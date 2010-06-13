@@ -39,7 +39,7 @@ static BOOL AROSMesaHiddInit()
     /* Open required libraries and hidds */
     AROSMesaCyberGfxBase = OpenLibrary((STRPTR)"cybergraphics.library",0);
     AROSMesaOOPBase = OpenLibrary((STRPTR)"oop.library", 0);
-    AROSMesaHIDDGalliumBase = OpenLibrary((STRPTR)"gallium.hidd", 4);
+    AROSMesaHIDDGalliumBase = OpenLibrary((STRPTR)"gallium.hidd", 5);
 
     if ((!AROSMesaCyberGfxBase) || (!AROSMesaOOPBase) || (!AROSMesaHIDDGalliumBase))
         return FALSE;

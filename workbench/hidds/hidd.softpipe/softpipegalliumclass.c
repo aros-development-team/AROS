@@ -219,12 +219,6 @@ fail:
     return NULL;
 }
 
-VOID METHOD(SoftpipeGallium, Hidd_Gallium, QueryDepthStencil)
-{
-    *msg->depthbits = 24;
-    *msg->stencilbits = 8;
-}
-
 VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplaySurface)
 {
     struct pipe_surface * surf = (struct pipe_surface *)msg->surface;

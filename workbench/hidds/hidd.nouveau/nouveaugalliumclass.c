@@ -213,12 +213,6 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     return nvws->pscreen;
 }
 
-VOID METHOD(NouveauGallium, Hidd_Gallium, QueryDepthStencil)
-{
-    *msg->depthbits = 24;
-    *msg->stencilbits = 8;
-}
-
 VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
 {
     /* unmap screenbitmap */
