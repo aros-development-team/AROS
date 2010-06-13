@@ -95,7 +95,7 @@ struct mouse_data
     UWORD buttonstate;
 
     char *mouse_name;
-    char type; /* type of mouse (usb, ps2, seriell) */
+    char type; /* type of mouse (usb, ps2, serial) */
 /* Driver specific data */
 
     union
@@ -111,9 +111,9 @@ struct mouse_data
             UBYTE           	    	mouse_data[5];
             UBYTE           	    	mouse_collected_bytes;
     	    UBYTE   	    	    	mouse_protocol;
-	    UBYTE   	    	    	mouse_packetsize;
+            UBYTE                       mouse_packetsize;
             UBYTE           	    	expected_mouse_acks;
-	    UBYTE   	    	    	packetsize;
+            UBYTE                       packetsize;
 	    
             struct pHidd_Mouse_Event    event;
         } ps2;
@@ -129,13 +129,13 @@ struct mouse_data
 
             struct pHidd_Mouse_Event	event;
             struct Ring     	    	*rx;    /* Ring structure for mouse init */
-        } com;
+        } ser;
     } u;
 };
 
 #define MDT_UNKNOWN 0
 #define MDT_USB     1
-#define MDT_SERIELL 2
+#define MDT_SERIAL  2
 #define MDT_PS2     3
 
 /* Mouse types */

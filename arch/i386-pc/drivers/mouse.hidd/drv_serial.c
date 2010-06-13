@@ -83,16 +83,16 @@ void mouse_usleep(LONG usec)
 
 /***** Test procedure ***********************************************/
 
-int test_mouse_com(OOP_Class *cl, OOP_Object *o)
+int test_mouse_serial(OOP_Class *cl, OOP_Object *o)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
     int i=0;
 
-    data->u.com.shidd = OpenLibrary("serial.hidd",0);
-    if (data->u.com.shidd != NULL)
+    data->u.ser.shidd = OpenLibrary("serial.hidd",0);
+    if (data->u.ser.shidd != NULL)
     {
-        data->u.com.serial = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL);
-        if (data->u.com.serial != NULL)
+        data->u.ser.serial = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL);
+        if (data->u.ser.serial != NULL)
         {
             /*
                 As we got serial object, we go now through all units searching
@@ -105,29 +105,29 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
 
             /* Allocate ring buffer */
 
-            data->u.com.rx = AllocMem(sizeof(struct Ring), MEMF_CLEAR);
-            data->u.com.mouse_inth_state = 0;  /* initialize to init state */
+            data->u.ser.rx = AllocMem(sizeof(struct Ring), MEMF_CLEAR);
+            data->u.ser.mouse_inth_state = 0;  /* initialize to init state */
 
-            if (data->u.com.rx)
+            if (data->u.ser.rx)
             {
                 for (i=0; i<4; i++)
                 {
                     /* Alloc New unit for us */
-                    data->u.com.unit = HIDD_Serial_NewUnit(data->u.com.serial, i);
-                    if (data->u.com.unit != NULL)
+                    data->u.ser.unit = HIDD_Serial_NewUnit(data->u.ser.serial, i);
+                    if (data->u.ser.unit != NULL)
                     {
                         int proto;
 
                         D(bug("Checking for mouse on serial port %d\n", i));
 
                         /* Install RingBuffer interrupt */
-                        HIDD_SerialUnit_Init(data->u.com.unit, mouse_RingHandler, data, NULL, NULL);
+                        HIDD_SerialUnit_Init(data->u.ser.unit, mouse_RingHandler, data, NULL, NULL);
 
                         /* Try to get mouse protocol in PnP way */
-                        if ((proto = mouse_DetectPNP(data, data->u.com.unit)) >= 0)
+                        if ((proto = mouse_DetectPNP(data, data->u.ser.unit)) >= 0)
                         {
                             /* We got protocol */
-                            data->u.com.mouse_protocol = proto;
+                            data->u.ser.mouse_protocol = proto;
                             switch (proto)
                             {
                                 case P_MS:
@@ -142,35 +142,35 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
                                 default:
                                     D(bug("Mouse: protocol: %d\n", proto));
                             }
-                            data->u.com.mouse_inth_state = 1;  /* initialize to event handling state */
+                            data->u.ser.mouse_inth_state = 1;  /* initialize to event handling state */
                             return 1; /* report the found mouse */
                         }
                         else
                         {
                             D(bug("Mouse: no serial mouse detected!\n"));
                             /* No mouse? Dispose useless unit then */
-                            HIDD_Serial_DisposeUnit(data->u.com.serial, data->u.com.unit);
+                            HIDD_Serial_DisposeUnit(data->u.ser.serial, data->u.ser.unit);
                         }
                     }
                 }
-                FreeMem(data->u.com.rx, sizeof(struct Ring));
+                FreeMem(data->u.ser.rx, sizeof(struct Ring));
             }
 
             /* Found no serial mouse... Dispose serial object */
-            OOP_DisposeObject(data->u.com.serial);
+            OOP_DisposeObject(data->u.ser.serial);
         }
-        CloseLibrary(data->u.com.shidd);
+        CloseLibrary(data->u.ser.shidd);
     }
     return 0; /* Report no COM mouse */
 }
 
-void dispose_mouse_seriell(OOP_Class *cl, OOP_Object *o) {
+void dispose_mouse_serial(OOP_Class *cl, OOP_Object *o) {
 struct mouse_data *data = OOP_INST_DATA(cl, o);
 
-	HIDD_Serial_DisposeUnit(data->u.com.serial, data->u.com.unit);
-	FreeMem(data->u.com.rx, sizeof(struct Ring));
-	OOP_DisposeObject(data->u.com.serial);
-	CloseLibrary(data->u.com.shidd);
+	HIDD_Serial_DisposeUnit(data->u.ser.serial, data->u.ser.unit);
+	FreeMem(data->u.ser.rx, sizeof(struct Ring));
+	OOP_DisposeObject(data->u.ser.serial);
+	CloseLibrary(data->u.ser.shidd);
 }
 
 /******************************************************************/
@@ -560,7 +560,7 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
 
 ULONG mouse_RingHandler(UBYTE *buf, ULONG len, ULONG unit, struct mouse_data *data)
 {
-    struct Ring *r = data->u.com.rx;
+    struct Ring *r = data->u.ser.rx;
 
     while (len--)
     {
@@ -569,8 +569,8 @@ ULONG mouse_RingHandler(UBYTE *buf, ULONG len, ULONG unit, struct mouse_data *da
         if (r->top >= RingSize) r->top = 0;
     }
 
-    if(data->u.com.mouse_inth_state >= 1)
-        handle_events(data->u.com.mouse_protocol, data);
+    if(data->u.ser.mouse_inth_state >= 1)
+        handle_events(data->u.ser.mouse_protocol, data);
 
     return 0;
 }
@@ -578,7 +578,7 @@ ULONG mouse_RingHandler(UBYTE *buf, ULONG len, ULONG unit, struct mouse_data *da
 void handle_events(UBYTE proto, struct mouse_data *data)
 {
 //    static UBYTE inbuf[3];
-    struct pHidd_Mouse_Event *e = &data->u.com.event;
+    struct pHidd_Mouse_Event *e = &data->u.ser.event;
     UWORD buttonstate;
     char c;
 
@@ -588,17 +588,17 @@ void handle_events(UBYTE proto, struct mouse_data *data)
     {
         D(bug("Mouse: handling events, c: %d\n", c));
 
-        data->u.com.mouse_data[data->u.com.mouse_collected_bytes++] = c;
+        data->u.ser.mouse_data[data->u.ser.mouse_collected_bytes++] = c;
 
-        D(bug("mouse_data: %d, colb: %d\n", data->u.com.mouse_data[data->u.com.mouse_collected_bytes],data->u.com.mouse_collected_bytes));
+        D(bug("mouse_data: %d, colb: %d\n", data->u.ser.mouse_data[data->u.ser.mouse_collected_bytes],data->u.ser.mouse_collected_bytes));
 
-        if (data->u.com.mouse_collected_bytes == 3)
+        if (data->u.ser.mouse_collected_bytes == 3)
         {
-            data->u.com.mouse_collected_bytes = 0;
-            while (!(data->u.com.mouse_data[0] & 0x40))
+            data->u.ser.mouse_collected_bytes = 0;
+            while (!(data->u.ser.mouse_data[0] & 0x40))
             {
-                data->u.com.mouse_data[0] = data->u.com.mouse_data[1];
-                data->u.com.mouse_data[1] = data->u.com.mouse_data[2];
+                data->u.ser.mouse_data[0] = data->u.ser.mouse_data[1];
+                data->u.ser.mouse_data[1] = data->u.ser.mouse_data[2];
 
 #if 0
                 if (length)
@@ -624,9 +624,9 @@ void handle_events(UBYTE proto, struct mouse_data *data)
             //mousedata = (struct mouse_data *)userdata;
 
             D(bug("event 1\n"));
-            e->x = (char)(((data->u.com.mouse_data[0] & 0x03) << 6) | (data->u.com.mouse_data[1] & 0x3f));
+            e->x = (char)(((data->u.ser.mouse_data[0] & 0x03) << 6) | (data->u.ser.mouse_data[1] & 0x3f));
             D(bug("subevent 1\n"));
-            e->y = (char)(((data->u.com.mouse_data[0] & 0x0c) << 4) | (data->u.com.mouse_data[2] & 0x3f));
+            e->y = (char)(((data->u.ser.mouse_data[0] & 0x0c) << 4) | (data->u.ser.mouse_data[2] & 0x3f));
             D(bug("subevent 1\n"));
             if (e->x || e->y)
             {
@@ -640,8 +640,8 @@ void handle_events(UBYTE proto, struct mouse_data *data)
             }
             D(bug("event 2\n"));
 
-            buttonstate  = ((data->u.com.mouse_data[0] & 0x20) >> 5); /* left  button bit goes to bit 0 in button state */
-            buttonstate |= ((data->u.com.mouse_data[0] & 0x10) >> 3); /* right button bit goes to bit 1 in button state */
+            buttonstate  = ((data->u.ser.mouse_data[0] & 0x20) >> 5); /* left  button bit goes to bit 0 in button state */
+            buttonstate |= ((data->u.ser.mouse_data[0] & 0x10) >> 3); /* right button bit goes to bit 1 in button state */
 
             if((buttonstate & LEFT_BUTTON) != (data->buttonstate & LEFT_BUTTON))
             {
@@ -673,7 +673,7 @@ void handle_events(UBYTE proto, struct mouse_data *data)
  */
 int mouse_CheckRing(struct mouse_data *data)
 {
-    return data->u.com.rx->top - data->u.com.rx->ptr;
+    return data->u.ser.rx->top - data->u.ser.rx->ptr;
 }
 
 /*
@@ -681,7 +681,7 @@ int mouse_CheckRing(struct mouse_data *data)
  */
 void mouse_FlushInput(struct mouse_data *data)
 {
-        data->u.com.rx->ptr = data->u.com.rx->top;
+        data->u.ser.rx->ptr = data->u.ser.rx->top;
 }
 
 /*
@@ -689,7 +689,7 @@ void mouse_FlushInput(struct mouse_data *data)
  */
 int mouse_GetFromRing(struct mouse_data *data, char *c)
 {
-    struct Ring *r = data->u.com.rx;
+    struct Ring *r = data->u.ser.rx;
 
     if (r->top != r->ptr)
     {
@@ -713,7 +713,7 @@ int mouse_Select(struct mouse_data *data, ULONG usec)
 {
     int step;
     int avail = 0;
-    struct Ring *r = data->u.com.rx;
+    struct Ring *r = data->u.ser.rx;
 
     while (usec && !avail)
     {
