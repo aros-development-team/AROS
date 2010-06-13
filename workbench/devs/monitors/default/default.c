@@ -6,7 +6,10 @@
     Lang: english
 */
 
+#define DEBUG 1
+
 #include <aros/bootloader.h>
+#include <aros/debug.h>
 #include <dos/dos.h>
 #include <hidd/hidd.h>
 #include <proto/bootloader.h>
@@ -45,6 +48,7 @@ int main(void)
     BPTR fh;
     APTR BootLoaderBase;
 
+    D(bug("[default.monitor] Loading default driver\n"));
     hiddname[0] = 0;
 
     /* Open the hidd prefsfile */	
@@ -97,6 +101,7 @@ int main(void)
 
 	    if (0 == strcmp(keyword, "library")) {
 		/* Open a specified library */
+		D(bug("[default.monitor] Opening library %s (from hidd.prefs)\n", arg));
 		OpenLibrary(arg, 0);
 	    } else if (0 == strcmp(keyword, "gfx")) {
 		strncpy(hiddname, arg, BUFSIZE - 1);
@@ -114,6 +119,7 @@ int main(void)
 	if (list) {
 	    ForeachNode(list,node) {
 		if (0 == strncmp(node->ln_Name,"lib=",4)) {
+		    D(bug("[default.monitor] Opening library %s (from bootloader.resource)\n", &node->ln_Name[4]));
 		    OpenLibrary(&node->ln_Name[4],0L);
 		} else if (0 == strncmp(node->ln_Name,"gfx=",4)) {
 		    strncpy(hiddname, &node->ln_Name[4], BUFSIZE-1);
@@ -121,6 +127,8 @@ int main(void)
 	    }
 	}
     }
+
+    D(bug("[default,monitor] HIDD name: %s\n", hiddname));
 
     if (hiddname[0]) {
         struct GfxBase *GfxBase;
@@ -132,6 +140,7 @@ int main(void)
 	    return RETURN_FAIL;
 
 	gfxhidd = OOP_NewObject(NULL, hiddname, NULL);
+	D(bug("[default.monitor] Driver object: 0x%p\n", gfxhidd));
 	if (gfxhidd) {
 	    if (AddDisplayDriverA(gfxhidd, NULL))
 		OOP_DisposeObject(gfxhidd);
