@@ -29,7 +29,10 @@ typedef struct arosmesa_framebuffer * AROSMesaFrameBuffer;
 /* AROS visual */
 struct arosmesa_visual
 {
-    GLvisual Base;                                  /* Base class - must be first */
+    GLvisual            Base;                       /* Base class - must be first */
+    enum pipe_format    ColorFormat;
+    enum pipe_format    DepthFormat;
+    enum pipe_format    StencilFormat;
 };
 
 typedef struct arosmesa_visual * AROSMesaVisual;

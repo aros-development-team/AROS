@@ -80,58 +80,152 @@ static VOID AROSMesaHiddDestroyVisual(AROSMesaVisual aros_vis)
     }
 }
 
-static AROSMesaVisual AROSMesaHiddNewVisual(GLint bpp, struct TagItem *tagList)
+static VOID AROSMesaHiddSelectColorFormat(GLint bpp, struct pipe_screen * screen, 
+    GLint * redBits, GLint * greenBits, GLint * blueBits, GLint * alphaBits,
+    enum pipe_format * colorFormat)
+{
+    *redBits        = 0;
+    *greenBits      = 0;
+    *blueBits       = 0;
+    *alphaBits      = 0;
+    *colorFormat    = PIPE_FORMAT_NONE;
+
+    if (bpp == 16)
+    {
+        /* Try PIPE_FORMAT_B5G6R5_UNORM */
+        if (screen->is_format_supported(screen, PIPE_FORMAT_B5G6R5_UNORM,
+            PIPE_TEXTURE_2D, PIPE_TEXTURE_USAGE_RENDER_TARGET, 0))
+        {
+            *redBits        = 5;
+            *greenBits      = 6;
+            *blueBits       = 5;
+            *alphaBits      = 0;
+            *colorFormat    = PIPE_FORMAT_B5G6R5_UNORM;
+        }
+    }
+    
+    if (bpp == 32)
+    {
+        /* Try PIPE_FORMAT_B8G8R8A8_UNORM */
+        if (screen->is_format_supported(screen, PIPE_FORMAT_B5G6R5_UNORM,
+            PIPE_TEXTURE_2D, PIPE_TEXTURE_USAGE_RENDER_TARGET, 0))
+        {
+            *redBits        = 8;
+            *greenBits      = 8;
+            *blueBits       = 8;
+            *alphaBits      = 8;
+            *colorFormat    = PIPE_FORMAT_B8G8R8A8_UNORM;
+        }
+    }    
+}
+
+static VOID AROSMesaHiddSelectDepthStencilFormat(struct pipe_screen * screen,
+    GLint * depthBits, enum pipe_format * depthFormat, 
+    GLint * stencilBits, enum pipe_format * stencilFormat)
+{
+    /* Defeaul values */
+    *depthBits      = 0;
+    *depthFormat    = PIPE_FORMAT_NONE;
+    *stencilBits    = 0;
+    *stencilFormat  = PIPE_FORMAT_NONE;
+    
+    /* Try PIPE_FORMAT_S8Z24_UNORM */
+    if((*depthFormat == PIPE_FORMAT_NONE) && (*stencilFormat == PIPE_FORMAT_NONE) &&
+        (screen->is_format_supported(screen, PIPE_FORMAT_S8Z24_UNORM,
+            PIPE_TEXTURE_2D, PIPE_TEXTURE_USAGE_DEPTH_STENCIL, 0)))
+    {
+        *depthBits      = 24;
+        *depthFormat    = PIPE_FORMAT_S8Z24_UNORM;
+        *stencilBits    = 8;
+        *stencilFormat  = PIPE_FORMAT_S8Z24_UNORM;
+    }
+    
+    /* Try PIPE_FORMAT_Z16_UNORM */
+    if((*depthFormat == PIPE_FORMAT_NONE) && 
+        (screen->is_format_supported(screen, PIPE_FORMAT_Z16_UNORM,
+            PIPE_TEXTURE_2D, PIPE_TEXTURE_USAGE_DEPTH_STENCIL, 0)))
+    {
+        *depthBits      = 16;
+        *depthFormat    = PIPE_FORMAT_Z16_UNORM;
+    }
+    
+    /* Try PIPE_FORMAT_Z16_UNORM */
+    if((*stencilFormat == PIPE_FORMAT_NONE) && 
+        (screen->is_format_supported(screen, PIPE_FORMAT_S8_UNORM,
+            PIPE_TEXTURE_2D, PIPE_TEXTURE_USAGE_DEPTH_STENCIL, 0)))
+    {
+        *stencilBits    = 8;
+        *stencilFormat  = PIPE_FORMAT_S8_UNORM;
+    }
+}
+
+static AROSMesaVisual AROSMesaHiddNewVisual(GLint bpp, struct pipe_screen * screen, struct TagItem *tagList)
 {
     AROSMesaVisual aros_vis = NULL;
     GLvisual * vis = NULL;
     GLint  redBits, greenBits, blueBits, alphaBits, accumBits;
-    UBYTE depthBits, stencilBits;
-    struct pHidd_Gallium_QueryDepthStencil qdsmsg = {
-    mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_QueryDepthStencil),
-    depthbits : &depthBits,
-    stencilbits : &stencilBits
-    };
+    GLint depthBits, stencilBits;
+    BOOL noDepth, noStencil, noAccum;
     
     D(bug("[AROSMESA] AROSMesaHiddNewVisual\n"));
-
-    /* Color buffer */
-    switch(bpp)
-    {
-        case(16):
-            redBits     = 5;
-            greenBits   = 6;
-            blueBits    = 5;
-            alphaBits   = 0;
-            break;
-        case(32):
-            redBits     = 8;
-            greenBits   = 8;
-            blueBits    = 8;
-            alphaBits   = 8;
-            break;
-        default:
-            D(bug("[AROSMESA] AROSMesaHiddNewVisual - ERROR - Unsupported bpp\n"));
-            return NULL;
-    }
-
-    /* Z-buffer / Stencil buffer */
-    OOP_DoMethod(driver, (OOP_Msg)&qdsmsg);
     
-    /* Accum buffer */
-    accumBits = 16;
-    
-    
-    /* Override default values */
-    /* AMA_RGBMode, AMA_DoubleBuf and AMA_AlphaFlag are always GL_TRUE in this implementation */
-    stencilBits     = !GetTagData(AMA_NoStencil, GL_FALSE, tagList) ? stencilBits : 0;
-    accumBits       = !GetTagData(AMA_NoAccum, GL_FALSE, tagList) ? accumBits : 0;
-    depthBits       = !GetTagData(AMA_NoDepth, GL_FALSE, tagList) ? depthBits : 0;
+    noStencil   = GetTagData(AMA_NoStencil, GL_FALSE, tagList);
+    noAccum     = GetTagData(AMA_NoAccum, GL_FALSE, tagList);
+    noDepth     = GetTagData(AMA_NoDepth, GL_FALSE, tagList);
 
     /* Allocate memory for aros structure */
     aros_vis = AllocVec(sizeof(struct arosmesa_visual), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (!aros_vis)
         return NULL;
+
+    /* Color buffer */
+    AROSMesaHiddSelectColorFormat(bpp, screen, &redBits, &greenBits, &blueBits,
+        &alphaBits, &aros_vis->ColorFormat);
+    if (aros_vis->ColorFormat == PIPE_FORMAT_NONE)
+    {
+        D(bug("[AROSMESA] AROSMesaHiddNewVisual - ERROR - No supported color format found\n"));        
+        AROSMesaHiddDestroyVisual(aros_vis);
+        return NULL;        
+    } 
+    
+    /* Z-buffer / Stencil buffer */
+    AROSMesaHiddSelectDepthStencilFormat(screen, &depthBits, &aros_vis->DepthFormat, 
+        &stencilBits, &aros_vis->StencilFormat);
+    if (noDepth)
+    {
+        depthBits = 0;
+        aros_vis->DepthFormat = PIPE_FORMAT_NONE;
+    }
+    else
+        if (aros_vis->DepthFormat == PIPE_FORMAT_NONE)
+        {
+            D(bug("[AROSMESA] AROSMesaHiddNewVisual - ERROR - No supported depth format found\n"));        
+            AROSMesaHiddDestroyVisual(aros_vis);
+            return NULL;        
+        }
+
+    if (noStencil)
+    {
+        stencilBits = 0;
+        aros_vis->StencilFormat = PIPE_FORMAT_NONE;
+    }
+    else
+        if (aros_vis->StencilFormat == PIPE_FORMAT_NONE)
+        {
+            D(bug("[AROSMESA] AROSMesaHiddNewVisual - ERROR - No supported stencil format found\n"));        
+            AROSMesaHiddDestroyVisual(aros_vis);
+            return NULL;        
+        }
+
+    /* Accum buffer */
+    if (noAccum)
+        accumBits = 0;
+    else
+        accumBits = 16;
+    
+    
+    /* AMA_RGBMode, AMA_DoubleBuf and AMA_AlphaFlag are always GL_TRUE in this implementation */
 
     vis = GET_GL_VIS_PTR(aros_vis);
 
@@ -169,60 +263,9 @@ static VOID AROSMesaHiddDestroyContext(AROSMesaContext amesa)
 static AROSMesaFrameBuffer AROSMesaHiddNewFrameBuffer(AROSMesaContext amesa, AROSMesaVisual visual)
 {
     AROSMesaFrameBuffer aros_fb = NULL;
-    enum pipe_format colorFormat, depthFormat, stencilFormat;
     GLvisual * vis = GET_GL_VIS_PTR(visual);
     
     D(bug("[AROSMESA] AROSMesaHiddNewFrameBuffer\n"));
-
-    stencilFormat = PIPE_FORMAT_NONE;
-
-    switch(vis->redBits)
-    {
-        case(5):
-            colorFormat = PIPE_FORMAT_B5G6R5_UNORM;
-            break;
-        case(8):
-            colorFormat = PIPE_FORMAT_B8G8R8A8_UNORM;
-            break;
-        default:
-            D(bug("[AROSMESA] AROSMesaHiddNewFrameBuffer - ERROR - Unsupported redBits value\n"));
-            return NULL;
-    }
-    /* TODO: screen->is_format_supported should be used here */
-    
-    switch(vis->depthBits)
-    {
-        case(0):
-            depthFormat = PIPE_FORMAT_NONE;
-            break;
-        case(16):
-            depthFormat = PIPE_FORMAT_Z16_UNORM;
-            break;
-        case(24):
-            depthFormat = PIPE_FORMAT_S8Z24_UNORM;
-            break;
-        default:
-            D(bug("[AROSMESA] AROSMesaHiddNewFrameBuffer - ERROR - Unsupported depthBits value\n"));
-            return NULL;
-    }
-    /* TODO: screen->is_format_supported should be used here */
-    
-    switch(vis->stencilBits)
-    {
-        case(0):
-            stencilFormat = PIPE_FORMAT_NONE;
-            break;
-        case(8):
-            if (depthFormat == PIPE_FORMAT_S8Z24_UNORM)
-                stencilFormat = PIPE_FORMAT_S8Z24_UNORM;
-            else
-                stencilFormat = PIPE_FORMAT_S8_UNORM;
-            break;
-        default:
-            D(bug("[AROSMESA] AROSMesaHiddNewFrameBuffer - ERROR - Unsupported stencilBits value\n"));
-            return NULL;
-    }
-    /* TODO: screen->is_format_supported should be used here */
 
     /* Allocate memory for aros structure */
     aros_fb = AllocVec(sizeof(struct arosmesa_framebuffer), MEMF_PUBLIC | MEMF_CLEAR);
@@ -232,9 +275,9 @@ static AROSMesaFrameBuffer AROSMesaHiddNewFrameBuffer(AROSMesaContext amesa, ARO
     
     /* Create framebuffer */
     aros_fb->stfb = st_create_framebuffer(vis,
-                                    colorFormat, depthFormat, stencilFormat,
-                                    amesa->width, amesa->height,
-                                    (void *) aros_fb);    
+                                    visual->ColorFormat, visual->DepthFormat, 
+                                    visual->StencilFormat, amesa->width, 
+                                    amesa->height, (void *) aros_fb);    
     
     return aros_fb;
 }
@@ -591,18 +634,9 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
     
     /* FIXME: check if any rastport is available */
     
-    /* FIXME: later this might me placed in initialization of framebuffer */
+    /* FIXME: later this might be placed in initialization of framebuffer */
     AROSMesaHiddStandardInit(amesa, tagList);   
-    
-    D(bug("[AROSMESA] AROSMesaCreateContext: Creating new AROSMesaVisual\n"));
 
-    if (!(amesa->visual = AROSMesaHiddNewVisual(amesa->ScreenInfo.BitsPerPixel, tagList)))
-    {
-        /* TODO: Route error handling to one place */
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create AROSMesaVisual\n"));
-        FreeVec( amesa );
-        return NULL;
-    }
 
     cpsmsg.mID = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_CreatePipeScreen);
     screen = (struct pipe_screen *)OOP_DoMethod(driver, (OOP_Msg)&cpsmsg);
@@ -611,8 +645,19 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
     {
         /* TODO: Route error handling to one place */
         D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create gallium driver screen\n"));
-        AROSMesaHiddDestroyVisual(amesa->visual);
         FreeVec(amesa);
+        return NULL;
+    }
+
+    
+    D(bug("[AROSMESA] AROSMesaCreateContext: Creating new AROSMesaVisual\n"));
+
+    if (!(amesa->visual = AROSMesaHiddNewVisual(amesa->ScreenInfo.BitsPerPixel, screen, tagList)))
+    {
+        /* TODO: Route error handling to one place */
+        /* TODO: Destroy screen */
+        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create AROSMesaVisual\n"));
+        FreeVec( amesa );
         return NULL;
     }
 
