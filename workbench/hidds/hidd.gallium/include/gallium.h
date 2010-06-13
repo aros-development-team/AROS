@@ -38,8 +38,7 @@ extern OOP_AttrBase HiddGalliumAttrBase;
 enum
 {
     moHidd_Gallium_CreatePipeScreen = 0,
-    moHidd_Gallium_QueryDepthStencil,
-    moHidd_Gallium_DisplaySurface,
+    moHidd_Gallium_DisplaySurface = 2,
     moHidd_Gallium_DestroyPipeScreen,
 
     NUM_GALLIUM_METHODS
@@ -60,13 +59,6 @@ enum
 struct pHidd_Gallium_CreatePipeScreen
 {
     OOP_MethodID    mID;
-};
-
-struct pHidd_Gallium_QueryDepthStencil
-{
-    OOP_MethodID    mID;
-    UBYTE           *depthbits;
-    UBYTE           *stencilbits;
 };
 
 struct pHidd_Gallium_DisplaySurface
