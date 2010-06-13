@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES	:=	mouse_init mouseclass drv_usb drv_ps2 drv_com
+FILES	:=	mouse_init mouseclass drv_usb drv_ps2 drv_serial
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../../include
 %build_module mmake=kernel-pc-i386-mouse \
