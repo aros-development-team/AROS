@@ -168,11 +168,15 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 
 	drvnode->callbacks = &csd->callbacks;
 
+/*	Commented out because this produces failures. For some weird reason
+        value of aHidd_Mouse_Extended is 1 here
+
 	OOP_GetAttr(drvnode->drv, aHidd_Mouse_Extended, &val);
 	D(bug("[Mouse] Extended event: %d\n", val));
 	if (val)
 	    drvnode->flags = vHidd_Mouse_Extended;
-	else {
+	else */
+	{
             OOP_GetAttr(drvnode->drv, aHidd_Mouse_RelativeCoords, &val);
 	    D(bug("[Mouse] Relative coordinates: %d\n", val));
             drvnode->flags = val ? vHidd_Mouse_Relative : 0;
