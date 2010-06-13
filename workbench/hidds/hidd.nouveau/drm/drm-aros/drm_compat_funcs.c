@@ -334,12 +334,6 @@ if (resource == 1) return (resource_size_t)0xf0000000;
 if (resource == 2) return (resource_size_t)0xef800000;
 #endif
 #endif
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_I915
-if (resource == 0) return (resource_size_t)0x50300000;
-if (resource == 1) return (resource_size_t)0x000030e0;
-if (resource == 2) return (resource_size_t)0x40000000;
-if (resource == 3) return (resource_size_t)0x50380000;
-#endif
 return (resource_size_t)0;
 #endif
 }
@@ -382,12 +376,6 @@ if (resource == 0) return (IPTR)0x1000000;
 if (resource == 1) return (IPTR)0x8000000;
 if (resource == 2) return (IPTR)0x80000;
 #endif
-#endif
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_I915
-if (resource == 0) return (IPTR)0x80000;
-if (resource == 1) return (IPTR)0x8;
-if (resource == 2) return (IPTR)0x10000000;
-if (resource == 3) return (IPTR)0x40000;
 #endif
 return (IPTR)0;
 #endif
@@ -479,13 +467,6 @@ int pci_read_config_word(void *dev, int where, u16 *val)
     
     *val = (UWORD)OOP_DoMethod((OOP_Object*)dev, (OOP_Msg)msg);
 #else
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_I915
-    switch(where)
-    {
-        case 0x52: *val = 48; break;
-        default: *val = 0; IMPLEMENT("check correct value with iMica\n"); break;
-    }
-#endif
 #endif
     bug("pci_read_config_word: %d -> %d\n", where, *val);
     
@@ -502,12 +483,6 @@ int pci_read_config_dword(void *dev, int where, u32 *val)
     
     *val = (ULONG)OOP_DoMethod((OOP_Object*)dev, (OOP_Msg)msg);
 #else
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_I915
-    switch(where)
-    {
-        default: *val = 0; IMPLEMENT("check correct value with iMica\n"); break;
-    }
-#endif
 #endif
     bug("pci_read_config_dword: %d -> %d\n", where, *val);
     
@@ -651,11 +626,6 @@ struct agp_bridge_data * agp_find_bridge(void * dev)
     global_agp_bridge->mode = 0x1f004e1b;
     global_agp_bridge->aperturebase = 0xd8000000;
     global_agp_bridge->aperturesize = 64;
-#endif
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_I915
-    bug("[AGP-API] agp_find_bridge - MISSING VALUES!\n");
-    global_agp_bridge->aperturebase = 0x40000000;
-    global_agp_bridge->aperturesize = 256;
 #endif
 #endif
 

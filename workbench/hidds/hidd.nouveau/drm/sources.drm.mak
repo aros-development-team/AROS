@@ -15,11 +15,6 @@ AROS_LIBDRM_NVIDIA_SOURCES = \
             libdrm/nouveau/nouveau_reloc \
             libdrm/arosdrm_nouveau \
 
-AROS_LIBDRM_INTEL_SOURCES = \
-            libdrm/intel/intel_bufmgr \
-            libdrm/intel/intel_bufmgr_gem \
-            libdrm/arosdrm_intel \
-
 AROS_DRM_CORE_SOURCES = \
             drm-aros/drm_aros \
             drm-aros/drm_bufs \
@@ -101,12 +96,4 @@ AROS_DRM_NVIDIA_SOURCES = \
             drm-unchanged/nouveau/nv50_graph \
             drm-unchanged/nouveau/nv50_grctx \
             drm-unchanged/nouveau/nv50_sor \
-
-AROS_DRM_INTEL_SOURCES = \
-            drm-aros/i915/i915_drv \
-            drm-changed/i915/i915_dma \
-            drm-changed/i915/i915_gem \
-            drm-changed/i915/i915_gem_tiling \
-            drm-changed/i915/i915_irq \
-            drm-changed/i915/i915_mem \
 
