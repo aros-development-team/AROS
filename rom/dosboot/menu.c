@@ -64,7 +64,7 @@ static BOOL init_mouse(STRPTR classid)
     
     ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
     if (ms) {
-        drv = HIDD_Kbd_AddHardwareDriver(ms, cl, NULL);
+        drv = HIDD_Mouse_AddHardwareDriver(ms, cl, NULL);
 	OOP_DisposeObject(ms);
     }
     
@@ -111,11 +111,13 @@ static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
 
     /* Only these poor input HIDDs still need external initialization */
     if (OpenLibrary("kbd.hidd", 0)) {
+       D(bug("[BootMenu] kbd.hidd present\n"));
 	if (!init_kbd("hidd.kbd.hw"))
 	    return FALSE;
     }
 
     if (OpenLibrary("ps2mouse.hidd", 0)) {
+       D(bug("[BootMenu] ps2mouse.hidd present\n"));
         if (!init_mouse("hidd.bus.mouse"))
 	    return FALSE;
     }
