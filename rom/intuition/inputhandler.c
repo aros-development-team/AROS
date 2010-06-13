@@ -52,6 +52,7 @@
 #define DEBUG_HANDLER(x)    ;
 #define DEBUG_KEY(x)        ;
 #define DEBUG_SCREENKEY(x)  ;
+#define DEBUG_AUTOSCROLL(x)
 #define DEBUG_CLICK(x)
 #define DEBUG_DRAG(x)
 #define DEBUG_GADGET(x)
@@ -415,7 +416,6 @@ struct Window *GetToolBoxWindow(struct InputEvent *ie, struct Screen *scr, struc
     /* NOTE: may be called with NULL ie ptr! */
     struct Layer    *l;
     struct Window   *new_w = NULL;
-    ULONG            lock;
 
     if (scr)
     {
@@ -1296,7 +1296,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     case IECODE_NOBUTTON: /* MOUSEMOVE */
     {
     	struct Screen *scr;
-	UWORD xlimit, ylimit;
+	UWORD DWidth, DHeight;
 
 	if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
 	    //ULONG Thresh;
@@ -1346,6 +1346,21 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    DEBUG_MOUSE(bug("[InputHandler] Delta is (%d, %d)\n", iihdata->DeltaMouseX, iihdata->DeltaMouseY));
 	}
 
+	/* Calculate current display size.
+	   At the moment it's determined by the first screen */
+	scr = IntuitionBase->FirstScreen;
+	if (scr)
+	{
+	    DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
+	    DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
+	}
+	else
+	{
+	    /* If there's no active screen, we take 160x160 as a limit */
+	    DWidth = 160;
+	    DHeight = 160;
+	}
+
 	scr = iihdata->ScreenDrag;
 	if (scr) {
 	    WORD dx = iihdata->DeltaMouseX;
@@ -1359,8 +1374,6 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    /* Restrict dragging to a physical display area if the driver does not allow composition or if the user wants it*/
 	    if (((spFlags & SF_HorCompose) != SF_HorCompose) || (DragMode & ICVDM_HBOUND)) {
 		/* Calculate limits */
-		WORD DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
-
 		if (scr->Width > DWidth) {
 		    min = DWidth - scr->Width;
 		    max = 0;
@@ -1395,10 +1408,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		}
 	    }
 	    if (((spFlags & SF_VertCompose) != SF_VertCompose) || (DragMode & ICVDM_VBOUND)) {
-		WORD DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
-
 		DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
-		DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, scr->ViewPort.DHeight));
+		DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, DHeight));
 		if (scr->Height > DHeight) {
 		    min = DHeight - scr->Height;
 		    max = 0;
@@ -1427,71 +1438,51 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
 	}
 
-/* Some old nonfunctional code - left for better times
+	/* Autoscroll the active screen */
+	scr = IntuitionBase->ActiveScreen;
 	if (scr->Flags & AUTOSCROLL)
 	{
+	    WORD xval = scr->LeftEdge;
+	    WORD yval = scr->TopEdge;
+	    WORD min;
 
-#define VWIDTH IntuitionBase->ViewLord.ViewPort->DWidth
-#define VHEIGHT IntuitionBase->ViewLord.ViewPort->DHeight
-#define VDX IntuitionBase->ViewLord.ViewPort->DxOffset
-#define VDY IntuitionBase->ViewLord.ViewPort->DyOffset
+	    DEBUG_AUTOSCROLL(bug("[Inputhandler] Autoscroll screen 0x%p, event at (%d, %d)\n",
+			         scr, ie->ie_X, ie->ie_Y));
 
-		if ((ie->ie_X > VWIDTH - scr->LeftEdge - 1) || (ie->ie_X < - scr->LeftEdge) ||
-		     (ie->ie_Y > VHEIGHT - scr->TopEdge - 1) || (ie->ie_Y < - scr->TopEdge))
-		{
-		    if (ie->ie_X >  VWIDTH - scr->LeftEdge - 1)
-		    {
-			scr->LeftEdge = VWIDTH - ie->ie_X;
-			if (VWIDTH - scr->LeftEdge > scr->Width) scr->LeftEdge = VWIDTH - scr->Width; 
-			VDX = scr->LeftEdge;
-		    }  
+	    if ((ie->ie_X < 0) || (ie->ie_X >= DWidth)) {
+		DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", iihdata->DeltaMouseX));
+		xval -= iihdata->DeltaMouseX;
 
-		    if (ie->ie_X < -scr->LeftEdge)
-		    {
-			scr->LeftEdge = -ie->ie_X;
-			if (scr->LeftEdge < VWIDTH - scr->Width) scr->LeftEdge = VWIDTH - scr->Width;
-			if(scr->LeftEdge > 0) scr->LeftEdge = 0;    // we don't support > 0 LeftEdges
-			VDX = scr->LeftEdge;
-		    }
-
-		    if (ie->ie_Y >  VHEIGHT - scr->TopEdge - 1)
-		    {
-			scr->TopEdge = VHEIGHT - ie->ie_Y;
-			if (VHEIGHT - scr->TopEdge > scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
-			VDY = scr->TopEdge;
-		    }
-
-		    if (ie->ie_Y < -scr->TopEdge)
-		    {
-			scr->TopEdge = - ie->ie_Y;
-			if (scr->TopEdge < VHEIGHT - scr->Height) scr->TopEdge = VHEIGHT - scr->Height;
-			if(scr->TopEdge > 0) scr->TopEdge = 0;
-			VDY = scr->TopEdge;
-		    }
-
-		    ScrollVPort(IntuitionBase->ViewLord.ViewPort);
+		if (ie->ie_X < 0) {
+		    if (xval > 0)
+			xval = 0;
+		} else if (ie->ie_X >= DWidth) {
+		    min = DWidth - scr->Width;
+		    if (xval < min)
+			xval = min;
 		}
-	}
-	
-*/
-	/* Restrict mouse coordinates to the physical display area.
-	   Its size is determined by the frontmost ViewPort, and the frontmost ViewPort
-	   is the frontmost screen */
-	scr = IntuitionBase->FirstScreen;
+	    }
 
-	if (scr)
-	{
-	    xlimit = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
-	    ylimit = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
+	    if ((ie->ie_Y < 0) || (ie->ie_Y >= DHeight)) {
+		yval -= iihdata->DeltaMouseY;
+
+		if (ie->ie_Y < 0) {
+		    if (yval > 0)
+			yval = 0;
+		} else if (ie->ie_Y >= DHeight) {
+		    min = DHeight - scr->Height;
+		    if (yval < min)
+			yval = min;
+		}
+	    }
+
+	    if ((xval != scr->LeftEdge) || (yval != scr->TopEdge))
+		ScreenPosition(scr, SPOS_ABSOLUTE, xval, yval, 0, 0);
 	}
-	else
-	{
-	    /* If there's no active screen, we take 160x160 as a limit */
-	    xlimit = 159;
-	    ylimit = 159;
-	}
-	if (ie->ie_X > xlimit) ie->ie_X = xlimit;
-	if (ie->ie_Y > ylimit) ie->ie_Y = ylimit;
+
+	/* Restrict mouse coordinates to the physical display area */
+	if (ie->ie_X >= DWidth) ie->ie_X = DWidth - 1;
+	if (ie->ie_Y >= DHeight) ie->ie_Y = DHeight - 1;
 	if (ie->ie_X < 0) ie->ie_X = 0;
 	if (ie->ie_Y < 0) ie->ie_Y = 0;
 
