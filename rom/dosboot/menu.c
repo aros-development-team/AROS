@@ -6,6 +6,8 @@
    Lang: english
 */
 
+#define DEBUG 1
+
 #include <aros/debug.h>
 
 #include <proto/bootloader.h>
@@ -38,12 +40,15 @@ static BOOL init_kbd(STRPTR classid)
     D(bug("[BootMenu] Adding keyboard HIDD %s\n", classid));
     
     cl = OOP_FindClass(classid);
+    D(bug("[BootMenu] Driver class: 0x%p\n", cl));
     if (!cl)
         return FALSE;
 
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
+    D(bug("[BootMenu] I/O object 0x%p\n", kbd));
     if (kbd) {
         drv = HIDD_Kbd_AddHardwareDriver(kbd, cl, NULL);
+	D(bug("[BootMenu] Driver object 0x%p\n", drv));
 	OOP_DisposeObject(kbd);
     }
     
@@ -59,12 +64,15 @@ static BOOL init_mouse(STRPTR classid)
     D(bug("[BootMenu] Adding mouse HIDD %s\n", classid));
     
     cl = OOP_FindClass(classid);
+    D(bug("[BootMenu] Driver class 0x%p\n", cl));
     if (!cl)
         return FALSE;
     
     ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
+    D(bug("[BootMenu] I/O object 0x%p\n", ms));
     if (ms) {
         drv = HIDD_Mouse_AddHardwareDriver(ms, cl, NULL);
+	D(bug("[BootMenu] Driver object 0x%p\n", drv));
 	OOP_DisposeObject(ms);
     }
     
