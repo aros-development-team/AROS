@@ -699,29 +699,35 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
         );
         GetAttr(MUIA_Cycle_Active, data->netped_ifDHCPState, &lng);
 
-        if (lng == 1)
+        if (iface != NULL)
         {
-            /* Clear and disable text boxes, but keep their values for later */
+            if (lng == 1)
+            {
+                /* Clear and disable text boxes, but keep their values for
+                 * later */
 
-            SET(data->netped_IPString, MUIA_Disabled, TRUE);
-            GET(data->netped_IPString, MUIA_String_Contents, &str);
-            SetIP(iface, str);
-            SET(data->netped_IPString, MUIA_String_Contents, "");
+                SET(data->netped_IPString, MUIA_Disabled, TRUE);
+                GET(data->netped_IPString, MUIA_String_Contents, &str);
+                SetIP(iface, str);
+                SET(data->netped_IPString, MUIA_String_Contents, "");
 
-            SET(data->netped_maskString, MUIA_Disabled, TRUE);
-            GET(data->netped_maskString, MUIA_String_Contents, &str);
-            SetMask(iface, str);
-            SET(data->netped_maskString, MUIA_String_Contents, "");
-        }
-        else
-        {
-            /* Enable text boxes, and reset their previous values */
+                SET(data->netped_maskString, MUIA_Disabled, TRUE);
+                GET(data->netped_maskString, MUIA_String_Contents, &str);
+                SetMask(iface, str);
+                SET(data->netped_maskString, MUIA_String_Contents, "");
+            }
+            else
+            {
+                /* Enable text boxes, and reset their previous values */
 
-            SET(data->netped_IPString, MUIA_Disabled, FALSE);
-            SET(data->netped_IPString, MUIA_String_Contents, GetIP(iface));
+                SET(data->netped_IPString, MUIA_Disabled, FALSE);
+                SET(data->netped_IPString, MUIA_String_Contents,
+                    GetIP(iface));
 
-            SET(data->netped_maskString, MUIA_Disabled, FALSE);
-            SET(data->netped_maskString, MUIA_String_Contents, GetMask(iface));
+                SET(data->netped_maskString, MUIA_Disabled, FALSE);
+                SET(data->netped_maskString, MUIA_String_Contents,
+                    GetMask(iface));
+            }
         }
     }
     else
