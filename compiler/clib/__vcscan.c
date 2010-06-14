@@ -334,7 +334,6 @@ const static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values
 	  if(!ignore)
 	    *va_arg(args,int *)=incount;
 	  size=1; /* fake a valid argument */
-	  blocks++;
 	  break;
 	default:
 	{ unsigned long v=0;
