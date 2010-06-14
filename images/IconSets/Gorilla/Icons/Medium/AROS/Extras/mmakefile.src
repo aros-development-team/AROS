@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-complete : iconset-Gorilla-icons-contrib
+#MM- workbench-complete : iconset-Gorilla-icons-contrib iconset-Gorilla-icons-ports
 
 ICONS := MultiMedia DOpus Demos Development Games Networking
 
