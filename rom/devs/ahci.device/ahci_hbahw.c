@@ -160,10 +160,12 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
             HBAHW_D("HBA supports BIOS/OS handoff\n");
             if( (hwhba->bohc && BOHC_BOS) ) {
                 hwhba->bohc |= BOHC_OOS;
+                /* Spin on BOHC_BOS bit FIXME: Possible dead lock. No maximum time given on AHCI1.3 specs... */
                 while( (hwhba->bohc && BOHC_BOS) );
-                //wait 25ms
+                delay_ms(hba_chip, 25);
+                /* If after 25ms BOHC_BB bit is still set give bios a minimum of 2 seconds more time to run */
                 if( (hwhba->bohc && BOHC_BB) ) {
-                    //Wait minimum of 2 seconds to give BIOS time for finishing outstanding commands.
+                    delay_ms(hba_chip, 2500);
                 }
             }
         }
@@ -335,31 +337,56 @@ BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
     return FALSE;
 }
 
+/* Ensure that the port is in idle state (It REALLY should be as we are just out of reset) */
 BOOL ahci_init_port(struct ahci_hba_chip *hba_chip, uint32_t port_hba_num) {
     HBAHW_D("HBA-init_port...\n");
 
     struct ahci_hwhba *hwhba;
     hwhba = hba_chip->abar;
 
-    /* These bits in port command register should all be cleared if the port is free */
-    HBAHW_D("P%dCMD = %x\n", port_hba_num, hwhba->port[port_hba_num].cmd);
+    /* These bits in port command register should all be cleared if the port is in idle state */
+    HBAHW_D("P%dCMD = %.08x\n", port_hba_num, hwhba->port[port_hba_num].cmd);
     HBAHW_D("Start DMA? %s\n",              (hwhba->port[port_hba_num].cmd & PORT_CMD_ST) ? "yes" : "no");
     HBAHW_D("Command List Running? %s\n",   (hwhba->port[port_hba_num].cmd & PORT_CMD_CR) ? "yes" : "no");
     HBAHW_D("FIS Receive Enable? %s\n",     (hwhba->port[port_hba_num].cmd & PORT_CMD_FRE) ? "yes" : "no");
     HBAHW_D("FIS Receive Running? %s\n",    (hwhba->port[port_hba_num].cmd & PORT_CMD_FR) ? "yes" : "no");
 
-    if ( !(hwhba->port[port_hba_num].cmd & (PORT_CMD_ST|PORT_CMD_CR)) )
-        return TRUE;
+    if ( (hwhba->port[port_hba_num].cmd & PORT_CMD_ST) ) {
+    	/* Port is not in idle state */
+        HBAHW_D("Running of command list is enabled! Disabling it...\n");
+	    hwhba->port[port_hba_num].cmd &= ~PORT_CMD_ST;
+	    if ( !(wait_until_clr(hba_chip, &hwhba->port[port_hba_num].cmd, PORT_CMD_CR, 500000)) ) {
+            HBAHW_D("ERROR, timeout!\n");
+            return FALSE;
+        }
+    }
 
-	/* Stop DMA engine */
-	hwhba->port[port_hba_num].cmd &= ~PORT_CMD_ST;
+    if ( (hwhba->port[port_hba_num].cmd & PORT_CMD_FRE) ) {
+    	/* Port is not in idle state */
+        HBAHW_D("FIS receive is enabled! Disabling it...\n");
+	    hwhba->port[port_hba_num].cmd &= ~PORT_CMD_FRE;
+	    if ( !(wait_until_clr(hba_chip, &hwhba->port[port_hba_num].cmd, PORT_CMD_FR, 500000)) ) {
+            HBAHW_D("ERROR, timeout!\n");
+            return FALSE;
+        }
+    }
 
-	/* Wait for DMA engine to stop */
-	if ( (wait_until_clr(hba_chip, &hwhba->port[port_hba_num].cmd, PORT_CMD_CR, 500000)) ) {
-        return TRUE;
-	}
+    uint32_t tmp = hwhba->port[port_hba_num].serr;
+    HBAHW_D("P%dERR = %.08x\n",port_hba_num, tmp);
+	/* Clear all implemented bits by setting them to '1' */
+    hwhba->port[port_hba_num].serr = tmp;
 
-    return FALSE;
+    /* TODO:
+        Determine which events should cause an interrupt, and set each implemented port’s PxIE
+        register with the appropriate enables. To enable the HBA to generate interrupts, system
+        software must also set GHC.IE to a ‘1’.
+        Note: Due to the multi-tiered nature of the AHCI HBA’s interrupt architecture, system
+        software must always ensure that the PxIS (clear this first) and IS.IPS (clear this second)
+        registers are cleared to ‘0’ before programming the PxIE and GHC.IE registers. This will
+        prevent any residual bits set in these registers from causing an interrupt to be asserted.
+    */
+
+    return TRUE;
 }
 
 /*
@@ -374,7 +401,7 @@ BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, uint32_t port_unit_num, uint3
 
     struct ahci_hba_port *hba_port;
     if( (hba_port = (struct ahci_hba_port*) AllocVec(sizeof(struct ahci_hba_port), MEMF_CLEAR|MEMF_PUBLIC)) ) {
-        HBAHW_D("hba_port @ %p\n",hba_port);
+        HBAHW_D("hba_port struct @ %p\n",hba_port);
 
         struct ahci_hwhba *hwhba;
         hwhba = hba_chip->abar;
