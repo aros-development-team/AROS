@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal utility functions.
@@ -8,7 +8,7 @@
 #include <aros/system.h>
 #include "alib_intern.h"
 
-#ifdef AROS_SLOWSTACKMETHODS
+#ifdef NO_LINEAR_VARARGS
 #include <intuition/classusr.h>
 #include <proto/exec.h>
 /******************************************************************************
@@ -120,9 +120,9 @@
 	FreeVec (msg);
 } /* FreeMsgFromStack */
 
-#endif /* AROS_SLOWSTACKMETHODS */
+#endif /* NO_LINEAR_VARARGS */
 
-#ifdef AROS_SLOWSTACKTAGS
+#ifdef NO_LINEAR_VARARGS
 #include <stdarg.h>
 #include <utility/tagitem.h>
 #include <exec/memory.h>
@@ -401,7 +401,7 @@
 	FreeVec (params);
 } /* FreeParamsFromStack */
 
-#endif /* AROS_SLOWSTACKTAGS */
+#endif /* NO_LINEAR_VARARGS */
 
 
 

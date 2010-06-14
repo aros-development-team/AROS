@@ -38,9 +38,8 @@
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm __attribute__((varargs68k))
 
-#define AROS_SLOWSTACKTAGS      1
-#define AROS_SLOWSTACKMETHODS   1
-#define AROS_SLOWSTACKHOOKS     1
+/* define this if we have no support for linear varargs in the compiler */
+#define NO_LINEAR_VARARGS       1
 
 /* types and limits for sig_atomic_t */
 #define AROS_SIG_ATOMIC_T       int

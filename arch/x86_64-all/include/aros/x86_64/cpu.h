@@ -1,7 +1,7 @@
 #ifndef AROS_X86_64_CPU_H
 #define AROS_X86_64_CPU_H
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -25,11 +25,7 @@
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
 
 /* define this if we have no support for linear varargs in the compiler */
-#define NO_LINEAR_VARARGS 1
-
-#define AROS_SLOWSTACKTAGS      1
-#define AROS_SLOWSTACKMETHODS   1
-#define AROS_SLOWSTACKHOOKS     1
+#define NO_LINEAR_VARARGS       1
 
 #define SIZEOF_FPU_CONTEXT      512
 #define SIZEOF_ALL_REGISTERS    (184 + SIZEOF_FPU_CONTEXT + 16)
