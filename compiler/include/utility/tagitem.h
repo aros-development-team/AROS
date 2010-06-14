@@ -2,7 +2,7 @@
 #define UTILITY_TAGITEM_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tag-lists
@@ -12,7 +12,7 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
-#ifdef AROS_SLOWSTACKTAGS
+#ifdef NO_LINEAR_VARARGS
 #   include <stdarg.h>
 #endif
 
@@ -24,7 +24,7 @@ struct TagItem
     STACKIPTR ti_Data; /* Tag-specific data */
 };
 
-#ifdef AROS_SLOWSTACKTAGS
+#ifdef NO_LINEAR_VARARGS
 __BEGIN_DECLS
     struct TagItem * GetTagsFromStack  (IPTR firstTag, va_list args);
     void             FreeTagsFromStack (struct TagItem * tags);
@@ -66,7 +66,7 @@ __END_DECLS
 #   define AROS_TAGRETURNTYPE IPTR
 #endif
 
-#ifdef AROS_SLOWSTACKTAGS
+#ifdef NO_LINEAR_VARARGS
 #	define AROS_NR_SLOWSTACKTAGS_PRE(arg)		\
 	    va_list		  args;			\
 	    struct TagItem	* tags;			\

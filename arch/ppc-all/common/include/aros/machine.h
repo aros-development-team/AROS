@@ -29,8 +29,8 @@
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm __attribute__((stackparm))
 
-#define AROS_SLOWSTACKTAGS	1
-#define AROS_SLOWSTACKMETHODS	1
+/* define this if we have no support for linear varargs in the compiler */
+#define NO_LINEAR_VARARGS  1
 
 /*
     How much do I have to add to sp to get the address of the first

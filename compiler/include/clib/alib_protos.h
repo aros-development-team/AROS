@@ -2,7 +2,7 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for amiga.lib
@@ -133,7 +133,7 @@ AROS_UFP3(IPTR, HookEntry,
 #   define AROS_METHODRETURNTYPE IPTR
 #endif
 
-#ifdef AROS_SLOWSTACKMETHODS
+#ifdef NO_LINEAR_VARARGS
     Msg  GetMsgFromStack  (IPTR MethodID, va_list args);
     void FreeMsgFromStack (Msg msg);
 
@@ -180,18 +180,18 @@ AROS_UFP3(IPTR, HookEntry,
 #   define AROS_SLOWSTACKMETHODS_ARG(arg)   ((Msg)&(arg))
 #   define AROS_SLOWSTACKMETHODS_POST	    return retval;
 #   define AROS_NR_SLOWSTACKMETHODS_POST
-#endif /* AROS_SLOWSTACKMETHODS */
+#endif /* NO_LINEAR_VARARGS */
 
-#ifdef AROS_SLOWSTACKTAGS
+#ifdef NO_LINEAR_VARARGS
     struct TagItem * GetTagsFromStack  (IPTR firstTag, va_list args);
     void	     FreeTagsFromStack (struct TagItem * tags);
-#endif /* AROS_SLOWSTACKTAGS */
+#endif /* NO_LINEAR_VARARGS */
 
 #ifndef AROS_HOOKRETURNTYPE
 #   define AROS_HOOKRETURNTYPE IPTR
 #endif
 
-#ifdef AROS_SLOWSTACKHOOKS
+#ifdef NO_LINEAR_VARARGS
     APTR  GetParamsFromStack  (va_list args);
     void FreeParamsFromStack (APTR params);
 
@@ -238,7 +238,7 @@ AROS_UFP3(IPTR, HookEntry,
 #   define AROS_SLOWSTACKHOOKS_ARG(arg)   ((IPTR*)&(arg)+1)
 #   define AROS_SLOWSTACKHOOKS_POST	    return retval;
 #   define AROS_NR_SLOWSTACKHOOKS_POST
-#endif /* AROS_SLOWSTACKHOOKS */
+#endif /* NO_LINEAR_VARARGS */
 
 /* Rexx support */
 BOOL CheckRexxMsg(struct RexxMsg *);

@@ -2,7 +2,7 @@
 #define AROS_SYSTEM_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Analyse the current kind of system and compiler.
@@ -167,8 +167,7 @@
 
 /* 5. Calculated #defines */
 #if !AROS_STACK_GROWS_DOWNWARDS
-#   define AROS_SLOWSTACKTAGS
-#   define AROS_SLOWSTACKMETHODS
+#   define NO_LINEAR_VARARGS
 #endif /* !AROS_STACK_GROWS_DOWNWARDS */
 
 #if !defined(__CONCAT)
