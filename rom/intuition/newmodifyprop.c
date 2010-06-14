@@ -39,7 +39,7 @@
     refreshing is done.
 
     INPUTS
-    gadget - Must be a PROPGADGET
+    gadget - Must be a PROPGADGET.
     window - The window which contains the gadget
     requester - If the gadget has GTYP_REQGADGET set, this must be
         non-NULL.
@@ -55,6 +55,13 @@
     None.
 
     NOTES
+    If NewModifyProp does not work for you, check if you
+    really have a gadget with GTYP_PROPGADGET set. If you
+    create a new gadget object from PROPGCLASS, you
+    might very well get a GTYP_CUSTOMGADGET gadget.
+    As a workaround, you might have to set the
+    gadget type to GTYP_PROPGADGET manually during the
+    call to NewModifyProp. Intuition does this, too.
 
     EXAMPLE
 
