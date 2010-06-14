@@ -27,7 +27,7 @@ AROS_UFH3(void, ahci_Enumerator,
 
     IPTR    intline;
 
-    static ULONG HBACounter;
+    static uint32_t HBACounter;
 
     LIBBASETYPE *LIBBASE = (LIBBASETYPE *)hook->h_Data;
 
@@ -152,10 +152,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
     return FALSE;
 }
 
-static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE, struct IORequest *iorq, ULONG unitnum, ULONG flags) {
+static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE, struct IORequest *iorq, uint32_t unitnum, uint32_t flags) {
     D(bug("[AHCI] Open\n"));
    
-    /* Assume it failed */
+    /* Assume Open failed */
     iorq->io_Error = IOERR_OPENFAIL;
 
     /* Overly complex way of finding port unit... */
@@ -166,7 +166,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE, struct IORequest *iorq, U
         struct ahci_hba_port *hba_port;
         ForeachNode(&hba_chip->port_list, hba_port) {
             if( (hba_port->port_unit.Port_Unit_Number == unitnum) ) {
-                /* set up iorequest */
+                /* set up IORequest */
                 iorq->io_Device     = &LIBBASE->device;
                 iorq->io_Unit       = &hba_port->port_unit.port_exec_unit;
                 iorq->io_Error      = 0;

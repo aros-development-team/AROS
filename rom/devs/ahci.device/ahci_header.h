@@ -36,6 +36,7 @@
 #include <aros/system.h>
 #include <aros/symbolsets.h>
 
+#include <inttypes.h>
 #include <string.h>
 
 #include "ahci_hba.h"
@@ -66,17 +67,20 @@ struct ahci_hba_chip {
     APTR    abar;
     IPTR    IRQ;
 
-    ULONG   Version;
+    uint32_t   Version;
 
-    ULONG   HBANumber;
+    uint32_t   HBANumber;
 
-    ULONG   CommandSlotCount;
+    uint32_t   CommandSlotCount;
 
-    ULONG   PortImplementedMask;
-    ULONG   PortCountMax;
-    ULONG   PortCount;
+    uint32_t   PortImplementedMask;
+    uint32_t   PortCountMax;
+    uint32_t   PortCount;
 
-    ULONG   StartingPortNumber;
+    uint32_t   StartingPortNumber;
+
+    struct  MsgPort MsgPort;
+    struct  timerequest tr;
 
     /*
         List of all implemented ports on a given HBA
@@ -94,10 +98,10 @@ struct ahci_hba_port_unit {
     struct  Unit port_exec_unit;
 
     /* Physical HBA-port number of controller, Used in e.g. PxCMD */
-    ULONG   Port_HBA_Number;
+    uint32_t   Port_HBA_Number;
 
     /* Port and it's device is unit number x in Aros system */
-    ULONG   Port_Unit_Number;
+    uint32_t   Port_Unit_Number;
 
     /* Port belongs to this HBA-chip */
     struct  ahci_hba_chip *parent_hba;
@@ -119,10 +123,15 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip);
 void ahci_enable_hba(struct ahci_hba_chip *hba_chip);
 BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip);
-BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG port_hba_num);
+BOOL ahci_init_port(struct ahci_hba_chip *hba_chip, uint32_t port_hba_num);
+BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, uint32_t port_unit_num, uint32_t port_hba_num);
 
 /* ahci_misc prototypes */
-ULONG count_bits_set(ULONG x);
+uint32_t count_bits_set(uint32_t x);
+void delay_ms(struct ahci_hba_chip *hba_chip, uint32_t msec);
+void delay_us(struct ahci_hba_chip *hba_chip, uint32_t usec);
+BOOL wait_until_set(struct ahci_hba_chip *hba_chip, volatile uint32_t *reg, uint32_t bits, uint32_t timeout);
+BOOL wait_until_clr(struct ahci_hba_chip *hba_chip, volatile uint32_t *reg, uint32_t bits, uint32_t timeout);
 
 #endif // AHCI_HEADER_H
 

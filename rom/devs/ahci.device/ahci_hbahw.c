@@ -176,8 +176,9 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
     if ( ahci_reset_hba(hba_chip) ) {
         HBAHW_D("Reset done\n");
 
+    /* FIXME: Is there something better for this? */
     #if defined(__i386__)
-        hwhba->cap = ~CAP_S64A;
+        hwhba->cap &= ~CAP_S64A;
     #endif
 
         hba_chip->CommandSlotCount = 1 + ((hwhba->cap >> CAP_NCS_SHIFT) & CAP_NCS_MASK);
@@ -186,13 +187,13 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
 	    hba_chip->PortImplementedMask = hwhba->pi;
 	    if (hba_chip->PortImplementedMask == 0) {
 		    hba_chip->PortImplementedMask = 0xffffffff >> (32 - hba_chip->PortCountMax);
-		    HBAHW_D("ports-implemented mask is zero, using 0x%lx instead.\n", hba_chip->PortImplementedMask);
+		    HBAHW_D("ports-implemented mask is zero, using 0x%x instead.\n", hba_chip->PortImplementedMask);
 	    }
 
 	    hba_chip->PortCount = count_bits_set(hba_chip->PortImplementedMask);
 /*
-        HBAHW_D("Interface Speed Support: generation %lu\n",    (hwhba->cap >> CAP_ISS_SHIFT) & CAP_ISS_MASK);
-        HBAHW_D("Number of Command Slots: %d (raw %lx)\n",      hba_chip->CommandSlotCount, (hwhba->cap >> CAP_NCS_SHIFT) & CAP_NCS_MASK);
+        HBAHW_D("Interface Speed Support: generation %u\n",    (hwhba->cap >> CAP_ISS_SHIFT) & CAP_ISS_MASK);
+        HBAHW_D("Number of Command Slots: %d (raw %x)\n",      hba_chip->CommandSlotCount, (hwhba->cap >> CAP_NCS_SHIFT) & CAP_NCS_MASK);
         HBAHW_D("Supports Port Multiplier: %s\n",               (hwhba->cap & CAP_SPM) ? "yes" : "no");
         HBAHW_D("Supports External SATA: %s\n",                 (hwhba->cap & CAP_SXS) ? "yes" : "no");
         HBAHW_D("Enclosure Management Supported: %s\n",         (hwhba->cap & CAP_EMS) ? "yes" : "no");
@@ -203,14 +204,30 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
         HBAHW_D("Supports Native Command Queuing: %s\n",        (hwhba->cap & CAP_SNCQ) ? "yes" : "no");
         HBAHW_D("Supports SNotification Register: %s\n",        (hwhba->cap & CAP_SSNTF) ? "yes" : "no");
         HBAHW_D("Supports Command List Override: %s\n",         (hwhba->cap & CAP_SCLO) ? "yes" : "no");
-        HBAHW_D("AHCI Version %lu.%lu (raw %lx)\n",             ((hba_chip->Version >> 24) & 0xf)*10 + ((hba_chip->Version >> 16) & 0xf),
+        HBAHW_D("AHCI Version %u.%u (raw %x)\n",                ((hba_chip->Version >> 24) & 0xf)*10 + ((hba_chip->Version >> 16) & 0xf),
                                                                 ((hba_chip->Version >> 8) & 0xf)*10 + (hba_chip->Version & 0xf), hwhba->vs );
         HBAHW_D("Interrupt %u\n",                               hba_chip->IRQ);
 */
+
+        /* Set timer.device up for this HBA-chip */
+        hba_chip->MsgPort.mp_SigBit = SIGB_SINGLE;
+        hba_chip->MsgPort.mp_Flags = PA_SIGNAL;
+        hba_chip->MsgPort.mp_SigTask = FindTask(NULL);
+        hba_chip->MsgPort.mp_Node.ln_Type = NT_MSGPORT;
+        NEWLIST(&hba_chip->MsgPort.mp_MsgList);
+
+        hba_chip->tr.tr_node.io_Message.mn_ReplyPort = &hba_chip->MsgPort;
+        hba_chip->tr.tr_node.io_Message.mn_Length = sizeof(hba_chip->tr);
+
+        if ( (OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)&hba_chip->tr, 0)) ) {
+            HBAHW_D("Could not open timer.device\n");
+            return FALSE;
+        }
+
         if( !ahci_create_interrupt(hba_chip) )
             return FALSE;
 
-        HBAHW_D("port count %ld\n", hba_chip->PortCount);
+        HBAHW_D("port count %d\n", hba_chip->PortCount);
 
         /*
             Get the pointer to previous HBA-chip struct in the list (if any)
@@ -250,10 +267,10 @@ BOOL ahci_reset_hba(struct ahci_hba_chip *hba_chip) {
     struct ahci_hwhba *hwhba;
     hwhba = hba_chip->abar;
 
-    ULONG Timeout;
+    uint32_t Timeout;
 
-	ULONG saveCaps = hwhba->cap & (CAP_SMPS | CAP_SSS | CAP_SPM | CAP_EMS | CAP_SXS);
-	ULONG savePI = hwhba->pi;
+	uint32_t saveCaps = hwhba->cap & (CAP_SMPS | CAP_SSS | CAP_SPM | CAP_EMS | CAP_SXS);
+	uint32_t savePI = hwhba->pi;
 
     /* Enable AHCI mode of communication to the HBA */
 	ahci_enable_hba(hba_chip);
@@ -289,7 +306,7 @@ void ahci_enable_hba(struct ahci_hba_chip *hba_chip) {
     /*
         Check if HBA supports legacy mode, otherwise GHC_AE(31) may be RO and the bit GHC_AE(31) is set
         Leave bits MRSM(2), IE(1) and HR(0) untouched
-        Rest of the GHC registers are RO (AHCI v1.3) do not set/clr other bits
+        Rest of the GHC register is RO (AHCI v1.3) do not set/clr other bits
     */
     if( !(hwhba->ghc && CAP_SAM) ){
         hwhba->ghc |= GHC_AE;
@@ -318,10 +335,42 @@ BOOL ahci_disable_hba(struct ahci_hba_chip *hba_chip) {
     return FALSE;
 }
 
-BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG port_hba_num) {
+BOOL ahci_init_port(struct ahci_hba_chip *hba_chip, uint32_t port_hba_num) {
+    HBAHW_D("HBA-init_port...\n");
+
+    struct ahci_hwhba *hwhba;
+    hwhba = hba_chip->abar;
+
+    /* These bits in port command register should all be cleared if the port is free */
+    HBAHW_D("P%dCMD = %x\n", port_hba_num, hwhba->port[port_hba_num].cmd);
+    HBAHW_D("Start DMA? %s\n",              (hwhba->port[port_hba_num].cmd & PORT_CMD_ST) ? "yes" : "no");
+    HBAHW_D("Command List Running? %s\n",   (hwhba->port[port_hba_num].cmd & PORT_CMD_CR) ? "yes" : "no");
+    HBAHW_D("FIS Receive Enable? %s\n",     (hwhba->port[port_hba_num].cmd & PORT_CMD_FRE) ? "yes" : "no");
+    HBAHW_D("FIS Receive Running? %s\n",    (hwhba->port[port_hba_num].cmd & PORT_CMD_FR) ? "yes" : "no");
+
+    if ( !(hwhba->port[port_hba_num].cmd & (PORT_CMD_ST|PORT_CMD_CR)) )
+        return TRUE;
+
+	/* Stop DMA engine */
+	hwhba->port[port_hba_num].cmd &= ~PORT_CMD_ST;
+
+	/* Wait for DMA engine to stop */
+	if ( (wait_until_clr(hba_chip, &hwhba->port[port_hba_num].cmd, PORT_CMD_CR, 500000)) ) {
+        return TRUE;
+	}
+
+    return FALSE;
+}
+
+/*
+    Add a port to the HBA-port list.
+    Physical port number is "port_hba_num" and it is added as unit number "port_unit_num" to the system
+    Make sure the port in question is free and ready for use, if not make it so
+*/
+BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, uint32_t port_unit_num, uint32_t port_hba_num) {
     HBAHW_D("HBA-add_port...\n");
 
-    HBAHW_D("added HBA-port %d as UNIT:%d\n",port_hba_num, port_unit_num);
+    HBAHW_D("add HBA-port %d as UNIT:%d\n",port_hba_num, port_unit_num);
 
     struct ahci_hba_port *hba_port;
     if( (hba_port = (struct ahci_hba_port*) AllocVec(sizeof(struct ahci_hba_port), MEMF_CLEAR|MEMF_PUBLIC)) ) {
@@ -334,19 +383,14 @@ BOOL ahci_add_port(struct ahci_hba_chip *hba_chip, ULONG port_unit_num, ULONG po
         hba_port->port_unit.Port_HBA_Number = port_hba_num;
         hba_port->port_unit.Port_Unit_Number = port_unit_num;
 
-        /* These bits in port command register should all be cleared if the port is free */
-        HBAHW_D("P%dCMD = %lx\n", port_hba_num, hwhba->port[port_hba_num].cmd);
-        HBAHW_D("Start DMA? %s\n",              (hwhba->port[port_hba_num].cmd & PORT_CMD_ST) ? "yes" : "no");
-        HBAHW_D("Command List Running? %s\n",   (hwhba->port[port_hba_num].cmd & PORT_CMD_CR) ? "yes" : "no");
-        HBAHW_D("FIS Receive Enable? %s\n",     (hwhba->port[port_hba_num].cmd & PORT_CMD_FRE) ? "yes" : "no");
-        HBAHW_D("FIS Receive Running? %s\n",    (hwhba->port[port_hba_num].cmd & PORT_CMD_FR) ? "yes" : "no");
-
-        /* HBA-port list is protected for us in ahci_init_hba */
-        AddTail((struct List*)&hba_chip->port_list, (struct Node*)hba_port);
-
-        return TRUE;
+        if( ahci_init_port(hba_chip, port_hba_num) ) {
+            /* HBA-port list is protected for us in ahci_init_hba */
+            AddTail((struct List*)&hba_chip->port_list, (struct Node*)hba_port);
+            return TRUE;
+        }
     }
 
+    /* Failed in setting the port up, skipping system unit number, e.g. there is no unit for this port_unit_num */
     return FALSE;
 }
 
