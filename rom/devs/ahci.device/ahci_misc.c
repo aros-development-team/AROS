@@ -26,7 +26,6 @@ uint32_t count_bits_set(uint32_t x) {
 void delay_ms(struct ahci_hba_chip *hba_chip, uint32_t msec) {
 
 	/* Allocate a signal within this task context */
-
 	hba_chip->tr.tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
 	hba_chip->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 
@@ -42,8 +41,8 @@ void delay_ms(struct ahci_hba_chip *hba_chip, uint32_t msec) {
 }
 
 void delay_us(struct ahci_hba_chip *hba_chip, uint32_t usec) {
-	/* Allocate a signal within this task context */
 
+	/* Allocate a signal within this task context */
 	hba_chip->tr.tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
 	hba_chip->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 
