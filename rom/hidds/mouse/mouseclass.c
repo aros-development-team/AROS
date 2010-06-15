@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define DEBUG 1
-
 #define __OOP_NOATTRBASES__
 
 #include <aros/debug.h>
