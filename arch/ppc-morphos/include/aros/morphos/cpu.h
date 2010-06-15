@@ -35,11 +35,12 @@
 /* For ABI V1 this should be done in common cpu.h */
 #define AROS_LARGEST_TYPE   long long
 
-/* do we need a function attribute to get parameters on the stack? */
+/* Note that MorphOS ABI DOES have linear varargs as an option */
 #define __stackparm __attribute__((varargs68k))
 
-/* define this if we have no support for linear varargs in the compiler */
-#define NO_LINEAR_VARARGS       1
+#define AROS_SLOWSTACKTAGS      1
+#define AROS_SLOWSTACKMETHODS   1
+#define AROS_SLOWSTACKHOOKS     1
 
 /* types and limits for sig_atomic_t */
 #define AROS_SIG_ATOMIC_T       int
