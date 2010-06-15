@@ -1440,7 +1440,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	/* Autoscroll the active screen */
 	scr = IntuitionBase->ActiveScreen;
-	if (scr->Flags & AUTOSCROLL)
+	if (scr && (scr->Flags & AUTOSCROLL))
 	{
 	    WORD xval = scr->LeftEdge;
 	    WORD yval = scr->TopEdge;
