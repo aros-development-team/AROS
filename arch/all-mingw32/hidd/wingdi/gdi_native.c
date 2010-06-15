@@ -140,8 +140,14 @@ LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     	if ((wp & 0x0000FFFF) != WA_INACTIVE) {
             if (!(wp & 0xFFFF0000))
                 window_active = TRUE;
-        } else
+        } else {
             window_active = FALSE;
+	    /* Send WM_KEYUP in order to prevent "stuck keys" phenomena */
+	    if (last_key) {
+		SendKbdIRQ(WM_KEYUP, last_key);
+		last_key = 0;
+	    }
+	}
         break;
     }
     return DefWindowProc(win, msg, wp, lp);
