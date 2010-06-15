@@ -101,7 +101,7 @@
 
 	APTR disphandle = FindDisplayInfo(modeid);
 
-	D(bug("[OpenWorkbench] Requested size: %dx%d, depth: %d, ModeID: 0x%08lX\n", width, height, depth, modeid));
+	D(bug("[OpenWorkbench] Requested size: %dx%d, depth: %d, ModeID: 0x%08lX, Handle: 0x%p\n", width, height, depth, modeid, disphandle));
         if (!disphandle)
 	{
     	    struct TagItem modetags[] =
@@ -114,15 +114,39 @@
 
 	    /* Specifying -1's here causes BestModeIDA() to fail,
 	       fix up the values */
-	    if (width == STDSCREENWIDTH)
+	    if (width == STDSCREENWIDTH) {
+	        D(bug("[OpenWorkbench] Using default width %d\n", AROS_DEFAULT_WBWIDTH));
 	        modetags[0].ti_Data = AROS_DEFAULT_WBWIDTH;
-	    if (height == STDSCREENHEIGHT)
+	    }
+	    if (height == STDSCREENHEIGHT) {
+	        D(bug("[OpenWorkbench] Using default height %d\n", AROS_DEFAULT_WBHEIGHT));
 	        modetags[1].ti_Data = AROS_DEFAULT_WBHEIGHT;
+	    }
 	    if (depth == -1)
 	        modetags[2].ti_Data = AROS_DEFAULT_WBDEPTH;
 
 	    modeid     = BestModeIDA(modetags);
 	    D(bug("[OpenWorkbench] Corrected ModeID: 0x%08lX\n", modeid));
+	    disphandle = FindDisplayInfo(modeid);
+	}
+
+        if (!disphandle)
+	{
+	    /* If we're here, we have no modes with requested depth.
+	       Find anything that just works.
+	       FIXME: We should still take requested size into account,
+	       however BestModeIDA() will fail if there are only modes
+	       smaller then the requested one. */
+    	    struct TagItem modetags[] =
+	    {
+	        { BIDTAG_DesiredWidth,  AROS_DEFAULT_WBWIDTH },
+	        { BIDTAG_DesiredHeight, AROS_DEFAULT_WBHEIGHT},
+	        { BIDTAG_Depth,         AROS_DEFAULT_WBDEPTH },
+	        { TAG_DONE,             0                    }
+	    };
+
+	    modeid     = BestModeIDA(modetags);
+	    D(bug("[OpenWorkbench] Failback ModeID: 0x%08lX\n", modeid));
 	    disphandle = FindDisplayInfo(modeid);
 	}
 
