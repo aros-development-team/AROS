@@ -114,11 +114,12 @@
 
     if (ret == DD_OK) {
 	/* Attach system structures to the driver */
+	D(bug("[AddDisplayDriverA] Installing driver\n"));
 	mdd = driver_Setup(gfxhidd, GfxBase);
 	D(bug("[AddDisplayDriverA] monitor_driverdata 0x%p\n", mdd));
 	if (mdd) {
 	    BOOL keep_boot;
-	    struct monitor_driverdata *last;
+	    struct monitor_driverdata *last, *old;
 
 	    mdd->id   = FirstID;
 	    mdd->mask = AROS_MONITOR_ID_MASK;
@@ -129,25 +130,34 @@
 	    keep_boot = GetTagData(DDRV_KeepBootMode, FALSE, tags);
 	    if (!keep_boot) {
 		D(bug("[AddDisplayDriverA] Shutting down boot mode drivers\n"));
-		for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
+		for (last = (struct monitor_driverdata *)CDD(GfxBase);; last = last->next) {
+		    D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p\n", last, last->next));
 		    /* Do not shut down the driver if it displays something.
 		       Experimental and will cause problems in certain cases. */
 		    while (last->next && (last->next->flags & DF_BootMode) && (!last->next->display)) {
-		        struct monitor_driverdata *exp = last->next;
-
-			D(bug("[AddDisplayDriverA] Shutting down driver 0x%p (ID 0x%08lX, next 0x%p)\n", exp, exp->id, exp->next));
-			last->next = exp->next;
-			driver_Expunge(exp, GfxBase);
-			D(bug("[AddDisplayDriverA] Shutdown OK\n"));
+		        old = last->next;
+			D(bug("[AddDisplayDriverA] Shutting down driver 0x%p (ID 0x%08lX, next 0x%p)\n", old, old->id, old->next));
+			last->next = old->next;
+			driver_Expunge(old, GfxBase);
+			D(bug("[AddDisplayDriverA] Shutdown OK, next 0x%p\n", last->next));
 		    }
+
+		    /* We check this condition here explicitly because last->next is modified inside loop body.
+		       If we check it in for() statement, last = last->next will be executed BEFORE the check,
+		       and NULL pointer may be hit. */
+		    if (!last->next)
+			break;
 		}
 	    }
 
 	    /* Insert the driverdata into chain, sorted by ID */
+	    D(bug("[AddDisplayDriverA] Inserting driver 0x%p, ID 0x%08lX\n", mdd, mdd->id));
 	    for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
-		if (mdd->id < last->next->id)
+	        D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p, ID 0x%08lX\n", last, last->next, last->next->id));
+		if (mdd->id > last->next->id)
 		    break;
 	    }
+	    D(bug("[AddDisplayDriverA] Inserting after 0x%p\n", last));
 	    mdd->next = last->next;
 	    last->next = mdd;
 
