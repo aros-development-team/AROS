@@ -20,6 +20,7 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
+#include <graphics/driver.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <proto/exec.h>
@@ -27,6 +28,9 @@
 #include <proto/oop.h>
 
 #include LC_LIBDEFS_FILE
+
+/* Define this to TRUE in order to simulate boot mode driver. Useful for testing */
+#define BOOT_MODE FALSE
 
 static int gdi_Startup(LIBBASETYPEPTR LIBBASE) 
 {
@@ -77,7 +81,7 @@ static int gdi_Startup(LIBBASETYPEPTR LIBBASE)
     D(bug("[gdi_Startup] gfxhidd 0x%p\n", gfxhidd));
 
     if (gfxhidd) {
-        ULONG err = AddDisplayDriverA(gfxhidd, NULL);
+	ULONG err = AddDisplayDriver(gfxhidd, DDRV_BootMode, BOOT_MODE, TAG_DONE);
 
 	D(bug("[gdi_Startup] AddDisplayDriver() result: %u\n", err));
 	if (err) {
