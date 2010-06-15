@@ -128,7 +128,7 @@ int main(void)
 	}
     }
 
-    D(bug("[default,monitor] HIDD name: %s\n", hiddname));
+    D(bug("[default.monitor] HIDD name: %s\n", hiddname));
 
     if (hiddname[0]) {
         struct GfxBase *GfxBase;
