@@ -6,8 +6,6 @@
    Lang: english
 */
 
-#define DEBUG 1
-
 #include <aros/debug.h>
 
 #include <proto/bootloader.h>
