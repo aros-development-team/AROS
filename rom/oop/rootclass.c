@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP rootclass
@@ -168,7 +168,7 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 				
 	    	data->subclasscount 	= 0UL;
 	    	data->objectcount	= 0UL;
-	    	data->superclass	= (OOP_Class *)superptr;
+	    	data->public.superclass	= (OOP_Class *)superptr;
 		data->instsize 	= instsize;
 		
 		D(bug("Copying class ID\n"));
@@ -204,7 +204,7 @@ static VOID basemeta_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     while (meta_iterateifs(o, &iterval, &interface_id, &num_methods))
     {
     	/* Only release the interfaces that were new for the class */
-	if (!meta_getifinfo((OOP_Object *)MD(o)->superclass, interface_id, &num_methods))
+	if (!meta_getifinfo((OOP_Object *)MD(o)->public.superclass, interface_id, &num_methods))
     	     release_idbucket(interface_id, GetOBase(OOPBase));
     }
     
@@ -349,7 +349,7 @@ static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     EnterFunc(bug("basemeta_dosupermethod(cl=%p, o=%p, msg=%p)\n",
     	cl, o, msg));
 
-    if (MD(cl)->superclass == ROOTCLASSPTR)
+    if (MD(cl)->public.superclass == ROOTCLASSPTR)
     {
     	ifm = &(OOPBase->ob_RootClassObject.inst.rootif[*msg]);
     }
@@ -446,7 +446,7 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase)
     bmo->inst.data.public.cl_CoerceMethod 	= basemeta_coercemethod;
     bmo->inst.data.public.cl_DoMethod 	= basemeta_domethod;
     	
-    bmo->inst.data.superclass  		= ROOTCLASSPTR;
+    bmo->inst.data.public.superclass  	= ROOTCLASSPTR;
     bmo->inst.data.subclasscount 	= 0UL;
     bmo->inst.data.objectcount 		= 0UL;
     bmo->inst.data.instsize		= sizeof (struct metadata);
@@ -582,7 +582,7 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     D(bug("Root stuff: dosupermethod %p, coeremethod %p, domethod %p\n",
 	basemeta_dosupermethod, basemeta_coercemethod, basemeta_domethod));
     
-    rco->inst.data.superclass		= NULL;
+    rco->inst.data.public.superclass	= NULL;
     rco->inst.data.subclasscount	= 0UL;
     rco->inst.data.objectcount		= 0UL;
     rco->inst.data.instsize		= 0UL;

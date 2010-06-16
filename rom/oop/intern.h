@@ -2,7 +2,7 @@
 #define INTERN_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -196,7 +196,6 @@ struct ServerNode
 struct metadata
 {
     OOP_Class public; /* public part of class objects */
-    OOP_Class *superclass;
     ULONG subclasscount;
     ULONG objectcount;
     ULONG instsize;

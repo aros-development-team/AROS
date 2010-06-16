@@ -2,7 +2,7 @@
 #define OOP_OOP_H
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -70,6 +70,7 @@ struct OOP_IClass
     IPTR    	    	(*cl_DoMethod)(OOP_Object *, OOP_Msg);
     IPTR    	    	(*cl_CoerceMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
     IPTR    	    	(*cl_DoSuperMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
+    OOP_Class           *superclass;
 };
 
 
