@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := linux_init gfxclass bmclass kbdclass mouseclass inputtask
+FILES := startup linux_init gfxclass bmclass kbdclass mouseclass inputtask
 
 %build_module mmake=kernel-hidd-linux \
   modname=linux modtype=hidd \
