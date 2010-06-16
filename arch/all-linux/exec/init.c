@@ -114,18 +114,10 @@ static const struct Resident *romtagList[] =
     &Keymap_ROMTag,                     /* ColdStart,   40   */
     &Input_ROMTag,                      /* ColdStart,   30   */
     &Intuition_ROMTag,                  /* ColdStart,   15   */
-/* This driver now causes segmentation fault and trashes the
-   display. Probably previously it failed to initialize because
-   its superclass was not initialized. Now everything is OK.
-   I've looked at the code, it creates input task during
-   resident initialization, not during driver instantiation.
-   I guess this causes some weird conflicts with running X server.
-   Disabled for now, needs to be seriously rewritten.
-   Pavel Fedin <sonic.amiga@gmail.com>
-    &LinuxFB_ROMTag,*/                  /* ColdStart,   9    */
 #if ENABLE_X11 == 1
     &X11Cl_ROMTag,			/* ColdStart,   9    */
 #endif
+    &LinuxFB_ROMTag,                    /* ColdStart,   8    */
     &Console_ROMTag,                    /* ColdStart,   5    */
 #if ENABLE_DBUS == 1
     &Dbus_ROMTag,                       /* ColdStart,   0    */
