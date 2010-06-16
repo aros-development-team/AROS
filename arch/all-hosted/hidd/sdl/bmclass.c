@@ -21,6 +21,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define DPUTIMAGE(x)
+
 #include "icon.h"
 
 #define LOCK(s)                     \
@@ -351,15 +353,15 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
     SDL_Surface *s;
     SDL_Rect srect, drect;
 
-    D(bug("[sdl] SDLBitMap::PutImage\n"));
+    DPUTIMAGE(bug("[sdl] SDLBitMap::PutImage\n"));
 
     switch (msg->pixFmt) {
         case vHidd_StdPixFmt_Native32:
-            D(bug("[sdl] native32 format, making a note to ensure 4-byte pixels later\n"));
+            DPUTIMAGE(bug("[sdl] native32 format, making a note to ensure 4-byte pixels later\n"));
             native32 = TRUE;
 
         case vHidd_StdPixFmt_Native:
-            D(bug("[sdl] native format, using our attributes\n"));
+            DPUTIMAGE(bug("[sdl] native format, using our attributes\n"));
 
             depth      = bmdata->surface->format->BitsPerPixel;
             red_mask   = bmdata->surface->format->Rmask;
@@ -370,7 +372,7 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
             break;
 
         default:
-            D(bug("[sdl] pixel format %d, asking the gfxhidd for attributes\n", msg->pixFmt));
+            DPUTIMAGE(bug("[sdl] pixel format %d, asking the gfxhidd for attributes\n", msg->pixFmt));
 
             OOP_Object *gfxhidd;
             OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
@@ -381,16 +383,21 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
             OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   &red_mask);
             OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, &green_mask);
             OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask,  &blue_mask);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_AlphaMask, &alpha_mask);
+	    /* Alpha blitting is done using PutAlphaImage(). This method
+	       should ignore alpha channel data. Otherwise data without
+	       alpha channel (with alpha == 0) is assumed to contain valid
+	       alpha values and we see nothing as a result.
+	       This is known to affect TrueType fonts. */
+	    alpha_mask = 0;
 
             break;
     }
 
-    D(bug("[sdl] source format: depth %d red 0x%08x green 0x%08x blue 0x%08x alpha 0x%08x\n", depth, red_mask, green_mask, blue_mask, alpha_mask));
+    DPUTIMAGE(bug("[sdl] source format: depth %d red 0x%08x green 0x%08x blue 0x%08x alpha 0x%08x\n", depth, red_mask, green_mask, blue_mask, alpha_mask));
 
     s = S(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, msg->modulo, red_mask, green_mask, blue_mask, alpha_mask);
     if (native32) {
-        D(bug("[sdl] native32 format, setting pixel width to 4 bytes\n"));
+        DPUTIMAGE(bug("[sdl] native32 format, setting pixel width to 4 bytes\n"));
         s->format->BytesPerPixel = 4;
     }
 
@@ -402,7 +409,7 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
     drect.x = msg->x;
     drect.y = msg->y;
 
-    D(bug("[sdl] blitting %dx%d image to surface 0x%08x at [%d,%d]\n", srect.w, srect.h, bmdata->surface, drect.x, drect.y));
+    DPUTIMAGE(bug("[sdl] blitting %dx%d image to surface 0x%08x at [%d,%d]\n", srect.w, srect.h, bmdata->surface, drect.x, drect.y));
 
     S(SDL_BlitSurface, s, &srect, bmdata->surface, &drect);
 
