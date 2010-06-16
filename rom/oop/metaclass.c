@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP metaclass
@@ -126,7 +126,7 @@ static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	if (!dosupermethod)
 	{
 	    
-	    OOP_Class *superptr = inst->base.superclass;
+	    OOP_Class *superptr = inst->base.public.superclass;
 	    if (superptr)
 	    {
 	    	D(bug("Got superptr: %p\n", superptr));
@@ -512,12 +512,12 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
     
     D(bug("Got ifmeta classptr\n"));
        
-    imo->inst.base.superclass = BASEMETAPTR;
+    imo->inst.base.public.superclass = BASEMETAPTR;
     imo->inst.base.public.OOPBasePtr = (struct OOPBase *)OOPBase;
     
     D(bug("Initialized ifmeta superclass\n"));
     
-    adt_msg.superclass = imo->inst.base.superclass;
+    adt_msg.superclass = imo->inst.base.public.superclass;
     adt_msg.ifdescr = meta_descr;
     
     /* allocdisptabs() must know the OOPBase */
@@ -775,7 +775,7 @@ static IPTR Meta_CoerceMethod(OOP_Class *cl, OOP_Object *object, OOP_Msg msg)
 ********************/
 static IPTR Meta_DoSuperMethod(OOP_Class *cl, OOP_Object *object, OOP_Msg msg)
 {
-    cl = IFI(cl)->base.superclass;
+    cl = IFI(cl)->base.public.superclass;
     IntCallMethod(cl, object, msg);
 }
 

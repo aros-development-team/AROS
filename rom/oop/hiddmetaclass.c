@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP HIDD metaclass
@@ -117,8 +117,8 @@ static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    /* Use superclass' DoSupermethod call if superclass isn't
 	       an instance of the HIDDMetaClass
 	    */
-	    if (OOP_OCLASS(MD(o)->superclass) != (OOP_Class *)cl)
-	    	dosupermethod = MD(o)->superclass->cl_DoSuperMethod;
+	    if (OOP_OCLASS(MD(o)->public.superclass) != (OOP_Class *)cl)
+	    	dosupermethod = MD(o)->public.superclass->cl_DoSuperMethod;
 	    else
 	    	dosupermethod = HIDD_DoSuperMethod;
 	}
@@ -603,6 +603,6 @@ static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 static IPTR HIDD_DoSuperMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     D(bug("HIDD_DoSuperMethod()\n"));
-    cl = MD(cl)->superclass;
+    cl = MD(cl)->public.superclass;
     IntCallMethod(cl, o, msg);
 }
