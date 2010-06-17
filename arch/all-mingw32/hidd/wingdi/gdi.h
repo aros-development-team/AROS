@@ -78,6 +78,10 @@ struct gdikbd_data
 
 struct gdi_staticdata
 {
+    /* This member should be in the beginning because it's exposed
+       outside (see gdi_class.h) */
+    ULONG		     displaynum;
+
     struct SignalSemaphore   sema; /* Protecting this whole struct */
 
     OOP_Class 	    	    *gfxclass;
@@ -90,7 +94,6 @@ struct gdi_staticdata
 
     struct GDI_Control	    *ctl;
     
-    ULONG		     displaynum;
 };
 
 struct gdiclbase
