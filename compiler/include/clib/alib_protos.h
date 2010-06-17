@@ -133,7 +133,7 @@ AROS_UFP3(IPTR, HookEntry,
 #   define AROS_METHODRETURNTYPE IPTR
 #endif
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKMETHODS
     Msg  GetMsgFromStack  (IPTR MethodID, va_list args);
     void FreeMsgFromStack (Msg msg);
 
@@ -180,18 +180,18 @@ AROS_UFP3(IPTR, HookEntry,
 #   define AROS_SLOWSTACKMETHODS_ARG(arg)   ((Msg)&(arg))
 #   define AROS_SLOWSTACKMETHODS_POST	    return retval;
 #   define AROS_NR_SLOWSTACKMETHODS_POST
-#endif /* NO_LINEAR_VARARGS */
+#endif /* AROS_SLOWSTACKMETHODS */
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
     struct TagItem * GetTagsFromStack  (IPTR firstTag, va_list args);
     void	     FreeTagsFromStack (struct TagItem * tags);
-#endif /* NO_LINEAR_VARARGS */
+#endif /* AROS_SLOWSTACKTAGS */
 
 #ifndef AROS_HOOKRETURNTYPE
 #   define AROS_HOOKRETURNTYPE IPTR
 #endif
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKHOOKS
     APTR  GetParamsFromStack  (va_list args);
     void FreeParamsFromStack (APTR params);
 
@@ -238,7 +238,7 @@ AROS_UFP3(IPTR, HookEntry,
 #   define AROS_SLOWSTACKHOOKS_ARG(arg)   ((IPTR*)&(arg)+1)
 #   define AROS_SLOWSTACKHOOKS_POST	    return retval;
 #   define AROS_NR_SLOWSTACKHOOKS_POST
-#endif /* NO_LINEAR_VARARGS */
+#endif /* AROS_SLOWSTACKHOOKS */
 
 /* Rexx support */
 BOOL CheckRexxMsg(struct RexxMsg *);

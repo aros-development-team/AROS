@@ -27,6 +27,10 @@
 /* define this if we have no support for linear varargs in the compiler */
 #define NO_LINEAR_VARARGS       1
 
+#define AROS_SLOWSTACKTAGS      1
+#define AROS_SLOWSTACKMETHODS   1
+#define AROS_SLOWSTACKHOOKS     1
+
 #define SIZEOF_FPU_CONTEXT      512
 #define SIZEOF_ALL_REGISTERS    (184 + SIZEOF_FPU_CONTEXT + 16)
 

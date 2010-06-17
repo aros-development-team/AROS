@@ -48,6 +48,10 @@
 /* define this if we have no support for linear varargs in the compiler */
 #define NO_LINEAR_VARARGS 1
 
+#define AROS_SLOWSTACKTAGS      1
+#define AROS_SLOWSTACKMETHODS   1
+#define AROS_SLOWSTACKHOOKS     1
+
 /* types and limits for sig_atomic_t */
 #define AROS_SIG_ATOMIC_T       int
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)

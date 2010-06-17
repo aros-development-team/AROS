@@ -167,7 +167,8 @@
 
 /* 5. Calculated #defines */
 #if !AROS_STACK_GROWS_DOWNWARDS
-#   define NO_LINEAR_VARARGS
+#   define AROS_SLOWSTACKTAGS
+#   define AROS_SLOWSTACKMETHODS
 #endif /* !AROS_STACK_GROWS_DOWNWARDS */
 
 #if !defined(__CONCAT)
