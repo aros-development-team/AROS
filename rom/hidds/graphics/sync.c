@@ -484,7 +484,10 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
 	    if (!data->mspc->ms_Special) {
 		data->mspc->ms_Special = (struct SpecialMonitor *)GfxNew(SPECIAL_MONITOR_TYPE);
 		if (data->mspc->ms_Special) {
-		    data->mspc->ms_Special->reserved1 = data;
+		    if (data->InternalFlags & SYNC_VARIABLE) {
+			data->mspc->ms_Special->do_monitor = do_monitor;
+			data->mspc->ms_Special->reserved1 = data;
+		    }
 		    data->mspc->ms_Flags |= MSF_REQUEST_SPECIAL;
 		    data->InternalFlags |= SYNC_FREE_SPECIALMONITOR;
 		} else
