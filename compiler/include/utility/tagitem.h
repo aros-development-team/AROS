@@ -12,7 +12,7 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
 #   include <stdarg.h>
 #endif
 
@@ -24,7 +24,7 @@ struct TagItem
     STACKIPTR ti_Data; /* Tag-specific data */
 };
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
 __BEGIN_DECLS
     struct TagItem * GetTagsFromStack  (IPTR firstTag, va_list args);
     void             FreeTagsFromStack (struct TagItem * tags);
@@ -66,7 +66,7 @@ __END_DECLS
 #   define AROS_TAGRETURNTYPE IPTR
 #endif
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
 #	define AROS_NR_SLOWSTACKTAGS_PRE(arg)		\
 	    va_list		  args;			\
 	    struct TagItem	* tags;			\

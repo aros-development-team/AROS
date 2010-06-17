@@ -8,7 +8,7 @@
 #include <aros/system.h>
 #include "alib_intern.h"
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKMETHODS
 #include <intuition/classusr.h>
 #include <proto/exec.h>
 /******************************************************************************
@@ -120,9 +120,9 @@
 	FreeVec (msg);
 } /* FreeMsgFromStack */
 
-#endif /* NO_LINEAR_VARARGS */
+#endif /* AROS_SLOWSTACKMETHODS */
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
 #include <stdarg.h>
 #include <utility/tagitem.h>
 #include <exec/memory.h>
@@ -401,7 +401,7 @@
 	FreeVec (params);
 } /* FreeParamsFromStack */
 
-#endif /* NO_LINEAR_VARARGS */
+#endif /* AROS_SLOWSTACKTAGS */
 
 
 

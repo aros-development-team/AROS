@@ -98,7 +98,7 @@ static IPTR RT_OpenScreen (RTData * rtd, ScreenResource * rt, va_list args, BOOL
     switch (op)
     {
     case RTTO_OpenScreenTags:
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
     {
     	Tag t = va_arg(args, Tag);
     	tags = GetTagsFromStack(t, args);
@@ -135,7 +135,7 @@ static IPTR RT_OpenScreen (RTData * rtd, ScreenResource * rt, va_list args, BOOL
 
     rt->Screen = OpenScreenTagList (ns, tags);
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
     if (op == RTTO_OpenScreenTags)
     	FreeTagsFromStack(tags);
 #endif
@@ -311,7 +311,7 @@ static IPTR RT_OpenWindow (RTData * rtd, WindowResource * rt, va_list args, BOOL
     switch (op)
     {
     case RTTO_OpenWindowTags:
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
     {
     	Tag t = va_arg (args, Tag);
     	tags = GetTagsFromStack(t, args);
@@ -354,7 +354,7 @@ static IPTR RT_OpenWindow (RTData * rtd, WindowResource * rt, va_list args, BOOL
     if (rt->Window)
 	*success = TRUE;
 
-#ifdef NO_LINEAR_VARARGS
+#ifdef AROS_SLOWSTACKTAGS
     if (op == RTTO_OpenWindowTags)
     	FreeTagsFromStack(tags);
 #endif
