@@ -59,7 +59,7 @@ static int MUIMasterInit(LIBBASETYPEPTR lh)
             struct Process* me      = (struct Process *) FindTask(NULL);
             APTR            win     = me->pr_WindowPtr; /* backup old value */
             ULONG           cnt     = 0;
-            const ULONG     max_cnt = 9;  /* 5s   */
+            const ULONG     max_cnt = 19;  /* 10s   */
             const ULONG     ticks   = 25; /* 0.5s */
             
             me->pr_WindowPtr = (APTR) -1; /* disable requester */
