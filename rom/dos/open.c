@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a file with the specified mode.
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
@@ -107,6 +109,8 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     LONG error2 = 0;
     LONG doappend = 0;
     BPTR con, ast;
+
+    D(bug("[Open] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\", \n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name));
 
     if(soft_nesting == 0)
     {
