@@ -22,7 +22,7 @@
 #include "gdi_class.h"
 
 /* Minimum required library version */
-#define GDI_VERSION 41
+#define GDI_VERSION 42
 
 /************************************************************************/
 
@@ -39,31 +39,24 @@ int __nocommandline = 1;
 /* This function uses library open count as displays count */
 static ULONG AddDisplays(ULONG num)
 {
-    struct Library *GDIBase;
+    struct GDIBase *GDIBase;
     OOP_Object *gfxhidd;
     ULONG old;
     ULONG i;
 
     D(bug("[GDI] Making %u displays\n", num));
     /* First query current displays count */
-    GDIBase = OpenLibrary(GDI_LIBNAME, GDI_VERSION);
+    GDIBase = (struct GDIBase *)OpenLibrary(GDI_LIBNAME, GDI_VERSION);
     if (!GDIBase)
         return 0;
 
-    old = GDIBase->lib_OpenCnt - 1;
-    CloseLibrary(GDIBase);
+    old = GDIBase->displaynum - 1;
+    CloseLibrary(&GDIBase->library);
     D(bug("[GDI] Current displays count: %u\n", old));
 
-    /* Add displays if needed, open the library once more for every display */
+    /* Add displays if needed */
     for (i = old; i < num; i++)
     {
-        /* This increments counter */
-	GDIBase = OpenLibrary(GDI_LIBNAME, GDI_VERSION);
-	if (!GDIBase) {
-	    D(bug("[GDI] Failed to open GDI library!\n"));
-	    break;
-	}
-
 	gfxhidd = OOP_NewObject(NULL, CLID_Hidd_GDIGfx, NULL);
 	D(bug("[GDI] Created display object 0x%p\n", gfxhidd));
 	if (gfxhidd){
@@ -74,13 +67,11 @@ static ULONG AddDisplays(ULONG num)
 	    }
 	}
 
-	/* If driver setup failed, decrement counter back and abort */
-	if (!gfxhidd) {
-	    CloseLibrary(GDIBase);
+	/* Abort if driver setup failed */
+	if (!gfxhidd)
 	    break;
-	}
     }
-    
+
     return i;
 }
 
