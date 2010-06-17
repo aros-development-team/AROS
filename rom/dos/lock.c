@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locks a file or directory.
@@ -107,6 +107,8 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     LONG ret = DOSFALSE;
     LONG error = 0;
     LONG error2 = 0;
+
+    D(bug("[Lock] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\", \n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name));
 
     if(soft_nesting == 0)
     {
