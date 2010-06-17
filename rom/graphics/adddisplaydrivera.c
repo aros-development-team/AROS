@@ -2,11 +2,9 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Private graphics function for initializing graphics.hidd
+    Desc: AROS-specific function for adding a display driver
     Lang: english
 */
-
-#define DEBUG 1
 
 #include <aros/debug.h>
 #include <graphics/driver.h>
