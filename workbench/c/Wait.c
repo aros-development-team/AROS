@@ -136,12 +136,13 @@ int main (void)
 
     if (delay > 0)
     {
-	if (delay <= TICKS_PER_SECOND)
-	{
-	    /* Don't care about breaking if delay is less than 1 second */
-	    Delay (delay);
-	}
-	else
+// Commented out the following: Wait is often used in scripts to allow to break loops, so it must always care about breaking
+//	if (delay < TICKS_PER_SECOND)
+//	{
+//	    /* Don't care about breaking if delay is less than 1 second */
+//	    Delay (delay);
+//	}
+//	else
 	{
 	    struct MsgPort 	*timermp;
 	    struct timerequest  *timerio;
