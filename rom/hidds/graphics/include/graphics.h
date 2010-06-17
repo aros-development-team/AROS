@@ -2245,8 +2245,9 @@ enum
     aoHidd_Sync_Flags,		/* [I.G] ULONG - mode tags */
 
     aoHidd_Sync_Variable,	/* [I.G] BOOL  - data can be modified */
-    aoHidd_Sync_MonitorSpec,	/* [ISG] struct MonitorSpec *	- MonitorSpec structure		     */
+    aoHidd_Sync_MonitorSpec,	/* [I.G] struct MonitorSpec *	- MonitorSpec structure		     */
     aoHidd_Sync_GfxHidd,	/* [I.G] OOP_Object *		- Driver to which the object belongs */
+    aoHidd_Sync_BoardNumber,	/* [I..] ULONG - Number of board (replaces '%b' in description) */
 
     num_Hidd_Sync_Attrs
     
@@ -2287,6 +2288,7 @@ enum
 #define aHidd_Sync_Variable	(HiddSyncAttrBase + aoHidd_Sync_Variable)
 #define aHidd_Sync_MonitorSpec	(HiddSyncAttrBase + aoHidd_Sync_MonitorSpec)
 #define aHidd_Sync_GfxHidd	(HiddSyncAttrBase + aoHidd_Sync_GfxHidd)
+#define aHidd_Sync_BoardNumber	(HiddSyncAttrBase + aoHidd_Sync_BoardNumber)
 
 /* Sync flags */
 #define vHidd_Sync_HSyncPlus		0x0001	/* HSYNC + if set */

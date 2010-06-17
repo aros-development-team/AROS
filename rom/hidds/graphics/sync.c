@@ -21,6 +21,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <stdio.h>
+
 #include "graphics_intern.h"
 
 #undef csd
@@ -303,7 +305,7 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
     }
 
     if (init) {
-	/* The following can be processed only during init */
+    	/* The following can be processed only during init */
 
 	/* We must have a MonitorSpec. Either it's pre-cooked by the driver (useful for Amiga(tm)
 	   chipset), or we create it ourselves */
@@ -320,8 +322,6 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
 	    data->InternalFlags |= SYNC_FREE_MONITORSPEC;
 	}
 
-	if (GOT_SYNC_ATTR(Description))
-    	    strlcpy(data->description, (STRPTR)attrs[SYAO(Description)], sizeof(data->description));
 
 	/* During init we must get HDisp and VDisp, so we set the
            returncode to FALSE if we don't get them */
@@ -362,6 +362,62 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
 
 	if (attrs[SYAO(Variable)])
 	    data->InternalFlags |= SYNC_VARIABLE;
+
+	if (GOT_SYNC_ATTR(Description)) {
+	    char *s = (char *)attrs[SYAO(Description)];
+	    char *d = data->description;
+	    int dlen = sizeof(data->description);
+	    char c;
+	    int l;
+
+	    for (;;) {
+	        c = *s++;
+	        if (c == '%') {
+		    /* It's a format prefix, let's deal with it */
+		    c = *s++;
+		    switch(c) {
+		    case 'b':
+		        l = snprintf(d, dlen, "%lu", attrs[SYAO(BoardNumber)]);
+		        break;
+		    case 'h':
+		        l = snprintf(d, dlen, "%u", data->hdisp);
+			break;
+		    case 'v':
+		        l = snprintf(d, dlen, "%u", data->vdisp);
+			break;
+		    default:
+			/* Just copy over two chars */
+		        d[0] = '%';
+			l = 1;
+			/* Copy next character only if we have room for it */
+			if (dlen > 2) {
+			    d[1] = c;
+			    l++;
+			}
+			break;
+		    }
+		} else {
+		    /* Copy one character */
+		    *d = c;
+		    l = 1;
+		}
+
+		/* If NULL byte has been just transferred, exit, the string is already terminated */
+		if (!c)
+		    break;
+
+		/* Increment pointer, decrement length */
+		d += l;
+		dlen -= l;
+
+		/* If we have only one byte in the destination left,
+		   terminate the string and exit */
+		if (dlen < 2) {
+		    *d = 0;
+		    break;
+		}
+	    }
+	}
 
     } else if (!(data->InternalFlags & SYNC_VARIABLE))
         /* During set, we don't process further data if the object

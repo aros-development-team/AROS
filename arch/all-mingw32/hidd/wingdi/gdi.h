@@ -89,6 +89,8 @@ struct gdi_staticdata
     OOP_Object      	    *kbdhidd;
 
     struct GDI_Control	    *ctl;
+    
+    ULONG		     displaynum;
 };
 
 struct gdiclbase
