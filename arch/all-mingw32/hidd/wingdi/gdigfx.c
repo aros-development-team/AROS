@@ -114,7 +114,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 160 	    	    	 },
 	{ aHidd_Sync_VDisp  	, 160 	    	    	 },
-	{ aHidd_Sync_Description, (IPTR)"Windows:160x160"},
 	{ TAG_DONE  	    	, 0UL 	    	    	 }
     };
     
@@ -122,7 +121,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 240 	    	    	 },
 	{ aHidd_Sync_VDisp  	, 320 	    	    	 },
-	{ aHidd_Sync_Description, (IPTR)"Windows:240x320"},
 	{ TAG_DONE  	    	, 0UL 	    	    	 } 
     };
 
@@ -130,7 +128,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 320 	    	    	 },
 	{ aHidd_Sync_VDisp  	, 240 	    	    	 },
-	{ aHidd_Sync_Description, (IPTR)"Windows:320x240"},
 	{ TAG_DONE  	    	, 0UL 	    	    	 }
     };
 
@@ -138,7 +135,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 512 	    	    	 },
 	{ aHidd_Sync_VDisp  	, 384 	    	    	 },
-	{ aHidd_Sync_Description, (IPTR)"Windows:512x384"},
 	{ TAG_DONE  	    	, 0UL 	    	    	 }
     };
 
@@ -146,7 +142,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 640 	    	    	 },
 	{ aHidd_Sync_VDisp  	, 480 	    	    	 },
-	{ aHidd_Sync_Description, (IPTR)"Windows:640x480"},
 	{ TAG_DONE  	    	, 0UL 	    	    	 }
     };
 
@@ -154,7 +149,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 800 	    	    	 },
 	{ aHidd_Sync_VDisp  	, 600 	    	    	 },
-	{ aHidd_Sync_Description, (IPTR)"Windows:800x600"},
 	{ TAG_DONE  	    	, 0UL 	    	    	 }
     };
 
@@ -162,7 +156,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 1024      	    	  },
 	{ aHidd_Sync_VDisp  	, 768       	    	  },
-	{ aHidd_Sync_Description, (IPTR)"Windows:1024x768"},
 	{ TAG_DONE  	    	, 0UL       	    	  }
     };
     
@@ -170,7 +163,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 1152      	    	  },
 	{ aHidd_Sync_VDisp  	, 864       	    	  },
-	{ aHidd_Sync_Description, (IPTR)"Windows:1152x864"},
 	{ TAG_DONE  	    	, 0UL       	    	  }
     };
 
@@ -178,7 +170,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 1280      	    	  },
 	{ aHidd_Sync_VDisp  	, 800       	    	  },
-	{ aHidd_Sync_Description, (IPTR)"Windows:1280x800"},
 	{ TAG_DONE  	    	, 0UL       	    	  }
     };
 
@@ -186,7 +177,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 1280      	    	  },
 	{ aHidd_Sync_VDisp  	, 960       	    	  },
-	{ aHidd_Sync_Description, (IPTR)"Windows:1280x960"},
 	{ TAG_DONE  	    	, 0UL       	    	  }
     };
     
@@ -194,7 +184,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 1280      	    	   },
 	{ aHidd_Sync_VDisp  	, 1024      	    	   },
-	{ aHidd_Sync_Description, (IPTR)"Windows:1280x1024"},
 	{ TAG_DONE  	    	, 0UL       	    	   }
     };
     
@@ -202,7 +191,6 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
     	{ aHidd_Sync_HDisp  	, 1600      	    	   },
 	{ aHidd_Sync_VDisp  	, 1200      	    	   },
-	{ aHidd_Sync_Description, (IPTR)"Windows:1600x1200"},
 	{ TAG_DONE  	    	, 0UL       	    	   }
     };
     
@@ -218,6 +206,12 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ aHidd_Sync_VMin	, 112			}, /* maximum can be even bigger...	     */
 	{ aHidd_Sync_HMax	, 16384			},
 	{ aHidd_Sync_VMax	, 16384			},
+	/* Formatting stands for:
+	   %b - board number
+	   %h - HDisp
+	   %v - VDisp */
+	{ aHidd_Sync_Description, (IPTR)"Windows %b: %hx%v"},
+	{ aHidd_Sync_BoardNumber, XSD(cl)->displaynum	},
 
 	/* The different syncmodes. The default attribute values above 
 	    will be applied to each of these. Note that
@@ -276,6 +270,10 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     mode_tags[2].ti_Data = htotal;
     mode_tags[3].ti_Data = vtotal;
 
+    /* Omit card number for the first display */
+    if (XSD(cl)->displaynum == 1)
+	mode_tags[8].ti_Data = (IPTR)"Windows: %hx%v";
+
     /* Register gfxmodes */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL != o)
@@ -285,6 +283,7 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	D(bug("GDIGfx::New(): Got object from super\n"));
 	data->display = display;
 	NewList((struct List *)&data->bitmaps);
+	XSD(cl)->displaynum++;
     }
     ReturnPtr("GDIGfx::New", OOP_Object *, o);
 }
@@ -644,6 +643,7 @@ ULONG GDICl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd
 static int gdigfx_init(LIBBASETYPEPTR LIBBASE) 
 {
     InitSemaphore(&LIBBASE->xsd.sema);
+    LIBBASE->xsd.displaynum = 1;
 
     if (OOP_ObtainAttrBases(attrbases)) {
         D(bug("[GDI] Starting up GDI controller\n"));
