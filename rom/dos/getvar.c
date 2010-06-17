@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetVar - Return the value of a local or global variable.
     Lang: English
 */
+
 #include <aros/debug.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
@@ -108,6 +109,7 @@
 	    /* look for a local variable */
 	    struct LocalVar *lv;
 	    
+	    D(bug("GetVar: Local variable\n"));
 	    /* look for a variable of the given name */
 	    lv = FindVar(name, flags);
 
@@ -173,6 +175,7 @@
 	    UBYTE filebuf[256] = "ENV:";
 	    
 	    AddPart(filebuf, name, 256);
+	    D(bug("GetVar: Global variable: %s\n", filebuf));
 	    file = Open(filebuf, MODE_OLDFILE);
 
 	    if (file) /* file could be opened */
