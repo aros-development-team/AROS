@@ -137,7 +137,7 @@ int main (void)
     if (delay > 0)
     {
 // Commented out the following: Wait is often used in scripts to allow to break loops, so it must always care about breaking
-//	if (delay < TICKS_PER_SECOND)
+//	if (delay <= TICKS_PER_SECOND)
 //	{
 //	    /* Don't care about breaking if delay is less than 1 second */
 //	    Delay (delay);
