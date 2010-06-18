@@ -14,7 +14,7 @@
 #include <stdlib.h>
 
 #include <exec/exec.h>       
-#include <graphics/GfxBase.h>
+#include <graphics/gfxbase.h>
 #include <cybergraphx/cybergraphics.h>
 #include <intuition/intuition.h>
 
