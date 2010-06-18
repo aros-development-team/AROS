@@ -3,7 +3,7 @@
 
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: $
+    $Id$
 
     Desc: Headerfile for BOOPSI monitorclass.
     Lang: english
@@ -16,6 +16,7 @@
 
 /* Attributes */
 #define MA_Dummy		(TAG_USER)
+
 #define MA_MonitorName		(MA_Dummy + 1)	/* [..G] STRPTR    Monitor name					      	    */
 #define MA_Manufacturer		(MA_Dummy + 2)	/* [..G] STRPTR    Hardware manufacturer string			      	    */
 #define MA_ManufacturerID	(MA_Dummy + 3)	/* [..G] ULONG							      	    */
@@ -35,6 +36,11 @@
 #define MA_DriverName		(MA_Dummy + 17) /* [..G] STRPTR    Driver name						    */
 #define MA_MemoryClock		(MA_Dummy + 18) /* [..G] ULONG     Video memory clock in Hz, 0 if unknown		    */
 
+/* AROS-specific attributes */
+#define MA_AROS			(TAG_USER + 0x00010000)
+
+#define MA_DriverObject		(MA_AROS + 1)   /* [I.G] OOP_Object * Display driver object */
+
 /* Pointer type flags */
 #define PointerType_3Plus1 0x0001 /* color 0 transparent, 1-3 visible				 */
 #define PointerType_2Plus1 0x0002 /* color 0 transparent, 2-3 visible, 1 undefined/clear/inverse */
@@ -49,6 +55,9 @@
 #define MM_RunBlanker		 0x406	/* Start screensaver for this monitor				       	  */
 #define MM_EnterPowerSaveMode	 0x407	/* Start power saving mode					       	  */
 #define MM_ExitBlanker		 0x408	/* Stop screensaver or power saving mode			       	  */
+
+/* AROS-specific methods */
+#define MM_SetDefaultGammaTables 0x1401 /* Set default gamma correction table */
 
 struct msGetRootBitMap
 {
@@ -91,5 +100,7 @@ struct msGetPointerBounds
     STACKED ULONG *Width;
     STACKED ULONG *Height;
 };
+
+#define msSetDefaultGammaTables msGetDefaultGammaTables
 
 #endif
