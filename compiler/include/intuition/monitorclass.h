@@ -71,25 +71,25 @@ struct msQuery3DSupport
 
 struct msGetDefaultGammaTables
 {
-    ULONG  MethodID;
-    UBYTE *Red;		/* Optional pointers to 256-byte arrays to fill in */
-    UBYTE *Green;
-    UBYTE *Blue;
+    STACKED ULONG  MethodID;
+    STACKED UBYTE *Red;		/* Optional pointers to 256-byte arrays to fill in */
+    STACKED UBYTE *Green;
+    STACKED UBYTE *Blue;
 };
 
 struct msGetDefaultPixelFormat
 {
-    ULONG  MethodID;
-    ULONG  Depth;
-    ULONG *Store;
+    STACKED ULONG  MethodID;
+    STACKED ULONG  Depth;
+    STACKED ULONG *Store;
 };
 
 struct msGetPointerBounds
 {
-    ULONG MethodID;
-    ULONG PointerType;
-    ULONG *Width;
-    ULONG *Height;
+    STACKED ULONG MethodID;
+    STACKED ULONG PointerType;
+    STACKED ULONG *Width;
+    STACKED ULONG *Height;
 };
 
 #endif
