@@ -52,16 +52,16 @@
 
 struct msGetRootBitMap
 {
-    ULONG  MethodID;
-    ULONG  PixelFormat;
-    struct BitMap **Store;
+    STACKED ULONG  MethodID;
+    STACKED ULONG  PixelFormat;
+    STACKED struct BitMap **Store;
 };
 
 struct msQuery3DSupport
 {
-    ULONG  MethodID;
-    ULONG  PixelFormat;
-    ULONG *Store;
+    STACKED ULONG  MethodID;
+    STACKED ULONG  PixelFormat;
+    STACKED ULONG *Store;
 };
 
 #define MSQUERY3D_UNKNOWN  (0) /* Unsupported pixelformat or other error */
