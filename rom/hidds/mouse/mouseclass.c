@@ -7,7 +7,6 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
-#include <hidd/mouse.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <proto/alib.h>
@@ -19,6 +18,58 @@
 
 #undef HiddMouseAB
 #define	HiddMouseAB		(CSD(cl)->hiddMouseAB)
+
+/*****************************************************************************************
+
+    --background--
+
+    NAME */
+#include <hidd/mouse.h>
+
+/*	CLID_Hidd_Mouse
+
+    OVERVIEW
+	This class represents a "hub" for collecting input from various
+	pointing devices (mice, tablets, touchscreens, etc) in the
+	system and sending them to clients.
+
+	In order to get an access to pointing input subsystem you need to
+	create an object of CLID_Hidd_Mouse class. There can be two use
+	scenarios: driver mode and client mode.
+
+	If you wish to run in client mode (receive pointing events), you
+	have to supply a callback using	aoHidd_Mouse_IrqHandler attribute.
+	After this your callback will be called every time the event arrives
+	until you dispose your object.
+
+	Events from all pointing devices are merged into a single stream
+	and propagated to all clients.
+
+	In driver mode you don't need to supply a callback (however it's not
+	forbidden). Instead you use the master object for registering your
+	hardware driver using HIDD_Mouse_AddHardwareDriver(). It is safe to
+	dispose the master object after adding a driver, the driver will
+	be internally kept in place.
+
+******************************************************************************************
+
+    --hardware drivers---
+
+	A hardware driver should implement the same interface according to the following
+	rules:
+
+	1. A single object of driver class represents a single hardware unit.
+	2. A single driver object maintains a single callback address (passed to it
+	   using aoHidd_Mouse_IrqHandler). Under normal conditions this callback is supplied
+	   by CLID_Hidd_Mouse class.
+	3. HIDD_Mouse_AddHardwareDriver() and HIDD_Mouse_RemHardwareDriver() on a driver object
+	   itself do not make sense, so there's no need to implement them.
+
+	A hardware driver class should be a subclass of CLID_Hidd in order to ensure
+	compatibility in future.
+
+*****************************************************************************************/
+
 
 static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *ev)
 {
@@ -42,6 +93,177 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 	data->callback(data->callbackdata, ev);
 }
 
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Mouse_IrqHandler -- [I..], APTR
+
+    LOCATION
+	IID_Hidd_Mouse
+
+    FUNCTION
+	Specifies a pointing device interrupt handler. The handler will called be every time a
+	keyboard event happens. A "C" calling convention is used, declare the handler
+	functions as follows:
+
+	void MouseIRQ(APTR data, struct pHidd_Mouse_Event *event);
+
+	Handler parameters are:
+	    data  - Anything you specify using aoHidd_Mouse_IrqHandlerData
+	    event - A pointer to a read-only event descriptor structure with the following
+	            contents:
+		button - button code, or vHidd_Mouse_NoButton of the event describes a simple
+			 motion.
+		x, y   - event coordinates. Need to be always valid, even if the event describes
+			 a button pressed without actual motion.
+			 In case of mouse wheel event these fields specify horizontal and vertical
+			 wheel delta respectively.
+		type   - type of event (button press, button release, wheel or motion).
+		flags  - event flags. Currently only one value of vHidd_Mouse_Relative is defined.
+			 If this flag is not set, coordinates are assumed to be absolute.
+			 This member is actually present in the structure only if the driver
+			 supplies TRUE value for aoHidd_Mouse_Extended attribute.
+
+	The handler is called inside interrupts, so usual restrictions apply to it.
+
+    NOTES
+	CLID_Hidd_Mouse class always provides extended form of event structure
+	(struct pHidd_Mouse_ExtEvent). Drivers will not always provide it, depending
+	on their aoHidd_Mouse_Extended attribute value.
+
+    EXAMPLE
+
+    BUGS
+	CLID_Hidd_Mouse and some hardware driver classes allow to get value of this attribute,
+	however there is currently no use for it. The attribute is considered non-getable.
+
+    SEE ALSO
+	aoHidd_Mouse_IrqHandlerData, aoHidd_Mouse_Extended
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************************
+
+    NAME
+	aoHidd_Mouse_IrqHandlerData -- [I..], APTR
+
+    LOCATION
+	IID_Hidd_Mouse
+
+    FUNCTION
+	Specifies a user-defined value that will be passed to interrupt handler as a first
+	parameter. The purpose of this is to pass some static data to the handler.
+	The system will not assume anything about this value.
+
+	Defaults to NULL if not specified.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+	CLID_Hidd_Mouse and some hardware driver classes allow to get value of this attribute,
+	however there is currently no use for it. The attribute is considered non-getable.
+
+    SEE ALSO
+	aoHidd_Mouse_IrqHandler
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************************
+
+    NAME
+	aoHidd_Mouse_State -- [..G], struct pHidd_Mouse_Event
+
+    LOCATION
+	IID_Hidd_Mouse
+
+    FUNCTION
+	Obtains current pointing devices state.
+
+	This attribute was historically implemented only in PS/2 mouse driver, but the
+	implementation was broken and incomplete. At the moment this attribute is considered
+	reserved. Do not use it, the specification may change in future.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+	Not implemented, considered reserved.
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************************
+
+    NAME
+	aoHidd_Mouse_RelativeCoords -- [..G], BOOL
+
+    LOCATION
+	IID_Hidd_Mouse
+
+    FUNCTION
+	Asks the driver it the device provides relative (like mouse) or absolute (like
+	touchscreen or tabled) coordinates.
+
+	Drivers which provide extended event structure may not implement this attribute
+	because they may provide mixed set of events. In this case coordinates type
+	is determined by flags member of struct pHidd_Mouse_ExtEvent.
+
+	CLID_Hidd_Mouse class does not implement this attribute since it provides mixed
+	stream of events.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Mouse_IrqHandler, aoHidd_Mouse_Extended
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************************
+
+    NAME
+	aoHidd_Mouse_Extended -- [..G], BOOL
+
+    LOCATION
+	IID_Hidd_Mouse
+
+    FUNCTION
+	Asks the driver if it provides extended event descriptor structure
+	(struct pHidd_Mouse_ExtEvent).
+
+	If value of this attribute is FALSE, the flags member is actually missing from
+	the structure, not just zeroed out! So do not use it at all in this case.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Mouse_IrqHandler
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************************/
+
 OOP_Object *Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct mouse_data *data;
@@ -53,6 +275,7 @@ OOP_Object *Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     data = OOP_INST_DATA(cl, o);
     data->callback = NULL;
+    data->callbackdata = NULL;
 
     tstate = msg->attrList;
     D(bug("tstate: %p\n", tstate));
@@ -141,6 +364,50 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
  * amigainput.library or something like it)
  */
 
+/*****************************************************************************************
+
+    NAME
+	HIDD_Mouse_AddHardwareDriver()
+
+    SYNOPSIS
+	OOP_Object *HIDD_Mouse_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
+
+    LOCATION
+	IID_Hidd_Mouse
+
+    FUNCTION
+	Creates a hardware driver object and registers it in the system.
+
+	It does not matter on which instance of CLID_Hidd_Mouse class this method is
+	used. Hardware driver objects are shared between all of them.
+
+    INPUTS
+	obj	    - Any object of CLID_Hidd_Mouse class.
+	driverClass - A pointer to OOP class of the driver. In order to create an object
+		      of some previously registered public class, use
+		      oop.library/OOP_FindClass().
+	tags	    - An optional taglist which will be passed to driver class' New() method.
+
+    RESULT
+	A pointer to driver object.
+
+    NOTES
+	Do not dispose the returned object yourself, use HIDD_Mouse_RemHardwareDriver() for it.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	HIDD_Mouse_RemHardwareDriver()
+
+    INTERNALS
+	This method supplies own interrupt handler to the driver, do not override this.
+
+    HISTORY
+
+*****************************************************************************************/
+
 OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_AddHardwareDriver *Msg)
 {
     struct TagItem tags[] = {
@@ -169,6 +436,9 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 /*	Commented out because this produces failures. For some weird reason
         value of aHidd_Mouse_Extended is 1 here
 
+	18.06.2010 - likely fixed (definition of aHidd_Mouse_Extended was wrong),
+	             but needs to be tested before enabling again.
+
 	OOP_GetAttr(drvnode->drv, aHidd_Mouse_Extended, &val);
 	D(bug("[Mouse] Extended event: %d\n", val));
 	if (val)
@@ -190,6 +460,45 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
     FreeMem(drvnode, sizeof(struct driverNode));
     return NULL;
 }
+
+/*****************************************************************************************
+
+    NAME
+	HIDD_Mouse_RemHardwareDriver()
+
+    SYNOPSIS
+	void HIDD_Mouse_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver)
+
+    LOCATION
+	IID_Hidd_Mouse
+
+    FUNCTION
+	Unregisters and disposes pointing device hardware driver object.
+
+	It does not matter on which instance of CLID_Hidd_Mouse class this method is
+	used. Hardware driver objects are shared between all of them.
+
+    INPUTS
+	obj    - Any object of CLID_Hidd_Mouse class.
+	driver - A pointer to a driver object, returned by HIDD_Mouse_AddHardwareDriver().
+
+    RESULT
+	None
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	HIDD_Mouse_AddHardwareDriver()
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************************/
 
 void Mouse__Hidd_Mouse__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_RemHardwareDriver *Msg)
 {
