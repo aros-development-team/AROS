@@ -11,6 +11,7 @@ COMMONTESTFILES := \
     amigademo \
     availfonts \
     blttemplatealpha \
+    CGXTest \
     date2amiga \
     dosvartest \
     exceptiontest \
