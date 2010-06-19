@@ -7,20 +7,20 @@
 #include <graphics/rastport.h>
 #include <proto/layers.h>
 #include <proto/graphics.h>
+#include <gallium/pipe/p_state.h>
 #include <aros/debug.h>
 
 /*****************************************************************************
 
     NAME */
 
-      AROS_LH9(void, BltPipeSurfaceRastPort,
+      AROS_LH8(void, BltPipeSurfaceRastPort,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(struct GalliumHandle *, handle, A0),
-      AROS_LHA(struct pipe_surface * , srcPipeSurface, A1),
+      AROS_LHA(struct pipe_surface * , srcPipeSurface, A0),
       AROS_LHA(LONG                  , xSrc, D0),
       AROS_LHA(LONG                  , ySrc, D1),
-      AROS_LHA(struct RastPort *     , destRP, A2),
+      AROS_LHA(struct RastPort *     , destRP, A1),
       AROS_LHA(LONG                  , xDest, D2),
       AROS_LHA(LONG                  , yDest, D3),
       AROS_LHA(LONG                  , xSize, D4),
@@ -57,11 +57,11 @@
     struct Layer *L = destRP->Layer;
     struct ClipRect *CR;
     struct Rectangle renderableLayerRect;
-    struct IntGalliumHandle * inthandle = (struct IntGalliumHandle *)handle;
 
-    if ((!inthandle) || (!inthandle->GalliumDriver))
+    struct HIDDT_WinSys * ws = (struct HIDDT_WinSys *)srcPipeSurface->texture->screen->winsys;
+    if (!ws)
         return;
-    
+
     /* TODO: Render only if screen is visible */
 //    if (amesa->window->WScreen != IntuitionBase->FirstScreen)
 //        return;
@@ -118,7 +118,7 @@
                 relx : result.MinX - L->bounds.MinX, /* Relative (on rastport) X of the desc blit */
                 rely : result.MinY - L->bounds.MinY /* Relative (on rastport) Y of the desc blit */
                 };
-                OOP_DoMethod(inthandle->GalliumDriver, (OOP_Msg)&dsmsg);
+                OOP_DoMethod(ws->driver, (OOP_Msg)&dsmsg);
                             
                 /* FIXME: clip last 4 parameters to actuall surface deminsions */
 /*                pipe->surface_copy(pipe, visiblescreen, 

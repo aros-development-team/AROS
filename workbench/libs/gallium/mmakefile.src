@@ -25,8 +25,8 @@ USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
 
 LIB_GALLIUM_SOURCES = \
-            creategalliumhandle \
-            destroygalliumhandle \
+            createpipescreen \
+            destroypipescreen \
             bltpipesurfacerastport \
             gallium_init \
             gallium_func
