@@ -19,16 +19,14 @@
 #undef HiddMouseAB
 #define	HiddMouseAB		(CSD(cl)->hiddMouseAB)
 
-/*****************************************************************************************
-
-    --background--
-
-    NAME */
 #include <hidd/mouse.h>
 
-/*	CLID_Hidd_Mouse
+/*****************************************************************************************
 
-    OVERVIEW
+    NAME
+	--background--
+
+    NOTES
 	This class represents a "hub" for collecting input from various
 	pointing devices (mice, tablets, touchscreens, etc) in the
 	system and sending them to clients.
@@ -50,11 +48,14 @@
 	hardware driver using HIDD_Mouse_AddHardwareDriver(). It is safe to
 	dispose the master object after adding a driver, the driver will
 	be internally kept in place.
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
-    --hardware drivers---
+    NAME
+	--hardware drivers---
 
+    NOTES
 	A hardware driver should implement the same interface according to the following
 	rules:
 
@@ -142,9 +143,9 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Mouse_IrqHandlerData -- [I..], APTR
@@ -172,9 +173,9 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Mouse_State -- [..G], struct pHidd_Mouse_Event
@@ -200,9 +201,9 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Mouse_RelativeCoords -- [..G], BOOL
@@ -232,9 +233,9 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Mouse_Extended -- [..G], BOOL
@@ -259,8 +260,6 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 	aoHidd_Mouse_IrqHandler
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************************/
 
@@ -367,9 +366,11 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 /*****************************************************************************************
 
     NAME
-	HIDD_Mouse_AddHardwareDriver()
+	moHidd_Mouse_AddHardwareDriver
 
     SYNOPSIS
+	OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Mouse_AddHardwareDriver *Msg);
+
 	OOP_Object *HIDD_Mouse_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
 
     LOCATION
@@ -403,8 +404,6 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     INTERNALS
 	This method supplies own interrupt handler to the driver, do not override this.
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -464,10 +463,12 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 /*****************************************************************************************
 
     NAME
-	HIDD_Mouse_RemHardwareDriver()
+	moHidd_Mouse_RemHardwareDriver
 
     SYNOPSIS
-	void HIDD_Mouse_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver)
+	void OOP_DoMethod(OOP_Object *obj, struct pHidd_Mouse_RemHardwareDriver *Msg);
+
+	void HIDD_Mouse_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
 
     LOCATION
 	IID_Hidd_Mouse
@@ -495,8 +496,6 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 	HIDD_Mouse_AddHardwareDriver()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 

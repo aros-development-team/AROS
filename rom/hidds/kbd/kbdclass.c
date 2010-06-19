@@ -20,16 +20,14 @@
 #undef HiddKbdAB
 #define	HiddKbdAB		(CSD(cl)->hiddKbdAB)
 
-/*****************************************************************************************
-
-    --background--
-
-    NAME */
 #include <hidd/keyboard.h>
 
-/*	CLID_Hidd_Kbd
+/*****************************************************************************************
 
-    OVERVIEW
+    NAME
+	--background--
+
+    NOTES
 	This class represents a "hub" for collecting input from various
 	keyboard devices in the system and sending them to clients.
 
@@ -51,10 +49,14 @@
 	dispose the master object after adding a driver, the driver will
 	be internally kept in place.
 
-******************************************************************************************
+*****************************************************************************************/
 
-    --hardware drivers---
+/*****************************************************************************************
 
+    NAME
+	--hardware drivers---
+
+    NOTES
 	A hardware driver should implement the same interface according to the following
 	rules:
 
@@ -114,9 +116,9 @@ static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Kbd_IrqHandlerData -- [I..], APTR
@@ -141,8 +143,6 @@ static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
 	aoHidd_Kbd_IrqHandler
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************************/
 
@@ -218,10 +218,13 @@ VOID KBD__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	HIDD_Kbd_AddHardwareDriver()
+	moHidd_Kbd_AddHardwareDriver
 
     SYNOPSIS
-	OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
+	OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Kbd_AddHardwareDriver *Msg);
+
+	OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass,
+                                               struct TagItem *tags);
 
     LOCATION
 	IID_Hidd_Kbd
@@ -255,8 +258,6 @@ VOID KBD__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     INTERNALS
 	This method supplies own interrupt handler to the driver, do not override this.
 
-    HISTORY
-
 *****************************************************************************************/
 
 OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_AddHardwareDriver *Msg)
@@ -273,10 +274,12 @@ OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struc
 /*****************************************************************************************
 
     NAME
-	HIDD_Kbd_RemHardwareDriver()
+	moHidd_Kbd_RemHardwareDriver
 
     SYNOPSIS
-	void HIDD_Kbd_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver)
+	void OOP_DoMethod(OOP_Object *obj, struct pHidd_Kbd_RemHardwareDriver *Msg);
+
+	void HIDD_Kbd_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
 
     LOCATION
 	IID_Hidd_Kbd
@@ -304,8 +307,6 @@ OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struc
 	HIDD_Kbd_AddHardwareDriver()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
