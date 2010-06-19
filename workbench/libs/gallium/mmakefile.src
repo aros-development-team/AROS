@@ -1,0 +1,44 @@
+#   $Id$
+#
+
+
+include $(TOP)/config/make.cfg
+
+##MM- workbench-libs-complete : workbench-libs-gallium
+#MM workbench-libs-gallium : includes
+
+ifeq ($(AROS_TARGET_CPU), i386)
+  FFIXED = -ffixed-ebx
+endif
+
+ifeq ($(AROS_TARGET_CPU), x86_64)
+  FFIXED = -ffixed-rbx
+endif
+
+ifeq ($(AROS_TARGET_CPU), ppc)
+  FFIXED = -ffixed-r14
+endif
+
+USER_CFLAGS := $(FFIXED)
+
+USER_INCLUDES := \
+            -I$(AROS_DEVELOPMENT)/include/gallium \
+
+LIB_GALLIUM_SOURCES = \
+            creategalliumhandle \
+            destroygalliumhandle \
+            bltpipesurfacerastport \
+            gallium_init \
+            gallium_func
+
+%build_module mmake=workbench-libs-gallium \
+    modname=gallium modtype=library linklibname=gallium conffile=gallium.conf \
+    files="$(LIB_GALLIUM_SOURCES)" uselibs="rom oop"
+
+#MM includes-copy
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+%copy_includes path=gallium dir=include
+
+%common
