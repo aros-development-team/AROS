@@ -27,6 +27,9 @@
     NAME
 	--background--
 
+    LOCATION
+	IID_Hidd_Kbd
+
     NOTES
 	This class represents a "hub" for collecting input from various
 	keyboard devices in the system and sending them to clients.
@@ -55,6 +58,9 @@
 
     NAME
 	--hardware drivers---
+
+    LOCATION
+	IID_Hidd_Kbd
 
     NOTES
 	A hardware driver should implement the same interface according to the following

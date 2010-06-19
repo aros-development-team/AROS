@@ -26,6 +26,9 @@
     NAME
 	--background--
 
+    LOCATION
+	IID_Hidd_Mouse
+
     NOTES
 	This class represents a "hub" for collecting input from various
 	pointing devices (mice, tablets, touchscreens, etc) in the
@@ -54,6 +57,9 @@
 
     NAME
 	--hardware drivers---
+
+    LOCATION
+	IID_Hidd_Mouse
 
     NOTES
 	A hardware driver should implement the same interface according to the following
