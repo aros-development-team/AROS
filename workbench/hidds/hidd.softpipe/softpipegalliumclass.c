@@ -40,6 +40,11 @@ struct HiddSoftpipeBuffer
     APTR                mapped;
 };
 
+struct HiddSoftpipeWinSys
+{
+    struct HIDDT_WinSys  base;
+};
+
 static struct pipe_buffer *
 HiddSoftpipeBufferCreate(struct pipe_winsys *pws, 
                         unsigned alignment, 
@@ -141,32 +146,33 @@ HiddSoftpipeDestroyWinSys( struct pipe_winsys *ws)
     FreeVec(ws);
 }
 
-static struct pipe_winsys *
-HiddSoftpipeCreateSoftpipeWinsys( void )
+static struct HiddSoftpipeWinSys *
+HiddSoftpipeCreateSoftpipeWinSys( void )
 {
-    struct pipe_winsys *ws = NULL;
+    struct HiddSoftpipeWinSys * ws = NULL;
 
-    ws = (struct pipe_winsys *)AllocVec(sizeof(struct pipe_winsys), MEMF_PUBLIC|MEMF_CLEAR);
+    ws = (struct HiddSoftpipeWinSys *)AllocVec
+        (sizeof(struct HiddSoftpipeWinSys), MEMF_PUBLIC|MEMF_CLEAR);
 
     /* Fill in this struct with callbacks that pipe will need to
     * communicate with the window system, buffer manager, etc. 
     */
-    ws->buffer_create = HiddSoftpipeBufferCreate;
-    ws->user_buffer_create = HiddSoftpipeUserBufferCreate;
-    ws->buffer_map = HiddSoftpipeBufferMap;
-    ws->buffer_unmap = HiddSoftpipeBufferUnmap;
-    ws->buffer_destroy = HiddSoftpipeBufferDestroy;
+    ws->base.base.buffer_create = HiddSoftpipeBufferCreate;
+    ws->base.base.user_buffer_create = HiddSoftpipeUserBufferCreate;
+    ws->base.base.buffer_map = HiddSoftpipeBufferMap;
+    ws->base.base.buffer_unmap = HiddSoftpipeBufferUnmap;
+    ws->base.base.buffer_destroy = HiddSoftpipeBufferDestroy;
 
-    ws->surface_buffer_create = HiddSoftpipeSurfaceBufferCreate;
+    ws->base.base.surface_buffer_create = HiddSoftpipeSurfaceBufferCreate;
 
-    ws->fence_reference = NULL; /* FIXME */
-    ws->fence_signalled = NULL; /* FIXME */
-    ws->fence_finish = NULL; /* FIXME */
+    ws->base.base.fence_reference = NULL; /* FIXME */
+    ws->base.base.fence_signalled = NULL; /* FIXME */
+    ws->base.base.fence_finish = NULL; /* FIXME */
 
-    ws->flush_frontbuffer = HiddSoftpipeFlushFrontBuffer;
-    ws->update_buffer = HiddSoftpipeUpdateBuffer;
-    ws->get_name = NULL; /* FIXME */
-    ws->destroy = HiddSoftpipeDestroyWinSys;
+    ws->base.base.flush_frontbuffer = HiddSoftpipeFlushFrontBuffer;
+    ws->base.base.update_buffer = HiddSoftpipeUpdateBuffer;
+    ws->base.base.get_name = NULL; /* FIXME */
+    ws->base.base.destroy = HiddSoftpipeDestroyWinSys;
 
     return ws;
 }
@@ -199,22 +205,25 @@ VOID METHOD(SoftpipeGallium, Root, Get)
 
 APTR METHOD(SoftpipeGallium, Hidd_Gallium, CreatePipeScreen)
 {
-    struct pipe_winsys *winsys;
+    struct HiddSoftpipeWinSys * softpipews;
     struct pipe_screen *screen;
 
-    winsys = HiddSoftpipeCreateSoftpipeWinsys();
-    if (winsys == NULL)
+    softpipews = HiddSoftpipeCreateSoftpipeWinSys();
+    if (softpipews == NULL)
         return NULL;
 
-    screen = softpipe_create_screen(winsys);
+    screen = softpipe_create_screen((struct pipe_winsys *)softpipews);
     if (screen == NULL)
         goto fail;
+
+    /* Preserve pointer to HIDD driver */
+    softpipews->base.driver = o;
 
     return screen;
 
 fail:
-    if (winsys && winsys->destroy)
-        winsys->destroy(winsys);
+    if (softpipews && softpipews->base.base.destroy)
+        softpipews->base.base.destroy((struct pipe_winsys *)softpipews);
 
     return NULL;
 }
