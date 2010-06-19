@@ -37,25 +37,33 @@
 #define DPF(x)
 
 
-/*****************************************************************************************
-
-    --background--
-
-    NAME */
 #include <hidd/graphics.h>
 
-/*	CLID_HIDD_Gfx
+/*****************************************************************************************
 
-    OVERVIEW
+    NAME
+	--background--
+
+    LOCATION
+	IID_Hidd_Gfx
+
+    NOTES
 	When working with graphics drivers this is the first object you get.
 	It allows you to create BitMap and GC (graphics context)
 	object. The class' methods must be overidden by hardware-specific
 	subclasses where documented to do so.
 
-******************************************************************************************
+*****************************************************************************************/
 
-    --display modes--
+/*****************************************************************************************
 
+    NAME
+	--display_modes--
+
+    LOCATION
+	IID_Hidd_Gfx
+
+    NOTES
 	Each display driver object internally stores a database of supported display mode
 	IDs. This database is normally managed by base class, the driver does not need to
 	reimplement respective methods.
@@ -64,8 +72,8 @@
 	However mode ID layout introduced by Commodore does not fit well for RTG systems.
 	In order to overcome its limitations, display ID on AROS may have two forms:
 
-	1. A chipset mode ID. These are standard IDs defined by Commodore. You may find their
-	   definitions in graphics/modeid.h.
+	1. A chipset mode ID. These are standard IDs defined by Commodore. You may find
+           their definitions in graphics/modeid.h.
 
 	2. AROS RTG mode ID.
 
@@ -73,27 +81,32 @@
 
 	nnnn xx yy
 
-	nnnn - monitor ID. This number is maintained by system libraries. IDs are assigned in the order
-	       in which drivers are loaded and display hardware is found. Drivers do not have to care about
-	       this part, and should normally mask it out if they for some reason look at mode ID.
-	       In order to distinguish between chipset mode IDs and RTG mode IDs, order number starts not from
-	       zero, reserving some space for C= chipset mode IDs (which appear to have order numbers from
-	       0x0000 to 0x000A). Currently RTG monitor IDs start from 0x0010, however with time this value may
-	       change. So don't rely on some particular values in RTG IDs. Use cybergraphics.library/IsCyberModeID()
-	       function if you want to know for sure if the given mode ID belongs to an RTG driver.
+	nnnn - monitor ID. This number is maintained by system libraries. IDs are
+	       assigned in the order in which drivers are loaded and display hardware is
+	       found. Drivers do not have to care about this part, and should normally
+	       mask it out if they for some reason look at mode ID. In order to
+	       distinguish between chipset mode IDs and RTG mode IDs, order number starts
+	       not from zero, reserving some space for C= chipset mode IDs (which appear
+	       to have order numbers from 0x0000 to 0x000A). Currently RTG monitor IDs
+	       start from 0x0010, however with time this value may change. So don't rely
+	       on some particular values in RTG IDs. Use cybergraphics.library/IsCyberModeID()
+	       function if you want to know for sure if the given mode ID belongs to an
+	       RTG driver.
 
 	  xx - A sync object index in driver's mode database.
 	  yy - A pixelformat object in driver's mode database.
 
-	Normally the driver does not have to care about mode ID decoding. The mode database is maintained by
-	base class. The only useful things for the driver are sync and pixelformat objects, from which it's
-	possible to get different information about the mode. They can be obtained from the base class using
+	Normally the driver does not have to care about mode ID decoding. The mode
+	database is maintained by base class. The only useful things for the driver are
+	sync and pixelformat objects, from which it's possible to get different
+	information about the mode. They can be obtained from the base class using
 	HIDD_Gfx_GetMode().
 
-	Note that the driver object by itself does not know its monitor ID. Different displays are served by
-	different objects, any of which may belong to any class. So all driver methods which return mode IDs will
-	set monitor ID to zero. All methods that take mode ID as argument are expected to ignore the monitor ID
-	part and do not make any assumptions about its value.
+	Note that the driver object by itself does not know its monitor ID. Different
+	displays are served by different objects, any of which may belong to any class.
+	So all driver methods which return mode IDs will set monitor ID to zero. All
+	methods that take mode ID as argument are expected to ignore the monitor ID part
+	and do not make any assumptions about its value.
 
 *****************************************************************************************/
 
@@ -239,9 +252,9 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     INTERNALS
 	Base class always provides FALSE value
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Gfx_DMPSLevel -- [ISG], HIDDT_DPMSLevel
@@ -274,9 +287,9 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	Base class always provides vHidd_Gfx_DPMSLevel_On value (comes from rootclass'
 	Get() which sets the value to NULL).
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Gfx_PixFmtTags -- [I..], struct TagItem *
@@ -296,9 +309,9 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Gfx_SyncTags -- [I..], struct TagItem *
@@ -318,9 +331,9 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Gfx_ModeTags -- [I..], struct TagItem *
@@ -340,9 +353,9 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Gfx_NumSyncs -- [..G], ULONG
@@ -364,9 +377,9 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Gfx_SupportsHWCursor -- [..G], BOOL
@@ -391,8 +404,8 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	versa.
 
     NOTES
-	Default implementation in the base class returns FALSE. This causes the system to use
-	software sprite emulation.
+	Default implementation in the base class returns FALSE. This causes the system to
+	use software sprite emulation.
 
     EXAMPLE
 
@@ -403,9 +416,9 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     INTERNALS
 
-    HISTORY
+*****************************************************************************************/
 
-******************************************************************************************
+/*****************************************************************************************
 
     NAME
 	aoHidd_Gfx_NoFrameBuffer -- [..G], BOOL
@@ -440,8 +453,6 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     INTERNALS
 	VGA and VESA do not use framebuffer, they use mirroring technique instead in order
 	to prevents VRAM reading which is slow.
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -488,9 +499,11 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_NewGC
+	moHidd_Gfx_NewGC
 
     SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_NewGC *msg);
+
 	OOP_Object *HIDD_Gfx_NewGC(OOP_Object *gfxHidd, struct TagItem *tagList);
 
     LOCATION
@@ -528,8 +541,6 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************************/
 
 OOP_Object *GFX__Hidd_Gfx__NewGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewGC *msg)
@@ -546,10 +557,12 @@ OOP_Object *GFX__Hidd_Gfx__NewGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_DeleteGC()
+	moHidd_Gfx_DisposeGC
 
     SYNOPSIS
-	VOID HIDD_Gfx_DeleteGC(OOP_Object *gfxHidd, OOP_Object *gc)
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisposeGC *msg);
+
+	VOID HIDD_Gfx_DisposeGC(OOP_Object *gfxHidd, OOP_Object *gc)
 
     LOCATION
 	IID_HIDD_Gfx
@@ -581,8 +594,6 @@ OOP_Object *GFX__Hidd_Gfx__NewGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     INTERNALS
 	Basically just does OOP_DisposeObject(gc);
 
-    HISTORY
-
 *****************************************************************************************/
 
 VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisposeGC *msg)
@@ -610,9 +621,11 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_NewBitMap()
-	
-    sYNOPSIS
+	moHidd_Gfx_NewBitMap
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_NewBitMap *msg);
+
 	OOP_Object *HIDD_Gfx_NewBitMap(OOP_Object *gfxHidd, struct TagItem *tagList);
 
     LOCATION
@@ -621,57 +634,61 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
     FUNCTION
 	Create a bitmap object.
 
-	One graphics driver represents at least one displayable bitmap class. Additionally
-	it may represent more classes (for example some old drivers use separate class for
-	nondisplayable bitmaps).
+	One graphics driver represents at least one displayable bitmap class.
+	Additionally it may represent more classes (for example some old drivers use
+	separate class for nondisplayable bitmaps).
 
-	These classes are private to the driver. In order to be able to use them bitmap
-	objects are never created directly. Instead they are created using HIDD_Gfx_NewBitMap()
-	call. An implementation of this method in the driver should examine bitmap attributes
-	supplied and make a decision if the bitmap should be created using driver's own class
-	or one of system classes.
+	These classes are private to the driver. In order to be able to use them
+	bitmap objects are never created directly. Instead they are created using
+	HIDD_Gfx_NewBitMap() call. An implementation of this method in the driver
+	should examine bitmap attributes supplied and make a decision if the bitmap
+	should be created using driver's own class or one of system classes.
 
 	A typical implementation should pay attention to the following bitmap attributes:
     
-	aHIDD_BitMap_ModeID - If this attribute is supplied, the bitmap needs to be either
-			      displayable by this driver, or be a friend of displayable bitmap.
-			      A friend bitmap usually repeats the internal layout of its friend
-			      so that the driver may perform blitting operations quickly.
+	aHIDD_BitMap_ModeID - If this attribute is supplied, the bitmap needs to be
+			      either displayable by this driver, or be a friend of
+			      displayable bitmap. A friend bitmap usually repeats the
+			      internal layout of its friend so that the driver may
+			      perform blitting operations quickly.
 
-	aHIDD_BitMap_Displayable - If this attribute is supplied, the bitmap NEEDS to be displayable
-			           by this driver. Usually this means that bitmap object will contain
-			           video hardware state information. This attribute will always be
-			           accompanied by aHIDD_BitMap_ModeID.
+	aHIDD_BitMap_Displayable - If this attribute is supplied, the bitmap NEEDS to be
+			           displayable by this driver. Usually this means that
+			           bitmap object will contain video hardware state
+			           information. This attribute will always be accompanied
+			           by aHIDD_BitMap_ModeID.
 
-	aHIDD_BitMap_FrameBuffer - The bitmap needs to be a framebuffer bitmap. A framebuffer bitmap
-			           is necessary for some kinds of hardware which have a small fixed
-			           amount of video RAM which can hold only one screen at a time.
-				   Setting this attribute also requires to set also a valid ModeID.
+	aHIDD_BitMap_FrameBuffer - The bitmap needs to be a framebuffer bitmap. A
+			           framebuffer bitmap is necessary for some kinds of
+			           hardware which have a small fixed amount of video
+			           RAM which can hold only one screen at a time. Setting
+			           this attribute also requires to set also a valid ModeID.
 
-	aHIDD_BitMap_Friend - If there's no ModeID supplied, you may wish to check class of friend
-			      bitmap. This can be useful if your driver uses different classes for
-			      displayable and non-displayable bitmaps. By default base class will
-			      pick up friend's class and use it for new bitmap if nothing is specified,
-			      here you may override this behavior.
+	aHIDD_BitMap_Friend - If there's no ModeID supplied, you may wish to check class
+			      of friend bitmap. This can be useful if your driver uses
+			      different classes for displayable and non-displayable bitmaps.
+			      By default base class will pick up friend's class and use it
+			      for new bitmap if nothing is specified, here you may override
+			      this behavior.
 
-	If your driver wants to specify own class for the bitmap being created, it should prepend an
-	aHIDD_BitMap_ClassPtr attribute to the supplied taglist and pass it to base class. It's not
-	allowed to create bitmap objects directly since they need some more extra information which is
-	added by the base class!
+	If your driver wants to specify own class for the bitmap being created,
+	it should prepend an aHIDD_BitMap_ClassPtr attribute to the supplied taglist
+	and pass it to base class. It's not allowed to create bitmap objects directly
+	since they need some more extra information which is added by the base class!
 
-	This method must be implemented by your subclass. aHIDD_BitMap_ClassPtr or aHIDD_BitMap_ClassID
-	must be provided to the base class for a displayable bitmap!
+	This method must be implemented by your subclass. aHIDD_BitMap_ClassPtr or
+	aHIDD_BitMap_ClassID must be provided to the base class for a displayable bitmap!
 
     INPUTS
 	gfxHidd - A graphics driver object with which the GC will perform
-    	      the rendering operations.
+	          the rendering operations.
 
 	tagList - A list of bitmap attributes. See hidd.graphics.bitmap class
-	      documentation for their description.
+	          documentation for their description.
 
     RESULT
 	gc - pointer to the newly created GC, ready for use for rendering
-         operations.
+             operations.
     
     NOTES
 
@@ -683,20 +700,18 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 	HIDD_Gfx_DisposeBitMap()
 
     INTERNALS
-	The base class implementation currently does the folliwing in order to determine a class for
-	a nondisplayable bitmap (in the listed order):
+	The base class implementation currently does the folliwing in order to determine
+	a class for a nondisplayable bitmap (in the listed order):
 
-	1. Check aHIDD_BitMap_ClassPtr and aHIDD_BitMap_ClassID. If one of them is supplied, the class
-       is already set by a subclass.
-	2. Check aHIDD_BitMap_StdPixFmt. If this attribute is supplied, figure out type of the pixelformat
-       (chunky or planar), and use one of two system's default classes.
+	1. Check aHIDD_BitMap_ClassPtr and aHIDD_BitMap_ClassID. If one of them is supplied,
+	   the class is already set by a subclass.
+	2. Check aHIDD_BitMap_StdPixFmt. If this attribute is supplied, figure out type of
+	   the pixelformat (chunky or planar), and use one of two system's default classes.
 	3. Check aHIDD_BitMap_Friend. If friend bitmap is supplied, obtain its class from
-       aHIDD_BitMap_ClassPtr value of friend bitmap.
+	   aHIDD_BitMap_ClassPtr value of friend bitmap.
 	4. If everything fails, bitmap creation fails too.
 
 	This behavior is subject to change, but will maintain backwards compatibility.
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -924,14 +939,14 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     
 }
 
-
-
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_DisposeBitMap()
+	moHidd_Gfx_DisposeBitMap
 	
     SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisposeBitMap *msg);
+
 	VOID HIDD_Gfx_DisposeBitMap(OOP_Object *gfxHidd, OOP_Object *bitMap);
 
     LOCATION
@@ -962,8 +977,6 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 
     INTERNALS
 	Basically just does OOP_DisposeObject(bitMap);
-
-    HISTORY
 
 ******************************************************************************************/
 
@@ -1514,9 +1527,11 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_QueryModeIDs
+	moHidd_Gfx_QueryModeIDs
 
     SYNOPSIS
+        HIDDT_ModeID *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_QueryModeIDs *msg);
+
 	HIDDT_ModeID *HIDD_Gfx_QueryModeIDs(OOP_Object *gfxHidd, struct TagItem *queryTags);
 
     LOCATION
@@ -1533,13 +1548,17 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
 	querytags - An optional taglist containing query options. Can be NULL.
                     The following tags are supported:
 
-		    tHidd_GfxMode_MinWidth  (ULONG) - A minimum width of modes you are interested in
-		    tHidd_GfxMode_MaxWidth  (ULONG) - A maximum width of modes you are interested in
-		    tHidd_GfxMode_MinHeight (ULONG) - A minimum height of modes you are interested in
-		    tHidd_GfxMode_MaxHeight (ULONG) - A maximum height of modes you are interested in
-		    tHidd_GfxMode_PixFmts   (HIDDT_StdPifXmt *) - A pointer to an array of standard
-			pixelformat indexes. If supplied, only mode IDs whose pixelformat numbers
-			match any of given ones will be returned.
+		    tHidd_GfxMode_MinWidth  (ULONG) - A minimum width of modes you are
+		                                      interested in
+		    tHidd_GfxMode_MaxWidth  (ULONG) - A maximum width of modes you are
+		                                      interested in
+		    tHidd_GfxMode_MinHeight (ULONG) - A minimum height of modes you are
+		                                      interested in
+		    tHidd_GfxMode_MaxHeight (ULONG) - A maximum height of modes you are
+		                                      interested in
+		    tHidd_GfxMode_PixFmts   (HIDDT_StdPifXmt *) - A pointer to an array
+			of standard pixelformat indexes. If supplied, only mode IDs whose
+			pixelformat numbers match any of given ones will be returned.
 
     RESULT
 	A pointer to an array of ModeIDs or NULL in case of failure
@@ -1551,11 +1570,9 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
     BUGS
 
     SEE ALSO
-     HIDD_Gfx_ReleaseModeIDs(), HIDD_Gfx_NextModeID()
+        HIDD_Gfx_ReleaseModeIDs(), HIDD_Gfx_NextModeID()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1629,9 +1646,11 @@ HIDDT_ModeID *GFX__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_ReleaseModeIDs
+	moHidd_Gfx_ReleaseModeIDs
 
     SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_ReleaseModeIDs *msg);
+
 	VOID HIDD_Gfx_ReleaseModeIDs(OOP_Object *gfxHidd, HIDDT_ModeID *modeIDs);
 
     LOCATION
@@ -1658,8 +1677,6 @@ HIDDT_ModeID *GFX__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************************/
 
 VOID GFX__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o,
@@ -1671,10 +1688,13 @@ VOID GFX__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o,
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_NextModeID
+	moHidd_Gfx_NextModeID
 
     SYNOPSIS
-	HIDDT_ModeID HIDD_Gfx_NextModeID(OOP_Object *gfxHidd, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
+        HIDDT_ModeID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_NextModeID *msg);
+
+	HIDDT_ModeID HIDD_Gfx_NextModeID(OOP_Object *gfxHidd, HIDDT_ModeID modeID,
+                                         OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
 
     LOCATION
 	IID_HIDD_Gfx
@@ -1703,8 +1723,6 @@ VOID GFX__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o,
 	HIDD_Gfx_GetMode()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1775,10 +1793,13 @@ HIDDT_ModeID GFX__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o,
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_GetMode
+	moHidd_Gfx_GetMode
 
     SYNOPSIS
-	BOOL HIDD_Gfx_GetMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID, OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_GetMode *msg);
+
+	BOOL HIDD_Gfx_GetMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID,
+	                      OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
 
     LOCATION
 	IID_HIDD_Gfx
@@ -1792,12 +1813,13 @@ HIDDT_ModeID GFX__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o,
 	pixFmtPtr - pointer to a storage where pixelformat object pointer will be placed
 
     RESULT
-	TRUE upon success, FALSE in case of failure (e.g. given mode does not exist in driver's internal database).
-	If the function returns FALSE, sync and pixelformat pointers will be set to NULL.
+	TRUE upon success, FALSE in case of failure (e.g. given mode does not exist in
+	driver's internal database). If the function returns FALSE, sync and pixelformat
+	pointers will be set to NULL.
 
     NOTES
-	Every display mode is associated with some sync and pixelformat object. If the method returns TRUE, object
-	pointers are guaranteed to be valid.
+	Every display mode is associated with some sync and pixelformat object. If the
+	method returns TRUE, object pointers are guaranteed to be valid.
 
     EXAMPLE
 
@@ -1807,8 +1829,6 @@ HIDDT_ModeID GFX__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o,
 	HIDD_Gfx_NextModeID()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1850,9 +1870,11 @@ BOOL GFX__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMo
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_SetMode
+	moHidd_Gfx_SetMode
 
     SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_SetMode *msg);
+
 	BOOL HIDD_Gfx_SetMode(OOP_Object *gfxHidd, OOP_Object *sync);
 
     LOCATION
@@ -1882,8 +1904,6 @@ BOOL GFX__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMo
     INTERNALS
 	Base class implementation just returns FALSE indicating that this method is
 	not supported.
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1930,9 +1950,11 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_Show
+	moHidd_Gfx_Show
 
     SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_Show *msg);
+
 	OOP_Object *HIDD_Gfx_Show(OOP_Object *gfxHidd, OOP_Object *bitMap, ULONG flags);
 
     LOCATION
@@ -1944,31 +1966,33 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	The bitmap object supplied must have been created with aHidd_BitMap_Displayable
 	attribute set to TRUE.
 
-	The function's behavior differs a lot depending on whether the driver uses a framebuffer
-	or video hardware is able to switch screens itself.
+	The function's behavior differs a lot depending on whether the driver uses a
+	framebuffer or video hardware is able to switch screens itself.
 
-	If the driver uses framebuffer bitmap, it is supposed to copy the supplied bitmap into
-	the framebuffer and return a framebuffer pointer. It also can be asked to copy back old
-	framebuffer contents into previous bitmap object. It is driver's job to keep track of
-	which bitmap object was displayed last time. This is what default implementation does. Note
-	that it is very basic, and even does not support changing display resolution. It's not
-	recommended to rely on it in production drivers (unless your video hardware supports only
-	one mode).
+	If the driver uses framebuffer bitmap, it is supposed to copy the supplied bitmap
+	into the framebuffer and return a framebuffer pointer. It also can be asked to
+	copy back old framebuffer contents into previous bitmap object. It is driver's
+	job to keep track of which bitmap object was displayed last time. This is what
+	default implementation does. Note that it is very basic, and even does not support
+	changing display resolution. It's not recommended to rely on it in production
+	drivers (unless your video hardware supports only one mode).
 
-	If the driver does not use a framebuffer, it is supposed to reprogram the hardware here to
-	display an appropriate region of video RAM. Do not call the base class in this case, its
-	implementation relies on framebuffer existance and will always return NULL which indicates
-	an error.
+	If the driver does not use a framebuffer, it is supposed to reprogram the hardware
+	here to display an appropriate region of video RAM. Do not call the base class
+	in this case, its implementation relies on framebuffer existance and will always
+	return NULL which indicates an error.
 
-	It is valid to get NULL value in bitMap parameter. This means that there is nothing to
-	display and the screen needs to be blanked out. It is valid for non-framebuffer-based driver
-	to return NULL as a reply then. In all other cases NULL return value means an error.
+	It is valid to get NULL value in bitMap parameter. This means that there is
+	nothing to display and the screen needs to be blanked out. It is valid for
+	non-framebuffer-based driver to return NULL as a reply then. In all other cases
+	NULL return value means an error.
 
-	Please avoid returning errors at all. graphics.library/LoadView() has no error indication.
-	An error during showing a bitmap would leave the display in unpredictable state.
+	Please avoid returning errors at all. graphics.library/LoadView() has no error
+	indication. An error during showing a bitmap would leave the display in
+	unpredictable state.
 
-	If the driver does not use a framebuffer, consider using HIDD_Gfx_ShowViewPorts(). It's more
-	straightforward, flexible and offers support for screen composition.
+	If the driver does not use a framebuffer, consider using HIDD_Gfx_ShowViewPorts().
+	It's more straightforward, flexible and offers support for screen composition.
 
     INPUTS
 	gfxHidd - a display driver object, whose display you wish to change.
@@ -1993,8 +2017,6 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	HIDD_Gfx_ShowViewPorts(), graphics.library/LoadView()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -2061,9 +2083,11 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_ShowViewPorts
+	moHidd_Gfx_ShowViewPorts
 
     SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_ShowViewPorts *msg);
+
 	ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data);
 
     LOCATION
@@ -2077,18 +2101,19 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	in the list in descending z-order. The driver is expected to put at least frontmost
 	bitmap on display.
 
-	It is valid to get NULL pointer as data parameter. This means that there's nothing to
-	show and the screen should go blank.
+	It is valid to get NULL pointer as data parameter. This means that there's
+	nothing to show and the screen should go blank.
 
-	Bitmaps display offsets are stored in their aHidd_BitMap_XOffset and aHidd_BitMap_YOffset.
-	attributes. This function is not expected to modify their values somehow. They are assumed
-	to be preserved between calls unless changed explicitly by the system.
+	Bitmaps display offsets are stored in their aHidd_BitMap_XOffset and
+	aHidd_BitMap_YOffset attributes. This function is not expected to modify their
+	values somehow. They are assumed to be preserved between calls unless changed
+	explicitly by the system.
 
-	If you implement this method, you don't have to implement HIDD_Gfx_Show() because it
-	will never be called.
+	If you implement this method, you don't have to implement HIDD_Gfx_Show() because
+	it will never be called.
 
-	Note that there is no more error indication - the driver is expected to be error-free
-	here.
+	Note that there is no more error indication - the driver is expected to be
+	error-free here.
 
     INPUTS
 	gfxHidd - a display driver object, whose display you wish to change.
@@ -2110,8 +2135,6 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	Default base class implementation simply returns FALSE. This causes
 	the system to use HIDD_Gfx_Show() instead.
 
-    HISTORY
-
 *****************************************************************************************/
 
 ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
@@ -2123,10 +2146,13 @@ ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_SetCursorShape
+	moHidd_Gfx_SetCursorShape
 
     SYNOPSIS
-	BOOL HIDD_Gfx_SetCursorShape(OOP_Object *gfxHidd, OOP_Object *shape, LONG xoffset, LONG yoffset);
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_SetCursorShape *msg);
+
+	BOOL HIDD_Gfx_SetCursorShape(OOP_Object *gfxHidd, OOP_Object *shape,
+	                             LONG xoffset, LONG yoffset);
 
     LOCATION
 	IID_HIDD_Gfx
@@ -2134,20 +2160,23 @@ ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     FUNCTION
 	Set mouse pointer shape.
 
-	A pointer image is contained in the specified bitmap object. The bitmap object may contain a colormap
-	if the system wants to specify own colors for the pointer. The supplied colormap will also contain alpha
-	channel values.
+	A pointer image is contained in the specified bitmap object. The bitmap object
+	may contain a colormap if the system wants to specify own colors for the pointer.
+	The supplied colormap will also contain alpha channel values.
 
-	It is up to driver what to do if, for example, alpha channel is not supported by the hardware. Or if given
-	bitmap type is not supported (for example truecolor bitmap on LUT-only hardware). It is expected that the
-	driver converts bitmap data to a more appropriate form in such a case.
+	It is up to driver what to do if, for example, alpha channel is not supported by
+	the hardware. Or if given bitmap type is not supported (for example truecolor
+	bitmap on LUT-only hardware). It is expected that the driver converts bitmap
+	data to a more appropriate form in such a case.
 
-	A hotspot is given as an offset from the actual hotspot to the top-left corner of the pointer image. It is
-	generally needed only for hosted display drivers which utilize host's support for mouse pointer.
+	A hotspot is given as an offset from the actual hotspot to the top-left corner
+	of the pointer image. It is generally needed only for hosted display drivers
+	which utilize host's support for mouse pointer.
 
-	The default implementation in the base class just does nothing. A software mouse pointer is implemented
-	in a special layer calles fakegfx.hidd inside graphics.library. If a software pointer emulation is used,
-	this method will never be called.
+	The default implementation in the base class just does nothing. A software mouse
+	pointer is implemented in a special layer calles fakegfx.hidd inside
+	graphics.library. If a software pointer emulation is used, this method will
+	never be called.
 
     INPUTS
 	gfxHidd - a display driver object, for whose display you wish to change the pointer
@@ -2169,8 +2198,6 @@ ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************************/
 
 BOOL GFX__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
@@ -2183,9 +2210,11 @@ BOOL GFX__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_SetCursorVisible
+	moHidd_Gfx_SetCursorVisible
 
     SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_SetCursorVisible *msg);
+
 	VOID HIDD_Gfx_SetCursorVisible(OOP_Object *gfxHidd, BOOL visible);
 
     LOCATION
@@ -2215,8 +2244,6 @@ BOOL GFX__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************************/
 
 VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
@@ -2227,9 +2254,11 @@ VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_SetCursorPos
+	moHidd_Gfx_SetCursorPos
 
     SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_SetCursorPos *msg);
+
 	BOOL HIDD_Gfx_SetCursorPos(OOP_Object *gfxHidd, LONG x, LONG y);
 
     LOCATION
@@ -2238,9 +2267,9 @@ VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
     FUNCTION
 	Set current mouse pointer position.
 
-	This is a real position on top-left image corner relative to top-left corner of the
-	physical display. Neither logical screen origin nor hotspot are taken into account
-	here.
+	This is a real position on top-left image corner relative to top-left corner of
+	the physical display. Neither logical screen origin nor hotspot are taken into
+	account here.
 
 	The default implementation in the base class does nothing and just returns TRUE.
 	If a software pointer emulation is used, this method will never be called.
@@ -2254,9 +2283,9 @@ VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	Always TRUE. Reserved for future, do not use it.
 
     NOTES
-	This method is called by graphics.library/MoveSprite() which has no return value. However,
-	for historical reasons, this method has a return value. Drivers should always return TRUE
-	in order to ensure future compatibility.
+	This method is called by graphics.library/MoveSprite() which has no return value.
+	However, for historical reasons, this method has a return value. Drivers should
+	always return TRUE in order to ensure future compatibility.
 
     EXAMPLE
 
@@ -2266,8 +2295,6 @@ VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	HIDD_Gfx_SetCursorShape(), HIDD_Gfx_SetCursorVisible(), graphics.library/MoveSprite()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -2279,10 +2306,14 @@ BOOL GFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_CopyBox
+	moHidd_Gfx_CopyBox
 
     SYNOPSIS
-	VOID HIDD_Gfx_CopyBox(OOP_Object *gfxHidd, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, OOP_Object *gc);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg);
+
+	VOID HIDD_Gfx_CopyBox(OOP_Object *gfxHidd, OOP_Object *src, WORD srcX, WORD srcY,
+	                      OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, 
+	                      OOP_Object *gc);
 
     LOCATION
 	IID_HIDD_Gfx
@@ -2290,14 +2321,15 @@ BOOL GFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     FUNCTION
 	Perform rectangle copy (blit) operation from one bitmap to another.
     
-	Given bitmaps may belong to different display drivers. The driver may attempt to use
-	hardware for acceleration (if availible), and if it's impossible, pass the operation on
-	to the base class.
+	Given bitmaps may belong to different display drivers. The driver may attempt to
+	use hardware for acceleration (if availible), and if it's impossible, pass the
+	operation on to the base class.
     
-	Always check class of the supplied bitmap before attempting to look at its private data.
+	Always check class of the supplied bitmap before attempting to look at its
+	private data.
     
-	A GC is used in order to specify raster operation performed between the source and
-	destination according to its aHidd_GC_DrawMode attribute value.
+	A GC is used in order to specify raster operation performed between the source
+	and destination according to its aHidd_GC_DrawMode attribute value.
 
     INPUTS
 	gfxHidd - a display driver object that you are going to use for copying
@@ -2315,10 +2347,11 @@ BOOL GFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 	None.
 
     NOTES
-	You must specify valid coordinates (non-negative and inside the actual bitmap area),
-	no checks are done.
+	You must specify valid coordinates (non-negative and inside the actual bitmap
+	area), no checks are done.
 	
-	It is valid to specify two overlapped areas of the same bitmap as source and destination.
+	It is valid to specify two overlapped areas of the same bitmap as source
+	and destination.
 
     EXAMPLE
 
@@ -2327,8 +2360,6 @@ BOOL GFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -2561,15 +2592,19 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     NAME
 	moHidd_Gfx_ShowImminentReset
 
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, OOP_Msg msg);
+
     LOCATION
 	IID_HIDD_Gfx
 
     FUNCTION
 	Indicate upcoming machine reset
 
-	The system calls this method when the machine is about to perform a warm reboot. The driver is expected
-	to blank the screen and reset the hardware to some known idle state. There is no need to preserve an old
-	hardware state and/or current bitmaps data.
+	The system calls this method when the machine is about to perform a warm reboot.
+	The driver is expected to blank the screen and reset the hardware to some known
+	idle state. There is no need to preserve an old hardware state and/or current
+	bitmap's data.
 
     INPUTS
 	None.
@@ -2578,9 +2613,10 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	None.
 
     NOTES
-	This method is obsolete, support for it will go away in future. New drivers should use exec reset callbacks
-	in order to get an upcoming reboot notifications. The reset code can be executed on an unstable system
-	suffering from crash, so using an OOP method here is not a very good idea.
+	This method is obsolete, support for it will go away in future. New drivers
+	should use exec reset callbacks in order to get an upcoming reboot notifications.
+	The reset code can be executed on an unstable system suffering from crash, so
+	using an OOP method here is not a very good idea.
 
     EXAMPLE
 
@@ -2589,8 +2625,6 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -2702,10 +2736,13 @@ VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *o,
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_CheckMode
+	moHidd_Gfx_CheckMode
 
     SYNOPSIS
-	BOOL HIDD_Gfx_CheckMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID, OOP_Object *sync, OOP_Object *pixFmt);
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_CheckMode *msg);
+
+	BOOL HIDD_Gfx_CheckMode(OOP_Object *gfxHidd, HIDDT_ModeID modeID,
+	                        OOP_Object *sync, OOP_Object *pixFmt);
 
     LOCATION
 	IID_HIDD_Gfx
@@ -2713,17 +2750,18 @@ VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *o,
     FUNCTION
 	Check if given display mode is supported by the driver.
 
-	Normally any resolution (sync) can be used together with any pixelformat. However on some hardware
-	there may be exceptions from this rule. In such a case this method should be implemented, and check
-	should be performed.
+	Normally any resolution (sync) can be used together with any pixelformat. However
+	on some hardware there may be exceptions from this rule. In such a case this
+	method should be implemented, and check should be performed.
 
-	The information provided by this method is used in order to exclude unsupported modes from the database
+	The information provided by this method is used in order to exclude unsupported
+	modes from the database
 
 	Default implementation in the base class just returns TRUE for all supplied values.
 
-	Note that this method can not be used in order to chech that the given mode is really present in
-	the database and it really refers to the given sync and pixelformat objects. Use HIDD_Gfx_GetMode() for
-	mode ID validation.
+	Note that this method can not be used in order to chech that the given mode is
+	really present in the database and it really refers to the given sync and
+	pixelformat objects. Use HIDD_Gfx_GetMode() for mode ID validation.
 
     INPUTS
 	gfxHidd - A display driver object
@@ -2739,14 +2777,13 @@ VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *o,
     EXAMPLE
 
     BUGS
-	Currently base class does not call this method after driver object creation. This needs to be fixed.
+	Currently base class does not call this method after driver object creation.
+	This needs to be fixed.
 
     SEE ALSO
 	HIDD_Gfx_GetMode()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -2759,9 +2796,11 @@ BOOL GFX__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Che
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_GetPixFmt
+	moHidd_Gfx_GetPixFmt
 
     SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *o, struct pHidd_Gfx_GetPixFmt *msg); 
+
 	OOP_Object *HIDD_Gfx_GetPixFmt(OOP_Object *gfxHidd, HIDDT_StdPixFmt pixFmt);
 
     LOCATION
@@ -2792,8 +2831,6 @@ BOOL GFX__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Che
 	This operation can never fail because all standard pixelformats are registered
 	during early system initialization.
 
-    HISTORY
-
 *****************************************************************************************/
 
 OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetPixFmt *msg) 
@@ -2816,9 +2853,11 @@ OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_GetSync
+	moHidd_Gfx_GetSync
 
     SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_GetSync *msg);
+
 	OOP_Object *HIDD_Gfx_GetSync(OOP_Object *gfxHidd, ULONG num);
 
     LOCATION
@@ -2844,8 +2883,6 @@ OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************************/
 
 OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetSync *msg) 
@@ -2863,10 +2900,13 @@ OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_ModeProperties
+	moHidd_Gfx_ModeProperties
 
     SYNOPSIS
-	ULONG HIDD_Gfx_ModeProperties(OOP_Object *gfxHidd, HIDDT_ModeID modeID, struct HIDD_ModeProperties *props, ULONG propsLen);
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_ModeProperties *msg);
+
+	ULONG HIDD_Gfx_ModeProperties(OOP_Object *gfxHidd, HIDDT_ModeID modeID,
+	                              struct HIDD_ModeProperties *props, ULONG propsLen);
 
     LOCATION
 	IID_HIDD_Gfx
@@ -2903,8 +2943,6 @@ OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	Default implementation in the base class relies on aHidd_Gfx_SupportsHWCursor attribute,
 	not vice versa. If you override this method, do not forget to override this attribute too.
 
-    HISTORY
-
 *****************************************************************************************/
 
 ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
@@ -2932,9 +2970,11 @@ ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_GetGamma
+	moHidd_Gfx_GetGamma
 
     SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_Gamma *msg);
+
 	BOOL HIDD_Gfx_GetGamma(OOP_Object *gfxHidd, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 
     LOCATION
@@ -2943,11 +2983,12 @@ ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_G
     FUNCTION
 	Get current gamma table for the display.
 
-	A gamma table consists of three 256-byte tables: one for red component, one for green
-	and one for blue.
+	A gamma table consists of three 256-byte tables: one for red component, one for
+	green and one for blue.
 
-	A user should supply three pointers to preallocated 256-byte tables which will be filled in.
-	Any ot these pointers may have NULL value, in this case the respective component will be ignored.
+	A user should supply three pointers to preallocated 256-byte tables which will
+	be filled in. Any ot these pointers may have NULL value, in this case the
+	respective component will be ignored.
 
     INPUTS
 	gfxHidd - A display driver object
@@ -2971,8 +3012,6 @@ ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************************/
 
 BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamma *msg)
@@ -2983,9 +3022,11 @@ BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamm
 /*****************************************************************************************
 
     NAME
-	HIDD_Gfx_SetGamma
+	moHidd_Gfx_SetGamma
 
     SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_Gamma *msg);
+
 	BOOL HIDD_Gfx_SetGamma(OOP_Object *gfxHidd, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 
     LOCATION
@@ -2994,12 +3035,12 @@ BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamm
     FUNCTION
 	Set current gamma table for the display.
 
-	A gamma table consists of three 256-byte tables: one for red component, one for green
-	and one for blue.
+	A gamma table consists of three 256-byte tables: one for red component, one for
+	green and one for blue.
 
-	A user should supply three pointers to 256-byte tables from which gamma values will
-	be picked up. Any ot these pointers may have NULL value, in this case the respective
-	component will be ignored.
+	A user should supply three pointers to 256-byte tables from which gamma values
+	will be picked up. Any ot these pointers may have NULL value, in this case the
+	respective component will be ignored.
 
     INPUTS
 	gfxHidd - A display driver object
@@ -3022,8 +3063,6 @@ BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamm
 	HIDD_Gfx_GetGamma()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************************/
 
