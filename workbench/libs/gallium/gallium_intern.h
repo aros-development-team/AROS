@@ -41,12 +41,6 @@ struct GalliumBase
     OOP_Object                  *driver;
 };
 
-struct IntGalliumHandle
-{
-    struct GalliumHandle    Base;
-    OOP_Object              *GalliumDriver;
-};
-
 OOP_Object * SelectGalliumDriver();
 
 #define GB(lb)  ((struct GalliumBase *)lb)

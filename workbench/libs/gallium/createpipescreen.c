@@ -9,7 +9,7 @@
 
     NAME */
 
-      AROS_LH1(struct GalliumHandle *, CreateGalliumHandle,
+      AROS_LH1(struct pipe_screen *, CreatePipeScreen,
 
 /*  SYNOPSIS */ 
       AROS_LHA(struct TagItem *, tagItem, A0),
@@ -20,14 +20,13 @@
 /*  NAME
  
     FUNCTION
-    Creates a gallium handle. If succesull, the PipeScreen field of returned
-    handle contains a created and initialized pipe_screen object.
+    Creates a gallium pipe screen.
  
     INPUTS
     tagItem - a pointer to tags to be used during creation.
  
     RESULT
-    A valid GalliumHandle instance or NULL of creation was not succesfull.
+    A valid pipe screen instance or NULL of creation was not succesfull.
  
     BUGS
 
@@ -39,7 +38,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct IntGalliumHandle * handle = NULL;
+    struct pipe_screen * screen = NULL;
 
     ObtainSemaphore(&GB(GalliumBase)->driversemaphore);
 
@@ -51,24 +50,15 @@
     if(GB(GalliumBase)->driver)
     {
         /* Create screen */
-        struct pipe_screen * screen = NULL;
         struct pHidd_Gallium_CreatePipeScreen cpsmsg;
         
         cpsmsg.mID = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_CreatePipeScreen);
         screen = (struct pipe_screen *)OOP_DoMethod(GB(GalliumBase)->driver, (OOP_Msg)&cpsmsg);
-        
-        if (screen)
-        {
-            /* Create handle */
-            handle = AllocVec(sizeof(struct IntGalliumHandle), MEMF_PUBLIC | MEMF_CLEAR);
-            handle->Base.PipeScreen = screen;
-            handle->GalliumDriver = GB(GalliumBase)->driver;
-        }
     }
     
     ReleaseSemaphore(&GB(GalliumBase)->driversemaphore);
 
-    return (struct GalliumHandle *)handle;
+    return screen;
 
     AROS_LIBFUNC_EXIT
 }

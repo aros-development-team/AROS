@@ -9,10 +9,10 @@
 
     NAME */
 
-      AROS_LH1(void, DestroyGalliumHandle,
+      AROS_LH1(void, DestroyPipeScreen,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(struct GalliumHandle *, handle, A0),
+      AROS_LHA(struct pipe_screen *, screen, A0),
 
 /*  LOCATION */
       struct Library *, GalliumBase, 6, Gallium)
@@ -20,15 +20,14 @@
 /*  NAME
  
     FUNCTION
-    Frees resources associated with the handle.
+    Disposes the pipe screen
  
     INPUTS
-    handle - a pointer to GalliumHandle structure. A NULL pointer will be
+    handle - a pointer to pipe screen structure. A NULL pointer will be
            ignored.
  
     RESULT
-    The resources associated with handle are freed and should no longer be
-    used.
+    The pipe screen is freed. Don't use it anymore.
  
     BUGS
 
@@ -40,14 +39,9 @@
 {
     AROS_LIBFUNC_INIT
     
-    if (handle)
+    if (screen)
     {
-        if (handle->PipeScreen)
-        {
-            handle->PipeScreen->destroy(handle->PipeScreen);
-        }
-        
-        FreeVec(handle);
+        screen->destroy(screen);
     }
     
     AROS_LIBFUNC_EXIT

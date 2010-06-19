@@ -8,9 +8,4 @@
 
 #include <gallium/pipe/p_screen.h>
 
-struct GalliumHandle
-{
-    struct pipe_screen * PipeScreen;
-};
-
 #endif
