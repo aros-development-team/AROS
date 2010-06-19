@@ -7,20 +7,24 @@
 */
 
 #ifndef EXEC_TYPES_H
-#include <exec/types.h>
+#   include <exec/types.h>
 #endif
 
 #ifndef HIDD_HIDD_H
-#include <hidd/hidd.h>
+#   include <hidd/hidd.h>
 #endif
 
 #ifndef OOP_OOP_H
-#include <oop/oop.h>
+#   include <oop/oop.h>
 #endif
 
 #ifndef P_AROS_VERSION_H
 /* Gallium3D interface version. This is separate from gallium.hidd versioning */
-#include <gallium/pipe/p_aros_version.h>
+#   include <gallium/pipe/p_aros_version.h>
+#endif
+
+#ifndef U_SIMPLE_SCREEN_H
+#   include <gallium/util/u_simple_screen.h>
 #endif
 
 /* Gallium interface */
@@ -81,6 +85,12 @@ struct pHidd_Gallium_DestroyPipeScreen
 {
     OOP_MethodID    mID;
     APTR            screen;
+};
+
+struct HIDDT_WinSys
+{
+    struct pipe_winsys  base;
+    OOP_Object          *driver;
 };
 
 /* Gallium DriverFactory class */
