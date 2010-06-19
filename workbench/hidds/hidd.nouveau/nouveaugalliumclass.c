@@ -18,7 +18,7 @@
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
 
 struct HiddNouveauWinSys {
-    struct pipe_winsys base;
+    struct HIDDT_WinSys base;
 
     struct pipe_screen *pscreen;
 };
@@ -196,10 +196,9 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
 
     nvws = CALLOC_STRUCT(HiddNouveauWinSys);
     if (!nvws) {
-        nouveau_device_close(&dev);
         return NULL;
     }
-    ws = &nvws->base;
+    ws = &nvws->base.base;
     ws->destroy = HiddNouveauDestroyWinSys;
 
     nvws->pscreen = init(ws, dev);
@@ -209,7 +208,10 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     }
     
     nvws->pscreen->flush_frontbuffer = HiddNouveauFlushFrontBuffer;
-
+    
+    /* Preserve pointer to HIDD driver */
+    nvws->base.driver = o;
+    
     return nvws->pscreen;
 }
 
