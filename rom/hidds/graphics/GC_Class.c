@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics gc class implementation.
@@ -29,7 +29,259 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_UserData -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        User data
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+    aoHidd_GC_BitMap -- [I.G]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Bitmap which this gc uses.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_Foreground -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Foreground color
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_Background -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Background color
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_DrawMode -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Draw mode
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_Font -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Current font
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_ColorMask -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Prevents some color bits from changing.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_LinePattern -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Pattern for line drawing
+    
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_LinePatternCnt -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Pattern start bit for line drawing.
+    
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_PlaneMask -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Shape bitmap 
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_GC_ColorExpansionMode -- [.SG]
+
+    LOCATION
+	IID_HIDD_GC
+
+    FUNCTION
+        Mode for color expansion
+    
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
 
 VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg);
 
@@ -192,7 +444,41 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_GC_SetClipRect
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_GC_SetClipRect *msg);
+
+        VOID HIDD_GC_SetClipRect(OOP_Object *obj, LONG x1, LONG y1, LONG x2, LONG y2);
+
+    LOCATION
+        IID_HIDD_GC
+
+    FUNCTION
+
+    INPUTS
+        obj -
+        x1  -
+        y1  -
+        x2  -
+        y2  -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetClipRect *msg)
 {
@@ -208,7 +494,37 @@ VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetC
      data->doClip = TRUE;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_GC_UnsetClipRect
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_GC_UnsetClipRect *msg);
+
+        VOID HIDD_GC_UnsetClipRect(OOP_Object *obj);
+
+    LOCATION
+        IID_HIDD_GC
+
+    FUNCTION
+
+    INPUTS
+        obj -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID GC__Hidd_GC__UnsetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_UnsetClipRect *msg)
 {
@@ -219,5 +535,3 @@ VOID GC__Hidd_GC__UnsetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_Un
      data->doClip = FALSE;
     
 }
-
-/****************************************************************************************/

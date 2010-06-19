@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics colormap class implementation.
@@ -27,7 +27,28 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+	aoHidd_ColorMap_NumEntries -- [I.G], ULONG
+
+    LOCATION
+	IID_HIDD_ColorMap
+
+    FUNCTION
+        Number of colors in the colormap.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 OOP_Object *CM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -171,7 +192,42 @@ static inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelForma
     return color->pixval;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_ColorMap_SetColors
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_ColorMap_SetColors *msg);
+
+        BOOL HIDD_CM_SetColors(OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor,
+                               ULONG numColors, OOP_Object *pixFmt);
+
+    LOCATION
+        IID_HIDD_ColorMap
+
+    FUNCTION
+
+    INPUTS
+        obj        -
+        colors     -
+        firstColor -
+        numColors  -
+        pixFmt     -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
 				  struct pHidd_ColorMap_SetColors *msg)
@@ -241,7 +297,38 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
     return TRUE;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_ColorMap_GetPixel
+
+    SYNOPSIS
+        HIDDT_Pixel OOP_DoMethod(OOP_Object *obj, struct pHidd_ColorMap_GetPixel *msg);
+
+        HIDDT_Pixel HIDD_CM_GetPixel(OOP_Object *obj, ULONG pixelNo);
+
+    LOCATION
+        IID_HIDD_ColorMap
+
+    FUNCTION
+
+    INPUTS
+        obj     -
+        pixelNo -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 					struct pHidd_ColorMap_GetPixel *msg)
@@ -264,7 +351,39 @@ HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
     return data->clut.colors[msg->pixelNo].pixval;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_ColorMap_GetColor
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *o, struct pHidd_ColorMap_GetColor *msg);
+
+        BOOL HIDD_CM_GetColor(OOP_Object *obj, ULONG colorNo, HIDDT_Color *colorReturn);
+
+    LOCATION
+        IID_HIDD_ColorMap
+
+    FUNCTION
+
+    INPUTS
+        obj         -
+        colorNo     -
+        colorReturn -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 BOOL CM__Hidd_ColorMap__GetColor(OOP_Class *cl, OOP_Object *o,
 				 struct pHidd_ColorMap_GetColor *msg)
@@ -286,5 +405,3 @@ BOOL CM__Hidd_ColorMap__GetColor(OOP_Class *cl, OOP_Object *o,
     
     return TRUE;
 }
-
-/****************************************************************************************/

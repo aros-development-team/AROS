@@ -111,7 +111,447 @@
         
 #define PIXBUF_FREE(buf) \
     if (buf) FreeVec(buf);
-    
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_Width -- [ISG]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Bitmap with
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_Height -- [ISG]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Bitmap height
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_Displayable -- [I.G], BOOL
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Bitmap is displayable (default: FALSE)
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_Visible -- [..G]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Check if a bitmap is visible
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_IsLinearMem -- [..G]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Is the bitmap memory contigous?
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_BytesPerRow -- [..G]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Number of bytes in a row 
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_ColorMap -- [..G]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Colormap of the bitmap
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_Friend -- [I.G]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Friend bitmap. The bitmap will be allocated so that it
+        is optimized for blitting to this bitmap.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_GfxHidd -- [..G]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Pointer to the gfxhidd object this bitmap was created with.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_StdPixFmt -- [I..], HIDDT_StdPixFmt
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        What stdpixel format the bitmap should have.
+        This is a shortcut to create a bitmap with a std pixelformat.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_PixFmt -- [..G], OOP_Object *
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        This is complete pixmft of a bitmap.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_ModeID -- [I.G], HIDDT_ModeID
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Must be passed on initialization of aHidd_BitMap_Displayable=TRUE bitmaps.
+        May also be used with non-displayable bitmaps.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_ClassPtr -- [I.G]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Only used by subclasses of the gfx hidd.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_ClassID -- [I..]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Only used by subclasses of the gfx hidd
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_PixFmtTags -- [I..]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Only used by subclasses of BitMap class.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_FrameBuffer -- [I.G], BOOL
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Allocate framebuffer
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_LeftEdge -- [.SG]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Left edge position of the bitmap
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_TopEdge -- [.SG]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Top edge position of the bitmap.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_BitMap_Align -- [I..]
+
+    LOCATION
+	IID_HIDD_BitMap
+
+    FUNCTION
+        Number of pixels to align bitmap data width to
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
 /****************************************************************************************/
 
 OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
@@ -433,7 +873,41 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
 #define UB(x) ((UBYTE *)x)
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_SetColors
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_SetColors *msg);
+
+        BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors,
+                                ULONG firstColor, ULONG numColors);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj        -
+        colors     -
+        firstColor -
+        numColors  -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
@@ -472,14 +946,16 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
 /*****************************************************************************************
 
-    BitMap::DrawPixel()
-
     NAME
         moHidd_BitMap_DrawPixel
 
     SYNOPSIS
-        OOP_DoMethod(obj, WORD x, WORD y);
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawPixel *msg);
 
+        ULONG HIDD_BM_DrawPixel(OOP_Object *obj, OOP_Object *gc, WORD x, WORD y);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Changes the pixel at (x,y). The color of the pixel depends on the
@@ -487,7 +963,9 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
         This function does not the coordinates.
 
     INPUTS
-        (x,y) - coordinates of the pixel in hidd units
+        obj  -
+        gc   -
+        x, y - coordinates of the pixel in hidd units
 
     RESULT
 
@@ -596,18 +1074,25 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
 
 /*****************************************************************************************
 
-    BitMap::DrawLine()
-
     NAME
-        DrawLine
+        moHidd_BitMap_DrawLine
 
     SYNOPSIS
-        OOP_DoMethod(obj, WORD x1, WORD y1, WORD x2, WORD y2);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawPixel *msg);
+
+        VOID HIDD_BM_DrawLine(OOP_Object *obj, OOP_Object *gc, WORD x1, WORD y1,
+                              WORD x2, WORD y2);
+
+    LOCATION
+        IID_HIDD_BitMap
 
    FUNCTION
         Draws a line from (x1,y1) to (x2,y2) in the specified gc.
         The function does not clip the line against the drawing area.
 
+    INPUTS
+        obj   -
+        gc    -
         x1,y1 - start point of the line in hidd units
         x2,y2 - end point of the line in hidd units
 
@@ -629,8 +1114,6 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
          Optimize remove if t == 1 ...
 	 Implement better clipping: Should be no reason to calculate
 	 more than the part of the line that is inside the cliprect
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -862,22 +1345,27 @@ VOID BM__Hidd_BitMap__DrawLine
 
 /*****************************************************************************************
 
-    BitMap::DrawRect()
-
     NAME
-        DrawRect
+        moHidd_BitMap_DrawRect
 
     SYNOPSIS
-        OOP_DoMethod(obj,  WORD minX, WORD minY, WORD maxX, WORD maxY);
+        OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawRect *msg);
+
+        VOID HIDD_BM_DrawRect (OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY,
+                          WORD maxX, WORD maxY);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
-
         Draws a hollow rectangle from. minX and minY specifies the upper
         left corner of the rectangle. minY and maxY specifies the lower
         right corner of the rectangle.
         The function does not clip the rectangle against the drawing area.
 
     INPUTS
+        obj        -
+        gc         -
         minX, minY - upper left corner of the rectangle in hidd units
         maxX, maxY - lower right corner of the rectangle in hidd units
 
@@ -895,8 +1383,6 @@ VOID BM__Hidd_BitMap__DrawLine
     INTERNALS
 
     TODO
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -921,13 +1407,17 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
 
 /*****************************************************************************************
 
-    BitMap::FillRect()
-
     NAME
-        FillRect
+        moHidd_BitMap_FillRect
 
     SYNOPSIS
-        OOP_DoMethod(obj,  WORD minX, WORD minY, WORD maxX, WORD maxY);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawRect *msg);
+
+        VOID HIDD_BM_FillRect (OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY,
+                               WORD maxX, WORD maxY);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
 
@@ -937,6 +1427,8 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
         The function does not clip the rectangle against the drawing area.
 
     INPUTS
+        obj        -
+        gc         -
         minX, minY - upper left corner of the rectangle in hidd units
         maxX, maxY - lower right corner of the rectangle in hidd units
 
@@ -955,8 +1447,6 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
 
     TODO
         Fill with pattern
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -984,13 +1474,17 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
 
 /*****************************************************************************************
 
-    BitMap::DrawEllipse()
-
     NAME
-        DrawEllipse
+        moHidd_BitMap_DrawEllipse
 
     SYNOPSIS
-        OOP_DoMethod(obj, WORD x, WORD y, UWORD rx, UWORD ry);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawEllipse *msg);
+
+        VOID HIDD_BM_DrawEllipse (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y,
+                                  WORD rx, WORD ry);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Draws a hollow ellipse from the center point (x/y) with the radii
@@ -998,6 +1492,8 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
         The function does not clip the ellipse against the drawing area.
 
     INPUTS
+        obj   -
+        gc    -
         x,y   - center point in hidd units
         rx,ry - ry and ry radius in hidd units
 
@@ -1018,8 +1514,6 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
 
     TODO
         Bugfix
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1143,13 +1637,17 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
 
 /*****************************************************************************************
 
-    BitMap::FillEllipse()
-
     NAME
-        FillEllipse
+        moHidd_BitMap_FillEllipse
 
     SYNOPSIS
-        OOP_DoMethod(obj, WORD x, WORD y, UWORD rx, UWORD ry);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawEllipse *msg);
+
+        VOID HIDD_BM_FillEllipse (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y,
+                                  WORD ry, WORD rx);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Draws a solid ellipse from the center point (x/y) with the radii
@@ -1157,6 +1655,8 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
         The function does not clip the ellipse against the drawing area.
 
     INPUTS
+        obj   -
+        gc    -
         x,y   - center point in hidd units
         rx,ry - ry and ry radius in hidd units
 
@@ -1176,8 +1676,6 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
 
     TODO
         Bugfix
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1244,20 +1742,24 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
 
 /*****************************************************************************************
 
-
-    BitMap::DrawPolygon()
-
     NAME
-        DrawPolygon
+        moHidd_BitMap_DrawPolygon
 
     SYNOPSIS
-        OOP_DoMethod(obj, UWORD n, WORD coords[2*n]);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawPolygon *msg);
+
+        VOID HIDD_BM_DrawPolygon (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Draws a hollow polygon from the list of coordinates in coords[].
         The function does not clip the polygon against the drawing area.
 
     INPUTS
+        obj    -
+        gc     -
         n      - number of coordinate pairs
         coords - array of n (x, y) coordinates in hidd units
 
@@ -1275,8 +1777,6 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
     INTERNALS
 
     TODO
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1299,13 +1799,16 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
 
 /*****************************************************************************************
 
-    BitMap::FillPolygon()
-
     NAME
-        FillPolygon()
+        moHidd_BitMap_FillPolygon
 
     SYNOPSIS
-        OOP_DoMethod(obj, UWORD n, WORD coords[2*n]);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawPolygon *msg);
+
+        VOID HIDD_BM_FillPolygon (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Draws a solid polygon from the list of coordinates in coords[].
@@ -1315,6 +1818,8 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
         The function does not clip the polygon against the drawing area.
 
     INPUTS
+        obj    -
+        gc     -
         n      - number of coordinate pairs
         coords - array of n (x, y) coordinates in hidd units
 
@@ -1333,8 +1838,6 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
 
     TODO
 
-    HISTORY
-
 *****************************************************************************************/
 
 VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
@@ -1349,19 +1852,25 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
 
 /*****************************************************************************************
 
-    BitMap::DrawText()
-
     NAME
-        DrawText()
+        moHidd_BitMap_DrawText
 
     SYNOPSIS
-        OOP_DoMethod(obj, WORD x, WORD y, STRPTR text, UWORD length);
+        OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawText *msg);
+
+        VOID HIDD_BM_DrawText (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y,
+                               STRPTR text, UWORD length);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Draws the first length characters of text at (x, y).
         The function does not clip the text against the drawing area.
 
     INPUTS
+        obj    -
+        gc     -
         x, y   - Position to start drawing in hidd units. The x
                  coordinate is relativ to the left side of the
                  first character.
@@ -1385,8 +1894,6 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
     TODO
         - Color fonts
         - Fontstyle
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1463,13 +1970,17 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
 
 /*****************************************************************************************
 
-    BitMap::DrawFillText ()
-
     NAME
-        DrawFillText()
+        moHidd_BitMap_FillText
 
     SYNOPSIS
-        OOP_DoMethod(obj, WORD x, WORD y, STRPTR text, UWORD length);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawText *msg);
+
+        VOID HIDD_BM_FillText (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y,
+                               STRPTR text, UWORD length);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Fills the area of the text with the background color
@@ -1477,6 +1988,8 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
         The function does not clip the text against the drawing area.
 
     INPUTS
+        obj    -
+        gc     -
         x, y   - Position to start drawing in hidd units. The x
                  coordinate is relativ to the left side of the
                  first character.
@@ -1499,8 +2012,6 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
 
     TODO
 
-    HISTORY
-
 *****************************************************************************************/
 
 VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
@@ -1515,13 +2026,14 @@ VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
 /*****************************************************************************************
 
-    BitMap::FillSpan()
-
     NAME
-        FillSpan()
+        moHidd_BitMap_FillSpan
 
     SYNOPSIS
-        OOP_DoMethod(obj, HIDDT_Span span);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawText *msg);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Draws a solid from a shape description in the specified bitmap. This
@@ -1544,8 +2056,6 @@ VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
     TODO
 
-    HISTORY
-
 *****************************************************************************************/
 
 VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
@@ -1560,13 +2070,16 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
 /*****************************************************************************************
 
-    BitMap::Clear()
-
     NAME
-        Clear()
+        moHidd_BitMap_Clear
 
     SYNOPSIS
-        OOP_DoMethod(obj);
+        OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_Clear *msg);
+
+        VOID HIDD_BM_Clear (OOP_Object *obj, OOP_Object *gc);
+
+    LOCATION
+        IID_HIDD_BitMap
 
     FUNCTION
         Sets all pixels of the drawing area to the background color.
@@ -1574,6 +2087,8 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         similar in both modes.
 
     INPUTS
+        obj -
+        gc  -
 
     RESULT
 
@@ -1588,8 +2103,6 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
     INTERNALS
 
     TODO
-
-    HISTORY
 
 *****************************************************************************************/
 
@@ -1651,7 +2164,44 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
     return bpp;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_GetImage
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_GetImage *msg);
+
+        VOID HIDD_BM_GetImage (OOP_Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y,
+                               WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj    -
+        pixels -
+        modulo -
+        x, y   -
+        width  -
+        height -
+        pixFmt -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
 			       struct pHidd_BitMap_GetImage *msg)
@@ -1768,7 +2318,45 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::GetImage");
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_PutImage
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutImage *msg);
+
+        VOID HIDD_BM_PutImage (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo,
+                               WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj    -
+        gc     -
+        pixels -
+        modulo -
+        x, y   -
+        width  -
+        height -
+        pixFmt -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 			       struct pHidd_BitMap_PutImage *msg)
@@ -1902,6 +2490,45 @@ __attribute__((always_inline, const)) do_alpha(int a, int v)
     int tmp  = (a*v);
     return ((tmp<<8) + tmp + 32768)>>16;
 }
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_PutAlphaImage
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutAlphaImage *msg);
+
+        VOID HIDD_BM_PutAlphaImage (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo,
+                                    WORD x, WORD y, WORD width, WORD height);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj    -
+        gc     -
+        pixels -
+        modulo -
+        x, y   -
+        width  -
+        height -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
 				    struct pHidd_BitMap_PutAlphaImage *msg)
@@ -2077,7 +2704,46 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::PutAlphaImage");
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_PutTemplate
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutTemplate *msg);
+
+        VOID HIDD_BM_PutTemplate (OOP_Object *obj, OOP_Object *gc, UBYTE *template, ULONG modulo,
+                                  WORD srcx, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj            -
+        gc             -
+        template       -
+        modulo         -
+        srcx           -
+        x, y           -
+        width          -
+        height         -
+        inverttemplate -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
 				  struct pHidd_BitMap_PutTemplate *msg)
@@ -2288,7 +2954,45 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::PutTemplate");
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_PutAlphaTemplate
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutAlphaTemplate *msg);
+
+        VOID HIDD_BM_PutAlphaTemplate (OOP_Object *obj, OOP_Object *gc, UBYTE *alpha, ULONG modulo,
+                                       WORD x, WORD y, WORD width, WORD height, BOOL invertalpha);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj         -
+        gc          -
+        alpha       -
+        modulo      -
+        x, y        -
+        width       -
+        height      -
+        invertalpha -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
 				       struct pHidd_BitMap_PutAlphaTemplate *msg)
@@ -2553,7 +3257,55 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::PutAlphaTemplate");
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_PutPattern
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *o, struct pHidd_BitMap_PutPattern *msg);
+
+        VOID HIDD_BM_PutPattern(OOP_Object *obj, OOP_Object *gc, UBYTE *pattern,
+                                WORD patternsrcx, WORD patternsrcy, WORD patternheight, WORD patterndepth,
+                                HIDDT_PixelLUT *patternlut, BOOL invertpattern, UBYTE *mask,
+                                ULONG maskmodulo, WORD masksrcx, WORD x, WORD y,
+                                WORD width, WORD height);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj           -
+        gc            -
+        pattern       -
+        patternsrcx   -
+        patternsrcy   -
+        patternheight -
+        patterndepth  -
+        patternlut    -
+        invertpattern -
+        mask          -
+        maskmodulo    -
+        masksrcx      -
+        x, y          -
+        width         -
+        height        -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 				 struct pHidd_BitMap_PutPattern *msg)
@@ -2884,7 +3636,45 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::PutPattern");
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_PutImageLUT
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg);
+
+        VOID HIDD_BM_PutImageLUT (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo,
+                                  WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj    -
+        gc     -
+        pixels -
+        modulo -
+        x, y   -
+        width  -
+        height -
+        pixlut -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 				  struct pHidd_BitMap_PutImageLUT *msg)
@@ -2973,6 +3763,47 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 
     ReturnVoid("BitMap::PutImageLUT");
 }
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_PutTranspImageLUT
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutTranspImageLUT *msg);
+
+        VOID HIDD_BM_PutTranspImageLUT (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels,
+                                        ULONG modulo, WORD x, WORD y, WORD width, WORD height,
+                                        HIDDT_PixelLUT *pixlut, UBYTE transparent);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj         -
+        gc          -
+        pixels      -
+        modulo      -
+        x, y        -
+        width       -
+        height      -
+        pixlut      -
+        transparent -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
 					struct pHidd_BitMap_PutTranspImageLUT *msg)
@@ -3083,7 +3914,44 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::PutTranspImageLUT");
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_GetImageLUT
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_GetImageLUT *msg);
+
+        VOID HIDD_BM_GetImageLUT (OOP_Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y,
+                                  WORD width, WORD height, HIDDT_PixelLUT *pixlut);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj    -
+        pixels -
+        modulo -
+        x, y   -
+        width  -
+        height -
+        pixlut -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 				  struct pHidd_BitMap_GetImageLUT *msg)
@@ -3161,7 +4029,47 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::GetImageLUT");
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_BlitColorExpansion
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_BlitColorExpansion *msg);
+
+        VOID HIDD_BM_BlitColorExpansion (OOP_Object *obj, OOP_Object *gc, OOP_Object *srcBitMap,
+                                         WORD srcX, WORD srcY, WORD destX, WORD destY,
+                                         UWORD width, UWORD height);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj       -
+        gc        -
+        srcBitMap -
+        srcX      -
+        srcY      -
+        destX     -
+        destY     -
+        width     -
+        height    -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 					 struct pHidd_BitMap_BlitColorExpansion *msg)
@@ -3225,7 +4133,39 @@ else
 
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_BytesPerLine
+
+    SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_BytesPerLine *msg);
+
+        ULONG HIDD_BM_BytesPerLine(OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj    -
+        pixFmt -
+        width  -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BytesPerLine *msg)
 {
@@ -3321,7 +4261,38 @@ VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     return;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_SetColorMap
+
+    SYNOPSIS
+        OOP_Object * OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_SetColorMap *msg);
+
+        OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj      -
+        colorMap -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 OOP_Object *BM__Hidd_BitMap__SetColorMap(OOP_Class *cl, OOP_Object *o,
 					 struct pHidd_BitMap_SetColorMap *msg)
@@ -3337,7 +4308,38 @@ OOP_Object *BM__Hidd_BitMap__SetColorMap(OOP_Class *cl, OOP_Object *o,
     return old;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_MapColor
+
+    SYNOPSIS
+        HIDDT_Pixel OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_MapColor *msg);
+
+        HIDDT_Pixel HIDD_BM_MapColor(OOP_Object *obj, HIDDT_Color *color);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj   -
+        color -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
 				      struct pHidd_BitMap_MapColor *msg)
@@ -3383,7 +4385,39 @@ HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
     return msg->color->pixval;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_UnmapPixel
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_UnmapPixel *msg);
+
+        VOID HIDD_BM_UnmapPixel(OOP_Object *obj, HIDDT_Pixel pixel, HIDDT_Color *color);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj   -
+        pixel -
+        color -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__UnmapPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
 {
@@ -3426,7 +4460,45 @@ VOID BM__Hidd_BitMap__UnmapPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
     msg->color->pixval	= msg->pixel;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_ObtainDirectAccess
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_ObtainDirectAccess *msg);
+
+        BOOL HIDD_BM_ObtainDirectAccess(OOP_Object *obj, UBYTE **addressReturn,
+                                        ULONG *widthReturn, ULONG *heightReturn,
+                                        ULONG *bankSizeReturn, ULONG *memSizeReturn);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj            -
+        addressReturn  -
+        widthReturn    -
+        heightReturn   -
+        bankSizeReturn -
+        memSizeReturn  -
+
+    RESULT
+        BOOL
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 BOOL BM__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
 					 struct pHidd_BitMap_ObtainDirectAccess *msg)
@@ -3435,7 +4507,37 @@ BOOL BM__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
     return FALSE;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_ReleaseDirectAccess
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_ReleaseDirectAccess *msg);
+
+        VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
 					  struct pHidd_BitMap_ReleaseDirectAccess *msg)
@@ -3446,7 +4548,42 @@ VOID BM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
      return;
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_BitMapScale
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_BitMapScale * msg);
+
+        VOID HIDD_BM_BitMapScale(OOP_Object *obj, OOP_Object *src, OOP_Object *dest,
+                                 struct BitScaleArgs * bsa, OOP_Object *gc);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj  -
+        src  -
+        dest -
+        bsa  -
+        gc   -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
 				  struct pHidd_BitMap_BitMapScale * msg)
@@ -3522,6 +4659,41 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
     FreeVec(srcbuf);
 }
 
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_SetRGBConversionFunction
+
+    SYNOPSIS
+        HIDDT_RGBConversionFunction
+        OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_SetRGBConversionFunction *msg);
+
+        HIDDT_RGBConversionFunction
+        HIDD_BM_SetRGBConversionFunction(OOP_Object *obj, HIDDT_StdPixFmt srcPixFmt,
+                                         HIDDT_StdPixFmt dstPixFmt, 
+                                         HIDDT_RGBConversionFunction function);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
 HIDDT_RGBConversionFunction BM__Hidd_BitMap__SetRGBConversionFunction(OOP_Class * cl, OOP_Object *o,
 				    	            	    	      struct pHidd_BitMap_SetRGBConversionFunction * msg)
 {
@@ -3545,7 +4717,40 @@ HIDDT_RGBConversionFunction BM__Hidd_BitMap__SetRGBConversionFunction(OOP_Class 
     }
 }
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_BitMap_UpdateRect
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_UpdateRect *msg);
+
+        VOID HIDD_BM_UpdateRect(OOP_Object *obj, WORD x, WORD y, WORD width, WORD height);
+
+    LOCATION
+        IID_HIDD_BitMap
+
+    FUNCTION
+
+    INPUTS
+        obj    -
+        x, y   -
+        width  -
+        height -
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID BM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg) {
     /* baseclass version does nothing */
