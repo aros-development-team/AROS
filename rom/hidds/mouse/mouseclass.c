@@ -103,7 +103,10 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 /*****************************************************************************************
 
     NAME
-	aoHidd_Mouse_IrqHandler -- [I..], APTR
+	aoHidd_Mouse_IrqHandler
+
+    SYNOPSIS
+	[I..], APTR
 
     LOCATION
 	IID_Hidd_Mouse
@@ -154,7 +157,10 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 /*****************************************************************************************
 
     NAME
-	aoHidd_Mouse_IrqHandlerData -- [I..], APTR
+	aoHidd_Mouse_IrqHandlerData
+
+    SYNOPSIS
+	[I..], APTR
 
     LOCATION
 	IID_Hidd_Mouse
@@ -184,7 +190,10 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 /*****************************************************************************************
 
     NAME
-	aoHidd_Mouse_State -- [..G], struct pHidd_Mouse_Event
+	aoHidd_Mouse_State
+
+    SYNOPSIS
+	[..G], struct pHidd_Mouse_Event
 
     LOCATION
 	IID_Hidd_Mouse
@@ -212,7 +221,10 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 /*****************************************************************************************
 
     NAME
-	aoHidd_Mouse_RelativeCoords -- [..G], BOOL
+	aoHidd_Mouse_RelativeCoords
+
+    SYNOPSIS
+	[..G], BOOL
 
     LOCATION
 	IID_Hidd_Mouse
@@ -244,7 +256,10 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 /*****************************************************************************************
 
     NAME
-	aoHidd_Mouse_Extended -- [..G], BOOL
+	aoHidd_Mouse_Extended
+
+    SYNOPSIS
+	[..G], BOOL
 
     LOCATION
 	IID_Hidd_Mouse

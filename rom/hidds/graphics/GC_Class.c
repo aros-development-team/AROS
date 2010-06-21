@@ -32,10 +32,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_UserData -- [.SG]
+        aoHidd_GC_UserData
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         User data
@@ -55,10 +58,13 @@
 /*****************************************************************************************
 
     NAME
-    aoHidd_GC_BitMap -- [I.G]
+    aoHidd_GC_BitMap
+
+    SYNOPSIS
+        [I.G]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Bitmap which this gc uses.
@@ -78,10 +84,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_Foreground -- [.SG]
+        aoHidd_GC_Foreground
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Foreground color
@@ -101,10 +110,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_Background -- [.SG]
+        aoHidd_GC_Background
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Background color
@@ -124,10 +136,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_DrawMode -- [.SG]
+        aoHidd_GC_DrawMode
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Draw mode
@@ -147,10 +162,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_Font -- [.SG]
+        aoHidd_GC_Font
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Current font
@@ -170,10 +188,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_ColorMask -- [.SG]
+        aoHidd_GC_ColorMask
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Prevents some color bits from changing.
@@ -193,10 +214,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_LinePattern -- [.SG]
+        aoHidd_GC_LinePattern
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Pattern for line drawing
@@ -216,10 +240,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_LinePatternCnt -- [.SG]
+        aoHidd_GC_LinePatternCnt
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Pattern start bit for line drawing.
@@ -239,10 +266,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_PlaneMask -- [.SG]
+        aoHidd_GC_PlaneMask
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Shape bitmap 
@@ -262,10 +292,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_ColorExpansionMode -- [.SG]
+        aoHidd_GC_ColorExpansionMode
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_GC
+        IID_HIDD_GC
 
     FUNCTION
         Mode for color expansion
