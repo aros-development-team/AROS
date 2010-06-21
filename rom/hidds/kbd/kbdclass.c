@@ -57,7 +57,7 @@
 /*****************************************************************************************
 
     NAME
-	--hardware drivers---
+	--hardware_drivers--
 
     LOCATION
 	IID_Hidd_Kbd
@@ -259,7 +259,7 @@ VOID KBD__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     BUGS
 
     SEE ALSO
-	HIDD_Kbd_RemHardwareDriver()
+	moHidd_Kbd_RemHardwareDriver
 
     INTERNALS
 	This method supplies own interrupt handler to the driver, do not override this.
@@ -310,7 +310,7 @@ OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struc
     BUGS
 
     SEE ALSO
-	HIDD_Kbd_AddHardwareDriver()
+	moHidd_Kbd_AddHardwareDriver
 
     INTERNALS
 

@@ -56,7 +56,7 @@
 /*****************************************************************************************
 
     NAME
-	--hardware drivers---
+	--hardware_drivers--
 
     LOCATION
 	IID_Hidd_Mouse
@@ -406,7 +406,7 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     BUGS
 
     SEE ALSO
-	HIDD_Mouse_RemHardwareDriver()
+	moHidd_Mouse_RemHardwareDriver
 
     INTERNALS
 	This method supplies own interrupt handler to the driver, do not override this.
@@ -499,7 +499,7 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
     BUGS
 
     SEE ALSO
-	HIDD_Mouse_AddHardwareDriver()
+	moHidd_Mouse_AddHardwareDriver
 
     INTERNALS
 

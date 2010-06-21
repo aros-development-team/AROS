@@ -45,7 +45,7 @@
 	--background--
 
     LOCATION
-	IID_Hidd_Gfx
+	IID_HIDD_Gfx
 
     NOTES
 	When working with graphics drivers this is the first object you get.
@@ -61,7 +61,7 @@
 	--display_modes--
 
     LOCATION
-	IID_Hidd_Gfx
+	IID_HIDD_Gfx
 
     NOTES
 	Each display driver object internally stores a database of supported display mode
@@ -298,6 +298,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	IID_HIDD_Gfx
 
     FUNCTION
+	...
 
     NOTES
 
@@ -320,6 +321,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	IID_HIDD_Gfx
 
     FUNCTION
+	...
 
     NOTES
 
@@ -342,6 +344,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	IID_HIDD_Gfx
 
     FUNCTION
+	...
 
     NOTES
 
@@ -373,7 +376,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_GetSync()
+	moHidd_Gfx_GetSync
 
     INTERNALS
 
@@ -412,7 +415,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_ModeProperties()
+	moHidd_Gfx_ModeProperties
 
     INTERNALS
 
@@ -448,7 +451,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_Show()
+	moHidd_Gfx_Show
 
     INTERNALS
 	VGA and VESA do not use framebuffer, they use mirroring technique instead in order
@@ -537,7 +540,7 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	subclassing GCs is actually needed.
 
     SEE ALSO
-	HIDD_Gfx_DisposeGC()
+	moHidd_Gfx_DisposeGC
 
     INTERNALS
 
@@ -589,7 +592,7 @@ OOP_Object *GFX__Hidd_Gfx__NewGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_NewGC()
+	moHidd_Gfx_NewGC
 
     INTERNALS
 	Basically just does OOP_DisposeObject(gc);
@@ -697,7 +700,7 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_DisposeBitMap()
+	moHidd_Gfx_DisposeBitMap
 
     INTERNALS
 	The base class implementation currently does the folliwing in order to determine
@@ -973,7 +976,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_NewBitMap()
+	moHidd_Gfx_NewBitMap
 
     INTERNALS
 	Basically just does OOP_DisposeObject(bitMap);
@@ -1570,7 +1573,7 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
     BUGS
 
     SEE ALSO
-        HIDD_Gfx_ReleaseModeIDs(), HIDD_Gfx_NextModeID()
+        moHidd_Gfx_ReleaseModeIDs, moHidd_Gfx_NextModeID
 
     INTERNALS
 
@@ -1673,7 +1676,7 @@ HIDDT_ModeID *GFX__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_QueryModeIDs()
+	moHidd_Gfx_QueryModeIDs
 
     INTERNALS
 
@@ -1720,7 +1723,7 @@ VOID GFX__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o,
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_GetMode()
+	moHidd_Gfx_GetMode
 
     INTERNALS
 
@@ -1826,7 +1829,7 @@ HIDDT_ModeID GFX__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o,
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_NextModeID()
+	moHidd_Gfx_NextModeID
 
     INTERNALS
 
@@ -2014,7 +2017,7 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_ShowViewPorts(), graphics.library/LoadView()
+	moHidd_Gfx_ShowViewPorts, graphics.library/LoadView()
 
     INTERNALS
 
@@ -2129,7 +2132,7 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_Show()
+	moHidd_Gfx_Show
 
     INTERNALS
 	Default base class implementation simply returns FALSE. This causes
@@ -2194,7 +2197,7 @@ ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_SetCursorPos(), HIDD_Gfx_SetCursorVisible()
+	moHidd_Gfx_SetCursorPos, moHidd_Gfx_SetCursorVisible
 
     INTERNALS
 
@@ -2240,7 +2243,7 @@ BOOL GFX__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_SetCursorPos(), HIDD_Gfx_SetCursorVisible()
+	moHidd_Gfx_SetCursorPos, moHidd_Gfx_SetCursorVisible
 
     INTERNALS
 
@@ -2292,7 +2295,7 @@ VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_SetCursorShape(), HIDD_Gfx_SetCursorVisible(), graphics.library/MoveSprite()
+	moHidd_Gfx_SetCursorShape, moHidd_Gfx_SetCursorVisible, graphics.library/MoveSprite()
 
     INTERNALS
 
@@ -2781,7 +2784,7 @@ VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *o,
 	This needs to be fixed.
 
     SEE ALSO
-	HIDD_Gfx_GetMode()
+	moHidd_Gfx_GetMode
 
     INTERNALS
 
@@ -3008,7 +3011,7 @@ ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_G
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_SetGamma()
+	moHidd_Gfx_SetGamma
 
     INTERNALS
 
@@ -3060,7 +3063,7 @@ BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamm
     BUGS
 
     SEE ALSO
-	HIDD_Gfx_GetGamma()
+	moHidd_Gfx_GetGamma
 
     INTERNALS
 
