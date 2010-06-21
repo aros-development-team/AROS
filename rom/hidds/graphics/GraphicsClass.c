@@ -229,7 +229,10 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_IsWindowed -- [..G], BOOL
+	aoHidd_Gfx_IsWindowed
+
+    SYNOPSIS
+	[..G], BOOL
 
     LOCATION
 	IID_HIDD_Gfx
@@ -257,7 +260,10 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_DMPSLevel -- [ISG], HIDDT_DPMSLevel
+	aoHidd_Gfx_DMPSLevel
+
+    SYNOPSIS
+	[ISG], HIDDT_DPMSLevel
 
     LOCATION
 	IID_HIDD_Gfx
@@ -292,13 +298,15 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_PixFmtTags -- [I..], struct TagItem *
+	aoHidd_Gfx_PixFmtTags
+
+    SYNOPSIS
+	[I..], struct TagItem *
 
     LOCATION
 	IID_HIDD_Gfx
 
     FUNCTION
-	...
 
     NOTES
 
@@ -315,13 +323,15 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_SyncTags -- [I..], struct TagItem *
+	aoHidd_Gfx_SyncTags
+
+    SYNOPSIS
+	[I..], struct TagItem *
 
     LOCATION
 	IID_HIDD_Gfx
 
     FUNCTION
-	...
 
     NOTES
 
@@ -338,13 +348,15 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_ModeTags -- [I..], struct TagItem *
+	aoHidd_Gfx_ModeTags
+
+    SYNOPSIS
+	[I..], struct TagItem *
 
     LOCATION
 	IID_HIDD_Gfx
 
     FUNCTION
-	...
 
     NOTES
 
@@ -361,7 +373,10 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_NumSyncs -- [..G], ULONG
+	aoHidd_Gfx_NumSyncs
+
+    SYNOPSIS
+	[..G], ULONG
 
     LOCATION
 	IID_HIDD_Gfx
@@ -385,7 +400,10 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_SupportsHWCursor -- [..G], BOOL
+	aoHidd_Gfx_SupportsHWCursor
+
+    SYNOPSIS
+	[..G], BOOL
 
     LOCATION
 	IID_HIDD_Gfx
@@ -424,7 +442,10 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_NoFrameBuffer -- [..G], BOOL
+	aoHidd_Gfx_NoFrameBuffer
+
+    SYNOPSIS
+	[..G], BOOL
 
     LOCATION
 	IID_HIDD_Gfx

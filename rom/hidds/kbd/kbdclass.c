@@ -90,7 +90,10 @@ static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Kbd_IrqHandler -- [I..], APTR
+	aoHidd_Kbd_IrqHandler
+
+    SYNOPSIS
+	[I..], APTR
 
     LOCATION
 	IID_Hidd_Kbd
@@ -127,7 +130,10 @@ static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Kbd_IrqHandlerData -- [I..], APTR
+	aoHidd_Kbd_IrqHandlerData
+
+    SYNOPSIS
+	[I..], APTR
 
     LOCATION
 	IID_Hidd_Kbd

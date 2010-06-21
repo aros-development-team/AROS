@@ -30,10 +30,13 @@
 /*****************************************************************************************
 
     NAME
-	aoHidd_ColorMap_NumEntries -- [I.G], ULONG
+        aoHidd_ColorMap_NumEntries
+
+    SYNOPSIS
+        [I.G], ULONG
 
     LOCATION
-	IID_HIDD_ColorMap
+        IID_HIDD_ColorMap
 
     FUNCTION
         Number of colors in the colormap.

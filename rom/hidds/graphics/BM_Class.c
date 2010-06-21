@@ -115,10 +115,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_Width -- [ISG]
+        aoHidd_BitMap_Width
+
+    SYNOPSIS
+        [ISG]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Bitmap with
@@ -138,10 +141,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_Height -- [ISG]
+        aoHidd_BitMap_Height
+
+    SYNOPSIS
+        [ISG]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Bitmap height
@@ -161,10 +167,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_Displayable -- [I.G], BOOL
+        aoHidd_BitMap_Displayable
+
+    SYNOPSIS
+        [I.G], BOOL
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Bitmap is displayable (default: FALSE)
@@ -184,10 +193,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_Visible -- [..G]
+        aoHidd_BitMap_Visible
+
+    SYNOPSIS
+        [..G]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Check if a bitmap is visible
@@ -207,10 +219,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_IsLinearMem -- [..G]
+        aoHidd_BitMap_IsLinearMem
+
+    SYNOPSIS
+        [..G]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Is the bitmap memory contigous?
@@ -230,10 +245,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_BytesPerRow -- [..G]
+        aoHidd_BitMap_BytesPerRow
+
+    SYNOPSIS
+        [..G]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Number of bytes in a row 
@@ -253,10 +271,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_ColorMap -- [..G]
+        aoHidd_BitMap_ColorMap
+
+    SYNOPSIS
+        [..G]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Colormap of the bitmap
@@ -276,10 +297,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_Friend -- [I.G]
+        aoHidd_BitMap_Friend
+
+    SYNOPSIS
+        [I.G]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Friend bitmap. The bitmap will be allocated so that it
@@ -300,10 +324,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_GfxHidd -- [..G]
+        aoHidd_BitMap_GfxHidd
+
+    SYNOPSIS
+        [..G]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Pointer to the gfxhidd object this bitmap was created with.
@@ -323,10 +350,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_StdPixFmt -- [I..], HIDDT_StdPixFmt
+        aoHidd_BitMap_StdPixFmt
+
+    SYNOPSIS
+        [I..], HIDDT_StdPixFmt
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         What stdpixel format the bitmap should have.
@@ -347,10 +377,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_PixFmt -- [..G], OOP_Object *
+        aoHidd_BitMap_PixFmt
+
+    SYNOPSIS
+        [..G], OOP_Object *
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         This is complete pixmft of a bitmap.
@@ -370,10 +403,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_ModeID -- [I.G], HIDDT_ModeID
+        aoHidd_BitMap_ModeID
+
+    SYNOPSIS
+        [I.G], HIDDT_ModeID
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Must be passed on initialization of aHidd_BitMap_Displayable=TRUE bitmaps.
@@ -394,10 +430,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_ClassPtr -- [I.G]
+        aoHidd_BitMap_ClassPtr
+
+    SYNOPSIS
+        [I.G]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Only used by subclasses of the gfx hidd.
@@ -417,10 +456,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_ClassID -- [I..]
+        aoHidd_BitMap_ClassID
+
+    SYNOPSIS
+        [I..]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Only used by subclasses of the gfx hidd
@@ -440,10 +482,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_PixFmtTags -- [I..]
+        aoHidd_BitMap_PixFmtTags
+
+    SYNOPSIS
+        [I..]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Only used by subclasses of BitMap class.
@@ -463,10 +508,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_FrameBuffer -- [I.G], BOOL
+        aoHidd_BitMap_FrameBuffer
+
+    SYNOPSIS
+        [I.G], BOOL
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Allocate framebuffer
@@ -486,10 +534,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_LeftEdge -- [.SG]
+        aoHidd_BitMap_LeftEdge
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Left edge position of the bitmap
@@ -509,10 +560,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_TopEdge -- [.SG]
+        aoHidd_BitMap_TopEdge
+
+    SYNOPSIS
+        [.SG]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Top edge position of the bitmap.
@@ -532,10 +586,13 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_Align -- [I..]
+        aoHidd_BitMap_Align
+
+    SYNOPSIS
+        [I..]
 
     LOCATION
-	IID_HIDD_BitMap
+        IID_HIDD_BitMap
 
     FUNCTION
         Number of pixels to align bitmap data width to
@@ -976,7 +1033,6 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     BUGS
 
     SEE ALSO
-        moHidd_Gfx_SetAttributes
 
     INTERNALS
 
