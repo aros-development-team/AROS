@@ -976,7 +976,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     BUGS
 
     SEE ALSO
-        GROUP=HIDD_Gfx_Pixel, GROUP=HIDD_Gfx_SetAttributes
+        moHidd_Gfx_SetAttributes
 
     INTERNALS
 
@@ -1086,7 +1086,7 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
     LOCATION
         IID_HIDD_BitMap
 
-   FUNCTION
+    FUNCTION
         Draws a line from (x1,y1) to (x2,y2) in the specified gc.
         The function does not clip the line against the drawing area.
 
@@ -1105,7 +1105,6 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
     BUGS
 
     SEE ALSO
-        GROUP=HIDD_Pixel
 
     INTERNALS
         Uses midpoint line ("Bresenham") algorithm([FOL90] 3.2.2)
@@ -1378,7 +1377,6 @@ VOID BM__Hidd_BitMap__DrawLine
     BUGS
 
     SEE ALSO
-        GROUP=HIDD_Rectangle
 
     INTERNALS
 
@@ -1441,7 +1439,6 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
     BUGS
 
     SEE ALSO
-        GROUP=HIDD_Rectangle
 
     INTERNALS
 
@@ -1508,7 +1505,6 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
         values of rx and ry.
 
     SEE ALSO
-        GROUP=HIDD_Ellipse
 
     INTERNALS
 
@@ -1670,7 +1666,6 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
         values of rx and ry.
 
     SEE ALSO
-        GROUP=HIDD_Ellipse
 
     INTERNALS
 
@@ -1772,7 +1767,6 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
     BUGS
 
     SEE ALSO
-        GROUP=HIDD_Polygon
 
     INTERNALS
 
@@ -1832,7 +1826,6 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
     BUGS
 
     SEE ALSO
-        GROUP=HIDD_Polygon
 
     INTERNALS
 
@@ -1887,7 +1880,6 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
     BUGS
 
     SEE ALSO
-        GROUP=HIDD_Text
 
     INTERNALS
 
@@ -2006,7 +1998,6 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
     BUGS
 
     SEE ALSO
-        GROUP=HIDD_Text
 
     INTERNALS
 
