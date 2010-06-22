@@ -72,6 +72,8 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     struct nouveau_grobj *surf2d = carddata->NvContextSurfaces;
     struct nouveau_grobj *blit = carddata->NvImageBlit;
     LONG fmt;
+    BOOL srcmapped = NULL != src_bo->map;
+    BOOL dstmapped = NULL != dst_bo->map;
 
     if (srcdata->bytesperpixel != destdata->bytesperpixel)
         return FALSE;
@@ -123,13 +125,13 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     OUT_RING  (chan, (height  << 16) | width);
 
     /* NOTE: Reads/writes via bo->map need to be protected where they exist (PutPixel/GetPixel) */
-    nouveau_bo_unmap(src_bo);
-    nouveau_bo_unmap(dst_bo);
+    if (srcmapped) nouveau_bo_unmap(src_bo);
+    if (dstmapped) nouveau_bo_unmap(dst_bo);
 
     FIRE_RING (chan);
 
-    nouveau_bo_map(src_bo, NOUVEAU_BO_RDWR);
-    nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);
+    if (srcmapped) nouveau_bo_map(src_bo, NOUVEAU_BO_RDWR);
+    if (dstmapped) nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);
 
     return TRUE;
 }

@@ -72,8 +72,7 @@ static BOOL HIDDNouveauNV50AcquireSurface2D(struct CardData * carddata,
     bo_flags  = NOUVEAU_BO_VRAM;
     bo_flags |= issrc ? NOUVEAU_BO_RD : NOUVEAU_BO_WR;
 
-//FIXME    if (!nv50_style_tiled_pixmap(ppix)) {
-    if(TRUE) { /* FIXME */
+    if(!bo->tile_flags) {
         BEGIN_RING(chan, eng2d, mthd, 2);
         OUT_RING  (chan, fmt);
         OUT_RING  (chan, 1);
@@ -179,6 +178,8 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     struct nouveau_grobj *eng2d = carddata->Nv2D;
     struct nouveau_bo * src_bo = srcdata->bo;
     struct nouveau_bo * dst_bo = destdata->bo;
+    BOOL srcmapped = NULL != src_bo->map;
+    BOOL dstmapped = NULL != dst_bo->map;
 
     if (srcdata->bytesperpixel != destdata->bytesperpixel)
         return FALSE;
@@ -225,13 +226,13 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     OUT_RING  (chan, srcY);
 
     /* NOTE: Reads/writes via bo->map need to be protected where they exist (PutPixel/GetPixel) */
-    nouveau_bo_unmap(src_bo);
-    nouveau_bo_unmap(dst_bo);
+    if (srcmapped) nouveau_bo_unmap(src_bo);
+    if (dstmapped) nouveau_bo_unmap(dst_bo);
 
     FIRE_RING (chan);
     
-    nouveau_bo_map(src_bo, NOUVEAU_BO_RDWR);
-    nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);    
+    if (srcmapped) nouveau_bo_map(src_bo, NOUVEAU_BO_RDWR);
+    if (dstmapped) nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);
     
     return TRUE;
 }
