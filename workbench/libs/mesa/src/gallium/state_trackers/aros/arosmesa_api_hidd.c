@@ -19,16 +19,11 @@
 #include <cybergraphx/cybergraphics.h>
 #include <proto/graphics.h>
 #include <graphics/rpattr.h>
-#include <proto/oop.h>
-#include <hidd/gallium.h>
 #include <aros/symbolsets.h>
 #include <proto/intuition.h>
+#include <proto/gallium.h>
 
 struct Library * AROSMesaCyberGfxBase = NULL;
-static struct Library * AROSMesaOOPBase = NULL;
-static struct Library * AROSMesaHIDDGalliumBase = NULL;
-#define OOPBase AROSMesaOOPBase
-static OOP_Object * driver = NULL;
 
 /*****************************************************************************/
 /*                             INIT FUNCTIONS                                */
@@ -38,10 +33,7 @@ static BOOL AROSMesaHiddInit()
 {
     /* Open required libraries and hidds */
     AROSMesaCyberGfxBase = OpenLibrary((STRPTR)"cybergraphics.library",0);
-    AROSMesaOOPBase = OpenLibrary((STRPTR)"oop.library", 0);
-    AROSMesaHIDDGalliumBase = OpenLibrary((STRPTR)"gallium.hidd", 5);
-
-    if ((!AROSMesaCyberGfxBase) || (!AROSMesaOOPBase) || (!AROSMesaHIDDGalliumBase))
+    if (!AROSMesaCyberGfxBase)
         return FALSE;
 
     return TRUE;
@@ -49,16 +41,6 @@ static BOOL AROSMesaHiddInit()
 
 static BOOL AROSMesaHiddExit()
 {
-    /* Close libraries and hidds. Do not dispose the driver. It is handled in
-       gallium.hidd */
-    driver = NULL;
-
-    if (AROSMesaHIDDGalliumBase)
-        CloseLibrary(AROSMesaHIDDGalliumBase);
-
-    if (AROSMesaOOPBase)
-        CloseLibrary(AROSMesaOOPBase);
-
     if (AROSMesaCyberGfxBase)
         CloseLibrary(AROSMesaCyberGfxBase);
 
@@ -412,7 +394,7 @@ static GLboolean AROSMesaHiddRecalculateBufferWidthHeight(AROSMesaContext amesa)
     return GL_FALSE;
 }
 
-static VOID AROSMesaHiddCheckaAndUpdateBufferSize(AROSMesaContext amesa)
+static VOID AROSMesaHiddCheckAndUpdateBufferSize(AROSMesaContext amesa)
 {
     if (AROSMesaHiddRecalculateBufferWidthHeight(amesa))
         st_resize_framebuffer(amesa->framebuffer->stfb, amesa->width, amesa->height);
@@ -497,90 +479,6 @@ static BOOL AROSMesaHiddStandardInit(AROSMesaContext amesa, struct TagItem *tagL
     return TRUE;
 }
 
-
-/* FIXME HACK FIXME */
-#include <proto/layers.h>
-
-static VOID HACK_BlitSurcaceOnRastport(AROSMesaContext amesa, struct pipe_surface * surf)
-{
-    struct Layer *L = amesa->visible_rp->Layer;
-    struct ClipRect *CR;
-    struct Rectangle renderableLayerRect;
-    
-    /* Render only if screen is visible */
-    if (amesa->window->WScreen != IntuitionBase->FirstScreen)
-        return;
-
-    if (!IsLayerVisible(L))
-        return;
-
-    LockLayerRom(L);
-    
-    renderableLayerRect.MinX = L->bounds.MinX + amesa->left;
-    renderableLayerRect.MaxX = L->bounds.MaxX - amesa->right;
-    renderableLayerRect.MinY = L->bounds.MinY + amesa->top;
-    renderableLayerRect.MaxY = L->bounds.MaxY - amesa->bottom;
-    
-    /*  Do not clip renderableLayerRect to screen rast port. CRs are already clipped and unclipped 
-        layer coords are needed: see surface_copy */
-    
-    CR = L->ClipRect;
-    
-    for (;NULL != CR; CR = CR->Next)
-    {
-        D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
-            CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
-            CR->lobs));
-
-        /* I assume this means the cliprect is visible */
-        if (NULL == CR->lobs)
-        {
-            struct Rectangle result;
-            
-            if (AndRectRect(&renderableLayerRect, &CR->bounds, &result))
-            {
-                /* This clip rect intersects renderable layer rect */
-                struct pHidd_Gallium_DisplaySurface dsmsg = {
-                mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplaySurface),
-                context : amesa->st->pipe,
-                rastport : amesa->visible_rp,
-                left : result.MinX - L->bounds.MinX - amesa->left, /* x in the source buffer */
-                top : result.MinY - L->bounds.MinY - amesa->top, /* y in the source buffer */
-                width : result.MaxX - result.MinX + 1, /* width of the rect in source buffer */
-                height : result.MaxY - result.MinY + 1, /* height of the rect in source buffer */
-                surface : surf,
-                absx : result.MinX, /* Absolute (on screen) X of dest blit */
-                absy : result.MinY, /* Absolute (on screen) Y of the dest blit */
-                relx : result.MinX - L->bounds.MinX, /* Relative (on rastport) X of the desc blit */
-                rely : result.MinY - L->bounds.MinY /* Relative (on rastport) Y of the desc blit */
-                };
-                OOP_DoMethod(driver, (OOP_Msg)&dsmsg);
-                            
-                /* FIXME: clip last 4 parameters to actuall surface deminsions */
-/*                pipe->surface_copy(pipe, visiblescreen, 
-                            result.MinX, 
-                            result.MinY, 
-                            surface, 
-                            result.MinX - L->bounds.MinX - msg->left, 
-                            result.MinY - L->bounds.MinY - msg->top, 
-                            result.MaxX - result.MinX + 1, 
-                            result.MaxY - result.MinY + 1);*/
-            }
-        }
-    }
-
-    /* Flush all copy operations done */
-//    pipe->flush(pipe, PIPE_FLUSH_RENDER_CACHE, NULL);
-
-
-    UnlockLayerRom(L);
-}
-
-/* FIXME HACK FIXME */
-
-
-
-
 /*****************************************************************************/
 /*                             PUBLIC FUNCTIONS                              */
 /*****************************************************************************/
@@ -595,32 +493,7 @@ AROSMesaContext AROSMesaCreateContextTags(long Tag1, ...)
 AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
 {
     AROSMesaContext amesa = NULL;
-    struct pipe_screen * screen = NULL;
     struct pipe_context * pipe = NULL;
-    struct pHidd_Gallium_CreatePipeScreen cpsmsg;
-
-    if (driver == NULL)
-    {
-        /* Create gallium driver factory */
-        OOP_Object * galliumdriverfactory = 
-            OOP_NewObject(NULL, CLID_Hidd_GalliumDriverFactory, NULL);
-        
-        if (galliumdriverfactory)
-        {
-            /* Ask for gallium driver */
-            driver = HIDD_GalliumDriverFactory_GetDriver(galliumdriverfactory);
-
-            /* Dispose factory */
-            OOP_DisposeObject(galliumdriverfactory);
-        }
-    }
-
-    /* Check if driver is acquired */
-    if (!driver)
-    {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR - failed to retrieve Gallium3D driver\n"));
-        return NULL;
-    }
     
     /* Allocate arosmesa_context struct initialized to zeros */
     if (!(amesa = (AROSMesaContext)AllocVec(sizeof(struct arosmesa_context), MEMF_PUBLIC|MEMF_CLEAR)))
@@ -637,39 +510,42 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
     /* FIXME: later this might be placed in initialization of framebuffer */
     AROSMesaHiddStandardInit(amesa, tagList);   
 
-
-    cpsmsg.mID = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_CreatePipeScreen);
-    screen = (struct pipe_screen *)OOP_DoMethod(driver, (OOP_Msg)&cpsmsg);
-    
-    if (!screen)
+    amesa->pscreen = CreatePipeScreen(NULL); /* TODO: Add requested gallium interface version via define check */
+    if (!amesa->pscreen)
     {
-        /* TODO: Route error handling to one place */
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create gallium driver screen\n"));
-        FreeVec(amesa);
-        return NULL;
+        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create gallium pipe screen\n"));
+        goto error_out;
     }
-
     
     D(bug("[AROSMESA] AROSMesaCreateContext: Creating new AROSMesaVisual\n"));
-
-    if (!(amesa->visual = AROSMesaHiddNewVisual(amesa->ScreenInfo.BitsPerPixel, screen, tagList)))
+    amesa->visual = AROSMesaHiddNewVisual(amesa->ScreenInfo.BitsPerPixel, amesa->pscreen, tagList);
+    if (!amesa->visual)
     {
-        /* TODO: Route error handling to one place */
-        /* TODO: Destroy screen */
         D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create AROSMesaVisual\n"));
-        FreeVec( amesa );
-        return NULL;
+        goto error_out;
     }
 
-    pipe = screen->context_create(screen, NULL);
-    
-    /* FIXME: If pipe == NULL */
+    pipe = amesa->pscreen->context_create(amesa->pscreen, NULL);
+    if (!pipe)
+    {
+        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create pipe context\n"));
+        goto error_out;
+    }
     
     amesa->st = st_create_context(pipe, GET_GL_VIS_PTR(amesa->visual), NULL);
+    if (!amesa->st)
+    {
+        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create mesa state tracker context\n"));
+        goto error_out;
+    }
+    
+    /* Pipe context life cycle is now managed by state tracker context */
+    pipe = NULL;
     
     /* Set up some needed pointers */
+    /* TODO: Are those needed anymore? */
     amesa->st->ctx->DriverCtx = amesa;
-    pipe->priv = amesa;
+    amesa->st->pipe->priv = amesa;
     
     /* Initial update of buffer dimensions (amesa->width/amesa->height) */
     AROSMesaHiddRecalculateBufferWidthHeight(amesa);
@@ -679,6 +555,13 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
     amesa->framebuffer = AROSMesaHiddNewFrameBuffer(amesa, amesa->visual);
     
     return amesa;
+
+error_out:
+    if (pipe) pipe->destroy(pipe);
+    if (amesa->visual) AROSMesaHiddDestroyVisual(amesa->visual);
+    if (amesa->pscreen) DestroyPipeScreen(amesa->pscreen);
+    if (amesa) AROSMesaHiddDestroyContext(amesa);
+    return NULL;
 }
 
 #if defined (AROS_MESA_SHARED)
@@ -744,13 +627,15 @@ void AROSMesaSwapBuffers(AROSMesaContext amesa)
 
     if (surf) 
     {
-        HACK_BlitSurcaceOnRastport(amesa, surf);
+        BltPipeSurfaceRastPort(surf, 0, 0, amesa->visible_rp, amesa->left, 
+            amesa->top, amesa->width, amesa->height);
     }
 
+    /* TODO: is this needed? gallium.library should have alrady made the flush */
     /* Flush. Executes all code posted in DisplaySurface */
     st_flush(amesa->st, PIPE_FLUSH_RENDER_CACHE, NULL);
 
-    AROSMesaHiddCheckaAndUpdateBufferSize(amesa);
+    AROSMesaHiddCheckAndUpdateBufferSize(amesa);
 
     RESTORE_REG
 #if defined (AROS_MESA_SHARED)
@@ -782,11 +667,6 @@ void AROSMesaDestroyContext(AROSMesaContext amesa)
 
     if (ctx)
     {
-        struct pHidd_Gallium_DestroyPipeScreen dpsmsg = {
-        mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DestroyPipeScreen),
-        screen : ctx->st->pipe->screen
-        };
-        
         GET_CURRENT_CONTEXT(cur_ctx);
 
         if (cur_ctx == ctx)
@@ -801,9 +681,9 @@ void AROSMesaDestroyContext(AROSMesaContext amesa)
         
         AROSMesaHiddDestroyFrameBuffer(amesa->framebuffer);
         AROSMesaHiddDestroyVisual(amesa->visual);
+        DestroyPipeScreen(amesa->pscreen);
         AROSMesaHiddDestroyContext(amesa);
 
-        OOP_DoMethod(driver, (OOP_Msg)&dpsmsg);
     }
     
     RESTORE_REG
