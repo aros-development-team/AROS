@@ -12,13 +12,7 @@
 
 static int GalliumHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 {
-    if (LIBBASE->sd.driver)
-        OOP_DisposeObject(LIBBASE->sd.driver);
-
-    if (LIBBASE->sd.loadedDriverHidd)
-        CloseLibrary(LIBBASE->sd.loadedDriverHidd);
-
-    if (LIBBASE->sd.hiddGalliumAB)
+    if (LIBBASE->sd.galliumAttrBase)
         OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
 
     return TRUE;
@@ -26,12 +20,9 @@ static int GalliumHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 
 static int GalliumHidd_InitLib(LIBBASETYPEPTR LIBBASE)
 {
-    LIBBASE->sd.loadedDriverHidd = NULL;
-    LIBBASE->sd.driver = NULL;
+    LIBBASE->sd.galliumAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
 
-    LIBBASE->sd.hiddGalliumAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
-
-    if (LIBBASE->sd.hiddGalliumAB)
+    if (LIBBASE->sd.galliumAttrBase)
         return TRUE;
 
     return FALSE;

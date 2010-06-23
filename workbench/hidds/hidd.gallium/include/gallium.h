@@ -28,7 +28,7 @@
 #endif
 
 /* Gallium interface */
-
+#define CLID_Hidd_Gallium   "hidd.gallium"
 #define IID_Hidd_Gallium    "hidd.gallium"
 
 #define HiddGalliumAttrBase __IHidd_Gallium
@@ -92,40 +92,5 @@ struct HIDDT_WinSys
     struct pipe_winsys  base;
     OOP_Object          *driver;
 };
-
-/* Gallium DriverFactory class */
-
-#define CLID_Hidd_GalliumDriverFactory    "hidd.gallium.driverfactory"
-#define IID_Hidd_GalliumDriverFactory     "hidd.gallium.driverfactory"
-
-#define HiddGalliumDriverFactoryAttrBase  __IHidd_GalliumDriverFactory
-
-#ifndef __OOP_NOATTRBASES__
-extern OOP_AttrBase HiddGalliumDriverFactoryAttrBase;
-#endif
-
-/* Gallium DriverFactory Class methods */
-enum
-{
-    moHidd_GalliumDriverFactory_GetDriver = 0,
-
-    NUM_GALLIUMDRIVERFACTORY_METHODS
-};
-
-struct pHidd_GalliumDriverFactory_GetDriver
-{
-    OOP_MethodID    mID;
-    ULONG           galliuminterfaceversion;
-};
-
-/* Stub that uses predefined Gallium interface version */
-#define HIDD_GalliumDriverFactory_GetDriver(__o)                                                        \
-    ({                                                                                                  \
-        struct pHidd_GalliumDriverFactory_GetDriver gdmsg = {                                           \
-        mID : OOP_GetMethodID(IID_Hidd_GalliumDriverFactory, moHidd_GalliumDriverFactory_GetDriver),    \
-        galliuminterfaceversion : GALLIUM_INTERFACE_VERSION                                             \
-        };                                                                                              \
-        (OOP_Object*)OOP_DoMethod(__o, (OOP_Msg)&gdmsg);                                                \
-    })
 
 #endif
