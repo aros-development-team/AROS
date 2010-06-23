@@ -250,10 +250,3 @@ VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplaySurface)
     FreeRastPort(rp);
 }
 
-VOID METHOD(SoftpipeGallium, Hidd_Gallium, DestroyPipeScreen)
-{
-    struct pipe_screen * screen = (struct pipe_screen *)msg->screen;
-
-    if (screen)
-        screen->destroy(screen);
-}

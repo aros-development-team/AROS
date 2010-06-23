@@ -252,10 +252,3 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
     HIDDNouveauReleaseWrap(srcdata);
 }
 
-VOID METHOD(NouveauGallium, Hidd_Gallium, DestroyPipeScreen)
-{
-    struct pipe_screen * screen = (struct pipe_screen *)msg->screen;
-
-    if (screen)
-        screen->destroy(screen);
-}

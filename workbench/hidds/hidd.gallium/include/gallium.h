@@ -43,7 +43,6 @@ enum
 {
     moHidd_Gallium_CreatePipeScreen = 0,
     moHidd_Gallium_DisplaySurface = 2,
-    moHidd_Gallium_DestroyPipeScreen,
 
     NUM_GALLIUM_METHODS
 };
@@ -79,12 +78,6 @@ struct pHidd_Gallium_DisplaySurface
     ULONG           absy;
     ULONG           relx;
     ULONG           rely;
-};
-
-struct pHidd_Gallium_DestroyPipeScreen
-{
-    OOP_MethodID    mID;
-    APTR            screen;
 };
 
 struct HIDDT_WinSys
