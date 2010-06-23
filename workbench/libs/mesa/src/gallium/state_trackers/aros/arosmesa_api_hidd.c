@@ -22,6 +22,7 @@
 #include <aros/symbolsets.h>
 #include <proto/intuition.h>
 #include <proto/gallium.h>
+#include <gallium/gallium.h>
 
 struct Library * AROSMesaCyberGfxBase = NULL;
 
@@ -486,7 +487,7 @@ static BOOL AROSMesaHiddStandardInit(AROSMesaContext amesa, struct TagItem *tagL
 AROSMesaContext AROSMesaCreateContextTags(long Tag1, ...)
 {
   AROS_SLOWSTACKTAGS_PRE(Tag1)
-  retval = AROSMesaCreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
+  retval = (IPTR)AROSMesaCreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
@@ -510,7 +511,7 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
     /* FIXME: later this might be placed in initialization of framebuffer */
     AROSMesaHiddStandardInit(amesa, tagList);   
 
-    amesa->pscreen = CreatePipeScreen(NULL); /* TODO: Add requested gallium interface version via define check */
+    amesa->pscreen = CreatePipeScreenV(NULL);
     if (!amesa->pscreen)
     {
         D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create gallium pipe screen\n"));

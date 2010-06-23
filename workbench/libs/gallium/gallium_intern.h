@@ -34,14 +34,22 @@
 #   include <hidd/gallium.h>
 #endif
 
+#ifndef P_SCREEN_H
+#   include <gallium/pipe/p_screen.h>
+#endif
+
 struct GalliumBase
 {
     struct Library              galb_Lib;
     struct SignalSemaphore      driversemaphore;
+    struct Library              *drivermodule;
     OOP_Object                  *driver;
+    OOP_AttrBase                galliumAttrBase;
 };
 
-OOP_Object * SelectGalliumDriver();
+OOP_Object * SelectGalliumDriver(ULONG requestedinterfaceversion, struct Library * GalliumBase);
+BOOL IsVersionMatching(ULONG version, OOP_Object * driver, struct Library * GalliumBase);
 
 #define GB(lb)  ((struct GalliumBase *)lb)
+
 #endif

@@ -7,10 +7,22 @@
 #include <proto/oop.h>
 #include <aros/debug.h>
 
-/* TODO: Move this into libbase and close at library expunge */
-static struct Library * GalliumHIDDBase = NULL;
+#undef HiddGalliumAttrBase
+#define HiddGalliumAttrBase GB(GalliumBase)->galliumAttrBase
 
-OOP_Object * SelectGalliumDriver()
+BOOL IsVersionMatching(ULONG version, OOP_Object * driver, struct Library * GalliumBase)
+{
+    IPTR galliuminterfaceversion = 0;
+
+    if ((!driver) || (!GalliumBase))
+        return FALSE;
+
+    OOP_GetAttr(driver, aHidd_Gallium_GalliumInterfaceVersion, &galliuminterfaceversion);
+    
+    return (version == (ULONG)galliuminterfaceversion);
+}
+
+OOP_Object * SelectGalliumDriver(ULONG requestedinterfaceversion, struct Library * GalliumBase)
 {
     OOP_Object * driver = NULL;
 
@@ -18,26 +30,40 @@ OOP_Object * SelectGalliumDriver()
         only work if the nouveau.hidd is actually loaded and used */    
     driver = OOP_NewObject(NULL, "hidd.gallium.nouveau", NULL);
     if (driver)
-        return driver;
-
-    /* 2. Everything else failed. Let's try loading softpipe */
-    if (!GalliumHIDDBase)
-        GalliumHIDDBase = OpenLibrary("softpipe.hidd", 4);
-
-    if (GalliumHIDDBase)
     {
-        driver = OOP_NewObject(NULL, "hidd.gallium.softpipe", NULL);
-        if (!driver)
+        if (IsVersionMatching(requestedinterfaceversion, driver, GalliumBase))
+            return driver;
+        else
         {
-            /* Failed. Close library */
-            CloseLibrary(GalliumHIDDBase);
-            GalliumHIDDBase = NULL;
+            /* Failed version check */
+            OOP_DisposeObject(driver);
+            driver = NULL;
         }
     }
 
-    /* Final check */
-    if (!driver)
-        bug("[gallium.library] ERROR - no driver available\n");
+    /* 2. Everything else failed. Let's try loading softpipe */
+    if (!GB(GalliumBase)->drivermodule)
+        GB(GalliumBase)->drivermodule = OpenLibrary("softpipe.hidd", 7);
 
-    return driver;
+    if (GB(GalliumBase)->drivermodule)
+    {
+        driver = OOP_NewObject(NULL, "hidd.gallium.softpipe", NULL);
+        if (driver)
+        {
+            if (IsVersionMatching(requestedinterfaceversion, driver, GalliumBase))
+                return driver;
+            else
+            {
+                /* Failed version check */
+                OOP_DisposeObject(driver);
+                driver = NULL;
+            }            
+        }
+        
+        /* Failed. Close library */
+        CloseLibrary(GB(GalliumBase)->drivermodule);
+        GB(GalliumBase)->drivermodule = NULL;
+    }
+
+    return NULL;
 }
