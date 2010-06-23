@@ -394,7 +394,7 @@ D(bug("[AROSTCP](amiga_log.c) log_task()\n"));
 				 * handles all ones pending.
 				 */
 	DNETTRACE(KPrintF(" log message\n");)
-	if (msg = log_poll()) {	/* Got an LOG_CLOSE-message? */
+	if (msg = log_poll()) {	/* Got a LOG_CLOSE-message? */
 	  DNETTRACE(KPrintF("Got LOG_CLOSE, exiting.\n");)
 	  log_close(msg);
 	  return;
@@ -402,7 +402,7 @@ D(bug("[AROSTCP](amiga_log.c) log_task()\n"));
 	sig &= ~logmask;
       }
 
-      if (sig & rexxmask) {	  /* One rexx message at time */
+      if (sig & rexxmask) {	  /* One rexx message at a time */
 	DNETTRACE(KPrintF(" REXX message\n");)
 	if (SocketBase) {
 	  if (!rexx_poll()) 

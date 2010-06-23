@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2010 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -87,7 +87,7 @@ D(bug("[AROSTCP](res_init.c) res_update_db: %d Domains in NetDB\n", n-1));
   }
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_init.c) res_update_db: %d Domains in DynDB\n", n-tmp_n-1));
+D(bug("[AROSTCP](res_init.c) res_update_db: %d Domains in DynDB\n", n-tmp_n));
 #endif
 
   /* Allocate space for the array */

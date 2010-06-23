@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2010 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -35,9 +35,7 @@
 #include <version.h>
 /*#include <string.h>*/
 
-#if 1 /* NC */
-#include <signal.h>		/* from the C compilers includes */
-#endif
+#include <signal.h>		/* from the C compiler's includes */
 
 #include <kern/amiga_includes.h>
 #include <libraries/miamipanel.h>
@@ -275,15 +273,16 @@ D(bug("[AROSTCP](amiga_main.c) main: preparing AROSTCP_Task\n"));
 	     int i;
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: Task recieved CTRL-C\n"));
+D(bug("[AROSTCP](amiga_main.c) main: Task received CTRL-C\n"));
 #endif
-	    /* We recieved CTRL-C
+	    /* We received CTRL-C
 	     * NETTRACE task keeps one base open, it is not counted. */
         api_hide();		          /* hides the API from users */
 
+        api_sendbreaktotasks(); /* send brk to all tasks w/ SBase open */
+
         /* Try three times with a short delay */
         for (i = 0; i < 3 && MasterSocketBase->lib_OpenCnt > 1; i++) {
-          api_sendbreaktotasks(); /* send brk to all tasks w/ SBase open */ 
           Delay(50);		          /* give tasks time to close socket base */
         }
 
@@ -298,7 +297,7 @@ D(bug("[AROSTCP](amiga_main.c) main: Got CTRL-C while %ld %s still open.\n",
 	       MasterSocketBase->lib_OpenCnt - 1,
 	             (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries");
 
-          api_show(); /* stopping not successfull, show API to users */ 
+          api_show(); /* stopping not successful, show API to users */ 
         } else {
           break;
         }
@@ -423,7 +422,7 @@ D(bug("[AROSTCP](amiga_main.c) init_all()\n"));
   D(Printf("rc_start() complete, initialization finished\n");)
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) init_all: Initialisation successfull.\n"));
+D(bug("[AROSTCP](amiga_main.c) init_all: Initialisation successful.\n"));
 #endif
 
   return TRUE;

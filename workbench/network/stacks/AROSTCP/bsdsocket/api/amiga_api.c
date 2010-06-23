@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2010 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -310,7 +310,7 @@ D(bug("[AROSTCP](amiga_api.c) __ELL_Expunge()\n"));
     return NULL; /* no AmigaDos seglist there (for system use) */
   }
   /*
-   * here if someone still have us open, or AmiTCP don't let us expunge yet
+   * here if someone still has us open, or AmiTCP won't let us expunge yet
    */
   libPtr->lib_Flags |= LIBF_DELEXP;	/* set delayed expunge flag */
   SB_Expunged = FALSE;
@@ -345,7 +345,6 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
   VOID * freestart;
   ULONG  size;
   int	 i;
-  struct soevent *se;
 
   /*
    * one task may have SocketLibrary opened more than once.
@@ -570,6 +569,7 @@ D(bug("[AROSTCP](amiga_api.c) api_hide()\n"));
   Forbid();
   /* unlink Master SocketBase from System Library list */
   Remove((struct Node*)MasterSocketBase);	
+  Remove((struct Node*)MasterMiamiBase);	
   Permit();
   api_state = API_HIDDEN;
 }
@@ -642,8 +642,7 @@ D(bug("[AROSTCP](amiga_api.c) api_deinit: The calling task of api_deinit() was n
 
   Forbid();
   if (MasterMiamiBase) {
-#warning "TODO: Replace __ELL_EXPUNGE with a generic version or fix for closing miami.."
-	  //ExpungeLibrary(MasterMiamiBase);
+    __ELL_Expunge(MasterMiamiBase);
     MasterMiamiBase = NULL;
   }
   if (MasterSocketBase) {
