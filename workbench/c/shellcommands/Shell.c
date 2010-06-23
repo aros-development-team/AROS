@@ -1152,7 +1152,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	    if
 	    (
 	        (GetVar(avBuffer, varBuffer, sizeof(varBuffer),
-		       GVF_GLOBAL_ONLY | LV_VAR) != -1) &&
+		       /*GVF_GLOBAL_ONLY |*/ LV_VAR) != -1) &&           // otigreat: Why would we only look for global variables here???
 		!(varBuffer[0] == '$' && !strcmp(varBuffer+1, avBuffer))
             )
 	    {
