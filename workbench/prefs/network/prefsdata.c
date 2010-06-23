@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -361,15 +361,7 @@ CONST_STRPTR GetDefaultStackLocation()
 
 BOOL IsStackRunning()
 {
-    struct Library * socketlib = NULL;
-
-    if ((socketlib = OpenLibrary("bsdsocket.library", 0L)) != NULL)
-    {
-        CloseLibrary(socketlib);
-        return TRUE;
-    }
-
-    return FALSE;
+    return FindTask("bsdsocket.library") != NULL;
 }
 
 BOOL RestartStack()
@@ -395,23 +387,14 @@ BOOL RestartStack()
 
     /* Startup */
     {
-        CONST_STRPTR srcdir = GetDefaultStackLocation();
-        ULONG arostcppathlen = strlen(srcdir) + 3 + 20;
-        TEXT arostcppath[arostcppathlen];
         struct TagItem tags[] =
         {
-            { SYS_Input,        (IPTR)NULL          },
-            { SYS_Output,       (IPTR)NULL          },
-            { SYS_Error,        (IPTR)NULL          },
             { SYS_Asynch,       (IPTR)TRUE          },
             { TAG_DONE,         0                   }
         };
 
-        CombinePath3P(arostcppath, arostcppathlen, srcdir, "C", "AROSTCP");
-
-        SystemTagList(arostcppath, tags);
+        SystemTagList("AROSTCP", tags);
     }
-
 
     /* Check if startup successful */
     trycount = 0;
