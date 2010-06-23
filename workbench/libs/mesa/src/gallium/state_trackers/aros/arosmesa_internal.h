@@ -62,7 +62,7 @@ struct arosmesa_context
     /* FIXME: shouldn't this be part of frame buffer? */
     struct Window               *window;                /* Intuition window */
     struct arosmesa_screen_info ScreenInfo;
-    struct pipe_surface         *screen_surface;        /* Surface of the whole screen. May be NULL (driver dependant) */
+    struct pipe_screen          *pscreen;
     
     /* Rastport 'visible' to user (window rasport, screen rastport)*/
     struct RastPort             *visible_rp;

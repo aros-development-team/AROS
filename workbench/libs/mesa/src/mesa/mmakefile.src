@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 include $(SRCDIR)/$(CURDIR)/sources.mak
 
 #MM- workbench-libs-complete : workbench-libs-mesa
-#MM workbench-libs-mesa : includes linklibs-galliumauxiliary
+#MM workbench-libs-mesa : includes linklibs-galliumauxiliary workbench-libs-gallium
 
 AROS_STATE_TRACKER_HIDD_SOURCES = \
             state_trackers/aros/arosmesa_api_hidd \
@@ -72,6 +72,6 @@ LIB_MESA_SOURCES = \
 %build_module mmake=workbench-libs-mesa \
     modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
     files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES)" \
-    uselibs="galliumauxiliary rom"
+    uselibs="galliumauxiliary rom gallium"
 
 %common
