@@ -4,8 +4,8 @@
 
 include $(TOP)/config/make.cfg
 
-##MM- workbench-libs-complete : workbench-libs-gallium
-#MM workbench-libs-gallium : includes
+#MM- workbench-libs-complete : workbench-libs-gallium
+#MM workbench-libs-gallium : includes hidd-gallium
 
 ifeq ($(AROS_TARGET_CPU), i386)
   FFIXED = -ffixed-ebx
