@@ -29,3 +29,5 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(Init, 0);
 ADD2EXPUNGELIB(Expunge, 0);
+
+ADD2LIBS((STRPTR)"gallium.hidd", 0, static struct Library *, GalliumHiddBase);
