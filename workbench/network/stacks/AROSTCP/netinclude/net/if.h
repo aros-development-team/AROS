@@ -78,6 +78,9 @@ struct	socket;
 struct	ether_header;
 #endif
 #endif
+
+#define	IFNAMSIZ	16
+
 /*
  * Structure describing information about an interface
  * which may be of interest to management entities.
@@ -114,6 +117,7 @@ struct if_data {
    u_quad_t ifi_aros_lasttotal;
    u_char   ifi_aros_usedhcp;
    pid_t    ifi_aros_dhcp_pid;
+   char     ifi_aros_dhcp_args[IFNAMSIZ + 5];
 };
 
 struct ifnet {
@@ -288,7 +292,6 @@ struct ifa_msghdr {
  * remainder may be interface specific.
  */
 struct	ifreq {
-#define	IFNAMSIZ	16
 	char	ifr_name[IFNAMSIZ];		/* if name, e.g. "en0" */
 	union {
 		struct	sockaddr ifru_addr;

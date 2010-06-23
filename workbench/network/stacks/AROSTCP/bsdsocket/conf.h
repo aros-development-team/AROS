@@ -47,7 +47,7 @@
 #endif
 
 /*
- * For m68k,AmigaOS4 and AROS we build Roadshow-compatible version
+ * For m68k, AmigaOS4 and AROS we build Roadshow-compatible version
  */
 #ifdef __mc68000
 #define COMPAT_ROADSHOW
