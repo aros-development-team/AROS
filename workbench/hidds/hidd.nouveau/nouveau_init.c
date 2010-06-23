@@ -48,4 +48,4 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(Novueau_Init, 0);
 
-ADD2LIBS((STRPTR)"gallium.hidd", 0, static struct Library *, GalliumBase);
+ADD2LIBS((STRPTR)"gallium.hidd", 0, static struct Library *, GalliumHiddBase);

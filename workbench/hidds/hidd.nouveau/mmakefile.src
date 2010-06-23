@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 
-#MM hidd-nouveau : hidd-i2c hidd-agp
+#MM hidd-nouveau : hidd-i2c hidd-agp hidd-gallium
 
 GALLIUM_NVIDIA_SOURCES = \
             drivers/nouveau/nouveau_screen \
