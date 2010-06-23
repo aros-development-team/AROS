@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
-FILES := driverfactoryclass init
+FILES := galliumclass init
 
 #MM includes-copy
 %copy_includes path=hidd dir=include

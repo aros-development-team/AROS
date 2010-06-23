@@ -9,16 +9,14 @@
 
 #include LC_LIBDEFS_FILE
 
-struct HIDDGalliumDriverFactoryData
+struct HIDDGalliumData
 {
 };
 
 struct galliumstaticdata 
 {
-    OOP_Class       *galliumDriverFactoryClass;
-    OOP_AttrBase    hiddGalliumAB;
-    struct Library  *loadedDriverHidd;
-    OOP_Object      *driver;
+    OOP_Class       *galliumclass;
+    OOP_AttrBase    galliumAttrBase;
 };
 
 LIBBASETYPE 
