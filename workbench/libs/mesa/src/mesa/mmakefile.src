@@ -10,10 +10,13 @@ include $(SRCDIR)/$(CURDIR)/sources.mak
 #MM- workbench-libs-complete : workbench-libs-mesa
 #MM workbench-libs-mesa : includes linklibs-galliumauxiliary workbench-libs-gallium
 
-AROS_STATE_TRACKER_HIDD_SOURCES = \
-            state_trackers/aros/arosmesa_api_hidd \
-
 SHARED_LIB_SOURCES = \
+            aros/arosmesacreatecontext \
+            aros/arosmesadestroycontext \
+            aros/arosmesamakecurrent \
+            aros/arosmesaswapbuffers \
+            aros/arosmesagetcurrentcontext \
+            aros/arosmesa_funcs \
             aros_libapi \
             aros_libinit \
             arosc_emul \
@@ -35,8 +38,6 @@ GLSL_SOURCES = \
             ../glsl/pp/sl_pp_token \
             ../glsl/pp/sl_pp_token_util \
             ../glsl/pp/sl_pp_version \
-
-GALLIUM_SUBPATH = ../gallium
 
 ifeq ($(AROS_TARGET_CPU), i386)
   FFIXED = -ffixed-ebx
@@ -66,7 +67,6 @@ USER_CFLAGS := -DUSE_MGL_NAMESPACE -DAROS_MESA_SHARED -ffast-math $(FFIXED)
 LIB_MESA_SOURCES = \
             $(MESA_GALLIUM_SOURCES:.c=) \
             $(GLAPI_SOURCES:.c=) \
-            $(addprefix $(GALLIUM_SUBPATH)/,$(AROS_STATE_TRACKER_HIDD_SOURCES)) \
             $(GLSL_SOURCES) \
 
 %build_module mmake=workbench-libs-mesa \
