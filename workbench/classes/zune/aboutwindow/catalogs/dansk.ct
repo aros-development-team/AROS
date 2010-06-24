@@ -1,0 +1,25 @@
+## version $VER: AboutWindow.catalog 1.0 (25.06.2010)
+## language dansk
+## codeset 0
+;
+;
+MSG_ABOUT
+Om
+; About
+;
+MSG_AUTHORS
+Ophavsmænd
+; Authors
+;
+MSG_SPONSORS
+Sponsorer
+; Sponsors
+;
+MSG_SECTION_PROGRAMMING
+Programmering
+; Programming
+;
+MSG_SECTION_TRANSLATING
+Oversættelse
+; Translating
+;
