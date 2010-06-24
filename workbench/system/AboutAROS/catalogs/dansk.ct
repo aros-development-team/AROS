@@ -1,0 +1,140 @@
+## version $VER: AboutAROS.catalog 1.0 (24.6.2010)
+## language dansk
+## codeset 0
+;
+;
+MSG_TITLE
+Om AROS
+; About AROS
+;
+MSG_PERSONAL_BUILD
+Personal %s Build
+; Personal %s Build
+;
+MSG_NIGHTLY_BUILD
+Nightly %s Build
+; Nightly %s Build
+;
+MSG_SNAPSHOT
+Øjebliksbillede
+; Snapshot
+;
+MSG_MILESTONE
+Milepæl
+; Milestone
+;
+MSG_RELEASE
+Udgivelse
+; Release
+;
+MSG_COPYRIGHT
+Copyright © 1995-2010, The AROS Development Team. Alle rettigheder forbeholdes.
+; Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Udgivet under vilkårene i
+; Released under the terms of the
+;
+MSG_LICENSE_2
+AROS Public License
+; AROS Public License
+;
+MSG_LICENSE_3
+, version 1.1.
+; , version 1.1.
+;
+MSG_MORE_INFORMATION
+Besøg http://www.aros.org/ for flere oplysninger.
+; Please visit http://www.aros.org/ for more information.
+;
+MSG_PAGE_AUTHORS
+Ophavsmænd
+; Authors
+;
+MSG_PAGE_SPONSORS
+Sponsorer
+; Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Anerkendelser
+; Acknowledgements
+;
+MSG_SECTION_COORDINATION
+Koordinering
+; Coordination
+;
+MSG_SECTION_EVANGELISM
+Evangelisme
+; Evangelism
+;
+MSG_SECTION_HIDD
+HIDD subsystem
+; HIDD subsystem
+;
+MSG_SECTION_INTUITION
+Intuition
+; Intuition
+;
+MSG_SECTION_GRAPHICS
+Grafik
+; Graphics
+;
+MSG_SECTION_SHELL_COMMANDS
+Skalkommandoer
+; Shell Commands
+;
+MSG_SECTION_WORKBENCH
+;** Workbench
+; Workbench
+;
+MSG_SECTION_TOOLS
+Værktøj
+; Tools
+;
+MSG_SECTION_PREFERENCES
+Indstillinger
+; Preferences
+;
+MSG_SECTION_BGUI
+BGUI
+; BGUI
+;
+MSG_SECTION_ZUNE
+Zune
+; Zune
+;
+MSG_SECTION_KERNEL
+Kerne
+; Kernel
+;
+MSG_SECTION_DOS
+DOS
+; DOS
+;
+MSG_SECTION_NETWORK
+Netværk
+; Networking Components
+;
+MSG_SECTION_LIBC_POSIX
+C link library and POSIX layer
+; C link library and POSIX layer
+;
+MSG_SECTION_DOCUMENTATION
+Dokumentation
+; Documentation
+;
+MSG_SECTION_TRANSLATION
+Oversættelse
+; Translation
+;
+MSG_SECTION_ARTISTRY
+Udsmykning
+; Artistry
+;
+MSG_SECTION_WEBSITE
+Hjemmeside
+; Website
+;
+MSG_SECTION_DATATYPES
+Datatyper
+; Datatypes
