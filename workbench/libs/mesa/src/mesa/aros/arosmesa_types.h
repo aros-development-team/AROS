@@ -1,18 +1,15 @@
 /*
-    Copyright 2009, The AROS Development Team. All rights reserved.
+    Copyright 2009-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef AROSMESA_INTERNAL_H
-#define AROSMESA_INTERNAL_H
+#ifndef AROSMESA_TYPES_H
+#define AROSMESA_TYPES_H
 
 #include "main/mtypes.h"
 #include "state_tracker/st_context.h"
 
 #include <GL/arosmesa.h>
-
-extern struct Library * AROSMesaCyberGfxBase;
-#define CyberGfxBase AROSMesaCyberGfxBase
 
 /* AROS frame buffer */
 struct arosmesa_framebuffer
@@ -49,13 +46,10 @@ struct arosmesa_screen_info
     GLuint          BitsPerPixel;
 };
 
-/* FIXME: Maybe the screen_surface should be hidden away in some framebuffer? */
-struct pipe_surface;
-
 /* AROS context */
 struct arosmesa_context
 {
-    struct st_context *         st;                     /* Base class - must be first */
+    struct st_context           *st;                     /* Base class - must be first */
     AROSMesaVisual              visual;                 /* the visual context */
     AROSMesaFrameBuffer         framebuffer;
     
