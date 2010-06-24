@@ -377,6 +377,7 @@ struct Volume *volume;
 	de.de_Reserved = cfg->reserved;
 	de.de_NumBuffers = 20;
 	de.de_Surfaces=1;
+	de.de_SectorPerBlock = 1;
 	de.de_BlocksPerTrack=1;
 	de.de_LowCyl = 0;
 	de.de_HighCyl = cfg->size-1;
@@ -581,6 +582,7 @@ struct PathElement *pe;
 		cfg->name = "SomeDisk";
 	return 0;
 }
+
 int main(int argc, char *argv[]) {
 int error;
 struct Config cfg;
