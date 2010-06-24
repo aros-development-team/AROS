@@ -1,0 +1,404 @@
+## version $VER: asl.catalog 1.0 (25.06.2010)
+## language dansk
+## codeset 0
+;
+MSG_FILEREQ_TITLE
+Vælg fil
+; Select File
+;
+MSG_FILEREQ_POSITIVE_GAD
+O.k.
+; Ok
+;
+MSG_FILEREQ_NEGATIVE_GAD
+Afbryd
+; Cancel
+;
+MSG_FILEREQ_VOLUMES_GAD
+Volumes
+; Volumes
+;
+MSG_FILEREQ_PARENT_GAD
+Forælder
+; Parent
+;
+MSG_FILEREQ_PATTERN_LABEL
+Mønster
+; Pattern
+;
+MSG_FILEREQ_DRAWER_LABEL
+Skuffe
+; Drawer
+;
+MSG_FILEREQ_FILE_LABEL
+Fil
+; File
+;
+MSG_FILEREQ_LV_DRAWER
+Skuffe
+; Drawer
+;
+MSG_FILEREQ_LV_ASSIGN
+Tildel
+; Assign
+;
+MSG_FILEREQ_DELETE_TITLE
+Slet fil
+; Delete File
+;
+MSG_FILEREQ_DELETE_MSG
+Advarsel: Slettede data kan ikke\ngenskabes. Vil du stadig slette\n%s?
+; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
+;
+MSG_FILEREQ_DELETE_OKCANCEL
+Slet|Afbryd
+; Delete|Cancel
+;
+MSG_FILEREQ_RENAME_TITLE
+Omdøb
+; Rename
+;
+MSG_FILEREQ_RENAME_OK
+Omdøb
+; Rename
+;
+MSG_FILEREQ_RENAME_CANCEL
+Afbryd
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_TITLE
+Opret skuffe
+; Create Drawer
+;
+MSG_FILEREQ_CREATEDRAWER_OK
+Opret
+; Create
+;
+MSG_FILEREQ_CREATEDRAWER_CANCEL
+Afbryd
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_DEFNAME
+Omdøb mig
+; Rename_Me
+;
+MSG_FILEREQ_SELECT_TITLE
+Vælg efter mønster
+; Select by pattern
+;
+MSG_FILEREQ_SELECT_OK
+Vælg
+; Select
+;
+MSG_FILEREQ_SELECT_CANCEL
+Afbryd
+; Cancel
+;
+MSG_FILEREQ_MEN_CONTROL
+Kontrol
+; Control
+;
+MSG_FILEREQ_MEN_CONTROL_LASTNAME
+L\0Forrige navn
+; L\0Last Name
+;
+MSG_FILEREQ_MEN_CONTROL_NEXTNAME
+N\0Næste navn
+; N\0Next Name
+;
+MSG_FILEREQ_MEN_CONTROL_RESTORE
+R\0Genskab
+; R\0Restore
+;
+MSG_FILEREQ_MEN_CONTROL_PARENT
+P\0Forælder
+; P\0Parent
+;
+MSG_FILEREQ_MEN_CONTROL_VOLUMES
+V\0Volumes
+; V\0Volumes
+;
+MSG_FILEREQ_MEN_CONTROL_UPDATE
+U\0Opdatér
+; U\0Update
+;
+MSG_FILEREQ_MEN_CONTROL_DELETE
+D\0Slet
+; D\0Delete
+;
+MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
+T\0Opret ny skuffe...
+; T\0Create new drawer...
+;
+MSG_FILEREQ_MEN_CONTROL_RENAME
+E\0Omdøb...
+; E\0Rename...
+;
+MSG_FILEREQ_MEN_CONTROL_SELECT
+#\0Vælg...
+; #\0Select...
+;
+MSG_FILEREQ_MEN_CONTROL_OK
+O\0O.k.
+; O\0Ok
+;
+MSG_FILEREQ_MEN_CONTROL_CANCEL
+C\0Afbryd
+; C\0Cancel
+;
+MSG_FILEREQ_MEN_FILELIST
+Filliste
+; File list
+;
+MSG_FILEREQ_MEN_FILELIST_SORTNAME
+1\0Sortér efter navn
+; 1\0Sort by name
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDATE
+2\0Sortér efter dato
+; 2\0Sort by date
+;
+MSG_FILEREQ_MEN_FILELIST_SORTSIZE
+3\0Sortér efter størrelse
+; 3\0Sort by size
+;
+MSG_FILEREQ_MEN_FILELIST_SORTUP
++\Stigende rækkefølge
+; +\0Ascending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDOWN
+-\Faldende rækkefølge
+; -\0Descending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
+4\0Vis skuffer forrest
+; 4\0Show drawers first
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
+5\0Vis skuffer med filer
+; 5\0Show drawers with files
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
+6\0Vis skuffer til sidst
+; 6\0Show drawers last
+;
+MSG_MODEREQ_TITLE
+Vælg skærmtilstand
+; Select Screen Mode
+;
+MSG_MODEREQ_POSITIVE_GAD
+O.k.
+; Ok
+;
+MSG_MODEREQ_NEGATIVE_GAD
+Afbryd
+; Cancel
+;
+MSG_MODEREQ_OVERSCAN_LABEL
+Overskan
+; Overscan
+;
+MSG_MODEREQ_OVERSCAN_TEXT
+Skriftstørrelse
+; Text Size
+;
+MSG_MODEREQ_OVERSCAN_GRAPHICS
+Grafikstørrelse
+; Graphics Size
+;
+MSG_MODEREQ_OVERSCAN_EXTREME
+Ekstrem størrelse
+; Extreme Size
+;
+MSG_MODEREQ_OVERSCAN_MAXIMUM
+Maksimal størrelse
+; Maximum Size
+;
+MSG_MODEREQ_WIDTH_LABEL
+Bredde
+; Width
+;
+MSG_MODEREQ_HEIGHT_LABEL
+Højde
+; Height
+;
+MSG_MODEREQ_COLORS_LABEL
+Farver
+; Colors
+;
+MSG_MODEREQ_AUTOSCROLL_LABEL
+Autorulning
+; AutoScroll
+;
+MSG_MODEREQ_AUTOSCROLL_OFF
+FRA
+; OFF
+;
+MSG_MODEREQ_AUTOSCROLL_ON
+TIL
+; ON
+;
+MSG_MODEREQ_PROPERTIES_TITLE
+Tilstandsegenskaber
+; Mode Properties
+;
+MSG_MODEREQ_PROPERTIES_NOTWB
+Understøtter ikke Workbench
+; Does not support Workbench
+;
+MSG_MODEREQ_PROPERTIES_NOTGENLOCK
+Understøtter ikke genlock
+; Does not support genlock
+;
+MSG_MODEREQ_PROPERTIES_NOTDRAG
+Ikke trækbar
+; Not draggable
+;
+MSG_MODEREQ_PROPERTIES_HAM
+Hold & Modify
+; Hold & Modify
+;
+MSG_MODEREQ_PROPERTIES_EHB
+Extra-HalfBright
+; Extra-HalfBright
+;
+MSG_MODEREQ_PROPERTIES_LACE
+Interlaced
+; Interlaced
+;
+MSG_MODEREQ_PROPERTIES_ECS
+Kræver ECS
+; Requires ECS
+;
+MSG_MODEREQ_PROPERTIES_WB
+Understøtter Workbench
+; Supports Workbench
+;
+MSG_MODEREQ_PROPERTIES_GENLOCK
+Understøtter genlock
+; Supports genlock
+;
+MSG_MODEREQ_PROPERTIES_DRAG
+Trækbar
+; Draggable
+;
+MSG_MODEREQ_PROPERTIES_DPFPRI2
+DualPlayfield Prioritet 2
+; DualPlayfield Priority 2
+;
+MSG_MODEREQ_PROPERTIES_REFRESHRATE
+%ldHz, %ld,%ldkHz
+; %ldHz, %ld,%ldkHz
+;
+MSG_MODEREQ_MEN_CONTROL
+Kontrol
+; Control
+;
+MSG_MODEREQ_MEN_CONTROL_LASTMODE
+L\0Forrige tilstand
+; L\0Last Mode
+;
+MSG_MODEREQ_MEN_CONTROL_NEXTMODE
+N\0Næste tilstand
+; N\0Next Mode
+;
+MSG_MODEREQ_MEN_CONTROL_PROPERTIES
+?\0Egenskabsliste...
+; ?\0Property List...
+;
+MSG_MODEREQ_MEN_CONTROL_RESTORE
+R\0Genskab
+; R\0Restore
+;
+MSG_MODEREQ_MEN_CONTROL_OK
+O\0O.k.
+; O\0Ok
+;
+MSG_MODEREQ_MEN_CONTROL_CANCEL
+C\0Afbryd
+; C\0Cancel
+;
+MSG_FONTREQ_TITLE
+Vælg skrifttype
+; Select Font
+;
+MSG_FONTREQ_POSITIVE_GAD
+O.k.
+; Ok
+;
+MSG_FONTREQ_NEGATIVE_GAD
+Afbryd
+; Cancel
+;
+MSG_FONTREQ_MEN_CONTROL
+Kontrol
+; Control
+;
+MSG_FONTREQ_MEN_CONTROL_LASTFONT
+L\0Forrige skrifttype
+; L\0Last Font
+;
+MSG_FONTREQ_MEN_CONTROL_NEXTFONT
+N\0Næste skrifttype
+; N\0Next Font
+;
+MSG_FONTREQ_MEN_CONTROL_RESTORE
+R\0Genskab
+; R\0Restore
+;
+MSG_FONTREQ_MEN_CONTROL_RESCAN
+D\0Genskan disk
+; D\0Rescan Disk
+;
+MSG_FONTREQ_MEN_CONTROL_OK
+O\0O.k.
+; O\0Ok
+;
+MSG_FONTREQ_MEN_CONTROL_CANCEL
+C\0Afbryd
+; C\0Cancel
+;
+MSG_FONTREQ_MODE_LABEL
+Tilstand
+; Mode
+;
+MSG_FONTREQ_MODE_TEXT
+Tekst
+; Text
+;
+MSG_FONTREQ_MODE_TEXTANDFIELD
+Tekst+baggrund
+; Text+Field
+;
+MSG_FONTREQ_MODE_COMPLEMENT
+Inverteret
+; Complement
+;
+MSG_FONTREQ_STYLE_LABEL
+Stil
+; Style
+;
+MSG_FONTREQ_STYLE_BOLD
+F
+; B
+;
+MSG_FONTREQ_STYLE_ITALIC
+I
+; I
+;
+MSG_FONTREQ_STYLE_UNDERLINED
+U
+; U
+;
+MSG_FONTREQ_COLOR_LABEL_FG
+Farve
+; Color
+;
+MSG_FONTREQ_COLOR_LABEL_BG
+Baggrundsfarve
+; BG Color
+;
+MSG_FONTREQ_COLOR_LABEL_FGBG
+Farver
+; Colors
+;
