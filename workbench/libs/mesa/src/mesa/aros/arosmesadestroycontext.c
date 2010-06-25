@@ -9,16 +9,12 @@
 #include <proto/gallium.h>
 #include <aros/debug.h>
 
-#if defined (AROS_MESA_SHARED)
 AROS_LH1(void, AROSMesaDestroyContext,
     AROS_LHA(AROSMesaContext, amesa, A0),
-    struct Library *, MesaBase, 0, Mesa)
+    struct Library *, MesaBase, 7, Mesa)
 {
     AROS_LIBFUNC_INIT
-#else
-void AROSMesaDestroyContext(AROSMesaContext amesa)
-{
-#endif
+
     SAVE_REG
     
     PUT_MESABASE_IN_REG
@@ -53,8 +49,7 @@ void AROSMesaDestroyContext(AROSMesaContext amesa)
     }
     
     RESTORE_REG
-#if defined (AROS_MESA_SHARED)
+
     AROS_LIBFUNC_EXIT
-#endif
 }
 

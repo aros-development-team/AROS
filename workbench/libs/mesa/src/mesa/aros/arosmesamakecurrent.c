@@ -7,16 +7,12 @@
 #include "state_tracker/st_public.h"
 #include <proto/exec.h>
 
-#if defined (AROS_MESA_SHARED)
 AROS_LH1(void, AROSMesaMakeCurrent,
     AROS_LHA(AROSMesaContext, amesa, A0),
-    struct Library *, MesaBase, 0, Mesa)
+    struct Library *, MesaBase, 8, Mesa)
 {
     AROS_LIBFUNC_INIT
-#else
-void AROSMesaMakeCurrent(AROSMesaContext amesa)
-{
-#endif
+
     SAVE_REG
     
     PUT_MESABASE_IN_REG
@@ -39,8 +35,7 @@ void AROSMesaMakeCurrent(AROSMesaContext amesa)
     }
         
     RESTORE_REG
-#if defined (AROS_MESA_SHARED)
+
     AROS_LIBFUNC_EXIT
-#endif
 }
 

@@ -1,12 +1,11 @@
-diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c ./mesa/glapi/glapi.c
+diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c ./mesa/glapi/glapi.c
 --- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c	2010-04-05 10:05:16.000000000 +0200
-+++ ./mesa/glapi/glapi.c	2010-04-08 20:15:14.000000000 +0200
-@@ -120,9 +120,12 @@
++++ ./mesa/glapi/glapi.c	2010-06-25 19:39:41.000000000 +0200
+@@ -120,9 +120,11 @@
  
  #endif /* defined(THREADS) */
  
-+#if defined(__AROS__) && defined(AROS_MESA_SHARED)
-+#else
++#if !defined(__AROS__)
  PUBLIC struct _glapi_table *_glapi_Dispatch = (struct _glapi_table *) __glapi_noop_table;
  
  PUBLIC void *_glapi_Context = NULL;
@@ -14,15 +13,14 @@ diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c 
  
  #endif /* defined(GLX_USE_TLS) */
  /*@}*/
-diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h ./mesa/glapi/glapi.h
+diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h ./mesa/glapi/glapi.h
 --- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h	2010-04-05 10:05:16.000000000 +0200
-+++ ./mesa/glapi/glapi.h	2010-04-08 20:12:52.000000000 +0200
-@@ -49,6 +49,38 @@
++++ ./mesa/glapi/glapi.h	2010-06-25 19:39:11.000000000 +0200
+@@ -49,6 +49,30 @@
  
  struct _glapi_table;
  
 +#if defined(__AROS__) 
-+#if defined(AROS_MESA_SHARED)
 +
 +#if defined(__i386__)
 +register struct MesaBase * REGMesaBase __asm__("ebx");
@@ -44,23 +42,19 @@ diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h 
 +#define RESTORE_REG         REGMesaBase = reg;
 +extern void                     **GETMESABASECTX(void);
 +extern struct _glapi_table      **GETMESABASEDDISPATCH(void);
-+#else
-+
-+#define SAVE_REG
-+#define PUT_MESABASE_IN_REG
-+#define RESTORE_REG
-+
-+#endif
 +#endif
 +
  typedef void (*_glapi_proc)(void); /* generic function pointer */
  
  
-@@ -94,9 +126,19 @@
+@@ -94,9 +118,15 @@
  
  #else
  
-+#if defined(__AROS__) && defined(AROS_MESA_SHARED)
+-extern struct _glapi_table *_glapi_Dispatch;
+-
+-extern void *_glapi_Context;
++#if defined(__AROS__)
 +# if defined(USE_MGL_NAMESPACE)
 +#  define _mglapi_Context *(GETMESABASECTX())
 +# define _mglapi_Dispatch *(GETMESABASEDDISPATCH())
@@ -68,15 +62,11 @@ diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h 
 +#  define _glapi_Context *(GETMESABASECTX())
 +#  define _glapi_Dispatch *(GETMESABASEDDISPATCH())
 +# endif
-+#else
- extern struct _glapi_table *_glapi_Dispatch;
- 
- extern void *_glapi_Context;
 +#endif
  
  # ifdef THREADS
  
-diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler.h ./mesa/main/compiler.h
+diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler.h ./mesa/main/compiler.h
 --- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler.h	2010-04-04 17:46:26.000000000 +0200
 +++ ./mesa/main/compiler.h	2010-04-08 20:08:28.000000000 +0200
 @@ -234,6 +234,8 @@
@@ -88,7 +78,7 @@ diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler.
  #elif (defined(_AIX) || defined(__blrts))
  static INLINE GLuint CPU_TO_LE32(GLuint x)
  {
-diff -ur -x.svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/imports.c ./mesa/main/imports.c
+diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/imports.c ./mesa/main/imports.c
 --- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/imports.c	2010-04-04 17:46:26.000000000 +0200
 +++ ./mesa/main/imports.c	2010-04-08 23:09:15.000000000 +0200
 @@ -501,7 +501,7 @@

@@ -120,8 +120,7 @@ static _glthread_TSD ContextTSD;         /**< Per-thread context pointer */
 
 #endif /* defined(THREADS) */
 
-#if defined(__AROS__) && defined(AROS_MESA_SHARED)
-#else
+#if !defined(__AROS__)
 PUBLIC struct _glapi_table *_glapi_Dispatch = (struct _glapi_table *) __glapi_noop_table;
 
 PUBLIC void *_glapi_Context = NULL;

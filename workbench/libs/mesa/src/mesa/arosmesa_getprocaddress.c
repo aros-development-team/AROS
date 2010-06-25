@@ -77,7 +77,6 @@ AROSMesaProc AROSMesaGetProcAddress(const GLubyte * procname)
     return get_static_proc_address(procname);
 }
 
-#if defined(AROS_MESA_SHARED)
 /* Implementation of no-op functions to remove linker problems */
 void GLAPIENTRY gl_dispatch_stub_343(GLenum target, GLenum format, GLenum type, GLvoid * table) {};
 void GLAPIENTRY gl_dispatch_stub_344(GLenum target, GLenum pname, GLfloat * params) {};
@@ -131,4 +130,4 @@ void GLAPIENTRY gl_dispatch_stub_804(GLuint id, GLenum pname, GLint64EXT * param
 void GLAPIENTRY gl_dispatch_stub_805(GLuint id, GLenum pname, GLuint64EXT * params) {};
 void GLAPIENTRY glEGLImageTargetTexture2DOES (GLenum target, GLeglImageOES image) {};
 void GLAPIENTRY glEGLImageTargetRenderbufferStorageOES (GLenum target, GLeglImageOES image) {};
-#endif
+

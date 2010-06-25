@@ -50,7 +50,6 @@
 struct _glapi_table;
 
 #if defined(__AROS__) 
-#if defined(AROS_MESA_SHARED)
 
 #if defined(__i386__)
 register struct MesaBase * REGMesaBase __asm__("ebx");
@@ -72,13 +71,6 @@ register struct MesaBase * REGMesaBase __asm__("r14");
 #define RESTORE_REG         REGMesaBase = reg;
 extern void                     **GETMESABASECTX(void);
 extern struct _glapi_table      **GETMESABASEDDISPATCH(void);
-#else
-
-#define SAVE_REG
-#define PUT_MESABASE_IN_REG
-#define RESTORE_REG
-
-#endif
 #endif
 
 typedef void (*_glapi_proc)(void); /* generic function pointer */
@@ -126,7 +118,7 @@ extern __thread void * _glapi_tls_Context
 
 #else
 
-#if defined(__AROS__) && defined(AROS_MESA_SHARED)
+#if defined(__AROS__)
 # if defined(USE_MGL_NAMESPACE)
 #  define _mglapi_Context *(GETMESABASECTX())
 # define _mglapi_Dispatch *(GETMESABASEDDISPATCH())
@@ -134,10 +126,6 @@ extern __thread void * _glapi_tls_Context
 #  define _glapi_Context *(GETMESABASECTX())
 #  define _glapi_Dispatch *(GETMESABASEDDISPATCH())
 # endif
-#else
-extern struct _glapi_table *_glapi_Dispatch;
-
-extern void *_glapi_Context;
 #endif
 
 # ifdef THREADS
