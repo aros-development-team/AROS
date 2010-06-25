@@ -49,7 +49,7 @@
 
 struct _glapi_table;
 
-#if defined(__AROS__) 
+#if defined(__AROS__)
 
 #if defined(__i386__)
 register struct MesaBase * REGMesaBase __asm__("ebx");
@@ -121,7 +121,7 @@ extern __thread void * _glapi_tls_Context
 #if defined(__AROS__)
 # if defined(USE_MGL_NAMESPACE)
 #  define _mglapi_Context *(GETMESABASECTX())
-# define _mglapi_Dispatch *(GETMESABASEDDISPATCH())
+#  define _mglapi_Dispatch *(GETMESABASEDDISPATCH())
 # else
 #  define _glapi_Context *(GETMESABASECTX())
 #  define _glapi_Dispatch *(GETMESABASEDDISPATCH())

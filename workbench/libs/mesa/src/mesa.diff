@@ -1,11 +1,24 @@
 diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c ./mesa/glapi/glapi.c
 --- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c	2010-04-05 10:05:16.000000000 +0200
-+++ ./mesa/glapi/glapi.c	2010-06-25 19:39:41.000000000 +0200
-@@ -120,9 +120,11 @@
++++ ./mesa/glapi/glapi.c	2010-06-25 20:21:12.000000000 +0200
+@@ -120,9 +120,24 @@
  
  #endif /* defined(THREADS) */
  
-+#if !defined(__AROS__)
++#if defined(__AROS__)
++
++#include "arosmesa_intern.h"
++void **GETMESABASECTX(void)
++{
++    return &(REGMesaBase->mglb_CurrentContext);
++}
++
++struct _glapi_table **GETMESABASEDDISPATCH(void)
++{
++    return (struct _glapi_table **)&(REGMesaBase->mglb_Dispatch);
++}
++
++#else
  PUBLIC struct _glapi_table *_glapi_Dispatch = (struct _glapi_table *) __glapi_noop_table;
  
  PUBLIC void *_glapi_Context = NULL;
@@ -15,12 +28,12 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c
  /*@}*/
 diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h ./mesa/glapi/glapi.h
 --- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h	2010-04-05 10:05:16.000000000 +0200
-+++ ./mesa/glapi/glapi.h	2010-06-25 19:39:11.000000000 +0200
++++ ./mesa/glapi/glapi.h	2010-06-25 20:26:03.000000000 +0200
 @@ -49,6 +49,30 @@
  
  struct _glapi_table;
  
-+#if defined(__AROS__) 
++#if defined(__AROS__)
 +
 +#if defined(__i386__)
 +register struct MesaBase * REGMesaBase __asm__("ebx");
@@ -57,7 +70,7 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h
 +#if defined(__AROS__)
 +# if defined(USE_MGL_NAMESPACE)
 +#  define _mglapi_Context *(GETMESABASECTX())
-+# define _mglapi_Dispatch *(GETMESABASEDDISPATCH())
++#  define _mglapi_Dispatch *(GETMESABASEDDISPATCH())
 +# else
 +#  define _glapi_Context *(GETMESABASECTX())
 +#  define _glapi_Dispatch *(GETMESABASEDDISPATCH())

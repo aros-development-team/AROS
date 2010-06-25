@@ -120,7 +120,20 @@ static _glthread_TSD ContextTSD;         /**< Per-thread context pointer */
 
 #endif /* defined(THREADS) */
 
-#if !defined(__AROS__)
+#if defined(__AROS__)
+
+#include "arosmesa_intern.h"
+void **GETMESABASECTX(void)
+{
+    return &(REGMesaBase->mglb_CurrentContext);
+}
+
+struct _glapi_table **GETMESABASEDDISPATCH(void)
+{
+    return (struct _glapi_table **)&(REGMesaBase->mglb_Dispatch);
+}
+
+#else
 PUBLIC struct _glapi_table *_glapi_Dispatch = (struct _glapi_table *) __glapi_noop_table;
 
 PUBLIC void *_glapi_Context = NULL;
