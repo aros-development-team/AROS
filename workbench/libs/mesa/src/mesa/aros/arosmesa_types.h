@@ -11,19 +11,9 @@
 
 #include <GL/arosmesa.h>
 
-/* AROS frame buffer */
-struct arosmesa_framebuffer
-{
-    struct st_framebuffer *stfb;                    /* Base class - must be first */
-};
+typedef struct st_framebuffer * AROSMesaFrameBuffer;
 
-typedef struct arosmesa_framebuffer * AROSMesaFrameBuffer;
-
-#define GET_GL_FB_PTR(arosmesa_fb) (&arosmesa_fb->stfb->Base)
-#define GET_AROS_FB_PTR(gl_fb) ((AROSMesaFrameBuffer)gl_fb)
-
-
-/* AROS visual */
+/* AROSMesa visual */
 struct arosmesa_visual
 {
     GLvisual            Base;                       /* Base class - must be first */
@@ -46,17 +36,16 @@ struct arosmesa_screen_info
     GLuint          BitsPerPixel;
 };
 
-/* AROS context */
+/* AROSMesa context */
 struct arosmesa_context
 {
-    struct st_context           *st;                     /* Base class - must be first */
-    AROSMesaVisual              visual;                 /* the visual context */
+    struct st_context           *st;
     AROSMesaFrameBuffer         framebuffer;
-    
-    /* FIXME: shouldn't this be part of frame buffer? */
+    AROSMesaVisual              visual;                 /* visual context */
+    struct pipe_screen          *pscreen;
+
     struct Window               *window;                /* Intuition window */
     struct arosmesa_screen_info ScreenInfo;
-    struct pipe_screen          *pscreen;
     
     /* Rastport 'visible' to user (window rasport, screen rastport)*/
     struct RastPort             *visible_rp;
@@ -71,6 +60,5 @@ struct arosmesa_context
 };
 
 #define GET_GL_CTX_PTR(arosmesa_ctx) (arosmesa_ctx->st->ctx)
-#define GET_AROS_CTX_PTR(gl_ctx) ((AROSMesaContext)gl_ctx->DriverCtx)
 
 #endif /* AROSMESA_INTERNAL_H */

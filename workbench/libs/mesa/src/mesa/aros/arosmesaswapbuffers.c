@@ -23,20 +23,17 @@ AROS_LH1(void, AROSMesaSwapBuffers,
     /* If we're swapping the buffer associated with the current context
     * we have to flush any pending rendering commands first.
     */
-    st_notify_swapbuffers(amesa->framebuffer->stfb);
+    st_notify_swapbuffers(amesa->framebuffer);
 
-    /* FIXME: should be ST_SURFACE_BACK_LEFT */
-    st_get_framebuffer_surface(amesa->framebuffer->stfb, ST_SURFACE_FRONT_LEFT, &surf);
+    /* ST_SURFACE_FRONT_LEFT is used because AROSMesa never renders directly to 
+       display, thus FRONT LEFT buffer actually is a "back buffer" */
+    st_get_framebuffer_surface(amesa->framebuffer, ST_SURFACE_FRONT_LEFT, &surf);
 
     if (surf) 
     {
         BltPipeSurfaceRastPort(surf, 0, 0, amesa->visible_rp, amesa->left, 
             amesa->top, amesa->width, amesa->height);
     }
-
-    /* TODO: is this needed? gallium.library should have alrady made the flush */
-    /* Flush. Executes all code posted in DisplaySurface */
-    st_flush(amesa->st, PIPE_FLUSH_RENDER_CACHE, NULL);
 
     AROSMesaCheckAndUpdateBufferSize(amesa);
 

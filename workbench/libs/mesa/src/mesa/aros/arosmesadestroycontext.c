@@ -19,33 +19,33 @@ AROS_LH1(void, AROSMesaDestroyContext,
     
     PUT_MESABASE_IN_REG
 
-    /* destroy a AROS/Mesa context */
+    /* Destroy a AROSMesa context */
     D(bug("[AROSMESA] AROSMesaDestroyContext(amesa @ %x)\n", amesa));
 
-    if (!amesa)
-        return;
-
-    GLcontext * ctx = GET_GL_CTX_PTR(amesa);
-
-    if (ctx)
+    if (amesa)
     {
-        GET_CURRENT_CONTEXT(cur_ctx);
+        GLcontext * ctx = GET_GL_CTX_PTR(amesa);
 
-        if (cur_ctx == ctx)
+        if (ctx)
         {
-            /* Unbind if current */
-            st_make_current( NULL, NULL, NULL );
+            GET_CURRENT_CONTEXT(cur_ctx);
+
+            if (cur_ctx == ctx)
+            {
+                /* Unbind if current */
+                st_make_current( NULL, NULL, NULL );
+            }
+
+            st_finish(ctx->st);
+
+            st_destroy_context(ctx->st);
+            
+            AROSMesaDestroyFrameBuffer(amesa->framebuffer);
+            AROSMesaDestroyVisual(amesa->visual);
+            DestroyPipeScreen(amesa->pscreen);
+            AROSMesaDestroyContext(amesa);
+
         }
-
-        st_finish(ctx->st);
-
-        st_destroy_context(ctx->st);
-        
-        AROSMesaDestroyFrameBuffer(amesa->framebuffer);
-        AROSMesaDestroyVisual(amesa->visual);
-        DestroyPipeScreen(amesa->pscreen);
-        AROSMesaDestroyContext(amesa);
-
     }
     
     RESTORE_REG

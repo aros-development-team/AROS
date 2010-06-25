@@ -382,24 +382,13 @@ GLboolean AROSMesaRecalculateBufferWidthHeight(AROSMesaContext amesa)
 
 AROSMesaFrameBuffer AROSMesaNewFrameBuffer(AROSMesaContext amesa, AROSMesaVisual visual)
 {
-    AROSMesaFrameBuffer aros_fb = NULL;
     GLvisual * vis = GET_GL_VIS_PTR(visual);
     
     D(bug("[AROSMESA] AROSMesaNewFrameBuffer\n"));
 
-    /* Allocate memory for aros structure */
-    aros_fb = AllocVec(sizeof(struct arosmesa_framebuffer), MEMF_PUBLIC | MEMF_CLEAR);
-
-    if (!aros_fb)
-        return NULL;
-    
-    /* Create framebuffer */
-    aros_fb->stfb = st_create_framebuffer(vis,
-                                    visual->ColorFormat, visual->DepthFormat, 
-                                    visual->StencilFormat, amesa->width, 
-                                    amesa->height, (void *) aros_fb);    
-    
-    return aros_fb;
+    return st_create_framebuffer(vis, visual->ColorFormat, visual->DepthFormat, 
+                                visual->StencilFormat, amesa->width, 
+                                amesa->height, NULL);
 }
 
 VOID AROSMesaDestroyContext(AROSMesaContext amesa)
@@ -422,20 +411,14 @@ VOID AROSMesaDestroyFrameBuffer(AROSMesaFrameBuffer aros_fb)
 {
     if (aros_fb)
     {
-        if (aros_fb->stfb)
-        {
-            /* So that reference count goes to 0 and buffer is freed */
-            st_unreference_framebuffer(aros_fb->stfb);
-            aros_fb->stfb = NULL;
-        }
-        
-        FreeVec(aros_fb);
+        /* So that reference count goes to 0 and buffer is freed */
+        st_unreference_framebuffer(aros_fb);
     }
 }
 
 VOID AROSMesaCheckAndUpdateBufferSize(AROSMesaContext amesa)
 {
     if (AROSMesaRecalculateBufferWidthHeight(amesa))
-        st_resize_framebuffer(amesa->framebuffer->stfb, amesa->width, amesa->height);
+        st_resize_framebuffer(amesa->framebuffer, amesa->width, amesa->height);
 }
 
