@@ -371,16 +371,12 @@ amccontextclean:
 
 
 
-#if defined (AROS_MESA_SHARED)
 AROS_LH1(void, AROSMesaMakeCurrent,
     AROS_LHA(AROSMesaContext, amesa, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
-#else
-void AROSMesaMakeCurrent(AROSMesaContext amesa)
-{
-#endif
+
     SAVE_REG
     
     PUT_MESABASE_IN_REG
@@ -422,21 +418,16 @@ void AROSMesaMakeCurrent(AROSMesaContext amesa)
     }
 
     RESTORE_REG
-#if defined (AROS_MESA_SHARED)
+
     AROS_LIBFUNC_EXIT
-#endif
 }
 
-#if defined (AROS_MESA_SHARED)
 AROS_LH1(void, AROSMesaSwapBuffers,
     AROS_LHA(AROSMesaContext, amesa, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
-#else
-void AROSMesaSwapBuffers(AROSMesaContext amesa)
-{        
-#endif
+
     SAVE_REG
     
     PUT_MESABASE_IN_REG
@@ -457,22 +448,17 @@ void AROSMesaSwapBuffers(AROSMesaContext amesa)
         AROS_PIXFMT);
         
     RESTORE_REG
-#if defined (AROS_MESA_SHARED)
+
     AROS_LIBFUNC_EXIT
-#endif
 }
 
 
-#if defined (AROS_MESA_SHARED)
 AROS_LH1(void, AROSMesaDestroyContext,
     AROS_LHA(AROSMesaContext, amesa, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
-#else
-void AROSMesaDestroyContext(AROSMesaContext amesa)
-{
-#endif
+
     SAVE_REG
     
     PUT_MESABASE_IN_REG
@@ -510,21 +496,16 @@ void AROSMesaDestroyContext(AROSMesaContext amesa)
     }
     
     RESTORE_REG
-#if defined (AROS_MESA_SHARED)
+
     AROS_LIBFUNC_EXIT
-#endif
 }
 
 
-#if defined (AROS_MESA_SHARED)
 AROS_LH0(AROSMesaContext, AROSMesaGetCurrentContext,
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
-#else
-AROSMesaContext AROSMesaGetCurrentContext()
-{
-#endif
+
     SAVE_REG
     
     PUT_MESABASE_IN_REG
@@ -535,7 +516,5 @@ AROSMesaContext AROSMesaGetCurrentContext()
     
     return (AROSMesaContext)ctx;
 
-#if defined (AROS_MESA_SHARED)
     AROS_LIBFUNC_EXIT
-#endif
 }

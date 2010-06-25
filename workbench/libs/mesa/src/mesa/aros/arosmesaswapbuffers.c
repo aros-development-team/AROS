@@ -8,16 +8,12 @@
 #include <proto/exec.h>
 #include <proto/gallium.h>
 
-#if defined (AROS_MESA_SHARED)
 AROS_LH1(void, AROSMesaSwapBuffers,
     AROS_LHA(AROSMesaContext, amesa, A0),
-    struct Library *, MesaBase, 0, Mesa)
+    struct Library *, MesaBase, 9, Mesa)
 {
     AROS_LIBFUNC_INIT
-#else
-void AROSMesaSwapBuffers(AROSMesaContext amesa)
-{        
-#endif
+
     SAVE_REG
     
     PUT_MESABASE_IN_REG
@@ -45,9 +41,8 @@ void AROSMesaSwapBuffers(AROSMesaContext amesa)
     AROSMesaCheckAndUpdateBufferSize(amesa);
 
     RESTORE_REG
-#if defined (AROS_MESA_SHARED)
+
     AROS_LIBFUNC_EXIT
-#endif
 }
 
 
