@@ -15,12 +15,13 @@
 #include <errno.h>
 
 /* 
-    The purpose of this file is to provide implementation for C functions which are used by Mesa/Gallium
-    and are not located in librom.a
+    The purpose of this file is to provide implementation for C functions which 
+    are used by a module and are not located in librom.a
 
-    Mesa/Gallium cannot use arosc.library because arosc.library context is bound with caller task
-    and gets destroyed when the task exits. mesa.library at that point is still in RAM and
-    crashes at expunge.
+    
+    A module cannot use arosc.library because arosc.library context is bound 
+    with caller task and gets destroyed when the task exits. After the
+    caller task exists, the module becomes instable
 */
 
 #define IMPLEMENT()  bug("------IMPLEMENT(%s)\n", __func__)
@@ -140,12 +141,6 @@ char *getenv (const char *name)
         return buff;
 }
 
-int gettimeofday (struct timeval * tv,struct timezone * tz)
-{
-    IMPLEMENT();
-    return 0;
-}
-
 void abort (void)
 {
     IMPLEMENT();
@@ -183,17 +178,11 @@ char * strdup (const char * orig)
     return copy;
 }
 	
-double atof (const char * str)
-{
-    return strtod (str, (char **)NULL);
-}
-
 int printf (const char * format, ...)
 {
     IMPLEMENT();
     return EOF;
 }
-
 
 /* File operations */
 FILE * fopen (const char * pathname, const char * mode)
@@ -256,12 +245,6 @@ void clearerr (FILE * stream)
 }
 
 int fprintf (FILE * fh, const char * format, ...)
-{
-    IMPLEMENT();
-    return 0;
-}
-
-int vfprintf (FILE * stream, const char * format, va_list args)
 {
     IMPLEMENT();
     return 0;
