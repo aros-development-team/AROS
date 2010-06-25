@@ -17,16 +17,19 @@ AROS_LH1(void, AROSMesaMakeCurrent,
     
     PUT_MESABASE_IN_REG
 
-    /* FIXME: if passed context is the same as current context, check buffer sizes */
-    /* FIXME: if there was old context active, flush it and NULL the pointers to buffers */
-    
     if (amesa)
     {
-        st_make_current(amesa->st, amesa->framebuffer->stfb, amesa->framebuffer->stfb);
+        GET_CURRENT_CONTEXT(cur_ctx);
         
+        if (GET_GL_CTX_PTR(amesa) != cur_ctx)
+        {
+            /* Attach */
+            st_make_current(amesa->st, amesa->framebuffer, amesa->framebuffer);
+        }            
+
         /* Resize must be done here */
         AROSMesaRecalculateBufferWidthHeight(amesa);
-        st_resize_framebuffer(amesa->framebuffer->stfb, amesa->width, amesa->height);
+        st_resize_framebuffer(amesa->framebuffer, amesa->width, amesa->height);
     }
     else
     {

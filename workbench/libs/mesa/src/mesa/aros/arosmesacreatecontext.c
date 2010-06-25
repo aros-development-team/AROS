@@ -30,12 +30,14 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
         return NULL;
     }
     
-    /* FIXME; shouldn't RastPort be part of framebuffer? */
     AROSMesaSelectRastPort(amesa, tagList);
+
+    if (!amesa->visible_rp)
+    {
+        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR - failed to select visible rastport\n"));
+        goto error_out;
+    }    
     
-    /* FIXME: check if any rastport is available */
-    
-    /* FIXME: later this might be placed in initialization of framebuffer */
     AROSMesaStandardInit(amesa, tagList);   
 
     amesa->pscreen = CreatePipeScreenV(NULL);
@@ -69,18 +71,17 @@ AROSMesaContext AROSMesaCreateContext(struct TagItem *tagList)
     
     /* Pipe context life cycle is now managed by state tracker context */
     pipe = NULL;
-    
-    /* Set up some needed pointers */
-    /* TODO: Are those needed anymore? */
-    amesa->st->ctx->DriverCtx = amesa;
-    amesa->st->pipe->priv = amesa;
-    
+  
     /* Initial update of buffer dimensions (amesa->width/amesa->height) */
     AROSMesaRecalculateBufferWidthHeight(amesa);
     
-    
-    /* FIXME: Provide rastport to framebuffer ? */
     amesa->framebuffer = AROSMesaNewFrameBuffer(amesa, amesa->visual);
+
+    if (!amesa->framebuffer)
+    {
+        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create frame buffer\n"));
+        goto error_out;
+    }
     
     return amesa;
 
