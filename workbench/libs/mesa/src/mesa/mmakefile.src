@@ -18,7 +18,6 @@ SHARED_LIB_SOURCES = \
             aros/arosmesagetcurrentcontext \
             aros/arosmesa_funcs \
             aros_libapi \
-            aros_libinit \
             arosc_emul \
             
 GLSL_SOURCES = \
