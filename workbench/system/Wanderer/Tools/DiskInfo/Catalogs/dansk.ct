@@ -1,0 +1,120 @@
+## version $VER: DiskInfo.catalog 1.0 (26.06.2010)
+## language dansk
+## codeset 0
+;
+; Initial translation by Kristian Poul Herkild
+;
+MSG_TITLE
+Disk Info
+; Disk Info
+;consider better translation - overvej bedre oversættelse, evt. Diskoplysninger
+;
+MSG_ERROR_HEADER
+FEJL
+; ERROR
+;
+MSG_ERROR_OK
+_O.k.
+; _OK
+;
+MSG_ERROR_LOCALE
+Kan ikke initialisere regionaldata.
+; Can't initialize locale.
+; Better translation needed -> behøver bedre oversættelse 
+;
+MSG_ERROR_CLASSES
+Kan ikke initialisere tilpassede klasser.
+; Can't initialize custom classes.
+;
+MSG_DESCRIPTION
+Disk Icon-oplysninger
+; Disk Icon Informations
+;
+MSG_PERCENTFULL
+%ld %% fuld
+; %ld %% Full
+;
+MSG_FORMAT
+Format
+; Format
+;
+MSG_UNKNOWN
+Ukendt
+; Unknown
+;
+MSG_AUTHOR
+Olivier Adam
+; Olivier Adam
+;
+MSG_COPYRIGHT
+©2006-2009 AROS Dev Team
+; ©2006-2009 AROS Dev Team
+;
+MSG_USED
+Brugt plads
+; Used space
+;
+MSG_FREE
+Fri plads
+; Free space
+;
+MSG_SIZE
+Kapacitet
+; Capacity
+;
+MSG_BLOCK_SIZE
+Blokstørrelse
+; Block size
+;
+MSG_BLOCKS
+blokke
+; blocks
+;
+MSG_BYTES
+byte
+; bytes
+;
+MSG_STATUS
+Status
+; Status
+;
+MSG_READABLE
+Læsbar
+; Readable
+;
+MSG_READABLE_WRITABLE
+Læsbar/skrivbar
+; Readable/writable
+;
+MSG_VALIDATING
+Validerer
+; Validating
+;
+MSG_NAME
+Volumenavn
+; Volume Name
+;
+MSG_UNIT
+;unit
+; unit
+;
+MSG_DOSDEVICE
+DOS-enhed:
+; DOS Device:
+;
+MSG_DEVICEINFO
+Tilsluttet på:
+; Connected on:
+;
+MSG_FILESYSTEM
+Filsystem:
+; FileSystem:
+;
+MSG_PACKETDEVICE
+Packet Style-enhed
+; Packet Style device
+;
+MSG_IOFSDEVICE
+IOFS Style-enhed
+; IOFS Style device
+;
