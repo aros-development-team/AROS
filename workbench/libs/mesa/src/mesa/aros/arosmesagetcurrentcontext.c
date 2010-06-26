@@ -7,8 +7,32 @@
 #include "state_tracker/st_public.h"
 #include <proto/exec.h>
 
-AROS_LH0(AROSMesaContext, AROSMesaGetCurrentContext,
-    struct Library *, MesaBase, 10, Mesa)
+/*****************************************************************************
+
+    NAME */
+
+      AROS_LH0(AROSMesaContext, AROSMesaGetCurrentContext,
+
+/*  SYNOPSIS */ 
+
+/*  LOCATION */
+      struct Library *, MesaBase, 10, Mesa)
+
+/*  FUNCTION
+        Returns the currently selected GL rendering context.
+ 
+    INPUTS
+ 
+    RESULT
+        The GL rendering context which is currently active.
+ 
+    BUGS
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
