@@ -1,0 +1,26 @@
+## version $VER: clock.catalog 1.0 (26.06.2010)
+## language dansk
+## codeset 0
+;
+;Initial danish translation by Kristian Poul Herkild
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Fejl: Kan ikke oprette programobjekt.
+; Error: Can't create application object.
+;
+MSG_WINDOW_TITLE
+Ur
+; Clock
+;
+MSG_DESCRIPTION
+Wanderer-ur
+; Wanderer Clock
+;
+MSG_OK
+O.k.
+; Ok
+;
+MSG_ERROR_DISKOBJECT
+Fejl: Kan ikke oprette diskobjekt
+; Error: Can't create diskobject
+;
