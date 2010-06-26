@@ -28,7 +28,7 @@
     Creates a gallium pipe screen.
  
     INPUTS
-    tagItem - a pointer to tags to be used during creation.
+    tags - a pointer to tags to be used during creation.
  
     TAGS
     CPS_GalliumInterfaceVersion   - Indicates a version of gallium interface
