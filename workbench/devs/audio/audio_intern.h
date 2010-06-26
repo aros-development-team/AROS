@@ -9,7 +9,7 @@
  * by Nexus Development 2003
  * coded by Emanuele Cesaroni
  *
- * $Id: libdata.h,v 1.11 2003/12/17 22:39:02 cesaroni Exp $
+ * $Id$
  */
 
 #ifndef LIBDATA_H

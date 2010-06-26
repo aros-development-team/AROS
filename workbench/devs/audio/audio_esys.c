@@ -9,7 +9,7 @@
  * by Nexus Development 2003
  * coded by Emanuele Cesaroni
  *
- * $Id: audio_esys.c,v 1.11 2003/11/04 10:50:21 cesaroni Exp $
+ * $Id$
  */
 
 #include "audio_intern.h"

@@ -9,7 +9,7 @@
  * by Nexus Development 2003
  * coded by Emanuele Cesaroni
  *
- * $Id: libfunctions.c,v 1.5 2003/12/17 22:39:02 cesaroni Exp $
+ * $Id$
  */
 
 #include "audio_intern.h"
