@@ -194,8 +194,8 @@ Markér, når aktiv:
 ; Select on Active:
 ;
 MSG_HELP_SelectOnActive
-Vælg automatisk al tekst når et\n
-BetterStringobjekt bliver aktiveret\n
+Vælg automatisk al tekst når et\n\
+BetterStringobjekt bliver aktiveret\n\
 via TAB-cykling eller brug af mus.
 ; Automatically select all text when a\n\
 ; BetterString object gets activated\n\
@@ -206,7 +206,7 @@ Markeringsmarkør:
 ; Selection Pointer:
 ;
 MSG_HELP_SelectPointer
-Hvis valgt vil en særlig markør blive vist\n
+Hvis valgt vil en særlig markør blive vist\n\
 når musepilen er over en BetterStringkontrol.
 ; If enabled, a custom selection pointer will appear\n\
 ; when the mouse pointer is above a betterstring gadget.
