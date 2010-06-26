@@ -9,7 +9,7 @@
  * by Nexus Development 2003
  * coded by Emanuele Cesaroni
  *
- * $Id: ObjPool_lite_1.c,v 1.4 2003/10/30 10:57:41 henes Exp $
+ * $Id$
  */
 
 #include	"audio_intern.h"
