@@ -1,0 +1,408 @@
+NOTICE(2010-06-26):
+
+This is an original README file that acompanied the audio.device package. The
+audio.device source codes has been freed and ported to AROS. The audio.device
+source codes in AROS repository are distributed under AROS Public License.
+
+Thanks go to Emanuele for feeing the codes!
+http://www.gekoclimb.it/nexusdev/eaudio.device/index.html
+
+"The eaudio.device source code may be downloaded here. I hope it will be usefull
+to the community. There is no license or restriction about the use of the source
+code. I would like only to be informed about the born of a new audio.device 
+incarnation based on my code. That's enought!"
+
+
+
+
+
+								
+################################################################################################		
+							
+               ###  #   # ####  ###  ###    ####  ##### #   # ###   ### #####  
+              #   # #   # #   #  #  #   #   #   # #     #   #  #   #    #
+              #   # #   # #   #  #  #   #   #   # #     #   #  #   #    #
+              ##### #   # #   #  #  #   #   #   # ####  #   #  #   #    ####
+              #   # #   # #   #  #  #   #   #   # #      # #   #   #    #
+              #   #  ###  ####  ###  ###  # ####  #####   #   ###   ### #####
+
+################################################################################################
+
+                                Version 50.0 - 09.02.2004
+
+                                  /\/exus /)evelopment
+
+
+
+
+
+
+Enhanced audio.device solution for MorphOS operating system
+-----------------------------------------------------------
+
+Developed by Emanuele Cesaroni of Nexus Development /\//)
+(url = "http://www.genie.it/utenti/nexusdev")
+(email = "emanuele.cesaroni@virgilio.it")
+
+Index of this guide
+-------------------
+
+- Purpose
+- Notices
+- Requirements
+- Installation
+- How this works
+- Compatibility
+- Bugs
+- Contacts
+- Emulation approach
+- Compatibility list
+- To do
+- History
+
+
+
+
+
+Purpose
+-------
+  The purpose of this device is to make fully compatibles with MorphOS all the programs written
+in the past using the native audio.device which was thought to interact with the hardware audio
+chips of the old 68k Amigas. This enhanced version of the audio.device redirects the commands to
+the AHI device allowing to use the last generation of sound boards supported by the ahi system.
+  The device foresees all the audio.device's original commands: CMD_CLEAR, CMD_FLUSH, CMD_READ,
+CMD_RESET, CMD_START, CMD_STOP, CMD_UPDATE, CMD_WRITE, ADCMD_ALLOCATE, ADCMD_FINISH, ADCMD_FREE,
+ADCMD_LOCK, ADCMD_PERVOL, ADCMD_SETPREC and ADCMD_WAITCYCLE.
+
+
+Notices
+-------
+  The version you are using is still under development, so isn't in the final form. The project's
+roadmap foresees to improve the device in the next releases. The first release is dated 11.2.2003
+(version 50, revision 0). At beginning (early version 50) the device was compiled under GCC,
+without any optimizations, in 68020+68881 code (so it wasn't PPC compiled yet).
+  In the next versions, after some debugging and testing, the code will be optimized and compiled
+in fast PPC code. You can get the version device's number simply typing on shell:
+
+"any_prompt> version devs:audio.device"
+
+You will get a string as "audio.device xx.y" where xx is the version and the y the revision.
+Probably the best is to run the test program enclosed in the device's archive (named 
+audio.device_test) which outputs a lot of informations more. The program, if opens the device
+successfully, prints a string as:
+
+"audio.device 50.0 (02.10.03 - 68K) by Nexus Development 2003, written....".
+
+or better if PPC compiled:
+
+"audio.device 50.0 (02.10.03 - PPC) by Nexus Development 2003, written....".
+
+"50.0" points to version.revision, so version 50 revision 0. Between brackets you have the
+compiling date and if is compiled in 68K (68K) or PPC code (PPC).
+Starting from version 50.0 dated october 2003 the code is fully PPC compiled.
+
+
+Requirements
+------------
+  You need MorphOS running and a bit of harddisk space (about 200 KBytes) in your system's
+partition. AHI device in version 4 minimum is strictly needed.
+
+
+Installation
+------------
+  Simply copy the file "audio.device" to the "DEVS:" directory. Each time you want to update the
+device with a new version or revision repeat the above passes replacing the "audio.device" file in
+"DEVS:". Take care that after the first device use it could be loaded in ram where it becomes
+resident. So to use the new installed one, when the old has been opened just only once, you need
+to reboot the whole system. 
+
+
+How this works
+--------------
+  This audio.device when is opened for the first time performs these operations:
+1) Creates a dos process (an exec superset slave task) which is responsable of all ahi.device
+   calls and is named "NexusDEV slave audio" (in version 50.0 with 127 as priority).
+2) The slave process opens ahi.device and setups 4 message ports each one used for each audio unit
+   (from 0 to 3) to receive the CMD_WRITE commands.
+
+  So, for example, if a task opens the audio.device and wants to play a sample, allocates the
+wanted channels combination (ADCMD_ALLLOCATE) and sends trought the device a CMD_WRITE command to
+the slave process unit. The slave process converts the incoming audio io request into an ahi one
+which will be sent to the ahi.device. When AHI returns the slave process returns the audio request
+to the calling task.
+
+**Important**
+  The device uses the AHI_DEFAULT_UNIT (unit 0). To get the best performances from the device in
+conjunction with AHI set at least to 4 the number of channels field of unit 0 under the AHI main
+preferences program. The equation is: more channels = better sound quality. 
+
+  
+
+Compatibility
+-------------
+  This audio.device is thought to be compatible with all the programs written using the OS instead
+banging the hardware. Most coders used to lock (by ADCMD_LOCK) the channels to access directly
+to the hardware audio registers. These programs are not compatible with this device but above all
+with the entire OS. In this case you need of UAE. Refer to the "Compatibility list" and the "Emulation
+Approach" sections.
+  
+
+Bugs
+----
+  Because doesn't exist a native audio.device's source code available all the work done is based
+upon an assumption derived from documents about the original audio.device operating method (reverse
+engineering no disassembling). For this reason may be not compatible and most programs using it may
+have problems. The debugging and the received reports about its usage in combination with certain
+programs will allow to improve the whole project. Read the history log to get infos about the known
+bugs.
+
+
+
+Contacts
+--------
+  To improve the device are wellcome impressions and reports about its behaviour. Please send them
+writing to "emanuele.cesaroni@virgilio.it" using as email subject "AUDIO.DEVICE" please. Be more
+precise as possible describing the problem you get, the program you was using with, the device
+version and revision etc. If you are a developer of a program which uses the audio.device (and it
+had always worked well) would be very appreciable if you test the app with my device reporting the
+results and some infos more about the approach you had used coding.  
+  The device was written by Emanuele Cesaroni of Nexus Development (emanuele.cesaroni@virgilio.it).
+You can find Nexus Development at "http://www.genie.it/utenti/nexusdev". 
+  Many thanks for your support...
+
+
+Emulation approach
+------------------
+  The audio.device on the classic Amigas interacts with a physical piece of hardware, so with the 
+well known Paula chip. Instead this enhanced audio.device interacts with AHI. For this reason 
+even if AHI allows better performances the device is forced to be closer to the Paula own
+performances. This allows a better emulation. This approach could give problem in certain 
+situations. Here a list of them i found during the development.
+
+1) The min period problem.
+  On all documents about Paula you can read that it supports a period range beetween 124 and
+65536 clock's cycles per sample. You can ask less than 124 or more than 65536 but without get 
+effects. This is an hardware limit which could not be surpassed. Even if AHI could supports very
+lower period values i forced the device to work with 124 as minimum value. So if some coders,
+in their programs, asked for values < 124 they won't be considered.     
+    
+   
+
+Compatibility list
+------------------
+  The programs here listed were tested with the device. Their behaviour had seen regular in all
+circumstances. The tests were done as deep as possible considering my aknowledgement with them.
+Where you found a ! you can read some infos more about its behaviour. 
+
+- ADoom v1.3
+- AmigaOS v3.5 own sound preferences program (sound.datatype 40.6) 
+- AmigaOS v3.1 own sound preferences program (sound.datatype 40.6)
+- Amigenerator v0.34
+  ! The audio works but you heard a wait noise in the background. The only way to bypass the
+    problem is to run the program with the NOPSG option enabled. 
+- Aqua
+- Delitracker v2.32 
+  ! The program opens the audio.device to get the channels but after a CMD_LOCK it bangs the
+    hardware and then dies.
+- DirectoryOpus v4.12
+- DoomAttack 68k v1.10
+  ! The audio is ok but the video can't work properly on my machine.
+- FroggerNG (68k and MorphOS versions)
+  ! Playing some videos the audio seems slow. This is due to the "Min period problem" about
+    what you can read in the "Emulation Approach" section. 
+- MAME v0.34.3 (tested with very few roms)
+- Miami v3.0d (sound.datatype 40.6) 
+- MooVID v1.2 player on AmigaOS v3.5
+- Multiview 45.9 (sound.datatype 40.6) 
+- Payback 68k
+- Ports of Call (game)
+- Prayer v2.0
+  ! Not totally supported (needs a small change in sources) because bangs the hardware.
+- PuzzleBOBS game v0.750 (in all its audio output modes)
+- Rustle
+- Samplitude Opus v3.5
+- SongPlayer v1.4 (it opens the device to get the channels then bangs the hardware)
+- WBClock v45.10 (sound.datatype 40.6) 
+- YAM v2.3p1 (sound.datatype 40.6)
+- Wipeout2097
+- Xgb (Game boy emulator) 
+
+
+
+To do
+-----
+
+1) Some commands as ADCMD_WAITCYCLE had never been tested by external apps (is very rare they are
+used). They have been tested succesfully under the audio.device own test program only.
+2) The device's init function probably touchs some register it shouldn't. Some programs (ADoom for
+example) at first audio.device opening, stops forever after had opened the device. I think is due
+to a stack or register problem. I am inquiring.
+
+
+
+History
+-------
+
+(50.0 - 19.1.2004)
+Some small changes to get Delitracker compatible at program starting and exiting. In any case Delitracker
+bangs the hardware soon after an ADCMD_LOCK and on MorphOS it dies. If you don't play anything the program
+exits well. Some fixes to the Slave Process init procedure too.
+
+(50.0 - 17.12.2003)
+Rewritten a small part of the builtin audio.device command (CMD_CLOSE) thought to die the slave process.
+A fix now lets the device to work regularly with CMD_WRITE commands with more than one single cycle per
+wave (ioa_Cycles) as it happens in "Ports of Call" game. Added again some semaphores where they are
+strictly needed.
+
+(50.0 - 15.11.2003)
+After some tests i wrote again the linking protocol between the slave process and the main device unit.
+Because the slave process **MUST** be synchronized with the device in certain situation were the data 
+sharing model is not allowed i searched for a signal bit number which the slave process could use to
+unlock the device waiting. The device infact sends the command to the slave process and soon after it 
+waits for a signal while the slave process is touching some structures they can't manage in the same time.
+When this lapse is ended the device is unlocked trought a signal. But which signal bit number use for
+this controll exchange? Well, the own IORequest signal is not sufficent when a task sends command 
+from more than one task. This is the example of Wipeout. It has two tasks, one opens the device and
+waits for the commands end the other sends them only. Reply to the waiting one before the command is end
+made a lot of confusion to the app which had a task completely locked. An other way i used in the past
+was to alloc a signal for each Task the device receives command from. So i putted a copy of the pointer
+of each of them in a list and when a command was received i went to see if a signal was just ready for that
+task. If it was just allocated i used it for the linking procedure. This was a really big waste of time 
+because at each command i had to do a long reasearch trought the list. So finally i adopted this method
+which somebody could consider dangerous, but since today it has always worked. Simply when i receive an
+IORequest i obtain its task pointer. I stole to it the CTRL_SIG_BREAKF signal and then i force it to wait
+for this signal only. When the controll exchange is done i bring back the task's wait signal set to its
+initial status. Hope this will work ever!  
+  
+(50.0 - 2.10.2003)
+A very long inactive time on this project. In this new release the device has been re-styled deeply
+and the version was brought down again to the 50.0.
+The most important changes of this re-styled version.
+1) No more the FAKE and REAL operating modes difference. Now the device works only in REAL mode so it
+outputs really the audio trought ahi.device which now is strictly needed al least in version v4. If
+it isn't present on the system the device fails just in OpenDevice().
+2) Erased totally the virtual channels system. Now there are only 4 channels, or better 4 units as the 
+original audio.device had. The units are under the slave process control and each one has a message
+port thought to receive CMD_WRITEs commands only. All the other commands are received by an other one
+message port controlled by the slave process again.
+3) No more IORequest mirroring but fast message handling between the device and the slave process.
+4) Added the original audio.device's double buffering technique. When more than two CMD_WRITEs are sent
+to the device the first is output, the second is put in a cache the others are inserted in a wait list.
+This allows to start faster the second wave when the first is ended so the null audio lapse between them
+is shorter for a better sound quality.
+5) Rewritten all the commands functions. Now they are faster. Rewritten AbortIO() which was one of
+the bigger problem of the past revisions. Now seems very stable and effectively functional.
+6) Erased the old link system used to interact with the slave process. Actually is used the IORequest
+own replyport and signal.
+7) Rewritten BeginIO(), OpenDevice() and CloseDevice() internal routines and the slave process main
+loop totally. Erased a lot of old code and complex procedures. The device now is smaller, simpler and
+faster.
+8) Erased all the semaphores used in BeginIO(), AbortIO() and in the OpenDevice() and CloseDevice()
+internal functions.
+
+(52.2 - 16.4.2003)
+Not a new revision but a lot of few changes in the code to make it faster and more stable.
+
+(52.2 - 10.4.2003)
+A lot of improvements on this release. Rewritten TOTALLY AbortIO(). Now a lot of programs which 
+gave problems in the past are working properly. Rewritten CMD_FLUSH and CMD_FINISH. Moreover
+i modified the process priority. This may be dangerous but since i increase it all the programs
+under testing are working better. The priority now is 127. Because the original audio.device worked
+trought hardware interrupts is clear that a software device needs to be faster as possible in
+replying to the programs.
+
+(52.1 - 10.4.2003)
+Modified the AHI starter. Actually i am using BeginIO() instead of SendIO(). This seems better in
+certain circustances.
+
+(52.0 - 7.4.2003)
+Rewritten ADCMD_PERVOL. Actually it does a lot of usefull things. It modifies on channel the period
+and volume as the classic audio.device used to do.
+
+(51.9 - 4.4.2003)
+Activated again the FAKE mode. It works as well as the REAL mode one. Rewritten some parts of code
+which were not allowing to enable the -02 GCC optimization.
+
+(51.8 - 2.4.2003)
+Rewritten the system which manages, finds, allocs, frees the virtual channels. Actually the channel
+struct at beginning has a node struct. This allows to move channels between lists without moving
+data or copying structure fields for each audio output. Actually the exec.library/AllocSignal() not
+checked is fixxed. When a task opens the audio.device its task's struct address is put in a list.
+The list contains for the task a just allocated signal and some structs just ready to make faster
+initializations and slave process message exchanging. Most part of the code was optimized erasing
+function calls with quick memory array accesses (the case of the count chans routine). 
+
+(51.7 - 28.3.2003)
+Fixxed the NT_MESSAGE IOAudio node-type problem in BeginIO() so now most programs which use
+CheckIO() now work (ADoom). Fixxed a bug in ADCMD_ALLOCATE when the task asks for a particular
+channel key just known. Rewritten ADCMD_PERVOL even if actually it does nothing special more
+than null. Added in this doc a program compatibility list. Tested with 12 channels and 4 programs
+at 4 channels for each succesfully (only one didn't exit!).   
+
+(51.6 - 22.3.2003)
+Rewritten totally the system which manages lists. Verified, under Samplitude Opus, the CMD_STOP
+and CMD_START. Now they work. Removed the FAKE mode part of code. It will be added again later 
+recycling the REAL mode routines after the needed tests. So in release 51.6 the device works
+exclusively in REAL mode. The whole is still 68k, not optimized.
+
+(51.5 - 12.3.3003)
+Rewritten the exit routines in the slave process. Actually the process is removed from the device
+itself. Rewritten the device init functions which inits the slave process and an usefull semaphore. 
+The tests under MorphOS actually are going well. No hits and no bad memory accesses.
+
+(51.4 - 02.3.2003)
+Fourth release. The device supports definitely AHI. The audio output is functional and good. I
+tested it with my PuzzleBOBS game and it works. Rewritten the AbortIO() function so most of
+programs which use it now work. The device now performs less operation during each audio
+initializing for better performance.  
+
+(51.3 - 20.2.2003)
+Third release. Added some code for the REAL mode. The slave task actually is a process allowing
+to open the ahi.device. The system opens AHI if it founds it. If not it swaps into FAKE mode.  
+Actually is ready to work in REAL mode. Moreover the device was tested with 8 channels and two
+programs asking both for 4 channels. The test was successfull but in this release the number of
+channels was brought to 4 maximum again. The whole is still GCC 68K compiled without any
+optimizations. Under MorphOS all the hits to Ramlib are disappear (there were some not allowed 
+memory accesses). 
+
+(51.2 - 19.2.2003)
+Fixxed the message link system beetween slave task and audio.device with the use of exec.library/
+AllocSignal() and exec.library/FreeSignal(). The whole is now faster and the major problems of 
+the second release seem solved. The problem about the bad count period now is fixxed even if it
+result a bit longer than the real audio.device one. This time difference increases when there are
+more than one cycle for wave. That is due to the work done by the slave process which loses time
+initialiting again the timer.device each cycle. The optimization of the slave process main code
+in conjunction with the adoption of the ppc code should reduce the problem. This version wont be
+released. 
+
+(51.1 - 15.2.2003)
+Second release. Some bugs were removed and the whole is improved. Actually at opening and closing
+(exec.library/OpenDevice() and exec.library/CloseDevice()) the problems present in the revision 0
+are fixxed. Some RamLib's hits, but no gurus. All the resources are freed and generally the whole
+seems working well. The bad count period is already present and sometimes when two task open it
+at the same time, one of them results locked at opening and the other at closing.  
+
+(51.0 - 11.2.2003)
+First release. The device is ready but needs to be deeply tested. Actually is 68k, supports only
+4 channels and works in FAKE mode. Sometimes it crashes. If you run the test program from shell
+add some mem to stack before. This may rend it more stable. 
+
+
+
+
+COPYRIGHT
+---------
+  All of the files in this archive are Copyright 2003 Nexus Development of Emanuele Cesaroni.
+The contents of this archive are protected by Copyright laws and Nexus Development reserves all
+of the rights on the files. It's forbidden to alter any of the files in this archive in any way
+and/or to modify the archive itself. In no event shall Nexus Development liable for any direct or
+indirect damages arising out of the use of the files in this archive. Redistribution of this
+archive in part or in its entire form is permitted.
+
+
+
+
+
+
+
+/\/exus /)evelopment

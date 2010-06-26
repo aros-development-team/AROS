@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := libfunctions audio_commands objpoollite audio_esys
+
+#MM- workbench-devs-complete : workbench-devs-audio
+#MM- workbench-devs-audio : includes linklibs contrib-AHI
+
+%build_module mmake=workbench-devs-audio \
+    modname=audio modtype=device \
+    files="$(FILES)" uselibs="hiddstubs rom"
