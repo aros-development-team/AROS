@@ -1,5 +1,5 @@
-# Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-# $Id: make.cfg 28435 2008-04-23 15:30:16Z NicJA $
+# Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+# $Id$
 #
 # Static makefile rule file for AROS.
 
@@ -186,4 +186,4 @@ VPATH := $(shell echo $(SRCDIR)/$(CURDIR) | sed 's/^\(.\):\//\/\1\//')
 # Macro for expanding wildcards in source directory
 # We use shell script here in order to avoid Unicode file names that are listed by pattern expansion but can't be accessed
 # because of failing Unicode->ACP conversion under Windows
-WILDCARD = $(shell cd $(SRCDIR)/$(CURDIR); for file in $(1); do if [ -f $$file ]; then echo -n "$$file "; fi; done)
+WILDCARD = $(shell cd $(SRCDIR)/$(CURDIR); for file in $(1); do if [ -f $$file ]; then printf "%s" "$$file "; fi; done)
