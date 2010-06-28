@@ -394,7 +394,42 @@ static void printPath(void);
 static void printPrompt(struct InterpreterState *is);
 
 
+
 /*****************************************************************************/
+
+
+/* Function: extractEmbeddedCommand
+ *
+ * Action:   Check if an item beginning with ' is an embedded command and if
+ *           that is the case, extract the embedded command line and update
+ *           the state of the input stream accordningly.
+ *
+ * Input:    struct CommandLine *cl  --  command line for embedded command
+ *                                       (the result will be stored here)
+ *           struct CSource     *cs  --  input stream
+ *
+ * Output:   --
+ */
+BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs);
+
+
+/* Function: copyEmbedResult
+ *
+ * Action:   Insert the result of executing an embedded command into the
+ *           commandline of the parent command.
+ *
+ * Input:    struct CSource     *filtered  --  output stream (command line)
+ *           struct Redirection *rd        --  state
+ *
+ * Output:   BOOL  --  success/failure indicator
+ */
+BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd);
+
+
+/*****************************************************************************/
+
+
+
 void setupResidentCommands(void);
 
 static void initDefaultInterpreterState(struct InterpreterState *is)
@@ -1014,6 +1049,64 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	if(item == '\n' || item == ';' || item == '\0')
 	    break;
 
+    /* Embedded command? */
+    if(item == '`')
+    {
+        struct CommandLine embedCl = { NULL, 0, 0 };
+
+        advance(1);
+
+        D(bug("Found possible embedded command.\n"));
+
+        if(extractEmbeddedCommand(&embedCl, cs))
+        {
+            /* The Amiga shell has severe problems when using
+                redirections in embedded commands so here, the
+                semantics differ somewhat. Unix shells seems to be
+                a little bit sloppy with this, too.
+                    If you really wanted to, you could track down
+                uses of > and >> and make them work inside ` `, too,
+                but this seems to be rather much work for little gain.
+            */
+
+            char embedOutputFilename[sizeof("T:Shell$embed") +
+                                    sizeof("9999999999999")];
+            struct Redirection embedRd;
+
+            /* No memory? */
+            if(!Redirection_init(&embedRd))
+                return FALSE;
+
+            /* Construct temporary output filename */
+            __sprintf(embedOutputFilename, "T:Shell%ld$embed",
+                        /*PROCESS*/((struct Process *)FindTask(NULL))->pr_TaskNum);
+
+            /* Temporary */
+            strcpy(embedRd.outFileName, embedOutputFilename);
+
+            embedRd.haveOutRD = TRUE;   /* ` _ ` is an implicit output
+                                            redirection */
+
+            D(bug("Doing embedded command.\n"));
+
+            checkLine(&embedRd, &embedCl, &is);
+
+            D(bug("Embedded command done.\n"));
+
+            copyEmbedResult(filtered, &embedRd);
+
+            Redirection_release(&embedRd);
+
+            /* Now, go on with the original argument string */
+            continue;
+        }
+
+        /* If this was just "`command", extractEmbeddedCommand will
+            have made sure that the '`' is included in the command
+            name */
+
+	}
+	
 	if(item == '|')
 	{
             BPTR pipefhs[2] = {0, 0};
@@ -1137,7 +1230,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		rd->haveOutRD = TRUE;
 	    }
 	}
-	else if (item == is->dollar) /* Possible environment variable usage */
+	else if (item == is->dollar) /* Possible variable usage */
 	{
 	    LONG size = cs->CS_CurChr;
 
@@ -1156,7 +1249,6 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		!(varBuffer[0] == '$' && !strcmp(varBuffer+1, avBuffer))
             )
 	    {
-		LONG result;
 		struct CSource varCs = { varBuffer, sizeof(varBuffer), 0 };
 
 		D(bug("Real variable! Value = %s\n", varBuffer));
@@ -1440,6 +1532,70 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 }
 
 
+/***********************************************/
+
+BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs)
+{
+    LONG  position  = fromCs->CS_CurChr;
+    BOOL  foundPrim = FALSE;
+
+    while(position <= fromCs->CS_Length)
+    {
+       if(fromCs->CS_Buffer[position] == '`')
+       {
+           foundPrim = TRUE;
+           break;
+       }
+
+       position++;
+    }
+
+    if(!foundPrim)
+    {
+       /* Back input stream to include the preceding ` in the command name */
+
+       D(bug("Found end of embedded command\n"));
+       fromCs->CS_CurChr--;
+       return FALSE;
+    }
+
+    /* Initialize stream data structure for embedded command */
+    cl->position = 0;
+    cl->size = position - fromCs->CS_CurChr;
+
+    D(bug("Embedded command size = %i\n", cl->size));
+
+    /* Just `` ? */
+    if (cl->size == 0)
+    {
+       return FALSE;
+    }
+
+    cl->line = &fromCs->CS_Buffer[fromCs->CS_CurChr];
+
+    /* End string */
+    fromCs->CS_Buffer[position] = 0;
+
+    /* Correct the original stream data structure */
+    fromCs->CS_CurChr = min(position + 1, fromCs->CS_Length);
+
+    return TRUE;
+}
+
+/* Currently, no error checking is involved */
+BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd)
+{
+    char a = 0;
+
+    Seek(embedRd->newOut, 0, OFFSET_BEGINNING);
+
+    while((a = FGetC(embedRd->newOut)) != '\n')
+       appendString(filtered, &a, 1);
+
+    return TRUE;
+}
+
+/***********************************************/
 
 
 BOOL getCommand(struct CSource *filtered, struct CSource *cs,
