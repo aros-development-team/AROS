@@ -1,0 +1,263 @@
+## version $VER: dos.catalog 1.0 (28.06.2010)
+## language dansk
+## codeset 0
+;
+; initial translation by Kristian Poul Herkild
+;
+MSG_ERROR_NO_FREE_STORE
+utilstrækkelig hukommelse tilgængelig
+; not enough memory available
+;
+MSG_ERROR_TASK_TABLE_FULL
+procestabellen er fuld
+; process table full
+;
+MSG_ERROR_BAD_TEMPLATE
+ugyldig skabelon
+; bad template
+;
+MSG_ERROR_BAD_NUMBER
+ugyldigt tal
+; bad number
+;
+MSG_ERROR_REQUIRED_ARG_MISSING
+der mangler et nødvendigt argument
+; required argument missing
+;
+MSG_ERROR_KEY_NEEDS_ARG
+manglende værdi efter nøgleord
+; value after keyword missing
+;
+MSG_ERROR_TOO_MANY_ARGS
+forkert antal argumenter
+; wrong number of arguments
+;
+MSG_ERROR_UNMATCHED_QUOTES
+uparrede anførselstegn
+; unmatched quotes
+;
+MSG_ERROR_LINE_TOO_LONG
+Ugyldig eller for lang argumentlinie
+; argument line invalid or too long
+;
+MSG_ERROR_FILE_NOT_OBJECT
+Filen er ikke kørbar
+; file is not executable
+;
+MSG_ERROR_INVALID_RESIDENT_LIBRARY
+Ugyldigt lagringsfast bibliotek
+; invalid resident library
+;
+MSG_ERROR_NO_DEFAULT_DIR
+Intet standardkatalog
+; no default directory
+;
+MSG_ERROR_OBJECT_IN_USE
+Objektet er i brug
+; object is in use
+;
+MSG_ERROR_OBJECT_EXISTS
+Objektet findes allerede
+; object already exists
+;
+MSG_ERROR_DIR_NOT_FOUND
+Kataloget blev ikke fundet
+; directory not found
+;
+MSG_ERROR_OBJECT_NOT_FOUND
+objektet blev ikke fundet
+; object not found
+;
+MSG_ERROR_BAD_STREAM_NAME
+ugyldig vinduesbeskrivelse
+; invalid window description
+;
+MSG_ERROR_OBJECT_TOO_LARGE
+objektet er for stort
+; object too large
+;
+MSG_ERROR_ACTION_NOT_KNOWN
+ukendt filsystemhandlingstype
+; filesystem action type unknown
+;
+MSG_ERROR_INVALID_COMPONENT_NAME
+objektnavnet er ugyldigt
+; object name invalid
+;
+MSG_ERROR_INVALID_LOCK
+ugyldig objektlås
+; invalid object lock
+;
+MSG_ERROR_OBJECT_WRONG_TYPE
+objektet er ikke af den påkrævede type
+; object is not of required type
+;
+MSG_ERROR_DISK_NOT_VALIDATED
+disken er ikke valideret
+; disk not validated
+;
+MSG_ERROR_DISK_WRITE_PROTECTED
+disken er skrivebeskyttet
+; disk is write-protected
+;
+MSG_ERROR_RENAME_ACROSS_DEVICES
+Der blev forsøgt en omdøbning på tværs af enheder
+; rename across devices attempted
+;
+MSG_ERROR_DIRECTORY_NOT_EMPTY
+kataloget er ikke tomt
+; directory not empty
+;
+MSG_ERROR_TOO_MANY_LEVELS
+for mange niveauer
+; too many levels
+;
+MSG_ERROR_DEVICE_NOT_MOUNTED
+enhed (eller volume) er ikke monteret
+; device (or volume) is not mounted
+;
+MSG_ERROR_SEEK_ERROR
+søgefejl
+; seek failure
+;
+MSG_ERROR_COMMENT_TOO_BIG
+kommentaren er for lang
+; comment is too long
+;
+MSG_ERROR_DISK_FULL
+disken er fuld
+; disk is full
+;
+MSG_ERROR_DELETE_PROTECTED
+Objektet er beskyttet mod sletning
+; object is protected from deletion
+;
+MSG_ERROR_WRITE_PROTECTED
+filen er skrivebeskyttet
+; file is write protected
+;
+MSG_ERROR_READ_PROTECTED
+filen er læsebeskyttet
+; file is read protected
+;
+MSG_ERROR_NOT_A_DOS_DISK
+er ikke en gyldig DOS-disk
+; not a valid DOS disk
+;
+MSG_ERROR_NO_DISK
+ingen disk i drevet
+; no disk in drive
+;
+MSG_ERROR_NO_MORE_ENTRIES
+ikke flere elementer i kataloget
+; no more entries in directory
+;
+MSG_ERROR_IS_SOFT_LINK
+objektet er en blød lænke
+; object is soft link
+;
+MSG_ERROR_OBJECT_LINKED
+objektet er lænket
+; object is linked
+;
+MSG_ERROR_BAD_HUNK
+ugyldig filhunk
+; bad loadfile hunk
+; better translation needed - behøver bedre oversættelse
+;
+MSG_ERROR_NOT_IMPLEMENTED
+funktionen er ikke implementeret
+; function not implemented
+;
+MSG_ERROR_RECORD_NOT_LOCKED
+post er ikke låst
+; record not locked
+;
+MSG_ERROR_LOCK_COLLISION
+postlåssammenstød
+; record lock collision
+;
+MSG_ERROR_LOCK_TIMEOUT
+postlåstidsudløb
+; record lock timeout
+;
+MSG_ERROR_UNLOCK_ERROR
+Poståbningsfejl
+; record unlock error
+;
+MSG_ERROR_BUFFER_OVERFLOW
+bufferoverløb
+; buffer overflow
+;
+MSG_ERROR_BREAK
+***Afbrudt
+; ***Break
+;
+MSG_ERROR_NOT_EXECUTABLE
+Filen er ikke kørbar
+; file not executable
+;
+MSG_STRING_DISK_NOT_VALIDATED
+Volume "%s" er ikke valideret
+; Volume "%s" is not validated
+;
+MSG_STRING_DISK_WRITE_PROTECTED
+Volume "%s" er skrivebeskyttet
+; Volume "%s" is write protected
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
+Indsæt volume "%s" i et drev
+; Please insert volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
+Udskift volume "%s" i et drev
+; Please replace volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
+Udskift volume "%s" i "%s"
+; Please replace volume "%s" in "%s"
+;
+MSG_STRING_DISK_FULL
+Volume "%s" er fuld
+; Volume "%s" is full
+;
+MSG_STRING_NOT_A_DOS_DISK
+Disken i "%s" er ikke en DOS-disk
+; Not a DOS disk in "%s"
+;
+MSG_STRING_NO_DISK
+Der er ingen disk i "%s"
+; No disk present in "%s"
+;
+MSG_STRING_ABORT_BUSY
+Du er nødt til at udskifte volume "%s" in "%s".
+; You MUST replace volume "%s" in "%s"!
+;
+MSG_STRING_ABORT_DISK_ERROR
+Der er en læse/skrivefejl på Volume "%s"
+; Volume "%s" has a read/write error
+;
+MSG_STRING_RETRY
+Prøv igen
+; Retry
+;
+MSG_STRING_CANCEL
+Afbryd
+; Cancel
+;
+MSG_STRING_REQUESTTITLE
+Systemforespørger
+; System requester
+;
+MSG_ERROR_NO_MATCHING_ELSEENDIF
+ingen tilsvarende Else eller EndIf
+; no matching Else or EndIf
+;
+MSG_ERROR_SCRIPT_ONLY
+denne kommando er kun beregnet til brug i kommandofiler
+; this command is supposed to be used in command files only
+;
+MSG_ERROR_UNKNOWN
+udefineret fejl
+; undefined error
+;
