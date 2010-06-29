@@ -106,7 +106,7 @@ nouveau_channel_free(struct nouveau_channel **chan)
 	struct nouveau_channel_priv *nvchan;
 	struct nouveau_device_priv *nvdev;
 	struct drm_nouveau_channel_free cf;
-	int i;
+	unsigned i;
 
 	if (!chan || !*chan)
 		return;

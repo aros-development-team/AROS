@@ -1,6 +1,6 @@
-diff -ur -x .svn /data/deadwood/source/drm-2.4.18/nouveau/nouveau_bo.c ./libdrm/nouveau/nouveau_bo.c
---- /data/deadwood/source/drm-2.4.18/nouveau/nouveau_bo.c	2010-02-16 12:12:40.000000000 +0100
-+++ ./libdrm/nouveau/nouveau_bo.c	2010-05-29 23:54:33.000000000 +0200
+diff -ur -x .svn drm-2.4.21/nouveau/nouveau_bo.c libdrm/nouveau/nouveau_bo.c
+--- drm-2.4.21/nouveau/nouveau_bo.c	2010-06-10 09:03:50.000000000 +0200
++++ libdrm/nouveau/nouveau_bo.c	2010-06-29 20:36:45.000000000 +0200
 @@ -28,7 +28,9 @@
  #include <errno.h>
  #include <assert.h>
@@ -43,9 +43,9 @@ diff -ur -x .svn /data/deadwood/source/drm-2.4.18/nouveau/nouveau_bo.c ./libdrm/
  	return 0;
  }
  
-diff -ur -x .svn /data/deadwood/source/drm-2.4.18/nouveau/nouveau_drmif.h ./libdrm/nouveau/nouveau_drmif.h
---- /data/deadwood/source/drm-2.4.18/nouveau/nouveau_drmif.h	2010-02-16 12:12:40.000000000 +0100
-+++ ./libdrm/nouveau/nouveau_drmif.h	2010-02-20 14:30:21.000000000 +0100
+diff -ur -x .svn drm-2.4.21/nouveau/nouveau_drmif.h libdrm/nouveau/nouveau_drmif.h
+--- drm-2.4.21/nouveau/nouveau_drmif.h	2010-06-10 09:03:50.000000000 +0200
++++ libdrm/nouveau/nouveau_drmif.h	2010-06-29 20:36:45.000000000 +0200
 @@ -24,7 +24,7 @@
  #define __NOUVEAU_DRMIF_H__
  
@@ -55,9 +55,9 @@ diff -ur -x .svn /data/deadwood/source/drm-2.4.18/nouveau/nouveau_drmif.h ./libd
  
  #include "nouveau_device.h"
  
-diff -ur -x .svn /data/deadwood/source/drm-2.4.18/nouveau/nouveau_private.h ./libdrm/nouveau/nouveau_private.h
---- /data/deadwood/source/drm-2.4.18/nouveau/nouveau_private.h	2010-02-16 12:12:40.000000000 +0100
-+++ ./libdrm/nouveau/nouveau_private.h	2010-02-20 14:33:08.000000000 +0100
+diff -ur -x .svn drm-2.4.21/nouveau/nouveau_private.h libdrm/nouveau/nouveau_private.h
+--- drm-2.4.21/nouveau/nouveau_private.h	2010-06-10 09:03:50.000000000 +0200
++++ libdrm/nouveau/nouveau_private.h	2010-06-29 20:36:45.000000000 +0200
 @@ -24,7 +24,7 @@
  #define __NOUVEAU_PRIVATE_H__
  

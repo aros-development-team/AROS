@@ -118,7 +118,6 @@ struct nouveau_bo_priv {
 	void *map;
 
 	/* Last known information from kernel on buffer status */
-	int pinned;
 	uint64_t offset;
 	uint32_t domain;
 };

@@ -209,7 +209,7 @@ nouveau_bo_new_tile(struct nouveau_device *dev, uint32_t flags, int align,
 	if (flags & (NOUVEAU_BO_VRAM | NOUVEAU_BO_GART)) {
 		ret = nouveau_bo_kalloc(nvbo, NULL);
 		if (ret) {
-			nouveau_bo_ref(NULL, (void *)nvbo);
+			nouveau_bo_ref(NULL, (void *)&nvbo);
 			return ret;
 		}
 	}
