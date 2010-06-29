@@ -92,11 +92,9 @@ nouveau_dma_init(struct nouveau_channel *chan)
 		return ret;
 
 	/* Map M2MF notifier object - fbcon. */
-	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
-		ret = nouveau_bo_map(chan->notifier_bo);
-		if (ret)
-			return ret;
-	}
+	ret = nouveau_bo_map(chan->notifier_bo);
+	if (ret)
+		return ret;
 
 	/* Insert NOPS for NOUVEAU_DMA_SKIPS */
 	ret = RING_SPACE(chan, NOUVEAU_DMA_SKIPS);
@@ -190,6 +188,11 @@ nv50_dma_push(struct nouveau_channel *chan, struct nouveau_bo *bo,
 	nouveau_bo_wr32(pb, ip++, upper_32_bits(offset) | length << 8);
 
 	chan->dma.ib_put = (chan->dma.ib_put + 1) & chan->dma.ib_max;
+
+	DRM_MEMORYBARRIER();
+	/* Flush writes. */
+	nouveau_bo_rd32(pb, 0);
+
 	nvchan_wr32(chan, 0x8c, chan->dma.ib_put);
 	chan->dma.ib_free--;
 }

@@ -142,7 +142,6 @@ nouveau_channel_alloc(struct drm_device *dev, struct nouveau_channel **chan_ret,
 					   GFP_KERNEL);
 	if (!dev_priv->fifos[channel])
 		return -ENOMEM;
-	dev_priv->fifo_alloc_count++;
 	chan = dev_priv->fifos[channel];
 	INIT_LIST_HEAD(&chan->nvsw.vbl_wait);
 	INIT_LIST_HEAD(&chan->fence.pending);
@@ -258,9 +257,7 @@ nouveau_channel_free(struct nouveau_channel *chan)
 	nouveau_debugfs_channel_fini(chan);
 
 	/* Give outstanding push buffers a chance to complete */
-	spin_lock_irqsave(&chan->fence.lock, flags);
 	nouveau_fence_update(chan);
-	spin_unlock_irqrestore(&chan->fence.lock, flags);
 	if (chan->fence.sequence != chan->fence.sequence_ack) {
 		struct nouveau_fence *fence = NULL;
 
@@ -321,7 +318,6 @@ nouveau_channel_free(struct nouveau_channel *chan)
 		iounmap(chan->user);
 
 	dev_priv->fifos[chan->id] = NULL;
-	dev_priv->fifo_alloc_count--;
 	kfree(chan);
 }
 

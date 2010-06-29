@@ -70,7 +70,6 @@
 #define DRM_MEMORYBARRIER()         __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
 #else
 #error IMPLEMENT momory bariers for non-x86
-/* FIXME: Implementation for other architextures */
 #endif
 
 
@@ -216,6 +215,7 @@ struct drm_driver
     /* GEM */
     int         (*gem_init_object) (struct drm_gem_object *obj);
     void        (*gem_free_object) (struct drm_gem_object *obj);
+    void        (*gem_free_object_unlocked) (struct drm_gem_object *obj);
 
     int                     version_patchlevel;
     unsigned int            driver_features;
@@ -403,12 +403,36 @@ void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
 /* GEM */
 int drm_gem_init(struct drm_device *dev);
 void drm_gem_object_free(struct kref *kref);
+void drm_gem_object_free_unlocked(struct kref *kref);
 void drm_gem_object_handle_free(struct kref *kref);
 struct drm_gem_object *drm_gem_object_alloc(struct drm_device *dev,
                         size_t size);
 int drm_gem_handle_create(struct drm_file *file_priv,
               struct drm_gem_object *obj,
               u32 *handlep);
+
+static inline void
+drm_gem_object_unreference_unlocked(struct drm_gem_object *obj)
+{
+    if (obj != NULL)
+        kref_put(&obj->refcount, drm_gem_object_free_unlocked);
+}
+
+static inline void
+drm_gem_object_handle_unreference_unlocked(struct drm_gem_object *obj)
+{
+    if (obj == NULL)
+        return;
+
+    /*
+    * Must bump handle count first as this may be the last
+    * ref, in which case the object would disappear before we
+    * checked for a name
+    */
+    kref_put(&obj->handlecount, drm_gem_object_handle_free);
+    drm_gem_object_unreference_unlocked(obj);
+}
+
 struct drm_gem_object *drm_gem_object_lookup(struct drm_device *dev,
                          struct drm_file *filp,
                          u32 handle);

@@ -34,6 +34,7 @@
 #include "drmP.h"
 #if !defined(__AROS__)
 #include <linux/module.h>
+#include <linux/slab.h>
 #endif
 
 #if __OS_HAS_AGP

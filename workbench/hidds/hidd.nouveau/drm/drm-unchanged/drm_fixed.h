@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Red Hat Inc.
+ * Copyright 2009 Red Hat Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -19,58 +19,49 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * Authors: Ben Skeggs
+ * Authors: Dave Airlie
  */
+#ifndef DRM_FIXED_H
+#define DRM_FIXED_H
 
-#include "drmP.h"
-#include "nouveau_drv.h"
-#include "nouveau_hw.h"
+typedef union dfixed {
+	u32 full;
+} fixed20_12;
 
-static int
-nv50_gpio_location(struct dcb_gpio_entry *gpio, uint32_t *reg, uint32_t *shift)
+
+#define dfixed_const(A) (u32)(((A) << 12))/*  + ((B + 0.000122)*4096)) */
+#define dfixed_const_half(A) (u32)(((A) << 12) + 2048)
+#define dfixed_const_666(A) (u32)(((A) << 12) + 2731)
+#define dfixed_const_8(A) (u32)(((A) << 12) + 3277)
+#define dfixed_mul(A, B) ((u64)((u64)(A).full * (B).full + 2048) >> 12)
+#define dfixed_init(A) { .full = dfixed_const((A)) }
+#define dfixed_init_half(A) { .full = dfixed_const_half((A)) }
+#define dfixed_trunc(A) ((A).full >> 12)
+
+static inline u32 dfixed_floor(fixed20_12 A)
 {
-	const uint32_t nv50_gpio_reg[4] = { 0xe104, 0xe108, 0xe280, 0xe284 };
+	u32 non_frac = dfixed_trunc(A);
 
-	if (gpio->line >= 32)
-		return -EINVAL;
-
-	*reg = nv50_gpio_reg[gpio->line >> 3];
-	*shift = (gpio->line & 7) << 2;
-	return 0;
+	return dfixed_const(non_frac);
 }
 
-int
-nv50_gpio_get(struct drm_device *dev, enum dcb_gpio_tag tag)
+static inline u32 dfixed_ceil(fixed20_12 A)
 {
-	struct dcb_gpio_entry *gpio;
-	uint32_t r, s, v;
+	u32 non_frac = dfixed_trunc(A);
 
-	gpio = nouveau_bios_gpio_entry(dev, tag);
-	if (!gpio)
-		return -ENOENT;
-
-	if (nv50_gpio_location(gpio, &r, &s))
-		return -EINVAL;
-
-	v = nv_rd32(dev, r) >> (s + 2);
-	return ((v & 1) == (gpio->state[1] & 1));
+	if (A.full > dfixed_const(non_frac))
+		return dfixed_const(non_frac + 1);
+	else
+		return dfixed_const(non_frac);
 }
 
-int
-nv50_gpio_set(struct drm_device *dev, enum dcb_gpio_tag tag, int state)
+static inline u32 dfixed_div(fixed20_12 A, fixed20_12 B)
 {
-	struct dcb_gpio_entry *gpio;
-	uint32_t r, s, v;
+	u64 tmp = ((u64)A.full << 13);
 
-	gpio = nouveau_bios_gpio_entry(dev, tag);
-	if (!gpio)
-		return -ENOENT;
-
-	if (nv50_gpio_location(gpio, &r, &s))
-		return -EINVAL;
-
-	v  = nv_rd32(dev, r) & ~(0x3 << s);
-	v |= (gpio->state[state] ^ 2) << s;
-	nv_wr32(dev, r, v);
-	return 0;
+	do_div(tmp, B.full);
+	tmp += 1;
+	tmp /= 2;
+	return lower_32_bits(tmp);
 }
+#endif

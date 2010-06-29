@@ -167,12 +167,10 @@ nouveau_gem_ioctl_new(struct drm_device *dev, void *data,
 
 	ret = drm_gem_handle_create(file_priv, nvbo->gem, &req->info.handle);
 out:
-	mutex_lock(&dev->struct_mutex);
-	drm_gem_object_handle_unreference(nvbo->gem);
-	mutex_unlock(&dev->struct_mutex);
+	drm_gem_object_handle_unreference_unlocked(nvbo->gem);
 
 	if (ret)
-		drm_gem_object_unreference(nvbo->gem);
+		drm_gem_object_unreference_unlocked(nvbo->gem);
 	return ret;
 }
 
@@ -182,40 +180,35 @@ nouveau_gem_set_domain(struct drm_gem_object *gem, uint32_t read_domains,
 {
 	struct nouveau_bo *nvbo = gem->driver_private;
 	struct ttm_buffer_object *bo = &nvbo->bo;
-	uint64_t flags;
+	uint32_t domains = valid_domains &
+		(write_domains ? write_domains : read_domains);
+	uint32_t pref_flags = 0, valid_flags = 0;
 
-	if (!valid_domains || (!read_domains && !write_domains))
+	if (!domains)
 		return -EINVAL;
 
-	if (write_domains) {
-		if ((valid_domains & NOUVEAU_GEM_DOMAIN_VRAM) &&
-		    (write_domains & NOUVEAU_GEM_DOMAIN_VRAM))
-			flags = TTM_PL_FLAG_VRAM;
-		else
-		if ((valid_domains & NOUVEAU_GEM_DOMAIN_GART) &&
-		    (write_domains & NOUVEAU_GEM_DOMAIN_GART))
-			flags = TTM_PL_FLAG_TT;
-		else
-			return -EINVAL;
-	} else {
-		if ((valid_domains & NOUVEAU_GEM_DOMAIN_VRAM) &&
-		    (read_domains & NOUVEAU_GEM_DOMAIN_VRAM) &&
-		    bo->mem.mem_type == TTM_PL_VRAM)
-			flags = TTM_PL_FLAG_VRAM;
-		else
-		if ((valid_domains & NOUVEAU_GEM_DOMAIN_GART) &&
-		    (read_domains & NOUVEAU_GEM_DOMAIN_GART) &&
-		    bo->mem.mem_type == TTM_PL_TT)
-			flags = TTM_PL_FLAG_TT;
-		else
-		if ((valid_domains & NOUVEAU_GEM_DOMAIN_VRAM) &&
-		    (read_domains & NOUVEAU_GEM_DOMAIN_VRAM))
-			flags = TTM_PL_FLAG_VRAM;
-		else
-			flags = TTM_PL_FLAG_TT;
-	}
+	if (valid_domains & NOUVEAU_GEM_DOMAIN_VRAM)
+		valid_flags |= TTM_PL_FLAG_VRAM;
 
-	nouveau_bo_placement_set(nvbo, flags);
+	if (valid_domains & NOUVEAU_GEM_DOMAIN_GART)
+		valid_flags |= TTM_PL_FLAG_TT;
+
+	if ((domains & NOUVEAU_GEM_DOMAIN_VRAM) &&
+	    bo->mem.mem_type == TTM_PL_VRAM)
+		pref_flags |= TTM_PL_FLAG_VRAM;
+
+	else if ((domains & NOUVEAU_GEM_DOMAIN_GART) &&
+		 bo->mem.mem_type == TTM_PL_TT)
+		pref_flags |= TTM_PL_FLAG_TT;
+
+	else if (domains & NOUVEAU_GEM_DOMAIN_VRAM)
+		pref_flags |= TTM_PL_FLAG_VRAM;
+
+	else
+		pref_flags |= TTM_PL_FLAG_TT;
+
+	nouveau_bo_placement_set(nvbo, pref_flags, valid_flags);
+
 	return 0;
 }
 
@@ -791,9 +784,7 @@ nouveau_gem_ioctl_cpu_prep(struct drm_device *dev, void *data,
 	}
 
 out:
-	mutex_lock(&dev->struct_mutex);
-	drm_gem_object_unreference(gem);
-	mutex_unlock(&dev->struct_mutex);
+	drm_gem_object_unreference_unlocked(gem);
 	return ret;
 }
 
@@ -821,9 +812,7 @@ nouveau_gem_ioctl_cpu_fini(struct drm_device *dev, void *data,
 	ret = 0;
 
 out:
-	mutex_lock(&dev->struct_mutex);
-	drm_gem_object_unreference(gem);
-	mutex_unlock(&dev->struct_mutex);
+	drm_gem_object_unreference_unlocked(gem);
 	return ret;
 }
 
@@ -842,9 +831,7 @@ nouveau_gem_ioctl_info(struct drm_device *dev, void *data,
 		return -EINVAL;
 
 	ret = nouveau_gem_info(gem, req);
-	mutex_lock(&dev->struct_mutex);
-	drm_gem_object_unreference(gem);
-	mutex_unlock(&dev->struct_mutex);
+	drm_gem_object_unreference_unlocked(gem);
 	return ret;
 }
 

@@ -28,7 +28,9 @@
  *      Jesse Barnes <jesse.barnes@intel.com>
  */
 #if !defined(__AROS__)
+#include <linux/kernel.h>
 #include <linux/sysrq.h>
+#include <linux/slab.h>
 #include <linux/fb.h>
 #endif
 #include "drmP.h"
@@ -54,21 +56,7 @@ int drm_fb_helper_add_connector(struct drm_connector *connector)
 }
 EXPORT_SYMBOL(drm_fb_helper_add_connector);
 
-static int my_atoi(const char *name)
-{
-	int val = 0;
-
-	for (;; name++) {
-		switch (*name) {
-		case '0' ... '9':
-			val = 10*val+(*name-'0');
-			break;
-		default:
-			return val;
-		}
-	}
-}
-
+#if !defined(__AROS__)
 /**
  * drm_fb_helper_connector_parse_command_line - parse command line for connector
  * @connector - connector to parse line for
@@ -99,12 +87,8 @@ static bool drm_fb_helper_connector_parse_command_line(struct drm_connector *con
 		return false;
 
 	cmdline_mode = &fb_help_conn->cmdline_mode;
-#if !defined(__AROS__)
 	if (!mode_option)
 		mode_option = fb_mode_option;
-#else
-IMPLEMENT("Getting fb_mode_option\n");
-#endif
 
 	if (!mode_option) {
 		cmdline_mode->specified = false;
@@ -119,7 +103,7 @@ IMPLEMENT("Getting fb_mode_option\n");
 			namelen = i;
 			if (!refresh_specified && !bpp_specified &&
 			    !yres_specified) {
-				refresh = my_atoi(&name[i+1]);
+				refresh = simple_strtol(&name[i+1], NULL, 10);
 				refresh_specified = 1;
 				if (cvt || rb)
 					cvt = 0;
@@ -129,7 +113,7 @@ IMPLEMENT("Getting fb_mode_option\n");
 		case '-':
 			namelen = i;
 			if (!bpp_specified && !yres_specified) {
-				bpp = my_atoi(&name[i+1]);
+				bpp = simple_strtol(&name[i+1], NULL, 10);
 				bpp_specified = 1;
 				if (cvt || rb)
 					cvt = 0;
@@ -138,7 +122,7 @@ IMPLEMENT("Getting fb_mode_option\n");
 			break;
 		case 'x':
 			if (!yres_specified) {
-				yres = my_atoi(&name[i+1]);
+				yres = simple_strtol(&name[i+1], NULL, 10);
 				yres_specified = 1;
 			} else
 				goto done;
@@ -178,7 +162,7 @@ IMPLEMENT("Getting fb_mode_option\n");
 		}
 	}
 	if (i < 0 && yres_specified) {
-		xres = my_atoi(name);
+		xres = simple_strtol(name, NULL, 10);
 		res_specified = 1;
 	}
 done:
@@ -224,24 +208,23 @@ done:
 
 	return true;
 }
+#endif
 
 int drm_fb_helper_parse_command_line(struct drm_device *dev)
 {
+#if !defined(__AROS__)
 	struct drm_connector *connector;
 
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		char *option = NULL;
 
-#if !defined(__AROS__)
 		/* do something on return - turn off connector maybe */
 		if (fb_get_options(drm_get_connector_name(connector), &option))
 			continue;
-#else
-IMPLEMENT("Calling fb_get_option\n");
-#endif
 
 		drm_fb_helper_connector_parse_command_line(connector, option);
 	}
+#endif
 	return 0;
 }
 
@@ -310,6 +293,8 @@ static struct sysrq_key_op sysrq_drm_fb_helper_restore_op = {
 	.help_msg = "force-fb(V)",
 	.action_msg = "Restore framebuffer console",
 };
+#else
+static struct sysrq_key_op sysrq_drm_fb_helper_restore_op = { };
 #endif
 
 static void drm_fb_helper_on(struct fb_info *info)
@@ -402,7 +387,7 @@ int drm_fb_helper_blank(int blank, struct fb_info *info)
 		break;
 	/* Display: Off; HSync: On, VSync: On */
 	case FB_BLANK_NORMAL:
-		drm_fb_helper_off(info, DRM_MODE_DPMS_ON);
+		drm_fb_helper_off(info, DRM_MODE_DPMS_STANDBY);
 		break;
 	/* Display: Off; HSync: Off, VSync: On */
 	case FB_BLANK_HSYNC_SUSPEND:
@@ -707,7 +692,7 @@ int drm_fb_helper_set_par(struct fb_info *info)
 	int i;
 
 	if (var->pixclock != 0) {
-		DRM_ERROR("PIXEL CLCOK SET\n");
+		DRM_ERROR("PIXEL CLOCK SET\n");
 		return -EINVAL;
 	}
 

@@ -24,6 +24,7 @@
 
 #if !defined(__AROS__)
 #include <linux/firmware.h>
+#include <linux/slab.h>
 #endif
 
 #include "drmP.h"

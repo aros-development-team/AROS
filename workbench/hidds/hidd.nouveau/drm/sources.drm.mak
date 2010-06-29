@@ -87,9 +87,11 @@ AROS_DRM_NVIDIA_SOURCES = \
             drm-unchanged/nouveau/nv40_graph \
             drm-unchanged/nouveau/nv40_grctx \
             drm-unchanged/nouveau/nv40_mc \
+            drm-unchanged/nouveau/nv50_calc \
             drm-unchanged/nouveau/nv50_crtc \
             drm-unchanged/nouveau/nv50_cursor \
             drm-unchanged/nouveau/nv50_dac \
+            drm-unchanged/nouveau/nv50_fb \
             drm-unchanged/nouveau/nv50_fifo \
             drm-unchanged/nouveau/nv50_mc \
             drm-unchanged/nouveau/nv50_gpio \

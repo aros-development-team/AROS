@@ -104,3 +104,36 @@ static inline void list_move_tail(struct list_head *list,
 	list_add_tail(list, head);
 }
 
+static inline void list_sort(void * priv, struct list_head *head,
+	       int (*cmp)(void * priv, struct list_head *a, struct list_head *b))
+{
+    int finished = 0;
+    
+    if (list_empty(head))
+        return;
+    do
+    {
+        struct list_head * elem = head->next;
+        finished = 1;
+
+        while(elem->next != head)
+        {
+            if (cmp(priv, elem, elem->next) < 0)
+            {
+                /* Need to switch both elements */
+                struct list_head * elemnext = elem->next;
+                elem->prev->next = elemnext;
+                elemnext->prev = elem->prev;
+                elem->prev = elemnext;
+                elem->next = elemnext->next;
+                elemnext->next->prev = elem;
+                elemnext->next = elem;
+                finished = 0;
+                break;
+            }
+            
+            elem = elem->next;
+        }
+    }while(!finished);
+}
+
