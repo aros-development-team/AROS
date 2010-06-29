@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -746,8 +746,10 @@ static struct MenuItem *FindItem(WORD *var, struct MenuHandlerData *mhd)
 
     if (mhd->menuwin)
     {
-        mouse_x = mhd->scrmousex - mhd->menuwin->LeftEdge + mhd->activemenu->JazzX - mhd->innerleft;
-        mouse_y = mhd->scrmousey - mhd->menuwin->TopEdge  + mhd->activemenu->JazzY - mhd->innertop;
+        mouse_x = mhd->scrmousex - mhd->menuwin->LeftEdge
+            + mhd->activemenu->JazzX - mhd->innerleft - mhd->menuinnerleft;
+        mouse_y = mhd->scrmousey - mhd->menuwin->TopEdge
+            + mhd->activemenu->JazzY - mhd->innertop - mhd->menuinnertop;
 
         for(item = mhd->activemenu->FirstItem, i = 0; item; item = item->NextItem, i++)
         {
