@@ -109,8 +109,8 @@ nv50_evo_channel_new(struct drm_device *dev, struct nouveau_channel **pchan)
 		return ret;
 	}
 
-	ret = nouveau_mem_init_heap(&chan->ramin_heap, chan->ramin->gpuobj->
-				    im_pramin->start, 32768);
+	ret = drm_mm_init(&chan->ramin_heap,
+			  chan->ramin->gpuobj->im_pramin->start, 32768);
 	if (ret) {
 		NV_ERROR(dev, "Error initialising EVO PRAMIN heap: %d\n", ret);
 		nv50_evo_channel_del(pchan);
@@ -143,7 +143,7 @@ nv50_evo_channel_new(struct drm_device *dev, struct nouveau_channel **pchan)
 	}
 
 	ret = nv50_evo_dmaobj_new(chan, 0x3d, NvEvoVRAM, 0, 0x19,
-				  0, nouveau_mem_fb_amount(dev));
+				  0, dev_priv->vram_size);
 	if (ret) {
 		nv50_evo_channel_del(pchan);
 		return ret;
@@ -231,7 +231,7 @@ nv50_display_init(struct drm_device *dev)
 	/* This used to be in crtc unblank, but seems out of place there. */
 	nv_wr32(dev, NV50_PDISPLAY_UNK_380, 0);
 	/* RAM is clamped to 256 MiB. */
-	ram_amount = nouveau_mem_fb_amount(dev);
+	ram_amount = dev_priv->vram_size;
 	NV_DEBUG_KMS(dev, "ram_amount %d\n", ram_amount);
 	if (ram_amount > 256*1024*1024)
 		ram_amount = 256*1024*1024;
@@ -529,8 +529,10 @@ int nv50_display_create(struct drm_device *dev)
 	}
 
 	ret = nv50_display_init(dev);
-	if (ret)
+	if (ret) {
+		nv50_display_destroy(dev);
 		return ret;
+	}
 
 	return 0;
 }
@@ -781,6 +783,37 @@ ack:
 }
 
 static void
+nv50_display_unk20_dp_hack(struct drm_device *dev, struct dcb_entry *dcb)
+{
+	int or = ffs(dcb->or) - 1, link = !(dcb->dpconf.sor.link & 1);
+	struct drm_encoder *encoder;
+	uint32_t tmp, unk0 = 0, unk1 = 0;
+
+	if (dcb->type != OUTPUT_DP)
+		return;
+
+	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
+		struct nouveau_encoder *nv_encoder = nouveau_encoder(encoder);
+
+		if (nv_encoder->dcb == dcb) {
+			unk0 = nv_encoder->dp.unk0;
+			unk1 = nv_encoder->dp.unk1;
+			break;
+		}
+	}
+
+	if (unk0 || unk1) {
+		tmp  = nv_rd32(dev, NV50_SOR_DP_CTRL(or, link));
+		tmp &= 0xfffffe03;
+		nv_wr32(dev, NV50_SOR_DP_CTRL(or, link), tmp | unk0);
+
+		tmp  = nv_rd32(dev, NV50_SOR_DP_UNK128(or, link));
+		tmp &= 0xfef080c0;
+		nv_wr32(dev, NV50_SOR_DP_UNK128(or, link), tmp | unk1);
+	}
+}
+
+static void
 nv50_display_unk20_handler(struct drm_device *dev)
 {
 	struct dcb_entry *dcbent;
@@ -802,6 +835,8 @@ nv50_display_unk20_handler(struct drm_device *dev)
 	nv50_crtc_set_clock(dev, head, pclk);
 
 	nouveau_bios_run_display_table(dev, dcbent, script, pclk);
+
+	nv50_display_unk20_dp_hack(dev, dcbent);
 
 	tmp = nv_rd32(dev, NV50_PDISPLAY_CRTC_CLK_CTRL2(head));
 	tmp &= ~0x000000f;
@@ -891,10 +926,19 @@ nv50_display_error_handler(struct drm_device *dev)
 	nv_wr32(dev, NV50_PDISPLAY_TRAPPED_ADDR, 0x90000000);
 }
 
-static void
-nv50_display_irq_hotplug(struct drm_device *dev)
+#if !defined(__AROS__)
+void
+nv50_display_irq_hotplug_bh(struct work_struct *work)
 {
-	struct drm_nouveau_private *dev_priv = dev->dev_private;
+	struct drm_nouveau_private *dev_priv =
+		container_of(work, struct drm_nouveau_private, hpd_work);
+	struct drm_device *dev = dev_priv->dev;
+#else
+void
+nv50_display_irq_hotplug_bh(struct drm_device * dev)
+{
+    struct drm_nouveau_private *dev_priv = dev->dev_private;
+#endif
 	struct drm_connector *connector;
 	const uint32_t gpio_reg[4] = { 0xe104, 0xe108, 0xe280, 0xe284 };
 	uint32_t unplug_mask, plug_mask, change_mask;
@@ -947,6 +991,10 @@ nv50_display_irq_hotplug(struct drm_device *dev)
 	nv_wr32(dev, 0xe054, nv_rd32(dev, 0xe054));
 	if (dev_priv->chipset >= 0x90)
 		nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
+
+#if !defined(__AROS__)
+	drm_sysfs_hotplug_event(dev);
+#endif
 }
 
 void
@@ -957,8 +1005,15 @@ nv50_display_irq_handler(struct drm_device *dev)
 #endif
 	uint32_t delayed = 0;
 
-	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG)
-		nv50_display_irq_hotplug(dev);
+	if (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG) {
+#if !defined(__AROS__)
+		if (!work_pending(&dev_priv->hpd_work))
+			queue_work(dev_priv->wq, &dev_priv->hpd_work);
+#else
+        /* Kind of hackish call but it does its job. */
+        nv50_display_irq_hotplug_bh(dev);
+#endif
+	}
 
 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_DISPLAY) {
 		uint32_t intr0 = nv_rd32(dev, NV50_PDISPLAY_INTR_0);

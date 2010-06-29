@@ -818,7 +818,7 @@ init_i2c_device_find(struct drm_device *dev, int i2c_index)
 	if (i2c_index == 0x81)
 		i2c_index = (dcb->i2c_default_indices & 0xf0) >> 4;
 
-	if (i2c_index > DCB_MAX_NUM_I2C_ENTRIES) {
+	if (i2c_index >= DCB_MAX_NUM_I2C_ENTRIES) {
 		NV_ERROR(dev, "invalid i2c_index 0x%x\n", i2c_index);
 		return NULL;
 	}
@@ -1451,12 +1451,18 @@ init_i2c_byte(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 	 * "mask n" and OR it with "data n" before writing it back to the device
 	 */
 
+#if !defined(__AROS__)
 	uint8_t i2c_index = bios->data[offset + 1];
 	uint8_t i2c_address = bios->data[offset + 2] >> 1;
+#endif
 	uint8_t count = bios->data[offset + 3];
+#if !defined(__AROS__)
 	struct nouveau_i2c_chan *chan;
+#endif
 	int len = 4 + count * 3;
+#if !defined(__AROS__)
 	int ret, i;
+#endif
 
 	if (!iexec->execute)
 		return len;
@@ -1524,12 +1530,18 @@ init_zm_i2c_byte(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 	 * "DCB I2C table entry index", set the register to "data n"
 	 */
 
+#if !defined(__AROS__)
 	uint8_t i2c_index = bios->data[offset + 1];
 	uint8_t i2c_address = bios->data[offset + 2] >> 1;
+#endif
 	uint8_t count = bios->data[offset + 3];
+#if !defined(__AROS__)
 	struct nouveau_i2c_chan *chan;
+#endif
 	int len = 4 + count * 2;
+#if !defined(__AROS__)
 	int ret, i;
+#endif
 
 	if (!iexec->execute)
 		return len;
@@ -2140,7 +2152,8 @@ init_reset(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 	/* no iexec->execute check by design */
 
 	pci_nv_19 = bios_rd32(bios, NV_PBUS_PCI_NV_19);
-	bios_wr32(bios, NV_PBUS_PCI_NV_19, 0);
+	bios_wr32(bios, NV_PBUS_PCI_NV_19, pci_nv_19 & ~0xf00);
+
 	bios_wr32(bios, reg, value1);
 
 	udelay(10);
@@ -2821,7 +2834,10 @@ init_gpio(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
 
 		BIOSLOG(bios, "0x%04X: Entry: 0x%08X\n", offset, gpio->entry);
 
-		nv50_gpio_set(bios->dev, gpio->tag, gpio->state_default);
+		BIOSLOG(bios, "0x%04X: set gpio 0x%02x, state %d\n",
+			offset, gpio->tag, gpio->state_default);
+		if (bios->execute)
+			nv50_gpio_set(bios->dev, gpio->tag, gpio->state_default);
 
 		/* The NVIDIA binary driver doesn't appear to actually do
 		 * any of this, my VBIOS does however.
@@ -3918,7 +3934,8 @@ int nouveau_bios_parse_lvds_table(struct drm_device *dev, int pxclk, bool *dl, b
 
 static uint8_t *
 bios_output_config_match(struct drm_device *dev, struct dcb_entry *dcbent,
-			 uint16_t record, int record_len, int record_nr)
+			 uint16_t record, int record_len, int record_nr,
+			 bool match_link)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nvbios *bios = &dev_priv->vbios;
@@ -3926,11 +3943,27 @@ bios_output_config_match(struct drm_device *dev, struct dcb_entry *dcbent,
 	uint16_t table;
 	int i, v;
 
+	switch (dcbent->type) {
+	case OUTPUT_TMDS:
+	case OUTPUT_LVDS:
+	case OUTPUT_DP:
+		break;
+	default:
+		match_link = false;
+		break;
+	}
+
 	for (i = 0; i < record_nr; i++, record += record_len) {
 		table = ROM16(bios->data[record]);
 		if (!table)
 			continue;
 		entry = ROM32(bios->data[table]);
+
+		if (match_link) {
+			v = (entry & 0x00c00000) >> 22;
+			if (!(v & dcbent->sorconf.link))
+				continue;
+		}
 
 		v = (entry & 0x000f0000) >> 16;
 		if (!(v & dcbent->or))
@@ -3973,7 +4006,7 @@ nouveau_bios_dp_table(struct drm_device *dev, struct dcb_entry *dcbent,
 	*length = table[4];
 	return bios_output_config_match(dev, dcbent,
 					bios->display.dp_table_ptr + table[1],
-					table[2], table[3]);
+					table[2], table[3], table[0] >= 0x21);
 }
 
 int
@@ -4062,7 +4095,7 @@ nouveau_bios_run_display_table(struct drm_device *dev, struct dcb_entry *dcbent,
 			dcbent->type, dcbent->location, dcbent->or);
 	otable = bios_output_config_match(dev, dcbent, table[1] +
 					  bios->display.script_table_ptr,
-					  table[2], table[3]);
+					  table[2], table[3], table[0] >= 0x21);
 	if (!otable) {
 		NV_ERROR(dev, "Couldn't find matching output script table\n");
 		return 1;
@@ -5147,10 +5180,14 @@ static int parse_bmp_structure(struct drm_device *dev, struct nvbios *bios, unsi
 	bios->legacy.i2c_indices.crt = bios->data[legacy_i2c_offset];
 	bios->legacy.i2c_indices.tv = bios->data[legacy_i2c_offset + 1];
 	bios->legacy.i2c_indices.panel = bios->data[legacy_i2c_offset + 2];
-	bios->dcb.i2c[0].write = bios->data[legacy_i2c_offset + 4];
-	bios->dcb.i2c[0].read = bios->data[legacy_i2c_offset + 5];
-	bios->dcb.i2c[1].write = bios->data[legacy_i2c_offset + 6];
-	bios->dcb.i2c[1].read = bios->data[legacy_i2c_offset + 7];
+	if (bios->data[legacy_i2c_offset + 4])
+		bios->dcb.i2c[0].write = bios->data[legacy_i2c_offset + 4];
+	if (bios->data[legacy_i2c_offset + 5])
+		bios->dcb.i2c[0].read = bios->data[legacy_i2c_offset + 5];
+	if (bios->data[legacy_i2c_offset + 6])
+		bios->dcb.i2c[1].write = bios->data[legacy_i2c_offset + 6];
+	if (bios->data[legacy_i2c_offset + 7])
+		bios->dcb.i2c[1].read = bios->data[legacy_i2c_offset + 7];
 
 	if (bmplength > 74) {
 		bios->fmaxvco = ROM32(bmp[67]);
@@ -5513,6 +5550,7 @@ static void fabricate_vga_output(struct dcb_table *dcb, int i2c, int heads)
 	/* "or" mostly unused in early gen crt modesetting, 0 is fine */
 }
 
+#if !defined(__AROS__)
 static void fabricate_dvi_i_output(struct dcb_table *dcb, bool twoHeads)
 {
 	struct dcb_entry *entry = new_dcb_entry(dcb);
@@ -5549,6 +5587,7 @@ static void fabricate_tv_output(struct dcb_table *dcb, bool twoHeads)
 	entry->heads = twoHeads ? 3 : 1;
 	entry->location = !DCB_LOC_ON_CHIP;	/* ie OFF CHIP */
 }
+#endif
 
 static bool
 parse_dcb20_entry(struct drm_device *dev, struct dcb_table *dcb,
@@ -5562,12 +5601,6 @@ parse_dcb20_entry(struct drm_device *dev, struct dcb_table *dcb,
 	entry->bus = (conn >> 16) & 0xf;
 	entry->location = (conn >> 20) & 0x3;
 	entry->or = (conn >> 24) & 0xf;
-	/*
-	 * Normal entries consist of a single bit, but dual link has the
-	 * next most significant bit set too
-	 */
-	entry->duallink_possible =
-			((1 << (ffs(entry->or) - 1)) * 3 == entry->or);
 
 	switch (entry->type) {
 	case OUTPUT_ANALOG:
@@ -5649,6 +5682,16 @@ parse_dcb20_entry(struct drm_device *dev, struct dcb_table *dcb,
 		return false;
 	default:
 		break;
+	}
+
+	if (dcb->version < 0x40) {
+		/* Normal entries consist of a single bit, but dual link has
+		 * the next most significant bit set too
+		 */
+		entry->duallink_possible =
+			((1 << (ffs(entry->or) - 1)) * 3 == entry->or);
+	} else {
+		entry->duallink_possible = (entry->sorconf.link == 3);
 	}
 
 	/* unsure what DCB version introduces this, 3.0? */
@@ -6243,6 +6286,30 @@ nouveau_bios_i2c_devices_takedown(struct drm_device *dev)
 		nouveau_i2c_fini(dev, entry);
 }
 
+static bool
+nouveau_bios_posted(struct drm_device *dev)
+{
+	struct drm_nouveau_private *dev_priv = dev->dev_private;
+	bool was_locked;
+	unsigned htotal;
+
+	if (dev_priv->chipset >= NV_50) {
+		if (NVReadVgaCrtc(dev, 0, 0x00) == 0 &&
+		    NVReadVgaCrtc(dev, 0, 0x1a) == 0)
+			return false;
+		return true;
+	}
+
+	was_locked = NVLockVgaCrtcs(dev, false);
+	htotal  = NVReadVgaCrtc(dev, 0, 0x06);
+	htotal |= (NVReadVgaCrtc(dev, 0, 0x07) & 0x01) << 8;
+	htotal |= (NVReadVgaCrtc(dev, 0, 0x07) & 0x20) << 4;
+	htotal |= (NVReadVgaCrtc(dev, 0, 0x25) & 0x01) << 10;
+	htotal |= (NVReadVgaCrtc(dev, 0, 0x41) & 0x01) << 11;
+	NVLockVgaCrtcs(dev, was_locked);
+	return (htotal != 0);
+}
+
 int
 nouveau_bios_init(struct drm_device *dev)
 {
@@ -6277,11 +6344,9 @@ nouveau_bios_init(struct drm_device *dev)
 	bios->execute = false;
 
 	/* ... unless card isn't POSTed already */
-	if (dev_priv->card_type >= NV_10 &&
-	    NVReadVgaCrtc(dev, 0, 0x00) == 0 &&
-	    NVReadVgaCrtc(dev, 0, 0x1a) == 0) {
+	if (!nouveau_bios_posted(dev)) {
 		NV_INFO(dev, "Adaptor not initialised\n");
-		if (dev_priv->card_type < NV_50) {
+		if (dev_priv->card_type < NV_40) {
 			NV_ERROR(dev, "Unable to POST this chipset\n");
 			return -ENODEV;
 		}

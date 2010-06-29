@@ -2,6 +2,7 @@
 #include "nouveau_drv.h"
 #if !defined(__AROS__)
 #include <linux/pagemap.h>
+#include <linux/slab.h>
 #endif
 
 #define NV_CTXDMA_PAGE_SHIFT 12
@@ -172,6 +173,24 @@ nouveau_sgdma_unbind(struct ttm_backend *be)
 		}
 	}
 	dev_priv->engine.instmem.finish_access(nvbe->dev);
+
+	if (dev_priv->card_type == NV_50) {
+		nv_wr32(dev, 0x100c80, 0x00050001);
+		if (!nv_wait(0x100c80, 0x00000001, 0x00000000)) {
+			NV_ERROR(dev, "timeout: (0x100c80 & 1) == 0 (2)\n");
+			NV_ERROR(dev, "0x100c80 = 0x%08x\n",
+						nv_rd32(dev, 0x100c80));
+			return -EBUSY;
+		}
+
+		nv_wr32(dev, 0x100c80, 0x00000001);
+		if (!nv_wait(0x100c80, 0x00000001, 0x00000000)) {
+			NV_ERROR(dev, "timeout: (0x100c80 & 1) == 0 (2)\n");
+			NV_ERROR(dev, "0x100c80 = 0x%08x\n",
+						nv_rd32(dev, 0x100c80));
+			return -EBUSY;
+		}
+	}
 
 	nvbe->bound = false;
 	return 0;

@@ -34,6 +34,8 @@ int nouveau_uscript_lvds = -1;
 int nouveau_uscript_tmds = -1;
 /* Ignore DCB connector type */
 int nouveau_override_conntype = 0;
+/* Disable TV-out detection */
+int nouveau_tv_disable = 0;
 
 
 extern struct drm_ioctl_desc nouveau_ioctls[];

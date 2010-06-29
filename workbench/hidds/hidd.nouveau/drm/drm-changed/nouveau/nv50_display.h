@@ -38,8 +38,10 @@
 void nv50_display_irq_handler(struct drm_device *dev);
 #if !defined(__AROS__)
 void nv50_display_irq_handler_bh(struct work_struct *work);
+void nv50_display_irq_hotplug_bh(struct work_struct *work);
 #else
 void nv50_display_irq_handler_bh(struct drm_device *dev);
+void nv50_display_irq_hotplug_bh(struct drm_device *dev);
 #endif
 int nv50_display_init(struct drm_device *dev);
 int nv50_display_create(struct drm_device *dev);

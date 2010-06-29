@@ -35,162 +35,6 @@
 #include "drm_sarea.h"
 #include "nouveau_drv.h"
 
-static struct mem_block *
-split_block(struct mem_block *p, uint64_t start, uint64_t size,
-	    struct drm_file *file_priv)
-{
-	/* Maybe cut off the start of an existing block */
-	if (start > p->start) {
-		struct mem_block *newblock =
-			kmalloc(sizeof(*newblock), GFP_KERNEL);
-		if (!newblock)
-			goto out;
-		newblock->start = start;
-		newblock->size = p->size - (start - p->start);
-		newblock->file_priv = NULL;
-		newblock->next = p->next;
-		newblock->prev = p;
-		p->next->prev = newblock;
-		p->next = newblock;
-		p->size -= newblock->size;
-		p = newblock;
-	}
-
-	/* Maybe cut off the end of an existing block */
-	if (size < p->size) {
-		struct mem_block *newblock =
-			kmalloc(sizeof(*newblock), GFP_KERNEL);
-		if (!newblock)
-			goto out;
-		newblock->start = start + size;
-		newblock->size = p->size - size;
-		newblock->file_priv = NULL;
-		newblock->next = p->next;
-		newblock->prev = p;
-		p->next->prev = newblock;
-		p->next = newblock;
-		p->size = size;
-	}
-
-out:
-	/* Our block is in the middle */
-	p->file_priv = file_priv;
-	return p;
-}
-
-struct mem_block *
-nouveau_mem_alloc_block(struct mem_block *heap, uint64_t size,
-			int align2, struct drm_file *file_priv, int tail)
-{
-	struct mem_block *p;
-	uint64_t mask = (1 << align2) - 1;
-
-	if (!heap)
-		return NULL;
-
-	if (tail) {
-		list_for_each_prev(p, heap) {
-			uint64_t start = ((p->start + p->size) - size) & ~mask;
-
-			if (p->file_priv == NULL && start >= p->start &&
-			    start + size <= p->start + p->size)
-				return split_block(p, start, size, file_priv);
-		}
-	} else {
-		list_for_each(p, heap) {
-			uint64_t start = (p->start + mask) & ~mask;
-
-			if (p->file_priv == NULL &&
-			    start + size <= p->start + p->size)
-				return split_block(p, start, size, file_priv);
-		}
-	}
-
-	return NULL;
-}
-
-void nouveau_mem_free_block(struct mem_block *p)
-{
-	p->file_priv = NULL;
-
-	/* Assumes a single contiguous range.  Needs a special file_priv in
-	 * 'heap' to stop it being subsumed.
-	 */
-	if (p->next->file_priv == NULL) {
-		struct mem_block *q = p->next;
-		p->size += q->size;
-		p->next = q->next;
-		p->next->prev = p;
-		kfree(q);
-	}
-
-	if (p->prev->file_priv == NULL) {
-		struct mem_block *q = p->prev;
-		q->size += p->size;
-		q->next = p->next;
-		q->next->prev = q;
-		kfree(p);
-	}
-}
-
-/* Initialize.  How to check for an uninitialized heap?
- */
-int nouveau_mem_init_heap(struct mem_block **heap, uint64_t start,
-			  uint64_t size)
-{
-	struct mem_block *blocks = kmalloc(sizeof(*blocks), GFP_KERNEL);
-
-	if (!blocks)
-		return -ENOMEM;
-
-	*heap = kmalloc(sizeof(**heap), GFP_KERNEL);
-	if (!*heap) {
-		kfree(blocks);
-		return -ENOMEM;
-	}
-
-	blocks->start = start;
-	blocks->size = size;
-	blocks->file_priv = NULL;
-	blocks->next = blocks->prev = *heap;
-
-	memset(*heap, 0, sizeof(**heap));
-	(*heap)->file_priv = (struct drm_file *) -1;
-	(*heap)->next = (*heap)->prev = blocks;
-	return 0;
-}
-
-/*
- * Free all blocks associated with the releasing file_priv
- */
-void nouveau_mem_release(struct drm_file *file_priv, struct mem_block *heap)
-{
-	struct mem_block *p;
-
-	if (!heap || !heap->next)
-		return;
-
-	list_for_each(p, heap) {
-		if (p->file_priv == file_priv)
-			p->file_priv = NULL;
-	}
-
-	/* Assumes a single contiguous range.  Needs a special file_priv in
-	 * 'heap' to stop it being subsumed.
-	 */
-	list_for_each(p, heap) {
-		while ((p->file_priv == NULL) &&
-					(p->next->file_priv == NULL) &&
-					(p->next != heap)) {
-			struct mem_block *q = p->next;
-			p->size += q->size;
-			p->next = q->next;
-			p->next->prev = p;
-			kfree(q);
-		}
-	}
-}
-
 /*
  * NV10-NV40 tiling helpers
  */
@@ -347,6 +191,20 @@ nv50_mem_vm_bind_linear(struct drm_device *dev, uint64_t virt, uint32_t size,
 		return -EBUSY;
 	}
 
+	nv_wr32(dev, 0x100c80, 0x00040001);
+	if (!nv_wait(0x100c80, 0x00000001, 0x00000000)) {
+		NV_ERROR(dev, "timeout: (0x100c80 & 1) == 0 (2)\n");
+		NV_ERROR(dev, "0x100c80 = 0x%08x\n", nv_rd32(dev, 0x100c80));
+		return -EBUSY;
+	}
+
+	nv_wr32(dev, 0x100c80, 0x00060001);
+	if (!nv_wait(0x100c80, 0x00000001, 0x00000000)) {
+		NV_ERROR(dev, "timeout: (0x100c80 & 1) == 0 (2)\n");
+		NV_ERROR(dev, "0x100c80 = 0x%08x\n", nv_rd32(dev, 0x100c80));
+		return -EBUSY;
+	}
+
 	return 0;
 }
 
@@ -387,30 +245,28 @@ nv50_mem_vm_unbind(struct drm_device *dev, uint64_t virt, uint32_t size)
 	if (!nv_wait(0x100c80, 0x00000001, 0x00000000)) {
 		NV_ERROR(dev, "timeout: (0x100c80 & 1) == 0 (2)\n");
 		NV_ERROR(dev, "0x100c80 = 0x%08x\n", nv_rd32(dev, 0x100c80));
+		return;
+	}
+
+	nv_wr32(dev, 0x100c80, 0x00040001);
+	if (!nv_wait(0x100c80, 0x00000001, 0x00000000)) {
+		NV_ERROR(dev, "timeout: (0x100c80 & 1) == 0 (2)\n");
+		NV_ERROR(dev, "0x100c80 = 0x%08x\n", nv_rd32(dev, 0x100c80));
+		return;
+	}
+
+	nv_wr32(dev, 0x100c80, 0x00060001);
+	if (!nv_wait(0x100c80, 0x00000001, 0x00000000)) {
+		NV_ERROR(dev, "timeout: (0x100c80 & 1) == 0 (2)\n");
+		NV_ERROR(dev, "0x100c80 = 0x%08x\n", nv_rd32(dev, 0x100c80));
 	}
 }
 
 /*
  * Cleanup everything
  */
-void nouveau_mem_takedown(struct mem_block **heap)
-{
-	struct mem_block *p;
-
-	if (!*heap)
-		return;
-
-	for (p = (*heap)->next; p != *heap;) {
-		struct mem_block *q = p;
-		p = p->next;
-		kfree(q);
-	}
-
-	kfree(*heap);
-	*heap = NULL;
-}
-
-void nouveau_mem_close(struct drm_device *dev)
+void
+nouveau_mem_close(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 
@@ -421,8 +277,7 @@ void nouveau_mem_close(struct drm_device *dev)
 
 	nouveau_ttm_global_release(dev_priv);
 
-	if (drm_core_has_AGP(dev) && dev->agp &&
-	    drm_core_check_feature(dev, DRIVER_MODESET)) {
+	if (drm_core_has_AGP(dev) && dev->agp) {
 		struct drm_agp_mem *entry, *tempe;
 
 		/* Remove AGP resources, but leave dev->agp
@@ -449,11 +304,31 @@ void nouveau_mem_close(struct drm_device *dev)
 	}
 }
 
-/*XXX won't work on BSD because of pci_read_config_dword */
 static uint32_t
-nouveau_mem_fb_amount_igp(struct drm_device *dev)
+nouveau_mem_detect_nv04(struct drm_device *dev)
 {
-#if !defined(__AROS__)
+	uint32_t boot0 = nv_rd32(dev, NV03_BOOT_0);
+
+	if (boot0 & 0x00000100)
+		return (((boot0 >> 12) & 0xf) * 2 + 2) * 1024 * 1024;
+
+	switch (boot0 & NV03_BOOT_0_RAM_AMOUNT) {
+	case NV04_BOOT_0_RAM_AMOUNT_32MB:
+		return 32 * 1024 * 1024;
+	case NV04_BOOT_0_RAM_AMOUNT_16MB:
+		return 16 * 1024 * 1024;
+	case NV04_BOOT_0_RAM_AMOUNT_8MB:
+		return 8 * 1024 * 1024;
+	case NV04_BOOT_0_RAM_AMOUNT_4MB:
+		return 4 * 1024 * 1024;
+	}
+
+	return 0;
+}
+
+static uint32_t
+nouveau_mem_detect_nforce(struct drm_device *dev)
+{
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct pci_dev *bridge;
 	uint32_t mem;
@@ -464,74 +339,53 @@ nouveau_mem_fb_amount_igp(struct drm_device *dev)
 		return 0;
 	}
 
-	if (dev_priv->flags&NV_NFORCE) {
+	if (dev_priv->flags & NV_NFORCE) {
 		pci_read_config_dword(bridge, 0x7C, &mem);
 		return (uint64_t)(((mem >> 6) & 31) + 1)*1024*1024;
 	} else
-	if (dev_priv->flags&NV_NFORCE2) {
+	if (dev_priv->flags & NV_NFORCE2) {
 		pci_read_config_dword(bridge, 0x84, &mem);
 		return (uint64_t)(((mem >> 4) & 127) + 1)*1024*1024;
 	}
-#else
-DRM_IMPL("\n");
-#endif
 
 	NV_ERROR(dev, "impossible!\n");
 	return 0;
 }
 
 /* returns the amount of FB ram in bytes */
-uint64_t nouveau_mem_fb_amount(struct drm_device *dev)
+int
+nouveau_mem_detect(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
-	uint32_t boot0;
 
-	switch (dev_priv->card_type) {
-	case NV_04:
-		boot0 = nv_rd32(dev, NV03_BOOT_0);
-		if (boot0 & 0x00000100)
-			return (((boot0 >> 12) & 0xf) * 2 + 2) * 1024 * 1024;
-
-		switch (boot0 & NV03_BOOT_0_RAM_AMOUNT) {
-		case NV04_BOOT_0_RAM_AMOUNT_32MB:
-			return 32 * 1024 * 1024;
-		case NV04_BOOT_0_RAM_AMOUNT_16MB:
-			return 16 * 1024 * 1024;
-		case NV04_BOOT_0_RAM_AMOUNT_8MB:
-			return 8 * 1024 * 1024;
-		case NV04_BOOT_0_RAM_AMOUNT_4MB:
-			return 4 * 1024 * 1024;
+	if (dev_priv->card_type == NV_04) {
+		dev_priv->vram_size = nouveau_mem_detect_nv04(dev);
+	} else
+	if (dev_priv->flags & (NV_NFORCE | NV_NFORCE2)) {
+		dev_priv->vram_size = nouveau_mem_detect_nforce(dev);
+	} else
+	if (dev_priv->card_type < NV_50) {
+		dev_priv->vram_size  = nv_rd32(dev, NV04_FIFO_DATA);
+		dev_priv->vram_size &= NV10_FIFO_DATA_RAM_AMOUNT_MB_MASK;
+	} else {
+		dev_priv->vram_size = nv_rd32(dev, NV04_FIFO_DATA);
+		dev_priv->vram_size |= (dev_priv->vram_size & 0xff) << 32;
+		dev_priv->vram_size &= 0xffffffff00;
+		if (dev_priv->chipset == 0xaa || dev_priv->chipset == 0xac) {
+			dev_priv->vram_sys_base = nv_rd32(dev, 0x100e10);
+			dev_priv->vram_sys_base <<= 12;
 		}
-		break;
-	case NV_10:
-	case NV_20:
-	case NV_30:
-	case NV_40:
-	case NV_50:
-	default:
-		if (dev_priv->flags & (NV_NFORCE | NV_NFORCE2)) {
-			return nouveau_mem_fb_amount_igp(dev);
-		} else {
-			uint64_t mem;
-			mem = (nv_rd32(dev, NV04_FIFO_DATA) &
-					NV10_FIFO_DATA_RAM_AMOUNT_MB_MASK) >>
-					NV10_FIFO_DATA_RAM_AMOUNT_MB_SHIFT;
-#if defined(HOSTED_BUILD)
-#if HOSTED_BUILD_CHIPSET >= 0x40
-            mem = 256;
-#else
-            mem = 128;
-#endif
-#endif
-			return mem * 1024 * 1024;
-		}
-		break;
 	}
 
-	NV_ERROR(dev,
-		"Unable to detect video ram size. Please report your setup to "
-							DRIVER_EMAIL "\n");
-	return 0;
+	NV_INFO(dev, "Detected %dMiB VRAM\n", (int)(dev_priv->vram_size >> 20));
+	if (dev_priv->vram_sys_base) {
+		NV_INFO(dev, "Stolen system memory at: 0x%010llx\n",
+			dev_priv->vram_sys_base);
+	}
+
+	if (dev_priv->vram_size)
+		return 0;
+	return -ENOMEM;
 }
 
 #if __OS_HAS_AGP
@@ -619,18 +473,12 @@ nouveau_mem_init(struct drm_device *dev)
 	if (dev_priv->card_type >= NV_50 &&
 	    pci_dma_supported(dev->pdev, DMA_BIT_MASK(40)))
 		dma_bits = 40;
-#else
-DRM_IMPL("Calling pci_dma_supported\n");
-#endif
 
-#if !defined(__AROS__)
 	ret = pci_set_dma_mask(dev->pdev, DMA_BIT_MASK(dma_bits));
 	if (ret) {
 		NV_ERROR(dev, "Error setting DMA mask: %d\n", ret);
 		return ret;
 	}
-#else
-DRM_IMPL("Calling pci_set_dma_mask\n");
 #endif
 
 	ret = nouveau_ttm_global_init(dev_priv);
@@ -650,14 +498,11 @@ DRM_IMPL("Calling pci_set_dma_mask\n");
 	spin_lock_init(&dev_priv->ttm.bo_list_lock);
 	spin_lock_init(&dev_priv->tile.lock);
 
-	dev_priv->fb_available_size = nouveau_mem_fb_amount(dev);
-
+	dev_priv->fb_available_size = dev_priv->vram_size;
 	dev_priv->fb_mappable_pages = dev_priv->fb_available_size;
 	if (dev_priv->fb_mappable_pages > drm_get_resource_len(dev, 1))
 		dev_priv->fb_mappable_pages = drm_get_resource_len(dev, 1);
 	dev_priv->fb_mappable_pages >>= PAGE_SHIFT;
-
-	NV_INFO(dev, "%d MiB VRAM\n", (int)(dev_priv->fb_available_size >> 20));
 
 	/* remove reserved space at end of vram from available amount */
 	dev_priv->fb_available_size -= dev_priv->ramin_rsvd_vram;

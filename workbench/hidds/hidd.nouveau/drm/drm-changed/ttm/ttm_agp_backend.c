@@ -36,6 +36,7 @@
 #if !defined(__AROS__)
 #include <linux/agp_backend.h>
 #include <linux/module.h>
+#include <linux/slab.h>
 #include <linux/io.h>
 #include <asm/agp.h>
 #else
