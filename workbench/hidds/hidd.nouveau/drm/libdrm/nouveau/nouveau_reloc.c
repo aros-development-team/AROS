@@ -73,6 +73,12 @@ nouveau_reloc_emit(struct nouveau_channel *chan, struct nouveau_bo *reloc_bo,
 		return -EINVAL;
 	}
 
+	/* We're about to reloc a user buffer, better make sure we don't cause
+	 * a double migration.
+	 */
+	if (!(nvbo->flags & (NOUVEAU_BO_GART | NOUVEAU_BO_VRAM)))
+		nvbo->flags |= (flags & (NOUVEAU_BO_GART | NOUVEAU_BO_VRAM));
+
 	rpbbo = nouveau_bo_emit_buffer(chan, reloc_bo);
 	if (!rpbbo)
 		return -ENOMEM;
