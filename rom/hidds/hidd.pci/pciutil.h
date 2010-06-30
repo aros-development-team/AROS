@@ -1,10 +1,10 @@
 #ifndef PCIUTIL_H
 #define PCIUTIL_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PCI stuff for standalone i386 AROS
+    Desc: PCI stuff for standalone AROS
     Lang: english
 */
 
@@ -37,6 +37,11 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x01, 0x02, 0x00, "Mass storage", "Floppy", "" },
     { 0x01, 0x03, 0x00, "Mass storage", "IPI", "" },
     { 0x01, 0x04, 0x00, "Mass storage", "RAID", "" },
+    { 0x01, 0x05, 0x20, "Mass storage", "ATA", "ADMA (Single)" },
+    { 0x01, 0x05, 0x30, "Mass storage", "ATA", "ADMA (Chained)" },
+    { 0x01, 0x06, 0x00, "Mass storage", "SATA", "Vendor-specific" },
+    { 0x01, 0x06, 0x01, "Mass storage", "SATA", "AHCI" },
+    { 0x01, 0x07, 0x00, "Mass storage", "SAS", "" },
     { 0x01, 0x80, 0x00, "Mass storage", "Other", "" },
 
     { 0x02, 0x00, 0x00, "Network", "Ethernet", "" },
@@ -44,6 +49,8 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x02, 0x02, 0x00, "Network", "FDDI", "" },
     { 0x02, 0x03, 0x00, "Network", "ATM", "" },
     { 0x02, 0x04, 0x00, "Network", "ISDN", "" },
+    { 0x02, 0x05, 0x00, "Network", "WorldFip", "" },
+    { 0x02, 0x06, 0x00, "Network", "PICMG", "" },
     { 0x02, 0x80, 0x00, "Network", "Other", "" },
 
     { 0x03, 0x00, 0x00, "Video", "PC Compatible", "VGA" },
@@ -55,6 +62,7 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x04, 0x00, 0x00, "Multimedia", "Video", "" },
     { 0x04, 0x01, 0x00, "Multimedia", "Audio", "" },
     { 0x04, 0x02, 0x00, "Multimedia", "Telephony", "" },
+    { 0x04, 0x03, 0x00, "Multimedia", "Audio", "" },
     { 0x04, 0x80, 0x00, "Multimedia", "Other", "" },
 
     { 0x05, 0x00, 0x00, "Memory controller", "RAM", "" },
@@ -71,6 +79,9 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x06, 0x06, 0x00, "Bridge", "PCI-NuBus", "" },
     { 0x06, 0x07, 0x00, "Bridge", "PCI-CardBus", "" },
     { 0x06, 0x08, 0x00, "Bridge", "PCI-RACEway", "" },
+    { 0x06, 0x09, 0x40, "Bridge", "Semi-transparent PCI-PCI", "Standard" },
+    { 0x06, 0x09, 0x80, "Bridge", "Semi-transparent PCI-PCI", "Reverse" },
+    { 0x06, 0x0a, 0x00, "Bridge", "PCI-Infiniband", "" },
     { 0x06, 0x80, 0x00, "Bridge", "Other", "" },
 
     { 0x07, 0x00, 0x00, "Communication", "Serial", "XT compatible" },
@@ -91,13 +102,15 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x07, 0x03, 0x02, "Communication", "Modem", "Hayes 16550 UART" },
     { 0x07, 0x03, 0x03, "Communication", "Modem", "Hayes 16650 UART" },
     { 0x07, 0x03, 0x04, "Communication", "Modem", "Hayes 16750 UART" },
+    { 0x07, 0x04, 0x00, "Communication", "GPIB", "" },
+    { 0x07, 0x05, 0x00, "Communication", "smart Card", "" },
     { 0x07, 0x80, 0x00, "Communication", "Other", "" },
 
     { 0x08, 0x00, 0x00, "System", "PIC", "Generic 8259" },
     { 0x08, 0x00, 0x01, "System", "PIC", "ISA" },
     { 0x08, 0x00, 0x02, "System", "PIC", "EISA" },
-    { 0x08, 0x00, 0x03, "System", "PIC", "I/O APIC" },
-    { 0x08, 0x00, 0x04, "System", "PIC", "I/O(x) APIC" },
+    { 0x08, 0x00, 0x10, "System", "PIC", "I/O APIC" },
+    { 0x08, 0x00, 0x20, "System", "PIC", "I/O(x) APIC" },
     { 0x08, 0x01, 0x00, "System", "DMA", "Generic 8237" },
     { 0x08, 0x01, 0x01, "System", "DMA", "ISA" },
     { 0x08, 0x01, 0x02, "System", "DMA", "EISA" },
@@ -106,7 +119,8 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x08, 0x02, 0x02, "System", "Timer", "EISA" },
     { 0x08, 0x03, 0x00, "System", "RTC", "Generic" },
     { 0x08, 0x03, 0x01, "System", "RTC", "ISA" },
-    { 0x08, 0x04, 0x00, "System", "PCI Hotplug", "Generic" },
+    { 0x08, 0x04, 0x00, "System", "PCI Hotplug", "" },
+    { 0x08, 0x05, 0x00, "System", "SD", "" },
     { 0x08, 0x80, 0x00, "System", "Other", "" },
 
     { 0x09, 0x00, 0x00, "Input", "Keyboard", "" },
@@ -114,7 +128,7 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x09, 0x02, 0x00, "Input", "Mouse", "" },
     { 0x09, 0x03, 0x00, "Input", "Scanner", "" },
     { 0x09, 0x04, 0x00, "Input", "Gameport", "Generic" },
-    { 0x09, 0x04, 0x01, "Input", "Gameport", "Legacy" },
+    { 0x09, 0x04, 0x10, "Input", "Gameport", "Legacy" },
     { 0x09, 0x80, 0x00, "Input", "Other", "" },
 
     { 0x0a, 0x00, 0x00, "Docking station", "Generic", "" },
@@ -128,32 +142,46 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x0b, 0x30, 0x00, "CPU", "MIPS", "" },
     { 0x0b, 0x40, 0x00, "CPU", "Co-processor", "" },
     
-    { 0x0c, 0x00, 0x00, "Serial", "IEE1394", "FireWire" },
-    { 0x0c, 0x00, 0x01, "Serial", "IEE1394", "OpenHCI" },
+    { 0x0c, 0x00, 0x00, "Serial", "IEEE1394", "FireWire" },
+    { 0x0c, 0x00, 0x10, "Serial", "IEEE1394", "OHCI" },
     { 0x0c, 0x01, 0x00, "Serial", "ACCESS.bus", "" },
     { 0x0c, 0x02, 0x00, "Serial", "SSA", "" },
     { 0x0c, 0x03, 0x00, "Serial", "USB", "UHCI" },
-    { 0x0c, 0x03, 0x01, "Serial", "USB", "OHCI" },
-    { 0x0c, 0x03, 0x02, "Serial", "USB", "Non-standard" },
+    { 0x0c, 0x03, 0x10, "Serial", "USB", "OHCI" },
+    { 0x0c, 0x03, 0x20, "Serial", "USB", "EHCI" },
+    { 0x0c, 0x03, 0x80, "Serial", "USB", "Other" },
+    { 0x0c, 0x03, 0xfe, "Serial", "USB", "Device" },
     { 0x0c, 0x04, 0x00, "Serial", "Fibrechannel", "" },
+    { 0x0c, 0x05, 0x00, "Serial", "SMBus", "" },
+    { 0x0c, 0x06, 0x00, "Serial", "Infiniband", "" },
+    { 0x0c, 0x07, 0x00, "Serial", "IPMI SMIC", "" },
+    { 0x0c, 0x08, 0x00, "Serial", "SERCOS", "" },
+    { 0x0c, 0x09, 0x00, "Serial", "CANBUS", "" },
 
     { 0x0d, 0x00, 0x00, "Wireless", "iRDA", "" },
     { 0x0d, 0x01, 0x00, "Wireless", "Consumer IR", "" },
-    { 0x0d, 0x02, 0x00, "Wireless", "RF", "" },
+    { 0x0d, 0x10, 0x00, "Wireless", "RF", "" },
+    { 0x0d, 0x11, 0x00, "Wireless", "Bluetooth", "" },
+    { 0x0d, 0x12, 0x00, "Wireless", "Broadband", "" },
+    { 0x0d, 0x20, 0x00, "Wireless", "IEEE802.11a", "" },
+    { 0x0d, 0x21, 0x00, "Wireless", "IEEE802.11b", "" },
     { 0x0d, 0x80, 0x00, "Wireless", "Other", "" },
 
     { 0x0e, 0x00, 0x00, "Intelligent I/O", "I2O", "" },
 
-    { 0x0f, 0x00, 0x00, "Satellite", "TV", "" },
-    { 0x0f, 0x01, 0x00, "Satellite", "Audio", "" },
-    { 0x0f, 0x02, 0x00, "Satellite", "Voice", "" },
-    { 0x0f, 0x03, 0x00, "Satellite", "Data", "" },
+    { 0x0f, 0x01, 0x00, "Satellite", "TV", "" },
+    { 0x0f, 0x02, 0x00, "Satellite", "Audio", "" },
+    { 0x0f, 0x03, 0x00, "Satellite", "Voice", "" },
+    { 0x0f, 0x04, 0x00, "Satellite", "Data", "" },
 
     { 0x10, 0x00, 0x00, "Crypto", "Network", "" },
     { 0x10, 0x10, 0x00, "Crypto", "Entertainment", "" },
     { 0x10, 0x80, 0x00, "Crypto", "Other", "" },
 
     { 0x11, 0x00, 0x00, "Data acquisition", "DPIO", "" },
+    { 0x11, 0x01, 0x00, "Data acquisition", "Performance Counters", "" },
+    { 0x11, 0x10, 0x00, "Data acquisition", "Communication Synchroniser", "" },
+    { 0x11, 0x20, 0x00, "Data acquisition", "Management", "" },
     { 0x11, 0x80, 0x00, "Data acquisition", "Other", "" },
 };
 
