@@ -1,3 +1,8 @@
+/*
+    Copyright (C) 2004-2010, The AROS Development Team.
+    $Id$
+*/
+
 #include <exec/types.h>
 
 #include <proto/dos.h>
@@ -73,7 +78,7 @@ static BOOL computeVendorIndexes(const char *buffer, LONG size)
 {
     LONG i, j;
 
-    vi_allocated = 2000;
+    vi_allocated = 2500;
     vendor_index = AllocVec(vi_allocated * sizeof(struct vendor_cell), MEMF_ANY);
     if (NULL == vendor_index)
 	return FALSE;
@@ -83,7 +88,7 @@ static BOOL computeVendorIndexes(const char *buffer, LONG size)
 
     while (i < size)
     {
-	// dont use isxdigit, beware of uppercase letter
+	// don't use isxdigit, beware of uppercase letter
 	if ((isdigit(buffer[i]) || (buffer[i] >= 'a' && buffer[i] <= 'f'))
 	    && (i + 4 < size) && (buffer[i + 4] == ' '))
 	{
@@ -92,7 +97,7 @@ static BOOL computeVendorIndexes(const char *buffer, LONG size)
 	    vendor_index[j].offset = i;
 	    //bug("%ld: %x => %ld\n", j, vendor_index[j].vendorID, vendor_index[j].offset);
 	    j++;
-	    if (j > vi_allocated)
+	    if (j >= vi_allocated)
 	    {
 		bug("[pcitool] pciids.c:computeVendorIndexes: vendor_index overflow\n");
 		FreeVec(vendor_index);
