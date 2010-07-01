@@ -82,7 +82,7 @@ struct CountryPrefs australiaPrefs =
     "\x00", SS_SPACE, SP_PREC_ALL, CSP_PRECEDES,
 
     /* Mon -ve sign, -ve space sep, -ve sign pos, -ve cs pos */
-    "\x00", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
+    "-", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
 
     /* Calendar type */
     CT_7SUN
