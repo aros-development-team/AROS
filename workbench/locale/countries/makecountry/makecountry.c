@@ -40,6 +40,7 @@ extern struct CountryPrefs
     espanaPrefs,
     francePrefs,
     greatBritainPrefs,
+    hangukPrefs,
     hellasPrefs,
     hrvatskaPrefs,
     iranPrefs,
@@ -74,7 +75,8 @@ extern struct CountryPrefs
     ukrajinaPrefs,
     united_kingdomPrefs,
     united_statesPrefs,
-    vaticanoPrefs;
+    vaticanoPrefs,
+    zhonghuaPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1 */
 
@@ -99,6 +101,7 @@ struct CountryEntry CountryArray[] =
     { COUNTRY_NAME "españa"	    	 , &espanaPrefs    	},
     { COUNTRY_NAME "france"	    	 , &francePrefs    	},
     { COUNTRY_NAME "great_britain"	 , &greatBritainPrefs   },
+    { COUNTRY_NAME "hanguk"	         , &hangukPrefs         },
     { COUNTRY_NAME "hellas"	         , &hellasPrefs         },
     { COUNTRY_NAME "hrvatska"    	 , &hrvatskaPrefs    	},
     { COUNTRY_NAME "iran"		 , &iranPrefs		},
@@ -134,6 +137,7 @@ struct CountryEntry CountryArray[] =
     { COUNTRY_NAME "united_kingdom"	 , &united_kingdomPrefs	},
     { COUNTRY_NAME "united_states"	 , &united_statesPrefs	},
     { COUNTRY_NAME "vaticano"		 , &vaticanoPrefs	},
+    { COUNTRY_NAME "zhonghua"		 , &zhonghuaPrefs	},
     { NULL		  	    	 , NULL    	    	}
 };
 
