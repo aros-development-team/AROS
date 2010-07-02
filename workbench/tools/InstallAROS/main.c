@@ -2147,6 +2147,32 @@ localecopydone:
 /** STEP : PACKAGE CLEANUP **/
 /* REMOVED - handled by DEVELPATH and EXTRASPATH variables */
 
+/** STEP : CREATE ENVIRONMENT VARIABLES THAT POINT TO INSTALLATION LOCATIONS */
+    {
+        TEXT varval[255];
+        IPTR optcheck = 0;
+     
+        /* Volume name of installed SYS */
+        sprintf(varval, "%s:", dest_Path);
+        SetVar("INSTALLEDSYS", varval, strlen(varval), GVF_GLOBAL_ONLY);
+
+        /* Volume name of installed WORK */
+        GET(check_work, MUIA_Selected, &optcheck);
+        if (optcheck)
+        {
+            sprintf(varval, "%s:", work_Path);
+            SetVar("INSTALLEDWORK", varval, strlen(varval), GVF_GLOBAL_ONLY);
+        }
+        else
+            SetVar("INSTALLEDWORK", "", 0, GVF_GLOBAL_ONLY);
+
+        /* Path to Extras */
+        sprintf(varval, "%s:", extras_path);
+        AddPart(varval, "Extras", 255);
+        SetVar("INSTALLEDEXTRAS", varval, strlen(varval), GVF_GLOBAL_ONLY);
+    }
+
+
 /** STEP : EXECUTE EXTERNAL POST-INSTALL SCRIPT **/
     {
         BPTR scriptfile = Open(POST_INSTALL_SCRIPT, MODE_OLDFILE);
