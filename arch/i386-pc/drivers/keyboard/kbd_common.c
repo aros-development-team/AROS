@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PS/2 mouse driver.
+    Desc: PS/2 keyboard/mouse driver.
     Lang: English.
 */
 
@@ -68,7 +68,7 @@ unsigned char handle_kbd_event(void)
  */
 void kb_wait(void)
 {
-    ULONG timeout = 1000; /* 1 sec should be enough */
+    ULONG timeout = 100; /* 0.1 sec should be enough */
     
     do
     {
@@ -158,7 +158,7 @@ int kbd_clear_input(void)
 
 int kbd_wait_for_input(void)
 {
-    ULONG timeout = 1000;
+    ULONG timeout = 100;
 
     do
     {

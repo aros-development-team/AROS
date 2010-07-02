@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -81,8 +81,9 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct TagItem *tag, *tstate;
     APTR    	    callback = NULL;
     APTR    	    callbackdata = NULL;
-    BOOL    	    has_kbd_hidd = FALSE;
+    BOOL    	    has_kbd_hidd = FALSE, reset_success;
     UBYTE           status;
+    int last_code;
     
     EnterFunc(bug("Kbd::New()\n"));
 
@@ -131,17 +132,16 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     if (NULL == callback)
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
-#if 0
-#warning This detection technique does not work with some chipsets
-    /* Only continue if there appears to be a keyboard port */
-    status = kbd_read_status();
-    if (status == 0 || status == 0xff)
-        o = NULL;
-    else
+    /* Only continue if there appears to be a keyboard controller */
+    Disable();
+    last_code = kbd_clear_input();
+    kbd_write_command_w(KBD_CTRLCMD_SELF_TEST);
+    reset_success = kbd_wait_for_input() == 0x55;
+    Enable();
+    if (reset_success)
         o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-#else
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-#endif
+    else
+        o = NULL;
 
     if (o)
     {
@@ -159,7 +159,6 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             /* Install keyboard interrupt */
 
             HIDDT_IRQ_Handler   *irq;
-            int last_code;
 
             XSD(cl)->irq = irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
 
@@ -174,7 +173,6 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             irq->h_Code         = kbd_keyint;
             irq->h_Data         = (APTR)data;
             Disable();
-	    last_code = kbd_clear_input();
 	    kbd_reset();		/* Reset the keyboard */
             kbd_updateleds(0);
             Enable();
@@ -588,10 +586,11 @@ int kbd_reset(void)
 {
     UBYTE status;
 
-    kbd_write_command_w(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard */
+    kbd_write_command_w(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard controller */
 
     if (kbd_wait_for_input() != 0x55)
     {
+        D(bug("Kbd: Controller test failed!\n"));
         return FALSE;
     }
 
@@ -599,6 +598,7 @@ int kbd_reset(void)
     
     if (kbd_wait_for_input() != 0)
     {
+        D(bug("Kbd: Keyboard test failed!\n"));
         return FALSE;
     }
     
@@ -615,12 +615,17 @@ int kbd_reset(void)
             break;
 	    
         if (status != KBD_REPLY_RESEND)
+        {
+            D(bug("Kbd: Keyboard reset failed! (1)\n"));
             return FALSE;
-	    
+        }
     } while(1);
 
     if (kbd_wait_for_input() != KBD_REPLY_POR)
+    {
+        D(bug("Kbd: Keyboard reset failed! (2)\n"));
         return FALSE;
+    }
 
     do
     {
@@ -631,8 +636,10 @@ int kbd_reset(void)
             break;
 	    
         if (status != KBD_REPLY_RESEND)
+        {
+            D(bug("Kbd: Keyboard disable failed!\n"));
             return FALSE;
-	    
+        }
     } while (1);
 
     kbd_write_command_w(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
