@@ -305,7 +305,7 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
     )
     {
         D(bug("[ELF Loader] Object is of wrong type\n"));
-            D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS64));
+        D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS64));
         D(bug("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT));
         D(bug("[ELF Loader] type       is %d - should be %d\n", eh->type,              ET_REL));
         D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2LSB));
@@ -382,7 +382,7 @@ static int load_hunk
         else
             sh->addr = hunk->data;
 
-        (bug("[dos:ELF64] sh->addr = %012lx - %012lx\n", sh->addr, sh->addr + sh->size - 1));
+        D(bug("[dos:ELF64] sh->addr = %012lx - %012lx\n", sh->addr, sh->addr + sh->size - 1));
         
         /* Link the previous one with the new one */
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
@@ -517,7 +517,7 @@ static int relocate
             #endif
 
             default:
-                D(bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF64_R_TYPE(rel->info)));
+                bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF64_R_TYPE(rel->info));
                 SetIoErr(ERROR_BAD_HUNK);
 		return 0;
         }
