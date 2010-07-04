@@ -668,7 +668,7 @@ static int relocate
             #endif
 
             default:
-                D(bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF32_R_TYPE(rel->info)));
+                bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF32_R_TYPE(rel->info));
                 SetIoErr(ERROR_BAD_HUNK);
 		return 0;
         }
