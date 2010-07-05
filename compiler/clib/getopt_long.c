@@ -618,11 +618,72 @@ getopt(int nargc, char * const *nargv, const char *options)
 	int *idx)
 
 /*  FUNCTION
-	Parse argc/argv argument vector
+        The getopt_long() function is similar to getopt() but it accepts options
+        in two forms: words and characters.  The getopt_long() function provides
+        a superset of the functionality of getopt(3).  The getopt_long() function
+        can be used in two ways.  In the first way, every long option understood
+        by the program has a corresponding short option, and the option structure
+        is only used to translate from long options to short options.  When used
+        in this fashion, getopt_long() behaves identically to getopt(3).  This is
+        a good way to add long option processing to an existing program with the
+        minimum of rewriting.
+
+        In the second mechanism, a long option sets a flag in the option struc-
+        ture passed, or will store a pointer to the command line argument in the
+        option structure passed to it for options that take arguments.  Addition-
+        ally, the long option's argument may be specified as a single argument
+        with an equal sign, e.g.,
+
+           myprogram --myoption=somevalue
+
+        When a long option is processed, the call to getopt_long() will return 0.
+        For this reason, long option processing without shortcuts is not back-
+        wards compatible with getopt(3).
+
+        It is possible to combine these methods, providing for long options pro-
+        cessing with short option equivalents for some options.  Less frequently
+        used options would be processed as long options only.
+
+        The getopt_long() call requires a structure to be initialized describing
+        the long options.	The structure is:
+
+           struct option {
+                   char *name;
+                   int has_arg;
+                   int *flag;
+                   int val;
+           };
+
+        The name field should contain the option name without the leading double
+        dash.
+
+        The has_arg field should be one of:
+
+           no_argument	      no argument to the option is expect
+           required_argument  an argument to the option is required
+           optional_argument  an argument to the option may be presented.
+
+        If flag is not NULL, then the integer pointed to by it will be set to the
+        value in the val field.  If the flag field is NULL, then the val field
+        will be returned.	Setting flag to NULL and setting val to the corre-
+        sponding short option will make this function act just like getopt(3).
+
+        If the longindex field is not NULL, then the integer pointed to by it
+        will be set to the index of the long option relative to longopts.
+
+        The last element of the longopts array has to be filled with zeroes.
 
     INPUTS
+        See above
 
     RESULT
+        If the flag field in struct option is NULL, getopt_long() and
+        getopt_long_only() return the value specified in the val field, which is
+        usually just the corresponding short option.  If flag is not NULL, these
+        functions return 0 and store val in the location pointed to by flag.
+        These functions return `:' if there was a missing option argument, `?' if
+        the user specified an unknown or ambiguous option, and -1 when the argu-
+        ment list has been exhausted.
 
     NOTES
 
@@ -656,7 +717,10 @@ getopt(int nargc, char * const *nargv, const char *options)
 	int *idx)
 
 /*  FUNCTION
-	Parse argc/argv argument vector
+        The getopt_long_only() function behaves identically to getopt_long() with
+        the exception that long options may start with `-' in addition to `--'.
+        If an option starting with `-' does not match a long option but does
+        match a single-character option, the single-character option is returned.
 
     INPUTS
 
