@@ -39,28 +39,43 @@
 	|| (y) < GC_CLIPY1(gc)		\
 	|| (y) > GC_CLIPY2(gc) )
 
+/*****************************************************************************************
 
+    NAME
+	--background--
 
-/* BitMap baseclass is a in C++ terminology a pure virtual
-   baseclass. It will not allocate any bitmap data at all,
-   that is up to the subclass to do.
+    LOCATION
+	CLID_HIDD_BitMap
 
-   The main task of the BitMap baseclass is to store
+    NOTES
+	Every display driver should implement at least one bitmap class for displayable
+	bitmaps.
 
-   There are two ways the we can find out the pixfmt:
+	Normally this class doesn't need to have public ID. In order to use it the driver
+	should pass class pointer as aoHidd_BitMap_ClassPtr value to the graphics base class
+	in its moHidd_Gfx_NewBitMap implementation.
 
-   Displayable bitmap -
-   	The tags will contrain a modeid.
-   	One can use this modeid to get a pointer to an
-	allready registered pixfmt.
+	BitMap base class is a in C++ terminology a pure virtual
+	baseclass. It will not allocate any bitmap data at all,
+	that is up to the subclass to do.
 
-    Non-displayable bitmap -
-    	The aHidd_BitMap_StdPixFmt attribute will allways be passed
+	The main task of the BitMap baseclass is to store some information about the bitmap
+	like its size and pixelformat. A pixelformat is an object of private class which
+	stores the actual information about the format.
 
-*/
+	There are two ways the we can find out the pixfmt in our moHidd_Gfx_NewBitMap
+	implementation:
 
+	Displayable bitmap -
+	    The tags will contrain a modeid.
+   	    One can use this modeid to get a pointer to an
+	    allready registered pixfmt.
 
-/****************************************************************************************/
+	Non-displayable bitmap -
+	    The aoHidd_BitMap_StdPixFmt or aoHidd_BitMap_Friend attribute will allways be
+	    passed.
+
+*****************************************************************************************/
 
 #define GOT_BM_ATTR(code)   GOT_ATTR(code, aoHidd_BitMap, bitmap)
 #define AO(x) 	    	    aoHidd_BitMap_ ## x
@@ -121,7 +136,7 @@
         [ISG], ULONG
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Specifies bitmap width in pixels.
@@ -152,7 +167,7 @@
         [ISG], ULONG
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Specifies bitmap height in pixels.
@@ -183,7 +198,7 @@
         [I.G], BOOL
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         The bitmap is displayable. A displayable bitmap is always managed by a display
@@ -211,10 +226,10 @@
         aoHidd_BitMap_Visible
 
     SYNOPSIS
-        [..G]
+        [..G], BOOL
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Check if the bitmap is currently visible on screen
@@ -242,21 +257,26 @@
         aoHidd_BitMap_IsLinearMem
 
     SYNOPSIS
-        [..G]
+        [..G], BOOL
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Is the bitmap memory contigous?
+        Check if the bitmap provides linear memory access.
 
     NOTES
+	Used by cybergraphics.library/GetCyberMapAttr() for providing CYBRMATTR_ISLINEARMEM
+	value.
 
     EXAMPLE
 
     BUGS
+	Currently no display drivers implement this attribute despite many native mode
+	drivers actually provide linear memory.
 
     SEE ALSO
+	moHidd_UpdateRect
 
     INTERNALS
 
@@ -268,13 +288,13 @@
         aoHidd_BitMap_BytesPerRow
 
     SYNOPSIS
-        [..G]
+        [..G], ULONG
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Number of bytes in a row 
+        Query number of bytes per row in the bitmap storage buffer
 
     NOTES
 
@@ -294,13 +314,20 @@
         aoHidd_BitMap_ColorMap
 
     SYNOPSIS
-        [..G]
+        [..G], OOP_Object *
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Colormap of the bitmap
+        Return associated colormap (palette) object.
+
+	By default only displayable bitmaps have colormaps. However a colormap can be attached
+	to any bitmap using moHidd_BitMap_SetColors or moHidd_BitMap_SetColorMap.
+
+	Note that manual attaching of a colormap to a nondisplayable bitmap may cause undesired
+	side-effects on graphics.library behavior. It's better not to do this at all. The system
+	knows what it does better than you.
 
     NOTES
 
@@ -309,6 +336,7 @@
     BUGS
 
     SEE ALSO
+	moHidd_BitMap_SetColorMap, moHidd_BitMap_SetColors.
 
     INTERNALS
 
@@ -320,14 +348,21 @@
         aoHidd_BitMap_Friend
 
     SYNOPSIS
-        [I.G]
+        [I.G], OOP_Object *
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Friend bitmap. The bitmap will be allocated so that it
+        Specify a friend bitmap. The bitmap will be allocated so that it
         is optimized for blitting to this bitmap.
+
+	Display drivers may query this attribute and then query friend bitmap
+	for anything they want (like pixelformat, mode ID, etc).
+
+	Note that explicit specification of mode ID and/or standard pixelformat
+	should override defaults provided by friend bitmap (i.e. actually breaking
+	the friendship).
 
     NOTES
 
@@ -347,13 +382,22 @@
         aoHidd_BitMap_GfxHidd
 
     SYNOPSIS
-        [..G]
+        [I.G], OOP_Object *
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Pointer to the gfxhidd object this bitmap was created with.
+        Specify display driver object this bitmap was created with.
+
+	Normally the user doesn't have to supply this attribute. Instead you should use
+	driver's moHidd_Gfx_NewBitMap method in order to create bitmaps. In this case
+	aoHidd_BitMap_GfxHidd attribute will be provided by graphics driver base class
+	with the correct value.
+
+	It is illegal to manually create bitmap objects with no driver associated.
+	graphics.library maintains at least a memory driver for nondisplayable
+	bitmaps in system RAM without any acceleration.
 
     NOTES
 
@@ -362,6 +406,7 @@
     BUGS
 
     SEE ALSO
+	CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
 
     INTERNALS
 
@@ -376,21 +421,40 @@
         [I..], HIDDT_StdPixFmt
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        What stdpixel format the bitmap should have.
-        This is a shortcut to create a bitmap with a std pixelformat.
+        Specify standard pixelformat code (one of vHidd_StdPixFmt_... values) for the
+	bitmap.
+
+	Values less than num_Hidd_PseudoStdPixFmt are illegal for this attribute.
+
+	Actually the bitmap class itself ignores this attribute. It is processed by
+	CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap method in order to look up a corresponding
+	pixelformat object in the system's database.
 
     NOTES
+    	Bitmaps with this attribute set should be created as RAM bitmaps with direct CPU
+	access. It is not recommended to replace them with, for example, virtual surfaces on
+	hosted AROS. Such bitmaps are expected to be directly addressable and breaking
+	this may cause undesired side effects.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	aoHidd_BitMap_PixFmt, CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
 
     INTERNALS
+    	Currently all display drivers omit specifying own bitmap class for bitmaps with this
+	attribute set, letting base class (actually memory driver) to select an appropriate
+	class for it. This way it ends up in a bitmap of CLID_Hidd_ChunkyBM or CLID_Hidd_PlanarBM
+	class. It is recommended to follow this rule. It's not prohibited, however, to do some
+	adjustments to the bitmap (like alignment) in order to optimize blitting to/from it.
+	In fact if the display driver was asked to create such a bitmap, this means that
+	the standard bitmap is being created as a friend of some bitmap which was allocated
+	using this driver. This way the bitmap is expected to be friendly to this driver.
 
 *****************************************************************************************/
 
@@ -400,13 +464,16 @@
         aoHidd_BitMap_PixFmt
 
     SYNOPSIS
-        [..G], OOP_Object *
+        [I.G], OOP_Object *
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        This is complete pixmft of a bitmap.
+        Returns pixelformat descriptor object associated with the bitmap.
+
+	Every bitmap has some associated pixelformat object. Pixelformat objects are
+	shared data storages, so many bitmaps may refer to the same pixelformat objects.
 
     NOTES
 
@@ -429,11 +496,15 @@
         [I.G], HIDDT_ModeID
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Must be passed on initialization of aHidd_BitMap_Displayable=TRUE bitmaps.
-        May also be used with non-displayable bitmaps.
+        Specify display mode ID for displayable bitmap.
+	
+	A displayable bitmap must have this attribute supplied with valid value. A nondisplayable
+	one may miss it, however it may remember it if it was created as a friend of displayable
+	one. This way you may create another displayable bitmap as a friend of nondisplayable
+	one which in turn is a friend of displayable one.
 
     NOTES
 
@@ -453,13 +524,22 @@
         aoHidd_BitMap_ClassPtr
 
     SYNOPSIS
-        [I.G]
+        [I.G], OOP_Class *
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Only used by subclasses of the gfx hidd.
+        Explicitly specify bitmap's class pointer.
+
+	This attribute is simply remembered by bitmap base class. Its main purpose is to let
+	graphics driver base class to select a class on which to call OOP_NewObject() in
+	its moHidd_Gfx_NewBitMap implementation.
+	
+	If neither this attribute nor aoHidd_BitMap_ClassID attribute is provided for
+	moHidd_Gfx_NewBitMap, graphics base class will do its best in order to find out the
+	correct class based on aoHidd_StdPixFmt attribute value	or aoHidd_BitMap_ClassPtr value
+	of friend bitmap.
 
     NOTES
 
@@ -468,6 +548,7 @@
     BUGS
 
     SEE ALSO
+	aoHidd_BitMap_ClassID, CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
 
     INTERNALS
 
@@ -482,18 +563,28 @@
         [I..]
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Only used by subclasses of the gfx hidd
+        Explicitly specify bitmap's class ID.
+
+	The purpose of this attribute is to let	graphics driver base class to select a class
+	on which to call OOP_NewObject() in its moHidd_Gfx_NewBitMap implementation.
+
+	If neither this attribute nor aoHidd_BitMap_ClassPtr attribute is provided for
+	moHidd_Gfx_NewBitMap, graphics base class will do its best in order to find out the
+	correct class based on aoHidd_StdPixFmt attribute value	or aoHidd_BitMap_ClassPtr value
+	of friend bitmap.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	The pointer to a given class will not be remembered as aoHidd_BitMap_ClassPtr value.
 
     SEE ALSO
+	aoHidd_BitMap_ClassPtr, CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
 
     INTERNALS
 
@@ -508,7 +599,7 @@
         [I..]
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Only used by subclasses of BitMap class.
@@ -531,13 +622,19 @@
         aoHidd_BitMap_FrameBuffer
 
     SYNOPSIS
-        [I.G], BOOL
+        [I..], BOOL
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Allocate framebuffer
+        Specifies that the bitmap is a framebuffer bitmap.
+
+	A detailed description of a framebuffer is given in CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap
+	and in CLID_Hidd_Gfx/moHidd_Gfx_Show documentation.
+
+	Specifying this attribute to moHidd_Gfx_NewBitMap method causes also implicit setting
+	of aoHidd_BitMap_Displayable to TRUE.
 
     NOTES
 
@@ -560,20 +657,41 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Left edge position of the bitmap
+        Controls horizontal position of a scrollable screen bitmap.
+
+	Size of displayable bitmaps may differ from actual screen size. In this case the
+	bitmap can be scrolled around the whole display area. If the bitmap is larger than
+	the display, only its part can be visible.
+
+	Setting this attribute causes changing left origin point of the bitmap. The value
+	of this attribute represents an offset from the physical edge of the display to the
+	logical edge of the bitmap. This means that if a large bitmap scrolls to the left in
+	order to reveal its right part, the offset will be negative. If the bitmap scrolls
+	to the left (possibly revealing another bitmap behind it), the offset will be positive.
+
+	It's up to the display driver to set scroll limits. If the value of the attribute
+	becomes unacceptable for any reason, the driver should adjust it and provide the real
+	resulting value back.
 
     NOTES
+	Implementing screen scrolling does not enforce to implement screen composition, despite
+	the composition is really based on scrolling (in case of composition scrolling a bitmap
+	off-display is expected to reveal another bitmap behing it instead of empty space).
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	aoHidd_BitMap_TopEdge
 
     INTERNALS
+	Base class will always provide zero value for this attribute and ignore all attempts
+	to set it. This means that by default bitmaps don't scroll and this needs explicit
+	implementation in the display driver.
 
 *****************************************************************************************/
 
@@ -586,12 +704,29 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Top edge position of the bitmap.
+        Controls vertical position of a scrollable screen bitmap.
+
+	Size of displayable bitmaps may differ from actual screen size. In this case the
+	bitmap can be scrolled around the whole display area. If the bitmap is larger than
+	the display, only its part can be visible.
+
+	Setting this attribute causes changing top origin point of the bitmap. The value
+	of this attribute represents an offset from the physical edge of the display to the
+	logical edge of the bitmap. This means that if a large bitmap scrolls upwards in
+	order to reveal its bottom part, the offset will be negative. If the bitmap scrolls
+	downdards (possibly revealing another bitmap behind it), the offset will be positive.
+
+	It's up to the display driver to set scroll limits. If the value of the attribute
+	becomes unacceptable for any reason, the driver should adjust it and provide the real
+	resulting value back.
 
     NOTES
+	Implementing screen scrolling does not enforce to implement screen composition, despite
+	the composition is really based on scrolling (in case of composition scrolling a bitmap
+	off-display is expected to reveal another bitmap behing it instead of empty space).
 
     EXAMPLE
 
@@ -612,16 +747,22 @@
         [I..]
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
-        Number of pixels to align bitmap data width to
+        Specify number of pixels to align bitmap data width to.
+
+	This attribute can be added in CLID_Hidd_Gfx/moHidd_Gfx_NewBitMap implementation
+	in order to enforce alignment needed for example by blitting hardware.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	This attribute does not affect aoHidd_BitMap_BytesPerRow value.
+
+	This attribute is supported only by CLID_Hidd_PlanarBM class at the moment.
 
     SEE ALSO
 
@@ -962,7 +1103,7 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
                                 ULONG firstColor, ULONG numColors);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -1032,7 +1173,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
         ULONG HIDD_BM_DrawPixel(OOP_Object *obj, OOP_Object *gc, WORD x, WORD y);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Changes the pixel at (x,y). The color of the pixel depends on the
@@ -1160,7 +1301,7 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
                               WORD x2, WORD y2);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Draws a line from (x1,y1) to (x2,y2) in the specified gc.
@@ -1430,7 +1571,7 @@ VOID BM__Hidd_BitMap__DrawLine
                           WORD maxX, WORD maxY);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Draws a hollow rectangle from. minX and minY specifies the upper
@@ -1491,7 +1632,7 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
                                WORD maxX, WORD maxY);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -1557,7 +1698,7 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
                                   WORD rx, WORD ry);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Draws a hollow ellipse from the center point (x/y) with the radii
@@ -1719,7 +1860,7 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
                                   WORD ry, WORD rx);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Draws a solid ellipse from the center point (x/y) with the radii
@@ -1822,7 +1963,7 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
         VOID HIDD_BM_DrawPolygon (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Draws a hollow polygon from the list of coordinates in coords[].
@@ -1878,7 +2019,7 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
         VOID HIDD_BM_FillPolygon (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Draws a solid polygon from the list of coordinates in coords[].
@@ -1931,7 +2072,7 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
                                STRPTR text, UWORD length);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Draws the first length characters of text at (x, y).
@@ -2048,7 +2189,7 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
                                STRPTR text, UWORD length);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Fills the area of the text with the background color
@@ -2100,7 +2241,7 @@ VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawText *msg);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Draws a solid from a shape description in the specified bitmap. This
@@ -2146,7 +2287,7 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         VOID HIDD_BM_Clear (OOP_Object *obj, OOP_Object *gc);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
         Sets all pixels of the drawing area to the background color.
@@ -2243,7 +2384,7 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
                                WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -2397,7 +2538,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
                                WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -2570,7 +2711,7 @@ __attribute__((always_inline, const)) do_alpha(int a, int v)
                                     WORD x, WORD y, WORD width, WORD height);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -2783,7 +2924,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                                   WORD srcx, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -3033,7 +3174,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
                                        WORD x, WORD y, WORD width, WORD height, BOOL invertalpha);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -3339,7 +3480,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
                                 WORD width, WORD height);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -3715,7 +3856,7 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
                                   WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -3843,7 +3984,7 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
                                         HIDDT_PixelLUT *pixlut, UBYTE transparent);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -3993,7 +4134,7 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
                                   WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4109,7 +4250,7 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
                                          UWORD width, UWORD height);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4211,7 +4352,7 @@ else
         ULONG HIDD_BM_BytesPerLine(OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4339,7 +4480,7 @@ VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
         OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4386,7 +4527,7 @@ OOP_Object *BM__Hidd_BitMap__SetColorMap(OOP_Class *cl, OOP_Object *o,
         HIDDT_Pixel HIDD_BM_MapColor(OOP_Object *obj, HIDDT_Color *color);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4463,7 +4604,7 @@ HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
         VOID HIDD_BM_UnmapPixel(OOP_Object *obj, HIDDT_Pixel pixel, HIDDT_Color *color);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4540,7 +4681,7 @@ VOID BM__Hidd_BitMap__UnmapPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
                                         ULONG *bankSizeReturn, ULONG *memSizeReturn);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4585,7 +4726,7 @@ BOOL BM__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
         VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4627,7 +4768,7 @@ VOID BM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
                                  struct BitScaleArgs * bsa, OOP_Object *gc);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4741,7 +4882,7 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
                                          HIDDT_RGBConversionFunction function);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
@@ -4795,7 +4936,7 @@ HIDDT_RGBConversionFunction BM__Hidd_BitMap__SetRGBConversionFunction(OOP_Class 
         VOID HIDD_BM_UpdateRect(OOP_Object *obj, WORD x, WORD y, WORD width, WORD height);
 
     LOCATION
-        IID_HIDD_BitMap
+        CLID_HIDD_BitMap
 
     FUNCTION
 
