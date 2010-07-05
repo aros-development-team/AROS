@@ -389,6 +389,9 @@ BOOL RestartStack()
     {
         struct TagItem tags[] =
         {
+            { SYS_Input,        (IPTR)NULL          },
+            { SYS_Output,       (IPTR)NULL          },
+            { SYS_Error,        (IPTR)NULL          },
             { SYS_Asynch,       (IPTR)TRUE          },
             { TAG_DONE,         0                   }
         };
