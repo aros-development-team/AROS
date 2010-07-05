@@ -81,6 +81,8 @@
 #   include <libraries/notifyintuition.h>
 #endif
 
+#include <oop/oop.h>
+
 #include "intuition_debug.h"
 
 #ifdef SKINS
@@ -583,6 +585,9 @@ struct IntIntuitionBase
 
     /* Menu Look Settings */
     int                          FrameSize;
+    
+    OOP_AttrBase		 HiddAttrBase;
+    OOP_AttrBase		 HiddGfxAttrBase;
 };
 
 struct SharedPointer

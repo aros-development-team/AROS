@@ -1,3 +1,5 @@
+#include <oop/oop.h>
+
 struct MonitorData
 {
     struct MinNode node;

@@ -14,9 +14,11 @@
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <exec/alerts.h>
+#include <oop/oop.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/oop.h>
 #include <proto/alib.h>
 //#include <proto/arossupport.h>
 #include <devices/input.h>
@@ -81,7 +83,16 @@ const ULONG coltab[] =
 
 static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 {
+    struct OOP_ABDescr attrbases[] = {
+	{IID_Hidd    , &GetPrivIBase(LIBBASE)->HiddAttrBase   },
+	{IID_Hidd_Gfx, &GetPrivIBase(LIBBASE)->HiddGfxAttrBase},
+	{NULL        , NULL				       }
+    };
+
     DEBUG_INIT(dprintf("LIB_Init: base 0x%lx\n", (ULONG) LIBBASE));
+
+    if (!OOP_ObtainAttrBases(attrbases))
+	return FALSE;
 
 #warning "FIXME: This libInit is all broken if something should fail, but do we care?"
 #warning "FIXME: If something fails we're screwed anyway..."
