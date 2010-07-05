@@ -28,7 +28,7 @@
 	--background--
 
     LOCATION
-	IID_Hidd_Kbd
+	CLID_Hidd_Kbd
 
     NOTES
 	This class represents a "hub" for collecting input from various
@@ -60,7 +60,7 @@
 	--hardware_drivers--
 
     LOCATION
-	IID_Hidd_Kbd
+	CLID_Hidd_Kbd
 
     NOTES
 	A hardware driver should implement the same interface according to the following
@@ -96,7 +96,7 @@ static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
 	[I..], APTR
 
     LOCATION
-	IID_Hidd_Kbd
+	CLID_Hidd_Kbd
 
     FUNCTION
 	Specifies a keyboard event handler. The handler will called be every time a
@@ -136,7 +136,7 @@ static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
 	[I..], APTR
 
     LOCATION
-	IID_Hidd_Kbd
+	CLID_Hidd_Kbd
 
     FUNCTION
 	Specifies a user-defined value that will be passed to IRQ handler as a first
@@ -239,7 +239,7 @@ VOID KBD__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
                                                struct TagItem *tags);
 
     LOCATION
-	IID_Hidd_Kbd
+	CLID_Hidd_Kbd
 
     FUNCTION
 	Creates a hardware driver object and registers it in the system.
@@ -294,7 +294,7 @@ OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struc
 	void HIDD_Kbd_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
 
     LOCATION
-	IID_Hidd_Kbd
+	CLID_Hidd_Kbd
 
     FUNCTION
 	Unregisters and disposes keyboard hardware driver object.

@@ -27,7 +27,7 @@
 	--background--
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     NOTES
 	This class represents a "hub" for collecting input from various
@@ -59,7 +59,7 @@
 	--hardware_drivers--
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     NOTES
 	A hardware driver should implement the same interface according to the following
@@ -109,7 +109,7 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 	[I..], APTR
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     FUNCTION
 	Specifies a pointing device interrupt handler. The handler will called be every time a
@@ -163,7 +163,7 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 	[I..], APTR
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     FUNCTION
 	Specifies a user-defined value that will be passed to interrupt handler as a first
@@ -196,7 +196,7 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 	[..G], struct pHidd_Mouse_Event
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     FUNCTION
 	Obtains current pointing devices state.
@@ -227,7 +227,7 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 	[..G], BOOL
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     FUNCTION
 	Asks the driver it the device provides relative (like mouse) or absolute (like
@@ -262,7 +262,7 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
 	[..G], BOOL
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     FUNCTION
 	Asks the driver if it provides extended event descriptor structure
@@ -395,7 +395,7 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	OOP_Object *HIDD_Mouse_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     FUNCTION
 	Creates a hardware driver object and registers it in the system.
@@ -492,7 +492,7 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 	void HIDD_Mouse_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
 
     LOCATION
-	IID_Hidd_Mouse
+	CLID_Hidd_Mouse
 
     FUNCTION
 	Unregisters and disposes pointing device hardware driver object.
