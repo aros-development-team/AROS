@@ -118,13 +118,17 @@
         aoHidd_BitMap_Width
 
     SYNOPSIS
-        [ISG]
+        [ISG], ULONG
 
     LOCATION
         IID_HIDD_BitMap
 
     FUNCTION
-        Bitmap with
+        Specifies bitmap width in pixels.
+	
+	Setting this attribute does not cause actual bitmap resize, just updates the information
+	about it. Use this only from within subclasses only if you know what you do. For example
+	SDL hosted driver sets it when framebufer changes the resolution.
 
     NOTES
 
@@ -133,6 +137,7 @@
     BUGS
 
     SEE ALSO
+	aoHidd_BitMap_Height
 
     INTERNALS
 
@@ -144,13 +149,17 @@
         aoHidd_BitMap_Height
 
     SYNOPSIS
-        [ISG]
+        [ISG], ULONG
 
     LOCATION
         IID_HIDD_BitMap
 
     FUNCTION
-        Bitmap height
+        Specifies bitmap height in pixels.
+	
+	Setting this attribute does not cause actual bitmap resize, just updates the information
+	about it. Use this only from within subclasses only if you know what you do. For example
+	SDL hosted driver sets it when framebufer changes the resolution.
 
     NOTES
 
@@ -159,6 +168,7 @@
     BUGS
 
     SEE ALSO
+	aoHidd_BitMap_Width
 
     INTERNALS
 
@@ -176,7 +186,11 @@
         IID_HIDD_BitMap
 
     FUNCTION
-        Bitmap is displayable (default: FALSE)
+        The bitmap is displayable. A displayable bitmap is always managed by a display
+	driver and must have valid display mode ID specification.
+
+	If this attribute is not supplied during bitmap creation, its value defaults
+	to FALSE.
 
     NOTES
 
@@ -185,6 +199,7 @@
     BUGS
 
     SEE ALSO
+	aoHidd_BitMap_ModeID
 
     INTERNALS
 
@@ -202,17 +217,22 @@
         IID_HIDD_BitMap
 
     FUNCTION
-        Check if a bitmap is visible
+        Check if the bitmap is currently visible on screen
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	Not all display drivers implement this attribute. No AROS components currently rely
+	on its value.
 
     SEE ALSO
 
     INTERNALS
+	Some drivers may choose to have this attribute internally setable. Do not rely on it
+	in any way and do not attempt to set it manually from within applications, this will
+	not do any nice things.
 
 *****************************************************************************************/
 
