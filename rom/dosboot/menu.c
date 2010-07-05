@@ -18,8 +18,6 @@
 #include <devices/timer.h>
 #include <exec/memory.h>
 #include <graphics/driver.h>
-#include <hidd/keyboard.h>
-#include <hidd/mouse.h>
 #include <libraries/expansionbase.h>
 #include <aros/bootloader.h>
 #include <aros/symbolsets.h>
@@ -28,54 +26,6 @@
 
 #include "dosboot_intern.h"
 #include "menu.h"
-
-static BOOL init_kbd(STRPTR classid)
-{
-    OOP_Class *cl;
-    OOP_Object *kbd;
-    OOP_Object *drv = NULL;
-    
-    D(bug("[BootMenu] Adding keyboard HIDD %s\n", classid));
-    
-    cl = OOP_FindClass(classid);
-    D(bug("[BootMenu] Driver class: 0x%p\n", cl));
-    if (!cl)
-        return FALSE;
-
-    kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
-    D(bug("[BootMenu] I/O object 0x%p\n", kbd));
-    if (kbd) {
-        drv = HIDD_Kbd_AddHardwareDriver(kbd, cl, NULL);
-	D(bug("[BootMenu] Driver object 0x%p\n", drv));
-	OOP_DisposeObject(kbd);
-    }
-    
-    return drv ? TRUE : FALSE;
-}
-
-static BOOL init_mouse(STRPTR classid)
-{
-    OOP_Class *cl;
-    OOP_Object *ms;
-    OOP_Object *drv = NULL;
-    
-    D(bug("[BootMenu] Adding mouse HIDD %s\n", classid));
-    
-    cl = OOP_FindClass(classid);
-    D(bug("[BootMenu] Driver class 0x%p\n", cl));
-    if (!cl)
-        return FALSE;
-    
-    ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
-    D(bug("[BootMenu] I/O object 0x%p\n", ms));
-    if (ms) {
-        drv = HIDD_Mouse_AddHardwareDriver(ms, cl, NULL);
-	D(bug("[BootMenu] Driver object 0x%p\n", drv));
-	OOP_DisposeObject(ms);
-    }
-    
-    return drv ? TRUE : FALSE;
-}
 
 static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootBase)
 {
@@ -112,19 +62,6 @@ static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
 	    return FALSE;
 
         if (!init_gfx(bootcfg->gfxhidd, bootcfg->bootmode, DOSBootBase))
-	    return FALSE;
-    }
-
-    /* Only these poor input HIDDs still need external initialization */
-    if (OpenLibrary("kbd.hidd", 0)) {
-       D(bug("[BootMenu] kbd.hidd present\n"));
-	if (!init_kbd("hidd.kbd.hw"))
-	    return FALSE;
-    }
-
-    if (OpenLibrary("ps2mouse.hidd", 0)) {
-       D(bug("[BootMenu] ps2mouse.hidd present\n"));
-        if (!init_mouse("hidd.bus.mouse"))
 	    return FALSE;
     }
 
