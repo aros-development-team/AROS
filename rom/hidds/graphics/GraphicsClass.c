@@ -298,56 +298,6 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_PixFmtTags
-
-    SYNOPSIS
-	[I..], struct TagItem *
-
-    LOCATION
-	CLID_HIDD_Gfx
-
-    FUNCTION
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-	aoHidd_Gfx_SyncTags
-
-    SYNOPSIS
-	[I..], struct TagItem *
-
-    LOCATION
-	CLID_HIDD_Gfx
-
-    FUNCTION
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
 	aoHidd_Gfx_ModeTags
 
     SYNOPSIS
@@ -357,10 +307,116 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	CLID_HIDD_Gfx
 
     FUNCTION
+	Specify a pointer to a taglist which contains description of display modes
+	supported by the driver.
+
+	This attribute is usually appended in moRoot_New method of the display driver
+	class.
+	
+	This attribute is mandatory for the base class, otherwise driver object creation
+	fails.
+	
+	Mode description taglist may contain the following tags:
+	  - Any sync attributes - these attributes will specify values common for all sync
+				  modes
+	  - Any pixelformat attributes - these attributes will specify values common for
+					 all pixelformat modes
+	  - aoHidd_Gfx_SyncTags - specifies a pointer to another separate taglist containing
+				  attributes for one sync (display) mode. If this tag
+				  is not supplied at all, a set of default modes will be
+				  generated for the driver.
+	  - aoHidd_Gfx_PixFmtTags - specifies a pointer to another separate taglist containing
+				    attributes for one pixelformat. This tag must be supplied
+				    at least once, otherwise driver object will fail to create.
+	
+	  aoHidd_Gfx_SyncTags and aoHidd_Gfx_PixFmtTags can be specified multiple times in
+	  order to associate more than one display mode with the driver. Note that common
+	  values for sync and pixelformat objects need to be placed in the taglist before
+	  aoHidd_Gfx_SyncTags and aoHidd_Gfx_PixFmtTags. You may specify them again between
+	  these tags in order to alter common values.
 
     NOTES
 
     EXAMPLE
+	Partial example code of display driver supporting a truecolor display with three
+	resolutions:
+
+	// Our pixelformat (24-bit 0BGR)
+	struct TagItem pftags[] =
+	{
+    	    { aHidd_PixFmt_RedShift     , 24			   	},
+	    { aHidd_PixFmt_GreenShift   , 16			   	},
+	    { aHidd_PixFmt_BlueShift    , 8			   	},
+	    { aHidd_PixFmt_AlphaShift   , 0			   	},
+	    { aHidd_PixFmt_RedMask	, 0x000000FF		   	},
+	    { aHidd_PixFmt_GreenMask    , 0x0000FF00		   	},
+	    { aHidd_PixFmt_BlueMask     , 0x00FF0000		   	},
+	    { aHidd_PixFmt_AlphaMask    , 0x00000000		   	},
+	    { aHidd_PixFmt_ColorModel   , vHidd_ColorModel_TrueColor   	},
+	    { aHidd_PixFmt_Depth	, 24			   	},
+	    { aHidd_PixFmt_BytesPerPixel, 4				},
+	    { aHidd_PixFmt_BitsPerPixel , 24			   	},
+	    { aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native	},
+	    { aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Chunky       },
+	    { TAG_DONE  	    	, 0UL			   	} 
+	};
+
+	// 640x480 resolution
+	struct TagItem tags_800_600[] = 
+	{
+	    { aHidd_Sync_HDisp  	, 640 	    	    	 },
+	    { aHidd_Sync_VDisp  	, 480 	    	    	 },
+	    { TAG_DONE  	    	, 0UL 	    	    	 }
+	};
+
+	// 800x600 resolution
+	struct TagItem tags_800_600[] = 
+	{
+	    { aHidd_Sync_HDisp  	, 800 	    	    	 },
+	    { aHidd_Sync_VDisp  	, 600 	    	    	 },
+	    { TAG_DONE  	    	, 0UL 	    	    	 }
+	};
+
+	// 1024x768 resolution
+	struct TagItem tags_1024_768[] = 
+	{
+    	    { aHidd_Sync_HDisp  	, 1024      	    	  },
+	    { aHidd_Sync_VDisp  	, 768       	    	  },
+	    { TAG_DONE  	    	, 0UL       	    	  }
+	};
+
+	// Mode description taglist itself
+	struct TagItem mode_tags[] =
+	{
+	    // Our driver supports a single pixelformat
+	    { aHidd_Gfx_PixFmtTags  , (IPTR)pftags		},
+
+	    // Here go sync values common for all sync modes
+	    { aHidd_Sync_HMin	    , 112			},
+	    { aHidd_Sync_VMin	    , 112			},
+	    { aHidd_Sync_HMax	    , 16384			},
+	    { aHidd_Sync_VMax	    , 16384			},
+	    { aHidd_Sync_Description, (IPTR)"Example: %hx%v"	},
+
+	    // First resolution
+	    { aHidd_Gfx_SyncTags    , (IPTR)tags_800_600	},
+
+	    // Next two syncs will have HMax = 32768, as an example
+	    { aHidd_Sync_HMax	    , 32768			},
+
+	    // Two more resolutions
+	    { aHidd_Gfx_SyncTags    , (IPTR)tags_800_600	},
+	    { aHidd_Gfx_SyncTags    , (IPTR)tags_1024_768	},
+	    { TAG_DONE  	    , 0UL 	    	    	}
+	};
+    
+	// This is the attribute list which is given to New method
+	// of the base class
+	struct TagItem mytags[] =
+	{
+	    { aHidd_Gfx_ModeTags	, (IPTR)mode_tags	},
+	    { TAG_DONE  	    	, NULL 			}
+	};
 
     BUGS
 

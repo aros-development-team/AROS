@@ -1106,14 +1106,22 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
         CLID_HIDD_BitMap
 
     FUNCTION
+	Sets values for one or more colors in the colormap object associated with the
+	bitmap.
+
+	The colormap will be created if it does not exist.
+
+	Only ARGB values from the source array are taken into account. pixval member is
+	updated with the real pixel value for every color.
 
     INPUTS
-        obj        -
-        colors     -
-        firstColor -
-        numColors  -
+        obj        - A bitmap object whose colormap needs to be set
+        colors     - A pointer to source data array
+        firstColor - Number of the first color to set
+        numColors  - Number of subsequent colors to set
 
     RESULT
+	TRUE on success, FALSE in case of some error (like out of memory)
 
     NOTES
 
@@ -1122,6 +1130,7 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
     BUGS
 
     SEE ALSO
+	CLID_Hidd_ColorMap/moHidd_ColorMap_SetColors
 
     INTERNALS
 
@@ -1178,14 +1187,15 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     FUNCTION
         Changes the pixel at (x,y). The color of the pixel depends on the
         attributes of gc, eg. colors, drawmode, colormask etc.
-        This function does not the coordinates.
+        This function does not check the coordinates.
 
     INPUTS
-        obj  -
-        gc   -
-        x, y - coordinates of the pixel in hidd units
+        obj  - A bitmap to draw on
+        gc   - A GC (graphics context) object to use for drawing
+        x, y - Coordinates of the pixel to draw
 
     RESULT
+	Undefined. Many drivers declare this method as void.
 
     NOTES
 
@@ -1308,12 +1318,13 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
         The function does not clip the line against the drawing area.
 
     INPUTS
-        obj   -
-        gc    -
-        x1,y1 - start point of the line in hidd units
-        x2,y2 - end point of the line in hidd units
+        obj   - A bitmap to draw on
+        gc    - A graphics context object to use
+        x1,y1 - start point of the line in pixels
+        x2,y2 - end point of the line in pixels
 
     RESULT
+	None.
 
     NOTES
 
@@ -1574,20 +1585,22 @@ VOID BM__Hidd_BitMap__DrawLine
         CLID_HIDD_BitMap
 
     FUNCTION
-        Draws a hollow rectangle from. minX and minY specifies the upper
+        Draws a hollow rectangle. minX and minY specifies the upper
         left corner of the rectangle. minY and maxY specifies the lower
         right corner of the rectangle.
         The function does not clip the rectangle against the drawing area.
 
     INPUTS
-        obj        -
-        gc         -
-        minX, minY - upper left corner of the rectangle in hidd units
-        maxX, maxY - lower right corner of the rectangle in hidd units
+        obj        - A bitmap to draw on
+        gc         - A GC object to use for drawing
+        minX, minY - upper left corner of the rectangle in pixels
+        maxX, maxY - lower right corner of the rectangle in pixels
 
     RESULT
+	None.
 
     NOTES
+	This method is not used by the system and considered reserved.
 
     EXAMPLE
 
@@ -1642,12 +1655,13 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
         The function does not clip the rectangle against the drawing area.
 
     INPUTS
-        obj        -
-        gc         -
-        minX, minY - upper left corner of the rectangle in hidd units
-        maxX, maxY - lower right corner of the rectangle in hidd units
+        obj        - A bitmap to draw on
+        gc         - A GC object to use for drawing
+        minX, minY - upper left corner of the rectangle in pixels
+        maxX, maxY - lower right corner of the rectangle in pixels
 
     RESULT
+	None.
 
     NOTES
 
@@ -1701,17 +1715,18 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
         CLID_HIDD_BitMap
 
     FUNCTION
-        Draws a hollow ellipse from the center point (x/y) with the radii
+        Draws a hollow ellipse from the center point (x,y) with the radii
         rx and ry in the specified bitmap.
         The function does not clip the ellipse against the drawing area.
 
     INPUTS
-        obj   -
-        gc    -
-        x,y   - center point in hidd units
-        rx,ry - ry and ry radius in hidd units
+        obj   - A bitmap to draw on
+        gc    - A GC object to use for drawing
+        x,y   - Coordinates of center point in pixels
+        rx,ry - ry and ry radius in pixels
 
     RESULT
+	None.
 
     NOTES
 
@@ -1863,19 +1878,21 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
         CLID_HIDD_BitMap
 
     FUNCTION
-        Draws a solid ellipse from the center point (x/y) with the radii
+        Draws a solid ellipse from the center point (x,y) with the radii
         rx and ry in the specified bitmap.
         The function does not clip the ellipse against the drawing area.
 
     INPUTS
-        obj   -
-        gc    -
-        x,y   - center point in hidd units
-        rx,ry - ry and ry radius in hidd units
+        obj   - A bitmap to draw on
+        gc    - A GC object to use for drawing
+        x,y   - Coordinates of center point in pixels
+        rx,ry - ry and ry radius in pixels
 
     RESULT
+	None.
 
     NOTES
+	This method is not used by the system and considered reserved.
 
     EXAMPLE
 
@@ -1970,14 +1987,16 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
         The function does not clip the polygon against the drawing area.
 
     INPUTS
-        obj    -
-        gc     -
+        obj    - A bitmap to draw on
+        gc     - A GC object to use for drawing
         n      - number of coordinate pairs
-        coords - array of n (x, y) coordinates in hidd units
+        coords - array of n (x, y) coordinates in pixels
 
     RESULT
+	None.
 
     NOTES
+    	This method is not used by the system and considered reserved.
 
     EXAMPLE
 
@@ -2022,25 +2041,25 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
         CLID_HIDD_BitMap
 
     FUNCTION
-        Draws a solid polygon from the list of coordinates in coords[].
-        If the last point of the polygon is not equal to the first point
-        then the function closes the polygon.
-
-        The function does not clip the polygon against the drawing area.
+	This method was initially designed for drawing solid polygons, however it was never
+	used and implemented. At the moment it is considered reserved, its synopsis and
+	semantics may change in future.
 
     INPUTS
-        obj    -
-        gc     -
+        obj    - A bitmap to draw on
+        gc     - A GC object to use for drawing
         n      - number of coordinate pairs
-        coords - array of n (x, y) coordinates in hidd units
+        coords - array of n (x, y) coordinates in pixels
 
     RESULT
+	None
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	Never used and implemented
 
     SEE ALSO
 
@@ -2079,9 +2098,9 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
         The function does not clip the text against the drawing area.
 
     INPUTS
-        obj    -
-        gc     -
-        x, y   - Position to start drawing in hidd units. The x
+        obj    - A bitmap to draw on
+        gc     - A GC object to use for drawing and font specification
+        x, y   - Position to start drawing in pixels. The x
                  coordinate is relativ to the left side of the
                  first character.
                  The y coordinate is relative to the baseline of the font.
@@ -2089,20 +2108,24 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
         length - Number of characters to draw
 
     RESULT
+	None.
 
     NOTES
+	At the moment text drawing is processed entirely by graphics.library
+	using BltTemplate(), which in turn uses moHodd_BitMap_PutTemplate.
+	This method is considered obsolete.
 
     EXAMPLE
 
     BUGS
+	The default implementation in the base class does not process styles,
+	color and alpha-blended fonts.
 
     SEE ALSO
 
     INTERNALS
 
     TODO
-        - Color fonts
-        - Fontstyle
 
 *****************************************************************************************/
 
@@ -2192,15 +2215,17 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
         CLID_HIDD_BitMap
 
     FUNCTION
-        Fills the area of the text with the background color
-        and draws the first length characters of text at (x, y).
-        The function does not clip the text against the drawing area.
+	Historically this method was designed to draw a text with background.
+	It was never implemented.
+	
+	Currently this method is considered reserved. Its synopsis and semantics
+	may change in future.
 
     INPUTS
-        obj    -
-        gc     -
-        x, y   - Position to start drawing in hidd units. The x
-                 coordinate is relativ to the left side of the
+        obj    - A bitmap to draw on
+        gc     - A GC object to use for drawing
+        x, y   - Position to start drawing in pixels. The x
+                 coordinate is relative to the left side of the
                  first character.
                  The y coordinate is relative to the baseline of the font.
         text   - Pointer to a Latin 1 string
@@ -2244,13 +2269,12 @@ VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         CLID_HIDD_BitMap
 
     FUNCTION
-        Draws a solid from a shape description in the specified bitmap. This
-        command is available in quick and normal mode. In normal mode,
-        the spans are clipped against the drawing area.
+        Reserved, never implemented method. The definition will change in future.
 
     INPUTS
 
     RESULT
+	None.
 
     NOTES
 
@@ -2291,20 +2315,22 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
     FUNCTION
         Sets all pixels of the drawing area to the background color.
-        This command is available in quick and normal mode and behaves
-        similar in both modes.
 
     INPUTS
-        obj -
-        gc  -
+        obj - A bitmap to clear.
+        gc  - A GC object, specifies background color value
 
     RESULT
 
     NOTES
+	This method is not used by the system and considered reserved. However it can
+	be useful for display driver's own needs.
 
     EXAMPLE
 
     BUGS
+	Default implementation in the base class sets all pixels to zero color instead of
+	the background color from GC
 
     SEE ALSO
 
@@ -3485,8 +3511,8 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     FUNCTION
 
     INPUTS
-        obj           -
-        gc            -
+        obj           - A bitmap to draw on
+        gc            - A GC object to use for drawing
         pattern       -
         patternsrcx   -
         patternsrcy   -
@@ -3502,6 +3528,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
         height        -
 
     RESULT
+	None
 
     NOTES
 
@@ -4253,21 +4280,29 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
         CLID_HIDD_BitMap
 
     FUNCTION
+	Perform a color expansion of the mask in srcBitMap according to foreground and background
+	colors and expansion mode specified by the supplied GC. Pixels which are set to zero in
+	the mask bitmap will be either painted by background (in opaque mode) or left without
+	change (in transparent mode). Pixels which are set to nonzero in the mask will be painted
+	by foreground color.
+	
+	The result of expansion is blitted onto the destination bitmap accorging to GC's draw mode.
 
     INPUTS
-        obj       -
-        gc        -
-        srcBitMap -
-        srcX      -
-        srcY      -
-        destX     -
-        destY     -
-        width     -
-        height    -
+        obj           - A bitmap to draw on
+        gc            - A GC object to use for drawing
+        srcBitMap     - A bitmap object containing mask image.
+        srcX, srcY    - A top-left coordinate of the used rectangle in the source bitmap
+        destX, destY  - A top-left coordinate of the destination rectangle to draw in
+        width, height - A size of the rectangle to blit
 
     RESULT
+	None.
 
     NOTES
+	This method was previously used by graphics.library/Text() to draw fonts with no
+	styles specified. Currently graphics.library always uses BltTemplate() and this
+	method is considered obsolete.
 
     EXAMPLE
 
