@@ -168,6 +168,6 @@ USER_INCLUDES := -I$(SRCDIR)/rom/dos
 
 %build_module mmake=kernel-intuition \
   modname=intuition modtype=library \
-  files="intuition_init $(FUNCS) $(FILES)" uselibs="hiddgraphicsstubs rom"
+  files="intuition_init $(FUNCS) $(FILES)" uselibs="hiddgraphicsstubs rom oop"
 
 
