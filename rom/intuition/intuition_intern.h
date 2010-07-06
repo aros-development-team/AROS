@@ -588,6 +588,8 @@ struct IntIntuitionBase
     
     OOP_AttrBase		 HiddAttrBase;
     OOP_AttrBase		 HiddGfxAttrBase;
+    struct MinList		 MonitorList;
+    struct SignalSemaphore	 MonitorListSem;
 };
 
 struct SharedPointer

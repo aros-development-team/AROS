@@ -52,6 +52,7 @@ FUNCS := \
 	freeclass \
 	freeicdata \
 	freeintuimessage \
+	freemonitorlist \
 	freeremember \
 	freescreenbuffer \
 	freescreendrawinfo \
@@ -60,6 +61,7 @@ FUNCS := \
 	getattr \
 	getdefaultpubscreen \
 	getdefprefs \
+	getmonitorlist \
 	getprefs \
 	getscreendata \
 	getscreendrawinfo \

@@ -247,6 +247,9 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
+    NEWLIST(&GetPrivIBase(IntuitionBase)->MonitorList);
+    InitSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+
     DEBUG_INIT(dprintf("LIB_Init: done\n"));
 
     return TRUE;
