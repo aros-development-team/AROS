@@ -116,6 +116,7 @@ struct Redirection
     BOOL  haveOutRD;
     BOOL  haveInRD;
     BOOL  haveAppRD;
+    BOOL  embedded;             /* True when running an embedded command */
 
     STRPTR  commandStr;		/* The command to execute */
     STRPTR  outFileName;	/* Redirection file for > or >> */
@@ -692,21 +693,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
     struct LocalVar *lv;
     LONG result = ERROR_UNKNOWN;
     
-    lv = FindVar("echo", LV_VAR);
-    if (lv != NULL)
-    {
-	/* AmigaDOS's shell is content also with echo being set to anything
-	   that begins with "on" in order to trigger commands echoing on, 
-	   it doesn't really have to be set to just "on".  */
-	if (lv->lv_Len >= 2)
-	    if (strncasecmp(lv->lv_Value, "on", 2) == 0)
-	    {
-		/* Ok, commands echoing is on.  */
-		PutStr(cl->line);
-	    }
-    }
-
-    D(bug("Calling convertLine(), line = %s\n", cl->line));
+    D(bug("[Shell] checkLine() Calling convertLine(), line = %s\n", cl->line));
 
     if ((result = convertLine(&filtered, &cs, rd, is)) == 0)
     {
@@ -779,6 +766,24 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
 	    D(bug("Input stream opened\n"));
     	    SelectInput(rd->newIn);
 	}
+
+        lv = FindVar("echo", LV_VAR);
+        /* AmigaDOS's shell is content also with echo being set to anything
+           that begins with "on" in order to trigger commands echoing on, 
+           it doesn't really have to be set to just "on".  */
+        /* Embedded command isn't echo'ed, but its result will be integrated
+           in final command line, which will be echo'ed if the var is set */
+        if ( (lv != NULL)                              &&
+             (lv->lv_Len >= 2)                         &&
+             (strncasecmp(lv->lv_Value, "on", 2) == 0) &&
+             (!rd->embedded)                              )
+        {
+            /* Ok, commands echoing is on.  */
+            STRPTR commandLine = AllocVec(1024, MEMF_ANY);
+            snprintf(commandLine, 1024, "%s%s", rd->commandStr, filtered.CS_Buffer);
+            PutStr(commandLine);
+            FreeVec(commandLine);
+        }
 
 	D(bug("Calling executeLine()\n"));
 
@@ -1084,12 +1089,13 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
             /* Temporary */
             strcpy(embedRd.outFileName, embedOutputFilename);
 
+            embedRd.embedded  = TRUE;   /* So the command won't be echo'ed */
             embedRd.haveOutRD = TRUE;   /* ` _ ` is an implicit output
                                             redirection */
 
             D(bug("Doing embedded command.\n"));
 
-            checkLine(&embedRd, &embedCl, &is);
+            checkLine(&embedRd, &embedCl, is);
 
             D(bug("Embedded command done.\n"));
 
