@@ -53,6 +53,10 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     /* TODO: Fill in data->pixelformats */
 
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->MonitorList, (struct Node *)o);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+
     return o;
 }
 
@@ -159,6 +163,10 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {   
     D(kprintf("MonitorClass: OM_DISPOSE\n"));
+
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+    Remove((struct Node *)o);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
 
     return DoSuperMethodA(cl, o, msg);
 }
