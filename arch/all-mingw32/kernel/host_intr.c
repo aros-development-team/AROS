@@ -30,7 +30,7 @@ typedef unsigned char UBYTE;
 #define DS(x)    /* Task switcher debug - DANGEROUS */
 #define DIRQ(x)  /* IRQ debug		*/
 
-#define AROS_EXCEPTION_SYSCALL 0x80000001
+#define AROS_EXCEPTION_SYSCALL 0x00080001
 
 struct ExceptionTranslation
 {
