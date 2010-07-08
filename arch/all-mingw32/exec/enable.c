@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: i386unix version of Enable()
+    Desc: Windows-hosted version of Enable()
     Lang: english
 */
 #define DEBUG 0
@@ -12,7 +12,6 @@
 #include <aros/libcall.h>
 #include <aros/atomic.h>
 #include <aros/debug.h>
-//#include <asm/segments.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
 #include "exec_intern.h"
@@ -30,13 +29,17 @@ AROS_LH0(void, Enable,
 
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     D(bug("[Exec] Enable(), new IDNestCnt is %d\n", SysBase->IDNestCnt));
-    
+
+    /* A supervisor mode is interrupt itself. Syscalls are not allowed,
+       everything will be processed later. Otherwise we are in trouble
+       (like Windows exception handler being preempted by task switcher) */
+    if (KrnIsSuper())
+	return;
+
     if(SysBase->IDNestCnt < 0)
     {
         D(bug("[Enable] Enabling interrupts\n"));
-        if (KernelBase)
-            KrnSti();
-        D(else bug("[Enable] KernelBase is NULL\n"));
+        KrnSti();
 
         /* There's no dff09c like thing in x86 native which would allow
            us to set delayed (mark it as pending but it gets triggered
@@ -46,17 +49,11 @@ AROS_LH0(void, Enable,
            
         if ((SysBase->TDNestCnt < 0) && (SysBase->AttnResched & ARF_AttnSwitch))
         {
-            if (!KrnIsSuper()) KrnSchedule();        
+            KrnSchedule();        
         }
         
         if (SysBase->SysFlags & SFF_SoftInt)
-        {
-            if (!KrnIsSuper())
-            {
-                /* sys_Cause */
-                KrnCause();
-            }
-        }
+            KrnCause();
     }
 
     AROS_LIBFUNC_EXIT
