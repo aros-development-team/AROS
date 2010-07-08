@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: i386unix version of Disable()
+    Desc: Windows-hosted version of Disable()
     Lang: english
 */
 
@@ -25,8 +25,7 @@ AROS_LH0(void, Disable,
     AROS_LIBFUNC_INIT
     
     /* Georg Steger */
-    if (KernelBase)
-        KrnCli();
+    KrnCli();
 
     AROS_ATOMIC_INC(SysBase->IDNestCnt);
 

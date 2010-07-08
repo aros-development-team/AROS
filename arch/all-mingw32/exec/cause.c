@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: i386native version of Cause().
+    Desc: Windows-hosted version of Cause().
     Lang: english
 */
 
@@ -67,14 +67,11 @@ AROS_UFH5(void, SoftIntDispatch,
         {
             for(i=4; i>=0; i--)
             {
-                KrnCli();
                 intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
 
                 if (intr)
                 {
                     intr->is_Node.ln_Type = NT_INTERRUPT;
-
-                    KrnSti();
 
                     /* Call the software interrupt. */
                     AROS_UFC3(void, intr->is_Code,
