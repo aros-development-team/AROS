@@ -88,6 +88,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     SEE ALSO
 
     INTERNALS
+	The function relies on display driver object being passed in DimensionInfo.reserved[0]
+	by graphics.library/GetDisplayInfoData()
 
     HISTORY
     29-10-95    digulla automatically created from
@@ -116,7 +118,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     LONG                     overscan = OSCAN_TEXT;
     DisplayInfoHandle        displayinfo;
     struct DimensionInfo     dimensions;
+#ifdef __MORPHOS__
     struct MonitorInfo       monitor;
+#endif
     ULONG                    allocbitmapflags = BMF_DISPLAYABLE;
     //ULONG                  lock;
     WORD                     numcolors = 0;
@@ -637,7 +641,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
         GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
+#ifdef __MORPHOS__
         && GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid)
+#endif
     )
     {
 #ifdef __MORPHOS__
@@ -645,7 +651,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #else
         struct HIDD_ModeProperties modeprops;
 
-	HIDD_Gfx_ModeProperties((OOP_Object *)monitor.reserved[0], modeid, &modeprops, sizeof(modeprops));
+	HIDD_Gfx_ModeProperties((OOP_Object *)dimensions.reserved[0], modeid, &modeprops, sizeof(modeprops));
 	screen->SpecialFlags = modeprops.CompositionFlags << 8;
 #endif
         success = TRUE;

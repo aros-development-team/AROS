@@ -44,6 +44,8 @@
     SEE ALSO
 
     INTERNALS
+	The function relies on pixelformat object being passed in DimensionInfo.reserved[1]
+	by graphics.library/GetDisplayInfoData()
 
     HISTORY
 	27-11-96    digulla automatically created from
@@ -52,59 +54,43 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    /* First lookup the pixfmt for the ID */
-    IPTR retval = (ULONG)-1;
-    struct VecInfo info;
 
-    if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_VEC, DisplayModeID) == sizeof(info)) {
-	OOP_Object *sync = (OOP_Object *)info.reserved[0];
-        OOP_Object *pf   = (OOP_Object *)info.reserved[1];
-        IPTR depth;
+    ULONG retval = (ULONG)-1;
+    struct DimensionInfo info;
 
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-    
-	if (depth < 8) {
-    	    D(bug("!!! TRYING TO GET ATTR FROM NON-CGFX MODE IN GetCyberIDAttr() !!!\n"));
-	    retval = (ULONG)-1;
-	} else {
-    
-	    switch (attribute) {
-		case CYBRIDATTR_PIXFMT: {
-	    	    HIDDT_StdPixFmt stdpf;
-		
-		    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
-		
-		    retval = hidd2cyber_pixfmt(stdpf);
-		    if (-1 == retval) {
-			D(bug("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n"));
-		    }
-	    	    break; }
-	
-		case CYBRIDATTR_DEPTH:
-	     	    retval = depth;
-		    break;
-	
-		case CYBRIDATTR_WIDTH:
-	    	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &retval);
-		    break;
-		
-		case CYBRIDATTR_HEIGHT:
-	    	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &retval);
-		    break;
-		
-		case CYBRIDATTR_BPPIX:
-	    	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
-		    break;
-		
-		default:
-	    	    D(bug("!!! UNKONOW ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n"
-			, attribute));
-		    retval = (ULONG)-1;
-		    break;
-	    	
-    	
-	    }
+    if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, DisplayModeID) == sizeof(info)) {
+    	OOP_Object *pf = (OOP_Object *)info.reserved[1];
+
+	switch (attribute) {
+	case CYBRIDATTR_PIXFMT: {
+	    HIDDT_StdPixFmt stdpf;
+
+	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+
+	    retval = hidd2cyber_pixfmt(stdpf);
+	    D(if (-1 == retval) bug("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n");)
+	    break;
+	}
+
+	case CYBRIDATTR_DEPTH:
+	    retval = info.MaxDepth;
+	    break;
+
+	case CYBRIDATTR_WIDTH:
+	    retval = info.Nominal.MaxX - info.Nominal.MinX + 1;
+	    break;
+
+	case CYBRIDATTR_HEIGHT:
+	    retval = info.Nominal.MaxY - info.Nominal.MinY + 1;
+	    break;
+
+	case CYBRIDATTR_BPPIX:
+	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+	    break;
+
+	default:
+	    D(bug("!!! UNKONOW ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n", attribute));
+	    break;
 	}
     }
     return retval;

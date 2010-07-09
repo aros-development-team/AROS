@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     ULONG modeid;
     BOOL iscyber;
     struct NameInfo name;
-    struct VecInfo vec;
+    struct DimensionInfo info;
     struct Library *OOPBase;
     OOP_AttrBase HiddPixFmtAttrBase;
 
@@ -46,11 +46,11 @@ int main(int argc, char **argv)
     iscyber = IsCyberModeID(modeid);
     printf("IsCyberModeID() returns %d\n", iscyber);
 
-    if (GetDisplayInfoData(NULL, (UBYTE *)&vec, sizeof(vec), DTAG_VEC, modeid) == sizeof(vec)) {
-	OOP_Object *pixfmt = (OOP_Object *)vec.reserved[1];
+    if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_VEC, modeid) == sizeof(info)) {
+	OOP_Object *pixfmt = (OOP_Object *)info.reserved[1];
 	IPTR val;
 
-        printf("Obtained VecInfo\n");
+        printf("Obtained DimensionInfo\n");
 
 	printf("Pixelformat data:\n");
 	OOP_GetAttr(pixfmt, aHidd_PixFmt_ColorModel, &val);
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	OOP_GetAttr(pixfmt, aHidd_PixFmt_BitMapType, &val);
 	printf("Bitmap type: %lu\n", val);
     } else
-        printf("Failed to obtain VecInfo\n");
+        printf("Failed to obtain DimensionInfo\n");
 
     OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
     CloseLibrary(OOPBase);
