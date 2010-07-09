@@ -89,7 +89,7 @@ fetch()
                 ret=false
             fi
             ;;
-	"")
+	*)
 	    if test "$origin" = "$destination";  then
 	        ! test -f "$origin/$file" && ret=false
 	    else
@@ -100,9 +100,6 @@ fetch()
 		fi
 	    fi
 	    ;;
-	*)
-	    echo "Unknown protocol type \`$protocol'"
-	    ret=false;;
     esac
     
     trap SIGINT SIGKILL SIGTERM
