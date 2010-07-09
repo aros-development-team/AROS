@@ -38,7 +38,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         User data
@@ -64,7 +64,7 @@
         [I.G]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Bitmap which this gc uses.
@@ -90,7 +90,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Foreground color
@@ -116,7 +116,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Background color
@@ -142,7 +142,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Draw mode
@@ -168,7 +168,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Current font
@@ -194,7 +194,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Prevents some color bits from changing.
@@ -220,7 +220,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Pattern for line drawing
@@ -246,7 +246,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Pattern start bit for line drawing.
@@ -272,7 +272,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Shape bitmap 
@@ -298,7 +298,7 @@
         [.SG]
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
         Mode for color expansion
@@ -488,7 +488,7 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
         VOID HIDD_GC_SetClipRect(OOP_Object *obj, LONG x1, LONG y1, LONG x2, LONG y2);
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
 
@@ -538,7 +538,7 @@ VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetC
         VOID HIDD_GC_UnsetClipRect(OOP_Object *obj);
 
     LOCATION
-        IID_HIDD_GC
+        CLID_Hidd_GC
 
     FUNCTION
 
