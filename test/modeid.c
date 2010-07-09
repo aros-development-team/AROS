@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     iscyber = IsCyberModeID(modeid);
     printf("IsCyberModeID() returns %d\n", iscyber);
 
-    if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_VEC, modeid) == sizeof(info)) {
+    if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, modeid) == sizeof(info)) {
 	OOP_Object *pixfmt = (OOP_Object *)info.reserved[1];
 	IPTR val;
 
