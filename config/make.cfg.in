@@ -32,7 +32,7 @@ PORTSSOURCEDIR    := @AROS_PORTSSRCDIR@
 PORTSDIR    := $(TARGETDIR)/Ports
 
 # Distributable Files we generate are put here
-DISTDIR    := $(TOP)/distfiles
+DISTDIR    := @AROS_BUILDDIR_UNIX@/distfiles
 
 # File for AROS gcc cross compiler spec file
 SPECS       := $(GENDIR)/config/specs
