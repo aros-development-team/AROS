@@ -50,6 +50,7 @@ fi
 #don't know where else to put this...
 AC_MSG_CHECKING([Building AROS in .. ])
 AROS_BUILDDIR=`${PWDCMD-pwd}`
+AROS_BUILDDIR_UNIX=${PWD}
 AC_MSG_RESULT($AROS_BUILDDIR)
 
 AC_MSG_CHECKING([AROS Source in .. ])
@@ -460,7 +461,6 @@ aros_arch_libs=
 aros_target_genmap="-Wl,-Map -Xlinker"
 
 # Native flavour stuff
-aros_bochs_hack="0"
 aros_serial_debug="0"
 
 # Palm native flavour stuff
@@ -1101,7 +1101,7 @@ esac
 AC_MSG_CHECKING([Where to download sourcecode for external ports])
 AC_ARG_WITH(portssources,AC_HELP_STRING([--with-portssources=DIR],[Where to download sourcecode for external ports]),with_portssrcdir=$withval,with_portssrcdir="default")
 if test "$with_portssrcdir" = "default"; then
-    AROS_PORTSSRCDIR="$AROS_BUILDDIR/bin/Sources"
+    AROS_PORTSSRCDIR="$AROS_BUILDDIR_UNIX/bin/Sources"
 else
     AROS_PORTSSRCDIR="$with_portssrcdir"
 fi
@@ -1429,14 +1429,6 @@ AC_MSG_RESULT($aros_default_wbwidth x $aros_default_wbheight x $aros_default_wbd
 aros_cv_default_wbwidth=$aros_default_wbwidth
 aros_cv_default_wbheight=$aros_default_wbheight
 aros_cv_default_wbdepth=$aros_default_wbdepth
-
-dnl See if the user wants the BOCHS hack for native flavour
-AC_MSG_CHECKING([if bochs hack is enabled])
-AC_ARG_ENABLE(bochs_hack,AC_HELP_STRING([--enable-bochs-hack],[Enable hacks to make BOCHS (partly) work (default=no)]),bochs_hack="yes",bochs_hack="no")
-if test "$bochs_hack" = "yes" ; then
-    aros_bochs_hack="1"
-fi
-AC_MSG_RESULT($bochs_hack)
 
 dnl See if the user wants the serial debug output for native flavour
 AC_MSG_CHECKING([if serial debug is enabled])
@@ -1769,7 +1761,6 @@ AC_SUBST(aros_host_sdl_cflags)
 AC_SUBST(aros_host_sdl_libs)
 
 # Native version related
-AC_SUBST(aros_bochs_hack)
 AC_SUBST(aros_serial_debug)
 
 # Palm native version related

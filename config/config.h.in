@@ -19,7 +19,6 @@
 #define AROS_DEFAULT_WBHEIGHT		@aros_default_wbheight@
 #define AROS_DEFAULT_WBDEPTH		@aros_default_wbdepth@
 
-#define AROS_BOCHS_HACK			@aros_bochs_hack@
 #define AROS_SERIAL_DEBUG		@aros_serial_debug@
 
 #define AROS_PALM_DEBUG_HACK	    	@aros_palm_debug_hack@
