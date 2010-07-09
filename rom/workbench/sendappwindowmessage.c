@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: check if the given window is an app window and send a list of files to it
@@ -18,26 +18,13 @@
 
 #include <string.h>
 
+static char *allocPath(char *str);
+
 /*****************************************************************************
 
     NAME */
     #include <proto/workbench.h>
 
-char *allocPath(char *str) {
-  char *s0, *s1, *s;
-  int	 l;
-
-  s = NULL;
-  s0 = str;
-
-  s1 = PathPart(str);
-  if (s1) {
-    for (l=0; s0 != s1; s0++,l++);
-    s = AllocVec(l+1, MEMF_CLEAR);
-    if (s) strncpy(s, str, l);
-  }
-  return s;
-}
         AROS_LH8(BOOL, SendAppWindowMessage,
 /*  SYNOPSIS */
         AROS_LHA(struct Window *, win,       A0),
@@ -84,6 +71,7 @@ char *allocPath(char *str) {
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
     struct List *awl = NULL;
 
     BOOL success = FALSE;
@@ -172,3 +160,23 @@ char *allocPath(char *str) {
 
     AROS_LIBFUNC_EXIT
 } /* SendAppWindowMessage() */
+
+/*****************************************************************************/
+
+static char *allocPath(char *str)
+{
+    char *s0, *s1, *s;
+    int  l;
+
+    s = NULL;
+    s0 = str;
+
+    s1 = PathPart(str);
+    if (s1)
+    {
+        for (l = 0; s0 != s1; s0++,l++);
+        s = AllocVec(l + 1, MEMF_CLEAR);
+        if (s) strncpy(s, str, l);
+    }
+    return s;
+}
