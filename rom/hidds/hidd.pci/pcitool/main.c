@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2009, The AROS Development Team.
+    Copyright (C) 2003-2010, The AROS Development Team.
     $Id$
 */
 
@@ -27,10 +27,10 @@
 #include "saveinfo.h"
 
 #define APPNAME "PCITool"
-#define VERSION "PCITool 0.4 (1.8.2009)"
+#define VERSION "PCITool 0.5 (10.7.2010)"
 #define IDB_SAVE 10001
 #define IDB_SAVEALL 10002
-static const char version[] = "$VER: " VERSION "\n";
+const char version[] = "$VER: " VERSION "\n";
 
 struct Library *OOPBase = NULL;
 struct Library *MUIMasterBase = NULL;
@@ -437,7 +437,7 @@ BOOL GUIinit()
     app = ApplicationObject,
 	    MUIA_Application_Title,	    (IPTR)APPNAME,
 	    MUIA_Application_Version,	    (IPTR)VERSION,
-	    MUIA_Application_Copyright,	    (IPTR)"� 2004-2009, The AROS Development Team",
+	    MUIA_Application_Copyright,	    (IPTR)"� 2004-2010, The AROS Development Team",
 	    MUIA_Application_Author,	    (IPTR)"Michal Schulz",
 	    MUIA_Application_Base,	    (IPTR)APPNAME,
 	    MUIA_Application_Description,   __(MSG_DESCRIPTION),

@@ -30,7 +30,7 @@
 // <tab>1234  DeviceName (same with a tab on linestart)
 // todo: subvendor/subdevice parsing
 // todo: proper memory reallocation, currently the index is fixed
-// to 2000 vendors (around 1700 exist on 2004-02-08)
+// to 2500 vendors
 
 static STRPTR mem = NULL;
 static ULONG memsize = 0;
