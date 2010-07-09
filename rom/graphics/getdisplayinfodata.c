@@ -26,8 +26,9 @@ static const ULONG size_checks[] =
     sizeof(struct DimensionInfo),
     sizeof(struct MonitorInfo),
     sizeof(struct NameInfo),
-    sizeof(struct VecInfo)
 };
+
+#define KNOWN_IDS 4
 
 static ULONG check_sizes(ULONG tagID, ULONG size);
 static ULONG compute_numbits(HIDDT_Pixel mask);
@@ -80,9 +81,13 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
         FindDisplayInfo(), NextDisplayInfo(), graphics/displayinfo.h
 
     INTERNALS
+	This function provides the following private parameters:
+	  DimensionInfo.reserved[0] - graphics driver object
+	  DimensionInfo.reserved[1] - pixelformat object
+	Do not rely on this in end user software! This is private to AROS and
+	subject to change at any time!
 
     HISTORY
-
 
 ******************************************************************************/
 {
@@ -142,14 +147,14 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 
 	    di = (struct DisplayInfo *)qh;
-	    
+
 	    /* All modes returned from the HIDD are available */
 	    di->NotAvailable = FALSE;
-	    
+
 	    /* Set the propertyflags,
 	       Note that we enforce some flags because we emulate these features by software */
 	    di->PropertyFlags = DIPF_IS_FOREIGN | DIPF_IS_WB | DIPF_IS_SPRITES | DIPF_IS_DBUFFER | HIDDProps.DisplayInfoFlags;
-	    
+
 	    /* Too many colors to count here. This field is really obsolete */
 	    di->PaletteRange = 65535;
 
@@ -218,7 +223,6 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->MaxOScan.MaxX	= di->Nominal.MaxX;
 	    di->MaxOScan.MaxY	= di->Nominal.MaxY;
 
-
 	    di->VideoOScan.MinX	= di->Nominal.MinX;
 	    di->VideoOScan.MinY	= di->Nominal.MinY;
 	    di->VideoOScan.MaxX	= di->Nominal.MaxX;
@@ -233,7 +237,10 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->StdOScan.MinY	= di->Nominal.MinY;
 	    di->StdOScan.MaxX	= di->Nominal.MaxX;
 	    di->StdOScan.MaxY	= di->Nominal.MaxY;
-*/	    
+*/
+	    di->reserved[0] = (IPTR)gfxhidd;
+	    di->reserved[1] = (IPTR)pf;
+
 	    break;
 	}
 
@@ -267,8 +274,6 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 
 	    mi->PreferredModeID   = ID;
 	    mi->Compatibility     = HIDDProps.CompositionFlags ? MCOMPAT_SELF : MCOMPAT_NOBODY;
-
-	    mi->reserved[0] = (IPTR)gfxhidd;
 
 	    break;
 	}
@@ -355,15 +360,6 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    break;
 	}
 
-	case DTAG_VEC:
-	{
-	    struct VecInfo *vi = (struct VecInfo *)qh;
-
-	    vi->reserved[0] = (IPTR)sync;
-	    vi->reserved[1] = (IPTR)pf;
-	    break;
-	}
-	    
 	default:
 	    D(bug("!!! UNKNOWN tagID IN CALL TO GetDisplayInfoData() !!!\n"));
 	    break;
@@ -393,7 +389,7 @@ static ULONG check_sizes(ULONG tagID, ULONG size)
 
     idx = DTAG_TO_IDX(tagID);
 
-    if (idx > 5)
+    if (idx > KNOWN_IDS)
     {
     	D(bug("!!! INVALID tagID TO GetDisplayInfoData"));
 	return 0;

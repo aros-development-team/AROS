@@ -47,6 +47,8 @@
     SEE ALSO
 
     INTERNALS
+	The function relies on pixelformat object being passed in DimensionInfo.reserved[1]
+	by graphics.library/GetDisplayInfoData()
 
     HISTORY
 	27-11-96    digulla automatically created from
@@ -120,23 +122,27 @@
     while ((mode = NextDisplayInfo(mode)) != INVALID_ID) {	    
 	struct CyberModeNode *cmnode;
 	UWORD *cyberpixfmts;
-	IPTR width, height, depth;
-	OOP_Object *sync, *pf;
-	struct VecInfo info;
+	ULONG width, height;
+	struct DimensionInfo info;
+	struct NameInfo name;
 	
-	if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_VEC, mode) != sizeof(info)) {
+	if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, mode) != sizeof(info)) {
 	    /* This should never happen because NextDisplayInfo() should
 	       only return valid modes
 	    */
-	    D(bug("!!! UNABLE TO GET HIDD MODE INFO IN AllocCModeListTagList() !!!\n"));
+	    D(bug("!!! UNABLE TO GET MODE INFO IN AllocCModeListTagList() !!!\n"));
+	    D(bug("!!! THIS SHOULD *NEVER* HAPPEN !!!\n"));
+	    goto failexit;
+	}
+	
+	if (GetDisplayInfoData(NULL, (UBYTE *)&name, sizeof(name), DTAG_NAME, mode) != sizeof(name)) {
+	    D(bug("!!! UNABLE TO GET MODE NAME IN AllocCModeListTagList() !!!\n"));
 	    D(bug("!!! THIS SHOULD *NEVER* HAPPEN !!!\n"));
 	    goto failexit;
 	}
 
-	sync = (OOP_Object *)info.reserved[0];
-	pf   = (OOP_Object *)info.reserved[1];
-	OOP_GetAttr(sync, aHidd_Sync_HDisp,  &width);
-	OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+	width  = info.Nominal.MaxX - info.Nominal.MinX + 1;
+	height = info.Nominal.MaxY - info.Nominal.MinY + 1;
 	
 	if (	width < minwidth
 	     || width > maxwidth
@@ -144,23 +150,20 @@
 	     || height > maxheight) {
 	     
 	     continue;
-	}
-	    
-	/* Get the pxifmt info */
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-	    
-	if (depth < mindepth || depth > maxdepth)
+	}   
+	if (info.MaxDepth < mindepth || info.MaxDepth > maxdepth)
 	    continue;
 		
 	/* Check whether the gfxmode is the correct pixel format */
 	if (NULL != cmodelarray) {
 	    HIDDT_StdPixFmt stdpf;
 	    UWORD cyberpf;
+	    OOP_Object *pf = (OOP_Object *)info.reserved[1];
 	    BOOL found = FALSE;
-	    
+
 	    /* Get the gfxmode pixelf format */
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
-		
+
 	    cyberpf = hidd2cyber_pixfmt(stdpf);
 	    if (cyberpf == (UWORD)-1)
 		continue;	/* Unknown format */
@@ -172,7 +175,7 @@
 		    break;
 		}
 	    } /* for (each supplied pixelformat in the cmodelarray) */
-		    
+
 	    if (!found)
 		continue; /* PixFmt not wanted, just continue with next node */
 
@@ -182,18 +185,15 @@
 	cmnode = AllocMem(sizeof (struct CyberModeNode), MEMF_CLEAR);
 	if (NULL == cmnode)
 	    goto failexit;
-		
+
 	cmnode->Width	= width;
 	cmnode->Height	= height;
-	cmnode->Depth	= depth;
+	cmnode->Depth	= info.MaxDepth;
 	cmnode->DisplayTagList = NULL;
-	    
-	snprintf( cmnode->ModeText
-		, DISPLAYNAMELEN
-		, "AROS: %ldx%ldx%ld"
-		, width, height, depth
-	);
-		
+	
+	/* This relies on DISPLAYNAMELEN being multiple of 4 */
+	CopyMemQuick(name.Name, cmnode->ModeText, DISPLAYNAMELEN);
+
 	/* Keep track of the node */
 	AddTail(cybermlist, (struct Node *)cmnode);
 	

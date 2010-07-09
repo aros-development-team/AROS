@@ -44,6 +44,8 @@
     SEE ALSO
 
     INTERNALS
+    	The function relies on pixelformat object being passed in DimensionInfo.reserved[1]
+	by graphics.library/GetDisplayInfoData()
 
     HISTORY
 	27-11-96    digulla automatically created from
@@ -53,10 +55,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Check if the given mode really exists and if it belongs to RTG.
-       TODO: remove hardcoded value, use anything else */
-    if (FindDisplayInfo(modeID) && modeID >= 0x00100000)
-        return TRUE;
+    struct DimensionInfo info;
+
+    /* This function works by querying pixelformat for the mode and checking if it is planar */
+    if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, modeID) == sizeof(info)) {
+    	HIDDT_StdPixFmt stdpf;
+	OOP_Object *pf = (OOP_Object *)info.reserved[1];
+
+	OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+
+	return (stdpf != vHidd_StdPixFmt_Plane);
+    }
 
     return FALSE;
 
