@@ -36,7 +36,7 @@
         [I.G], ULONG
 
     LOCATION
-        IID_HIDD_ColorMap
+        CLID_Hidd_ColorMap
 
     FUNCTION
         Number of colors in the colormap.
@@ -207,7 +207,7 @@ static inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelForma
                                ULONG numColors, OOP_Object *pixFmt);
 
     LOCATION
-        IID_HIDD_ColorMap
+        CLID_Hidd_ColorMap
 
     FUNCTION
 
@@ -311,7 +311,7 @@ BOOL CM__Hidd_ColorMap__SetColors(OOP_Class *cl, OOP_Object *o,
         HIDDT_Pixel HIDD_CM_GetPixel(OOP_Object *obj, ULONG pixelNo);
 
     LOCATION
-        IID_HIDD_ColorMap
+        CLID_Hidd_ColorMap
 
     FUNCTION
 
@@ -365,7 +365,7 @@ HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
         BOOL HIDD_CM_GetColor(OOP_Object *obj, ULONG colorNo, HIDDT_Color *colorReturn);
 
     LOCATION
-        IID_HIDD_ColorMap
+        CLID_Hidd_ColorMap
 
     FUNCTION
 
