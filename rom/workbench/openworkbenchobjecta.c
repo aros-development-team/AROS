@@ -30,7 +30,7 @@ static BOOL   CLI_LaunchProgram(CONST_STRPTR command, struct TagItem *tags, stru
 static STRPTR CLI_BuildCommandLine(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 static BOOL   WB_LaunchProgram(BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 static BOOL   WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-static void   HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase);
+static BOOL   HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase);
 static BOOL   HandleTool(STRPTR name, LONG isDefaultIcon, struct DiskObject *icon, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *icon, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 
@@ -92,7 +92,7 @@ static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *
         D(bug("[WBLIB] OpenWorkbenchObjectA: forward %s to uae\n", name));
 
         forward_to_uae(tags, name);
-        success=TRUE;
+        success = TRUE;
     }
     else 
     {
@@ -103,7 +103,7 @@ static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *
                 case WBDISK:
                 case WBDRAWER:
                 case WBGARBAGE:
-                    HandleDrawer(name, WorkbenchBase);
+                    success = HandleDrawer(name, WorkbenchBase);
                     break;
 
                 case WBTOOL:
@@ -557,7 +557,7 @@ error:
 
 /****************************************************************************/
 
-static void HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase)
+static BOOL HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase)
 {
     /*
         Since it's a directory or volume, tell the Workbench
@@ -566,6 +566,7 @@ static void HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase)
 
     D(bug("[WBLIB] OpenWorkbenchObjectA: it's a DISK, DRAWER or GARBAGE\n"));
 
+    BOOL success                      = FALSE;
     struct WBCommandMessage *wbcm     = NULL;
     struct WBHandlerMessage *wbhm     = NULL;
     CONST_STRPTR             namecopy = NULL;
@@ -582,6 +583,7 @@ static void HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase)
         wbcm->wbcm_Data.Relay.Message = wbhm;
 
         PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) wbcm);
+        success = TRUE;
     }
     else
     {
@@ -589,6 +591,7 @@ static void HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase)
         DestroyWBHM(wbhm);
         DestroyWBCM(wbcm);
     }
+    return success;
 }
 
 /****************************************************************************/
@@ -714,6 +717,7 @@ static BOOL HandleProject
         lock = Lock(name, ACCESS_READ);
         if (lock != NULL)
             parent = ParentDir(lock);
+
         if (parent != NULL)
         {
             IPTR stacksize = icon->do_StackSize;
@@ -735,7 +739,7 @@ static BOOL HandleProject
             
             D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes, priority %d\n", stacksize, priority));
 
-            struct TagItem tags2[] =
+            struct TagItem deftool_tags[] =
             {
                 { NP_StackSize    ,        stacksize      },
                 { NP_Priority     ,        priority       },
@@ -746,24 +750,25 @@ static BOOL HandleProject
             };
 
             if (tags == NULL)
-                tags2[4].ti_Tag = TAG_IGNORE;
+                deftool_tags[4].ti_Tag = TAG_IGNORE;
             
             if (FindToolType(icon->do_ToolTypes, "CLI") == NULL)
             {
-                BPTR lock2 = NULL, parent2 = NULL;
+                BPTR deftool_lock = NULL, deftool_parent = NULL;
 
-                lock2 = Lock(icon->do_DefaultTool, ACCESS_READ);
-                if (lock2 != NULL)
-                    parent2 = ParentDir(lock2);
-                if (parent2 != NULL)
+                deftool_lock = Lock(icon->do_DefaultTool, ACCESS_READ);
+                if (deftool_lock != NULL)
+                    deftool_parent = ParentDir(deftool_lock);
+
+                if (deftool_parent != NULL)
                 {
                     success = WB_LaunchProgram
                     (
-                        parent2, FilePart(icon->do_DefaultTool), tags2, WorkbenchBase
+                        deftool_parent, FilePart(icon->do_DefaultTool), deftool_tags, WorkbenchBase
                     );
                 }
-                UnLock(parent2);
-                UnLock(lock2);
+                UnLock(deftool_parent);
+                UnLock(deftool_lock);
             }
             else
             {
@@ -780,7 +785,7 @@ static BOOL HandleProject
 
     if (!success)
     {
-        // FIXME: open execute command?
+        // FIXME: open ExecuteCommand?
     }
     
     return success;
