@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     The Workbench Handler process and associated functions.
@@ -277,14 +277,25 @@ static VOID __HandleLaunch_WB
     BPTR              home;
     BPTR              cd;
     IPTR              stacksize = WorkbenchBase->wb_DefaultStackSize;
+    LONG              priority = 0;
     struct Process   *process;
 
     D(bug("[WBLIB] __HandleLaunch_WB('%s')\n", name));
 
     if (msgTags)
     {
-        if ((foundTag = FindTagItem(NP_StackSize, msgTags)) != NULL)
+        foundTag = FindTagItem(NP_StackSize, msgTags);
+        if (foundTag != NULL)
+        {
             stacksize = foundTag->ti_Data;
+        }
+
+        foundTag = FindTagItem(NP_Priority, msgTags);
+        if (foundTag != NULL)
+        {
+            priority = foundTag->ti_Data;
+        }
+
         FreeTagItems(msgTags);
     }
 
@@ -305,7 +316,8 @@ static VOID __HandleLaunch_WB
         {NP_Name,       (IPTR)name                      },
         {NP_HomeDir,    (IPTR)home                      },
         {NP_StackSize,  stacksize                       },
-        {TAG_DONE,      0     	    	    	        }
+        {NP_Priority,   priority                        },
+        {TAG_DONE,      0                               }
     };
 
     D(bug("[WBLIB] __HandleLaunch_WB: Starting '%s' with %d stack\n", tags[1].ti_Data, tags[3].ti_Data));

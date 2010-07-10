@@ -279,6 +279,7 @@ static BOOL CLI_LaunchProgram
     BPTR   input       = NULL;
     STRPTR commandline = NULL;
     IPTR                stacksize = WorkbenchBase->wb_DefaultStackSize;
+    LONG                priority = 0;
     struct TagItem      *foundTag = NULL;
 
     input = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
@@ -287,8 +288,20 @@ static BOOL CLI_LaunchProgram
     commandline = CLI_BuildCommandLine(command, tags, WorkbenchBase);
     if (commandline == NULL) goto error;
 
-    if ((tags) && ((foundTag = FindTagItem(NP_StackSize, tags)) != NULL))
-        stacksize = foundTag->ti_Data;
+    if (tags)
+    {
+        foundTag = FindTagItem(NP_StackSize, tags);
+        if (foundTag != NULL)
+        {
+            stacksize = foundTag->ti_Data;
+        }
+
+        foundTag = FindTagItem(NP_Priority, tags);
+        if (foundTag != NULL)
+        {
+            priority = foundTag->ti_Data;
+        }
+    }
 
     if
     (
@@ -307,6 +320,7 @@ static BOOL CLI_LaunchProgram
             SYS_Output,   (IPTR) NULL,
             SYS_Error,    (IPTR) NULL,
             NP_StackSize,        stacksize,
+            NP_Priority,         priority,
             TAG_DONE
         ) == -1
     )
@@ -476,7 +490,8 @@ static BOOL WB_LaunchProgram
 {
     struct WBStartup        *startup = NULL;
     struct WBCommandMessage *message = NULL;
-    struct TagItem          *foundTag = NULL;
+    struct TagItem          *stackTag = NULL;
+    struct TagItem          *prioTag = NULL;
 
     /*-- Allocate memory for messages --------------------------------------*/
     startup = CreateWBS();
@@ -495,12 +510,23 @@ static BOOL WB_LaunchProgram
         goto error;
     }
 
-    if ((tags) && ((foundTag = FindTagItem(NP_StackSize, tags)) != NULL))
+    if (tags)
     {
-        message->wbcm_Tags =  AllocateTagItems(2);
-        message->wbcm_Tags[0].ti_Tag = foundTag->ti_Tag;
-        message->wbcm_Tags[0].ti_Data = foundTag->ti_Data;
-        message->wbcm_Tags[1].ti_Tag = TAG_DONE;
+        stackTag = FindTagItem(NP_StackSize, tags);
+        prioTag = FindTagItem(NP_Priority, tags);
+
+        if (stackTag || prioTag)
+        {
+            message->wbcm_Tags =  AllocateTagItems(3);
+
+            message->wbcm_Tags[0].ti_Tag = stackTag ? stackTag->ti_Tag : TAG_IGNORE;
+            message->wbcm_Tags[0].ti_Data = stackTag->ti_Data;
+
+            message->wbcm_Tags[1].ti_Tag = prioTag ? prioTag->ti_Tag : TAG_IGNORE;
+            message->wbcm_Tags[1].ti_Data = prioTag->ti_Data;
+
+            message->wbcm_Tags[2].ti_Tag = TAG_DONE;
+        }
     }
 
     /*-- Build the arguments array -----------------------------------------*/
@@ -683,23 +709,36 @@ static BOOL HandleProject
         && strlen(icon->do_DefaultTool) > 0
     )
     {
-        BPTR lock = (BPTR)NULL, parent = (BPTR)NULL;
+        BPTR lock = NULL, parent = NULL;
 
         lock = Lock(name, ACCESS_READ);
-        if (lock != (BPTR)NULL)
+        if (lock != NULL)
             parent = ParentDir(lock);
-        if (parent != (BPTR)NULL)
+        if (parent != NULL)
         {
             IPTR stacksize = icon->do_StackSize;
 
             if (stacksize < WorkbenchBase->wb_DefaultStackSize)
                 stacksize = WorkbenchBase->wb_DefaultStackSize;
 
-            D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
+            /* check for TOOLPRI */
+            LONG priority = 0;
+            STRPTR prio_tt = FindToolType(icon->do_ToolTypes, "TOOLPRI");
+            if (prio_tt)
+            {
+                StrToLong(prio_tt, &priority);
+                if (priority < -128)
+                    priority = -128;
+                if (priority > 127)
+                    priority = 127;
+            }
+            
+            D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes, priority %d\n", stacksize, priority));
 
             struct TagItem tags2[] =
             {
                 { NP_StackSize    ,        stacksize      },
+                { NP_Priority     ,        priority       },
                 { WBOPENA_ArgLock , (IPTR) parent         },
                 { WBOPENA_ArgName , (IPTR) FilePart(name) },
                 { TAG_MORE        , (IPTR) tags           },
@@ -707,14 +746,14 @@ static BOOL HandleProject
             };
 
             if (tags == NULL)
-                tags2[3].ti_Tag = TAG_IGNORE;
+                tags2[4].ti_Tag = TAG_IGNORE;
             
             if (FindToolType(icon->do_ToolTypes, "CLI") == NULL)
             {
-                BPTR lock2 = (BPTR)NULL, parent2 = (BPTR)NULL;
+                BPTR lock2 = NULL, parent2 = NULL;
 
                 lock2 = Lock(icon->do_DefaultTool, ACCESS_READ);
-                if (lock2 != (BPTR)NULL)
+                if (lock2 != NULL)
                     parent2 = ParentDir(lock2);
                 if (parent2 != NULL)
                 {
