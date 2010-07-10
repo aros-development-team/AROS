@@ -604,17 +604,30 @@ static BOOL HandleTool
                 if (stacksize < WorkbenchBase->wb_DefaultStackSize)
                     stacksize = WorkbenchBase->wb_DefaultStackSize;
 
-                D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
+                /* check for TOOLPRI */
+                LONG priority = 0;
+                STRPTR prio_tt = FindToolType(icon->do_ToolTypes, "TOOLPRI");
+                if (prio_tt)
+                {
+                    StrToLong(prio_tt, &priority);
+                    if (priority < -128)
+                        priority = -128;
+                    if (priority > 127)
+                        priority = 127;
+                }
+                
+                D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes, priority %d\n", stacksize, priority));
 
                 struct TagItem wbp_Tags[] =
                 {
-                    { NP_StackSize, stacksize       },
-                    { TAG_MORE, (IPTR)tags          },
-                    { TAG_DONE, 0                   }
+                    { NP_StackSize,   stacksize },
+                    { NP_Priority,    priority  },
+                    { TAG_MORE, (IPTR)tags      },
+                    { TAG_DONE,       0         }
                 };
 
                 if (tags == NULL)
-                    wbp_Tags[1].ti_Tag = TAG_IGNORE;
+                    wbp_Tags[2].ti_Tag = TAG_IGNORE;
 
                 success = WB_LaunchProgram
                 (
