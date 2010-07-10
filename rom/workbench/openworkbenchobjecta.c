@@ -1,9 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Open a drawer or launch a program.
 */
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -25,16 +26,13 @@
 #include "uae_integration.h"
 
 /*** Prototypes *************************************************************/
-BOOL   __CLI_LaunchProgram(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-STRPTR __CLI_BuildCommandLine(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-BOOL   __WB_LaunchProgram(BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-
-/*** Macros *****************************************************************/
-#define CLI_LaunchProgram(name, tags) (__CLI_LaunchProgram((name), (tags), WorkbenchBase))
-#define CLI_BuildCommandLine(name, tags) (__CLI_BuildCommandLine((name), (tags), WorkbenchBase))
-#define WB_LaunchProgram(lock, name, tags) (__WB_LaunchProgram((lock), (name), (tags), WorkbenchBase))
-#define WB_BuildArguments(startup, lock, name, tags) (__WB_BuildArguments((startup), (lock), (name), (tags), WorkbenchBase))
+static BOOL   CLI_LaunchProgram(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+static STRPTR CLI_BuildCommandLine(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+static BOOL   WB_LaunchProgram(BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+static BOOL   WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+static void   HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase);
+static BOOL   HandleTool(STRPTR name, LONG isDefaultIcon, struct DiskObject *icon, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *icon, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 
 /*****************************************************************************
 
@@ -91,247 +89,76 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
     if( j_uae_running() && is_68k(name) ) 
     {
 
-	D(bug("[WBLIB] OpenWorkbenchObjectA: forward %s to uae\n", name));
+        D(bug("[WBLIB] OpenWorkbenchObjectA: forward %s to uae\n", name));
 
-    	forward_to_uae(tags, name);
-	success=TRUE;
+        forward_to_uae(tags, name);
+        success=TRUE;
     }
     else 
     {
-	if (icon != NULL)
-	{
-	    switch (icon->do_Type)
-	    {
-		case WBDISK:
-		case WBDRAWER:
-		case WBGARBAGE:
-		    /*
-			Since it's a directory or volume, tell the Workbench
-			Application to open the corresponding drawer.
-		    */
+        if (icon != NULL)
+        {
+            switch (icon->do_Type)
+            {
+                case WBDISK:
+                case WBDRAWER:
+                case WBGARBAGE:
+                    HandleDrawer(name, WorkbenchBase);
+                    break;
 
-		    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a DISK, DRAWER or GARBAGE\n"));
+                case WBTOOL:
+                    success = HandleTool(name, isDefaultIcon, icon, tags, WorkbenchBase);
+                    break;
 
-		    {
-			struct WBCommandMessage *wbcm     = NULL;
-			struct WBHandlerMessage *wbhm     = NULL;
-			CONST_STRPTR             namecopy = NULL;
+                case WBPROJECT:
+                    success = HandleProject(name, isDefaultIcon, icon, tags, WorkbenchBase);
+                    break;
+            }
 
-			if
-			(
-			       (wbcm     = CreateWBCM(WBCM_TYPE_RELAY)) != NULL
-			    && (wbhm     = CreateWBHM(WBHM_TYPE_OPEN))  != NULL
-			    && (namecopy = StrDup(name))                != NULL
+            FreeDiskObject(icon);
+        }
+        else
+        {
+            /*
+                Getting (a possibly default) icon for the path failed, and
+                therefore there is no such file. We need to search the default
+                search path for an executable of that name and launch it. This
+                only makes sense if the name is *not* an (absolute or relative)
+                path: that is, it must not contain any ':' or '/'.
+            */
 
-			)
-			{
-			    wbhm->wbhm_Data.Open.Name     = namecopy;
-			    wbcm->wbcm_Data.Relay.Message = wbhm;
+            if (strpbrk(name, "/:") == NULL)
+            {
+                struct CommandLineInterface *cli = Cli();
+                if (cli != NULL)
+                {
+                    BPTR *paths;          /* Path list */
+                    BOOL  running = TRUE;
 
-			    PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) wbcm);
-			}
-			else
-			{
-			    FreeVec((STRPTR)namecopy);
-			    DestroyWBHM(wbhm);
-			    DestroyWBCM(wbcm);
-			}
-		    }
+                    /* Iterate over all paths in the path list */
+                    for
+                    (
+                        paths = (BPTR *) BADDR(cli->cli_CommandDir);
+                        running == TRUE && paths != NULL;
+                        paths = (BPTR *) BADDR(paths[0]) /* next path */
+                    )
+                    {
+                        BPTR cd   = CurrentDir(paths[1]);
+                        BPTR lock = Lock(name, SHARED_LOCK);
 
-		    break;
+                        if (lock != NULL)
+                        {
+                            success = OpenWorkbenchObjectA(name, tags);
+                            running = FALSE;
 
-		case WBTOOL:
-		    /*
-			It's an executable. Before I launch it, I must check
-			whether it is a Workbench program or a CLI program.
-		    */
+                            UnLock(lock);
+                        }
 
-		    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a TOOL\n"));
-
-		    if
-		    (
-			   !isDefaultIcon
-			&& FindToolType(icon->do_ToolTypes, "CLI") == NULL
-		    )
-		    {
-			/* It's a Workbench program */
-			BPTR lock = Lock(name, ACCESS_READ);
-
-			D(bug("[WBLIB] OpenWorkbenchObjectA: it's a WB program\n"));
-
-			if (lock != NULL)
-			{
-			    BPTR parent = ParentDir(lock);
-
-			    if (parent != NULL)
-			    {
-				IPTR stacksize = icon->do_StackSize;
-
-				if (stacksize < WorkbenchBase->wb_DefaultStackSize)
-				    stacksize = WorkbenchBase->wb_DefaultStackSize;
-
-				D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
-
-				struct TagItem wbp_Tags[] =
-				{
-				    { NP_StackSize, stacksize       },
-				    { TAG_MORE, (IPTR)tags          },
-				    { TAG_DONE, 0                   }
-				};
-
-				if (tags == NULL)
-				    wbp_Tags[1].ti_Tag = TAG_IGNORE;
-
-				success = WB_LaunchProgram
-				(
-				    parent, FilePart(name), wbp_Tags
-				);
-
-				if (!success)
-				{
-				    /*
-					Fallback to launching it as a CLI program.
-					Most likely it will also fail, but we
-					might get lucky.
-				    */
-				    success = CLI_LaunchProgram(name, wbp_Tags);
-				}
-
-				UnLock(parent);
-			    }
-
-			    UnLock(lock);
-			}
-		    }
-		    else
-		    {
-			/* It's a CLI program */
-
-			D(bug("[WBLIB] OpenWorkbenchObjectA: it's a CLI program\n"));
-
-			success = CLI_LaunchProgram(name, tags);
-		    }
-		    break;
-
-		case WBPROJECT:
-		    /* It's a project; try to launch it via its default tool. */
-
-		    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a PROJECT\n"));
-		    D(bug("[WBLIB] OpenWorkbenchObjectA: default tool: %s\n", icon->do_DefaultTool));
-
-		    if
-		    (
-			   icon->do_DefaultTool != NULL
-			&& strlen(icon->do_DefaultTool) > 0
-		    )
-		    {
-			BPTR lock = (BPTR)NULL, parent = (BPTR)NULL;
-
-			lock = Lock(name, ACCESS_READ);
-			if (lock != (BPTR)NULL)
-			    parent = ParentDir(lock);
-			if (parent != (BPTR)NULL)
-			{
-			    IPTR stacksize = icon->do_StackSize;
-
-			    if (stacksize < WorkbenchBase->wb_DefaultStackSize)
-				stacksize = WorkbenchBase->wb_DefaultStackSize;
-
-			    D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
-
-			    struct TagItem tags2[] =
-			    {
-				{ NP_StackSize    ,        stacksize      },
-				{ WBOPENA_ArgLock , (IPTR) parent         },
-				{ WBOPENA_ArgName , (IPTR) FilePart(name) },
-				{ TAG_MORE        , (IPTR) tags           },
-				{ TAG_DONE        ,        0              }
-			    };
-
-			    if (tags == NULL)
-				tags2[3].ti_Tag = TAG_IGNORE;
-			    
-			    if (FindToolType(icon->do_ToolTypes, "CLI") == NULL)
-			    {
-				BPTR lock2 = (BPTR)NULL, parent2 = (BPTR)NULL;
-
-				lock2 = Lock(icon->do_DefaultTool, ACCESS_READ);
-				if (lock2 != (BPTR)NULL)
-				    parent2 = ParentDir(lock2);
-				if (parent2 != NULL)
-				{
-				    success = WB_LaunchProgram
-				    (
-					parent2, FilePart(icon->do_DefaultTool), tags2
-				    );
-				}
-				UnLock(parent2);
-				UnLock(lock2);
-			    }
-			    else
-			    {
-				success = CLI_LaunchProgram
-				(
-				    icon->do_DefaultTool, tags
-				);
-			    }
-
-			    UnLock(parent);
-			    UnLock(lock);
-			}
-		    }
-
-		    if (!success)
-		    {
-			// FIXME: open execute command?
-		    }
-		    break;
-	    }
-
-	    FreeDiskObject(icon);
-	}
-	else
-	{
-	    /*
-		Getting (a possibly default) icon for the path failed, and
-		therefore there is no such file. We need to search the default
-		search path for an executable of that name and launch it. This
-		only makes sense if the name is *not* an (absolute or relative)
-		path: that is, it must not contain any ':' or '/'.
-	    */
-
-	    if (strpbrk(name, "/:") == NULL)
-	    {
-		struct CommandLineInterface *cli = Cli();
-		if (cli != NULL)
-		{
-		    BPTR *paths;          /* Path list */
-		    BOOL  running = TRUE;
-
-		    /* Iterate over all paths in the path list */
-		    for
-		    (
-			paths = (BPTR *) BADDR(cli->cli_CommandDir);
-			running == TRUE && paths != NULL;
-			paths = (BPTR *) BADDR(paths[0]) /* next path */
-		    )
-		    {
-			BPTR cd   = CurrentDir(paths[1]);
-			BPTR lock = Lock(name, SHARED_LOCK);
-
-			if (lock != NULL)
-			{
-			    success = OpenWorkbenchObjectA(name, tags);
-			    running = FALSE;
-
-			    UnLock(lock);
-			}
-
-			CurrentDir(cd);
-		    }
-		}
-	    }
-	}
+                        CurrentDir(cd);
+                    }
+                }
+            }
+        }
     }
 
     D(bug("[WBLIB] OpenWorkbenchObjectA: success = %d\n", success));
@@ -341,7 +168,9 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
     AROS_LIBFUNC_EXIT
 } /* OpenWorkbenchObjectA() */
 
-STRPTR __CLI_BuildCommandLine
+/****************************************************************************/
+
+static STRPTR CLI_BuildCommandLine
 (
     CONST_STRPTR command, struct TagItem *tags,
     struct WorkbenchBase *WorkbenchBase
@@ -439,7 +268,9 @@ STRPTR __CLI_BuildCommandLine
     return buffer;
 }
 
-BOOL __CLI_LaunchProgram
+/****************************************************************************/
+
+static BOOL CLI_LaunchProgram
 (
     CONST_STRPTR command, struct TagItem *tags,
     struct WorkbenchBase *WorkbenchBase
@@ -453,7 +284,7 @@ BOOL __CLI_LaunchProgram
     input = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
     if (input == NULL) goto error;
 
-    commandline = CLI_BuildCommandLine(command, tags);
+    commandline = CLI_BuildCommandLine(command, tags, WorkbenchBase);
     if (commandline == NULL) goto error;
 
     if ((tags) && ((foundTag = FindTagItem(NP_StackSize, tags)) != NULL))
@@ -493,7 +324,9 @@ error:
     return FALSE;
 }
 
-BOOL __WB_BuildArguments
+/****************************************************************************/
+
+static BOOL WB_BuildArguments
 (
     struct WBStartup *startup, BPTR lock, CONST_STRPTR name, struct TagItem *tags,
     struct WorkbenchBase *WorkbenchBase
@@ -633,7 +466,9 @@ error:
     return FALSE;
 }
 
-BOOL __WB_LaunchProgram
+/****************************************************************************/
+
+static BOOL WB_LaunchProgram
 (
     BPTR lock, CONST_STRPTR name, struct TagItem *tags,
     struct WorkbenchBase *WorkbenchBase
@@ -669,7 +504,7 @@ BOOL __WB_LaunchProgram
     }
 
     /*-- Build the arguments array -----------------------------------------*/
-    if (!WB_BuildArguments(startup, lock, name, tags))
+    if (!WB_BuildArguments(startup, lock, name, tags, WorkbenchBase))
     {
         D(bug("[WBLIB] WB_LaunchProgram: Failed to build arguments\n"));
         goto error;
@@ -692,4 +527,209 @@ error:
     D(bug("[WBLIB] WB_LaunchProgram: Failure\n"));
 
     return FALSE;
+}
+
+/****************************************************************************/
+
+static void HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase)
+{
+    /*
+        Since it's a directory or volume, tell the Workbench
+        Application to open the corresponding drawer.
+    */
+
+    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a DISK, DRAWER or GARBAGE\n"));
+
+    struct WBCommandMessage *wbcm     = NULL;
+    struct WBHandlerMessage *wbhm     = NULL;
+    CONST_STRPTR             namecopy = NULL;
+
+    if
+    (
+           (wbcm     = CreateWBCM(WBCM_TYPE_RELAY)) != NULL
+        && (wbhm     = CreateWBHM(WBHM_TYPE_OPEN))  != NULL
+        && (namecopy = StrDup(name))                != NULL
+
+    )
+    {
+        wbhm->wbhm_Data.Open.Name     = namecopy;
+        wbcm->wbcm_Data.Relay.Message = wbhm;
+
+        PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) wbcm);
+    }
+    else
+    {
+        FreeVec((STRPTR)namecopy);
+        DestroyWBHM(wbhm);
+        DestroyWBCM(wbcm);
+    }
+}
+
+/****************************************************************************/
+
+static BOOL HandleTool
+(
+    STRPTR name, LONG isDefaultIcon, struct DiskObject *icon,
+    struct TagItem *tags, struct WorkbenchBase *WorkbenchBase
+)
+{
+    /*
+        It's an executable. Before I launch it, I must check
+        whether it is a Workbench program or a CLI program.
+    */
+
+    BOOL success = FALSE;
+
+    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a TOOL\n"));
+
+    if
+    (
+           !isDefaultIcon
+        && FindToolType(icon->do_ToolTypes, "CLI") == NULL
+    )
+    {
+        /* It's a Workbench program */
+        BPTR lock = Lock(name, ACCESS_READ);
+
+        D(bug("[WBLIB] OpenWorkbenchObjectA: it's a WB program\n"));
+
+        if (lock != NULL)
+        {
+            BPTR parent = ParentDir(lock);
+
+            if (parent != NULL)
+            {
+                IPTR stacksize = icon->do_StackSize;
+
+                if (stacksize < WorkbenchBase->wb_DefaultStackSize)
+                    stacksize = WorkbenchBase->wb_DefaultStackSize;
+
+                D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
+
+                struct TagItem wbp_Tags[] =
+                {
+                    { NP_StackSize, stacksize       },
+                    { TAG_MORE, (IPTR)tags          },
+                    { TAG_DONE, 0                   }
+                };
+
+                if (tags == NULL)
+                    wbp_Tags[1].ti_Tag = TAG_IGNORE;
+
+                success = WB_LaunchProgram
+                (
+                    parent, FilePart(name), wbp_Tags, WorkbenchBase
+                );
+
+                if (!success)
+                {
+                    /*
+                        Fallback to launching it as a CLI program.
+                        Most likely it will also fail, but we
+                        might get lucky.
+                    */
+                    success = CLI_LaunchProgram(name, wbp_Tags, WorkbenchBase);
+                }
+
+                UnLock(parent);
+            }
+
+            UnLock(lock);
+        }
+    }
+    else
+    {
+        /* It's a CLI program */
+
+        D(bug("[WBLIB] OpenWorkbenchObjectA: it's a CLI program\n"));
+
+        success = CLI_LaunchProgram(name, tags, WorkbenchBase);
+    }
+
+    return success;
+}
+
+/****************************************************************************/
+
+static BOOL HandleProject
+(
+    STRPTR name, LONG isDefaultIcon, struct DiskObject *icon,
+    struct TagItem *tags, struct WorkbenchBase *WorkbenchBase
+)
+{
+    /* It's a project; try to launch it via its default tool. */
+
+    BOOL success = FALSE;
+
+    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a PROJECT\n"));
+    D(bug("[WBLIB] OpenWorkbenchObjectA: default tool: %s\n", icon->do_DefaultTool));
+
+    if
+    (
+           icon->do_DefaultTool != NULL
+        && strlen(icon->do_DefaultTool) > 0
+    )
+    {
+        BPTR lock = (BPTR)NULL, parent = (BPTR)NULL;
+
+        lock = Lock(name, ACCESS_READ);
+        if (lock != (BPTR)NULL)
+            parent = ParentDir(lock);
+        if (parent != (BPTR)NULL)
+        {
+            IPTR stacksize = icon->do_StackSize;
+
+            if (stacksize < WorkbenchBase->wb_DefaultStackSize)
+                stacksize = WorkbenchBase->wb_DefaultStackSize;
+
+            D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
+
+            struct TagItem tags2[] =
+            {
+                { NP_StackSize    ,        stacksize      },
+                { WBOPENA_ArgLock , (IPTR) parent         },
+                { WBOPENA_ArgName , (IPTR) FilePart(name) },
+                { TAG_MORE        , (IPTR) tags           },
+                { TAG_DONE        ,        0              }
+            };
+
+            if (tags == NULL)
+                tags2[3].ti_Tag = TAG_IGNORE;
+            
+            if (FindToolType(icon->do_ToolTypes, "CLI") == NULL)
+            {
+                BPTR lock2 = (BPTR)NULL, parent2 = (BPTR)NULL;
+
+                lock2 = Lock(icon->do_DefaultTool, ACCESS_READ);
+                if (lock2 != (BPTR)NULL)
+                    parent2 = ParentDir(lock2);
+                if (parent2 != NULL)
+                {
+                    success = WB_LaunchProgram
+                    (
+                        parent2, FilePart(icon->do_DefaultTool), tags2, WorkbenchBase
+                    );
+                }
+                UnLock(parent2);
+                UnLock(lock2);
+            }
+            else
+            {
+                success = CLI_LaunchProgram
+                (
+                    icon->do_DefaultTool, tags, WorkbenchBase
+                );
+            }
+
+            UnLock(parent);
+            UnLock(lock);
+        }
+    }
+
+    if (!success)
+    {
+        // FIXME: open execute command?
+    }
+    
+    return success;
 }
