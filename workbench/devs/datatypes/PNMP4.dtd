@@ -1,0 +1,10 @@
+# DataType Description for PNMP4
+Name=PNMP4
+Version=$VER: PNMP4 41.0 (09.07.2010)
+BaseName=pnm
+Pattern=#?
+Mask='P' '4'
+GroupID=pict
+ID=pnm4
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

@@ -1,0 +1,10 @@
+# DataType Description for PNMP3
+Name=PNMP3
+Version=$VER: PNMP3 41.0 (09.07.2010)
+BaseName=pnm
+Pattern=#?
+Mask='P' '3'
+GroupID=pict
+ID=pnm3
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

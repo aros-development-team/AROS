@@ -1,0 +1,10 @@
+# DataType Description for PNMP2
+Name=PNMP2
+Version=$VER: PNMP2 41.0 (09.07.2010)
+BaseName=pnm
+Pattern=#?
+Mask='P' '2'
+GroupID=pict
+ID=pnm2
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
