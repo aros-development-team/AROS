@@ -1,0 +1,10 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := pnmclass
+
+#MM workbench-datatypes-pnm : includes linklibs
+
+%build_module mmake=workbench-datatypes-pnm \
+    modname=pnm modtype=datatype \
+    files=$(FILES) uselibs="amiga rom"
