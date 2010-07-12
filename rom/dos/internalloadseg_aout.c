@@ -227,7 +227,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
 #ifdef __AROS_SET_JMP
   __AROS_SET_JMP(&jumphunk->vec);
 #endif
-  __AROS_SET_VEC(&jumphunk->vec, texthunk + header.a_entry);
+  jumphunk->vec.vec = texthunk + header.a_entry;
 
   if ( AROS_CALL3(LONG, functionarray[0] /* Read */,
   	 AROS_LCA(BPTR  , file                                , D1),

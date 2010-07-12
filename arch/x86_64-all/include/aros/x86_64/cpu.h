@@ -76,16 +76,16 @@ register unsigned char * AROS_GET_SP __asm__("%rsp");
 struct FullJumpVec
 {
     unsigned char jmp;
-    unsigned char vec[4];
-};
+    void         *vec;
+} __attribute__((packed));
+
 #define __AROS_SET_FULLJMP(v,a) \
 do \
 {  \
     struct FullJumpVec *_v = v; \
     _v->jmp = 0xE9; \
-    *((unsigned int *)(_v->vec))=(unsigned int)(a)-(unsigned int)(_v)-5;\
+    _v->vec = (void *) ((unsigned int)(a) - (unsigned int)(_v) - 5); \
 } while (0)
-
 
 /*
     Extracts and stores the start address from a loaded
@@ -101,17 +101,14 @@ do \
 
 struct JumpVec
 {
-    unsigned char vec[8];
+    void *vec;
 };
-/* Internal macros */
-#define __AROS_SET_VEC(v,a)             (*(unsigned long*)(v)->vec=(unsigned long)(a))
-#define __AROS_GET_VEC(v)               ((void *)(*(unsigned long*)(v)->vec))
 
-/* Use these to acces a vector table */
+/* Use these to access a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
 #define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(long)(n)])
-#define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
-#define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
+#define __AROS_GETVECADDR(lib,n)        (__AROS_GETJUMPVEC(lib,n)->vec)
+#define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
 /*
