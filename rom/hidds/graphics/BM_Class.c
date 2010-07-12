@@ -45,7 +45,7 @@
 	--background--
 
     LOCATION
-	CLID_Hidd_BitMap
+	hidd.graphics.bitmap
 
     NOTES
 	Every display driver should implement at least one bitmap class for displayable
@@ -136,7 +136,7 @@
         [ISG], ULONG
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Specifies bitmap width in pixels.
@@ -167,7 +167,7 @@
         [ISG], ULONG
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Specifies bitmap height in pixels.
@@ -198,7 +198,7 @@
         [I.G], BOOL
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         The bitmap is displayable. A displayable bitmap is always managed by a display
@@ -229,7 +229,7 @@
         [..G], BOOL
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Check if the bitmap is currently visible on screen
@@ -260,7 +260,7 @@
         [..G], BOOL
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Check if the bitmap provides linear memory access.
@@ -291,7 +291,7 @@
         [..G], ULONG
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Query number of bytes per row in the bitmap storage buffer
@@ -317,7 +317,7 @@
         [..G], OOP_Object *
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Return associated colormap (palette) object.
@@ -351,7 +351,7 @@
         [I.G], OOP_Object *
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Specify a friend bitmap. The bitmap will be allocated so that it
@@ -385,7 +385,7 @@
         [I.G], OOP_Object *
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Specify display driver object this bitmap was created with.
@@ -421,7 +421,7 @@
         [I..], HIDDT_StdPixFmt
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Specify standard pixelformat code (one of vHidd_StdPixFmt_... values) for the
@@ -467,7 +467,7 @@
         [I.G], OOP_Object *
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Returns pixelformat descriptor object associated with the bitmap.
@@ -496,7 +496,7 @@
         [I.G], HIDDT_ModeID
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Specify display mode ID for displayable bitmap.
@@ -527,7 +527,7 @@
         [I.G], OOP_Class *
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Explicitly specify bitmap's class pointer.
@@ -563,7 +563,7 @@
         [I..]
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Explicitly specify bitmap's class ID.
@@ -599,7 +599,7 @@
         [I..]
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Only used by subclasses of BitMap class.
@@ -625,7 +625,7 @@
         [I..], BOOL
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Specifies that the bitmap is a framebuffer bitmap.
@@ -657,7 +657,7 @@
         [.SG]
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Controls horizontal position of a scrollable screen bitmap.
@@ -704,7 +704,7 @@
         [.SG]
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Controls vertical position of a scrollable screen bitmap.
@@ -747,7 +747,7 @@
         [I..]
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Specify number of pixels to align bitmap data width to.
@@ -1103,7 +1103,7 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
                                 ULONG firstColor, ULONG numColors);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 	Sets values for one or more colors in the colormap object associated with the
@@ -1182,7 +1182,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
         ULONG HIDD_BM_DrawPixel(OOP_Object *obj, OOP_Object *gc, WORD x, WORD y);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Changes the pixel at (x,y). The color of the pixel depends on the
@@ -1311,7 +1311,7 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
                               WORD x2, WORD y2);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Draws a line from (x1,y1) to (x2,y2) in the specified gc.
@@ -1582,7 +1582,7 @@ VOID BM__Hidd_BitMap__DrawLine
                           WORD maxX, WORD maxY);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Draws a hollow rectangle. minX and minY specifies the upper
@@ -1645,7 +1645,7 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
                                WORD maxX, WORD maxY);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -1712,7 +1712,7 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
                                   WORD rx, WORD ry);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Draws a hollow ellipse from the center point (x,y) with the radii
@@ -1875,7 +1875,7 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
                                   WORD ry, WORD rx);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Draws a solid ellipse from the center point (x,y) with the radii
@@ -1980,7 +1980,7 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
         VOID HIDD_BM_DrawPolygon (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Draws a hollow polygon from the list of coordinates in coords[].
@@ -2038,7 +2038,7 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
         VOID HIDD_BM_FillPolygon (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 	This method was initially designed for drawing solid polygons, however it was never
@@ -2091,7 +2091,7 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
                                STRPTR text, UWORD length);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Draws the first length characters of text at (x, y).
@@ -2212,7 +2212,7 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
                                STRPTR text, UWORD length);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 	Historically this method was designed to draw a text with background.
@@ -2266,7 +2266,7 @@ VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawText *msg);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Reserved, never implemented method. The definition will change in future.
@@ -2311,7 +2311,7 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
         VOID HIDD_BM_Clear (OOP_Object *obj, OOP_Object *gc);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
         Sets all pixels of the drawing area to the background color.
@@ -2410,7 +2410,7 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
                                WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -2564,7 +2564,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
                                WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -2737,7 +2737,7 @@ __attribute__((always_inline, const)) do_alpha(int a, int v)
                                     WORD x, WORD y, WORD width, WORD height);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -2950,7 +2950,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                                   WORD srcx, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -3200,7 +3200,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
                                        WORD x, WORD y, WORD width, WORD height, BOOL invertalpha);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -3506,7 +3506,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
                                 WORD width, WORD height);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -3883,7 +3883,7 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
                                   WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4011,7 +4011,7 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
                                         HIDDT_PixelLUT *pixlut, UBYTE transparent);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4161,7 +4161,7 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
                                   WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4277,7 +4277,7 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
                                          UWORD width, UWORD height);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 	Perform a color expansion of the mask in srcBitMap according to foreground and background
@@ -4387,7 +4387,7 @@ else
         ULONG HIDD_BM_BytesPerLine(OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4515,7 +4515,7 @@ VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
         OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4562,7 +4562,7 @@ OOP_Object *BM__Hidd_BitMap__SetColorMap(OOP_Class *cl, OOP_Object *o,
         HIDDT_Pixel HIDD_BM_MapColor(OOP_Object *obj, HIDDT_Color *color);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4639,7 +4639,7 @@ HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
         VOID HIDD_BM_UnmapPixel(OOP_Object *obj, HIDDT_Pixel pixel, HIDDT_Color *color);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4716,7 +4716,7 @@ VOID BM__Hidd_BitMap__UnmapPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
                                         ULONG *bankSizeReturn, ULONG *memSizeReturn);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4761,7 +4761,7 @@ BOOL BM__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
         VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4803,7 +4803,7 @@ VOID BM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
                                  struct BitScaleArgs * bsa, OOP_Object *gc);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4917,7 +4917,7 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
                                          HIDDT_RGBConversionFunction function);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 
@@ -4971,7 +4971,7 @@ HIDDT_RGBConversionFunction BM__Hidd_BitMap__SetRGBConversionFunction(OOP_Class 
         VOID HIDD_BM_UpdateRect(OOP_Object *obj, WORD x, WORD y, WORD width, WORD height);
 
     LOCATION
-        CLID_Hidd_BitMap
+        hidd.graphics.bitmap
 
     FUNCTION
 

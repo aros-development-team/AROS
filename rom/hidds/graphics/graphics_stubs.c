@@ -403,6 +403,22 @@ BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
 
 /***************************************************************/
 
+BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_QueryHardware3D p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_QueryHardware3D);
+
+    p.mID    = mid;
+    p.pixFmt = pixFmt;
+
+    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+
+/***************************************************************/
+
 BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
 {
     STATIC_MID;

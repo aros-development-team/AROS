@@ -126,6 +126,7 @@ struct monitor_driverdata
     OOP_Object      	      *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
     ObjectCache     	      *gc_cache;	/* GC cache					  */
 
+    APTR		       userdata;	/* Associated data from notification callback	  */
     UWORD		       flags;		/* Flags, see below				  */
     struct HIDD_ViewPortData  *display;		/* What is currently displayed			  */
 
@@ -158,6 +159,8 @@ struct common_driverdata
     ObjectCache     	      *gc_cache;		/* GC cache			   */
 
     /* End of driverdata */
+    APTR		       notify_data;		      /* User data for notification callback  */
+    APTR (*DriverNotify)(APTR obj, BOOL add, APTR userdata); /* Display driver notification callback */
     struct SignalSemaphore     displaydb_sem;		/* Display mode database semaphore */
 
     ObjectCache     	      *planarbm_cache;		/* Planar bitmaps cache		   */

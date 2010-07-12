@@ -23,6 +23,19 @@
 
 #include "intuition_intern.h"
 #include "monitorclass_intern.h"
+#include "monitorclass_private.h"
+
+/***********************************************************************************/
+
+Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionBase)
+{
+    if (add)
+	return NewObject(GetPrivIBase(IntuitionBase)->monitorclass, NULL, MA_DriverObject, obj, TAG_DONE);
+    else {
+	DisposeObject(obj);
+	return NULL;
+    }
+}
 
 /***********************************************************************************/
 
@@ -145,10 +158,6 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     case MA_MemoryClock:
 	/* TODO: Add HIDD attribute */
 	*msg->opg_Storage = 0;
-	break;
-
-    case MA_DriverObject:
-	*msg->opg_Storage = (IPTR)data->driver;
 	break;
 
     default:

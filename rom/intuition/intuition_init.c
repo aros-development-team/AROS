@@ -36,6 +36,7 @@
 #include "strgadgets.h" /* To get GlobalEditFunc prototype */
 #include "inputhandler.h"
 #include "menutask.h"
+#include "monitorclass_private.h"
 #include "screennotifytask.h"
 
 #ifdef SKINS
@@ -249,6 +250,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     NEWLIST(&GetPrivIBase(IntuitionBase)->MonitorList);
     InitSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+    SetDisplayDriverCallback(DisplayDriverNotify, IntuitionBase);
 
     DEBUG_INIT(dprintf("LIB_Init: done\n"));
 

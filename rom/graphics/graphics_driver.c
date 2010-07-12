@@ -457,6 +457,9 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 
 void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
+    if (CDD(GfxBase)->DriverNotify)
+	CDD(GfxBase)->DriverNotify(mdd->userdata, FALSE, CDD(GfxBase)->notify_data);
+
     if (mdd->framebuffer)
 	OOP_DisposeObject(mdd->framebuffer);
 
