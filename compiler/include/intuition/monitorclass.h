@@ -36,11 +36,6 @@
 #define MA_DriverName		(MA_Dummy + 17) /* [..G] STRPTR    Driver name						    */
 #define MA_MemoryClock		(MA_Dummy + 18) /* [..G] ULONG     Video memory clock in Hz, 0 if unknown		    */
 
-/* AROS-specific attributes */
-#define MA_AROS			(TAG_USER + 0x00010000)
-
-#define MA_DriverObject		(MA_AROS + 1)   /* [I.G] OOP_Object * Display driver object */
-
 /* Pointer type flags */
 #define PointerType_3Plus1 0x0001 /* color 0 transparent, 1-3 visible				 */
 #define PointerType_2Plus1 0x0002 /* color 0 transparent, 2-3 visible, 1 undefined/clear/inverse */

@@ -45,7 +45,7 @@
 	--background--
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     NOTES
 	When working with graphics drivers this is the first object you get.
@@ -61,7 +61,7 @@
 	--display_modes--
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     NOTES
 	Each display driver object internally stores a database of supported display mode
@@ -235,7 +235,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	[..G], BOOL
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Tells if the display driver is using hosted display in host OS' window.
@@ -266,7 +266,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	[ISG], HIDDT_DPMSLevel
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Gets or sets current DPMS level for driver's display.
@@ -304,7 +304,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	[I..], struct TagItem *
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Specify a pointer to a taglist which contains description of display modes
@@ -435,7 +435,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	[..G], ULONG
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Gets total number of sync objects in the internal display mode database.
@@ -462,7 +462,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	[..G], BOOL
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Tells whether the driver supports hardware mouse pointer sprite.
@@ -504,7 +504,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	[..G], BOOL
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Tells whether the driver does not need a framebuffer.
@@ -587,7 +587,7 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	OOP_Object *HIDD_Gfx_NewGC(OOP_Object *gfxHidd, struct TagItem *tagList);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Create a GC (gfx context) object that may be used for rendering
@@ -645,7 +645,7 @@ OOP_Object *GFX__Hidd_Gfx__NewGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 	VOID HIDD_Gfx_DisposeGC(OOP_Object *gfxHidd, OOP_Object *gc)
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Deletes a GC (Graphics Context) object previously created
@@ -709,7 +709,7 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 	OOP_Object *HIDD_Gfx_NewBitMap(OOP_Object *gfxHidd, struct TagItem *tagList);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Create a bitmap object.
@@ -1030,7 +1030,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 	VOID HIDD_Gfx_DisposeBitMap(OOP_Object *gfxHidd, OOP_Object *bitMap);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Deletes a bitmap object previously created by HIDD_Gfx_NewBitMap().
@@ -1615,7 +1615,7 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
 	HIDDT_ModeID *HIDD_Gfx_QueryModeIDs(OOP_Object *gfxHidd, struct TagItem *queryTags);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Obtain a table of all supported display mode IDs
@@ -1734,7 +1734,7 @@ HIDDT_ModeID *GFX__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
 	VOID HIDD_Gfx_ReleaseModeIDs(OOP_Object *gfxHidd, HIDDT_ModeID *modeIDs);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Free array of display mode IDs returned by HIDD_Gfx_QueryModeIDs()
@@ -1777,7 +1777,7 @@ VOID GFX__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o,
                                          OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Iterate driver's internal display mode database.
@@ -1882,7 +1882,7 @@ HIDDT_ModeID GFX__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o,
 	                      OOP_Object **syncPtr, OOP_Object **pixFmtPtr);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Get sync and pixelformat objects for a particular display ModeID.
@@ -1958,7 +1958,7 @@ BOOL GFX__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMo
 	BOOL HIDD_Gfx_SetMode(OOP_Object *gfxHidd, OOP_Object *sync);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Update display mode according to changed sync object
@@ -2038,7 +2038,7 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	OOP_Object *HIDD_Gfx_Show(OOP_Object *gfxHidd, OOP_Object *bitMap, ULONG flags);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Change currently displayed bitmap on the screen.
@@ -2171,7 +2171,7 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *gfxHidd, struct HIDD_ViewPortData *data);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Show one or more bitmaps on the screen.
@@ -2235,7 +2235,7 @@ ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	                             LONG xoffset, LONG yoffset);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Set mouse pointer shape.
@@ -2298,7 +2298,7 @@ BOOL GFX__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
 	VOID HIDD_Gfx_SetCursorVisible(OOP_Object *gfxHidd, BOOL visible);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Control mouse pointer visiblity.
@@ -2342,7 +2342,7 @@ VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	BOOL HIDD_Gfx_SetCursorPos(OOP_Object *gfxHidd, LONG x, LONG y);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Set current mouse pointer position.
@@ -2396,7 +2396,7 @@ BOOL GFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 	                      OOP_Object *gc);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Perform rectangle copy (blit) operation from one bitmap to another.
@@ -2676,7 +2676,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
         VOID OOP_DoMethod(OOP_Object *obj, OOP_Msg msg);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Indicate upcoming machine reset
@@ -2825,7 +2825,7 @@ VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *o,
 	                        OOP_Object *sync, OOP_Object *pixFmt);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Check if given display mode is supported by the driver.
@@ -2884,7 +2884,7 @@ BOOL GFX__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Che
 	OOP_Object *HIDD_Gfx_GetPixFmt(OOP_Object *gfxHidd, HIDDT_StdPixFmt pixFmt);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Get a standard pixelformat descriptor from internal pixelformats database.
@@ -2941,7 +2941,7 @@ OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	OOP_Object *HIDD_Gfx_GetSync(OOP_Object *gfxHidd, ULONG num);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Get a sync object from internal display mode database by index
@@ -2989,7 +2989,7 @@ OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	                              struct HIDD_ModeProperties *props, ULONG propsLen);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Obtain an information about the video mode.
@@ -3058,7 +3058,7 @@ ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 	BOOL HIDD_Gfx_GetGamma(OOP_Object *gfxHidd, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Get current gamma table for the display.
@@ -3110,7 +3110,7 @@ BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamm
 	BOOL HIDD_Gfx_SetGamma(OOP_Object *gfxHidd, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 
     LOCATION
-	CLID_Hidd_Gfx
+	hidd.graphics.graphics
 
     FUNCTION
 	Set current gamma table for the display.
@@ -3147,6 +3147,48 @@ BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamm
 *****************************************************************************************/
 
 BOOL GFX__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamma *msg)
+{
+    return FALSE;
+}
+
+/*****************************************************************************************
+
+    NAME
+	moHidd_Gfx_QueryHardware3D
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_QueryHardware3D *msg);
+
+	BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *gfxHidd, OOP_Object *pixFmt);
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Query if the driver supports hardware-accelerated 3D graphics for the given
+	pixelformat.
+
+    INPUTS
+	gfxHidd - A display driver object
+	pixFmt  - A pointer to a pixelformat descriptor object
+
+    RESULT
+	TRUE if the driver supports hardware-accelerated 3D for the given pixelformat,
+	FALSE otherwise.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+BOOL GFX__Hidd_Gfx__QueryHardware3D(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryHardware3D *msg)
 {
     return FALSE;
 }

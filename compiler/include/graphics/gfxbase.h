@@ -110,9 +110,9 @@ struct GfxBase
     struct MonitorSpec     * default_monitor;		/* MonitorSpec of "default.monitor"	  */
     struct SignalSemaphore * MonitorListSemaphore;	/* Semaphore for MonitorList access       */
 
-    VOID                   * DisplayInfoDataBase;
+    VOID                   * DisplayInfoDataBase;	/* NULL, unused by AROS			  */
     UWORD                    TopLine;
-    struct SignalSemaphore * ActiViewCprSemaphore;
+    struct SignalSemaphore * ActiViewCprSemaphore;	/* Semaphore for active view access	  */
 
     struct Library  *UtilBase;				/* Library Bases */
     struct ExecBase *ExecBase;
@@ -144,7 +144,7 @@ struct GfxBase
     struct AnalogSignalInterval MonitorVBlank;
     struct MonitorSpec        * natural_monitor;	/* Default MonitorSpec for view without explicit MonitorSpec in ViewExtra */
 
-    APTR  ProgData;
+    APTR  ProgData;					/* NULL, unused by AROS */
     UBYTE ExtSprites;
     UBYTE pad3;
     UWORD GfxFlags;

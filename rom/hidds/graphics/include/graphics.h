@@ -95,6 +95,8 @@ enum
 
     moHidd_Gfx_GetGamma,
     moHidd_Gfx_SetGamma,
+    
+    moHidd_Gfx_QueryHardware3D,
 
     num_Hidd_Gfx_Methods
 };
@@ -357,6 +359,12 @@ struct pHidd_Gfx_Gamma
     UBYTE	 *Red;
     UBYTE	 *Green;
     UBYTE	 *Blue;
+};
+
+struct pHidd_Gfx_QueryHardware3D
+{
+    OOP_MethodID mID;
+    OOP_Object   *pixFmt;
 };
 
 enum
@@ -1493,6 +1501,7 @@ ULONG	    HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data
 OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num);
 BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt);
 
 VOID HIDD_GC_SetClipRect(OOP_Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
 VOID HIDD_GC_UnsetClipRect(OOP_Object *gc);

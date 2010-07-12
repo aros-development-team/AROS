@@ -169,6 +169,7 @@ FUNCTIONS := \
 	setbpen \
 	setchiprev \
 	setcollision \
+	setdisplaydrivercallback \
 	setdrmd \
 	setfont \
 	setmaxpen \
