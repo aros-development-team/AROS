@@ -119,7 +119,11 @@ enum
     aoHidd_Gfx_NumSyncs,		/* [..G] (ULONG) - The number of different syncs the gfxcard can do */
     aoHidd_Gfx_SupportsHWCursor,	/* [..G] (BOOL) - if the hidd supports hardware cursors */
     aoHidd_Gfx_NoFrameBuffer,		/* [..G] (BOOL) - if the hidd does not need a framebuffer */
-    
+
+    aoHidd_Gfx_HardwarePointerTypes,	/* [..G] (UBYTE) - Supported types of mouse pointer sprite     */
+    aoHidd_Gfx_MaxPointerWidth,		/* [..G] (ULONG) - Maximum allowed mouse pointer sprite width  */
+    aoHidd_Gfx_MaxPointerHeight,	/* [..G] (ULONG) - Maximum allowed mouse pointer sprite height */
+
     num_Hidd_Gfx_Attrs
 };
 
@@ -137,12 +141,17 @@ enum
 #define aHidd_Gfx_NumSyncs		(HiddGfxAttrBase + aoHidd_Gfx_NumSyncs			)
 #define aHidd_Gfx_SupportsHWCursor	(HiddGfxAttrBase + aoHidd_Gfx_SupportsHWCursor		)
 #define aHidd_Gfx_NoFrameBuffer		(HiddGfxAttrBase + aoHidd_Gfx_NoFrameBuffer		)
+#define aHidd_Gfx_HardwarePointerTypes	(HiddGfxAttrBase + aoHidd_Gfx_HardwarePointerTypes	)
+#define aHidd_Gfx_MaxPointerWidth	(HiddGfxAttrBase + aoHidd_Gfx_MaxPointerWidth		)
+#define aHidd_Gfx_MaxPointerHeight	(HiddGfxAttrBase + aoHidd_Gfx_MaxPointerHeight		)
 
 #define IS_GFX_ATTR(attr, idx)	\
 	( ( ( idx ) = (attr) - HiddGfxAttrBase) < num_Hidd_Gfx_Attrs)
 
-
-
+/* Pointer types */
+#define vHidd_PointerType_3Plus1      0x01 /* Color 0 transparent, 1-3 visible		     */
+#define vHidd_PointerType_2Plus1      0x02 /* Color 0 transparrent, 1 undefined, 2-3 visible */
+#define vHidd_PointerType_DirectColor 0x04 /* Hi- or truecolor image			     */
 
 /* Parameter tags for the QueryModeIDs method */
 enum

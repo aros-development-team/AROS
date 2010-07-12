@@ -82,7 +82,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 
     INTERNALS
 	This function provides the following private parameters:
-	  DimensionInfo.reserved[0] - graphics driver object
+	  DimensionInfo.reserved[0] - driver user data (intuition's monitorclass object)
 	  DimensionInfo.reserved[1] - pixelformat object
 	Do not rely on this in end user software! This is private to AROS and
 	subject to change at any time!
@@ -238,7 +238,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    di->StdOScan.MaxX	= di->Nominal.MaxX;
 	    di->StdOScan.MaxY	= di->Nominal.MaxY;
 */
-	    di->reserved[0] = (IPTR)gfxhidd;
+	    di->reserved[0] = (IPTR)DIH(handle)->drv->userdata;
 	    di->reserved[1] = (IPTR)pf;
 
 	    break;

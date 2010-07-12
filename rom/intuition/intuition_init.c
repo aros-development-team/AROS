@@ -36,7 +36,6 @@
 #include "strgadgets.h" /* To get GlobalEditFunc prototype */
 #include "inputhandler.h"
 #include "menutask.h"
-#include "monitorclass_private.h"
 #include "screennotifytask.h"
 
 #ifdef SKINS
@@ -85,9 +84,10 @@ const ULONG coltab[] =
 static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] = {
-	{IID_Hidd    , &GetPrivIBase(LIBBASE)->HiddAttrBase   },
-	{IID_Hidd_Gfx, &GetPrivIBase(LIBBASE)->HiddGfxAttrBase},
-	{NULL        , NULL				       }
+	{IID_Hidd       , &GetPrivIBase(LIBBASE)->HiddAttrBase      },
+	{IID_Hidd_Gfx   , &GetPrivIBase(LIBBASE)->HiddGfxAttrBase   },
+	{IID_Hidd_PixFmt, &GetPrivIBase(LIBBASE)->HiddPixFmtAttrBase},
+	{NULL           , NULL				             }
     };
 
     DEBUG_INIT(dprintf("LIB_Init: base 0x%lx\n", (ULONG) LIBBASE));

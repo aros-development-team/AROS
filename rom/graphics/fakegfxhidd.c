@@ -370,6 +370,28 @@ static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 #endif    
 }
 
+static void gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    ULONG idx;
+
+    if (IS_GFX_ATTR(msg->attrID, idx)) {
+	switch (idx) {
+	case aoHidd_Gfx_HardwarePointerTypes:
+            *msg->storage = vHidd_PointerType_3Plus1|vHidd_PointerType_DirectColor;
+	    return;
+
+	/* I beleive this is enough for everybody :) */
+	case aoHidd_Gfx_MaxPointerWidth:
+	case aoHidd_Gfx_MaxPointerHeight:
+	    *msg->storage = 65535;
+	    return;
+	}
+    }
+
+    OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
+}
+
 static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
     /* Is the user about to create a framebuffer ? */
@@ -743,7 +765,7 @@ static void fakefb_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct fakefb_data *data = OOP_INST_DATA(cl, o);
 
     if (msg->attrID == aHidd_FakeFB_RealBitMap) {
-        *msg->storage = data->framebuffer;
+        *msg->storage = (IPTR)data->framebuffer;
 	return;
     }
 
@@ -1160,7 +1182,7 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
     {
         {(IPTR (*)())gfx_new	,    	     	moRoot_New	},
         {(IPTR (*)())gfx_dispose,         	moRoot_Dispose	},
-        {(IPTR (*)())gfx_fwd	,      		moRoot_Get	},
+        {(IPTR (*)())gfx_get	,      		moRoot_Get	},
         {(IPTR (*)())gfx_fwd	,         	moRoot_Set	},
 	{ NULL	    	    	, 0UL 	    	    	    	}
     };
@@ -1194,6 +1216,7 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
 	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_GetSync	    },
 	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_GetGamma	    },
 	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_SetGamma	    },
+	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_QueryHardware3D    },
         {NULL	    	    	    	    , 0UL   	    	    	    }
     };
     
@@ -1356,10 +1379,10 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
     UWORD	curs_base;
 
     struct TagItem bmtags[] = {
-	{ aHidd_BitMap_Width , data->curs_width },
-	{ aHidd_BitMap_Height, data->curs_height},
-	{ aHidd_BitMap_Friend, data->framebuffer},
-	{ TAG_DONE	     , 0UL	 	}
+	{ aHidd_BitMap_Width , data->curs_width       },
+	{ aHidd_BitMap_Height, data->curs_height      },
+	{ aHidd_BitMap_Friend, (IPTR)data->framebuffer},
+	{ TAG_DONE	     , 0UL	 	       }
     };
 
     D(bug("rethink_cursor(), curs_bm is 0x%p\n", data->curs_bm));
@@ -1387,10 +1410,10 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 	return FALSE;
     }
 
-    OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, &pf);
+    OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, (IPTR *)&pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &fbdepth);
-    OOP_GetAttr(data->curs_bm, aHidd_BitMap_ColorMap, &cmap);
-    OOP_GetAttr(data->curs_bm, aHidd_BitMap_PixFmt, &pf);
+    OOP_GetAttr(data->curs_bm, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+    OOP_GetAttr(data->curs_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &curdepth);
 
 #ifndef DISABLE_ARGB_POINTER
@@ -1497,7 +1520,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 	    ULONG pixnum = 0;
 	    OOP_Object *cmap;
 	    
-	    OOP_GetAttr(data->framebuffer, aHidd_BitMap_ColorMap, &cmap);
+	    OOP_GetAttr(data->framebuffer, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
 
     	    for(y = 0; y < height; y++)
 	    {

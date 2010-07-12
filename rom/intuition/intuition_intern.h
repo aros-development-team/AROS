@@ -588,6 +588,7 @@ struct IntIntuitionBase
     
     OOP_AttrBase		 HiddAttrBase;
     OOP_AttrBase		 HiddGfxAttrBase;
+    OOP_AttrBase		 HiddPixFmtAttrBase;
     struct IClass		*monitorclass;
     struct MinList		 MonitorList;
     struct SignalSemaphore	 MonitorListSem;
