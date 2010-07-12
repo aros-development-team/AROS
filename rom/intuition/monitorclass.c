@@ -6,6 +6,7 @@
 #define __OOP_NOATTRBASES__
 
 #include <aros/debug.h>
+#include <cybergraphx/cybergraphics.h>
 #include <hidd/graphics.h>
 #include <hidd/hidd.h>
 #include <intuition/intuition.h>
@@ -20,6 +21,7 @@
 #include <proto/utility.h>
 
 #undef HiddGfxAttrBase
+#undef HiddPixFmtAttrBase
 
 #include "intuition_intern.h"
 #include "monitorclass_intern.h"
@@ -40,16 +42,45 @@ Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionB
 /***********************************************************************************/
 
 #undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-#define HiddAttrBase	(GetPrivIBase(IntuitionBase)->HiddAttrBase)
-#define HiddGfxAttrBase (GetPrivIBase(IntuitionBase)->HiddGfxAttrBase)
+#define IntuitionBase      ((struct IntuitionBase *)(cl->cl_UserData))
+#define HiddAttrBase	   (GetPrivIBase(IntuitionBase)->HiddAttrBase)
+#define HiddGfxAttrBase    (GetPrivIBase(IntuitionBase)->HiddGfxAttrBase)
+#define HiddPixFmtAttrBase (GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase)
 
 /***********************************************************************************/
+
+static BYTE pixelformats[] = {
+    -1,
+    -1,
+    -1,
+    PIXFMT_RGB24,
+    PIXFMT_BGR24,
+    PIXFMT_RGB16,
+    PIXFMT_RGB16PC,
+    PIXFMT_BGR16,
+    PIXFMT_BGR16PC,
+    PIXFMT_RGB15,
+    PIXFMT_RGB15PC,
+    PIXFMT_BGR15,
+    PIXFMT_BGR15PC,
+    PIXFMT_ARGB32,
+    PIXFMT_BGRA32,
+    PIXFMT_RGBA32,
+    PIXFMT_ABGR32,
+    PIXFMT_0RGB32,
+    PIXFMT_BGR032,
+    PIXFMT_RGB032,
+    PIXFMT_0BGR32,
+    PIXFMT_LUT8,
+    -1
+};
 
 Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     OOP_Object *driver = (OOP_Object *)GetTagData(MA_DriverObject, 0, msg->ops_AttrList);
+    HIDDT_ModeID mode = vHidd_ModeID_Invalid;
     struct MonitorData *data;
+    OOP_Object *sync, *pixfmt;
 
     D(kprintf("[monitorclass] OM_NEW\n"));
 
@@ -64,7 +95,17 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     data->driver = driver;
 
-    /* TODO: Fill in data->pixelformats */
+    while ((mode = HIDD_Gfx_NextModeID(driver, mode, &sync, &pixfmt))) {
+	IPTR stdpf;
+	BYTE cgxpf;
+	
+	OOP_GetAttr(pixfmt, aHidd_PixFmt_StdPixFmt, &stdpf);
+	cgxpf = pixelformats[stdpf];
+	
+	if (cgxpf != -1)
+	data->pfobjects[cgxpf] = pixfmt;
+	data->pixelformats[cgxpf] = TRUE;
+    }
 
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
     AddTail((struct List *)&GetPrivIBase(IntuitionBase)->MonitorList, (struct Node *)o);
@@ -78,6 +119,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct MonitorData *data = INST_DATA(cl, o);
+    IPTR val;
 
     D(kprintf("[monitorclass] OM_GET\n"));
 
@@ -147,8 +189,8 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	break;
 
     case MA_PointerType:
-	/* FIXME: Perhaps drivers should really specify this ? */
-	*msg->opg_Storage = PointerType_3Plus1|PointerType_ARGB;
+	OOP_GetAttr(data->driver, aHidd_Gfx_HardwarePointerTypes, &val);
+	*msg->opg_Storage = val;
 	break;
 
     case MA_DriverName:
@@ -203,7 +245,7 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 	In AROS displayable bitmaps need complete display mode information and not
 	only pixelformat. So this method will never be implemented and will always return NULL
 	pointer. In order to create a displayable RTG bitmap on AROS the user needs to supply
-	BMF_SCREEN flag togetger with display mode ID to AllocBitMap() function.
+	BMF_SCREEN flag together with display mode ID to AllocBitMap() function.
 
     INPUTS
 	obj         - A monitor object
@@ -242,7 +284,7 @@ IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitM
     SYNOPSIS
         DoMethod(Object *obj, ULONG MethodID, ULONG PixelFormat, ULONG *Store);
 
-        DoMethodA(Object *obj, msQuery3DSupport *msg);
+        DoMethodA(Object *obj, struct msQuery3DSupport *msg);
 
     LOCATION
 
@@ -271,11 +313,8 @@ IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitM
     EXAMPLE
 
     BUGS
-	At the moment this method is not implemented and always returns
-	MSQUERY3D_UNKNOWN
 
     SEE ALSO
-	MM_EnterPowerSaveMode, MM_ExitBlanker
 
     INTERNALS
 
@@ -283,13 +322,68 @@ IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitM
 
 IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSupport *msg)
 {
-    /* TODO: Add HIDD attribute or something ??? */
-    *msg->Store = MSQUERY3D_UNKNOWN;
+    struct MonitorData *data = INST_DATA(cl, obj);
+    OOP_Object *pf = data->pfobjects[msg->PixelFormat];
+
+    if (pf) {
+	if (HIDD_Gfx_QueryHardware3D(data->driver, pf))
+	    *msg->Store = MSQUERY3D_HWDRIVER;
+	else {
+	    IPTR depth;
+
+	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	    if (depth > 8)
+		*msg->Store = MSQUERY3D_SWDRIVER;
+	    else
+		*msg->Store = MSQUERY3D_NODRIVER;
+	}
+    } else
+	*msg->Store = MSQUERY3D_UNKNOWN;
 
     return *msg->Store;
 }
 
 /************************************************************************************
+
+    NAME
+	MM_GetDefaultGammaTables
+
+    SYNOPSIS
+        DoMethod(Object *obj, ULONG MethodID, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+
+        DoMethodA(Object *obj, struct msGetDefaultGammaTables *msg);
+
+    LOCATION
+
+    FUNCTION
+	Get default gamma correction tables for the monitor
+
+    INPUTS
+	obj      - A monitor object to query
+	MethodID - MM_GetDefaultGammaTables
+	Red	 - A pointer to an array of 256 bytes where gamma correction data for
+		   red component will be placed. You may speciy a NULL pointer in order
+		   to ignore this component.
+	Green	 - A pointer to an array of 256 bytes where gamma correction data for
+		   green component will be placed. You may speciy a NULL pointer in order
+		   to ignore this component.
+	Blue	 - A pointer to an array of 256 bytes where gamma correction data for
+		   blue component will be placed. You may speciy a NULL pointer in order
+		   to ignore this component.
+
+    RESULT
+	Undefined.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MM_SetDefaultGammaTables
+
+    INTERNALS
 
 ************************************************************************************/
 
@@ -306,27 +400,118 @@ IPTR MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGet
 
 /************************************************************************************
 
+    NAME
+	MM_GetDefaultPixelFormat
+
+    SYNOPSIS
+        DoMethod(Object *obj, ULONG MethodID, ULONG Depth, ULONG *Store);
+
+        DoMethodA(Object *obj, struct msGetDefaultPixelFormat *msg);
+
+    LOCATION
+
+    FUNCTION
+	Get driver's preferred pixelformat for specified bitmap depth.
+
+    INPUTS
+	obj      - A monitor object
+	MethodID - MM_GetDefaultPixelFormat
+	Depth	 - Depth to ask about
+	Store	 - A pointer to an ULONG location where CyberGraphX pixelformat
+		   number will be placed. -1 means unsupported depth.
+
+    RESULT
+	Undefined.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
 ************************************************************************************/
 
 IPTR MonitorClass__MM_GetDefaultPixelFormat(Class *cl, Object *obj, struct msGetDefaultPixelFormat *msg)
 {
-    /* TODO: Implement this, perhaps again need HIDD API extension */
-    *msg->Store = -1;
+    struct MonitorData *data = INST_DATA(cl, obj);
+    ULONG i;
+
+    for (i = 0; i < MONITOR_MAXPIXELFORMATS; i++) {
+	if (data->pfobjects[i]) {
+	    IPTR depth;
+
+	    OOP_GetAttr(data->pfobjects[i], aHidd_PixFmt_Depth, &depth);
+	    if (depth == msg->Depth) {
+		*msg->Store = i;
+		break;
+	    }
+	}
+    }
+
+    if (i == MONITOR_MAXPIXELFORMATS)
+        *msg->Store = -1;
 
     return *msg->Store;
 }
 
 /************************************************************************************
 
+    NAME
+	MM_GetPointerBounds
+
+    SYNOPSIS
+        DoMethod(Object *obj, ULONG MethodID, ULONG PointerType, ULONG *Width, ULONG *Height);
+
+        DoMethodA(Object *obj, struct msGetPointerBounds *msg);
+
+    LOCATION
+	monitorclass
+
+    FUNCTION
+	Get maximum allowed size of mouse pointer sprite.
+
+    INPUTS
+	obj         - A monitor object
+	MethodID    - MM_GetPointerBounds
+	PointerType - Pointer type (one of PointerType_...)
+	Store	 - A pointer to an ULONG location where CyberGraphX pixelformat
+		   number will be placed. -1 means unsupported depth.
+
+    RESULT
+	FALSE is given pointer type is not supported, TRUE otherwise.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_PointerType
+
+    INTERNALS
+
 ************************************************************************************/
 
 IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPointerBounds *msg)
 {
-    /* TODO: We really should add some HIDD attributes for this */
-    *msg->Width  = 64;
-    *msg->Height = 64;
+    struct MonitorData *data = INST_DATA(cl, obj);
+    IPTR val;
 
-    return TRUE;
+    OOP_GetAttr(data->driver, aHidd_Gfx_HardwarePointerTypes, &val);
+    if (val & msg->PointerType) {
+	OOP_GetAttr(data->driver, aHidd_Gfx_MaxPointerWidth, &val);
+	*msg->Width  = val;
+	OOP_GetAttr(data->driver, aHidd_Gfx_MaxPointerHeight, &val);
+	*msg->Height = val;
+
+	return TRUE;
+    } else
+	return FALSE;
 }
 
 /************************************************************************************
@@ -472,6 +657,47 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
 
 /************************************************************************************
 
+    NAME
+	MM_SetDefaultGammaTables
+
+    SYNOPSIS
+        DoMethod(Object *obj, ULONG MethodID, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+
+        DoMethodA(Object *obj, struct msSetDefaultGammaTables *msg);
+
+    LOCATION
+
+    FUNCTION
+	Set default gamma correction tables for the monitor
+
+    INPUTS
+	obj      - A monitor object to query
+	MethodID - MM_GetDefaultGammaTables
+	Red	 - A pointer to an array of 256 bytes where gamma correction data for
+		   red component is placed. You may speciy a NULL pointer in order
+		   to ignore this component.
+	Green	 - A pointer to an array of 256 bytes where gamma correction data for
+		   green component is placed. You may speciy a NULL pointer in order
+		   to ignore this component.
+	Blue	 - A pointer to an array of 256 bytes where gamma correction data for
+		   blue component is placed. You may speciy a NULL pointer in order
+		   to ignore this component.
+
+    RESULT
+	Undefined.
+
+    NOTES
+	This method is AROS-specific.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MM_GetDefaultGammaTables
+
+    INTERNALS
+
 ************************************************************************************/
 
 IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSetDefaultGammaTables *msg)
@@ -483,4 +709,15 @@ IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSet
        If we implement per-screen gamma correction, we'll need more sophisticated
        management here */
     return HIDD_Gfx_SetGamma(data->driver, msg->Red, msg->Green, msg->Blue);
+}
+
+/************************************************************************************/
+
+ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetCompositionFlags *msg)
+{
+    struct MonitorData *data = INST_DATA(cl, obj);
+    struct HIDD_ModeProperties modeprops;
+
+    HIDD_Gfx_ModeProperties(data->driver, msg->ModeID, &modeprops, sizeof(modeprops));
+    return modeprops.CompositionFlags;
 }

@@ -393,7 +393,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
 
 #ifndef FORCE_SOFTWARE_SPRITE
-    OOP_GetAttr(gfxhidd, aHidd_Gfx_SupportsHWCursor, &hwcursor);
+    OOP_GetAttr(gfxhidd, aHidd_Gfx_HardwarePointerTypes, &hwcursor);
 #endif
     OOP_GetAttr(gfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
 

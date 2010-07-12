@@ -12,7 +12,7 @@
 #include <exec/types.h>
 
 /* Length of array returned by MA_PixelFormats */
-#define MONITOR_MAXPIXELFORMATS 14
+#define MONITOR_MAXPIXELFORMATS 105
 
 /* Attributes */
 #define MA_Dummy		(TAG_USER)

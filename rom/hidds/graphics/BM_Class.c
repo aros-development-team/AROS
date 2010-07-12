@@ -263,7 +263,12 @@
         hidd.graphics.bitmap
 
     FUNCTION
-        Check if the bitmap provides linear memory access.
+        Check if the bitmap provides linear memory access. This means that bitmap's
+	pixelbuffer is directly addressable by the CPU.
+
+	Bitmaps with no linear memory may implement moHidd_BitMap_ObtainDirectAccess,
+	but this means that this method will rely on mirrored buffer. In such a case
+	the user must call moHidd_BitMap_UpdateRect after modifying bitmap's contents.
 
     NOTES
 	Used by cybergraphics.library/GetCyberMapAttr() for providing CYBRMATTR_ISLINEARMEM
@@ -276,7 +281,7 @@
 	drivers actually provide linear memory.
 
     SEE ALSO
-	moHidd_UpdateRect
+	moHidd_ObtainDirectAccess, moHidd_ReleaseDirectAccess, moHidd_UpdateRect
 
     INTERNALS
 

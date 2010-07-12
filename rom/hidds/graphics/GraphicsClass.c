@@ -163,7 +163,7 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 /*  data->curmode = vHidd_ModeID_Invalid; */
 
     /* Get the mode tags */
-    modetags = (struct TagItem *)GetTagData(aHidd_Gfx_ModeTags, NULL, msg->attrList);
+    modetags = (struct TagItem *)GetTagData(aHidd_Gfx_ModeTags, 0, msg->attrList);
     if (NULL != modetags)
     {
 	/* Parse it and register the gfxmodes */
@@ -466,7 +466,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     FUNCTION
 	Tells whether the driver supports hardware mouse pointer sprite.
-	
+
 	If the driver provides TRUE value for this attribute, it is expected to implement
 	HIDD_Gfx_SetCursorPos(), HIDD_Gfx_SetCursorShape() and HIDD_Gfx_SetCursorVisible()
 	methods.
@@ -474,7 +474,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	Mouse pointer counts for one hardware sprite, so if the driver implements also
 	HIDD_Gfx_ModeProperties(), it should set NumHWSprites to 1 in order to provide
 	valid information about display modes.
-	
+
 	The driver must implement this attribute if it implements HIDD_Gfx_ModeProperties().
 	Otherwise it will provide false information in graphics.library/GetDisplayInfoData().
 	Base class can determine NumHWSprites based on this attribute value but not vice
@@ -484,12 +484,15 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	Default implementation in the base class returns FALSE. This causes the system to
 	use software sprite emulation.
 
+	This attribute is obsolete and is used only by AROS graphics.library up to v41.2. In
+	new drivers consider implementing aoHidd_Gfx_HardwarePointerTypes attribute.
+
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	moHidd_Gfx_ModeProperties
+	aoHidd_Gfx_HardwarePointerTypes, moHidd_Gfx_ModeProperties
 
     INTERNALS
 
@@ -536,44 +539,86 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 *****************************************************************************************/
 
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_HardwarePointerTypes
+
+    SYNOPSIS
+	[..G], BOOL
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Return mouse pointer image types supported by the driver.
+	
+	The returned value is a combination of the following bit flags:
+	  vHidd_PointerType_3Plus1 - color 0 is transparent, 1-3 visible
+				     (Amiga(tm) chipset sprite format)
+	  vHidd_PointerType_2Plus1 - color 0 is transparent, color 1 is undefined
+				     (can be whatever, for example clear or inverse),
+				     colors 2-3 visible.
+	  vHidd_PointerType_DirectColor - Hi- or truecolor image, perhaps with alpha channel
+
+    NOTES
+	This attribute should return 0 if the driver does not support hardware mouse sprite
+	at all. Software sprite emulation is done by graphics.library.
+
+	Default implementation in the base class is based on aoHidd_Gfx_SupportsHWCursor
+	value. This is done for backwards compatibility.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_SupportsHWCursor
+
+    INTERNALS
+	Default implementation in the base class queries aoHidd_Gfx_SupportsHWCursor
+	and provides (vHidd_PointerType_3Plus1|vHidd_PointerType_DirectColor) in case
+	if it returns TRUE. Otherwise it returns zero.
+
+*****************************************************************************************/
+
 VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct HIDDGraphicsData *data;
-    BOOL    	    	    found = FALSE;
     ULONG   	    	    idx;
-    
+
     data = OOP_INST_DATA(cl, o);
-    
+
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
 	switch (idx)
 	{
 	    case aoHidd_Gfx_NumSyncs:
-	    {
-		found = TRUE;
 		*msg->storage = data->mdb.num_syncs;
-		break;
-	    }
-	    
-	    case aoHidd_Gfx_SupportsHWCursor:
-	    	found = TRUE;
-	    	*msg->storage = FALSE;
-		break;
+		return;
 
 	    case aoHidd_Gfx_IsWindowed:
-	    	found = TRUE;
-	    	*msg->storage = FALSE;
-		break;
-	    
+	    case aoHidd_Gfx_SupportsHWCursor:
+	    	*msg->storage = 0;
+		return;
+
+	    case aoHidd_Gfx_HardwarePointerTypes:
+	    {
+		IPTR hwc;
+
+		OOP_GetAttr(o, aHidd_Gfx_SupportsHWCursor, &hwc);
+		*msg->storage = hwc ? (vHidd_PointerType_3Plus1|vHidd_PointerType_DirectColor) : 0;
+		return;
+	    }
+
 	    default:	/* Keep compiler happy */
 		break;
 	}
     }
-    
-    if (!found)
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	
-    return;    
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    return;
 }
 
 /*****************************************************************************************
@@ -1319,8 +1364,6 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 		1200, 1203, 1209, 1235,
 		"Default:1920x1200");
 
-    DECLARE_ATTRCHECK(sync);
-    
     struct mode_db  	    *mdb;
     
     HIDDT_PixelFormat 	    pixfmt_data;
@@ -1356,7 +1399,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     init_def_tags(def_pixfmt_tags,	num_Hidd_PixFmt_Attrs);
 
     def_sync_tags[aoHidd_Sync_GfxHidd].ti_Tag = aHidd_Sync_GfxHidd;
-    def_sync_tags[aoHidd_Sync_GfxHidd].ti_Data = o;
+    def_sync_tags[aoHidd_Sync_GfxHidd].ti_Data = (IPTR)o;
     
     /* First we need to calculate how much memory we are to allocate by counting supplied
        pixel formats and syncs */
@@ -2924,7 +2967,7 @@ OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
     } 
     else 
     {
-    	fmt = CSD(cl)->std_pixfmts[REAL_STDPIXFMT_IDX(msg->stdPixFmt)];
+    	fmt = (OOP_Object *)CSD(cl)->std_pixfmts[REAL_STDPIXFMT_IDX(msg->stdPixFmt)];
     }
 
     return fmt;
@@ -3017,10 +3060,10 @@ OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     BUGS
 
     SEE ALSO
-	aoHidd_Gfx_SupportsHWCursor
+	aoHidd_Gfx_HardwarePointerTypes, aoHidd_Gfx_SupportsHWCursor
 
     INTERNALS
-	Default implementation in the base class relies on aHidd_Gfx_SupportsHWCursor attribute,
+	Default implementation in the base class relies on aHidd_Gfx_HardwarePointerTypes attribute,
 	not vice versa. If you override this method, do not forget to override this attribute too.
 
 *****************************************************************************************/
@@ -3028,11 +3071,11 @@ OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
 {
     struct HIDD_ModeProperties props = {0, 0, 0};
-    IPTR has_hw_cursor = FALSE;
+    IPTR has_hw_cursor = 0;
     ULONG len = msg->propsLen;
 
     D(bug("[GFXHIDD] Hidd::Gfx::ModeProperties(0x%08lX, 0x%p, %u)\n", msg->modeID, msg->props, msg->propsLen));
-    OOP_GetAttr(o, aHidd_Gfx_SupportsHWCursor, &has_hw_cursor);
+    OOP_GetAttr(o, aHidd_Gfx_HardwarePointerTypes, &has_hw_cursor);
     if (has_hw_cursor) {
 	D(bug("[GFXHIDD] Driver has hardware mouse cursor implementation\n"));
         props.DisplayInfoFlags = DIPF_IS_SPRITES;
@@ -3321,7 +3364,7 @@ static VOID delete_pixfmts(struct class_static_data *csd)
     struct Node *n, *safe;
 
     ForeachNodeSafe(&csd->pflist, n, safe)
-	OOP_DisposeObject(PIXFMT_OBJ(n));
+	OOP_DisposeObject((OOP_Object *)PIXFMT_OBJ(n));
 }
 
 /****************************************************************************************/

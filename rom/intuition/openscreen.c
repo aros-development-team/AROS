@@ -18,7 +18,6 @@
 #include <graphics/modeid.h>
 #include <graphics/videocontrol.h>
 #include <graphics/displayinfo.h>
-#include <hidd/graphics.h>
 #include <prefs/screenmode.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -36,6 +35,7 @@
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
 #include "menus.h"
+#include "monitorclass_private.h"
 
 #ifndef DEBUG_OpenScreen
 #define DEBUG_OpenScreen 0
@@ -649,10 +649,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #ifdef __MORPHOS__
         screen->Monitor = monitor.Mspc;
 #else
-        struct HIDD_ModeProperties modeprops;
-
-	HIDD_Gfx_ModeProperties((OOP_Object *)dimensions.reserved[0], modeid, &modeprops, sizeof(modeprops));
-	screen->SpecialFlags = modeprops.CompositionFlags << 8;
+	screen->SpecialFlags = DoMethod((Object *)dimensions.reserved[0], MM_GetCompositionFlags, modeid) << 8;
 #endif
         success = TRUE;
 
