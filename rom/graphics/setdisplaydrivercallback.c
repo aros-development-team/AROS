@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: Set display driver notification callback
     Lang: english
