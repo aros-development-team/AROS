@@ -210,7 +210,7 @@
 	    if (depth > 24)
 		stdpf = vHidd_StdPixFmt_ARGB32;
 	    else if (depth > 16)
-		stdpf = vHidd_StdPixFmt_0RGB32;
+		stdpf = vHidd_StdPixFmt_RGB24;
 	    else if (depth > 15)
 		stdpf = vHidd_StdPixFmt_RGB16;
 	    else if (depth > 8)
