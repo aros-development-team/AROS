@@ -211,7 +211,12 @@ BOOL ahci_init_hba(struct ahci_hba_chip *hba_chip) {
         HBAHW_D("Interrupt %u\n",                               hba_chip->IRQ);
 */
 
-        /* Set timer.device up for this HBA-chip */
+        /* Set timer.device up for this HBA-chip and within this task context */
+        /*
+            FIXME: For now ahci_init_hba() is called from ahci_setup_hba(), 
+                    which in turn is called from Init(), but ahci_setup_hba() should create HBA_Task_(hba_number) that would call ahci_init_hba()
+                    and HBA_Task_(hba_number) would also direct commands for the device.
+        */
         hba_chip->MsgPort.mp_SigBit = SIGB_SINGLE;
         hba_chip->MsgPort.mp_Flags = PA_SIGNAL;
         hba_chip->MsgPort.mp_SigTask = FindTask(NULL);
