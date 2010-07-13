@@ -8,6 +8,7 @@
 
 #define __OOP_NOATTRBASES__
 
+#include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -35,6 +36,30 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+static AROS_UFH3(void, ResetHandler,
+		 AROS_UFHA(APTR, unused, A0),
+		 AROS_UFHA(struct ExecBase *, SysBase, A6),
+		 AROS_UFHA(struct vga_staticdata *, xsd, A1))
+{
+    AROS_USERFUNC_INIT
+
+/* On my machine this fills the screen with colorful vertical stripes
+   instead of blanking. So for now we use software method.
+	Pavel Fedin.
+    vgaBlankScreen(0); */
+
+    struct bitmap_data *data = xsd->visible;
+
+    if (data)
+    {
+    	struct Box box = {0, 0, data->width - 1, data->height - 1};
+	
+	vgaEraseArea(data, &box);
+    }
+    
+    AROS_USERFUNC_EXIT
+}
+
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
@@ -57,6 +82,8 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_Gfx, 	    	&HiddGfxAttrBase    	},
     { NULL, NULL }
 };
+
+static struct Interrupt ResetInterrupt;
 
 /* Default graphics modes */
 
@@ -181,11 +208,17 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     XSD(cl)->vgahidd = o;
+    if (o) {
+	ResetInterrupt.is_Code = ResetHandler;
+	ResetInterrupt.is_Data = XSD(cl);
+	AddResetCallback(&ResetInterrupt);
+    }
     ReturnPtr("VGAGfx::New", OOP_Object *, o);
 }
 
 VOID PCVGA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    RemResetCallback(&ResetInterrupt);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     return;
 }
@@ -267,7 +300,7 @@ OOP_Object *PCVGA__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	/* TODO: this should be brought in from SpriteBase of the colormap */
 	data->mouseBase = (depth > 4) ? 16 : (1 << depth) - 8;
 
-	OOP_SetAttrs(msg->bitMap, tags);
+	OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
 	data->visible = OOP_INST_DATA(data->bmclass, msg->bitMap);
     } else {
 	/* Otherwize simply clear the framebuffer */
@@ -297,7 +330,6 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 {
     ULONG mode;
     unsigned char *src = 0, *dest = 0;
-    struct Box box = {0, 0, 0, 0};
 
     mode = GC_DRMD(msg->gc);
 
@@ -594,23 +626,6 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     }
     ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
-
-VOID PCVGA__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    struct bitmap_data *data;
-    
-    Disable();
-    data = XSD(cl)->visible;    
-    if (data)
-    {
-    	struct Box box = {0, 0, data->width - 1, data->height - 1};
-	
-	vgaEraseArea(data, &box);
-    }
-    Enable();
-    
-}
-
 
 /* stuff added by stegerg */
 
