@@ -58,31 +58,33 @@
     
     IPTR retval;
     
-    /* This is cybergraphx. We only work wih HIDD bitmaps */
-    if (!IS_HIDD_BM(bitMap)) {
-    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in GetCyberMapAttr() !!!\n"));
-    	return 0;
-    }
-	
-    bm_obj = HIDD_BM_OBJ(bitMap);
-    
-    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    
+    if (IS_HIDD_BM(bitMap)) {
+	bm_obj = HIDD_BM_OBJ(bitMap);
+	OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    } else
+	bm_obj = NULL;
+
     switch (attribute) {
    	case CYBRMATTR_XMOD:
-	    OOP_GetAttr(bm_obj, aHidd_BitMap_BytesPerRow, &retval);
+	    if (bm_obj)
+		OOP_GetAttr(bm_obj, aHidd_BitMap_BytesPerRow, &retval);
+	    else
+		retval = bitMap->BytesPerRow;
 	    break;
-	
+
    	case CYBRMATTR_BPPIX:
-	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+	    if (bm_obj)
+		OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+	    else
+		retval = -1;
 	    break;
-	
+
    	case CYBRMATTR_PIXFMT:
         case CYBRMATTR_PIXFMT_ALPHA: {
 	    IPTR stdpf;
 	    UWORD cpf;
+
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);
-	    
 	    /* Convert to cybergfx */
 	    cpf = hidd2cyber_pixfmt(stdpf);
 
@@ -95,62 +97,42 @@
                     case PIXFMT_0BGR32: cpf = PIXFMT_ABGR32; break;
                 }
             }
-	    
+
 	    if (cpf == (UWORD)-1) {
 	    	D(bug("!!! UNKNOWN PIXEL FORMAT IN GetCyberMapAttr()\n"));
 	    }
-	    
+
 	    retval = (IPTR)cpf;
 	    break;
 	    
 	}
 	
    	case CYBRMATTR_WIDTH:
-	#if 0 /* stegerg: doesn't really work, because of framebuffer bitmap object stuff */
-	    OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &retval);
-	#else
 	    retval = GetBitMapAttr(bitMap, BMA_WIDTH);
-	#endif
 	    break;
 	
    	case CYBRMATTR_HEIGHT:
-	#if 0 /* stegerg: doesn't really work, because of framebuffer bitmap object stuff */
-	    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &retval);
-	#else
 	    retval = GetBitMapAttr(bitMap, BMA_HEIGHT);
-	#endif
 	    break;
 	
    	case CYBRMATTR_DEPTH:
-	#if 0 /* stegerg: might not really work, because of framebuffer bitmap object stuff */
-	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &retval);
-	#else
 	    retval = GetBitMapAttr(bitMap, BMA_DEPTH);
-	#endif
 	    break;
 	
-   	case CYBRMATTR_ISCYBERGFX: {
-	    IPTR depth;
-	    
-	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-	    
-	    if (depth < 8) {
-	    	retval = 0;
-	    } else {
-	    /* We allways have a HIDD bitmap */
-	    	retval = 0xFFFFFFFF; /* Some apps seem to rely on this retval */
-	    }
-	    break; }
-	
+   	case CYBRMATTR_ISCYBERGFX:
+	    retval = bm_obj ? TRUE : FALSE;
+	    break;
+
    	case CYBRMATTR_ISLINEARMEM:
-	    OOP_GetAttr(bm_obj, aHidd_BitMap_IsLinearMem, &retval);
+	    if (bm_obj)
+		OOP_GetAttr(bm_obj, aHidd_BitMap_IsLinearMem, &retval);
+	    else
+		retval = TRUE;
 	    break;
-	
+
 	default:
 	    D(bug("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n"));
 	    break;
-	
-	
     } /* switch (attribute) */
     
     return retval;
