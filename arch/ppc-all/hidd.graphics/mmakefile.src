@@ -1,7 +1,0 @@
-# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
-include $(TOP)/config/make.cfg
-
-%build_archspecific \
-  mainmmake=kernel-hidd-graphics maindir=rom/hidds/graphics \
-  arch=ppc \
-  files="atomic"
