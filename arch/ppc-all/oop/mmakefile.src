@@ -1,7 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-%build_archspecific \
-  mainmmake=kernel-oop maindir=rom/oop \
-  arch=ppc \
-  files="atomic"

@@ -5,7 +5,7 @@ USER_AFLAGS := -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles="execstubs stackswap" \
-  files="atomic cachecleare newstackswap" \
+  files="cachecleare newstackswap" \
   arch=ppc
 
 #MM kernel-exec-ppc : includes-asm_h-ppc

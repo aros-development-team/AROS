@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -80,22 +80,7 @@ Atomic OR of an immediate value with a memory location.
   
 #elif defined(__powerpc__) || defined(__ppc__)
 
-void atomic_inc_b(BYTE* p);
-void atomic_dec_b(BYTE* p);
-
-void atomic_inc_w(WORD* p);
-void atomic_dec_w(WORD* p);
-
-void atomic_inc_l(LONG* p);
-void atomic_dec_l(LONG* p);
-
-void atomic_and_b(UBYTE* p, UBYTE mask);
-void atomic_and_w(UWORD* p, UWORD mask);
-void atomic_and_l(ULONG* p, ULONG mask);
-
-void atomic_or_b(UBYTE* p, UBYTE mask);
-void atomic_or_w(UWORD* p, UWORD mask);
-void atomic_or_l(ULONG* p, ULONG mask);
+#include "atomic_ppc.h"
 
 #define __AROS_ATOMIC_INC_B(var) atomic_inc_b((BYTE *) &(var))
 #define __AROS_ATOMIC_DEC_B(var) atomic_dec_b((BYTE *) &(var))

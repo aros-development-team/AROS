@@ -7,9 +7,8 @@
 */
 
 #include <proto/exec.h>
-#include <aros/atomic.h>
 
-static BOOL set_atomic(
+static inline BOOL set_atomic(
     IPTR* addr,
     IPTR  old,
     IPTR  new)
@@ -22,7 +21,7 @@ static BOOL set_atomic(
     "      bne-   2f                     \n\t" /* give up, caller can try again on the changed value */
     "      stwcx. %[new],     0, %[addr] \n\t" /* check that storage was not changed by other thread */
     "      bne-   1b                     \n\t" /* in the meantime, then store, otherwise try again   */
-    "      li     %[success], 1          \n\t" /* atomic store successful, set success flag                  */
+    "      li     %[success], 1          \n\t" /* atomic store successful, set success flag          */
     "2:                                  \n\t"
     : [success] "+r" (success)
     : [addr]    "r"  (addr),
@@ -35,7 +34,7 @@ static BOOL set_atomic(
     return success;
 }
 
-void atomic_inc_l(LONG* p)
+static inline void atomic_inc_l(LONG* p)
 {
     BOOL success = FALSE;
 
@@ -48,7 +47,7 @@ void atomic_inc_l(LONG* p)
     }
 }
 
-void atomic_dec_l(LONG* p)
+static inline void atomic_dec_l(LONG* p)
 {
     BOOL success = FALSE;
 
@@ -57,11 +56,11 @@ void atomic_dec_l(LONG* p)
         CONST IPTR old = *p;
         CONST IPTR new = old - 1;
         
-        success = set_atomic(p, old, new);
+        success = set_atomic((IPTR*)p, old, new);
     }
 }
 
-void atomic_and_l(ULONG* p, ULONG mask)
+static inline void atomic_and_l(ULONG* p, ULONG mask)
 {
     BOOL success = FALSE;
 
@@ -70,11 +69,11 @@ void atomic_and_l(ULONG* p, ULONG mask)
         CONST IPTR old = *p;
         CONST IPTR new = old & mask;
         
-        success = set_atomic(p, old, new);
+        success = set_atomic((IPTR*)p, old, new);
     }
 }
 
-void atomic_or_l(ULONG* p, ULONG mask)
+static inline void atomic_or_l(ULONG* p, ULONG mask)
 {
     BOOL success = FALSE;
 
@@ -83,11 +82,11 @@ void atomic_or_l(ULONG* p, ULONG mask)
         CONST IPTR old = *p;
         CONST IPTR new = old | mask;
         
-        success = set_atomic(p, old, new);
+        success = set_atomic((IPTR*)p, old, new);
     }
 }
 
-void atomic_inc_b(BYTE* p)
+static inline void atomic_inc_b(BYTE* p)
 {
     CONST IPTR  rem     = ((IPTR) p) % 4;    /* get pointer to 4 byte aligned base */
           IPTR* addr    = (IPTR*) (p - rem); /* address of byte                    */
@@ -109,7 +108,7 @@ void atomic_inc_b(BYTE* p)
     }
 }
 
-void atomic_dec_b(BYTE* p)
+static inline void atomic_dec_b(BYTE* p)
 {
     CONST IPTR  rem     = ((IPTR) p) % 4;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -131,7 +130,7 @@ void atomic_dec_b(BYTE* p)
     }
 }
 
-void atomic_and_b(UBYTE* p, UBYTE mask)
+static inline void atomic_and_b(UBYTE* p, UBYTE mask)
 {
     CONST IPTR  rem     = ((IPTR) p) % 4;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -153,7 +152,7 @@ void atomic_and_b(UBYTE* p, UBYTE mask)
     }
 }
 
-void atomic_or_b(UBYTE* p, UBYTE mask)
+static inline void atomic_or_b(UBYTE* p, UBYTE mask)
 {
     CONST IPTR  rem     = ((IPTR) p) % 4;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -175,7 +174,7 @@ void atomic_or_b(UBYTE* p, UBYTE mask)
     }
 }
 
-void atomic_inc_w(WORD* p)
+static inline void atomic_inc_w(WORD* p)
 {
     CONST IPTR  rem     = (((IPTR) p) % 4 ) / 2;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -197,7 +196,7 @@ void atomic_inc_w(WORD* p)
     }
 }
 
-void atomic_dec_w(WORD* p)
+static inline void atomic_dec_w(WORD* p)
 {
     CONST IPTR  rem     = (((IPTR) p) % 4 ) / 2;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -219,7 +218,7 @@ void atomic_dec_w(WORD* p)
     }
 }
 
-void atomic_and_w(UWORD* p, UWORD mask)
+static inline void atomic_and_w(UWORD* p, UWORD mask)
 {
     CONST IPTR  rem     = (((IPTR) p) % 4 ) / 2;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -241,7 +240,7 @@ void atomic_and_w(UWORD* p, UWORD mask)
     }
 }
 
-void atomic_or_w(UWORD* p, UWORD mask)
+static inline void atomic_or_w(UWORD* p, UWORD mask)
 {
     CONST IPTR  rem     = (((IPTR) p) % 4 ) / 2;
           IPTR* addr    = (IPTR*) (p - rem);
