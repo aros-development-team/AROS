@@ -38,13 +38,7 @@ unsigned char vgaANSIPalette[]=
 {
      0,  0,  0,    0,  0, 42,    0, 42,  0,    0, 42, 42,
     42,  0,  0,   42,  0, 42,   42, 21,  0,   42, 42, 42,
-/*  21, 21, 21,   21, 21, 63,   21, 63, 21,   21, 63, 63,
-    A temporary measure which prevents annoying effect of
-    a pointer appearing in strange colors before the first
-    screen opens.
-    In fact the pointer should appear only upon opening of
-    the first screen. */
-    21, 21, 21,  224, 64, 64,    0,  0,  0,  224,224,192, 
+    21, 21, 21,   21, 21, 63,   21, 63, 21,   21, 63, 63,
     63, 21, 21,   63, 21, 63,   63, 63, 21,   63, 63, 63,
      0,  0,  0,    5,  5,  5,    8,  8,  8,   11, 11, 11,
     14, 14, 14,   17, 17, 17,   20, 20, 20,   24, 24, 24,

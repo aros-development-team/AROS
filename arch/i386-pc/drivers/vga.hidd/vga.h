@@ -2,7 +2,7 @@
 #define HIDD_VGA_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the vga gfx HIDD.
@@ -62,6 +62,7 @@ struct vgabase
 
 void draw_mouse (struct vga_staticdata *);
 void erase_mouse (struct vga_staticdata *);
+int vgaBlankScreen(int on);
 
 #define XSD(cl) (&((struct vgabase *)cl->UserData)->vsd)
 
