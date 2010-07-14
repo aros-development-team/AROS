@@ -126,6 +126,8 @@ enum
 
     aoHidd_Gfx_MemorySize,		/* [..G] (ULONG) - Size of video card's memory in bytes	       */
     aoHidd_Gfx_MemoryClock,		/* [..G] (ULONG) - A video card's memory clock in Hz	       */
+    
+    aoHidd_Gfx_DriverName,		/* [..G] (STRPTR) - A name of driver for CyberGraphX	       */
 
     num_Hidd_Gfx_Attrs
 };
@@ -149,6 +151,7 @@ enum
 #define aHidd_Gfx_MaxSpriteHeight	(HiddGfxAttrBase + aoHidd_Gfx_MaxSpriteHeight		)
 #define aHidd_Gfx_MemorySize		(HiddGfxAttrBase + aoHidd_Gfx_MemorySize		)
 #define aHidd_Gfx_MemoryClock		(HiddGfxAttrBase + aoHidd_Gfx_MemoryClock		)
+#define aHidd_Gfx_DriverName		(HiddGfxAttrBase + aoHidd_Gfx_DriverName		)
 
 #define IS_GFX_ATTR(attr, idx)	\
 	( ( ( idx ) = (attr) - HiddGfxAttrBase) < num_Hidd_Gfx_Attrs)

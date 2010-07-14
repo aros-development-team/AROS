@@ -639,8 +639,6 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	Query CyberGraphX driver name. It is the same name which can be given to
 	cybergraphics.library/BestCModeIDTagList() as CYBRBIDTG_BoardName value.
 
-	In AROS this is also a public ID of OOP driver class.
-
     NOTES
 
     EXAMPLE
@@ -758,7 +756,7 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	break;
 
     case MA_DriverName:
-	*msg->opg_Storage = (IPTR)(OOP_OCLASS(data->driver)->ClassNode.ln_Name);
+	OOP_GetAttr(data->driver, aHidd_Gfx_DriverName, msg->opg_Storage);
 	break;
 
     case MA_MemoryClock:

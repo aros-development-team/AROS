@@ -7,6 +7,7 @@
 */
 
 #include <aros/debug.h>
+#include <cybergraphx/cybergraphics.h>
 #include <graphics/modeid.h>
 #include <hidd/graphics.h>
 #include <proto/graphics.h>
@@ -74,9 +75,10 @@
         graphics/modeid.h, graphics/displayinfo.h
 
     INTERNALS
+	This function also processes CYBRBIDTG_BoardName tag. This is private
+	to AROS, do not rely on it!
 
     HISTORY
-
 
 ******************************************************************************/
 {
@@ -90,6 +92,8 @@
     UBYTE redbits, greenbits, bluebits;
     ULONG dipf_musthave, dipf_mustnothave;
     ULONG modeid;
+    STRPTR boardname;
+    struct DisplayInfoHandle *dinfo;
     struct DisplayInfo disp;
     struct DimensionInfo dims;
     ULONG found_id     = INVALID_ID;
@@ -138,6 +142,8 @@
     desired_height = GetTagData(BIDTAG_DesiredHeight, nominal_height, TagItems);
     depth	   = GetTagData(BIDTAG_Depth        , depth         , TagItems);
 
+    boardname = (STRPTR)GetTagData(CYBRBIDTG_BoardName, 0, TagItems);
+
     /* Exclude flags in MustHave from MustNotHave (CHECKME: if this correct?) */
     dipf_mustnothave &= ~dipf_musthave;
     /* Mask out bit 12 in monitorid because the user may (and will) pass in IDs defined in include/graphics/modeid.h
@@ -164,7 +170,21 @@
 	    continue;
 	}
 
-	if (GetDisplayInfoData(NULL, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, modeid) < offsetof(struct DisplayInfo, pad2)) {
+	dinfo = FindDisplayInfo(modeid);
+	if (!dinfo) {
+	    D(bug("No DisplayInfoHandle!\n"));
+	    continue;
+	}
+
+	if (boardname) {
+	    STRPTR name;
+
+	    OOP_GetAttr(dinfo->drv->gfxhidd, aHidd_Gfx_DriverName, (IPTR *)&name);
+	    if (strcmp(boardname, name))
+		continue;
+	}
+
+	if (GetDisplayInfoData(dinfo, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, modeid) < offsetof(struct DisplayInfo, pad2)) {
 	    D(bug("No DisplayInfo!\n"));
 	    continue;
 	}
@@ -181,7 +201,7 @@
 	    continue;
 	}
 
-	if (GetDisplayInfoData(NULL, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid) < offsetof(struct DimensionInfo, MaxOScan)) {
+	if (GetDisplayInfoData(dinfo, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid) < offsetof(struct DimensionInfo, MaxOScan)) {
 	    D(bug("No DimensionInfo!\n"));
 	    continue;
 	}

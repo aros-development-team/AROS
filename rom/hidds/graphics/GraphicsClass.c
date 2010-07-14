@@ -703,6 +703,36 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 *****************************************************************************************/
 
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_DriverName
+
+    SYNOPSIS
+	[..G], STRPTR
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Query CyberGraphX driver name. It is the same name which can be given to
+	cybergraphics.library/BestCModeIDTagList() as CYBRBIDTG_BoardName value.
+
+    NOTES
+	By default base class returns class name as value of this attribute.
+	However this can (and must for some drivers listed in BestCModeIDTagList()
+	documentation) be overriden.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
 VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct HIDDGraphicsData *data;
@@ -752,6 +782,10 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		*msg->storage = hwc ? 65535 : 0;
 		return;
 	    }
+
+	    case aoHidd_Gfx_DriverName:
+		*msg->storage = (IPTR)cl->ClassNode.ln_Name;
+		return;
 
 	    default:	/* Keep compiler happy */
 		break;
