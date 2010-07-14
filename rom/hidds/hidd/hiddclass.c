@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main class for HIDD.
@@ -33,13 +33,190 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/*****************************************************************************************
+
+    NAME
+	--background--
+
+    LOCATION
+	hiddclass
+
+    NOTES
+	This class is a base class for all object-oriented hardware drivers in AROS. Its
+	main purpose is to provide some information about the driver itself.
+	
+	At the moment this class is just a primary design. Many defined attributes and
+	methods are drafts and reserved. This documentation includes only already
+	estabilished definitions. Do not use any other methods and attributes, their
+	definitions may change at any moment.
+
+*****************************************************************************************/
+
 static const char unknown[]  = "--unknown device--";
 
 #define IS_HIDD_ATTR(attr, idx) ((idx = attr - HiddAttrBase) < num_Hidd_Attrs)
 
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Producer
+
+    SYNOPSIS
+	[I.G], ULONG
+
+    LOCATION
+	hiddclass
+
+    FUNCTION
+	Query hardware manufacturer's numeric ID. This ID may come for example from PCI
+	or Zorro bus configuration data.
+
+    NOTES
+	It is valid to return 0 if your hardware doesn't provide any ID number.
+	
+	Initial value for this attribute is usually supplied by driver class in its
+	moRoot_New implementation.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Product
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Name
+
+    SYNOPSIS
+	[I.G], STRPTR
+
+    LOCATION
+	hiddclass
+
+    FUNCTION
+	Name of the driver instance under which it is known to the OS. This name is
+	provided to OS components that use the driver. For example Intuition's MONITORCLASS
+	expects to find	something like "ati_dvi.monitor", "ati_vga.monitor" or
+	"pcvga.monitor" here.
+
+	Note that is is instance name, not class name. Different instances of the driver may
+	need to provide different names	for different objects (like in ATI example) in order
+	to let the OS to distinguish between them.
+
+    NOTES
+	Initial value for this attribute is usually supplied by driver class in its
+	moRoot_New implementation.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_HardwareName
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_HardwareName
+
+    SYNOPSIS
+	[I.G], STRPTR
+
+    LOCATION
+	hiddclass
+
+    FUNCTION
+	Query hardware name string.
+
+    NOTES
+	Initial value for this attribute is usually supplied by driver class in its
+	moRoot_New implementation.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Name
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Product
+
+    SYNOPSIS
+	[I.G], ULONG
+
+    LOCATION
+	hiddclass
+
+    FUNCTION
+	Query hardware's numeric produce ID. This ID may come for example from PCI
+	or Zorro bus configuration data.
+
+    NOTES
+	It is valid to return 0 if your hardware doesn't provide any ID number.
+
+	Initial value for this attribute is usually supplied by driver class in its
+	moRoot_New implementation.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Producer
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_ProducerName
+
+    SYNOPSIS
+	[I.G], STRPTR
+
+    LOCATION
+	hiddclass
+
+    FUNCTION
+	Query hardware manufacturer string. NULL is a valid value for this attribute
+	meaning that the information is not specified.
+
+    NOTES
+	Initial value for this attribute is usually supplied by driver class in its
+	moRoot_New implementation.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_HardwareName
+
+    INTERNALS
+
+*****************************************************************************************/
+
 /* Implementation of root HIDD class methods. */
 VOID HIDDCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg);
-
 
 /*** HIDD::New() **************************************************************/
 
@@ -73,7 +250,8 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         
         hd->hd_Name     = (STRPTR)GetTagData(aHidd_Name,        (IPTR)unknown,  list);
         hd->hd_HWName   = (STRPTR)GetTagData(aHidd_HardwareName,(IPTR)unknown,  list);
-        
+	hd->hd_ProducerName = (STRPTR)GetTagData(aHidd_ProducerName, 0, list);
+
         hd->hd_Status   = GetTagData(aHidd_Status,      vHidd_StatusUnknown,    list);
         hd->hd_Locking  = GetTagData(aHidd_Locking,     vHidd_LockShared,       list);
         hd->hd_ErrorCode= GetTagData(aHidd_ErrorCode,   0, list);
@@ -144,6 +322,12 @@ VOID HIDDCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_Status      : *msg->storage = hd->hd_Status;       break;
             case aoHidd_ErrorCode   : *msg->storage = hd->hd_ErrorCode;    break;
             case aoHidd_Locking     : *msg->storage = hd->hd_Locking;      break;
+	    case aoHidd_Product:
+		*msg->storage = hd->hd_Product;
+		break;
+	    case aoHidd_ProducerName:
+		*msg->storage = (IPTR)hd->hd_ProducerName;
+		break;
 	    default		    : OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);	   break;
         }
     } else {

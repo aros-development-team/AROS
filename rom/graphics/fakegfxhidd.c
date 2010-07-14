@@ -377,13 +377,13 @@ static void gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     if (IS_GFX_ATTR(msg->attrID, idx)) {
 	switch (idx) {
-	case aoHidd_Gfx_HardwarePointerTypes:
-            *msg->storage = vHidd_PointerType_3Plus1|vHidd_PointerType_DirectColor;
+	case aoHidd_Gfx_HWSpriteTypes:
+            *msg->storage = vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor;
 	    return;
 
 	/* I beleive this is enough for everybody :) */
-	case aoHidd_Gfx_MaxPointerWidth:
-	case aoHidd_Gfx_MaxPointerHeight:
+	case aoHidd_Gfx_MaxSpriteWidth:
+	case aoHidd_Gfx_MaxSpriteHeight:
 	    *msg->storage = 65535;
 	    return;
 	}

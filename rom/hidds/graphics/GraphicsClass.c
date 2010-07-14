@@ -485,14 +485,14 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	use software sprite emulation.
 
 	This attribute is obsolete and is used only by AROS graphics.library up to v41.2. In
-	new drivers consider implementing aoHidd_Gfx_HardwarePointerTypes attribute.
+	new drivers consider implementing aoHidd_Gfx_HWSpriteTypes attribute.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	aoHidd_Gfx_HardwarePointerTypes, moHidd_Gfx_ModeProperties
+	aoHidd_Gfx_HWSpriteTypes, moHidd_Gfx_ModeProperties
 
     INTERNALS
 
@@ -542,7 +542,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-	aoHidd_Gfx_HardwarePointerTypes
+	aoHidd_Gfx_HWSpriteTypes
 
     SYNOPSIS
 	[..G], BOOL
@@ -551,15 +551,15 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	hidd.graphics.graphics
 
     FUNCTION
-	Return mouse pointer image types supported by the driver.
+	Return hardware sprite image types supported by the driver.
 	
 	The returned value is a combination of the following bit flags:
-	  vHidd_PointerType_3Plus1 - color 0 is transparent, 1-3 visible
+	  vHidd_SpriteType_3Plus1 - color 0 is transparent, 1-3 visible
 				     (Amiga(tm) chipset sprite format)
-	  vHidd_PointerType_2Plus1 - color 0 is transparent, color 1 is undefined
+	  vHidd_SpriteType_2Plus1 - color 0 is transparent, color 1 is undefined
 				     (can be whatever, for example clear or inverse),
 				     colors 2-3 visible.
-	  vHidd_PointerType_DirectColor - Hi- or truecolor image, perhaps with alpha channel
+	  vHidd_SpriteType_DirectColor - Hi- or truecolor image, perhaps with alpha channel
 
     NOTES
 	This attribute should return 0 if the driver does not support hardware mouse sprite
@@ -577,8 +577,129 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     INTERNALS
 	Default implementation in the base class queries aoHidd_Gfx_SupportsHWCursor
-	and provides (vHidd_PointerType_3Plus1|vHidd_PointerType_DirectColor) in case
-	if it returns TRUE. Otherwise it returns zero.
+	and provides (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor) in case
+	if it returns TRUE. Otherwise it returns zero. This is done for backwards
+	compatibility with old drivers.
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_MaxSpriteWidth
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Return maximum width of hardware sprite image supported by the driver.
+	
+    NOTES
+	This attribute should return 0 if the driver does not support hardware mouse sprite
+	at all. Software sprite emulation is done by graphics.library.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_MaxSpriteHeight
+
+    INTERNALS
+	Default implementation in the base class queries aoHidd_Gfx_HWSpriteTypes
+	and provides 16 in case	if it returns nonzero value. Otherwise it returns zero. This
+	is done for backwards compatibility with old drivers. Note that these values have
+	nothing to do with real ones.
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_MaxSpriteHeight
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Return maximum height of hardware sprite image supported by the driver.
+	
+    NOTES
+	This attribute should return 0 if the driver does not support hardware mouse sprite
+	at all. Software sprite emulation is done by graphics.library.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_MaxSpriteHeight
+
+    INTERNALS
+	Default implementation in the base class queries aoHidd_Gfx_HWSpriteTypes
+	and provides 65535 in case if it returns nonzero value. Otherwise it returns zero.
+	This is done for backwards compatibility with old drivers. Note that these values
+	have nothing to do with real ones.
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_MemorySize
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Query total size of video card memory in bytes.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_MemoryClock
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_MemoryClock
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Query video card's memory clock in Hz. 0 is a valid value meaning 'unknown'.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_MemorySize
+
+    INTERNALS
 
 *****************************************************************************************/
 
@@ -602,12 +723,33 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    	*msg->storage = 0;
 		return;
 
-	    case aoHidd_Gfx_HardwarePointerTypes:
+	    case aoHidd_Gfx_HWSpriteTypes:
 	    {
 		IPTR hwc;
 
 		OOP_GetAttr(o, aHidd_Gfx_SupportsHWCursor, &hwc);
-		*msg->storage = hwc ? (vHidd_PointerType_3Plus1|vHidd_PointerType_DirectColor) : 0;
+		*msg->storage = hwc ? (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor) : 0;
+		return;
+	    }
+
+	    /* Note that MaxSpriteWidth and MaxSpriteHeight here are not real values. These are
+	       just some reasonable defaults. It is strongly advised to provide correct values
+	       in your driver and not rely on this kludge! */
+	    case aoHidd_Gfx_MaxSpriteWidth:
+	    {
+		IPTR hwc;
+
+		OOP_GetAttr(o, aHidd_Gfx_HWSpriteTypes, &hwc);
+		*msg->storage = hwc ? 16 : 0;
+		return;
+	    }
+
+	    case aoHidd_Gfx_MaxSpriteHeight:
+	    {
+		IPTR hwc;
+
+		OOP_GetAttr(o, aHidd_Gfx_HWSpriteTypes, &hwc);
+		*msg->storage = hwc ? 65535 : 0;
 		return;
 	    }
 
@@ -3060,10 +3202,10 @@ OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     BUGS
 
     SEE ALSO
-	aoHidd_Gfx_HardwarePointerTypes, aoHidd_Gfx_SupportsHWCursor
+	aoHidd_Gfx_HWSpriteTypes, aoHidd_Gfx_SupportsHWCursor
 
     INTERNALS
-	Default implementation in the base class relies on aHidd_Gfx_HardwarePointerTypes attribute,
+	Default implementation in the base class relies on aHidd_Gfx_HWSpriteTypes attribute,
 	not vice versa. If you override this method, do not forget to override this attribute too.
 
 *****************************************************************************************/
@@ -3075,7 +3217,7 @@ ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_G
     ULONG len = msg->propsLen;
 
     D(bug("[GFXHIDD] Hidd::Gfx::ModeProperties(0x%08lX, 0x%p, %u)\n", msg->modeID, msg->props, msg->propsLen));
-    OOP_GetAttr(o, aHidd_Gfx_HardwarePointerTypes, &has_hw_cursor);
+    OOP_GetAttr(o, aHidd_Gfx_HWSpriteTypes, &has_hw_cursor);
     if (has_hw_cursor) {
 	D(bug("[GFXHIDD] Driver has hardware mouse cursor implementation\n"));
         props.DisplayInfoFlags = DIPF_IS_SPRITES;

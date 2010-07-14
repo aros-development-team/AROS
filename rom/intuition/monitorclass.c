@@ -27,6 +27,26 @@
 #include "monitorclass_intern.h"
 #include "monitorclass_private.h"
 
+/*****************************************************************************************
+
+    NAME
+	--background--
+
+    LOCATION
+	MONITORCLASS
+
+    NOTES
+	In AROS display drivers have associated BOOPSI objects of MONITORCLASS class.
+	This class provides information about relative physical placement of monitors
+	in user's workspace as well as some additional properties.
+	
+	MONITORCLASS is a pseudo name. This class is in fact private to the system and
+	does not have a public ID. The user can't create objects of this class manually.
+
+	This class is fully compatible with MorphOS starting from v2.
+
+*****************************************************************************************/
+
 /***********************************************************************************/
 
 Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionBase)
@@ -114,6 +134,553 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     return o;
 }
 
+/*****************************************************************************************
+
+    NAME
+	MA_MonitorName
+
+    SYNOPSIS
+	[..G], STRPTR
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query monitor driver name
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_Manufacturer
+
+    SYNOPSIS
+	[..G], STRPTR
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query video card hardware manufacturer name
+
+    NOTES
+	Not all drivers may specify manufacturer string. NULL is a valid return value.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_ManufacturerID
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query video card hardware's numeric manufacturer ID (which may come from PCI,
+	Zorro, etc).
+
+    NOTES
+	Not all drivers may have assigned IDs. For example VGA driver and virtual
+	hosted drivers do not associate themselves with any IDs.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_ProductID
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_ProductID
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query video card hardware's numeric product ID (which may come from PCI, Zorro, etc).
+
+    NOTES
+	Not all drivers may have assigned IDs. For example VGA driver and virtual
+	hosted drivers do not associate themselves with any IDs.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_ManufacturerID
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_MemorySize
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query total size of video card memory in bytes.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_MemoryClock
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_PixelFormats
+
+    SYNOPSIS
+	[..G], BOOL *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query table of supported pixelformats.
+
+	A returned value is a pointer to static array of BOOLs, one BOOL per CyberGraphX
+	pixelformat. TRUE value in the array says that the pixelformat is supported,
+	otherwise it's not.
+
+    NOTES
+
+    EXAMPLE
+	BOOL *pfs;
+
+	GetAttr(MA_PixelFormats, monitor, (IPTR *)&pfs);
+	if (pfs[PUXFMT_LUT8])
+	    printf("The display driver supports LUT8 format\n");
+
+    BUGS
+
+    SEE ALSO
+	MA_ManufacturerID
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_TopLeftMonitor
+
+    SYNOPSIS
+	[.SG], Object *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Get a pointer to a monitor placed in top-left diagonal direction relative to
+	the current one.
+
+	This attribute is used to describe relative placement of monitors in user's
+	physical environment.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
+	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_TopMiddleMonitor
+
+    SYNOPSIS
+	[.SG], Object *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Get a pointer to a monitor placed in top direction relative to the current one.
+
+	This attribute is used to describe relative placement of monitors in user's
+	physical environment.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_TopLeftMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
+	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_TopRightMonitor
+
+    SYNOPSIS
+	[.SG], Object *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Get a pointer to a monitor placed in top-right diagonal direction relative to
+	the current one.
+
+	This attribute is used to describe relative placement of monitors in user's
+	physical environment.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_TopLeftMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
+	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_MiddleLeftMonitor
+
+    SYNOPSIS
+	[.SG], Object *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Get a pointer to a monitor placed in left direction relative to
+	the current one.
+
+	This attribute is used to describe relative placement of monitors in user's
+	physical environment.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleRightMonitor,
+	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_MiddleRightMonitor
+
+    SYNOPSIS
+	[.SG], Object *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Get a pointer to a monitor placed in right direction relative to
+	the current one.
+
+	This attribute is used to describe relative placement of monitors in user's
+	physical environment.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
+	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_BottomLeftMonitor
+
+    SYNOPSIS
+	[.SG], Object *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Get a pointer to a monitor placed in bottom-left diagonal direction relative to
+	the current one.
+
+	This attribute is used to describe relative placement of monitors in user's
+	physical environment.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
+	MA_MiddleRightMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_BottomMiddleMonitor
+
+    SYNOPSIS
+	[.SG], Object *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Get a pointer to a monitor placed in bottom direction relative to the current one.
+
+	This attribute is used to describe relative placement of monitors in user's
+	physical environment.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
+	MA_MiddleRightMonitor, MA_BottomLeftMonitor, MA_BottomRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_BottomRightMonitor
+
+    SYNOPSIS
+	[.SG], Object *
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Get a pointer to a monitor placed in bottom-right diagonal direction relative to
+	the current one.
+
+	This attribute is used to describe relative placement of monitors in user's
+	physical environment.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
+	MA_MiddleRightMonitor, MA_BottomLeftMonitor, MA_BottomMiddleMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_GammaControl
+
+    SYNOPSIS
+	[..G], BOOL
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query if the display driver supports gamma control
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MM_GetDefaultGammaTables, MM_SetDefaultGammaTables
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_PointerType
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query supported mouse pointer sprite formats.
+
+	The returned value is a combination of the following bit flags:
+	  PointerType_3Plus1 - color 0 transparent, 1-3 visible	(Amiga(tm) chipset sprite)
+	  PointerType_2Plus1 - color 0 transparent, 1 unsefined (can be for example clear or
+			       inverse), 2-3 visible
+	  PointerType_ARGB   - Direct color bitmap (hi-color or truecolor, possibly with alpha
+			       channel
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MM_GetPointerBounds
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_DriverName
+
+    SYNOPSIS
+	[..G], STRPTR
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query CyberGraphX driver name. It is the same name which can be given to
+	cybergraphics.library/BestCModeIDTagList() as CYBRBIDTG_BoardName value.
+
+	In AROS this is also a public ID of OOP driver class.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MM_GetPointerBounds
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	MA_MemoryClock
+
+    SYNOPSIS
+	[..G], ULONG
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Query video card's memory clock in Hz. 0 is a valid value meaning 'unknown'.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	MA_MemorySize
+
+    INTERNALS
+
+*****************************************************************************************/
+
 /***********************************************************************************/
 
 IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
@@ -130,22 +697,19 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	break;
 
     case MA_Manufacturer:
-	OOP_GetAttr(data->driver, aHidd_Producer, msg->opg_Storage);
+	OOP_GetAttr(data->driver, aHidd_ProducerName, msg->opg_Storage);
 	break;
 
     case MA_ManufacturerID:
-	/* TODO: PCI ID ??? */
-	*msg->opg_Storage = 0;
+	OOP_GetAttr(data->driver, aHidd_Producer, msg->opg_Storage);
 	break;
 
     case MA_ProductID:
-	/* TODO: PCI ID ??? */
-	*msg->opg_Storage = 0;
+	OOP_GetAttr(data->driver, aHidd_Product, msg->opg_Storage);
 	break;
 
     case MA_MemorySize:
-	/* TODO: Add HIDD attribute */
-	*msg->opg_Storage = 0;
+	OOP_GetAttr(data->driver, aHidd_Gfx_MemorySize, msg->opg_Storage);
 	break;
 
     case MA_PixelFormats:
@@ -189,7 +753,7 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	break;
 
     case MA_PointerType:
-	OOP_GetAttr(data->driver, aHidd_Gfx_HardwarePointerTypes, &val);
+	OOP_GetAttr(data->driver, aHidd_Gfx_HWSpriteTypes, &val);
 	*msg->opg_Storage = val;
 	break;
 
@@ -198,8 +762,7 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	break;
 
     case MA_MemoryClock:
-	/* TODO: Add HIDD attribute */
-	*msg->opg_Storage = 0;
+	OOP_GetAttr(data->driver, aHidd_Gfx_MemoryClock, msg->opg_Storage);
 	break;
 
     default:
@@ -502,11 +1065,11 @@ IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPoint
     struct MonitorData *data = INST_DATA(cl, obj);
     IPTR val;
 
-    OOP_GetAttr(data->driver, aHidd_Gfx_HardwarePointerTypes, &val);
+    OOP_GetAttr(data->driver, aHidd_Gfx_HWSpriteTypes, &val);
     if (val & msg->PointerType) {
-	OOP_GetAttr(data->driver, aHidd_Gfx_MaxPointerWidth, &val);
+	OOP_GetAttr(data->driver, aHidd_Gfx_MaxSpriteWidth, &val);
 	*msg->Width  = val;
-	OOP_GetAttr(data->driver, aHidd_Gfx_MaxPointerHeight, &val);
+	OOP_GetAttr(data->driver, aHidd_Gfx_MaxSpriteHeight, &val);
 	*msg->Height = val;
 
 	return TRUE;
