@@ -120,9 +120,12 @@ enum
     aoHidd_Gfx_SupportsHWCursor,	/* [..G] (BOOL) - if the hidd supports hardware cursors */
     aoHidd_Gfx_NoFrameBuffer,		/* [..G] (BOOL) - if the hidd does not need a framebuffer */
 
-    aoHidd_Gfx_HardwarePointerTypes,	/* [..G] (UBYTE) - Supported types of mouse pointer sprite     */
-    aoHidd_Gfx_MaxPointerWidth,		/* [..G] (ULONG) - Maximum allowed mouse pointer sprite width  */
-    aoHidd_Gfx_MaxPointerHeight,	/* [..G] (ULONG) - Maximum allowed mouse pointer sprite height */
+    aoHidd_Gfx_HWSpriteTypes,		/* [..G] (UBYTE) - Supported types of hardware sprites         */
+    aoHidd_Gfx_MaxSpriteWidth,		/* [..G] (ULONG) - Maximum allowed mouse pointer sprite width  */
+    aoHidd_Gfx_MaxSpriteHeight,		/* [..G] (ULONG) - Maximum allowed mouse pointer sprite height */
+
+    aoHidd_Gfx_MemorySize,		/* [..G] (ULONG) - Size of video card's memory in bytes	       */
+    aoHidd_Gfx_MemoryClock,		/* [..G] (ULONG) - A video card's memory clock in Hz	       */
 
     num_Hidd_Gfx_Attrs
 };
@@ -141,17 +144,19 @@ enum
 #define aHidd_Gfx_NumSyncs		(HiddGfxAttrBase + aoHidd_Gfx_NumSyncs			)
 #define aHidd_Gfx_SupportsHWCursor	(HiddGfxAttrBase + aoHidd_Gfx_SupportsHWCursor		)
 #define aHidd_Gfx_NoFrameBuffer		(HiddGfxAttrBase + aoHidd_Gfx_NoFrameBuffer		)
-#define aHidd_Gfx_HardwarePointerTypes	(HiddGfxAttrBase + aoHidd_Gfx_HardwarePointerTypes	)
-#define aHidd_Gfx_MaxPointerWidth	(HiddGfxAttrBase + aoHidd_Gfx_MaxPointerWidth		)
-#define aHidd_Gfx_MaxPointerHeight	(HiddGfxAttrBase + aoHidd_Gfx_MaxPointerHeight		)
+#define aHidd_Gfx_HWSpriteTypes		(HiddGfxAttrBase + aoHidd_Gfx_HWSpriteTypes		)
+#define aHidd_Gfx_MaxSpriteWidth	(HiddGfxAttrBase + aoHidd_Gfx_MaxSpriteWidth		)
+#define aHidd_Gfx_MaxSpriteHeight	(HiddGfxAttrBase + aoHidd_Gfx_MaxSpriteHeight		)
+#define aHidd_Gfx_MemorySize		(HiddGfxAttrBase + aoHidd_Gfx_MemorySize		)
+#define aHidd_Gfx_MemoryClock		(HiddGfxAttrBase + aoHidd_Gfx_MemoryClock		)
 
 #define IS_GFX_ATTR(attr, idx)	\
 	( ( ( idx ) = (attr) - HiddGfxAttrBase) < num_Hidd_Gfx_Attrs)
 
-/* Pointer types */
-#define vHidd_PointerType_3Plus1      0x01 /* Color 0 transparent, 1-3 visible		     */
-#define vHidd_PointerType_2Plus1      0x02 /* Color 0 transparrent, 1 undefined, 2-3 visible */
-#define vHidd_PointerType_DirectColor 0x04 /* Hi- or truecolor image			     */
+/* Sprite types */
+#define vHidd_SpriteType_3Plus1      0x01 /* Color 0 transparent, 1-3 visible		     */
+#define vHidd_SpriteType_2Plus1      0x02 /* Color 0 transparrent, 1 undefined, 2-3 visible */
+#define vHidd_SpriteType_DirectColor 0x04 /* Hi- or truecolor image			     */
 
 /* Parameter tags for the QueryModeIDs method */
 enum

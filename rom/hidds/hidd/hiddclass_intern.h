@@ -25,8 +25,10 @@ struct HIDDData
     UWORD       hd_Type;
     UWORD       hd_SubType;
     ULONG       hd_Producer;
+    ULONG	hd_Product;
     STRPTR      hd_Name;
     STRPTR      hd_HWName;
+    STRPTR	hd_ProducerName;
     BOOL        hd_Active;
     UWORD       hd_Locking;
     ULONG       hd_Status;

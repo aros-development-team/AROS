@@ -39,16 +39,18 @@
     See the HIDD documentation for information on their use.
  */
 enum {
-    aoHidd_Type = 0, 		/* [..G] (UWORD) Major type of HIDD */
-    aoHidd_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
-    aoHidd_Producer,		/* [..G] (ULONG) Product Developer */
-    aoHidd_Name, 		/* [..G] (STRPTR) Name of HIDD */
-    aoHidd_HardwareName, 	/* [..G] (STRPTR) Hardware description */
-    aoHidd_Active,		/* [ISG] (BOOL) Current active status */
-    aoHidd_Status,		/* [..G] (ULONG) Status change */
-    aoHidd_ErrorCode,		/* [..G] (ULONG) Error code */
-    aoHidd_Locking,		/* [..G] (UBYTE) Type of locking supported */
-    
+    aoHidd_Type = 0, 		/* [..G] (UWORD) Major type of HIDD          */
+    aoHidd_SubType,		/* [..G] (UWORD) Sub-type of HIDD            */
+    aoHidd_Producer,		/* [I.G] (ULONG) Hardware manufacturer ID    */
+    aoHidd_Name, 		/* [I.G] (STRPTR) Name of HIDD               */
+    aoHidd_HardwareName, 	/* [I.G] (STRPTR) Hardware description       */
+    aoHidd_Active,		/* [ISG] (BOOL) Current active status        */
+    aoHidd_Status,		/* [..G] (ULONG) Status change               */
+    aoHidd_ErrorCode,		/* [..G] (ULONG) Error code                  */
+    aoHidd_Locking,		/* [..G] (UBYTE) Type of locking supported   */
+    aoHidd_Product,		/* [I.G] (ULONG) Hardware product ID         */
+    aoHidd_ProducerName,	/* [I.G] (STRPTR) Hardware manufacturer name */
+
     num_Hidd_Attrs
 };
 
@@ -59,9 +61,10 @@ enum {
 #define aHidd_HardwareName	(HiddAttrBase + aoHidd_HardwareName)
 #define aHidd_Active		(HiddAttrBase + aoHidd_Active	)
 #define aHidd_Status		(HiddAttrBase + aoHidd_Status	)
-#define aHidd_ErrorCode		(HiddAttrBase + aoHidd_ErrorCode	)
+#define aHidd_ErrorCode		(HiddAttrBase + aoHidd_ErrorCode)
 #define aHidd_Locking		(HiddAttrBase + aoHidd_Locking	)
-
+#define aHidd_Product		(HiddAttrBase + aoHidd_Product  )
+#define aHidd_ProducerName	(HiddAttrBase + aoHidd_ProducerName)
 
 /* Values for the HIDD_Type Tag */
 #define vHidd_Type_Any		-1	/* match any type */
