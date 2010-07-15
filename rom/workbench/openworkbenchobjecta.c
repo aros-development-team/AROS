@@ -754,21 +754,60 @@ static BOOL HandleProject
             
             if (FindToolType(icon->do_ToolTypes, "CLI") == NULL)
             {
-                BPTR deftool_lock = NULL, deftool_parent = NULL;
+                BPTR deftool_lock = NULL, deftool_parent = NULL, old_parent = NULL;
 
-                deftool_lock = Lock(icon->do_DefaultTool, ACCESS_READ);
-                if (deftool_lock != NULL)
-                    deftool_parent = ParentDir(deftool_lock);
-
-                if (deftool_parent != NULL)
+                if (strpbrk(icon->do_DefaultTool, "/:") == NULL) /* relative path */
                 {
-                    success = WB_LaunchProgram
-                    (
-                        deftool_parent, FilePart(icon->do_DefaultTool), deftool_tags, WorkbenchBase
-                    );
+                    struct CommandLineInterface *cli = Cli();
+                    if (cli != NULL)
+                    {
+                        BPTR *paths;          /* Path list */
+                        BOOL  running = TRUE;
+
+                        /* Iterate over all paths in the path list */
+                        for
+                        (
+                            paths = (BPTR *) BADDR(cli->cli_CommandDir);
+                            running == TRUE && paths != NULL;
+                            paths = (BPTR *) BADDR(paths[0]) /* next path */
+                        )
+                        {
+                            old_parent  = CurrentDir(paths[1]);
+                            deftool_parent = Lock(paths[1], SHARED_LOCK);
+                            deftool_lock = Lock(icon->do_DefaultTool, SHARED_LOCK);
+
+                            if (deftool_lock != NULL)
+                            {
+                                success = WB_LaunchProgram
+                                (
+                                    deftool_parent, icon->do_DefaultTool, deftool_tags, WorkbenchBase
+                                );
+ 
+                                running = FALSE;
+
+                                UnLock(deftool_lock);
+                                UnLock(deftool_parent);
+                            }
+                            CurrentDir(old_parent);
+                        }
+                    }
                 }
-                UnLock(deftool_parent);
-                UnLock(deftool_lock);
+                else /* absolute path */
+                {
+                    deftool_lock = Lock(icon->do_DefaultTool, ACCESS_READ);
+                    if (deftool_lock != NULL)
+                        deftool_parent = ParentDir(deftool_lock);
+
+                    if (deftool_parent != NULL)
+                    {
+                        success = WB_LaunchProgram
+                        (
+                            deftool_parent, FilePart(icon->do_DefaultTool), deftool_tags, WorkbenchBase
+                        );
+                    }
+                    UnLock(deftool_parent);
+                    UnLock(deftool_lock);
+                }
             }
             else
             {
