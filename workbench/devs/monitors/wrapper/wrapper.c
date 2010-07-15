@@ -71,12 +71,14 @@ int main(void)
  
     if (args.hidd) {
         OOP_Class *cl;
+	struct Library *gfxlib = NULL;
 	OOP_Object *gfxhidd;
 
 	cl = OOP_FindClass(args.hidd);
 	if (!cl) {
 	    if (args.lib) {
-	        if (!OpenLibrary(args.lib, 0))
+		gfxlib = OpenLibrary(args.lib, 0);
+	        if (!gfxlib)
 		    res = RETURN_ERROR;
 	    }
 	    
@@ -90,6 +92,9 @@ int main(void)
 		    }
 		} else
 		    res = RETURN_ERROR;
+		
+		if ((res != RETURN_OK) && gfxlib)
+		    CloseLibrary(gfxlib);
 	    }
 	}
     } else
