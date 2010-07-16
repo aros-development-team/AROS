@@ -6,33 +6,28 @@
 OBJS= arossupport.o main.o misc.o vars.o locale.o
 
 MultiView: $(OBJS)
-   sc link to MultiView with <<
-$(OBJS)
-lib lib:debug.lib
-<
+   sc link to $@ $(OBJS) lib lib:debug.lib
 
 arossupport.o: arossupport.c arossupport.h
     sc nostackcheck cpu=68020 define=MYDEBUG arossupport.c OBJNAME=$@
 
-
 main.o: main.c global.h compilerspecific.h debug.h arossupport.h vars.h \
-	multiview_strings.h
-    sc nostackcheck cpu=68020 define=MYDEBUG main.c OBJNAME=$@
+	strings.h
+    sc nostackcheck cpu=68020 main.c OBJNAME=$@
 
 misc.o: misc.c global.h version.h compilerspecific.h debug.h vars.h \
-	multiview_strings.h
+	strings.h
     sc nostackcheck cpu=68020 define=MYDEBUG misc.c OBJNAME=$@
 
-vars.o: vars.c global.h version.h vars.h vars.h multiview_strings.h
+vars.o: vars.c global.h version.h vars.h vars.h strings.h
     sc nostackcheck cpu=68020 define=MYDEBUG vars.c OBJNAME=$@
 
-locale.o: locale.c multiview_strings.h global.h vars.h multiview_strings.h
+locale.o: locale.c strings.h global.h vars.h strings.h
     sc nostackcheck cpu=68020 define=MYDEBUG locale.c OBJNAME=$@
 
+strings.h: catalogs/multiview.cd
+	catcomp $< cfile $@ noblock nocode
 
 
-
-
-
-
-
+clean:
+	-delete $(OBJS) MultiView.lnk strings.h
