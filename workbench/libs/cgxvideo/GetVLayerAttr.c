@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <aros/debug.h>
@@ -60,6 +60,7 @@
     AROS_LIBFUNC_INIT
 
     aros_print_not_implemented ("GetVLayerAttr");
+    return 0;
 
     AROS_LIBFUNC_EXIT
 } /* GetVLayerAttr */

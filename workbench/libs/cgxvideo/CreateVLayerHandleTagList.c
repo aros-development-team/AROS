@@ -1,11 +1,15 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include "cgxvideo_intern.h"
 
 #include <aros/debug.h>
+#include <hidd/graphics.h>
+#include <proto/utility.h>
+
+#define setError(x) if (errPtr) *errPtr = x
 
 /*****************************************************************************
 
@@ -78,7 +82,36 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("CreateVLayerHandleTagList");
+    struct VLayerHandle *vh;
+    struct BitMap *bm = Screen->RastPort.BitMap;
+    ULONG *errPtr = GetTagData(VOA_Error, 0, TagItems);
+
+    vh = AllocMem(sizeof(struct VLayerHandle), MEMF_ANY);
+    if (!vh) {
+	setError(VOERR_NOMEMORY);
+	return NULL;
+    }
+
+    if (bm->Flags & BMF_SPECIALFMT) {
+        struct TagItem layerTags[] = {
+	    {TAG_DONE, 0}
+	};
+
+	/* TODO: fill in layer tags */
+	vh->drv = (OOP_Object *)bm->Planes[0];
+	vh->obj = HIDD_Gfx_NewOverlay(vh->drv, layerTags);
+	/* TODO: determine and set error code */
+    } else {
+	vh->obj = NULL;
+	setError(VOERR_INVSCRMODE);
+    }
+
+    if (vh->obj)
+	return vh;
+
+    FreeMem(vh, sizeof(struct VLayerHandle));
+
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 } /* CreateVLayerHandleTagList */

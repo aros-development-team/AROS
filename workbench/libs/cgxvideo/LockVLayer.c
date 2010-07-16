@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <aros/debug.h>
@@ -48,6 +48,7 @@
     AROS_LIBFUNC_INIT
 
     aros_print_not_implemented ("LockVLayer");
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* LockVLayer */

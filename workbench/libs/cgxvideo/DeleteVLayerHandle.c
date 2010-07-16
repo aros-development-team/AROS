@@ -1,8 +1,9 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <aros/debug.h>
+#include <hidd/graphics.h>
 
 #include "cgxvideo_intern.h"
 
@@ -44,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("DeleteVLayerHandle");
+    HIDD_Gfx_DisposeOverlay(VLayerHandle->drv, VLayerHandle->obj);
 
     AROS_LIBFUNC_EXIT
 } /* DeleteVLayerHandle */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <aros/debug.h>
@@ -11,7 +11,7 @@
     NAME */
 #include <clib/cgxvideo_protos.h>
 
-	AROS_LH1(ULONG, UnlockVLayer,
+	AROS_LH1(void, UnlockVLayer,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct VLayerHandle *, VLayerHandle, A0),
