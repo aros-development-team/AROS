@@ -6,6 +6,6 @@ Path "C" "S" ADD QUIET
 Protect S/startnet s add quiet
 Protect S/stopnet s add quiet
 
-if $AROSTCP/AutoRun eq "True"
+if ${AROSTCP/AutoRun} eq "True"
   C:execute S/startnet
 EndIf
