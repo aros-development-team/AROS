@@ -1,0 +1,924 @@
+## version $VER: Zune.catalog 1.0 (16.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+; buttonsp.c
+;-----------
+MSG_GENERAL
+Generelt
+; General
+;
+MSG_BACKGROUND_COLON
+Baggrund:
+; Background:
+;
+MSG_BACKGROUND_PRESSED
+Baggrund i\nnedtrykket tilstand:
+; Background in\npressed state:
+;
+MSG_TEXT_BUTTONS
+Tekstknapper
+; Text Buttons
+;
+MSG_FRAME_COLON
+Ramme:
+; Frame:
+;
+MSG_FONT
+Skrifttype:
+; Font:
+;
+MSG_IMAGE_BUTTONS
+Billedknapper
+; Image Buttons
+;
+MSG_ADJUST_FRAME
+Justér ramme
+; Adjust Frame
+;
+MSG_CHECKMARKS
+Afkrydsningsmærker
+; Checkmarks
+;
+MSG_LOOK_COLON
+Udseende:
+; Look:
+;
+MSG_CHECKMARK
+Afkrydsningsmærke
+; Checkmark
+;
+MSG_RADIO_BUTTONS
+Radioknapper
+; Radio Buttons
+;
+MSG_RADIOBUTTON
+Radioknap
+; Radiobutton
+;
+MSG_LOOK
+Udseende
+; Look
+;
+MSG_H
+V
+; H
+;
+MSG_V
+L
+; V
+;
+MSG_SPACING
+Afstand
+; Spacing
+;
+;=============================
+; cyclesp.c
+;----------
+MSG_BELOW
+under
+; below
+;
+MSG_ON_ACTIVE
+aktiveret
+; on active
+;
+MSG_CYCLE_GADGET_DESIGN
+Cycle Gadget Design
+; Cycle Gadget Design
+;
+MSG_CYCLE
+Cycle
+; Cycle
+;
+MSG_POPUP_MENU_CONTROL
+Popopmenukontrol
+; Popup Menu Control
+;
+MSG_POSITION
+Position:
+; Position:
+;
+MSG_LEVEL
+Niveau:
+; Level:
+;
+MSG_SPEED
+Hastighed:
+; Speed:
+;
+MSG_POPUP_MENU_DESIGN
+Popopmenudesign
+; Popup Menu Design
+;
+MSG_FRAME
+Ramme
+; Frame
+;
+MSG_ADJUST_BACKGROUND
+Justér baggrund
+; Adjust Background
+;
+MSG_BACKGROUND
+Baggrund
+; Background
+;
+MSG_RECESSED_ENTRIES
+Recessed Entries:
+; Recessed Entries:
+;
+;=============================
+; groupsp.c
+;__________
+MSG_ABOVE
+over
+; above
+;
+MSG_CENTERED
+centreret
+; centered
+;
+MSG_STANDARD
+standard
+; standard
+;
+MSG_HILITE
+hilite
+; hilite
+;
+MSG_3D
+3d
+; 3d
+;
+MSG_OUTLINE
+outline
+; outline
+;
+MSG_TITLE
+Titel
+; Title
+;
+MSG_COLOR
+Farve:
+; Color:
+;
+MSG_HORIZONTAL
+Vandret:
+; Horizontal:
+;
+MSG_VERTICAL
+Lodret:
+; Vertical:
+;
+MSG_REGISTER
+Register
+; Register
+;
+MSG_DEFAULT_SIZE_TRUNCATE_TITLES
+Standardstørrelse for afkortning af titler:
+; Default size truncate titles:
+;
+MSG_NORMAL
+Normal
+; Normal
+;
+MSG_VIRTUAL
+Virtuel
+; Virtual
+;
+MSG_FRAMED
+Indrammet
+; Framed
+;
+MSG_PAGE
+Side
+; Page
+;
+;=============================
+; listviewsp.c
+;-------------
+MSG_SHIFTED
+skiftet
+; shifted
+;
+MSG_ALWAYS
+altid
+; always
+;
+MSG_LINEAR
+lineær
+; linear
+;
+MSG_MIXED
+blandet
+; mixed
+;
+MSG_CONTROL
+Kontrol
+; Control
+;
+MSG_MULTI
+Multi:
+; Multi:
+;
+MSG_REFRESH
+Opfrisk:
+; Refresh:
+;
+MSG_SMOOTH
+Udglat:
+; Smooth:
+;
+MSG_FONTS
+Skrifttyper
+; Fonts
+;
+MSG_NORMAL_COLON
+Normal:
+; Normal:
+;
+MSG_FIXED
+Fastbredde:
+; Fixed:
+;
+MSG_LEADING
+Afstand
+; Leading
+;
+MSG_DESIGN
+Design
+; Design
+;
+MSG_INPUT_LISTS
+Input \nlister:
+; Input \nLists:
+;
+MSG_READONLY_LISTS
+Readonly \nlister:
+; Readonly \nLists:
+;
+MSG_CURSOR
+Markør
+; Cursor
+;
+MSG_ACTIVE
+Aktiv:
+; Active:
+;
+MSG_ACTIVE_SELECTED
+Aktiv &\nvalgt:
+; Active &\nSelected:
+;
+MSG_SELECTED
+Valgt:
+; Selected:
+;
+;=============================
+; navigationp.c
+;______________
+MSG_ALWAYS_SOLID
+altid solid
+; always solid
+;
+MSG_GHOSTED_ON_BOX
+gennemsigtig over boks
+; ghosted on box
+;
+MSG_GHOSTED_OUTSIDE_BOX
+gennemsigtig udenfor boks
+; ghosted outside box
+;
+MSG_ALWAYS_GHOSTED
+altid gennemsigtig
+; always ghosted
+;
+MSG_SHOW_FRAMES
+vis rammer
+; show frames
+;
+MSG_SHOW_OBJECTS
+vis objekter
+; show objects
+;
+MSG_KL_PRESS
+Tryk:
+; Press:
+;
+MSG_KL_TOGGLE
+Veksle
+; Toggle:
+;
+MSG_KL_UP
+Op:
+; Up:
+;
+MSG_KL_DOWN
+Ned:
+; Down:
+;
+MSG_KL_PAGE_UP
+Side op:
+; Page up:
+;
+MSG_KL_PAGE_DOWN
+Side ned:
+; Page down:
+;
+MSG_KL_TOP
+Top:
+; Top:
+;
+MSG_KL_BOTTOM
+Bund:
+; Bottom:
+;
+MSG_KL_LEFT
+Venstre:
+; Left:
+;
+MSG_KL_RIGHT
+Højre:
+; Right:
+;
+MSG_KL_WORD_LEFT
+Ord venstre:
+; Word left:
+;
+MSG_KL_WORD_RIGHT
+Ord højre:
+; Word right:
+;
+MSG_KL_LINE_START
+Liniestart:
+; Line start:
+;
+MSG_KL_LINE_END
+Lineafslutning:
+; Line end:
+;
+MSG_KL_NEXT_GADGET
+Næste gadget:
+; Next gadget:
+;
+MSG_KL_PREV_GADGET
+Forrige gadget:
+; Prev. gadget:
+;
+MSG_KL_GADGET_OFF
+Gadget slået fra:
+; Gadget off:
+;
+MSG_KL_CLOSE_WINDOW
+Luk vindue:
+; Close window:
+;
+MSG_KL_NEXT_WINDOW
+Næste vindue:
+; Next window:
+;
+MSG_KL_PREV_WINDOW
+Forrige vindue:
+; Prev. window:
+;
+MSG_KL_HELP
+Hjælp:
+; Help:
+;
+MSG_KL_POPUP
+Pop-op:
+; Popup:
+;
+MSG_DRAG_DROP
+Træk og slip
+; Drag & Drop
+;
+MSG_LEFT_BUTTON
+Venstre knap:
+; Left Button:
+;
+MSG_MIDDLE_BUTTON
+Midterknap:
+; Middle Button:
+;
+MSG_AUTOSTART
+Autostart:
+; Autostart:
+;
+MSG_PIXEL
+%ld billedpunkt
+; %ld pixel
+;
+MSG_BALANCING_GROUPS
+Balancerede grupper
+; Balancing Groups
+;
+MSG_EXAMPLE
+Eksempel:
+; Example:
+;
+MSG_TRY_WITH
+Prøv med
+; Try with
+;
+MSG_SHIFT
+skift
+; shift
+;
+MSG_TOO
+også!
+; too!
+;
+MSG_KEYBOARD_CONTROL
+Tastaturkontrol
+; Keyboard Control
+;
+MSG_COLOR_ACTIVE_OBJ
+Farve på aktivt objekt:
+; Color of active object:
+;
+MSG_NEWLOOK
+newlook
+; newlook
+;
+MSG_CUSTOM
+custom
+; custom
+;
+MSG_ARROWS
+Pile
+; Arrows
+;
+MSG_UP
+op
+; up
+;
+MSG_ARROW_UP
+Pil op
+; Arrow up
+;
+MSG_ARROW_DOWN
+Pil ned
+; Arrow down
+;
+MSG_DOWN
+ned
+; down
+;
+MSG_LEFT
+venstre
+; left
+;
+MSG_ARROW_LEFT
+Pil venstre
+; Arrow left
+;
+MSG_ARROW_RIGHT
+Pil højre
+; Arrow right
+;
+MSG_RIGHT
+højre
+; right
+;
+MSG_BAR
+Bjælke
+; Bar
+;
+MSG_GADGET_TYPE
+Gadgettype:
+; Gadget Type:
+;
+MSG_SCROLLER
+Ruller:
+; Scroller
+;
+MSG_KNOB
+Knop
+; Knob
+;
+MSG_ARRANGEMENT
+Arrangement
+; Arrangement
+;
+;=============================
+; slidersp.c
+;-----------
+MSG_CONTAINER_DESIGN
+Containerdesign
+; Container Design
+;
+MSG_KNOB_DESIGN
+Knopdesign
+; Knob Design
+;
+MSG_EXAMPLE_SLIDERS
+Example Sliders
+; Example Sliders
+;
+;=============================
+; specialp.c
+;-----------
+MSG_TEXT_FIELDS
+Tekstfelter
+; Text fields
+;
+MSG_EXAMPLE_TEXTFIELD
+Eksempel på tekstfelt
+; Example Textfield
+;
+MSG_PROGRESS_INDICATOR
+Fremgangsviser
+; Progress Indicator
+;
+MSG_DEVICE_IMAGES
+Enhedsbilleder
+; Device Images
+;
+MSG_DRAWER
+Skuffe
+; Drawer
+;
+MSG_HARDDISK
+Harddisk
+; Harddisk
+;
+MSG_DISK
+Disk
+; Disk
+;
+MSG_RAM
+Hukommelse
+; RAM
+;
+MSG_VOLUME
+Volume
+; Volume
+;
+MSG_NETWORK
+Netværk
+; Network
+;
+MSG_ASSIGN
+Tildel
+; Assign
+;
+MSG_TAPE_IMAGES
+Båndarkiver
+; Tape Images
+;
+MSG_TAPE_PLAY
+Tape play
+; Tape play
+;
+MSG_TAPE_PLAYBACK
+Tape playback
+; Tape playback
+;
+MSG_TAPE_PAUSE
+Tape pause
+; Tape pause
+;
+MSG_TAPE_STOP
+Tape stop
+; Tape stop
+;
+MSG_TAPE_RECORD
+Tape record
+; Tape record
+;
+MSG_TAPE_UP
+Tape up
+; Tape up
+;
+MSG_TAPE_DOWN
+Tape down
+; Tape down
+;
+;=============================
+; stringsp.c
+;-----------
+MSG_STRING_FRAME
+Strengramme
+; String Frame
+;
+MSG_SPECIAL_POPUP_BUTTONS
+Specielle pop-opknapper
+; Special Popup Buttons
+;
+MSG_POPUP
+Pop-op
+; Popup
+;
+MSG_DEFAULT
+Standard
+; Default
+;
+MSG_FILE
+Fil
+; File
+;
+MSG_POPUP_FILE
+Pop-op fil
+; Popup file
+;
+MSG_POPUP_DRAWER
+Pop-op skuffe
+; Popup drawer
+;
+MSG_INACTIVE_STRING_COLORS
+Inaktive strengfarver
+; Inactive String Colors
+;
+MSG_TEXT
+Tekst
+; Text
+;
+MSG_ACTIVE_STRING_COLORS
+Aktive strengfarver
+; Active String Colors
+;
+MSG_MARKED_STRING_COLORS
+Markerede strengfarver
+; Marked String Colors
+;
+MSG_EXAMPLE_STRING_GADGET
+Eksempel på et strenggadget
+; Example String Gadget
+;
+;=============================
+; windowp.c
+;----------
+MSG_FORGET_ON_EXIT
+Glem ved afslutning
+; forget on exit
+;
+MSG_REMEMBER_ON_EXIT
+Husk ved afslutning
+; remember on exit
+;
+MSG_SAVE_ON_EXIT
+Gem ved afslutning
+; save on exit
+;
+MSG_SMART
+smart
+; smart
+;
+MSG_SIMPLE
+enkel
+; simple
+;
+MSG_WITHOUT_CLEAR
+without clear
+; without clear
+;
+MSG_WITH_CLEAR
+with clear
+; with clear
+;
+MSG_POSITIONS
+Positioner:
+; Positions:
+;
+MSG_REDRAW
+Gentegn:
+; Redraw:
+;
+MSG_TINY
+Lille:
+; Tiny:
+;
+MSG_BIG
+Stor:
+; Big:
+;
+MSG_WINDOW
+Vindue:
+; Window
+;
+MSG_REQUESTER
+Forespørger:
+; Requester
+;
+MSG_L
+L
+; L
+;
+MSG_T
+T
+; T
+;
+MSG_R
+R
+; R
+;
+MSG_B
+B
+; B
+;
+MSG_BUTTONS
+Knapper
+; Buttons
+;
+;=============================
+; zune.c
+;-------
+MSG_WINTITLE1
+Zune - globale indstillinger
+; Zune - Global Prefs
+;
+MSG_WINTITLE2
+Zune - indstillinger for : %s
+; Zune - Prefs for : %s
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_OPEN
+Åbn ...
+; Open ...
+;
+MSG_MEN_OPEN_SC
+O
+; O
+;
+MSG_MEN_APPEND
+Tilføj ...
+; Append ...
+;
+MSG_MEN_SAVEAS
+Gem som ...
+; Save As ...
+;
+MSG_MEN_SAVEAS_SC
+A
+; A
+;
+MSG_MEN_ABOUT
+Om Zune ...
+; About Zune ...
+;
+MSG_MEN_ABOUT_SC
+?
+; ?
+;
+MSG_MEN_QUIT
+Afslut
+; Quit
+;
+MSG_MEN_QUIT_SC
+Q
+; Q
+;
+MSG_FRAME_CLIPBOARD
+Rammeklippebord
+; Frame Clipboard
+;
+MSG_IMAGE_CLIPBOARD
+Billedklippebord
+; Image Clipboard
+;
+MSG_GAD_TEST
+_Prøv
+; _Test
+;
+MSG_GAD_SAVE
+_Gem
+; _Save
+;
+MSG_GAD_USE
+_Brug
+; _Use
+;
+MSG_GAD_CANCEL
+_Afbryd
+; _Cancel
+;
+MSG_DSC_SYSTEM
+System
+; System
+;
+MSG_DSC_WINDOWS
+Vinduer
+; Windows
+;
+MSG_DSC_GROUPS
+Grupper
+; Groups
+;
+MSG_DSC_BUTTONS
+Knapper
+; Buttons
+;
+MSG_DSC_CYCLES
+Cycles
+; Cycles
+;
+MSG_DSC_SLIDERS
+Sliders
+; Sliders
+;
+MSG_DSC_SCROLLBARS
+Rullebjælker
+; Scrollbars
+;
+MSG_DSC_LISTVIEWS
+Listevisninger
+; Listviews
+;
+MSG_DSC_STRINGS
+Strenge
+; Strings
+;
+MSG_DSC_NAVIGATION
+Navigering
+; Navigation
+;
+MSG_DSC_SPECIAL
+Speciel
+; Special
+;
+MSG_DSC_FRAMES
+Rammer
+; Frames
+;
+;=============================
+; zunestuff.c
+;------------
+MSG_ADJUST_PEN
+Justér pen
+; Adjust Pen
+;
+;=============================
+; framesp.c
+;----------
+MSG_CUSTOMFRAMES
+Customframes
+; Customframes
+;
+;=============================
+; systemp.c
+;----------
+MSG_PUBLIC_SCREEN
+Offentlig skærm
+; Public Screen
+;
+MSG_NAME
+Navn:
+; Name:
+;
+MSG_CALL_INSPECTOR
+Kald inspektør
+; Call Inspector
+;
+MSG_POP_TO_FRONT
+Pop to front:
+; Pop to front:
+;
+MSG_ICONIFICATION
+Ikonificering
+; Iconification
+;
+MSG_HOTKEY
+Hotkey:
+; Hotkey:
+;
+MSG_SHOW
+Vis:
+; Show:
+;
+MSG_ICON
+IkoN:
+; Icon
+;
+MSG_MENU
+Menu:
+; Menu
+;
+MSG_ON_STARTUP
+Ved opstart:
+; On Startup:
+;
+MSG_INTERFACES
+Interfaces
+; Interfaces
+;
+MSG_AREXX
+ARexx:
+; ARexx:
+;
+MSG_BUBBLE_HELP
+Boblehjælp
+; Bubble Help
+;
+MSG_FIRST_BUBBLE
+Første boble:
+; First Bubble:
+;
+MSG_NEXT_BUBBLE
+Næste boble:
+; Next Bubble:
+;

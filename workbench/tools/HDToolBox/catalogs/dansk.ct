@@ -1,0 +1,170 @@
+## version $VER: hdtoolbox.catalog 1.0 (14.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+WORD_Active
+Aktiv
+; Active
+;
+WORD_AddEntry
+Tilføj post
+; Add Entry
+;
+WORD_All
+Alle
+; All
+;
+WORD_Automount
+Automatisk montering
+; Automount
+;
+WORD_Bootable
+Opstartelig
+; Bootable
+;
+WORD_BootPri
+Opstartsprioritet
+; Boot Priority
+;
+WORD_Cancel
+Afbryd
+; Cancel
+;
+WORD_Changed
+Ændret
+; Changed
+;
+WORD_Change_Type
+Ændr type
+; Change Type
+;
+WORD_Create_Table
+Opret tabel
+; Create Table
+;
+WORD_Devices
+Enheder
+; Devices
+;
+WORD_DosEnvec
+DosEnvec
+; DosEnvec
+;
+WORD_Exit
+Afslut
+; Exit
+;
+WORD_Geometry
+Geometri
+; Geometry
+;
+WORD_Name
+Navn
+; Name
+;
+WORD_Switches
+Parametre
+; Switches
+;
+WORD_Ok
+O.k.
+; Ok
+;
+WORD_Parent
+Forælder
+; Parent
+;
+WORD_Partitions
+Partitioner
+; Partitions
+;
+WORD_Partition_Table
+Partitionstabel
+; Partition Table
+;
+WORD_Partition_Table_Type
+Partitionstabeltype
+; Partition Table Type
+;
+WORD_Partition_Type
+Partitionstype
+; Partition Type
+;
+WORD_RemoveEntry
+Fjern post
+; Remove Entry
+;
+WORD_Rename
+Omdøb
+; Rename
+;
+WORD_Resize_Move
+Ændr størrelse/flyt
+; Resize/Move
+;
+WORD_Save_Changes
+Gem ændringer
+; Save Changes
+;
+WORD_Size
+Størrelse
+; Size
+;
+WORD_Unit
+Enhed
+; Unit
+;
+WORD_Units
+Enheder
+; Units
+;
+WORD_Unknown
+Ukendt
+; Unknown
+;
+WORD_MENU_Project
+Projekt
+; Project
+;
+WORD_MENU_About
+Om
+; About
+;
+WORD_MENU_Quit
+Afslut
+; Quit
+;
+MSG_ASK_SAVE
+Alle data på ændrede partitioner vil blive ødelagt!\nVil du gennemføre ændringerne til partitionstabel '%s'?
+; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
+;
+MSG_NO_MEMORY
+Ikke nok hukommelse
+; Not enough memory
+;
+MSG_PARTITION_TABLE_FULL
+Partitionstabellen er fuld
+; Partition table full
+;
+MSG_Select_Empty_Area
+Vælg tomt område
+; Select empty area
+;
+MSG_Select_Partition_Resize_Move
+vælg en partition til flytning/størrelsesforandring
+; Select a partition and resize/move it
+;
+MSG_Welcome
+Velkommen til partitioneringsværktøjet
+; Welcome to the partitioning tool
+;
+MSG_WriteTableError
+Der opstod en fejl under skrivning af partitionstabel
+; Error while writing partition table
+;
+MSG_CreateTableError
+Der opstod en fejl under oprettelse af partitionstabel
+; Error while creating partition table
+;
