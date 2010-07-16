@@ -7,10 +7,7 @@
 #endif
 
 
-struct    VLayerHandle
-{
-	ULONG	VLH_Void;		/*dont know the structure _yet_ */	
-};
+struct VLayerHandle;
 
 
 #define VOA_TAGBASE			(0x88000000)
