@@ -428,6 +428,7 @@ ULONG DoLayout(ULONG initial)
 
 ULONG DoScaleMethod(ULONG xsize, ULONG ysize, BOOL aspect)
 {
+#ifdef __GNUC__
     struct pdtScale msg;
     
     D(bug(" scale width %d height %d\n", xsize, ysize));
@@ -438,6 +439,9 @@ ULONG DoScaleMethod(ULONG xsize, ULONG ysize, BOOL aspect)
     // D(bug("- method %08lx newwidth %ld newheight %ld flags %08lx\n", msg.MethodID, msg.ps_NewWidth, msg.ps_NewHeight, msg.ps_Flags));
 
     return DoMethodA(dto, (Msg)&msg);
+#else
+    return 0;
+#endif
 }
 
 /*********************************************************************************************/

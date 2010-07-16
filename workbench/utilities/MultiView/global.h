@@ -156,8 +156,12 @@
 #include <proto/datatypes.h>
 #endif
 
+#ifdef __SASC
+typedef const unsigned char *CONST_STRPTR;
+#else
 #ifndef PROTO_ALIB_H
 #include <proto/alib.h>
+#endif
 #endif
 
 #ifndef PROTO_GADTOOLS_H

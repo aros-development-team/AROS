@@ -963,11 +963,11 @@ static void HandleAll(void)
     
     while (!quitme)
     {
-	sigs = Wait(msgmask | winmask );
 //        if ( (sigs & winmask) || (sigs & msgmask) )
         TEXT                editorvarbuffer[300];
         struct AppMessage  *appmsg;
 
+	sigs = Wait(msgmask | winmask );
         while ((appmsg = (struct AppMessage *) GetMsg(msgport)))
         {
             if (appmsg->am_Type == AMTYPE_APPWINDOW)

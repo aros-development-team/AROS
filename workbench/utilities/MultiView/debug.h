@@ -22,7 +22,7 @@
 void kprintf(char *string, ...);
 #define D(x) {kprintf("%s/%ld (%s): ", __FILE__, __LINE__, FindTask(NULL)->tc_Node.ln_Name);(x);};
 #else
-#define D(x) ;
+#define D(x)
 
 #endif /* MYDEBUG */
 
