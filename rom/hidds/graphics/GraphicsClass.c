@@ -555,11 +555,12 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	
 	The returned value is a combination of the following bit flags:
 	  vHidd_SpriteType_3Plus1 - color 0 is transparent, 1-3 visible
-				     (Amiga(tm) chipset sprite format)
+				    (Amiga(tm) chipset sprite format)
 	  vHidd_SpriteType_2Plus1 - color 0 is transparent, color 1 is undefined
 				     (can be whatever, for example clear or inverse),
 				     colors 2-3 visible.
-	  vHidd_SpriteType_DirectColor - Hi- or truecolor image, perhaps with alpha channel
+	  vHidd_SpriteType_DirectColor - Hi- or truecolor image, or LUT image with own
+					 palette, perhaps with alpha channel
 
     NOTES
 	This attribute should return 0 if the driver does not support hardware mouse sprite
@@ -580,72 +581,6 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	and provides (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor) in case
 	if it returns TRUE. Otherwise it returns zero. This is done for backwards
 	compatibility with old drivers.
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-	aoHidd_Gfx_MaxSpriteWidth
-
-    SYNOPSIS
-	[..G], ULONG
-
-    LOCATION
-	hidd.graphics.graphics
-
-    FUNCTION
-	Return maximum width of hardware sprite image supported by the driver.
-	
-    NOTES
-	This attribute should return 0 if the driver does not support hardware mouse sprite
-	at all. Software sprite emulation is done by graphics.library.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	aoHidd_Gfx_MaxSpriteHeight
-
-    INTERNALS
-	Default implementation in the base class queries aoHidd_Gfx_HWSpriteTypes
-	and provides 16 in case	if it returns nonzero value. Otherwise it returns zero. This
-	is done for backwards compatibility with old drivers. Note that these values have
-	nothing to do with real ones.
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-	aoHidd_Gfx_MaxSpriteHeight
-
-    SYNOPSIS
-	[..G], ULONG
-
-    LOCATION
-	hidd.graphics.graphics
-
-    FUNCTION
-	Return maximum height of hardware sprite image supported by the driver.
-	
-    NOTES
-	This attribute should return 0 if the driver does not support hardware mouse sprite
-	at all. Software sprite emulation is done by graphics.library.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	aoHidd_Gfx_MaxSpriteHeight
-
-    INTERNALS
-	Default implementation in the base class queries aoHidd_Gfx_HWSpriteTypes
-	and provides 65535 in case if it returns nonzero value. Otherwise it returns zero.
-	This is done for backwards compatibility with old drivers. Note that these values
-	have nothing to do with real ones.
 
 *****************************************************************************************/
 
@@ -759,27 +694,6 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 		OOP_GetAttr(o, aHidd_Gfx_SupportsHWCursor, &hwc);
 		*msg->storage = hwc ? (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor) : 0;
-		return;
-	    }
-
-	    /* Note that MaxSpriteWidth and MaxSpriteHeight here are not real values. These are
-	       just some reasonable defaults. It is strongly advised to provide correct values
-	       in your driver and not rely on this kludge! */
-	    case aoHidd_Gfx_MaxSpriteWidth:
-	    {
-		IPTR hwc;
-
-		OOP_GetAttr(o, aHidd_Gfx_HWSpriteTypes, &hwc);
-		*msg->storage = hwc ? 16 : 0;
-		return;
-	    }
-
-	    case aoHidd_Gfx_MaxSpriteHeight:
-	    {
-		IPTR hwc;
-
-		OOP_GetAttr(o, aHidd_Gfx_HWSpriteTypes, &hwc);
-		*msg->storage = hwc ? 65535 : 0;
 		return;
 	    }
 
@@ -3410,6 +3324,63 @@ BOOL GFX__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamm
 BOOL GFX__Hidd_Gfx__QueryHardware3D(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryHardware3D *msg)
 {
     return FALSE;
+}
+
+/*****************************************************************************************
+
+    NAME
+	moHidd_Gfx_GetMaxSpriteSize
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_GetMaxSpriteSize *msg);
+
+	BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *gfxHidd, ULONG Type, ULONG *Width, ULONG *Height);
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Query maximum allowed size for the given sprite type.
+
+    INPUTS
+	gfxHidd - A display driver object
+	Type	- Type of the sprite image (one of vHidd_SpriteType_... values)
+	Width	- A pointer to ULONG where width will be placed.
+	Height	- A pointer to ULONG where height will be placed.
+
+    RESULT
+	FALSE is the given sprite type is not supported, otherwise TRUE.
+
+    NOTES
+	Default implementation in the base class just return some small values
+	which it hopes can be supported by every driver if the driver supports given
+	sprite type. It is strongly suggested to reimplement this method in the display
+	driver.
+
+	Width and Height are considered undefined if the method returns FALSE.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+BOOL GFX__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMaxSpriteSize *msg)
+{
+    IPTR types;
+
+    OOP_GetAttr(o, aHidd_Gfx_HWSpriteTypes, &types);
+
+    if (types & msg->Type) {
+	*msg->Width  = 16;
+	*msg->Height = 32;
+	return TRUE;
+    } else
+	return FALSE;
 }
 
 /****************************************************************************************/

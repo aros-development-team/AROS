@@ -279,7 +279,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MA_PixelFormats
 
     SYNOPSIS
-	[..G], BOOL *
+	[..G], ULONG *
 
     LOCATION
 	MONITORCLASS
@@ -287,14 +287,14 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     FUNCTION
 	Query table of supported pixelformats.
 
-	A returned value is a pointer to static array of BOOLs, one BOOL per CyberGraphX
-	pixelformat. TRUE value in the array says that the pixelformat is supported,
-	otherwise it's not.
+	A returned value is a pointer to static array of ULONGs, one ULONG per CyberGraphX
+	pixelformat. Values of these ULONGs are actually booleans. TRUE value in the array
+	says that the pixelformat is supported,	FALSE means it's not.
 
     NOTES
 
     EXAMPLE
-	BOOL *pfs;
+	ULONG *pfs;
 
 	GetAttr(MA_PixelFormats, monitor, (IPTR *)&pfs);
 	if (pfs[PUXFMT_LUT8])
@@ -1039,13 +1039,14 @@ IPTR MonitorClass__MM_GetDefaultPixelFormat(Class *cl, Object *obj, struct msGet
 	obj         - A monitor object
 	MethodID    - MM_GetPointerBounds
 	PointerType - Pointer type (one of PointerType_...)
-	Store	 - A pointer to an ULONG location where CyberGraphX pixelformat
-		   number will be placed. -1 means unsupported depth.
+	Width	    - A pointer to an ULONG location where width will be placed.
+	Height	    - A pointer to an ULONG location where height will be placed.
 
     RESULT
 	FALSE is given pointer type is not supported, TRUE otherwise.
 
     NOTES
+	Width and Height are considered undefined if the method returns FALSE.
 
     EXAMPLE
 
@@ -1061,18 +1062,8 @@ IPTR MonitorClass__MM_GetDefaultPixelFormat(Class *cl, Object *obj, struct msGet
 IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPointerBounds *msg)
 {
     struct MonitorData *data = INST_DATA(cl, obj);
-    IPTR val;
 
-    OOP_GetAttr(data->driver, aHidd_Gfx_HWSpriteTypes, &val);
-    if (val & msg->PointerType) {
-	OOP_GetAttr(data->driver, aHidd_Gfx_MaxSpriteWidth, &val);
-	*msg->Width  = val;
-	OOP_GetAttr(data->driver, aHidd_Gfx_MaxSpriteHeight, &val);
-	*msg->Height = val;
-
-	return TRUE;
-    } else
-	return FALSE;
+    return HIDD_Gfx_GetMaxSpriteSize(data->driver, msg->PointerType, msg->Width, msg->Height);
 }
 
 /************************************************************************************

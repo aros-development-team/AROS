@@ -4,7 +4,7 @@ struct MonitorData
 {
     struct MinNode node;
     OOP_Object *driver;
-    BOOL pixelformats[MONITOR_MAXPIXELFORMATS];
+    ULONG pixelformats[MONITOR_MAXPIXELFORMATS];
     OOP_Object *pfobjects[MONITOR_MAXPIXELFORMATS];
     
     Object *topleft;

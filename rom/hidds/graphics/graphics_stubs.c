@@ -416,6 +416,22 @@ BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt)
     return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
+/***************************************************************/
+
+BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *obj, ULONG Type, ULONG *Width, ULONG *Height)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_GetMaxSpriteSize p, *msg = &p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMaxSpriteSize);
+
+    p.mID    = mid;
+    p.Type   = Type;
+    p.Width  = Width;
+    p.Height = Height;
+
+    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
+}
 
 /***************************************************************/
 
