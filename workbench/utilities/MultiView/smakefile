@@ -31,3 +31,5 @@ strings.h: catalogs/multiview.cd
 
 clean:
 	-delete $(OBJS) MultiView.lnk strings.h
+
+install:
