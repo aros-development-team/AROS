@@ -9,6 +9,7 @@
 #define __OOP_NOATTRBASES__
 
 #include <exec/libraries.h>
+#include <exec/rawfmt.h>
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
@@ -65,6 +66,7 @@ static OOP_AttrBase HiddGDIBitMapAB;
 static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
@@ -73,6 +75,7 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
     { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
     { IID_Hidd_Gfx  	, &HiddGfxAttrBase	},
+    { IID_Hidd		, &HiddAttrBase		},
     { NULL  	    	, NULL      	    	}
 };
 
@@ -231,10 +234,14 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1600_1200	},
 	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
-    
+
+    STRPTR name[32];
     struct TagItem mytags[] =
     {
 	{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	},
+	{ aHidd_Name		, (IPTR)name		},
+	{ aHidd_HardwareName	, (IPTR)"Windows GDI"	},
+	{ aHidd_ProducerName	, (IPTR)"Microsoft corporation"},
 	{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
     };
     struct pRoot_New mymsg = { msg->mID, mytags };
@@ -270,9 +277,7 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     mode_tags[2].ti_Data = htotal;
     mode_tags[3].ti_Data = vtotal;
 
-    /* Omit card number for the first display */
-    if (XSD(cl)->displaynum == 1)
-	mode_tags[8].ti_Data = (IPTR)"Windows: %hx%v";
+    NewRawDoFmt("gdi%lu.monitor", (VOID_FUNC)RAWFMTFUNC_STRING, name, XSD(cl)->displaynum);
 
     /* Register gfxmodes */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
@@ -378,20 +383,19 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_Gfx_IsWindowed:
 	    case aoHidd_Gfx_SupportsHWCursor:
 	    case aoHidd_Gfx_NoFrameBuffer:
-	    	*msg->storage = (IPTR)TRUE;
-		break;
-	
-	    default:
-	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
+	    	*msg->storage = TRUE;
+		return;
+
+	    case aoHidd_Gfx_HWSpriteTypes:
+		*msg->storage = vHidd_SpriteType_DirectColor;
+		return;
+
+	    case aoHidd_Gfx_DriverName:
+		*msg->storage = (IPTR)"GDI";
+		return;
 	}
     }
-    else
-    {
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
-
-    return;
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/

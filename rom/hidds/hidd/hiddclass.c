@@ -24,6 +24,8 @@
 
 #include <aros/symbolsets.h>
 
+#include <string.h>
+
 #include "hiddclass_intern.h"
 
 #include LC_LIBDEFS_FILE
@@ -102,12 +104,14 @@ static const char unknown[]  = "--unknown device--";
     FUNCTION
 	Name of the driver instance under which it is known to the OS. This name is
 	provided to OS components that use the driver. For example Intuition's MONITORCLASS
-	expects to find	something like "ati_dvi.monitor", "ati_vga.monitor" or
+	expects to find	something like "ati_dvi1.monitor", "ati_vga1.monitor" or
 	"pcvga.monitor" here.
 
 	Note that is is instance name, not class name. Different instances of the driver may
 	need to provide different names	for different objects (like in ATI example) in order
 	to let the OS to distinguish between them.
+
+	The supplied string is internally copied, you may destroy it after object creation.
 
     NOTES
 	Initial value for this attribute is usually supplied by driver class in its
@@ -141,6 +145,8 @@ static const char unknown[]  = "--unknown device--";
     NOTES
 	Initial value for this attribute is usually supplied by driver class in its
 	moRoot_New implementation.
+
+	The supplied string is not copied!
 
     EXAMPLE
 
@@ -204,6 +210,8 @@ static const char unknown[]  = "--unknown device--";
 	Initial value for this attribute is usually supplied by driver class in its
 	moRoot_New implementation.
 
+	The supplied string is not copied!
+
     EXAMPLE
 
     BUGS
@@ -230,7 +238,19 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         struct HIDDData *hd;
         struct TagItem *list = msg->attrList;
         struct pRoot_Set set_msg;
-        
+	STRPTR name, name2;
+
+	name = (STRPTR)GetTagData(aHidd_Name, 0,  list);
+	if (name) {
+	    ULONG l = strlen(name)+1;
+
+	    name2 = AllocVec(l, MEMF_ANY);
+	    if (!name2)
+		return NULL;
+	    CopyMem(name, name2, l);
+	} else
+	    name2 = unknown;
+
         hd = OOP_INST_DATA(cl, o);
 
         /*  Initialise the HIDD class. These fields are publicly described
@@ -247,8 +267,8 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         hd->hd_Type     = GetTagData(aHidd_Type,        0, list);
         hd->hd_SubType  = GetTagData(aHidd_SubType,     0, list);
         hd->hd_Producer = GetTagData(aHidd_Producer,    0, list);
-        
-        hd->hd_Name     = (STRPTR)GetTagData(aHidd_Name,        (IPTR)unknown,  list);
+
+	hd->hd_Name	= name2;
         hd->hd_HWName   = (STRPTR)GetTagData(aHidd_HardwareName,(IPTR)unknown,  list);
 	hd->hd_ProducerName = (STRPTR)GetTagData(aHidd_ProducerName, 0, list);
 
@@ -268,6 +288,16 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     ReturnPtr("HIDD::New", OOP_Object *, o);
 }
 
+/*** HIDD::Dispose() **********************************************************/
+VOID HIDDCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    struct HIDDData *hd = OOP_INST_DATA(cl, o);
+
+    if (hd->hd_Name != unknown)
+	FreeVec(hd->hd_Name);
+
+    OOP_DoSuperMethod(cl, o, msg);
+}
 
 /*** HIDD::Set() **************************************************************/
 
