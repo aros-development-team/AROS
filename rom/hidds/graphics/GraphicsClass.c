@@ -11,6 +11,7 @@
 #include <aros/atomic.h>
 #include <aros/config.h>
 #include <aros/symbolsets.h>
+#include <cybergraphx/cgxvideo.h>
 #include <exec/lists.h>
 #include <graphics/displayinfo.h>
 
@@ -3408,9 +3409,10 @@ BOOL GFX__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	Pointer to the newly created overlay object or NULL in case of failure.
 
     NOTES
-	Default implementation in the base class always returns NULL meaning that hardware
-	overlays are not supported. There's no sense in software implementation because
-	the software is supposed to handle software rendering itself.
+	Default implementation in the base class always sets VOERR_INVSCRMODE error and
+	returns NULL meaning that hardware overlays are not supported. There's no sense
+	in software implementation because the software is supposed to handle software
+	rendering itself.
 
     EXAMPLE
 
@@ -3425,6 +3427,11 @@ BOOL GFX__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 OOP_Object *GFX__Hidd_Gfx__NewOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewOverlay *msg)
 {
+    ULONG *err = (ULONG *)GetTagData(aHidd_Overlay_Error, 0, msg->attrList);
+
+    if (err)
+	*err = VOERR_INVSCRMODE;
+
     return NULL;
 }
 
@@ -3489,6 +3496,7 @@ static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
     __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
     __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
     __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
+    __IHidd_Overlay    	= OOP_ObtainAttrBase(IID_Hidd_Overlay);
     __IHidd_ColorMap 	= OOP_ObtainAttrBase(IID_Hidd_ColorMap);
     __IHidd_PlanarBM	= OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
     
@@ -3543,9 +3551,9 @@ static int GFX_ClassFree(LIBBASETYPEPTR LIBBASE)
     	OOP_ReleaseAttrBase(IID_Hidd_Gfx);
     	OOP_ReleaseAttrBase(IID_Hidd_Sync);
     	OOP_ReleaseAttrBase(IID_Hidd_GC);
+	OOP_ReleaseAttrBase(IID_Hidd_Overlay);
     	OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
     	OOP_ReleaseAttrBase(IID_Hidd_PlanarBM);
-
     }
     
     ReturnInt("free_gfxhiddclass", BOOL, TRUE);
