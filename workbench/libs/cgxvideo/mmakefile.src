@@ -23,8 +23,8 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-cgxvideo \
   modname=cgxvideo modtype=library \
-  files="$(FUNCS)" \
-  uselibs="arossupport amiga rom m hiddgraphicsstubs"
+  files="cgxvideo_init $(FUNCS)" \
+  uselibs="hiddgraphicsstubs oop"
 
 #MM includes-copy
 

@@ -31,12 +31,16 @@
 
 #include <oop/oop.h>
 
+#undef HiddOverlayAttrBase
+
 struct IntCGXVBase
 {
     struct Library libnode;
+    OOP_AttrBase   HiddOverlayAttrBase;
 };
 
 #define GetCGXVBase(base) ((struct IntCGXVBase *)base)
+#define HiddOverlayAttrBase (GetCGXVBase(CGXVideoBase)->HiddOverlayAttrBase)
 
 struct VLayerHandle
 {
