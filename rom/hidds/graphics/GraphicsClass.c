@@ -3383,6 +3383,97 @@ BOOL GFX__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	return FALSE;
 }
 
+/*****************************************************************************************
+
+    NAME
+	moHidd_Gfx_NewOverlay
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_NewOverlay *msg);
+
+	OOP_Object *HIDD_Gfx_NewOverlay(OOP_Object *gfxHidd, struct TagItem *tagList);
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Create a video overlay object.
+
+    INPUTS
+	gfxHidd - A graphics driver object on whose display you want to create an overlay.
+	tagList - A list of overlay attributes. See overlay class documentation for
+		  their description.
+
+    RESULT
+	Pointer to the newly created overlay object or NULL in case of failure.
+
+    NOTES
+	Default implementation in the base class always returns NULL meaning that hardware
+	overlays are not supported. There's no sense in software implementation because
+	the software is supposed to handle software rendering itself.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_Gfx_DisposeOverlay
+
+    INTERNALS
+
+*****************************************************************************************/
+
+OOP_Object *GFX__Hidd_Gfx__NewOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewOverlay *msg)
+{
+    return NULL;
+}
+
+/*****************************************************************************************
+
+    NAME
+	moHidd_Gfx_DisposeOverlay
+
+    SYNOPSIS
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisposeOverlay *msg);
+
+	VOID HIDD_Gfx_DisposeOverlay(OOP_Object *gfxHidd, OOP_Object *Overlay)
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Deletes an overlay previously created by moHidd_Gfx_NewOverlay.
+
+	Subclasses do not have to override this method
+	unless they allocate anything additional to an overlay object in
+	their HIDD_Gfx_NewOverlay() implementation.
+
+    INPUTS
+	gfxHidd - A driver object which was used for creating a GC.
+	Overlay - Pointer to an overlay object to delete.
+
+    RESULT
+	None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_Gfx_NewGC
+
+    INTERNALS
+	Basically just does OOP_DisposeObject(Overlay);
+
+*****************************************************************************************/
+
+VOID GFX__Hidd_Gfx__DisposeOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisposeOverlay *msg)
+{
+    OOP_DisposeObject(msg->Overlay);
+}
+
 /****************************************************************************************/
 
 #undef csd

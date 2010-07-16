@@ -95,10 +95,13 @@ enum
 
     moHidd_Gfx_GetGamma,
     moHidd_Gfx_SetGamma,
-    
+
     moHidd_Gfx_QueryHardware3D,
-    
+
     moHidd_Gfx_GetMaxSpriteSize,
+
+    moHidd_Gfx_NewOverlay,
+    moHidd_Gfx_DisposeOverlay,
 
     num_Hidd_Gfx_Methods
 };
@@ -224,12 +227,7 @@ struct pHidd_Gfx_DisposeGC
     OOP_Object      *gc;
 };
 
-struct pHidd_Gfx_NewBitMap
-{
-    OOP_MethodID    mID;
-    
-    struct TagItem  *attrList;
-};
+#define pHidd_Gfx_NewBitMap pHidd_Gfx_NewGC
 
 struct pHidd_Gfx_DisposeBitMap
 {
@@ -237,6 +235,13 @@ struct pHidd_Gfx_DisposeBitMap
     OOP_Object      *bitMap;
 };
 
+#define pHidd_Gfx_NewOverlay pHidd_Gfx_NewGC
+
+struct pHidd_Gfx_DisposeOverlay
+{
+    OOP_MethodID    mID;
+    OOP_Object      *Overlay;
+};
 
 /*
      The four next method calls are used for
@@ -1500,10 +1505,12 @@ enum
 
 /* Predeclarations of stubs in libhiddgraphicsstubs.h */
 
-OOP_Object * HIDD_Gfx_NewGC        (OOP_Object *hiddGfx, struct TagItem *tagList);
-VOID         HIDD_Gfx_DisposeGC    (OOP_Object *hiddGfx, OOP_Object *gc);
-OOP_Object * HIDD_Gfx_NewBitMap    (OOP_Object *hiddGfx, struct TagItem *tagList);
-VOID         HIDD_Gfx_DisposeBitMap(OOP_Object *hiddGfx, OOP_Object *bitMap);
+OOP_Object * HIDD_Gfx_NewGC         (OOP_Object *hiddGfx, struct TagItem *tagList);
+VOID         HIDD_Gfx_DisposeGC     (OOP_Object *hiddGfx, OOP_Object *gc);
+OOP_Object * HIDD_Gfx_NewBitMap     (OOP_Object *hiddGfx, struct TagItem *tagList);
+VOID         HIDD_Gfx_DisposeBitMap (OOP_Object *hiddGfx, OOP_Object *bitMap);
+OOP_Object * HIDD_Gfx_NewOverlay    (OOP_Object *hiddGfx, struct TagItem *tagList);
+VOID	     HIDD_Gfx_DisposeOverlay(OOP_Object *hiddGfx, OOP_Object *Overlay);
 
 HIDDT_ModeID *HIDD_Gfx_QueryModeIDs(OOP_Object *hiddGfx, struct TagItem *queryTags);
 VOID 	      HIDD_Gfx_ReleaseModeIDs(OOP_Object *hiddGfx, HIDDT_ModeID *modeIDs);
