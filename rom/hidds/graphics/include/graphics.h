@@ -48,12 +48,14 @@ typedef OOP_Object *HIDDT_GC;
 #define HiddBitMapAttrBase      __IHidd_BitMap
 
 #define HiddPixFmtAttrBase	__IHidd_PixFmt
+#define HiddOverlayAttrBase	__IHidd_Overlay
 
 #ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddGCAttrBase;
 extern OOP_AttrBase HiddGfxAttrBase;
 extern OOP_AttrBase HiddBitMapAttrBase;
 extern OOP_AttrBase HiddPixFmtAttrBase;
+extern OOP_AttrBase HiddOverlayAttrBase;
 #endif
 
 /**** Graphics definitions ****************************************************/
@@ -2339,8 +2341,24 @@ enum
 #define IS_SYNC_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddSyncAttrBase) < num_Hidd_Sync_Attrs)
 
+/************* Video overlay class *****************************/
+
+enum
+{
+    aoHidd_Overlay_SrcWidth,	    	/* [I..] (ULONG)   Source width in pixels			      */
+    aoHidd_Overlay_SrcHeight,		/* [I..] (ULONG)   Source height in pixels			      */
+    aoHidd_Overlay_SrcFormat,		/* [I..] (ULONG)   Source pixel format				      */
+    aoHidd_Overlay_Error,		/* [I..] (ULONG *) Points to location where error code will be placed */
+
+    num_Hidd_Overlay_Attrs
+};
+
+#define aHidd_Overlay_SrcWidth	(HiddOverlayAttrBase + aoHidd_Overlay_SrcWidth )
+#define aHidd_Overlay_SrcHeight (HiddOverlayAttrBase + aoHidd_Overlay_SrcHeight)
+#define aHidd_Overlay_SrcFormat (HiddOverlayAttrBase + aoHidd_Overlay_SrcFormat)
+#define aHidd_Overlay_Error	(HiddOverlayAttrBase + aoHidd_Overlay_Error    )
+
+#define IS_OVERLAY_ATTR(attr, idx) \
+	(((idx) = (attr) - HiddOverlayAttrBase) < num_Hidd_Overlay_Attrs)
 
 #endif /* HIDD_GRAPHICS_H */
-
-
-
