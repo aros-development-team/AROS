@@ -281,6 +281,7 @@ struct class_static_data
     OOP_AttrBase    	 hiddGfxAttrBase;
     OOP_AttrBase    	 hiddSyncAttrBase;
     OOP_AttrBase    	 hiddGCAttrBase;
+    OOP_AttrBase	 hiddOverlayAttrBase;
     OOP_AttrBase    	 hiddColorMapAttrBase;
     OOP_AttrBase    	 hiddPlanarBMAttrBase;
     
@@ -328,6 +329,7 @@ struct class_static_data
 #define __IHidd_Gfx 	    (csd->hiddGfxAttrBase)
 #define __IHidd_Sync	    (csd->hiddSyncAttrBase)
 #define __IHidd_GC  	    (csd->hiddGCAttrBase)
+#define __IHidd_Overlay	    (csd->hiddOverlayAttrBase)
 #define __IHidd_ColorMap    (csd->hiddColorMapAttrBase)
 #define __IHidd_PlanarBM    (csd->hiddPlanarBMAttrBase)
 
