@@ -97,6 +97,8 @@ enum
     moHidd_Gfx_SetGamma,
     
     moHidd_Gfx_QueryHardware3D,
+    
+    moHidd_Gfx_GetMaxSpriteSize,
 
     num_Hidd_Gfx_Methods
 };
@@ -121,8 +123,6 @@ enum
     aoHidd_Gfx_NoFrameBuffer,		/* [..G] (BOOL) - if the hidd does not need a framebuffer */
 
     aoHidd_Gfx_HWSpriteTypes,		/* [..G] (UBYTE) - Supported types of hardware sprites         */
-    aoHidd_Gfx_MaxSpriteWidth,		/* [..G] (ULONG) - Maximum allowed mouse pointer sprite width  */
-    aoHidd_Gfx_MaxSpriteHeight,		/* [..G] (ULONG) - Maximum allowed mouse pointer sprite height */
 
     aoHidd_Gfx_MemorySize,		/* [..G] (ULONG) - Size of video card's memory in bytes	       */
     aoHidd_Gfx_MemoryClock,		/* [..G] (ULONG) - A video card's memory clock in Hz	       */
@@ -147,8 +147,6 @@ enum
 #define aHidd_Gfx_SupportsHWCursor	(HiddGfxAttrBase + aoHidd_Gfx_SupportsHWCursor		)
 #define aHidd_Gfx_NoFrameBuffer		(HiddGfxAttrBase + aoHidd_Gfx_NoFrameBuffer		)
 #define aHidd_Gfx_HWSpriteTypes		(HiddGfxAttrBase + aoHidd_Gfx_HWSpriteTypes		)
-#define aHidd_Gfx_MaxSpriteWidth	(HiddGfxAttrBase + aoHidd_Gfx_MaxSpriteWidth		)
-#define aHidd_Gfx_MaxSpriteHeight	(HiddGfxAttrBase + aoHidd_Gfx_MaxSpriteHeight		)
 #define aHidd_Gfx_MemorySize		(HiddGfxAttrBase + aoHidd_Gfx_MemorySize		)
 #define aHidd_Gfx_MemoryClock		(HiddGfxAttrBase + aoHidd_Gfx_MemoryClock		)
 #define aHidd_Gfx_DriverName		(HiddGfxAttrBase + aoHidd_Gfx_DriverName		)
@@ -382,6 +380,14 @@ struct pHidd_Gfx_QueryHardware3D
 {
     OOP_MethodID mID;
     OOP_Object   *pixFmt;
+};
+
+struct pHidd_Gfx_GetMaxSpriteSize
+{
+    OOP_MethodID mID;
+    ULONG	 Type;
+    ULONG	 *Width;
+    ULONG	 *Height;
 };
 
 enum
@@ -1519,6 +1525,7 @@ OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num);
 BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
 BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt);
+BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *obj, ULONG Type, ULONG *Width, ULONG *Height);
 
 VOID HIDD_GC_SetClipRect(OOP_Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
 VOID HIDD_GC_UnsetClipRect(OOP_Object *gc);

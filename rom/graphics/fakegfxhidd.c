@@ -373,23 +373,13 @@ static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 static void gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, o);
-    ULONG idx;
 
-    if (IS_GFX_ATTR(msg->attrID, idx)) {
-	switch (idx) {
-	case aoHidd_Gfx_HWSpriteTypes:
-            *msg->storage = vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor;
-	    return;
-
-	/* I beleive this is enough for everybody :) */
-	case aoHidd_Gfx_MaxSpriteWidth:
-	case aoHidd_Gfx_MaxSpriteHeight:
-	    *msg->storage = 65535;
-	    return;
-	}
+    if (msg->attrID == aHidd_Gfx_HWSpriteTypes) {
+        *msg->storage = vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor;
+	return;
     }
 
-    OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
+    OOP_DoMethod(data->gfxhidd, (OOP_Msg)msg);
 }
 
 static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
@@ -680,6 +670,18 @@ static ULONG gfx_showviewports(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     /* In future we are going to be able to simulate composition using a framebuffer.
        For now just return FALSE (not supported). */
     return FALSE;
+}
+
+static BOOL gfx_getmaxspritesize(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMaxSpriteSize *msg)
+{
+    if (msg->Type & (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor)) {
+	/* I hope these values are enough for everyone :) */
+	*msg->Width  = 65535;
+	*msg->Height = 65535;
+
+	return TRUE;
+    } else
+	return FALSE;
 }
 
 static IPTR gfx_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -1217,6 +1219,7 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
 	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_GetGamma	    },
 	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_SetGamma	    },
 	{(IPTR (*)())gfx_fwd		    , moHidd_Gfx_QueryHardware3D    },
+	{(IPTR (*)())gfx_getmaxspritesize  , moHidd_Gfx_GetMaxSpriteSize   },
         {NULL	    	    	    	    , 0UL   	    	    	    }
     };
     
