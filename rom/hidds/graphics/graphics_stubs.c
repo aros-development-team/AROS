@@ -110,6 +110,37 @@ void HIDD_Gfx_DisposeBitMap(OOP_Object *obj, OOP_Object *bitMap)
 
 /***************************************************************/
 
+OOP_Object * HIDD_Gfx_NewOverlay(OOP_Object *obj, struct TagItem *tagList)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_NewOverlay p, *msg = &p;
+
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewOverlay);
+
+    p.mID      = mid;
+    p.attrList = tagList;
+
+    return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) msg));
+}
+
+/***************************************************************/
+
+void HIDD_Gfx_DisposeOverlay(OOP_Object *obj, OOP_Object *Overlay)
+{
+    STATIC_MID;
+    struct pHidd_Gfx_DisposeOverlay p, *msg = &p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeOverlay);
+        
+    p.mID     = mid;
+    p.Overlay = Overlay;
+
+    OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+/***************************************************************/
+
+/***************************************************************/
+
 HIDDT_ModeID * HIDD_Gfx_QueryModeIDs(OOP_Object *obj, struct TagItem *queryTags)
 {
     STATIC_MID;
