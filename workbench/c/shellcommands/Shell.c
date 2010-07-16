@@ -32,11 +32,12 @@
 
     RESULT
 
-    NOTES
+    HISTORY
 
-    The script file is not a script in execute sense (as you may not use any
-    .key, .bra or .ket and similar things).
- 
+    Jul 2010 - improved handling of $ and `: things like cd SYS:Olle/$pelle
+               work now. Non-alphanumerical var-names must be enclosed in
+               braces.
+
     Feb 2008 - initial support for .key/bra/ket/dot/dollar/default.
 
     EXAMPLE
@@ -53,7 +54,7 @@
 
     INTERNALS
 
-    The prompt	 support is not using SetCurrentDirName() as this function
+    The prompt support is not using SetCurrentDirName() as this function
     has improper limitations. More or less the same goes for GetProgramName().
 
 ******************************************************************************/
@@ -62,9 +63,6 @@
 
   *  Alias [] support
   *  Break support (and +(0L) before execution) -- CreateNewProc()?
-  *  Script file execution capabilities (if script bit set)
-  *  $ must be taken care of differently than it is now so that things
-     like cd SYS:Olle/$pelle works
 
  */
 
@@ -846,7 +844,7 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 			s = pos + 1;
 			break;
 		    }
-		    else if (s[len] == is->ket || s[len] == is->dollar && pos)
+		    else if ( (s[len] == is->ket) || (s[len] == is->dollar && pos) )
 		    {
 			/* argument substitution */
 			STRPTR arg = NULL;
@@ -962,10 +960,9 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 			break;
 		    }
 		}
-	    }
-
 	    if (is->argcount == i)
 	        appendString(filtered, s - 1, 1);
+}
 	}
 	else
 	    appendString(filtered, s++, 1);
@@ -1034,7 +1031,248 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 #define from       cs->CS_Buffer
 #define advance(x) cs->CS_CurChr += x;
 
-    LONG result;
+    LONG   result, i;
+    BOOL   foundOpeningBrace = FALSE,
+           foundClosingBrace = FALSE,
+           doNotExpandVar    = FALSE;
+    STRPTR varNameString     = NULL;
+
+    /* Vars and BackTicks can't be properly handled by using FindItem() as
+       it wouldn't find them when they aren't surrounded with blanck spaces,
+       so we handle them ourselves here. Environment variables are always
+       referended by prepending a '$' to their name, it's only scripts
+       argument variables that can be referended by prepending a modified
+       (.dollar) sign. Environment variable names containing non-alpha-
+       numerical characters must be surrounded with braces ( ${_} ).
+       Variables and BackTicks need to be handled only once per line.
+
+       Perhaps substArgs() would be a better place to handle all that?
+       But could we get the same results, as <$$> is done there and fails
+       in some cases... */
+
+    if ( cs->CS_CurChr == 0 )
+    {
+
+        /* Environment variables handling (locals and globals) */
+        while ( cs->CS_CurChr < cs->CS_Length )
+        {
+
+            if ( (item == '\n') || (item == '\0') )
+            {
+                D(bug("[Shell] var-handling: found end of line\n"));
+                break;
+            }
+
+            if (item == '*')
+            {
+                D(bug("[Shell] prevItem = '%c', item = '%c'\n", cs->CS_Buffer[cs->CS_CurChr - 1], item));
+                if (cs->CS_Buffer[cs->CS_CurChr - 1] == '*')
+                {
+                    doNotExpandVar = !doNotExpandVar;
+                }
+                else
+                {
+                    doNotExpandVar = TRUE;
+                }
+            }
+
+            if (item == '$')
+            {
+                if (cs->CS_Buffer[cs->CS_CurChr - 1] != '*')
+                    doNotExpandVar = FALSE;
+                D(bug("[Shell] prevItem = '%c', letter = '%c'\n", cs->CS_Buffer[cs->CS_CurChr - 1], item));
+                D(bug("[Shell] doNotExpandVar = %s\n", (doNotExpandVar ? "TRUE" : "FALSE")));
+            }
+
+            if ( (item != '$') || (doNotExpandVar) )
+            {
+                appendString(filtered, (CONST_STRPTR) &item, 1);
+            }
+            else
+            {
+
+                advance(1);
+
+                if (item == '$')
+                {
+                    appendString(filtered, (CONST_STRPTR) &cs->CS_Buffer[cs->CS_CurChr - 1], 1);
+                    appendString(filtered, (CONST_STRPTR) &item, 1);
+                    advance(1);
+                    continue;
+                }
+
+                if ( (item == '\n') || (item == '\0') )
+                {
+                    D(bug("[Shell] var-handling: found end of line\n"));
+                    break;
+                }
+
+                if (item == '{')
+                {
+                    D(bug("[Shell] var-handling: found opening brace!\n"));
+                    foundOpeningBrace = TRUE;
+                    advance(1);
+                }
+
+                varNameString = AllocVec( 256, MEMF_ANY );
+
+                for
+                (
+                    i = 0 ;
+                    foundOpeningBrace ? ( (item != '}')  &&
+                                          (item != '\n')    ) : isalnum(item) ;
+                )
+                {
+                    varNameString[i++] = item;
+                    advance(1);
+                }
+
+                varNameString[i] = '\0';
+
+                if (item == '}')
+                {
+                    foundClosingBrace = TRUE;
+                    D(bug("[Shell] found closing brace!\n"));
+                }
+                else
+                {
+                    cs->CS_CurChr--;
+                }
+
+                D(bug("[Shell] varNameString = '%s'\n", varNameString));
+
+                if
+                (
+                    ( foundOpeningBrace == foundClosingBrace )                           &&
+                    ( !doNotExpandVar )                                                  &&
+                    ( GetVar(varNameString, varBuffer, sizeof(varBuffer), LV_VAR) != -1)
+                )
+                {
+                    appendString(filtered, varBuffer, strlen(varBuffer));
+                    D(bug("[Shell] Real variable! Value = '%s'\n", varBuffer));
+                }
+                else
+                {
+                    for ( i += (foundOpeningBrace ? 1 : 0), i += (foundClosingBrace ? 1 : 0) ; i-- ; )
+                    {
+                        cs->CS_CurChr--;
+                    }
+                    /* We don't reach back the dollar char as it would lead to
+                       endless loop, but we put it in the string nevertheless */
+                    appendString(filtered, "$", 1);
+                }
+
+                foundOpeningBrace = foundClosingBrace = FALSE;
+                FreeVec(varNameString);
+                
+            }
+            advance(1);
+
+        } // while( cs->CS_CurChr < cs->CS_Length )
+
+        appendString(filtered, "\n\0", 2);
+        
+        if ( filtered->CS_Buffer != NULL )
+        {
+            /* cs->CS->Buffer is built on the stack */
+            CopyMem(filtered->CS_Buffer, cs->CS_Buffer, strlen(filtered->CS_Buffer));
+        }
+
+        cs->CS_Length = strlen(cs->CS_Buffer);
+        cs->CS_CurChr = 0;
+        D(bug("\n[Shell] Var handling done... cs->CS_Buffer = '%s'\n", cs->CS_Buffer));
+
+        FreeVec(filtered->CS_Buffer);
+        filtered->CS_Buffer = NULL;
+        filtered->CS_CurChr = filtered->CS_Length = 0;
+
+        /* BackTicks handling... we allow several embedded commands
+           for now, while original AmigaDOS only allows one per line */
+        while ( item != '\0' )
+        {
+
+            if (item == '`')
+            {
+                struct CommandLine embedCl = { NULL, 0, 0 };
+
+                advance(1);
+
+                if(extractEmbeddedCommand(&embedCl, cs))
+                {
+                    /* The Amiga shell has severe problems when using
+                        redirections in embedded commands so here, the
+                        semantics differ somewhat. Unix shells seems to be
+                        a little bit sloppy with this, too.
+                            If you really wanted to, you could track down
+                        uses of > and >> and make them work inside ` `, too,
+                        but this seems to be rather much work for little gain.
+                    */
+
+                    char embedOutputFilename[sizeof("T:Shell$embed") +
+                                             sizeof("9999999999999")   ];
+                    struct Redirection embedRd;
+
+                    /* No memory? */
+                    if(!Redirection_init(&embedRd))
+                        return FALSE;
+
+                    /* Construct temporary output filename */
+                    __sprintf(embedOutputFilename, "T:Shell%ld$embed",
+                                ((struct Process *)FindTask(NULL))->pr_TaskNum);
+
+                    /* Temporary */
+                    strcpy(embedRd.outFileName, embedOutputFilename);
+
+                    embedRd.embedded  = TRUE;   /* So the command won't be echo'ed */
+                    embedRd.haveOutRD = TRUE;   /* ` _ ` is an implicit output
+                                                   redirection */
+
+                    D(bug("Doing embedded command.\n"));
+
+                    checkLine(&embedRd, &embedCl, is);
+
+                    D(bug("Embedded command done.\n"));
+
+                    copyEmbedResult(filtered, &embedRd);
+
+                    Redirection_release(&embedRd);
+
+                    /* Now, go on with the original argument string */
+                    continue;
+
+                } //if(extractEmbeddedCommand(&embedCl, cs))
+
+                /* If this was just "`command", extractEmbeddedCommand will have
+                   made sure that the '`' is included in the command name */
+
+            } // if (item = '`')
+
+            appendString(filtered, (CONST_STRPTR) &item, 1);
+            advance(1);
+
+        } // while ( item != '\0' )
+
+        appendString(filtered, &item, 1);
+
+        if ( filtered->CS_Buffer != NULL )
+        {
+            /* cs->CS->Buffer is built on the stack */
+            CopyMem(filtered->CS_Buffer, cs->CS_Buffer, strlen(filtered->CS_Buffer));
+        }
+
+        cs->CS_Length = strlen(cs->CS_Buffer);
+        cs->CS_CurChr = 0;
+        D(bug("\n[Shell] BackTicks handling done... cs->CS_Buffer = '%s'\n", cs->CS_Buffer));
+
+        FreeVec(filtered->CS_Buffer);
+        filtered->CS_Buffer = NULL;
+        filtered->CS_CurChr = filtered->CS_Length = 0;
+
+    } // if ( cs->CS_CurChr == 0 )
+    else
+    {
+        D(bug("\n[Shell] Vars and BackTicks handling were skipped... cs->CS_Buffer+cs->CS_CurChr = '%s'\n", cs->CS_Buffer+cs->CS_CurChr));
+    }
 
     while(TRUE)
     {
@@ -1054,65 +1292,6 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	if(item == '\n' || item == ';' || item == '\0')
 	    break;
 
-    /* Embedded command? */
-    if(item == '`')
-    {
-        struct CommandLine embedCl = { NULL, 0, 0 };
-
-        advance(1);
-
-        D(bug("Found possible embedded command.\n"));
-
-        if(extractEmbeddedCommand(&embedCl, cs))
-        {
-            /* The Amiga shell has severe problems when using
-                redirections in embedded commands so here, the
-                semantics differ somewhat. Unix shells seems to be
-                a little bit sloppy with this, too.
-                    If you really wanted to, you could track down
-                uses of > and >> and make them work inside ` `, too,
-                but this seems to be rather much work for little gain.
-            */
-
-            char embedOutputFilename[sizeof("T:Shell$embed") +
-                                    sizeof("9999999999999")];
-            struct Redirection embedRd;
-
-            /* No memory? */
-            if(!Redirection_init(&embedRd))
-                return FALSE;
-
-            /* Construct temporary output filename */
-            __sprintf(embedOutputFilename, "T:Shell%ld$embed",
-                        /*PROCESS*/((struct Process *)FindTask(NULL))->pr_TaskNum);
-
-            /* Temporary */
-            strcpy(embedRd.outFileName, embedOutputFilename);
-
-            embedRd.embedded  = TRUE;   /* So the command won't be echo'ed */
-            embedRd.haveOutRD = TRUE;   /* ` _ ` is an implicit output
-                                            redirection */
-
-            D(bug("Doing embedded command.\n"));
-
-            checkLine(&embedRd, &embedCl, is);
-
-            D(bug("Embedded command done.\n"));
-
-            copyEmbedResult(filtered, &embedRd);
-
-            Redirection_release(&embedRd);
-
-            /* Now, go on with the original argument string */
-            continue;
-        }
-
-        /* If this was just "`command", extractEmbeddedCommand will
-            have made sure that the '`' is included in the command
-            name */
-
-	}
-	
 	if(item == '|')
 	{
             BPTR pipefhs[2] = {0, 0};
@@ -1236,48 +1415,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		rd->haveOutRD = TRUE;
 	    }
 	}
-	else if (item == is->dollar) /* Possible variable usage */
-	{
-	    LONG size = cs->CS_CurChr;
 
-	    advance(1);
-	    result = ReadItem(avBuffer, sizeof(avBuffer), cs);
-
-	    D(bug("Found variable\n"));
-
-	    if(result == ITEM_ERROR || ITEM_NOTHING)
-		return ERROR_REQUIRED_ARG_MISSING;
-
-	    if
-	    (
-	        (GetVar(avBuffer, varBuffer, sizeof(varBuffer),
-		       /*GVF_GLOBAL_ONLY |*/ LV_VAR) != -1) &&           // otigreat: Why would we only look for global variables here???
-		!(varBuffer[0] == '$' && !strcmp(varBuffer+1, avBuffer))
-            )
-	    {
-		struct CSource varCs = { varBuffer, sizeof(varBuffer), 0 };
-
-		D(bug("Real variable! Value = %s\n", varBuffer));
-
-		if ((result = convertLine(filtered, &varCs, rd, is)) != 0)
-		    return result;
-	    }
-	    else
-		/* If this "variable" wasn't defined, we use the '$' as a
-		   regular character */
-	    {
-		D(bug("No real variable\n"));
-
-		if(!rd->haveCommand)
-		{
-		    cs->CS_CurChr = size;
-		    getCommand(filtered, cs, rd, is);
-		}
-		else
-		    appendString(filtered, cs->CS_Buffer + size,
-				 cs->CS_CurChr - size);
-	    }
-	}
 	else
 	{
 	    STRPTR s = &item;
@@ -1595,7 +1733,7 @@ BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd)
 
     Seek(embedRd->newOut, 0, OFFSET_BEGINNING);
 
-    while((a = FGetC(embedRd->newOut)) != '\n')
+    while(((a = FGetC(embedRd->newOut)) != '\n') && (a != EOF))
        appendString(filtered, &a, 1);
 
     return TRUE;

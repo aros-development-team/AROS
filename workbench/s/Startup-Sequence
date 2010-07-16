@@ -51,7 +51,7 @@ Endif
 Copy >NIL: ENVARC: ENV: ALL NOPRO NOREQ
 
 If EXISTS ENV:SYS/theme.var
-    Assign THEME: $SYS/theme.var
+    Assign THEME: ${SYS/theme.var}
 else
     Assign THEME: THEMES:OS3.1/
 endif
@@ -112,7 +112,7 @@ EndIf
 
 
 If EXISTS ENV:SYS/Packages
-    List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="If EXISTS $SYS/Packages/%s*NCD $SYS/Packages/%s*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
+    List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="If EXISTS ${SYS/Packages/%s}*NCD ${SYS/Packages/%s}*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
     Execute T:P
     Delete T:P QUIET
     CD SYS:
