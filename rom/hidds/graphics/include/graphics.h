@@ -33,6 +33,8 @@
 
 #define IID_Hidd_PixFmt	    	"hidd.graphics.pixfmt"
 
+#define IID_Hidd_Overlay	"hidd.graphics.overlay"
+
 /* Some "example" hidd bitmaps */
 
 #define CLID_Hidd_ChunkyBM "hidd.graphics.bitmap.chunkybm"

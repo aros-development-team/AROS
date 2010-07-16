@@ -17,7 +17,7 @@
 	--background--
 
     LOCATION
-	OVERLAY
+	hidd.graphics.overlay
 
     NOTES
 	Objects of overlay class represent hardware video overlays.
@@ -25,10 +25,10 @@
 	Current hardware supports only one video overlay per screen, however in future
 	the situation may change.
 	
-	OVERLAY is a pseudo-name. There's no such public ID since there's actually no base
-	class for the overlay. The whole implementation is hardware-dependant and needs
-	to be done separately for every driver.
-	
+	hidd.graphics.overlay is an interface name. There's no such public ID since
+	there's actually no base class for the overlay. The whole implementation is
+	hardware-dependant and needs to be done separately for every driver.
+
 	Overlay classes do not need to be public. It's up to display drivers to manage
 	them. A moHidd_Gfx_NewOverlay method of graphics driver class is used to create
 	overlay objects.
@@ -44,7 +44,7 @@
         [I..], ULONG
 
     LOCATION
-        OVERLAY
+        hidd.graphics.overlay
 
     FUNCTION
         Specifies source data width in pixels.
@@ -71,7 +71,7 @@
         [I..], ULONG
 
     LOCATION
-        OVERLAY
+        hidd.graphics.overlay
 
     FUNCTION
         Specifies source data height in pixels.
@@ -98,7 +98,7 @@
         [I..], ULONG
 
     LOCATION
-        OVERLAY
+        hidd.graphics.overlay
 
     FUNCTION
         Specifies source data pixel format. The value should be one of SRCFMT_... constants
@@ -132,7 +132,7 @@
         [I..], ULONG *
 
     LOCATION
-        OVERLAY
+        hidd.graphics.overlay
 
     FUNCTION
         Specifies a pointer to ULONG location where error code will be written.

@@ -3,11 +3,11 @@
     $Id$
 */
 
-#include "cgxvideo_intern.h"
-
 #include <aros/debug.h>
 #include <hidd/graphics.h>
 #include <proto/utility.h>
+
+#include "cgxvideo_intern.h"
 
 #define setError(x) if (errPtr) *errPtr = x
 
@@ -84,7 +84,7 @@
 
     struct VLayerHandle *vh;
     struct BitMap *bm = Screen->RastPort.BitMap;
-    ULONG *errPtr = GetTagData(VOA_Error, 0, TagItems);
+    ULONG *errPtr = (ULONG *)GetTagData(VOA_Error, 0, TagItems);
 
     vh = AllocMem(sizeof(struct VLayerHandle), MEMF_ANY);
     if (!vh) {
@@ -94,13 +94,20 @@
 
     if (bm->Flags & BMF_SPECIALFMT) {
         struct TagItem layerTags[] = {
-	    {TAG_DONE, 0}
+	    {aHidd_Overlay_SrcWidth , 0           },
+	    {aHidd_Overlay_SrcHeight, 0           },
+	    {aHidd_Overlay_SrcFormat, 0           },
+	    {aHidd_Overlay_Error    , (IPTR)errPtr},
+	    {TAG_DONE               , 0           }
 	};
 
-	/* TODO: fill in layer tags */
+	/* CHECKME: Are there any reasonable defaults ? */
+	layerTags[0].ti_Data = GetTagData(VOA_SrcWidth , 0, TagItems);
+	layerTags[1].ti_Data = GetTagData(VOA_SrcHeight, 0, TagItems);
+	layerTags[2].ti_Data = GetTagData(VOA_SrcType  , 0, TagItems);
+
 	vh->drv = (OOP_Object *)bm->Planes[0];
 	vh->obj = HIDD_Gfx_NewOverlay(vh->drv, layerTags);
-	/* TODO: determine and set error code */
     } else {
 	vh->obj = NULL;
 	setError(VOERR_INVSCRMODE);
