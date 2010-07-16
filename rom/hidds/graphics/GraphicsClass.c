@@ -699,7 +699,7 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    }
 
 	    case aoHidd_Gfx_DriverName:
-		*msg->storage = (IPTR)cl->ClassNode.ln_Name;
+		*msg->storage = (IPTR)OOP_OCLASS(o)->ClassNode.ln_Name;
 		return;
 
 	    default:	/* Keep compiler happy */

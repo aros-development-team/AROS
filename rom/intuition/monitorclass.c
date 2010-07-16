@@ -86,11 +86,11 @@ static BYTE pixelformats[] = {
     PIXFMT_ARGB32,
     PIXFMT_BGRA32,
     PIXFMT_RGBA32,
-    PIXFMT_ABGR32,
-    PIXFMT_0RGB32,
-    PIXFMT_BGR032,
-    PIXFMT_RGB032,
-    PIXFMT_0BGR32,
+    -1,
+    PIXFMT_ARGB32,
+    PIXFMT_BGRA32,
+    PIXFMT_RGBA32,
+    -1,
     PIXFMT_LUT8,
     -1
 };
@@ -115,16 +115,18 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     data->driver = driver;
 
-    while ((mode = HIDD_Gfx_NextModeID(driver, mode, &sync, &pixfmt))) {
+    while ((mode = HIDD_Gfx_NextModeID(driver, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid) {
 	IPTR stdpf;
 	BYTE cgxpf;
 	
 	OOP_GetAttr(pixfmt, aHidd_PixFmt_StdPixFmt, &stdpf);
 	cgxpf = pixelformats[stdpf];
-	
-	if (cgxpf != -1)
-	data->pfobjects[cgxpf] = pixfmt;
-	data->pixelformats[cgxpf] = TRUE;
+	D(bug("[monitorclass] Mode 0x%08lX, StdPixFmt %lu, CGX pixfmt %d\n", mode, stdpf, cgxpf));
+
+	if (cgxpf != -1) {
+	    data->pfobjects[cgxpf] = pixfmt;
+	    data->pixelformats[cgxpf] = TRUE;
+	}
     }
 
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
@@ -636,7 +638,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Query CyberGraphX driver name. It is the same name which can be given to
+	Query CyberGraphX driver name. It is the name which can be given to
 	cybergraphics.library/BestCModeIDTagList() as CYBRBIDTG_BoardName value.
 
     NOTES
