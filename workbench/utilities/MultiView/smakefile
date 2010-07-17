@@ -33,3 +33,4 @@ clean:
 	-delete $(OBJS) MultiView.lnk strings.h
 
 install:
+	catcomp catalogs/multiview.cd catalogs/$(Language).ct CATALOG LOCALE:Catalogs/$(Language)/System/Utilities/multiview.catalog
