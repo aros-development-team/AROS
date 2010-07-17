@@ -1,0 +1,146 @@
+## version $VER: locale.catalog 1.0 (17.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+MSG_CANT_OPEN_LIB
+Kan ikke åbne %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Kan ikke låse offentlig skærm!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Kan ikke indhente DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Kan ikke indhente VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Kan ikke oprette gadgets!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Kan ikke oprette menuer!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Kan ikke oprette vinduer!
+; Can't create window!
+;
+MSG_WINTITLE
+Lande- og sprogindstillinger
+; Locale Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Åbn...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Gem som...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Afslut
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Redigér
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Nulstil til standardværdier
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Sidst gemte
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Genskab
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Indstillinger
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Opret ikoner?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Indlæs lande- og sprogindstillinger
+; Load Locale Preferences
+;
+MSG_ASL_SAVE_TITLE
+Gem lande- og sprogindstillinger
+; Save Locale Preferences
+;
+MSG_OK
+O.k.
+; Ok
+;
+MSG_GAD_AVAIL_LANGUAGES
+Tilgængelige sprog
+; Available Languages
+;
+MSG_GAD_PREF_LANGUAGES
+Foretrukne sprog
+; Preferred Languages
+;
+MSG_GAD_CLEAR_LANGUAGES
+Tøm foretrukne sprog
+; Clear Languages
+;
+MSG_GAD_SAVE
+Gem
+; Save
+;
+MSG_GAD_USE
+Brug
+; Use
+;
+MSG_GAD_CANCEL
+Afbryd
+; Cancel
+;
+MSG_GAD_TAB_LANGUAGE
+Sprog
+; Language
+;
+MSG_GAD_TAB_COUNTRY
+Land
+; Country
+;
+MSG_GAD_TAB_TIMEZONE
+Tidszone
+; Time Zone
+;
+MSG_TIMEZONE_1HOUR
+Tidszone: 1 time fra GMT
+; Time Zone: 1 Hour from GMT
+;
+MSG_TIMEZONE_HOURS
+Tidszone: %ld timer fra GMT
+; Time Zone: %ld Hours from GMT
+;
+MSG_TIMEZONE_HOURSMINS
+Tidszone: %ld timer, %ld minutter fra GMT
+; Time Zone: %ld Hours, %ld Minutes from GMT
+;
+MSG_CHARACTER_SET
+Standardtegnsæt
+; Default character set
+;
+MSG_NOT_SPECIFIED
+Ikke angivet
+; Not specified
+;
