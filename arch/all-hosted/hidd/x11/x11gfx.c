@@ -64,6 +64,7 @@ static OOP_AttrBase HiddX11BitMapAB;
 static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
@@ -73,6 +74,7 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
     { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
     { IID_Hidd_Gfx  	, &HiddGfxAttrBase	},
+    { IID_Hidd  	, &HiddAttrBase		},
     { NULL  	    	, NULL      	    	}
 };
 
@@ -109,7 +111,10 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     struct TagItem mytags[] =
     {
-		{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags		},
+		{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	},
+		{ aHidd_Name		, (IPTR)"x11_1.monitor"	},
+		{ aHidd_HardwareName	, (IPTR)"X Window system"},
+		{ aHidd_ProducerName	, (IPTR)"X.Org Foundation"},
 		{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
     };
  
@@ -179,12 +184,12 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 			{
 				sprintf(modename, "X11: %dx%d", modes[i]->hdisplay, modes[i]->vdisplay);
 				resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
-				resolution[realmode * 4 + 2].ti_Data = modename;
+				resolution[realmode * 4 + 2].ti_Data = (IPTR)modename;
 			} 
 			else
 			{
 				resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
-				resolution[realmode * 4 + 2].ti_Data = "Failed to allocate memory";				
+				resolution[realmode * 4 + 2].ti_Data = (IPTR)"Failed to allocate memory";				
 			}
 	
 			resolution[realmode * 4 + 3].ti_Tag = TAG_DONE;
@@ -232,7 +237,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	for(i=0; i < realmode; i++)
 	{
 		mode_tags[8 + i].ti_Tag = aHidd_Gfx_SyncTags;
-		mode_tags[8 + i].ti_Data = resolution + i*4;
+		mode_tags[8 + i].ti_Data = (IPTR)(resolution + i*4);
 	}
 	
 	mode_tags[8 + i].ti_Tag = TAG_DONE;
@@ -491,15 +496,11 @@ VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	{
 	    case aoHidd_X11Gfx_SysDisplay:
 	    	*msg->storage = (IPTR)data->display;
-		break;
+		return;
 		
 	    case aoHidd_X11Gfx_SysScreen:
 	    	*msg->storage = (IPTR)data->screen;
-		break;
-	    
-	    default:
-	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
+		return;
 	}
     }
     else if (IS_GFX_ATTR(msg->attrID, idx))
@@ -507,28 +508,23 @@ VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     	switch (idx)
 	{
 	    case aoHidd_Gfx_IsWindowed:
-	    	*msg->storage = (IPTR)TRUE;
-		break;
+	    	*msg->storage = TRUE;
+		return;
 		
-	    case aoHidd_Gfx_SupportsHWCursor:
-    	    #if X11SOFTMOUSE
-	    	*msg->storage = (IPTR)FALSE;
-    	    #else
-	    	*msg->storage = (IPTR)TRUE;
-    	    #endif
-		break;
-		
-	    default:
-	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
+	    case aoHidd_Gfx_HWSpriteTypes:
+#if X11SOFTMOUSE
+	    	*msg->storage = 0;
+#else
+	    	*msg->storage = vHidd_SpriteType_DirectColor;
+#endif
+		return;
+
+	    case aoHidd_Gfx_DriverName:
+		*msg->storage = (IPTR)"X11";
+		return;
 	}
     }
-    else
-    {
-    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
-    
-    return;
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
