@@ -199,7 +199,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		}
 	}
 			
-	if((mode_tags = AllocMem(sizeof(struct TagItem) * (realmode + 9), MEMF_PUBLIC)) == NULL)
+	if((mode_tags = AllocMem(sizeof(struct TagItem) * (realmode + 2), MEMF_PUBLIC)) == NULL)
 	{	
 		FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
 		XCALL(XCloseDisplay, disp);
@@ -210,38 +210,16 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 	mode_tags[0].ti_Tag = aHidd_Gfx_PixFmtTags;
 	mode_tags[0].ti_Data = (IPTR)pftags;
-
-	/* Default values for the sync attributes */
-	mode_tags[1].ti_Tag = aHidd_Sync_PixelClock;
-	mode_tags[1].ti_Data = 100000000;  /* Oh boy,  this X11 pixelclock is fast ;-) */
-	
-	mode_tags[2].ti_Tag = aHidd_Sync_LeftMargin;
-	mode_tags[2].ti_Data = 0; 
-
-	mode_tags[3].ti_Tag = aHidd_Sync_RightMargin;
-	mode_tags[3].ti_Data = 0;
-	
-	mode_tags[4].ti_Tag = aHidd_Sync_HSyncLength;
-	mode_tags[4].ti_Data = 0;
-	
-	mode_tags[5].ti_Tag = aHidd_Sync_UpperMargin;
-	mode_tags[5].ti_Data = 0;
-	
-	mode_tags[6].ti_Tag = aHidd_Sync_LowerMargin;
-	mode_tags[6].ti_Data = 0;
-	
-	mode_tags[7].ti_Tag = aHidd_Sync_VSyncLength;
-	mode_tags[7].ti_Data = 0;
 	
 	/* The different screenmode from XF86VMODE */
 	for(i=0; i < realmode; i++)
 	{
-		mode_tags[8 + i].ti_Tag = aHidd_Gfx_SyncTags;
-		mode_tags[8 + i].ti_Data = (IPTR)(resolution + i*4);
+		mode_tags[1 + i].ti_Tag = aHidd_Gfx_SyncTags;
+		mode_tags[1 + i].ti_Data = (IPTR)(resolution + i*4);
 	}
 	
-	mode_tags[8 + i].ti_Tag = TAG_DONE;
-	mode_tags[8 + i].ti_Data = 0UL;
+	mode_tags[1 + i].ti_Tag = TAG_DONE;
+	mode_tags[1 + i].ti_Data = 0UL;
 
 	mytags[0].ti_Data = (IPTR)mode_tags;
 	
@@ -269,7 +247,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	else
 	{
 		FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
-		FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 9));
+		FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 2));
 		XCALL(XCloseDisplay, disp);
 		kprintf("!!! UNHANDLED COLOR MODEL IN X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
 		cleanupx11stuff(XSD(cl));
@@ -299,7 +277,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	}
 	
 	FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
-	FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 9));
+	FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 2));
 	XCALL(XCloseDisplay, disp);
 
     if (NULL != o)
