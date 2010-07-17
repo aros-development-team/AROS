@@ -1,4 +1,4 @@
-## version $VER: multiview.catalog 1.0 (13.09.2000)
+## version $VER: multiview.catalog 1.1 (17.07.2010)
 ## codeset 0
 ## language deutsch
 ;
@@ -28,6 +28,12 @@ Kann Menus nicht erzeugen!
 ;
 MSG_CANT_CREATE_WIN
 Kann Fenster nicht erzeugen!
+;
+MSG_CANT_CREATE_MSGPORT
+Kann Message-Port nicht erzeugen!
+;
+MSG_CANT_ADD_APPWINDOW
+Kann Fenster nicht zum AppWindow befördern!
 ;
 MSG_SAVE_FAILED
 Datei speichern fehlgeschlagen!
@@ -145,4 +151,7 @@ Weiter
 ;
 MSG_OK
 Ok
+;
+MSG_SHORTCUT_EDITOR
+E
 ;
