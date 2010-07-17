@@ -1,0 +1,46 @@
+## version $VER: Trackdisk.catalog 1.0 (17.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial translation to Danish by Kristian Poul Herkild
+;
+MSG_NAME
+Trackdisk
+; Trackdisk
+;
+MSG_TITLE
+Trackdisk-indstillinger
+; Trackdisk prefs
+;
+MSG_SAVE
+Gem
+; Save
+;
+MSG_USE
+Brug
+; Use
+;
+MSG_CANCEL
+Afbryd
+; Cancel
+;
+MSG_DESCRIPTION
+Indstillingsredigering for trackdisk.device
+; trackdisk.device preferences editor
+;
+MSG_WINDOW_TITLE
+Indstillinger for trackdisk.device
+; trackdisk.device preferences
+;
+MSG_DRIVE
+Drev %u
+; Drive %u
+;
+MSG_NOCLICK
+Ingen klik:
+; No click:
+;
+MSG_RETRIES
+Antal forsøg:
+; Retries:
+;
