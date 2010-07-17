@@ -118,7 +118,7 @@ If EXISTS ENV:SYS/Packages
     CD SYS:
 EndIf
 
-Protect S:PCD s add
+Protect S:PCD s ADD QUIET
 
 If EXISTS S:User-Startup
     Execute S:User-Startup
