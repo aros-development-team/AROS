@@ -359,15 +359,7 @@ static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     {
     	OOP_DisposeObject(data->gc);
 	data->gc = NULL;
-    }
-    
-#if 0    
-    if (NULL != data->gfxhidd)
-    {
-    	OOP_DisposeObject(data->gfxhidd);
-	data->gfxhidd = NULL;
-    }
-#endif    
+    }  
 }
 
 static void gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
@@ -396,31 +388,13 @@ static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     
     realfb = HIDD_Gfx_NewBitMap(data->gfxhidd, msg->attrList);
     
-    if (NULL != realfb && create_fb)
-    {
-    	OOP_Object *fakefb;
-    	fakefb = create_fake_fb(realfb, data, CSD(cl));
-	if (NULL != fakefb)
-	{
-	    ret = fakefb;
-	    data->framebuffer = realfb;
-	}
-	else
-	{
-	    ok = FALSE;
-	}
-    }
-    else
-    {
+    if (realfb && create_fb) {
+    	ret = create_fake_fb(realfb, data, CSD(cl));
+	if (!ret)
+	    OOP_DisposeObject(realfb);
+    } else
     	ret = realfb;
-    }
-    
-    if (!ok)
-    {
-    	OOP_DisposeObject(realfb);
-	ret = NULL;
-    }
-    
+
     return ret;
 }
 
@@ -429,10 +403,11 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     struct gfx_data *data;   
     OOP_Object      *shape;
     BOOL	     ok = TRUE;
-    
+
     data = OOP_INST_DATA(cl, o);
     shape = msg->shape;
-    
+    D(bug("[FakeGfx] SetCursorShape(0x%p)\n", shape));
+
     /* Bitmap changed */
     if (NULL == shape)
     {
@@ -460,23 +435,10 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	APTR new_curs_pixels;
 	ULONG curs_pixels_len;
 
-	struct TagItem bmtags[] =
-	{
-	    { aHidd_BitMap_Displayable	, FALSE	},
-	    { aHidd_BitMap_Width    	, 0	},
-	    { aHidd_BitMap_Height   	, 0	},
-	    { aHidd_BitMap_Friend   	, 0	},
-	    { TAG_DONE	    	    	, 0UL 	}
-	};
-
 	OOP_GetAttr(shape, aHidd_BitMap_Width,  &curs_width);
 	OOP_GetAttr(shape, aHidd_BitMap_Height, &curs_height);
 
-	/* Create new backup bitmap */
 	D(bug("[FakeGfx] New cursor size: %lu x %lu, framebuffer 0x%p\n", curs_width, curs_height, data->framebuffer));
-	bmtags[1].ti_Data = curs_width;
-	bmtags[2].ti_Data = curs_height;
-	bmtags[3].ti_Data = (IPTR)data->framebuffer;
 	
 	/* Create new cursor pixelbuffer. We multiply size by 4 because we want ARGB data
 	   to fit in. */
@@ -640,28 +602,36 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
     data = OOP_INST_DATA(cl, o);
     ret = msg->bitMap;
 
-    D(bug("[FakeFB] Show(0x%p)\n", ret));
+    D(bug("[FakeGfx] Show(0x%p)\n", ret));
     /* If we are attempting to show a fake bitmap, we are working
        in NoFrameBuffer mode where each displayable bitmap is
        intercepted by us */
     if (ret && (OOP_OCLASS(ret) == CSD(cl)->fakefbclass)) {
         data->fakefb = ret;
         OOP_GetAttr(msg->bitMap, aHidd_FakeFB_RealBitMap, (IPTR *)&ret);
-        D(bug("[FakeFB] Bitmap is a fakefb object, real bitmap is 0x%p\n", ret));
+        D(bug("[FakeGfx] Bitmap is a fakefb object, real bitmap is 0x%p\n", ret));
     }
 
-LFB(data);   
-    draw_cursor(data, FALSE, TRUE, CSD(cl));
-    
+    LFB(data);
+    draw_cursor(data, FALSE, FALSE, CSD(cl));
+
     ret = HIDD_Gfx_Show(data->gfxhidd, ret, msg->flags);
+    D(bug("[FakeGfx] Real framebuffer object 0x%p\n", ret));
     data->framebuffer = ret;
     if (NULL != ret)
     	ret = data->fakefb;
+    /* FIXME: temporary workaround: at this point Intuition has already destroyed
+       the sprite image (since the last screen was closed) but we have no information
+       about it. Perhaps FreeSpriteData() should track this down somehow and inform
+       drivers about destroyed sprites. */
+    if (!msg->bitMap)
+	data->curs_bm = NULL;
     rethink_cursor(data, CSD(cl));
     draw_cursor(data, TRUE, TRUE, CSD(cl));
     
-UFB(data);    
-    
+    UFB(data);
+
+    D(bug("[FakeGfx] Returning 0x%p\n", ret));
     return ret;
 }
 
@@ -1388,7 +1358,7 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 	{ TAG_DONE	     , 0UL	 	       }
     };
 
-    D(bug("rethink_cursor(), curs_bm is 0x%p\n", data->curs_bm));
+    D(bug("rethink_cursor(), curs_bm is 0x%p, framebuffer is 0x%p\n", data->curs_bm, data->framebuffer));
 
     /* The first thing we do is recreating a backup bitmap. We do it every time when either
        cursor shape changes (because new shape may have different size) or shown bitmap
@@ -1398,6 +1368,7 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
        Delete the old backup bitmap first */
     if (NULL != data->curs_backup) {
 	OOP_DisposeObject(data->curs_backup);
+	D(bug("[FakeGfx] Disposed old backup bitmap\n"));
 	data->curs_backup = NULL;
     }
 
@@ -1408,16 +1379,20 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 
     /* Create new backup bitmap */
     data->curs_backup = HIDD_Gfx_NewBitMap(data->gfxhidd, bmtags);
-    if (!data->curs_backup) {
-	D(bug("[FakeGfx] rethink_cursor(): COULD NOT CREATE BACKUP BM !!!\n"));
+    D(bug("[FakeGfx] New backup bitmap is 0x%p\n", data->curs_backup));
+    if (!data->curs_backup)
 	return FALSE;
-    }
 
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    D(bug("[FakeGfx] Framebuffer pixelformat 0x%p\n", pf));
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &fbdepth);
+    D(bug("[FakeGfx] Framebuffer depth %u\n", fbdepth));
     OOP_GetAttr(data->curs_bm, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+    D(bug("[FakeGfx] Cursor colormap 0x%p\n", cmap));
     OOP_GetAttr(data->curs_bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    D(bug("[FakeGfx] Cursor pixelformat 0x%p\n", pf));
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &curdepth);
+    D(bug("[FakeGfx] Cursor depth %u\n", curdepth));
 
 #ifndef DISABLE_ARGB_POINTER
     /* We can get ARGB data from the pointer bitmap only
@@ -1442,6 +1417,7 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
     /* If we have some good bitmap->bitmap blitting function with alpha channel support,
        we would not need this extra buffer and conversion for truecolor screens. */
     HIDD_BM_GetImage(data->curs_bm, data->curs_pixels, data->curs_width * data->curs_bpp, 0, 0, data->curs_width, data->curs_height, data->curs_pixfmt);
+    D(bug("[FakeGfx] Obtained cursor sprite data\n"));
     if (data->curs_pixfmt == vHidd_StdPixFmt_LUT8) {
 	for (i = 0; i < data->curs_width * data->curs_height; i++) {
 	    if (data->curs_pixels[i])
