@@ -25,6 +25,9 @@
 /* hack: prevent linux include header <bits/time.h> to re-define timeval struct */
 #  define _STRUCT_TIMEVAL 1
 
+/* avoid conflicts between our __unused define and the ones that might come in
+   via fcntl.h */
+#undef __unused
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
