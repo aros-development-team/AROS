@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: Bitmap class for VGA hidd.
     Lang: English.
@@ -217,19 +217,7 @@ static int PCVGABM_Expunge(LIBBASETYPEPTR LIBBASE)
 ADD2INITLIB(PCVGABM_Init, 0)
 ADD2EXPUNGELIB(PCVGABM_Expunge, 0)
 
-/*********  BitMap::Clear()  *************************************/
-VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
-{
-    IPTR width, height;
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    
-    /* Get width & height from bitmap superclass */
-
-    OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
-    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
-
-    memset(data->VideoData, GC_BG(msg->gc), width*height);
-}
+/*********  BitMap::SetColors()  ***************************/
 
 void vgaDACLoad(struct vgaHWRec *, unsigned char, int);
 
@@ -491,58 +479,6 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
     } /* switch(mode) */
 
     ReturnVoid("VGAGfx.BitMap::FillRect");
-}
-
-/*** BitMap::BlitColorExpansion() **********************************************/
-VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
-{
-    ULONG cemd;
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    HIDDT_Pixel fg, bg;
-    LONG x, y;
-
-    EnterFunc(bug("VGAGfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n"
-    	, msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
-    
-    fg = GC_FG(msg->gc);
-    bg = GC_BG(msg->gc);
-    cemd = GC_COLEXP(msg->gc);
-
-    if (cemd & vHidd_GC_ColExp_Opaque)
-    {
-	for (y = 0; y < msg->height; y ++)
-	{
-            for (x = 0; x < msg->width; x ++)
-            {
-		ULONG is_set;
-
-		is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
-
-   	    	*(data->VideoData + x + msg->destX + ((y + msg->destY) * data->bpr)) = is_set ? fg : bg;
-
-	    } /* for (each x) */
-
-	} /* for (each y) */
-    	
-    }
-    else
-    {
-	for (y = 0; y < msg->height; y ++)
-	{
-            for (x = 0; x < msg->width; x ++)
-            {
-		ULONG is_set;
-
-		is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
-
-    	    	if (is_set)
-   	    	    *(data->VideoData + x + msg->destX + ((y + msg->destY) * data->bpr)) = fg;
-
-	    } /* for (each x) */
-
-	} /* for (each y) */
-    }
-    ReturnVoid("VGAGfx.BitMap::BlitColorExpansion");
 }
 
 /*** BitMap::Set() *******************************************/
