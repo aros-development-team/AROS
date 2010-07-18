@@ -1,0 +1,30 @@
+## version $VER: installer.catalog 1.0 (18.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+MSG_OK
+O.k.
+; OK
+;
+MSG_CANCEL
+Afbryd
+; Cancel
+;
+MSG_MESSAGE
+Besked
+; Message
+;
+MSG_PROMPT
+Prompt
+; Prompt
+;
+MSG_YES
+Ja
+; Yes
+;
+MSG_NO
+Nej
+; No
+;

@@ -1,0 +1,10 @@
+## version $VER: loadresource.catalog 1.0 (18.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+MSG_ERROR_OPEN_LIBRARY
+Kunne ikke åbne biblioteket %s.
+; Couldn't open library %s.
+;
