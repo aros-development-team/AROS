@@ -75,8 +75,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
     CONSOLECLASSPTR = makeConsoleClass(ConsoleDevice);
     STDCONCLASSPTR = makeStdConClass(ConsoleDevice);
 	CHARMAPCLASSPTR = makeCharMapConClass(ConsoleDevice);
+	SNIPMAPCLASSPTR = makeSnipMapConClass(ConsoleDevice);
 
-    if (!CONSOLECLASSPTR || !STDCONCLASSPTR || !CHARMAPCLASSPTR)
+    if (!CONSOLECLASSPTR || !STDCONCLASSPTR || !CHARMAPCLASSPTR || !SNIPMAPCLASSPTR)
 	Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
 
     /* Create the console.device task. */
