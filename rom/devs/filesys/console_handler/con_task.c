@@ -220,7 +220,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 	fh->conreadio->io_Data   = (APTR)fh->window;
 	fh->conreadio->io_Length = sizeof (struct Window);
 
-	if (0 == OpenDevice("console.device", CONU_CHARMAP, ioReq(fh->conreadio), 0))
+	if (0 == OpenDevice("console.device", CONU_SNIPMAP, ioReq(fh->conreadio), 0))
 	{
 	    const UBYTE lf_on[] = {0x9B, 0x32, 0x30, 0x68 }; /* Set linefeed mode    */
 

@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 
-FILES	:=  support consoleclass stdconclass charmapconclass charmap consoletask
+FILES	:=  support consoleclass stdconclass charmapconclass charmap snipmapconclass consoletask
 FUNCS	:=  cdinputhandler rawkeyconvert
 
 #MM- kernel-console : includes linklibs

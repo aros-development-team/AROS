@@ -245,6 +245,7 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite
 Class *makeConsoleClass(struct ConsoleBase *ConsoleDevice);
 Class *makeStdConClass(struct ConsoleBase *ConsoleDevice);
 Class *makeCharMapConClass(struct ConsoleBase *ConsoleDevice);
+Class *makeSnipMapConClass(struct ConsoleBase *ConsoleDevice);
 
 
 VOID printstring(STRPTR string, ULONG len, struct ConsoleBase *ConsoleDevice);
