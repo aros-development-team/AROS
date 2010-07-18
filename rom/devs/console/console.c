@@ -74,7 +74,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
     /* Create the console classes */
     CONSOLECLASSPTR = makeConsoleClass(ConsoleDevice);
     STDCONCLASSPTR = makeStdConClass(ConsoleDevice);
-    if (!CONSOLECLASSPTR || !STDCONCLASSPTR)
+	CHARMAPCLASSPTR = makeCharMapConClass(ConsoleDevice);
+
+    if (!CONSOLECLASSPTR || !STDCONCLASSPTR || !CHARMAPCLASSPTR)
 	Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
 
     /* Create the console.device task. */

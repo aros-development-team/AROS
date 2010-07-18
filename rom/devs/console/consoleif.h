@@ -33,7 +33,8 @@ enum
     M_Console_RenderCursor,
     M_Console_UnRenderCursor,
     M_Console_ClearCell,
-    M_Console_NewWindowSize
+    M_Console_NewWindowSize,
+	M_Console_HandleGadgets,
     
 };
 
@@ -101,6 +102,12 @@ struct P_Console_ClearCell
 struct P_Console_NewWindowSize
 {
     ULONG MethodID;
+};
+
+struct P_Console_HandleGadgets
+{
+    ULONG MethodID;
+    APTR IAddress;
 };
 
 struct P_Console_GetDefaultParams
@@ -191,6 +198,14 @@ struct P_Console_GetDefaultParams
 ({						\
     struct P_Console_NewWindowSize p;		\
     p.MethodID	= M_Console_NewWindowSize;	\
+    DoMethodA((o), (Msg)&p);			\
+})
+
+#define Console_HandleGadgets(o, a)				\
+({						\
+    struct P_Console_HandleGadgets p;		\
+    p.MethodID	= M_Console_HandleGadgets;	\
+	p.IAddress = a;						\
     DoMethodA((o), (Msg)&p);			\
 })
 

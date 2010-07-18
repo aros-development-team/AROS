@@ -23,7 +23,7 @@
 #include "console_gcc.h"
 #include "consoleif.h"
 
-/* #define DEBUG 1 */
+#define DEBUG 0
 #include <aros/debug.h>
 
 /* Protos */
@@ -113,14 +113,14 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 	    while ( (cdihmsg = (struct cdihMessage *)GetMsg(inputport)) )
 	    {
 
-		D(bug("GOT MESSAGE FROM CONSOLE INPUT HANDLER: "));
+		D(bug("GOT MESSAGE FROM CONSOLE INPUT HANDLER:\n"));
 		/* Check that the ConUnit has not been disposed,
 		   while the message was passed
 		*/
 		if (checkconunit(cdihmsg->unit, ConsoleDevice))
 		{
 		    switch(cdihmsg->ie.ie_Class)
-		    {
+ 		    {
 		    	case IECLASS_CLOSEWINDOW:
 			#warning this is a hack. It would actually be up to the
 			#warning console.device user (CON: handler for example) to
@@ -189,7 +189,15 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 
 			} /* IECLASS_RAWKEY */
 			break; 
+
+			case IECLASS_GADGETUP:
+			  {
+				D(bug("Gadgetup: %p\n",(APTR)cdihmsg->ie.ie_EventAddress));
+				Console_HandleGadgets(cdihmsg->unit,(APTR)cdihmsg->ie.ie_EventAddress);
+			  }
+			  break;
 			
+	   	    case IECLASS_REFRESHWINDOW: /* Intentional fallthrough */
 			case IECLASS_SIZEWINDOW:
 			{
 			    Console_NewWindowSize(cdihmsg->unit);
