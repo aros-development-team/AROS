@@ -403,6 +403,22 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	break;
     }
 
+	case C_INSERT_CHAR:
+	  {
+		UBYTE oldpen = rp->FgPen;
+		Console_UnRenderCursor(o);
+		SetAPen(rp, CU(o)->cu_BgPen);
+		SetAPen(rp, oldpen);
+		ScrollRaster(rp,
+					 -XRSIZE,
+					 0,
+					 GFX_X(o, XCP),
+					 GFX_Y(o, YCP),
+					 GFX_XMAX(o),
+					 GFX_Y(o, YCP+1));
+		Console_RenderCursor(o);
+	  }
+	  break;
     case C_INSERT_LINE:
     {
         UBYTE oldpen = rp->FgPen;
