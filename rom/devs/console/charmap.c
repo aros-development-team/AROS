@@ -42,7 +42,7 @@ struct charmap_line * charmap_newline(struct charmap_line * next, struct charmap
 
 // FIXME: **much** faster if add capacity to charmap_line and allocate
 // a few characters at a time
-VOID charmap_extend(struct charmap_line * line, ULONG newsize)
+VOID charmap_resize(struct charmap_line * line, ULONG newsize)
 {
   char * text = line->text;
   BYTE * fgpen = line->fgpen;
@@ -57,6 +57,11 @@ VOID charmap_extend(struct charmap_line * line, ULONG newsize)
 	line->bgpen = (BYTE *)AllocMem(newsize,MEMF_ANY);
 	if (line->bgpen) memset(line->bgpen,0,newsize);
 	line->size = newsize;
+  } else {
+	line->text = 0;
+	line->fgpen = 0;
+	line->bgpen = 0;
+	line->size = 0;
   }
 
   if (text && line->text) memcpy(line->text, text, size);

@@ -24,7 +24,7 @@ struct charmap_line
 VOID charmap_dispose_lines(struct charmap_line * line);
 struct charmap_line * charmap_dispose_line(struct charmap_line * line);
 struct charmap_line * charmap_newline(struct charmap_line * next, struct charmap_line * prev);
-VOID charmap_extend(struct charmap_line * line, ULONG newsize);
+VOID charmap_resize(struct charmap_line * line, ULONG newsize);
 
 #endif
 
