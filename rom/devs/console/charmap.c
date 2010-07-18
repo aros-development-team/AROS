@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: charmap.c 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc: Code for CONU_CHARMAP console units.
     Lang: english
