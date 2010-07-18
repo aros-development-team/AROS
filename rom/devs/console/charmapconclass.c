@@ -345,7 +345,7 @@ static VOID charmap_ascii(Class * cl, Object * o, ULONG xcp, ULONG ycp, char * s
   ULONG oldsize = line->size;
 
   // Ensure the line has sufficient capacity.
-  if (line->size < xcp + len) charmap_extend(line, xcp + len);
+  if (line->size < xcp + len) charmap_resize(line, xcp + len);
 
   // .. copy the required data
   memset(line->fgpen + xcp, CU(o)->cu_FgPen, len);
@@ -438,6 +438,37 @@ static VOID charmap_delete_char(Class * cl, Object *o, ULONG x, ULONG y)
   memmove(line->text + x, line->text + x + 1, 1);
 }
 
+static VOID charmap_insert_char(Class * cl, Object *o, ULONG x, ULONG y)
+{
+  struct charmapcondata 	*data = INST_DATA(cl, o);
+  struct charmap_line * line = charmapcon_find_line(cl,o, y);
+  
+  if (x >= line->size) return;
+
+  /* FIXME: This is wasteful, since it copies the buffers straight over,
+   * so we have to do memmove's further down. */
+  charmap_resize(line, line->size + 1);
+  
+  memmove(line->fgpen + x + 1, line->fgpen + x, line->size - x - 1);
+  memmove(line->bgpen + x + 1, line->bgpen + x, line->size - x - 1);
+  memmove(line->text + x + 1, line->text  + x, line->size - x - 1);
+
+  line->fgpen[x] = CU(o)->cu_FgPen;
+  line->bgpen[x] = CU(o)->cu_BgPen;
+  line->text[x] = ' ';
+}
+
+static VOID charmap_formfeed(Class *cl, Object * o)
+{
+  struct charmapcondata 	*data = INST_DATA(cl, o);
+  struct charmap_line * line = data->top_of_window;
+
+  while (line) {
+	charmap_resize(line,0);
+	line = line->next;
+  }
+}
+
 static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 
 {
@@ -470,12 +501,17 @@ static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoComman
 	    break;
 
     case C_FORMFEED:
-	    // FIXME: Clear the buffer
+        charmap_formfeed(cl,o);
     	DoSuperMethodA(cl, o, (Msg)msg);
     	break;
 
     case C_DELETE_CHAR: /* FIXME: can it have params!? */
 		charmap_delete_char(cl,o, XCP,YCP);
+    	DoSuperMethodA(cl, o, (Msg)msg);
+        break;
+
+    case C_INSERT_CHAR:
+		charmap_insert_char(cl,o, XCP,YCP);
     	DoSuperMethodA(cl, o, (Msg)msg);
         break;
 
