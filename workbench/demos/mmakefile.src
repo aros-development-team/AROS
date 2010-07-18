@@ -14,7 +14,7 @@ ifeq ($(FLAVOUR),native)
 FILES	:= \
     font2c gtdemo helloworld inquire intuitext librarytest listfonts \
     keymaptest mxgads  readicon regiontest shadowborder sift strtest \
-    consoledemo serialtest window test_text 
+    consoledemo serialtest window test_text cons cons_charmap
 
 else
 FILES	:= \
@@ -23,6 +23,8 @@ FILES	:= \
     colorwheel \
     compleximage \
     consoledemo \
+	cons \
+	cons_charmap \
     coolbutton \
     cxtest \
     demowin \
