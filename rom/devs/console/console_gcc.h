@@ -238,21 +238,13 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice);
 
 struct Task *createConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevice);
 
-APTR  CreateCharMap(ULONG numchars, struct ConsoleBase *ConsoleDevice);
-VOID  FreeCharMap  (APTR map, struct ConsoleBase *ConsoleDevice);
-ULONG RewindChars  (APTR map, ULONG num);
-ULONG ForwardChars (APTR map, ULONG num);
-UBYTE GetChar      (APTR map);
-BOOL  NextChar     (APTR map, UBYTE *char_ptr);
-BOOL  LastChar     (APTR map, UBYTE *char_ptr);
-BOOL  InsertChar   (APTR map, UBYTE c, struct ConsoleBase *ConsoleDevice);
-
 /* Prototypes */
 ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite
 	, struct ConsoleBase *ConsoleDevice);
 
 Class *makeConsoleClass(struct ConsoleBase *ConsoleDevice);
 Class *makeStdConClass(struct ConsoleBase *ConsoleDevice);
+Class *makeCharMapConClass(struct ConsoleBase *ConsoleDevice);
 
 
 VOID printstring(STRPTR string, ULONG len, struct ConsoleBase *ConsoleDevice);

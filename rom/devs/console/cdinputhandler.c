@@ -77,15 +77,18 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
     BOOL send_message = FALSE;
 
     struct cdihMessage *message = cdihdata->cdihMsg;
-D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
+	D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 
     for (ie = events; ie; ie = ie->ie_NextEvent)
     {
-
+	  D(bug("ie_Class %d\n",ie->ie_Class));
 	/* A rawkey event ? */
     	if ((ie->ie_Class == IECLASS_RAWKEY && !(ie->ie_Code & IECODE_UP_PREFIX)) ||
 	    (ie->ie_Class == IECLASS_SIZEWINDOW) ||
-	    (ie->ie_Class == IECLASS_CLOSEWINDOW))
+	    (ie->ie_Class == IECLASS_CLOSEWINDOW) ||
+		(ie->ie_Class == IECLASS_REFRESHWINDOW) || 
+			(ie->ie_Class == IECLASS_GADGETDOWN) ||
+			(ie->ie_Class == IECLASS_GADGETUP || ie->ie_Class == IECLASS_RAWMOUSE))
 	{
 	    /* What console do we send it to ? */
 	    Object *unit;
@@ -106,7 +109,10 @@ D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 
 	    } /* if (RAWKEY event was meant for a console window) */
 
-	} /* if (IECLASS_RAWKEY event) */
+	}  else {
+		  D(bug("Ignoring event of ie_Class %d\n",ie->ie_Class));
+		}
+	 
 
 	if (send_message)
 	{
@@ -284,7 +290,7 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
 			/* Initialize Interrupt struct */
 		    	cdihandler->is_Code = (APTR)AROS_SLIB_ENTRY(CDInputHandler, Console);
 		    	cdihandler->is_Data = cdihdata;
-		    	cdihandler->is_Node.ln_Pri	= 0;
+		    	cdihandler->is_Node.ln_Pri	= 50;
 		    	cdihandler->is_Node.ln_Name	= "console.device InputHandler";
 
 		    	cdihdata->consoleDevice = ConsoleDevice;

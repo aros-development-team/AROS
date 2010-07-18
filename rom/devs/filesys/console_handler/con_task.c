@@ -5,7 +5,6 @@
     Filesystem that uses console device for input/output.
 */
 
-
 #include <proto/exec.h>
 #include <exec/libraries.h>
 #include <exec/resident.h>
@@ -56,7 +55,6 @@ static const struct NewWindow default_nw =
     WFLG_DRAGBAR       |
     WFLG_SIZEBRIGHT    |
     WFLG_SMART_REFRESH |
-    WFLG_NOCAREREFRESH |
     WFLG_ACTIVATE,
     0,				/* FirstGadget */
     0,				/* CheckMark */
@@ -69,6 +67,7 @@ static const struct NewWindow default_nw =
     32767,			/* MaxHeight */
     WBENCHSCREEN		/* type */
 };
+
 
 /****************************************************************************************/
 
@@ -221,7 +220,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 	fh->conreadio->io_Data   = (APTR)fh->window;
 	fh->conreadio->io_Length = sizeof (struct Window);
 
-	if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conreadio), 0))
+	if (0 == OpenDevice("console.device", CONU_CHARMAP, ioReq(fh->conreadio), 0))
 	{
 	    const UBYTE lf_on[] = {0x9B, 0x32, 0x30, 0x68 }; /* Set linefeed mode    */
 

@@ -103,13 +103,13 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
 	Console_UnRenderCursor(o);
 
-    	SetAPen(rp, CU(o)->cu_FgPen);
+	SetAPen(rp, CU(o)->cu_FgPen);
 	SetBPen(rp, CU(o)->cu_BgPen);
-    	SetDrMd(rp, JAM2);
-    	Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
+	SetDrMd(rp, JAM2);
+	Move(rp,CP_X(o),CP_Y(o)+rp->Font->tf_Baseline);
 	{
-	    UBYTE c = params[0];
-	    Text(rp, &c, 1);
+	  UBYTE c = params[0];
+	  Text(rp, &c,1);
 	}
 
     	Console_Right(o, 1);
@@ -645,12 +645,10 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
 
     if ((old_xcp != XCP) || (old_ycp != YCP))
     {
-    #if 0
         SetAPen(rp, 0);
 	SetDrMd(rp, JAM2);
 	RectFill(rp, GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
-#endif
-
+#if 0
     	if (old_ycp != YCP)
 	{
 	    /* Scroll up one line */
@@ -666,7 +664,7 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
 	    XCP = CHAR_XMIN(o);
 	    XCCP = CHAR_XMIN(o);
 	}
-
+#endif
 	data->rendercursorcount--;
     	Console_RenderCursor(o);
     }
