@@ -41,6 +41,9 @@
 
 #define timeval sys_timeval
 
+/* avoid conflicts between our __unused define and the ones that might come in
+   via fcntl.h */
+#undef __unused
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
