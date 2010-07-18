@@ -1,0 +1,150 @@
+## version $VER: icontrol.catalog 1.0 (18.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+MSG_CANT_OPEN_LIB
+Kan ikke åbne %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+Kan ikke oprette programobjekt!
+; Can't create application object!
+;
+MSG_CANT_CREATE_CUSTOM_CLASS
+Kan ikke oprette tilpasset preferenceswindow klasse.
+; Can't create custom preferenceswindow class
+;
+MSG_WINTITLE
+Indstillinger for IControl
+; IControl Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Åbn...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Gem som...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Afslut
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Redigér
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Nulstil til standardværdier
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Sidst gemt
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Genskab
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Indstillinger
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Opret ikoner?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Indlæs indstillinger for IControl
+; Load IControl Preferences
+;
+MSG_ASL_SAVE_TITLE
+Gem indstillinger for IControl
+; Save IControl Preferences
+;
+MSG_OK
+O.k.
+; Ok
+;
+MSG_MENUS_GROUP
+Menuer
+; Menus
+;
+MSG_MENUS_TYPE
+Type
+; Type
+;
+MSG_MENUS_TYPE_PULLDOWN
+Rullegardin
+; Pull-Down
+;
+MSG_MENUS_TYPE_POPUP
+Pop-op
+; Pop-Up
+;
+MSG_MENUS_LOOK
+Udseende
+; Look
+;
+MSG_MENUS_LOOK_CLASSIC
+Klassisk
+; Classic
+;
+MSG_MENUS_LOOK_3D
+3D
+; 3D
+;
+MSG_WINDOWS
+Vinduer
+; Windows
+;
+MSG_OFFSCREEN_MOVE
+Flytning uden for skærmområde
+; Offscreen move:
+;
+MSG_SCREENS
+Skærme
+; Screens
+;
+MSG_FRONTMOST_DEFAULT
+Forreste skærm som offentlig skærm:
+; Frontmost set as default public screen:
+;
+MSG_OFFSCREEN_DESC
+Tillader vinduer at blive flyttet ud af det synlige område
+; Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC
+Gør den forreste offentlige skærm til standardskærm.
+; Make the frontmost public screen\nthe default public screen
+;
+MSG_BACKWARDS_DRAG
+Slå baglæns træk fra
+; Disable drag in top-left direction
+;
+MSG_BOUND_LEFT_DRAG
+Bundet træk mod venstre
+; Bound drag in left direction
+;
+MSG_BOUND_RIGHT_DRAG
+Bundet træk mod højre
+; Bound drag in right direction
+;
+MSG_BOUND_TOP_DRAG
+Bundet træk mod toppen
+; Bound drag in top direction
+;
+MSG_BOUND_BOTTOM_DRAG
+Bundet træk mod bunden
+; Bound drag in bottom direction
+;
+MSG_META_DRAG
+Træktaster
+; Drag keys
+;

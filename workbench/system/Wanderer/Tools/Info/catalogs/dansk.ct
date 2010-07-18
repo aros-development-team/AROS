@@ -1,0 +1,182 @@
+## version $VER: info.catalog 1.0 (18.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+MSG_TITLE
+Information
+; Information
+;
+MSG_DESCRIPTION
+Vis ikonoplysninger
+; Display Icon information
+;
+MSG_COPYRIGHT
+Icon information\n© 2003-2010 The AROS Dev Team
+; Icon information\n© 2003-2010 The AROS Dev Team
+;
+MSG_ICON
+Ikon
+; Icon
+;
+MSG_NAME
+Navn
+; Name
+;
+MSG_COMMENT
+Bemærkninger
+; Comment
+;
+MSG_STACK
+Stak
+; Stack
+;
+MSG_DEFTOOL
+Værktøj
+; Tool
+;
+MSG_ICONTYPE
+Ikontype
+; Icon type
+;
+MSG_DISK
+Disk
+; Disk
+;
+MSG_DRAWER
+Skuffe
+; Drawer
+;
+MSG_TOOL
+Værktøj
+; Tool
+;
+MSG_PROJECT
+Projekt
+; Project
+;
+MSG_GARBAGE
+Affald
+; Garbage
+;
+MSG_DEVICE
+Enhed
+; Device
+;
+MSG_KICK
+Kick
+; Kick
+;
+MSG_APPICON
+Programikon
+; AppIcon
+;
+MSG_INFORMATION
+Information
+; Information
+;
+MSG_PROTECTION
+Beskyttelse
+; Protection
+;
+MSG_TOOLTYPES
+Værktøjstyper
+; Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Fejl: Kan ikke køres fra skal
+; Error: Cannot be started from shell
+;
+MSG_ABOUT
+Om...
+; About...
+;
+MSG_QUIT
+Afslut
+; Quit
+;
+MSG_READ
+Læs
+; Read
+;
+MSG_WRITE
+Skriv
+; Write
+;
+MSG_EXECUTE
+Udfør
+; Execute
+;
+MSG_DELETE
+Slet
+; Delete
+;
+MSG_SCRIPT
+Skript
+; Script
+;
+MSG_PURE
+Ren
+; Pure
+;
+MSG_ARCHIVED
+Arkiveret
+; Archived
+;
+MSG_STICKY
+Klæbrig
+; Sticky
+;
+MSG_SIZE
+Størrelse
+; Size
+;
+MSG_VERSION
+Version
+; Version
+;
+MSG_OWNERID
+Ejer-id
+; Owner ID
+;
+MSG_GROUPID
+Gruppe-id
+; Group ID
+;
+MSG_OWNERNAME
+Ejer
+; Owner
+;
+MSG_GROUPNAME
+Gruppe
+; Group
+;
+MSG_TYPE
+Type
+; Type
+;
+MSG_DATE
+Dato
+; Date
+;
+MSG_NEW_KEY
+Ny nøgle
+; New key
+;
+MSG_DELETE_KEY
+Slet nøgle
+; Delete key
+;
+MSG_SAVE
+_Gem
+; _Save
+;
+MSG_CANCEL
+_Afbryd
+; _Cancel
+;
+MSG_OK
+O.k.
+; Ok
+;
