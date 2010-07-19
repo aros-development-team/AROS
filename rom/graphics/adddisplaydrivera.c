@@ -156,7 +156,7 @@
 	    D(bug("[AddDisplayDriverA] Inserting driver 0x%p, ID 0x%08lX\n", mdd, mdd->id));
 	    for (last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
 	        D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p, ID 0x%08lX\n", last, last->next, last->next->id));
-		if (mdd->id > last->next->id)
+		if (mdd->id < last->next->id)
 		    break;
 	    }
 	    D(bug("[AddDisplayDriverA] Inserting after 0x%p\n", last));
