@@ -623,9 +623,9 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
     /* FIXME: temporary workaround: at this point Intuition has already destroyed
        the sprite image (since the last screen was closed) but we have no information
        about it. Perhaps FreeSpriteData() should track this down somehow and inform
-       drivers about destroyed sprites. */
+       drivers about destroyed sprites.
     if (!msg->bitMap)
-	data->curs_bm = NULL;
+	data->curs_bm = NULL;*/
     rethink_cursor(data, CSD(cl));
     draw_cursor(data, TRUE, TRUE, CSD(cl));
     
@@ -1376,6 +1376,11 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
        We also don't need new backup bitmap */
     if (!data->curs_bm)
         return TRUE;
+
+    /* We may also have no framebuffer (empty display on
+       non-framebuffer driver). Also NOP in this case */
+    if (!data->framebuffer)
+	return TRUE;
 
     /* Create new backup bitmap */
     data->curs_backup = HIDD_Gfx_NewBitMap(data->gfxhidd, bmtags);

@@ -1018,7 +1018,7 @@ extern void MySetPointerPos(struct IntuitionBase *);
 struct TextFont *SafeReopenFont(struct IntuitionBase *, struct TextFont **);
 extern Object *MakePointerFromPrefs(struct IntuitionBase *, struct Preferences *);
 extern Object *MakePointerFromData(struct IntuitionBase *, UWORD *, int, int, int, int);
-void InstallPointer(struct IntuitionBase *, Object **, Object *);
+void InstallPointer(struct IntuitionBase *, UWORD, Object **, Object *);
 void SetPointerColors(struct IntuitionBase *IntuitionBase);
 struct IClass *InitITextIClass (struct IntuitionBase * IntuitionBase);
 struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req, struct Gadget *gad,

@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <intuition/pointerclass.h>
+#include <prefs/pointer.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
@@ -179,7 +180,7 @@ Object *MakePointerFromPrefs(struct IntuitionBase *IntuitionBase, struct Prefere
     return MakePointerFromData(IntuitionBase, prefs->PointerMatrix, prefs->XOffset, prefs->YOffset, 16, 16);
 }
 
-void InstallPointer(struct IntuitionBase *IntuitionBase, Object **old, Object *pointer)
+void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **old, Object *pointer)
 {
     struct IntScreen 	*scr;
     struct Window   	*win;
@@ -222,6 +223,14 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, Object **old, Object *p
             }
         }
     }
+
+    /* Normal pointer image is also set on all empty displays (with zero ViewPorts) */
+    if (which == WBP_NORMAL)
+	ChangeExtSprite(NULL,
+			oldpointer->sprite, newpointer->sprite,
+			POINTERA_XOffset, newpointer->xoffset,
+			POINTERA_YOffset, newpointer->yoffset,
+			TAG_DONE);
 
     DisposeObject(*old);
     *old = pointer;

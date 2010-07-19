@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -380,7 +380,7 @@ struct IOldOverScanPrefs
                  &GetPrivIBase(IntuitionBase)->BusyPointer :
                  &GetPrivIBase(IntuitionBase)->DefaultPointer;
 
-            InstallPointer(IntuitionBase, oldptr, pointer);
+            InstallPointer(IntuitionBase, fp->Type, oldptr, pointer);
             /*
              * Original iprefs checks for a 0 or -1 return
              * otherwise it expects a returned bitmap..sigh
