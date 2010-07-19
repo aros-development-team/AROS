@@ -42,6 +42,7 @@ struct Scroll
   struct Image *  downimage;       /* ditto for down arrow */
 };
 
+// FIXME: Abstract out the non-GUI aspects
 struct charmapcondata
 {
   /* Start of the scrollback buffer */
@@ -61,6 +62,13 @@ struct charmapcondata
 									   buffer on top of CHAR_YMAX(o) */
 
   BOOL unrendered;                  /* Unrendered cursor while scrolled back? */
+
+  /* Current selection */
+  ULONG select_x_min;
+  ULONG select_y_min;
+  ULONG select_x_max;
+  ULONG select_y_max;
+  BOOL active_selection;            /* If true, mouse move will affect the selection */
 
   UBYTE  boopsigad;					/* Type of right prop gadget of window */
   struct Scroll * prop;
