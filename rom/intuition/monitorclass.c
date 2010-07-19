@@ -774,6 +774,56 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /***********************************************************************************/
 
+IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
+{
+    struct MonitorData *data = INST_DATA(cl, o);
+    struct TagItem  *tag, *tstate;
+
+    tstate = msg->ops_AttrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate))) {
+	switch (tag->ti_Tag) {
+	case MA_TopLeftMonitor:
+	    data->topleft = (Object *)tag->ti_Data;
+	    break;
+
+	case MA_TopMiddleMonitor:
+	    data->topmiddle = (Object *)tag->ti_Data;
+	    break;
+
+	case MA_TopRightMonitor:
+	    data->topright = (Object *)tag->ti_Data;
+	    break;
+
+	case MA_MiddleLeftMonitor:
+	    data->middleleft = (Object *)tag->ti_Data;
+	    break;
+
+	case MA_MiddleRightMonitor:
+	    data->middleright = (Object *)tag->ti_Data;
+	    break;
+
+	case MA_BottomLeftMonitor:
+	    data->bottomleft = (Object *)tag->ti_Data;
+	    break;
+
+	case MA_BottomMiddleMonitor:
+	    data->bottommiddle = (Object *)tag->ti_Data;
+	    break;
+
+	case MA_BottomRightMonitor:
+	    data->bottomright = (Object *)tag->ti_Data;
+	    break;
+	
+	case MA_PointerVisible:
+	    HIDD_Gfx_SetCursorVisible(data->driver, tag->ti_Data);
+	    break;
+	}
+    }
+    return DoSuperMethodA(cl, o, (Msg)msg);
+}
+
+/***********************************************************************************/
+
 IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {   
     D(kprintf("MonitorClass: OM_DISPOSE\n"));
@@ -1274,4 +1324,13 @@ ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetC
 
     HIDD_Gfx_ModeProperties(data->driver, msg->ModeID, &modeprops, sizeof(modeprops));
     return modeprops.CompositionFlags;
+}
+
+/************************************************************************************/
+
+void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerPos *msg)
+{
+    struct MonitorData *data = INST_DATA(cl, obj);
+
+    HIDD_Gfx_SetCursorPos(data->driver, msg->x, msg->y);
 }

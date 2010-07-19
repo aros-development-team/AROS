@@ -57,7 +57,13 @@
     INTERNALS
         This is a minimal implementation which supports only single sprite #0
         for mouse pointer.
-	
+
+	ViewPort pointer determines the display driver on which to set the
+	sprite image. If it is set to NULL, the image will be set on all
+	empty displays, this is needed for Intuition. Please do not rely on this,
+	consider NULL ViewPort unimplemented. This is going to change when
+	Amiga(tm) chipset support is implemented.
+
 	Hosted ports can use host OS' native mouse cursor functions, which need
 	to know hotspot coordinates. Passing them to the graphics driver is done
 	by forwarding two pointerclass tags: POINTERA_XOffset and POINTERA_YOffset.
@@ -88,21 +94,30 @@
     newsprite->es_SimpleSprite.y = oldsprite->es_SimpleSprite.y;
     D(bug("Sprite position: (%d, %d)\n", newsprite->es_SimpleSprite.x, newsprite->es_SimpleSprite.y));
 
-    /* Pick up display driver from ViewPort's bitmap */
-    if (vp)
-        mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
-    else
-        /* TODO: vp == NULL suggests Amiga(tm) chipset display */
-        return FALSE;
-
-    /* Set the cursor shape and make sure it is visible */
     bitmap = OBTAIN_HIDD_BM(newsprite->es_BitMap);
     D(bug("HIDD bitmap object: 0x%p\n", bitmap));
-    res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, xoffset, yoffset);
-    RELEASE_HIDD_BM(bitmap, newsprite->es_BitMap);
 
-    if (res)
-        HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
+    if (vp) {
+        /* Pick up display driver from ViewPort's bitmap */
+        mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
+	res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, xoffset, yoffset);
+	if (res)
+	    HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
+    } else {
+        res = TRUE;
+	/* NULL ViewPort means 'all empty displays'. This allows Intuition to reset
+	   mouse pointer sprite on displays with no screens */
+	for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
+	    if (!mdd->display) {
+		if (!HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, xoffset, yoffset))
+		    res = FALSE;
+		/* Also don't enforce sprite visiblity here because it's controlled
+		   by Intuition */
+	    }
+	}
+    }
+
+    RELEASE_HIDD_BM(bitmap, newsprite->es_BitMap);
     return res;
 
     AROS_LIBFUNC_EXIT

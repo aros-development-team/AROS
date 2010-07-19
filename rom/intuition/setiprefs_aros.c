@@ -146,7 +146,7 @@
                       &GetPrivIBase(IntuitionBase)->BusyPointer :
                       &GetPrivIBase(IntuitionBase)->DefaultPointer;
 
-            InstallPointer(IntuitionBase, oldptr, pointer);
+            InstallPointer(IntuitionBase, fp->Which, oldptr, pointer);
         }
         break;
 

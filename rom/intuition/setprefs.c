@@ -10,6 +10,8 @@
 #include <intuition/preferences.h>
 #include <devices/input.h>
 #include <devices/inputevent.h>
+#include <prefs/pointer.h>
+
 #include <stddef.h>
 
 static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *IntuitionBase)
@@ -178,7 +180,7 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
 	    pointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
             if (pointer)
             {
-                InstallPointer(IntuitionBase, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
+                InstallPointer(IntuitionBase, WBP_NORMAL, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
             }
         }
 
