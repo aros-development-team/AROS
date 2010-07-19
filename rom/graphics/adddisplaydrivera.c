@@ -125,7 +125,8 @@
 	        mdd->flags |= DF_BootMode;
 
 	    if (CDD(GfxBase)->DriverNotify)
-		mdd->userdata = CDD(GfxBase)->DriverNotify(gfxhidd, TRUE, CDD(GfxBase)->notify_data);
+		/* Use mdd->gfxhidd here because it can be substituted by fakegfx object */
+		mdd->userdata = CDD(GfxBase)->DriverNotify(mdd->gfxhidd, TRUE, CDD(GfxBase)->notify_data);
 
 	    /* Remove boot mode drivers if needed */
 	    keep_boot = GetTagData(DDRV_KeepBootMode, FALSE, tags);
