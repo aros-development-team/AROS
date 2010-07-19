@@ -1451,8 +1451,8 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     
     if (NULL == data->curs_bm || NULL == data->framebuffer)
     {
-    	D(bug("!!! draw_cursor: FAKE GFX HIDD NOT PROPERLY INITIALIZED !!!\n"));
-	D(bug("CURS BM: 0x%p, FB: 0x%p\n", data->curs_bm, data->framebuffer));
+    	DB2(bug("!!! draw_cursor: FAKE GFX HIDD NOT PROPERLY INITIALIZED !!!\n"));
+	DB2(bug("CURS BM: 0x%p, FB: 0x%p\n", data->curs_bm, data->framebuffer));
     	return;
     }
     
@@ -1495,7 +1495,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 
 	data->backup_done = TRUE;
 
-    	DB2(bug("RENDERING CURSOR IMAGE\n"));
+    	DB2(bug("[FakeGfx] Rendering cursor, framebuffer 0x%p\n", data->framebuffer));
 	/* Render the cursor image */
 	if (data->curs_pixfmt == vHidd_StdPixFmt_ARGB32)
 	    HIDD_BM_PutAlphaImage(data->framebuffer, data->gc, data->curs_pixels, data->curs_width * data->curs_bpp, data->curs_x, data->curs_y, width, height);
@@ -1530,7 +1530,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 	/* Erase the old cursor image */
 	if (data->backup_done)
 	{
-    	    // bug("PUTTING BACK BACKED UP AREA\n");
+    	    DB2(bug("[FakeGfx] Restoring cursor area, framebuffer 0x%p\n", data->framebuffer));
 	    HIDD_Gfx_CopyBox(data->gfxhidd
 	    	, data->curs_backup
 	    	, 0, 0
@@ -1557,14 +1557,14 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 	{ TAG_DONE  	    	    , 0UL   	    	}
     };
 
+    /* If we work with framebuffer-based driver, Show() will never be called on
+       a fakefb object so we remember it right now */
     fakebm = OOP_NewObject(NULL, CLID_Hidd_FakeFB, fakebmtags);
-    if (NULL != fakebm)
-    {
+    if (data->fakefb_attr == aHidd_BitMap_FrameBuffer) {
+	data->fakefb      = fakebm;
 	data->framebuffer = framebuffer;
-	data->fakefb = fakebm;
-    
     }
-    
+
     return fakebm;
 }
 
