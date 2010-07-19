@@ -202,9 +202,22 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	break;
 
     case C_DELETE_CHAR: /* FIXME: can it have params!? */
-        Console_UnRenderCursor(o);
-	Console_ClearCell(o, XCCP, YCCP);
-	Console_RenderCursor(o);
+	  {
+		UBYTE oldpen = rp->FgPen;
+		Console_UnRenderCursor(o);
+		SetAPen(rp, CU(o)->cu_BgPen);
+		SetAPen(rp, oldpen);
+		ScrollRaster(rp,
+					 XRSIZE,
+					 0,
+					 GFX_X(o, XCP)+1,
+					 GFX_Y(o, YCP),
+					 GFX_XMAX(o),
+					 GFX_Y(o, YCP+1));
+		Console_RenderCursor(o);
+	  }
+	  break;
+	  Console_RenderCursor(o);
 	break;
 
     case C_HTAB:
@@ -289,9 +302,17 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	Console_RenderCursor(o);
     	break;
 
-
+	case C_CURSOR_UP:
     case C_VTAB:
-    	Console_Up(o, 1);
+	  Console_UnRenderCursor(o);
+	  Console_Up(o, 1);
+	  Console_RenderCursor(o);
+  	break;
+
+	case C_CURSOR_DOWN:
+	  Console_UnRenderCursor(o);
+	  Console_Down(o, 1);
+	  Console_RenderCursor(o);
   	break;
 
     case C_CARRIAGE_RETURN:
