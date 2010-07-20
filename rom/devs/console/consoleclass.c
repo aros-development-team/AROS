@@ -392,6 +392,7 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	case C_CURSOR_BACKWARD:
 	case C_CURSOR_NEXT_LINE:
 	case C_CURSOR_PREV_LINE:
+	case C_SET_TOP_OFFSET:
 	    msg->Params[0] = 1;
 	    break;
 	case C_CURSOR_POS:
