@@ -550,18 +550,14 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	}
 	break;
 
-/*    case C_:
+    case C_SET_TOP_OFFSET:
+	    Console_UnRenderCursor(o);
+		CU(o)->cu_YROrigin = params[0];
+		CU(o)->cu_YMax = (w->Height - (CU(o)->cu_YROrigin  + w->BorderBottom)) / CU(o)->cu_YRSize - 1;
+	    Console_RenderCursor(o);		
+		Console_NewWindowSize(o);
     	break;
 
-    case C_:
-    	break;
-
-    case C_:
-    	break;
-
-    case C_:
-    	break;
-*/
     default:
     	DoSuperMethodA(cl, o, (Msg)msg);
 	break;

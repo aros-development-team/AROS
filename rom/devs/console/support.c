@@ -493,8 +493,8 @@ static const struct Command
     { C_SET_LINE_LENGTH    	,   	    	    	},  	/* 0x75 u */
     { -1    	    	    	,   	    	    	},  	/* 0x76 v */
     { -1    	    	    	,   	    	    	},  	/* 0x77 w */
-    { C_SET_LEFT_OFFSET	    	,   	    	    	},  	/* 0x78 x */
-    { C_SET_TOP_OFFSET 	    	,   	    	    	},  	/* 0x79 y */
+    { C_SET_LEFT_OFFSET	    	, 1  	    	    	},  	/* 0x78 x */
+    { C_SET_TOP_OFFSET 	    	, 1  	    	    	},  	/* 0x79 y */
     { -1    	    	    	,   	    	    	},  	/* 0x7A z */
     { C_SET_RAWEVENTS  	    	, MAX_COMMAND_PARAMS   	},  	/* 0x7B { */
     { -1    	    	    	,   	    	    	},  	/* 0x7C | */
