@@ -84,14 +84,14 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     	unit->cu_XMax 	  = (win->Width  - (win->BorderLeft + win->BorderRight )) / unit->cu_XRSize - 1;
     	unit->cu_YMax 	  = (win->Height - (win->BorderTop  + win->BorderBottom)) / unit->cu_YRSize - 1;
     	    	
-    	unit->cu_XROrigin = win->BorderLeft;
-    	unit->cu_YROrigin = win->BorderTop;
+    	unit->cu_XROrigin = win->Flags & WFLG_GIMMEZEROZERO ? 0 : win->BorderLeft;
+    	unit->cu_YROrigin = win->Flags & WFLG_GIMMEZEROZERO ? 0 : win->BorderTop;
 
     	D(bug("cu_XROrigin: %d, cu_YROrigin: %d\n",
     	unit->cu_XROrigin, unit->cu_YROrigin));
     	    	
-    	unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * (unit->cu_XMax + 1) - 1);
-    	unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * (unit->cu_YMax + 1) - 1);
+    	unit->cu_XRExtant = unit->cu_XROrigin + (unit->cu_XRSize * (unit->cu_XMax + 1) - 1);
+    	unit->cu_YRExtant = unit->cu_YROrigin  + (unit->cu_YRSize * (unit->cu_YMax + 1) - 1);
 	
 	unit->cu_XCP = DEF_CHAR_XMIN;
 	unit->cu_YCP = DEF_CHAR_YMIN;
@@ -461,6 +461,8 @@ static VOID console_newwindowsize(Class *cl, Object *o, struct P_Console_NewWind
     
     return;
 }
+
+
 
 /********* Console class dispatcher **********************************/
 AROS_UFH3S(IPTR, dispatch_consoleclass,
