@@ -2,15 +2,14 @@
 #define HIDD_VESAGFXCLASS_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VesaGfx useful data.
     Lang: English.
 */
 
-#define BUFFERED_VRAM	    1
-
+#include <exec/interrupts.h>
 #include <exec/semaphores.h>
 #include <exec/memory.h>
 #include <exec/nodes.h>
@@ -18,40 +17,34 @@
 
 #include "bitmap.h"
 #include "hardware.h"
-#include "mouse.h"
 
 #define IID_Hidd_VesaGfx  "hidd.gfx.vesa"
 #define CLID_Hidd_VesaGfx "hidd.gfx.vesa"
 
+struct VesaGfx_data
+{
+    struct Interrupt ResetInterrupt;
+};
+
 struct VesaGfx_staticdata
 {
-    struct MemHeader 	    mh;
     OOP_Class 	    	    *vesagfxclass;
-    OOP_Class 	    	    *onbmclass;
-    OOP_Class 	    	    *offbmclass;
+    OOP_Class 	    	    *bmclass;
     OOP_Object      	    *vesagfxhidd;
-    struct BitmapData       *visible;
-    VOID	    	    (*activecallback)(APTR, OOP_Object *, BOOL);
-    APTR	    	    callbackdata;
-    struct MouseData 	    mouse;
+    OOP_Object       	    *visible;		/* Currently visible bitmap */
     struct HWData   	    data;
-#if BUFFERED_VRAM
     struct SignalSemaphore  framebufferlock;
-#endif
     struct SignalSemaphore  HW_acc;
 };
 
 struct VesaGfxBase
 {
     struct Library library;
-    
     struct VesaGfx_staticdata vsd;
 };
 
-#if BUFFERED_VRAM
 #define LOCK_FRAMEBUFFER(xsd)	ObtainSemaphore(&xsd->framebufferlock)
 #define UNLOCK_FRAMEBUFFER(xsd) ReleaseSemaphore(&xsd->framebufferlock)
-#endif
 
 #define XSD(cl)     	    	(&((struct VesaGfxBase *)cl->UserData)->vsd)
 

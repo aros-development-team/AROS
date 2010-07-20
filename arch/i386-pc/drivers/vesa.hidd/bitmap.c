@@ -1,18 +1,171 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
+    Desc: Bitmap class for Vesa hidd.
     Lang: English.
 */
 
-#include <exec/alerts.h>
-#include <string.h>    // memset() prototype
-#include <aros/macros.h>
+#define __OOP_NOATTRBASES__
 
-#undef DEBUG
+#include <proto/oop.h>
+#include <proto/utility.h>
+#include <assert.h>
+#include <exec/memory.h>
+#include <exec/lists.h>
+#include <graphics/rastport.h>
+#include <graphics/gfx.h>
+#include <hidd/graphics.h>
+#include <oop/oop.h>
+#include <aros/symbolsets.h>
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include <string.h>
+
+#include "bitmap.h"
+#include "vesagfxclass.h"
+
+#include LC_LIBDEFS_FILE
+
+/* Don't initialize static variables with "=0", otherwise they go into DATA segment */
+
+static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddSyncAttrBase;
+static OOP_AttrBase HiddVesaGfxAttrBase;
+static OOP_AttrBase HiddVesaGfxBitMapAttrBase;
+
+static struct OOP_ABDescr attrbases[] = 
+{
+    { IID_Hidd_BitMap	    , &HiddBitMapAttrBase   	},
+    { IID_Hidd_PixFmt	    , &HiddPixFmtAttrBase   	},
+    { IID_Hidd_Gfx  	    , &HiddGfxAttrBase      	},
+    { IID_Hidd_Sync 	    , &HiddSyncAttrBase     	},
+    /* Private bases */
+    { IID_Hidd_VesaGfx	    , &HiddVesaGfxAttrBase  	},
+    { IID_Hidd_VesaGfxBitMap, &HiddVesaGfxBitMapAttrBase},
+    { NULL  	    	    , NULL  	    	    	}
+};
+
+#define MNAME_ROOT(x) PCVesaBM__Root__ ## x
+#define MNAME_BM(x) PCVesaBM__Hidd_BitMap__ ## x
+
+/*********** BitMap::New() *************************************/
+OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+{
+    EnterFunc(bug("VesaGfx.BitMap::New()\n"));
+    
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+    if (o)
+    {
+	OOP_MethodID	     disp_mid;
+	struct BitmapData   *data;
+	IPTR 	    	     width, height, depth, multi;
+	IPTR		     displayable;
+	HIDDT_ModeID 	     modeid;
+
+	data = OOP_INST_DATA(cl, o);
+
+	/* clear all data  */
+	memset(data, 0, sizeof(struct BitmapData));
+
+	/* Get attr values */
+	OOP_GetAttr(o, aHidd_BitMap_Width, &width);
+	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+	OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
+	OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&data->pixfmtobj);
+	OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
+	OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_Depth, &depth);
+	OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
+	
+	ASSERT (width != 0 && height != 0 && depth != 0);
+	/* 
+	   We must only create depths that are supported by the friend drawable
+	   Currently we only support the default depth
+	   */
+
+	width=(width+15) & ~15;
+	data->width = width;
+	data->height = height;
+	data->bpp = depth;
+
+	data->bytesperpix = multi;
+	data->bytesperline = width * multi;
+
+	OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
+	if (modeid != vHidd_ModeID_Invalid) {
+	    OOP_Object *sync, *pf;
+	    IPTR dwidth, dheight;
+
+	    HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf);
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
+	    data->disp_width  = dwidth;
+	    data->disp_height = dheight;
+	}
+
+    	data->VideoData = AllocVec(width * height * multi, MEMF_PUBLIC | MEMF_CLEAR);
+	
+	if (data->VideoData) {
+	    HIDDT_ColorModel cmod;
+	    
+	    if (!displayable)
+	        ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
+
+	    OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_ColorModel, &cmod);
+	    if (cmod != vHidd_ColorModel_Palette)
+		ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
+
+	    data->DAC = AllocMem(768, MEMF_ANY);
+	    if (data->DAC)
+		ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
+	}
+
+	disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+
+	OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+	o = NULL;
+    } /* if created object */
+
+    ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
+}
+
+/**********  Bitmap::Dispose()  ***********************************/
+VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    EnterFunc(bug("VesaGfx.BitMap::Dispose()\n")); 
+
+    if (data->VideoData)
+    	FreeVec(data->VideoData);
+
+    OOP_DoSuperMethod(cl, o, msg);
+
+    ReturnVoid("VesaGfx.BitMap::Dispose");
+}
+
+/*** init_bitmapclass *********************************************************/
+
+static int PCVesaBM_Init(LIBBASETYPEPTR LIBBASE)
+{
+    EnterFunc(bug("PCVesaOnBM_Init\n"));
+    
+    ReturnPtr("PCVesaOnBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
+}
+
+/*** free_bitmapclass *********************************************************/
+
+static int PCVesaBM_Expunge(LIBBASETYPEPTR LIBBASE)
+{
+    OOP_ReleaseAttrBases(attrbases);
+    ReturnInt("PCVesaOnBM_Expunge", int, TRUE);
+}
+
+ADD2INITLIB(PCVesaBM_Init, 0)
+ADD2EXPUNGELIB(PCVesaBM_Expunge, 0)
 
 /*********  BitMap::PutPixel()  ***************************/
 
@@ -20,80 +173,36 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     ULONG   	       offset;
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    ULONG   	       offset2;
-#endif
     HIDDT_Pixel       pixel = msg->pixel;
     UBYTE   	      *mem;
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    UBYTE   	      *mem2;
-#endif
     
     offset = (msg->x * data->bytesperpix) + (msg->y * data->bytesperline);
     mem = data->VideoData + offset;
-
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    offset2 = (msg->x * data->bytesperpix) + (msg->y * data->data->bytesperline);
-    mem2 = data->data->framebuffer + offset2;
-#endif
     
     switch(data->bytesperpix)
     {
     	case 1:
 	    *(UBYTE *)mem = pixel;
-    	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-	    if (data->data->use_updaterect == FALSE)
-	    {
-	    	*(UBYTE *)mem2 = pixel;
-	    }
-    	#endif
 	    break;
 	   
 	case 2:
 	    *(UWORD *)mem = pixel;
-    	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-	    if (data->data->use_updaterect == FALSE)
-	    {
-	    	*(UWORD *)mem2 = pixel;
-	    }
-	#endif
 	    break;
 	    
 	case 3:
-	#if AROS_BIG_ENDIAN
+#if AROS_BIG_ENDIAN
 	    *(UBYTE *)(mem) = pixel >> 16;
 	    *(UBYTE *)(mem + 1) = pixel >> 8;
 	    *(UBYTE *)(mem + 2) = pixel;
-	#else
+#else
 	    *(UBYTE *)(mem) = pixel;
 	    *(UBYTE *)(mem + 1) = pixel >> 8;
 	    *(UBYTE *)(mem + 2) = pixel >> 16;
-	#endif
-
-        #if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    	    if (data->data->use_updaterect == FALSE)
-	    {
-	    #if AROS_BIG_ENDIAN
-		*(UBYTE *)(mem2) = pixel >> 16;
-		*(UBYTE *)(mem2 + 1) = pixel >> 8;
-		*(UBYTE *)(mem2 + 2) = pixel;
-	    #else
-		*(UBYTE *)(mem2) = pixel;
-		*(UBYTE *)(mem2 + 1) = pixel >> 8;
-		*(UBYTE *)(mem2 + 2) = pixel >> 16;
-	    #endif
-	    }
-        #endif
+#endif
  	    break;
 	    
 	case 4:
 	    *(ULONG *)mem = pixel;
-	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-	    if (data->data->use_updaterect == FALSE)
-	    {
-	    	*(ULONG *)mem2 = pixel;
-	    }
-    	#endif
 	    break;
     }
     
@@ -123,11 +232,11 @@ HIDDT_Pixel MNAME_BM(GetPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 	    break;
 	    
 	case 3:
-	#if AROS_BIG_ENDIAN
+#if AROS_BIG_ENDIAN
 	    pixel = (mem[0] << 16) | (mem[1] << 8) | mem[2];
-	#else
+#else
 	    pixel = (mem[2] << 16) | (mem[1] << 8) | mem[0];
-	#endif
+#endif
 	    break;
 	    
 	case 4:
@@ -221,12 +330,6 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
 	    break;
 	    
     } /* switch(mode) */
-
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    LOCK_FRAMEBUFFER(XSD(cl));    
-    vesaRefreshArea(data, msg->minX, msg->minY, msg->maxX, msg->maxY);    
-    UNLOCK_FRAMEBUFFER(XSD(cl));
-#endif
 }
 
 /*********  BitMap::PutImage()  ***************************/
@@ -356,7 +459,6 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 	    break;
 	    
 	default:
-	#if 1
 	    {
 	    	APTR 	    pixels = msg->pixels;
     	    	APTR 	    dstBuf = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpix;
@@ -368,20 +470,9 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 		    	    	      &dstBuf, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
 				      msg->width, msg->height, NULL);    	    	
 	    }
-		
-	#else
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	#endif
 	    break;
 	    
-    } /* switch(msg->pixFmt) */
-
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    LOCK_FRAMEBUFFER(XSD(cl));    
-    vesaRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
-    UNLOCK_FRAMEBUFFER(XSD(cl));
-#endif
-	    
+    } /* switch(msg->pixFmt) */	    
 }
 
 /*********  BitMap::GetImage()  ***************************/
@@ -511,7 +602,6 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
 	    break;
 	    
 	default:
-	#if 1
 	    {
 	    	APTR 	    pixels = msg->pixels;
     	    	APTR 	    srcPixels = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpix;
@@ -523,13 +613,9 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
 		    	    	      &pixels, (HIDDT_PixelFormat *)dstpf, msg->modulo,
 				      msg->width, msg->height, NULL);    	    	
 	    }		
-	#else		
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    	#endif
 	    break;
 	    
-    } /* switch(msg->pixFmt) */
-	    
+    } /* switch(msg->pixFmt) */	    
 }
 
 VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
@@ -587,101 +673,7 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	    break;
 
-    } /* switch(data->bytesperpix) */
-
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    LOCK_FRAMEBUFFER(XSD(cl));    
-    vesaRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
-    UNLOCK_FRAMEBUFFER(XSD(cl));
-#endif
-	    
-}
-
-/*** BitMap::BlitColorExpansion() **********************************************/
-VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
-{
-    struct BitmapData  *data = OOP_INST_DATA(cl, o);
-    HIDDT_Pixel     	fg, bg, pix;
-    ULONG   	    	cemd;
-    LONG    	    	x, y;
-    ULONG   	    	mod, bpp;
-    UBYTE   	       *mem;
-    BOOL    	    	opaque;
-    
-    fg = GC_FG(msg->gc);
-    bg = GC_BG(msg->gc);
-    cemd = GC_COLEXP(msg->gc);
-
-    bpp = data->bytesperpix;
-    
-    mem = data->VideoData + msg->destY * data->bytesperline + msg->destX * bpp;
-    mod = data->bytesperline - msg->width * bpp;
-    
-    opaque = (cemd & vHidd_GC_ColExp_Opaque) ? TRUE : FALSE;
-    
-    for (y = 0; y < msg->height; y ++)
-    {
-        for (x = 0; x < msg->width; x ++)
-        {
-	    ULONG is_set;
-
-	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
-	    if (is_set)
-	    {
-		pix = fg;
-	    }
-	    else if (opaque)
-	    {
-		pix = bg;
-	    }
-	    else
-	    {
-		mem += bpp;
-		continue;
-	    }
-
-    	    switch(bpp)
-	    {
-		case 1:
-   	    	    *mem++ = pix;
-		    break;
-
-		case 2:
-		    *((UWORD *)mem) = pix;
-		    mem += 2;
-    	    	    break;
-
-		case 3:
-		#if AROS_BIG_ENDIAN
-		    mem[0] = pix >> 16;
-		    mem[1] = pix >> 8;
-		    mem[2] = pix;
-		#else
-		    mem[0] = pix;
-		    mem[1] = pix >> 8;
-		    mem[2] = pix >> 16;
-		#endif
-		    mem += 3;
-		    break;
-
-		case 4:
-		    *((ULONG *)mem) = pix;
-		    mem += 4;
-		    break;
-
-	    }
-	    
-	} /* for (each x) */
-
-    	mem += mod;
-
-    } /* for (each y) */
-
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    LOCK_FRAMEBUFFER(XSD(cl));    
-    vesaRefreshArea(data, msg->destX, msg->destY, msg->destX + msg->width - 1, msg->destY + msg->height - 1);
-    UNLOCK_FRAMEBUFFER(XSD(cl));    
-#endif
+    } /* switch(data->bytesperpix) */	    
 }
 
 /*** BitMap::PutTemplate() **********************************************/
@@ -757,13 +749,6 @@ VOID MNAME_BM(PutTemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
     	    break;
 	    
     } /* switch(data->bytesperpix) */
-
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    LOCK_FRAMEBUFFER(XSD(cl));    
-    vesaRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
-    UNLOCK_FRAMEBUFFER(XSD(cl));
-#endif
-	    
 }
 
 /*** BitMap::PutPattern() **********************************************/
@@ -863,15 +848,7 @@ VOID MNAME_BM(PutPattern)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutP
     	    break;
 	    
     } /* switch(data->bytesperpix) */
-
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
-    LOCK_FRAMEBUFFER(XSD(cl));    
-    vesaRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
-    UNLOCK_FRAMEBUFFER(XSD(cl));
-#endif
-	    
 }
-
 
 /*** BitMap::Get() *******************************************/
 
@@ -885,16 +862,46 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	switch (idx)
 	{
 	    case aoHidd_VesaGfxBitMap_Drawable:
-		*msg->storage = (ULONG)data->VideoData;
-		break;
-	    default:
-		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+		*msg->storage = (IPTR)data->VideoData;
+		return;
+	}
+    } else if (IS_BM_ATTR(msg->attrID, idx)) {
+	switch (idx) {
+	case aoHidd_BitMap_Visible:
+	    *msg->storage = data->disp;
+	    return;
 	}
     }
-    else
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/*** BitMap::Set() *******************************************/
+
+VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    struct TagItem  *tag, *tstate;
+    ULONG   	    idx;
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        if(IS_BM_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+            case aoHidd_BitMap_Visible:
+		data->disp = tag->ti_Data;
+		if (data->disp) {
+		    if (data->DAC)
+			DACLoad(XSD(cl), data->DAC, 0, 256);
+    		    vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->disp_width - 1, data->disp_height - 1);
+		}
+		break;
+	    }
+	}
     }
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /*** BitMap::SetColors() *************************************/
@@ -903,82 +910,49 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct HWData *hwdata = &XSD(cl)->data;
-    HIDDT_PixelFormat *pf;
-    
     ULONG xc_i, col_i;
     UBYTE p_shift;
-    
-    HIDDT_Pixel	red, green, blue;
-    
+    UWORD red, green, blue;
+
     D(bug("[VESA] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
-    pf = BM_PIXFMT(o);
 
-    if (    vHidd_ColorModel_StaticPalette == HIDD_PF_COLMODEL(pf)
-    	 || vHidd_ColorModel_TrueColor	   == HIDD_PF_COLMODEL(pf) ) {
-        D(bug("[VESA] SetColors: not a palette bitmap\n"));
-	 
-	 /* Superclass takes care of this case */
-	 
-	 return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }
-
-    /* We have a vHidd_GT_Palette bitmap */    
-    
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
 	D(bug("[VESA] DoSuperMethod() failed\n"));
 	return FALSE;
     }
-    
+
     if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
 	return FALSE;
-    
-    for ( xc_i = msg->firstColor, col_i = 0;
-    		col_i < msg->numColors; 
-		xc_i ++, col_i ++ )
-    {
-	red   = msg->colors[col_i].red   >> 8;
-	green = msg->colors[col_i].green >> 8;
-	blue  = msg->colors[col_i].blue  >> 8;
 
-	/* Set given color as allocated */
-	data->cmap[xc_i] = 0x01000000 | red | (green << 8) | (blue << 16);
+    if (data->DAC) {
+	for ( xc_i = msg->firstColor, col_i = 0;
+    	      col_i < msg->numColors; 
+	      xc_i ++, col_i ++) {
+	    red   = msg->colors[col_i].red   >> 8;
+	    green = msg->colors[col_i].green >> 8;
+	    blue  = msg->colors[col_i].blue  >> 8;
 
-	/* Update DAC registers */
-	p_shift = 8 - hwdata->palettewidth;
-	hwdata->DAC[xc_i*3] = red >> p_shift;
-	hwdata->DAC[xc_i*3+1] = green >> p_shift;
-	hwdata->DAC[xc_i*3+2] = blue >> p_shift;
-	
-	msg->colors[col_i].pixval = xc_i;
+	    /* Update DAC registers */
+	    p_shift = 8 - hwdata->palettewidth;
+	    data->DAC[xc_i*3] = red >> p_shift;
+	    data->DAC[xc_i*3+1] = green >> p_shift;
+	    data->DAC[xc_i*3+2] = blue >> p_shift;
+	}
+
+	/* Upload palette to the DAC if the current bitmap is on display */
+	if (data->disp)
+	    DACLoad(XSD(cl), data->DAC, msg->firstColor, msg->numColors);
     }
-
-    /* Upload palette to the DAC if OnBitmap */
-#ifdef OnBitmap
-#ifdef TRACK_POINTER_PALETTE
-    if ((msg->firstColor <= 20) && (msg->firstColor + msg->numColors - 1 >= 17))
-	bug("%d colors from %d changed\n", msg->firstColor, msg->numColors);
-#endif
-    ObtainSemaphore(&XSD(cl)->HW_acc);
-    DACLoad(hwdata, msg->firstColor, msg->numColors);
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
-#endif /* OnBitmap */
-
     return TRUE;
 }
-
-#if defined(OnBitmap) && defined(BUFFERED_VRAM)
 
 VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
-    struct HWData *hwdata = &XSD(cl)->data;
-    
-    if (hwdata->use_updaterect)
-    {
-        LOCK_FRAMEBUFFER(XSD(cl));    
-        vesaDoRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
-        UNLOCK_FRAMEBUFFER(XSD(cl));    	
-    }  
-}
 
-#endif
+    if (data->disp) {
+	LOCK_FRAMEBUFFER(XSD(cl));
+        vesaDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);
+	UNLOCK_FRAMEBUFFER(XSD(cl));
+    }
+}
