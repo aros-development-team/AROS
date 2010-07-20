@@ -9,6 +9,7 @@
     Lang: English.
 */
 
+#include <exec/interrupts.h>
 #include <exec/types.h>
 #include <exec/nodes.h>
 
@@ -48,6 +49,11 @@ struct vgaModeEntry
     struct MinNode	Node;
     ULONG		mode;		/* Mode desc */
     struct vgaModeDesc	*Desc;
+};
+
+struct Vga_Data
+{
+    struct Interrupt ResetInterrupt;
 };
 
 #endif /* HIDD_VGACLASS_H */

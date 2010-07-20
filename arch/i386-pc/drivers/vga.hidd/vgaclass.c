@@ -83,8 +83,6 @@ static struct OOP_ABDescr attrbases[] =
     { NULL, NULL }
 };
 
-static struct Interrupt ResetInterrupt;
-
 /* Default graphics modes */
 
 struct vgaModeDesc
@@ -179,7 +177,11 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ TAG_MORE, 0UL }
     };
     struct pRoot_New mymsg;
-    
+
+    /* Do not allow to create more than one object */
+    if (XSD(cl)->vgahidd)
+	return NULL;
+
     /* First init the sync tags */
     init_sync_tags(sync_640_480, &vgaDefMode[0], "VGA:640x480");
 #ifndef ONLY640
@@ -209,18 +211,22 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     XSD(cl)->vgahidd = o;
     if (o) {
-	ResetInterrupt.is_Code = ResetHandler;
-	ResetInterrupt.is_Data = XSD(cl);
-	AddResetCallback(&ResetInterrupt);
+        struct Vga_Data *data = OOP_INST_DATA(cl, o);
+
+	data->ResetInterrupt.is_Code = ResetHandler;
+	data->ResetInterrupt.is_Data = XSD(cl);
+	AddResetCallback(&data->ResetInterrupt);
     }
     ReturnPtr("VGAGfx::New", OOP_Object *, o);
 }
 
 VOID PCVGA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    RemResetCallback(&ResetInterrupt);
+    struct Vga_Data *data = OOP_INST_DATA(cl, o);
+
+    RemResetCallback(&data->ResetInterrupt);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    return;
+    XSD(cl)->vgahidd = NULL;
 }
 
 VOID PCVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
