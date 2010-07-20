@@ -213,7 +213,7 @@ DWORD WINAPI gdithread_entry(struct GDI_Control *ctl)
             	} else if ((struct bitmap_data *)gdata->bitmaps.mlh_Head == bmdata) {
 		    /* If the displayed bitmap is the frontmost one, adjust window size */
 		    DWIN(printf("[GDI] Resizing display...\n"));
-		    SetWindowPos(gdata->fbwin, HWND_TOP, 0, 0, width, height, SWP_NOMOVE);
+		    SetWindowPos(gdata->fbwin, 0, 0, 0, width, height, SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOZORDER);
 	        }
 		DWIN(printf("[GDI] Display window: 0x%p\n", gdata->fbwin));
 	        if (gdata->fbwin) {
