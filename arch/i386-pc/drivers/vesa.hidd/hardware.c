@@ -1,19 +1,20 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: vesa "hardware" functions
     Lang: English
 */
 
+#define DEBUG 0
 
-#define DEBUG 0 /* no SysBase */
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/bootloader.h>
 #include <asm/io.h>
 #include <proto/bootloader.h>
+#include <proto/exec.h>
 #include <proto/oop.h>
 #include <utility/hooks.h>
 #include <utility/tagitem.h>
@@ -26,46 +27,17 @@
 
 #include <string.h>
 
-
-#undef SysBase
-extern struct ExecBase *SysBase;
-OOP_AttrBase HiddPCIDeviceAttrBase;
 static void Find_PCI_Card(struct HWData *sd);
-
-unsigned char cursorPalette[] =
-{
-    224, 64,   64,
-      0,  0,    0,
-    224, 224, 192
-};
 
 BOOL initVesaGfxHW(struct HWData *data)
 {
     struct BootLoaderBase *BootLoaderBase;
     struct VesaInfo *vi;
-    int i, col;
 
     if ((BootLoaderBase = OpenResource("bootloader.resource")))
     {
-    	struct List *list;
-    	struct Node *node;
-
-	if ((list = (struct List *)GetBootInfo(BL_Args)))
-	{
-            ForeachNode(list, node)
-            {
-                if (strncmp(node->ln_Name, "vesagfx=", 8) == 0)
-                {
-		    if (strstr(node->ln_Name, "updaterect"))
-		    {
-		    	data->use_updaterect = TRUE;
-		    }
-		}
-		
-	    }	    
-	}
-
 	D(bug("[Vesa] Init: Bootloader.resource opened\n"));
+
 	if ((vi = (struct VesaInfo *)GetBootInfo(BL_Video)))
 	{
 	    D(bug("[Vesa] Init: Got Vesa structure from resource\n"));
@@ -74,9 +46,6 @@ BOOL initVesaGfxHW(struct HWData *data)
 		D(bug("[Vesa] Init: Textmode was specified. Aborting\n"));
 		return FALSE;
 	    }
-
-            /* Disable on-screen debug output to avoid trashing graphics */
-            bug("\03");
 
 	    data->width = vi->XSize; data->height = vi->YSize;
 	    data->bitsperpixel = data->depth = vi->BitsPerPixel;
@@ -112,13 +81,6 @@ BOOL initVesaGfxHW(struct HWData *data)
 	    else
 	    {
 	    	data->bytesperpixel = 1;
-		if (data->depth > 4)
-		    col = 17;
-		else
-		    col = (1 << data->depth) - 7;
-		for (i = 0; i < 9; i++)
-		    data->DAC[col*3+i] = cursorPalette[i];
-		DACLoad(data, col, 3);
 	    }
 	    D(bug("[Vesa] HwInit: Clearing %d kB of framebuffer at 0x%08x"
 		" size %d kB\n", data->height * data->bytesperline >> 10,
@@ -141,9 +103,8 @@ BOOL initVesaGfxHW(struct HWData *data)
     return FALSE;
 }
 
-
-#if BUFFERED_VRAM
-void vesaDoRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
+void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
+		       LONG x1, LONG y1, LONG x2, LONG y2)
 {
     UBYTE *src, *dst;
     ULONG srcmod, dstmod;
@@ -158,12 +119,11 @@ void vesaDoRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG 
     h = (y2 - y1) + 1;
     
     srcmod = (data->bytesperline);
-    dstmod = (data->data->bytesperline);
+    dstmod = (hwdata->bytesperline);
 
-   
     src = data->VideoData + y1 * data->bytesperline + x1;
-    dst = data->data->framebuffer + y1 * data->data->bytesperline + x1;
-    
+    dst = hwdata->framebuffer + y1 * hwdata->bytesperline + x1;
+
     /*
     ** common sense assumption: memcpy can't possibly be faster than CopyMem[Quick]
     */
@@ -181,18 +141,7 @@ void vesaDoRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG 
 	/* this is a plain total fast rulez copy */
 	CopyMem(src, dst, w*h);
     }
-    
 }
-
-void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
-{
-    if (data->data->use_updaterect == FALSE)
-    {
-    	vesaDoRefreshArea(data, x1, y1, x2, y2);
-    }
-}
-
-#endif
 
 AROS_UFH3(void, Enumerator,
     AROS_UFHA(struct Hook *,	hook,	    A0),
@@ -278,16 +227,20 @@ static void Find_PCI_Card(struct HWData *sd)
 ** DACLoad --
 **      load a palette
 */
-void DACLoad(struct HWData *restore, unsigned char first, int num)
+void DACLoad(struct VesaGfx_staticdata *xsd, UBYTE *DAC,
+	     unsigned char first, int num)
 {
     int i, n;
 
     n = first * 3;
+    
+    ObtainSemaphore(&xsd->HW_acc);
     outb(first, 0x3C8);
     for (i=0; i<num*3; i++)
     {
-	outb(restore->DAC[n++], 0x3C9);
+	outb(DAC[n++], 0x3C9);
     }
+    ReleaseSemaphore(&xsd->HW_acc);
 }
 
 /*

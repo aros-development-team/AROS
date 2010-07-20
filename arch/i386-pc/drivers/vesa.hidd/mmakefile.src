@@ -5,8 +5,7 @@ FILES	:=	\
 	vesagfx_init \
 	vesagfxclass \
 	hardware \
-	offbitmap \
-	onbitmap
+	bitmap
 
 %build_module mmake=kernel-pc-i386-vesa \
   modname=vesagfx modtype=hidd \
