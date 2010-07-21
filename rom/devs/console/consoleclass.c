@@ -393,6 +393,7 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	case C_CURSOR_NEXT_LINE:
 	case C_CURSOR_PREV_LINE:
 	case C_SET_TOP_OFFSET:
+	case C_SET_PAGE_LENGTH:
 	    msg->Params[0] = 1;
 	    break;
 	case C_CURSOR_POS:
@@ -448,8 +449,8 @@ static VOID console_newwindowsize(Class *cl, Object *o, struct P_Console_NewWind
 
     win = unit->cu_Window;
     
-    unit->cu_XMax     = (win->Width  - (win->BorderLeft + win->BorderRight )) / unit->cu_XRSize - 1;
-    unit->cu_YMax     = (win->Height - (win->BorderTop  + win->BorderBottom)) / unit->cu_YRSize - 1;
+    unit->cu_XMax     = (win->Width  - (win->BorderLeft + win->BorderRight ) - unit->cu_XROrigin) / unit->cu_XRSize - 1;
+    unit->cu_YMax     = (win->Height - (win->BorderTop  + win->BorderBottom) - unit->cu_YROrigin) / unit->cu_YRSize - 1;
 
     unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * (unit->cu_XMax + 1) - 1);
     unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * (unit->cu_YMax + 1) - 1);
