@@ -116,6 +116,7 @@ extern struct OOP_InterfaceDescr SDLMouse_ifdescr[];
 extern struct OOP_InterfaceDescr SDLKbd_ifdescr[];
 
 extern OOP_AttrBase MetaAttrBase;
+extern OOP_AttrBase HiddAttrBase;
 extern OOP_AttrBase HiddSDLBitMapAttrBase;
 
 extern struct sdlhidd xsd;
