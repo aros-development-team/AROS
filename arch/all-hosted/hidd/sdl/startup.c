@@ -22,6 +22,7 @@ struct Library *OOPBase;
 struct Library *UtilityBase;
 
 OOP_AttrBase MetaAttrBase;
+OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HiddPixFmtAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddColorMapAttrBase;
@@ -33,6 +34,7 @@ OOP_AttrBase HiddKbdAB;
 
 static struct OOP_ABDescr attrbases[] = {
     { IID_Meta,           &MetaAttrBase          },
+    { IID_Hidd,           &HiddAttrBase          },
     { IID_Hidd_PixFmt,    &HiddPixFmtAttrBase    },
     { IID_Hidd_BitMap,    &HiddBitMapAttrBase    },
     { IID_Hidd_ColorMap,  &HiddColorMapAttrBase  },

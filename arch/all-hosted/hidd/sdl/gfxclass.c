@@ -51,7 +51,6 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     int nmodes, i;
     APTR tagpool;
     struct TagItem **synctags, *modetags, *msgtags;
-    char *desc;
     struct pRoot_New supermsg;
 
     S(SDL_VideoDriverName, driver, sizeof(driver));
@@ -240,13 +239,10 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             continue;
         }
 
-        desc = AllocPooled(tagpool, 16);
-        __sprintf(desc, "SDL:%dx%d", modes[i]->w, modes[i]->h);
-
         synctags[i] = AllocPooled(tagpool, sizeof(struct TagItem) * 4);
         synctags[i][0].ti_Tag = aHidd_Sync_HDisp;       synctags[i][0].ti_Data = modes[i]->w;
         synctags[i][1].ti_Tag = aHidd_Sync_VDisp;       synctags[i][1].ti_Data = modes[i]->h;
-        synctags[i][2].ti_Tag = aHidd_Sync_Description; synctags[i][2].ti_Data = (IPTR) desc;
+        synctags[i][2].ti_Tag = aHidd_Sync_Description; synctags[i][2].ti_Data = (IPTR)"SDL:%hx%v";
         synctags[i][3].ti_Tag = TAG_DONE;
     }
 
@@ -267,8 +263,11 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     modetags[1+i].ti_Tag = TAG_DONE;
 
     msgtags = TAGLIST(
-        aHidd_Gfx_ModeTags, (IPTR) modetags,
-        TAG_MORE,           (IPTR) msg->attrList
+        aHidd_Gfx_ModeTags, (IPTR)modetags,
+	aHidd_Name        , (IPTR)"sdl.monitor",
+	aHidd_HardwareName, (IPTR)"Simple DirectMedia Layer",
+	aHidd_ProducerName, (IPTR)"SDL development team (http://libsdl.org/credits.php)",
+        TAG_MORE          , (IPTR)msg->attrList
     );
 
     supermsg.mID = msg->mID;
@@ -302,6 +301,26 @@ VOID SDLGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
     OOP_DoSuperMethod(cl, o, msg);
     
     return;
+}
+
+VOID SDLGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG   	     idx;
+
+    if (IS_GFX_ATTR(msg->attrID, idx))
+    {
+    	switch (idx)
+	{
+	    case aoHidd_Gfx_IsWindowed:
+	    	*msg->storage = TRUE;
+		return;
+
+	    case aoHidd_Gfx_DriverName:
+		*msg->storage = (IPTR)"SDL";
+		return;
+	}
+    }
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
@@ -446,11 +465,12 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 }
 
 static struct OOP_MethodDescr SDLGfx_Root_descr[] = {
-    {(OOP_MethodFunc)SDLGfx__Root__New, moRoot_New},
+    {(OOP_MethodFunc)SDLGfx__Root__New    , moRoot_New    },
     {(OOP_MethodFunc)SDLGfx__Root__Dispose, moRoot_Dispose},
-    {NULL, 0}
+    {(OOP_MethodFunc)SDLGfx__Root__Get    , moRoot_Get    },
+    {NULL				  , 0             }
 };
-#define NUM_SDLGfx_Root_METHODS 2
+#define NUM_SDLGfx_Root_METHODS 3
 
 static struct OOP_MethodDescr SDLGfx_Hidd_Gfx_descr[] = {
     {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__NewBitMap, moHidd_Gfx_NewBitMap},
