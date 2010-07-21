@@ -801,25 +801,25 @@ IPTR IconWindowDrawerList__MUIM_DrawBackground
 
         DrawBackGround_BackFillMsg.AreaBounds.MinX = 0;
         DrawBackGround_BackFillMsg.AreaBounds.MinY = 0;
-        DrawBackGround_BackFillMsg.AreaBounds.MaxX = _mwidth(self);
-        DrawBackGround_BackFillMsg.AreaBounds.MaxY = _mheight(self);
+        DrawBackGround_BackFillMsg.AreaBounds.MaxX = _mwidth(self) - 1;
+        DrawBackGround_BackFillMsg.AreaBounds.MaxY = _mheight(self) - 1;
 
         DrawBackGround_BackFillMsg.DrawBounds.MinX = message->left - _mleft(self);
         DrawBackGround_BackFillMsg.DrawBounds.MinY = message->top - _mtop(self);
-        DrawBackGround_BackFillMsg.DrawBounds.MaxX = message->width;
-        DrawBackGround_BackFillMsg.DrawBounds.MaxY = message->height;
+        DrawBackGround_BackFillMsg.DrawBounds.MaxX = DrawBackGround_BackFillMsg.DrawBounds.MinX + message->width - 1;
+        DrawBackGround_BackFillMsg.DrawBounds.MaxY = DrawBackGround_BackFillMsg.DrawBounds.MinY + message->height - 1;
     }
     else
     {
         DrawBackGround_BackFillMsg.AreaBounds.MinX = _mleft(self);
         DrawBackGround_BackFillMsg.AreaBounds.MinY = _mtop(self);
-        DrawBackGround_BackFillMsg.AreaBounds.MaxX = (_mleft(self) + _mwidth(self));
-        DrawBackGround_BackFillMsg.AreaBounds.MaxY = (_mtop(self) + _mheight(self));
+        DrawBackGround_BackFillMsg.AreaBounds.MaxX = _mleft(self) + _mwidth(self) - 1;
+        DrawBackGround_BackFillMsg.AreaBounds.MaxY = _mtop(self) + _mheight(self) - 1;
 
         DrawBackGround_BackFillMsg.DrawBounds.MinX = message->left;
         DrawBackGround_BackFillMsg.DrawBounds.MinY = message->top;
-        DrawBackGround_BackFillMsg.DrawBounds.MaxX = (message->left + message->width);
-        DrawBackGround_BackFillMsg.DrawBounds.MaxY = (message->top + message->height);
+        DrawBackGround_BackFillMsg.DrawBounds.MaxX = message->left + message->width - 1;
+        DrawBackGround_BackFillMsg.DrawBounds.MaxY = message->top + message->height - 1;
     }
 
     DrawBackGround_BackFillMsg.Layer = DrawBackGround_RastPort->Layer;
