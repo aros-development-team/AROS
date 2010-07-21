@@ -304,12 +304,8 @@ int driver_init(struct GfxBase * GfxBase)
 
 		    CDD(GfxBase)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, gc_create_tags, GfxBase);
 		    DEBUG_INIT(bug("[driver_init] GC cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
-		    if (CDD(GfxBase)->gc_cache) {
-		        /* Get method id here, to avoid any possible semaphore involment when calling the method */ 
-		        CDD(GfxBase)->hiddGfxShowImminentReset_MethodID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowImminentReset);
-
+		    if (CDD(GfxBase)->gc_cache)
 		        ReturnInt("driver_init", int, TRUE);
-		    }
 		    delete_object_cache(CDD(GfxBase)->planarbm_cache, GfxBase);
 		    
 		}

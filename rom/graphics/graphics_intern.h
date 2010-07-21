@@ -173,7 +173,6 @@ struct common_driverdata
     OOP_AttrBase    	     hiddPlanarBMAttrBase;
     OOP_AttrBase    	     hiddGfxAttrBase;
     OOP_AttrBase    	     hiddFakeGfxHiddAttrBase;
-    OOP_MethodID    	     hiddGfxShowImminentReset_MethodID;
 };
 
 #define CDD(base)   	    ((struct common_driverdata *)&PrivGBase(base)->shared_driverdata)
