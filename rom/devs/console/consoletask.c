@@ -23,7 +23,7 @@
 #include "console_gcc.h"
 #include "consoleif.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /* Protos */
@@ -113,7 +113,6 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 	    while ( (cdihmsg = (struct cdihMessage *)GetMsg(inputport)) )
 	    {
 
-		D(bug("GOT MESSAGE FROM CONSOLE INPUT HANDLER:\n"));
 		/* Check that the ConUnit has not been disposed,
 		   while the message was passed
 		*/
@@ -190,20 +189,20 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 			} /* IECLASS_RAWKEY */
 			break; 
 
+			case IECLASS_GADGETDOWN:
+			case IECLASS_RAWMOUSE:
 			case IECLASS_GADGETUP:
-			  {
-				D(bug("Gadgetup: %p\n",(APTR)cdihmsg->ie.ie_EventAddress));
-				Console_HandleGadgets(cdihmsg->unit,(APTR)cdihmsg->ie.ie_EventAddress);
-			  }
+				Console_HandleGadgets(cdihmsg->unit,cdihmsg->ie.ie_Class, (APTR)cdihmsg->ie.ie_EventAddress);
 			  break;
-			
+
 	   	    case IECLASS_REFRESHWINDOW: /* Intentional fallthrough */
 			case IECLASS_SIZEWINDOW:
 			{
 			    Console_NewWindowSize(cdihmsg->unit);
 			} /* IECLASS_NEWSIZE */
 			break;
-			
+			default:
+			  D(bug("cdihmsg->ie.ie_Class = %d\n", cdihmsg->ie.ie_Class));
 		    } /* switch(cdihmsg->ie.ie_Class) */
 
 		    

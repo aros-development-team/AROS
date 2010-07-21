@@ -72,6 +72,9 @@ struct charmapcondata
 
   UBYTE  boopsigad;					/* Type of right prop gadget of window */
   struct Scroll * prop;
+
+  /* Active gadget */
+  APTR activeGad;
 };
 
 
@@ -649,8 +652,12 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_Hand
     struct RastPort 	*rp = w->RPort;
 	struct charmapcondata *data = INST_DATA(cl, o);
 
+	if (msg->Class == IECLASS_GADGETDOWN) {
+	  data->activeGad = msg->IAddress;
+	}
+
 	// FIXME: The if below isn't safe for mouse events. See 5.9.2.
-   	if (msg->IAddress == (APTR)&(data->prop->scroller)) {
+   	if (data->activeGad == (APTR)&(data->prop->scroller)) {
 	  ULONG hidden = data->scrollback_size > CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) -1 : 0;
 	  ULONG pos = (((struct PropInfo *)((struct Gadget*)&(data->prop->scroller))->SpecialInfo)->VertPot * hidden + (MAXPOT / 2)) / MAXPOT;
 
@@ -669,7 +676,13 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_Hand
 		charmapcon_refresh(cl,o);
 	  }
 	}
+
+	if (msg->Class == IECLASS_GADGETUP) {
+	  data->activeGad = 0;
+	}
 }
+
+
 
 AROS_UFH3S(IPTR, dispatch_charmapconclass,
     AROS_UFHA(Class *,  cl,  A0),
