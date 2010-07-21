@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -531,9 +531,10 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    struct IOStdReq resetio = *kbdio;
 	    
 	    InputDevice->ResetSig = 0;
-	    
-    	    ShowImminentReset();
-	    
+
+	    /* Blank screen(s) in order to indicate upcoming machine reset */
+    	    LoadView(NULL);
+
 	    resetio.io_Command = KBD_RESETHANDLERDONE;
 	    resetio.io_Data = &resethandler;
 	    
