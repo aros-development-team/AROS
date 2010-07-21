@@ -2816,7 +2816,6 @@ IPTR Install__MUIM_Reboot
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		D(bug("[INSTALLER] Cold rebooting...\n"));
-		ShowImminentReset();
 		ShutdownA(SD_ACTION_COLDREBOOT);
 	}
 	else
