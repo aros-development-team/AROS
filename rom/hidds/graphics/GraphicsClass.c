@@ -239,17 +239,17 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	hidd.graphics.graphics
 
     FUNCTION
-	Tells if the display driver is using hosted display in host OS' window.
+	Tells if the display driver is using hosted display in host OS' window, and mouse
+	input is handled by host OS.
 
     NOTES
-	At the moment the system does not use this attribute in any way. The attribute
-	is considered reserved, its semantics and meaning may change. Applications should
-	not use this attribute for now.
+	Even in fullscreen mode drivers should still return TRUE if the host OS manages mouse
+	input (for example, X11 driver). If mouse input is not managed by the host OS
+	(for example, with Linux framebuffer driver), return FALSE.
 
     EXAMPLE
 
     BUGS
-	Not all hosted drivers provide this attribute.
 
     SEE ALSO
 
@@ -292,7 +292,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     INTERNALS
 	Base class always provides vHidd_Gfx_DPMSLevel_On value (comes from rootclass'
-	Get() which sets the value to NULL).
+	Get() which sets the value to 0).
 
 *****************************************************************************************/
 
@@ -2813,12 +2813,10 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	hidd.graphics.graphics
 
     FUNCTION
-	Indicate upcoming machine reset
+	Indicate upcoming machine reset. Obsolete.
 
-	The system calls this method when the machine is about to perform a warm reboot.
-	The driver is expected to blank the screen and reset the hardware to some known
-	idle state. There is no need to preserve an old hardware state and/or current
-	bitmap's data.
+	Since graphics.library v41.4 this method is not used any more. Considered
+	reserved. Do not use it in any way.
 
     INPUTS
 	None.
@@ -2827,10 +2825,6 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	None.
 
     NOTES
-	This method is obsolete, support for it will go away in future. New drivers
-	should use exec reset callbacks in order to get an upcoming reboot notifications.
-	The reset code can be executed on an unstable system suffering from crash, so
-	using an OOP method here is not a very good idea.
 
     EXAMPLE
 
