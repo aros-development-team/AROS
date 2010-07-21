@@ -22,9 +22,10 @@
 	struct GfxBase *, GfxBase, 197, Graphics)
 
 /*  FUNCTION
-    	Indicates that a reset is imminent by (usually)
-	blanking the screen.
-	
+	Obsolete private function. Some programs already call it, so it's
+	still here in order to provide backwards compatibility. Do not use it,
+	it will be removed in future!
+
     INPUTS
 
     RESULT
@@ -34,9 +35,6 @@
     EXAMPLE
 
     BUGS
-        This function can't work reliably by design. It is subject to removal.
-	Don't use it, use exec reset callbacks from within display drivers
-	instead.
 
     SEE ALSO
 
@@ -48,12 +46,5 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct monitor_driverdata *mdd;
-    
-    /* Call ShowImminentReset() on all drivers */
-    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
-        OOP_DoMethod(mdd->gfxhidd_orig, (OOP_Msg)&CDD(GfxBase)->hiddGfxShowImminentReset_MethodID);
-
     AROS_LIBFUNC_EXIT
-
 } /* ShowImminentReset */
