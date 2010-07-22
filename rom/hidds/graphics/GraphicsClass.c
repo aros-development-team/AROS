@@ -242,6 +242,10 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	Tells if the display driver is using hosted display in host OS' window, and mouse
 	input is handled by host OS.
 
+	Windowed displays may send activation events to AROS. This is needed in order to
+	correctly handle display switch in a multi-display configuration (which means that
+	the user has multiple windows on host OS desktop and can freely switch between them).
+
     NOTES
 	Even in fullscreen mode drivers should still return TRUE if the host OS manages mouse
 	input (for example, X11 driver). If mouse input is not managed by the host OS
@@ -252,6 +256,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     BUGS
 
     SEE ALSO
+	aoHidd_Gfx_ActiveCallBack, aoHidd_Gfx_ActiveCallBackData
 
     INTERNALS
 	Base class always provides FALSE value
@@ -666,6 +671,94 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     SEE ALSO
 
     INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_ActiveCallBack
+
+    SYNOPSIS
+	[.S.], void (*)(APTR userdata, OOP_Object *bitmap)
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Set display activation interrupt handler.
+
+	This handler needs to be called by hosted display driver, if host OS
+	windowing system is used for the display and mouse input is handled by the
+	host OS.
+
+	This way the driver can tell AROS when a display window has been activated so that
+	AROS will be able to switch current display correctly when working in a multi-display
+	configuration.
+
+	The function uses C calling convention and needs to be declared as follows:
+
+	void ActivationHandler(APTR userdata, OOP_Object *bitmap);
+
+	Parameters of this function will be:
+	  userdata - Whatever is specified by aoHidd_Gfx_ActiveCallBackData attribute.
+	  bitmap   - Currently reserved. Drivers need to set it to NULL.
+
+	The function can be called from within an interrupt, so usual restrictions apply
+	to it.
+
+	Set this attribute to NULL in order to disable activation handling.
+
+    NOTES
+	When setting the activation callback function, be sure that you set correct
+	userdata before you actually set the callback pointer. Otherwise your callback
+	can be called with wrong data pointer.
+
+	Only one activation handler can be installed. Installing a new handler replaces
+	the previous one.
+
+	Native displays do not need to implement this attribute because there can be
+	no external activation events.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_ActiveCallBackData, aoHidd_Gfx_IsWindowed
+
+    INTERNALS
+	This attribute needs to be implemented by the display driver. Base class contains
+	no implementation.
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_ActiveCallBackData
+
+    SYNOPSIS
+	[.S.], APTR
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Set user-defined data pointer for display activation handler.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_ActiveCallBack
+
+    INTERNALS
+	This attribute needs to be implemented by the display driver. Base class contains
+	no implementation.
 
 *****************************************************************************************/
 
