@@ -17,7 +17,9 @@
 struct GDI_Control
 {
     /* Display */
-    unsigned char  GfxIrq;
+    unsigned char  GfxIrq;	/* IRQ number */
+    unsigned char  ShowDone;	/* NOTY_SHOW completion flag */
+    void	   *Active;	/* Set to struct gfx_data * when new display window is activated */
 
     /* Mouse */
     unsigned char  MouseIrq;
@@ -82,7 +84,9 @@ struct gdi_staticdata
        outside (see gdi_class.h) */
     ULONG		     displaynum;
 
-    struct SignalSemaphore   sema; /* Protecting this whole struct */
+    struct SignalSemaphore   sema;
+    struct Task		    *showtask;
+    void		    *gfx_int;
 
     OOP_Class 	    	    *gfxclass;
     OOP_Class 	    	    *bmclass;
@@ -93,7 +97,6 @@ struct gdi_staticdata
     OOP_Object      	    *kbdhidd;
 
     struct GDI_Control	    *ctl;
-    
 };
 
 struct gdiclbase
@@ -131,16 +134,12 @@ struct MinList
 /* Private instance data for Gfx hidd class */
 struct gfx_data
 {
-    struct MinList bitmaps;	/* Currently shown bitmap objects */
-    void *display;		/* Windows system display object  */
-    void *cursor;		/* Windows mouse cursor object    */
-    void *fbwin;		/* Display window		  */
+    struct MinList bitmaps;		/* Currently shown bitmap objects       */
+    void *display;			/* Windows system display object        */
+    void *cursor;			/* Windows mouse cursor object          */
+    void *fbwin;			/* Display window		        */
+    void (*cb)(void *data, void *bm);	/* Display activation callback function */
+    void *cbdata;			/* User data for activation callback    */
 };
-
-#ifdef __AROS__
-
-void GfxIntHandler(struct gfx_data *data, struct Task *task);
-
-#endif
 
 #endif /* HIDD_GDI_H */

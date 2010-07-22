@@ -79,9 +79,25 @@ static struct OOP_ABDescr attrbases[] =
     { NULL  	    	, NULL      	    	}
 };
 
-void GfxIntHandler(struct gfx_data *data, struct Task *task)
+static void GfxIntHandler(struct gdi_staticdata *xsd, void *unused)
 {
-    Signal(task, SIGF_BLIT);
+    struct gfx_data *active;
+
+    /* Process ShowDone IRQ */
+    if (xsd->ctl->ShowDone) {
+	xsd->ctl->ShowDone = FALSE;
+	if (xsd->showtask)
+	    Signal(xsd->showtask, SIGF_BLIT);
+    }
+
+    /* Process display window activation */
+    active = xsd->ctl->Active;
+    if (active) {
+	xsd->ctl->Active = NULL;
+	D(bug("Activated display data 0x%p\n", active));
+	if (active->cb)
+	    active->cb(active->cbdata, GetHead(&active->bitmaps));
+    }
 }
 
 /****************************************************************************************/
@@ -400,6 +416,33 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
+VOID GDICl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
+{
+    struct gfx_data *data = OOP_INST_DATA(cl, obj);
+    struct TagItem  *tag, *tstate;
+    ULONG   	    idx;
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
+	    switch(idx)
+	    {
+	    case aoHidd_Gfx_ActiveCallBack:
+	        data->cb = (void *)tag->ti_Data;
+		break;
+
+	    case aoHidd_Gfx_ActiveCallBackData:
+	        data->cbdata = tag->ti_Data;
+		break;
+	    }
+	}
+    }
+    OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
 static void AddToList(struct MinList *list, OOP_Object *bitmap)
 {
     OOP_Class *bmclass = OOP_OCLASS(bitmap);
@@ -413,10 +456,9 @@ static void AddToList(struct MinList *list, OOP_Object *bitmap)
     AddTail((struct List *)list, (struct Node *)bmdata);
 }
 
-static void ShowList(struct gfx_data *data, struct MinList *list)
+static void ShowList(struct gdi_staticdata *xsd, struct gfx_data *data, struct MinList *list)
 {
     struct bitmap_data *bmdata;
-    BOOL empty = TRUE;
 
     /* If something left in displayed bitmaps list, close it */
     for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
@@ -426,6 +468,7 @@ static void ShowList(struct gfx_data *data, struct MinList *list)
 	    NATIVECALL(GDI_PutMsg, bmdata->window, WM_CLOSE, 0, 0);
 	    bmdata->window = NULL;
 	}
+	/* This indicates that the bitmap is not in the list any more */
 	bmdata->node.mln_Pred = NULL;
     }
 
@@ -435,24 +478,18 @@ static void ShowList(struct gfx_data *data, struct MinList *list)
     data->bitmaps.mlh_TailPred           = list->mlh_TailPred;
     data->bitmaps.mlh_TailPred->mln_Succ = (struct MinNode *)&data->bitmaps.mlh_Tail;
 
-    /* Now traverse through the new list and (re)open every bitmap's window. This will
-	cause rearranging them in the correct Z-order */
-    for (bmdata = (struct bitmap_data *)data->bitmaps.mlh_Head;
-	bmdata->node.mln_Succ; bmdata = (struct bitmap_data *)bmdata->node.mln_Succ) {
+    /* Own our virtual hardware. We are in Forbid() state and i hope it's enough */
+    xsd->showtask = FindTask(NULL);
+    SetSignal(0, SIGF_BLIT);
 
-	D(bug("[GDI] Showing bitmap data 0x%p, window 0x%p\n", bmdata, bmdata->window));
-	SetSignal(0, SIGF_BLIT);
-	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, (IPTR)bmdata);
-	Wait(SIGF_BLIT);
+    /* This will show display list and sort bitmaps in correct Z-order.
+       Windows must be created by control thread in order to be owned
+       by it. */
+    NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_SHOW, (IPTR)data, 0);
+    Wait(SIGF_BLIT);
 
-	empty = FALSE;
-    }
-    
-    /* Close empty display window */
-    if (empty && data->fbwin) {
-        NATIVECALL(GDI_PutMsg, data->fbwin, WM_CLOSE, 0, 0);
-	data->fbwin = NULL;
-    }
+    /* Disown virtual hardware */
+    xsd->showtask = NULL;
 }
 
 ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
@@ -463,26 +500,26 @@ ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_
     void *gfx_int;
     struct MinList new_bitmaps;
 
-    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->GfxIrq, GfxIntHandler, data, me);
-    if (gfx_int) {
+    Forbid();
 
-	NewList((struct List *)&new_bitmaps);
-	Forbid();
+    NewList((struct List *)&new_bitmaps);
 
-	/* Traverse through bitmaps chain and move them from old displayed list to the new temporary one */
-	for (vpdata = msg->Data; vpdata; vpdata = vpdata->Next)
-	    AddToList(&new_bitmaps, vpdata->Bitmap);
-	ShowList(data, &new_bitmaps);
-	
-	Permit();
-	KrnRemIRQHandler(gfx_int);
-    }
+    /* Traverse through bitmaps chain and move them from old displayed list to the new temporary one */
+    for (vpdata = msg->Data; vpdata; vpdata = vpdata->Next)
+	AddToList(&new_bitmaps, vpdata->Bitmap);
+    ShowList(XSD(cl), data, &new_bitmaps);
+
+    Permit();
+
     /* We always return TRUE in order to indicate that we support this method.
        LoadView() has no return code, so we have no rights for error too. */
     return TRUE;
 }
 
 /****************************************************************************************/
+
+/* This method is needed for software mouse sprite emulation so that we can test it on
+   this driver */
 
 OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
@@ -491,19 +528,15 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     void *gfx_int;
     struct MinList new_bitmaps;
 
-    gfx_int = KrnAddIRQHandler(XSD(cl)->ctl->GfxIrq, GfxIntHandler, data, me);
-    if (gfx_int) {
+    Forbid();
 
-	NewList((struct List *)&new_bitmaps);
-	Forbid();
+    NewList((struct List *)&new_bitmaps);
 
-	if (msg->bitMap)
-	    AddToList(&new_bitmaps, msg->bitMap);
-	ShowList(data, &new_bitmaps);
+    if (msg->bitMap)
+	AddToList(&new_bitmaps, msg->bitMap);
+    ShowList(XSD(cl), data, &new_bitmaps);
 
-	Permit();
-	KrnRemIRQHandler(gfx_int);
-    }
+    Permit();
 
     return msg->bitMap;
 }
@@ -656,8 +689,11 @@ static int gdigfx_init(LIBBASETYPEPTR LIBBASE)
         LIBBASE->xsd.ctl = NATIVECALL(GDI_Init);
 	Permit();
 	
-	if (LIBBASE->xsd.ctl)
-	    return TRUE;
+	if (LIBBASE->xsd.ctl) {
+	    LIBBASE->xsd.gfx_int = KrnAddIRQHandler(LIBBASE->xsd.ctl->GfxIrq, GfxIntHandler, &LIBBASE->xsd, NULL);
+	    if (LIBBASE->xsd.gfx_int)
+		return TRUE;
+	}
     }
     return FALSE;
 }
@@ -666,6 +702,9 @@ static int gdigfx_init(LIBBASETYPEPTR LIBBASE)
 
 static int gdigfx_expunge(LIBBASETYPEPTR LIBBASE)
 {
+    if (LIBBASE->xsd.gfx_int)
+	KrnRemIRQHandler(LIBBASE->xsd.gfx_int);
+
     if (LIBBASE->xsd.ctl) {
         Forbid();
 	NATIVECALL(GDI_Shutdown, LIBBASE->xsd.ctl);
