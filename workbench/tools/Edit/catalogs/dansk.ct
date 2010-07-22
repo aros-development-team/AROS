@@ -1,0 +1,441 @@
+## version $VER: JanoEditor.catalog 1.0 (20.07.2010)
+## language dansk
+## codeset 0
+;
+;
+; Catalog description for JanoEditor
+; JanoEditor.cd
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Project Menu
+;
+MSG_PROJECTTITLE
+Projekt
+; Project
+;
+MSG_NEWEMPTYFILE
+Ny
+; New
+;
+MSG_OPENNEWFILE
+Åbn fil...
+; Open file...
+;
+MSG_LOADINPRJ
+Indlæs fil...
+; Load file...
+;
+MSG_SAVEFILE
+Gem
+; Save
+;
+MSG_SAVEFILEAS
+Gem som...
+; Save as...
+;
+MSG_SAVECHANGES
+Gem ændringer
+; Save changes
+;
+MSG_PRINTFILE
+Udskriv
+; Print
+;
+MSG_INFORMATION
+Information...
+; Information...
+;
+MSG_CLOSE
+Luk
+; Close
+;
+MSG_QUIT
+Afslut
+; Quit
+;
+; Edit Menu
+;
+MSG_EDITTITLE
+Redigér
+; Edit
+;
+MSG_CUT
+Klip
+; Cut
+;
+MSG_COPY
+Kopiér
+; Copy
+;
+MSG_PASTE
+Indsæt
+; Paste
+;
+MSG_MARK
+Markér
+; Mark
+;
+MSG_MARKCOLUMN
+Markér kolonne
+; Mark column
+;
+MSG_SELECTALL
+Vælg alle
+; Select all
+;
+MSG_DELLINE
+Slet linie
+; Delete line
+;
+MSG_SUBTOOLS
+Værktøjer
+; Tools
+;
+MSG_INDENT
+Indryk
+; Indent
+;
+MSG_UNINDENT
+Ophæv indrykning
+; Unindent
+;
+MSG_UPPERCASE
+Store bogstaver
+; Upper case
+;
+MSG_LOWERCASE
+Små bogstaver
+; Lower case
+;
+MSG_TOGGLECASE
+Skift mellem store og små bogstaver
+; Toggle case
+;
+MSG_INSERTFILE
+Indsæt fil...
+; Insert file...
+;
+MSG_UNDO
+Fortryd
+; Undo
+;
+MSG_REDO
+Redo
+; Redo
+;
+; Search Menu
+;
+MSG_SEARCHTITLE
+Søg
+; Search
+;
+MSG_FIND
+Find...
+; Find...
+;
+MSG_REPLACE
+Erstat...
+; Replace...
+;
+MSG_SUBFIND
+Find
+; Find
+;
+MSG_NEXTFIND
+Næste
+; Next
+;
+MSG_PREVFIND
+Forrige
+; Previous
+;
+MSG_NEXTREPLACE
+Erstat
+; Replace
+;
+MSG_PREVPAGE
+Forrige side
+; Previous page
+;
+MSG_NEXTPAGE
+Næste side
+; Next page
+;
+MSG_GOTOLINE
+Gå til linie...
+; Goto line...
+;
+MSG_FINDBRACKET
+Find modsvarende kantet parentes
+; Matching bracket
+;
+MSG_LASTMODIF
+Sidste ændring
+; Last modification
+;
+MSG_BEGOFLINE
+Begyndelse på linie
+; Start of line
+;
+MSG_ENDOFLINE
+Slutning på linie
+; End of line
+;
+; Macro Menu
+;
+MSG_MACROTITLE
+Makro
+; Macro
+;
+MSG_STARTRECORD
+Start optagelse
+; Start recording
+;
+MSG_STOPRECORD
+Stop optagelse
+; Stop recording
+;
+MSG_PLAYMACRO
+Udfør makro
+; Execute macro
+;
+MSG_REPEATMACRO
+Gentag makro...
+; Repeat macro...
+;
+; Environment Menu
+;
+MSG_ENVTITLE
+Miljø
+; Environment
+;
+MSG_SCRMODE
+Skærmtilstand...
+; Screen mode...
+;
+MSG_FONTS
+Skrifttyper...
+; Fonts...
+;
+MSG_PREFS
+Generelle indstillinger...
+; General preferences...
+;
+MSG_LOADPREFS
+Indlæs indstillinger...
+; Load preferences..
+;
+MSG_SAVEPREFS
+Gem indstillinger
+; Save preferences
+;
+MSG_SAVEPREFSAS
+Gem indstillinger som...
+; Save preferences as...
+;
+;
+;
+; *****************************
+;  Possible error messages
+; *****************************
+;
+ERR_BADOS
+Forældet styresystem. Installér version 2.0 eller nyere.
+; Obsolete OS. Install v2.0 or better.
+;
+ERR_NOASLREQ
+Kan ikke tildele ASL-requester!
+; Cannot alloc ASL requester!
+;
+ERR_NOMEM
+For lidt hukommelse!
+; Out of memory!
+;
+ERR_NOGUI
+Åbning af hovedinterface mislykkedes!
+; Main interface failed to open!
+;
+ERR_NONAME
+Ingen title
+; No title
+; Not really an error but simplify translation
+;
+ERR_WRITECLIP
+Skriv fejl til klippebordet
+; Write error into clipboard device
+;
+ERR_OPENCLIP
+Kan ikke åbne klippebord!
+; Unable to open clipboard!
+;
+ERR_LOADFILE
+Kan ikke indlæse ønsket fil
+; Unable to load requested file
+;
+ERR_NOTXTINCLIP
+Ingen tekst i klippebordet
+; No text in clipboard
+;
+ERR_WRONG_TYPE
+Objektet er et katalog!
+; Object is a directory!
+;
+ERR_READCLIP
+Læsehandling ufuldstændig
+; Read operation incomplete
+;
+ERR_NOBRACKET
+Ingen paranteser under markør!
+; No parenthesis under cursor!
+;
+ERR_NOT_FOUND
+Mønstret `%s' kunne ikke findes
+; Pattern `%s' not found
+;
+ERR_LOADFONT
+Kan ikke åbne den ønskede skrifttype!
+; Can't open desired font!
+;
+ERR_NOPREFEDITOR
+Kan ikke finde indstillingsredigering!
+; Can't find preference editor!
+;
+ERR_BADPREFSFILE
+Ugyldigt indstillingsfilformat.
+; Bad preference file format.
+;
+ERR_FILEMODIFIED
+%s er blevet ændret.\nEr du sikker på, at du vil lukke den?
+; %s has been modified.\nAre you sure want to close it?
+;
+ERR_SLC
+Gem|Luk|Afbryd
+; Save|Close|Cancel
+;
+ERR_NOSEARCHTEXT
+Ingen tekst at søge på!
+; No text to search for!
+;
+ERR_FILEEXISTS
+Filen findes allerede. Ønsker du at overskrive den?
+; This file already exists. Overwrite it?
+;
+ERR_OC
+Ja|Nej!
+; Yes|No!
+;
+WARN_RECORD
+Start optagelse af makro
+; Start recording macro
+;
+WARN_RECORDED
+Makro blev optaget
+; Macro recorded
+;
+WARN_REC
+[REC]
+; [REC]
+;
+;
+; *************************************
+;  Information window related messages
+; *************************************
+;
+MSG_ABOUT
+Information
+; Information
+;
+MSG_FORMATINFO
+%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
+;
+MSG_CONTINUE
+Fortsæt
+; Continue
+;
+MSG_BYTE
+byte
+; byte
+;
+MSG_BYTES
+byte
+; bytes
+;
+MSG_LINE
+linie
+; line
+;
+MSG_LINES
+linier
+; lines
+;
+;
+; *************************
+;  Search & replace window
+; *************************
+;
+MSG_SEARCHWINDOW
+Søgemønster
+; Search pattern
+;
+MSG_REPLACEWINDOW
+Søg & erstat
+; Search & Replace
+;
+MSG_SEARCHSTRING
+Find:
+; Locate:
+;
+MSG_REPLACESTRING
+Erstat:
+; Replace:
+;
+MSG_OPTCASE
+Afstem med store/små bogstaver
+; Match case
+;
+MSG_OPTWORDS
+hele ord
+; Whole words
+;
+MSG_BUTTONREPLACE
+_Erstat
+; _Replace
+;
+MSG_BUTTONREPALL
+Erstat a_lle
+; Replace _All
+;
+MSG_BUTTONSEARCH
+Søg
+; Search
+;
+MSG_NEXTSEARCH
+_Forrige
+; _Previous
+;
+MSG_USESEARCH
+Br_ug
+; _Use
+;
+MSG_CANCELSEARCH
+_Afbryd
+; _Cancel
+;
+MSG_REPLACEALL
+%ld %s af `%s' blev erstattet
+; %ld %s of `%s' replaced
+;
+MSG_OCCURENCY
+Forekomst
+; occurency
+;
+MSG_OCCURENCIES
+Forekomster
+; occurencies
+;

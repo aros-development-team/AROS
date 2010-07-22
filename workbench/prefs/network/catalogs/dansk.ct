@@ -1,0 +1,138 @@
+## version $VER: network.catalog 2.0 (22.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+MSG_NAME
+Netværksindstillinger
+; Network Preferences
+;
+MSG_DESCRIPTION
+TCP/IP-netværksindstillinger
+; TCP/IP Network preferences
+;
+MSG_IFNAME
+Navn
+; Name
+;
+MSG_UP
+Aktiv
+; Active
+;
+MSG_DEVICE
+Enhed
+; Device
+;
+MSG_UNIT
+Unit
+; Unit
+;
+MSG_IP_MODE
+IP-tilstand
+; IP Mode
+;
+MSG_IP
+Adresse
+; Address
+;
+MSG_MASK
+Netmaske
+; Net Mask
+;
+MSG_GATE
+Adgangspunkt
+; Gateway
+;
+MSG_DNS1
+Primær DNS
+; Primary DNS
+;
+MSG_DNS2
+Sekundær DNS
+; Secondary DNS
+;
+MSG_HOST_NAME
+Værtsnavn
+; Host Name
+;
+MSG_DOMAIN_NAME
+Domænenavn
+; Domain Name
+;
+MSG_IP_MODE_MANUAL
+Manuelt
+; Manual
+;
+MSG_IP_MODE_DHCP
+Hent adresse fra DHCP
+; Get address from DHCP
+;
+MSG_TAB_IP_CONFIGURATION
+IPv4-opsætning
+; IPv4 Configuration
+;
+MSG_TAB_COMPUTER_NAME
+Computernavn
+; Computer Name
+;
+MSG_AUTOSTART_STACK
+Start netværk automatisk under systemopstart?
+; Automatically start network during system boot?
+;
+MSG_ERR_UNKNOWN_ERROR
+Ukendt fejl
+; Unknown error
+;
+MSG_ERR_NOT_RESTARTED_STACK
+Genstart af netværksstak mislykkedes
+; Failed to restart network stack
+;
+MSG_BUTTON_OK
+O.k.
+; Ok
+;
+MSG_BUTTON_ADD
+Tilføj
+; Add
+;
+MSG_BUTTON_EDIT
+Redigér
+; Edit
+;
+MSG_BUTTON_REMOVE
+Fjern
+; Remove
+;
+MSG_BUTTON_APPLY
+Anvend
+; Apply
+;
+MSG_BUTTON_CLOSE
+Luk
+; Close
+;
+MSG_ERROR_TITLE
+Fejl
+; Error
+;
+MSG_ERR_NOT_SAVED_PREFS
+Netværksindstillinger blev ikke gemt i %s
+; Network preferences not saved to %s
+;
+MSG_ERR_NOT_COPIED_FILES
+Yderligere filer blev ikke kopieret til %s
+; Additional files not copied to %s
+;
+MSG_INFO_TITLE
+Information
+; Information
+;
+MSG_PREFS_SAVED_RESTART
+Indstillingerne blev gemt i %s.\nGenstart AROS for at bruge de nye indstillinger.
+; Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;
+MSG_IFWINDOW_TITLE
+Grænseflade
+; Interface
+;

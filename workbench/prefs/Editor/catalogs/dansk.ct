@@ -1,0 +1,140 @@
+## version $VER: EditorPrefs.catalog 1.0 (20.07.2010)
+## language dansk
+## codeset 0
+;
+;
+; Catalog description for JanoPrefs
+; JanoPrefs.cd
+;
+; Initial Danish translation by Kristian Poul Herkild
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT
+Standardværdier
+; Default values
+;
+MSG_LASTSAVED
+Sidst gemte værdier
+; Last saved values
+;
+; *******************
+;  Preference window
+; *******************
+;
+MSG_TITLEWIN
+Hovedopsætning
+; Main setup
+;
+MSG_TAB
+Tabulering:
+; Tabulation:
+;
+MSG_SEPARATORS
+Separatorer:
+; Separators:
+;
+MSG_TXTFONT
+Printerskrifttype:
+; Text font:
+;
+MSG_SCRFONT
+Skærmskrifttype:
+; Screen font:
+;
+MSG_PUBSCREEN
+Skærmtilstand:
+; Screen mode:
+;
+MSG_BACKDROP
+Baggrund
+; Backdrop
+;
+MSG_LEFTMARGIN
+Venstremargen
+; Left margin
+;
+MSG_AUTOINDENT
+Automatisk indrykning
+; Auto indent
+;
+MSG_EXTEND
+Udvidet numerisk tastatur
+; Extended numeric pad
+;
+MSG_PREFSSAVE
+Gem
+; Save
+;
+MSG_USEPREFS
+Brug
+; Use
+;
+MSG_DISCARDPREFS
+Afbryd
+; Cancel
+;
+MSG_USEDEF
+Brug standard
+; Use Default
+;
+MSG_CHOOSEIT
+Vælg...
+; Choose one...
+;
+MSG_CLONEPARENT
+Klon forælder
+; Clone parent
+;
+MSG_COLOR_BACK
+Baggrundsfarve
+; Background
+;
+MSG_COLOR_TEXT
+Standardtekst
+; Standard text
+;
+MSG_COLOR_FILLTXT
+Valgt udfyldningstekst
+; Selected fill text
+;
+MSG_COLOR_FILLSEL
+Valgt tekst
+; Selected text
+;
+MSG_COLOR_MARGINBACK
+Margenbaggrund
+; Margin background
+;
+MSG_COLOR_MARGINTXT
+Margentekst
+; Margin text
+;
+MSG_COLOR_SHINE
+Panelskin
+; Panel shine
+;
+MSG_COLOR_SHADE
+Panelskygge
+; Panel shade
+;
+MSG_COLOR_PANELBACK
+Panelbaggrund
+; Panel back
+;
+MSG_COLOR_PANELTEXT
+Paneltekst
+; Panel text
+;
+MSG_COLOR_GLYPH
+Panel glyph
+; Panel glyph
+;
+MSG_COLOR_MARKEDLINES
+Aktivt panel
+; Active panel
+;
