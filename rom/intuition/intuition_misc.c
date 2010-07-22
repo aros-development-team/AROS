@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2004, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -645,8 +645,10 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
             D(bug("[intuition] CreateScreenBar: Adding BarLayer @ %p\n", scr->BarLayer));
             D(bug("[intuition] CreateScreenBar: Rastport @ %p, Font @ %p\n", scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri.dri_Font));
             SetFont(scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri.dri_Font);
-            D(bug("[intuition] CreateScreenBar: Rendering Bar  ...\n"));
-            RenderScreenBar(scr, FALSE, IntuitionBase);
+	    if (!(scr->Flags & SCREENQUIET)) {
+		D(bug("[intuition] CreateScreenBar: Rendering Bar  ...\n"));
+		RenderScreenBar(scr, FALSE, IntuitionBase);
+	    }
             D(bug("[intuition] CreateScreenBar:    ... done\n"));
         }
         else
