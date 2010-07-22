@@ -114,10 +114,6 @@ enum
 {
     aoHidd_Gfx_IsWindowed,	    	/* [..G] (BOOL) - Whether the HIDD is using a window 
 						  system to render its gfx */
-#if 0
-    aoHidd_Gfx_ActiveBMCallBack,
-    aoHidd_Gfx_ActiveBMCallBackData,
-#endif    
     aoHidd_Gfx_DPMSLevel,		/* [ISG] (ULONG) - DPMS level	*/
     
     /* Used in gfxmode registering */
@@ -135,6 +131,9 @@ enum
     aoHidd_Gfx_MemoryClock,		/* [..G] (ULONG) - A video card's memory clock in Hz	       */
     
     aoHidd_Gfx_DriverName,		/* [..G] (STRPTR) - A name of driver for CyberGraphX	       */
+
+    aoHidd_Gfx_ActiveCallBack,		/* [.S.] (APTR)   - Display activation callback function       */
+    aoHidd_Gfx_ActiveCallBackData,	/* [.S.] (APTR)   - User data for activation callback	       */
 
     num_Hidd_Gfx_Attrs
 };
@@ -157,6 +156,8 @@ enum
 #define aHidd_Gfx_MemorySize		(HiddGfxAttrBase + aoHidd_Gfx_MemorySize		)
 #define aHidd_Gfx_MemoryClock		(HiddGfxAttrBase + aoHidd_Gfx_MemoryClock		)
 #define aHidd_Gfx_DriverName		(HiddGfxAttrBase + aoHidd_Gfx_DriverName		)
+#define aHidd_Gfx_ActiveCallBack	(HiddGfxAttrBase + aoHidd_Gfx_ActiveCallBack		)
+#define aHidd_Gfx_ActiveCallBackData	(HiddGfxAttrBase + aoHidd_Gfx_ActiveCallBackData	)
 
 #define IS_GFX_ATTR(attr, idx)	\
 	( ( ( idx ) = (attr) - HiddGfxAttrBase) < num_Hidd_Gfx_Attrs)
