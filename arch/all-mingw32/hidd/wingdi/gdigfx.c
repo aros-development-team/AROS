@@ -96,7 +96,7 @@ static void GfxIntHandler(struct gdi_staticdata *xsd, void *unused)
 	xsd->ctl->Active = NULL;
 	D(bug("Activated display data 0x%p\n", active));
 	if (active->cb)
-	    active->cb(active->cbdata, GetHead(&active->bitmaps));
+	    active->cb(active->cbdata, NULL);
     }
 }
 
