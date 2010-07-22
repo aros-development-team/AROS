@@ -1,0 +1,42 @@
+## version $VER: screenmode.catalog 1.0 (22.07.2010)
+## language dansk
+## codeset 0
+;
+; Initial Danish translation by Kristian Poul Herkilds
+;
+MSG_NAME
+Skærmindstillinger
+; ScreenMode Preferences
+; 
+MSG_WIDTH
+\33lBredde:
+; \33lWidth:
+;
+MSG_DEFAULT
+\33l_standard
+; \33l_default
+;
+MSG_HEIGHT
+\33lHøjde:
+; \33lHeight:
+;
+MSG_DEPTH
+\33lDybde:
+; \33lDepth:
+;
+MSG_AUTOSCROLL
+\33lAutorulning
+; \33lAutoscroll
+;
+MSG_DISPLAY_MODE
+Skærmtilstand
+; Display Mode
+;
+MSG_MODE_ID
+Tilstands-ID
+; Mode ID
+;
+MSG_DESCRIPTION
+Beskrivelse
+; Description
+;
