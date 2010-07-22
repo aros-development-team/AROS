@@ -14,7 +14,9 @@
 #include "bitmap.h"
 
 #define D(x)
+#define DACT(x)
 #define DKBD(x)
+#define DMSE(x)
 #define DWIN(x)
 
 LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp);
@@ -47,7 +49,7 @@ static WNDCLASS bitmap_class_desc = {
     "AROS_Bitmap"
 };
 static DWORD thread_id;	    /* Window service thread ID			      */
-static BOOL window_active;  /* Flag - AROS window is active		      */
+static HWND window_active;  /* Currently active AROS window		      */
 static ULONG display_class; /* Display window class		   	      */
 static ULONG bitmap_class;  /* Bitmap window class			      */
 static DWORD last_key;      /* Last pressed key - used to suppress autorepeat */
@@ -114,12 +116,15 @@ LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     case WM_MBUTTONDOWN:
     case WM_MBUTTONUP:
     case WM_MOUSEWHEEL:
-        gdictl.MouseEvent = msg;
-        gdictl.MouseX = GET_X_LPARAM(lp);
-    	gdictl.MouseY = GET_Y_LPARAM(lp);
-    	gdictl.Buttons = wp & 0x0000FFFF;
-    	gdictl.WheelDelta = wp >> 16;
-        KrnCauseIRQ(gdictl.MouseIrq);
+	if (win == window_active) {
+	    DMSE(printf("[GDI] Mouse event 0x%04X, window 0x%p\n", msg, win));
+            gdictl.MouseEvent = msg;
+            gdictl.MouseX = GET_X_LPARAM(lp);
+    	    gdictl.MouseY = GET_Y_LPARAM(lp);
+    	    gdictl.Buttons = wp & 0x0000FFFF;
+    	    gdictl.WheelDelta = wp >> 16;
+            KrnCauseIRQ(gdictl.MouseIrq);
+	}
     	return 0;
 /* This keyboard-related fragment is not used on Windows NT because keyboard hook intercepts all keyboard messages.
    It is left here for Windows 9x. */
@@ -132,19 +137,19 @@ LRESULT CALLBACK display_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
         SendKbdIRQ(msg & 0xFFFFFFFB, (lp >> 16) & 0x000001FF);
         return 0;
     case WM_ACTIVATE:
-        DWIN(printf("[GDI] WM_ACTIVATE, wParam is 0x%08lX\n", wp));
+        DACT(printf("[GDI] WM_ACTIVATE, Window 0x%p, wParam 0x%08lX\n", win, wp));
         /* In some cases Windows can activate an iconified window (for example if we minimize it
            by clicking its button on the taskbar). We process deactivation messages regardless of
            minimized state, but we handle activation only when it's done on a non-minimized window.
            This behavior was discovered by trial and error, i hope it's really ok now. */
     	if ((wp & 0x0000FFFF) != WA_INACTIVE) {
             if (!(wp & 0xFFFF0000)) {
-                window_active = TRUE;
+                window_active = win;
 		gdictl.Active = (void *)GetWindowLongPtr(win, GWLP_USERDATA);
 		KrnCauseIRQ(gdictl.GfxIrq);
 	    }
         } else {
-            window_active = FALSE;
+            window_active = NULL;
 	    /* Send WM_KEYUP in order to prevent "stuck keys" phenomena */
 	    if (last_key) {
 		SendKbdIRQ(WM_KEYUP, last_key);
@@ -312,7 +317,7 @@ struct GDI_Control *__declspec(dllexport) GDI_Init(void)
 			gdictl.ShowDone = FALSE;
 			gdictl.Active   = NULL;
 
-		        window_active = FALSE;
+		        window_active = NULL;
 		        last_key = 0;
 		        th = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)gdithread_entry, &gdictl, 0, &thread_id);
 		        D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
