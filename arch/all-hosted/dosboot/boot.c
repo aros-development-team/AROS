@@ -131,7 +131,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
         PutStr("Failed to load system HIDDs\n");
     if (cis)
     {
-        D(bug("[DOSBoot.hosted] __dosboot_Boot: Open Startup Sequence = %d\n", opensseq));
+        D(bug("[DOSBoot.hosted] __dosboot_Boot: Flags = 0x%08lX\n", Flags));
 
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
         {
