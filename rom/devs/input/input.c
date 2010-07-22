@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Input device
@@ -34,7 +34,6 @@
 /****************************************************************************************/
 
 extern UWORD AROS_SLIB_ENTRY(PeekQualifier,Input) ();
-extern void AROS_SLIB_ENTRY(AddNullEvent,Input) ();
 
 #if NEWSTYLE_DEVICE
 

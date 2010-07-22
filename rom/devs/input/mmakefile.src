@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-input : includes linklibs
 
-FUNCS := peekqualifier addnullevent
+FUNCS := peekqualifier
 FILES := processevents support
 
 %build_module mmake=kernel-input \
