@@ -7,7 +7,6 @@
 */
 
 #define AROS_BOOT_CHECKSIG
-#define DOSBOOT_DISCINSERT_SCREENPRINT
 
 # define  DEBUG 0
 # include <aros/debug.h>
@@ -260,9 +259,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
     LONG                        bootNameLength;
     BPTR                        lock;
     APTR                        BootLoaderBase = OpenResource("bootloader.resource");
-
-    struct MsgPort *mp;         // Message port used with timer.device
-    struct timerequest *tr = NULL;     // timer's time request message
+    struct Screen *bootScreen = NULL;
 
     D(bug("[DOSBoot] __dosboot_BootProcess()\n"));
 
@@ -279,28 +276,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
     {
         D(bug("[DOSBoot] __dosboot_BootProcess: Failed to open expansion.library.\n"));
         Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
-    }
-
-    if ((mp = CreateMsgPort()) != NULL)
-    {
-        if ((tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest))) != NULL)
-        {
-            if ((OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0)) == 0)
-                #define ioStd(x) ((struct IOStdReq *)x)
-                ioStd(tr)->io_Command = TR_ADDREQUEST;
-            else
-            {
-                D(bug("[DOSBoot] __dosboot_BootProcess: Failed to open timer.device.\n"));
-                DeleteMsgPort(mp);
-                DeleteIORequest((struct IORequest *)tr);
-                tr = NULL;
-            }
-        }
-
-        if (tr == NULL)
-        {
-            DeleteMsgPort(mp);
-        }
     }
 
     /**** Try to mount all filesystems in the MountList ****************************/
@@ -351,31 +326,15 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
         if (!(LIBBASE->db_BootDevice))
         {
-            /* Check if Gfx are up .. and if so show insert media animation */
-            if (LIBBASE->db_attemptingboot == FALSE)
-            {
-#warning "TODO: Show insert disc animation !"
-                LIBBASE->db_attemptingboot = TRUE;
-            }
-            else
-            {
-#warning "TODO: re-run insert disc animation !"
-            }
-#if defined(DOSBOOT_DISCINSERT_SCREENPRINT)
-            kprintf("No bootable disk was found.\n");
-            kprintf("Please insert a bootable disk in any drive.\n");
+	    if (!bootScreen)
+		bootScreen = NoBootMediaScreen(LIBBASE);
 
-            kprintf("Retrying in 5 seconds...\n");
-#endif
+            D(kprintf("No bootable disk was found.\n"));
+            D(kprintf("Please insert a bootable disk in any drive.\n"));
+            D(kprintf("Retrying in 5 seconds...\n"));
 
-            if (tr != NULL) {
-                tr->tr_time.tv_secs = 5;
-                tr->tr_time.tv_micro = 0;
-                DoIO((struct IORequest *)tr);
-            } else {
-                Delay(500);
-            }
-            
+            Delay(500);
+
             /* retry to mount stuff -- there might be some additional device in the meanwhile */
             ForeachNode(&ExpansionBase->MountList, bootNode)
             {
@@ -395,14 +354,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
         }
     }
 
-    if (mp)
-        DeleteMsgPort(mp);
-
-    if (tr)
-    {
-        CloseDevice((struct IORequest *)tr);
-        DeleteIORequest((struct IORequest *)tr);
-    }
+    if (bootScreen)
+	CloseBootScreen(bootScreen, LIBBASE);
 
     if (LIBBASE->db_BootDevice != NULL)
     {
@@ -481,6 +434,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
             Attempt to mount filesystems marked for retry. If it fails again,
             remove the BootNode from the list.
         */
+	D(bug("[DOSBoot] Assigns done, retrying mounting handlers\n"));
         ForeachNodeSafe(&ExpansionBase->MountList, bootNode, tmpNode)
         {
             if (bootNode->bn_Flags & BNF_RETRY)
@@ -497,12 +451,15 @@ AROS_UFH3(void, __dosboot_BootProcess,
         ExpansionBase->Flags |= EBF_BOOTFINISHED;
 
         /* We don't need expansion.library any more */
+	D(bug("[DOSBoot] Closing expansion.library\n"));
         CloseLibrary( (struct Library *) ExpansionBase );
 
         /* Initialize HIDDs */
+	D(bug("[DOSBoot] Loading display drivers\n"));
         __dosboot_InitHidds(DOSBase);
 
         /* We now call the system dependant boot - should NEVER return! */
+	D(bug("[DOSBoot] Calling bootstrap code\n"));
         __dosboot_Boot(BootLoaderBase, DOSBase, LIBBASE->BootFlags);
     }
 
@@ -532,7 +489,6 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[DOSBoot] dosboot_Init: Launching Boot Process control task ..\n"));
 
     LIBBASE->db_BootDevice = NULL;
-    LIBBASE->db_attemptingboot = FALSE;
     LIBBASE->BootFlags = 0;
 
     bootmenu_Init(LIBBASE);

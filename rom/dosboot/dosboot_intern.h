@@ -29,7 +29,6 @@ struct DOSBootBase
 {
     struct Node           db_Node;		/* Node for linking into the list */
     char                 *db_BootDevice;	/* Device to boot up from	  */
-    BOOL                  db_attemptingboot;	/* Reserved for animation	  */
 
     struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
     struct IntuitionBase *bm_IntuitionBase;
@@ -48,10 +47,12 @@ void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
 BOOL __dosboot_InitHidds(struct DosLibrary *dosBase);
 void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags);
 
+struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase);
+void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase);
+
 #undef GfxBase
 #define GfxBase DOSBootBase->bm_GfxBase
 #undef IntuitionBase
 #define IntuitionBase DOSBootBase->bm_IntuitionBase
 
 #endif /* DOSBOOT_INTERN_H */
-

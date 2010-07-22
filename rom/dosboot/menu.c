@@ -170,34 +170,24 @@ static void msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
         ReplyMsg(&msg->ExecMessage);
 }
 
-static struct TagItem screen_tags[] =
-{
-    {SA_Draggable, FALSE},
-    {TAG_DONE	 , 0    }
-};
-
-struct ExtNewScreen ns =
-{
-    0, 0, 640, 256, 4, /* left, top, width, height, depth */
-    0, 1,              /* DetailPen, BlockPen */
-    HIRES,             /* ViewModes */
-    CUSTOMSCREEN|NS_EXTENDED, /* Type */
-    NULL,              /* Font */
-    NULL,              /* DefaultTitle */
-    NULL,              /* Gadgets */
-    NULL,              /* CustomBitMap */
-    screen_tags
-};
-
 static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
 {
     struct Gadget *first = NULL;
     BOOL res = FALSE;
+    ULONG mode;
 
     D(bug("[BootMenu] initScreen()\n"));
 
-    if ((DOSBootBase->bm_Screen = OpenScreen(&ns)) != NULL)
-    {
+    /* We want the screen to occupy the whole display, so we find best maching
+       mode ID and then open a screen with that mode */
+    mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 480,
+				    BIDTAG_Depth, 4, TAG_DONE);
+    if (mode == INVALID_ID)
+	return NULL;
+
+    DOSBootBase->bm_Screen = OpenScreenTags(NULL, NULL, SA_DisplayID, mode, SA_Draggable, FALSE, 
+					    SA_ShowTitle, FALSE, TAG_DONE);
+    if (DOSBootBase->bm_Screen) {
         D(bug("[BootMenu] initScreen: Screen opened @ %p\n", DOSBootBase->bm_Screen));
         if ((first = createGadgets(DOSBootBase)) != NULL)
         {
