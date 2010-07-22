@@ -4,6 +4,7 @@
     $Id$
 */
 
+#include <intuition/pointerclass.h>
 #include <proto/graphics.h>
 #include "intuition_intern.h"
 #include "inputhandler.h"
@@ -150,6 +151,10 @@
 
             if (!failure)
             {
+#ifndef __MORPHOS__
+		Object *obj;
+#endif
+
                 DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView ViewLord 0x%lx\n",&IntuitionBase->ViewLord));
                 LoadView(&IntuitionBase->ViewLord);
 
@@ -178,6 +183,18 @@
                     IntuitionBase->FirstScreen->MouseX = xpos;
                     IntuitionBase->FirstScreen->MouseY = ypos;
                 }
+#else
+		/* Ensure that empty displays get normal pointer */
+		obj = GetPrivIBase(IntuitionBase)->DefaultPointer;
+
+		if (obj) {
+		    struct SharedPointer *pointer;
+
+		    GetAttr(POINTERA_SharedPointer, obj, (IPTR *)&pointer);
+		    ChangeExtSprite(NULL, pointer->sprite, pointer->sprite,
+				    POINTERA_XOffset, pointer->xoffset, POINTERA_YOffset, pointer->yoffset,
+				    TAG_DONE);
+		}
 #endif
             }
         }

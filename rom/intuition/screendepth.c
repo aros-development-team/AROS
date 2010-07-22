@@ -114,9 +114,6 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
     ULONG            ilock = LockIBase(0); /* before access to FirstScreen */
     struct Screen   *family = NULL,
                     *current = IntuitionBase->FirstScreen,
-#ifndef __MORPHOS__
-                    *oldfront = current,
-#endif
                     *previous = NULL,
                     *prefamily = NULL;
     struct Window   *win;
@@ -214,7 +211,9 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                 } /* ! SDEPTH_INFAMILY */
 
             } /* if (previous) */
-
+	    /* The screen has been made frontmost, activate its monitor */
+	    ActivateMonitor(GetPrivScreen(IntuitionBase->FirstScreen)->MonitorObject, IntuitionBase);
+	    IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
         } /* if SDEPTH_TO_FRONT */
 
         else if ( flags & SDEPTH_TOBACK )
@@ -352,10 +351,11 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
             } /* ! SDEPTH_INFAMILY */
 
         } /* if SDEPTH_TO_BACK */
-
+	/* We have just brought the screen to back. We want to stay on the current monitor,
+	   so we activate the frontmost screen on THIS monitor */
+	IntuitionBase->ActiveScreen = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
     } /* if (current) */
 
-    IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
     RethinkDisplay();
 
     win = NULL;

@@ -75,9 +75,13 @@ void notify_mousemove_screensandwindows(WORD x,
     IntuitionBase->MouseX = x;
     IntuitionBase->MouseY = y;
 
-    while (NULL != scr)
+    for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen)
     {
-        struct Window * win = scr->FirstWindow;
+        struct Window *win;
+
+	/* Ignore screens which are not on our current monitor */
+	if (GetPrivScreen(scr)->MonitorObject != GetPrivIBase(IntuitionBase)->ActiveMonitor)
+	    continue;
 
         scr->MouseX = x - scr->LeftEdge;
         scr->MouseY = y - scr->TopEdge;
@@ -85,6 +89,7 @@ void notify_mousemove_screensandwindows(WORD x,
         /*
         ** Visit all windows of this screen
         */
+	win = scr->FirstWindow;
 
         while (NULL != win)
         {
@@ -92,8 +97,6 @@ void notify_mousemove_screensandwindows(WORD x,
 
             win = win -> NextWindow;
         }
-
-        scr = scr->NextScreen;
     }
 
     UnlockIBase(lock);
@@ -555,6 +558,8 @@ void SetGPIMouseCoords(struct gpInput *gpi, struct Gadget *gad)
 void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
                            struct IntuitionBase *IntuitionBase)
 {
+    struct Screen *scr;
+
     switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
     {
     case GTYP_CLOSE:
@@ -594,7 +599,8 @@ void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
         break;
 
     case GTYP_SDEPTH:
-        if (gi->gi_Screen == IntuitionBase->FirstScreen)
+	scr = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
+        if (gi->gi_Screen == scr)
         {
             ScreenToBack(gi->gi_Screen);
         }
@@ -1417,6 +1423,11 @@ struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase)
     struct Screen *scr;
     
     for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen) {
+	/* We check only screens which are on this monitor */
+	if (GetPrivScreen(scr)->MonitorObject != GetPrivIBase(IntuitionBase)->ActiveMonitor)
+	    continue;
+
+	/* If the mouse is inside screen's bitmap, we found it */
         if ((scr->MouseX >= 0) && (scr->MouseY >= 0) &&
 	   ((scr->MouseX < scr->Width) && scr->MouseY < scr->Height))
 	       break;

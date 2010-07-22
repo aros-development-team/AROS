@@ -13,35 +13,69 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+
 #include "intuition_intern.h"
+#include "monitorclass_private.h"
 
-void MySetPointerPos(struct IntuitionBase *IntuitionBase)
+/* This function does not use MoveSprite() any more because it
+   wants to work on empty displays too. Additionally it uses
+   physical display coordinates instead of logical screen ones */
+void MySetPointerPos(struct IntuitionBase *IntuitionBase, WORD x, WORD y)
 {
+    Object *mon = GetPrivIBase(IntuitionBase)->ActiveMonitor;
     struct IntScreen *scr = GetPrivScreen(IntuitionBase->ActiveScreen);
+    struct SharedPointer *pointer = NULL;
 
-    if (scr && scr->Pointer)
-    {
-        D(bug("MoveSprite Viewport 0x%lx %ld %ld\n",&scr->Screen.ViewPort,x + scr->Pointer->xoffset - scr->Screen.LeftEdge,y + scr->Pointer->yoffset - scr->Screen.TopEdge));
-        D(bug("MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
-                scr->Pointer->sprite->es_SimpleSprite.posctldata,
-                scr->Pointer->sprite->es_SimpleSprite.height,
-                scr->Pointer->sprite->es_SimpleSprite.x,
-                scr->Pointer->sprite->es_SimpleSprite.y,
-                scr->Pointer->sprite->es_SimpleSprite.num,
-                scr->Pointer->sprite->es_wordwidth,
-                scr->Pointer->sprite->es_flags));
-        MoveSprite(&scr->Screen.ViewPort, &scr->Pointer->sprite->es_SimpleSprite,
-                   scr->Screen.MouseX + scr->Pointer->xoffset,
-                   scr->Screen.MouseY + scr->Pointer->yoffset);
-        D(bug("MoveSprite data 0x%lx, height %ld, x %ld, y %ld, num %ld, wordwidth, 0x%lx, flags 0x%lx\n",
-                scr->Pointer->sprite->es_SimpleSprite.posctldata,
-                scr->Pointer->sprite->es_SimpleSprite.height,
-                scr->Pointer->sprite->es_SimpleSprite.x,
-                scr->Pointer->sprite->es_SimpleSprite.y,
-                scr->Pointer->sprite->es_SimpleSprite.num,
-                scr->Pointer->sprite->es_wordwidth,
-                scr->Pointer->sprite->es_flags));
+    if (scr)
+	pointer = scr->Pointer;
+    else {
+        Object *obj = GetPrivIBase(IntuitionBase)->DefaultPointer;
+
+	if (obj)
+	    GetAttr(POINTERA_SharedPointer, obj, (IPTR *)&pointer);
     }
+    if (pointer) {
+	DB2(bug("Move pointer to (%d, %d), monitor 0x%p\n", x, y, mon));
+	/* Take hotspot into account */
+	x += pointer->xoffset;
+        y += pointer->yoffset;
+	/* Update sprite position, just for backwards compatibility */
+	pointer->sprite->es_SimpleSprite.x = x;
+	pointer->sprite->es_SimpleSprite.y = y;
+    }
+
+    if (mon)
+	DoMethod(mon, MM_SetPointerPos, x, y);
+}
+
+void ActivateMonitor(Object *newmonitor, struct IntuitionBase *IntuitionBase)
+{
+    Object *oldmonitor = GetPrivIBase(IntuitionBase)->ActiveMonitor;
+
+    D(bug("ActivateMonitor(0x%p), old monitor 0x%p\n", newmonitor, oldmonitor));
+    /* Do not bother if switching to the same monitor */
+    if (newmonitor == oldmonitor)
+	return;
+
+    if (oldmonitor)
+	SetAttrs(oldmonitor, MA_PointerVisible, FALSE, TAG_DONE);
+
+    GetPrivIBase(IntuitionBase)->ActiveMonitor = newmonitor;
+    if (newmonitor) {
+	SetAttrs(newmonitor, MA_PointerVisible, TRUE, TAG_DONE);
+	/* TODO: Set pointer position */
+    }
+}
+
+struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase)
+{
+    struct Screen *scr;
+
+    for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen) {
+	if (GetPrivScreen(scr)->MonitorObject == monitor)
+	    break;
+    }
+    return scr;
 }
 
 #ifdef __MORPHOS__

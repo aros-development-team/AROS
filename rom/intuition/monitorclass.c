@@ -39,15 +39,13 @@
 	In AROS display drivers have associated BOOPSI objects of MONITORCLASS class.
 	This class provides information about relative physical placement of monitors
 	in user's workspace as well as some additional properties.
-	
+
 	MONITORCLASS is a pseudo name. This class is in fact private to the system and
 	does not have a public ID. The user can't create objects of this class manually.
 
-	This class is fully compatible with MorphOS starting from v2.
+	This class is fully compatible with MorphOS starting from v2.6.
 
 *****************************************************************************************/
-
-/***********************************************************************************/
 
 Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionBase)
 {
@@ -66,6 +64,17 @@ Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionB
 #define HiddAttrBase	   (GetPrivIBase(IntuitionBase)->HiddAttrBase)
 #define HiddGfxAttrBase    (GetPrivIBase(IntuitionBase)->HiddGfxAttrBase)
 #define HiddPixFmtAttrBase (GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase)
+
+/***********************************************************************************/
+
+static void ActivationHandler(Object *mon, OOP_Object *bitmap)
+{
+    Class *cl = OCLASS(mon);
+
+    /* Experimental: NewMonitor will be picked up by input handler
+       when the next event arrives, so no signals etc */
+    GetPrivIBase(IntuitionBase)->NewMonitor = mon;
+}
 
 /***********************************************************************************/
 
@@ -101,6 +110,14 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     HIDDT_ModeID mode = vHidd_ModeID_Invalid;
     struct MonitorData *data;
     OOP_Object *sync, *pixfmt;
+    /* Tags order is important because CallBackData needs to be set before
+       function pointer. Otherwise the function can be called with a wrong
+       pointer. */
+    struct TagItem tags[] = {
+	{aHidd_Gfx_ActiveCallBackData, 0                      },
+	{aHidd_Gfx_ActiveCallBack    , (IPTR)ActivationHandler},
+	{TAG_DONE                    , 0                      }
+    };
 
     D(kprintf("[monitorclass] OM_NEW\n"));
 
@@ -115,10 +132,12 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     data->driver = driver;
 
+    /* We can't list driver's pixelformats, we can list only modes. This does not harm however,
+       just some pixelformats will be processed more than once */
     while ((mode = HIDD_Gfx_NextModeID(driver, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid) {
 	IPTR stdpf;
 	BYTE cgxpf;
-	
+
 	OOP_GetAttr(pixfmt, aHidd_PixFmt_StdPixFmt, &stdpf);
 	cgxpf = pixelformats[stdpf];
 	D(bug("[monitorclass] Mode 0x%08lX, StdPixFmt %lu, CGX pixfmt %d\n", mode, stdpf, cgxpf));
@@ -129,8 +148,11 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	}
     }
 
+    tags[0].ti_Data = (IPTR)o;
+    OOP_SetAttrs(driver, tags);
+
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
-    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->MonitorList, (struct Node *)o);
+    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->MonitorList, (struct Node *)data);
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
 
     return o;
@@ -825,11 +847,27 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 /***********************************************************************************/
 
 IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
-{   
+{
+    struct MonitorData *data = INST_DATA(cl, o);
+    struct TagItem tags[] = {
+	{aHidd_Gfx_ActiveCallBack, 0},
+	{TAG_DONE                , 0}
+    };
+
     D(kprintf("MonitorClass: OM_DISPOSE\n"));
 
+    /* Disable activation callback */
+    OOP_SetAttrs(data->driver, tags);
+
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
-    Remove((struct Node *)o);
+    Remove((struct Node *)data);
+
+    /* TODO: fix up spatial links */
+
+    /* If an active monitor is being removed, we should activate another one */
+    if (GetPrivIBase(IntuitionBase)->ActiveMonitor == o)
+	ActivateMonitor((Object *)GetHead(&GetPrivIBase(IntuitionBase)->MonitorList), IntuitionBase);
+
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
 
     return DoSuperMethodA(cl, o, msg);

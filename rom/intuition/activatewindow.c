@@ -215,10 +215,6 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                         window->XOffset = shared_pointer->xoffset;
                         window->YOffset = shared_pointer->yoffset;
                     }
-
-                    //jDc: fix some weird refresh pbs
-/*		    Seems to be not needed on AROS, disabled - Sonic
-                    MySetPointerPos(IntuitionBase); */
                 }
                 else
                 {

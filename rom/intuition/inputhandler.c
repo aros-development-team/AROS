@@ -1347,8 +1347,9 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	}
 
 	/* Calculate current display size.
-	   At the moment it's determined by the first screen */
-	scr = IntuitionBase->FirstScreen;
+	   It's determined by the first screen on this monitor.
+	   TODO: perhaps we should just ask display driver about its current display mode? */
+	scr = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
 	if (scr)
 	{
 	    DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
@@ -1440,7 +1441,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
 	/* Autoscroll the active screen */
 	scr = IntuitionBase->ActiveScreen;
-	if (scr && (scr->Flags & AUTOSCROLL))
+	if (scr && (scr->Flags & AUTOSCROLL) &&
+	   (GetPrivScreen(scr)->MonitorObject == GetPrivIBase(IntuitionBase)->ActiveMonitor))
 	{
 	    WORD xval = scr->LeftEdge;
 	    WORD yval = scr->TopEdge;
@@ -1523,7 +1525,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	iihdata->LastMouseY = ie->ie_Y;
 	notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
 #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-	MySetPointerPos(IntuitionBase);
+	MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
 #else
 	*call_setpointerpos = TRUE;
 #endif
@@ -1838,6 +1840,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
         struct Window   *old_w;
         BOOL        	 keep_event = TRUE;
         BOOL        	 new_active_window = FALSE;
+	Object *newmonitor = GetPrivIBase(IntuitionBase)->NewMonitor;
+
+	/* Process hosted display activation event (if any).
+	   This is experimental. If this works badly, we'll possibly have to put it into
+	   input events queue */
+	if (newmonitor) {
+	    GetPrivIBase(IntuitionBase)->NewMonitor = NULL;
+	    ActivateMonitor(newmonitor, IntuitionBase);
+	}
 
         /* new event, we need to reset this */
         screen = FindActiveScreen(IntuitionBase);
@@ -2029,9 +2040,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             case IESUBCLASS_PIXEL:
                 {
                     struct IEPointerPixel *pp = ie->ie_EventAddress;
-		    
+
                     ie->ie_X = pp->iepp_Position.X + pp->iepp_Screen->LeftEdge;
                     ie->ie_Y = pp->iepp_Position.Y + pp->iepp_Screen->TopEdge;
+
+		    ActivateMonitor(GetPrivScreen(pp->iepp_Screen)->MonitorObject, IntuitionBase);
                 }
                 ie->ie_Code = IECODE_NOBUTTON;
                 break;
@@ -2862,7 +2875,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
     if (call_setpointerpos)
-    	MySetPointerPos(IntuitionBase);
+    	MySetPointerPos(IntuitionBase, iihdata->LastMouseX, iihdata->LastMouseY);
 #endif
 
     /* Terminate the event chain. */
