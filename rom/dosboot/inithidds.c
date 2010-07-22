@@ -29,6 +29,12 @@
    However, additionally we support priority-based sorting for display drivers.
    This is needed in order to make monitor ID assignment more predictable */
 
+struct MonitorNode
+{
+    struct Node n;
+    char        Name[1];
+};
+
 static BYTE checkIcon(STRPTR name, struct Library *IconBase)
 {
     LONG pri = 0;
@@ -61,29 +67,35 @@ static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, 
     LONG error;
     struct AnchorPath *ap = AllocPooled(poolmem, sizeof(struct AnchorPath));
 
+    DB2(bug("[DOSBoot] AnchorPath 0x%p\n", ap));
     if (ap)
     {
+        /* Initialize important fields in AnchorPath, especially
+	   ap_Strlen (prevents memory trashing) */
+        ap->ap_Flags     = 0;
+	ap->ap_Strlen    = 0;
+	ap->ap_BreakBits = 0;
+
 	error = MatchFirst("~(#?.info)", ap);
 	while (!error)
 	{
-	    struct Node *newnode = AllocPooled(poolmem, sizeof (struct Node));
+	    struct MonitorNode *newnode;
 
+	    DB2(bug("[DOSBoot] Found monitor name %s\n", ap->ap_Info.fib_FileName));
+
+	    newnode = AllocPooled(poolmem, sizeof(struct MonitorNode) + strlen(ap->ap_Info.fib_FileName));
+	    DB2(bug("[DOSBoot] Monitor node 0x%p\n", newnode));
 	    if (newnode == NULL) {
 		retvalue = FALSE;
 		goto exit;
 	    }
-	    newnode->ln_Name = AllocPooled(poolmem, strlen(ap->ap_Info.fib_FileName) + 1);
-	    if (newnode->ln_Name == NULL) {
-		retvalue = FALSE;
-		goto exit;
-	    }
 
-	    strcpy(newnode->ln_Name, ap->ap_Info.fib_FileName);
+	    strcpy(newnode->Name, ap->ap_Info.fib_FileName);
 	    if (IconBase)
-	        newnode->ln_Pri = checkIcon(ap->ap_Info.fib_FileName, IconBase);
+	        newnode->n.ln_Pri = checkIcon(ap->ap_Info.fib_FileName, IconBase);
 	    else
-	        newnode->ln_Pri = 0;
-	    Enqueue(monitorsList, newnode);
+	        newnode->n.ln_Pri = 0;
+	    Enqueue(monitorsList, &newnode->n);
 
 	    error = MatchNext(ap);
 	}
@@ -102,21 +114,21 @@ exit:
 
 static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase)
 {
-    struct Node *node;
+    struct MonitorNode *node;
 
     D(bug("[DOSBoot] Loading monitor drivers...\n"));
     D(bug(" Pri Name\n"));
 
     ForeachNode(monitorsList, node)
     {
-	D(bug("%4d %s\n", node->ln_Pri, node->ln_Name));
-	Execute(node->ln_Name, NULL, NULL);
+	D(bug("%4d %s\n", node->n.ln_Pri, node->Name));
+	Execute(node->Name, NULL, NULL);
     }
 
     D(bug("--------------------------\n"));
 }
 
-BOOL __dosboot_InitHidds(struct DosLibrary *dosBase)
+BOOL __dosboot_InitHidds(struct DosLibrary *DOSBase)
 {
     APTR pool;
     struct Library *IconBase;
@@ -128,15 +140,16 @@ BOOL __dosboot_InitHidds(struct DosLibrary *dosBase)
     if (dir) {
         olddir = CurrentDir(dir);
 
-        pool = CreatePool(MEMF_ANY, sizeof(struct Node) * 10, sizeof(struct Node) * 5);
+        pool = CreatePool(MEMF_ANY, sizeof(struct MonitorNode) * 10, sizeof(struct MonitorNode) * 5);
+	DB2(bug("[DOSBoot] Created pool 0x%p\n", pool));
         if (pool) {
 	    struct List MonitorsList;
 
 	    NewList(&MonitorsList);
 	    IconBase = OpenLibrary("icon.library", 0);
 
-            findMonitors(&MonitorsList, dosBase, IconBase, pool);
-            loadMonitors(&MonitorsList, dosBase);
+            findMonitors(&MonitorsList, DOSBase, IconBase, pool);
+            loadMonitors(&MonitorsList, DOSBase);
 
 	    if (IconBase)
 		CloseLibrary(IconBase);
