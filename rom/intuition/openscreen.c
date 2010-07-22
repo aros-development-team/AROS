@@ -649,7 +649,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #ifdef __MORPHOS__
         screen->Monitor = monitor.Mspc;
 #else
-	screen->SpecialFlags = DoMethod((Object *)dimensions.reserved[0], MM_GetCompositionFlags, modeid) << 8;
+	screen->MonitorObject = (Object *)dimensions.reserved[0];
+	screen->SpecialFlags = DoMethod(screen->MonitorObject, MM_GetCompositionFlags, modeid) << 8;
 #endif
         success = TRUE;
 
@@ -1836,6 +1837,11 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
     }
 
     lock = LockIBase((ULONG)NULL);
+
+    /* If it's the first screen being opened, activate its monitor */
+    if (!IntuitionBase->FirstScreen)
+	ActivateMonitor(screen->MonitorObject, IntuitionBase);
+
     if (ns->Type & SCREENBEHIND)
     {
         struct Screen **ptr = &IntuitionBase->FirstScreen;

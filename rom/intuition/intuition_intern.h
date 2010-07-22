@@ -585,7 +585,10 @@ struct IntIntuitionBase
 
     /* Menu Look Settings */
     int                          FrameSize;
-    
+
+    Object			*ActiveMonitor;
+    Object			*NewMonitor;
+
     OOP_AttrBase		 HiddAttrBase;
     OOP_AttrBase		 HiddGfxAttrBase;
     OOP_AttrBase		 HiddPixFmtAttrBase;
@@ -653,6 +656,7 @@ struct IntScreen
     ULONG                    ModeID;
     struct MonitorSpec      *Monitor;
 #endif
+    Object		    *MonitorObject;
     struct SharedPointer    *Pointer;
     struct Window           *MenuVerifyActiveWindow;
     int                      MenuVerifyTimeOut;
@@ -1014,7 +1018,9 @@ void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *Intuit
 void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase);
 
 /* misc.c */
-extern void MySetPointerPos(struct IntuitionBase *);
+extern void MySetPointerPos(struct IntuitionBase *, WORD, WORD);
+extern void ActivateMonitor(Object *newmonitor, struct IntuitionBase *IntuitionBase);
+extern struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
 struct TextFont *SafeReopenFont(struct IntuitionBase *, struct TextFont **);
 extern Object *MakePointerFromPrefs(struct IntuitionBase *, struct Preferences *);
 extern Object *MakePointerFromData(struct IntuitionBase *, UWORD *, int, int, int, int);
