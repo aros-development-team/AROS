@@ -209,10 +209,7 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         );
     }
 
-    LIBBASE->use_fullscreen = CFG_WANT_FULLSCREEN ? TRUE : FALSE;
-
     modes = S(SDL_ListModes, NULL, surftype | LIBBASE->use_fullscreen ? SDL_FULLSCREEN : 0);
-
     D(bug("[sdl] available modes:"));
     if (modes == NULL) {
         D(bug(" none\n"));

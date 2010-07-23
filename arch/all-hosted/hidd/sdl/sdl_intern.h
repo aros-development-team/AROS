@@ -109,10 +109,6 @@ struct sdlhidd
 
 #define LIBBASETYPEPTR struct sdlhidd *
 
-/* these should be handled by some sort of configuration
- * and/or commandline switches */
-#define CFG_WANT_FULLSCREEN (0)
-
 /* Class descriptors */
 extern struct OOP_InterfaceDescr SDLGfx_ifdescr[];
 extern struct OOP_InterfaceDescr SDLBitMap_ifdescr[];
