@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -27,8 +27,8 @@
          struct IntuitionBase *, IntuitionBase, 161, Intuition)
 
 /*  FUNCTION
-    Add Notifications to Intuition. You will be notified when
-    the screen changes.
+	Add Notifications to Intuition. You will be notified when
+	the screen changes.
  
     INPUTS
 	tags - see below
@@ -46,16 +46,17 @@
 	SNA_Notify (ULONG)            - SNOTIFY_ flags, see intuition/intuition.h
 
     RESULT
-    The value is private, only a test against ZERO is allowed and means Failure
+	The value is private, only a test against ZERO is allowed and means Failure
  
     NOTES
+	This function is compatible with AmigaOS v4.
  
     EXAMPLE
  
     BUGS
  
     SEE ALSO
-    EndScreenNotify() 
+	EndScreenNotify() 
 
     INTERNALS
  

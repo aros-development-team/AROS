@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -27,22 +27,23 @@
          struct IntuitionBase *, IntuitionBase, 162, Intuition)
 
 /*  FUNCTION
-    Remove a Screen Notifications from Intuition.
+	Remove a Screen Notifications from Intuition.
  
     INPUTS
-    notify - notification returned from StartScreenNotifyTagList() 
+	notify - notification returned from StartScreenNotifyTagList() 
  
     RESULT
-    BOOL - if false Notification is in use and cannot be removed, try later
+	BOOL - if false Notification is in use and cannot be removed, try later
  
     NOTES
+	This function is compatible with AmigaOS v4.
  
     EXAMPLE
  
     BUGS
  
     SEE ALSO
-    StartScreenNotifyTagList() 
+	StartScreenNotifyTagList() 
     
     INTERNALS
  

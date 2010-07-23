@@ -7,8 +7,10 @@
 
 #include <intuition/extensions.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "intuition_intern.h"
+#include "monitorclass_private.h"
 
 /*****************************************************************************
 
@@ -41,11 +43,11 @@
 	FreeMonitorList()
 
     NOTES
+	This function is compatible with MorphOS v2.
 
     EXAMPLE
 
     BUGS
-	Tags are currently ignored
 
     SEE ALSO
 	FreeMonitorList() 
@@ -61,18 +63,23 @@
     struct MinNode *n;
     Object **res;
     ULONG num = 1;
+    ULONG id = GetTagData(GMLA_DisplayID, INVALID_ID, tags);
 
     ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
 
-    for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ)
-	num++;
+    for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ) {
+	if ((id == INVALID_ID) || DoMethod((Object *)n, MM_CheckID, id))
+	    num++;
+    }
 
     res = AllocVec(num * sizeof(Object *), MEMF_ANY);
 
     if (res) {
 	num = 0;
-        for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ)
-	    res[num++] = (Object *)n;
+        for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ) {
+	    if ((id == INVALID_ID) || DoMethod((Object *)n, MM_CheckID, id))
+		res[num++] = (Object *)n;
+	}
 	res[num] = NULL;
     }
 

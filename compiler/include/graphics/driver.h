@@ -24,4 +24,13 @@
 #define DD_NO_MEM    1	/* Out of memory */
 #define DD_ID_EXISTS 2	/* Specified MonitorID is already allocated */
 
+/* This structure is subject to change! Private! */
+struct MonitorHandle
+{
+    struct MonitorHandle *next;
+    ULONG		  id;
+    ULONG		  mask;
+    APTR		  gfxhidd;
+};
+
 #endif

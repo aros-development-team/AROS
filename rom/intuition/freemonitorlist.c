@@ -34,6 +34,7 @@
 	None.
  
     NOTES
+	This function is compatible with MorphOS v2.
  
     EXAMPLE
  

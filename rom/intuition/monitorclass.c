@@ -9,6 +9,7 @@
 #include <cybergraphx/cybergraphics.h>
 #include <hidd/graphics.h>
 #include <hidd/hidd.h>
+#include <graphics/driver.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/classes.h>
@@ -50,7 +51,7 @@
 Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionBase)
 {
     if (add)
-	return NewObject(GetPrivIBase(IntuitionBase)->monitorclass, NULL, MA_DriverObject, obj, TAG_DONE);
+	return NewObject(GetPrivIBase(IntuitionBase)->monitorclass, NULL, MA_MonitorHandle, obj, TAG_DONE);
     else {
 	DisposeObject(obj);
 	return NULL;
@@ -106,7 +107,7 @@ static BYTE pixelformats[] = {
 
 Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
-    OOP_Object *driver = (OOP_Object *)GetTagData(MA_DriverObject, 0, msg->ops_AttrList);
+    struct MonitorHandle *handle = (struct MonitorHandle *)GetTagData(MA_MonitorHandle, 0, msg->ops_AttrList);
     HIDDT_ModeID mode = vHidd_ModeID_Invalid;
     struct MonitorData *data;
     OOP_Object *sync, *pixfmt;
@@ -121,7 +122,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     D(kprintf("[monitorclass] OM_NEW\n"));
 
-    if (!driver)
+    if (!handle)
 	return NULL;
 
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
@@ -130,11 +131,11 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     data = INST_DATA(cl, o);
 
-    data->driver = driver;
+    data->handle = handle;
 
     /* We can't list driver's pixelformats, we can list only modes. This does not harm however,
        just some pixelformats will be processed more than once */
-    while ((mode = HIDD_Gfx_NextModeID(driver, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid) {
+    while ((mode = HIDD_Gfx_NextModeID(handle->gfxhidd, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid) {
 	IPTR stdpf;
 	BYTE cgxpf;
 
@@ -149,7 +150,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     }
 
     tags[0].ti_Data = (IPTR)o;
-    OOP_SetAttrs(driver, tags);
+    OOP_SetAttrs(handle->gfxhidd, tags);
 
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
     AddTail((struct List *)&GetPrivIBase(IntuitionBase)->MonitorList, (struct Node *)data);
@@ -765,23 +766,23 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
     case MA_MonitorName:
-	OOP_GetAttr(data->driver, aHidd_Name, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_Name, msg->opg_Storage);
 	break;
 
     case MA_Manufacturer:
-	OOP_GetAttr(data->driver, aHidd_ProducerName, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_ProducerName, msg->opg_Storage);
 	break;
 
     case MA_ManufacturerID:
-	OOP_GetAttr(data->driver, aHidd_Producer, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_Producer, msg->opg_Storage);
 	break;
 
     case MA_ProductID:
-	OOP_GetAttr(data->driver, aHidd_Product, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_Product, msg->opg_Storage);
 	break;
 
     case MA_MemorySize:
-	OOP_GetAttr(data->driver, aHidd_Gfx_MemorySize, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_MemorySize, msg->opg_Storage);
 	break;
 
     case MA_PixelFormats:
@@ -821,23 +822,23 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	break;
 
     case MA_GammaControl:
-	*msg->opg_Storage = HIDD_Gfx_GetGamma(data->driver, NULL, NULL, NULL);
+	*msg->opg_Storage = HIDD_Gfx_GetGamma(data->handle->gfxhidd, NULL, NULL, NULL);
 	break;
 
     case MA_PointerType:
-	OOP_GetAttr(data->driver, aHidd_Gfx_HWSpriteTypes, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_HWSpriteTypes, msg->opg_Storage);
 	break;
 
     case MA_DriverName:
-	OOP_GetAttr(data->driver, aHidd_Gfx_DriverName, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_DriverName, msg->opg_Storage);
 	break;
 
     case MA_MemoryClock:
-	OOP_GetAttr(data->driver, aHidd_Gfx_MemoryClock, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_MemoryClock, msg->opg_Storage);
 	break;
 
     case MA_Windowed:
-	OOP_GetAttr(data->driver, aHidd_Gfx_IsWindowed, msg->opg_Storage);
+	OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_IsWindowed, msg->opg_Storage);
 	break;
 
     default:
@@ -890,7 +891,7 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 	    break;
 	
 	case MA_PointerVisible:
-	    HIDD_Gfx_SetCursorVisible(data->driver, tag->ti_Data);
+	    HIDD_Gfx_SetCursorVisible(data->handle->gfxhidd, tag->ti_Data);
 	    break;
 	}
     }
@@ -916,7 +917,7 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     D(kprintf("MonitorClass: OM_DISPOSE\n"));
 
     /* Disable activation callback */
-    OOP_SetAttrs(data->driver, tags);
+    OOP_SetAttrs(data->handle->gfxhidd, tags);
 
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
     Remove((struct Node *)data);
@@ -1007,7 +1008,7 @@ IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitM
 
 	Supplied storage will be filled with one of:
 	    MSQUERY3D_UNKNOWN  - Unsupported pixelformat or some internal error
-	    MSQUERY3D_NODRIVER - There is no 3D driver for the given pixelformat
+	    MSQUERY3D_NODRIVER - There is no 3D support for the given pixelformat
 	    MSQUERY3D_SWDRIVER - A software 3D support is available for the given
 				 pixelformat
 	    MSQUERY3D_HWDRIVER - A hardware 3D support is available for the given
@@ -1040,7 +1041,7 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
     OOP_Object *pf = data->pfobjects[msg->PixelFormat];
 
     if (pf) {
-	if (HIDD_Gfx_QueryHardware3D(data->driver, pf))
+	if (HIDD_Gfx_QueryHardware3D(data->handle->gfxhidd, pf))
 	    *msg->Store = MSQUERY3D_HWDRIVER;
 	else {
 	    IPTR depth;
@@ -1109,7 +1110,7 @@ IPTR MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGet
        to the driver.
        If we implement per-screen gamma correction, we'll need more sophisticated
        management here */
-    return HIDD_Gfx_GetGamma(data->driver, msg->Red, msg->Green, msg->Blue);
+    return HIDD_Gfx_GetGamma(data->handle->gfxhidd, msg->Red, msg->Green, msg->Blue);
 }
 
 /************************************************************************************
@@ -1216,7 +1217,7 @@ IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPoint
 {
     struct MonitorData *data = INST_DATA(cl, obj);
 
-    return HIDD_Gfx_GetMaxSpriteSize(data->driver, msg->PointerType, msg->Width, msg->Height);
+    return HIDD_Gfx_GetMaxSpriteSize(data->handle->gfxhidd, msg->PointerType, msg->Width, msg->Height);
 }
 
 /************************************************************************************
@@ -1310,7 +1311,7 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
 	{TAG_DONE	    , 0			     }    
     };
     
-    return OOP_SetAttrs(data->driver, tags);
+    return OOP_SetAttrs(data->handle->gfxhidd, tags);
 }
 
 /************************************************************************************
@@ -1357,7 +1358,7 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
 	{TAG_DONE	    , 0			    }    
     };
     
-    return OOP_SetAttrs(data->driver, tags);
+    return OOP_SetAttrs(data->handle->gfxhidd, tags);
 }
 
 /************************************************************************************
@@ -1413,7 +1414,7 @@ IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSet
        to the driver.
        If we implement per-screen gamma correction, we'll need more sophisticated
        management here */
-    return HIDD_Gfx_SetGamma(data->driver, msg->Red, msg->Green, msg->Blue);
+    return HIDD_Gfx_SetGamma(data->handle->gfxhidd, msg->Red, msg->Green, msg->Blue);
 }
 
 /************************************************************************************/
@@ -1423,7 +1424,8 @@ ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetC
     struct MonitorData *data = INST_DATA(cl, obj);
     struct HIDD_ModeProperties modeprops;
 
-    HIDD_Gfx_ModeProperties(data->driver, msg->ModeID, &modeprops, sizeof(modeprops));
+    HIDD_Gfx_ModeProperties(data->handle->gfxhidd, msg->ModeID & (!data->handle->mask),
+			    &modeprops, sizeof(modeprops));
     return modeprops.CompositionFlags;
 }
 
@@ -1433,5 +1435,14 @@ void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerP
 {
     struct MonitorData *data = INST_DATA(cl, obj);
 
-    HIDD_Gfx_SetCursorPos(data->driver, msg->x, msg->y);
+    HIDD_Gfx_SetCursorPos(data->handle->gfxhidd, msg->x, msg->y);
+}
+
+/************************************************************************************/
+
+BOOL MonitorClass__MM_CheckID(Class *cl, Object *obj, struct msGetCompositionFlags *msg)
+{
+    struct MonitorData *data = INST_DATA(cl, obj);
+    
+    return ((msg->ModeID & data->handle->mask) == data->handle->id);
 }

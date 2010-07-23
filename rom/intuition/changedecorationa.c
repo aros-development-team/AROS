@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -14,17 +14,18 @@
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 
-/*****************************************************************************
- 
-    NAME */
-#include <proto/intuition.h>
-
-struct RemoveDecoratorMsg {
+struct RemoveDecoratorMsg
+{
     struct IntuiActionMsg    msg;
     struct NewDecorator     *nd;
 };
 
 static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBase *IntuitionBase);
+
+/*****************************************************************************
+ 
+    NAME */
+#include <proto/intuition.h>
 
     AROS_LH2(void, ChangeDecoration,
 
@@ -36,18 +37,20 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
          struct IntuitionBase *, IntuitionBase, 153, Intuition)
 
 /*  FUNCTION
-    Setup a new decorator for intuition windows, screens or menus.
+	Setup a new decorator for intuition windows, screens or menus.
 
     INPUTS
-    ID - identifier for decorations, see screens.h
-    nd -  an ID dependent NewDecorator structure
+	ID - identifier for decorations, see screens.h
+	nd -  an ID dependent NewDecorator structure
 
     RESULT
-    void - this Function cannot fail, 
+	void - this Function cannot fail, 
 
     NOTES
-    The function fails if screens are open, use ChangeIntuition() to notify applications that
-    the UI will be changed.
+	The function fails if screens are open, use ChangeIntuition() to notify applications that
+	the UI will be changed.
+
+	This function is private and AROS-specific. Do not use it in regular applications.
 
     EXAMPLE
  
