@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -50,19 +50,21 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
         window back into the visible area of the screen but rather
         switches it into visible state.
  
- 
     INPUTS
-    window - The window to affect.
+	window - The window to affect.
  
     RESULT
+	None.
  
     NOTES
+	This function is compatible with AmigaOS v4.
  
     EXAMPLE
  
     BUGS
  
     SEE ALSO
+	HideWindow()
  
     INTERNALS
  

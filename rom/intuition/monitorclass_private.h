@@ -4,13 +4,14 @@
 
 #define MA_AROS_PRIVATE		(TAG_USER + 0x00020000)
 
-#define MA_DriverObject		(MA_AROS_PRIVATE + 1)   /* [I..] OOP_Object * Display driver object    */
-#define MA_PointerVisible	(MA_AROS_PRIVATE + 2)	/* [.S.] BOOL         Mouse pointer is visible */
+#define MA_MonitorHandle	(MA_AROS_PRIVATE + 1)   /* [I..] struct MonitorHandle * graphics.library monitor handle */
+#define MA_PointerVisible	(MA_AROS_PRIVATE + 2)	/* [.S.] BOOL                   Mouse pointer is visible        */
 
 /* Methods */
 
-#define MM_GetCompositionFlags 0x2401 /* Ask display composition flags */
-#define MM_SetPointerPos       0x2402 /* Set mouse pointer position    */
+#define MM_GetCompositionFlags 0x2401 /* Ask display composition flags			 */
+#define MM_SetPointerPos       0x2402 /* Set mouse pointer position			 */
+#define MM_CheckID	       0x2403 /* Check if the given mode ID matches this monitor */
 
 struct msGetCompositionFlags
 {

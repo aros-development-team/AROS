@@ -49,17 +49,20 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
         Make a window invisible.
  
     INPUTS
-    window - The window to affect.
+	window - The window to affect.
  
     RESULT
+	None.
  
     NOTES
+	This function is compatible with AmigaOS v4.
  
     EXAMPLE
  
     BUGS
  
     SEE ALSO
+	ShowWindow()
  
     INTERNALS
  

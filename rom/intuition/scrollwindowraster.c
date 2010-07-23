@@ -129,19 +129,60 @@ static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
     AROS_LIBFUNC_EXIT
 } /* ScrollWindowRaster */
 
-AROS_LH7(void, ScrollWindowRasterNoFill,
+/*****************************************************************************
 
-         /*  SYNOPSIS */
-         AROS_LHA(struct Window *, win , A1),
-         AROS_LHA(WORD           , dx  , D0),
-         AROS_LHA(WORD           , dy  , D1),
-         AROS_LHA(WORD           , xmin, D2),
-         AROS_LHA(WORD           , ymin, D3),
-         AROS_LHA(WORD           , xmax, D4),
-         AROS_LHA(WORD           , ymax, D5),
+    NAME */
+#include <proto/intuition.h>
 
-         /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 159, Intuition)
+    AROS_LH7(void, ScrollWindowRasterNoFill,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct Window *, win , A1),
+        AROS_LHA(WORD           , dx  , D0),
+        AROS_LHA(WORD           , dy  , D1),
+        AROS_LHA(WORD           , xmin, D2),
+        AROS_LHA(WORD           , ymin, D3),
+        AROS_LHA(WORD           , xmax, D4),
+        AROS_LHA(WORD           , ymax, D5),
+
+/*  LOCATION */
+        struct IntuitionBase *, IntuitionBase, 159, Intuition)
+
+/*  FUNCTION
+        Scrolls the content of the rectangle defined by (xmin,ymin)-
+        (xmax,ymax) by (dx,dy) towards (0,0). This function calls
+        ScrollRasterBF().
+        The advantage of this function over calling ScrollRasterBF() is
+        that the window will be informed about damages. A damage happens
+        if in a simple window parts from concelealed areas are scrolled
+        to visible areas. The visible areas will be blank as simple
+        windows store no data for concealed areas.
+        The blank parts that appear due to the scroll will be filled
+        with EraseRect() and are not considered damaged areas.
+
+    INPUTS
+        win       - pointer to window in which to scroll
+        dx,dy     - scroll by (dx,dy) towards (0,0)
+        xmin,ymin - upper left corner of the rectangle that will be
+                    affected by the scroll
+        xmax,ymax - lower rigfht corner of the rectangle that will be
+                    affected by the scroll
+
+    RESULT
+	None.
+
+    NOTES
+	This function is compatible with MorphOS.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
 
 {
     AROS_LIBFUNC_INIT

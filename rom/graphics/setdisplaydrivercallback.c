@@ -34,17 +34,17 @@
 	declaration should have a form:
 
 	APTR DriverNotify(APTR object, BOOL add, APTR userdata);
-	
+
 	The function will be called upon display driver insertion and removal.
 	Upon insertion the parameters will be the following:
-	  object   - A pointer to a HIDD display driver object
+	  object   - A pointer to a struct MonitorHandle for the new driver
 	  add      - TRUE, indicates driver insertion
 	  userdata - User data originally passed to SetDisplayDriverCallback()
-	The function should return a pointer to arbitraty data object which will
+	The function should return a pointer to opaque data object which will
 	be stored in the display driver handle structure.
 
 	Upon driver removal the parameters mean:
-	  object   - A pointer to additional object returned by the callback when
+	  object   - A pointer to opaque object returned by the callback when
 		     the driver was added.
 	  add	   - FALSE, indicates driver removal.
 	  userdata - User data originally passed to SetDisplayDriverCallback()
@@ -75,9 +75,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     CDD(GfxBase)->DriverNotify = callback;
     CDD(GfxBase)->notify_data  = userdata;
-    
+
     AROS_LIBFUNC_EXIT
 }

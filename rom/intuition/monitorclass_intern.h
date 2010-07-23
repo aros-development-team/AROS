@@ -1,12 +1,10 @@
-#include <oop/oop.h>
-
 struct MonitorData
 {
     struct MinNode node;
-    OOP_Object *driver;
+    struct MonitorHandle *handle;
     ULONG pixelformats[MONITOR_MAXPIXELFORMATS];
     OOP_Object *pfobjects[MONITOR_MAXPIXELFORMATS];
-    
+
     Object *topleft;
     Object *topmiddle;
     Object *topright;
