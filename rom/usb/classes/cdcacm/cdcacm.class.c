@@ -111,16 +111,68 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
     IPTR ifclass;
     IPTR subclass;
     IPTR proto;
-
+    IPTR NumEndpoints;
+    struct PsdConfig *pc;
+    struct PsdDevice *pd;
+	IPTR prodid;
+    IPTR vendid;
+    IPTR numintf;
+	struct PsdPipe *pp;
+	struct MsgPort *mp;
+	
     KPRINTF(1, ("nepSerialAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
+					
         psdGetAttrs(PGA_INTERFACE, pif,
                     IFA_Class, &ifclass,
                     IFA_SubClass, &subclass,
                     IFA_Protocol, &proto,
-                    TAG_DONE);
-        CloseLibrary(ps);
+					IFA_NumEndpoints, &NumEndpoints,
+                    IFA_Config, &pc,
+					TAG_DONE);	
+									
+		psdGetAttrs(PGA_CONFIG, pc,
+                    CA_Device, &pd,
+                    CA_NumInterfaces, &numintf,
+					TAG_END);
+					
+        psdGetAttrs(PGA_DEVICE, pd,
+                    DA_ProductID, &prodid,
+                    DA_VendorID, &vendid,
+                    TAG_END);						
+									
+		// huawei ModeSwitch 
+		
+		if(  (vendid ==0x12d1 ) && (prodid == 0x1001) ){
+			
+			if((mp = CreateMsgPort()))
+			{
+				if((pp = psdAllocPipe(pd, mp, NULL)))
+				{
+					psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+					 "Huawei ModeSwitch...");
+					psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE,
+							USR_SET_FEATURE, UFS_DEVICE_REMOTE_WAKEUP, 0);
+					psdDoPipe(pp, NULL, 0);	  
+					psdFreePipe(pp);
+				}
+				DeleteMsgPort(mp);
+			}		
+			
+			CloseLibrary(ps);
+						
+			if( (ifclass == 255) &&
+				(subclass == 255) &&
+				( NumEndpoints == 3 ) )
+			{
+				return(usbForceInterfaceBinding(nh, pif));
+			} 
+			return(NULL);
+		}
+		
+		CloseLibrary(ps);		
+				
         if((ifclass == CDCCTRL_CLASSCODE) &&
            (subclass == CDC_ACM_SUBCLASS) &&
            //(proto == CDC_PROTO_HAYES)
@@ -317,7 +369,7 @@ AROS_LH3(LONG, usbGetAttrsA,
         case UGA_CLASS:
              if((ti = FindTagItem(UCCA_Priority, tags)))
              {
-                 *((SIPTR *) ti->ti_Data) = 0;
+                 *((SIPTR *) ti->ti_Data) = 1;
                  count++;
              }
              if((ti = FindTagItem(UCCA_Description, tags)))
@@ -834,6 +886,25 @@ struct NepClassSerial * nAllocSerial(void)
                                              EA_TransferType, USEAF_BULK,
                                              TAG_END);
         } while(!(ncp->ncp_EPOut && ncp->ncp_EPIn));
+		
+		if(!ncp->ncp_DataIf)
+        {	
+			// Huawei ? (first interface) TODO: more general approach.
+			ncp->ncp_DataIf = psdFindInterface(ncp->ncp_Device, NULL, TAG_END);		   
+			if(ncp->ncp_DataIf)
+			{    
+				ncp->ncp_EPIn = psdFindEndpoint(ncp->ncp_DataIf, NULL,
+												EA_IsIn, TRUE,
+												EA_TransferType, USEAF_BULK,
+												TAG_END);
+				ncp->ncp_EPOut = psdFindEndpoint(ncp->ncp_DataIf, NULL,
+												EA_IsIn, FALSE,
+												EA_TransferType, USEAF_BULK,
+												TAG_END);
+				if( ! ( ncp->ncp_EPInt && ncp->ncp_EPIn && ncp->ncp_EPOut )	) ncp->ncp_DataIf = NULL;					 
+			}
+		}
+	
         if(!ncp->ncp_DataIf)
         {
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname, "Data interface with IN and OUT interface missing?!?");
