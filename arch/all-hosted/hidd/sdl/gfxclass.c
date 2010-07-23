@@ -44,7 +44,9 @@ static const SDL_Rect *default_modes[] = {
 OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
     const SDL_VideoInfo *info;
     const SDL_PixelFormat *pixfmt;
+#if DEBUG
     char driver[128] = "";
+#endif
     Uint32 surftype;
     SDL_Rect **modes;
     struct TagItem *pftags;
@@ -53,12 +55,12 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct TagItem **synctags, *modetags, *msgtags;
     struct pRoot_New supermsg;
 
+#if DEBUG
     S(SDL_VideoDriverName, driver, sizeof(driver));
+    kprintf("sdlgfx: using %s driver\n", driver);
+#endif
     info = S(SDL_GetVideoInfo);
     pixfmt = info->vfmt;
-
-    kprintf("sdlgfx: using %s driver\n", driver);
-
     D(bug("[sdl] window manager: %savailable\n", info->wm_available ? "" : "not "));
     D(bug("[sdl] hardware surfaces: %savailable\n", info->hw_available ? "" : "not "));
 
@@ -323,6 +325,30 @@ VOID SDLGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+VOID SDLGfx__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
+{
+    struct TagItem  *tag, *tstate;
+    ULONG   	    idx;
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
+	    switch(idx)
+	    {
+	    case aoHidd_Gfx_ActiveCallBack:
+	        xsd.cb = (void *)tag->ti_Data;
+		break;
+
+	    case aoHidd_Gfx_ActiveCallBackData:
+	        xsd.cbdata = (void *)tag->ti_Data;
+		break;
+	    }
+	}
+    }
+    OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+}
+
 OOP_Object *SDLGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
     struct TagItem *msgtags;
     struct pHidd_Gfx_NewBitMap supermsg;
@@ -468,9 +494,10 @@ static struct OOP_MethodDescr SDLGfx_Root_descr[] = {
     {(OOP_MethodFunc)SDLGfx__Root__New    , moRoot_New    },
     {(OOP_MethodFunc)SDLGfx__Root__Dispose, moRoot_Dispose},
     {(OOP_MethodFunc)SDLGfx__Root__Get    , moRoot_Get    },
+    {(OOP_MethodFunc)SDLGfx__Root__Set    , moRoot_Set    },
     {NULL				  , 0             }
 };
-#define NUM_SDLGfx_Root_METHODS 3
+#define NUM_SDLGfx_Root_METHODS 4
 
 static struct OOP_MethodDescr SDLGfx_Hidd_Gfx_descr[] = {
     {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__NewBitMap, moHidd_Gfx_NewBitMap},

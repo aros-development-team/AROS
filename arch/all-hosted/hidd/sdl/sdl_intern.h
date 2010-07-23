@@ -92,10 +92,14 @@ struct sdlhidd
     OOP_Class               *kbdclass;
 
     struct Task             *eventtask;
+    /* Object instance would be a better place for this, but event handler task gets
+       only pointer to this structure. Anyway there can be only one SDL display in
+       the system, so this will do. */
+    void (*cb)(void *data, void *bm);		/* Display activation callback function */
+    void 		    *cbdata;		/* User data for activation callback    */
 
     OOP_Object              *mousehidd;
     OOP_Object              *kbdhidd;
-
 
     UBYTE                   keycode[SDLK_LAST];
 
