@@ -674,8 +674,8 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
     {
         x1 = GFX_XMAX(o) + 1;
 	y1 = GFX_YMIN(o);
-	x2 = WINDOW(o)->Width - WINDOW(o)->BorderRight - 1;
-	y2 = WINDOW(o)->Height - WINDOW(o)->BorderBottom - 1;
+	x2 = GFX_XMAX(o);
+	y2 = GFX_YMAX(o) -1;
 	
 	if ((x2 >= x1) && (y2 >= y1))
 	{
