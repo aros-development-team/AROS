@@ -169,7 +169,11 @@ struct NepClassMS * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepMSBase *
     IPTR ifclass;
     IPTR subclass;
     IPTR proto;
-
+	struct PsdConfig *pc;
+    struct PsdDevice *pd;
+	IPTR prodid;
+    IPTR vendid;
+	
     KPRINTF(1, ("nepMSAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
@@ -177,9 +181,21 @@ struct NepClassMS * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepMSBase *
                     IFA_Class, &ifclass,
                     IFA_SubClass, &subclass,
                     IFA_Protocol, &proto,
+					IFA_Config, &pc,
+                    TAG_END);
+		psdGetAttrs(PGA_CONFIG, pc,
+                    CA_Device, &pd,
+					TAG_END);			
+        psdGetAttrs(PGA_DEVICE, pd,
+                    DA_ProductID, &prodid,
+                    DA_VendorID, &vendid,
                     TAG_END);
 
         CloseLibrary(ps);
+		
+		// Huawei modem, massstorage is useless.		
+		if( (vendid ==0x12d1 ) && (prodid == 0x1001) )  return(NULL);		
+		
         if((ifclass == MASSSTORE_CLASSCODE) &&
            ((subclass == MS_SCSI_SUBCLASS) ||
             (subclass == MS_RBC_SUBCLASS) ||
