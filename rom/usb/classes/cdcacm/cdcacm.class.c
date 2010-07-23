@@ -144,8 +144,10 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
 									
 		// huawei ModeSwitch 
 		
-		if(  (vendid ==0x12d1 ) && (prodid == 0x1001) ){
-			
+		if( (vendid ==0x12d1 ) && (
+									prodid == 0x1001 ||    // e169
+									prodid == 0x1003       // e220
+		)){  
 			if((mp = CreateMsgPort()))
 			{
 				if((pp = psdAllocPipe(pd, mp, NULL)))
@@ -887,22 +889,19 @@ struct NepClassSerial * nAllocSerial(void)
                                              TAG_END);
         } while(!(ncp->ncp_EPOut && ncp->ncp_EPIn));
 		
-		if(!ncp->ncp_DataIf)
-        {	
-			// Huawei ? (first interface) TODO: more general approach.
-			ncp->ncp_DataIf = psdFindInterface(ncp->ncp_Device, NULL, TAG_END);		   
-			if(ncp->ncp_DataIf)
-			{    
-				ncp->ncp_EPIn = psdFindEndpoint(ncp->ncp_DataIf, NULL,
-												EA_IsIn, TRUE,
-												EA_TransferType, USEAF_BULK,
-												TAG_END);
-				ncp->ncp_EPOut = psdFindEndpoint(ncp->ncp_DataIf, NULL,
-												EA_IsIn, FALSE,
-												EA_TransferType, USEAF_BULK,
-												TAG_END);
-				if( ! ( ncp->ncp_EPInt && ncp->ncp_EPIn && ncp->ncp_EPOut )	) ncp->ncp_DataIf = NULL;					 
-			}
+		if(!ncp->ncp_DataIf)// Huawei ? (this interface => interrupt + bulks in & out)
+        {	   
+			ncp->ncp_EPIn = psdFindEndpoint(ncp->ncp_Interface, NULL,
+											EA_IsIn, TRUE,
+											EA_TransferType, USEAF_BULK,
+											TAG_END);
+			ncp->ncp_EPOut = psdFindEndpoint(ncp->ncp_Interface, NULL,
+											EA_IsIn, FALSE,
+											EA_TransferType, USEAF_BULK,
+											TAG_END);
+			if( ncp->ncp_EPInt && ncp->ncp_EPIn && ncp->ncp_EPOut ){
+				 ncp->ncp_DataIf = ncp->ncp_Interface; 			
+			}	 		 	
 		}
 	
         if(!ncp->ncp_DataIf)
