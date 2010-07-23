@@ -38,7 +38,7 @@ void writestart(struct config *cfg)
     }
 
     banner = getBanner(cfg);
-    fprintf(out, banner);
+    fprintf(out, "%s", banner);
     freeBanner(banner);
 
     writedecl(out, cfg);
