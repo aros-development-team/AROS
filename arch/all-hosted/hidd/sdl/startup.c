@@ -6,9 +6,12 @@
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <hidd/hidd.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/icon.h>
 #include <proto/oop.h>
 
 #include <string.h>
@@ -104,10 +107,17 @@ static int sdl_Startup(struct sdlhidd *xsd)
     return gfxhidd ? TRUE : FALSE;
 }
 
+extern struct WBStartup *WBenchMsg;
+
 int __nocommandline = 1;
 
 int main(void)
 {
+    BPTR olddir = NULL;
+    STRPTR myname;
+    struct DiskObject *icon;
+    struct RDArgs *rdargs = NULL;
+    IPTR fullscreen = FALSE;
     int ret = RETURN_FAIL;
 
     /* Open libraries manually, otherwise they will be closed when this subroutine
@@ -129,6 +139,43 @@ int main(void)
 	CloseLibrary(OOPBase);
 	return RETURN_FAIL;
     }
+
+    /* We don't open dos.library and icon.library manually because only startup code
+       needs them and these libraries can be closed even upon successful exit */
+    if (WBenchMsg) {
+        olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
+	myname = WBenchMsg->sm_ArgList[0].wa_Name;
+    } else {
+	struct Process *me = (struct Process *)FindTask(NULL);
+    
+	if (me->pr_CLI) {
+            struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+	
+	    myname = cli->cli_CommandName;
+	} else
+	    myname = me->pr_Task.tc_Node.ln_Name;
+    }
+
+    icon = GetDiskObject(myname);
+    D(bug("[X11] Icon 0x%p\n", icon));
+
+    if (icon) {
+        STRPTR str;
+
+	str = FindToolType(icon->do_ToolTypes, "FULLSCREEN");
+	fullscreen = str ? TRUE : FALSE;
+    }
+
+    if (!WBenchMsg)
+        rdargs = ReadArgs("FULLSCREEN/S", &fullscreen, NULL);
+
+    xsd.use_fullscreen = fullscreen;
+    if (rdargs)
+        FreeArgs(rdargs);
+    if (icon)
+        FreeDiskObject(icon);
+    if (olddir)
+        CurrentDir(olddir);
 
     /* Obtain attribute bases first */
     if (OOP_ObtainAttrBases(attrbases)) {
