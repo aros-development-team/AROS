@@ -51,6 +51,11 @@
 #define MM_EnterPowerSaveMode	 0x407	/* Start power saving mode					       	  */
 #define MM_ExitBlanker		 0x408	/* Stop screensaver or power saving mode			       	  */
 
+/* AROS-specific attributes */
+#define MA_AROS			(TAG_USER + 0x00010000)
+
+#define MA_Windowed		(MA_AROS + 1) /* [G..] BOOL A display is a window on hosted OS */
+
 /* AROS-specific methods */
 #define MM_SetDefaultGammaTables 0x1401 /* Set default gamma correction table */
 

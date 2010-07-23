@@ -356,6 +356,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     EXAMPLE
 
     BUGS
+	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
+	monitor object.
 
     SEE ALSO
 	MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
@@ -387,6 +389,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     EXAMPLE
 
     BUGS
+    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
+	monitor object.
 
     SEE ALSO
 	MA_TopLeftMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
@@ -419,6 +423,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     EXAMPLE
 
     BUGS
+    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
+	monitor object.
 
     SEE ALSO
 	MA_TopLeftMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
@@ -451,6 +457,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     EXAMPLE
 
     BUGS
+    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
+	monitor object.
 
     SEE ALSO
 	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleRightMonitor,
@@ -483,6 +491,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     EXAMPLE
 
     BUGS
+    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
+	monitor object.
 
     SEE ALSO
 	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
@@ -515,6 +525,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     EXAMPLE
 
     BUGS
+    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
+	monitor object.
 
     SEE ALSO
 	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
@@ -546,6 +558,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     EXAMPLE
 
     BUGS
+    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
+	monitor object.
 
     SEE ALSO
 	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
@@ -578,6 +592,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     EXAMPLE
 
     BUGS
+    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
+	monitor object.
 
     SEE ALSO
 	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
@@ -703,12 +719,46 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 *****************************************************************************************/
 
+/*****************************************************************************************
+
+    NAME
+	MA_Windowed
+
+    SYNOPSIS
+	[..G], BOOL
+
+    LOCATION
+	MONITORCLASS
+
+    FUNCTION
+	Check if this monitor is a window on hosted OS desktop.
+
+	This means that the host OS is responsible for handling mouse input and display
+	activation. Monitors with this attribute set to TRUE should be ignored by
+	multi-display desktop configuration software.
+
+	These monitors should have no spatial links to other monitors. Activation of these
+	monitors is done by clicking on their windows on the host's desktop and is handled
+	by the driver itself.
+
+    NOTES
+	This attribute is AROS-specific, it does not exist in MorphOS.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
 /***********************************************************************************/
 
 IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct MonitorData *data = INST_DATA(cl, o);
-    IPTR val;
 
     D(kprintf("[monitorclass] OM_GET\n"));
 
@@ -775,8 +825,7 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	break;
 
     case MA_PointerType:
-	OOP_GetAttr(data->driver, aHidd_Gfx_HWSpriteTypes, &val);
-	*msg->opg_Storage = val;
+	OOP_GetAttr(data->driver, aHidd_Gfx_HWSpriteTypes, msg->opg_Storage);
 	break;
 
     case MA_DriverName:
@@ -785,6 +834,10 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
     case MA_MemoryClock:
 	OOP_GetAttr(data->driver, aHidd_Gfx_MemoryClock, msg->opg_Storage);
+	break;
+
+    case MA_Windowed:
+	OOP_GetAttr(data->driver, aHidd_Gfx_IsWindowed, msg->opg_Storage);
 	break;
 
     default:
@@ -846,6 +899,12 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /***********************************************************************************/
 
+#define Relink(nextAttr, prev, prevAttr, next)		\
+    if (prev)						\
+	SetAttrs(prev, nextAttr, next, TAG_DONE);	\
+    if (next)						\
+	SetAttrs(next, prevAttr, prev, TAG_DONE)
+
 IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct MonitorData *data = INST_DATA(cl, o);
@@ -862,7 +921,11 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
     Remove((struct Node *)data);
 
-    /* TODO: fix up spatial links */
+    /* Remove this monitor from spatial links */
+    Relink(MA_BottomRightMonitor, data->topleft, MA_TopLeftMonitor, data->bottomright);
+    Relink(MA_BottomMiddleMonitor, data->topmiddle, MA_TopMiddleMonitor, data->bottommiddle);
+    Relink(MA_BottomLeftMonitor, data->topright, MA_TopRightMonitor, data->bottomleft);
+    Relink(MA_MiddleLeftMonitor, data->middleright, MA_MiddleRightMonitor, data->middleleft);
 
     /* If an active monitor is being removed, we should activate another one */
     if (GetPrivIBase(IntuitionBase)->ActiveMonitor == o)
