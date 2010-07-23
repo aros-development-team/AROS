@@ -229,12 +229,16 @@ DWORD WINAPI gdithread_entry(struct GDI_Control *ctl)
 		    /* Open display window if we don't have it. Try every time, for sure */
 		    if (!gdata->fbwin) {
 			DWIN(printf("[GDI] Opening display...\n"));
-			gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,
+			/* We create the window as invisible, and show it only after setting gdata pointer.
+			   Otherwise we miss activation event (since gdata is NULL) */
+			gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
 						     CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL,
 						     display_class_desc.hInstance, NULL);
 			DWIN(printf("[GDI] Opened display window: 0x%p\n", gdata->fbwin));
-			if (gdata->fbwin)
+			if (gdata->fbwin) {
 			    SetWindowLongPtr(gdata->fbwin, GWLP_USERDATA, (LONG_PTR)gdata);
+			    ShowWindow(gdata->fbwin, SW_SHOW);
+			}
 		    }
 
 		    /* Open bitmap window only if we really have display window */
