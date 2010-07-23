@@ -25,33 +25,31 @@ void init_ppp(LIBBASETYPEPTR LIBBASE);
 
 void ConfNetWork();
 
+void Set_phase(UBYTE ph);
+
 void byte_received(UBYTE c);
 void ProcessPacket();
 void SendPPP_Packet(struct packet *);
 void EscapePacket(struct packet *);
 void UnEscapePacket(struct packet *,struct packet *);
 
-unsigned int calcchksum(unsigned char *,int );
 void AddChkSum(struct packet * );
+void AddByte(struct packet *p,const UBYTE b);
 
 void LCP_packet(struct packet *);
 void SendConfACK(struct packet *);
 void SendConfReq();
 void SendConfNack( UBYTE *ptr, ULONG len,BYTE num);
 void SendConfReject( UBYTE *ptr, ULONG len,BYTE num);
-
+void SendEchoReply(struct packet *);
 void SendTerminateReq();
 
 void IPCP_Packet(struct packet * );
-
 void Send_IPCP_ack();
 void Send_IPCP_req();
 
-
-void SendEchoReply(struct packet *);
-
 void PAP_Packet(struct packet * );
-
+void Send_PAP_Req();
 
 unsigned char LocalIP[4]={0,0,0,0};
 unsigned char RemoteIP[4]={0,0,0,0};
@@ -62,9 +60,14 @@ ULONG async_map,mru;
 int Control=0;
 int number = 0;
 UBYTE *username,*password;
+
+UBYTE phase;
+BOOL  my_conf_ok;
+BOOL  device_conf_ok;
+UBYTE authentication;
+
 struct PPPBase *ppp_libbase;
 struct packet recdpacket;
-
 
 unsigned long threadid, bytesrecd,byteswritten;
 
@@ -106,73 +109,127 @@ static unsigned short fcstab[256] = {
     0xf78f, 0xe606, 0xd49d, 0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330,
     0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78
 };
+
 #define PPPINITFCS16 0xffff
 #define PPPGOODFCS16 0xf0b8
-unsigned short pppfcs16(fcs,cp,len)
-unsigned short fcs;
-unsigned char *cp;
-int len;
-{
-while ( len -- )
-fcs = ( fcs>>8 ) ^ fcstab[ (fcs^*cp++) & 0xff];
-return fcs;
-}
-
-unsigned int calcchksum(cp,len)
-unsigned char *cp;
-int len;
-{
-unsigned short trialfcs;
-trialfcs = pppfcs16(PPPINITFCS16,cp,len); 
-trialfcs ^= 0xffff;
-cp[len] = (trialfcs & 0x00ff);
-cp[len+1] = ((trialfcs >> 8 ) & 0x00ff);
-return len+2;
-}
+#define PPP_FCS(fcs, c)	(((fcs) >> 8) ^ fcstab[((fcs) ^ (c)) & 0xff])
 
 void AddChkSum(struct packet *p)
 {
-   p->packetsize=calcchksum(p->header,p->packetsize + 4 );// 4 = header size
-}    
+	
+  unsigned char *cp;	
+  unsigned short fcs;	
+  int i;
 
+  fcs = PPPINITFCS16;
+  fcs = PPP_FCS(fcs, 0xff);   // header simulation...
+  fcs = PPP_FCS(fcs, 0x03);
+  
+  cp = p->data;	
+  for( i=0 ;i < p->packetsize ; i++ ){
+	  fcs = PPP_FCS(fcs, *cp);
+	  cp++;
+  }	
+   	
+  fcs = fcs ^ 0xffff;	
+  AddByte( p , (fcs & 0x00ff) );
+  AddByte( p ,((fcs >> 8 ) & 0x00ff));
+	
+}   
 
+void Set_phase(UBYTE ph){
+	bug("\nPPP PHASE: "); 
+	phase = ph;
+	
+	switch( ph ){
+		
+		case PPP_PHASE_CONFIGURATION :
+			bug("CONFIGURATION\n"); 
+			phase = ph;
+			
+			async_map = 0xffffffff;
+			authentication = 0;
+			my_conf_ok = FALSE;
+			device_conf_ok = FALSE;
+			SendConfReq();
+			
+		break;
+		
+		case PPP_PHASE_AUTHENTICATION :
+			bug("AUTHENTICATION\n"); 		
+			phase = ph;	
+			
+			if( authentication ){
+				Send_PAP_Req();
+			}else{
+				bug("no authentication configured -> next phase\n"); 
+				Set_phase( PPP_PHASE_PROTOCOL_CONF );
+			}				
+		break;	
+			
+		case PPP_PHASE_PROTOCOL_CONF :
+			bug("PROTOCOL_CONF\n"); 		
+			phase = ph;	
+			Send_IPCP_req();	
+		break;	
+			
+		case PPP_PHASE_NETWORK :
+			bug("NETWORK\n"); 		
+			phase = ph;		
+			ConfNetWork();
+		break;
+		
+		case PPP_PHASE_DEAD :
+			bug("DEAD\n"); 		
+			phase = ph;
+			
+			async_map = 0xffffffff;
+			ppp_libbase->ppp_online = FALSE; 
+			
+			LocalIP[0]=0;
+			LocalIP[1]=0;
+			LocalIP[2]=0;
+			LocalIP[3]=0;  
+  
+			RemoteIP[0]=0;
+			RemoteIP[1]=0;
+			RemoteIP[2]=0;
+			RemoteIP[3]=0;
+  
+			PrimaryDNS[0]=0;
+			PrimaryDNS[1]=0;
+			PrimaryDNS[2]=0;
+			PrimaryDNS[3]=0;
+      
+			SecondaryDNS[0]=0;
+			SecondaryDNS[1]=0;
+			SecondaryDNS[2]=0;
+			SecondaryDNS[3]=0;
+						
+		break;	
+				
+		default:
+		 bug("ERROR unknown phase:%d\n",ph); 
+		break;
+		
+	}	
+		
 
-
-
-
+}	
+	
 void  init_ppp(LIBBASETYPEPTR LIBBASE){
   mru = 1500;
   number=1;
   Control=CONTROL_SEARCH_BEGIN;
   recdpacket.packetsize = 0;
   
-  ppp_libbase = LIBBASE;
-  ppp_libbase->ppp_online = FALSE; 
-  
-  LocalIP[0]=0 ;
-  LocalIP[1]=0 ;
-  LocalIP[2]=0  ;
-  LocalIP[3]=0 ;  
-  
-  RemoteIP[0]=0;
-  RemoteIP[1]=0;
-  RemoteIP[2]=0;
-  RemoteIP[3]=0;
-  
-  PrimaryDNS[0]=0;
-  PrimaryDNS[1]=0;
-  PrimaryDNS[2]=0;
-  PrimaryDNS[3]=0;
-      
-  SecondaryDNS[0]=0;
-  SecondaryDNS[1]=0;
-  SecondaryDNS[2]=0;
-  SecondaryDNS[3]=0;
-  
-  async_map = 0xffffffff;
-  
+  ppp_libbase = LIBBASE; 
+   
   username = LIBBASE->username ;
   password = LIBBASE->password ;
+  
+  Set_phase( PPP_PHASE_DEAD );
+  Set_phase( PPP_PHASE_CONFIGURATION );
   
 }
 
@@ -299,9 +356,9 @@ void printpacket(struct packet * p)
     bug("\n");
 }   
 
-void AddByte(struct packet *p,const UBYTE b){
+void inline AddByte(struct packet *p,const UBYTE b){
 
-  if( p->packetsize >= MAXPSIZE-8 ){
+  if( p->packetsize >= MAXPSIZE ){
       bug("\nERROR:AddByte maxpsize\n");
       return;
   }
@@ -326,7 +383,6 @@ void  byte_received( UBYTE c )
       }
     }
     
-    
     else if( Control == CONTROL_SEARCH_BEGIN ){          
       if ( c == 0x7e ){
         //  bug("start\n");
@@ -335,7 +391,6 @@ void  byte_received( UBYTE c )
           return;
       }
     }
-   
    
     else if( Control == CONTROL_SKIP_HEADER ){  
         
@@ -420,7 +475,10 @@ void PAP_Packet(struct packet * f)
     case 2:
       bug("PAP Ack Received: PAP authentication succeeded\n");
       
-      Send_IPCP_req();
+	  if( phase == PPP_PHASE_AUTHENTICATION ){
+		  Set_phase( PPP_PHASE_PROTOCOL_CONF );	  
+      }
+	  
     break;
 
     case 3:
@@ -429,6 +487,7 @@ void PAP_Packet(struct packet * f)
 
     case 4:
       bug("PAP Reject received\n");
+	  Set_phase( PPP_PHASE_DEAD );	
     break;
 
     default:
@@ -505,8 +564,8 @@ void IPCP_Packet(struct packet * f)
 
     case 2:
       
-     bug("IPCP Ack Received\n"); 
-     ConfNetWork();
+     bug("IPCP Ack Received\n");  
+     Set_phase(  PPP_PHASE_NETWORK );
      
     break;
 
@@ -638,11 +697,7 @@ switch( p->data[2] ){
     while( (IPTR)ptr < (IPTR)( p->data + p->packetsize ) ){
         type = ptr[0];  
         len =  ptr[1]; 
-         
-        if( len < 3  ){
-            bug("LCP packet type bug 2 !!!!!!!!!!\n");
-           return;  
-         }
+          
         if( type == 2 ){   // async control character map
           async_map = ( ptr[2] << 24) | ( ptr[3] << 16) | ( ptr[4] << 8) | (ptr[5] );   
           bug("  Async_map = %x\n",async_map);      
@@ -662,6 +717,7 @@ switch( p->data[2] ){
         else if( type == 3  ){ // authentication 
            if( ptr[2] == 0xc0 &&  ptr[3] == 0x23 ){ 
              bug("  Authentication = PAP\n");
+			 authentication = 0xc0;
           } else {  
               
              ptr[2] = 0xc0; // PAP
@@ -685,6 +741,7 @@ switch( p->data[2] ){
            bug("  Unknown type %d ,send reject response...\n",type);
            SendConfReject( ptr , len , p->data[3] ); 
            ok = FALSE; 
+		   break;
         }           
         
         ptr += len; 
@@ -693,14 +750,27 @@ switch( p->data[2] ){
     
     if(ok){
          SendConfACK(p);
-         SendConfReq();
+		 device_conf_ok = TRUE;
+		 if( phase == PPP_PHASE_CONFIGURATION &&
+		                           my_conf_ok && 
+				               device_conf_ok   )
+		 {
+			 Set_phase( PPP_PHASE_AUTHENTICATION );					   
+	     }
      }
      
  break;
 
  case 2:
-    bug("LCP Ack Received Gooood!\n");
-    Send_PAP_Req();
+    bug("LCP Ack Received !\n");
+	my_conf_ok = TRUE;
+	if( phase == PPP_PHASE_CONFIGURATION &&
+		                      my_conf_ok && 
+				          device_conf_ok   )
+	{
+		 Set_phase( PPP_PHASE_AUTHENTICATION );					   
+	}
+	
  break;
  
  case 3:
@@ -721,13 +791,22 @@ switch( p->data[2] ){
  
  case 5:
     bug("LCP Terminate request Received :-(\n");
-    ppp_libbase->ppp_online = FALSE;
+	Set_phase( PPP_PHASE_DEAD );	
  break;
  
  case 6:
     bug("LCP Terminate Act Received\n");
-    ppp_libbase->ppp_online = FALSE;
+	Set_phase( PPP_PHASE_DEAD );
  break;
+ 
+  case 11:
+    bug("LCP Discard-Request Received ????\n");
+	if( phase == PPP_PHASE_AUTHENTICATION ) Send_PAP_Req();  //huawei workaround
+ break; 
+ 
+ case 12:
+    bug("LCP  Link-Quality Report Received ????\n");
+ break;  
  
  default:
    bug("unknow lcp Received:%d\n",p->data[2]);
@@ -800,6 +879,7 @@ void SendConfReq()
 
 struct packet p;
 bug("\nsend LCP Req\n");
+
 p.packetsize=0;
 AddByte( &p , 0xc0 );//LPC
 AddByte( &p , 0x21 );
@@ -816,10 +896,10 @@ AddByte( &p , 0x04 );
 AddByte( &p , 0x05 );
 AddByte( &p , 0xdc );
 */
-AddByte( &p , 0x02 ); // async control char map 0a00
+AddByte( &p , 0x02 ); // async control char map 0000
 AddByte( &p , 0x06 );
 AddByte( &p , 0x00 );
-AddByte( &p , 0x0a );
+AddByte( &p , 0x00 );
 AddByte( &p , 0x00 );
 AddByte( &p , 0x00 );
 
@@ -864,9 +944,9 @@ void SendTerminateReq()
   printpacket(&p);
   AddChkSum(&p);
   SendPPP_Packet(&p);
-
-  ppp_libbase->ppp_online = FALSE;
-
+  
+  Set_phase( PPP_PHASE_DEAD ); 
+  
 }
 
 
@@ -893,7 +973,6 @@ void send_IP_packet( BYTE *data ,ULONG len )
    }
  
   AddChkSum(&p);
- 
   EscapePacket(&p);
   AddByte( &p , 0x7e );   
   SendBYTES( ppp_libbase , p.header , p.packetsize + 4 );   
@@ -923,7 +1002,6 @@ void EscapePacket(struct packet * p)
 {
     struct packet dummy;
     unsigned int i,j;
-
 
     for(i=0;i<p->packetsize;i++){
         dummy.data[i]=p->data[i];
