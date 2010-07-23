@@ -194,7 +194,7 @@ struct NepClassMS * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepMSBase *
         CloseLibrary(ps);
 		
 		// Huawei modem, massstorage is useless.		
-		if( (vendid ==0x12d1 ) && (prodid == 0x1001) )  return(NULL);		
+		if( (vendid == 0x12d1 ) && (prodid == 0x1001 || prodid == 0x1003 ) ) return(NULL);		
 		
         if((ifclass == MASSSTORE_CLASSCODE) &&
            ((subclass == MS_SCSI_SUBCLASS) ||
