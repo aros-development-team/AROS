@@ -46,6 +46,13 @@
 
 #define PPP_MAXBUFF 4096
 
+// phases
+#define PPP_PHASE_DEAD 1
+#define PPP_PHASE_CONFIGURATION 2
+#define PPP_PHASE_AUTHENTICATION 3
+#define PPP_PHASE_PROTOCOL_CONF 4
+#define PPP_PHASE_NETWORK 5
+#define PPP_PHASE_TERMINATE 6
 
 // config stuff
 #define PPP_MAXATCOM 30       
