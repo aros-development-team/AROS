@@ -75,7 +75,7 @@ struct IIHData
     BOOL                     TitlebarOnTop;
     BOOL                     MouseWasInsideBoolGadget;
     struct Screen	    *ScreenDrag;
-
+    BOOL		     SwitchedMonitor;
 };
 
 struct GeneratedInputEvent

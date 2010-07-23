@@ -211,8 +211,9 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
                 } /* ! SDEPTH_INFAMILY */
 
             } /* if (previous) */
+
 	    /* The screen has been made frontmost, activate its monitor */
-	    ActivateMonitor(GetPrivScreen(IntuitionBase->FirstScreen)->MonitorObject, IntuitionBase);
+	    ActivateMonitor(GetPrivScreen(IntuitionBase->FirstScreen)->MonitorObject, -1, -1, IntuitionBase);
 	    IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
         } /* if SDEPTH_TO_FRONT */
 
