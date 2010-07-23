@@ -15,6 +15,8 @@
 #include <proto/intuition.h>
 
 #include "intuition_intern.h"
+#include "inputhandler.h"
+#include "inputhandler_support.h"
 #include "monitorclass_private.h"
 
 /* This function does not use MoveSprite() any more because it
@@ -48,7 +50,7 @@ void MySetPointerPos(struct IntuitionBase *IntuitionBase, WORD x, WORD y)
 	DoMethod(mon, MM_SetPointerPos, x, y);
 }
 
-void ActivateMonitor(Object *newmonitor, struct IntuitionBase *IntuitionBase)
+void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *IntuitionBase)
 {
     Object *oldmonitor = GetPrivIBase(IntuitionBase)->ActiveMonitor;
 
@@ -62,8 +64,35 @@ void ActivateMonitor(Object *newmonitor, struct IntuitionBase *IntuitionBase)
 
     GetPrivIBase(IntuitionBase)->ActiveMonitor = newmonitor;
     if (newmonitor) {
+	struct Screen *scr = FindFirstScreen(newmonitor, IntuitionBase);
+	struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+	UWORD DWidth, DHeight;
+
+	if (x == -1)
+	    x = iihd->LastMouseX;
+	if (y == -1)
+	    y = iihd->LastMouseY;
+
+	/* A crude copy from inputhandler.c. We should really handle this in monitorclass */
+	if (scr)
+	{
+	    DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
+	    DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
+	}
+	else
+	{
+	    /* If there's no active screen, we take 160x160 as a limit */
+	    DWidth = 159;
+	    DHeight = 159;
+	}
+	if (x > DWidth)
+	    x = DWidth;
+	if (y > DHeight)
+	    y = DHeight;
+
 	SetAttrs(newmonitor, MA_PointerVisible, TRUE, TAG_DONE);
-	/* TODO: Set pointer position */
+	MySetPointerPos(IntuitionBase, x, y);
+	notify_mousemove_screensandwindows(x, y, IntuitionBase);
     }
 }
 

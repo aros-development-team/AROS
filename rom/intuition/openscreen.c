@@ -1840,7 +1840,7 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
 
     /* If it's the first screen being opened, activate its monitor */
     if (!IntuitionBase->FirstScreen)
-	ActivateMonitor(screen->MonitorObject, IntuitionBase);
+	ActivateMonitor(screen->MonitorObject, -1, -1, IntuitionBase);
 
     if (ns->Type & SCREENBEHIND)
     {

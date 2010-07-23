@@ -1019,7 +1019,7 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
 
 /* misc.c */
 extern void MySetPointerPos(struct IntuitionBase *, WORD, WORD);
-extern void ActivateMonitor(Object *newmonitor, struct IntuitionBase *IntuitionBase);
+extern void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *IntuitionBase);
 extern struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
 struct TextFont *SafeReopenFont(struct IntuitionBase *, struct TextFont **);
 extern Object *MakePointerFromPrefs(struct IntuitionBase *, struct Preferences *);

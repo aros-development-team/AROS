@@ -866,7 +866,7 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
     /* If an active monitor is being removed, we should activate another one */
     if (GetPrivIBase(IntuitionBase)->ActiveMonitor == o)
-	ActivateMonitor((Object *)GetHead(&GetPrivIBase(IntuitionBase)->MonitorList), IntuitionBase);
+	ActivateMonitor((Object *)GetHead(&GetPrivIBase(IntuitionBase)->MonitorList), -1, -1, IntuitionBase);
 
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
 

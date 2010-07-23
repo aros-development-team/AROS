@@ -56,6 +56,7 @@
 #define DEBUG_CLICK(x)
 #define DEBUG_DRAG(x)
 #define DEBUG_GADGET(x)
+#define DEBUG_MONITOR(x)
 #define DEBUG_MOUSE(x)
 #define DEBUG_WINDOW(x)
 
@@ -1846,13 +1847,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	   This is experimental. If this works badly, we'll possibly have to put it into
 	   input events queue */
 	if (newmonitor) {
+	    DEBUG_MONITOR(bug("[Inputhandler] Activating monitor 0x%p\n", newmonitor));
 	    GetPrivIBase(IntuitionBase)->NewMonitor = NULL;
-	    ActivateMonitor(newmonitor, IntuitionBase);
+	    ActivateMonitor(newmonitor, -1, -1, IntuitionBase);
+	    iihdata->SwitchedMonitor = TRUE;
 	}
-
-        /* new event, we need to reset this */
-        screen = FindActiveScreen(IntuitionBase);
-        iihdata->ActEventTablet = 0;
 
         if (!reuse_event)
         {
@@ -1864,6 +1863,23 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
         D(bug("iih: Handling event of class %d, code %d\n", ie->ie_Class, ie->ie_Code));
         reuse_event = FALSE;
+
+	/* If the monitor has been changed, this possibly happened because of mouse click in
+	   its display window. In such a case we have to update current mouse coordinates
+	   from the first absolute mouse event. Otherwise input will misbehave. */
+	if (iihdata->SwitchedMonitor && (ie->ie_Class == IECLASS_RAWMOUSE)) {
+	    iihdata->SwitchedMonitor = FALSE;
+	     if (!(ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE)) {
+		DEBUG_MONITOR(bug("[Inputhandler] Adjusting coordinates to (%d, %d)\n", ie->ie_X, ie->ie_Y));
+		iihdata->LastMouseX = ie->ie_X;
+		iihdata->LastMouseY = ie->ie_Y;
+		notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
+	    }
+	}
+
+        /* new event, we need to reset this */
+        screen = FindActiveScreen(IntuitionBase);
+        iihdata->ActEventTablet = 0;
 
         /* Set the timestamp in IntuitionBase */
 
@@ -2044,7 +2060,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     ie->ie_X = pp->iepp_Position.X + pp->iepp_Screen->LeftEdge;
                     ie->ie_Y = pp->iepp_Position.Y + pp->iepp_Screen->TopEdge;
 
-		    ActivateMonitor(GetPrivScreen(pp->iepp_Screen)->MonitorObject, IntuitionBase);
+		    ActivateMonitor(GetPrivScreen(pp->iepp_Screen)->MonitorObject, ie->ie_X, ie->ie_Y, IntuitionBase);
                 }
                 ie->ie_Code = IECODE_NOBUTTON;
                 break;
