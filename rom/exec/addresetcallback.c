@@ -24,7 +24,10 @@
 	struct ExecBase *, SysBase, 167, Exec)
 
 /*  FUNCTION
-	The given Interrupr structure is inserted into list according to
+	Install a system warm reset notification callback. The callback
+	will be called whenever system warm reboot is performed.
+
+	The given Interrupt structure is inserted into list according to
 	its proirity. The callback code is called with the following arguments:
 	
 	    A0 - scratch (set to NULL)
@@ -38,6 +41,7 @@
 	TRUE for success, FALSE for failure
 
     NOTES
+	This function is compatible with AmigaOS v4.
 
     EXAMPLE
 
