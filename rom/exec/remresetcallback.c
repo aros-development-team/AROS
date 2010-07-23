@@ -33,6 +33,7 @@
 	None.
 
     NOTES
+	This function is compatible with AmigaOS v4.
 
     EXAMPLE
 
