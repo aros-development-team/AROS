@@ -236,11 +236,11 @@ static VOID charmapcon_add_prop(Class * cl, Object * o)
 static VOID charmapcon_adj_prop(Class *cl, Object *o)
 {
   struct charmapcondata 	*data = INST_DATA(cl, o);
-    struct Window   	*w  = CU(o)->cu_Window;
-	ULONG VertBody, VertPot;
+  struct Window   	*w  = CU(o)->cu_Window;
+  ULONG VertBody, VertPot;
 
-	ULONG hidden = data->scrollback_size > CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) - 1 : 0;
-	ULONG top = data->scrollback_pos > hidden ? hidden : data->scrollback_pos;
+  ULONG hidden = data->scrollback_size > CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) - 1 : 0;
+  ULONG top = data->scrollback_pos > hidden ? hidden : data->scrollback_pos;
 
 	if (hidden > 0) {
 	  VertPot  =  (data->scrollback_pos) * MAXPOT / hidden;
@@ -248,6 +248,11 @@ static VOID charmapcon_adj_prop(Class *cl, Object *o)
 	} else {
 	  VertPot  = 0;
 	  VertBody = MAXBODY;
+	}
+
+	if (VertPot > MAXPOT) {
+	  VertPot = MAXPOT;
+	  D(bug("VERTPOT SET TOO HIGH. Adjusted\n"));
 	}
 
 	NewModifyProp((struct Gadget *)&(data->prop->scroller),w,NULL,((struct PropInfo *)data->prop->scroller.SpecialInfo)->Flags,MAXPOT,VertPot,MAXBODY,VertBody,1);
@@ -313,7 +318,6 @@ static VOID charmapcon_dispose(Class *cl, Object *o, Msg msg)
 static struct charmap_line * charmapcon_find_line(Class * cl, Object * o, ULONG ycp)
 {
   struct charmapcondata 	*data = INST_DATA(cl, o);
-  ULONG old_scrollback_size = data->scrollback_size;
 
   // Find the line. This is inefficient but the number of lines on screen
   // should never be very high.
@@ -335,16 +339,12 @@ static struct charmap_line * charmapcon_find_line(Class * cl, Object * o, ULONG 
 	ycp -= 1;
   }
 
-  BOOL adj_prop = old_scrollback_size != data->scrollback_size;
-
   while (data->scrollback_size > data->scrollback_max + CHAR_YMAX(o) && 
 		 data->top_of_window != data->top_of_scrollback) {
 	data->scrollback_size -= 1;
 	data->scrollback_pos -= 1;
 	data->top_of_scrollback = charmap_dispose_line(data->top_of_scrollback);
   }
-
-  if (adj_prop) charmapcon_adj_prop(cl,o);
 
   return line;
 }
@@ -372,7 +372,7 @@ static VOID charmap_ascii(Class * cl, Object * o, ULONG xcp, ULONG ycp, char * s
   }
 }
 
-static VOID charmap_scroll_up(Class * cl, Object * o, ULONG y, BOOL adj_prop)
+static VOID charmap_scroll_up(Class * cl, Object * o, ULONG y)
 {
   struct charmapcondata *data = INST_DATA(cl, o);
 
@@ -387,8 +387,6 @@ static VOID charmap_scroll_up(Class * cl, Object * o, ULONG y, BOOL adj_prop)
 	data->scrollback_pos += 1;
   }
 
-  if (adj_prop) charmapcon_adj_prop(cl,o);
-  
   if (data->scrollback_size - CHAR_YMAX(o) - 1 <= data->scrollback_pos &&
 	  data->unrendered) {
 	Console_RenderCursor(o);
@@ -403,7 +401,7 @@ static VOID charmap_scroll_up(Class * cl, Object * o, ULONG y, BOOL adj_prop)
   }
 }
 
-static VOID charmap_scroll_down(Class * cl, Object * o, ULONG y, BOOL adj_prop)
+static VOID charmap_scroll_down(Class * cl, Object * o, ULONG y)
 {
   // FIXME: Need to adjust cursor position or reset to bottom when editing.
   struct charmapcondata *data = INST_DATA(cl, o);
@@ -418,16 +416,15 @@ static VOID charmap_scroll_down(Class * cl, Object * o, ULONG y, BOOL adj_prop)
 	  data->top_of_window = data->top_of_window->prev;
 	  data->scrollback_pos -= 1;
 	}
-	if (adj_prop) charmapcon_adj_prop(cl,o);
   }
 }
 
-static VOID charmapcon_scroll_to(Class * cl, Object * o, ULONG y, BOOL adj_prop)
+static VOID charmapcon_scroll_to(Class * cl, Object * o, ULONG y)
 {
   struct charmapcondata *data = INST_DATA(cl, o);
 
-  if (data->scrollback_pos > y) charmap_scroll_down(cl, o, data->scrollback_pos - y, adj_prop);
-  else if (data->scrollback_pos < y) charmap_scroll_up(cl,o,y-data->scrollback_pos, adj_prop);
+  if (data->scrollback_pos > y) charmap_scroll_down(cl, o, data->scrollback_pos - y);
+  else if (data->scrollback_pos < y) charmap_scroll_up(cl,o,y-data->scrollback_pos);
 }
 
 
@@ -491,6 +488,10 @@ static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoComman
 
 	// This is a bit of a hack: Set position to bottom in order to prevent output while
 	// scrolled.
+
+  ULONG old_scrollback_size = data->scrollback_size;
+  ULONG old_scrollback_pos = data->scrollback_pos;
+
   if (data->unrendered) {
 	data->unrendered = 0;
 	data->scrollback_pos = data->saved_scrollback_pos;
@@ -531,7 +532,7 @@ static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoComman
         // FIXME: Remove excess lines if the scrollback buffer grows too large
         D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
         GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), YRSIZE * params[0]));
-        charmap_scroll_up(cl,o, params[0],1);
+        charmap_scroll_up(cl,o, params[0]);
         DoSuperMethodA(cl, o, (Msg)msg);
         break;
 	}
@@ -540,7 +541,7 @@ static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoComman
     {
         D(bug("C_SCROLL_DOWN area (%d, %d) to (%d, %d), %d\n",
         GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), YRSIZE * params[0]));
-        charmap_scroll_down(cl,o, params[0],1);
+        charmap_scroll_down(cl,o, params[0]);
         DoSuperMethodA(cl, o, (Msg)msg);
 	    break;
 	}
@@ -549,6 +550,10 @@ static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoComman
     	DoSuperMethodA(cl, o, (Msg)msg);
 	break;
     }
+
+	if (old_scrollback_size != data->scrollback_size ||
+		old_scrollback_pos  != data->scrollback_pos)
+	  charmapcon_adj_prop(cl,o);
 
     ReturnVoid("CharMapCon::DoCommand");
 }
@@ -639,7 +644,7 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewW
 
 	// Scroll up if new window size has forced the cursor up
 	if (old_ycp > CHAR_YMAX(o)) {
-	  charmap_scroll_up(cl,o, old_ycp - CHAR_YMAX(o),1);
+	  charmap_scroll_up(cl,o, old_ycp - CHAR_YMAX(o));
 	}
 
 	charmapcon_refresh(cl,o);
@@ -662,18 +667,20 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_Hand
 	  ULONG pos = (((struct PropInfo *)((struct Gadget*)&(data->prop->scroller))->SpecialInfo)->VertPot * hidden + (MAXPOT / 2)) / MAXPOT;
 
 	  if (pos != data->scrollback_pos) {
-		charmapcon_scroll_to(cl,o, pos, 0);
+		charmapcon_scroll_to(cl,o, pos);
 		charmapcon_refresh(cl,o);
 	  }
 	} else if (msg->IAddress == (APTR)&(data->prop->down)) {
 	  if (data->scrollback_pos + CHAR_YMAX(o) < data->scrollback_size - 1) {
-		charmap_scroll_up(cl,o,1,1);
+		charmap_scroll_up(cl,o,1);
 		charmapcon_refresh(cl,o);
+		charmapcon_adj_prop(cl,o);
 	  }
 	} else if (msg->IAddress == (APTR)&(data->prop->up)) {
 	  if (data->top_of_window != data->top_of_scrollback) {
-		charmap_scroll_down(cl,o,1,1);
+		charmap_scroll_down(cl,o,1);
 		charmapcon_refresh(cl,o);
+		charmapcon_adj_prop(cl,o);
 	  }
 	}
 
