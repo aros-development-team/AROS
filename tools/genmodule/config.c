@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#define __USE_XOPEN
 #include <time.h>
 #include <unistd.h>
 
@@ -21,7 +22,7 @@ const static char bannertemplate[] =
     "    Copyright © 1995-2010, The AROS Development Team. All rights reserved.\n"
     "*/\n";
 
-const char*
+char*
 getBanner(struct config* config)
 {
     int bannerlength = strlen(config->conffile) + strlen(bannertemplate) -1;

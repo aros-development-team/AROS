@@ -374,7 +374,16 @@ char *getargtype(const struct functionarg *funcarg)
     }
 			
     /* Skip over the argument name */
-    while (!isspace(*(end-1)) && *(end-1)!='*') end--;
+    while (!isspace(*(end-1)) && *(end-1)!='*')
+    {
+        if (begin == end)
+        {
+            free(s);
+            fprintf(stderr, "no argument type or name found for arg: %s\n", funcarg->arg);
+            exit(20);
+        }
+        end--;
+    }
 
     /* Add * for the brackets */
     while (isspace(*(end-1))) end--;

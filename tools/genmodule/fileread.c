@@ -56,16 +56,26 @@ char *readline(void)
     }
     if (fgets(line, slen, file))
     {
-	haseol = line[strlen(line)-1]=='\n';
-	if (haseol) line[strlen(line)-1]='\0';
+        size_t len = strlen(line);
+	haseol = line[len-1]=='\n';
+	if (haseol) line[len-1]='\0';
 	
 	while (!(haseol || feof(file)))
 	{
 	    slen += 256;
 	    line = (char *)realloc(line, slen);
-	    fgets(line+strlen(line), slen, file);
-	    haseol = line[strlen(line)-1]=='\n';
-	    if (haseol) line[strlen(line)-1]='\0';
+	    if (fgets(line+len, slen, file))
+            {
+                len = strlen(line);
+                haseol = line[len-1]=='\n';
+                if (haseol) line[len-1]='\0';
+            }
+            else if (ferror(file))
+            {
+                perror(filename);
+                free(line);
+                return NULL;
+            }
 	}
     }
     else
