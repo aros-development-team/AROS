@@ -131,6 +131,8 @@ struct MUI_WindowData
                              Popup windows work ok on AmiGG when main window is move
                            */
     LONG    wd_YStore;
+
+    WORD    wd_SleepCount; /* MUIA_Window_Sleep nests */
 };
 
 #ifndef WFLG_SIZEGADGET
@@ -3039,6 +3041,32 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 data->wd_UserPublicScreen = (STRPTR)tag->ti_Data;
                 break;
 
+            case MUIA_Window_Sleep:
+                if (tag->ti_Data)
+                {
+                    data->wd_SleepCount++;
+                    if (data->wd_RenderInfo.mri_Window && (data->wd_SleepCount == 1))
+                    {
+                        SetWindowPointer
+                        (
+                            data->wd_RenderInfo.mri_Window,
+                            WA_BusyPointer,  TRUE,
+                            WA_PointerDelay, TRUE,
+                            TAG_DONE
+                        );
+                        // FIXME: how to disable event handling?
+                    }
+                }
+                else
+                {
+                    data->wd_SleepCount--;
+                    if (data->wd_RenderInfo.mri_Window && (data->wd_SleepCount == 0))
+                    {
+                        SetWindowPointerA(data->wd_RenderInfo.mri_Window, NULL);
+                    }
+                }
+                break;
+
         }
     }
 
@@ -3142,8 +3170,12 @@ IPTR Window__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             return TRUE;
 
         case MUIA_Window_Menustrip:
-                STORE = (IPTR)data->wd_ChildMenustrip;
-                return TRUE;
+            STORE = (IPTR)data->wd_ChildMenustrip;
+            return TRUE;
+
+        case MUIA_Window_Sleep:
+            STORE = data->wd_SleepCount ? TRUE : FALSE;
+            return TRUE;
 
         case MUIA_Version:
             STORE = __version;
