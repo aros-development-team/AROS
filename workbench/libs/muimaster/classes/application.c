@@ -74,7 +74,7 @@ struct MUI_ApplicationData
     STRPTR                  app_Version_Number;
     STRPTR                  app_Version_Date;
     STRPTR                  app_Version_Extra;
-    ULONG                   app_SleepCount;
+    WORD                    app_SleepCount; // attribute nests
     ULONG                   app_TimerOutstanding;
     ULONG                   app_MenuAction; /* Remember last action */
     BOOL                    app_ForceQuit;
@@ -890,15 +890,43 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
                 break;
 
             case    MUIA_Application_Sleep:
-                if (tag->ti_Data) data->app_SleepCount++;
-                else data->app_SleepCount--;
-                if (data->app_SleepCount < 0)
-                    data->app_SleepCount = 0;
-                else
                 {
-                    /*
-                     * todo SC == 0 (wakeup), SC == 1 (sleep)
-                     */
+                    struct List *wlist;
+                    APTR         wstate;
+                    Object      *curwin;
+
+                    if (tag->ti_Data)
+                    {
+                        data->app_SleepCount++;
+                        if (data->app_SleepCount == 1)
+                        {
+                            get(obj, MUIA_Application_WindowList, &wlist);
+                            if (wlist)
+                            {
+                                wstate = wlist->lh_Head;
+                                while ((curwin = NextObject(&wstate)))
+                                {
+                                    set(curwin, MUIA_Window_Sleep, TRUE);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        data->app_SleepCount--;
+                        if (data->app_SleepCount == 0)
+                        {
+                            get(obj, MUIA_Application_WindowList, &wlist);
+                            if (wlist)
+                            {
+                                wstate = wlist->lh_Head;
+                                while ((curwin = NextObject(&wstate)))
+                                {
+                                    set(curwin, MUIA_Window_Sleep, FALSE);
+                                }
+                            }
+                        }
+                    }
                 }
                 break;
 
