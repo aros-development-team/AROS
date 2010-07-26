@@ -94,9 +94,12 @@ struct relo
   unsigned int info;     /* Type of the relocation */
 };
 
-int load_elf_file(void *, ULONG_PTR);
-void *kernel_lowest();
 void *kernel_highest();
-void set_base_address(void *tracker, void ** sysbaseaddr);
+void set_base_address(void *kstart, void *tracker, void ** sysbaseaddr);
+
+int AddKernelFile(char *name);
+void FreeKernelList(void);
+size_t GetKernelSize(void);
+int LoadKernel(void);
 
 #endif /*ELFLOADER_H_*/

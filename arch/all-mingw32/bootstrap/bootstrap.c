@@ -31,6 +31,7 @@ static unsigned char __bss_track[32768];
 struct TagItem km[64];
 char bootstrapdir[MAX_PATH];
 char SystemVersion[256];
+char buf[256];
 char *bootstrapname;
 char *cmdline;
 
@@ -55,158 +56,200 @@ struct HostInterface HostIFace = {
 /* ***** This is the global SysBase ***** */
 void *SysBase;
 
+static char *GetConfigArg(char *str, char *option)
+{
+    size_t l = strlen(option);
+
+    /* First check option name */
+    if (strnicmp(str, option, l))
+        return NULL;
+
+    /* Skip option name */
+    str += l;
+
+    /* First character must be space */
+    if (!isspace(*str++))
+        return NULL;
+    /* Skip the rest of spaces */
+    while(isspace(*str))
+	str++;
+
+    return str;
+}
+
 int main(int argc, char ** argv)
 {
-  char *error;
-  unsigned long BadSyms;
-  struct TagItem *t;
-  int x;
-  struct stat st;
-  int i = 1;
-  unsigned int memSize = 64;
-  char *kernel = "boot\\aros-mingw32";
-  char *KernelArgs = NULL;
-  OSVERSIONINFO winver;
+    char *error;
+    unsigned long BadSyms;
+    struct TagItem *t;
+    int x;
+    struct stat st;
+    int i = 1;
+    unsigned int memSize = 64;
+    int def_memSize = 1;
+    char *config = "boot\\AROSBootstrap.conf";
+    char *KernelArgs = NULL;
+    OSVERSIONINFO winver;
+    FILE *file;
+    kernel_entry_fun_t kernel_addr;
+    size_t kernel_size;
 
-  /* Set current CRT locale. This makes national characters to be output
-     properly into the debug log */
-  setlocale(LC_ALL, "");
-  GetCurrentDirectory(MAX_PATH, bootstrapdir);
-  bootstrapname = argv[0];
-  cmdline = GetCommandLine();
+    /* Set current CRT locale. This makes national characters to be output
+       properly into the debug log */
+    setlocale(LC_ALL, "");
+    GetCurrentDirectory(MAX_PATH, bootstrapdir);
+    bootstrapname = argv[0];
+    cmdline = GetCommandLine();
 
-  while (i < argc)
-  {
-      if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
-      {
-        printf
-        (
-            "AROS for Windows\n"
-            "usage: %s [options] [kernel arguments]\n"
-	    "Availible options:\n"
-            " -h                 show this page\n"
-            " -m <size>          allocate <size> Megabytes of memory for AROS\n"
-            "                    (default is 64M)\n"
-            " -k <file>          use <file> as a kernel\n"
-            "                    (default is boot\\aros-mingw32)\n"
-            " --help             same as '-h'\n"
-            " --memsize <size>   same as '-m <size>'\n"
-            " --kernel <file>    same as '-k'\n"
-            "\n"
-            "Please report bugs to the AROS development team. http://www.aros.org/\n",
-            argv[0]
-        );
-        return 0;
-      }
-      else if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m"))
-      {
-        i++;
-        x = 0;
-        memSize = 0;
-        while ((argv[i])[x] >= '0' && (argv[i])[x] <= '9')
-        {
-          memSize = memSize * 10 + (argv[i])[x] - '0';
-          x++;
-        }
-        i++;
-      }
-      else if (!strcmp(argv[i], "--kernel") || !strcmp(argv[i], "-k"))
-      {
-        kernel = argv[++i];
-        i++;
-      }
-      else
-        break;
-  }
+    while (i < argc) {
+	if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
+            printf ("AROS for Windows\n"
+		    "usage: %s [options] [kernel arguments]\n"
+		    "Availible options:\n"
+		    " -h                 show this page\n"
+		    " -m <size>          allocate <size> Megabytes of memory for AROS\n"
+		    "                    (default is 64M)\n"
+		    " -c <file>          read configuration from <file>\n"
+		    "                    (default is boot\\AROSBootstrap.conf)\n"
+		    " --help             same as '-h'\n"
+		    " --memsize <size>   same as '-m <size>'\n"
+		    " --kernel <file>    same as '-k'\n"
+		    "\n"
+		    "Please report bugs to the AROS development team. http://www.aros.org/\n", argv[0]);
+            return 0;
+        } else if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m")) {
+	    memSize = atoi(argv[++i]);
+	    def_memSize = 0;
+	    i++;
+	} else if (!strcmp(argv[i], "--kernel") || !strcmp(argv[i], "-c")) {
+	    config = argv[++i];
+            i++;
+        } else
+	    break;
+    }
+    D(printf("[Bootstrap] %ld arguments processed\n", i));
 
-  D(printf("[Bootstrap] %ld arguments processed\n", i));
-  D(printf("[Bootstrap] Raw command line: %s\n", cmdline));
-  if (i < argc) {
-      KernelArgs = cmdline;
-      while(isspace(*KernelArgs++));
-      for (x = 0; x < i; x++) {
-          while (!isspace(*KernelArgs++));
-          while (isspace(*KernelArgs))
-          	KernelArgs++;
-      }
-  }
-  D(printf("[Bootstrap] Kernel arguments: %s\n", KernelArgs));
-  winver.dwOSVersionInfoSize = sizeof(winver);
-  GetVersionEx(&winver);
-  sprintf(SystemVersion, "Windows %lu.%lu build %lu %s", winver.dwMajorVersion, winver.dwMinorVersion, winver.dwBuildNumber, winver.szCSDVersion);
-  D(printf("[Bootstrap] OS version: %s\n", SystemVersion));
+    D(printf("[Bootstrap] Raw command line: %s\n", cmdline));
+    if (i < argc) {
+	KernelArgs = cmdline;
+	while(isspace(*KernelArgs++));
+	for (x = 0; x < i; x++) {
+            while (!isspace(*KernelArgs++));
+            while (isspace(*KernelArgs))
+        	KernelArgs++;
+	}
+    }
+    D(printf("[Bootstrap] Kernel arguments: %s\n", KernelArgs));
+
+    winver.dwOSVersionInfoSize = sizeof(winver);
+    GetVersionEx(&winver);
+    sprintf(SystemVersion, "Windows %lu.%lu build %lu %s", winver.dwMajorVersion, winver.dwMinorVersion, winver.dwBuildNumber, winver.szCSDVersion);
+    D(printf("[Bootstrap] OS version: %s\n", SystemVersion));
+
+    /* If AROSBootstrap.exe is found in the current directory, this means the bootstrap
+       was started in its own dir. Go one level up in order to reach the root */
+    if (!stat("AROSBootstrap.exe", &st))
+	chdir("..");
+
+    file = fopen(config, "r");
+    if (!file) {
+	printf("Failed to load configuration file %s!\n", config);
+	return -1;
+    }
+
+    /* Parse the configuration file */
+    while (fgets(buf, sizeof(buf), file)) {
+	char *c = strchr(buf, '\r');
+      
+	if (!c)
+            c = strchr(buf, '\n');
+	if (c)
+	    *c = 0;
+
+	c = GetConfigArg(buf, "module");
+	if (c) {
+	    AddKernelFile(c);
+	    continue;
+	}
+
+	/* Command line argument overrides this */
+	if (def_memSize) {
+	    c = GetConfigArg(buf, "memory");
+	    if (c) {
+		memSize = atoi(c);
+		continue;
+	    }
+	}
+    }
+    fclose(file);
+
+    kernel_size = GetKernelSize();
+    if (!kernel_size)
+	return -1;
+
+    kernel_addr = malloc(kernel_size);
+    if (!kernel_addr) {
+	printf("Failed to allocate %u bytes for the kernel!\n", kernel_size);
+	return -1;
+    }
+
+    set_base_address(kernel_addr, __bss_track, &SysBase);
+    if (!LoadKernel())
+	return -1;
+
+    FreeKernelList();
+
+    D(printf("[Bootstrap] allocating working mem: %iMb\n",memSize));
+
+    size_t memlen = memSize << 20;
+    void * memory = malloc(memlen);
+
+    if (!memory) {
+	printf("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
+	return -1;
+    }
+    D(printf("[Bootstrap] RAM memory allocated: %p-%p (%lu bytes)\n", memory, memory + memlen, memlen));
+
+    //fill in kernel message
+    struct TagItem *tag = km;
+
+    tag->ti_Tag = KRN_MEMLower;
+    tag->ti_Data = (IPTR)memory;
+    tag++;
+
+    tag->ti_Tag = KRN_MEMUpper;
+    tag->ti_Data = (IPTR)memory + memlen - 1;
+    tag++;
+
+    tag->ti_Tag = KRN_KernelLowest;
+    tag->ti_Data = (IPTR)kernel_addr;
+    tag++;
+
+    tag->ti_Tag = KRN_KernelHighest;
+    tag->ti_Data = (IPTR)kernel_highest();
+    tag++;
+
+    tag->ti_Tag = KRN_KernelBss;
+    tag->ti_Data = (IPTR)__bss_track;
+    tag++;
+
+    tag->ti_Tag = KRN_BootLoader;
+    tag->ti_Data = (IPTR)SystemVersion;
+    tag++;
+
+    tag->ti_Tag = KRN_CmdLine;
+    tag->ti_Data = (IPTR)KernelArgs;
+    tag++;
   
-  if (!stat("..\\AROS.boot", &st)) {
-      chdir("..");
-  }
+    tag->ti_Tag = KRN_HostInterface;
+    tag->ti_Data = (IPTR)&HostIFace;
+    tag++;
 
-  //load elf-kernel and fill in the bootinfo
-  void * file = fopen(kernel, "rb");
+    tag->ti_Tag = TAG_DONE;
 
-  if (!file)
-  {
-  	printf("[Bootstrap] unable to open kernel \"%s\"\n", kernel);
-  	return -1;
-  }
-  set_base_address(__bss_track, &SysBase);
-  i = load_elf_file(file,0);
-  fclose(file);
-  if (!i) {
-      printf("[Bootstrap] Failed to load kernel \"%s\"\n", kernel);
-      return -1;
-  }
-  D(printf("[Bootstrap] allocating working mem: %iMb\n",memSize));
+    printf("[Bootstrap] entering kernel@%p...\n", kernel_addr);
+    int retval = kernel_addr(km);
 
-  size_t memlen = memSize << 20;
-  void * memory = malloc(memlen);
-
-  if (!memory) {
-      printf("[Bootstrap] Failed to allocate RAM!\n");
-      return -1;
-  }
-  D(printf("[Bootstrap] RAM memory allocated: %p-%p (%lu bytes)\n", memory, memory + memlen, memlen));
-  
-  kernel_entry_fun_t kernel_entry_fun = kernel_lowest();
-
-  //fill in kernel message
-  struct TagItem *tag = km;
-
-  tag->ti_Tag = KRN_MEMLower;
-  tag->ti_Data = (IPTR)memory;
-  tag++;
-  
-  tag->ti_Tag = KRN_MEMUpper;
-  tag->ti_Data = (IPTR)memory + memlen - 1;
-  tag++;
-
-  tag->ti_Tag = KRN_KernelLowest;
-  tag->ti_Data = (IPTR)kernel_entry_fun;
-  tag++;
-    
-  tag->ti_Tag = KRN_KernelHighest;
-  tag->ti_Data = (IPTR)kernel_highest();
-  tag++;
-
-  tag->ti_Tag = KRN_KernelBss;
-  tag->ti_Data = (IPTR)__bss_track;
-  tag++;
-
-  tag->ti_Tag = KRN_BootLoader;
-  tag->ti_Data = (IPTR)SystemVersion;
-  tag++;
-
-  tag->ti_Tag = KRN_CmdLine;
-  tag->ti_Data = (IPTR)KernelArgs;
-  tag++;
-  
-  tag->ti_Tag = KRN_HostInterface;
-  tag->ti_Data = (IPTR)&HostIFace;
-  tag++;
-
-  tag->ti_Tag = TAG_DONE;
-
-  printf("[Bootstrap] entering kernel@%p...\n",kernel_entry_fun);
-  int retval = kernel_entry_fun(km);
-
-  printf("kernel returned %i\n",retval);
+    printf("kernel returned %i\n",retval);
+    return retval;
 }  
