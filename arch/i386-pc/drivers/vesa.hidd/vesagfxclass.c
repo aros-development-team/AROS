@@ -231,6 +231,7 @@ OOP_Object *PCVesa__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     data->visible = msg->bitMap;
     UNLOCK_FRAMEBUFFER(data);
 
+    D(bug("[VesaGfx] Show() done\n"));
     return msg->bitMap;
 }
 
