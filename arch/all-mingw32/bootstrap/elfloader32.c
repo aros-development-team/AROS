@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2006-2009 The AROS Development Team. All rights reserved.
+ Copyright (C) 2006-2010 The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: ELF32 loader extracted from our internal_load_seg_elf in dos.library.
@@ -18,33 +18,40 @@
 #define kprintf printf
 
 /*
- * These two pointers are used by the ELF loader to claim for memory ranges for both
- * the RW sections (.data, .bss and such) and RO sections (.text, .rodata....) of executable.
+ * This pointer is used by the ELF loader to claim for memory ranges for executables.
  */
-char *kbase;
 char *ptr_ro;
 void ** SysBaseAddr;
 
-struct _bss_tracker {
+struct _bss_tracker
+{
   void *addr;
   size_t len;
 } *bss_tracker;
 
-void *kernel_lowest()
+struct ELFNode
 {
-    return kbase;
-}
+    struct ELFNode   *Next;
+    struct sheader   *sh;
+    struct elfheader  eh;
+    char	      Name[1];
+};
+
+struct ELFNode *FirstELF = NULL;
+struct ELFNode *LastELF = (struct ELFNode *)&FirstELF;
 
 void *kernel_highest()
 {
     return ptr_ro - 1;
 }
 
-void set_base_address(void *tracker, void ** sysbaseaddr)
+void set_base_address(void *kstart, void *tracker, void ** sysbaseaddr)
 {
-  D(printf("[ELF Loader] set_base_address %p %p\n", tracker, sysbaseaddr));
-  bss_tracker = (struct _bss_tracker *)tracker;
-  SysBaseAddr = sysbaseaddr;
+    D(printf("[ELF Loader] set_base_address %p %p\n", tracker, sysbaseaddr));
+
+    ptr_ro = kstart;
+    bss_tracker = (struct _bss_tracker *)tracker;
+    SysBaseAddr = sysbaseaddr;
 }
 
 /*
@@ -52,9 +59,10 @@ void set_base_address(void *tracker, void ** sysbaseaddr)
  */
 static int read_block(void *file, long offset, void *dest, long length)
 {
-  fseek(file, offset, SEEK_SET);
-  fread(dest,(size_t)length, 1, file);
-  return 1;
+    fseek(file, offset, SEEK_SET);
+    fread(dest,(size_t)length, 1, file);
+
+    return 1;
 }
 
 /*
@@ -62,41 +70,28 @@ static int read_block(void *file, long offset, void *dest, long length)
  */
 static void *load_block(void *file, long offset, long length)
 {
-  void * dest = malloc(length);
-  fseek(file, offset, SEEK_SET);
-  fread(dest, (size_t)length, 1, file);
-  return dest;
-}
+    void * dest = malloc(length);
 
-static void free_block(void * block)
-{
-  free(block);
-}
+    fseek(file, offset, SEEK_SET);
+    fread(dest, (size_t)length, 1, file);
 
+    return dest;
+}
 
 /*
  * Test for correct ELF header here
  */
-static int check_header(struct elfheader *eh)
+static char *check_header(struct elfheader *eh)
 {
-  if
-    (
-	 eh->ident[0] != 0x7f ||
-	 eh->ident[1] != 'E'  ||
-	 eh->ident[2] != 'L'  ||
-	 eh->ident[3] != 'F'
-	 )
-  {
-	D(kprintf("[ELF Loader] Not an ELF object\n"));
-	return 0;
-  }
+    if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
+        eh->ident[2] != 'L'  || eh->ident[3] != 'F')
+	return "Not a ELF object";
   
-  if (eh->type != ET_REL || eh->machine != EM_386)
-  {
-	D(kprintf("[ELF Loader] Wrong object type or wrong architecture\n"));
-	return 0;
-  }
-  return 1;
+    if (eh->type != ET_REL || eh->machine != EM_386)
+	return "Wrong object type or wrong architecture";
+
+    /* No error */
+    return NULL;
 }
 
 /*
@@ -218,74 +213,131 @@ SysBase_no:     s = sym->value;
   return 1;
 }
 
-int load_elf_file(void *file, ULONG_PTR virt)
+int AddKernelFile(char *name)
 {
-    struct elfheader eh;
-    struct sheader *sh;
-    unsigned long i;
-    size_t ksize = 0;
+    int l;
+    struct ELFNode *n;
 
-    D(kprintf("[ELF Loader] Loading ELF module from virtual address %p\n", virt));
-  
-    /* Check the header of ELF file */
-    if (!read_block(file, 0, &eh, sizeof(eh)) ||
-	!check_header(&eh) ||
-	!(sh = load_block(file, eh.shoff, eh.shnum * eh.shentsize))) {
-	kprintf("[ELF Loader] Wrong module header, aborting.\n");
-	return;
-    }
-  
-    for(i = 0; i < eh.shnum; i++) {
-        if (sh[i].flags & SHF_ALLOC)
-            ksize += (sh[i].size + sh[i].addralign - 1);
-    }
-    
-    kbase = malloc(ksize);
-    ptr_ro = kbase;
-    if (!kbase) {
-        printf("[ELF Loader] Failed to allocate %lu bytes for kernel\n", ksize);
+    n = malloc(sizeof(struct ELFNode) + strlen(name));
+    if (!n)
         return 0;
-    }
-    D(printf("[ELF Loader] Kernel memory allocated: %p-%p (%lu bytes)\n", kbase, kbase + ksize, ksize));
-  
-    /* Iterate over the section header in order to prepare memory and eventually load some hunks */
-    for (i=0; i < eh.shnum; i++)
-    {
-        /* Load the symbol and string tables */
-	if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB)
-	{
-            D(printf("[ELF Loader] Symbol table\n"));
-	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
-	}
-	/* Does the section require memoy allcation? */
-	else if (sh[i].flags & SHF_ALLOC)
-	{
-            D(printf("[ELF Loader] Allocated section\n"));
-	    /* Yup, it does. Load the hunk */
-	    if (!load_hunk(file, &sh[i]))
-	    {
-		kprintf("[ELF Loader] Error at loading of the hunk!\n");
-	    }
-	        D(else printf("[ELF Loader] shared mem@0x%x\n", sh[i].addr));
-	}
-    }
-  
-    /* For every loaded section perform the relocations */
-    for (i=0; i < eh.shnum; i++)
-    {
-	if ((sh[i].type == SHT_RELA || sh[i].type == SHT_REL) && sh[sh[i].info].addr)
-	{
-	  sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
-	  if (!sh[i].addr || !relocate(&eh, sh, i, virt))
-	  {
-		kprintf("[ELF Loader] Relocation error!\n");
-	  }
-	  free_block(sh[i].addr);
-	}
-	else if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB)
-	  free_block(sh[i].addr);
-    }
-    free_block(sh);
+    
+    n->Next = NULL;
+    strcpy(n->Name, name);
+
+    LastELF->Next = n;
+    LastELF = n;
+
     return 1;
 }
 
+void FreeKernelList(void)
+{
+    struct ELFNode *n, *n2;
+    
+    for (n = FirstELF; n; n = n2) {
+	n2 = n->Next;
+	free(n);
+    }
+    /* We do not reset list pointers because the list will never be reused */
+}
+
+size_t GetKernelSize(void)
+{
+    struct ELFNode *n;
+    FILE *file;
+    char *err;
+    size_t ksize = 0;
+    unsigned short i;
+
+    D(printf("[ELF Loader] Calculating kernel size...\n"));
+
+    for (n = FirstELF; n; n = n->Next) {
+	D(printf("[ELF Loader] Checking file %s\n", n->Name));
+	file = fopen(n->Name, "rb");
+	if (!file) {
+	    printf("Failed to open file %s!\n", n->Name);
+	    return 0;
+	}
+	
+	/* Check the header of ELF file */
+	read_block(file, 0, &n->eh, sizeof(struct elfheader));
+	err = check_header(&n->eh);
+	if (err)
+	    n->sh = NULL;
+	else {
+	    n->sh = load_block(file, n->eh.shoff, n->eh.shnum * n->eh.shentsize);
+	    if (!n->sh)
+	        err = "Failed to read file";
+	}
+
+	fclose(file);
+	if (err) {
+	    printf("%s: %s\n", n->Name, err);
+	    return 0;
+	}
+
+	for(i = 0; i < n->eh.shnum; i++) {
+	    if (n->sh[i].flags & SHF_ALLOC)
+                ksize += (n->sh[i].size + n->sh[i].addralign - 1);
+	}
+    }
+
+    return ksize;
+}
+
+int LoadKernel(void)
+{
+    struct ELFNode *n;
+    FILE *file;
+    unsigned short i;
+
+    D(printf("[ELF Loader] Loading kernel...\n"));
+
+    for (n = FirstELF; n; n = n->Next) {
+	D(printf("[ELF Loader] Loading file %s\n", n->Name));
+	file = fopen(n->Name, "rb");
+	if (!file) {
+	    printf("Failed to open file %s!\n", n->Name);
+	    return 0;
+	}
+	
+	/* Iterate over the section header in order to prepare memory and eventually load some hunks */
+	for (i=0; i < n->eh.shnum; i++) {
+	    struct sheader *sh = n->sh;
+
+            /* Load the symbol and string tables */
+	    if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB) {
+		D(printf("[ELF Loader] Symbol table\n"));
+		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
+	    } else if (sh[i].flags & SHF_ALLOC) {
+		/* Does the section require memory allcation? */
+		D(printf("[ELF Loader] Allocated section\n"));
+		if (!load_hunk(file, &sh[i])) {
+		    printf("%s: Error loading hunk %u!\n", n->Name, i);
+		    return 0;
+		}
+	        printf("[ELF Loader] shared mem@0x%x\n", sh[i].addr);
+	    }
+	}
+  
+	/* For every loaded section perform relocations */
+	for (i=0; i < n->eh.shnum; i++) {
+	    struct sheader *sh = n->sh;
+
+	    if ((sh[i].type == SHT_RELA || sh[i].type == SHT_REL) && sh[sh[i].info].addr) {
+		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
+		if (!sh[i].addr || !relocate(&n->eh, sh, i, 0)) {
+		    printf("%s: Relocation error in hunk %u!\n", n->Name, 0);
+		    return 0;
+		}
+
+		free(sh[i].addr);
+	    } else if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB)
+		free(sh[i].addr);
+	}
+
+	free(n->sh);
+    }
+    return 1;
+}
