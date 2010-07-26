@@ -18,7 +18,7 @@
 #include <hidd/graphics.h>
 #include <oop/oop.h>
 #include <aros/symbolsets.h>
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <string.h>
@@ -93,6 +93,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 	data->bytesperpix = multi;
 	data->bytesperline = width * multi;
+	D(bug("[VesaBitMap] Size %dx%d, %u bytes per pixel, %u bytes per line, displayable: %u\n", width, height, multi, data->bytesperline, displayable));
 
 	OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
 	if (modeid != vHidd_ModeID_Invalid) {
@@ -107,7 +108,8 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	}
 
     	data->VideoData = AllocVec(width * height * multi, MEMF_PUBLIC | MEMF_CLEAR);
-	
+	D(bug("[VesaBitMap] Video data at 0x%p (%u bytes)\n", data->VideoData, width * height * multi));
+
 	if (data->VideoData) {
 	    HIDDT_ColorModel cmod;
 	    
@@ -119,6 +121,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 		ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 
 	    data->DAC = AllocMem(768, MEMF_ANY);
+	    D(bug("[VesaBitMap] Palette data at 0x%p\n", data->DAC));
 	    if (data->DAC)
 		ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 	}
@@ -137,8 +140,10 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
-    EnterFunc(bug("VesaGfx.BitMap::Dispose()\n")); 
+    D(bug("[VesaBitMap] Dispose(0x%p)\n", o));
 
+    if (data->DAC)
+	FreeMem(data->DAC, 768);
     if (data->VideoData)
     	FreeVec(data->VideoData);
 
@@ -950,6 +955,7 @@ VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Upda
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
+    D(bug("[VesaBitMap] UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
     if (data->disp) {
 	LOCK_FRAMEBUFFER(XSD(cl));
         vesaDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);

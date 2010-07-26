@@ -23,7 +23,7 @@
 #include <clib/alib_protos.h>
 #include <string.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "vesagfxclass.h"
@@ -207,19 +207,26 @@ OOP_Object *PCVesa__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 	{TAG_DONE	     , 0    }
     };
 
+    D(bug("[VesaGfx] Show(0x%p), old visible 0x%p\n", msg->bitMap, data->visible));
+
     LOCK_FRAMEBUFFER(data);
 
     /* Remove old bitmap from the screen */
-    if (data->visible)
+    if (data->visible) {
+	D(bug("[VesaGfx] Hiding old bitmap\n"));
 	OOP_SetAttrs(data->visible, tags);
+    }
 
     if (msg->bitMap) {
 	/* If we have a bitmap to show, set it as visible */
+	D(bug("[VesaGfx] Showing new bitmap\n"));
 	tags[0].ti_Data = TRUE;
 	OOP_SetAttrs(msg->bitMap, tags);
-    } else
+    } else {
+	D(bug("[VesaGfx] Blanking screen\n"));
 	/* Otherwize simply clear the framebuffer */
 	ClearBuffer(&data->data);
+    }
 
     data->visible = msg->bitMap;
     UNLOCK_FRAMEBUFFER(data);
@@ -331,8 +338,6 @@ static int PCVesa_InitClass(LIBBASETYPEPTR LIBBASE)
 
 static int PCVesa_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    EnterFunc(bug("free_vesagfxclass(xsd=%p)\n", xsd));
-
     OOP_ReleaseAttrBases(attrbases);
     ReturnInt("PCVesa_ExpungeClass", int, TRUE);
 }
