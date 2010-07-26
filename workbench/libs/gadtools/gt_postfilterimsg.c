@@ -59,6 +59,14 @@
 
     	rc = gtmsg->origmsg;
 	
+	if (rc) if (rc->Class == IDCMP_MENUVERIFY)
+	{
+	    /* IDCMP_MENUVERIFY: app can put MENUCANCEL into msg->Code to
+	       indicate to Intuition that it shall prevent opening of menus */
+	       
+	    rc->Code = gtmsg->imsg.eim_IntuiMessage.Code;
+	}
+	
 	if (gtmsg->wasalloced)
 	{
 	    FreeMem(gtmsg, sizeof(struct GT_IntuiMessage));
