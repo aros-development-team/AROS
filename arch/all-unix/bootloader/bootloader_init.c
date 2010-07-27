@@ -20,7 +20,6 @@
 #include <aros/symbolsets.h>
 #include <aros/bootloader.h>
 #include "bootloader_intern.h"
-#include LC_LIBDEFS_FILE
 
 #include <ctype.h>
 #include <string.h>
@@ -29,7 +28,7 @@
 extern char *Kernel_Args;
 extern char *BootLoader_Name;
 
-static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
+static int BootLoader_Init(struct BootLoaderBase *BootLoaderBase)
 {
     D(bug("[Bootldr] Init\n"));
     NEWLIST(&(BootLoaderBase->Args));
@@ -46,7 +45,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 
 	D(bug("[BootLdr] Kernel arguments: %s\n", Kernel_Args));
 	/* First make a working copy of the command line */
-	buff = AllocMem(len, MEMF_ANY|MEMF_CLEAR)
+	buff = AllocMem(len, MEMF_ANY|MEMF_CLEAR);
 	if (buff) {
 	    strcpy(buff,Kernel_Args);
 	    /* remove any leading spaces */
@@ -69,4 +68,4 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     return TRUE;
 }
 
-ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2INITLIB(BootLoader_Init, 0)
