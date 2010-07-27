@@ -79,22 +79,6 @@ int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, .
   return r;
 }
 
-void __clear_bss(struct TagItem *msg)
-{
-    struct KernelBSS *bss;
-
-    bss = (struct KernelBSS *)krnGetTagData(KRN_KernelBss, 0, msg);
-    
-    if (bss)
-    {
-        while (bss->addr)
-        {
-		  bzero((void*)bss->addr, bss->len);
-            bss++;
-        }   
-    }
-}
-
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
          struct KernelBase *, KernelBase, 1, Kernel)
 {
@@ -138,6 +122,8 @@ static int Kernel_Init(LIBBASETYPEPTR kBase)
         NEWLIST(&kBase->kb_Exceptions[i]);
 
   NEWLIST(&kBase->kb_Interrupts);
+  NEWLIST(&kBase->kb_Modules);
+  InitSemaphore(&kBase->kb_ModSem);
   D(mykprintf("[Kernel] KrnGetBootInfo yields %p\n",Kernel_KrnGetBootInfo()));
   return 1;
 }

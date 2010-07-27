@@ -6,6 +6,7 @@
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <exec/semaphores.h>
 #include <utility/tagitem.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -43,10 +44,12 @@
 #define INT_TIMER 0
 
 struct KernelBase {
-    struct Node         kb_Node;
-    void *              kb_MemPool;
-    struct List         kb_Exceptions[EXCEPTIONS_NUM];
-    struct List         kb_Interrupts;
+    struct Node            kb_Node;
+    void *                 kb_MemPool;
+    struct List            kb_Exceptions[EXCEPTIONS_NUM];
+    struct List            kb_Interrupts;
+    struct MinList         kb_Modules;
+    struct SignalSemaphore kb_ModSem;
 };
 
 struct KernelBSS {
