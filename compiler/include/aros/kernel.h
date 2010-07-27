@@ -2,7 +2,7 @@
 #define AROS_KERNEL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: TagItems for the kernel.resource
@@ -50,5 +50,15 @@ typedef enum {
 #define KRN_HostInterface	(KRN_Dummy + 20)
 #define KRN_DebugInfo		(KRN_Dummy + 21)
 #define KRN_BootLoader          (KRN_Dummy + 22)
+
+/* Known debug info types */
+#define DEBUG_ELF 1
+
+/* ELF debug info */
+struct ELF_DebugInfo
+{
+    APTR eh;
+    APTR sh;
+};
 
 #endif /* AROS_KERNEL_H */
