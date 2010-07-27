@@ -79,6 +79,22 @@ int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, .
   return r;
 }
 
+void __clear_bss(struct TagItem *msg)
+{
+    struct KernelBSS *bss;
+
+    bss = (struct KernelBSS *)krnGetTagData(KRN_KernelBss, 0, msg);
+    
+    if (bss)
+    {
+        while (bss->addr)
+        {
+		  bzero((void*)bss->addr, bss->len);
+            bss++;
+        }   
+    }
+}
+
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
          struct KernelBase *, KernelBase, 1, Kernel)
 {
@@ -148,8 +164,9 @@ int __startup startup(struct TagItem *msg)
   unsigned long badsyms;
   struct MemHeader *mh;
 
+  __clear_bss(msg);
   BootMsg = msg;
-  
+
   void * klo = (void*)krnGetTagData(KRN_KernelLowest, 0, msg);
   void * khi = (void*)krnGetTagData(KRN_KernelHighest, 0, msg);
   void * memory = (void*)krnGetTagData(KRN_MEMLower, 0, msg);
