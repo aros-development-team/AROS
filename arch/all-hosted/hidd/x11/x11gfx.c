@@ -507,6 +507,32 @@ VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
+VOID X11Cl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
+{
+    struct TagItem  *tag, *tstate;
+    ULONG   	    idx;
+    struct x11_staticdata *data = XSD(cl);
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
+	    switch(idx)
+	    {
+	    case aoHidd_Gfx_ActiveCallBack:
+	        data->activecallback = (void *)tag->ti_Data;
+		break;
+
+	    case aoHidd_Gfx_ActiveCallBackData:
+	        data->callbackdata = (void *)tag->ti_Data;
+		break;
+	    }
+	}
+    }
+    OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+}
+/****************************************************************************************/
+
 OOP_Object *X11Cl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
     OOP_Object      *fb = 0;

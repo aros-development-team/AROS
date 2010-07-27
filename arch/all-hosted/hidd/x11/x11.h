@@ -196,13 +196,12 @@ struct x11_staticdata
     Atom    	    	     clipboard_incr_atom;
     Atom    	    	     clipboard_targets_atom;
     Time    	    	     x_time;
-#if 0
-    VOID	    	     (*activecallback)(APTR, OOP_Object *, BOOL);
+
+    VOID	    	     (*activecallback)(APTR, OOP_Object *);
     APTR	    	     callbackdata;
-#endif    
 
     BOOL    	    	    fullscreen;
-    
+
     struct MsgPort  	    *hostclipboardmp;
     struct Message  	    *hostclipboardmsg;
     ULONG   	    	     hostclipboard_readstate;

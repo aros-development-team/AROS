@@ -609,28 +609,14 @@ D(bug("Got input from unixio\n"));
 			XCALL(XAutoRepeatOn, xsd->display);
     	    	    	UNLOCK_X11
 		    #endif
-		    
-    	    	    #if 0
-    	    	    	ObtainSemaphoreShared(&xsd->sema);
-			/* Call the user supplied callback func, if supplied */
-			if (NULL != xsd->activecallback)
-			{
-		    	    xsd->activecallback(xsd->callbackdata, node->bmobj, FALSE);
-			}
-    	    	    	ReleaseSemaphore(&xsd->sema);
-    	    	    #endif
 			break;
 
 		    case FocusIn:
-    	    	    #if 0		
-    	    	    	ObtainSemaphoreShared(&xsd->sema);
 			/* Call the user supplied callback func, if supplied */
 			if (NULL != xsd->activecallback)
 			{
-		    	    xsd->activecallback(xsd->callbackdata, node->bmobj, TRUE);
+		    	    xsd->activecallback(xsd->callbackdata, NULL);
 			}
-    	    	    	ReleaseSemaphore(&xsd->sema);
-    	    	    #endif
 			break;
 
 	    	    case KeyPress:
