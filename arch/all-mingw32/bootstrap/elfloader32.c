@@ -317,7 +317,7 @@ int LoadKernel(void)
 		    printf("%s: Error loading hunk %u!\n", n->Name, i);
 		    return 0;
 		}
-	        printf("[ELF Loader] shared mem@0x%x\n", sh[i].addr);
+	        D(printf("[ELF Loader] shared mem@0x%x\n", sh[i].addr));
 	    }
 	}
   
