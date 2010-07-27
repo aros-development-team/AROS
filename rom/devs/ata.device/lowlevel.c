@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2009, The AROS Development Team. All rights reserved
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -241,20 +241,26 @@ static BYTE ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
 
 static inline struct ata_Unit* ata_GetSelectedUnit(struct ata_Bus* bus)
 {
-    register int id = (ata_in(ata_DevHead, bus->ab_Port) & 0x10) >> 4;
-    return bus->ab_Units[id];
+    return bus->ab_SelectedUnit;
 }
 
 static inline BOOL ata_SelectUnit(struct ata_Unit* unit)
 {
-    ata_out(unit->au_DevMask, ata_DevHead, unit->au_Bus->ab_Port);
+    struct ata_Bus *bus = unit->au_Bus;
+
+    if (unit == bus->ab_SelectedUnit)
+        return TRUE;
+
+    ata_out(unit->au_DevMask, ata_DevHead, bus->ab_Port);
 
     do
     {
         ata_WaitNano(400);
         //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
     }
-    while (0 != (ATAF_BUSY & ata_ReadStatus(unit->au_Bus)));
+    while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
+
+    bus->ab_SelectedUnit = unit;
 
     return TRUE;
 }
@@ -1132,7 +1138,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
             return FALSE;
     }
 
-    D(bug("[ATA  ] ata_setup_unit: Enabling IRQs\n"));
+    DINIT(bug("[ATA  ] ata_setup_unit: Enabling IRQs\n"));
     ata_out(0x0, ata_AltControl, bus->ab_Alt);
 
     /*
@@ -1465,11 +1471,19 @@ BYTE ata_Identify(struct ata_Unit* unit)
     };
 
     /* If the right command fails, try the wrong one. If both fail, abort */
+    DINIT(bug("[ATA%02ld] ata_Identify: Executing ATA_IDENTIFY_%s command\n",
+        unit->au_UnitNum, atapi ? "ATAPI" : "DEVICE"));
     if (ata_exec_cmd(unit, &acb))
     {
         acb.command = atapi ? ATA_IDENTIFY_DEVICE : ATA_IDENTIFY_ATAPI;
+        DINIT(bug("[ATA%02ld] ata_Identify: Executing ATA_IDENTIFY_%s command"
+            " instead\n", unit->au_UnitNum, atapi ? "DEVICE" : "ATAPI"));
         if (ata_exec_cmd(unit, &acb))
+        {
+            DINIT(bug("[ATA%02ld] ata_Identify: Both command variants failed\n",
+                unit->au_UnitNum));
             return IOERR_OPENFAIL;
+        }
         unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] ^= 0x82;
         atapi = unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] & 0x80;
         DINIT(bug("[ATA%02ld] ata_Identify:"
