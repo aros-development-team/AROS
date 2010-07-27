@@ -488,8 +488,9 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
-    int xoffset, yoffset, limit;
-    BOOL do_move = FALSE;
+    int limit;
+    int xoffset = data->xoffset;
+    int yoffset = data->yoffset;
 
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
@@ -534,8 +535,6 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 		    xoffset = 0;
 		else if (xoffset < limit)
 		    xoffset = limit;
-		if (xoffset != data->xoffset)
-		    do_move = TRUE;
 		break;
 	    case aoHidd_BitMap_TopEdge:
 	        yoffset = tag->ti_Data;
@@ -544,15 +543,13 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 		    yoffset = 0;
 		else if (yoffset < limit)
 		    yoffset = limit;
-		if (yoffset != data->yoffset)
-		    do_move = TRUE;
 		break;
 	    }
 	}
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    if (do_move) {
+    if ((xoffset != data->xoffset) || (yoffset != data->yoffset)) {
 	data->xoffset = xoffset;
 	data->yoffset = yoffset;
 	    
