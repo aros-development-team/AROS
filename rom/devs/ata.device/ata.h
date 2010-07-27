@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-   Copyright © 2004-2009, The AROS Development Team. All rights reserved
+   Copyright © 2004-2010, The AROS Development Team. All rights reserved.
    $Id$
 
 Desc: ata.device main private include file
@@ -143,6 +143,7 @@ struct ata_Bus
    LONG                    ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
 
    struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
+   struct ata_Unit         *ab_SelectedUnit;    /* Currently selected unit */
 
    HIDDT_IRQ_Handler       *ab_IntHandler;
    ULONG                   ab_IntCnt;
