@@ -17,6 +17,7 @@ typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
 
 #include <aros/kernel.h>
+#include <aros/multiboot.h>
 #include <utility/tagitem.h>
 
 #include "debug.h"
@@ -28,7 +29,6 @@ typedef unsigned char UBYTE;
 #define D(x)
 
 static unsigned char __bss_track[32768];
-struct TagItem km[64];
 char bootstrapdir[MAX_PATH];
 char SystemVersion[256];
 char buf[256];
@@ -36,6 +36,15 @@ char *bootstrapname;
 char *cmdline;
 
 typedef int (*kernel_entry_fun_t)(struct TagItem *);
+
+struct mb_mmap MemoryMap = {
+    sizeof(struct mb_mmap),
+    0,
+    0,
+    0,
+    0,
+    MMAP_TYPE_RAM
+};
 
 /*
  * Some helpful functions that link us to the underlying host OS.
@@ -51,6 +60,19 @@ struct HostInterface HostIFace = {
     Host_PutChar,
     Host_Shutdown,
     Host_Alert
+};
+
+/* Kernel message */
+static struct TagItem km[] = {
+    {KRN_KernelLowest , 0                  },
+    {KRN_KernelHighest, 0                  },
+    {KRN_CmdLine      , 0                  },
+    {KRN_MMAPAddress  , (IPTR)&MemoryMap   },
+    {KRN_MMAPLength   , sizeof(MemoryMap)  },
+    {KRN_KernelBss    , (IPTR)__bss_track  },
+    {KRN_BootLoader   , (IPTR)SystemVersion},
+    {KRN_HostInterface, (IPTR)&HostIFace   },
+    {TAG_DONE         , 0                  }
 };
 
 /* ***** This is the global SysBase ***** */
@@ -210,42 +232,12 @@ int main(int argc, char ** argv)
     }
     D(printf("[Bootstrap] RAM memory allocated: %p-%p (%lu bytes)\n", memory, memory + memlen, memlen));
 
-    //fill in kernel message
-    struct TagItem *tag = km;
+    MemoryMap.addr = (IPTR)memory;
+    MemoryMap.len  = memlen;
 
-    tag->ti_Tag = KRN_MEMLower;
-    tag->ti_Data = (IPTR)memory;
-    tag++;
-
-    tag->ti_Tag = KRN_MEMUpper;
-    tag->ti_Data = (IPTR)memory + memlen - 1;
-    tag++;
-
-    tag->ti_Tag = KRN_KernelLowest;
-    tag->ti_Data = (IPTR)kernel_addr;
-    tag++;
-
-    tag->ti_Tag = KRN_KernelHighest;
-    tag->ti_Data = (IPTR)kernel_highest();
-    tag++;
-
-    tag->ti_Tag = KRN_KernelBss;
-    tag->ti_Data = (IPTR)__bss_track;
-    tag++;
-
-    tag->ti_Tag = KRN_BootLoader;
-    tag->ti_Data = (IPTR)SystemVersion;
-    tag++;
-
-    tag->ti_Tag = KRN_CmdLine;
-    tag->ti_Data = (IPTR)KernelArgs;
-    tag++;
-  
-    tag->ti_Tag = KRN_HostInterface;
-    tag->ti_Data = (IPTR)&HostIFace;
-    tag++;
-
-    tag->ti_Tag = TAG_DONE;
+    km[0].ti_Data = (IPTR)kernel_addr;
+    km[1].ti_Data = (IPTR)kernel_highest();
+    km[2].ti_Data = (IPTR)KernelArgs;
 
     printf("[Bootstrap] entering kernel@%p...\n", kernel_addr);
     int retval = kernel_addr(km);

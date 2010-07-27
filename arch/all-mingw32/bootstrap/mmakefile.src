@@ -43,7 +43,9 @@ KOBJS_MINGW32 := $(MINGW32_RES) $(MINGW32_HANDLERS) $(MINGW32_LIBS) $(MINGW32_DE
 #MM			 contrib-amberram-kobj
 
 #MM
-kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap.exe  $(BINDIR)/boot/AROSBootstrap.conf
+kernel-bootstrap-mingw32-quick: setup-mingw32 $(BINDIR)/boot/AROSBootstrap.exe  $(BINDIR)/boot/AROSBootstrap.conf
+
+#MM- kernel-bootstrap-mingw32: includes kernel-bootstrap-mingw32-quick
 
 #MM
 kernel-link-mingw32: $(BINDIR)/boot/aros-common $(BINDIR)/boot/aros-mingw32

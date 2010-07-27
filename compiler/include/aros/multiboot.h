@@ -65,6 +65,9 @@ struct mb_mmap {
 #define MMAP_TYPE_ACPINVS   4
 };
 
+#define addr addr_low
+#define len  len_low
+
 /* VBE controller information */
 struct vbe_controller
 {
