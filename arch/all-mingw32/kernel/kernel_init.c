@@ -1,6 +1,7 @@
 #define DEBUG 0
 
 #include <inttypes.h>
+#include <aros/multiboot.h>
 #include <aros/symbolsets.h>
 #include <exec/lists.h>
 #include <memory.h>
@@ -163,15 +164,23 @@ int __startup startup(struct TagItem *msg)
   char *errstr;
   unsigned long badsyms;
   struct MemHeader *mh;
+  void *klo, *khi;
+  void *memory;
+  IPTR memlen;
+  struct mb_mmap *mmap;
 
   __clear_bss(msg);
   BootMsg = msg;
 
-  void * klo = (void*)krnGetTagData(KRN_KernelLowest, 0, msg);
-  void * khi = (void*)krnGetTagData(KRN_KernelHighest, 0, msg);
-  void * memory = (void*)krnGetTagData(KRN_MEMLower, 0, msg);
-  void * memupper = krnGetTagData(KRN_MEMUpper, 0, msg);
+  klo = (void*)krnGetTagData(KRN_KernelLowest, 0, msg);
+  khi = (void*)krnGetTagData(KRN_KernelHighest, 0, msg);
+  mmap = (void*)krnGetTagData(KRN_MMAPAddress, 0, msg);
   HostIFace = (struct HostInterface *)krnGetTagData(KRN_HostInterface, 0, msg);
+
+  if (!mmap) {
+      mykprintf("[Kernel] Memory map not supplied, old bootstrap version\n");
+      return -1;
+  }
 
   hostlib = HostIFace->HostLib_Open("Libs\\Host\\kernel.dll", &errstr);
   if (!hostlib) {
@@ -188,6 +197,10 @@ int __startup startup(struct TagItem *msg)
 
   mykprintf("[Kernel] preparing first mem header\n");
 
+  /* We know that memory map has only one RAM element */
+  memory = (void *)mmap->addr;
+  memlen = mmap->len;
+
   /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
   mh = memory;
   mh->mh_Node.ln_Type  = NT_MEMORY;
@@ -196,9 +209,9 @@ int __startup startup(struct TagItem *msg)
   mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK;
   mh->mh_First = memory + MEMHEADER_TOTAL;
   mh->mh_First->mc_Next = NULL;
-  mh->mh_First->mc_Bytes = memupper - memory + 1 - MEMHEADER_TOTAL;
+  mh->mh_First->mc_Bytes = memlen - MEMHEADER_TOTAL;
   mh->mh_Lower = memory;
-  mh->mh_Upper = memupper;
+  mh->mh_Upper = memory + memlen - 1;
   mh->mh_Free = mh->mh_First->mc_Bytes;
 
   mykprintf("[Kernel] calling PrepareExecBase@%p mh_First=%p\n",PrepareExecBase,mh->mh_First);
