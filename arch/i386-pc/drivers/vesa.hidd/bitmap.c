@@ -896,11 +896,12 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             switch(idx)
             {
             case aoHidd_BitMap_Visible:
+		D(bug("[VesaBitMap] Setting Visible to %d\n", tag->ti_Data));
 		data->disp = tag->ti_Data;
 		if (data->disp) {
 		    if (data->DAC)
 			DACLoad(XSD(cl), data->DAC, 0, 256);
-    		    vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->disp_width - 1, data->disp_height - 1);
+//    		    vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->disp_width - 1, data->disp_height - 1);
 		}
 		break;
 	    }
@@ -919,10 +920,10 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
     UBYTE p_shift;
     UWORD red, green, blue;
 
-    D(bug("[VESA] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
+    D(bug("[VesaBitMap] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
 
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
-	D(bug("[VESA] DoSuperMethod() failed\n"));
+	D(bug("[VesaBitMap] DoSuperMethod() failed\n"));
 	return FALSE;
     }
 
