@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-fs-emul-kobj                           \
 #MM     contrib-amberram-kobj                         \
 #MM     kernel-dosboot-kobj                           \
-#MM	kernel-bootloader-unix-kobj		      \
+#MM	kernel-bootloader-kobj			      \
 #MM	kernel-hidd-graphics-kobj		      \
 #MM     workbench-hidd-unix-parallel-kobj             \
 #MM     workbench-hidd-unix-serial-kobj		      \

@@ -4,8 +4,8 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES  := -I$(SRCDIR)/rom/bootloader
 
 %build_archspecific \
-  mainmmake=kernel-bootloader maindir=rom/battclock \
+  mainmmake=kernel-bootloader maindir=rom/bootloader \
   arch=unix \
-  files="botloader_init"
+  files="bootloader_init"
 
 %common
