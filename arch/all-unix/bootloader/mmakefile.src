@@ -1,7 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-%build_module mmake=kernel-bootloader-unix \
-    modname=bootloader modtype=resource \
-    files="bootloader_init getbootinfo" uselibs="rom utility"
+USER_INCLUDES  := -I$(SRCDIR)/rom/bootloader
 
+%build_archspecific \
+  mainmmake=kernel-bootloader maindir=rom/battclock \
+  arch=unix \
+  files="botloader_init"
+
+%common
