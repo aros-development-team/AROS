@@ -73,13 +73,12 @@ void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *I
     GetPrivIBase(IntuitionBase)->ActiveMonitor = newmonitor;
     if (newmonitor) {
 	struct Screen *scr = FindFirstScreen(newmonitor, IntuitionBase);
-	struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 	UWORD DWidth, DHeight;
 
 	if (x == -1)
-	    x = iihd->LastMouseX;
+	    x = IntuitionBase->MouseX;
 	if (y == -1)
-	    y = iihd->LastMouseY;
+	    y = IntuitionBase->MouseY;
 
 	/* A crude copy from inputhandler.c. We should really handle this in monitorclass */
 	if (scr)
