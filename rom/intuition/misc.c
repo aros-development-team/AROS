@@ -19,13 +19,12 @@
 #include "inputhandler_support.h"
 #include "monitorclass_private.h"
 
-void MySetPointerPos(struct IntuitionBase *IntuitionBase, WORD x, WORD y)
+void MySetPointerPos(struct IntuitionBase *IntuitionBase)
 {
     Object *mon = GetPrivIBase(IntuitionBase)->ActiveMonitor;
 
-    DB2(bug("MySetPointerPos(%d, %d), monitor 0x%p\n", x, y, mon));
     if (mon)
-	DoMethod(mon, MM_SetPointerPos, x, y);
+	DoMethod(mon, MM_SetPointerPos, IntuitionBase->MouseX, IntuitionBase->MouseY);
 }
 
 BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
@@ -98,9 +97,12 @@ void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *I
 	    y = DHeight;
 
 	D(bug("[ActivateMonitor] Mouse pointer coordinates: (%d, %d)\n", x, y));
+	IntuitionBase->MouseX = x;
+	IntuitionBase->MouseY = y;
+
 	SetAttrs(newmonitor, MA_PointerVisible, TRUE, TAG_DONE);
-	MySetPointerPos(IntuitionBase, x, y);
-	notify_mousemove_screensandwindows(x, y, IntuitionBase);
+	MySetPointerPos(IntuitionBase);
+	notify_mousemove_screensandwindows(IntuitionBase);
     }
     D(bug("[ActivateMonitor] Done\n"));
 }

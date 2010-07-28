@@ -1018,7 +1018,7 @@ void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *Intuit
 void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase);
 
 /* misc.c */
-extern void MySetPointerPos(struct IntuitionBase *, WORD, WORD);
+extern void MySetPointerPos(struct IntuitionBase *IntuitionBase);
 extern BOOL ResetPointer(struct IntuitionBase *IntuitionBase);
 extern void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *IntuitionBase);
 extern struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);

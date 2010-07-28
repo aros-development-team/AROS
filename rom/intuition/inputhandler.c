@@ -1338,13 +1338,13 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 	    }
 
 
-	    ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
-	    ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
+	    ie->ie_X = iihdata->DeltaMouseX + IntuitionBase->MouseX;
+	    ie->ie_Y = iihdata->DeltaMouseY + IntuitionBase->MouseY;
 	} else {
 	    DEBUG_MOUSE(bug("[Inputhandler] Last mouse position: (%d, %d), new mouse position: (%d, %d)\n",
-			    iihdata->LastMouseX, iihdata->LastMouseY, ie->ie_X, ie->ie_Y));
-	    iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
-	    iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
+			    IntuitionBase->MouseX, IntuitionBase->MouseY, ie->ie_X, ie->ie_Y));
+	    iihdata->DeltaMouseX = ie->ie_X - IntuitionBase->MouseX;
+	    iihdata->DeltaMouseY = ie->ie_Y - IntuitionBase->MouseY;
 	    DEBUG_MOUSE(bug("[InputHandler] Delta is (%d, %d)\n", iihdata->DeltaMouseX, iihdata->DeltaMouseY));
 	}
 
@@ -1523,11 +1523,11 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		ie->ie_Y = iihdata->MouseBoundsBottom;
 	}
 
-	iihdata->LastMouseX = ie->ie_X;
-	iihdata->LastMouseY = ie->ie_Y;
-	notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
+	IntuitionBase->MouseX = ie->ie_X;
+	IntuitionBase->MouseY = ie->ie_Y;
+	notify_mousemove_screensandwindows(IntuitionBase);
 #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-	MySetPointerPos(IntuitionBase, ie->ie_X, ie->ie_Y);
+	MySetPointerPos(IntuitionBase);
 #else
 	*call_setpointerpos = TRUE;
 #endif
@@ -1872,9 +1872,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    iihdata->SwitchedMonitor = FALSE;
 	     if (!(ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE)) {
 		DEBUG_MONITOR(bug("[Inputhandler] Adjusting coordinates to (%d, %d)\n", ie->ie_X, ie->ie_Y));
-		iihdata->LastMouseX = ie->ie_X;
-		iihdata->LastMouseY = ie->ie_Y;
-		notify_mousemove_screensandwindows(ie->ie_X, ie->ie_Y, IntuitionBase);
+		IntuitionBase->MouseX = ie->ie_X;
+		IntuitionBase->MouseY = ie->ie_Y;
+		notify_mousemove_screensandwindows(IntuitionBase);
 	    }
 	}
 
@@ -2888,7 +2888,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
     if (call_setpointerpos)
-    	MySetPointerPos(IntuitionBase, iihdata->LastMouseX, iihdata->LastMouseY);
+    	MySetPointerPos(IntuitionBase);
 #endif
 
     /* Terminate the event chain. */
