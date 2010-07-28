@@ -151,7 +151,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
 
     /* if we're already at the root, then we can't go any further */
     if (dh->ioh.first_cluster == dh->ioh.sb->rootdir_cluster) {
-        D(bug("[fat] trying go up past the root, so entry not found\n"));
+        D(bug("[fat] trying to go up past the root, so entry not found\n"));
         return ERROR_OBJECT_NOT_FOUND;
     }
 
@@ -352,6 +352,7 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
     LONG err;
     ULONG nfound;
     struct DateStamp ds;
+    BOOL clusteradded = FALSE;
 
     D(bug("[fat] creating dir entry (name '"); RawPutChars(name, namelen);
       bug("' attr 0x%02x cluster %ld)\n", attr, cluster));
@@ -400,15 +401,23 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
 
             last = de->index + nwant;
             do {
-                GetDirEntry(dh, de->index+1, de);
+                if (GetDirEntry(dh, de->index + 1, de) != 0)
+                    clusteradded = TRUE;
                 de->e.entry.name[0] = 0x00;
                 UpdateDirEntry(de);
             } while(de->index != last);
 
             D(bug("[fat] new end-of-directory is entry %ld\n", de->index));
 
-            /* get the previous entry; this is this base (short name) entry */
-            GetDirEntry(dh, de->index-1, de);
+            /* clear all remaining entries in any new cluster added */
+            if (clusteradded)
+                while (GetDirEntry(dh, de->index + 1, de) == 0) {
+                    memset(&de->e.entry, 0, sizeof(struct FATDirEntry));
+                    UpdateDirEntry(de);
+                }
+
+            /* get the previous entry; this is the base (short name) entry */
+            GetDirEntry(dh, last - 1, de);
 
             break;
         }

@@ -111,7 +111,8 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
 
                 /* if it was free (shouldn't happen) or we hit the end of the
                  * chain, the requested data isn't here */
-                if (ioh->cur_cluster == 0 || ioh->cur_cluster >= ioh->sb->eoc_mark) {
+                if (ioh->cur_cluster == 0
+                    || ioh->cur_cluster >= ioh->sb->eoc_mark - 7) {
                     D(bug("[fat] hit empty or eoc cluster, no more file left\n"));
 
                     RESET_HANDLE(ioh);
@@ -168,7 +169,8 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
             if (b == NULL) {
                 RESET_HANDLE(ioh);
 
-                D(bug("[fat] couldn't load sector, returning error %ld\n", err));
+                D(bug("[fat] couldn't load sector, returning error %ld\n",
+                    IoErr()));
 
                 return IoErr();
             }
@@ -267,7 +269,8 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                 /* if it was free (shouldn't happen) or we hit the end of the
                  * chain, there is no next cluster, so we have to allocate a
                  * new one */
-                if (next_cluster == 0 || next_cluster >= ioh->sb->eoc_mark) {
+                if (next_cluster == 0
+                    || next_cluster >= ioh->sb->eoc_mark - 7) {
                     D(bug("[fat] hit empty or eoc cluster, allocating another\n"));
 
                     if ((err = FindFreeCluster(ioh->sb, &next_cluster)) != 0) {

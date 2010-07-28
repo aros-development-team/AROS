@@ -118,7 +118,8 @@ static ULONG GetFat16Entry(struct FSSuper *sb, ULONG n) {
 }
 
 static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n) {
-    return AROS_LE2LONG(*((ULONG *) GetFatEntryPtr(sb, n << 2, NULL)));
+    return AROS_LE2LONG(*((ULONG *) GetFatEntryPtr(sb, n << 2, NULL)))
+        & 0x0fffffff;
 }
 
 static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
@@ -305,21 +306,21 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     if (sb->clusters_count < 4085) {
         D(bug("\tFAT12 filesystem detected\n"));
         sb->type = 12;
-        sb->eoc_mark = 0x0FF8;
+        sb->eoc_mark = 0x0FFF;
         sb->func_get_fat_entry = GetFat12Entry;
         sb->func_set_fat_entry = SetFat12Entry;
     }
     else if (sb->clusters_count < 65525) {
         D(bug("\tFAT16 filesystem detected\n"));
         sb->type = 16;
-        sb->eoc_mark = 0xFFF8;
+        sb->eoc_mark = 0xFFFF;
         sb->func_get_fat_entry = GetFat16Entry;
         sb->func_set_fat_entry = SetFat16Entry;
     }
     else {
         D(bug("\tFAT32 filesystem detected\n"));
         sb->type = 32;
-        sb->eoc_mark = 0x0FFFFFF8;
+        sb->eoc_mark = 0x0FFFFFFF;
         sb->func_get_fat_entry = GetFat32Entry;
         sb->func_set_fat_entry = SetFat32Entry;
     }
