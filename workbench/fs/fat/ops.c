@@ -27,7 +27,7 @@
 #define FREE_CLUSTER_CHAIN(sb,cl)                               \
     do {                                                        \
         ULONG cluster = cl;                                     \
-        while (cluster >= 0 && cluster < sb->eoc_mark) {        \
+        while (cluster >= 0 && cluster < sb->eoc_mark - 7) {    \
             ULONG next_cluster = GET_NEXT_CLUSTER(sb, cluster); \
             SET_NEXT_CLUSTER(sb, cluster, 0);                   \
             cluster = next_cluster;                             \
@@ -526,7 +526,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
 }
 
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock) {
-    LONG err;
+    LONG err, i;
     ULONG cluster;
     struct DirHandle dh, sdh;
     struct DirEntry de, sde;
@@ -602,10 +602,12 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     sde.e.entry.first_cluster_hi = dh.ioh.first_cluster >> 16;
     UpdateDirEntry(&sde);
 
-    /* put an empty entry at the end to mark end of directory */
-    GetDirEntry(&sdh, 2, &sde);
-    memset(&sde.e.entry, 0, sizeof(struct FATDirEntry));
-    UpdateDirEntry(&sde);
+    /* clear all remaining entries (the first of which marks the end of the
+     * directory) */
+    for (i = 2; GetDirEntry(&sdh, i, &sde) == 0; i++) {
+        memset(&sde.e.entry, 0, sizeof(struct FATDirEntry));
+        UpdateDirEntry(&sde);
+    }
 
     /* new dir created */
     ReleaseDirHandle(&sdh);
@@ -809,7 +811,8 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence, LONG *new
         count = 0;
 
         /* do the actual count */
-        while ((last = GET_NEXT_CLUSTER(glob->sb, cl)) < glob->sb->eoc_mark) {
+        while ((last = GET_NEXT_CLUSTER(glob->sb, cl))
+            < glob->sb->eoc_mark - 7) {
             count++;
             cl = last;
 

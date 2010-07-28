@@ -294,7 +294,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
         while (1) {
             /* build a new tail if necessary */
             if (cur != seq) {
-                sprintf(tail, "~%ld", seq);
+                sprintf(tail, "~%lu", seq);
                 while (left + strlen(tail) > 8) left--;
                 CopyMem(tail, &basis[left], strlen(tail));
                 cur = seq;
@@ -381,15 +381,21 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
 
         /* copy bytes in */
         for (dst = 0; dst < 5; dst++) {
-	    de.e.long_entry.name1[dst] = src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) : 0x00;
+	    de.e.long_entry.name1[dst] =
+                src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) :
+                (src++ == len ? 0x0000 : 0xffff);
         }
 
         for (dst = 0; dst < 6; dst++) {
-	    de.e.long_entry.name2[dst] = src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) : 0x00;
+	    de.e.long_entry.name2[dst] =
+                src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) :
+                (src++ == len ? 0x0000 : 0xffff);
         }
 
         for (dst = 0; dst < 2; dst++) {
-	    de.e.long_entry.name3[dst] = src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) : 0x00;
+	    de.e.long_entry.name3[dst] =
+                src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) :
+                (src++ == len ? 0x0000 : 0xffff);
         }
 
         /* setup the rest of the entry */
@@ -400,7 +406,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
         de.e.long_entry.first_cluster_lo = 0;
 
         /* if we've reached the end then this is the last entry */
-        if (src == len)
+        if (src >= len)
             de.e.long_entry.order |= 0x40;
 
         /* write the entry out */
