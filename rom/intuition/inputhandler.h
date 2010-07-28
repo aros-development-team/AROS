@@ -2,7 +2,7 @@
 #define INPUTHANDLER_H
 
 /*
-    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -53,8 +53,6 @@ struct IIHData
 #endif
     APTR                     InputEventMemPool;
     APTR                     ActionsMemPool;
-    WORD                     LastMouseX;
-    WORD                     LastMouseY;
     WORD                     DeltaMouseX;
     WORD                     DeltaMouseY;
     WORD                     DeltaMouseX_Correction;

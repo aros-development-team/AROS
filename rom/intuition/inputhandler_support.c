@@ -59,21 +59,16 @@
 /****************************************************************************************/
 
 /*
-  All screens and windows will be updated with the current position of
-  the mouse pointer. The windows will receive relative mouse coordinates.
+  All screens and windows on active monitor will be updated with the current position of
+  the mouse pointer. Windows will receive relative mouse coordinates.
 */
 
 /****************************************************************************************/
 
-void notify_mousemove_screensandwindows(WORD x,
-                                        WORD y,
-                                        struct IntuitionBase * IntuitionBase)
+void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase)
 {
     LONG    	   lock = LockIBase(0);
     struct Screen *scr = IntuitionBase->FirstScreen;
-
-    IntuitionBase->MouseX = x;
-    IntuitionBase->MouseY = y;
 
     for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen)
     {
@@ -83,8 +78,8 @@ void notify_mousemove_screensandwindows(WORD x,
 	if (GetPrivScreen(scr)->MonitorObject != GetPrivIBase(IntuitionBase)->ActiveMonitor)
 	    continue;
 
-        scr->MouseX = x - scr->LeftEdge;
-        scr->MouseY = y - scr->TopEdge;
+        scr->MouseX = IntuitionBase->MouseX - scr->LeftEdge;
+        scr->MouseY = IntuitionBase->MouseY - scr->TopEdge;
 
         /*
         ** Visit all windows of this screen

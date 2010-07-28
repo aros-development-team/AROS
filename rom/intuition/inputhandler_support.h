@@ -2,7 +2,7 @@
 #define INPUTHANDLER_SUPPORT_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -11,9 +11,7 @@ struct IIHData;
 
 struct gpInput;
 
-void notify_mousemove_screensandwindows(WORD x,
-                                        WORD y,
-                                        struct IntuitionBase * IntuitionBase);
+void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase);
 
 void notify_newprefs(struct IntuitionBase * IntuitionBase);
 
