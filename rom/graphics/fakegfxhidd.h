@@ -6,9 +6,6 @@
 #ifndef FAKEGFXHIDD_H
 #define FAKEGFXHIDD_H
 
-#define CLID_Hidd_FakeGfxHidd	"hidd.gfx.fake"
-#define CLID_Hidd_FakeFB	"hidd.bitmap.fakefb"
-
 #define IID_Hidd_FakeGfxHidd	"hidd.gfx.fake"
 #define IID_Hidd_FakeFB		"hidd.bitmap.fakefb"
 
