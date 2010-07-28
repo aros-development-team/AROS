@@ -1822,6 +1822,7 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
     struct IntScreen 	*screen = msg->Screen;
     struct NewScreen 	*ns = msg->NewScreen;
     struct List     	*list = msg->List;
+    struct Screen	*oldFirstScreen;
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: Checking for pubScrNode (0x%lx)\n",screen->pubScrNode));
 
@@ -1838,9 +1839,7 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
 
     lock = LockIBase((ULONG)NULL);
 
-    /* If it's the first screen being opened, activate its monitor */
-    if (!IntuitionBase->FirstScreen)
-	ActivateMonitor(screen->MonitorObject, -1, -1, IntuitionBase);
+    oldFirstScreen = IntuitionBase->FirstScreen;
 
     if (ns->Type & SCREENBEHIND)
     {
@@ -1860,6 +1859,10 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
             IntuitionBase->ActiveScreen = &screen->Screen;
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set as ActiveScreen\n"));
     }
+
+    /* If it's the first screen being opened, activate its monitor */
+    if (!oldFirstScreen)
+	ActivateMonitor(screen->MonitorObject, -1, -1, IntuitionBase);
 
     /* set the default pub screen */
     if (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_DEFPUBSCREEN)

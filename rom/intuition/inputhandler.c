@@ -39,6 +39,7 @@
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
 #include "menus.h"
+#include "monitorclass_private.h"
 
 #ifdef SKINS
 #   include "smallmenu.h"
@@ -2542,11 +2543,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             DEBUG_POINTER(dprintf("InputHandler: sprite 0x%lx\n",
                                           shared_pointer->sprite));
 
-                            if (ChangeExtSprite(&scr->Screen.ViewPort,
-						scr->Pointer->sprite, shared_pointer->sprite,
-						POINTERA_XOffset, shared_pointer->xoffset,
-						POINTERA_YOffset, shared_pointer->yoffset,
-						TAG_DONE))
+                            if (DoMethod(scr->MonitorObject, MM_SetPointerShape, shared_pointer))
                             {
                                 ObtainSharedPointer(shared_pointer, IntuitionBase);
                                 ReleaseSharedPointer(scr->Pointer, IntuitionBase);

@@ -13,4 +13,8 @@ struct MonitorData
     Object *bottomleft;
     Object *bottommiddle;
     Object *bottomright;
+
+    struct SharedPointer *pointer;
+    ULONG mouseX;
+    ULONG mouseY;
 };

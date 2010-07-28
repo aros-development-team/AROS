@@ -10,6 +10,7 @@
 #include <hidd/graphics.h>
 #include <hidd/hidd.h>
 #include <graphics/driver.h>
+#include <graphics/sprite.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/classes.h>
@@ -51,11 +52,52 @@
 Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionBase)
 {
     if (add)
-	return NewObject(GetPrivIBase(IntuitionBase)->monitorclass, NULL, MA_MonitorHandle, obj, TAG_DONE);
-    else {
+    {
+	Object *mon = NewObject(GetPrivIBase(IntuitionBase)->monitorclass, NULL, MA_MonitorHandle, obj, TAG_DONE);
+
+	D(bug("[monitorclass] Created monitorclass object 0x%p\n", mon));
+	if (mon) {
+	    /* Install default mouse pointer on the new monitor */
+	    Object *ptr = GetPrivIBase(IntuitionBase)->DefaultPointer;
+
+	    if (ptr) {
+		struct SharedPointer *pointer;
+
+		GetAttr(POINTERA_SharedPointer, ptr, (IPTR *)&pointer);
+		DoMethod(mon, MM_SetPointerShape, pointer);
+	    }
+	}
+
+	return mon;
+    }
+    else
+    {
 	DisposeObject(obj);
 	return NULL;
     }
+}
+
+/***********************************************************************************/
+
+static void SetPointerPos(struct MonitorData *data, struct IntuitionBase *IntuitionBase)
+{
+    ULONG x = data->mouseX;
+    ULONG y = data->mouseY;
+
+    DB2(bug("[monitorclass] SetPointerPos(%d, %d), pointer 0x%p\n", x, y, data->pointer));
+    if (data->pointer)
+    {
+        /* Take HotSpot into account */
+	x += data->pointer->xoffset;
+        y += data->pointer->yoffset;
+
+	/* Update sprite position, just for backwards compatibility */
+	data->pointer->sprite->es_SimpleSprite.x = x;
+	data->pointer->sprite->es_SimpleSprite.y = y;
+    }
+
+    DB2(bug("[monitorclass] Physical coordinates: (%d, %d)\n", x, y));
+    HIDD_Gfx_SetCursorPos(data->handle->gfxhidd, x, y);
 }
 
 /***********************************************************************************/
@@ -72,8 +114,7 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
 {
     Class *cl = OCLASS(mon);
 
-    /* Experimental: NewMonitor will be picked up by input handler
-       when the next event arrives, so no signals etc */
+    /* NewMonitor will be picked up by input handler when the next event arrives, so no signals etc */
     GetPrivIBase(IntuitionBase)->NewMonitor = mon;
 }
 
@@ -1435,7 +1476,9 @@ void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerP
 {
     struct MonitorData *data = INST_DATA(cl, obj);
 
-    HIDD_Gfx_SetCursorPos(data->handle->gfxhidd, msg->x, msg->y);
+    data->mouseX = msg->x;
+    data->mouseY = msg->y;
+    SetPointerPos(data, IntuitionBase);
 }
 
 /************************************************************************************/
@@ -1445,4 +1488,33 @@ BOOL MonitorClass__MM_CheckID(Class *cl, Object *obj, struct msGetCompositionFla
     struct MonitorData *data = INST_DATA(cl, obj);
     
     return ((msg->ModeID & data->handle->mask) == data->handle->id);
+}
+
+/************************************************************************************/
+
+BOOL MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointerShape *msg)
+{
+    struct MonitorData *data = INST_DATA(cl, obj);
+    struct BitMap *bm;
+    BOOL res;
+
+    D(bug("[monitorclass] SetPointerShape(0x%p), old pointer 0x%p\n", msg->pointer, data->pointer));
+    /* Don't do anything if already set */
+    if (data->pointer == msg->pointer)
+	return TRUE;
+
+    bm = msg->pointer->sprite->es_BitMap;
+    /* Currently we don't work with planar sprites */
+    if (!(bm->Flags & BMF_SPECIALFMT))
+        return FALSE;
+
+    res = HIDD_Gfx_SetCursorShape(data->handle->gfxhidd, bm->Planes[0], msg->pointer->xoffset, msg->pointer->yoffset);
+    D(bug("[monitorclass] SetCursorShape() returned %d\n", res));
+    if (res) {
+	data->pointer = msg->pointer;
+	/* This will fix up sprite position if hotspot changed */
+	SetPointerPos(data, IntuitionBase);
+    }
+
+    return res;
 }

@@ -7,6 +7,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include "intuition_intern.h"
+#include "monitorclass_private.h"
 #include <intuition/pointerclass.h>
 
 /*****************************************************************************
@@ -95,11 +96,7 @@
                     DEBUG_POINTER(dprintf("SetWindowPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
                                           scr, pointer, shared_pointer->sprite));
 
-                    if (ChangeExtSprite(&scr->Screen.ViewPort,
-                                        scr->Pointer->sprite, shared_pointer->sprite,
-					POINTERA_XOffset, shared_pointer->xoffset,
-					POINTERA_YOffset, shared_pointer->yoffset,
-					TAG_DONE))
+                    if (DoMethod(scr->MonitorObject, MM_SetPointerShape, shared_pointer))
                     {
                         ObtainSharedPointer(shared_pointer, IntuitionBase);
                         ReleaseSharedPointer(scr->Pointer, IntuitionBase);

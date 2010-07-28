@@ -12,6 +12,7 @@
 #define MM_GetCompositionFlags 0x2401 /* Ask display composition flags			 */
 #define MM_SetPointerPos       0x2402 /* Set mouse pointer position			 */
 #define MM_CheckID	       0x2403 /* Check if the given mode ID matches this monitor */
+#define MM_SetPointerShape     0x2404 /* Set mouse pointer shape			 */
 
 struct msGetCompositionFlags
 {
@@ -24,6 +25,12 @@ struct msSetPointerPos
     STACKED ULONG MethodID;
     STACKED ULONG x;
     STACKED ULONG y;
+};
+
+struct msSetPointerShape
+{
+    STACKED ULONG MethodID;
+    STACKED struct SharedPointer *pointer;
 };
 
 Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionBase);
