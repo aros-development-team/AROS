@@ -19,35 +19,43 @@
 #include "inputhandler_support.h"
 #include "monitorclass_private.h"
 
-/* This function does not use MoveSprite() any more because it
-   wants to work on empty displays too. Additionally it uses
-   physical display coordinates instead of logical screen ones */
 void MySetPointerPos(struct IntuitionBase *IntuitionBase, WORD x, WORD y)
 {
     Object *mon = GetPrivIBase(IntuitionBase)->ActiveMonitor;
-    struct IntScreen *scr = GetPrivScreen(IntuitionBase->ActiveScreen);
-    struct SharedPointer *pointer = NULL;
 
-    if (scr)
-	pointer = scr->Pointer;
-    else {
-        Object *obj = GetPrivIBase(IntuitionBase)->DefaultPointer;
-
-	if (obj)
-	    GetAttr(POINTERA_SharedPointer, obj, (IPTR *)&pointer);
-    }
-    if (pointer) {
-	DB2(bug("Move pointer to (%d, %d), monitor 0x%p\n", x, y, mon));
-	/* Take hotspot into account */
-	x += pointer->xoffset;
-        y += pointer->yoffset;
-	/* Update sprite position, just for backwards compatibility */
-	pointer->sprite->es_SimpleSprite.x = x;
-	pointer->sprite->es_SimpleSprite.y = y;
-    }
-
+    DB2(bug("MySetPointerPos(%d, %d), monitor 0x%p\n", x, y, mon));
     if (mon)
 	DoMethod(mon, MM_SetPointerPos, x, y);
+}
+
+BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
+{
+
+    Object *mon;
+    struct SharedPointer *pointer = NULL;
+    Object *obj = GetPrivIBase(IntuitionBase)->DefaultPointer;
+    BOOL res = TRUE;
+
+    if (obj)
+	GetAttr(POINTERA_SharedPointer, obj, (IPTR *)&pointer);
+    D(bug("[ResetPointer] Default pointer is 0x%p\n", pointer));
+    if (!pointer)
+	return TRUE;
+
+    ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+
+    ForeachNode(&GetPrivIBase(IntuitionBase)->MonitorList, mon) {
+	if (!FindFirstScreen(mon, IntuitionBase)) {
+	    D(bug("[ResetPointer] Setting default pointer for monitor 0x%p\n", mon));
+	    if (!DoMethod(mon, MM_SetPointerShape, pointer))
+		res = FALSE;
+	}
+    }
+
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+
+    D(bug("[ResetPointer] Returning %d\n", res));
+    return res;
 }
 
 void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *IntuitionBase)
@@ -90,10 +98,12 @@ void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *I
 	if (y > DHeight)
 	    y = DHeight;
 
+	D(bug("[ActivateMonitor] Mouse pointer coordinates: (%d, %d)\n", x, y));
 	SetAttrs(newmonitor, MA_PointerVisible, TRUE, TAG_DONE);
 	MySetPointerPos(IntuitionBase, x, y);
 	notify_mousemove_screensandwindows(x, y, IntuitionBase);
     }
+    D(bug("[ActivateMonitor] Done\n"));
 }
 
 struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase)
@@ -249,7 +259,8 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
     struct Window   	*win;
     struct SharedPointer *oldpointer;
     struct SharedPointer *newpointer;
-    
+    Object *oldobject;
+
     ULONG lock = LockIBase(0);
 
     GetAttr(POINTERA_SharedPointer, *old, (IPTR *)&oldpointer);
@@ -270,11 +281,7 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
         {
             DEBUG_POINTER(dprintf("InstallPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
                                   scr, pointer, newpointer->sprite));
-            if (ChangeExtSprite(&scr->Screen.ViewPort,
-                                oldpointer->sprite, newpointer->sprite,
-				POINTERA_XOffset, newpointer->xoffset,
-				POINTERA_YOffset, newpointer->yoffset,
-				TAG_DONE))
+            if (DoMethod(scr->MonitorObject, MM_SetPointerShape, newpointer))
             {
                 ObtainSharedPointer(newpointer, IntuitionBase);
                 ReleaseSharedPointer(oldpointer, IntuitionBase);
@@ -287,16 +294,13 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
         }
     }
 
-    /* Normal pointer image is also set on all empty displays (with zero ViewPorts) */
-    if (which == WBP_NORMAL)
-	ChangeExtSprite(NULL,
-			oldpointer->sprite, newpointer->sprite,
-			POINTERA_XOffset, newpointer->xoffset,
-			POINTERA_YOffset, newpointer->yoffset,
-			TAG_DONE);
-
-    DisposeObject(*old);
+    oldobject = *old;
     *old = pointer;
+    /* Set new normal pointer image on all empty displays */
+    if (which == WBP_NORMAL)
+	ResetPointer(IntuitionBase);
+    /* Dispose old pointer only after setting new one */
+    DisposeObject(oldobject);
 
     UnlockIBase(lock);
 }
