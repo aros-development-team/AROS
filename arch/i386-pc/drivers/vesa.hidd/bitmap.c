@@ -18,7 +18,7 @@
 #include <hidd/graphics.h>
 #include <oop/oop.h>
 #include <aros/symbolsets.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <string.h>
@@ -107,7 +107,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	    data->disp_height = dheight;
 	}
 
-    	data->VideoData = AllocVec(width * height * multi, MEMF_PUBLIC | MEMF_CLEAR);
+    	data->VideoData = AllocVec(data->bytesperline * height, MEMF_PUBLIC | MEMF_CLEAR);
 	D(bug("[VesaBitMap] Video data at 0x%p (%u bytes)\n", data->VideoData, width * height * multi));
 
 	if (data->VideoData) {
@@ -875,6 +875,12 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	case aoHidd_BitMap_Visible:
 	    *msg->storage = data->disp;
 	    return;
+	case aoHidd_BitMap_LeftEdge:
+	    *msg->storage = data->xoffset;
+	    return;
+	case aoHidd_BitMap_TopEdge:
+	    *msg->storage = data->yoffset;
+	    return;
 	}
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -887,6 +893,9 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
+    LONG xoffset = data->xoffset;
+    LONG yoffset = data->yoffset;
+    LONG limit;
 
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
@@ -901,12 +910,43 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 		if (data->disp) {
 		    if (data->DAC)
 			DACLoad(XSD(cl), data->DAC, 0, 256);
-//    		    vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->disp_width - 1, data->disp_height - 1);
 		}
+		break;
+	    case aoHidd_BitMap_LeftEdge:
+	        xoffset = tag->ti_Data;
+		/* Our bitmap can not be smaller than display size
+		   because of fakegfx.hidd limitations (it can't place
+		   cursor beyond bitmap edges). Otherwize Intuition
+		   will provide strange user experience (mouse cursor will
+		   disappear) */
+    		limit = data->disp_width - data->width;
+    		if (xoffset > 0)
+		    xoffset = 0;
+		else if (xoffset < limit)
+		    xoffset = limit;
+		break;
+	    case aoHidd_BitMap_TopEdge:
+	        yoffset = tag->ti_Data;
+		limit = data->disp_height - data->height;
+		if (yoffset > 0)
+		    yoffset = 0;
+		else if (yoffset < limit)
+		    yoffset = limit;
 		break;
 	    }
 	}
     }
+
+    if ((xoffset != data->xoffset) || (yoffset != data->yoffset)) {
+	D(bug("[VesaBitMap] Scroll to (%d, %d)\n", xoffset, yoffset));
+	data->xoffset = xoffset;
+	data->yoffset = yoffset;
+
+	LOCK_FRAMEBUFFER(XSD(cl));
+	vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
+	UNLOCK_FRAMEBUFFER(XSD(cl));
+    }
+
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -959,7 +999,7 @@ VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Upda
     D(bug("[VesaBitMap] UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
     if (data->disp) {
 	LOCK_FRAMEBUFFER(XSD(cl));
-        vesaDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);
+        vesaDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
 	UNLOCK_FRAMEBUFFER(XSD(cl));
     }
 }

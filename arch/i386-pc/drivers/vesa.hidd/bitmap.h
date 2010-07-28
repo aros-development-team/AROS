@@ -31,8 +31,8 @@ enum
 struct BitmapData
 {
     UBYTE   	    	*VideoData;	/* Pointing to video data */
-    ULONG   	    	width;      	/* Width of bitmap */
-    ULONG   	    	height;		/* Height of bitmap */
+    LONG   	    	width;      	/* Width of bitmap */
+    LONG   	    	height;		/* Height of bitmap */
     UBYTE   	    	bytesperpix;
     ULONG   	    	bytesperline;
     UBYTE *   	    	DAC;   		/* Hardware palette registers */
@@ -40,8 +40,10 @@ struct BitmapData
     BYTE    	    	disp;        	/* !=0 - displayable */
     OOP_Object	    	*pixfmtobj;	/* Cached pixelformat object */
     OOP_Object	    	*gfxhidd;	/* Cached driver object */
-    ULONG		disp_width;	/* Display size */
-    ULONG		disp_height;
+    LONG		disp_width;	/* Display size */
+    LONG		disp_height;
+    LONG		xoffset;	/* Bitmap offset */
+    LONG		yoffset;
 };
 
 #endif /* _BITMAP_H */
