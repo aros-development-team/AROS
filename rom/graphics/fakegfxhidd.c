@@ -1204,10 +1204,8 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
         
     struct TagItem tags[] =
     {
-     /* { aMeta_SuperID     	, (IPTR)CLID_Hidd   	    	    },*/
         { aMeta_SuperID     	, (IPTR)CLID_Root   	    	    },
         { aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
-        { aMeta_ID  	    	, (IPTR)CLID_Hidd_FakeGfxHidd	    },
         { aMeta_InstSize    	, (IPTR)sizeof (struct gfx_data)    },
         {TAG_DONE   	    	, 0UL	    	    	    	    }
     };
@@ -1221,7 +1219,6 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
 	{
     	    D(bug("FAKE GFX CLASS INITED\n"));	    
 	    cl->UserData = csd;
-	    OOP_AddClass(cl);
 
 	    return cl;
 	}
@@ -1312,7 +1309,6 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
     {
         {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    },
         {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
-        {aMeta_ID   	    	, (IPTR) CLID_Hidd_FakeFB   	    },
         {aMeta_InstSize     	, (IPTR) sizeof(struct fakefb_data) },
         {TAG_DONE   	    	, 0UL	    	    	    	    }
     };
@@ -1323,10 +1319,7 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
     {
    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	if(NULL != cl)
-	{
             cl->UserData     = csd;
-	    OOP_AddClass(cl);
-        }
     } /* if(MetaAttrBase) */
     
     if (NULL == cl)
@@ -1559,7 +1552,7 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 
     /* If we work with framebuffer-based driver, Show() will never be called on
        a fakefb object so we remember it right now */
-    fakebm = OOP_NewObject(NULL, CLID_Hidd_FakeFB, fakebmtags);
+    fakebm = OOP_NewObject(csd->fakefbclass, NULL, fakebmtags);
     if (data->fakefb_attr == aHidd_BitMap_FrameBuffer) {
 	data->fakefb      = fakebm;
 	data->framebuffer = framebuffer;
@@ -1597,7 +1590,7 @@ OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 	{ TAG_DONE	    	    	, 0UL   	 }
     };
 
-    return OOP_NewObject(NULL, CLID_Hidd_FakeGfxHidd, fgh_tags);
+    return OOP_NewObject(csd->fakegfxclass, NULL, fgh_tags);
 }
 
 VOID cleanup_fakegfxhidd(struct GfxBase *GfxBase)
