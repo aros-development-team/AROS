@@ -109,20 +109,40 @@ void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
     UBYTE *src, *dst;
     ULONG srcmod, dstmod;
     LONG  y, w, h;
+    LONG sx, sy;
 
-    x1 *= data->bytesperpix;
-    x2 *= data->bytesperpix; x2 += data->bytesperpix - 1;
-    
-    x1 &= ~3;
-    x2 = (x2 & ~3) + 3;
-    w = (x2 - x1) + 1;
-    h = (y2 - y1) + 1;
-    
-    srcmod = (data->bytesperline);
-    dstmod = (hwdata->bytesperline);
+    x1 += data->xoffset;
+    y1 += data->yoffset;
+    x2 += data->xoffset;
+    y2 += data->yoffset;
 
-    src = data->VideoData + y1 * data->bytesperline + x1;
-    dst = hwdata->framebuffer + y1 * hwdata->bytesperline + x1;
+    /* Clip the rectangle against physical display borders */
+    if ((x1 >= data->disp_width) || (x2 < 1) ||
+        (y1 >= data->disp_height) || (y2 < 1))
+	return;
+    if (x1 < 0)
+	x1 = 0;
+    if (y1 < 0)
+	y1 = 0;
+    if (x2 > data->disp_width)
+	x2 = data->disp_width;
+    if (y2 > data->disp_height)
+	y2 = data->disp_height;
+
+    /* Calculate width and height */
+    w = x2 - x1;
+    h = y2 - y1;
+    /* Jump back to bitmap coordinatess (adjusted) */
+    sx = x1 - data->xoffset;
+    sy = y1 - data->yoffset;
+
+    w *= data->bytesperpix;
+
+    srcmod = data->bytesperline;
+    dstmod = hwdata->bytesperline;
+
+    src = data->VideoData + sy * data->bytesperline + sx * data->bytesperpix;
+    dst = hwdata->framebuffer + y1 * hwdata->bytesperline + x1 * hwdata->bytesperpixel;
 
     /*
     ** common sense assumption: memcpy can't possibly be faster than CopyMem[Quick]

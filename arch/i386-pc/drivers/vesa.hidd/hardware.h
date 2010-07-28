@@ -25,7 +25,6 @@ struct HWData
     ULONG	bytesperline;
     UBYTE	palettewidth;
     UBYTE	DAC[768];
-    BOOL    	use_updaterect;
 };
 
 extern OOP_AttrBase HiddPCIDeviceAttrBase;

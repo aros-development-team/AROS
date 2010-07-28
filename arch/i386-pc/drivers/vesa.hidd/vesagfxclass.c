@@ -23,7 +23,7 @@
 #include <clib/alib_protos.h>
 #include <string.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "vesagfxclass.h"
@@ -89,6 +89,8 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	{aHidd_Sync_PixelClock, 0},
 	{aHidd_Sync_HDisp,      0},
 	{aHidd_Sync_VDisp,      0},
+	{aHidd_Sync_HMax,	16384},
+	{aHidd_Sync_VMax,	16384},
 	{aHidd_Sync_Description, (IPTR)"VESA:%hx%v"},
 	{aHidd_Sync_HSyncStart, 0},
 	{aHidd_Sync_HSyncEnd,   0},
