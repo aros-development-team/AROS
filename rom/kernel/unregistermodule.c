@@ -56,7 +56,7 @@ AROS_LH1(void, KrnUnregisterModule,
 	    symbol_t *sym, *sym2;
 
 	    D(bug("[KRN] Removing module %s\n", mod->m_name));
-	    Remove(mod);
+	    Remove((struct Node *)mod);
 
 	    /* Free associated string table */
 	    if (mod->m_str)
