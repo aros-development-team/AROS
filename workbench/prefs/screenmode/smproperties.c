@@ -106,8 +106,6 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     data->def_width  = def_width;
     data->def_height = def_height;
     data->autoscroll = autoscroll;
-    
-/*  Check me: this is likely not needed and can cause notifyloops - sonic
 
     DoMethod
     (
@@ -128,13 +126,13 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         depth, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
         (IPTR)self, 3,
         MUIM_Set, MUIA_ScreenModeProperties_Depth, MUIV_TriggerValue
-    );*/
+    );
     
     DoMethod
     (
         def_width, MUIM_Notify, MUIA_Selected, TRUE,
         (IPTR)self, 3,
-        MUIM_NoNotifySet, MUIA_ScreenModeProperties_Width, -1
+        MUIM_Set, MUIA_ScreenModeProperties_Width, -1
     );
 
     DoMethod
@@ -148,7 +146,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     (
         def_height, MUIM_Notify, MUIA_Selected, TRUE,
         (IPTR)self, 3,
-        MUIM_NoNotifySet, MUIA_ScreenModeProperties_Height, -1
+        MUIM_Set, MUIA_ScreenModeProperties_Height, -1
     );
 
     DoMethod
@@ -157,7 +155,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         (IPTR)def_height, 3,
         MUIM_Set, MUIA_Selected, FALSE
     );
-        
+
     id = GetTagData(MUIA_ScreenModeProperties_DisplayID, INVALID_ID, message->ops_AttrList);
     D(bug("[smproperties] Setting initial ModeID 0x%08lX\n", id));
     set(self, MUIA_ScreenModeProperties_DisplayID, id);
