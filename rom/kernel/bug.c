@@ -1,8 +1,10 @@
 #include <aros/libcall.h>
 
 #include <stdarg.h>
+#include <stdio.h>
 
 #include "kernel_base.h"
+#include "kernel_debug.h"
 
 /*****************************************************************************
 
@@ -38,7 +40,7 @@ AROS_LH2(int, KrnBug,
 {
     AROS_LIBFUNC_INIT
 
-    return 0;
+    return __vcformat(NULL, krnPutC, format, args);
 
     AROS_LIBFUNC_EXIT
 }

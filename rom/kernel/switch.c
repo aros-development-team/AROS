@@ -33,7 +33,7 @@ AROS_LH0(void, KrnSwitch,
 {
     AROS_LIBFUNC_INIT
 
-    KernelSysCall(SC_SWITCH);
+    krnSysCall(SC_SWITCH);
 
     AROS_LIBFUNC_EXIT
 }

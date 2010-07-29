@@ -13,8 +13,8 @@
 #define SC_RTAS		0x009
 #define SC_REBOOT	0x100
 
-#ifndef KernelSysCall
-#define KernelSysCall(num)
+#ifndef krnSysCall
+#define krnSysCall(num)
 #endif
 
 #endif /*SYSCALL_H_*/

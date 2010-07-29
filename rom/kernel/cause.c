@@ -33,7 +33,7 @@ AROS_LH0I(void, KrnCause,
 {
     AROS_LIBFUNC_INIT
 
-    KernelSysCall(SC_CAUSE);
+    krnSysCall(SC_CAUSE);
 
     AROS_LIBFUNC_EXIT
 }
