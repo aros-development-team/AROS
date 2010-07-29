@@ -1,5 +1,9 @@
 #include <proto/kernel.h>
 
+#ifdef bug
+#undef bug
+#endif
+
 AROS_LD2(int, KrnBug,
          AROS_LDA(const char *, format, A0),
          AROS_LDA(va_list, args, A1),
