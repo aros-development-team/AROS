@@ -79,6 +79,7 @@ PURE_FILES := \
     Copy \
     Dir \
     GfxControl \
+    WaitX
 #   ISApnp
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/dos
