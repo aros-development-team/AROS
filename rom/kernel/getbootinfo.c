@@ -1,5 +1,11 @@
 #include "kernel_base.h"
 
+/*
+ * We store boot message in a global variable because we need to store it before
+ * we get KernelBase
+ */
+struct TagItem *BootMsg = NULL;
+
 /*****************************************************************************
 
     NAME */
@@ -32,7 +38,7 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
 {
     AROS_LIBFUNC_INIT
 
-    return NULL;
+    return BootMsg;
 
     AROS_LIBFUNC_EXIT
 }
