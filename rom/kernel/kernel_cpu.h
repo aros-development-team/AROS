@@ -1,5 +1,5 @@
 /*
- * CPU-specific stuff.
+ * CPU-specific stuff. Also needs to be replaced for every architecture.
  */
 
 struct AROSCPUContext

@@ -1,6 +1,8 @@
+#include <aros/kernel.h>
 #include <utility/tagitem.h>
 
 #include <inttypes.h>
+#include <string.h>
 
 #include "kernel_tagitems.h"
 
@@ -58,4 +60,25 @@ intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *
         return ti->ti_Data;
 
         return defaultVal;
+}
+
+struct KernelBSS
+{
+    void *addr;
+    IPTR len;
+};
+
+void __clear_bss(struct TagItem *msg)
+{
+    struct KernelBSS *bss;
+
+    bss = (struct KernelBSS *)krnGetTagData(KRN_KernelBss, 0, msg);
+    
+    if (bss)
+    {
+        while (bss->addr) {
+	    bzero((void*)bss->addr, bss->len);
+            bss++;
+        }
+    }
 }
