@@ -39,7 +39,7 @@ AROS_LH0I(void *, KrnCreateContext,
     void *ctx;
     cpumode_t mode = goSuper();
 
-    ctx = AllocKernelMem(sizeof(struct AROSCPUContext));
+    ctx = krnAllocMem(sizeof(struct AROSCPUContext));
 
     goBack(mode);
 

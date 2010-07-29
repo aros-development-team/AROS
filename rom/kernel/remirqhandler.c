@@ -58,7 +58,7 @@ AROS_LH1(void, KrnRemIRQHandler,
         }
         Enable();
 
-        FreeKernelMem(h, sizeof(struct IntrNode));
+        krnFreeMem(h, sizeof(struct IntrNode));
 
         goUser();
     }

@@ -1,5 +1,9 @@
 #include <utility/tagitem.h>
 
+#include <inttypes.h>
+
+#include "kernel_tagitems.h"
+
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 {
     if (!(*tagListPtr)) return 0;
@@ -46,7 +50,7 @@ struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
     return 0;
 }
 
-IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList)
+intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList)
 {
     struct TagItem *ti = 0;
 

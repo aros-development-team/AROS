@@ -1,17 +1,20 @@
+#include <aros/symbolsets.h>
 #include <proto/exec.h>
+
+#include "kernel_base.h"
 
 static int Kernel_Init(struct KernelBase *KernelBase)
 {
     int i;
 
     for (i=0; i < EXCEPTIONS_COUNT; i++)
-	NEWLIST(&kBase->kb_Exceptions[i]);
+	NEWLIST(&KernelBase->kb_Exceptions[i]);
 
     for (i=0; i < IRQ_COUNT; i++)
-        NEWLIST(&kBase->kb_Interrupts[i]);
+        NEWLIST(&KernelBase->kb_Interrupts[i]);
 
-    NEWLIST(&kBase->kb_Modules);
-    InitSemaphore(&kBase->kb_ModSem);
+    NEWLIST(&KernelBase->kb_Modules);
+    InitSemaphore(&KernelBase->kb_ModSem);
 
     return 1;
 }

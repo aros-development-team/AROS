@@ -16,3 +16,5 @@ static inline void bug(const char *format, ...)
     AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, KernelBase);
     va_end(args);
 }
+
+int krnPutC(int chr, void *data);

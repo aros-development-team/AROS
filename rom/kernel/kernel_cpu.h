@@ -8,6 +8,7 @@ struct AROSCPUContext
 };
 
 #define cpumode_t __unused char
+
 #define goSuper() 0
 #define goUser()
 #define goBack(mode)

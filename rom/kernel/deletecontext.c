@@ -39,7 +39,7 @@ AROS_LH1I(void, KrnDeleteContext,
 
     cpumode_t mode = goSuper();
 
-    FreeKernelMem(context, sizeof(struct AROSCPUContext));
+    krnFreeMem(context, sizeof(struct AROSCPUContext));
 
     goBack(mode);
 

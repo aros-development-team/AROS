@@ -9,8 +9,8 @@ FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecon
 	 remexceptionhandler remirqhandler schedule setprotection setscheduler sti   \
 	 switch unmapglobal unregistermodule virtualtophysical
 
-FILES := kernel_init kernel_tagitems
+FILES := kernel_init kernel_debug kernel_tagitems
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource \
-  files="$(FUNCS)" uselibs=rom
+  files="$(FILES) $(FUNCS)" uselibs=rom
