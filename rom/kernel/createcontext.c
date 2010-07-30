@@ -1,8 +1,8 @@
 #include <aros/libcall.h>
 
-#include "kernel_base.h"
-#include "kernel_cpu.h"
-#include "kernel_memory.h"
+#include <kernel_base.h>
+#include <kernel_cpu.h>
+#include <kernel_memory.h>
 
 /*****************************************************************************
 

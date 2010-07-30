@@ -1,5 +1,5 @@
-#include "kernel_base.h"
-#include "kernel_syscall.h"
+#include <kernel_base.h>
+#include <kernel_syscall.h>
 
 /*****************************************************************************
 

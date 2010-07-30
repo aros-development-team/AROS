@@ -1,11 +1,11 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-#include "kernel_base.h"
-#include "kernel_cpu.h"
-#include "kernel_debug.h"
-#include "kernel_interrupts.h"
-#include "kernel_memory.h"
+#include <kernel_base.h>
+#include <kernel_cpu.h>
+#include <kernel_debug.h>
+#include <kernel_interrupts.h>
+#include <kernel_memory.h>
 
 /* We use own implementation of bug(), so we don't need aros/debug.h */
 #define D(x)

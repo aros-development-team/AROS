@@ -4,8 +4,8 @@
 
 #include <string.h>
 
-#include "kernel_base.h"
-#include "kernel_debug.h"
+#include <kernel_base.h>
+#include <kernel_debug.h>
 #include "debug_elf.h"
 #include "debug_intern.h"
 

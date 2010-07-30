@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include "kernel_tagitems.h"
+#include <kernel_tagitems.h>
 
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 {

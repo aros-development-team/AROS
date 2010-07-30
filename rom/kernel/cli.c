@@ -1,6 +1,6 @@
 #include <aros/libcall.h>
 
-#include "kernel_base.h"
+#include <kernel_base.h>
 
 /*****************************************************************************
 
