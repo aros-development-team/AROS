@@ -83,7 +83,8 @@ extern const struct Resident
 #if ENABLE_X11 == 1
     X11Cl_ROMTag,
 #endif
-    Dosboot_ROMTag;
+    Dosboot_ROMTag,
+    Processor_ROMTag;
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
@@ -94,6 +95,7 @@ static const struct Resident *romtagList[] =
     &Utility_ROMTag,                    /* ColdStart,   103  */
     &Aros_ROMTag,                       /* ColdStart,   102  */
     &Bootloader_ROMTag,			/* ColdStart,	100  */
+    &Processor_ROMTag,                  /* Coldstart,   99 */
     &OOP_ROMTag,                        /* ColdStart,   94   */
     &HIDDCl_ROMTag,                     /* ColdStart,   92   */
     &UXIO_ROMTag,                       /* ColdStart,   91   */

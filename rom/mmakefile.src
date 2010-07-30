@@ -23,7 +23,8 @@
 #MM	    kernel-oop-kobj \
 #MM	    kernel-layers-kobj \
 #MM	    kernel-workbench-kobj \
-#MM         kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM     kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
+#MM     kernel-processor-kobj
 
 #MM- includes-generate : \
 #MM      kernel-exec-includes \

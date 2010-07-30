@@ -55,6 +55,7 @@ title AROS on Sam440
     module boot/modules/usbromstartup.resource
     module boot/modules/utility.library
     module boot/modules/workbench.library
+    module boot/modules/processor.resource
 
 title AROS on Sam440 Test AltUsb
     kernel boot/aros-amcc440
@@ -103,3 +104,4 @@ title AROS on Sam440 Test AltUsb
     module boot/modules/usb.hidd
     module boot/modules/utility.library
     module boot/modules/workbench.library
+    module boot/modules/processor.resource
