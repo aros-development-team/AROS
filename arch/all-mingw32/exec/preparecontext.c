@@ -1,5 +1,5 @@
 /*
- Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+ Copyright © 1995-2010, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: mingw32 version of PrepareContext().
@@ -10,18 +10,15 @@
 
 #include <aros/debug.h>
 #include <exec/types.h>
-#include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <proto/kernel.h>
-#include <aros/kernel.h>
-#include "etask.h"
-#include "exec_util.h"
-#include "../kernel/cpucontext.h"
 
-#include <aros/libcall.h>
-#include <proto/arossupport.h>
-#include <proto/kernel.h>
+#include "kernel_cpu.h"
+
+#include "etask.h"
+#include "exec_intern.h"
+#include "exec_util.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 #define _PUSH(sp,val) (*--sp = (SP_TYPE)(val))

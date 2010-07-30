@@ -35,7 +35,7 @@ KOBJS_MINGW32 := $(MINGW32_RES) $(MINGW32_HANDLERS) $(MINGW32_LIBS) $(MINGW32_DE
 
 #MM- AROS-mingw32-$(CPU): kernel-link-mingw32 workbench-hosted kernel-bootstrap-mingw32 arch-common-boot-generatebootsig
 #MM kernel-link-mingw32: setup-mingw32			    \
-#MM			 kernel-kernel-mingw32-kobj	    \
+#MM			 kernel-kernel-kobj		    \
 #MM			 kernel-bootloader-kobj	    	    \
 #MM			 kernel-hostlib-mingw32-kobj	    \
 #MM			 kernel				    \

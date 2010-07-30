@@ -4,19 +4,6 @@ struct EXCEPTION_REGISTRATION
     void *handler;
 };
 
-#ifdef __i386__
-
-#define ADD_EXCEPTION_FRAME(f)			     \
-    asm volatile ("movl %%fs:0, %0" : "=r" (f.prev));\
-    asm volatile ("movl %0, %%fs:0" : : "r" (&f))
-
-#define REMOVE_EXCEPTION_FRAME(f) \
-    asm volatile ("movl %0, %%fs:0" : : "r" (f.prev))
-
-#else
-#error Unsupported CPU
-#endif
-
 #define BEGIN_EXCEPTION(x)		    \
 {					    \
     struct EXCEPTION_REGISTRATION _ex_frame;\

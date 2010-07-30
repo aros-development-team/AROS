@@ -1,13 +1,16 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-kernel-mingw32 : includes linklibs kernel-kernel-mingw32-native
-#MM kernel-kernel-mingw32-kobj : includes linklibs kernel-kernel-mingw32-native
+USER_INCLUDES  := -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
 
-%build_module mmake=kernel-kernel-mingw32 	\
-  modname=kernel modtype=resource		\
-  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"	\
-  files="kernel_init debug intr scheduler mmu" uselibs="rom"
+#MM kernel-kernel-mingw32: kernel-kernel-mingw32-native
+
+FUNCS := bug addirqhandler cli issuper sti
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel \
+  arch=mingw32 \
+  files="kernel_startup kernel_debug $(FUNCS)"
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_DIR := $(GENDIR)/native
@@ -28,4 +31,6 @@ $(NATIVE_DIR) :
 	mkdir $(NATIVE_DIR)
 	 
 $(NATIVE_DIR)/%.o : %.c $(NATIVE_DIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/all-mingw32/exec
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(SRCDIR)/arch/all-mingw32/exec $(USER_INCLUDES) -I$(GENINCDIR)
+
+%common
