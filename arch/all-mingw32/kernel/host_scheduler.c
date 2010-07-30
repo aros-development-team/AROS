@@ -12,9 +12,10 @@ typedef unsigned char UBYTE;
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
+
 #include "etask.h"
-#include "kernel_intern.h"
-#include "cpucontext.h"
+#include "kernel_base.h"
+#include "kernel_cpu.h"
 
 /* We have to redefine these flags here because including exec_intern.h causes conflicts
    between dos.h and WinAPI headers. This needs to be fixed - Pavel Fedin <sonic_amiga@rambler.ru */

@@ -13,9 +13,11 @@ typedef unsigned char UBYTE;
 #include <exec/alerts.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
-#include "kernel_intern.h"
-#include "syscall.h"
-#include "cpucontext.h"
+
+#include "kernel_base.h"
+#include "kernel_cpu.h"
+#include "kernel_interrupts.h"
+#include "kernel_syscall.h"
 
 /*
  * Console output in Windows seems to be protected via semaphores. SuspendThread() at the moment
@@ -124,7 +126,7 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	    break;
 	default:
 	    /* It's something else, likely a CPU trap */
-	    printf("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", ExceptionRecord->ExceptionCode, ContextRecord, SysBase, KernelBase);
+	    printf("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", ExceptionRecord->ExceptionCode, SysBase, KernelBase);
 	    /* Find out trap handler for caught task */
     	    if (SysBase)
     	    {
@@ -210,7 +212,7 @@ DWORD WINAPI TaskSwitcher()
     	    DS(PRINT_CPUCONTEXT(&MainCtx));
 	    /* Call user-defined IRQ handler */
     	    if (*KernelBasePtr)
-	    	user_irq_handler(obj, &(*KernelBasePtr)->kb_Interrupts);
+	    	user_irq_handler(obj, (*KernelBasePtr)->kb_Interrupts);
 	    /* Call scheduler */
     	    core_ExitInterrupt(&MainCtx);
 	    /* If AROS is going to sleep, set new CPU context */
@@ -269,6 +271,10 @@ long __declspec(dllexport) core_intr_enable(void)
 
 void __declspec(dllexport) core_syscall(unsigned long n)
 {
+    /* This ensures that we are never preempted inside RaiseException().
+       Upon exit from the syscall interrupt state will be restored by
+       core_LeaveInterrupt() */
+    Ints_Enabled = 0;
     RaiseException(AROS_EXCEPTION_SYSCALL, 0, 1, &n);
     /* If after RaiseException we are still here, but Sleep_Mode != 0, this likely means
        we've just called SC_SCHEDULE, SC_SWITCH or SC_DISPATCH, and it is putting us to sleep.

@@ -4,7 +4,10 @@ include $(TOP)/config/make.cfg
 CFILES := alert cause disable dispatch enable exec_init newaddtask permit preparecontext rawputchar \
           remtask reschedule setexcept settaskpri shutdowna signal traphandler wait idletask
 
-USER_CFLAGS := -I$(SRCDIR)/rom/exec
+USER_INCLUDES := -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/all-mingw32/kernel
+
 %build_archspecific \
 	mainmmake=kernel-exec maindir=rom/exec arch=mingw32 \
 	files=$(CFILES) modulename=exec
+
+%common

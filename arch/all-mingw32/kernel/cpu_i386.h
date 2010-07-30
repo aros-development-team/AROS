@@ -1,19 +1,24 @@
 #ifdef __AROS__
 
 /* This was taken from Mingw32's w32api/winnt.h */
-#ifdef __i386__
-#define SIZE_OF_80387_REGISTERS	80
-#define CONTEXT_i386	0x10000
-#define CONTEXT_i486	0x10000
-#define CONTEXT_CONTROL	(CONTEXT_i386|0x00000001L)
-#define CONTEXT_INTEGER	(CONTEXT_i386|0x00000002L)
-#define CONTEXT_SEGMENTS	(CONTEXT_i386|0x00000004L)
-#define CONTEXT_FLOATING_POINT	(CONTEXT_i386|0x00000008L)
-#define CONTEXT_DEBUG_REGISTERS	(CONTEXT_i386|0x00000010L)
+
+/* Context flags */
+#define CONTEXT_i386		   0x10000
+#define CONTEXT_i486		   0x10000
+#define CONTEXT_CONTROL		   (CONTEXT_i386|0x00000001L)
+#define CONTEXT_INTEGER		   (CONTEXT_i386|0x00000002L)
+#define CONTEXT_SEGMENTS	   (CONTEXT_i386|0x00000004L)
+#define CONTEXT_FLOATING_POINT	   (CONTEXT_i386|0x00000008L)
+#define CONTEXT_DEBUG_REGISTERS	   (CONTEXT_i386|0x00000010L)
 #define CONTEXT_EXTENDED_REGISTERS (CONTEXT_i386|0x00000020L)
-#define CONTEXT_FULL	(CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_SEGMENTS)
-#define MAXIMUM_SUPPORTED_EXTENSION  512
-typedef struct _FLOATING_SAVE_AREA {
+#define CONTEXT_FULL		   (CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_SEGMENTS)
+
+/* Some lengths */
+#define SIZE_OF_80387_REGISTERS	    80
+#define MAXIMUM_SUPPORTED_EXTENSION 512
+
+typedef struct _FLOATING_SAVE_AREA
+{
 	IPTR	ControlWord;
 	IPTR	StatusWord;
 	IPTR	TagWord;
@@ -24,7 +29,9 @@ typedef struct _FLOATING_SAVE_AREA {
 	UBYTE	RegisterArea[80];
 	IPTR	Cr0NpxState;
 } FLOATING_SAVE_AREA;
-struct AROSCPUContext {
+
+struct AROSCPUContext
+{
 	IPTR	ContextFlags;
 	IPTR	Dr0;
 	IPTR	Dr1;
@@ -52,9 +59,15 @@ struct AROSCPUContext {
 	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 	ULONG	LastError;
 };
-#else
-#error Unsupported CPU type
-#endif
+
+#define ADD_EXCEPTION_FRAME(f)			     \
+    asm volatile ("movl %%fs:0, %0" : "=r" (f.prev));\
+    asm volatile ("movl %0, %%fs:0" : : "r" (&f))
+
+#define REMOVE_EXCEPTION_FRAME(f) \
+    asm volatile ("movl %0, %%fs:0" : : "r" (f.prev))
+
+#define SET_PC(ctx, addr) ctx->Eip = (IPTR)addr
 
 #else
 
@@ -68,7 +81,6 @@ struct AROSCPUContext
 
 #endif
 
-#ifdef __i386__
 #define PRINT_CPUCONTEXT(ctx) \
 	kprintf ("    ContextFlags: 0x%08lX\n" \
 		 "    ESP=%08lx  EBP=%08lx  EIP=%08lx\n" \
@@ -102,6 +114,3 @@ struct AROSCPUContext
 #define CONTEXT_RESTORE_REGS(ctx) (ctx)->SegCs = SegCS_Save; \
 				  (ctx)->SegSs = SegSS_Save; \
 				  (ctx)->ContextFlags &= CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS
-#else
-#error Unsupported CPU type
-#endif
