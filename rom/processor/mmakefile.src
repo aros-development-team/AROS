@@ -1,0 +1,14 @@
+# Copyright © 2009-2010, The AROS Development Team. All rights reserved.
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM kernel-processor-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+
+#MM kernel-processor-kobj: includes kernel-processor-includes
+#MM kernel-processor: includes kernel-processor-includes
+
+%build_module mmake=kernel-processor modname=processor modtype=resource \
+    files="getcpuinfo" uselibs="rom utility"
