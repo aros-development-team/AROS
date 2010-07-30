@@ -76,37 +76,41 @@
 	    if (bm_obj)
 		OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
 	    else
-		retval = -1;
+		retval = 0;
 	    break;
 
    	case CYBRMATTR_PIXFMT:
-        case CYBRMATTR_PIXFMT_ALPHA: {
-	    IPTR stdpf;
-	    UWORD cpf;
+        case CYBRMATTR_PIXFMT_ALPHA:
+	    if (bm_obj) {
+		IPTR stdpf;
 
-	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);
-	    /* Convert to cybergfx */
-	    cpf = hidd2cyber_pixfmt(stdpf);
+		OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);
+		/* Convert to cybergfx */
+		retval = hidd2cyber_pixfmt(stdpf);
 
-            /* CYBRMATTR_PIXFMT doesn't know about non-alpha 32-bit modes */
-            if (attribute == CYBRMATTR_PIXFMT) {
-                switch (cpf) {
-                    case PIXFMT_0RGB32: cpf = PIXFMT_ARGB32; break;
-                    case PIXFMT_BGR032: cpf = PIXFMT_BGRA32; break;
-                    case PIXFMT_RGB032: cpf = PIXFMT_RGBA32; break;
-                    case PIXFMT_0BGR32: cpf = PIXFMT_ABGR32; break;
+		/* CYBRMATTR_PIXFMT doesn't know about non-alpha 32-bit modes */
+		if (attribute == CYBRMATTR_PIXFMT) {
+                    switch (retval) {
+		    case PIXFMT_0RGB32:
+			retval = PIXFMT_ARGB32;
+			break;
+		    case PIXFMT_BGR032:
+			retval = PIXFMT_BGRA32;
+			break;
+		    case PIXFMT_RGB032:
+			retval = PIXFMT_RGBA32;
+			break;
+		    case PIXFMT_0BGR32:
+			retval = PIXFMT_ABGR32;
+			break;
+                    }
                 }
-            }
+	    	D(bug("[GetCyberMapAttr] Pixel format is %d\n", retval));
 
-	    if (cpf == (UWORD)-1) {
-	    	D(bug("!!! UNKNOWN PIXEL FORMAT IN GetCyberMapAttr()\n"));
-	    }
-
-	    retval = (IPTR)cpf;
+	    } else
+	        retval = -1;
 	    break;
-	    
-	}
-	
+
    	case CYBRMATTR_WIDTH:
 	    retval = GetBitMapAttr(bitMap, BMA_WIDTH);
 	    break;
