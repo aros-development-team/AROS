@@ -421,7 +421,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 		mdd->framebuffer = create_framebuffer(mdd, GfxBase);
 
 	    if (noframebuffer || mdd->framebuffer) {
-		D(bug("[driver_OpenMonitor] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
+		D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
 		return mdd;
 	    }
 
