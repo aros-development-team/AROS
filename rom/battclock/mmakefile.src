@@ -3,7 +3,9 @@ include $(TOP)/config/make.cfg
 
 # Do not remove this! It allows to override battclock_intern.h in arch-specific
 # directory (currently used by Windows-hosted port)
-USER_CFLAGS := -I $(SRCDIR)/arch/all-$(ARCH)/battclock
+# Note that overrideable files must be included using #include <name>, not #include "name"
+# for this to work
+USER_CFLAGS := -I $(SRCDIR)/arch/all-$(ARCH)/battclock -I$(SRCDIR)/rom/battclock
 
 #MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
 #MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)
@@ -13,3 +15,5 @@ FUNCTIONS := readbattclock resetbattclock writebattclock
 %build_module mmake=kernel-battclock \
     modname=battclock modtype=resource \
     files="$(FUNCTIONS)"
+
+%common
