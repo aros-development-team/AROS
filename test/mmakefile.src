@@ -106,7 +106,8 @@ COMMONTESTFILES := \
     patchrgbconv \
     childstatus \
     joystick \
-    supertest
+    supertest \
+    getcpuinfo
 
 HOSTEDTESTFILES :=  \
     hostlib
