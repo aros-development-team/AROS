@@ -3,6 +3,7 @@
 include $(TOP)/config/make.cfg
 
 #MM- kernel-unix : \
+#MM     kernel-kernel-includes                        \
 #MM     kernel-unixio-kobj kernel-hostlib-kobj        \
 #MM     graphics-$(GFXSYSTEM)			      \
 #MM     $(X11_HIDD_TARGET)		              \
