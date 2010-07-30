@@ -28,7 +28,8 @@ MINGW32_HANDLERS := $(KOBJSDIR)/emul_handler.o
 MINGW32_HIDD	 := $(KOBJSDIR)/wingdi_hidd.o
 MINGW32_LIBS	 := $(KOBJSDIR)/exec_library.o
 MINGW32_RES	 := $(KOBJSDIR)/kernel_resource.o     $(KOBJSDIR)/hostlib_resource.o	\
-		    $(KOBJSDIR)/battclock_resource.o  $(KOBJSDIR)/bootloader_resource.o
+		    $(KOBJSDIR)/battclock_resource.o  $(KOBJSDIR)/bootloader_resource.o \
+		    $(KOBJSDIR)/processor_resource.o
 
 KOBJS_COMMON := $(COMMON_RES) $(COMMON_HANDLERS) $(COMMON_LIBS) $(COMMON_DEVICES) $(COMMON_HIDD)
 KOBJS_MINGW32 := $(MINGW32_RES) $(MINGW32_HANDLERS) $(MINGW32_LIBS) $(MINGW32_DEVICES) $(MINGW32_HIDD)
@@ -41,7 +42,8 @@ KOBJS_MINGW32 := $(MINGW32_RES) $(MINGW32_HANDLERS) $(MINGW32_LIBS) $(MINGW32_DE
 #MM			 kernel				    \
 #MM			 kernel-fs-emul-mingw32-kobj	    \
 #MM			 kernel-hidd-wingdi-kobj	    \
-#MM			 contrib-amberram-kobj
+#MM			 contrib-amberram-kobj \
+#MM			 kernel-processor-kobj
 
 #MM
 kernel-bootstrap-mingw32-quick: setup-mingw32 $(BINDIR)/boot/AROSBootstrap.exe  $(BINDIR)/boot/AROSBootstrap.conf
