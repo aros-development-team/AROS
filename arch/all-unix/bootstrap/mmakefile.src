@@ -1,0 +1,19 @@
+# $Id: mmakefile.src 33939 2010-07-28 10:43:06Z sonic $
+include $(TOP)/config/make.cfg
+
+FILES  := bootstrap elfloader32 hostlib debug shutdown
+EXEDIR := $(BINDIR)/boot
+
+USER_INCLUDES := -I$(GENINCDIR)
+
+#MM
+kernel-bootstrap-unix: $(EXEDIR)/AROSBootstrap.conf
+
+%build_prog mmake=kernel-bootstrap-unix \
+    progname=AROSBootstrap targetdir=$(EXEDIR) \
+    files=$(FILES) compiler=kernel uselibs="dl"
+
+$(EXEDIR)/AROSBootstrap.conf: AROSBootstrap.conf
+	@$(CP) $^ $@
+
+%common
