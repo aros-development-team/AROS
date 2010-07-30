@@ -2,7 +2,9 @@
 include $(TOP)/config/make.cfg
 
 # Allow to override include files by placing them in arch-specific directories
-USER_CFLAGS := -I $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I $(SRCDIR)/arch/all-$(ARCH)/kernel
+# Note that kernel_#?.h files must be included using #include <name>, not #include "name"
+# for this to work
+USER_CFLAGS := -I $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I $(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel
 
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
          dispatch getbootinfo getscheduler issuper mapglobal registermodule          \

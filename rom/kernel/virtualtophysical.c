@@ -1,6 +1,6 @@
 #include <aros/libcall.h>
 
-#include "kernel_base.h"
+#include <kernel_base.h>
 
 /*****************************************************************************
 
@@ -14,9 +14,28 @@ AROS_LH1I(void *, KrnVirtualToPhysical,
 
 /*  LOCATION */
 	struct KernelBase *, KernelBase, 20, Kernel)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	AROS_LIBFUNC_INIT
 
+	/* The implementation is entirely architecture-specific */
 	return virtual;
 
 	AROS_LIBFUNC_EXIT
