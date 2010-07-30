@@ -52,7 +52,8 @@ include $(TOP)/config/make.cfg
 #MM	kernel-hidd-graphics \
 #MM	kernel-hidd-kbd \
 #MM	kernel-hidd-mouse \
-#MM	devs-networks-drivers-fec-powerpc
+#MM	devs-networks-drivers-fec-powerpc \
+#MM	kernel-processor
 
 PKG_GEN_LIBS 	:= aros partition expansion utility oop graphics layers intuition keymap workbench boot dos
 PKG_GEN_RSRC 	:= dosboot bestcomm
@@ -61,7 +62,7 @@ PKG_GEN_HANDLERS:= con nil amberram cdrom
 PKG_GEN_HIDDS	:= graphics keyboard mouse hiddclass i2c pci
 
 PKG_EFI_LIBS 	:= 
-PKG_EFI_RSRC 	:= battclock bootloader openfirmware
+PKG_EFI_RSRC 	:= battclock bootloader openfirmware processor
 PKG_EFI_DEVS 	:= timer ata
 PKG_EFI_HANDLERS:= 
 PKG_EFI_HIDDS	:= radeon pci-efika irq
