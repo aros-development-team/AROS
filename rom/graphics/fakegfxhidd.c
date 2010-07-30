@@ -485,7 +485,10 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     
     data = OOP_INST_DATA(cl, o);
     DB2(bug("[FakeGfx] SetCursorPos(%u, %u)\n", msg->x, msg->y));
-    
+
+    if (!data->framebuffer)
+	return TRUE;
+
     /* We draw our cursor on the bitmap, so we have to convert back
        from physical to logical coordinates */
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_LeftEdge, &xoffset);
