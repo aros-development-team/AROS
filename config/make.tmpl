@@ -537,7 +537,7 @@ $(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
 #------------------------------------------------------------------------------
 # Link %(objs) to %(prog) using the libraries in %(uselibs)
 %define rule_link_prog prog=/A objs=/A ldflags=$(LDFLAGS) uselibs= \
-    usehostlibs= usestartup=yes detach=no nix=no
+    usehostlibs= usestartup=yes detach=no nix=no linker=target
 
 TMP_EXTRA_LDFLAGS := 
 ifeq (%(nix),yes)
@@ -570,11 +570,21 @@ else
 TMP_DEPLIBS :=
 endif
 
+ifeq (%(linker),target)
+%(prog) : CMD:=$(TARGET_CC)
+endif
+ifeq (%(linker),host)
+%(prog) : CMD:=$(HOST_CC)
+endif
+ifeq (%(linker),kernel)
+%(prog) : CMD:=$(KERNEL_CC)
+endif
+
 %(prog) : OBJS := %(objs)
 %(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
 %(prog) : LIBS := $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
 %(prog) : %(objs) $(TMP_DEPLIBS)
-	%link_q from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS)
+	%link_q from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS) cmd=$(CMD)
 %end
 #------------------------------------------------------------------------------
 
@@ -1042,7 +1052,7 @@ BDID := $(BDTARGETID)
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
-    srcdir=
+    compiler=target srcdir=
 
 .PHONY : %(mmake)
 
@@ -1068,14 +1078,15 @@ BD_LDFLAGS   := %(ldflags)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile basename=%(srcdir)% targetdir=$(BD_OBJDIR) \
-    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
+    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
 %rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
     aflags=$(BD_AFLAGS)
 
 %rule_link_prog prog=$(BD_TARGETDIR)/$(BD_PROGNAME) \
     objs=$(BD_OBJS) ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
-    usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)"
+    usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
+    linker=%(compiler)
 
 endif
 
