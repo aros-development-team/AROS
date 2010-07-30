@@ -225,6 +225,8 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
             return(NULL);
         }
 		
+		CloseLibrary(ps);
+				
 		// AnyDATA
 		if( vendid == 0x16d5  &&  prodid == 0x6502 ){ 
 			bug("AnyDATA found: ifclass=%d subclass=%d protocol=%d NumEndpoints=%d\n",
@@ -237,8 +239,6 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
 			return(usbForceInterfaceBinding(nh, pif));
         }
 
-        CloseLibrary(ps);
-
         if((ifclass == CDCCTRL_CLASSCODE) &&
            (subclass == CDC_ACM_SUBCLASS) &&
            //(proto == CDC_PROTO_HAYES)
@@ -246,11 +246,13 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
         {
             return(usbForceInterfaceBinding(nh, pif));
         }
+		
         if((ifclass == CDCCTRL_CLASSCODE) &&
            (subclass == CDC_OBEX_SUBCLASS))
         {
             return(usbForceInterfaceBinding(nh, pif));
         }
+		
     }
     return(NULL);
 }
