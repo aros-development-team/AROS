@@ -68,6 +68,8 @@
 	fi; \
 	$(STRIP) %(to)
 %end
+#------------------------------------------------------------------------------
+
 
 #-------------------------------------------------------------------------
 # Link a module based upon a number of arguments and the standard $(LIBS)
@@ -91,6 +93,7 @@
 %end
 #------------------------------------------------------------------------------
 
+
 #------------------------------------------------------------------------------
 # Create the library
 %define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
@@ -98,6 +101,8 @@
 	@%(ar) %(to) %(from)
 	@%(ranlib) %(to)
 %end
+#------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Create the dependency file %(to) for %(from)
@@ -107,6 +112,7 @@
 	@AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
 %end
 #------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Create the function reference file %(to) to %(from)
@@ -126,12 +132,16 @@
 	    exit 1 ; \
 	fi
 %end
+#------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Create one directory without any output
 %define mkdir_q dir=.
 	@$(IF) $(TEST) ! -d %(dir) ; then $(MKDIR) %(dir) ; else $(NOP) ; fi
 %end
+#------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Create several directories without any output
@@ -140,6 +150,8 @@
 	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
 	done
 %end
+#------------------------------------------------------------------------------
+
 
 #############################################################################
 #############################################################################
@@ -184,6 +196,7 @@ $(addprefix %(targetdir)/,%(files)) : %(targetdir)/% : %(srcdir)/%
 %end
 #------------------------------------------------------------------------------
 
+
 #------------------------------------------------------------------------------
 # Copy the files %(files) to %(targetdir). For each file in %(files),
 # %(srcdir)/file is copied to %(targetdir)/file if these files are different.
@@ -209,6 +222,7 @@ $(addprefix %(targetdir)/,%(files)) : | %(stampfile)
 	@$(TOUCH) $@
 %end
 #------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Will join all the files in %(from) to %(to). When text is specified it will
@@ -884,6 +898,7 @@ $(TMP_TARGET) : $(TMP_DEPS)
 %end
 #------------------------------------------------------------------------------
 
+
 #------------------------------------------------------------------------------
 # Generate dummy support files so cxref when used on the a module source file
 # will find something to include. This rule has to be preceeded by
@@ -975,6 +990,7 @@ endif
 %end
 #------------------------------------------------------------------------------
 
+
 #------------------------------------------------------------------------------
 # Generate the support files for compiling a module. This includes include
 # files and source files.
@@ -1019,6 +1035,7 @@ $(TMP_TARGETS) : $(TMP_DEPS)
 endif
 %end
 #------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Common rules for all makefiles
@@ -1291,6 +1308,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 	@$(ECHO) "Cleaning up for module %(modname)"
 	@$(RM) $(FILES)
 %end
+#------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------
@@ -1704,8 +1722,8 @@ endif
 .PHONY: %(mmake) %(mmake)-clean
 
 %end
-
 #-----------------------------------------------------------------------------
+
 
 #-----------------------------------------------------------------------------
 # Build icons.
@@ -1736,8 +1754,8 @@ GLOB_MKDIRS += %(dir)
 .PHONY: %(mmake) %(mmake)-clean
 
 %end
-
 #-----------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Compile files for an arch-specific replacement of code for a module
@@ -1877,6 +1895,7 @@ endif
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@%(genlibdefstool) -c -o $@ %(conffile)
 %end
+#------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------
@@ -1886,6 +1905,8 @@ endif
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(TARGET_CC) -S $(CFLAGS) $< -c -o $@
 %end
+#------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Convert two png images to an Amiga icon file based on the description
@@ -1896,6 +1917,8 @@ endif
 	@$(PNGTOPNM) %(img2) | $(PPMTOILBM) -maxplanes 8 >$(GENDIR)/genicon2.iff
 	@$(ILBMTOICON) %(from) $(GENDIR)/genicon1.iff $(GENDIR)/genicon2.iff %(to)
 %end
+#------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # NOTE: The following are all part of Iain's build changes, please don't use
@@ -1917,8 +1940,10 @@ setup ::
 	%mkdirs_q %(dst)
 
 %end
+#------------------------------------------------------------------------------
 
-#----------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
 # Copy a directory recursively to another place, preserving the original 
 # hierarchical structure
 #
@@ -1963,6 +1988,8 @@ $(GENDIR)/$(CURDIR):
 	$(MKDIR) $@
 
 %end
+#------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 #   Copy include files into the includes directories. There are currently
@@ -2012,8 +2039,10 @@ endif
 $(BD_INCL_FILES) : | $(dir $(BD_INCL_FILES))
 GLOB_MKDIRS += $(dir $(BD_INCL_FILES))
 %end
+#------------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------
 %define make_hidd_stubs hidd=/A cflags=$(CFLAGS) dflags=$(CFLAGS) parenttarget=linklibs
 STUBS_SRC := $(addprefix $(SRCDIR)/$(CURDIR)/,$(addsuffix .c,$(STUBS)))
 STUBS_MEM := $(addsuffix .o,$(STUBS))
@@ -2045,7 +2074,9 @@ clean ::
 DEPS := $(DEPS) $(STUBS_DEP)
 
 %end
-      
+#------------------------------------------------------------------------------
+
+
 #------------------------------------------------------------------------------
 # Build an imported source tree which uses the configure script from the
 # autoconf package.  This rule will try to "integrate" the produced files as
@@ -2247,6 +2278,8 @@ endif
 %(mmake)-clean : %(mmake)-uninstall
 	@$(RM) $(%(mmake)-pkgdir)
 %end
+#------------------------------------------------------------------------------
+
 
 #############################################################################
 #############################################################################
@@ -2257,7 +2290,7 @@ endif
 #############################################################################
 #############################################################################
 
-#----------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Given an archive name, patches names and locations where to find them, fetch
 # the archive and the patches from any of those locations, unpack the archive
 # and then apply the patches.
@@ -2296,8 +2329,10 @@ endif
 	$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l %(location) -d %(destination) \
         -po "%(patches_origins)" -p %(patches_specs)
 %end
+#------------------------------------------------------------------------------
 
-#-----------------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
 # Joins the features of %fetch and %build_with_configure, taking advantage of
 # the naming scheme of GNU packages. GNU packages names are in the form
 #
@@ -2421,7 +2456,10 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
         bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar ; \
     fi
 %end
+#------------------------------------------------------------------------------
 
+
+#------------------------------------------------------------------------------
 %define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU extraoptions= preconfigure= postconfigure= postinstall= 
@@ -2436,8 +2474,10 @@ GNU_REPOSITORY := gnu://
     preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall)" nix=yes
 
 %end
+#------------------------------------------------------------------------------
 
-#-----------------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
 # Same job as the one of %fetch_and_build_gnu, except that this one assumes
 # that the package is a "Development" package, and as such it needs to be placed
 # under the $(AROS_DEVELOPMENT) directory, as a default. 
@@ -2462,6 +2502,7 @@ GNU_REPOSITORY := gnu://
    extraoptions="%(extraoptions)"
     
 %end
+#------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------
@@ -2620,4 +2661,3 @@ BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) %(reffile) \
 endif # $(TARGET) in $(BD_ALLTARGETS)
 %end
 #------------------------------------------------------------------------------
-
