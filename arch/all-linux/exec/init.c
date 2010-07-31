@@ -545,7 +545,7 @@ int main(int argc, char **argv)
         mh->mh_Node.ln_Pri = -128;
         mh->mh_Attributes = MEMF_KICK;
         mh->mh_First = NULL;
-        mh->mh_Lower = (APTR)(_stack - 2048);
+        mh->mh_Lower = (APTR)(_stack - 3072);
         mh->mh_Upper = (APTR)_stack;
         mh->mh_Free = 0;                        /* Never allocate from this chunk! */
         Enqueue(&SysBase->MemList, &mh->mh_Node);
