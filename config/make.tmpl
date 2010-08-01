@@ -1681,21 +1681,32 @@ GLOB_MKDIRS += %(objdir) %(libdir)
 # Build catalogs.
 # - mmake is the mmaketarget
 # - catalogs is the list of catalogs, without the .ct suffix (default *.ct)
-# - description is the catalog description file (.cd) (default *.cd)
-# - subdir is the destination subdir of the catalogs
+# - description is the catalog description file (.cd), without the .ct suffix (default *.cd)
+# - subdir is the destination subdirectory of the catalogs
 # - name is the name of the destination catalog, without the .catalog suffix
 # - source is the path to the generated source code file
 # - dir is the base destination directory (default $(AROS_CATALOGS))
 # - sourcedescription is the path to the FlexCat's source description file, without the .sd suffix
+# - srcdir is the directory in which the *.cd and *.ct files are searched
 
 %define build_catalogs mmake=/A name=/A subdir=/A \
- catalogs="$(basename $(call WILDCARD, *.ct))" source="../strings.h" \
- description="$(basename $(call WILDCARD, *.cd))" dir=$(AROS_CATALOGS) \
- sourcedescription="$(TOOLDIR)/C_h_orig"
+ catalogs= source="../strings.h" description= dir=$(AROS_CATALOGS) \
+ sourcedescription="$(TOOLDIR)/C_h_orig" srcdir="$(SRCDIR)/$(CURDIR)"
 
-BD_SRCS := $(addsuffix .ct, %(catalogs))
-BD_OBJS := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, %(catalogs)))
-BD_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, %(catalogs)))
+ifeq (%(description),)
+BD_DESC := $(basename $(wildcard %(srcdir)/*.cd))
+else
+BD_DESC := %(description)
+endif
+
+ifeq (%(catalogs),)
+BD_LNGS := $(basename $(notdir $(wildcard %(srcdir)/*.ct)))
+else
+BD_LNGS := %(catalogs)
+endif
+
+BD_OBJS := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, $(BD_LNGS)))
+BD_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, $(BD_LNGS)))
 
 #MM
 %(mmake) : $(BD_OBJS) %(source)
@@ -1703,21 +1714,20 @@ BD_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, %(catalogs)))
 $(BD_OBJS) : | $(BD_DIRS)
 GLOB_MKDIRS += $(BD_DIRS)
 
-%(dir)/%/%(subdir)/%(name).catalog : %.ct %(description).cd
+%(dir)/%/%(subdir)/%(name).catalog : %(srcdir)/%.ct $(BD_DESC).cd
 	@$(ECHO) "Creating %(name) catalog for language $*."
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/%(description).cd $< CATALOG=%(dir)/$*/%(subdir)/%(name).catalog || [ $$? -lt 10 ]
+	@$(FLEXCAT) $(BD_DESC).cd $< CATALOG=%(dir)/$*/%(subdir)/%(name).catalog || [ $$? -lt 10 ]
 
 ifneq (%(source),)
 %(source) : TMP_SOURCEDESCRIPTION := $(shell echo %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
-%(source) : %(description).cd
+%(source) : $(BD_DESC).cd
 	@$(ECHO) "Creating %(name) catalog source file %(source)"
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/%(description).cd %(source)=$(TMP_SOURCEDESCRIPTION).sd
+	@$(FLEXCAT) $(BD_DESC).cd %(source)=$(TMP_SOURCEDESCRIPTION).sd
 endif
 
-%(mmake)-clean : FILES := $(BD_OJS) %(source)
 #MM
 %(mmake)-clean ::
-	$(RM) $(FILES)
+	$(RM) $(BD_OBJS) %(source)
 
 .PHONY: %(mmake) %(mmake)-clean
 
