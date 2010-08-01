@@ -20,10 +20,6 @@ clean-errors :
 checkerr :
 	@if [ -f $(GENDIR)/errors ]; then wc -l $(GENDIR)/errors ; else $(NOP) ; fi
 
-# Create the file crypt to create a password for CVS access
-crypt : tools/crypt.c
-	$(CC) -o crypt tools/crypt.c
-
 #MM- install : install-$(ARCH)-$(CPU)
 
 # Remove all generated dependency files.
