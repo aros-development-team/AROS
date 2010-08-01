@@ -1706,7 +1706,7 @@ BD_LNGS := %(catalogs)
 endif
 
 BD_OBJS := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, $(BD_LNGS)))
-BD_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, $(BD_LNGS)))
+BD_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, $(BD_LNGS))) $(dir %(source))
 
 #MM
 %(mmake) : $(BD_OBJS) %(source)
@@ -1720,7 +1720,7 @@ GLOB_MKDIRS += $(BD_DIRS)
 
 ifneq (%(source),)
 %(source) : TMP_SOURCEDESCRIPTION := $(shell echo %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
-%(source) : $(BD_DESC).cd
+%(source) : $(BD_DESC).cd | $(dir %(source))
 	@$(ECHO) "Creating %(name) catalog source file %(source)"
 	@$(FLEXCAT) $(BD_DESC).cd %(source)=$(TMP_SOURCEDESCRIPTION).sd
 endif
