@@ -1,8 +1,0 @@
-<contents>
-<item>
-    <file>machine.h</file>
-    Constants which allow Exec to adjust to
-	the local hardware.
-
-</item>
-</contents>
