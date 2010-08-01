@@ -1,8 +1,0 @@
-<contents>
-<item>
-    <file>filesys/ -</file>
-    A starting filesystem which uses the Linux
-	filesystem to emulate a <filename>SYS:</filename>.
-
-</item>
-</contents>
