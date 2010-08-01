@@ -30,3 +30,20 @@ crypt : tools/crypt.c
 #MM
 cleandep :
 	find $(GENDIR) -name "*.d" -exec $(RM) "{}" \;
+
+#MM
+query :
+	@$(ECHO) "HOST_CC        : $(HOST_CC)"
+	@$(ECHO) "HOST_CFLAGS    : $(HOST_CFLAGS)"
+	@$(ECHO) "HOST_LDFLAGS   : $(HOST_LDFLAGS)"
+	@$(ECHO) "KERNEL_CC      : $(KERNEL_CC)"
+	@$(ECHO) "KERNEL_CFLAGS  : $(KERNEL_CFLAGS)"
+	@$(ECHO) "KERNEL_LDFLAGS : $(KERNEL_LDFLAGS)"
+	@$(ECHO) "TARGET_CC      : $(TARGET_CC)"
+	@$(ECHO) "TARGET_CFLAGS  : $(TARGET_CFLAGS)"
+	@$(ECHO) "TARGET_LDFLAGS : $(TARGET_LDFLAGS)"
+	@$(ECHO)
+	@$(ECHO) "SRCDIR         : $(SRCDIR)"
+	@$(ECHO) "GENDIR         : $(GENDIR)"
+	@$(ECHO) "PORTSDIR       : $(PORTSDIR)"
+	@$(ECHO) "PORTSSOURCEDIR : $(PORTSSOURCEDIR)"
