@@ -9,6 +9,7 @@
 /distfiles
 /config.status
 /contrib
+/ports
 /documentation
 /.settings
 /.cproject
@@ -192,6 +193,9 @@
 # /arch/all-freebsd/exec/
 /arch/all-freebsd/exec/mmakefile
 
+# /arch/all-hosted/devs/networks/tap/
+/arch/all-hosted/devs/networks/tap/mmakefile
+
 # /arch/all-hosted/dosboot/
 /arch/all-hosted/dosboot/mmakefile
 
@@ -201,6 +205,9 @@
 # /arch/all-hosted/hidd/x11/
 /arch/all-hosted/hidd/x11/mmakefile
 /arch/all-hosted/hidd/x11/libdefs.h
+
+# /arch/all-hosted/hidd/x11/icons/Gorilla/
+/arch/all-hosted/hidd/x11/icons/Gorilla/mmakefile
 
 # /arch/all-linux/
 /arch/all-linux/mmakefile
@@ -218,12 +225,6 @@
 # /arch/all-mingw32/battclock/
 /arch/all-mingw32/battclock/mmakefile
 
-# /arch/all-mingw32/bootloader/
-/arch/all-mingw32/bootloader/mmakefile
-
-# /arch/all-mingw32/bootmenu/
-/arch/all-mingw32/bootmenu/mmakefile
-
 # /arch/all-mingw32/bootstrap/
 /arch/all-mingw32/bootstrap/mmakefile
 
@@ -233,8 +234,14 @@
 # /arch/all-mingw32/exec/
 /arch/all-mingw32/exec/mmakefile
 
+# /arch/all-mingw32/hidd/hostio/
+/arch/all-mingw32/hidd/hostio/mmakefile
+
 # /arch/all-mingw32/hidd/wingdi/
 /arch/all-mingw32/hidd/wingdi/mmakefile
+
+# /arch/all-mingw32/hidd/wingdi/icons/Gorilla/
+/arch/all-mingw32/hidd/wingdi/icons/Gorilla/mmakefile
 
 # /arch/all-mingw32/hostlib/
 /arch/all-mingw32/hostlib/mmakefile
@@ -255,9 +262,6 @@
 
 # /arch/all-unix/bootloader/
 /arch/all-unix/bootloader/mmakefile
-
-# /arch/all-unix/bootmenu/
-/arch/all-unix/bootmenu/mmakefile
 
 # /arch/all-unix/devs/filesys/emul_handler/
 /arch/all-unix/devs/filesys/emul_handler/mmakefile
@@ -527,15 +531,39 @@
 # /arch/i386-pc/timer/
 /arch/i386-pc/timer/mmakefile
 
+# /arch/m68k-all/clib/
+/arch/m68k-all/clib/mmakefile
+
+# /arch/m68k-all/include/
+/arch/m68k-all/include/mmakefile
+
+# /arch/m68k-all/libgcc1/
+/arch/m68k-all/libgcc1/mmakefile
+
+# /arch/m68k-amiga/
+/arch/m68k-amiga/mmakefile
+
+# /arch/m68k-amiga/exec/
+/arch/m68k-amiga/exec/mmakefile
+
+# /arch/m68k-amiga/include/
+/arch/m68k-amiga/include/mmakefile
+
+# /arch/m68k-amiga/kernel/
+/arch/m68k-amiga/kernel/mmakefile
+
+# /arch/m68k-amiga/libs/
+/arch/m68k-amiga/libs/mmakefile
+
+# /arch/m68k-amiga/mlib/
+/arch/m68k-amiga/mlib/mmakefile
+
 # /arch/m68k-mac/
 /arch/m68k-mac/mmakefile
 
 # /arch/m68k-mac/boot/
 /arch/m68k-mac/boot/mmakefile
 /arch/m68k-mac/boot/entrycode.s
-
-# /arch/m68k-mac/clib/
-/arch/m68k-mac/clib/mmakefile
 
 # /arch/m68k-mac/exec/
 /arch/m68k-mac/exec/mmakefile
@@ -552,9 +580,6 @@
 # /arch/m68k-mac/include/exec/
 /arch/m68k-mac/include/exec/mmakefile
 
-# /arch/m68k-mac/libgcc1/
-/arch/m68k-mac/libgcc1/mmakefile
-
 # /arch/m68k-mac/mlib/
 /arch/m68k-mac/mlib/mmakefile
 
@@ -570,12 +595,27 @@
 # /arch/ppc-all/exec/
 /arch/ppc-all/exec/mmakefile
 
+# /arch/ppc-all/graphics/
+/arch/ppc-all/graphics/mmakefile
+
+# /arch/ppc-all/hidd.graphics/
+/arch/ppc-all/hidd.graphics/mmakefile
+
 # /arch/ppc-all/include/
 /arch/ppc-all/include/mmakefile
 /arch/ppc-all/include/machine.i
 
+# /arch/ppc-all/intuition/
+/arch/ppc-all/intuition/mmakefile
+
 # /arch/ppc-all/mlib/
 /arch/ppc-all/mlib/mmakefile
+
+# /arch/ppc-all/oop/
+/arch/ppc-all/oop/mmakefile
+
+# /arch/ppc-all/pci/
+/arch/ppc-all/pci/mmakefile
 
 # /arch/ppc-all/prep/
 /arch/ppc-all/prep/mmakefile
@@ -632,20 +672,11 @@
 # /arch/ppc-chrp/exec/
 /arch/ppc-chrp/exec/mmakefile
 
-# /arch/ppc-chrp/graphics/
-/arch/ppc-chrp/graphics/mmakefile
-
 # /arch/ppc-chrp/hidd.radeon/
 /arch/ppc-chrp/hidd.radeon/mmakefile
 
-# /arch/ppc-chrp/intuition/
-/arch/ppc-chrp/intuition/mmakefile
-
 # /arch/ppc-chrp/irq.hidd/
 /arch/ppc-chrp/irq.hidd/mmakefile
-
-# /arch/ppc-chrp/pci/
-/arch/ppc-chrp/pci/mmakefile
 
 # /arch/ppc-chrp/rtas/
 /arch/ppc-chrp/rtas/mmakefile
@@ -653,8 +684,14 @@
 # /arch/ppc-linux/bootloader/
 /arch/ppc-linux/bootloader/mmakefile
 
+# /arch/ppc-morphos/include/
+/arch/ppc-morphos/include/mmakefile
+
 # /arch/ppc-sam440/ata/
 /arch/ppc-sam440/ata/mmakefile
+
+# /arch/ppc-sam440/battclock/
+/arch/ppc-sam440/battclock/mmakefile
 
 # /arch/ppc-sam440/boot/
 /arch/ppc-sam440/boot/mmakefile
@@ -668,29 +705,23 @@
 # /arch/ppc-sam440/bootloader/
 /arch/ppc-sam440/bootloader/mmakefile
 
-# /arch/ppc-sam440/bootmenu/
-/arch/ppc-sam440/bootmenu/mmakefile
-
 # /arch/ppc-sam440/dos/
 /arch/ppc-sam440/dos/mmakefile
+
+# /arch/ppc-sam440/dosboot/
+/arch/ppc-sam440/dosboot/mmakefile
 
 # /arch/ppc-sam440/exec/
 /arch/ppc-sam440/exec/mmakefile
 
-# /arch/ppc-sam440/graphics/
-/arch/ppc-sam440/graphics/mmakefile
-
-# /arch/ppc-sam440/hidd.pci/
-/arch/ppc-sam440/hidd.pci/mmakefile
-
 # /arch/ppc-sam440/hidd.radeon/
 /arch/ppc-sam440/hidd.radeon/mmakefile
 
+# /arch/ppc-sam440/i2c/
+/arch/ppc-sam440/i2c/mmakefile
+
 # /arch/ppc-sam440/include/
 /arch/ppc-sam440/include/mmakefile
-
-# /arch/ppc-sam440/intuition/
-/arch/ppc-sam440/intuition/mmakefile
 
 # /arch/ppc-sam440/irq.hidd/
 /arch/ppc-sam440/irq.hidd/mmakefile
@@ -703,9 +734,6 @@
 
 # /arch/ppc-sam440/timer/
 /arch/ppc-sam440/timer/mmakefile
-
-# /arch/ppc-sam440/workbench/
-/arch/ppc-sam440/workbench/mmakefile
 
 # /arch/x86_64-all/
 /arch/x86_64-all/mmakefile
@@ -878,6 +906,9 @@
 # /images/IconSets/Gorilla/Icons/Medium/AROS/Devs/
 /images/IconSets/Gorilla/Icons/Medium/AROS/Devs/mmakefile
 
+# /images/IconSets/Gorilla/Icons/Medium/AROS/Devs/Monitors/
+/images/IconSets/Gorilla/Icons/Medium/AROS/Devs/Monitors/mmakefile
+
 # /images/IconSets/Gorilla/Icons/Medium/AROS/Extras/
 /images/IconSets/Gorilla/Icons/Medium/AROS/Extras/mmakefile
 
@@ -1049,6 +1080,9 @@
 # /images/mason/gadgets/prefs/
 /images/mason/gadgets/prefs/mmakefile
 
+# /images/pointers/
+/images/pointers/mmakefile
+
 # /rom/
 /rom/mmakefile
 
@@ -1068,12 +1102,8 @@
 # /rom/bootloader/
 /rom/bootloader/mmakefile
 
-# /rom/bootmenu/
-/rom/bootmenu/mmakefile
-/rom/bootmenu/libdefs.h
-
-# /rom/cgfx/
-/rom/cgfx/mmakefile
+# /rom/cia/
+/rom/cia/mmakefile
 
 # /rom/dbus/
 /rom/dbus/mmakefile
@@ -1301,6 +1331,7 @@
 
 # /rom/utility/
 /rom/utility/mmakefile
+/rom/utility/archspecific.h
 
 # /rom/workbench/
 /rom/workbench/libdefs.h
@@ -1322,6 +1353,9 @@
 /test/HiddGraphics/*.o
 /test/HiddGraphics/mmakefile
 /test/HiddGraphics/gfxhiddtool.a
+
+# /test/HiddGraphics/obsolete/
+/test/HiddGraphics/obsolete/mmakefile
 
 # /test/Zune/
 /test/Zune/mmakefile
@@ -1355,6 +1389,9 @@
 
 # /test/library/
 /test/library/mmakefile
+
+# /test/mesa/
+/test/mesa/mmakefile
 
 # /test/oop/
 /test/oop/oop
@@ -1573,9 +1610,8 @@
 /workbench/classes/datatypes/png/libdefs.h
 /workbench/classes/datatypes/png/*.bak
 
-# /workbench/classes/datatypes/ppm/
-/workbench/classes/datatypes/ppm/libdefs.h
-/workbench/classes/datatypes/ppm/mmakefile
+# /workbench/classes/datatypes/pnm/
+/workbench/classes/datatypes/pnm/mmakefile
 
 # /workbench/classes/datatypes/sound/
 /workbench/classes/datatypes/sound/mmakefile
@@ -1719,6 +1755,9 @@
 /workbench/devs/makefile
 /workbench/devs/makefile.bak
 
+# /workbench/devs/audio/
+/workbench/devs/audio/mmakefile
+
 # /workbench/devs/clipboard/
 /workbench/devs/clipboard/mmakefile
 
@@ -1731,6 +1770,12 @@
 # /workbench/devs/midi/
 /workbench/devs/midi/mmakefile
 /workbench/devs/midi/*.o
+
+# /workbench/devs/monitors/default/
+/workbench/devs/monitors/default/mmakefile
+
+# /workbench/devs/monitors/wrapper/
+/workbench/devs/monitors/wrapper/mmakefile
 
 # /workbench/devs/networks/e1000/
 /workbench/devs/networks/e1000/mmakefile
@@ -1752,6 +1797,9 @@
 
 # /workbench/devs/networks/pcnet32/
 /workbench/devs/networks/pcnet32/mmakefile
+
+# /workbench/devs/networks/ppp/
+/workbench/devs/networks/ppp/mmakefile
 
 # /workbench/devs/networks/prism2/
 /workbench/devs/networks/prism2/mmakefile
@@ -1780,9 +1828,6 @@
 # /workbench/devs/parallel/
 /workbench/devs/parallel/mmakefile
 
-# /workbench/devs/ram_handler/
-/workbench/devs/ram_handler/mmakefile
-
 # /workbench/devs/serial/
 /workbench/devs/serial/mmakefile
 
@@ -1798,20 +1843,32 @@
 # /workbench/hidds/
 /workbench/hidds/mmakefile
 
+# /workbench/hidds/hidd.agp/
+/workbench/hidds/hidd.agp/mmakefile
+
+# /workbench/hidds/hidd.gallium/
+/workbench/hidds/hidd.gallium/mmakefile
+
 # /workbench/hidds/hidd.i2c/
 /workbench/hidds/hidd.i2c/mmakefile
 
 # /workbench/hidds/hidd.i2c/stubs/
 /workbench/hidds/hidd.i2c/stubs/mmakefile
 
-# /workbench/hidds/hidd.intelG33/
-/workbench/hidds/hidd.intelG33/mmakefile
+# /workbench/hidds/hidd.intelG45/
+/workbench/hidds/hidd.intelG45/mmakefile
+
+# /workbench/hidds/hidd.nouveau/
+/workbench/hidds/hidd.nouveau/mmakefile
 
 # /workbench/hidds/hidd.nvidia/
 /workbench/hidds/hidd.nvidia/mmakefile
 
 # /workbench/hidds/hidd.radeon/
 /workbench/hidds/hidd.radeon/mmakefile
+
+# /workbench/hidds/hidd.softpipe/
+/workbench/hidds/hidd.softpipe/mmakefile
 
 # /workbench/hidds/hidd.vmwaresvga/
 /workbench/hidds/hidd.vmwaresvga/mmakefile
@@ -1854,6 +1911,9 @@
 # /workbench/libs/camd/
 /workbench/libs/camd/libdefs.h
 /workbench/libs/camd/mmakefile
+
+# /workbench/libs/cgfx/
+/workbench/libs/cgfx/mmakefile
 
 # /workbench/libs/cgxvideo/
 /workbench/libs/cgxvideo/mmakefile
@@ -1960,9 +2020,15 @@
 /workbench/libs/gadtools/libdefs.h
 /workbench/libs/gadtools/mmakefile
 
+# /workbench/libs/gallium/
+/workbench/libs/gallium/mmakefile
+
 # /workbench/libs/icon/
 /workbench/libs/icon/libdefs.h
 /workbench/libs/icon/mmakefile
+
+# /workbench/libs/identify/
+/workbench/libs/identify/mmakefile
 
 # /workbench/libs/iffparse/
 /workbench/libs/iffparse/libdefs.h
@@ -1993,6 +2059,39 @@
 # /workbench/libs/mathtrans/
 /workbench/libs/mathtrans/libdefs.h
 /workbench/libs/mathtrans/mmakefile
+
+# /workbench/libs/mesa/include/GL/
+/workbench/libs/mesa/include/GL/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/
+/workbench/libs/mesa/src/gallium/auxiliary/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/cso_cache/
+/workbench/libs/mesa/src/gallium/auxiliary/cso_cache/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/draw/
+/workbench/libs/mesa/src/gallium/auxiliary/draw/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/os/
+/workbench/libs/mesa/src/gallium/auxiliary/os/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/rtasm/
+/workbench/libs/mesa/src/gallium/auxiliary/rtasm/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/tgsi/
+/workbench/libs/mesa/src/gallium/auxiliary/tgsi/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/translate/
+/workbench/libs/mesa/src/gallium/auxiliary/translate/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/util/
+/workbench/libs/mesa/src/gallium/auxiliary/util/mmakefile
+
+# /workbench/libs/mesa/src/gallium/include/pipe/
+/workbench/libs/mesa/src/gallium/include/pipe/mmakefile
+
+# /workbench/libs/mesa/src/mesa/
+/workbench/libs/mesa/src/mesa/mmakefile
 
 # /workbench/libs/muimaster/
 /workbench/libs/muimaster/*_end.c
@@ -2081,6 +2180,9 @@
 
 # /workbench/libs/popupmenu/
 /workbench/libs/popupmenu/mmakefile
+
+# /workbench/libs/popupmenu/staticlib/
+/workbench/libs/popupmenu/staticlib/mmakefile
 
 # /workbench/libs/prometheus/
 /workbench/libs/prometheus/mmakefile
@@ -2199,6 +2301,9 @@
 # /workbench/prefs/Editor/catalogs/
 /workbench/prefs/Editor/catalogs/mmakefile
 
+# /workbench/prefs/MonEd/
+/workbench/prefs/MonEd/mmakefile
+
 # /workbench/prefs/PSI/
 /workbench/prefs/PSI/strings.h
 /workbench/prefs/PSI/mmakefile
@@ -2254,6 +2359,19 @@
 
 # /workbench/prefs/network/catalogs/
 /workbench/prefs/network/catalogs/mmakefile
+
+# /workbench/prefs/palette/
+/workbench/prefs/palette/mmakefile
+
+# /workbench/prefs/palette/catalogs/
+/workbench/prefs/palette/catalogs/mmakefile
+
+# /workbench/prefs/pointer/
+/workbench/prefs/pointer/strings.h
+/workbench/prefs/pointer/mmakefile
+
+# /workbench/prefs/pointer/catalogs/
+/workbench/prefs/pointer/catalogs/mmakefile
 
 # /workbench/prefs/reqtools/
 /workbench/prefs/reqtools/mmakefile
