@@ -1,9 +1,0 @@
-include $(TOP)/config/make.cfg
-
-#MM- build-tools : build-tools-cpak
-
-%build_prog mmake=build-tools-cpak \
-    progname=cpak targetdir=$(AROSDIR)/Build/Tools \
-    files=cpak uselibs=arosc
-
-%common
