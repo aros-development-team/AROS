@@ -56,8 +56,8 @@ struct KernelBase
 struct KernelInterface
 {
     long (*core_init)(unsigned long TimerPeriod, struct ExecBase **SysBasePointer, APTR *KernelBasePointer);
-    long (*core_intr_disable)(void);
-    long (*core_intr_enable)(void);
+    void (*core_intr_disable)(void);
+    void (*core_intr_enable)(void);
     void (*core_syscall)(unsigned long n);
     unsigned char (*core_is_super)(void);
     long (*core_exception)(void *ExceptionRecord, void *EstablisherFrame, void *ContextRecord, void *DispatcherContext);
@@ -87,7 +87,7 @@ void core_Switch(CONTEXT *regs, struct ExecBase *SysBase);
 void core_Schedule(CONTEXT *regs, struct ExecBase *SysBase);
 void core_ExitInterrupt(CONTEXT *regs);
 void core_Cause(struct ExecBase *SysBase);
-long core_intr_enable(void);
+void core_intr_enable(void);
 
 static inline void core_LeaveInterrupt(struct ExecBase *SysBase)
 {   

@@ -166,7 +166,6 @@ LRESULT CALLBACK bitmap_callback(HWND win, UINT msg, WPARAM wp, LPARAM lp)
     HDC window_dc;
     PAINTSTRUCT ps;
     LONG x, y, xsize, ysize;
-    LONG bm_xend, bm_yend;
     struct bitmap_data *bmdata;
 
     switch(msg) {
@@ -206,6 +205,7 @@ DWORD WINAPI gdithread_entry(struct GDI_Control *ctl)
                 gdata = (struct gfx_data *)msg.wParam;
 		DWIN(printf("[GDI] NOTY_SHOW, Display data: 0x%p\n", gdata));
 		width = 0;
+		height = 0;
 		prev  = HWND_TOP;
 
 		/* Traverse through the bitmaps list and (re)open every bitmap's window. This will
