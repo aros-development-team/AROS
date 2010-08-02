@@ -1,12 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-TARGETDIR 	:= $(GENDIR)/$(CURDIR)
+EXEDIR := $(BINDIR)/boot
 
-BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o \
-		   $(TARGETDIR)/hostlib.o $(TARGETDIR)/debug.o	       \
-		   $(TARGETDIR)/shutdown.o $(TARGETDIR)/icon.o
-FILES		:= bootstrap elfloader32 hostlib debug
+# --- Kickstart ---
 
 # Hardware-independant part of kernel
 COMMON_DEVICES  := $(KOBJSDIR)/gameport_device.o     $(KOBJSDIR)/keyboard_device.o	\
@@ -31,7 +28,7 @@ MINGW32_RES	 := $(KOBJSDIR)/kernel_resource.o     $(KOBJSDIR)/hostlib_resource.o
 		    $(KOBJSDIR)/battclock_resource.o  $(KOBJSDIR)/bootloader_resource.o \
 		    $(KOBJSDIR)/processor_resource.o
 
-KOBJS_COMMON := $(COMMON_RES) $(COMMON_HANDLERS) $(COMMON_LIBS) $(COMMON_DEVICES) $(COMMON_HIDD)
+KOBJS_COMMON  := $(COMMON_RES) $(COMMON_HANDLERS) $(COMMON_LIBS) $(COMMON_DEVICES) $(COMMON_HIDD)
 KOBJS_MINGW32 := $(MINGW32_RES) $(MINGW32_HANDLERS) $(MINGW32_LIBS) $(MINGW32_DEVICES) $(MINGW32_HIDD)
 
 #MM- AROS-mingw32-$(CPU): kernel-link-mingw32 workbench-hosted kernel-bootstrap-mingw32 arch-common-boot-generatebootsig
@@ -46,58 +43,44 @@ KOBJS_MINGW32 := $(MINGW32_RES) $(MINGW32_HANDLERS) $(MINGW32_LIBS) $(MINGW32_DE
 #MM			 kernel-processor-kobj
 
 #MM
-kernel-bootstrap-mingw32-quick: setup-mingw32 $(BINDIR)/boot/AROSBootstrap.exe  $(BINDIR)/boot/AROSBootstrap.conf
-
-#MM- kernel-bootstrap-mingw32: includes kernel-bootstrap-mingw32-quick
-
-#MM
 kernel-link-mingw32: $(BINDIR)/boot/aros-common $(BINDIR)/boot/aros-mingw32
-#MM
-kernel-link-mingw32-quick: $(BINDIR)/boot/aros-common $(BINDIR)/boot/aros-mingw32
+
 #MM
 kernel-link-mingw32-common-quick: $(BINDIR)/boot/aros-common
-#MM
-kernel-link-mingw32-quick: $(BINDIR)/boot/aros-common
 
 #MM
-setup-mingw32 :
-	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
+kernel-link-mingw32-quick: $(BINDIR)/boot/aros-mingw32
 
-$(BINDIR)/boot/aros-common: $(KOBJS_COMMON)
+$(EXEDIR)/aros-common: $(KOBJS_COMMON)
 	@$(ECHO) Linking $@...
 	@$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel-common.map \
 	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
-$(BINDIR)/boot/aros-mingw32: $(KOBJS_MINGW32)
+$(EXEDIR)/aros-mingw32: $(KOBJS_MINGW32)
 	@$(ECHO) Linking $@...
 	@$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel-mingw32.map \
 	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
-$(TARGETDIR)/icon.o: $(SRCDIR)/$(CURDIR)/icon.rc $(SRCDIR)/$(CURDIR)/icon.ico
+# --- Bootstrap ---
+
+FILES         := bootstrap elfloader32 hostlib debug shutdown
+USER_INCLUDES := -I$(GENINCDIR)
+USER_OBJS     := $(GENDIR)/$(CURDIR)/icon.o
+
+#MM
+kernel-bootstrap-mingw32: $(EXEDIR)/AROSBootstrap.conf
+
+%build_prog mmake=kernel-bootstrap-mingw32 \
+    progname=AROSBootstrap$(HOST_EXE_SUFFIX) targetdir=$(EXEDIR) \
+    files=$(FILES) compiler=kernel
+
+$(GENDIR)/$(CURDIR)/icon.o: $(SRCDIR)/$(CURDIR)/icon.rc $(SRCDIR)/$(CURDIR)/icon.ico
 	@$(ECHO) Compiling $<...
 	@$(KERNEL_RESCOMP) --output-format=coff $< $@
 
-$(BINDIR)/boot/AROSBootstrap.exe: $(BOBJS)
-	@$(ECHO) Linking $@...
-	@$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(BOBJS)
-
-$(BINDIR)/boot/AROSBootstrap.conf: AROSBootstrap.conf
+$(EXEDIR)/AROSBootstrap.conf: AROSBootstrap.conf
 	@$(CP) $^ $@
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-$(TARGETDIR)/%.d : %.c
-	%mkdepend_q cc="$(KERNEL_CC) $(KERNEL_CFLAGS) -I$(GENINCDIR)"
-
-DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
--include $(DEPS)
-
-$(TARGETDIR)/%.o : %.c
-	@$(ECHO) Compiling $<...
-	@$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
 
 %common

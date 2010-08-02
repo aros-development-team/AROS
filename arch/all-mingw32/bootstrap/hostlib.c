@@ -10,7 +10,7 @@ static void GetErrorStr(char **error, BOOL condition)
     if (error != NULL) {
     	if (condition) {
 	    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
-			  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), error, 0, NULL );
+			  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)error, 0, NULL );
 	} else
 	    *error = NULL;
     }

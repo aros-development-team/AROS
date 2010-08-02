@@ -52,7 +52,7 @@
 
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
-%define link_q cmd=$(AROS_CC) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS)
+%define link_q cmd=$(AROS_CC) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP)
 	@$(ECHO) "Linking %(to)..."
 	@$(IF) %(cmd) %(opt) %(from) -o %(to) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -66,7 +66,7 @@
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi; \
-	$(STRIP) %(to)
+	%(strip) %(to)
 %end
 #------------------------------------------------------------------------------
 
@@ -586,19 +586,22 @@ endif
 
 ifeq (%(linker),target)
 %(prog) : CMD:=$(TARGET_CC)
+%(prog) : STRIPCMD:=$(TARGET_STRIP)
 endif
 ifeq (%(linker),host)
 %(prog) : CMD:=$(HOST_CC)
+%(prog) : STRIPCMD:=$(HOST_STRIP)
 endif
 ifeq (%(linker),kernel)
 %(prog) : CMD:=$(KERNEL_CC)
+%(prog) : STRIPCMD:=$(ECHO) >/dev/null
 endif
 
 %(prog) : OBJS := %(objs)
 %(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
 %(prog) : LIBS := $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
 %(prog) : %(objs) $(TMP_DEPLIBS)
-	%link_q from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS) cmd=$(CMD)
+	%link_q from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS) cmd=$(CMD) strip=$(STRIPCMD)
 %end
 #------------------------------------------------------------------------------
 
@@ -1100,7 +1103,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
     aflags=$(BD_AFLAGS)
 
 %rule_link_prog prog=$(BD_TARGETDIR)/$(BD_PROGNAME) \
-    objs=$(BD_OBJS) ldflags=$(BD_LDFLAGS) \
+    objs="$(BD_OBJS) $(USER_OBJS)" ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
     linker=%(compiler)
