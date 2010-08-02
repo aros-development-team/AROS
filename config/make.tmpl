@@ -1743,16 +1743,17 @@ endif
 # - mmake is the mmaketarget
 # - icons is a list of icon base names (ie. without the .info suffix)
 # - dir is the destination directory
+# - srcdir is where *.png and *.info.src are searched
 #-----------------------------------------------------------------------------
 
-%define build_icons mmake=/A icons=/A dir=/A
+%define build_icons mmake=/A icons=/A dir=/A srcdir="$(SRCDIR)/$(CURDIR)"
 
 BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 
 #MM
 %(mmake) : $(BD_OBJS)
 
-%(dir)/%.info : %.info.src %.png
+%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%.png
 	@$(ECHO) Creating $(notdir $@)...
 	@$(ILBMTOICON) $+ $@
 
@@ -1917,18 +1918,6 @@ endif
 %.s : %.c
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(TARGET_CC) -S $(CFLAGS) $< -c -o $@
-%end
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
-# Convert two png images to an Amiga icon file based on the description
-# file %(from), with outputfile going to %(to).
-%define makeicon2 from=$< to=$@ img1="$(basename $(basename $<))_N.png" img2="$(basename $(basename $<))_S.png"
-	@$(ECHO) "Creating icon %(to)..."
-	@$(PNGTOPNM) %(img1) | $(PPMTOILBM) -maxplanes 8 >$(GENDIR)/genicon1.iff
-	@$(PNGTOPNM) %(img2) | $(PPMTOILBM) -maxplanes 8 >$(GENDIR)/genicon2.iff
-	@$(ILBMTOICON) %(from) $(GENDIR)/genicon1.iff $(GENDIR)/genicon2.iff %(to)
 %end
 #------------------------------------------------------------------------------
 
