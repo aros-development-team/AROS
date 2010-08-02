@@ -6,11 +6,22 @@
  Lang: English
  */
 
-#include <windows.h>
-#include "elfloader32.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <windows.h>
+
+#define EXEC_TYPES_H
+
+typedef BYTE     UBYTE;
+typedef WORD     UWORD;
+typedef UINT_PTR IPTR;
+typedef INT_PTR  SIPTR;
+typedef void *   APTR;
+
+#include <dos/elf.h>
+
+#include "elfloader32.h"
 
 #define D(x)
 #define DREL(x)
@@ -146,7 +157,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, UL
   
   for (i=0; i<numrel; i++, rel++)
   {
-	struct symbol *sym = &symtab[ELF32_R_SYM(rel->info)];
+	struct symbol *sym = &symtab[ELF_R_SYM(rel->info)];
 	unsigned long *p = (unsigned long *)&section[rel->offset];
 	ULONG_PTR s;
 	const char * name = (char *)((unsigned long)sh[shsymtab->link].addr) + sym->name;
@@ -188,7 +199,7 @@ SysBase_no:     s = sym->value;
         DREL(printf("[ELF Loader] Relocating symbol "));
         DREL(if (sym->name) printf("%s", name); else printf("<unknown>"));
         DREL(printf(" type "));
-	switch (ELF32_R_TYPE(rel->info))
+	switch (ELF_R_TYPE(rel->info))
 	{
 	case R_386_32: /* 32bit absolute */
             DREL(printf("R_386_32"));
@@ -205,7 +216,7 @@ SysBase_no:     s = sym->value;
 	    break;
 		
 	default:
-	    printf("[ELF Loader] Unrecognized relocation type %d %d\n", i, (unsigned int)ELF32_R_TYPE(rel->info));
+	    printf("[ELF Loader] Unrecognized relocation type %d %d\n", i, (unsigned int)ELF_R_TYPE(rel->info));
 	    return 0;
 	}
 	DREL(printf(" -> 0x%p\n", *p));

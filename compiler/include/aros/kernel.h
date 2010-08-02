@@ -9,15 +9,18 @@
     Lang: english
 */
 
+#include <dos/elf.h>
 #include <utility/tagitem.h>
 
 /* Type of scheduler. See KrnGetScheduler()/KrnSetScheduler() functions. */
-typedef enum {
+typedef enum
+{
     SCHED_RR = 1	/* Old good round robin scheduler */
 } KRN_SchedType;
 
 /* Flags for KrnMapGlobal */
-typedef enum {
+typedef enum
+{
 	MAP_CacheInhibit 	= 0x0001,
 	MAP_WriteThrough	= 0x0002,
 	MAP_Guarded 		= 0x0004,
@@ -27,6 +30,7 @@ typedef enum {
 	MAP_Executable		= 0x0400,
 } KRN_MapAttr;
 
+/* Tags for kernel boot message */
 #define KRN_Dummy               (TAG_USER + 0x03d00000)
 #define KRN_KernelBase          (KRN_Dummy + 1)
 #define KRN_KernelLowest        (KRN_Dummy + 2)
@@ -57,8 +61,17 @@ typedef enum {
 /* ELF debug info */
 struct ELF_DebugInfo
 {
-    APTR eh;
-    APTR sh;
+    struct elfheader *eh;
+    struct sheader *sh;
 };
+
+/* Tags for KrnDecodeLocation() */
+#define KDL_Dummy		(TAG_USER + 0x03e00000)
+#define KDL_ModuleName		(KDL_Dummy + 1)
+#define KDL_SegmentName		(KDL_Dummy + 2)
+#define KDL_SegmentNumber	(KDL_Dummy + 3)
+#define KDL_SegmentOffset	(KDL_Dummy + 4)
+#define KDL_FunctionName	(KDL_Dummy + 5)
+#define KDL_FunctionOffset	(KDL_Dummy + 6)
 
 #endif /* AROS_KERNEL_H */
