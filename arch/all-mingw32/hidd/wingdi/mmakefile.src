@@ -7,7 +7,6 @@ FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
 
 #MM kernel-hidd-wingdi-kobj  : kernel-hidd-wingdi-native devs-monitors-gdi
 #MM kernel-hidd-wingdi       : kernel-hidd-wingdi-native
-#MM kernel-hidd-wingdi-quick : kernel-hidd-wingdi-native
 
 %build_module mmake=kernel-hidd-wingdi \
   modname=wingdi modtype=hidd \
@@ -24,24 +23,15 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
     files=$(DISK_FILES) uselibs="oop"
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
-NATIVE_DIR := $(GENDIR)/native
-NATIVE_OBJS := $(NATIVE_DIR)/gdi_native.o
-SOEXT := .dll
-SO_LDFLAGS := -shared
+NATIVE_LIBDIR := $(GENDIR)/lib
 
-#MM
-kernel-hidd-wingdi-native: $(NATIVE_BINDIR)/wingdi$(SOEXT)
+NATIVE_FILES  := gdi_native
 
-$(NATIVE_BINDIR)/wingdi$(SOEXT): $(NATIVE_OBJS) $(NATIVE_BINDIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS) -L $(NATIVE_DIR) -lkernel -lgdi32
+USER_INCLUDES := -I$(GENINCDIR)
+USER_LDFLAGS  := -shared -L$(NATIVE_LIBDIR)
 
-$(NATIVE_BINDIR) :
-	mkdir -p $(NATIVE_BINDIR)
-
-$(NATIVE_DIR) :
-	mkdir $(NATIVE_DIR)
-	 
-$(NATIVE_DIR)/%.o : %.c $(NATIVE_DIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/arch/all-mingw32/hidd/wingdi
+%build_prog mmake=kernel-hidd-wingdi-native \
+    progname=wingdi.dll targetdir=$(NATIVE_BINDIR) \
+    files=$(NATIVE_FILES) compiler=kernel uselibs="kernel gdi32"
 
 %common

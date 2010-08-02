@@ -48,8 +48,6 @@
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
 
-#include <aros/host-conf.h>
-
 #include <string.h>
 
 #include "emul_handler_intern.h"

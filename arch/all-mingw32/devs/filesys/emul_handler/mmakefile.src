@@ -1,32 +1,23 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(GENINCDIR)
-
-#MM kernel-fs-emul-mingw32-linklib : includes linklibs kernel-fs-emul-mingw32-native
-#MM kernel-fs-emul-mingw32-kobj : includes linklibs kernel-fs-emul-mingw32-native
+#MM kernel-fs-emul-mingw32: kernel-fs-emul-mingw32-native
+#MM kernel-fs-emul-mingw32-kobj: kernel-fs-emul-mingw32-native
 
 %build_module mmake=kernel-fs-emul-mingw32 \
   modname=emul modtype=device modsuffix=handler \
   files=emul_handler
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
-NATIVE_DIR := $(GENDIR)/native
-NATIVE_OBJS := $(NATIVE_DIR)/emul_handler_native.o
-SOEXT := .dll
-SO_LDFLAGS := -shared
+NATIVE_LIBDIR := $(GENDIR)/lib
 
-#MM
-kernel-fs-emul-mingw32-native: $(NATIVE_BINDIR)/emul_handler$(SOEXT)
+NATIVE_FILES  := emul_handler_native
 
-$(NATIVE_BINDIR)/emul_handler$(SOEXT): $(NATIVE_OBJS) $(NATIVE_BINDIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS) -L $(NATIVE_DIR) -lkernel
+USER_INCLUDES := -I$(GENINCDIR)
+USER_LDFLAGS  := -shared -L$(NATIVE_LIBDIR)
 
-$(NATIVE_BINDIR) :
-	mkdir -p $(NATIVE_BINDIR)
+%build_prog mmake=kernel-fs-emul-mingw32-native \
+    progname=emul_handler.dll targetdir=$(NATIVE_BINDIR) \
+    files=$(NATIVE_FILES) compiler=kernel uselibs=kernel
 
-$(NATIVE_DIR) :
-	mkdir $(NATIVE_DIR)
-	 
-$(NATIVE_DIR)/%.o : %.c $(NATIVE_DIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR)
+%common

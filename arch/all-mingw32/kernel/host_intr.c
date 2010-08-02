@@ -177,12 +177,10 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 
 DWORD WINAPI TaskSwitcher()
 {
-    HANDLE IntEvent;
     DWORD obj;
     CONTEXT MainCtx;
     REG_SAVE_VAR;
     DS(DWORD res);
-    MSG msg;
 
     for (;;) {
         obj = WaitForMultipleObjects(Ints_Num, IntObjects, FALSE, INFINITE);
@@ -245,13 +243,13 @@ DWORD WINAPI TaskSwitcher()
 
 /* ****** Interface functions ****** */
 
-long __declspec(dllexport) core_intr_disable(void)
+void __declspec(dllexport) core_intr_disable(void)
 {
     DI(printf("[KRN] disabling interrupts\n"));
     Ints_Enabled = 0;
 }
 
-long __declspec(dllexport) core_intr_enable(void)
+void __declspec(dllexport) core_intr_enable(void)
 {
     unsigned char i;
 
@@ -358,7 +356,7 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
 		}
 		    D(else printf("[KRN] Failed to run task switcher thread\n");)
 	    } else
-		printf("Unsupported Windows version %u.%u, platform ID %u\n", osver.dwMajorVersion, osver.dwMinorVersion, osver.dwPlatformId);
+		printf("Unsupported Windows version %lu.%lu, platform ID %lu\n", osver.dwMajorVersion, osver.dwMinorVersion, osver.dwPlatformId);
 	}
 	    D(else printf("[KRN] failed to get thread handle\n");)
     }
