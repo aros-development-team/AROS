@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: Definition of ELF file structures.
     Lang: english
