@@ -215,7 +215,6 @@ SysBase_no:     s = sym->value;
 
 int AddKernelFile(char *name)
 {
-    int l;
     struct ELFNode *n;
 
     n = malloc(sizeof(struct ELFNode) + strlen(name));

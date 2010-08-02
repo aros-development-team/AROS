@@ -101,9 +101,6 @@ static char *GetConfigArg(char *str, char *option)
 
 int main(int argc, char ** argv)
 {
-    char *error;
-    unsigned long BadSyms;
-    struct TagItem *t;
     int x;
     struct stat st;
     int i = 1;
