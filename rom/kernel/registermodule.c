@@ -6,7 +6,6 @@
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
-#include "debug_elf.h"
 #include "debug_intern.h"
 
 /* We use own implementation of bug(), so we don't need aros/debug.h */
