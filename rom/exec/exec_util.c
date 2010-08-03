@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Exec utility functions.
@@ -14,6 +14,7 @@
 #include <proto/exec.h>
 
 #include "etask.h"
+#include "exec_intern.h"
 #include "exec_util.h"
 
 /*****************************************************************************

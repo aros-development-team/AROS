@@ -15,6 +15,7 @@
 
 #include <stdarg.h>
 
+#include "exec_intern.h"
 #include "exec_util.h"
 
 /* Fetch the data from a va_list.

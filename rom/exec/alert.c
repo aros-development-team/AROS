@@ -95,9 +95,10 @@ static void PrintFrame(void)
     struct Task *task = SysBase->ThisTask;
 
     /* First try to issue an Intuition requester */
-    alertNum = Exec_UserAlert(alertNum, task);
+    alertNum = Exec_UserAlert(alertNum, task, SysBase);
     if (!alertNum)
 	return;
+
     /* We're here if Intuition failed. Print alert to the debug output and reboot.
        In future we should have more intelligent handling for such a case. For
        example we should report what was wrong after we rebooted. */

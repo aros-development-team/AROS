@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Default trap handler
@@ -21,5 +21,21 @@
 
 void Exec_TrapHandler(ULONG trapNum)
 {
+    struct Task *task = SysBase->ThisTask;
+    struct IntETask *iet;
+    
+    /* Our situation is deadend */
+    trapNum |= AT_DeadEnd;
+
+    if (task)
+    {
+	/* Protection against double-crash. If the alert code is already specified, we have
+	   a second crash during processing the first one. Then we just pick up initial alert code
+	   and just call Alert(). */
+        iet = GetIntETask(task);
+	if (iet->iet_AlertCode)
+	    trapNum = iet->iet_AlertCode;
+    }
+
     Alert(AT_DeadEnd | trapNum);
 } /* TrapHandler */

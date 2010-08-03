@@ -5,14 +5,10 @@
 
 VOID Exec_CrashHandler(void)
 {
-    ULONG alertNum;
     struct Task *task = FindTask(NULL);
     struct IntETask *iet = GetIntETask(task);
-    
-    /* Pick up the alert code given us by trap handler */
-    alertNum = iet->iet_LastAlert[0];
-    /* Remove supervisor-level crash indication (see traphandler.c) */
-    iet->iet_LastAlert[0] = 0;
-    
+    ULONG alertNum = iet->iet_AlertCode;
+
+    iet->iet_AlertCode = 0;	/* Makes Alert() attempting to bring up Intuition requester */
     Alert(alertNum);
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: alert.c 32172 2009-12-25 11:40:20Z sonic $
 
     Desc: Display an alert.
@@ -15,6 +15,8 @@
 #include <string.h>
 
 #include "../kernel/hostinterface.h"
+
+#include "exec_intern.h"
 #include "exec_util.h"
 
 static UBYTE *const fmtstring = "Task %08lx - %s\n";
@@ -56,8 +58,6 @@ extern struct HostInterface *HostIFace;
     SEE ALSO
 
     INTERNALS
-        This is a very basic implementation for Windows-hosted AROS. It displays
-	alerts as Windows message boxes.
 
 ******************************************************************************/
 {
@@ -65,11 +65,12 @@ extern struct HostInterface *HostIFace;
 
     UBYTE buffer[256], *buf;
     struct Task *task = SysBase->ThisTask;
-    
+
     /* If we are running in user mode we should first try to report a problem using AROS'
        own way to do it */
-    if (!KrnIsSuper()) {
-        alertNum = Exec_UserAlert(alertNum, task);
+    if (!KrnIsSuper())
+    {
+        alertNum = Exec_UserAlert(alertNum, task, SysBase);
 	if (!alertNum)
 	    return;
     }
@@ -79,10 +80,12 @@ extern struct HostInterface *HostIFace;
     buf = NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buf, task, Alert_GetTaskName(task));
     buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, --buf, alertNum);
     Alert_GetString(alertNum, --buf);
+
+    /* Display an alert using Windows message box */
     Disable();
     D(bug("[Alert] Message:\n%s\n", buffer));
     HostIFace->_Alert(buffer);
-    
+
     if (alertNum & AT_DeadEnd)
     {
 	/* Um, we have to do something here in order to prevent the

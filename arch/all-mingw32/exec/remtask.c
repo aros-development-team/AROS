@@ -1,10 +1,11 @@
 /*
-    Copyright  1995-2000, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
@@ -12,8 +13,10 @@
 #include <proto/kernel.h>
 
 #include "etask.h"
+#include "exec_intern.h"
 #include "exec_util.h"
 #include "exec_debug.h"
+
 #ifndef DEBUG_RemTask
 #   define DEBUG_RemTask 0
 #endif

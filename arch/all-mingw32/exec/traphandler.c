@@ -35,25 +35,28 @@ void Exec_TrapHandler(ULONG trapNum, struct AROSCPUContext *ctx)
     
     /* Our situation is deadend */
     trapNum |= AT_DeadEnd;
-#ifdef SET_PC
-    if (task) {
+
+    if (task)
+    {
 	/* Get internal task structure */
         iet = GetIntETask(task);
 	/* Protection against double-crash. If the alert code is already specified, we have
 	   a second crash during processing the first one. Then we just pick up initial alert code
 	   and just call Alert(). */
-	if (iet->iet_LastAlert[0])
-	    trapNum = iet->iet_LastAlert[0];
+	if (iet->iet_AlertCode)
+	    trapNum = iet->iet_AlertCode;
+#ifdef SET_PC
 	else {
 	    /* Otherwise we can try to send the crash to user level. Set alert code for the task */
-	    iet->iet_LastAlert[0] = trapNum;
+	    iet->iet_AlertCode = trapNum;
             /* Make the task to jump to crash handler. We don't care about return address etc because
 	       the alert is deadend anyway. */
             SET_PC(ctx, Exec_CrashHandler);
 	    /* Let the task go */
 	    return;
 	}
-    }
 #endif
+    }
+
     Alert(trapNum);
 } /* TrapHandler */
