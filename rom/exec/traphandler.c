@@ -11,6 +11,8 @@
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 
+#include "etask.h"
+
 /* In original AmigaOS the trap handler is entered in supervisor mode with the
  * following on the supervisor stack:
  *  0(sp).l = trap#
