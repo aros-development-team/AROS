@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new process
@@ -12,7 +12,6 @@
 #include <dos/filesystem.h>
 #include <dos/dostags.h>
 #include <dos/stdio.h>
-#define __DOS_NOLIBBASE__
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
