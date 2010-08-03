@@ -29,18 +29,15 @@ extern int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE *
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
-APTR KernelBase = NULL;
 
 /* auto init */
-static int SetKernelBase(struct KernelBase *kBase)
+static int Core_Init(APTR KernelBase)
 {
-    KernelBase = kBase;
-    D(bug("[KRN] KernelBase set to 0x%p\n", kBase));
-
-    return 1;
+    D(bug("[KRN] initializing host-side kernel module\n"));
+    return KernelIFace.core_init(SysBase->VBlankFrequency, SysBase, KernelBase);
 }
 
-ADD2INITLIB(SetKernelBase, 0)
+ADD2INITLIB(Core_Init, 10)
 
 char *kernel_functions[] = {
     "core_init",
@@ -140,12 +137,6 @@ int __startup startup(struct TagItem *msg)
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf = myvkprintf;
 
     SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
-
-    mykprintf("[Kernel] initializing host-side kernel module\n");
-    if (!KernelIFace.core_init(SysBase->VBlankFrequency, &SysBase, &KernelBase)) {
-	mykprintf("[Kernel] Failed to initialize!\n");
-	return -1;
-    }
 
     /*
      * BEGIN_EXCEPTION() and END_EXCEPTION() are clever macros which create a SEH

@@ -55,7 +55,7 @@ struct KernelBase
 #ifdef __AROS__
 struct KernelInterface
 {
-    long (*core_init)(unsigned long TimerPeriod, struct ExecBase **SysBasePointer, APTR *KernelBasePointer);
+    long (*core_init)(unsigned long TimerPeriod, struct ExecBase *SysBase, APTR *KernelBase);
     void (*core_intr_disable)(void);
     void (*core_intr_enable)(void);
     void (*core_syscall)(unsigned long n);
@@ -79,8 +79,8 @@ extern DWORD *LastErrorPtr;
 extern unsigned char Ints_Enabled;
 extern unsigned char Sleep_Mode;
 extern unsigned char PendingInts[256];
-extern struct ExecBase **SysBasePtr;
-extern struct KernelBase **KernelBasePtr;
+extern struct ExecBase *SysBase;
+extern struct KernelBase *KernelBase;
 
 void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase);
 void core_Switch(CONTEXT *regs, struct ExecBase *SysBase);

@@ -27,11 +27,9 @@ int myvkprintf (const UBYTE *fmt, va_list args)
 {
     int res;
     
-    if (SysBase)
-        Forbid();
+    Forbid();
     res = HostIFace->VKPrintF(fmt, args);
-    if (SysBase)
-        Permit();
+    Permit();
 
     return res;
 }
@@ -43,11 +41,9 @@ int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, .
 
     va_start(args, fmt);
 
-    if (SysBase)
-	Forbid();
+    Forbid();
     r = HostIFace->VKPrintF(fmt, args);
-    if (SysBase)
-	Permit();
+    Permit();
 
     va_end(args);
 

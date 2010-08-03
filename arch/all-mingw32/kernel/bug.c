@@ -13,11 +13,9 @@ AROS_LH2I(int, KrnBug,
 
     int res;
 
-    if (SysBase)
-	Forbid();
+    Forbid();
     res = HostIFace->VKPrintF(format, args);
-    if (SysBase)
-	Permit();
+    Permit();
 
     return res;
 
