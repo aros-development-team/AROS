@@ -424,7 +424,7 @@ STRPTR Alert_GetTaskName(struct Task *task)
 }
 
 /* Decode the alert number, and try and work out what string to get */
-void Alert_GetString(ULONG alertnum, STRPTR buf)
+STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
 {
     /* Is this a CPU alert? */
     if((alertnum & 0x7f008000) == 0)
@@ -453,5 +453,7 @@ void Alert_GetString(ULONG alertnum, STRPTR buf)
         else
             buf = Alert_AddString(buf, "unknown error");
     }
+
     *buf = 0;
+    return buf;
 }
