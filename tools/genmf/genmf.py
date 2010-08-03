@@ -32,8 +32,8 @@ class GenmfException:
 # - templates: an assosiative array of objects of class template
 #
 # Returns:
-# - templrefs: an array of tuples with two elems. First element is the lineno
-#   in the lines array, second is the results of the search for that line with
+# - templrefs: an array of tuples with two elements. First element is the line number
+#   in the lines array, second is the result of the search for that line with
 #   re_tmplinst. Only templates which name are present in the templates argument
 #   will be added to this array.
 def generate_templrefs(lines, templates):
@@ -84,12 +84,12 @@ def writelines(lines, templrefs, templates, outfile):
         outfile.writelines(lines[start:len(lines)])
     
 
-# arg is q class that stores the specification of an argument in the template header
-# The of the arg is not stored in this class but this class is supposed to be
+# arg is a class that stores the specification of an argument in the template header.
+# The name of the arg is not stored in this class but this class is supposed to be
 # stored in an assosiative array with the names of the arg as indices. E.g
 # arg['cflags'] gives back an object of this class.
 # It has the following members:
-# - ismain: boolean to indicate if it has the /M definition
+# - ismulti: boolean to indicate if it has the /M definition
 # - isneeded: boolean to indicate if it has the /A definition
 # - used: boolean to indicate if a value is used in the body of a template
 # - default: default value when the argument is not given during a template
@@ -102,7 +102,7 @@ class arg:
 
     # You create this object with giving it the default value 
     def __init__(self, default=None):
-        self.ismain = 0
+        self.ismulti = 0
         self.isneeded = 0
         self.used = 0
     
@@ -111,7 +111,7 @@ class arg:
             if not m:
                 break
             if m.group(1) == "M":
-                self.ismain = 1
+                self.ismulti = 1
             elif m.group(1) == "A":
                 self.isneeded = 1
             else:
@@ -123,16 +123,16 @@ class arg:
             default = default[1:len(default)-1]
         
         self.default = default
-        # The value field will get the value passed to the argument when the tmeplate is used
+        # The value field will get the value passed to the argument when the template is used
         self.value = None
 
 
 # template is a class to store the whole definition of a genmf template
 # Members:
 # - name: name of the template
-# - args: an assosiative of the arguments of this template
+# - args: an associative array of the arguments of this template
 # - body: an array of strings with the body of the template
-# - mainarg: contains the arg with /M if it is present
+# - multiarg: contains the arg with /M if it is present
 # - used: Is this template already used; used to check for recursive calling
 #   of a template
 # - linerefs: an array to indicate the genmf variables used in the body of the
@@ -152,16 +152,16 @@ class template:
         self.name = name
         self.args = args
         self.body = body
-        self.mainarg = None
+        self.multiarg = None
         self.used = 0
         self.linerefs = None
         self.templrefs = None
         
         for argname, argbody in args.items():
-            if argbody.ismain:
-                if self.mainarg:
+            if argbody.ismulti:
+                if self.multiarg:
                     sys.exit('A template can have only one main (/M) argument')
-                self.mainarg = argbody
+                self.multiarg = argbody
 
     # Generate the references for the genmf variable used in this template
     # This function will return an assositive array of tuples with linerefs[lineno]
@@ -211,8 +211,8 @@ class template:
                         value = value[1:len(value)-1]
                     self.args[m.group(1)].value = value
                 line = line[m.end():].lstrip()
-            elif self.mainarg:
-                self.mainarg.value = line[:len(line)-1]
+            elif self.multiarg:
+                self.multiarg.value = line[:len(line)-1]
                 line = ''
             else:
                 raise GenmfException('Syntax error in arguments: '+line)
@@ -369,7 +369,7 @@ if listfile == None:
 else:
     # When a listfile is specified each line in this listfile is of the form
     # inputfile outputfile
-    # and apply the instantiation of the templates to all these files listed there
+    # Apply the instantiation of the templates to all these files listed there
     infile = open(listfile, "r")
     filelist = infile.readlines()
     infile.close()
