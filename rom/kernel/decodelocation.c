@@ -2,9 +2,13 @@
 #include <proto/exec.h>
 
 #include <kernel_base.h>
+#include <kernel_debug.h>
 #include <kernel_tagitems.h>
 
 #include "debug_intern.h"
+
+#define D(x)
+#define DSEGS(x)
 
 /*****************************************************************************
 
@@ -90,6 +94,8 @@ AROS_LH2(int, KrnDecodeLocationA,
     BOOL want_sym = FALSE;
     int ret = 0;
 
+    D(bug("[KRN] KrnDecodeLocationA(0x%p)\n", addr));
+
     /* Parse TagList */
     while ((tag = krnNextTagItem(&tstate)))
     {
@@ -141,9 +147,13 @@ AROS_LH2(int, KrnDecodeLocationA,
 
     ForeachNode(&KernelBase->kb_Modules, seg)
     {
+        DSEGS(bug("[KRN] Checking segment 0x%p - 0x%p, num %u, module %s\n", seg->s_lowest, seg->s_highest, seg->s_num, seg->s_mod->m_name));
+
 	/* if address suits the segment bounds, you got it */
 	if ((seg->s_lowest <= addr) && (seg->s_highest >= addr))
 	{
+	    D(bug("[KRN] Found module %s, Segment %u (0x%p - 0x%p)\n", seg->s_mod->m_name, seg->s_num, seg->s_lowest, seg->s_highest));
+
 	    *module = seg->s_mod->m_name;
 
 	    *segment  = seg->s_name;

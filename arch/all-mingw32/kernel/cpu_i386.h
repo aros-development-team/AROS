@@ -67,6 +67,7 @@ struct AROSCPUContext
 #define REMOVE_EXCEPTION_FRAME(f) \
     asm volatile ("movl %0, %%fs:0" : : "r" (f.prev))
 
+#define GET_PC(ctx) (void *)ctx->Eip
 #define SET_PC(ctx, addr) ctx->Eip = (IPTR)addr
 
 #else
