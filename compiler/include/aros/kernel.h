@@ -69,9 +69,12 @@ struct ELF_DebugInfo
 #define KDL_Dummy		(TAG_USER + 0x03e00000)
 #define KDL_ModuleName		(KDL_Dummy + 1)
 #define KDL_SegmentName		(KDL_Dummy + 2)
-#define KDL_SegmentNumber	(KDL_Dummy + 3)
-#define KDL_SegmentOffset	(KDL_Dummy + 4)
-#define KDL_FunctionName	(KDL_Dummy + 5)
-#define KDL_FunctionOffset	(KDL_Dummy + 6)
+#define KDL_SegmentPointer	(KDL_Dummy + 3)
+#define KDL_SegmentNumber	(KDL_Dummy + 4)
+#define KDL_SegmentStart	(KDL_Dummy + 5)
+#define KDL_SegmentEnd		(KDL_Dummy + 6)
+#define KDL_SymbolName		(KDL_Dummy + 7)
+#define KDL_SymbolStart		(KDL_Dummy + 8)
+#define KDL_SymbolEnd		(KDL_Dummy + 9)
 
 #endif /* AROS_KERNEL_H */

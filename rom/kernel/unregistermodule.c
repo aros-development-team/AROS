@@ -44,32 +44,50 @@ AROS_LH1(void, KrnUnregisterModule,
 {
     AROS_LIBFUNC_INIT
     
-    module_t *mod;
-    void *addr = BADDR(segList);
+    struct segment *seg;
 
     D(bug("[KRN] KrnUnregisterModule(0x%p)\n", segList));
     ObtainSemaphore(&KernelBase->kb_ModSem);
 
-    ForeachNode(&KernelBase->kb_Modules, mod) {
-	if (mod->segList == addr) {
-	    symbol_t *sym, *sym2;
+    while (segList)
+    {
+	ForeachNode(&KernelBase->kb_Modules, seg) {
+	    if (seg->s_seg == segList)
+	    {
+		module_t *mod = seg->s_mod;
 
-	    D(bug("[KRN] Removing module %s\n", mod->m_name));
-	    Remove((struct Node *)mod);
+	        D(bug("[KRN] Removing segment 0x%p\n", segList));
+		Remove((struct Node *)seg);
 
-	    /* Free associated string table */
-	    if (mod->m_str)
-		FreeVec(mod->m_str);
+		/* If module's segment count reached 0, remove the whole
+		   module information */
+		if (--mod->m_segcnt == 0)
+		{
+		    symbol_t *sym, *sym2;
 
-	    /* Free associated symbols */
-	    ForeachNodeSafe(&mod->m_symbols, sym, sym2)
-		FreeVec(sym);
+		    D(bug("[KRN] Removing module %s\n", mod->m_name));
 
-	    /* Free module node at last */
-	    FreeVec(mod);
+		    /* Free associated symbols */
+		    ForeachNodeSafe(&mod->m_symbols, sym, sym2)
+			FreeMem(sym, sizeof(symbol_t));
 
-	    break;
+		    /* Free associated string table */
+		    if (mod->m_str) {
+			D(bug("[KRN] Removing string table 0x%p\n", mod->m_str));
+			FreeVec(mod->m_str);
+		    }
+
+		    /* Free module descriptor at last */
+		    FreeVec(mod);
+		}
+
+		FreeMem(seg, sizeof(struct segment));
+
+		break;
+	    }
 	}
+	/* Advance to next DOS segment */
+	segList = *(BPTR *)BADDR(segList);
     }
 
     ReleaseSemaphore(&KernelBase->kb_ModSem);
