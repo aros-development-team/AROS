@@ -16,11 +16,16 @@
 
 #include "../kernel/hostinterface.h"
 
+#include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 
-static UBYTE *const fmtstring = "Task %08lx - %s\n";
+static UBYTE *const fmtstring = "Task 0x%P - %s\n";
 static UBYTE *const errstring = "Error %08lx - ";
+static UBYTE *const locstring = "PC 0x%P\n";
+static UBYTE *const modstring = "Module %s Segment %u (%s, 0x%P) Offset 0x%P\n";
+static UBYTE *const funstring = "Function %s (0x%P) Offset 0x%P\n";
+
 extern struct HostInterface *HostIFace;
 
 /*****************************************************************************
@@ -63,23 +68,53 @@ extern struct HostInterface *HostIFace;
 {
     AROS_LIBFUNC_INIT
 
-    UBYTE buffer[256], *buf;
+    UBYTE buffer[512], *buf;
     struct Task *task = SysBase->ThisTask;
 
     /* If we are running in user mode we should first try to report a problem using AROS'
        own way to do it */
+/* Disabled in order to test new crash location finder - Sonic
     if (!KrnIsSuper())
     {
         alertNum = Exec_UserAlert(alertNum, task, SysBase);
 	if (!alertNum)
 	    return;
     }
-
+*/
     buf = Alert_AddString(buffer, Alert_GetTitle(alertNum));
     *buf++ = '\n';
     buf = NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buf, task, Alert_GetTaskName(task));
     buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, --buf, alertNum);
-    Alert_GetString(alertNum, --buf);
+    buf = Alert_GetString(alertNum, --buf);
+
+    if (task) {
+	struct IntETask *iet = GetIntETask(task);
+
+	if (iet->iet_AlertLocation) {
+	    char *modname, *segname, *symname;
+	    void *segaddr, *symaddr;
+	    unsigned int segnum;
+
+	    *buf++ = '\n';
+	    buf = NewRawDoFmt(locstring, RAWFMTFUNC_STRING, buf, iet->iet_AlertLocation);
+
+	    if (KrnDecodeLocation(iet->iet_AlertLocation,
+				  KDL_ModuleName , &modname, KDL_SegmentNumber, &segnum ,
+				  KDL_SegmentName, &segname, KDL_SegmentStart , &segaddr,
+				  KDL_SymbolName , &symname, KDL_SymbolStart  , &symaddr,
+				  TAG_DONE))
+	    {
+		if (!segname)
+		    segname = "- no name -";
+		buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, --buf, modname, segnum, segname, segaddr, iet->iet_AlertLocation - segaddr);
+		if (symaddr) {
+		    if (!symname)
+			symname = "- unknown -";
+		    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, --buf, symname, symaddr, iet->iet_AlertLocation - symaddr);
+		}
+	    }
+	}
+    }
 
     /* Display an alert using Windows message box */
     Disable();

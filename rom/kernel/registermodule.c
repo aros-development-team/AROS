@@ -13,6 +13,17 @@
 #define D(x)
 #define DSYMS(x)
 
+static inline char *getstrtab(struct sheader *sh)
+{
+    char *str;
+	
+    str = AllocVec(sh->size, MEMF_PUBLIC);
+    if (str)
+        CopyMem(sh->addr, str, sh->size);
+
+    return str;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -30,10 +41,22 @@ AROS_LH4(void, KrnRegisterModule,
 	struct KernelBase *, KernelBase, 22, Kernel)
 
 /*  FUNCTION
+	Add information about the loaded executable module to the
+	debug information database
 
     INPUTS
+	name      - Module name
+	segList   - DOS segment list for the module
+	debugType - Type of supplied debug information. The only currently
+		    supported type is DEBUG_ELF.
+	debugInfo - Debug information data. For DEBUG_ELF type this should be
+		    a pointer to struct ELF_DebugInfo, filled in as follows:
+		      eh - a pointer to ELF file header with int_shnum and
+		           int_shstrndx fields filled in.
+		      sh - a pointer to an array of ELF section headers.
 
     RESULT
+	None
 
     NOTES
 
@@ -44,6 +67,8 @@ AROS_LH4(void, KrnRegisterModule,
     SEE ALSO
 
     INTERNALS
+	The function supposes that segments in DOS list are linked in the same
+	order in which corresponding sections are placed in the file
 
 ******************************************************************************/
 {
@@ -51,12 +76,14 @@ AROS_LH4(void, KrnRegisterModule,
 
     D(bug("[KRN] KrnRegisterModule(%s, 0x%p, %d)\n", name, segList, debugType));
 
-    if (debugType == DEBUG_ELF) {
+    if (debugType == DEBUG_ELF)
+    {
     	struct elfheader *eh = ((struct ELF_DebugInfo *)debugInfo)->eh;
 	struct sheader *sections = ((struct ELF_DebugInfo *)debugInfo)->sh;
-	module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC);
+	module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
 
 	if (mod) {
+	    int shstr = SHINDEX(eh->int_shstrndx);
 	    int i;
 
 	    D(bug("[KRN] %d sections at 0x%p\n", eh->int_shnum, sections));
@@ -65,45 +92,50 @@ AROS_LH4(void, KrnRegisterModule,
 	    NEWLIST(&mod->m_symbols);
 	    mod->m_str = NULL;
 	    mod->m_segcnt = 0;
+	    if (sections[shstr].type == SHT_STRTAB)
+		mod->m_shstr = getstrtab(&sections[shstr]);
 
 	    for (i=0; i < eh->int_shnum; i++) {
-		/* If we have string table, copy it */
-		if (sections[i].type == SHT_STRTAB && i != SHINDEX(eh->int_shstrndx))
+		/* Ignore all empty segments */
+		if (sections[i].size)
 		{
-		    D(bug("[KRN] string table of length %d in section %d\n", sections[i].size, i));
-
-		    if (!mod->m_str) {
-			mod->m_str = AllocVec(sections[i].size, MEMF_PUBLIC);
-			CopyMem(sections[i].addr, mod->m_str, sections[i].size);
+		    /* If we have string table, copy it */
+		    if ((sections[i].type == SHT_STRTAB) && (i != shstr) && (!mod->m_str)) {
+			D(bug("[KRN] Symbol name table of length %d in section %d\n", sections[i].size, i));
+			mod->m_str = getstrtab(&sections[i]);
 		    }
-		}
 
-		if (segList && (sections[i].flags & SHF_ALLOC))
-		{
-		    /* Actually register only executable sections */
-		    if (sections[i].flags & SHF_EXECINSTR)
+		    /* Every loadable section with nonzero size got a corresponding DOS segment */
+		    if (segList && (sections[i].flags & SHF_ALLOC))
 		    {
-			struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC);
+			/* Actually register only executable sections */
+			if (sections[i].flags & SHF_EXECINSTR)
+			{
+			    struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC);
 
-			if (seg) {
-			    D(bug("[KRN] Adding segment 0x%p\n", segList));
+			    if (seg) {
+				D(bug("[KRN] Adding segment 0x%p\n", segList));
 
-			    seg->s_lowest  = sections[i].addr;
-			    seg->s_highest = sections[i].addr + sections[i].size - 1;
-			    seg->s_seg     = segList; /* Note that this will differ from s_lowest */
-			    seg->s_mod     = mod;
-			    seg->s_num     = i;
-			    seg->s_name    = NULL; /* TODO: extract segment name */
+				seg->s_lowest  = sections[i].addr;
+				seg->s_highest = sections[i].addr + sections[i].size - 1;
+				seg->s_seg     = segList; /* Note that this will differ from s_lowest */
+				seg->s_mod     = mod;
+				seg->s_num     = i;
+				if (mod->m_shstr)
+			            seg->s_name = &mod->m_shstr[sections[i].name];
+				else
+			            seg->s_name = NULL;
 
-			    mod->m_segcnt++;
-			    ObtainSemaphore(&KernelBase->kb_ModSem);
-			    AddTail((struct List *)&KernelBase->kb_Modules, (struct Node *)seg);
-			    ReleaseSemaphore(&KernelBase->kb_ModSem);
+				mod->m_segcnt++;
+				ObtainSemaphore(&KernelBase->kb_ModSem);
+				AddTail((struct List *)&KernelBase->kb_Modules, (struct Node *)seg);
+				ReleaseSemaphore(&KernelBase->kb_ModSem);
+			    }
 			}
-		    }
 
-		    /* Advance to next DOS segment */
-		    segList = *(BPTR *)BADDR(segList);
+			/* Advance to next DOS segment */
+			segList = *(BPTR *)BADDR(segList);
+		    }
 		}
 	    }
 
@@ -115,6 +147,8 @@ AROS_LH4(void, KrnRegisterModule,
 	    {
 		if (mod->m_str)
 		    FreeVec(mod->m_str);
+		if (mod->m_shstr)
+		    FreeVec(mod->m_shstr);
 		FreeVec(mod);
 
 		return;

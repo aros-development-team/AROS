@@ -25,12 +25,18 @@ AROS_LH1(void, KrnUnregisterModule,
 	struct KernelBase *, KernelBase, 23, Kernel)
 
 /*  FUNCTION
+	Remove previously registered module from the debug information database
 
     INPUTS
+	segList - DOS segment list for the module to remove
 
     RESULT
+	None
 
     NOTES
+	The function correctly supports partial removal of the module
+	(when an existing seglist is broken and only a part of the module
+	is unloaded).
 
     EXAMPLE
 
@@ -76,6 +82,9 @@ AROS_LH1(void, KrnUnregisterModule,
 			D(bug("[KRN] Removing string table 0x%p\n", mod->m_str));
 			FreeVec(mod->m_str);
 		    }
+
+		    if (mod->m_shstr)
+			FreeVec(mod->m_shstr);
 
 		    /* Free module descriptor at last */
 		    FreeVec(mod);

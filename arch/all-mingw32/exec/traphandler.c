@@ -47,8 +47,9 @@ void Exec_TrapHandler(ULONG trapNum, struct AROSCPUContext *ctx)
 	    trapNum = iet->iet_AlertCode;
 #ifdef SET_PC
 	else {
-	    /* Otherwise we can try to send the crash to user level. Set alert code for the task */
+	    /* Otherwise we can try to send the crash to user level. Set alert information for the task */
 	    iet->iet_AlertCode = trapNum;
+	    iet->iet_AlertLocation = GET_PC(ctx);
             /* Make the task to jump to crash handler. We don't care about return address etc because
 	       the alert is deadend anyway. */
             SET_PC(ctx, Exec_CrashHandler);
