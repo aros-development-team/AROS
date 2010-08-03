@@ -11,7 +11,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH2(int, KrnDecodeLocation,
+AROS_LH2(int, KrnDecodeLocationA,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, addr, A0),
@@ -26,7 +26,10 @@ AROS_LH2(int, KrnDecodeLocation,
 
     INPUTS
 	addr - An address to resolve
-	tags - An optional taglist.
+	tags - An optional taglist. ti_Tag can be one of the following tags and
+	       ti_Data is always a pointer to a storage of specified type.
+	       Resulting values will be placed into specified locations if the
+	       function succeeds.
 
 	    KDL_ModuleName     (char *) - Module name
 	    KDL_SegmentName    (char *) - Segment name. Can be NULL if there were
@@ -56,6 +59,7 @@ AROS_LH2(int, KrnDecodeLocation,
 	otherwise.
 
     NOTES
+	If the function fails values pointed to by taglist will not be changed.
 
     EXAMPLE
 
