@@ -3,11 +3,12 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-locale : workbench-locale-help
-#MM workbench-locale-help : setup
+#MM- workbench-locale : workbench-locale-help workbench-locale-help-cpy1 workbench-locale-help-cpy2
 
-workbench-locale-help : files-copy
-%copy_files_q files=LICENSE src=$(SRCDIR) dst=$(AROS_HELP)
-%copy_files_q files="$(call WILDCARD, *.txt) $(call WILDCARD, *.htm)" src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP)
+%copy_files_q mmake=workbench-locale-help-cpy1 files=LICENSE src=$(SRCDIR) dst=$(AROS_HELP)
+
+%copy_files_q mmake=workbench-locale-help-cpy2 files="$(call WILDCARD, *.txt) $(call WILDCARD, *.htm)" \
+    src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP)
+
 
 %copy_dir_recursive mmake=workbench-locale-help src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP)

@@ -21,8 +21,6 @@ USER_INCLUDES :=
     files=$(FILES) uselibs="mui arossupport amiga arosc m Garshnelib"
 
 FILES := $(EXE).ifc $(EXE).txt
-#MM
-workbench-tools-commodities-gblanker-aswarm-cpy :
-%copy_files_q files=$(FILES) src=. dst=$(TARGETDIR) maketarget=workbench-tools-commodities-gblanker-aswarm-cpy
+%copy_files_q mmake=workbench-tools-commodities-gblanker-aswarm-cpy files=$(FILES) src=. dst=$(TARGETDIR)
 
 %common

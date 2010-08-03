@@ -16,8 +16,6 @@ EXEDIR      := $(AROSDIR)/Prefs
     progname=Network targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="mui arossupport amiga arosc m"
 
-#MM workbench-prefs-network-cpy
-
-%copy_files_q files=interface src=. dst=$(AROS_IMAGES) maketarget=workbench-prefs-network-cpy
+%copy_files_q mmake=workbench-prefs-network-cpy files=interface src=. dst=$(AROS_IMAGES)
 
 %common
