@@ -40,7 +40,7 @@ STRPTR Alert_GetTitle(ULONG alertNum);
 STRPTR Alert_GetTaskName(struct Task *task);
 void Alert_GetString(ULONG alertnum, STRPTR buf);
 VOID Exec_CrashHandler(void);
-ULONG Exec_UserAlert(ULONG alertNum, struct Task *task);
+ULONG Exec_UserAlert(ULONG alertNum, struct Task *task, struct ExecBase *SysBase);
 void Exec_DoResetCallbacks(struct IntExecBase *SysBase);
 
 APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,

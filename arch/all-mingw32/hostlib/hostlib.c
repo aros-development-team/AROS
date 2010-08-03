@@ -102,7 +102,7 @@ AROS_LH1I(void, HostLib_DropInterface,
 /* auto init */
 static int HostLib_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct UtilityBase *UlitityBase;
+    struct UtilityBase *UtilityBase;
     APTR KernelBase;
     struct TagItem *BootInfo;
     

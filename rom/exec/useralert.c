@@ -6,12 +6,13 @@
 #include "etask.h"
 #include "exec_util.h"
 
-static LONG AskSuspend(struct Task *task, ULONG alertNum)
+static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)
 {
     LONG choice = -1;
     struct IntuitionBase *IntuitionBase = OpenLibrary("intuition.library", 36);
-    
-    if (IntuitionBase && IntuitionBase->FirstScreen) {
+
+    if (IntuitionBase && IntuitionBase->FirstScreen)
+    {
         struct EasyStruct es = {
             sizeof (struct EasyStruct),
             0,
@@ -33,6 +34,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum)
         else
             es.es_GadgetFormat = "Ok";
         choice = EasyRequestArgs(NULL, &es, NULL, args);
+
 	CloseLibrary(IntuitionBase);
     }
     return choice;
@@ -43,35 +45,35 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum)
    alert and everything went ok.
    Note that in case of some crashes (e.g. corrupt memory list) this function
    may crash itself, and this has to be handled on a lower level. This is
-   why we do this trick with iet_LastAlert */
+   why we do this trick with iet_AlertCode */
 
-ULONG Exec_UserAlert(ULONG alertNum, struct Task *task)
+ULONG Exec_UserAlert(ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
 {
     struct IntETask *iet;
-    STRPTR taskName;
     LONG res;
 
     /* Protect ourselves agains really hard crashes where SysBase->ThisTask is NULL.
        Obviously we won't go far away in such a case */
     if (!task)
         return alertNum;    
+
     /* Get internal task structure */
     iet = GetIntETask(task);
     /* If we already have alert number for this task, we are in double-crash during displaying
        intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
        and proceed with arch-specific Alert() */
-    if (iet->iet_LastAlert[1])
-	return iet->iet_LastAlert[1];
+    if (iet->iet_AlertCode)
+	return iet->iet_AlertCode;
+
     /* Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
        in order to indicate crash condition */
-    iet->iet_LastAlert[1] = alertNum;
+    iet->iet_AlertCode = alertNum;
     /* Issue a requester */
-    res = AskSuspend(task, alertNum);
-    /* If we managed to get here, everything went OK, remove crash indicator */
-    iet->iet_LastAlert[1] = 0;
-    /* If AskSuspend() failed, fail back to arch-specific Alert()*/
+    res = AskSuspend(task, alertNum, SysBase);
+    /* If AskSuspend() failed, fail back to safe-mode alert */
     if (res == -1)
 	return alertNum;
+
     /* Halt if we need to */
     if (alertNum & AT_DeadEnd)
     {
@@ -83,6 +85,8 @@ ULONG Exec_UserAlert(ULONG alertNum, struct Task *task)
         /* Well, stop if the user wants so (or if the reboot didn't work at all) */
         Wait(0);
     }
-    /* Otherwise return happily */
+
+    /* Otherwise remove crash indicator and return happily */
+    iet->iet_AlertCode = 0;
     return 0;
 }

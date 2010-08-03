@@ -167,127 +167,139 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 {
     AROS_USERFUNC_INIT
 
+    struct Task    *t;
+    struct MemList *ml;
+    int i, j;
+    UWORD sum;
+    UWORD *ptr;
+
     D(bug("[exec_init] Entered exec.library init, SysBase is 0x%p\n", sysBase));
     SysBase = sysBase;
+
     KernelBase = OpenResource("kernel.resource");
     D(bug("[exec_init] KernelBase is 0x%p\n", KernelBase));
+
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,
 	since DOS needs to call things which think it has a Process and
 	we don't want to overwrite memory with something strange do we?
 
 	We do this until at least we can boot dos more cleanly.
-    */
-    {
-	struct Task    *t;
-	struct MemList *ml;
+     */
 
-	ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-	t  = (struct Task *)   AllocMem(sizeof(struct Process), MEMF_PUBLIC|MEMF_CLEAR);
-
-	if( !ml || !t )
-	{
-	    kprintf("ERROR: Cannot create Boot Task!\n");
-	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-	}
-	ml->ml_NumEntries = 1;
-	ml->ml_ME[0].me_Addr = t;
-	ml->ml_ME[0].me_Length = sizeof(struct Process);
-
-	NEWLIST(&t->tc_MemEntry);
-	NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
-
-	/* It's the boot process that RunCommand()s the boot shell, so we
-	   must have this list initialized */
-	NEWLIST((struct List *)&((struct Process *)t)->pr_LocalVars);
-
-	AddHead(&t->tc_MemEntry,&ml->ml_Node);
-
-	t->tc_Node.ln_Name = "Boot Task";
-	t->tc_Node.ln_Pri = 0;
-	t->tc_State = TS_RUN;
-	t->tc_SigAlloc = 0xFFFF;
-	t->tc_SPLower = 0;	    /* This is the system's stack */
-	t->tc_SPUpper = (APTR)~0UL;
-	t->tc_Flags |= TF_ETASK;
-
-	t->tc_UnionETask.tc_ETask = AllocVec
-	(
-	    sizeof(struct IntETask),
-	    MEMF_ANY|MEMF_CLEAR
-	);
-
-	if (!t->tc_UnionETask.tc_ETask)
-	{
-	    kprintf("Not enough memory for first task\n");
-	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-	}
-
-	/* Initialise the ETask data. */
-	InitETask(t, t->tc_UnionETask.tc_ETask);
-
-	GetIntETask(t)->iet_Context = KrnCreateContext();
-	if (!GetIntETask(t)->iet_Context)
-	{
-	    kprintf("Not enough memory for first task\n");
-	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-	}
-
-	sysBase->ThisTask = t;
-	sysBase->Elapsed = sysBase->Quantum;
+    ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
+    t  = (struct Task *)   AllocMem(sizeof(struct Process), MEMF_PUBLIC|MEMF_CLEAR);
+    if( !ml || !t ) {
+	kprintf("ERROR: Cannot create Boot Task!\n");
+	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
+
+    ml->ml_NumEntries = 1;
+    ml->ml_ME[0].me_Addr = t;
+    ml->ml_ME[0].me_Length = sizeof(struct Process);
+
+    NEWLIST(&t->tc_MemEntry);
+    NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
+
+    /* It's the boot process that RunCommand()s the boot shell, so we
+       must have this list initialized */
+    NEWLIST((struct List *)&((struct Process *)t)->pr_LocalVars);
+
+    AddHead(&t->tc_MemEntry,&ml->ml_Node);
+
+    t->tc_Node.ln_Name = "Boot Task";
+    t->tc_Node.ln_Pri = 0;
+    t->tc_State = TS_RUN;
+    t->tc_SigAlloc = 0xFFFF;
+    t->tc_SPLower = 0;	    /* This is the system's stack */
+    t->tc_SPUpper = (APTR)~0UL;
+    t->tc_Flags |= TF_ETASK;
+
+    t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
+    if (!t->tc_UnionETask.tc_ETask) {
+	kprintf("Not enough memory for first task\n");
+	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+    }
+
+    /* Initialise the ETask data. */
+    InitETask(t, t->tc_UnionETask.tc_ETask);
+
+    GetIntETask(t)->iet_Context = KrnCreateContext();
+    if (!GetIntETask(t)->iet_Context) {
+	kprintf("Not enough memory for first task\n");
+	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+    }
+
+    sysBase->ThisTask = t;
+    sysBase->Elapsed = sysBase->Quantum;
+
     D(bug("[exec_init] Installing interrupt servers\n"));
+    /* Install the interrupt servers */
+    for(i=0; i < 16; i++)
     {
-	/* Install the interrupt servers */
-	int i;
-	for(i=0; i < 16; i++)
-	    if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
-	    {
-		struct Interrupt *is;
-		struct SoftIntList *sil;
-		is = AllocMem(sizeof(struct Interrupt) + sizeof(struct SoftIntList),
-				MEMF_CLEAR|MEMF_PUBLIC);
-		if( is == NULL )
-		{
-		    kprintf("ERROR: Cannot install Interrupt Servers!\n");
-		    Alert( AT_DeadEnd | AN_IntrMem );
-		}
-		sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
+    	struct Interrupt *is;
 
-		is->is_Code = &IntServer;
-		is->is_Data = sil;
-		NEWLIST((struct List *)sil);
-		SetIntVector(i,is);
+	if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
+	{
+	    struct SoftIntList *sil;
+
+	    is = AllocMem(sizeof(struct Interrupt) + sizeof(struct SoftIntList), MEMF_CLEAR|MEMF_PUBLIC);
+	    if (is == NULL) {
+		kprintf("ERROR: Cannot install Interrupt Servers!\n");
+		Alert( AT_DeadEnd | AN_IntrMem );
 	    }
-	    else
-	    {
-	      struct Interrupt * is;
-	      switch(i)
-	      {
-	        case INTB_SOFTINT:
-	          is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-	          if (NULL == is)
-	          {
-	            kprintf("Error: Cannot install Interrupt Handler!\n");
+
+	    sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
+
+	    is->is_Code = &IntServer;
+	    is->is_Data = sil;
+	    NEWLIST((struct List *)sil);
+	    SetIntVector(i,is);
+	}
+	else
+	{
+	    struct Interrupt * is;
+	
+	    switch(i) {
+	    case INTB_SOFTINT:
+	        is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+	        if (NULL == is) {
+	            kprintf("Error: Cannot install SoftInt Handler!\n");
 	            Alert( AT_DeadEnd | AN_IntrMem );
-	          }
-	          is->is_Node.ln_Type = NT_INTERRUPT;
-	          is->is_Node.ln_Pri = 0;
-	          is->is_Node.ln_Name = "SW Interrupt Dispatcher";
-	          is->is_Data = NULL;
-	          is->is_Code = (void *)SoftIntDispatch;
-	          SetIntVector(i,is);
+	        }
+
+	        is->is_Node.ln_Type = NT_INTERRUPT;
+	        is->is_Node.ln_Pri = 0;
+	        is->is_Node.ln_Name = "SW Interrupt Dispatcher";
+	        is->is_Data = NULL;
+	        is->is_Code = (void *)SoftIntDispatch;
+	        SetIntVector(i,is);
 	        break;
-	      }
 	    }
+	}
     }
-    /* Install the VBlank handler. We drop the handle because exec.library never expunges. */
+
+    /* Install the VBlank handler. We drop the handle because exec.library never expunges */
     KrnAddIRQHandler(0, VBlankHandler, sysBase, NULL);
 
     /* We now start up the interrupts */
     Permit();
     Enable();
-    
+
+    /* Now it's time to calculate exec checksum. It will be used
+     * in future to distinguish whether we'd had proper execBase
+     * before restart */
+    sum=0;
+    ptr = &SysBase->SoftVer;
+
+    i=((IPTR)&SysBase->IntVects[0] - (IPTR)&SysBase->SoftVer) / 2;
+
+    /* Calculate sum for every static part from SoftVer to ChkSum */
+    for (j = 0; j < i; j++)
+        sum+=*(ptr++);
+
+    SysBase->ChkSum = ~sum;
+
     D(debugmem());
 
     /* This will cause everything else to run. This call will not return.
@@ -299,6 +311,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 
     /* There had better be some kind of task waiting to run. */
     return NULL;
+
     AROS_USERFUNC_EXIT
 }
 

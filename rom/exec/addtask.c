@@ -1,16 +1,19 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a task.
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include <aros/config.h>
 #include <proto/exec.h>
+
 #include "etask.h"
+#include "exec_intern.h"
 #include "exec_util.h"
 
 #include "exec_debug.h"

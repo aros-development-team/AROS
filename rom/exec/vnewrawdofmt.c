@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Format a string and emit it.
@@ -13,6 +13,7 @@
 
 #include <stdarg.h>
 
+#include "exec_intern.h"
 #include "exec_util.h"
 
 /*****************************************************************************
