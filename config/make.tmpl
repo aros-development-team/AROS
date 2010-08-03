@@ -1931,15 +1931,17 @@ endif
 #------------------------------------------------------------------------------
 # Copy files from one directory to another.
 
-%define copy_files_q files=$(FILES) src=. dst=/A maketarget=files-copy
+%define copy_files_q mmake=/A files=$(FILES) src=. dst=/A
 
-%(maketarget)_SRC := $(shell echo %(src) | sed 's/^\(.\):\//\/\1\//')
+%(mmake)_SRC := $(shell echo %(src) | sed 's/^\(.\):\//\/\1\//')
 
-%(maketarget) : setup 
-	$(foreach file, %(files), $(shell $(CP) $(addprefix $(if $(filter /%,$(%(maketarget)_SRC)),$(%(maketarget)_SRC),$(SRCDIR)/$(CURDIR)/$(%(maketarget)_SRC))/, $(file)) $(addprefix %(dst)/, $(file))))
+GLOB_MKDIRS += %(dst)
 
-setup ::
-	%mkdirs_q %(dst)
+.PHONY : %(mmake)
+
+#MM
+%(mmake) : | %(dst) 
+	$(foreach file, %(files), $(shell $(CP) $(addprefix $(if $(filter /%,$(%(mmake)_SRC)),$(%(mmake)_SRC),$(SRCDIR)/$(CURDIR)/$(%(mmake)_SRC))/, $(file)) $(addprefix %(dst)/, $(file))))
 
 %end
 #------------------------------------------------------------------------------
