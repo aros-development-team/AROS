@@ -550,7 +550,6 @@ BPTR InternalLoadSeg_ELF
     BPTR  *next_hunk_ptr = MKBADDR(&hunks);
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
-    APTR KernelBase;
 
     /* load and validate ELF header */
     if (!load_header(file, &eh, funcarray, DOSBase))
@@ -629,7 +628,6 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Everything is loaded now. Register the module at kernel.resource */
-    KernelBase = OpenResource("kernel.resource");
     if (KernelBase) {
 	char buffer[512];
 

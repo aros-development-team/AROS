@@ -55,8 +55,6 @@
     BPTR next;
 
     if (seglist) {
-	void *KernelBase = OpenResource("kernel.resource");
-	
 	if (KernelBase)
 	    KrnUnregisterModule(seglist);
     
