@@ -59,6 +59,22 @@ Boston, MA 02111-1307, USA.  */
 extern char *mm_srcdir;
 extern char *mm_builddir;
 
+/* Return true if last non whitespace character is a '\' */
+static int
+check_continue(const char *str)
+{
+    int pos = strlen(str) - 1;
+    while (pos >= 0 && isspace(str[pos]))
+    {
+	pos--;
+    }
+    if (pos >= 0 && str[pos] == '\\')
+    {
+	return 1;
+    }
+    return 0;
+}
+
 static MakefileTarget *
 newmakefiletarget (char *name, int virtualtarget)
 {
@@ -477,7 +493,7 @@ printf ("found #MM in %s\n", makefile->name);
 #endif
 
 		    /* Read in next lines if there is continuation */
-		    while (line[strlen(line)-1] == '\\')
+		    while (check_continue(line))
 		    {
 			ptr = line + strlen(line) - 1;
 			
