@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Header for dos.library
@@ -25,7 +25,7 @@
 #include LC_LIBDEFS_FILE
 #include "dos_intern.h"
 
-static int DosInit(LIBBASETYPEPTR LIBBASE)
+static int DosInit(struct DosLibrary *LIBBASE)
 {
     D(bug("DosInit\n"));
     
@@ -118,6 +118,8 @@ static int DosInit(LIBBASETYPEPTR LIBBASE)
 	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
 
 	    AddLibrary((struct Library *)LIBBASE);
+
+	    KernelBase = OpenResource("kernel.resource");
 
 	    /* This is where we start the RTC_AFTERDOS residents */
 bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n");

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal types and stuff for dos
@@ -33,6 +33,14 @@
 AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
 
 #define RDAF_ALLOCATED_BY_READARGS (1L << 31)
+
+struct IntDosBase
+{
+    struct DosLibrary pub;
+    APTR	      KernelBase;
+};
+
+#define KernelBase ((struct IntDosBase *)DOSBase)->KernelBase
 
 struct DAList
 {
