@@ -49,8 +49,8 @@ unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
 unsigned char Supervisor;
 unsigned char Sleep_Mode;
-struct ExecBase **SysBasePtr;
-struct KernelBase **KernelBasePtr;
+struct ExecBase *SysBase;
+struct KernelBase *KernelBase;
 
 void user_exception_handler(uint8_t exception, struct List *list)
 {
@@ -91,8 +91,6 @@ struct ExceptionTranslation ExceptionsTable[] = {
 
 EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *ExceptionRecord, void *EstablisherFrame, CONTEXT *ContextRecord, void *DispatcherContext)
 {
-    	struct ExecBase *SysBase = *SysBasePtr;
-    	struct KernelBase *KernelBase = *KernelBasePtr;
 	void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
     	REG_SAVE_VAR;
 
@@ -209,8 +207,7 @@ DWORD WINAPI TaskSwitcher()
     	    DS(bug("[Task switcher] original CPU context: ****\n"));
     	    DS(PRINT_CPUCONTEXT(&MainCtx));
 	    /* Call user-defined IRQ handler */
-    	    if (*KernelBasePtr)
-	    	user_irq_handler(obj, (*KernelBasePtr)->kb_Interrupts);
+	    user_irq_handler(obj, KernelBase->kb_Interrupts);
 	    /* Call scheduler */
     	    core_ExitInterrupt(&MainCtx);
 	    /* If AROS is going to sleep, set new CPU context */
@@ -288,7 +285,7 @@ unsigned char __declspec(dllexport) core_is_super(void)
     return Supervisor;
 }
 
-int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase **SysBasePointer, struct KernelBase **KernelBasePointer)
+int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *sBase, struct KernelBase *kBase)
 {
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
@@ -299,9 +296,9 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     DWORD SwitcherId;
     ULONG LastErrOffset = 0;
 
-    D(printf("[KRN] Setting up interrupts, SysBasePtr = 0x%08lX, KernelBasePtr = 0x%08lX\n", SysBasePointer, KernelBasePointer));
-    SysBasePtr = SysBasePointer;
-    KernelBasePtr = KernelBasePointer;
+    D(printf("[KRN] Setting up interrupts, SysBase = 0x%08lX, KernelBase = 0x%08lX\n", sBase, kBase));
+    SysBase = sBase;
+    KernelBase = kBase;
     Ints_Enabled = 0;
     Supervisor = 0;
     Sleep_Mode = 0;

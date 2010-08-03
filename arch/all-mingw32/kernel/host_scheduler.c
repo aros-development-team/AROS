@@ -188,7 +188,6 @@ void core_Schedule(CONTEXT *regs, struct ExecBase *SysBase)
  */
 void core_ExitInterrupt(CONTEXT *regs) 
 {
-    struct ExecBase *SysBase = *SysBasePtr;
     char TDNestCnt;
 
     D(bug("[Scheduler] core_ExitInterrupt\n"));
