@@ -3,11 +3,10 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-fonts : workbench-fonts-truetype
-#MM workbench-fonts-truetype : setup
+#MM- workbench-fonts : workbench-fonts-truetype-cpy workbench-fonts-truetype-extra
 
-workbench-fonts-truetype : files-copy files-copy-extra
-%copy_files_q files="$(call WILDCARD, *.ttf)" dst=$(AROSDIR)/Fonts/TrueType
+%copy_files_q mmake=workbench-fonts-truetype-cpy files="$(call WILDCARD, *.ttf)" \
+    dst=$(AROSDIR)/Fonts/TrueType
 
 files-copy-extra :
 	@cd $(SRCDIR)/$(CURDIR); for file in *.font *.otag; do \

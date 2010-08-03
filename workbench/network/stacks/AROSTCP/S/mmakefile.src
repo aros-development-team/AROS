@@ -1,12 +1,14 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-s
-#MM workbench-network-stacks-arostcp-s
+#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-s \
+#MM  workbench-network-stacks-arostcp-envpackage
 
-workbench-network-stacks-arostcp-s : files-copy
-%copy_files_q files="Package-Startup startnet stopnet" \
+%copy_files_q mmake=workbench-network-stacks-arostcp-s files="Package-Startup startnet stopnet" \
     dst=$(AROS_SYSTEM)/Network/AROSTCP/S
+
+#MM
+workbench-network-stacks-arostcp-envpackage :
 	$(ECHO) "SYS:System/Network/AROSTCP" >$(AROS_PACKAGES)/AROSTCP
 
 #%common

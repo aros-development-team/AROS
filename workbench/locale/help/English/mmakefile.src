@@ -4,7 +4,5 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-locale-help : workbench-locale-help-english
-#MM workbench-locale-help-english : setup
 
-workbench-locale-help-english : files-copy
-%copy_files_q files=LICENSE src=$(SRCDIR) dst=$(AROS_HELP)/English
+%copy_files_q mmake=workbench-locale-help-english files=LICENSE src=$(SRCDIR) dst=$(AROS_HELP)/English

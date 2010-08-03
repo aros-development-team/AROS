@@ -3,9 +3,6 @@ include $(TOP)/config/make.cfg
 
 FILES := Package-Startup Package-Shutdown
 
-#MM development-startup :
-
 #MM- development-gcc : development-startup
 
-%copy_files_q dst=$(AROSDIR)/Development/S maketarget=development-startup
-
+%copy_files_q mmake=development-startup dst=$(AROSDIR)/Development/S

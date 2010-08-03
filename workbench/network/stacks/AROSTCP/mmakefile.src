@@ -3,9 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-network : workbench-network-stacks-arostcp
 
-workbench-network-stacks-arostcp : files-copy arostcp-libs-miamipanel
-%copy_files_q files="README" \
+%copy_files_q mmake=workbench-network-stacks-arostcp files="README" \
     dst=$(AROS_SYSTEM)/Network/AROSTCP
 
 #%common
-

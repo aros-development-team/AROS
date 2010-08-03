@@ -3,11 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := sys_group sys_user sys_pass
 
 #MM- themes-kalamatee-images-gadgets : themes-kalamatee-images-gadgets-system 
-#MM themes-kalamatee-images-gadgets-system : setup
-themes-kalamatee-images-gadgets-system : files-copy
 
-%copy_files_q files=$(FILES) dst=$(AROS_IMAGES)/Gadgets/System
+%copy_files_q mmake=themes-kalamatee-images-gadgets-system files=$(FILES) dst=$(AROS_IMAGES)/Gadgets/System
 
 %common
-
-
