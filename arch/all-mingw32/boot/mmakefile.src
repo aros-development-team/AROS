@@ -1,0 +1,70 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+EXEDIR := $(BINDIR)/boot
+
+# Hardware-independent part of kernel
+COMMON_DEVICES  := $(KOBJSDIR)/gameport_device.o     $(KOBJSDIR)/keyboard_device.o	\
+		   $(KOBJSDIR)/input_device.o	     $(KOBJSDIR)/console_device.o
+COMMON_HANDLERS := $(KOBJSDIR)/packet_handler.o	     $(KOBJSDIR)/con_handler.o		\
+		   $(KOBJSDIR)/amberram_handler.o    $(KOBJSDIR)/nil_handler.o
+COMMON_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o	     $(KOBJSDIR)/graphics_hidd.o	\
+		   $(KOBJSDIR)/keyboard_hidd.o	     $(KOBJSDIR)/mouse_hidd.o
+COMMON_LIBS	:= $(KOBJSDIR)/boot_library.o	     $(KOBJSDIR)/dos_library.o		\
+		   $(KOBJSDIR)/utility_library.o     $(KOBJSDIR)/intuition_library.o	\
+		   $(KOBJSDIR)/keymap_library.o	     $(KOBJSDIR)/expansion_library.o	\
+		   $(KOBJSDIR)/oop_library.o	     $(KOBJSDIR)/graphics_library.o	\
+		   $(KOBJSDIR)/layers_library.o	     $(KOBJSDIR)/aros_library.o
+COMMON_RES	:= $(KOBJSDIR)/dosboot_resource.o
+
+# Hardware-dependent part of kernel, basic drivers set
+MINGW32_DEVICES  := $(KOBJSDIR)/timer_device.o
+MINGW32_HANDLERS := $(KOBJSDIR)/emul_handler.o
+MINGW32_HIDD	 := $(KOBJSDIR)/wingdi_hidd.o
+MINGW32_LIBS	 := $(KOBJSDIR)/exec_library.o
+MINGW32_RES	 := $(KOBJSDIR)/kernel_resource.o     $(KOBJSDIR)/hostlib_resource.o	\
+		    $(KOBJSDIR)/battclock_resource.o  $(KOBJSDIR)/bootloader_resource.o \
+		    $(KOBJSDIR)/processor_resource.o
+
+KOBJS_COMMON  := $(COMMON_RES) $(COMMON_HANDLERS) $(COMMON_LIBS) $(COMMON_DEVICES) $(COMMON_HIDD)
+KOBJS_MINGW32 := $(MINGW32_RES) $(MINGW32_HANDLERS) $(MINGW32_LIBS) $(MINGW32_DEVICES) $(MINGW32_HIDD)
+
+#MM- AROS-mingw32-$(CPU): kernel-bootstrap-hosted kernel-boot-mingw32 kernel-link-mingw32 workbench-hosted arch-common-boot-generatebootsig
+
+#MM kernel-link-mingw32: kernel-kernel-kobj		    \
+#MM			 kernel-bootloader-kobj	    	    \
+#MM			 kernel-hostlib-mingw32-kobj	    \
+#MM			 kernel				    \
+#MM			 kernel-fs-emul-mingw32-kobj	    \
+#MM			 kernel-hidd-wingdi-kobj	    \
+#MM			 contrib-amberram-kobj \
+#MM			 kernel-processor-kobj
+
+#MM
+kernel-link-mingw32: $(EXEDIR)/aros-common $(EXEDIR)/aros-mingw32
+
+#MM
+kernel-link-mingw32-common-quick: $(BINDIR)/boot/aros-common
+
+#MM
+kernel-link-mingw32-quick: $(BINDIR)/boot/aros-mingw32
+
+$(EXEDIR)/aros-common: $(KOBJS_COMMON)
+	@$(ECHO) Linking $@...
+	@$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel-common.map \
+	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
+	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
+
+$(EXEDIR)/aros-mingw32: $(KOBJS_MINGW32)
+	@$(ECHO) Linking $@...
+	@$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel-mingw32.map \
+	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
+	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
+
+#MM
+kernel-boot-mingw32: $(EXEDIR)/AROSBootstrap.conf
+
+$(EXEDIR)/AROSBootstrap.conf: AROSBootstrap.conf
+	@$(CP) $^ $@
+
+%common

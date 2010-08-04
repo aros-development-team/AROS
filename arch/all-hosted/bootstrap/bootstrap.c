@@ -1,20 +1,12 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <locale.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <signal.h>
-#include <windows.h>
 #include <sys/stat.h>
-#include <aros/system.h>
-
-#define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
-#define __typedef_WORD /* is the same except BOOL. It's defined to short on AROS and to int on Windows. This means */
-#define __typedef_BYTE /* that you can't use it in OS-native part of the code and can't use any AROS structure     */
-#define __typedef_BOOL /* definition that contains BOOL.                                                           */
-typedef unsigned AROS_16BIT_TYPE UWORD;
-typedef unsigned char UBYTE;
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
@@ -22,22 +14,19 @@ typedef unsigned char UBYTE;
 
 #include "debug.h"
 #include "elfloader32.h"
-#include "hostlib.h"
+#include "support.h"
 #include "shutdown.h"
-#include "../kernel/hostinterface.h"
 
 #define D(x)
 
-static unsigned char __bss_track[32768];
+extern void *HostIFace;
+
 char bootstrapdir[MAX_PATH];
-char SystemVersion[256];
 char buf[256];
-char *bootstrapname;
-char *cmdline;
 
 typedef int (*kernel_entry_fun_t)(struct TagItem *);
 
-struct mb_mmap MemoryMap = {
+static struct mb_mmap MemoryMap = {
     sizeof(struct mb_mmap),
     0,
     0,
@@ -46,37 +35,21 @@ struct mb_mmap MemoryMap = {
     MMAP_TYPE_RAM
 };
 
-/*
- * Some helpful functions that link us to the underlying host OS.
- * Without them we would not be able to estabilish any interaction with it.
- */
-struct HostInterface HostIFace = {
-    Host_HostLib_Open,
-    Host_HostLib_Close,
-    Host_HostLib_GetPointer,
-    Host_HostLib_FreeErrorStr,
-    Host_HostLib_GetInterface,
-    Host_VKPrintF,
-    Host_PutChar,
-    Host_Shutdown,
-    Host_Alert
-};
+static struct KernelBSS __bss_track[256];
 
 /* Kernel message */
 static struct TagItem km[] = {
-    {KRN_KernelLowest , 0                  },
-    {KRN_KernelHighest, 0                  },
-    {KRN_CmdLine      , 0                  },
-    {KRN_MMAPAddress  , (IPTR)&MemoryMap   },
-    {KRN_MMAPLength   , sizeof(MemoryMap)  },
-    {KRN_KernelBss    , (IPTR)__bss_track  },
-    {KRN_BootLoader   , (IPTR)SystemVersion},
-    {KRN_HostInterface, (IPTR)&HostIFace   },
-    {TAG_DONE         , 0                  }
+    {KRN_KernelLowest , 0                },
+    {KRN_KernelHighest, 0                },
+    {KRN_KernelBss    , (IPTR)__bss_track},
+    {KRN_BootLoader   , 0                },
+    {KRN_CmdLine      , 0                },
+    {KRN_DebugInfo    , 0                },
+    {KRN_HostInterface, 0                },
+    {KRN_MMAPAddress  , (IPTR)&MemoryMap },
+    {KRN_MMAPLength   , sizeof(MemoryMap)},
+    {TAG_DONE         , 0                }
 };
-
-/* ***** This is the global SysBase ***** */
-void *SysBase;
 
 static char *GetConfigArg(char *str, char *option)
 {
@@ -99,70 +72,83 @@ static char *GetConfigArg(char *str, char *option)
     return str;
 }
 
+char *join_string(int argc, char **argv)
+{
+    char *str, *s;
+    int j;
+    int x = 0;
+
+    for (j = 0; j < argc; j++)
+	x += (strlen(argv[j]) + 1);
+    D(printf("[Init] Allocating %lu bytes for string\n", x));
+    str = malloc(x);
+    if (str) {
+	s = str;
+	for (j = 0; j < argc; j++) {
+	    strcpy(s, argv[j]);
+	    s += strlen(s);
+	    *s++ = ' ';
+	}
+	s[-1] = 0;
+	D(printf("[Init] Joined line: %s\n", str));
+    }
+    return str;
+}
+
 int main(int argc, char ** argv)
 {
-    int x;
     struct stat st;
     int i = 1;
     unsigned int memSize = 64;
     int def_memSize = 1;
-    char *config = "boot\\AROSBootstrap.conf";
+    char *config = DefaultConfig;
     char *KernelArgs = NULL;
-    OSVERSIONINFO winver;
+    char *SystemVersion;
     FILE *file;
     kernel_entry_fun_t kernel_addr;
-    size_t kernel_size;
+    void *debug_addr;
+    size_t kernel_size, debug_size;
 
-    /* Set current CRT locale. This makes national characters to be output
-       properly into the debug log */
+    /* This makes national characters to be output properly into
+       the debug log under Windows */
     setlocale(LC_ALL, "");
-    GetCurrentDirectory(MAX_PATH, bootstrapdir);
-    bootstrapname = argv[0];
-    cmdline = GetCommandLine();
+    getcwd(bootstrapdir, sizeof(bootstrapdir));;
+    SaveArgs(argv);
 
     while (i < argc) {
 	if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
-            printf ("AROS for Windows\n"
+            printf ("Hosted AROS bootstrap\n"
 		    "usage: %s [options] [kernel arguments]\n"
 		    "Availible options:\n"
 		    " -h                 show this page\n"
 		    " -m <size>          allocate <size> Megabytes of memory for AROS\n"
 		    "                    (default is 64M)\n"
 		    " -c <file>          read configuration from <file>\n"
-		    "                    (default is boot\\AROSBootstrap.conf)\n"
+		    "                    (default is %s)\n"
 		    " --help             same as '-h'\n"
 		    " --memsize <size>   same as '-m <size>'\n"
-		    " --kernel <file>    same as '-k'\n"
+		    " --config <file>    same as '-c'\n"
 		    "\n"
-		    "Please report bugs to the AROS development team. http://www.aros.org/\n", argv[0]);
+		    "Please report bugs to the AROS development team. http://www.aros.org/\n", argv[0], DefaultConfig);
             return 0;
         } else if (!strcmp(argv[i], "--memsize") || !strcmp(argv[i], "-m")) {
 	    memSize = atoi(argv[++i]);
 	    def_memSize = 0;
 	    i++;
-	} else if (!strcmp(argv[i], "--kernel") || !strcmp(argv[i], "-c")) {
+	} else if (!strcmp(argv[i], "--config") || !strcmp(argv[i], "-c")) {
 	    config = argv[++i];
             i++;
         } else
 	    break;
     }
-    D(printf("[Bootstrap] %ld arguments processed\n", i));
+    D(printf("[Bootstrap] %u arguments processed\n", i));
 
-    D(printf("[Bootstrap] Raw command line: %s\n", cmdline));
     if (i < argc) {
-	KernelArgs = cmdline;
-	while(isspace(*KernelArgs++));
-	for (x = 0; x < i; x++) {
-            while (!isspace(*KernelArgs++));
-            while (isspace(*KernelArgs))
-        	KernelArgs++;
-	}
+	KernelArgs = join_string(argc - i, &argv[i]);
+	D(printf("[Bootstrap] Kernel arguments: %s\n", KernelArgs));
     }
-    D(printf("[Bootstrap] Kernel arguments: %s\n", KernelArgs));
 
-    winver.dwOSVersionInfoSize = sizeof(winver);
-    GetVersionEx(&winver);
-    sprintf(SystemVersion, "Windows %lu.%lu build %lu %s", winver.dwMajorVersion, winver.dwMinorVersion, winver.dwBuildNumber, winver.szCSDVersion);
+    SystemVersion = getosversion();
     D(printf("[Bootstrap] OS version: %s\n", SystemVersion));
 
     /* If AROSBootstrap.exe is found in the current directory, this means the bootstrap
@@ -202,18 +188,20 @@ int main(int argc, char ** argv)
     }
     fclose(file);
 
-    kernel_size = GetKernelSize();
-    if (!kernel_size)
+    if (!GetKernelSize(&kernel_size, &debug_size))
 	return -1;
+    D(printf("[Bootstrap] Kernel size %u, debug information size %u\n", kernel_size, debug_size));
 
-    kernel_addr = malloc(kernel_size);
+    kernel_addr = malloc(kernel_size + debug_size);
     if (!kernel_addr) {
 	printf("Failed to allocate %u bytes for the kernel!\n", kernel_size);
 	return -1;
     }
 
-    set_base_address(kernel_addr, __bss_track, &SysBase);
-    if (!LoadKernel())
+    debug_addr = (void *)kernel_addr + kernel_size;
+    D(printf("[Bootstrap] Code 0x%p, debug info 0x%p, End 0x%p\n", kernel_addr, debug_addr, debug_addr + debug_size));
+    
+    if (!LoadKernel(kernel_addr, debug_addr, __bss_track))
 	return -1;
 
     FreeKernelList();
@@ -227,18 +215,18 @@ int main(int argc, char ** argv)
 	printf("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
 	return -1;
     }
-    D(printf("[Bootstrap] RAM memory allocated: %p-%p (%lu bytes)\n", memory, memory + memlen, memlen));
+    D(printf("[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", memory, memory + memlen, memlen));
 
     MemoryMap.addr = (IPTR)memory;
     MemoryMap.len  = memlen;
 
     km[0].ti_Data = (IPTR)kernel_addr;
-    km[1].ti_Data = (IPTR)kernel_highest();
-    km[2].ti_Data = (IPTR)KernelArgs;
+    km[1].ti_Data = (IPTR)debug_addr + debug_size - 1;
+    km[3].ti_Data = (IPTR)SystemVersion;
+    km[4].ti_Data = (IPTR)KernelArgs;
+    km[5].ti_Data = (IPTR)debug_addr;
+    km[6].ti_Data = (IPTR)HostIFace;
 
     printf("[Bootstrap] entering kernel@%p...\n", kernel_addr);
-    int retval = kernel_addr(km);
-
-    printf("kernel returned %i\n",retval);
-    return retval;
-}  
+    return kernel_addr(km);
+}
