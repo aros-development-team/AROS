@@ -16,7 +16,7 @@
 static inline char *getstrtab(struct sheader *sh)
 {
     char *str;
-	
+
     str = AllocVec(sh->size, MEMF_PUBLIC);
     if (str)
         CopyMem(sh->addr, str, sh->size);
@@ -80,7 +80,7 @@ AROS_LH4(void, KrnRegisterModule,
     {
     	struct elfheader *eh = ((struct ELF_DebugInfo *)debugInfo)->eh;
 	struct sheader *sections = ((struct ELF_DebugInfo *)debugInfo)->sh;
-	module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
+	module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC);
 
 	if (mod) {
 	    int shstr = SHINDEX(eh->int_shstrndx);
@@ -163,7 +163,7 @@ AROS_LH4(void, KrnRegisterModule,
 		    for (j=0; j < (sections[i].size / sizeof(struct symbol)); j++) {
 			if (st[j].shindex != SHN_XINDEX) {
 			    if (sections[st[j].shindex].addr && (sections[st[j].shindex].flags & (SHF_ALLOC | SHF_EXECINSTR)) == (SHF_ALLOC | SHF_EXECINSTR)) {
-				symbol_t *sym = AllocMem(sizeof(symbol_t), MEMF_PUBLIC);
+				dbg_sym_t *sym = AllocMem(sizeof(dbg_sym_t), MEMF_PUBLIC);
 
 				if (mod->m_str)
 				    sym->s_name = &mod->m_str[st[j].name];
@@ -173,7 +173,7 @@ AROS_LH4(void, KrnRegisterModule,
 				sym->s_highest = sym->s_lowest + st[j].size - 1;
 
 				DSYMS(bug("[KRN]  Adding symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
-				AddHead((struct List *)&mod->m_symbols, (struct Node *)sym);
+				AddTail((struct List *)&mod->m_symbols, (struct Node *)sym);
 			    }
 			}
 		    }

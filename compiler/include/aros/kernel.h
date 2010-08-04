@@ -9,6 +9,7 @@
     Lang: english
 */
 
+#include <exec/lists.h>
 #include <dos/elf.h>
 #include <utility/tagitem.h>
 
@@ -61,6 +62,24 @@ struct KernelBSS
     void *addr;
     IPTR len;
 };
+
+/* Kernel debug info structures. Must be placed in kernel memory! */
+typedef struct
+{
+    struct MinNode m_node;	/* For linking into the list 	*/
+    struct MinList m_symbols;	/* List of dbg_sym_t structures */
+    void *	   m_lowest;	/* Start address	     	*/
+    void *	   m_highest;	/* End address		     	*/
+    char	   m_name[1];	/* Variable length		*/
+} dbg_mod_t;
+
+typedef struct
+{
+    struct MinNode s_node;	/* For linking into the list 	*/
+    char *	   s_name;	/* Symbol name			*/
+    void *	   s_lowest;	/* Start address	     	*/
+    void *	   s_highest;	/* End address		     	*/
+} dbg_sym_t;
 
 /* Known debug info types */
 #define DEBUG_ELF 1

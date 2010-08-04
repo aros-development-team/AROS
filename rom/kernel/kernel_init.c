@@ -6,6 +6,7 @@
 #include <kernel_base.h>
 #include <kernel_init.h>
 #include <kernel_debug.h>
+#include <kernel_tagitems.h>
 
 #define D(x)
 
@@ -31,6 +32,8 @@ static int Kernel_Init(struct KernelBase *KernelBase)
 
     NEWLIST(&KernelBase->kb_Modules);
     InitSemaphore(&KernelBase->kb_ModSem);
+
+    KernelBase->kb_KernelModules = (struct MinList *)krnGetTagData(KRN_DebugInfo, 0, BootMsg);
 
     D(bug("[KRN] Kernel_Init() done\n"));
     return 1;

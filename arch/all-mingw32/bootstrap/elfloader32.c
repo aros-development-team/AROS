@@ -19,6 +19,7 @@ typedef UINT_PTR IPTR;
 typedef INT_PTR  SIPTR;
 typedef void *   APTR;
 
+#include <aros/kernel.h>
 #include <dos/elf.h>
 
 #include "elfloader32.h"
@@ -346,6 +347,8 @@ int LoadKernel(void)
 	    } else if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB)
 		free(sh[i].addr);
 	}
+
+	kmod = malloc(sizeof(
 
 	free(n->sh);
     }
