@@ -1,0 +1,13 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+EXEDIR := $(BINDIR)/boot
+
+FILES         := bootstrap elfloader32 hostlib debug support shutdown
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR)
+
+%build_prog mmake=kernel-bootstrap-hosted \
+    progname=AROSBootstrap$(HOST_EXE_SUFFIX) targetdir=$(EXEDIR) \
+    files=$(FILES) compiler=kernel
+
+%common

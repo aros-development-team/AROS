@@ -2,7 +2,6 @@
 #define SD_ACTION_COLDREBOOT 1
 
 extern char bootstrapdir[];
-extern char *bootstrapname;
-extern char *cmdline;
 
+void SaveArgs(char **argv);
 void Host_Shutdown(unsigned long action);

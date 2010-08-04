@@ -1,0 +1,1 @@
+void Host_Alert(char *text);
