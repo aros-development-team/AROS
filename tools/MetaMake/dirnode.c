@@ -574,8 +574,15 @@ printf ("found #MM in %s\n", makefile->name);
 
 			targets = getargs (line, &count, NULL);
 
-			if (count != 0)
+			if (count > 0)
 			{
+			    if (count > 1)
+			    {
+				printf ("Warning: Multiple metatargets, only the 1st will be added in %s:%d (%s)\n",
+				    makefile->node.name, lineno, buildpath(node)
+				);
+				/* FIXME: should we better add all metatargets? */
+			    }
 			    mftarget = FindNode (&makefile->targets, targets[0]);
 			    
 			    if (mftarget == NULL)
@@ -594,12 +601,13 @@ printf ("found #MM in %s\n", makefile->name);
 			List newtargets;
 			char * ptr2 = ptr, ** tptr;
 			MakefileTarget * mftarget2, * mftarget3;
-			
+
 			NewList (&newtargets);
 			
 			while (*ptr2 != ':' && *ptr2)
 			    ptr2 ++;
-			if (*ptr2)
+
+			if (*ptr2 == ':')
 			    *ptr2 ++ = 0;
 
 			tptr = getargs (ptr, &count, NULL);
@@ -611,6 +619,14 @@ printf ("found #MM in %s\n", makefile->name);
 			}
 			
 			tptr = getargs (ptr2, &count, NULL);
+			
+			if (count == 0)
+			{
+			    printf ("Warning: metatarget with no prerequisites %s:%d (%s)\n",
+				makefile->node.name, lineno, buildpath(node)
+			    );
+			}
+
 			for (t = 0; t < count; t++)
 			{
 			    ForeachNode (&newtargets, mftarget)
