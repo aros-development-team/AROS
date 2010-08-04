@@ -156,9 +156,9 @@
 #############################################################################
 #############################################################################
 ##                                                                         ##
-## Here are the mmakefile macro's that are used to do certain tasks in a   ##
+## Here are the mmakefile macros that are used to do certain tasks in a    ##
 ## mmakefile. They consist of one or more full makefile rules.             ##
-## In general the files generated in these macro's are also defined as     ##
+## In general the files generated in these macros are also defined as      ##
 ## make targets so that they can be used as a dependency in other rules    ##
 ##                                                                         ##
 #############################################################################
@@ -244,7 +244,7 @@ endif
 # Include the dependency files and add some internal rules
 # When depstargets is provided the depencies will only be included when one of
 # these targets is the $(TARGET). Otherwise the dependencies will only be
-# include when the $(TARGET) is not for setup or clean 
+# included when the $(TARGET) is not for setup or clean 
 %define include_deps deps=$(DEPS)/M  depstargets=
 ifneq (%(deps),)
   ifneq (%(depstargets),)
@@ -653,7 +653,7 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLI
 
 
 #------------------------------------------------------------------------------
-# Link the %(objs) to the library %(libdir)/lib%(libname).a in
+# Link the %(objs) to the library %(libdir)/lib%(libname).a
 %define rule_link_linklib libname=/A objs=/A libdir=$(LIBDIR)
 
 %(libdir)/lib%(libname).a : %(objs)
@@ -663,7 +663,7 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLI
 
 
 #------------------------------------------------------------------------------
-# Link the %(objs) to the library %(libdir)/lib%(libname).so in
+# Link the %(objs) to the library %(libdir)/lib%(libname).so
 %define rule_link_shlib libname=/A objs=/A libdir=$(LIBDIR)
 
 %(libdir)/lib%(libname).so : %(objs)
@@ -832,7 +832,7 @@ $(TMP_TARGET) : $(TMP_DEPS)
 
 
 #------------------------------------------------------------------------------
-# Generate the libdefs.h include file for a module.
+# Generate the funclist file for a module.
 %define rule_genmodule_funclist \
     modname=/A modtype=/A modsuffix= conffile= targetdir= reffile=
 
@@ -1058,7 +1058,7 @@ BDID := $(BDTARGETID)
 #############################################################################
 #############################################################################
 ##                                                                         ##
-## Here are the mmakefile build macro's. These are macro's that takes care ##
+## Here are the mmakefile build macros. These are macros that takes care   ##
 ## of everything to go from the sources to the generated target. Also all  ##
 ## intermediate files and directories that are needed are created by these ##
 ## rules.                                                                  ##
@@ -1128,7 +1128,7 @@ GLOB_MKDIRS += $(BD_OBJDIR) $(BD_TARGETDIR)
 
 #------------------------------------------------------------------------------
 # Build programs, for every C file an executable will be built with the same
-# 
+# name as the C file
 %define build_progs mmake=/A files=/A nix=no \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
@@ -1604,6 +1604,158 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 
 
 #------------------------------------------------------------------------------
+# Build a module skeleton
+# This is a stripped-down version of build_module, it only creates include files,
+# but no actual object. This is used when for plugins or classes with the same
+# API, but no actual implementation here.
+%define build_module_skeleton mmake=/A modname=/A modtype=/A modsuffix= \
+  conffile= \
+  objdir=$(OBJDIR) prefix=$(AROSDIR) \
+  reffile=$(BD_DEFREFFILE)
+
+# Define metamake targets and their dependencies
+#MM- includes-all : %(mmake)-includes
+#MM %(mmake) : %(mmake)-includes core-linklibs
+#MM %(mmake)-kobj : %(mmake)-includes core-linklibs
+#MM %(mmake)-linklib : %(mmake)-includes
+#MM %(mmake)-quick : %(mmake)-includes-quick
+#MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
+#MM     includes-generate-deps
+#MM %(mmake)-includes-quick
+#MM %(mmake)-includes-dirs
+#MM %(mmake)-makefile
+#MM %(mmake)-funclist
+#MM %(mmake)-clean
+
+# All MetaMake targets defined by this macro
+BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
+    %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
+    %(mmake)-kobj %(mmake)-funclist
+
+.PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
+
+ifeq (%(modname),)
+$(error using %build_module_skeleton: modname may not be empty)
+endif
+ifeq (%(modtype),)
+$(error using %build_module_skeleton: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+# Default values for variables and arguments
+BD_DEFLINKLIBNAME := %(modname)
+BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
+BD_DEFDFLAGS := %(cflags)
+OBJDIR ?= $(GENDIR)/$(CURDIR)
+
+## Create genmodule include Makefile for the module
+##
+%(mmake)-makefile : %(objdir)/Makefile.%(modname)
+
+%rule_genmodule_makefile \
+    modname=%(modname) modtype=%(modtype) \
+    modsuffix=%(modsuffix) targetdir=%(objdir) \
+    conffile=%(conffile)
+
+%(objdir)/Makefile.%(modname) : | %(objdir)
+
+GLOB_MKDIRS += %(objdir)
+
+# Do not parse these statements if metatarget is not appropriate
+ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
+
+include %(objdir)/Makefile.%(modname)
+
+BD_DEFMODDIR := $(%(modname)_MODDIR)
+
+
+## include files generation
+##
+BD_INCDIR    := %(prefix)/$(AROS_DIR_INCLUDE)
+BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
+BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
+
+%(mmake)-includes-quick : %(mmake)-includes
+%(mmake)-includes : $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
+    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
+    $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC)
+
+ifneq ($(%(modname)_INCLUDES),)
+%rule_genmodule_includes modname=%(modname) modtype=%(modtype) \
+		      	 modsuffix=%(modsuffix) targetdir=%(objdir)/include \
+		      	 conffile=%(conffile) reffile=%(reffile)
+
+%rule_copy_diff_multi \
+    files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(GENINCDIR) \
+    stampfile=%(objdir)/%(modname)_geninc
+
+%rule_copy_diff_multi \
+    files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(BD_INCDIR) \
+    stampfile=%(objdir)/%(modname)_incs
+
+%rule_genmodule_dummy modname=%(modname) modtype=%(modtype) \
+		      modsuffix=%(modsuffix) \
+		      targetdir=%(objdir)/dummyinc conffile=%(conffile)
+
+BD_INCDIRS := $(filter-out ./,$(sort $(dir $(%(modname)_INCLUDES))))
+
+TMP%(modname)_INCDIRS := \
+    %(objdir)/include $(addprefix %(objdir)/include/,$(BD_INCDIRS)) \
+    $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
+    $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
+%rule_makedirs dirs=$(TMP%(modname)_INCDIRS) setuptarget=%(mmake)-includes-dirs
+
+$(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES)) : | %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
+GLOB_MKDIRS += %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
+
+endif
+
+%rule_genmodule_genlibdefs modname=%(modname) modtype=%(modtype) \
+		 	   modsuffix=%(modsuffix) targetdir=%(objdir)/include \
+		 	   conffile=%(conffile)
+
+$(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
+$(BD_DEFLIBDEFSINC) :
+	@$(ECHO) "generating $@"
+	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
+
+$(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | %(objdir)/include
+GLOB_MKDIRS += %(objdir)/include
+
+## Generation of the funclist file
+##
+%(mmake)-funclist : %(modname).funclist
+
+%rule_genmodule_funclist \
+    modname=%(modname) modtype=%(modtype) modsuffix=%(modsuffix) \
+    conffile=%(conffile) reffile=%(reffile)
+
+
+## Extra genmodule src files generation
+## 
+%rule_genmodule_files modname=%(modname) modtype=%(modtype) \
+		      modsuffix=%(modsuffix) targetdir=%(objdir) \
+		      conffile=%(conffile) reffile=%(reffile)
+
+BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) %(reffile) \
+    $(BD_REFS) $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
+    %(objdir)/Makefile.%(modname) \
+    $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
+    $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
+    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
+    %(objdir)/%(modname)_geninc %(objdir)/%(modname)_incs \
+    $(addsuffix .c,$(BD_LINKLIBFILES)) $(BD_LINKLIBOBJS) $(BD_LIBDEFSINC) \
+    $(BD_DEFLIBDEFSINC)
+%(mmake)-clean : FILES := $(BD_TOCLEAN)
+%(mmake)-clean ::
+	@$(ECHO) "Cleaning up for module %(modname)"
+	@$(RM) $(FILES)
+
+endif # $(TARGET) in $(BD_ALLTARGETS)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Build a linklib.
 # - mmake is the mmaketarget
 # - libname is the baselibname e.g. lib%(libname).a will be created
@@ -1678,6 +1830,8 @@ GLOB_MKDIRS += %(objdir) %(libdir)
 
 %end
 #------------------------------------------------------------------------------
+
+
 
 
 #------------------------------------------------------------------------------
@@ -1883,35 +2037,6 @@ endif
 #------------------------------------------------------------------------------
 
 
-
-
-
-
-
-# ======================
-# Old stuff, will probably be removed in the future
-
-
-
-
-# GNU Make automatic variables
-# $@ current target
-# $< First dependency
-# $? All newer dependencies
-# $^ All dependencies
-# $* The stem (ie. target is dir/a.foo.b and the pattern is
-#    a.%.b, then the stem is dir/foo)
-
-#------------------------------------------------------------------------------
-# rule to generate libdefs.h with archtool (options may go away!)
-%define libdefs_rule conffile=lib.conf genlibdefstool=$(ARCHTOOL) dest=libdefs.h
-%(dest) : %(conffile) %(genlibdefstool)
-	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@%(genlibdefstool) -c -o $@ %(conffile)
-%end
-#------------------------------------------------------------------------------
-
-
 #------------------------------------------------------------------------------
 # generate asm files from c files (for debugging purposes)
 %define ctoasm_q
@@ -1921,12 +2046,6 @@ endif
 %end
 #------------------------------------------------------------------------------
 
-
-#------------------------------------------------------------------------------
-# NOTE: The following are all part of Iain's build changes, please don't use
-# or change anything below this line until you know what you are doing. This
-# is so that I don't conflict with the semantics of any of the above macros.
-#------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
 # Copy files from one directory to another.
@@ -2274,15 +2393,6 @@ endif
 #------------------------------------------------------------------------------
 
 
-#############################################################################
-#############################################################################
-##                                                                         ##
-## Miscellaneous macros. Everything that doesn't fit above should be put   ##
-## here.                                                                   ##
-##                                                                         ##
-#############################################################################
-#############################################################################
-
 #------------------------------------------------------------------------------
 # Given an archive name, patches names and locations where to find them, fetch
 # the archive and the patches from any of those locations, unpack the archive
@@ -2498,163 +2608,5 @@ GNU_REPOSITORY := gnu://
    aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall)" \
    extraoptions="%(extraoptions)"
     
-%end
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
-# NOTE: The following are all part of platon42's build changes, please don't use
-# or change anything below this line until you know what you are doing.
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
-# Build a module skeleton
-# This is a stripped-down version of build_module, it only creates include files,
-# but no actual object. This is used when for plugins or classes with the same
-# API, but no actual implementation here.
-%define build_module_skeleton mmake=/A modname=/A modtype=/A modsuffix= \
-  conffile= \
-  objdir=$(OBJDIR) prefix=$(AROSDIR) \
-  reffile=$(BD_DEFREFFILE)
-
-# Define metamake targets and their dependencies
-#MM- includes-all : %(mmake)-includes
-#MM %(mmake) : %(mmake)-includes core-linklibs
-#MM %(mmake)-kobj : %(mmake)-includes core-linklibs
-#MM %(mmake)-linklib : %(mmake)-includes
-#MM %(mmake)-quick : %(mmake)-includes-quick
-#MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
-#MM     includes-generate-deps
-#MM %(mmake)-includes-quick
-#MM %(mmake)-includes-dirs
-#MM %(mmake)-makefile
-#MM %(mmake)-funclist
-#MM %(mmake)-clean
-
-# All MetaMake targets defined by this macro
-BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
-    %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-funclist
-
-.PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
-
-ifeq (%(modname),)
-$(error using %build_module_skeleton: modname may not be empty)
-endif
-ifeq (%(modtype),)
-$(error using %build_module_skeleton: $(MODTYPE) has to be defined with the type of the module)
-endif
-
-# Default values for variables and arguments
-BD_DEFLINKLIBNAME := %(modname)
-BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
-BD_DEFDFLAGS := %(cflags)
-OBJDIR ?= $(GENDIR)/$(CURDIR)
-
-## Create genmodule include Makefile for the module
-##
-%(mmake)-makefile : %(objdir)/Makefile.%(modname)
-
-%rule_genmodule_makefile \
-    modname=%(modname) modtype=%(modtype) \
-    modsuffix=%(modsuffix) targetdir=%(objdir) \
-    conffile=%(conffile)
-
-%(objdir)/Makefile.%(modname) : | %(objdir)
-
-GLOB_MKDIRS += %(objdir)
-
-# Do not parse these statements if metatarget is not appropriate
-ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
-
-include %(objdir)/Makefile.%(modname)
-
-BD_DEFMODDIR := $(%(modname)_MODDIR)
-
-
-## include files generation
-##
-BD_INCDIR    := %(prefix)/$(AROS_DIR_INCLUDE)
-BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
-BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
-
-%(mmake)-includes-quick : %(mmake)-includes
-%(mmake)-includes : $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
-    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
-    $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC)
-
-ifneq ($(%(modname)_INCLUDES),)
-%rule_genmodule_includes modname=%(modname) modtype=%(modtype) \
-		      	 modsuffix=%(modsuffix) targetdir=%(objdir)/include \
-		      	 conffile=%(conffile) reffile=%(reffile)
-
-%rule_copy_diff_multi \
-    files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(GENINCDIR) \
-    stampfile=%(objdir)/%(modname)_geninc
-
-%rule_copy_diff_multi \
-    files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(BD_INCDIR) \
-    stampfile=%(objdir)/%(modname)_incs
-
-%rule_genmodule_dummy modname=%(modname) modtype=%(modtype) \
-		      modsuffix=%(modsuffix) \
-		      targetdir=%(objdir)/dummyinc conffile=%(conffile)
-
-BD_INCDIRS := $(filter-out ./,$(sort $(dir $(%(modname)_INCLUDES))))
-
-TMP%(modname)_INCDIRS := \
-    %(objdir)/include $(addprefix %(objdir)/include/,$(BD_INCDIRS)) \
-    $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
-    $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
-%rule_makedirs dirs=$(TMP%(modname)_INCDIRS) setuptarget=%(mmake)-includes-dirs
-
-$(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES)) : | %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
-GLOB_MKDIRS += %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
-
-endif
-
-%rule_genmodule_genlibdefs modname=%(modname) modtype=%(modtype) \
-		 	   modsuffix=%(modsuffix) targetdir=%(objdir)/include \
-		 	   conffile=%(conffile)
-
-$(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
-$(BD_DEFLIBDEFSINC) :
-	@$(ECHO) "generating $@"
-	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
-
-$(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | %(objdir)/include
-GLOB_MKDIRS += %(objdir)/include
-
-## Generation of the funclist file
-##
-%(mmake)-funclist : %(modname).funclist
-
-%rule_genmodule_funclist \
-    modname=%(modname) modtype=%(modtype) modsuffix=%(modsuffix) \
-    conffile=%(conffile) reffile=%(reffile)
-
-
-## Extra genmodule src files generation
-## 
-%rule_genmodule_files modname=%(modname) modtype=%(modtype) \
-		      modsuffix=%(modsuffix) targetdir=%(objdir) \
-		      conffile=%(conffile) reffile=%(reffile)
-
-BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) %(reffile) \
-    $(BD_REFS) $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
-    %(objdir)/Makefile.%(modname) \
-    $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
-    $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
-    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
-    %(objdir)/%(modname)_geninc %(objdir)/%(modname)_incs \
-    $(addsuffix .c,$(BD_LINKLIBFILES)) $(BD_LINKLIBOBJS) $(BD_LIBDEFSINC) \
-    $(BD_DEFLIBDEFSINC)
-%(mmake)-clean : FILES := $(BD_TOCLEAN)
-%(mmake)-clean ::
-	@$(ECHO) "Cleaning up for module %(modname)"
-	@$(RM) $(FILES)
-
-endif # $(TARGET) in $(BD_ALLTARGETS)
 %end
 #------------------------------------------------------------------------------
