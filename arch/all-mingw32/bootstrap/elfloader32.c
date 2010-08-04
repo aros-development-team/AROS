@@ -348,8 +348,6 @@ int LoadKernel(void)
 		free(sh[i].addr);
 	}
 
-	kmod = malloc(sizeof(
-
 	free(n->sh);
     }
     return 1;
