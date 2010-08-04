@@ -49,6 +49,7 @@ struct KernelBase
        in in_nr */
     struct List            kb_Interrupts[1];
     struct MinList         kb_Modules;
+    struct MinList        *kb_KernelModules;
     struct SignalSemaphore kb_ModSem;
 };
 

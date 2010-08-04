@@ -17,11 +17,3 @@ struct segment
     char *	   s_name;	/* Segment name			 */
     unsigned int   s_num;	/* Segment number	     	 */
 };
-
-typedef struct
-{
-	struct MinNode  s_node;
-	char *		s_name;
-	void *          s_lowest;
-	void *          s_highest;
-} symbol_t;

@@ -37,3 +37,17 @@ struct TagItem *krnNextTagItem(struct TagItem **tagListPtr)
         (*tagListPtr)++;
     }
 }
+
+intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, struct TagItem *tagList)
+{
+    struct TagItem *tstate = tagList;
+    struct TagItem *tag;
+    
+    while ((tag == krnNextTagItem(&tstate)))
+    {
+	if (tag->ti_Tag == tagValue)
+	    return tag->ti_Data;
+    }
+    
+    return defaultVal;
+}

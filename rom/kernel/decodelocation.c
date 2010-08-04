@@ -10,6 +10,30 @@
 #define D(x)
 #define DSEGS(x)
 
+static void FindSymbol(struct MinList *list, char **function, void **funstart, void **funend, void *addr)
+{
+    dbg_sym_t *sym;
+
+    if (!addr)
+	return;
+
+    ForeachNode(list, sym)
+    {
+	if (sym->s_lowest <= addr && sym->s_highest >= addr) {
+	    *function = sym->s_name;
+	    *funstart = sym->s_lowest;
+	    *funend   = sym->s_highest;
+
+	    return;
+	}
+    }
+
+    /* Indicate that symbol not found */
+    *function = NULL;
+    *funstart = NULL;
+    *funend   = NULL;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -78,7 +102,6 @@ AROS_LH2(int, KrnDecodeLocationA,
     AROS_LIBFUNC_INIT
 
     struct segment *seg;
-    symbol_t *sym;
     void *dummy;
     char **module   = &dummy;
     char **segment  = &dummy;
@@ -91,7 +114,7 @@ AROS_LH2(int, KrnDecodeLocationA,
     unsigned int *secnum = &dummy;
     struct TagItem *tstate = tags;
     struct TagItem *tag;
-    BOOL want_sym = FALSE;
+    void *symaddr = NULL;
     int ret = 0;
 
     D(bug("[KRN] KrnDecodeLocationA(0x%p)\n", addr));
@@ -126,17 +149,17 @@ AROS_LH2(int, KrnDecodeLocationA,
 
 	case KDL_SymbolName:
 	    function = (char **)tag->ti_Data;
-	    want_sym = TRUE;
+	    symaddr = addr;
 	    break;
 
 	case KDL_SymbolStart:
 	    funstart = (void **)tag->ti_Data;
-	    want_sym = TRUE;
+	    symaddr = addr;
 	    break;
 
 	case KDL_SymbolEnd:
 	    funend = (void **)tag->ti_Data;
-	    want_sym = TRUE;
+	    symaddr = addr;
 	    break;
 	}
     }
@@ -163,27 +186,8 @@ AROS_LH2(int, KrnDecodeLocationA,
 	    *secend   = seg->s_highest;
 
 	    /* Now look up the function if requested */
-	    if (want_sym) {
-		ForeachNode(&seg->s_mod->m_symbols, sym)
-		{
-		    if (sym->s_lowest <= addr && sym->s_highest >= addr) {
-			*function = sym->s_name;
-			*funstart = sym->s_lowest;
-			*funend   = sym->s_highest;
+	    FindSymbol(&seg->s_mod->m_symbols, function, funstart, funend, symaddr);
 
-			break;
-		    }
-		}
-
-		if (!sym->s_node.mln_Succ)
-		{
-		    /* Indicate that symbol not found */
-		    *function = NULL;
-		    *funstart = NULL;
-		    *funend   = NULL;
-		}
-
-	    }
 	    ret = 1;
 	    break;
 	}
@@ -191,6 +195,33 @@ AROS_LH2(int, KrnDecodeLocationA,
 
     if (!KrnIsSuper())
 	ReleaseSemaphore(&KernelBase->kb_ModSem);
+
+    /* Try to search kernel debug information if found nothing */
+    if ((!ret) && KernelBase->kb_KernelModules)
+    {
+	dbg_mod_t *kmod;
+
+	ForeachNode(KernelBase->kb_KernelModules, kmod)
+	{
+	    if ((kmod->m_lowest <= addr) && (kmod->m_highest >= addr))
+	    {
+		D(bug("[KRN] Found kernel module %s (0x%p - 0x%p)\n", kmod->m_name, kmod->m_lowest, kmod->m_highest));
+
+		*module   = kmod->m_name;
+		*segment  = NULL;
+		*secptr   = NULL;
+		*secnum   = 0;
+		*secstart = kmod->m_lowest;
+		*secend   = kmod->m_highest;
+
+		/* Now look up the function if requested */
+		FindSymbol(&kmod->m_symbols, function, funstart, funend, symaddr);
+
+	        ret = 1;
+	        break;
+	    }
+	}
+    }
 
     return ret;
 

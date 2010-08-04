@@ -23,7 +23,7 @@
 static UBYTE *const fmtstring = "Task 0x%P - %s\n";
 static UBYTE *const errstring = "Error %08lx - ";
 static UBYTE *const locstring = "PC 0x%P\n";
-static UBYTE *const modstring = "Module %s Segment %u (%s, 0x%P) Offset 0x%P\n";
+static UBYTE *const modstring = "Module %s Segment %u %s (0x%P) Offset 0x%P\n";
 static UBYTE *const funstring = "Function %s (0x%P) Offset 0x%P\n";
 
 extern struct HostInterface *HostIFace;
@@ -105,7 +105,7 @@ extern struct HostInterface *HostIFace;
 				  TAG_DONE))
 	    {
 		if (!segname)
-		    segname = "- no name -";
+		    segname = "- unknown -";
 		buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, --buf, modname, segnum, segname, segaddr, iet->iet_AlertLocation - segaddr);
 		if (symaddr) {
 		    if (!symname)

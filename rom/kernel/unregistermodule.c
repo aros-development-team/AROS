@@ -69,13 +69,13 @@ AROS_LH1(void, KrnUnregisterModule,
 		   module information */
 		if (--mod->m_segcnt == 0)
 		{
-		    symbol_t *sym, *sym2;
+		    dbg_sym_t *sym, *sym2;
 
 		    D(bug("[KRN] Removing module %s\n", mod->m_name));
 
 		    /* Free associated symbols */
 		    ForeachNodeSafe(&mod->m_symbols, sym, sym2)
-			FreeMem(sym, sizeof(symbol_t));
+			FreeMem(sym, sizeof(dbg_sym_t));
 
 		    /* Free associated string table */
 		    if (mod->m_str) {
