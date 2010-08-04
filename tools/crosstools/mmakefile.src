@@ -47,10 +47,7 @@ endif
 	    package_repo="http://ftp.gnu.org/gnu/gcc/gcc-$(HOSTAROSGCCVERSION)" patch=no \
 	    prefix="$(TOOLDIR)" extraoptions="--target=$(AROS_TARGET_CPU)-elf --bindir=$(TOOLDIR) --enable-languages=$(HOSTAROSGCCLANGUAGES) --disable-libssp --disable-nls --disable-shared --disable-threads --disable-multilib --with-as=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-as --with-gnu-as --with-ld=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-ld --with-gnu-ld --with-gmp=$(TOOLDIR) --with-mpfr=$(TOOLDIR) --without-pic $(NEWLIB_FLAGS)"
 
-.PHONY : host-build-tools-hostarosnewlib
-#MM
-host-build-tools-hostarosnewlib :
-	%fetch archive=newlib-$(HOSTAROSNEWLIBVERSION) suffixes="tar.gz" \
+%fetch mmake=host-build-tools-hostarosnewlib archive=newlib-$(HOSTAROSNEWLIBVERSION) suffixes="tar.gz" \
 		location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/newlib \
 		archive_origins=". ftp://sources.redhat.com/pub/newlib"
 
