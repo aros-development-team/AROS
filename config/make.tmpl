@@ -1082,8 +1082,13 @@ BD_TARGETDIR := %(targetdir)
 
 BD_FILES     := %(files)
 BD_ASMFILES  := %(asmfiles)
-BD_OBJS      := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(BD_FILES) $(BD_ASMFILES)))
-BD_DEPS      := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_FILES)))
+
+BD_ARCHOBJS   := $(wildcard $(BD_OBJDIR)/arch/*.o)
+BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
+BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
+
+BD_OBJS      := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(BD_NARCHFILES) $(BD_ASMFILES)))
+BD_DEPS      := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_NARCHFILES)))
 
 BD_CFLAGS    := %(cflags)
 BD_AFLAGS    := %(aflags)
@@ -1103,7 +1108,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
     aflags=$(BD_AFLAGS)
 
 %rule_link_prog prog=$(BD_TARGETDIR)/$(BD_PROGNAME) \
-    objs="$(BD_OBJS) $(USER_OBJS)" ldflags=$(BD_LDFLAGS) \
+    objs="$(BD_OBJS) $(BD_ARCHOBJS) $(USER_OBJS)" ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
     linker=%(compiler)
