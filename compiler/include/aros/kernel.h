@@ -55,6 +55,13 @@ typedef enum
 #define KRN_DebugInfo		(KRN_Dummy + 21)
 #define KRN_BootLoader          (KRN_Dummy + 22)
 
+/* BSS segments descriptor */
+struct KernelBSS
+{
+    void *addr;
+    IPTR len;
+};
+
 /* Known debug info types */
 #define DEBUG_ELF 1
 
@@ -76,5 +83,9 @@ struct ELF_DebugInfo
 #define KDL_SymbolName		(KDL_Dummy + 7)
 #define KDL_SymbolStart		(KDL_Dummy + 8)
 #define KDL_SymbolEnd		(KDL_Dummy + 9)
+
+/* Exception and IRQ handler types */
+typedef int (*exhandler_t)(void *ctx, void *data, void *data2);
+typedef void (*irqhandler_t)(void *data, void *data2);
 
 #endif /* AROS_KERNEL_H */

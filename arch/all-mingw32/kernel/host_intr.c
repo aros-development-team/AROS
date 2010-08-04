@@ -52,16 +52,7 @@ unsigned char Sleep_Mode;
 struct ExecBase *SysBase;
 struct KernelBase *KernelBase;
 
-void user_exception_handler(uint8_t exception, struct List *list)
-{
-    struct IntrNode *in, *in2;
-
-    ForeachNodeSafe(&list[exception], in, in2)
-    {
-        if (in->in_Handler)
-            in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
-    }
-}
+typedef void (*irqhandler_t)(void *data, void *data2);
 
 void user_irq_handler(uint8_t exception, struct List *list)
 {
@@ -69,8 +60,10 @@ void user_irq_handler(uint8_t exception, struct List *list)
 
     ForeachNodeSafe(list, in, in2)
     {
-        if (in->in_Handler && (in->in_nr == exception))
-            in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
+	irqhandler_t h = in->in_Handler;
+	
+        if (h && (in->in_nr == exception))
+            h(in->in_HandlerData, in->in_HandlerData2);
     }
 }
 
@@ -133,10 +126,11 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
         	if (t) {
         	    printf("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
 		    trapHandler = t->tc_TrapCode;
-        	} else {
+        	} else
         	    printf("[KRN] No task\n");
+
+		if (!trapHandler)
 		    trapHandler = SysBase->TaskTrapCode;
-		}
     	    }
     	    PRINT_CPUCONTEXT(ContextRecord);
 

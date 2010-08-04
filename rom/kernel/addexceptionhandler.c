@@ -1,4 +1,4 @@
-#include <aros/libcall.h>
+#include <aros/kernel.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
@@ -21,7 +21,7 @@ AROS_LH4(void *, KrnAddExceptionHandler,
 
 /*  SYNOPSIS */
         AROS_LHA(uint8_t, num, D0),
-        AROS_LHA(void *, handler, A0),
+        AROS_LHA(exhandler_t *, handler, A0),
         AROS_LHA(void *, handlerData, A1),
         AROS_LHA(void *, handlerData2, A2),
 
@@ -29,10 +29,33 @@ AROS_LH4(void *, KrnAddExceptionHandler,
         struct KernelBase *, KernelBase, 14, Kernel)
 
 /*  FUNCTION
+	Add a raw CPU exception handler to the chain of handlers.
 
     INPUTS
+	num          - CPU-specific exception number
+	handler      - Pointer to a handler function
+	handlerData,
+	handlerData2 - User-defined data which is passed to the
+		       handler.
+	
+	  Handler function uses a C calling convention and must be
+	  declared as follows:
+	  
+	  int ExceptionHandler(void *ctx, void *handlerData, void *handlerData2)
+	    
+	  handlerData and handlerData2 will be values passed to the
+	  KrnAddExceptionHandler() function. ctx is a CPU context handle.
+	  Consider this parameter private and reserved for now.
+
+	  Exception handler should return nonzero value if it processes the
+	  exception and wants to continue program execution. Otherwise it should
+	  return zero. If all exception handlers in the chain return zero, the
+	  exception will be passed on to exec.library trap handler pointed to
+	  by tc_TrapCode field of task structure.
 
     RESULT
+	An opaque handle that can be used for handler removal or NULL in case
+	of failure (like unsupported exception number).
 
     NOTES
 
@@ -41,6 +64,7 @@ AROS_LH4(void *, KrnAddExceptionHandler,
     BUGS
 
     SEE ALSO
+	KrnRemExceptionHandler()
 
     INTERNALS
 
