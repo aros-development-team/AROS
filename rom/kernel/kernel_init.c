@@ -1,10 +1,21 @@
+#include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
+#include <string.h>
 
 #include <kernel_base.h>
+#include <kernel_init.h>
 #include <kernel_debug.h>
 
 #define D(x)
+
+void __clear_bss(struct KernelBSS *bss)
+{
+    while (bss->addr) {
+	bzero((void*)bss->addr, bss->len);
+        bss++;
+    }
+}
 
 static int Kernel_Init(struct KernelBase *KernelBase)
 {

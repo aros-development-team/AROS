@@ -19,7 +19,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
 
 /*  SYNOPSIS */
         AROS_LHA(uint8_t, irq, D0),
-        AROS_LHA(void *, handler, A0),
+        AROS_LHA(irqhandler_t *, handler, A0),
         AROS_LHA(void *, handlerData, A1),
         AROS_LHA(void *, handlerData2, A2),
 
@@ -27,10 +27,28 @@ AROS_LH4(void *, KrnAddIRQHandler,
         struct KernelBase *, KernelBase, 7, Kernel)
 
 /*  FUNCTION
+	Add a raw hardware IRQ handler to the chain of handlers.
 
     INPUTS
+	num          - hardware-specific IRQ number
+	handler      - Pointer to a handler function
+	handlerData,
+	handlerData2 - User-defined data which is passed to the
+		       handler.
+	
+	  Handler function uses a C calling convention and must be
+	  declared as follows:
+
+	  void IRQHandler(void *handlerData, void *handlerData2)
+
+	  handlerData and handlerData2 will be values passed to the
+	  KrnAddExceptionHandler() function.
+
+	  There is no return code for the IRQ handler.
 
     RESULT
+	An opaque handle that can be used for handler removal or NULL in case
+	of failure (like unsupported exception number).
 
     NOTES
 
@@ -39,6 +57,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
     BUGS
 
     SEE ALSO
+	KrnRemIRQHandler()
 
     INTERNALS
 

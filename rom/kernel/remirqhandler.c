@@ -24,10 +24,14 @@ AROS_LH1(void, KrnRemIRQHandler,
          struct KernelBase *, KernelBase, 8, Kernel)
 
 /*  FUNCTION
+	Remove previously installed hardware IRQ handler
 
     INPUTS
+	handle - an opaque handler returned by KrnAddIRQHandler()
+	         function
 
     RESULT
+	None
 
     NOTES
 

@@ -1,7 +1,7 @@
 struct IntrNode
 {
     struct MinNode      in_Node;
-    void                (*in_Handler)(void *, void *);
+    void                *in_Handler;
     void                *in_HandlerData;
     void                *in_HandlerData2;
     uint8_t             in_type;

@@ -18,16 +18,20 @@
 AROS_LH1(void, KrnRemExceptionHandler,
 
 /*  SYNOPSIS */
-         AROS_LHA(void *, handle, A0),
+        AROS_LHA(void *, handle, A0),
 
 /*  LOCATION */
-         struct KernelBase *, KernelBase, 15, Kernel)
+        struct KernelBase *, KernelBase, 15, Kernel)
 
 /*  FUNCTION
+	Remove previously installed CPU exception handler
 
     INPUTS
+	handle - an opaque handler returned by KrnAddExceptionHandler()
+	         function
 
     RESULT
+	None
 
     NOTES
 

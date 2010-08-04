@@ -12,6 +12,7 @@
 #include "kernel_base.h"
 #include "kernel_cpu.h"
 #include "kernel_debug.h"
+#include "kernel_init.h"
 #include "kernel_tagitems.h"
 #include "exception.h"
 
@@ -58,16 +59,37 @@ int __startup startup(struct TagItem *msg)
     struct MemHeader *mh;
     void *memory;
     IPTR memlen;
-    struct mb_mmap *mmap;
+    struct TagItem *tag;
+    struct TagItem *tstate = msg;
+    struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
-    __clear_bss(msg);
-    BootMsg = msg;
+    while ((tag = krnNextTagItem(&tstate))) {
+	switch (tag->ti_Tag) {
+	case KRN_KernelLowest:
+	    ranges[0] = (UWORD *)tag->ti_Data;
+	    break;
 
-    ranges[0] = (UWORD *)krnGetTagData(KRN_KernelLowest, 0, msg);
-    ranges[1] = (UWORD *)krnGetTagData(KRN_KernelHighest, 0, msg);
-    mmap = (void*)krnGetTagData(KRN_MMAPAddress, 0, msg);
-    HostIFace = (struct HostInterface *)krnGetTagData(KRN_HostInterface, 0, msg);
+	case KRN_KernelHighest:
+	    ranges[1] = (UWORD *)tag->ti_Data;
+	    break;
+
+	case KRN_MMAPAddress:
+	    mmap = (struct mb_mmap *)tag->ti_Data;
+	    break;
+
+	case KRN_KernelBss:
+	    __clear_bss((struct KernelBSS *)tag->ti_Data);
+	    break;
+
+	case KRN_HostInterface:
+	    HostIFace = (struct HostInterface *)tag->ti_Data;
+	    break;
+	}
+    }
+
+    /* Set globals only AFTER __kernel_bss() */
+    BootMsg = msg;
 
     if ((!ranges[0]) || (!ranges[1]) || (!mmap) || (!HostIFace)) {
 	mykprintf("[Kernel] Not enough parameters from bootstrap!\n");
