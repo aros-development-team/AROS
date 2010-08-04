@@ -1,4 +1,4 @@
-############################################################################
+#############################################################################
 #############################################################################
 ##                                                                         ##
 ## Here are the mmakefile macros that are used as commands in the body     ##
@@ -2294,6 +2294,7 @@ endif
 #
 # Arguments:
 #
+#     - mmake           = mmaketarget
 #     - archive_origins = list of locations where to find the archive. They are tried
 #                         in sequence, until the archive is found and fetching it 
 #                         succeeded. If not specified, the current directory is assumed.
@@ -2318,7 +2319,13 @@ endif
 #                         
 #                         The patch_subdir and patch_opt fields are optional.
 
-%define fetch archive_origins=. archive=/A suffixes= location=%destination destination=. patches_origins=$(SRCDIR)/$(CURDIR) patches_specs=::
+%define fetch mmake=/A archive_origins=. archive=/A suffixes= location=%destination destination=. \
+    patches_origins=$(SRCDIR)/$(CURDIR) patches_specs=::
+
+.PHONY: %(mmake)
+
+#MM
+%(mmake) :
 	$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l %(location) -d %(destination) \
         -po "%(patches_origins)" -p %(patches_specs)
 %end
@@ -2406,13 +2413,10 @@ else
     %(mmake)-%(subpackage)-patches_specs := ::
 endif
 
-.PHONY : %(mmake)-%(subpackage)-fetch
-#MM
-%(mmake)-%(subpackage)-fetch :
-	%fetch archive=$(%(mmake)-%(subpackage)-archbase) suffixes="%(suffixes)" \
-	    location=$(PORTSSOURCEDIR) destination=$(%(mmake)-portdir) \
-	    archive_origins=". %(package_repo)" \
-	    patches_specs="$(%(mmake)-%(subpackage)-patches_specs)" patches_origins="$(SRCDIR)/$(CURDIR) %(patch_repo)"
+%fetch mmake=%(mmake)-%(subpackage)-fetch archive=$(%(mmake)-%(subpackage)-archbase) suffixes="%(suffixes)" \
+    location=$(PORTSSOURCEDIR) destination=$(%(mmake)-portdir) \
+    archive_origins=". %(package_repo)" \
+    patches_specs="$(%(mmake)-%(subpackage)-patches_specs)" patches_origins="$(SRCDIR)/$(CURDIR) %(patch_repo)"
 
 #MM- %(mmake) : %(mmake)-%(subpackage)
 
