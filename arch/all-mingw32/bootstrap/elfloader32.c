@@ -18,6 +18,8 @@ typedef WORD     UWORD;
 typedef UINT_PTR IPTR;
 typedef INT_PTR  SIPTR;
 typedef void *   APTR;
+typedef unsigned long STACKULONG;
+typedef UINT_PTR STACKIPTR;
 
 #include <aros/kernel.h>
 #include <dos/elf.h>
