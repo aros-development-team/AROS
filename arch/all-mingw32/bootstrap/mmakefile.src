@@ -1,10 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR := $(BINDIR)/boot
+EXEDIR  := $(BINDIR)/boot
+ICONDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
 
 FILES         := debug hostinterface hostlib shutdown support
-ICON          := $(GENDIR)/arch/all-hosted/bootstrap/arch/icon.o
+ICON          := $(ICONDIR)/icon.o
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(SRCDIR)/arch/all-mingw32/kernel   \
 		 -I$(GENINCDIR)
@@ -20,6 +21,7 @@ kernel-bootstrap-icon-mingw32: $(ICON)
 
 $(ICON): $(SRCDIR)/$(CURDIR)/icon.rc $(SRCDIR)/$(CURDIR)/icon.ico
 	@$(ECHO) Compiling $<...
+	@$(MKDIR) $(ICONDIR)
 	@$(KERNEL_RESCOMP) --output-format=coff $< $@
 
 %common
