@@ -14,6 +14,7 @@
 
 #include "debug.h"
 #include "elfloader32.h"
+#include "memory.h"
 #include "support.h"
 #include "shutdown.h"
 
@@ -23,8 +24,6 @@ extern void *HostIFace;
 
 char bootstrapdir[MAX_PATH];
 char buf[256];
-
-typedef int (*kernel_entry_fun_t)(struct TagItem *);
 
 static struct mb_mmap MemoryMap = {
     sizeof(struct mb_mmap),
@@ -105,9 +104,10 @@ int main(int argc, char ** argv)
     char *KernelArgs = NULL;
     char *SystemVersion;
     FILE *file;
-    kernel_entry_fun_t kernel_addr;
+    kernel_entry_fun_t kernel_entry;
     void *debug_addr;
-    size_t kernel_size, debug_size;
+    void *kernel_addr;
+    size_t kernel_size;
 
     /* This makes national characters to be output properly into
        the debug log under Windows */
@@ -188,45 +188,41 @@ int main(int argc, char ** argv)
     }
     fclose(file);
 
-    if (!GetKernelSize(&kernel_size, &debug_size))
+    if (!GetKernelSize(&kernel_size))
 	return -1;
-    D(printf("[Bootstrap] Kernel size %u, debug information size %u\n", kernel_size, debug_size));
+    D(printf("[Bootstrap] Kernel size %u\n", kernel_size));
 
-    kernel_addr = malloc(kernel_size + debug_size);
+    kernel_addr = AllocateROM(kernel_size);
     if (!kernel_addr) {
 	printf("Failed to allocate %u bytes for the kernel!\n", kernel_size);
 	return -1;
     }
 
-    debug_addr = (void *)kernel_addr + kernel_size;
-    D(printf("[Bootstrap] Code 0x%p, debug info 0x%p, End 0x%p\n", kernel_addr, debug_addr, debug_addr + debug_size));
-    
-    if (!LoadKernel(kernel_addr, debug_addr, __bss_track))
+    if (!LoadKernel(kernel_addr, __bss_track, &kernel_entry, &debug_addr))
 	return -1;
+    D(printf("[Bootstrap] Kernel start 0x%p, End 0x%p, Entry 0x%p, Debug info 0x%p\n", kernel_addr,
+	     kernel_addr + kernel_size - 1, kernel_entry, debug_addr));
 
     FreeKernelList();
 
     D(printf("[Bootstrap] allocating working mem: %iMb\n",memSize));
 
-    size_t memlen = memSize << 20;
-    void * memory = malloc(memlen);
+    MemoryMap.len = memSize << 20;
+    MemoryMap.addr = (IPTR)AllocateRAM(MemoryMap.len);
 
-    if (!memory) {
+    if (!MemoryMap.addr) {
 	printf("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
 	return -1;
     }
-    D(printf("[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", memory, memory + memlen, memlen));
-
-    MemoryMap.addr = (IPTR)memory;
-    MemoryMap.len  = memlen;
+    D(printf("[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", MemoryMap.addr, MemoryMap.addr + MemoryMap.len, MemoryMap.len));
 
     km[0].ti_Data = (IPTR)kernel_addr;
-    km[1].ti_Data = (IPTR)debug_addr + debug_size - 1;
+    km[1].ti_Data = (IPTR)kernel_addr + kernel_size - 1;
     km[3].ti_Data = (IPTR)SystemVersion;
     km[4].ti_Data = (IPTR)KernelArgs;
     km[5].ti_Data = (IPTR)debug_addr;
     km[6].ti_Data = (IPTR)HostIFace;
 
-    printf("[Bootstrap] entering kernel@%p...\n", kernel_addr);
-    return kernel_addr(km);
+    printf("[Bootstrap] entering kernel@%p...\n", kernel_entry);
+    return kernel_entry(km);
 }

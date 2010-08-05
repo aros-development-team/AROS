@@ -9,7 +9,6 @@
     Lang: english
 */
 
-#include <exec/lists.h>
 #include <dos/elf.h>
 #include <utility/tagitem.h>
 
@@ -53,7 +52,7 @@ typedef enum
 #define KRN_MEMUpper          	(KRN_Dummy + 18)
 #define KRN_OpenFirmwareTree	(KRN_Dummy + 19)
 #define KRN_HostInterface	(KRN_Dummy + 20)
-#define KRN_DebugInfo		(KRN_Dummy + 21)
+#define KRN_DebugInfo		(KRN_Dummy + 21) /* (dbg_seg_t *) */
 #define KRN_BootLoader          (KRN_Dummy + 22)
 
 /* BSS segments descriptor */
@@ -66,20 +65,27 @@ struct KernelBSS
 /* Kernel debug info structures. Must be placed in kernel memory! */
 typedef struct
 {
-    struct MinNode m_node;	/* For linking into the list 	*/
-    struct MinList m_symbols;	/* List of dbg_sym_t structures */
-    void *	   m_lowest;	/* Start address	     	*/
-    void *	   m_highest;	/* End address		     	*/
-    char	   m_name[1];	/* Variable length		*/
-} dbg_mod_t;
+    char *s_name;	/* Symbol name			*/
+    void *s_lowest;	/* Start address	     	*/
+    void *s_highest;	/* End address		     	*/
+} dbg_sym_t;
 
 typedef struct
 {
-    struct MinNode s_node;	/* For linking into the list 	*/
-    char *	   s_name;	/* Symbol name			*/
-    void *	   s_lowest;	/* Start address	     	*/
-    void *	   s_highest;	/* End address		     	*/
-} dbg_sym_t;
+    dbg_sym_t     *m_symbols;	/* Array of associated symbols    */
+    unsigned long  m_symcnt;	/* Number of symbols in the array */
+    char	   m_name[1];	/* Module name, variable length	  */
+} dbg_mod_t;
+
+typedef struct debug_seginfo
+{
+    struct debug_seginfo *s_next;	/* Next segment			*/
+    void 	 	 *s_lowest;	/* Start address	     	*/
+    void 		 *s_highest;	/* End address		     	*/
+    dbg_mod_t		 *s_module;	/* To what module it belongs	*/
+    char		 *s_name;	/* Segment name			*/
+    unsigned int	  s_num;	/* Segment number		*/
+} dbg_seg_t;
 
 /* Known debug info types */
 #define DEBUG_ELF 1

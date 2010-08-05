@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 EXEDIR := $(BINDIR)/boot
 
-FILES         := bootstrap elfloader32 hostlib debug support shutdown
+FILES         := bootstrap elfloader32 hostinterface debug memory support shutdown
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR)
 
 %build_prog mmake=kernel-bootstrap-hosted \

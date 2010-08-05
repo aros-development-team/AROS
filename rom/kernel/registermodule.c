@@ -80,7 +80,7 @@ AROS_LH4(void, KrnRegisterModule,
     {
     	struct elfheader *eh = ((struct ELF_DebugInfo *)debugInfo)->eh;
 	struct sheader *sections = ((struct ELF_DebugInfo *)debugInfo)->sh;
-	module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC);
+	module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
 
 	if (mod) {
 	    int shstr = SHINDEX(eh->int_shstrndx);
@@ -88,10 +88,7 @@ AROS_LH4(void, KrnRegisterModule,
 
 	    D(bug("[KRN] %d sections at 0x%p\n", eh->int_shnum, sections));
 
-	    strcpy(mod->m_name, name);
-	    NEWLIST(&mod->m_symbols);
-	    mod->m_str = NULL;
-	    mod->m_segcnt = 0;
+	    strcpy(mod->mod.m_name, name);
 	    if (sections[shstr].type == SHT_STRTAB)
 		mod->m_shstr = getstrtab(&sections[shstr]);
 
@@ -108,29 +105,25 @@ AROS_LH4(void, KrnRegisterModule,
 		    /* Every loadable section with nonzero size got a corresponding DOS segment */
 		    if (segList && (sections[i].flags & SHF_ALLOC))
 		    {
-			/* Actually register only executable sections */
-			if (sections[i].flags & SHF_EXECINSTR)
-			{
-			    struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC);
+			struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC);
 
-			    if (seg) {
-				D(bug("[KRN] Adding segment 0x%p\n", segList));
+			if (seg) {
+			    D(bug("[KRN] Adding segment 0x%p\n", segList));
 
-				seg->s_lowest  = sections[i].addr;
-				seg->s_highest = sections[i].addr + sections[i].size - 1;
-				seg->s_seg     = segList; /* Note that this will differ from s_lowest */
-				seg->s_mod     = mod;
-				seg->s_num     = i;
-				if (mod->m_shstr)
-			            seg->s_name = &mod->m_shstr[sections[i].name];
-				else
-			            seg->s_name = NULL;
+			    seg->s_lowest  = sections[i].addr;
+			    seg->s_highest = sections[i].addr + sections[i].size - 1;
+			    seg->s_seg     = segList; /* Note that this will differ from s_lowest */
+			    seg->s_mod     = mod;
+			    seg->s_num     = i;
+			    if (mod->m_shstr)
+				seg->s_name = &mod->m_shstr[sections[i].name];
+			    else
+				seg->s_name = NULL;
 
-				mod->m_segcnt++;
-				ObtainSemaphore(&KernelBase->kb_ModSem);
-				AddTail((struct List *)&KernelBase->kb_Modules, (struct Node *)seg);
-				ReleaseSemaphore(&KernelBase->kb_ModSem);
-			    }
+			    mod->m_segcnt++;
+			    ObtainSemaphore(&KernelBase->kb_ModSem);
+			    AddTail((struct List *)&KernelBase->kb_Modules, (struct Node *)seg);
+			    ReleaseSemaphore(&KernelBase->kb_ModSem);
 			}
 
 			/* Advance to next DOS segment */
@@ -139,7 +132,7 @@ AROS_LH4(void, KrnRegisterModule,
 		}
 	    }
 
-	    /* If the module contains no executable segments (hm, weird),
+	    /* If the module contains no loadable segments (hm, weird),
 	       we actually got nothing linked in our base list. This means
 	       that module handle is actually a garbage and we can deallocate
 	       it right now, and do nothing more */
@@ -156,28 +149,41 @@ AROS_LH4(void, KrnRegisterModule,
 
 	    /* Parse module's symbol table */
 	    for (i=0; i < eh->int_shnum; i++) {
-		if (sections[i].addr && sections[i].type == SHT_SYMTAB) {
-		    int j;
+		if (sections[i].addr && sections[i].type == SHT_SYMTAB)
+		{
 		    struct symbol *st = (struct symbol *)sections[i].addr;
+		    unsigned int symcnt = sections[i].size / sizeof(struct symbol);
+		    dbg_sym_t *sym = AllocVec(sizeof(dbg_sym_t) * symcnt, MEMF_PUBLIC);
+		    unsigned int j;
 
-		    for (j=0; j < (sections[i].size / sizeof(struct symbol)); j++) {
-			if (st[j].shindex != SHN_XINDEX) {
-			    if (sections[st[j].shindex].addr && (sections[st[j].shindex].flags & (SHF_ALLOC | SHF_EXECINSTR)) == (SHF_ALLOC | SHF_EXECINSTR)) {
-				dbg_sym_t *sym = AllocMem(sizeof(dbg_sym_t), MEMF_PUBLIC);
+		    mod->mod.m_symbols = sym;
 
+		    if (sym) {
+			for (j=0; j < symcnt; j++)
+			{
+			    int idx;
+
+			    /* TODO: perhaps XINDEX support is needed */
+			    if (st[j].shindex == SHN_XINDEX)
+				continue;
+
+			    idx = st[j].shindex;
+
+			    if (sections[idx].addr && (sections[idx].flags & SHF_ALLOC)) {
 				if (mod->m_str)
 				    sym->s_name = &mod->m_str[st[j].name];
 				else
 				    sym->s_name = NULL;
-				sym->s_lowest = sections[st[j].shindex].addr + st[j].value;
+				sym->s_lowest = sections[idx].addr + st[j].value;
 				sym->s_highest = sym->s_lowest + st[j].size - 1;
 
-				DSYMS(bug("[KRN]  Adding symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
-				AddTail((struct List *)&mod->m_symbols, (struct Node *)sym);
+				DSYMS(bug("[KRN] Added symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
+				sym++;
+				/* We count symbols here because not all of them can be added */
+				mod->mod.m_symcnt++;
 			    }
 			}
 		    }
-
 		    break;
 		}
 	    }

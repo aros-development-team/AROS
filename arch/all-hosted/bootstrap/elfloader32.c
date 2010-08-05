@@ -17,7 +17,7 @@
 #include "elfloader32.h"
 #include "support.h"
 
-#define D(x)
+#define D(x) x
 #define DREL(x)
 #define DSYM(x)
 
@@ -92,7 +92,7 @@ void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS **b
     if (!sh->size)
 	return addr;
 
-    D(kprintf("[ELF Loader] Chunk (%d bytes, align=%d) @ ", sh->size, sh->addralign));
+    D(kprintf("[ELF Loader] Chunk (%ld bytes, align=%ld (0x%p) @ ", sh->size, sh->addralign, (void *)sh->addralign));
     addr = (char *)(((IPTR)addr + sh->addralign - 1) & ~(sh->addralign-1));
 
     D(kprintf("%p\n", addr));
@@ -229,13 +229,12 @@ void FreeKernelList(void)
     /* We do not reset list pointers because the list will never be reused */
 }
 
-int GetKernelSize(size_t *KernelSize, size_t *DebugSize)
+int GetKernelSize(size_t *KernelSize)
 {
     struct ELFNode *n;
     FILE *file;
     char *err;
     size_t ksize = 0;
-    size_t dbgsize = sizeof(struct MinList);
     unsigned short i;
 
     D(printf("[ELF Loader] Calculating kernel size...\n"));
@@ -266,7 +265,8 @@ int GetKernelSize(size_t *KernelSize, size_t *DebugSize)
 	    return 0;
 	}
 
-	dbgsize += (sizeof(dbg_mod_t) + strlen(n->NamePtr));
+	/* Module descriptor for the debug info */
+	ksize += (sizeof(dbg_mod_t) + strlen(n->NamePtr));
 
 	/* Go through all sections and calculate kernel size */
 	for(i = 0; i < n->eh.shnum; i++)
@@ -276,32 +276,35 @@ int GetKernelSize(size_t *KernelSize, size_t *DebugSize)
 		/* Add maximum space for alignment */
                 ksize += (n->sh[i].size + n->sh[i].addralign - 1);
 
+	    /* Every loadable section gets segment descriptor in the debug info */
+	    if (n->sh[i].flags & SHF_ALLOC)
+		ksize += sizeof(dbg_seg_t);
+
+	    /* Debug info also includes symbols array */
 	    if (n->sh[i].type == SHT_SYMTAB)
-		dbgsize += (n->sh[i].size / sizeof(struct symbol) * sizeof(dbg_sym_t));
+		ksize += (n->sh[i].size / sizeof(struct symbol) * sizeof(dbg_sym_t));
 	}
     }
 
     *KernelSize = ksize;
-    *DebugSize  = dbgsize;
 
     return 1;
 }
 
-int LoadKernel(void *ptr_ro, void *ptr_dbg, struct KernelBSS *tracker)
+int LoadKernel(void *ptr_ro, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, void **kernel_debug)
 {
     struct ELFNode *n;
     FILE *file;
-    unsigned short i;
+    unsigned int i;
     dbg_mod_t *mod;
+    dbg_seg_t *seg = NULL;
 
     D(printf("[ELF Loader] Loading kernel...\n"));
 
     for (n = FirstELF; n; n = n->Next)
     {
-    	void *start = NULL;
-	void *end   = NULL;
-
 	D(printf("[ELF Loader] Loading file %s\n", n->Name));
+
 	file = fopen(n->Name, "rb");
 	if (!file) {
 	    printf("Failed to open file %s!\n", n->Name);
@@ -331,71 +334,90 @@ int LoadKernel(void *ptr_ro, void *ptr_dbg, struct KernelBSS *tracker)
 		    return 0;
 		}
 	        D(printf("[ELF Loader] Section address: 0x%p\n", sh[i].addr));
-
-		/* Remember start and end addresses of the module */
-		if (sh[i].flags & SHF_ALLOC) {
-		    /* Start address is taken only once */
-		    if (!start)
-			start = sh[i].addr;
-
-		    end = sh[i].addr + sh[i].size - 1;
-		}
 	    }
 	}
 
-	/* For every loaded section perform relocations */
-	D(printf("[ELF Loader] Performing relocations...\n"));
-	for (i=0; i < n->eh.shnum; i++) {
+	D(printf("[ELF Loader] Adding module debug information...\n"));
+	mod = (dbg_mod_t *)ptr_ro;
+	ptr_ro += (sizeof(dbg_mod_t) + strlen(n->NamePtr));
+
+	strcpy(mod->m_name, n->NamePtr);
+
+	/* For every loaded section perform relocations and add debug info */
+	D(printf("[ELF Loader] Relocating and adding section debug information...\n"));
+	for (i=0; i < n->eh.shnum; i++)
+	{
 	    struct sheader *sh = n->sh;
 
-	    if ((sh[i].type == SHT_RELA || sh[i].type == SHT_REL) && sh[sh[i].info].addr) {
+	    if ((sh[i].type == SHT_RELA || sh[i].type == SHT_REL) && sh[sh[i].info].addr)
+	    {
 		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
 		if (!sh[i].addr || !relocate(&n->eh, sh, i, 0)) {
-		    printf("%s: Relocation error in hunk %u!\n", n->Name, 0);
+		    printf("%s: Relocation error in hunk %u!\n", n->Name, i);
 		    return 0;
 		}
 
 		free(sh[i].addr);
 	    }
+
+	    if (sh[i].flags & SHF_ALLOC)
+	    {
+		/* Link new segment descriptor with the previous one */
+		if (seg)
+		    seg->s_next = ptr_ro;
+		else {
+		    /* Remember start of code and debug info for the first segment */
+		    *kernel_entry = sh[i].addr;
+		    *kernel_debug = seg;
+		}
+
+		seg = (dbg_seg_t *)ptr_ro;
+		ptr_ro += sizeof(dbg_seg_t);
+
+		seg->s_next    = NULL;
+		seg->s_lowest  = sh[i].addr;
+		seg->s_highest = sh[i].addr + sh[i].size - 1;
+		seg->s_module  = mod;
+		seg->s_name    = sh[n->eh.shstrndx].addr + sh[i].name;
+		seg->s_num     = i;
+		
+		D(printf("[ELF Loader] Listed section %u (%s, 0x%p - 0x%p)\n", seg->s_num, seg->s_name, seg->s_lowest, seg->s_highest));
+	    }
 	}
 
-	D(printf("[ELF Loader] Adding debug information...\n"));
-	mod = (dbg_mod_t *)ptr_dbg;
-
-	NEWLIST(&mod->m_symbols);
-	mod->m_lowest  = start;
-	mod->m_highest = end;
-	strcpy(mod->m_name, n->NamePtr);
-
-	ptr_dbg += (sizeof(dbg_mod_t) + strlen(n->NamePtr));
-
-	/* Free symbol tables not needed any more */
+	/* Copy symbols to the debug info and free symbol tables */
 	for (i = 0; i < n->eh.shnum; i++) {
 	    struct sheader *sh = n->sh;
 
 	    if (sh[i].type == SHT_SYMTAB)
 	    {
-		int j;
 		struct symbol *st = (struct symbol *)n->sh[i].addr;
+		unsigned int syms = sh[i].size / sizeof(struct symbol);
+		unsigned int j;
 
-		for (j=0; j < (sh[i].size / sizeof(struct symbol)); j++)
+		mod->m_symbols = ptr_ro;
+		mod->m_symcnt  = syms;
+
+		for (j=0; j < syms; j++)
 		{
 		    unsigned long idx;
 
-		    if (st[j].shindex != SHN_XINDEX) {
-			idx = st[j].shindex;
+		    if (st[j].shindex == SHN_XINDEX)
+			continue;
 
-			if (sh[idx].flags & SHF_ALLOC) {
-			    dbg_sym_t *sym = (dbg_sym_t *)ptr_dbg;
+		    idx = st[j].shindex;
 
-			    sym->s_name    = n->sh[n->sh[i].link].addr + st[j].name;
-			    sym->s_lowest  = n->sh[idx].addr + st[j].value;
-			    sym->s_highest = sym->s_lowest + st[j].size - 1;
-			    DSYM(printf("[ELF Loader] Listed symbol %s (0x%p - 0x%p)\n", sym->s_name, sym->s_lowest, sym->s_highest));
+		    if (sh[idx].flags & SHF_ALLOC)
+		    {
+			dbg_sym_t *sym = (dbg_sym_t *)ptr_ro;
 
-			    ADDTAIL(&mod->m_symbols, sym);
-			    ptr_dbg += sizeof(dbg_sym_t);
-			}
+			ptr_ro += sizeof(dbg_sym_t);
+
+			sym->s_name    = n->sh[n->sh[i].link].addr + st[j].name;
+			sym->s_lowest  = n->sh[idx].addr + st[j].value;
+			sym->s_highest = sym->s_lowest + st[j].size - 1;
+
+			DSYM(printf("[ELF Loader] Listed symbol %s (0x%p - 0x%p)\n", sym->s_name, sym->s_lowest, sym->s_highest));
 		    }
 		}
 
