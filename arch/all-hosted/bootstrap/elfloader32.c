@@ -17,7 +17,7 @@
 #include "elfloader32.h"
 #include "support.h"
 
-#define D(x) x
+#define D(x)
 #define DREL(x)
 #define DSYM(x)
 
