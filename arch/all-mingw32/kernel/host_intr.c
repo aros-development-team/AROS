@@ -65,6 +65,14 @@ void user_irq_handler(uint8_t exception, struct List *list)
     }
 }
 
+static inline void core_LeaveInterrupt(void)
+{
+    Supervisor = 0;
+
+    if ((char)SysBase->IDNestCnt < 0)
+        core_intr_enable();
+}
+
 struct ExceptionTranslation ExceptionsTable[] = {
     {EXCEPTION_ACCESS_VIOLATION     , 2},
     {EXCEPTION_ARRAY_BOUNDS_EXCEEDED, 3},
@@ -159,9 +167,8 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	/* Restore important registers */
 	CONTEXT_RESTORE_REGS(ContextRecord);
 	/* Exit supervisor */
-	Supervisor = 0;
-	/* Restore interrupts state. I again hope that being preemted beyond this point is OK */
-	core_LeaveInterrupt(SysBase);
+	core_LeaveInterrupt();
+
 	return ExceptionContinueExecution;
 }
 
@@ -211,7 +218,7 @@ DWORD WINAPI TaskSwitcher()
     	        DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    }
 	    /* Leave supervisor mode */
-    	    Supervisor = 0;
+	    core_LeaveInterrupt();
     	} else {
 	    /* Otherwise remember the interrupt in order to re-submit it later */
     	    PendingInts[obj] = 1;
@@ -241,6 +248,12 @@ void __declspec(dllexport) core_intr_disable(void)
 void __declspec(dllexport) core_intr_enable(void)
 {
     unsigned char i;
+
+    /* If we are in supervisor mode, don't do anything. Interrupts will
+       be enabled upon leaving supervisor mode by core_ExitInterrupt().
+       Otherwise we can end up in nested interrupts */
+    if (Supervisor)
+	return;
 
     DI(printf("[KRN] enabling interrupts\n"));
     Ints_Enabled = 1;

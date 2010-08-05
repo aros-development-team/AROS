@@ -203,7 +203,6 @@ void core_ExitInterrupt(CONTEXT *regs)
        a new ready task (if any) */
     if (Sleep_Mode) {
         core_Dispatch(regs, SysBase);
-	core_LeaveInterrupt(SysBase);
         return;
     }
     
@@ -222,7 +221,6 @@ void core_ExitInterrupt(CONTEXT *regs)
             core_Schedule(regs, SysBase);
         }
     }
-    core_LeaveInterrupt(SysBase);
 }
 
 void core_Cause(struct ExecBase *SysBase)
