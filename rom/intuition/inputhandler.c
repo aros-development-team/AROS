@@ -104,11 +104,11 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 
                     iihdata->MasterDragGadget = (struct Gadget *)NewObjectA(GetPrivIBase(IntuitionBase)->dragbarclass,
                                     NULL,
-                                    dragtags);
+									(struct TagItem *)dragtags);
 
                     iihdata->MasterSizeGadget = (struct Gadget *)NewObjectA(GetPrivIBase(IntuitionBase)->sizebuttonclass,
                                     NULL,
-                                    sizetags);
+									(struct TagItem *)sizetags);
 
                     if (iihdata->MasterDragGadget && iihdata->MasterSizeGadget)
                     {
@@ -2100,6 +2100,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 				      &call_setpointerpos,
 #endif
 				      IntuitionBase);
+	    keep_event = TRUE;
             break;
 
         case IECLASS_RAWKEY:
