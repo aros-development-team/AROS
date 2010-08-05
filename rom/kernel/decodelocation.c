@@ -10,19 +10,20 @@
 #define D(x)
 #define DSEGS(x)
 
-static void FindSymbol(struct MinList *list, char **function, void **funstart, void **funend, void *addr)
+static void FindSymbol(dbg_mod_t *mod, char **function, void **funstart, void **funend, void *addr)
 {
-    dbg_sym_t *sym;
+    dbg_sym_t *sym = mod->m_symbols;
+    unsigned int i;
 
     if (!addr)
 	return;
 
-    ForeachNode(list, sym)
+    for (i = 0; i < mod->m_symcnt; i++)
     {
-	if (sym->s_lowest <= addr && sym->s_highest >= addr) {
-	    *function = sym->s_name;
-	    *funstart = sym->s_lowest;
-	    *funend   = sym->s_highest;
+	if (sym[i].s_lowest <= addr && sym[i].s_highest >= addr) {
+	    *function = sym[i].s_name;
+	    *funstart = sym[i].s_lowest;
+	    *funend   = sym[i].s_highest;
 
 	    return;
 	}
@@ -103,15 +104,15 @@ AROS_LH2(int, KrnDecodeLocationA,
 
     struct segment *seg;
     void *dummy;
-    char **module   = &dummy;
-    char **segment  = &dummy;
-    char **function = &dummy;
+    char **module   = (char **)&dummy;
+    char **segment  = (char **)&dummy;
+    char **function = (char **)&dummy;
     void **secstart = &dummy;
     void **secend   = &dummy;
     void **funstart = &dummy;
     void **funend   = &dummy;
     BPTR  *secptr   = &dummy;
-    unsigned int *secnum = &dummy;
+    unsigned int *secnum = (unsigned int *)&dummy;
     struct TagItem *tstate = tags;
     struct TagItem *tag;
     void *symaddr = NULL;
@@ -175,9 +176,10 @@ AROS_LH2(int, KrnDecodeLocationA,
 	/* if address suits the segment bounds, you got it */
 	if ((seg->s_lowest <= addr) && (seg->s_highest >= addr))
 	{
-	    D(bug("[KRN] Found module %s, Segment %u (0x%p - 0x%p)\n", seg->s_mod->m_name, seg->s_num, seg->s_lowest, seg->s_highest));
+	    D(bug("[KRN] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", seg->s_mod->m_name, seg->s_num,
+		   seg->s_name, seg->s_lowest, seg->s_highest));
 
-	    *module = seg->s_mod->m_name;
+	    *module = seg->s_mod->mod.m_name;
 
 	    *segment  = seg->s_name;
 	    *secptr   = seg->s_seg;
@@ -186,7 +188,7 @@ AROS_LH2(int, KrnDecodeLocationA,
 	    *secend   = seg->s_highest;
 
 	    /* Now look up the function if requested */
-	    FindSymbol(&seg->s_mod->m_symbols, function, funstart, funend, symaddr);
+	    FindSymbol(&seg->s_mod->mod, function, funstart, funend, symaddr);
 
 	    ret = 1;
 	    break;
@@ -199,23 +201,25 @@ AROS_LH2(int, KrnDecodeLocationA,
     /* Try to search kernel debug information if found nothing */
     if ((!ret) && KernelBase->kb_KernelModules)
     {
-	dbg_mod_t *kmod;
+	dbg_seg_t *kseg;
 
-	ForeachNode(KernelBase->kb_KernelModules, kmod)
+	D(bug("[KRN] Checking kernel segments...\n"));
+	for (kseg = KernelBase->kb_KernelModules; kseg; kseg = kseg->s_next)
 	{
-	    if ((kmod->m_lowest <= addr) && (kmod->m_highest >= addr))
+	    if ((kseg->s_lowest <= addr) && (kseg->s_highest >= addr))
 	    {
-		D(bug("[KRN] Found kernel module %s (0x%p - 0x%p)\n", kmod->m_name, kmod->m_lowest, kmod->m_highest));
+		D(bug("[KRN] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", kseg->s_module->m_name, kseg->s_num,
+		       kseg->s_name, kseg->s_lowest, kseg->s_highest));
 
-		*module   = kmod->m_name;
-		*segment  = NULL;
+		*module   = kseg->s_module->m_name;
+		*segment  = kseg->s_name;
 		*secptr   = NULL;
-		*secnum   = 0;
-		*secstart = kmod->m_lowest;
-		*secend   = kmod->m_highest;
+		*secnum   = kseg->s_num;
+		*secstart = kseg->s_lowest;
+		*secend   = kseg->s_highest;
 
 		/* Now look up the function if requested */
-		FindSymbol(&kmod->m_symbols, function, funstart, funend, symaddr);
+		FindSymbol(kseg->s_module, function, funstart, funend, symaddr);
 
 	        ret = 1;
 	        break;

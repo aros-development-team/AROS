@@ -1,5 +1,9 @@
 #include <aros/system.h>
+
+#include <stddef.h>
+#include <stdio.h>
 #include <windows.h>
+
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
 #define __typedef_WORD /* is the same except BOOL. It's defined to short on AROS and to int on Windows. This means */
 #define __typedef_BYTE /* that you can't use it in OS-native part of the code and can't use any AROS structure     */
@@ -7,8 +11,7 @@
 typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
 
-#include <stddef.h>
-#include <stdio.h>
+#include <aros/libcall.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>

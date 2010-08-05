@@ -69,22 +69,23 @@ AROS_LH1(void, KrnUnregisterModule,
 		   module information */
 		if (--mod->m_segcnt == 0)
 		{
-		    dbg_sym_t *sym, *sym2;
-
 		    D(bug("[KRN] Removing module %s\n", mod->m_name));
 
 		    /* Free associated symbols */
-		    ForeachNodeSafe(&mod->m_symbols, sym, sym2)
-			FreeMem(sym, sizeof(dbg_sym_t));
-
-		    /* Free associated string table */
-		    if (mod->m_str) {
-			D(bug("[KRN] Removing string table 0x%p\n", mod->m_str));
-			FreeVec(mod->m_str);
+		    if (mod->mod.m_symbols) {
+			D(bug("[KRN] Removing symbol table 0x%p\n", mod->mod.m_symbols));
+			FreeVec(mod->mod.m_symbols);
 		    }
 
-		    if (mod->m_shstr)
+		    /* Free associated string tables */
+		    if (mod->m_str) {
+			D(bug("[KRN] Removing symbol name table 0x%p\n", mod->m_str));
+			FreeVec(mod->m_str);
+		    }
+		    if (mod->m_shstr) {
+			D(bug("[KRN] Removing section name table 0x%p\n", mod->m_str));
 			FreeVec(mod->m_shstr);
+		    }
 
 		    /* Free module descriptor at last */
 		    FreeVec(mod);

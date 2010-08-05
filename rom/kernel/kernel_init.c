@@ -33,7 +33,7 @@ static int Kernel_Init(struct KernelBase *KernelBase)
     NEWLIST(&KernelBase->kb_Modules);
     InitSemaphore(&KernelBase->kb_ModSem);
 
-    KernelBase->kb_KernelModules = (struct MinList *)krnGetTagData(KRN_DebugInfo, 0, BootMsg);
+    KernelBase->kb_KernelModules = (dbg_seg_t *)krnGetTagData(KRN_DebugInfo, 0, BootMsg);
 
     D(bug("[KRN] Kernel_Init() done\n"));
     return 1;

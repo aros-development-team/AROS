@@ -14,6 +14,6 @@ struct KernelBase
     struct MinList         kb_Exceptions[EXCEPTIONS_COUNT];
     struct MinList         kb_Interrupts[IRQ_COUNT];
     struct MinList         kb_Modules;
-    struct MinList	  *kb_KernelModules;
+    dbg_seg_t		  *kb_KernelModules;
     struct SignalSemaphore kb_ModSem;
 };

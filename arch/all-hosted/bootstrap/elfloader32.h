@@ -6,9 +6,11 @@
  $Id$
  */
 
+typedef int (*kernel_entry_fun_t)(struct TagItem *);
+
 int AddKernelFile(char *name);
 void FreeKernelList(void);
-int GetKernelSize(size_t *, size_t *);
-int LoadKernel(void *ptr_ro, void *ptr_dbg, struct KernelBSS *tracker);
+int GetKernelSize(size_t *ro_size);
+int LoadKernel(void *ptr_ro, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, void **kernel_debug);
 
 #endif /*ELFLOADER_H_*/

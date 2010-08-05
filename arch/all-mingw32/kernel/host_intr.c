@@ -52,8 +52,6 @@ unsigned char Sleep_Mode;
 struct ExecBase *SysBase;
 struct KernelBase *KernelBase;
 
-typedef void (*irqhandler_t)(void *data, void *data2);
-
 void user_irq_handler(uint8_t exception, struct List *list)
 {
     struct IntrNode *in, *in2;

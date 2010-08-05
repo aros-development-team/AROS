@@ -1,15 +1,17 @@
 #ifndef KERNEL_BASE_H_
 #define KERNEL_BASE_H_
 
-#include <aros/libcall.h>
-#include <inttypes.h>
+#include <aros/kernel.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <utility/tagitem.h>
+
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdarg.h>
+
 #include "hostinterface.h"
 
 #define STACK_SIZE 4096
@@ -49,7 +51,7 @@ struct KernelBase
        in in_nr */
     struct List            kb_Interrupts[1];
     struct MinList         kb_Modules;
-    struct MinList        *kb_KernelModules;
+    dbg_seg_t		  *kb_KernelModules;
     struct SignalSemaphore kb_ModSem;
 };
 
