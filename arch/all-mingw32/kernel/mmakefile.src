@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES  := -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
+USER_INCLUDES  := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
 
 #MM kernel-kernel-mingw32: kernel-kernel-mingw32-native
 
@@ -15,7 +15,7 @@ FUNCS := bug addirqhandler cli issuper sti
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_LIBDIR := $(GENDIR)/lib
 
-NATIVE_FILES  := host_intr host_scheduler
+NATIVE_FILES  := host_intr host_scheduler cpu_$(CPU)
 
 USER_INCLUDES += -I$(GENINCDIR)
 USER_LDFLAGS  := -shared -Wl,--out-implib,$(NATIVE_LIBDIR)/libkernel.a
