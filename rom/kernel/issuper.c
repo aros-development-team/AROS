@@ -15,10 +15,13 @@ AROS_LH0I(int, KrnIsSuper,
 	struct KernelBase *, KernelBase, 13, Kernel)
 
 /*  FUNCTION
+	Determine if the caller is running in supervisor mode
 
     INPUTS
+	None
 
     RESULT
+	Nonzero for supervisor mode, zero for user mode
 
     NOTES
 
@@ -34,6 +37,7 @@ AROS_LH0I(int, KrnIsSuper,
 {
     AROS_LIBFUNC_INIT
 
+    /* The implementation of this function is entirely architecture-specific */
     return FALSE;
 
     AROS_LIBFUNC_EXIT
