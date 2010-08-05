@@ -54,16 +54,16 @@
 #define PPP_PHASE_NETWORK 5
 #define PPP_PHASE_TERMINATE 6
 
-// config stuff
-#define PPP_MAXATCOM 30       
+// config stuff      
 #define PPP_MAXARGLEN 100
 #define COM_WAIT 1
 #define COM_SEND 2
 #define COM_DELAY 3
 
 struct at_command {
-  BYTE command,arg;     
-  BYTE str[PPP_MAXARGLEN];
+	struct Node cNode; 	
+	BYTE command,arg;     
+	BYTE str[PPP_MAXARGLEN];
 };  
     
     
@@ -72,7 +72,6 @@ struct PPPBase {
     ULONG        sd_OpenCnt;
     UBYTE        sd_Flags;
     
-    BOOL ppp_online;
     BOOL serial_ok;
     BOOL device_up;
     BOOL sdu_Proc_run;
@@ -95,8 +94,8 @@ struct PPPBase {
     
     BYTE DeviceName[PPP_MAXARGLEN];
     BYTE SerUnitNum;
-    struct at_command atc[PPP_MAXATCOM]; 
-    
+
+    struct List  atcl; 
     BYTE username[PPP_MAXARGLEN]; 
     BYTE password[PPP_MAXARGLEN];
     BOOL enable_dns;

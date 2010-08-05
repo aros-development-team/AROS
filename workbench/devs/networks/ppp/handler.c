@@ -2,7 +2,6 @@
  * $Id$
  */
 
-
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/io.h>
@@ -34,60 +33,61 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
 #include <oop/oop.h>
 #include <hidd/pci.h>
 
 #include <ctype.h>
 
-
 #include "ppp.h"
 #include "device_protos.h"
-//#include LC_LIBDEFS_FILE
 
 
+VOID PerformIO(LIBBASETYPEPTR LIBBASE,struct IOSana2Req *ios2){
 
-VOID PerformIO(LIBBASETYPEPTR LIBBASE,struct IOSana2Req *ios2)
-{
+	// D(bug("PerformIO Command-->"));
 
-   // D(bug("PerformIO Command-->"));
+	ios2->ios2_Req.io_Error = 0;
 
-    ios2->ios2_Req.io_Error = 0;
+	switch (ios2->ios2_Req.io_Command){
+	case CMD_READ:
+		ReadPacket(LIBBASE,ios2);
+		break;
 
-    switch(ios2->ios2_Req.io_Command)
-    {
-    case CMD_READ:               ReadPacket(LIBBASE,ios2);
-                                 break;
+	case CMD_WRITE:
+		WritePacket(LIBBASE,ios2);
+		break;
 
-    case CMD_WRITE:              WritePacket(LIBBASE,ios2);
-                                 break;
+	case S2_DEVICEQUERY:
+		DeviceQuery(LIBBASE,ios2);
+		break;
 
-    case S2_DEVICEQUERY:         DeviceQuery(LIBBASE,ios2);
-                                 break;
+	case S2_GETSTATIONADDRESS:
+		GetStationAddress(LIBBASE,ios2);
+		break;
 
-    case S2_GETSTATIONADDRESS:   GetStationAddress(LIBBASE,ios2);
-                                 break;
+	case S2_BROADCAST:
+		WritePacket(LIBBASE,ios2);
+		break;
 
-    case S2_BROADCAST:           WritePacket(LIBBASE,ios2);
-                                 break;
+	case S2_ONLINE:
+		Online(LIBBASE,ios2);
+		break;
 
-    case S2_ONLINE:              Online(LIBBASE,ios2);
-                                 break;
+	case S2_OFFLINE:
+		Offline(LIBBASE,ios2);
+		break;
 
-    case S2_OFFLINE:             Offline(LIBBASE,ios2);
-                                 break;
+	case S2_CONFIGINTERFACE:
+		ConfigInterface(LIBBASE,ios2);
+		break;
 
-    case S2_CONFIGINTERFACE:     ConfigInterface(LIBBASE,ios2);
-                                 break;
-
-
-    default:
-                D(bug("Unknown Command %d\n",ios2->ios2_Req.io_Command));
-                    ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
-                    ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
-                    TermIO(LIBBASE,ios2);
-                    break;
-    }
+	default:
+		D(bug("Unknown Command %d\n",ios2->ios2_Req.io_Command));
+		ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
+		ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+		TermIO(LIBBASE,ios2);
+		break;
+	}
 //  case S2_TRACKTYPE:
 //  case S2_UNTRACKTYPE:
 //  case S2_GETTYPESTATS:
@@ -102,238 +102,219 @@ VOID PerformIO(LIBBASETYPEPTR LIBBASE,struct IOSana2Req *ios2)
 }
 
 
-VOID TermIO(LIBBASETYPEPTR LIBBASE,struct IOSana2Req *ios2)
-{
-    if(!(ios2->ios2_Req.io_Flags & IOF_QUICK)){
-       ReplyMsg((struct Message *)ios2);
-    }
+VOID TermIO(LIBBASETYPEPTR LIBBASE,struct IOSana2Req *ios2){
+	if(!(ios2->ios2_Req.io_Flags & IOF_QUICK)){
+		ReplyMsg((struct Message *)ios2);
+	}
 }
 
 
-
-VOID ConfigInterface(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2)
-{
-    D(bug("ConfigInterface\n"));
-    //CopyMem(&sdu->sdu_StAddr,&ios2->ios2_SrcAddr,4);
-    //ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
-    //ios2->ios2_WireError = S2WERR_IS_CONFIGURED;
-    TermIO(LIBBASE,ios2);
+VOID ConfigInterface(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
+	D(bug("ConfigInterface\n"));
+	//CopyMem(&sdu->sdu_StAddr,&ios2->ios2_SrcAddr,4);
+	//ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
+	//ios2->ios2_WireError = S2WERR_IS_CONFIGURED;
+	TermIO(LIBBASE,ios2);
 }
 
 
-VOID GetStationAddress(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2)
-{
-    D(bug("GetStationAddress\n"));
-    memset(ios2->ios2_DstAddr, 0, SANA2_MAX_ADDR_BYTES);
-    memset(ios2->ios2_SrcAddr, 0, SANA2_MAX_ADDR_BYTES);
-    TermIO(LIBBASE,ios2);
+VOID GetStationAddress(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
+	D(bug("GetStationAddress\n"));
+	memset(ios2->ios2_DstAddr, 0, SANA2_MAX_ADDR_BYTES);
+	memset(ios2->ios2_SrcAddr, 0, SANA2_MAX_ADDR_BYTES);
+	TermIO(LIBBASE,ios2);
 }
 
 
-VOID DeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2)
-{
-    struct Sana2DeviceQuery *sdq;
-    D(bug("DeviceQuery\n"));
-    sdq = (struct Sana2DeviceQuery *)ios2->ios2_StatData;
+VOID DeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
+	struct Sana2DeviceQuery *sdq;
+	D(bug("DeviceQuery\n"));
+	sdq = (struct Sana2DeviceQuery *)ios2->ios2_StatData;
 
-    sdq->DevQueryFormat = 0;
-    sdq->DeviceLevel = 0;
-    sdq->AddrFieldSize = 32;
-    sdq->MTU = PPP_MTU;
-    sdq->BPS = 1000000;
-    sdq->HardwareType = S2WireType_PPP;
-    sdq->SizeSupplied = sizeof(*sdq);
+	sdq->DevQueryFormat = 0;
+	sdq->DeviceLevel = 0;
+	sdq->AddrFieldSize = 32;
+	sdq->MTU = PPP_MTU;
+	sdq->BPS = 1000000;
+	sdq->HardwareType = S2WireType_PPP;
+	sdq->SizeSupplied = sizeof(*sdq);
 
-    TermIO(LIBBASE,ios2);
+	TermIO(LIBBASE,ios2);
 }
 
 
-VOID WritePacket(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2)
-{
-  //  D(bug("WritePacket\n"));
-    /* Make sure that we are online. */
-  if( LIBBASE->device_up && LIBBASE->ppp_online ){
-    /* Make sure it's a legal length. */
-    if(ios2->ios2_DataLength <= PPP_MTU){
-      /* See if our serial CMD_WRITE command is busy.  If it's not, send
-         the IO request to SendPacket. */
-      if(CheckIO((struct IORequest *)LIBBASE->sdu_SerTx)){
-            WaitIO((struct IORequest *)LIBBASE->sdu_SerTx);
-            SendPacket(LIBBASE, ios2);
-      }else{
-        /* We'll have to queue the packet for later...*/
-        ios2->ios2_Req.io_Flags &= ~IOF_QUICK;
-        ObtainSemaphore(&LIBBASE->sdu_ListLock);
-        AddTail((struct List *)&LIBBASE->sdu_Tx,(struct Node *)ios2);
-        ReleaseSemaphore(&LIBBASE->sdu_ListLock);
-      }
+VOID WritePacket(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
+	//  D(bug("WritePacket\n"));
+	/* Make sure that we are online. */
+	if( LIBBASE->device_up && ( Phase() == PPP_PHASE_NETWORK ) ){
+		/* Make sure it's a legal length. */
+		if(ios2->ios2_DataLength <= PPP_MTU){
+			/* See if our serial CMD_WRITE command is busy.  If it's not, send
+			   the IO request to SendPacket. */
+			if(CheckIO((struct IORequest *)LIBBASE->sdu_SerTx)){
+				WaitIO((struct IORequest *)LIBBASE->sdu_SerTx);
+				SendPacket(LIBBASE, ios2);
+			}else{
+				/* We'll have to queue the packet for later...*/
+				ios2->ios2_Req.io_Flags &= ~IOF_QUICK;
+				ObtainSemaphore(&LIBBASE->sdu_ListLock);
+				AddTail((struct List *)&LIBBASE->sdu_Tx,(struct Node *)ios2);
+				ReleaseSemaphore(&LIBBASE->sdu_ListLock);
+			}
 
-    }else{
-        /* Sorry, the packet is too long! */
-        D(bug("WritePacket TOO LONG !\n"));
-        ios2->ios2_Req.io_Error = S2ERR_MTU_EXCEEDED;
-        ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
-        TermIO(LIBBASE,ios2);
-     //  DoEvent(LIBBASE,sdu,S2EVENT_TX);
-    }
+		}else{
+			/* Sorry, the packet is too long! */
+			D(bug("WritePacket TOO LONG !\n"));
+			ios2->ios2_Req.io_Error = S2ERR_MTU_EXCEEDED;
+			ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+			TermIO(LIBBASE,ios2);
+			//  DoEvent(LIBBASE,sdu,S2EVENT_TX);
+		}
 
-  }else{
-    /* Sorry, we're offline */
-    ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
-    ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
-    TermIO(LIBBASE,ios2);
-  }
+	}else{
+		/* Sorry, we're offline */
+		ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
+		ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
+		TermIO(LIBBASE,ios2);
+	}
 }
 
 
+VOID SendPacket( LIBBASETYPEPTR LIBBASE ,struct IOSana2Req *ios2 ){
 
+	//  D(bug("SendPacket lenght %d\n",ios2->ios2_DataLength));
 
-VOID SendPacket( LIBBASETYPEPTR LIBBASE ,struct IOSana2Req *ios2 )
-{
+	if( ( Phase() == PPP_PHASE_NETWORK ) && LIBBASE->device_up ){
 
+		if( LIBBASE->CopyFromBuffer( LIBBASE->sdu_TxBuff , ios2->ios2_Data , ios2->ios2_DataLength ) ){
 
-  //  D(bug("SendPacket lenght %d\n",ios2->ios2_DataLength));
- 
- if( LIBBASE->ppp_online && LIBBASE->device_up ){
-   
-   if( LIBBASE->CopyFromBuffer( LIBBASE->sdu_TxBuff , ios2->ios2_Data , ios2->ios2_DataLength ) ){
+			send_IP_packet( LIBBASE->sdu_TxBuff , ios2->ios2_DataLength );
 
-      send_IP_packet( LIBBASE->sdu_TxBuff , ios2->ios2_DataLength );
+		}else{
+			bug( "SendPacket CopyFromBuffer FAIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+			ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+			ios2->ios2_WireError = S2WERR_BUFF_ERROR;
+		}
 
-   } else{
-      bug( "SendPacket CopyFromBuffer FAIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-      ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
-      ios2->ios2_WireError = S2WERR_BUFF_ERROR;
-   }
+	}else{
+		ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
+		ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
+	}
 
- }else{
-     ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
-     ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;    
- }   
-
- TermIO(LIBBASE,ios2);
+	TermIO(LIBBASE,ios2);
 
 }
 
 
+VOID ReadPacket(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 
+//   D(bug("ReadPacket type %d ",ios2->ios2_PacketType));
 
-VOID ReadPacket(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2)
-{
-
- //   D(bug("ReadPacket type %d ",ios2->ios2_PacketType));
-
-    if( LIBBASE->ppp_online && LIBBASE->device_up ){
-    //   D(bug("Add to list...\n"));
-      ObtainSemaphore(&LIBBASE->sdu_ListLock);
-      AddTail((struct List *)&LIBBASE->sdu_Rx,(struct Node *)ios2);
-      ReleaseSemaphore(&LIBBASE->sdu_ListLock);
-   }else{
-   // D(bug("Sorry,We're offline..\n"));
-      ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
-      ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
-      TermIO(LIBBASE,ios2);
-    }
+	if( ( Phase() == PPP_PHASE_NETWORK ) && LIBBASE->device_up ){
+		//   D(bug("Add to list...\n"));
+		ObtainSemaphore(&LIBBASE->sdu_ListLock);
+		AddTail((struct List *)&LIBBASE->sdu_Rx,(struct Node *)ios2);
+		ReleaseSemaphore(&LIBBASE->sdu_ListLock);
+	}else{
+		// D(bug("Sorry,We're offline..\n"));
+		ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
+		ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
+		TermIO(LIBBASE,ios2);
+	}
 }
 
 
 
-VOID Online(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2)
-{
-    D(bug("Online\n"));
-    
-    if( LIBBASE->ppp_online ) RunRoute();
-    
-    LIBBASE->device_up = TRUE;
-    TermIO(LIBBASE,ios2);
-    SetTimer(LIBBASE,1);
+VOID Online(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
+	D(bug("Online\n"));
+
+	if( Phase() == PPP_PHASE_NETWORK ) RunRoute();
+
+	LIBBASE->device_up = TRUE;
+	TermIO(LIBBASE,ios2);
+	SetTimer(LIBBASE,1);
 }
 
 
-VOID Offline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2)
-{
+VOID Offline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 
-   D(bug("Offline\n"));
+	D(bug("Offline\n"));
 
-   if( LIBBASE->serial_ok ){
-     SendTerminateReq();  // 3 times just in case
-     SendTerminateReq();  
-     SendTerminateReq();    
-     CloseSerial(LIBBASE);
-   }
-   LIBBASE->device_up = FALSE;
-   TermIO(LIBBASE,ios2);
-   SetTimer(LIBBASE,1);
+	if( LIBBASE->serial_ok ){
+		SendTerminateReq();  // 3 times just in case
+		SendTerminateReq();
+		SendTerminateReq();
+		CloseSerial(LIBBASE);
+	}
+	Set_phase( PPP_PHASE_DEAD );
+	LIBBASE->device_up = FALSE;
+	TermIO(LIBBASE,ios2);
+	SetTimer(LIBBASE,1);
 }
 
 
 
-VOID CMD_WRITE_Ready(LIBBASETYPEPTR LIBBASE)
-{
-    struct IOSana2Req *ios2;
+VOID CMD_WRITE_Ready(LIBBASETYPEPTR LIBBASE){
+	struct IOSana2Req *ios2;
 
-    /* See if we have any pending CMD_WRITE requests. */
-    ObtainSemaphore(&LIBBASE->sdu_ListLock);
-    ios2 = (struct IOSana2Req *)RemHead((struct List *)&LIBBASE->sdu_Tx);
-    ReleaseSemaphore(&LIBBASE->sdu_ListLock);
+	/* See if we have any pending CMD_WRITE requests. */
+	ObtainSemaphore(&LIBBASE->sdu_ListLock);
+	ios2 = (struct IOSana2Req *)RemHead((struct List *)&LIBBASE->sdu_Tx);
+	ReleaseSemaphore(&LIBBASE->sdu_ListLock);
 
-    if(ios2) SendPacket( LIBBASE , ios2 );
-    
+	if(ios2) SendPacket( LIBBASE , ios2 );
+
 }
 
 
-VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE, struct IOExtSer *ioSer)
-{
-    UBYTE  *ptr;
-    ULONG length;
+VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE, struct IOExtSer *ioSer){
+	UBYTE  *ptr;
+	ULONG length;
 
-    ptr = LIBBASE->sdu_RxBuff;
+	ptr = LIBBASE->sdu_RxBuff;
 
-    length = ioSer->IOSer.io_Actual;
+	length = ioSer->IOSer.io_Actual;
 
-    while(length--){
-        byte_received( *ptr );
-        ptr++;
-    }
+	while(length--){
+		byte_received( *ptr );
+		ptr++;
+	}
 
-    QueueSerRequest( LIBBASE ,  PPP_MAXBUFF );
+	QueueSerRequest( LIBBASE ,  PPP_MAXBUFF );
 }
-
-
 
 
 // ppp.c call this if IP packet is received.
 
-VOID Incoming_IP_Packet(LIBBASETYPEPTR LIBBASE, BYTE *data , ULONG length)
-{
-    struct IOSana2Req *ios2;
-    struct PPP_DevUnit *sdu;
+VOID Incoming_IP_Packet(LIBBASETYPEPTR LIBBASE, BYTE *data , ULONG length){
+	struct IOSana2Req *ios2;
+	struct PPP_DevUnit *sdu;
 
- // bug("GotPacket %d bytes \n",length);
+// bug("GotPacket %d bytes \n",length);
 
-   sdu =   (struct PPP_DevUnit *)LIBBASE->sd_Unit;
+	sdu =   (struct PPP_DevUnit *)LIBBASE->sd_Unit;
 
-    if(length){ // ignore zero-length packets.
+	if(length){ // ignore zero-length packets.
 
-      ObtainSemaphore(&LIBBASE->sdu_ListLock);
-      ios2 = (struct IOSana2Req *)RemHead((struct List *)&LIBBASE->sdu_Rx);
-      ReleaseSemaphore(&LIBBASE->sdu_ListLock);
+		ObtainSemaphore(&LIBBASE->sdu_ListLock);
+		ios2 = (struct IOSana2Req *)RemHead((struct List *)&LIBBASE->sdu_Rx);
+		ReleaseSemaphore(&LIBBASE->sdu_ListLock);
 
-      if(ios2){
-        if( LIBBASE->CopyToBuffer(ios2->ios2_Data, data ,length)){
-    //    bug("CopyToBuffer OK\n");
-          ios2->ios2_DataLength = length;
-        }else{
-          bug("CopyToBuffer FAIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-          ios2->ios2_DataLength = 0;
-          ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
-          ios2->ios2_WireError = S2WERR_BUFF_ERROR;
-        }
-        TermIO(LIBBASE,ios2);
-      }else{
-        bug( "Orphan Packet Receivet !!! %d bytes\n" , length );
-      }
-    }
+		if(ios2){
+			if( LIBBASE->CopyToBuffer(ios2->ios2_Data, data ,length)){
+				//    bug("CopyToBuffer OK\n");
+				ios2->ios2_DataLength = length;
+			}else{
+				bug("CopyToBuffer FAIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+				ios2->ios2_DataLength = 0;
+				ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+				ios2->ios2_WireError = S2WERR_BUFF_ERROR;
+			}
+			TermIO(LIBBASE,ios2);
+		}else{
+			bug( "Orphan Packet Receivet !!! %d bytes\n" , length );
+		}
+	}
 
 }
 
