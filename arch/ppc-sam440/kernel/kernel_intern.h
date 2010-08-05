@@ -34,11 +34,6 @@ struct KernelBase {
     uint32_t			kb_EPBFreq;
 };
 
-struct KernelBSS {
-    void *addr;
-    uint32_t len;
-};
-
 enum intr_types {
     it_exception = 0xe0,
     it_interrupt = 0xf0

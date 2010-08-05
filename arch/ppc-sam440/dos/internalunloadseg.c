@@ -51,7 +51,6 @@
   AROS_LIBFUNC_INIT
 
   BPTR next;
-  void *KernelBase = OpenResource("kernel.resource");
 
   if (seglist)
   {
@@ -90,7 +89,8 @@
 
       char *seg = (ULONG)seglist;
       seg += (*(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG))) / 2;
-      KrnUnregisterModule(seg);
+      if (KernelBase)
+        KrnUnregisterModule(seg);
 
       AROS_CALL2NR(void, freefunc,
         AROS_LCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
