@@ -92,12 +92,6 @@ void core_ExitInterrupt(CONTEXT *regs);
 void core_Cause(struct ExecBase *SysBase);
 void core_intr_enable(void);
 
-static inline void core_LeaveInterrupt(struct ExecBase *SysBase)
-{   
-    if ((char )SysBase->IDNestCnt < 0)
-        core_intr_enable();
-}
-
 #define bug printf
 
 #endif
