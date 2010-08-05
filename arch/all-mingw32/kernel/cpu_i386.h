@@ -82,6 +82,8 @@ struct AROSCPUContext
 
 #endif
 
+#define EXCEPTIONS_COUNT 19
+
 #define PRINT_CPUCONTEXT(ctx) \
 	kprintf ("    ContextFlags: 0x%08lX\n" \
 		 "    ESP=%08lx  EBP=%08lx  EIP=%08lx\n" \

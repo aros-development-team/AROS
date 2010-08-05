@@ -15,7 +15,6 @@ typedef unsigned char UBYTE;
 #include <exec/execbase.h>
 
 #include "kernel_base.h"
-#include "kernel_cpu.h"
 #include "kernel_interrupts.h"
 #include "kernel_syscall.h"
 
@@ -34,12 +33,6 @@ typedef unsigned char UBYTE;
 
 #define AROS_EXCEPTION_SYSCALL 0x00080001
 
-struct ExceptionTranslation
-{
-    DWORD ExceptionCode;
-    unsigned long TrapNum;
-};
-
 HANDLE MainThread;
 DWORD *LastErrorPtr;
 unsigned char Ints_Enabled;
@@ -51,6 +44,23 @@ unsigned char Supervisor;
 unsigned char Sleep_Mode;
 struct ExecBase *SysBase;
 struct KernelBase *KernelBase;
+
+/* Call all exception handlers and accumulate return value */
+int user_exception_handler(uint8_t exception, struct List *list, CONTEXT *ctx)
+{
+    struct IntrNode *in, *in2;
+    int ret = 0;
+
+    ForeachNodeSafe(&list[exception], in, in2)
+    {
+	exhandler_t h = in->in_Handler;
+
+        if (h)
+            ret |= h(ctx, in->in_HandlerData, in->in_HandlerData2);
+    }
+
+    return ret;
+}
 
 void user_irq_handler(uint8_t exception, struct List *list)
 {
@@ -73,7 +83,7 @@ static inline void core_LeaveInterrupt(void)
         core_intr_enable();
 }
 
-struct ExceptionTranslation ExceptionsTable[] = {
+struct ExceptionTranslation AmigaTraps[] = {
     {EXCEPTION_ACCESS_VIOLATION     , 2},
     {EXCEPTION_ARRAY_BOUNDS_EXCEEDED, 3},
     {EXCEPTION_BREAKPOINT	    , 4},
@@ -91,6 +101,7 @@ struct ExceptionTranslation ExceptionsTable[] = {
 EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *ExceptionRecord, void *EstablisherFrame, CONTEXT *ContextRecord, void *DispatcherContext)
 {
 	void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
+	struct ExceptionTranslation *ex;
     	REG_SAVE_VAR;
 
 	/* We are already in interrupt and we must not be preempted by task switcher. 
@@ -124,38 +135,45 @@ EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *Exc
 	default:
 	    /* It's something else, likely a CPU trap */
 	    printf("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", ExceptionRecord->ExceptionCode, SysBase, KernelBase);
+
 	    /* Find out trap handler for caught task */
-    	    if (SysBase)
-    	    {
+	    if (SysBase)
+	    {
         	struct Task *t = SysBase->ThisTask;
 
         	if (t) {
-        	    printf("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
+		    printf("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
 		    trapHandler = t->tc_TrapCode;
-        	} else
-        	    printf("[KRN] No task\n");
-
+		    DT(printf("[KRN] Task trap handler 0x%p\n", trapHandler));
+		} else
+		    printf("[KRN] No task\n");
+		
+		DT(printf("[KRN] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
 		if (!trapHandler)
 		    trapHandler = SysBase->TaskTrapCode;
-    	    }
+	    }
+
     	    PRINT_CPUCONTEXT(ContextRecord);
 
-	    DT(printf("Task trap handler 0x%p\n", trapHandler));
-	    DT(printf("Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
-	    if (trapHandler) {
-	    	/* If there is a trap handler, execute it. In fact it's always there, exec.library
-		   supplies a default one. But first we have to convert exception code to
-		   the well-known */
-	        struct ExceptionTranslation *ex;
+	    /* Translate Windows exception code to CPU and exec trap numbers */
+	    for (ex = Traps; ex->ExceptionCode; ex++)
+	    {
+		if (ExceptionRecord->ExceptionCode == ex->ExceptionCode)
+		    break;
+	    }
+	    DI(printf("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
 
-	        for (ex = ExceptionsTable; ex->ExceptionCode; ex++) {
-		    if (ExceptionRecord->ExceptionCode == ex->ExceptionCode)
-		        break;
-		}
+	    if (ex->CPUTrap == -1) {
+		if (user_exception_handler(ex->CPUTrap, KernelBase->kb_Exceptions, ContextRecord))
+		    break;
+	    }
+
+	    if (trapHandler && (ex->AmigaTrap != -1)) {
 		/* Call our trap handler. Note that we may return, this means that the handler has
 		   fixed the problem somehow and we may safely continue */
-		DT(printf("Calling trap %u\n", ex->TrapNum));
-	        trapHandler(ex->TrapNum, ContextRecord);
+		DT(printf("[KRN] Amiga trap %d\n", ex->AmigaTrap));
+
+		trapHandler(ex->AmigaTrap, ContextRecord);
 	    } else {
 	        /* We should never get here. But if we do, it's a true emergency.
 		   And we tell Windows to throw us away. */

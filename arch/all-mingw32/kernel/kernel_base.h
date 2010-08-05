@@ -12,31 +12,28 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <kernel_cpu.h>
+
 #include "hostinterface.h"
 
 #define STACK_SIZE 4096
 
-/* In Windows-hosted kernel exceptions and IRQs work in the following way:
+/*
+   In Windows-hosted kernel IRQs are used to receive events from emulated
+   hardware. Hardware is mostly emulated using Windows threads running
+   asynchronously to AROS. When the thread finishes its job it calls host-side
+   KrnCauseIRQ() function in order to initiate an IRQ in AROS.
 
-   Exceptions are currently not used. They are reserved for implementing CPU
-   exceptions handling (access violation, division by zero, etc).
-   
-   IRQs are used to receive events from emulated hardware. Hardware is mostly
-   emulated using Windows threads running asynchronously to AROS. When the
-   thread finishes its job it calls host-side KrnCauseIRQ() function in order
-   to initiate an IRQ in AROS.
-   
    IRQs are managed dynamically using host-side KrnAllocIRQ() and KrnFreeIRQ() functions
    except the following static allocations:
 
    IRQ 0 - main system periodic timer (50 Hz). Used internally by kernel.resource
            for task switching and VBlank emulation. Exec uses it as a VBLANK source.
            In current implementation it can not be caused manually using KernelCauseIRQ().
-   
+
    The whole described thing is experimental and subject to change.
 */
 
-#define EXCEPTIONS_COUNT 1
 #define IRQ_COUNT        1
 
 #define INT_TIMER 0
