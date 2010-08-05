@@ -42,3 +42,5 @@ void byte_received(UBYTE c);
 void send_IP_packet( BYTE *ptr ,ULONG len );
 void SendTerminateReq();
 void RunRoute();
+BYTE Phase();
+void Set_phase(UBYTE ph);
