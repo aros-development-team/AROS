@@ -486,7 +486,7 @@ printf ("Opening %s\n", makefile->name);
 		if (strncmp (line, "#MM", 3) == 0)
 		{
 		    char * ptr;
-		    int count, t;
+		    int count, count2, t;
 		    
 #if 0
 printf ("found #MM in %s\n", makefile->name);
@@ -618,16 +618,17 @@ printf ("found #MM in %s\n", makefile->name);
 			    AddTail (&newtargets, mftarget);
 			}
 			
-			tptr = getargs (ptr2, &count, NULL);
+			tptr = getargs (ptr2, &count2, NULL);
 			
-			if (count == 0)
+			if (count > 1 && count2 == 0)
 			{
-			    printf ("Warning: metatarget with no prerequisites %s:%d (%s)\n",
+			    /* could mean a missing colon */
+			    printf ("Warning: multiple metatargets but no prerequisites %s:%d (%s)\n",
 				makefile->node.name, lineno, buildpath(node)
 			    );
 			}
 
-			for (t = 0; t < count; t++)
+			for (t = 0; t < count2; t++)
 			{
 			    ForeachNode (&newtargets, mftarget)
 				addnodeonce (&mftarget->deps, tptr[t]);
