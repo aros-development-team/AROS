@@ -6,19 +6,8 @@ include $(TOP)/config/make.cfg
 
 ICONS     := FixFonts
 ICONDIR   := $(AROSDIR)/System
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM- iconset-Mason-icons : masonworkbenchsystemicons
 
-#MM
-masonworkbenchsystemicons : setup $(ICONFILES)
-	@$(NOP)
-	
-$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
-	%makeicon2
-
-setup :
-	%mkdirs_q $(ICONDIR)
-
-
-
+%build_icons mmake=masonworkbenchsystemicons icons=$(ICONS) \
+             dir=$(ICONDIR)

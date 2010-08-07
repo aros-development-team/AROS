@@ -6,20 +6,8 @@ include $(TOP)/config/make.cfg
 
 ICONS     := def_Disk def_RAM def_Drawer def_Project def_Tool def_Text def_Document def_Harddisk def_CDROM
 ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM- iconset-Mason-icons : masonworkbenchenvicons
 
-#MM
-masonworkbenchenvicons : setup $(ICONFILES)
-	@$(NOP)
-	
-$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
-	%makeicon2
-
-setup :
-	%mkdirs_q $(ICONDIR)
-
-
-
-
+%build_icons mmake=masonworkbenchenvicons icons=$(ICONS) \
+             dir=$(ICONDIR)

@@ -6,20 +6,8 @@ include $(TOP)/config/make.cfg
 
 ICONS     := Input Zune Time ReqTools Font Locale Serial
 ICONDIR   := $(AROSDIR)/Prefs
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM- iconset-Mason-icons : masonworkbenchprefsicons
 
-#MM
-masonworkbenchprefsicons : setup $(ICONFILES)
-	@$(NOP)
-	
-$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
-	%makeicon2
-
-setup :
-	%mkdirs_q $(ICONDIR)
-
-
-
-
+%build_icons mmake=masonworkbenchprefsicons icons=$(ICONS) \
+             dir=$(ICONDIR)
