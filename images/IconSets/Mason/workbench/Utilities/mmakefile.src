@@ -6,19 +6,8 @@ include $(TOP)/config/make.cfg
 
 ICONS     := Multiview Clock More Installer
 ICONDIR   := $(AROSDIR)/Utilities
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM- iconset-Mason-icons : masonworkbenchutilityicons
 
-#MM
-masonworkbenchutilityicons : setup $(ICONFILES)
-	@$(NOP)
-	
-$(ICONDIR)/%.info : %.info.src %_N.png %_S.png
-	%makeicon2
-
-setup :
-	%mkdirs_q $(ICONDIR)
-
-
-
+%build_icons mmake=masonworkbenchutilityicons icons=$(ICONS) \
+             dir=$(ICONDIR)

@@ -5,18 +5,8 @@
 include $(TOP)/config/make.cfg
 
 ICONS := Prefs Storage System T Tools Utilities Devs Fonts Locale Demos
-ICONFILES := $(foreach f, $(ICONS), $(AROSDIR)/$(f).info)
 
 #MM- iconset-Mason-icons : masonworkbenchicons
 
-#MM
-masonworkbenchicons : setup $(ICONFILES)
-	@$(NOP)
-	
-$(AROSDIR)/%.info : %.info.src %_N.png %_S.png
-	%makeicon2
-
-setup :
-	%mkdirs_q $(AROSDIR)
-
-
+%build_icons mmake=masonworkbenchicons icons=$(ICONS) \
+             dir=$(AROSDIR)
