@@ -262,18 +262,26 @@ static VOID charmapcon_adj_prop(Class *cl, Object *o)
 void charmapcon_free_prop(Class * cl, Object * o)
 {
     struct charmapcondata *data= INST_DATA(cl, o);
-	if( data->prop )
-	{
-		if( data->boopsigad ) DisposeObject( data->prop );
-		else {
-			/* Free elements */
-			DisposeObject(data->prop->upimage);
-			DisposeObject(data->prop->downimage);
-
-			/* Free struct */
-			FreeMem(data->prop, sizeof(* data->prop));
-		}
-	}
+    struct Window * win = CU(o)->cu_Window;
+   
+    if( data->prop )
+      {
+	if (win)
+	  {
+	    if (data->boopsigad) RemoveGadget(win,(struct Gadget *)data->prop);
+	    else RemoveGList(win,&data->prop->scroller, 3);
+	  }
+	if( data->boopsigad ) DisposeObject( data->prop );
+	else
+	  {
+	    /* Free elements */
+	    DisposeObject(data->prop->upimage);
+	    DisposeObject(data->prop->downimage);
+	    
+	    /* Free struct */
+	    FreeMem(data->prop, sizeof(* data->prop));
+	  }
+      }
 }
 
 
