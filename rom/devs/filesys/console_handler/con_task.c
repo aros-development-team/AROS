@@ -500,7 +500,6 @@ AROS_UFH3(VOID, conTaskEntry,
     	if (fh->usecount == 0)
 	{
 	    if ((fh->flags & FHFLG_EOF) ||
-	    	(fh->window == NULL) ||
 		(!(fh->flags & FHFLG_WAIT)))
 	    {
 	    	break;
@@ -901,6 +900,8 @@ bug("CONTASK: treq=%x\n", (unsigned)treq);
 		    	    fh->flags |= FHFLG_EOF;
                             if (fh->flags & FHFLG_AUTO && fh->window)
                             {
+			      if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
+				CloseDevice((struct IORequest *)fh->conreadio);
                                 CloseWindow(fh->window);
                                 fh->window = NULL;
                             }
