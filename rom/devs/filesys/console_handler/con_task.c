@@ -418,8 +418,6 @@ AROS_UFH3(VOID, conTaskEntry,
 
 		fh->nw = default_nw;
 
-		parse_filename(conbase, fh, iofs, &fh->nw);
-
 		if (parse_filename(conbase, fh, iofs, &fh->nw))
 		{
                     if (!(fh->flags & FHFLG_AUTO))
