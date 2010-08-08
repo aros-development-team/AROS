@@ -18,6 +18,8 @@
 #include <graphics/rastport.h>
 #include <aros/asmcall.h>
 
+#include <stdlib.h>
+
 #define SDEBUG 0
 //#define DEBUG 1
 #define DEBUG 0
@@ -113,7 +115,7 @@ struct Scroll ScrollBar = {
 #define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
 
 
-static VOID charmapcon_refresh(Class *cl, Object * o);
+static VOID charmapcon_refresh(Class *cl, Object * o, LONG off);
 
 /*** Allocate and attach a prop gadget to the window ***/
 static VOID charmapcon_add_prop(Class * cl, Object * o)
@@ -430,9 +432,62 @@ static VOID charmap_scroll_down(Class * cl, Object * o, ULONG y)
 static VOID charmapcon_scroll_to(Class * cl, Object * o, ULONG y)
 {
   struct charmapcondata *data = INST_DATA(cl, o);
+  struct Window   	*w  = CU(o)->cu_Window;
+  struct RastPort 	*rp = w->RPort;
+  LONG off = data->scrollback_pos - y;
+  LONG old_pos = data->scrollback_pos;
 
-  if (data->scrollback_pos > y) charmap_scroll_down(cl, o, data->scrollback_pos - y);
-  else if (data->scrollback_pos < y) charmap_scroll_up(cl,o,y-data->scrollback_pos);
+  if (off == 0) return;
+
+  Console_UnRenderCursor(o);
+	
+  if (off > 0) charmap_scroll_down(cl, o, off);
+  else charmap_scroll_up(cl,o,-off);
+
+  /* Correct offset to account for the fact we might reach the
+   * top or bottom of the buffer:
+   */
+  off = old_pos - data->scrollback_pos;
+
+  /* A whole screenful? If so we have no choice but a full refresh
+   * (though we could double buffer... Not sure that's worth the 
+   * memory cost)
+   */
+  if (abs(off) > CHAR_YMAX(o))
+    {
+      charmapcon_refresh(cl,o,0);
+      Console_RenderCursor(o);
+      return;
+    }
+  
+  /* Avoid a full refresh by scrolling the rastport */
+  SetBPen( rp, CU(o)->cu_BgPen); /* Use "standard" background to reduce flicker */
+  if (off > 0)
+    {
+      ScrollRaster(rp,
+		   0,
+		   -YRSIZE*off,
+		   GFX_XMIN(o),
+		   GFX_YMIN(o),
+		   GFX_XMAX(o),
+		   GFX_YMAX(o));
+    } 
+  else
+    {
+      ScrollRaster(rp,
+		   0,
+		   -YRSIZE*off,
+		   GFX_XMIN(o),
+		   GFX_YMIN(o),
+		   GFX_XMAX(o),
+		   GFX_YMAX(o));
+
+    }
+
+  /* Partial refresh */
+  charmapcon_refresh(cl,o,off);
+
+  Console_RenderCursor(o);
 }
 
 
@@ -504,7 +559,7 @@ static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoComman
 	data->unrendered = 0;
 	data->scrollback_pos = data->saved_scrollback_pos;
 	data->top_of_window = data->saved_top_of_window;
-	charmapcon_refresh(cl,o);
+	charmapcon_refresh(cl,o,0);
 	Console_RenderCursor(o);
   }
 
@@ -575,61 +630,71 @@ static VOID charmapcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCel
     DoSuperMethodA(cl, o, (Msg)msg);
 }
 
-
-static VOID charmapcon_refresh(Class *cl, Object * o)
+/*
+ * Refresh the full console unless "off" is provided.
+ * If off is set to a positive value, it indicates the
+ * number of rows from the top we start rendering.
+ * If off is set to a negative value, it indicated the
+ * number of rows from the top we stop rendering.
+ * This is used for partial refreshes when the screen is
+ * scrolled up/down.
+ */
+static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
 {
-    struct Window   	*w  = CU(o)->cu_Window;
-    struct RastPort 	*rp = w->RPort;
-	struct charmapcondata *data = INST_DATA(cl, o);
+  struct Window   	*w  = CU(o)->cu_Window;
+  struct RastPort 	*rp = w->RPort;
+  struct charmapcondata *data = INST_DATA(cl, o);
 
-	UBYTE oldpen = rp->FgPen;
+  LONG fromLine = 0;
+  LONG toLine   = CHAR_YMAX(o) - CHAR_YMIN(o);
 
-	Console_UnRenderCursor(o);
+  if (off > 0) toLine   = off-1;
+  if (off < 0) fromLine = CHAR_YMAX(o)+off+1;
 
-	// FIXME: Limit refresh fromLine to toLine and only clear that
-	SetAPen( rp, CU(o)->cu_BgPen );
-	RectFill(rp
-			 ,CU(o)->cu_XROrigin
-			 ,CU(o)->cu_YROrigin
-			 ,CU(o)->cu_XRExtant
-			 ,CU(o)->cu_YRExtant);
-	
-	SetAPen(rp, oldpen);
+  //bug("off: %ld, fromLine: %ld, toLine: %ld, char_ymax: %ld\n",off,fromLine,toLine, CHAR_YMAX(o));
 
-	D(bug("Rendering charmap\n"));
-	  
-	struct charmap_line * line = data->top_of_window;
-	SetDrMd(rp, JAM2);
-	ULONG y = GFX_YMIN(o)+rp->Font->tf_Baseline;
-	ULONG yc = CHAR_YMIN(o);
-	while(line && yc <= CHAR_YMAX(o)) {
-	  
-	  char * str = line->text;
-	  ULONG start = 0;
-	  ULONG remaining_space = CHAR_XMAX(o)+1-start;
-	  while (line->size > start && remaining_space > 0 && line->text[start]) {
+  Console_UnRenderCursor(o);
 
-		/* Identify a batch of characters with the same fgpen/bgpen
-		   to avoid having to move/set pens and do Text() on single
-		   characters */
-		ULONG len = 0;
-		while (line->size > start + len && line->text[start + len] && len < remaining_space &&
-			   line->fgpen[start] == line->fgpen[start + len] &&
-			   line->bgpen[start] == line->bgpen[start + len]) len += 1;
+  D(bug("Rendering charmap\n"));
+  
+  struct charmap_line * line = charmapcon_find_line(cl,o, fromLine);
+  SetDrMd(rp, JAM2);
+  ULONG y  = GFX_YMIN(o)+fromLine*YRSIZE+rp->Font->tf_Baseline;
+  ULONG yc = fromLine;
+  while(line && yc <= toLine)
+    {
+      const char * str = line->text;
+      ULONG start = 0;
+      ULONG remaining_space = CHAR_XMAX(o)+1;
+      Move(rp, GFX_XMIN(o), y);
+      while (line->size > start && remaining_space > 0 && str[start])
+	{
+	  /* Identify a batch of characters with the same fgpen/bgpen
+	     to avoid having to move/set pens and do Text() on single
+	     characters */
+	  ULONG len = 0;
+	  while (line->size > start + len && str[start + len] && 
+		 len < remaining_space &&
+		 line->fgpen[start] == line->fgpen[start + len] &&
+		 line->bgpen[start] == line->bgpen[start + len]) len += 1;
 		
-		Move(rp, GFX_X(o,start), y);
-		SetAPen(rp, line->fgpen[start]);
-		SetBPen(rp, line->bgpen[start]);
-		Text(rp,&str[start],len);
-		
-		start += len;
-		remaining_space -= len;
-	  }
-	  y += YRSIZE;
-	  yc ++;
-	  line = line->next;
+	  SetAPen(rp, line->fgpen[start]);
+	  SetBPen(rp, line->bgpen[start]);
+	  Text(rp,&str[start],len);
+	  start += len;
+	  remaining_space -= len;
 	}
-	Console_RenderCursor(o);
+
+      /* Clear to EOL, without overwriting scroll bar (ClearEOL does) */
+      SetAPen( rp, CU(o)->cu_BgPen);
+      RectFill (rp, 
+		GFX_X(o,start), GFX_Y(o,yc), 
+		GFX_XMAX(o),    GFX_Y(o,yc+1)-1);
+      y += YRSIZE;
+      yc ++;
+      line = line->next;
+    }
+  Console_RenderCursor(o);
 }
 
 /*******************************
@@ -655,7 +720,7 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewW
 	  charmap_scroll_up(cl,o, old_ycp - CHAR_YMAX(o));
 	}
 
-	charmapcon_refresh(cl,o);
+	charmapcon_refresh(cl,o,0);
 }
 
 
@@ -675,19 +740,18 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_Hand
 	  ULONG pos = (((struct PropInfo *)((struct Gadget*)&(data->prop->scroller))->SpecialInfo)->VertPot * hidden + (MAXPOT / 2)) / MAXPOT;
 
 	  if (pos != data->scrollback_pos) {
-		charmapcon_scroll_to(cl,o, pos);
-		charmapcon_refresh(cl,o);
+	    charmapcon_scroll_to(cl,o, pos);
 	  }
 	} else if (msg->IAddress == (APTR)&(data->prop->down)) {
 	  if (data->scrollback_pos + CHAR_YMAX(o) < data->scrollback_size - 1) {
 		charmap_scroll_up(cl,o,1);
-		charmapcon_refresh(cl,o);
+		charmapcon_refresh(cl,o,0);
 		charmapcon_adj_prop(cl,o);
 	  }
 	} else if (msg->IAddress == (APTR)&(data->prop->up)) {
 	  if (data->top_of_window != data->top_of_scrollback) {
 		charmap_scroll_down(cl,o,1);
-		charmapcon_refresh(cl,o);
+		charmapcon_refresh(cl,o,0);
 		charmapcon_adj_prop(cl,o);
 	  }
 	}
