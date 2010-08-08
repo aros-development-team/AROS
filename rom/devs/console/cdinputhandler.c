@@ -77,18 +77,18 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
     BOOL send_message = FALSE;
 
     struct cdihMessage *message = cdihdata->cdihMsg;
-	D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
+    D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 
     for (ie = events; ie; ie = ie->ie_NextEvent)
     {
-	  D(bug("ie_Class %d\n",ie->ie_Class));
 	/* A rawkey event ? */
     	if ((ie->ie_Class == IECLASS_RAWKEY && !(ie->ie_Code & IECODE_UP_PREFIX)) ||
 	    (ie->ie_Class == IECLASS_SIZEWINDOW) ||
 	    (ie->ie_Class == IECLASS_CLOSEWINDOW) ||
-		(ie->ie_Class == IECLASS_REFRESHWINDOW) || 
-			(ie->ie_Class == IECLASS_GADGETDOWN) ||
-			(ie->ie_Class == IECLASS_GADGETUP || ie->ie_Class == IECLASS_RAWMOUSE))
+	    (ie->ie_Class == IECLASS_REFRESHWINDOW) || 
+	    (ie->ie_Class == IECLASS_GADGETDOWN) ||
+	    (ie->ie_Class == IECLASS_GADGETUP || 
+	     ie->ie_Class == IECLASS_TIMER))
 	{
 	    /* What console do we send it to ? */
 	    Object *unit;

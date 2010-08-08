@@ -728,37 +728,45 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_Hand
 {
     struct Window   	*w  = CU(o)->cu_Window;
     struct RastPort 	*rp = w->RPort;
-	struct charmapcondata *data = INST_DATA(cl, o);
+    struct charmapcondata *data = INST_DATA(cl, o);
 
-	if (msg->Class == IECLASS_GADGETDOWN) {
-	  data->activeGad = msg->IAddress;
-	}
+    if (msg->Class == IECLASS_GADGETUP)
+      {
+	data->activeGad = 0;
+	return;
+      }
 
-	// FIXME: The if below isn't safe for mouse events. See 5.9.2.
-   	if (data->activeGad == (APTR)&(data->prop->scroller)) {
-	  ULONG hidden = data->scrollback_size > CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) -1 : 0;
-	  ULONG pos = (((struct PropInfo *)((struct Gadget*)&(data->prop->scroller))->SpecialInfo)->VertPot * hidden + (MAXPOT / 2)) / MAXPOT;
+    if (msg->Class == IECLASS_GADGETDOWN)
+      {
+	data->activeGad = msg->IAddress;
+	return; 
+      }
 
-	  if (pos != data->scrollback_pos) {
-	    charmapcon_scroll_to(cl,o, pos);
+    if (data->activeGad == (APTR)&(data->prop->scroller))
+      {
+	ULONG hidden = data->scrollback_size > CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) -1 : 0;
+	ULONG pos = (((struct PropInfo *)((struct Gadget*)&(data->prop->scroller))->SpecialInfo)->VertPot * hidden + (MAXPOT / 2)) / MAXPOT;
+	
+	if (pos != data->scrollback_pos) charmapcon_scroll_to(cl,o, pos);
+      } 
+    else if (data->activeGad == (APTR)&(data->prop->down))
+      {
+	if (data->scrollback_pos + CHAR_YMAX(o) < data->scrollback_size - 1)
+	  {
+	    charmap_scroll_up(cl,o,1);
+	    charmapcon_refresh(cl,o,0);
+	    charmapcon_adj_prop(cl,o);
 	  }
-	} else if (msg->IAddress == (APTR)&(data->prop->down)) {
-	  if (data->scrollback_pos + CHAR_YMAX(o) < data->scrollback_size - 1) {
-		charmap_scroll_up(cl,o,1);
-		charmapcon_refresh(cl,o,0);
-		charmapcon_adj_prop(cl,o);
+      } 
+    else if (data->activeGad == (APTR)&(data->prop->up))
+      {
+	if (data->top_of_window != data->top_of_scrollback)
+	  {
+	    charmap_scroll_down(cl,o,1);
+	    charmapcon_refresh(cl,o,0);
+	    charmapcon_adj_prop(cl,o);
 	  }
-	} else if (msg->IAddress == (APTR)&(data->prop->up)) {
-	  if (data->top_of_window != data->top_of_scrollback) {
-		charmap_scroll_down(cl,o,1);
-		charmapcon_refresh(cl,o,0);
-		charmapcon_adj_prop(cl,o);
-	  }
-	}
-
-	if (msg->Class == IECLASS_GADGETUP) {
-	  data->activeGad = 0;
-	}
+      }
 }
 
 
@@ -797,10 +805,10 @@ AROS_UFH3S(IPTR, dispatch_charmapconclass,
         charmapcon_newwindowsize(cl, o, (struct P_Console_NewWindowSize *)msg);
 	break;
 
-	case M_Console_HandleGadgets:
-	  D(bug("CharMapCon::HandleGadgets\n"));
-	  charmapcon_handlegadgets(cl, o, (struct P_Console_HandleGadgets *)msg);
-	  break;
+    case M_Console_HandleGadgets:
+      D(bug("CharMapCon::HandleGadgets\n"));
+      charmapcon_handlegadgets(cl, o, (struct P_Console_HandleGadgets *)msg);
+      break;
 
     default:
     	retval = DoSuperMethodA(cl, o, msg);
