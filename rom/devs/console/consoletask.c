@@ -189,14 +189,14 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 			} /* IECLASS_RAWKEY */
 			break; 
 
-			case IECLASS_GADGETDOWN:
-			case IECLASS_RAWMOUSE:
-			case IECLASS_GADGETUP:
-				Console_HandleGadgets(cdihmsg->unit,cdihmsg->ie.ie_Class, (APTR)cdihmsg->ie.ie_EventAddress);
-			  break;
+		    case IECLASS_GADGETDOWN:
+		    case IECLASS_GADGETUP:
+		    case IECLASS_TIMER:
+		      Console_HandleGadgets(cdihmsg->unit,cdihmsg->ie.ie_Class, (APTR)cdihmsg->ie.ie_EventAddress);
+		      break;
 
 	   	    case IECLASS_REFRESHWINDOW: /* Intentional fallthrough */
-			case IECLASS_SIZEWINDOW:
+		    case IECLASS_SIZEWINDOW:
 			{
 			    Console_NewWindowSize(cdihmsg->unit);
 			} /* IECLASS_NEWSIZE */
