@@ -900,6 +900,7 @@ bug("CONTASK: treq=%x\n", (unsigned)treq);
                             {
 			      if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
 				CloseDevice((struct IORequest *)fh->conreadio);
+			        fh->flags &= ~FHFLG_CONSOLEDEVICEOPEN;
                                 CloseWindow(fh->window);
                                 fh->window = NULL;
                             }
