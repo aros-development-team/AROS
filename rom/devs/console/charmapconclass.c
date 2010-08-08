@@ -694,6 +694,15 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
       yc ++;
       line = line->next;
     }
+
+  if (off == 0 && yc < CHAR_YMAX(o))
+    {
+      SetAPen( rp, CU(o)->cu_BgPen);
+      RectFill (rp, 
+		GFX_XMIN(o), GFX_Y(o,yc), 
+		GFX_XMAX(o),    GFX_YMAX(o));
+    }
+
   Console_RenderCursor(o);
 }
 
