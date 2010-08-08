@@ -225,25 +225,3 @@ FUNCTIONS := \
   modname=graphics modtype=library \
   files="graphics_init $(FUNCTIONS) $(FILES)" \
   uselibs="hiddgraphicsstubs oop rom"
-
-# Generate dummy includes for the layer library to solve a circular include
-# dependency problem. Yes, this is a hack.
-
-OBJDIR   := $(GENDIR)/$(CURDIR)
-DUMMYDIR := $(OBJDIR)/dummyinc
-REFFILES := $(addprefix $(OBJDIR)/, $(addsuffix .ref, graphics_init $(FUNCTIONS) $(FILES)))
-
-ifeq ($(findstring $(TARGET), kernel-graphics-objdir kernel-graphics-setup kernel-graphics-clean clean),)
-%rule_genmodule_makefile modname=layers modtype=library \
-    targetdir=$(OBJDIR) conffile=../hyperlayers/layers.conf
-
-$(OBJDIR)/Makefile.layers : | $(OBJDIR)
-GLOB_MKDIRS += $(OBJDIR)
-
-include $(OBJDIR)/Makefile.layers
-
-%rule_genmodule_dummy modname=layers modtype=library \
-    targetdir=$(DUMMYDIR) conffile=../hyperlayers/layers.conf
-    
-$(REFFILES) : $(DUMMYDIR)/proto/layers.h
-endif
