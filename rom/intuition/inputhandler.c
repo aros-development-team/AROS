@@ -2699,12 +2699,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             }
 #endif /* USE_NEWDISPLAYBEEP */
 
-
-            /* stegerg: on the Amiga, Intuition's InputHandler seems to always
-               swallow IECLASS_TIMER InputEvents. They never reach InputHandlers with
-               lower priorities. So we mark the event as eaten by Intuition */
-            keep_event = FALSE;
-
             if (!w) break;
 
             /* Send INTUITICK msg only if app already replied the last INTUITICK msg */
