@@ -27,7 +27,7 @@
 #include "saveinfo.h"
 
 #define APPNAME "PCITool"
-#define VERSION "PCITool 0.5 (10.7.2010)"
+#define VERSION "PCITool 0.6 (9.8.2010)"
 #define IDB_SAVE 10001
 #define IDB_SAVEALL 10002
 const char version[] = "$VER: " VERSION "\n";
@@ -94,12 +94,12 @@ void cleanup(CONST_STRPTR message)
 
     if (message != NULL)
     {
-        ShowError(NULL, NULL, message, TRUE);
-        exit(RETURN_FAIL);
+	ShowError(NULL, NULL, message, TRUE);
+	exit(RETURN_FAIL);
     }
     else
     {
-        exit(RETURN_OK);
+	exit(RETURN_OK);
     }
 }
 
@@ -131,6 +131,8 @@ Object *SaveInfo, *SaveAllInfo;
 struct Hook pci_hook;
 struct Hook display_hook;
 struct Hook select_hook;
+struct Hook save_hook;
+struct Hook saveall_hook;
 
 AROS_UFH3(void, pci_callback,
     AROS_UFHA(struct Hook *,	hook,	A0),
@@ -140,6 +142,52 @@ AROS_UFH3(void, pci_callback,
     AROS_USERFUNC_INIT
 
     DoMethod(DriverList, MUIM_List_InsertSingle, (IPTR)obj, MUIV_List_Insert_Bottom);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(void, save_function,
+    AROS_UFHA(struct Hook *,	hook,	A0),
+    AROS_UFHA(Object *,		obj,	A2),
+    AROS_UFHA(APTR,		msg,	A1))
+{
+    AROS_USERFUNC_INIT
+
+    LONG active = xget(DriverList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+	/*Saves the Info of the Displayed Device to RamDisk*/
+	SaveToDisk(&SaveDeviceInfo);
+    }
+    else
+    {
+	// TODO: requester
+	PutStr("No active entry\n");
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(void, saveall_function,
+    AROS_UFHA(struct Hook *,	hook,	A0),
+    AROS_UFHA(Object *,		obj,	A2),
+    AROS_UFHA(APTR,		msg,	A1))
+{
+    AROS_USERFUNC_INIT
+
+    LONG entries, i;
+
+    /*Saves All PCITool Info to RamDisk*/
+    if (OpenPCIInfoFile())
+    {
+	entries = XGET(DriverList, MUIA_List_Entries);
+	for(i = 0 ; i < entries ; i++)
+	{
+	    set(DriverList, MUIA_List_Active, i);
+	    WriteToPCIInfoFile(&SaveDeviceInfo);
+	}
+	ClosePCIInfoFile();
+    }
 
     AROS_USERFUNC_EXIT
 }
@@ -205,7 +253,7 @@ AROS_UFH3(void, select_function,
 
 	static char ranges[6][60];
 	DoMethod(object, MUIM_List_GetEntry, active, (IPTR)&obj);
-	
+
 	OOP_GetAttr(obj, aHidd_PCIDevice_Driver, (APTR)&drv);
 	OOP_GetAttr(drv, aHidd_Name, (APTR)&str);
 	set(StrDriverName, MUIA_Text_Contents, str);
@@ -233,18 +281,16 @@ AROS_UFH3(void, select_function,
 	snprintf(buf, 79, "0x%04lx", val);
 	set(ProductID, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.ProductID, buf); //Save Debug Info
-	set(ProductName, MUIA_Text_Contents,
-	    pciids_GetDeviceName(vendor, val, buf, 79));
+	set(ProductName, MUIA_Text_Contents, pciids_GetDeviceName(vendor, val, buf, 79));
 	product = val;
 	strcpy(SaveDeviceInfo.Product_name, pciids_GetDeviceName(vendor, val, buf, 79)); 
-	
+
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubsystemVendorID, (APTR)&val);
 	subvendor = val;
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubsystemID, (APTR)&val);
 	subdevice = val;
 	set(SubsystemName, MUIA_Text_Contents,
-	    pciids_GetSubDeviceName(vendor, product, subvendor, subdevice,
-				    buf, 79));	
+	    pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
 	strcpy(SaveDeviceInfo.Subsystem, pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
  
 	OOP_GetAttr(obj, aHidd_PCIDevice_RevisionID, (APTR)&val);
@@ -334,9 +380,9 @@ AROS_UFH3(void, select_function,
 
 	    if (val)
 	    {
-	        memoryPrint(ranges[2], 2, val, val2, val3);
+		memoryPrint(ranges[2], 2, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[2], MUIV_List_Insert_Bottom);
-	        strcpy(SaveDeviceInfo.Rangelist_2, ranges[2]);
+		strcpy(SaveDeviceInfo.Rangelist_2, ranges[2]);
 	    }
 
 	    OOP_GetAttr(obj, aHidd_PCIDevice_Base3, (APTR)&val);
@@ -345,9 +391,9 @@ AROS_UFH3(void, select_function,
 
 	    if (val)
 	    {
-	        memoryPrint(ranges[3], 3, val, val2, val3);
+		memoryPrint(ranges[3], 3, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[3], MUIV_List_Insert_Bottom);
-	        strcpy(SaveDeviceInfo.Rangelist_3, ranges[3]);
+		strcpy(SaveDeviceInfo.Rangelist_3, ranges[3]);
 	    }
 
 	    OOP_GetAttr(obj, aHidd_PCIDevice_Base4, (APTR)&val);
@@ -356,9 +402,9 @@ AROS_UFH3(void, select_function,
 
 	    if (val)
 	    {
-	        memoryPrint(ranges[4], 4, val, val2, val3);
+		memoryPrint(ranges[4], 4, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[4], MUIV_List_Insert_Bottom);
-	        strcpy(SaveDeviceInfo.Rangelist_4, ranges[4]);
+		strcpy(SaveDeviceInfo.Rangelist_4, ranges[4]);
 	    }
 
 	    OOP_GetAttr(obj, aHidd_PCIDevice_Base5, (APTR)&val);
@@ -369,7 +415,7 @@ AROS_UFH3(void, select_function,
 	    {
 		memoryPrint(ranges[5], 5, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[5], MUIV_List_Insert_Bottom);
-	        strcpy(SaveDeviceInfo.Rangelist_5, ranges[5]);
+		strcpy(SaveDeviceInfo.Rangelist_5, ranges[5]);
 	    }
 	}
 	else
@@ -385,46 +431,41 @@ AROS_UFH3(void, select_function,
 	    strcpy(SaveDeviceInfo.Rangelist_2, ranges[2]);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_MemoryBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_MemoryLimit, (APTR)&val2);
-	    
-	    snprintf(ranges[3], 59, _(MSG_MEMORY_RANGE),
-		val, val2);
+
+	    snprintf(ranges[3], 59, _(MSG_MEMORY_RANGE), val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[3], MUIV_List_Insert_Bottom);
 	    strcpy(SaveDeviceInfo.Rangelist_3, ranges[3]);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_PrefetchableBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_PrefetchableLimit, (APTR)&val2);
 	    
-	    snprintf(ranges[4], 59, _(MSG_PREFETCHABLE_MEMORY),
-		val, val2);
+	    snprintf(ranges[4], 59, _(MSG_PREFETCHABLE_MEMORY), val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[4], MUIV_List_Insert_Bottom);
 	    strcpy(SaveDeviceInfo.Rangelist_4, ranges[4]);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_IOBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_IOLimit, (APTR)&val2);
-	    
-	    snprintf(ranges[5], 59, _(MSG_IO_RANGE),
-		val, val2);
+
+	    snprintf(ranges[5], 59, _(MSG_IO_RANGE), val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[5], MUIV_List_Insert_Bottom);
 	    strcpy(SaveDeviceInfo.Rangelist_5, ranges[5]);
 	}
-	   
-	   
-	    
-    {
-		IPTR io, mem, master, snoop, is66;
-		OOP_GetAttr(obj, aHidd_PCIDevice_isIO, (APTR)&io);
-		OOP_GetAttr(obj, aHidd_PCIDevice_isMEM, (APTR)&mem);
-		OOP_GetAttr(obj, aHidd_PCIDevice_isMaster, (APTR)&master);
-		OOP_GetAttr(obj, aHidd_PCIDevice_paletteSnoop, (APTR)&snoop);
-		OOP_GetAttr(obj, aHidd_PCIDevice_is66MHz, (APTR)&is66);
+	{
+	    IPTR io, mem, master, snoop, is66;
 
-		snprintf(buf, 79, _(MSG_IO_MSG),
-		    io ? _(MSG_YES):_(MSG_NO),
-		    mem ? _(MSG_YES):_(MSG_NO),
-		    master ? _(MSG_YES):_(MSG_NO),
-		    snoop ? _(MSG_YES):_(MSG_NO),
-		    is66 ? _(MSG_YES):_(MSG_NO));
-		set(Status, MUIA_Text_Contents, buf);
-                strcpy(SaveDeviceInfo.Status, buf);
-    }
+	    OOP_GetAttr(obj, aHidd_PCIDevice_isIO, (APTR)&io);
+	    OOP_GetAttr(obj, aHidd_PCIDevice_isMEM, (APTR)&mem);
+	    OOP_GetAttr(obj, aHidd_PCIDevice_isMaster, (APTR)&master);
+	    OOP_GetAttr(obj, aHidd_PCIDevice_paletteSnoop, (APTR)&snoop);
+	    OOP_GetAttr(obj, aHidd_PCIDevice_is66MHz, (APTR)&is66);
+
+	    snprintf(buf, 79, _(MSG_IO_MSG),
+		io ? _(MSG_YES):_(MSG_NO),
+		mem ? _(MSG_YES):_(MSG_NO),
+		master ? _(MSG_YES):_(MSG_NO),
+		snoop ? _(MSG_YES):_(MSG_NO),
+		is66 ? _(MSG_YES):_(MSG_NO));
+	    set(Status, MUIA_Text_Contents, buf);
+	    strcpy(SaveDeviceInfo.Status, buf);
+	}
     }
 
     AROS_USERFUNC_EXIT
@@ -433,17 +474,17 @@ AROS_UFH3(void, select_function,
 BOOL GUIinit()
 {
     BOOL retval = FALSE;
-    
+
     app = ApplicationObject,
 	    MUIA_Application_Title,	    (IPTR)APPNAME,
 	    MUIA_Application_Version,	    (IPTR)VERSION,
-	    MUIA_Application_Copyright,	    (IPTR)"� 2004-2010, The AROS Development Team",
+	    MUIA_Application_Copyright,	    (IPTR)"(C) 2004-2010, The AROS Development Team",
 	    MUIA_Application_Author,	    (IPTR)"Michal Schulz",
 	    MUIA_Application_Base,	    (IPTR)APPNAME,
 	    MUIA_Application_Description,   __(MSG_DESCRIPTION),
 
 	    SubWindow, MainWindow = WindowObject,
-                MUIA_Window_Title,	__(MSG_WINTITLE),
+		MUIA_Window_Title,	__(MSG_WINTITLE),
 //		MUIA_Window_Height,	MUIV_Window_Height_Visible(50),
 //		MUIA_Window_Width,	MUIV_Window_Width_Visible(60),
 
@@ -461,28 +502,28 @@ BOOL GUIinit()
 			Child, VGroup, GroupFrameT(_(MSG_DRIVER_INFO)),
 			    Child, ColGroup(2),
 				Child, Label(_(MSG_DRIVER_NAME)),
-                                Child, HGroup,
-                                    Child, StrDriverName = TextObject,
-                                        TextFrame,
+				Child, HGroup,
+				    Child, StrDriverName = TextObject,
+					TextFrame,
 					MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_SetMax, FALSE,
-                                        MUIA_Text_Contents, "",
-                                    End,
-                                    Child, Label(_(MSG_DIRECT_BUS)),
-                                    Child, StrDriverDirect = TextObject,
-                                        TextFrame,
+					MUIA_Text_SetMax, FALSE,
+					MUIA_Text_Contents, "",
+				    End,
+				    Child, Label(_(MSG_DIRECT_BUS)),
+				    Child, StrDriverDirect = TextObject,
+					TextFrame,
 					MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_SetMax, FALSE,
-                                        MUIA_Text_Contents, "",
-                                    End,
-                                End,
-                                Child, Label(_(MSG_HARDWARE_INFO)),
-                                Child, StrDriverHWName = TextObject,
-                                    TextFrame,
+					MUIA_Text_SetMax, FALSE,
+					MUIA_Text_Contents, "",
+				    End,
+				End,
+				Child, Label(_(MSG_HARDWARE_INFO)),
+				Child, StrDriverHWName = TextObject,
+				    TextFrame,
 				    MUIA_Background, MUII_TextBack,
-                                    MUIA_Text_SetMax, FALSE,
-                                    MUIA_Text_Contents, "",
-                                End,
+				    MUIA_Text_SetMax, FALSE,
+				    MUIA_Text_Contents, "",
+				End,
 			    End,
 			End, // HGroup
 			Child, VGroup, GroupFrameT(_(MSG_PCI_DEVICE_INFO)),
@@ -494,21 +535,21 @@ BOOL GUIinit()
 				    MUIA_Text_SetMax, FALSE,
 				    MUIA_Text_Contents, "",
 				End,
-                                Child, Label(_(MSG_VENDORNAME)),
+				Child, Label(_(MSG_VENDORNAME)),
 				Child, VendorName = TextObject,
 				    TextFrame,
 				    MUIA_Background, MUII_TextBack,
 				    MUIA_Text_SetMax, FALSE,
 				    MUIA_Text_Contents, "",
 				End,
-                                Child, Label(_(MSG_PRODUCTNAME)),
+				Child, Label(_(MSG_PRODUCTNAME)),
 				Child, ProductName = TextObject,
 				    TextFrame,
 				    MUIA_Background, MUII_TextBack,
 				    MUIA_Text_SetMax, FALSE,
 				    MUIA_Text_Contents, "",
 				End,
-                                Child, Label(_(MSG_SUBSYSTEM)),
+				Child, Label(_(MSG_SUBSYSTEM)),
 				Child, SubsystemName = TextObject,
 				    TextFrame,
 				    MUIA_Background, MUII_TextBack,
@@ -597,7 +638,7 @@ BOOL GUIinit()
 			End,
 			/*Save the displayed info into a text file in RAM:*/
 			Child, SaveInfo = SimpleButton(_(MSG_SAVETORAMDISK) ),
-			Child, SaveAllInfo = SimpleButton(_(MSG_SAVEALLTORAMDISK) ),		
+			Child, SaveAllInfo = SimpleButton(_(MSG_SAVEALLTORAMDISK) ),
 		    End,
 		End, // WindowContents
 	    End, // MainWindow
@@ -605,121 +646,61 @@ BOOL GUIinit()
 
     if (app)
     {
-        /* Quit application if the windowclosegadget or the esc key is pressed. */
-	      
-	
-	
+	/* Quit application if the windowclosegadget or the esc key is pressed. */
 	DoMethod(MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-	         (IPTR)app, 2, 
+		 (IPTR)app, 2, 
 		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
 	DoMethod(DriverList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
 		(IPTR)DriverList, 2,
 		MUIM_CallHook, (IPTR)&select_hook);
+
+	DoMethod(SaveInfo, MUIM_Notify, MUIA_Pressed, FALSE,
+		(IPTR)app, 2,
+		MUIM_CallHook, (IPTR)&save_hook);
+
+	DoMethod(SaveAllInfo, MUIM_Notify, MUIA_Pressed, FALSE,
+		(IPTR)app, 2,
+		MUIM_CallHook, (IPTR)&saveall_hook);
+
 	retval=TRUE;
     }
 
     return retval;
 }
 
-void loop(void)
-{
-    ULONG sigs = 0;
-    ULONG entries;
-    int i = 0;
-    BOOL running = TRUE;
-
-	/*Save Device Information to text file in RAM Disk*/
-	DoMethod(SaveInfo, MUIM_Notify, MUIA_Pressed, FALSE,
-                 (IPTR)app, 2,
-                 MUIM_Application_ReturnID, (ULONG)IDB_SAVE);
-	/*Save All Devices Information to text file in RAM Disk*/
-	DoMethod(SaveAllInfo, MUIM_Notify, MUIA_Pressed, FALSE,
-                 (IPTR)app, 2,
-                 MUIM_Application_ReturnID, (ULONG)IDB_SAVEALL);
-
-
-    while(running)
-    {
-	 
- 
-
-
-		
-           
-                switch(DoMethod(app, MUIM_Application_NewInput, &sigs)) 
-                {
-                        case IDB_SAVE:
-				/*Saves the Info of the Displayed Device to RamDisk*/	
-                        	SaveToDisk(&SaveDeviceInfo);
-                        break;
-			   
-			case IDB_SAVEALL:
-			   	/*Saves All PCITool Info to RamDisk*/	
-                           	OpenPCIInfoFile();
-				entries = XGET(DriverList, MUIA_List_Entries);
-				set(DriverList, MUIA_List_Active, MUIV_List_Active_Top);
-				DoMethod(DriverList, MUIM_List_Redraw,MUIV_List_Redraw_All);
-				WriteToPCIInfoFile(&SaveDeviceInfo);
-				
-				while( i < (entries - 1))
-				{
-					
-					i = i + 1;
-					set(DriverList, MUIA_List_Active, MUIV_List_Active_Down);
-					DoMethod(DriverList,MUIM_List_Redraw,MUIV_List_Redraw_All); 
-					WriteToPCIInfoFile(&SaveDeviceInfo);
-												
-				}
-				ClosePCIInfoFile();				
-				i = 0;
-			
-                        break;
-			
-			case MUIV_Application_ReturnID_Quit:
-				running = FALSE;
-			break;
-		}
-
-	if (sigs)
-	{
-	    Wait(sigs | SIGBREAKF_CTRL_C);
-	}
-    }
-} /* loop(void)*/
-
-
-int main(int argc, char *argv[])
+int main(void)
 {
     pci_hook.h_Entry = (APTR)pci_callback;
     display_hook.h_Entry = (APTR)display_function;
     select_hook.h_Entry = (APTR)select_function;
+    save_hook.h_Entry = (APTR)save_function;
+    saveall_hook.h_Entry = (APTR)saveall_function;
 
     if (!Locale_Initialize())
 	cleanup(_(MSG_ERROR_LOCALE));
 
     if(openLibs())
     {
-    	if(GUIinit())
-    	{
+	if(GUIinit())
+	{
 	    pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 	    if (pci)
-	    {	
+	    {
 		HIDD_PCI_EnumDevices(pci, &pci_hook, NULL);
 	    }
+
+	    set(MainWindow, MUIA_Window_Open, TRUE);
 	    
-      	    set(MainWindow, MUIA_Window_Open, TRUE);
-	    
-    	    if(xget(MainWindow, MUIA_Window_Open))
+	    if(xget(MainWindow, MUIA_Window_Open))
 	    {
-                loop();
+		DoMethod(app, MUIM_Application_Execute);
+		set(MainWindow, MUIA_Window_Open, FALSE);
 	    }
 
-      	    set(MainWindow, MUIA_Window_Open, FALSE);
 	    DisposeObject(app);
 
-//	    deinit_gui();
-    	}
+	}
 	
 	closeLibs();
     }
