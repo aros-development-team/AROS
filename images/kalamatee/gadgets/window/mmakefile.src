@@ -10,10 +10,9 @@ FILES = os1.x/win_close os1.x/win_depth os1.x/win_size os1.x/win_zoom \
 
 #MM- themes-kalamatee-images-gadgets : themes-kalamatee-images-gadgets-window
 #MM themes-kalamatee-images-gadgets-window : setup themes-kalamatee-images-gadgets-window-simoami
-themes-kalamatee-images-gadgets-window : files-copy
 
 %rule_makedirs dirs="$(addprefix $(AROS_THEMES)/,$(DIRS))"
 
-%copy_files_q files=$(FILES) dst=$(AROS_THEMES)
+%copy_files_q mmake=themes-kalamatee-images-gadgets-window files=$(FILES) dst=$(AROS_THEMES)
 
 %common
