@@ -212,7 +212,7 @@
 			else
 			{
     			    D(bug("datatypes.library/NewDTObjectA: AllocIFF okay\n"));
-			    if((iff->iff_Stream = (ULONG)OpenClipboard((ULONG)name)))
+			    if((iff->iff_Stream = (IPTR)OpenClipboard((ULONG)name)))
 			    {
     				D(bug("datatypes.library/NewDTObjectA: OpenClipBoard okay\n"));
 
@@ -298,13 +298,13 @@
     		    D(bug("datatypes.library/NewDTObjectA: ObtainEngine returned %x\n", DTClass));
 		    
 		    Tags[0].ti_Tag  = DTA_Name;
-		    Tags[0].ti_Data = (ULONG)name;
+		    Tags[0].ti_Data = (IPTR)name;
 		    Tags[1].ti_Tag  = DTA_DataType;
-		    Tags[1].ti_Data = (ULONG)DataType;
+		    Tags[1].ti_Data = (IPTR)DataType;
 		    Tags[2].ti_Tag  = DTA_Handle;
-		    Tags[2].ti_Data = (ULONG)Handle;
+		    Tags[2].ti_Data = (IPTR)Handle;
 		    Tags[3].ti_Tag  = TAG_MORE;
-		    Tags[3].ti_Data = (ULONG)attrs;
+		    Tags[3].ti_Data = (IPTR)attrs;
 		    
     		    D(bug("datatypes.library/NewDTObjectA: Calling NewObjectA on obtained engine\n"));
 
