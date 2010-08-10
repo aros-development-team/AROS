@@ -107,7 +107,8 @@ COMMONTESTFILES := \
     childstatus \
     joystick \
     supertest \
-    getcpuinfo
+    getcpuinfo \
+	printf_f
 
 HOSTEDTESTFILES :=  \
     hostlib
