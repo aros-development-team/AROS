@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 1.9 (26.1.2010)
+## version $VER: Zune.catalog 1.10 (22.7.2010)
 ## language czech
 ## codeset 0
 ;
@@ -10,11 +10,11 @@ Obecné
 ; General
 ;
 MSG_BACKGROUND_COLON
-Pozadí:
+Pozadí\nnormální:
 ; Background:
 ;
 MSG_BACKGROUND_PRESSED
-Pozadí\npo zmáèknutí:
+Pozadí\npøi zmáèknutí:
 ; Background in\npressed state:
 ;
 MSG_TEXT_BUTTONS
@@ -70,7 +70,7 @@ V
 ; V
 ;
 MSG_SPACING
-Odstup
+Rozestup
 ; Spacing
 ;
 ;=============================
@@ -164,15 +164,15 @@ Barva:
 ; Color:
 ;
 MSG_HORIZONTAL
-Vodorovná:
+Vodorovnì:
 ; Horizontal:
 ;
 MSG_VERTICAL
-Svislá:
+Svisle:
 ; Vertical:
 ;
 MSG_REGISTER
-Registr
+Zálo¾ka
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
@@ -184,7 +184,7 @@ Normální
 ; Normal
 ;
 MSG_VIRTUAL
-Virtuální
+Vnoøený
 ; Virtual
 ;
 MSG_FRAMED
@@ -223,7 +223,7 @@ Více polo¾ek:
 ; Multi:
 ;
 MSG_REFRESH
-Pøekreslení:
+Obnovení:
 ; Refresh:
 ;
 MSG_SMOOTH
@@ -278,19 +278,19 @@ Vybraná:
 ; navigationp.c
 ;______________
 MSG_ALWAYS_SOLID
-always solid??
+Nemìnit vzhled táhnutého objektu
 ; always solid
 ;
 MSG_GHOSTED_ON_BOX
-ghosted on box??
+Ze¹ednout nad cílovou oblastí
 ; ghosted on box
 ;
 MSG_GHOSTED_OUTSIDE_BOX
-ghosted outside box??
+Ze¹ednout mimo cílovou oblast
 ; ghosted outside box
 ;
 MSG_ALWAYS_GHOSTED
-always ghosted??
+Ze¹ednout na celou dobu táhnutí
 ; always ghosted
 ;
 MSG_SHOW_FRAMES
@@ -505,7 +505,7 @@ Umístìní
 ; slidersp.c
 ;-----------
 MSG_CONTAINER_DESIGN
-Vzhled kontejneru
+Vzhled vnitøní èásti
 ; Container Design
 ;
 MSG_KNOB_DESIGN
@@ -513,7 +513,7 @@ Vzhled knoflíku
 ; Knob Design
 ;
 MSG_EXAMPLE_SLIDERS
-Ukázka posuvníkù
+Ukázka
 ; Example Sliders
 ;
 ;=============================
@@ -650,11 +650,11 @@ Ukázka textového pole
 ; windowp.c
 ;----------
 MSG_FORGET_ON_EXIT
-Neukládat
+Vùbec neukládat
 ; forget on exit
 ;
 MSG_REMEMBER_ON_EXIT
-Ulo¾it pro danou relaci
+Ulo¾it doèasnì (do restartu)
 ; remember on exit
 ;
 MSG_SAVE_ON_EXIT
@@ -670,11 +670,11 @@ Jednoduché
 ; simple
 ;
 MSG_WITHOUT_CLEAR
-Bez smazání
+Pomalé
 ; without clear
 ;
 MSG_WITH_CLEAR
-Se smazáním
+Rychlé
 ; with clear
 ;
 MSG_POSITIONS
@@ -686,7 +686,7 @@ Pøekreslení:
 ; Redraw:
 ;
 MSG_TINY
-Velmi malé:
+Malé:
 ; Tiny:
 ;
 MSG_BIG
@@ -694,11 +694,11 @@ Velké:
 ; Big:
 ;
 MSG_WINDOW
-Okno
+Pro okno
 ; Window
 ;
 MSG_REQUESTER
-Dialogové okno
+Pro dotaz
 ; Requester
 ;
 MSG_L
@@ -813,7 +813,7 @@ Tlaèítka
 ; Buttons
 ;
 MSG_DSC_CYCLES
-Cyklovací
+Cyklická
 ; Cycles
 ;
 MSG_DSC_SLIDERS
