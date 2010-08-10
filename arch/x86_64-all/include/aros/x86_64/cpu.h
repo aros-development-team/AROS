@@ -84,7 +84,7 @@ do \
 {  \
     struct FullJumpVec *_v = v; \
     _v->jmp = 0xE9; \
-    _v->vec = (void *) ((unsigned int)(a) - (unsigned int)(_v) - 5); \
+    _v->vec = (void *) ((unsigned long)(a) - (unsigned long)(_v) - 5); \
 } while (0)
 
 /*
