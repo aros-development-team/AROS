@@ -87,10 +87,19 @@ typedef IPTR (* RT_CheckFunc)  (RTData * rtd, int, const char * file, ULONG line
 #define HASH_BASE(rtn)  (((Resource *)rtn)->Resource)
 
 #if HASH_BITS==4
+#if __WORDSIZE == 64
+#define CALCHASH(res)   \
+    ((((IPTR)res)      + (((IPTR)res)>>4) + (((IPTR)res)>>8 ) + (((IPTR)res)>>12) + \
+     (((IPTR)res)>>16) + (((IPTR)res)>>20) +(((IPTR)res)>>24) + (((IPTR)res)>>28) + \
+     (((IPTR)res)>>32) + (((IPTR)res)>>36) +(((IPTR)res)>>40) + (((IPTR)res)>>44) + \
+     (((IPTR)res)>>48) + (((IPTR)res)>>52) +(((IPTR)res)>>56) + (((IPTR)res)>>60)) \
+     & 0x0000000FL)
+#else
 #define CALCHASH(res)   \
     ((((ULONG)res) + (((ULONG)res)>>4) +(((ULONG)res)>>8) + (((ULONG)res)>>12) + \
      (((ULONG)res)>>16) + (((ULONG)res)>>20) +(((ULONG)res)>>24) + (((ULONG)res)>>28)) \
      & 0x0000000FL)
+#endif
 #endif
 
 struct __RTDesc
