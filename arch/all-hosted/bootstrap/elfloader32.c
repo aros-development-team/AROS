@@ -192,7 +192,7 @@ SysBase_no:     s = sym->value;
 	    break;
 
 	default:
-	    printf("[ELF Loader] Unrecognized relocation type %d %ld\n", i, ELF_R_TYPE(rel->info));
+	    printf("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF_R_TYPE(rel->info));
 	    return 0;
 	}
 	DREL(printf(" -> 0x%p\n", *p));

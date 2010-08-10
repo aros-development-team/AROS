@@ -18,11 +18,15 @@
 #include "support.h"
 #include "shutdown.h"
 
+#ifndef PATH_MAX
+#define PATH_MAX _MAX_PATH
+#endif
+
 #define D(x)
 
 extern void *HostIFace;
 
-char bootstrapdir[MAX_PATH];
+char bootstrapdir[PATH_MAX];
 char buf[256];
 
 static struct mb_mmap MemoryMap = {
@@ -40,12 +44,12 @@ static struct KernelBSS __bss_track[256];
 static struct TagItem km[] = {
     {KRN_KernelLowest , 0                },
     {KRN_KernelHighest, 0                },
-    {KRN_KernelBss    , (IPTR)__bss_track},
+    {KRN_KernelBss    , 0		 },
     {KRN_BootLoader   , 0                },
     {KRN_CmdLine      , 0                },
     {KRN_DebugInfo    , 0                },
     {KRN_HostInterface, 0                },
-    {KRN_MMAPAddress  , (IPTR)&MemoryMap },
+    {KRN_MMAPAddress  , 0		 },
     {KRN_MMAPLength   , sizeof(MemoryMap)},
     {TAG_DONE         , 0                }
 };
@@ -218,10 +222,12 @@ int main(int argc, char ** argv)
 
     km[0].ti_Data = (IPTR)kernel_addr;
     km[1].ti_Data = (IPTR)kernel_addr + kernel_size - 1;
+    km[2].ti_Data = (IPTR)__bss_track;
     km[3].ti_Data = (IPTR)SystemVersion;
     km[4].ti_Data = (IPTR)KernelArgs;
     km[5].ti_Data = (IPTR)debug_addr;
     km[6].ti_Data = (IPTR)HostIFace;
+    km[7].ti_Data = (IPTR)&MemoryMap;
 
     printf("[Bootstrap] entering kernel@%p...\n", kernel_entry);
     return kernel_entry(km);
