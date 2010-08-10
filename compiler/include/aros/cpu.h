@@ -39,6 +39,16 @@
 #endif
 
 /*
+    Under 64-bit MS Windows long is still 32 bits
+*/
+
+#ifdef _WIN64
+#define AROS_INTPTR_TYPE __int64
+#define AROS_INTPTR_STACKTYPE __int64
+#define AROS_LARGEST_TYPE __int64
+#endif
+
+/*
     Now, for any optional define that hasn't been provided, we must provide
     an implementation of it here. This is somewhat tedious...
 */
