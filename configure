@@ -8994,18 +8994,18 @@ $as_echo "$as_me: error: \"Unknown CPU for Amiga $target_cpu\"" >&2;}
         esac
 	;;
 
-    mingw32*)
+    mingw*)
         aros_target_arch="mingw32"
 	aros_shared_default="no"
+	aros_flavour="emulation"
+	aros_shared_cflags=""
 	need_dlopen="no"
 	rescomp="windres"
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
                 aros_object_format="elf_i386"
-		aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-		aros_shared_cflags=""
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 		aros_target_cc="i386-aros-gcc"
@@ -9018,6 +9018,42 @@ $as_echo "$as_me: error: \"Unknown CPU for Amiga $target_cpu\"" >&2;}
 		aros_target_objcopy="i386-aros-objcopy"
 		aros_target_objdump="i386-aros-objdump"
 		target_tool_prefix="i386-mingw32-"
+		;;
+	    *x86_64*)
+		aros_target_cpu="x86_64"
+                aros_object_format="elf_x86_64"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
+		aros_default_wbdepth=8
+		gcc_target_cpu="x86_64"
+		aros_target_cc="x86_64-aros-gcc"
+		aros_target_ld="x86_64-aros-ld"
+		aros_target_as="x86_64-aros-as"
+		aros_target_ar="x86_64-aros-ar"
+		aros_target_ranlib="x86_64-aros-ranlib"
+		aros_target_nm="x86_64-aros-nm"
+		aros_target_strip="x86_64-aros-strip"
+		aros_target_objcopy="x86_64-aros-objcopy"
+		aros_target_objdump="x86_64-aros-objdump"
+		target_tool_prefix="x86_64-w64-mingw32-"
+		;;
+	    *arm*)
+		aros_target_cpu="arm"
+                aros_object_format="armelf_linux_eabi"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
+		aros_default_wbdepth=8
+		gcc_target_cpu="arm"
+		aros_target_cc="arm-elf-gcc"
+		aros_target_ld="arm-elf-ld"
+		aros_target_as="arm-elf-as"
+		aros_target_ar="arm-elf-ar"
+		aros_target_ranlib="arm-elf-ranlib"
+		aros_target_nm="arm-elf-nm"
+		aros_target_strip="arm-elf-strip"
+		aros_target_objcopy="arm-elf-objcopy"
+		aros_target_objdump="arm-elf-objdump"
+		target_tool_prefix="arm-mingw32ce-"
+		aros_default_wbwidth=160
+                aros_default_wbheight=160
 		;;
 	    *)
 		{ { $as_echo "$as_me:$LINENO: error: \"Unknown CPU for Mingw32 -- $target_cpu\"" >&5
