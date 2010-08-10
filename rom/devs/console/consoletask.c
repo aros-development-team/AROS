@@ -19,6 +19,7 @@
 
 
 #include <devices/input.h>
+#include <devices/rawkeycodes.h>
 
 #include "console_gcc.h"
 #include "consoleif.h"
@@ -118,6 +119,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 		*/
 		if (checkconunit(cdihmsg->unit, ConsoleDevice))
 		{
+
 		    switch(cdihmsg->ie.ie_Class)
  		    {
 		    	case IECLASS_CLOSEWINDOW:
@@ -126,38 +128,52 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 			#warning activate CLOSEWINDOW raw events (SET RAW EVENTS cmd)
 			#warning and then look out for this in the input stream (CMD_READ)
 			    /* fall through */
-			    
-		        case IECLASS_RAWKEY:
-			{
+			  
+		    case IECLASS_RAWKEY:
+		      {
 			    #define MAPRAWKEY_BUFSIZE 80
+			
+			struct IOStdReq *req, *nextreq;
+			UBYTE  inputBuf[MAPRAWKEY_BUFSIZE + 1];			    
+			LONG actual;
+			ULONG tocopy;
 
-			    struct IOStdReq *req, *nextreq;
-			    UBYTE  inputBuf[MAPRAWKEY_BUFSIZE + 1];			    
-			    LONG actual;
-			    ULONG tocopy;
+			/* Mouse wheel support */
+			if (cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_UP)
+			  {
+			    Console_HandleGadgets(cdihmsg->unit, IECLASS_GADGETDOWN, 1);
+			    Console_HandleGadgets(cdihmsg->unit, IECLASS_GADGETUP, 1);
+			  }
+			else if (cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_DOWN)
+			  {
+			    Console_HandleGadgets(cdihmsg->unit, IECLASS_GADGETDOWN, 2);
+			    Console_HandleGadgets(cdihmsg->unit, IECLASS_GADGETUP, 2);
+			  } 
+			else 
+			  {
 			    
 	   	  	    /* Convert it to ANSI chars */
 	    		    
 			    if (cdihmsg->ie.ie_Class == IECLASS_CLOSEWINDOW)
-			    {
+			      {
 			    	/* HACK */
 			    	inputBuf[0] = 28; /* CTRL-\ */
 				actual = 1;
 				/* HACK */
-			    }
+			      }
 			    else
-			    {
+			      {
 			    	actual = RawKeyConvert(&cdihmsg->ie
 						       ,inputBuf
 						       ,MAPRAWKEY_BUFSIZE
 						       ,NULL);
-    	    	    	    }
+			      }
 			    
 			    D(bug("RawKeyConvert returned %ld\n", actual));
-
-			
+			    
+			    
 			    if (actual > 0)
-			    {
+			      {
 				/* Copy received characters to the console unit input buffer.
 				   If the buffer is full, then console input will be lost
 				*/
@@ -166,29 +182,30 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 				CopyMem(inputBuf
 		     			, ICU(cdihmsg->unit)->inputBuf + ICU(cdihmsg->unit)->numStoredChars
 					, tocopy
-				);
-
+					);
+				
 				ICU(cdihmsg->unit)->numStoredChars += tocopy;
-		    
+				
 				/* See if there are any queued io read requests that wants to be replied */
 				ForeachNodeSafe(&ConsoleDevice->readRequests, req, nextreq)
-				{
-
+				  {
+				    
 		     		    if ((APTR)req->io_Unit == (APTR)cdihmsg->unit)
-				    {
+				      {
 					/* Paranoia */
 					if (0 != ICU(req->io_Unit)->numStoredChars)
-					{
+					  {
 			        	    Remove((struct Node *)req);
 			     		    answer_read_request(req, ConsoleDevice);
-					}
-				    }
-				}
-		    	    } /* if (actual > 0) */
-
-			} /* IECLASS_RAWKEY */
-			break; 
-
+					  }
+				      }
+				  }
+			      } /* if (actual > 0) */
+			  }
+			
+		      } /* IECLASS_RAWKEY */
+		      break; 
+		      
 		    case IECLASS_GADGETDOWN:
 		    case IECLASS_GADGETUP:
 		    case IECLASS_TIMER:
