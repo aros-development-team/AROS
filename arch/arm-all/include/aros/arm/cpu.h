@@ -1,7 +1,7 @@
 #ifndef AROS_ARM_CPU_H
 #define AROS_ARM_CPU_H
 /*
-    Copyright � 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -24,6 +24,9 @@
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
 
+/* define this if we have no support for linear varargs in the compiler */
+#define NO_LINEAR_VARARGS       1
+
 /* Do not use patched compiler. */
 #define AROS_SLOWSTACKTAGS      1
 #define AROS_SLOWSTACKMETHODS   1
@@ -45,6 +48,8 @@
 #define AROS_SIG_ATOMIC_T       int
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
+
+register unsigned char* AROS_GET_SP __asm__("%sp");
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
