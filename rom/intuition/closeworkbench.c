@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -54,16 +54,14 @@
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: <%s>\n",
                                  FindTask(NULL)->tc_Node.ln_Name));
 
+    wbscreen = GetPrivIBase(IntuitionBase)->WorkBench;
+    DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: Workbench Screen 0x%p\n", wbscreen));
+
     if (wbscreen) FireScreenNotifyMessage((IPTR) wbscreen, SNOTIFY_BEFORE_CLOSEWB, IntuitionBase);
 
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: LockPubScreenList\n"));
     LockPubScreenList();
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: LockPubScreenList done\n"));
-
-    wbscreen = GetPrivIBase(IntuitionBase)->WorkBench;
-
-    DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: Workbench Screen 0x%lx\n",
-                                 (ULONG) wbscreen));
 
     if (!wbscreen)
     {
