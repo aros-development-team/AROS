@@ -112,7 +112,6 @@ struct AROSCPUContext
     ULONG LastError;
 };
 
-#define GET_PC(ctx) (void *)ctx->Rip
 #define SET_PC(ctx, addr) ctx->Rip = (IPTR)addr
 
 #else
@@ -127,6 +126,9 @@ struct AROSCPUContext
 
 #endif
 
+#define GET_PC(ctx) (void *)ctx->Rip
+#define GET_SP(ctx) (void *)ctx->Rsp
+
 #define EXCEPTIONS_COUNT 19
 
 #define PRINT_CPUCONTEXT(ctx) \
@@ -139,7 +141,6 @@ struct AROSCPUContext
 	    , (ctx)->ContextFlags \
 	    , (ctx)->Rsp, (ctx)->Rbp, (ctx)->Rip \
 	    , (ctx)->Rax, (ctx)->Rbx, (ctx)->Rcx, (ctx)->Rdx \
-	    , (ctx)->R8 , (ctx)->R9 , (ctx)->R10, (ctx)->R11 \
 	    , (ctx)->R8 , (ctx)->R9 , (ctx)->R10, (ctx)->R11 \
 	    , (ctx)->R12, (ctx)->R13, (ctx)->R14, (ctx)->R15 \
 	    , (ctx)->Rdi, (ctx)->Rsi, (ctx)->EFlags \
