@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -26,57 +26,47 @@ static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
 {
-/*
- * Modules compiled with noexpunge always have seglist == NULL
- * The seglist is not kept as it is not needed because the module never
- * can be expunged
- if (GM_SEGLIST_FIELD(nilbase)==NULL) /* Are we a ROM module? * /
-*/
-    {
-        struct DeviceNode *dn;
-        /* Install NIL: handler into device list
-         *
-         * KLUDGE: The mountlists for NIL: should be into dos.library bootstrap routines.
-         */
-
-        if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(3),
-                          MEMF_CLEAR|MEMF_PUBLIC)
-           )
-        )
-        {
-            struct IOFileSys dummyiofs;
-
-            if (OpenDev(nilbase, &dummyiofs))
-            {
-                BSTR s = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
-
-                ((struct Library *)nilbase)->lib_OpenCnt++;
-
-                AROS_BSTR_putchar(s, 0, 'N');
-                AROS_BSTR_putchar(s, 1, 'I');
-                AROS_BSTR_putchar(s, 2, 'L');
-                AROS_BSTR_setstrlen(s, 3);
-
-                dn->dn_Type    = DLT_DEVICE;
-                dn->dn_Ext.dn_AROS.dn_Unit    = dummyiofs.IOFS.io_Unit;
-                dn->dn_Ext.dn_AROS.dn_Device  = dummyiofs.IOFS.io_Device;
-                dn->dn_Handler = NULL;
-                dn->dn_Startup = NULL;
-                dn->dn_Name = s;
-                dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
-
-                if (AddDosEntry((struct DosList *)dn))
-                    return TRUE;
-            }
-
-            FreeMem(dn, sizeof (struct DeviceNode));
-        }
-    }
     /*
-    else
-        return TRUE;
+     * Modules compiled with noexpunge always have seglist == NULL
+     * The seglist is not kept as it is not needed because the module never
+     * can be expunged
      */
-    
+    struct DeviceNode *dn;
+    /* Install NIL: handler into device list
+     *
+     * KLUDGE: The mountlists for NIL: should be into dos.library bootstrap routines.
+     */
+
+    if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(3),
+                       MEMF_CLEAR|MEMF_PUBLIC)))
+    {
+        struct IOFileSys dummyiofs;
+
+        if (OpenDev(nilbase, &dummyiofs))
+        {
+            BSTR s = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
+
+            ((struct Library *)nilbase)->lib_OpenCnt++;
+
+            AROS_BSTR_putchar(s, 0, 'N');
+            AROS_BSTR_putchar(s, 1, 'I');
+            AROS_BSTR_putchar(s, 2, 'L');
+            AROS_BSTR_setstrlen(s, 3);
+
+            dn->dn_Type    = DLT_DEVICE;
+            dn->dn_Ext.dn_AROS.dn_Unit    = dummyiofs.IOFS.io_Unit;
+            dn->dn_Ext.dn_AROS.dn_Device  = dummyiofs.IOFS.io_Device;
+            dn->dn_Handler = NULL;
+            dn->dn_Startup = NULL;
+            dn->dn_Name = s;
+            dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
+
+            if (AddDosEntry((struct DosList *)dn))
+                return TRUE;
+        }
+
+        FreeMem(dn, sizeof (struct DeviceNode));
+    }
     return FALSE;
 }
 
@@ -143,7 +133,7 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close),0)
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct nilbase *, nilbase, 5, Nil)
+	 LIBBASETYPEPTR, nilbase, 5, Nil)
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
@@ -216,7 +206,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct nilbase *, nilbase, 6, Nil)
+	 LIBBASETYPEPTR, nilbase, 6, Nil)
 {
     AROS_LIBFUNC_INIT
     /* Everything already done. */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -47,14 +47,6 @@
 #endif /* !__MORPHOS__ */
 
 /***********************************************************************************/
-
-/* Set if to 1 to enable kprintf debugging
- */
-#if 0
-#define D(x) x
-#else
-#define D(x)
-#endif
 
 #define DEBUG_HIT(x)    ;
 

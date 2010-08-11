@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -107,11 +107,11 @@
 
     /* Store important variables of the RastPort */
 #ifdef __MORPHOS__
-    GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,RPTAG_APen,(ULONG)&apen,
-               RPTAG_BPen,(ULONG)&bpen,RPTAG_DrMd,(ULONG)&drmd,TAG_DONE);
+    GetRPAttrs(rp, RPTAG_PenMode, &penmode, RPTAG_APen, &apen,
+               RPTAG_BPen, &bpen, RPTAG_DrMd, &drmd, TAG_DONE);
 #else
-    GetRPAttrs(rp,RPTAG_APen,(ULONG)&apen,
-               RPTAG_BPen,(ULONG)&bpen,RPTAG_DrMd,(ULONG)&drmd,TAG_DONE);
+    GetRPAttrs(rp, RPTAG_APen, &apen,
+               RPTAG_BPen, &bpen, RPTAG_DrMd, &drmd, TAG_DONE);
 #endif
 
     /* For all borders... */

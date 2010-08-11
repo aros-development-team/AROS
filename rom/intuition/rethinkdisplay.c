@@ -151,10 +151,6 @@
 
             if (!failure)
             {
-#ifndef __MORPHOS__
-		Object *obj;
-#endif
-
                 DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView ViewLord 0x%lx\n",&IntuitionBase->ViewLord));
                 LoadView(&IntuitionBase->ViewLord);
 

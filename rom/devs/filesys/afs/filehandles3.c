@@ -89,7 +89,7 @@ ULONG owner;
 		ead->ed_Name[(ULONG)name[0]] = 0;
 		next += name[0]+1; /* NULL-Byte */
 	case 0 :
-		ead->ed_Next = (struct ExAllData *)(((ULONG)next + OS_PTRALIGN - 1) & ~(OS_PTRALIGN - 1));
+		ead->ed_Next = (struct ExAllData *)(((IPTR)next + OS_PTRALIGN - 1) & ~(OS_PTRALIGN - 1));
 	}
 	return 0;
 }

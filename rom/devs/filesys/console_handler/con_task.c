@@ -684,7 +684,8 @@ AROS_UFH3(VOID, conTaskEntry,
 	    treq = timereq->next;
 	    while (treq)
 	    {
-bug("CONTASK: treq=%x\n", (unsigned)treq);
+		D(bug("CONTASK: treq=0x%p\n", treq));
+
 		treq1 = treq->next;
 		iofs = treq->iofs;
 		AbortIO((struct IORequest *)treq);

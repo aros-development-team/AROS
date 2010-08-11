@@ -235,7 +235,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
             if (dl == NULL) {
                 UnLockDosList(LDF_ALL | LDF_READ);
 
-                if (ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_INSERT, (ULONG) vol, NULL) == DOSTRUE) {
+                if (ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_INSERT, (IPTR)vol, NULL) == DOSTRUE) {
                     FreeMem(dp, sizeof(struct DevProc));
                     return NULL;
                 }
@@ -337,7 +337,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
 	} else {
 	    while (res && VolumeIsOffline(dl)) {
 	    	D(bug("Accessing offline volume %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
-		res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (ULONG)dl, NULL);
+		res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (IPTR)dl, NULL);
 	    }
 	}
 	if (!res) {

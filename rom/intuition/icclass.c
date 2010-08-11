@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -123,11 +123,11 @@ IPTR ICClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
     case ICA_MAP:
-	*msg->opg_Storage = (ULONG)ic->ic_Mapping;
+	*msg->opg_Storage = (IPTR)ic->ic_Mapping;
 	break;
 
     case ICA_TARGET:
-	*msg->opg_Storage = (ULONG)ic->ic_Target;
+	*msg->opg_Storage = (IPTR)ic->ic_Target;
 	break;
     }
 

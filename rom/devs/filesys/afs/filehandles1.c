@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -87,19 +87,9 @@ D
 		error = ERROR_OBJECT_WRONG_TYPE;
 		return NULL;
 	}
-	while (
-				!noCaseStrCmp
-					(
-						name,
-						(char *)
-							(
-								(ULONG)blockbuffer->buffer+
-								(BLK_DIRECTORYNAME_START(volume)*4)
-							),
-						volume->dosflags,
-						MAX_NAME_LENGTH
-					)
-			)
+
+	while (!noCaseStrCmp(name, (char *)blockbuffer->buffer + (BLK_DIRECTORYNAME_START(volume)*4),
+			     volume->dosflags, MAX_NAME_LENGTH))
 	{
 		*block = blockbuffer->blocknum;
 		if (blockbuffer->buffer[BLK_HASHCHAIN(volume)] == 0)

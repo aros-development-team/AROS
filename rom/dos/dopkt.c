@@ -17,16 +17,16 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH7(LONG, DoPkt,
+	AROS_LH7(SIPTR, DoPkt,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct MsgPort *, port, D1),
 	AROS_LHA(LONG            , action, D2),
-	AROS_LHA(LONG            , arg1, D3),
-	AROS_LHA(LONG            , arg2, D4),
-	AROS_LHA(LONG            , arg3, D5),
-	AROS_LHA(LONG            , arg4, D6),
-	AROS_LHA(LONG            , arg5, D7),
+	AROS_LHA(SIPTR           , arg1, D3),
+	AROS_LHA(SIPTR           , arg2, D4),
+	AROS_LHA(SIPTR           , arg3, D5),
+	AROS_LHA(SIPTR           , arg4, D6),
+	AROS_LHA(SIPTR           , arg5, D7),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 40, Dos)
@@ -62,7 +62,7 @@
      * SendPkt rewrite it.
      */
 
-    LONG res;
+    SIPTR res;
     struct Process   *me = (struct Process *)FindTask(NULL);
     struct DosPacket *dp = (struct DosPacket *)AllocDosObject(DOS_STDPKT,
 							      NULL);

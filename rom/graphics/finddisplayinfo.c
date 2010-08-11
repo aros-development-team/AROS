@@ -9,8 +9,9 @@
 #include <proto/graphics.h>
 #include <graphics/displayinfo.h>
 #include <hidd/graphics.h>
-#include "dispinfo.h"
+
 #include "graphics_intern.h"
+#include "dispinfo.h"
 
 /*****************************************************************************
 

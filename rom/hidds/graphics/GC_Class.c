@@ -442,7 +442,7 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 		break;
 		
             case aoHidd_GC_Font:
-	    	*msg->storage = (ULONG) data->font;
+	    	*msg->storage = (IPTR)data->font;
 		break;
 		
             case aoHidd_GC_ColorMask:
@@ -458,7 +458,7 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 		break;
 		
             case aoHidd_GC_PlaneMask:
-	    	*msg->storage = (ULONG) data->planeMask;
+	    	*msg->storage = (IPTR)data->planeMask;
 		break;
 		
             case aoHidd_GC_ColorExpansionMode:

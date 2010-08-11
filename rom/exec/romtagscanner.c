@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     ROMTag scanner. Adapted from the original i386-native to become
@@ -126,12 +126,12 @@ ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
 		 * it's higher then present one - this avoids strange locks
 		 * when not all modules have Resident structure in .text
 		 * section */
-		ptr = ((ULONG)res->rt_EndSkip > (ULONG)ptr)
+		ptr = ((IPTR)res->rt_EndSkip > (IPTR)ptr)
 			?   (UWORD *)res->rt_EndSkip - 2
 			:   ptr;
 
-		if ((ULONG)ptr & 0x01)
-		   ptr = (UWORD *)((ULONG)ptr+1);
+		if ((IPTR)ptr & 0x01)
+		   ptr = (UWORD *)((IPTR)ptr+1);
 	    }
 
 	    /* Get next address... */

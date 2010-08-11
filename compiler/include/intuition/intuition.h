@@ -2,7 +2,7 @@
 #define INTUITION_INTUITION_H
 
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Important defines and structures for intuition.library
@@ -241,7 +241,7 @@ struct Gadget
     APTR	       SelectRender;
     struct IntuiText * GadgetText;
 
-    LONG MutualExclude; /* OBSOLETE */
+    IPTR MutualExclude; /* OBSOLETE */
 
     APTR  SpecialInfo;
     UWORD GadgetID;
@@ -265,7 +265,7 @@ struct ExtGadget
     APTR	       SelectRender;
     struct IntuiText * GadgetText;
 
-    LONG MutualExclude; /* OBSOLETE */
+    IPTR MutualExclude; /* OBSOLETE */
 
     APTR  SpecialInfo;
     UWORD GadgetID;

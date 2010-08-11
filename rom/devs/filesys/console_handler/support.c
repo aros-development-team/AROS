@@ -377,7 +377,7 @@ void do_movecursor(struct conbase *conbase, struct filehandle *fh, UBYTE directi
 	    seq[1] = direction;
 	    size = 2;
 	} else {
-            sprintf(&seq[1],"%ld%lc", (LONG)howmuch, (LONG)direction);
+            sprintf(&seq[1],"%d%c", howmuch, direction);
 	    size = strlen(seq);
 	}
     	

@@ -162,7 +162,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->SysStkUpper    = (APTR)~0;
     SysBase->SysStkLower    = (APTR)0;
 
-    SysBase->MaxLocMem      = (ULONG)mh->mh_Upper;
+    SysBase->MaxLocMem      = (IPTR)mh->mh_Upper;
 
     SysBase->Quantum        = 4;
 

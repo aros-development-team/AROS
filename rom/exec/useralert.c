@@ -4,6 +4,7 @@
 #include <proto/intuition.h>
 
 #include "etask.h"
+#include "exec_intern.h"
 #include "exec_util.h"
 
 static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)

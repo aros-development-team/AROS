@@ -2,7 +2,7 @@
 #define DOS_EXALL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ExAll() handling.
@@ -67,7 +67,7 @@ struct ExAllControl
 {
       /* The number of entries that were returned in the buffer. */
     ULONG         eac_Entries;
-    ULONG         eac_LastKey;     /* PRIVATE */
+    IPTR          eac_LastKey;     /* PRIVATE */
       /* Parsed pattern string, as created by ParsePattern(). This may be NULL.
       */
     UBYTE       * eac_MatchString;

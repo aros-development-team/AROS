@@ -433,7 +433,7 @@ VOID GDICl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 		break;
 
 	    case aoHidd_Gfx_ActiveCallBackData:
-	        data->cbdata = tag->ti_Data;
+	        data->cbdata = (APTR)tag->ti_Data;
 		break;
 	    }
 	}

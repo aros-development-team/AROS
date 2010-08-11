@@ -2,7 +2,7 @@
 #define DOS_DOS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic DOS structures and constants
@@ -65,7 +65,7 @@ struct DateStamp
    with AllocDosObject(). */
 struct FileInfoBlock
 {
-    LONG	     fib_DiskKey;
+    IPTR	     fib_DiskKey;
       /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
          the file described is a directory, otherwise it is a plain file. */
     LONG	     fib_DirEntryType;
