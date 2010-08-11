@@ -272,7 +272,7 @@ static void showfont(void)
     
     if ((scr = LockPubScreen(NULL)))
     {
-    	win = OpenWindowTags(NULL, WA_PubScreen, (ULONG)scr,
+    	win = OpenWindowTags(NULL, WA_PubScreen, scr,
 	    	    	    	   WA_InnerWidth, te.te_Width + 6,
 				   WA_InnerHeight, te.te_Height + 6,
 				   WA_CloseGadget, TRUE,
@@ -280,7 +280,7 @@ static void showfont(void)
 				   WA_DepthGadget, TRUE,
 				   WA_Activate, TRUE,
 				   WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY,
-				   WA_Title, (ULONG)"FontInfo",
+				   WA_Title, "FontInfo",
 				   TAG_DONE);
 				   
 	if (win)

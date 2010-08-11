@@ -241,7 +241,7 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
   tags = msg->ops_AttrList;
   while((tag = NextTagItem((APTR)&tags)))
   {
-    ULONG ti_Data = tag->ti_Data;
+    IPTR ti_Data = tag->ti_Data;
 
     switch(tag->ti_Tag)
     {

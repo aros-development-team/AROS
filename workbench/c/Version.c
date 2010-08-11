@@ -1021,17 +1021,17 @@ struct Resident *findresident(CONST_STRPTR name)
 
 	while ((resident = *rp++))
 	{
-		if (((IPTR) resident) > 0)
-		{
-			if (!Stricmp(resident->rt_Name, (STRPTR) name))
-			{
-				break;
-			}
-		}
-		else
-		{
-			rp = (struct Resident **) (((ULONG) resident) & (ULONG) ~(1 << 31));
-		}
+#ifdef __mc68000__
+	    if (((LONG)resident) < 0)
+		rp = (struct Resident **)((ULONG)resident & 0x7fffffff);
+#else
+	    if (((IPTR)resident) & 0x01)
+		rp = (struct Resident **)((IPTR)resident & ~1);
+#endif
+	    else {
+		if (!Stricmp(resident->rt_Name, (STRPTR) name))
+		    break;
+	    }
 	}
 
 	return resident;
@@ -1306,11 +1306,11 @@ struct Resident *FindLibResident(BPTR	Segment)
 {
 	while (Segment)
 	{
-		ULONG		*MySegment;
+		IPTR		*MySegment;
 		UWORD		*MyBuffer;
 		UWORD		*EndBuffer;
 
-		MySegment	= (ULONG*) BADDR(Segment);
+		MySegment	= (IPTR*) BADDR(Segment);
 		MyBuffer	= (UWORD*) &MySegment[1];
 		EndBuffer	= (UWORD*) &MySegment[(MySegment[-1] - sizeof(ULONG) * 4) / sizeof(ULONG)];
 
@@ -1426,7 +1426,7 @@ int makedevicever(CONST_STRPTR name)
 
 	if (error != RETURN_OK && error != -1)
 	{
-		Printf("Could not find version information for '%s'\n", (LONG) name);
+		Printf("Could not find version information for '%s'\n", name);
 	}
 
 	return error;

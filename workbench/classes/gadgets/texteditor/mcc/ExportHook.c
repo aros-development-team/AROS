@@ -121,7 +121,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
       struct LineColor *colors = emsg->Colors;
       UWORD lastpos = 0;
       UWORD currentstyle = 0;
-      ULONG hookType = (ULONG)hook->h_Data;
+      IPTR hookType = (IPTR)hook->h_Data;
       STRPTR startx;
 
       // if this hook is of plain type we have consider highlighting as well.

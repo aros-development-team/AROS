@@ -322,7 +322,7 @@ void SetupSelectPointer(struct InstData *data)
     if(((struct Library *)IntuitionBase)->lib_Version >= 39)
     {
       data->PointerObj = (Object *)NewObject(NULL, (STRPTR)"pointerclass",
-        POINTERA_BitMap,      (LONG)&selectPointerBitmap,
+        POINTERA_BitMap,      &selectPointerBitmap,
         POINTERA_WordWidth,   (ULONG)1,
         POINTERA_XResolution, (ULONG)POINTERXRESN_SCREENRES,
         POINTERA_YResolution, (ULONG)POINTERYRESN_SCREENRESASPECT,

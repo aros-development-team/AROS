@@ -721,7 +721,7 @@ IPTR mImport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *msg)
   {
     STRPTR contents = (STRPTR)DoMethod(msg->dataspace, MUIM_Dataspace_Find, id);
 
-    set(obj, MUIA_TextEditor_Contents, contents != NULL ? (ULONG)contents : (ULONG)"");
+    set(obj, MUIA_TextEditor_Contents, contents != NULL ? (IPTR)contents : (IPTR)"");
   }
 
   RETURN(0);
@@ -791,7 +791,7 @@ DISPATCHER(_Dispatcher)
       {
         data->UpdateInfo = msg;
         MUI_Redraw(obj, MADF_DRAWUPDATE);
-        result = (ULONG)data->UpdateInfo;
+        result = (IPTR)data->UpdateInfo;
         data->UpdateInfo = NULL;
 
         RETURN(result);

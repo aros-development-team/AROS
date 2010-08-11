@@ -74,10 +74,10 @@ DISPATCHER(WidthSlider_Dispatcher)
     struct MUIP_Numeric_Stringify *smsg = (struct MUIP_Numeric_Stringify *)msg;
 
     if(smsg->value == 1)
-      return (ULONG)tr(MSG_SliderText_MinWidth);
+      return (IPTR)tr(MSG_SliderText_MinWidth);
 
     if(smsg->value == 6)
-      return (ULONG)tr(MSG_SliderText_MaxWidth);
+      return (IPTR)tr(MSG_SliderText_MaxWidth);
   }
 
   return(DoSuperMethodA(cl, obj, msg));
@@ -90,14 +90,14 @@ DISPATCHER(SpeedSlider_Dispatcher)
     struct MUIP_Numeric_Stringify *smsg = (struct MUIP_Numeric_Stringify *)msg;
 
     if(smsg->value == 0)
-      return (ULONG)tr(MSG_SliderText_MinSpeed);
+      return (IPTR)tr(MSG_SliderText_MinSpeed);
     else
     {
       static char buf[20];
 
       snprintf(buf, sizeof(buf), "%d ms", (int)smsg->value*25);
 
-      return (ULONG)buf;
+      return (IPTR)buf;
     }
   }
 

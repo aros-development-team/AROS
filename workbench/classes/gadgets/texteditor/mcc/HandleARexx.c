@@ -83,11 +83,11 @@ enum
 #define MaxArgs 8
 
 /// CallFunction()
-static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, const char *txtargs)
+static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, const char *txtargs)
 {
   struct line_node *oldactualline = data->actualline;
   UWORD oldCPos_X = data->CPos_X;
-  ULONG result = TRUE;
+  IPTR result = TRUE;
   LONG new_y = data->visual_y-1;
 
   ENTER();
@@ -175,7 +175,7 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
 
             // return the current line number, this may differ from the input value!
             snprintf(buffer, 16, "%ld", xget(data->object, MUIA_TextEditor_CursorY));
-            result = (ULONG)buffer;
+            result = (IPTR)buffer;
           }
         }
       }
@@ -192,7 +192,7 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
             set(data->object, MUIA_TextEditor_CursorX, *(ULONG *)*args);
             // return the current column number, this may differ from the input value!
             snprintf(buffer, 16, "%ld", xget(data->object, MUIA_TextEditor_CursorX));
-            result = (ULONG)buffer;
+            result = (IPTR)buffer;
           }
         }
       }
@@ -319,7 +319,7 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
 
           buffer[data->actualline->line.Length] = '\0';
 
-          result = (ULONG)buffer;
+          result = (IPTR)buffer;
         }
         break;
       }
@@ -339,7 +339,7 @@ static ULONG CallFunction(struct InstData *data, UWORD function, IPTR *args, con
 
           snprintf(buffer, 16, "%d", (int)pos);
 
-          result = (ULONG)buffer;
+          result = (IPTR)buffer;
         }
         break;
       }

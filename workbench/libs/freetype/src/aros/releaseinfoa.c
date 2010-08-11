@@ -25,7 +25,7 @@ AROS_LH2(ULONG, ReleaseInfoA,
 
     FT_GlyphEngine *engine = (FT_GlyphEngine *)ge;
     Tag   otagtag;
-    ULONG otagdata;
+    IPTR otagdata;
 
     const struct TagItem *tstate;
     struct TagItem *tag;

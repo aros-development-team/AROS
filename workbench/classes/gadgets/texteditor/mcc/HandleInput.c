@@ -57,7 +57,7 @@ static ULONG RAWToANSI(struct IntuiMessage *imsg)
   event.ie_SubClass     = 0;
   event.ie_Code         = imsg->Code;
   event.ie_Qualifier    = imsg->Qualifier;
-  event.ie_EventAddress = (APTR *) *((ULONG *)imsg->IAddress);
+  event.ie_EventAddress = *((APTR **)imsg->IAddress);
 
   MapRawKey(&event, (STRPTR)&code, 1, NULL);
 
@@ -574,7 +574,7 @@ static BOOL ConvertKey(struct InstData *data, struct IntuiMessage *imsg)
   event.ie_SubClass     = 0;
   event.ie_Code         = imsg->Code;
   event.ie_Qualifier    = imsg->Qualifier;
-  event.ie_EventAddress = (APTR *) *((ULONG *)imsg->IAddress);
+  event.ie_EventAddress = *((APTR **)imsg->IAddress);
 
   if(MapRawKey(&event, (STRPTR)&code, 1, NULL) > 0)
   {
@@ -769,8 +769,8 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
         data->UpdateInfo = msg;
         MUI_Redraw(obj, MADF_DRAWUPDATE);
 
-        RETURN((ULONG)data->UpdateInfo);
-        return((ULONG)data->UpdateInfo);
+        RETURN((IPTR)data->UpdateInfo);
+        return((IPTR)data->UpdateInfo);
       }
 
       switch(imsg->Class)

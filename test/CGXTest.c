@@ -54,8 +54,8 @@ int main(int argc, char *argv[])
 	ULONG bm_pixfmt;
 	ULONG bm_bytesperpix;
 	ULONG bm_bytesperrow;
-	ULONG bm_baseaddress;
-	ULONG bm_endaddress;
+	IPTR  bm_baseaddress;
+	IPTR  bm_endaddress;
 	volatile ULONG *bm_curraddress;
 
 	if(argc == 1)
@@ -79,20 +79,20 @@ int main(int argc, char *argv[])
 
 
 	GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39L);
-	if((ULONG)GfxBase == 0)
+	if(!GfxBase)
 	{
 		printf("Couldnt open graphics.library 40.\n");
 		return 2;
 	}
 	CyberGfxBase = OpenLibrary("cybergraphics.library", 41L);
-	if((ULONG)CyberGfxBase == 0)
+	if(!CyberGfxBase)
 	{
 		printf("Couldnt open cybergraphics.library 41.\n");
 		CloseLibrary((struct Library *)GfxBase);
 		return 3;
 	}
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39L);
-	if((ULONG)GfxBase == 0)
+	if(!IntuitionBase)
 	{
 		printf("Couldnt open intuition.library 39.\n");
 		CloseLibrary(CyberGfxBase);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 	}
 
 	myBitMap = AllocBitMap(width, height, depth, BMF_MINPLANES | BMF_DISPLAYABLE, myScreen->RastPort.BitMap);
-	if((ULONG)myBitMap == 0)
+	if(!myBitMap)
 	{
 		printf("Couldnt allocate bitmap.\n");
 		CloseLibrary(CyberGfxBase);
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 									LBMI_BASEADDRESS,   &bm_baseaddress,
 									TAG_END);
 
-	if((ULONG)bitMapHandle != 0)
+	if(bitMapHandle)
 	{
 		//Trashing?
 		bm_endaddress = bm_baseaddress + bm_bytesperrow * bm_height;

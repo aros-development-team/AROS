@@ -355,7 +355,7 @@ ULONG New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet
       else
         set(data->frame, MUIA_Disabled, TRUE);
 
-      return((ULONG)obj);
+      return((IPTR)obj);
     }
 
     CoerceMethod(cl, obj, OM_DISPOSE);

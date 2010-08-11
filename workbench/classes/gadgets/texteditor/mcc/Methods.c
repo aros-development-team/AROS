@@ -60,7 +60,7 @@ IPTR mQueryKeyAction(UNUSED struct IClass *cl, Object *obj, struct MUIP_TextEdit
 {
   struct te_key *userkeys;
   struct te_key *foundKey = NULL;
-  ULONG setting = 0;
+  IPTR setting = 0;
   int i;
 
   ENTER();
