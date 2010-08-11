@@ -806,15 +806,15 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 {
     struct TagItem win_tags[] =
     {
-        {WA_Left    	, 0 	    	    	    },
-        {WA_Top     	, 0                 	    },
-        {WA_Width   	, mhd->scr->Width           },
-        {WA_Height  	, mhd->scr->BarHeight + 1   },
-        {WA_AutoAdjust  , TRUE              	    },
-        {WA_Borderless  , TRUE              	    },
-        {WA_CustomScreen, (ULONG) mhd->scr          },
-        {WA_BackFill    , (IPTR) LAYERS_NOBACKFILL  },
-        {TAG_DONE                   	    	    }
+        {WA_Left    	, 0 	    	    	  },
+        {WA_Top     	, 0                 	  },
+        {WA_Width   	, mhd->scr->Width        },
+        {WA_Height  	, mhd->scr->BarHeight + 1},
+        {WA_AutoAdjust  , TRUE              	  },
+        {WA_Borderless  , TRUE              	  },
+        {WA_CustomScreen, (IPTR)mhd->scr         },
+        {WA_BackFill    , LAYERS_NOBACKFILL       },
+        {TAG_DONE       , 0            	    	  }
     };
     struct Menu *menu;
 
@@ -1152,15 +1152,15 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
     {
         struct TagItem win_tags[] =
         {
-            {WA_Left 	    , xpos  	    	    	},
-            {WA_Top         , ypos                  	},
-            {WA_Width       , width                 	},
-            {WA_Height      , height                	},
-            {WA_AutoAdjust  , TRUE                  	},
-            {WA_Borderless  , TRUE                  	},
-            {WA_CustomScreen, (ULONG)mhd->scr       	},
-            {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
-            {TAG_DONE                       	    	}
+            {WA_Left 	    , xpos  	       },
+            {WA_Top         , ypos             },
+            {WA_Width       , width            },
+            {WA_Height      , height           },
+            {WA_AutoAdjust  , TRUE             },
+            {WA_Borderless  , TRUE             },
+            {WA_CustomScreen, (IPTR)mhd->scr   },
+            {WA_BackFill    , LAYERS_NOBACKFILL},
+            {TAG_DONE       , 0                }
         };
 
         if (MENUS_UNDERMOUSE)
@@ -1297,8 +1297,8 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         {WA_Height  	, 0                 	    },
         {WA_AutoAdjust  , TRUE              	    },
         {WA_Borderless  , TRUE              	    },
-        {WA_CustomScreen, (ULONG)mhd->scr           },
-        {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL   },
+        {WA_CustomScreen, (IPTR)mhd->scr           },
+        {WA_BackFill    , LAYERS_NOBACKFILL         },
         {TAG_DONE                   	    	    }
     };
 

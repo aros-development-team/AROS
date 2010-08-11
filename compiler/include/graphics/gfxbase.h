@@ -88,9 +88,9 @@ struct GfxBase
     UBYTE   crb_reserved[4];
     UWORD   monitor_id;
 
-    ULONG hedley[8];
-    ULONG hedley_sprites[8];
-    ULONG hedley_sprites1[8];
+    IPTR  hedley[8];
+    IPTR  hedley_sprites[8];
+    IPTR  hedley_sprites1[8];
     WORD  hedley_count;
     UWORD hedley_flags;
     WORD  hedley_tmp;

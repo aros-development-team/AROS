@@ -448,7 +448,7 @@ IPTR GadgetClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	eg->Flags         = GFLG_EXTENDED;
 	eg->GadgetType    = GTYP_CUSTOMGADGET;
     eg->MoreFlags     = GMORE_BOOPSIGADGET;
-	eg->MutualExclude = (LONG)&((Class *)o)->cl_Dispatcher;
+	eg->MutualExclude = (IPTR)&((Class *)o)->cl_Dispatcher;
 
 	/* Handle our special tags - overrides defaults */
 	set_gadgetclass(cl, eg, msg);

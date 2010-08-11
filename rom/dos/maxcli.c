@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,13 +45,13 @@
 {
     AROS_LIBFUNC_INIT
     
-   ULONG * taskarray = (ULONG *)BADDR(DOSBase->dl_Root->rn_TaskArray);
+   IPTR *taskarray = (ULONG *)BADDR(DOSBase->dl_Root->rn_TaskArray);
     /* 
-       The first ULONG in the taskarray contains the size of the
+       The first IPTR in the taskarray contains the size of the
        taskarray = the max. number of processes the taskarray
        can currently hold. 
     */
-    ULONG retval = taskarray[0];
+    IPTR retval = taskarray[0];
     
     /* 
        Not all of the fields in the array may contain a valid

@@ -381,7 +381,6 @@ static OOP_Object *gfx_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     struct gfx_data *data;
     OOP_Object      *realfb;
     OOP_Object      *ret = NULL;
-    BOOL    	     ok = TRUE;
     
     data = OOP_INST_DATA(cl, o);
     create_fb = (BOOL)GetTagData(data->fakefb_attr, FALSE, msg->attrList);
@@ -1345,7 +1344,7 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 {
     OOP_Object *pf, *cmap;
     IPTR    	fbdepth, curdepth, i;
-    UWORD	curs_base;
+    UWORD	curs_base = 16;
 
     struct TagItem bmtags[] = {
 	{ aHidd_BitMap_Width , data->curs_width       },

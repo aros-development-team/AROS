@@ -59,8 +59,6 @@
 
     if (bm->pad != 0 || (bm->Flags & BMF_AROS_HIDD))
     {
-        OOP_Object *gfxhidd = NULL;
-
     	if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB)
 	{
 	    /* NULL colormap otherwise bitmap killing also kills

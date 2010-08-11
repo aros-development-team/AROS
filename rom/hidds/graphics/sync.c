@@ -291,7 +291,9 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
     DECLARE_ATTRCHECK(sync);
     IPTR attrs[num_Hidd_Sync_Attrs] = {0};
     BOOL ok = TRUE;
-    UWORD hsync_start, hsync_end, vsync_start, vsync_end;
+    UWORD hsync_start = 0;
+    UWORD vsync_start = 0;
+    UWORD hsync_end, vsync_end;
     BOOL have_hsync_start, have_hsync_end, have_vsync_start, have_vsync_end;
     BOOL change_totclk = init;
     BOOL notify_driver = FALSE;

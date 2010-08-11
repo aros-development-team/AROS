@@ -110,7 +110,7 @@ struct RootNode
     struct DateStamp rn_Time;
       /* (APTR) The SegList of the process that handles validation of devices.
       */
-    LONG             rn_RestartSeg;
+    APTR             rn_RestartSeg;
       /* (struct DosInfo *) see below for DosInfo */
     BPTR             rn_Info;
     BPTR             rn_FileHandlerSegment;
@@ -361,7 +361,7 @@ struct FileHandle
 struct FileLock
 {
     BPTR             fl_Link;   /* (struct FileLock *) Pointer to next lock. */
-    LONG             fl_Key;
+    IPTR             fl_Key;
     LONG             fl_Access;
     struct MsgPort * fl_Task;
     BPTR             fl_Volume; /* (struct DeviceList * - see below) */
@@ -568,9 +568,9 @@ struct DosPacket
    struct Message * dp_Link; /* Pointer to a standard exec message. */
    struct MsgPort * dp_Port; /* Reply-Port of that packet. */
 
-   LONG dp_Type; /* see below */
-   LONG dp_Res1; /* Normal return value. */
-   LONG dp_Res2; /* Secondary return value (as returned by IoErr()). See
+   LONG  dp_Type; /* see below */
+   SIPTR dp_Res1; /* Normal return value. */
+   LONG  dp_Res2; /* Secondary return value (as returned by IoErr()). See
                     <dos/dos.h> for possible values. */
 
    /* The actual data. */

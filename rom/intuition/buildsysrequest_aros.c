@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
-#define	DEBUG_BUILDSYSREQUEST(x)	x;
+#define	DEBUG_BUILDSYSREQUEST(x)
 
 /**********************************************************************************************/
 #include <proto/exec.h>
@@ -132,8 +132,8 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
     struct                       sysreqdims dims;
     struct IntRequestUserData   *requserdata;
 
-    DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: window 0x%lx body <%s> postext <%s> negtext <%s> IDCMPFlags 0x%lx width %ld height %ld\n",
-                                  (ULONG) window,
+    DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: window 0x%p body <%s> postext <%s> negtext <%s> IDCMPFlags 0x%lx width %ld height %ld\n",
+                                  window,
                                   bodytext ? (char *) bodytext->IText : "<NULL>",
                                   (postext && postext->IText) ? (char *) postext->IText : "<NULL>",
                                   (negtext && negtext->IText) ? (char *) negtext->IText : "<NULL>",
@@ -183,12 +183,12 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
                                   bodytext, gadgetlabels, IntuitionBase))
     {
         gadgets = buildsysreq_makegadgets(&dims, gadgetlabels, scr, IntuitionBase);
-        DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: gadgets 0x%lx\n", (ULONG) gadgets));
+        DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: gadgets 0x%p\n", gadgets));
         if (gadgets)
         {
             requserdata = AllocVec(sizeof(struct IntRequestUserData),
                                    MEMF_ANY|MEMF_CLEAR);
-            DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: requserdata 0x%lx\n", (ULONG) requserdata));
+            DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: requserdata 0x%p\n", requserdata));
             if (requserdata)
             {
                 struct TagItem win_tags[] =
@@ -210,7 +210,7 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
                 };
 
                 req = OpenWindowTagList(NULL, win_tags);
-                DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: req 0x%lx\n", (ULONG) req));
+                DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: req 0x%p\n", req));
                 if (req)
                 {
                     if (lockedscr) UnlockPubScreen(NULL, lockedscr);
@@ -222,7 +222,7 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
                     requserdata->NumGadgets = dims.gadgets;
                     buildsysreq_draw(&dims, bodytext,
                                      req, scr, gadgets, IntuitionBase);
-                    DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: gadgets 0x%lx\n", (ULONG) gadgets));
+                    DEBUG_BUILDSYSREQUEST(dprintf("intrequest_buildsysrequest: gadgets 0x%p\n", gadgets));
 
                     return req;
                 }

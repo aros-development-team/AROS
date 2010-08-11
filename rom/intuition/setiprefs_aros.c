@@ -127,15 +127,12 @@
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER\n"));
         {
             struct IPointerPrefs *fp = data;
-            struct TagItem pointertags[] =
-                {
-                    {
-                        POINTERA_BitMap    , (ULONG) fp->BitMap
-                    },
-                    {POINTERA_XOffset   , fp->XOffset   },
-                    {POINTERA_YOffset   , fp->YOffset   },
-                    {TAG_DONE               }
-                };
+            struct TagItem pointertags[] = {
+                {POINTERA_BitMap , (IPTR)fp->BitMap},
+                {POINTERA_XOffset, fp->XOffset     },
+                {POINTERA_YOffset, fp->YOffset     },
+                {TAG_DONE        , 0               }
+            };
 
             Object *pointer = NewObjectA(
                           GetPrivIBase(IntuitionBase)->pointerclass,

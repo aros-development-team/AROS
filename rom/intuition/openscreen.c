@@ -188,7 +188,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     DEBUG_OPENSCREEN(dprintf("OpenScreen: screen 0x%lx\n", screen));
 
     /* Do this really early to be able to report errors */
-    errorPtr = (ULONG *)GetTagData((Tag)SA_ErrorCode, (ULONG)NULL, (struct TagItem *)tagList);
+    errorPtr = (ULONG *)GetTagData(SA_ErrorCode, 0, tagList);
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_ErrorCode 0x%lx\n",errorPtr));
 
@@ -1837,7 +1837,7 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
         AddTail(list, (struct Node *)GetPrivScreen(screen)->pubScrNode);
     }
 
-    lock = LockIBase((ULONG)NULL);
+    lock = LockIBase(0);
 
     oldFirstScreen = IntuitionBase->FirstScreen;
 

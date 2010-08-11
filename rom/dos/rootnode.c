@@ -20,10 +20,10 @@
    as C:Status and functions like dos.library/MaxCli() */
 void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
 {
-    ULONG  *taskarray;
-    ULONG  *newtaskarray;
-    ULONG   size;
-    ULONG   i;
+    IPTR  *taskarray;
+    IPTR  *newtaskarray;
+    ULONG  size;
+    ULONG  i;
 
     struct CommandLineInterface *cli =
 	(struct CommandLineInterface *)BADDR(process->pr_CLI);
@@ -69,7 +69,7 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     {
 	if(0 == taskarray[i])
 	{
-	    taskarray[i] = (ULONG)&process->pr_MsgPort;
+	    taskarray[i] = (IPTR)&process->pr_MsgPort;
 	    process->pr_TaskNum = i;
 
 	    ReleaseSemaphore(&root->rn_RootLock);
@@ -85,7 +85,7 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     /*
     ** it seems like a new taskarray is needed 
     */
-    newtaskarray = AllocMem(sizeof(ULONG) + (size + 1)*sizeof(APTR), MEMF_ANY);
+    newtaskarray = AllocMem(sizeof(IPTR) + (size + 1)*sizeof(APTR), MEMF_ANY);
     
     newtaskarray[0] = size + 1;
     i = 1;
@@ -96,12 +96,12 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
 	i++;
     }
 
-    newtaskarray[size + 1] = (ULONG)&process->pr_MsgPort;
+    newtaskarray[size + 1] = (IPTR)&process->pr_MsgPort;
     process->pr_TaskNum = size + 1;
     
     root->rn_TaskArray = MKBADDR(newtaskarray);
 
-    FreeMem(taskarray, sizeof(ULONG) + size*sizeof(APTR));
+    FreeMem(taskarray, sizeof(IPTR) + size*sizeof(APTR));
     
     ReleaseSemaphore(&root->rn_RootLock);
 }
@@ -109,9 +109,9 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
 
 void removefromrootnode(struct Process *process, struct DosLibrary *DOSBase)
 {
-    ULONG   size;
-    ULONG  *taskarray;
-    ULONG   i;
+    ULONG  size;
+    IPTR  *taskarray;
+    ULONG  i;
 
     struct Node     *temp;
     struct CLIInfo  *cliNode;
@@ -142,7 +142,7 @@ void removefromrootnode(struct Process *process, struct DosLibrary *DOSBase)
 
     while (i <= size)
     {
-	if (taskarray[i] == (ULONG)&process->pr_MsgPort)
+	if (taskarray[i] == (IPTR)&process->pr_MsgPort)
 	{
 	    taskarray[i] = 0;
 	    break;
