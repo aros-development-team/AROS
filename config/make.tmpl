@@ -1862,7 +1862,7 @@ BD_DESC := %(description)
 endif
 
 ifeq (%(catalogs),)
-BD_LNGS := $(basename $(notdir $(wildcard %(srcdir)/*.ct)))
+BD_LNGS := $(basename $(notdir $(call WILDCARD, %(srcdir)/*.ct)))
 else
 BD_LNGS := %(catalogs)
 endif
