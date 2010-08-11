@@ -14,12 +14,11 @@
 #define CONTEXT_FULL		   (CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_SEGMENTS)
 
 /* Some lengths */
-#define SIZE_OF_80387_REGISTERS	    80
 #define MAXIMUM_SUPPORTED_EXTENSION 512
 
 typedef struct _FLOATING_SAVE_AREA
 {
-	IPTR	ControlWord;
+	IPTR	ControlWord;  
 	IPTR	StatusWord;
 	IPTR	TagWord;
 	IPTR	ErrorOffset;
@@ -59,13 +58,6 @@ struct AROSCPUContext
 	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 	ULONG	LastError;
 };
-
-#define ADD_EXCEPTION_FRAME(f)			     \
-    asm volatile ("movl %%fs:0, %0" : "=r" (f.prev));\
-    asm volatile ("movl %0, %%fs:0" : : "r" (&f))
-
-#define REMOVE_EXCEPTION_FRAME(f) \
-    asm volatile ("movl %0, %%fs:0" : : "r" (f.prev))
 
 #define GET_PC(ctx) (void *)ctx->Eip
 #define SET_PC(ctx, addr) ctx->Eip = (IPTR)addr
@@ -109,7 +101,7 @@ struct AROSCPUContext
 
 #define REG_SAVE_VAR DWORD SegCS_Save, SegSS_Save
 
-#define CONTEXT_INIT_FLAGS(ctx) (ctx)->ContextFlags = CONTEXT_FULL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_DEBUG_REGISTERS|CONTEXT_EXTENDED_REGISTERS
+#define CONTEXT_INIT_FLAGS(ctx) (ctx)->ContextFlags = CONTEXT_FULL|CONTEXT_FLOATING_POINT|CONTEXT_DEBUG_REGISTERS|CONTEXT_EXTENDED_REGISTERS
 
 #define CONTEXT_SAVE_REGS(ctx)    SegCS_Save = (ctx)->SegCs; \
     			          SegSS_Save = (ctx)->SegSs
