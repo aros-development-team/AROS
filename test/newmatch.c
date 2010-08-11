@@ -863,7 +863,7 @@ static void my_matchme(char *pattern, BOOL all)
     struct AnchorPath stackap[2], *AP;
     LONG error = 0;
 
-    AP = (struct AnchorPath *)((((ULONG)stackap) + 3) & ~3);
+    AP = (struct AnchorPath *)((((IPTR)stackap) + 3) & ~3);
 
     memset(AP, 0, sizeof(struct AnchorPath));
 
@@ -871,11 +871,11 @@ static void my_matchme(char *pattern, BOOL all)
 
     if (error != 0)
     {
-	printf("MatchFirst: error = %ld\n", error);
+	printf("MatchFirst: error = %d\n", error);
     }
     else
     {
-        printf("direntrytype = %ld\n", AP->ap_Info.fib_DirEntryType);
+        printf("direntrytype = %d\n", AP->ap_Info.fib_DirEntryType);
         if (!(AP->ap_Flags & APF_ITSWILD) &&
 	     (AP->ap_Info.fib_DirEntryType > 0))
 	{

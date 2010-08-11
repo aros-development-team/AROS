@@ -863,7 +863,7 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
 	linerect.MinY = (objY  - data->icld_ViewY) + data->icld_LVMAttribs->lmva_HeaderHeight + (message->drawmode * data->icld_LVMAttribs->lmva_RowHeight);
 	linerect.MaxY = linerect.MinY + data->icld_LVMAttribs->lmva_RowHeight - 1;
 
-	if (!AndRectRect(&linerect, &objrect, NULL)) return;
+	if (!AndRectRect(&linerect, &objrect, NULL)) return FALSE;
 //	if (!MustRenderRect(data, &linerect)) return;
 
 	SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);

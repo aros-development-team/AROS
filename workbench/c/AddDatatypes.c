@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -862,7 +862,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 						      &DefaultStack)))
 			{
 			    cdt->SegList = SegList;
-			    cdt->Function = (APTR)((((ULONG)SegList) << 2) + 4); // FIXME: is this portable?
+			    cdt->Function = BADDR(SegList) + sizeof(BPTR);
 			}
 
 		    } /* if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR))) */
@@ -1055,7 +1055,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 					    if((SegList = InternalLoadSeg((BPTR)sv, NULL, (LONG_FUNC)FunctionArray, &DefaultStack)))
 					    {
 						cdt->SegList = SegList;
-						cdt->Function = (APTR)((((ULONG)SegList)<<2)+4);  // FIXME: is this portable?
+						cdt->Function = BADDR(SegList) + sizeof(BPTR);  // FIXME: is this portable?
 					    }
 					}
 					else

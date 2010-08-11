@@ -74,7 +74,7 @@ AROS_LH2(ULONG, ObtainInfoA,
     struct GlyphMap **gm_p;
     struct MinList **gw_p;
     Tag   otagtag;
-    ULONG otagdata;
+    IPTR otagdata;
     const struct TagItem *tstate;
     struct TagItem *tag;
 

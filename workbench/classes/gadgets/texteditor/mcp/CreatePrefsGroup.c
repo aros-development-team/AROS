@@ -197,7 +197,7 @@ HOOKPROTONHNO(SelectCode, void, APTR **array)
   {
     char buffer[256];
     struct KeyAction ka;
-    ULONG result;
+    IPTR result;
 
     result = xget(data->keyfunctions, MUIA_Popstring_String);
     nnset((Object *)result, MUIA_UserData, entry->act);
@@ -226,7 +226,7 @@ HOOKPROTONHNO(UpdateCode, void, APTR **array)
   struct InstData_MCP *data = (struct InstData_MCP *)*array++;
   Object *keylist = (Object *)*array++;
   struct te_key entry;
-  ULONG result;
+  IPTR result;
   ULONG active;
 
   ENTER();

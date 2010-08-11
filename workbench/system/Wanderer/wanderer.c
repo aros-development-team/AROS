@@ -528,11 +528,11 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                     DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
                     do
                     {
-                        if ( (int)ent2 != MUIV_IconList_NextIcon_End )
+                        if ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
                             argsCounted++;
                         DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
                     }
-                    while ( (int)ent2 != MUIV_IconList_NextIcon_End );
+                    while ((IPTR)ent2 != MUIV_IconList_NextIcon_End );
                 } /* while ( (windowItem = NextObject(&firstWindow)) ) */
                 D(bug("[Wanderer] argsCounted = %d\n", argsCounted));
                         
@@ -547,7 +547,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                         ent2     = (void*) MUIV_IconList_NextIcon_Start;
                         DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
                         
-                        while ( (int)ent2 != MUIV_IconList_NextIcon_End )
+                        while ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
                         {
                             if ( ent2->ile_IconEntry->ie_IconNode.ln_Name != ent->ile_IconEntry->ie_IconNode.ln_Name )
                             {
@@ -665,7 +665,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 {
                     DoMethod(msg->iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &ent);
                     /*  if not end of selection, process */
-                    if ( (int)ent != MUIV_IconList_NextIcon_End )
+                    if ((IPTR)ent != MUIV_IconList_NextIcon_End )
                     {
                         struct AppW *a = AllocVec(sizeof(struct AppW), MEMF_CLEAR);
                         if (a)
@@ -686,7 +686,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                         else fail = TRUE;
                     }
                 } 
-                while ( ((int)ent != MUIV_IconList_NextIcon_End) && !fail);
+                while (((IPTR)ent != MUIV_IconList_NextIcon_End) && !fail);
 
                 if (!fail && (files > 0))
                 {
@@ -1808,7 +1808,7 @@ void wanderer_menufunc_icon_rename(void)
     {
         DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
 
-        if ((int)entry != MUIV_IconList_NextIcon_End)
+        if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
             BPTR lock   = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
             BPTR parent = ParentDir(lock);
@@ -2491,7 +2491,7 @@ void wanderer_menufunc_icon_delete(void)
     {
         do
         {   
-            if ((int)entry != MUIV_IconList_NextIcon_End)
+            if ((IPTR)entry != MUIV_IconList_NextIcon_End)
             {  
                 /* copy via filesystems.c */
                 D(bug("[Wanderer] Delete \"%s\"\n", entry->ile_IconEntry->ie_IconNode.ln_Name);)
@@ -2500,7 +2500,7 @@ void wanderer_menufunc_icon_delete(void)
             }
             DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
         } 
-        while ( (int)entry != MUIV_IconList_NextIcon_End );
+        while ((IPTR)entry != MUIV_IconList_NextIcon_End );
         DisposeCopyDisplay(&dobjects);
     }
     // Only update list if anything happened to the icons!
@@ -2523,7 +2523,7 @@ void wanderer_menufunc_icon_format(void)
     DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
 
     /* Process only first selected entry */
-    if ((int)entry != MUIV_IconList_NextIcon_End)
+    if ((IPTR)entry != MUIV_IconList_NextIcon_End)
     {  
 	BPTR lock   = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
 D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_IconNode.ln_Name);)

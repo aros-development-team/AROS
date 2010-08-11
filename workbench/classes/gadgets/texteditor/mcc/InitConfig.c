@@ -104,7 +104,7 @@ static void SetCol(struct InstData *data, void *obj, long item, ULONG *storage, 
 /// InitConfig()
 void InitConfig(struct InstData *data, Object *obj)
 {
-  ULONG setting = 0;
+  IPTR setting = 0;
   BOOL loadDefaultKeys = FALSE;
 
   ENTER();

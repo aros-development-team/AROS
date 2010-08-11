@@ -87,7 +87,7 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     
     EnterFunc(bug("Kbd::New()\n"));
 
-#if 1 /* FIXME: REMOVEME: just a debugging thing for the weird s-key problem */
+#if __WORDSIZE == 32 /* FIXME: REMOVEME: just a debugging thing for the weird s-key problem */
     SysBase->ex_Reserved2[1] = (ULONG)std_keytable;
 #endif
      

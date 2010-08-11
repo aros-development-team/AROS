@@ -43,21 +43,21 @@ struct MUI_NotifyData
 #define MUIM_SetUDataOnce        (MUIB_MUI|0x0042ca19) /* MUI: V11 */
 #define MUIM_WriteLong           (MUIB_MUI|0x00428d86) /* MUI: V6  */
 #define MUIM_WriteString         (MUIB_MUI|0x00424bf4) /* MUI: V6  */
-struct MUIP_CallHook             {STACKED ULONG MethodID; STACKED struct Hook *Hook; STACKED ULONG param1; /* more might follow */};
+struct MUIP_CallHook             {STACKED ULONG MethodID; STACKED struct Hook *Hook; STACKED IPTR param1; /* more might follow */};
 struct MUIP_Export               {STACKED ULONG MethodID; STACKED Object *dataspace;};
-struct MUIP_FindUData            {STACKED ULONG MethodID; STACKED ULONG udata;};
+struct MUIP_FindUData            {STACKED ULONG MethodID; STACKED IPTR udata;};
 struct MUIP_GetConfigItem        {STACKED ULONG MethodID; STACKED ULONG id; STACKED APTR *storage;};
 struct MUIP_GetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED APTR *storage;};
 struct MUIP_Import               {STACKED ULONG MethodID; STACKED Object *dataspace;};
 struct MUIP_KillNotify           {STACKED ULONG MethodID; STACKED ULONG TrigAttr;};
 struct MUIP_KillNotifyObj        {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED Object *dest;};
-struct MUIP_MultiSet             {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val; STACKED APTR obj; /* more might follow */};
-struct MUIP_NoNotifySet          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val; /* more might follow */};
-struct MUIP_Notify               {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED ULONG TrigVal; STACKED APTR DestObj; STACKED ULONG FollowParams; /* more might follow */};
-struct MUIP_Set                  {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val;};
-struct MUIP_SetAsString          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED char *format; STACKED ULONG val; /* more might follow */};
-struct MUIP_SetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED ULONG val;};
-struct MUIP_SetUDataOnce         {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED ULONG val;};
+struct MUIP_MultiSet             {STACKED ULONG MethodID; STACKED ULONG attr; STACKED IPTR val; STACKED APTR obj; /* more might follow */};
+struct MUIP_NoNotifySet          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED IPTR val; /* more might follow */};
+struct MUIP_Notify               {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED IPTR TrigVal; STACKED APTR DestObj; STACKED ULONG FollowParams; /* more might follow */};
+struct MUIP_Set                  {STACKED ULONG MethodID; STACKED ULONG attr; STACKED IPTR val;};
+struct MUIP_SetAsString          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED char *format; STACKED IPTR val; /* more might follow */};
+struct MUIP_SetUData             {STACKED ULONG MethodID; STACKED IPTR udata; STACKED ULONG attr; STACKED IPTR val;};
+struct MUIP_SetUDataOnce         {STACKED ULONG MethodID; STACKED IPTR udata; STACKED ULONG attr; STACKED IPTR val;};
 struct MUIP_WriteLong            {STACKED ULONG MethodID; STACKED ULONG val; STACKED ULONG *memory;};
 struct MUIP_WriteString          {STACKED ULONG MethodID; STACKED char *str; STACKED char *memory;};
 
