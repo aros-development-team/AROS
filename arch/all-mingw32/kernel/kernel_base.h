@@ -55,12 +55,11 @@ struct KernelBase
 #ifdef __AROS__
 struct KernelInterface
 {
-    long (*core_init)(unsigned long TimerPeriod, struct ExecBase *SysBase, APTR *KernelBase);
+    int (*core_init)(unsigned int TimerPeriod, struct ExecBase *SysBase, APTR *KernelBase);
     void (*core_intr_disable)(void);
     void (*core_intr_enable)(void);
     void (*core_syscall)(unsigned long n);
     unsigned char (*core_is_super)(void);
-    long (*core_exception)(void *ExceptionRecord, void *EstablisherFrame, void *ContextRecord, void *DispatcherContext);
 };
 
 extern struct HostInterface *HostIFace;

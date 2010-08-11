@@ -14,7 +14,6 @@
 #include "kernel_debug.h"
 #include "kernel_init.h"
 #include "kernel_tagitems.h"
-#include "exception.h"
 
 #define D(x)
 
@@ -46,7 +45,6 @@ char *kernel_functions[] = {
     "core_intr_enable",
     "core_syscall",
     "core_is_super",
-    "core_exception",
     NULL
 };
 
@@ -160,18 +158,10 @@ int __startup startup(struct TagItem *msg)
 
     SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
 
-    /*
-     * BEGIN_EXCEPTION() and END_EXCEPTION() are clever macros which create a SEH
-     * frame around the nested code. We use it in order to catch exceptions in
-     * AROS thread.
-     */
-    BEGIN_EXCEPTION(KernelIFace.core_exception);
-
     mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
 
     mykprintf("[Kernel] leaving startup!\n");
-    END_EXCEPTION();
 
     HostIFace->HostLib_Close(hostlib, NULL);
     return 1;

@@ -34,6 +34,7 @@ typedef unsigned char UBYTE;
 #define AROS_EXCEPTION_SYSCALL 0x00080001
 
 HANDLE MainThread;
+DWORD MainThreadId;
 DWORD *LastErrorPtr;
 unsigned char Ints_Enabled;
 unsigned short Ints_Num;
@@ -98,96 +99,119 @@ struct ExceptionTranslation AmigaTraps[] = {
     {0				    , 0}
  };
 
-EXCEPTION_DISPOSITION __declspec(dllexport) core_exception(EXCEPTION_RECORD *ExceptionRecord, void *EstablisherFrame, CONTEXT *ContextRecord, void *DispatcherContext)
+LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
 {
-	void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
-	struct ExceptionTranslation *ex;
-    	REG_SAVE_VAR;
+    DWORD ExceptionCode = exptr->ExceptionRecord->ExceptionCode;
+    CONTEXT *ContextRecord = exptr->ContextRecord;
+    void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
+    struct ExceptionTranslation *ex;
+    DWORD ThreadId;
+    REG_SAVE_VAR;
 
-	/* We are already in interrupt and we must not be preempted by task switcher. 
-	   Note that up to this point we still can be preempted by task switcher, i
-	   hope it's okay. */
-        Ints_Enabled = 0;
-        /* Enter supervisor mode, */
-	Supervisor = 1;
-	/* Save important registers that must not be modified */
-	CONTEXT_SAVE_REGS(ContextRecord);
+    /* We are already in interrupt and we must not be preempted by task switcher. 
+       Note that up to this point we still can be preempted by task switcher, i
+       hope it's okay. */
+    Ints_Enabled = 0;
 
-	switch (ExceptionRecord->ExceptionCode) {
-	case AROS_EXCEPTION_SYSCALL:
-	    /* It's a SysCall exception issued by core_syscall() */
-	    switch (*ExceptionRecord->ExceptionInformation)
-	    {
-	    case SC_CAUSE:
-	        core_Cause(SysBase);
-	        break;
-	    case SC_DISPATCH:
-	        core_Dispatch(ContextRecord, SysBase);
-	        break;
-	    case SC_SWITCH:
-	        core_Switch(ContextRecord, SysBase);
-	        break;
-	    case SC_SCHEDULE:
-	        core_Schedule(ContextRecord, SysBase);
-	        break;
-	    }
+    /* Exception in other thread, probably in virtual hardware. Die. */
+    ThreadId = GetCurrentThreadId();
+    if (ThreadId != MainThreadId)
+    {
+	printf("[KRN] Service thread 0x%08lX, exception 0x%08lX\n", ThreadId, ExceptionCode);
+	PRINT_CPUCONTEXT(ContextRecord);
+
+	return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    /* Enter supervisor mode, */
+    Supervisor = 1;
+    /* Save important registers that must not be modified */
+    CONTEXT_SAVE_REGS(ContextRecord);
+
+    switch (ExceptionCode) {
+    case AROS_EXCEPTION_SYSCALL:
+	/* It's a SysCall exception issued by core_syscall() */
+	switch (*exptr->ExceptionRecord->ExceptionInformation)
+	{
+	case SC_CAUSE:
+	    core_Cause(SysBase);
 	    break;
-	default:
-	    /* It's something else, likely a CPU trap */
-	    printf("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", ExceptionRecord->ExceptionCode, SysBase, KernelBase);
 
-	    /* Find out trap handler for caught task */
-	    if (SysBase)
-	    {
-        	struct Task *t = SysBase->ThisTask;
+	case SC_DISPATCH:
+	    core_Dispatch(ContextRecord, SysBase);
+	    break;
 
-        	if (t) {
-		    printf("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
-		    trapHandler = t->tc_TrapCode;
-		    DT(printf("[KRN] Task trap handler 0x%p\n", trapHandler));
-		} else
-		    printf("[KRN] No task\n");
+	case SC_SWITCH:
+	    core_Switch(ContextRecord, SysBase);
+	    break;
+
+	case SC_SCHEDULE:
+	    core_Schedule(ContextRecord, SysBase);
+	    break;
+	}
+	break;
+
+    default:
+	/* It's something else, likely a CPU trap */
+	printf("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", ExceptionCode, SysBase, KernelBase);
+
+	/* Find out trap handler for caught task */
+	if (SysBase)
+	{
+            struct Task *t = SysBase->ThisTask;
+
+            if (t) {
+		printf("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
+		trapHandler = t->tc_TrapCode;
+		DT(printf("[KRN] Task trap handler 0x%p\n", trapHandler));
+	    } else
+		printf("[KRN] No task\n");
 		
-		DT(printf("[KRN] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
-		if (!trapHandler)
-		    trapHandler = SysBase->TaskTrapCode;
-	    }
-
-    	    PRINT_CPUCONTEXT(ContextRecord);
-
-	    /* Translate Windows exception code to CPU and exec trap numbers */
-	    for (ex = Traps; ex->ExceptionCode; ex++)
-	    {
-		if (ExceptionRecord->ExceptionCode == ex->ExceptionCode)
-		    break;
-	    }
-	    DI(printf("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
-
-	    if (ex->CPUTrap == -1) {
-		if (user_exception_handler(ex->CPUTrap, KernelBase->kb_Exceptions, ContextRecord))
-		    break;
-	    }
-
-	    if (trapHandler && (ex->AmigaTrap != -1)) {
-		/* Call our trap handler. Note that we may return, this means that the handler has
-		   fixed the problem somehow and we may safely continue */
-		DT(printf("[KRN] Amiga trap %d\n", ex->AmigaTrap));
-
-		trapHandler(ex->AmigaTrap, ContextRecord);
-	    } else {
-	        /* We should never get here. But if we do, it's a true emergency.
-		   And we tell Windows to throw us away. */
-    	        printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
-	        return ExceptionContinueSearch;
-	    }
+	    DT(printf("[KRN] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
+	    if (!trapHandler)
+		trapHandler = SysBase->TaskTrapCode;
 	}
 
-	/* Restore important registers */
-	CONTEXT_RESTORE_REGS(ContextRecord);
-	/* Exit supervisor */
-	core_LeaveInterrupt();
+    	PRINT_CPUCONTEXT(ContextRecord);
 
-	return ExceptionContinueExecution;
+	/* Translate Windows exception code to CPU and exec trap numbers */
+	for (ex = Traps; ex->ExceptionCode; ex++)
+	{
+	    if (ExceptionCode == ex->ExceptionCode)
+		break;
+	}
+	DI(printf("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
+
+	if (ex->CPUTrap == -1)
+	{
+	    if (user_exception_handler(ex->CPUTrap, KernelBase->kb_Exceptions, ContextRecord))
+		break;
+	}
+
+	if (trapHandler && (ex->AmigaTrap != -1))
+	{
+	    /* Call our trap handler. Note that we may return, this means that the handler has
+	       fixed the problem somehow and we may safely continue */
+	    DT(printf("[KRN] Amiga trap %d\n", ex->AmigaTrap));
+
+	    trapHandler(ex->AmigaTrap, ContextRecord);
+	}
+	else
+	{
+	    /* We should never get here. But if we do, it's a true emergency.
+	       And we tell Windows to throw us away. */
+    	    printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
+
+	    return EXCEPTION_CONTINUE_SEARCH;
+	}
+    }
+
+    /* Restore important registers */
+    CONTEXT_RESTORE_REGS(ContextRecord);
+    /* Exit supervisor */
+    core_LeaveInterrupt();
+
+    return EXCEPTION_CONTINUE_EXECUTION;
 }
 
 DWORD WINAPI TaskSwitcher()
@@ -308,7 +332,7 @@ unsigned char __declspec(dllexport) core_is_super(void)
     return Supervisor;
 }
 
-int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *sBase, struct KernelBase *kBase)
+int __declspec(dllexport) core_init(unsigned int TimerPeriod, struct ExecBase *sBase, struct KernelBase *kBase)
 {
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
@@ -329,6 +353,10 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
 	IntObjects[i] = NULL;
         AllocatedInts[i] = 0;
     }
+
+    MainThreadId = GetCurrentThreadId();
+    SetUnhandledExceptionFilter(exceptionHandler);
+
     IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
     if (IntObjects[INT_TIMER]) {
 	AllocatedInts[INT_TIMER] = 1;
