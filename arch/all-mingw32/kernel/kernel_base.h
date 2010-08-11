@@ -58,7 +58,7 @@ struct KernelInterface
     int (*core_init)(unsigned int TimerPeriod, struct ExecBase *SysBase, APTR *KernelBase);
     void (*core_intr_disable)(void);
     void (*core_intr_enable)(void);
-    void (*core_syscall)(unsigned long n);
+    void (*core_syscall)(const unsigned long n);
     unsigned char (*core_is_super)(void);
 };
 

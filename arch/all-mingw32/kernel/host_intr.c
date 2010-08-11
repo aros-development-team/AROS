@@ -311,7 +311,7 @@ void __declspec(dllexport) core_intr_enable(void)
     }
 }
 
-void __declspec(dllexport) core_syscall(unsigned long n)
+void __declspec(dllexport) core_syscall(const unsigned long n)
 {
     /* This ensures that we are never preempted inside RaiseException().
        Upon exit from the syscall interrupt state will be restored by

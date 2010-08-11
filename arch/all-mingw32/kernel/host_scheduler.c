@@ -122,7 +122,7 @@ void core_Switch(CONTEXT *regs, struct ExecBase *SysBase)
         
     /* store IDNestCnt into tasks's structure */  
     task->tc_IDNestCnt = SysBase->IDNestCnt;
-    task->tc_SPReg = (APTR)regs->Esp;
+    task->tc_SPReg = GET_SP(regs);
         
     /* And enable interrupts */
     SysBase->IDNestCnt = -1;

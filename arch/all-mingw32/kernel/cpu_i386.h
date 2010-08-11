@@ -59,9 +59,6 @@ struct AROSCPUContext
 	ULONG	LastError;
 };
 
-#define GET_PC(ctx) (void *)ctx->Eip
-#define SET_PC(ctx, addr) ctx->Eip = (IPTR)addr
-
 #else
 
 struct AROSCPUContext
@@ -73,6 +70,10 @@ struct AROSCPUContext
 #define kprintf printf
 
 #endif
+
+#define GET_PC(ctx) (void *)ctx->Eip
+#define GET_SP(ctx) (void *)ctx->Esp
+#define SET_PC(ctx, addr) ctx->Eip = (unsigned long)addr
 
 #define EXCEPTIONS_COUNT 19
 
