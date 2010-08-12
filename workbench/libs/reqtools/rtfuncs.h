@@ -9,7 +9,7 @@ SAVEDS ASM int RTFuncs_Null(REGPARAM(a6, struct ReqToolsBase *, RTBase));
 SAVEDS ASM struct ReqToolsPrefs *RTFuncs_LockPrefs(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase));
 SAVEDS ASM void RTFuncs_UnlockPrefs(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase));
 
-SAVEDS ASM ULONG RTFuncs_rtReqHandlerA(REGPARAM(a1, struct rtHandlerInfo *, handlerinfo),
+SAVEDS ASM IPTR RTFuncs_rtReqHandlerA(REGPARAM(a1, struct rtHandlerInfo *, handlerinfo),
     	    	    	    	       REGPARAM(d0, ULONG, sigs),
 				       REGPARAM(a0, struct TagItem *, taglist));
 

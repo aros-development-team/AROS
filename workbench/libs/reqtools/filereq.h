@@ -74,7 +74,7 @@
 #endif
 
 #define D_S(type,name)	UBYTE a_##name[ sizeof( type ) + 3 ]; \
-			type *name = ( type * )( ( LONG ) ( a_##name + 3 ) & ~3 );
+			type *name = ( type * )( ( IPTR ) ( a_##name + 3 ) & ~3 );
 
 /****************************************************************************************/
 
@@ -267,7 +267,7 @@ typedef struct RealHandlerInfo	GlobData;
 
 struct RealHandlerInfo
 {
-    ULONG				(*func)();        /* private */
+    IPTR				(*func)();        /* private */
     ULONG				WaitMask;
     ULONG				DoNotWait;
 
@@ -393,7 +393,7 @@ void REGARGS ShowFontSample (GlobData *, int, int);
 void REGARGS UnLockReqLock (GlobData *);
 void REGARGS NewDir (GlobData *);
 LONG REGARGS IntGadgetBounds (GlobData *, struct Gadget *, LONG, LONG);
-ULONG ASM SAVEDS PropReqHandler (REGPARAM(a1, struct RealHandlerInfo *,),
+IPTR ASM SAVEDS PropReqHandler (REGPARAM(a1, struct RealHandlerInfo *,),
 				 REGPARAM(d0, ULONG,),
 				 REGPARAM(a0, struct TagItem *,));
 
@@ -419,7 +419,7 @@ void ASM SAVEDS IntuiMsgFunc (
 int REGARGS FindEntryPos (GlobData *, char *, int);
 void REGARGS DeselectFiles (GlobData *, int, int);
 int REGARGS ClickDown (GlobData *, int, struct IntuiMessage *, int);
-ULONG REGARGS LeaveReq (GlobData *, char *);
+IPTR REGARGS LeaveReq (GlobData *, char *);
 void REGARGS FreeAll (GlobData *);
 void REGARGS FreeAllCheckBuffer (GlobData *);
 struct rtFileList *REGARGS AllocSelectedFiles (GlobData *);

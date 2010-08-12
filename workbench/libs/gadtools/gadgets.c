@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     GadTools gadget creation functions
@@ -603,7 +603,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 
     	    lmaxpixellen = lmaxlen * xsize;
     	        
-    	    ltags[4].ti_Data = (ULONG)tattr;
+    	    ltags[4].ti_Data = (IPTR)tattr;
     	    	
     	} /* if (!lmaxpixellen) */
     	

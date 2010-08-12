@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2006, The AROS Development Team.
+    Copyright  2002-2010, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -194,9 +194,9 @@ struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
 /****************************************************************
  Our standard hook function, for easy call backs
 *****************************************************************/
-static void hook_func_standard(struct Hook *h, void *dummy, ULONG * funcptr)
+static void hook_func_standard(struct Hook *h, void *dummy, IPTR *funcptr)
 {
-    void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
+    void (*func) (ULONG *) = (void (*)(IPTR *)) (*funcptr);
     if (func) func(funcptr + 1);
 }
 

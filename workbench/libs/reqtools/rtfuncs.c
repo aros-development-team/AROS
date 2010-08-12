@@ -337,11 +337,11 @@ SAVEDS ASM void RTFuncs_UnlockPrefs(REGPARAM(a6, struct ReqToolsBase *, ReqTools
 
 /****************************************************************************************/
 
-SAVEDS ASM ULONG RTFuncs_rtReqHandlerA(REGPARAM(a1, struct rtHandlerInfo *, handlerinfo),
+SAVEDS ASM IPTR RTFuncs_rtReqHandlerA(REGPARAM(a1, struct rtHandlerInfo *, handlerinfo),
     	    	    	    	       REGPARAM(d0, ULONG, sigs),
 				       REGPARAM(a0, struct TagItem *, taglist))
 {
-    return  ((ULONG (*)(REGPARAM(a1, struct rtHandlerInfo *,),
+    return  ((IPTR (*)(REGPARAM(a1, struct rtHandlerInfo *,),
     	    	    	REGPARAM(d0, ULONG,),
 			REGPARAM(a0, struct TagItem *,)))handlerinfo->private1)(handlerinfo, sigs, taglist);
 }

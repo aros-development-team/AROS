@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -271,8 +271,8 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	dobj->do_DrawerData = AllocPooled(pool, sizeof(struct DrawerData));
     	if (!dobj->do_DrawerData) goto fail;
 	
- 	if (((LONG)icon->do_Gadget.UserData > 0) &&
-	    ((LONG)icon->do_Gadget.UserData <= WB_DISKREVISION))
+ 	if (((SIPTR)icon->do_Gadget.UserData > 0) &&
+	    ((SIPTR)icon->do_Gadget.UserData <= WB_DISKREVISION))
 	{
 	    size = sizeof(struct DrawerData);
 	}

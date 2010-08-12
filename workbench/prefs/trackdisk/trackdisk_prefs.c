@@ -55,7 +55,7 @@ int main(void)
     LoadPrefs();
     for (i = 0; i < TD_NUMUNITS; i++) {
 	    MainGrp.DriveGroup[i].ti_Tag = MUIA_Group_Child;
-	    MainGrp.DriveGroup[i].ti_Data = (ULONG)CreateDriveControls(&Drives[i], i);
+	    MainGrp.DriveGroup[i].ti_Data = (IPTR)CreateDriveControls(&Drives[i], i);
     }
     MainGrp.TagChild = MUIA_Group_Child;
     MainGrp.ButtonsGroup = MUI_NewObject("Group.mui", MUIA_Group_Horiz, TRUE,

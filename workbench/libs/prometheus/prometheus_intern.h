@@ -20,8 +20,8 @@
 
 
 #ifndef UPINT
-typedef ULONG UPINT;
-typedef LONG PINT;
+typedef IPTR UPINT;
+typedef SIPTR PINT;
 #endif
 
 

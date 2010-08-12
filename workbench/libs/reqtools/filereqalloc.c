@@ -185,7 +185,7 @@ ChangeReqAttrA (REGPARAM(a1, APTR, req),
     	        REGPARAM(a0, struct TagItem *, taglist))
 {
     UBYTE			fibspace[sizeof(struct FileInfoBlock)+4];
-    struct FileInfoBlock	*fib = (struct FileInfoBlock *)(((LONG)&fibspace[3] >> 2) << 2);
+    struct FileInfoBlock	*fib = (struct FileInfoBlock *)(((IPTR)&fibspace[3] >> 2) << 2);
     struct TagItem 		*tag;
     const struct TagItem *tstate = taglist;
     struct RealFileRequester 	*freq;

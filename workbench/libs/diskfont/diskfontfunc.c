@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hook for handling fonts in FONTS:
@@ -1281,7 +1281,7 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_inte
 	AddFont(tf);				
 	tf->tf_Accessors++;
 
-	dfh = (struct DiskFontHeader *)((UBYTE *)(tf) - (LONG)OFFSET(DiskFontHeader, dfh_TF));
+	dfh = (struct DiskFontHeader *)((UBYTE *)(tf) - (IPTR)OFFSET(DiskFontHeader, dfh_TF));
 
 	/* Paranoia check */
 	if (dfh->dfh_FileID == DFH_ID)
@@ -1424,7 +1424,7 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
 	AddFont(tf);				
 	tf->tf_Accessors++;
 
-	dfh = (struct DiskFontHeader *)((UBYTE *)(tf) - (LONG)OFFSET(DiskFontHeader, dfh_TF));
+	dfh = (struct DiskFontHeader *)((UBYTE *)(tf) - (IPTR)OFFSET(DiskFontHeader, dfh_TF));
 
 	/* Paranoia check */
 	if (dfh->dfh_FileID == DFH_ID)

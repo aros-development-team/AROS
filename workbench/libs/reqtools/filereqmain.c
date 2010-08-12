@@ -98,7 +98,7 @@ ExpandLink( GlobData *glob )
 
 /****************************************************************************************/
 
-ULONG ASM SAVEDS PropReqHandler (
+IPTR ASM SAVEDS PropReqHandler (
     REGPARAM(a1, struct RealHandlerInfo *, glob),
     REGPARAM(d0, ULONG, sigs),
     REGPARAM(a0, struct TagItem *, taglist))

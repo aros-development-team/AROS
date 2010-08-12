@@ -127,7 +127,7 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
     SETUP_INST_DATA;
 
     data->language=NewObject(Language_CLASS->mcc_Class,NULL,
-			      MA_PrefsObject, (ULONG) self,
+			      MA_PrefsObject, self,
 			      TAG_DONE);
 
     if(!data->language)
@@ -135,7 +135,7 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
 
     data->country= ListviewObject, MUIA_Listview_List,
 			NewObject(Country_CLASS->mcc_Class,0,
-				  MA_PrefsObject, (ULONG) self,
+				  MA_PrefsObject, self,
 			  	  TAG_DONE),
 		   End;
 
@@ -143,7 +143,7 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
 	return handle_New_error(self,CLASS,"ERROR: Unable to create country object!\n");
 
     data->timezone=NewObject(Timezone_CLASS->mcc_Class,NULL,
-                             MA_PrefsObject, (ULONG) self,
+                             MA_PrefsObject, self,
 			     TAG_DONE);
 
     if(!data->timezone)
@@ -200,7 +200,7 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
     if(!data->child)
 	return handle_New_error(self, CLASS, "ERROR: unable to create registergroup\n");
 
-    DoMethod(self,OM_ADDMEMBER,(ULONG) data->child);
+    DoMethod(self,OM_ADDMEMBER, data->child);
 
     DoMethod(data->country,COUNTRY_FILL);
 

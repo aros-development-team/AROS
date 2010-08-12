@@ -59,7 +59,7 @@ APTR ASM SAVEDS FileRequestA (
     struct Locale 			*locale = NULL;
     char 				*pubname = NULL;
     int 				reqhandler = FALSE, mon, propmaskset = FALSE;
-    ULONG 				tagdata;
+    IPTR 				tagdata;
 
 
     if (!(glob = AllocVec (sizeof(GlobData), MEMF_PUBLIC|MEMF_CLEAR)))
@@ -365,7 +365,7 @@ retryopenwin:
     my_SetStringGadget (glob->reqwin, glob->filegad, filename);
 
     /* fill in RealHandlerInfo */
-    glob->func = (ULONG (*)())PropReqHandler;
+    glob->func = (IPTR (*)())PropReqHandler;
     glob->WaitMask = glob->winmask = (1 << glob->reqwin->UserPort->mp_SigBit);
     if (glob->appwindow) glob->WaitMask |= (1 << glob->appwinport->mp_SigBit);
     glob->DoNotWait = TRUE;
@@ -818,7 +818,7 @@ nodirselect:
 * Requester exit *
 *****************/
 
-ULONG REGARGS LeaveReq (GlobData *glob, char *filename)
+IPTR REGARGS LeaveReq (GlobData *glob, char *filename)
 {
     struct rtFileList *selfile = (APTR)TRUE;
     int flags = glob->flags, nodir = glob->nodir;
@@ -867,7 +867,7 @@ ULONG REGARGS LeaveReq (GlobData *glob, char *filename)
     
     FreeAllCheckBuffer (glob);
     
-    return ((ULONG)selfile);
+    return ((IPTR)selfile);
 }
 
 /****************************************************************************************/
@@ -974,7 +974,7 @@ struct rtFileList *REGARGS AllocSelectedFiles (GlobData *glob)
 	}
 	
 	ptr->StrLen = isfile ? len : -1;
-	ptr->Name = (char *)(4 + (ULONG)&ptr->Name);
+	ptr->Name = (char *)(4 + (IPTR)&ptr->Name);
 	strcpy (ptr->Name, str);
 	*last = ptr;
 	last = &ptr->Next;

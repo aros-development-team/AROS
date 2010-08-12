@@ -326,7 +326,7 @@ AROS_LH1(void, beginio,
   {
 #if NEWSTYLE_DEVICE
   case NSCMD_DEVICEQUERY:
-    if(ioreq->IOSer.io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+    if(ioreq->IOSer.io_Length < ((IPTR)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
     {
       ioreq->IOSer.io_Error = IOERR_BADLENGTH;
     }

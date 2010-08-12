@@ -885,12 +885,7 @@ AllocDevEntry( GlobData *glob, struct DosList *dlist, STRPTR name )
 	  glob->buff->pool, sizeof( struct DeviceEntry ) ) ) )
     {
 	strcpy( deventry->name, name );
-#ifdef __AROS__
-#warning FIXME: dlist->dol_Task does not exist in AROS. For now assuming 0 here.
-	deventry->task = NULL;
-#else
 	deventry->task = dlist->dol_Task;
-#endif
 	deventry->resolved = FALSE;
     }
 
@@ -1005,17 +1000,8 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
 
 	while( deventry )
 	{
-#ifdef __AROS__
-#warning FIXME: AROS has no dol_Task!
-#else
 	    devmatch |= ( deventry->task == dlist->dol_Task );
-#endif
-#ifdef __AROS__
-#warning FIXME: AROS again has no dol_Task!
-	    if( !deventry->resolved && deventry->task && devmatch )
-#else
 	    if( !deventry->resolved && deventry->task && ( deventry->task == dlist->dol_Task ) )
-#endif
 	    {
 		GetVolName( dlist->dol_Name, devname );
 		AddDisk( glob, deventry, devname, SIZE_CALCULATE, volreqflags );

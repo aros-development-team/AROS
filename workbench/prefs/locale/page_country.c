@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2008, The AROS Development Team. All rights reserved.
+    Copyright  2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -99,7 +99,7 @@ STATIC VOID init_country_list(struct MUI_CountryData *data) {
 
 	if ((lock = Lock(filename, ACCESS_READ)) != NULL) {
 	    data->pic[i]->pic=(APTR) MUI_NewObject("Dtpic.mui",
-	                               MUIA_Dtpic_Name,(ULONG) filename,
+	                               MUIA_Dtpic_Name, filename,
 				       TAG_DONE);
 
 	    UnLock(lock);
@@ -285,7 +285,7 @@ static IPTR Country_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_CountryData *data = INST_DATA(cl, obj);
     struct CountryEntry    *entry;
-    ULONG rc;
+    IPTR rc;
     ULONG nr;
     ULONG i;
 
@@ -299,7 +299,7 @@ static IPTR Country_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    ForeachNode(&country_list, entry) {
 		if(i==nr)
 		{
-		    rc = (ULONG)entry->lve.realname;
+		    rc = (IPTR)entry->lve.realname;
 		}
 		i++;
 	    }

@@ -51,50 +51,50 @@
 
 	struct TagItem *tag;
 	const struct TagItem *tstate=tags;
-	ULONG *where;
+	IPTR *where;
 	ULONG ret=0;
 
 	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 
 	while((tag=NextTagItem(&tstate))){
 		ret++;
-		where=(ULONG *)tag->ti_Data;
+		where=(IPTR *)tag->ti_Data;
 		switch(tag->ti_Tag){
 			case MLINK_Name:
-				*where=(ULONG)midilink->ml_Node.ln_Name;
+				*where=(IPTR)midilink->ml_Node.ln_Name;
 				break;
 			case MLINK_Location:
-				*where=(ULONG)midilink->ml_Location->mcl_Node.ln_Name;
+				*where=(IPTR)midilink->ml_Location->mcl_Node.ln_Name;
 				break;
 			case MLINK_ChannelMask:
-				*where=(ULONG)midilink->ml_ChannelMask;
+				*where=(IPTR)midilink->ml_ChannelMask;
 				break;
 			case MLINK_EventMask:
-				*where=(ULONG)midilink->ml_EventTypeMask;
+				*where=(IPTR)midilink->ml_EventTypeMask;
 				break;
 			case MLINK_UserData:
-				*where=(ULONG)midilink->ml_UserData;
+				*where=(IPTR)midilink->ml_UserData;
 				break;
 			case MLINK_Comment:
 				ret--;
 				break;
 			case MLINK_PortID:
-				*where=(ULONG)midilink->ml_PortID;
+				*where=(IPTR)midilink->ml_PortID;
 				break;
 			case MLINK_Private:
-				*where=(ULONG)midilink->ml_Flags&MLF_PrivateLink;
+				*where=(IPTR)midilink->ml_Flags&MLF_PrivateLink;
 				break;
 			case MLINK_Priority:
-				*where=(ULONG)midilink->ml_Node.ln_Pri;
+				*where=(IPTR)midilink->ml_Node.ln_Pri;
 				break;
 			case MLINK_SysExFilter:
-				*where=(ULONG)midilink->ml_SysExFilter.sxf_Packed;
+				*where=(IPTR)midilink->ml_SysExFilter.sxf_Packed;
 				break;
 			case MLINK_SysExFilterX:
-				*where=(ULONG)midilink->ml_SysExFilter.sxf_Packed;
+				*where=(IPTR)midilink->ml_SysExFilter.sxf_Packed;
 				break;
 			case MLINK_Parse:
-				*where=(ULONG)midilink->ml_ParserData==0?FALSE:TRUE;
+				*where=(IPTR)midilink->ml_ParserData==0?FALSE:TRUE;
 				break;
 			default:
 				ret--;

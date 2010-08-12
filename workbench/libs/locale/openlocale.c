@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     OpenLocale() - Give access to a new locale.
@@ -116,7 +116,7 @@ extern void InitLocale(
 		return NULL;
 	}
 
-	iff->iff_Stream = (ULONG)Open(name, MODE_OLDFILE);
+	iff->iff_Stream = (IPTR)Open(name, MODE_OLDFILE);
 
 	DEBUG_OPENLOCALE(dprintf("OpenLocale: stream 0x%lx\n",iff->iff_Stream));
 
