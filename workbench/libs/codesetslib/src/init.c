@@ -30,6 +30,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+#include <libraries/iffparse.h>
 
 #include "debug.h"
 
@@ -129,44 +130,47 @@ ULONG freeBase(struct LibraryHeader *lib)
 struct loc
 {
   const char *name;
-  ULONG  len;
+  ULONG len;
   const char *codesetName;
+  ULONG carPlateCode;
+  ULONG iso3166Code;
 };
 
 // table with the default LANGUAGE<>CHARSET mapping we
 // are using in codesets.library.
+// the IOS3166 codes have been taken from http://de.wikipedia.org/wiki/ISO-3166-1-Kodierliste
 static const struct loc locs[] =
 {
-  { "bosanski",     8,  "ISO-8859-2"        },
-  { "català",       6,  "ISO-8859-1 + Euro" },
-  { "czech",        5,  "ISO-8859-2"        },
-  { "dansk",        5,  "ISO-8859-1 + Euro" },
-  { "deutsch",      7,  "ISO-8859-1 + Euro" },
-  { "english",      7,  "ISO-8859-1 + Euro" },
-  { "esperanto",    9,  "ISO-8859-3"        },
-  { "eesti",        5,  "ISO-8859-15"       },
-  { "èe¹tina",      7,  "ISO-8859-2"        },  /* Czech in MorphOS 2.0 */
-  { "español",      7,  "ISO-8859-1 + Euro" },
-  { "français",     8,  "ISO-8859-1 + Euro" },
-  { "gaeilge",      7,  "ISO-8859-15"       },
-  { "galego",       6,  "ISO-8859-1 + Euro" },
-  { "greek",        5,  "ISO-8859-7"        },
-  { "hrvatski",     8,  "ISO-8859-2"        },
-  { "italiano",     8,  "ISO-8859-1 + Euro" },
-  { "lietuvi",      7,  "ISO-8859-13"       },
-  { "magyar",       6,  "ISO-8859-2"        },
-  { "nederlands",  10,  "ISO-8859-1 + Euro" },
-  { "norsk",        5,  "ISO-8859-1 + Euro" },
-  { "polski",       6,  "ISO-8859-2"        },
-  { "português",    9,  "ISO-8859-1 + Euro" },
-  { "russian",      7,  "Amiga-1251"        },
-  { "slovak",       6,  "ISO-8859-2"        },
-  { "slovensko",    9,  "ISO-8859-2"        },
-  { "srpski",       6,  "ISO-8859-2"        },
-  { "suomi",        5,  "ISO-8859-1"        },
-  { "svenska",      7,  "ISO-8859-1 + Euro" },
-  { "türkçe",       6,  "ISO-8859-9"        },
-  { NULL,           0,  NULL                }
+  { "bosanski",     8,  "ISO-8859-2",        MAKE_ID('B', 'A', 0, 0),   MAKE_ID('B', 'I', 'H', 0) },
+  { "català",       6,  "ISO-8859-1 + Euro", MAKE_ID('E', 0, 0, 0),     MAKE_ID('E', 'S', 'P', 0) }, // same as spanish
+  { "czech",        5,  "ISO-8859-2",        MAKE_ID('C', 'Z', 0, 0),   MAKE_ID('C', 'Z', 'E', 0) },
+  { "dansk",        5,  "ISO-8859-1 + Euro", MAKE_ID('D', 'K', 0, 0),   MAKE_ID('D', 'N', 'K', 0) },
+  { "deutsch",      7,  "ISO-8859-1 + Euro", MAKE_ID('D', 0, 0, 0),     MAKE_ID('D', 'E', 'U', 0) },
+  { "english",      7,  "ISO-8859-1 + Euro", MAKE_ID('G', 'B', 0, 0),   MAKE_ID('G', 'B', 'R', 0) },
+  { "esperanto",    9,  "ISO-8859-3",        MAKE_ID(0, 0, 0, 0),       MAKE_ID(0, 0, 0, 0)       },
+  { "eesti",        5,  "ISO-8859-15",       MAKE_ID('E', 'E', 0, 0),   MAKE_ID('E', 'S', 'T', 0) },
+  { "èe¹tina",      7,  "ISO-8859-2",        MAKE_ID('C', 'Z', 0, 0),   MAKE_ID('C', 'Z', 'E', 0) }, // czech in MorphOS 2.0
+  { "español",      7,  "ISO-8859-1 + Euro", MAKE_ID('E', 0, 0, 0),     MAKE_ID('E', 'S', 'P', 0) },
+  { "français",     8,  "ISO-8859-1 + Euro", MAKE_ID('F', 0, 0, 0),     MAKE_ID('F', 'R', 'A', 0) },
+  { "gaeilge",      7,  "ISO-8859-15",       MAKE_ID(0, 0, 0, 0),       MAKE_ID(0, 0, 0, 0)       },
+  { "galego",       6,  "ISO-8859-1 + Euro", MAKE_ID('E', 0, 0, 0),     MAKE_ID('E', 'S', 'P', 0) }, // same as spanish
+  { "greek",        5,  "ISO-8859-7",        MAKE_ID('G', 'R', 0, 0),   MAKE_ID('G', 'R', 'C', 0) },
+  { "hrvatski",     8,  "ISO-8859-2",        MAKE_ID('H', 'R', 0, 0),   MAKE_ID('H', 'R', 'V', 0) },
+  { "italiano",     8,  "ISO-8859-1 + Euro", MAKE_ID('I', 0, 0, 0),     MAKE_ID('I', 'T', 'A', 0) },
+  { "lietuvi",      7,  "ISO-8859-13",       MAKE_ID('L', 'T', 0, 0),   MAKE_ID('L', 'T', 'U', 0) },
+  { "magyar",       6,  "ISO-8859-2",        MAKE_ID('H', 'U', 0, 0),   MAKE_ID('H', 'U', 'N', 0) },
+  { "nederlands",  10,  "ISO-8859-1 + Euro", MAKE_ID('N', 'L', 0, 0),   MAKE_ID('N', 'L', 'D', 0) },
+  { "norsk",        5,  "ISO-8859-1 + Euro", MAKE_ID('N', 0, 0, 0),     MAKE_ID('N', 'O', 'R', 0) },
+  { "polski",       6,  "ISO-8859-2",        MAKE_ID('P', 'L', 0, 0),   MAKE_ID('P', 'O', 'L', 0) },
+  { "português",    9,  "ISO-8859-1 + Euro", MAKE_ID('P', 'T', 0, 0),   MAKE_ID('P', 'R', 'T', 0) },
+  { "russian",      7,  "Amiga-1251",        MAKE_ID('R', 'U', 0, 0),   MAKE_ID('R', 'U', 'S', 0) },
+  { "slovak",       6,  "ISO-8859-2",        MAKE_ID('S', 'K', 0, 0),   MAKE_ID('S', 'V', 'K', 0) },
+  { "slovensko",    9,  "ISO-8859-2",        MAKE_ID('S', 'I', 0, 0),   MAKE_ID('S', 'V', 'N', 0) },
+  { "srpski",       6,  "ISO-8859-2",        MAKE_ID('R', 'S', 0, 0),   MAKE_ID('S', 'R', 'B', 0) },
+  { "suomi",        5,  "ISO-8859-1",        MAKE_ID('F', 'I', 'N', 0), MAKE_ID('F', 'I', 'N', 0) },
+  { "svenska",      7,  "ISO-8859-1 + Euro", MAKE_ID('S', 0, 0, 0),     MAKE_ID('S', 'W', 'E', 0) },
+  { "türkçe",       6,  "ISO-8859-9",        MAKE_ID('T', 'R', 0, 0),   MAKE_ID('T', 'U', 'R', 0) },
+  { NULL,           0,  NULL,                MAKE_ID(0, 0, 0, 0),       MAKE_ID(0, 0, 0, 0)       }
 };
 
 static void getSystemCodeset(struct LibraryHeader *lib)
@@ -179,6 +183,7 @@ static void getSystemCodeset(struct LibraryHeader *lib)
   // might not be so accurate) we try different other means of
   // finding the codeset/charset of the system
   #if defined(__amigaos4__)
+  if(foundCodeset == NULL)
   {
     LONG default_charset = GetDiskFontCtrl(DFCTRL_CHARSET);
     char *charset = (char *)ObtainCharsetInfo(DFCS_NUMBER, default_charset, DFCS_MIMENAME);
@@ -189,19 +194,24 @@ static void getSystemCodeset(struct LibraryHeader *lib)
   }
   #endif
 
-  #if defined(__MORPHOS__)
+  if(foundCodeset == NULL)
   {
-    /* The system maintains CODEPAGE environment variable which defines the preferred codepage for this user. */
     char codepage[40];
 
     codepage[0] = '\0';
     if(GetVar("CODEPAGE", codepage, sizeof(codepage), 0) > 0)
     {
+      D(DBF_STARTUP, "trying ENV:CODEPAGE '%s'", codepage);
       foundCodeset = codesetsFind(&lib->codesets, codepage);
     }
 
-    D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "not found", codepage);
+    D(DBF_STARTUP, "%s system default codeset: '%s' (ENV:CODEPAGE)", foundCodeset ? "found" : "did not find",
+                                                                     foundCodeset ? foundCodeset->name : "?");
+  }
 
+  #if defined(__MORPHOS__)
+  if(foundCodeset == NULL)
+  {
     /* If CODEPAGE did not work (maybe user deleted it or something) we try a keymap instead. This only works
      * in MorphOS 2 and only if an old Amiga keymap is not used.
      */
@@ -224,7 +234,8 @@ static void getSystemCodeset(struct LibraryHeader *lib)
           {
             foundCodeset = codesetsFind(&lib->codesets, codepage);
 
-            D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "did not find", codepage);
+            D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "did not find",
+                                                                       foundCodeset ? foundCodeset->name : "?");
           }
         }
 
@@ -243,10 +254,47 @@ static void getSystemCodeset(struct LibraryHeader *lib)
     charset[0] = '\0';
     if(GetVar("CHARSET", charset, sizeof(charset), 0) > 0)
     {
+      D(DBF_STARTUP, "trying ENV:CHARSET '%s'", charset);
       foundCodeset = codesetsFind(&lib->codesets, charset);
     }
 
-    D(DBF_STARTUP, "%s system default codeset: '%s' (ENV:CHARSET)", foundCodeset ? "found" : "did not find", charset);
+    D(DBF_STARTUP, "%s system default codeset: '%s' (ENV:CHARSET)", foundCodeset ? "found" : "did not find",
+                                                                    foundCodeset ? foundCodeset->name : "?");
+  }
+
+  // try the country code next
+  if(foundCodeset == NULL)
+  {
+    struct Locale *defaultLocale;
+
+    if((defaultLocale = OpenLocale(NULL)) != NULL)
+    {
+      int i;
+      const struct loc *curLoc = NULL;
+      BOOL found = FALSE;
+
+      for(i=0;;i++)
+      {
+        curLoc = &locs[i];
+        if(curLoc == NULL || curLoc->name == NULL)
+          break;
+
+        if(defaultLocale->loc_CountryCode == curLoc->carPlateCode || defaultLocale->loc_CountryCode == curLoc->iso3166Code)
+        {
+          D(DBF_STARTUP, "found country code for '%s'", curLoc->name);
+          found = TRUE;
+          break;
+        }
+      }
+
+      if(found == TRUE)
+        foundCodeset = codesetsFind(&lib->codesets, curLoc->codesetName);
+
+      CloseLocale(defaultLocale);
+    }
+
+    D(DBF_STARTUP, "%s system default codeset: '%s' (locale/country)", foundCodeset ? "found" : "did not find",
+                                                                       foundCodeset ? foundCodeset->name : "?");
   }
 
   // and if even the CHARSET environment variable didn't work
@@ -271,6 +319,7 @@ static void getSystemCodeset(struct LibraryHeader *lib)
 
         if(Strnicmp(language, curLoc->name, curLoc->len) == 0)
         {
+          D(DBF_STARTUP, "found language name for '%s'", curLoc->name);
           found = TRUE;
           break;
         }
@@ -316,8 +365,8 @@ static void getSystemCodeset(struct LibraryHeader *lib)
         foundCodeset = codesetsFind(&lib->codesets, curLoc->codesetName);
     }
 
-    D(DBF_STARTUP, "%s system default codeset: '%s' (locale)", foundCodeset ? "found" : "did not find",
-                                                               foundCodeset ? foundCodeset->name : "?");
+    D(DBF_STARTUP, "%s system default codeset: '%s' (locale/language)", foundCodeset ? "found" : "did not find",
+                                                                        foundCodeset ? foundCodeset->name : "?");
   }
 
   // and if even that very last test didn't work out we

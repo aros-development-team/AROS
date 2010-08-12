@@ -4,7 +4,7 @@
 /* Includeheader
 
         Name:           SDI_compiler.h
-        Versionstring:  $VER: SDI_compiler.h 1.32 (28.05.2009)
+        Versionstring:  $VER: SDI_compiler.h 1.33 (03.06.2010)
         Author:         Dirk Stoecker & Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
@@ -54,6 +54,8 @@
  1.30  26.03.09 : fixed the IPTR definition by only defining it for non AROS targets.
  1.31  29.03.09 : added VARARGS68K definition for AROS.
  1.32  28.05.09 : added STACKED definition for non-AROS targets.
+ 1.33  03.06.10 : added missing SIPTR definition to make SDI_compiler.h more compatible
+                  to AROS.
 
 */
 
@@ -223,6 +225,9 @@
 #endif
 #if !defined(__AROS__) && !defined(IPTR)
   #define IPTR ULONG
+#endif
+#if !defined(__AROS__) && !defined(SIPTR)
+  #define SIPTR LONG
 #endif
 #if !defined(__AROS__) && !defined(STACKED)
   #define STACKED

@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2009 by codesets.library Open Source Team
+ Copyright (C) 2005-2010 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -228,7 +228,7 @@ MakeStaticHook(popupCloseHook, popupCloseFun);
 ** Codesets popup new method
 */
 
-static ULONG
+static Object *
 mpopupNew(struct IClass *cl,Object *obj,struct opSet *msg)
 {
     Object *str, *bt, *lv, *l;
@@ -276,7 +276,7 @@ mpopupNew(struct IClass *cl,Object *obj,struct opSet *msg)
         set(str,MUIA_Text_Contents,codeset->name);
     }
 
-    return (ULONG)obj;
+    return obj;
 }
 
 /***********************************************************************/
@@ -309,7 +309,7 @@ struct editorData
 ** Editor new method
 */
 
-static ULONG
+static Object *
 meditorNew(struct IClass *cl,Object *obj,struct opSet *msg)
 {
     struct FileRequester *req;
@@ -329,7 +329,7 @@ meditorNew(struct IClass *cl,Object *obj,struct opSet *msg)
         if (req) MUI_FreeAslRequest(req);
     }
 
-    return (ULONG)obj;
+    return obj;
 }
 
 /***********************************************************************/
@@ -581,7 +581,7 @@ static struct NewMenu appMenu[] =
     MEND
 };
 
-static ULONG
+static Object *
 mappNew(struct IClass *cl,Object *obj,struct opSet *msg)
 {
     Object *strip, *win, *codesets = NULL, *editor, *sb, *loadPlain, *loadUTF8, *save, *cancel;
@@ -665,7 +665,7 @@ mappNew(struct IClass *cl,Object *obj,struct opSet *msg)
         set(win,MUIA_Window_Open,TRUE);
     }
 
-    return (ULONG)obj;
+    return obj;
 }
 
 /***********************************************************************/
@@ -790,7 +790,7 @@ main(UNUSED int argc,char **argv)
     if((IntuitionBase = (APTR)OpenLibrary("intuition.library", 39)) &&  // open intuition.library
        GETINTERFACE(IIntuition, IntuitionBase))
     {
-      if((UtilityBase = OpenLibrary("utility.library", 39)) &&      // open utility.library
+      if((UtilityBase = (APTR)OpenLibrary("utility.library", 39)) &&      // open utility.library
          GETINTERFACE(IUtility, UtilityBase))
       {
         if((CodesetsBase = OpenLibrary(CODESETSNAME, CODESETSVER)) && // open codesets.library

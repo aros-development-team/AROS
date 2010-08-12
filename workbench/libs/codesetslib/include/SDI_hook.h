@@ -4,7 +4,7 @@
 /* Includeheader
 
         Name:           SDI_hook.h
-        Versionstring:  $VER: SDI_hook.h 1.21 (19.05.2009)
+        Versionstring:  $VER: SDI_hook.h 1.22 (24.06.2010)
         Author:         SDI & Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
@@ -49,6 +49,8 @@
  1.19  25.03.09 : fixed the DISPATCHERPROTO() macros for x86_64 AROS.
  1.20  26.03.09 : fixed m68k define checks.
  1.21  19.05.09 : added SDISPATCHER() to generate a static dispatcher.
+ 1.22  24.06.10 : fixed AROS macros (Matthias Rustler).
+       12.08.10 : added missing proto/alib.h include for AROS
 */
 
 /*
@@ -188,7 +190,24 @@
     static ULONG name(struct IClass * cl, Object * obj, Msg msg)
   #define ENTRY(func) (APTR)&Gate_##func
 
-#else /* !__MORPHOS__ */
+#elif __AROS__
+
+  #include <proto/alib.h>
+
+  #define MakeHook(hookname, funcname) struct Hook hookname = {{NULL, NULL}, \
+    (HOOKFUNC)HookEntry, (HOOKFUNC)funcname, NULL}
+  #define MakeHookWithData(hookname, funcname, data) struct Hook hookname =  \
+    {{NULL, NULL}, (HOOKFUNC)HookEntry, (HOOKFUNC)funcname, (APTR)data}
+  #define MakeStaticHook(hookname, funcname) static struct Hook hookname =   \
+    {{NULL, NULL}, (HOOKFUNC)HookEntry, (HOOKFUNC)funcname, NULL}
+  #define ENTRY(func) (APTR)func
+  #define DISPATCHERPROTO(name) SAVEDS ASM IPTR name(REG(a0,                 \
+    struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg))
+  #define DISPATCHER(name) DISPATCHERPROTO(name)
+  #define SDISPATCHER(name) static DISPATCHERPROTO(name)
+
+#else /* !__MORPHOS__ && !__AROS__*/
+
   #define MakeHook(hookname, funcname) struct Hook hookname = {{NULL, NULL}, \
     (HOOKFUNC)funcname, NULL, NULL}
   #define MakeHookWithData(hookname, funcname, data) struct Hook hookname =  \
