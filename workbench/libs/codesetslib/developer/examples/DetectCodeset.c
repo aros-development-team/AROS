@@ -61,7 +61,7 @@ int main(void)
                               CSA_ErrPtr, (Tag)&errNum,
                               TAG_DONE)))
     {
-      printf("Identified ISO8859_1_STR as %s with %d of %d errors\n", cs->name, errNum, strlen(ISO8859_1_STR));
+      printf("Identified ISO8859_1_STR as %s with %d of %d errors\n", cs->name, (int)errNum, (int)strlen(ISO8859_1_STR));
     }
     else
       printf("couldn't identify ISO8859_1_STR!\n");
@@ -71,7 +71,7 @@ int main(void)
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {
-      printf("Identified CP1251_STR as %s with %d of %d errors\n", cs->name, errNum, strlen(CP1251_STR));
+      printf("Identified CP1251_STR as %s with %d of %d errors\n", cs->name, (int)errNum, (int)strlen(CP1251_STR));
     }
     else
       printf("couldn't identify CP1251_STR!\n");
@@ -81,7 +81,7 @@ int main(void)
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {
-      printf("Identified ASCII_STR as %s with %d of %d errors\n", cs->name, errNum, strlen(ASCII_STR));
+      printf("Identified ASCII_STR as %s with %d of %d errors\n", cs->name, (int)errNum, (int)strlen(ASCII_STR));
     }
     else
       printf("couldn't identify ASCII_STR!\n");
@@ -91,7 +91,7 @@ int main(void)
                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
                               TAG_DONE)))
     {
-      printf("Identified KOI8R_STR as %s with %d of %d errors\n", cs->name, errNum, strlen(KOI8R_STR));
+      printf("Identified KOI8R_STR as %s with %d of %d errors\n", cs->name, (int)errNum, (int)strlen(KOI8R_STR));
     }
     else
       printf("couldn't identify KOI8R_STR!\n");

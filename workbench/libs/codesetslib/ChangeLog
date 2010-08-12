@@ -5,6 +5,52 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2010-08-12 Pavel Fedin <pavel_fedin@mail.ru>
+  * src/codesets.c: fixed pointer to integer conversion for 64-bit systems
+  * developer/examples/demo1.c: likewise
+  * include/SDI_hook.h: added missing include for AROS
+
+2010-07-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/init.c: enabled querying of ENV:CODEPAGES to obtain the default codeset
+    for all systems.
+  * src/init.c: added car plate codes and ISO3166 Alpha 3 country code detection
+    when obtaining the system default codeset. Thus a user can use a system
+    default language/codeset which doesn't match the country's language/codeset.
+    This fulfils feature request #2971890.
+
+2010-06-15 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/codesets.c: added a union of several pointer types to avoid the tons of
+    warnings of GCC4+ about type punned pointer accesses.
+
+2010-06-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Install: extended the final message that a reboot might be necessary to be
+    able to use the just installed version.
+
+2010-06-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/libinit.c: fixed a warning for the OS3 build.
+  * misc: added all necessary stuff for an automated build for all supported
+    platforms. This also includes an Installer script for an easy installation.
+
+2010-06-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_compiler.h: updated to latest version.
+
+2010-06-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * developer/examples/DetectCodeset.c: fixed some warnings about wrong types
+    in the printf() calls.
+  * developer/examples/b64[ed].c: fixed some warnings about wrong types in the
+    printf() calls.
+
+2010-06-03  Matthias Rustler <mrustler@gmx.de>
+
+  * fixes for 64-bit AROS. Changed some ULONG to IPTR to get rid of warnings
+    like "conversion from/to integer to/from pointer with different size".
+
 2010-04-23 Pavel Fedin <pavel_fedin@mail.ru>
 
   * src/libinit.c: use NewStackSwap() under AROS, re-enabled stack swapping under MorphOS

@@ -20,7 +20,7 @@
  from the source code of SimpleMail (http://www.sf.net/projects/simplemail)
  with full permissions by its authors.
 
- $Id: Convert.c 201 2009-06-02 20:08:23Z marust $
+ $Id: Convert.c 240 2010-06-03 10:51:09Z thboeckel $
 
 ***************************************************************************/
 
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
                                          TAG_DONE);
             if (destbuf)
             {
-              fprintf(stderr, "Result length: %u\n", destlen);
+              fprintf(stderr, "Result length: %u\n", (unsigned int)destlen);
               fwrite(destbuf, destlen, 1, stdout);
               fputc('\n', stderr);
               CodesetsFreeA(destbuf, NULL);
