@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-DIRS = os1.x os3.1 special xen
+DIRS = os1.x os3.1 special #xen
 
 FILES = os1.x/win_close os1.x/win_depth os1.x/win_size os1.x/win_zoom \
         os3.1/win_close os3.1/win_depth os3.1/win_size os3.1/win_zoom \
@@ -11,7 +11,11 @@ FILES = os1.x/win_close os1.x/win_depth os1.x/win_size os1.x/win_zoom \
 #MM- themes-kalamatee-images-gadgets : themes-kalamatee-images-gadgets-window
 #MM themes-kalamatee-images-gadgets-window : setup themes-kalamatee-images-gadgets-window-simoami
 
-%rule_makedirs dirs="$(addprefix $(AROS_THEMES)/,$(DIRS))"
+#MM
+themes-kalamatee-images-gadgets-window: kalamatee-images-gadgets-window-dirs
+
+kalamatee-images-gadgets-window-dirs:
+	$(MKDIR) $(addprefix $(AROS_THEMES)/,$(DIRS))
 
 %copy_files_q mmake=themes-kalamatee-images-gadgets-window files=$(FILES) dst=$(AROS_THEMES)
 
