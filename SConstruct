@@ -4,7 +4,7 @@
 # Get default environment
 env = Environment()
 
-# Where the fake compiler an FlexCat resides
+# Where the fake compiler and FlexCat resides
 tooldir = '/home/mazze/projects/aros-linux-i386-dbg/bin/linux-x86_64/tools'
 
 # Some more variables. "#" means directory from where SCons was started
@@ -16,7 +16,12 @@ gendir  = '#' + platform + '/bin/' + platform + '/gen'
 targetEnv = env.Clone()
 
 # Add a builder for source files from *.cd files by FlexCat
-bld = Builder(action = 'FlexCat $SOURCE $TARGET=' + tooldir + '/C_h_orig.sd')
+targetEnv['FLEXCAT_SD'] = tooldir + '/C_h_orig.sd'
+
+def locale_h_generator(source, target, env, for_signature):
+    return 'FlexCat %s %s=%s' % (source[0], target[0], env['FLEXCAT_SD'])
+
+bld = Builder(generator = locale_h_generator)
 targetEnv.Append(BUILDERS = {'Locale_H' : bld})
 
 # Set tool search path
@@ -47,4 +52,4 @@ SConscript([
 ])
 
 
-#print targetEnv.Dump()
+# print targetEnv.Dump()
