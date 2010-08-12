@@ -179,8 +179,7 @@ COBJS = locale.o \
         CreatePrefsGroup.o \
         Dispatcher.o \
         Debug.o \
-        icon.o \
-        vastubs.o
+        icon.o
 
 TOBJS = Preference.o
 
@@ -188,13 +187,14 @@ MCCOBJS  = $(addprefix $(OBJDIR)/,$(LOBJS)) $(addprefix $(OBJDIR)/,$(COBJS))
 TESTOBJS = $(addprefix $(OBJDIR)/,$(COBJS)) $(addprefix $(OBJDIR)/,$(TOBJS))
 
 # available catalog translations
-CATALOGS = $(LOCALE)/german.catalog \
-           $(LOCALE)/french.catalog \
-           $(LOCALE)/swedish.catalog \
+CATALOGS = $(LOCALE)/czech.catalog \
            $(LOCALE)/danish.catalog \
-           $(LOCALE)/russian.catalog \
+           $(LOCALE)/french.catalog \
+           $(LOCALE)/german.catalog \
            $(LOCALE)/italian.catalog \
-           $(LOCALE)/czech.catalog
+           $(LOCALE)/polish.catalog \
+           $(LOCALE)/swedish.catalog \
+           $(LOCALE)/russian.catalog
 
 # different options per target OS
 ifeq ($(OS), os4)
@@ -238,6 +238,9 @@ ifeq ($(OS), os3)
   CFLAGS  += -noixemul -DNO_INLINE_STDARG
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug -lmui
+
+  # additional object files required
+  COBJS += vastubs.o
 
 else
 ifeq ($(OS), mos)
@@ -364,7 +367,7 @@ $(OBJDIR)/mccclass_68k.o: ../include/mccclass_68k.c
 	@echo "  CC $<"
 	@$(CC) $(CFLAGS) $< -o $@
 
-$(LOCALE)/%.catalog: $(LOCALE)/%.ct
+$(LOCALE)/%.catalog: $(LOCALE)/%.ct $(LOCALE)/BetterString_mcp.cd
 	@echo "  MK $@"
 	@$(FC) $(LOCALE)/BetterString_mcp.cd $< CATALOG $@
 

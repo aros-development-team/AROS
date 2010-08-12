@@ -21,8 +21,7 @@ FILES := \
         InitConfig \
         Pointer \
         PrintString \
-        Debug \
-        vastubs
+        Debug
 
 %build_module_simple mmake=workbench-classes-zune-betterstring-class \
   modname=BetterString modtype=mcc \
@@ -42,7 +41,7 @@ USER_CFLAGS := -DNO_INLINE_STDARG
 
 #MM includes-copy
 
-INCLUDE_FILES := BetterString_mcc.h
-%copy_includes path=mui
+INCLUDE_FILES := ../include/mui/BetterString_mcc.h
+%copy_includes path=mui dir=../include/mui
 
 %common

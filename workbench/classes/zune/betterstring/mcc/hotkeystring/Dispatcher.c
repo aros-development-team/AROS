@@ -26,8 +26,6 @@
 #include <proto/utility.h>
 #include <libraries/mui.h>
 
-#include "HotkeyString_mcc.h"
-
 #include "private.h"
 #include "version.h"
 

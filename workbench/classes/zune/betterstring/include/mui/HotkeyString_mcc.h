@@ -1,10 +1,8 @@
-##stringtype C
-##shortstrings
 /***************************************************************************
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2007 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -18,25 +16,25 @@
 
  BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 
- $Id: C_h.sd 59 2007-03-06 00:08:55Z damato $
+ $Id: HotkeyString_mcc.h 244 2010-05-19 06:22:32Z thboeckel $
 
 ***************************************************************************/
 
-/****************************************************************
-   This file was created automatically by `FlexCat V1.3'
-****************************************************************/
+#ifndef HOTKEYSTRING_MCC_H
+#define HOTKEYSTRING_MCC_H
 
-#ifndef %b_LOCALE_H
-#define %b_LOCALE_H
+#ifndef EXEC_TYPES_H
 #include <exec/types.h>
+#endif
 
-#define MSG_Space ((APTR)1)
+#define MUIC_HotkeyString   "HotkeyString.mcc"
+#if defined(__AROS__) && !defined(NO_INLINE_STDARG)
+#define HotkeyStringObject  MUIOBJMACRO_START(MUIC_HotkeyString)
+#else
+#define HotkeyStringObject  MUI_NewObject(MUIC_HotkeyString
+#endif
 
-extern const char *GetStr(APTR);
-extern const char *GetStripStr(APTR);
-extern void OpenCat(void);
-extern void CloseCat(void);
+#define MUIA_HotkeyString_Snoop 0xad001000UL
+#define MUIA_HotkeyString_IX    0xad001002UL	/* V12 IS. */
 
-extern const APTR _%i;\n#define %i ((APTR) &_%i)
-
-#endif /* %b_LOCALE_H */
+#endif /* HOTKEYSTRING_MCC_H */

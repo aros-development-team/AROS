@@ -29,8 +29,6 @@
 #include <proto/utility.h>
 #include <proto/dos.h>
 
-#include "BetterString_mcc.h"
-
 #include "private.h"
 #include "version.h"
 
@@ -206,7 +204,7 @@ IPTR Set(struct IClass *cl, Object *obj, struct opSet *msg)
         // side, but also because modern C runtime libraries should definitly
         // support it!
         snprintf(IntegerString, sizeof(IntegerString), "%d", (int)ti_Data);
-        ti_Data = (ULONG)IntegerString;
+        ti_Data = (IPTR)IntegerString;
 
         // The missing break is intended!
 

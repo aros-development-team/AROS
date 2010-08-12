@@ -52,3 +52,11 @@ install:
 	@$(MAKE) -C mcc --no-print-directory install
 	@$(MAKE) -C mcc/hotkeystring --no-print-directory install
 	@$(MAKE) -C mcp --no-print-directory install
+
+.PHONY: bumprev
+bumprev:
+	@sh tools/bumprev.sh all
+
+.PHONY: release
+release:
+	@sh tools/mkrelease.sh

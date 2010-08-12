@@ -1,11 +1,11 @@
-## version $VER: BetterString_mcp.catalog 2.2 (26.06.2010)
-## language dansk
+## version $VER: BetterString_mcp.catalog 2.1 (15.4.2007)
 ## codeset 0
+## language dansk
 ;
-; translation 26.06.2010 by Kristian Poul Herkild
 ;
-; BetterString_mcp.cd - BetterString MUI custom prefs catalog description file
+; BetterString_mcp.ct - BetterString MUI custom prefs catalog translation file
 ; $Id$
+;
 ;
 MSG_Label_Active
 Aktiv:
@@ -20,7 +20,7 @@ Markør:
 ; Cursor:
 ;
 MSG_Label_Fonts
-Skrifttype:
+Skriftsnit:
 ; Font:
 ;
 MSG_Label_Frame
@@ -40,174 +40,6 @@ Tekst
 ; Text
 ;
 MSG_String_TestString
-Her kan du afprøve BetterStrings styrke.
+Her kan du prøve BetterStrings mange muligheder.
 ; Test the power of BetterString here!
-;
-MSG_Help_Copy
-Kopiér al eller markeret tekst
-; Copy all or marked text
-;
-MSG_Help_Copy_Shortcut
-Amiga + c
-; Amiga + c
-;
-MSG_Help_Cut
-Klip al eller markeret tekst
-; Cut all or marked text
-;
-MSG_Help_Cut_Shortcut
-Amiga + x
-; Amiga + x
-;
-MSG_Help_Paste
-Indsæt
-; Paste
-;
-MSG_Help_Paste_Shortcut
-Amiga + v
-; Amiga + v
-;
-MSG_Help_Undo
-Fortryd sidste sletning
-; Undo last deletion
-;
-MSG_Help_Undo_Shortcut
-Amiga + z
-; Amiga + z
-;
-MSG_Help_Redo
-Omgør sidste sletning
-; Redo last deletion
-;
-MSG_Help_Redo_Shortcut
-Amiga + Z
-; Amiga + Z
-;
-MSG_Help_ToggleBuffer
-Skift mellem oprindelig og forandret buffer
-; Toggle between original and modified buffer
-;
-MSG_Help_ToggleBuffer_Shortcut
-Amiga + q
-; Amiga + q
-;
-MSG_Help_ToggleCaseChar
-Skift mellem stort og lille bogstav
-; Toggle case on character
-;
-MSG_Help_ToggleCaseChar_Shortcut
-Amiga + g
-; Amiga + g
-;
-MSG_Help_ToggleCaseWord
-Skift mellem stort og lille bogstav i ord
-; think of better translation - overvej bedre oversættelse
-; Toggle case on word
-;
-MSG_Help_ToggleCaseWord_Shortcut
-Amiga + G
-; Amiga + G
-;
-MSG_Help_IncreaseNumber
-Forøg nummer
-; Increase number
-;
-MSG_Help_IncreaseNumber_Shortcut
-Amiga + i
-; Amiga + i
-;
-MSG_Help_DecreaseNumber
-Formindsk nummer
-; Decrease number
-;
-MSG_Help_DecreaseNumber_Shortcut
-Amiga + d
-; Amiga + d
-;
-MSG_Help_HexToDecimal
-
-; Hex to Decimal
-;
-MSG_Help_HexToDecimal_Shortcut
-Hex til decimal
-; Amiga + #
-;
-MSG_Help_DecimalToHex
-Decimal til hex
-; Decimal to Hex
-;
-MSG_Help_DecimalToHex_Shortcut
-Amiga + $
-; Amiga + $
-;
-MSG_Help_FilenameCompletition
-Filnavnsfærddiggørelse (brug SKIFT for at gå tilbage)
-; Filenamecompletion (use SHIFT to cycle back)
-;
-MSG_Help_FilenameCompletition_Shortcut
-Amiga + TAB
-; Amiga + TAB
-;
-MSG_Help_Mark
-Markér
-; Mark
-;
-MSG_Help_Mark_Shortcut
-CTRL + markør
-; CTRL + cursor
-;
-MSG_Help_GotoToStartEndOfLine
-Gå til begyndelse/afslutning af linie
-; Goto to start/end of line
-;
-MSG_Help_GotoToStartEndOfLine_Shortcut
-SKIFT + markør
-; SHIFT + cursor
-;
-MSG_Help_DeleteToStartEndOfLine
-Slet til begyndelse/afslutning af linie
-; Delete to start/end of line
-;
-MSG_Help_DeleteToStartEndOfLine_Shortcut
-SKIFT + BACKSPACE/DELETE
-;Consider better translation - Overvej bedre oversættelse
-; SHIFT + BACKSPACE/DELETE
-;
-MSG_Help_GotoToPrevNextWord
-Gå til forrige/næste ord
-; Goto to previous/next word
-;
-MSG_Help_GotoToPrevNextWord_Shortcut
-ALT + markør
-; ALT + cursor
-;
-MSG_Help_DeleteToPrevNextWord
-Slet forrige/næste ord
-; Delete previous/next word
-;
-MSG_Help_DeleteToPrevNextWord_Shortcut
-ALT + BACKSPACE/DELETE
-; ALT + BACKSPACE/DELETE
-;
-MSG_SelectOnActive
-Markér, når aktiv:
-; Select on Active:
-;
-MSG_HELP_SelectOnActive
-Vælg automatisk al tekst når et\n\
-BetterStringobjekt bliver aktiveret\n\
-via TAB-cykling eller brug af mus.
-; Automatically select all text when a\n\
-; BetterString object gets activated\n\
-; via TAB cycling or mouse activation.
-;
-MSG_SelectPointer
-Markeringsmarkør:
-; Selection Pointer:
-;
-MSG_HELP_SelectPointer
-Hvis valgt vil en særlig markør blive vist\n\
-når musepilen er over en BetterStringkontrol.
-; If enabled, a custom selection pointer will appear\n\
-; when the mouse pointer is above a betterstring gadget.
 ;

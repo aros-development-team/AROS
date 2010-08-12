@@ -13,9 +13,8 @@ FILES := library \
         locale \
         CreatePrefsGroup \
         Dispatcher \
-		icon \
-        Debug \
-        vastubs
+        icon \
+        Debug
 	 
 %build_module_simple mmake=workbench-classes-zune-betterstring-mcp \
   modname=BetterString modtype=mcp \
@@ -24,8 +23,8 @@ FILES := library \
 
 #MM includes-copy
 
-INCLUDE_FILES := BetterString_mcp.h
-%copy_includes path=mui
+INCLUDE_FILES := ../include/mui/BetterString_mcc.h
+%copy_includes path=mui dir=../include/mui
 
 
 TARGETDIR := $(AROS_CATALOGS)

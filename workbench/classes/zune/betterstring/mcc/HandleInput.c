@@ -527,7 +527,7 @@ ULONG ConvertKey(struct IntuiMessage *imsg)
   event.ie_SubClass       = 0;
   event.ie_Code           = imsg->Code;
   event.ie_Qualifier      = imsg->Qualifier;
-  event.ie_EventAddress   = (APTR *) *((ULONG *)imsg->IAddress);
+  event.ie_EventAddress   = (APTR *) *((IPTR *)imsg->IAddress);
 
   MapRawKey(&event, (STRPTR)&code, 1, NULL);
   return(code);
@@ -680,7 +680,7 @@ IPTR mDoAction(struct IClass *cl, Object *obj, struct MUIP_BetterString_DoAction
   {
     struct TagItem tags[] =
     {
-      { MUIA_String_Contents, (ULONG)data->Contents },
+      { MUIA_String_Contents, (IPTR)data->Contents  },
       { TAG_DONE,             0                     }
     };
 

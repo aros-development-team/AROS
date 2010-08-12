@@ -32,7 +32,7 @@
 #include <muiextra.h>
 #include <mcc_common.h>
 
-#include "BetterString_mcc.h"
+#include <mui/BetterString_mcc.h>
 #include "Debug.h"
 
 struct FNCData

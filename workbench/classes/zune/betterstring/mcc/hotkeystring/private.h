@@ -28,8 +28,8 @@
 #include <muiextra.h>
 #include <mcc_common.h>
 
-#include "HotkeyString_mcc.h"
-#include "BetterString_mcc.h"
+#include <mui/HotkeyString_mcc.h>
+#include <mui/BetterString_mcc.h>
 #include "Debug.h"
 
 struct InstData

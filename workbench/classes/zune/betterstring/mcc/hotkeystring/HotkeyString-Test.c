@@ -28,7 +28,6 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-#include "HotkeyString_mcc.h"
 #include "private.h"
 
 #if defined(__amigaos4__)

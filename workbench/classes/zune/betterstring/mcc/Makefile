@@ -207,8 +207,7 @@ COBJS = AllocBitMap.o \
         InitConfig.o \
         Pointer.o \
         PrintString.o \
-        Debug.o \
-        vastubs.o
+        Debug.o
 
 TOBJS = BetterString-Test.o
 
@@ -257,6 +256,9 @@ ifeq ($(OS), os3)
   CFLAGS  += -noixemul -DNO_INLINE_STDARG
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug -lmui
+
+  # additional object files required
+  COBJS += vastubs.o
 
 else
 ifeq ($(OS), mos)

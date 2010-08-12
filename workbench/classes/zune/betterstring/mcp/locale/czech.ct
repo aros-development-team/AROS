@@ -3,11 +3,8 @@
 ## codeset 5
 ;
 ;
-; BetterString_mcp.cd - BetterString MUI custom prefs catalog description file
+; BetterString_mcp.ct - BetterString MUI custom prefs catalog translation file
 ; $Id$
-;
-;#version 2
-;#language english
 ;
 ;
 MSG_Label_Active
