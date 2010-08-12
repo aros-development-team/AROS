@@ -29,27 +29,6 @@
 
 #include <aros/macros.h>
 
-#if defined(__i386__)
-#define WANT_MACHINE EM_386
-#define WANT_RELOC SHT_REL
-#elif defined(__x86_64__)
-#define WANT_MACHINE EM_X86_64
-#elif defined(__mc68000__)
-#define WANT_MACHINE EM_68K
-#elif defined(__ppc__) || defined(__powerpc__)
-#define WANT_MACHINE EM_PPC
-#elif defined(__arm__)
-#define WANT_MACHINE EM_ARM
-#endif
-
-#ifndef WANT_MACHINE
-#error Your architecture is not supported yet
-#endif
-
-#ifndef WANT_RELOC
-#define WANT_RELOC SHT_RELA
-#endif
-
 #if (__WORDSIZE == 64)
 #define WANT_CLASS ELFCLASS64
 #else
@@ -223,14 +202,14 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
         eh->ident[EI_VERSION] != EV_CURRENT      ||
         eh->type              != ET_REL          ||
         eh->ident[EI_DATA]    != WANT_BYTE_ORDER ||
-        eh->machine           != WANT_MACHINE)
+        eh->machine           != AROS_ELF_MACHINE)
     {
         D(bug("[ELF Loader] Object is of wrong type\n"));
         D(bug("[ELF Loader] ET_CLASS   is %d - should be %d\n", eh->ident[ET_CLASS]  , WANT_CLASS     ));
         D(bug("[ELF Loader] ET_VERSION is %d - should be %d\n", eh->ident[ET_VERSION], EV_CURRENT     ));
         D(bug("[ELF Loader] type       is %d - should be %d\n", eh->type             , ET_REL         ));
         D(bug("[ELF Loader] ET_DATA    is %d - should be %d\n", eh->ident[ET_DATA]   , WANT_BYTE_ORDER));
-        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine          , WANT_MACHINE   ));
+        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine          , AROS_ELF_MACHINE));
 
         SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
@@ -616,7 +595,7 @@ BPTR InternalLoadSeg_ELF
     for (i = 0; i < eh.int_shnum; i++)
     {
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
-        if ((sh[i].type == WANT_RELOC) && sh[SHINDEX(sh[i].info)].addr)
+        if ((sh[i].type == AROS_ELF_REL) && sh[SHINDEX(sh[i].info)].addr)
         {
 	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
