@@ -76,7 +76,7 @@ static char *check_header(struct elfheader *eh)
         eh->ident[2] != 'L'  || eh->ident[3] != 'F')
 	return "Not a ELF file";
 
-    if (eh->type != ET_REL || eh->machine != EM_386)
+    if (eh->type != ET_REL || eh->machine != AROS_ELF_MACHINE)
 	return "Wrong object type or wrong architecture";
 
     /* No error */
@@ -177,6 +177,7 @@ SysBase_no:     s = sym->value;
         DREL(printf(" type "));
 	switch (ELF_R_TYPE(rel->info))
 	{
+#ifdef __i386__
 	case R_386_32: /* 32bit absolute */
             DREL(printf("R_386_32"));
 	    *p += s;
@@ -190,7 +191,102 @@ SysBase_no:     s = sym->value;
 	case R_386_NONE:
             DREL(printf("R_386_NONE"));
 	    break;
+#endif
+#ifdef __x86_64__
+        case R_X86_64_64: /* 64bit direct/absolute */
+            *(uint64_t *)p = s + rel->addend;
+            break;
 
+        case R_X86_64_PC32: /* PC relative 32 bit signed */
+            *(uint32_t *)p = s + rel->addend - (uintptr_t) p;
+            break;
+
+        case R_X86_64_32:
+            *(uint32_t *)p = (uint64_t)s + (uint64_t)rel->addend;
+            break;
+                
+        case R_X86_64_32S:
+            *(int32_t *)p = (int64_t)s + (int64_t)rel->addend;
+            break;
+
+        case R_X86_64_NONE: /* No reloc */
+            break;
+#endif
+#ifdef __mc68000__
+        case R_68K_32:
+            *p = s + rel->addend;
+            break;
+
+        case R_68K_PC32:
+            *p = s + rel->addend - (uint32_t)p;
+            break;
+
+        case R_68k_NONE:
+            break;
+#endif
+#if defined(__ppc__) || defined(__powerpc__)
+        case R_PPC_ADDR32:
+            *p = s + rel->addend;
+            break;
+	
+	case R_PPC_ADDR16_LO:
+	{
+	    unsigned short *c = (unsigned short *) p;
+	    *c = (s + rel->addend) & 0xffff;
+	}
+	break;
+
+	case R_PPC_ADDR16_HA:
+	{
+	    unsigned short *c = (unsigned short *) p;
+	    uint32_t temp = s + rel->addend;
+	    *c = temp >> 16;
+	    if ((temp & 0x8000) != 0)
+		(*c)++;
+	}
+	break;
+
+        case R_PPC_REL16_LO:
+	{
+	    unsigned short *c = (unsigned short *) p;
+	    *c = (s + rel->addend - (uint32_t)p) & 0xffff;
+	}
+	break;
+
+        case R_PPC_REL16_HA:
+	{
+	    unsigned short *c = (unsigned short *) p;
+	    uint32_t temp = s + rel->addend - (uint32_t)p;
+	    *c = temp >> 16;
+	    if ((temp & 0x8000) != 0)
+			(*c)++;
+	}
+	break;
+
+        case R_PPC_REL24:
+	    *p &= ~0x3fffffc;
+            *p |= (s + rel->addend - (uint32_t)p) & 0x3fffffc;
+            break;
+
+	case R_PPC_REL32:
+	    *p = s + rel->addend - (uint32_t)p;
+	    break;
+
+        case R_PPC_NONE:
+            break;
+#endif
+#ifdef __arm__
+        case R_ARM_PC24:
+            *p = s + rel->addend - (uint32_t)p;
+            break;
+
+        case R_ARM_ABS32:
+            *p = s + rel->addend;
+            break;
+
+        case R_ARM_NONE:
+            break;
+#endif
 	default:
 	    printf("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF_R_TYPE(rel->info));
 	    return 0;
@@ -349,7 +445,7 @@ int LoadKernel(void *ptr_ro, struct KernelBSS *tracker, kernel_entry_fun_t *kern
 	{
 	    struct sheader *sh = n->sh;
 
-	    if ((sh[i].type == SHT_RELA || sh[i].type == SHT_REL) && sh[sh[i].info].addr)
+	    if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
 	    {
 		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
 		if (!sh[i].addr || !relocate(&n->eh, sh, i, 0)) {

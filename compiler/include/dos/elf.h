@@ -171,4 +171,26 @@ struct relo
 #define SHNUM(i) \
     ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))
 
+/* Machine's native values */
+#ifdef __i386__
+#define AROS_ELF_MACHINE EM_386
+#define AROS_ELF_REL     SHT_REL
+#endif
+#ifdef __x86_64__
+#define AROS_ELF_MACHINE EM_X86_64
+#define AROS_ELF_REL     SHT_RELA
+#endif
+#ifdef __mc68000__
+#define AROS_ELF_MACHINE EM_68K
+#define AROS_ELF_REL     SHT_RELA
+#endif
+#if defined(__ppc__) || defined(__powerpc__)
+#define AROS_ELF_MACHINE EM_PPC
+#define AROS_ELF_REL     SHT_RELA
+#endif
+#ifdef __arm__
+#define AROS_ELF_MACHINE EM_ARM
+#define AROS_ELF_REL     SHT_RELA
+#endif
+
 #endif
