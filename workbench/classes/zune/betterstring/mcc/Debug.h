@@ -84,6 +84,7 @@ void kprintf(const char *formatString,...);
 #define DBF_ALL       0xffffffff
 
 void SetupDebug(void);
+void CleanupDebug(void);
 
 void _ENTER(unsigned long dclass, const char *file, int line, const char *function);
 void _LEAVE(unsigned long dclass, const char *file, int line, const char *function);

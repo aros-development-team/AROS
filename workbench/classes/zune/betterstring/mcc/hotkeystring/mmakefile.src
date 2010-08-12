@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
 USER_CFLAGS := -DNO_INLINE_STDARG
 
-FILES := Dispatcher HandleInput Debug vastubs
+FILES := Dispatcher HandleInput Debug
 	 
 %build_module_simple mmake=workbench-classes-zune-hotkeystring-class \
   modname=HotkeyString modtype=mcc \
@@ -29,7 +29,7 @@ USER_CFLAGS := -DNO_INLINE_STDARG
 
 #MM includes-copy
 
-INCLUDE_FILES := HotkeyString_mcc.h
-%copy_includes path=mui
+INCLUDE_FILES := ../../include/mui/HotkeyString_mcc.h
+%copy_includes path=mui dir=../../include/mui
 
 %common

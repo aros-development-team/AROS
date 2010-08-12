@@ -30,7 +30,6 @@
 #include <proto/utility.h>
 #include <proto/locale.h>
 
-#include "BetterString_mcc.h"
 #include "private.h"
 
 /*
@@ -275,7 +274,7 @@ IPTR Show(struct IClass *cl, Object *obj, Msg msg)
   depth = ((struct Library *)GfxBase)->lib_Version >= 39 ? GetBitMapAttr(friendBMp, BMA_DEPTH) : friendBMp->Depth;
 
   InitRastPort(&data->rport);
-  data->rport.BitMap = MUIG_AllocBitMap(width+40, height, depth, (ULONG)NULL, friendBMp);
+  data->rport.BitMap = MUIG_AllocBitMap(width+40, height, depth, (IPTR)NULL, friendBMp);
   SetFont(&data->rport, font);
   SetDrMd(&data->rport, JAM1);
 

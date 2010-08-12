@@ -26,7 +26,7 @@
 #include <libraries/asl.h>
 #include <libraries/mui.h>
 
-#include "BetterString_mcc.h"
+#include <mui/BetterString_mcc.h>
 
 #include "locale.h"
 #include "private.h"

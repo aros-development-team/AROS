@@ -60,7 +60,7 @@ static struct PrefsExchangeData PrefsInfo[] =
 DISPATCHER(_DispatcherP)
 {
   struct InstData_MCP *data = (struct InstData_MCP *)INST_DATA(cl, obj);
-  ULONG result = 0;
+  IPTR result = 0;
 
   ENTER();
 
@@ -86,7 +86,7 @@ DISPATCHER(_DispatcherP)
               DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].CfgItem, 0L, NULL);
           }
 
-          result = (ULONG)obj;
+          result = (IPTR)obj;
         }
         else
           CoerceMethod(cl, obj, OM_DISPOSE);
@@ -113,9 +113,9 @@ DISPATCHER(_DispatcherP)
         }
         else
         {
-          W(DBF_STARTUP, "1 MUIM_Dataspace_Find[%ld]: %08lx : %lx / %lx", i, PrefsInfo[i].CfgItem, cfg_val, cfg_val ? *(ULONG *)cfg_val : (ULONG)PrefsInfo[i].DefValue);
+          W(DBF_STARTUP, "1 MUIM_Dataspace_Find[%ld]: %08lx : %P / %P", i, PrefsInfo[i].CfgItem, cfg_val, cfg_val ? *(IPTR *)cfg_val : (IPTR)PrefsInfo[i].DefValue);
 
-          set(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? *(ULONG *)cfg_val : (ULONG)PrefsInfo[i].DefValue);
+          set(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? *(IPTR *)cfg_val : (IPTR)PrefsInfo[i].DefValue);
         }
       }
     }
@@ -128,7 +128,7 @@ DISPATCHER(_DispatcherP)
 
       for(i=0; i < NumberOfObject; i++)
       {
-        LONG cfg_val;
+        SIPTR cfg_val;
         ULONG len;
 
         cfg_val = xget(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag);

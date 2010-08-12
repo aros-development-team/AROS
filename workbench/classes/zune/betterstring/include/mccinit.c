@@ -1,7 +1,7 @@
 /*******************************************************************************
 
         Name:           mccinit.c
-        Versionstring:  $VER: mccinit.c 1.19 (25.05.2010)
+        Versionstring:  $VER: mccinit.c 1.20 (01.06.2010)
         Author:         Jens Langner <Jens.Langner@light-speed.de>
         Distribution:   PD (public domain)
         Description:    library init file for easy generation of a MUI
@@ -52,6 +52,7 @@
   1.17  02.06.2009 : more fixes to better comply for AROS compilation
   1.18  24.04.2010 : fixed stack swapping for AROS
   1.19  25.05.2010 : updated for compatibility with AROS V1 API
+  1.20  01.06.2010 : added CleanupDebug() call to expunge function.
 
  About:
 
@@ -839,6 +840,10 @@ static ULONG mccLibExpunge(UNUSED struct LibraryHeader *base)
   // is finished, if he want's to get informed.
   #if defined(POSTCLASSEXPUNGE)
   PostClassExpunge();
+  #endif
+
+  #if defined(DEBUG)
+  CleanupDebug();
   #endif
 
   // cleanup the various library bases and such

@@ -171,6 +171,13 @@ void SetupDebug(void)
 
 /****************************************************************************/
 
+void CleanupDebug(void)
+{
+  kprintf("** Cleaned up debugging ********************************************\n");
+}
+
+/****************************************************************************/
+
 // define variables for using ANSI colors in our debugging scheme
 #define ANSI_ESC_CLR        "\033[0m"
 #define ANSI_ESC_BOLD        "\033[1m"

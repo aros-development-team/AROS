@@ -48,7 +48,7 @@ ULONG GetCol (Object *obj, ULONG item, struct MUI_PenSpec *defaultcol, UNUSED st
 
 void InitConfig (Object *obj, struct InstData *data)
 {
-  ULONG setting;
+  IPTR setting;
 
   ENTER();
 
@@ -103,12 +103,12 @@ void InitConfig (Object *obj, struct InstData *data)
     data->Font = NULL;
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_SelectOnActive, &setting))
-    data->SelectOnActive = *(ULONG*)setting;
+    data->SelectOnActive = *(IPTR*)setting;
   else
     data->SelectOnActive = FALSE;
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_SelectPointer, &setting))
-    data->SelectPointer = *(ULONG*)setting;
+    data->SelectPointer = *(IPTR*)setting;
   else
     data->SelectPointer = FALSE;
 

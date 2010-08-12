@@ -29,7 +29,6 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-#include "BetterString_mcc.h"
 #include "private.h"
 
 #if defined(__amigaos4__)

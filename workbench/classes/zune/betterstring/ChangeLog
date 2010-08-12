@@ -2,8 +2,67 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 242 2010-05-01 07:29:36Z damato $
-$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.18/ChangeLog $
+$Id: ChangeLog 265 2010-07-08 08:18:11Z thboeckel $
+$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/trunk/ChangeLog $
+
+2010-07-08 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mccinit.c, Debug.c: updated to latest mccinit.c and added CleanupDebug()
+    function needed by mccinit.c.
+
+2010-06-29 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/swedish.ct: added ##codeset line.
+
+2010-06-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Install-MCC: extended the final message that a reboot might be necessary to
+    be able to use the just installed version.
+
+2010-06-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_compiler.h: added SIPTR definition.
+
+2010-06-03 Matthias Rustler <mrustler@gmx.de>
+
+  * Fixes for 64-bit AROS. Some ULONG to IPTR changes to get rid of warnings
+    about conversion from/to integer to/from pointer with different size.
+  * mmakefile.src: Path to header fixed.
+
+2010-05-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * dist/Install-MCC: the supported languages are now collected dynamically
+    instead of being defined statically. Furthermore the .mcc name must be
+    specified in the script's icon as application name. This makes it possible
+    to use the script for arbitrary classes without modification.
+  * dist/icons: set some reasonable default icon positions.
+
+2010-05-26 Thore Böckelmann <tboeckel@gmx.de>
+
+  * dist/Install-MCC: added the first version of a generic MCC Installer script.
+    To use this script for other classes only the name and the set of supported
+    languages needs to be adapted.
+
+2010-05-25 Matthias Rustler <mrustler@gmx.de>
+
+  * mccinit.c: changes for AROS V1 API
+  * mmakefile.scr: icon.c added
+
+2010-05-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Makefiles: add varargs stubs only for those systems which really need it.
+
+2010-05-19 Mariusz Danilewicz <mandi@interia.pl>
+
+  * mcp/locale/polish.ct: first version of Polish translation
+
+2010-05-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: moved the public include files to the include/mui directory.
+  * added stuff for automated build of release archives.
+  * mcp/locale: slight correction for the polish catalog to generate a proper
+    AUTH chunk and set some properties. Also added new polish translation to the
+    catalog generation.
 
 #### v11.18 RELEASE ###########################################################
 
