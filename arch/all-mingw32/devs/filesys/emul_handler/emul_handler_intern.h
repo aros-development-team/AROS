@@ -42,10 +42,6 @@ struct emulbase
     struct filehandle  		* eb_stdin;
     struct filehandle 		* eb_stdout;
     struct filehandle 		* eb_stderr;
-    void			* stdin_handle;
-    void			* stdout_handle;
-    void			* stderr_handle;
-    struct SignalSemaphore	  memsem;
     APTR			  mempool;
     void			* EmulHandle;
     void			* KernelHandle;
@@ -58,15 +54,18 @@ struct filehandle
 {
     char * hostname; /* full host's pathname (includes volume root prefix 		       */
     char * name;     /* full name including pathname					       */
-    int    type;     /* type can either be FHD_FILE or FHD_DIRECTORY			       */
+    int    type;     /* type flag, see below			       */
     char * pathname; /* if type == FHD_FILE then you'll find the pathname here		       */
     char * volumename;
     void * fd;
     ULONG  dirpos;
     struct DosList *dl;
 };
-#define FHD_FILE      0
-#define FHD_DIRECTORY 1
+
+/* type flags */
+#define FHD_FILE      0x01
+#define FHD_DIRECTORY 0x02
+#define FHD_STDIO     0x80
 
 struct EmulInterface
 {

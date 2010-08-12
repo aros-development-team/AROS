@@ -20,8 +20,6 @@
 #define DASYNC(x)
 
 #define __DOS_NOLIBBASE__
-#define __HOSTLIB_NOLIBBASE__
-#define __KERNEL_NOLIBBASE__
 
 #include <aros/debug.h>
 #include <aros/kernel.h>
@@ -60,7 +58,6 @@
 
 /* Init DOSBase ourselves because emul_handler is initialized before dos.library */
 static struct DosLibrary *DOSBase;
-static APTR HostLibBase, KernelBase;
 static struct EmulInterface *EmulIFace;
 static struct KernelInterface *KernelIFace;
 
@@ -93,44 +90,6 @@ static void SendEvent(struct emulbase *emulbase, LONG event) {
 	}
 	DeleteMsgPort (InputPort);
   }
-}
-
-/*********************************************************************************************/
-
-static APTR emul_malloc(struct emulbase *emulbase, ULONG size)
-{
-  ULONG *res;
-  
-  // kprintf("** emul_malloc: size = %d **\n",size);
-  ObtainSemaphore(&emulbase->memsem);
-  
-  size += sizeof(ULONG);
-  res = AllocPooled(emulbase->mempool, size);
-  if (res) *res++ = size;
-  
-  ReleaseSemaphore(&emulbase->memsem);
-  
-  // kprintf("** emul_malloc: size = %d  result = %x **\n",size-sizeof(ULONG),res);
-  
-  return res;
-}
-
-/*********************************************************************************************/
-
-static void emul_free(struct emulbase *emulbase, APTR mem)
-{
-  if (mem)
-  {
-	ULONG *m = (ULONG *)mem;
-	ULONG size = *--m;
-	
-	// kprintf("** emul_free: size = %d  memory = %x **\n",size-sizeof(ULONG),mem);
-	
-	ObtainSemaphore(&emulbase->memsem);
-	FreePooled(emulbase->mempool, m, size);
-	ReleaseSemaphore(&emulbase->memsem);
-  }
-  	D(else kprintf("*** emul_handler: tried to free NULL mem ***\n");)
 }
 
 /*********************************************************************************************/
@@ -211,7 +170,7 @@ static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, st
     dirlen = strlen(fh->hostname);
     flen = strlen(filename);
     len = flen + dirlen + 2;
-    *dest=(char *)emul_malloc(emulbase, len);
+    *dest = AllocVecPooled(emulbase->mempool, len);
     if ((*dest)) {
 	CopyMem(fh->hostname, *dest, dirlen);
 	c = *dest + dirlen;
@@ -227,15 +186,15 @@ static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, st
 	DFNAME(bug("[emul] Shrinking filename: \"%s\"\n", c));
 	if (!shrink(emulbase, c))
 	{
-	  emul_free(emulbase, *dest);
-	  *dest = NULL;
-	  ret = ERROR_OBJECT_NOT_FOUND;
+	    FreeVecPooled(emulbase->mempool, *dest);
+	    *dest = NULL;
+	    ret = ERROR_OBJECT_NOT_FOUND;
 	} else {
-	  DFNAME(bug("[emul] resulting host filename: \"%s\"\n", *dest));
-	  if (part) {
-	      *part = c;
-	      DFNAME(bug("[emul] resulting AROS filename: \"%s\"\n", c));
-	  }
+	    DFNAME(bug("[emul] resulting host filename: \"%s\"\n", *dest));
+	    if (part) {
+	        *part = c;
+	        DFNAME(bug("[emul] resulting AROS filename: \"%s\"\n", c));
+	    }
 	}
     } else
 	ret = ERROR_NO_FREE_STORE;
@@ -329,16 +288,19 @@ static ULONG u2a[][2]=
 
 ULONG Errno_w2a(ULONG e)
 {
-  ULONG i;
+    ULONG i;
   
-  DERROR(printf("[EmulHandler] Windows error code: %lu\n", e));
-  for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
+    DERROR(printf("[EmulHandler] Windows error code: %lu\n", e));
+    for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
+    {
 	if(u2a[i][0]==e) {
-	  DERROR(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
-	  return u2a[i][1];
+	    DERROR(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
+	    return u2a[i][1];
 	}
-  DERROR(printf("[EmulHandler] Unknown error code\n"));
-  return ERROR_UNKNOWN;
+    }
+
+    DERROR(printf("[EmulHandler] Unknown error code\n"));
+    return ERROR_UNKNOWN;
 }
 
 #define Errno() Errno_w2a(GetLastError())
@@ -395,32 +357,31 @@ static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
     D(bug("[emul] Lock type = %lu\n", current->type));
     switch(current->type)
     {
-	case FHD_FILE:
-	  if((current->fd != emulbase->stdin_handle) && (current->fd != emulbase->stdout_handle) &&
-	     (current->fd != emulbase->stderr_handle))
-	  {
-	        DB2(bug("[emul] CloseHandle(), fd = 0x%08lX\n", current->fd));
-	        Forbid();
-		DoClose(current->fd);
-		Permit();
-	  }
-	  break;
-	case FHD_DIRECTORY:
-	  if (current->fd != INVALID_HANDLE_VALUE)
-	  {
-	        D(bug("[emul] Closing directory search handle\n"));
-	        Forbid();
-		FindEnd(current->fd);
-		Permit();
-	  }
-	  break;
+    case FHD_FILE:
+	/* Nothing will happen if type has FHD_STDIO set, this is intentional */
+	DB2(bug("[emul] CloseHandle(), fd = 0x%08lX\n", current->fd));
+
+	Forbid();
+	DoClose(current->fd);
+	Permit();
+	break;
+
+    case FHD_DIRECTORY:
+	if (current->fd != INVALID_HANDLE_VALUE)
+	{
+	    D(bug("[emul] Closing directory search handle\n"));
+	    Forbid();
+	    FindEnd(current->fd);
+	    Permit();
+	}
+	break;
     }
     if (current->pathname) {
 	D(bug("[emul] Freeing pathname: \"%s\"\n", current->pathname));
-	emul_free(emulbase, current->pathname);
+	FreeVecPooled(emulbase->mempool, current->pathname);
     }
     D(bug("[emul] Freeing name: \"%s\"\n", current->hostname));
-    emul_free(emulbase, current->hostname);
+    FreeVecPooled(emulbase->mempool, current->hostname);
     D(bug("[emul] Freeing filehandle\n"));
     FreeMem(current, sizeof(struct filehandle));
     D(bug("[emul] Done\n"));
@@ -436,32 +397,33 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
   
     DOPEN(bug("[emul] open_(\"%s\"), directories allowed: %lu\n", name, AllowDir));
   
-    fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
-    if(fh!=NULL) {
+    fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+    if (fh)
+    {
 	fh->pathname = NULL; /* just to make sure... */
 	fh->dl = (*handle)->dl;
 	/* If no filename is given and the file-descriptor is one of the
 	 standard filehandles (stdin, stdout, stderr) ... */
-	if((!name[0]) && ((*handle)->type == FHD_FILE) &&
-	   (((*handle)->fd == emulbase->stdin_handle) || ((*handle)->fd == emulbase->stdout_handle) || ((*handle)->fd == emulbase->stderr_handle)))
+	if((!name[0]) && ((*handle)->type & FHD_STDIO))
 	{
-	  /* ... then just reopen that standard filehandle. */
-	  fh->type       = FHD_FILE;
-	  fh->fd         = (*handle)->fd;
-	  fh->name       = NULL;
-	  fh->hostname   = NULL;
-	  fh->volumename = NULL;
-	  *handle = fh;
-	  return 0;
+	    /* ... then just reopen that standard filehandle. */
+	    fh->type       = FHD_FILE|FHD_STDIO;
+	    fh->fd         = (*handle)->fd;
+	    fh->name       = NULL;
+	    fh->hostname   = NULL;
+	    fh->volumename = NULL;
+	    *handle = fh;
+
+	    return 0;
 	}
 
 	fh->volumename=(*handle)->volumename;
-	
+
 	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, name);
 	if (!ret)
 	{
 	    int kind;
-	    
+
 	    DOPEN(bug("[emul] AROS object name: %s\n", fh->name));
 	    DOPEN(bug("[emul] Host object name: %s\n", fh->hostname));	    
 	    kind = Stat(fh->hostname, NULL);
@@ -497,7 +459,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR 
 		ret = ERROR_OBJECT_WRONG_TYPE;
 	    }
 	    D(bug("[emul] Freeing pathname\n"));
-	    emul_free(emulbase, fh->hostname);
+	    FreeVecPooled(emulbase->mempool, fh->hostname);
 	}
 	D(bug("[emul] Freeing filehandle\n"));
 	FreeMem(fh, sizeof(struct filehandle));
@@ -607,7 +569,7 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
   {
 	if (!Delete(filename))
 	    ret = Errno();
-	emul_free(emulbase, filename);
+	FreeVecPooled(emulbase->mempool, filename);
   }
   
   return ret;
@@ -618,20 +580,20 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
 						STRPTR file, ULONG aprot)
 {
-  LONG ret = 0;
-  char *filename = NULL;
-  
-  if ((ret = makefilename(emulbase, &filename, NULL, fh, file)))
+    LONG ret = 0;
+    char *filename = NULL;
+
+    if ((ret = makefilename(emulbase, &filename, NULL, fh, file)))
 	return ret;
 
-  Forbid();
-  ret = Chmod(filename, prot_a2w(aprot));
-  Permit();
-  ret = ret ? 0 : Errno();
-  
-  emul_free(emulbase, filename);
-  
-  return ret;
+    Forbid();
+    ret = Chmod(filename, prot_a2w(aprot));
+    Permit();
+    ret = ret ? 0 : Errno();
+
+    FreeVecPooled(emulbase->mempool, filename);
+
+    return ret;
 }
 
 /*********************************************************************************************/
@@ -643,22 +605,53 @@ static void EmulIntHandler(struct AsyncReaderControl *msg, void *d)
 }
 
 /*********************************************************************************************/
+
+static struct filehandle *CreateStdHandle(ULONG id)
+{
+    struct filehandle *fh;
+    APTR handle;
+
+    Forbid();
+    handle = GetStdFile(id);
+    Permit();
+
+    if (!handle)
+	return NULL;
+
+    fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
+    if (fh) {
+	fh->type = FHD_FILE|FHD_STDIO;
+	fh->fd   = handle;
+    }
+
+    return fh;
+}
+
+/*********************************************************************************************/
+
 static LONG startup(struct emulbase *emulbase)
 {
-  struct Library *ExpansionBase;
-  struct filehandle *fhi = NULL;
-  struct filehandle *fho = NULL;
-  struct filehandle *fhe = NULL;
-  struct filehandle *fhv;
-  struct DeviceNode *dlv, *dlv2;
-  LONG ret = ERROR_NO_FREE_STORE;
-  ULONG res;
-  
-  D(kprintf("[Emulhandler] startup\n"));
-  ExpansionBase = OpenLibrary("expansion.library",0);
-  if(ExpansionBase != NULL)
-  {
+    APTR KernelBase;
+    struct Library *ExpansionBase;
+    struct filehandle *fhi = NULL;
+    struct filehandle *fho = NULL;
+    struct filehandle *fhe = NULL;
+    struct filehandle *fhv;
+    struct DeviceNode *dlv, *dlv2;
+    LONG ret = ERROR_NO_FREE_STORE;
+    ULONG res;
+
+    D(kprintf("[Emulhandler] startup\n"));
+    
+    KernelBase = OpenResource("kernel.resource");
+    if (!KernelBase)
+	return ERROR_INVALID_RESIDENT_LIBRARY;
+
+    ExpansionBase = OpenLibrary("expansion.library",0);
+    if (!ExpansionBase)
+	return ERROR_INVALID_RESIDENT_LIBRARY;
     D(kprintf("[Emulhandler] startup: got ExpansionBase\n"));	  
+
     fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle) + 256 + AROS_WORSTALIGN, MEMF_PUBLIC);
     if(fhv != NULL)
     {
@@ -686,48 +679,9 @@ static LONG startup(struct emulbase *emulbase)
 			  
 	    fhv->volumename = VOLNAME;
 
-	    Forbid();
-	    emulbase->stdin_handle = GetStdFile(STD_INPUT_HANDLE);
-	    emulbase->stdout_handle = GetStdFile(STD_OUTPUT_HANDLE);
-	    emulbase->stderr_handle = GetStdFile(STD_ERROR_HANDLE);
-	    Permit();
-	    if (!emulbase->stdin_handle)
-		emulbase->stdin_handle = INVALID_HANDLE_VALUE;
-	    if (!emulbase->stdout_handle)
-		emulbase->stdout_handle = INVALID_HANDLE_VALUE;
-	    if (!emulbase->stderr_handle)
-		emulbase->stderr_handle = INVALID_HANDLE_VALUE;
-
-	    if (emulbase->stdin_handle != INVALID_HANDLE_VALUE) {
-		fhi=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
-		if(fhi!=NULL)
-		{
-		    D(kprintf("[Emulhandler] allocated fhi\n"));
-		    fhi->type	    = FHD_FILE;
-		    fhi->fd	    = emulbase->stdin_handle;
-		    emulbase->eb_stdin = fhi;
-		}
-	    }
-	    if (emulbase->stdout_handle != INVALID_HANDLE_VALUE) {
-		fho=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
-		if(fho!=NULL)
-		{
-		    D(kprintf("[Emulhandler] startup allocated fho\n"));
-		    fho->type	    = FHD_FILE;
-		    fho->fd	    = emulbase->stdout_handle;
-		    emulbase->eb_stdout = fho;
-		}
-	    }
-	    if (emulbase->stderr_handle != INVALID_HANDLE_VALUE) {
-		fhe=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
-		if(fhe!=NULL)
-		{
-		    D(kprintf("[Emulhandler] startup allocated fhe\n"));
-		    fhe->type	    = FHD_FILE;
-		    fhe->fd	    = emulbase->stderr_handle;
-		    emulbase->eb_stderr = fhe;
-		}
-	    }
+	    emulbase->eb_stdin = CreateStdHandle(STD_INPUT_HANDLE);
+	    emulbase->eb_stdout = CreateStdHandle(STD_OUTPUT_HANDLE);
+	    emulbase->eb_stderr = CreateStdHandle(STD_ERROR_HANDLE);
 
 	    ret = ERROR_NO_FREE_STORE;
 
@@ -735,19 +689,19 @@ static LONG startup(struct emulbase *emulbase)
 	    Forbid();
 	    emulbase->ConsoleReader = InitNative();
 	    Permit();
-	    if (emulbase->ConsoleReader) {
+	    if (emulbase->ConsoleReader)
+	    {
 		D(bug("[Emulhandler] Console reader at %p with IRQ %u\n", emulbase->ConsoleReader, emulbase->ConsoleReader->IrqNum));
 	        emulbase->ConsoleInt = KrnAddIRQHandler(emulbase->ConsoleReader->IrqNum, EmulIntHandler, emulbase->ConsoleReader, NULL);
 	        D(bug("[Emulhandler] Added console interrupt %p\n", emulbase->ConsoleReader));
-	        if (emulbase->ConsoleInt) {
-
+	        if (emulbase->ConsoleInt)
+		{
 		    /*
 		       Allocate space for the string from same mem,
 		       Use AROS_BSTR_MEMSIZE4LEN macro for space to
 		       to allocate and add an extra 4 for alignment
 		       purposes.
 		    */
-
 		    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)), MEMF_CLEAR|MEMF_PUBLIC);
 		    if (dlv) {
 			dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)), MEMF_CLEAR|MEMF_PUBLIC);
@@ -781,7 +735,7 @@ static LONG startup(struct emulbase *emulbase)
 			    for(i = 0; i < sizeof(VOLNAME) - 1; i++)
 				AROS_BSTR_putchar(s2, i, volname[i]);
 			    AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
-					
+
 			    dlv2->dn_Type   = DLT_VOLUME;
 			    dlv2->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
 			    dlv2->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
@@ -789,11 +743,11 @@ static LONG startup(struct emulbase *emulbase)
 			    dlv2->dn_Startup = NULL;
 			    dlv2->dn_Name = s2;
 			    dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
-					
+
 			    /* Make sure this is not booted from */
 			    AddBootNode(-128, 0, dlv2, NULL);
 			    fhv->dl = dlv2;
-			    
+
 			    /* Increment our open counter because we use ourselves */
 			    emulbase->device.dd_Library.lib_OpenCnt++;
 			    return 0;
@@ -817,9 +771,8 @@ static LONG startup(struct emulbase *emulbase)
 	free_lock(emulbase, fhv);
     }
     CloseLibrary(ExpansionBase);
-  }
-  
-  return ret;
+
+    return ret;
 }
 
 /*********************************************************************************************/
@@ -832,7 +785,7 @@ sizeof(struct ExAllData) };
 
 /*********************************************************************************************/
 
-/* Returns a emul_malloc()'ed buffer, containing a pathname, stripped by the
+/* Returns an allocated buffer, containing a pathname, stripped by the
  filename.
  */
 char *pathname_from_name (struct emulbase *emulbase, char *name)
@@ -848,7 +801,7 @@ char *pathname_from_name (struct emulbase *emulbase, char *name)
   
   if (0 != i)
   {
-    result = (char *)emul_malloc(emulbase, i + 1);
+    result = AllocVecPooled(emulbase->mempool, i + 1);
     if(!result)
       return NULL;
 
@@ -871,7 +824,7 @@ ULONG examine_start(struct emulbase *emulbase, struct filehandle *fh)
 
     if (!fh->pathname) {
         len = strlen(fh->hostname);
-        fh->pathname = emul_malloc(emulbase, len + 3);
+        fh->pathname = AllocVecPooled(emulbase->mempool, len + 3);
         if (!fh->pathname)
             return ERROR_NO_FREE_STORE;
         CopyMem(fh->hostname, fh->pathname, len);
@@ -966,34 +919,36 @@ ULONG ReadDir(struct filehandle *fh, LPWIN32_FIND_DATA FindData, ULONG *dirpos)
 
 ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, WIN32_FILE_ATTRIBUTE_DATA *FIB, LONG *kind)
 {
-  STRPTR filename, name;
-  ULONG plen, flen;
-  ULONG error = 0;
+    STRPTR filename, name;
+    ULONG plen, flen;
+    ULONG error = 0;
 
-  D(bug("[emul] examine_entry_sub(): filehandle's path: %s\n", fh->hostname));
-  if (FoundName) {
-      D(bug("[emul] ...containing object: %s\n", FoundName));
-      plen = strlen(fh->hostname);
-      flen = strlen(FoundName);
-      name = emul_malloc(emulbase, plen + flen + 2);
-      if (NULL == name)
-	  return ERROR_NO_FREE_STORE;
-      strcpy(name, fh->hostname);
-      filename = name + plen;
-      *filename++ = '\\';
-      strcpy(filename, FoundName);
-  } else
-      name = fh->hostname;
+    D(bug("[emul] examine_entry_sub(): filehandle's path: %s\n", fh->hostname));
+    if (FoundName)
+    {
+	D(bug("[emul] ...containing object: %s\n", FoundName));
+	plen = strlen(fh->hostname);
+	flen = strlen(FoundName);
+	name = AllocVecPooled(emulbase->mempool, plen + flen + 2);
+	if (NULL == name)
+	    return ERROR_NO_FREE_STORE;
+	strcpy(name, fh->hostname);
+	filename = name + plen;
+	*filename++ = '\\';
+	strcpy(filename, FoundName);
+    } else
+	name = fh->hostname;
   
-  D(bug("[emul] Full name: %s\n", name));
-  *kind = Stat(name, FIB);
-  if (*kind == 0)
-      error = Errno();
-  if (FoundName) {
-      D(bug("[emul] Freeing full name\n"));
-      emul_free(emulbase, name);
-  }
-  return error;
+    D(bug("[emul] Full name: %s\n", name));
+    *kind = Stat(name, FIB);
+    if (*kind == 0)
+	error = Errno();
+    if (FoundName)
+    {
+	D(bug("[emul] Freeing full name\n"));
+	FreeVecPooled(emulbase->mempool, name);
+    }
+    return error;
 }	
 
 /*********************************************************************************************/
@@ -1200,7 +1155,7 @@ static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle
       error = Link(fn, oldfile->hostname, NULL);
       Permit();
       error = error ? 0 : Errno();
-      emul_free(emulbase, fn);
+      FreeVecPooled(emulbase->mempool, fn);
   }
 
   return error;
@@ -1228,9 +1183,9 @@ static LONG create_softlink(struct emulbase * emulbase,
 	  error = SymLink(src, dest, 0);
 	  Permit();
 	  error = error ? 0 : Errno();
-	  emul_free(emulbase, dest);
+	  FreeVecPooled(emulbase->mempool, dest);
       }
-      emul_free(emulbase, src);
+      FreeVecPooled(emulbase->mempool, src);
   }
   
   return error;
@@ -1255,9 +1210,9 @@ static LONG rename_object(struct emulbase * emulbase,
 	    ret = DoRename(filename,newfilename);
 	    Permit();
 	    ret = ret ? 0 : Errno();
-	    emul_free(emulbase, newfilename);
+	    FreeVecPooled(emulbase->mempool, newfilename);
 	}
-	emul_free(emulbase, filename);
+	FreeVecPooled(emulbase->mempool, filename);
   }
   
   return ret;
@@ -1293,9 +1248,9 @@ ULONG parent_dir(struct emulbase *emulbase,
 
 void parent_dir_post(struct emulbase *emulbase, char ** DirectoryName)
 {
-  /* free the previously allocated memory */
-  emul_free(emulbase, *DirectoryName);
-  **DirectoryName = 0;
+    /* free the previously allocated memory */
+    FreeVecPooled(emulbase->mempool, *DirectoryName);
+    **DirectoryName = 0;
 }
 
 /*********************************************************************************************/
@@ -1306,27 +1261,23 @@ int loadhooks(struct emulbase *emulbase);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR emulbase)
 {
-  D(bug("Initializing emul_handler\n"));
+    D(bug("Initializing emul_handler\n"));
   
-  if (loadhooks(emulbase) != 0)
-	  return FALSE;
+    if (loadhooks(emulbase) != 0)
+	return FALSE;
 
-  InitSemaphore(&emulbase->memsem);
-  
-  emulbase->mempool = CreatePool(MEMF_ANY, 4096, 2000);
-  if (!emulbase->mempool) return FALSE;
+    emulbase->mempool = CreatePool(MEMF_ANY|MEMF_SEM_PROTECTED, 4096, 2000);
+    if (!emulbase->mempool)
+	return FALSE;
 
-  if(!startup(emulbase))
-  {
+    if(!startup(emulbase)) {
 	D(bug("emul_handler initialized OK\n"));
 	return TRUE;
-  }
+    }
 
-  DeletePool(emulbase->mempool);
-  
-  D(bug("emul_handler startup failed\n"));
-  
-  return FALSE;
+    DeletePool(emulbase->mempool);
+    D(bug("emul_handler startup failed\n"));
+    return FALSE;
 }
 
 /*********************************************************************************************/
@@ -1478,6 +1429,10 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_INIT
   
     LONG error = 0;
+    struct filehandle *fh, *fh2;
+    struct InfoData *id;
+    UQUAD newpos;
+    LONG error2;
   
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
@@ -1504,102 +1459,90 @@ AROS_LH1(void, beginio,
 	  D(bug("[emul] FSA_OPEN returning %lu\n", error));
 	  
 	  break;
-	  
+
     case FSA_CLOSE:
 	  D(bug("[emul] FSA_CLOSE\n"));
 	  error = free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
 	  D(bug("[emul] FSA_CLOSE returning %lu\n", error));
 	  break;
-	  
-    case FSA_READ:
-	{
-	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-	  
-	  if (fh->type == FHD_FILE)
-	  {
-		if (fh->fd == emulbase->stdout_handle)
-		    fh->fd = emulbase->stdin_handle;
-		if (fh->fd == emulbase->stdin_handle) {
-		    DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", iofs->io_Union.io_READ.io_Length));
-		    emulbase->ConsoleReader->fh = fh->fd;
-		    emulbase->ConsoleReader->addr = iofs->io_Union.io_READ.io_Buffer;
-		    emulbase->ConsoleReader->len = iofs->io_Union.io_READ.io_Length;
-		    emulbase->ConsoleReader->sig = SIGF_DOS;
-		    emulbase->ConsoleReader->task = FindTask(NULL);
-		    emulbase->ConsoleReader->cmd = ASYNC_CMD_READ;
-		    SetSignal(0, emulbase->ConsoleReader->sig);
-		    if (RaiseEvent(emulbase->ConsoleReader->CmdEvent)) {
-		    	Wait(emulbase->ConsoleReader->sig);
-		    	DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
-		    	iofs->io_Union.io_READ.io_Length = emulbase->ConsoleReader->actual;
-		    	error = Errno_w2a(emulbase->ConsoleReader->error);
-		    	if (!error) {
-		            char *c, *d;
 
-		            c = iofs->io_Union.io_READ.io_Buffer;
-		            d = c;
-		            while (*c) {
-		            	if ((c[0] == '\r') && (c[1] == '\n')) {
-		            	    c++;
-		            	    iofs->io_Union.io_READ.io_Length--;
-		            	}
-		                *d++ = *c++;
-		            }
-		        }
-		    } else {
-		        DASYNC(bug("[emul] FSA_READ: RaiseEvent() failed!\n"));
-		        error = ERROR_UNKNOWN;
-		    }
-		} else {
-		    Forbid();
-		    error = DoRead(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length, &iofs->io_Union.io_READ.io_Length, NULL);
-		    Permit();
-		    error = error ? 0 : Errno();
-		}
-	  }
-	  else
-	  {
-		error = ERROR_OBJECT_WRONG_TYPE;
-	  }
-	  
-	  break;
-	}
-	  
-    case FSA_WRITE:
+    case FSA_READ:
+	fh = (struct filehandle *)iofs->IOFS.io_Unit;  
+	if (fh->type & FHD_FILE)
 	{
-	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-	  
-	  if (fh->type == FHD_FILE)
-	  {
-		if (fh->fd == emulbase->stdin_handle)
-		  fh->fd=emulbase->stdout_handle;
+	    if (fh->type & FHD_STDIO)
+	    {
+		DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", iofs->io_Union.io_READ.io_Length));
+		emulbase->ConsoleReader->fh = fh->fd;
+		emulbase->ConsoleReader->addr = iofs->io_Union.io_READ.io_Buffer;
+		emulbase->ConsoleReader->len = iofs->io_Union.io_READ.io_Length;
+		emulbase->ConsoleReader->sig = SIGF_DOS;
+		emulbase->ConsoleReader->task = FindTask(NULL);
+		emulbase->ConsoleReader->cmd = ASYNC_CMD_READ;
+		SetSignal(0, emulbase->ConsoleReader->sig);
+		if (RaiseEvent(emulbase->ConsoleReader->CmdEvent))
+		{
+		    Wait(emulbase->ConsoleReader->sig);
+		    DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
+		    iofs->io_Union.io_READ.io_Length = emulbase->ConsoleReader->actual;
+		    error = Errno_w2a(emulbase->ConsoleReader->error);
+		    if (!error)
+		    {
+		        char *c, *d;
+
+		        c = iofs->io_Union.io_READ.io_Buffer;
+		        d = c;
+		        while (*c) {
+		            if ((c[0] == '\r') && (c[1] == '\n')) {
+		                c++;
+		                iofs->io_Union.io_READ.io_Length--;
+		            }
+		            *d++ = *c++;
+		        }
+		    }
+		}
+		else
+		{
+		    DASYNC(bug("[emul] FSA_READ: RaiseEvent() failed!\n"));
+		    error = ERROR_UNKNOWN;
+		}
+	    }
+	    else
+	    {
 		Forbid();
-		error = DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL);
+		error = DoRead(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length, &iofs->io_Union.io_READ.io_Length, NULL);
 		Permit();
 		error = error ? 0 : Errno();
-	  }
-	  else
-	  {
-		error = ERROR_OBJECT_WRONG_TYPE;
-	  }
-	  
-	  break;
+	    }
 	}
+	else
+	    error = ERROR_OBJECT_WRONG_TYPE;
+	break;
+
+    case FSA_WRITE:
+	fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  
+	if (fh->type & FHD_FILE)
+	{
+	    Forbid();
+	    error = DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL);
+	    Permit();
+	    error = error ? 0 : Errno();
+	}
+	else
+	    error = ERROR_OBJECT_WRONG_TYPE;
+	break;
+
     case FSA_SEEK:
-    {
-	struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+	fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
     	DSEEK(bug("[emul] FSA_SEEK, mode %ld, offset %llu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
 	error = seek_file(fh, &iofs->io_Union.io_SEEK, NULL);
 	DSEEK(bug("[emul] FSA_SEEK returning %lu\n", error));
 	break;
-    }
+
     case FSA_SET_FILE_SIZE:
-    {
-        struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-        UQUAD newpos;
-        LONG error2;
+        fh = (struct filehandle *)iofs->IOFS.io_Unit;
         
         DFSIZE(bug("[emul] FSA_SET_FILE_SIZE, mode %ld, offset %llu\n", iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode, iofs->io_Union.io_SET_FILE_SIZE.io_Offset));
         /* First seek to the requested position. io_Offset will contain OLD position after that. NEW position will be in newpos */
@@ -1620,45 +1563,35 @@ AROS_LH1(void, beginio,
             } else
                 iofs->io_Union.io_SEEK.io_Offset = newpos;
         }
+
 	D(bug("[emul] FSA_SET_FILE_SIZE returning %lu\n", error));
 	break;
-    }
+
     case FSA_IS_INTERACTIVE:
-	{
-	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+	fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  
-	  if (fh->type == FHD_FILE)
-	  {
-	        DB2(bug("[emul] GetFileType()\n"));
-	        Forbid();
-		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = (GetFileType(fh->fd) == FILE_TYPE_CHAR) ? TRUE : FALSE;
-		Permit();
-	  }
-	  else
-	  {
+	if (fh->type & FHD_FILE)
+	{
+	    DB2(bug("[emul] GetFileType()\n"));
+	    Forbid();
+	    iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = (GetFileType(fh->fd) == FILE_TYPE_CHAR) ? TRUE : FALSE;
+	    Permit();
+	}
+	else
 		iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = FALSE;
-	  }
-	  
-	  break;
-	}
-	  
+	break;
+
     case FSA_SAME_LOCK:
-	{
-	  struct filehandle *lock1 = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
-	  *lock2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
+	fh = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
+	fh2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
 	  
-	  if (strcmp(lock1->hostname, lock2->hostname))
-	  {
-		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
-	  }
-	  else
-	  {
-		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_SAME;
-	  }
+	if (strcmp(fh->hostname, fh2->hostname))
+	    iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
+	else
+	    iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_SAME;
 	  
-	  break;
-	}
-	  
+	break;
+
     case FSA_EXAMINE:
 	  D(bug("[emul] FSA_EXAMINE\n"));
 	  error = examine(emulbase,
@@ -1778,17 +1711,15 @@ AROS_LH1(void, beginio,
 	  break;
 	  
     case FSA_DISK_INFO:
-	{
-	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-	  struct InfoData *id = iofs->io_Union.io_INFO.io_Info;
+	fh = (struct filehandle *)iofs->IOFS.io_Unit;
+	id = iofs->io_Union.io_INFO.io_Info;
 
-	  error = StatFS(fh->hostname, id);
-	  if (error)
-	      error = Errno_w2a(error);
-	  else
-	      id->id_VolumeNode = fh->dl;
-	  break;
-	}
+	error = StatFS(fh->hostname, id);
+	if (error)
+	    error = Errno_w2a(error);
+	else
+	    id->id_VolumeNode = fh->dl;
+	break;
 /* FIXME: not supported yet
     case FSA_SET_COMMENT:
     case FSA_SET_OWNER:
@@ -1801,18 +1732,16 @@ AROS_LH1(void, beginio,
         DCMD(bug("[emul] Unknown action %lu\n", iofs->IOFS.io_Command));
 	error = ERROR_ACTION_NOT_KNOWN;
 	break;
-  }
+    }
 
-  /* Set error code */
-  iofs->io_DosError = error;
+    /* Set error code */
+    iofs->io_DosError = error;
   
-  /* If the quick bit is not set send the message to the port */
-  if(!(iofs->IOFS.io_Flags & IOF_QUICK))
-  {
+    /* If the quick bit is not set send the message to the port */
+    if(!(iofs->IOFS.io_Flags & IOF_QUICK))
 	ReplyMsg(&iofs->IOFS.io_Message);
-  }
-  
-  AROS_LIBFUNC_EXIT
+
+    AROS_LIBFUNC_EXIT
 }
 
 /*********************************************************************************************/
@@ -1865,15 +1794,19 @@ const char *KernelSymbols[] = {
 
 int loadhooks(struct emulbase *emulbase)
 {
-  ULONG r = 1;
+    ULONG r = 1;
+    APTR HostLibBase = OpenResource("hostlib.resource");
 
-  HostLibBase = OpenResource("hostlib.resource");
-  if (!HostLibBase)
-    return 1;
-  D(kprintf("[EmulHandler] got hostlib.resource HostLibBase=%p\n", HostLibBase));
+    D(kprintf("[EmulHandler] got hostlib.resource HostLibBase=%p\n", HostLibBase));
+    if (!HostLibBase)
+	return ERROR_INVALID_RESIDENT_LIBRARY;
 
-  emulbase->EmulHandle = HostLib_Open("Libs\\Host\\emul_handler.dll", NULL);
-  if (emulbase->EmulHandle) {
+    emulbase->EmulHandle = HostLib_Open("Libs\\Host\\emul_handler.dll", NULL);
+    if (!emulbase->EmulHandle) {
+	D(bug("[EmulHandler] Unable to open emul.handler host-side library!\n"));
+	return ERROR_INVALID_RESIDENT_LIBRARY;
+    }
+
     EmulIFace = (struct EmulInterface *)HostLib_GetInterface(emulbase->EmulHandle, EmulSymbols, &r);
     D(bug("[EmulHandler] Native library interface: 0x%08lX\n", EmulIFace));
     if (EmulIFace) {
@@ -1886,9 +1819,8 @@ int loadhooks(struct emulbase *emulbase)
             	    if (r < 3) {
             	    	D(bug("[EmulHandler] CreateHardLink()     : 0x%08lX\n", KernelIFace->CreateHardLink));
             	    	D(bug("[EmulHandler] CreateSymbolicLink() : 0x%08lX\n", KernelIFace->CreateSymbolicLink));
-            	    	KernelBase = OpenResource("kernel.resource");
-            	    	if (KernelBase)
-            	    	    return 0;
+
+            	    	return 0;
             	    }
             	    HostLib_DropInterface((APTR *)KernelIFace);
             	}
@@ -1901,7 +1833,6 @@ int loadhooks(struct emulbase *emulbase)
     }
         D(else bug("[EmulHandler] Unable go get host-side library interface!\n"));
     HostLib_Close(emulbase->EmulHandle, NULL);
-  }
-    D(else bug("[EmulHandler] Unable to open emul.handler host-side library!\n"));
-  return 1;
+
+    return ERROR_INVALID_RESIDENT_LIBRARY;
 }
