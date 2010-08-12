@@ -220,7 +220,7 @@ static int GM_UNIQUENAME(Open)
 	    InitSemaphore(&CBUn->cu_UnitLock);
 
 	    /* Construct clipboard unit filename. */
-	    cb_sprintf(CBBase, CBUn->cu_clipFilename, "%s%lu", (ULONG) CBBase->cb_ClipDir,
+	    cb_sprintf(CBBase, CBUn->cu_clipFilename, "%s%lu", CBBase->cb_ClipDir,
 		       unitnum);
 
 	    CBUn->cu_Satisfy.sm_Unit = unitnum;
@@ -334,7 +334,7 @@ AROS_LH1(void, beginio,
     {
 #if NEWSTYLE_DEVICE
         case NSCMD_DEVICEQUERY:
-	    if(ioClip(ioreq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+	    if(ioClip(ioreq)->io_Length < ((IPTR)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
 	    {
 		ioreq->io_Error = IOERR_BADLENGTH;
 	    }

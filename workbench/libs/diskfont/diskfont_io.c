@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Functions for reading disk font files.
@@ -62,7 +62,7 @@ SKIPPTR(ptr);
 #else
 
 #define COPYPTR(ptr,destptr) \
-(destptr) = (APTR)(*((ULONG *)(ptr))); \
+(destptr) = (APTR)(*((IPTR *)(ptr))); \
 SKIPPTR(ptr);
 #endif
 /****************************************************************************************/

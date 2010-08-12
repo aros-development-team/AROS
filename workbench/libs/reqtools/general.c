@@ -71,7 +71,7 @@ int ASM SAVEDS GetVScreenSize (
 {
     struct ViewPortExtra 	*vpe;
     struct Rectangle 		dispclip, *clip;
-    ULONG 			getvpetags[3];
+    IPTR 			getvpetags[3];
     int 			ht;
 #ifndef USE_FORBID
     struct Screen		*pubscr;
@@ -81,16 +81,13 @@ int ASM SAVEDS GetVScreenSize (
 
 
     getvpetags[0] = VTAG_VIEWPORTEXTRA_GET;
-    getvpetags[1] = (ULONG)&vpe;
+    getvpetags[1] = (IPTR)&vpe;
     getvpetags[2] = TAG_END;
     
 #ifdef USE_FORBID
 
     Forbid();
 
-#ifdef __AROS__
-#warning No VideoControl in AROS, yet
-#else
     if (IntuitionBase->FirstScreen == scr &&
 	VideoControl (scr->ViewPort.ColorMap, (struct TagItem *)getvpetags) == 0)
     {
@@ -98,12 +95,9 @@ int ASM SAVEDS GetVScreenSize (
     }
     else
     {
-#endif
 	QueryOverscan (GetVPModeID (&scr->ViewPort), &dispclip, OSCAN_TEXT);
 	clip = &dispclip;
-#ifndef __AROS__
     }
-#endif
 
     Permit();
 
@@ -127,9 +121,6 @@ int ASM SAVEDS GetVScreenSize (
 	UnlockIBase(ilock);
     }
 
-#ifdef __AROS__
-#warning No VideoControl in AROS, yet
-#else
     if (isfirst &&
 	VideoControl (scr->ViewPort.ColorMap, (struct TagItem *)getvpetags) == 0)
     {
@@ -137,12 +128,9 @@ int ASM SAVEDS GetVScreenSize (
     }
     else
     {
-#endif
 	QueryOverscan (GetVPModeID (&scr->ViewPort), &dispclip, OSCAN_TEXT);
 	clip = &dispclip;
-#ifndef __AROS__
     }
-#endif
     if (pubscr)
     {
 	UnlockPubScreen(NULL, pubscr);
@@ -235,7 +223,7 @@ struct Screen *REGARGS GetReqScreen (
     }
     else
     {
-	if (win && (ULONG)win != ~0) scr = win->WScreen;
+	if (win && (IPTR)win != ~0) scr = win->WScreen;
 	else
 	{
 	    if (!(scr = LockPubScreen (pubname)))
@@ -571,7 +559,7 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
 {
     struct RastPort *rp;
     struct Window *win;
-    ULONG tags[5], mask;
+    IPTR tags[5], mask;
     UWORD maxpen = 0;
     int i;
 
@@ -586,9 +574,9 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     hook->h_Data = (void *)pens;
 
     tags[0] = WA_BackFill;
-    tags[1] = (ULONG)hook;
+    tags[1] = (IPTR)hook;
     tags[2] = WA_Zoom;
-    tags[3] = (ULONG)zoom;
+    tags[3] = (IPTR)zoom;
     tags[4] = TAG_END;
 
     if( zoom )

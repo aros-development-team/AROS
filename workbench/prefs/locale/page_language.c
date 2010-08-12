@@ -196,7 +196,7 @@ AROS_UFH2(
 	D(bug("[register class] hook_func_available\n"));
 
 	DoMethod(obj,MUIM_List_GetEntry,
-	             MUIV_List_GetEntry_Active,(ULONG) &selstr);
+	             MUIV_List_GetEntry_Active, &selstr);
 
 	func_move_to_selected(selstr,data);
 
@@ -218,7 +218,7 @@ AROS_UFH2(
 	D(bug("[register class] hook_func_preferred\n"));
 
 	DoMethod(obj,MUIM_List_GetEntry,
-	             MUIV_List_GetEntry_Active,(ULONG) &selstr);
+	             MUIV_List_GetEntry_Active, &selstr);
 
 	if(selstr) {
 	    D(bug("move: %s\n",selstr));
@@ -473,7 +473,7 @@ Object *Language_New(struct IClass *cl, Object *obj, struct opSet *msg)
     init_language_lists(data);
     data->strings_charsets = CodesetsSupportedA(NULL);
 
-    data->clear=MUI_MakeObject(MUIO_Button, (ULONG) MSG(MSG_GAD_CLEAR_LANGUAGES));
+    data->clear=MUI_MakeObject(MUIO_Button, (IPTR)MSG(MSG_GAD_CLEAR_LANGUAGES));
 
     data->available= ListviewObject, MUIA_Listview_List, 
 			ListObject,
@@ -558,7 +558,7 @@ Object *Language_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return handle_New_error(obj,cl,"ERROR: create child failed\n");
 
     /* add to self */
-    DoMethod(obj,OM_ADDMEMBER,(ULONG) data->child);
+    DoMethod(obj,OM_ADDMEMBER, data->child);
 
     /* setup hooks */
     DoMethod(data->cslistview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, data->popup, 2, MUIM_Popstring_Close, TRUE);
@@ -566,16 +566,16 @@ Object *Language_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /* move hooks */
     hook_available.h_Entry    = (HOOKFUNC) hook_func_available;
     hook_available.h_Data     = data ;
-    DoMethod(data->available,MUIM_Notify,MUIA_Listview_DoubleClick,MUIV_EveryTime, (ULONG) data->available,2,MUIM_CallHook,(IPTR) &hook_available);
+    DoMethod(data->available,MUIM_Notify,MUIA_Listview_DoubleClick,MUIV_EveryTime, data->available,2,MUIM_CallHook,(IPTR) &hook_available);
 
     hook_preferred.h_Entry    = (HOOKFUNC) hook_func_preferred;
     hook_preferred.h_Data     = data ;
-    DoMethod(data->preferred,MUIM_Notify,MUIA_Listview_DoubleClick,MUIV_EveryTime, (ULONG) data->preferred,2,MUIM_CallHook,(IPTR) &hook_preferred);
+    DoMethod(data->preferred,MUIM_Notify,MUIA_Listview_DoubleClick,MUIV_EveryTime, data->preferred,2,MUIM_CallHook,(IPTR) &hook_preferred);
 
     /* clear hook */
     hook_clear.h_Entry    = (HOOKFUNC) hook_func_clear;
     hook_clear.h_Data     = data ;
-    DoMethod(data->clear,MUIM_Notify,MUIA_Selected,MUIV_EveryTime, (ULONG) data->preferred,2,MUIM_CallHook,(IPTR) &hook_clear);
+    DoMethod(data->clear,MUIM_Notify,MUIA_Selected,MUIV_EveryTime, data->preferred,2,MUIM_CallHook,(IPTR) &hook_clear);
 
     /* changed hooks */
     DoMethod(data->preferred, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime, (IPTR) data->prefs, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
@@ -589,7 +589,7 @@ Object *Language_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR Language_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_LanguageData *data = INST_DATA(cl, obj);
-    ULONG rc;
+    IPTR rc;
     IPTR i;
 
     switch (msg->opg_AttrID)
@@ -601,13 +601,13 @@ static IPTR Language_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		         MUIM_List_GetEntry,i,
 			 &data->result[i]);
 	    }
-	    rc = (ULONG) data->result;
+	    rc = (IPTR) data->result;
 	    break;
 	case MA_CharacterSet:
 	    GetAttr(MUIA_List_Active, data->cslist, (IPTR *)&i);
 	    D(bug("[Language::Get] Active character set entry is %d\n", i));
 	    if ((i == 0) || (i == MUIV_List_Active_Off))
-	    	*msg->opg_Storage = NULL;
+	    	*msg->opg_Storage = 0;
 	    else
 	        GetAttr(MUIA_Text_Contents, data->charset, msg->opg_Storage);
 	    return TRUE;

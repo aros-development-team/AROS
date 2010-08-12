@@ -160,21 +160,21 @@ void show_changes(PREFS *old, PREFS *new)
 		TextFontTags[1].ti_Data = 0; extended=0;
 		if( new->use_txtfont )
 			font_info(StrInfo, new->txtfont),
-			TextFontTags[0].ti_Data = (ULONG) FTCycTxt, extended |= 1;
+			TextFontTags[0].ti_Data = (IPTR) FTCycTxt, extended |= 1;
 		else
-			TextFontTags[0].ti_Data = (ULONG) (FTCycTxt+1);
+			TextFontTags[0].ti_Data = (IPTR) (FTCycTxt+1);
 
 		if( new->use_scrfont )
 			font_info(StrInfo+20, new->scrfont),
-			ScrFontTags[0].ti_Data = (ULONG) FSCycTxt, extended |= 2;
+			ScrFontTags[0].ti_Data = (IPTR) FSCycTxt, extended |= 2;
 		else
-			ScrFontTags[0].ti_Data = (ULONG) (FSCycTxt+1);
+			ScrFontTags[0].ti_Data = (IPTR) (FSCycTxt+1);
 
 		if( new->use_pub==1 )
 			scr_info(StrInfo+40,Scr->Width, Scr->Height, Scr->RastPort.BitMap->Depth),
-			ScrMdTags[0].ti_Data = (ULONG) ScrCycTxt, extended |= 4;
+			ScrMdTags[0].ti_Data = (IPTR) ScrCycTxt, extended |= 4;
 		else {
-			ScrMdTags[0].ti_Data = (ULONG) (ScrCycTxt+1);
+			ScrMdTags[0].ti_Data = (IPTR) (ScrCycTxt+1);
 			if(new->use_pub!=2) ScrMdTags[1].ti_Data = 1; /* Clone */
 		}
 

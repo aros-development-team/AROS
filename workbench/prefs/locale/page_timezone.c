@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -318,15 +318,15 @@ static void SetEarthmapSelection(UBYTE timezonespen)
 
 /*************************************************************************/
 
-static void UpdateZoneName(Object *zone_name, char *new) 
+static void UpdateZoneName(Object *zone_name, char *newname)
 {
     char *old;
 
     get(zone_name, MUIA_Text_Contents, &old);
 
-    if(strcmp(old,new))
+    if(strcmp(old, newname))
     {
-	set(zone_name, MUIA_Text_Contents,(ULONG) new);
+	set(zone_name, MUIA_Text_Contents, newname);
     }
 }
 
@@ -700,16 +700,16 @@ Object *Timezone_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return handle_New_error(obj,cl,"ERROR: unable to create city_name ListviewObject!\n");
     }
 
-    DoMethod(obj,OM_ADDMEMBER,(ULONG) data->zone_name);
+    DoMethod(obj,OM_ADDMEMBER, data->zone_name);
 
-    DoMethod(obj,OM_ADDMEMBER,(ULONG) data->city_name);
+    DoMethod(obj,OM_ADDMEMBER, data->city_name);
 
     data->Timezone_list_hook.h_Entry = (HOOKFUNC) &Timezone_list_hook_func;
     data->Timezone_list_hook.h_Data  = data ;
     DoMethod(data->city_name,
              MUIM_Notify,MUIA_List_Active,
-	     MUIV_EveryTime, (ULONG) data->city_name,
-	     2,MUIM_CallHook,(ULONG) &data->Timezone_list_hook);
+	     MUIV_EveryTime, data->city_name,
+	     2,MUIM_CallHook, &data->Timezone_list_hook);
 
     /* handle mouse clicks to map image */
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS |

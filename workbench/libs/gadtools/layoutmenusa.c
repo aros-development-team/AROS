@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include "gadtools_intern.h"
@@ -113,7 +113,7 @@
     {
 	if (NULL != menu->FirstItem)
 	{
-	    stdlayouttags[TAG_Menu].ti_Data = (ULONG)menu;
+	    stdlayouttags[TAG_Menu].ti_Data = (IPTR)menu;
 
 	    if (FALSE == LayoutMenuItemsA(menu->FirstItem,
                                 	  vi,

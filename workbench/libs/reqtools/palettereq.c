@@ -309,7 +309,8 @@ LONG ASM SAVEDS PaletteRequestA (
     struct TextAttr 	*fontattr = NULL;
     struct Locale 	*locale = NULL;
     char 		*pubname = NULL;
-    ULONG 		tagdata, reqhandler = FALSE;
+    IPTR 		tagdata;
+    BOOL		reqhandler = FALSE;
 
     if (!(glob = AllocVec (sizeof(GlobData), MEMF_PUBLIC|MEMF_CLEAR)))
 	return (-1);
@@ -400,12 +401,7 @@ LONG ASM SAVEDS PaletteRequestA (
 	    glob->bluebits = displayinfo.BlueBits;
 #ifdef COLORWHEEL
 
-#ifdef __AROS__
-#warning DisplayInfo.Resolution does not seem to have correct/any values yet in AROS
-	    glob->screenres.x = glob->screenres.y = 22;
-#else
 	    glob->screenres = displayinfo.Resolution;
-#endif
 
 #endif
 	}

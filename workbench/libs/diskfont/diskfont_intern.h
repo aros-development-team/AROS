@@ -100,7 +100,7 @@ struct AADiskFontHeader
     struct Node			dfh_DF;
     UWORD			dfh_FileID;
     UWORD			dfh_Revision;
-    LONG			dfh_Segment;
+    BPTR			dfh_Segment;
     char			dfh_Name[MAXFONTNAME];
     struct ColorTextFont	dfh_TF;
 };

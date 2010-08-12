@@ -76,7 +76,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 // The code here is partly taken from AROS/rom/dos/lddemon.c - LDInit()
 
 	while(seg!=NULL){
-		addr=(STRPTR)((LONG)BADDR(seg)-sizeof(ULONG));
+		addr=(STRPTR)(BADDR(seg)-sizeof(ULONG));
 		size=*(ULONG *)addr;
 
 		for(
@@ -214,7 +214,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize){
 	ULONG size;
 
 	while(seglist!=0){
-		addr=(STRPTR)((LONG)BADDR(seglist)-sizeof(ULONG));
+		addr=(STRPTR)(BADDR(seglist)-sizeof(ULONG));
 		size=*(ULONG *)addr;
 		addr+=sizeof(BPTR)+sizeof(ULONG);
 		size-=sizeof(BPTR)+sizeof(ULONG);

@@ -909,7 +909,7 @@ AROS_UFH3(LONG, pipefsproc,
 		    strncpy(fib->fib_FileName, fn->name, MAXFILENAMELENGTH - 1);
 		    fib->fib_Comment[0] = '\0';
 
-		    fib->fib_DiskKey = (LONG)GetSucc(fn);
+		    fib->fib_DiskKey = (IPTR)GetSucc(fn);
     		    SendBack(msg, 0);
 
 		    continue;

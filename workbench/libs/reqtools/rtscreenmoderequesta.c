@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -217,7 +217,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return (ULONG)FileRequestA((struct RealFileRequester *)screenmodereq, NULL, title, taglist); /* in filereq.c */
+    return (IPTR)FileRequestA((struct RealFileRequester *)screenmodereq, NULL, title, taglist); /* in filereq.c */
     
     AROS_LIBFUNC_EXIT
     

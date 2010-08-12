@@ -223,19 +223,29 @@ CONST_STRPTR GetDefaultIconName(LONG type)
     }
 }
 
-
+/* FIXME: Probably sucks. I have no clue about this hash stuff */
 LONG CalcIconHash(struct DiskObject *dobj)
 {
     LONG l1, l2, l3, l4, hash;
+#if __WORDSIZE == 64
+    LONG l5, l6, l7, l8;
+
+    l5 = (((IPTR)dobj) >> 32) & 0xFF;
+    l6 = (((IPTR)dobj) >> 40) & 0xFF;
+    l7 = (((IPTR)dobj) >> 48) & 0xFF;
+    l8 = (((IPTR)dobj) >> 56) & 0xFF;
+#endif
     
-    /* FIXME: Probably sucks. I have no clue about this hash stuff */
-    
-    l1 = ((LONG)dobj) & 0xFF;
-    l2 = (((LONG)dobj) >> 8) & 0xFF;
-    l3 = (((LONG)dobj) >> 16) & 0xFF;
-    l4 = (((LONG)dobj) >> 24) & 0xFF;
+    l1 = ((IPTR)dobj) & 0xFF;
+    l2 = (((IPTR)dobj) >> 8) & 0xFF;
+    l3 = (((IPTR)dobj) >> 16) & 0xFF;
+    l4 = (((IPTR)dobj) >> 24) & 0xFF;
    
-    hash = (l1 + l2 + l3 + l4) % ICONLIST_HASHSIZE;
+    hash = (l1 + l2 + l3 + l4
+#if __WORDSIZE == 64
+	    + l5 + l6 + l7 + l8
+#endif
+	   ) % ICONLIST_HASHSIZE;
 
     return hash;
 }

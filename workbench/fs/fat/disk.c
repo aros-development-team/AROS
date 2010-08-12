@@ -91,7 +91,7 @@ void SendVolumePacket(struct DosList *vol, ULONG action) {
     dospacket = AllocDosObject(DOS_STDPKT, TAG_DONE);
     dospacket->dp_Type = ACTION_DISK_CHANGE;
     dospacket->dp_Arg1 = ID_FAT_DISK;
-    dospacket->dp_Arg2 = (ULONG) vol;
+    dospacket->dp_Arg2 = (IPTR)vol;
     dospacket->dp_Arg3 = action;
     dospacket->dp_Port = NULL;
 
