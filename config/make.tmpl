@@ -1334,6 +1334,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #MM- includes-all : %(mmake)-includes
 #MM %(mmake) : %(mmake)-includes core-linklibs
 #MM %(mmake)-kobj : %(mmake)-includes core-linklibs
+#MM %(mmake)-kobj-quick : %(mmake)-includes-quick
 #MM %(mmake)-linklib : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
 #MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
@@ -1347,7 +1348,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
     %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-funclist %(mmake)-linklib
+    %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-funclist %(mmake)-linklib
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -1524,6 +1525,7 @@ endif
 %(mmake)-quick : %(mmake)
 %(mmake) : $(BD_MODULE) $(BD_LINKLIB)
 %(mmake)-kobj : $(BD_KOBJ) $(BD_LINKLIB)
+%(mmake)-kobj-quick : $(BD_KOBJ) $(BD_LINKLIB)
 %(mmake)-linklib : $(BD_LINKLIB)
 
 BD_OBJS       := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
@@ -1570,7 +1572,7 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 ## Dependency fine-tuning
 ##
 BD_DEPS := $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CCFILES) $(BD_TARGETCCFILES))))
-%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) $(BD_REFS) : | %(objdir)
 $(BD_MODULE) : | %(prefix)/%(moduledir)
@@ -1578,7 +1580,7 @@ $(BD_KOBJ) : | $(KOBJSDIR)
 GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)
 
 # Some include files need to be generated before the .c can be parsed.
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj),) # Only for this target these deps are wanted
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick),) # Only for this target these deps are wanted
 BD_REFFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
     $(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES))
 $(BD_REFS) : $(BD_REFFILE_DEPS) $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
@@ -1958,11 +1960,13 @@ ifeq ($(AROS_TARGET_VARIANT),)
 #MM- %(mainmmake) : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-linklib : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-kobj : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-kobj-quick : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-quick : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 else
 #MM- %(mainmmake) : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-linklib : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-kobj : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-kobj-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 endif
 
