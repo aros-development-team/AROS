@@ -13,7 +13,6 @@ title AROS on Sam440
     module boot/modules/boot.library
     module boot/modules/bootkeyboard.class
     module boot/modules/bootloader.resource
-    module boot/modules/bootmenu.resource
     module boot/modules/bootmouse.class
     module boot/modules/cdrom.handler
     module boot/modules/con.handler
@@ -66,7 +65,6 @@ title AROS on Sam440 Test AltUsb
     module boot/modules/battclock.resource
     module boot/modules/boot.library
     module boot/modules/bootloader.resource
-    module boot/modules/bootmenu.resource
     module boot/modules/cdrom.handler
     module boot/modules/con.handler
     module boot/modules/console.device
