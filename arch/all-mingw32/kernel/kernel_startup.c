@@ -14,6 +14,7 @@
 #include "kernel_debug.h"
 #include "kernel_init.h"
 #include "kernel_tagitems.h"
+#include "winapi.h"
 
 #define D(x)
 
@@ -22,9 +23,9 @@ extern struct ExecBase *PrepareExecBase(struct MemHeader *);
 extern ULONG **Exec_RomTagScanner(struct ExecBase*, UWORD**);
 
 /* External functions from kernel_debug.c */
-extern int mykprintf(const UBYTE * fmt, ...);
-extern int myvkprintf(const UBYTE *fmt, va_list args);
-extern int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, ...);
+extern int mykprintf(const char * fmt, ...);
+extern int myvkprintf(const char *fmt, va_list args);
+extern int myrkprintf(const char *foo, const char *bar, int baz, const char *fmt, ...);
 
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
@@ -45,6 +46,7 @@ char *kernel_functions[] = {
     "core_intr_enable",
     "core_syscall",
     "core_is_super",
+    "core_protect",
     NULL
 };
 
@@ -59,17 +61,19 @@ int __startup startup(struct TagItem *msg)
     IPTR memlen;
     struct TagItem *tag;
     struct TagItem *tstate = msg;
+    void *klo = NULL;
+    void *khi = NULL;
     struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
     while ((tag = krnNextTagItem(&tstate))) {
 	switch (tag->ti_Tag) {
 	case KRN_KernelLowest:
-	    ranges[0] = (UWORD *)tag->ti_Data;
+	    klo = (UWORD *)tag->ti_Data;
 	    break;
 
 	case KRN_KernelHighest:
-	    ranges[1] = (UWORD *)tag->ti_Data;
+	    khi = (UWORD *)tag->ti_Data;
 	    break;
 
 	case KRN_MMAPAddress:
@@ -89,7 +93,7 @@ int __startup startup(struct TagItem *msg)
     /* Set globals only AFTER __kernel_bss() */
     BootMsg = msg;
 
-    if ((!ranges[0]) || (!ranges[1]) || (!mmap) || (!HostIFace)) {
+    if ((!klo) || (!khi) || (!mmap) || (!HostIFace)) {
 	mykprintf("[Kernel] Not enough parameters from bootstrap!\n");
 	return -1;
     }
@@ -101,12 +105,15 @@ int __startup startup(struct TagItem *msg)
 	return -1;
     }
 
-    badsyms = HostIFace->HostLib_GetInterface(hostlib, kernel_functions, &KernelIFace);
+    badsyms = HostIFace->HostLib_GetInterface(hostlib, kernel_functions, (APTR **)&KernelIFace);
     if (badsyms) {
 	mykprintf("[Kernel] Failed to find %lu functions in host-side module\n", badsyms);
 	HostIFace->HostLib_Close(hostlib, NULL);
 	return -1;
     }
+
+    /* Turn kernel space read-only */
+    KernelIFace.core_protect(klo, khi - klo + 1, PAGE_EXECUTE_READ);
 
     mykprintf("[Kernel] preparing first mem header\n");
     /* We know that memory map has only one RAM element */
@@ -146,8 +153,8 @@ int __startup startup(struct TagItem *msg)
 	mh->mh_Node.ln_Pri = -128;
 	mh->mh_Attributes = MEMF_KICK;
 	mh->mh_First = NULL;
-	mh->mh_Lower = ranges[0];
-	mh->mh_Upper = ranges[1];
+	mh->mh_Lower = klo;
+	mh->mh_Upper = khi;
 	mh->mh_Free = 0;                        /* Never allocate from this chunk! */
 	Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
@@ -156,6 +163,8 @@ int __startup startup(struct TagItem *msg)
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf = myrkprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf = myvkprintf;
 
+    ranges[0] = klo;
+    ranges[1] = khi;
     SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
 
     mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");

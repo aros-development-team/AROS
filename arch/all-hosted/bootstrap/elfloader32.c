@@ -325,12 +325,13 @@ void FreeKernelList(void)
     /* We do not reset list pointers because the list will never be reused */
 }
 
-int GetKernelSize(size_t *KernelSize)
+int GetKernelSize(size_t *ro_size, size_t *rw_size)
 {
     struct ELFNode *n;
     FILE *file;
     char *err;
     size_t ksize = 0;
+    size_t rwsize = 0;
     unsigned short i;
 
     D(printf("[ELF Loader] Calculating kernel size...\n"));
@@ -369,8 +370,15 @@ int GetKernelSize(size_t *KernelSize)
 	{
 	    /* We include also string tables for debug info */
 	    if ((n->sh[i].flags & SHF_ALLOC) || (n->sh[i].type == SHT_STRTAB))
+	    {
 		/* Add maximum space for alignment */
-                ksize += (n->sh[i].size + n->sh[i].addralign - 1);
+		size_t s = n->sh[i].size + n->sh[i].addralign - 1;
+
+		if (n->sh[i].flags & SHF_WRITE)
+		    rwsize += s;
+		else
+		    ksize += s;
+	    }
 
 	    /* Every loadable section gets segment descriptor in the debug info */
 	    if (n->sh[i].flags & SHF_ALLOC)
@@ -382,12 +390,13 @@ int GetKernelSize(size_t *KernelSize)
 	}
     }
 
-    *KernelSize = ksize;
+    *ro_size = ksize;
+    *rw_size = rwsize;
 
     return 1;
 }
 
-int LoadKernel(void *ptr_ro, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, void **kernel_debug)
+int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, void **kernel_debug)
 {
     struct ELFNode *n;
     FILE *file;
@@ -423,11 +432,21 @@ int LoadKernel(void *ptr_ro, struct KernelBSS *tracker, kernel_entry_fun_t *kern
 		/* Does the section require memory allcation? */
 		D(printf("[ELF Loader] Allocated section\n"));
 
-		ptr_ro = load_hunk(file, &sh[i], ptr_ro, &tracker);
-
-		if (!ptr_ro) {
-		    printf("%s: Error loading hunk %u!\n", n->Name, i);
-		    return 0;
+		if (sh[i].flags & SHF_WRITE)
+		{
+		    ptr_rw = load_hunk(file, &sh[i], ptr_rw, &tracker);
+		    if (!ptr_rw) {
+			printf("%s: Error loading hunk %u!\n", n->Name, i);
+			return 0;
+		    }
+		}
+		else
+		{
+		    ptr_ro = load_hunk(file, &sh[i], ptr_ro, &tracker);
+		    if (!ptr_ro) {
+			printf("%s: Error loading hunk %u!\n", n->Name, i);
+			return 0;
+		    }
 		}
 	        D(printf("[ELF Loader] Section address: 0x%p\n", sh[i].addr));
 	    }

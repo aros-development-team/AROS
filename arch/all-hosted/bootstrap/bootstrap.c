@@ -110,8 +110,8 @@ int main(int argc, char ** argv)
     FILE *file;
     kernel_entry_fun_t kernel_entry;
     void *debug_addr;
-    void *kernel_addr;
-    size_t kernel_size;
+    void *ro_addr, *rw_addr;
+    size_t ro_size, rw_size;
 
     /* This makes national characters to be output properly into
        the debug log under Windows */
@@ -192,20 +192,26 @@ int main(int argc, char ** argv)
     }
     fclose(file);
 
-    if (!GetKernelSize(&kernel_size))
+    if (!GetKernelSize(&ro_size, &rw_size))
 	return -1;
-    D(printf("[Bootstrap] Kernel size %u\n", kernel_size));
+    D(printf("[Bootstrap] Kernel size %u\n", ro_size));
 
-    kernel_addr = AllocateROM(kernel_size);
-    if (!kernel_addr) {
-	printf("Failed to allocate %u bytes for the kernel!\n", kernel_size);
+    ro_addr = AllocateRO(ro_size);
+    if (!ro_addr) {
+	printf("Failed to allocate %u bytes for the kernel!\n", ro_size);
 	return -1;
     }
 
-    if (!LoadKernel(kernel_addr, __bss_track, &kernel_entry, &debug_addr))
+    rw_addr = AllocateRW(rw_size);
+    if (!rw_addr) {
+	printf("Failed to allocate %u bytes for the kernel!\n", rw_size);
 	return -1;
-    D(printf("[Bootstrap] Kernel start 0x%p, End 0x%p, Entry 0x%p, Debug info 0x%p\n", kernel_addr,
-	     kernel_addr + kernel_size - 1, kernel_entry, debug_addr));
+    }
+
+    if (!LoadKernel(ro_addr, rw_addr, __bss_track, &kernel_entry, &debug_addr))
+	return -1;
+    D(printf("[Bootstrap] Read-only 0x%p - 0x%p, Read-write 0x%p - 0x%p, Entry 0x%p, Debug info 0x%p\n",
+	     ro_addr, ro_addr + ro_size - 1, rw_addr, rw_addr + rw_size - 1, kernel_entry, debug_addr));
 
     FreeKernelList();
 
@@ -220,8 +226,8 @@ int main(int argc, char ** argv)
     }
     D(printf("[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", MemoryMap.addr, MemoryMap.addr + MemoryMap.len, MemoryMap.len));
 
-    km[0].ti_Data = (IPTR)kernel_addr;
-    km[1].ti_Data = (IPTR)kernel_addr + kernel_size - 1;
+    km[0].ti_Data = (IPTR)ro_addr;
+    km[1].ti_Data = (IPTR)ro_addr + ro_size - 1;
     km[2].ti_Data = (IPTR)__bss_track;
     km[3].ti_Data = (IPTR)SystemVersion;
     km[4].ti_Data = (IPTR)KernelArgs;
