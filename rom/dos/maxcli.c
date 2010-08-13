@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
     
-   IPTR *taskarray = (ULONG *)BADDR(DOSBase->dl_Root->rn_TaskArray);
+    IPTR *taskarray = BADDR(DOSBase->dl_Root->rn_TaskArray);
     /* 
        The first IPTR in the taskarray contains the size of the
        taskarray = the max. number of processes the taskarray
@@ -56,10 +56,10 @@
     /* 
        Not all of the fields in the array may contain a valid
        pointer to a process and they might be NULL instead. So
-       I search that array backwards until I find a valid endtry.
+       I search that array backwards until I find a valid entry.
     */
     while (retval && NULL != taskarray[retval])
-      retval--;
+        retval--;
     
     return retval;
     AROS_LIBFUNC_EXIT

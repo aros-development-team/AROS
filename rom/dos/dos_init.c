@@ -34,7 +34,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
     __AROS_SETVECADDR(LIBBASE, 65, __AROS_GETVECADDR(LIBBASE, 17));
     __AROS_SETVECADDR(LIBBASE, 68, __AROS_GETVECADDR(LIBBASE, 67));
     
-    ULONG * taskarray;
+    IPTR * taskarray;
     struct DosInfo *dosinfo;
 
     LIBBASE->dl_Root = (struct RootNode *)AllocMem(sizeof(struct RootNode),
@@ -42,7 +42,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
     dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
 
     /* Init the RootNode structure */
-    taskarray = (ULONG *)AllocMem(sizeof(ULONG) + sizeof(APTR), MEMF_CLEAR);
+    taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR), MEMF_CLEAR);
     taskarray[0] = 1;
     LIBBASE->dl_Root->rn_TaskArray = MKBADDR(taskarray);
     LIBBASE->dl_Root->rn_Info= MKBADDR(dosinfo);
