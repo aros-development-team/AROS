@@ -913,7 +913,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 	    if (GOT_BM_ATTR(ModeID))
 	    	data->modeid = attrs[AO(ModeID)];
-	    data->classptr = attrs[AO(ClassPtr)];
+	    data->classptr = (OOP_Class *)attrs[AO(ClassPtr)];
 
     	#if USE_FAST_PUTPIXEL
 	    data->putpixel = (IPTR (*)(OOP_Class *, OOP_Object *, struct pHidd_BitMap_PutPixel *))
@@ -1075,7 +1075,7 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 		break;
 
 	    case aoHidd_BitMap_ClassPtr:
-		*msg->storage = data->classptr;
+		*msg->storage = (IPTR)data->classptr;
 		break;
 
             default:
@@ -3243,7 +3243,9 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     struct HIDDBitMapData   *data;
     HIDDT_Color     	     color;
     LONG 	    	     a_red, a_green, a_blue;
-    LONG	    	     b_red, b_green, b_blue;
+    LONG	    	     b_red = 0;
+    LONG		     b_green = 0;
+    LONG		     b_blue = 0;
     WORD    	    	     type = 0;
     PIXBUF_DECLARE_VARS
     
@@ -3553,7 +3555,8 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     WORD    	    	    x, y;
     UBYTE   	    	    *patarray;
     UBYTE   	    	    *maskarray = 0;
-    ULONG    	    	    *buf, *xbuf, patmask, maskmask;
+    ULONG		     maskmask = 0;
+    ULONG    	    	    *buf, *xbuf, patmask;
     OOP_Object	    	    *gc = msg->gc;
     struct HIDDBitMapData   *data;
     WORD    	    	     type = 0;
@@ -3616,8 +3619,8 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 	    ULONG  mmask = maskmask;
 	    UWORD *parray = ((UWORD *)patarray) + ((y + msg->patternsrcy - msg->y) % msg->patternheight);
 	    UWORD  patword = AROS_BE2WORD(*parray);
-	    UWORD *marray;
-	    UWORD  maskword;
+	    UWORD *marray = NULL;
+	    UWORD  maskword = 0;
 	    
 	    if (maskarray)
 	    {
@@ -4019,19 +4022,29 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
         hidd.graphics.bitmap
 
     FUNCTION
+	Copy an array of 8-bit LUT pixels to the bitmap at the specified position making
+	one of colors transparent.
+
+	Pixels are converted to bitmap's native format using either user-supplied LUT (if
+	given) or bitmap's own colormap.
+
+	Draw mode of the supplied GC is ignored, the operation is always bulk copy.
 
     INPUTS
-        obj         -
-        gc          -
-        pixels      -
-        modulo      -
-        x, y        -
-        width       -
-        height      -
-        pixlut      -
-        transparent -
+        obj         - A bitmap to draw image on
+        gc          - A GC used for drawing
+        pixels      - A pointer to source pixel array
+        modulo      - Total number of bytes per line in the source array
+        x, y        - Top-left corner of the destination rectangle
+        width       - Width of the image to draw
+        height      - Height of the image to draw
+        pixlut      - An optional pointer to a LUT to use. NULL means using bitmap's
+		      own colormap (if available)
+        transparent - Value of pixels in the source array which will be made
+		      transparent
 
     RESULT
+	None
 
     NOTES
 
@@ -4070,10 +4083,10 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
     if (buf)
     {
     	HIDDT_DrawMode old_drmd = GC_DRMD(msg->gc);	
+
 	GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
-	
 	xbuf = buf;
-	
+
     	for(y = msg->y; y < msg->y + msg->height; y++)
 	{
 	    if (PIXBUF_TIME_TO_START_PROCESS)
@@ -4089,7 +4102,7 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
 				 height,
 				 vHidd_StdPixFmt_Native32);
     	    }
-	    			     
+
 	    if (lut)
 	    {
 	    	for(x = 0; x < msg->width; x++)
@@ -4111,9 +4124,11 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
 		    
 		    if (pix != transparent)
 		    {
+			if (data->colmap)
+			    pix = HIDD_CM_GetPixel(data->colmap, pix);
 		    	xbuf[x] = pix;
 		    }
-		    
+
     		} /* for(x = 0; x < msg->width; x++) */
 	    }
 		
@@ -4472,7 +4487,8 @@ ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct HIDDBitMapData   *data = OOP_INST_DATA(cl, obj);
-    struct TagItem  	    *tag, *tstate;
+    struct TagItem  	    *tag;
+    const struct TagItem    *tstate;
     ULONG   	    	    idx;
 
 /*    EnterFunc(bug("BitMap::Set()\n"));
