@@ -65,8 +65,9 @@
 #define SHN_XINDEX      0xffff
 #define SHN_HIRESERVE   0xffff
 
-#define SHF_ALLOC            (1 << 1)
-#define SHF_EXECINSTR        (1 << 2)
+#define SHF_WRITE   	(1 << 0)
+#define SHF_ALLOC       (1 << 1)
+#define SHF_EXECINSTR   (1 << 2)
 
 #define ELF32_ST_TYPE(i)    ((i) & 0x0F)
 

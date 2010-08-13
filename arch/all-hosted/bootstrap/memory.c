@@ -1,6 +1,11 @@
 #include <stdlib.h>
 
-void *AllocateROM(size_t len)
+void *AllocateRO(size_t len)
+{
+    return malloc(len);
+}
+
+void *AllocateRW(size_t len)
 {
     return malloc(len);
 }

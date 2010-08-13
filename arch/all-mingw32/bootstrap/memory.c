@@ -9,16 +9,21 @@
 #define FILE_MAP_EXECUTE 0x0020
 #endif
 
-#define D(x) x
+#define D(x)
 
 #define ID_LEN 64
 
 HANDLE RAM_Handle = NULL;
 void *RAM_Address = NULL;
 
-void *AllocateROM(size_t len)
+void *AllocateRO(size_t len)
 {
     return VirtualAlloc(NULL, len, MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+}
+
+void *AllocateRW(size_t len)
+{
+    return VirtualAlloc(NULL, len, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
 }
 
 void *AllocateRAM(size_t len)
