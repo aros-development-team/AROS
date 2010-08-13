@@ -23,5 +23,5 @@ int main(void)
 {
     ShutdownA(SD_ACTION_POWEROFF);
     PutStr("Software power off is not supported\n");
-    return 0;
+    return 20;
 }
