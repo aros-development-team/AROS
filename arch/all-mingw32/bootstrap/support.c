@@ -4,11 +4,11 @@
 #include "support.h"
 
 char *DefaultConfig = "boot\\AROSBootstrap.conf";
+OSVERSIONINFO winver;
 
 char *getosversion(void)
 {
     static char SystemVersion[256];
-    OSVERSIONINFO winver;
 
     winver.dwOSVersionInfoSize = sizeof(winver);
     GetVersionEx(&winver);
