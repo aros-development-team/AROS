@@ -6,8 +6,14 @@ EXEDIR := $(BINDIR)/boot
 FILES         := bootstrap elfloader32 hostinterface debug memory support shutdown
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR)
 
+ifeq ($(ARCH),mingw32)
+    EXE_SUFFIX := .exe
+else
+    EXE_SUFFIX :=
+endif
+
 %build_prog mmake=kernel-bootstrap-hosted \
-    progname=AROSBootstrap$(HOST_EXE_SUFFIX) targetdir=$(EXEDIR) \
+    progname=AROSBootstrap$(EXE_SUFFIX) targetdir=$(EXEDIR) \
     files=$(FILES) compiler=kernel
 
 %common
