@@ -552,48 +552,43 @@ UFB_QUICK(data);
 #define WRECT_INSIDE(fgh, x1, y1, width, height)	\
 	RECT_INSIDE(fgh, x1, y1, (x1) + (width) - 1, (y1) + (height) - 1)
 
-static IPTR gfx_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+static void gfx_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
-    struct gfx_data 	    	*data;
-    BOOL    	    	    	inside = FALSE;
-    IPTR    	    	    	retval;   
-    struct pHidd_Gfx_CopyBox 	p;
-    
+    struct gfx_data *data;
+    OOP_Object *src = NULL;
+    OOP_Object *dest = NULL;
+    BOOL inside = FALSE;
+
     data = OOP_INST_DATA(cl, o);
-LFB(data);    
-    p = *msg;
-    
-    if (msg->src == data->fakefb)
-    {
-    	if (WRECT_INSIDE(data, msg->srcX, msg->srcY, msg->width, msg->height))
-	{
-	    inside = TRUE;
-	}
-	p.src = data->framebuffer;
-    }
-    
-    if (msg->dest == data->fakefb)
-    {
-    	if (WRECT_INSIDE(data, msg->destX, msg->destY, msg->width, msg->height))
-	{
-	    inside = TRUE;
-	}
-	p.dest = data->framebuffer;
-    }
-    
+    LFB(data);
+
+    /* De-masquerade bitmap objects, every of which can be fakefb object */
+    OOP_GetAttr(msg->src, aHidd_FakeFB_RealBitMap, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_FakeFB_RealBitMap, (IPTR *)&dest);
+    if (!src)
+	src = msg->src;
+    if (!dest)
+	dest = msg->dest;
+
+    /* FIXME: other bitmap may belong to another instance of fakegfx which can be on
+	      display on another monitor. In this case mouse cursor should be handled also
+	      there. Needs further reengineering. */
+    if ((msg->src == data->fakefb) && WRECT_INSIDE(data, msg->srcX, msg->srcY, msg->width, msg->height))
+	inside = TRUE;
+
+    if ((msg->dest == data->fakefb) && WRECT_INSIDE(data, msg->destX, msg->destY, msg->width, msg->height))
+	inside = TRUE;
+
     if (inside)
-    {
     	draw_cursor(data, FALSE, FALSE, CSD(cl));
-    }
-    msg = &p;
-    
-    retval = OOP_DoMethod(data->gfxhidd, (OOP_Msg)msg);
-    
+
+    HIDD_Gfx_CopyBox(data->gfxhidd, src, msg->srcX, msg->srcY,
+		     dest, msg->destX, msg->destY, msg->width, msg->height, msg->gc);
+
     if (inside)
     	draw_cursor(data, TRUE, FALSE, CSD(cl));
-UFB(data);
-	
-    return retval;
+
+    UFB(data);
 }
 
 static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
@@ -1131,7 +1126,21 @@ static IPTR fakefb_fillspan(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     BITMAP_METHOD_EXIT
 }
 
+static IPTR fakefb_scale(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BitMapScale *msg)
+{
+    /* FIXME: should check both source and destination, similar to gfx_copybox() */
+    BITMAP_METHOD_INIT
 
+    if (WRECT_INSIDE(fgh, msg->bsa->bsa_SrcX, msg->bsa->bsa_SrcY, msg->bsa->bsa_SrcWidth, msg->bsa->bsa_SrcHeight))
+    {
+    	REMOVE_CURSOR(data);
+	inside = TRUE;
+    }
+
+    FORWARD_METHOD
+
+    BITMAP_METHOD_EXIT
+}
 
 static IPTR fakefb_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
@@ -1255,47 +1264,69 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
 
     struct OOP_MethodDescr bitmap_descr[num_Hidd_BitMap_Methods + 1] =
     {
+        {(IPTR (*)())fakefb_fwd	  	, moHidd_BitMap_SetColors	    },
         {(IPTR (*)())fakefb_putpixel		, moHidd_BitMap_PutPixel	    },
+	{(IPTR (*)())fakefb_drawpixel		, moHidd_BitMap_DrawPixel	    },
+	{(IPTR (*)())fakefb_putimage		, moHidd_BitMap_PutImage	    },
+        {(IPTR (*)())fakefb_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
+        {(IPTR (*)())fakefb_puttemplate	, moHidd_BitMap_PutTemplate         },
+        {(IPTR (*)())fakefb_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
+        {(IPTR (*)())fakefb_putpattern	    	, moHidd_BitMap_PutPattern          },
+	{(IPTR (*)())fakefb_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())fakefb_getpixel		, moHidd_BitMap_GetPixel	    },
-        {(IPTR (*)())fakefb_fwd	  		, moHidd_BitMap_SetColors	    },
-        {(IPTR (*)())fakefb_drawpixel		, moHidd_BitMap_DrawPixel	    },
         {(IPTR (*)())fakefb_drawline		, moHidd_BitMap_DrawLine	    },
         {(IPTR (*)())fakefb_drawrect		, moHidd_BitMap_DrawRect	    },
         {(IPTR (*)())fakefb_fillrect 		, moHidd_BitMap_FillRect	    },
-        {(IPTR (*)())fakefb_drawellipse		, moHidd_BitMap_DrawEllipse	    },
-        {(IPTR (*)())fakefb_fillellipse		, moHidd_BitMap_FillEllipse	    },
-        {(IPTR (*)())fakefb_drawpolygon		, moHidd_BitMap_DrawPolygon	    },
-        {(IPTR (*)())fakefb_fillpolygon		, moHidd_BitMap_FillPolygon	    },
+        {(IPTR (*)())fakefb_drawellipse	, moHidd_BitMap_DrawEllipse	    },
+        {(IPTR (*)())fakefb_fillellipse	, moHidd_BitMap_FillEllipse	    },
+        {(IPTR (*)())fakefb_drawpolygon	, moHidd_BitMap_DrawPolygon	    },
+        {(IPTR (*)())fakefb_fillpolygon	, moHidd_BitMap_FillPolygon	    },
         {(IPTR (*)())fakefb_drawtext		, moHidd_BitMap_DrawText	    },
         {(IPTR (*)())fakefb_drawfilltext	, moHidd_BitMap_FillText	    },
         {(IPTR (*)())fakefb_fillspan		, moHidd_BitMap_FillSpan	    },
         {(IPTR (*)())fakefb_clear		, moHidd_BitMap_Clear		    },
-        {(IPTR (*)())fakefb_putimage		, moHidd_BitMap_PutImage	    },
-        {(IPTR (*)())fakefb_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
-        {(IPTR (*)())fakefb_puttemplate	    	, moHidd_BitMap_PutTemplate         },
-        {(IPTR (*)())fakefb_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
-        {(IPTR (*)())fakefb_putpattern	    	, moHidd_BitMap_PutPattern          },
-        {(IPTR (*)())fakefb_putimagelut		, moHidd_BitMap_PutImageLUT	    },
-        {(IPTR (*)())fakefb_puttranspimagelut	, moHidd_BitMap_PutTranspImageLUT   },
-        {(IPTR (*)())fakefb_getimage		, moHidd_BitMap_GetImage	    },
-        {(IPTR (*)())fakefb_getimagelut		, moHidd_BitMap_GetImageLUT	    },
         {(IPTR (*)())fakefb_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
-        {(IPTR (*)())fakefb_fwd			, moHidd_BitMap_BytesPerLine	    },
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_ConvertPixels	    },
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_SetColorMap	    },
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_MapColor	    },
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_UnmapPixel	    },
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_ObtainDirectAccess  },
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_ReleaseDirectAccess },
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_SetRGBConversionFunction },
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_UpdateRect          },
-
-	/* PRIVATE METHODS */	
-#if 0
-/* This is private to the gfxhidd, and we should not be called with this */
-	{(IPTR (*)())fakefb_fwd			, moHidd_BitMap_SetBitMapTags	},
-#endif	
-        {NULL, 0UL}
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_MapColor	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_UnmapPixel	    },
+        {(IPTR (*)())fakefb_putimagelut	, moHidd_BitMap_PutImageLUT	    },
+        {(IPTR (*)())fakefb_puttranspimagelut	, moHidd_BitMap_PutTranspImageLUT   },
+        {(IPTR (*)())fakefb_getimagelut	, moHidd_BitMap_GetImageLUT	    },
+        {(IPTR (*)())fakefb_fwd		, moHidd_BitMap_BytesPerLine	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ConvertPixels	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_FillMemRect32	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_InvertMemRect	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyMemBox32	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_CopyLUTMemBox32	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMem32Image24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_GetMem32Image24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate16    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate24    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemTemplate32    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern8	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern16	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern24	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PutMemPattern32	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_SetColorMap	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ObtainDirectAccess  },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_ReleaseDirectAccess },
+	{(IPTR (*)())fakefb_scale		, moHidd_BitMap_BitMapScale	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_PrivateSet	    },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_SetRGBConversionFunction },
+	{(IPTR (*)())fakefb_fwd		, moHidd_BitMap_UpdateRect          },
+        {NULL					, 0UL				    }
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
@@ -1468,10 +1499,12 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 
     if (w2end < width)
 	width -= (width - w2end);
-	
+
     if (h2end < height)
 	height -= (height - h2end);
-    
+
+    /* FIXME: clip negative coordinates */
+
     OOP_SetAttrs(data->gc, gctags);
     
     if (draw)
@@ -1480,8 +1513,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     	// bug("BACKING UP RENDERED AREA\n");	
 	HIDD_Gfx_CopyBox(data->gfxhidd
 	    , data->framebuffer
-	    , data->curs_x
-	    , data->curs_y
+	    , x, y
 	    , data->curs_backup
 	    , 0, 0
 	    , width, height
@@ -1493,30 +1525,11 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     	DB2(bug("[FakeGfx] Rendering cursor, framebuffer 0x%p\n", data->framebuffer));
 	/* Render the cursor image */
 	if (data->curs_pixfmt == vHidd_StdPixFmt_ARGB32)
-	    HIDD_BM_PutAlphaImage(data->framebuffer, data->gc, data->curs_pixels, data->curs_width * data->curs_bpp, data->curs_x, data->curs_y, width, height);
-	else {
-	    /* Unfortunately we don't have any transparent blit function in our HIDD API, so we have to do it by hands. */
-	    ULONG pixnum = 0;
-	    OOP_Object *cmap;
-	    
-	    OOP_GetAttr(data->framebuffer, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+	    HIDD_BM_PutAlphaImage(data->framebuffer, data->gc, data->curs_pixels, data->curs_width * data->curs_bpp, x, y, width, height);
+	else
+	    /* data->curs_bpp is always 1 here so we safely ignore it */
+	    HIDD_BM_PutTranspImageLUT(data->framebuffer, data->gc, data->curs_pixels, data->curs_width, x, y, width, height, NULL, 0);
 
-    	    for(y = 0; y < height; y++)
-	    {
-    	        for(x = 0; x < width; x++)
-	        {
-		    HIDDT_Pixel pix = data->curs_pixels[pixnum + x];
-
-		    if (pix) {
-			pix = HIDD_CM_GetPixel(cmap, pix);
-		        HIDD_BM_PutPixel(data->framebuffer, data->curs_x + x, data->curs_y + y, pix);
-		    }
-		}
-		/* data->curs_bpp is always 1 here so we ignore it */
-		pixnum += data->curs_width;
-	    }
-	}
-        
         if (updaterect) HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
     
     }
@@ -1530,8 +1543,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 	    	, data->curs_backup
 	    	, 0, 0
 	    	, data->framebuffer
-	    	, data->curs_x
-	    	, data->curs_y
+	    	, x, y
 	    	, width, height
 	    	, data->gc
 	    );
