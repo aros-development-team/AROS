@@ -17,7 +17,11 @@
 
 #include <diskfont/diskfont.h>
 
+#ifdef __AROS__
 #include <aros/macros.h>
+#else
+#define AROS_ALIGN(x) x
+#endif
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/diskfont.h>
