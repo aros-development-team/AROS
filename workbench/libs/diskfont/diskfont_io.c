@@ -27,25 +27,24 @@
 
 /****************************************************************************************/
 
-#define SKIPLONG(ptr) 	ptr += sizeof (LONG);
+#define SKIPLONG(ptr)	ptr += sizeof(LONG);
 
-#define SKIPWORD(ptr)	ptr += sizeof (WORD)
+#define SKIPWORD(ptr)	ptr += sizeof(WORD)
 
 #define SKIPBYTE(ptr)	ptr ++;
 
 #define SKIPPTR(ptr) 	ptr += sizeof(LONG)
 
 #define CONVLONG(ptr, destlong)  \
-destlong = ptr[0] << 24 |ptr[1] << 16 | ptr[2] << 8 | ptr[3]; \
+destlong = ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3]; \
 SKIPLONG(ptr);
 
-#define CONVWORD(ptr, destword)		\
-destword = ptr[0] <<  8 | ptr[1];	\
+#define CONVWORD(ptr, destword) \
+destword = ptr[0] <<  8 | ptr[1]; \
 SKIPWORD(ptr);
-														
 
-#define CONVBYTE(ptr, destbyte)	\
-destbyte = ptr[0]; 							\
+#define CONVBYTE(ptr, destbyte) \
+destbyte = ptr[0]; \
 SKIPBYTE(ptr);
 
 /*
@@ -61,8 +60,8 @@ SKIPPTR(ptr);
 SKIPPTR(ptr);
 #else
 
-#define COPYPTR(ptr,destptr) \
-(destptr) = (APTR)(*((IPTR *)(ptr))); \
+#define COPYPTR(ptr, destptr) \
+(destptr) = (APTR)(IPTR)(*((ULONG *)(ptr))); \
 SKIPPTR(ptr);
 #endif
 /****************************************************************************************/
@@ -167,7 +166,7 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname, BOOL do
     D(bug("Boldsmear: %d\n",	tmp_dfh.dfh_TF.tf_BoldSmear));
     D(bug("LoChar:    %d\n",	tmp_dfh.dfh_TF.tf_LoChar));
     D(bug("HiChar:    %d\n",	tmp_dfh.dfh_TF.tf_HiChar));
-    D(bug("chardara:  %p\n", 	chardata_ptr));
+    D(bug("chardata:  %p\n", 	chardata_ptr));
     D(bug("Modulo:    %d\n", 	tmp_dfh.dfh_TF.tf_Modulo));
     D(bug("charloc:   %p\n", 	charloc_ptr));
     D(bug("charspace: %p\n", 	charspace_ptr));
