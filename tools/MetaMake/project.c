@@ -56,7 +56,7 @@ readvars (Project * prj)
     Node * node, * next;
     Dep * dep;
 
-debug(printf("MMAKE:project.c->readvars(Project @ %x)\n", prj));
+    debug(printf("MMAKE:project.c->readvars(Project @ %x)\n", prj));
 
     if (!prj->readvars)
 	return;
@@ -79,6 +79,7 @@ debug(printf("MMAKE:project.c->readvars(Project @ %x)\n", prj));
 	fn = xstrdup (substvars (&prj->vars, prj->globalvarfile));
 	fh = fopen (fn, "r");
 
+	/* if prj->globalvarfile doesn't exist execute prj->genglobalvarfile */
 	if (!fh && prj->genglobalvarfile)
 	{
 	    char * gen = xstrdup (substvars (&prj->vars, prj->genglobalvarfile));
@@ -128,8 +129,8 @@ debug(printf("MMAKE:project.c->readvars(Project @ %x)\n", prj));
 
 	    *ptr = 0;
 
-		if (debug)
-			printf ("%s=%s\n", name, substvars (&prj->vars, value));
+	    if (debug)
+		printf ("%s=%s\n", name, substvars (&prj->vars, value));
 
 	    setvar (&prj->vars, name, substvars (&prj->vars, value));
 	}
@@ -137,6 +138,7 @@ debug(printf("MMAKE:project.c->readvars(Project @ %x)\n", prj));
 	fclose (fh);
     }
 
+    /* handle prj->genmakefiledeps */
     NewList(&deps);
     ForeachNodeSafe (&prj->genmakefiledeps, node, next)
     {
@@ -173,30 +175,30 @@ initproject (char * name)
 
     memset (prj, 0, sizeof(Project));
 
-debug(printf("MMAKE:project.c->initproject('%s')\n", name));
-debug(printf("MMAKE:project.c->initproject: Project node @ %x\n", prj));
+    debug(printf("MMAKE:project.c->initproject('%s')\n", name));
+    debug(printf("MMAKE:project.c->initproject: Project node @ %x\n", prj));
 
     if (!defaultprj)
     {
-        prj->maketool = xstrdup ("make \"TOP=$(TOP)\" \"SRCDIR=$(SRCDIR)\" \"CURDIR=$(CURDIR)\"");
-        prj->defaultmakefilename = xstrdup ("Makefile");
-        prj->srctop = mm_srcdir;
-        prj->buildtop = mm_builddir;
-        prj->defaulttarget = xstrdup ("all");
-        prj->genmakefilescript = NULL;
-        prj->globalvarfile = NULL;
-        prj->genglobalvarfile = NULL;
+	prj->maketool = xstrdup ("make \"TOP=$(TOP)\" \"SRCDIR=$(SRCDIR)\" \"CURDIR=$(CURDIR)\"");
+	prj->defaultmakefilename = xstrdup ("Makefile");
+	prj->srctop = mm_srcdir;
+	prj->buildtop = mm_builddir;
+	prj->defaulttarget = xstrdup ("all");
+	prj->genmakefilescript = NULL;
+	prj->globalvarfile = NULL;
+	prj->genglobalvarfile = NULL;
     }
     else
     {
-        prj->maketool = xstrdup (defaultprj->maketool);
-        prj->defaultmakefilename = xstrdup (defaultprj->defaultmakefilename);
-        prj->srctop = xstrdup (defaultprj->srctop);
-        prj->buildtop = xstrdup (defaultprj->buildtop);
-        prj->defaulttarget = xstrdup (defaultprj->defaulttarget);
-        SETSTR (prj->genmakefilescript, defaultprj->genmakefilescript);
-        SETSTR (prj->globalvarfile, defaultprj->globalvarfile);
-        SETSTR (prj->genglobalvarfile, defaultprj->genglobalvarfile);
+	prj->maketool = xstrdup (defaultprj->maketool);
+	prj->defaultmakefilename = xstrdup (defaultprj->defaultmakefilename);
+	prj->srctop = xstrdup (defaultprj->srctop);
+	prj->buildtop = xstrdup (defaultprj->buildtop);
+	prj->defaulttarget = xstrdup (defaultprj->defaulttarget);
+	SETSTR (prj->genmakefilescript, defaultprj->genmakefilescript);
+	SETSTR (prj->globalvarfile, defaultprj->globalvarfile);
+	SETSTR (prj->genglobalvarfile, defaultprj->genglobalvarfile);
     }
 
     prj->node.name = xstrdup (name);
@@ -219,10 +221,10 @@ freeproject (Project * prj)
     cfree (prj->node.name);
     cfree (prj->maketool);
     cfree (prj->defaultmakefilename);
-	if (prj->srctop != mm_srcdir)
-		cfree (prj->srctop);
-	if (prj->buildtop != mm_builddir)
-		cfree (prj->buildtop);
+    if (prj->srctop != mm_srcdir)
+	cfree (prj->srctop);
+    if (prj->buildtop != mm_builddir)
+	cfree (prj->buildtop);
     cfree (prj->defaulttarget);
     cfree (prj->genmakefilescript);
     cfree (prj->globalvarfile);
@@ -230,7 +232,7 @@ freeproject (Project * prj)
 
     if (prj->cache)
 	closecache (prj->cache);
-    
+
     freelist (&prj->genmakefiledeps);
     freelist (&prj->ignoredirs);
     freevarlist (&prj->vars);
@@ -246,7 +248,7 @@ callmake (Project * prj, const char * tname, Makefile * makefile)
     const char * path = buildpath (makefile->dir);
     int t;
 
-debug(printf("MMAKE:project.c->callmake()\n"));
+    debug(printf("MMAKE:project.c->callmake()\n"));
 
     if (makefile->generated)
 	chdir (prj->buildtop);
@@ -293,7 +295,7 @@ initprojects (void)
     FILE * optfh = NULL;
     Project * project;
 
-debug(printf("MMAKE:project.c->initprojects()\n"));
+    debug(printf("MMAKE:project.c->initprojects()\n"));
 
     NewList(&projects);
     defaultprj = project = initproject ("default");
@@ -307,13 +309,13 @@ debug(printf("MMAKE:project.c->initprojects()\n"));
     /* Try "$HOME/.mmake.config" */
     if (!optfh)
     {
-        if ((home = getenv("HOME")))
-        {
-            optionfile = xmalloc (strlen(home) + sizeof("/.mmake.config") + 1);
-            sprintf (optionfile, "%s/.mmake.config", home);
-            optfh = fopen (optionfile, "r");
-            free (optionfile);
-    	}
+	if ((home = getenv("HOME")))
+	{
+	    optionfile = xmalloc (strlen(home) + sizeof("/.mmake.config") + 1);
+	    sprintf (optionfile, "%s/.mmake.config", home);
+	    optfh = fopen (optionfile, "r");
+	    free (optionfile);
+	}
     }
 
     /* Try with $CWD/.mmake.config" */
@@ -328,8 +330,8 @@ debug(printf("MMAKE:project.c->initprojects()\n"));
     if (!optfh)
     {
 	fprintf (stderr,
-	    "Please set the HOME or MMAKE_CONFIG env var (with setenv or export)\n"
-	);
+		"Please set the HOME or MMAKE_CONFIG env var (with setenv or export)\n"
+		);
 	error ("Opening mmake.config for reading");
 	exit (10);
     }
@@ -339,7 +341,7 @@ debug(printf("MMAKE:project.c->initprojects()\n"));
 	if (*line == '\n' || *line == '#') continue;
 	line[strlen(line)-1] = 0;
 
-	if (*line == '[')
+	if (*line == '[') /* look for project name */
 	{
 	    char * name, * ptr;
 
@@ -349,7 +351,7 @@ debug(printf("MMAKE:project.c->initprojects()\n"));
 
 	    *ptr = 0;
 
-debug(printf("MMAKE:project.c->initprojects: Adding '%s' from MMAKE_CONFIG\n", name));
+	    debug(printf("MMAKE:project.c->initprojects: Adding '%s' from MMAKE_CONFIG\n", name));
 
 	    project = initproject (name);
 
@@ -443,7 +445,7 @@ debug(printf("MMAKE:project.c->initprojects: Adding '%s' from MMAKE_CONFIG\n", n
 
     /* Clean up memory from getargs */
     getargs (NULL, NULL, NULL);
-    
+
     if (debug)
     {
 	printf ("known projects: ");
@@ -455,7 +457,7 @@ void
 expungeprojects (void)
 {
     Project *prj, *next;
-    
+
     ForeachNodeSafe (&projects, prj, next)
     {
 	Remove (prj);
@@ -468,27 +470,27 @@ findproject (const char * pname)
 {
     return FindNode (&projects, pname);
 }
-		     
+
 Project *
 getfirstproject (void)
 {
     Project * prj = GetHead (&projects);
-    
+
     if (prj && prj == defaultprj)
 	prj = GetNext (prj);
-    
+
     return prj;
 }
 
 int
 execute (Project * prj, const char * cmd, const char * in,
-	 const char * out, const char * args)
+	const char * out, const char * args)
 {
     char buffer[4096];
     char * cmdstr;
     int rc;
 
-debug(printf("MMAKE:project.c->execute(cmd '%s')\n", cmd));
+    debug(printf("MMAKE:project.c->execute(cmd '%s')\n", cmd));
 
     strcpy (buffer, cmd);
     strcat (buffer, " ");
@@ -511,7 +513,7 @@ debug(printf("MMAKE:project.c->execute(cmd '%s')\n", cmd));
 
     cmdstr = substvars (&prj->vars, buffer);
 
-debug(printf("MMAKE:project.c->execute: parsed cmd '%s'\n", buffer));
+    debug(printf("MMAKE:project.c->execute: parsed cmd '%s'\n", buffer));
 
     if (verbose)
 	printf ("Executing %s...\n", cmdstr);
@@ -534,18 +536,18 @@ maketarget (Project * prj, char * tname)
     MakefileRef * mfref;
     MakefileTarget * mftarget;
     List deps;
-    
+
     printf ("Building %s.%s\n", prj->node.name, tname);
 
     NewList (&deps);
-    
+
     chdir (prj->srctop);
 
     readvars (prj);
 
     if (!prj->cache)
 	prj->cache = activatecache (prj);
-    
+
     if (!*tname)
 	tname = prj->defaulttarget;
 
@@ -562,11 +564,11 @@ maketarget (Project * prj, char * tname)
     ForeachNode (&target->makefiles, mfref)
     {
 	mftarget = FindNode (&mfref->makefile->targets, tname);
-	
+
 	ForeachNode (&mftarget->deps, node)
 	    addnodeonce (&deps, node->name);
     }
-    
+
     ForeachNode (&deps, node)
     {
 	subtarget = FindNode (&prj->cache->targets, node->name);
@@ -582,7 +584,7 @@ maketarget (Project * prj, char * tname)
     }
 
     freelist (&deps);
-    
+
     ForeachNode (&target->makefiles, mfref)
     {
 	if (!mfref->virtualtarget)
@@ -590,6 +592,6 @@ maketarget (Project * prj, char * tname)
 	    callmake (prj, tname, mfref->makefile);
 	}
     }
-    
+
     freelist (&deps);
 }

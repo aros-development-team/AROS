@@ -56,7 +56,7 @@ checkdeps (List * deps, time_t desttime)
     {
 	if (dep->time > desttime)
 	{
-/*printf ("%s is newer\n", dep->node.name);*/
+	    /*printf ("%s is newer\n", dep->node.name);*/
 	    newer = 1;
 	    break;
 	}

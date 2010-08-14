@@ -112,80 +112,80 @@ main (int argc, char ** argv)
 
     for (t=1; t<argc; t++)
     {
-        if (argv[t][0] == '-')
-        {
-            if (!strcmp (argv[t], "--version"))
-            {
-                printf ("MetaMake %s (%s)\n", PACKAGE_VERSION, __DATE__);
-                if (argc == 2)
-                    exit (0);
-            }
-            else if (!strncmp (argv[t], "--srcdir", 8) || !strcmp (argv[t], "-s"))
-            {
-                mm_srcdir = (char *)&argv[t][9];
-            }
-            else if (!strncmp (argv[t], "--builddir", 10) || !strcmp (argv[t], "-b"))
-            {
-                mm_builddir = (char *)&argv[t][11];
-            }
-            else if (!strcmp (argv[t], "--verbose") || !strcmp (argv[t], "-v"))
-            {
-                verbose = 1;
-            }
-            else if (!strcmp (argv[t], "--debug"))
-            {
-                debug = 1;
-            }
-            else if (!strcmp (argv[t], "--help"))
-            {
-                printf ("%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [--debug] [--help]\n", argv[0]);
-                return 0;
-            }
-            else
-            {
-                mflags[mflagc++] = argv[t];
-            }
-        }
-        else
-        {
-            targets[targetc++] = argv[t];
-        }
+	if (argv[t][0] == '-')
+	{
+	    if (!strcmp (argv[t], "--version"))
+	    {
+		printf ("MetaMake %s (%s)\n", PACKAGE_VERSION, __DATE__);
+		if (argc == 2)
+		    exit (0);
+	    }
+	    else if (!strncmp (argv[t], "--srcdir", 8) || !strcmp (argv[t], "-s"))
+	    {
+		mm_srcdir = (char *)&argv[t][9];
+	    }
+	    else if (!strncmp (argv[t], "--builddir", 10) || !strcmp (argv[t], "-b"))
+	    {
+		mm_builddir = (char *)&argv[t][11];
+	    }
+	    else if (!strcmp (argv[t], "--verbose") || !strcmp (argv[t], "-v"))
+	    {
+		verbose = 1;
+	    }
+	    else if (!strcmp (argv[t], "--debug"))
+	    {
+		debug = 1;
+	    }
+	    else if (!strcmp (argv[t], "--help"))
+	    {
+		printf ("%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [--debug] [--help]\n", argv[0]);
+		return 0;
+	    }
+	    else
+	    {
+		mflags[mflagc++] = argv[t];
+	    }
+	}
+	else
+	{
+	    targets[targetc++] = argv[t];
+	}
     }
 
     if (verbose)
     {
-        printf ("SRCDIR   '%s'\n", mm_srcdir);
-        printf ("BUILDDIR '%s'\n", mm_builddir);
+	printf ("SRCDIR   '%s'\n", mm_srcdir);
+	printf ("BUILDDIR '%s'\n", mm_builddir);
     }
 
-debug(printf("MMAKE:mmake.c->main: parsed command line options\n"));
+    debug(printf("MMAKE:mmake.c->main: parsed command line options\n"));
 
     initprojects ();
 
-debug(printf("MMAKE:mmake.c->main: projects initialised\n"));
+    debug(printf("MMAKE:mmake.c->main: projects initialised\n"));
 
     if (!targetc)
     {
 	Project * firstprj = getfirstproject ();
-	
+
 	assert (firstprj);
 
 	targets[targetc++] = firstprj->node.name;
-debug(printf("MMAKE:mmake.c->main: targetc not set, using default'%s'\n", firstprj->node.name));
+	debug(printf("MMAKE:mmake.c->main: targetc not set, using default'%s'\n", firstprj->node.name));
     }
 
     for (t=0; t<targetc; t++)
     {
 	char * pname, * tname, * ptr;
 	Project * prj;
-    
+
 	pname = ptr = targets[t];
 	while (*ptr && *ptr != '.')
 	    ptr ++;
 	if (*ptr)
 	    *ptr ++ = 0;
 	tname = ptr;
-	
+
 	prj = findproject (pname);
 
 	if (!prj)
@@ -194,7 +194,7 @@ debug(printf("MMAKE:mmake.c->main: targetc not set, using default'%s'\n", firstp
 	    return 20;
 	}
 
-debug(printf("MMAKE:mmake.c->main: calling maketarget '%s'\n", tname));
+	debug(printf("MMAKE:mmake.c->main: calling maketarget '%s'\n", tname));
 	maketarget (prj, tname);
     }
 

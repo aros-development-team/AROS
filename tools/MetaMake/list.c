@@ -39,7 +39,7 @@ void
 AssignList (List * dest, List * src)
 {
     NewList (dest);
-    
+
     if (src->first->next != NULL)
     {
 	src->first->prev = (Node *)&dest->first;
@@ -111,7 +111,7 @@ newnodesize (const char * name, size_t size)
 
     n = (Node *)xmalloc (size);
     memset (n, 0, size);
-    
+
     n->name = xstrdup (name);
 
     return (void *)n;

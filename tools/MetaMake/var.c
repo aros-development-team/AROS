@@ -151,7 +151,7 @@ getargs (const char * line, int * argc, List * vars)
 
     cfree (buffer);
     buffer = NULL;
-    
+
     if (!line)
 	return NULL;
 

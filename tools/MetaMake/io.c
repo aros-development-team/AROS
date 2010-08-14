@@ -41,13 +41,13 @@ writestring (FILE * fh, const char * s)
 	len = strlen(s);
     else
 	len = -1;
-    
+
     out = htonl(len);
     fwrite(&out, sizeof(out), 1, fh);
 
     if (!ferror(fh) && len>0)
 	fwrite(s, len, 1, fh);
-    
+
     return !ferror(fh);
 }
 
@@ -56,11 +56,11 @@ readstring (FILE * fh, char **strptr)
 {
     uint32_t in;
     int32_t len;
-    
+
     fread(&in, sizeof(in), 1, fh);
     if (ferror(fh))
 	return 0;
-    
+
     len = ntohl(in);
     if (len>0)
     {
@@ -77,7 +77,7 @@ readstring (FILE * fh, char **strptr)
 	*strptr = xstrdup("");
     else /* len < 0 */
 	*strptr = NULL;
-    
+
     return 1;
 }
 
@@ -96,11 +96,11 @@ int
 readint32 (FILE * fh, int32_t * iptr)
 {
     uint32_t in;
-    
+
     fread(&in, sizeof(in), 1, fh);
     if (!ferror(fh))
 	*iptr = ntohl(in);
-    
+
     return !ferror(fh);
 }
 
@@ -119,11 +119,11 @@ int
 readuint32 (FILE * fh, uint32_t * iptr)
 {
     uint32_t in;
-    
+
     fread(&in, sizeof(in), 1, fh);
     if (!ferror(fh))
 	*iptr = ntohl(in);
-    
+
     return !ferror(fh);
 }
-    
+
