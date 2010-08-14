@@ -70,5 +70,6 @@ Makefile * findmakefile (DirNode * node, const char * filename);
 const char * buildpath (DirNode * node);
 DirNode * readcachedir (FILE * fh);
 int writecachedir (FILE * fh, DirNode * node);
+void freemakefiletargetlist (List * targets);
 
 #endif /* __MMAKE_DIRNODE_H */
