@@ -65,7 +65,7 @@ _xstrndup (const char * str, size_t len, const char * file, int line)
     if (nstr)
 	strncpy (nstr, str, len);
 #endif
-    
+
     if (!nstr)
     {
 	fprintf (stderr, "Out of memory in %s:%d", file, line);

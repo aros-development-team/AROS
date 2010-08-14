@@ -79,11 +79,11 @@ static MakefileTarget *
 newmakefiletarget (char *name, int virtualtarget)
 {
     MakefileTarget * mftarget;
-    
+
     mftarget = newnodesize (name, sizeof(MakefileTarget));
     mftarget->virtualtarget = virtualtarget;
     NewList (&mftarget->deps);
-    
+
     return mftarget;
 }
 
@@ -98,10 +98,10 @@ void
 freemakefiletargetlist (List * targets)
 {
     MakefileTarget * mftarget, * mftarget2;
-    
+
     ForeachNodeSafe (targets, mftarget, mftarget2)
 	freemakefiletarget (mftarget);
-    
+
     NewList (targets);
 }
 
@@ -141,7 +141,7 @@ printdirnodemftarget (DirNode * node)
 	    printf ("\n");
 	}
     }
-    
+
     ForeachNode (&node->subdirs, subdir)
 	printdirnodemftarget (subdir);
 }
@@ -212,34 +212,34 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 
     int mfnamelen = strlen(mfname), scanned = 0;
 
-debug(printf("MMAKE:dirnode.c->scandirnode('%s')\n", node->node.name));
-	
+    debug(printf("MMAKE:dirnode.c->scandirnode('%s')\n", node->node.name));
+
     if (stat(".", &st) != 0)
     {
-		error("scandirnode(): scanning %s\n",
-            strlen(node->node.name) == 0
-                ? "topdir"
-                : node->node.name);
+	error("scandirnode(): scanning %s\n",
+		strlen(node->node.name) == 0
+		? "topdir"
+		: node->node.name);
 
-        exit(20);
+	exit(20);
     }
 
     if (st.st_mtime > node->time)
     {
-    	List newdirs, newmakefiles;
-    	DirNode * subdir = NULL, * subdir2;
-    	Makefile * makefile;
+	List newdirs, newmakefiles;
+	DirNode * subdir = NULL, * subdir2;
+	Makefile * makefile;
 
-debug(printf("MMAKE:dirnode.c->scandirnode dir->time changed .. scanning\n"));
+	debug(printf("MMAKE:dirnode.c->scandirnode dir->time changed .. scanning\n"));
 
 	if (debug)
 	    printf("scandirnode(): scanning %s\n",
-		   strlen(node->node.name)==0 ? "topdir" : buildpath(node)
-	    );
+		    strlen(node->node.name)==0 ? "topdir" : buildpath(node)
+		  );
 
 	NewList (&newdirs);
 	NewList (&newmakefiles);
-	
+
 	node->time = st.st_mtime;
 
 	dirh = opendir (".");
@@ -248,24 +248,24 @@ debug(printf("MMAKE:dirnode.c->scandirnode dir->time changed .. scanning\n"));
 	    error("opendir: could not open current dir");
 	    exit(20);
 	}
-	
+
 	while ((dirent = readdir (dirh)))
 	{
 	    /* Add makefile if it present or the file with .src is present */
 	    if (strcmp(dirent->d_name, mfname) == 0
-		|| (strlen(dirent->d_name) == mfnamelen + 4
-		    && strncmp(dirent->d_name, mfname, mfnamelen) == 0
-		    && strcmp(dirent->d_name + mfnamelen, ".src") == 0
-		)
-	    )
+		    || (strlen(dirent->d_name) == mfnamelen + 4
+			&& strncmp(dirent->d_name, mfname, mfnamelen) == 0
+			&& strcmp(dirent->d_name + mfnamelen, ".src") == 0
+		       )
+	       )
 	    {
 		/* Don't add makefile twice */
-debug(printf("MMAKE:dirnode.c->scandirnode: %s found ('%s')\n", mfname, dirent->d_name));
+		debug(printf("MMAKE:dirnode.c->scandirnode: %s found ('%s')\n", mfname, dirent->d_name));
 
 		makefile = FindNode (&newmakefiles, mfname);
 		if (makefile == NULL)
 		{
-debug(printf("MMAKE:dirnode.c->scandirnode: Creating New Makefile node\n"));
+		    debug(printf("MMAKE:dirnode.c->scandirnode: Creating New Makefile node\n"));
 		    makefile = FindNode (&node->makefiles, mfname);
 		    if (makefile != NULL)
 		    {
@@ -275,14 +275,14 @@ debug(printf("MMAKE:dirnode.c->scandirnode: Creating New Makefile node\n"));
 		    {
 			makefile = newnodesize (mfname, sizeof (Makefile));
 			makefile->dir = node;
-debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->node.name));
+			debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->node.name));
 			makefile->time = (time_t)0;
 			NewList (&makefile->targets);
 		    }
 		    AddTail (&newmakefiles, makefile);
 		}
 		if (strcmp(dirent->d_name + mfnamelen, ".src") == 0)
-			makefile->generated = 1;
+		    makefile->generated = 1;
 	    }
 	    else
 	    {
@@ -291,8 +291,8 @@ debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->nod
 		 * list
 		 */
 		if (strlen (dirent->d_name) > 4
-		    && strcmp (dirent->d_name + strlen(dirent->d_name) - 4, ".src") == 0
-		)
+			&& strcmp (dirent->d_name + strlen(dirent->d_name) - 4, ".src") == 0
+		   )
 		{
 		    dirent->d_name[strlen(dirent->d_name) - 4] = 0;
 		    makefile = FindNode (&node->makefiles, dirent->d_name);
@@ -300,7 +300,7 @@ debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->nod
 		}
 		else
 		    makefile = FindNode (&node->makefiles, dirent->d_name);
-		
+
 		if (makefile != NULL)
 		{
 		    Remove (makefile);
@@ -311,23 +311,23 @@ debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->nod
 		/* Add file to newsubdirs if it is a directory and it has not to be ignored
 		 */
 		st.st_mode = 0; /* This makes us to ignore the file if it can't be stat()'ed.
-		                   This lets us to succesfully skip Unicode-named files under Windows */
+				   This lets us to succesfully skip Unicode-named files under Windows */
 		lstat (dirent->d_name, &st);
 
-                /* TODO: Add support to MetaMake for going through links
-                 * If this feature is to be supported one also has to implement
-                 * checks to avoid MetaMake going into infinite loop when circular
-                 * linking is present
-                 */
+		/* TODO: Add support to MetaMake for going through links
+		 * If this feature is to be supported one also has to implement
+		 * checks to avoid MetaMake going into infinite loop when circular
+		 * linking is present
+		 */
 		if (S_ISDIR (st.st_mode)
-		    && strcmp (dirent->d_name, ".") != 0
-		    && strcmp (dirent->d_name, "..") != 0
-		    && !S_ISLNK (st.st_mode)
-		    && !FindNode (ignoredirs, dirent->d_name)
-		)
+			&& strcmp (dirent->d_name, ".") != 0
+			&& strcmp (dirent->d_name, "..") != 0
+			&& !S_ISLNK (st.st_mode)
+			&& !FindNode (ignoredirs, dirent->d_name)
+		   )
 		{
 		    subdir = FindNode (&node->subdirs, dirent->d_name);
-		    
+
 		    if (subdir != NULL)
 		    {
 			Remove (subdir);
@@ -335,7 +335,7 @@ debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->nod
 		    else
 		    {
 			subdir = newnodesize (dirent->d_name, sizeof(DirNode));
-debug(printf("MMAKE:dirnode.c->scandirnode: New SubDir Node '%s' @ %p\n", dirent->d_name, subdir));
+			debug(printf("MMAKE:dirnode.c->scandirnode: New SubDir Node '%s' @ %p\n", dirent->d_name, subdir));
 			subdir->parent = node;
 			subdir->time = (time_t)0;
 			NewList (&subdir->subdirs);
@@ -347,7 +347,7 @@ debug(printf("MMAKE:dirnode.c->scandirnode: New SubDir Node '%s' @ %p\n", dirent
 	}
 
 	closedir (dirh);
-	
+
 	ForeachNodeSafe (&node->subdirs, subdir, subdir2)
 	    freedirnode  (subdir);
 	AssignList (&node->subdirs, &newdirs);
@@ -356,27 +356,27 @@ debug(printf("MMAKE:dirnode.c->scandirnode: New SubDir Node '%s' @ %p\n", dirent
 	ForeachNode (&node->makefiles, makefile)
 	{
 	    MakefileTarget * mftarget;
-	    
+
 	    ForeachNode (&makefile->targets, mftarget)
 		freelist (&mftarget->deps);
-	    
+
 	    freelist (&makefile->targets);
 	}
 
 	freelist (&node->makefiles);
-	
+
 	AssignList (&node->makefiles, &newmakefiles);
-	
+
 	scanned = 1;
     }
-    
-debug(printf("MMAKE:dirnode.c->scandirnode: Finished scanning dir '%s'\n", node->node.name));
-	if (debug)
-	{
-		printf ("scandirnode()\n");
-		printdirnode (node, 1);
-	}
-    
+
+    debug(printf("MMAKE:dirnode.c->scandirnode: Finished scanning dir '%s'\n", node->node.name));
+    if (debug)
+    {
+	printf ("scandirnode()\n");
+	printdirnode (node, 1);
+    }
+
     return scanned;
 }
 
@@ -391,71 +391,71 @@ scanmakefiles (DirNode * node, List * vars)
     int reread = 0;
     FILE * fh;
 
-debug(printf("MMAKE:dirnode.c->scanmakefiles('%s')\n", node->node.name));
+    debug(printf("MMAKE:dirnode.c->scanmakefiles('%s')\n", node->node.name));
 
     assert (node);
 
     if (line == NULL)
 	line = xmalloc(linelen);
-    
+
     ForeachNode (&node->makefiles, makefile)
     {
-debug(printf("MMAKE:dirnode.c->scanmakefiles: %d '%s'\n", makefile->generated, makefile->node.name));
+	debug(printf("MMAKE:dirnode.c->scanmakefiles: %d '%s'\n", makefile->generated, makefile->node.name));
 
 	if (makefile->generated == 0)
 	{
-		if (chdir(mm_srcdir) < 0)
-		{
-			error("Could not change to dir '%s'", mm_srcdir);
-			exit (20);
-		}
+	    if (chdir(mm_srcdir) < 0)
+	    {
+		error("Could not change to dir '%s'", mm_srcdir);
+		exit (20);
+	    }
 	}
 	else
 	{
-		if (chdir(mm_builddir) < 0)
-		{
-			error("Could not change to dir '%s'", mm_builddir);
-			exit (20);
-		}
+	    if (chdir(mm_builddir) < 0)
+	    {
+		error("Could not change to dir '%s'", mm_builddir);
+		exit (20);
+	    }
 	}
 
-    if ((strlen(makefile->dir->node.name) != 0) && (strcmp(makefile->dir->node.name, mm_srcdir) != 0))
-    {
-	if (chdir(buildpath(makefile->dir)) < 0)
+	if ((strlen(makefile->dir->node.name) != 0) && (strcmp(makefile->dir->node.name, mm_srcdir) != 0))
 	{
+	    if (chdir(buildpath(makefile->dir)) < 0)
+	    {
 		error("Could not change to dir '%s'", makefile->dir->node.name);
 		exit (20);
+	    }
 	}
-    }
 
 	if (stat(makefile->node.name, &st) != 0)
 	{
 	    error("Could not stat %s", makefile->node.name);
 	    exit(20);
 	}
-	
+
 	if (st.st_mtime > makefile->time)
 	{
 	    int flags = 0;
 	    int lineno = 0;
 	    MakefileTarget * mftarget = NULL;
-	    
+
 	    if (debug)
 		printf("scanmakefiles(): scanning makefile in %s/%s\n",
-		       strlen(node->node.name)==0 ? "topdir" : buildpath(node),
-		       makefile->node.name
-		);
+			strlen(node->node.name)==0 ? "topdir" : buildpath(node),
+			makefile->node.name
+		      );
 
 #if 0
-printf ("Opening %s\n", makefile->name);
+	    printf ("Opening %s\n", makefile->name);
 #endif
 
 	    fh = fopen (makefile->node.name, "r");
 	    if (!fh)
 	    {
 		error ("buildtargetlist:fopen(): Opening %s for reading",
-		       makefile->node.name
-		);
+			makefile->node.name
+		      );
 	    }
 
 	    /* Free old metatargets when the file is reread */
@@ -469,7 +469,7 @@ printf ("Opening %s\n", makefile->name);
 		while (line[strlen(line)-1] != '\n' && !feof(fh))
 		{
 		    char * ptr;
-		    
+
 		    linelen += 512;
 		    ptr = xmalloc (linelen);
 		    strcpy (ptr, line);
@@ -487,27 +487,27 @@ printf ("Opening %s\n", makefile->name);
 		{
 		    char * ptr;
 		    int count, count2, t;
-		    
+
 #if 0
-printf ("found #MM in %s\n", makefile->name);
+		    printf ("found #MM in %s\n", makefile->name);
 #endif
 
 		    /* Read in next lines if there is continuation */
 		    while (check_continue(line))
 		    {
 			ptr = line + strlen(line) - 1;
-			
+
 			if (!fgets (ptr, linelen-strlen(line)+1, fh))
 			{
 			    error("%s/%s:unexpected end of makefile",
-				  getcwd(NULL, 0),
-				  makefile->node.name
-			    );
+				    getcwd(NULL, 0),
+				    makefile->node.name
+				 );
 			    exit(20);
 			}
 
 			lineno ++;
-			
+
 			while (line[strlen(line)-1] != '\n' && !feof(fh))
 			{
 			    int pos = ptr - line;
@@ -531,18 +531,18 @@ printf ("found #MM in %s\n", makefile->name);
 			    ptr[1] = 0;
 			    continue;
 			}
-			
+
 			if (strncmp (ptr, "#MM", 3) != 0)
 			{
 			    errno = 0;
 			    error("%s/%s:%d:continuation line has to start with #MM",
-				  getcwd (NULL, 0),
-				  makefile->node.name,
-				  lineno
-			    );
+				    getcwd (NULL, 0),
+				    makefile->node.name,
+				    lineno
+				 );
 			    exit(20);
 			}
-			
+
 			memmove (ptr, ptr+4, strlen(ptr)-4+1);
 		    }
 
@@ -555,7 +555,7 @@ printf ("found #MM in %s\n", makefile->name);
 		    }
 		    else
 			flags &= ~FLAG_VIRTUAL;
-		    
+
 		    while (isspace (*ptr))
 			ptr ++;
 
@@ -579,12 +579,12 @@ printf ("found #MM in %s\n", makefile->name);
 			    if (count > 1)
 			    {
 				printf ("Warning: Multiple metatargets, only the 1st will be added in %s:%d (%s)\n",
-				    makefile->node.name, lineno, buildpath(node)
-				);
+					makefile->node.name, lineno, buildpath(node)
+				       );
 				/* FIXME: should we better add all metatargets? */
 			    }
 			    mftarget = FindNode (&makefile->targets, targets[0]);
-			    
+
 			    if (mftarget == NULL)
 			    {
 				mftarget = newmakefiletarget (targets[0], 0);
@@ -603,7 +603,7 @@ printf ("found #MM in %s\n", makefile->name);
 			MakefileTarget * mftarget2, * mftarget3;
 
 			NewList (&newtargets);
-			
+
 			while (*ptr2 != ':' && *ptr2)
 			    ptr2 ++;
 
@@ -611,21 +611,21 @@ printf ("found #MM in %s\n", makefile->name);
 			    *ptr2 ++ = 0;
 
 			tptr = getargs (ptr, &count, NULL);
-			
+
 			for (t = 0; t < count; t++)
 			{
 			    mftarget = newmakefiletarget (tptr[t], (flags & FLAG_VIRTUAL) != 0);
 			    AddTail (&newtargets, mftarget);
 			}
-			
+
 			tptr = getargs (ptr2, &count2, NULL);
-			
+
 			if (count > 1 && count2 == 0)
 			{
 			    /* could mean a missing colon */
 			    printf ("Warning: multiple metatargets but no prerequisites %s:%d (%s)\n",
-				makefile->node.name, lineno, buildpath(node)
-			    );
+				    makefile->node.name, lineno, buildpath(node)
+				   );
 			}
 
 			for (t = 0; t < count2; t++)
@@ -633,7 +633,7 @@ printf ("found #MM in %s\n", makefile->name);
 			    ForeachNode (&newtargets, mftarget)
 				addnodeonce (&mftarget->deps, tptr[t]);
 			}
-			
+
 			ForeachNodeSafe (&newtargets, mftarget, mftarget2)
 			{
 			    mftarget3 = FindNode (&makefile->targets, mftarget->node.name);
@@ -648,9 +648,9 @@ printf ("found #MM in %s\n", makefile->name);
 			    {
 				/* Merge data in mftarget into mftarget3 */
 				Node * node;
-				
+
 				mftarget3->virtualtarget =  mftarget3->virtualtarget && mftarget->virtualtarget;
-				
+
 				ForeachNode (&mftarget->deps, node)
 				    addnodeonce (&mftarget3->deps, node->name);
 			    }
@@ -660,13 +660,13 @@ printf ("found #MM in %s\n", makefile->name);
 		    }
 		} /* If this is a MetaMake line in the makefile */
 	    } /* For all lines in a makefile */
-	    
+
 	    reread ++;
 	    makefile->time = st.st_mtime;
 #if 0
-printf ("Read %d lines\n", lineno);
+	    printf ("Read %d lines\n", lineno);
 #endif
-	    
+
 	    fclose (fh);
 	} /* If the makefile needed to be scanned */
     } /* For all makefiles in the project */
@@ -686,7 +686,7 @@ addmakefile (DirNode * node, const char * filename)
     Makefile * makefile = NULL;
 
     getcwd(curdir, PATH_MAX);
-    
+
     while (ptr != NULL)
     {
 	len = 0;
@@ -696,7 +696,7 @@ addmakefile (DirNode * node, const char * filename)
 	name = xmalloc (len+4+1); /* Make room for possibly adding .src at the end */
 	strncpy (name, ptr, len);
 	name[len] = 0;
-	
+
 	if (ptr[len] == '/')
 	{
 	    subnode = FindNode (&node->subdirs, name);
@@ -716,13 +716,13 @@ addmakefile (DirNode * node, const char * filename)
 		name[len-4] = 0;
 
 	    makefile = FindNode (&node->makefiles, name);
-	    
+
 	    if (makefile == NULL)
 	    {
 		struct stat st;
 
 		printf ("Trying to stat %s\n", name);
-		
+
 		if (stat(name, &st) != 0)
 		{
 		    len = strlen(name);
@@ -742,15 +742,15 @@ addmakefile (DirNode * node, const char * filename)
 		NewList (&makefile->targets);
 		AddTail (&node->makefiles, makefile);
 	    }
-	    
+
 	    ptr = NULL;
 	}
-	
+
 	xfree (name);
     }
 
     chdir (curdir);
-    
+
     return makefile;
 }
 
@@ -772,7 +772,7 @@ findmakefile (DirNode * node, const char *filename)
 
 	name = xstrndup (ptr, len);
 	name[len] = 0;
-	
+
 	if (ptr[len] == '/')
 	{
 	    subnode = FindNode (&node->subdirs, name);
@@ -793,13 +793,13 @@ findmakefile (DirNode * node, const char *filename)
 	    makefile = FindNode (&node->makefiles, name);
 	    ptr = NULL;
 	}
-	
+
 	xfree (name);
     }
 
     return makefile;
 }
-    
+
 typedef struct {
     Node node;
     DirNode * dirnode;
@@ -813,7 +813,7 @@ buildpath (DirNode * node)
     static char path[PATH_MAX];
     List tree;
     DirNodeRef * ref = NULL;
-    
+
     NewList (&tree);
 
     do
@@ -826,7 +826,7 @@ buildpath (DirNode * node)
 	}
 	node = node->parent;
     } while (node != NULL);
-    
+
     strcpy (path, "");
     ForeachNode (&tree, ref)
     {
@@ -836,7 +836,7 @@ buildpath (DirNode * node)
     }
 
     freelist (&tree);
-    
+
     return path;
 }
 
@@ -900,7 +900,7 @@ readmakefile (FILE * fh)
 	    exit (20);
 	}
 	mftarget->virtualtarget = in;
-	
+
 	for (;;)
 	{
 	    if (!readstring(fh, &s))
@@ -908,7 +908,7 @@ readmakefile (FILE * fh)
 		error ("readmakefile:readstring():%d", __LINE__);
 		exit (20);
 	    }
-	    
+
 	    if (s == NULL)
 		break;
 
@@ -917,7 +917,7 @@ readmakefile (FILE * fh)
 	    AddTail (&mftarget->deps, n);
 	}
     }
-    
+
     return makefile;
 }
 
@@ -935,10 +935,10 @@ writemakefile (FILE * fh, Makefile * makefile)
 	    error ("writemakefile/writestring():%d", __LINE__);
 	    return 0;
 	}
-	    
+
 	return 1;
     }
-    
+
     if (!writestring (fh, makefile->node.name))
     {
 	error ("writemakefile/writestring():%d", __LINE__);
@@ -992,7 +992,7 @@ writemakefile (FILE * fh, Makefile * makefile)
 	error ("writemakefile/writestring():%d", __LINE__);
 	return 0;
     }
-    
+
     return 1;
 }
 
@@ -1032,7 +1032,7 @@ readcachedir (FILE * fh)
 	makefile->dir = node;
 	AddTail (&node->makefiles, makefile);
     }
-    
+
     while ((subnode = readcachedir (fh)))
     {
 	subnode->parent = node;
@@ -1059,7 +1059,7 @@ writecachedir (FILE * fh, DirNode * node)
 
 	return 1;
     }
-    
+
     if (!writestring(fh, node->node.name))
     {
 	error ("writecachedir/writestring():%d", __LINE__);
