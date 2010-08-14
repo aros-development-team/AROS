@@ -24,7 +24,7 @@
 #define LANGSTR     "czech"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
 #define LANGREV     1           /* Revision number of language */
-#define LANGTAG     "\0$VER: czech.language 41.1 (3.12.2007)"
+#define LANGTAG     "\0$VER: czech.language 41.1 (14.08.2010)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -278,11 +278,14 @@ const STRPTR __czech_strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "pondìlí", "úterý", "støeda", "ètvrtek", "pátek",
-    "sobota", "nedìle",
+
+#warning: stegerg: I think this must always start with Sunday and not what comment above says
+
+    "nedìle", "pondìlí", "úterý", "støeda", "ètvrtek",
+    "pátek", "sobota",
 
     /* Abbreviated days of the week */
-    "po", "út", "st", "èt", "pá", "so", "ne",
+    "ne", "po", "út", "st", "èt", "pá", "so",
 
     /* Months of the year */
     "leden", "únor", "bøezen",
