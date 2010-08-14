@@ -228,7 +228,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __catalan_strings[id];
+	return __turkce_strings[id];
     else
 	return NULL;
 
