@@ -22,8 +22,8 @@
 
 #define LANGSTR     "deutsch"   /* String version of above */
 #define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: deutsch.language 41.0 (08.01.1998)"
+#define LANGREV     1           /* Revision number of language */
+#define LANGTAG     "\0$VER: deutsch.language 41.1 (14.08.2010)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -303,10 +303,10 @@ const STRPTR __german_strings[] =
     "Vorm.", "Nachm.",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
-    "\"", "\"",
+    "\xBB", "\xAB",
 
     /* Days: But not actual day names
        Yesterday - the day before the current
