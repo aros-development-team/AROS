@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2006, The AROS Development Team.
+    Copyright  2002-2010, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -347,19 +347,22 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
              data->knob_height, data->knob_left, data->knob_top, data->knob_width,
              data->knob_height);
 
-    SetFont(_rp(obj),_font(obj));
-    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],_pens(obj)[MPEN_BACKGROUND],JAM1);
-    longget(obj, MUIA_Numeric_Value, &val);
-    buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
-    width = TextLength(_rp(obj),buf,strlen(buf));
-    
-    Move(_rp(obj),
-    	 data->knob_left + knob_frame->ileft + 
-    	 muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerLeft +
-	 (data->max_text_width - width) / 2,	 
-	 data->knob_top + _font(obj)->tf_Baseline + knob_frame->itop + 
-	 muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerTop);
-    Text(_rp(obj), buf, strlen(buf));
+    if ( ! (data->flags & SLIDER_QUIET))
+    {
+	SetFont(_rp(obj),_font(obj));
+	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],_pens(obj)[MPEN_BACKGROUND],JAM1);
+	longget(obj, MUIA_Numeric_Value, &val);
+	buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
+	width = TextLength(_rp(obj),buf,strlen(buf));
+	
+	Move(_rp(obj),
+	     data->knob_left + knob_frame->ileft + 
+	     muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerLeft +
+	     (data->max_text_width - width) / 2,	 
+	     data->knob_top + _font(obj)->tf_Baseline + knob_frame->itop + 
+	     muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerTop);
+	Text(_rp(obj), buf, strlen(buf));
+    }
 
     data->same_knop_value = 0;
     return TRUE;
