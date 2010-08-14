@@ -1,18 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: piglatin.language description file.
+    Desc: shqipja.language description file.
     Lang: english
 */
 
-/* 
-    This is a rather silly language, but it is more of an example than
-    then english language file, as this one actually does something...
-
-    In fact you may even wish to copy this one instead of copying
-    english_language.c and english_data.c
-*/
+/*  Language file for the Albanian language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -26,22 +20,20 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "piglatin"  /* String version of above */
+#define LANGSTR     "shqipja"   /* String version of above */
 #define LANGVER     41          /* Version number of language */
-#define LANGREV     1           /* Revision number of language */
-#define LANGTAG     "\0$VER: "LANGSTR".language 41.1 (20.2.1997)"
+#define LANGREV     0           /* Revision number of language */
+#define LANGTAG     "\0$VER: "LANGSTR".language 41.0 (14.08.2010)"
 
-AROS_LD1(STRPTR, getlangstring,
-    AROS_LHA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language);
+STRPTR AROS_SLIB_ENTRY(getlangstring,language)();
 
 /* ----------------------------------------------------------------------- */
 
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for Pig Latin character type/conversion */
-extern const STRPTR __pig_strings[];
+/* Arrays for Italian character type/conversion */
+extern const STRPTR __shqipja_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -59,13 +51,11 @@ extern const UBYTE version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language)();
-AROS_LD1(struct Language *, open,
-    AROS_LHA(ULONG, version, D0),
-    struct Language *, language, 1, language);
-AROS_LD0(BPTR, close, struct Language *, language, 2, language);
-AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
-AROS_LD0I(int, null, struct Language *, language, 4, language);
-AROS_LD0(ULONG, mask, struct Language *, language, 5, language);
+extern struct Language *AROS_SLIB_ENTRY(open,language)();
+extern BPTR AROS_SLIB_ENTRY(close,language)();
+extern BPTR AROS_SLIB_ENTRY(expunge,language)();
+extern int AROS_SLIB_ENTRY(null,language)();
+extern ULONG AROS_SLIB_ENTRY(mask,language)();
 extern const char end;
 
 int entry(void)
@@ -237,7 +227,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __pig_strings[id];
+	return __islenska_strings[id];
     else
 	return NULL;
 
@@ -274,7 +264,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __pig_strings[] =
+const STRPTR __shqipja_strings[] =
 {
     /* A blank string */
     "",
@@ -283,30 +273,33 @@ const STRPTR __pig_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-    "Undaysay",   "Ondaymay",   "Uesdaytay",  "Ednesdayway",
-    "Hursdaytay", "Ridayfay",   "Aturdaysay",
+
+#warning: stegerg: I think this must always start with Sunday and not what comment above says
+
+    "e diel", "e hënë", "e martë", "e mërkurë", "e enjte",
+    "e premte", "e shtunë",
 
     /* Abbreviated days of the week */
-    "Unsay", "Onmay", "Uetay", "Edway", "Hutay", "Rifay", "Atsay",
+    "Die", "Hën", "Mar", "Mër", "Enj", "Pre", "Sht",
 
     /* Months of the year */
-    "Anuaryjay",  "Ebruaryfay", "Archmay",
-    "Aprilway",    "Aymay",      "Unejay",
-    "Ulyjay",     "Augustway",   "Eptembersay",
-    "Octoberway",  "Ovembernay", "Ecemberday",
+    "janar", "shkurt", "mars",
+    "prill", "maj", "qershor",
+    "korrik", "gusht", "shtator",
+    "tetor", "nëntor", "dhjetor",
 
     /* Abbreviated months of the year */
-    "Anjay", "Ebfay", "Armay", "Aprway", "Aymay", "Unjay",
-    "Uljay", "Augway", "Epsay", "Octway", "Ovnay", "Ecday",
+    "Jan", "Shk", "Mar", "Pri", "Maj", "Qer",
+    "Kor", "Gus", "Sht", "Tet", "Nën", "Dhj",
 
-    "Yesay", /* Yes, affirmative response */
-    "Onay", /* No/negative response */
+    "Po", /* Yes, affirmative response */
+    "Jo", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "am", "pm",
+    "PD", "MD",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
     "\"", "\"",
@@ -317,7 +310,7 @@ const STRPTR __pig_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Esterdayyay", "Odaytay", "Omorrowtay", "Uturefay"
+    "Dje", "Sot", "Nesër", "Ardhmen"
 };
 
 /* This is the end of ROMtag marker. */
