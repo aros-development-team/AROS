@@ -87,6 +87,218 @@ newmakefiletarget (char *name, int virtualtarget)
     return mftarget;
 }
 
+/* Read the metatargets from a file handle */
+static void
+ReadTargets(DirNode * node, Makefile * makefile, char *line, int linelen, FILE *fh)
+{
+    int lineno = 0;
+    int flags = 0;
+    MakefileTarget * mftarget = NULL;
+
+    while (fgets (line, linelen, fh))
+    {
+	lineno ++;
+
+	while (line[strlen(line)-1] != '\n' && !feof(fh))
+	{
+	    char * ptr;
+
+	    linelen += 512;
+	    ptr = xmalloc (linelen);
+	    strcpy (ptr, line);
+	    xfree (line);
+	    line = ptr;
+	    fgets (line+strlen(line), linelen-strlen(line), fh);
+	}
+
+	if (line[strlen(line)-1] == '\n')
+	{
+	    line[strlen(line)-1] = 0;
+	}
+
+	if (strncmp (line, "#MM", 3) == 0)
+	{
+	    char * ptr;
+	    int count, count2, t;
+
+#if 0
+	    printf ("found #MM in %s\n", makefile->name);
+#endif
+
+	    /* Read in next lines if there is continuation */
+	    while (check_continue(line))
+	    {
+		ptr = line + strlen(line) - 1;
+
+		if (!fgets (ptr, linelen-strlen(line)+1, fh))
+		{
+		    error("%s/%s:unexpected end of makefile",
+			    getcwd(NULL, 0),
+			    makefile->node.name
+			 );
+		    exit(20);
+		}
+
+		lineno ++;
+
+		while (line[strlen(line)-1] != '\n' && !feof(fh))
+		{
+		    int pos = ptr - line;
+		    linelen += 512;
+		    ptr = xmalloc (linelen);
+		    strcpy (ptr, line);
+		    xfree (line);
+		    line = ptr;
+		    fgets (line+strlen(line), linelen-strlen(line), fh);
+		    ptr = line + pos;
+		}
+
+		if (line[strlen(line)-1] == '\n')
+		{
+		    line[strlen(line)-1] = 0;
+		}
+
+		if (strncmp (ptr, "##MM", 3) == 0)
+		{
+		    *ptr = line[strlen(line)-1];
+		    ptr[1] = 0;
+		    continue;
+		}
+
+		if (strncmp (ptr, "#MM", 3) != 0)
+		{
+		    errno = 0;
+		    error("%s/%s:%d:continuation line has to start with #MM",
+			    getcwd (NULL, 0),
+			    makefile->node.name,
+			    lineno
+			 );
+		    exit(20);
+		}
+
+		memmove (ptr, ptr+4, strlen(ptr)-4+1);
+	    }
+
+	    ptr = line+3;
+
+	    if (*ptr == '-')
+	    {
+		flags |= FLAG_VIRTUAL;
+		ptr ++;
+	    }
+	    else
+		flags &= ~FLAG_VIRTUAL;
+
+	    while (isspace (*ptr))
+		ptr ++;
+
+	    if (!*ptr)
+	    {
+		/* Line with only #MM, metatarget is on next line */
+		char ** targets;
+		fgets (line, linelen, fh);
+		lineno ++;
+
+		ptr = line;
+		while (*ptr != ':' && *ptr)
+		    ptr ++;
+
+		*ptr = 0;
+
+		targets = getargs (line, &count, NULL);
+
+		if (count > 0)
+		{
+		    if (count > 1)
+		    {
+			printf ("Warning: Multiple metatargets, only the 1st will be added in %s:%d (%s)\n",
+				makefile->node.name, lineno, buildpath(node)
+			       );
+			/* FIXME: should we better add all metatargets? */
+		    }
+		    mftarget = FindNode (&makefile->targets, targets[0]);
+
+		    if (mftarget == NULL)
+		    {
+			mftarget = newmakefiletarget (targets[0], 0);
+			AddTail (&makefile->targets, mftarget);
+		    }
+		    else
+			mftarget->virtualtarget = 0;
+		}
+		else
+		    printf ("Warning: Can't find metatarget in %s:%d (%s)\n", makefile->node.name, lineno, buildpath(node));
+	    }
+	    else
+	    {
+		List newtargets;
+		char * ptr2 = ptr, ** tptr;
+		MakefileTarget * mftarget2, * mftarget3;
+
+		NewList (&newtargets);
+
+		while (*ptr2 != ':' && *ptr2)
+		    ptr2 ++;
+
+		if (*ptr2 == ':')
+		    *ptr2 ++ = 0;
+
+		tptr = getargs (ptr, &count, NULL);
+
+		for (t = 0; t < count; t++)
+		{
+		    mftarget = newmakefiletarget (tptr[t], (flags & FLAG_VIRTUAL) != 0);
+		    AddTail (&newtargets, mftarget);
+		}
+
+		tptr = getargs (ptr2, &count2, NULL);
+
+		if (count > 1 && count2 == 0)
+		{
+		    /* could mean a missing colon */
+		    printf ("Warning: multiple metatargets but no prerequisites %s:%d (%s)\n",
+			    makefile->node.name, lineno, buildpath(node)
+			   );
+		}
+
+		for (t = 0; t < count2; t++)
+		{
+		    ForeachNode (&newtargets, mftarget)
+			addnodeonce (&mftarget->deps, tptr[t]);
+		}
+
+		ForeachNodeSafe (&newtargets, mftarget, mftarget2)
+		{
+		    mftarget3 = FindNode (&makefile->targets, mftarget->node.name);
+
+		    /* mftarget doesn't exists yet add it to targets */
+		    if (mftarget3 == NULL)
+		    {
+			Remove (mftarget);
+			AddTail (&makefile->targets, mftarget);
+		    }
+		    else
+		    {
+			/* Merge data in mftarget into mftarget3 */
+			Node * node;
+
+			mftarget3->virtualtarget =  mftarget3->virtualtarget && mftarget->virtualtarget;
+
+			ForeachNode (&mftarget->deps, node)
+			    addnodeonce (&mftarget3->deps, node->name);
+		    }
+		    /* Free the targets from which the data was merged in other targets */
+		    freemakefiletargetlist (&newtargets);
+		}
+	    }
+	} /* If this is a MetaMake line in the makefile */
+    } /* For all lines in a makefile */
+
+#if 0
+    printf ("Read %d lines\n", lineno);
+#endif
+}
+
 void
 freemakefiletarget (MakefileTarget * mftarget)
 {
@@ -436,10 +648,6 @@ scanmakefiles (DirNode * node, List * vars)
 
 	if (st.st_mtime > makefile->time)
 	{
-	    int flags = 0;
-	    int lineno = 0;
-	    MakefileTarget * mftarget = NULL;
-
 	    if (debug)
 		printf("scanmakefiles(): scanning makefile in %s/%s\n",
 			strlen(node->node.name)==0 ? "topdir" : buildpath(node),
@@ -462,210 +670,10 @@ scanmakefiles (DirNode * node, List * vars)
 	    freemakefiletargetlist (&makefile->targets);
 	    NewList (&makefile->targets);
 
-	    while (fgets (line, linelen, fh))
-	    {
-		lineno ++;
-
-		while (line[strlen(line)-1] != '\n' && !feof(fh))
-		{
-		    char * ptr;
-
-		    linelen += 512;
-		    ptr = xmalloc (linelen);
-		    strcpy (ptr, line);
-		    xfree (line);
-		    line = ptr;
-		    fgets (line+strlen(line), linelen-strlen(line), fh);
-		}
-
-		if (line[strlen(line)-1] == '\n')
-		{
-		    line[strlen(line)-1] = 0;
-		}
-
-		if (strncmp (line, "#MM", 3) == 0)
-		{
-		    char * ptr;
-		    int count, count2, t;
-
-#if 0
-		    printf ("found #MM in %s\n", makefile->name);
-#endif
-
-		    /* Read in next lines if there is continuation */
-		    while (check_continue(line))
-		    {
-			ptr = line + strlen(line) - 1;
-
-			if (!fgets (ptr, linelen-strlen(line)+1, fh))
-			{
-			    error("%s/%s:unexpected end of makefile",
-				    getcwd(NULL, 0),
-				    makefile->node.name
-				 );
-			    exit(20);
-			}
-
-			lineno ++;
-
-			while (line[strlen(line)-1] != '\n' && !feof(fh))
-			{
-			    int pos = ptr - line;
-			    linelen += 512;
-			    ptr = xmalloc (linelen);
-			    strcpy (ptr, line);
-			    xfree (line);
-			    line = ptr;
-			    fgets (line+strlen(line), linelen-strlen(line), fh);
-			    ptr = line + pos;
-			}
-
-			if (line[strlen(line)-1] == '\n')
-			{
-			    line[strlen(line)-1] = 0;
-			}
-
-			if (strncmp (ptr, "##MM", 3) == 0)
-			{
-			    *ptr = line[strlen(line)-1];
-			    ptr[1] = 0;
-			    continue;
-			}
-
-			if (strncmp (ptr, "#MM", 3) != 0)
-			{
-			    errno = 0;
-			    error("%s/%s:%d:continuation line has to start with #MM",
-				    getcwd (NULL, 0),
-				    makefile->node.name,
-				    lineno
-				 );
-			    exit(20);
-			}
-
-			memmove (ptr, ptr+4, strlen(ptr)-4+1);
-		    }
-
-		    ptr = line+3;
-
-		    if (*ptr == '-')
-		    {
-			flags |= FLAG_VIRTUAL;
-			ptr ++;
-		    }
-		    else
-			flags &= ~FLAG_VIRTUAL;
-
-		    while (isspace (*ptr))
-			ptr ++;
-
-		    if (!*ptr)
-		    {
-			/* Line with only #MM, metatarget is on next line */
-			char ** targets;
-			fgets (line, linelen, fh);
-			lineno ++;
-
-			ptr = line;
-			while (*ptr != ':' && *ptr)
-			    ptr ++;
-
-			*ptr = 0;
-
-			targets = getargs (line, &count, NULL);
-
-			if (count > 0)
-			{
-			    if (count > 1)
-			    {
-				printf ("Warning: Multiple metatargets, only the 1st will be added in %s:%d (%s)\n",
-					makefile->node.name, lineno, buildpath(node)
-				       );
-				/* FIXME: should we better add all metatargets? */
-			    }
-			    mftarget = FindNode (&makefile->targets, targets[0]);
-
-			    if (mftarget == NULL)
-			    {
-				mftarget = newmakefiletarget (targets[0], 0);
-				AddTail (&makefile->targets, mftarget);
-			    }
-			    else
-				mftarget->virtualtarget = 0;
-			}
-			else
-			    printf ("Warning: Can't find metatarget in %s:%d (%s)\n", makefile->node.name, lineno, buildpath(node));
-		    }
-		    else
-		    {
-			List newtargets;
-			char * ptr2 = ptr, ** tptr;
-			MakefileTarget * mftarget2, * mftarget3;
-
-			NewList (&newtargets);
-
-			while (*ptr2 != ':' && *ptr2)
-			    ptr2 ++;
-
-			if (*ptr2 == ':')
-			    *ptr2 ++ = 0;
-
-			tptr = getargs (ptr, &count, NULL);
-
-			for (t = 0; t < count; t++)
-			{
-			    mftarget = newmakefiletarget (tptr[t], (flags & FLAG_VIRTUAL) != 0);
-			    AddTail (&newtargets, mftarget);
-			}
-
-			tptr = getargs (ptr2, &count2, NULL);
-
-			if (count > 1 && count2 == 0)
-			{
-			    /* could mean a missing colon */
-			    printf ("Warning: multiple metatargets but no prerequisites %s:%d (%s)\n",
-				    makefile->node.name, lineno, buildpath(node)
-				   );
-			}
-
-			for (t = 0; t < count2; t++)
-			{
-			    ForeachNode (&newtargets, mftarget)
-				addnodeonce (&mftarget->deps, tptr[t]);
-			}
-
-			ForeachNodeSafe (&newtargets, mftarget, mftarget2)
-			{
-			    mftarget3 = FindNode (&makefile->targets, mftarget->node.name);
-
-			    /* mftarget doesn't exists yet add it to targets */
-			    if (mftarget3 == NULL)
-			    {
-				Remove (mftarget);
-				AddTail (&makefile->targets, mftarget);
-			    }
-			    else
-			    {
-				/* Merge data in mftarget into mftarget3 */
-				Node * node;
-
-				mftarget3->virtualtarget =  mftarget3->virtualtarget && mftarget->virtualtarget;
-
-				ForeachNode (&mftarget->deps, node)
-				    addnodeonce (&mftarget3->deps, node->name);
-			    }
-			    /* Free the targets from which the data was merged in other targets */
-			    freemakefiletargetlist (&newtargets);
-			}
-		    }
-		} /* If this is a MetaMake line in the makefile */
-	    } /* For all lines in a makefile */
+	    ReadTargets(node, makefile, line, linelen, fh);
 
 	    reread ++;
 	    makefile->time = st.st_mtime;
-#if 0
-	    printf ("Read %d lines\n", lineno);
-#endif
 
 	    fclose (fh);
 	} /* If the makefile needed to be scanned */
