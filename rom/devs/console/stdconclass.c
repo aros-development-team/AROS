@@ -207,7 +207,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 		ScrollRaster(rp,
 					 XRSIZE,
 					 0,
-					 GFX_X(o, XCP)+1,
+					 GFX_X(o, XCP),
 					 GFX_Y(o, YCP),
 					 GFX_XMAX(o),
 					 GFX_Y(o, YCP+1));
