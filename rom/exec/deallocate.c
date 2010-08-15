@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by Allocate().
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/alerts.h>
 #include <aros/libcall.h>
@@ -43,6 +45,8 @@
     EXAMPLE
 
     BUGS
+	Does not work with managed memory blocks because of backwards
+	compatibility issues
 
     SEE ALSO
 	Allocate()

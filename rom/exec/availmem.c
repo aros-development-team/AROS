@@ -1,10 +1,14 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tell how much memory is available.
     Lang: english
 */
+
+#define MDEBUG 1
+
+#include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -13,10 +17,8 @@
 #include <exec/memheaderext.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
 #include "memory.h"
-
-#define MDEBUG 1
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -133,8 +135,8 @@
     }
     /* All done. Permit dispatches and return. */
 
-#if AROS_MUNGWALL_DEBUG
-    if (attributes & MEMF_CLEAR)
+    if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) &&
+        (attributes & MEMF_CLEAR))
     {
     	struct List 	    	*allocmemlist;
    	struct MungwallHeader 	*allocnode;
@@ -160,7 +162,7 @@
 	}
 	kprintf("\n Num allocations: %d   Memory allocated %d\n", alloccount, allocsize);
     }
-#endif
+
     Permit();
     return ret;
     AROS_LIBFUNC_EXIT

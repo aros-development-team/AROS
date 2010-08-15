@@ -31,8 +31,14 @@
 struct IntExecBase
 {
     struct ExecBase pub;
-    struct List ResetHandlers;
+    struct List ResetHandlers;	/* Reset handlers list	     */
+    ULONG  IntFlags;		/* Internal flags, see below */
 };
+
+#define PrivExecBase(base) ((struct IntExecBase *)base)
+
+/* IntFlags */
+#define EXECF_MungWall 0x0001
 
 #if UseLVOs
 extern void __AROS_InitExecBase (void);

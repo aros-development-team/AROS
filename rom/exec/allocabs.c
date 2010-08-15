@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory at address
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include "memory.h"
