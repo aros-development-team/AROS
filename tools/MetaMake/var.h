@@ -21,17 +21,16 @@ Boston, MA 02111-1307, USA.  */
 #include "list.h"
 
 /* Types */
-typedef struct
+struct Var
 {
-    Node   node;
+    struct Node   node;
     char * value;
-}
-Var;
+};
 
 /* Functions */
-extern char *getvar (List * varlist, const char * varname);
-extern char *substvars (List * varlist, const char * str);
-extern void setvar (List * varlist, const char * name, const char * val);
-extern void printvarlist (List * l);
-extern void freevarlist(List * l);
-extern char **getargs (const char * line, int * argc, List * vars);
+char *getvar (struct List * varlist, const char * varname);
+char *substvars (struct List * varlist, const char * str);
+void setvar (struct List * varlist, const char * name, const char * val);
+void printvarlist (struct List * l);
+void freevarlist(struct List * l);
+char **getargs (const char * line, int * argc, struct List * vars);

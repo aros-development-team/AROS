@@ -34,11 +34,11 @@ Boston, MA 02111-1307, USA.  */
 
 /* Functions */
 char *
-getvar (List * varlist, const char * varname)
+getvar (struct List * varlist, const char * varname)
 {
     static char buffer[256];
     char *env_val;
-    Var * var = FindNode (varlist, varname);
+    struct Var * var = FindNode (varlist, varname);
 
     if (var)
 	return var->value;
@@ -53,7 +53,7 @@ getvar (List * varlist, const char * varname)
 }
 
 char *
-substvars (List * varlist, const char * str)
+substvars (struct List * varlist, const char * str)
 {
     static char buffer[4096];
     char varname[256];
@@ -96,9 +96,9 @@ substvars (List * varlist, const char * str)
 }
 
 void
-setvar (List * varlist, const char * name, const char * val)
+setvar (struct List * varlist, const char * name, const char * val)
 {
-    Var * var;
+    struct Var * var;
 
     assert (name);
 
@@ -106,7 +106,7 @@ setvar (List * varlist, const char * name, const char * val)
     printf ("assign %s=%s\n", name, val);
 #endif
 
-    var = addnodeoncesize (varlist, name, sizeof(Var));
+    var = addnodeoncesize (varlist, name, sizeof(struct Var));
     SETSTR (var->value, val);
 
 #if 0
@@ -116,9 +116,9 @@ setvar (List * varlist, const char * name, const char * val)
 }
 
 void
-printvarlist (List * l)
+printvarlist (struct List * l)
 {
-    Var * n;
+    struct Var * n;
 
     ForeachNode (l,n)
     {
@@ -127,9 +127,9 @@ printvarlist (List * l)
 }
 
 void
-freevarlist (List * l)
+freevarlist (struct List * l)
 {
-    Var * node, * next;
+    struct Var * node, * next;
 
     ForeachNodeSafe(l,node,next)
     {
@@ -142,7 +142,7 @@ freevarlist (List * l)
 }
 
 char **
-getargs (const char * line, int * argc, List * vars)
+getargs (const char * line, int * argc, struct List * vars)
 {
     static char * argv[256];
     static char * buffer = NULL;

@@ -21,34 +21,35 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
+#include "list.h"
 #include "dirnode.h"
+#include "project.h"
+#include "cache.h"
 
-typedef struct
+struct MakefileRef
 {
-    Node node;
+    struct Node node;
     int virtualtarget : 1;
     
-    Makefile * makefile;
-}
-MakefileRef;
+    struct Makefile * makefile;
+};
    
-typedef struct
+struct Target
 {
-    Node node;
+    struct Node node;
     int  updated : 1;
 
-    List makefiles;
-}
-Target;
+    struct List makefiles;
+};
 
 /* The public part of the Cache structure */
-typedef struct {
-    List targets;
-} Cache;
+struct Cache
+{
+    struct List targets;
+}; 
 
-#include "project.h"
 
-Cache *activatecache(Project *);
-void closecache(Cache * cache);
+struct Cache *activatecache(struct Project *);
+void closecache(struct Cache * cache);
 
 #endif /* __MMAKE_CACHE_H */

@@ -43,18 +43,15 @@ Boston, MA 02111-1307, USA.  */
 #define debug(v)
 #endif
 
-extern char *mm_srcdir;
-extern char *mm_builddir;
-
-List projects;
-static Project * defaultprj = NULL;
+struct List projects;
+static struct Project * defaultprj = NULL;
 
 static void
-readvars (Project * prj)
+readvars (struct Project * prj)
 {
-    List deps;
-    Node * node, * next;
-    Dep * dep;
+    struct List deps;
+    struct Node * node, * next;
+    struct Dep * dep;
 
     debug(printf("MMAKE:project.c->readvars(Project @ %x)\n", prj));
 
@@ -168,12 +165,12 @@ readvars (Project * prj)
     }
 }
 
-static Project *
+static struct Project *
 initproject (char * name)
 {
-    Project * prj = new (Project);
+    struct Project * prj = new (struct Project);
 
-    memset (prj, 0, sizeof(Project));
+    memset (prj, 0, sizeof(struct Project));
 
     debug(printf("MMAKE:project.c->initproject('%s')\n", name));
     debug(printf("MMAKE:project.c->initproject: Project node @ %x\n", prj));
@@ -214,7 +211,7 @@ initproject (char * name)
 }
 
 static void
-freeproject (Project * prj)
+freeproject (struct Project * prj)
 {
     assert (prj);
 
@@ -242,7 +239,7 @@ freeproject (Project * prj)
 }
 
 static void
-callmake (Project * prj, const char * tname, Makefile * makefile)
+callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
 {
     static char buffer[4096];
     const char * path = buildpath (makefile->dir);
@@ -259,7 +256,7 @@ callmake (Project * prj, const char * tname, Makefile * makefile)
     setvar (&prj->vars, "CURDIR", path);
     setvar (&prj->vars, "TARGET", tname);
 
-    strcpy (buffer, "");
+    buffer[0] = '\0';
 
     for (t=0; t<mflagc; t++)
     {
@@ -293,7 +290,7 @@ initprojects (void)
     char * home;
     char line[256];
     FILE * optfh = NULL;
-    Project * project;
+    struct Project * project;
 
     debug(printf("MMAKE:project.c->initprojects()\n"));
 
@@ -385,13 +382,13 @@ initprojects (void)
 
 	    if (!strcmp (cmd, "add"))
 	    {
-		Node * n;
+		struct Node * n;
 		n = newnode(args);
 		AddTail(&project->extramakefiles, n);
 	    }
 	    else if (!strcmp (cmd, "ignoredir"))
 	    {
-		Node * n;
+		struct Node * n;
 		n = newnode(args);
 		AddTail(&project->ignoredirs, n);
 	    }
@@ -413,7 +410,7 @@ initprojects (void)
 	    }
 	    else if (!strcmp (cmd, "genmakefiledeps"))
 	    {
-		Node * dep;
+		struct Node * dep;
 		int depc, t;
 		char ** deps = getargs (args, &depc, NULL);
 
@@ -456,7 +453,7 @@ initprojects (void)
 void
 expungeprojects (void)
 {
-    Project *prj, *next;
+    struct Project *prj, *next;
 
     ForeachNodeSafe (&projects, prj, next)
     {
@@ -465,16 +462,16 @@ expungeprojects (void)
     }
 }
 
-Project *
+struct Project *
 findproject (const char * pname)
 {
     return FindNode (&projects, pname);
 }
 
-Project *
+struct Project *
 getfirstproject (void)
 {
-    Project * prj = GetHead (&projects);
+    struct Project * prj = GetHead (&projects);
 
     if (prj && prj == defaultprj)
 	prj = GetNext (prj);
@@ -483,7 +480,7 @@ getfirstproject (void)
 }
 
 int
-execute (Project * prj, const char * cmd, const char * in,
+execute (struct Project * prj, const char * cmd, const char * in,
 	const char * out, const char * args)
 {
     char buffer[4096];
@@ -529,13 +526,13 @@ execute (Project * prj, const char * cmd, const char * in,
 }
 
 void
-maketarget (Project * prj, char * tname)
+maketarget (struct Project * prj, char * tname)
 {
-    Target * target, * subtarget;
-    Node * node;
-    MakefileRef * mfref;
-    MakefileTarget * mftarget;
-    List deps;
+    struct Target * target, * subtarget;
+    struct Node * node;
+    struct MakefileRef * mfref;
+    struct MakefileTarget * mftarget;
+    struct List deps;
 
     printf ("Building %s.%s\n", prj->node.name, tname);
 

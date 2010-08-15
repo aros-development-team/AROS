@@ -26,73 +26,71 @@ Boston, MA 02111-1307, USA.  */
 /* This file specifies the API for the list functions */
 
 /* Types */
-typedef struct _Node Node;
-
-struct _Node
+struct Node
 {
-    Node * next,
-	 * prev;
-    char * name;
+    struct Node * next,
+		* prev;
+    char 	* name;
 };
 
-typedef struct
+struct List
 {
-    Node * first,
-	 * last,
-	 * prelast;
+    struct Node * first,
+		* last,
+		* prelast;
 }
 List;
 
 /* Macros */
-#   define NewList(l)       (((List *)l)->prelast = (Node *)(l), \
-			    ((List *)l)->last = 0, \
-			    ((List *)l)->first = (Node *)&(((List *)l)->last))
+#   define NewList(l)       (((struct List *)l)->prelast = (struct Node *)(l), \
+			    ((struct List *)l)->last = 0, \
+			    ((struct List *)l)->first = (struct Node *)&(((struct List *)l)->last))
 
 #   define AddHead(l,n)     ((void)(\
-	((Node *)n)->next        = ((List *)l)->first, \
-	((Node *)n)->prev        = (Node *)&((List *)l)->first, \
-	((List *)l)->first->prev = ((Node *)n), \
-	((List *)l)->first       = ((Node *)n)))
+	((struct Node *)n)->next        = ((struct List *)l)->first, \
+	((struct Node *)n)->prev        = (struct Node *)&((struct List *)l)->first, \
+	((struct List *)l)->first->prev = ((struct Node *)n), \
+	((struct List *)l)->first       = ((struct Node *)n)))
 
 #   define AddTail(l,n)     ((void)(\
-	((Node *)n)->next          = (Node *)&((List *)l)->last, \
-	((Node *)n)->prev          = ((List *)l)->prelast, \
-	((List *)l)->prelast->next = ((Node *)n), \
-	((List *)l)->prelast       = ((Node *)n) ))
+	((struct Node *)n)->next          = (struct Node *)&((struct List *)l)->last, \
+	((struct Node *)n)->prev          = ((struct List *)l)->prelast, \
+	((struct List *)l)->prelast->next = ((struct Node *)n), \
+	((struct List *)l)->prelast       = ((struct Node *)n) ))
 
 #   define Remove(n)        ((void)(\
-	((Node *)n)->prev->next = ((Node *)n)->next,\
-	((Node *)n)->next->prev = ((Node *)n)->prev ))
+	((struct Node *)n)->prev->next = ((struct Node *)n)->next,\
+	((struct Node *)n)->next->prev = ((struct Node *)n)->prev ))
 
-#   define GetHead(l)       (void *)(((List *)l)->first->next \
-				? ((List *)l)->first \
-				: (Node *)0)
-#   define GetTail(l)       (void *)(((List *)l)->prelast->prev \
-				? ((List *)l)->prelast \
-				: (Node *)0)
-#   define GetNext(n)       (void *)(((Node *)n)->next->next \
-				? ((Node *)n)->next \
-				: (Node *)0)
-#   define GetPrev(n)       (void *)(((Node *)n)->prev->prev \
-				? ((Node *)n)->prev \
-				: (Node *)0)
+#   define GetHead(l)       (void *)(((struct List *)l)->first->next \
+				? ((struct List *)l)->first \
+				: (struct Node *)0)
+#   define GetTail(l)       (void *)(((struct List *)l)->prelast->prev \
+				? ((struct List *)l)->prelast \
+				: (struct Node *)0)
+#   define GetNext(n)       (void *)(((struct Node *)n)->next->next \
+				? ((struct Node *)n)->next \
+				: (struct Node *)0)
+#   define GetPrev(n)       (void *)(((struct Node *)n)->prev->prev \
+				? ((struct Node *)n)->prev \
+				: (struct Node *)0)
 #   define ForeachNode(l,n) \
-	for (n=(void *)(((List *)(l))->first); \
-	    ((Node *)(n))->next; \
-	    n=(void *)(((Node *)(n))->next))
+	for (n=(void *)(((struct List *)(l))->first); \
+	    ((struct Node *)(n))->next; \
+	    n=(void *)(((struct Node *)(n))->next))
 #   define ForeachNodeSafe(l,node,nextnode) \
-	for (node=(void *)(((List *)(l))->first); \
-	    ((nextnode)=(void*)((Node *)(node))->next); \
+	for (node=(void *)(((struct List *)(l))->first); \
+	    ((nextnode)=(void*)((struct Node *)(node))->next); \
 	    (node)=(void *)(nextnode))
 
 /* Functions */
-void AssignList (List * dest, List * src); /* After assignment only dest may be used !!! */
-void *FindNode (const List * l, const char * name);
-void printlist (List * l);
-void freelist (List * l);
-Node *newnode (const char * name);
+void AssignList (struct List * dest, struct List * src); /* After assignment only dest may be used !!! */
+void *FindNode (const struct List * l, const char * name);
+void printlist (struct List * l);
+void freelist (struct List * l);
+struct Node *newnode (const char * name);
 void *newnodesize (const char * name, size_t size);
-Node *addnodeonce (List * l, const char * name);
-void *addnodeoncesize (List * l, const char * name, size_t size);
+struct Node *addnodeonce (struct List * l, const char * name);
+void *addnodeoncesize (struct List * l, const char * name, size_t size);
 
 #endif /* __MMAKE_LIST_H */
