@@ -29,15 +29,15 @@ Boston, MA 02111-1307, USA.  */
 #include "mem.h"
 #include "win32.h"
 
-Dep *
+struct Dep *
 newdepnode (const char * path)
 {
-    Dep * n;
+    struct Dep * n;
     struct stat st;
 
     assert (path);
 
-    n = new (Dep);
+    n = new (struct Dep);
 
     n->node.name = xstrdup (path);
     lstat (path, &st);
@@ -47,9 +47,9 @@ newdepnode (const char * path)
 }
 
 int
-checkdeps (List * deps, time_t desttime)
+checkdeps (struct List * deps, time_t desttime)
 {
-    Dep * dep;
+    struct Dep * dep;
     int newer = 0;
 
     ForeachNode (deps, dep)

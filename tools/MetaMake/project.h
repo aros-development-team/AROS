@@ -24,9 +24,12 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-typedef struct
+#include "list.h"
+#include "cache.h"
+
+struct Project
 {
-    Node node;
+    struct Node node;
 
     char * maketool;
     char * defaultmakefilename;
@@ -39,21 +42,20 @@ typedef struct
 
     int readvars;
 
-    List genmakefiledeps;
-    List ignoredirs;
-    List vars;
-    List extramakefiles;
+    struct List genmakefiledeps;
+    struct List ignoredirs;
+    struct List vars;
+    struct List extramakefiles;
     
-    Cache * cache;
-}
-Project;
+    struct Cache * cache;
+};
 
-extern void initprojects (void);
-extern void expungeprojects (void);
-extern Project * findproject (const char * pname);
-extern Project * getfirstproject (void);
-extern void maketarget (Project * prj, char * tname);
-extern int execute (Project * prj, const char * cmd, const char * in,
-		     const char * out, const char * args);
+void initprojects (void);
+void expungeprojects (void);
+struct Project * findproject (const char * pname);
+struct Project * getfirstproject (void);
+void maketarget (struct Project * prj, char * tname);
+int execute (struct Project * prj, const char * cmd, const char * in,
+             const char * out, const char * args);
 
 #endif /* __MMAKE_PROJECT_H */

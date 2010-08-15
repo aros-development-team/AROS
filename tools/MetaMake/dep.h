@@ -25,14 +25,13 @@ Boston, MA 02111-1307, USA.  */
 
 #include "list.h"
 
-typedef struct
+struct Dep
 {
-    Node   node;
+    struct Node   node;
     time_t time;
-}
-Dep;
+};
 
-extern int checkdeps (List * deps, time_t desttime);
-extern Dep * newdepnode (const char * path);
+int checkdeps (struct List * deps, time_t desttime);
+struct Dep * newdepnode (const char * path);
 
 #endif /* __MMAKE_DEP_H */

@@ -25,51 +25,48 @@ Boston, MA 02111-1307, USA.  */
 #include <stdio.h>
 
 #include "list.h"
+#include "project.h"
 
-typedef struct _DirNode DirNode;
-
-struct _DirNode
+struct DirNode
 {
-    Node node;
+    struct Node node;
     
-    DirNode * parent;
+    struct DirNode * parent;
     time_t	time;
-    List subdirs;
-    List makefiles;
+    struct List subdirs;
+    struct List makefiles;
 };
 
-typedef struct
+struct MakefileTarget
 {
-    Node node;
+    struct Node node;
 
     int virtualtarget;
-    List deps;
-}
-MakefileTarget;
+    struct List deps;
+};
 
-typedef struct
+struct Makefile
 {
-    Node node;
+    struct Node node;
 
-    DirNode * dir; /* The directory where this makefile is located */
+    struct DirNode * dir; /* The directory where this makefile is located */
     time_t time; /* Last time this Makefile was scanned for targets */
-    List targets; /* list of MakefileTargets: targets present in this makefile */
-	int  generated;
-}
-Makefile;
+    struct List targets; /* list of MakefileTargets: targets present in this makefile */
+    int  generated;
+};
 
-void printdirnode (DirNode * node, int level);
-void printdirnodemftarget (DirNode * node);
-void freedirnode (DirNode * node);
-void freemakefile (Makefile * makefile);
-DirNode * finddirnode (DirNode * node, const char * path);
-int scandirnode (DirNode * node, const char * mfname, List * ignoredirs);
-int scanmakefiles (DirNode * node, List * vars);
-Makefile * addmakefile (DirNode * node, const char * filename);
-Makefile * findmakefile (DirNode * node, const char * filename);
-const char * buildpath (DirNode * node);
-DirNode * readcachedir (FILE * fh);
-int writecachedir (FILE * fh, DirNode * node);
-void freemakefiletargetlist (List * targets);
+void printdirnode (struct DirNode * node, int level);
+void printdirnodemftarget (struct DirNode * node);
+void freedirnode (struct DirNode * node);
+void freemakefile (struct Makefile * makefile);
+struct DirNode * finddirnode (struct DirNode * node, const char * path);
+int scandirnode (struct DirNode * node, const char * mfname, struct List * ignoredirs);
+int scanmakefiles (struct Project * prj, struct DirNode * node, struct List * vars);
+struct Makefile * addmakefile (struct DirNode * node, const char * filename);
+struct Makefile * findmakefile (struct DirNode * node, const char * filename);
+const char * buildpath (struct DirNode * node);
+struct DirNode * readcachedir (FILE * fh);
+int writecachedir (FILE * fh, struct DirNode * node);
+void freemakefiletargetlist (struct List * targets);
 
 #endif /* __MMAKE_DIRNODE_H */

@@ -36,23 +36,23 @@ Boston, MA 02111-1307, USA.  */
 #include "list.h"
 
 void
-AssignList (List * dest, List * src)
+AssignList (struct List * dest, struct List * src)
 {
     NewList (dest);
 
     if (src->first->next != NULL)
     {
-	src->first->prev = (Node *)&dest->first;
+	src->first->prev = (struct Node *)&dest->first;
 	dest->first = src->first;
-	src->prelast->next = (Node *)&dest->last;
+	src->prelast->next = (struct Node *)&dest->last;
 	dest->prelast = src->prelast;
     }
 }
 
 void *
-FindNode (const List * l, const char * name)
+FindNode (const struct List * l, const char * name)
 {
-    Node * n;
+    struct Node * n;
 
     ForeachNode (l, n)
     {
@@ -64,9 +64,9 @@ FindNode (const List * l, const char * name)
 }
 
 void
-printlist (List * l)
+printlist (struct List * l)
 {
-    Node * n;
+    struct Node * n;
 
     ForeachNode (l,n)
     {
@@ -75,9 +75,9 @@ printlist (List * l)
 }
 
 void
-freelist (List * l)
+freelist (struct List * l)
 {
-    Node * node, * next;
+    struct Node * node, * next;
 
     ForeachNodeSafe(l,node,next)
     {
@@ -88,14 +88,14 @@ freelist (List * l)
     }
 }
 
-Node *
+struct Node *
 newnode (const char * name)
 {
-    Node * n;
+    struct Node * n;
 
     assert (name);
 
-    n = new (Node);
+    n = new (struct Node);
 
     n->name = xstrdup (name);
 
@@ -105,11 +105,11 @@ newnode (const char * name)
 void *
 newnodesize (const char * name, size_t size)
 {
-    Node * n;
+    struct Node * n;
 
     assert (name);
 
-    n = (Node *)xmalloc (size);
+    n = (struct Node *)xmalloc (size);
     memset (n, 0, size);
 
     n->name = xstrdup (name);
@@ -117,10 +117,10 @@ newnodesize (const char * name, size_t size)
     return (void *)n;
 }
 
-Node *
-addnodeonce (List * l, const char * name)
+struct Node *
+addnodeonce (struct List * l, const char * name)
 {
-    Node * n;
+    struct Node * n;
 
     n = FindNode (l, name);
 
@@ -134,7 +134,7 @@ addnodeonce (List * l, const char * name)
 }
 
 void *
-addnodeoncesize (List * l, const char * name, size_t size)
+addnodeoncesize (struct List * l, const char * name, size_t size)
 {
     void * n;
 

@@ -166,7 +166,7 @@ main (int argc, char ** argv)
 
     if (!targetc)
     {
-	Project * firstprj = getfirstproject ();
+	struct Project * firstprj = getfirstproject ();
 
 	assert (firstprj);
 
@@ -177,7 +177,7 @@ main (int argc, char ** argv)
     for (t=0; t<targetc; t++)
     {
 	char * pname, * tname, * ptr;
-	Project * prj;
+	struct Project * prj;
 
 	pname = ptr = targets[t];
 	while (*ptr && *ptr != '.')

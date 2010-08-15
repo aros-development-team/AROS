@@ -46,6 +46,8 @@ Boston, MA 02111-1307, USA.  */
 #include "var.h"
 #include "mmake.h"
 #include "io_.h"
+#include "project.h"
+#include "list.h"
 #include "win32.h"
 
 #if defined(DEBUG_DIRNODE)
@@ -55,9 +57,6 @@ Boston, MA 02111-1307, USA.  */
 #endif
 
 #define FLAG_VIRTUAL	0x0001
-
-extern char *mm_srcdir;
-extern char *mm_builddir;
 
 /* Return true if last non whitespace character is a '\' */
 static int
@@ -75,12 +74,12 @@ check_continue(const char *str)
     return 0;
 }
 
-static MakefileTarget *
+static struct MakefileTarget *
 newmakefiletarget (char *name, int virtualtarget)
 {
-    MakefileTarget * mftarget;
+    struct MakefileTarget * mftarget;
 
-    mftarget = newnodesize (name, sizeof(MakefileTarget));
+    mftarget = newnodesize (name, sizeof(struct MakefileTarget));
     mftarget->virtualtarget = virtualtarget;
     NewList (&mftarget->deps);
 
@@ -89,11 +88,11 @@ newmakefiletarget (char *name, int virtualtarget)
 
 /* Read the metatargets from a file handle */
 static void
-ReadTargets(DirNode * node, Makefile * makefile, FILE * fh)
+readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 {
     int lineno = 0;
     int flags = 0;
-    MakefileTarget * mftarget = NULL;
+    struct MakefileTarget * mftarget = NULL;
     static char * line = NULL;
     static int linelen = 512;
 
@@ -236,9 +235,9 @@ ReadTargets(DirNode * node, Makefile * makefile, FILE * fh)
 	    }
 	    else
 	    {
-		List newtargets;
+		struct List newtargets;
 		char * ptr2 = ptr, ** tptr;
-		MakefileTarget * mftarget2, * mftarget3;
+		struct MakefileTarget * mftarget2, * mftarget3;
 
 		NewList (&newtargets);
 
@@ -285,7 +284,7 @@ ReadTargets(DirNode * node, Makefile * makefile, FILE * fh)
 		    else
 		    {
 			/* Merge data in mftarget into mftarget3 */
-			Node * node;
+			struct Node * node;
 
 			mftarget3->virtualtarget =  mftarget3->virtualtarget && mftarget->virtualtarget;
 
@@ -304,17 +303,63 @@ ReadTargets(DirNode * node, Makefile * makefile, FILE * fh)
 #endif
 }
 
+/* Call mmakefile with _MM_ target */
+static int
+callmake_mm (struct Project * prj, struct Makefile * makefile)
+{
+    static char buffer[4096];
+    const char * path = buildpath (makefile->dir);
+    const char * tname = "_MM_";
+    int t;
+
+    debug(printf("MMAKE:project.c->callmake()\n"));
+
+#if 0
+    if (makefile->generated)
+	chdir (prj->buildtop);
+    else
+	chdir (prj->srctop);
+    chdir (path);
+#endif
+
+    setvar (&prj->vars, "CURDIR", path);
+    setvar (&prj->vars, "TARGET", tname);
+
+    buffer[0] = '\0';
+
+    for (t=0; t<mflagc; t++)
+    {
+	strcat (buffer, mflags[t]);
+	strcat (buffer, " ");
+    }
+
+    if (strcmp (makefile->node.name, "Makefile")!=0 && strcmp (makefile->node.name, "makefile")!=0);
+    {
+	strcat (buffer, "--file=");
+	strcat (buffer, makefile->node.name);
+	strcat (buffer, " ");
+    }
+
+    strcat (buffer, tname);
+
+    printf ("Making %s in %s\n", tname, path);
+
+    /* TODO: create filename for output */
+    /* execute returns 0 for error */
+    return execute (prj, prj->maketool, "-", "-" /* "/home/mazze/mmtest" */, buffer);
+}
+
 void
-freemakefiletarget (MakefileTarget * mftarget)
+freemakefiletarget (struct MakefileTarget * mftarget)
 {
     freelist (&mftarget->deps);
     xfree (mftarget);
 }
 
 void
-freemakefiletargetlist (List * targets)
+freemakefiletargetlist (struct List * targets)
 {
-    MakefileTarget * mftarget, * mftarget2;
+    struct MakefileTarget * mftarget, * mftarget2;
 
     ForeachNodeSafe (targets, mftarget, mftarget2)
 	freemakefiletarget (mftarget);
@@ -323,9 +368,9 @@ freemakefiletargetlist (List * targets)
 }
 
 void
-printdirnode (DirNode * node, int level)
+printdirnode (struct DirNode * node, int level)
 {
-    DirNode * subdir;
+    struct DirNode * subdir;
     int t;
 
     for (t=0; t<level; t++)
@@ -340,12 +385,12 @@ printdirnode (DirNode * node, int level)
 }
 
 void
-printdirnodemftarget (DirNode * node)
+printdirnodemftarget (struct DirNode * node)
 {
-    Makefile * makefile;
-    MakefileTarget * mftarget;
-    Node * dep;
-    DirNode * subdir;
+    struct Makefile * makefile;
+    struct MakefileTarget * mftarget;
+    struct Node * dep;
+    struct DirNode * subdir;
 
     ForeachNode (&node->makefiles, makefile)
     {
@@ -364,9 +409,9 @@ printdirnodemftarget (DirNode * node)
 }
 
 void
-freedirnode (DirNode * node)
+freedirnode (struct DirNode * node)
 {
-    DirNode * subnode, * subnode2;
+    struct DirNode * subnode, * subnode2;
 
     ForeachNodeSafe (&node->subdirs, subnode, subnode2)
 	freedirnode (subnode);
@@ -376,20 +421,20 @@ freedirnode (DirNode * node)
 }
 
 void
-freemakefile (Makefile * makefile)
+freemakefile (struct Makefile * makefile)
 {
     freemakefiletargetlist (&makefile->targets);
     xfree (makefile->node.name);
     xfree (makefile);
 }
 
-DirNode *
-finddirnode (DirNode * topnode, const char * path)
+struct DirNode *
+finddirnode (struct DirNode * topnode, const char * path)
 {
     const char * ptr;
     char dirname[256];
     int len;
-    DirNode * node = topnode, * subdir;
+    struct DirNode * node = topnode, * subdir;
 
     ptr = path+2;
 
@@ -421,7 +466,7 @@ finddirnode (DirNode * topnode, const char * path)
 
 
 int
-scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
+scandirnode (struct DirNode * node, const char * mfname, struct List * ignoredirs)
 {
     struct stat st;
     DIR * dirh;
@@ -443,9 +488,9 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 
     if (st.st_mtime > node->time)
     {
-	List newdirs, newmakefiles;
-	DirNode * subdir = NULL, * subdir2;
-	Makefile * makefile;
+	struct List newdirs, newmakefiles;
+	struct DirNode * subdir = NULL, * subdir2;
+	struct Makefile * makefile;
 
 	debug(printf("MMAKE:dirnode.c->scandirnode dir->time changed .. scanning\n"));
 
@@ -490,7 +535,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 		    }
 		    else
 		    {
-			makefile = newnodesize (mfname, sizeof (Makefile));
+			makefile = newnodesize (mfname, sizeof (struct Makefile));
 			makefile->dir = node;
 			debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->node.name));
 			makefile->time = (time_t)0;
@@ -551,7 +596,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 		    }
 		    else
 		    {
-			subdir = newnodesize (dirent->d_name, sizeof(DirNode));
+			subdir = newnodesize (dirent->d_name, sizeof(struct DirNode));
 			debug(printf("MMAKE:dirnode.c->scandirnode: New SubDir Node '%s' @ %p\n", dirent->d_name, subdir));
 			subdir->parent = node;
 			subdir->time = (time_t)0;
@@ -572,7 +617,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 	/* Clear the makefiles that have disappeared */
 	ForeachNode (&node->makefiles, makefile)
 	{
-	    MakefileTarget * mftarget;
+	    struct MakefileTarget * mftarget;
 
 	    ForeachNode (&makefile->targets, mftarget)
 		freelist (&mftarget->deps);
@@ -599,9 +644,9 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 
 
 int
-scanmakefiles (DirNode * node, List * vars)
+scanmakefiles (struct Project * prj, struct DirNode * node, struct List * vars)
 {
-    Makefile * makefile;
+    struct Makefile * makefile;
     struct stat st;
     int reread = 0;
     FILE * fh;
@@ -670,12 +715,21 @@ scanmakefiles (DirNode * node, List * vars)
 	    freemakefiletargetlist (&makefile->targets);
 	    NewList (&makefile->targets);
 
-	    ReadTargets(node, makefile, fh);
+	    readtargets(node, makefile, fh);
 
 	    reread ++;
 	    makefile->time = st.st_mtime;
 
 	    fclose (fh);
+
+            /* Call make for _MM_ target */
+	    if (callmake_mm (prj, makefile))
+	    {
+		/* _MM_ found */
+		/* TODO: parsing of the result */
+		/* exit (666); */
+	    }
+
 	} /* If the makefile needed to be scanned */
     } /* For all makefiles in the project */
 
@@ -683,15 +737,15 @@ scanmakefiles (DirNode * node, List * vars)
 }
 
 
-Makefile *
-addmakefile (DirNode * node, const char * filename)
+struct Makefile *
+addmakefile (struct DirNode * node, const char * filename)
 {
     static char curdir[PATH_MAX];
     const char * ptr = filename;
     char * name;
     int len = 0;
-    DirNode * subnode;
-    Makefile * makefile = NULL;
+    struct DirNode * subnode;
+    struct Makefile * makefile = NULL;
 
     getcwd(curdir, PATH_MAX);
 
@@ -744,7 +798,7 @@ addmakefile (DirNode * node, const char * filename)
 		    name[len]=0;
 		}
 
-		makefile = newnodesize (name, sizeof (Makefile));
+		makefile = newnodesize (name, sizeof (struct Makefile));
 		makefile->dir = node;
 		makefile->time = (time_t)0;
 		NewList (&makefile->targets);
@@ -763,14 +817,14 @@ addmakefile (DirNode * node, const char * filename)
 }
 
 
-Makefile *
-findmakefile (DirNode * node, const char *filename)
+struct Makefile *
+findmakefile (struct DirNode * node, const char *filename)
 {
     const char * ptr = filename;
     char * name;
     int len;
-    DirNode * subnode;
-    Makefile * makefile = NULL;
+    struct DirNode * subnode;
+    struct Makefile * makefile = NULL;
 
     while (ptr != NULL)
     {
@@ -808,19 +862,19 @@ findmakefile (DirNode * node, const char *filename)
     return makefile;
 }
 
-typedef struct {
-    Node node;
-    DirNode * dirnode;
-}
-DirNodeRef;
+struct DirNodeRef
+{
+    struct Node node;
+    struct DirNode * dirnode;
+};
 
 
 const char *
-buildpath (DirNode * node)
+buildpath (struct DirNode * node)
 {
     static char path[PATH_MAX];
-    List tree;
-    DirNodeRef * ref = NULL;
+    struct List tree;
+    struct DirNodeRef * ref = NULL;
 
     NewList (&tree);
 
@@ -828,7 +882,7 @@ buildpath (DirNode * node)
     {
 	if ((strlen (node->node.name) > 0) && (strcmp(node->node.name, mm_srcdir) != 0))
 	{
-	    ref = newnodesize ("", sizeof (DirNodeRef));
+	    ref = newnodesize ("", sizeof (struct DirNodeRef));
 	    ref->dirnode = node;
 	    AddHead (&tree, ref);
 	}
@@ -848,12 +902,12 @@ buildpath (DirNode * node)
     return path;
 }
 
-Makefile *
+struct Makefile *
 readmakefile (FILE * fh)
 {
-    Makefile * makefile;
-    MakefileTarget * mftarget;
-    Node * n;
+    struct Makefile * makefile;
+    struct MakefileTarget * mftarget;
+    struct Node * n;
     uint32_t intt;
     char * s;
 
@@ -866,7 +920,7 @@ readmakefile (FILE * fh)
     if (s == NULL)
 	return NULL;
 
-    makefile = newnodesize(s, sizeof(Makefile));
+    makefile = newnodesize(s, sizeof(struct Makefile));
     xfree(s);
     NewList(&makefile->targets);
 
@@ -897,7 +951,7 @@ readmakefile (FILE * fh)
 	if (s == NULL)
 	    break;
 
-	mftarget = newnodesize(s, sizeof(MakefileTarget));
+	mftarget = newnodesize(s, sizeof(struct MakefileTarget));
 	xfree(s);
 	AddTail (&makefile->targets, mftarget);
 	NewList (&mftarget->deps);
@@ -931,10 +985,10 @@ readmakefile (FILE * fh)
 
 
 int
-writemakefile (FILE * fh, Makefile * makefile)
+writemakefile (FILE * fh, struct Makefile * makefile)
 {
-    MakefileTarget * mftarget;
-    Node * n;
+    struct MakefileTarget * mftarget;
+    struct Node * n;
 
     if (makefile == NULL)
     {
@@ -1005,11 +1059,11 @@ writemakefile (FILE * fh, Makefile * makefile)
 }
 
 
-DirNode *
+struct DirNode *
 readcachedir (FILE * fh)
 {
-    DirNode * node, * subnode;
-    Makefile * makefile;
+    struct DirNode * node, * subnode;
+    struct Makefile * makefile;
     uint32_t intt;
     char * s;
 
@@ -1022,7 +1076,7 @@ readcachedir (FILE * fh)
     if (s == NULL)
 	return NULL;
 
-    node = newnodesize(s, sizeof(DirNode));
+    node = newnodesize(s, sizeof(struct DirNode));
     xfree (s);
     NewList(&node->makefiles);
     NewList(&node->subdirs);
@@ -1051,11 +1105,11 @@ readcachedir (FILE * fh)
 }
 
 int
-writecachedir (FILE * fh, DirNode * node)
+writecachedir (FILE * fh, struct DirNode * node)
 {
     int out;
-    DirNode * subnode;
-    Makefile * makefile;
+    struct DirNode * subnode;
+    struct Makefile * makefile;
 
     if (node == NULL)
     {
