@@ -89,11 +89,16 @@ newmakefiletarget (char *name, int virtualtarget)
 
 /* Read the metatargets from a file handle */
 static void
-ReadTargets(DirNode * node, Makefile * makefile, char *line, int linelen, FILE *fh)
+ReadTargets(DirNode * node, Makefile * makefile, FILE * fh)
 {
     int lineno = 0;
     int flags = 0;
     MakefileTarget * mftarget = NULL;
+    static char * line = NULL;
+    static int linelen = 512;
+
+    if (line == NULL)
+        line = xmalloc(linelen);
 
     while (fgets (line, linelen, fh))
     {
@@ -598,17 +603,12 @@ scanmakefiles (DirNode * node, List * vars)
 {
     Makefile * makefile;
     struct stat st;
-    static char * line = NULL;
-    static int linelen = 512;
     int reread = 0;
     FILE * fh;
 
     debug(printf("MMAKE:dirnode.c->scanmakefiles('%s')\n", node->node.name));
 
     assert (node);
-
-    if (line == NULL)
-	line = xmalloc(linelen);
 
     ForeachNode (&node->makefiles, makefile)
     {
@@ -670,7 +670,7 @@ scanmakefiles (DirNode * node, List * vars)
 	    freemakefiletargetlist (&makefile->targets);
 	    NewList (&makefile->targets);
 
-	    ReadTargets(node, makefile, line, linelen, fh);
+	    ReadTargets(node, makefile, fh);
 
 	    reread ++;
 	    makefile->time = st.st_mtime;
