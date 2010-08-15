@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -61,8 +61,7 @@ struct Block
     ULONG Size;
 };
 
-#if AROS_MUNGWALL_DEBUG
-#include <aros/debug.h> /* for MUNGWALLHEADER_SIZE */
+APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct ExecBase *SysBase);
 
 #define MUNGWALL_HEADER_ID 0x1ADEBCA1
 
@@ -88,9 +87,6 @@ struct MungwallHeader
 #define mwh_node    	u.s.node
 #define mwh_magicid 	u.s.magicid
 #define mwh_allocsize 	u.s.allocsize
-
-#endif
-
 
 #define BLOCK_TOTAL \
 ((sizeof(struct Block)+AROS_WORSTALIGN-1)&~(AROS_WORSTALIGN-1))

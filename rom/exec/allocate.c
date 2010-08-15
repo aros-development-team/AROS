@@ -1,10 +1,13 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Allocate memory from a specific MemHeader.
 */
 
+#define MDEBUG 1
+
+#include <aros/debug.h>
 #include "exec_intern.h"
 #include "memory.h"
 #include <exec/alerts.h>
@@ -66,6 +69,8 @@ AROS_LH2(APTR, Allocate,
 	}
 
     BUGS
+	Does not work with managed memory blocks because of backwards
+	compatibility issues
 
     SEE ALSO
 	Deallocate()
@@ -76,10 +81,10 @@ AROS_LH2(APTR, Allocate,
 {
     AROS_LIBFUNC_INIT
     
-    struct MemChunk *p1, *p2;
+    APTR res;
 
+    D(bug("[exec] Allocate(0x%p, %u)\n", freeList, byteSize));
     ASSERT_VALID_PTR(freeList);
-
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
@@ -92,74 +97,13 @@ AROS_LH2(APTR, Allocate,
     if(freeList->mh_Free<byteSize)
 	return NULL;
 
-    /*
-	The free memory list is only single linked, i.e. to remove
-	elements from the list I need the node as well as it's
-	predessor. For the first element I can use freeList->mh_First
-	instead of a real predecessor.
-    */
-    p1=(struct MemChunk *)&freeList->mh_First;
-    p2=p1->mc_Next;
+    res = stdAlloc(freeList, byteSize, 0, SysBase);
 
-    /* Is the list enpty? */
-    if(p2==NULL)
-	return NULL;
-
-    /* Follow the list */
-    for(;;)
-    {
-#if !defined(NO_CONSISTENCY_CHECKS)
-	/* Consistency check: Check alignment restrictions */
-	if( ((IPTR)p2|(ULONG)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1) )
-	{
-	    if (SysBase != NULL) Alert(AN_MemCorrupt);
-	    return NULL;
-	}
-#endif
-	/* Check if current block is large enough */
-	if(p2->mc_Bytes>=byteSize)
-	{
-	    /* It is. Remove it from the list and return it. */
-	    if(p2->mc_Bytes==byteSize)
-		/* Fits exactly. Just relink the list. */
-		p1->mc_Next=p2->mc_Next;
-	    else
-	    {
-		/* Split the current chunk and return the first bytes. */
-		p1->mc_Next=(struct MemChunk *)((UBYTE *)p2+byteSize);
-		p1=p1->mc_Next;
-		p1->mc_Next=p2->mc_Next;
-		p1->mc_Bytes=p2->mc_Bytes-byteSize;
-	    }
-	    /* Adjust free memory count and return */
-	    freeList->mh_Free-=byteSize;
-
-	    /* Fill the block with weird stuff to exploit bugs in applications */
-	    MUNGE_BLOCK(p2,MEMFILL_ALLOC,byteSize);
-
-	    /* Return allocated block to caller */
-	    return p2;
-	}
-
-	/* Go to next block */
-	p1=p2;
-	p2=p1->mc_Next;
-
-	/* Check if this was the end */
-	if(p2==NULL)
-	    return NULL;
-#if !defined(NO_CONSISTENCY_CHECKS)
-	/*
-	    Consistency check:
-	    If the end of the last block+1 is bigger or equal to
-	    the start of the current block something must be wrong.
-	*/
-	if((UBYTE *)p2<=(UBYTE *)p1+p1->mc_Bytes)
-	{
-	    if (SysBase != NULL) Alert(AN_MemCorrupt);
-	    return NULL;
-	}
-#endif
+    if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
+	MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);
     }
+
+    return res;
+
     AROS_LIBFUNC_EXIT
 } /* Allocate() */

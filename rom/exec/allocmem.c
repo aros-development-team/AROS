@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate some memory
@@ -13,7 +13,6 @@
 #include <aros/macros.h>
 #include <aros/config.h>
 #include <aros/arossupportbase.h>
-#include "memory.h"
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
 #include <exec/nodes.h>
@@ -24,6 +23,7 @@
 #include <string.h>
 
 #include "exec_debug.h"
+
 #ifndef DEBUG_AllocMem
 #   define DEBUG_AllocMem 0
 #endif
@@ -31,8 +31,11 @@
 #if DEBUG_AllocMem
 #   define DEBUG 1
 #endif
-#define MDEBUG 0
+#define MDEBUG 1
 #   include <aros/debug.h>
+
+#include "exec_intern.h"
+#include "memory.h"
 
 struct checkMemHandlersState
 {
@@ -40,7 +43,6 @@ struct checkMemHandlersState
     struct MemHandlerData  cmhs_Data;
 };
 
-static APTR  stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requiements);
 static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 
 /*****************************************************************************
@@ -88,11 +90,8 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     
     APTR res = NULL;
     struct checkMemHandlersState cmhs;
-
-#if ENABLE_RT || AROS_MUNGWALL_DEBUG
     ULONG origSize         = byteSize;
     ULONG origRequirements = requirements;
-#endif
 
     D(if (SysBase->DebugAROSBase))
     D(bug("Call AllocMem (%d, %08x)\n", byteSize, requirements));
@@ -102,6 +101,12 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 	return NULL;
 
 #if AROS_MUNGWALL_DEBUG
+    /* Backwards compatibility hack for ports whose exec init code
+       does not set this flag. If should be set BEFORE THE FIRST ALLOCMEM,
+       otherwise FreeMem() will crash on block allocated without walls */
+    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
+#endif
+
     /* Make room for safety walls around allocated block and an some more extra space
        for other interesting things, actually --> the size.
 
@@ -113,9 +118,8 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
        size (byteSize) param. So it is possible in FreeMem to check, if freemem size
        matches allocmem size or not.
     */
-
-    byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
-#endif /* AROS_MUNGWALL_DEBUG */
+    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
+        byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
 
     /* First round byteSize to a multiple of MEMCHUNK_TOTAL */
     byteSize = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
@@ -154,8 +158,8 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
                     res = mhe->mhe_Alloc(mhe, byteSize, &requirements);
             }
             else
-            {  
-                res = stdAlloc(mh, byteSize, requirements);
+            {
+                res = stdAlloc(mh, byteSize, requirements, SysBase);
             }                
 	    if (res)
 	        break;
@@ -171,14 +175,13 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     RT_Add (RTT_MEMORY, res, origSize);
 #endif  
 
-#if AROS_MUNGWALL_DEBUG
-    requirements = origRequirements;
-    
-    if (res)
+    if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res)
     {
     	struct MungwallHeader *header;
 	struct List 	      *allocmemlist;
-	
+
+	requirements = origRequirements;
+
         /* Save orig byteSize before wall (there is one room of MUNGWALLHEADER_SIZE
 	   bytes before wall for such stuff (see above).
 	*/
@@ -221,7 +224,6 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 	/* Initialize post-wall */
 	BUILD_WALL(res + origSize, 0xDB, MUNGWALL_SIZE + AROS_ROUNDUP2(origSize, MEMCHUNK_TOTAL) - origSize);
     }
-#endif /* AROS_MUNGWALL_DEBUG */
 
     /* Set DOS error if called from a process */
     if (res == NULL)
@@ -233,19 +235,16 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 
 #if DEBUG
     if (SysBase->DebugAROSBase)
-	ReturnPtr ("AllocMem", APTR, res)
-    else
-	return res;
-#else
-    ReturnPtr ("AllocMem", APTR, res);
+	bug("AllocMem result: 0x%p\n", res);
 #endif
+    return res;
     
     AROS_LIBFUNC_EXIT
     
 } /* AllocMem */
 
 
-static APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements)
+APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct ExecBase *SysBase)
 {
     struct MemChunk *mc=NULL, *p1, *p2;
     
