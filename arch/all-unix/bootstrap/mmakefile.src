@@ -1,19 +1,15 @@
-# $Id: mmakefile.src 33939 2010-07-28 10:43:06Z sonic $
+# $Id: mmakefile.src 34117 2010-08-13 11:13:30Z sonic $
 include $(TOP)/config/make.cfg
 
-FILES  := bootstrap elfloader32 hostlib debug shutdown
-EXEDIR := $(BINDIR)/boot
+EXEDIR  := $(BINDIR)/boot
 
-USER_INCLUDES := -I$(GENINCDIR)
+FILES         := hostinterface hostlib shutdown support
+USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
+		 -I$(SRCDIR)/arch/all-unix/kernel   \
+		 -I$(GENINCDIR)
 
-#MM
-kernel-bootstrap-unix: $(EXEDIR)/AROSBootstrap.conf
-
-%build_prog mmake=kernel-bootstrap-unix \
-    progname=AROSBootstrap targetdir=$(EXEDIR) \
-    files=$(FILES) compiler=kernel uselibs="dl"
-
-$(EXEDIR)/AROSBootstrap.conf: AROSBootstrap.conf
-	@$(CP) $^ $@
+%build_archspecific \
+	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=unix \
+	files=$(FILES) compiler=kernel
 
 %common
