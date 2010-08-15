@@ -9,11 +9,11 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR)
 ifeq ($(ARCH),mingw32)
     EXE_SUFFIX := .exe
 else
-    EXE_SUFFIX :=
+    LIBS := dl
 endif
 
 %build_prog mmake=kernel-bootstrap-hosted \
     progname=AROSBootstrap$(EXE_SUFFIX) targetdir=$(EXEDIR) \
-    files=$(FILES) compiler=kernel
+    files=$(FILES) compiler=kernel uselibs=$(LIBS)
 
 %common

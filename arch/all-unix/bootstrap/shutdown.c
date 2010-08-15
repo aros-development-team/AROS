@@ -5,6 +5,13 @@
 
 #define D(x)
 
+static char **Kernel_ArgV;
+
+void SaveArgs(char **argv)
+{
+    Kernel_ArgV = argv;
+}
+
 void Host_Shutdown(unsigned long action)
 {
     switch (action) {
