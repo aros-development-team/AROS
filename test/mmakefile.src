@@ -124,4 +124,13 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
     uselibs="coolimagesstatic arossupport amiga arosc m hiddstubs hiddgraphicsstubs oop"
 
+
+# Test for dynamic metatargets
+
+_MM_ ::
+	@$(ECHO) "#MM FOO : BAR1 BAR2"
+	@$(ECHO) "#MM FOOVIRT- : BAR1 BAR2 \\"
+	@$(ECHO) "#MM BAR3"
+
+
 %common
