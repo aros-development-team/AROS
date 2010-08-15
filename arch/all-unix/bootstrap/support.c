@@ -1,14 +1,15 @@
 #include <stdio.h>
-#include <windows.h>
+#include <sys/utsname.h>
 
 #include "support.h"
 
 char *DefaultConfig = "boot/AROSBootstrap.conf";
-OSVERSIONINFO winver;
 
 char *getosversion(void)
 {
     char *BootLoader_Name;
+    struct utsname sysinfo;
+    char *nameparts[4];
 
     uname(&sysinfo);
     nameparts[0] = sysinfo.sysname;

@@ -9,7 +9,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 
 #include <aros/kernel.h>
 #include <dos/elf.h>

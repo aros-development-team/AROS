@@ -4,9 +4,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <signal.h>
 #include <sys/stat.h>
+
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
@@ -59,7 +63,7 @@ static char *GetConfigArg(char *str, char *option)
     size_t l = strlen(option);
 
     /* First check option name */
-    if (strnicmp(str, option, l))
+    if (strncasecmp(str, option, l))
         return NULL;
 
     /* Skip option name */
