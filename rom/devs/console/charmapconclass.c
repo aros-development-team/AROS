@@ -371,6 +371,7 @@ static VOID charmap_ascii(Class * cl, Object * o, ULONG xcp, ULONG ycp, char * s
   // .. copy the required data
   memset(line->fgpen + xcp, CU(o)->cu_FgPen, len);
   memset(line->bgpen + xcp, CU(o)->cu_BgPen, len);
+  memset(line->flags + xcp, CU(o)->cu_TxFlags, len);
   memcpy(line->text + xcp, str, len);
 
   // If cursor output is moved further right on the screen than
@@ -378,6 +379,7 @@ static VOID charmap_ascii(Class * cl, Object * o, ULONG xcp, ULONG ycp, char * s
   if (oldsize < xcp) {
 	memset(line->fgpen + oldsize, CU(o)->cu_FgPen, xcp - oldsize);
 	memset(line->bgpen + oldsize, CU(o)->cu_BgPen, xcp - oldsize);
+	memset(line->flags + oldsize, CU(o)->cu_TxFlags, xcp - oldsize);
 	memset(line->text + oldsize, ' ', xcp - oldsize);
   }
 }
@@ -506,6 +508,7 @@ static VOID charmap_delete_char(Class * cl, Object *o, ULONG x, ULONG y)
 
   memmove(line->fgpen + x, line->fgpen + x + 1, 1);
   memmove(line->bgpen + x, line->bgpen + x + 1, 1);
+  memmove(line->flags + x, line->flags + x + 1, 1);
   memmove(line->text + x, line->text + x + 1, 1);
 }
 
@@ -515,28 +518,30 @@ static VOID charmap_insert_char(Class * cl, Object *o, ULONG x, ULONG y)
   struct charmap_line * line = charmapcon_find_line(cl,o, y);
   
   if (x >= line->size) return;
-
+  
   /* FIXME: This is wasteful, since it copies the buffers straight over,
    * so we have to do memmove's further down. */
   charmap_resize(line, line->size + 1);
   
   memmove(line->fgpen + x + 1, line->fgpen + x, line->size - x - 1);
   memmove(line->bgpen + x + 1, line->bgpen + x, line->size - x - 1);
+  memmove(line->flags + x + 1, line->flags + x, line->size - x - 1);
   memmove(line->text + x + 1, line->text  + x, line->size - x - 1);
 
   line->fgpen[x] = CU(o)->cu_FgPen;
   line->bgpen[x] = CU(o)->cu_BgPen;
+  line->flags[x] = CU(o)->cu_TxFlags;
   line->text[x] = ' ';
 }
 
 static VOID charmap_formfeed(Class *cl, Object * o)
 {
-  struct charmapcondata 	*data = INST_DATA(cl, o);
-  struct charmap_line * line = data->top_of_window;
+  struct charmapcondata *data = INST_DATA(cl, o);
+  struct charmap_line   * line = data->top_of_window;
 
   while (line) {
-	charmap_resize(line,0);
-	line = line->next;
+    charmap_resize(line,0);
+    line = line->next;
   }
 }
 
@@ -658,9 +663,9 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
   D(bug("Rendering charmap\n"));
   
   struct charmap_line * line = charmapcon_find_line(cl,o, fromLine);
-  SetDrMd(rp, JAM2);
   ULONG y  = GFX_YMIN(o)+fromLine*YRSIZE+rp->Font->tf_Baseline;
   ULONG yc = fromLine;
+  UBYTE flags = 255;
   while(line && yc <= toLine)
     {
       const char * str = line->text;
@@ -676,10 +681,14 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
 	  while (line->size > start + len && str[start + len] && 
 		 len < remaining_space &&
 		 line->fgpen[start] == line->fgpen[start + len] &&
-		 line->bgpen[start] == line->bgpen[start + len]) len += 1;
+		 line->bgpen[start] == line->bgpen[start + len] &&
+		 line->flags[start] == line->flags[start + len]) len += 1;
 		
-	  SetAPen(rp, line->fgpen[start]);
-	  SetBPen(rp, line->bgpen[start]);
+	  SetABPenDrMd(rp, line->fgpen[start],line->bgpen[start],JAM2);
+	  if (line->flags[start] != flags) {
+	    SetSoftStyle(rp, line->flags[start], FSF_BOLD | FSF_UNDERLINED | FSF_ITALIC);
+	    flags = line->flags[start];
+	  }
 	  Text(rp,&str[start],len);
 	  start += len;
 	  remaining_space -= len;

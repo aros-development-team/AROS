@@ -308,28 +308,72 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
 
 		    switch(param)
 		    {
-		        case 30:
-			case 31:
-			case 32:
-			case 33:
-			case 34:
-			case 35:
-			case 36:
-			case 37:
-			    CU(o)->cu_FgPen = param - 30;
-			    break;
+		    case 0:
+		      CU(o)->cu_FgPen = 1;
+		      CU(o)->cu_BgPen = 0;
+		      CU(o)->cu_TxFlags = 0;
+		      break;
+		    case 1:
+		      CU(o)->cu_TxFlags |= FSF_BOLD;
+		      break;
+		    case 2:
+		      /* Set "faint" */
+		      break;
+		    case 3:
+		      CU(o)->cu_TxFlags |= FSF_ITALIC;
+		      break;
+		    case 4:
+		      CU(o)->cu_TxFlags |= FSF_UNDERLINED;
+		      break;
+		    case 7:
+		      bug("NOT implemented: Reversed mode on\n");
+		      break;
+		    case 8:
+		      bug("NOT implemented: Concealed mode\n");
+		      break;
+		    case 22:
+		      CU(o)->cu_TxFlags &= ~FSF_BOLD;
+		      break;
+		    case 23:
+		      CU(o)->cu_TxFlags &= ~FSF_ITALIC;
+		      break;
+		    case 24:
+		      CU(o)->cu_TxFlags &= ~FSF_UNDERLINED;
+		      break;
+		    case 27:
+		      bug("NOT implemented: Reversed mode on\n");
+		      break;
+		    case 28:
+		      bug("NOT implemented: Concealed mode off\n");
+		      break;
+		    case 30:
+		    case 31:
+		    case 32:
+		    case 33:
+		    case 34:
+		    case 35:
+		    case 36:
+		    case 37:
+		      CU(o)->cu_FgPen = param - 30;
+		      break;
+		    case 39:
+		      CU(o)->cu_FgPen = 1;
+		      break;
+		      
+		    case 40:
+		    case 41:
+		    case 42:
+		    case 43:
+		    case 44:
+		    case 45:
+		    case 46:
+		    case 47:
+		      CU(o)->cu_BgPen = param - 40;
+		      break;
 			    
-			case 40:
-			case 41:
-			case 42:
-			case 43:
-			case 44:
-			case 45:
-			case 46:
-			case 47:
-			    CU(o)->cu_BgPen = param - 40;
-			    break;
-			    
+		    case 49:
+		      CU(o)->cu_BgPen = 1;
+		      break;
 		    } /* switch(param) */
 		    
 		} /* for(i = 0; i < msg->NumParams; i++) */

@@ -103,9 +103,8 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
 	Console_UnRenderCursor(o);
 
-	SetAPen(rp, CU(o)->cu_FgPen);
-	SetBPen(rp, CU(o)->cu_BgPen);
-	SetDrMd(rp, JAM2);
+    	SetABPenDrMd(rp, CU(o)->cu_FgPen,CU(o)->cu_BgPen, JAM2);
+	SetSoftStyle(rp, CU(o)->cu_TxFlags, FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED);
 	Move(rp,CP_X(o),CP_Y(o)+rp->Font->tf_Baseline);
 	{
 	  UBYTE c = params[0];
@@ -126,9 +125,8 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
 	Console_UnRenderCursor(o);
 
-    	SetAPen(rp, CU(o)->cu_FgPen);
-	SetBPen(rp, CU(o)->cu_BgPen);
-    	SetDrMd(rp, JAM2);
+    	SetABPenDrMd(rp, CU(o)->cu_FgPen,CU(o)->cu_BgPen, JAM2);
+	SetSoftStyle(rp, CU(o)->cu_TxFlags, FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED);
 
 	{
 	    ULONG  len     = params[1];
@@ -206,7 +204,6 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 		UBYTE oldpen = rp->FgPen;
 		Console_UnRenderCursor(o);
 		SetAPen(rp, CU(o)->cu_BgPen);
-		SetAPen(rp, oldpen);
 		ScrollRaster(rp,
 					 XRSIZE,
 					 0,
@@ -214,6 +211,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 					 GFX_Y(o, YCP),
 					 GFX_XMAX(o),
 					 GFX_Y(o, YCP+1));
+		SetAPen(rp, oldpen);
 		Console_RenderCursor(o);
 	  }
 	  break;
@@ -445,7 +443,6 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 		UBYTE oldpen = rp->FgPen;
 		Console_UnRenderCursor(o);
 		SetAPen(rp, CU(o)->cu_BgPen);
-		SetAPen(rp, oldpen);
 		ScrollRaster(rp,
 					 -XRSIZE,
 					 0,
@@ -453,6 +450,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 					 GFX_Y(o, YCP),
 					 GFX_XMAX(o),
 					 GFX_Y(o, YCP+1));
+		SetAPen(rp, oldpen);
 		Console_RenderCursor(o);
 	  }
 	  break;
@@ -705,23 +703,6 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
         SetAPen(rp, 0);
 	SetDrMd(rp, JAM2);
 	RectFill(rp, GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
-#if 0
-    	if (old_ycp != YCP)
-	{
-	    /* Scroll up one line */
-
-	    SetAPen(rp, 0);
-	    SetDrMd(rp, JAM2);
-	    ScrollRaster(rp,
-	                 0, CU(o)->cu_YRSize,
-			 GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
-
-	    /* Move cursor to column 0 */
-
-	    XCP = CHAR_XMIN(o);
-	    XCCP = CHAR_XMIN(o);
-	}
-#endif
 	data->rendercursorcount--;
     	Console_RenderCursor(o);
     }
