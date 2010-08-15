@@ -17,8 +17,7 @@ struct charmap_line
   char * text;
   BYTE * fgpen;
   BYTE * bgpen;
-  // FIXME: flags isn't used yet.
-  //  BYTE * flags;
+  BYTE * flags;
 };
 
 VOID charmap_dispose_lines(struct charmap_line * line);
