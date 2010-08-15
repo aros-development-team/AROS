@@ -86,18 +86,11 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     };
     struct TagItem sync_mode[] =
     {
-	{aHidd_Sync_PixelClock, 0},
 	{aHidd_Sync_HDisp,      0},
 	{aHidd_Sync_VDisp,      0},
 	{aHidd_Sync_HMax,	16384},
 	{aHidd_Sync_VMax,	16384},
 	{aHidd_Sync_Description, (IPTR)"VESA:%hx%v"},
-	{aHidd_Sync_HSyncStart, 0},
-	{aHidd_Sync_HSyncEnd,   0},
-	{aHidd_Sync_HTotal,     0},
-	{aHidd_Sync_VSyncStart, 0},
-	{aHidd_Sync_VSyncEnd,   0},
-	{aHidd_Sync_VTotal,     0},
 	{TAG_DONE, 0UL}
     };
     struct TagItem modetags[] =
@@ -130,8 +123,8 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     pftags[11].ti_Data = (XSD(cl)->data.bitsperpixel > 24) ? 24 : XSD(cl)->data.bitsperpixel;
     pftags[14].ti_Data = (1 << XSD(cl)->data.depth) - 1;
 
-    sync_mode[1].ti_Data = XSD(cl)->data.width;
-    sync_mode[2].ti_Data = XSD(cl)->data.height;
+    sync_mode[0].ti_Data = XSD(cl)->data.width;
+    sync_mode[1].ti_Data = XSD(cl)->data.height;
 
     yourtags[1].ti_Data = (IPTR)msg->attrList;
     yourmsg.mID = msg->mID;
@@ -242,6 +235,7 @@ VOID PCVesa__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
     unsigned char *src = 0, *dest = 0;
     ULONG mode;
 
+    DB2(bug("[VesaGfx] CopyBox()\n"));
     mode = GC_DRMD(msg->gc);
 
     OOP_GetAttr(msg->src,  aHidd_VesaGfxBitMap_Drawable, (APTR)&src);
@@ -330,6 +324,7 @@ VOID PCVesa__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
 		
     	} /* switch(mode) */    
     }
+    DB2(bug("[VesaGfx] CopyBox() done\n"));
 }
 
 static int PCVesa_InitClass(LIBBASETYPEPTR LIBBASE)
