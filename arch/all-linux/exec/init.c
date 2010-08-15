@@ -167,17 +167,23 @@ static int memnest;
 static APTR myAlloc(struct MemHeaderExt *mhe, ULONG size, ULONG *flags)
 {
     APTR ret;
-    
-    if (flags && (*flags & MEMF_CLEAR))
-        ret = __libc_calloc(1, size);
-    else
-        ret = __libc_malloc(size);
-    
-    if (ret)
-    {
-        if (flags) *flags &= ~MEMF_CLEAR;
-        mhe->mhe_MemHeader.mh_Free -= size;
+
+    /* Allocate the memory */
+    if (posix_memalign(&ret, sysconf(_SC_PAGESIZE), size))
+	return NULL;
+
+    /* Enable execution from the allocated area */
+    if (mprotect(ret, size, PROT_READ | PROT_WRITE | PROT_EXEC)) {
+	__libc_free(ret);
+	return NULL;
     }
+
+    if (flags) {
+	if (*flags & MEMF_CLEAR)
+	    memset(ret, 0, size);
+        *flags &= ~MEMF_CLEAR;
+    }
+    mhe->mhe_MemHeader.mh_Free -= size;
 
     return ret;
 }
@@ -479,6 +485,7 @@ int main(int argc, char **argv)
     }
 
     /* Prepare the first mem header */
+    D(printf("[init] MemHeader %p\n", mh));
     mh->mh_Node.ln_Type  = NT_MEMORY;
     mh->mh_Node.ln_Name  = "chip memory";
     mh->mh_Node.ln_Pri   = -5;
@@ -512,7 +519,9 @@ int main(int argc, char **argv)
         This will prepare enough of ExecBase to allow us to
         call functions, it will also set up the memory list.
     */
+    D(printf("[init] Preparing ExecBase...\n"));
     SysBase = PrepareExecBase(mh);
+    D(printf("[init] SysBase 0x%p\n", SysBase));
     SysBase->PowerSupplyFrequency = ticrate / SysBase->VBlankFrequency;
     
     use_hostmem = _use_hostmem;
@@ -554,6 +563,7 @@ int main(int argc, char **argv)
     /* Ok, lets start up the kernel, we are probably using the UNIX
        kernel, or a variant of that (see config/unix).
     */
+    D(printf("[init] Initializing core...\n"));
     InitCore();
 
     /* On Linux/m68k where we can run old Amiga binaries, we should
@@ -581,6 +591,7 @@ int main(int argc, char **argv)
 
     SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);*/
     SysBase->ResModules = romtagList;
+    D(printf("[init] Running InitCode(RTF_SINGLETASK)\n"));
     InitCode(RTF_SINGLETASK, 0);
     fprintf(stderr,"Returned from InitCode()\n");
     return 1;
