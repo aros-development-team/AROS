@@ -84,7 +84,7 @@ static VOID int_showtitle(struct ShowTitleActionMsg *msg,
 {
     struct Screen *screen = msg->screen;
 
-    if (msg->showit)
+    if (!msg->showit)
     {
         if (screen->Flags & SHOWTITLE)
         {
