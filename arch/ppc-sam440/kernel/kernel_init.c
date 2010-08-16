@@ -96,7 +96,6 @@ static char            CmdLine[200]            __attribute__((used));
 
 module_t *	modlist;
 uint32_t	modlength;
-void *priv_KernelBase;
 uintptr_t	memlo;
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
@@ -390,7 +389,6 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      * exec.library itself.
      */
     wrspr(SPRG4, LIBBASE);
-    priv_KernelBase = LIBBASE;
 
     D(bug("[KRN] Allowing userspace to flush caches\n"));
     wrspr(MMUCR, rdspr(MMUCR) & ~0x000c0000);

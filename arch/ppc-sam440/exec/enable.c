@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386unix version of Enable()
@@ -14,9 +14,10 @@
 //#include <asm/segments.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
-#include "exec_intern.h"
 
 #include "../kernel/kernel_intern.h"
+
+#include "exec_intern.h"
 
 #undef  Exec
 #ifdef UseExecstubs
@@ -28,8 +29,6 @@ AROS_LH0(void, Enable,
 {
 #undef Exec
     AROS_LIBFUNC_INIT
-
-    void *KernelBase = getKernelBase();
     
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     

@@ -713,6 +713,7 @@ int exec_main(struct TagItem *msg, void *entry)
             rkprintf("\3");
         }
         InitCode(RTF_SINGLETASK, 0);
+	KernelBase = TLS_GET(KernelBase);
 
         UBYTE apictotal;
         if ((apictotal = core_APICGetTotal()) > 1)

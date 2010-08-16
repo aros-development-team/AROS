@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Wait for some signal.
@@ -11,8 +11,7 @@
 #include <proto/kernel.h>
 
 #include "etask.h"
-
-extern void *priv_KernelBase;
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -61,7 +60,6 @@ extern void *priv_KernelBase;
 
     ULONG rcvd;
     struct Task *me;
-    void *KernelBase = priv_KernelBase;
 
     /* Get pointer to current task - I'll need it very often */
     me = FindTask (NULL);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Emit one character via raw IO
@@ -14,6 +14,8 @@
 #include <proto/kernel.h>
 
 #include "../kernel/kernel_intern.h"
+
+#include "exec_intern.h"
 
         AROS_LH1(void, RawPutChar,
 
@@ -49,8 +51,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    void *KernelBase = getKernelBase();
     
     /* Don't write 0 bytes */
     if (chr)

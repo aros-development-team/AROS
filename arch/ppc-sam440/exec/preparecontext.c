@@ -4,7 +4,9 @@
 #include <utility/tagitem.h>
 #include <asm/amcc440.h>
 #include <proto/kernel.h>
+
 #include "etask.h"
+#include "exec_intern.h"
 #include "exec_util.h"
 
 #define DEBUG 0
@@ -14,8 +16,6 @@
 
 #define Regs(t) ((struct regs_t *)(GetIntETask(t)->iet_Context))
 
-extern void *priv_KernelBase;
-
 static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fallBack,
                                     struct TagItem *tagList, struct ExecBase *SysBase)
 {
@@ -24,8 +24,6 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     IPTR        *sp=(IPTR *)((IPTR)task->tc_SPReg & 0xfffffff0);
     IPTR        args[8] = {0};
     WORD        numargs = 0;
- 
-    void *KernelBase = priv_KernelBase;
 
     while(tagList)
     {

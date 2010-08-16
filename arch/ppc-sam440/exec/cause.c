@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386native version of Cause().
@@ -15,8 +15,9 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-#include <exec_intern.h>
 #include "../kernel/kernel_intern.h"
+
+#include "exec_intern.h"
 
 AROS_LH1(void, Cause,
          AROS_LHA(struct Interrupt *, softint, A1),
@@ -56,8 +57,6 @@ AROS_UFH5(void, SoftIntDispatch,
 {
     AROS_USERFUNC_INIT
 
-    void *KernelBase = getKernelBase();
-    
     struct Interrupt *intr = 0;
     BYTE i;
 

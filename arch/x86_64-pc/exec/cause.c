@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386native version of Cause().
@@ -54,8 +54,6 @@ AROS_UFH5(void, SoftIntDispatch,
           AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
-
-    void *KernelBase = TLS_GET(KernelBase);
     
     struct Interrupt *intr = 0;
     BYTE i;

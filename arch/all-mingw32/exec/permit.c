@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Permit() - Allow tasks switches to occur.
@@ -13,6 +13,8 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
+
+#include "exec_intern.h"
 
 #undef Exec
 #ifdef UseExecstubs

@@ -32,17 +32,17 @@ extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
 intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 
 struct ExecBase *priv_SysBase;
-void *priv_KernelBase;
 
 int Kernel_KrnBug(const char * format, va_list args, void * KernelBase);
 #undef bug
 
 static inline void bug(const char *format, ...)
 {
-    void *kbase = priv_KernelBase;
     va_list args;
+
     va_start(args, format);
-    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, kbase);
+    /* Our KrnBug() ignores base address */
+    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, NULL);
     va_end(args);
 }
 
@@ -89,7 +89,6 @@ int exec_main(struct TagItem *msg, void *entry)
     int i;
 
     priv_SysBase = NULL;
-    priv_KernelBase = NULL;
 
     D(bug("[exec] AROS for Efika5200B - The AROS Research OS\n"));
 
@@ -371,7 +370,7 @@ int exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
     InitCode(RTF_SINGLETASK, 0);
 
-    priv_KernelBase = OpenResource("kernel.resource");
+    KernelBase = OpenResource("kernel.resource");
 
     Permit();
 
@@ -562,33 +561,29 @@ static int __kprintf(const UBYTE *fmt, ...)
 {
     va_list ap;
     int result = 0;
-    void *KernelBase = priv_KernelBase;
 
-	va_start(ap,fmt);
-	result = AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, ap, KernelBase);
-	va_end(ap);
+    va_start(ap,fmt);
+    result = AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, ap, NULL);
+    va_end(ap);
 
-	return result;
+    return result;
 }
 
 static int __vkprintf(const UBYTE *fmt, va_list args)
 {
-    void *KernelBase = priv_KernelBase;
-
-	return AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, args, KernelBase);
+    return AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, args, NULL);
 }
 
 static int __rkprintf(const STRPTR mainSystem, const STRPTR subSystem, int level, const UBYTE *fmt, ...)
 {
     va_list ap;
     int result = 0;
-    void *KernelBase = priv_KernelBase;
 
-	va_start(ap,fmt);
-	result = AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, ap, KernelBase);
-	va_end(ap);
+    va_start(ap,fmt);
+    result = AROS_SLIB_ENTRY(KrnBug, Kernel)(fmt, ap, NULL);
+    va_end(ap);
 
-	return result;
+    return result;
 }
 
 struct Library * PrepareAROSSupportBase(struct ExecBase *SysBase)

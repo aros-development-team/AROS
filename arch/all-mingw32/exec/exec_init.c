@@ -157,8 +157,6 @@ void VBlankHandler(struct ExecBase *SysBase, void *dummy)
 
 extern ULONG SoftIntDispatch();
 
-APTR KernelBase = NULL;
-
 AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(BPTR, segList, A0),
@@ -178,6 +176,8 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 
     KernelBase = OpenResource("kernel.resource");
     D(bug("[exec_init] KernelBase is 0x%p\n", KernelBase));
+    if (!KernelBase)
+	return NULL;
 
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,

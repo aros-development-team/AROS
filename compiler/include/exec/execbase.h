@@ -103,9 +103,8 @@ struct ExecBase
     struct MinList ex_MemHandlers;
     APTR           ex_MemHandler;      /* PRIVATE */
 
-/* Additional fields for AROS */
+/* Additional field for AROS */
     struct Library      * DebugAROSBase;
-    void                * PlatformData;     /* different for all platforms */
 };
 
 /* AttnFlags */

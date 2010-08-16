@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Dispatch() entry :)
@@ -17,13 +17,12 @@
 #include <aros/asmcall.h>
 #include <aros/kernel.h>
 
+#include "exec_intern.h"
 
 AROS_LH0(void, Dispatch,
          struct ExecBase *, SysBase, 10, Exec)
 {
     AROS_LIBFUNC_INIT
-
-    void *KernelBase = TLS_GET(KernelBase);
 
     KrnDispatch();
     
