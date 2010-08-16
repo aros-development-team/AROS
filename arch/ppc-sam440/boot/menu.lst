@@ -17,7 +17,6 @@ title AROS on Sam440
     module boot/modules/cdrom.handler
     module boot/modules/con.handler
     module boot/modules/console.device
-    module boot/modules/cybergraphics.library
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
     module boot/modules/expansion.library
@@ -68,7 +67,6 @@ title AROS on Sam440 Test AltUsb
     module boot/modules/cdrom.handler
     module boot/modules/con.handler
     module boot/modules/console.device
-    module boot/modules/cybergraphics.library
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
     module boot/modules/expansion.library
