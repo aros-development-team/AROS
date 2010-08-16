@@ -23,8 +23,8 @@
 
 #define LANGSTR     "russian"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: russian.language 41.0 (11.05.2006)"
+#define LANGREV     1           /* Revision number of language */
+#define LANGTAG     "\0$VER: russian.language 41.1 (16.08.2010)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -300,10 +300,10 @@ const STRPTR __russian_strings[] =
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "am", "pm",
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
-    "\"", "\"",
+    "\xAB", "\xBB",
 
     /* Days: But not actual day names
        Yesterday - the day before the current
