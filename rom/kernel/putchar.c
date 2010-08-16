@@ -1,4 +1,7 @@
-#include "kernel_debug.h"
+#include <aros/kernel.h>
+
+#include <kernel_base.h>
+#include <kernel_debug.h>
 
 /*****************************************************************************
 
@@ -36,7 +39,7 @@ AROS_LH1(void, KrnPutChar,
 {
     AROS_LIBFUNC_INIT
     
-    krnPutC(c);
-    
+    krnPutC(c, NULL);
+
     AROS_LIBFUNC_EXIT
 }

@@ -1,3 +1,4 @@
+#include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
