@@ -612,7 +612,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
         if (nw.Screen)
         {
             moreFlags |= WMFLG_DO_UNLOCKPUBSCREEN;
-            if (nw.Screen) nw.Flags |= WFLG_VISITOR;
+            nw.Flags  |= WFLG_VISITOR;
         }
     }
 
