@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
@@ -11,7 +11,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-
+#include "exec_intern.h"
 #include "exec_util.h"
 #include "exec_debug.h"
 #ifndef DEBUG_RemTask
@@ -106,8 +106,6 @@
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
-        void *KernelBase = TLS_GET(KernelBase);
-
         /* Can't do that - let the dispatcher do it. */
 	task->tc_State=TS_REMOVED;
 

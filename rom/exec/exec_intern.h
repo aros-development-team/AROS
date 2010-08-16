@@ -33,9 +33,12 @@ struct IntExecBase
     struct ExecBase pub;
     struct List ResetHandlers;	/* Reset handlers list	     */
     ULONG  IntFlags;		/* Internal flags, see below */
+    APTR   KernelBase;		/* kernel.resource base	     */
 };
 
 #define PrivExecBase(base) ((struct IntExecBase *)base)
+
+#define KernelBase PrivExecBase(SysBase)->KernelBase
 
 /* IntFlags */
 #define EXECF_MungWall 0x0001

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
@@ -11,9 +11,8 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-extern void *priv_KernelBase;
-
 #include "etask.h"
+#include "exec_intern.h"
 #include "exec_util.h"
 
 #include "exec_debug.h"
@@ -67,7 +66,6 @@ extern void *priv_KernelBase;
 {
     AROS_LIBFUNC_INIT
     struct MemList *mb;
-    void *KernelBase = priv_KernelBase;
     struct ETask *et;
 
     /* A value of NULL means current task */

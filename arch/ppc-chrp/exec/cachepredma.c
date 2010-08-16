@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CachePreDMA() - Do what is necessary for DMA.
@@ -12,7 +12,7 @@
 #include <exec/types.h>
 #include <aros/libcall.h>
 
-extern void *priv_KernelBase;
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -68,8 +68,6 @@ extern void *priv_KernelBase;
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    void *KernelBase = priv_KernelBase;
 
     void *addr = KrnVirtualToPhysical(address);
 

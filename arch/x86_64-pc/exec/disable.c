@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386unix version of Disable()
@@ -13,6 +13,8 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include "exec_intern.h"
+
 #undef  Exec
 #ifdef UseExecstubs
 #    define Exec _Exec
@@ -23,7 +25,6 @@ AROS_LH0(void, Disable,
 {
 #undef Exec
     AROS_LIBFUNC_INIT
-    void *KernelBase = TLS_GET(KernelBase);
     
     /* Georg Steger */
     if (KernelBase)

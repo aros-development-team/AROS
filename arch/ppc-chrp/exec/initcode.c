@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize resident modules
@@ -14,12 +14,10 @@
 int Kernel_KrnBug(const char * format, va_list args, void * KernelBase);
 #undef bug
 
-extern void *priv_KernelBase;
-
-static inline void bug(const char *format, ...)
+static inline void bug(APTR KernelBase, const char *format, ...)
 {
-    void *kbase = priv_KernelBase;
     va_list args;
+
     va_start(args, format);
     AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, kbase);
     va_end(args);
@@ -80,12 +78,12 @@ static inline void bug(const char *format, ...)
             if( (((struct Resident *)*list)->rt_Version >= (UBYTE)version)
              && (((struct Resident *)*list)->rt_Flags & (UBYTE)startClass) )
             {
-                D(bug("calling InitResident(\"%s\", NULL)\n",
+                D(bug(KernelBase, "calling InitResident(\"%s\", NULL)\n",
                         ((struct Resident *)(*list))->rt_Name));
                 InitResident((struct Resident *)*list, NULL);
             }
 //            else
-//                D(bug("NOT calling InitResident(\"%s\", NULL)\n",
+//                D(bug(KernelBase, "NOT calling InitResident(\"%s\", NULL)\n",
 //                      ((struct Resident *)(*list))->rt_Name)
 //                );
             list++;

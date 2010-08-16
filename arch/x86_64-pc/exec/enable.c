@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386unix version of Enable()
@@ -28,8 +28,6 @@ AROS_LH0(void, Enable,
 {
 #undef Exec
     AROS_LIBFUNC_INIT
-
-    void *KernelBase = TLS_GET(KernelBase);
     
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     

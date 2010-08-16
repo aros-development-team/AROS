@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display an alert.
@@ -12,12 +12,12 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-extern void *priv_KernelBase;
+#include "exec_intern.h"
 
-static inline void bug(const char *format, ...)
+static inline void bug(APTR KernelBase, const char *format, ...)
 {
-    void *KernelBase = priv_KernelBase;
     va_list args;
+
     va_start(args, format);
     KrnBug(format, args);
     va_end(args);
@@ -203,77 +203,77 @@ static inline void bug(const char *format, ...)
     task = FindTask (NULL);
 
     /* since this is an emulation, we just show the bug in the console */
-    bug ( "[exec] GURU Meditation %04lx %04lx\n[exec] "
+    bug (KernelBase, "[exec] GURU Meditation %04lx %04lx\n[exec] "
         , alertNum >> 16
         , alertNum & 0xFFFF
     );
 
     if (alertNum & 0x80000000)
-        bug ( "Deadend/" );
+        bug(KernelBase, "Deadend/" );
     else
-        bug( "Recoverable/" );
+        bug(KernelBase, "Recoverable/" );
 
     switch (GetSubSysId (alertNum))
     {
     case 0: /* CPU/OS/App */
         if (GetGenError (alertNum) == 0)
         {
-            bug( "CPU/" );
+            bug(KernelBase, "CPU/" );
 
             if (GetSpecError (alertNum) >= 2 && GetSpecError (alertNum) <= 0x1F)
-                bug("%s"
+                bug(KernelBase, "%s"
                     , CPUStrings[GetSpecError (alertNum) - 2]
                 );
             else
-                bug("*unknown*");
+                bug(KernelBase, "*unknown*");
         }
         else if (GetGenError (alertNum) <= 0x0B)
         {
-            bug("%s/"
+            bug(KernelBase, "%s/"
                 , GenPurposeStrings[GetGenError (alertNum) - 1]
             );
 
             if (GetSpecError (alertNum) >= 0x8001
                 && GetSpecError (alertNum) <= 0x8035)
             {
-                bug("%s"
+                bug(KernelBase, "%s"
                     , AlertObjects[GetSpecError (alertNum) - 0x8001]
                 );
             }
             else
-                bug("*unknown*");
+                bug(KernelBase, "*unknown*");
         }
 
         break;
 
     case 1: /* Exec */
-        bug("Exec/");
+        bug(KernelBase, "Exec/");
 
         if (!GetGenError (alertNum)
             && GetSpecError (alertNum) >= 0x0001
             && GetSpecError (alertNum) <= 0x0010)
         {
-            bug("%s"
+            bug(KernelBase, "%s"
                 , ExecStrings[GetSpecError (alertNum) - 0x0001]
             );
         }
         else
         {
-            bug("*unknown*");
+            bug(KernelBase, "*unknown*");
         }
 
         break;
 
     case 2: /* Graphics */
-        bug("Graphics/*unknown*");
+        bug(KernelBase, "Graphics/*unknown*");
 
         break;
 
     default:
-        bug("*unknown*/*unknown*");
+        bug(KernelBase, "*unknown*/*unknown*");
     }
 
-    bug("\n[exec] Task: %p (%s)\n"
+    bug(KernelBase, "\n[exec] Task: %p (%s)\n"
         , task
         , (task && task->tc_Node.ln_Name) ?
             task->tc_Node.ln_Name

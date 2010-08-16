@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -12,6 +12,7 @@
 #include <aros/atomic.h>
 #include <proto/kernel.h>
 
+#include "exec_intern.h"
 
 /*****i***********************************************************************
 
@@ -72,11 +73,7 @@
     if (SysBase->TDNestCnt < 0)		    	/* If task switching enabled */
     {
 	if (SysBase->IDNestCnt < 0)	    	/* And interrupts enabled */
-	{
-	    void *KernelBase = TLS_GET(KernelBase);
-
 	    KrnSchedule();
-	}
 	else if (!(flag & 0x80))		/* Generate software interrupt */
 	{
 #if 0

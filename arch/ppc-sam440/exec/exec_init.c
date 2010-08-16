@@ -18,10 +18,11 @@
 #include <inttypes.h>
 
 #include "etask.h"
-#include "exec_intern.h"
 #include "exec_util.h"
 
 #include "../kernel/kernel_intern.h"
+
+#include "exec_intern.h"
 
 D(extern void debugmem(void));
 
@@ -393,6 +394,7 @@ void exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
     InitCode(RTF_SINGLETASK, 0);
     
+    KernelBase = getKernelBase();
     D(debugmem());
 
     D(bug("[exec] InitCode(RTF_COLDSTART)\n"));
@@ -579,6 +581,7 @@ AROS_LH0I(int, null,
 #undef kprintf
 #undef rkprintf
 #undef vkprintf
+#undef KernelBase
 
 static int __kprintf(const UBYTE *fmt, ...)
 {

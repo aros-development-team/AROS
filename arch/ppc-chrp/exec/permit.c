@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Permit() - Allow tasks switches to occur.
@@ -14,7 +14,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-extern void *priv_KernelBase;
+#include "exec_intern.h"
 
 #undef Exec
 #ifdef UseExecstubs
@@ -66,8 +66,6 @@ HISTORY
 #undef Exec
 {
     AROS_LIBFUNC_INIT
-
-    void *KernelBase = priv_KernelBase;
 
     /*
         Task switches are allowed again, if a switch is pending, we
