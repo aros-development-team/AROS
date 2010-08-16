@@ -9,7 +9,8 @@ USER_CFLAGS := -I $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I $(SRCDIR)/arch/all-$(A
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
          dispatch getbootinfo getscheduler issuper mapglobal registermodule          \
 	 remexceptionhandler remirqhandler schedule setprotection setscheduler sti   \
-	 switch unmapglobal unregistermodule virtualtophysical decodelocation
+	 switch unmapglobal unregistermodule virtualtophysical decodelocation	     \
+	 putchar maygetchar
 
 FILES := kernel_init kernel_debug kernel_tagitems
 

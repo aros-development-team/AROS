@@ -357,6 +357,9 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod, struct ExecBase *s
     MainThreadId = GetCurrentThreadId();
     SetUnhandledExceptionFilter(exceptionHandler);
 
+    conin  = GetStdHandle(STD_INPUT_HANDLE);
+    conout = GetStdHandle(STD_OUTPUT_HANDLE);
+
     IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
     if (IntObjects[INT_TIMER]) {
 	AllocatedInts[INT_TIMER] = 1;

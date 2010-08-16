@@ -50,6 +50,8 @@ char *kernel_functions[] = {
     "core_syscall",
     "core_is_super",
     "core_protect",
+    "core_putc",
+    "core_getc",
     NULL
 };
 

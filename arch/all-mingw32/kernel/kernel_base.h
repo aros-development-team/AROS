@@ -61,6 +61,8 @@ struct KernelInterface
     void (*core_syscall)(const unsigned int n);
     unsigned char (*core_is_super)(void);
     unsigned int (*core_protect)(void *addr, unsigned int len, unsigned int prot);
+    void (*core_putc)(char c);
+    int (*core_getc)(void);
 };
 
 extern struct HostInterface *HostIFace;
@@ -81,6 +83,8 @@ extern unsigned char Sleep_Mode;
 extern unsigned char PendingInts[256];
 extern struct ExecBase *SysBase;
 extern struct KernelBase *KernelBase;
+
+extern HANDLE conin, conout;
 
 void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase);
 void core_Switch(CONTEXT *regs, struct ExecBase *SysBase);

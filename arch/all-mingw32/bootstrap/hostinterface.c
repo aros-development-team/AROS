@@ -18,7 +18,6 @@ static struct HostInterface _HostIFace = {
     Host_HostLib_FreeErrorStr,
     Host_HostLib_GetInterface,
     Host_VKPrintF,
-    Host_PutChar,
     Host_Shutdown,
     Host_Alert
 };

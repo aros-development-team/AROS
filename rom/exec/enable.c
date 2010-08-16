@@ -1,14 +1,18 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Enable() - Allow interrupts to occur after Disable().
     Lang: english
 */
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
+#include <proto/kernel.h>
+
+#include "exec_intern.h"
 
 /*****************************************************************************/
 #undef  Exec
@@ -83,17 +87,25 @@
     
     if( SysBase->IDNestCnt < 0)
     {
-	/*
-	    We have to enable interrupts, however some silly person
-	    hasn't written the code required to do it yet. They should
-	    have created a file in config/$(KERNEL)/exec or
-	    config/$(ARCH)/exec called disable.c or disable.s which
-	    implements this function.
-	*/
+        D(bug("[Enable] Enabling interrupts\n"));
+        KrnSti();
 
-#ifndef __CXREF__
-#error You have not written the $(KERNEL) interrupt subsystem!
-#endif
+	if (KrnIsSuper())
+	    return;
+
+        /* There's no dff09c like thing in x86 native which would allow
+           us to set delayed (mark it as pending but it gets triggered
+           only once interrupts are enabled again) software interrupt,
+           so we check it manually here in Enable() == same stuff as
+           in Permit(). */
+           
+        if ((SysBase->TDNestCnt < 0) && (SysBase->AttnResched & ARF_AttnSwitch))
+        {
+            KrnSchedule();        
+        }
+        
+        if (SysBase->SysFlags & SFF_SoftInt)
+            KrnCause();
     }
 
     AROS_LIBFUNC_EXIT
