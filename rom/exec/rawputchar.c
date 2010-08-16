@@ -1,11 +1,14 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Emit one character via raw IO
     Lang: english
 */
-#include <unistd.h>
+
+#include <proto/kernel.h>
+
+#include "exec_intern.h"
 
 /*****i***********************************************************************
 
@@ -21,7 +24,7 @@
 	struct ExecBase *, SysBase, 86, Exec)
 
 /*  FUNCTION
-	Emits a single character.
+	Emits a single character into low-level debug output stream
 
     INPUTS
 	chr - The character to emit
@@ -31,6 +34,8 @@
 
     NOTES
 	This function is for very low level debugging only.
+
+	Zero bytes are ignored by this function.
 
     EXAMPLE
 
@@ -48,11 +53,7 @@
     /* Don't write 0 bytes */
     if (chr)
     {
-	/* Write char to stderr */
-	write (STDERR_FILENO, &chr, 1);
-
-	/* Make sure it makes it to the user. Slow but safe. */
-	fsync (STDERR_FILENO);
+	KrnPutChar(chr);
     }
 
     AROS_LIBFUNC_EXIT

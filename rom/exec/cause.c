@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Cause() - Cause a software interrupt.
@@ -9,8 +9,8 @@
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
 #include <hardware/custom.h>
+#include <proto/kernel.h>
 
-/* Change this to <exec_intern.h> if you move this file... */
 #include "exec_intern.h"
 
 /*****************************************************************************
@@ -88,26 +88,23 @@
 
     UBYTE pri;
 
+    Disable();
     /* Check to ensure that this node is not already in a list. */
     if( softint->is_Node.ln_Type != NT_SOFTINT )
     {
-	/* Scale the priority down to a number between 0 and 4 inclusive
-	   We can use that to index into exec's software interrupt lists. */
-	pri = ((softint->is_Node.ln_Pri & 0xF0) + 0x20) >> 4;
+        /* Scale the priority down to a number between 0 and 4 inclusive
+        We can use that to index into exec's software interrupt lists. */
+        pri = (softint->is_Node.ln_Pri + 0x20)>>4;
 
-	/* We are accessing an Exec list, protect ourselves. */
-	Disable();
-	AddTail((struct List *)&SysBase->SoftInts[pri],
-		(struct Node *)softint);
-	softint->is_Node.ln_Type = NT_SOFTINT;
-	SysBase->SysFlags |= SFF_SoftInt;
-	Enable();
+        /* We are accessing an Exec list, protect ourselves. */
+        ADDTAIL(&SysBase->SoftInts[pri].sh_List, &softint->is_Node);
+        softint->is_Node.ln_Type = NT_SOFTINT;
+        SysBase->SysFlags |= SFF_SoftInt;
 
-	/* We now cause a software interrupt. Pretty hard here... */
-#ifndef __CXREF__
-#error The '$(KERNEL)' interrupt implementation has not been completed.
-#endif
+        /* If we are in usermode the software interrupt will end up
+           being triggered in Enable(). See Enable() code */
     }
+    Enable();
 
     AROS_LIBFUNC_EXIT
 } /* Cause() */
@@ -122,11 +119,10 @@
     at least declare all of them. You do not however have to use any
     of them (although that is recommended).
 
-    This procedure could be more efficient, and it has to be implemented
-    in the kernel.
+    This procedure could be more efficient.
 */
 
-AROS_UFH5(ULONG, SoftIntDispatch,
+AROS_UFH5(void, SoftIntDispatch,
     AROS_UFHA(ULONG, intReady, D1),
     AROS_UFHA(struct Custom *, custom, A0),
     AROS_UFHA(IPTR, intData, A1),
@@ -136,15 +132,7 @@ AROS_UFH5(ULONG, SoftIntDispatch,
     AROS_USERFUNC_INIT
 
     struct Interrupt *intr;
-    UBYTE i;
-    ULONG res;
-
-    /*
-	Hmm, we have to disable software interrupts ONLY. Do NOT disable
-	any other kind of interrupt. This is very hard to do here however.
-
-	The #error line above will trap however.
-    */
+    BYTE i;
 
     /* Don't bother if there are no software ints queued. */
     if( SysBase->SysFlags & SFF_SoftInt )
@@ -152,23 +140,33 @@ AROS_UFH5(ULONG, SoftIntDispatch,
 	/* Clear Software interrupt pending flag. */
 	SysBase->SysFlags &= ~(SFF_SoftInt);
 
-	for(i=0; i < 4; i++)
-	{
-	    /* There is a possible problem here with list access */
-	    while( (intr = RemHead((struct List *)&SysBase->SoftInts[i])) )
-	    {
-		intr->is_Node.ln_Type = NT_INTERRUPT;
+        for(;;)
+        {
+            for(i=4; i>=0; i--)
+            {
+		KrnCli();
+                intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
 
-		/* Call the software interrupt. */
-		AROS_UFC3(void, intr->is_Code,
-		    AROS_UFCA(APTR, intr->is_Data, A1),
-		    AROS_UFCA(ULONG_FUNC, intr->is_Code, A5),
-		    AROS_UFCA(struct ExecBase *, SysBase, A6));
-	    }
-	}
+                if (intr)
+                {
+                    intr->is_Node.ln_Type = NT_INTERRUPT;
+
+                    KrnSti();
+
+                    /* Call the software interrupt. */
+                    AROS_UFC3(void, intr->is_Code,
+                              AROS_UFCA(APTR, intr->is_Data, A1),
+                              AROS_UFCA(APTR, intr->is_Code, A5),
+                              AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+                    /* Get out and start loop *all* over again *from scratch*! */
+                    break;
+                }
+            }
+
+            if (!intr) break;
+        }
     }
 
-    /* We now re-enable software interrupts. But we can't do it here. */
     AROS_USERFUNC_EXIT
 }
-

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Disable() - Stop interrupts from occurring.
@@ -10,6 +10,9 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
+#include <proto/kernel.h>
+
+#include "exec_intern.h"
 
 /*****************************************************************************/
 #undef  Exec
@@ -75,22 +78,8 @@
 
     AROS_LIBFUNC_INIT
 
-    /* Only disable interrupts if they are not already disabled. The
-       initial (enabled) value of IDNestCnt is -1
-    */
-    
+    KrnCli();
     AROS_ATOMIC_INC(SysBase->IDNestCnt);
-    
-    /*
-	We have to disable interrupts, however some silly person
-	hasn't written the code required to do it yet. They should
-	have created a file in config/$(KERNEL)/exec or
-	config/$(ARCH)/exec called disable.c or disable.s which
-	implements this function.
-    */
-    #ifndef __CXREF__
-    #error You have not written the $(KERNEL) interrupt subsystem!
-    #endif
 
     AROS_LIBFUNC_EXIT
 } /* Disable() */
