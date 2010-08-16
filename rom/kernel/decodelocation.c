@@ -1,3 +1,4 @@
+#include <aros/kernel.h>
 #include <dos/bptr.h>
 #include <proto/exec.h>
 

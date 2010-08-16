@@ -1,3 +1,5 @@
+#include <aros/kernel.h>
+
 #include <kernel_base.h>
 
 /*

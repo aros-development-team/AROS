@@ -1,3 +1,6 @@
+#include <aros/kernel.h>
+
+#include <kernel_base.h>
 #include <kernel_debug.h>
 
 /*****************************************************************************
@@ -5,7 +8,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1(int, KrnMayGetChar,
+AROS_LH0(int, KrnMayGetChar,
 
 /*  SYNOPSIS */
 
