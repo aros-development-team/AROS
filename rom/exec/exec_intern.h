@@ -58,6 +58,6 @@ extern void __AROS_InitExecBase (void);
 #define ARF_AttnDispatch    (1L<<15)
 
 ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)(struct ExecBase *, UWORD *ranges[]);
-struct ExecBase *PrepareExecBase(struct MemHeader *mh);
+struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args);
 
 #endif /* __EXEC_INTERN_H__ */

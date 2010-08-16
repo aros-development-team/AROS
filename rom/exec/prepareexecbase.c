@@ -67,7 +67,7 @@ static APTR allocmem(struct MemHeader *mh, ULONG size)
 */
 extern void *stderr;
 
-struct ExecBase *PrepareExecBase(struct MemHeader *mh)
+struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
 {
     ULONG   negsize = 0, i;
     VOID  **fp      = LIBFUNCTABLE;
@@ -174,9 +174,16 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
-    
+
+    D(bug("[exec] TrapCode is 0x%p\n", SysBase->TaskTrapCode));
+    /* Enable mungwall before the first AllocMem() */
+    if (args && strstr(args, "mungwall"))
+    {
+	((struct IntExecBase *)SysBase)->IntFlags = EXECF_MungWall;
+	bug("[exec] Mungwall enabled\n");
+    }
+
     SysBase->DebugAROSBase  = PrepareAROSSupportBase(SysBase);
-    D(bug("[execbase] TrapCode is 0x%p\n", SysBase->TaskTrapCode));
 
     return SysBase;
 }

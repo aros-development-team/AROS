@@ -130,7 +130,7 @@ UBYTE *memory, *space;
 int memSize = 48;
 
 extern void InitCore(void);
-extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
+extern struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args);
 
 char *join_string(int argc, char **argv)
 {
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
         This will prepare enough of ExecBase to allow us to
         call functions, it will also set up the memory list.
     */
-    SysBase = PrepareExecBase(mh);
+    SysBase = PrepareExecBase(mh, Kernel_Args);
 
     if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
     {
