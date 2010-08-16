@@ -1,4 +1,5 @@
 #include <aros/arossupportbase.h>
+#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <aros/symbolsets.h>
@@ -16,11 +17,13 @@
 #include "kernel_tagitems.h"
 #include "winapi.h"
 
-#define D(x)
-
 /* External functions from exec.library */
-extern struct ExecBase *PrepareExecBase(struct MemHeader *);
+extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *);
 extern ULONG **Exec_RomTagScanner(struct ExecBase*, UWORD**);
+
+#undef kprintf
+#undef vkprintf
+#undef rkprintf
 
 /* External functions from kernel_debug.c */
 extern int mykprintf(const char * fmt, ...);
@@ -64,6 +67,7 @@ int __startup startup(struct TagItem *msg)
     void *klo = NULL;
     void *khi = NULL;
     struct mb_mmap *mmap = NULL;
+    char *args = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
     while ((tag = krnNextTagItem(&tstate))) {
@@ -86,6 +90,10 @@ int __startup startup(struct TagItem *msg)
 
 	case KRN_HostInterface:
 	    HostIFace = (struct HostInterface *)tag->ti_Data;
+	    break;
+	
+	case KRN_CmdLine:
+	    args = (char *)tag->ti_Data;
 	    break;
 	}
     }
@@ -140,7 +148,7 @@ int __startup startup(struct TagItem *msg)
      * only from here. Probably the code should be reorganized and this routine needs
      * to be moved to kernel.resource
      */
-    SysBase = PrepareExecBase(mh);
+    SysBase = PrepareExecBase(mh, args);
     mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);
 
     /*
