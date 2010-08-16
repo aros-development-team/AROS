@@ -129,7 +129,7 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 
 _MM_ ::
 	@$(ECHO) "#MM FOO : BAR1 BAR2"
-	@$(ECHO) "#MM FOOVIRT- : BAR1 BAR2 \\"
+	@$(ECHO) "#MM- FOOVIRT : BAR1 BAR2 \\"
 	@$(ECHO) "#MM BAR3"
 
 
