@@ -6,7 +6,7 @@
 # System environment
 EXE    = jed
 CC     = gcc -s
-CFLAGS = -I/amiga/include #-DDEBUG 
+CFLAGS = #-I/amiga/include #-DDEBUG 
 LIBS   = -noixemul
 RM     = rm -f #Delete Quiet
 
@@ -23,8 +23,8 @@ all: $(EXE)
 $(EXE): $(OBJ)
 	$(CC) $(OBJ) -o $(EXE) $(LIBS)
 
-cat: ../Catalogs/JanoEditor.cd
-	catcomp $< Jed_Strings.h
+Jed_Strings.h: catalogs/JanoEditor.cd
+	catcomp $< cfile strings.h
 
 clean:
 	$(RM) $(OBJ)
