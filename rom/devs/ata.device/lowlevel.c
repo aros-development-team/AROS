@@ -534,6 +534,9 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     ULONG step = 0;
     BOOL res = TRUE;
 
+    if (unit->au_Bus->ab_Base->ata_Poll)
+        irq = FALSE;
+
     /*
      * set up bus timeout
      */
