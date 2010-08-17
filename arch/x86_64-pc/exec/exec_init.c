@@ -229,6 +229,8 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
     }
 }
 
+#undef KernelBase
+
 int exec_main(struct TagItem *msg, void *entry)
 {
     struct ExecBase *SysBase;
@@ -713,7 +715,7 @@ int exec_main(struct TagItem *msg, void *entry)
             rkprintf("\3");
         }
         InitCode(RTF_SINGLETASK, 0);
-	KernelBase = TLS_GET(KernelBase);
+	PrivExecBase(SysBase)->KernelBase = TLS_GET(KernelBase);
 
         UBYTE apictotal;
         if ((apictotal = core_APICGetTotal()) > 1)
