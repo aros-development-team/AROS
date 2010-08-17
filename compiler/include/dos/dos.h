@@ -138,7 +138,7 @@ struct InfoData
     LONG id_BytesPerBlock; /* Bytes per block. */
     LONG id_DiskType;      /* Type of disk (see below). */
     BPTR id_VolumeNode;
-    LONG id_InUse;         /* Set, if device is in use. */
+    IPTR id_InUse;         /* Set, if device is in use. */
 };
 
 /* id_DiskState */
