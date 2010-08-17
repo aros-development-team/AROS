@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2009, The AROS Development Team. All rights reserved
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -592,6 +592,7 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->ata_32bit = FALSE;
     LIBBASE->ata_NoMulti = FALSE;
     LIBBASE->ata_NoDMA = FALSE;
+    LIBBASE->ata_Poll = FALSE;
 
     /*
      * start initialization: 
@@ -635,6 +636,11 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
                     {
                         D(bug("[ATA  ] ata_init: Disabled DMA transfers\n"));
                         LIBBASE->ata_NoDMA = TRUE;
+                    }
+                    if (strstr(node->ln_Name, "poll"))
+                    {
+                        D(bug("[ATA  ] ata_init: Using polling to detect end of busy state\n"));
+                        LIBBASE->ata_Poll = TRUE;
                     }
                 }
             }

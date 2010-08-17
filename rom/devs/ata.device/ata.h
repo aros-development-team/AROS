@@ -114,6 +114,7 @@ struct ataBase
    UBYTE                   ata_32bit;
    UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
+   UBYTE                   ata_Poll;
    UBYTE                   ata_NoSubclass;
    UBYTE                   ata_ScanFlags;
 
