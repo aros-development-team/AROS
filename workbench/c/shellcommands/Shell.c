@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     The shell program.
@@ -822,6 +822,7 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 	    char buf[32];
 
 	    ++s;
+#if 0
 	    if (s[0] == is->dollar && s[1] == is->dollar && s[2] == is->ket)
 	    {
 		/* <$$> CLI number substitution */
@@ -829,7 +830,9 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 		len = sprintf(buf, "%d", is->cliNumber);
 		appendString(filtered, buf, len);
 	    }
-	    else for (i = 0; i < is->argcount; ++i)
+	    else
+#endif
+            for (i = 0; i < is->argcount; ++i)
 	    {
 		len = is->argnamelen[i];
 		if (strncmp(s, is->argname[i], len) == 0)
@@ -960,9 +963,9 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 			break;
 		    }
 		}
-	    if (is->argcount == i)
-	        appendString(filtered, s - 1, 1);
-}
+		if (is->argcount == i)
+		    appendString(filtered, s - 1, 1);
+	    }
 	}
 	else
 	    appendString(filtered, s++, 1);
@@ -1031,27 +1034,77 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 #define from       cs->CS_Buffer
 #define advance(x) cs->CS_CurChr += x;
 
-    LONG   result, i;
+    LONG   result, i, len;
+    char   buf[32];
     BOOL   foundOpeningBrace = FALSE,
            foundClosingBrace = FALSE,
            doNotExpandVar    = FALSE;
     STRPTR varNameString     = NULL;
 
-    /* Vars and BackTicks can't be properly handled by using FindItem() as
+    /*
+       Vars and BackTicks can't be properly handled by using FindItem() as
        it wouldn't find them when they aren't surrounded with blanck spaces,
        so we handle them ourselves here. Environment variables are always
-       referended by prepending a '$' to their name, it's only scripts
-       argument variables that can be referended by prepending a modified
+       referenced by prepending a '$' to their name, it's only scripts
+       argument variables that can be referenced by prepending a modified
        (.dollar) sign. Environment variable names containing non-alpha-
        numerical characters must be surrounded with braces ( ${_} ).
-       Variables and BackTicks need to be handled only once per line.
-
-       Perhaps substArgs() would be a better place to handle all that?
-       But could we get the same results, as <$$> is done there and fails
-       in some cases... */
+        CLI number substitution <$$> handles .dollar and .bra and .ket
+       signs subtitution.
+        <$$> and Variables and BackTicks need to be handled only once per
+       line, but in right order: Commodore's DPAT script builds an
+       environment variable per script used, by including the current CLi's
+       number in the variable name: $qw{$$} so we must first handle CLI
+       number substitution, then extract variables, and then handle 
+       BackTicks nested commands.
+     */
 
     if ( cs->CS_CurChr == 0 )
     {
+
+        /* <$$> CLI number substitution */
+        while ( cs->CS_CurChr < cs->CS_Length )
+        {
+
+            if ( (item == '\n') || (item == '\0') )
+            {
+                D(bug("[Shell] var-handling: found end of line\n"));
+                break;
+            }
+
+	    if ( (item == is->bra)                                &&
+                 (cs->CS_Buffer[cs->CS_CurChr + 1] == is->dollar) &&
+                 (cs->CS_Buffer[cs->CS_CurChr + 2] == is->dollar) &&
+                 (cs->CS_Buffer[cs->CS_CurChr + 3] == is->ket)       )
+	    {
+                len = sprintf(buf, "%d", is->cliNumber);
+                appendString(filtered, buf, len);
+                advance(4);
+	    }
+            else
+            {
+                appendString(filtered, (CONST_STRPTR) &item, 1);
+                advance(1);
+            }
+        }
+
+        appendString(filtered, "\n\0", 2);
+
+        if ( filtered->CS_Buffer != NULL )
+        {
+            /* cs->CS->Buffer is built on the stack */
+            CopyMem(filtered->CS_Buffer, cs->CS_Buffer, strlen(filtered->CS_Buffer));
+        }
+
+        cs->CS_Length = strlen(cs->CS_Buffer);
+        cs->CS_CurChr = 0;
+        FreeVec(filtered->CS_Buffer);
+        filtered->CS_Buffer = NULL;
+        filtered->CS_CurChr = filtered->CS_Length = 0;
+        
+        D(bug("\n[Shell] <$$> CLI number substitution done... cs->CS_Buffer = '%s'\n",
+            cs->CS_Buffer));
+
 
         /* Environment variables handling (locals and globals) */
         while ( cs->CS_CurChr < cs->CS_Length )
@@ -1180,11 +1233,12 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
         cs->CS_Length = strlen(cs->CS_Buffer);
         cs->CS_CurChr = 0;
-        D(bug("\n[Shell] Var handling done... cs->CS_Buffer = '%s'\n", cs->CS_Buffer));
-
         FreeVec(filtered->CS_Buffer);
         filtered->CS_Buffer = NULL;
         filtered->CS_CurChr = filtered->CS_Length = 0;
+        
+        D(bug("\n[Shell] Var handling done... cs->CS_Buffer = '%s'\n", cs->CS_Buffer));
+
 
         /* BackTicks handling... we allow several embedded commands
            for now, while original AmigaDOS only allows one per line */
@@ -1262,11 +1316,12 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
         cs->CS_Length = strlen(cs->CS_Buffer);
         cs->CS_CurChr = 0;
-        D(bug("\n[Shell] BackTicks handling done... cs->CS_Buffer = '%s'\n", cs->CS_Buffer));
-
         FreeVec(filtered->CS_Buffer);
         filtered->CS_Buffer = NULL;
         filtered->CS_CurChr = filtered->CS_Length = 0;
+
+        D(bug("\n[Shell] BackTicks handling done... cs->CS_Buffer = '%s'\n", cs->CS_Buffer));
+
 
     } // if ( cs->CS_CurChr == 0 )
     else
@@ -1512,7 +1567,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 				while (s[0] == ' ' || s[0] == '\t')
 				    ++s;
 
-				while (s[0] != '/' && s[0] != '\0')
+				while (s[0] != '/' && s[0] != ',' && s[0] != '\0')
 				{
 				    ++len;
 				    ++s;
@@ -1567,11 +1622,13 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 				}
 				else if (t & MULTIPLE)
 				{
-				    CONST_STRPTR *m = (CONST_STRPTR*)is->arg[i];
+				    CONST_STRPTR *m = NULL;
+                                    if (is->arg[i])
+                                        m = (CONST_STRPTR*)is->arg[i];
 
 				    kprintf("[Shell] .key[%s]/%02x = ",
 					is->argname[i], (int)is->argtype[i]);
-				    while (*m)
+				    while (m && *m)
 				    {
 					kprintf("%s ", *m);
 					++m;
