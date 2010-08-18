@@ -1,5 +1,11 @@
 /* WinAPI definitions to be used with AROS-side code. Taken from various Mingw32 headers. */
 
+#ifdef __x86_64__
+#define __stdcall
+#else
+#define __stdcall __attribute__((stdcall))
+#endif
+
 #define GENERIC_READ	0x80000000
 #define GENERIC_WRITE	0x40000000
 #define GENERIC_EXECUTE	0x20000000
