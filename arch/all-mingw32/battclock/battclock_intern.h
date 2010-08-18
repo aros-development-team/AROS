@@ -11,6 +11,12 @@
 
 #include <exec/libraries.h>
 
+#ifdef __x86_64__
+#define __stdcall
+#else
+#define __stdcall __attribute__((stdcall))
+#endif
+
 typedef struct _SYSTEMTIME
 {
     UWORD wYear;
@@ -25,8 +31,8 @@ typedef struct _SYSTEMTIME
 
 struct KernelInterface
 {
-    __attribute__((stdcall)) void (*GetSystemTime)(SYSTEMTIME *lpSystemTime);
-    __attribute__((stdcall)) ULONG (*SetSystemTime)(SYSTEMTIME *lpSystemTime);
+    void  __stdcall (*GetSystemTime)(SYSTEMTIME *lpSystemTime);
+    ULONG __stdcall (*SetSystemTime)(SYSTEMTIME *lpSystemTime);
 };
 
 struct BattClockBase
