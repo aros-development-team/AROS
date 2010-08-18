@@ -87,7 +87,7 @@ char *join_string(int argc, char **argv)
 
     for (j = 0; j < argc; j++)
 	x += (strlen(argv[j]) + 1);
-    D(printf("[Init] Allocating %lu bytes for string\n", x));
+    D(printf("[Init] Allocating %u bytes for string\n", x));
     str = malloc(x);
     if (str) {
 	s = str;
@@ -228,7 +228,7 @@ int main(int argc, char ** argv)
 	printf("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
 	return -1;
     }
-    D(printf("[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", MemoryMap.addr, MemoryMap.addr + MemoryMap.len, MemoryMap.len));
+    D(printf("[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", (void *)MemoryMap.addr, (void *)MemoryMap.addr + MemoryMap.len, MemoryMap.len));
 
     km[0].ti_Data = (IPTR)ro_addr;
     km[1].ti_Data = (IPTR)ro_addr + ro_size - 1;
