@@ -342,7 +342,7 @@ static struct charmap_line * charmapcon_find_line(Class * cl, Object * o, ULONG 
   D(bug("Finding correct line\n"));
   while(ycp > 0) {
 	if (!line->next) {
-	  line->next = charmap_newline(0,line);
+	  charmap_newline(0,line);
 	  data->scrollback_size += 1;
 	}
 	line = line->next;
@@ -392,7 +392,7 @@ static VOID charmap_scroll_up(Class * cl, Object * o, ULONG y)
 
   while(y--) {
 	if (!data->top_of_window->next) {
-	  data->top_of_window->next = charmap_newline(0, data->top_of_window);
+	  charmap_newline(0, data->top_of_window);
 	  data->scrollback_size += 1;
 	}
 	data->top_of_window = data->top_of_window->next;
@@ -701,6 +701,15 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
 		GFX_XMAX(o),    GFX_Y(o,yc+1)-1);
       y += YRSIZE;
       yc ++;
+
+      /* We want to make sure we have lines covering the window once
+	 there's something to scroll back, as that simplies resize handling
+	 etc. 
+      */
+      if (!line->next && yc <= toLine) {
+	line->next = charmap_newline(0,line);
+	data->scrollback_size += 1;
+      }
       line = line->next;
     }
 
@@ -730,15 +739,15 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewW
     D(bug("CharMapCon::NewWindowSize(o=%p) x=%d, y=%d, ymax=%d\n",
 				  o, XCP,YCP, CHAR_YMAX(o)));
 
-	// Is console empty? Unlikely, but anyway.
-	if (!data->top_of_window) return;
+    // Is console empty? Unlikely, but anyway.
+    if (!data->top_of_window) return;
+    
+    // Scroll up if new window size has forced the cursor up
+    if (old_ycp > CHAR_YMAX(o)) {
+      charmap_scroll_up(cl,o, old_ycp - CHAR_YMAX(o));
+    }
 
-	// Scroll up if new window size has forced the cursor up
-	if (old_ycp > CHAR_YMAX(o)) {
-	  charmap_scroll_up(cl,o, old_ycp - CHAR_YMAX(o));
-	}
-
-	charmapcon_refresh(cl,o,0);
+    charmapcon_refresh(cl,o,0);
 }
 
 

@@ -32,6 +32,8 @@ struct charmap_line * charmap_newline(struct charmap_line * next, struct charmap
   struct charmap_line * newline = (struct charmap_line *)AllocMem(sizeof(struct charmap_line),MEMF_ANY);
   newline->next = next;
   newline->prev = prev;
+  if (next) next->prev = newline;
+  if (prev) prev->next = newline;
   newline->text = 0;
   newline->fgpen = 0;
   newline->bgpen = 0;
