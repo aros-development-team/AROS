@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -110,7 +110,7 @@ AROS_SHA(STRPTR,   , TO,     /K,   NULL))
 	    }
 	    else
 	    {
-		b += l;
+		b += l - 1; // Original Echo always prints at least the latest character
 	    }
 	}
 	else if(l > max)
