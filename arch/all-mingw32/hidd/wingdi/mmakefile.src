@@ -1,8 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
-
 FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
 
 #MM kernel-hidd-wingdi-kobj  : kernel-hidd-wingdi-native devs-monitors-gdi
@@ -10,8 +8,7 @@ FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
 
 %build_module mmake=kernel-hidd-wingdi \
   modname=wingdi modtype=hidd \
-  files=$(FILES) cflags=$(FLAGS) \
-  uselibs="oop hiddgraphicsstubs"
+  files=$(FILES) uselibs="oop rom hiddgraphicsstubs hiddstubs"
 
 DISK_FILES  := disk_startup
 DISK_EXEDIR := $(AROS_DEVS)/Monitors
@@ -27,11 +24,13 @@ NATIVE_LIBDIR := $(GENDIR)/lib
 
 NATIVE_FILES  := gdi_native
 
+NATIVE_LDFLAGS  := -shared -L$(NATIVE_LIBDIR)
+
 USER_INCLUDES := -I$(GENINCDIR)
-USER_LDFLAGS  := -shared -L$(NATIVE_LIBDIR)
 
 %build_prog mmake=kernel-hidd-wingdi-native \
     progname=wingdi.dll targetdir=$(NATIVE_BINDIR) \
-    files=$(NATIVE_FILES) compiler=kernel uselibs="kernel gdi32"
+    files=$(NATIVE_FILES) compiler=kernel uselibs="kernel gdi32" \
+    ldflags=$(NATIVE_LDFLAGS)
 
 %common
