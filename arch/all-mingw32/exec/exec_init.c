@@ -171,13 +171,16 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     UWORD sum;
     UWORD *ptr;
 
-    D(bug("[exec_init] Entered exec.library init, SysBase is 0x%p\n", sysBase));
     SysBase = sysBase;
 
     KernelBase = OpenResource("kernel.resource");
     D(bug("[exec_init] KernelBase is 0x%p\n", KernelBase));
     if (!KernelBase)
 	return NULL;
+
+    /* We print the notice here because kprintf() works only after KernelBase is set up */
+    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
+    	bug("[exec] Mungwall enabled\n");
 
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,

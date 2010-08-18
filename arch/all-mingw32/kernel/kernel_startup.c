@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <aros/arossupportbase.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
@@ -143,7 +145,7 @@ int __startup startup(struct TagItem *msg)
     mh->mh_Upper = memory + memlen - 1;
     mh->mh_Free = mh->mh_First->mc_Bytes;
 
-    D(mykprintf("[Kernel] calling PrepareExecBase@%p mh_First=%p\n",PrepareExecBase,mh->mh_First));
+    D(mykprintf("[Kernel] calling PrepareExecBase(), mh_First = 0x%p, args = %s\n", mh->mh_First, args));
     /*
      * FIXME: This routine is part of exec.library, however it doesn't have an LVO
      * (it can't have one because exec.library is not initialized yet) and is called
@@ -151,7 +153,7 @@ int __startup startup(struct TagItem *msg)
      * to be moved to kernel.resource
      */
     SysBase = PrepareExecBase(mh, args);
-    mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);
+    D(mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections

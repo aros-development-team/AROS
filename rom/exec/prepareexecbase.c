@@ -69,6 +69,7 @@ extern void *stderr;
 
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
 {
+    struct ExecBase *SysBase;
     ULONG   negsize = 0, i;
     VOID  **fp      = LIBFUNCTABLE;
     
@@ -106,7 +107,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;
     SysBase->LibNode.lib_Node.ln_Name = "exec.library";
-    SysBase->LibNode.lib_IdString     = Exec_resident.rt_IdString;
+    SysBase->LibNode.lib_IdString     = (char *)Exec_resident.rt_IdString;
     SysBase->LibNode.lib_Version      = VERSION_NUMBER;
     SysBase->LibNode.lib_Revision     = REVISION_NUMBER;
     SysBase->LibNode.lib_OpenCnt      = 1;
@@ -175,13 +176,9 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
 
-    D(bug("[exec] TrapCode is 0x%p\n", SysBase->TaskTrapCode));
     /* Enable mungwall before the first AllocMem() */
     if (args && strstr(args, "mungwall"))
-    {
-	((struct IntExecBase *)SysBase)->IntFlags = EXECF_MungWall;
-	bug("[exec] Mungwall enabled\n");
-    }
+	PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
 
     SysBase->DebugAROSBase  = PrepareAROSSupportBase(SysBase);
 
