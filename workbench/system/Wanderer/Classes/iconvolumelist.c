@@ -164,15 +164,16 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                             D(bug("[IconVolumeList] %s: Volume '%s' is OFFLINE\n", __PRETTY_FUNCTION__, newdvn->dvn_VolName));
                             newdvn->dvn_FLags |= (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED);
                         }
-
-                        D(bug("[IconVolumeList] %s: Registering Volume '%s' @ %p (Device '%s' @ 0x%p, Unit @ 0x%p) Type: %d\n", __PRETTY_FUNCTION__, newdvn->dvn_VolName, dl, dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, dl->dol_Ext.dol_AROS.dol_Device, newdvn->dvn_Unit, dl->dol_Type));
+#if DEBUG
+                        bug("[IconVolumeList] %s: Registering Volume '%s' @ %p (Device '%s' @ 0x%p, Unit @ 0x%p) Type: %d\n", __PRETTY_FUNCTION__, newdvn->dvn_VolName, dl, dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, dl->dol_Ext.dol_AROS.dol_Device, newdvn->dvn_Unit, dl->dol_Type);
 			if (dl->dol_misc.dol_handler.dol_Startup)
 			{
 			    struct FileSysStartupMsg *thisfs_SM = dl->dol_misc.dol_handler.dol_Startup;
-                            D(bug("[IconVolumeList] %s: Startup msg @ 0x%p\n", __PRETTY_FUNCTION__, thisfs_SM));
-                            D(bug("[IconVolumeList] %s: Startup Device @ %p, Unit %d\n", __PRETTY_FUNCTION__, thisfs_SM->fssm_Device, thisfs_SM->fssm_Unit));
-			}
 
+                            bug("[IconVolumeList] %s: Startup msg @ 0x%p\n", __PRETTY_FUNCTION__, thisfs_SM);
+                            bug("[IconVolumeList] %s: Startup Device @ %p, Unit %d\n", __PRETTY_FUNCTION__, thisfs_SM->fssm_Device, thisfs_SM->fssm_Unit);
+			}
+#endif
 			if (dl->dol_Task != NULL)
 			{
                             D(bug("[IconVolumeList] %s: Packet Style device\n", __PRETTY_FUNCTION__));
@@ -182,7 +183,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 			else if (dl->dol_Ext.dol_AROS.dol_Device != NULL)
 			{
                             D(bug("[IconVolumeList] %s: IOFS Style device\n", __PRETTY_FUNCTION__));
-			    newdvn->dvn_Port = dl->dol_Ext.dol_AROS.dol_Device;
+			    newdvn->dvn_Port = (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device;
 			}
 #endif
 			else
@@ -209,6 +210,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                 D(bug("[IconVolumeList] %s: Checking Device '%s' @ %p (Device ", __PRETTY_FUNCTION__, dosname, dl));
                 D(if (dl->dol_Ext.dol_AROS.dol_Device) bug("'%s' ", dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name));
                 D(bug("@ 0x%p, Unit @ 0x%p) Type: %d\n", dl->dol_Ext.dol_AROS.dol_Device, __DL_UNIT, dl->dol_Type));
+
 #if defined(__AROS__)
 		if (dl->dol_Ext.dol_AROS.dol_Device == NULL)
 #else
@@ -224,6 +226,12 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		    strncpy(nd_nambuf, dosname, len);
 		    nd_nambuf[len] = ':';
 		    nd_nambuf[len + 1] = 0;
+
+		    if (!IsFileSystem(nd_nambuf))
+		    {
+			FreePooled(newdvl->dvl_Pool, nd_nambuf, len + 2);
+			continue;
+		    }
 
                     if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
                     {
@@ -279,7 +287,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 			    (
 			       (dvn->dvn_Port == dl->dol_Task)
 #if defined(__AROS__)
-			       || (dvn->dvn_Port == dl->dol_Ext.dol_AROS.dol_Device)
+			       || (dvn->dvn_Port == (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device)
 #endif
 			    ))
 			{
@@ -601,7 +609,7 @@ D(bug("[IconVolumeList] %s: Updating IconList\n", __PRETTY_FUNCTION__));
 }
 ///
 
-IPTR IconVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_CreateEntry *message)
+struct IconEntry *IconVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_CreateEntry *message)
 {
     struct IconEntry  		*this_Icon = NULL;
     struct VolumeIcon_Private   *volPrivate = NULL;
@@ -615,7 +623,7 @@ IPTR IconVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj
         }
     )
 
-    this_Icon = DoSuperMethodA(CLASS, obj, (Msg) message);
+    this_Icon = (struct IconEntry *)DoSuperMethodA(CLASS, obj, (Msg) message);
     if ((this_Icon) && (this_Icon->ie_IconListEntry.type == ST_ROOT))
     {
         if ((volPrivate = AllocMem(sizeof(struct VolumeIcon_Private), MEMF_CLEAR)) != NULL)
@@ -632,8 +640,7 @@ IPTR IconVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj
 
 IPTR IconVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_UpdateEntry *message)
 {
-    struct IconEntry  		*this_Icon = NULL;
-    struct VolumeIcon_Private   *volPrivate = NULL;
+    IPTR this_Icon;
 
     D(bug("[IconVolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -645,7 +652,7 @@ IPTR IconVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Object *obj
 IPTR IconVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DestroyEntry *message)
 {
     struct VolumeIcon_Private   *volPrivate = NULL;
-    IPTR                        rv = NULL;
+    IPTR                        rv;
 
     D(bug("[IconVolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
