@@ -51,10 +51,8 @@
     AROS_LIBFUNC_INIT
 
     /* Don't write 0 bytes */
-    if (chr)
-    {
+    if (KernelBase && chr)
 	KrnPutChar(chr);
-    }
 
     AROS_LIBFUNC_EXIT
 } /* RawPutChar */
