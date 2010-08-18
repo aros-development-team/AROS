@@ -263,6 +263,24 @@ AROS_LH1(void, beginio,
 	    error=ERROR_ACTION_NOT_KNOWN;
 	    break;
 
+	case FSA_DISK_INFO:
+	{
+	    /* In AmigaOS this functionality is provided by ACTION_DISK_INFO */
+	    struct InfoData *inf = iofs->io_Union.io_INFO.io_Info;
+	    struct filehandle *fh = iofs->IOFS.io_Unit;
+
+	    inf->id_NumSoftErrors = 0;
+	    inf->id_UnitNumber    = CONU_SNIPMAP;
+	    inf->id_DiskState     = ID_VALIDATED;
+	    inf->id_NumBlocks     = 0;
+	    inf->id_NumBlocksUsed = 0;
+	    inf->id_BytesPerBlock = 1;
+	    inf->id_DiskType      = ID_NO_DISK_PRESENT;
+	    inf->id_VolumeNode    = fh->window;
+	    inf->id_InUse         = (IPTR)&fh->conwriteio;
+	}
+	break;
+
 	case FSA_EXAMINE:
         {
             struct ExAllData  *ead        = iofs->io_Union.io_EXAMINE.io_ead;
