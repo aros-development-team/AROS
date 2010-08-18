@@ -288,7 +288,7 @@ SysBase_no:     s = sym->value;
             break;
 #endif
 	default:
-	    printf("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF_R_TYPE(rel->info));
+	    printf("[ELF Loader] Unrecognized relocation type %d %ld\n", i, ELF_R_TYPE(rel->info));
 	    return 0;
 	}
 	DREL(printf(" -> 0x%p\n", *p));
@@ -483,7 +483,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 		else {
 		    /* Remember start of code and debug info for the first segment */
 		    *kernel_entry = sh[i].addr;
-		    *kernel_debug = seg;
+		    *kernel_debug = ptr_ro;
 		}
 
 		seg = (dbg_seg_t *)ptr_ro;
