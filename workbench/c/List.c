@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     List the contents of a directory.
@@ -124,7 +124,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-const TEXT version[] = "$VER: List 41.6 (19.12.2009)\n";
+const TEXT version[] = "$VER: List 41.7 (18.08.2010)\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
@@ -205,7 +205,7 @@ int printDirHeader(STRPTR dirname, BOOL noHead)
 	%M  --  file name without extension
 	%N  --  file name
 	%P  --  file path
-	%S  --  the same as %N
+	%S  --  file name or file path
 	%T  --  creation date
 */
 
@@ -227,9 +227,32 @@ struct lfstruct
 
 int printLformat(STRPTR format, struct lfstruct *lf)
 {
-    STRPTR filename = FilePart(lf->filename);
+    STRPTR filename       = FilePart(lf->filename);
+    STRPTR temp           = format;
+    LONG   substitutePath = 0;
     char c;
-    
+
+    /*
+        Whether the path or the filename is substituted for an occurrence
+        of %S depends on how many occurrences are in the LFORMAT line, and
+        their order, as follows:
+
+        Occurrences of %S   1st         2nd         3rd         4th
+        1                   filename
+        2                   path        filename
+        3                   path        filename    filename
+        4                   path        filename    path        filename
+    */
+
+    while ( ( substitutePath < 4 ) && ( '\0' != (c = *temp++) ) )
+    {
+        if ( '%' == c )
+            if ( 'S' == toupper(*temp++) )
+                substitutePath++;
+    }
+    if ( substitutePath == 3 )
+        substitutePath = 2;
+
     while ('\0' != (c = *format++))
     {
 	if ('%' == c)
@@ -347,9 +370,24 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
 		break;
 		
-		/* Filename */
+		/* Filename or Path name */
 	    case 'S':
-		/* Fall through */
+                D(bug("[List] substitutePath = %d\n", substitutePath));
+                if ( (--substitutePath == 3) || (substitutePath == 1) )
+		{
+		    STRPTR end = FilePart(lf->filename);
+		    UBYTE  token = *end;
+
+		    *end = '\0';
+
+		    Printf(lf->filename);
+
+		    /* Restore pathname */
+		    *end = token;
+
+		    break;
+                }
+                /* Fall through */
 	    case 'N':
 		Printf(filename);
 		break;
