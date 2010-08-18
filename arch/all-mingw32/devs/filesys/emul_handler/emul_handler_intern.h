@@ -1,7 +1,7 @@
 #ifndef __EMUL_HANDLER_INTERN_H
 #define __EMUL_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -88,26 +88,27 @@ struct EmulInterface
 
 struct KernelInterface
 {
-    __attribute__((stdcall)) void *(*CreateFile)(char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,
+    void * __stdcall (*CreateFile)(char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,
 						 ULONG dwCreationDisposition, ULONG dwFlagsAndAttributes, void *hTemplateFile);
-    __attribute__((stdcall)) ULONG (*CloseHandle)(void *hObject);
-    __attribute__((stdcall)) ULONG (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
-    __attribute__((stdcall)) ULONG (*WriteFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToWrite, ULONG *lpNumberOfBytesWritten, void *lpOverlapped);
-    __attribute__((stdcall)) ULONG (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
-    __attribute__((stdcall)) ULONG (*SetEndOfFile)(void *hFile);
-    __attribute__((stdcall)) ULONG (*GetFileType)(void *hFile);
-    __attribute__((stdcall)) void *(*GetStdHandle)(ULONG nStdHandle);
-    __attribute__((stdcall)) ULONG (*MoveFile)(char *lpExistingFileName, char *lpNewFileName);
-    __attribute__((stdcall)) ULONG (*GetCurrentDirectory)(ULONG nBufferLength, char *lpBuffer);
-    __attribute__((stdcall)) void *(*FindFirstFile)(char *lpFileName, LPWIN32_FIND_DATA lpFindFileData);
-    __attribute__((stdcall)) ULONG (*FindNextFile)(void *hFindFile, LPWIN32_FIND_DATA lpFindFileData);
-    __attribute__((stdcall)) ULONG (*FindClose)(void *hFindFile);
-    __attribute__((stdcall)) ULONG (*CreateDirectory)(char *lpPathName, void *lpSecurityAttributes);
-    __attribute__((stdcall)) ULONG (*SetFileAttributes)(char *lpFileName, ULONG dwFileAttributes);
-    __attribute__((stdcall)) ULONG (*GetLastError)(void);
-    __attribute__((stdcall)) ULONG (*CreateHardLink)(char *lpFileName, char *lpExistingFileName, void *lpSecurityAttributes);
-    __attribute__((stdcall)) ULONG (*CreateSymbolicLink)(char *lpSymlinkFileName, char *lpTargetFileName, ULONG dwFlags);
-    __attribute__((stdcall)) ULONG (*SetEvent)(void *hEvent);
+    ULONG  __stdcall (*CloseHandle)(void *hObject);
+    ULONG  __stdcall (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
+    ULONG  __stdcall (*WriteFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToWrite, ULONG *lpNumberOfBytesWritten, void *lpOverlapped);
+    ULONG  __stdcall (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
+    ULONG  __stdcall (*SetEndOfFile)(void *hFile);
+    ULONG  __stdcall (*GetFileType)(void *hFile);
+    void * __stdcall (*GetStdHandle)(ULONG nStdHandle);
+    ULONG  __stdcall (*MoveFile)(char *lpExistingFileName, char *lpNewFileName);
+    ULONG  __stdcall (*GetCurrentDirectory)(ULONG nBufferLength, char *lpBuffer);
+    void * __stdcall (*FindFirstFile)(char *lpFileName, LPWIN32_FIND_DATA lpFindFileData);
+    ULONG  __stdcall (*FindNextFile)(void *hFindFile, LPWIN32_FIND_DATA lpFindFileData);
+    ULONG  __stdcall (*FindClose)(void *hFindFile);
+    ULONG  __stdcall (*CreateDirectory)(char *lpPathName, void *lpSecurityAttributes);
+    ULONG  __stdcall (*SetFileAttributes)(char *lpFileName, ULONG dwFileAttributes);
+    ULONG  __stdcall (*GetLastError)(void);
+    ULONG  __stdcall (*CreateHardLink)(char *lpFileName, char *lpExistingFileName, void *lpSecurityAttributes);
+    ULONG  __stdcall (*CreateSymbolicLink)(char *lpSymlinkFileName, char *lpTargetFileName, ULONG dwFlags);
+    ULONG  __stdcall (*SetEvent)(void *hEvent);
+    ULONG  __stdcall (*SetFileTime)(void *hFile, UQUAD *lpCreationTime, UQUAD *lpLastAccessTime, UQUAD *lpLastWriteTime);
 };
 
 #define OpenFile KernelIFace->CreateFile
@@ -129,6 +130,7 @@ struct KernelInterface
 #define Link KernelIFace->CreateHardLink
 #define SymLink KernelIFace->CreateSymbolicLink
 #define RaiseEvent KernelIFace->SetEvent
+#define SetFileTime KernelIFace->SetFileTime
 
 #endif
 

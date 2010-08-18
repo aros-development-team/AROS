@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-fs-emul-mingw32 \
   modname=emul modtype=device modsuffix=handler \
-  files=emul_handler
+  files=emul_handler uselibs=rom
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_LIBDIR := $(GENDIR)/lib

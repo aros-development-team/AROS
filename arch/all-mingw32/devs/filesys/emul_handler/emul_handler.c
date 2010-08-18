@@ -10,10 +10,12 @@
 
 /*********************************************************************************************/
 
+#define DEBUG 0
 #define DCMD(x)
 #define DERROR(x)
 #define DFNAME(x)
 #define DFSIZE(x)
+#define DMOUNT(x)
 #define DOPEN(x)
 #define DOPEN2(x)
 #define DSEEK(x)
@@ -137,11 +139,12 @@ BOOL shrink(struct emulbase *emulbase, char *filename)
 /*********************************************************************************************/
 
 /* Allocate a buffer, in which the filename is appended to the pathname. */
-static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, struct filehandle * fh, STRPTR filename)
+static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, struct filehandle * fh, const char *filename)
 {
     LONG ret = 0;
     int len, flen, dirlen;
-    char *c, *s;
+    char *c;
+    const char *s;
 
     DFNAME(bug("[emul] makefilename(): directory \"%s\", file \"%s\")\n", fh->hostname, filename));
   
@@ -262,6 +265,20 @@ static void FileTime2DateStamp(struct DateStamp *ds, UQUAD ft)
     ds->ds_Days = totalmins / (24*60);
     ds->ds_Minute = totalmins % (24*60);
     ds->ds_Tick = ft % (60*50);
+}
+
+/*********************************************************************************************/
+
+static UQUAD DateStamp2FileTime(struct DateStamp *ds)
+{
+    UQUAD ticks;
+
+    /* Get total number of minutes */
+    ticks = ds->ds_Days * (24*60) + ds->ds_Minute;
+    /* Convert to ticks and add ds_Tick */
+    ticks = ticks * (60*50) + ds->ds_Tick;
+
+    return ticks * 200000 + 118969344000000000LL;
 }
 
 /*********************************************************************************************/
@@ -390,7 +407,7 @@ static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 
 /*********************************************************************************************/
 
-static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR name, LONG mode, LONG protect, BOOL AllowDir)
+static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const char *name, LONG mode, LONG protect, BOOL AllowDir)
 {
     LONG ret = 0;
     struct filehandle *fh;
@@ -519,7 +536,7 @@ static LONG seek_file(struct filehandle *fh, struct IFS_SEEK *io_SEEK, UQUAD *ne
 /*********************************************************************************************/
 
 static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
-					   STRPTR filename, IPTR protect)
+		       const char *filename, ULONG protect)
 {
   LONG ret = 0;
   struct filehandle *fh;
@@ -558,8 +575,7 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
 
 /*********************************************************************************************/
 
-static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
-						  STRPTR file)
+static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh, const char *file)
 {
   LONG ret = 0;
   char *filename = NULL;
@@ -578,7 +594,7 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 /*********************************************************************************************/
 
 static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
-						STRPTR file, ULONG aprot)
+			const char *file, ULONG aprot)
 {
     LONG ret = 0;
     char *filename = NULL;
@@ -746,7 +762,7 @@ static LONG startup(struct emulbase *emulbase)
 
 			    /* Make sure this is not booted from */
 			    AddBootNode(-128, 0, dlv2, NULL);
-			    fhv->dl = dlv2;
+			    fhv->dl = (struct DosList *)dlv2;
 
 			    /* Increment our open counter because we use ourselves */
 			    emulbase->device.dd_Library.lib_OpenCnt++;
@@ -859,7 +875,7 @@ static LONG CloseDir(struct filehandle *fh)
 #define is_special_dir(x) (x[0] == '.' && (!x[1] || (x[1] == '.' && !x[2])))
 
 /* Positions to dirpos in directory, retrieves next item in it and updates dirpos */
-ULONG ReadDir(struct filehandle *fh, LPWIN32_FIND_DATA FindData, ULONG *dirpos)
+ULONG ReadDir(struct filehandle *fh, LPWIN32_FIND_DATA FindData, IPTR *dirpos)
 {
   ULONG res;
 
@@ -1139,7 +1155,7 @@ static LONG examine_all(struct emulbase *emulbase, struct filehandle *fh,
 
 /*********************************************************************************************/
 
-static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle, STRPTR name, struct filehandle *oldfile)
+static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle, const char *name, struct filehandle *oldfile)
 {
   LONG error;
   char *fn;
@@ -1164,7 +1180,7 @@ static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle
 /*********************************************************************************************/
 
 static LONG create_softlink(struct emulbase * emulbase,
-                            struct filehandle *handle, STRPTR name, STRPTR ref)
+                            struct filehandle *handle, const char *name, const char *ref)
 {
   LONG error=0L;
   char *src, *dest;
@@ -1193,8 +1209,8 @@ static LONG create_softlink(struct emulbase * emulbase,
 
 /*********************************************************************************************/
 
-static LONG rename_object(struct emulbase * emulbase,
-						  struct filehandle *fh, STRPTR file, STRPTR newname)
+static LONG rename_object(struct emulbase * emulbase, struct filehandle *fh,
+			  const char *file, const char *newname)
 {
   LONG ret = 0L;
   
@@ -1218,6 +1234,7 @@ static LONG rename_object(struct emulbase * emulbase,
   return ret;
 }
 
+/*********************************************************************************************/
 
 static LONG read_softlink(struct emulbase *emulbase,
                           struct filehandle *fh,
@@ -1255,6 +1272,37 @@ void parent_dir_post(struct emulbase *emulbase, char ** DirectoryName)
 
 /*********************************************************************************************/
 
+static LONG set_date(struct emulbase *emulbase, struct filehandle *fh,
+		     const char *FileName, struct DateStamp *date)
+{
+    void *handle;
+    char *fullname;
+    LONG ret;
+    UQUAD ft;
+
+    ret = makefilename(emulbase, &fullname, NULL, fh, FileName);
+    if (!ret)
+    {
+        ft = DateStamp2FileTime(date);
+
+        Forbid();
+        handle = OpenFile(fullname, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			  NULL, OPEN_EXISTING, 0, NULL);
+	if (handle != INVALID_HANDLE_VALUE)
+	{
+	    if (!SetFileTime(handle, &ft, NULL, &ft))
+		ret = Errno();
+	    DoClose(handle);
+	}
+	else
+	    ret = Errno();
+	Permit();
+
+	FreeVecPooled(emulbase->mempool, fullname);
+    }
+    return ret;
+}
+
 /************************ Library entry points ************************/
 
 int loadhooks(struct emulbase *emulbase);
@@ -1284,107 +1332,111 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR emulbase)
 
 static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 {
-  struct filehandle 	*fhv;
-  struct DosList  	*doslist;
-  char    	    	*unixpath;
-  
-  /* Volume name and Unix path are encoded into DEVICE entry of
-   MountList like this: <volumename>:<unixpath> */
-  
-  unixpath = iofs->io_Union.io_OpenDevice.io_DeviceName;
-  unixpath = strchr(unixpath, ':');
-  
-  if (unixpath)
-  {
-	char *sp;
-	
-	*unixpath++ = '\0';
-	
-	if ((sp = strchr(unixpath, '~')))
+    struct filehandle *fhv;
+    struct DosList *doslist;
+    char *unixpath;
+    int vol_len = 0;
+    char *sp;
+
+    unixpath = (char *)iofs->io_Union.io_OpenDevice.io_DeviceName;
+    if (!unixpath)
+	return FALSE;
+
+    DMOUNT(bug("[emul] Mounting volume %s\n", unixpath));
+    /* Volume name and Unix path are encoded into DEVICE entry of
+       MountList like this: <volumename>:<unixpath> */
+    do {
+	if (*unixpath == 0)
+	    return FALSE;
+
+	vol_len++;
+    } while (*unixpath++ != ':');
+    DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", unixpath, vol_len));
+
+    sp = strchr(unixpath, '~');
+    if (sp)
+    {
+	char home[260];
+	char *newunixpath = NULL;
+	char *sp_end;
+	WORD cmplen;
+	char tmp;
+	ULONG err;
+	  
+	/* "~<name>" means home of user <name> */
+		
+	for(sp_end = sp + 1;
+	    sp_end[0] != '\0' && sp_end[0] != '\\';
+	    sp_end++);
+
+	cmplen = sp_end - sp - 1;
+	/* temporariliy zero terminate name */
+	tmp = sp[cmplen+1];
+	sp[cmplen+1] = '\0';
+
+	err = GetHome(sp+1, home);
+	sp[cmplen+1] = tmp;
+
+	if (!err)
 	{
-	  char home[260];
-	  char *newunixpath = 0;
-	  char *sp_end;
-	  BOOL ok = FALSE;
-	  WORD cmplen;
-	  char tmp;
-	  ULONG err;
-	  
-	  /* "~<name>" means home of user <name> */
-		
-	  for(sp_end = sp + 1;
-		sp_end[0] != '\0' && sp_end[0] != '\\';
-		sp_end++);
+	    newunixpath = AllocVec(strlen(unixpath) + strlen(home) + 1, MEMF_CLEAR);
+	    if (newunixpath)
+	    {
+		strncpy(newunixpath, unixpath, sp - unixpath);
+		strcat(newunixpath, home);
+		strcat(newunixpath, sp_end);
 
-	  cmplen = sp_end - sp - 1;
-	  /* temporariliy zero terminate name */
-	  tmp = sp[cmplen+1]; sp[cmplen+1] = '\0';
-
-	  err = GetHome(sp+1, home);
-		
-	  sp[cmplen+1] = tmp;
-		
-	  if (err)
-	      err = Errno_w2a(err);
-	  else {
-		newunixpath = AllocVec(strlen(unixpath) + strlen(home) + 1, MEMF_CLEAR);
-		if (newunixpath)
-		{
-		  strncpy(newunixpath, unixpath, sp - unixpath);
-		  strcat(newunixpath, home);
-		  strcat(newunixpath, sp_end);
-		  
-		  ok = TRUE;
-		  unixpath = newunixpath;
-		}
-	  }
-	  
-	  if (!ok)
-	  {
-		unixpath = 0;
-		if (newunixpath) FreeVec(newunixpath);
-	  }
+		unixpath = newunixpath;
+	    }
 	}
-	
-	if (unixpath)
+
+	if (!newunixpath)
+	    return FALSE;
+    }
+
+    if (Stat(unixpath, NULL) > 0)
+    {
+	fhv = AllocMem(sizeof(struct filehandle) + vol_len, MEMF_PUBLIC);
+	if (fhv)
 	{
-	  if (Stat(unixpath, NULL)>0)
-	  {
-		fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
-		if (fhv != NULL)
-		{
-		  fhv->hostname   = unixpath;
-		  fhv->name       = unixpath + strlen(unixpath);
-		  fhv->type       = FHD_DIRECTORY;
-		  fhv->pathname   = NULL; /* just to make sure... */
-		  fhv->volumename = iofs->io_Union.io_OpenDevice.io_DeviceName;
-		  
-		  if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME)))
-		  {
-		      	fhv->dl = doslist;
-			doslist->dol_Ext.dol_AROS.dol_Unit=(struct Unit *)fhv;
-			doslist->dol_Ext.dol_AROS.dol_Device=&emulbase->device;
-			AddDosEntry(doslist);
+	    char *volname = (char *)fhv + sizeof(struct filehandle);
+
+	    CopyMem(iofs->io_Union.io_OpenDevice.io_DeviceName, volname, vol_len - 1);
+	    volname[vol_len - 1] = 0;
+
+	    fhv->hostname   = unixpath;
+	    fhv->name       = unixpath + strlen(unixpath);
+	    fhv->type       = FHD_DIRECTORY;
+	    fhv->pathname   = NULL; /* just to make sure... */
+	    fhv->volumename = volname;
+	    AllocMem(12, MEMF_PUBLIC);
+	    DMOUNT(bug("[emul] Making volume node %s\n", volname));
+
+	    doslist = MakeDosEntry(volname, DLT_VOLUME);
+	    DMOUNT(bug("[emul] Volume node 0x%p\n", doslist));
+	    if (doslist)
+	    {
+		fhv->dl = doslist;
+		doslist->dol_Ext.dol_AROS.dol_Unit=(struct Unit *)fhv;
+		doslist->dol_Ext.dol_AROS.dol_Device=&emulbase->device;
+		AddDosEntry(doslist);
+
+		iofs->IOFS.io_Unit   = (struct Unit *)fhv;
+		iofs->IOFS.io_Device = &emulbase->device;
+
+		SendEvent(emulbase, IECLASS_DISKINSERTED);
+
+		return TRUE;
 			
-			iofs->IOFS.io_Unit   = (struct Unit *)fhv;
-			iofs->IOFS.io_Device = &emulbase->device;
-			
-			SendEvent(emulbase, IECLASS_DISKINSERTED);
-			
-			return TRUE;
-			
-		  } /* if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME))) */
-		  
-		  FreeMem(fhv, sizeof(struct filehandle));
-		  
-		} /* if (fhv != NULL)*/
-		
-	  } /* if (!Stat(unixpath, &st)) */
-	  
-	} /* if (unixpath) */
-	
-  } /* if (unixpath) */
-  return FALSE;
+	    } /* if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME))) */
+
+	    DMOUNT(bug("[emul] Failed, freeing volume node\n"));
+	    FreeMem(fhv, sizeof(struct filehandle) + vol_len);
+	}
+    }
+
+    DMOUNT(bug("[emul] Mounting failed\n"));
+    return FALSE;
 }
 
 /*********************************************************************************************/
@@ -1720,10 +1772,15 @@ AROS_LH1(void, beginio,
 	else
 	    id->id_VolumeNode = fh->dl;
 	break;
+
+    case FSA_SET_DATE:
+	error = set_date(emulbase, (struct filehandle *)iofs->IOFS.io_Unit
+			 , iofs->io_Union.io_SET_DATE.io_Filename, &iofs->io_Union.io_SET_DATE.io_Date);
+	break;
+
 /* FIXME: not supported yet
     case FSA_SET_COMMENT:
     case FSA_SET_OWNER:
-    case FSA_SET_DATE:
     case FSA_MORE_CACHE:
     case FSA_MOUNT_MODE:
     case FSA_WAIT_CHAR:
@@ -1789,6 +1846,7 @@ const char *KernelSymbols[] = {
     "CreateHardLinkA",
     "CreateSymbolicLinkA",
     "SetEvent",
+    "SetFileTime",
     NULL
 };
 
