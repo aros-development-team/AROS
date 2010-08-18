@@ -1,5 +1,11 @@
 /* WinAPI definitions to be used with AROS-side code. Taken from various Mingw32 headers. */
 
+#ifdef __x86_64__
+#define __stdcall
+#else
+#define __stdcall __attribute__((stdcall))
+#endif
+
 #define BLACKNESS	0x00000042
 #define NOTSRCERASE	0x001100A6
 #define NOTSRCCOPY	0x00330008

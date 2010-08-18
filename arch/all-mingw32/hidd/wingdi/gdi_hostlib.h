@@ -1,42 +1,43 @@
 #ifndef GDI_HOSTLIB_H
 #define GDI_HOSTLIB_H
 
-#include <aros/config.h>
-
-struct gdi_func {
-    __attribute__((stdcall)) APTR (*CreateDC)(STRPTR lpszDriver, STRPTR lpszDevice, STRPTR lpszOutput, APTR lpInitData);
-    __attribute__((stdcall)) APTR (*CreateCompatibleDC)(APTR hdc);
-    __attribute__((stdcall)) LONG (*DeleteDC)(APTR hdc);
-    __attribute__((stdcall)) LONG (*GetDeviceCaps)(APTR hdc, LONG nIndex);
-    __attribute__((stdcall)) APTR (*CreateBitmapIndirect)(CONST BITMAP *lpbm);
-    __attribute__((stdcall)) APTR (*CreateCompatibleBitmap)(APTR hdc, ULONG nWidth, ULONG nHeight);
-    __attribute__((stdcall)) APTR (*CreateSolidBrush)(ULONG crColor);
-    __attribute__((stdcall)) LONG (*DeleteObject)(APTR hObject);
-    __attribute__((stdcall)) APTR (*SelectObject)(APTR hdc, APTR hgdiobj);
-    __attribute__((stdcall)) ULONG (*SetBkColor)(APTR hdc, ULONG crColor);
-    __attribute__((stdcall)) ULONG (*SetTextColor)(APTR hdc, ULONG crColor);
-    __attribute__((stdcall)) ULONG (*SetROP2)(APTR hdc, ULONG fnDrawMode);
-    __attribute__((stdcall)) LONG (*BitBlt)(APTR hdcDest, LONG nXDest, LONG nYDest, LONG nWidth, LONG nHeight, APTR hdcSrc,
+struct gdi_func
+{
+    APTR  __stdcall (*CreateDC)(STRPTR lpszDriver, STRPTR lpszDevice, STRPTR lpszOutput, APTR lpInitData);
+    APTR  __stdcall (*CreateCompatibleDC)(APTR hdc);
+    LONG  __stdcall (*DeleteDC)(APTR hdc);
+    LONG  __stdcall (*GetDeviceCaps)(APTR hdc, LONG nIndex);
+    APTR  __stdcall (*CreateBitmapIndirect)(CONST BITMAP *lpbm);
+    APTR  __stdcall (*CreateCompatibleBitmap)(APTR hdc, ULONG nWidth, ULONG nHeight);
+    APTR  __stdcall (*CreateSolidBrush)(ULONG crColor);
+    LONG  __stdcall (*DeleteObject)(APTR hObject);
+    APTR  __stdcall (*SelectObject)(APTR hdc, APTR hgdiobj);
+    ULONG __stdcall (*SetBkColor)(APTR hdc, ULONG crColor);
+    ULONG __stdcall (*SetTextColor)(APTR hdc, ULONG crColor);
+    ULONG __stdcall (*SetROP2)(APTR hdc, ULONG fnDrawMode);
+    LONG  __stdcall (*BitBlt)(APTR hdcDest, LONG nXDest, LONG nYDest, LONG nWidth, LONG nHeight, APTR hdcSrc,
     					    LONG nXSrc, LONG nYSrc, ULONG dwRop);
-    __attribute__((stdcall)) LONG (*PatBlt)(APTR hdc, LONG nXLeft, LONG nYLeft, LONG nWidth, LONG nHeight, ULONG dwRop);
-    __attribute__((stdcall)) ULONG (*GetPixel)(APTR hdc, LONG nXPos, LONG nYPos);
-    __attribute__((stdcall)) ULONG (*SetPixel)(APTR hdc, LONG X, LONG Y, ULONG crColor);
-    __attribute__((stdcall)) LONG (*GetDIBits)(APTR hdc, APTR hbmp, ULONG uStartScan, ULONG cScanLines,
+    LONG  __stdcall (*PatBlt)(APTR hdc, LONG nXLeft, LONG nYLeft, LONG nWidth, LONG nHeight, ULONG dwRop);
+    ULONG __stdcall (*GetPixel)(APTR hdc, LONG nXPos, LONG nYPos);
+    ULONG __stdcall (*SetPixel)(APTR hdc, LONG X, LONG Y, ULONG crColor);
+    LONG  __stdcall (*GetDIBits)(APTR hdc, APTR hbmp, ULONG uStartScan, ULONG cScanLines,
     					       void *lpvBits, BITMAPINFO *lpbi, ULONG uUsage);
-    __attribute__((stdcall)) LONG (*StretchDIBits)(APTR hdc, LONG XDest, LONG YDest, LONG nDestWidth, LONG nDestHeight,
+    LONG  __stdcall (*StretchDIBits)(APTR hdc, LONG XDest, LONG YDest, LONG nDestWidth, LONG nDestHeight,
 						   LONG XSrc, LONG YSrc, LONG nSrcWidth, LONG nSrcHeight,
 						   const void *lpBits, const BITMAPINFO *lpBitsInfo, ULONG iUsage, ULONG dwRop);
 };
 
-struct user_func {
-    __attribute__((stdcall)) APTR (*CreateIconIndirect)(ICONINFO *piconinfo);
-    __attribute__((stdcall)) ULONG (*DestroyIcon)(APTR hIcon);
-    __attribute__((stdcall)) APTR (*SetCursor)(APTR hCursor);
-    __attribute__((stdcall)) ULONG (*SetWindowPos)(APTR hWnd, APTR hWndInsertAfter, LONG X, LONG Y, LONG cx, LONG cy, ULONG uFlags);
-    __attribute__((stdcall)) ULONG (*RedrawWindow)(APTR hWnd, CONST RECT* lpRect, APTR hrgnUpdate, ULONG flags);
+struct user_func
+{
+    APTR  __stdcall (*CreateIconIndirect)(ICONINFO *piconinfo);
+    ULONG __stdcall (*DestroyIcon)(APTR hIcon);
+    APTR  __stdcall (*SetCursor)(APTR hCursor);
+    ULONG __stdcall (*SetWindowPos)(APTR hWnd, APTR hWndInsertAfter, LONG X, LONG Y, LONG cx, LONG cy, ULONG uFlags);
+    ULONG __stdcall (*RedrawWindow)(APTR hWnd, CONST RECT* lpRect, APTR hrgnUpdate, ULONG flags);
 };
 
-struct native_func {
+struct native_func
+{
     struct GDI_Control *(*GDI_Init)(void);
     void (*GDI_Shutdown)(struct GDI_Control *ctl);
     ULONG (*GDI_PutMsg)(void *win, ULONG msg, IPTR wp, IPTR lp);
