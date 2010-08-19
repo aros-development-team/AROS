@@ -340,13 +340,13 @@ ULONG Errno_w2a(ULONG e, LONG mode)
 
 /*********************************************************************************************/
 
-void *DoOpen(char *path, int mode, int protect)
+void *DoOpen(char *path, int mode, int protect, ULONG mask)
 {
     ULONG flags = 0;
     ULONG lock;
     ULONG create;
     void *res;
-  
+
     DOPEN2(bug("[emul] DoOpen(\"%s\", 0x%08lX)\n", path, mode));
 
     if (mode & FMF_WRITE)
@@ -363,7 +363,10 @@ void *DoOpen(char *path, int mode, int protect)
     else
 	create = (mode & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
 
-    protect = prot_a2w(protect);
+    /* On post-XP systems files with 'system' attribute may be opened for writing
+       only if we specify FILE_ATTRIBUTE_SYSTEM in CreateFile() call. So we use
+       mask retrieved earlier by EmulStat() */
+    protect = prot_a2w(protect) | mask;
 
     DOPEN2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
     Forbid();
@@ -479,10 +482,11 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
 	if (!ret)
 	{
 	    int kind;
+	    ULONG mask = 0;
 
 	    DOPEN(bug("[emul] AROS object name: %s\n", fh->name));
 	    DOPEN(bug("[emul] Host object name: %s\n", fh->hostname));	    
-	    kind = Stat(fh->hostname, NULL);
+	    kind = Stat(fh->hostname, NULL, &mask);
 	    DOPEN(bug("[emul] object type: %ld\n", kind));
 
 	    switch (kind) {
@@ -493,7 +497,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
 	    case 0: /* Non-existing objects can be files opened for writing */
 	    case ST_FILE:
 		fh->type=FHD_FILE;
-		fh->fd = DoOpen(fh->hostname, mode, protect);
+		fh->fd = DoOpen(fh->hostname, mode, protect, mask);
 		if(fh->fd != INVALID_HANDLE_VALUE)
 		{
 		    *handle=fh;
@@ -999,7 +1003,7 @@ ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR
 	name = fh->hostname;
   
     D(bug("[emul] Full name: %s\n", name));
-    *kind = Stat(name, FIB);
+    *kind = Stat(name, FIB, NULL);
     if (*kind == 0)
 	error = Errno(FMF_MODE_OLDFILE);
     if (FoundName)
@@ -1437,7 +1441,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 	    return FALSE;
     }
 
-    if (Stat(unixpath, NULL) > 0)
+    if (Stat(unixpath, NULL, NULL) > 0)
     {
 	fhv = AllocMem(sizeof(struct filehandle) + vol_len, MEMF_PUBLIC);
 	if (fhv)
