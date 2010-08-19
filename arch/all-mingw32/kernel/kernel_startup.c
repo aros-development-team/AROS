@@ -58,6 +58,7 @@ char *kernel_functions[] = {
 /* rom startup */
 int __startup startup(struct TagItem *msg)
 {
+    struct ExecBase *SysBase;
     void *hostlib;
     char *errstr;
     unsigned long badsyms;
@@ -100,7 +101,7 @@ int __startup startup(struct TagItem *msg)
 	}
     }
 
-    /* Set globals only AFTER __kernel_bss() */
+    /* Set globals only AFTER __clear_bss() */
     BootMsg = msg;
 
     if ((!klo) || (!khi) || (!mmap) || (!HostIFace)) {
@@ -115,7 +116,7 @@ int __startup startup(struct TagItem *msg)
 	return -1;
     }
 
-    badsyms = HostIFace->HostLib_GetInterface(hostlib, kernel_functions, (APTR **)&KernelIFace);
+    badsyms = HostIFace->HostLib_GetInterface(hostlib, kernel_functions, (void **)&KernelIFace);
     if (badsyms) {
 	mykprintf("[Kernel] Failed to find %lu functions in host-side module\n", badsyms);
 	HostIFace->HostLib_Close(hostlib, NULL);
@@ -169,6 +170,7 @@ int __startup startup(struct TagItem *msg)
 	Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
 
+    /* In order for these functions to work before KernelBase is set up */
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf = mykprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf = myrkprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf = myvkprintf;

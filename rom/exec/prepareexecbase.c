@@ -69,7 +69,6 @@ extern void *stderr;
 
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
 {
-    struct ExecBase *SysBase;
     ULONG   negsize = 0, i;
     VOID  **fp      = LIBFUNCTABLE;
     
