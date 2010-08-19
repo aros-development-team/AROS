@@ -4,6 +4,7 @@
  */
 
 #include <exec/semaphores.h>
+#include <aros/kernel.h>
 
 #define EXCEPTIONS_COUNT 1
 #define IRQ_COUNT        1
