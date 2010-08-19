@@ -12,21 +12,33 @@ struct X86ProcessorInformation
 {
     TEXT    VendorID[13]; /* 12 + \0 */
     ULONG   Vendor;
-    TEXT    BrandString[48];
+    TEXT    BrandStringBuffer[48];
+    STRPTR  BrandString;
     ULONG   Family;
-    STRPTR  FamilyString;
+    ULONG   Model;
     ULONG   VectorUnit;
     ULONG   Features1;  /* From EDX, function 00000001 */
     ULONG   Features2;  /* From ECX, function 00000001 */
     ULONG   Features3;  /* From EDX, function 80000001 */
     ULONG   Features4;  /* From ECX, function 80000001 */
     
+    /* CPUID Information */
+    ULONG   CPUIDHighestStandardFunction;
+    ULONG   CPUIDHighestExtendedFunction;
+
     /* Processor cache */
     ULONG   L1DataCacheSize;
     ULONG   L1InstructionCacheSize;
     ULONG   L2CacheSize;
     ULONG   L3CacheSize;
     ULONG   CacheLineSize;  /* Min. of L1, L2, L3 */
+    
+    /* MSR Support */
+    BOOL    APERFMPERF;
+    
+    /* Frequency information */
+    UQUAD   MaxCPUFrequency;
+    UQUAD   MaxFSBFrequency;
 };
 
 struct SystemProcessors
@@ -35,8 +47,12 @@ struct SystemProcessors
     ULONG count;
 };
 
+#define cpuid(num) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
-void ReadProcessorInformation(struct X86ProcessorInformation * info);
+VOID ReadProcessorInformation(struct X86ProcessorInformation * info);
+VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info);
+UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info);
 
 #define VENDOR_UNKNOWN  0
 #define VENDOR_AMD      1
@@ -46,6 +62,7 @@ void ReadProcessorInformation(struct X86ProcessorInformation * info);
 #define FEATB_FPU   0
 #define FEATB_VME   1
 #define FEATB_PSE   3
+#define FEATB_MSR   5
 #define FEATB_PAE   6
 #define FEATB_CX8   8
 #define FEATB_APIC  9
@@ -62,6 +79,7 @@ void ReadProcessorInformation(struct X86ProcessorInformation * info);
 #define FEATF_FPU   (1 << FEATB_FPU)
 #define FEATF_VME   (1 << FEATB_VME)
 #define FEATF_PSE   (1 << FEATB_PSE)
+#define FEATF_MSR   (1 << FEATB_MSR)
 #define FEATF_PAE   (1 << FEATB_PAE)
 #define FEATF_CX8   (1 << FEATB_CX8)
 #define FEATF_APIC  (1 << FEATB_APIC)
@@ -115,7 +133,7 @@ void ReadProcessorInformation(struct X86ProcessorInformation * info);
 #define FEATURE_MASK_ECX_UNKNOWN    0
 
 #define FEATURE_MASK_EDX_INTEL \
-    (FEATF_FPU | FEATF_VME | FEATF_PSE | FEATF_PAE | FEATF_CX8 | FEATF_APIC | \
+    (FEATF_FPU | FEATF_VME | FEATF_PSE | FEATF_MSR | FEATF_PAE | FEATF_CX8 | FEATF_APIC | \
     FEATF_CMOV | FEATF_PSE36 | FEATF_CLFSH | FEATF_ACPI | FEATF_MMX | \
     FEATF_FXSR | FEATF_SSE | FEATF_SSE2 | FEATF_HTT)
 #define FEATURE_MASK_ECX_INTEL \
@@ -126,7 +144,7 @@ void ReadProcessorInformation(struct X86ProcessorInformation * info);
 #define FEATURE_MASK_ECX_EXT_INTEL  0
 
 #define FEATURE_MASK_EDX_AMD \
-    (FEATF_FPU | FEATF_VME | FEATF_PSE | FEATF_PAE | FEATF_CX8 | FEATF_APIC | \
+    (FEATF_FPU | FEATF_VME | FEATF_PSE | FEATF_MSR | FEATF_PAE | FEATF_CX8 | FEATF_APIC | \
     FEATF_CMOV | FEATF_PSE36 | FEATF_CLFSH | FEATF_MMX | FEATF_FXSR | \
     FEATF_SSE | FEATF_SSE2 | FEATF_HTT)
 #define FEATURE_MASK_ECX_AMD \

@@ -33,93 +33,11 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
 
 /*  FUNCTION
 
-        Provides information about selected processor in the system
-    
     INPUTS
-
-        Function takes an array of tags. Data is returned for each tag. See
-        specific tag description. There is a control tag CGIT_SelecetProcessor.
 
     TAGS
 
-        GCIT_SelectedProcessor - (ULONG) When this tag is set correctly, information 
-                                 about choosen processor is provided. If this 
-                                 tag is missing or this tag has invalid value, 
-                                 information about first processor is returned.
-
-        GCIT_NumberOfProcessors - (ULONG *) Provides the number of processors 
-                                 present in the system.
-
-        GCIT_ModelString - (STRPTR) Fills in a passed buffer with model
-                           information. Buffer should be at least 128 bytes long.
-
-        GCIT_Family - (ULONG *) Provides designation of processor family using
-                      one of the CPUFAMILY_XXX values.
-
-        GCIT_FamilyString - (STRPTR) Fills in a passed buffer with family
-                            information. Buffer should be at least 64 bytes long.
-
-        GCIT_VectorUnit - (ULONG *) Provides designation of available vectory
-                          unit using one of the VECTORTYPE_XXX values.
-
-        GCIT_Architecture - (ULONG *) Provides designation of processor
-                            architecture using one of the PROCESSORARCH_XXX 
-                            values.
-
-        GCIT_Endianness - (ULONG *) Provides designation of current processor
-                          endianness using one of the ENDIANNESS_XXX values.
-
-        Cache sizes - (ULONG *) Following tags are used to retrieve size of 
-                      specified caches.
-                      
-                      GCIT_L1CacheSize
-                      GCIT_L1DataCacheSize
-                      GCIT_L1InstructionCacheSize
-                      GCIT_L2CacheSize
-                      GCIT_L3CacheSize
-                      
-                      Size is returned in kB.
-
-        GCIT_CacheLineSize - (ULONG *) Provides the size of cache line in bytes.
-                             In case these sizes differ per cache level, the
-                             smallest size if provided.
-
-        Features - (BOOL *) Following tags are used to check availability of
-                   certain features. The result is always a boolean.
-                   
-                   GCIT_SupportsFPU
-                   GCIT_SupportsAltiVec
-                   GCIT_SupportsVMX
-                   GCIT_SupportsMMX
-                   GCIT_SupportsMMXEXT
-                   GCIT_Supports3DNOW
-                   GCIT_Supports3DNOWEXT
-                   GCIT_SupportsSSE
-                   GCIT_SupportsSSE2
-                   GCIT_SupportsSSE3
-                   GCIT_SupportsSSSE3
-                   GCIT_SupportsSSE41
-                   GCIT_SupportsSSE42
-                   GCIT_SupportsSSE4A
-                   GCIT_SupportsVME
-                   GCIT_SupportsPSE
-                   GCIT_SupportsPAE
-                   GCIT_SupportsCX8
-                   GCIT_SupportsAPIC
-                   GCIT_SupportsCMOV
-                   GCIT_SupportsPSE36
-                   GCIT_SupportsCLFSH
-                   GCIT_SupportsACPI
-                   GCIT_SupportsFXSR
-                   GCIT_SupportsHTT
-                   GCIT_SupportsCX16
-                   GCIT_SupportsVirtualization
-                   GCIT_SupportsNoExecutionBit
-                   GCIT_Supports64BitMode
-
     RESULT
-
-        None
 
     NOTES
     
@@ -167,13 +85,10 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
             *((ULONG *)passedTag->ti_Data) = sysprocs->count;
             break;
         case(GCIT_ModelString):
-            strcpy((STRPTR)passedTag->ti_Data, processor->BrandString);
+            *((CONST_STRPTR *)passedTag->ti_Data) = processor->BrandString;
             break;
         case(GCIT_Family):
             *((ULONG *)passedTag->ti_Data) = processor->Family;
-            break;
-        case(GCIT_FamilyString):
-            strcpy((STRPTR)passedTag->ti_Data, processor->FamilyString);
             break;
         case(GCIT_VectorUnit):
             *((ULONG *)passedTag->ti_Data) = processor->VectorUnit;
@@ -202,6 +117,15 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
             break;
         case(GCIT_Endianness):
             *((ULONG *)passedTag->ti_Data) = ENDIANNESS_LE;
+            break;
+        case(GCIT_ProcessorSpeed):
+            *((UQUAD *)passedTag->ti_Data) = GetCurrentProcessorFrequency(processor);
+            break;
+        case(GCIT_ProcessorLoad):
+            *((UBYTE *)passedTag->ti_Data) = 0; /* TODO: IMPLEMENT */
+            break;
+        case(GCIT_FrontsideSpeed):
+            *((UQUAD *)passedTag->ti_Data) = processor->MaxFSBFrequency;
             break;
         }
         }
@@ -281,6 +205,8 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
         *((BOOL *)tag->ti_Data) = (BOOL)((info->Features3 & FEATF_XDNX) >> FEATB_XDNX); break;
     case(GCIT_Supports64BitMode):
         *((BOOL *)tag->ti_Data) = (BOOL)((info->Features3 & FEATF_AMD64) >> FEATB_AMD64); break;
+    case(GCIT_SupportsMSR):
+        *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_MSR) >> FEATB_MSR); break;
     default: 
         *((BOOL *)tag->ti_Data) = FALSE; break;
     }
