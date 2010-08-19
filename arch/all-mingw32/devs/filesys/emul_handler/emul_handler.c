@@ -287,7 +287,6 @@ static UQUAD DateStamp2FileTime(struct DateStamp *ds)
 static ULONG u2a[][2]=
 {
   { ERROR_PATH_NOT_FOUND	, ERROR_OBJECT_NOT_FOUND	},
-  { ERROR_ACCESS_DENIED		, ERROR_OBJECT_WRONG_TYPE	},
   { ERROR_NO_MORE_FILES		, ERROR_NO_MORE_ENTRIES		},
   { ERROR_NOT_ENOUGH_MEMORY	, ERROR_NO_FREE_STORE		},
   { ERROR_FILE_NOT_FOUND	, ERROR_OBJECT_NOT_FOUND	},
@@ -303,11 +302,28 @@ static ULONG u2a[][2]=
   { 0				, 0				}
 };
 
-ULONG Errno_w2a(ULONG e)
+ULONG Errno_w2a(ULONG e, LONG mode)
 {
     ULONG i;
-  
+
     DERROR(printf("[EmulHandler] Windows error code: %lu\n", e));
+
+    /* ERROR_ACCESS_DENIED may mean different AmigaDOS errors depending
+       on the context */
+    if (e == ERROR_ACCESS_DENIED)
+    {
+	if (mode == FMF_MODE_OLDFILE)
+	    return ERROR_READ_PROTECTED;
+	
+	if (mode & FMF_WRITE)
+	    return ERROR_WRITE_PROTECTED;
+
+	if (mode == 0)
+	    return ERROR_DELETE_PROTECTED;
+
+	return ERROR_READ_PROTECTED;
+    }
+
     for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
     {
 	if(u2a[i][0]==e) {
@@ -320,56 +336,77 @@ ULONG Errno_w2a(ULONG e)
     return ERROR_UNKNOWN;
 }
 
-#define Errno() Errno_w2a(GetLastError())
+#define Errno(mode) Errno_w2a(GetLastError(), mode)
 
 /*********************************************************************************************/
 
 void *DoOpen(char *path, int mode, int protect)
 {
-  ULONG flags = 0;
-  ULONG lock;
-  ULONG create;
-  void *res;
+    ULONG flags = 0;
+    ULONG lock;
+    ULONG create;
+    void *res;
   
-  DOPEN2(bug("[emul] DoOpen(\"%s\", 0x%08lX)\n", path, mode));
-  if (mode & FMF_WRITE)
-      flags = GENERIC_WRITE;
-  if (mode & FMF_READ)
-      flags |= GENERIC_READ;
-  /* FILE_SHARE_WRITE looks strange here, however without it i can't reopen file which
-     is already open with MODE_OLDFILE, even just for reading with FMF_READ */
-  lock = (mode & FMF_LOCK) ? 0 : FILE_SHARE_READ|FILE_SHARE_WRITE;
-  if (mode & FMF_CREATE)
-      create = (mode & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
-  else
-      create = (mode & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
-  protect = prot_a2w(protect);
-  DOPEN2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
-  Forbid();
-  res = OpenFile(path, flags, lock, NULL, create, protect, NULL);
-  /* Hack: dll's in LIBS:Host and AROSBootstrap.exe are locked against writing by
-     Windows while AROS is running. However we may still read them. MODE_OLDFILE
-     also requests write access with shared lock, this is why it fails on these files.
-     Here we try to work around this by attempting to open the file in read-only mode
-     (FMF_READ) when we discover this problem.
-     I hope this will not affect files really open in AROS because exclusive lock
-     disallows read access also. */
-  if (res == INVALID_HANDLE_VALUE) {
-      ULONG err = GetLastError();
+    DOPEN2(bug("[emul] DoOpen(\"%s\", 0x%08lX)\n", path, mode));
 
-      if ((err == ERROR_SHARING_VIOLATION) && (mode == FMF_MODE_OLDFILE)) {
-	  res = OpenFile(path, GENERIC_READ, lock, NULL, OPEN_EXISTING, protect, NULL);
-      }
-  }
-  Permit();
-  DOPEN2(bug("[emul] FileHandle = 0x%08lX\n", res));
-  return res;
+    if (mode & FMF_WRITE)
+	flags = GENERIC_WRITE;
+    if (mode & FMF_READ)
+	flags |= GENERIC_READ;
+
+    /* FILE_SHARE_WRITE looks strange here, however without it i can't reopen file which
+       is already open with MODE_OLDFILE, even just for reading with FMF_READ */
+    lock = (mode & FMF_LOCK) ? 0 : FILE_SHARE_READ|FILE_SHARE_WRITE;
+
+    if (mode & FMF_CREATE)
+	create = (mode & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
+    else
+	create = (mode & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
+
+    protect = prot_a2w(protect);
+
+    DOPEN2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
+    Forbid();
+    res = OpenFile(path, flags, lock, NULL, create, protect, NULL);
+
+    if ((mode == FMF_MODE_OLDFILE) && (res == INVALID_HANDLE_VALUE))
+    {
+        /*
+	 * Hack against two problems: 
+	 *
+	 * Problem 1: dll's in LIBS:Host and AROSBootstrap.exe are locked against writing by
+         * Windows while AROS is running. However we may still read them. MODE_OLDFILE
+	 * also requests write access with shared lock, this is why it fails on these files.
+	 *
+	 * Problem 2: FMF_MODE_OLDFILE requests write access, which fails on files with
+	 * read-only attribute.
+	 *
+         * Here we try to work around these problems by attempting to open the file in read-only mode
+         * (FMF_READ) when we discover one of them.
+	 *
+         * I hope this will not affect files really open in AROS because exclusive lock
+         * disallows read access also.
+	 */
+	ULONG err = GetLastError();
+
+	DOPEN2(bug("[emul] Windows error: %u\n", err));
+	switch (err)
+	{
+	case ERROR_SHARING_VIOLATION:
+	case ERROR_ACCESS_DENIED:
+	    res = OpenFile(path, GENERIC_READ, lock, NULL, OPEN_EXISTING, protect, NULL);
+	}
+    }
+    Permit();
+
+    DOPEN2(bug("[emul] FileHandle = 0x%08lX\n", res));
+    return res;
 }
 
 /*********************************************************************************************/
 
 /* Free a filehandle */
-static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
+static void free_lock(struct emulbase *emulbase, struct filehandle *current)
 {
     D(bug("[emul] Lock type = %lu\n", current->type));
     switch(current->type)
@@ -397,12 +434,14 @@ static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 	D(bug("[emul] Freeing pathname: \"%s\"\n", current->pathname));
 	FreeVecPooled(emulbase->mempool, current->pathname);
     }
+
     D(bug("[emul] Freeing name: \"%s\"\n", current->hostname));
     FreeVecPooled(emulbase->mempool, current->hostname);
+
     D(bug("[emul] Freeing filehandle\n"));
     FreeMem(current, sizeof(struct filehandle));
+
     D(bug("[emul] Done\n"));
-    return 0;
 }
 
 /*********************************************************************************************/
@@ -450,6 +489,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
 	    case ST_SOFTLINK:
 	        ret = ERROR_IS_SOFT_LINK;
 	        break;
+
 	    case 0: /* Non-existing objects can be files opened for writing */
 	    case ST_FILE:
 		fh->type=FHD_FILE;
@@ -459,19 +499,22 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
 		    *handle=fh;
 		    return 0;
 		}
-		ret = Errno();
+
+		ret = Errno(mode);
 		break;
+
 	    case ST_USERDIR:
 		/* file is a directory */
-		if (AllowDir) {
+		if (AllowDir)
+		{
 		    fh->type   = FHD_DIRECTORY;
 		    fh->fd     = INVALID_HANDLE_VALUE;
 		    fh->dirpos = 0;
 		    *handle=fh;
+
 		    return 0;
 		}
-		ret = ERROR_OBJECT_WRONG_TYPE;
-		break;
+
 	    default:
 		ret = ERROR_OBJECT_WRONG_TYPE;
 	    }
@@ -518,7 +561,7 @@ static LONG seek_file(struct filehandle *fh, struct IFS_SEEK *io_SEEK, UQUAD *ne
 	error = LSeek(fh->fd, io_SEEK->io_Offset, &pos_high, mode);
 	Permit();
 	if (error == (ULONG)-1)
-	    error = Errno();
+	    error = Errno(FMF_MODE_OLDFILE);
 	else {
 	    if (newpos) {
 	        *newpos = error;
@@ -564,7 +607,7 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
 	        Permit();
 	        return 0;
 	    }
-	    ret = Errno();
+	    ret = Errno(FMF_WRITE);
 	}
 	free_lock(emulbase, fh);
   } else
@@ -584,7 +627,7 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh, cons
   if (!ret)
   {
 	if (!Delete(filename))
-	    ret = Errno();
+	    ret = Errno(0);
 	FreeVecPooled(emulbase->mempool, filename);
   }
   
@@ -605,7 +648,7 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
     Forbid();
     ret = Chmod(filename, prot_a2w(aprot));
     Permit();
-    ret = ret ? 0 : Errno();
+    ret = ret ? 0 : Errno(FMF_WRITE);
 
     FreeVecPooled(emulbase->mempool, filename);
 
@@ -863,7 +906,7 @@ static LONG CloseDir(struct filehandle *fh)
         r = FindEnd(fh->fd);
         Permit();
         if (!r)
-            return Errno();
+            return Errno(FMF_MODE_OLDFILE);
         fh->fd = INVALID_HANDLE_VALUE;
     }
     fh->dirpos = 0;
@@ -916,7 +959,7 @@ ULONG ReadDir(struct filehandle *fh, LPWIN32_FIND_DATA FindData, IPTR *dirpos)
               Permit();
           }
           if (!res)
-	      return Errno();
+	      return Errno(FMF_MODE_OLDFILE);
 	  fh->dirpos++;
 	  D(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->dirpos));
       } while (fh->dirpos <= *dirpos);
@@ -958,7 +1001,7 @@ ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR
     D(bug("[emul] Full name: %s\n", name));
     *kind = Stat(name, FIB);
     if (*kind == 0)
-	error = Errno();
+	error = Errno(FMF_MODE_OLDFILE);
     if (FoundName)
     {
 	D(bug("[emul] Freeing full name\n"));
@@ -1170,7 +1213,7 @@ static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle
       Forbid();
       error = Link(fn, oldfile->hostname, NULL);
       Permit();
-      error = error ? 0 : Errno();
+      error = error ? 0 : Errno(FMF_WRITE);
       FreeVecPooled(emulbase->mempool, fn);
   }
 
@@ -1198,7 +1241,7 @@ static LONG create_softlink(struct emulbase * emulbase,
           Forbid();
 	  error = SymLink(src, dest, 0);
 	  Permit();
-	  error = error ? 0 : Errno();
+	  error = error ? 0 : Errno(FMF_WRITE);
 	  FreeVecPooled(emulbase->mempool, dest);
       }
       FreeVecPooled(emulbase->mempool, src);
@@ -1225,7 +1268,7 @@ static LONG rename_object(struct emulbase * emulbase, struct filehandle *fh,
 	    Forbid();
 	    ret = DoRename(filename,newfilename);
 	    Permit();
-	    ret = ret ? 0 : Errno();
+	    ret = ret ? 0 : Errno(FMF_WRITE);
 	    FreeVecPooled(emulbase->mempool, newfilename);
 	}
 	FreeVecPooled(emulbase->mempool, filename);
@@ -1291,11 +1334,11 @@ static LONG set_date(struct emulbase *emulbase, struct filehandle *fh,
 	if (handle != INVALID_HANDLE_VALUE)
 	{
 	    if (!SetFileTime(handle, &ft, NULL, &ft))
-		ret = Errno();
+		ret = Errno(FMF_WRITE);
 	    DoClose(handle);
 	}
 	else
-	    ret = Errno();
+	    ret = Errno(FMF_WRITE);
 	Permit();
 
 	FreeVecPooled(emulbase->mempool, fullname);
@@ -1499,23 +1542,11 @@ AROS_LH1(void, beginio,
           D(bug("[emul] FSA_OPEN(\"%s\")\n", iofs->io_Union.io_OPEN.io_Filename));
 	  error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
 			iofs->io_Union.io_OPEN.io_Filename, iofs->io_Union.io_OPEN.io_FileMode, 0, TRUE);
-	  if (
-		  (error == ERROR_WRITE_PROTECTED) &&
-		  (iofs->io_Union.io_OPEN.io_FileMode & FMF_AMIGADOS)
-		  )
-	  {
-	        D(bug("[emul] Retrying in read mode\n"));
-		error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
-	                      iofs->io_Union.io_OPEN.io_Filename, iofs->io_Union.io_OPEN.io_FileMode & (~FMF_WRITE), 0, TRUE);
-	  }
-	  D(bug("[emul] FSA_OPEN returning %lu\n", error));
-	  
 	  break;
 
     case FSA_CLOSE:
 	  D(bug("[emul] FSA_CLOSE\n"));
-	  error = free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
-	  D(bug("[emul] FSA_CLOSE returning %lu\n", error));
+	  free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
 	  break;
 
     case FSA_READ:
@@ -1537,7 +1568,7 @@ AROS_LH1(void, beginio,
 		    Wait(emulbase->ConsoleReader->sig);
 		    DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
 		    iofs->io_Union.io_READ.io_Length = emulbase->ConsoleReader->actual;
-		    error = Errno_w2a(emulbase->ConsoleReader->error);
+		    error = Errno_w2a(emulbase->ConsoleReader->error, FMF_MODE_OLDFILE);
 		    if (!error)
 		    {
 		        char *c, *d;
@@ -1564,7 +1595,7 @@ AROS_LH1(void, beginio,
 		Forbid();
 		error = DoRead(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length, &iofs->io_Union.io_READ.io_Length, NULL);
 		Permit();
-		error = error ? 0 : Errno();
+		error = error ? 0 : Errno(FMF_MODE_OLDFILE);
 	    }
 	}
 	else
@@ -1579,7 +1610,7 @@ AROS_LH1(void, beginio,
 	    Forbid();
 	    error = DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL);
 	    Permit();
-	    error = error ? 0 : Errno();
+	    error = error ? 0 : Errno(FMF_WRITE);
 	}
 	else
 	    error = ERROR_OBJECT_WRONG_TYPE;
@@ -1604,7 +1635,7 @@ AROS_LH1(void, beginio,
             Forbid();
             error = SetEOF(fh->fd);
             Permit();
-            error = error ? 0 : Errno();
+            error = error ? 0 : Errno(FMF_WRITE);
             /* If our OLD position was less than new file size, we seek back to it. io_Offset will again contain
                position before this seek - i. e. our NEW file size. */
             if (iofs->io_Union.io_SEEK.io_Offset < newpos) {
@@ -1681,19 +1712,8 @@ AROS_LH1(void, beginio,
 	  error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
 			iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode,
 			iofs->io_Union.io_OPEN_FILE.io_Protection, FALSE);
-	  if (
-		  (error == ERROR_WRITE_PROTECTED) &&
-		  (iofs->io_Union.io_OPEN_FILE.io_FileMode & FMF_AMIGADOS)
-		  )
-	  {
-	        D(bug("[emul] Retrying in read-only mode\n"));
-		error = open_(emulbase,(struct filehandle **)&iofs->IOFS.io_Unit,
-			      iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode & (~FMF_WRITE),
-			      iofs->io_Union.io_OPEN_FILE.io_Protection, FALSE);
-	  }
-	  D(bug("[emul] FSA_OPEN_FILE returning %lu\n", error));
 	  break;
-	  
+
     case FSA_CREATE_DIR:
 	  error = create_dir(emulbase,
 						 (struct filehandle **)&iofs->IOFS.io_Unit,
@@ -1768,7 +1788,7 @@ AROS_LH1(void, beginio,
 
 	error = StatFS(fh->hostname, id);
 	if (error)
-	    error = Errno_w2a(error);
+	    error = Errno_w2a(error, FMF_MODE_OLDFILE);
 	else
 	    id->id_VolumeNode = fh->dl;
 	break;
