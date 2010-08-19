@@ -3,8 +3,7 @@
 
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id$
-
+        
     Tags and defines for processors information queries
 */
 
@@ -22,8 +21,8 @@
 #define GCIT_ModelString            (TAG_USER +   4)
 /* #define GCIT_Version            (TAG_USER +   5) */
 /* #define GCIT_VersionString      (TAG_USER +   6) */
-/* #define GCIT_FrontsideSpeed     (TAG_USER +   7) */
-/* #define GCIT_ProcessorSpeed     (TAG_USER +   8) */
+#define GCIT_FrontsideSpeed         (TAG_USER +   7)
+#define GCIT_ProcessorSpeed         (TAG_USER +   8)
 #define GCIT_L1CacheSize            (TAG_USER +   9)
 #define GCIT_L2CacheSize            (TAG_USER +  10)
 #define GCIT_L3CacheSize            (TAG_USER +  11)
@@ -34,11 +33,11 @@
 /* #define GCIT_ExecPageSize       (TAG_USER +  16) */
 /* #define GCIT_TimeBaseSpeed      (TAG_USER +  17) */
 #define GCIT_SelectedProcessor      (TAG_USER + 100)
-#define GCIT_FamilyString           (TAG_USER + 101)
 #define GCIT_L1DataCacheSize        (TAG_USER + 102)
 #define GCIT_L1InstructionCacheSize (TAG_USER + 103)
 #define GCIT_Architecture           (TAG_USER + 104)
 #define GCIT_Endianness             (TAG_USER + 105)
+#define GCIT_ProcessorLoad          (TAG_USER + 106)
 
 /* Space [TAG_USER + 200, TAG_USER + 499] is reserved for boolean feature
    tags. Do no introduce non boolean, non feature tags in this space. */
@@ -72,6 +71,7 @@
 #define GCIT_SupportsVirtualization (GCIT_FeaturesBase +  27)
 #define GCIT_SupportsNoExecutionBit (GCIT_FeaturesBase +  28)
 #define GCIT_Supports64BitMode      (GCIT_FeaturesBase +  29)
+#define GCIT_SupportsMSR            (GCIT_FeaturesBase +  30)
 #define GCIT_FeaturesLast           (TAG_USER + 499)
 
 /* Processor family defines */
