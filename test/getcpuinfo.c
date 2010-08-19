@@ -1,9 +1,17 @@
 #include <proto/exec.h>
 #include <resources/processor.h>
 #include <stdio.h>
+#if !defined(STATICBUILD)
 #include <proto/processor.h>
 
 APTR ProcessorBase = NULL;
+#else
+#include "processor_intern.h"
+struct ProcessorBase ProcBase;
+void Processor_GetCPUInfo(struct TagItem * tagList, struct ProcessorBase * ProcessorBase);
+LONG Processor_Init(struct ProcessorBase * ProcessorBase);
+#define GetCPUInfo(x) Processor_GetCPUInfo(x, &ProcBase)
+#endif
 
 static ULONG getcpucount()
 {
@@ -21,11 +29,13 @@ static ULONG getcpucount()
     return cpucount;
 }
 
-struct
+struct TagDescription
 {
-    ULONG VectorUnitType;
-    STRPTR Description;
-} VectorUnit [] = 
+    ULONG Value;
+    CONST_STRPTR Description;
+};
+
+struct TagDescription VectorUnit [] = 
 {
     { VECTORTYPE_NONE, "None"},
     { VECTORTYPE_ALTIVEC, "AltiVec"},
@@ -44,11 +54,45 @@ struct
     { 0, NULL }        
 };
 
-struct
+struct TagDescription ProcessorFamily [] =
 {
-    ULONG Feature;
-    STRPTR Description;
-} ProcessorFeatures [] =
+    { CPUFAMILY_UNKNOWN, "Unknown" },
+    { CPUFAMILY_60X, "PowerPC 60X" },
+    { CPUFAMILY_7X0, "PowerPC 7X0" },
+    { CPUFAMILY_74XX, "PowerPC 74XX" },
+    { CPUFAMILY_4XX, "PowerPC 4XX" },
+    { CPUFAMILY_AMD_K5, "AMD K5" },
+    { CPUFAMILY_AMD_K6, "AMD K6" },
+    { CPUFAMILY_AMD_K7, "AMD K7" },
+    { CPUFAMILY_AMD_K8, "AMD K8" },
+    { CPUFAMILY_AMD_K9, "AMD K9" },
+    { CPUFAMILY_AMD_K10, "AMD K10" },
+    { CPUFAMILY_INTEL_486, "Intel 486" },
+    { CPUFAMILY_INTEL_PENTIUM, "Intel Pentium" },
+    { CPUFAMILY_INTEL_PENTIUM_PRO, "Intel Pentium Pro" },
+    { CPUFAMILY_INTEL_PENTIUM4, "Intel Pentium 4"},
+    { 0, NULL },
+};
+
+struct TagDescription ProcessorArchitecture [] =
+{
+    { PROCESSORARCH_UNKNOWN, "Unknown" },
+    { PROCESSORARCH_M68K, "Motorola 68K" },
+    { PROCESSORARCH_PPC, "PowerPC" },
+    { PROCESSORARCH_X86, "X86" },
+    { PROCESSORARCH_ARM, "ARM" },
+    { 0, NULL }   
+};
+
+struct TagDescription CurrentEndianness [] =
+{
+    { ENDIANNESS_UNKNOWN, "Unknown" },
+    { ENDIANNESS_LE, "LE" },
+    { ENDIANNESS_BE, "BE" },
+    { 0, NULL}
+};
+
+struct TagDescription ProcessorFeatures [] =
 {
     { GCIT_SupportsFPU, "FPU" },
     { GCIT_SupportsAltiVec, "AltiVec" },
@@ -79,50 +123,39 @@ struct
     { GCIT_SupportsVirtualization, "Virtualization Technology" },
     { GCIT_SupportsNoExecutionBit, "No-Execution Page Bit" },
     { GCIT_Supports64BitMode, "64-bit Capable (x86-64)" },
+    { GCIT_SupportsMSR, "MSR (Model Specific Registers)" },
     { 0, NULL }
 };
 
-struct
+CONST_STRPTR GetDescription(struct TagDescription * table, ULONG value)
 {
-    ULONG Architecture;
-    STRPTR Description;
-} ProcessorArchitecture [] =
-{
-    { PROCESSORARCH_UNKNOWN, "Unknown" },
-    { PROCESSORARCH_M68K, "Motorola 68K" },
-    { PROCESSORARCH_PPC, "PowerPC" },
-    { PROCESSORARCH_X86, "X86" },
-    { PROCESSORARCH_ARM, "ARM" },
-    { 0, NULL }   
-};
-
-struct
-{
-    ULONG Endianness;
-    STRPTR Description;
-} CurrentEndianness [] =
-{
-    { ENDIANNESS_UNKNOWN, "Unknown" },
-    { ENDIANNESS_LE, "LE" },
-    { ENDIANNESS_BE, "BE" },
-    { 0, NULL}
-};
+    static CONST_STRPTR undefined = "Undefined";
+    
+    LONG i = 0;
+    while (table[i].Description != NULL)
+    {
+        if (table[i].Value == value)
+            return table[i].Description;
+        i++;
+    }
+    
+    return undefined;
+}
 
 static void printcpuinformation(ULONG index)
 {
-    TEXT modelstring[128] = {0};
-    TEXT familystring[64] = {0};
+    CONST_STRPTR modelstring;
     ULONG family, vectorunit;
     ULONG i = 0;
     ULONG l1size, l1datasize, l1instrsize, l2size, l3size, cachelinesize;
     ULONG architecture, endianness;
+    UQUAD currentspeed, fsbspeed;
     
     struct TagItem tags [] =
     {
         {GCIT_SelectedProcessor, index},
-        {GCIT_ModelString, (IPTR)modelstring},
+        {GCIT_ModelString, (IPTR)&modelstring},
         {GCIT_Family, (IPTR)&family},
-        {GCIT_FamilyString, (IPTR)familystring},
         {GCIT_VectorUnit, (IPTR)&vectorunit},
         {GCIT_L1CacheSize, (IPTR)&l1size},
         {GCIT_L1DataCacheSize, (IPTR)&l1datasize},
@@ -132,6 +165,8 @@ static void printcpuinformation(ULONG index)
         {GCIT_CacheLineSize, (IPTR)&cachelinesize},
         {GCIT_Architecture, (IPTR)&architecture},
         {GCIT_Endianness, (IPTR)&endianness},
+        {GCIT_ProcessorSpeed, (IPTR)&currentspeed},
+        {GCIT_FrontsideSpeed, (IPTR)&fsbspeed},
         {TAG_DONE, TAG_DONE}
     };
     
@@ -139,40 +174,14 @@ static void printcpuinformation(ULONG index)
     
     printf("CPU: %d\n", index);
     printf("Family: %d\n", family);
-    printf("FamilyString: %s\n", familystring);
+    printf("FamilyString: %s\n", GetDescription(ProcessorFamily, family));
     printf("ModelString: %s\n", modelstring);
+    printf("Vector Unit: %s\n", GetDescription(VectorUnit, vectorunit));
+    printf("Architecture: %s\n", GetDescription(ProcessorArchitecture, architecture));
+    printf("Endianness: %s\n", GetDescription(CurrentEndianness, endianness));
     
-    while(VectorUnit[i].Description != NULL)
-    {
-        if (VectorUnit[i].VectorUnitType == vectorunit)
-        {
-            printf("Vector Unit: %s\n", VectorUnit[i].Description);
-            break;
-        }
-        i++;
-    }
-    
-    i = 0;
-    while(ProcessorArchitecture[i].Description != NULL)
-    {
-        if (ProcessorArchitecture[i].Architecture == architecture)
-        {
-            printf("Architecture: %s\n", ProcessorArchitecture[i].Description);
-            break;
-        }
-        i++;
-    }
-
-    i = 0;
-    while(CurrentEndianness[i].Description != NULL)
-    {
-        if (CurrentEndianness[i].Endianness == endianness)
-        {
-            printf("Endianness: %s\n", CurrentEndianness[i].Description);
-            break;
-        }
-        i++;
-    }
+    printf("Current Speed: %u Mhz\n", (ULONG)(currentspeed / 1000000));
+    printf("Frontside Bus Speed: %u Mhz\n", (ULONG)(fsbspeed / 1000000));
     
     printf("L1CacheSize: %d kB\n", l1size);
     printf("L1DataCacheSize: %d kB\n", l1datasize);
@@ -189,7 +198,7 @@ static void printcpuinformation(ULONG index)
         struct TagItem ftags [] =
         {
             { GCIT_SelectedProcessor, index },
-            { ProcessorFeatures[i].Feature, (IPTR)&check },
+            { ProcessorFeatures[i].Value, (IPTR)&check },
             { TAG_DONE, TAG_DONE }
         };
         
@@ -206,12 +215,16 @@ int main(void)
     ULONG cpus = 0;
     ULONG index = 0;
 
+#if !defined(STATICBUILD)
     if ((ProcessorBase = OpenResource(PROCESSORNAME)) == NULL)
     {
         printf("Not able to open %s\n", PROCESSORNAME);
         return 1;
     }
-    
+#else
+    Processor_Init(&ProcBase);
+#endif
+
     cpus = getcpucount();
 
     for(index = 0; index < cpus; index++)
