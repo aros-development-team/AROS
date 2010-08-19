@@ -1,0 +1,12 @@
+#   $Id$
+#
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-system : workbench-system-sysmon
+
+%build_prog mmake=workbench-system-sysmon \
+    files=main targetdir=$(AROSDIR)/System \
+    progname=SysMon uselibs="mui"
+
+%common
