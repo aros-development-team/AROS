@@ -48,14 +48,11 @@
         GCIT_NumberOfProcessors - (ULONG *) Provides the number of processors 
                                  present in the system.
 
-        GCIT_ModelString - (STRPTR) Fills in a passed buffer with model
-                           information. Buffer should be at least 128 bytes long.
+        GCIT_ModelString - (CONST_STRPTR *) Provides the name of the model of the
+                            processor. The string is considered read-only.
 
         GCIT_Family - (ULONG *) Provides designation of processor family using
                       one of the CPUFAMILY_XXX values.
-
-        GCIT_FamilyString - (STRPTR) Fills in a passed buffer with family
-                            information. Buffer should be at least 64 bytes long.
 
         GCIT_VectorUnit - (ULONG *) Provides designation of available vectory
                           unit using one of the VECTORTYPE_XXX values.
@@ -66,6 +63,12 @@
 
         GCIT_Endianness - (ULONG *) Provides designation of current processor
                           endianness using one of the ENDIANNESS_XXX values.
+
+        GCIT_ProcessorSpeed - (UQUAD *) Provides the current CPU speed in Hz
+        
+        GCIT_FrontsideSpeed - (UQUAD *) Provides the current FSB speed in Hz
+
+        GCIT_ProcessorLoad - (UBYTE *) Provides the current CPU load in % (0-100)
 
         Cache sizes - (ULONG *) Following tags are used to retrieve size of 
                       specified caches.
@@ -114,6 +117,7 @@
                    GCIT_SupportsVirtualization
                    GCIT_SupportsNoExecutionBit
                    GCIT_Supports64BitMode
+                   GCIT_SupportsMSR
 
     RESULT
 
@@ -154,13 +158,10 @@
             *((ULONG *)passedTag->ti_Data) = 1;
             break;
         case(GCIT_ModelString):
-            strcpy((STRPTR)passedTag->ti_Data, "processor.resource not implemented");
+            *((CONST_STRPTR *)passedTag->ti_Data) = "Unknown";
             break;
         case(GCIT_Family):
             *((ULONG *)passedTag->ti_Data) = CPUFAMILY_UNKNOWN;
-            break;
-        case(GCIT_FamilyString):
-            strcpy((STRPTR)passedTag->ti_Data, "processor.resource not implemented");
             break;
         case(GCIT_VectorUnit):
             *((ULONG *)passedTag->ti_Data) = VECTORTYPE_NONE;
@@ -188,6 +189,15 @@
             break;
         case(GCIT_Endianness):
             *((ULONG *)passedTag->ti_Data) = ENDIANNESS_UNKNOWN;
+            break;
+        case(GCIT_ProcessorSpeed):
+            *((UQUAD *)passedTag->ti_Data) = 0;
+            break;
+        case(GCIT_ProcessorLoad):
+            *((UBYTE *)passedTag->ti_Data) = 0;
+            break;
+        case(GCIT_FrontsideSpeed):
+            *((UQUAD *)passedTab->ti_Data) = 0;
             break;
         }
         }
