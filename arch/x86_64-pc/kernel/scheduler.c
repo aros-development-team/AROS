@@ -3,6 +3,8 @@
 #include "exec_intern.h"
 #include "etask.h"
 
+#undef KernelBase
+
 #include <exec/lists.h>
 #include <exec/types.h>
 #include <exec/tasks.h>
