@@ -8,28 +8,34 @@
 
 #include "processor_arch_intern.h"
 
-#define cpuid(num) \
-    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
-
 static void ReadVendorID(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
     ULONG * ulongptr = NULL;
     ULONG index = 0;
+    info->Vendor = VENDOR_UNKNOWN;
+    info->CPUIDHighestStandardFunction = 0x0;
+    info->CPUIDHighestExtendedFunction = 0x0;
     
     /* Reading CPU Vendor ID */
     ulongptr = (ULONG *)info->VendorID;
     index = 0;
     cpuid(0x00000000);
+    info->CPUIDHighestStandardFunction = eax;
     ulongptr[index++] = ebx;ulongptr[index++] = edx;
     ulongptr[index++] = ecx;info->VendorID[12] = 0;
 
     /* Select manufacturer based on Vendor ID */
-    info->Vendor = VENDOR_UNKNOWN;
     if (strcmp(info->VendorID, "AuthenticAMD") == 0)
         info->Vendor = VENDOR_AMD;
     else if (strcmp(info->VendorID, "GenuineIntel") == 0)
         info->Vendor = VENDOR_INTEL;
+
+    /* Reading Highest Extended Function */
+    cpuid(0x80000000);
+    info->CPUIDHighestExtendedFunction = eax;
+    
+
 }
 
 static void ReadBrandString(struct X86ProcessorInformation * info)
@@ -39,7 +45,7 @@ static void ReadBrandString(struct X86ProcessorInformation * info)
     ULONG index = 0;
     
     /* Reading CPU Brand String */
-    ulongptr = (ULONG *)info->BrandString;
+    ulongptr = (ULONG *)info->BrandStringBuffer;
     index = 0;
     cpuid(0x80000002);
     ulongptr[index++] = eax;ulongptr[index++] = ebx;
@@ -50,28 +56,19 @@ static void ReadBrandString(struct X86ProcessorInformation * info)
     cpuid(0x80000004);
     ulongptr[index++] = eax;ulongptr[index++] = ebx;
     ulongptr[index++] = ecx;ulongptr[index++] = edx;
+    
+    /* Left trim */
+    info->BrandString = info->BrandStringBuffer;
+    
+    while(*info->BrandString == ' ') info->BrandString++;
+    
 }
-
-/* Relies on order of definitions of CPUFAMILY_XXX */
-static STRPTR FamilyStrings [] =
-{
-    "Unknown",
-    "AMD K5",
-    "AMD K6",
-    "AMD K7",
-    "AMD K8",
-    "AMD K9",
-    "AMD K10",
-    "Intel 486",
-    "Intel Pentium",
-    "Intel Pentium Pro",
-    "Intel Pentium 4"
-};
 
 static ULONG AMDDeriveFamily(UBYTE basefamily, UBYTE extendedfamily)
 {
     ULONG family = 0;
     ULONG ret;
+
     if (basefamily == 0x0f) 
         family = basefamily + extendedfamily;
     else
@@ -111,7 +108,7 @@ static ULONG IntelDeriveFamily(UBYTE basefamily, UBYTE extendedfamily)
 static void ReadFamilyModelStepping(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
-    UBYTE stepping, basefamily, extendedfamily;
+    UBYTE stepping, basefamily, extendedfamily, basemodel, extendedmodel;
     
     /* Reading Family/Model/Stepping */
     cpuid(0x00000001);
@@ -119,16 +116,22 @@ static void ReadFamilyModelStepping(struct X86ProcessorInformation * info)
     stepping = eax & 0x0f;
     basefamily = (eax >> 8) & 0x0f;
     extendedfamily = (eax >> 20) & 0xff;
+    basemodel = (eax >> 4) & 0x0f;
+    extendedmodel = (eax >> 16) & 0x0f;
     
     /* Read family */
     info->Family = CPUFAMILY_UNKNOWN;
     switch(info->Vendor)
     {
-    case(VENDOR_AMD): info->Family = AMDDeriveFamily(basefamily, extendedfamily); break;
-    case(VENDOR_INTEL): info->Family = IntelDeriveFamily(basefamily, extendedfamily); break;
+    case(VENDOR_AMD): 
+        info->Family = AMDDeriveFamily(basefamily, extendedfamily); 
+        info->Model = basemodel | (basefamily < 0x0f ? 0 : (extendedmodel << 4));
+        break;
+    case(VENDOR_INTEL): 
+        info->Family = IntelDeriveFamily(basefamily, extendedfamily);
+        info->Model = basemodel | (extendedmodel << 4);
+        break;
     }
-    
-    info->FamilyString = FamilyStrings[(info->Family == 0 ? info->Family : info->Family - 100)];
 }
 
 static void ReadFeaturesFlags(struct X86ProcessorInformation * info)
@@ -361,12 +364,32 @@ static void ReadCacheInformation(struct X86ProcessorInformation * info)
     }
 }
 
-void ReadProcessorInformation(struct X86ProcessorInformation * info)
+static void ReadMSRSupportInformation(struct X86ProcessorInformation * info)
+{
+    ULONG eax, ebx, ecx, edx;
+    info->APERFMPERF = FALSE;
+
+    /* Check if MSR is supported */
+    if (!(info->Features1 & FEATF_MSR))
+        return;
+
+    if (info->CPUIDHighestStandardFunction > 0x00000005)
+    {   
+        /* Reading Power Management Information */
+        cpuid(0x00000006);
+        if (ecx & 0x01)
+            info->APERFMPERF = TRUE;
+    }
+}
+
+VOID ReadProcessorInformation(struct X86ProcessorInformation * info)
 {
     ReadVendorID(info);
     ReadBrandString(info);
     ReadFamilyModelStepping(info);
     ReadFeaturesFlags(info);
     ReadCacheInformation(info);
+    ReadMSRSupportInformation(info);
+    ReadMaxFrequencyInformation(info);
 }
 
