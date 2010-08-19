@@ -56,6 +56,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Init(REGPARAM(d0, struct ReqToolsBase *,
 
     InitSemaphore(&RTBase->ReqToolsPrefs.PrefsSemaphore);
     RTBase->ReqToolsPrefs.PrefsSize = RTPREFS_SIZE;
+    RTBase->ReqToolsPrefs.IsLoaded = FALSE;
 
     /* Set default preferences */
     RTBase->ReqToolsPrefs.ReqDefaults[RTPREF_FILEREQ].Size = 75;
@@ -110,13 +111,15 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 {
     if (DOSBase == NULL)
     {
-        UBYTE configbuffer[RTPREFS_SIZE];
-	
-        DOSBase = RTBase->DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
-        if (DOSBase == NULL)
-            return NULL;
+	DOSBase = RTBase->DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
+	if (DOSBase == NULL)
+	    return NULL;
+    }
 
-	    
+    if ( ! RTBase->ReqToolsPrefs.IsLoaded)
+    {
+        UBYTE configbuffer[RTPREFS_SIZE];
+
 	/* Read config file */
 	
         D(bug("reqtools.library: Inside libopen func. Reading config file\n"));
@@ -163,8 +166,9 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 	    }
 	    	
 	}
-	
-    } /* if (DOSBase == NULL) */
+	RTBase->ReqToolsPrefs.IsLoaded = TRUE;
+
+    } /* if (! RTBase->ReqToolsPrefs.IsLoaded) */
     
     if(IntuitionBase == NULL)
 	IntuitionBase = RTBase->IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
