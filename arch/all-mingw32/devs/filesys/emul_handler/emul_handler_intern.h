@@ -70,7 +70,7 @@ struct filehandle
 struct EmulInterface
 {
     struct AsyncReaderControl *(*EmulInitNative)(void);
-    LONG (*EmulStat)(char *path, WIN32_FILE_ATTRIBUTE_DATA *FIB);
+    LONG (*EmulStat)(char *path, WIN32_FILE_ATTRIBUTE_DATA *FIB, ULONG *attrmask);
     ULONG (*EmulDelete)(char *filename);
     unsigned long (*EmulGetHome)(char *name, char *home);
     ULONG (*EmulStatFS)(char *path, struct InfoData *id);

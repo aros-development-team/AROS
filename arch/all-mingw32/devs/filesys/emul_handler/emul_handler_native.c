@@ -1,11 +1,10 @@
 /*
- *  emul_handler_native.c
- *  AROS
- *
- *  Created by Daniel Oberhoff on 06.04.08.
- *  Copyright 2008 __MyCompanyName__. All rights reserved.
- *
- */
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Host-side hepler code for Windows emul.handler
+    Lang: english
+*/
 
 #define _WIN32_IE 0x0500
 #include <windows.h>
@@ -56,76 +55,92 @@ BOOL __declspec(dllexport) EmulDelete(const char *filename)
   return res;
 }
 
-LONG __declspec(dllexport) EmulStat(const char *path, WIN32_FILE_ATTRIBUTE_DATA *FIB)
+LONG __declspec(dllexport) EmulStat(const char *path, WIN32_FILE_ATTRIBUTE_DATA *FIB, LONG *attrmask)
 {
-  DWORD retval;
-  DWORD m;
+    DWORD retval;
+    DWORD m;
 
-  DSTAT(printf("[EmulHandler] Stat(%s, 0x%p)\n", path, FIB));
-  if (FIB) {
-      retval = GetFileAttributesEx(path, GetFileExInfoStandard, FIB);
-      m = FIB->dwFileAttributes;
-  } else {
-      m = GetFileAttributes(path);
-      retval = (m != INVALID_FILE_ATTRIBUTES);
-  }
-  DSTAT(printf("[EmulHandler] Return value %ld, object attributes 0x%08lX\n", retval, m));
-  if (retval) {
-      /* TODO: Here we may also probably recognize hard and soft links */
-      if (m & FILE_ATTRIBUTE_DIRECTORY) {
-          DSTAT(printf("[EmulHandler] Object is a directory\n"));
-          retval = ST_USERDIR;
-      } else {
-          DSTAT(printf("[EmulHandler] Object is a file\n"));
-          retval = ST_FILE;
-      }
-  }
-  return retval;
+    DSTAT(printf("[EmulHandler] Stat(%s, 0x%p)\n", path, FIB));
+    if (FIB) {
+	retval = GetFileAttributesEx(path, GetFileExInfoStandard, FIB);
+	m = FIB->dwFileAttributes;
+    } else {
+	m = GetFileAttributes(path);
+	retval = (m != INVALID_FILE_ATTRIBUTES);
+    }
+    DSTAT(printf("[EmulHandler] Return value %ld, object attributes 0x%08lX\n", retval, m));
+
+    if (retval)
+    {
+	/* TODO: Here we may also probably recognize hard and soft links */
+	if (m & FILE_ATTRIBUTE_DIRECTORY) {
+            DSTAT(printf("[EmulHandler] Object is a directory\n"));
+            retval = ST_USERDIR;
+	} else {
+            DSTAT(printf("[EmulHandler] Object is a file\n"));
+            retval = ST_FILE;
+	}
+    }
+    else
+	m = 0;
+
+    if (attrmask)
+	*attrmask = m & FILE_ATTRIBUTE_SYSTEM;
+ 
+    return retval;
 }
 
-int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
+int __declspec(dllexport) EmulStatFS(char *path, struct InfoData *id)
 {
-  LPTSTR c;
-  char s;
-  DWORD SectorsPerCluster, BytesPerSector, FreeBlocks;
-  BOOL res = 0;
+    char *c;
+    char s;
+    DWORD SectorsPerCluster, BytesPerSector, FreeBlocks;
+    BOOL res = 0;
 
-  DSTATFS(printf("[EmulHandler] StatFS(\"%s\")\n", path));
-  /* GetDiskFreeSpace() can be called only on root path. We always work with absolute pathnames, so let's get first part of the path */
-  c = path;
-  if ((c[0] == '\\') && (c[1] == '\\')) {
-      /* If the path starts with "\\", it's a UNC path. Its root is "\\Server\Share\", so we skip "\\Server\" part */
-      c += 2;
-      while (*c != '\\') {
-          if (*c == 0)
-              return ERROR_FILE_NOT_FOUND;
-          c++;
-      }
-      c++;
-  }
-  /* Skip everything up to the first '\'. */
-  while (*c != '\\') {
-      if (*c == 0)
-          return ERROR_FILE_NOT_FOUND;
-      c++;
-  }
-  /* Temporarily terminate the path */
-  s = c[1];
-  c[1] = 0;
-  DSTATFS(printf("[EmulHandler] Root path: %s\n", path));
-  res = GetDiskFreeSpace(path, &SectorsPerCluster, &BytesPerSector, &FreeBlocks, &id->id_NumBlocks);
-  c[1] = s;
-  if (res) {
-      id->id_NumSoftErrors = 0;
-      id->id_UnitNumber = 0;
-      id->id_DiskState = ID_VALIDATED;
-      id->id_NumBlocksUsed = id->id_NumBlocks - FreeBlocks;
-      id->id_BytesPerBlock = SectorsPerCluster*BytesPerSector;
-      id->id_DiskType = ID_DOS_DISK;
-      id->id_InUse = TRUE;
-      return 0;
-  }
-  return GetLastError();
+    DSTATFS(printf("[EmulHandler] StatFS(\"%s\")\n", path));
+
+    /* GetDiskFreeSpace() can be called only on root path. We always work with absolute pathnames, so let's get first part of the path */
+    c = path;
+    if ((c[0] == '\\') && (c[1] == '\\'))
+    {
+	/* If the path starts with "\\", it's a UNC path. Its root is "\\Server\Share\", so we skip "\\Server\" part */
+	c += 2;
+	while (*c != '\\') {
+            if (*c == 0)
+		return ERROR_FILE_NOT_FOUND;
+            c++;
+	}
+	c++;
+    }
+
+    /* Skip everything up to the first '\'. */
+    while (*c != '\\')
+    {
+	if (*c == 0)
+	    return ERROR_FILE_NOT_FOUND;
+	c++;
+    }
+
+    /* Temporarily terminate the path */
+    s = c[1];
+    c[1] = 0;
+    DSTATFS(printf("[EmulHandler] Root path: %s\n", path));
+
+    res = GetDiskFreeSpace(path, &SectorsPerCluster, &BytesPerSector, &FreeBlocks, &id->id_NumBlocks);
+    c[1] = s;
+    if (res)
+    {
+	id->id_NumSoftErrors = 0;
+	id->id_UnitNumber = 0;
+	id->id_DiskState = ID_VALIDATED;
+	id->id_NumBlocksUsed = id->id_NumBlocks - FreeBlocks;
+	id->id_BytesPerBlock = SectorsPerCluster*BytesPerSector;
+	id->id_DiskType = ID_DOS_DISK;
+	id->id_InUse = TRUE;
+
+	return 0;
+    }
+    return GetLastError();
 }
 
 DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
