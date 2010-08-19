@@ -107,18 +107,20 @@ static VOID PrintProcessorInformation()
 {
     ULONG count = GetProcessorsCount();
     ULONG i, j;
-    TEXT modelstring[128];
+    CONST_STRPTR modelstring;
     ULONG architecture, endianness;
     STRPTR architecturestring, endiannessstring;
+    UQUAD cpuspeed;
     
     for (i = 0; i < count; i++)
     {
         struct TagItem tags [] =
         {
             {GCIT_SelectedProcessor, i},
-            {GCIT_ModelString, (IPTR)modelstring},
+            {GCIT_ModelString, (IPTR)&modelstring},
             {GCIT_Architecture, (IPTR)&architecture},
             {GCIT_Endianness, (IPTR)&endianness},
+            {GCIT_ProcessorSpeed, (IPTR)&cpuspeed},
             {TAG_DONE, TAG_DONE}
         };
         
@@ -145,10 +147,11 @@ static VOID PrintProcessorInformation()
             }
             j++;
         }       
-        
-        
-        printf("PROCESSOR %d:\t[%s/%s] %s\n", i + 1, 
-            architecturestring, endiannessstring, modelstring);
+
+
+        printf("PROCESSOR %d:\t[%s/%s] %s (%u Mhz)\n", i + 1, 
+            architecturestring, endiannessstring, modelstring,
+            (ULONG)(cpuspeed / 1000000));
     }
 }
 
