@@ -1,11 +1,13 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <inttypes.h>
 
 #include "exec_intern.h"
 #include "etask.h"
+
+#undef KernelBase
 
 #include <exec/lists.h>
 #include <exec/types.h>
