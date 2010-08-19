@@ -34,12 +34,15 @@ AROS_LH1(void, KrnPutChar,
     SEE ALSO
 
     INTERNALS
+	During very early system startup this function can be called
+	directly with KernelBase set to NULL. Architecture-specific
+	implementations of this function need to take care of it.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
-    krnPutC(c, NULL);
+    krnPutC(c, KernelBase);
 
     AROS_LIBFUNC_EXIT
 }

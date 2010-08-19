@@ -37,21 +37,10 @@ INIT_FILE   := exec_init
 SYS_FILES   := prepareexecbase
 FILES	    := traphandler exec_util idletask
 
-ifeq ($(FLAVOUR),palmnative)
-#basically the same as 'not native' a few lines above except for LIB:=.
-FILES	    += romtagscanner
-endif
-
 ifeq ($(FLAVOUR),native)
 DEPLIBS := arossupport arosc
 else
 DEPLIBS :=
-  ifeq ($(ARCH),darwin)
-    FILES	    += romtagscanner
-  endif
-  ifeq ($(ARCH),mingw32)
-    FILES	    += romtagscanner
-  endif
 endif
 
 # I need the private includes (for SIZEOF_ALL_REGISTERS) and they

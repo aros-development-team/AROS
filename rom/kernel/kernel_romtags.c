@@ -2,8 +2,7 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    ROMTag scanner. Adapted from the original i386-native to become
-    system independent.
+    ROMTag scanner.
 */
 
 #include <exec/types.h>
@@ -13,10 +12,13 @@
 #include <exec/resident.h>
 #include <proto/exec.h>
 
-#include "exec_intern.h"
+#include <kernel_base.h>
+#include <kernel_debug.h>
+#include <kernel_romtags.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
+/* This relies on KrnBug()'s ability to work with NULL KernelBase */
+#define KernelBase NULL
+
 /*
  * RomTag scanner.
  *
@@ -35,17 +37,7 @@
  * -1 used to break the loop.
  */
 
-struct rt_node
-{
-    struct Node     node;
-    struct Resident *module;
-};
-
-ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
-(
-    struct ExecBase *SysBase,
-    UWORD	    *ranges[]
-)
+ULONG **krnRomTagScanner(struct ExecBase *SysBase, UWORD *ranges[])
 {
     struct List     rtList;             /* List of modules */
     UWORD	    *end;
@@ -65,7 +57,7 @@ ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
 	ptr = *ranges++;
 	end = *ranges++;
 
-	kprintf("RomTagScanner: Start = %p, End = %p\n", ptr, end);
+	bug("RomTagScanner: Start = %p, End = %p\n", ptr, end);
 	do
 	{
 	    res = (struct Resident *)ptr;
@@ -114,7 +106,7 @@ ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
 
 		    if (node)
 		    {
-			node->node.ln_Name  = res->rt_Name;
+			node->node.ln_Name  = (char *)res->rt_Name;
 			node->node.ln_Pri   = res->rt_Pri;
 			node->module        = res;
 
@@ -156,7 +148,7 @@ ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
 
     RomTag = AllocMem((i+1)*4,MEMF_PUBLIC | MEMF_CLEAR);
 
-    kprintf("Resident modules (addr: pri version name):\n");
+    bug("Resident modules (addr: pri version name):\n");
     if (RomTag)
     {
         int             j;
@@ -165,7 +157,7 @@ ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
         for (j=0; j<i; j++)
         {
             n = (struct rt_node *)RemHead(&rtList);
-            kprintf("+ 0x%08.8lx: %3d %3d \"%s\"\n",
+            bug("+ 0x%08.8lx: %3d %3d \"%s\"\n",
                 n->module,
                 n->node.ln_Pri,
                 n->module->rt_Version,

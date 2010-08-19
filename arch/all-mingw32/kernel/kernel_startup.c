@@ -14,12 +14,12 @@
 #include "kernel_cpu.h"
 #include "kernel_debug.h"
 #include "kernel_init.h"
+#include "kernel_romtags.h"
 #include "kernel_tagitems.h"
 #include "winapi.h"
 
-/* External functions from exec.library */
+/* External function from exec.library */
 extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *);
-extern ULONG **Exec_RomTagScanner(struct ExecBase*, UWORD**);
 
 #undef kprintf
 #undef vkprintf
@@ -177,7 +177,7 @@ int __startup startup(struct TagItem *msg)
 
     ranges[0] = klo;
     ranges[1] = khi;
-    SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
+    SysBase->ResModules = krnRomTagScanner(SysBase, ranges);
 
     mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
