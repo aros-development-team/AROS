@@ -98,7 +98,7 @@ struct ReqDefaults
 
 struct ReqToolsPrefs
 {
-    /* Size of preferences (_without_ this field and the semaphore) */
+    /* Size of preferences (_without_ this field, the semaphore and IsLoaded) */
     ULONG 			PrefsSize;
     struct SignalSemaphore 	PrefsSemaphore;
     BOOL IsLoaded; /* To avoid multiple loading of preferences */
