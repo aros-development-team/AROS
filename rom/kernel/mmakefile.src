@@ -12,7 +12,7 @@ FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecon
 	 switch unmapglobal unregistermodule virtualtophysical decodelocation	     \
 	 putchar maygetchar
 
-FILES := kernel_init kernel_debug kernel_tagitems
+FILES := kernel_init kernel_debug kernel_romtags kernel_tagitems
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource \

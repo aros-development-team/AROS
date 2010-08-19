@@ -22,10 +22,17 @@ AROS_LH2(int, KrnBug,
         struct KernelBase *, KernelBase, 12, Kernel)
 
 /*  FUNCTION
+	Output a formatted string to low-level debug output stream.
+
+	The function supports the same set of formatting specifiers
+	as standard C printf() function.
 
     INPUTS
+	format - A format string
+	args   - A list of arguments
 
     RESULT
+	Number of succesfully printed characters
 
     NOTES
 
@@ -36,12 +43,15 @@ AROS_LH2(int, KrnBug,
     SEE ALSO
 
     INTERNALS
+	During very early system startup this function can be called
+	directly with KernelBase set to NULL. Architecture-specific
+	implementations of this function need to take care of it.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    return __vcformat(NULL, krnPutC, format, args);
+    return __vcformat(KernelBase, krnPutC, format, args);
 
     AROS_LIBFUNC_EXIT
 }
