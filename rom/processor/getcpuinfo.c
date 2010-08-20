@@ -197,7 +197,7 @@
             *((UBYTE *)passedTag->ti_Data) = 0;
             break;
         case(GCIT_FrontsideSpeed):
-            *((UQUAD *)passedTab->ti_Data) = 0;
+            *((UQUAD *)passedTag->ti_Data) = 0;
             break;
         }
         }
