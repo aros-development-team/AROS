@@ -8,6 +8,7 @@
 #include "etask.h"
 #include "syscall.h"
 
+#undef KernelBase
 #include "kernel_intern.h"
 
 AROS_LH0(KRN_SchedType, KrnGetScheduler,
