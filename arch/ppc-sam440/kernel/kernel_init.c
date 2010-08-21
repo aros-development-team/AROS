@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include "memory.h"
 #include <utility/tagitem.h>
