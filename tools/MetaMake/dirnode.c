@@ -722,6 +722,7 @@ scanmakefiles (struct Project * prj, struct DirNode * node, struct List * vars)
 
 	    fclose (fh);
 
+#if 0
             /* Call make for _MM_ target */
 	    if (callmake_mm (prj, makefile))
 	    {
@@ -729,6 +730,7 @@ scanmakefiles (struct Project * prj, struct DirNode * node, struct List * vars)
 		/* TODO: parsing of the result */
 		/* exit (666); */
 	    }
+#endif
 
 	} /* If the makefile needed to be scanned */
     } /* For all makefiles in the project */
