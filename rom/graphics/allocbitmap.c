@@ -25,6 +25,24 @@
 #define SET_BM_TAG(tags, idx, tag, val)	\
     SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
 
+static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
+{
+    vHidd_StdPixFmt_LUT8,
+    vHidd_StdPixFmt_RGB15,
+    vHidd_StdPixFmt_BGR15,
+    vHidd_StdPixFmt_RGB15_LE,
+    vHidd_StdPixFmt_BGR15_LE,
+    vHidd_StdPixFmt_RGB16,
+    vHidd_StdPixFmt_BGR16,
+    vHidd_StdPixFmt_RGB16_LE,
+    vHidd_StdPixFmt_BGR16_LE,
+    vHidd_StdPixFmt_RGB24,
+    vHidd_StdPixFmt_BGR24,
+    vHidd_StdPixFmt_ARGB32,
+    vHidd_StdPixFmt_BGRA32,
+    vHidd_StdPixFmt_RGBA32
+};
+
 /*****************************************************************************
 
     NAME */
@@ -260,8 +278,14 @@
 
 	/* Now let's deal with pixelformat */
 	if (flags & BMF_SPECIALFMT)
-	    stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
-	else if ((!friend_bitmap) && (hiddmode == vHidd_ModeID_Invalid)) {
+	{
+	    ULONG cgxpf = DOWNSHIFT_PIXFMT(flags);
+	    
+	    if (cgxpf <= PIXFMT_RGBA32)
+	        stdpf = cyber2hidd_pixfmt[cgxpf];
+	}
+	else if ((!friend_bitmap) && (hiddmode == vHidd_ModeID_Invalid))
+	{
 	    /* If there is neither pixelformat nor friend bitmap nor ModeID specified,
 	       we have to use some default pixelformat depending on the depth */
 	    if (depth > 24)
