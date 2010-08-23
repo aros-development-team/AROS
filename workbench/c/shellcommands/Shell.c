@@ -517,7 +517,7 @@ static LONG getArgumentIdx(struct InterpreterState *is,
     return i;
 }
 
-AROS_SH1(Shell, 41.1,
+AROS_SH1(Shell, 41.2,
 AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 {
     AROS_SHCOMMAND_INIT
@@ -731,7 +731,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
 	    }
 
 	    D(bug("Output stream opened\n"));
-    	    SelectOutput(rd->newOut);
+    	    rd->oldOut = SelectOutput(rd->newOut);
 	}
 
 	if(rd->haveAppRD)
@@ -747,7 +747,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
 
 	    Seek(rd->newOut, 0, OFFSET_END);
 	    D(bug("Output stream opened (append)\n"));
-    	    SelectOutput(rd->newOut);
+    	    rd->oldOut = SelectOutput(rd->newOut);
 	}
 
 	if(rd->haveInRD)
@@ -768,19 +768,35 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
         lv = FindVar("echo", LV_VAR);
         /* AmigaDOS's shell is content also with echo being set to anything
            that begins with "on" in order to trigger commands echoing on, 
-           it doesn't really have to be set to just "on".  */
+           it doesn't really have to be set to just "on". */
         /* Embedded command isn't echo'ed, but its result will be integrated
-           in final command line, which will be echo'ed if the var is set */
+           in final command line, which will be echo'ed if the var is set. */
         if ( (lv != NULL)                              &&
              (lv->lv_Len >= 2)                         &&
              (strncasecmp(lv->lv_Value, "on", 2) == 0) &&
              (!rd->embedded)                              )
         {
-            /* Ok, commands echoing is on.  */
-            STRPTR commandLine = AllocVec(1024, MEMF_ANY);
-            snprintf(commandLine, 1024, "%s%s", rd->commandStr, filtered.CS_Buffer);
-            PutStr(commandLine);
-            FreeVec(commandLine);
+            /* Ok, commands echoing is on. */
+            /* If a redirection is present, echoing isn't expected to go to
+               it. If a script is running, building commandLine allows us
+               to show what the command line looks like after arguments
+               substitution... but redirection part is lost at that stage,
+               so line with redirections in scripts won't be shown with
+               substitued arguments, but with their name in the script */
+            if ( (rd->haveOutRD) || (rd->haveAppRD) )
+                FPuts(rd->oldOut, cl->line);
+            else
+            {
+                if ( cli->cli_Interactive )
+                    PutStr(cl->line);
+                else
+                {
+                    STRPTR commandLine = AllocVec(1024, MEMF_ANY);
+                    snprintf(commandLine, 1024, "%s%s", rd->commandStr, filtered.CS_Buffer);
+                    PutStr(commandLine);
+                    FreeVec(commandLine);
+                }
+            }
         }
 
 	D(bug("Calling executeLine()\n"));
