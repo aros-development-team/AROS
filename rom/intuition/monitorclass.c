@@ -1001,7 +1001,7 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 	In AROS displayable bitmaps need complete display mode information and not
 	only pixelformat. So this method will never be implemented and will always return NULL
 	pointer. In order to create a displayable RTG bitmap on AROS the user needs to supply
-	BMF_SCREEN flag together with display mode ID to AllocBitMap() function.
+	a taglist with BMATags_DisplayID specification to AllocBitMap() function.
 
     INPUTS
 	obj         - A monitor object

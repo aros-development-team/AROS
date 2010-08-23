@@ -57,22 +57,25 @@
     
     ASSERT_VALID_PTR(bm);
 
-    if (bm->pad != 0 || (bm->Flags & BMF_AROS_HIDD))
+    if (bm->pad != 0 || (bm->Flags & BMF_SPECIALFMT))
     {
+        OOP_Object *bmobj = HIDD_BM_OBJ(bm);
+	
     	if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB)
 	{
 	    /* NULL colormap otherwise bitmap killing also kills
 	       the colormap object of the bitmap object
 	       from which we shared it = to which it belongs */
-	       
-	    HIDD_BM_SetColorMap(HIDD_BM_OBJ(bm), NULL);
+	    if (bmobj)
+		HIDD_BM_SetColorMap(bmobj, NULL);
 	}
 	else if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SCREEN_BITMAP) // (bm->Flags & BMF_DISPLAYABLE)
 	{
     	    FreeVec(HIDD_BM_PIXTAB(bm));
 	}
 
-	HIDD_Gfx_DisposeBitMap(HIDD_BM_DRVDATA(bm)->gfxhidd, HIDD_BM_OBJ(bm));
+	if (bmobj)
+	    HIDD_Gfx_DisposeBitMap(HIDD_BM_DRVDATA(bm)->gfxhidd, bmobj);
 
 	FreeMem(bm, sizeof (struct BitMap));
     }

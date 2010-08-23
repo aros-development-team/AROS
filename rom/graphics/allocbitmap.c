@@ -9,9 +9,12 @@
 #include <aros/debug.h>
 #include <string.h>
 #include <exec/memory.h>
+#include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
+#include <proto/utility.h>
 #include <cybergraphx/cybergraphics.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
@@ -81,16 +84,43 @@
 	    BMF_SPECIALFMT: causes graphics to allocate a bitmap
 	    	of a standard CyberGraphX format. The format
 		(PIXFMT_????) must be stored in the 8 most significant bits.
-	
-	    BMF_SCREEN: causes graphics to allocate a bitmap which is actually
-		displayable using RTG driver. You must also pass a displaymode
-		ID number (and NOT a bitmap pointer) in friend_bitmap parameter.
-		Note that this flag is not stored in Flags member of the BitMap
-		structure.
+
+	    BMF_RTGTAGS,
+	    BMF_RTGCHECK,
+	    BMF_FRIENDSTAG: Setting these flags to 1's while BMF_SPECIALFMT
+	        and BMF_INVALID are set to 0 means that friend_bitmap
+		points to a taglist instead of BitMap structure.
 
 	friend_bitmap - pointer to another bitmap, or NULL. If this pointer
 	    is passed, then the bitmap data will be allocated in
 	    the most efficient form for blitting to friend_bitmap.
+
+	    This pointer can also point to a TagList, if specified by flags.
+	    In this case it may contain the following tags:
+
+	      - BMATags_Friend (struct BitMap *)
+	            An actual pointer to friend bitmap. Defaults to NULL.
+
+	      - BMATags_Depth (ULONG)
+	            Depth of the bitmap to create. Defaults to depth argument
+		    of AllocBitMap().
+
+	      - BMATags_Clear (BOOL)
+		    Tells if the newly created bitmap should be explicitly
+		    cleared. Defaults to the value of BMF_CLEAR flag in
+		    AllocBitMap() arguments.
+
+	      - BMATags_Displayable (BOOL)
+		    Tells if the bitmap should be displayable by the hardware.
+		    Defaults to the value of BMF_DISPLAYABLE flag in AllocBitMap()
+		    arguments.
+
+	      - BMATags_NoMemory (BOOL)
+		    Tells AllocBitMap() not to allocate actual bitmap storage. Only
+		    header is allocated and set up. Default value is FALSE.
+	
+	      - BMATags_DisplayID (ULONG)
+		    Allocate a displayable bitmap for specified display mode.
 
     RESULT
 	A pointer to the new bitmap.
@@ -147,19 +177,49 @@
 
     struct BitMap *nbm;
     HIDDT_ModeID hiddmode = vHidd_ModeID_Invalid;
+    struct DisplayInfoHandle *dh;
     struct monitor_driverdata *drv = NULL;
+    ULONG clear = flags & BMF_CLEAR;
+    BOOL alloc = TRUE;
 
-    if (flags & BMF_SCREEN)
+    if (BITMAPFLAGS_ARE_EXTENDED(flags))
     {
-        struct DisplayInfoHandle *dh = FindDisplayInfo((ULONG)friend_bitmap);
-	
-	if (!dh)
-	    return NULL;
+        const struct TagItem *tstate = (const struct TagItem *)friend_bitmap;
+	struct TagItem *tag;
 
-	drv           = dh->drv;
-    	hiddmode      = dh->id;
 	friend_bitmap = NULL;
-	flags        |= BMF_REQUESTVMEM;
+
+	while ((tag = NextTagItem(&tstate)))
+	{
+	    switch (tag->ti_Tag) {
+	    case BMATags_Friend:
+	        friend_bitmap = (struct BitMap *)tag->ti_Data;
+		break;
+
+	    case BMATags_Depth:
+		depth = tag->ti_Data;
+		break;
+
+	    case BMATags_Clear:
+		clear = tag->ti_Data;
+		break;
+
+	    case BMATags_NoMemory:
+		alloc = !tag->ti_Data;
+		break;
+
+	    case BMATags_DisplayID:
+		dh = FindDisplayInfo(tag->ti_Data);
+		if (!dh)
+		    return NULL;
+
+		drv      = dh->drv;
+		hiddmode = dh->id;
+		flags   |= BMF_REQUESTVMEM;
+
+		break;
+	    }
+	}
     }
 
     ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
@@ -171,12 +231,9 @@
 	there is a friend_bitmap bitmap and that's not a normal bitmap, then
 	call the RTG driver.
     */
-    if (
-	depth > 8
-	|| (flags & BMF_SCREEN)
-	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
-	|| (flags & BMF_SPECIALFMT) /* Cybergfx bitmap */
-    )
+    if ((depth > 8) || (hiddmode != vHidd_ModeID_Invalid) ||
+	(friend_bitmap && (friend_bitmap->Flags & BMF_SPECIALFMT)) ||
+	(flags & BMF_SPECIALFMT))
     {
 	struct TagItem bm_tags[6];
 	HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
@@ -241,49 +298,66 @@
 
 	nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
 	D(bug("[AllocBitMap] Allocated bitmap structure: 0x%p\n", nbm));
-	if (NULL != nbm)
+	
+	if (nbm)
 	{
-    	    OOP_Object *bm_obj;
+    	    OOP_Object *bm_obj = NULL;
+	    BOOL ok = TRUE;
 
 	    /* Use the memory driver if we didn't get another object in any way */
 	    if (!drv)
     	        drv = (struct monitor_driverdata *)CDD(GfxBase);
 
-    	    bm_obj = HIDD_Gfx_NewBitMap(drv->gfxhidd, bm_tags);
-	    D(bug("[AllocBitMap] Created bitmap object 0x%p\n", bm_obj));
-    	    if (NULL != bm_obj) {
-    		OOP_Object      *pf;
-    		OOP_Object      *colmap = 0;
-    		HIDDT_ColorModel colmod;
-    		BOOL    	 ok = FALSE;
-		IPTR    	 width, height, val;
+	    if (alloc)
+	    {
+		bm_obj = HIDD_Gfx_NewBitMap(drv->gfxhidd, bm_tags);
+		D(bug("[AllocBitMap] Created bitmap object 0x%p\n", bm_obj));
+		if (!bm_obj)
+		    ok = FALSE;
+	    }
 
-    		/*  It is possible that the HIDD had to allocate
-    		    a larger depth than that supplied, so
-    		    we should get back the correct depth.
-    		    This is because layers.library might
-    		    want to allocate offscreen bitmaps to
-    		    store obscured areas, and then those
-    		    offscreen bitmaps should be of the same depth as
-    		    the onscreen ones. */
-		OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &width);
-		OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
-    		OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    	    if (ok)
+	    {
+		IPTR width = sizex;
+		IPTR height = sizey;
+		HIDDT_ColorModel colmod = -1;
 
-    		OOP_GetAttr(pf, aHidd_PixFmt_Depth, &val);
-		depth = val;
+		if (alloc)
+		{
+    		    OOP_Object      *pf;
+    		    OOP_Object      *colmap = NULL;
+		    IPTR val;
 
-    		OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &val);
-    	    	colmod = val;
+    		    /*  It is possible that the HIDD had to allocate
+    		        a larger depth than that supplied, so
+    		        we should get back the correct depth.
+    		        This is because layers.library might
+    		        want to allocate offscreen bitmaps to
+    		        store obscured areas, and then those
+    		        offscreen bitmaps should be of the same depth as
+    		        the onscreen ones. */
+		    OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &width);
+		    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
+    		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
 
-    		OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
+    		    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &val);
+		    depth = val;
 
-    		/* Store it in plane array */
-    		HIDD_BM_OBJ(nbm)        = bm_obj;
+    		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+
+    		    OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
+
+    		    /* Store it in plane array */
+    		    HIDD_BM_OBJ(nbm)        = bm_obj;
+    		    HIDD_BM_COLMOD(nbm)     = colmod;
+    		    HIDD_BM_COLMAP(nbm)     = colmap;
+		    HIDD_BM_REALDEPTH(nbm)  = depth;
+		}
+		else
+		    /* There's nothing to clear if we don't allocate an object */
+		    clear = FALSE;
+
 		HIDD_BM_DRVDATA(nbm)    = drv;
-    		HIDD_BM_COLMOD(nbm)     = colmod;
-    		HIDD_BM_COLMAP(nbm)     = colmap;
-		HIDD_BM_REALDEPTH(nbm)  = depth;
 		HIDD_BM_HIDDMODE(nbm)   = hiddmode;
 
     		nbm->Rows   = height;
@@ -293,13 +367,15 @@
 #else
     		nbm->Depth  = depth;
 #endif
-    		nbm->Flags  = flags | BMF_AROS_HIDD;
+    		nbm->Flags  = flags | BMF_SPECIALFMT;
 
     		/* If this is a displayable bitmap, create a color table for it */
-    		if ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM) {
+    		if (((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM) && alloc)
+		{
 		    HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SCREEN_BITMAP;
 
-		    if (friend_bitmap) {
+		    if (friend_bitmap)
+		    {
 			OOP_Object *oldcolmap;
 			    
 			oldcolmap = HIDD_BM_SetColorMap(HIDD_BM_OBJ(nbm), HIDD_BM_COLMAP(friend_bitmap));
@@ -312,13 +388,14 @@
     	    	    	HIDD_BM_REALDEPTH(nbm)  = HIDD_BM_REALDEPTH(friend_bitmap);
 
 			HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SHARED_PIXTAB;
-
-			ok = TRUE;
-		    } else {
+		    }
+		    else
+		    {
     			/* Allcoate a pixtab */
     			HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
-			
-    			if (NULL != HIDD_BM_PIXTAB(nbm)) {
+
+    			if (HIDD_BM_PIXTAB(nbm))
+			{
     			    /* Set this palette to all black by default */
 
     			    HIDDT_Color col;
@@ -329,41 +406,43 @@
     			    col.blue    = 0;
     			    col.alpha   = 0;
 
-    			    if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
+    			    if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod)
+			    {
     				ULONG numcolors;
 
 				numcolors = 1L << ((depth <= 8) ? depth : 8);
 
     				/* Set palette to all black */
     				for (i = 0; i < numcolors; i ++) {
-    				    HIDD_BM_SetColors(HIDD_BM_OBJ(nbm), &col, i, 1);
+    				    HIDD_BM_SetColors(bm_obj, &col, i, 1);
     	    	    	    	    HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
     				}
     			    }
-    			    ok = TRUE;
     			} /* if (pixtab successfully allocated) */
-		    }
-    		} else {
-    		    if (friend_bitmap) {
-    			/* We got a friend_bitmap bitmap. We inherit its colormap
-    			   !!! NOTE !!! If this is used after the friend_bitmap bitmap is freed
-    			   it means trouble, as the colortab mem
-    			   will no longer be valid */
-    			if (IS_HIDD_BM(nbm)) {
-    			    HIDD_BM_COLMAP(nbm)     = HIDD_BM_COLMAP(friend_bitmap);
-    			    HIDD_BM_COLMOD(nbm)     = HIDD_BM_COLMOD(friend_bitmap);
-    			    HIDD_BM_PIXTAB(nbm)     = HIDD_BM_PIXTAB(friend_bitmap);
-    	    	    	    HIDD_BM_REALDEPTH(nbm)  = HIDD_BM_REALDEPTH(friend_bitmap);
-    			    ok = TRUE;
-    			}
-    		    } else {
-    	    	    	HIDD_BM_REALDEPTH(nbm) = depth;		    
-			ok = TRUE;
+			else
+			    ok = FALSE;
 		    }
     		}
+		else if (friend_bitmap)
+		{
+    		    /* We got a friend_bitmap bitmap. We inherit its colormap
+    		       !!! NOTE !!! If this is used after the friend_bitmap bitmap is freed
+    		       it means trouble, as the colortab mem
+    		       will no longer be valid */
+    		    if (IS_HIDD_BM(friend_bitmap))
+		    {
+			HIDD_BM_COLMAP(nbm)     = HIDD_BM_COLMAP(friend_bitmap);
+    			HIDD_BM_COLMOD(nbm)     = HIDD_BM_COLMOD(friend_bitmap);
+    			HIDD_BM_PIXTAB(nbm)     = HIDD_BM_PIXTAB(friend_bitmap);
+    	    	    	HIDD_BM_REALDEPTH(nbm)  = HIDD_BM_REALDEPTH(friend_bitmap);
+		    }
+		    else
+    			ok = FALSE;
+    		}
 
-    		if (ok) {
-		    if (flags & BMF_CLEAR)
+    		if (ok)
+		{
+		    if (clear)
 		    	BltBitMap(nbm, 0, 0, nbm, 0, 0, width, height, 0x00, 0xFF, NULL);
     		    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
     		}
@@ -384,40 +463,42 @@
 
 	if (nbm)
 	{
-	    ULONG plane;
-
 	    nbm->BytesPerRow = ((sizex + 15) >> 4) * 2;
 	    nbm->Rows	     = sizey;
 	    nbm->Flags	     = flags | BMF_STANDARD;
 	    nbm->Depth	     = depth;
 	    nbm->pad	     = 0;
 
-	    for (plane=0; plane<depth; plane++)
+	    if (alloc)
 	    {
-		nbm->Planes[plane] = AllocRaster (sizex, sizey);
+		ULONG plane;
 
-		if (!nbm->Planes[plane])
-		    break;
-
-		if (flags & BMF_CLEAR)
-		    memset (nbm->Planes[plane], 0, RASSIZE(sizex,sizey));
-	    }
-
-	    if (plane != depth)
-	    {
 		for (plane=0; plane<depth; plane++)
-		    if (nbm->Planes[plane])
-			FreeRaster (nbm->Planes[plane], sizex, sizey);
+		{
+		    nbm->Planes[plane] = AllocRaster (sizex, sizey);
 
-		FreeMem (nbm, sizeof (struct BitMap));
+		    if (!nbm->Planes[plane])
+			break;
 
-		nbm = 0;
+		    if (clear)
+			memset (nbm->Planes[plane], 0, RASSIZE(sizex,sizey));
+		}
+
+		if (plane != depth)
+		{
+		    for (plane=0; plane<depth; plane++)
+			if (nbm->Planes[plane])
+			    FreeRaster (nbm->Planes[plane], sizex, sizey);
+
+		    FreeMem (nbm, sizeof (struct BitMap));
+
+		    nbm = NULL;
+		}
 	    }
 	}
     }
 
     return nbm;
-    
+
     AROS_LIBFUNC_EXIT
-    
 } /* AllocBitMap */

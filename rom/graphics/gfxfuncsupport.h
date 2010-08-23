@@ -68,7 +68,7 @@ do                                                                             \
 		? DIH(vp->ColorMap->NormalDisplayInfo)->drv \
 		: GET_BM_DRIVERDATA(vp->RasInfo->BitMap))
 
-#define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
+#define IS_HIDD_BM(bitmap) ((bitmap)->Flags & BMF_SPECIALFMT)
 
 #if 0
 #define BM_PIXEL(bitmap, pen) ((!IS_HIDD_BM(bitmap) || !HIDD_BM_PIXTAB(bitmap)) ? (pen) :  \
