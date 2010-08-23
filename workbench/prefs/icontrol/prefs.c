@@ -94,7 +94,7 @@ void CleanupPrefs(void)
 
 BOOL LoadPrefs(STRPTR filename)
 {
-    static struct FileIControlPrefs loadprefs = {0};
+    static struct FileIControlPrefs loadprefs = {{0}};
     struct IFFHandle 	    	    *iff;
     BOOL    	    	    	    retval = FALSE;
     
