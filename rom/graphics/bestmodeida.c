@@ -221,12 +221,19 @@
 	{
 	    /* Check if this mode matches closer than the one we already found */
 	    if ((dims.MaxDepth <= found_depth) &&
-	        (gm_width <= found_width) && (gm_height <= found_height)) {
-		found_id     = modeid;
-		found_depth  = dims.MaxDepth;
-		found_width  = gm_width;
-		found_height = gm_height;
-		D(bug(" Match!\n"));
+	        (gm_width <= found_width) && (gm_height <= found_height))
+	    {
+		/* Remember the new mode only if something changed. This prevents unwanted
+		   jumping to another display (several displays may have the same modes,
+		   in this case the last display will be picked up without this check. */
+		if ((dims.MaxDepth < found_depth) || (gm_width < found_width) || (gm_height < found_height))
+		{
+		    found_id     = modeid;
+		    found_depth  = dims.MaxDepth;
+		    found_width  = gm_width;
+		    found_height = gm_height;
+		    D(bug(" Match!\n"));
+		}
 	    }
 	}
 	D(bug("\n"));
