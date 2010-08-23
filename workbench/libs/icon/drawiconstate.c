@@ -1,11 +1,15 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <workbench/icon.h>
 #include <intuition/imageclass.h>
 #include "icon_intern.h"
+
+/* Define this in order to simulate LUT screen on hi- and truecolor displays.
+   Useful for debugging.
+#define FORCE_LUT_ICONS */
 
 /*****************************************************************************
 
@@ -56,29 +60,24 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
+#ifndef FORCE_LUT_ICONS
     struct NativeIcon *nativeicon;
     
     nativeicon = GetNativeIcon(icon, LB(IconBase));
     if (nativeicon && GfxBase && CyberGfxBase)
     {
-	    ULONG bmdepth;
-    
-	    bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
-    
+	ULONG bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+
         if (nativeicon->iconPNG.img1 && CyberGfxBase && (bmdepth >= 15))
-	    {
-	        APTR img;
+	{
+	    APTR img;
 	        
-	        if ((state == IDS_SELECTED) && nativeicon->iconPNG.img2)
-	        {
-	            img = nativeicon->iconPNG.img2;
-	        }
-	        else
-	        {
-	            img = nativeicon->iconPNG.img1;
-	        }            
-            
+	    if ((state == IDS_SELECTED) && nativeicon->iconPNG.img2)
+	        img = nativeicon->iconPNG.img2;
+	    else
+	        img = nativeicon->iconPNG.img1;
+
             // OLD MODE
             WritePixelArrayAlpha(
                 img,
@@ -92,91 +91,66 @@
                 nativeicon->iconPNG.height,
                 0
             );
-	        return;
-	    }
-        else if (nativeicon->icon35.img1.imagedata)
+	    return;
+	}
+
+        if (nativeicon->icon35.img1.imagedata)
+	{
+	    if (bmdepth >= 15)
 	    {
-	        if (bmdepth >= 15)
-	        {
-	            struct Image35 *img;
-		        ULONG	    	*cgfxcoltab;
+	        struct Image35 *img;
+		ULONG	    	*cgfxcoltab;
 		    
-		        if (state == IDS_SELECTED && nativeicon->icon35.img2.imagedata)
-		        {
-		            img = &nativeicon->icon35.img2;
-		        }
-		        else
-		        {
-		            img = &nativeicon->icon35.img1;
-		        }
-		    
-		        if ((cgfxcoltab = AllocVecPooled(POOL, img->numcolors * sizeof(ULONG))))
-		        {
-		            struct ColorRegister *cr;
-		            WORD i;
+		if (state == IDS_SELECTED && nativeicon->icon35.img2.imagedata)
+		    img = &nativeicon->icon35.img2;
+		else
+		    img = &nativeicon->icon35.img1;
+
+		if ((cgfxcoltab = AllocVecPooled(POOL, img->numcolors * sizeof(ULONG))))
+		{
+		    struct ColorRegister *cr;
+		    WORD i;
 		            
-		            cr = (struct ColorRegister *)img->palette;
-		            for(i = 0; i < img->numcolors; i++)
-		            {
+		    cr = (struct ColorRegister *)img->palette;
+		    for(i = 0; i < img->numcolors; i++)
+		    {
                         struct ColorRegister color = *cr;
                         
                         if (state == IDS_SELECTED)
-                        {
                             ChangeToSelectedIconColor(&color);
-                        }
                             
-		                cgfxcoltab[i] = (color.red << 16) | (color.green << 8) | color.blue;
-			            cr++;
-		            }
+		        cgfxcoltab[i] = (color.red << 16) | (color.green << 8) | color.blue;
+			cr++;
+		    }
 		            
-		            if (img->mask)
-		            {
-			        struct BitMap *bm;
-        
-			        bm = AllocBitMap
-                    (
-                        nativeicon->icon35.width,
-                        nativeicon->icon35.height,
-                        0, 0, rp->BitMap
-                    );
-        
-			        if (bm)
-			        {
-		                    struct RastPort bmrp;
-                                    
-			            InitRastPort(&bmrp);
-			            bmrp.BitMap = bm;
-                                    
-			            WriteLUTPixelArray
-                        (
-                            img->imagedata,
-                            0, 0,
-                            nativeicon->icon35.width,
-                            &bmrp, cgfxcoltab,
-                            0, 0,
-                            nativeicon->icon35.width,
-                            nativeicon->icon35.height,
-                            CTABFMT_XRGB8
-                        );
+		    if (img->mask)
+		    {
+			struct BitMap *bm = AllocBitMap(nativeicon->icon35.width, nativeicon->icon35.height,
+							0, 0, rp->BitMap);
+
+			if (bm)
+			{
+		            struct RastPort bmrp;
+
+			    InitRastPort(&bmrp);
+			    bmrp.BitMap = bm;
+			    WriteLUTPixelArray(img->imagedata, 0, 0, nativeicon->icon35.width,
+					       &bmrp, cgfxcoltab, 0, 0, nativeicon->icon35.width, nativeicon->icon35.height,
+					       CTABFMT_XRGB8);
     
-			            BltMaskBitMapRastPort
-                        (
-                            bm, 0, 0, rp, leftEdge, topEdge,
-                            nativeicon->icon35.width,
-                            nativeicon->icon35.height,
-                            0xE0, img->mask
-                        );
+			    BltMaskBitMapRastPort(bm, 0, 0, rp, leftEdge, topEdge, nativeicon->icon35.width,
+						  nativeicon->icon35.height, 0xE0, img->mask);
 		    
-                        DeinitRastPort(&bmrp);
+			    DeinitRastPort(&bmrp);
         
-			            FreeBitMap(bm);
-                        FreeVecPooled(POOL, cgfxcoltab);
-			            
-			            return;
-			        } /* if (bm) */ 
-		            } /* if (img->mask) */
-                            
-		            WriteLUTPixelArray
+			    FreeBitMap(bm);
+                            FreeVecPooled(POOL, cgfxcoltab);
+
+			    return;
+			} /* if (bm) */ 
+		    } /* if (img->mask) */
+
+		    WriteLUTPixelArray
                     (
                         img->imagedata, 0, 0, nativeicon->icon35.width,
                         rp, cgfxcoltab, leftEdge, topEdge,
@@ -184,19 +158,17 @@
                         nativeicon->icon35.height,
                         CTABFMT_XRGB8
                     );
-				            
-		            FreeVecPooled(POOL, cgfxcoltab);
-		            
-                            return;
-		            
-		        } /* if (cgfxcoltab != NULL) */
-		    
-	        } /* if (bmdepth >= 15) */
-	        
-	    } /* if (nativeicon->icon35.img1.imagedata) */
-	    
+
+		    FreeVecPooled(POOL, cgfxcoltab);
+
+                    return;
+
+		} /* if (cgfxcoltab != NULL) */
+
+	    } /* if (bmdepth >= 15) */
+	} /* if (nativeicon->icon35.img1.imagedata) */
     } /* if (nativeicon && GfxBase && CyberGfxBase) */
-        
+#endif
     if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
     {
 	    DrawImage
