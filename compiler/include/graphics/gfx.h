@@ -69,7 +69,6 @@ struct Rect32
 #define BMB_MINPLANES        4
 #define BMF_MINPLANES   (1L<<4)
 
-
 /* Cybergfx flag */
 #define BMB_SPECIALFMT	     7
 #define BMF_SPECIALFMT	(1L<<7)
@@ -78,12 +77,52 @@ struct Rect32
 
 #define BMF_REQUESTVMEM (BMF_DISPLAYABLE|BMF_MINPLANES)
 
-/* AROS specific flags */
-#define BMB_AROS_HIDD        7	   /* Obsolete definition, use BMF_SPECIALFMT instead */
-#define BMF_AROS_HIDD	(1L << 7)
-#define BMB_SCREEN	    23
-#define BMF_SCREEN 	(1l << 23) /* A bitmap is a screen bitmap and can be displayed */
+/* AmigaOS v4 flags*/
+#define BMB_HIJACKED          7
+#define BMF_HIJACKED     (1L<<7)
+#define BMB_RTGTAGS           8
+#define BMF_RTGTAGS	 (1L<<8)
+#define BMB_RTGCHECK          9
+#define BMF_RTGCHECK     (1L<<9)
+#define BMB_FRIENDISTAG      10
+#define BMF_FRIENDISTAG (1L<<10)
+#define BMB_INVALID          11
+#define BMF_INVALID     (1L<<11)
 
+#define BMF_CHECKVALUE (BMF_RTGTAGS|BMF_RTGCHECK|BMF_FRIENDISTAG)
+#define BMF_CHECKMASK  (BMF_HIJACKED|BMF_CHECKVALUE|BMF_INVALID)
+
+#define BITMAPFLAGS_ARE_EXTENDED(f) ((f & BMF_CHECKMASK) == BMF_CHECKVALUE)
+
+/* tags for AllocBitMap */
+#define BMATags_Friend              (TAG_USER + 0)
+#define BMATags_Depth               (TAG_USER + 1)
+#define BMATags_RGBFormat           (TAG_USER + 2)
+#define BMATags_Clear               (TAG_USER + 3)
+#define BMATags_Displayable         (TAG_USER + 4)
+#define BMATags_Private1            (TAG_USER + 5)
+#define BMATags_NoMemory            (TAG_USER + 6)
+#define BMATags_NoSprite            (TAG_USER + 7)
+#define BMATags_Private2            (TAG_USER + 8)
+#define BMATags_Private3            (TAG_USER + 9)
+#define BMATags_ModeWidth           (TAG_USER + 10)
+#define BMATags_ModeHeight          (TAG_USER + 11)
+#define BMATags_RenderFunc          (TAG_USER + 12)
+#define BMATags_SaveFunc            (TAG_USER + 13)
+#define BMATags_UserData            (TAG_USER + 14)
+#define BMATags_Alignment           (TAG_USER + 15)
+#define BMATags_ConstantBytesPerRow (TAG_USER + 16)
+#define BMATags_UserPrivate         (TAG_USER + 17)
+#define BMATags_Private4            (TAG_USER + 18)
+#define BMATags_Private5            (TAG_USER + 19)
+#define BMATags_Private6            (TAG_USER + 20)
+#define BMATags_Private7            (TAG_USER + 21)
+#define BMATags_BitmapColors        (TAG_USER + 0x29)
+#define BMATags_DisplayID           (TAG_USER + 0x32)
+#define BMATags_BitmapInvisible     (TAG_USER + 0x37)
+#define BMATags_BitmapColors32      (TAG_USER + 0x43)
+
+/* IDs for GetBitMapAttr() */
 #define BMA_HEIGHT 0
 #define BMA_DEPTH  4
 #define BMA_WIDTH  8

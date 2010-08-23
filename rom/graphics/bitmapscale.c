@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function BitMapScale()
@@ -83,8 +83,8 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
 
   if (bitScaleArgs->bsa_SrcBitMap->pad  != 0  || 
       bitScaleArgs->bsa_DestBitMap->pad != 0 || 
-      bitScaleArgs->bsa_SrcBitMap->Flags  & BMF_AROS_HIDD || 
-      bitScaleArgs->bsa_DestBitMap->Flags & BMF_AROS_HIDD)
+      bitScaleArgs->bsa_SrcBitMap->Flags  & BMF_SPECIALFMT || 
+      bitScaleArgs->bsa_DestBitMap->Flags & BMF_SPECIALFMT)
   {
     ULONG srcflags = 0;
     ULONG dstflags = 0;

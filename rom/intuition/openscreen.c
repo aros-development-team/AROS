@@ -767,11 +767,16 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                                              allocbitmapflags | (pixfmt << 24),
                                              NULL);
 #else
+	    struct TagItem bmtags[] = {
+		{BMATags_DisplayID, modeid},
+		{TAG_DONE         , 0     }
+	    };
+
 	    screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width,
                                              ns.Height,
                                              Depth,
-                                             allocbitmapflags | BMF_SCREEN,
-                                             (struct BitMap *)modeid);
+                                             allocbitmapflags | BMF_CHECKVALUE,
+                                             (struct BitMap *)bmtags);
 #endif
             screen->AllocatedBitmap = screen->Screen.RastPort.BitMap;
 
