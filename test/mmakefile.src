@@ -12,6 +12,7 @@ COMMONTESTFILES := \
     availfonts \
     blttemplatealpha \
     CGXTest \
+    customscreen \
     date2amiga \
     dosvartest \
     exceptiontest \
