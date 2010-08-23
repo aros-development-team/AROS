@@ -20,9 +20,10 @@
 #include "etask.h"
 #include "exec_util.h"
 
-#include "../kernel/kernel_intern.h"
-
 #include "exec_intern.h"
+
+#undef KernelBase
+#include "../kernel/kernel_intern.h"
 
 D(extern void debugmem(void));
 
@@ -246,6 +247,15 @@ void exec_main(struct TagItem *msg, void *entry)
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase();
     
+    /* Scan for valid RomTags */
+    SysBase->ResModules = exec_RomTagScanner(msg);
+
+    D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
+    InitCode(RTF_SINGLETASK, 0);
+
+    PrivExecBase(SysBase)->KernelBase = getKernelBase();
+
+    /* Install the interrupt servers */
     for (i=0; i<16; i++)
     {
         if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
@@ -295,10 +305,6 @@ void exec_main(struct TagItem *msg, void *entry)
         }
     }
 
-    /* Set int disable level to -1 */
-    SysBase->TDNestCnt = -1;
-    SysBase->IDNestCnt = -1;
-    
     /* Now it's time to calculate exec checksum. It will be used
      * in future to distinguish whether we'd had proper execBase
      * before restart */
@@ -386,15 +392,10 @@ void exec_main(struct TagItem *msg, void *entry)
     
     D(bug("[exec] Done. SysBase->ThisTask = %08p\n", SysBase->ThisTask));
     
-    SysBase->TDNestCnt++;
-    
-    /* Scan for valid RomTags */
-    SysBase->ResModules = exec_RomTagScanner(msg);
-    
-    D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
-    InitCode(RTF_SINGLETASK, 0);
-    
-    KernelBase = getKernelBase();
+    /* We now start up the interrupts */
+    Permit();
+    Enable();
+
     D(debugmem());
 
     D(bug("[exec] InitCode(RTF_COLDSTART)\n"));

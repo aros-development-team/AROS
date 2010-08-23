@@ -448,8 +448,6 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     goUser();
     D(bug("[KRN] Entered user mode \n"));
 
-    Permit();
-
     return TRUE;
 }
 
