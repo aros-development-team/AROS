@@ -3,7 +3,7 @@
 
 #include "cybergraphics_intern.h"
 
-#define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
+#define IS_HIDD_BM(bitmap) ((bitmap)->Flags & BMF_SPECIALFMT)
 #define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[0]))
 #define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[4]))
 
