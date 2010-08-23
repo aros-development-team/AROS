@@ -2100,6 +2100,10 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 	STRPTR oldtaskname = me->tc_Node.ln_Name;
 	BOOL  __debug_mem;
 	LONG mem_before;
+	ULONG sig_before = ((struct Process *)me)->pr_Task.tc_SigAlloc;
+	ULONG sig_after;
+	BYTE sigbit;
+	ULONG sigmask;
 
 	BPTR seglist = ss.residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg:module;
 
@@ -2161,6 +2165,33 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 					 cmd, len);
+
+	/*
+	    Check if running the command has changed signal bits of the Shell process.
+	    If there is a difference the signals will be set or freed to avoid that
+	    the Shell runs out of free signals.
+	*/
+	sig_after = ((struct Process *)me)->pr_Task.tc_SigAlloc;
+	if (sig_before != sig_after)
+	{
+	    for (sigbit = 0; sigbit < 32; sigbit++)
+	    {
+		sigmask = 1L << sigbit;
+		if ((sig_before & sigmask) && !(sig_after & sigmask))
+		{
+		    /* Command has deleted signal => set it */
+		    Printf("*** Command returned with freed signal 0x%lx\n", sigmask);
+		    AllocSignal(sigbit);
+		}
+		else if ( !(sig_before & sigmask) && (sig_after & sigmask))
+		{
+		    /* Command has set signal => free it */
+		    Printf("*** Command returned with unfreed signal 0x%lx\n", sigmask);
+		    FreeSignal(sigbit);
+		}
+	    }
+	}
+
 	if (__debug_mem)
 	{
 	    LONG mem_after;
