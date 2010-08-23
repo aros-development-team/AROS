@@ -48,6 +48,7 @@ struct IControlPrefs {
 
 // FIXME: do we want these MOS extensions?
 // FIXME: what are the correct values?
+#define ICF_STICKYMENUS		(1<<31)
 #define ICF_OPAQUEMOVE          (1<<30)
 #define ICF_PRIVILEDGEDREFRESH  (1<<29)
 #define ICF_OFFSCREENLAYERS     (1<<28)

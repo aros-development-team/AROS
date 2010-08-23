@@ -68,6 +68,7 @@ struct IPWindow_DATA
 {
     Object  *menutypeobj;
     Object  *menulookobj;
+    Object  *menustickobj;
     Object  *offscreenobj;
     Object  *defpubscrobj;
     Object  *scrleftdragobj;
@@ -153,6 +154,16 @@ BOOL Gadgets2Prefs
     	prefs->ic_Flags |= ICF_3DMENUS;
     }
 
+    get(data->menustickobj, MUIA_Selected, &active);
+    if (active == 0)
+    {
+    	prefs->ic_Flags &= ~ICF_STICKYMENUS;
+    }
+    else
+    {
+    	prefs->ic_Flags |= ICF_STICKYMENUS;
+    }
+
     get(data->offscreenobj, MUIA_Selected, &active);
     if (active == 0)
     {
@@ -215,6 +226,7 @@ BOOL Prefs2Gadgets
 
     set(data->menutypeobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_POPUPMENUS) ? 1 : 0);
     set(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
+    set(data->menustickobj, MUIA_Selected, (prefs->ic_Flags & ICF_STICKYMENUS) ? 1 : 0);
     set(data->offscreenobj, MUIA_Selected, (prefs->ic_Flags & ICF_OFFSCREENLAYERS) ? 1 : 0);
     set(data->defpubscrobj, MUIA_Selected, (prefs->ic_Flags & ICF_DEFPUBSCREEN) ? 1 : 0);
     set(data->scrleftdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_LBOUND);
@@ -237,6 +249,7 @@ IPTR IPWindow__OM_NEW
 {
     struct IPWindow_DATA *data = NULL;
     Object *menu, *previewpage, *menutypeobj, *menulookobj;
+    Object *menustickobj;
     Object *offscreenobj;
     Object *defpubscrobj;
     Object *scrleftdragobj, *scrrightdragobj, *scrtopdragobj, *scrbotdragobj;
@@ -277,6 +290,11 @@ IPTR IPWindow__OM_NEW
 		    Child, menutypeobj = MUI_MakeObject(MUIO_Cycle, NULL, menutype_labels),
 		    Child, Label1(MSG(MSG_MENUS_LOOK)),
 		    Child, menulookobj = MUI_MakeObject(MUIO_Cycle, NULL, menulook_labels),
+		    End,
+		Child, ColGroup(3),
+		    Child, HSpace(0),
+    		    Child, Label1(MSG(MSG_MENUS_STICKY)),
+    		    Child, menustickobj = MUI_MakeObject(MUIO_Checkmark, NULL),
 		    End,
 		Child, VSpace(1),
 		Child, previewpage = PageGroup,
@@ -389,6 +407,7 @@ IPTR IPWindow__OM_NEW
     data = INST_DATA(CLASS, self);
     data->menutypeobj = menutypeobj;
     data->menulookobj = menulookobj;
+    data->menustickobj = menustickobj;
     data->offscreenobj = offscreenobj;
     set(data->offscreenobj, MUIA_ShortHelp,
 	(IPTR)MSG(MSG_OFFSCREEN_DESC));

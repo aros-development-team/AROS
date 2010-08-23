@@ -119,22 +119,25 @@ MSG_FRONTMOST_DEFAULT_DESC
 Самый верхний общий экран\nстановится общим экраном по умолчанию
 ;Make the frontmost public screen\nthe default public screen
 ;
-MSG_BACKWARDS_DRAG (//)
+MSG_BACKWARDS_DRAG
 Запретить протаскивание вверх и влево
 ;Disable drag in top-left direction
 ;
-MSG_BOUND_LEFT_DRAG (//)
+MSG_BOUND_LEFT_DRAG
 Ограничить протаскивание влево
 ;
-MSG_BOUND_RIGHT_DRAG (//)
+MSG_BOUND_RIGHT_DRAG
 Ограничить протаскивание вправо
 ;
-MSG_BOUND_TOP_DRAG (//)
+MSG_BOUND_TOP_DRAG
 Ограничить протаскивание вверх
 ;
-MSG_BOUND_BOTTOM_DRAG (//)
+MSG_BOUND_BOTTOM_DRAG
 Ограничить протаскивание вниз
 ;
-MSG_META_DRAG (//)
+MSG_META_DRAG
 Клавиши перетаскивания
+;
+MSG_MENUS_STICKY
+Залипание
 ;

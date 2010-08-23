@@ -107,3 +107,6 @@ Bound drag in bottom direction
 MSG_META_DRAG (//)
 Drag keys
 ;
+MSG_MENUS_STICKY (//)
+Sticky
+;

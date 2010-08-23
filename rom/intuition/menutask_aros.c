@@ -253,6 +253,7 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                 mhd->scrmousex      	= mhd->scr->MouseX;
                 mhd->scrmousey      	= mhd->scr->MouseY;
                 mhd->firstmenupick      = MENUNULL;
+		mhd->keepmenuup         = TRUE;
                 mhd->TrueColor          = GetBitMapAttr(&mhd->scr->BitMap, BMA_DEPTH) > 8 ? TRUE: FALSE;
 
                 /* close windows in the back first because
@@ -463,60 +464,73 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
 
 /**************************************************************************************************/
 
+#define STICKY (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_STICKYMENUS)
+
 static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
                              struct IntuitionBase *IntuitionBase)
 {
+    BOOL die = FALSE;
     struct Layer *lay;
 
-    switch(ie->ie_Code)
-    {
-        case MENUUP:
-        case SELECTDOWN:
+    switch(ie->ie_Code) {
+    case MENUUP:
+	if (STICKY)
+	    break;
 
-            if ((lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey)))
-            {
-                struct Window   *win = (struct Window *)lay->Window;
-                struct MenuItem *item = NULL;
+    case SELECTDOWN:
+        LockLayerInfo(&mhd->scr->LayerInfo);
+        lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey);
+        UnlockLayerInfo(&mhd->scr->LayerInfo);
 
-                win = (struct Window *)lay->Window;
+        if (lay)
+        {
+            struct Window   *win = (struct Window *)lay->Window;
+            struct MenuItem *item = NULL;
 
-                if (win && (win == mhd->submenuwin) && (mhd->activesubitemnum != -1))
-                {
-                    item = mhd->activesubitem;
+            if (win && (win == mhd->submenuwin) && (mhd->activesubitemnum != -1))
+                item = mhd->activesubitem;
+            else if (win && (win == mhd->menuwin) && (mhd->activeitemnum != -1))
+                item = mhd->activeitem;
 
-                }
-                else if (win && (win == mhd->menuwin) && (mhd->activeitemnum != -1))
-                {
-                    item = mhd->activeitem;
-                }
-
-                if (item) if (item->Flags & CHECKIT)
-                    {
+            if (item) {
+	        if (item->Flags & CHECKIT)
                         HandleCheckItem(win, item, mhd, IntuitionBase);
-                    }
+	    }
 
-                AddToSelection(mhd, IntuitionBase);
+            AddToSelection(mhd, IntuitionBase);
 
-            } /* if ((lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey))) */
+        }
 
-            if (ie->ie_Code == MENUUP)
-            {
-                KillMenuBarWin(mhd, IntuitionBase);
-                KillMenuWin(mhd, IntuitionBase);
-                KillSubMenuWin(mhd, IntuitionBase);
+        if ((ie->ie_Code == MENUUP) || STICKY)
+	    die = TRUE;
 
-                if (mhd->dri)
-                {
-                    FreeScreenDrawInfo(mhd->scr, mhd->dri);
-                    mhd->dri = 0;
-                }
-                MH2Int_MakeMenusInactive(mhd->win, mhd->firstmenupick, IntuitionBase);
-                mhd->active = FALSE;
+        break;
 
-            }
-            break;
-
+    case MENUDOWN:
+	if (STICKY)
+	{
+	    if (mhd->keepmenuup)
+		mhd->keepmenuup = FALSE;
+	    else
+		die = TRUE;
+	}
+	break;
     } /* switch(ie->ie_Code) */
+
+    if (die)
+    {
+        KillMenuBarWin(mhd, IntuitionBase);
+	KillMenuWin(mhd, IntuitionBase);
+	KillSubMenuWin(mhd, IntuitionBase);
+
+	if (mhd->dri)
+	{
+            FreeScreenDrawInfo(mhd->scr, mhd->dri);
+            mhd->dri = 0;
+	}
+	MH2Int_MakeMenusInactive(mhd->win, mhd->firstmenupick, IntuitionBase);
+	mhd->active = FALSE;
+    }
 }
 
 /**************************************************************************************************/
@@ -813,7 +827,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         {WA_AutoAdjust  , TRUE              	  },
         {WA_Borderless  , TRUE              	  },
         {WA_CustomScreen, (IPTR)mhd->scr         },
-        {WA_BackFill    , LAYERS_NOBACKFILL       },
+        {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL},
         {TAG_DONE       , 0            	    	  }
     };
     struct Menu *menu;
@@ -1159,7 +1173,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
             {WA_AutoAdjust  , TRUE             },
             {WA_Borderless  , TRUE             },
             {WA_CustomScreen, (IPTR)mhd->scr   },
-            {WA_BackFill    , LAYERS_NOBACKFILL},
+            {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL},
             {TAG_DONE       , 0                }
         };
 
@@ -1298,7 +1312,7 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         {WA_AutoAdjust  , TRUE              	    },
         {WA_Borderless  , TRUE              	    },
         {WA_CustomScreen, (IPTR)mhd->scr           },
-        {WA_BackFill    , LAYERS_NOBACKFILL         },
+        {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL  },
         {TAG_DONE                   	    	    }
     };
 
