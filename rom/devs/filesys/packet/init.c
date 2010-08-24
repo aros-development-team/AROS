@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007-2009 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -234,8 +234,12 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
             Enable();
         }
         else {
-            /* hook the process up to the device node */
-            dn->dn_Task = &(mount->process->pr_MsgPort);
+	    /* The handler has set up dn_Task itself. Note that it's okay for the handler
+	       to create a custom message port, so it may differ from process->pr_MsgPort.
+	       FIXME: console-alike handlers may want to leave it NULL, this means that
+	       a new process needs to be started up upon next access. Current packet.handler
+	       does not support this at all and will crash. */
+	    mount->msgport = dn->dn_Task;
 
             iofs->IOFS.io_Unit = (struct Unit *) &(mount->root_handle);
             iofs->IOFS.io_Error = 0;
