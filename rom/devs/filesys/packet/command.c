@@ -389,9 +389,8 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
         }
 
         case FSA_IS_INTERACTIVE:
-            /* XXX is there some other way to query this? how does (eg) aos
-             * console handler do it? */
-            iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = FALSE;
+            /* Interactive flag is BOOL stored in fh_Port */
+            iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = (IPTR)handle->fh.fh_Port;
             iofs->io_DosError = 0;
             goto reply;
 
