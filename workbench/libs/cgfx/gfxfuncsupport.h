@@ -7,7 +7,7 @@
 #define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[0]))
 #define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[4]))
 
-UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf);
+extern BYTE hidd2cyber_pixfmt[];
 
 void hidd2buf_fast(struct BitMap *hidd_bm, LONG x_src , LONG y_src, APTR dest_info,
     	    	   LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize, VOID (*putbuf_hook)(),

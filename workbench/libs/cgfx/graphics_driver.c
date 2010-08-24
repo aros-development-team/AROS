@@ -1019,7 +1019,7 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     /* Get the bitmap std pixfmt */    
     OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&dmrd.pf);
     OOP_GetAttr(dmrd.pf, aHidd_PixFmt_StdPixFmt, &dmrd.stdpf);
-    dmrd.msg.colormodel = hidd2cyber_pixfmt(dmrd.stdpf);
+    dmrd.msg.colormodel = hidd2cyber_pixfmt[dmrd.stdpf];
     dmrd.hook = hook;
     dmrd.rp = rp;
     

@@ -53,92 +53,82 @@
 {
     AROS_LIBFUNC_INIT
     
-    OOP_Object *bm_obj;
-    OOP_Object *pf;
+    OOP_Object *bm_obj = NULL;
+    OOP_Object *pf = NULL;
     
     IPTR retval;
     
-    if (IS_HIDD_BM(bitMap)) {
+    if (IS_HIDD_BM(bitMap))
+    {
 	bm_obj = HIDD_BM_OBJ(bitMap);
 	OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    } else
-	bm_obj = NULL;
+    }
 
     switch (attribute) {
-   	case CYBRMATTR_XMOD:
-	    if (bm_obj)
-		OOP_GetAttr(bm_obj, aHidd_BitMap_BytesPerRow, &retval);
-	    else
-		retval = bitMap->BytesPerRow;
-	    break;
+    case CYBRMATTR_XMOD:
+	if (bm_obj)
+	    OOP_GetAttr(bm_obj, aHidd_BitMap_BytesPerRow, &retval);
+	else
+	    retval = bitMap->BytesPerRow;
+	break;
 
-   	case CYBRMATTR_BPPIX:
-	    if (bm_obj)
-		OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
-	    else
-		retval = 0;
-	    break;
+    case CYBRMATTR_BPPIX:
+	if (pf)
+	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+	else
+	    retval = 0;
+	break;
 
-   	case CYBRMATTR_PIXFMT:
-        case CYBRMATTR_PIXFMT_ALPHA:
-	    if (bm_obj) {
-		IPTR stdpf;
+    case CYBRMATTR_PIXFMT:
+    case CYBRMATTR_PIXFMT_ALPHA:
+	if (pf)
+	{
+	    IPTR stdpf;
 
-		OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);
-		/* Convert to cybergfx */
-		retval = hidd2cyber_pixfmt(stdpf);
+	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+	    retval = hidd2cyber_pixfmt[stdpf];
 
-		/* CYBRMATTR_PIXFMT doesn't know about non-alpha 32-bit modes */
-		if (attribute == CYBRMATTR_PIXFMT) {
-                    switch (retval) {
-		    case PIXFMT_0RGB32:
-			retval = PIXFMT_ARGB32;
-			break;
-		    case PIXFMT_BGR032:
-			retval = PIXFMT_BGRA32;
-			break;
-		    case PIXFMT_RGB032:
-			retval = PIXFMT_RGBA32;
-			break;
-		    case PIXFMT_0BGR32:
-			retval = PIXFMT_ABGR32;
-			break;
-                    }
-                }
-	    	D(bug("[GetCyberMapAttr] Pixel format is %d\n", retval));
+	    /* Backwards compatibility kludge. To be removed.
+	       Used only by Cairo, do not use CYBRMATTR_PIXFMT_ALPHA
+	       anywhere else. */
+	    if ((attribute == CYBRMATTR_PIXFMT_ALPHA) &&
+	        (stdpf >= vHidd_StdPixFmt_0RGB32) && (stdpf >= vHidd_StdPixFmt_0BGR32))
+		retval += 91;
 
-	    } else
-	        retval = -1;
-	    break;
+	    D(bug("[GetCyberMapAttr] Pixel format is %d\n", retval));
+	}
+	else
+	    retval = -1;
+	break;
 
-   	case CYBRMATTR_WIDTH:
-	    retval = GetBitMapAttr(bitMap, BMA_WIDTH);
-	    break;
+    case CYBRMATTR_WIDTH:
+	retval = GetBitMapAttr(bitMap, BMA_WIDTH);
+	break;
 	
-   	case CYBRMATTR_HEIGHT:
-	    retval = GetBitMapAttr(bitMap, BMA_HEIGHT);
-	    break;
+    case CYBRMATTR_HEIGHT:
+	retval = GetBitMapAttr(bitMap, BMA_HEIGHT);
+	break;
 	
-   	case CYBRMATTR_DEPTH:
-	    retval = GetBitMapAttr(bitMap, BMA_DEPTH);
-	    break;
+    case CYBRMATTR_DEPTH:
+	retval = GetBitMapAttr(bitMap, BMA_DEPTH);
+	break;
 	
-   	case CYBRMATTR_ISCYBERGFX:
-	    retval = bm_obj ? TRUE : FALSE;
-	    break;
+    case CYBRMATTR_ISCYBERGFX:
+	retval = bm_obj ? TRUE : FALSE;
+	break;
 
-   	case CYBRMATTR_ISLINEARMEM:
-	    if (bm_obj)
-		OOP_GetAttr(bm_obj, aHidd_BitMap_IsLinearMem, &retval);
-	    else
-		retval = TRUE;
-	    break;
+    case CYBRMATTR_ISLINEARMEM:
+	if (bm_obj)
+	    OOP_GetAttr(bm_obj, aHidd_BitMap_IsLinearMem, &retval);
+	else
+	    retval = TRUE;
+	break;
 
-	default:
-	    D(bug("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n"));
-	    break;
+    default:
+	D(bug("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n"));
+	break;
     } /* switch (attribute) */
-    
+
     return retval;
 
     AROS_LIBFUNC_EXIT

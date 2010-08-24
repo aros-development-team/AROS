@@ -98,96 +98,28 @@ void hidd2buf_fast(struct BitMap *hidd_bm, LONG x_src , LONG y_src, APTR dest_in
 
 /****************************************************************************************/
 
-UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf)
-{
-     UWORD cpf = (UWORD)-1;
-
-     D(bug("hidd2cyber stdpf = %d [%d]\n", stdpf, vHidd_StdPixFmt_BGR032));
-
-     switch (stdpf)
-     {
-	case vHidd_StdPixFmt_RGB15:
-	    cpf = PIXFMT_RGB15;
-	    break;
-
-	case vHidd_StdPixFmt_RGB15_LE:
-	    cpf = PIXFMT_RGB15PC;
-	    break;
-
-	case vHidd_StdPixFmt_BGR15:
-	    cpf = PIXFMT_BGR15;
-	    break;
-
-	case vHidd_StdPixFmt_BGR15_LE:
-	    cpf = PIXFMT_BGR15PC;
-	    break;
-	
-	case vHidd_StdPixFmt_RGB16:
-	    cpf = PIXFMT_RGB16;
-	    break;
-
-	case vHidd_StdPixFmt_RGB16_LE:
-	    cpf = PIXFMT_RGB16PC;
-	    break;
-
-	case vHidd_StdPixFmt_BGR16:
-	    cpf = PIXFMT_BGR16;
-	    break;
-
-	case vHidd_StdPixFmt_BGR16_LE:
-	    cpf = PIXFMT_BGR16PC;
-	    break;
-	
-	case vHidd_StdPixFmt_RGB24:
-	    cpf = PIXFMT_RGB24;
-	    break;
-
-	case vHidd_StdPixFmt_BGR24:
-	    cpf = PIXFMT_BGR24;
-	    break;
-	
-	case vHidd_StdPixFmt_0RGB32:
-            cpf = PIXFMT_0RGB32;
-            break;
-
-	case vHidd_StdPixFmt_RGB032:
-            cpf = PIXFMT_RGB032;
-            break;
-
-	case vHidd_StdPixFmt_BGR032:
-            cpf = PIXFMT_BGR032;
-            break;
-
-	case vHidd_StdPixFmt_0BGR32:
-            cpf = PIXFMT_0BGR32;
-    	    break;
-	    
-	case vHidd_StdPixFmt_ARGB32:
-	    cpf = PIXFMT_ARGB32;
-	    break;
-	
-	case vHidd_StdPixFmt_RGBA32:
-	    cpf = PIXFMT_RGBA32;
-	    break;
-	
-	case vHidd_StdPixFmt_BGRA32:
-	    cpf = PIXFMT_BGRA32;
-	    break;
-	    
-	case vHidd_StdPixFmt_ABGR32:
-	    cpf = PIXFMT_ABGR32;
-	    break;
-	
-	case vHidd_StdPixFmt_LUT8:
-	    cpf = PIXFMT_LUT8;
-	    break;
-
-	default:
-	    D(bug("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n"));
-	    break;
-     
-    }
-
-    return cpf;     
-     
-}
+BYTE hidd2cyber_pixfmt[] = {
+    -1,
+    -1,
+    -1,
+    PIXFMT_RGB24,
+    PIXFMT_BGR24,
+    PIXFMT_RGB16,
+    PIXFMT_RGB16PC,
+    PIXFMT_BGR16,
+    PIXFMT_BGR16PC,
+    PIXFMT_RGB15,
+    PIXFMT_RGB15PC,
+    PIXFMT_BGR15,
+    PIXFMT_BGR15PC,
+    PIXFMT_ARGB32,
+    PIXFMT_BGRA32,
+    PIXFMT_RGBA32,
+    -1,
+    PIXFMT_ARGB32,
+    PIXFMT_BGRA32,
+    PIXFMT_RGBA32,
+    -1,
+    PIXFMT_LUT8,
+    -1
+};

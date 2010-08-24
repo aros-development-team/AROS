@@ -67,7 +67,7 @@
 
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
 
-	    retval = hidd2cyber_pixfmt(stdpf);
+	    retval = hidd2cyber_pixfmt[stdpf];
 	    D(if (-1 == retval) bug("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n");)
 	    break;
 	}
