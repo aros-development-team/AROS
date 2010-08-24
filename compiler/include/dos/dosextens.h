@@ -346,6 +346,7 @@ struct FileHandle
     struct Unit   * fh_Unit;
 };
 
+#define fh_Interactive fh_Port
 #define  fh_Arg1  fh_CompatibilityHack
 
 /* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
