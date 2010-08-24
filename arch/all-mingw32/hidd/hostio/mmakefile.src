@@ -1,7 +1,7 @@
 # $Id: mmakefile.src 32263 2010-01-02 01:12:16Z verhaegs $
 include $(TOP)/config/make.cfg
 
-%build_module mmake=kernel-hostio \
+%build_module mmake=workbench-hidd-hostio-mingw32 \
     modname=hostio modtype=hidd \
     files="hostio_class hostio_hostlib" \
     uselibs="rom oop"
