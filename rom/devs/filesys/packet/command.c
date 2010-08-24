@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007-2009 The AROS Development Team
+ * Copyright © 2007-2010 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -714,7 +714,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
     iofs->IOFS.io_Flags &= ~IOF_QUICK;
 
     /* send the packet */
-    PutMsg(&(handle->mount->process->pr_MsgPort), dp->dp_Link);
+    PutMsg(handle->mount->msgport, dp->dp_Link);
 
     return;
 
