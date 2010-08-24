@@ -2,7 +2,7 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: hostio_class.c 32324 2010-01-14 08:44:13Z sonic $
 
-    Desc: Host OS filedescriptor/socket IO
+    Desc: Host OS file I/O, Windows-hosted version
     Lang: english
 */
 
@@ -122,9 +122,67 @@ IPTR HIO__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     return OOP_DoSuperMethod(cl, o, msg);
 }
 
-/*********************
-**  HostIO::Wait()  **
-*********************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_HostIO_Wait
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct hioMsg *msg);
+
+        IPTR Hidd_HostIO_Wait (OOP_Object *obj, APTR fd, APTR callback, APTR callbackdata, int *errno_ptr, int *raw_errno_ptr);
+
+    LOCATION
+        hostio.hidd
+
+    FUNCTION
+        Wait for asynchronous I/O to complete.
+
+	The user may supply a callback function which will be called when the operation
+	completes. The function is called using C calling convention and should be
+	declared as:
+
+	  int callback(APTR fh, APTR data);
+
+	Parameters of the callback are:
+	  fh   - A HostIO file handle.
+	  data - User-defined data specified for the method.
+
+	The callback is expected to return nonzero value in order to terminate the
+	operation and zero in order to continue it. For example, this can be used in
+	order to read data in portions until some condition is met. Note that it's
+	up to callback function to request another operation on the handle before
+	returning zero, otherwise the process will lock up.
+
+    INPUTS
+        obj           - An object to operate on
+        fd            - A file descriptor to operate on
+	callback      - An optional callback which will be called when the operation
+		        completes
+	callbackdata  - User-defined data which will be passed to a callback
+	errno_ptr     - An optional pointer to a location where standard error code will
+			be written
+	raw_errno_ptr - An optional pointer to a location where host-specific error code
+			will be written
+
+    RESULT
+	A number of bytes succesfully transferred during last operation or -1 in case of
+	error. 0 means end of file.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
+
 IPTR HIO__Hidd_HostIO__Wait(OOP_Class *cl, OOP_Object *o, struct hioMsg *msg)
 {
     LONG retval = -1;
@@ -136,37 +194,48 @@ IPTR HIO__Hidd_HostIO__Wait(OOP_Class *cl, OOP_Object *o, struct hioMsg *msg)
     struct Task *me = FindTask(NULL);
     void *ih = KrnAddIRQHandler(id->irq, IoIntHandler, msg->hm_FD, me);
     
-    do {
+    do
+    {
 	/* This comparison is what HasOverlappedIoCompleted() does */
-	while (fh->io.Internal == STATUS_PENDING) {
+	while (fh->io.Internal == STATUS_PENDING)
+	{
 	    if (!ih) {
 		SetError(ERROR_NOT_ENOUGH_MEMORY);
 		return -1;
             }
+
             SetSignal(0, SIGF_SINGLE);
             Wait(SIGF_SINGLE);
 	}
+
 	Forbid();
 	res = GetOverlappedResult(fh->handle, &fh->io, &retval, FALSE);
 	err = GetLastError();
 	Permit();
+
 	/* First check for EOF and reset error condition in the case */
-	if (!res) {
-	    if (err == ERROR_HANDLE_EOF) {
+	if (!res)
+	{
+	    if (err == ERROR_HANDLE_EOF)
 	        res = TRUE;
-	    } else
+	    else
 	        retval = -1;
 	}
 	done = 1;
+
 	/* If we succeeded, we may have a callback. If the callback returns 0, we should
 	   continue looping. It's assumed that the callback has requested another operation. */
-	if (res) {
+	if (res)
+	{
 	    int (*cb)(void *, void *) = msg->hm_CallBack;
 
 	    if (cb)
 		done = cb(fh, msg->hm_CallBackData);
 	}
     } while (!done);
+
+    if (ih)
+	KrnRemIRQHandler(ih);
 
     SetError(err);
     return retval;
@@ -248,9 +317,50 @@ VOID HIO__Hidd_HostIO__AbortAsyncIO(OOP_Class *cl, OOP_Object *o, struct hioMsgA
 */
 }
 
-/*****************************
-**  HostIO::OpenFile()      **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_HostIO_OpenFile
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct hioMsgOpenFile *msg);
+
+        APTR Hidd_HostIO_OpenFile (OOP_Object *obj, const char *filename, int flags, int mode, int *errno_ptr, int *raw_errno_ptr);
+
+    LOCATION
+        hostio.hidd
+
+    FUNCTION
+        Open a file on host OS side.
+
+    INPUTS
+        obj           - An object to operate on
+        filename      - File name to open. File name should meet host OS conventions.
+	flags         - Flags specifying open mode. These are the same flags as for
+			open() C function.
+	errno_ptr     - An optional pointer to a location where standard error code will
+			be written
+	raw_errno_ptr - An optional pointer to a location where host-specific error code
+			will be written
+
+    RESULT
+	An opaque file handle or vHidd_HostIO_Invalid_Handle in case of error.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_HostIO_CloseFile
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
+
 APTR HIO__Hidd_HostIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct hioMsgOpenFile *msg)
 {
     struct HostIOData *id = OOP_INST_DATA(cl, o);
@@ -270,10 +380,12 @@ APTR HIO__Hidd_HostIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct hioMsgOpenF
 	    access |= GENERIC_WRITE;
 	    share = 0;
 	}
+
 	if (msg->hm_Flags & O_CREAT)
 	    create = (msg->hm_Flags & O_EXCL) ? CREATE_NEW : OPEN_ALWAYS;
 	else if (msg->hm_Flags & O_TRUNC)
 	    create = CREATE_ALWAYS;
+
 	if (msg->hm_Flags & O_DSYNC)
 	    flags = FILE_FLAG_WRITE_THROUGH;
 	if (msg->hm_Flags & O_NONBLOCK)
@@ -295,16 +407,61 @@ APTR HIO__Hidd_HostIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct hioMsgOpenF
 	    fh = vHidd_HostIO_Invalid_Handle;
 	} else
 	    fh->io.hEvent = id->irqobj;
-    } else {
+    }
+    else
+    {
         fh = vHidd_HostIO_Invalid_Handle;
 	SetError(ERROR_NOT_ENOUGH_MEMORY);
     }
     return fh;
 }
 
-/*****************************
-**  HostIO::CloneHandle()   **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_HostIO_CloneHandle
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct hioMsgCloneHandle *msg);
+
+        APTR Hidd_HostIO_CloneHandle (OOP_Object *obj, APTR fd, int *errno_ptr, int *raw_errno_ptr);
+
+    LOCATION
+        hostio.hidd
+
+    FUNCTION
+        Clone a host file handle. This may be needed if the user wants to run more than
+	one operation on an object concurrently.
+
+    INPUTS
+        obj           - An object to operate on.
+        fd            - An original handle to clone.
+	errno_ptr     - An optional pointer to a location where standard error code will
+			be written
+	raw_errno_ptr - An optional pointer to a location where host-specific error code
+			will be written
+
+    RESULT
+	A duplicated file handle or vHidd_HostIO_Invalid_Handle in case of error.
+
+    NOTES
+	All cloned handles internally refer to the same object. If you close the original
+	handle, underlying object will also be closed and all cloned handles
+	automatically become inoperative. You won't be able to perform any operations on
+	them, however you will still need to close them.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
+
 APTR HIO__Hidd_HostIO__CloneHandle(OOP_Class *cl, OOP_Object *o, struct hioMsgCloneHandle *msg)
 {
     struct HostIOData *id = OOP_INST_DATA(cl, o);
@@ -324,9 +481,45 @@ APTR HIO__Hidd_HostIO__CloneHandle(OOP_Class *cl, OOP_Object *o, struct hioMsgCl
     return fh2;
 }
 
-/*****************************
-**  HostIO::GetRawHandle()  **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_HostIO_GetRawHandle
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct hioMsgGetRawHandle *msg);
+
+        APTR Hidd_HostIO_GetRawHandle (OOP_Object *obj, APTR fd);
+
+    LOCATION
+        hostio.hidd
+
+    FUNCTION
+        Extract raw host OS file object handle.
+
+    INPUTS
+        obj - An object to operate on.
+        fd  - A hostio.hidd file handle from which you want to extract
+	      the host OS handle.
+
+    RESULT
+	Raw untranslated host OS handle of the object.
+
+    NOTES
+	The raw handle will be closed when the user invokes moHidd_HostIO_CloseFile on the
+	object. Do not use it after this.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
 
 APTR HIO__Hidd_HostIO__GetRawHandle(OOP_Class *cl, OOP_Object *o, struct hioMsgGetRawHandle *msg)
 {
@@ -335,15 +528,61 @@ APTR HIO__Hidd_HostIO__GetRawHandle(OOP_Class *cl, OOP_Object *o, struct hioMsgG
     return fh->handle;
 }
 
-/*****************************
-**  HostIO::CloseFile()      **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_HostIO_CloseFile
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct hioMsgCloseFile *msg);
+
+        void Hidd_HostIO_CloseFile (OOP_Object *obj, APTR fd, int *errno_ptr, int *raw_errno_ptr);
+
+    LOCATION
+        hostio.hidd
+
+    FUNCTION
+        Close the host-side file.
+
+    INPUTS
+        obj	     - An object to operate on.
+        fd            - A file handle to close.
+	errno_ptr     - An optional pointer to a location where standard error code will
+			be written
+	raw_errno_ptr - An optional pointer to a location where host-specific error code
+			will be written
+
+    RESULT
+	None.
+
+    NOTES
+	Closing cloned handles does not actually close underlying host OS object. It
+	will be closed only when you close the primary handle obtained using
+	moHidd_HostIO_OpenFile.
+
+	Despite there's no return code, error code still can be set, depending on the
+	host OS.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_HostIO_OpenFile
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
+
 VOID HIO__Hidd_HostIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct hioMsgCloseFile *msg)
 {
     struct File_Handle *fh = msg->hm_FD;
     ULONG error = 0;
     
-    if (fh != vHidd_HostIO_Invalid_Handle) {
+    if (fh != vHidd_HostIO_Invalid_Handle)
+    {
 	if (!(fh->flags & HANDLE_CLONED)) {
 	    Forbid();
 	    CloseHandle(fh->handle);
