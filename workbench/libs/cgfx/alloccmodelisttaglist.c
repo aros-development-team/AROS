@@ -164,7 +164,7 @@
 	    /* Get the gfxmode pixelf format */
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
 
-	    cyberpf = hidd2cyber_pixfmt(stdpf);
+	    cyberpf = hidd2cyber_pixfmt[stdpf];
 	    if (cyberpf == (UWORD)-1)
 		continue;	/* Unknown format */
 			

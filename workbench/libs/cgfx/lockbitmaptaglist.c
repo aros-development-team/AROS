@@ -70,7 +70,7 @@
     OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_PixFmt, (IPTR *)&pf);
     
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
-    cpf = hidd2cyber_pixfmt(stdpf);
+    cpf = hidd2cyber_pixfmt[stdpf];
     if (((UWORD)-1) == cpf)
     {
     	D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-CYBER PIXFMT BITMAP !!!\n"));
