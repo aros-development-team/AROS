@@ -780,22 +780,20 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
             /* If a redirection is present, echoing isn't expected to go to
                it. If a script is running, building commandLine allows us
                to show what the command line looks like after arguments
-               substitution... but redirection part is lost at that stage,
-               so line with redirections in scripts won't be shown with
-               substitued arguments, but with their name in the script */
-            if ( (rd->haveOutRD) || (rd->haveAppRD) )
-                FPuts(rd->oldOut, cl->line);
+               substitution. */
+            BPTR echoOut = ( (rd->haveOutRD) || (rd->haveAppRD) ) ? rd->oldOut : Output();
+            if ( cli->cli_Interactive )
+                FPuts(echoOut, cl->line);
             else
             {
-                if ( cli->cli_Interactive )
-                    PutStr(cl->line);
-                else
-                {
-                    STRPTR commandLine = AllocVec(1024, MEMF_ANY);
-                    snprintf(commandLine, 1024, "%s%s", rd->commandStr, filtered.CS_Buffer);
-                    PutStr(commandLine);
-                    FreeVec(commandLine);
-                }
+                STRPTR commandLine = AllocVec(1024, MEMF_ANY);
+                snprintf(commandLine, 1024, "%s%s%s%s",
+                    rd->commandStr,
+                    rd->haveOutRD ? " >" : rd->haveAppRD ? " >>" : "",
+                    rd->outFileName,
+                    filtered.CS_Buffer);
+                FPuts(echoOut, commandLine);
+                FreeVec(commandLine);
             }
         }
 
@@ -838,16 +836,7 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 	    char buf[32];
 
 	    ++s;
-#if 0
-	    if (s[0] == is->dollar && s[1] == is->dollar && s[2] == is->ket)
-	    {
-		/* <$$> CLI number substitution */
-		s += 3;
-		len = sprintf(buf, "%d", is->cliNumber);
-		appendString(filtered, buf, len);
-	    }
-	    else
-#endif
+
             for (i = 0; i < is->argcount; ++i)
 	    {
 		len = is->argnamelen[i];
@@ -979,9 +968,9 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 			break;
 		    }
 		}
-		if (is->argcount == i)
-		    appendString(filtered, s - 1, 1);
 	    }
+	    if (is->argcount == i)
+		appendString(filtered, s - 1, 1);
 	}
 	else
 	    appendString(filtered, s++, 1);
