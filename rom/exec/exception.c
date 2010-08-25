@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Exception - Perform a task exception.
@@ -36,7 +36,7 @@
     RESULT
 
     NOTES
-	Exec internal function.
+	This function is private. Do not call it from any program.
 
     EXAMPLE
 
@@ -46,6 +46,7 @@
 	Dispatch()
 
     INTERNALS
+	Unlike in AmigaOS this function is called in user mode.
 
 ******************************************************************************/
 {
