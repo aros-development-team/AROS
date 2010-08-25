@@ -44,7 +44,7 @@ include $(TOP)/config/make.cfg
 #MM	hidd-i2c \
 #MM	hidd-radeon \
 #MM	hidd-usb \
-#MM	workbench-fs-nil \
+#MM	kernel-fs-nil \
 #MM	workbench-libs-partition \
 #MM	contrib-cdvdfs \
 #MM contrib-sfs \

@@ -1,11 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-fs-nil : includes linklibs
+#MM- kernel-fs-nil : includes linklibs
 
 USER_CFLAGS := -DDEBUG=0
 
-%build_module mmake=workbench-fs-nil \
+%build_module mmake=kernel-fs-nil \
     modname=nil modtype=device modsuffix=handler \
     files=nil_handler uselibs="amiga rom"
 

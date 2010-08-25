@@ -44,7 +44,7 @@ include $(TOP)/config/make.cfg
 #MM hidd-i2c-amcc440 \
 #MM	hidd-radeon \
 #MM	hidd-usb \
-#MM	workbench-fs-nil \
+#MM	kernel-fs-nil \
 #MM	workbench-libs-partition \
 #MM	kernel-sam440-ppc-irq \
 #MM	contrib-cdvdfs \
