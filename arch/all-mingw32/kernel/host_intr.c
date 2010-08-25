@@ -31,8 +31,6 @@ typedef unsigned char UBYTE;
 #define DS(x)    /* Task switcher debug - DANGEROUS */
 #define DIRQ(x)  /* IRQ debug		*/
 
-#define AROS_EXCEPTION_SYSCALL 0x00080001
-
 HANDLE MainThread;
 DWORD MainThreadId;
 DWORD *LastErrorPtr;
@@ -74,6 +72,13 @@ void user_irq_handler(uint8_t exception, struct List *list)
         if (h && (in->in_nr == exception))
             h(in->in_HandlerData, in->in_HandlerData2);
     }
+}
+
+static void core_Resume(struct AROSCPUContext *save, CONTEXT *regs)
+{
+    /* Restore saved context and continue */
+    CopyMemory(regs, save, sizeof(CONTEXT));
+    *LastErrorPtr = save->LastError;
 }
 
 static inline void core_LeaveInterrupt(void)
@@ -131,7 +136,7 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     switch (ExceptionCode) {
     case AROS_EXCEPTION_SYSCALL:
 	/* It's a SysCall exception issued by core_syscall() */
-	switch (*exptr->ExceptionRecord->ExceptionInformation)
+	switch (exptr->ExceptionRecord->ExceptionInformation[0])
 	{
 	case SC_CAUSE:
 	    core_Cause(SysBase);
@@ -147,6 +152,10 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
 
 	case SC_SCHEDULE:
 	    core_Schedule(ContextRecord, SysBase);
+	    break;
+
+	case SC_RESUME:
+	    core_Resume((struct AROSCPUContext *)exptr->ExceptionRecord->ExceptionInformation[1], ContextRecord);
 	    break;
 	}
 	break;
@@ -311,7 +320,7 @@ void __declspec(dllexport) core_intr_enable(void)
     }
 }
 
-void __declspec(dllexport) core_syscall(const unsigned long n)
+void __declspec(dllexport) core_syscall(const ULONG_PTR n)
 {
     /* This ensures that we are never preempted inside RaiseException().
        Upon exit from the syscall interrupt state will be restored by
