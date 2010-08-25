@@ -464,13 +464,41 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
 
 /**************************************************************************************************/
 
+static void HandleSelection(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
+{
+    struct Layer *lay;
+
+    LockLayerInfo(&mhd->scr->LayerInfo);
+    lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey);
+    UnlockLayerInfo(&mhd->scr->LayerInfo);
+
+    if (lay)
+    {
+        struct Window   *win = (struct Window *)lay->Window;
+        struct MenuItem *item = NULL;
+
+        if (win && (win == mhd->submenuwin) && (mhd->activesubitemnum != -1))
+            item = mhd->activesubitem;
+        else if (win && (win == mhd->menuwin) && (mhd->activeitemnum != -1))
+            item = mhd->activeitem;
+
+        if (item) {
+	    if (item->Flags & CHECKIT)
+                HandleCheckItem(win, item, mhd, IntuitionBase);
+	}
+
+        AddToSelection(mhd, IntuitionBase);
+    }
+}
+
+/**************************************************************************************************/
+
 #define STICKY (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_STICKYMENUS)
 
 static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
                              struct IntuitionBase *IntuitionBase)
 {
     BOOL die = FALSE;
-    struct Layer *lay;
 
     switch(ie->ie_Code) {
     case MENUUP:
@@ -478,28 +506,7 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 	    break;
 
     case SELECTDOWN:
-        LockLayerInfo(&mhd->scr->LayerInfo);
-        lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey);
-        UnlockLayerInfo(&mhd->scr->LayerInfo);
-
-        if (lay)
-        {
-            struct Window   *win = (struct Window *)lay->Window;
-            struct MenuItem *item = NULL;
-
-            if (win && (win == mhd->submenuwin) && (mhd->activesubitemnum != -1))
-                item = mhd->activesubitem;
-            else if (win && (win == mhd->menuwin) && (mhd->activeitemnum != -1))
-                item = mhd->activeitem;
-
-            if (item) {
-	        if (item->Flags & CHECKIT)
-                        HandleCheckItem(win, item, mhd, IntuitionBase);
-	    }
-
-            AddToSelection(mhd, IntuitionBase);
-
-        }
+	HandleSelection(mhd, IntuitionBase);
 
         if ((ie->ie_Code == MENUUP) || STICKY)
 	    die = TRUE;
@@ -511,8 +518,10 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 	{
 	    if (mhd->keepmenuup)
 		mhd->keepmenuup = FALSE;
-	    else
+	    else {
+		HandleSelection(mhd, IntuitionBase);
 		die = TRUE;
+	    }
 	}
 	break;
     } /* switch(ie->ie_Code) */
