@@ -58,7 +58,7 @@ struct KernelInterface
     int (*core_init)(unsigned int TimerPeriod, struct ExecBase *SysBase, APTR *KernelBase);
     void (*core_intr_disable)(void);
     void (*core_intr_enable)(void);
-    void (*core_syscall)(const unsigned int n);
+    void (*core_syscall)(const unsigned long n);
     unsigned char (*core_is_super)(void);
     unsigned int (*core_protect)(void *addr, unsigned int len, unsigned int prot);
     void (*core_putc)(char c);
@@ -71,6 +71,8 @@ extern struct KernelInterface KernelIFace;
 #define krnSysCall KernelIFace.core_syscall
 
 #else
+
+#define AROS_EXCEPTION_SYSCALL 0x00080001
 
 #define SLEEP_MODE_OFF     0
 #define SLEEP_MODE_PENDING 1

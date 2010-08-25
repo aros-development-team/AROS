@@ -19,6 +19,7 @@ typedef unsigned char UBYTE;
 #include "etask.h"
 #include "kernel_base.h"
 #include "kernel_cpu.h"
+#include "kernel_syscall.h"
 
 /* We have to redefine these flags here because including exec_intern.h causes conflicts
    between dos.h and WinAPI headers. This needs to be fixed - Pavel Fedin <sonic_amiga@rambler.ru */
@@ -39,9 +40,58 @@ typedef unsigned char UBYTE;
 				       struct ExecBase *, SysBase, 45, Exec)
 
 #define D(x)
+#define DEXCEPT(x) x
 #define DINT(x)
 #define DS(x)
 #define DSLEEP(x)
+
+/*
+ * User-mode part of exception handling. Save context, call
+ * exec handler, then resume task.
+ * Note that interrupts are disabled and SysBase->IDNestCnt contains 0.
+ * Real IDNestCnt count for the task is stored in its tc_IDNestCnt.
+ *
+ * We have to do this complex trick with disabling interrupts because
+ * in Windows exception handler operates on thread's stack, this means
+ * we can't modify the stack inside exception handler, i.e. we can't save
+ * the context on task's stack.
+ *
+ * In order to overcome this we forcibly disable interrupts in core_Dispatch()
+ * and make the task to jump here. After this iet_Context still contains
+ * unmodified saved task context. Since we're running normally on our stack,
+ * we can save the context on the stack here.
+ * Inside Exception() interrupts and task switching will be enabled, so original
+ * IDNestCnt will be lost. In order to prevent it we save it on the stack too.
+ *
+ * When we're done we pick up saved IDNestCnt from stack and use SC_RESUME syscall
+ * in order to jump back to the saved context.
+ */
+static void core_Exception(void)
+{
+    /* Save return context and IDNestCnt on stack */
+    struct Task *task = SysBase->ThisTask;
+    char nestCnt = task->tc_IDNestCnt;
+    struct AROSCPUContext *ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
+    struct AROSCPUContext save;
+    ULONG_PTR resumeargs[2] = {
+	SC_RESUME,
+	(ULONG_PTR)&save
+    };
+
+    DEXCEPT(printf("[KRN] Entered exception, task 0x%p, return PC 0x%p, IDNestCnt %d, interrupts %d\n",
+		    task, GET_PC((&ctx->regs)), SysBase->IDNestCnt, Ints_Enabled));
+    CopyMemory(&save, ctx, sizeof(struct AROSCPUContext));
+    /* Call exec exception processing */
+    Exception();
+
+    /* Restore saved task state and resume it. Note that interrupts are
+       disabled again here */
+    task->tc_IDNestCnt = nestCnt;
+    SysBase->IDNestCnt = nestCnt;
+    DEXCEPT(printf("[KRN] Leaving exception, IDNestCnt %d, interrupts %d\n",
+		    SysBase->IDNestCnt, Ints_Enabled));
+    RaiseException(AROS_EXCEPTION_SYSCALL, 0, 2, resumeargs);
+}
 
 /*
  * Task dispatcher. Basically it may be the same one no matter what scheduling algorithm is used
@@ -58,10 +108,12 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
      */
     if (IsListEmpty(&SysBase->TaskReady))
     {
-        if (!Sleep_Mode) {
+        if (Sleep_Mode == SLEEP_MODE_OFF)
+	{
             SysBase->IdleCount++;
             SysBase->AttnResched |= ARF_AttnSwitch;
             DSLEEP(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
+
             /* We are entering sleep mode */
 	    Sleep_Mode = SLEEP_MODE_PENDING;
         }
@@ -71,7 +123,7 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
     DSLEEP(if (Sleep_Mode) bug("[KRN] Exiting sleep mode\n");)
     Sleep_Mode = SLEEP_MODE_OFF;
     SysBase->DispCount++;
-        
+
     /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
     task = (struct Task *)REMHEAD(&SysBase->TaskReady);
     SysBase->ThisTask = task;  
@@ -82,25 +134,25 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
 
     DS(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
-    /* Handle tasks's flags */
-    if (task->tc_Flags & TF_EXCEPT)
-	/* TODO: this is implemented completely in wrong way. Task exceptions in AmigaOS are called
-	   in a user-mode in the context of its task, not from within the task scheduler in its context.
-	   We should have core_Exception() which would do the job of remembering task's context somewhere,
-	   adjusting it to jump to exception handler, then restore task context back upon return from
-	   exception handler */
-        Exception();
-        
-    if (task->tc_Flags & TF_LAUNCH)
-    {
-        task->tc_Launch(SysBase);       
-    }
-        
     /* Restore the task's state */
     ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
     CopyMemory(regs, ctx, sizeof(CONTEXT));
     *LastErrorPtr = ctx->LastError;
-        
+
+    /* Handle tasks's flags.
+       We do it after restoring the context because we may modify PC */
+    if (task->tc_Flags & TF_LAUNCH)
+        task->tc_Launch(SysBase);
+
+    if (task->tc_Flags & TF_EXCEPT)
+    {
+        /* Disable interrupts, otherwise we may lose saved context */
+        SysBase->IDNestCnt = 0;
+	DEXCEPT(printf("[KRN] Exception requested for task 0x%p, return PC = 0x%p\n", task, GET_PC(regs)));
+	/* Make the task to jump to exception handler */
+        SET_PC(regs, core_Exception);
+    }
+
     /* Leave interrupt and jump to the new task */
 }
 
@@ -108,31 +160,29 @@ void core_Switch(CONTEXT *regs, struct ExecBase *SysBase)
 {
     struct Task *task;
     struct AROSCPUContext *ctx;
-    
+
     D(bug("[KRN] core_Switch()\n"));
-    
+
     task = SysBase->ThisTask;
-        
+
     DS(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
-        
+
     /* Copy current task's context into the ETask structure */
     ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
     CopyMemory(ctx, regs, sizeof(CONTEXT));
     ctx->LastError = *LastErrorPtr;
-        
+
     /* store IDNestCnt into tasks's structure */  
     task->tc_IDNestCnt = SysBase->IDNestCnt;
     task->tc_SPReg = GET_SP(regs);
-        
+
     /* And enable interrupts */
     SysBase->IDNestCnt = -1;
-        
+
     /* TF_SWITCH flag set? Call the switch routine */
     if (task->tc_Flags & TF_SWITCH)
-    {
         task->tc_Switch(SysBase);
-    }
-    
+
     core_Dispatch(regs, SysBase);
 }
 
