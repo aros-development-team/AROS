@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Bootloader information initialisation.
@@ -53,7 +53,10 @@ static int BootLoader_Init(struct BootLoaderBase *BootLoaderBase)
 	    while(cmd[0]) {
 		/* Split the command line */
 		temp = strcspn(cmd," ");
-		cmd[temp++] = 0x00;
+		if (cmd[temp] != '\0')
+		{
+		    cmd[temp++] = '\0';
+		}
 		D(bug("[BootLdr] Init: Argument %s\n",cmd));
 		/* Allocate node and insert into list */
 		node = AllocMem(sizeof(struct Node),MEMF_ANY|MEMF_CLEAR);
