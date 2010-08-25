@@ -1626,9 +1626,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         {
             int i;
 
-            for (i = 0;i <= screen->DInfo.dri.dri_NumPens; i++)
+            for (i = 0; i <= screen->DInfo.dri.dri_NumPens; i++)
             {
-                dprintf("OpenScreen: dri_Pen[%ld] = %ld\n",i,screen->DInfo.dri.dri_Pens[i]));
+                dprintf("OpenScreen: dri_Pen[%ld] = %ld\n", i, screen->DInfo.dri.dri_Pens[i]);
             }
         }
 #endif
@@ -1645,7 +1645,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         int_InitTitlebarBuffer(screen,IntuitionBase);
 #endif
 
-        D(bug("callling SetRast()\n"));
+        D(bug("Calling SetRast()\n"));
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set background color Pen %ld\n",screen->Pens[BACKGROUNDPEN]));
         /* Set screen to background color */
