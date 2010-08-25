@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -63,9 +63,9 @@ struct header
     struct Locale   	* def_locale = NULL;
     struct IntCatalog 	* catalog = NULL;
     char    	    	* language;
-    char    	    	* app_language;
-    char    	    	* specific_language;
-    struct Process	* MyProcess;	
+    char    	    	* app_language; /* Language given with tag OC_BuiltInLanguage */
+    char    	    	* specific_language;  /* Language given with tag OC_Language */
+    struct Process	* MyProcess;
 #define FILENAMESIZE 256
 
     char    	    	  filename[FILENAMESIZE];
@@ -137,7 +137,7 @@ struct header
     DEBUG_OPENCATALOG(dprintf("OpenCatalogA: app_language 0x%lx\n",
 				app_language));
 
-    if (NULL != app_language && 0 == strcmp(app_language, language))
+    if (NULL != app_language && 0 == strcasecmp(app_language, language))
     {
     	if (def_locale) CloseLocale(def_locale);
 	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: failure..done\n"));
@@ -265,6 +265,9 @@ struct header
 	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: try filename <%s>\n",filename));
 
             iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE);
+	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: iffstream 0x%lx\n",
+					iff->iff_Stream));
+
 	    if (iff->iff_Stream) break;
 
 	    pref_language++;
