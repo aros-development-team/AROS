@@ -1,6 +1,6 @@
 /* Mountlist entry for the unlimited source of NUL bytes (just a handler) */
 ZERO:
-	EHandler	= zero.handler
+	EHandler	= nil.handler
 	Activate	= 1
 #
 

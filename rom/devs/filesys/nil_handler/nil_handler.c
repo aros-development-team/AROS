@@ -5,6 +5,9 @@
     Desc:
     Lang:
 */
+
+#include <aros/atomic.h>
+#include <aros/debug.h>
 #include <exec/errors.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
@@ -22,6 +25,17 @@
 
 #include <string.h>
 
+#include "nil_handler.h"
+
+#ifdef AROS_FAST_BSTR
+#define bstrcpy strcpy
+#else
+#define bstrcpy(d, s) \
+    d = (d + 3) & ~3; \
+    strcpy(d + 1, s); \
+    d[0] = strlen(s);
+#endif
+
 static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
@@ -32,38 +46,28 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
      * can be expunged
      */
     struct DeviceNode *dn;
-    /* Install NIL: handler into device list
-     *
-     * KLUDGE: The mountlists for NIL: should be into dos.library bootstrap routines.
-     */
 
-    if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(3),
-                       MEMF_CLEAR|MEMF_PUBLIC)))
+    /* Install NIL: handler into device list */
+    if((dn = AllocMem(sizeof (struct DeviceNode) + 6 +
+		      AROS_BSTR_MEMSIZE4LEN(3) + AROS_BSTR_MEMSIZE4LEN(11),
+                      MEMF_CLEAR|MEMF_PUBLIC)))
     {
-        struct IOFileSys dummyiofs;
+	STRPTR str = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
 
-        if (OpenDev(nilbase, &dummyiofs))
-        {
-            BSTR s = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
+	bstrcpy(str, "NIL");
+	dn->dn_Name = MKBADDR(str);
+	dn->dn_Ext.dn_AROS.dn_DevName = str;
 
-            ((struct Library *)nilbase)->lib_OpenCnt++;
+	str = (STRPTR)(((IPTR)str + AROS_BSTR_MEMSIZE4LEN(3) + 3) & ~3);
+	bstrcpy(str, "nil.handler");
+	dn->dn_Handler = MKBADDR(str);
 
-            AROS_BSTR_putchar(s, 0, 'N');
-            AROS_BSTR_putchar(s, 1, 'I');
-            AROS_BSTR_putchar(s, 2, 'L');
-            AROS_BSTR_setstrlen(s, 3);
+        dn->dn_Type    = DLT_DEVICE;
 
-            dn->dn_Type    = DLT_DEVICE;
-            dn->dn_Ext.dn_AROS.dn_Unit    = dummyiofs.IOFS.io_Unit;
-            dn->dn_Ext.dn_AROS.dn_Device  = dummyiofs.IOFS.io_Device;
-            dn->dn_Handler = NULL;
-            dn->dn_Startup = NULL;
-            dn->dn_Name = s;
-            dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
-
-            if (AddDosEntry((struct DosList *)dn))
-                return TRUE;
-        }
+	/* Since dn_Device is NULL, the handler will be initialized
+	   by dos.library on first access */
+        if (AddDosEntry((struct DosList *)dn))
+            return TRUE;
 
         FreeMem(dn, sizeof (struct DeviceNode));
     }
@@ -91,14 +95,22 @@ static int GM_UNIQUENAME(Open)
 
 static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs)
 {
-    ULONG *dev;
+    struct nil_unit *dev;
     
-    dev=AllocMem(sizeof(ULONG),MEMF_PUBLIC|MEMF_CLEAR);
+    dev = AllocMem(sizeof(struct nil_unit), MEMF_PUBLIC);
     if(dev!=NULL)
     {
+	dev->use = 0;
+	D(bug("[NIL] Device name: %s\n", iofs->io_Union.io_OpenDevice.io_DosName));
+	if (strcmp(iofs->io_Union.io_OpenDevice.io_DosName, "NIL"))
+	    dev->chr = 0;
+	else
+	    dev->chr = CHAR_EOF;
+
         iofs->IOFS.io_Unit   = (struct Unit *)dev;
         iofs->IOFS.io_Device = (struct Device *)nilbase;
     	iofs->IOFS.io_Error = 0;
+
     	return TRUE;
     }
     else
@@ -111,17 +123,16 @@ static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs)
 
 static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs)
 {
-    ULONG *dev;
+    struct nil_unit *dev = (struct nil_unit *)iofs->IOFS.io_Unit;
 
-    dev=(ULONG *)iofs->IOFS.io_Unit;
-    if(*dev)
+    if (dev->use)
     {
 	iofs->io_DosError=ERROR_OBJECT_IN_USE;
 	return FALSE;
     }
 
     /* Let any following attemps to use the device crash hard. */
-    FreeMem(dev,sizeof(ULONG));
+    FreeMem(dev, sizeof(struct nil_unit));
     iofs->io_DosError=0;
 
     return TRUE;
@@ -137,6 +148,7 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
+    struct nil_unit *unit;
 
     /*
 	Do everything quick no matter what. This is possible
@@ -152,13 +164,20 @@ AROS_LH1(void, beginio,
 		error=ERROR_OBJECT_NOT_FOUND;
 		break;
 	    }
-	    Forbid();
-	    ++*(ULONG *)iofs->IOFS.io_Unit;
-	    Permit();
+
+	    unit = (struct nil_unit *)iofs->IOFS.io_Unit;
+	    AROS_ATOMIC_INC(unit->use);
+
 	    break;
 
 	case FSA_READ:
-	    iofs->io_Union.io_READ.io_Length=0;
+	    unit = (struct nil_unit *)iofs->IOFS.io_Unit;
+
+	    if (unit->chr == CHAR_EOF)
+		iofs->io_Union.io_READ.io_Length=0;
+	    else
+		memset(iofs->io_Union.io_READ.io_Buffer, unit->chr, iofs->io_Union.io_READ.io_Length);
+	    
 	    break;
 
 	case FSA_WRITE:
@@ -169,9 +188,8 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_CLOSE:
-	    Forbid();
-	    --*(ULONG *)iofs->IOFS.io_Unit;
-	    Permit();
+	    unit = (struct nil_unit *)iofs->IOFS.io_Unit;
+	    AROS_ATOMIC_DEC(unit->use);
 	    break;
 
 	case FSA_IS_INTERACTIVE:
