@@ -11,10 +11,14 @@
 /*********************************************************************************************/
 
 #define DEBUG 0
+#define DCHDIR(x)
 #define DCMD(x)
 #define DERROR(x)
+#define DEXAM(x)
 #define DFNAME(x)
 #define DFSIZE(x)
+#define DLINK(x)
+#define DLOCK(x)
 #define DMOUNT(x)
 #define DOPEN(x)
 #define DOPEN2(x)
@@ -48,13 +52,25 @@
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
 
+#include <limits.h>
 #include <string.h>
 
 #include "emul_handler_intern.h"
 
-#include <string.h>
-
 #include LC_LIBDEFS_FILE
+
+#ifdef AROS_FAST_BSTR
+
+#define bstrcpy strcpy
+
+#else
+
+#define bstrcpy(d, s) \
+    d = (d + 3) & ~3; \
+    strcpy(d + 1, s); \
+    d[0] = strlen(s);
+
+#endif
 
 /*********************************************************************************************/
 
@@ -411,7 +427,7 @@ void *DoOpen(char *path, int mode, int protect, ULONG mask)
 /* Free a filehandle */
 static void free_lock(struct emulbase *emulbase, struct filehandle *current)
 {
-    D(bug("[emul] Lock type = %lu\n", current->type));
+    DLOCK(bug("[emul] Lock type = %lu\n", current->type));
     switch(current->type)
     {
     case FHD_FILE:
@@ -426,7 +442,7 @@ static void free_lock(struct emulbase *emulbase, struct filehandle *current)
     case FHD_DIRECTORY:
 	if (current->fd != INVALID_HANDLE_VALUE)
 	{
-	    D(bug("[emul] Closing directory search handle\n"));
+	    DLOCK(bug("[emul] Closing directory search handle\n"));
 	    Forbid();
 	    FindEnd(current->fd);
 	    Permit();
@@ -434,17 +450,17 @@ static void free_lock(struct emulbase *emulbase, struct filehandle *current)
 	break;
     }
     if (current->pathname) {
-	D(bug("[emul] Freeing pathname: \"%s\"\n", current->pathname));
+	DLOCK(bug("[emul] Freeing pathname: \"%s\"\n", current->pathname));
 	FreeVecPooled(emulbase->mempool, current->pathname);
     }
 
-    D(bug("[emul] Freeing name: \"%s\"\n", current->hostname));
+    DLOCK(bug("[emul] Freeing name: \"%s\"\n", current->hostname));
     FreeVecPooled(emulbase->mempool, current->hostname);
 
-    D(bug("[emul] Freeing filehandle\n"));
+    DLOCK(bug("[emul] Freeing filehandle\n"));
     FreeMem(current, sizeof(struct filehandle));
 
-    D(bug("[emul] Done\n"));
+    DLOCK(bug("[emul] Done\n"));
 }
 
 /*********************************************************************************************/
@@ -522,10 +538,11 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
 	    default:
 		ret = ERROR_OBJECT_WRONG_TYPE;
 	    }
-	    D(bug("[emul] Freeing pathname\n"));
+
+	    DOPEN(bug("[emul] Freeing pathname\n"));
 	    FreeVecPooled(emulbase->mempool, fh->hostname);
 	}
-	D(bug("[emul] Freeing filehandle\n"));
+	DOPEN(bug("[emul] Freeing filehandle\n"));
 	FreeMem(fh, sizeof(struct filehandle));
     } else
 	ret = ERROR_NO_FREE_STORE;
@@ -547,7 +564,7 @@ static LONG seek_file(struct filehandle *fh, struct IFS_SEEK *io_SEEK, UQUAD *ne
 	oldpos = LSeek(fh->fd, 0, &pos_high, FILE_CURRENT);
 	Permit();
 	oldpos |= (UQUAD)pos_high << 32;
-	D(bug("[emul] Original position: %llu\n", oldpos));
+	DSEEK(bug("[emul] Original position: %llu\n", oldpos));
 	
 	switch(io_SEEK->io_SeekMode) {
 	case OFFSET_BEGINNING:
@@ -692,17 +709,19 @@ static struct filehandle *CreateStdHandle(ULONG id)
 
 /*********************************************************************************************/
 
+#define DEVNAME	    "EMU"
+#define VOLNAME	    "System"
+#define HANDLERNAME "emul.handler"
+
+#define DEVNAME_LEN	3
+#define VOLNAME_LEN     6
+#define HANDLERNAME_LEN 12
+
 static LONG startup(struct emulbase *emulbase)
 {
     APTR KernelBase;
     struct Library *ExpansionBase;
-    struct filehandle *fhi = NULL;
-    struct filehandle *fho = NULL;
-    struct filehandle *fhe = NULL;
-    struct filehandle *fhv;
-    struct DeviceNode *dlv, *dlv2;
-    LONG ret = ERROR_NO_FREE_STORE;
-    ULONG res;
+    struct DeviceNode *dlv;
 
     D(kprintf("[Emulhandler] startup\n"));
     
@@ -715,127 +734,66 @@ static LONG startup(struct emulbase *emulbase)
 	return ERROR_INVALID_RESIDENT_LIBRARY;
     D(kprintf("[Emulhandler] startup: got ExpansionBase\n"));	  
 
-    fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle) + 256 + AROS_WORSTALIGN, MEMF_PUBLIC);
-    if(fhv != NULL)
+    emulbase->eb_stdin = CreateStdHandle(STD_INPUT_HANDLE);
+    emulbase->eb_stdout = CreateStdHandle(STD_OUTPUT_HANDLE);
+    emulbase->eb_stderr = CreateStdHandle(STD_ERROR_HANDLE);
+
+    D(bug("[Emulhandler] Creating console reader\n"));
+    Forbid();
+    emulbase->ConsoleReader = InitNative();
+    Permit();
+
+    if (emulbase->ConsoleReader)
     {
-	D(kprintf("[Emulhandler] startup allocated fhv\n"));
-	fhv->hostname = (char *)(fhv + 1);
-	fhv->type     = FHD_DIRECTORY;
-	fhv->fd       = INVALID_HANDLE_VALUE;
-	fhv->dirpos   = 0;
-	fhv->pathname = NULL; /* just to make sure... */
+	D(bug("[Emulhandler] Console reader at %p with IRQ %u\n", emulbase->ConsoleReader, emulbase->ConsoleReader->IrqNum));
 
-	Forbid();
-	res = GetCWD(256, fhv->hostname);
-	Permit();
-	if (res > 256)
-	    res = 0;
-	if(res)
+	emulbase->ConsoleInt = KrnAddIRQHandler(emulbase->ConsoleReader->IrqNum, EmulIntHandler, emulbase->ConsoleReader, NULL);
+	D(bug("[Emulhandler] Added console interrupt %p\n", emulbase->ConsoleReader));
+	if (emulbase->ConsoleInt)
 	{
-	    D(bug("[Emulhandler] startup got directory %s\n", fhv->hostname));
-	    fhv->name = fhv->hostname + res;
-#define DEVNAME "EMU"
-#define VOLNAME "System"
-			  
-	    static const char *devname = DEVNAME;
-	    static const char *volname = VOLNAME;
-			  
-	    fhv->volumename = VOLNAME;
-
-	    emulbase->eb_stdin = CreateStdHandle(STD_INPUT_HANDLE);
-	    emulbase->eb_stdout = CreateStdHandle(STD_OUTPUT_HANDLE);
-	    emulbase->eb_stderr = CreateStdHandle(STD_ERROR_HANDLE);
-
-	    ret = ERROR_NO_FREE_STORE;
-
-	    D(bug("[Emulhandler] Creating console reader\n"));
-	    Forbid();
-	    emulbase->ConsoleReader = InitNative();
-	    Permit();
-	    if (emulbase->ConsoleReader)
+	    /*
+	     * Allocate space for the string from same mem,
+	     * Use AROS_BSTR_MEMSIZE4LEN macro for space to
+	     * to allocate and add an extra 4 for alignment
+	     * purposes.
+	     */
+	    dlv = AllocMem(sizeof(struct DeviceNode) + 6 +
+			   AROS_BSTR_MEMSIZE4LEN(DEVNAME_LEN) +
+			   AROS_BSTR_MEMSIZE4LEN(HANDLERNAME_LEN), MEMF_CLEAR|MEMF_PUBLIC);
+	    if (dlv)
 	    {
-		D(bug("[Emulhandler] Console reader at %p with IRQ %u\n", emulbase->ConsoleReader, emulbase->ConsoleReader->IrqNum));
-	        emulbase->ConsoleInt = KrnAddIRQHandler(emulbase->ConsoleReader->IrqNum, EmulIntHandler, emulbase->ConsoleReader, NULL);
-	        D(bug("[Emulhandler] Added console interrupt %p\n", emulbase->ConsoleReader));
-	        if (emulbase->ConsoleInt)
-		{
-		    /*
-		       Allocate space for the string from same mem,
-		       Use AROS_BSTR_MEMSIZE4LEN macro for space to
-		       to allocate and add an extra 4 for alignment
-		       purposes.
-		    */
-		    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)), MEMF_CLEAR|MEMF_PUBLIC);
-		    if (dlv) {
-			dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)), MEMF_CLEAR|MEMF_PUBLIC);
-			if(dlv2 != NULL)
-			{
-			    BSTR s;
-			    BSTR s2;
-			    WORD i;
+		STRPTR str;
 
-			    D(kprintf("[Emulhandler] startup allocated dlv/dlv2\n"));
-			    /* We want s to point to the first 4-byte
-			       aligned memory after the structure.
-			     */
-			    s = (BSTR)MKBADDR(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
-			    s2 = (BSTR)MKBADDR(((IPTR)dlv2 + sizeof(struct DeviceNode) + 3) & ~3);
+		D(kprintf("[Emulhandler] startup allocated dlv\n"));
+		/* We want str to point to the first 4-byte aligned memory after the structure */
+		str = (STRPTR)(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
 
-			    for(i = 0; i < sizeof(DEVNAME) - 1; i++)
-				AROS_BSTR_putchar(s, i, devname[i]);
-			    AROS_BSTR_setstrlen(s, sizeof(DEVNAME) - 1);
+		bstrcpy(str, DEVNAME);
+		dlv->dn_Name = MKBADDR(str);
+		dlv->dn_Ext.dn_AROS.dn_DevName = str;
 
-			    dlv->dn_Type    = DLT_DEVICE;
-			    dlv->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
-			    dlv->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
-			    dlv->dn_Handler = NULL;
-			    dlv->dn_Startup = NULL;
-			    dlv->dn_Name    = s;
-			    dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv->dn_Name);
+		str = (STRPTR)(((IPTR)str + AROS_BSTR_MEMSIZE4LEN(DEVNAME_LEN) + 3) & ~3);
+		bstrcpy(str, HANDLERNAME);
+		dlv->dn_Handler = MKBADDR(str);
 
-			    AddBootNode(5, 0, dlv, NULL);
+		dlv->dn_Type    = DLT_DEVICE;
+		AddBootNode(5, 0, dlv, NULL);
 
-			    for(i = 0; i < sizeof(VOLNAME) - 1; i++)
-				AROS_BSTR_putchar(s2, i, volname[i]);
-			    AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
-
-			    dlv2->dn_Type   = DLT_VOLUME;
-			    dlv2->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
-			    dlv2->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
-			    dlv2->dn_Handler = NULL;
-			    dlv2->dn_Startup = NULL;
-			    dlv2->dn_Name = s2;
-			    dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
-
-			    /* Make sure this is not booted from */
-			    AddBootNode(-128, 0, dlv2, NULL);
-			    fhv->dl = (struct DosList *)dlv2;
-
-			    /* Increment our open counter because we use ourselves */
-			    emulbase->device.dd_Library.lib_OpenCnt++;
-			    return 0;
-			}
-			FreeMem(dlv, sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)));
-		    }
-		    KrnRemIRQHandler(emulbase->ConsoleInt);
-		}
+		CloseLibrary(ExpansionBase);
+		return 0;
 	    }
-	    if (fhe)
-		FreeMem(fhe, sizeof(struct filehandle));
-	    if (fho)
-		FreeMem(fho, sizeof(struct filehandle));
-	    if (fhi)
-		FreeMem(fhi, sizeof(struct filehandle));
-	} /* valid directory */
-	else
-	{
-	    Alert(AT_DeadEnd|AO_Unknown|AN_Unknown );
+	    KrnRemIRQHandler(emulbase->ConsoleInt);
 	}
-	free_lock(emulbase, fhv);
     }
-    CloseLibrary(ExpansionBase);
 
-    return ret;
+    if (emulbase->eb_stdin)
+	FreeMem(emulbase->eb_stdin, sizeof(struct filehandle));
+    if (emulbase->eb_stdout)
+	FreeMem(emulbase->eb_stdout, sizeof(struct filehandle));
+    if (emulbase->eb_stderr)
+	FreeMem(emulbase->eb_stderr, sizeof(struct filehandle));
+
+    return ERROR_NO_FREE_STORE;
 }
 
 /*********************************************************************************************/
@@ -894,7 +852,7 @@ ULONG examine_start(struct emulbase *emulbase, struct filehandle *fh)
         c = fh->pathname + len;
         strcpy(c, "\\*");
     }
-    D(bug("[emul] Created search path: %s\n", fh->pathname));
+    DEXAM(bug("[emul] Created search path: %s\n", fh->pathname));
     return 0;
 }
 
@@ -924,58 +882,60 @@ static LONG CloseDir(struct filehandle *fh)
 /* Positions to dirpos in directory, retrieves next item in it and updates dirpos */
 ULONG ReadDir(struct filehandle *fh, LPWIN32_FIND_DATA FindData, IPTR *dirpos)
 {
-  ULONG res;
+    ULONG res;
 
-  /*
-   * Windows does not support positioning within directory. The only thing i can do is to
-   * scan the directory in forward direction. In order to bypass this limitation we do the
-   * following:
-   * 1. Before starting we explicitly set current position (dirpos) to 0. Examine() will place
-   *    it into our fib_DiskKey; in case of ExAll() this is eac_LastKey. We also maintain second
-   *	directory position counter - in our directory handle. It reflects the real position of
-   *	our file search handle.
-   * 2. Here we compare position in dirpos with position in the handle. If dirpos is smaller than
-   *    filehandle's counter, we have to rewind the directory. This is done by closing the search
-   *    handle in order to be able to restart from the beginning and setting handle's counter to 0.
-   */
-  D(bug("[emul] Current dirpos %lu, requested %lu\n", fh->dirpos, *dirpos));
-  if (fh->dirpos > *dirpos) {
-      D(bug("[emul] Resetting search handle\n"));
-      CloseDir(fh);
-  }
-  do
-  {
-  /* 
-   * 3. Now we will scan the next directory entry until its index is greater than original index
-   *    in dirpos. This means that we've repositioned and scanned the next entry. After this we
-   *	update dirpos.
-   */
-      do {
-          if (fh->fd == INVALID_HANDLE_VALUE) {
-              D(bug("[emul] Finding first file\n"));
-              Forbid();
-              fh->fd = FindFirst(fh->pathname, FindData);
-              Permit();
-              res = (fh->fd != INVALID_HANDLE_VALUE);
-          } else {
-              Forbid();
-              res = FindNext(fh->fd, FindData);
-              Permit();
-          }
-          if (!res)
-	      return Errno(FMF_MODE_OLDFILE);
-	  fh->dirpos++;
-	  D(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->dirpos));
-      } while (fh->dirpos <= *dirpos);
-      (*dirpos)++;
-      D(bug("[emul] New dirpos: %lu\n", *dirpos));
-  /*
-   * We also skip "." and ".." entries (however we count their indexes - just in case), because
-   * AmigaOS donesn't have them.
-   */
-  } while (is_special_dir(FindData->cFileName));
+    /*
+     * Windows does not support positioning within directory. The only thing i can do is to
+     * scan the directory in forward direction. In order to bypass this limitation we do the
+     * following:
+     * 1. Before starting we explicitly set current position (dirpos) to 0. Examine() will place
+     *    it into our fib_DiskKey; in case of ExAll() this is eac_LastKey. We also maintain second
+     *	directory position counter - in our directory handle. It reflects the real position of
+     *	our file search handle.
+     * 2. Here we compare position in dirpos with position in the handle. If dirpos is smaller than
+     *    filehandle's counter, we have to rewind the directory. This is done by closing the search
+     *    handle in order to be able to restart from the beginning and setting handle's counter to 0.
+     */
+    DEXAM(bug("[emul] Current dirpos %lu, requested %lu\n", fh->dirpos, *dirpos));
+    if (fh->dirpos > *dirpos)
+    {
+	DEXAM(bug("[emul] Resetting search handle\n"));
+	CloseDir(fh);
+    }
 
-  return 0;
+    do
+    {
+    /* 
+     * 3. Now we will scan the next directory entry until its index is greater than original index
+     *    in dirpos. This means that we've repositioned and scanned the next entry. After this we
+     *	update dirpos.
+     */
+	do {
+            if (fh->fd == INVALID_HANDLE_VALUE) {
+		DEXAM(bug("[emul] Finding first file\n"));
+		Forbid();
+		fh->fd = FindFirst(fh->pathname, FindData);
+		Permit();
+		res = (fh->fd != INVALID_HANDLE_VALUE);
+            } else {
+		Forbid();
+		res = FindNext(fh->fd, FindData);
+		Permit();
+            }
+            if (!res)
+		return Errno(FMF_MODE_OLDFILE);
+	    fh->dirpos++;
+	    DEXAM(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->dirpos));
+        } while (fh->dirpos <= *dirpos);
+        (*dirpos)++;
+        DEXAM(bug("[emul] New dirpos: %lu\n", *dirpos));
+    /*
+     * We also skip "." and ".." entries (however we count their indexes - just in case), because
+     * AmigaOS donesn't have them.
+     */
+    } while (is_special_dir(FindData->cFileName));
+
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -986,10 +946,10 @@ ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR
     ULONG plen, flen;
     ULONG error = 0;
 
-    D(bug("[emul] examine_entry_sub(): filehandle's path: %s\n", fh->hostname));
+    DEXAM(bug("[emul] examine_entry_sub(): filehandle's path: %s\n", fh->hostname));
     if (FoundName)
     {
-	D(bug("[emul] ...containing object: %s\n", FoundName));
+	DEXAM(bug("[emul] ...containing object: %s\n", FoundName));
 	plen = strlen(fh->hostname);
 	flen = strlen(FoundName);
 	name = AllocVecPooled(emulbase->mempool, plen + flen + 2);
@@ -1002,13 +962,13 @@ ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR
     } else
 	name = fh->hostname;
   
-    D(bug("[emul] Full name: %s\n", name));
+    DEXAM(bug("[emul] Full name: %s\n", name));
     *kind = Stat(name, FIB, NULL);
     if (*kind == 0)
 	error = Errno(FMF_MODE_OLDFILE);
     if (FoundName)
     {
-	D(bug("[emul] Freeing full name\n"));
+	DEXAM(bug("[emul] Freeing full name\n"));
 	FreeVecPooled(emulbase->mempool, name);
     }
     return error;
@@ -1019,27 +979,28 @@ ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR
 ULONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName,
 		    struct ExAllData *ead, ULONG size, ULONG type)
 {
-  STRPTR next, last, end, name;
-  WIN32_FILE_ATTRIBUTE_DATA FIB;
-  LONG kind;
-  ULONG error;
+    STRPTR next, last, end, name;
+    WIN32_FILE_ATTRIBUTE_DATA FIB;
+    LONG kind;
+    ULONG error;
 
-  /* Check, if the supplied buffer is large enough. */
-  next=(STRPTR)ead+sizes[type];
-  end =(STRPTR)ead+size;
+    /* Check, if the supplied buffer is large enough. */
+    next=(STRPTR)ead+sizes[type];
+    end =(STRPTR)ead+size;
   
-  if(next>end) {
-      D(bug("[emul] examine_entry(): end of buffer\n"));
+    if(next > end)
+    {
+      DEXAM(bug("[emul] examine_entry(): end of buffer\n"));
       return ERROR_BUFFER_OVERFLOW;
-  }
+    }
 
-  error = examine_entry_sub(emulbase, fh, FoundName, &FIB, &kind);
-  if (error)
-      return error;
+    error = examine_entry_sub(emulbase, fh, FoundName, &FIB, &kind);
+    if (error)
+	return error;
 
-  D(bug("[emul] Filling in object information\n"));
-  switch(type)
-  {
+    DEXAM(bug("[emul] Filling in object information\n"));
+    switch(type)
+    {
 	default:
 	case ED_OWNER:
 	  ead->ed_OwnerUID = 0;
@@ -1080,7 +1041,7 @@ ULONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR Fou
 	  ead->ed_Next=(struct ExAllData *)(((IPTR)next+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1));
 	  
 	  return 0;
-  }
+    }
 }
 
 /*********************************************************************************************/
@@ -1091,22 +1052,23 @@ static LONG examine(struct emulbase *emulbase, struct filehandle *fh,
                     ULONG  type,
                     LONG  *dirpos)
 {
-  LONG error;
+    LONG error;
 
-  /* Return an error, if supplied type is not supported. */
-  if(type>ED_OWNER)
+    /* Return an error, if supplied type is not supported. */
+    if(type>ED_OWNER)
 	return ERROR_BAD_NUMBER;
 
-  /* Reset fh->dirpos to 0. If there is already a directory scan handle, it will be closed in order to start from the beginning */
-  if (fh->type == FHD_DIRECTORY) {
-      D(bug("[emul] examine(): Resetting search handle\n"));
-      error = CloseDir(fh);
-      if (error)
-          return error;
-  }
-  *dirpos = 0;
-  
-  return examine_entry(emulbase, fh, NULL, ead, size, type);
+    /* Reset fh->dirpos to 0. If there is already a directory scan handle, it will be closed in order to start from the beginning */
+    if (fh->type == FHD_DIRECTORY)
+    {
+	DEXAM(bug("[emul] examine(): Resetting search handle\n"));
+	error = CloseDir(fh);
+	if (error)
+            return error;
+    }
+    *dirpos = 0;
+
+    return examine_entry(emulbase, fh, NULL, ead, size, type);
 }
 
 /*********************************************************************************************/
@@ -1158,46 +1120,48 @@ static LONG examine_all(struct emulbase *emulbase, struct filehandle *fh,
                         ULONG  size,
                         ULONG  type)
 {
-  struct ExAllData *last = NULL;
-  STRPTR end = (STRPTR)ead + size;
-  LONG error;
-  WIN32_FIND_DATA FindData;
+    struct ExAllData *last = NULL;
+    STRPTR end = (STRPTR)ead + size;
+    LONG error;
+    WIN32_FIND_DATA FindData;
 
-  eac->eac_Entries = 0;
-  error = examine_start(emulbase, fh);
-  if (error)
-      return error;
+    eac->eac_Entries = 0;
+    error = examine_start(emulbase, fh);
+    if (error)
+	return error;
 
-  for(;;)
-  {
-      error = ReadDir(fh, &FindData, &eac->eac_LastKey);
-      if (error) {
-          D(bug("[emul] ReadDir() returned %lu\n", error));
-          break;
-      }
-      /* Try to match the filename, if required.  */
-      D(bug("[emul] Checking against MatchString\n"));
-      if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, FindData.cFileName))
-	  continue;
-      D(bug("[emul] Examining object\n"));
-      error = examine_entry(emulbase, fh, FindData.cFileName, ead, end-(STRPTR)ead, type);
-      if(error)
-	  break;
-      /* Do some more matching... */
-      if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
-	  continue;
-      eac->eac_Entries++;
-      last = ead;
-      ead = ead->ed_Next;
-  }
-  if (last!=NULL)
+    for(;;)
+    {
+	error = ReadDir(fh, &FindData, &eac->eac_LastKey);
+	if (error) {
+            DEXAM(bug("[emul] ReadDir() returned %lu\n", error));
+            break;
+        }
+
+	/* Try to match the filename, if required.  */
+	DEXAM(bug("[emul] Checking against MatchString\n"));
+	if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, FindData.cFileName))
+	    continue;
+
+	DEXAM(bug("[emul] Examining object\n"));
+        error = examine_entry(emulbase, fh, FindData.cFileName, ead, end-(STRPTR)ead, type);
+        if(error)
+	    break;
+	/* Do some more matching... */
+	if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
+	    continue;
+	eac->eac_Entries++;
+	last = ead;
+	ead = ead->ed_Next;
+    }
+
+    if (last!=NULL)
 	last->ed_Next=NULL;
-  if((error==ERROR_BUFFER_OVERFLOW)&&last!=NULL)
-  {
+
+    if ((error==ERROR_BUFFER_OVERFLOW) && last)
 	return 0;
-  }
-      
-  return error;
+
+    return error;
 }
 
 /*********************************************************************************************/
@@ -1213,7 +1177,7 @@ static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle
   error = makefilename(emulbase, &fn, NULL, handle, name);
   if (!error)
   {
-      D(bug("[emul] Creating hardlink %s to file %s\n", fn, oldfile->hostname));
+      DLINK(bug("[emul] Creating hardlink %s to file %s\n", fn, oldfile->hostname));
       Forbid();
       error = Link(fn, oldfile->hostname, NULL);
       Permit();
@@ -1303,9 +1267,9 @@ ULONG parent_dir(struct emulbase *emulbase,
 				 struct filehandle *fh,
 				 char ** DirectoryName)
 {
-  *DirectoryName = pathname_from_name(emulbase, fh->name);
-  D(bug("[emul] Parent directory: \"%s\"\n", *DirectoryName));
-  return 0;
+    *DirectoryName = pathname_from_name(emulbase, fh->name);
+    DCHDIR(bug("[emul] Parent directory: \"%s\"\n", *DirectoryName));
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -1384,61 +1348,89 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
     char *unixpath;
     int vol_len = 0;
     char *sp;
+    char *vol;
 
     unixpath = (char *)iofs->io_Union.io_OpenDevice.io_DeviceName;
-    if (!unixpath)
-	return FALSE;
-
-    DMOUNT(bug("[emul] Mounting volume %s\n", unixpath));
-    /* Volume name and Unix path are encoded into DEVICE entry of
-       MountList like this: <volumename>:<unixpath> */
-    do {
-	if (*unixpath == 0)
-	    return FALSE;
-
-	vol_len++;
-    } while (*unixpath++ != ':');
-    DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", unixpath, vol_len));
-
-    sp = strchr(unixpath, '~');
-    if (sp)
+    if (unixpath)
     {
-	char home[260];
-	char *newunixpath = NULL;
-	char *sp_end;
-	WORD cmplen;
-	char tmp;
-	ULONG err;
-	  
-	/* "~<name>" means home of user <name> */
-		
-	for(sp_end = sp + 1;
-	    sp_end[0] != '\0' && sp_end[0] != '\\';
-	    sp_end++);
+	DMOUNT(bug("[emul] Mounting volume %s\n", unixpath));
 
-	cmplen = sp_end - sp - 1;
-	/* temporariliy zero terminate name */
-	tmp = sp[cmplen+1];
-	sp[cmplen+1] = '\0';
+	/* Volume name and Unix path are encoded into DEVICE entry of
+	   MountList like this: <volumename>:<unixpath> */
+	vol = unixpath;
+	do {
+	    if (*unixpath == 0)
+		return FALSE;
 
-	err = GetHome(sp+1, home);
-	sp[cmplen+1] = tmp;
+	    vol_len++;
+	} while (*unixpath++ != ':');
+	DMOUNT(bug("[emul] Host path: %s, volume name length %u\n", unixpath, vol_len));
 
-	if (!err)
+	sp = strchr(unixpath, '~');
+	if (sp)
 	{
-	    newunixpath = AllocVec(strlen(unixpath) + strlen(home) + 1, MEMF_CLEAR);
-	    if (newunixpath)
+	    char home[260];
+	    char *newunixpath = NULL;
+	    char *sp_end;
+	    WORD cmplen;
+	    char tmp;
+	    ULONG err;
+	  
+	    /* "~<name>" means home of user <name> */
+		
+	    for(sp_end = sp + 1;
+		sp_end[0] != '\0' && sp_end[0] != '\\';
+		sp_end++);
+
+	    cmplen = sp_end - sp - 1;
+	    /* temporarily zero terminate name */
+	    tmp = sp[cmplen+1];
+	    sp[cmplen+1] = '\0';
+
+	    err = GetHome(sp+1, home);
+	    sp[cmplen+1] = tmp;
+
+	    if (!err)
 	    {
-		strncpy(newunixpath, unixpath, sp - unixpath);
-		strcat(newunixpath, home);
-		strcat(newunixpath, sp_end);
+		newunixpath = AllocVec(strlen(unixpath) + strlen(home) + 1, MEMF_CLEAR);
+		if (newunixpath)
+		{
+		    strncpy(newunixpath, unixpath, sp - unixpath);
+		    strcat(newunixpath, home);
+		    strcat(newunixpath, sp_end);
 
-		unixpath = newunixpath;
+		    unixpath = newunixpath;
+		}
 	    }
-	}
 
-	if (!newunixpath)
+	    if (!newunixpath)
+		return FALSE;
+	}
+    }
+    else
+    {
+        ULONG res;
+
+        unixpath = AllocVec(PATH_MAX, MEMF_PUBLIC);
+	if (!unixpath)
 	    return FALSE;
+	
+	Forbid();
+	res = GetCWD(PATH_MAX, unixpath);
+	Permit();
+
+	if (res > PATH_MAX)
+	    res = 0;
+
+	if(!res) {
+	    FreeVec(unixpath);
+
+	    return FALSE;
+	}
+	D(bug("[Emulhandler] startup directory %s\n", unixpath));
+	
+	vol = VOLNAME;
+	vol_len = VOLNAME_LEN + 1;
     }
 
     if (Stat(unixpath, NULL, NULL) > 0)
@@ -1448,7 +1440,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 	{
 	    char *volname = (char *)fhv + sizeof(struct filehandle);
 
-	    CopyMem(iofs->io_Union.io_OpenDevice.io_DeviceName, volname, vol_len - 1);
+	    CopyMem(vol, volname, vol_len - 1);
 	    volname[vol_len - 1] = 0;
 
 	    fhv->hostname   = unixpath;
@@ -1543,13 +1535,13 @@ AROS_LH1(void, beginio,
     switch(iofs->IOFS.io_Command)
     {
     case FSA_OPEN:
-          D(bug("[emul] FSA_OPEN(\"%s\")\n", iofs->io_Union.io_OPEN.io_Filename));
+          DCMD(bug("[emul] FSA_OPEN(\"%s\")\n", iofs->io_Union.io_OPEN.io_Filename));
 	  error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
 			iofs->io_Union.io_OPEN.io_Filename, iofs->io_Union.io_OPEN.io_FileMode, 0, TRUE);
 	  break;
 
     case FSA_CLOSE:
-	  D(bug("[emul] FSA_CLOSE\n"));
+	  DCMD(bug("[emul] FSA_CLOSE\n"));
 	  free_lock(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
 	  break;
 
@@ -1623,7 +1615,7 @@ AROS_LH1(void, beginio,
     case FSA_SEEK:
 	fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
-    	DSEEK(bug("[emul] FSA_SEEK, mode %ld, offset %llu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
+    	DCMD(bug("[emul] FSA_SEEK, mode %ld, offset %llu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
 	error = seek_file(fh, &iofs->io_Union.io_SEEK, NULL);
 	DSEEK(bug("[emul] FSA_SEEK returning %lu\n", error));
 	break;
@@ -1631,7 +1623,7 @@ AROS_LH1(void, beginio,
     case FSA_SET_FILE_SIZE:
         fh = (struct filehandle *)iofs->IOFS.io_Unit;
         
-        DFSIZE(bug("[emul] FSA_SET_FILE_SIZE, mode %ld, offset %llu\n", iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode, iofs->io_Union.io_SET_FILE_SIZE.io_Offset));
+        DCMD(bug("[emul] FSA_SET_FILE_SIZE, mode %ld, offset %llu\n", iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode, iofs->io_Union.io_SET_FILE_SIZE.io_Offset));
         /* First seek to the requested position. io_Offset will contain OLD position after that. NEW position will be in newpos */
         error = seek_file(fh, &iofs->io_Union.io_SEEK, &newpos);
         if (!error) {
@@ -1651,7 +1643,7 @@ AROS_LH1(void, beginio,
                 iofs->io_Union.io_SEEK.io_Offset = newpos;
         }
 
-	D(bug("[emul] FSA_SET_FILE_SIZE returning %lu\n", error));
+	DFSIZE(bug("[emul] FSA_SET_FILE_SIZE returning %lu\n", error));
 	break;
 
     case FSA_IS_INTERACTIVE:
@@ -1680,7 +1672,7 @@ AROS_LH1(void, beginio,
 	break;
 
     case FSA_EXAMINE:
-	  D(bug("[emul] FSA_EXAMINE\n"));
+	  DCMD(bug("[emul] FSA_EXAMINE\n"));
 	  error = examine(emulbase,
 					  (struct filehandle *)iofs->IOFS.io_Unit,
 					  iofs->io_Union.io_EXAMINE.io_ead,
@@ -1690,14 +1682,14 @@ AROS_LH1(void, beginio,
 	  break;
 	  
     case FSA_EXAMINE_NEXT:
-	  D(bug("[emul] FSA_EXAMINE_NEXT\n"));
+	  DCMD(bug("[emul] FSA_EXAMINE_NEXT\n"));
 	  error = examine_next(emulbase,
 						   (struct filehandle *)iofs->IOFS.io_Unit,
 						   iofs->io_Union.io_EXAMINE_NEXT.io_fib);
 	  break;
 	  
     case FSA_EXAMINE_ALL:
-	  D(bug("[emul] FSA_EXAMINE_ALL\n"));
+	  DCMD(bug("[emul] FSA_EXAMINE_ALL\n"));
 	  error = examine_all(emulbase,
 						  (struct filehandle *)iofs->IOFS.io_Unit,
 						  iofs->io_Union.io_EXAMINE_ALL.io_ead,
@@ -1712,7 +1704,7 @@ AROS_LH1(void, beginio,
 	  break;
 	  
     case FSA_OPEN_FILE:
-	  D(bug("[emul] FSA_OPEN_FILE: name \"%s\", mode 0x%08lX)\n", iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode));
+	  DCMD(bug("[emul] FSA_OPEN_FILE: name \"%s\", mode 0x%08lX)\n", iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode));
 	  error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
 			iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode,
 			iofs->io_Union.io_OPEN_FILE.io_Protection, FALSE);
@@ -1726,12 +1718,12 @@ AROS_LH1(void, beginio,
 	  break;
 	  
     case FSA_CREATE_HARDLINK:
-	  D(bug("[emul] FSA_CREATE_HARDLINK: link name \"%s\"\n", iofs->io_Union.io_CREATE_HARDLINK.io_Filename));
+	  DCMD(bug("[emul] FSA_CREATE_HARDLINK: link name \"%s\"\n", iofs->io_Union.io_CREATE_HARDLINK.io_Filename));
 	  error = create_hardlink(emulbase,
 							  (struct filehandle *)iofs->IOFS.io_Unit,
 							  iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
 							  (struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
-	  D(bug("[emul] FSA_CREATE_HARDLINK returning %lu\n", error));
+	  DLINK(bug("[emul] FSA_CREATE_HARDLINK returning %lu\n", error));
 	  break;
 	  
     case FSA_CREATE_SOFTLINK:
