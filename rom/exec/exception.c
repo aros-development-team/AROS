@@ -23,12 +23,12 @@
 	a task exception has occured. It is called in the Disable()'d
 	state so that all signals are still unchanged.
 
-	TF_EXCEPT is still set and must be reset by this route.
+	TF_EXCEPT is still set and must be reset by task route.
 
 	The exception code is called with the following parameters:
 
 	    A1  -   Task->tc_ExceptData
-	    D0  -   Mask of Flags which caused this exception.
+	    D0  -   Mask of Flags which caused task exception.
 	    A6  -   SysBase
 
     INPUTS
@@ -46,46 +46,38 @@
 	Dispatch()
 
     INTERNALS
-	Unlike in AmigaOS this function is called in user mode.
+	Unlike in AmigaOS task function is called in user mode.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct Task * this = FindTask (NULL);
+    struct Task *task = FindTask (NULL);
     BYTE nestCnt;
     ULONG flags;
 
-    this->tc_Flags &= ~TF_EXCEPT;
+    task->tc_Flags &= ~TF_EXCEPT;
 
     nestCnt = SysBase->IDNestCnt;
     SysBase->IDNestCnt = 0;
 
-    while ((flags = (this->tc_SigExcept & this->tc_SigRecvd)))
+    while ((flags = (task->tc_SigExcept & task->tc_SigRecvd)))
     {
-	flags ^= this->tc_SigExcept;
-	flags ^= this->tc_SigRecvd;
+	task->tc_SigExcept ^= flags;
+	task->tc_SigRecvd  ^= flags;
 
-	Enable ();
+	Enable();
 
-	/* Call the Exception with the new AROS ASMCALL macros */
-	if( this->tc_ExceptCode != NULL)
+	/* Call the Exception */
+	if(task->tc_ExceptCode)
 	{
-	    this->tc_SigExcept = AROS_UFC3(ULONG, this->tc_ExceptCode,
-		AROS_UFCA(APTR, this->tc_ExceptData, A1),
+	    task->tc_SigExcept |= AROS_UFC3(ULONG, task->tc_ExceptCode,
+		AROS_UFCA(APTR, task->tc_ExceptData, A1),
 		AROS_UFCA(ULONG, flags, D0),
 		AROS_UFCA(struct ExecBase *, SysBase, A6));
 	}
-	else
-	{
-	    /*
-		We don't have an exception handler, we shouldn't have
-		any exceptions. Clear them.
-	    */
 
-	    this->tc_SigExcept = 0;
-	}
-	Disable ();
+	Disable();
     }
 
     SysBase->IDNestCnt = nestCnt;
