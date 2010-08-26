@@ -56,6 +56,9 @@ struct FileInputPrefs
     UBYTE   ip_KeyRptSpeed_secs[4];
     UBYTE   ip_KeyRptSpeed_micro[4];
     UBYTE   ip_MouseAccel[2];
+    UBYTE   ip_ClassicKeyboard[4];
+    char    ip_KeymapName[64];
+    UBYTE   ip_SwitchMouseButtons[4];
 };
 
 struct nameexp

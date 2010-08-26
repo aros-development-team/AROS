@@ -35,7 +35,6 @@
 #include "stringify.h"
 
 static    CONST_STRPTR InputTabs[] = {NULL, NULL, NULL, };
-static    CONST_STRPTR ButtonMappings[] = {NULL, NULL, NULL, NULL, };
 static    CONST_STRPTR MouseSpeed[] = {NULL, NULL, NULL, NULL, };
 
 static struct Hook display_hook;
@@ -49,6 +48,7 @@ struct IPEditor_DATA
     Object *iped_Accelerated;
     Object *iped_MouseSpeed;
     Object *iped_DoubleClickDelay;
+    Object *iped_LeftHandedMouse;
 };
 
 /*** Local Functions ********************************************************/
@@ -75,6 +75,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object *Accelerated;
     Object *GadMouseSpeed;
     Object *DoubleClickDelay;
+    Object *LeftHandedMouse;
 
     struct ListviewEntry *entry;
 
@@ -83,10 +84,6 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     InputTabs[0] = _(MSG_GAD_TAB_KEYBOARD);
     InputTabs[1] = _(MSG_GAD_TAB_MOUSE);
-
-    ButtonMappings[0] = _(MSG_GAD_MOUSE_MAPPING_SELECT);
-    ButtonMappings[1] = _(MSG_GAD_MOUSE_MAPPING_MENU);
-    ButtonMappings[2] = _(MSG_GAD_MOUSE_MAPPING_THIRD);
 
     MouseSpeed[0] = _(MSG_GAD_MOUSE_SPEED_SLOW);
     MouseSpeed[1] = _(MSG_GAD_MOUSE_SPEED_NORMAL);
@@ -147,38 +144,31 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
             End,
             Child, VGroup,
-                Child, HGroup,
-                    Child, VGroup,
-                        Child, ColGroup(2),
-                            MUIA_Disabled, TRUE,
-                            GroupFrameT(__(MSG_GAD_MOUSE_BUTTON_MAPPING)),
-                            Child, (IPTR)Label1(__(MSG_GAD_MOUSE_LEFT)),
-                            Child, MUI_MakeObject(MUIO_Cycle, NULL, ButtonMappings),
-                            Child, (IPTR)Label1(__(MSG_GAD_MOUSE_MIDDLE)),
-                            Child, MUI_MakeObject(MUIO_Cycle, NULL, ButtonMappings),
-                            Child, (IPTR)Label1(__(MSG_GAD_MOUSE_RIGHT)),
-                            Child, MUI_MakeObject(MUIO_Cycle, NULL, ButtonMappings),
-                        End,
-                        Child, (IPTR)HVSpace,
+                Child, VGroup,
+                    GroupFrameT(__(MSG_GAD_MOUSE_SPEED)),
+                    Child, (IPTR)(GadMouseSpeed = MUI_MakeObject(MUIO_Cycle, NULL, MouseSpeed)),
+                    Child, HGroup,
+			Child, (IPTR)HSpace(0),
+                        Child, (IPTR)Label1(__(MSG_GAD_MOUSE_ACCELERATED)),
+                        Child, (IPTR)(Accelerated = MUI_MakeObject(MUIO_Checkmark, NULL)),
                     End,
-                    Child, VGroup,
-                        Child, ColGroup(2),
-                            GroupFrameT(__(MSG_GAD_MOUSE_SPEED)),
-                            Child, (IPTR)(GadMouseSpeed = MUI_MakeObject(MUIO_Cycle, NULL, MouseSpeed)),
-                            Child, (IPTR)HVSpace,
-                            Child, (IPTR)Label1(__(MSG_GAD_MOUSE_ACCELERATED)),
-                            Child, (IPTR)(Accelerated = MUI_MakeObject(MUIO_Checkmark, NULL)),
-                        End,
-                        Child, HGroup,
-                            GroupFrameT(__(MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY)),
-                            Child, (IPTR)(DoubleClickDelay = (Object *)StringifyObject,
-                                MUIA_MyStringifyType, STRINGIFY_DoubleClickDelay,
-                                MUIA_Numeric_Value, 0,
-                                MUIA_Numeric_Min, 0,
-                                MUIA_Numeric_Max, 199,
-                            End),
-                        End,
-                    End,
+		End,
+                Child, VGroup,
+                    GroupFrameT(__(MSG_GAD_MOUSE_BUTTON_SETTINGS)),
+		    Child, ColGroup(2),
+		        Child, (IPTR)Label1(__(MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY)),
+                        Child, (IPTR)(DoubleClickDelay = (Object *)StringifyObject,
+                            MUIA_MyStringifyType, STRINGIFY_DoubleClickDelay,
+                            MUIA_Numeric_Value, 0,
+                            MUIA_Numeric_Min, 0,
+                            MUIA_Numeric_Max, 199,
+                        End),
+			Child, (IPTR)Label1(__(MSG_GAD_LEFT_HANDED_MOUSE)),
+			Child, HGroup,
+			    Child, (IPTR)(LeftHandedMouse = MUI_MakeObject(MUIO_Checkmark, NULL)),
+			    Child, (IPTR)HSpace(0),
+			End,
+		    End,
                 End,
             End,
         End,
@@ -196,6 +186,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->iped_Accelerated = Accelerated;
         data->iped_MouseSpeed = GadMouseSpeed;
         data->iped_DoubleClickDelay = DoubleClickDelay;
+	data->iped_LeftHandedMouse = LeftHandedMouse;
 
         IPTR root;
 
@@ -246,6 +237,11 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
+	DoMethod
+        (
+            LeftHandedMouse, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
     }
 
     return self;
@@ -253,7 +249,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
 {
-    IPTR    val;
+    IPTR    val = 0;
     ULONG   micros, secs;
 
     GET(data->iped_RepeatRate, MUIA_Numeric_Value, &val);
@@ -310,6 +306,9 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
         strncpy(inputprefs.ip_Keymap, DEFAULT_KEYMAP, sizeof(inputprefs.ip_Keymap));
     }
 
+    GET(data->iped_LeftHandedMouse, MUIA_Selected, &val);
+    inputprefs.ip_SwitchMouseButtons = val;
+
     return TRUE;
 }
 
@@ -359,6 +358,8 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     }
 
     NNSET(data->iped_MouseSpeed, MUIA_Cycle_Active, active);
+
+    NNSET(data->iped_LeftHandedMouse, MUIA_Selected, inputprefs.ip_SwitchMouseButtons);
 
     return TRUE;
 }

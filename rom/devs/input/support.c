@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -38,6 +38,29 @@ struct InputEvent *GetEventsFromQueue(struct inputbase *InputDevice)
 /* Adds a chian of InputEvents to the eventqueue */
 VOID AddEQTail(struct InputEvent *ie, struct inputbase *InputDevice)
 {
+    /* Experimental */
+    if (InputDevice->pub.id_Flags & IDF_SWAP_BUTTONS)
+    {
+        UWORD code;
+
+	switch (ie->ie_Class)
+	{
+	/* FIXME: add more event classes to which this is applicable */
+	case IECLASS_RAWMOUSE:
+            code = ie->ie_Code & ~IECODE_UP_PREFIX;
+
+	    switch (code) {
+	    case IECODE_LBUTTON:
+		code = IECODE_RBUTTON;
+		break;
+	    case IECODE_RBUTTON:
+		code = IECODE_LBUTTON;
+		break;
+	    }
+
+	    ie->ie_Code = code | (ie->ie_Code & IECODE_UP_PREFIX);
+	}
+    }
 
     if (!InputDevice->EventQueueHead) /* Empty queue ? */
     {
