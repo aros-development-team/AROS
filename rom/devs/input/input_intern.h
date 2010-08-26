@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for the input.device
@@ -24,6 +24,7 @@
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
+#include <devices/input.h>
 #ifndef DEVICES_INPUTEVENT_H
 #   include <devices/inputevent.h>
 #endif
@@ -44,8 +45,8 @@
 
 struct inputbase
 {
-    struct Device   	device;
-    
+    struct InputDevice	pub;
+
     /* The stuff below will never get deallocated, since
     ** input device is never removed, once it's initialized.
     */

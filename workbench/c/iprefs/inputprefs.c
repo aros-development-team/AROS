@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,7 +17,7 @@
 
 #include <string.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /*********************************************************************************************/
@@ -33,6 +33,9 @@ struct FileInputPrefs
     UBYTE   ip_KeyRptSpeed_secs[4];
     UBYTE   ip_KeyRptSpeed_micro[4];
     UBYTE   ip_MouseAccel[2];
+    UBYTE   ip_ClassicKeyboard[4];
+    char    ip_KeymapName[64];
+    UBYTE   ip_SwitchMouseButtons[4];
 };
 
 /*********************************************************************************************/
@@ -72,10 +75,17 @@ static void SetInputPrefs(struct FileInputPrefs *prefs)
     struct KeyMapResource *KeyMapResource;
     struct KeyMapNode	  *kmn;
     struct Preferences	   p;
+    struct IOStdReq	   ioreq;
     
     if ((KeyMapResource = OpenResource("keymap.resource")))
     {
-    	kmn = KeymapAlreadyOpen(KeyMapResource, prefs->ip_Keymap);
+	char *keymap = prefs->ip_KeymapName;
+	
+	if (!keymap[0])
+		keymap = prefs->ip_Keymap;
+	D(bug("[InputPrefs] Keymap name: %s\n", keymap));
+
+    	kmn = KeymapAlreadyOpen(KeyMapResource, keymap);
 	
 	if (!kmn)
 	{
@@ -87,12 +97,12 @@ static void SetInputPrefs(struct FileInputPrefs *prefs)
 	    {
 	    	olddir = CurrentDir(lock);
 		
-		if ((seg = LoadSeg(prefs->ip_Keymap)))
+		if ((seg = LoadSeg(keymap)))
 		{
 	    	    kmn = (struct KeyMapNode *) (((UBYTE *)BADDR(seg)) + sizeof(APTR));
 		    
 		    Forbid();
-		    if ((kmn_check = KeymapAlreadyOpen(KeyMapResource, prefs->ip_Keymap)))
+		    if ((kmn_check = KeymapAlreadyOpen(KeyMapResource, keymap)))
 		    {
 		    	kmn = kmn_check;
 		    }
@@ -140,7 +150,26 @@ static void SetInputPrefs(struct FileInputPrefs *prefs)
     }     
     
     SetPrefs(&p, sizeof(p), FALSE);
-    
+
+    memset(&ioreq, 0, sizeof(ioreq));
+    ioreq.io_Message.mn_Length = sizeof(ioreq);
+
+    if (!OpenDevice("input.device", 0, (struct IORequest *)&ioreq, 0))
+    {
+	struct InputDevice *InputBase = (struct InputDevice *)ioreq.io_Device;
+
+	D(bug("[InputPrefs] Opened input.device v%d.%d\n", InputBase->id_Device.dd_Library.lib_Version,
+	      InputBase->id_Device.dd_Library.lib_Revision));
+	/* AROS input.device support this since v41.3 */
+	if ((InputBase->id_Device.dd_Library.lib_Version >= 41) &&
+	    (InputBase->id_Device.dd_Library.lib_Revision >= 3))
+	{
+	    InputBase->id_Flags = prefs->ip_SwitchMouseButtons[3] ? IDF_SWAP_BUTTONS : 0;
+	    D(bug("[InputPrefs] Flags set to 0x%08lX\n", InputBase->id_Flags));
+	}
+
+	CloseDevice((struct IORequest *)&ioreq);
+    }
 }
 
 /*********************************************************************************************/
@@ -170,18 +199,20 @@ void InputPrefs_Handler(STRPTR filename)
 		  cn->cn_ID >> 8,
 		  cn->cn_ID));
 
-	    if ((cn->cn_ID == ID_INPT) && (cn->cn_Size == sizeof(inputprefs)))
+	    if (cn->cn_ID == ID_INPT)
 	    {
-    	    	D(bug("InputPrefs_Handler: ID_INPT chunk with correct size found.\n"));
+		ULONG size = cn->cn_Size;
 
-		if (ReadChunkBytes(iff, &inputprefs, sizeof(inputprefs)) == sizeof(inputprefs))
-		{
+		if (size > sizeof(inputprefs))
+		    size = sizeof(inputprefs);
+
+    	    	D(bug("InputPrefs_Handler: ID_INPT chunk found.\n"));		
+
+		memset(&inputprefs, 0, sizeof(inputprefs));
+
+		if (ReadChunkBytes(iff, &inputprefs, size) == size)
     	    	    SetInputPrefs(&inputprefs);
-		    
- 		} /* if (ReadChunkBytes(iff, &inputprefs, sizeof(inputprefs)) == sizeof(inputprefs)) */
-		
-	    } /* if ((cn->cn_ID == ID_INPT) && (cn->cn_Size == sizeof(inputprefs))) */
-
+	    }
 	} /* while(ParseIFF(iff, IFFPARSE_SCAN) == 0) */
 	    
    	KillIFF(iff);

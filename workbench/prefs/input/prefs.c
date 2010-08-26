@@ -204,55 +204,60 @@ BOOL Prefs_ImportFH(BPTR fh)
 {
     struct FileInputPrefs   loadprefs;
     struct IFFHandle       *iff;
+    ULONG		    size;
     BOOL                    retval = FALSE;
+
+    memset(&loadprefs, 0, sizeof(loadprefs));
 
     if ((iff = AllocIFF()))
     {
         iff->iff_Stream = (IPTR)fh;
         if (fh != NULL)
         {
-            D(bug("LoadPrefs: stream opened.\n"));
+            D(Printf("LoadPrefs: stream opened.\n"));
 
             InitIFFasDOS(iff);
 
             if (!OpenIFF(iff, IFFF_READ))
             {
-                D(bug("LoadPrefs: OpenIFF okay.\n"));
+                D(Printf("LoadPrefs: OpenIFF okay.\n"));
 
                 if (!StopChunk(iff, ID_PREF, ID_INPT))
                 {
-                    D(bug("LoadPrefs: StopChunk okay.\n"));
+                    D(Printf("LoadPrefs: StopChunk okay.\n"));
 
                     if (!ParseIFF(iff, IFFPARSE_SCAN))
                     {
                         struct ContextNode *cn;
 
-                        D(bug("LoadPrefs: ParseIFF okay.\n"));
+                        D(Printf("LoadPrefs: ParseIFF okay.\n"));
 
                         cn = CurrentChunk(iff);
+			size = cn->cn_Size;
 
-                        if (cn->cn_Size == sizeof(struct FileInputPrefs))
+                        if (size > sizeof(struct FileInputPrefs))
+			    size = sizeof(struct FileInputPrefs);
+
+                        if (ReadChunkBytes(iff, &loadprefs, size) == size)
                         {
-                            D(bug("LoadPrefs: ID_INPT chunk size okay.\n"));
+                            D(Printf("LoadPrefs: Reading chunk successful.\n"));
 
-                            if (ReadChunkBytes(iff, &loadprefs, sizeof(struct FileInputPrefs)) == sizeof(struct FileInputPrefs))
-                            {
-                                D(bug("LoadPrefs: Reading chunk successful.\n"));
+                            CopyMem(loadprefs.ip_Keymap, inputprefs.ip_Keymap, sizeof(loadprefs.ip_Keymap));
+                            inputprefs.ip_PointerTicks         = ARRAY_TO_WORD(loadprefs.ip_PointerTicks);
+                            inputprefs.ip_DoubleClick.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_secs);
+                            inputprefs.ip_DoubleClick.tv_micro = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_micro);
+                            inputprefs.ip_KeyRptDelay.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_secs);
+                            inputprefs.ip_KeyRptDelay.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_micro);
+                            inputprefs.ip_KeyRptSpeed.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_secs);
+                            inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_micro);
+                            inputprefs.ip_MouseAccel           = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
+			    inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_ClassicKeyboard);
+			    CopyMem(loadprefs.ip_KeymapName, inputprefs.ip_KeymapName, sizeof(loadprefs.ip_KeymapName));
+			    inputprefs.ip_SwitchMouseButtons   = loadprefs.ip_SwitchMouseButtons[3];
+			    
+			    D(Printf("LoadPrefs: SwitchMouseButtons: %ld\n", inputprefs.ip_SwitchMouseButtons));
 
-                                CopyMem(loadprefs.ip_Keymap, inputprefs.ip_Keymap, sizeof(loadprefs.ip_Keymap));
-                                inputprefs.ip_PointerTicks         = ARRAY_TO_WORD(loadprefs.ip_PointerTicks);
-                                inputprefs.ip_DoubleClick.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_secs);
-                                inputprefs.ip_DoubleClick.tv_micro = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_micro);
-                                inputprefs.ip_KeyRptDelay.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_secs);
-                                inputprefs.ip_KeyRptDelay.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_micro);
-                                inputprefs.ip_KeyRptSpeed.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_secs);
-                                inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_micro);
-                                inputprefs.ip_MouseAccel           = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
-
-                                D(bug("LoadPrefs: Everything okay :-)\n"));
-
-                                retval = TRUE;
-                            }
+                            retval = TRUE;
                         }
                     } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
                 } /* if (!StopChunk(iff, ID_PREF, ID_INPT)) */
@@ -274,6 +279,8 @@ BOOL Prefs_ExportFH(BPTR fh)
     BOOL                    retval = FALSE;
     BOOL                    delete_if_error = FALSE;
 
+    D(Printf("SavePrefs: SwitchMouseButtons: %ld\n", inputprefs.ip_SwitchMouseButtons));
+
     CopyMem(inputprefs.ip_Keymap, saveprefs.ip_Keymap, sizeof(saveprefs.ip_Keymap));
     WORD_TO_ARRAY(inputprefs.ip_PointerTicks, saveprefs.ip_PointerTicks);
     LONG_TO_ARRAY(inputprefs.ip_DoubleClick.tv_secs , saveprefs.ip_DoubleClick_secs);
@@ -283,13 +290,18 @@ BOOL Prefs_ExportFH(BPTR fh)
     LONG_TO_ARRAY(inputprefs.ip_KeyRptSpeed.tv_secs , saveprefs.ip_KeyRptSpeed_secs);
     LONG_TO_ARRAY(inputprefs.ip_KeyRptSpeed.tv_micro, saveprefs.ip_KeyRptSpeed_micro);
     WORD_TO_ARRAY(inputprefs.ip_MouseAccel, saveprefs.ip_MouseAccel);
+    CopyMem(inputprefs.ip_KeymapName, saveprefs.ip_KeymapName, sizeof(saveprefs.ip_KeymapName));
+    saveprefs.ip_SwitchMouseButtons[0] = 0;
+    saveprefs.ip_SwitchMouseButtons[1] = 0;
+    saveprefs.ip_SwitchMouseButtons[2] = 0;
+    saveprefs.ip_SwitchMouseButtons[3] = inputprefs.ip_SwitchMouseButtons;
 
     if ((iff = AllocIFF()))
     {
         iff->iff_Stream = (IPTR)fh;
         if (iff->iff_Stream)
         {
-            D(bug("SavePrefs: stream opened.\n"));
+            D(Printf("SavePrefs: stream opened.\n"));
 
             delete_if_error = TRUE;
 
@@ -297,17 +309,17 @@ BOOL Prefs_ExportFH(BPTR fh)
 
             if (!OpenIFF(iff, IFFF_WRITE))
             {
-                D(bug("SavePrefs: OpenIFF okay.\n"));
+                D(Printf("SavePrefs: OpenIFF okay.\n"));
 
                 if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
                 {
-                    D(bug("SavePrefs: PushChunk(FORM) okay.\n"));
+                    D(Printf("SavePrefs: PushChunk(FORM) okay.\n"));
 
                     if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
                     {
                         struct FilePrefHeader head;
 
-                        D(bug("SavePrefs: PushChunk(PRHD) okay.\n"));
+                        D(Printf("SavePrefs: PushChunk(PRHD) okay.\n"));
 
                         head.ph_Version  = 0; // FIXME: shouold be PHV_CURRENT, but see <prefs/prefhdr.h>
                         head.ph_Type     = 0;
@@ -318,18 +330,17 @@ BOOL Prefs_ExportFH(BPTR fh)
 
                         if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
                         {
-                            D(bug("SavePrefs: WriteChunkBytes(PRHD) okay.\n"));
+                            D(Printf("SavePrefs: WriteChunkBytes(PRHD) okay.\n"));
 
                             PopChunk(iff);
 
                             if (!PushChunk(iff, ID_PREF, ID_INPT, sizeof(saveprefs)))
                             {
-                                D(bug("SavePrefs: PushChunk(INPT) okay.\n"));
+                                D(Printf("SavePrefs: PushChunk(INPT) okay.\n"));
 
                                 if (WriteChunkBytes(iff, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
                                 {
-                                    D(bug("SavePrefs: WriteChunkBytes(INPT) okay.\n"));
-                                    D(bug("SavePrefs: Everything okay :-)\n"));
+                                    D(Printf("SavePrefs: WriteChunkBytes(INPT) okay.\n"));
 
                                     retval = TRUE;
                                 }

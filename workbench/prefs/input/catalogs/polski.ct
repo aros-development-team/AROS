@@ -106,22 +106,6 @@ MSG_TIME_FORMAT
 %d.%02d sek.
 ; %d.%02d s
 ;
-MSG_GAD_MOUSE_BUTTON_MAPPING
-Mapa klawiatury
-; Button mapping
-;
-MSG_GAD_MOUSE_MAPPING_SELECT
-Wybierz
-; Select
-;
-MSG_GAD_MOUSE_MAPPING_MENU
-Menu
-; Menu
-;
-MSG_GAD_MOUSE_MAPPING_THIRD
-Trzeci
-; Third
-;
 MSG_GAD_MOUSE_DOUBLECLICK_DELAY
 Opó¼nienie dwukrotnego klikniêcia
 ; Double-Click Delay
@@ -137,16 +121,4 @@ normalna
 MSG_GAD_MOUSE_SPEED_FAST
 szybka
 ; Fast
-;
-MSG_GAD_MOUSE_LEFT
-Lewy przycisk
-; Left Button
-;
-MSG_GAD_MOUSE_MIDDLE
-¦rodkowy przycisk
-; Middle Button
-;
-MSG_GAD_MOUSE_RIGHT
-Prawy przycisk
-; Right Button
 ;

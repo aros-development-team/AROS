@@ -77,11 +77,11 @@ Type
 MSG_TIME_FORMAT (//)
 %d.%02d s
 ;
-MSG_GAD_MOUSE_BUTTON_MAPPING (//)
-Button mapping
+MSG_GAD_MOUSE_BUTTON_SETTINGS (//)
+Mouse buttons
 ;
-MSG_GAD_MOUSE_MAPPING_SELECT (//)
-Select
+MSG_GAD_LEFT_HANDED_MOUSE (//)
+Left-handed mouse
 ;
 MSG_GAD_MOUSE_MAPPING_MENU (//)
 Menu
@@ -100,13 +100,4 @@ Normal
 ;
 MSG_GAD_MOUSE_SPEED_FAST (//)
 Fast
-;
-MSG_GAD_MOUSE_LEFT (//)
-Left Button
-;
-MSG_GAD_MOUSE_MIDDLE (//)
-Middle Button
-;
-MSG_GAD_MOUSE_RIGHT (//)
-Right Button
 ;

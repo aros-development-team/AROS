@@ -107,22 +107,6 @@ MSG_TIME_FORMAT
 %d.%02d sek.
 ; %d.%02d s
 ;
-MSG_GAD_MOUSE_BUTTON_MAPPING
-Mapování tlaèítek
-; Button mapping
-;
-MSG_GAD_MOUSE_MAPPING_SELECT
-Vybrat
-; Select
-;
-MSG_GAD_MOUSE_MAPPING_MENU
-Menu
-; Menu
-;
-MSG_GAD_MOUSE_MAPPING_THIRD
-Tøetí tlaèítko
-; Third
-;
 MSG_GAD_MOUSE_DOUBLECLICK_DELAY
 Èas mezi dvojím kliknutím
 ; Double-Click Delay
@@ -138,16 +122,4 @@ Støední
 MSG_GAD_MOUSE_SPEED_FAST
 Vysoká
 ; Fast
-;
-MSG_GAD_MOUSE_LEFT
-Levé tlaèítko
-; Left Button
-;
-MSG_GAD_MOUSE_MIDDLE
-Prostøední tlaèítko
-; Middle Button
-;
-MSG_GAD_MOUSE_RIGHT
-Pravé tlaèítko
-; Right Button
 ;
