@@ -2,7 +2,7 @@
     Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for slovakia
+    Desc: Country data for Slovakia
 */
 
 #include <libraries/locale.h>
@@ -10,7 +10,7 @@
 
 /* slovakia.country: V44 */
    
-struct CountryPrefs slovakiaPrefs =
+struct CountryPrefs slovenskoPrefs =
 {
     /* Reserved */
     { 0, 0, 0, 0 },
