@@ -132,13 +132,13 @@ end
 
 define modlist
     if Debug_ModList
-        printf "Segment  Module\n"
+        printf "Segment           Module\n"
         printf "---------------------------------------------------------------------\n"
 
         set $segnode = (struct segment *)Debug_ModList->mlh_Head
 
         while ($segnode->s_node.mln_Succ != 0)
-            printf "%p %s\n", $segnode->s_seg, $segnode->s_mod->mod.m_name
+            printf "%p %s %u %s\n", $segnode->s_seg, $segnode->s_name, $segnode->s_num, $segnode->s_mod->mod.m_name
 
             set $segnode = (struct segment *)$segnode->s_node.mln_Succ
         end
