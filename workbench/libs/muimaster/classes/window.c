@@ -843,7 +843,8 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
         ** are ignored also the current overscan view */
         if (data->wd_X == MUIV_Window_LeftEdge_Centered)
         {
-            data->wd_X = (data->wd_RenderInfo.mri_Screen->Width - data->wd_Width)/2;
+	    data->wd_X = (data->wd_RenderInfo.mri_Screen->ViewPort.DWidth - data->wd_Width)/2
+	        - data->wd_RenderInfo.mri_Screen->LeftEdge;
         }
         else if (data->wd_X == MUIV_Window_LeftEdge_Moused)
         {
@@ -852,7 +853,8 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
 
         if (data->wd_Y == MUIV_Window_TopEdge_Centered)
         {
-            data->wd_Y = (data->wd_RenderInfo.mri_Screen->Height - data->wd_Height)/2;
+	    data->wd_Y = (data->wd_RenderInfo.mri_Screen->ViewPort.DHeight - data->wd_Height)/2
+	        - data->wd_RenderInfo.mri_Screen->TopEdge;
         }
         else if (data->wd_Y == MUIV_Window_TopEdge_Moused)
         {
