@@ -12,7 +12,7 @@
 #define D(x)
 
 #if AROS_MODULES_DEBUG
-static struct List *Debug_ModList = NULL;
+static struct MinList *Debug_ModList = NULL;
 #endif
 
 void __clear_bss(struct KernelBSS *bss)
