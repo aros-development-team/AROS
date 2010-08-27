@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #undef timeval
 
+#include "exec_intern.h"
 #include "exec_util.h"
 #include "etask.h"
 #include LC_LIBDEFS_FILE
@@ -229,6 +230,9 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 #ifndef AROS_CREATE_ROM
     SysBase = sysBase;
 #endif
+    KernelBase = OpenResource("kernel.resource");
+    if (!KernelBase)
+	return NULL;
 
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,

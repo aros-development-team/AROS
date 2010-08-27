@@ -16,15 +16,6 @@
 #include "dos_intern.h"
 #include "internalloadseg.h"
 
-#if AROS_MODULES_DEBUG
-#include <exec/nodes.h>
-#include <exec/lists.h>
-#include <string.h>
-
-struct MinList debug_seglist, free_debug_segnodes;
-
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -107,14 +98,8 @@ struct MinList debug_seglist, free_debug_segnodes;
         int i = 0;
 	const int num_funcs = sizeof(funcs)/sizeof(funcs[0]);
 	struct MinList *pseginfos;
-#if AROS_MODULES_DEBUG
-	struct MinList seginfos;
 
-	NEWLIST(&seginfos);
-	pseginfos = &seginfos;
-#else
 	pseginfos = NULL;
-#endif
       
 	do
 	{
@@ -127,42 +112,6 @@ struct MinList debug_seglist, free_debug_segnodes;
 	          segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
  	     
 	} while	(!segs && (IoErr() == ERROR_NOT_EXECUTABLE) && (++i < num_funcs));
-
-#if AROS_MODULES_DEBUG
-	if(segs)
-	{
-	    struct debug_segnode *segnode;
-
-	    Forbid();
-	    segnode = (struct debug_segnode *)REMHEAD(&free_debug_segnodes);
-	    Permit();
-
-	    if (segnode)
-	    {
-		struct seginfo *si;
-
-		NameFromFH(fh, segnode->name, sizeof(segnode->name));
-		D(bug("[InternalLoadSeg] loaded: %s\n", segnode->name));
-
-		segnode->seglist = segs;
-
-		/* copy the segments info list */
-		NEWLIST(&segnode->seginfos);
-		while ((si = (struct seginfo *)REMHEAD(&seginfos)))
-		    ADDTAIL(&segnode->seginfos, si);
-
-#if defined(__AROS_SET_START_ADDR)
-		__AROS_SET_START_ADDR(segnode);
-#else
-#warning "if you want gdb debugging of loaded executables implement __AROS_GET_START_ADDR in machine.h"
-#endif
-
-		Forbid();
-		ADDTAIL(&debug_seglist, segnode);
-		Permit();
-	    }
-	}
-#endif
     }
 
     return segs;
