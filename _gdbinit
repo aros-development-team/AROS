@@ -131,16 +131,16 @@ Print out information about the currently running task.
 end
 
 define modlist
-    if debug_seglist
-        printf "SegList  Module\n"
+    if Debug_ModList
+        printf "Segment  Module\n"
         printf "---------------------------------------------------------------------\n"
 
-        set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
+        set $segnode = (struct segment *)Debug_ModList->mlh_Head
 
-        while ($segnode->node.mln_Succ != 0)
-            printf "%p %s\n", $segnode->seglist, $segnode->name
+        while ($segnode->s_node.mln_Succ != 0)
+            printf "%p %s\n", $segnode->s_seg, $segnode->s_mod->mod.m_name
 
-            set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
+            set $segnode = (struct segment *)$segnode->s_node.mln_Succ
         end
     end
 end
@@ -153,22 +153,15 @@ define findaddr
 
     #first search in modules loaded from disk
     printf "Searching in the loaded modules...\n"
-    if debug_seglist
-        set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
+    if Debug_ModList
+        set $segnode = (struct segment *)Debug_ModList->mlh_Head
 
-        while ($segnode->node.mln_Succ != 0) && $cont
-            set $nextseg = $segnode->seglist
+        while ($segnode->s_node.mln_Succ != 0) && $cont
+	    if $arg0 >= $segnode->s_lowest && $arg0 <= $segnode->s_highest
+                printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->s_mod->mod.m_name, $segnode->s_seg, $segnode->s_lowest
 
-            while $nextseg && $cont
-	        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *((ULONG *)$nextseg - 1) - sizeof(BPTR))
-                    printf "Address found in %s, which is loaded at %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->name, $segnode->seglist, $segnode->start_address
-
-                    set $cont = 0
-                end
-
-                set $nextseg = *(BPTR *)$nextseg
-     	    end
-
+                set $cont = 0
+            end
             set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
         end
     end
@@ -267,14 +260,12 @@ end
 define loadseg
   dont-repeat
   set $cont = 1
-  if debug_seglist
-    set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
-    while ($segnode->node.mln_Succ != 0) && $cont
-      set $nextseg = $segnode->seglist
-      while $nextseg && $cont
-        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *((ULONG *)$nextseg - 1) - sizeof(BPTR))
+  if Debug_ModList
+    set $segnode = (struct segment *)Debug_ModList->mlh_Head
+    while ($segnode->s_node.mln_Succ != 0) && $cont
+        if $arg0 >= $segnode->s_lowest && $arg0 <= $segnode->s_highest
           log_to_file segname.tmp on
-          printf "%s", $segnode->name
+          printf "%s", $segnode->s_mod->mod.m_name
           end_log
           shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
           log_to_file loadseg.tmp on
@@ -282,25 +273,16 @@ define loadseg
           end_log
           shell head -n1 segname.tmp >>loadseg.tmp
           log_to_file loadseg.tmp off
-          set $seginfo = (struct seginfo *)$segnode->seginfos.mlh_Head
-          while ($seginfo->node.mln_Succ != 0)
-            if (strcmp($seginfo->name, ".text") == 0)
-              printf " %p", $seginfo->addr
-              set $cont = 0
-            else
-              printf " -s %s %p", $seginfo->name, $seginfo->addr
-            end
-            set $seginfo = (struct seginfo *)$seginfo->node.mln_Succ
+          if (strcmp($segnode->s_name, ".text") == 0)
+              printf " %p", $segnode->s_lowest
+          else
+              printf " -s %s %p", $segnode->s_name, $segnode->s_lowest
           end
           end_log
-          if $cont == 0
-            source loadseg.tmp
-          end
           set $cont = 0
+	  source loadseg.tmp
         end
-        set $nextseg = *(BPTR *)$nextseg
-      end
-      set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
+      set $segnode = (struct segment *)$segnode->s_node.mln_Succ
     end
   end
   if $cont

@@ -29,6 +29,7 @@
 char *malloc_options;
 
 extern const struct Resident
+    Kernel_ROMTag,
     Expansion_ROMTag,
     Exec_resident,
     Utility_ROMTag,
@@ -75,6 +76,7 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
+    &Kernel_ROMTag,			/* SingleTask,  127  */
     &Expansion_ROMTag,                  /* SingleTask,  110  */
     &Exec_resident,                     /* SingleTask,  105  */
     &Utility_ROMTag,                    /* ColdStart,   103  */

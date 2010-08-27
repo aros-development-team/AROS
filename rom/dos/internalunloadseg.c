@@ -1,15 +1,18 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
-#include "dos_intern.h"
-#include <proto/exec.h>
+
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <exec/libraries.h>
+#include <proto/exec.h>
+#include <proto/kernel.h>
+
+#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -27,7 +30,7 @@
 
 /*  FUNCTION
 	Unloads a seglist loaded with InternalLoadSeg().
-	
+
     INPUTS
 	seglist  - Seglist
 	freefunc - Function to be called to free memory
@@ -47,57 +50,31 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  BPTR next;
+    BPTR next;
 
-  if (seglist)
-  {
-#if AROS_MODULES_DEBUG
-    extern struct MinList debug_seglist;
-    extern struct MinList free_debug_segnodes;
-    struct debug_segnode *segnode;
+    if (seglist) {
+	if (KernelBase)
+	    KrnUnregisterModule(seglist);
+    
+	while (seglist) {
+	    char *seg = (ULONG)seglist;
 
-    Forbid();
-    ForeachNode(&debug_seglist, segnode)
-    {
-      if (segnode->seglist == seglist)
-      {
-	/* use the same free function as loadseg ! */
-	struct seginfo *si;
-	while ((si = (struct seginfo *)REMHEAD(&segnode->seginfos)))
-	{
-	  AROS_CALL2NR(void, freefunc,
-	    AROS_LCA(APTR ,  si, A1),
-	    AROS_LCA(ULONG,  sizeof(struct seginfo), D0),
-	    struct Library *, (struct Library *)SysBase
-          );
+	    next = *(BPTR *)BADDR(seglist);
+	    seg += (*(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG))) / 2;
+
+	    AROS_CALL2NR(void, freefunc,
+			 AROS_LCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
+			 AROS_LCA(ULONG, *(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)), D0),
+			 struct Library *, (struct Library *)SysBase);
+
+	    seglist = next;
 	}
 
-	REMOVE(segnode);
-	ADDHEAD(&free_debug_segnodes, segnode);
-        break;
-      }
-    }
-    Permit();
-#endif
+	return DOSTRUE;
+    } else
+	return DOSFALSE;
 
-    while (seglist)
-    {
-      next = *(BPTR *)BADDR(seglist);
-
-      AROS_CALL2NR(void, freefunc,
-        AROS_LCA(APTR ,  BADDR(seglist) - sizeof(ULONG), A1),
-        AROS_LCA(ULONG, *(LONG *)(BADDR(seglist) - sizeof(ULONG)), D0),
-        struct Library *, (struct Library *)SysBase
-      );
-      
-      seglist = next;
-    }
-    return TRUE;
-  }
-  else
-    return FALSE;
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* InternalUnLoadSeg */
