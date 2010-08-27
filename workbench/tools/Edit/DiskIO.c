@@ -391,7 +391,8 @@ WORD load_file( LoadFileArgs *args )
 			for(; i<len; p++, i++)
 				if (*p == eol)
 				{
-					new->size   = p-q; *p = '\n';
+					new->size   = p-q; 
+					/* *p = '\n';   Removed to preserve MS-DOS/Windows CRLF end-of-line chars */ 
 					new->stream = q;
 					args->nblines++;
 					if(args->eol == MSDOS_EOL && p[1]=='\n') p++,i++; q = p+1;
