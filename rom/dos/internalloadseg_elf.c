@@ -11,6 +11,7 @@
 
 #define DEBUG 0
 
+#include <aros/config.h>
 #include <aros/kernel.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -607,19 +608,22 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Everything is loaded now. Register the module at kernel.resource */
-    if (KernelBase) {
+    if (KernelBase)
+    {
 	char buffer[512];
 
 	if (NameFromFH(file, buffer, sizeof(buffer))) {
 	    char *nameptr = buffer;
 	    struct ELF_DebugInfo dbg = {&eh, sh};
 
+/* gdb support needs ful paths */
+#if !AROS_MODULES_DEBUG
 	    /* First, go through the name, till end of the string */
 	    while(*nameptr++);
 	    /* Now, go back until either ":" or "/" is found */
 	    while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
     		nameptr--;
-
+#endif
     	   KrnRegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
 	}
     }
