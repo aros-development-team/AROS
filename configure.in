@@ -542,7 +542,7 @@ aros_config_cflags="$aros_config_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build
 AC_MSG_RESULT($build_type)
 
 #-----------------------------------------------------------------------------
-all_debug_types="messages stack modules symbols"
+all_debug_types="messages stack modules mungwall symbols"
 
 AC_MSG_CHECKING([which debug types to enable])
 AC_ARG_ENABLE(debug,AC_HELP_STRING([--enable-debug=list],[Enable different types of debug. Commas or whitespaces can be used to separate the items in the list. Available types of debug are: all, none, messages, stack, mungwall, modules, symbols. If no list is provided then "all" is assumed. (default=none)]),
@@ -555,7 +555,7 @@ elif test "$debug" = "yes"; then
 fi
 
 if test "$debug" = "all" ; then
-    debug=$all_debug_types
+    debug="messages stack modules symbols"
     for d in $all_debug_types; do
         export aros_${d}_debug="1"
     done

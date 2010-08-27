@@ -8095,7 +8095,7 @@ aros_config_cflags="$aros_config_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build
 echo "${ECHO_T}$build_type" >&6; }
 
 #-----------------------------------------------------------------------------
-all_debug_types="messages stack modules symbols"
+all_debug_types="messages stack modules mungwall symbols"
 
 { echo "$as_me:$LINENO: checking which debug types to enable" >&5
 echo $ECHO_N "checking which debug types to enable... $ECHO_C" >&6; }
@@ -8114,7 +8114,7 @@ elif test "$debug" = "yes"; then
 fi
 
 if test "$debug" = "all" ; then
-    debug=$all_debug_types
+    debug="messages stack modules symbols"
     for d in $all_debug_types; do
         export aros_${d}_debug="1"
     done
