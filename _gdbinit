@@ -162,7 +162,7 @@ define findaddr
 
                 set $cont = 0
             end
-            set $segnode = (struct segment *)$segnode->node.mln_Succ
+            set $segnode = (struct segment *)$segnode->s_node.mln_Succ
         end
     end
 
