@@ -3,8 +3,6 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES  := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-unix/kernel -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
 
-#MM kernel-kernel-mingw32: kernel-kernel-mingw32-native
-
 FUNCS := putchar
 
 %build_archspecific \
