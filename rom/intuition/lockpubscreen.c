@@ -117,7 +117,7 @@
     {
         struct PubScreenNode *psn;
 	
-        ASSERT_VALID_PTR_ROMOK(name);
+        ASSERT_VALID_PTR(name);
 
         /* Browse the public screen list */
         if( (psn = (struct PubScreenNode *) FindName(list, (UBYTE *)name )) )
