@@ -392,6 +392,7 @@ struct drm_pciid nouveau_pciids [] =
     { 0x10de, 0x086f }, /* C79 [GeForce 9200M G] */
     { 0x10de, 0x0870 }, /* C79 [GeForce 9400M] */
     { 0x10de, 0x087a }, /* Quadro FX 470 */
+    { 0x10de, 0x087d }, /* GeForce 9400M (ION) */
     
     { 0x0000, 0x0000 }
 };
