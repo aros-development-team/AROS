@@ -391,8 +391,57 @@ struct drm_pciid nouveau_pciids [] =
     { 0x10de, 0x086e }, /* C79 [GeForce 9100M G] */
     { 0x10de, 0x086f }, /* C79 [GeForce 9200M G] */
     { 0x10de, 0x0870 }, /* C79 [GeForce 9400M] */
-    { 0x10de, 0x087a }, /* Quadro FX 470 */
-    { 0x10de, 0x087d }, /* GeForce 9400M (ION) */
+    { 0x10de, 0x0871 }, /* C79 [GeForce 9200] */
+    { 0x10de, 0x0872 }, /* C79 [GeForce G102M] */
+    { 0x10de, 0x0873 }, /* C79 [GeForce G102M] */
+    { 0x10de, 0x0874 }, /* C79 [ION] */
+    { 0x10de, 0x0876 }, /* ION VGA [GeForce 9400M] */
+    { 0x10de, 0x087a }, /* C79 [GeForce 9400] */
+    { 0x10de, 0x087d }, /* ION VGA */
+    { 0x10de, 0x087e }, /* ION LE VGA */
+    { 0x10de, 0x087f }, /* ION LE VGA */
+    { 0x10de, 0x0a20 }, /* GT216 [GeForce GT 220] */
+    { 0x10de, 0x0a23 }, /* GT218 [GeForce 210] */
+    { 0x10de, 0x0a28 }, /* GT216 [GeForce GT 230M] */
+    { 0x10de, 0x0a29 }, /* GT216 [GeForce GT 330M] */
+    { 0x10de, 0x0a2a }, /* GT216 [GeForce GT 230M] */
+    { 0x10de, 0x0a2b }, /* GT216 [GeForce GT 330M] */
+    { 0x10de, 0x0a2c }, /* GT216 [NVS 5100M] */
+    { 0x10de, 0x0a2d }, /* GT216 [GeForce GT 320M] */
+    { 0x10de, 0x0a34 }, /* GT216 [GeForce GT 240M] */
+    { 0x10de, 0x0a35 }, /* GT216 [GeForce GT 325M] */
+    { 0x10de, 0x0a3c }, /* GT216 [Quadro FX 880M] */
+    { 0x10de, 0x0a60 }, /* GT218 [GeForce G210] */
+    { 0x10de, 0x0a62 }, /* GT218 [GeForce 205] */
+    { 0x10de, 0x0a63 }, /* GT218 [GeForce 310] */
+    { 0x10de, 0x0a64 }, /* GT218 [ION] */
+    { 0x10de, 0x0a65 }, /* GT218 [GeForce 210] */
+    { 0x10de, 0x0a66 }, /* GT218 [GeForce 310] */
+    { 0x10de, 0x0a68 }, /* G98M [GeForce G105M] */
+    { 0x10de, 0x0a69 }, /* G98M [GeForce G105M] */
+    { 0x10de, 0x0a6a }, /* GT218 [NVS 2100M] */
+    { 0x10de, 0x0a6c }, /* GT218 [NVS 3100M] */
+    { 0x10de, 0x0a6e }, /* GT218 [GeForce 305M] */
+    { 0x10de, 0x0a6f }, /* GT218 [ION] */
+    { 0x10de, 0x0a70 }, /* GT218 [GeForce 310M] */
+    { 0x10de, 0x0a71 }, /* GT218 [GeForce 305M] */
+    { 0x10de, 0x0a72 }, /* GT218 [GeForce 310M] */
+    { 0x10de, 0x0a73 }, /* GT218 [GeForce 305M] */
+    { 0x10de, 0x0a74 }, /* GT218 [GeForce G210M] */
+    { 0x10de, 0x0a75 }, /* GT218 [GeForce 310M] */
+    { 0x10de, 0x0a78 }, /* GT218GL [Quadro FX 380 LP] */
+    { 0x10de, 0x0a7c }, /* GT218 [Quadro FX 380M] */
+    { 0x10de, 0x0ca0 }, /* GT215 [GeForce GT 330] */
+    { 0x10de, 0x0ca2 }, /* GT215 [GeForce GT 320] */
+    { 0x10de, 0x0ca3 }, /* GT215 [GeForce GT 240] */
+    { 0x10de, 0x0ca4 }, /* GT215 [GeForce GT 340] */
+    { 0x10de, 0x0ca7 }, /* GT215 [GeForce GT 330] */
+    { 0x10de, 0x0ca8 }, /* GT215 [GeForce GTS 260M] */
+    { 0x10de, 0x0ca9 }, /* GT215 [GeForce GTS 250M] */
+    { 0x10de, 0x0caf }, /* GT215 [GeForce GT 335M] */
+    { 0x10de, 0x0cb0 }, /* GT215 [GeForce GTS 350M] */
+    { 0x10de, 0x0cb1 }, /* GT215 [GeForce GTS 360M] */
+    { 0x10de, 0x0cbc }, /* GT215 [Quadro FX 1800M] */
     
     { 0x0000, 0x0000 }
 };
