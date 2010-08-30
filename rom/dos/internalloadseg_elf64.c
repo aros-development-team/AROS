@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
     $Id: internalloadseg_elf.c 26730 2007-09-19 20:33:25Z schulz $
 
     Desc: Code to dynamically load 64-bit ELF executables
@@ -534,7 +534,6 @@ BPTR InternalLoadSeg_ELF64
     BPTR               table __unused,
     SIPTR             *funcarray,
     SIPTR             *stack __unused,
-    struct MinList    *seginfos,
     struct DosLibrary *DOSBase
 )
 {
@@ -604,22 +603,6 @@ BPTR InternalLoadSeg_ELF64
 
                 if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, exec_hunk_seen, DOSBase))
                     goto error;
-
-		if (seginfos)
-		{
-		    STRPTR name = st + sh[i].name;
-		    ULONG size = sizeof(struct seginfo);
-		    struct seginfo *si = MyAlloc(size, MEMF_ANY);
-
-		    D(bug("[ELF Loader] seg %s at 0x%x\n", name, sh[i].addr));
-
-		    si->addr = sh[i].addr;
-		    size = sizeof(si->name) - 1;
-		    strncpy(si->name, name, size);
-		    si->name[size] = '\0';
-
-		    ADDTAIL(seginfos, &si->node);
-		}
 	    }
         }
 

@@ -54,10 +54,13 @@
 
     BPTR next;
 
-    if (seglist) {
+    if (seglist)
+    {
+#ifdef KrnUnregisterModule
 	if (KernelBase)
 	    KrnUnregisterModule(seglist);
-    
+#endif
+
 	while (seglist) {
 	    char *seg = (ULONG)seglist;
 
@@ -73,7 +76,8 @@
 	}
 
 	return DOSTRUE;
-    } else
+    }
+    else
 	return DOSFALSE;
 
     AROS_LIBFUNC_EXIT

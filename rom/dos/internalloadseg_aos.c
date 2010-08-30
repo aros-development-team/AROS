@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -35,7 +35,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
                          SIPTR * funcarray,
                          SIPTR * stack,
-                         struct MinList *seginfos,
                          struct DosLibrary * DOSBase)
 {
   #define ERROR(a)    { *error=a; goto end; }
