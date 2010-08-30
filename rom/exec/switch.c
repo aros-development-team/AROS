@@ -1,35 +1,43 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Switch() - Switch to the next available task.
     Lang: english
 */
 
-#include <exec/execbase.h>
+#include <aros/asmcall.h>
+
+#include "etask.h"
+#include "exec_intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH0(void, Switch,
+	AROS_LH0(void *, Switch,
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 9, Exec)
 
 /*  FUNCTION
-	Switch to the next task which wishes to be run. This function has
-	a similar effect to calling Dispatch(), however it may be called
-	at any time, and will not lose the current task if it is of type
-	TS_RUN.
+	Notify exec.library about task switch
 
     INPUTS
+	None.
 
     RESULT
+	A pointer to a CPU context storage area for current task.
 
     NOTES
-	This function will preserve all its registers.
+	In AmigaOS this was a private function. In AROS this function
+	should be called only from within kernel.resource's lowlevel task
+	switcher.
+	There's no practical sense in calling this function from within
+	any user software.
+
+	This code normally runs in supervisor mode.
 
     EXAMPLE
 
@@ -39,39 +47,28 @@
 	Dispatch(), Reschedule()
 
     INTERNALS
-	If you want to have this function save all its registers, you
-	should replace this function in $(KERNEL) or $(ARCH).
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *this = SysBase->ThisTask;
+    struct Task *task = SysBase->ThisTask;
 
-    /*
-	If the state is not TS_RUN then the task is already in a list
-    */
+    /* store IDNestCnt into tasks's structure */  
+    task->tc_IDNestCnt = SysBase->IDNestCnt;
 
-    /*
-       This task (= the task that's running in the moment) is
-       moved to the task ready list with Reschedule(), if necessary.
-       After that a new task is taken from the task-ready list
-       and is launched by doing the context switch. This happens
-       in Dispatch(). 
-    */
-return;
+    /* Upon leaving supervisor mode interrupts will be enabled
+       if nothing changes in Dispatch() */
+    SysBase->IDNestCnt = -1;
 
-    if( (this->tc_State == TS_RUN)
-	&& !(this->tc_Flags & TF_EXCEPT) )
-    {
-	this->tc_State = TS_READY;
+    /* TF_SWITCH flag set? Call the switch routine */
+    if (task->tc_Flags & TF_SWITCH)
+	AROS_UFC1(void, task->tc_Switch,
+		  AROS_UFCA(struct ExecBase *, SysBase, A6));
 
-	/* Use Reschedule() to put the task in the correct list. */
-	Reschedule(this);
-    }
-
-    /* Call the dispatcher proper. */
-    Dispatch();
+    /* Return context storage area. The caller is now suggested to save
+       task's context there. */
+    return GetIntETask(task)->iet_Context;
 
     AROS_LIBFUNC_EXIT
 } /* Switch() */
