@@ -1,7 +1,7 @@
 #ifndef AROS_I386_CPU_H
 #define AROS_I386_CPU_H
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -71,18 +71,6 @@ do \
     struct FullJumpVec *_v = v; \
     _v->jmp = 0xE9; \
     _v->vec = (void *) ((ULONG)(a) - (ULONG)(_v) - 5);\
-} while (0)
-
-/*
-    Extracts and stores the start address from a loaded
-    executable segment. start_address may then be used by gdb.
-    It is calculated from _v->vec set in __AROS_SET_FULLJMP.
-*/
-#define __AROS_SET_START_ADDR(debug_segnode)\
-do \
-{  \
-    (debug_segnode)->start_address \
-	= (IPTR)(BADDR((debug_segnode)->seglist) + 4) + 5 + *(IPTR *)((char *)(BADDR((debug_segnode)->seglist) + 4) + 1); \
 } while (0)
 
 struct JumpVec

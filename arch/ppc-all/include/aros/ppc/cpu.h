@@ -89,17 +89,6 @@ struct FullJumpVec
     _v->jmp   = (19 << 26) | (20 << 21) | (528 << 1);                            \
 }
 
-/*
-    Extracts and stores the start address from a loaded
-    executable segment. start_address may then be used by gdb.
-*/
-#define __AROS_SET_START_ADDR(debug_segnode)\
-{\
-    struct FullJumpVec *_v = (struct FullJumpVec *) ((debug_segnode)->seglist + 4);\
-    (debug_segnode)->start_address  = (IPTR) ((_v->addis & 0x0000FFFF) << 16);     \
-    (debug_segnode)->start_address |= (IPTR)  (_v->ori   & 0x0000FFFF);            \
-}
-
 struct JumpVec
 {
     void *vec;

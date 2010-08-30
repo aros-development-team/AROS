@@ -70,16 +70,6 @@ do \
     _v->vec = (ULONG)(a); 		/* .word target_address */ 	\
 } while (0)
 
-/*
-	Extracts and stores the start address from a loaded
-	executable segment. start_address may then be used by gdb.
- */
-#define __AROS_SET_START_ADDR(debug_segnode)\
-{\
-	struct FullJumpVec *_v = (struct FullJumpVec *) ((debug_segnode)->seglist + 4);\
-	(debug_segnode)->start_address  = (IPTR)(_v->vec);     \
-}
-
 struct JumpVec
 {
 	unsigned char vec[4];
