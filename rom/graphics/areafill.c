@@ -668,7 +668,7 @@ void LineInTmpRas(struct RastPort  * rp,
                   UWORD              y,
                   struct GfxBase   * GfxBase)
 {
-  UWORD  index;
+  ULONG  index;
   UWORD  NumPixels;
   WORD   PixelMask;
   UWORD  PixelMask2;
