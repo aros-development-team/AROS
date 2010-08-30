@@ -148,4 +148,16 @@ struct ExecBase
 #define DMA_NoModify    (1L<<2)
 #define DMA_ReadFromRAM (1L<<3)
 
+/*
+ * The following definitions are private!
+ */
+
+/* SysFlags */
+#define SFF_SoftInt         (1L<<5)  /* There is a software interrupt */
+#define SFF_QuantumOver     (1L<<13) /* Task's time slice is over     */
+
+/* AttnFlags */
+#define ARF_AttnSwitch      (1L<<7)  /* Delayed Switch() pending   */
+#define ARF_AttnDispatch    (1L<<15) /* Delayed Dispatch() pending */
+
 #endif /* EXEC_EXECBASE_H */

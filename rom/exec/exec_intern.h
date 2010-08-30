@@ -27,8 +27,6 @@
 #   include <proto/exec.h>
 #endif
 
-#include "exec_private.h"
-
 /* A private portion of ExecBase */
 struct IntExecBase
 {
