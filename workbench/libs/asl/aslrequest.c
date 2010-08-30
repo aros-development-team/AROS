@@ -151,13 +151,15 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	    {
 	        nw.LeftEdge = intreq->ir_LeftEdge;
 	    } else {
-	        nw.LeftEdge = (ld->ld_Screen->Width - (nw.Width + ld->ld_WBorLeft + ld->ld_WBorRight)) / 2;
+	        nw.LeftEdge = (ld->ld_Screen->ViewPort.DWidth - (nw.Width + ld->ld_WBorLeft + ld->ld_WBorRight)) / 2
+	                      - ld->ld_Screen->LeftEdge;
 	    }
 	    if (intreq->ir_TopEdge >= 0)
 	    {
 	        nw.TopEdge = intreq->ir_TopEdge;
 	    } else {
-	        nw.TopEdge = (ld->ld_Screen->Height - (nw.Height + ld->ld_WBorTop + ld->ld_WBorBottom)) / 2;
+	        nw.TopEdge = (ld->ld_Screen->ViewPort.DHeight - (nw.Height + ld->ld_WBorTop + ld->ld_WBorBottom)) / 2
+	                     - ld->ld_Screen->TopEdge;
 	    }
 
 	    D(bug("MinWidth: %d, MinHeight: %d\n", ld->ld_MinWidth, ld->ld_MinHeight));
