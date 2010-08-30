@@ -70,15 +70,17 @@ STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     	    	D(bug("GTNM_Number: %ld\n", tidata));
     	    	if (data->dispfunc)
     	    	{
+		    struct Gadget *g;
+		    
+		    g = data->parentgadget ? data->parentgadget : (struct Gadget *)o;
 #ifdef __MORPHOS__
 		    REG_A7 -= 8;
-		    ((ULONG *)REG_A7)[0] = (ULONG)o;
+		    ((ULONG *)REG_A7)[0] = (ULONG)g;
 		    ((ULONG *)REG_A7)[1] = data->toprint;
 		    data->toprint = MyEmulHandle->EmulCallDirect68k(data->dispfunc);
 		    REG_A7 += 8;
 #else
-    	    	    data->toprint = (ULONG)data->dispfunc((struct Gadget *)o,
-    	    	    					(WORD)data->toprint);
+    	    	    data->toprint = data->dispfunc(g, (WORD)data->toprint);
 #endif
     	    	}
     	    	retval = 1UL;
@@ -211,6 +213,7 @@ IPTR GTText__OM_NEW(Class * cl, Object * o, struct opSet *msg)
     	data->maxnumberlength = 0; /* This means "no limit" */
     	data->dispfunc = (APTR)GetTagData(GTA_Text_DispFunc, (IPTR) NULL, msg->ops_AttrList);
     	data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
+	data->parentgadget = (struct Gadget *)GetTagData(GTA_Text_ParentGadget, 0, msg->ops_AttrList);
 	
     	/* Open font to use for gadget */
     	

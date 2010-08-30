@@ -167,6 +167,7 @@ struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
 #define GTA_Scroller_ArrowKind	  	(GT_Dummy + 12)
 #define GTA_Scroller_Arrow1       	(GT_Dummy + 13)
 #define GTA_Scroller_Arrow2       	(GT_Dummy + 14)
+#define GTA_Text_ParentGadget  	    	(GT_Dummy + 15)
 
 /****************************************************************************************/
 
@@ -464,7 +465,8 @@ struct ButtonData
 struct TextData
 {
     struct DrawInfo 	*dri;
-    Object 		*frame;    
+    struct Gadget   	*parentgadget;
+    Object 		*frame;
     STRPTR 		format;
     IPTR 		toprint;
     UBYTE 		frontpen;
@@ -474,7 +476,7 @@ struct TextData
     struct TextFont 	*font;
     UWORD 		maxnumberlength;
     WORD 		gadgetkind;
-    LONG  		(*dispfunc)(struct Gadget *, WORD);
+    IPTR  		(*dispfunc)(struct Gadget *, WORD);
     UBYTE 		labelplace;
     
 };

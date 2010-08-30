@@ -491,6 +491,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 	 {GTNM_Number		, 0		},
 	 {GTA_GadgetKind	, SLIDER_KIND	},
 	 {GA_Previous		, (IPTR)NULL	},
+	 {GTA_Text_ParentGadget , 0 	    	},
 	 {TAG_DONE				}
     };
     STRPTR lformat = NULL;
@@ -638,6 +639,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	ltags[9].ti_Data = (IPTR)vi->vi_dri;
     	ltags[10].ti_Data = (IPTR)level;
 	ltags[12].ti_Data = (IPTR)GetTagData(GA_Previous, 0, stdgadtags);
+	ltags[13].ti_Data = (IPTR)slidergad;
 
     	levelgad = (struct Gadget *)NewObjectA(GadToolsBase->textclass, NULL, ltags);
     	if (!levelgad)
