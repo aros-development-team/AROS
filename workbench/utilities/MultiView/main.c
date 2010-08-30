@@ -750,11 +750,13 @@ static void CloseDTO(void)
 
 static void MakeWindow(void)
 {
-    WORD minwidth, minheight;
+    WORD minwidth, minheight, winoutterwidth = 0;
     
-    if (!winwidth) winwidth = scr->Width;
-    if (!winheight) winheight = scr->Height - scr->BarHeight - 1 - 
-				scr->WBorTop - scr->Font->ta_YSize - 1 - sizeimageheight;
+    if (!winwidth)
+        winoutterwidth = scr->ViewPort.DWidth;
+    if (!winheight)
+        winheight = scr->ViewPort.DHeight - scr->BarHeight - 1 - scr->WBorTop
+                    - scr->Font->ta_YSize - 1 - sizeimageheight;
     
     minwidth  = (winwidth  < 50) ? winwidth : 50;
     minheight = (winheight < 50) ? winheight : 50;
@@ -769,9 +771,10 @@ static void MakeWindow(void)
 			    WA_SimpleRefresh    , TRUE                  ,
 			    WA_NoCareRefresh    , TRUE                  ,
 			    WA_NewLookMenus     , TRUE                  ,
-			    WA_Left             , 0                     ,
-			    WA_Top              , scr->BarHeight + 1    ,
-			    WA_InnerWidth       , winwidth              ,
+                            WA_Left             , - scr->LeftEdge       ,
+                            WA_Top              , ( (- scr->TopEdge) < (scr->BarHeight + 1) ) ? (scr->BarHeight + 1) : (- scr->TopEdge) ,
+			    ( winwidth ? WA_InnerWidth : WA_Width )
+			                        , ( winwidth ? winwidth : winoutterwidth ) ,
 			    WA_InnerHeight      , winheight             ,
 			    WA_AutoAdjust       , TRUE                  ,
 			    WA_MinWidth         , minwidth              ,
