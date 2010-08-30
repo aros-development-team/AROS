@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS function InternalLoadSeg()
@@ -73,8 +73,7 @@
 
     typedef struct _segfunc_t
     {
-        BPTR (*func)(BPTR, BPTR, SIPTR *, SIPTR *,
-		     struct MinList *, struct DosLibrary *);
+        BPTR (*func)(BPTR, BPTR, SIPTR *, SIPTR *, struct DosLibrary *);
         D(CONST_STRPTR format;)
     } segfunc_t;
 
@@ -97,16 +96,13 @@
     {
         int i = 0;
 	const int num_funcs = sizeof(funcs)/sizeof(funcs[0]);
-	struct MinList *pseginfos;
 
-	pseginfos = NULL;
-      
 	do
 	{
 	    SetIoErr(0);
 	   
 	    segs = (*funcs[i].func)(fh, MKBADDR(NULL), (SIPTR *)functionarray,
-				    NULL, pseginfos, DOSBase);
+				    NULL, DOSBase);
             
 	    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
 	          segs ? "Succeeded" : "FAILED", fh, funcs[i].format));

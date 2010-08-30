@@ -199,7 +199,9 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
         }
     }
 
-    if (eh->ident[EI_CLASS]   != WANT_CLASS      ||
+    /* FIXME: this file should also handle x86-64, but something seems to be broken.
+       Replase ELFCLASS32 with WANT_CLASS here in order to enable 64-bit ELF support */
+    if (eh->ident[EI_CLASS]   != ELFCLASS32      ||
         eh->ident[EI_VERSION] != EV_CURRENT      ||
         eh->type              != ET_REL          ||
         eh->ident[EI_DATA]    != WANT_BYTE_ORDER ||
@@ -519,7 +521,6 @@ BPTR InternalLoadSeg_ELF
     BPTR               table __unused,
     SIPTR             *funcarray,
     SIPTR             *stack __unused,
-    struct MinList    *seginfos,
     struct DosLibrary *DOSBase
 )
 {
@@ -607,6 +608,7 @@ BPTR InternalLoadSeg_ELF
         }
     }
 
+#ifdef KrnRegisterModule
     /* Everything is loaded now. Register the module at kernel.resource */
     if (KernelBase)
     {
@@ -616,7 +618,7 @@ BPTR InternalLoadSeg_ELF
 	    char *nameptr = buffer;
 	    struct ELF_DebugInfo dbg = {&eh, sh};
 
-/* gdb support needs ful paths */
+/* gdb support needs full paths */
 #if !AROS_MODULES_DEBUG
 	    /* First, go through the name, till end of the string */
 	    while(*nameptr++);
@@ -627,6 +629,7 @@ BPTR InternalLoadSeg_ELF
     	   KrnRegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
 	}
     }
+#endif
     goto end;
 
 error:

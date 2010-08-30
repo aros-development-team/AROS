@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Load an a.out format image into memory.
@@ -151,7 +151,6 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
                           BPTR table,
                           SIPTR * functionarray,
                           SIPTR * stack,
-                          struct MinList *seginfos,
                           struct DosLibrary * DOSBase)
 {
 /* Currently the only parameter passed to this function that is

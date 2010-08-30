@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables
@@ -411,7 +411,6 @@ BPTR InternalLoadSeg_ELF_AROS
     BPTR               table __unused,
     SIPTR             *funcarray,
     SIPTR             *stack __unused,
-    struct MinList    *seginfos,
     struct DosLibrary *DOSBase
 )
 {
