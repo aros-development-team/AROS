@@ -15,7 +15,7 @@ kernel-kernel-pc-x86_64-kobj : $(KOBJSDIR)/smpboot.bin.o
   files="$(KERNELFILES)" uselibs="rom"
 
 $(KOBJSDIR)/smpboot.bin.o : smpbootstrap.c
-	%mkdirs_q $(GENDIR)/$(CURDIR)/arch		
+	%mkdirs_q $(GENDIR)/$(CURDIR)/arch $(KOBSDIR)
 	$(TARGET_CC) $(CFLAGS) -m32 -fomit-frame-pointer -c $(SRCDIR)/$(CURDIR)/smpbootstrap.c
 	$(KERNEL_LD) -melf_i386	-Ttext=0 -o smpbootstrap smpbootstrap.o
 	$(OBJCOPY) -O binary smpbootstrap
