@@ -138,7 +138,7 @@ void VBlankHandler(struct ExecBase *SysBase, void *dummy)
     /* First decrease Elapsed time for current task */
     if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
     {
-        SysBase->SysFlags |= 0x2000;
+        SysBase->SysFlags |= SFF_QuantumOver;
         SysBase->AttnResched |= ARF_AttnSwitch;
     }
     

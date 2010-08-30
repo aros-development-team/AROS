@@ -27,6 +27,8 @@
 #   include <proto/exec.h>
 #endif
 
+#include "exec_private.h"
+
 /* A private portion of ExecBase */
 struct IntExecBase
 {
@@ -48,19 +50,6 @@ extern void __AROS_InitExecBase (void);
 #endif
 
 
-/* These are the bit definitions of the SysFlags and AttnResched flags.
-    They are listed here more as somewhere to list them.
-*/
-
-#define SFB_SoftInt         5   /* There is a software interrupt */
-#define SFF_SoftInt         (1L<<5)
-
-#define ARB_AttnSwitch      7   /* Delayed Switch() pending */
-#define ARF_AttnSwitch      (1L<<7)
-#define ARB_AttnDispatch   15   /* Delayed Dispatch() pending */
-#define ARF_AttnDispatch    (1L<<15)
-
-ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)(struct ExecBase *, UWORD *ranges[]);
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args);
 
 #endif /* __EXEC_INTERN_H__ */
