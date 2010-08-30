@@ -22,8 +22,9 @@ typedef unsigned char UBYTE;
 #include "kernel_cpu.h"
 #include "kernel_syscall.h"
 
-/* We also have to define needed exec functions here because proto/exec.h conflicts with
-   WinAPI headers. */
+/* We have to define needed exec functions here because proto/exec.h conflicts with WinAPI headers. */
+
+#define Switch()    AROS_LC0(void *, Switch, struct ExecBase *, SysBase, 9, Exec)
 #define Exception() AROS_LC0NR(void, Exception, struct ExecBase *, SysBase, 11, Exec)
 #define Enqueue(arg1, arg2) AROS_LC2NR(void, Enqueue, \
 				       AROS_LCA(struct List *,(arg1),A0), \
@@ -155,24 +156,16 @@ void core_Switch(CONTEXT *regs, struct ExecBase *SysBase)
     D(bug("[KRN] core_Switch()\n"));
 
     task = SysBase->ThisTask;
-
     DS(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
+    /* Notify exec.library and get saved context */
+    ctx = Switch();
+
     /* Copy current task's context into the ETask structure */
-    ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
     CopyMemory(ctx, regs, sizeof(CONTEXT));
     ctx->LastError = *LastErrorPtr;
 
-    /* store IDNestCnt into tasks's structure */  
-    task->tc_IDNestCnt = SysBase->IDNestCnt;
     task->tc_SPReg = GET_SP(regs);
-
-    /* And enable interrupts */
-    SysBase->IDNestCnt = -1;
-
-    /* TF_SWITCH flag set? Call the switch routine */
-    if (task->tc_Flags & TF_SWITCH)
-        task->tc_Switch(SysBase);
 
     core_Dispatch(regs, SysBase);
 }
