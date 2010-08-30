@@ -196,8 +196,8 @@ static int charsinstring(STRPTR string, char c);
                         {
                             { WA_Width                      	    	  , dims.width              	    	    	    	    	},
                             { WA_Height                      	    	  , dims.height             	    	    	    	    	},
-                            { WA_Left                       	    	  , (scr->Width/2) - (dims.width/2) 	    	    	    	},
-                            { WA_Top                        	    	  , (scr->Height/2) - (dims.height/2) 	    	    	    	},
+                            { WA_Left                       	    	  , - scr->LeftEdge + (scr->ViewPort.DWidth/2) - (dims.width/2) },
+                            { WA_Top                        	    	  , - scr->TopEdge + (scr->ViewPort.DHeight/2) - (dims.height/2)},
                             { WA_IDCMP                      	    	  , IDCMP_GADGETUP | IDCMP_RAWKEY | (IDCMP & ~IDCMP_VANILLAKEY) },
                             { WA_Gadgets                    	    	  , (IPTR)gadgets           	    	    	    	    	},
                             { WA_Title                      	    	  , (IPTR)reqtitle          	    	    	    	    	},
