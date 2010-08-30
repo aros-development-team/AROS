@@ -16,8 +16,6 @@ typedef unsigned char UBYTE;
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 
-#include "etask.h"
-#include "exec_private.h"
 #include "kernel_base.h"
 #include "kernel_cpu.h"
 #include "kernel_syscall.h"
@@ -25,11 +23,13 @@ typedef unsigned char UBYTE;
 /* We have to define needed exec functions here because proto/exec.h conflicts with WinAPI headers. */
 
 #define Switch()    AROS_LC0(void *, Switch, struct ExecBase *, SysBase, 9, Exec)
+#define Dispatch()  AROS_LC0(void *, Dispatch, struct ExecBase *, SysBase, 10, Exec)
 #define Exception() AROS_LC0NR(void, Exception, struct ExecBase *, SysBase, 11, Exec)
 #define Enqueue(arg1, arg2) AROS_LC2NR(void, Enqueue, \
 				       AROS_LCA(struct List *,(arg1),A0), \
 			               AROS_LCA(struct Node *,(arg2),A1), \
 				       struct ExecBase *, SysBase, 45, Exec)
+
 
 #define D(x)
 #define DEXCEPT(x) x
@@ -58,12 +58,13 @@ typedef unsigned char UBYTE;
  * When we're done we pick up saved IDNestCnt from stack and use SC_RESUME syscall
  * in order to jump back to the saved context.
  */
-static void core_Exception(void)
+static void core_Exception()
 {
+    /* Pointer to CPU context will be in REG_A0 */
+    register struct AROSCPUContext *ctx asm(REG_A0);
     /* Save return context and IDNestCnt on stack */
     struct Task *task = SysBase->ThisTask;
     char nestCnt = task->tc_IDNestCnt;
-    struct AROSCPUContext *ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
     struct AROSCPUContext save;
     ULONG_PTR resumeargs[2] = {
 	SC_RESUME,
@@ -95,10 +96,11 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
 
     D(bug("[KRN] core_Dispatch()\n"));
 
-    /* 
+    ctx = Dispatch();
+    /*
      * Is the list of ready tasks empty? Well, increment the idle switch cound and stop the main thread.
      */
-    if (IsListEmpty(&SysBase->TaskReady))
+    if (!ctx)
     {
         if (Sleep_Mode == SLEEP_MODE_OFF)
 	{
@@ -112,37 +114,27 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
         return;
     }
 
-    DSLEEP(if (Sleep_Mode) bug("[KRN] Exiting sleep mode\n");)
+    DSLEEP(if (Sleep_Mode != SLEEP_MODE_OFF) bug("[KRN] Exiting sleep mode\n");)
     Sleep_Mode = SLEEP_MODE_OFF;
-    SysBase->DispCount++;
 
-    /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
-    task = (struct Task *)REMHEAD(&SysBase->TaskReady);
-    SysBase->ThisTask = task;  
-    SysBase->Elapsed = SysBase->Quantum;
-    SysBase->SysFlags &= ~SFF_QuantumOver;
-    task->tc_State = TS_RUN;
-    SysBase->IDNestCnt = task->tc_IDNestCnt;
-
+    task = SysBase->ThisTask;
     DS(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
-    /* Restore the task's state */
-    ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
+    /* Restore the task's context */
     CopyMemory(regs, ctx, sizeof(CONTEXT));
     *LastErrorPtr = ctx->LastError;
 
-    /* Handle tasks's flags.
-       We do it after restoring the context because we may modify PC */
-    if (task->tc_Flags & TF_LAUNCH)
-        task->tc_Launch(SysBase);
-
+    /* Handle exception if requested */
     if (task->tc_Flags & TF_EXCEPT)
     {
+    	DEXCEPT(printf("[KRN] Exception requested for task 0x%p, return PC = 0x%p\n", task, GET_PC(regs)));
+
         /* Disable interrupts, otherwise we may lose saved context */
         SysBase->IDNestCnt = 0;
-	DEXCEPT(printf("[KRN] Exception requested for task 0x%p, return PC = 0x%p\n", task, GET_PC(regs)));
+
 	/* Make the task to jump to exception handler */
         SET_PC(regs, core_Exception);
+	SET_A0(regs, ctx);
     }
 
     /* Leave interrupt and jump to the new task */
@@ -229,13 +221,16 @@ void core_ExitInterrupt(CONTEXT *regs)
 
     D(bug("[Scheduler] core_ExitInterrupt\n"));
     /* Soft interrupt requested? It's high time to do it */
-    if (SysBase->SysFlags & SFF_SoftInt) {
+    if (SysBase->SysFlags & SFF_SoftInt)
+    {
         DS(bug("[Scheduler] Causing SoftInt\n"));
         core_Cause(SysBase);
     }
+
     /* No tasks active (AROS is sleeping)? If yes, just pick up
        a new ready task (if any) */
-    if (Sleep_Mode) {
+    if (Sleep_Mode)
+    {
         core_Dispatch(regs, SysBase);
         return;
     }
