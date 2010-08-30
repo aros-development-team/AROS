@@ -17,21 +17,12 @@ typedef unsigned char UBYTE;
 #include <hardware/intbits.h>
 
 #include "etask.h"
+#include "exec_private.h"
 #include "kernel_base.h"
 #include "kernel_cpu.h"
 #include "kernel_syscall.h"
 
-/* We have to redefine these flags here because including exec_intern.h causes conflicts
-   between dos.h and WinAPI headers. This needs to be fixed - Pavel Fedin <sonic_amiga@rambler.ru */
-#define SFB_SoftInt         5   /* There is a software interrupt */
-#define SFF_SoftInt         (1L<<5)
-
-#define ARB_AttnSwitch      7   /* Delayed Switch() pending */
-#define ARF_AttnSwitch      (1L<<7)
-#define ARB_AttnDispatch   15   /* Delayed Dispatch() pending */
-#define ARF_AttnDispatch    (1L<<15)
-
-/* We also have to define needed exec functions here because proto/exec.h also conflicts with
+/* We also have to define needed exec functions here because proto/exec.h conflicts with
    WinAPI headers. */
 #define Exception() AROS_LC0NR(void, Exception, struct ExecBase *, SysBase, 11, Exec)
 #define Enqueue(arg1, arg2) AROS_LC2NR(void, Enqueue, \
@@ -128,7 +119,7 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
     task = (struct Task *)REMHEAD(&SysBase->TaskReady);
     SysBase->ThisTask = task;  
     SysBase->Elapsed = SysBase->Quantum;
-    SysBase->SysFlags &= ~0x2000;
+    SysBase->SysFlags &= ~SFF_QuantumOver;
     task->tc_State = TS_RUN;
     SysBase->IDNestCnt = task->tc_IDNestCnt;
 
@@ -218,11 +209,11 @@ void core_Schedule(CONTEXT *regs, struct ExecBase *SysBase)
         if (pri <= (char)task->tc_Node.ln_Pri)
         {
             /* If the running task did not used it's whole quantum yet, let it work */
-            if (!(SysBase->SysFlags & 0x2000))
+            if (!(SysBase->SysFlags & SFF_QuantumOver))
                 return;
         }
     }
-    
+
     /* 
      * If we got here, then the rescheduling is necessary. 
      * Put the task into the TaskReady list.
