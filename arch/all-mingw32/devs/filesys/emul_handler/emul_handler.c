@@ -1168,24 +1168,25 @@ static LONG examine_all(struct emulbase *emulbase, struct filehandle *fh,
 
 static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle, const char *name, struct filehandle *oldfile)
 {
-  LONG error;
-  char *fn;
+    LONG error;
+    char *fn;
   
-  if (!KernelIFace->CreateHardLink)
-      return ERROR_ACTION_NOT_KNOWN;
-  
-  error = makefilename(emulbase, &fn, NULL, handle, name);
-  if (!error)
-  {
-      DLINK(bug("[emul] Creating hardlink %s to file %s\n", fn, oldfile->hostname));
-      Forbid();
-      error = Link(fn, oldfile->hostname, NULL);
-      Permit();
-      error = error ? 0 : Errno(FMF_WRITE);
-      FreeVecPooled(emulbase->mempool, fn);
-  }
+    if (!KernelIFace->CreateHardLink)
+	return ERROR_ACTION_NOT_KNOWN;
 
-  return error;
+    DLINK(bug("[emul] Creating hardlink %s to file %s\n", name, oldfile->hostname));
+    error = makefilename(emulbase, &fn, NULL, handle, name);
+    if (!error)
+    {
+	DLINK(bug("[emul] Host name of the link: %s\n", fn));
+	Forbid();
+	error = Link(fn, oldfile->hostname, NULL);
+	Permit();
+	error = error ? 0 : Errno(FMF_WRITE);
+	FreeVecPooled(emulbase->mempool, fn);
+    }
+
+    return error;
 }
 
 /*********************************************************************************************/
@@ -1193,29 +1194,41 @@ static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle
 static LONG create_softlink(struct emulbase * emulbase,
                             struct filehandle *handle, const char *name, const char *ref)
 {
-  LONG error=0L;
-  char *src, *dest;
-  
-  /* TODO: implement symbolic links on earlier Windows versions using shell shortcuts */
-  if (!KernelIFace->CreateSymbolicLink)
-      return ERROR_ACTION_NOT_KNOWN;
-  
-  /* TODO: currently relative paths are converted to absolute one, this needs to be improved */
-  error = makefilename(emulbase, &src, NULL, handle, name);
-  if (!error)
-  {
-      error = makefilename(emulbase, &dest, NULL, handle, ref);
-      if (!error) {
-          Forbid();
-	  error = SymLink(src, dest, 0);
-	  Permit();
-	  error = error ? 0 : Errno(FMF_WRITE);
-	  FreeVecPooled(emulbase->mempool, dest);
-      }
-      FreeVecPooled(emulbase->mempool, src);
-  }
-  
-  return error;
+    LONG error;
+    char *src, *dest;
+
+/* This subroutine is intentionally disabled because:
+   1. On Windows 7 CreateSymbolicLink() gives ERROR_PRIVILEGE_NOT_HELD error
+   2. Referred object name is supplied in AROS form. Windows seems not to like it,
+      and it needs to be translated to Windows path. This will not work in all cases
+      and this requires additional thinking and coding. Since reading symbolic links
+      is not implemented yet, i disabled creation too - Pavel Fedin <pavel_fedin@mail.ru>
+    if (!KernelIFace->CreateSymbolicLink) */
+	return ERROR_ACTION_NOT_KNOWN;
+
+    DLINK(bug("[emul] Creating softlink %s to file %s\n", name, ref));
+    DLINK(bug("[emul] Handle 0x%p, pathname %s\n", handle, handle->hostname));
+    error = makefilename(emulbase, &dest, NULL, handle, name);
+    if (!error)
+    {
+	DLINK(bug("[emul] Link host name: %s\n", dest));
+	error = makefilename(emulbase, &src, NULL, handle, ref);
+	if (!error)
+	{
+	    DLINK(bug("[emul] File host name: %s\n", src));
+            Forbid();
+	    error = SymLink(dest, src, 0);
+	    DLINK(bug("[emul] Result: %d, Windows error: %u\n", error, GetLastError()));
+	    Permit();
+	    error = error ? 0 : Errno(FMF_WRITE);
+	    DLINK(bug("[emul] Error: %d\n", error));
+
+	    FreeVecPooled(emulbase->mempool, dest);
+	}
+	FreeVecPooled(emulbase->mempool, src);
+    }
+
+    return error;
 }
 
 /*********************************************************************************************/
@@ -1427,7 +1440,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 
 	    return FALSE;
 	}
-	D(bug("[Emulhandler] startup directory %s\n", unixpath));
+	D(bug("[emul] startup directory %s\n", unixpath));
 	
 	vol = VOLNAME;
 	vol_len = VOLNAME_LEN + 1;
@@ -1436,6 +1449,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
     if (Stat(unixpath, NULL, NULL) > 0)
     {
 	fhv = AllocMem(sizeof(struct filehandle) + vol_len, MEMF_PUBLIC);
+	DMOUNT(bug("[emul] Volume file handle: 0x%p\n", fhv));
 	if (fhv)
 	{
 	    char *volname = (char *)fhv + sizeof(struct filehandle);
@@ -1728,7 +1742,7 @@ AROS_LH1(void, beginio,
 	  
     case FSA_CREATE_SOFTLINK:
 	  error = create_softlink(emulbase,
-							  (struct filehandle *)&iofs->IOFS.io_Unit,
+							  (struct filehandle *)iofs->IOFS.io_Unit,
 							  iofs->io_Union.io_CREATE_SOFTLINK.io_Filename,
 							  iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
 	  break;

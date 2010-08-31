@@ -47,16 +47,15 @@ struct emulbase
     void			* KernelHandle;
     void			* ConsoleInt;
     struct AsyncReaderControl	* ConsoleReader;
-    struct Interrupt		  EmulInt;
 };
 
 struct filehandle
 {
-    char * hostname; /* full host's pathname (includes volume root prefix 		       */
-    char * name;     /* full name including pathname					       */
-    int    type;     /* type flag, see below			       */
-    char * pathname; /* if type == FHD_FILE then you'll find the pathname here		       */
-    char * volumename;
+    char * hostname;	/* full host's pathname (includes volume root prefix 	  */
+    char * name;	/* full name including pathname				  */
+    int    type;	/* type flag, see below			       		  */
+    char * pathname;	/* if type == FHD_FILE then you'll find the pathname here */
+    char * volumename;	/* volume name						  */
     void * fd;
     ULONG  dirpos;
     struct DosList *dl;
