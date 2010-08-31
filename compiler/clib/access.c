@@ -79,11 +79,10 @@
         return -1;
     }
 
-    /* POSIX root is (poorly) emulated, it is accessible for
-       reading and executing (listing) */
+    /* POSIX root is (poorly) emulated, its contents is accessible */
     if (__doupath && (path[0] == '/') && (path[1] == '\0'))
     {
-	if (mode & W_OK) {
+	if (mode & (W_OK|R_OK)) {
 	    errno = EACCES;
 	    return -1;
 	} else
