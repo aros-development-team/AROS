@@ -1,7 +1,6 @@
 # $Id$
 
 #MM- kernel-objs : \
-#MM     kernel-kernel-kobj \
 #MM     kernel-exec-kobj \
 #MM     kernel-aros-kobj \
 #MM     kernel-dos-kobj \
