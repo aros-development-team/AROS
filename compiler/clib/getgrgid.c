@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,6 @@
 ******************************************************************************/
 {
 #   warning Implement getgrgid()
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return NULL;
 }

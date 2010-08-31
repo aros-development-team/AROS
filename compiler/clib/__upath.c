@@ -1,6 +1,6 @@
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: utility internal function __path_u2a()
@@ -68,6 +68,14 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     {
         errno = EFAULT;
         return NULL;
+    }
+
+    /* Some scripts (config.guess) try to access /.attbin
+       which is MacOS-specific thing. Block it. */
+    if (!strncmp(upath, "/.attbin", 8))
+    {
+	errno = ENOENT;
+	return NULL;
     }
 
     /*

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function times().
@@ -37,7 +37,6 @@
 ******************************************************************************/
 {
 #   warning Implement times()
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     tms->tms_utime  = 0;
     tms->tms_stime  = 0;
