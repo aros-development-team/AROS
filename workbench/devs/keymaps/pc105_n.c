@@ -77,7 +77,7 @@ STATIC CONST UBYTE lokeymaptypes[] =
     S|A,	/* 09 */
     S|A,	/* 0A */
     ST|V,	/* 0B */
-    S, 		/* 0C */
+    S|A,	/* 0C */
     N, 		/* 0D */
     N, 		/* 0E */
     S|A, 	/* 0F */
@@ -239,7 +239,7 @@ STATIC CONST UBYTE key0b_descr[] =
 
 STATIC CONST IPTR lokeymap[] =
 {
-    BYTES('¬', '§', '½', '§'), 		/* 00 Left of 1 Key */
+    BYTES('¬', '§', '§', '|'), 		/* 00 Left of 1 Key */
     BYTES('¹', '1', '!', '1'), 		/* 01 1 */
     BYTES('@', '@', '"', '2'), 		/* 02 2 */
     BYTES('£', '£', '#', '3'), 		/* 03 3 */
@@ -251,7 +251,7 @@ STATIC CONST IPTR lokeymap[] =
     BYTES(']', ']', ')', '9'),		/* 09 9 */
     BYTES('}', '}', '=', '0'),		/* 0A 0 */
     STRING(key0b_descr),		/* 0B Right of 0 */
-    BYTES('`', '´', '`', '´'),		/* 0C 2nd right of 0 */
+    BYTES('`', '´', '`', '\\'),		/* 0C 2nd right of 0 */
     BYTES('|', '|', '|', '|'),		/* 0D 3rd right of 0 */
     BYTES(0, 0, 0, 0),			/* 0E undefined */
     BYTES('0', '0', '0', '0'), 		/* 0F NUM 0 */
