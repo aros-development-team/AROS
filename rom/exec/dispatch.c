@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Dispatch() - Tell the system that we have switched tasks.
@@ -15,12 +15,14 @@
 #include <proto/arossupport.h>
 #include <aros/asmcall.h>
 
+#include "etask.h"
+
 /*****i***********************************************************************
 
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH0(void, Dispatch,
+	AROS_LH0(void *, Dispatch,
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 10, Exec)
@@ -28,69 +30,51 @@
 /*  FUNCTION
 	Inform SysBase that the task has been switched. This function
 	only does all the non-system-dependant dispatching. It is up
-	to the implementation to ensure that the tasks do actually get
-	switched.
+	to kernel.resource to do actual context switch.
 
-	The tc_Switch and tc_Launch functions will be called with
-	SysBase in register A6.
+	The tc_Launch function will be called with SysBase in register A6.
 
     INPUTS
 	None.
 
     RESULT
-	The current task will have changed.
+	A pointer to CPU context storage area for a new task or NULL
+	if there are no ready tasks.
 
     NOTES
+	In AmigaOS this was a private function. In AROS this function
+	should be called only from within kernel.resource's lowlevel task
+	switcher.
+	There's no practical sense in calling this function from within
+	any user software.
+
+	This code normally runs in supervisor mode.
 
     EXAMPLE
 
     BUGS
-	Not a good function to call.
 
     SEE ALSO
 	Switch(), Reschedule()
 
     INTERNALS
-	You can use your CPU dependant function as a wrapper around this
-	function if you want. But you have to make sure then that you
-	do NOT call Dispatch() from the exec.library function table.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct Task *this, *task;
-
-    this = SysBase->ThisTask;
-
-    /* Check the stack... */
+    struct Task *task;
 
     /* Get the task which is ready to run */
     if(( task = (struct Task *)RemHead(&SysBase->TaskReady)))
-    {
-	if(this->tc_Flags & TF_SWITCH)
-	{
-	    AROS_UFC1(void, this->tc_Switch,
-	    AROS_UFCA(struct ExecBase *, SysBase, A6));
-	}
-
-	this->tc_TDNestCnt = SysBase->TDNestCnt;
-	this->tc_IDNestCnt = SysBase->IDNestCnt;
-		
-	/*  Oh dear, the previous task has just vanished...
-	    you should have called Switch() instead :-)
-		
-	    We don't change the state of the old task, otherwise it
-	    may never get freed.(See RemTask() for details).
-		
-	    We especially don't add it to the ReadyList !
-	*/
+    {	
+	/*  Oh dear, the previous task has just vanished... */
 	task->tc_State = TS_RUN;
-		
-	SysBase->TDNestCnt = task->tc_TDNestCnt;
+
 	SysBase->IDNestCnt = task->tc_IDNestCnt;
-		
 	SysBase->ThisTask = task;
+	SysBase->Elapsed = SysBase->Quantum;
+        SysBase->SysFlags &= ~SFF_QuantumOver;
 
 	/* Check the stack of the task we are about to launch */
 
@@ -100,19 +84,22 @@
 	    /* POW! */
 	    Alert(AT_DeadEnd|AN_StackProbe);
 	}
-		
+
 	if(task->tc_Flags & TF_LAUNCH)
 	{
 	    AROS_UFC1(void, task->tc_Launch,
 	    AROS_UFCA(struct ExecBase *, SysBase, A6));
 	}
-		
+
 	/* Increase the dispatched counter */
 	SysBase->DispCount++;
+
+	/* Return context storage area. The caller is expected to
+	   restore task's context from it. */
+	return GetIntETask(task)->iet_Context;
     }
     else
     {
-	kprintf("Eh? No tasks left to Dispatch()\n");
 
     /*
 	We have reached a point where there are no ready tasks.
@@ -134,9 +121,8 @@
 
 		SysBase->IdleCount++;
     */
+	return NULL;
     }
-
-    /* Aha, the task pointed to be SysBase->ThisTask is correct. */
 
     AROS_LIBFUNC_EXIT
 } /* Dispatch() */

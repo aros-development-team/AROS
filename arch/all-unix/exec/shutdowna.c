@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: shutdowna.c 29957 2008-11-01 19:06:57Z neil $
 
     Desc: ShutdownA() - Shut down the operating system.
@@ -57,12 +57,12 @@ extern char **Kernel_ArgV;
 {
     AROS_LIBFUNC_INIT
 
-    struct MsgPort *port;
-    
-    switch(action) {
+    switch(action)
+    {
     case SD_ACTION_POWEROFF:
 	raise(SIGINT);
 	break;
+
     case SD_ACTION_COLDREBOOT:
 	D(bug("[exec] Machine reboot, re-executing %s\n", Kernel_ArgV[0]));
 	/* SIGARLM during execvp() aborts the whole thing.

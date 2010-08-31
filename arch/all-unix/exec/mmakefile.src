@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := kernel alert cause disable enable exception preparecontext stackswap switch \
+FILES := cause preparecontext stackswap switch \
       	 idletask shutdowna newstackswap
 
 USER_INCLUDES   := -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/$(CURDIR)/..
@@ -11,13 +11,5 @@ USER_INCLUDES   := -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/$(CURDIR)/..
   files=$(FILES)
 
 #MM- kernel-exec-includes-unix : kernel-$(ARCH)-sigcore
-
-TESTS		:= stackswap coretest
-
-#MM
-check-exec-unix : $(TESTS)
-
-% : %.c
-	$(CC) -DTEST $(CFLAGS) $< -o $@
 
 %common

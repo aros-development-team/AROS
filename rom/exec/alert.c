@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display an alert.
@@ -12,6 +12,7 @@
 #include <proto/exec.h>
 #include <string.h>
 
+#include "exec_intern.h"
 #include "exec_util.h"
 
 #define ALERT_WIDTH 80
