@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
     $Id: internalloadseg_elf.c 28685 2008-05-12 19:42:21Z schulz $
 
     Desc: Code to dynamically load ELF executables
@@ -684,7 +684,6 @@ BPTR InternalLoadSeg_ELF
     BPTR               table __unused,
     SIPTR             *funcarray,
     SIPTR             *stack __unused,
-    struct MinList    *seginfos,
     struct DosLibrary *DOSBase
 )
 {
@@ -752,22 +751,6 @@ BPTR InternalLoadSeg_ELF
 
                 if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, exec_hunk_seen, DOSBase))
                     goto error;
-
-		if (seginfos)
-		{
-		    STRPTR name = st + sh[i].name;
-		    ULONG size = sizeof(struct seginfo);
-		    struct seginfo *si = MyAlloc(size, MEMF_ANY);
-
-		    D(bug("[ELF Loader] seg %s at 0x%x\n", name, sh[i].addr));
-
-		    si->addr = sh[i].addr;
-		    size = sizeof(si->name) - 1;
-		    strncpy(si->name, name, size);
-		    si->name[size] = '\0';
-
-		    ADDTAIL(seginfos, &si->node);
-		}
 	    }
         }
 
@@ -816,24 +799,21 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Everything is loaded now. Register the module at kernel.resource */
-
-    char buffer[512], *nameptr = buffer;
-
-    if (NameFromFH(file, buffer, 512))
+    if (KernelBase)
     {
-    	void *KernelBase = OpenResource("kernel.resource");
+	char buffer[512], *nameptr = buffer;
 
-    	/* First, go through the name, till end of the string */
-    	while(*nameptr++);
+	if (NameFromFH(file, buffer, 512))
+	{
+    	    /* First, go through the name, till end of the string */
+    	    while(*nameptr++);
 
-    	/* Now, go back until either ":" or "/" is found */
-
-    	while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
-    	{
+    	    /* Now, go back until either ":" or "/" is found */
+    	    while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
     		nameptr--;
-    	}
 
-    	KrnRegisterModule(nameptr, sh, &eh);
+    	    KrnRegisterModule(nameptr, sh, &eh);
+	}
     }
 
     goto end;
