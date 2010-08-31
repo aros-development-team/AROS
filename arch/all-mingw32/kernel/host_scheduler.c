@@ -16,6 +16,7 @@ typedef unsigned char UBYTE;
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 
+#include "etask.h"
 #include "kernel_base.h"
 #include "kernel_cpu.h"
 #include "kernel_syscall.h"
@@ -60,11 +61,10 @@ typedef unsigned char UBYTE;
  */
 static void core_Exception()
 {
-    /* Pointer to CPU context will be in REG_A0 */
-    register struct AROSCPUContext *ctx asm(REG_A0);
     /* Save return context and IDNestCnt on stack */
     struct Task *task = SysBase->ThisTask;
     char nestCnt = task->tc_IDNestCnt;
+    struct AROSCPUContext *ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
     struct AROSCPUContext save;
     ULONG_PTR resumeargs[2] = {
 	SC_RESUME,
@@ -134,7 +134,6 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
 
 	/* Make the task to jump to exception handler */
         SET_PC(regs, core_Exception);
-	SET_A0(regs, ctx);
     }
 
     /* Leave interrupt and jump to the new task */

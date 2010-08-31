@@ -71,13 +71,9 @@ struct AROSCPUContext
 
 #endif
 
-#define REG_A0 "eax"
-
 #define GET_PC(ctx) (void *)ctx->Eip
 #define GET_SP(ctx) (void *)ctx->Esp
-
 #define SET_PC(ctx, addr) ctx->Eip = (unsigned long)addr
-#define SET_A0(ctx, addr) ctx->Eax = (unsigned long)addr
 
 #define EXCEPTIONS_COUNT 19
 
