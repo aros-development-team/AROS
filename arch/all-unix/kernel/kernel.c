@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize the interface to the "hardware".
@@ -26,6 +26,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include <unistd.h>
 #undef timeval
 
 #include <proto/exec.h>
@@ -70,14 +71,38 @@ static const int sig2trap[][2] =
     { SIGFPE,   13 }
 };
 
-/* On TF_EXCEPT make Exec_Exception being called. */
-extern void AROS_SLIB_ENTRY(Exception, Exec)();
-
 /* This is from sigcore.h - it brings in the definition of the
    systems initial signal handler, which simply calls
    sighandler(int signum, sigcontext_t sigcontext)
 */
 GLOBAL_SIGNAL_INIT
+
+/*
+ * Task exception handler. Calls exec function, then jumps back
+ * to kernel mode in order to resume the task
+ */
+static void core_Exception(void)
+{
+    struct Task *task = FindTask(NULL);
+
+    Exception();
+
+    /* This tells task switcher that we are returning from the exception */
+    task->tc_State = TS_EXCEPT;
+
+    /* Enter the kernel. We use an endless loop just in case the
+       signal handler returns us to this point for whatever reason.
+    */
+    while (TRUE)
+    {
+        sigset_t temp_sig_int_mask;
+
+        sigemptyset(&temp_sig_int_mask);
+        sigaddset(&temp_sig_int_mask, SIGUSR1);
+        sigprocmask(SIG_UNBLOCK, &temp_sig_int_mask, NULL);
+        kill(getpid(), SIGUSR1);
+    }
+}
 
 /* sighandler() Handle the signals:
     You can either turn them into interrupts, or alternatively,
@@ -192,15 +217,24 @@ static void sighandler(int sig, sigcontext_t * sc)
 #endif    
     if (SysBase->AttnResched & ARF_AttnDispatch)
     {
+	struct Task *task;
     #if AROS_NESTING_SUPERVISOR
     	// Disable(); commented out, as causes problems with IDNestCnt. Getting completely out of range. 
     #endif
         UWORD u = (UWORD) ~(ARF_AttnDispatch);
         AROS_ATOMIC_AND(SysBase->AttnResched, u);
 
+	task = SysBase->ThisTask;
 	/* Save registers for this task (if there is one...) */
-	if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
+	if (task && task->tc_State != TS_REMOVED)
 	{
+	    if (task->tc_Flags & TF_SWITCH)
+		AROS_UFC1(void, task->tc_Switch,
+			  AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+	    task->tc_TDNestCnt = SysBase->TDNestCnt;
+	    task->tc_IDNestCnt = SysBase->IDNestCnt;
+
 	    SAVEREGS(SysBase->ThisTask, sc);
 	}
 
@@ -232,9 +266,9 @@ static void sighandler(int sig, sigcontext_t * sc)
             memcpy(SysBase->ThisTask->tc_SPReg, GetCpuContext(SysBase->ThisTask), SIZEOF_ALL_REGISTERS);
             /* Manipulate the current cpu context so Exec_Exception gets
                excecuted after we leave the kernel resp. the signal handler. */
-            SP(sc) = (unsigned long) SysBase->ThisTask->tc_SPReg;
-            PC(sc) = (unsigned long) AROS_SLIB_ENTRY(Exception, Exec);
-            SETUP_EXCEPTION(sc, SysBase);
+            SP(sc) = (IPTR) SysBase->ThisTask->tc_SPReg;
+            PC(sc) = (IPTR) core_Exception;
+//          SETUP_EXCEPTION(sc, SysBase);
 
             if (SysBase->ThisTask->tc_SPReg <= SysBase->ThisTask->tc_SPLower)
             {
