@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function access().
 */
 
+#include <aros/debug.h>
 #include <errno.h>
 #include <proto/dos.h>
 #include <dos/filesystem.h>
@@ -12,6 +13,7 @@
 
 #include <aros/debug.h>
 
+#include "__arosc_privdata.h"
 #include "__errno.h"
 #include "__upath.h"
 
@@ -62,6 +64,7 @@
     int result = -1;
     char vol[32];
     struct DosList *dl = NULL;
+    const char *apath;
 
     if (!path) /* safety check */
     {
@@ -69,15 +72,30 @@
         return -1;
     }
 
+    D(bug("[access] Path: %s\n", path));
     if (!strlen(path)) /* empty path */
     {
         errno = ENOENT;
         return -1;
     }
 
-    /* Check if the volume exists. Calling Lock on non-existing volume will bring up System Requester */
-    if (SplitName(__path_u2a(path), ':', vol, 0, sizeof(vol)-1) != -1)
+    /* POSIX root is (poorly) emulated, it is accessible for
+       reading and executing (listing) */
+    if (__doupath && (path[0] == '/') && (path[1] == '\0'))
     {
+	if (mode & W_OK) {
+	    errno = EACCES;
+	    return -1;
+	} else
+	    return 0;
+    }
+
+    apath = __path_u2a(path);
+    D(bug("[access] AROS path: %s\n", apath));
+    /* Check if the volume exists. Calling Lock on non-existing volume will bring up System Requester */
+    if (SplitName(apath, ':', vol, 0, sizeof(vol)-1) != -1)
+    {
+	D(bug("[access] Volume name: %s\n", vol));
 	if(strcmp(vol, "PROGDIR") != 0)
 	{
             dl = LockDosList(LDF_ALL | LDF_READ);
@@ -94,7 +112,7 @@
 
     /* Create a lock and examine a lock */
 
-    lock = Lock(__path_u2a(path), SHARED_LOCK);
+    lock = Lock(apath, SHARED_LOCK);
     if (lock == NULL)
     {
         errno = IoErr2errno(IoErr());
