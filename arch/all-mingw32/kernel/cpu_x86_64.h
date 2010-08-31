@@ -112,6 +112,8 @@ struct AROSCPUContext
     ULONG LastError;
 };
 
+#define SET_PC(ctx, addr) ctx->Rip = (IPTR)addr
+
 #else
 
 struct AROSCPUContext
@@ -124,13 +126,8 @@ struct AROSCPUContext
 
 #endif
 
-#define REG_A0 "rax"
-
 #define GET_PC(ctx) (void *)ctx->Rip
 #define GET_SP(ctx) (void *)ctx->Rsp
-
-#define SET_PC(ctx, addr) ctx->Rip = (unsigned long long)addr
-#define SET_A0(ctx, addr) ctx->Rax = (unsigned long long)addr
 
 #define EXCEPTIONS_COUNT 19
 
