@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function sigprocmask().
@@ -39,7 +39,6 @@
 ******************************************************************************/
 {
 #   warning Implement sigprocmask()
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return -1;
 } /* sigprocmask */
