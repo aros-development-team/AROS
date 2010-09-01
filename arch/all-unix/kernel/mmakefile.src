@@ -12,7 +12,7 @@ FUNCS := bug cli dispatch issuper putchar sti
 
 #MM- kernel-kernel-includes-unix : kernel-$(ARCH)-sigcore
 
-TESTS		:= stackswap coretest
+TESTS		:= coretest
 
 #MM
 check-kernel-unix : $(TESTS)
