@@ -10,6 +10,8 @@ USER_INCLUDES   := -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/$(CURDIR)/..
   arch=unix compiler=kernel \
   files=$(FILES)
 
+#MM kernel-exec-unix: kernel-kernel-includes
+
 #MM- kernel-exec-includes-unix : kernel-$(ARCH)-sigcore
 
 %common
