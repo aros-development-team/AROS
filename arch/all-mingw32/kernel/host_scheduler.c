@@ -104,6 +104,9 @@ void core_Dispatch(CONTEXT *regs, struct ExecBase *SysBase)
     {
         if (Sleep_Mode == SLEEP_MODE_OFF)
 	{
+	    /* This will enable interrupts in core_LeaveInterrupt() */
+	    SysBase->IDNestCnt = -1;
+
             SysBase->IdleCount++;
             SysBase->AttnResched |= ARF_AttnSwitch;
             DSLEEP(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));

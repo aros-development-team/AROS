@@ -114,14 +114,10 @@
         task->tc_State=TS_REMOVED;
 
         /*
-            Since I don't know how many levels of Forbid() and Disable()
+            Since I don't know how many levels of Forbid()
             are already pending I set a default value.
         */
         SysBase->TDNestCnt = -1;
-        SysBase->IDNestCnt = -1;
-
-//        task->tc_Node.ln_Pred->ln_Succ = task->tc_Node.ln_Succ;
-//      task->tc_Node.ln_Succ->ln_Pred = task->tc_Node.ln_Pred;
 
         /* And force a task switch. Note: Dispatch, not Switch,
            because the state of thistask must not be saved ->
