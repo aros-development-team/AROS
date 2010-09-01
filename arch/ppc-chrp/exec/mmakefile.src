@@ -11,7 +11,7 @@ endif
 
 CFILES          := \
         exec_init preparecontext rawputchar initcode alert coldreboot \
-        findresident newaddtask permit prepareexecbase remtask reschedule setexcept settaskpri \
+        findresident newaddtask permit prepareexecbase reschedule setexcept settaskpri \
         signal wait cachecleare cachepostdma cachepredma supervisor superstate userstate idletask \
         shutdowna
 
