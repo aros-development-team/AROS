@@ -429,7 +429,7 @@ struct AROS_cpu_context
 	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx\n" \
-	    , (ULONG)(GetSP(task)) \
+	    , (IPTR)(GetSP(task)) \
 	    , GetCpuContext(task)->regs[15] \
 	    , GetCpuContext(task)->regs[16] \
 	    , GetCpuContext(task)->regs[0] \
