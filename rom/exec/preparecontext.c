@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PrepareContext() - Prepare a task context for dispatch.
@@ -7,9 +7,15 @@
 */
 
 #include <exec/types.h>
-#include <aros/libcall.h>
 #include <exec/execbase.h>
+#include <exec/memory.h>
 #include <utility/tagitem.h>
+#include <proto/kernel.h>
+
+#include "etask.h"
+#include "exec_intern.h"
+#include "exec_util.h"
+#include "kernel_cpu.h"
 
 /*****i***********************************************************************
 
@@ -54,20 +60,100 @@
 	Dispatch()
 
     INTERNALS
-	This function is required to be implemented in the $(KERNEL).
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    /* This function is too CPU dependant to be described here, but
-	basically you effectively do a state save (similar to in
-	Dispatch()) but of a context that has not been run yet.
+    IPTR args[8] = {0};
+    WORD numargs = 0;
+    struct AROSCPUContext *ctx;
+
+    if (!(task->tc_Flags & TF_ETASK) )
+	return FALSE;
+  
+    ctx = KrnCreateContext();
+    GetIntETask (task)->iet_Context = ctx;
+    if (!ctx)
+	return FALSE;
+
+    while(tagList)
+    {
+    	switch(tagList->ti_Tag)
+	{
+	    case TAG_MORE:
+	    	tagList = (struct TagItem *)tagList->ti_Data;
+		continue;
+		
+	    case TAG_SKIP:
+	    	tagList += tagList->ti_Data;
+		break;
+		
+	    case TAG_DONE:
+	    	tagList = NULL;
+    	    	break;
+		
+	    #define HANDLEARG(x) \
+	    case TASKTAG_ARG ## x: \
+	    	args[x - 1] = (IPTR)tagList->ti_Data; \
+		if (x > numargs) numargs = x; \
+		break;
+		
+	    HANDLEARG(1)
+	    HANDLEARG(2)
+	    HANDLEARG(3)
+	    HANDLEARG(4)
+	    HANDLEARG(5)
+	    HANDLEARG(6)
+	    HANDLEARG(7)
+	    HANDLEARG(8)
+	    	
+	    #undef HANDLEARG
+	}
+	
+	if (tagList) tagList++;
+    }
+    
+    /*
+	There is not much to do here, or at least that is how it
+	appears. Most of the work is done in the kernel_cpu.h macros.
     */
 
-#ifndef __CXREF__
-#error The PrepareContext() function was not implemented in the kernel.
-#endif
+    if (numargs)
+    {
+    	#ifdef PREPARE_INITIAL_ARGS
+	
+	PREPARE_INITIAL_ARGS(ctx, args, numargs);
+	
+	#else
+	
+	/* Assume C function gets all param on stack */
+	
+	while(numargs--)
+	{
+	    _PUSH(GetSP(task), args[numargs]);
+	}
+	
+	#endif
+    }
+
+    #ifdef PREPARE_RETURN_ADDRESS
+    
+    PREPARE_RETURN_ADDRESS(ctx, fallBack);
+    
+    #else
+    
+    /* First we push the return address */
+    _PUSH(GetSP(task), fallBack);
+    
+    #endif
+    
+    /* Then set up the frame to be used by Dispatch() */
+    PREPARE_INITIAL_FRAME(ctx, GetSP(task), entryPoint);
+    PREPARE_INITIAL_CONTEXT(ctx, entryPoint);
+
+    /* We return the new stack pointer back to the caller. */
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* PrepareContext() */

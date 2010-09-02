@@ -1,8 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := cause preparecontext stackswap switch \
-      	 idletask shutdowna newstackswap remtask
+FILES := cause stackswap switch idletask shutdowna newstackswap
 
 USER_INCLUDES   := -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/$(CURDIR)/..
 %build_archspecific \

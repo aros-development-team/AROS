@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id:$
 
     Desc: Macros to handle unix signals
     Lang: english
@@ -17,7 +17,6 @@
 #include <ucontext.h>
 
 #include <signal.h>
-#include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 
@@ -85,18 +84,15 @@ typedef @sighandler@ SignalHandler;
 /* This structure is used to save/restore registers, because the stack is too
    small. */
 
-struct AROS_cpu_context
+struct AROSCPUContext
 {
     struct pt_regs            regs;
     double                    fpregs[32];
-    struct AROS_cpu_context * sc;
+    struct AROSCPUContext * sc;
 };
 
-#define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
-#define GetCpuContext(task)	((struct AROS_cpu_context *)\
-				 (GetIntETask(task)->iet_Context))
+#define SIZEOF_ALL_REGISTERS	(sizeof (struct AROSCPUContext))
 #define GetSP(task)		((SP_TYPE **)&task->tc_SPReg)
-
 
 /* Macros to access the stack pointer and program counter,
    PC is the current address in the program code. */
@@ -114,100 +110,91 @@ struct AROS_cpu_context
    doesn't contain enough registers. Some assembler is needed for the signal
    handler instead. */
 
-#define SAVE_CPU(task,sc)\
-{								\
-    long i;							\
-    for (i = 0; i < 32; i++)					\
-	GetCpuContext(task)->regs.gpr[i] = sc->regs->gpr[i];	\
-    GetCpuContext(task)->regs.nip 	= sc->regs->nip;	\
-    GetCpuContext(task)->regs.msr	= sc->regs->msr;	\
-    GetCpuContext(task)->regs.orig_gpr3	= sc->regs->orig_gpr3;	\
-    GetCpuContext(task)->regs.ctr	= sc->regs->ctr;	\
-    GetCpuContext(task)->regs.link	= sc->regs->link;	\
-    GetCpuContext(task)->regs.xer	= sc->regs->xer;	\
-    GetCpuContext(task)->regs.ccr	= sc->regs->ccr;	\
-    GetCpuContext(task)->regs.trap	= sc->regs->trap;	\
-    GetCpuContext(task)->regs.dar	= sc->regs->dar;	\
-    GetCpuContext(task)->regs.dsisr	= sc->regs->dsisr;	\
-    GetCpuContext(task)->regs.result	= sc->regs->result;	\
+#define SAVE_CPU(cc, sc)\
+{						\
+    long i;					\
+    for (i = 0; i < 32; i++)			\
+	cc->regs.gpr[i] = sc->regs->gpr[i];	\
+    cc->regs.nip 	= sc->regs->nip;	\
+    cc->regs.msr	= sc->regs->msr;	\
+    cc->regs.orig_gpr3	= sc->regs->orig_gpr3;	\
+    cc->regs.ctr	= sc->regs->ctr;	\
+    cc->regs.link	= sc->regs->link;	\
+    cc->regs.xer	= sc->regs->xer;	\
+    cc->regs.ccr	= sc->regs->ccr;	\
+    cc->regs.trap	= sc->regs->trap;	\
+    cc->regs.dar	= sc->regs->dar;	\
+    cc->regs.dsisr	= sc->regs->dsisr;	\
+    cc->regs.result	= sc->regs->result;	\
 }
 
-#define SAVE_FPU(task,sc)\
+#define SAVE_FPU(cc, sc)\
 {\
     long i;\
     for (i = 0; i < 32; i++)\
-	GetCpuContext(task)->fpregs[i] = *(double*)&(sc->regs->gpr[PT_FPR0 + 2 * i]);\
+	cc->fpregs[i] = *(double*)&(sc->regs->gpr[PT_FPR0 + 2 * i]);\
 }
 
-#define RESTORE_CPU(task,sc)\
-{								\
-    long i;							\
-    for (i = 0; i < 32; i++)					\
-	sc->regs->gpr[i] = GetCpuContext(task)->regs.gpr[i];	\
-    sc->regs->nip	= GetCpuContext(task)->regs.nip; 	\
-    sc->regs->msr	= GetCpuContext(task)->regs.msr;	\
-    sc->regs->orig_gpr3 = GetCpuContext(task)->regs.orig_gpr3;	\
-    sc->regs->ctr	= GetCpuContext(task)->regs.ctr;	\
-    sc->regs->link	= GetCpuContext(task)->regs.link;	\
-    sc->regs->xer	= GetCpuContext(task)->regs.xer;	\
-    sc->regs->ccr	= GetCpuContext(task)->regs.ccr;	\
-    sc->regs->trap	= GetCpuContext(task)->regs.trap;	\
-    sc->regs->dar	= GetCpuContext(task)->regs.dar;	\
-    sc->regs->dsisr	= GetCpuContext(task)->regs.dsisr;	\
-    sc->regs->result	= GetCpuContext(task)->regs.result;	\
+#define RESTORE_CPU(cc, sc)\
+{						\
+    long i;					\
+    for (i = 0; i < 32; i++)			\
+	sc->regs->gpr[i] = cc->regs.gpr[i];	\
+    sc->regs->nip	= cc->regs.nip; 	\
+    sc->regs->msr	= cc->regs.msr;		\
+    sc->regs->orig_gpr3 = cc->regs.orig_gpr3;	\
+    sc->regs->ctr	= cc->regs.ctr;		\
+    sc->regs->link	= cc->regs.link;	\
+    sc->regs->xer	= cc->regs.xer;		\
+    sc->regs->ccr	= cc->regs.ccr;		\
+    sc->regs->trap	= cc->regs.trap;	\
+    sc->regs->dar	= cc->regs.dar;		\
+    sc->regs->dsisr	= cc->regs.dsisr;	\
+    sc->regs->result	= cc->regs.result;	\
 }
 
-#define RESTORE_FPU(task,sc)\
+#define RESTORE_FPU(cc, sc)\
 {\
     long i;\
     for (i = 0; i < 32; i++)\
-	*(double*)&(sc->regs->gpr[PT_FPR0 + 2 * i]) = GetCpuContext(task)->fpregs[i];\
+	*(double*)&(sc->regs->gpr[PT_FPR0 + 2 * i]) = cc->fpregs[i];\
 }
 
-#define PREPARE_RETURN_ADDRESS(task, addr)                    \
+#define PREPARE_RETURN_ADDRESS(cc, addr)                      \
     do                                                        \
     {                                                         \
-        GetCpuContext(task)->regs.link = (unsigned long) addr;\
+        cc->regs.link = (unsigned long) addr;\
     } while (0)
 
-#define PREPARE_INITIAL_ARGS(task, args, numargs)\
+#define PREPARE_INITIAL_ARGS(cc, args, numargs)\
 {\
     long i;\
     for (i = 0; i < numargs; i++)\
-	GetCpuContext(task)->regs.gpr[3+i] = args[i];\
+	cc->regs.gpr[3+i] = args[i];\
 }
 
-#define PREPARE_INITIAL_FRAME(sp,pc)                           \
-    do                                                         \
-    {                                                          \
-        GetCpuContext(task)->regs.gpr[1] = (unsigned long) sp; \
-        GetCpuContext(task)->regs.nip    = (unsigned long) pc; \
+#define PREPARE_INITIAL_FRAME(cc, sp, pc)     \
+    do                                        \
+    {                                         \
+        cc->regs.gpr[1] = (unsigned long) sp; \
+        cc->regs.nip    = (unsigned long) pc; \
     } while (0)
-
-/* For PowerPc setting up a task exception
-    is just passing the SysBase as argument
-    to the Exec_Exception, which in turn will
-    call the users exception handler. */
-#define SETUP_EXCEPTION(sc,arg)\
-{\
-    sc->regs->gpr[3] = (unsigned long) arg;\
-}
 
 /* Prepare the cpu context
    Sys V PPC ABI says r2 is reserved
    so we copy the current one and it
    will never be changed again */
-#define PREPARE_INITIAL_CONTEXT(task,pc)          \
+#define PREPARE_INITIAL_CONTEXT(cc, pc)           \
 {                                                 \
     __asm__ __volatile__ (                        \
     "stw 2,%0 \n\t"                               \
-    : "=m"(GetCpuContext(task)->regs.gpr[2])      \
+    : "=m"(cc->regs.gpr[2])			  \
     :                                             \
     : "memory");                                  \
     {                                             \
         long i;                                   \
         for (i = 0; i < 32; i++)                  \
-            GetCpuContext(task)->fpregs[i] = 0.0; \
+            cc->fpregs[i] = 0.0;		  \
     }                                             \
 }
 
@@ -219,13 +206,11 @@ struct AROS_cpu_context
    must store the value of "sp" after the macro and hand it to
    RESTOREREGS() below to restore this context. */
 
-#define SAVEREGS(task,sc)           \
-    do                              \
-    {                               \
-        SP_TYPE **sp = GetSP(task); \
-        *sp = (SP_TYPE *)SP(sc);    \
-        SAVE_CPU(task,sc);          \
-        SAVE_FPU(task,sc);          \
+#define SAVEREGS(cc, sc)           \
+    do                             \
+    {                              \
+        SAVE_CPU(cc, sc);          \
+        SAVE_FPU(cc, sc);          \
     } while(0)
 
 /* This macro does the opposite to SAVEREGS(). It restores all
@@ -233,13 +218,11 @@ struct AROS_cpu_context
    tasks' context. Both "sp" and "sc" must be initialized.
    The macro will save the new SP into the sigcontext "sc". */
 
-#define RESTOREREGS(task,sc)           \
-    do                                 \
-    {                                  \
-        RESTORE_FPU(task,sc);          \
-        RESTORE_CPU(task,sc);          \
-        SP_TYPE** sp = GetSP(task);    \
-        SP(sc) = (typeof(SP(sc))) *sp; \
+#define RESTOREREGS(cc, sc)           \
+    do                                \
+    {                                 \
+        RESTORE_FPU(cc, sc);          \
+        RESTORE_CPU(cc, sc);          \
     } while(0)
 
 /* This macro prints the current signals' context */
