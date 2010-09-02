@@ -3,7 +3,6 @@
 include $(TOP)/config/make.cfg
 
 #MM- kernel-unix : \
-#MM     kernel-kernel-kobj                            \
 #MM     kernel-unixio-kobj kernel-hostlib-kobj        \
 #MM     graphics-$(GFXSYSTEM)			      \
 #MM     $(X11_HIDD_TARGET)		              \
@@ -20,7 +19,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-unix : workbench-hidd-unix workbench-hosted
 
-#MM kernel-link-emul : kernel-objs
+#MM kernel-link-emul : kernel-kernel-kobj kernel-objs
 kernel-link-emul : $(BINDIR)/boot/aros-unix
 
 #MM
