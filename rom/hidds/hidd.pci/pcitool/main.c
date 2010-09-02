@@ -294,7 +294,7 @@ AROS_UFH3(void, select_function,
 	strcpy(SaveDeviceInfo.Subsystem, pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
  
 	OOP_GetAttr(obj, aHidd_PCIDevice_RevisionID, (APTR)&val);
-	snprintf(buf, 79, "0x%04lx", val);
+	snprintf(buf, 79, "0x%02lx", val);
 	set(RevisionID, MUIA_Text_Contents, buf);
 	strcpy(SaveDeviceInfo.RevisionID, buf); //Save Debug Info
 
