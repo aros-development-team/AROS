@@ -27,10 +27,11 @@
 
 #include <proto/arossupport.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <clib/macros.h> /* need ABS() */
 
 #define timeval sys_timeval
-#include <sigcore.h>
+#include "kernel_cpu.h"
 #include <stdlib.h>
 #undef timeval
 
@@ -244,6 +245,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     {
 	struct Task    *t;
 	struct MemList *ml;
+	struct AROSCPUContext *ctx;
 
 	ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
 	t  = (struct Task *)   AllocMem(sizeof(struct Process), MEMF_PUBLIC|MEMF_CLEAR);
@@ -289,18 +291,16 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	/* Initialise the ETask data. */
 	InitETask(t, t->tc_UnionETask.tc_ETask);
 
-	GetIntETask(t)->iet_Context = AllocTaskMem(t
-	    , SIZEOF_ALL_REGISTERS
-	    , MEMF_PUBLIC|MEMF_CLEAR
-	);
+	ctx = KrnCreateContext();
 
-	if (!GetIntETask(t)->iet_Context)
+	if (!ctx)
 	{
 	    kprintf("Not enough memory for first task\n");
 	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
+	GetIntETask(t)->iet_Context = ctx;
 
-	PREPARE_INITIAL_CONTEXT(t, NULL /* NOT USED ANYWAY*/);
+	PREPARE_INITIAL_CONTEXT(ctx, NULL /* NOT USED ANYWAY*/);
 
 	sysBase->ThisTask = t;
     }

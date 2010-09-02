@@ -2,7 +2,7 @@
 #define _SIGCORE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle unix signals
@@ -17,7 +17,6 @@
 #include <signal.h>
 #include <errno.h>
 #include <stddef.h>
-#include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 #define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
@@ -89,19 +88,17 @@ typedef @sighandler@ SignalHandler;
 /* Use this structure to save/restore registers if the stack is too
    small */
 
-struct AROS_cpu_context
+struct AROSCPUContext
 {
     UQUAD regs[17];  	     /* rip (PC), rbp (FP), rax, rbx, rcx,
                              rdx, rdi, rsi, r8, r9, r10, r11, r12,
 			     r13, r14, r15, eflags */
     struct _fpstate fpstate __attribute__ ((aligned (16))); /* FPU state */
-    struct AROS_cpu_context * sc;
+    struct AROSCPUContext * sc;
     int	errno_backup;
 };
 
-#define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
-#define GetCpuContext(task)     ((struct AROS_cpu_context *)\
-				(GetIntETask(task)->iet_Context))
+#define SIZEOF_ALL_REGISTERS	(sizeof (struct AROSCPUContext))
 #define GetSP(task)             (*(SP_TYPE **)&task->tc_SPReg)
 
 /*
@@ -312,21 +309,11 @@ struct AROS_cpu_context
 
 */
 
-#   define PREPARE_INITIAL_FRAME(sp,pc)       \
+#   define PREPARE_INITIAL_FRAME(cc, sp, pc)  \
         do                                    \
 	{                                     \
-	    GetCpuContext(task)->regs[15] = 0; \
-	    GetCpuContext(task)->regs[16] = (UQUAD)pc; \
-	} while (0)
-
-/* Here we have to setup a complete stack frame
-    so Exec_Exception thinks it was called as a
-    normal function. */
-#define SETUP_EXCEPTION(sc,arg)\
-	do                                        \
-	{                                         \
-	    _PUSH(GetSP(SysBase->ThisTask), arg); \
-	    _PUSH(GetSP(SysBase->ThisTask), arg); \
+	    cc->regs[15] = 0;		      \
+	    cc->regs[16] = (UQUAD)pc;	      \
 	} while (0)
 
 /*
@@ -335,14 +322,14 @@ struct AROS_cpu_context
 
 #ifndef NO_FPU
 
-#define PREPARE_INITIAL_CONTEXT(task,startpc) \
+#define PREPARE_INITIAL_CONTEXT(cc, startpc) \
    asm volatile("fninit\n\t" \
     	    	"fxsave %0\n\t" \
-		"fwait" : "=m" (GetCpuContext(task)->fpstate))
+		"fwait" : "=m" (cc->fpstate))
 
 #else
 
-#define PREPARE_INITIAL_CONTEXT(task,startpc)
+#define PREPARE_INITIAL_CONTEXT(cc, startpc)
 
 #endif
 
@@ -350,25 +337,24 @@ struct AROS_cpu_context
     Store first six arguments in registers, the rest on stack
 */
 
-#define PREPARE_INITIAL_ARGS(task, args, numargs) \
-    UQUAD* regs = GetIntETask (task)->iet_Context;\
+#define PREPARE_INITIAL_ARGS(cc, args, numargs)   \
     int argcounter = numargs;                     \
     while (argcounter > 6)                        \
         _PUSH(GetSP(task), args[--argcounter]);   \
     switch (argcounter)                           \
     {                                             \
         case 6:                                   \
-            regs[7] = args[5];                    \
+            cc->regs[7] = args[5];                \
         case 5:                                   \
-            regs[6] = args[4];                    \
+            cc->regs[6] = args[4];                \
         case 4:                                   \
-            regs[2] = args[3];                    \
+            cc->regs[2] = args[3];                \
         case 3:                                   \
-            regs[3] = args[2];                    \
+            cc->regs[3] = args[2];                \
         case 2:                                   \
-            regs[5] = args[1];                    \
+            cc->regs[5] = args[1];                \
         case 1:                                   \
-            regs[4] = args[0];                    \
+            cc->regs[4] = args[0];                \
             break;                                \
     }
 
@@ -382,11 +368,9 @@ struct AROS_cpu_context
     RESTOREREGS() below to restore this context.
 */
 
-#define SAVEREGS(task,sc)                                  \
-    do                                                     \
-    {                                                      \
-        struct AROS_cpu_context *cc = GetCpuContext(task); \
-	GetSP(task) = (SP_TYPE *)SP(sc); \
+#define SAVEREGS(cc, sc)                 \
+    do                                   \
+    {                                    \
 	SAVE_FPU(cc,sc);                 \
 	SAVE_CPU(cc,sc);                 \
 	SAVE_ERRNO(cc);                  \
@@ -399,14 +383,12 @@ struct AROS_cpu_context
     The macro will save the new SP into the sigcontext "sc".
 */
 
-#   define RESTOREREGS(task,sc) \
-    do                                                     \
-    {                                                      \
-        struct AROS_cpu_context *cc = GetCpuContext(task); \
-	RESTORE_ERRNO(cc);    \
-	RESTORE_FPU(cc,sc);   \
-	RESTORE_CPU(cc,sc);   \
-	SP(sc) = (typeof(SP(sc)))GetSP(task); \
+#   define RESTOREREGS(cc, sc) \
+    do                         \
+    {                          \
+	RESTORE_ERRNO(cc);     \
+	RESTORE_FPU(cc,sc);    \
+	RESTORE_CPU(cc,sc);    \
     } while (0)
 
 
@@ -422,31 +404,6 @@ struct AROS_cpu_context
 	    , R0(sc), R1(sc), R2(sc), R3(sc) \
 	    , R4(sc), R5(sc), R6(sc), R7(sc), R8(sc), R9(sc) \
 	    , R10(sc), R11(sc), R12(sc), R13(sc), R14(sc) \
-	)
-
-    /* This macro prints the current stack (after SAVEREGS()) */
-#define PRINT_CPUCONTEXT(task) \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx\n" \
-	    , (IPTR)(GetSP(task)) \
-	    , GetCpuContext(task)->regs[15] \
-	    , GetCpuContext(task)->regs[16] \
-	    , GetCpuContext(task)->regs[0] \
-	    , GetCpuContext(task)->regs[1] \
-	    , GetCpuContext(task)->regs[2] \
-	    , GetCpuContext(task)->regs[3] \
-	    , GetCpuContext(task)->regs[4] \
-	    , GetCpuContext(task)->regs[5] \
-	    , GetCpuContext(task)->regs[6] \
-	    , GetCpuContext(task)->regs[7] \
-	    , GetCpuContext(task)->regs[8] \
-	    , GetCpuContext(task)->regs[9] \
-	    , GetCpuContext(task)->regs[10] \
-	    , GetCpuContext(task)->regs[11] \
-	    , GetCpuContext(task)->regs[12] \
-	    , GetCpuContext(task)->regs[13] \
-	    , GetCpuContext(task)->regs[14] \
 	)
 
 #endif /* _SIGCORE_H */

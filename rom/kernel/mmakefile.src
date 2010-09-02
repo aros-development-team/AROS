@@ -3,8 +3,11 @@ include $(TOP)/config/make.cfg
 
 # Allow to override include files by placing them in arch-specific directories
 # Note that kernel_#?.h files must be included using #include <name>, not #include "name"
-# for this to work
-USER_CFLAGS := -I $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I $(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel
+# for this to work.
+# Linux-hosted kernel_cpu.h relies on sigcore.h which in turn relies on Linux system includes,
+# so we also append $(GENINCDIR) and /usr/include.
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/arch/all-$(ARCH)/kernel \
+               -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) -idirafter /usr/include
 
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
          dispatch getbootinfo getscheduler issuper mapglobal registermodule          \

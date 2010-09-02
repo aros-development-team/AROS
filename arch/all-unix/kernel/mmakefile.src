@@ -1,7 +1,7 @@
 # $Id: mmakefile.src 34170 2010-08-16 11:58:02Z sonic $
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES  := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-unix/kernel -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
+USER_INCLUDES  := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
 
 FUNCS := bug cli dispatch issuper putchar sti
 

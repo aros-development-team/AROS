@@ -19,7 +19,8 @@
 #include <hardware/intbits.h>
 
 #define timeval sys_timeval
-#include <sigcore.h>
+#include "etask.h"
+#include "kernel_cpu.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -218,6 +219,8 @@ static void sighandler(int sig, sigcontext_t * sc)
     if (SysBase->AttnResched & ARF_AttnDispatch)
     {
 	struct Task *task;
+	struct AROSCPUContext *ctx;
+
     #if AROS_NESTING_SUPERVISOR
     	// Disable(); commented out, as causes problems with IDNestCnt. Getting completely out of range. 
     #endif
@@ -235,14 +238,18 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    task->tc_TDNestCnt = SysBase->TDNestCnt;
 	    task->tc_IDNestCnt = SysBase->IDNestCnt;
 
-	    SAVEREGS(SysBase->ThisTask, sc);
+	    ctx = GetIntETask(task)->iet_Context;
+	    task->tc_SPReg = (APTR)SP(sc);
+	    SAVEREGS(ctx, sc);
+
 	}
 
 	/* Tell exec that we have actually switched tasks... */
-	Dispatch ();
+	ctx = Dispatch();
 
 	/* Get the registers of the old task */
-	RESTOREREGS(SysBase->ThisTask, sc);
+	RESTOREREGS(ctx, sc);
+	SP(sc) = (IPTR)SysBase->ThisTask->tc_SPReg;
 
 	/* Make sure that the state of the interrupts is what the task
 	   expects.
@@ -261,14 +268,13 @@ static void sighandler(int sig, sigcontext_t * sc)
             Disable();
             /* Make room for the current cpu context. */
             SysBase->ThisTask->tc_SPReg -= SIZEOF_ALL_REGISTERS;
-            GetCpuContext(SysBase->ThisTask)->sc = SysBase->ThisTask->tc_SPReg;
+            ctx->sc = SysBase->ThisTask->tc_SPReg;
             /* Copy current cpu context. */
-            memcpy(SysBase->ThisTask->tc_SPReg, GetCpuContext(SysBase->ThisTask), SIZEOF_ALL_REGISTERS);
+            memcpy(SysBase->ThisTask->tc_SPReg, ctx, SIZEOF_ALL_REGISTERS);
             /* Manipulate the current cpu context so Exec_Exception gets
                excecuted after we leave the kernel resp. the signal handler. */
             SP(sc) = (IPTR) SysBase->ThisTask->tc_SPReg;
             PC(sc) = (IPTR) core_Exception;
-//          SETUP_EXCEPTION(sc, SysBase);
 
             if (SysBase->ThisTask->tc_SPReg <= SysBase->ThisTask->tc_SPLower)
             {
@@ -293,8 +299,10 @@ static void sighandler(int sig, sigcontext_t * sc)
     /* Are we returning from Exec_Exception? Then restore the saved cpu context. */
     if (SysBase->ThisTask && SysBase->ThisTask->tc_State == TS_EXCEPT)
     {
-        SysBase->ThisTask->tc_SPReg = GetCpuContext(SysBase->ThisTask)->sc;
-        memcpy(GetCpuContext(SysBase->ThisTask), SysBase->ThisTask->tc_SPReg, SIZEOF_ALL_REGISTERS);
+	struct AROSCPUContext *ctx = GetIntETask(SysBase->ThisTask)->iet_Context;
+
+        SysBase->ThisTask->tc_SPReg = ctx->sc;
+        memcpy(ctx, SysBase->ThisTask->tc_SPReg, SIZEOF_ALL_REGISTERS);
         SysBase->ThisTask->tc_SPReg += SIZEOF_ALL_REGISTERS;
 
         if (SysBase->ThisTask->tc_SPReg > SysBase->ThisTask->tc_SPUpper)
@@ -304,7 +312,8 @@ static void sighandler(int sig, sigcontext_t * sc)
         }
 
         /* Restore the signaled context. */
-        RESTOREREGS(SysBase->ThisTask,sc);
+        RESTOREREGS(ctx, sc);
+	SP(sc) = (IPTR)SysBase->ThisTask->tc_SPReg;
 
         SysBase->ThisTask->tc_State = TS_RUN;
         Enable();
