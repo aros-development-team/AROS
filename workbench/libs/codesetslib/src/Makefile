@@ -247,6 +247,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -lrom
 
@@ -263,6 +264,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -lrom
 
@@ -279,6 +281,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -lrom
 
