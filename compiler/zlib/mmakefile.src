@@ -3,19 +3,24 @@
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES	:= zconf.h zlib.h zutil.h
+
 FILES := \
     adler32 \
     compress \
     crc32 \
-    gzio \
-    uncompr \
     deflate \
-    trees \
-    zutil \
+    gzclose \
+    gzlib \
+    gzread \
+    gzwrite \
+    infback \
+    inffast \
     inflate \
-	infback \
     inftrees \
-    inffast
+    trees \
+    uncompr \
+    zutil
+
 
 #MM- linklibs-core : linklibs-zlib
 #MM- linklibs : linklibs-zlib
