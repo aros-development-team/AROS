@@ -1,6 +1,7 @@
 ## chunk AUTH Pär Boberg
 ## language svenska
 ## version $VER: TextEditor_mcp.ct 2.6 (06.03.08)
+## codeset 0
 HelpBubble_BlockQual
 Håll nere tangenten som du har valt här\noch flytta markören för att markera text.
 ;#DEF Move the cursor key and hold down the qualifier\nthat you set here to mark text.

@@ -32,6 +32,8 @@
 
 #include "SDI_compiler.h"
 
+#include "private.h"
+
 #define DEBUG_USE_MALLOC_REDEFINE 1
 #include "Debug.h"
 #include "version.h"
@@ -43,14 +45,6 @@
 #else
 #include <clib/debug_protos.h>
 #endif
-
-// special flagging macros
-#define isFlagSet(v,f)      (((v) & (f)) == (f))  // return TRUE if the flag is set
-#define hasFlag(v,f)        (((v) & (f)) != 0)    // return TRUE if one of the flags in f is set in v
-#define isFlagClear(v,f)    (((v) & (f)) == 0)    // return TRUE if flag f is not set in v
-#define SET_FLAG(v,f)       ((v) |= (f))          // set the flag f in v
-#define CLEAR_FLAG(v,f)     ((v) &= ~(f))         // clear the flag f in v
-#define MASK_FLAG(v,f)      ((v) &= (f))          // mask the variable v with flag f bitwise
 
 // our static variables with default values
 static int indent_level = 0;
@@ -111,6 +105,7 @@ void SetupDebug(void)
       { "debug",   DBC_DEBUG    },
       { "error",   DBC_ERROR    },
       { "warning", DBC_WARNING  },
+      { "mtrack",  DBC_MTRACK   },
       { "all",     DBC_ALL      },
       { NULL,      0            }
     };
@@ -155,7 +150,7 @@ void SetupDebug(void)
             if(strnicmp(&s[2], dbclasses[i].token, strlen(dbclasses[i].token)) == 0)
             {
               _DBPRINTF("clear '%s' debug class flag.\n", dbclasses[i].token);
-              CLEAR_FLAG(debug_classes, dbclasses[i].flag);
+              clearFlag(debug_classes, dbclasses[i].flag);
             }
           }
         }
@@ -167,7 +162,7 @@ void SetupDebug(void)
             if(strnicmp(&s[1], dbclasses[i].token, strlen(dbclasses[i].token)) == 0)
             {
               _DBPRINTF("set '%s' debug class flag\n", dbclasses[i].token);
-              SET_FLAG(debug_classes, dbclasses[i].flag);
+              setFlag(debug_classes, dbclasses[i].flag);
             }
           }
         }
@@ -182,7 +177,7 @@ void SetupDebug(void)
             if(strnicmp(&s[1], dbflags[i].token, strlen(dbflags[i].token)) == 0)
             {
               _DBPRINTF("clear '%s' debug flag\n", dbflags[i].token);
-              CLEAR_FLAG(debug_flags, dbflags[i].flag);
+              clearFlag(debug_flags, dbflags[i].flag);
             }
           }
         }
@@ -202,7 +197,7 @@ void SetupDebug(void)
               if(strnicmp(s, dbflags[i].token, strlen(dbflags[i].token)) == 0)
               {
                 _DBPRINTF("set '%s' debug flag\n", dbflags[i].token);
-                SET_FLAG(debug_flags, dbflags[i].flag);
+                setFlag(debug_flags, dbflags[i].flag);
               }
             }
           }
@@ -490,6 +485,7 @@ struct DbgMallocNode
 static struct MinList DbgMallocList[256];
 static struct SignalSemaphore DbgMallocListSema;
 static ULONG DbgMallocCount;
+static ULONG DbgUnsuitableFreeCount;
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a)         (sizeof(a) / sizeof(a[0]))
@@ -509,9 +505,9 @@ static ULONG DbgMallocCount;
 static struct DbgMallocNode *findDbgMallocNode(const void *ptr)
 {
   struct DbgMallocNode *result = NULL;
-  struct MinNode *curNode;
+  struct Node *curNode;
 
-  for(curNode = DbgMallocList[ptr2hash(ptr)].mlh_Head; curNode->mln_Succ != NULL; curNode = curNode->mln_Succ)
+  for(curNode = GetHead((struct List *)&DbgMallocList[ptr2hash(ptr)]); curNode != NULL; curNode = GetSucc(curNode))
   {
     struct DbgMallocNode *dmn = (struct DbgMallocNode *)curNode;
 
@@ -523,6 +519,39 @@ static struct DbgMallocNode *findDbgMallocNode(const void *ptr)
   }
 
   return result;
+}
+
+///
+/// matchAllocFunc
+// check wether the used allocation function matches a set of given function names
+// separated by '|', i.e. "malloc|calloc|strdup"
+BOOL matchAllocFunc(const char *allocFunc, const char *freeFunc)
+{
+  BOOL match = FALSE;
+  const char *p = freeFunc;
+  const char *q;
+
+  while((q = strchr(p, '|')) != NULL)
+  {
+    char tmp[16];
+
+    // we have to handle more than one possible function name
+    strlcpy(tmp, p, ((size_t)(q-p)+1 < sizeof(tmp)) ? (size_t)(q-p)+1 : sizeof(tmp));
+    if(strcmp(allocFunc, tmp) == 0)
+    {
+      match = TRUE;
+      break;
+    }
+    p = q+1;
+  }
+
+  if(match == FALSE)
+  {
+    // compare the last or only function name
+    match = (strcmp(allocFunc, p) == 0);
+  }
+
+  return match;
 }
 
 ///
@@ -560,7 +589,7 @@ void _MEMTRACK(const char *file, const int line, const char *func, void *ptr, si
 ///
 /// _UNMEMTRACK
 // remove a node from the memory tracking lists
-void _UNMEMTRACK(const char *file, const int line, const void *ptr)
+void _UNMEMTRACK(const char *file, const int line, const char *func, const void *ptr)
 {
   if(isFlagSet(debug_classes, DBC_MTRACK) && ptr != NULL)
   {
@@ -572,6 +601,12 @@ void _UNMEMTRACK(const char *file, const int line, const void *ptr)
     if((dmn = findDbgMallocNode(ptr)) != NULL)
     {
       Remove((struct Node *)dmn);
+
+      if(matchAllocFunc(dmn->func, func) == FALSE)
+      {
+        _DPRINTF(DBC_WARNING, DBF_ALWAYS, file, line, "free of tracked memory area 0x%08lx with unsuitable function (allocated with %s, freed with %s counterpart)", ptr, dmn->func, func);
+        DbgUnsuitableFreeCount++;
+      }
 
       FreeVec(dmn);
 
@@ -602,6 +637,7 @@ static void SetupDbgMalloc(void)
       NewList((struct List *)&DbgMallocList[i]);
 
     DbgMallocCount = 0;
+    DbgUnsuitableFreeCount = 0;
 
     InitSemaphore(&DbgMallocListSema);
   }
@@ -622,26 +658,33 @@ static void CleanupDbgMalloc(void)
 
     ObtainSemaphore(&DbgMallocListSema);
 
-    if(DbgMallocCount != 0)
+    if(DbgMallocCount != 0 || DbgUnsuitableFreeCount != 0)
     {
-      ULONG i;
-
-      E(DBF_ALWAYS, "there are still %ld unfreed memory trackings", DbgMallocCount);
-      for(i = 0; i < ARRAY_SIZE(DbgMallocList); i++)
+      if(DbgMallocCount != 0)
       {
-        struct DbgMallocNode *dmn;
+        ULONG i;
 
-        while((dmn = (struct DbgMallocNode *)RemHead((struct List *)&DbgMallocList[i])) != NULL)
+        E(DBF_ALWAYS, "there are still %ld unfreed memory trackings", DbgMallocCount);
+        for(i = 0; i < ARRAY_SIZE(DbgMallocList); i++)
         {
-          _DPRINTF(DBC_ERROR, DBF_ALWAYS, dmn->file, dmn->line, "unfreed memory tracking: 0x%08lx, size/type %ld, func (%s)", dmn->memory, dmn->size, dmn->func);
+          struct DbgMallocNode *dmn;
 
-          // We only free the node structure here but not dmn->memory itself.
-          // First of all, this is because the allocation could have been done
-          // by other functions than malloc() and calling free() for these will
-          // cause havoc. And second the c-library's startup code will/should
-          // free all further pending allocations upon program termination.
-          FreeVec(dmn);
+          while((dmn = (struct DbgMallocNode *)RemHead((struct List *)&DbgMallocList[i])) != NULL)
+          {
+            _DPRINTF(DBC_ERROR, DBF_ALWAYS, dmn->file, dmn->line, "unfreed memory tracking: 0x%08lx, size/type %ld, func (%s)", dmn->memory, dmn->size, dmn->func);
+
+            // We only free the node structure here but not dmn->memory itself.
+            // First of all, this is because the allocation could have been done
+            // by other functions than malloc() and calling free() for these will
+            // cause havoc. And second the c-library's startup code will/should
+            // free all further pending allocations upon program termination.
+            FreeVec(dmn);
+          }
         }
+      }
+      if(DbgUnsuitableFreeCount != 0)
+      {
+        E(DBF_ALWAYS, "there were %ld unsuitable freeing calls", DbgUnsuitableFreeCount);
       }
     }
     else
@@ -669,9 +712,9 @@ void DumpDbgMalloc(void)
     D(DBF_ALWAYS, "%ld memory areas tracked", DbgMallocCount);
     for(i = 0; i < ARRAY_SIZE(DbgMallocList); i++)
     {
-      struct MinNode *curNode;
+      struct Node *curNode;
 
-      for(curNode = DbgMallocList[i].mlh_Head; curNode->mln_Succ != NULL; curNode = curNode->mln_Succ)
+      for(curNode = GetHead((struct List *)&DbgMallocList[i]); curNode != NULL; curNode = GetSucc(curNode))
       {
         struct DbgMallocNode *dmn = (struct DbgMallocNode *)curNode;
 

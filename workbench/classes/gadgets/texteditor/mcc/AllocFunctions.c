@@ -23,50 +23,8 @@
 #include <proto/exec.h>
 
 #include "private.h"
-
-#define DEBUG_USE_MALLOC_REDEFINE 1
 #include "Debug.h"
 
-/// AllocVecPooled()
-#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
-APTR AllocVecPooled(APTR pool, ULONG length)
-{
-  ULONG *mem;
-
-  ENTER();
-
-  length += sizeof(ULONG);
-  if((mem = AllocPooled(pool, length)) != NULL)
-  {
-    *mem++ = length;
-    MEMTRACK("AllocVecPooled", mem, length);
-  }
-
-  RETURN(mem);
-  return(mem);
-}
-#endif // !__amigaos4__ && !__MORPHOS__
-
-///
-/// FreeVecPooled()
-#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
-void FreeVecPooled(APTR pool, APTR mem)
-{
-  ULONG *memptr, length;
-
-  ENTER();
-
-  UNMEMTRACK(mem);
-  memptr = &((ULONG *)mem)[-1];
-  length = *memptr;
-
-  FreePooled(pool, memptr, length);
-
-  LEAVE();
-}
-#endif // !__amigaos4__ && !__MORPHOS__
-
-///
 /// AllocLine()
 struct line_node *AllocLine(struct InstData *data)
 {
@@ -112,8 +70,8 @@ void FreeLine(struct InstData *data, struct line_node *line)
   }
 
   // finally free the line itself
-  UNMEMTRACK(line);
   FreeVecPooled(data->mypool, line);
+  UNMEMTRACK("AllocLine", line);
 
   LEAVE();
 }

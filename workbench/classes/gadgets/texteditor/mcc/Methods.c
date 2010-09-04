@@ -155,14 +155,14 @@ IPTR mClearText(struct IClass *cl, Object *obj, UNUSED Msg msg)
   {
     if(Init_LineNode(data, newcontents, NULL, "\n") == TRUE)
     {
-      if(data->maxUndoSteps != 0)
+      if(isFlagClear(data->flags, FLG_ReadOnly) && data->maxUndoSteps != 0)
       {
         struct  marking newblock;
 
         newblock.startx = 0;
         newblock.startline = data->firstline;
         newblock.stopline = data->firstline;
-        while(newblock.stopline->next)
+        while(newblock.stopline->next != NULL)
         {
           newblock.stopline = newblock.stopline->next;
         }
@@ -170,7 +170,7 @@ IPTR mClearText(struct IClass *cl, Object *obj, UNUSED Msg msg)
 
         data->CPos_X = 0;
         data->actualline = data->firstline;
-        AddToUndoBuffer(data, ET_DELETEBLOCK, &newblock);
+        AddToUndoBuffer(data, ET_DELETEBLOCK_NOMOVE, &newblock);
       }
       FreeTextMem(data, data->firstline);
       data->firstline = newcontents;
@@ -227,14 +227,14 @@ IPTR mInputTrigger(struct IClass *cl, Object *obj, UNUSED Msg msg)
       LONG  move;
 
       if(data->scr_direction)
-        move = data->height-(data->realypos-data->ypos);
+        move = data->fontheight-(data->realypos-data->ypos);
       else
         move = -(data->realypos-data->ypos);
 
       if(move != 1 && move != -1)
         move  = (move*2)/3;
 
-      set(data->object, MUIA_TextEditor_Prop_First, (data->visual_y-1)*data->height+(data->realypos-data->ypos)+move);
+      set(data->object, MUIA_TextEditor_Prop_First, (data->visual_y-1)*data->fontheight+(data->realypos-data->ypos)+move);
     }
     else
     {
@@ -250,8 +250,8 @@ IPTR mInputTrigger(struct IClass *cl, Object *obj, UNUSED Msg msg)
 
   if(data->mousemove == TRUE)
   {
-    LONG MouseX = muiRenderInfo(data->object)->mri_Window->MouseX;
-    LONG MouseY = muiRenderInfo(data->object)->mri_Window->MouseY;
+    LONG MouseX = _window(data->object)->MouseX;
+    LONG MouseY = _window(data->object)->MouseY;
     LONG oldCPos_X = data->CPos_X;
     struct line_node *oldactualline = data->actualline;
     BOOL scroll = TRUE;
@@ -283,9 +283,9 @@ IPTR mInputTrigger(struct IClass *cl, Object *obj, UNUSED Msg msg)
       LONG limit = data->ypos;
 
       if(data->maxlines < (data->totallines-data->visual_y+1))
-        limit += (data->maxlines * data->height);
+        limit += (data->maxlines * data->fontheight);
       else
-        limit += (data->totallines-data->visual_y+1)*data->height;
+        limit += (data->totallines-data->visual_y+1)*data->fontheight;
 
       if(MouseY >= limit)
       {
@@ -319,7 +319,7 @@ IPTR mInputTrigger(struct IClass *cl, Object *obj, UNUSED Msg msg)
       NiceBlock(&data->blockinfo, &tmpblock);
       if(data->blockinfo.startx == tmpblock.startx && data->blockinfo.startline == tmpblock.startline)
       {
-        if(MouseX > data->xpos)
+        if(MouseX > _mleft(data->object))
         {
           if(data->selectmode == 1)
           {
@@ -341,7 +341,7 @@ IPTR mInputTrigger(struct IClass *cl, Object *obj, UNUSED Msg msg)
         OffsetToLines(data, data->CPos_X, data->actualline, &pos);
         flow = FlowSpace(data, data->actualline->line.Flow, &data->actualline->line.Contents[pos.bytes]);
 
-        if(MouseX <= (LONG)(data->xpos+flow+TextLength(&data->tmprp, &data->actualline->line.Contents[pos.bytes], pos.extra-pos.bytes-1)))
+        if(MouseX <= (LONG)(_mleft(data->object)+flow+TextLength(&data->tmprp, &data->actualline->line.Contents[pos.bytes], pos.extra-pos.bytes-1)))
         {
           if(data->selectmode == 1)
           {

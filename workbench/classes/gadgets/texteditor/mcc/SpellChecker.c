@@ -95,6 +95,8 @@ static BOOL SafePutMsg(CONST_STRPTR portName, struct Message *msg)
 
   ENTER();
 
+  D(DBF_SPELL, "put message 0x%08lx to port '%s'", msg, portName);
+
   // forbid task switching before we look up the port
   Forbid();
 
@@ -119,8 +121,6 @@ static BOOL SafePutMsg(CONST_STRPTR portName, struct Message *msg)
 static BOOL SendRexx(CONST_STRPTR word, CONST_STRPTR command)
 {
   struct MsgPort *clipport;
-  struct RexxMsg *rxmsg;
-  char buffer[512];
   BOOL result = FALSE;
 
   ENTER();
@@ -132,27 +132,39 @@ static BOOL SendRexx(CONST_STRPTR word, CONST_STRPTR command)
   #endif
   if(clipport != NULL)
   {
-    rxmsg = CreateRexxMsg(clipport, NULL, NULL);
-    rxmsg->rm_Action = RXCOMM;
-    snprintf(buffer, sizeof(buffer), command, word);
-    rxmsg->rm_Args[0] = (APTR)CreateArgstring(buffer, strlen(buffer));
+    struct RexxMsg *rxmsg;
 
-    if(SafePutMsg("REXX", (struct Message *)rxmsg) == TRUE)
+    if((rxmsg = CreateRexxMsg(clipport, NULL, NULL)) != NULL)
     {
-      if(Wait((1 << clipport->mp_SigBit) | SIGBREAKF_CTRL_C) != SIGBREAKF_CTRL_C)
-      {
-        GetMsg(clipport);
+      char buffer[512];
 
-        if(rxmsg->rm_Result1 == 0)
+      snprintf(buffer, sizeof(buffer), command, word);
+      SHOWSTRING(DBF_SPELL, buffer);
+
+      rxmsg->rm_Action = RXCOMM;
+      if((rxmsg->rm_Args[0] = (APTR)CreateArgstring(buffer, strlen(buffer))) != 0)
+      {
+        if(SafePutMsg("REXX", (struct Message *)rxmsg) == TRUE)
         {
-          result = TRUE;
-          DeleteArgstring((APTR)rxmsg->rm_Result2);
+          if(Wait((1 << clipport->mp_SigBit) | SIGBREAKF_CTRL_C) != SIGBREAKF_CTRL_C)
+          {
+            GetMsg(clipport);
+
+            D(DBF_SPELL, "ARexx result1 %ld", rxmsg->rm_Result1);
+            if(rxmsg->rm_Result1 == 0)
+            {
+              result = TRUE;
+              DeleteArgstring((APTR)rxmsg->rm_Result2);
+            }
+          }
         }
+
+        DeleteArgstring((APTR)rxmsg->rm_Args[0]);
       }
+
+      DeleteRexxMsg(rxmsg);
     }
 
-    DeleteArgstring((APTR)rxmsg->rm_Args[0]);
-    DeleteRexxMsg(rxmsg);
     #if defined(__amigaos4__)
     FreeSysObject(ASOT_PORT, clipport);
     #else
@@ -202,8 +214,8 @@ static BPTR CloneSearchPath(void)
     WorkbenchControl(NULL, WBCTRLA_DuplicateSearchPath, &path, TAG_DONE);
 
   // We don't like this evil code in OS4 compile, as we should have
-  // a recent enough workbench available
-  #ifndef __amigaos4__
+  // a recent enough Workbench available
+  #if !defined(__amigaos4__)
   if(path == 0)
   {
     struct Process *pr = (struct Process*)FindTask(NULL);
@@ -248,8 +260,8 @@ static BPTR CloneSearchPath(void)
   RETURN(path);
   return path;
 }
-///
 
+///
 /// FreeSearchPath()
 /***********************************************************************
  Free the memory returned by CloneSearchPath
@@ -260,7 +272,7 @@ static void FreeSearchPath(BPTR path)
 
   if(path != 0)
   {
-    #ifndef __MORPHOS__
+    #if !defined(__MORPHOS__)
     if(WorkbenchBase != NULL)
     {
       WorkbenchControl(NULL, WBCTRLA_FreeSearchPath, path, TAG_DONE);
@@ -268,7 +280,7 @@ static void FreeSearchPath(BPTR path)
     else
     #endif
     {
-      #ifndef __amigaos4__
+      #if !defined(__amigaos4__)
       /* This is compatible with WorkbenchControl(NULL, WBCTRLA_FreeSearchPath, ...)
        * in Ambient */
       while(path != 0)
@@ -285,8 +297,8 @@ static void FreeSearchPath(BPTR path)
 
   LEAVE();
 }
-///
 
+///
 /// SendCLI()
 static BOOL SendCLI(CONST_STRPTR word, CONST_STRPTR command)
 {
@@ -378,6 +390,10 @@ static BOOL LookupWord(struct InstData *data, CONST_STRPTR word)
 
   ENTER();
 
+  SHOWSTRING(DBF_SPELL, data->LookupCmd);
+  SHOWSTRING(DBF_SPELL, word);
+  SHOWVALUE(DBF_SPELL, data->LookupSpawn);
+
   if(data->LookupSpawn != 0)
     res = SendRexx(word, data->LookupCmd);
   else
@@ -446,8 +462,8 @@ void SuggestWord(struct InstData *data)
     OffsetToLines(data, data->CPos_X, line, &pos);
     left = xget(_win(data->object), MUIA_Window_LeftEdge);
     top = xget(_win(data->object), MUIA_Window_TopEdge);
-    left  += data->xpos + FlowSpace(data, line->line.Flow, line->line.Contents+(data->CPos_X-pos.x)) + TextLength(&data->tmprp, line->line.Contents+(data->CPos_X-pos.x), pos.x);
-    top += data->ypos + (data->height * (line_nr + pos.lines));
+    left  += _mleft(data->object) + FlowSpace(data, line->line.Flow, line->line.Contents+(data->CPos_X-pos.x)) + TextLength(&data->tmprp, line->line.Contents+(data->CPos_X-pos.x), pos.x);
+    top += data->ypos + (data->fontheight * (line_nr + pos.lines));
 
     while(data->CPos_X < line->line.Length && (IsAlpha(data->mylocale, line->line.Contents[data->CPos_X]) || line->line.Contents[data->CPos_X] == '-' || line->line.Contents[data->CPos_X] == '\''))
     {
@@ -568,4 +584,5 @@ void CheckWord(struct InstData *data)
 
   LEAVE();
 }
+
 ///

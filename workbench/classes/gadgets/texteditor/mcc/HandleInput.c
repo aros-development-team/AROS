@@ -57,7 +57,7 @@ static ULONG RAWToANSI(struct IntuiMessage *imsg)
   event.ie_SubClass     = 0;
   event.ie_Code         = imsg->Code;
   event.ie_Qualifier    = imsg->Qualifier;
-  event.ie_EventAddress = *((APTR **)imsg->IAddress);
+  event.ie_EventAddress = (APTR *) *((IPTR *)imsg->IAddress);
 
   MapRawKey(&event, (STRPTR)&code, 1, NULL);
 
@@ -275,7 +275,7 @@ static LONG FindKey(struct InstData *data, UBYTE key, ULONG qualifier)
             new_y = data->totallines-data->maxlines;
           if(new_y < 0)
             new_y = 0;
-          set(data->object, MUIA_TextEditor_Prop_First, new_y*data->height);
+          set(data->object, MUIA_TextEditor_Prop_First, new_y*data->fontheight);
 
           RETURN(4);
           return(4);
@@ -574,7 +574,7 @@ static BOOL ConvertKey(struct InstData *data, struct IntuiMessage *imsg)
   event.ie_SubClass     = 0;
   event.ie_Code         = imsg->Code;
   event.ie_Qualifier    = imsg->Qualifier;
-  event.ie_EventAddress = *((APTR **)imsg->IAddress);
+  event.ie_EventAddress = (APTR *) *((IPTR *)imsg->IAddress);
 
   if(MapRawKey(&event, (STRPTR)&code, 1, NULL) > 0)
   {
@@ -895,12 +895,10 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
             // user has pressed the left mousebutton
             if(imsg->Code == IECODE_LBUTTON)
             {
-              struct MUI_AreaData *ad = muiAreaData(obj);
-
-              if(imsg->MouseX >= ad->mad_Box.Left &&
-                 imsg->MouseX <  ad->mad_Box.Left + ad->mad_Box.Width &&
+              if(imsg->MouseX >= _left(data->object) &&
+                 imsg->MouseX <= _right(data->object) &&
                  imsg->MouseY >= data->ypos &&
-                 imsg->MouseY <  data->ypos+(data->maxlines * data->height))
+                 imsg->MouseY <  data->ypos+(data->maxlines * data->fontheight))
               {
                 if(isFlagClear(data->flags, FLG_Active) &&
                    isFlagClear(data->flags, FLG_Activated) &&
@@ -1196,6 +1194,8 @@ void Key_Paste(struct InstData *data)
     AddToUndoBuffer(data, ET_PASTEBLOCK, &block);
     data->pixel_x = 0;
   }
+  else
+    data->update = TRUE;
 
   LEAVE();
 }

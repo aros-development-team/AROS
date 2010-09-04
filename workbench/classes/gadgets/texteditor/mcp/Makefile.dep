@@ -5,7 +5,7 @@ library.o: library.c ../include/libraries/mui.h \
  TextEditor_mcp.h ../include/mcc_common.h ../include/SDI_compiler.h \
  ../include/SDI_hook.h ../include/SDI_lib.h ../include/SDI_stdarg.h \
  Debug.h ../include/amiga-align.h ../include/default-align.h version.h \
- locale.h icon.bh icon32.h ../include/mccinit.c
+ locale.h icon.h ../include/mui/NBitmap_mcc.h ../include/mccinit.c
 locale.o: locale.c ../include/SDI_compiler.h Debug.h
 CreatePrefsGroup.o: CreatePrefsGroup.c ../include/libraries/mui.h \
  ../include/mui/BetterString_mcc.h ../include/mui/HotkeyString_mcc.h \
@@ -44,9 +44,13 @@ ObjectCreator.o: ObjectCreator.c ../include/libraries/mui.h \
  ../include/SDI_compiler.h ../include/SDI_hook.h ../include/SDI_lib.h \
  ../include/SDI_stdarg.h Debug.h ../include/amiga-align.h \
  ../include/default-align.h ../include/muiextra.h
-Debug.o: Debug.c ../include/SDI_compiler.h Debug.h version.h
-icon32.o: icon32.c
-vastubs.o: vastubs.c
+Debug.o: Debug.c ../include/SDI_compiler.h private.h \
+ ../include/mui/TextEditor_mcc.h TextEditor_mcp.h \
+ ../include/libraries/mui.h ../include/mcc_common.h \
+ ../include/SDI_compiler.h ../include/SDI_hook.h ../include/SDI_lib.h \
+ ../include/SDI_stdarg.h Debug.h ../include/amiga-align.h \
+ ../include/default-align.h version.h
+icon.o: icon.c
 Preference.o: Preference.c ../include/libraries/mui.h \
  ../include/proto/muimaster.h ../include/interfaces/muimaster.h \
  ../include/inline4/muimaster.h locale.h private.h \

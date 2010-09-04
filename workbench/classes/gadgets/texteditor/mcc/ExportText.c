@@ -42,7 +42,7 @@ IPTR mExportText(struct IClass *cl, Object *obj, UNUSED struct MUIP_TextEditor_E
   // clear the export message
   memset(&emsg, 0, sizeof(struct ExportMessage));
 
-  while(node)
+  while(node != NULL)
   {
     struct line_node *next_node = node->next;
 

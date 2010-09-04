@@ -64,14 +64,14 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
       else
         cursor_width = data->CursorWidth;
 
-      xplace  = data->xpos + TextLength(&data->tmprp, &line->line.Contents[x-pos.x], pos.x);
+      xplace  = _mleft(data->object) + TextLength(&data->tmprp, &line->line.Contents[x-pos.x], pos.x);
       xplace += FlowSpace(data, line->line.Flow, &line->line.Contents[pos.bytes]);
-      yplace  = data->ypos + (data->height * (line_nr + pos.lines - 1));
+      yplace  = data->ypos + (data->fontheight * (line_nr + pos.lines - 1));
 
       data->CursorPosition.MinX = xplace;
       data->CursorPosition.MinY = yplace;
       data->CursorPosition.MaxX = xplace + cursor_width - 1;
-      data->CursorPosition.MaxY = yplace + data->height - 1;
+      data->CursorPosition.MaxY = yplace + data->fontheight - 1;
       ti_Data = (IPTR)&data->CursorPosition;
     }
     break;
@@ -152,10 +152,10 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
       ti_Data = data->maxlines;
       break;
     case MUIA_TextEditor_Prop_DeltaFactor:
-      ti_Data = data->height;
+      ti_Data = data->fontheight;
       break;
     case MUIA_TextEditor_Prop_First:
-      ti_Data = (data->visual_y-1)*data->height;
+      ti_Data = (data->visual_y-1)*data->fontheight;
       break;
     case MUIA_TextEditor_ReadOnly:
       ti_Data = isFlagSet(data->flags, FLG_ReadOnly);
@@ -304,16 +304,16 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 
       case MUIA_TextEditor_Prop_First:
       {
-        if(((data->visual_y-1)*data->height+(data->realypos - data->ypos) != (LONG)ti_Data) && data->shown == TRUE)
+        if(((data->visual_y-1)*data->fontheight+(data->realypos - data->ypos) != (LONG)ti_Data) && data->shown == TRUE)
         {
           LONG     diff, smooth;
-          LONG     lastpixel = ((data->visual_y-1)*data->height) + (data->realypos - data->ypos);
+          LONG     lastpixel = ((data->visual_y-1)*data->fontheight) + (data->realypos - data->ypos);
           struct   Hook  *oldhook;
           void    *cliphandle;
 
-          diff = data->visual_y - ((ti_Data/data->height)+1);
+          diff = data->visual_y - ((ti_Data/data->fontheight)+1);
 
-          data->visual_y = (ti_Data/data->height)+1;
+          data->visual_y = (ti_Data/data->fontheight)+1;
           smooth = ti_Data - lastpixel;
 
           if(smooth > 0)
@@ -322,18 +322,18 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
             data->scr_direction = 0;
 
           oldhook = InstallLayerHook(data->rport->Layer, LAYERS_NOBACKFILL);
-          cliphandle = MUI_AddClipping(muiRenderInfo(data->object), data->xpos, data->realypos, data->innerwidth, data->maxlines*data->height);
-          if(smooth > 0 && smooth < data->maxlines*data->height)
+          cliphandle = MUI_AddClipping(muiRenderInfo(data->object), _mleft(data->object), data->realypos, _mwidth(data->object), data->maxlines*data->fontheight);
+          if(smooth > 0 && smooth < data->maxlines*data->fontheight)
           {
             LONG line_nr;
 
             ScrollRasterBF(data->rport, 0, smooth,
-                          data->xpos, data->realypos,
-                          data->xpos + data->innerwidth - 1,
-                          data->realypos + (data->maxlines * data->height) - 1);
+                          _mleft(data->object), data->realypos,
+                          _mleft(data->object) + _mwidth(data->object) - 1,
+                          data->realypos + (data->maxlines * data->fontheight) - 1);
 
-            data->ypos = data->realypos - ti_Data%data->height;
-            line_nr = data->maxlines-(smooth/data->height)-1;
+            data->ypos = data->realypos - ti_Data%data->fontheight;
+            line_nr = data->maxlines-(smooth/data->fontheight)-1;
 
             {
               struct Layer *layer = data->rport->Layer;
@@ -352,16 +352,16 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
           }
           else
           {
-            if(smooth < 0 && -smooth < data->maxlines*data->height)
+            if(smooth < 0 && -smooth < data->maxlines*data->fontheight)
             {
               LONG lines;
 
               ScrollRasterBF(data->rport, 0, smooth,
-                            data->xpos, data->realypos,
-                            data->xpos + data->innerwidth - 1,
-                            data->realypos + (data->maxlines * data->height) - 1);
-              data->ypos = data->realypos - ti_Data%data->height;
-              lines = (-smooth/data->height)+2;
+                            _mleft(data->object), data->realypos,
+                            _mleft(data->object) + _mwidth(data->object) - 1,
+                            data->realypos + (data->maxlines * data->fontheight) - 1);
+              data->ypos = data->realypos - ti_Data%data->fontheight;
+              lines = (-smooth/data->fontheight)+2;
               {
                 struct Layer *layer = data->rport->Layer;
 
@@ -397,7 +397,7 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
                     ((data->maxlines > data->totallines) ?
                       data->maxlines :
                       data->totallines))
-                    * data->height,
+                    * data->fontheight,
                   TAG_DONE);
       }
       break;
@@ -474,10 +474,10 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
           clearFlag(data->flags, FLG_Quiet);
           MUI_Redraw(obj, MADF_DRAWOBJECT);
           if(data->maxlines > data->totallines)
-            set(data->object, MUIA_TextEditor_Prop_Entries, data->maxlines*data->height);
+            set(data->object, MUIA_TextEditor_Prop_Entries, data->maxlines*data->fontheight);
           else
-            set(data->object, MUIA_TextEditor_Prop_Entries, data->totallines*data->height);
-          set(data->object, MUIA_TextEditor_Prop_First, (data->visual_y-1)*data->height);
+            set(data->object, MUIA_TextEditor_Prop_Entries, data->totallines*data->fontheight);
+          set(data->object, MUIA_TextEditor_Prop_First, (data->visual_y-1)*data->fontheight);
         }
         break;
 
@@ -557,7 +557,7 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
             // now we check whether we have a valid font or not
             // and if not we take the default one of our muiAreaData
             if(data->font == NULL)
-              data->font = muiAreaData(obj)->mad_Font;
+              data->font = _font(obj);
           }
           break;
         }

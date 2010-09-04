@@ -289,7 +289,7 @@ static Object *TxtLabel(const char *text, ULONG weight)
 Object *CreatePrefsGroup(struct InstData_MCP *data)
 {
   BOOL hotkeystringOk = FALSE;
-  Object *slider, *slider2, *readview, *button, *group,
+  Object *slider, *button, *group,
          *editor, *keylist, *defaultkeys, *functionname,
          *plist, *popbutton, *popNormalFontButton, *popFixedFontButton;
 
@@ -634,13 +634,15 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
 
         Child, HGroup,
           GroupSpacing(0),
-          Child, readview = TextEditorObject,
-            ReadListFrame,
+          Child, ListviewObject,
             MUIA_CycleChain, TRUE,
-            MUIA_TextEditor_ReadOnly, TRUE,
-            MUIA_TextEditor_Contents, tr(MSG_HelpTxt_SpellChecker),
-          End,
-          Child, slider2 = ScrollbarObject,
+            MUIA_Listview_Input, FALSE,
+            MUIA_Listview_List, FloattextObject,
+              MUIA_Frame, MUIV_Frame_ReadList,
+              MUIA_Background, MUII_ReadListBack,
+              MUIA_Floattext_Text, tr(MSG_HelpTxt_SpellChecker),
+              MUIA_Floattext_Justify, FALSE,
+            End,
           End,
         End,
 
@@ -744,7 +746,9 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
 
   if(group && data->editpopup)
   {
+/*
     set(readview, MUIA_TextEditor_Slider, slider2);
+*/
     set(editor, MUIA_TextEditor_Slider, slider);
 
     set(data->blockqual, MUIA_ShortHelp, tr(HelpBubble_BlockQual));

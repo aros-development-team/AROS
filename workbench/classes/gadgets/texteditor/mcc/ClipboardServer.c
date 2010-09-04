@@ -396,9 +396,7 @@ LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *csetPtr)
   struct IFFHandle *iff = (struct IFFHandle *)session;
   struct line_node *line = NULL;
   struct LineStyle *styles = NULL;
-  ULONG allocatedStyles = 0;
   struct LineColor *colors = NULL;
-  ULONG allocatedColors = 0;
   STRPTR textline;
   LONG codeset = 0;
   UWORD flow = MUIV_TextEditor_Flow_Left;
@@ -502,7 +500,6 @@ LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *csetPtr)
             error = ReadChunkBytes(iff, colors, numColors * sizeof(struct LineColor));
             SHOWVALUE(DBF_CLIPBOARD, error);
             colors[numColors].column = EOC;
-            allocatedColors = numColors+1;
           }
         }
         break;
@@ -525,7 +522,6 @@ LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *csetPtr)
             error = ReadChunkBytes(iff, styles, numStyles * sizeof(struct LineStyle));
             SHOWVALUE(DBF_CLIPBOARD, error);
             styles[numStyles].column = EOS;
-            allocatedStyles = numStyles+1;
           }
         }
         break;
@@ -560,11 +556,7 @@ LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *csetPtr)
               line->line.Flow = flow;
               line->line.Separator = separator;
               line->line.Styles = styles;
-              line->line.allocatedStyles = allocatedStyles;
-              line->line.usedStyles = allocatedStyles;
               line->line.Colors = colors;
-              line->line.allocatedColors = allocatedColors;
-              line->line.usedColors = allocatedColors;
 
               lineFinished = TRUE;
               error = 0;
@@ -580,9 +572,7 @@ LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *csetPtr)
             }
 
             styles = NULL;
-            allocatedStyles = 0;
             colors = NULL;
-            allocatedColors = 0;
             flow = MUIV_TextEditor_Flow_Left;
             highlight = FALSE;
             separator = LNSF_None;
@@ -781,8 +771,6 @@ static SAVEDS ASM LONG ClipboardServer(UNUSED REG(a0, STRPTR args), UNUSED REG(d
   struct ExecIFace *IExec = (struct ExecIFace *)SysBase->MainInterface;
   #endif
 
-  ENTER();
-
   me = (struct Process *)FindTask(NULL);
   WaitPort(&me->pr_MsgPort);
   msg = GetMsg(&me->pr_MsgPort);
@@ -878,7 +866,6 @@ static SAVEDS ASM LONG ClipboardServer(UNUSED REG(a0, STRPTR args), UNUSED REG(d
 
   Forbid();
 
-  LEAVE();
   return 0;
 }
 

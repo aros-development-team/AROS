@@ -80,6 +80,7 @@ enum
   InsTEXT, UNDO, REDO, GETLINE, GETCURSOR, MARK, DELETE, BACKSPACE,
   KILLLINE, TOUPPER, TOLOWER, SELECTALL, SELECTNONE
 };
+
 #define MaxArgs 8
 
 /// CallFunction()
@@ -99,21 +100,27 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
     switch(function)
     {
       case CURSOR:
+      {
         if(*args++)
           new_y -= 1;
         if(*args)
           new_y += 1;
-        break;
+      }
+      break;
 
       case NEXT:
+      {
         if(args[3])
           new_y += data->maxlines;
-        break;
+      }
+      break;
 
       case PREVIOUS:
+      {
         if(args[3])
           new_y -= data->maxlines;
-        break;
+      }
+      break;
     }
   }
 
@@ -123,7 +130,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
       new_y = data->totallines-data->maxlines;
     if(new_y < 0)
       new_y = 0;
-    set(data->object, MUIA_TextEditor_Prop_First, new_y*data->height);
+    set(data->object, MUIA_TextEditor_Prop_First, new_y*data->fontheight);
   }
   else
   {
@@ -169,7 +176,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
         {
           STRPTR buffer;
 
-          if((buffer = AllocVec(16, MEMF_SHARED)))
+          if((buffer = AllocVec(16, MEMF_SHARED)) != NULL)
           {
             set(data->object, MUIA_TextEditor_CursorY, *(ULONG *)*args);
 
@@ -187,7 +194,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
         {
           STRPTR buffer;
 
-          if((buffer = AllocVec(16, MEMF_SHARED)))
+          if((buffer = AllocVec(16, MEMF_SHARED)) != NULL)
           {
             set(data->object, MUIA_TextEditor_CursorX, *(ULONG *)*args);
             // return the current column number, this may differ from the input value!
@@ -288,7 +295,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
       {
         if(*txtargs)
         {
-            struct Hook *oldhook = data->ImportHook;
+          struct Hook *oldhook = data->ImportHook;
 
           data->ImportHook = &ImPlainHook;
           DoMethod(data->object, MUIM_TextEditor_InsertText, txtargs, MUIV_TextEditor_InsertText_Cursor);
@@ -313,12 +320,9 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
       {
         STRPTR buffer;
 
-        if((buffer = AllocVec(data->actualline->line.Length+1, MEMF_SHARED)))
+        if((buffer = AllocVec(data->actualline->line.Length+1, MEMF_SHARED)) != NULL)
         {
-          memcpy(buffer, data->actualline->line.Contents, data->actualline->line.Length);
-
-          buffer[data->actualline->line.Length] = '\0';
-
+          strlcpy(buffer, data->actualline->line.Contents, data->actualline->line.Length+1);
           result = (IPTR)buffer;
         }
         break;
@@ -328,7 +332,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
       {
         STRPTR buffer;
 
-        if((buffer = AllocVec(16, MEMF_SHARED)))
+        if((buffer = AllocVec(16, MEMF_SHARED)) != NULL)
         {
           LONG pos = 0;
 
@@ -413,7 +417,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
         data->blockinfo.startline = actual;
         data->blockinfo.startx = 0;
 
-        while(actual->next)
+        while(actual->next != NULL)
           actual = actual->next;
 
         data->blockinfo.stopline = actual;
@@ -425,8 +429,13 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
 
       case SELECTNONE:
       {
-        data->blockinfo.enabled = FALSE;
-        MarkText(data, data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline);
+        if(data->blockinfo.enabled == TRUE)
+        {
+          data->blockinfo.enabled = FALSE;
+          MarkText(data, data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline);
+        }
+        else
+          W(DBF_BLOCK, "no text selected (startline=%08lx, stopline=%08lx)", data->blockinfo.startline, data->blockinfo.stopline);
       }
       break;
     }
@@ -535,9 +544,7 @@ IPTR mHandleARexx(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ARexxCm
           {
             struct RDArgs *ra_result = NULL;
 
-            memcpy(buffer, txtargs, length);
-            buffer[length] = '\n';
-            buffer[length+1] = '\0';
+            snprintf(buffer, length+2, "%s\n", txtargs);
 
             myrdargs->RDA_Source.CS_Buffer = buffer;
             myrdargs->RDA_Source.CS_Length = length+1;

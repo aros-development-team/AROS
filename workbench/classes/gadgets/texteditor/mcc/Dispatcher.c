@@ -25,6 +25,7 @@
 #include <exec/memory.h>
 #include <intuition/classes.h>
 #include <clib/alib_protos.h>
+#include <graphics/gfxmacros.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
@@ -78,10 +79,10 @@ void ResetDisplay(struct InstData *data)
     SetAttrs(data->object,  MUIA_TextEditor_Pen,            data->Pen,
                     MUIA_TextEditor_Flow,         data->Flow,
                     MUIA_TextEditor_Separator,        data->Separator,
-                    MUIA_TextEditor_Prop_Entries,     lines*data->height,
-                    MUIA_TextEditor_Prop_Visible,     data->maxlines*data->height,
-                    MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->height,
-                    MUIA_TextEditor_Prop_DeltaFactor, data->height,
+                    MUIA_TextEditor_Prop_Entries,     lines*data->fontheight,
+                    MUIA_TextEditor_Prop_Visible,     data->maxlines*data->fontheight,
+                    MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->fontheight,
+                    MUIA_TextEditor_Prop_DeltaFactor, data->fontheight,
                     TAG_DONE);
     data->NoNotify = FALSE;
 
@@ -193,31 +194,16 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
-  struct line_node *line;
 
   ENTER();
 
-  ResizeUndoBuffer(data, 0);
+  FreeUndoBuffer(data);
 
   data->blockinfo.startline = NULL;
   data->blockinfo.stopline = NULL;
 
   // free all lines with their contents
-  line = data->firstline;
-  while(line != NULL)
-  {
-    struct line_node *next = line->next;
-
-    if(line->line.Styles != NULL)
-      FreeVecPooled(data->mypool, line->line.Styles);
-    if(line->line.Colors != NULL)
-      FreeVecPooled(data->mypool, line->line.Colors);
-    if(line->line.Contents != NULL)
-      FreeVecPooled(data->mypool, line->line.Contents);
-    FreeLine(data, line);
-
-    line = next;
-  }
+  FreeTextMem(data, data->firstline);
   data->firstline = NULL;
 
   if(data->mylocale != NULL)
@@ -263,7 +249,7 @@ static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
     // now we check whether we have a valid font or not
     // and if not we take the default one of our muiAreaData
     if(data->font == NULL)
-      data->font = muiAreaData(obj)->mad_Font;
+      data->font = _font(obj);
 
     // initialize our temporary rastport
     InitRastPort(&data->tmprp);
@@ -370,7 +356,7 @@ static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *ms
   if(data->Columns)
   {
     // for the font width we take the nominal font width provided by the tf_XSize attribute
-    ULONG width = data->Columns * (data->font ? data->font->tf_XSize : muiAreaData(obj)->mad_Font->tf_XSize);
+    ULONG width = data->Columns * (data->font ? data->font->tf_XSize : _font(obj)->tf_XSize);
 
     mi->MinWidth += width;
     mi->DefWidth += width;
@@ -383,7 +369,7 @@ static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *ms
     mi->MaxWidth = MUI_MAXMAX;
   }
 
-  fontheight = data->font ? data->font->tf_YSize : muiAreaData(obj)->mad_Font->tf_YSize;
+  fontheight = data->font ? data->font->tf_YSize : _font(obj)->tf_YSize;
   if(data->Rows)
   {
     ULONG height = data->Rows * fontheight;
@@ -409,7 +395,6 @@ static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
   struct line_node  *line;
-  struct MUI_AreaData *ad = muiAreaData(obj);
   LONG  lines = 0;
 
   ENTER();
@@ -418,16 +403,14 @@ static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
 
   // now we check whether we have a valid font or not
   // and if not we take the default one of our muiAreaData
-  if(!data->font)
-    data->font = ad->mad_Font;
+  if(data->font == NULL)
+    data->font = _font(obj);
 
-  data->rport       = muiRenderInfo(obj)->mri_RastPort;
-  data->height      = data->font->tf_YSize;
-  data->xpos        = ad->mad_Box.Left + ad->mad_addleft;
-  data->innerwidth  = ad->mad_Box.Width - ad->mad_subwidth;
-  data->maxlines    = (ad->mad_Box.Height - ad->mad_subheight) / data->height;
-  data->ypos        = ad->mad_Box.Top + ad->mad_addtop;
-  data->realypos    = data->ypos;
+  data->rport       = _rp(obj);
+  data->fontheight  = data->font->tf_YSize;
+  data->maxlines    = _mheight(obj) / data->fontheight;
+  data->ypos        = _mtop(obj);
+  data->realypos    = _mtop(obj);
 
   line = data->firstline;
   while(line != NULL)
@@ -447,26 +430,26 @@ static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
   data->update = TRUE;
   data->shown = FALSE;
 
-  SetAttrs(obj, MUIA_TextEditor_Prop_DeltaFactor, data->height,
+  SetAttrs(obj, MUIA_TextEditor_Prop_DeltaFactor, data->fontheight,
             MUIA_TextEditor_Prop_Entries,
               ((lines-(data->visual_y-1) < data->maxlines) ?
                 ((data->visual_y-1)+data->maxlines) :
                 ((data->maxlines > lines) ?
                   data->maxlines :
                   lines))
-                * data->height,
-            MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->height,
-            MUIA_TextEditor_Prop_Visible,     data->maxlines*data->height,
+                * data->fontheight,
+            MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->fontheight,
+            MUIA_TextEditor_Prop_Visible,     data->maxlines*data->fontheight,
             TAG_DONE);
 
   // initialize the doublebuffering rastport
   InitRastPort(&data->doublerp);
-  data->doublebuffer = MUIG_AllocBitMap(data->innerwidth+((data->height-data->font->tf_Baseline+1)>>1)+1, data->height, GetBitMapAttr(data->rport->BitMap, BMA_DEPTH), (BMF_CLEAR | BMF_INTERLEAVED), data->rport->BitMap);
+  data->doublebuffer = MUIG_AllocBitMap(_mwidth(data->object)+((data->fontheight-data->font->tf_Baseline+1)>>1)+1, data->fontheight, GetBitMapAttr(data->rport->BitMap, BMA_DEPTH), (BMF_CLEAR | BMF_INTERLEAVED), data->rport->BitMap);
   data->doublerp.BitMap = data->doublebuffer;
   SetFont(&data->doublerp, data->font);
 
   // initialize the copyrp rastport
-  data->copyrp = *muiRenderInfo(obj)->mri_RastPort;
+  data->copyrp = *_rp(obj);
   SetFont(&data->copyrp, data->font);
 
   // initialize our temporary rastport
@@ -523,8 +506,6 @@ static IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
   if(isFlagSet(msg->flags, MADF_DRAWOBJECT))
   {
-    struct MUI_AreaData *ad = muiAreaData(obj);
-
     SetFont(data->rport, data->font);
 
 /*    This cases crash on simplerefresh,
@@ -538,25 +519,21 @@ static IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     // we clear the very last part of the gadget
     // content at the very bottom because that one will not be
     // automatically cleared by PrintLine() later on
-    DoMethod(obj, MUIM_DrawBackground, data->xpos, data->ypos+(data->height * (data->maxlines)),
-                                       data->innerwidth, (ad->mad_Box.Height-ad->mad_subheight-(data->height * (data->maxlines))),
-                                       data->xpos, ad->mad_Box.Top+ad->mad_addtop, 0);
+    DoMethod(obj, MUIM_DrawBackground, _mleft(data->object), data->ypos+(data->fontheight * (data->maxlines)),
+                                       _mwidth(data->object), (_mheight(data->object)-(data->fontheight * (data->maxlines))),
+                                       _mleft(data->object), _mtop(data->object), 0);
 
     // make sure we ghost out the whole area in case
     // the gadget was flagged as being ghosted.
     if(isFlagSet(data->flags, FLG_Ghosted))
     {
-      UWORD *oldPattern = (UWORD *)data->rport->AreaPtrn;
-      UBYTE oldSize = data->rport->AreaPtSz;
       UWORD newPattern[] = {0x1111, 0x4444};
 
       SetDrMd(data->rport, JAM1);
       SetAPen(data->rport, _pens(obj)[MPEN_SHADOW]);
-      data->rport->AreaPtrn = newPattern;
-      data->rport->AreaPtSz = 1;
-      RectFill(data->rport, ad->mad_Box.Left, ad->mad_Box.Top, ad->mad_Box.Left + ad->mad_Box.Width  - 1, ad->mad_Box.Top  + ad->mad_Box.Height - 1);
-      data->rport->AreaPtrn = oldPattern;
-      data->rport->AreaPtSz = oldSize;
+      SetAfPt(data->rport, newPattern, 1);
+      RectFill(data->rport, _left(data->object), _top(data->object), _right(data->object), _bottom(data->object));
+      SetAfPt(data->rport, NULL, (UBYTE)-1);
     }
 
     // dump all text now
@@ -885,8 +862,8 @@ DISPATCHER(_Dispatcher)
                 ((data->maxlines > data->totallines) ?
                   data->maxlines :
                   data->totallines))
-                * data->height,
-              MUIA_TextEditor_Prop_First, (data->visual_y-1)*data->height,
+                * data->fontheight,
+              MUIA_TextEditor_Prop_First, (data->visual_y-1)*data->fontheight,
               TAG_DONE);
   }
 

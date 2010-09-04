@@ -25,30 +25,38 @@ all: mcc mcp demo
 
 .PHONY: mcc
 mcc:
-	@$(MAKE) -C mcc --no-print-directory
+	@$(MAKE) -C mcc
 
 .PHONY: mcp
 mcp:
-	@$(MAKE) -C mcp --no-print-directory
+	@$(MAKE) -C mcp
 
 .PHONY: demo
 demo:
-	@$(MAKE) -C demo --no-print-directory
+	@$(MAKE) -C demo
 
 .PHONY: clean
 clean:
-	@$(MAKE) -C mcc --no-print-directory clean
-	@$(MAKE) -C mcp --no-print-directory clean
-	@$(MAKE) -C demo --no-print-directory clean
+	@$(MAKE) -C mcc clean
+	@$(MAKE) -C mcp clean
+	@$(MAKE) -C demo clean
 
-.PHONY: cleanall
-cleanall:
-	@$(MAKE) -C mcc --no-print-directory cleanall
-	@$(MAKE) -C mcp --no-print-directory cleanall
-	@$(MAKE) -C demo --no-print-directory cleanall
+.PHONY: distclean
+distclean:
+	@$(MAKE) -C mcc distclean
+	@$(MAKE) -C mcp distclean
+	@$(MAKE) -C demo distclean
 
 .PHONY: install
 install:
-	@$(MAKE) -C mcc --no-print-directory install
-	@$(MAKE) -C mcp --no-print-directory install
-	@$(MAKE) -C demo --no-print-directory install
+	@$(MAKE) -C mcc install
+	@$(MAKE) -C mcp install
+	@$(MAKE) -C demo install
+
+.PHONY: bumprev
+bumprev:
+	@sh tools/bumprev.sh all
+
+.PHONY: release
+release:
+	@sh tools/mkrelease.sh

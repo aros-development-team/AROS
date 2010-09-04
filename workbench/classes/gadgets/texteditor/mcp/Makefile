@@ -182,8 +182,7 @@ COBJS = locale.o \
         KeyStorage.o \
         ObjectCreator.o \
         Debug.o \
-        icon.o \
-        vastubs.o
+        icon.o
 
 TOBJS = Preference.o
 
@@ -196,7 +195,8 @@ CATALOGS = $(LOCALE)/czech.catalog \
            $(LOCALE)/french.catalog \
            $(LOCALE)/german.catalog \
            $(LOCALE)/russian.catalog \
-           $(LOCALE)/swedish.catalog
+           $(LOCALE)/swedish.catalog \
+           $(LOCALE)/polish.catalog
 
 
 # different options per target OS
@@ -242,6 +242,14 @@ ifeq ($(OS), os3)
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug -lmui
 
+  # additional object files required
+  # additional object files required
+  COBJS += vastubs.o \
+           extrasrc/GetHead.o \
+           extrasrc/GetPred.o \
+           extrasrc/GetSucc.o \
+           extrasrc/GetTail.o
+
 else
 ifeq ($(OS), mos)
 
@@ -257,7 +265,7 @@ ifeq ($(OS), mos)
 
   # Compiler/Linker flags
   CPU     = -mcpu=powerpc
-  CFLAGS  += -noixemul -DNO_PPCINLINE_STDARG
+  CFLAGS  += -noixemul -DNO_PPCINLINE_STDARG -DAROS_ALMOST_COMPATIBLE
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
@@ -274,6 +282,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -290,6 +299,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -306,6 +316,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -352,6 +363,7 @@ release:
 $(OBJDIR):
 	@echo "  MK $@"
 	@$(MKDIR) $(OBJDIR)
+	@$(MKDIR) $(OBJDIR)/extrasrc
 
 # make the binary directories
 $(BINDIR):
@@ -367,7 +379,7 @@ $(OBJDIR)/mccclass_68k.o: ../include/mccclass_68k.c
 	@echo "  CC $<"
 	@$(CC) $(CFLAGS) $< -o $@
 
-$(LOCALE)/%.catalog: $(LOCALE)/%.ct
+$(LOCALE)/%.catalog: $(LOCALE)/%.ct $(LOCALE)/TextEditor_mcp.cd
 	@echo "  MK $@"
 	@$(FC) $(LOCALE)/TextEditor_mcp.cd $< CATALOG $@
 
