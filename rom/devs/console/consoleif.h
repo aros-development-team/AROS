@@ -106,9 +106,8 @@ struct P_Console_NewWindowSize
 
 struct P_Console_HandleGadgets
 {
-    ULONG MethodID;
-  ULONG Class;
-    APTR IAddress;
+  ULONG MethodID;
+  struct InputEvent * Event;
 };
 
 struct P_Console_GetDefaultParams
@@ -202,12 +201,11 @@ struct P_Console_GetDefaultParams
     DoMethodA((o), (Msg)&p);			\
 })
 
-#define Console_HandleGadgets(o, c,a)			\
+#define Console_HandleGadgets(o, e)	       	\
 ({						\
     struct P_Console_HandleGadgets p;		\
     p.MethodID	= M_Console_HandleGadgets;	\
-	p.Class = c;						\
-	p.IAddress = a;						\
+    p.Event = e;	      			\
     DoMethodA((o), (Msg)&p);			\
 })
 

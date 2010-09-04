@@ -87,8 +87,9 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 	    (ie->ie_Class == IECLASS_CLOSEWINDOW) ||
 	    (ie->ie_Class == IECLASS_REFRESHWINDOW) || 
 	    (ie->ie_Class == IECLASS_GADGETDOWN) ||
-	    (ie->ie_Class == IECLASS_GADGETUP || 
-	     ie->ie_Class == IECLASS_TIMER))
+	    (ie->ie_Class == IECLASS_GADGETUP) || 
+	    (ie->ie_Class == IECLASS_RAWMOUSE) || 
+	    (ie->ie_Class == IECLASS_TIMER))
 	{
 	    /* What console do we send it to ? */
 	    Object *unit;
