@@ -57,6 +57,22 @@ static VOID snipmapcon_dispose(Class *cl, Object *o, Msg msg)
     DoSuperMethodA(cl, o, msg);
 }
 
+
+static VOID snipmapcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
+{
+    IPTR *params = msg->Params;
+    EnterFunc(bug("SnipMapCon::DoCommand(o=%p, cmd=%d, params=%p) x=%d, y=%d, ymax=%d\n",
+		  o, msg->Command, params,XCP,YCP, CHAR_YMAX(o)));
+
+    switch (msg->Command)
+      {
+      default:
+    	DoSuperMethodA(cl, o, (Msg)msg);
+	break;
+      }
+    ReturnVoid("SnipMapCon::DoCommand");
+}
+
 AROS_UFH3S(IPTR, dispatch_snipmapconclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
@@ -76,6 +92,17 @@ AROS_UFH3S(IPTR, dispatch_snipmapconclass,
     case OM_DISPOSE:
     	snipmapcon_dispose(cl, o, msg);
 	break;
+
+    case M_Console_DoCommand:
+    	snipmapcon_docommand(cl, o, (struct P_Console_DoCommand *)msg);
+	break;
+
+	/*
+    case M_Console_HandleGadgets:
+      D(bug("SnipMapCon::HandleGadgets\n"));
+      snipmapcon_handlegadgets(cl, o, (struct P_Console_HandleGadgets *)msg);
+      break;
+	*/
 
     default:
     	retval = DoSuperMethodA(cl, o, msg);

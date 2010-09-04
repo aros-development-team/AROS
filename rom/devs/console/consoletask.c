@@ -137,18 +137,20 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 			UBYTE  inputBuf[MAPRAWKEY_BUFSIZE + 1];			    
 			LONG actual;
 			ULONG tocopy;
+			struct InputEvent e;
 
 			/* Mouse wheel support */
-			if (cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_UP)
+			if (cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_UP ||
+			    cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_DOWN)
 			  {
-			    Console_HandleGadgets(cdihmsg->unit, IECLASS_GADGETDOWN, 1);
-			    Console_HandleGadgets(cdihmsg->unit, IECLASS_GADGETUP, 1);
+			    e.ie_EventAddress = 
+			      (cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_UP) ? 
+			      1 : 2;
+			    e.ie_Class = IECLASS_GADGETDOWN; 
+			    Console_HandleGadgets(cdihmsg->unit, &e);
+			    e.ie_Class = IECLASS_GADGETUP;
+			    Console_HandleGadgets(cdihmsg->unit, &e);
 			  }
-			else if (cdihmsg->ie.ie_Code == RAWKEY_NM_WHEEL_DOWN)
-			  {
-			    Console_HandleGadgets(cdihmsg->unit, IECLASS_GADGETDOWN, 2);
-			    Console_HandleGadgets(cdihmsg->unit, IECLASS_GADGETUP, 2);
-			  } 
 			else 
 			  {
 			    
@@ -209,7 +211,9 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 		    case IECLASS_GADGETDOWN:
 		    case IECLASS_GADGETUP:
 		    case IECLASS_TIMER:
-		      Console_HandleGadgets(cdihmsg->unit,cdihmsg->ie.ie_Class, (APTR)cdihmsg->ie.ie_EventAddress);
+		    case IECLASS_RAWMOUSE:
+		      Console_HandleGadgets(cdihmsg->unit,&(cdihmsg->ie));
+			//.ie_Class, (APTR)cdihmsg->ie.ie_EventAddress);
 		      break;
 
 	   	    case IECLASS_REFRESHWINDOW: /* Intentional fallthrough */

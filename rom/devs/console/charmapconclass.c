@@ -65,12 +65,14 @@ struct charmapcondata
 
   BOOL unrendered;                  /* Unrendered cursor while scrolled back? */
 
+  /* FIXME: Belongs in snipmap class */
   /* Current selection */
-  ULONG select_x_min;
-  ULONG select_y_min;
-  ULONG select_x_max;
-  ULONG select_y_max;
+  LONG select_x_min;
+  LONG select_y_min;
+  LONG select_x_max;
+  LONG select_y_max;
   BOOL active_selection;            /* If true, mouse move will affect the selection */
+  BOOL ignore_drag; /* This is a hack - better to capture mouse down instead of relying on this */
 
   UBYTE  boopsigad;					/* Type of right prop gadget of window */
   struct Scroll * prop;
@@ -331,6 +333,8 @@ static struct charmap_line * charmapcon_find_line(Class * cl, Object * o, ULONG 
 
   // Find the line. This is inefficient but the number of lines on screen
   // should never be very high.
+  // FIXME: Optimizing the case of appending to the end (e.g. know what line
+  // is on the last line of the buffer).
 
   struct charmap_line * line = data->top_of_window;
   if (!line) {
@@ -339,7 +343,7 @@ static struct charmap_line * charmapcon_find_line(Class * cl, Object * o, ULONG 
 	data->scrollback_size = 1;
   }
 
-  D(bug("Finding correct line\n"));
+  D(bug("Finding line %ld\n",ycp));
   while(ycp > 0) {
 	if (!line->next) {
 	  charmap_newline(0,line);
@@ -391,12 +395,14 @@ static VOID charmap_scroll_up(Class * cl, Object * o, ULONG y)
   if (!data->top_of_window) return;
 
   while(y--) {
-	if (!data->top_of_window->next) {
+    if (!data->top_of_window->next) {
 	  charmap_newline(0, data->top_of_window);
 	  data->scrollback_size += 1;
 	}
 	data->top_of_window = data->top_of_window->next;
 	data->scrollback_pos += 1;
+	data->select_y_max -= 1;
+	data->select_y_min -= 1;
   }
 
   if (data->scrollback_size - CHAR_YMAX(o) - 1 <= data->scrollback_pos &&
@@ -422,11 +428,15 @@ static VOID charmap_scroll_down(Class * cl, Object * o, ULONG y)
 	data->unrendered = 1;
 	data->saved_scrollback_pos = data->scrollback_pos;
 	data->saved_top_of_window = data->top_of_window;
+
+	// FIXME: Select position.
   }
   if (data->top_of_window) {
 	while(y-- && data->top_of_window->prev) {
 	  data->top_of_window = data->top_of_window->prev;
 	  data->scrollback_pos -= 1;
+	  data->select_y_max += 1;
+	  data->select_y_min += 1;
 	}
   }
 }
@@ -563,6 +573,8 @@ static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoComman
   if (data->unrendered) {
 	data->unrendered = 0;
 	data->scrollback_pos = data->saved_scrollback_pos;
+	data->select_y_min += old_scrollback_pos - data->scrollback_pos;
+	data->select_y_max += old_scrollback_pos - data->scrollback_pos;
 	data->top_of_window = data->saved_top_of_window;
 	charmapcon_refresh(cl,o,0);
 	Console_RenderCursor(o);
@@ -597,7 +609,6 @@ static VOID charmapcon_docommand(Class *cl, Object *o, struct P_Console_DoComman
 
     case C_SCROLL_UP:
     {
-        // FIXME: Remove excess lines if the scrollback buffer grows too large
         D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
         GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), YRSIZE * params[0]));
         charmap_scroll_up(cl,o, params[0]);
@@ -635,28 +646,18 @@ static VOID charmapcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCel
     DoSuperMethodA(cl, o, (Msg)msg);
 }
 
-/*
- * Refresh the full console unless "off" is provided.
- * If off is set to a positive value, it indicates the
- * number of rows from the top we start rendering.
- * If off is set to a negative value, it indicated the
- * number of rows from the top we stop rendering.
- * This is used for partial refreshes when the screen is
- * scrolled up/down.
- */
-static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
+static VOID charmapcon_refresh_lines(Class *cl, Object * o, LONG fromLine, LONG toLine)
 {
   struct Window   	*w  = CU(o)->cu_Window;
   struct RastPort 	*rp = w->RPort;
   struct charmapcondata *data = INST_DATA(cl, o);
 
-  LONG fromLine = 0;
-  LONG toLine   = CHAR_YMAX(o) - CHAR_YMIN(o);
+  if (fromLine < CHAR_YMIN(o)) fromLine = CHAR_YMIN(o);
+  if (toLine   > CHAR_YMAX(o)) toLine = CHAR_YMAX(o);
 
-  if (off > 0) toLine   = off-1;
-  if (off < 0) fromLine = CHAR_YMAX(o)+off+1;
+  D(bug("fromLine: %ld, toLine: %ld, char_ymax: %ld\n",fromLine,toLine, CHAR_YMAX(o)));
 
-  //bug("off: %ld, fromLine: %ld, toLine: %ld, char_ymax: %ld\n",off,fromLine,toLine, CHAR_YMAX(o));
+  if (toLine   < fromLine) return;
 
   Console_UnRenderCursor(o);
 
@@ -666,6 +667,29 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
   ULONG y  = GFX_YMIN(o)+fromLine*YRSIZE+rp->Font->tf_Baseline;
   ULONG yc = fromLine;
   UBYTE flags = 255;
+
+  LONG selectstart_x,selectstart_y,selectend_x,selectend_y;
+  if (data->select_y_min == data->select_y_max)
+    {
+      selectstart_y = selectend_y = data->select_y_min;
+      selectstart_x = MIN(data->select_x_min,data->select_x_max);
+      selectend_x   = MAX(data->select_x_min,data->select_x_max);
+    }
+  else if (data->select_y_min < data->select_y_max) 
+    {
+      selectstart_y = data->select_y_min;
+      selectstart_x = data->select_x_min;
+      selectend_y   = data->select_y_max;
+      selectend_x   = data->select_x_max;
+    } 
+  else 
+    {
+      selectstart_y = data->select_y_max;
+      selectstart_x = data->select_x_max;
+      selectend_y   = data->select_y_min;
+      selectend_x   = data->select_x_min;
+    }
+
   while(line && yc <= toLine)
     {
       const char * str = line->text;
@@ -677,19 +701,74 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
 	  /* Identify a batch of characters with the same fgpen/bgpen
 	     to avoid having to move/set pens and do Text() on single
 	     characters */
+
+	  UBYTE fgpen = line->fgpen[start];
+	  UBYTE bgpen = line->bgpen[start];
+
+	  /* Is any part of this line part of a selection? 
+	   * If so, we bake in a state transition on "stop".
+	   * This code is messy - there must be a nicer way.
+	   */
+	  ULONG stop = 9999999;
+	  BOOL in_selection = 0;
+
+	  if (yc > selectstart_y && yc < selectend_y) 
+	    {
+	      in_selection = 1;
+	    }
+	  else if (yc == selectstart_y)
+	    {
+	      if (yc == selectend_y) 
+		{
+		  if (start >= selectstart_x &&
+		      start <  selectend_x)
+		    {
+		      in_selection = 1;
+		      stop = selectend_x;
+		    }
+		  else if (start < selectstart_x)
+		    {
+		      stop = selectstart_x;
+		    }
+		}
+	      else
+		{
+		  if (start >= selectstart_x) in_selection = 1;
+		  else stop = selectstart_x; 
+		}
+	    }
+	  else if (yc == selectend_y)
+	    {
+	      /* In this case, the selection *ends* on selectend_x */
+	      if (start < selectend_x) {
+		in_selection = 1;
+		stop = selectend_x;
+	      }
+	    }
+	  	
+	  if (stop == start) stop += 1;
+	  
+	  if (in_selection) {
+	    fgpen = line->bgpen[start];
+	    bgpen = line->fgpen[start];
+	  }
+
 	  ULONG len = 0;
 	  while (line->size > start + len && str[start + len] && 
 		 len < remaining_space &&
 		 line->fgpen[start] == line->fgpen[start + len] &&
 		 line->bgpen[start] == line->bgpen[start + len] &&
-		 line->flags[start] == line->flags[start + len]) len += 1;
-		
-	  SetABPenDrMd(rp, line->fgpen[start],line->bgpen[start],JAM2);
+		 line->flags[start] == line->flags[start + len] &&
+		 start + len < stop) len += 1;
+
+	  SetABPenDrMd(rp, fgpen,bgpen,JAM2);
+
 	  if (line->flags[start] != flags) {
 	    SetSoftStyle(rp, line->flags[start], FSF_BOLD | FSF_UNDERLINED | FSF_ITALIC);
 	    flags = line->flags[start];
 	  }
 	  Text(rp,&str[start],len);
+
 	  start += len;
 	  remaining_space -= len;
 	}
@@ -713,15 +792,36 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
       line = line->next;
     }
 
-  if (off == 0 && yc < CHAR_YMAX(o))
+  if (yc < toLine)
     {
       SetAPen( rp, CU(o)->cu_BgPen);
       RectFill (rp, 
 		GFX_XMIN(o), GFX_Y(o,yc), 
-		GFX_XMAX(o),    GFX_YMAX(o));
+		GFX_XMAX(o), GFX_Y(o,toLine));
     }
 
   Console_RenderCursor(o);
+}
+
+
+/*
+ * Refresh the full console unless "off" is provided.
+ * If off is set to a positive value, it indicates the
+ * number of rows from the top we start rendering.
+ * If off is set to a negative value, it indicates the
+ * number of rows from the top we stop rendering.
+ * This is used for partial refreshes when the screen is
+ * scrolled up/down.
+ */
+static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
+{
+  LONG fromLine = 0;
+  LONG toLine   = CHAR_YMAX(o) - CHAR_YMIN(o);
+
+  if (off > 0) toLine   = off-1;
+  if (off < 0) fromLine = CHAR_YMAX(o)+off+1;
+
+  charmapcon_refresh_lines(cl,o,fromLine,toLine);
 }
 
 /*******************************
@@ -750,52 +850,156 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewW
     charmapcon_refresh(cl,o,0);
 }
 
+static VOID charmapcon_handlemouse(Class *cl, Object *o, struct P_Console_HandleGadgets *msg)
+{
+  struct charmapcondata *data = INST_DATA(cl, o);
+  struct Window   	*w  = CU(o)->cu_Window;
+  struct RastPort 	*rp = w->RPort;
+  struct InputEvent * e = msg->Event;
+
+  /* We have the following states:
+   * - No active selection and no mouse button => ignore
+   * - No active selection and left mouse button => Start selection
+   * - Active selection and no mouse button => End selection
+   * - Active selection and left mouse button => Update selection
+   */
+
+  LONG x,y;
+  x = e->ie_X - w->LeftEdge;
+  y = e->ie_Y - w->TopEdge;
+
+  /* Active selection */
+
+  if (!(e->ie_Qualifier & IEQUALIFIER_LEFTBUTTON))
+    {
+      /* End selection */
+      data->active_selection = 0;
+      data->ignore_drag = 0;
+      return;
+    }
+
+  if (!data->active_selection) 
+    {
+      if (e->ie_Qualifier & IEQUALIFIER_LEFTBUTTON && !data->ignore_drag)
+	{
+	  /* Inside the console area? */
+	  if (x >= GFX_XMIN(o) && x <= GFX_XMAX(o) &&
+	      y >= GFX_YMIN(o) && y <= GFX_YMAX(o)) 
+	    {
+	      D(bug("activated selection with x: %ld, y: %ld, xmin: %ld, ymin: %Ld, xmax: %ld, ymax: %ld\n",
+		    x,y,GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o)));
+
+	      /* We need to clear these lines 
+	       */
+	      LONG old_min_y = MIN(data->select_y_min, data->select_y_max);
+	      LONG old_max_y = MAX(data->select_y_min, data->select_y_max);
+
+	      /* Yes, so start selection */
+	      data->active_selection = 1;
+	      data->ignore_drag = 0;
+	      data->select_x_min = (x - GFX_XMIN(o)) / XRSIZE;
+	      data->select_y_min = (y - GFX_YMIN(o)) / YRSIZE;
+
+	      data->select_x_max = data->select_x_min;
+	      data->select_y_min = data->select_y_min;
+
+	      /* Clear */
+
+	      /* FIXME: Determine exactly which lines are affected, as
+		 follows:
+
+		 - If max_y has increased, render from old_max_y to new
+		 - If min_y has decreased, refresh from new min y to old
+		 - If both have changed, refresh in two batches.
+		 - If there's been a reversal of the relative positions of
+		   y_min/y_max, refresh the entire range.
+	      */
+	      charmapcon_refresh_lines(cl,o,old_min_y, old_max_y);
+
+	    } else data->ignore_drag = 1;
+	}
+      return;
+    }
+
+  /* Update selection. */
+  if (x >= GFX_XMIN(o) && x <= GFX_XMAX(o) &&
+      y >= GFX_YMIN(o) && y <= GFX_YMAX(o))
+    {
+      
+      LONG xmax, ymax;
+      xmax = data->select_x_max;
+      ymax = data->select_y_max;
+      data->select_x_max = (x - GFX_XMIN(o)) / XRSIZE;
+      data->select_y_max = (y - GFX_YMIN(o)) / YRSIZE;
+      
+      /* FIXME: More intelligent refresh */
+      if (xmax != data->select_x_max ||
+	  ymax != data->select_y_max)
+	{
+	  charmapcon_refresh_lines(cl,o, MIN(ymax,MIN(data->select_y_min, data->select_y_max)), MAX(ymax,MAX(data->select_y_min,data->select_y_max)));
+	}
+    } 
+  else 
+    {
+      /* FIXME: Outside the console area, we need to scroll the window
+	 and just update the selection based on that */
+    }
+
+}
 
 static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_HandleGadgets *msg)
 {
-    struct Window   	*w  = CU(o)->cu_Window;
-    struct RastPort 	*rp = w->RPort;
-    struct charmapcondata *data = INST_DATA(cl, o);
+  struct InputEvent * e = msg->Event;
 
-    if (msg->Class == IECLASS_GADGETUP)
-      {
-	data->activeGad = 0;
-	return;
-      }
+  if (e->ie_Class == IECLASS_RAWMOUSE) 
+    {
+      charmapcon_handlemouse(cl,o,msg);
+      return;
+    }
+  
+  struct charmapcondata *data = INST_DATA(cl, o);
+  struct Window   	*w  = CU(o)->cu_Window;
+  struct RastPort 	*rp = w->RPort;
 
-    if (msg->Class == IECLASS_GADGETDOWN)
-      {
-	/* We pass 0 from consoletask if the mouse wheel is being used */
-	if (msg->IAddress == 1) data->activeGad = (APTR)&(data->prop->up);
-	else if (msg->IAddress == 2) data->activeGad = (APTR)&(data->prop->down);
-	else data->activeGad = msg->IAddress;
-      }
+  if (e->ie_Class == IECLASS_GADGETUP)
+    {
+      data->activeGad = 0;
+      return;
+    }
 
-    if (data->activeGad == (APTR)&(data->prop->scroller))
-      {
-	ULONG hidden = data->scrollback_size > CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) -1 : 0;
-	ULONG pos = (((struct PropInfo *)((struct Gadget*)&(data->prop->scroller))->SpecialInfo)->VertPot * hidden + (MAXPOT / 2)) / MAXPOT;
-	
-	if (pos != data->scrollback_pos) charmapcon_scroll_to(cl,o, pos);
-      } 
-    else if (data->activeGad == (APTR)&(data->prop->down))
-      {
-	if (data->scrollback_pos + CHAR_YMAX(o) < data->scrollback_size - 1)
-	  {
-	    charmap_scroll_up(cl,o,1);
-	    charmapcon_refresh(cl,o,0);
-	    charmapcon_adj_prop(cl,o);
-	  }
-      } 
-    else if (data->activeGad == (APTR)&(data->prop->up))
-      {
-	if (data->top_of_window != data->top_of_scrollback)
-	  {
-	    charmap_scroll_down(cl,o,1);
-	    charmapcon_refresh(cl,o,0);
-	    charmapcon_adj_prop(cl,o);
-	  }
-      }
+  if (e->ie_Class == IECLASS_GADGETDOWN)
+    {
+      /* We pass 0 from consoletask if the mouse wheel is being used */
+      if (e->ie_EventAddress == 1) data->activeGad = (APTR)&(data->prop->up);
+      else if (e->ie_EventAddress == 2) data->activeGad = (APTR)&(data->prop->down);
+      else data->activeGad = e->ie_EventAddress;
+    }
+    
+  if (data->activeGad == (APTR)&(data->prop->scroller))
+    {
+      ULONG hidden = data->scrollback_size > CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) -1 : 0;
+      ULONG pos = (((struct PropInfo *)((struct Gadget*)&(data->prop->scroller))->SpecialInfo)->VertPot * hidden + (MAXPOT / 2)) / MAXPOT;
+      
+      if (pos != data->scrollback_pos) charmapcon_scroll_to(cl,o, pos);
+    } 
+  else if (data->activeGad == (APTR)&(data->prop->down))
+    {
+      if (data->scrollback_pos + CHAR_YMAX(o) < data->scrollback_size - 1)
+	{
+	  charmap_scroll_up(cl,o,1);
+	  charmapcon_refresh(cl,o,0);
+	  charmapcon_adj_prop(cl,o);
+	}
+    } 
+  else if (data->activeGad == (APTR)&(data->prop->up))
+    {
+      if (data->top_of_window != data->top_of_scrollback)
+	{
+	  charmap_scroll_down(cl,o,1);
+	  charmapcon_refresh(cl,o,0);
+	  charmapcon_adj_prop(cl,o);
+	}
+    }
 }
 
 
@@ -821,13 +1025,12 @@ AROS_UFH3S(IPTR, dispatch_charmapconclass,
 	break;
 
     case M_Console_DoCommand:
-	  // FIXME: scroll down to end here if it's not there already.
     	charmapcon_docommand(cl, o, (struct P_Console_DoCommand *)msg);
 	break;
 
-    case M_Console_ClearCell:
-	  // FIXME: scroll down to end here if it's not there already.
-    	charmapcon_clearcell(cl, o, (struct P_Console_ClearCell *)msg);
+    case M_Console_ClearCell: 
+        // FIXME: scroll down to end here if it's not there already.
+   	charmapcon_clearcell(cl, o, (struct P_Console_ClearCell *)msg);
 	break;
 
     case M_Console_NewWindowSize:

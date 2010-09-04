@@ -104,7 +104,9 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct Con
     	    break;
 
 
+	Console_UnRenderCursor((Object *)unit);
 	Console_DoCommand((Object *)unit, command, numparams, param_tab);
+	Console_RenderCursor((Object *)unit);
 
 	towrite = orig_towrite - (write_str - orig_write_str);
 
