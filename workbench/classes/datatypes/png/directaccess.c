@@ -258,7 +258,7 @@ static APTR PNG_LoadImageInternal(APTR handle, STRPTR *chunkstoread, APTR *chunk
     	    png_set_packing(png.png_ptr);
 	    if (png.png_type == PNG_COLOR_TYPE_GRAY)
 	    {
-		png_set_gray_1_2_4_to_8(png.png_ptr);
+		png_set_expand_gray_1_2_4_to_8(png.png_ptr);
 	    }
 	    png.png_bits = 8;
 	}
