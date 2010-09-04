@@ -1,6 +1,51 @@
 CHANGE LOG for Independent JPEG Group's JPEG software
 
 
+Version 8b  16-May-2010
+-----------------------
+
+Repair problem in new memory source manager with corrupt JPEG data.
+Thank to Ted Campbell and Samuel Chun for the report.
+
+Repair problem in Makefile.am test target.
+Thank to anonymous user for the report.
+
+Support MinGW installation with automatic configure.
+Thank to Volker Grabsch for the suggestion.
+
+
+Version 8a  28-Feb-2010
+-----------------------
+
+Writing tables-only datastreams via jpeg_write_tables works again.
+
+Support 32-bit BMPs (RGB image with Alpha channel) for read in cjpeg.
+Thank to Brett Blackham for the suggestion.
+
+Improve accuracy in floating point IDCT calculation.
+Thank to Robert Hooke for the hint.
+
+
+Version 8  10-Jan-2010
+----------------------
+
+jpegtran now supports the same -scale option as djpeg for "lossless" resize.
+An implementation of the JPEG SmartScale extension is required for this
+feature.  A (draft) specification of the JPEG SmartScale extension is
+available as a contributed document at ITU and ISO.  Revision 2 or later
+of the document is required (latest document version is Revision 3).
+The SmartScale extension will enable more features beside lossless resize
+in future implementations, as described in the document (new compression
+options).
+
+Add sanity check in BMP reader module to avoid cjpeg crash for empty input
+image (thank to Isaev Ildar of ISP RAS, Moscow, RU for reporting this error).
+
+Add data source and destination managers for read from and write to
+memory buffers.  New API functions jpeg_mem_src and jpeg_mem_dest.
+Thank to Roberto Boni from Italy for the suggestion.
+
+
 Version 7  27-Jun-2009
 ----------------------
 
