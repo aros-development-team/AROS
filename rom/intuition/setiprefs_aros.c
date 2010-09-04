@@ -83,11 +83,27 @@
 	    
 	    if (GetPrivIBase(IntuitionBase)->WorkBench)
 	    {
-	        BOOL try = TRUE, closed;
+	        BOOL try = TRUE, closed = FALSE;
+	        LONG tries = 10;
 		
 	        UnlockIBase(lock);
 		
-		while (try && !(closed = CloseWorkBench()))
+		/* ScreenMode Prefs editor writes its screenmode.prefs file in
+		   ENV:SYS _before_ closing its window... Intuition has often
+		   already been warned by IPrefs before the window closes, and
+		   Intuition is unable to close the screen while the window is
+		   open. This problem should be solved when prefs editors will
+		   be listening to screennotify messages, but until then we can
+		   try silently several times before warning the user with the
+		   system requester: there is no (big) visual effect when
+		   CloseWorkBench() fails (windows listening to screennotify
+		   close and reopen immediately), and usually the problematic
+		   ScreenMode Prefs editor's window is closed after two or
+		   three attempts. */
+		while (!closed && (tries-- > 0))
+		    closed = CloseWorkBench();
+		    
+		while (!closed && try && !(closed = CloseWorkBench()))
 		{
                     struct EasyStruct es =
                     {
@@ -103,11 +119,14 @@
 		}
 		
 		if (closed)
+		{
+		    DEBUG_SETIPREFS(bug("[Intuition] SetIPrefs: remaining tries = %d\n", tries));
 		    #warning FIXME: handle the error condition!
 		    /* What to do if OpenWorkBench() fails? Try until it succeeds?
 		       Try for a finite amount of times? Don't try and do nothing 
 		       at all? */
 		    OpenWorkBench();
+		}
 		else
 		{
 		    lock = LockIBase(0);
