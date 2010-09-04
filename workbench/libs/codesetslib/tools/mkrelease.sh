@@ -18,7 +18,7 @@
 #
 # BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 #
-# $Id: mkrelease.sh 244 2010-06-10 11:25:11Z thboeckel $
+# $Id: mkrelease.sh 256 2010-08-31 21:30:10Z damato $
 #
 ############################################################################
 
@@ -76,6 +76,5 @@ releaserev=`grep "#define LIB_REVISION" src/version.h | awk '{ print $3 }'`
 
 echo "  MK codesets-$releasever.$releaserev.lha"
 find release -nowarn -name ".svn" -exec rm -rf {} \; 2>/dev/null
-pushd release >/dev/null
+cd release
 lha -aq ../codesets-$releasever.$releaserev.lha *
-popd >/dev/null

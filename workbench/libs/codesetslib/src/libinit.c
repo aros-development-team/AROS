@@ -169,14 +169,21 @@ static LONG                   LIBFUNC LibNull    (void);
  *
  */
 
-#if defined(__amigaos4__)
-int _start(void)
-#else
-int Main(void)
-#endif
+#if defined(__amigaos4__) && !defined(__AROS__) && !defined(__MORPHOS__)
+#if !defined(__mc68000__)
+int32 _start(void)
 {
   return RETURN_FAIL;
 }
+#else
+asm(".text                    \n\
+     .even                    \n\
+     .globl _start            \n\
+   _start:                    \n\
+     moveq #0,d0              \n\
+     rts");
+#endif
+#endif
 
 static LONG LIBFUNC LibNull(VOID)
 {

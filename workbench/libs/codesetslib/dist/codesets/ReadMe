@@ -1,0 +1,128 @@
+Short:    Library handling codesets and character conversions
+Author:   codesets.library Open Source Team
+Uploader: Jens Langner <Jens.Langner@light-speed.de>
+Type:     util/libs
+Version:  6.11
+Replaces: util/libs/codesets-6.10.lha
+Requires: AmigaOS 3.0+, MorphOS or AROS
+Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
+
+Introduction
+~~~~~~~~~~~~
+Classic Amiga systems, but even modern AmigaOS versions like AmigaOS4 and
+MorphOS don't come with a centralized programming interface for dealing
+with different codesets. Especially for the more and more important dealing
+with the UTF-8 codeset (e.g. in internet communication programs like YAM or
+SimpleMail) a centralized way or API is definitly required and provides
+signification advantages. In addition, it should serve as a single interface
+point for developers wanting to develop multi-platform applications without
+having to implement charset conversion routines on each OS differently.
+
+codesets.library should solve this by providing 3rd party developers an
+efficient and easy to use API for dealing with different codesets like
+ISO-8859-15, Amiga-1251 but also the mentioned UTF-8 standard, etc. It is
+already widly used in known programs like YAM (Internet Mailer) for
+example and therefore considered very stable.
+
+The currently internally supported (hardcoded) charsets/codesets are:
+(conversions are possible from and to each codeset)
+
+AmigaPL           - Polish (Amiga)
+Amiga-1251        - Cyrillic (Amiga)
+ISO-8859-1        - West European
+ISO-8859-1 + Euro - West European (with EURO)
+ISO-8859-2        - Central/East European
+ISO-8859-3        - South European
+ISO-8859-4        - North European
+ISO-8859-5        - Slavic languages
+ISO-8859-9        - Turkish
+ISO-8859-15       - West European II
+ISO-8859-16       - South-Eastern European
+KOI8-R            - Russian
+UTF-8             - Unicode
+
+In addition, external charset table files can be stored in LIBS:Charsets
+or loaded by an application from PROGDIR:Charsets. The charset files included
+with this distributions are:
+
+IBM866        - Cyrillic (cp866)
+ISO-8859-7    - Greek (LatinGreek)
+ISO-8859-10   - Nordic (Latin 6)
+windows-1250  - Central/East Europe (Windows)
+windows-1251  - Cyrillic (Windows)
+windows-1252  - West European (Windows)
+
+More additional, but rarly used charset tables can be found at:
+http://www.unicode.org/Public/MAPPINGS/
+
+NOTE: Please note that on operating systems having own codeset/charset
+querying support (e.g. AmigaOS4), codesets.library tries to use the system's
+functionality as much as possible and will load all additional codesets
+supported by the OS itself. Therefore, the above list is just meant to list
+the very bare minimum of supported codesets. Please check with your
+operating system manual before manually installing additional charset
+tables as they might already be available in your OS. In case an internal
+charset conflicts with an external charset file, the internal charset is
+preferred.
+
+The library is available for AmigaOS3 (m68k), AmigaOS4 (PPC), MorphOS (PPC)
+or for AROS.
+
+It is an open-source development effort of many people and is
+kindly hosted on SourceForge. The project name is "codesetslib" and the
+project's page can be found at:
+
+http://www.sf.net/projects/codesetslib/
+
+Please use this address for further updates, bug reports and feature
+requests and try to avoid direct mail contact to single developers. We really
+prefer to get bug reports via the sourceforge.net platform if possible.
+
+Installation
+~~~~~~~~~~~~
+1) Extract the archive to a temporary directory.
+
+   > cd RAM:
+   > lha x codesets.lha
+
+2) Go to the "codesetsLibrary/Libs/<OS>" directory where <OS> is the directory
+   matching the operating system you want to install the library for.
+
+   > cd codesets/Libs/AmigaOS4
+
+3) copy the library out of the <OS> directory to your LIBS: directory.
+
+   > copy codesets.library LIBS:
+
+4) In case you are running an operating system from which codesets.library
+   can't directly obtain additional charsets/codesets, you have to copy
+   additional charset files to the LIBS:Charsets directory. (This is only
+   required for AmigaOS3 and MorphOS):
+
+   > cd RAM:codesets
+   > copy ALL Charsets LIBS:
+
+5) reboot and enjoy ;)
+
+History
+~~~~~~~
+Since version 6.0, codesets.library development is publically hosted and
+maintained by an open-source developer community. Many major changes have
+been made during the first open-source release cycle of 6.0. Therefore,
+include files and some internal functions have been changed a lot. If you
+were already using version 5.x in your applications you are supposed to
+update them according to the new 6.x library interface. However, the library
+was tried to be still somehwat compatible to the old 5.x API.
+
+For a detailed change log since the last release please consult the
+included "ChangeLog" file in the distribution archive.
+
+         __
+        / /
+   __  / /   Only Amiga makes it possible...
+   \ \/ /
+    \__/
+
+Amiga is a trademark of Amiga, Inc.
+
+Your codestes.library Open Source Team...
