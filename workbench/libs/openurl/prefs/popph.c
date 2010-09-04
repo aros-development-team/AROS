@@ -298,10 +298,10 @@ static IPTR mRequestFile(struct IClass *cl, Object *obj, UNUSED Msg msg)
     }
 
     if (MUI_AslRequestTags(data->req,
-                           ASLFR_InitialFile,       (ULONG)file,
-                           p ? ASLFR_InitialDrawer : TAG_IGNORE, (ULONG)p,
-                           ASLFR_IntuiMsgFunc,      (ULONG)&intuiHook,
-                           ASLFR_Window,            (ULONG)_window(obj),
+                           ASLFR_InitialFile,       (IPTR)file,
+                           p ? ASLFR_InitialDrawer : TAG_IGNORE, (IPTR)p,
+                           ASLFR_IntuiMsgFunc,      (IPTR)&intuiHook,
+                           ASLFR_Window,            (IPTR)_window(obj),
                            ASLFR_PrivateIDCMP,      TRUE,
                            ASLFR_Flags1,            FRF_INTUIFUNC,
                            TAG_DONE))

@@ -111,7 +111,7 @@ int main(int argc,char **argv)
          {
             struct TagItem tags[8];
             struct SmartArgs smart_args;
-            LONG args[A_MAX];
+            IPTR args[A_MAX];
             STRPTR real_url = NULL;
             STRPTR filename = NULL;
 

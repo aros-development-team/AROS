@@ -2,8 +2,69 @@
 openurl.library - ChangeLog
 ---------------------------
 
-$Id: ChangeLog 126 2009-10-24 17:43:02Z damato $
-$URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/trunk/ChangeLog $
+$Id: ChangeLog 145 2010-09-01 19:16:21Z damato $
+$URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/releases/7.7/ChangeLog $
+
+#### v7.7 RELEASE ##############################################################
+
+2009-09-01  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.7 release preparations
+
+2010-08-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/init.c: lowered the required version of rexxsys.library to V36. This
+    fixes bug #3050895.
+
+2010-08-16 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: the library init code now ensures that the entry code is really
+    the first code to be executed in case the .library is executed like a
+    regular command by accident.
+  * include/SDI_compiler.h: updated to latest version.
+
+2010-06-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * prefs/Makefile, raPrefs/Makefile: added the .cd file to the dependency list
+    of each .catalog file.
+
+2010-06-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/libinit.c: fixed a warning for the OS3 build.
+
+2010-06-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_compiler.h: updated to latest version.
+  * include/clib/openurl_protos.h: added IPTR definition.
+
+2010-06-03 Matthias Rustler <mrustler@gmx.de>
+
+  * Fixes for 64-bit AROS: changes from ULONG to IPTR to get rid of
+    warnings about conversion from/to pointer to/from integer with different size.
+    Prototype of URL_GetAttr changed. I hope this doesn't cause any trouble.
+
+2010-05-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/#?.ct: set some properties.
+  * raPrefs/Makefile: added polish catalog generation.
+
+2010-05-27 Mariusz Danilewicz <mandi@interia.pl>
+
+  * locale/polish.ct: fixed MSG_About_Descr
+
+2010-05-27 Mariusz Danilewicz <mandi@interia.pl>
+
+  * locale/polish.ct: added Polish translation
+  * prefs/makefile: added generating Polish catalog
+
+2010-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/libinit.c: use NewStackSwap() under AROS, re-enabled stack swapping
+    under MorphOS
+
+2010-04-23 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/libinit.c: replaced some #ifdef's by macros.
 
 #### v7.6 RELEASE ##############################################################
 

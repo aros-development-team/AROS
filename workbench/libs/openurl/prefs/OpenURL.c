@@ -250,7 +250,7 @@ int main(void)
             {
                 ULONG signals;
 
-                for (signals = 0; (LONG)DoMethod(app,MUIM_Application_NewInput,(ULONG)&signals) != (LONG)MUIV_Application_ReturnID_Quit; )
+                for (signals = 0; (LONG)DoMethod(app,MUIM_Application_NewInput,(IPTR)&signals) != (LONG)MUIV_Application_ReturnID_Quit; )
                     if (signals && ((signals = Wait(signals | SIGBREAKF_CTRL_C)) & SIGBREAKF_CTRL_C)) break;
 
                 MUI_DisposeObject(app);

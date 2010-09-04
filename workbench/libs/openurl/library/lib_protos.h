@@ -84,7 +84,7 @@ LIBPROTOVA(URL_LaunchPrefsApp, ULONG, ...);
 #else
 LIBPROTOVA(URL_LaunchPrefsApp, ULONG, REG(a0, Tag tag1), ...);
 #endif
-LIBPROTO(URL_GetAttr, ULONG, REG(d0, ULONG attr), REG(a0, ULONG *storage));
+LIBPROTO(URL_GetAttr, ULONG, REG(d0, ULONG attr), REG(a0, IPTR *storage));
 
 /* handler.c */
 void SAVEDS handler(void);

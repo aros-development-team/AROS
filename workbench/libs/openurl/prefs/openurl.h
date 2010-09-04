@@ -177,7 +177,7 @@ struct MUIP_App_CloseWin
 {
     STACKED ULONG MethodID;
     STACKED ULONG IDAttr;
-    STACKED ULONG IDVal;
+    STACKED IPTR  IDVal;
 };
 
 /* Attributes */

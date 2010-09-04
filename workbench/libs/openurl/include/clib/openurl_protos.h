@@ -29,6 +29,9 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#if !defined(__AROS__) && !defined(IPTR)
+  #define IPTR ULONG
+#endif
 
 /* Obsolete, don't use! */
 struct URL_Prefs *URL_OldGetPrefs(void);
@@ -49,7 +52,7 @@ ULONG URL_SetPrefsA(struct URL_Prefs *,struct TagItem *);
 ULONG URL_LaunchPrefsAppA(struct TagItem *);
 
 /* Information */
-ULONG URL_GetAttr(ULONG attr,ULONG *storage);
+ULONG URL_GetAttr(ULONG attr,IPTR *storage);
 
 #if defined(_DCC) || defined(__SASC) || defined (__STORM__) || defined(__GNUC__)
 ULONG URL_Open(STRPTR, Tag tag1, ...);

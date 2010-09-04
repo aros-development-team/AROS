@@ -143,7 +143,7 @@ initBase(struct LibraryHeader *lib)
 
       if((IFFParseBase = OpenLibrary("iffparse.library", 37)) &&
          GETINTERFACE(IIFFParse, IFFParseBase))
-      if((RexxSysBase = (APTR)OpenLibrary("rexxsyslib.library", 37)) &&
+      if((RexxSysBase = (APTR)OpenLibrary("rexxsyslib.library", 36)) &&
          GETINTERFACE(IRexxSys, RexxSysBase))
       {
         #if defined(__amigaos4__)
