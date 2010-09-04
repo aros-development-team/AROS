@@ -119,7 +119,7 @@ STRPTR getString(ULONG id)
 void localizeStrings(STRPTR *s)
 {
     for (; *s; s++)
-        *s = getString((ULONG)*s);
+        *s = getString((IPTR)*s);
 }
 
 /***********************************************************************/
@@ -128,7 +128,7 @@ void localizeNewMenu(struct NewMenu *nm)
 {
     for ( ; nm->nm_Type!=NM_END; nm++)
         if (nm->nm_Label!=NM_BARLABEL)
-            nm->nm_Label = (STRPTR)getString((ULONG)nm->nm_Label);
+            nm->nm_Label = (STRPTR)getString((IPTR)nm->nm_Label);
 }
 
 /***********************************************************************/

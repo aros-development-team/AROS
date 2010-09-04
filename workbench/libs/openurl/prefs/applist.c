@@ -443,7 +443,7 @@ static IPTR mListCleanup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
   {
     if(data->lamp != NULL)
     {
-      DoSuperMethod(cl, obj, MUIM_List_DeleteImage, (ULONG)data->lamp);
+      DoSuperMethod(cl, obj, MUIM_List_DeleteImage, (IPTR)data->lamp);
       data->lamp = NULL;
     }
 
@@ -768,7 +768,7 @@ static IPTR mAdd(struct IClass *cl, Object *obj, UNUSED Msg msg)
 
     node->Flags = UNF_NEW|UNF_NTALLOC;
 
-    DoMethod(data->appList,MUIM_List_InsertSingle,(ULONG)node,MUIV_List_Insert_Bottom);
+    DoMethod(data->appList,MUIM_List_InsertSingle,(IPTR)node,MUIV_List_Insert_Bottom);
 
     set(data->appList,MUIA_List_Active,xget(data->appList,MUIA_List_InsertPosition));
 
@@ -784,7 +784,7 @@ static IPTR mEdit(struct IClass *cl, Object *obj, struct MUIP_AppList_Edit *msg)
     struct data     *data = INST_DATA(cl,obj);
     struct URL_Node *node;
 
-    DoMethod(data->appList,MUIM_List_GetEntry,MUIV_List_GetEntry_Active,(ULONG)&node);
+    DoMethod(data->appList,MUIM_List_GetEntry,MUIV_List_GetEntry_Active,(IPTR)&node);
     if (node)
     {
         if (msg->check && (xget(data->appList,MUIA_Listview_ClickColumn)==0))
@@ -800,7 +800,7 @@ static IPTR mEdit(struct IClass *cl, Object *obj, struct MUIP_AppList_Edit *msg)
             set(data->disable, MUIA_Selected, isFlagSet(node->Flags, UNF_DISABLED));
         }
         else
-            DoMethod(_app(obj),MUIM_App_OpenWin,(ULONG)data->editClass,data->editAttr,(ULONG)node,data->listAttr,(ULONG)data->appList,TAG_END);
+            DoMethod(_app(obj),MUIM_App_OpenWin,(IPTR)data->editClass,data->editAttr,(IPTR)node,data->listAttr,(IPTR)data->appList,TAG_END);
     }
 
     return TRUE;
@@ -816,7 +816,7 @@ static IPTR mClone(struct IClass *cl, Object *obj, UNUSED Msg msg)
     ULONG           active;
 
     active = xget(data->appList, MUIA_List_Active);
-    DoMethod(data->appList, MUIM_List_GetEntry, active, (ULONG)&node);
+    DoMethod(data->appList, MUIM_List_GetEntry, active, (IPTR)&node);
     if(node != NULL)
     {
         struct URL_Node *new;
@@ -826,7 +826,7 @@ static IPTR mClone(struct IClass *cl, Object *obj, UNUSED Msg msg)
             CopyMem(node, new, data->nodeSize);
             new->Flags = UNF_NEW|UNF_NTALLOC;
 
-            DoMethod(data->appList, MUIM_List_InsertSingle, (ULONG)new, MUIV_List_Insert_Bottom);
+            DoMethod(data->appList, MUIM_List_InsertSingle, (IPTR)new, MUIV_List_Insert_Bottom);
             set(data->appList, MUIA_List_Active, MUIV_List_Active_Bottom);
 
             DoMethod(obj, MUIM_AppList_Edit, FALSE);
@@ -847,10 +847,10 @@ static IPTR mDelete(struct IClass *cl, Object *obj, UNUSED Msg msg)
     ULONG       active;
 
     active = xget(data->appList,MUIA_List_Active);
-    DoMethod(data->appList,MUIM_List_GetEntry,active,(ULONG)&node);
+    DoMethod(data->appList,MUIM_List_GetEntry,active,(IPTR)&node);
     if (node)
     {
-        DoMethod(_app(obj),MUIM_App_CloseWin,data->editAttr,(ULONG)node);
+        DoMethod(_app(obj),MUIM_App_CloseWin,data->editAttr,(IPTR)node);
         DoMethod(data->appList,MUIM_List_Remove,active);
     }
 
@@ -877,7 +877,7 @@ static IPTR mActiveChanged(struct IClass *cl, Object *obj, UNUSED Msg msg)
             (IPTR)data->disable,
             NULL);
 
-        DoMethod(data->appList,MUIM_List_GetEntry,a,(ULONG)&node);
+        DoMethod(data->appList,MUIM_List_GetEntry,a,(IPTR)&node);
         set(data->disable, MUIA_Selected, isFlagSet(node->Flags, UNF_DISABLED));
 
         if (a==0) SetAttrs(data->up,MUIA_Selected,FALSE,MUIA_Disabled,TRUE,TAG_DONE);
@@ -911,7 +911,7 @@ static IPTR mDisable(struct IClass *cl, Object *obj, struct MUIP_AppList_Disable
     struct data     *data = INST_DATA(cl,obj);
     struct URL_Node *node;
 
-    DoMethod(data->appList,MUIM_List_GetEntry,MUIV_List_GetEntry_Active,(ULONG)&node);
+    DoMethod(data->appList,MUIM_List_GetEntry,MUIV_List_GetEntry_Active,(IPTR)&node);
     if (node)
     {
         if (!BOOLSAME(msg->disable, isFlagSet(node->Flags, UNF_DISABLED)))

@@ -47,7 +47,7 @@ ULONG LIBFUNC URL_OpenA(REG(a0,STRPTR URL), REG(a1,struct TagItem *attrs))
   ObtainSemaphore(&OpenURLBase->prefsSem);
 
   /* parse arguments */
-  pubScreenName = (STRPTR)GetTagData(URL_PubScreenName, (ULONG)"Workbench", attrs);
+  pubScreenName = (STRPTR)GetTagData(URL_PubScreenName, (IPTR)"Workbench", attrs);
   flags = 0;
   if(GetTagData(URL_Show, OpenURLBase->prefs->up_DefShow, attrs))
     SET_FLAG(flags, SENDTOF_SHOW);
@@ -328,8 +328,8 @@ ULONG LIBFUNC URL_LaunchPrefsAppA(REG(a0,UNUSED struct TagItem *attrs))
       #define NP_PPCStackSize TAG_IGNORE
       #endif
 
-      SystemTags(name, SYS_Input,       (ULONG)in,
-                       SYS_Output,      (ULONG)out,
+      SystemTags(name, SYS_Input,       (IPTR)in,
+                       SYS_Output,      (IPTR)out,
                        SYS_Error,       NULL,
                        SYS_Asynch,      TRUE,
                        NP_StackSize,    NP_STACKSIZE,
@@ -356,19 +356,19 @@ ULONG LIBFUNC URL_OldLaunchPrefsApp(void)
 
 /**************************************************************************/
 
-ULONG LIBFUNC URL_GetAttr(REG(d0,ULONG attr),REG(a0,ULONG *storage))
+ULONG LIBFUNC URL_GetAttr(REG(d0,ULONG attr),REG(a0,IPTR *storage))
 {
   switch (attr)
   {
     case URL_GetAttr_Version:          *storage = LIB_VERSION;    return TRUE;
     case URL_GetAttr_Revision:         *storage = LIB_REVISION;   return TRUE;
-    case URL_GetAttr_VerString:        *storage = (ULONG)"$VER: openurl.library " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT;; return TRUE;
+    case URL_GetAttr_VerString:        *storage = (IPTR)"$VER: openurl.library " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT;; return TRUE;
 
     case URL_GetAttr_PrefsVer:         *storage = PREFS_VERSION;  return TRUE;
 
     case URL_GetAttr_HandlerVersion:   *storage = 0;              return TRUE;
     case URL_GetAttr_HandlerRevision:  *storage = 0;              return TRUE;
-    case URL_GetAttr_HandlerVerString: *storage = (ULONG)"";      return TRUE;
+    case URL_GetAttr_HandlerVerString: *storage = (IPTR)"";       return TRUE;
 
     default: return FALSE;
   }

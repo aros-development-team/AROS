@@ -49,3 +49,11 @@ cleanall:
 	@$(MAKE) -C library cleanall
 	@$(MAKE) -C prefs cleanall
 	@$(MAKE) -C cmd cleanall
+
+.PHONY: bumprev
+bumprev:
+	@sh tools/bumprev.sh all
+
+.PHONY: release
+release:
+	@sh tools/mkrelease.sh

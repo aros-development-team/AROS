@@ -28,31 +28,35 @@
 /**************************************************************************/
 
 #define _KEY(k)  ((ULONG)(k)) ? MUIA_ControlChar : TAG_IGNORE, ((ULONG)(k)) ? (ULONG)getKeyChar(NULL,(ULONG)(k)) : 0
-#define _HELP(h) ((ULONG)(h)) ? MUIA_ShortHelp   : TAG_IGNORE, ((ULONG)(h)) ? (ULONG)getString((ULONG)(h)) : 0
+#define _HELP(h) ((ULONG)(h)) ? MUIA_ShortHelp   : TAG_IGNORE, ((ULONG)(h)) ? (IPTR)getString((ULONG)(h)) : 0
 
 /***********************************************************************/
 
 // DoSuperNew()
 // Calls parent NEW method within a subclass
-#ifdef __MORPHOS__
-
-#elif defined(__AROS__)
-IPTR DoSuperNew(struct IClass *cl, Object *obj, IPTR tag1, ...)
+#if !defined(__MORPHOS__)
+#if defined(__AROS__)
+IPTR VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
-  AROS_SLOWSTACKTAGS_PRE(tag1)
-  retval = DoSuperMethod(cl, obj, OM_NEW, AROS_SLOWSTACKTAGS_ARG(tag1));
-  AROS_SLOWSTACKTAGS_POST
-}
+  IPTR rc;
 #else
 Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
   Object *rc;
+#endif
   VA_LIST args;
 
+  ENTER();
+
   VA_START(args, obj);
+  #if defined(__AROS__)
+  rc = (IPTR)DoSuperNewTagList(cl, obj, NULL, (struct TagItem *)VA_ARG(args, IPTR));
+  #else
   rc = (Object *)DoSuperMethod(cl, obj, OM_NEW, VA_ARG(args, ULONG), NULL);
+  #endif
   VA_END(args);
 
+  RETURN(rc);
   return rc;
 }
 #endif
@@ -113,42 +117,42 @@ void SetAmiUpdateENVVariable( CONST_STRPTR varname )
 
 Object *olabel(ULONG id)
 {
-    return Label((ULONG)getString(id));
+    return Label((IPTR)getString(id));
 }
 
 /****************************************************************************/
 
 Object *ollabel(ULONG id)
 {
-    return LLabel((ULONG)getString(id));
+    return LLabel((IPTR)getString(id));
 }
 
 /****************************************************************************/
 
 Object *ollabel1(ULONG id)
 {
-    return LLabel1((ULONG)getString(id));
+    return LLabel1((IPTR)getString(id));
 }
 
 /****************************************************************************/
 
 Object *olabel1(ULONG id)
 {
-    return Label1((ULONG)getString(id));
+    return Label1((IPTR)getString(id));
 }
 
 /***********************************************************************/
 
 Object *olabel2(ULONG id)
 {
-    return Label2((ULONG)getString(id));
+    return Label2((IPTR)getString(id));
 }
 
 /****************************************************************************/
 
 Object *oflabel(ULONG text)
 {
-    return FreeLabel((ULONG)getString(text));
+    return FreeLabel((IPTR)getString(text));
 }
 
 /****************************************************************************/
@@ -157,7 +161,7 @@ Object *obutton(ULONG text, ULONG help)
 {
     Object *obj;
 
-    if((obj = MUI_MakeObject(MUIO_Button, (ULONG)getString(text))) != NULL)
+    if((obj = MUI_MakeObject(MUIO_Button, (IPTR)getString(text))) != NULL)
         SetAttrs(obj,MUIA_CycleChain,TRUE,_HELP(help),TAG_DONE);
 
     return obj;
@@ -167,8 +171,8 @@ Object *obutton(ULONG text, ULONG help)
 
 Object *oibutton(ULONG spec, ULONG help)
 {
-    if (spec==IBT_Up) spec = (ULONG)"\33I[6:38]";
-    else if (spec==IBT_Down) spec = (ULONG)"\33I[6:39]";
+    if (spec==IBT_Up) spec = (IPTR)"\33I[6:38]";
+    else if (spec==IBT_Down) spec = (IPTR)"\33I[6:39]";
          else return NULL;
 
     return TextObject,
@@ -208,7 +212,7 @@ Object *ocheckmark(ULONG key, ULONG help)
 {
     Object *obj;
 
-    if((obj = MUI_MakeObject(MUIO_Checkmark, (ULONG)getString(key))) != NULL)
+    if((obj = MUI_MakeObject(MUIO_Checkmark, (IPTR)getString(key))) != NULL)
         SetAttrs(obj,MUIA_CycleChain,TRUE,_HELP(help),TAG_DONE);
 
     return obj;
@@ -287,20 +291,20 @@ ULONG openWindow(Object *app, Object *win)
 
 /***********************************************************************/
 
-ULONG delEntry(Object *obj, APTR entry)
+IPTR delEntry(Object *obj, APTR entry)
 {
     APTR e = NULL;
     int  i;
 
     for (i = 0; ;i++)
     {
-        DoMethod(obj,MUIM_List_GetEntry,i,(ULONG)&e);
+        DoMethod(obj,MUIM_List_GetEntry,i,(IPTR)&e);
         if (!e || e==entry) break;
     }
 
     if (e) DoMethod(obj,MUIM_List_Remove,i);
 
-    return (ULONG)e;
+    return (IPTR)e;
 }
 
 /**************************************************************************/

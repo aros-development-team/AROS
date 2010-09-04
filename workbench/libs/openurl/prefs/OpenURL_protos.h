@@ -21,9 +21,9 @@
 #include "SDI_compiler.h"
 
 #ifdef __MORPHOS__
-APTR DoSuperNew( struct IClass *cl, APTR obj, ... );
+APTR DoSuperNew(struct IClass *cl, APTR obj, ...);
 #elif defined(__AROS__)
-IPTR DoSuperNew(struct IClass *cl, Object *obj, IPTR tag1, ...);
+IPTR VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...);
 #else
 Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...);
 #endif
@@ -55,7 +55,7 @@ Object *ostring ( ULONG maxlen , ULONG key , ULONG help );
 Object *opopport ( ULONG maxLen , ULONG key , ULONG help );
 Object *opopph ( CONST_STRPTR *syms , STRPTR *names , ULONG maxLen , ULONG key , ULONG asl , ULONG help );
 ULONG openWindow ( Object *app , Object *win );
-ULONG delEntry ( Object *obj , APTR entry );
+IPTR delEntry ( Object *obj , APTR entry );
 void STDARGS msprintf ( STRPTR to , STRPTR fmt , ... ) VARARGS68K;
 int STDARGS msnprintf ( STRPTR buf , int size , STRPTR fmt , ... ) VARARGS68K;
 

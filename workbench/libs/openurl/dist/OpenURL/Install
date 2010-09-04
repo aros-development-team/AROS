@@ -1,0 +1,177 @@
+;
+; $VER: Install 1.1 (11.06.2010)
+;
+; $Id: Install 246 2010-06-11 10:07:45Z thboeckel $
+;
+; History:
+;
+;   1.0   10.06.2010: initial release
+;   1.1   11.06.2010: extended the final message that a reboot might be
+;                     necessary to be able to use the just installed version.
+
+;----------------------------------------------------------------------------
+; /// ***** English
+(if (= @language "english")
+    (
+        (set #acknowledgeOS (cat "Please acknowledge the automatic\n"
+                                 "detection of your operating system:"))
+        (set #done          (cat "\n"
+                                 @app-name " has been successfully installed.\n"
+                                 "\n"
+                                 "A reboot might be necessary to\n"
+                                 "finish this installation!"))
+    )
+)
+
+; ///
+; /// ***** Deutsch
+(if (= @language "deutsch")
+    (
+        (set #acknowledgeOS (cat "Bitte bestätigen Sie die automatische\n"
+                                 "Ermittlung Ihres Betriebssystems:"))
+        (set #done          (cat "\n"
+                                 @app-name " wurde erfolgreich installiert.\n"
+                                 "\n"
+                                 "Gegebenenfalls ist ein Neustart des Systems\n"
+                                 "nötig, um die Installation abzuschließen!"))
+    )
+)
+; ///
+
+;----------------------------------------------------------------------------
+; /// Checking environment
+(set EXEC_ver (getversion "exec.library" (resident)))
+(set NEWLIB_ver (getversion "newlib.library" (resident)))
+(set AROS_ver (getversion "aros.library" (resident)))
+
+; we use newlib.library to check whether we are running on AmigaOS 4.x
+(if (>= NEWLIB_ver (* 4 65536))
+    (set #detectedSystem 1)
+    (
+        ; we are not running on AmigaOS 4.x
+        (if (>= AROS_ver (* 40 65536))
+            (set #detectedSystem 3)
+            (
+                ; we are not running on AROS
+                ; now check if we are running on MorphOS (exec.library V50+) or on AmigaOS 3.x
+                (if (>= EXEC_ver (* 50 65536))
+                    (set #detectedSystem 2)
+                    (set #detectedSystem 0)
+                )
+            )
+        )
+    )
+)
+
+(set #detectedSystem
+    (askchoice
+        (prompt #acknowledgeOS)
+        (help @askchoice-help)
+        (choices "AmigaOS 3.x"
+                 "AmigaOS 4.x"
+                 "MorphOS 1.x/2.x"
+                 "AROS i386"
+                 "AROS PPC"
+                 "AROS x86_64"
+        )
+        (default #detectedSystem)
+    )
+)
+; finally convert the system number into a string for easier understanding
+(set #detectedSystem
+    (select #detectedSystem "os3" "os4" "mos" "aros-i386" "aros-ppc" "aros-x86_64")
+)
+
+; set up the source and destination path
+(if (= #detectedSystem "os3")
+  (
+    (set #C_source "C/AmigaOS3")
+    (set #LIB_source "Libs/AmigaOS3")
+    (set #PREFS_source "Prefs/AmigaOS3")
+  )
+)
+(if (= #detectedSystem "os4")
+  (
+    (set #C_source "C/AmigaOS4")
+    (set #LIB_source "Libs/AmigaOS4")
+    (set #PREFS_source "Prefs/AmigaOS4")
+  )
+)
+(if (= #detectedSystem "mos")
+  (
+    (set #C_source "C/MorphOS")
+    (set #LIB_source "Libs/MorphOS")
+    (set #PREFS_source "Prefs/MorphOS")
+  )
+)
+(if (= #detectedSystem "aros-i386")
+  (
+    (set #C_source "C/AROS-i386")
+    (set #LIB_source "Libs/AROS-i386")
+    (set #PREFS_source "Prefs/AROS-i386")
+  )
+)
+(if (= #detectedSystem "aros-ppc")
+  (
+    (set #C_source "C/AROS-ppc")
+    (set #LIB_source "Libs/AROS-i386")
+    (set #PREFS_source "Prefs/AROS-i386")
+  )
+)
+(if (= #detectedSystem "aros-x86_64")
+  (
+    (set #C_source "C/AROS-x86_64")
+    (set #LIB_source "Libs/AROS-x86_64")
+    (set #PREFS_source "Prefs/AROS-x86_64")
+  )
+)
+
+; ///
+
+; /// Here we go!
+(complete 33)
+
+; copy the .library files
+(foreach #LIB_source "#?.library"
+    (copylib
+        (prompt @each-name)
+        (source (tackon #LIB_source @each-name))
+        (dest "LIBS:")
+        (confirm)
+        (help @copylib-help)
+    )
+)
+
+(complete 66)
+
+; copy the C files
+(foreach #C_source "#?"
+    (copylib
+        (prompt @each-name)
+        (source (tackon #C_source @each-name))
+        (dest "C:")
+        (confirm)
+        (help @copylib-help)
+    )
+)
+
+(complete 99)
+
+; copy the Prefs files
+(foreach #PREFS_source "#?"
+    (copylib
+        (prompt @each-name)
+        (source (tackon #PREFS_source @each-name))
+        (dest "SYS:Prefs")
+        (confirm)
+        (help @copylib-help)
+    )
+)
+
+(complete 100)
+
+(message #done)
+
+; /// ********************
+;----------------------------------------------------------------------------
+(exit (QUIET))

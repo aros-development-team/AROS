@@ -99,7 +99,7 @@ typedef ULONG _sfdc_vararg;
 #define URL_GetAttr(___attr, ___storage) \
 	AROS_LC2(ULONG, URL_GetAttr, \
 	AROS_LCA(ULONG, (___attr), D0), \
-	AROS_LCA(ULONG *, (___storage), A0), \
+	AROS_LCA(IPTR *, (___storage), A0), \
 	struct Library *, OPENURL_BASE_NAME, 16, Openurl)
 
 #endif /* !_INLINE_OPENURL_H */

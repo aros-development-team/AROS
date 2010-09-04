@@ -238,6 +238,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -254,6 +255,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -270,6 +272,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -302,6 +305,7 @@ OBJS += OpenURL.o \
 CATALOGS = $(LOCALE)/german.catalog \
            $(LOCALE)/french.catalog \
            $(LOCALE)/italian.catalog \
+           $(LOCALE)/polish.catalog \
            $(LOCALE)/swedish.catalog
 
 # main target
@@ -358,7 +362,7 @@ install: all
 
 ## CATALOG GENERATION #################
 
-$(LOCALE)/%.catalog: $(LOCALE)/%.ct
+$(LOCALE)/%.catalog: $(LOCALE)/%.ct $(LOCALE)/OpenURL.cd
 	@echo "  MK $@"
 	@$(FC) $(LOCALE)/OpenURL.cd $< CATALOG $@
 

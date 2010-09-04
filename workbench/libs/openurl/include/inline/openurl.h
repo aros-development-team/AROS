@@ -21,7 +21,7 @@
 #endif /* !NO_INLINE_STDARG */
 
 #define URL_GetAttr(___attr, ___storage) \
-	LP2(0x60, ULONG, URL_GetAttr, ULONG, ___attr, d0, ULONG *, ___storage, a0, \
+	LP2(0x60, ULONG, URL_GetAttr, ULONG, ___attr, d0, IPTR *, ___storage, a0, \
 	, OPENURL_BASE_NAME)
 
 #define URL_GetPrefsA(___tags) \

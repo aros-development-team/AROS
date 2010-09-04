@@ -130,7 +130,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
         /*
         ** Load list formats
         */
-        DoSuperMethod(cl,obj,MUIM_Application_Load,(ULONG)MUIV_Application_Load_ENV);
+        DoSuperMethod(cl,obj,MUIM_Application_Load,(IPTR)MUIV_Application_Load_ENV);
 
         /*
         ** Try to get OpenURL prefs and open window
@@ -160,8 +160,8 @@ static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
     */
     if (DoMethod(data->win,MUIM_App_CheckSave))
     {
-        DoSuperMethod(cl,obj,MUIM_Application_Save,(ULONG)MUIV_Application_Save_ENV);
-        DoSuperMethod(cl,obj,MUIM_Application_Save,(ULONG)MUIV_Application_Save_ENVARC);
+        DoSuperMethod(cl,obj,MUIM_Application_Save,(IPTR)MUIV_Application_Save_ENV);
+        DoSuperMethod(cl,obj,MUIM_Application_Save,(IPTR)MUIV_Application_Save_ENVARC);
     }
 
     res = DoSuperMethodA(cl,obj,msg);
