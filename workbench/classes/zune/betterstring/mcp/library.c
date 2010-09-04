@@ -48,6 +48,10 @@
 
 #define CLASSINIT
 #define CLASSEXPUNGE
+
+#define USEDCLASSES used_mccs
+static const char *used_mccs[] = { "BetterString.mcc", NULL };
+
 #define MIN_STACKSIZE 8192
 
 #include "locale.h"

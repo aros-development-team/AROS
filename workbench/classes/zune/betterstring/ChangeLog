@@ -2,8 +2,28 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 265 2010-07-08 08:18:11Z thboeckel $
-$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/trunk/ChangeLog $
+$Id: ChangeLog 273 2010-08-31 20:44:14Z damato $
+$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.19/ChangeLog $
+
+#### v11.19 RELEASE ###########################################################
+
+2010-09-01 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.19 release preparations
+
+2010-08-31 Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile: updated all makefiles to compile with -O2 for AROS
+  * mccinit.c, SDI-compiler.h: updated to latest versions
+
+2010-08-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/italian.ct: updated italian translation provided by Samir
+    Hawamdeh.
+
+2010-08-17 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mccinit.c, SDI_compiler.h: updated to latest versions.
 
 2010-07-08 Thore Böckelmann <tboeckel@gmx.de>
 
