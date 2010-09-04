@@ -31,6 +31,14 @@
 
 #include "Debug.h"
 
+// special flagging macros
+#define setFlag(mask, flag)             (mask) |= (flag)               // set the flag "flag" in "mask"
+#define clearFlag(mask, flag)           (mask) &= ~(flag)              // clear the flag "flag" in "mask"
+#define maskFlag(mask, flag)            (mask) &= (flag)               // mask the variable "mask" with flags "flag" bitwise
+#define isAnyFlagSet(mask, flag)        (((mask) & (flag)) != 0)       // return TRUE if at least one of the flags is set
+#define isFlagSet(mask, flag)           (((mask) & (flag)) == (flag))  // return TRUE if the flag is set
+#define isFlagClear(mask, flag)         (((mask) & (flag)) == 0)       // return TRUE if the flag is NOT set
+
 // if something in our configuration setup (keybindings, etc)
 // has changed we can increase the config version so that TextEditor
 // will popup a warning about and obsolete configuration.
@@ -187,14 +195,14 @@ BOOL CreateSubClasses(void);
 void DeleteSubClasses(void);
 
 // main class methods
-ULONG New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet *msg));
-ULONG Dispose(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, Msg msg));
-ULONG GadgetsToConfig(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_GadgetsToConfig *msg));
-ULONG ConfigToGadgets(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_ConfigToGadgets *msg));
+IPTR New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet *msg));
+IPTR Dispose(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, Msg msg));
+IPTR GadgetsToConfig(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_GadgetsToConfig *msg));
+IPTR ConfigToGadgets(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_ConfigToGadgets *msg));
 
 /// xget()
 //  Gets an attribute value from a MUI object
-ULONG xget(Object *obj, const IPTR attr);
+IPTR xget(Object *obj, const IPTR attr);
 #if defined(__GNUC__)
   // please note that we do not evaluate the return value of GetAttr()
   // as some attributes (e.g. MUIA_Selected) always return FALSE, even
@@ -203,5 +211,16 @@ ULONG xget(Object *obj, const IPTR attr);
   #define xget(OBJ, ATTR) ({IPTR b=0; GetAttr(ATTR, OBJ, &b); b;})
 #endif
 ///
+
+#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
+// GetHead.c
+struct Node *GetHead(struct List *);
+// GetPred.c
+struct Node *GetPred(struct Node *);
+// GetSucc.c
+struct Node *GetSucc(struct Node *);
+// GetTail.c
+struct Node *GetTail(struct List *);
+#endif
 
 #endif /* MUI_NLISTVIEWS_priv_MCP_H */

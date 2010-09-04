@@ -150,9 +150,17 @@
 #define isFlagSet(mask, flag)           (((mask) & (flag)) == (flag))  // return TRUE if the flag is set
 #define isFlagClear(mask, flag)         (((mask) & (flag)) == 0)       // return TRUE if the flag is NOT set
 
+#ifndef MAX
+#define MAX(a,b)          (((a) > (b)) ? (a) : (b))
+#endif
+#ifndef MIN
+#define MIN(a,b)          (((a) < (b)) ? (a) : (b))
+#endif
+
 enum EventType
 {
-  ET_PASTECHAR = 0,
+  ET_NONE = 0,
+  ET_PASTECHAR,
   ET_DELETECHAR,
   ET_SPLITLINE,
   ET_MERGELINES,
@@ -194,11 +202,7 @@ struct LineNode
   ULONG    Length;        // The length of the line (including the '\n')
   ULONG allocatedContents;
   struct LineStyle *Styles; // Set this to the styles used for this line (allocated via the poolhandle). The array is terminated by an (EOS,0) marker
-  ULONG allocatedStyles;
-  ULONG usedStyles;
   struct LineColor *Colors; // The colors to use (allocated via the poolhandle). The array is terminated by an (EOC,0) marker
-  ULONG allocatedColors;
-  ULONG usedColors;
   BOOL     Highlight;     // Set this to TRUE if you want the line to be highlighted
   UWORD    Flow;          // Use the MUIV_TextEditor_Flow_xxx values...
   UWORD    Separator;     // See definitions below
@@ -289,13 +293,22 @@ struct ImportMessage
   ULONG   ImportWrap;         /* For your use only (reflects MUIA_TextEditor_ImportWrap) */
 };
 
+struct Grow
+{
+  char *array;
+
+  int itemSize;
+  int itemCount;
+  int maxItemCount;
+
+  APTR pool;
+};
+
 struct InstData
 {
-  WORD    xpos;             // xpos of gadget
   WORD    ypos;             // ypos of gadget
   WORD    realypos;
-  UWORD   height;           // font height
-  UWORD   innerwidth;         // inner gadget width in pixels (-cursor)
+  UWORD   fontheight;       // font height
 
   UWORD   CPos_X;           // Cursor x pos.
   struct  line_node *actualline;    // The actual line...
@@ -420,12 +433,9 @@ void SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *));
 #define SHARED_MEMFLAG          MEMF_ANY
 #endif
 
+// AllocFunctions.c
 struct line_node *AllocLine(struct InstData *);
 void FreeLine(struct InstData *, struct line_node *);
-#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
-APTR AllocVecPooled(APTR, ULONG);
-void FreeVecPooled(APTR, APTR);
-#endif
 
 // BlockOperators.c
 STRPTR GetBlock(struct InstData *, struct marking *);
@@ -472,6 +482,12 @@ IPTR mExportText(struct IClass *, Object *, struct MUIP_TextEditor_ExportText *)
 // GetSetAttrs.c
 IPTR mGet(struct IClass *, Object *, struct opGet *);
 IPTR mSet(struct IClass *, Object *, struct opSet *);
+
+// Grow.c
+void InitGrow(struct Grow *grow, APTR pool, int itemSize);
+void FreeGrow(struct Grow *grow);
+void AddToGrow(struct Grow *grow, void *newItem);
+void RemoveFromGrow(struct Grow *grow);
 
 // HandleARexx.c
 IPTR mHandleARexx(struct IClass *, Object *, struct MUIP_TextEditor_ARexxCmd *);
@@ -584,8 +600,27 @@ void AddStyleToLine(struct InstData *, LONG, struct line_node *, LONG, UWORD);
 BOOL AddToUndoBuffer(struct InstData *, enum EventType, void *);
 void ResetUndoBuffer(struct InstData *);
 void ResizeUndoBuffer(struct InstData *, ULONG);
+void FreeUndoBuffer(struct InstData *);
 BOOL Undo(struct InstData *);
 BOOL Redo(struct InstData *);
+
+#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
+// AllocVecPooled.c
+APTR AllocVecPooled(APTR, ULONG);
+// FreeVecPooled.c
+void FreeVecPooled(APTR, APTR);
+#endif
+
+#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
+// GetHead.c
+struct Node *GetHead(struct List *);
+// GetPred.c
+struct Node *GetPred(struct Node *);
+// GetSucc.c
+struct Node *GetSucc(struct Node *);
+// GetTail.c
+struct Node *GetTail(struct List *);
+#endif
 
 #if defined(DEBUG)
 void DumpLine(struct line_node *line);

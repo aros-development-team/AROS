@@ -20,6 +20,7 @@ FILES := library \
         ExportBlock \
         ExportText \
         GetSetAttrs \
+        Grow \
         HandleARexx \
         HandleInput \
         InitConfig \
@@ -36,8 +37,7 @@ FILES := library \
         SpellChecker \
         StyleOperators \
         UndoFunctions \
-        Debug \
-        vastubs
+        Debug
 
 %build_module_simple mmake=workbench-classes-zune-texteditor-class \
   modname=TextEditor modtype=mcc \

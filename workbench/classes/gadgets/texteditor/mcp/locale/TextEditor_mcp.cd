@@ -1,6 +1,6 @@
 ;
 ; TextEditor_mcp.cd - TextEditor MUI custom prefs catalog description file
-; $Id: TextEditor_mcp.cd 438 2008-01-03 06:09:44Z thboeckel $
+; $Id: TextEditor_mcp.cd 667 2010-05-25 13:21:55Z marust $
 ;
 #version 2
 #language english

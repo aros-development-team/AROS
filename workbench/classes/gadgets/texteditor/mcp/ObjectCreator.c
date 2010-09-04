@@ -310,7 +310,7 @@ static Object *PrefsObject(struct InstData_MCP *data)
   return(data->obj);
 }
 
-ULONG New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet *msg))
+IPTR New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet *msg))
 {
   if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)))
   {
@@ -346,7 +346,6 @@ ULONG New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet
         DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->typenspell, MUICFG_TextEditor_TypeNSpell, 1, tr(MSG_ConfigMenu_TypeNSpell));
         DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->CheckWord, MUICFG_TextEditor_CheckWord, 1, tr(MSG_ConfigMenu_CheckWord));
         DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->tabsize, MUICFG_TextEditor_TabSize, 1, tr(MSG_Label_TabSize));
-        DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->undosize, MUICFG_TextEditor_UndoSize, 1, tr(MSG_Label_UndoLevel));
         DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->textcolor, MUICFG_TextEditor_TextColor, 1, tr(MSG_Label_Text));
         DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->separatorshine, MUICFG_TextEditor_SeparatorShine, 1, tr(MSG_Label_SeparatorShine));
         DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->separatorshadow, MUICFG_TextEditor_SeparatorShadow, 1, tr(MSG_Label_SeparatorShadow));
@@ -363,7 +362,7 @@ ULONG New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet
   return(FALSE);
 }
 
-ULONG Dispose(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, Msg msg))
+IPTR Dispose(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, Msg msg))
 {
   struct InstData_MCP *data = INST_DATA(cl, obj);
   Object *editpopup = data->editpopup;
@@ -380,7 +379,7 @@ ULONG Dispose(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, Msg msg)
   return(DoSuperMethodA(cl, obj, msg));
 }
 
-ULONG GadgetsToConfig(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_GadgetsToConfig *msg))
+IPTR GadgetsToConfig(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_GadgetsToConfig *msg))
 {
   struct InstData_MCP *data = INST_DATA(cl, obj);
   IPTR cfg_data;
@@ -477,7 +476,7 @@ ULONG GadgetsToConfig(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, 
   return(0);
 }
 
-ULONG ConfigToGadgets(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_ConfigToGadgets *msg))
+IPTR ConfigToGadgets(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct MUIP_Settingsgroup_ConfigToGadgets *msg))
 {
   struct InstData_MCP *data = INST_DATA(cl, obj);
   APTR cfg_data;

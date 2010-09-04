@@ -186,6 +186,7 @@ COBJS = AllocBitMap.o \
         ExportBlock.o \
         ExportText.o \
         GetSetAttrs.o \
+        Grow.o \
         HandleARexx.o \
         HandleInput.o \
         InitConfig.o \
@@ -202,8 +203,7 @@ COBJS = AllocBitMap.o \
         SpellChecker.o \
         StyleOperators.o \
         UndoFunctions.o \
-        Debug.o \
-        vastubs.o
+        Debug.o
 
 TOBJS = TextEditor-Test.o
 
@@ -253,6 +253,15 @@ ifeq ($(OS), os3)
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug -lmui
 
+  # additional object files required
+  COBJS += vastubs.o \
+           extrasrc/AllocVecPooled.o \
+           extrasrc/FreeVecPooled.o \
+           extrasrc/GetHead.o \
+           extrasrc/GetPred.o \
+           extrasrc/GetSucc.o \
+           extrasrc/GetTail.o
+
 else
 ifeq ($(OS), mos)
 
@@ -268,7 +277,7 @@ ifeq ($(OS), mos)
 
   # Compiler/Linker flags
   CPU     = -mcpu=powerpc
-  CFLAGS  += -noixemul -DNO_PPCINLINE_STDARG
+  CFLAGS  += -noixemul -DNO_PPCINLINE_STDARG -DAROS_ALMOST_COMPATIBLE
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
@@ -285,6 +294,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -301,6 +311,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -317,6 +328,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
+  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -363,6 +375,7 @@ release:
 $(OBJDIR):
 	@echo "  MK $@"
 	@$(MKDIR) $(OBJDIR)
+	@$(MKDIR) $(OBJDIR)/extrasrc
 
 # make the binary directories
 $(BINDIR):

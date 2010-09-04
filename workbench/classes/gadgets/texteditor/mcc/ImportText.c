@@ -29,7 +29,7 @@
 
 /// ImportText()
 /***********************************************************************
- Import the given 0 terminated text by invoking the gicen import Hook
+ Import the given 0 terminated text by invoking the given import Hook
  for every line
 ***********************************************************************/
 struct line_node *ImportText(struct InstData *data, char *contents, struct Hook *importHook, LONG wraplength)
@@ -56,19 +56,18 @@ struct line_node *ImportText(struct InstData *data, char *contents, struct Hook 
 
       im.linenode = &line->line;
 
-      /* invoke the hook, it will return NULL in case it is finished or
-       * an error occured */
+      // invoke the hook, it will return NULL in case it is finished or
+      // an error occured
       im.Data = (char*)CallHookPkt(importHook, NULL, &im);
 
-      if (!im.Data)
+      if(im.Data == NULL)
       {
-        if (!line->line.Contents)
+        if(line->line.Contents == NULL)
         {
-          /* Free the line node if it didn't contain any contents */
-          if (line->previous)
+          // free the line node if it didn't contain any contents
+          if(line->previous != NULL)
           {
             line->previous->next = NULL;
-
             FreeLine(data, line);
           }
           else
@@ -115,4 +114,5 @@ struct line_node *ImportText(struct InstData *data, char *contents, struct Hook 
   RETURN(first_line);
   return first_line;
 }
+
 ///

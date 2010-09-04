@@ -1,7 +1,7 @@
 /*******************************************************************************
 
         Name:           mccinit.c
-        Versionstring:  $VER: mccinit.c 1.19 (25.05.2010)
+        Versionstring:  $VER: mccinit.c 1.20 (01.06.2010)
         Author:         Jens Langner <Jens.Langner@light-speed.de>
         Distribution:   PD (public domain)
         Description:    library init file for easy generation of a MUI
@@ -52,6 +52,12 @@
   1.17  02.06.2009 : more fixes to better comply for AROS compilation
   1.18  24.04.2010 : fixed stack swapping for AROS
   1.19  25.05.2010 : updated for compatibility with AROS V1 API
+  1.20  01.06.2010 : added CleanupDebug() call to expunge function.
+  1.21  17.08.2010 : the UserLibName and UserLibID strings are now correctly
+                     placed in the .data instead of the .text section. Also made
+                     sure that the _start() function is really the first entry,
+                     otherwise random data will be executed as code, which will
+                     crash for sure.
 
  About:
 
@@ -220,22 +226,22 @@ extern "C" {
 #define STR2(x) #x
 
 #ifdef __amigaos4__
-static const char USED_VAR stack_size[] = "$STACK:" STR(MIN_STACKSIZE) "\n";
+STATIC const char USED_VAR stack_size[] = "$STACK:" STR(MIN_STACKSIZE) "\n";
 #endif
 #endif
 
 /* The name of the class will also become the name of the library. */
 /* We need a pointer to this string in our ROMTag (see below). */
-static const char UserLibName[] = CLASS;
-static const char UserLibID[]   = "$VER: " USERLIBID;
+STATIC const char UserLibName[] = CLASS;
+STATIC const char UserLibID[]   = "$VER: " USERLIBID;
 
 #ifdef SUPERCLASS
-static struct MUI_CustomClass *ThisClass = NULL;
+STATIC struct MUI_CustomClass *ThisClass = NULL;
 DISPATCHERPROTO(_Dispatcher);
 #endif
 
 #ifdef SUPERCLASSP
-static struct MUI_CustomClass *ThisClassP = NULL;
+STATIC struct MUI_CustomClass *ThisClassP = NULL;
 DISPATCHERPROTO(_DispatcherP);
 #endif
 
@@ -298,20 +304,20 @@ struct LibraryHeader
 
 #if defined(__amigaos4__)
 
-static struct LibraryHeader * LIBFUNC LibInit    (struct LibraryHeader *base, BPTR librarySegment, struct ExecIFace *pIExec);
-static BPTR                   LIBFUNC LibExpunge (struct LibraryManagerInterface *Self);
-static struct LibraryHeader * LIBFUNC LibOpen    (struct LibraryManagerInterface *Self, ULONG version);
-static BPTR                   LIBFUNC LibClose   (struct LibraryManagerInterface *Self);
-static IPTR                   LIBFUNC MCC_Query  (UNUSED struct Interface *self, REG(d0, LONG which));
+STATIC struct LibraryHeader * LIBFUNC LibInit    (struct LibraryHeader *base, BPTR librarySegment, struct ExecIFace *pIExec);
+STATIC BPTR                   LIBFUNC LibExpunge (struct LibraryManagerInterface *Self);
+STATIC struct LibraryHeader * LIBFUNC LibOpen    (struct LibraryManagerInterface *Self, ULONG version);
+STATIC BPTR                   LIBFUNC LibClose   (struct LibraryManagerInterface *Self);
+STATIC IPTR                   LIBFUNC MCC_Query  (UNUSED struct Interface *self, REG(d0, LONG which));
 
 #elif defined(__MORPHOS__)
 
-static struct LibraryHeader * LIBFUNC LibInit    (struct LibraryHeader *base, BPTR librarySegment, struct ExecBase *sb);
-static BPTR                   LIBFUNC LibExpunge (void);
-static struct LibraryHeader * LIBFUNC LibOpen    (void);
-static BPTR                   LIBFUNC LibClose   (void);
-static LONG                   LIBFUNC LibNull    (void);
-static IPTR                   LIBFUNC MCC_Query  (void);
+STATIC struct LibraryHeader * LIBFUNC LibInit    (struct LibraryHeader *base, BPTR librarySegment, struct ExecBase *sb);
+STATIC BPTR                   LIBFUNC LibExpunge (void);
+STATIC struct LibraryHeader * LIBFUNC LibOpen    (void);
+STATIC BPTR                   LIBFUNC LibClose   (void);
+STATIC LONG                   LIBFUNC LibNull    (void);
+STATIC IPTR                   LIBFUNC MCC_Query  (void);
 
 #elif defined(__AROS__)
 
@@ -338,12 +344,12 @@ AROS_LD1(IPTR, MCC_Query,
 
 #else
 
-static struct LibraryHeader * LIBFUNC LibInit    (REG(d0, struct LibraryHeader *base), REG(a0, BPTR librarySegment), REG(a6, struct ExecBase *sb));
-static BPTR                   LIBFUNC LibExpunge (REG(a6, struct LibraryHeader *base));
-static struct LibraryHeader * LIBFUNC LibOpen    (REG(d0, ULONG version), REG(a6, struct LibraryHeader *base));
-static BPTR                   LIBFUNC LibClose   (REG(a6, struct LibraryHeader *base));
-static LONG                   LIBFUNC LibNull    (void);
-static IPTR                   LIBFUNC MCC_Query  (REG(d0, LONG which));
+STATIC struct LibraryHeader * LIBFUNC LibInit    (REG(d0, struct LibraryHeader *base), REG(a0, BPTR librarySegment), REG(a6, struct ExecBase *sb));
+STATIC BPTR                   LIBFUNC LibExpunge (REG(a6, struct LibraryHeader *base));
+STATIC struct LibraryHeader * LIBFUNC LibOpen    (REG(d0, ULONG version), REG(a6, struct LibraryHeader *base));
+STATIC BPTR                   LIBFUNC LibClose   (REG(a6, struct LibraryHeader *base));
+STATIC LONG                   LIBFUNC LibNull    (void);
+STATIC IPTR                   LIBFUNC MCC_Query  (REG(d0, LONG which));
 
 #endif
 
@@ -363,17 +369,24 @@ static IPTR                   LIBFUNC MCC_Query  (REG(d0, LONG which));
  *
  */
 
-#if defined(__amigaos4__)
+#if defined(__amigaos4__) && !defined(__AROS__) && !defined(__MORPHOS__)
+#if !defined(__mc68000__)
 int32 _start(void)
-#else
-int Main(void)
-#endif
 {
   return RETURN_FAIL;
 }
+#else
+asm(".text                    \n\
+     .even                    \n\
+     .globl _start            \n\
+   _start:                    \n\
+     moveq #0,d0              \n\
+     rts");
+#endif
+#endif
 
 #if !defined(__amigaos4__)
-static LONG LIBFUNC LibNull(VOID)
+STATIC LONG LIBFUNC LibNull(VOID)
 {
   return(0);
 }
@@ -525,7 +538,7 @@ STATIC CONST IPTR LibInitTab[] =
 #endif
 
 /* ------------------- ROM Tag ------------------------ */
-static const USED_VAR struct Resident ROMTag =
+STATIC const USED_VAR struct Resident ROMTag =
 {
   RTC_MATCHWORD,
   (struct Resident *)&ROMTag,
@@ -626,7 +639,7 @@ ULONG stackswap_call(struct StackSwapStruct *stack,
 #error Bogus operating system
 #endif
 
-static BOOL callMccFunction(ULONG (*function)(struct LibraryHeader *), struct LibraryHeader *arg)
+STATIC BOOL callMccFunction(ULONG (*function)(struct LibraryHeader *), struct LibraryHeader *arg)
 {
   BOOL success = FALSE;
   struct Task *tc;
@@ -686,7 +699,7 @@ static BOOL callMccFunction(ULONG (*function)(struct LibraryHeader *), struct Li
 /******************************************************************************/
 
 /* open and init all necessary library and stuff in the LibInit() phase */
-static ULONG mccLibInit(struct LibraryHeader *base)
+STATIC ULONG mccLibInit(struct LibraryHeader *base)
 {
   // now that this library/class is going to be initialized for the first time
   // we go and open all necessary libraries on our own
@@ -809,7 +822,7 @@ static ULONG mccLibInit(struct LibraryHeader *base)
 }
 
 /* expunge everything we previously opened and call user definable functions */
-static ULONG mccLibExpunge(UNUSED struct LibraryHeader *base)
+STATIC ULONG mccLibExpunge(UNUSED struct LibraryHeader *base)
 {
   // in case the user specified that he has an own class
   // expunge function we call it right here, not caring about
@@ -839,6 +852,10 @@ static ULONG mccLibExpunge(UNUSED struct LibraryHeader *base)
   // is finished, if he want's to get informed.
   #if defined(POSTCLASSEXPUNGE)
   PostClassExpunge();
+  #endif
+
+  #if defined(DEBUG)
+  CleanupDebug();
   #endif
 
   // cleanup the various library bases and such
@@ -882,7 +899,7 @@ static ULONG mccLibExpunge(UNUSED struct LibraryHeader *base)
 
 /* we call the user definable function here only */
 #if defined(CLASSOPEN)
-static ULONG mccLibOpen(struct LibraryHeader *base)
+STATIC ULONG mccLibOpen(struct LibraryHeader *base)
 {
   return ClassOpen(&base->lh_Library);
 }
@@ -890,7 +907,7 @@ static ULONG mccLibOpen(struct LibraryHeader *base)
 
 /* we call the user definable function here only */
 #if defined(CLASSCLOSE)
-static ULONG mccLibClose(struct LibraryHeader *base)
+STATIC ULONG mccLibClose(struct LibraryHeader *base)
 {
   ClassClose(&base->lh_Library);
   return TRUE;
@@ -902,12 +919,12 @@ static ULONG mccLibClose(struct LibraryHeader *base)
 /******************************************************************************/
 
 #if defined(__amigaos4__)
-static struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecIFace *pIExec)
+STATIC struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecIFace *pIExec)
 {
   struct Library *sb = (struct Library *)pIExec->Data.LibBase;
   IExec = pIExec;
 #elif defined(__MORPHOS__)
-static struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecBase *sb)
+STATIC struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecBase *sb)
 {
 #elif defined(__AROS__)
 AROS_UFH3 (struct LibraryHeader *, LibInit,
@@ -918,7 +935,7 @@ AROS_UFH3 (struct LibraryHeader *, LibInit,
 {
   AROS_USERFUNC_INIT
 #else
-static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base), REG(a0, BPTR librarySegment), REG(a6, struct ExecBase *sb))
+STATIC struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base), REG(a0, BPTR librarySegment), REG(a6, struct ExecBase *sb))
 {
 #endif
 
@@ -937,7 +954,7 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
   {
     BOOL success = FALSE;
 
-    D(DBF_STARTUP, "LibInit(%s)", CLASS);
+    D(DBF_STARTUP, "LibInit(" CLASS ")");
 
     // cleanup the library header structure beginning with the
     // library base, even if that is done automcatically, we explicitly
@@ -1002,28 +1019,28 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
 #endif
 
 #if defined(__amigaos4__)
-static BPTR LibExpunge(struct LibraryManagerInterface *Self)
+STATIC BPTR LibExpunge(struct LibraryManagerInterface *Self)
 {
   struct ExecIFace *IExec = (struct ExecIFace *)(*(struct ExecBase **)4)->MainInterface;
   struct LibraryHeader *base = (struct LibraryHeader *)Self->Data.LibBase;
 #elif defined(__MORPHOS__)
-static BPTR LibExpunge(void)
+STATIC BPTR LibExpunge(void)
 {
   struct LibraryHeader *base = (struct LibraryHeader *)REG_A6;
 #elif defined(__AROS__)
 AROS_LH1 (BPTR, LibExpunge,
-    AROS_LHA(struct LibraryHeader *, extralh, D0),
+    AROS_LHA(UNUSED struct LibraryHeader *, extralh, D0),
     struct LibraryHeader *, base, 3, __MCC_
 )
 {
     AROS_LIBFUNC_INIT
 #else
-static BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
+STATIC BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
 {
 #endif
   BPTR rc;
 
-  D(DBF_STARTUP, "LibExpunge(%s): %ld", CLASS, base->lh_Library.lib_OpenCnt);
+  D(DBF_STARTUP, "LibExpunge(" CLASS "): %ld", base->lh_Library.lib_OpenCnt);
 
   // in case our open counter is still > 0, we have
   // to set the late expunge flag and return immediately
@@ -1070,27 +1087,27 @@ static BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
 /*****************************************************************************************************/
 
 #if defined(__amigaos4__)
-static struct LibraryHeader *LibOpen(struct LibraryManagerInterface *Self, ULONG version UNUSED)
+STATIC struct LibraryHeader *LibOpen(struct LibraryManagerInterface *Self, ULONG version UNUSED)
 {
   struct LibraryHeader *base = (struct LibraryHeader *)Self->Data.LibBase;
 #elif defined(__MORPHOS__)
-static struct LibraryHeader *LibOpen(void)
+STATIC struct LibraryHeader *LibOpen(void)
 {
   struct LibraryHeader *base = (struct LibraryHeader *)REG_A6;
 #elif defined(__AROS__)
 AROS_LH1 (struct LibraryHeader *, LibOpen,
-    AROS_LHA (ULONG, version, D0),
+    AROS_LHA (UNUSED ULONG, version, D0),
     struct LibraryHeader *, base, 1, __MCC_
 )
 {
   AROS_LIBFUNC_INIT
 #else
-static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG(a6, struct LibraryHeader *base))
+STATIC struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG(a6, struct LibraryHeader *base))
 {
 #endif
   struct LibraryHeader *res = NULL;
 
-  D(DBF_STARTUP, "LibOpen(%s): %ld", CLASS, base->lh_Library.lib_OpenCnt);
+  D(DBF_STARTUP, "LibOpen(" CLASS "): %ld", base->lh_Library.lib_OpenCnt);
 
   // LibOpen(), LibClose() and LibExpunge() are called while the system is in
   // Forbid() state. That means that these functions should be quick and should
@@ -1126,7 +1143,7 @@ static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG
       res = base;
     else
     {
-      E(DBF_STARTUP, "ClassOpen(%s) failed", CLASS);
+      E(DBF_STARTUP, "ClassOpen(" CLASS ") failed");
 
       // decrease the open counter again
       base->lh_Library.lib_OpenCnt--;
@@ -1149,11 +1166,11 @@ static struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG
 /*****************************************************************************************************/
 
 #if defined(__amigaos4__)
-static BPTR LibClose(struct LibraryManagerInterface *Self)
+STATIC BPTR LibClose(struct LibraryManagerInterface *Self)
 {
   struct LibraryHeader *base = (struct LibraryHeader *)Self->Data.LibBase;
 #elif defined(__MORPHOS__)
-static BPTR LibClose(void)
+STATIC BPTR LibClose(void)
 {
   struct LibraryHeader *base = (struct LibraryHeader *)REG_A6;
 #elif defined(__AROS__)
@@ -1163,12 +1180,12 @@ AROS_LH0 (BPTR, LibClose,
 {
     AROS_LIBFUNC_INIT
 #else
-static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
+STATIC BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
 {
 #endif
   BPTR rc = 0;
 
-  D(DBF_STARTUP, "LibClose(%s): %ld", CLASS, base->lh_Library.lib_OpenCnt);
+  D(DBF_STARTUP, "LibClose(" CLASS "): %ld", base->lh_Library.lib_OpenCnt);
 
   // check if the user defined a ClassClose() function
   #if defined(CLASSCLOSE)
@@ -1224,25 +1241,25 @@ static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
 /*****************************************************************************************************/
 
 #if defined(__amigaos4__)
-static IPTR LIBFUNC MCC_Query(UNUSED struct Interface *self, REG(d0, LONG which))
+STATIC IPTR LIBFUNC MCC_Query(UNUSED struct Interface *self, REG(d0, LONG which))
 {
 #elif defined(__MORPHOS__)
-static IPTR MCC_Query(void)
+STATIC IPTR MCC_Query(void)
 {
   LONG which = (LONG)REG_D0;
 #elif defined(__AROS__)
 AROS_LH1(IPTR, MCC_Query,
          AROS_LHA(LONG, which, D0),
-         struct LibraryHeader *, base, 5, __MCC_
+         UNUSED struct LibraryHeader *, base, 5, __MCC_
 )
 {
     AROS_LIBFUNC_INIT
 #else
-static IPTR LIBFUNC MCC_Query(REG(d0, LONG which))
+STATIC IPTR LIBFUNC MCC_Query(REG(d0, LONG which))
 {
 #endif
 
-  D(DBF_STARTUP, "MCC_Query(%s): %ld", CLASS, which);
+  D(DBF_STARTUP, "MCC_Query(" CLASS "): %ld", which);
 
   switch (which)
   {

@@ -2,8 +2,232 @@
 MUI TextEditor MCC class - ChangeLog
 ------------------------------------
 
-$Id: ChangeLog 647 2010-05-16 11:46:34Z damato $
-$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases/15.33/ChangeLog $
+$Id: ChangeLog 739 2010-09-01 19:38:32Z damato $
+$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases/15.35/ChangeLog $
+
+#### v15.35 RELEASE ############################################################
+
+2010-09-01 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.35 release preparations
+
+2010-08-17 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mccinit.c, SDI_compiler.h: updated to latest versions.
+
+2010-08-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/#?: replaced lots of direct references to MUI's area data and render
+    info by the appropriate macro calls. This way we can rid of some private
+    variables which are just copies of these values.
+  * mcc/PrintLineWithStyle.c: added a TextFit() call to calculate how many
+    characters can really be displayed. This works around the problem that very
+    long lines would either be drawn outside the editors area or were not
+    correctly displayed at all due to integer overflows in graphics.library.
+
+2010-07-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Debug.c, mcp/Debug.c: removed unused debug flags from the .mcp and made
+    @mtrack user definable for both classes.
+  * mcp/Makefile, misc: added missing functions for the OS3 debug build.
+
+2010-07-29 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp: fixed MorphOS compile by applying debugging framework from mcc also
+    on the mcp.
+
+2010-07-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: the text was no longer refreshed in case the user tried
+    to paste from an empty or non-text clipboard.
+
+2010-07-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Methods.c: clearing the complete text is now remembered as an action
+    without cursor movement. Undoing this action will result in the cursor being
+    placed on the very first character of the text instead of behind the very
+    last character.
+  * mcc/misc: use the SetAfPt() macro instead of poking directly into the
+    RastPort structure.
+
+2010-07-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/CreatePrefsGroup.c: replaced the text editor object containing the
+    instructions about the spell checking facility by a plain float text object.
+    Having a flow blown editor is far too much overhead here.
+  * mcc/UndoFunctions.c: defined a separate value for a "do nothing" undo step
+    which can be used to erase any other undo step type.
+  * mcc/UndoFunctions.c: fixed a possible memory leak when resizing the undo
+    buffer. A resize from any number of steps to zero steps would not have freed
+    any undo steps done so far.
+
+2010-07-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/ObjectCreator.c: removed the "undo steps" slider from the real time
+    settings facility of MUI4 completely. First, adjusting the value will give
+    no visual feedback. Second (and even more important), adjusting the number
+    of steps in real time will effectively kill all undo steps so far in case
+    the slider is moved to zero. This is not what the user expects to happen.
+    MorphOS-devs, please check the other GUI elements if some of them can be
+    excluded from the real time settings as well. Furthermore, please check if
+    this change fixes bug #3024024.
+
+2010-07-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/UndoFunctions.c: the undo buffer will be preserved in case the number of
+    undo steps is modified.
+  * mcc/UndoFunctions.c: a modified number of undo steps will now trigger the
+    notifications for MUIA_TextEditor_Undo/RedoAvailable.
+  * mcc/UndoFunctions.c: in case there is not enough memory for a new undo step
+    (i.e. a too big block) only this single step will be discarded instead of
+    all remembered steps so far.
+  * mcc/UndoFunctions.c: in case the number of undo steps is decreased the steps
+    which don't fit into the new buffer are freed correctly now.
+
+#### v15.34 RELEASE ############################################################
+
+2010-07-01 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.34 release preparations
+
+2010-06-30 Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile: fixed the top-level Makefile to only compile for the standard
+    platform found by the separate Makefiles in each subdirectories.
+  * tools/mkrelease.sh: minor fixes to the mkrelease script to generate a complete
+    new release archive.
+
+2010-06-29 Ilkka Lehtoranta <ilkleht@yahoo.com>
+
+  * mcc/Makefile, mcc/private.h: Use standard AROS GetHead/Pred/Succ/Tail
+    macros in MorphOS.
+
+2010-06-29 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/swedish.ct: added ##codeset line.
+
+2010-06-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * doc/MCC_TextEditor.guide: fixed wrong version information. This fixes bug
+    #3021781.
+
+2010-06-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Install-MCC: extended the final message that a reboot might be necessary to
+    be able to use the just installed version.
+
+2010-06-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: moved all sources which implement stuff which is missing on some
+    systems to a separate "extrasrc" directory.
+
+2010-06-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Get#?.c: added GetHead/Pred/Succ/Tail implementation for those systems
+    which don't implement these natively.
+  * mcc/EditorStuff.c: use the growing tables as well when removing characters
+    and the style/color information needs to be updated. This should have been
+    the last place for possible buffer overruns if removing some styled text
+    resulted in more style changes than before.
+
+2010-06-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: replaced all hand crafted style and color array allocations by
+    growing arrays which are resized on demand. This makes buffer overruns
+    due to imprecise size calculation impossible and should fix the random
+    crashes.
+
+2010-05-25 Matthias Rustler <mrustler@gmx.de>
+
+  * Fixes for 64-bit AROS: changed some ULONG to IPTR to get rid of warnings like
+    "conversion from/to pointer to/from integer with different size"
+
+2010-06-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: fixed an off-by-one string copying.
+
+2010-06-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c, mcc/HandleARexx.c: replaced some memcpy() calls by more
+    apropriate strlcpy() calls.
+  * mcc/AllocFunctions.c, mcc/#?VecPooled.c, mcc/Makefile: moved the
+    #?VecPooled()functions for OS3 to separate files.
+  * mcc/ClipboardServer.c: removed the ENTER()/LEAVE() macro calls from the
+    server process' function as these are cluttering up the debug log.
+
+2010-06-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mccinit.c: added CleanupDebug() call to expunge function.
+  * Debug.c, misc: implemented a basic check to verify that stuff is being freed
+    using the correct function, i.e. FreeVec() for AllocVec()'ed memory.
+  * Debug.c: fixed slightly wrong string parsing.
+
+2010-05-31 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/MixedFunctions.c: fixed a possible memory leak.
+  * mcc/EditorStuff.c, mcc/Dispatcher.c: replaced some free line loops by a call
+    to FreeTextMem().
+  * mcc/BlockOperators.c, mcc/ImportHook.c, mcc/HandleARexx.c: minor code
+    cleanup.
+
+2010-05-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * dist/Install-MCC: the supported languages are now collected dynamically
+    instead of being defined statically. Furthermore the .mcc name must be
+    specified in the script's icon as application name. This makes it possible
+    to use the script for arbitrary classes without modification.
+  * dist/icons: set some reasonable default icon positions.
+
+2010-05-26 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/polish.ct: added a missing comment.
+
+2010-05-26 Mariusz Danilewicz <mandi@interia.pl>
+
+  * mcp/locale/polish.ct: translation of MSG_HELP_CURSOR_SELECTED corrected
+
+2010-05-25 Matthias Rustler <mrustler@gmx.de>
+
+  * mcp/mmakefile.src: icon.c added
+  * mcp/locale/TextEditor_mcp.cd: one string corrected
+  * mcp/locale/french.ct: there was a more recent version
+    in the AROS source
+  * include/mccinit.c: updated with fixes for AROS V1 API
+
+2010-05-25 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleARexx.c: fixed a NULL pointer access when the "SELECTNONE"
+    command was invoked without any text being selected before. This closes
+    YAM bug #165.
+  * mcp/locale/polish.ct: added missing final LF character.
+  * dist/Install-MCC: added the first version of a generic MCC Installer script.
+    To use this script for other classes only the name and the set of supported
+    languages needs to be adapted.
+
+2010-05-24 Mariusz Danilewicz <mandi@interia.pl>
+
+  * mcp\locale\polish.ct: added Polish translation
+  * tools\mkrelease.sh: added generating Polish catalog to release
+  * mcp\makefile and mmakefile.src: added generating Polish catalog
+
+2010-05-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Makefiles: add varargs stubs only for those systems which really need it.
+
+2010-05-18 Thore Böckelmann <tboeckel@gmx.de>
+
+ * mcc/UndoFunctions.c: use memmove() instead of memcpy() to shift the undo
+   steps as the buffers definitely do overlap due to the in-place operation.
+ * mcc/Methods.c: clearing the text of a read-only instance will no longer add
+   the deleted text to the undo buffer. This fixes bug #3003238.
+ * mcc/UndoFunctions.c: trying to perform any undo/redo action on a ready-only
+   instance will let this action fail.
+ * added stuff for automated build of release archives.
+
+2010-05-17 Thore Böckelmann <tboeckel@gmx.de>
+
+ * mcc/SpellChecker.c: slightly improved the setup of the Rexx messages to avoid
+   accessing possible NULL pointers.
 
 #### v15.33 RELEASE ############################################################
 

@@ -22,33 +22,63 @@
 
 #ifdef DEBUG
 
-#include <stdlib.h>
+#include <stdio.h> // vsnprintf
 #include <string.h>
 #include <stdarg.h>
-#include <stdio.h>
 
-#include <proto/intuition.h>
-#include <proto/utility.h>
-#include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
+#include <clib/alib_protos.h>
 
 #include "SDI_compiler.h"
+
+#include "private.h"
+
+#define DEBUG_USE_MALLOC_REDEFINE 1
 #include "Debug.h"
 #include "version.h"
 
-// special flagging macros
-#define isFlagSet(v,f)      (((v) & (f)) == (f))  // return TRUE if the flag is set
-#define hasFlag(v,f)        (((v) & (f)) != 0)    // return TRUE if one of the flags in f is set in v
-#define isFlagClear(v,f)    (((v) & (f)) == 0)    // return TRUE if flag f is not set in v
-#define SET_FLAG(v,f)       ((v) |= (f))          // set the flag f in v
-#define CLEAR_FLAG(v,f)     ((v) &= ~(f))         // clear the flag f in v
-#define MASK_FLAG(v,f)      ((v) &= (f))          // mask the variable v with flag f bitwise
+#if defined(__MORPHOS__)
+#include <exec/rawfmt.h>
+#elif defined(__AROS__)
+#include <proto/arossupport.h>
+#else
+#include <clib/debug_protos.h>
+#endif
 
 // our static variables with default values
 static int indent_level = 0;
 static BOOL ansi_output = FALSE;
 static ULONG debug_flags = DBF_ALWAYS | DBF_STARTUP; // default debug flags
-static ULONG debug_classes = DBC_ERROR | DBC_DEBUG | DBC_WARNING | DBC_ASSERT | DBC_REPORT; // default debug classes
+static ULONG debug_classes = DBC_ERROR | DBC_DEBUG | DBC_WARNING | DBC_ASSERT | DBC_REPORT | DBC_MTRACK; // default debug classes
+
+static void SetupDbgMalloc(void);
+static void CleanupDbgMalloc(void);
+
+/****************************************************************************/
+
+void _DBPRINTF(const char *format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+
+  {
+  #if defined(__MORPHOS__)
+  VNewRawDoFmt(format, (APTR)RAWFMTFUNC_SERIAL, NULL, args);
+  #elif defined(__amigaos4__)
+  static char buf[1024];
+  vsnprintf(buf, 1024, format, args);
+  DebugPrintF("%s", buf);
+  #elif defined(__AROS__)
+  vkprintf(format, args);
+  #else
+  KPutFmt(format, args);
+  #endif
+  }
+
+  va_end(args);
+}
 
 /****************************************************************************/
 
@@ -56,17 +86,17 @@ void SetupDebug(void)
 {
   char var[256];
 
-  kprintf("** TextEditor.mcp v" LIB_REV_STRING " startup ***********************\n");
-  kprintf("Initializing runtime debugging:\n");
+  _DBPRINTF("** TextEditor.mcp v" LIB_REV_STRING " startup **********************\n");
+  _DBPRINTF("Exec version: v%ld.%ld\n", ((struct Library *)SysBase)->lib_Version, ((struct Library *)SysBase)->lib_Revision);
+  _DBPRINTF("Initializing runtime debugging:\n");
 
   if(GetVar("texteditor.mcp.debug", var, sizeof(var), 0) > 0)
   {
-    char *tok;
-    char *debug = var;
+    char *s = var;
 
     // static list of our debugging classes tokens.
-    // in the yamdebug variable these classes always start with a @
-    static struct { const char *token; unsigned long flag; } dbclasses[] =
+    // in the texteditor.mcp.debug variable these classes always start with a @
+    static const struct { const char *token; unsigned long flag; } dbclasses[] =
     {
       { "ctrace",  DBC_CTRACE   },
       { "report",  DBC_REPORT   },
@@ -75,37 +105,42 @@ void SetupDebug(void)
       { "debug",   DBC_DEBUG    },
       { "error",   DBC_ERROR    },
       { "warning", DBC_WARNING  },
+      { "mtrack",  DBC_MTRACK   },
       { "all",     DBC_ALL      },
       { NULL,      0            }
     };
 
-    static struct { const char *token; unsigned long flag; } dbflags[] =
+    static const struct { const char *token; unsigned long flag; } dbflags[] =
     {
-      { "always",   DBF_ALWAYS  },
-      { "startup",  DBF_STARTUP },
-      { "all",      DBF_ALL     },
-      { NULL,       0           }
+      { "always",    DBF_ALWAYS    },
+      { "startup",   DBF_STARTUP   },
+      { "all",       DBF_ALL       },
+      { NULL,        0             }
     };
 
     // we parse the env variable token-wise
-    while((tok = strtok(debug, ", ;")))
+    while(*s)
     {
       ULONG i;
+      char *e;
+
+      if((e = strpbrk(s, " ,;")) == NULL)
+        e = s+strlen(s);
 
       // check if the token is class definition or
       // just a flag definition
-      if(tok[0] == '@')
+      if(s[0] == '@')
       {
         // check if this call is a negation or not
-        if(tok[1] == '!')
+        if(s[1] == '!')
         {
           // search for the token and clear the flag
           for(i=0; dbclasses[i].token; i++)
           {
-            if(stricmp(tok+2, dbclasses[i].token) == 0)
+            if(strnicmp(&s[2], dbclasses[i].token, strlen(dbclasses[i].token)) == 0)
             {
-              kprintf("clear '%s' debug class flag.\n", dbclasses[i].token);
-              CLEAR_FLAG(debug_classes, dbclasses[i].flag);
+              _DBPRINTF("clear '%s' debug class flag.\n", dbclasses[i].token);
+              clearFlag(debug_classes, dbclasses[i].flag);
             }
           }
         }
@@ -114,10 +149,10 @@ void SetupDebug(void)
           // search for the token and set the flag
           for(i=0; dbclasses[i].token; i++)
           {
-            if(stricmp(tok+1, dbclasses[i].token) == 0)
+            if(strnicmp(&s[1], dbclasses[i].token, strlen(dbclasses[i].token)) == 0)
             {
-              kprintf("set '%s' debug class flag\n", dbclasses[i].token);
-              SET_FLAG(debug_classes, dbclasses[i].flag);
+              _DBPRINTF("set '%s' debug class flag\n", dbclasses[i].token);
+              setFlag(debug_classes, dbclasses[i].flag);
             }
           }
         }
@@ -125,14 +160,14 @@ void SetupDebug(void)
       else
       {
         // check if this call is a negation or not
-        if(tok[0] == '!')
+        if(s[0] == '!')
         {
           for(i=0; dbflags[i].token; i++)
           {
-            if(stricmp(tok+1, dbflags[i].token) == 0)
+            if(strnicmp(&s[1], dbflags[i].token, strlen(dbflags[i].token)) == 0)
             {
-              kprintf("clear '%s' debug flag\n", dbflags[i].token);
-              CLEAR_FLAG(debug_flags, dbflags[i].flag);
+              _DBPRINTF("clear '%s' debug flag\n", dbflags[i].token);
+              clearFlag(debug_flags, dbflags[i].flag);
             }
           }
         }
@@ -140,31 +175,46 @@ void SetupDebug(void)
         {
           // check if the token was "ansi" and if so enable the ANSI color
           // output
-          if(stricmp(tok, "ansi") == 0)
+          if(strnicmp(s, "ansi", 4) == 0)
           {
-            kprintf("ansi output enabled\n");
+            _DBPRINTF("ansi output enabled\n");
             ansi_output = TRUE;
           }
           else
           {
             for(i=0; dbflags[i].token; i++)
             {
-              if(stricmp(tok, dbflags[i].token) == 0)
+              if(strnicmp(s, dbflags[i].token, strlen(dbflags[i].token)) == 0)
               {
-                kprintf("set '%s' debug flag\n", dbflags[i].token);
-                SET_FLAG(debug_flags, dbflags[i].flag);
+                _DBPRINTF("set '%s' debug flag\n", dbflags[i].token);
+                setFlag(debug_flags, dbflags[i].flag);
               }
             }
           }
         }
       }
 
-      debug = NULL;
+      // set the next start to our last search
+      if(*e)
+        s = ++e;
+      else
+        break;
     }
   }
 
-  kprintf("set debug classes/flags (env:texteditor.mcp.debug): %08lx/%08lx\n", debug_classes, debug_flags);
-  kprintf("** Normal processing follows ***************************************\n");
+  _DBPRINTF("set debug classes/flags (env:texteditor.mcp.debug): %08lx/%08lx\n", debug_classes, debug_flags);
+  _DBPRINTF("** Normal processing follows ***************************************\n");
+
+  SetupDbgMalloc();
+}
+
+/****************************************************************************/
+
+void CleanupDebug(void)
+{
+  CleanupDbgMalloc();
+
+  _DBPRINTF("** Cleaned up debugging ********************************************\n");
 }
 
 /****************************************************************************/
@@ -208,7 +258,7 @@ INLINE void _INDENT(void)
 {
   int i;
   for(i=0; i < indent_level; i++)
-    kprintf(" ");
+    _DBPRINTF(" ");
 }
 
 /****************************************************************************/
@@ -219,9 +269,9 @@ void _ENTER(unsigned long dclass, const char *file, int line, const char *functi
   {
     _INDENT();
     if(ansi_output)
-      kprintf("%s%s:%ld:Entering %s%s\n", ANSI_ESC_FG_BROWN, file, line, function, ANSI_ESC_CLR);
+      _DBPRINTF("%s%s:%ld:Entering %s%s\n", ANSI_ESC_FG_BROWN, file, line, function, ANSI_ESC_CLR);
     else
-      kprintf("%s:%ld:Entering %s\n", file, line, function);
+      _DBPRINTF("%s:%ld:Entering %s\n", file, line, function);
   }
 
   indent_level++;
@@ -235,9 +285,9 @@ void _LEAVE(unsigned long dclass, const char *file, int line, const char *functi
   {
     _INDENT();
     if(ansi_output)
-      kprintf("%s%s:%ld:Leaving %s%s\n", ANSI_ESC_FG_BROWN, file, line, function, ANSI_ESC_CLR);
+      _DBPRINTF("%s%s:%ld:Leaving %s%s\n", ANSI_ESC_FG_BROWN, file, line, function, ANSI_ESC_CLR);
     else
-      kprintf("%s:%ld:Leaving %s\n", file, line, function);
+      _DBPRINTF("%s:%ld:Leaving %s\n", file, line, function);
   }
 }
 
@@ -249,9 +299,9 @@ void _RETURN(unsigned long dclass, const char *file, int line, const char *funct
   {
     _INDENT();
     if(ansi_output)
-      kprintf("%s%s:%ld:Leaving %s (result 0x%08lx, %ld)%s\n", ANSI_ESC_FG_BROWN, file, line, function, result, result, ANSI_ESC_CLR);
+      _DBPRINTF("%s%s:%ld:Leaving %s (result 0x%08lx, %ld)%s\n", ANSI_ESC_FG_BROWN, file, line, function, result, result, ANSI_ESC_CLR);
     else
-      kprintf("%s:%ld:Leaving %s (result 0x%08lx, %ld)\n", file, line, function, result, result);
+      _DBPRINTF("%s:%ld:Leaving %s (result 0x%08lx, %ld)\n", file, line, function, result, result);
   }
 }
 
@@ -282,22 +332,22 @@ void _SHOWVALUE(unsigned long dclass, unsigned long dflags, unsigned long value,
     _INDENT();
 
     if(ansi_output)
-      kprintf(ANSI_ESC_FG_GREEN);
+      _DBPRINTF(ANSI_ESC_FG_GREEN);
 
-    kprintf(fmt, file, line, name, value, value);
+    _DBPRINTF(fmt, file, line, name, value, value);
 
     if(size == 1 && value < 256)
     {
       if(value < ' ' || (value >= 127 && value < 160))
-        kprintf(", '\\x%02lx'", value);
+        _DBPRINTF(", '\\x%02lx'", value);
       else
-        kprintf(", '%lc'", value);
+        _DBPRINTF(", '%lc'", value);
     }
 
     if(ansi_output)
-      kprintf("%s\n", ANSI_ESC_CLR);
+      _DBPRINTF("%s\n", ANSI_ESC_CLR);
     else
-      kprintf("\n");
+      _DBPRINTF("\n");
   }
 }
 
@@ -319,12 +369,12 @@ void _SHOWPOINTER(unsigned long dclass, unsigned long dflags, const void *p, con
 
     if(ansi_output)
     {
-      kprintf(ANSI_ESC_FG_GREEN);
-      kprintf(fmt, file, line, name, p);
-      kprintf(ANSI_ESC_CLR);
+      _DBPRINTF(ANSI_ESC_FG_GREEN);
+      _DBPRINTF(fmt, file, line, name, p);
+      _DBPRINTF(ANSI_ESC_CLR);
     }
     else
-      kprintf(fmt, file, line, name, p);
+      _DBPRINTF(fmt, file, line, name, p);
   }
 }
 
@@ -338,9 +388,9 @@ void _SHOWSTRING(unsigned long dclass, unsigned long dflags, const char *string,
     _INDENT();
 
     if(ansi_output)
-      kprintf("%s%s:%ld:%s = 0x%08lx \"%s\"%s\n", ANSI_ESC_FG_GREEN, file, line, name, string, string, ANSI_ESC_CLR);
+      _DBPRINTF("%s%s:%ld:%s = 0x%08lx \"%s\"%s\n", ANSI_ESC_FG_GREEN, file, line, name, string, string, ANSI_ESC_CLR);
     else
-      kprintf("%s:%ld:%s = 0x%08lx \"%s\"\n", file, line, name, string, string);
+      _DBPRINTF("%s:%ld:%s = 0x%08lx \"%s\"\n", file, line, name, string, string);
   }
 }
 
@@ -354,27 +404,39 @@ void _SHOWMSG(unsigned long dclass, unsigned long dflags, const char *msg, const
     _INDENT();
 
     if(ansi_output)
-      kprintf("%s%s:%ld:%s%s\n", ANSI_ESC_FG_GREEN, file, line, msg, ANSI_ESC_CLR);
+      _DBPRINTF("%s%s:%ld:%s%s\n", ANSI_ESC_FG_GREEN, file, line, msg, ANSI_ESC_CLR);
     else
-      kprintf("%s:%ld:%s\n", file, line, msg);
+      _DBPRINTF("%s:%ld:%s\n", file, line, msg);
   }
 }
 
 /****************************************************************************/
 
-void _DPRINTF(unsigned long dclass, unsigned long dflags, const char *file, int line, const char *format, ...)
+void _DPRINTF(unsigned long dclass, unsigned long dflags, const char *file, unsigned long line, const char *format, ...)
 {
   if((isFlagSet(debug_classes, dclass) && isFlagSet(debug_flags, dflags)) ||
      (isFlagSet(dclass, DBC_ERROR) || isFlagSet(dclass, DBC_WARNING)))
   {
     va_list args;
+
+    va_start(args, format);
+    _VDPRINTF(dclass, dflags, file, line, format, args);
+    va_end(args);
+  }
+}
+
+/****************************************************************************/
+
+void _VDPRINTF(unsigned long dclass, unsigned long dflags, const char *file, unsigned long line, const char *format, va_list args)
+{
+  if((isFlagSet(debug_classes, dclass) && isFlagSet(debug_flags, dflags)) ||
+     (isFlagSet(dclass, DBC_ERROR) || isFlagSet(dclass, DBC_WARNING)))
+  {
     static char buf[1024];
 
     _INDENT();
 
-    va_start(args, format);
     vsnprintf(buf, 1024, format, args);
-    va_end(args);
 
     if(ansi_output)
     {
@@ -391,13 +453,271 @@ void _DPRINTF(unsigned long dclass, unsigned long dflags, const char *file, int 
         case DBC_WARNING: highlight = ANSI_ESC_FG_PURPLE;break;
       }
 
-      kprintf("%s%s:%ld:%s%s\n", highlight, file, line, buf, ANSI_ESC_CLR);
+      _DBPRINTF("%s%s:%ld:%s%s\n", highlight, file, line, buf, ANSI_ESC_CLR);
     }
     else
-      kprintf("%s:%ld:%s\n", file, line, buf);
+      _DBPRINTF("%s:%ld:%s\n", file, line, buf);
   }
 }
 
 /****************************************************************************/
 
+struct DbgMallocNode
+{
+  struct MinNode node;
+  void *memory;
+  size_t size;
+  const char *file;
+  const char *func;
+  int line;
+};
+
+static struct MinList DbgMallocList[256];
+static struct SignalSemaphore DbgMallocListSema;
+static ULONG DbgMallocCount;
+static ULONG DbgUnsuitableFreeCount;
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(a)         (sizeof(a) / sizeof(a[0]))
 #endif
+
+#ifndef NewList
+#endif
+
+// a very simple hashing function to spread the allocations across the lists
+// Since AmigaOS memory allocation has a granularity of at least 8 bytes we simple ignore the
+// lower 4 bits (=16 Bytes) and take the next 8 bits as hash value. Not very sophisticated, but
+// it does the job quite good.
+#define ptr2hash(p)           ((((ULONG)(p)) >> 4) & 0xff)
+
+/// findDbgMallocNode
+// find a given pointer in the tracking lists
+static struct DbgMallocNode *findDbgMallocNode(const void *ptr)
+{
+  struct DbgMallocNode *result = NULL;
+  struct Node *curNode;
+
+  for(curNode = GetHead((struct List *)&DbgMallocList[ptr2hash(ptr)]); curNode != NULL; curNode = GetSucc(curNode))
+  {
+    struct DbgMallocNode *dmn = (struct DbgMallocNode *)curNode;
+
+    if(dmn->memory == ptr)
+    {
+      result = dmn;
+      break;
+    }
+  }
+
+  return result;
+}
+
+///
+/// matchAllocFunc
+// check wether the used allocation function matches a set of given function names
+// separated by '|', i.e. "malloc|calloc|strdup"
+BOOL matchAllocFunc(const char *allocFunc, const char *freeFunc)
+{
+  BOOL match = FALSE;
+  const char *p = freeFunc;
+  const char *q;
+
+  while((q = strchr(p, '|')) != NULL)
+  {
+    char tmp[16];
+
+    // we have to handle more than one possible function name
+    strlcpy(tmp, p, ((size_t)(q-p)+1 < sizeof(tmp)) ? (size_t)(q-p)+1 : sizeof(tmp));
+    if(strcmp(allocFunc, tmp) == 0)
+    {
+      match = TRUE;
+      break;
+    }
+    p = q+1;
+  }
+
+  if(match == FALSE)
+  {
+    // compare the last or only function name
+    match = (strcmp(allocFunc, p) == 0);
+  }
+
+  return match;
+}
+
+///
+/// _MEMTRACK
+// add a new node to the memory tracking lists
+void _MEMTRACK(const char *file, const int line, const char *func, void *ptr, size_t size)
+{
+  if(isFlagSet(debug_classes, DBC_MTRACK))
+  {
+    if(ptr != NULL && size != 0)
+    {
+      struct DbgMallocNode *dmn;
+
+      if((dmn = AllocVec(sizeof(*dmn), MEMF_ANY)) != NULL)
+      {
+        dmn->memory = ptr;
+        dmn->size = size;
+        dmn->file = file;
+        dmn->line = line;
+        dmn->func = func;
+
+        ObtainSemaphore(&DbgMallocListSema);
+
+        AddTail((struct List *)&DbgMallocList[ptr2hash(ptr)], (struct Node *)&dmn->node);
+        DbgMallocCount++;
+
+        ReleaseSemaphore(&DbgMallocListSema);
+      }
+    }
+    else
+      _DPRINTF(DBC_WARNING, DBF_ALWAYS, file, line, "potential invalid %s call with return (0x%08lx, 0x%08lx)", func, ptr, size);
+  }
+}
+
+///
+/// _UNMEMTRACK
+// remove a node from the memory tracking lists
+void _UNMEMTRACK(const char *file, const int line, const char *func, const void *ptr)
+{
+  if(isFlagSet(debug_classes, DBC_MTRACK) && ptr != NULL)
+  {
+    BOOL success = FALSE;
+    struct DbgMallocNode *dmn;
+
+    ObtainSemaphore(&DbgMallocListSema);
+
+    if((dmn = findDbgMallocNode(ptr)) != NULL)
+    {
+      Remove((struct Node *)dmn);
+
+      if(matchAllocFunc(dmn->func, func) == FALSE)
+      {
+        _DPRINTF(DBC_WARNING, DBF_ALWAYS, file, line, "free of tracked memory area 0x%08lx with unsuitable function (allocated with %s, freed with %s counterpart)", ptr, dmn->func, func);
+        DbgUnsuitableFreeCount++;
+      }
+
+      FreeVec(dmn);
+
+      DbgMallocCount--;
+
+      success = TRUE;
+    }
+
+    if(success == FALSE)
+      _DPRINTF(DBC_WARNING, DBF_ALWAYS, file, line, "free of untracked memory area 0x%08lx attempted", ptr);
+
+    ReleaseSemaphore(&DbgMallocListSema);
+  }
+}
+
+///
+/// SetupDbgMalloc
+// initialize the memory tracking framework
+static void SetupDbgMalloc(void)
+{
+  ENTER();
+
+  if(isFlagSet(debug_classes, DBC_MTRACK))
+  {
+    ULONG i;
+
+    for(i = 0; i < ARRAY_SIZE(DbgMallocList); i++)
+      NewList((struct List *)&DbgMallocList[i]);
+
+    DbgMallocCount = 0;
+    DbgUnsuitableFreeCount = 0;
+
+    InitSemaphore(&DbgMallocListSema);
+  }
+
+  LEAVE();
+}
+
+///
+/// CleanupDbgMalloc
+// cleanup the memory tracking framework and output possibly pending allocations
+static void CleanupDbgMalloc(void)
+{
+  ENTER();
+
+  if(isFlagSet(debug_classes, DBC_MTRACK))
+  {
+    _DBPRINTF("** Cleaning up memory tracking *************************************\n");
+
+    ObtainSemaphore(&DbgMallocListSema);
+
+    if(DbgMallocCount != 0 || DbgUnsuitableFreeCount != 0)
+    {
+      if(DbgMallocCount != 0)
+      {
+        ULONG i;
+
+        E(DBF_ALWAYS, "there are still %ld unfreed memory trackings", DbgMallocCount);
+        for(i = 0; i < ARRAY_SIZE(DbgMallocList); i++)
+        {
+          struct DbgMallocNode *dmn;
+
+          while((dmn = (struct DbgMallocNode *)RemHead((struct List *)&DbgMallocList[i])) != NULL)
+          {
+            _DPRINTF(DBC_ERROR, DBF_ALWAYS, dmn->file, dmn->line, "unfreed memory tracking: 0x%08lx, size/type %ld, func (%s)", dmn->memory, dmn->size, dmn->func);
+
+            // We only free the node structure here but not dmn->memory itself.
+            // First of all, this is because the allocation could have been done
+            // by other functions than malloc() and calling free() for these will
+            // cause havoc. And second the c-library's startup code will/should
+            // free all further pending allocations upon program termination.
+            FreeVec(dmn);
+          }
+        }
+      }
+      if(DbgUnsuitableFreeCount != 0)
+      {
+        E(DBF_ALWAYS, "there were %ld unsuitable freeing calls", DbgUnsuitableFreeCount);
+      }
+    }
+    else
+      D(DBF_ALWAYS, "all memory trackings have been free()'d correctly");
+
+    ReleaseSemaphore(&DbgMallocListSema);
+  }
+
+  LEAVE();
+}
+
+///
+/// DumpDbgMalloc
+// output all current allocations
+void DumpDbgMalloc(void)
+{
+  ENTER();
+
+  if(isFlagSet(debug_classes, DBC_MTRACK))
+  {
+    ULONG i;
+
+    ObtainSemaphore(&DbgMallocListSema);
+
+    D(DBF_ALWAYS, "%ld memory areas tracked", DbgMallocCount);
+    for(i = 0; i < ARRAY_SIZE(DbgMallocList); i++)
+    {
+      struct Node *curNode;
+
+      for(curNode = GetHead((struct List *)&DbgMallocList[i]); curNode != NULL; curNode = GetSucc(curNode))
+      {
+        struct DbgMallocNode *dmn = (struct DbgMallocNode *)curNode;
+
+        _DPRINTF(DBC_MTRACK, DBF_ALWAYS, dmn->file, dmn->line, "memarea 0x%08lx, size/type %ld, func (%s)", dmn->memory, dmn->size, dmn->func);
+      }
+    }
+
+    ReleaseSemaphore(&DbgMallocListSema);
+  }
+
+  LEAVE();
+}
+
+///
+
+#endif /* DEBUG */

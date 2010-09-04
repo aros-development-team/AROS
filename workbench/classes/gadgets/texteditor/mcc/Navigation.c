@@ -39,7 +39,7 @@ ULONG FlowSpace(struct InstData *data, UWORD flow, STRPTR text)
 
   if(flow != MUIV_TextEditor_Flow_Left)
   {
-    flowspace  = (data->innerwidth-TextLength(&data->tmprp, text, LineCharsWidth(data, text)-1));
+    flowspace  = (_mwidth(data->object)-TextLength(&data->tmprp, text, LineCharsWidth(data, text)-1));
     flowspace -= (data->CursorWidth == 6) ? TextLength(&data->tmprp, " ", 1) : data->CursorWidth;
     if(flow == MUIV_TextEditor_Flow_Center)
     {
@@ -654,18 +654,18 @@ void PosFromCursor(struct InstData *data, WORD MouseX, WORD MouseY)
   ENTER();
 
   if(data->maxlines < data->totallines-data->visual_y+1)
-    limit += (data->maxlines * data->height);
+    limit += (data->maxlines * data->fontheight);
   else
-    limit += (data->totallines-data->visual_y+1)*data->height;
+    limit += (data->totallines-data->visual_y+1)*data->fontheight;
 
   if(MouseY >= limit)
     MouseY = limit-1;
 
-  GetLine(data, ((MouseY - data->ypos)/data->height) + data->visual_y, &pos);
+  GetLine(data, ((MouseY - data->ypos)/data->fontheight) + data->visual_y, &pos);
 
   data->actualline = pos.line;
 
-  data->pixel_x = MouseX-data->xpos+1;
+  data->pixel_x = MouseX-_mleft(data->object)+1;
 
   if(data->pixel_x < 1)
     data->pixel_x = 1;

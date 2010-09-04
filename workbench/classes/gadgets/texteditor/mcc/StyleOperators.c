@@ -104,10 +104,8 @@ UWORD GetStyle(LONG x, struct line_node *line)
 /// AddStyleToLine()
 void AddStyleToLine(struct InstData *data, LONG x, struct line_node *line, LONG length, UWORD style)
 {
-  ULONG numStyles;
-  struct LineStyle *styles = line->line.Styles;
-  struct LineStyle *oldStyles = styles;
-  struct LineStyle *newstyles;
+  struct Grow styleGrow;
+  struct LineStyle *styles;
   UWORD cur_style = 0;
   UWORD end_style = GetStyle(x+length, line);
 
@@ -115,107 +113,105 @@ void AddStyleToLine(struct InstData *data, LONG x, struct line_node *line, LONG 
 
   x++;
 
-  if(styles != NULL)
-    numStyles = line->line.allocatedStyles + 4;
-  else
-    numStyles = 8;
+  InitGrow(&styleGrow, data->mypool, sizeof(struct LineStyle));
 
-  if((newstyles = AllocVecPooled(data->mypool, numStyles * sizeof(struct LineStyle))) != NULL)
+  if((styles = line->line.Styles) != NULL)
   {
-    ULONG usedStyles = 0;
-
-    line->line.Styles = newstyles;
-
-    if(styles != NULL)
+    while(styles->column != EOS && styles->column < x)
     {
-      while(styles->column != EOS && styles->column < x)
-      {
-        newstyles->column = styles->column;
-        newstyles->style = styles->style;
+      struct LineStyle newStyle;
 
-        if(styles->style > 0xff)
-          cur_style &= styles->style;
-        else
-          cur_style |= styles->style;
+      newStyle.column = styles->column;
+      newStyle.style = styles->style;
+      AddToGrow(&styleGrow, &newStyle);
 
-        styles++;
-        newstyles++;
-        usedStyles++;
-      }
-    }
-    if(style > 0xff)
-    {
-      if(cur_style & ~style)
-      {
-        newstyles->column = x;
-        newstyles->style = style;
-        newstyles++;
-        usedStyles++;
-      }
-    }
-    else
-    {
-      if(!(cur_style & style))
-      {
-        newstyles->column = x;
-        newstyles->style = style;
-        newstyles++;
-        usedStyles++;
-      }
-    }
+      if(styles->style > 0xff)
+        cur_style &= styles->style;
+      else
+        cur_style |= styles->style;
 
-    if(styles != NULL)
-    {
-      while(styles->column != EOS && styles->column <= x+length)
-      {
-        UWORD invstyle = ~style;
-
-        if(styles->style != style && styles->style != invstyle)
-        {
-          newstyles->column = styles->column;
-          newstyles->style = styles->style;
-          newstyles++;
-          usedStyles++;
-        }
-        styles++;
-      }
-    }
-    if(!(((style > 0xff) && (!(end_style & ~style))) ||
-        ((style < 0xff) && ((end_style & style)))))
-    {
-      newstyles->column = x+length;
-      newstyles->style = ~style;
-      newstyles++;
-      usedStyles++;
-    }
-
-    if(styles != NULL)
-    {
-      while(styles->column != EOS)
-      {
-        newstyles->column = styles->column;
-        newstyles->style = styles->style;
-        styles++;
-        newstyles++;
-        usedStyles++;
-      }
-    }
-    newstyles->column = EOS;
-    usedStyles++;
-
-    line->line.allocatedStyles = numStyles;
-    line->line.usedStyles = usedStyles;
-    if(usedStyles > numStyles)
-    {
-      E(DBF_STYLE, "used styles (%ld) > allocated styles (%ld)", usedStyles, numStyles);
-      DumpLine(line);
-    }
-
-    if(oldStyles != NULL)
-    {
-      FreeVecPooled(data->mypool, oldStyles);
+      styles++;
     }
   }
+  if(style > 0xff)
+  {
+    if(cur_style & ~style)
+    {
+      struct LineStyle newStyle;
+
+      newStyle.column = x;
+      newStyle.style = style;
+      AddToGrow(&styleGrow, &newStyle);
+    }
+  }
+  else
+  {
+    if(!(cur_style & style))
+    {
+      struct LineStyle newStyle;
+
+      newStyle.column = x;
+      newStyle.style = style;
+      AddToGrow(&styleGrow, &newStyle);
+    }
+  }
+
+  if(styles != NULL)
+  {
+    while(styles->column != EOS && styles->column <= x+length)
+    {
+      UWORD invstyle = ~style;
+
+      if(styles->style != style && styles->style != invstyle)
+      {
+        struct LineStyle newStyle;
+
+        newStyle.column = styles->column;
+        newStyle.style = styles->style;
+        AddToGrow(&styleGrow, &newStyle);
+      }
+
+      styles++;
+    }
+  }
+  if(!(((style > 0xff) && (!(end_style & ~style))) ||
+      ((style < 0xff) && ((end_style & style)))))
+  {
+    struct LineStyle newStyle;
+
+    newStyle.column = x+length;
+    newStyle.style = ~style;
+    AddToGrow(&styleGrow, &newStyle);
+  }
+
+  if(styles != NULL)
+  {
+    while(styles->column != EOS)
+    {
+      struct LineStyle newStyle;
+
+      newStyle.column = styles->column;
+      newStyle.style = styles->style;
+      AddToGrow(&styleGrow, &newStyle);
+
+      styles++;
+    }
+  }
+
+  // the old styles are not needed anymore
+  if(line->line.Styles != NULL)
+    FreeVecPooled(data->mypool, line->line.Styles);
+
+  if(styleGrow.itemCount > 0)
+  {
+    struct LineStyle newStyle;
+
+    newStyle.column = EOS;
+    newStyle.style = 0;
+    AddToGrow(&styleGrow, &newStyle);
+  }
+
+  line->line.Styles = (struct LineStyle *)styleGrow.array;
 
   LEAVE();
 }

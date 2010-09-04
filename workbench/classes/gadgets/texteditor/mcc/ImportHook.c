@@ -30,19 +30,6 @@
 
 /*************************************************************************/
 
-struct grow
-{
-  char *array;
-
-  int itemSize;
-  int itemCount;
-  int maxItemCount;
-
-  APTR pool;
-};
-
-/*************************************************************************/
-
 
 
 /*************************************************************************/
@@ -154,62 +141,6 @@ static char *FindEOL(char *src, int *tabs_ptr)
 }
 
 ///
-/// InitGrow()
-/************************************************************************
- Initialize a grow structure
-*************************************************************************/
-static void InitGrow(struct grow *grow, APTR pool, int itemSize)
-{
-  ENTER();
-
-  grow->array = NULL;
-  grow->itemSize = itemSize;
-  grow->itemCount = 0;
-  grow->maxItemCount = 0;
-  grow->pool = pool;
-
-  LEAVE();
-}
-
-///
-/// AddToGrow()
-/************************************************************************
- Adds two new values to the given grow. This function guarantees
- that there is at least space for 2 additional values.
-*************************************************************************/
-static void AddToGrow(struct grow *grow, void *newItem)
-{
-  ENTER();
-
-  if(grow->itemCount+1 >= grow->maxItemCount)
-  {
-    char *new_array;
-
-    // we reserve 8 new items
-    if((new_array = AllocVecPooled(grow->pool, (grow->maxItemCount+8) * grow->itemSize)) != NULL)
-    {
-      // Copy old contents into new array
-      if(grow->array != NULL)
-      {
-        memcpy(new_array, grow->array, grow->itemCount * grow->itemSize);
-        FreeVecPooled(grow->pool, grow->array);
-      }
-
-      grow->array = new_array;
-      grow->maxItemCount += 8;
-    }
-  }
-
-  if(grow->itemCount < grow->maxItemCount)
-  {
-    memcpy(&grow->array[grow->itemCount * grow->itemSize], newItem, grow->itemSize);
-    grow->itemCount++;
-  }
-
-  LEAVE();
-}
-
-///
 /// ContainsText()
 /************************************************************************
  searches through a string and returns TRUE if the string contains
@@ -299,8 +230,8 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
       /* Style and color state */
       int state = 0;
 
-      struct grow style_grow;
-      struct grow color_grow;
+      struct Grow style_grow;
+      struct Grow color_grow;
 
       struct LineStyle newStyle;
       struct LineColor newColor;
@@ -524,8 +455,6 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
 
       D(DBF_IMPORT, "added %ld color sections", color_grow.itemCount);
       line->Colors = (struct LineColor *)color_grow.array;
-      line->allocatedColors = color_grow.maxItemCount;
-      line->usedColors = color_grow.itemCount;
 
       // terminate the style array, but only if there are any styles at all
       if(style_grow.itemCount > 0)
@@ -562,8 +491,6 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
 
       D(DBF_IMPORT, "added %ld style sections", style_grow.itemCount);
       line->Styles = (struct LineStyle *)style_grow.array;
-      line->allocatedStyles = style_grow.maxItemCount;
-      line->usedStyles = style_grow.itemCount;
 
       *dest++ = '\n';
       *dest = 0;
@@ -647,8 +574,8 @@ static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
       int escstate = 0;
       int shownext = 0;
 
-      struct grow style_grow;
-      struct grow color_grow;
+      struct Grow style_grow;
+      struct Grow color_grow;
 
       struct LineStyle newStyle;
       struct LineColor newColor;
@@ -1016,8 +943,6 @@ static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
       }
 
       line->Colors = (struct LineColor *)color_grow.array;
-      line->allocatedColors = color_grow.maxItemCount;
-      line->usedColors = color_grow.itemCount;
 
       // terminate the style array, but only if there are any styles at all
       if(style_grow.itemCount > 0)
@@ -1028,8 +953,6 @@ static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
       }
 
       line->Styles = (struct LineStyle *)style_grow.array;
-      line->allocatedStyles = style_grow.maxItemCount;
-      line->usedStyles = style_grow.itemCount;
 
       *dest++ = '\n';
       *dest = 0;

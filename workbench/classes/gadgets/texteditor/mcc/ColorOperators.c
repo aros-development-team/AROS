@@ -50,45 +50,36 @@ UWORD GetColor(LONG x, struct line_node *line)
 /// AddColorToLine()
 static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *line, UWORD length, UWORD color)
 {
-  ULONG numColors;
-  struct LineColor *colors = line->line.Colors;
-  struct LineColor *oldcolors = colors;
-  struct LineColor *newcolors;
+  struct Grow colorGrow;
+  struct LineColor *colors;
 
   ENTER();
 
   x++;
 
-  if(colors != NULL)
-    numColors = line->line.allocatedColors + 4;
-  else
-    numColors = 8;
+  InitGrow(&colorGrow, data->mypool, sizeof(struct LineColor));
 
-  if((newcolors = AllocVecPooled(data->mypool, numColors * sizeof(struct LineColor))) != NULL)
+  if((colors = line->line.Colors) != NULL)
   {
-    ULONG usedColors = 0;
     UWORD oldcol = 0;
 
-    line->line.Colors = newcolors;
-
-    if(colors != NULL)
+    while(colors->column != EOC && colors->column < x)
     {
-      while(colors->column != EOC && colors->column < x)
-      {
-        newcolors->column = colors->column;
-        oldcol = colors->color;
-        newcolors->color = colors->color;
-        colors++;
-        newcolors++;
-        usedColors++;
-      }
+      struct LineColor newColor;
+
+      newColor.column = colors->column;
+      newColor.color = colors->color;
+      oldcol = colors->color;
+      colors++;
+      AddToGrow(&colorGrow, &newColor);
     }
     if(color != oldcol)
     {
-      newcolors->column = x;
-      newcolors->color = color;
-      newcolors++;
-      usedColors++;
+      struct LineColor newColor;
+
+      newColor.column = x;
+      newColor.color = color;
+      AddToGrow(&colorGrow, &newColor);
     }
     if(colors != NULL)
     {
@@ -100,38 +91,40 @@ static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *lin
     }
     if(color != oldcol)
     {
-      newcolors->column = x+length;
-      newcolors->color = oldcol;
-      newcolors++;
-      usedColors++;
+      struct LineColor newColor;
+
+      newColor.column = x+length;
+      newColor.color = oldcol;
+      AddToGrow(&colorGrow, &newColor);
     }
     if(colors != NULL)
     {
       while(colors->column != EOC)
       {
-        newcolors->column = colors->column;
-        newcolors->color = colors->color;
+        struct LineColor newColor;
+
+        newColor.column = colors->column;
+        newColor.color = colors->color;
+        AddToGrow(&colorGrow, &newColor);
         colors++;
-        newcolors++;
-        usedColors++;
       }
     }
-    newcolors->column = EOC;
-    usedColors++;
 
-    line->line.allocatedColors = numColors;
-    line->line.usedColors = usedColors;
-    if(usedColors > numColors)
+    // terminate the color array if we have any colors at all
+    if(colorGrow.itemCount > 0)
     {
-      E(DBF_STYLE, "used colors (%ld) > allocated colors (%ld)", usedColors, numColors);
-      DumpLine(line);
+      struct LineColor newColor;
+
+      newColor.column = EOC;
+      newColor.color = 0;
+      AddToGrow(&colorGrow, &newColor);
     }
 
-    if(oldcolors != NULL)
-    {
-      FreeVecPooled(data->mypool, oldcolors);
-    }
+    // the old colors are not needed anymore
+    FreeVecPooled(data->mypool, line->line.Colors);
   }
+
+  line->line.Colors = (struct LineColor *)colorGrow.array;
 
   LEAVE();
 }

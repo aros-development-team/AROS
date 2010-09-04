@@ -103,104 +103,134 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
     {
       if(startline->line.Styles != NULL && startline->line.Styles[0].column != EOS)
       {
+        struct Grow styleGrow;
+        UWORD startstyle = GetStyle(startx, startline);
+        struct LineStyle *oldstyles = startline->line.Styles;
+
         D(DBF_BLOCK, "export styles");
 
-        // allocate space for all old styles and up to 4 new styles
-        if((emsg.Styles = (struct LineStyle *)AllocVecPooled(data->mypool, (startline->line.usedStyles+4) * sizeof(struct LineStyle))) != NULL)
+        InitGrow(&styleGrow, data->mypool, sizeof(struct LineStyle));
+
+        // apply any active style
+        if(isFlagSet(startstyle, BOLD))
         {
-          UWORD startstyle = GetStyle(startx, startline);
-          struct LineStyle *styles = emsg.Styles;
-          struct LineStyle *oldstyles = startline->line.Styles;
+          struct LineStyle newStyle;
 
-          // apply any active style
-          if(isFlagSet(startstyle, BOLD))
-          {
-            styles->column = 1;
-            styles->style = BOLD;
-            styles++;
-          }
-          if(isFlagSet(startstyle, ITALIC))
-          {
-            styles->column = 1;
-            styles->style = ITALIC;
-            styles++;
-          }
-          if(isFlagSet(startstyle, UNDERLINE))
-          {
-            styles->column = 1;
-            styles->style = UNDERLINE;
-            styles++;
-          }
-
-          // skip all styles until the block starts
-          while(oldstyles->column <= startx)
-            oldstyles++;
-
-          // copy all styles until the end of the line
-          while(oldstyles->column != EOS)
-          {
-            styles->column = oldstyles->column - startx;
-            styles->style = oldstyles->style;
-            styles++;
-            oldstyles++;
-          }
-
-          // terminate the style array
-          styles->column = EOS;
+          newStyle.column = 1;
+          newStyle.style = BOLD;
+          AddToGrow(&styleGrow, &newStyle);
         }
+        if(isFlagSet(startstyle, ITALIC))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = 1;
+          newStyle.style = ITALIC;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+        if(isFlagSet(startstyle, UNDERLINE))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = 1;
+          newStyle.style = UNDERLINE;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+
+        // skip all styles until the block starts
+        while(oldstyles->column <= startx)
+          oldstyles++;
+
+        // copy all styles until the end of the line
+        while(oldstyles->column != EOS)
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = oldstyles->column - startx;
+          newStyle.style = oldstyles->style;
+          AddToGrow(&styleGrow, &newStyle);
+
+          oldstyles++;
+        }
+
+        // terminate the style array
+        if(styleGrow.itemCount > 0)
+        {
+          struct LineStyle terminator;
+
+          terminator.column = EOC;
+          terminator.style = 0;
+          AddToGrow(&styleGrow, &terminator);
+        }
+
+        emsg.Styles = (struct LineStyle *)styleGrow.array;
       }
       else
         emsg.Styles = NULL;
 
       if(startline->line.Colors != NULL && startline->line.Colors[0].column != EOC)
       {
+        struct Grow colorGrow;
+        UWORD lastcolor = GetColor(startx, startline);
+        struct LineColor *oldcolors = startline->line.Colors;
+
         D(DBF_BLOCK, "export colors");
 
-        // allocate space for all old colors and up to 3 new colors
-        if((emsg.Colors = (struct LineColor *)AllocVecPooled(data->mypool, (startline->line.usedColors+3) * sizeof(struct LineColor))) != NULL)
+        InitGrow(&colorGrow, data->mypool, sizeof(struct LineColor));
+
+        // apply the active color
+        if(lastcolor != 0)
         {
-          UWORD lastcolor = GetColor(startx, startline);
-          struct LineColor *colors = emsg.Colors;
-          struct LineColor *oldcolors = startline->line.Colors;
+          struct LineColor newColor;
 
-          // apply the active color
-          if(lastcolor != 0)
-          {
-            colors->column = 1;
-            colors->color = lastcolor;
-            colors++;
-          }
-
-          // skip all colors until the block starts
-          while(oldcolors->column <= startx)
-            oldcolors++;
-
-          // copy all colors until the end of the line
-          while(oldcolors->column != EOC)
-          {
-            // apply real color changes only
-          	if(oldcolors->color != lastcolor)
-          	{
-              colors->column = oldcolors->column - startx;
-              colors->color = oldcolors->color;
-              colors++;
-              // remember this color change
-              lastcolor = oldcolors->color;
-            }
-            oldcolors++;
-          }
-
-          // unapply the last active color
-          if(lastcolor != 0)
-          {
-            colors->column = strlen(startline->line.Contents)-startx+1;
-            colors->color = 0;
-            colors++;
-          }
-
-          // terminate the color array
-          colors->column = EOC;
+          newColor.column = 1;
+          newColor.color = lastcolor;
+          AddToGrow(&colorGrow, &newColor);
         }
+
+        // skip all colors until the block starts
+        while(oldcolors->column <= startx)
+          oldcolors++;
+
+        // copy all colors until the end of the line
+        while(oldcolors->column != EOC)
+        {
+          // apply real color changes only
+          if(oldcolors->color != lastcolor)
+          {
+            struct LineColor newColor;
+
+            newColor.column = oldcolors->column - startx;
+            newColor.color = oldcolors->color;
+            AddToGrow(&colorGrow, &newColor);
+
+            // remember this color change
+            lastcolor = oldcolors->color;
+          }
+          oldcolors++;
+        }
+
+        // unapply the last active color
+        if(lastcolor != 0)
+        {
+          struct LineColor newColor;
+
+          newColor.column = strlen(startline->line.Contents)-startx+1;
+          newColor.color = 0;
+          AddToGrow(&colorGrow, &newColor);
+        }
+
+        // terminate the color array
+        if(colorGrow.itemCount > 0)
+        {
+          struct LineColor terminator;
+
+          terminator.column = EOC;
+          terminator.color = 0;
+          AddToGrow(&colorGrow, &terminator);
+        }
+
+        emsg.Colors = (struct LineColor *)colorGrow.array;
       }
       else
         emsg.Colors = NULL;
@@ -250,86 +280,114 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
 
       if(stopline->line.Styles != NULL && stopline->line.Styles[0].column != EOS)
       {
-        // allocate space for all old styles and up to 4 new styles
-        if((emsg.Styles = AllocVecPooled(data->mypool, (stopline->line.usedStyles+4) * sizeof(struct LineStyle))) != NULL)
+        struct Grow styleGrow;
+        UWORD stopstyle = GetStyle(stopx, stopline);
+        struct LineStyle *oldstyles = stopline->line.Styles;
+
+        InitGrow(&styleGrow, data->mypool, sizeof(struct LineStyle));
+
+        // copy all styles until the end of the block
+        while(oldstyles->column <= stopx)
         {
-          UWORD stopstyle = GetStyle(stopx, stopline);
-          struct LineStyle *styles = emsg.Styles;
-          struct LineStyle *oldstyles = stopline->line.Styles;
+          struct LineStyle newStyle;
 
-          // copy all styles until the end of the block
-          while(oldstyles->column <= stopx)
-          {
-            styles->column = oldstyles->column;
-            styles->style = oldstyles->style;
-            styles++;
-            oldstyles++;
-          }
+          newStyle.column = oldstyles->column;
+          newStyle.style = oldstyles->style;
+          AddToGrow(&styleGrow, &newStyle);
 
-          // unapply any still active styles
-          if(isFlagSet(stopstyle, BOLD))
-          {
-            styles->column = stopx+1;
-            styles->style = ~BOLD;
-            styles++;
-          }
-          if(isFlagSet(stopstyle, ITALIC))
-          {
-            styles->column = stopx+1;
-            styles->style = ~ITALIC;
-            styles++;
-          }
-          if(isFlagSet(stopstyle, UNDERLINE))
-          {
-            styles->column = stopx+1;
-            styles->style = ~UNDERLINE;
-            styles++;
-          }
-
-          // terminate the style array
-          styles->column = EOS;
+          oldstyles++;
         }
+
+        // unapply any still active styles
+        if(isFlagSet(stopstyle, BOLD))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = stopx + 1;
+          newStyle.style = ~BOLD;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+        if(isFlagSet(stopstyle, ITALIC))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = stopx + 1;
+          newStyle.style = ~ITALIC;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+        if(isFlagSet(stopstyle, UNDERLINE))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = stopx + 1;
+          newStyle.style = ~UNDERLINE;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+
+        // terminate the style array
+        if(styleGrow.itemCount > 0)
+        {
+          struct LineStyle terminator;
+
+          terminator.column = EOC;
+          terminator.style = 0;
+          AddToGrow(&styleGrow, &terminator);
+        }
+
+        emsg.Styles = (struct LineStyle *)styleGrow.array;
       }
       else
         emsg.Styles = NULL;
 
       if(stopline->line.Colors != NULL && stopline->line.Colors[0].column != EOC)
       {
+        struct Grow colorGrow;
+        UWORD lastcolor = 0;
+        struct LineColor *oldcolors = stopline->line.Colors;
+
         D(DBF_BLOCK, "export colors");
 
-        // allocate space for all old colors and 2 new colors
-        if((emsg.Colors = (struct LineColor *)AllocVecPooled(data->mypool, (startline->line.usedColors+2) * sizeof(struct LineColor))) != NULL)
+        InitGrow(&colorGrow, data->mypool, sizeof(struct LineColor));
+
+        // copy all colors until the end of the block
+        while(oldcolors->column <= stopx)
         {
-          UWORD lastcolor = 0;
-          struct LineColor *colors = emsg.Colors;
-          struct LineColor *oldcolors = stopline->line.Colors;
-
-          // copy all colors until the end of the block
-          while(oldcolors->column <= stopx)
+          // apply real color changes only
+          if(oldcolors->color != lastcolor)
           {
-            // apply real color changes only
-          	if(oldcolors->color != lastcolor)
-          	{
-              colors->column = oldcolors->column;
-              colors->color = oldcolors->color;
-              colors++;
-              // remember this color change
-              lastcolor = oldcolors->color;
-            }
-            oldcolors++;
-          }
+            struct LineColor newColor;
 
-          // unapply the last active color
-          if(lastcolor != 0)
-          {
-            colors->column = stopx+1;
-            colors->color = 0;
-            colors++;
-          }
+            newColor.column = oldcolors->column;
+            newColor.color = oldcolors->color;
+            AddToGrow(&colorGrow, &newColor);
 
-          // terminate the color array
-          colors->column = EOC;
+            // remember this color change
+            lastcolor = oldcolors->color;
+          }
+          oldcolors++;
         }
+
+        // unapply the last active color
+        if(lastcolor != 0)
+        {
+          struct LineColor newColor;
+
+          newColor.column = stopx + 1;
+          newColor.color = 0;
+          AddToGrow(&colorGrow, &newColor);
+        }
+
+        // terminate the color array
+        if(colorGrow.itemCount > 0)
+        {
+          struct LineColor terminator;
+
+          terminator.column = EOC;
+          terminator.color = 0;
+          AddToGrow(&colorGrow, &terminator);
+        }
+
+        emsg.Colors = (struct LineColor *)colorGrow.array;
       }
       else
         emsg.Colors = NULL;
@@ -367,121 +425,157 @@ STRPTR GetBlock(struct InstData *data, struct marking *block)
     {
       if(startline->line.Styles != NULL && startline->line.Styles->column != EOS)
       {
-        // allocate space for all old styles and up to 7 new styles
-        if((emsg.Styles = (struct LineStyle *)AllocVecPooled(data->mypool, (startline->line.usedStyles+7) * sizeof(struct LineStyle))) != NULL)
+        struct Grow styleGrow;
+        UWORD startstyle = GetStyle(startx, startline);
+        UWORD stopstyle = GetStyle(stopx, stopline);
+        struct LineStyle *oldstyles = startline->line.Styles;
+
+        InitGrow(&styleGrow, data->mypool, sizeof(struct LineStyle));
+
+        // apply any active style
+        if(isFlagSet(startstyle, BOLD))
         {
-          UWORD startstyle = GetStyle(startx, startline);
-          UWORD stopstyle = GetStyle(stopx, stopline);
-          struct LineStyle *styles = emsg.Styles;
-          struct LineStyle *oldstyles = startline->line.Styles;
+          struct LineStyle newStyle;
 
-          // apply any active style
-          if(isFlagSet(startstyle, BOLD))
-          {
-            styles->column = 1;
-            styles->style = BOLD;
-            styles++;
-          }
-          if(isFlagSet(startstyle, ITALIC))
-          {
-            styles->column = 1;
-            styles->style = ITALIC;
-            styles++;
-          }
-          if(isFlagSet(startstyle, UNDERLINE))
-          {
-            styles->column = 1;
-            styles->style = UNDERLINE;
-            styles++;
-          }
-
-          // skip all styles until the block starts
-          while(oldstyles->column <= startx)
-            oldstyles++;
-
-          // copy all styles until the end of the block
-          while(oldstyles->column <= stopx)
-          {
-            styles->column = oldstyles->column - startx;
-            styles->style = oldstyles->style;
-            styles++;
-            oldstyles++;
-          }
-
-          // unapply any still active styles
-          if(isFlagSet(stopstyle, BOLD))
-          {
-            styles->column = stopx-startx+1;
-            styles->style = ~BOLD;
-            styles++;
-          }
-          if(isFlagSet(stopstyle, ITALIC))
-          {
-            styles->column = stopx-startx+1;
-            styles->style = ~ITALIC;
-            styles++;
-          }
-          if(isFlagSet(stopstyle, UNDERLINE))
-          {
-            styles->column = stopx-startx+1;
-            styles->style = ~UNDERLINE;
-            styles++;
-          }
-
-          // terminate the style array
-          styles->column = EOS;
+          newStyle.column = 1;
+          newStyle.style = BOLD;
+          AddToGrow(&styleGrow, &newStyle);
         }
+        if(isFlagSet(startstyle, ITALIC))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = 1;
+          newStyle.style = ITALIC;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+        if(isFlagSet(startstyle, UNDERLINE))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = 1;
+          newStyle.style = UNDERLINE;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+
+        // skip all styles until the block starts
+        while(oldstyles->column <= startx)
+          oldstyles++;
+
+        // copy all styles until the end of the block
+        while(oldstyles->column <= stopx)
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = oldstyles->column - startx;
+          newStyle.style = oldstyles->style;
+          AddToGrow(&styleGrow, &newStyle);
+
+          oldstyles++;
+        }
+
+        // unapply any still active styles
+        if(isFlagSet(stopstyle, BOLD))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = stopx - startx + 1;
+          newStyle.style = ~BOLD;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+        if(isFlagSet(stopstyle, ITALIC))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = stopx - startx + 1;
+          newStyle.style = ~ITALIC;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+        if(isFlagSet(stopstyle, UNDERLINE))
+        {
+          struct LineStyle newStyle;
+
+          newStyle.column = stopx - startx + 1;
+          newStyle.style = ~UNDERLINE;
+          AddToGrow(&styleGrow, &newStyle);
+        }
+
+        // terminate the style array
+        if(styleGrow.itemCount > 0)
+        {
+          struct LineStyle terminator;
+
+          terminator.column = EOC;
+          terminator.style = 0;
+          AddToGrow(&styleGrow, &terminator);
+        }
+
+        emsg.Styles = (struct LineStyle *)styleGrow.array;
       }
       else
         emsg.Styles = NULL;
 
       if(startline->line.Colors != NULL && startline->line.Colors[0].column != EOC)
       {
-        // allocate space for all old colors and up to 3 new colors
-        if((emsg.Colors = (struct LineColor *)AllocVecPooled(data->mypool, (startline->line.usedColors+3) * sizeof(struct LineColor))) != NULL)
+        struct Grow colorGrow;
+        UWORD lastcolor = GetColor(startx, startline);
+        struct LineColor *oldcolors = startline->line.Colors;
+
+        InitGrow(&colorGrow, data->mypool, sizeof(struct LineColor));
+
+        // apply the active color
+        if(lastcolor != 0)
         {
-          UWORD lastcolor = GetColor(startx, startline);
-          struct LineColor *colors = emsg.Colors;
-          struct LineColor *oldcolors = startline->line.Colors;
+          struct LineColor newColor;
 
-          // apply the active color
-          if(lastcolor != 0)
-          {
-            colors->column = 1;
-            colors->color = lastcolor;
-            colors++;
-          }
-
-          // skip all colors until the block starts
-          while(oldcolors->column <= startx)
-            oldcolors++;
-
-          // copy all colors until the end of the block
-          while(oldcolors->column <= stopx)
-          {
-            // apply real color changes only
-          	if(oldcolors->color != lastcolor)
-          	{
-              colors->column = oldcolors->column - startx;
-              colors->color = oldcolors->color;
-              colors++;
-              // remember this color change
-              lastcolor = oldcolors->color;
-            }
-            oldcolors++;
-          }
-
-          // unapply the last active color
-          if(lastcolor != 0)
-          {
-            colors->column = stopx-startx+1;
-            colors->color = 0;
-            colors++;
-          }
-
-          // terminate the color array
-          colors->column = EOC;
+          newColor.column = 1;
+          newColor.color = lastcolor;
+          AddToGrow(&colorGrow, &newColor);
         }
+
+        // skip all colors until the block starts
+        while(oldcolors->column <= startx)
+          oldcolors++;
+
+        // copy all colors until the end of the block
+        while(oldcolors->column <= stopx)
+        {
+          // apply real color changes only
+          if(oldcolors->color != lastcolor)
+          {
+            struct LineColor newColor;
+
+            newColor.column = oldcolors->column - startx;
+            newColor.color = oldcolors->color;
+            AddToGrow(&colorGrow, &newColor);
+
+            // remember this color change
+            lastcolor = oldcolors->color;
+          }
+          oldcolors++;
+        }
+
+        // unapply the last active color
+        if(lastcolor != 0)
+        {
+          struct LineColor newColor;
+
+          newColor.column = stopx - startx + 1;
+          newColor.color = 0;
+          AddToGrow(&colorGrow, &newColor);
+        }
+
+        // terminate the color array
+        if(colorGrow.itemCount > 0)
+        {
+          struct LineColor terminator;
+
+          terminator.column = EOC;
+          terminator.color = 0;
+          AddToGrow(&colorGrow, &terminator);
+        }
+
+        emsg.Colors = (struct LineColor *)colorGrow.array;
       }
       else
         emsg.Colors = NULL;
@@ -656,7 +750,7 @@ LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, BOOL update, s
 
       if(NoCut == FALSE)
       {
-        struct line_node *cc_startline = c_startline;
+        struct line_node *cc_startline = c_startline->next;
 
         FreeVecPooled(data->mypool, c_startline->line.Contents);
         if(c_startline->line.Styles != NULL)
@@ -664,11 +758,12 @@ LONG CutBlock2(struct InstData *data, BOOL Clipboard, BOOL NoCut, BOOL update, s
         if(c_startline->line.Colors != NULL)
           FreeVecPooled(data->mypool, c_startline->line.Colors);
         data->totallines -= c_startline->visual;
-        c_startline = c_startline->next;
 
         //D(DBF_STARTUP, "FreeLine %08lx", cc_startline);
 
-        FreeLine(data, cc_startline);
+        FreeLine(data, c_startline);
+
+        c_startline = cc_startline;
       }
       else
         c_startline = c_startline->next;
