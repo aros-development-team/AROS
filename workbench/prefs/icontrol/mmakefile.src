@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main vars locale misc prefs gui
+FILES 	    := main args icontroleditor locale misc prefs
 EXEDIR      := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-icontrol
