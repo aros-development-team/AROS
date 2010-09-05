@@ -449,6 +449,8 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 		break;
 		
 	    case 8:
+	      /* FIXME: Ugh... Race condition, anyone? The qualifier might
+		 have changed between the keypress and the time we do this */
 	    	if (PeekQualifier() & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
 		{
 		    result = INP_SHIFT_BACKSPACE;

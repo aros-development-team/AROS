@@ -269,6 +269,22 @@ struct ConsoleBase
     Class *stdConClass;
     Class *charMapClass;
     Class *snipMapClass;
+
+  /* Copy buffer
+     
+     This buffer is shared across all console units. It is used by
+     conunits of type CONU_SNIPMAP to provide built in copy/paste.
+     
+     If ConClip is running, this buffer is passed to ConClip on copy,
+     and is not used on Paste. Instead, <CSI> 0 v (Hex 9B 30 20 76)
+     is put into the console units input buffer to signal to the app
+     (console handler or otherwise) to paste.
+
+     Access to the copyBuffer is protected by a semaphore.
+  */
+  const char * copyBuffer;
+  ULONG copyBufferSize;
+  struct SignalSemaphore copyBufferLock;
 };
 
 /* The following typedefs are necessary, because the names of the global
