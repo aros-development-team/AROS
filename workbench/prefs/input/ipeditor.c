@@ -107,7 +107,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             MUIA_Listview_Input, FALSE,
                             MUIA_Listview_List, (IPTR)(keyTypes = (Object *)ListObject,
                                 InputListFrame,
-                                 MUIA_List_AutoVisible, TRUE,
+                                MUIA_List_AutoVisible, TRUE,
                                 MUIA_List_DisplayHook, (IPTR)&display_hook,
                             End),
                         End,
@@ -148,27 +148,27 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     GroupFrameT(__(MSG_GAD_MOUSE_SPEED)),
                     Child, (IPTR)(GadMouseSpeed = MUI_MakeObject(MUIO_Cycle, NULL, MouseSpeed)),
                     Child, HGroup,
-			Child, (IPTR)HSpace(0),
+                        Child, (IPTR)HSpace(0),
                         Child, (IPTR)Label1(__(MSG_GAD_MOUSE_ACCELERATED)),
                         Child, (IPTR)(Accelerated = MUI_MakeObject(MUIO_Checkmark, NULL)),
                     End,
-		End,
+                End,
                 Child, VGroup,
                     GroupFrameT(__(MSG_GAD_MOUSE_BUTTON_SETTINGS)),
-		    Child, ColGroup(2),
-		        Child, (IPTR)Label1(__(MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY)),
+                    Child, ColGroup(2),
+                        Child, (IPTR)Label1(__(MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY)),
                         Child, (IPTR)(DoubleClickDelay = (Object *)StringifyObject,
                             MUIA_MyStringifyType, STRINGIFY_DoubleClickDelay,
                             MUIA_Numeric_Value, 0,
                             MUIA_Numeric_Min, 0,
                             MUIA_Numeric_Max, 199,
                         End),
-			Child, (IPTR)Label1(__(MSG_GAD_LEFT_HANDED_MOUSE)),
-			Child, HGroup,
-			    Child, (IPTR)(LeftHandedMouse = MUI_MakeObject(MUIO_Checkmark, NULL)),
-			    Child, (IPTR)HSpace(0),
-			End,
-		    End,
+                        Child, (IPTR)Label1(__(MSG_GAD_LEFT_HANDED_MOUSE)),
+                        Child, HGroup,
+                            Child, (IPTR)(LeftHandedMouse = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                            Child, (IPTR)HSpace(0),
+                        End,
+                    End,
                 End,
             End,
         End,
@@ -186,7 +186,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->iped_Accelerated = Accelerated;
         data->iped_MouseSpeed = GadMouseSpeed;
         data->iped_DoubleClickDelay = DoubleClickDelay;
-	data->iped_LeftHandedMouse = LeftHandedMouse;
+        data->iped_LeftHandedMouse = LeftHandedMouse;
 
         IPTR root;
 
@@ -237,7 +237,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
-	DoMethod
+        DoMethod
         (
             LeftHandedMouse, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
