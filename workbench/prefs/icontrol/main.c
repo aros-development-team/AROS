@@ -1,215 +1,81 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
-*/
+   Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+   $Id$
+ */
 
 /*********************************************************************************************/
 
-#include "global.h"
-#include "version.h"
+#define MUIMASTER_YES_INLINE_STDARG
 
-#include <libraries/coolimages.h>
-#include <aros/debug.h>
-
-#include <zune/clock.h>
-#include <zune/calendar.h>
+#include <proto/intuition.h>
+#include <proto/muimaster.h>
+#include <proto/utility.h>
+#include <proto/dos.h>
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
 #include <string.h>
 
+#include <intuition/intuition.h>
+#include <intuition/gadgetclass.h>
+#include <libraries/gadtools.h>
+
+#include <libraries/mui.h>
+#include <zune/systemprefswindow.h>
+
+#include <prefs/icontrol.h>
+
+#include "locale.h"
+#include "icontroleditor.h"
+#include "args.h"
+#include "prefs.h"
+
+/* #define DEBUG 1 */
+#include <aros/debug.h>
+
+#define VERSION "$VER: IControl 1.2 (05.09.2010) AROS Dev Team"
+
 /*********************************************************************************************/
 
-#define ARG_TEMPLATE    "FROM,EDIT/S,USE/S,SAVE/S,PUBSCREEN/K"
-
-#define ARG_FROM        0
-#define ARG_EDIT    	1
-#define ARG_USE     	2
-#define ARG_SAVE      	3
-#define ARG_PUBSCREEN   4
-
-#define NUM_ARGS        5
-
-#define RETURNID_USE 	1
-#define RETURNID_SAVE 	2
-
-/*********************************************************************************************/
-
-static struct libinfo
+int main(int argc, char **argv)
 {
-    APTR        var;
-    STRPTR      name;
-    WORD        version;
-    BOOL    	required;
-}
-libtable[] =
-{
-    {&IntuitionBase     , "intuition.library"	 , 39, TRUE  },
-    {&GfxBase           , "graphics.library" 	 , 40, TRUE  }, /* 40, because of WriteChunkyPixels */
-    {&UtilityBase       , "utility.library"  	 , 39, TRUE  },
-    {&IFFParseBase      , "iffparse.library" 	 , 39, TRUE  },
-    {&MUIMasterBase 	, "muimaster.library"	 , 0 , TRUE  },
-    {NULL                                            	     }
-};
+    Object *application;
+    Object *window;
 
-/*********************************************************************************************/
+    Locale_Initialize();
 
-static struct RDArgs        	*myargs;
-static IPTR                 	args[NUM_ARGS];
-
-/*********************************************************************************************/
-
-static void CloseLibs(void);
-static void FreeArguments(void);
-
-
-/*********************************************************************************************/
-
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
-{
-    struct EasyStruct es;
-    
-    es.es_StructSize   = sizeof(es);
-    es.es_Flags        = 0;
-    es.es_Title        = title;
-    es.es_TextFormat   = text;
-    es.es_GadgetFormat = gadtext;
-   
-    return EasyRequestArgs(NULL, &es, NULL, NULL);  
-}
-
-/*********************************************************************************************/
-
-void Cleanup(STRPTR msg)
-{
-    if (msg)
+    /* init */
+    if (ReadArguments(argc, argv))
     {
-	if (IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI)
-	{
-	    ShowMessage("IControl", msg, MSG(MSG_OK));     
-	}
-	else
-	{
-	    printf("IControl: %s\n", msg);
-	}
-    }
-    
-    KillGUI();
+        if (ARG(USE) || ARG(SAVE))
+        {
+            Prefs_HandleArgs((STRPTR)ARG(FROM), ARG(USE), ARG(SAVE));
+        }
+        else
+        {
+            application = (Object *)ApplicationObject,
+                MUIA_Application_Title, __(MSG_WINTITLE),
+                MUIA_Application_Version, (IPTR) VERSION,
+                MUIA_Application_Description, __(MSG_WINTITLE),
+                MUIA_Application_Base, (IPTR) "ICONTROLPREF",
+                SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
+                    MUIA_Window_ID, ID_ICTL,
+                    WindowContents, (IPTR) IControlEditorObject,
+                    End,
+                End),
+            End;
 
-    FreeArguments();
-    CloseLibs();
-    CleanupLocale();
-    
-    exit(prog_exitcode);
-}
+            if (application != NULL)
+            {
+                SET(window, MUIA_Window_Open, TRUE);
+                DoMethod(application, MUIM_Application_Execute);
 
-
-/*********************************************************************************************/
-
-static void OpenLibs(void)
-{
-    struct libinfo *li;
-    
-    for(li = libtable; li->var; li++)
-    {
-	if (!((*(struct Library **)li->var) = OpenLibrary(li->name, li->version)))
-	{
-	    if (li->required)
-	    {
-	    	sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
-	    	Cleanup(s);
-	    }
-	}       
-    }
-       
-}
-
-/*********************************************************************************************/
-
-static void CloseLibs(void)
-{
-    struct libinfo *li;
-    
-    for(li = libtable; li->var; li++)
-    {
-	if (*(struct Library **)li->var) CloseLibrary((*(struct Library **)li->var));
-    }
-}
-
-/*********************************************************************************************/
-
-static void GetArguments(void)
-{
-    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
-    {
-	Fault(IoErr(), 0, s, 256);
-	Cleanup(s);
-    }
-    
-    if (!args[ARG_FROM]) args[ARG_FROM] = (IPTR)CONFIGNAME_ENV;
-}
-
-/*********************************************************************************************/
-
-static void FreeArguments(void)
-{
-    if (myargs) FreeArgs(myargs);
-}
-
-/*********************************************************************************************/
-
-
-
-
-
-
-
-
-
-
-
-
-
-static void HandleAll(void)
-{
-    ULONG sigs = 0;
-    LONG returnid;
-    
-    set (wnd, MUIA_Window_Open, TRUE);
-    
-    for(;;)
-    {
-    	returnid = (LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs);
-
-	if ((returnid == MUIV_Application_ReturnID_Quit) ||
-	    (returnid == RETURNID_SAVE) || (returnid == RETURNID_USE)) break;
-	
-	if (sigs)
-	{
-	    sigs = Wait(sigs | SIGBREAKF_CTRL_C);
-	    if (sigs & SIGBREAKF_CTRL_C) break;
-	}
+                MUI_DisposeObject(application);
+            }
+        }
+        FreeArguments();
     }
 
-}
-
-/*********************************************************************************************/
-
-int main(void)
-{
-    InitLocale("System/Prefs/IControl.catalog", 1);
-    InitMenus();
-    OpenLibs();
-    GetArguments();
-    InitPrefs((STRPTR)args[ARG_FROM], (args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE));
-
-    MakeGUI();
-    HandleAll();
-    Cleanup(NULL);
-    
+    Locale_Deinitialize();
     return 0;
 }
-
-/*********************************************************************************************/
-
-

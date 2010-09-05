@@ -1,103 +1,37 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
-/*********************************************************************************************/
+#include <exec/types.h>
 
-#include "global.h"
-#include "version.h"
+#include <proto/dos.h>
+#include <proto/intuition.h>
 
-#include <string.h>
+#include <stdio.h>
 
-/*********************************************************************************************/
+#include "locale.h"
+#include "misc.h"
 
-struct NewMenu nm[] =
+VOID ShowMessage(CONST_STRPTR msg)
 {
-    {NM_TITLE, (STRPTR)MSG_MEN_PROJECT                                                  },
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_OPEN                                             },
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS                                           },
-     {NM_ITEM, NM_BARLABEL                                                              },
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_QUIT                                             },
-    {NM_TITLE, (STRPTR)MSG_MEN_EDIT                                                     },
-     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_DEFAULT                                           	},
-     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_LASTSAVED                                           },
-     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_RESTORE                                           	},
-    {NM_TITLE, (STRPTR)MSG_MEN_SETTINGS                                                 },
-     {NM_ITEM, (STRPTR)MSG_MEN_SETTINGS_CREATEICONS, NULL, CHECKIT | MENUTOGGLE         },
-    {NM_END}
-};
+    struct EasyStruct es;
 
-/*********************************************************************************************/
-
-void InitMenus(void)
-{
-    struct NewMenu *actnm = nm;
-    
-    for(actnm = nm; actnm->nm_Type != NM_END; actnm++)
+    if (msg)
     {
-	if (actnm->nm_Label != NM_BARLABEL)
-	{
-	    ULONG  id = (ULONG)actnm->nm_Label;
-	    STRPTR str = MSG(id);
-	    
-	    if (actnm->nm_Type == NM_TITLE)
-	    {
-		actnm->nm_Label = str;
-	    } else {
-		actnm->nm_Label = str + 2;
-		if (str[0] != ' ') actnm->nm_CommKey = str;
-	    }
-	    actnm->nm_UserData = (APTR)id;
-	    
-	} /* if (actnm->nm_Label != NM_BARLABEL) */
-	
-    } /* for(actnm = nm; nm->nm_Type != NM_END; nm++) */
+        if (IntuitionBase)
+        {
+            es.es_StructSize   = sizeof(es);
+            es.es_Flags        = 0;
+            es.es_Title        = (CONST_STRPTR) "Serial";
+            es.es_TextFormat   = (CONST_STRPTR) msg;
+            es.es_GadgetFormat = _(MSG_OK);
 
+            EasyRequestArgs(NULL, &es, NULL, NULL); /* win=NULL -> wb screen */
+        }
+        else
+        {
+            printf("Serial: %s\n", msg);
+        }
+    }
 }
-
-/*********************************************************************************************/
-
-/*********************************************************************************************/
-
-STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode)
-{
-    static UBYTE         filebuffer[300];
-    struct FileRequester *req;
-    STRPTR               retval = NULL;
-    
-    AslBase = OpenLibrary("asl.library", 39);
-    if (AslBase)
-    {
-	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)title,
-						   ASLFR_DoPatterns   , TRUE       ,
-						   ASLFR_InitialDrawer, (IPTR)dir  ,
-						   ASLFR_DoSaveMode   , savemode   ,
-						   TAG_DONE);
-	if (req)
-	{
-	    if (AslRequest(req, NULL))
-	    {
-		strncpy(filebuffer, req->fr_Drawer, 299);
-		AddPart(filebuffer, req->fr_File, 299);
-		
-		retval = filebuffer;
-		
-	    } /* if (AslRequest(req, NULL) */
-	    
-	    FreeAslRequest(req);
-	    
-	} /* if (req) */
-	
-	CloseLibrary(AslBase);
-	
-    } /* if (AslBase) */
-    
-    return retval;
-}
-
-/*********************************************************************************************/
-
