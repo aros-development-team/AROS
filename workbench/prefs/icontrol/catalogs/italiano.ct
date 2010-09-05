@@ -2,6 +2,8 @@
 ## codeset 0
 ## language deutsch
 ;
+; TODO: update me and set version to 2
+;
 MSG_CANT_OPEN_LIB
 Impossibile aprire %s V%ld!\n
 ;

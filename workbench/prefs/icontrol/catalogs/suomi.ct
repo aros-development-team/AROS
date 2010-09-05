@@ -2,6 +2,8 @@
 ## codeset 0
 ## language suomi
 ;
+; TODO: update me and set version to 2
+;
 MSG_CANT_OPEN_LIB
 En voi avata %s V%ld!\n
 ; Can't open %s V%ld!\n
