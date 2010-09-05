@@ -75,7 +75,7 @@ struct ListviewEntry
     UBYTE                           layoutname[30];
     UBYTE                           realname[30];
     UBYTE                           flagname[30];
-    UBYTE                           displayname[128];
+    UBYTE                           displayflag[128];
 };
 
 struct KeymapEntry

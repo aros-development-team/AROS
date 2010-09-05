@@ -190,9 +190,9 @@ void Prefs_ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
     ForeachNode(list, entry)
     {
 #if SHOWFLAGS == 1
-        sprintf(entry->displayname, "\033I[5:Locale:Flags/Countries/%s]%s", entry->flagname, entry->node.ln_Name);
+        sprintf(entry->displayflag, "\033I[5:Locale:Flags/Countries/%s]", entry->flagname);
 #else
-        sprintf(entry->displayname, "%s", entry->node.ln_Name);
+        entry->displayflag[0] = '\0';
 #endif
         D(bug("IPrefs: kbd entry flag: %s\n", entry->flagname));
     }

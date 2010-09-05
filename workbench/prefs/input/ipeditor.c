@@ -63,7 +63,8 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data);
 *****************************************************************/
 static void keytypes_display_func(struct Hook *h, char **array, struct ListviewEntry * entry)
 {
-    *array++ = entry->displayname;
+    *array++ = entry->displayflag;
+    *array   = entry->node.ln_Name;
 }
 
 /*** Methods ****************************************************************/
@@ -108,6 +109,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             MUIA_Listview_List, (IPTR)(keyTypes = (Object *)ListObject,
                                 InputListFrame,
                                 MUIA_List_AutoVisible, TRUE,
+                                MUIA_List_Format, (IPTR)"P=\033c,",
                                 MUIA_List_DisplayHook, (IPTR)&display_hook,
                             End),
                         End,
