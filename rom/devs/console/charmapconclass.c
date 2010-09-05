@@ -901,7 +901,7 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o, struct P_Console_Handle
 	      data->select_y_min = (y - GFX_YMIN(o)) / YRSIZE;
 
 	      data->select_x_max = data->select_x_min;
-	      data->select_y_min = data->select_y_min;
+	      data->select_y_max = data->select_y_min;
 
 	      /* Clear */
 
