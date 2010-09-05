@@ -21,7 +21,6 @@ Lang: English
 #include <string.h>
 #include <stdio.h>
 
-#include "version.h"
 #include "icontroleditor.h"
 #include "prefs.h"
 #include "locale.h"
