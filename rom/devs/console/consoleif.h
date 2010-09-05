@@ -34,8 +34,9 @@ enum
     M_Console_UnRenderCursor,
     M_Console_ClearCell,
     M_Console_NewWindowSize,
-	M_Console_HandleGadgets,
-    
+    M_Console_HandleGadgets,
+    M_Console_Copy,
+    M_Console_Paste
 };
 
 struct P_Console_ScrollDown
@@ -104,6 +105,16 @@ struct P_Console_NewWindowSize
     ULONG MethodID;
 };
 
+struct P_Console_Copy
+{
+    ULONG MethodID;
+};
+
+struct P_Console_Paste
+{
+    ULONG MethodID;
+};
+
 struct P_Console_HandleGadgets
 {
   ULONG MethodID;
@@ -116,7 +127,6 @@ struct P_Console_GetDefaultParams
     BYTE Command;
     IPTR *Params;
 };
-
 
 #define Console_DoCommand(o, cmd, numparams, params)	\
 ({							\
@@ -207,6 +217,20 @@ struct P_Console_GetDefaultParams
     p.MethodID	= M_Console_HandleGadgets;	\
     p.Event = e;	      			\
     DoMethodA((o), (Msg)&p);			\
+})
+
+#define Console_Copy(o)	       	\
+({						\
+  struct P_Console_Copy p;			\
+  p.MethodID	= M_Console_Copy;		\
+  DoMethodA((o), (Msg)&p);			\
+ })
+
+#define Console_Paste(o)	       	\
+({						\
+  struct P_Console_Paste p;			\
+  p.MethodID	= M_Console_Paste;		\
+  DoMethodA((o), (Msg)&p);			\
 })
 
 

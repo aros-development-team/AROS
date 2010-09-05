@@ -70,7 +70,11 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
     NEWLIST(&ConsoleDevice->unitList);
     InitSemaphore(&ConsoleDevice->unitListLock);
     InitSemaphore(&ConsoleDevice->consoleTaskLock);
+    InitSemaphore(&ConsoleDevice->copyBufferLock);
     
+    ConsoleDevice->copyBuffer = 0;
+    ConsoleDevice->copyBufferSize = 0;
+
     /* Create the console classes */
     CONSOLECLASSPTR = makeConsoleClass(ConsoleDevice);
     STDCONCLASSPTR = makeStdConClass(ConsoleDevice);

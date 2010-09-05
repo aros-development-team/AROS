@@ -169,6 +169,21 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 						       ,inputBuf
 						       ,MAPRAWKEY_BUFSIZE
 						       ,NULL);
+
+				if (cdihmsg->ie.ie_Qualifier == IEQUALIFIER_RCOMMAND && actual == 1)
+				  {
+				    switch(inputBuf[0]) 
+				      {
+				      case 'c':
+					Console_Copy(cdihmsg->unit);
+					actual = 0;
+					break;
+				      case 'v':
+					Console_Paste(cdihmsg->unit);
+					actual = 0;
+					break;
+				      }
+				  }
 			      }
 			    
 			    D(bug("RawKeyConvert returned %ld\n", actual));

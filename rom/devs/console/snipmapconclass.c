@@ -57,6 +57,39 @@ static VOID snipmapcon_dispose(Class *cl, Object *o, Msg msg)
     DoSuperMethodA(cl, o, msg);
 }
 
+static VOID snipmapcon_copy(Class *cl, Object *o, Msg msg)
+{
+  struct snipmapcondata *data= INST_DATA(cl, o);
+
+  /* FIXME: Handle ConClip here */
+  ObtainSemaphore(&ConsoleDevice->copyBufferLock);
+  if (ConsoleDevice->copyBuffer)
+    {
+      FreeMem(ConsoleDevice->copyBuffer,ConsoleDevice->copyBufferSize);
+    }
+
+  /* FIXME: Create a string from the contents of the scrollback buffer 
+   */
+  ConsoleDevice->copyBuffer = 0;
+  ConsoleDevice->copyBufferSize = 0;
+  ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
+}
+
+static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
+{
+  struct snipmapcondata *data= INST_DATA(cl, o);
+
+  /* FIXME: Handle ConClip here */
+  ObtainSemaphore(&ConsoleDevice->copyBufferLock);
+  if (ConsoleDevice->copyBuffer)
+    {
+      IPTR params[2];
+      params[0] = ConsoleDevice->copyBuffer;
+      params[1] = ConsoleDevice->copyBufferSize;
+      Console_DoCommand(o, C_ASCII_STRING,1,&params);
+    }
+  ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
+}
 
 static VOID snipmapcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 {
@@ -96,6 +129,14 @@ AROS_UFH3S(IPTR, dispatch_snipmapconclass,
     case M_Console_DoCommand:
     	snipmapcon_docommand(cl, o, (struct P_Console_DoCommand *)msg);
 	break;
+
+    case M_Console_Copy:
+      snipmapcon_copy(cl,o,msg);
+      break;
+
+    case M_Console_Paste:
+      snipmapcon_paste(cl,o,msg);
+      break;
 
 	/*
     case M_Console_HandleGadgets:
