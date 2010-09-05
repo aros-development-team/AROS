@@ -1,71 +1,11 @@
-## version $VER: icontrolprefs.catalog 1.0 (25.08.2003)
+## version $VER: icontrolprefs.catalog 2.0 (05.09.2010)
 ## language deutsch
 ## codeset 0
 ;
 ;
-MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!\n
-; Can't open %s V%ld!\n
-;
-MSG_CANT_CREATE_APP
-Kann Applikations-Objekt nicht erzeugen!
-; Can't create application object!
-;
-MSG_CANT_CREATE_CUSTOM_CLASS
-Kann Klasse 'Preferenceswindow' nicht erzeugen
-; Can't create custom preferenceswindow class
-;
 MSG_WINTITLE
 IControl-Voreinsteller
 ; IControl Preferences
-;
-MSG_MEN_PROJECT
-Projekt
-; Project
-;
-MSG_MEN_PROJECT_OPEN
-O\0Öffnen ...
-; O\0Open...
-;
-MSG_MEN_PROJECT_SAVEAS
-A\0Speichern als ...
-; A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Beenden
-; Q\0Quit
-;
-MSG_MEN_EDIT
-Vorgaben
-; Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Auf Vorgaben zurücksetzen
-; D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Auf zuletzt gespeichertes
-; L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Auf vorherigen Stand
-; R\0Restore
-;
-MSG_MEN_SETTINGS
-Einstellungen
-; Settings
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Piktogramme erzeugen?
-; I\0Create Icons?
-;
-MSG_ASL_OPEN_TITLE
-Laden Icontrol-Vorgaben
-; Load IControl Preferences
-;
-MSG_ASL_SAVE_TITLE
-Speichern IControl-Vorgaben
-; Save IControl Preferences
 ;
 MSG_OK
 Ok
@@ -113,7 +53,7 @@ Bildschirme
 ;
 MSG_FRONTMOST_DEFAULT
 Vorderster als voreingesteller öffentlicher Bildschirm:
-; Frontmost set as DefaultPubScreen:
+; Frontmost set as default public screen:
 ;
 MSG_OFFSCREEN_DESC
 Ermöglicht das Verschieben von Fenstern\naußerhalb des sichtbaren Bereichs
@@ -122,4 +62,28 @@ Ermöglicht das Verschieben von Fenstern\naußerhalb des sichtbaren Bereichs
 MSG_FRONTMOST_DEFAULT_DESC
 Macht den vordersten öffentlichen Bildschirm\nzum voreingestellten öffentlichen Bildschirm
 ; Make the frontmost public screen\nthe default public screen
+;
+MSG_BOUND_LEFT_DRAG
+Verschieben nach links verhindern
+; Bound drag in left direction
+;
+MSG_BOUND_RIGHT_DRAG
+Verschieben nach rechts verhindern
+; Bound drag in right direction
+;
+MSG_BOUND_TOP_DRAG
+Verschieben nach oben verhindern
+; Bound drag in top direction
+;
+MSG_BOUND_BOTTOM_DRAG
+Verschieben nach unten verhindern
+; Bound drag in bottom direction
+;
+MSG_META_DRAG
+Tastenkombination zum Verschieben
+; Drag keys
+;
+MSG_MENUS_STICKY
+Klebend
+; Sticky
 ;
