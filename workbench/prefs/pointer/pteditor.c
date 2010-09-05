@@ -11,7 +11,7 @@
 #include <libraries/mui.h>
 #include <prefs/pointer.h>
 
-#define DEBUG 1
+// #define DEBUG 1
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 

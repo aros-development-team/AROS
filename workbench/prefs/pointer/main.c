@@ -30,7 +30,7 @@
 #include "args.h"
 #include "prefs.h"
 
-/* #define DEBUG 1 */
+// #define DEBUG 1
 #include <aros/debug.h>
 
 #define VERSION "$VER: Pointer 1.3 (17.02.2010) AROS Dev Team"

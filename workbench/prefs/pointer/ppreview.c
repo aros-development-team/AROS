@@ -12,7 +12,7 @@
 #include <prefs/pointer.h>
 #include <datatypes/pictureclass.h>
 
-#define DEBUG 1
+// #define DEBUG 1
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
