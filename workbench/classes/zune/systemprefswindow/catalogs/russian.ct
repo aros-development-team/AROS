@@ -1,6 +1,9 @@
 ## version $VER: SystemPrefsWindow.catalog 1.0 (11.05.2006)
 ## codeset 0
 ## language russian
+;
+; TODO: update me and set version to 2
+;
 ; Translated by Sergey Mineychev aka Keen
 ;
 MSG_MENU_PREFS

@@ -25,6 +25,7 @@
 #include "systemprefswindow.h"
 #include "systemprefswindow_private.h"
 
+#define CATALOG_VERSION (2)
 #define CATCOMP_ARRAY
 #include "strings.h"
 
@@ -92,9 +93,12 @@ Object *SystemPrefsWindow__OM_NEW
     if (editor == NULL) return NULL;
     
     /*--- Initialize locale ------------------------------------------------*/
-    catalog = OpenCatalogA
+    catalog = OpenCatalog
     (
-        NULL, "System/Classes/Zune/SystemPrefsWindow.catalog", NULL
+        NULL,
+        "System/Classes/Zune/SystemPrefsWindow.catalog",
+        OC_Version, CATALOG_VERSION,
+        TAG_DONE
     );
     
     /*--- Create object ----------------------------------------------------*/
@@ -109,8 +113,8 @@ Object *SystemPrefsWindow__OM_NEW
                 MUIA_Menu_Title, __(MSG_MENU_PREFS),
                 Child, (IPTR)(importMI = MakeMenuitem(_(MSG_MENU_PREFS_IMPORT))),
                 Child, (IPTR)(exportMI = MakeMenuitem(_(MSG_MENU_PREFS_EXPORT))),
-                Child, (IPTR)(exportIconMI = MakeMenuitem("Export with Icon...")),      // FIXME: localize
-                Child, (IPTR)(defaultsMI = MakeMenuitem("Reset to Defaults")),          // FIXME: localize
+                Child, (IPTR)(exportIconMI = MakeMenuitem(_(MSG_MENU_PREFS_EXPORT_WITH_ICON))),
+                Child, (IPTR)(defaultsMI = MakeMenuitem(_(MSG_MENU_RESET_TO_DEFAULTS))),
                 Child, (IPTR)MakeMenuitem(NM_BARLABEL),
                 Child, (IPTR)(testMI   = MakeMenuitem(_(MSG_MENU_PREFS_TEST))),
                 Child, (IPTR)(revertMI = MakeMenuitem(_(MSG_MENU_PREFS_REVERT))),
@@ -383,13 +387,14 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
     SETUP_INST_DATA;
 
     IPTR result = FALSE;
+    struct Catalog *catalog = data->spwd_Catalog;
 
     if (data->spwd_FileRequester)
     {
         BOOL reqOK = MUI_AslRequestTags
         (
             data->spwd_FileRequester,
-            ASLFR_TitleText, "Import",  // TODO: localize
+            ASLFR_TitleText, _(MSG_FILEREQ_IMPORT_TITLE),
             TAG_DONE
         );
         if (reqOK)
@@ -428,13 +433,14 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Export
 
     IPTR result = FALSE;
     STRPTR prefname = NULL;
+    struct Catalog *catalog = data->spwd_Catalog;
 
     if (data->spwd_FileRequester)
     {
         BOOL reqOK = MUI_AslRequestTags
         (
             data->spwd_FileRequester,
-            ASLFR_TitleText, "Export", // TODO: localize
+            ASLFR_TitleText, _(MSG_FILEREQ_EXPORT_TITLE),
             ASLFR_DoSaveMode, TRUE,
             TAG_DONE
         );

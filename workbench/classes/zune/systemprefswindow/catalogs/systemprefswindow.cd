@@ -23,3 +23,14 @@ U\0Use
 MSG_MENU_PREFS_CANCEL (//)
 C\0Cancel
 ;
+MSG_MENU_PREFS_EXPORT_WITH_ICON (//)
+Export with Icon...
+;
+MSG_MENU_RESET_TO_DEFAULTS (//)
+Reset to Defaults
+;
+MSG_FILEREQ_EXPORT_TITLE (//)
+Export
+;
+MSG_FILEREQ_IMPORT_TITLE (//)
+Import
