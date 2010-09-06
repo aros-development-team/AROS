@@ -319,7 +319,7 @@ static inline void wrmsr(uint32_t msr) {
 #define INTR_U2         3       /* UART2 Interrupt Status*/
 #define INTR_U3         4       /* UART3 Interrupt Status*/
 #define INTR_PCRW       5       /* PCI Command Register Write Interrupt Status */
-#define INTR_PPM        6       /* PCI Power Management Interrupt Status */
+#define INTR_PCIPM      6       /* PCI Power Management Interrupt Status */
 #define INTR_IIC1       7       /* IIC1 Interrupt Status */
 #define INTR_SPI        8       /* SPI Interrupt Status */
 #define INTR_EPS        9       /* Ext PCI SERR Interrupt Status */
