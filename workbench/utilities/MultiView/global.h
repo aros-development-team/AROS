@@ -221,6 +221,8 @@ enum
 void OutputMessage(CONST_STRPTR msg);
 void Cleanup(CONST_STRPTR msg);
 void AddDTOToWin(void);
+void WinCleanup(void);
+void InitWin(void);
 
 /* misc.c */
 
