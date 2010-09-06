@@ -120,15 +120,29 @@ void OutputMessage(CONST_STRPTR msg)
 
 /*********************************************************************************************/
 
-void Cleanup(CONST_STRPTR msg)
+void WinCleanup(void)
 {
-    OutputMessage(msg);
 
-    if (appwindow)
-        RemoveAppWindow(appwindow);
+    wincoords.MinX = win->LeftEdge;
+    wincoords.MinY = win->TopEdge;
+    wincoords.MaxX = win->Width;
+    wincoords.MaxY = win->Height;
+    D(bug("[Multiview] MinX = %d  MinY = %d  MaxX = %d  MaxY = %d\n",
+        wincoords.MinX, wincoords.MinY, wincoords.MaxX, wincoords.MaxY));
+
     if (msgport)
+    {
         DeleteMsgPort(msgport);
-
+        msgport = NULL;
+        D(bug("[Multiview] removed msgport\n"));
+    }
+    if (appwindow)
+    {
+        RemoveAppWindow(appwindow);
+        appwindow = NULL;
+        D(bug("[Multiview] removed appwindow\n"));
+    }
+    
     KillWindow();
     KillMenus();
     KillGadgets();
@@ -136,6 +150,30 @@ void Cleanup(CONST_STRPTR msg)
     CloseDTO();
     KillICObjects();
     KillFont();
+}
+
+/*********************************************************************************************/
+
+void Cleanup(CONST_STRPTR msg)
+{
+    OutputMessage(msg);
+
+    struct ScreenNotifyMessage *snmsg;
+    
+    while (!EndScreenNotify (isnstarted))
+        Delay (10);
+    
+    if (isnport)
+    {
+        while ((snmsg = (struct ScreenNotifyMessage *) GetMsg (isnport)))
+        {
+            ReplyMsg((struct Message *)snmsg);
+        }
+        DeleteMsgPort(isnport);
+    }
+
+    WinCleanup();
+
     FreeArguments();
     
     if (cd != NULL)
@@ -750,16 +788,19 @@ static void CloseDTO(void)
 
 static void MakeWindow(void)
 {
-    WORD minwidth, minheight, winoutterwidth = 0;
+    WORD minwidth, minheight;
+
+    if (wincoords.MinX == 0)
+        wincoords.MinX = (- scr->LeftEdge);
+    if (wincoords.MinY == 0)
+        wincoords.MinY = ( (- scr->TopEdge) < (scr->BarHeight + 1) ) ? (scr->BarHeight + 1) : (- scr->TopEdge);
+    if (wincoords.MaxX == 0)
+        wincoords.MaxX = scr->ViewPort.DWidth;
+    if (wincoords.MaxY == 0)
+        wincoords.MaxY = scr->ViewPort.DHeight - scr->BarHeight - 2;
     
-    if (!winwidth)
-        winoutterwidth = scr->ViewPort.DWidth;
-    if (!winheight)
-        winheight = scr->ViewPort.DHeight - scr->BarHeight - 1 - scr->WBorTop
-                    - scr->Font->ta_YSize - 1 - sizeimageheight;
-    
-    minwidth  = (winwidth  < 50) ? winwidth : 50;
-    minheight = (winheight < 50) ? winheight : 50;
+    minwidth  = ( (winwidth) && (winwidth < 50) ) ? winwidth : 50;
+    minheight = ( (winheight) && (winheight < 50) ) ? winheight : 50;
 
     win = OpenWindowTags(0, WA_PubScreen        , (IPTR)scr             ,
 			    WA_Title            , (IPTR)objnamebuffer   ,
@@ -771,11 +812,16 @@ static void MakeWindow(void)
 			    WA_SimpleRefresh    , TRUE                  ,
 			    WA_NoCareRefresh    , TRUE                  ,
 			    WA_NewLookMenus     , TRUE                  ,
-                            WA_Left             , - scr->LeftEdge       ,
-                            WA_Top              , ( (- scr->TopEdge) < (scr->BarHeight + 1) ) ? (scr->BarHeight + 1) : (- scr->TopEdge) ,
-			    ( winwidth ? WA_InnerWidth : WA_Width )
-			                        , ( winwidth ? winwidth : winoutterwidth ) ,
-			    WA_InnerHeight      , winheight             ,
+                            WA_Left             , wincoords.MinX        ,
+                            WA_Top              , wincoords.MinY        ,
+	       ( winwidth ? WA_InnerWidth
+	                  : WA_Width )          ,
+	       ( winwidth ?                       winwidth
+	                  :                       wincoords.MaxX )      ,
+	      ( winheight ? WA_InnerHeight
+	                  : WA_Height )         ,
+	      ( winheight ?                       winheight
+	                  :                       wincoords.MaxY )      ,
 			    WA_AutoAdjust       , TRUE                  ,
 			    WA_MinWidth         , minwidth              ,
 			    WA_MinHeight        , minheight             ,
@@ -805,7 +851,7 @@ static void MakeWindow(void)
     {
         Cleanup(MSG(MSG_CANT_CREATE_MSGPORT));
     }
-    if (!(appwindow = AddAppWindow(0,0,win,msgport,NULL)))
+    if (!(appwindow = AddAppWindow(0, 0, win, msgport, NULL)))
     {
         Cleanup(MSG(MSG_CANT_ADD_APPWINDOW));
     }
@@ -824,6 +870,58 @@ static void KillWindow(void)
 	win = NULL;
 	
 	winwidth = winheight = 0;
+    }
+}
+
+/*********************************************************************************************/
+
+static void InitIScreenNotify(void)
+{
+    if (!(isnport = CreateMsgPort()))
+    {
+        Cleanup(MSG(MSG_CANT_CREATE_MSGPORT));
+    }
+    if ( (isnstarted = StartScreenNotifyTags(SNA_Notify,   SNOTIFY_WAIT_REPLY     |
+                                                           SNOTIFY_BEFORE_CLOSEWB |
+                                                           SNOTIFY_AFTER_OPENWB,
+                                             SNA_MsgPort,  isnport,
+                                             SNA_Priority, 0,
+                                             TAG_END                               )) )
+    {
+        isnmask = 1L << isnport->mp_SigBit;
+    }
+}
+
+/************************************************************************************/
+/* Handle Intuition's ScreenNotify signals                                          */
+
+static void HandleIScreenNotify(void)
+{
+    struct ScreenNotifyMessage *isnmsg;
+    while ((isnmsg = (struct ScreenNotifyMessage *) GetMsg (isnport)))
+    {
+        IPTR isnmclass = isnmsg->snm_Class;
+    
+        switch (isnmclass)
+        {
+            case SNOTIFY_BEFORE_CLOSEWB:
+                D(bug("[Multiview] received isn before close WB msg\n"));
+                WinCleanup();
+                ReplyMsg ((struct Message *) isnmsg);
+                break;
+            case SNOTIFY_AFTER_OPENWB:
+                ReplyMsg ((struct Message *) isnmsg);
+                D(bug("[Multiview] received isn after open WB msg\n"));
+                if (!win)
+                {
+                    InitWin();
+                }
+                break;
+            default:
+                ReplyMsg ((struct Message *) isnmsg);
+                D(bug("[Multiview] received unexpected msg!\n"));
+                break;
+      }
     }
 }
 
@@ -970,7 +1068,14 @@ static void HandleAll(void)
         TEXT                editorvarbuffer[300];
         struct AppMessage  *appmsg;
 
-	sigs = Wait(msgmask | winmask );
+	sigs = Wait(msgmask | winmask | isnmask);
+	
+	if (sigs & isnmask)
+	{
+	    HandleIScreenNotify();
+	}
+	
+        if (msgport)
         while ((appmsg = (struct AppMessage *) GetMsg(msgport)))
         {
             if (appmsg->am_Type == AMTYPE_APPWINDOW)
@@ -992,6 +1097,7 @@ static void HandleAll(void)
 
         } /* while ((appmsg = (struct AppMessage *) GetMsg(msgport))) */
         
+	if (win)
 	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	{
 //	    D(if (msg->Class!=IDCMP_INTUITICKS) bug("  Msg Class %08lx\n", (long)msg->Class));
@@ -1388,14 +1494,35 @@ static void HandleAll(void)
 
 /*********************************************************************************************/
 
+void InitWin(void)
+{
+    InitDefaults();
+    LoadFont();
+    MakeICObjects();
+    OpenDTO();
+    GetVisual();
+    MakeGadgets();
+    menus = MakeMenus(nm);
+    pictmenus = MakeMenus(nmpict);
+    textmenus = MakeMenus(nmtext);
+    SetMenuFlags();
+    MakeWindow();
+}
+
+/*********************************************************************************************/
+
 int main(int argc, char **argv)
 {
+    wincoords.MinX = 0;
+    wincoords.MinY = 0;
+    wincoords.MaxX = 0;
+    wincoords.MaxY = 0;
+
     InitLocale("System/Utilities/MultiView.catalog", 1);
     InitMenus(nm);
     InitMenus(nmpict);
     InitMenus(nmtext);
     OpenLibs();
-    InitDefaults();
     
     if (argc == 0)
     {
@@ -1417,17 +1544,10 @@ int main(int argc, char **argv)
     {
         GetArguments();
     }
-    
-    LoadFont();
-    MakeICObjects();
-    OpenDTO();
-    GetVisual();
-    MakeGadgets();
-    menus = MakeMenus(nm);
-    pictmenus = MakeMenus(nmpict);
-    textmenus = MakeMenus(nmtext);
-    SetMenuFlags();
-    MakeWindow();
+
+    InitIScreenNotify();
+    InitWin();
+
     HandleAll();
     Cleanup(NULL);
     

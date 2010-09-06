@@ -27,6 +27,7 @@ VAR struct Library              *DiskfontBase;
 
 VAR struct Screen               *scr;
 VAR struct Window               *win;
+VAR struct Rectangle            wincoords;
 VAR struct DrawInfo             *dri;
 VAR STRPTR                      filename;
 VAR BPTR                        cd;     /* saved current directory */
@@ -80,3 +81,8 @@ VAR struct MsgPort             *msgport;
 VAR struct AppWindow           *appwindow;
 VAR ULONG                       winmask;
 VAR ULONG                       msgmask;
+/* variables for Intuition's ScreenNotify */
+VAR struct MsgPort             *isnport;
+VAR IPTR                        isnstarted;
+VAR ULONG                       isnmask;
+
