@@ -174,7 +174,7 @@ AROS_UFH3(void, Enumerator,
     	}
     }
 
-    if (forced || ProductID == 0x2772 || ProductID == 0x27a6 || ProductID == 0x27a2 || ProductID == 0x27ae)
+    if (forced || ProductID == 0x2772 || ProductID == 0x27a6 || ProductID == 0x27a2 || ProductID == 0x27ae || ProductID == 0x2582)
     {
     	UWORD MGCC = HIDD_PCIDevice_ReadConfigWord(pciDevice, G45_MGCC);
     	ULONG BSM = HIDD_PCIDevice_ReadConfigLong(pciDevice, G45_BSM);
