@@ -239,7 +239,10 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 
     if ((iihdata->ActiveGadget) && (targetwindow == iihdata->GadgetInfo.gi_Window))
     {
-        GetGadgetDomain(iihdata->ActiveGadget,
+    	/* In case of active window drag/size gadget the master drag/size gadget never
+	   has GZZ flag set, so pass in real gadget (ActiveSysGadget) */
+	   
+        GetGadgetDomain(iihdata->ActiveSysGadget ? iihdata->ActiveSysGadget : iihdata->ActiveGadget,
                 	iihdata->GadgetInfo.gi_Screen,
                 	iihdata->GadgetInfo.gi_Window,
                 	NULL,
