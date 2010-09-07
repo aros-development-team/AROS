@@ -232,10 +232,15 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
 			bug("AnyDATA found: ifclass=%d subclass=%d protocol=%d NumEndpoints=%d\n",
 				ifclass,subclass,proto,NumEndpoints );
 			return(usbForceInterfaceBinding(nh, pif));
-        }			
+        }
 
-        if( (ifclass == 255) && (subclass == 255) && ( NumEndpoints == 3 ) )
-        {		
+		// Huawei
+		if( (vendid == 0x12d1) && 
+			(ifclass == 255) && (subclass == 255) && (proto == 255) && 
+			(NumEndpoints == 3) && ( // modem interface
+			prodid == 0x1001 ||    // e169
+			prodid == 0x1003       // e220
+        )){
 			return(usbForceInterfaceBinding(nh, pif));
         }
 
