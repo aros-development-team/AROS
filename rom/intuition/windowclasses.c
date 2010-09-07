@@ -393,6 +393,9 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
             if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE))
             {
     	    #ifdef USEGADGETLOCK
+	    	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+		data->drag_inputhandlerlock = TRUE;
+		
                 if (AttemptSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock))
                 {
                     data->drag_gadgetlock = TRUE;
@@ -480,6 +483,12 @@ fail:
             ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
             data->drag_gadgetlock = FALSE;
         }
+	
+	if (data->drag_inputhandlerlock);
+	{
+	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+	    data->drag_inputhandlerlock = FALSE;
+	}
     #endif
 
     #ifdef USEWINDOWLOCK
@@ -898,11 +907,17 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
         data->drag_layerlock = FALSE;
     }
 
-#ifdef USEGADGETLOCK
+#ifdef USEGADGETLOCK    
     if (data->drag_gadgetlock)
     {
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
         data->drag_gadgetlock = FALSE;
+    }
+
+    if (data->drag_inputhandlerlock)
+    {
+    	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+	data->drag_inputhandlerlock = FALSE;
     }
 #endif
 
@@ -1119,6 +1134,9 @@ IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *m
             if (!OPAQUESIZE)
             {
     	    #ifdef USEGADGETLOCK
+	    	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+		data->drag_inputhandlerlock = TRUE;
+		
                 if (AttemptSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock))
                 {
                     data->drag_gadgetlock = TRUE;
@@ -1191,6 +1209,12 @@ fail:
             ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
             data->drag_gadgetlock = FALSE;
         }
+	
+	if (data->drag_inputhandlerlock);
+	{
+	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+	    data->drag_inputhandlerlock = FALSE;
+	}
 #endif
 
 #ifdef USEWINDOWLOCK
@@ -1541,6 +1565,12 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
     {
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
         data->drag_gadgetlock = FALSE;
+    }
+    
+    if (data->drag_inputhandlerlock)
+    {
+    	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+	data->drag_inputhandlerlock = FALSE;
     }
 #endif
 

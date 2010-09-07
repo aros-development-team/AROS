@@ -1298,6 +1298,7 @@ struct dragbar_data
     BOOL    	     drag_layerlock;
 #ifdef USEGADGETLOCK
     BOOL    	     drag_gadgetlock;
+    BOOL    	     drag_inputhandlerlock;
 #endif
     BOOL    	     drag_refreshed;
 
@@ -1348,6 +1349,7 @@ struct sizebutton_data
     BOOL    	     drag_layerlock;
 #ifdef USEGADGETLOCK
     BOOL    	     drag_gadgetlock;
+    BOOL    	     drag_inputhandlerlock;
 #endif
 
     BOOL    	     drag_refreshed;
