@@ -73,7 +73,11 @@
     {
         struct RegionRectangle *last = NULL;
 
-        if ((rr = _NewRegionRectangle(&last, GfxBase)))
+    	if (ARE_COORDS_EVIL(MinX, MinY, MaxX, MaxY))
+	{
+	    /* Just create an empty region */
+	}
+        else if ((rr = _NewRegionRectangle(&last, GfxBase)))
 	{
 	    region->bounds.MinX = MinX;
 	    region->bounds.MinY = MinY;

@@ -57,6 +57,11 @@
 
     struct Region *Res = NewRegion();
 
+    if (IS_RECT_EVIL(Rect))
+    {
+    	return CopyRegion(Reg);
+    }
+    
     if (Res)
     {
 

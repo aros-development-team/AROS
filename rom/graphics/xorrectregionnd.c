@@ -59,6 +59,11 @@
     struct Region R;
     struct RegionRectangle rr;
 
+    if (IS_RECT_EVIL(Rect))
+    {
+    	return CopyRegion(Reg);
+    }
+    
     InitRegion(&R);
 
     R.bounds = *Rect;

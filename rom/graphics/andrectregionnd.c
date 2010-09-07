@@ -56,6 +56,11 @@
 
     struct Region *Res;
 
+    if (IS_RECT_EVIL(Rect))
+    {
+    	return NewRegion();
+    }
+    
     if
     (
         /* Is the region empty? */

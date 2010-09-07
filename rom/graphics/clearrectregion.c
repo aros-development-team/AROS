@@ -58,7 +58,7 @@
     struct RegionRectangle rr;
 
     /* If the rectangle and the region don't overlap just return */
-    if (!overlap(*Rect, Reg->bounds))
+    if (IS_RECT_EVIL(Rect) || !overlap(*Rect, Reg->bounds))
         return TRUE;
 
     /* if the rectangle completely covers the region just clear the region and return */

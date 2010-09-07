@@ -58,9 +58,8 @@
     {
         struct Rectangle OldBounds = Reg->bounds;
 
-
 	/* Does the rectangle overlap with the region? */
-        if (!_AndRectRect(Rect, &OldBounds, &Reg->bounds))
+        if (IS_RECT_EVIL(Rect) || !_AndRectRect(Rect, &OldBounds, &Reg->bounds))
         {
 	    /* If not then just clear the region */
             ClearRegion(Reg);
