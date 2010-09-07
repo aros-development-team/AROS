@@ -4,6 +4,9 @@ Coordination:
 Evangelism:
     Ola "4pLaY" Jensen
     Matt Parsons
+    Stephen Jones
+    Pascal Papara
+    Paolo Besser
 
 HIDD subsystem:
     Aaron Digulla
@@ -14,6 +17,7 @@ HIDD subsystem:
     Sebastian Rittau
     Stefan Berger
     Sven Drieling
+    Pavel Fedin
 
 Intuition:
     Stefan Berger
@@ -38,6 +42,7 @@ Intuition:
     Kars de Jong
     Staf Verhaegen
     Franck Charlet
+    Pavel Fedin
 
 Graphics: 
     Aaron Digulla
@@ -60,6 +65,9 @@ Graphics:
     Kars de Jong 
     Staf Verhaegen
     Flavio Stanchina
+    Matthias Rustler
+    Pavel Fedin
+    Krzysztof Smiechowicz
 
 Shell commands:
     Martin Recktenwald
@@ -70,6 +78,10 @@ Shell commands:
     Johan Alfredsson
     Iain Templeton
     Fabio Alemagna
+    Alain Greppin
+    Matthias Rustler
+    Olivier Tigreat
+    Vikar Hokstad
 
 Workbench:
     Adam Chodorowski
@@ -79,6 +91,7 @@ Workbench:
     Paul Smith
     Nick Andrews (Kalamatee)
     Christoph Johann Szczecina
+    Matthias Rustler
 
 Tools:
     Adam Chodorowski
@@ -113,6 +126,8 @@ Kernel:
     Fabio Alemagna
     Georg Steger
     Nick Andrews (Kalamatee)
+    Pavel Fedin
+    Markus Weiss
 
 DOS:
     Georg Steger
@@ -134,6 +149,7 @@ C link library and POSIX layer:
     Fabio Alemagna
     Iain Templeton
     Henning Kiel
+    Staf Verhaegen
 
 Datatypes:
     Johan Alfredsson
@@ -156,6 +172,7 @@ Documentation:
     Daniel Holmen
     Matthias Rustler
     João Ralha
+    Pavel Fedin
 
 Translation:
     Henning Kiel
@@ -185,6 +202,7 @@ Artistry:
     Jostein "Taxi" Klemmetsrud
     Paolo Besser
     Adam Chodorowski
+    Damir Sijakovik
     
 Website:
     Adam Chodorowski
