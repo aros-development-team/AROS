@@ -66,6 +66,9 @@
     ASSERT_VALID_PTR(rect2);
     ASSERT_VALID_PTR_OR_NULL(intersect);
 
+    if (IS_RECT_EVIL(rect1)) return FALSE;
+    if (IS_RECT_EVIL(rect2)) return FALSE;
+    
     if (intersect)
         return _AndRectRect(rect1, rect2, intersect);
     else

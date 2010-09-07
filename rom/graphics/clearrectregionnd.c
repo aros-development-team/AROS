@@ -59,6 +59,7 @@
     if
     (
         !Reg->RegionRectangle        ||
+	IS_RECT_EVIL(Rect)           ||
         !overlap(*Rect, Reg->bounds)
     )
     {

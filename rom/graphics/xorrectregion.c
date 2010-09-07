@@ -60,6 +60,8 @@
     struct Region R;
     struct RegionRectangle rr;
 
+    if (IS_RECT_EVIL(Rect)) return TRUE;
+    
     InitRegion(&R);
 
     R.bounds = *Rect;

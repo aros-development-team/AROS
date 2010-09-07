@@ -11,6 +11,41 @@
 #include <graphics/gfxbase.h>
 #include <graphics/regions.h>
 
+/* CHECK_EVIL_RECTS:
+
+   If 1, code will assume such rects to be like an empty region
+
+   If 0, code reacts on such rects in a probably undefined matter
+   and things like layers.library might freak out if an app for
+   example tries to install a clip rectangle (region) with maxx < minx
+   and/or maxy < miny. Causing apps to render outside of layer/window
+   and possibly crash.
+   
+*/
+
+#define CHECK_EVIL_RECTS 1
+   
+#if CHECK_EVIL_RECTS
+
+#define IS_RECT_EVIL(rect)           \
+(                                    \
+    ((rect)->MaxX < (rect)->MinX) || \
+    ((rect)->MaxY < (rect)->MinY)    \
+)
+
+#define ARE_COORDS_EVIL(minx,miny,maxx,maxy) \
+(                                            \
+    ((maxx) < (minx)) ||                     \
+    ((maxy) < (miny))                        \
+)
+
+#else
+
+#define IS_RECT_EVIL(rect)                   0
+#define ARE_COORDS_EVIL(minx,miny,maxx,maxy) 0
+
+#endif
+
 
 BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 		   struct RegionRectangle** erg);
