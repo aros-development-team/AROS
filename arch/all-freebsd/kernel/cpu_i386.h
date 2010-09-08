@@ -1,10 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#ifndef _SIGCORE_H
-#define _SIGCORE_H
 
 #include <machine/psl.h>
 #include <sys/types.h>
@@ -49,7 +46,7 @@ typedef struct sigcontext sigcontext_t;
  * We can't have an #ifdef based on FreeBSD here because this structure
  * is (wrongly) accessed from rom/exec.
  */
-struct AROS_cpu_context
+struct AROSCPUContext
 {
     ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
     int	errno_backup;
@@ -72,13 +69,9 @@ struct AROS_cpu_context
         acc_u;
 
     int eflags;
-    struct AROS_cpu_context *sc;
+    struct AROSCPUContext *sc;
 };
 
-#undef SIZEOF_ALL_REGISTERS
-#define SIZEOF_ALL_REGISTERS	(sizeof(struct AROS_cpu_context))
-#define GetCpuContext(task)	((struct AROS_cpu_context *)\
-				(GetIntETask(task)->iet_Context))
 #define GetSP(task)		((SP_TYPE **)(&task->tc_SPReg))
 
 #define GLOBAL_SIGNAL_INIT \
@@ -218,22 +211,19 @@ struct AROS_cpu_context
         _PUSH(GetSP(SysBase->ThisTask), arg);                       \
     } while (0)
 
-#define PREPARE_INITIAL_FRAME(sp,startpc)                           \
-    do {                                                            \
-        GetCpuContext(task)->regs[7] = 0;                           \
-        GetCpuContext(task)->regs[8] = (startpc);                   \
+#define PREPARE_INITIAL_FRAME(cc, sp, startpc)     \
+    do {                                           \
+        cc->regs[7] = 0;                           \
+        cc->regs[8] = (startpc);                   \
     } while (0)
 
-#define PREPARE_INITIAL_CONTEXT(task,startpc)                       \
-    do {                                                            \
-        PREPARE_FPU(GetCpuContext(task));                           \
+#define PREPARE_INITIAL_CONTEXT(cc, startpc)       \
+    do {                                           \
+        PREPARE_FPU(cc);                           \
     } while (0)
 
-#define SAVEREGS(task,sc)                                           \
+#define SAVEREGS(cc, sc)                                            \
     do {                                                            \
-        struct AROS_cpu_context *cc = GetCpuContext(task);          \
-        SP_TYPE **sp = GetSP(task);                                 \
-        *sp = (SP_TYPE *)SP(sc);                                    \
         if (HAS_FPU(sc))                                            \
             SAVE_FPU(cc,sc);                                        \
         SAVE_CPU(cc,sc);                                            \
@@ -241,16 +231,12 @@ struct AROS_cpu_context
         cc->eflags = sc->sc_efl & PSL_USERCHANGE;                   \
     } while (0)
 
-#define RESTOREREGS(task,sc)                                        \
+#define RESTOREREGS(cc, sc)                                         \
     do {                                                            \
-        struct AROS_cpu_context *cc = GetCpuContext(task);          \
-        SP_TYPE **sp;                                               \
 	RESTORE_ERRNO(cc);                                          \
 	RESTORE_CPU(cc,sc);                                         \
         if (HAS_FPU(sc))                                            \
             RESTORE_FPU(cc,sc);                                     \
-        sp = GetSP(task);                                           \
-        SP(sc) = (typeof(SP(sc))) *sp;                              \
         sc->sc_efl = (sc->sc_efl & ~PSL_USERCHANGE) | cc->eflags;   \
     } while (0)
 
@@ -263,21 +249,3 @@ struct AROS_cpu_context
 	    , R0(sc), R1(sc), R2(sc), R3(sc)                        \
 	    , R4(sc), R5(sc), R6(sc)                                \
 	)
-
-#define PRINT_CPUCONTEXT(task)                                      \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n"                \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n"      \
-		"    R4=%08lx  R5=%08lx  R6=%08lx\n"                \
-	    , (ULONG)(*GetSP(task))                                 \
-	    , GetCpuContext(task)->fp,                              \
-            , GetCpuContext(task)->pc,                              \
-	    , GetCpuContext(task)->regs[0]                          \
-	    , GetCpuContext(task)->regs[1]                          \
-	    , GetCpuContext(task)->regs[2]                          \
-	    , GetCpuContext(task)->regs[3]                          \
-	    , GetCpuContext(task)->regs[4]                          \
-	    , GetCpuContext(task)->regs[5]                          \
-	    , GetCpuContext(task)->regs[6]                          \
-	)
-
-#endif /* _SIGCORE_H */
