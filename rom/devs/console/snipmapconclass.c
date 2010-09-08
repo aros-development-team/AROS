@@ -59,20 +59,20 @@ static VOID snipmapcon_dispose(Class *cl, Object *o, Msg msg)
 
 static VOID snipmapcon_copy(Class *cl, Object *o, Msg msg)
 {
-  struct snipmapcondata *data= INST_DATA(cl, o);
+  /* FIXME: This really should happen here, but currently,
+     charmapcon contains the selection code, and it's hard to 
+     extract.
+  */
+  DoSuperMethodA(cl, o, (Msg)msg);
 
   /* FIXME: Handle ConClip here */
-  ObtainSemaphore(&ConsoleDevice->copyBufferLock);
-  if (ConsoleDevice->copyBuffer)
-    {
-      FreeMem(ConsoleDevice->copyBuffer,ConsoleDevice->copyBufferSize);
+  /*
+    if conclip running {
+      ObtainSemaphore(&ConsoleDevice->copyBufferLock);
+      .. create SGWork and send message to ConClip
+      ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
     }
-
-  /* FIXME: Create a string from the contents of the scrollback buffer 
-   */
-  ConsoleDevice->copyBuffer = 0;
-  ConsoleDevice->copyBufferSize = 0;
-  ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
+  */
 }
 
 static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
@@ -80,13 +80,22 @@ static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
   struct snipmapcondata *data= INST_DATA(cl, o);
 
   /* FIXME: Handle ConClip here */
+  /* if conclip running, insert <CSI> 0 v and we're done */
+
   ObtainSemaphore(&ConsoleDevice->copyBufferLock);
   if (ConsoleDevice->copyBuffer)
     {
-      IPTR params[2];
-      params[0] = ConsoleDevice->copyBuffer;
-      params[1] = ConsoleDevice->copyBufferSize;
-      Console_DoCommand(o, C_ASCII_STRING,1,&params);
+      struct intPasteData * p = AllocMem(sizeof(struct intPasteData),MEMF_ANY);
+      if (p)
+	{
+	  p->pasteBuffer = AllocMem(ConsoleDevice->copyBufferSize,MEMF_ANY);
+	  if (p->pasteBuffer)
+	    {
+	      CopyMem(ConsoleDevice->copyBuffer,p->pasteBuffer,ConsoleDevice->copyBufferSize);
+	      p->pasteBufferSize = ConsoleDevice->copyBufferSize;
+	      AddTail(&ICU(o)->pasteData,p);
+	    }
+	}
     }
   ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
 }

@@ -331,7 +331,7 @@ AROS_LH1(void, beginio,
 
     	case CMD_WRITE: {
 	    ULONG towrite;
-
+	    D(bug("CMD_WRITE\n"));
 #if DEBUG
 	    {
 	    	char *str;
@@ -339,8 +339,9 @@ AROS_LH1(void, beginio,
 	    	str = ioreq->io_Data;
 	    	for (i = 0; i < ioreq->io_Length; i ++)
 	    	{
-	    	    kprintf("%c\n", *str ++);
+	    	    kprintf("%c", *str ++);
 	    	}
+		kprintf("\n");
 	    }
 #endif
 	    if (ioreq->io_Length == -1) {
@@ -359,11 +360,25 @@ AROS_LH1(void, beginio,
     	    break; }
 
 	case CMD_READ:
+	    D(bug("CMD_READ\n"));
+#if DEBUG
+	    {
+	    	char *str;
+	    	int i;
+	    	str = ioreq->io_Data;
+	    	for (i = 0; i < ioreq->io_Length; i ++)
+	    	{
+	    	    kprintf("%c", *str ++);
+	    	}
+		kprintf("\n");
+	    }
+#endif
 	    done_quick = FALSE;
 
 	    break;
 
 	default:
+	  D(bug("IOERR_NOCMD\n"));
 	    error = IOERR_NOCMD;
 	    break;
 

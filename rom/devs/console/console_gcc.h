@@ -170,6 +170,14 @@ struct coTaskParams
     ULONG initSignal;
 };
 
+struct intPasteData
+{
+    struct MinNode node;
+    struct intConUnit * unit;
+    const char * pasteBuffer;
+    ULONG pasteBufferSize;
+};
+
 #define CON_INPUTBUF_SIZE 512
 struct intConUnit
 {
@@ -182,7 +190,12 @@ struct intConUnit
     UBYTE inputBuf[CON_INPUTBUF_SIZE];
     /* Number of charcters currently stored in the buffer */
     ULONG numStoredChars;
-        
+
+    /* Data to be copied into the inputBuf for processing */ 
+    struct MinList pasteData;
+
+    /* Position in the first pasteData element */
+    ULONG pasteBufferPos;
 };
 
 /* The conFlags */
@@ -285,6 +298,7 @@ struct ConsoleBase
   const char * copyBuffer;
   ULONG copyBufferSize;
   struct SignalSemaphore copyBufferLock;
+
 };
 
 /* The following typedefs are necessary, because the names of the global
