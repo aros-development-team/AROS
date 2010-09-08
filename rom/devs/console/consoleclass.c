@@ -108,6 +108,8 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 	ICU(o)->conFlags = 0UL;
 	ICU(o)->numStoredChars = 0;
 
+	NEWLIST(&ICU(o)->pasteData);
+
     	SET_MODE(o, PMB_ASM); /* auto-scroll-mode ON */
 	SET_MODE(o, PMB_AWM); /* auto-wrap-mode ON */ 
 

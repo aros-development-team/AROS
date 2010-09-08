@@ -31,6 +31,55 @@
 static BOOL checkconunit(Object *unit, struct ConsoleBase *ConsoleDevice);
 static void answer_read_request(struct IOStdReq *req, struct ConsoleBase *ConsoleDevice);
 
+static VOID answer_requests(APTR unit,struct ConsoleBase *ConsoleDevice)
+{
+  struct IOStdReq *req, *nextreq;
+  /* See if there are any queued io read requests that wants to be replied */
+  ForeachNodeSafe(&ConsoleDevice->readRequests, req, nextreq)
+    {
+      if ((APTR)req->io_Unit == (APTR)unit)
+	{
+	  /* Paranoia */
+	  if (0 != ICU(req->io_Unit)->numStoredChars)
+	    {
+	      Remove((struct Node *)req);
+	      answer_read_request(req, ConsoleDevice);
+	    }
+	}
+    }
+}
+
+static ULONG pasteData(struct intConUnit * icu, struct ConsoleBase * ConsoleDevice)
+{
+  /* Check if we have data to paste to the input buffer */
+  struct intPasteData * pd = GetHead(&icu->pasteData);
+  if (pd)
+    {
+      ULONG tocopy = MIN(pd->pasteBufferSize - icu->pasteBufferPos
+			 , CON_INPUTBUF_SIZE - icu->numStoredChars);
+
+      D(bug("Pasting %ld bytes\n",tocopy));
+      CopyMem(pd->pasteBuffer + icu->pasteBufferPos
+	      , icu->inputBuf + icu->numStoredChars
+	      , tocopy
+	      );
+      icu->numStoredChars += tocopy;
+      icu->pasteBufferPos += tocopy;
+      
+      if (icu->pasteBufferPos >= pd->pasteBufferSize)
+	{
+	  FreeMem(pd->pasteBuffer, pd->pasteBufferSize);
+	  Remove(pd);
+	  FreeMem(pd,sizeof(struct intPasteData));
+	  icu->pasteBufferPos = 0;
+	}
+
+      answer_requests((APTR)icu, ConsoleDevice);
+      return tocopy;
+    }
+  return 0;
+}
+
 VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 {
     BOOL success = FALSE;
@@ -105,7 +154,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 	}
 
 	ObtainSemaphore(&ConsoleDevice->consoleTaskLock);
-	
+
 	if (wakeupsig & inputsig)
 	{
 	    /* A message from the console device input handler */
@@ -119,6 +168,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 		*/
 		if (checkconunit(cdihmsg->unit, ConsoleDevice))
 		{
+		  BOOL toWrite = pasteData(ICU(cdihmsg->unit), ConsoleDevice);
 
 		    switch(cdihmsg->ie.ie_Class)
  		    {
@@ -133,7 +183,6 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 		      {
 			    #define MAPRAWKEY_BUFSIZE 80
 			
-			struct IOStdReq *req, *nextreq;
 			UBYTE  inputBuf[MAPRAWKEY_BUFSIZE + 1];			    
 			LONG actual;
 			ULONG tocopy;
@@ -202,21 +251,8 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 					);
 				
 				ICU(cdihmsg->unit)->numStoredChars += tocopy;
-				
-				/* See if there are any queued io read requests that wants to be replied */
-				ForeachNodeSafe(&ConsoleDevice->readRequests, req, nextreq)
-				  {
-				    
-		     		    if ((APTR)req->io_Unit == (APTR)cdihmsg->unit)
-				      {
-					/* Paranoia */
-					if (0 != ICU(req->io_Unit)->numStoredChars)
-					  {
-			        	    Remove((struct Node *)req);
-			     		    answer_read_request(req, ConsoleDevice);
-					  }
-				      }
-				  }
+
+				answer_requests(cdihmsg->unit,ConsoleDevice);
 			      } /* if (actual > 0) */
 			  }
 			
@@ -259,15 +295,17 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 	    
 	    while ((req = (struct IOStdReq *)GetMsg(&ConsoleDevice->commandPort)))
 	    {
+	      pasteData(ICU(req->io_Unit), ConsoleDevice);
+	      
 	    	switch (req->io_Command)
 		{
 		    case CMD_READ:
-			if (0 != ICU(req->io_Unit)->numStoredChars)
-			{
+		      if (0 != ICU(req->io_Unit)->numStoredChars)
+			  {
 			    answer_read_request(req, ConsoleDevice);
-			}
+			  }
 			else
-			{
+			  {
 			    /* Not enough bytes in the buffer to fill the request, put it on hold */
 			    
 			    /* ioReq allready removed from the queue qith GetMsg() */

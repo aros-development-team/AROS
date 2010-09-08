@@ -503,17 +503,15 @@ AROS_UFH3(VOID, conTaskEntry,
 	    	break;
 	    }
 	}
-	
-#if BETTER_WRITE_HANDLING
+
+	if (fh->flags & FHFLG_WRITEPENDING) D(bug("Write Pending\n"));
+	D(bug("inputpos %ld and inputstart %ld\n",fh->inputpos,fh->inputstart));
 	/* Dont wait if a write is pending and a write really can be done */
-	if ((fh->flags & FHFLG_WRITEPENDING) &&
-	    (fh->inputpos == fh->inputstart) &&
-	    ((fh->inputsize - fh->inputstart) == 0))
+	if ((fh->flags & FHFLG_WRITEPENDING))
 	{
 	    sigs = CheckSignal(conreadmask | contaskmask | timermask);
 	}
 	else
-#endif
 	{
 	    D(bug("contask: waiting for sigs 0x%x\n",
 		  conreadmask | contaskmask | timermask));
@@ -998,10 +996,11 @@ AROS_UFH3(VOID, conTaskEntry,
 
 	/* pending writes ? */
 
-	if ((fh->flags & FHFLG_WRITEPENDING) &&
-	    (fh->inputpos == fh->inputstart) &&
-	    ((fh->inputsize - fh->inputstart) == 0))
+	if ((fh->flags & FHFLG_WRITEPENDING))
 	{
+	  /* FIXME: If fg->inputpos != fh->inputstart, it means there are
+	     things on the command line buffer. When we return to the prompt, we need to make sure these gets written out again */
+
 	    struct IOFileSys *iofs, *iofs_next;
 
 #if BETTER_WRITE_HANDLING

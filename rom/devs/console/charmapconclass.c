@@ -69,10 +69,13 @@ struct charmapcondata
   /* Current selection */
   LONG select_x_min;
   LONG select_y_min;
+  struct charmap_line * select_line_min;
   LONG select_x_max;
   LONG select_y_max;
+  struct charmap_line * select_line_max;
   BOOL active_selection;            /* If true, mouse move will affect the selection */
-  BOOL ignore_drag; /* This is a hack - better to capture mouse down instead of relying on this */
+  BOOL ignore_drag;
+
 
   UBYTE  boopsigad;					/* Type of right prop gadget of window */
   struct Scroll * prop;
@@ -357,6 +360,35 @@ static struct charmap_line * charmapcon_find_line(Class * cl, Object * o, ULONG 
 		 data->top_of_window != data->top_of_scrollback) {
 	data->scrollback_size -= 1;
 	data->scrollback_pos -= 1;
+
+	/* FIXME: Needs testing... */
+	if (data->select_line_max == data->select_line_min &&
+	    data->select_line_min == data->top_of_scrollback) 
+	  {
+	    /* The entire selection has scrolled out, but we keep it in case
+	       it is still active
+	    */
+	    data->select_line_min = data->select_line_min->next;
+	    data->select_line_max = data->select_line_min;
+	    data->select_x_min = 0;
+	    data->select_x_max = 0;
+	    data->select_y_min += 1;
+	    data->select_y_max += 1;
+	  } 
+	else if (data->top_of_scrollback == data->select_line_min)
+	  {
+	    data->select_line_min = data->select_line_min->next;
+	    data->select_y_min += 1;
+	    data->select_x_min = 0;
+	  }
+	else if (data->top_of_scrollback == data->select_line_max)
+	  {
+	    /* "Reversed" selection */
+	    data->select_line_max = data->select_line_max->next;
+	    data->select_y_max += 1;
+	    data->select_x_max = 0;
+	  }
+
 	data->top_of_scrollback = charmap_dispose_line(data->top_of_scrollback);
   }
 
@@ -824,6 +856,100 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
   charmapcon_refresh_lines(cl,o,fromLine,toLine);
 }
 
+/* FIXME: Belongs in snipmapcon - here temporary until refactored out
+   selection code */
+static VOID charmapcon_copy(Class *cl, Object *o, Msg msg)
+{
+  struct charmapcondata *data= INST_DATA(cl, o);
+
+  /* FIXME: Handle ConClip here */
+  ObtainSemaphore(&ConsoleDevice->copyBufferLock);
+  if (ConsoleDevice->copyBuffer)
+    {
+      FreeMem(ConsoleDevice->copyBuffer,ConsoleDevice->copyBufferSize);
+    }
+
+  /* Create a string from the contents of the scrollback buffer */
+  struct charmap_line * first, *last, * cur;
+  ULONG minx,maxx;
+  if (data->select_y_min < data->select_y_max) {
+    first = data->select_line_min;
+    last  = data->select_line_max;
+    minx = data->select_x_min;
+    maxx = data->select_x_max;
+  } else {
+    first = data->select_line_max;
+    last  = data->select_line_min;
+    minx = data->select_x_max;
+    maxx = data->select_x_min;
+  }
+
+  ULONG size = 0;
+  cur = first;
+  while (cur)
+    {
+      if (cur->text) {
+	if (cur == first)
+	  {
+	    if (cur == last) size += abs(maxx - minx);
+	    else size += cur->size - minx;
+	} 
+	else if (cur == last) 
+	  {
+	    size += maxx;
+	  } 
+	else {
+	  size += cur->size;
+	}
+      }
+      if (cur != last || (cur == last && maxx == cur->size)) size += 1; /* line feed */
+
+      if (cur == last) break;
+      cur = cur->next;
+    }
+    
+  ConsoleDevice->copyBuffer = AllocMem(size, MEMF_ANY);
+  if (ConsoleDevice->copyBuffer) {
+    char * bufpos = ConsoleDevice->copyBuffer;
+    cur = first;
+    while(cur)
+      {
+	if (cur->text) { /* empty lines may not have text ptrs */
+	  if (cur == first)
+	    {
+	      if (cur == last) {
+		CopyMem(cur->text + MIN(minx,maxx),bufpos, abs(maxx - minx));
+		bufpos += abs(maxx-minx);
+	      } else {
+		CopyMem(cur->text + minx, bufpos, cur->size - minx);
+		bufpos += cur->size - minx;
+	      }
+	    } 
+	  else if (cur == last)
+	    {
+	      CopyMem(cur->text,bufpos, maxx);
+	      bufpos += maxx;
+	    } 
+	  else 
+	    {
+	      CopyMem(cur->text,bufpos, cur->size);
+	      bufpos += cur->size;
+	    }
+	}
+	if (cur != last || (cur == last && maxx == cur->size)) /* line feed */
+	  {
+	    *bufpos = '\r';
+	    bufpos += 1;
+	  }
+	if (cur == last) break;
+	cur = cur->next;
+      }
+    ConsoleDevice->copyBufferSize = size;
+  } else ConsoleDevice->copyBufferSize = 0;
+  ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
+}
+
+
 /*******************************
 **  CharMapCon::NewWindowSize()  **
 *******************************/
@@ -831,7 +957,7 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewW
 {
     struct Window   	*w  = CU(o)->cu_Window;
     struct RastPort 	*rp = w->RPort;
-  struct charmapcondata *data = INST_DATA(cl, o);
+    struct charmapcondata *data = INST_DATA(cl, o);
 
     WORD old_ycp = YCP;
 
@@ -899,6 +1025,7 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o, struct P_Console_Handle
 	      data->ignore_drag = 0;
 	      data->select_x_min = (x - GFX_XMIN(o)) / XRSIZE;
 	      data->select_y_min = (y - GFX_YMIN(o)) / YRSIZE;
+	      data->select_line_min = charmapcon_find_line(cl,o,data->select_y_min);
 
 	      data->select_x_max = data->select_x_min;
 	      data->select_y_max = data->select_y_min;
@@ -931,7 +1058,7 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o, struct P_Console_Handle
       ymax = data->select_y_max;
       data->select_x_max = (x - GFX_XMIN(o)) / XRSIZE;
       data->select_y_max = (y - GFX_YMIN(o)) / YRSIZE;
-      
+      data->select_line_max = charmapcon_find_line(cl,o,data->select_y_max);    
       /* FIXME: More intelligent refresh */
       if (xmax != data->select_x_max ||
 	  ymax != data->select_y_max)
@@ -1040,6 +1167,12 @@ AROS_UFH3S(IPTR, dispatch_charmapconclass,
     case M_Console_HandleGadgets:
       D(bug("CharMapCon::HandleGadgets\n"));
       charmapcon_handlegadgets(cl, o, (struct P_Console_HandleGadgets *)msg);
+      break;
+
+      /* FIXME: Belongs in snimapcon - here temporary until refactored out
+	 selection code */
+    case M_Console_Copy:
+      charmapcon_copy(cl,o,msg);
       break;
 
     default:
