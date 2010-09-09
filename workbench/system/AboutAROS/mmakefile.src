@@ -11,10 +11,11 @@ USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 
 #MM- workbench-system : workbench-system-aboutaros
 #MM workbench-system-aboutaros : includes linklibs \
-#MM     workbench-system-aboutaros-catalogs \
-#MM     workbench-system-aboutaros-generated
+#MM     workbench-system-aboutaros-catalogs
 
 #MM- clean :  aboutaros-clean
+
+workbench-system-aboutaros : force-rebuild-svnrev
 
 %build_prog mmake=workbench-system-aboutaros \
     progname=About targetdir=$(EXEDIR) \
@@ -23,8 +24,10 @@ USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 
 GENERATED   := $(TOP)/$(CURDIR)/authors.h $(TOP)/$(CURDIR)/sponsors.h $(TOP)/$(CURDIR)/acknowledgements.h $(TOP)/$(CURDIR)/svnrev.h
 
-#MM
-workbench-system-aboutaros-generated : $(GENERATED)
+force-rebuild-svnrev :
+	$(RM) $(TOP)/$(CURDIR)/svnrev.h
+
+.PHONY: force-rebuild-svnrev
 
 $(TOP)/$(CURDIR)/authors.h : $(SRCDIR)/$(CURDIR)/db/credits $(SRCDIR)/$(CURDIR)/scripts/authors2header.py
 	@$(ECHO) Generating $@
@@ -38,11 +41,8 @@ $(TOP)/$(CURDIR)/acknowledgements.h : $(SRCDIR)/ACKNOWLEDGEMENTS $(SRCDIR)/$(CUR
 	@$(ECHO) Generating $@
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py <$< >$@
 
-.PHONY : $(TOP)/$(CURDIR)/svnrev.h
-
 $(TOP)/$(CURDIR)/svnrev.h :
-	- $(ECHO) '#define SVNREV "'`svnversion $(SRCDIR)`'"' >$(TOP)/$(CURDIR)/svnrev.h
-
+	-$(ECHO) '#define SVNREV "'`svnversion $(SRCDIR)/rom/exec`'"' > $@
 
 #MM
 aboutaros-clean :
