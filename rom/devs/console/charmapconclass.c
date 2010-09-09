@@ -7,12 +7,15 @@
 */
 #include <string.h>
 
+#include <exec/ports.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <proto/alib.h>
 #include <intuition/intuition.h>
 
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/sghooks.h>
 #include <libraries/gadtools.h>
 
 #include <graphics/rastport.h>
@@ -32,6 +35,18 @@
 
 #define	PROP_FLAGS \
 	AUTOKNOB | FREEVERT | PROPNEWLOOK | PROPBORDERLESS
+
+#define CODE_COPY	'C'
+#define CODE_PASTE	'V'
+
+struct MyEditHookMsg
+{
+    struct Message 	msg;
+    struct SGWork	*sgw;
+    WORD 		code;
+};
+
+const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 
 struct Scroll
 {
@@ -247,22 +262,21 @@ static VOID charmapcon_adj_prop(Class *cl, Object *o)
   ULONG VertBody, VertPot;
 
   ULONG hidden = data->scrollback_size > CHAR_YMAX(o) ? data->scrollback_size - CHAR_YMAX(o) - 1 : 0;
-  ULONG top = data->scrollback_pos > hidden ? hidden : data->scrollback_pos;
 
-	if (hidden > 0) {
-	  VertPot  =  (data->scrollback_pos) * MAXPOT / hidden;
-	  VertBody = CHAR_YMAX(o) * MAXBODY / data->scrollback_size;
-	} else {
-	  VertPot  = 0;
-	  VertBody = MAXBODY;
-	}
+  if (hidden > 0) {
+    VertPot  =  (data->scrollback_pos) * MAXPOT / hidden;
+    VertBody = CHAR_YMAX(o) * MAXBODY / data->scrollback_size;
+  } else {
+    VertPot  = 0;
+    VertBody = MAXBODY;
+  }
+  
+  if (VertPot > MAXPOT) {
+    VertPot = MAXPOT;
+    D(bug("VERTPOT SET TOO HIGH. Adjusted\n"));
+  }
 
-	if (VertPot > MAXPOT) {
-	  VertPot = MAXPOT;
-	  D(bug("VERTPOT SET TOO HIGH. Adjusted\n"));
-	}
-
-	NewModifyProp((struct Gadget *)&(data->prop->scroller),w,NULL,((struct PropInfo *)data->prop->scroller.SpecialInfo)->Flags,MAXPOT,VertPot,MAXBODY,VertBody,1);
+  NewModifyProp((struct Gadget *)&(data->prop->scroller),w,NULL,((struct PropInfo *)data->prop->scroller.SpecialInfo)->Flags,MAXPOT,VertPot,MAXBODY,VertBody,1);
 }
 
 /*** Free resources allocated for scroller ***/
@@ -397,7 +411,6 @@ static struct charmap_line * charmapcon_find_line(Class * cl, Object * o, ULONG 
 
 static VOID charmap_ascii(Class * cl, Object * o, ULONG xcp, ULONG ycp, char * str, ULONG len)
 {
-  struct charmapcondata *data = INST_DATA(cl, o);
   struct charmap_line   *line = charmapcon_find_line(cl,o, ycp);
   ULONG oldsize = line->size;
 
@@ -537,7 +550,6 @@ static VOID charmapcon_scroll_to(Class * cl, Object * o, ULONG y)
 
 static VOID charmap_delete_char(Class * cl, Object *o, ULONG x, ULONG y)
 {
-  struct charmapcondata 	*data = INST_DATA(cl, o);
   struct charmap_line * line = charmapcon_find_line(cl,o, y);
 
   if (!line || x >= line->size) return;
@@ -556,7 +568,6 @@ static VOID charmap_delete_char(Class * cl, Object *o, ULONG x, ULONG y)
 
 static VOID charmap_insert_char(Class * cl, Object *o, ULONG x, ULONG y)
 {
-  struct charmapcondata 	*data = INST_DATA(cl, o);
   struct charmap_line * line = charmapcon_find_line(cl,o, y);
   
   if (x >= line->size) return;
@@ -856,22 +867,86 @@ static VOID charmapcon_refresh(Class *cl, Object * o, LONG off)
   charmapcon_refresh_lines(cl,o,fromLine,toLine);
 }
 
+
+static ULONG charmapcon_calc_selection_size(struct charmap_line * first, 
+					   struct charmap_line * last,
+					   ULONG minx, ULONG maxx)
+{
+  struct charmap_line * cur = first;
+  ULONG size = 0;
+  while (cur) {
+    if (cur->text) {
+      if (cur == first) {
+	if (cur == last) size += abs(maxx - minx);
+	else size += cur->size - minx;
+      } else if (cur == last) {
+	size += maxx;
+      } else {
+	size += cur->size;
+      }
+    }
+    if (cur != last || (cur == last && maxx == cur->size)) size += 1; /* line feed */
+    
+    if (cur == last) break;
+    cur = cur->next;
+  }
+  return size;
+}
+
+char * charmapcon_get_selection(ULONG size,
+				struct charmap_line * first,
+				struct charmap_line * last,
+				ULONG minx,
+				ULONG maxx) {
+  char * buf = AllocMem(size, MEMF_ANY);
+  char * bufpos = buf;
+  struct charmap_line * cur = first;
+
+  if (!bufpos) return 0;
+
+  while(cur) {
+    if (cur->text) { /* empty lines may not have text ptrs */
+      if (cur == first) {
+	if (cur == last) {
+	  CopyMem(cur->text + MIN(minx,maxx),bufpos, abs(maxx - minx));
+	  bufpos += abs(maxx-minx);
+	} else {
+	  CopyMem(cur->text + minx, bufpos, cur->size - minx);
+	  bufpos += cur->size - minx;
+	}
+      }  else if (cur == last) {
+	CopyMem(cur->text,bufpos, maxx);
+	bufpos += maxx;
+      } else {
+	CopyMem(cur->text,bufpos, cur->size);
+	bufpos += cur->size;
+      }
+    }
+    if (cur != last || (cur == last && maxx == cur->size)) /* line feed */
+      {
+	*bufpos = '\r';
+	bufpos += 1;
+      }
+    if (cur == last) break;
+    cur = cur->next;
+  }
+  return buf;
+}
+
 /* FIXME: Belongs in snipmapcon - here temporary until refactored out
    selection code */
-static VOID charmapcon_copy(Class *cl, Object *o, Msg msg)
+static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
 {
   struct charmapcondata *data= INST_DATA(cl, o);
+  struct MsgPort replyport, *port;
+  struct SGWork sgw;
+  struct MyEditHookMsg msg;
+  char * buf;
 
-  /* FIXME: Handle ConClip here */
-  ObtainSemaphore(&ConsoleDevice->copyBufferLock);
-  if (ConsoleDevice->copyBuffer)
-    {
-      FreeMem(ConsoleDevice->copyBuffer,ConsoleDevice->copyBufferSize);
-    }
+  struct charmap_line * first, *last;
+  ULONG minx,maxx,size;
 
   /* Create a string from the contents of the scrollback buffer */
-  struct charmap_line * first, *last, * cur;
-  ULONG minx,maxx;
   if (data->select_y_min < data->select_y_max) {
     first = data->select_line_min;
     last  = data->select_line_max;
@@ -884,68 +959,57 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg msg)
     maxx = data->select_x_min;
   }
 
-  ULONG size = 0;
-  cur = first;
-  while (cur)
-    {
-      if (cur->text) {
-	if (cur == first)
-	  {
-	    if (cur == last) size += abs(maxx - minx);
-	    else size += cur->size - minx;
-	} 
-	else if (cur == last) 
-	  {
-	    size += maxx;
-	  } 
-	else {
-	  size += cur->size;
-	}
-      }
-      if (cur != last || (cur == last && maxx == cur->size)) size += 1; /* line feed */
+  size = charmapcon_calc_selection_size(first,last,minx,maxx);
+  buf = charmapcon_get_selection(size,first,last,minx,maxx);
 
-      if (cur == last) break;
-      cur = cur->next;
+  /* If Conclip is running, we prefer using that */
+  if ((port = FindPort(CONCLIP_PORTNAME))) {
+    replyport.mp_Node.ln_Type	= NT_MSGPORT;
+    replyport.mp_Node.ln_Name 	= NULL;
+    replyport.mp_Node.ln_Pri 	= 0;
+    replyport.mp_Flags 		= PA_SIGNAL;
+    replyport.mp_SigBit 	= SIGB_SINGLE;
+    replyport.mp_SigTask 	= FindTask(NULL);
+    NewList(&replyport.mp_MsgList);
+			    
+    msg.msg.mn_Node.ln_Type 	= NT_MESSAGE;
+    msg.msg.mn_ReplyPort 	= &replyport;
+    msg.msg.mn_Length 		= sizeof(msg);
+			    
+    msg.code = CODE_COPY;
+    msg.sgw  = &sgw;
+
+    sgw.Gadget = 0;
+    sgw.WorkBuffer = buf;
+    sgw.PrevBuffer = 0;
+    sgw.IEvent = 0;
+    sgw.Code = CODE_COPY;
+    sgw.Actions = 0;
+    sgw.LongInt = 0;
+    sgw.GadgetInfo = 0;
+    sgw.EditOp = EO_BIGCHANGE;
+    sgw.BufferPos = 0;
+    sgw.NumChars = size;
+			    
+    SetSignal(0, SIGF_SINGLE);
+    PutMsg(port, &msg.msg);
+    WaitPort(&replyport);
+
+    /* FIXME: When we return from here in the future, we need to free the
+       copy buffer here */
+  }
+
+  /* FIXME: For now, falling through and using both, since paste isn't in place yet */
+
+  ObtainSemaphore(&ConsoleDevice->copyBufferLock);
+  if (ConsoleDevice->copyBuffer)
+    {
+      FreeMem((APTR)ConsoleDevice->copyBuffer,ConsoleDevice->copyBufferSize);
     }
-    
-  ConsoleDevice->copyBuffer = AllocMem(size, MEMF_ANY);
-  if (ConsoleDevice->copyBuffer) {
-    char * bufpos = ConsoleDevice->copyBuffer;
-    cur = first;
-    while(cur)
-      {
-	if (cur->text) { /* empty lines may not have text ptrs */
-	  if (cur == first)
-	    {
-	      if (cur == last) {
-		CopyMem(cur->text + MIN(minx,maxx),bufpos, abs(maxx - minx));
-		bufpos += abs(maxx-minx);
-	      } else {
-		CopyMem(cur->text + minx, bufpos, cur->size - minx);
-		bufpos += cur->size - minx;
-	      }
-	    } 
-	  else if (cur == last)
-	    {
-	      CopyMem(cur->text,bufpos, maxx);
-	      bufpos += maxx;
-	    } 
-	  else 
-	    {
-	      CopyMem(cur->text,bufpos, cur->size);
-	      bufpos += cur->size;
-	    }
-	}
-	if (cur != last || (cur == last && maxx == cur->size)) /* line feed */
-	  {
-	    *bufpos = '\r';
-	    bufpos += 1;
-	  }
-	if (cur == last) break;
-	cur = cur->next;
-      }
-    ConsoleDevice->copyBufferSize = size;
-  } else ConsoleDevice->copyBufferSize = 0;
+
+  ConsoleDevice->copyBuffer = buf;
+  if (ConsoleDevice->copyBuffer) ConsoleDevice->copyBufferSize = size;
+  else ConsoleDevice->copyBufferSize = 0;
   ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
 }
 
@@ -955,8 +1019,6 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg msg)
 *******************************/
 static VOID charmapcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindowSize *msg)
 {
-    struct Window   	*w  = CU(o)->cu_Window;
-    struct RastPort 	*rp = w->RPort;
     struct charmapcondata *data = INST_DATA(cl, o);
 
     WORD old_ycp = YCP;
@@ -980,7 +1042,6 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o, struct P_Console_Handle
 {
   struct charmapcondata *data = INST_DATA(cl, o);
   struct Window   	*w  = CU(o)->cu_Window;
-  struct RastPort 	*rp = w->RPort;
   struct InputEvent * e = msg->Event;
 
   /* We have the following states:
@@ -1078,15 +1139,12 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_Hand
 {
   struct InputEvent * e = msg->Event;
 
-  if (e->ie_Class == IECLASS_RAWMOUSE) 
-    {
-      charmapcon_handlemouse(cl,o,msg);
-      return;
-    }
+  if (e->ie_Class == IECLASS_RAWMOUSE) {
+    charmapcon_handlemouse(cl,o,msg);
+    return;
+  }
   
   struct charmapcondata *data = INST_DATA(cl, o);
-  struct Window   	*w  = CU(o)->cu_Window;
-  struct RastPort 	*rp = w->RPort;
 
   if (e->ie_Class == IECLASS_GADGETUP)
     {
@@ -1097,8 +1155,8 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o, struct P_Console_Hand
   if (e->ie_Class == IECLASS_GADGETDOWN)
     {
       /* We pass 0 from consoletask if the mouse wheel is being used */
-      if (e->ie_EventAddress == 1) data->activeGad = (APTR)&(data->prop->up);
-      else if (e->ie_EventAddress == 2) data->activeGad = (APTR)&(data->prop->down);
+      if ((ULONG)e->ie_EventAddress == 1) data->activeGad = (APTR)&(data->prop->up);
+      else if ((ULONG)e->ie_EventAddress == 2) data->activeGad = (APTR)&(data->prop->down);
       else data->activeGad = e->ie_EventAddress;
     }
     
