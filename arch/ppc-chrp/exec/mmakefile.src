@@ -12,7 +12,7 @@ endif
 CFILES          := \
         exec_init preparecontext rawputchar initcode alert coldreboot \
         findresident newaddtask permit prepareexecbase reschedule setexcept settaskpri \
-        signal wait cachecleare cachepostdma cachepredma supervisor superstate userstate idletask \
+        signal wait cachepostdma cachepredma supervisor superstate userstate idletask \
         shutdowna
 
 #MM kernel-exec-chrp-ppc : kernel-kernel-ppc-includes kernel-exec-includes 
