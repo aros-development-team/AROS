@@ -15,19 +15,20 @@ USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 
 #MM- clean :  aboutaros-clean
 
-workbench-system-aboutaros : force-rebuild-svnrev
+GENERATED = $(TOP)/$(CURDIR)/authors.h $(TOP)/$(CURDIR)/sponsors.h $(TOP)/$(CURDIR)/acknowledgements.h $(TOP)/$(CURDIR)/svnrev.h
 
-%build_prog mmake=workbench-system-aboutaros \
-    progname=About targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport amiga arosc m"
-
-
-GENERATED   := $(TOP)/$(CURDIR)/authors.h $(TOP)/$(CURDIR)/sponsors.h $(TOP)/$(CURDIR)/acknowledgements.h $(TOP)/$(CURDIR)/svnrev.h
+$(EXEDIR)/About: force-rebuild-svnrev $(GENERATED)
 
 force-rebuild-svnrev :
 	$(RM) $(TOP)/$(CURDIR)/svnrev.h
 
 .PHONY: force-rebuild-svnrev
+
+$(GENDIR)/$(CURDIR)/aboutaros.d: $(TOP)/$(CURDIR)/svnrev.h
+
+%build_prog mmake=workbench-system-aboutaros \
+    progname=About targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc m"
 
 $(TOP)/$(CURDIR)/authors.h : $(SRCDIR)/$(CURDIR)/db/credits $(SRCDIR)/$(CURDIR)/scripts/authors2header.py
 	@$(ECHO) Generating $@
