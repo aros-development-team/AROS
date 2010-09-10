@@ -71,7 +71,7 @@
     All rights resevered
 ******************************************************************************/
 
-#define  DEBUG  0
+#define  DEBUG 0
 #include <aros/debug.h>
 
 #include <dos/dos.h>
@@ -766,8 +766,13 @@ void doInfo()
 			
 			{
 			    LONG err = IoErr();
+
+			    /* just ignore PIPEFS */
+			    if (err == ERROR_ACTION_NOT_KNOWN)
+				if (strcmp(name, "PIPEFS:") == 0)
+				    err = 0;
 			    
-			    if((err != 0) && showall)
+			    if (err && showall)
 			    {
                                 VLPrintf(~0, nfmtstr, (IPTR*) &name);
 				PrintFault(err, NULL);
