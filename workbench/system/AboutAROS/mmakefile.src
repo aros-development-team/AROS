@@ -15,14 +15,7 @@ USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 
 #MM- clean :  aboutaros-clean
 
-GENERATED = $(TOP)/$(CURDIR)/authors.h $(TOP)/$(CURDIR)/sponsors.h $(TOP)/$(CURDIR)/acknowledgements.h $(TOP)/$(CURDIR)/svnrev.h
-
-$(EXEDIR)/About: force-rebuild-svnrev
-
-force-rebuild-svnrev :
-	$(RM) $(TOP)/$(CURDIR)/svnrev.h
-
-.PHONY: force-rebuild-svnrev workbench-system-aboutaros # make.tmpl should do it
+GENERATED = $(TOP)/$(CURDIR)/authors.h $(TOP)/$(CURDIR)/sponsors.h $(TOP)/$(CURDIR)/acknowledgements.h
 
 $(GENDIR)/$(CURDIR)/aboutaros.d: $(GENERATED)
 $(GENDIR)/$(CURDIR)/aboutaros.o: $(GENERATED)
@@ -42,10 +35,6 @@ $(TOP)/$(CURDIR)/sponsors.h : $(SRCDIR)/$(CURDIR)/db/sponsors $(SRCDIR)/$(CURDIR
 $(TOP)/$(CURDIR)/acknowledgements.h : $(SRCDIR)/ACKNOWLEDGEMENTS $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py
 	@$(ECHO) Generating $@
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py <$< >$@
-
-$(TOP)/$(CURDIR)/svnrev.h :
-	@$(ECHO) Generating $@
-	@$(ECHO) '#define SVNREV "'`svnversion $(SRCDIR)/rom/exec`'"' > $@
 
 #MM
 aboutaros-clean :
