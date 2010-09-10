@@ -34,7 +34,7 @@ AROS_LH0I(void, KrnSti,
     BUGS
 
     SEE ALSO
-	KrnSti()
+	KrnCli()
 
     INTERNALS
 
