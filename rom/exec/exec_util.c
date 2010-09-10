@@ -327,7 +327,7 @@ Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
 void
 Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
 {
-    struct ETask *child, *parent;
+    struct ETask *child, *nextchild, *parent;
     struct Node *tmpNode;
     if(!et)
 	return;
@@ -352,7 +352,7 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
         parent = GetETask(et->et_Parent);
 
         /* Link children to our parent. */
-        ForeachNode(&et->et_Children, child)
+        ForeachNodeSafe(&et->et_Children, child, nextchild)
         {
             child->et_Parent = et->et_Parent;
             //Forbid();
