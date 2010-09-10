@@ -567,8 +567,7 @@ void AddDTOToWin(void)
 				 TAG_DONE);
 
     AddDTObject(win, NULL, dto, -1);
-    // RefreshDTObjects(dto, win, NULL, NULL); needed ?
-
+    RefreshDTObjects(dto, win, NULL, NULL); // seems to be needed by text datatype to render more than first line at start...
 }
 
 /*********************************************************************************************/
@@ -668,8 +667,6 @@ static void OpenDTO(void)
     GetDTAttrs(dto, DTA_NominalVert , (IPTR)&val, TAG_DONE);
     pdt_origheight = winheight = (WORD)val;
     pdt_zoom = 1;
-    pdt_fit_win = FALSE;
-    pdt_keep_aspect = FALSE;
 
     /*
      *  Add 4 Pixels for border around DataType-Object
@@ -789,6 +786,8 @@ static void CloseDTO(void)
 static void MakeWindow(void)
 {
     WORD minwidth, minheight;
+    if (pdt_fit_win)
+        winwidth = winheight = 0;
 
     if (wincoords.MinX == 0)
         wincoords.MinX = (- scr->LeftEdge);
@@ -906,7 +905,10 @@ static void HandleIScreenNotify(void)
         {
             case SNOTIFY_BEFORE_CLOSEWB:
                 D(bug("[Multiview] received isn before close WB msg\n"));
-                WinCleanup();
+                if (win)
+                {
+                    WinCleanup();
+                }
                 ReplyMsg ((struct Message *) isnmsg);
                 break;
             case SNOTIFY_AFTER_OPENWB:
@@ -1074,9 +1076,8 @@ static void HandleAll(void)
 	{
 	    HandleIScreenNotify();
 	}
-	
-        if (msgport)
-        while ((appmsg = (struct AppMessage *) GetMsg(msgport)))
+
+        while ( (msgport) && (appmsg = (struct AppMessage *) GetMsg(msgport)) )
         {
             if (appmsg->am_Type == AMTYPE_APPWINDOW)
             {
@@ -1093,12 +1094,14 @@ static void HandleAll(void)
             ActivateWindow(win);
 
             if (filename)
+            {
                 OpenDTO();
+                FitToWindow();
+            }
 
         } /* while ((appmsg = (struct AppMessage *) GetMsg(msgport))) */
         
-	if (win)
-	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+	while( (win) && (msg = (struct IntuiMessage *)GetMsg(win->UserPort)) )
 	{
 //	    D(if (msg->Class!=IDCMP_INTUITICKS) bug("  Msg Class %08lx\n", (long)msg->Class));
 	    switch (msg->Class)
@@ -1389,13 +1392,15 @@ static void HandleAll(void)
 				    break;
 
 				case MSG_MEN_PICT_FORCE_MAP:
+				    pdt_force_map = (item->Flags & CHECKED) ? TRUE : FALSE;
 				    SetDTAttrs (dto, NULL, NULL,
-						PDTA_DestMode, (item->Flags & CHECKED) ? FALSE : TRUE,
+						PDTA_DestMode, (pdt_force_map) ? PMODE_V42 : PMODE_V43,
 						TAG_DONE);
 				    DoLayout(TRUE);
 				    break;
 
 				case MSG_MEN_PICT_DITHER:
+				    pdt_pict_dither = (item->Flags & CHECKED) ? TRUE : FALSE;
 				    SetDTAttrs (dto, NULL, NULL,
 						PDTA_DitherQuality, (item->Flags & CHECKED) ? 4 : 0,
 						TAG_DONE);
@@ -1403,12 +1408,13 @@ static void HandleAll(void)
 				    break;
 
 				case MSG_MEN_TEXT_WORDWRAP:
-				    if (item->Flags & CHECKED)
+				    tdt_text_wordwrap = (item->Flags & CHECKED) ? TRUE : FALSE;
+				    if (tdt_text_wordwrap)
 					D(bug("wordwrap enabled\n"));
 				    else
 					D(bug("wordwrap disabled\n"));
 				    SetDTAttrs (dto, NULL, NULL,
-						TDTA_WordWrap, (item->Flags & CHECKED) ? TRUE : FALSE,
+						TDTA_WordWrap, tdt_text_wordwrap,
 						TAG_DONE);
 				    DoLayout(TRUE);
 				    break;
@@ -1507,6 +1513,12 @@ void InitWin(void)
     textmenus = MakeMenus(nmtext);
     SetMenuFlags();
     MakeWindow();
+    SetDTAttrs (dto, NULL, NULL,
+		PDTA_DestMode, (pdt_force_map) ? PMODE_V42 : PMODE_V43,
+		PDTA_DitherQuality, (pdt_pict_dither) ? 4 : 0,
+		TDTA_WordWrap, tdt_text_wordwrap,
+		TAG_DONE);
+    FitToWindow();
 }
 
 /*********************************************************************************************/
@@ -1517,6 +1529,13 @@ int main(int argc, char **argv)
     wincoords.MinY = 0;
     wincoords.MaxX = 0;
     wincoords.MaxY = 0;
+    
+    pdt_fit_win       = FALSE;
+    pdt_keep_aspect   = FALSE;
+    pdt_force_map     = FALSE;
+    pdt_pict_dither   = TRUE;
+    tdt_text_wordwrap = TRUE;
+    separate_screen   = FALSE;
 
     InitLocale("System/Utilities/MultiView.catalog", 1);
     InitMenus(nm);

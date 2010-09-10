@@ -76,6 +76,10 @@ VAR UWORD			pdt_origheight;
 VAR WORD			pdt_zoom;
 VAR BOOL			pdt_fit_win;
 VAR BOOL			pdt_keep_aspect;
+VAR BOOL			pdt_force_map;
+VAR BOOL			pdt_pict_dither;
+/* variable for text-dt word-wraping */
+VAR BOOL			tdt_text_wordwrap;
 /* variables for AppWindow handling */
 VAR struct MsgPort             *msgport;
 VAR struct AppWindow           *appwindow;
@@ -85,4 +89,6 @@ VAR ULONG                       msgmask;
 VAR struct MsgPort             *isnport;
 VAR IPTR                        isnstarted;
 VAR ULONG                       isnmask;
+/* variable for using separate screen */
+VAR BOOL			separate_screen;
 

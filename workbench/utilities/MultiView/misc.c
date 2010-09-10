@@ -17,6 +17,7 @@
 
 static struct MenuItem * FindMenuItem( struct Menu *menu, ULONG msgid );
 static void ChangeItemState( ULONG msgid, BOOL state );
+static void SetItemChecked( ULONG msgid, BOOL state );
 
 /*********************************************************************************************/
 
@@ -110,6 +111,19 @@ static void ChangeItemState( ULONG msgid, BOOL state )
 }
 
 /*********************************************************************************************/
+			    
+static void SetItemChecked( ULONG msgid, BOOL state )
+{
+    struct MenuItem *item;
+
+    item = FindMenuItem(menus, msgid);
+    if (item)
+    {
+	if (state) item->Flags |= CHECKED; else item->Flags &= ~CHECKED;
+    }
+}
+
+/*********************************************************************************************/
 
 void InitMenus(struct NewMenu *newm)
 {
@@ -199,6 +213,10 @@ void SetMenuFlags(void)
 	{
 	    D(bug("Multiview: is picture.datatype\n"));
 	    menu->NextMenu = pictmenus;
+	    SetItemChecked( MSG_MEN_PICT_FIT_WIN, pdt_fit_win );
+	    SetItemChecked( MSG_MEN_PICT_KEEP_ASPECT, pdt_keep_aspect );
+	    SetItemChecked( MSG_MEN_PICT_FORCE_MAP, pdt_force_map );
+	    SetItemChecked( MSG_MEN_PICT_DITHER, pdt_pict_dither );
 	}
 	else if (dto_subclass_gid == GID_TEXT)
 	{
@@ -210,6 +228,7 @@ void SetMenuFlags(void)
 	    {
 		if (val) item->Flags |= CHECKED; else item->Flags &= ~CHECKED;
 	    }
+	    SetItemChecked( MSG_MEN_TEXT_WORDWRAP, tdt_text_wordwrap );
 	    ChangeItemState( MSG_MEN_TEXT_WORDWRAP, ret );
 	    ChangeItemState( MSG_MEN_TEXT_SEARCH, dto_supports_search );
 	    ChangeItemState( MSG_MEN_TEXT_SEARCH_PREV, dto_supports_search_prev );
