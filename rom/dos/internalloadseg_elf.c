@@ -199,19 +199,18 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
         }
     }
 
-    /* FIXME: this file should also handle x86-64, but something seems to be broken.
-       Replase ELFCLASS32 with WANT_CLASS here in order to enable 64-bit ELF support */
-    if (eh->ident[EI_CLASS]   != ELFCLASS32      ||
+    /* WANT_CLASS should be defined for your target */
+    if (eh->ident[EI_CLASS]   != WANT_CLASS      ||
         eh->ident[EI_VERSION] != EV_CURRENT      ||
         eh->type              != ET_REL          ||
         eh->ident[EI_DATA]    != WANT_BYTE_ORDER ||
         eh->machine           != AROS_ELF_MACHINE)
     {
         D(bug("[ELF Loader] Object is of wrong type\n"));
-        D(bug("[ELF Loader] ET_CLASS   is %d - should be %d\n", eh->ident[ET_CLASS]  , WANT_CLASS     ));
-        D(bug("[ELF Loader] ET_VERSION is %d - should be %d\n", eh->ident[ET_VERSION], EV_CURRENT     ));
+        D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS]  , WANT_CLASS     ));
+        D(bug("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT     ));
         D(bug("[ELF Loader] type       is %d - should be %d\n", eh->type             , ET_REL         ));
-        D(bug("[ELF Loader] ET_DATA    is %d - should be %d\n", eh->ident[ET_DATA]   , WANT_BYTE_ORDER));
+        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA]   , WANT_BYTE_ORDER));
         D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine          , AROS_ELF_MACHINE));
 
         SetIoErr(ERROR_NOT_EXECUTABLE);
