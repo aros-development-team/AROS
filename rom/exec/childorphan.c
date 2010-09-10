@@ -63,6 +63,7 @@
 
     if(tid == 0L)
     {
+    	Forbid();
 	ForeachNode(&et->et_Children, child)
 	{
 	    /*
@@ -72,9 +73,11 @@
 	    child->et_Parent = NULL;
 	}
 	NEWLIST(&et->et_Children);
+    	Permit();
     }
     else
     {
+    	Forbid();
 	child = FindChild((ULONG)tid);
 	if(child != NULL)
 	{
@@ -82,7 +85,11 @@
 	    Remove((struct Node *)child);
 	}
 	else
+	{
+    	    Permit();
 	    return CHILD_NOTFOUND;
+	}
+	Permit();
     }
     return 0;
 

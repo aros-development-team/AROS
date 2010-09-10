@@ -51,6 +51,7 @@
 
     struct ETask *et;
 
+    Forbid();
     et = FindChild((ULONG)tid);
     if(et != NULL)
     {
@@ -64,6 +65,7 @@
 #endif
 	FreeVec(et);
     }
-
+    Permit();
+    
     AROS_LIBFUNC_EXIT
 } /* ChildFree */

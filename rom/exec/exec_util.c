@@ -332,6 +332,8 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     if(!et)
 	return;
 
+    Forbid();
+    
     /* Clean up after all the children that the task didn't do itself. */
     ForeachNodeSafe(&et->et_TaskMsgPort.mp_MsgList, child, tmpNode)
     {
@@ -353,9 +355,9 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
         ForeachNode(&et->et_Children, child)
         {
             child->et_Parent = et->et_Parent;
-            Forbid();
+            //Forbid();
             ADDTAIL(&parent->et_Children, child);
-            Permit();
+            //Permit();
         }
 
         /* Notify parent only if child was created with NP_NotifyOnDeath set 
@@ -396,4 +398,6 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
 #endif
         FreeVec(et);
     }
+    
+    Permit();
 }
