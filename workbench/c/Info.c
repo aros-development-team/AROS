@@ -71,7 +71,7 @@
     All rights resevered
 ******************************************************************************/
 
-#define  DEBUG  1
+#define  DEBUG  0
 #include <aros/debug.h>
 
 #include <dos/dos.h>
@@ -472,7 +472,6 @@ BOOL ScanDosList(STRPTR *filter)
 void PrintNum(ULONG num)
 {
     /* MBytes ? */
-	bug("num: %ld\n", num);
     if(num > 1023) 
     {
 	ULONG  x, xx;
@@ -490,8 +489,6 @@ void PrintNum(ULONG num)
 	/* round */
 	x = ExtUDivMod32(x, 10, &xx);
 
-	bug("num: %ld x: %ld xx: %ld %c\n", num, x, xx, fmt);
-	
 	if(xx > 4)
 	{
 	    if(++x > 9)
