@@ -13,8 +13,6 @@
 #endif
 
 /* Some common definitions */
-#define SIZEOF_ALL_REGISTERS	(sizeof(struct AROSCPUContext))
-
 #define cpumode_t __unused char
 
 #define goSuper() 0

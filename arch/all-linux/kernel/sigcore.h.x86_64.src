@@ -18,10 +18,6 @@
 #include <errno.h>
 #include <stddef.h>
 
-/* Put a value of type SP_TYPE on the stack or get it off the stack. */
-#define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
-#define _POP(sp)            (*sp++)
-
 #ifndef _SIGNAL_H
 #define _SIGNAL_H
 #endif
@@ -76,11 +72,6 @@ typedef @sighandler@ SignalHandler;
 	    sighandler(sig, (sigcontext_t *)&u->uc_mcontext); 			\
 	}
 
-/* Type of the values which can be stored on the stack. A variable
-   which is to be used as a stack pointer must be declared as
-   "SP_TYPE *". */
-#define SP_TYPE     long
-
 /* How many general purpose registers are to be saved on the stack
    when a task switch happens */
 #define CPU_NUMREGS		0
@@ -97,9 +88,6 @@ struct AROSCPUContext
     struct AROSCPUContext * sc;
     int	errno_backup;
 };
-
-#define SIZEOF_ALL_REGISTERS	(sizeof (struct AROSCPUContext))
-#define GetSP(task)             (*(SP_TYPE **)&task->tc_SPReg)
 
 /*
     Macros to access the stack pointer, frame pointer and program
@@ -322,14 +310,14 @@ struct AROSCPUContext
 
 #ifndef NO_FPU
 
-#define PREPARE_INITIAL_CONTEXT(cc, startpc) \
+#define PREPARE_INITIAL_CONTEXT(cc) \
    asm volatile("fninit\n\t" \
     	    	"fxsave %0\n\t" \
 		"fwait" : "=m" (cc->fpstate))
 
 #else
 
-#define PREPARE_INITIAL_CONTEXT(cc, startpc)
+#define PREPARE_INITIAL_CONTEXT(cc)
 
 #endif
 

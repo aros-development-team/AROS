@@ -19,16 +19,6 @@
 #include <signal.h>
 #include <errno.h>
 
-/* Put a value of type SP_TYPE on the stack or get it off the stack. */
-#define _PUSH(sp,val)              \
-    do                             \
-    {                              \
-       SP_TYPE **stackp = (sp);    \
-       --*stackp;                  \
-       **stackp = (SP_TYPE) (val); \
-    } while (0)
-#define _POP(sp)            (*sp++)
-
 #ifndef _SIGNAL_H
 #define _SIGNAL_H
 #endif
@@ -95,11 +85,6 @@ typedef @sighandler@ SignalHandler;
 	}
 #endif
 
-/* Type of the values which can be stored on the stack. A variable
-   which is to be used as a stack pointer must be declared as
-   "SP_TYPE *". */
-#define SP_TYPE     long
-
 /* How many general purpose registers are to be saved on the stack
    when a task switch happens */
 #define CPU_NUMREGS		0
@@ -115,10 +100,6 @@ struct AROSCPUContext
     int                       errno_backup;
     struct AROSCPUContext * sc;
 };
-
-#undef SIZEOF_ALL_REGISTERS
-#define SIZEOF_ALL_REGISTERS	(sizeof (struct AROSCPUContext))
-#define GetSP(task)             ((SP_TYPE **)&task->tc_SPReg)
 
 /*
     Macros to access the stack pointer, frame pointer and program
@@ -307,7 +288,7 @@ struct AROSCPUContext
 #define cpuid(num, eax, ebx, ecx, edx) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
-#define PREPARE_INITIAL_CONTEXT(cc, startpc) \
+#define PREPARE_INITIAL_CONTEXT(cc) \
     UBYTE * ptr = cc->fpbuffer; \
     UBYTE current_xmm[512+16], *curr = current_xmm; \
     curr = (UBYTE*)(((IPTR)curr + 15) & ~15); \

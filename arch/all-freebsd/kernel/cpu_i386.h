@@ -11,20 +11,10 @@
 #include <errno.h>
 #include "etask.h"
 
-/* Put a value of type SP_TYPE on the stack or get it off the stack. */
-#define _PUSH(sp,val)                           \
-    do {                                        \
-        SP_TYPE **stackp = (sp);                \
-        --*stackp;                              \
-        **stackp = (SP_TYPE)(val);              \
-    } while (0)
-#define _POP(sp)            (*sp++)
-
 typedef struct sigcontext sigcontext_t;
 #define SIGHANDLER	bsd_sighandler
 #define SIGHANDLER_T	__sighandler_t *
 
-#define SP_TYPE		long
 #define CPU_NUMREGS	0
 
 #define SC_DISABLE(sc)   (sc->sc_mask = sig_int_mask)
@@ -71,8 +61,6 @@ struct AROSCPUContext
     int eflags;
     struct AROSCPUContext *sc;
 };
-
-#define GetSP(task)		((SP_TYPE **)(&task->tc_SPReg))
 
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc); \
@@ -149,7 +137,7 @@ struct AROSCPUContext
                 ((sc)->sc_fpformat != _MC_FPFMT_NODEV)                      \
             )
 
-#       define PREPARE_FPU(cc)                                              \
+#       define PREPARE_INITIAL_CONTEXT(cc)                                              \
             do {                                                            \
                 (cc)->acc_u.acc_f5.fpformat = _MC_FPFMT_NODEV;              \
                 (cc)->acc_u.acc_f5.ownedfp = _MC_FPOWNED_NONE;              \
@@ -176,7 +164,7 @@ struct AROSCPUContext
 
 #       define HAS_FPU(sc)      0
 
-#       define PREPARE_FPU(cc)                                              \
+#       define PREPARE_INITIAL_CONTEXT(cc)                                  \
             do {                                                            \
                 asm volatile("fninit\n\t"                                   \
                              "fnsave %0\n\t"                                \
@@ -199,7 +187,7 @@ struct AROSCPUContext
 
 #   define HAS_FPU(sc)      0
 
-#   define PREPARE_FPU(cc)                                          \
+#   define PREPARE_INITIAL_CONTEXT(cc)                              \
         do {                                                        \
         } while (0)
 
@@ -215,11 +203,6 @@ struct AROSCPUContext
     do {                                           \
         cc->regs[7] = 0;                           \
         cc->regs[8] = (startpc);                   \
-    } while (0)
-
-#define PREPARE_INITIAL_CONTEXT(cc, startpc)       \
-    do {                                           \
-        PREPARE_FPU(cc);                           \
     } while (0)
 
 #define SAVEREGS(cc, sc)                                            \

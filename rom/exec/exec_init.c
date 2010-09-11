@@ -299,9 +299,6 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
 	GetIntETask(t)->iet_Context = ctx;
-
-	PREPARE_INITIAL_CONTEXT(ctx, NULL /* NOT USED ANYWAY*/);
-
 	sysBase->ThisTask = t;
     }
 
