@@ -488,9 +488,8 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
     char                *bdrp_file = NULL, *linebuf = NULL, *bdrp_fullfile = NULL, *bdrp_namepart = NULL;
     struct DiskObject   *bdrp_currfile_dob = NULL;
     BOOL                retVal = FALSE;
+    char *bdrp_dir = bdrp_direntry->ie_IconNode.ln_Name;
 
-    char *bdrp_dir = bdrp_direntry->ie_IconListEntry.label;
-    
     if ((bdrp_dir == NULL) || (bdrp_dir[strlen(bdrp_dir) - 1] != ':'))
         return retVal;
 
@@ -1158,7 +1157,9 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
 
 	ForeachNode(iconList, volentry)
 	{
-	    if ((volentry->ie_IconListEntry.type == ST_ROOT) && ((volentry->ie_IconNode.ln_Pri == -2) || (volentry->ie_IconNode.ln_Pri == -5)))
+	    if ((volentry->ie_IconListEntry.type == ST_ROOT)
+		&& ((volentry->ie_IconNode.ln_Pri == -2) || (volentry->ie_IconNode.ln_Pri == -5))
+		&& !(volentry->ie_IconListEntry.flags & ICONENTRY_VOL_OFFLINE))
 	    {
 		if (volentry->ie_IconNode.ln_Pri == -5) volentry->ie_IconNode.ln_Pri = 5;
 		else volentry->ie_IconNode.ln_Pri = 2;
@@ -1214,7 +1215,7 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
 			if ((Obj_NetworkIcon = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
 			{
 			    Obj_NetworkIcon->ln_Pri = 4;   /// Network Access gets Priority 4 so its displayed after special dirs
-			    D(bug("[Wanderer:VolumeList] %s: NetworkBrowser Icon Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
+//			    D(bug("[Wanderer:VolumeList] %s: NetworkBrowser Icon Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
 			}
 		    }
 		}
@@ -1354,7 +1355,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
     struct VolumeIcon_Private   *volPrivate = NULL;
     IPTR                	_volumeIcon__FSNotifyPort = 0;
     struct List         	*_volumeIcon__FSNotifyList = NULL;
-    struct Wanderer_FSHandler	*_volumeIcon__FSNotifyHandler = NULL
+    struct Wanderer_FSHandler	*_volumeIcon__FSNotifyHandler = NULL;
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -1400,11 +1401,8 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
 IPTR IconWindowVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_UpdateEntry *message)
 {
     struct IconEntry  		*this_Icon = NULL;
-    struct VolumeIcon_Private   *volPrivate = NULL;
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
-
-    volPrivate = message->entry->ie_IconListEntry.udata;
 
     this_Icon = DoSuperMethodA(CLASS, obj, (Msg) message);
 
