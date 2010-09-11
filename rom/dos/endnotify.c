@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -55,32 +55,20 @@
     AROS_LIBFUNC_INIT
 
     struct IOFileSys iofs;
-    struct DevProc *dvp;
 
-    /* get the device pointer and dir lock. note that we don't just use
-     * nr_Handler here, because we also need to supply a unit pointer so
-     * packet.handler can get its mount context */
-    if ((dvp = GetDeviceProc(notify->nr_FullName, NULL)) == NULL)
-        return;
-
-    /* setup the call */
+    /* set up the call */
     InitIOFS(&iofs, FSA_REMOVE_NOTIFY, DOSBase);
     iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
 
-    iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
-
-    /* take the root lock from either the doslist entry or from the devproc */
-    if (dvp->dvp_Lock == NULL)
-        iofs.IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
-    else
-        iofs.IOFS.io_Unit = ((struct FileHandle *) BADDR(dvp->dvp_Lock))->fh_Unit;
-
-    FreeDeviceProc(dvp);
+    /* get the device pointer and dir lock. The lock is only needed for
+     * packet.handler, and has been stored by it during FSA_ADD_NOTIFY */
+    iofs.IOFS.io_Device = (struct Device *) notify->nr_Handler;
+    iofs.IOFS.io_Unit = ((APTR *)notify->nr_Reserved)[0];
 
     /* go */
     do {
         DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, dvp->dvp_Port) == DOSFALSE);
+    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, iofs.IOFS.io_Device) == DOSFALSE);
 
     /* free fullname if it was built in StartNotify() */
     if (notify->nr_FullName != notify->nr_Name)
