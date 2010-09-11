@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES := alert coldreboot exec_init newaddtask permit preparecontext \
+CFILES := alert coldreboot exec_init newaddtask permit \
           reschedule setexcept settaskpri shutdowna signal traphandler wait idletask
 
 USER_INCLUDES := -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/all-mingw32/kernel
