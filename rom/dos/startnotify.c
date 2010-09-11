@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -77,8 +77,7 @@
     iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
     iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
 
-    /* remember the handler for EndNotify() (but see the comments there about
-     * why we don't really use it */
+    /* remember the handler for EndNotify() */
     notify->nr_Handler = dvp->dvp_Port;
 
     /* if no lock is returned by GetDeviceProc() (eg if the path is for a
@@ -144,7 +143,7 @@
 
     len = strlen(buf);
 
-    /* if its not some absolute base thing, then add a dir seperator for
+    /* if it's not some absolute base thing, then add a dir seperator for
      * the concat operation below */
     if (buf[len-1] != ':') {
         buf[len] = '/';
@@ -182,7 +181,7 @@
     CopyMem(buf, buf2, len);
     CopyMem(p, buf2 + len, len2 + 1);
 
-    /* thats our expanded name */
+    /* that's our expanded name */
     notify->nr_FullName = buf2;
 
     /* send the request, with error reporting */

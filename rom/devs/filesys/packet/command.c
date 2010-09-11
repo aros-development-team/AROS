@@ -674,6 +674,10 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Type = ACTION_ADD_NOTIFY;
             dp->dp_Arg1 =
                 (SIPTR) iofs->io_Union.io_NOTIFY.io_NotificationRequest;
+
+            /* Store root handle in a private field so EndNotify() can send it back */
+            ((APTR *)iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_Reserved)[0] =
+                &handle->mount->root_handle;
             break;
 
         case FSA_REMOVE_NOTIFY:
