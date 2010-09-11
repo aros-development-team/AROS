@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CacheClearE() - Clear the caches with extended control.
     Lang: english
 */
 
+#include <aros/config.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -87,13 +88,15 @@
         asm volatile("sync");
     }
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     if (caches & CACRF_InvalidateD)
     {
         register APTR addr asm ("r4") = address;
         register ULONG len asm ("r5") = length;
         asm volatile("li %%r3,%0; sc"::"i"(8 /*SC_INVALIDATED*/),"r"(addr),"r"(len):"memory","r3");
     }
-    
+#endif
+
     if (caches & CACRF_ClearI) /* Clear ICache with DCache together */
     {
         for (ptr = start; ptr < end; ptr +=32)
