@@ -52,7 +52,6 @@ int main(int argc, char **argv)
     /* init */
     if (ReadArguments(argc, argv))
     {
-        //InitPrefs((STRPTR)args[ARG_FROM], (args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE)) )
         D(bug("[serial prefs] initialized\n"));
         if (ARG(USE) || ARG(SAVE))
         {
