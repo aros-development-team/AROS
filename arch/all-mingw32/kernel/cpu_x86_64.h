@@ -146,7 +146,7 @@ struct AROSCPUContext
 	    , (ctx)->Rdi, (ctx)->Rsi, (ctx)->EFlags \
       );
 
-#define PREPARE_INITIAL_CONTEXT(ctx, sp, pc) ctx->Rbp = 0;			 \
+#define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->Rbp = 0;			 \
 					     ctx->Rip = (IPTR)pc;		 \
 					     ctx->Rsp = (IPTR)sp;		 \
 					     ctx->ContextFlags = CONTEXT_CONTROL;

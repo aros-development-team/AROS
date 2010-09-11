@@ -95,7 +95,7 @@ struct AROSCPUContext
 	    , (ctx)->EFlags \
       );
 
-#define PREPARE_INITIAL_CONTEXT(ctx, sp, pc) ctx->Ebp = 0;			 \
+#define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->Ebp = 0;			 \
 					     ctx->Eip = (IPTR)pc;		 \
 					     ctx->Esp = (IPTR)sp;		 \
 					     ctx->ContextFlags = CONTEXT_CONTROL;
