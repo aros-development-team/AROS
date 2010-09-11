@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,7 +19,7 @@
 
 #include <utility/utility.h>
 
-//#include "/usr/include/asm/unistd.h"
+#include <unistd.h>
 
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -42,6 +42,10 @@ static int PCILx_Init(LIBBASETYPEPTR LIBBASE)
 
     {
 	int ret;
+
+/* TODO: when AROS goes modular, syscalls need to be inlined
+         in some include files. For now i leave this fragment
+         here for reference.
 	asm volatile(
 		"int $0x80"
 		:"=a"(ret)
@@ -52,7 +56,10 @@ static int PCILx_Init(LIBBASETYPEPTR LIBBASE)
 		"int $0x80"
 		:"=a"(LIBBASE->psd.fd)
 		:"a"(__NR_open),"b"("/dev/mem"),"c"(2)
-	);
+	);*/
+
+	ret = syscall(__NR_iopl, 3);
+	LIBBASE->psd.fd = syscall(__NR_open, "/dev/mem", 2);
 
 	D(bug("LinuxPCI: iopl(3)=%d\n", ret));
 	D(bug("LinuxPCI: /dev/mem fd=%d\n", LIBBASE->psd.fd));

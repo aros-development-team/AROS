@@ -1,5 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-#MM- kernel-bootloader-linux-x86_64 : kernel-bootloader-unix
-#MM- kernel-bootloader-linux-x86_64-includes : kernel-bootloader-unix-includes
