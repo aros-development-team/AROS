@@ -23,10 +23,10 @@
 	AROS_LH4(BOOL, PrepareContext,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Task *, task,    A0),
-	AROS_LHA(APTR, entryPoint,      A1),
-	AROS_LHA(APTR, fallBack,        A2),
-	AROS_LHA(struct TagItem *, tagList, A3),
+	AROS_LHA(VOLATILE struct Task *, task,       A0),
+	AROS_LHA(APTR,                   entryPoint, A1),
+	AROS_LHA(APTR,                   fallBack,   A2),
+	AROS_LHA(struct TagItem *,       tagList,    A3),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 6, Exec)
