@@ -28,7 +28,7 @@ FUNCS := \
 
 #MM workbench-libs-mathieeesingtrans-includes : \
 #MM    kernel-exec-includes \
-#MM    kernel-mathieeesingbas-includes \
+#MM    workbench-libs-mathieeesingbas-includes \
 #MM    includes-copy
 
 %build_module mmake=workbench-libs-mathieeesingtrans \

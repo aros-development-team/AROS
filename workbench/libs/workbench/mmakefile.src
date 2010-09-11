@@ -24,7 +24,7 @@ FUNCS := \
     workbenchcontrola \
     uae_integration
 
-#MM kernel-workbench-includes : \
+#MM workbench-libs-workbench-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-utility-includes \
 #MM     kernel-intuition-includes \
@@ -32,10 +32,9 @@ FUNCS := \
 #MM     workbench-libs-icon-includes \
 #MM     includes-copy
 
-#MM kernel-workbench-kobj : workbench-libs-icon-linklib
-#MM kernel-workbench : workbench-libs-icon-linklib
+#MM workbench-libs-workbench : workbench-libs-icon-linklib
 
-%build_module mmake=kernel-workbench \
+%build_module mmake=workbench-libs-workbench \
   modname=workbench modtype=library \
   files="workbench_init $(FUNCS) $(FILES)" \
   uselibs="icon rom"

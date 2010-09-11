@@ -12,7 +12,7 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM- software-pc-i386 : general-setup binary-pc-i386 \
 #MM	    workbench-pc-i386 demos contrib-necessary
 
-#MM- workbench-pc-i386 : workbench-complete workbench kernel-mathffp kernel-mathieeesingbas kernel-workbench
+#MM- workbench-pc-i386 : workbench-complete workbench
 
 #MM- AROS-complete-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386 contrib
 

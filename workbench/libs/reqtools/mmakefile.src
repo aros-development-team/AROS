@@ -40,7 +40,7 @@ FUNCS := \
 #MM      kernel-layers-includes \
 #MM      kernel-intuition-includes \
 #MM      kernel-console-includes \
-#MM      kernel-workbench-includes \
+#MM      workbench-libs-workbench-includes \
 #MM      workbench-libs-diskfont-includes \
 #MM      workbench-libs-gadtools-includes \
 #MM      workbench-libs-locale-includes \

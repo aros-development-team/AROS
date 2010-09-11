@@ -18,6 +18,8 @@
 #MM     workbench-libs-iffparse \
 #MM     workbench-libs-locale \
 #MM	workbench-libs-lowlevel \
+#MM     workbench-libs-mathffp \
+#MM     workbench-libs-mathieeesingbas \
 #MM     workbench-libs-mathieeesingtrans \
 #MM     workbench-libs-mathtrans \
 #MM     workbench-libs-mathieeedoubbas \
@@ -30,6 +32,7 @@
 #MM     workbench-libs-realtime \
 #MM     workbench-libs-nonvolatile \
 #MM     workbench-libs-nvdisk \
+#MM     workbench-libs-workbench \
 #MM     workbench-libs-muimaster \
 #MM     workbench-libs-coolimages \
 #MM     workbench-libs-pci \
@@ -55,6 +58,8 @@
 #MM     workbench-libs-iffparse-includes \
 #MM     workbench-libs-locale-includes \
 #MM	workbench-libs-lowlevel-includes \
+#MM     workbench-libs-mathffp-includes \
+#MM     workbench-libs-mathieeesingbas-includes \
 #MM     workbench-libs-mathieeesingtrans-includes \
 #MM     workbench-libs-mathtrans-includes \
 #MM     workbench-libs-mathieeedoubbas-includes \
@@ -67,6 +72,7 @@
 #MM     workbench-libs-realtime-includes \
 #MM     workbench-libs-nonvolatile-includes \
 #MM     workbench-libs-nvdisk-includes \
+#MM     workbench-libs-workbench-includes \
 #MM     workbench-libs-muimaster-includes \
 #MM     workbench-libs-coolimages-includes \
 #MM     workbench-libs-codesets-lib-includes \

@@ -10,7 +10,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-gameport \
 #MM	kernel-battclock \
 #MM	kernel-misc \
-#MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
 #MM	kernel-hidd-graphics \
 #MM	kernel-hidd-kbd \
@@ -25,7 +24,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-console \
 #MM	kernel-fs-packet \
 #MM	kernel-fs-con \
-#MM	kernel-workbench \
+#MM	workbench-libs-workbench \
 #MM	kernel-fs-nil \
 #MM	contrib-amberram \
 #MM	kernel-fs-afs \
@@ -37,7 +36,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-contrib-necessary-pc-x86_64 : contrib-necessary-pc-x86_64
 
-PKG_LIBS := aros boot dos graphics intuition keymap layers mathieeesingbas partition workbench
+PKG_LIBS := aros boot dos graphics intuition keymap layers partition workbench
 PKG_RSRC := battclock bootloader dosboot misc processor
 PKG_DEVS := ata console gameport input keyboard timer
 PKG_HANDLERS := afs cdrom con nil packet amberram

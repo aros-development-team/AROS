@@ -19,7 +19,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-oop \
 #MM	kernel-battclock \
 #MM	kernel-hidd \
-#MM	kernel-mathieeesingbas \
 #MM	kernel-aros \
 #MM	kernel-misc \
 #MM	kernel-timer \
@@ -36,7 +35,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-console \
 #MM	kernel-fs-con \
 #MM	kernel-fs-packet \
-#MM	kernel-workbench \
+#MM	workbench-libs-workbench \
 #MM	kernel-boot \
 #MM kernel-dos \
 #MM kernel-dosboot \

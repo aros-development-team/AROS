@@ -15,10 +15,10 @@ FUNCS   := \
     spsub \
     sptst
 
-#MM kernel-mathffp-includes : \
+#MM workbench-libs-mathffp-includes : \
 #MM     kernel-exec-includes \
 #MM     includes-copy
 
-%build_module mmake=kernel-mathffp \
+%build_module mmake=workbench-libs-mathffp \
   modname=mathffp modtype=library \
   files=$(FUNCS)
