@@ -77,7 +77,7 @@ struct IControlEditor_DATA
 /*********************************************************************************************/
 
 static struct Hook  previewhook;
-static STRPTR       menutype_labels[3], menulook_labels[3];
+static CONST_STRPTR menutype_labels[3], menulook_labels[3];
 static WORD         imagetransparray[4];
 
 /*********************************************************************************************/
@@ -170,10 +170,10 @@ static void PreviewFunc(struct Hook *hook, Object *previewpage, struct IControlE
     IPTR type = 0;
     IPTR look = 0;
 
-    get((*data)->menutypeobj, MUIA_Cycle_Active, &type);
-    get((*data)->menulookobj, MUIA_Cycle_Active, &look);
+    GET((*data)->menutypeobj, MUIA_Cycle_Active, &type);
+    GET((*data)->menulookobj, MUIA_Cycle_Active, &look);
 
-    nnset(previewpage, MUIA_Group_ActivePage, type * 2 + look);
+    NNSET(previewpage, MUIA_Group_ActivePage, type * 2 + look);
 }
 
 /*********************************************************************************************/
@@ -186,7 +186,7 @@ BOOL Gadgets2IControlPrefs(struct IControlEditor_DATA *data)
     STRPTR key = NULL;
     struct InputXpression ix = {IX_VERSION, 0};
 
-    get(data->menutypeobj, MUIA_Cycle_Active, &active);
+    GET(data->menutypeobj, MUIA_Cycle_Active, &active);
     if (active == 0)
     {
         prefs->ic_Flags &= ~ICF_POPUPMENUS;
@@ -196,7 +196,7 @@ BOOL Gadgets2IControlPrefs(struct IControlEditor_DATA *data)
         prefs->ic_Flags |= ICF_POPUPMENUS;
     }
 
-    get(data->menulookobj, MUIA_Cycle_Active, &active);
+    GET(data->menulookobj, MUIA_Cycle_Active, &active);
     if (active == 0)
     {
         prefs->ic_Flags &= ~ICF_3DMENUS;
@@ -206,7 +206,7 @@ BOOL Gadgets2IControlPrefs(struct IControlEditor_DATA *data)
         prefs->ic_Flags |= ICF_3DMENUS;
     }
 
-    get(data->menustickobj, MUIA_Selected, &active);
+    GET(data->menustickobj, MUIA_Selected, &active);
     if (active == 0)
     {
         prefs->ic_Flags &= ~ICF_STICKYMENUS;
@@ -216,7 +216,7 @@ BOOL Gadgets2IControlPrefs(struct IControlEditor_DATA *data)
         prefs->ic_Flags |= ICF_STICKYMENUS;
     }
 
-    get(data->offscreenobj, MUIA_Selected, &active);
+    GET(data->offscreenobj, MUIA_Selected, &active);
     if (active == 0)
     {
         prefs->ic_Flags &= ~ICF_OFFSCREENLAYERS;
@@ -226,7 +226,7 @@ BOOL Gadgets2IControlPrefs(struct IControlEditor_DATA *data)
         prefs->ic_Flags |= ICF_OFFSCREENLAYERS;
     }
 
-    get(data->defpubscrobj, MUIA_Selected, &active);
+    GET(data->defpubscrobj, MUIA_Selected, &active);
     if (active == 0)
     {
         prefs->ic_Flags &= ~ICF_DEFPUBSCREEN;
@@ -237,20 +237,20 @@ BOOL Gadgets2IControlPrefs(struct IControlEditor_DATA *data)
     }
 
     prefs->ic_VDragModes[0] = 0;
-    get(data->scrleftdragobj, MUIA_Selected, &active);
+    GET(data->scrleftdragobj, MUIA_Selected, &active);
     if (active)
         prefs->ic_VDragModes[0] |= ICVDM_LBOUND;
-    get(data->scrrightdragobj, MUIA_Selected, &active);
+    GET(data->scrrightdragobj, MUIA_Selected, &active);
     if (active)
         prefs->ic_VDragModes[0] |= ICVDM_RBOUND;
-    get(data->scrtopdragobj, MUIA_Selected, &active);
+    GET(data->scrtopdragobj, MUIA_Selected, &active);
     if (active)
         prefs->ic_VDragModes[0] |= ICVDM_TBOUND;
-    get(data->scrbotdragobj, MUIA_Selected, &active);
+    GET(data->scrbotdragobj, MUIA_Selected, &active);
     if (active)
         prefs->ic_VDragModes[0] |= ICVDM_BBOUND;
 
-    get(data->metadragobj, MUIA_String_Contents, (IPTR *)&key);
+    GET(data->metadragobj, MUIA_String_Contents, (IPTR *)&key);
     if (!ParseIX(key, &ix))
         prefs->ic_MetaDrag = ix.ix_Qualifier;
 
@@ -276,18 +276,18 @@ BOOL IControlPrefs2Gadgets(struct IControlEditor_DATA *data)
         0
     };
 
-    set(data->menutypeobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_POPUPMENUS) ? 1 : 0);
-    set(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
-    set(data->menustickobj, MUIA_Selected, (prefs->ic_Flags & ICF_STICKYMENUS) ? 1 : 0);
-    set(data->offscreenobj, MUIA_Selected, (prefs->ic_Flags & ICF_OFFSCREENLAYERS) ? 1 : 0);
-    set(data->defpubscrobj, MUIA_Selected, (prefs->ic_Flags & ICF_DEFPUBSCREEN) ? 1 : 0);
-    set(data->scrleftdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_LBOUND);
-    set(data->scrrightdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_RBOUND);
-    set(data->scrtopdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_TBOUND);
-    set(data->scrbotdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_BBOUND);
+    NNSET(data->menutypeobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_POPUPMENUS) ? 1 : 0);
+    NNSET(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
+    NNSET(data->menustickobj, MUIA_Selected, (prefs->ic_Flags & ICF_STICKYMENUS) ? 1 : 0);
+    NNSET(data->offscreenobj, MUIA_Selected, (prefs->ic_Flags & ICF_OFFSCREENLAYERS) ? 1 : 0);
+    NNSET(data->defpubscrobj, MUIA_Selected, (prefs->ic_Flags & ICF_DEFPUBSCREEN) ? 1 : 0);
+    NNSET(data->scrleftdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_LBOUND);
+    NNSET(data->scrrightdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_RBOUND);
+    NNSET(data->scrtopdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_TBOUND);
+    NNSET(data->scrbotdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_BBOUND);
 
     ix.ix_Qualifier = prefs->ic_MetaDrag;
-    set(data->metadragobj, MUIA_HotkeyString_IX, &ix);
+    NNSET(data->metadragobj, MUIA_HotkeyString_IX, &ix);
 
     return TRUE;
 }
@@ -459,24 +459,87 @@ IPTR IControlEditor__OM_NEW
     data->menulookobj = menulookobj;
     data->menustickobj = menustickobj;
     data->offscreenobj = offscreenobj;
-    set(data->offscreenobj, MUIA_ShortHelp, __(MSG_OFFSCREEN_DESC));
+    SET(data->offscreenobj, MUIA_ShortHelp, __(MSG_OFFSCREEN_DESC));
     data->defpubscrobj = defpubscrobj;
     data->scrleftdragobj = scrleftdragobj;
     data->scrrightdragobj = scrrightdragobj;
     data->scrtopdragobj = scrtopdragobj;
     data->scrbotdragobj = scrbotdragobj;
     data->metadragobj = metadragobj;
-    set(data->defpubscrobj, MUIA_ShortHelp, __(MSG_FRONTMOST_DEFAULT_DESC));
+    SET(data->defpubscrobj, MUIA_ShortHelp, __(MSG_FRONTMOST_DEFAULT_DESC));
 
     DoMethod
     (
         menutypeobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
         (IPTR)previewpage, 3, MUIM_CallHook, (IPTR)&previewhook, (IPTR)data
     );
+
     DoMethod
     (
         menulookobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
         (IPTR)previewpage, 3, MUIM_CallHook, (IPTR)&previewhook, (IPTR)data
+    );
+
+    DoMethod
+    (
+        menutypeobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        menulookobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        menustickobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        offscreenobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        defpubscrobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        scrleftdragobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        scrrightdragobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        scrtopdragobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        scrbotdragobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    // FIXME: MUIA_String_Acknowledge doesn't work and
+    // MUIA_String_Contents sets MUIA_PrefsEditor_Changed immediately
+    DoMethod
+    (
+        metadragobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
     );
 
     IControlPrefs2Gadgets(data);
