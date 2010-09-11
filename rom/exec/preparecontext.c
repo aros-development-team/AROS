@@ -17,7 +17,7 @@
 #include "exec_util.h"
 #include "kernel_cpu.h"
 
-#define  GetSP(task)   ((IPTR *)task->tc_SPReg)
+#define  GetSP(task)   (*(IPTR **)&task->tc_SPReg)
 #define _PUSH(sp, val) (*--sp = (IPTR)val)
 #define _POP(sp)       (*sp++)
 
