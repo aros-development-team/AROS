@@ -1,13 +1,19 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Wait for some signal.
     Lang: english
 */
+#define DEBUG 0
+
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
+
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -48,6 +54,8 @@
 
     INTERNALS
 
+    HISTORY
+
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -58,24 +66,22 @@
     /* Get pointer to current task - I'll need it very often */
     me = FindTask (NULL);
 
+    D(bug("[Exec] Wait(0x%08lX) called by %s\n", signalSet, me->tc_Node.ln_Name));
     /* Protect the task lists against access by other tasks. */
     Disable();
 
     /* If at least one of the signals is already set do not wait. */
     while(!(me->tc_SigRecvd&signalSet))
     {
-        BYTE old_TDNestCnt;
-	
+	D(bug("[Exec] Signals are not set, putting the task to sleep\n"));
 	/* Set the wait signal mask */
 	me->tc_SigWait=signalSet;
 
 	/*
 	    Clear TDNestCnt (because Switch() will not care about it),
 	    but memorize it first. IDNestCnt is handled by Switch().
-	    This could as well be stored in a local variable which makes
-	    the tc_TDNestCnt field somehow redundant.
 	*/
-	old_TDNestCnt=SysBase->TDNestCnt;
+	me->tc_TDNestCnt=SysBase->TDNestCnt;
 	SysBase->TDNestCnt=-1;
 
 	/* Move current task to the waiting list. */
@@ -83,7 +89,8 @@
 	Enqueue(&SysBase->TaskWait,&me->tc_Node);
 
 	/* And switch to the next ready task. */
-	Switch();
+	KrnSwitch();
+
 	/*
 	    OK. Somebody awakened me. This means that either the
 	    signals are there or it's just a finished task exception.
@@ -91,7 +98,7 @@
 	*/
 
 	/* Restore TDNestCnt. */
-	SysBase->TDNestCnt=old_TDNestCnt;
+	SysBase->TDNestCnt=me->tc_TDNestCnt;
     }
     /* Get active signals. */
     rcvd=me->tc_SigRecvd&signalSet;
@@ -103,6 +110,7 @@
     Enable();
 
     return rcvd;
+
     AROS_LIBFUNC_EXIT
-} /* Wait() */
+}
 
