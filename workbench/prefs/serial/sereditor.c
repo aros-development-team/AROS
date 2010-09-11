@@ -1,6 +1,6 @@
 /*
-    Copyright  2003-2008, The AROS Development Team. All rights reserved.
-    $Id: ipeditor.c 21816 2007-09-25 12:35:29Z chodorowski, dariusb $
+    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
