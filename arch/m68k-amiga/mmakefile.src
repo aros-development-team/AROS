@@ -45,7 +45,6 @@ create-mf-inc-again :
 #MM	kernel-aros-linklib                \
 #MM	kernel-oop-linklib                 \
 #MM	kernel-hidd-linklib                \
-#MM	kernel-mathieeesingbas-linklib     \
 #MM	kernel-timer-linklib               \
 #MM	kernel-misc-linklib kernel-misc-amiga-m68k \
 #MM	kernel-battclock-amiga-m68k           \
@@ -56,8 +55,6 @@ create-mf-inc-again :
 #MM	kernel-graphics-amiga-m68k            \
 #MM	kernel-layers-linklib              \
 #MM	kernel-intuition-amiga-m68k           \
-#MM	kernel-mathffp-linklib             \
-#MM	kernel-workbench-linklib           \
 #MM	kernel-keymap-linklib              \
 #MM	kernel-keyboard-linklib            \
 #MM	kernel-gameport-linklib            \

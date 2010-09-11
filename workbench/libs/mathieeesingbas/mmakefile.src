@@ -15,6 +15,6 @@ FUNCS := \
     ieeespsub \
     ieeesptst
 
-%build_module mmake=kernel-mathieeesingbas \
+%build_module mmake=workbench-libs-mathieeesingbas \
   modname=mathieeesingbas modtype=library \
   files=$(FUNCS)

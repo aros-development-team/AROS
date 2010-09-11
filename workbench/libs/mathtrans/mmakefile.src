@@ -25,7 +25,7 @@ FUNCS := \
 
 #MM workbench-libs-mathtrans-includes : \
 #MM    kernel-exec-includes \
-#MM    kernel-mathffp-includes \
+#MM    workbench-libs-mathffp-includes \
 #MM    includes-copy
 #MM- workbench-libs-mathtrans : linklibs
 

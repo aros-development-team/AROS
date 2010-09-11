@@ -1,8 +1,5 @@
 include $(TOP)/config/make.cfg
 
-#MM- workbench-hosted:  kernel-mathieeesingbas \
-#MM			kernel-mathffp	       \
-#MM			kernel-workbench       \
-#MM			$(SDL_HIDD_TARGET)     \
+#MM- workbench-hosted:  $(SDL_HIDD_TARGET)     \
 #MM			contrib-cdvdfs-packet  \
 #MM			contrib-sfs-packet

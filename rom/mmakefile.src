@@ -14,8 +14,6 @@
 #MM     kernel-utility-kobj \
 #MM     kernel-intuition-kobj \
 #MM     kernel-keymap-kobj \
-#MM     kernel-mathffp-kobj \
-#MM     kernel-mathieeesingbas-kobj \
 #MM     kernel-devs \
 #MM     kernel-expansion-kobj \
 #MM     kernel-hidd-kobj \
@@ -23,7 +21,6 @@
 #MM     kernel-battclock-kobj \
 #MM     kernel-oop-kobj \
 #MM     kernel-layers-kobj \
-#MM     kernel-workbench-kobj \
 #MM     kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
 #MM     kernel-processor-kobj
 
@@ -38,11 +35,8 @@
 #MM     kernel-utility-includes \
 #MM     kernel-intuition-includes \
 #MM     kernel-keymap-includes \
-#MM     kernel-mathffp-includes \
-#MM     kernel-mathieeesingbas-includes \
 #MM     kernel-expansion-includes \
 #MM     kernel-layers-includes \
-#MM     kernel-workbench-includes \
 #MM     kernel-timer-includes \
 #MM     kernel-oop-includes \
 #MM     kernel-battclock-includes \

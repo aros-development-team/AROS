@@ -26,13 +26,10 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 #MM	kernel-graphics-solaris \
 #MM	kernel-intuition-solaris \
 #MM	kernel-keymap-linklib \
-#MM	kernel-mathffp-linklib \
-#MM	kernel-mathieeesingbas-linklib \
 #MM	kernel-timer-linklib \
 #MM	kernel-utility-solaris \
 #MM	kernel-oop-linklib \
 #MM	kernel-layers-linklib \
-#MM	kernel-workbench-linklib	\
 #MM	workbench-libs-cgfx-linklib
 
 # Setup the CLIB metatargets...
