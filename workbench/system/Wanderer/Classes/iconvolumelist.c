@@ -377,6 +377,11 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                                         nd_namext = "KICK";
                                         nd_namext_len = 4;
                                         break;
+                                default:
+                                        nd_namext = "BUSY";
+                                        nd_namext_len = 4;
+                                        D(bug("[IconVolumeList] %s: '%s' : disk type 0x%lx\n", __PRETTY_FUNCTION__, nd_nambuf, nd_paramblock->id_DiskType));
+                                        break;
                                 }
                                 if (nd_namext_len > 0)
                                 {
@@ -388,10 +393,12 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                                         AddTail((struct List*)&newdvl->dvl_List, (struct Node*)&newdvn->dvn_Node);
                                     }
                                 }
+#if 0
                                 else
                                 {
                                     D(bug("[IconVolumeList] %s: '%s' : Unknown Condition?\n", __PRETTY_FUNCTION__, nd_nambuf));
                                 }
+#endif
                             }
                         }
 		    }
@@ -510,6 +517,11 @@ D(bug("[IconVolumeList] %s: Processing '%s'\n", __PRETTY_FUNCTION__, devname));
                     {
                         BOOL entrychanged = FALSE;
                         volDOB = this_Icon->ie_DiskObj;
+
+                        if (dvn->dvn_FLags & ICONENTRY_VOL_OFFLINE)
+                            this_Icon->ie_IconListEntry.flags |= ICONENTRY_VOL_OFFLINE;
+                        if (dvn->dvn_FLags & ICONENTRY_VOL_DISABLED)
+                            this_Icon->ie_IconListEntry.flags |= ICONENTRY_VOL_DISABLED;
 
                         Remove((struct Node*)&this_Icon->ie_IconNode);
 
