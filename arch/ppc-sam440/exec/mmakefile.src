@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 CFILES          := \
         exec_init preparecontext rawputchar initcode alert \
         findresident newaddtask permit prepareexecbase reschedule setexcept settaskpri \
-        signal wait cachepostdma cachepredma supervisor superstate userstate \
+        signal cachepostdma cachepredma supervisor superstate userstate \
         coldreboot
 
 #MM kernel-exec : kernel-exec-sam440-ppc
