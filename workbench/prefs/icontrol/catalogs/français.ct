@@ -1,4 +1,4 @@
-## version $VER: icontrolprefs.catalog 2.0 (08.09.2010)
+## version $VER: icontrolprefs.catalog 2.0 (8.9.2010)
 ## language français
 ## codeset 0
 ;
@@ -20,11 +20,11 @@ Type
 ; Type
 ;
 MSG_MENUS_TYPE_PULLDOWN
-Collés à la barre de menus
+Attachés à la barre de menus
 ; Pull-Down
 ;
 MSG_MENUS_TYPE_POPUP
-Suivre le pointeur de souris
+Sous le pointeur de souris
 ; Pop-Up
 ;
 MSG_MENUS_LOOK
@@ -44,7 +44,7 @@ Fenêtres
 ; Windows
 ;
 MSG_OFFSCREEN_MOVE
-Sortir de l'écran :
+Libres de sortir de l'écran :
 ; Offscreen move:
 ;
 MSG_SCREENS
