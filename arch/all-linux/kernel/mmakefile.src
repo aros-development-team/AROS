@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 #MM
 kernel-linux-sigcore : $(GENINCDIR)/sigcore.h
 
-$(GENINCDIR)/sigcore.h : ../$(AROS_TARGET_CPU)/sigcore.h.src mksigcore.sh
+$(GENINCDIR)/sigcore.h : sigcore.h.$(AROS_TARGET_CPU).src mksigcore.sh
 	%mkdirs_q $(GENINCDIR)
 	CC="$(KERNEL_CC)" CPU=$(AROS_TARGET_CPU) $(SHELL) $(SRCDIR)/$(CURDIR)/mksigcore.sh $(SRCDIR)/$(CURDIR) $(GENINCDIR)/sigcore.h
 

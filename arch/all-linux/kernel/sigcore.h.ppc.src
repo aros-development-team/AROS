@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: Macros to handle unix signals
     Lang: english
@@ -17,17 +17,6 @@
 #include <ucontext.h>
 
 #include <signal.h>
-
-/* Put a value of type SP_TYPE on the stack or get it off the stack. */
-
-#define _PUSH(sp,val)              \
-    do                             \
-    {                              \
-       SP_TYPE **stackp = (sp);    \
-       --*stackp;                  \
-       **stackp = (SP_TYPE) (val); \
-    } while (0)
-#define _POP(sp)	(*sp++)
 
 #ifndef _SIGNAL_H
 #define _SIGNAL_H
@@ -70,12 +59,6 @@ typedef @sighandler@ SignalHandler;
 	}
 #endif
 
-/* Type of the values which can be stored on the stack. A variable
-   which is to be used as a stack pointer must be declared as
-   "SP_TYPE *". */
-
-#define SP_TYPE	long
-
 /* How many general purpose registers are to be saved on the stack
    when a task switch happens. */
 
@@ -90,9 +73,6 @@ struct AROSCPUContext
     double                    fpregs[32];
     struct AROSCPUContext * sc;
 };
-
-#define SIZEOF_ALL_REGISTERS	(sizeof (struct AROSCPUContext))
-#define GetSP(task)		((SP_TYPE **)&task->tc_SPReg)
 
 /* Macros to access the stack pointer and program counter,
    PC is the current address in the program code. */
@@ -184,7 +164,7 @@ struct AROSCPUContext
    Sys V PPC ABI says r2 is reserved
    so we copy the current one and it
    will never be changed again */
-#define PREPARE_INITIAL_CONTEXT(cc, pc)           \
+#define PREPARE_INITIAL_CONTEXT(cc)               \
 {                                                 \
     __asm__ __volatile__ (                        \
     "stw 2,%0 \n\t"                               \

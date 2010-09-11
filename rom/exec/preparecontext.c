@@ -17,6 +17,10 @@
 #include "exec_util.h"
 #include "kernel_cpu.h"
 
+#define  GetSP(task)   ((IPTR *)task->tc_SPReg)
+#define _PUSH(sp, val) (*--sp = (IPTR)val)
+#define _POP(sp)       (*sp++)
+
 /*****i***********************************************************************
 
     NAME */
@@ -150,7 +154,6 @@
     
     /* Then set up the frame to be used by Dispatch() */
     PREPARE_INITIAL_FRAME(ctx, GetSP(task), entryPoint);
-    PREPARE_INITIAL_CONTEXT(ctx, entryPoint);
 
     /* We return the new stack pointer back to the caller. */
     return TRUE;

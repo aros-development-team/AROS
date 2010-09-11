@@ -267,10 +267,10 @@ static void sighandler(int sig, sigcontext_t * sc)
             /* Exec_Exception will Enable() */
             Disable();
             /* Make room for the current cpu context. */
-            SysBase->ThisTask->tc_SPReg -= SIZEOF_ALL_REGISTERS;
+            SysBase->ThisTask->tc_SPReg -= sizeof(struct AROSCPUContext);
             ctx->sc = SysBase->ThisTask->tc_SPReg;
             /* Copy current cpu context. */
-            memcpy(SysBase->ThisTask->tc_SPReg, ctx, SIZEOF_ALL_REGISTERS);
+            memcpy(SysBase->ThisTask->tc_SPReg, ctx, sizeof(struct AROSCPUContext));
             /* Manipulate the current cpu context so Exec_Exception gets
                excecuted after we leave the kernel resp. the signal handler. */
             SP(sc) = (IPTR) SysBase->ThisTask->tc_SPReg;
@@ -302,8 +302,8 @@ static void sighandler(int sig, sigcontext_t * sc)
 	struct AROSCPUContext *ctx = GetIntETask(SysBase->ThisTask)->iet_Context;
 
         SysBase->ThisTask->tc_SPReg = ctx->sc;
-        memcpy(ctx, SysBase->ThisTask->tc_SPReg, SIZEOF_ALL_REGISTERS);
-        SysBase->ThisTask->tc_SPReg += SIZEOF_ALL_REGISTERS;
+        memcpy(ctx, SysBase->ThisTask->tc_SPReg, sizeof(struct AROSCPUContext));
+        SysBase->ThisTask->tc_SPReg += sizeof(struct AROSCPUContext);
 
         if (SysBase->ThisTask->tc_SPReg > SysBase->ThisTask->tc_SPUpper)
         {
