@@ -235,7 +235,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 		AROS_UFC1(void, task->tc_Switch,
 			  AROS_UFCA(struct ExecBase *, SysBase, A6));
 
-	    task->tc_TDNestCnt = SysBase->TDNestCnt;
+//	    task->tc_TDNestCnt = SysBase->TDNestCnt;
 	    task->tc_IDNestCnt = SysBase->IDNestCnt;
 
 	    ctx = GetIntETask(task)->iet_Context;
