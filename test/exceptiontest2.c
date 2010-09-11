@@ -17,7 +17,7 @@ int           sigbit1;
 int           sigbit2;
 struct Task * parent;
 
-#define STACKSIZE 4096
+#define STACKSIZE 16384
 
 static ULONG handler(
     ULONG             signals,
