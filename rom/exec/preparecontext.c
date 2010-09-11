@@ -17,9 +17,7 @@
 #include "exec_util.h"
 #include "kernel_cpu.h"
 
-#define  GetSP(task)   (*(IPTR **)&task->tc_SPReg)
-#define _PUSH(sp, val) (*--sp = (IPTR)val)
-#define _POP(sp)       (*sp++)
+#define _PUSH(sp, val) *--sp = (IPTR)val
 
 /*****i***********************************************************************
 
@@ -71,6 +69,7 @@
 
     IPTR args[8] = {0};
     WORD numargs = 0;
+    IPTR *sp = task->tc_SPReg;
     struct AROSCPUContext *ctx;
 
     if (!(task->tc_Flags & TF_ETASK) )
@@ -135,7 +134,7 @@
 	
 	while(numargs--)
 	{
-	    _PUSH(GetSP(task), args[numargs]);
+	    _PUSH(sp, args[numargs]);
 	}
 	
 	#endif
@@ -148,14 +147,15 @@
     #else
     
     /* First we push the return address */
-    _PUSH(GetSP(task), fallBack);
+    _PUSH(sp, fallBack);
     
     #endif
     
     /* Then set up the frame to be used by Dispatch() */
-    PREPARE_INITIAL_FRAME(ctx, GetSP(task), entryPoint);
+    PREPARE_INITIAL_FRAME(ctx, sp, entryPoint);
 
     /* We return the new stack pointer back to the caller. */
+    task->tc_SPReg = sp;
     return TRUE;
 
     AROS_LIBFUNC_EXIT
