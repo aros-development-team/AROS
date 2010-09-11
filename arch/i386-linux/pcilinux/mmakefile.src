@@ -1,9 +1,0 @@
-#   $Id$
-include $(TOP)/config/make.cfg
-
-FILES	:= pcilinux_init driverclass
-
-%build_module mmake=kernel-pci-linux-i386 \
-    modname=pcilinux modtype=hidd \
-    files=$(FILES) \
-    uselibs="oop rom amiga"

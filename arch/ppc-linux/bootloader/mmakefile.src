@@ -1,5 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-#MM- kernel-bootloader-linux-ppc : kernel-bootloader-unix
-#MM- kernel-bootloader-linux-ppc-includes : kernel-bootloader-unix-includes
