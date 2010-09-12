@@ -33,6 +33,7 @@ struct ListviewEntry
     struct Node node;
     char        name[30];
     char        realname[30];
+    char        displayflag[100];
 };
 
 struct CountryEntry
