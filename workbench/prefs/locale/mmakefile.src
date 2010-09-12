@@ -4,11 +4,13 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main locale page_language page_country page_timezone prefs registertab
+FILES 	    := main args misc locale \
+               page_language page_country page_timezone prefs registertab
 
 EXEDIR      := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-locale
+
 #MM workbench-prefs-locale : includes linklibs \
 #MM     workbench-prefs-locale-catalogs \
 #MM     workbench-prefs-locale-images
@@ -26,6 +28,6 @@ C_IMAGES    := $(foreach f, $(IMAGES), $(f)_image.c)
 workbench-prefs-locale-images : $(C_IMAGES)
 
 ./%_image.c : pics/%.ilbm
-	@$(ILBMTOC) $< >$@    	
+	@$(ILBMTOC) $< >$@
 
 %common
