@@ -5,25 +5,13 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#include <exec/types.h>
-#include <utility/tagitem.h>
-#include <libraries/asl.h>
-#include <libraries/mui.h>
-#include <prefs/serial.h>
-#include <prefs/prefhdr.h>
-/* #define DEBUG 1 */
+// #define DEBUG 1
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
-#include <proto/exec.h>
 #include <proto/intuition.h>
-#include <proto/utility.h>
 #include <proto/muimaster.h>
-#include <proto/dos.h>
-#include <proto/iffparse.h>
 
-#include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <aros/debug.h>
