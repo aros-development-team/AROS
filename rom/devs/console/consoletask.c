@@ -229,6 +229,8 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 					break;
 				      case 'v':
 					Console_Paste(cdihmsg->unit);
+					/* We have likely put something into the input buffer */
+					if (ICU(cdihmsg->unit)->numStoredChars) answer_requests(cdihmsg->unit,ConsoleDevice);
 					actual = 0;
 					break;
 				      }
