@@ -9,18 +9,7 @@
 
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-#include <proto/utility.h>
-#include <proto/dos.h>
 
-#include <stdlib.h> /* for exit() */
-#include <stdio.h>
-#include <string.h>
-
-#include <intuition/intuition.h>
-#include <intuition/gadgetclass.h>
-#include <libraries/gadtools.h>
-
-#include <libraries/mui.h>
 #include <zune/systemprefswindow.h>
 
 #include <prefs/pointer.h>
