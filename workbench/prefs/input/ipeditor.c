@@ -109,6 +109,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             MUIA_Listview_List, (IPTR)(keyTypes = (Object *)ListObject,
                                 InputListFrame,
                                 MUIA_List_AutoVisible, TRUE,
+                                MUIA_List_MinLineHeight, 19,
                                 MUIA_List_Format, (IPTR)"P=\033c,",
                                 MUIA_List_DisplayHook, (IPTR)&display_hook,
                             End),
