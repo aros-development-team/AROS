@@ -5,11 +5,6 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#include <exec/types.h>
-#include <utility/tagitem.h>
-#include <libraries/asl.h>
-#include <libraries/mui.h>
-#include <prefs/pointer.h>
 #include <datatypes/pictureclass.h>
 
 // #define DEBUG 1
@@ -17,17 +12,12 @@
 #include <zune/prefseditor.h>
 
 #include <proto/alib.h>
-#include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
 #include <proto/datatypes.h>
 #include <proto/cybergraphics.h>
-
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include <aros/debug.h>
 
