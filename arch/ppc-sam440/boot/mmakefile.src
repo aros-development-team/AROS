@@ -45,6 +45,7 @@ include $(TOP)/config/make.cfg
 #MM	hidd-usb \
 #MM	kernel-fs-nil \
 #MM	workbench-libs-partition \
+#MM	workbench-libs-workbench \
 #MM	kernel-sam440-ppc-irq \
 #MM	contrib-cdvdfs \
 #MM	contrib-sfs \
