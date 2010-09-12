@@ -128,6 +128,13 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
         error = MatchNext(&ap);
     }
     MatchEnd(&ap);
+
+    ForeachNode(list, entry)
+    {
+        sprintf(entry->displayflag, "\033I[5:Locale:Flags/Countries/%s]", entry->realname);
+        D(bug("Locale: country entry flag: %s\n", entry->realname));
+    }
+
 }
 
 /*********************************************************************************************/
