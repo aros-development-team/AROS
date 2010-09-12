@@ -289,6 +289,8 @@ struct AROSCPUContext
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
 #define PREPARE_INITIAL_CONTEXT(cc) \
+    do \
+    { \
     UBYTE * ptr = cc->fpbuffer; \
     UBYTE current_xmm[512+16], *curr = current_xmm; \
     curr = (UBYTE*)(((IPTR)curr + 15) & ~15); \
@@ -314,8 +316,8 @@ struct AROSCPUContext
     { \
         /* FPU only */ \
         asm volatile("fnsave (%0); fninit; fwait; fnsave (%1); frstor (%0);"::"r"(curr), "r"(cc->fpstate)); \
-    }
-
+    } \
+    }while (0)
 #else
 
 #define PREPARE_INITIAL_CONTEXT(cc, startpc)
