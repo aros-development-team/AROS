@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -9,21 +9,8 @@
 
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-#include <proto/utility.h>
-#include <proto/dos.h>
 
-#include <stdlib.h> /* for exit() */
-#include <stdio.h>
-#include <string.h>
-
-#include <intuition/intuition.h>
-#include <intuition/gadgetclass.h>
-#include <libraries/gadtools.h>
-
-#include <libraries/mui.h>
 #include <zune/systemprefswindow.h>
-
-#include <prefs/icontrol.h>
 
 #include "locale.h"
 #include "icontroleditor.h"
