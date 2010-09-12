@@ -126,7 +126,7 @@
     {
     	#ifdef PREPARE_INITIAL_ARGS
 	
-	PREPARE_INITIAL_ARGS(ctx, args, numargs);
+	PREPARE_INITIAL_ARGS(sp, ctx, args, numargs);
 	
 	#else
 	

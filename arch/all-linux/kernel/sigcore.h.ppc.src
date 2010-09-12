@@ -146,7 +146,7 @@ struct AROSCPUContext
         cc->regs.link = (unsigned long) addr;\
     } while (0)
 
-#define PREPARE_INITIAL_ARGS(cc, args, numargs)\
+#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)\
 {\
     long i;\
     for (i = 0; i < numargs; i++)\

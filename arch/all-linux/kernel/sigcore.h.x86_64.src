@@ -325,10 +325,10 @@ struct AROSCPUContext
     Store first six arguments in registers, the rest on stack
 */
 
-#define PREPARE_INITIAL_ARGS(cc, args, numargs)   \
+#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)   \
     int argcounter = numargs;                     \
     while (argcounter > 6)                        \
-        _PUSH(GetSP(task), args[--argcounter]);   \
+        _PUSH(sp, args[--argcounter]);   \
     switch (argcounter)                           \
     {                                             \
         case 6:                                   \
