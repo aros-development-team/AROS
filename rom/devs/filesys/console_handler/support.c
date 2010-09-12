@@ -63,6 +63,7 @@ static UBYTE f7_seq[]			= {'6', '~'};
 static UBYTE f8_seq[]			= {'7', '~'};
 static UBYTE f9_seq[]			= {'8', '~'};
 static UBYTE f10_seq[]			= {'9', '~'};
+static UBYTE paste_seq[]                = {'0', ' ', 'v'};
 static UBYTE f11_seq[]			= {'2', '0', '~'};
 static UBYTE f12_seq[]			= {'2', '1', '~'};
 static UBYTE shift_f1_seq[]		= {'1', '0', '~'};
@@ -147,6 +148,7 @@ csimatchtable[] =
     {shift_pagedown_seq , 3, INP_SHIFT_PAGEDOWN		},
     {shift_home_seq	, 3, INP_SHIFT_HOME		},
     {shift_end_seq	, 3, INP_SHIFT_END		},
+    {paste_seq          , 3, INP_PASTE                  },
     {0			, 0, 0				}
 };
 
