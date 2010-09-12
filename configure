@@ -3985,6 +3985,9 @@ echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 	    *powerpc*)
 	    	aros_host_cpu="ppc"
 		;;
+            *arm*)
+                aros_host_cpu="arm"
+                ;;
 	    *)
 		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
 echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
@@ -8401,6 +8404,15 @@ case "$target_os" in
 		aros_default_wbdepth=8
 		gcc_target_cpu="ppc"
 		;;
+            *arm*)
+                aros_target_cpu="arm"
+                aros_object_format="armelf_linux_eabi"
+                aros_flavour="emulation"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
+                gcc_target_cpu="arm"
+                aros_config_cflags="$aros_config_cflags -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp -fno-asynchronous-unwind-tables -fno-exceptions"
+                aros_config_aflags="$aros_config_aflags -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp -fno-asynchronous-unwind-tables -fno-exceptions"
+                ;;
 	    *)
 		{ { echo "$as_me:$LINENO: error: \"Unknown CPU for Linux -- $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown CPU for Linux -- $target_cpu\"" >&2;}
