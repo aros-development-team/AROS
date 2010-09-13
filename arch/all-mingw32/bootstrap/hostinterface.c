@@ -2,7 +2,6 @@
 
 #include "hostinterface.h"
 
-#include "alert.h"
 #include "debug.h"
 #include "hostlib.h"
 #include "shutdown.h"
@@ -18,8 +17,7 @@ static struct HostInterface _HostIFace = {
     Host_HostLib_FreeErrorStr,
     Host_HostLib_GetInterface,
     Host_VKPrintF,
-    Host_Shutdown,
-    Host_Alert
+    Host_Shutdown
 };
 
 void *HostIFace = &_HostIFace;

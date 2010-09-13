@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CachePreDMA() - Do what is necessary for DMA.
@@ -67,12 +67,13 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning "TODO: Write exec/CachePreDMA()"
-#if defined(DEBUG) && (DEBUG > 0)
-    aros_print_not_implemented("CachePreDMA");
-#endif
+    /*
+     * Due to the strong cache coherency of x86 systems this function
+     * is actually not needed. CPU snoops the address lines and 
+     * invalidate all cache which is out-of-date. It is valid for both
+     * D and I caches). Even a BM-DMA transfer are perfectly safe here.
+     */
     return address;
 
     AROS_LIBFUNC_EXIT
 } /* CachePreDMA() */
-
