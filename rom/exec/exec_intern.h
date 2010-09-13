@@ -27,17 +27,20 @@
 #   include <proto/exec.h>
 #endif
 
+#include <exec_platform.h>
+
 /* A private portion of ExecBase */
 struct IntExecBase
 {
     struct ExecBase pub;
-    struct List ResetHandlers;	/* Reset handlers list	     */
-    ULONG  IntFlags;		/* Internal flags, see below */
-    APTR   KernelBase;		/* kernel.resource base	     */
+    struct List ResetHandlers;			/* Reset handlers list       */
+    ULONG  IntFlags;				/* Internal flags, see below */
+    APTR   KernelBase;				/* kernel.resource base      */
+    struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   */
 };
 
 #define PrivExecBase(base) ((struct IntExecBase *)base)
-
+#define PD(base)   PrivExecBase(base)->PlatformData
 #define KernelBase PrivExecBase(SysBase)->KernelBase
 
 /* IntFlags */
@@ -47,7 +50,7 @@ struct IntExecBase
 extern void __AROS_InitExecBase (void);
 #endif
 
-
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args);
+BOOL Exec_PreparePlatform(struct ExecBase *SysBase);
 
 #endif /* __EXEC_INTERN_H__ */

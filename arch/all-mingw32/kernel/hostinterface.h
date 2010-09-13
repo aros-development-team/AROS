@@ -7,5 +7,4 @@ struct HostInterface
     unsigned long (*HostLib_GetInterface)(void *, char **, void **);
     int (*VKPrintF)(const char *, va_list);
     void (*_Shutdown)(unsigned long action);
-    void (*_Alert)(char *text);
 };

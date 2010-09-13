@@ -14,8 +14,6 @@
 #include <proto/kernel.h>
 #include <string.h>
 
-#include "../kernel/hostinterface.h"
-
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
@@ -119,13 +117,13 @@ extern struct HostInterface *HostIFace;
     /* Display an alert using Windows message box */
     Disable();
     D(bug("[Alert] Message:\n%s\n", buffer));
-    HostIFace->_Alert(buffer);
+    PD(SysBase).MessageBox(NULL, buffer, "AROS guru meditation", 0x10010); /* MB_ICONERROR|MB_SETFOREGROUND */
 
     if (alertNum & AT_DeadEnd)
     {
 	/* Um, we have to do something here in order to prevent the
 	   computer from continuing... */
-	HostIFace->_Shutdown(SD_ACTION_COLDREBOOT);
+	ColdReboot();
     }
     Enable();
 

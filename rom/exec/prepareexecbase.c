@@ -85,6 +85,12 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
     /* Clear the library base */
     memset(SysBase, 0, sizeof(struct IntExecBase));
 
+#ifdef HAVE_PREPAREPLATFORM
+    /* Setup platform-specific data. This is needed for CacheClearU() and CacleClearE() on MinGW32 */
+    if (!Exec_PreparePlatform(SysBase))
+	return NULL;
+#endif
+
     /* Setup function vectors */
     i  = 1;
     fp = LIBFUNCTABLE;
@@ -99,7 +105,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
         fp++; i++;
     }
 
-    
     AROS_LC0NR(void, CacheClearU,
 	struct ExecBase *, SysBase, 106, Exec);
 
