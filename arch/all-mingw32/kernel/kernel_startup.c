@@ -19,7 +19,7 @@
 #include "winapi.h"
 
 /* External function from exec.library */
-extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *);
+extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *, void *);
 
 #undef kprintf
 #undef vkprintf
@@ -147,7 +147,7 @@ int __startup startup(struct TagItem *msg)
      * only from here. Probably the code should be reorganized and this routine needs
      * to be moved to kernel.resource
      */
-    SysBase = PrepareExecBase(mh, args);
+    SysBase = PrepareExecBase(mh, args, HostIFace);
     D(mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
     /*

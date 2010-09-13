@@ -15,12 +15,18 @@ void SaveArgs(char **argv)
     cmdline = GetCommandLine();
 }
 
-static void Restart(char *var)
+void Host_Shutdown(unsigned char warm)
 {
+    char var[SHARED_RAM_LEN];
     STARTUPINFO runinfo;
     PROCESS_INFORMATION ProcInfo;
 
-    D(printf("[Restart] Dir: %s, Name: %s, RAM: %s, Command line: %s\n", bootstrapdir, bootstrapname, var, cmdline));
+    if (warm)
+	sprintf(var, "%s=%p:%p", SHARED_RAM_VAR, RAM_Handle, RAM_Address);
+    else
+	strcpy(var, SHARED_RAM_VAR "=");
+
+    D(printf("[Shutdown] Dir: %s, Name: %s, RAM: %s, Command line: %s\n", bootstrapdir, bootstrapname, var, cmdline));
     putenv(var);
     SetCurrentDirectory(bootstrapdir);
     FillMemory(&runinfo, sizeof(runinfo), 0);
@@ -36,25 +42,4 @@ static void Restart(char *var)
         exit(0);
     }
     D(printf("[Shutdown] Unable to re-run AROS\n"));
-}
-
-void Host_Shutdown(unsigned long action)
-{
-    char buf[SHARED_RAM_LEN];
-
-    switch (action) {
-    case SD_ACTION_POWEROFF:
-        D(printf("[Shutdown] POWER OFF request\n"));
-        exit(0);
-    	break;
-
-    case SD_ACTION_WARMREBOOT:
-	sprintf(buf, "%s=%lx:%lx", SHARED_RAM_VAR, RAM_Handle, RAM_Address);
-	Restart(buf);
-	break;
-
-    case SD_ACTION_COLDREBOOT:
-	Restart(SHARED_RAM_VAR "=");
-	break;
-    }
 }

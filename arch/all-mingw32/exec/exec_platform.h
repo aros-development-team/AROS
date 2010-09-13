@@ -8,7 +8,10 @@
 
 struct Exec_PlatformData
 {
-    APTR  MyProcess;
+    void  __stdcall (*ExitProcess)(ULONG uExitCode);
     ULONG __stdcall (*FlushInstructionCache)(APTR hProcess, void *lpBaseAddress, IPTR dwSize);
+    APTR  __stdcall (*GetCurrentProcess)(void);
     LONG  __stdcall (*MessageBox)(APTR hWnd, STRPTR lpText, STRPTR lpCaption, ULONG uType);
+    void            (*Reboot)(unsigned char warm);
+    APTR  MyProcess;
 };

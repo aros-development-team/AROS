@@ -67,7 +67,7 @@ static APTR allocmem(struct MemHeader *mh, ULONG size)
 */
 extern void *stderr;
 
-struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
+struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data)
 {
     ULONG   negsize = 0, i;
     VOID  **fp      = LIBFUNCTABLE;
@@ -87,7 +87,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args)
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data. This is needed for CacheClearU() and CacleClearE() on MinGW32 */
-    if (!Exec_PreparePlatform(SysBase))
+    if (!Exec_PreparePlatform(SysBase, data))
 	return NULL;
 #endif
 

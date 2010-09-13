@@ -6,5 +6,5 @@ struct HostInterface
     void (*HostLib_FreeErrorStr)(char *);
     unsigned long (*HostLib_GetInterface)(void *, char **, void **);
     int (*VKPrintF)(const char *, va_list);
-    void (*_Shutdown)(unsigned long action);
+    void (*Reboot)(unsigned char warm);
 };

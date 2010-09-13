@@ -153,7 +153,7 @@ UBYTE *memory, *space;
 int memSize = 32;
 
 extern void InitCore(void);
-extern struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args);
+extern struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data);
 extern ULONG **Exec_RomTagScanner(struct ExecBase*, UWORD**);
 
 extern APTR __libc_malloc(size_t);
@@ -522,7 +522,7 @@ int main(int argc, char **argv)
         call functions, it will also set up the memory list.
     */
     D(printf("[init] Preparing ExecBase...\n"));
-    SysBase = PrepareExecBase(mh, Kernel_Args);
+    SysBase = PrepareExecBase(mh, Kernel_Args, NULL);
     D(printf("[init] SysBase 0x%p\n", SysBase));
     SysBase->PowerSupplyFrequency = ticrate / SysBase->VBlankFrequency;
     

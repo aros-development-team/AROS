@@ -50,7 +50,7 @@ struct IntExecBase
 extern void __AROS_InitExecBase (void);
 #endif
 
-struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args);
-BOOL Exec_PreparePlatform(struct ExecBase *SysBase);
+struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data);
+BOOL Exec_PreparePlatform(struct ExecBase *SysBase, void *data);
 
 #endif /* __EXEC_INTERN_H__ */
