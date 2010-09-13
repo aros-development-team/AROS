@@ -233,7 +233,8 @@ void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
     {
     	struct monitor_driverdata *sdd;
 
-	if (rp->BitMap)
+    	/* rp->BitMap may not be valid anymore! */
+	if (0) // (rp->BitMap)
 	    sdd = GET_BM_DRIVERDATA(rp->BitMap);
 	else
 	    sdd = (struct monitor_driverdata *)CDD(GfxBase);
