@@ -328,6 +328,299 @@ VOID HandlePendingReads(struct conbase *conbase, struct filehandle *fh)
 
 /****************************************************************************************/
 
+static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
+
+static void do_paste(struct conbase * conbase, struct filehandle * fh)
+{
+  struct MsgPort replyport, *port;
+  if (!(port = FindPort(CONCLIP_PORTNAME))) {
+    D(bug("ConClip not running, but we got a ConClip paste request"));
+    return;
+  }
+
+  bug("PASTE REQUEST!\n");
+}
+
+
+/****************************************************************************************/
+
+static void process_input(struct conbase * conbase,struct filehandle *fh)
+{
+  UBYTE c;
+  WORD inp;
+  while((inp = scan_input(conbase, fh, &c)) != INP_DONE)
+    {
+      D(bug("Input Code: %d\n",inp));
+      
+      switch(inp)
+	{
+	case INP_CURSORLEFT:
+	  if (fh->inputpos > fh->inputstart)
+	    {
+	      fh->inputpos--;
+	      do_movecursor(conbase, fh, CUR_LEFT, 1);
+	    }
+	  break;
+	  
+	case INP_SHIFT_CURSORLEFT: /* move to beginning of line */
+	case INP_HOME:
+	  if (fh->inputpos > fh->inputstart)
+	    {
+	      do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+	      fh->inputpos = fh->inputstart;
+	    }
+	  break;
+	  
+	case INP_CURSORRIGHT:
+	  if (fh->inputpos < fh->inputsize)
+	    {
+	      fh->inputpos++;
+	      do_movecursor(conbase, fh, CUR_RIGHT, 1);
+	    }
+	  break;
+	  
+	case INP_SHIFT_CURSORRIGHT: /* move to end of line */
+	case INP_END:
+	  if (fh->inputpos != fh->inputsize)
+	    {
+	      do_movecursor(conbase, fh, CUR_RIGHT, fh->inputsize - fh->inputpos);
+	      fh->inputpos = fh->inputsize;
+	    }
+	  break;
+	  
+	case INP_CURSORUP: /* walk through cmd history */
+	case INP_CURSORDOWN:
+	case INP_SHIFT_CURSORUP:
+	case INP_SHIFT_CURSORDOWN:
+	  /* no history if we're hidden */
+	  if (! (fh->flags & FHFLG_NOECHO))
+	    history_walk(conbase, fh, inp);
+	  break;
+	  
+	case INP_BACKSPACE:
+	  if (fh->inputpos > fh->inputstart)
+	    {
+	      do_movecursor(conbase, fh, CUR_LEFT, 1);
+	      
+	      if (fh->inputpos == fh->inputsize)
+		{
+		  do_deletechar(conbase, fh);
+		  
+		  fh->inputsize--;
+		  fh->inputpos--;
+		} else {
+		WORD chars_right = fh->inputsize - fh->inputpos;
+		
+		fh->inputsize--;
+		fh->inputpos--;
+		
+		do_cursorvisible(conbase, fh, FALSE);
+		do_write(conbase, fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
+		do_deletechar(conbase, fh);
+		do_movecursor(conbase, fh, CUR_LEFT, chars_right);
+		do_cursorvisible(conbase, fh, TRUE);
+		
+		memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
+		
+	      }
+	    }
+	  break;
+	  
+	case INP_SHIFT_BACKSPACE:
+	  if (fh->inputpos > fh->inputstart)
+	    {
+	      do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+	      if (fh->inputpos == fh->inputsize)
+		{
+		  do_eraseinline(conbase, fh);
+		  
+		  fh->inputpos = fh->inputsize = fh->inputstart;
+		} else {
+		WORD chars_right = fh->inputsize - fh->inputpos;
+		
+		do_cursorvisible(conbase, fh, FALSE);
+		do_write(conbase, fh, &fh->inputbuffer[fh->inputpos], chars_right);
+		do_eraseinline(conbase, fh);
+		do_movecursor(conbase, fh, CUR_LEFT, chars_right);
+		do_cursorvisible(conbase, fh, TRUE);
+		
+		memmove(&fh->inputbuffer[fh->inputstart], &fh->inputbuffer[fh->inputpos], chars_right);
+		
+		fh->inputsize -= (fh->inputpos - fh->inputstart);
+		fh->inputpos = fh->inputstart;
+	      }
+	    }
+	  break;
+	  
+	case INP_DELETE:
+	  if (fh->inputpos < fh->inputsize)
+	    {
+	      fh->inputsize--;
+	      
+	      if (fh->inputpos == fh->inputsize)
+		{
+		  do_deletechar(conbase, fh);
+		} else {
+		WORD chars_right = fh->inputsize - fh->inputpos;
+		
+		do_cursorvisible(conbase, fh, FALSE);
+		do_write(conbase, fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
+		do_deletechar(conbase, fh);
+		do_movecursor(conbase, fh, CUR_LEFT, chars_right);
+		do_cursorvisible(conbase, fh, TRUE);
+		
+		memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
+	      }
+	    }
+	  break;
+	  
+	case INP_SHIFT_DELETE:
+	  if (fh->inputpos < fh->inputsize)
+	    {
+	      fh->inputsize = fh->inputpos;
+	      do_eraseinline(conbase, fh);
+	    }
+	  break;
+	  
+	case INP_CONTROL_X:
+	  if ((fh->inputsize - fh->inputstart) > 0)
+	    {
+	      if (fh->inputpos > fh->inputstart)
+		{
+		  do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+		}
+	      do_eraseinline(conbase, fh);
+	      
+	      fh->inputpos = fh->inputsize = fh->inputstart;
+	    }
+	  break;
+	  
+	case INP_ECHO_STRING:
+	  do_write(conbase, fh, &c, 1);
+	  break;
+	  
+	case INP_STRING:
+	  if (fh->inputsize < INPUTBUFFER_SIZE)
+	    {
+	      do_write(conbase, fh, &c, 1);
+	      
+	      if (fh->inputpos == fh->inputsize)
+		{
+		  fh->inputbuffer[fh->inputpos++] = c;
+		  fh->inputsize++;
+		} else {
+		WORD chars_right = fh->inputsize - fh->inputpos;
+		
+		do_cursorvisible(conbase, fh, FALSE);
+		do_write(conbase, fh, &fh->inputbuffer[fh->inputpos], chars_right);
+		do_movecursor(conbase, fh, CUR_LEFT, chars_right);
+		do_cursorvisible(conbase, fh, TRUE);
+		
+		memmove(&fh->inputbuffer[fh->inputpos + 1], &fh->inputbuffer[fh->inputpos], chars_right);
+		fh->inputbuffer[fh->inputpos++] = c;
+		fh->inputsize++;
+	      }
+	    }
+	  break;
+	  
+	case INP_EOF:
+	  fh->flags |= FHFLG_EOF;
+	  if (fh->flags & FHFLG_AUTO && fh->window)
+	    {
+	      if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
+		CloseDevice((struct IORequest *)fh->conreadio);
+	      fh->flags &= ~FHFLG_CONSOLEDEVICEOPEN;
+	      CloseWindow(fh->window);
+	      fh->window = NULL;
+	    }
+	  
+	  /* fall through */
+	  
+	case INP_RETURN:
+	  if (fh->inputsize < INPUTBUFFER_SIZE)
+	    {
+	      if (inp != INP_EOF)
+		{
+		  c = '\n';
+		  do_write(conbase, fh, &c, 1);
+		  
+		  /* don't put hidden things in the history */
+		  if (! (fh->flags & FHFLG_NOECHO))
+		    add_to_history(conbase, fh);
+		  
+		  fh->inputbuffer[fh->inputsize++] = '\n';
+		}
+	      
+	      fh->inputstart = fh->inputsize;
+	      fh->inputpos = fh->inputstart;
+	      
+	      if (fh->inputsize) HandlePendingReads(conbase, fh);
+	      
+	      if ((fh->flags & FHFLG_EOF) && (fh->flags & FHFLG_READPENDING))
+		{
+		  struct IOFileSys *iofs = (struct IOFileSys *)RemHead((struct List *)&fh->pendingReads);
+		  
+		  if (iofs)
+		    {
+		      iofs->io_Union.io_READ.io_Length = 0;
+		      iofs->IOFS.io_Error     	     = 0;
+		      iofs->io_DosError 	    	     = 0;
+		      
+		      ReplyMsg(&iofs->IOFS.io_Message);
+		      
+		      fh->flags &= ~FHFLG_EOF;
+		    }
+		  
+		  if (IsListEmpty(&fh->pendingReads)) fh->flags &= ~FHFLG_READPENDING;
+		}
+	      
+	    } /* if (fh->inputsize < INPUTBUFFER_SIZE) */
+	  break;
+	  
+	case INP_LINEFEED:
+	  if (fh->inputsize < INPUTBUFFER_SIZE)
+	    {
+	      c = '\n';
+	      do_write(conbase, fh, &c, 1);
+	      
+	      /* don't put hidden things in the history */
+	      if (! (fh->flags & FHFLG_NOECHO))
+		add_to_history(conbase, fh);
+	      
+	      fh->inputbuffer[fh->inputsize++] = c;
+	      fh->inputstart = fh->inputsize;
+	      fh->inputpos = fh->inputsize;
+	    }
+	  break;
+	  
+	case INP_CTRL_C:
+	case INP_CTRL_D:
+	case INP_CTRL_E:
+	case INP_CTRL_F:
+	  if (fh->breaktask)
+	    {
+	      Signal(fh->breaktask, 1L << (12 + inp - INP_CTRL_C));
+	    }
+	  break;
+	  
+	case INP_TAB:
+	  /* don't complete hidden things */
+	  if (! (fh->flags & FHFLG_NOECHO))
+	    Completion(conbase, fh);
+	  break;
+	  
+	case INP_PASTE:
+	  do_paste(conbase,fh);
+	  break;
+	  
+	} /* switch(inp) */
+      
+    } /* while((inp = scan_input(conbase, fh, &c)) != INP_DONE) */
+}
+
+
+/****************************************************************************************/
+
 struct TimedReq
 {
     struct timerequest req;
@@ -697,291 +990,28 @@ AROS_UFH3(VOID, conTaskEntry,
 	    timereq->next = NULL;
 
     	    if (fh->flags & FHFLG_RAW)
-	    {
+	      {
 	    	/* raw mode */
-
+		
 		for(inp = 0; (inp < fh->conbuffersize) && (fh->inputpos <  INPUTBUFFER_SIZE); )
-		{
+		  {
 		    fh->inputbuffer[fh->inputpos++] = fh->consolebuffer[inp++];
-		}
-
+		  }
+		
 	    	fh->inputsize = fh->inputstart = fh->inputpos;
 		
 		HandlePendingReads(conbase, fh);
 		
-	    } /* if (fh->flags & FHFLG_RAW) */
+	      } /* if (fh->flags & FHFLG_RAW) */
 	    else
-	    {
+	      {
 	    	/* Cooked mode */
 		
                 /* disable output if we're not suppoed to be echoing */
                 if (fh->flags & FHFLG_NOECHO)
                     fh->flags |= FHFLG_NOWRITE;
 
-		while((inp = scan_input(conbase, fh, &c)) != INP_DONE)
-		{
-		    D(bug("Input Code: %d\n",inp));
-
-		    switch(inp)
-		    {
-			case INP_CURSORLEFT:
-			    if (fh->inputpos > fh->inputstart)
-			    {
-				fh->inputpos--;
-				do_movecursor(conbase, fh, CUR_LEFT, 1);
-			    }
-			    break;
-
-			case INP_SHIFT_CURSORLEFT: /* move to beginning of line */
-			case INP_HOME:
-			    if (fh->inputpos > fh->inputstart)
-			    {
-				do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
-				fh->inputpos = fh->inputstart;
-			    }
-			    break;
-
-			case INP_CURSORRIGHT:
-			    if (fh->inputpos < fh->inputsize)
-			    {
-				fh->inputpos++;
-				do_movecursor(conbase, fh, CUR_RIGHT, 1);
-			    }
-			    break;
-
-			case INP_SHIFT_CURSORRIGHT: /* move to end of line */
-			case INP_END:
-			    if (fh->inputpos != fh->inputsize)
-			    {
-				do_movecursor(conbase, fh, CUR_RIGHT, fh->inputsize - fh->inputpos);
-				fh->inputpos = fh->inputsize;
-			    }
-			    break;
-
-			case INP_CURSORUP: /* walk through cmd history */
-			case INP_CURSORDOWN:
-			case INP_SHIFT_CURSORUP:
-			case INP_SHIFT_CURSORDOWN:
-                            /* no history if we're hidden */
-                            if (! (fh->flags & FHFLG_NOECHO))
-			        history_walk(conbase, fh, inp);
-		    	    break;
-
-			case INP_BACKSPACE:
-			    if (fh->inputpos > fh->inputstart)
-			    {
-				do_movecursor(conbase, fh, CUR_LEFT, 1);
-
-				if (fh->inputpos == fh->inputsize)
-				{
-				    do_deletechar(conbase, fh);
-
-				    fh->inputsize--;
-				    fh->inputpos--;
-				} else {
-				    WORD chars_right = fh->inputsize - fh->inputpos;
-
-				    fh->inputsize--;
-				    fh->inputpos--;
-
-				    do_cursorvisible(conbase, fh, FALSE);
-				    do_write(conbase, fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
-				    do_deletechar(conbase, fh);
-				    do_movecursor(conbase, fh, CUR_LEFT, chars_right);
-				    do_cursorvisible(conbase, fh, TRUE);
-
-				    memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
-
-				}
-			    }
-			    break;
-
-			case INP_SHIFT_BACKSPACE:
-		            if (fh->inputpos > fh->inputstart)
-			    {
-				do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
-				if (fh->inputpos == fh->inputsize)
-				{
-				    do_eraseinline(conbase, fh);
-
-			    	    fh->inputpos = fh->inputsize = fh->inputstart;
-				} else {
-			            WORD chars_right = fh->inputsize - fh->inputpos;
-
-			            do_cursorvisible(conbase, fh, FALSE);
-				    do_write(conbase, fh, &fh->inputbuffer[fh->inputpos], chars_right);
-				    do_eraseinline(conbase, fh);
-				    do_movecursor(conbase, fh, CUR_LEFT, chars_right);
-				    do_cursorvisible(conbase, fh, TRUE);
-
-				    memmove(&fh->inputbuffer[fh->inputstart], &fh->inputbuffer[fh->inputpos], chars_right);
-
-				    fh->inputsize -= (fh->inputpos - fh->inputstart);
-				    fh->inputpos = fh->inputstart;
-				}
-			    }
-		    	    break;
-
-			case INP_DELETE:
-			    if (fh->inputpos < fh->inputsize)
-			    {
-				fh->inputsize--;
-
-				if (fh->inputpos == fh->inputsize)
-				{
-				    do_deletechar(conbase, fh);
-				} else {
-				    WORD chars_right = fh->inputsize - fh->inputpos;
-
-				    do_cursorvisible(conbase, fh, FALSE);
-				    do_write(conbase, fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
-				    do_deletechar(conbase, fh);
-				    do_movecursor(conbase, fh, CUR_LEFT, chars_right);
-				    do_cursorvisible(conbase, fh, TRUE);
-
-				    memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
-				}
-			    }
-			    break;
-
-			case INP_SHIFT_DELETE:
-		            if (fh->inputpos < fh->inputsize)
-			    {
-				fh->inputsize = fh->inputpos;
-				do_eraseinline(conbase, fh);
-			    }
-		    	    break;
-
-			case INP_CONTROL_X:
-			    if ((fh->inputsize - fh->inputstart) > 0)
-			    {
-				if (fh->inputpos > fh->inputstart)
-				{
-				    do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
-				}
-				do_eraseinline(conbase, fh);
-
-				fh->inputpos = fh->inputsize = fh->inputstart;
-			    }
-			    break;
-
-    	    	    	case INP_ECHO_STRING:
-			    do_write(conbase, fh, &c, 1);
-			    break;
-
-			case INP_STRING:
-			    if (fh->inputsize < INPUTBUFFER_SIZE)
-			    {
-				do_write(conbase, fh, &c, 1);
-
-				if (fh->inputpos == fh->inputsize)
-				{
-				    fh->inputbuffer[fh->inputpos++] = c;
-				    fh->inputsize++;
-				} else {
-				    WORD chars_right = fh->inputsize - fh->inputpos;
-
-				    do_cursorvisible(conbase, fh, FALSE);
-				    do_write(conbase, fh, &fh->inputbuffer[fh->inputpos], chars_right);
-				    do_movecursor(conbase, fh, CUR_LEFT, chars_right);
-				    do_cursorvisible(conbase, fh, TRUE);
-
-				    memmove(&fh->inputbuffer[fh->inputpos + 1], &fh->inputbuffer[fh->inputpos], chars_right);
-				    fh->inputbuffer[fh->inputpos++] = c;
-				    fh->inputsize++;
-				}
-			    }
-			    break;
-
-    	    		case INP_EOF:
-		    	    fh->flags |= FHFLG_EOF;
-                            if (fh->flags & FHFLG_AUTO && fh->window)
-                            {
-			      if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
-				CloseDevice((struct IORequest *)fh->conreadio);
-			        fh->flags &= ~FHFLG_CONSOLEDEVICEOPEN;
-                                CloseWindow(fh->window);
-                                fh->window = NULL;
-                            }
-
-    	    	    	    /* fall through */
-
-			case INP_RETURN:
-		            if (fh->inputsize < INPUTBUFFER_SIZE)
-			    {
-				if (inp != INP_EOF)
-				{
-		        	    c = '\n';
-				    do_write(conbase, fh, &c, 1);
-
-                                    /* don't put hidden things in the history */
-                                    if (! (fh->flags & FHFLG_NOECHO))
-				        add_to_history(conbase, fh);
-
-				    fh->inputbuffer[fh->inputsize++] = '\n';
-				}
-
-				fh->inputstart = fh->inputsize;
-				fh->inputpos = fh->inputstart;
-
-				if (fh->inputsize) HandlePendingReads(conbase, fh);
-
-				if ((fh->flags & FHFLG_EOF) && (fh->flags & FHFLG_READPENDING))
-				{
-			    	    struct IOFileSys *iofs = (struct IOFileSys *)RemHead((struct List *)&fh->pendingReads);
-
-				    if (iofs)
-				    {
-					iofs->io_Union.io_READ.io_Length = 0;
-					iofs->IOFS.io_Error     	     = 0;
-					iofs->io_DosError 	    	     = 0;
-
-					ReplyMsg(&iofs->IOFS.io_Message);
-
-					fh->flags &= ~FHFLG_EOF;
-				    }
-
-			    	    if (IsListEmpty(&fh->pendingReads)) fh->flags &= ~FHFLG_READPENDING;
-				}
-
-			    } /* if (fh->inputsize < INPUTBUFFER_SIZE) */
-			    break;
-
-			case INP_LINEFEED:
-		            if (fh->inputsize < INPUTBUFFER_SIZE)
-			    {
-				c = '\n';
-				do_write(conbase, fh, &c, 1);
-
-                                /* don't put hidden things in the history */
-                                if (! (fh->flags & FHFLG_NOECHO))
-				    add_to_history(conbase, fh);
-
-				fh->inputbuffer[fh->inputsize++] = c;
-				fh->inputstart = fh->inputsize;
-				fh->inputpos = fh->inputsize;
-			    }
-		    	    break;
-
-			case INP_CTRL_C:
-			case INP_CTRL_D:
-			case INP_CTRL_E:
-			case INP_CTRL_F:
-		            if (fh->breaktask)
-			    {
-				Signal(fh->breaktask, 1L << (12 + inp - INP_CTRL_C));
-			    }
-		    	    break;
-
-    	    	    	case INP_TAB:
-                            /* don't complete hidden things */
-                            if (! (fh->flags & FHFLG_NOECHO))
-			        Completion(conbase, fh);
-			    break;
-			    
-		    } /* switch(inp) */
-
-		} /* while((inp = scan_input(conbase, fh, &c)) != INP_DONE) */
+		process_input(conbase,fh);
 
                 /* re-enable output */
                 fh->flags &= ~FHFLG_NOWRITE;
