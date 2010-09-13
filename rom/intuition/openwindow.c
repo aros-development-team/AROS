@@ -113,6 +113,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     struct MsgPort  	    	*userport = NULL;
 #endif
     STRPTR          	    	 pubScreenName = NULL;
+    BOOL            	    	 pubScreenNameSet = FALSE;
     UBYTE           	    	*screenTitle = NULL;
     BOOL            	    	 autoAdjust = FALSE, pubScreenFallBack = FALSE;
     ULONG           	    	 innerWidth = ~0;
@@ -369,7 +370,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 break;
 
             case WA_PubScreenName:
-                //nw.Type = PUBLICSCREEN; //handled below!!
+                pubScreenNameSet = TRUE;
                 pubScreenName = (STRPTR)tag->ti_Data;
                 break;
 
@@ -588,7 +589,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
          *  to open on the default public screen that way 
          */
 
-    if (pubScreenName || (nw.Type == PUBLICSCREEN))
+    if (pubScreenNameSet || nw.Type == PUBLICSCREEN && nw.Screen == NULL)
     {
         struct Screen *pubs = 0;
 
