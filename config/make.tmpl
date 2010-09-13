@@ -1282,13 +1282,10 @@ BD_OBJS       := $(addprefix %(objdir)/, $(addsuffix .o,%(files)))
 BD_KAUTOLIB := dos intuition layers graphics oop utility expansion keymap
 
 # Make these symbols local
-BD_KBASE := WorkbenchBase DOSBase CyberGfxBase IntuitionBase LayersBase \
-    GfxBase OOPBase UtilityBase ExpansionBase KeymapBase KernelBase
-BD_ATOMIC := atomic_inc_l atomic_dec_l atomic_and_l atomic_or_l \
-	     atomic_inc_w atomic_dec_w atomic_and_w atomic_or_w \
-	     atomic_inc_b atomic_dec_b atomic_and_b atomic_or_b
+BD_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
+	    UtilityBase ExpansionBase KeymapBase KernelBase
 
-BD_SYMBOLS := $(BD_KBASE) $(BD_ATOMIC)
+BD_SYMBOLS := $(BD_KBASE)
 
 BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
@@ -1550,10 +1547,10 @@ endif
 BD_KAUTOLIB := dos intuition layers graphics oop utility expansion keymap
 
 # Make these symbols local
-BD_KBASE := WorkbenchBase DOSBase CyberGfxBase IntuitionBase LayersBase \
-    GfxBase OOPBase UtilityBase ExpansionBase KeymapBase KernelBase
+BD_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
+	    UtilityBase ExpansionBase KeymapBase KernelBase
 
-BD_SYMBOLS := $(BD_KBASE) $(BD_ATOMIC)
+BD_SYMBOLS := $(BD_KBASE)
 
 BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
