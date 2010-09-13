@@ -36,7 +36,7 @@ void *AllocateRAM(size_t len)
     if (var)
     {
 	D(printf("[AllocateRAM] Found RAM specification: %s\n", var));
-	if (sscanf(var, "%lx:%lx", &RAM_Handle, &addr) != 2) {
+	if (sscanf(var, "%p:%p", &RAM_Handle, &addr) != 2) {
 	    D(printf("[AllocateRAM] Error parsing specification\n"));
 	    RAM_Handle = NULL;
 	    addr = NULL;

@@ -6,20 +6,25 @@
 
 /*
  * In fact this file can be a temporary thing. Perhaps CPU cache manipulation
- * should be moved to kernel.resource.
+ * and system rebooting should also be handled by kernel.resource.
  */
 
-extern struct HostInterface *HostIFace;
+static char *kernel_funcs[] = {
+    "ExitProcess",
+    "FlushInstructionCache",
+    "GetCurrentProcess",
+    NULL
+};
 
 /*
  * Note that we are called very early, so no exec calls here! We don't have
  * ExecBase's functions table yet, only empty data structure!
  */
-BOOL Exec_PreparePlatform(struct ExecBase *SysBase)
+BOOL Exec_PreparePlatform(struct ExecBase *SysBase, void *data)
 {
     void *KernelLib, *UserLib;
-    APTR  __stdcall (*GetCurrentProcess)(void);
     struct Exec_PlatformData *pd = &PD(SysBase);
+    struct HostInterface *HostIFace = data;
 
     KernelLib = HostIFace->HostLib_Open("kernel32.dll", NULL);
     if (!KernelLib)
@@ -29,18 +34,14 @@ BOOL Exec_PreparePlatform(struct ExecBase *SysBase)
     if (!UserLib)
 	return FALSE;
 
-    GetCurrentProcess = HostIFace->HostLib_GetPointer(KernelLib, "GetCurrentProcess", NULL);
-    if (!GetCurrentProcess)
+    if (HostIFace->HostLib_GetInterface(KernelLib, kernel_funcs, (void **)pd))
         return FALSE;
-
-    pd->FlushInstructionCache = HostIFace->HostLib_GetPointer(KernelLib, "FlushInstructionCache", NULL);
-    if (!pd->FlushInstructionCache)
-	return FALSE;
 
     pd->MessageBox = HostIFace->HostLib_GetPointer(UserLib, "MessageBoxA", NULL);
     if (!pd->MessageBox)
 	return FALSE;
 
-    pd->MyProcess = GetCurrentProcess();
+    pd->Reboot = HostIFace->Reboot;
+    pd->MyProcess = pd->GetCurrentProcess();
     return TRUE;
 }
