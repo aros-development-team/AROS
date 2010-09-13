@@ -42,13 +42,10 @@ static struct mb_mmap MemoryMap = {
     MMAP_TYPE_RAM
 };
 
-static struct KernelBSS __bss_track[256];
-
 /* Kernel message */
 static struct TagItem km[] = {
     {KRN_KernelLowest , 0                },
     {KRN_KernelHighest, 0                },
-    {KRN_KernelBss    , 0		 },
     {KRN_BootLoader   , 0                },
     {KRN_CmdLine      , 0                },
     {KRN_DebugInfo    , 0                },
@@ -212,7 +209,7 @@ int main(int argc, char ** argv)
 	return -1;
     }
 
-    if (!LoadKernel(ro_addr, rw_addr, __bss_track, &kernel_entry, &debug_addr))
+    if (!LoadKernel(ro_addr, rw_addr, &kernel_entry, &debug_addr))
 	return -1;
     D(printf("[Bootstrap] Read-only 0x%p - 0x%p, Read-write 0x%p - 0x%p, Entry 0x%p, Debug info 0x%p\n",
 	     ro_addr, ro_addr + ro_size - 1, rw_addr, rw_addr + rw_size - 1, kernel_entry, debug_addr));
@@ -232,12 +229,11 @@ int main(int argc, char ** argv)
 
     km[0].ti_Data = (IPTR)ro_addr;
     km[1].ti_Data = (IPTR)ro_addr + ro_size - 1;
-    km[2].ti_Data = (IPTR)__bss_track;
-    km[3].ti_Data = (IPTR)SystemVersion;
-    km[4].ti_Data = (IPTR)KernelArgs;
-    km[5].ti_Data = (IPTR)debug_addr;
-    km[6].ti_Data = (IPTR)HostIFace;
-    km[7].ti_Data = (IPTR)&MemoryMap;
+    km[2].ti_Data = (IPTR)SystemVersion;
+    km[3].ti_Data = (IPTR)KernelArgs;
+    km[4].ti_Data = (IPTR)debug_addr;
+    km[5].ti_Data = (IPTR)HostIFace;
+    km[6].ti_Data = (IPTR)&MemoryMap;
 
     printf("[Bootstrap] entering kernel@%p...\n", kernel_entry);
     return kernel_entry(km);
