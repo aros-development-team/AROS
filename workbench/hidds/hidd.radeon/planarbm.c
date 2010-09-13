@@ -38,7 +38,7 @@
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
 #define HiddPCIDeviceAttrBase   (_sd->pciAttrBase)
-#define HiddNVidiaBitMapAttrBase (_sd->nvBitMapAttrBase)
+#define HiddATIBitMapAttrBase (_sd->atiBitMapAttrBase)
 #define HiddBitMapAttrBase      (_sd->bitMapAttrBase)
 #define HiddPixFmtAttrBase      (_sd->pixFmtAttrBase)
 #define HiddGfxAttrBase         (_sd->gfxAttrBase)
