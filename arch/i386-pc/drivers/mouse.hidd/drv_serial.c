@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: COM mouse driver.
@@ -11,7 +11,6 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 
-#include <asm/io.h>
 #include <exec/alerts.h>
 #include <exec/memory.h>
 

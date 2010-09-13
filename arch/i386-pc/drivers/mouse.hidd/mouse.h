@@ -2,7 +2,7 @@
 #define _MOUSE_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -214,10 +214,40 @@ struct mouse_data
 
 /****************************************************************************************/
 
-#define kbd_read_input() 	inb(0x60) //KBD_DATA_REG)
-#define kbd_read_status() 	inb(0x64) //KBD_STATUS_REG)
-#define kbd_write_output(val)	outb(val, 0x60) //KBD_DATA_REG)
-#define kbd_write_command(val) 	outb(val, 0x64) //KBD_CONTROL_REG)
+#ifdef inb
+#undef inb
+#endif
+static inline unsigned char inb(unsigned short port)
+{
+    unsigned char  _v;
+
+    __asm__ __volatile__
+    ("inb %w1,%0"
+     : "=a" (_v)
+     : "Nd" (port)
+    );
+
+    return _v;
+}
+
+#ifdef outb
+#undef outb
+#endif
+static inline void outb(unsigned char value, unsigned short port)
+{
+    __asm__ __volatile__
+    ("outb %b0,%w1"
+     :
+     : "a" (value), "Nd" (port)
+    );
+}
+
+/****************************************************************************************/
+
+#define mouse_read_input() 	inb(0x60) //KBD_DATA_REG)
+#define mouse_read_status() 	inb(0x64) //KBD_STATUS_REG)
+#define mouse_write_output(val)	outb(val, 0x60) //KBD_DATA_REG)
+#define mouse_write_command(val) 	outb(val, 0x64) //KBD_CONTROL_REG)
 
 /****************************************************************************************/
 

@@ -2,7 +2,7 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PS/2 keyboard/mouse driver.
+    Desc: PS/2 keyboard driver.
     Lang: English.
 */
 
@@ -19,7 +19,7 @@ static ULONG usec2tick(ULONG usec)
     return ret;
 }
 
-static void mouse_usleep(LONG usec)
+static void kbd_usleep(LONG usec)
 {
     int oldtick, tick;
     usec = usec2tick(usec);
@@ -39,7 +39,6 @@ static void mouse_usleep(LONG usec)
         oldtick = tick;
     }
 }
-
 
 unsigned char handle_kbd_event(void)
 {
@@ -76,7 +75,7 @@ void kb_wait(void)
 	if (! (status & KBD_STATUS_IBF))
 	    return;
 	
-	mouse_usleep(1000);
+	kbd_usleep(1000);
 	timeout--;
     } while (timeout);
 }
@@ -87,23 +86,6 @@ void kbd_write_cmd(int cmd)
     kbd_write_command(KBD_CTRLCMD_WRITE_MODE);
     kb_wait();
     kbd_write_output(cmd);
-}
-
-void aux_write_ack(int val)
-{
-    kb_wait();
-    kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);
-    kb_wait();
-    kbd_write_output(val);
-    kbd_wait_for_input();
-}
-
-void aux_write_noack(int val)
-{
-    kb_wait();
-    kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);
-    kb_wait();
-    kbd_write_output(val);
 }
 
 void kbd_write_output_w(int data)
@@ -165,7 +147,7 @@ int kbd_wait_for_input(void)
         int retval = kbd_read_data();
         if (retval >= 0)
             return retval;
-        mouse_usleep(1000);
+        kbd_usleep(1000);
     } while(--timeout);
     return -1;
 }
