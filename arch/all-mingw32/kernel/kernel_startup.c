@@ -87,10 +87,6 @@ int __startup startup(struct TagItem *msg)
 	    mmap = (struct mb_mmap *)tag->ti_Data;
 	    break;
 
-	case KRN_KernelBss:
-	    __clear_bss((struct KernelBSS *)tag->ti_Data);
-	    break;
-
 	case KRN_HostInterface:
 	    HostIFace = (struct HostInterface *)tag->ti_Data;
 	    break;
