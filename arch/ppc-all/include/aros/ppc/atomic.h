@@ -261,3 +261,20 @@ static inline void atomic_or_w(UWORD* p, UWORD mask)
         success = set_atomic(addr, old, un.new);
     }
 }
+
+#define __AROS_ATOMIC_INC_B(var) atomic_inc_b((BYTE *) &(var))
+#define __AROS_ATOMIC_DEC_B(var) atomic_dec_b((BYTE *) &(var))
+
+#define __AROS_ATOMIC_INC_W(var) atomic_inc_w((WORD *) &(var))
+#define __AROS_ATOMIC_DEC_W(var) atomic_dec_w((WORD *) &(var))
+
+#define __AROS_ATOMIC_INC_L(var) atomic_inc_l((LONG *) &(var))
+#define __AROS_ATOMIC_DEC_L(var) atomic_dec_l((LONG *) &(var))
+
+#define __AROS_ATOMIC_AND_B(var, mask) atomic_and_b((UBYTE *) &(var), (mask))
+#define __AROS_ATOMIC_AND_W(var, mask) atomic_and_w((UWORD *) &(var), (mask))
+#define __AROS_ATOMIC_AND_L(var, mask) atomic_and_l((ULONG *) &(var), (mask))
+
+#define __AROS_ATOMIC_OR_B(var, mask) atomic_or_b((UBYTE *) &(var), (mask))
+#define __AROS_ATOMIC_OR_W(var, mask) atomic_or_w((UWORD *) &(var), (mask))
+#define __AROS_ATOMIC_OR_L(var, mask) atomic_or_l((ULONG *) &(var), (mask))
