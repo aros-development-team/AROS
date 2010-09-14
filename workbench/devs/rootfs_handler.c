@@ -384,7 +384,7 @@ static struct filehandle * getFileHandle_1(struct rootfsbase * rootfsbase, struc
 
 	kprintf("Forwarding the request - Current directory is: %S\n", curdir->name);
 
-	/* send the request to the proprer device */
+	/* send the request to the proper device */
 	{
 	    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 	    STRPTR oldfilename = iofs->io_Union.io_OPEN_FILE.io_Filename;

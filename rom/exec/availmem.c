@@ -45,12 +45,12 @@
 
     NOTES
 	Due to the nature of multitasking the returned value may already
-	be obsolete if this function returns.
+	be obsolete when this function returns.
 
     EXAMPLE
 	Print the total available memory.
 
-	printf("Free memory: %lu bytes\n",AvailMem(0));
+	printf("Free memory: %lu bytes\n", AvailMem(0));
 
 	Print the size of the largest chunk of chip memory.
 

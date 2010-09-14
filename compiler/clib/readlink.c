@@ -1,6 +1,8 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
+
+    ANSI C function readlink().
 */
 
 #include <aros/debug.h>

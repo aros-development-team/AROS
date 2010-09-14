@@ -42,7 +42,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	struct GfxBase *, GfxBase, 5, Graphics)
 
 /*  FUNCTION
-	Moves a part of a bitmap around or into another bitmaps.
+	Moves a part of a bitmap around or into another bitmap.
 
     INPUTS
 	srcBitMap - Copy from this bitmap.
