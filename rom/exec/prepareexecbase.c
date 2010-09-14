@@ -6,6 +6,7 @@
     Lang:
 */
 
+#include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/lists.h>
@@ -30,12 +31,16 @@ extern void *LIBFUNCTABLE[];
 
 extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
-extern void AROS_SLIB_ENTRY(CacheClearU,Exec)();
 AROS_UFP1(void, Exec_TaskFinaliser,
 	  AROS_UFPA(struct ExecBase *, SysBase, A6)
 );
 extern void Exec_TrapHandler(ULONG trapNum);
 extern void AROS_SLIB_ENTRY(TaskFinaliser,Exec)();
+AROS_LD3(ULONG, MakeFunctions,
+	 AROS_LHA(APTR, target, A0),
+	 AROS_LHA(CONST_APTR, functionArray, A1),
+	 AROS_LHA(CONST_APTR, funcDispBase, A2),
+         struct ExecBase *, SysBase, 15, Exec);
 
 static APTR allocmem(struct MemHeader *mh, ULONG size)
 {
@@ -92,21 +97,11 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data)
 #endif
 
     /* Setup function vectors */
-    i  = 1;
-    fp = LIBFUNCTABLE;
-    
-    while(*fp != (VOID *) -1)
-    {
-        /* Decrement vector pointer by one and install vector */
-        __AROS_INITVEC(SysBase, i);
-        if (*fp != NULL) __AROS_SETVECADDR(SysBase, i, *fp);
-
-        /* Use next array entry */
-        fp++; i++;
-    }
-
-    AROS_LC0NR(void, CacheClearU,
-	struct ExecBase *, SysBase, 106, Exec);
+    AROS_UFC4(ULONG, AROS_SLIB_ENTRY(MakeFunctions, Exec),
+	      AROS_UFCA(APTR, SysBase, A0),
+	      AROS_UFCA(CONST_APTR, LIBFUNCTABLE, A1),
+	      AROS_UFCA(CONST_APTR, NULL, A2),
+	      AROS_UFCA(struct ExecBase *, SysBase, A6));
 
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;

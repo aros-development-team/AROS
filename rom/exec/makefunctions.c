@@ -1,13 +1,21 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create the jumptable for a shared library or a device.
     Lang: english
 */
+
 #include <exec/execbase.h>
+#include <aros/asmcall.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+AROS_LD3(void, CacheClearE,
+	 AROS_LHA(APTR, address, A0),
+	 AROS_LHA(ULONG, length, D0),
+	 AROS_LHA(ULONG, caches, D1),
+	 struct ExecBase *, SysBase, 107, Exec);
 
 /*****************************************************************************
 
@@ -98,8 +106,19 @@
     lastvec = __AROS_GETJUMPVEC(target,n);
     n = (IPTR)target-(IPTR)lastvec;
 
-    /* Clear instruction cache for the whole jumptable */
-    CacheClearE(lastvec, n, CACRF_ClearI|CACRF_ClearD);
+#ifdef __AROS_USE_FULLJMP
+    /* Clear instruction cache for the whole jumptable. We need to do it only if
+       the jumptable actually contains executable code. __AROS_USE_FULLJMP must
+       be defined in cpu.h in this case.
+
+       Note that we call this function directly because MakeFunctions() is also
+       used for building ExecBase itself. */
+    AROS_UFC4(void, AROS_SLIB_ENTRY(CacheClearE, Exec),
+	      AROS_UFCA(APTR, lastvec, A0),
+	      AROS_UFCA(ULONG, n, D0),
+	      AROS_UFCA(ULONG, CACRF_ClearI|CACRF_ClearD, D1),
+	      AROS_UFCA(struct ExecBase *, SysBase));
+#endif
 
     /* Return size of jumptable */
     return n;
