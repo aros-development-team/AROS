@@ -36,7 +36,6 @@ title AROS on Sam440
     module boot/modules/keymap.library
     module boot/modules/layers.library
     module boot/modules/massstorage.class
-    module boot/modules/mathieeesingbas.library
     module boot/modules/misc.resource
     module boot/modules/mouse.hidd
     module boot/modules/nil.handler
@@ -84,7 +83,6 @@ title AROS on Sam440 Test AltUsb
     module boot/modules/keyboard.hidd
     module boot/modules/keymap.library
     module boot/modules/layers.library
-    module boot/modules/mathieeesingbas.library
     module boot/modules/misc.resource
     module boot/modules/mouse.hidd
     module boot/modules/nil.handler
