@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386unix version of Cause().
@@ -39,9 +39,6 @@ AROS_LH1(void, Cause,
 	softint->is_Node.ln_Type = NT_SOFTINT;
 	SysBase->SysFlags |= SFF_SoftInt;
 	Enable();
-
-	/* We now cause a software interrupt. */
-	kill(getpid(), SIGUSR1);
     }
 
     AROS_LIBFUNC_EXIT

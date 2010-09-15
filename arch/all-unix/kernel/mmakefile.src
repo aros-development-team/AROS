@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES  := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
 
-FUNCS := bug cli dispatch issuper putchar sti switch
+FUNCS := bug cause cli dispatch issuper putchar schedule sti switch
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \

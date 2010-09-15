@@ -3,12 +3,7 @@ include $(TOP)/config/make.cfg
 
 CFILES          := \
         exec_init copymem enable preparecontext rawputchar serialrawio screen \
-        initcode alert dispatch permit newaddtask remtask reschedule setexcept settaskpri \
-        findresident shutdowna signal prepareexecbase #rawdofmt
-# RawDoFmt() is left out since currently generic RawDoFmt should be 64bit-friendly. Due to
-# recent VNewRawDoFmt() introduction and code reorganization this x86/64-specific version
-# would not build any more. The code is left for reference in case of problems.
-# Pavel Fedin <sonic_amiga@rambler.ru>
+        permit remtask shutdowna prepareexecbase
 
 AFILES		:= coldreboot
 

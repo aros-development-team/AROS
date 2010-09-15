@@ -5,6 +5,7 @@
     Desc: Send some signal to a given task
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
@@ -46,6 +47,8 @@
 
     INTERNALS
 
+    HISTORY
+
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -72,11 +75,11 @@
 	    else
 	    {
 		/* Switches are allowed. Move the current task away. */
-		SysBase->ThisTask->tc_State=TS_READY;
-		Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+//		SysBase->ThisTask->tc_State=TS_READY;
+//		Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 
 		/* And force a rescedule. */
-		Switch();
+		Reschedule(task);
 	    }
 
 	    /* All done. */
@@ -89,7 +92,7 @@
 	Is the task receiving the signals waiting on them
 	(or on a exception) ?
     */
-    if(task->tc_State==TS_WAIT&&
+    if((task->tc_State==TS_WAIT)&&
        (task->tc_SigRecvd&(task->tc_SigWait|task->tc_SigExcept)))
     {
 	/* Yes. Move him to the ready list. */
@@ -108,24 +111,17 @@
 	    {
 		/* Are taskswitches allowed? */
 		if(SysBase->TDNestCnt>=0||SysBase->IDNestCnt>0)
-		{
 		    /* No. Store it for later. */
 		    SysBase->AttnResched|=0x80;
-		}
 		else
-		{
-		    /* Switches are allowed. Move the current task away. */
-		    SysBase->ThisTask->tc_State=TS_READY;
-		    Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
-
-		    /* And force a rescedule. */
-		    Switch();
-		}
+		    /* Switches are allowed. Move the current task away.
+		       And force a rescedule. */
+		    Reschedule(task);
 	    }
 	}
     }
 
     Enable();
     AROS_LIBFUNC_EXIT
-} /* Signal() */
+}
 

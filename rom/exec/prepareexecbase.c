@@ -31,11 +31,8 @@ extern void *LIBFUNCTABLE[];
 
 extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
-AROS_UFP1(void, Exec_TaskFinaliser,
-	  AROS_UFPA(struct ExecBase *, SysBase, A6)
-);
+
 extern void Exec_TrapHandler(ULONG trapNum);
-extern void AROS_SLIB_ENTRY(TaskFinaliser,Exec)();
 AROS_LD3(ULONG, MakeFunctions,
 	 AROS_LHA(APTR, target, A0),
 	 AROS_LHA(CONST_APTR, functionArray, A1),
@@ -66,11 +63,17 @@ static APTR allocmem(struct MemHeader *mh, ULONG size)
     return ret;
 }
 
+/* Default finaliser. */
+static void Exec_TaskFinaliser(void)
+{
+    /* Get rid of current task. */
+    RemTask(SysBase->ThisTask);
+}
+
 /*
     PrepareExecBase() will initialize the ExecBase to default values,
     and not add anything yet (except for the MemHeader).
 */
-extern void *stderr;
 
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data)
 {
@@ -168,7 +171,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data)
 
     SysBase->TaskTrapCode   = Exec_TrapHandler;
     SysBase->TaskExceptCode = NULL;
-    SysBase->TaskExitCode   = AROS_SLIB_ENTRY(TaskFinaliser,Exec);
+    SysBase->TaskExitCode   = Exec_TaskFinaliser;
     SysBase->TaskSigAlloc   = 0xFFFF;
     SysBase->TaskTrapAlloc  = 0;
 
