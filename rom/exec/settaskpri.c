@@ -5,6 +5,7 @@
     Desc: Change the priority of a task.
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
@@ -43,6 +44,8 @@
     SEE ALSO
 
     INTERNALS
+
+    HISTORY
 
 ******************************************************************************/
 {
@@ -84,11 +87,15 @@
 	else
 	{
 	    /* Switches are allowed. Move the current task away. */
-	    SysBase->ThisTask->tc_State=TS_READY;
-	    Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+//	    SysBase->ThisTask->tc_State=TS_READY;
+
+//	    task->tc_Node.ln_Pred->ln_Succ = task->tc_Node.ln_Succ;
+//    	    task->tc_Node.ln_Succ->ln_Pred = task->tc_Node.ln_Pred;
+
+//	    Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 
 	    /* And force a reschedule. */
-	    Switch();
+	    Reschedule(task);
 	}
     }
 

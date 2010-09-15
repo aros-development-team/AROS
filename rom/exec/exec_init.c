@@ -180,7 +180,7 @@ AROS_UFH4(int, Dispatcher,
 	    if( SysBase->ThisTask->tc_State == TS_RUN )
 	    {
 		SysBase->ThisTask->tc_State = TS_READY;
-		Reschedule(SysBase->ThisTask);
+		Enqueue(&SysBase->TaskReady, &SysBase->ThisTask->tc_Node);
 		SysBase->AttnResched |= 0x8000;
 	    }
 	    else if( SysBase->ThisTask->tc_State == TS_REMOVED )

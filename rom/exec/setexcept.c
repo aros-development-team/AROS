@@ -5,6 +5,7 @@
     Desc: Examine and/or modify the signals which cause an exception.
     Lang: english
 */
+
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
@@ -43,6 +44,8 @@
 
     INTERNALS
 
+    HISTORY
+
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -73,12 +76,19 @@
 	    /* No. Store it for later. */
 	    SysBase->AttnResched|=0x80;
 	else
-	    /* Switches are allowed. Force a reschedule. */
-	    Switch();
+	{
+	    /* Switches are allowed. Force a rescedule. */
+
+//	    me->tc_Node.ln_Pred->ln_Succ = me->tc_Node.ln_Succ;
+//    	    me->tc_Node.ln_Succ->ln_Pred = me->tc_Node.ln_Pred;
+
+	    Reschedule(me);
+	}
     }
     Enable();
 
     return old;
     AROS_LIBFUNC_EXIT
-} /* SetExcept() */
+}
+
 
