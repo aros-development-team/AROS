@@ -9,6 +9,8 @@
 #include <exec/libraries.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
+#include <exec/ports.h>
+#include <proto/alib.h>
 #include <exec/io.h>
 #include <exec/errors.h>
 #include <exec/alerts.h>
@@ -17,6 +19,7 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <intuition/intuition.h>
+#include <intuition/sghooks.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <devices/conunit.h>
@@ -330,15 +333,70 @@ VOID HandlePendingReads(struct conbase *conbase, struct filehandle *fh)
 
 static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 
+struct MyEditHookMsg
+{
+    struct Message 	msg;
+    struct SGWork	*sgw;
+    WORD 		code;
+};
+
 static void do_paste(struct conbase * conbase, struct filehandle * fh)
 {
   struct MsgPort replyport, *port;
+  struct SGWork sgw;
+  struct MyEditHookMsg msg;
+  struct StringInfo sinfo;
+
   if (!(port = FindPort(CONCLIP_PORTNAME))) {
     D(bug("ConClip not running, but we got a ConClip paste request"));
     return;
   }
 
-  bug("PASTE REQUEST!\n");
+  D(bug("PASTE REQUEST!\n"));
+
+  replyport.mp_Node.ln_Type	= NT_MSGPORT;
+  replyport.mp_Node.ln_Name 	= NULL;
+  replyport.mp_Node.ln_Pri 	= 0;
+  replyport.mp_Flags 		= PA_SIGNAL;
+  replyport.mp_SigBit 	= SIGB_SINGLE;
+  replyport.mp_SigTask 	= FindTask(NULL);
+  NewList(&replyport.mp_MsgList);
+			    
+  msg.msg.mn_Node.ln_Type 	= NT_MESSAGE;
+  msg.msg.mn_ReplyPort 	= &replyport;
+  msg.msg.mn_Length 		= sizeof(msg);
+  
+  msg.code = 'V';
+  msg.sgw  = &sgw;
+
+  /* FIXME: Ensure no fields are left uninitialized */
+
+  sgw.Gadget = 0;
+  sgw.WorkBuffer = AllocMem(PASTEBUFSIZE,MEMF_CLEAR | MEMF_ANY);
+  sgw.PrevBuffer = 0;
+  sgw.IEvent = 0;
+  sgw.Code = 'V';
+  sgw.Actions = 0;
+  sgw.LongInt = 0;
+  sgw.GadgetInfo = 0;
+  sgw.EditOp = EO_BIGCHANGE;
+  sgw.BufferPos = 0;
+  sgw.NumChars = 0;
+
+  /* ConClip only ever looks at MaxChars in StringInfo */
+  sinfo.MaxChars = PASTEBUFSIZE;
+  sgw.StringInfo = &sinfo;
+  
+  SetSignal(0, SIGF_SINGLE);
+  PutMsg(port, &msg.msg);
+  WaitPort(&replyport);
+
+  D(bug("Pasting %d bytes\n",sgw.BufferPos));
+
+  if (fh->pastebuffer) FreeMem(fh->pastebuffer,PASTEBUFSIZE);
+  fh->pastebuffer = sgw.WorkBuffer;
+  fh->pastebuffersize = sgw.BufferPos;
+  fh->pastebufferpos = 0;
 }
 
 
@@ -1102,8 +1160,10 @@ AROS_UFH3(VOID, conTaskEntry,
 
     if (fh->screenname) FreeVec(fh->screenname);
     if (fh->wintitle) FreeVec(fh->wintitle);
+    if (fh->pastebuffer) FreeMem(fh->pastebuffer,PASTEBUFSIZE);
 
     FreeMem(fh, sizeof (struct filehandle));
+
     
     AROS_USERFUNC_EXIT
 }

@@ -46,8 +46,7 @@ struct MyEditHookMsg
     WORD 		code;
 };
 
-const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
-
+static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 struct Scroll
 {
   struct Gadget   scroller;        /* proportionnal gadget */
@@ -995,11 +994,9 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
     PutMsg(port, &msg.msg);
     WaitPort(&replyport);
 
-    /* FIXME: When we return from here in the future, we need to free the
-       copy buffer here */
+    FreeMem(buf,size);
+    return;
   }
-
-  /* FIXME: For now, falling through and using both, since paste isn't in place yet */
 
   ObtainSemaphore(&ConsoleDevice->copyBufferLock);
   if (ConsoleDevice->copyBuffer)

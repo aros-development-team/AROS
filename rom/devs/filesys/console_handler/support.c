@@ -429,14 +429,39 @@ void do_eraseindisplay(struct conbase *conbase, struct filehandle *fh)
     do_write(conbase, fh, seq, 2);
 }
 /******************************************************************************************/
+static void copy_from_pastebuf(struct filehandle * fh)
+{
+  if (fh->conbufferpos >= fh->conbuffersize && 
+      fh->pastebuffer &&
+      fh->pastebufferpos < fh->pastebuffersize)
+    {
+      ULONG len = CONSOLEBUFFER_SIZE;
+      ULONG pastelen = fh->pastebuffersize - fh->pastebufferpos;
+      if (pastelen < len) len = pastelen;
+      
+      D(bug("Copying %d bytes from paste buffer\n",len));
+      
+      fh->conbufferpos = 0;
+      CopyMem(fh->pastebuffer + fh->pastebufferpos, 
+	      &fh->consolebuffer,
+	      len);
+      fh->conbuffersize = len;
+      fh->pastebufferpos += len;
+      if (fh->pastebufferpos >= fh->pastebuffersize) {
+	FreeMem(fh->pastebuffer,PASTEBUFSIZE);
+	fh->pastebuffer = 0;
+      }
+    }
+}
 
 WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 {
-    struct csimatch *match;
-    UBYTE c;
-    
-    WORD result = INP_DONE;
-    
+  struct csimatch *match;
+  UBYTE c;
+  WORD result = INP_DONE;
+
+  copy_from_pastebuf(fh);
+
     if (fh->conbufferpos < fh->conbuffersize)
     {
         c = fh->consolebuffer[fh->conbufferpos++];
