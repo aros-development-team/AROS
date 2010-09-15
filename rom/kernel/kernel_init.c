@@ -15,6 +15,14 @@
 static struct MinList *Debug_ModList = NULL;
 #endif
 
+void __clear_bss(struct KernelBSS *bss)
+{
+    while (bss->addr) {
+	bzero((void*)bss->addr, bss->len);
+        bss++;
+    }
+}
+
 static int Kernel_Init(struct KernelBase *KernelBase)
 {
     int i;

@@ -86,7 +86,7 @@ static char *check_header(struct elfheader *eh)
 /*
  * Get the memory for chunk and load it
  */
-void *load_hunk(void *file, struct sheader *sh, void *addr)
+void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS **bss_tracker)
 { 
     /* empty chunk? Who cares :) */
     if (!sh->size)
@@ -105,8 +105,13 @@ void *load_hunk(void *file, struct sheader *sh, void *addr)
 	    return NULL;
     }
     else
-	/* BSS section, initialize to zero */
+    {
 	memset(addr, 0, sh->size);
+
+	(*bss_tracker)->addr = addr;
+	(*bss_tracker)->len = sh->size;
+	(*bss_tracker)++;
+    }
 
     return addr + sh->size;
 }
@@ -391,7 +396,7 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
     return 1;
 }
 
-int LoadKernel(void *ptr_ro, void *ptr_rw, kernel_entry_fun_t *kernel_entry, void **kernel_debug)
+int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, void **kernel_debug)
 {
     struct ELFNode *n;
     FILE *file;
@@ -429,7 +434,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, kernel_entry_fun_t *kernel_entry, voi
 
 		if (sh[i].flags & SHF_WRITE)
 		{
-		    ptr_rw = load_hunk(file, &sh[i], ptr_rw);
+		    ptr_rw = load_hunk(file, &sh[i], ptr_rw, &tracker);
 		    if (!ptr_rw) {
 			printf("%s: Error loading hunk %u!\n", n->Name, i);
 			return 0;
@@ -437,7 +442,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, kernel_entry_fun_t *kernel_entry, voi
 		}
 		else
 		{
-		    ptr_ro = load_hunk(file, &sh[i], ptr_ro);
+		    ptr_ro = load_hunk(file, &sh[i], ptr_ro, &tracker);
 		    if (!ptr_ro) {
 			printf("%s: Error loading hunk %u!\n", n->Name, i);
 			return 0;
