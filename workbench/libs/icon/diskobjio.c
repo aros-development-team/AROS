@@ -613,7 +613,10 @@ AROS_UFH3S(ULONG, ProcessSelectRender,
 kprintf ("ProcessSelectRender\n");
 #endif
 
-    if (DO(data->sdd_Dest)->do_Gadget.Flags & GFLG_GADGHIMAGE)
+    /* Not all icon with second image seem to have GFLG_GADGHIMAGE set */
+    
+    // if (DO(data->sdd_Dest)->do_Gadget.Flags & GFLG_GADGHIMAGE)    
+    if (DO(data->sdd_Dest)->do_Gadget.SelectRender)
     {
 	switch (data->sdd_Mode)
 	{
@@ -869,6 +872,12 @@ kprintf ("ProcessToolTypes\n");
 		return FALSE;
 
 	    count = (count >> 2) - 1; /* How many entries */
+
+    	    if ((LONG)count < 0)
+	    {
+	    	DO(data->sdd_Dest)->do_ToolTypes = NULL;
+	    	return TRUE;
+	    }
 
 	    ttarray = AllocVec ((count+1)*sizeof(STRPTR), MEMF_ANY);
 	    if (!ttarray) return FALSE;
