@@ -12,11 +12,13 @@
 
 /****************************************************************************************/
 
-static void RemoveToolType(STRPTR *tt)
+static STRPTR RemoveToolType(STRPTR *tt)
 {
-    if (tt[0])
+    STRPTR ret = tt[0];
+    
+    if (ret)
     {
-    	FreeVec(tt[0]);
+    	//FreeVec(ret);
 	
     	for(;;)
     	{
@@ -26,11 +28,13 @@ static void RemoveToolType(STRPTR *tt)
     	    tt++;
     	}
     }
+    
+    return ret;
 }
 
 /****************************************************************************************/
 
-/* Decode3NI() based on ModifyIcon by Dirk Stöcker */
+/* DecodeNI() based on ModifyIcon by Dirk Stöcker */
 
 /****************************************************************************************/
 
@@ -38,12 +42,12 @@ static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WOR
 {
     LONG   numbits = 0, curentry = 0, bitbuf = 0, loop = 0, mask, val;
     UBYTE  byte;
-    STRPTR src;
+    STRPTR src, dead = NULL;
 
     if(is_palette)
     {
 	src = *tt + 9;
-	RemoveToolType(tt);
+	dead = RemoveToolType(tt);
     }
     else
     {
@@ -62,6 +66,11 @@ static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WOR
 	{
 	    if(!*src)
 	    {
+	    	if (dead)
+		{
+		    FreeVec(dead);
+		    dead = NULL;
+		}
               	src = *tt;
               	if(!src || src[0] != 'I' || src[1] != 'M' || src[2] != '1' + which || src[3] != '=')
 	      	{
@@ -71,13 +80,14 @@ static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WOR
               	{
                     src += 4; numbits = 0;
               	}
-              	RemoveToolType(tt);
+              	dead = RemoveToolType(tt);
 	    }
 	    
 	    byte = *(src++);
 	    
 	    if(!byte)
 	    {
+	    	if (dead) FreeVec(dead);
 	    	return "NewIcon data invalid";
 	    }
 	    else if(byte < 0xA0)
@@ -108,6 +118,8 @@ static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WOR
 	  curentry++;
 	}
     }
+    
+    if (dead) FreeVec(dead);
     
     return 0;
 }
@@ -142,7 +154,7 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     
     width = tt[1] - 0x21;
     height = tt[2] - 0x21;
-    
+
     /* Selected image must have same size as normal image otherwise ignore it. */
     if (which && ((width != icon->icon35.width) || (height != icon->icon35.height)))
     {
@@ -218,8 +230,8 @@ BOOL ReadIconNI(struct NativeIcon *icon, struct Hook *streamhook,
     }
     
     if (!tt) return TRUE;
-    
-    RemoveToolType(tooltypes);
+
+    FreeVec(RemoveToolType(tooltypes));
     
     ReadImageNI(icon, 0, tooltypes, IconBase);
     ReadImageNI(icon, 1, tooltypes, IconBase);
