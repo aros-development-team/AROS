@@ -39,6 +39,7 @@
 #define CONSOLEBUFFER_SIZE 	256
 #define INPUTBUFFER_SIZE 	256
 #define CMD_HISTORY_SIZE 	32
+#define PASTEBUFSIZE            16384
 
 struct conTaskParams
 {
@@ -90,6 +91,10 @@ struct filehandle
     UBYTE		inputbuffer[INPUTBUFFER_SIZE + 2];
     UBYTE		historybuffer[CMD_HISTORY_SIZE][INPUTBUFFER_SIZE + 1];
 
+  /* If pastebuffer != 0, this contains data to paste from ConClip */
+    WORD                pastebufferpos;
+    WORD                pastebuffersize;
+    STRPTR              pastebuffer;
 };
 
 /* filehandle flags */
