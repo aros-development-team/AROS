@@ -24,7 +24,7 @@ void SetTitle(struct Window *, STRPTR);
 
 extern struct IntuitionBase *IntuitionBase;
 extern ULONG  err_time;
-static UBYTE  SPrintfBuf[80], *savea3;
+static UBYTE  SPrintfBuf[256], *savea3;
 
 /** SPrintf like routine **/
 

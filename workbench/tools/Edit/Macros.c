@@ -28,7 +28,7 @@ extern UBYTE   record;
 extern Project edit;
 static STRPTR  OldInfo = NULL;
 
-UBYTE NewTmpl[20], TmplLen, TmplWid;
+UBYTE NewTmpl[40], TmplLen, TmplWid;
 
 /** Manage a set of macros **/
 Macro MainMacro = NULL, MacCur = NULL, LastChunk;
@@ -43,6 +43,7 @@ UBYTE SzOp[] = {
 void init_macros( void )
 {
 	TmplLen = strlen(
+#warning "FIXME: Missing buffer overflow check!"
 	strcpy(NewTmpl, ErrMsg(WARN_REC)));
 	strcat(NewTmpl, "  "); TmplLen += 2;
 	strcat(NewTmpl, InfoTmpl);
