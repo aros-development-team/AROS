@@ -2,10 +2,11 @@
 
 #include <stdarg.h>
 
-#include "kernel_base.h"
-#include "kernel_debug.h"
+#include "hostinterface.h"
+#include "kernel_cpu.h"
+#include "kernel_mingw32.h"
 
-int mykprintf(const UBYTE * fmt, ...)
+int mykprintf(const char *fmt, ...)
 {
     va_list args;
     int r;
@@ -23,7 +24,7 @@ int mykprintf(const UBYTE * fmt, ...)
     return r;
 }
 
-int myvkprintf (const UBYTE *fmt, va_list args)
+int myvkprintf (const char *fmt, va_list args)
 {
     int res;
     
@@ -34,7 +35,7 @@ int myvkprintf (const UBYTE *fmt, va_list args)
     return res;
 }
 
-int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, ...)
+int myrkprintf(const char *foo, const char *bar, int baz, const char* fmt, ...)
 {
     va_list args;
     int r;

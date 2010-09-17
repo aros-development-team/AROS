@@ -2,12 +2,6 @@
 
 #include <kernel_base.h>
 
-/*
- * We store boot message in a global variable because we need to store it before
- * we get KernelBase
- */
-struct TagItem *BootMsg = NULL;
-
 /*****************************************************************************
 
     NAME */

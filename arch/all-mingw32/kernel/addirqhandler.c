@@ -1,10 +1,11 @@
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+
+#include <inttypes.h>
 #include <stddef.h>
 
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include "kernel_base.h"
 #include "kernel_interrupts.h"
@@ -39,4 +40,18 @@ AROS_LH4(void *, KrnAddIRQHandler,
     return handle;
 
     AROS_LIBFUNC_EXIT
+}
+
+/* Run IRQ handlers */
+void krnRunIRQHandlers(uint8_t exception)
+{
+    struct IntrNode *in, *in2;
+
+    ForeachNodeSafe(KernelBase->kb_Interrupts, in, in2)
+    {
+	irqhandler_t h = in->in_Handler;
+
+        if (h && (in->in_nr == exception))
+            h(in->in_HandlerData, in->in_HandlerData2);
+    }
 }

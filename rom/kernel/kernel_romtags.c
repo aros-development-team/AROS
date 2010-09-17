@@ -16,8 +16,11 @@
 #include <kernel_debug.h>
 #include <kernel_romtags.h>
 
-/* This relies on KrnBug()'s ability to work with NULL KernelBase */
-#define KernelBase NULL
+struct rt_node
+{
+    struct Node     node;
+    struct Resident *module;
+};
 
 /*
  * RomTag scanner.

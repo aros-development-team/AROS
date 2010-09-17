@@ -1,5 +1,7 @@
 #include <windows.h>
 
+#include "host_intern.h"
+
 HANDLE conin, conout;
 
 int __declspec(dllexport) core_putc(char c)

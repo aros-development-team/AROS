@@ -1,5 +1,4 @@
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include "kernel_base.h"
 

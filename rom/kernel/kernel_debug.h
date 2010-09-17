@@ -1,5 +1,10 @@
+/*
+ * This file contains useful redefinition of bug() macro which uses
+ * kernel.resource's own debugging facilities. Include it if you
+ * need bug() in your code.
+ */
+
 #include <aros/asmcall.h>
-#include <proto/kernel.h>
 
 #ifdef bug
 #undef bug
@@ -29,4 +34,9 @@ static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
 
 #define bug(...) _bug(KernelBase, __VA_ARGS__)
 
+/*
+ * Character output function. All debug output end up there.
+ * This function is needed to be implemented for every supported
+ * architecture.
+ */
 int krnPutC(int chr, struct KernelBase *KernelBase);

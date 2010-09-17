@@ -2,15 +2,19 @@
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
+
+#include <inttypes.h>
 #include <string.h>
 
 #include <kernel_base.h>
-#include <kernel_init.h>
 #include <kernel_debug.h>
 #include <kernel_tagitems.h>
 
 #define D(x)
 
+/* Some globals we can't live without */
+struct TagItem *BootMsg = NULL;
+struct KernelBase *KernelBase = NULL;
 #if AROS_MODULES_DEBUG
 static struct MinList *Debug_ModList = NULL;
 #endif
@@ -23,10 +27,11 @@ void __clear_bss(struct KernelBSS *bss)
     }
 }
 
-static int Kernel_Init(struct KernelBase *KernelBase)
+static int Kernel_Init(struct KernelBase *kBase)
 {
     int i;
 
+    KernelBase = kBase;
     D(bug("[KRN] Kernel_Init(0x%p)\n", KernelBase));
 
     for (i=0; i < EXCEPTIONS_COUNT; i++)

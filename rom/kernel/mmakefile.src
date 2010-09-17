@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 # Linux-hosted kernel_cpu.h relies on sigcore.h which in turn relies on Linux system includes,
 # so we also append $(GENINCDIR) and /usr/include.
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/arch/all-$(ARCH)/kernel \
+	       -I$(SRCDIR)/arch/$(CPU)-all/kernel \
                -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) -idirafter /usr/include
 
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
@@ -15,7 +16,7 @@ FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecon
 	 switch unmapglobal unregistermodule virtualtophysical decodelocation	     \
 	 putchar maygetchar allocpages freepages
 
-FILES := kernel_init kernel_debug kernel_romtags kernel_tagitems
+FILES := kernel_init kernel_debug kernel_romtags kernel_scheduler kernel_tagitems
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource \

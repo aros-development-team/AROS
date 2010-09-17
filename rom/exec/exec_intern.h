@@ -29,6 +29,9 @@
 
 #include <exec_platform.h>
 
+/* Internals of this structure are host-specific, we don't know them here */
+struct HostInterface;
+
 /* A private portion of ExecBase */
 struct IntExecBase
 {
@@ -50,7 +53,7 @@ struct IntExecBase
 extern void __AROS_InitExecBase (void);
 #endif
 
-struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data);
-BOOL Exec_PreparePlatform(struct ExecBase *SysBase, void *data);
+struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *hif);
+BOOL Exec_PreparePlatform(struct Exec_PlatformData *pdata, struct HostInterface *hif);
 
 #endif /* __EXEC_INTERN_H__ */
