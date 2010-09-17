@@ -39,7 +39,7 @@ typedef struct _XMM_SAVE_AREA32
     UBYTE Reserved4[96];
 } XMM_SAVE_AREA32;
 
-struct AROSCPUContext
+typedef struct _CONTEXT
 {
     IPTR  P1Home;
     IPTR  P2Home;
@@ -110,29 +110,18 @@ struct AROSCPUContext
     IPTR  LastExceptionToRip;
     IPTR  LastExceptionFromRip;
     ULONG LastError;
-};
-
-#define SET_PC(ctx, addr) ctx->Rip = (IPTR)addr
-
-#else
-
-struct AROSCPUContext
-{
-    CONTEXT regs;
-    ULONG LastError;
-};
-
-#define kprintf printf
+} CONTEXT;
 
 #endif
 
-#define GET_PC(ctx) (void *)ctx->Rip
-#define GET_SP(ctx) (void *)ctx->Rsp
+#define GET_PC(ctx) (void *)ctx->Regs.Rip
+#define GET_SP(ctx) (void *)ctx->Regs.Rsp
+#define SET_PC(ctx, addr) ctx->Regs.Rip = (IPTR)addr
 
 #define EXCEPTIONS_COUNT 19
 
 #define PRINT_CPUCONTEXT(ctx) \
-	kprintf ("    ContextFlags: 0x%08lX\n" \
+	BUG ("    ContextFlags: 0x%08lX\n" \
 		 "    RSP=%016lx  RBP=%016lx  RIP=%016lx\n" \
 		 "    RAX=%016lx  RBX=%016lx  RCX=%016lx  RDX=%016lx\n" \
 		 "    R08=%016lx  R09=%016lx  R10=%016lx  R11=%016lx\n" \
@@ -146,10 +135,10 @@ struct AROSCPUContext
 	    , (ctx)->Rdi, (ctx)->Rsi, (ctx)->EFlags \
       );
 
-#define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->Rbp = 0;			 \
-					     ctx->Rip = (IPTR)pc;		 \
-					     ctx->Rsp = (IPTR)sp;		 \
-					     ctx->ContextFlags = CONTEXT_CONTROL;
+#define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->Regs.Rbp = 0;			 \
+					     ctx->Regs.Rip = (IPTR)pc;		 \
+					     ctx->Regs.Rsp = (IPTR)sp;		 \
+					     ctx->ContextFlags |= CONTEXT_CONTROL;
 
 #define REG_SAVE_VAR UWORD SegCS_Save, SegSS_Save
 

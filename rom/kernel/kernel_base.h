@@ -1,14 +1,13 @@
-/* 
- * This is actually a sample file, which definitely will be overriden
- * for every architecture.
- */
+#define __KERNEL_NOLIBBASE__
 
 #include <exec/semaphores.h>
 #include <aros/kernel.h>
 
-#define EXCEPTIONS_COUNT 1
-#define IRQ_COUNT        1
+/* These two specify IRQ_COUNT and EXCEPTIONS_COUNT */
+#include <kernel_arch.h>
+#include <kernel_cpu.h>
 
+/* kernel.resource base. Nothing spectacular, really. */
 struct KernelBase
 {
     struct Node            kb_Node;
@@ -18,3 +17,14 @@ struct KernelBase
     dbg_seg_t		  *kb_KernelModules;
     struct SignalSemaphore kb_ModSem;
 };
+
+/*
+ * Some useful global variables. They are global because:
+ * - BootMsg needs to be stored before KernelBase is allocated;
+ * - KernelBase is needed by interrupt handling code
+ */
+extern struct TagItem *BootMsg;
+extern struct KernelBase *KernelBase;
+
+/* Utility function to clear BSS segments. Call it before storing any globals!!! */
+void __clear_bss(struct KernelBSS *bss);

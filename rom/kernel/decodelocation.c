@@ -2,6 +2,8 @@
 #include <dos/bptr.h>
 #include <proto/exec.h>
 
+#include <inttypes.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
 #include <kernel_tagitems.h>

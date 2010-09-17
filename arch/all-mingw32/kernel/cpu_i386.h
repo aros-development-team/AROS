@@ -29,7 +29,7 @@ typedef struct _FLOATING_SAVE_AREA
 	IPTR	Cr0NpxState;
 } FLOATING_SAVE_AREA;
 
-struct AROSCPUContext
+typedef struct _CONTEXT
 {
 	IPTR	ContextFlags;
 	IPTR	Dr0;
@@ -57,28 +57,18 @@ struct AROSCPUContext
 	IPTR	SegSs;
 	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 	ULONG	LastError;
-};
-
-#else
-
-struct AROSCPUContext
-{
-    CONTEXT regs;
-    DWORD LastError;
-};
-
-#define kprintf printf
+} CONTEXT;
 
 #endif
 
-#define GET_PC(ctx) (void *)ctx->Eip
-#define GET_SP(ctx) (void *)ctx->Esp
-#define SET_PC(ctx, addr) ctx->Eip = (unsigned long)addr
+#define GET_PC(ctx) (void *)ctx->regs.Eip
+#define GET_SP(ctx) (void *)ctx->regs.Esp
+#define SET_PC(ctx, addr) ctx->regs.Eip = (unsigned long)addr
 
 #define EXCEPTIONS_COUNT 19
 
 #define PRINT_CPUCONTEXT(ctx) \
-	kprintf ("    ContextFlags: 0x%08lX\n" \
+	bug ("    ContextFlags: 0x%08lX\n" \
 		 "    ESP=%08lx  EBP=%08lx  EIP=%08lx\n" \
 		 "    EAX=%08lx  EBX=%08lx  ECX=%08lx  EDX=%08lx\n" \
 		 "    EDI=%08lx  ESI=%08lx  EFLAGS=%08lx\n" \
@@ -95,10 +85,10 @@ struct AROSCPUContext
 	    , (ctx)->EFlags \
       );
 
-#define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->Ebp = 0;			 \
-					     ctx->Eip = (IPTR)pc;		 \
-					     ctx->Esp = (IPTR)sp;		 \
-					     ctx->ContextFlags = CONTEXT_CONTROL;
+#define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->regs.Ebp = 0;			 \
+					   ctx->regs.Eip = (IPTR)pc;		 \
+					   ctx->regs.Esp = (IPTR)sp;		 \
+					   ctx->regs.ContextFlags = CONTEXT_CONTROL;
 
 #define REG_SAVE_VAR DWORD SegCS_Save, SegSS_Save
 
@@ -110,3 +100,5 @@ struct AROSCPUContext
 #define CONTEXT_RESTORE_REGS(ctx) (ctx)->SegCs = SegCS_Save; \
 				  (ctx)->SegSs = SegSS_Save; \
 				  (ctx)->ContextFlags &= CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS
+
+#define PC(regs) regs->Eip

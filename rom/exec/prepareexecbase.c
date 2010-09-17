@@ -75,7 +75,7 @@ static void Exec_TaskFinaliser(void)
     and not add anything yet (except for the MemHeader).
 */
 
-struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data)
+struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *data)
 {
     ULONG   negsize = 0, i;
     VOID  **fp      = LIBFUNCTABLE;
@@ -95,7 +95,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data)
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data. This is needed for CacheClearU() and CacleClearE() on MinGW32 */
-    if (!Exec_PreparePlatform(SysBase, data))
+    if (!Exec_PreparePlatform(&PD(SysBase), data))
 	return NULL;
 #endif
 

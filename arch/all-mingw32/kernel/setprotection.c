@@ -1,9 +1,10 @@
 #include <aros/libcall.h>
-#include <proto/kernel.h>
+#include <aros/kernel.h>
 
-#include <kernel_base.h>
+#include <inttypes.h>
 
-#include "winapi.h"
+#include "kernel_base.h"
+#include "kernel_mingw32.h"
 
 static unsigned int access_map[] =
 {

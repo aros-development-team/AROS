@@ -20,11 +20,9 @@ static char *kernel_funcs[] = {
  * Note that we are called very early, so no exec calls here! We don't have
  * ExecBase's functions table yet, only empty data structure!
  */
-BOOL Exec_PreparePlatform(struct ExecBase *SysBase, void *data)
+BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct HostInterface *HostIFace)
 {
     void *KernelLib, *UserLib;
-    struct Exec_PlatformData *pd = &PD(SysBase);
-    struct HostInterface *HostIFace = data;
 
     KernelLib = HostIFace->HostLib_Open("kernel32.dll", NULL);
     if (!KernelLib)

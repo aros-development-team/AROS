@@ -1,35 +1,40 @@
-#include <aros/system.h>
-#include <excpt.h>
-#include <windows.h>
-#define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
-#define __typedef_WORD /* is the same except BOOL. It's defined to short on AROS and to int on Windows. This means */
-#define __typedef_BYTE /* that you can't use it in OS-native part of the code and can't use any AROS structure     */
-#define __typedef_BOOL /* definition that contains BOOL.                                                           */
-typedef unsigned AROS_16BIT_TYPE UWORD;
-typedef unsigned char UBYTE;
-
 #include <stddef.h>
 #include <stdio.h>
-#include <exec/alerts.h>
-#include <exec/lists.h>
-#include <exec/execbase.h>
+#include <windows.h>
 
-#include "kernel_base.h"
-#include "kernel_interrupts.h"
-#include "kernel_syscall.h"
+/* PRINT_CPUCONTEXT() macro uses bug() because it can be useful on AROS side too. */
+#define bug printf
+
+#include "host_core.h"
+#include "host_intern.h"
+#include "kernel_cpu.h"
 
 /*
  * Console output in Windows seems to be protected via semaphores. SuspendThread() at the moment
  * of writing something to console leaves it in locked state. Attempt to write something to it from
- * within task scheduler. Because of this certain debug types that are known to halt the system are
- * marked as DANGEROUS.
+ * within task scheduler may halt the system. Because of this only init debug actually works and
+ * is safe to use.
  */
-
 #define D(x)	 /* Init debug		*/
-#define DI(x)    /* Interrupts debug    - DANGEROUS */
-#define DT(x)    /* Traps debug         */
-#define DS(x)    /* Task switcher debug - DANGEROUS */
-#define DIRQ(x)  /* IRQ debug		*/
+#define DI(x)    /* Interrupts debug    */
+#define DS(x)    /* Task switcher debug */
+
+/*
+   In Windows-hosted kernel IRQs are used to receive events from emulated
+   hardware. Hardware is mostly emulated using Windows threads running
+   asynchronously to AROS. When the thread finishes its job it calls host-side
+   KrnCauseIRQ() function in order to initiate an IRQ in AROS.
+
+   IRQs are managed dynamically using host-side KrnAllocIRQ() and KrnFreeIRQ() functions
+   except the following static allocations:
+
+   IRQ 0 - main system periodic timer (50 Hz). Used internally by kernel.resource
+           for task switching and VBlank emulation. Exec uses it as a VBLANK source.
+           In current implementation it can not be caused manually using KernelCauseIRQ().
+
+   The whole described thing is experimental and subject to change.
+*/
+#define INT_TIMER 0
 
 HANDLE MainThread;
 DWORD MainThreadId;
@@ -40,82 +45,31 @@ HANDLE IntObjects[256];
 unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
 unsigned char Supervisor;
-unsigned char Sleep_Mode;
-struct ExecBase *SysBase;
-struct KernelBase *KernelBase;
+struct CoreInterface *CoreIFace;
+char *IDNestCnt;
 
-/* Call all exception handlers and accumulate return value */
-int user_exception_handler(uint8_t exception, struct List *list, CONTEXT *ctx)
-{
-    struct IntrNode *in, *in2;
-    int ret = 0;
+unsigned char __declspec(dllexport) Sleep_Mode;
 
-    ForeachNodeSafe(&list[exception], in, in2)
-    {
-	exhandler_t h = in->in_Handler;
-
-        if (h)
-            ret |= h(ctx, in->in_HandlerData, in->in_HandlerData2);
-    }
-
-    return ret;
-}
-
-void user_irq_handler(uint8_t exception, struct List *list)
-{
-    struct IntrNode *in, *in2;
-
-    ForeachNodeSafe(list, in, in2)
-    {
-	irqhandler_t h = in->in_Handler;
-	
-        if (h && (in->in_nr == exception))
-            h(in->in_HandlerData, in->in_HandlerData2);
-    }
-}
-
-static void core_Resume(struct AROSCPUContext *save, CONTEXT *regs)
-{
-    /* Restore saved context and continue */
-    CopyMemory(regs, save, sizeof(CONTEXT));
-    *LastErrorPtr = save->LastError;
-}
+void core_intr_enable(void);
 
 static inline void core_LeaveInterrupt(void)
 {
     Supervisor = 0;
 
-    if ((char)SysBase->IDNestCnt < 0)
+    if (*IDNestCnt < 0)
         core_intr_enable();
 }
-
-struct ExceptionTranslation AmigaTraps[] = {
-    {EXCEPTION_ACCESS_VIOLATION     , 2},
-    {EXCEPTION_ARRAY_BOUNDS_EXCEEDED, 3},
-    {EXCEPTION_BREAKPOINT	    , 4},
-    {EXCEPTION_DATATYPE_MISALIGNMENT, 3},
-    {EXCEPTION_FLT_DIVIDE_BY_ZERO   , 5},
-    {EXCEPTION_GUARD_PAGE	    , 3},
-    {EXCEPTION_ILLEGAL_INSTRUCTION  , 4},
-    {EXCEPTION_IN_PAGE_ERROR	    , 3},
-    {EXCEPTION_INT_DIVIDE_BY_ZERO   , 5},
-    {EXCEPTION_PRIV_INSTRUCTION     , 8},
-    {EXCEPTION_SINGLE_STEP	    , 9},
-    {0				    , 0}
- };
 
 LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
 {
     DWORD ExceptionCode = exptr->ExceptionRecord->ExceptionCode;
     CONTEXT *ContextRecord = exptr->ContextRecord;
-    void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
-    struct ExceptionTranslation *ex;
     DWORD ThreadId;
     REG_SAVE_VAR;
 
     /* We are already in interrupt and we must not be preempted by task switcher. 
        Note that up to this point we still can be preempted by task switcher, i
-       hope it's okay. */
+       really hope it's okay. */
     Ints_Enabled = 0;
 
     /* Exception in other thread, probably in virtual hardware. Die. */
@@ -133,86 +87,12 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     /* Save important registers that must not be modified */
     CONTEXT_SAVE_REGS(ContextRecord);
 
-    switch (ExceptionCode) {
-    case AROS_EXCEPTION_SYSCALL:
-	/* It's a SysCall exception issued by core_syscall() */
-	switch (exptr->ExceptionRecord->ExceptionInformation[0])
-	{
-	case SC_CAUSE:
-	    core_Cause(SysBase);
-	    break;
+    /* Call trap handler */
+    if (CoreIFace->HandleTrap(ExceptionCode, exptr->ExceptionRecord->ExceptionInformation, ContextRecord, LastErrorPtr))
+    {
+        printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
 
-	case SC_DISPATCH:
-	    core_Dispatch(ContextRecord, SysBase);
-	    break;
-
-	case SC_SWITCH:
-	    core_Switch(ContextRecord, SysBase);
-	    break;
-
-	case SC_SCHEDULE:
-	    core_Schedule(ContextRecord, SysBase);
-	    break;
-
-	case SC_RESUME:
-	    core_Resume((struct AROSCPUContext *)exptr->ExceptionRecord->ExceptionInformation[1], ContextRecord);
-	    break;
-	}
-	break;
-
-    default:
-	/* It's something else, likely a CPU trap */
-	printf("[KRN] Exception 0x%08lX, SysBase 0x%p, KernelBase 0x%p\n", ExceptionCode, SysBase, KernelBase);
-
-	/* Find out trap handler for caught task */
-	if (SysBase)
-	{
-            struct Task *t = SysBase->ThisTask;
-
-            if (t) {
-		printf("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
-		trapHandler = t->tc_TrapCode;
-		DT(printf("[KRN] Task trap handler 0x%p\n", trapHandler));
-	    } else
-		printf("[KRN] No task\n");
-		
-	    DT(printf("[KRN] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
-	    if (!trapHandler)
-		trapHandler = SysBase->TaskTrapCode;
-	}
-
-    	PRINT_CPUCONTEXT(ContextRecord);
-
-	/* Translate Windows exception code to CPU and exec trap numbers */
-	for (ex = Traps; ex->ExceptionCode; ex++)
-	{
-	    if (ExceptionCode == ex->ExceptionCode)
-		break;
-	}
-	DI(printf("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
-
-	if (ex->CPUTrap == -1)
-	{
-	    if (user_exception_handler(ex->CPUTrap, KernelBase->kb_Exceptions, ContextRecord))
-		break;
-	}
-
-	if (trapHandler && (ex->AmigaTrap != -1))
-	{
-	    /* Call our trap handler. Note that we may return, this means that the handler has
-	       fixed the problem somehow and we may safely continue */
-	    DT(printf("[KRN] Amiga trap %d\n", ex->AmigaTrap));
-
-	    trapHandler(ex->AmigaTrap, ContextRecord);
-	}
-	else
-	{
-	    /* We should never get here. But if we do, it's a true emergency.
-	       And we tell Windows to throw us away. */
-    	    printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
-
-	    return EXCEPTION_CONTINUE_SEARCH;
-	}
+	return EXCEPTION_CONTINUE_SEARCH;
     }
 
     /* Restore important registers */
@@ -230,22 +110,27 @@ DWORD WINAPI TaskSwitcher()
     REG_SAVE_VAR;
     DS(DWORD res);
 
-    for (;;) {
+    for (;;)
+    {
         obj = WaitForMultipleObjects(Ints_Num, IntObjects, FALSE, INFINITE);
-        DS(bug("[Task switcher] Object %lu signalled\n", obj));
+        DS(printf("[Task switcher] Object %lu signalled\n", obj));
+
 	/* Stop main thread if it's not sleeping */
-        if (Sleep_Mode != SLEEP_MODE_ON) {
+        if (Sleep_Mode != SLEEP_MODE_ON)
+	{
             DS(res =) SuspendThread(MainThread);
-    	    DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
+    	    DS(printf("[Task switcher] Suspend thread result: %lu\n", res));
 	    /* People say that on SMP systems thread is not stopped immediately by SuspendThread().
 	       So we have to do our best to ensure that is is really stopped. I hope GetThreadContext()
 	       guarantees it. */
 	    CONTEXT_INIT_FLAGS(&MainCtx);
     	    DS(res =) GetThreadContext(MainThread, &MainCtx);
-    	    DS(bug("[Task switcher] Get context result: %lu\n", res));
+    	    DS(printf("[Task switcher] Get context result: %lu\n", res));
     	}
+
 	/* Process the interrupt if we are allowed to */
-        if (Ints_Enabled) {
+        if (Ints_Enabled)
+	{
     	    Supervisor = 1;
     	    PendingInts[obj] = 0;
     	    /* 
@@ -254,35 +139,41 @@ DWORD WINAPI TaskSwitcher()
 	     * our process. This can be a useful aid for future AROS debuggers.
     	     */
     	    CONTEXT_SAVE_REGS(&MainCtx);
-    	    DS(bug("[Task switcher] original CPU context: ****\n"));
+    	    DS(printf("[Task switcher] original CPU context: ****\n"));
     	    DS(PRINT_CPUCONTEXT(&MainCtx));
-	    /* Call user-defined IRQ handler */
-	    user_irq_handler(obj, KernelBase->kb_Interrupts);
-	    /* Call scheduler */
-    	    core_ExitInterrupt(&MainCtx);
+
+	    /* Call IRQ handler */
+	    CoreIFace->HandleIRQ(obj, &MainCtx, LastErrorPtr);
+
 	    /* If AROS is going to sleep, set new CPU context */
-    	    if (!Sleep_Mode) {
-    	        DS(bug("[Task switcher] new CPU context: ****\n"));
+    	    if (!Sleep_Mode)
+	    {
+    	        DS(printf("[Task switcher] new CPU context: ****\n"));
     	        DS(PRINT_CPUCONTEXT(&MainCtx));
     	        CONTEXT_RESTORE_REGS(&MainCtx);
     	        DS(res =)SetThreadContext(MainThread, &MainCtx);
-    	        DS(bug("[Task switcher] Set context result: %lu\n", res));
+    	        DS(printf("[Task switcher] Set context result: %lu\n", res));
     	    }
+
 	    /* Leave supervisor mode */
 	    core_LeaveInterrupt();
-    	} else {
+    	}
+	else
+	{
 	    /* Otherwise remember the interrupt in order to re-submit it later */
     	    PendingInts[obj] = 1;
-            DS(bug("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
+            DS(printf("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
         }
+
 	/* Resuming main thread if AROS is not sleeping */
         if (Sleep_Mode)
             /* We've entered sleep mode */
             Sleep_Mode = SLEEP_MODE_ON;
-        else {
-	    DS(bug("[Task switcher] Resuming main thread\n"));
+        else
+	{
+	    DS(printf("[Task switcher] Resuming main thread\n"));
             DS(res =) ResumeThread(MainThread);
-            DS(bug("[Task switcher] Resume thread result: %lu\n", res));
+            DS(printf("[Task switcher] Resume thread result: %lu\n", res));
         }
     }
     return 0;
@@ -320,20 +211,18 @@ void __declspec(dllexport) core_intr_enable(void)
     }
 }
 
-void __declspec(dllexport) core_syscall(const ULONG_PTR n)
+void __declspec(dllexport) core_raise(DWORD code, const ULONG_PTR n)
 {
     /* This ensures that we are never preempted inside RaiseException().
        Upon exit from the syscall interrupt state will be restored by
        core_LeaveInterrupt() */
     Ints_Enabled = 0;
-    RaiseException(AROS_EXCEPTION_SYSCALL, 0, 1, &n);
+    RaiseException(code, 0, 1, &n);
+
     /* If after RaiseException we are still here, but Sleep_Mode != 0, this likely means
        we've just called SC_SCHEDULE, SC_SWITCH or SC_DISPATCH, and it is putting us to sleep.
        Sleep mode will be committed as soon as timer IRQ happens */
-    while(Sleep_Mode) {
-    	/* TODO: SwitchToThread() here maybe? But it's dangerous because context switch
-    	   will happen inside it and Windows will kill us */
-    }
+    while (Sleep_Mode);
 }
 
 unsigned char __declspec(dllexport) core_is_super(void)
@@ -341,87 +230,112 @@ unsigned char __declspec(dllexport) core_is_super(void)
     return Supervisor;
 }
 
-int __declspec(dllexport) core_init(unsigned int TimerPeriod, struct ExecBase *sBase, struct KernelBase *kBase)
+int __declspec(dllexport) core_init(unsigned int TimerPeriod, char *idnestcnt, struct CoreInterface *iface)
 {
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
     LARGE_INTEGER VBLPeriod;
-    OSVERSIONINFO osver;
     void *MainTEB;
     int i;
     DWORD SwitcherId;
-    ULONG LastErrOffset = 0;
 
-    D(printf("[KRN] Setting up interrupts, SysBase = 0x%08lX, KernelBase = 0x%08lX\n", sBase, kBase));
-    SysBase = sBase;
-    KernelBase = kBase;
+    D(printf("[KRN] Setting up interrupts, CoreInterface = 0x%p\n", iface));
+    IDNestCnt = idnestcnt;
+    CoreIFace = iface;
     Ints_Enabled = 0;
     Supervisor = 0;
     Sleep_Mode = 0;
-    for (i = 1; i < 256; i++) {
+    for (i = 1; i < 256; i++)
+    {
 	IntObjects[i] = NULL;
         AllocatedInts[i] = 0;
     }
 
+    /* Set up traps */
     MainThreadId = GetCurrentThreadId();
     SetUnhandledExceptionFilter(exceptionHandler);
 
+    /* Set up debug I/O */
     conin  = GetStdHandle(STD_INPUT_HANDLE);
     conout = GetStdHandle(STD_OUTPUT_HANDLE);
 
+    /* Statically allocate main system timer */
     IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
-    if (IntObjects[INT_TIMER]) {
-	AllocatedInts[INT_TIMER] = 1;
-	PendingInts[INT_TIMER] = 0;
-	Ints_Num = 1;
-	ThisProcess = GetCurrentProcess();
-	if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
-	    FillMemory(&osver, sizeof(osver), 0);
-	    osver.dwOSVersionInfoSize = sizeof(osver);
-	    GetVersionEx(&osver);
-	    /* LastError value is part of our context. In order to manipulate it we have to hack
-	       into Windows TEB (thread environment block).
-	       Since this structure is private, error code offset changes from version to version.
-	       The following offsets are known:
-	       * Windows 95 and 98 - 0x60
-	       * Windows Me - 0x74
-	       * Windows NT (all family, fixed at last) - 0x34
-	     */
-	    switch(osver.dwPlatformId) {
-	    case VER_PLATFORM_WIN32_WINDOWS:
-	        if (osver.dwMajorVersion == 4) {
-	            if (osver.dwMinorVersion > 10)
-	                LastErrOffset = 0x74;
-	            else
-	                LastErrOffset = 0x60;
-	        }
-	        break;
-	    case VER_PLATFORM_WIN32_NT:
-	        LastErrOffset = 0x34;
-	        break;
-	    }
-	    if (LastErrOffset) {
-		MainTEB = NtCurrentTeb();
-		LastErrorPtr = MainTEB + LastErrOffset;
-		SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, NULL, 0, &SwitcherId);
-		if (SwitcherThread) {
-		    D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
-#ifdef SLOW
-		    TimerPeriod = 5000;
-#else
-		    TimerPeriod = 1000/TimerPeriod;
-#endif
-		    VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
-		    return SetWaitableTimer(IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
-		}
-		    D(else printf("[KRN] Failed to run task switcher thread\n");)
-	    } else
-		printf("Unsupported Windows version %lu.%lu, platform ID %lu\n", osver.dwMajorVersion, osver.dwMinorVersion, osver.dwPlatformId);
-	}
-	    D(else printf("[KRN] failed to get thread handle\n");)
+    if (!IntObjects[INT_TIMER])
+    {
+	D(printf("[KRN] Failed to create timer interrupt\n");)
+	return FALSE;
     }
-	D(else printf("[KRN] Failed to create timer interrupt\n");)
-    return 0;
+    AllocatedInts[INT_TIMER] = 1;
+    PendingInts[INT_TIMER] = 0;
+    Ints_Num = 1;
+
+    ThisProcess = GetCurrentProcess();
+    if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS))
+    {
+#ifdef __x86_64__
+	#define LastErrOffset 0x34
+#else
+	/* On 32-bit x86 we have to figure out the offset depending on Windows version */
+	OSVERSIONINFO osver = {0};
+	ULONG LastErrOffset = 0;
+
+	osver.dwOSVersionInfoSize = sizeof(osver);
+	GetVersionEx(&osver);
+
+	/*
+	 * LastError value is part of our context. In order to manipulate it we have to hack
+	 * into Windows TEB (thread environment block).
+	 * Since this structure is private, error code offset changes from version to version.
+	 * The following offsets are known:
+	 * - Windows 95 and 98 - 0x60
+	 * - Windows Me - 0x74
+	 * - Windows NT (all family, fixed at last) - 0x34
+	 */
+	switch(osver.dwPlatformId)
+	{
+	case VER_PLATFORM_WIN32_WINDOWS:
+	    if (osver.dwMajorVersion == 4) {
+	        if (osver.dwMinorVersion > 10)
+	            LastErrOffset = 0x74;
+	        else
+	            LastErrOffset = 0x60;
+	    }
+	    break;
+
+	case VER_PLATFORM_WIN32_NT:
+	    LastErrOffset = 0x34;
+	    break;
+	}
+
+	if (!LastErrOffset)
+	{
+	    printf("Unsupported Windows version %lu.%lu, platform ID %lu\n", osver.dwMajorVersion, osver.dwMinorVersion, osver.dwPlatformId);
+	    return FALSE;
+	}
+#endif
+
+	MainTEB = NtCurrentTeb();
+	LastErrorPtr = MainTEB + LastErrOffset;
+
+	SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, NULL, 0, &SwitcherId);
+	if (SwitcherThread)
+	{
+	    D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
+#ifdef SLOW
+	    TimerPeriod = 5000;
+#else
+	    TimerPeriod = 1000/TimerPeriod;
+#endif
+	    VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
+	    return SetWaitableTimer(IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
+	}
+	    D(else printf("[KRN] Failed to run task switcher thread\n");)
+    } else
+	D(else printf("[KRN] failed to get thread handle\n");)
+
+    CloseHandle(IntObjects[INT_TIMER]);
+    return FALSE;
 }
 
 /*

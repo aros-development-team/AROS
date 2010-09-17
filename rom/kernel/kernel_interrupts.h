@@ -1,3 +1,8 @@
+#include <inttypes.h>
+
+/*
+ * Internal definitions. Needed only if you replace some related function.
+ */
 struct IntrNode
 {
     struct MinNode      in_Node;
@@ -14,16 +19,6 @@ enum intr_types
     it_interrupt = 0xf0
 };
 
-#ifdef HAVE_KERNEL_INTERRUPTS_C
-
-/* Architecture-specific interrupt controller functions */
-
-void ictl_enable_irq(uint8_t num)  /* Enable IRQ num  */
-void ictl_disable_irq(uint8_t num) /* Disable IRQ num */
-
-#else
-
-#define ictl_enable_irq(irq)
-#define ictl_disable_irq(irq)
-
-#endif
+/* Functions to be called by machine-specific code */
+int krnRunExceptionHandlers(uint8_t exception, void *ctx); /* Run user-supplied exception handlers */
+void krnRunIRQHandlers(uint8_t exception);		   /* Run user-supplied IRQ handlers       */

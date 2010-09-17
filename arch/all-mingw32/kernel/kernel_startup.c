@@ -2,48 +2,37 @@
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
-#include <aros/symbolsets.h>
 #include <exec/resident.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
-#include <memory.h>
 
+/*
+ * Private exec.library include, needed for MEMHEADER_TOTAL.
+ * TODO: may be bring it out to public includes ?
+ */
+#include "memory.h"
+
+#include "host_core.h"
+#include "hostinterface.h"
 #include "kernel_base.h"
-#include "kernel_cpu.h"
 #include "kernel_debug.h"
-#include "kernel_init.h"
 #include "kernel_romtags.h"
 #include "kernel_tagitems.h"
-#include "winapi.h"
+#include "kernel_mingw32.h"
 
-/* External function from exec.library */
-extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *, void *);
-
-#undef kprintf
-#undef vkprintf
-#undef rkprintf
-
-/* External functions from kernel_debug.c */
-extern int mykprintf(const char * fmt, ...);
-extern int myvkprintf(const char *fmt, va_list args);
-extern int myrkprintf(const char *foo, const char *bar, int baz, const char *fmt, ...);
+/*
+ * External early init function from exec.library
+ * TODO: find some way to discover it dynamically
+ */
+extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *, struct HostInterface *);
 
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
 
-/* auto init */
-static int Core_Init(APTR KernelBase)
-{
-    D(bug("[KRN] initializing host-side kernel module\n"));
-    return KernelIFace.core_init(SysBase->VBlankFrequency, SysBase, KernelBase);
-}
-
-ADD2INITLIB(Core_Init, 10)
-
-char *kernel_functions[] = {
+static char *kernel_functions[] = {
     "core_init",
     "core_intr_disable",
     "core_intr_enable",
@@ -52,7 +41,13 @@ char *kernel_functions[] = {
     "core_protect",
     "core_putc",
     "core_getc",
+    "Sleep_Mode",
     NULL
+};
+
+static struct CoreInterface CoreIFace = {
+    core_TrapHandler,
+    core_IRQHandler
 };
 
 /* rom startup */
@@ -67,6 +62,7 @@ int __startup startup(struct TagItem *msg)
     IPTR memlen;
     struct TagItem *tag;
     struct TagItem *tstate = msg;
+    struct HostInterface *hif = NULL;
     void *klo = NULL;
     void *khi = NULL;
     struct mb_mmap *mmap = NULL;
@@ -92,9 +88,9 @@ int __startup startup(struct TagItem *msg)
 	    break;
 
 	case KRN_HostInterface:
-	    HostIFace = (struct HostInterface *)tag->ti_Data;
+	    hif = (struct HostInterface *)tag->ti_Data;
 	    break;
-	
+
 	case KRN_CmdLine:
 	    args = (char *)tag->ti_Data;
 	    break;
@@ -103,6 +99,7 @@ int __startup startup(struct TagItem *msg)
 
     /* Set globals only AFTER __clear_bss() */
     BootMsg = msg;
+    HostIFace = hif;
 
     if ((!klo) || (!khi) || (!mmap) || (!HostIFace)) {
 	mykprintf("[Kernel] Not enough parameters from bootstrap!\n");
@@ -116,9 +113,9 @@ int __startup startup(struct TagItem *msg)
 	return -1;
     }
 
-    badsyms = HostIFace->HostLib_GetInterface(hostlib, kernel_functions, (void **)&KernelIFace);
+    badsyms = HostIFace->HostLib_GetInterface(hostlib, kernel_functions, &KernelIFace);
     if (badsyms) {
-	mykprintf("[Kernel] Failed to find %lu functions in host-side module\n", badsyms);
+	mykprintf("[Kernel] Failed to find %u symbols in host-side module\n", badsyms);
 	HostIFace->HostLib_Close(hostlib, NULL);
 	return -1;
     }
@@ -158,7 +155,8 @@ int __startup startup(struct TagItem *msg)
      * ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
      */
-    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC))) {
+    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
+    {
 	mh->mh_Node.ln_Type = NT_MEMORY;
 	mh->mh_Node.ln_Name = "rom memory";
 	mh->mh_Node.ln_Pri = -128;
@@ -170,7 +168,7 @@ int __startup startup(struct TagItem *msg)
 	Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
 
-    /* In order for these functions to work before KernelBase is set up */
+    /* In order for these functions to work before KernelBase and ExecBase are set up */
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf = mykprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf = myrkprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf = myvkprintf;
@@ -179,11 +177,16 @@ int __startup startup(struct TagItem *msg)
     ranges[1] = khi;
     SysBase->ResModules = krnRomTagScanner(SysBase, ranges);
 
+    D(mykprintf("[Kernel] initializing host-side kernel module\n"));
+    if (!KernelIFace.core_init(SysBase->VBlankFrequency, &SysBase->IDNestCnt, &CoreIFace)) {
+	mykprintf("[Kernel] Failed to start up virtual machine!\n");
+	return -1;
+    }
+
     mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
 
     mykprintf("[Kernel] leaving startup!\n");
-
     HostIFace->HostLib_Close(hostlib, NULL);
     return 1;
 }

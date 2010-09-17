@@ -58,6 +58,8 @@ AROS_LH4(void *, KrnAddExceptionHandler,
 	of failure (like unsupported exception number).
 
     NOTES
+	The specification of this function is preliminary and subject to change.
+	Consider it private for now.
 
     EXAMPLE
 
@@ -102,4 +104,21 @@ AROS_LH4(void *, KrnAddExceptionHandler,
     return handle;
 
     AROS_LIBFUNC_EXIT
+}
+
+/* Run exception handlers and accumulate return value */
+int krnRunExceptionHandlers(uint8_t exception, void *ctx)
+{
+    struct IntrNode *in, *in2;
+    int ret = 0;
+
+    ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
+    {
+	exhandler_t h = in->in_Handler;
+
+        if (h)
+            ret |= h(ctx, in->in_HandlerData, in->in_HandlerData2);
+    }
+
+    return ret;
 }
