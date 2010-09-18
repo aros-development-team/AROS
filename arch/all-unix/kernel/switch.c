@@ -1,9 +1,9 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
-#include <proto/kernel.h>
 
 #include <kernel_base.h>
+#include <proto/kernel.h>
 
 AROS_LH0(void, KrnSwitch,
          struct KernelBase *, KernelBase, 5, Kernel)

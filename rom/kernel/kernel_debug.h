@@ -5,6 +5,8 @@
  */
 
 #include <aros/asmcall.h>
+#include <aros/libcall.h>
+#include <stdarg.h>
 
 #ifdef bug
 #undef bug
@@ -21,9 +23,9 @@ static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
 
     va_start(args, format);
 
-    /* We call the function directly, not using vector table,
+    /* We call the function directly. Not using vector table,
        because KernelBase can be NULL here (during very early
-       startup) */
+       startup). */
     AROS_UFC3(int, AROS_SLIB_ENTRY(KrnBug, Kernel),
 	      AROS_UFCA(const char *, format, A0),
 	      AROS_UFCA(va_list, args, A1),
@@ -35,8 +37,8 @@ static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
 #define bug(...) _bug(KernelBase, __VA_ARGS__)
 
 /*
- * Character output function. All debug output end up there.
- * This function is needed to be implemented for every supported
+ * Character output function. All debug output ends up there.
+ * This function needs to be implemented for every supported
  * architecture.
  */
 int krnPutC(int chr, struct KernelBase *KernelBase);
