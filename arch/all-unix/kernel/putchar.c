@@ -1,9 +1,9 @@
 #include <proto/exec.h>
+
+#include <kernel_base.h>
 #include <proto/kernel.h>
 
 #include <unistd.h>
-
-#include "kernel_base.h"
 
 AROS_LH1(void, KrnPutChar,
 	 AROS_LHA(char, c, D0),
