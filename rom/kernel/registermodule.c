@@ -25,6 +25,24 @@ static inline char *getstrtab(struct sheader *sh)
     return str;
 }
 
+static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR value)
+{
+    if (mod->m_str)
+	sym->s_name = &mod->m_str[st->name];
+    else
+	sym->s_name = NULL;
+
+    sym->s_lowest = value;
+    if (st->size)
+	sym->s_highest = value + st->size - 1;
+    else
+	/* For symbols with zero size KDL_SymbolEnd will give NULL */ 
+	sym->s_highest = NULL;
+
+    /* We count symbols here because not all of them can be added */
+    mod->mod.m_symcnt++;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -162,26 +180,23 @@ AROS_LH4(void, KrnRegisterModule,
 		    if (sym) {
 			for (j=0; j < symcnt; j++)
 			{
-			    int idx;
+			    int idx = st[j].shindex;
 
+			    /* Ignore these - they should not be here at all */
+			    if ((idx == SHN_UNDEF) || (idx == SHN_COMMON))
+				continue;
 			    /* TODO: perhaps XINDEX support is needed */
-			    if (st[j].shindex == SHN_XINDEX)
+			    if (idx == SHN_XINDEX)
 				continue;
 
-			    idx = st[j].shindex;
-
-			    if (sections[idx].addr && (sections[idx].flags & SHF_ALLOC)) {
-				if (mod->m_str)
-				    sym->s_name = &mod->m_str[st[j].name];
-				else
-				    sym->s_name = NULL;
-				sym->s_lowest = sections[idx].addr + st[j].value;
-				sym->s_highest = sym->s_lowest + st[j].size - 1;
-
+			    if (idx == SHN_ABS) {
+				addsymbol(mod, sym, &st[j], (APTR)st[j].value);
+				DSYMS(bug("[KRN] Added ABS symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
+				sym++;
+			    } else if (sections[idx].addr && (sections[idx].flags & SHF_ALLOC)) {
+				addsymbol(mod, sym, &st[j], sections[idx].addr + st[j].value);
 				DSYMS(bug("[KRN] Added symbol '%s' %08x-%08x\n", sym->s_name, sym->s_lowest, sym->s_highest));
 				sym++;
-				/* We count symbols here because not all of them can be added */
-				mod->mod.m_symcnt++;
 			    }
 			}
 		    }
