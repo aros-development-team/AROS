@@ -54,8 +54,6 @@ void core_intr_enable(void);
 
 static inline void core_LeaveInterrupt(void)
 {
-    Supervisor = 0;
-
     if (*IDNestCnt < 0)
         core_intr_enable();
 }
@@ -76,21 +74,22 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     ThreadId = GetCurrentThreadId();
     if (ThreadId != MainThreadId)
     {
-	printf("[KRN] Service thread 0x%08lX, exception 0x%08lX\n", ThreadId, ExceptionCode);
+	printf("[KRN] Service thread 0x%lu, exception 0x%08lX\n", ThreadId, ExceptionCode);
 	PRINT_CPUCONTEXT(ContextRecord);
 
 	return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    /* Enter supervisor mode, */
-    Supervisor = 1;
+    /* Enter supervisor mode. We can already be in supervisor (crashed inside
+       IRQ handler), so we increment on order to retain previous state. */
+    Supervisor++;
     /* Save important registers that must not be modified */
     CONTEXT_SAVE_REGS(ContextRecord);
 
     /* Call trap handler */
     if (CoreIFace->HandleTrap(ExceptionCode, exptr->ExceptionRecord->ExceptionInformation, ContextRecord, LastErrorPtr))
     {
-        printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
+        printf("[KRN] **UNHANDLED EXCEPTION 0x%08lX** stopping here...\n", ExceptionCode);
 
 	return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -98,7 +97,8 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     /* Restore important registers */
     CONTEXT_RESTORE_REGS(ContextRecord);
     /* Exit supervisor */
-    core_LeaveInterrupt();
+    if (--Supervisor == 0)
+	core_LeaveInterrupt();
 
     return EXCEPTION_CONTINUE_EXECUTION;
 }
@@ -156,6 +156,7 @@ DWORD WINAPI TaskSwitcher()
     	    }
 
 	    /* Leave supervisor mode */
+	    Supervisor = 0;
 	    core_LeaveInterrupt();
     	}
 	else
@@ -222,7 +223,7 @@ void __declspec(dllexport) core_raise(DWORD code, const ULONG_PTR n)
     /* If after RaiseException we are still here, but Sleep_Mode != 0, this likely means
        we've just called SC_SCHEDULE, SC_SWITCH or SC_DISPATCH, and it is putting us to sleep.
        Sleep mode will be committed as soon as timer IRQ happens */
-    while (Sleep_Mode);
+    while (Sleep_Mode) {};
 }
 
 unsigned char __declspec(dllexport) core_is_super(void)
@@ -331,7 +332,7 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod, char *idnestcnt, s
 	    return SetWaitableTimer(IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
 	}
 	    D(else printf("[KRN] Failed to run task switcher thread\n");)
-    } else
+    }
 	D(else printf("[KRN] failed to get thread handle\n");)
 
     CloseHandle(IntObjects[INT_TIMER]);

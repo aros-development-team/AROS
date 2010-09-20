@@ -20,21 +20,20 @@ BOOL core_Schedule(void)
     D(bug("[KRN] core_Schedule()\n"));
 
     SysBase->AttnResched &= ~ARF_AttnSwitch;
-    
+
     /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
     if (!(task->tc_Flags & TF_EXCEPT))
     {
-        char pri;
+        BYTE pri;
 
         /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
         if (IsListEmpty(&SysBase->TaskReady))
             return FALSE;
 
 	/* Does the TaskReady list contains tasks with priority equal or lower than current task?
-         * If so, then check further... 
-	 * Note that we explicitly convert ln_Pri to char because BYTE is unsigned in Windows */
+         * If so, then check further... */
 	pri = ((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri;
-        if (pri <= (char)task->tc_Node.ln_Pri)
+        if (pri <= task->tc_Node.ln_Pri)
         {
             /* If the running task did not used it's whole quantum yet, let it work */
             if (!(SysBase->SysFlags & SFF_QuantumOver))
@@ -46,6 +45,7 @@ BOOL core_Schedule(void)
      * If we got here, then the rescheduling is necessary. 
      * Put the task into the TaskReady list.
      */
+    D(bug("[KRN] Setting task 0x%p (%s) to READY\n", task, task->tc_Node.ln_Name));
     task->tc_State = TS_READY;
     Enqueue(&SysBase->TaskReady, &task->tc_Node);
 
@@ -76,12 +76,14 @@ struct Task *core_Dispatch(void)
 
     D(bug("[KRN] core_Dispatch()\n"));
 
-    task = (struct Task *)RemHead(&SysBase->TaskReady);
-    if (!task)
+    task = (struct Task *)REMHEAD(&SysBase->TaskReady);
+    if (!task) {
+	D(bug("[KRN] No ready tasks, entering sleep mode\n"));
         /*
 	 * Is the list of ready tasks empty? Well, go idle.
 	 */
 	return NULL;
+    }
 
     SysBase->DispCount++;
 

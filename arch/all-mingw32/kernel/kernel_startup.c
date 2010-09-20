@@ -36,7 +36,7 @@ static char *kernel_functions[] = {
     "core_init",
     "core_intr_disable",
     "core_intr_enable",
-    "core_syscall",
+    "core_raise",
     "core_is_super",
     "core_protect",
     "core_putc",

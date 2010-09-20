@@ -1,11 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# /mingw/include is needed for kernel-$(CPU).c because it includes windows.h
-# FIXME: this will likely break cross-build. Looks like i need to copy
-# definitions to winapi.h.
 USER_INCLUDES  := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel \
-		  -I$(SRCDIR)/rom/exec -idirafter /mingw/include
+		  -I$(SRCDIR)/rom/exec
 
 #MM kernel-kernel-mingw32: kernel-kernel-mingw32-native
 

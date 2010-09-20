@@ -109,7 +109,6 @@ typedef struct _CONTEXT
     IPTR  LastBranchFromRip;
     IPTR  LastExceptionToRip;
     IPTR  LastExceptionFromRip;
-    ULONG LastError;
 } CONTEXT;
 
 #endif
