@@ -212,8 +212,8 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 	    break;
 
 	case SC_CAUSE:
-//	    core_ExitInterrupt(regs);
-	    core_Cause(INTB_SOFTINT);
+	    core_ExitInterrupt(regs);
+//	    core_Cause(INTB_SOFTINT);
 	    break;
 	}
 
