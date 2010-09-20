@@ -11,6 +11,8 @@
 #include <errno.h>
 #include "etask.h"
 
+#define EXCEPTIONS_COUNT 19
+
 typedef struct sigcontext sigcontext_t;
 #define SIGHANDLER	bsd_sighandler
 #define SIGHANDLER_T	__sighandler_t *
