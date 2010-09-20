@@ -14,7 +14,6 @@
  */
 #include "memory.h"
 
-#include "host_core.h"
 #include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
@@ -37,17 +36,15 @@ static char *kernel_functions[] = {
     "core_intr_disable",
     "core_intr_enable",
     "core_raise",
-    "core_is_super",
     "core_protect",
     "core_putc",
     "core_getc",
+    "TrapVector",
+    "IRQVector",
+    "Supervisor",
     "Sleep_Mode",
+    "LastErrorPtr", 
     NULL
-};
-
-static struct CoreInterface CoreIFace = {
-    core_TrapHandler,
-    core_IRQHandler
 };
 
 /* rom startup */
@@ -178,7 +175,9 @@ int __startup startup(struct TagItem *msg)
     SysBase->ResModules = krnRomTagScanner(SysBase, ranges);
 
     D(mykprintf("[Kernel] initializing host-side kernel module\n"));
-    if (!KernelIFace.core_init(SysBase->VBlankFrequency, &SysBase->IDNestCnt, &CoreIFace)) {
+    *KernelIFace.TrapVector = core_TrapHandler;
+    *KernelIFace.IRQVector  = core_IRQHandler;
+    if (!KernelIFace.core_init(SysBase->VBlankFrequency, &SysBase->IDNestCnt)) {
 	mykprintf("[Kernel] Failed to start up virtual machine!\n");
 	return -1;
     }

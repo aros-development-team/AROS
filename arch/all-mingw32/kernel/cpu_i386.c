@@ -1,7 +1,4 @@
-#include <exec/types.h>
-
-#include "kernel_cpu.h"
-#include "winapi.h"
+#include "kernel_traps.h"
 
 struct ExceptionTranslation Traps[] =
 {
