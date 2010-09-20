@@ -131,9 +131,17 @@ AROS_UFH5S(void, IntServer,
     AROS_USERFUNC_EXIT
 }
 
-void VBlankHandler(struct ExecBase *SysBase, void *dummy)
+/* VBlankServer. The same as general purpose IntServer but also counts task's quantum */
+AROS_UFH5S(void, VBlankServer,
+    AROS_UFHA(ULONG, intMask, D1),
+    AROS_UFHA(struct Custom *, custom, A0),
+    AROS_UFHA(struct List *, intList, A1),
+    AROS_UFHA(APTR, intCode, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    struct IntVector *iv = &SysBase->IntVects[INTB_VERTB];
+    AROS_USERFUNC_INIT
+
+    struct Interrupt *irq;
 
     /* First decrease Elapsed time for current task */
     if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
@@ -141,18 +149,19 @@ void VBlankHandler(struct ExecBase *SysBase, void *dummy)
         SysBase->SysFlags |= SFF_QuantumOver;
         SysBase->AttnResched |= ARF_AttnSwitch;
     }
-    
-    /* If the VBlank vector in SysBase is set, call it. */
-    if (iv->iv_Code)
+
+    ForeachNode(intList, irq)
     {
-         AROS_UFC5(void, iv->iv_Code,
-            AROS_UFCA(ULONG, 0, D1),
-            AROS_UFCA(ULONG, 0, A0),
-            AROS_UFCA(APTR, iv->iv_Data, A1),
-            AROS_UFCA(APTR, iv->iv_Code, A5),
-            AROS_UFCA(struct ExecBase *, SysBase, A6)
-        );
+	if( AROS_UFC4(int, irq->is_Code,
+		AROS_UFCA(struct Custom *, custom, A0),
+		AROS_UFCA(APTR, irq->is_Data, A1),
+		AROS_UFCA(APTR, irq->is_Code, A5),
+		AROS_UFCA(struct ExecBase *, SysBase, A6)
+	))
+	    break;
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 extern ULONG SoftIntDispatch();
@@ -254,7 +263,10 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 
 	    sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
 
-	    is->is_Code = &IntServer;
+	    if (i == INTB_VERTB)
+		is->is_Code = &VBlankServer;
+	    else
+		is->is_Code = &IntServer;
 	    is->is_Data = sil;
 	    NEWLIST((struct List *)sil);
 	    SetIntVector(i,is);
@@ -262,7 +274,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	else
 	{
 	    struct Interrupt * is;
-	
+
 	    switch(i) {
 	    case INTB_SOFTINT:
 	        is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
@@ -281,10 +293,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	    }
 	}
     }
-
-    /* Install the VBlank handler. We drop the handle because exec.library never expunges */
-    KrnAddIRQHandler(0, VBlankHandler, sysBase, NULL);
-
+ 
     /* We now start up the interrupts */
     Permit();
     Enable();
