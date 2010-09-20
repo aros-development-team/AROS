@@ -17,6 +17,8 @@
 #define D(x) /* This may lock up. See notes in host_intr.c */
 #define DEXCEPT(x)
 #define DSLEEP(x)
+#define DSC(x)
+#define DTRAP(x)
 
 #define Sleep_Mode (*KernelIFace.SleepState)
 
@@ -94,6 +96,7 @@ static void cpu_Dispatch(CONTEXT *regs, ULONG *LastErrorPtr)
     DSLEEP(if (Sleep_Mode != SLEEP_MODE_OFF) bug("[KRN] Exiting sleep mode\n");)
     Sleep_Mode = SLEEP_MODE_OFF;
 
+    D(bug("[KRN] Dispatched task 0x%p (%s)\n", task, task->tc_Node.ln_Name));
     /* Restore the task's context */
     ctx = GetIntETask(task)->iet_Context;
     CopyMem(ctx, regs, sizeof(CONTEXT));
@@ -102,7 +105,7 @@ static void cpu_Dispatch(CONTEXT *regs, ULONG *LastErrorPtr)
     /* Handle exception if requested */
     if (task->tc_Flags & TF_EXCEPT)
     {
-        DEXCEPT(bug("[KRN] Exception requested for task 0x%p, return PC = 0x%p\n", SysBase->ThisTask, GET_PC(ctx)));
+        DEXCEPT(bug("[KRN] Exception requested for task 0x%p, return PC = 0x%p\n", task, GET_PC(ctx)));
 
 	/* Disable interrupts, otherwise we may lose saved context */
 	SysBase->IDNestCnt = 0;
@@ -110,6 +113,18 @@ static void cpu_Dispatch(CONTEXT *regs, ULONG *LastErrorPtr)
 	/* Make the task to jump to exception handler */
 	PC(regs) = (IPTR)core_Exception;
     }
+}
+
+static inline void SaveRegs(struct Task *t, CONTEXT *regs, ULONG *LastErrorPtr)
+{
+    struct AROSCPUContext *ctx = GetIntETask(t)->iet_Context;
+
+    /* Actually save the context */
+    CopyMem(regs, ctx, sizeof(CONTEXT));
+    ctx->LastError = *LastErrorPtr;
+
+    /* Update tc_SPReg */
+    t->tc_SPReg = GET_SP(ctx);
 }
 
 /*
@@ -129,7 +144,7 @@ static void core_ExitInterrupt(CONTEXT *regs, ULONG *LastErrorPtr)
 
     /* No tasks active (AROS is sleeping)? If yes, just pick up
        a new ready task (if any) */
-    if (Sleep_Mode)
+    if (Sleep_Mode != SLEEP_MODE_OFF)
     {
         cpu_Dispatch(regs, LastErrorPtr);
         return;
@@ -148,23 +163,12 @@ static void core_ExitInterrupt(CONTEXT *regs, ULONG *LastErrorPtr)
             D(bug("[Scheduler] Rescheduling\n"));
             if (core_Schedule())
 	    {
+		SaveRegs(SysBase->ThisTask, regs, LastErrorPtr);
 		core_Switch();
 		cpu_Dispatch(regs, LastErrorPtr);
 	    }
         }
     }
-}
-
-static inline void SaveRegs(struct Task *t, CONTEXT *regs, ULONG *LastErrorPtr)
-{
-    struct AROSCPUContext *ctx = GetIntETask(t)->iet_Context;
-
-    /* Actually save the context */
-    CopyMem(regs, ctx, sizeof(CONTEXT));
-    ctx->LastError = *LastErrorPtr;
-
-    /* Update tc_SPReg */
-    t->tc_SPReg = GET_SP(ctx);
 }
 
 /* This entry point is called by host-side DLL when an IRQ arrives */
@@ -174,10 +178,6 @@ void core_IRQHandler(unsigned int num, CONTEXT *regs, ULONG *LastErrorPtr)
      * We save task context here in order to make it valid before user-supplied
      * IRQ handlers are executed. This way IRQ handlers have an access to task's context.
      */
-    struct Task *task = SysBase->ThisTask;
-    
-    SaveRegs(task, regs, LastErrorPtr);
-
     krnRunIRQHandlers(num);
     core_ExitInterrupt(regs, LastErrorPtr);
 }
@@ -192,13 +192,16 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs, ULONG *LastErr
     {
     case AROS_EXCEPTION_SYSCALL:
 	/* It's a SysCall exception issued by core_raise() */
+	DSC(bug("[KRN] SysCall 0x%04X\n", args[0]));
 	switch(args[0])
 	{
 	case SC_SCHEDULE:
-	    if (!core_Schedule());
+	    if (!core_Schedule())
 		break;
 
 	case SC_SWITCH:
+	    /* Save registers before core_Switch()! */
+	    SaveRegs(SysBase->ThisTask, regs, LastErrorPtr);
 	    core_Switch();
 
 	case SC_DISPATCH:
@@ -234,17 +237,11 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs, ULONG *LastErr
 		bug("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
 		trapHandler = t->tc_TrapCode;
 		D(bug("[KRN] Task trap handler 0x%p\n", trapHandler));
-
-		/*
-		 * Save registers to iet_Context. This way we make them accessible
-		 * from within user-supplied exception handlers.
-		 */
-		SaveRegs(t, regs, LastErrorPtr);
 	    }
 	    else
 		bug("[KRN] No task\n");
 
-	    D(bug("[KRN] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
+	    DTRAP(bug("[KRN] Exec trap handler 0x%p\n", SysBase->TaskTrapCode));
 	    if (!trapHandler)
 		trapHandler = SysBase->TaskTrapCode;
 	}
@@ -257,7 +254,7 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs, ULONG *LastErr
 	    if (num == ex->ExceptionCode)
 		break;
 	}
-	D(printf("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
+	DTRAP(bug("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
 
 	if (ex->CPUTrap != -1)
 	{
@@ -269,7 +266,7 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs, ULONG *LastErr
 	{
 	    /* Call our trap handler. Note that we may return, this means that the handler has
 	       fixed the problem somehow and we may safely continue */
-	    D(printf("[KRN] Amiga trap %d\n", ex->AmigaTrap));
+	    DTRAP(bug("[KRN] Amiga trap %d\n", ex->AmigaTrap));
 	    trapHandler(ex->AmigaTrap, regs);
 
 	    return FALSE;

@@ -56,7 +56,6 @@ typedef struct _CONTEXT
 	IPTR	Esp;
 	IPTR	SegSs;
 	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-	ULONG	LastError;
 } CONTEXT;
 
 #endif
