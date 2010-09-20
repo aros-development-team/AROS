@@ -6,6 +6,7 @@
 
 #include "etask.h"
 
+#include "host_irq.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
@@ -176,11 +177,11 @@ static void core_ExitInterrupt(CONTEXT *regs)
 /* This entry point is called by host-side DLL when an IRQ arrives */
 void core_IRQHandler(unsigned int num, CONTEXT *regs)
 {
-    /*
-     * We save task context here in order to make it valid before user-supplied
-     * IRQ handlers are executed. This way IRQ handlers have an access to task's context.
-     */
     krnRunIRQHandlers(num);
+    /* Timer IRQ is also used to emulate exec VBlank */
+    if (num == INT_TIMER)
+	core_Cause(INTB_VERTB);
+
     core_ExitInterrupt(regs);
 }
 
