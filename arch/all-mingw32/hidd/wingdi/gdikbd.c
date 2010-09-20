@@ -116,8 +116,8 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	}
 	OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
-	return NULL;
     }
+    return NULL;
 }
 
 /****************************************************************************************/

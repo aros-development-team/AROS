@@ -389,7 +389,6 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 
 VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
     ULONG   	     idx;
     
     if (IS_GFX_ATTR(msg->attrID, idx))
@@ -495,9 +494,7 @@ static void ShowList(struct gdi_staticdata *xsd, struct gfx_data *data, struct M
 ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, o);
-    struct Task *me = FindTask(NULL);;
     struct HIDD_ViewPortData *vpdata;
-    void *gfx_int;
     struct MinList new_bitmaps;
 
     Forbid();
@@ -524,8 +521,6 @@ ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_
 OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, o);
-    struct Task *me = FindTask(NULL);;
-    void *gfx_int;
     struct MinList new_bitmaps;
 
     Forbid();
@@ -587,8 +582,7 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
     OOP_Object *pfmt;
     OOP_Object *colormap;
     IPTR depth;
-    HIDDT_Color color;
-    IPTR width, height, x, y;
+    IPTR width, height;
     ULONG *buf, *mask;
     ULONG bufsize;
     APTR buf_bm, mask_bm;
