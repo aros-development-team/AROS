@@ -120,7 +120,7 @@ typedef struct _CONTEXT
 #define EXCEPTIONS_COUNT 19
 
 #define PRINT_CPUCONTEXT(ctx) \
-	BUG ("    ContextFlags: 0x%08lX\n" \
+	bug ("    ContextFlags: 0x%08lX\n" \
 		 "    RSP=%016lx  RBP=%016lx  RIP=%016lx\n" \
 		 "    RAX=%016lx  RBX=%016lx  RCX=%016lx  RDX=%016lx\n" \
 		 "    R08=%016lx  R09=%016lx  R10=%016lx  R11=%016lx\n" \
@@ -134,10 +134,34 @@ typedef struct _CONTEXT
 	    , (ctx)->Rdi, (ctx)->Rsi, (ctx)->EFlags \
       );
 
+#define PREPARE_INITIAL_CONTEXT(ctx) ctx->regs.ContextFlags = 0
+
+#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)   \
+    int argcounter = numargs;                     \
+    while (argcounter > 6)                        \
+        _PUSH(sp, args[--argcounter]);   	  \
+    switch (argcounter)                           \
+    {                                             \
+        case 6:                                   \
+            cc->regs.R9 = args[5];                \
+        case 5:                                   \
+            cc->regs.R8 = args[4];                \
+        case 4:                                   \
+            cc->regs.Rcx = args[3];               \
+        case 3:                                   \
+            cc->regs.Rdx = args[2];               \
+        case 2:                                   \
+            cc->regs.Rsi = args[1];               \
+        case 1:                                   \
+            cc->regs.Rdi = args[0];               \
+	    cc->regs.ContextFlags |= CONTEXT_INTEGER; \
+            break;                                \
+    }
+
 #define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->Regs.Rbp = 0;			 \
-					     ctx->Regs.Rip = (IPTR)pc;		 \
-					     ctx->Regs.Rsp = (IPTR)sp;		 \
-					     ctx->ContextFlags |= CONTEXT_CONTROL;
+					     ctx->regs.Rip = (IPTR)pc;		 \
+					     ctx->regs.Rsp = (IPTR)sp;		 \
+					     ctx->regs.ContextFlags |= CONTEXT_CONTROL
 
 #define REG_SAVE_VAR UWORD SegCS_Save, SegSS_Save
 
