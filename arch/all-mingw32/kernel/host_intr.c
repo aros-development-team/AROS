@@ -5,7 +5,6 @@
 /* PRINT_CPUCONTEXT() macro uses bug() because it can be useful on AROS side too. */
 #define bug printf
 
-#include "host_core.h"
 #include "host_intern.h"
 #include "kernel_cpu.h"
 
@@ -38,17 +37,19 @@
 
 HANDLE MainThread;
 DWORD MainThreadId;
-DWORD *LastErrorPtr;
 unsigned char Ints_Enabled;
 unsigned short Ints_Num;
 HANDLE IntObjects[256];
 unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
-unsigned char Supervisor;
-struct CoreInterface *CoreIFace;
 char *IDNestCnt;
 
+/* Virtual CPU control registers */
+int           __declspec(dllexport) (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
+void          __declspec(dllexport) (*IRQVector)(unsigned int num, CONTEXT *regs);
+unsigned char __declspec(dllexport) Supervisor;
 unsigned char __declspec(dllexport) Sleep_Mode;
+DWORD *       __declspec(dllexport) LastErrorPtr;
 
 void core_intr_enable(void);
 
@@ -81,13 +82,13 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     }
 
     /* Enter supervisor mode. We can already be in supervisor (crashed inside
-       IRQ handler), so we increment on order to retain previous state. */
+       IRQ handler), so we increment in order to retain previous state. */
     Supervisor++;
     /* Save important registers that must not be modified */
     CONTEXT_SAVE_REGS(ContextRecord);
 
     /* Call trap handler */
-    if (CoreIFace->HandleTrap(ExceptionCode, exptr->ExceptionRecord->ExceptionInformation, ContextRecord, LastErrorPtr))
+    if (TrapVector(ExceptionCode, exptr->ExceptionRecord->ExceptionInformation, ContextRecord))
     {
         printf("[KRN] **UNHANDLED EXCEPTION 0x%08lX** stopping here...\n", ExceptionCode);
 
@@ -97,8 +98,8 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     /* Restore important registers */
     CONTEXT_RESTORE_REGS(ContextRecord);
     /* Exit supervisor */
-    if (--Supervisor == 0)
-	core_LeaveInterrupt();
+    Supervisor--;
+    core_LeaveInterrupt();
 
     return EXCEPTION_CONTINUE_EXECUTION;
 }
@@ -143,10 +144,10 @@ DWORD WINAPI TaskSwitcher()
     	    DS(PRINT_CPUCONTEXT(&MainCtx));
 
 	    /* Call IRQ handler */
-	    CoreIFace->HandleIRQ(obj, &MainCtx, LastErrorPtr);
+	    IRQVector(obj, &MainCtx);
 
-	    /* If AROS is going to sleep, set new CPU context */
-    	    if (!Sleep_Mode)
+	    /* If AROS is not going to sleep, set new CPU context */
+    	    if (Sleep_Mode == SLEEP_MODE_OFF)
 	    {
     	        DS(printf("[Task switcher] new CPU context: ****\n"));
     	        DS(PRINT_CPUCONTEXT(&MainCtx));
@@ -167,15 +168,17 @@ DWORD WINAPI TaskSwitcher()
         }
 
 	/* Resuming main thread if AROS is not sleeping */
-        if (Sleep_Mode)
-            /* We've entered sleep mode */
-            Sleep_Mode = SLEEP_MODE_ON;
-        else
+        if (Sleep_Mode == SLEEP_MODE_OFF)
 	{
 	    DS(printf("[Task switcher] Resuming main thread\n"));
             DS(res =) ResumeThread(MainThread);
             DS(printf("[Task switcher] Resume thread result: %lu\n", res));
         }
+	else
+	    /* We've entered sleep mode */
+            Sleep_Mode = SLEEP_MODE_ON;
+
+	
     }
     return 0;
 }
@@ -193,7 +196,7 @@ void __declspec(dllexport) core_intr_enable(void)
     unsigned char i;
 
     /* If we are in supervisor mode, don't do anything. Interrupts will
-       be enabled upon leaving supervisor mode by core_ExitInterrupt().
+       be enabled upon leaving supervisor mode by core_LeaveInterrupt().
        Otherwise we can end up in nested interrupts */
     if (Supervisor)
 	return;
@@ -223,15 +226,10 @@ void __declspec(dllexport) core_raise(DWORD code, const ULONG_PTR n)
     /* If after RaiseException we are still here, but Sleep_Mode != 0, this likely means
        we've just called SC_SCHEDULE, SC_SWITCH or SC_DISPATCH, and it is putting us to sleep.
        Sleep mode will be committed as soon as timer IRQ happens */
-    while (Sleep_Mode) {};
+    while (Sleep_Mode);
 }
 
-unsigned char __declspec(dllexport) core_is_super(void)
-{
-    return Supervisor;
-}
-
-int __declspec(dllexport) core_init(unsigned int TimerPeriod, char *idnestcnt, struct CoreInterface *iface)
+int __declspec(dllexport) core_init(unsigned int TimerPeriod, char *idnestcnt)
 {
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
@@ -240,9 +238,8 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod, char *idnestcnt, s
     int i;
     DWORD SwitcherId;
 
-    D(printf("[KRN] Setting up interrupts, CoreInterface = 0x%p\n", iface));
+    D(printf("[KRN] Setting up interrupts, IDNestCnt = 0x%p\n", idnestcnt));
     IDNestCnt = idnestcnt;
-    CoreIFace = iface;
     Ints_Enabled = 0;
     Supervisor = 0;
     Sleep_Mode = 0;

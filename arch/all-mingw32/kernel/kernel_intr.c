@@ -6,13 +6,13 @@
 
 #include "etask.h"
 
-#include "host_core.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
 #include "kernel_mingw32.h"
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
+#include "kernel_traps.h"
 
 #define D(x) /* This may lock up. See notes in host_intr.c */
 #define DEXCEPT(x)
@@ -20,7 +20,8 @@
 #define DSC(x)
 #define DTRAP(x)
 
-#define Sleep_Mode (*KernelIFace.SleepState)
+#define Sleep_Mode   (*KernelIFace.SleepState)
+#define LastErrorPtr (*KernelIFace.LastErrorPtr)
 
 /*
  * User-mode part of exception handling. Save context, call
@@ -70,7 +71,7 @@ static void core_Exception()
  * CPU-dependent wrapper around core_Dispatch(). Handles sleep mode
  * and task exceptions
  */
-static void cpu_Dispatch(CONTEXT *regs, ULONG *LastErrorPtr)
+static void cpu_Dispatch(CONTEXT *regs)
 {
     struct Task *task = core_Dispatch();
     struct AROSCPUContext *ctx;
@@ -115,7 +116,7 @@ static void cpu_Dispatch(CONTEXT *regs, ULONG *LastErrorPtr)
     }
 }
 
-static inline void SaveRegs(struct Task *t, CONTEXT *regs, ULONG *LastErrorPtr)
+static inline void SaveRegs(struct Task *t, CONTEXT *regs)
 {
     struct AROSCPUContext *ctx = GetIntETask(t)->iet_Context;
 
@@ -131,7 +132,7 @@ static inline void SaveRegs(struct Task *t, CONTEXT *regs, ULONG *LastErrorPtr)
  * Leave the interrupt. This function receives the register frame used to leave the supervisor
  * mode. It reschedules the task if it was asked for.
  */
-static void core_ExitInterrupt(CONTEXT *regs, ULONG *LastErrorPtr)
+static void core_ExitInterrupt(CONTEXT *regs)
 {
     D(bug("[Scheduler] core_ExitInterrupt\n"));
 
@@ -146,7 +147,7 @@ static void core_ExitInterrupt(CONTEXT *regs, ULONG *LastErrorPtr)
        a new ready task (if any) */
     if (Sleep_Mode != SLEEP_MODE_OFF)
     {
-        cpu_Dispatch(regs, LastErrorPtr);
+        cpu_Dispatch(regs);
         return;
     }
 
@@ -163,27 +164,28 @@ static void core_ExitInterrupt(CONTEXT *regs, ULONG *LastErrorPtr)
             D(bug("[Scheduler] Rescheduling\n"));
             if (core_Schedule())
 	    {
-		SaveRegs(SysBase->ThisTask, regs, LastErrorPtr);
+		/* core_Switch() is machine-independent, so save registers before */
+		SaveRegs(SysBase->ThisTask, regs);
 		core_Switch();
-		cpu_Dispatch(regs, LastErrorPtr);
+		cpu_Dispatch(regs);
 	    }
         }
     }
 }
 
 /* This entry point is called by host-side DLL when an IRQ arrives */
-void core_IRQHandler(unsigned int num, CONTEXT *regs, ULONG *LastErrorPtr)
+void core_IRQHandler(unsigned int num, CONTEXT *regs)
 {
     /*
      * We save task context here in order to make it valid before user-supplied
      * IRQ handlers are executed. This way IRQ handlers have an access to task's context.
      */
     krnRunIRQHandlers(num);
-    core_ExitInterrupt(regs, LastErrorPtr);
+    core_ExitInterrupt(regs);
 }
 
 /* Trap handler entry point */
-int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs, ULONG *LastErrorPtr)
+int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 {
     void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
     struct ExceptionTranslation *ex;
@@ -201,15 +203,15 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs, ULONG *LastErr
 
 	case SC_SWITCH:
 	    /* Save registers before core_Switch()! */
-	    SaveRegs(SysBase->ThisTask, regs, LastErrorPtr);
+	    SaveRegs(SysBase->ThisTask, regs);
 	    core_Switch();
 
 	case SC_DISPATCH:
-	    cpu_Dispatch(regs, LastErrorPtr);
+	    cpu_Dispatch(regs);
 	    break;
 
 	case SC_CAUSE:
-//	    core_ExitInterrupt(regs, LastErrorPtr);
+//	    core_ExitInterrupt(regs);
 	    core_Cause(INTB_SOFTINT);
 	    break;
 	}

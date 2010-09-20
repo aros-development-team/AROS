@@ -34,29 +34,21 @@ struct AROSCPUContext
     ULONG LastError;
 };
 
-struct ExceptionTranslation
-{
-    ULONG ExceptionCode; /* Windows exception code		       */
-    char  AmigaTrap;	 /* m68k trap number for exec.library	       */
-    char  CPUTrap;	 /* Native CPU trap number for kernel.resource */
-};
-
-extern struct ExceptionTranslation Traps[];
-
-/* I don't want to include too much */
-struct CoreInterface;
-
+/* Our virtual CPU interface. It's needed here for krnSysCall() definition */
 struct KernelInterface
 {
-    int (*core_init)(unsigned int TimerPeriod, char *IDNestCnt, struct CoreInterface *CoreIFace);
+    int (*core_init)(unsigned int TimerPeriod, char *IDNestCnt);
     void (*core_intr_disable)(void);
     void (*core_intr_enable)(void);
     void (*core_raise)(ULONG num, const IPTR n);
-    unsigned char (*core_is_super)(void);
     unsigned int (*core_protect)(void *addr, unsigned int len, unsigned int prot);
     void (*core_putc)(char c);
     int (*core_getc)(void);
+    int (**TrapVector)(unsigned int num, IPTR *args, CONTEXT *regs);
+    void (**IRQVector)(unsigned int num, CONTEXT *regs);
+    unsigned char *SuperState;
     unsigned char *SleepState;
+    ULONG **LastErrorPtr;
 };
 
 extern struct KernelInterface KernelIFace;
@@ -64,5 +56,10 @@ extern struct KernelInterface KernelIFace;
 #define krnSysCall(n) KernelIFace.core_raise(AROS_EXCEPTION_SYSCALL, n)
 
 #endif
+
+/* Virtual machine sleep states */
+#define SLEEP_MODE_OFF     0
+#define SLEEP_MODE_PENDING 1
+#define SLEEP_MODE_ON      2
 
 #endif
