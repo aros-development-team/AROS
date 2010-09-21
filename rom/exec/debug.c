@@ -87,9 +87,9 @@ static char *NextWord(char *s)
 {
     AROS_LIBFUNC_INIT
 
-    char key;
-    char comm[3];
-    char data[70];
+    char comm[128];
+    char *data;
+    BOOL ignorelf = FALSE;
 
     RawIOInit();
 
@@ -102,14 +102,36 @@ static char *NextWord(char *s)
 	/* Get Command code */
 	do
 	{
-	    key = GetK(SysBase);
+	    char key = GetK(SysBase);
+	    BOOL t = ignorelf;
 
-	    if ((key == 0x0A) || (key == 0x0D))
+	    /* We skip only single LF which immediately follows the CR. So we remember
+	       previous value of the flag and reset it when any character arrives. */
+	    ignorelf = FALSE;
+	    if (key == '\n') {
+		if (t)
+		    continue;
+		else
+		    break;
+	    }
+
+	    /* TABs are problematic to deal with, we ignore them */
+	    else if (key == 0x09)
 		continue;
 
-	    if (key == 0x08)
+	    /* If we've just got CR, we may get LF next and we'll need to skip it */
+	    else if (key == '\r') {
+		ignorelf = TRUE;
+		break;
+	    }
+
+	    /* Process backspace */
+	    else if (key == 0x08)
 	    {
 		if (i > 0) {
+		    /* Go backwards, erase the character, then go backwards again */
+		    RawPutChar(key);
+		    RawPutChar(' ');
 		    RawPutChar(key);
 		    i--;
 		}
@@ -119,34 +141,13 @@ static char *NextWord(char *s)
 	    RawPutChar(key);
 	    comm[i++] = key;
 	}
-	while (i < 2);
-	comm[2] = 0;    
-	RawPutChar(' ');
+	while (i < sizeof(comm)-1);
+	comm[i] = 0;
+	RawPutChar('\n');
 
 	/* Now get data for command */
-	i = 0;
-	do
-	{
-	    key = GetK(SysBase);
-
-	    if (key == 0x0A)
-		break;
-
-	    if (key == 0x08)
-	    {
-		if (i > 0) {
-		    RawPutChar(key);
-		    i--;
-		}
-		continue;
-	    }
-
-	    RawPutChar(key);
-	    data[i++]=key;
-	}
-	while (i < sizeof(data)-1);
-	data[i] = 0;
-	RawPutChar('\n');
+	data = NextWord(comm);
+	comm[2] = 0;
 
 	/* Reboot command */
 	if (strcmp(comm, "RE") == 0 && strcmp(data, "AAAAAAAA") == 0)
@@ -425,10 +426,6 @@ char GetK(struct ExecBase *SysBase)
     {
         i = RawMayGetChar();
     } while(i == -1);
-
-    /* CR->LF translation needed on some terminals */
-    if (i == 0x0D)
-	i = 0x0A;
 
     return (char)i;
 }
