@@ -1,9 +1,15 @@
-/* A library of alert strings and useful functions.
-   Used by platform-specific Alert() implementations */
+/*
+ * A library of alert strings and useful functions.
+ * Used by platform-specific Alert() implementations
+ */
 
+#include <aros/debug.h>
 #include <exec/alerts.h>
+#include <exec/rawfmt.h>
 #include <exec/tasks.h>
+#include <proto/kernel.h>
 
+#include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 
@@ -452,6 +458,62 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
             buf = Alert_AddString(buf, getString(alertnum, stringlist[subsys]));
         else
             buf = Alert_AddString(buf, "unknown error");
+    }
+
+    *buf = 0;
+    return buf;
+}
+
+static char *hdrstring = "Task : 0x%P - %s\n"
+			 "Error: 0x%08lx - ";
+static char *locstring = "PC   : 0x%P\n";
+static char *modstring = "Module %s Segment %lu %s (0x%P) Offset 0x%P\n";
+static char *funstring = "Function %s (0x%P) Offset 0x%P\n";
+
+STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
+{
+    char *buf;
+
+    buf = NewRawDoFmt(hdrstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(task), alertNum);
+    buf = Alert_GetString(alertNum, --buf);
+    *buf++ = '\n';
+    D(bug("[FormatAlert] Header:\n%s\n", buffer));
+
+    if (task)
+    {
+	struct IntETask *iet = GetIntETask(task);
+
+	if (iet->iet_AlertLocation)
+	{
+	    char *modname, *segname, *symname;
+	    void *segaddr, *symaddr;
+	    unsigned int segnum;
+
+	    buf = NewRawDoFmt(locstring, RAWFMTFUNC_STRING, buf, iet->iet_AlertLocation);
+	    D(bug("[FormatAlert] Location string:\n%s\n", buffer));
+
+	    if (KrnDecodeLocation(iet->iet_AlertLocation,
+				  KDL_ModuleName , &modname, KDL_SegmentNumber, &segnum ,
+				  KDL_SegmentName, &segname, KDL_SegmentStart , &segaddr,
+				  KDL_SymbolName , &symname, KDL_SymbolStart  , &symaddr,
+				  TAG_DONE))
+	    {
+		if (!segname)
+		    segname = "- unknown -";
+
+		buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, --buf, modname, segnum, segname, segaddr, iet->iet_AlertLocation - segaddr);
+
+		if (symaddr)
+		{
+		    if (!symname)
+			symname = "- unknown -";
+
+		    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, --buf, symname, symaddr, iet->iet_AlertLocation - symaddr);
+		}
+	    }
+	    /* After NewRawDoFmt() buf points to the character AFTER null terminator */
+	    buf--;
+	}
     }
 
     *buf = 0;

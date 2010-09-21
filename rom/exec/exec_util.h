@@ -2,7 +2,7 @@
 #define _EXEC_UTIL_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility functions for exec.
@@ -39,6 +39,8 @@ STRPTR Alert_AddString(STRPTR dest, STRPTR src);
 STRPTR Alert_GetTitle(ULONG alertNum);
 STRPTR Alert_GetTaskName(struct Task *task);
 STRPTR Alert_GetString(ULONG alertnum, STRPTR buf);
+STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase);
+
 VOID Exec_CrashHandler(void);
 ULONG Exec_UserAlert(ULONG alertNum, struct Task *task, struct ExecBase *SysBase);
 void Exec_DoResetCallbacks(struct IntExecBase *SysBase);
