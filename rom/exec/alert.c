@@ -94,7 +94,6 @@ static void PrintFrame(void)
 
     UBYTE buffer[256], *buf;
     struct Task *task = SysBase->ThisTask;
-    APTR args[2];
 
     /* First try to issue an Intuition requester */
     alertNum = Exec_UserAlert(alertNum, task, SysBase);
@@ -106,12 +105,9 @@ static void PrintFrame(void)
        example we should report what was wrong after we rebooted. */
     PrintFrame();
     PrintCentered(Alert_GetTitle(alertNum));
-    args[0] = task;
-    args[1] = Alert_GetTaskName(task);
-    RawDoFmt(fmtstring, &args[0], RAWFMTFUNC_STRING, buffer);
+    NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(task));
     PrintCentered(buffer);
-    args[0] = alertNum;
-    buf = RawDoFmt(errstring, &args[0], RAWFMTFUNC_STRING, buffer);
+    buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buffer, alertNum);
     Alert_GetString(alertNum, --buf);
     PrintCentered(buffer);
     PrintFrame();

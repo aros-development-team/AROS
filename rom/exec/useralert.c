@@ -1,53 +1,61 @@
+#include <aros/debug.h>
 #include <exec/alerts.h>
 #include <intuition/intuition.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/kernel.h>
 
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 
+static char *startstring = "Program failed\n";
+static char *endstring   = "Wait for disk activity to finish.";
+
 static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)
 {
     LONG choice = -1;
-    struct IntuitionBase *IntuitionBase = OpenLibrary("intuition.library", 36);
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
 
     if (IntuitionBase && IntuitionBase->FirstScreen)
     {
+        char buffer[256];
+	char *buf;
         struct EasyStruct es = {
             sizeof (struct EasyStruct),
             0,
             NULL,
-	    "Program failed\n"
-            "Task: #%P (%s)\n"
-	    "Error: #%08lx (%s)\n"
-            "Wait for disk activity to finish.",
+	    buffer,
             NULL,
         };
-        UBYTE buffer[256];
-        STRPTR taskName = Alert_GetTaskName(task);
-        CONST_APTR args[] = {task, taskName, (CONST_APTR)alertNum, buffer};
 
-        es.es_Title = Alert_GetTitle(alertNum);
-        Alert_GetString(alertNum, buffer);
+	buf = Alert_AddString(buffer, startstring);
+	buf = FormatAlert(buf, alertNum, task, SysBase);
+	buf = Alert_AddString(buf, endstring);
+	*buf = 0;
+
+	es.es_Title = Alert_GetTitle(alertNum);
         if (alertNum & AT_DeadEnd)
             es.es_GadgetFormat = "Suspend|Reboot";
         else
-            es.es_GadgetFormat = "Ok";
-        choice = EasyRequestArgs(NULL, &es, NULL, args);
+            es.es_GadgetFormat = "Continue";
 
-	CloseLibrary(IntuitionBase);
+	D(bug("[UserAlert] Body text:\n%s\n", buffer));
+        choice = EasyRequestArgs(NULL, &es, NULL, NULL);
+
+	CloseLibrary(&IntuitionBase->LibNode);
     }
     return choice;
 }
 
-/* This function posts alerts in user-mode via Intuition requester.
-   Returns initial alert code if something fails and 0 if it was a recoverable
-   alert and everything went ok.
-   Note that in case of some crashes (e.g. corrupt memory list) this function
-   may crash itself, and this has to be handled on a lower level. This is
-   why we do this trick with iet_AlertCode */
-
+/*
+ * This function posts alerts in user-mode via Intuition requester.
+ * Returns initial alert code if something fails and 0 if it was a recoverable
+ * alert and everything went ok.
+ * Note that in case of some crashes (e.g. corrupt memory list) this function
+ * may crash itself, and this has to be handled on a lower level. This is
+ * why we do this trick with iet_AlertCode
+ */
 ULONG Exec_UserAlert(ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
 {
     struct IntETask *iet;
