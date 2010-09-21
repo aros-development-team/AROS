@@ -1126,6 +1126,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     }
 
     InitCode(RTF_SINGLETASK, 0);
+    KernelBase = OpenResource("kernel.resource");
     InitCode(RTF_COLDSTART, 0);
 
     /*
