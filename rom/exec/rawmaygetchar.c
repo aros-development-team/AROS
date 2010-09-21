@@ -1,10 +1,14 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Check if there is a character on the raw console
     Lang: english
 */
+
+#include <proto/kernel.h>
+
+#include "exec_intern.h"
 
 /*****i***********************************************************************
 
@@ -33,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	RawIOInit(), RawPutChar(), RawMayGetChar()
+	RawIOInit(), RawPutChar()
 
     INTERNALS
 
@@ -41,6 +45,11 @@
 {
     AROS_LIBFUNC_INIT
 
+#ifdef KrnMayGetChar
+    return KrnMayGetChar();
+#else
     return -1;
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* RawMayGetChar */
