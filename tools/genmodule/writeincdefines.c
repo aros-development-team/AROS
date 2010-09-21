@@ -150,7 +150,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 {
     struct functionarg *arglistit = funclistit->arguments;
     char isvararg = 0, *varargname, *lastname;
-	
+
     /* Go to last argument */
     if (arglistit == NULL)
 	return;
@@ -182,6 +182,12 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 	varargname = strdup(funclistit->name);
 	varargname[strlen(funclistit->name)-4] = '\0';
     }
+    else if ((funclistit->name[0] == 'V') &&  (strncmp(arglistit->arg, "va_list", 7) == 0))
+    {
+	isvararg = 2;
+	varargname = malloc(strlen(funclistit->name));
+	strcpy(varargname, &funclistit->name[1]);
+    }
     else
     {
 	char *p;
@@ -210,7 +216,8 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 	    }
 	}
     }
-    if (isvararg)
+
+    if (isvararg == 1)
     {
 	int count;
 	char *type;
@@ -258,6 +265,78 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 		"#endif /* !NO_INLINE_STDARG */\n"
 	);
 	    
+	free(varargname);
+    }
+    else if (isvararg == 2)
+    {
+	int count;
+	struct functionarg *lastarg;
+
+	fprintf(out,
+		"\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
+		"static inline %s __%s_WB(%s %s",
+		cfg->modulenameupper,
+		funclistit->type, varargname, cfg->libbasetypeptrextern, cfg->libbase
+	);
+	for (arglistit = funclistit->arguments;
+	     arglistit != NULL && arglistit->next != NULL;
+	     arglistit = arglistit->next
+	)
+	{
+	    fprintf(out, ", %s", arglistit->arg);
+	    lastarg = arglistit;
+	}
+	fprintf(out, ", ...)\n");
+
+	fprintf(out,
+		"{\n"
+		"    %s retval;\n"
+		"    va_list args;\n"
+		"\n"
+		"    va_start(args, %s);\n"
+		"    retval = %s(",
+		funclistit->type,
+		getargname(lastarg),
+		funclistit->name
+	);
+	for (arglistit = funclistit->arguments;
+	     arglistit != NULL && arglistit->next != NULL;
+	     arglistit = arglistit->next
+	)
+	{
+	    fprintf(out, "%s, ", getargname(arglistit));
+	}
+	fprintf(out,
+		"args);\n"
+		"    va_end(args);\n"
+		"    return retval;\n"
+		"}\n"
+		"#define %s(",
+		varargname
+	);
+	for (arglistit = funclistit->arguments, count = 1;
+	     arglistit != NULL && arglistit->next != NULL;
+	     arglistit = arglistit->next, count++
+	)
+	{
+	    fprintf(out, "arg%d, ", count);
+	}
+	fprintf(out,
+		"...) __%s_WB(%s, ",
+		varargname, cfg->libbase
+	);
+	for (arglistit = funclistit->arguments, count = 1;
+	     arglistit != NULL && arglistit->next != NULL;
+	     arglistit = arglistit->next, count++
+	)
+	{
+	    fprintf(out, "(arg%d), ", count);
+	}
+	fprintf(out,
+		"__VA_ARGS__)\n"
+		"#endif /* !NO_INLINE_STDARG */\n"
+	);
+
 	free(varargname);
     }
 }
