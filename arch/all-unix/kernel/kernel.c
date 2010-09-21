@@ -21,6 +21,7 @@
 #define timeval sys_timeval
 #include "etask.h"
 #include "kernel_cpu.h"
+#include "kernel_scheduler.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -231,23 +232,17 @@ static void sighandler(int sig, sigcontext_t * sc)
 	/* Save registers for this task (if there is one...) */
 	if (task && task->tc_State != TS_REMOVED)
 	{
-	    if (task->tc_Flags & TF_SWITCH)
-		AROS_UFC1(void, task->tc_Switch,
-			  AROS_UFCA(struct ExecBase *, SysBase, A6));
-
-//	    task->tc_TDNestCnt = SysBase->TDNestCnt;
-	    task->tc_IDNestCnt = SysBase->IDNestCnt;
-
 	    ctx = GetIntETask(task)->iet_Context;
 	    task->tc_SPReg = (APTR)SP(sc);
 	    SAVEREGS(ctx, sc);
-
+	    core_Switch();
 	}
 
-	/* Tell exec that we have actually switched tasks... */
-	ctx = Dispatch();
+	/* Get the next task */
+	task = core_Dispatch();
 
-	/* Get the registers of the old task */
+	/* Get the registers of the new task */
+	ctx = GetIntETask(task)->iet_Context;
 	RESTOREREGS(ctx, sc);
 	SP(sc) = (IPTR)SysBase->ThisTask->tc_SPReg;
 
