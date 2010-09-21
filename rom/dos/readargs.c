@@ -109,6 +109,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     STRPTR *multvec = NULL, *argbuf = NULL;
     CONST_STRPTR numstr;
     ULONG multnum = 0, multmax = 0;
+    LONG strbuflen;
 
     /* Some variables */
     CONST_STRPTR cs1;
@@ -179,11 +180,9 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
         cs1 = lcs.CS_Buffer;
 
-        while (*cs1++)
-        {
-        }
+	for (; *cs1 != '\0'; ++cs1);
 
-        lcs.CS_Length = (IPTR) cs1 - (IPTR) lcs.CS_Buffer - 1;
+	lcs.CS_Length = cs1 - lcs.CS_Buffer;
         lcs.CS_CurChr = 0;
 
         cs = &lcs;
@@ -274,15 +273,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	                    
 	                    if (c == EOF || c == '\n' || c == '\0')
 	                    {
-	                        /* stegerg: added this. Otherwise try "list ?" then enter only "l" + RETURN
-	                         * and you will get a broken wall in FreeMem reported. This happens in
-	                         * FreeArgs() during the FreeVec() of the StrBuf. Appending '\n' here fixes
-	                         * this, but maybe the real bug is somewhere else. */
-	
-	                        iline[isize++] = '\n';
-	
-	                        /* end stegerg: */
-	
+	                        iline[isize] = '\0'; /* end of string */
 	                        break;
 	                    }
 	
@@ -329,7 +320,8 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
      * It's always smaller than the size of the input line+1.
      */
 
-    strbuf = (STRPTR) AllocVec(cs->CS_Length + 1, MEMF_ANY);
+    strbuflen = cs->CS_Length + 1;
+    strbuf = (STRPTR) AllocVec(strbuflen, MEMF_ANY);
 
     if (strbuf == NULL)
     {
@@ -410,7 +402,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
     	
         {
             /* Get item. Quoted items are never keywords. */
-            it = ReadItem(s1, ~0ul / 2, cs);
+            it = ReadItem(s1, strbuflen, cs);
 
             if (it == ITEM_UNQUOTED)
             {
@@ -431,11 +423,11 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
                         && (flags[item] & TYPEMASK) != TOGGLE)
                     {
                         /* Get value. */
-                        it = ReadItem(s1, ~0ul / 2, cs);
+                        it = ReadItem(s1, strbuflen, cs);
 
                         if (it == ITEM_EQUAL)
                         {
-                            it = ReadItem(s1, ~0ul / 2, cs);
+                            it = ReadItem(s1, strbuflen, cs);
                         }
                     }
                 }
@@ -526,9 +518,8 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
             /* Put string into the buffer. */
             multvec[multnum++] = s1;
 
-            while (*s1++)
-            {
-            }
+	    while (*s1++)
+		--strbuflen;
 
             /* /M takes more than one argument, so retry. */
             nextarg = arg;
@@ -544,10 +535,12 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
             /* Put argument into argument buffer. */
             argbuf[arg] = s1;
 
-            while (*s1++)
-            {
-            }
+	    while (*s1++)
+		--strbuflen;
         }
+
+	if (cs->CS_CurChr >= cs->CS_Length)
+	    break; /* end of input */
     }
 
     /* Unfilled /A options steal Arguments from /M */
