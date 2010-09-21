@@ -34,6 +34,8 @@ struct AROSCPUContext
     ULONG LastError;
 };
 
+#define PRINT_CPU_CONTEXT(ctx) PRINT_CPUCONTEXT(&ctx->regs)
+
 /* Our virtual CPU interface. It's needed here for krnSysCall() definition */
 struct KernelInterface
 {

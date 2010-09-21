@@ -26,7 +26,9 @@ int __declspec(dllexport) core_getc(void)
 
 	if (!ReadConsoleInput(conin, &input, 1, &cnt))
 	    return -1;
-    } while ((input.EventType != KEY_EVENT) || (!input.Event.KeyEvent.bKeyDown));
+	/* Control keys also generate events with zero character, so we ignore them */
+    } while ((input.EventType != KEY_EVENT) || (!input.Event.KeyEvent.bKeyDown) ||
+	     (!input.Event.KeyEvent.uChar.AsciiChar));
 
     return input.Event.KeyEvent.uChar.AsciiChar;
 }
