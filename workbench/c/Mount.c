@@ -278,7 +278,7 @@ int main(void)
 	if (!_WBenchMsg)
         {
           memset(args,0,sizeof(args));
-          if ((rda = ReadArgs("DEVICE/M,FROM/K", (IPTR *)args, NULL)))
+          if ((rda = ReadArgs("DEVICE/M,FROM/K", args, NULL)))
           {
             STRPTR	*MyDevPtr;
             int		len;
@@ -707,7 +707,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	memset(&args, 0, sizeof(args));
 
-	if (!(MyRDA = ReadArgs((STRPTR)options, (IPTR *)args, rda)))
+	if (!(MyRDA = ReadArgs((STRPTR)options, &args[0], rda)))
 	{
 		DEBUG_MOUNT(Printf("ReadMountArgs: ReadArgs failed\n"));
 		DEBUG_MOUNT(PrintFault(IoErr(),"ReadMountArgs"));
@@ -1440,58 +1440,31 @@ struct FileSysEntry *GetFileSysEntry(ULONG DosType)
 /************************************************************************************************/
 /************************************************************************************************/
 
+#define PATCH_FIELD(f, name) \
+    if (MyFileSysEntry->fse_PatchFlags & f) \
+	MyDeviceNode->dn_ ## name = (typeof(MyDeviceNode->dn_ ## name))MyFileSysEntry->fse_ ## name
 
-void	PatchDosNode(struct DeviceNode	*MyDeviceNode,
-                     ULONG		DosType)
+void PatchDosNode(struct DeviceNode *MyDeviceNode, ULONG DosType)
 {
-struct FileSysEntry	*MyFileSysEntry;
-ULONG			MyPatchFlags;
+    struct FileSysEntry	*MyFileSysEntry;
 
-  DEBUG_PATCHDOSNODE(Printf("MakeDosNode: DeviceNode 0x%lx\n",
-                    (ULONG)MyDeviceNode));
+    DEBUG_PATCHDOSNODE(Printf("MakeDosNode: DeviceNode 0x%P\n", MyDeviceNode));
 
-  if ((MyFileSysEntry=GetFileSysEntry(DosType)))
-  {
-    MyPatchFlags		=	MyFileSysEntry->fse_PatchFlags;
-
-    DEBUG_PATCHDOSNODE(Printf("PatchDosNode: FileSysEntry 0x%lx PatchFlags 0x%lx\n",
-                      (ULONG)MyFileSysEntry,
-                      MyPatchFlags));
-
-    if (MyPatchFlags)
+    if ((MyFileSysEntry=GetFileSysEntry(DosType)))
     {
-      ULONG	*PatchDeviceNode;
-      ULONG	*PatchDeviceNodeEnd;
-      ULONG	*PatchFileSysEntry;
-
-      PatchFileSysEntry		=(ULONG*) &MyFileSysEntry->fse_Type;
-      PatchDeviceNode		=(ULONG*) &MyDeviceNode->dn_Type;
-      PatchDeviceNodeEnd	=(ULONG*) ((IPTR) MyDeviceNode + sizeof(struct DeviceNode));
-
-      while (MyPatchFlags)
-      {
-        if (MyPatchFlags & 1)
-        {
-          *PatchDeviceNode	=	*PatchFileSysEntry;
-        }
-        PatchDeviceNode++;
-        PatchFileSysEntry++;
-
-        if (PatchDeviceNode >= PatchDeviceNodeEnd)
-        {
-          /* Savety */
-          break;
-        }
-
-        MyPatchFlags	>>=	1;
-      }
+	DEBUG_PATCHDOSNODE(Printf("PatchDosNode: FileSysEntry 0x%P PatchFlags 0x%08lx\n", MyFileSysEntry, MyFileSysEntry->fse_PatchFlags));
+	
+	PATCH_FIELD(0x0001, Type);
+	PATCH_FIELD(0x0002, Task);
+	PATCH_FIELD(0x0004, Lock);
+	PATCH_FIELD(0x0008, Handler);
+	PATCH_FIELD(0x0010, StackSize);
+	PATCH_FIELD(0x0020, Priority);
+	PATCH_FIELD(0x0040, Startup);
+	PATCH_FIELD(0x0080, SegList);
+	PATCH_FIELD(0x0100, GlobalVec);
     }
-  }
-  else
-  {
-    /* Mount with no BootNode */
-    DEBUG_PATCHDOSNODE(Printf("PatchDosNode: Can't get FileSysEntry..no bootnode\n"));
-  }
+    DEBUG_PATCHDOSNODE(else Printf("PatchDosNode: Can't get FileSysEntry..no bootnode\n"));
 }
 
 
