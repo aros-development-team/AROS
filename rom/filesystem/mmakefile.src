@@ -1,0 +1,6 @@
+# $Id: mmakefile.src 33880 2010-07-22 06:56:06Z sonic $
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-filesystem \
+  modname=FileSystem modtype=resource \
+  files="filesystem"
