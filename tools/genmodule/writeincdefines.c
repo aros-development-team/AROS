@@ -274,7 +274,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 
 	fprintf(out,
 		"\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
-		"static inline %s __%s_WB(%s %s",
+		"static inline %s __%s_WB(%s __%s",
 		cfg->modulenameupper,
 		funclistit->type, varargname, cfg->libbasetypeptrextern, cfg->libbase
 	);
@@ -294,10 +294,10 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 		"    va_list args;\n"
 		"\n"
 		"    va_start(args, %s);\n"
-		"    retval = %s(",
+		"    retval = __%s_WB(__%s, ",
 		funclistit->type,
 		getargname(lastarg),
-		funclistit->name
+		funclistit->name, cfg->libbase
 	);
 	for (arglistit = funclistit->arguments;
 	     arglistit != NULL && arglistit->next != NULL;
