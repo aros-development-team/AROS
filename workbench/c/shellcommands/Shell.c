@@ -1034,9 +1034,9 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		 struct Redirection *rd, struct InterpreterState *is)
 {
 
-#define item       cs->CS_Buffer[cs->CS_CurChr]
-#define from       cs->CS_Buffer
-#define advance(x) cs->CS_CurChr += x;
+#define item       cookingCS.CS_Buffer[cookingCS.CS_CurChr]
+#define from       cookingCS.CS_Buffer
+#define advance(x) cookingCS.CS_CurChr += x;
 
     LONG   result, i, len;
     char   buf[32];
@@ -1044,6 +1044,11 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
            foundClosingBrace = FALSE,
            doNotExpandVar    = FALSE;
     STRPTR varNameString     = NULL;
+    struct CSource cookingCS = {NULL, 0, 0};
+    
+    appendString(&cookingCS, cs->CS_Buffer, cs->CS_Length + 1);
+    cookingCS.CS_CurChr = cs->CS_CurChr;
+    cookingCS.CS_Length = cs->CS_Length;
 
     /*
        Vars and BackTicks can't be properly handled by using FindItem() as
@@ -1063,23 +1068,22 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
        BackTicks nested commands.
      */
 
-    if ( cs->CS_CurChr == 0 )
+    if ( cookingCS.CS_CurChr == 0 )
     {
 
         /* <$$> CLI number substitution */
-        while ( cs->CS_CurChr < cs->CS_Length )
+        while ( cookingCS.CS_CurChr < cookingCS.CS_Length )
         {
 
-            if ( (item == '\n') || (item == '\0') )
+            if ( (item == '\0') || (item == '\n') )
             {
-                D(bug("[Shell] var-handling: found end of line\n"));
                 break;
             }
 
-	    if ( (item == is->bra)                                &&
-                 (cs->CS_Buffer[cs->CS_CurChr + 1] == is->dollar) &&
-                 (cs->CS_Buffer[cs->CS_CurChr + 2] == is->dollar) &&
-                 (cs->CS_Buffer[cs->CS_CurChr + 3] == is->ket)       )
+	    if ( (item == is->bra)                                            &&
+                 (cookingCS.CS_Buffer[cookingCS.CS_CurChr + 1] == is->dollar) &&
+                 (cookingCS.CS_Buffer[cookingCS.CS_CurChr + 2] == is->dollar) &&
+                 (cookingCS.CS_Buffer[cookingCS.CS_CurChr + 3] == is->ket)       )
 	    {
                 len = sprintf(buf, "%d", is->cliNumber);
                 appendString(filtered, buf, len);
@@ -1092,38 +1096,32 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
             }
         }
 
-        appendString(filtered, "\n\0", 2);
+        appendString(filtered, "\0", 1);
 
         if ( filtered->CS_Buffer != NULL )
         {
-            /* cs->CS->Buffer is built on the stack */
-            CopyMem(filtered->CS_Buffer, cs->CS_Buffer, strlen(filtered->CS_Buffer));
+            FreeVec(cookingCS.CS_Buffer);
+            cookingCS.CS_Buffer = filtered->CS_Buffer;
         }
 
-        cs->CS_Length = strlen(cs->CS_Buffer);
-        cs->CS_CurChr = 0;
-        FreeVec(filtered->CS_Buffer);
+        cookingCS.CS_Length = strlen(cookingCS.CS_Buffer);
+        cookingCS.CS_CurChr = 0;
         filtered->CS_Buffer = NULL;
         filtered->CS_CurChr = filtered->CS_Length = 0;
-        
-        D(bug("\n[Shell] <$$> CLI number substitution done... cs->CS_Buffer = '%s'\n",
-            cs->CS_Buffer));
 
 
         /* Environment variables handling (locals and globals) */
-        while ( cs->CS_CurChr < cs->CS_Length )
+        while ( cookingCS.CS_CurChr < cookingCS.CS_Length )
         {
 
-            if ( (item == '\n') || (item == '\0') )
+            if ( (item == '\0') || (item == '\n') )
             {
-                D(bug("[Shell] var-handling: found end of line\n"));
                 break;
             }
 
             if (item == '*')
             {
-                D(bug("[Shell] prevItem = '%c', item = '%c'\n", cs->CS_Buffer[cs->CS_CurChr - 1], item));
-                if (cs->CS_Buffer[cs->CS_CurChr - 1] == '*')
+                if (cookingCS.CS_Buffer[cookingCS.CS_CurChr - 1] == '*')
                 {
                     doNotExpandVar = !doNotExpandVar;
                 }
@@ -1135,10 +1133,8 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
             if (item == '$')
             {
-                if (cs->CS_Buffer[cs->CS_CurChr - 1] != '*')
+                if (cookingCS.CS_Buffer[cookingCS.CS_CurChr - 1] != '*')
                     doNotExpandVar = FALSE;
-                D(bug("[Shell] prevItem = '%c', letter = '%c'\n", cs->CS_Buffer[cs->CS_CurChr - 1], item));
-                D(bug("[Shell] doNotExpandVar = %s\n", (doNotExpandVar ? "TRUE" : "FALSE")));
             }
 
             if ( (item != '$') || (doNotExpandVar) )
@@ -1152,21 +1148,19 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
                 if (item == '$')
                 {
-                    appendString(filtered, (CONST_STRPTR) &cs->CS_Buffer[cs->CS_CurChr - 1], 1);
+                    appendString(filtered, (CONST_STRPTR) &cookingCS.CS_Buffer[cookingCS.CS_CurChr - 1], 1);
                     appendString(filtered, (CONST_STRPTR) &item, 1);
                     advance(1);
                     continue;
                 }
 
-                if ( (item == '\n') || (item == '\0') )
+                if ( (item == '\0') || (item == '\n') )
                 {
-                    D(bug("[Shell] var-handling: found end of line\n"));
                     break;
                 }
 
                 if (item == '{')
                 {
-                    D(bug("[Shell] var-handling: found opening brace!\n"));
                     foundOpeningBrace = TRUE;
                     advance(1);
                 }
@@ -1189,11 +1183,10 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                 if (item == '}')
                 {
                     foundClosingBrace = TRUE;
-                    D(bug("[Shell] found closing brace!\n"));
                 }
                 else
                 {
-                    cs->CS_CurChr--;
+                    cookingCS.CS_CurChr--;
                 }
 
                 D(bug("[Shell] varNameString = '%s'\n", varNameString));
@@ -1205,14 +1198,14 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                     ( GetVar(varNameString, varBuffer, sizeof(varBuffer), LV_VAR) != -1)
                 )
                 {
-                    appendString(filtered, varBuffer, strlen(varBuffer));
                     D(bug("[Shell] Real variable! Value = '%s'\n", varBuffer));
+                    appendString(filtered, varBuffer, strlen(varBuffer));
                 }
                 else
                 {
                     for ( i += (foundOpeningBrace ? 1 : 0), i += (foundClosingBrace ? 1 : 0) ; i-- ; )
                     {
-                        cs->CS_CurChr--;
+                        cookingCS.CS_CurChr--;
                     }
                     /* We don't reach back the dollar char as it would lead to
                        endless loop, but we put it in the string nevertheless */
@@ -1225,23 +1218,18 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
             }
             advance(1);
 
-        } // while( cs->CS_CurChr < cs->CS_Length )
+        } // while( cookingCS.CS_CurChr < cookingCS.CS_Length )
 
-        appendString(filtered, "\n\0", 2);
-        
-        if ( filtered->CS_Buffer != NULL )
+        appendString(filtered, "\0", 1);
         {
-            /* cs->CS->Buffer is built on the stack */
-            CopyMem(filtered->CS_Buffer, cs->CS_Buffer, strlen(filtered->CS_Buffer));
+            FreeVec(cookingCS.CS_Buffer);
+            cookingCS.CS_Buffer = filtered->CS_Buffer;
         }
 
-        cs->CS_Length = strlen(cs->CS_Buffer);
-        cs->CS_CurChr = 0;
-        FreeVec(filtered->CS_Buffer);
+        cookingCS.CS_Length = strlen(cookingCS.CS_Buffer);
+        cookingCS.CS_CurChr = 0;
         filtered->CS_Buffer = NULL;
         filtered->CS_CurChr = filtered->CS_Length = 0;
-        
-        D(bug("\n[Shell] Var handling done... cs->CS_Buffer = '%s'\n", cs->CS_Buffer));
 
 
         /* BackTicks handling... we allow several embedded commands
@@ -1255,7 +1243,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
                 advance(1);
 
-                if(extractEmbeddedCommand(&embedCl, cs))
+                if(extractEmbeddedCommand(&embedCl, &cookingCS))
                 {
                     /* The Amiga shell has severe problems when using
                         redirections in embedded commands so here, the
@@ -1272,7 +1260,10 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
                     /* No memory? */
                     if(!Redirection_init(&embedRd))
+                    {
+                        FreeVec(cookingCS.CS_Buffer);
                         return FALSE;
+                    }
 
                     /* Construct temporary output filename */
                     __sprintf(embedOutputFilename, "T:Shell%ld$embed",
@@ -1314,28 +1305,27 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
         if ( filtered->CS_Buffer != NULL )
         {
-            /* cs->CS->Buffer is built on the stack */
-            CopyMem(filtered->CS_Buffer, cs->CS_Buffer, strlen(filtered->CS_Buffer));
+            FreeVec(cookingCS.CS_Buffer);
+            cookingCS.CS_Buffer = filtered->CS_Buffer;
         }
 
-        cs->CS_Length = strlen(cs->CS_Buffer);
-        cs->CS_CurChr = 0;
-        FreeVec(filtered->CS_Buffer);
+        cookingCS.CS_Length = strlen(cookingCS.CS_Buffer);
+        cookingCS.CS_CurChr = 0;
         filtered->CS_Buffer = NULL;
         filtered->CS_CurChr = filtered->CS_Length = 0;
 
-        D(bug("\n[Shell] BackTicks handling done... cs->CS_Buffer = '%s'\n", cs->CS_Buffer));
+        D(bug("[Shell] BackTicks handling done... cookingCS.CS_Buffer = '%s'\n", cookingCS.CS_Buffer));
 
 
-    } // if ( cs->CS_CurChr == 0 )
+    } // if ( cookingCS.CS_CurChr == 0 )
     else
     {
-        D(bug("\n[Shell] Vars and BackTicks handling were skipped... cs->CS_Buffer+cs->CS_CurChr = '%s'\n", cs->CS_Buffer+cs->CS_CurChr));
+        D(bug("\n[Shell] Vars and BackTicks handling were skipped... cookingCS.CS_Buffer+cookingCS.CS_CurChr = '%s'\n", cookingCS.CS_Buffer+cookingCS.CS_CurChr));
     }
 
     while(TRUE)
     {
-	D(bug("Str: %s\n", cs->CS_Buffer+cs->CS_CurChr));
+	D(bug("Str: %s\n", cookingCS.CS_Buffer+cookingCS.CS_CurChr));
 
 	while(item == ' ' || item == '\t')
 	{
@@ -1367,20 +1357,24 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
 	    /* Prevent command lines like "Prompt> | Olle echo Oepir" */
 	    if(!rd->haveCommand)
+	    {
+		FreeVec(cookingCS.CS_Buffer);
 		return ERROR_ACTION_NOT_KNOWN;
+	    }
 
 	    item = 0;
 
 	    /* There must be something after a pipe... */
 	    for
 	    (
-	        i = cs->CS_CurChr + 1;
-		cs->CS_Buffer[i] == ' ' || cs->CS_Buffer[i] == '\t';
+	        i = cookingCS.CS_CurChr + 1;
+		cookingCS.CS_Buffer[i] == ' ' || cookingCS.CS_Buffer[i] == '\t';
 		i++
 	    );
 
-	    if(cs->CS_Buffer[i] == '\n' || cs->CS_Buffer[i] == ';' || cs->CS_Buffer[i] == '\0')
+	    if(cookingCS.CS_Buffer[i] == '\n' || cookingCS.CS_Buffer[i] == ';' || cookingCS.CS_Buffer[i] == '\0')
 	    {
+		FreeVec(cookingCS.CS_Buffer);
 		SetIoErr(ERROR_LINE_TOO_LONG); /* what kind of error must we report? */
 	        return ERROR_LINE_TOO_LONG;
 	    }
@@ -1390,12 +1384,18 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	    if(rd->haveOutRD)
 	    {
 	        if (SystemTagList(&item+1, tags) == -1)
+	        {
+	            FreeVec(cookingCS.CS_Buffer);
 	            return IoErr();
+	        }
 	    }
 	    else
 	    {
                 if (Pipe("PIPEFS:", &pipefhs[0], &pipefhs[1]) != DOSTRUE)
+                {
+	            FreeVec(cookingCS.CS_Buffer);
 	            return IoErr();
+	        }
 
 	        tags[0].ti_Data = (IPTR)pipefhs[0];
 
@@ -1406,6 +1406,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		    Close(pipefhs[0]);
 		    Close(pipefhs[1]);
 		    
+		    FreeVec(cookingCS.CS_Buffer);
 		    return error;
 		}
 		    
@@ -1418,19 +1419,28 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	{
 	    /* Prevent command lines like "Prompt> <Olle type" */
 	    if(!rd->haveCommand)
+	    {
+		FreeVec(cookingCS.CS_Buffer);
 		return ERROR_ACTION_NOT_KNOWN;
+	    }
 
 	    /* Multiple redirections not allowed */
 	    if(rd->haveInRD)
+	    {
+		FreeVec(cookingCS.CS_Buffer);
 		return ERROR_TOO_MANY_LEVELS;
+	    }
 
 	    advance(1);
-	    result = ReadItem(rd->inFileName, FILENAME_LEN, cs);
+	    result = ReadItem(rd->inFileName, FILENAME_LEN, &cookingCS);
 
 	    D(bug("Found input redirection\n"));
 
 	    if(result == ITEM_ERROR || result == ITEM_NOTHING)
+	    {
+		FreeVec(cookingCS.CS_Buffer);
 		return ERROR_OBJECT_NOT_FOUND;
+	    }
 
 	    rd->haveInRD = TRUE;
 	}
@@ -1438,7 +1448,10 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	{
 	    /* Prevent command lines like "Prompt> >>Olle echo Oepir" */
 	    if(!rd->haveCommand)
+	    {
+		FreeVec(cookingCS.CS_Buffer);
 		return ERROR_ACTION_NOT_KNOWN;
+	    }
 
 	    advance(1);
 
@@ -1446,15 +1459,21 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	    {
 		/* Multiple redirections not allowed */
 		if(rd->haveAppRD)
+		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return ERROR_TOO_MANY_LEVELS;
+		}
 
 		advance(1);
-		result = ReadItem(rd->outFileName, FILENAME_LEN, cs);
+		result = ReadItem(rd->outFileName, FILENAME_LEN, &cookingCS);
 
 		D(bug("Found append redirection\n"));
 
 		if(result == ITEM_ERROR || result == ITEM_NOTHING)
+		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return ERROR_OBJECT_NOT_FOUND;
+		}
 
 		rd->haveAppRD = TRUE;
 	    }
@@ -1462,14 +1481,20 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	    {
 		/* Multiple redirections not allowed */
 		if(rd->haveOutRD)
+		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return ERROR_TOO_MANY_LEVELS;
+		}
 
-		result = ReadItem(rd->outFileName, FILENAME_LEN, cs);
+		result = ReadItem(rd->outFileName, FILENAME_LEN, &cookingCS);
 
 		D(bug("Found output redirection\n"));
 
 		if(result == ITEM_ERROR || result == ITEM_NOTHING)
+		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return ERROR_OBJECT_NOT_FOUND;
+	        }
 
 		rd->haveOutRD = TRUE;
 	    }
@@ -1479,14 +1504,16 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	{
 	    STRPTR s = &item;
 
-	    if (strncmp(s, ".popis\n", 7) == 0)
+            if (strncmp(s, ".popis", 6) == 0)
 	    {
 		popInterpreterState(is);
+		FreeVec(cookingCS.CS_Buffer);
 		return 0;
 	    }
-	    else if (strncmp(s, ".pushis\n", 8) == 0)
+	    else if (strncmp(s, ".pushis", 7) == 0)
 	    {
 		pushInterpreterState(is);
+		FreeVec(cookingCS.CS_Buffer);
 		return 0;
 	    }
 	    else if (item == is->dot)
@@ -1496,25 +1523,32 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		++s;
 
 		if (s[0] == ' ') /* dot comment */
+		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return 0;
-		else if (doCommand(cs, filtered, "bra ", 4, NULL, 0, 
+		}
+		else if (doCommand(&cookingCS, filtered, "bra ", 4, NULL, 0, 
 				   &is->bra, &error, is))
 		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return error;
 		}
-		else if (doCommand(cs, filtered, "ket ", 4, NULL, 0, 
+		else if (doCommand(&cookingCS, filtered, "ket ", 4, NULL, 0, 
 				   &is->ket, &error, is))
 		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return error;
 		}
-		else if (doCommand(cs, filtered, "dollar ", 7, "dol ", 4,
+		else if (doCommand(&cookingCS, filtered, "dollar ", 7, "dol ", 4,
 				   &is->dollar, &error, is))
 		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return error;
 		}
-		else if (doCommand(cs, filtered, "dot ", 4, NULL, 0, 
+		else if (doCommand(&cookingCS, filtered, "dot ", 4, NULL, 0, 
 				   &is->ket, &error, is))
 		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return error;
 		}
 		else if (strncasecmp(s, "key ", 4) == 0 ||
@@ -1533,19 +1567,26 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 			appendString(filtered, "duplicate", 10);
 			FreeDosObject(DOS_RDARGS, is->rdargs);
 			is->rdargs = NULL;
+			FreeVec(cookingCS.CS_Buffer);
 			return ERROR_ACTION_NOT_KNOWN;
 		    }
 
 		    is->rdargs = AllocDosObject(DOS_RDARGS, NULL);
 		    if (is->rdargs)
 		    {
-			result = ReadItem(argBuffer, sizeof(argBuffer), cs);
+			result = ReadItem(argBuffer, sizeof(argBuffer), &cookingCS);
 
 			if (result == ITEM_ERROR)
+			{
+			    FreeVec(cookingCS.CS_Buffer);
 			    return ERROR_UNKNOWN;
+			}
 
 			if (result == ITEM_NOTHING)
+			{
+			    FreeVec(cookingCS.CS_Buffer);
 			    return ERROR_KEY_NEEDS_ARG;
+			}
 
 			len = strlen(argBuffer);
 		        appendString(filtered, argBuffer, len + 1);
@@ -1654,13 +1695,16 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 			    D(bug("[Shell] bad args for: %s\n", argBuffer));
 			    FreeDosObject(DOS_RDARGS, is->rdargs);
 			    is->rdargs = NULL;
+			    FreeVec(cookingCS.CS_Buffer);
 			    return error;
 			}
 
+			FreeVec(cookingCS.CS_Buffer);
 			return 0;
 		    }
 		    else
 		    {
+			FreeVec(cookingCS.CS_Buffer);
 			D(bug("[Shell] memory exhausted\n"));
 			return ERROR_NO_FREE_STORE;
 		    }
@@ -1671,26 +1715,31 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		    len = s[3] == ' ' ? 5 : 9;
 		    advance(len);
 
-		    i = cs->CS_CurChr;
-		    result = ReadItem(argBuffer, sizeof(argBuffer), cs);
+		    i = cookingCS.CS_CurChr;
+		    result = ReadItem(argBuffer, sizeof(argBuffer), &cookingCS);
 
 		    if (result == ITEM_UNQUOTED)
 		    {
-			len = cs->CS_CurChr - i;
+			len = cookingCS.CS_CurChr - i;
 
 			i = getArgumentIdx(is, argBuffer, len);
 			if (i < 0)
+			{
+			    FreeVec(cookingCS.CS_Buffer);
 			    return ERROR_UNKNOWN;
+			}
 
 			advance(1);
-			len = cs->CS_CurChr;
-		    	result = ReadItem(argBuffer, sizeof(argBuffer), cs);
-			len = cs->CS_CurChr - len;
+			len = cookingCS.CS_CurChr;
+		    	result = ReadItem(argBuffer, sizeof(argBuffer), &cookingCS);
+			len = cookingCS.CS_CurChr - len;
 			switch (result)
 			{
 			case ITEM_ERROR:
+			    FreeVec(cookingCS.CS_Buffer);
 			    return ERROR_UNKNOWN;
 			case ITEM_NOTHING:
+			    FreeVec(cookingCS.CS_Buffer);
 			    return ERROR_REQUIRED_ARG_MISSING;
 			default:
 			    if (is->argdef[i])
@@ -1701,6 +1750,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 			    ((STRPTR)is->argdef[i])[len] = '\0';
 			    is->argdeflen[i] = len;
 			    advance(len);
+			    FreeVec(cookingCS.CS_Buffer);
 			    return 0;
 			}
 		    }
@@ -1712,24 +1762,29 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	    {
 		D(bug("Found possible command\n"));
 
-    		getCommand(filtered, cs, rd, is);
+    		getCommand(filtered, /*cs*/&cookingCS, rd, is);
 	    }
 	    else
 	    {
 		/* Copy argument */
-		LONG size = cs->CS_CurChr;
+		LONG size = cookingCS.CS_CurChr;
 
-		result = ReadItem(argBuffer, sizeof(argBuffer), cs);
+		result = ReadItem(argBuffer, sizeof(argBuffer), /*cs*/&cookingCS);
 
 		/*??AGR who coded this shit ? */
 		if(result == ITEM_ERROR || ITEM_NOTHING)
+		{
+		    FreeVec(cookingCS.CS_Buffer);
 		    return ERROR_UNKNOWN;
+		}
 
 		D(bug("\nFound argument %s\n", argBuffer));
-		substArgs(filtered, from + size, cs->CS_CurChr - size, is);
+		substArgs(filtered, from + size, cookingCS.CS_CurChr - size, is);
 	    }
 	}
     }
+
+    FreeVec(cookingCS.CS_Buffer);
 
     D(bug("Exiting convertLine()\n"));
 
@@ -1794,8 +1849,13 @@ BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd)
 
     Seek(embedRd->newOut, 0, OFFSET_BEGINNING);
 
-    while(((a = FGetC(embedRd->newOut)) != '\n') && (a != EOF))
-       appendString(filtered, &a, 1);
+    while(((a = FGetC(embedRd->newOut)) != '\0') && (a != EOF))
+    {
+        if (a != '\n')
+            appendString(filtered, &a, 1);
+        else
+            appendString(filtered, " ", 1);
+    }
 
     return TRUE;
 }
@@ -1858,7 +1918,7 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
     {
 	letter = inputStream ? FGetC(inputStream) : EOF;
 
-	D(bug("Read character %c (%d)\n", letter, letter));
+//	D(bug("Read character %c (%d)\n", letter, letter));
 
 	/* -2 to skip test for boundary for terminating '\n\0' */
 	if(cl->position > (cl->size - 2))
@@ -1984,6 +2044,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 
 		ss->residentCommand = TRUE;
 		Permit();
+		D(bug("[Shell] loadCommand() using resident '%s' command\n", commandName));
 		return MKBADDR(residentSeg);
 	    }
 	}
