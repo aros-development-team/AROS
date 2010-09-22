@@ -5,6 +5,7 @@
 
 #include <aros/debug.h>
 #include <hidd/graphics.h>
+#include <proto/oop.h>
 #include <proto/utility.h>
 
 #include "cgxvideo_intern.h"
@@ -92,7 +93,8 @@
 	return NULL;
     }
 
-    if (bm->Flags & BMF_SPECIALFMT) {
+    if (bm->Flags & BMF_SPECIALFMT)
+    {
         struct TagItem layerTags[] = {
 	    {aHidd_Overlay_SrcWidth , 0           },
 	    {aHidd_Overlay_SrcHeight, 0           },
@@ -106,9 +108,11 @@
 	layerTags[1].ti_Data = GetTagData(VOA_SrcHeight, 0, TagItems);
 	layerTags[2].ti_Data = GetTagData(VOA_SrcType  , 0, TagItems);
 
-	vh->drv = (OOP_Object *)bm->Planes[0];
+	OOP_GetAttr((OOP_Object *)bm->Planes[0], aHidd_BitMap_GfxHidd, &vh->drv);
 	vh->obj = HIDD_Gfx_NewOverlay(vh->drv, layerTags);
-    } else {
+    }
+    else
+    {
 	vh->obj = NULL;
 	setError(VOERR_INVSCRMODE);
     }
