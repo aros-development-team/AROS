@@ -492,6 +492,7 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 	    buf = NewRawDoFmt(locstring, RAWFMTFUNC_STRING, buf, iet->iet_AlertLocation);
 	    D(bug("[FormatAlert] Location string:\n%s\n", buffer));
 
+#ifdef KrnDecodeLocation
 	    if (KrnDecodeLocation(iet->iet_AlertLocation,
 				  KDL_ModuleName , &modname, KDL_SegmentNumber, &segnum ,
 				  KDL_SegmentName, &segname, KDL_SegmentStart , &segaddr,
@@ -511,6 +512,7 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 		    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, --buf, symname, symaddr, iet->iet_AlertLocation - symaddr);
 		}
 	    }
+#endif
 	    /* After NewRawDoFmt() buf points to the character AFTER null terminator */
 	    buf--;
 	}
