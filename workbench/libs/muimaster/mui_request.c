@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -104,11 +104,10 @@ AROS_UFH2S(void, len_func,
 	return EasyRequestArgs(NULL,&es,NULL,params);
     }
 
-#ifdef __AROS__
     reqtxt_len = 0;
+#ifdef __AROS__
     RawDoFmt(format,params,(VOID_FUNC)AROS_ASMSYMNAME(len_func),&reqtxt_len);
 #else
-    reqtxt_len = 0;
     RawDoFmt(format,params,(void(*)())&len_func,&reqtxt_len);
 #endif
 
@@ -139,16 +138,18 @@ AROS_UFH2S(void, len_func,
 	WindowContents, VGroup,
 	    MUIA_Background,       MUII_RequesterBack,
 	    Child, HGroup,
+		TextFrame,
+		MUIA_Background,    MUII_TextBack,
+		Child, HSpace(0),
 		Child, TextObject,
-		    TextFrame,
 		    MUIA_InnerBottom,   8,
 		    MUIA_InnerLeft,     8,
 		    MUIA_InnerRight,    8,
 		    MUIA_InnerTop,      8,
-		    MUIA_Background,    MUII_TextBack,
 		    MUIA_Text_SetMax,   TRUE,
 		    MUIA_Text_Contents, reqtxt,
 		    End,
+		Child, HSpace(0),
 		End,
 	    Child, VSpace(2),
 	    Child, req_group = HGroup, End,
@@ -167,7 +168,7 @@ AROS_UFH2S(void, len_func,
     	    char *current = gadgs;
 	    int active = -1;
 	    int num_gads = 0;
-	    IPTR isopen;
+	    IPTR isopen = FALSE;
 
 //	    set(app, MUIA_Application_Sleep, TRUE);
 	    DoMethod(app, OM_ADDMEMBER, (IPTR)req_wnd);
