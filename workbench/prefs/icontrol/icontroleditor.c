@@ -68,6 +68,7 @@ struct IControlEditor_DATA
     Object  *scrtopdragobj;
     Object  *scrbotdragobj;
     Object  *metadragobj;
+    Object  *previewpage;
 };
 
 /*********************************************************************************************/
@@ -165,7 +166,7 @@ static void InitImages(void)
 
 /*********************************************************************************************/
 
-static void PreviewFunc(struct Hook *hook, Object *previewpage, struct IControlEditor_DATA **data)
+static void SetPreviewImage(Object *previewpage, struct IControlEditor_DATA **data)
 {
     IPTR type = 0;
     IPTR look = 0;
@@ -174,6 +175,13 @@ static void PreviewFunc(struct Hook *hook, Object *previewpage, struct IControlE
     GET((*data)->menulookobj, MUIA_Cycle_Active, &look);
 
     NNSET(previewpage, MUIA_Group_ActivePage, type * 2 + look);
+}
+
+/*********************************************************************************************/
+
+static void PreviewFunc(struct Hook *hook, Object *previewpage, struct IControlEditor_DATA **data)
+{
+    SetPreviewImage(previewpage, data);
 }
 
 /*********************************************************************************************/
@@ -288,6 +296,8 @@ BOOL IControlPrefs2Gadgets(struct IControlEditor_DATA *data)
 
     ix.ix_Qualifier = prefs->ic_MetaDrag;
     NNSET(data->metadragobj, MUIA_HotkeyString_IX, &ix);
+
+    SetPreviewImage(data->previewpage, &data);
 
     return TRUE;
 }
@@ -466,6 +476,7 @@ IPTR IControlEditor__OM_NEW
     data->scrtopdragobj = scrtopdragobj;
     data->scrbotdragobj = scrbotdragobj;
     data->metadragobj = metadragobj;
+    data->previewpage = previewpage;
     SET(data->defpubscrobj, MUIA_ShortHelp, __(MSG_FRONTMOST_DEFAULT_DESC));
 
     DoMethod
@@ -615,3 +626,4 @@ ZUNE_CUSTOMCLASS_4
     MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_SetDefaults, Msg
 );
+
