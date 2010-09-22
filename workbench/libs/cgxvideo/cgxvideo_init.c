@@ -6,15 +6,17 @@
 
 static int cgxv_init(struct IntCGXVBase *CGXVideoBase)
 {
-     HiddOverlayAttrBase = OOP_ObtainAttrBase(IID_Hidd_Overlay);
-     
-     return HiddOverlayAttrBase ? TRUE : FALSE;
+    CGXVideoBase->attrbases[0].interfaceID = IID_Hidd_BitMap;
+    CGXVideoBase->attrbases[0].attrBase = &HiddBitMapAttrBase;
+    CGXVideoBase->attrbases[1].interfaceID = IID_Hidd_Overlay;
+    CGXVideoBase->attrbases[1].attrBase = &HiddOverlayAttrBase;
+
+    return OOP_ObtainAttrBases(CGXVideoBase->attrbases);
 }
 
 static int cgxv_expunge(struct IntCGXVBase *CGXVideoBase)
 {
-    if (HiddOverlayAttrBase)
-        OOP_ReleaseAttrBase(IID_Hidd_Overlay);
+    OOP_ReleaseAttrBases(CGXVideoBase->attrbases);
 
     return TRUE;
 }
