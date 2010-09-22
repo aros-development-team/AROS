@@ -20,6 +20,7 @@ COMMONTESTFILES := \
     fileseek \
     filetest \
     fontinfo \
+    frequencies \
     fstest \
     getcybermapattr \
     gfx \
