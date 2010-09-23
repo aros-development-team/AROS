@@ -175,14 +175,18 @@ static void core_ExitInterrupt(CONTEXT *regs)
 }
 
 /* This entry point is called by host-side DLL when an IRQ arrives */
-void core_IRQHandler(unsigned int num, CONTEXT *regs)
+int core_IRQHandler(unsigned int num, CONTEXT *regs)
 {
     krnRunIRQHandlers(num);
     /* Timer IRQ is also used to emulate exec VBlank */
     if (num == INT_TIMER)
 	core_Cause(INTB_VERTB);
 
+    /* Do task scheduling */
     core_ExitInterrupt(regs);
+
+    /* Report new interrupts state */
+    return (SysBase->IDNestCnt < 0) ? INT_ENABLE : INT_DISABLE;
 }
 
 /* Trap handler entry point */
@@ -216,15 +220,14 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 //	    core_Cause(INTB_SOFTINT);
 	    break;
 	}
-
-	return FALSE;
+	break;
 
     case AROS_EXCEPTION_RESUME:
         /* Restore saved context and continue */
 	CopyMem((void *)args[0], regs, sizeof(CONTEXT));
 	*LastErrorPtr = ((struct AROSCPUContext *)args[0])->LastError;
 
-	return FALSE;
+	break;
 
     default:
 	/* It's something else, likely a CPU trap */
@@ -262,7 +265,7 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 	if (ex->CPUTrap != -1)
 	{
 	    if (krnRunExceptionHandlers(ex->CPUTrap, regs))
-		return FALSE;
+		break;
 	}
 
 	if (trapHandler && (ex->AmigaTrap != -1))
@@ -272,11 +275,13 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 	    DTRAP(bug("[KRN] Amiga trap %d\n", ex->AmigaTrap));
 	    trapHandler(ex->AmigaTrap, regs);
 
-	    return FALSE;
+	    break;
 	}
 
-	break;	
+	/* If we reach here, the trap is unhandled and we request the virtual machine to stop */
+	return INT_HALT;
     }
 
-    return TRUE;
+    /* Report new interrupts state */
+    return (SysBase->IDNestCnt < 0) ? INT_ENABLE : INT_DISABLE;
 }
