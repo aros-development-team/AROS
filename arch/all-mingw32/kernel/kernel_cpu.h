@@ -39,7 +39,7 @@ struct AROSCPUContext
 /* Our virtual CPU interface. It's needed here for krnSysCall() definition */
 struct KernelInterface
 {
-    int (*core_init)(unsigned int TimerPeriod, char *IDNestCnt);
+    int (*core_init)(unsigned int TimerPeriod);
     void (*core_intr_disable)(void);
     void (*core_intr_enable)(void);
     void (*core_raise)(ULONG num, const IPTR n);
@@ -47,7 +47,7 @@ struct KernelInterface
     void (*core_putc)(char c);
     int (*core_getc)(void);
     int (**TrapVector)(unsigned int num, IPTR *args, CONTEXT *regs);
-    void (**IRQVector)(unsigned int num, CONTEXT *regs);
+    int (**IRQVector)(unsigned int num, CONTEXT *regs);
     unsigned char *SuperState;
     unsigned char *SleepState;
     ULONG **LastErrorPtr;
@@ -58,6 +58,11 @@ extern struct KernelInterface KernelIFace;
 #define krnSysCall(n) KernelIFace.core_raise(AROS_EXCEPTION_SYSCALL, n)
 
 #endif
+
+/* Return values for trap and IRQ handlers */
+#define INT_DISABLE 0
+#define INT_ENABLE  1
+#define INT_HALT    -1
 
 /* Virtual machine sleep states */
 #define SLEEP_MODE_OFF     0

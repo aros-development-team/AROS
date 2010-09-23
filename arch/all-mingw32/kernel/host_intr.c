@@ -26,20 +26,19 @@ unsigned short Ints_Num;
 HANDLE IntObjects[256];
 unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
-char *IDNestCnt;
 
 /* Virtual CPU control registers */
 int           __declspec(dllexport) (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
-void          __declspec(dllexport) (*IRQVector)(unsigned int num, CONTEXT *regs);
+int           __declspec(dllexport) (*IRQVector)(unsigned int num, CONTEXT *regs);
 unsigned char __declspec(dllexport) Supervisor;
 unsigned char __declspec(dllexport) Sleep_Mode;
 DWORD *       __declspec(dllexport) LastErrorPtr;
 
 void core_intr_enable(void);
 
-static inline void core_LeaveInterrupt(void)
+static inline void core_LeaveInterrupt(int state)
 {
-    if (*IDNestCnt < 0)
+    if (state)
         core_intr_enable();
 }
 
@@ -48,6 +47,7 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     DWORD ExceptionCode = exptr->ExceptionRecord->ExceptionCode;
     CONTEXT *ContextRecord = exptr->ContextRecord;
     DWORD ThreadId;
+    int intstate;
     REG_SAVE_VAR;
 
     /* We are already in interrupt and we must not be preempted by task switcher. 
@@ -72,7 +72,8 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     CONTEXT_SAVE_REGS(ContextRecord);
 
     /* Call trap handler */
-    if (TrapVector(ExceptionCode, exptr->ExceptionRecord->ExceptionInformation, ContextRecord))
+    intstate = TrapVector(ExceptionCode, exptr->ExceptionRecord->ExceptionInformation, ContextRecord);
+    if (intstate == INT_HALT)
     {
         printf("[KRN] **UNHANDLED EXCEPTION 0x%08lX** stopping here...\n", ExceptionCode);
 
@@ -83,7 +84,7 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     CONTEXT_RESTORE_REGS(ContextRecord);
     /* Exit supervisor */
     Supervisor--;
-    core_LeaveInterrupt();
+    core_LeaveInterrupt(intstate);
 
     return EXCEPTION_CONTINUE_EXECUTION;
 }
@@ -116,6 +117,8 @@ DWORD WINAPI TaskSwitcher()
 	/* Process the interrupt if we are allowed to */
         if (Ints_Enabled)
 	{
+	    int intstate;
+
     	    Supervisor = 1;
     	    PendingInts[obj] = 0;
     	    /* 
@@ -128,7 +131,7 @@ DWORD WINAPI TaskSwitcher()
     	    DS(PRINT_CPUCONTEXT(&MainCtx));
 
 	    /* Call IRQ handler */
-	    IRQVector(obj, &MainCtx);
+	    intstate = IRQVector(obj, &MainCtx);
 
 	    /* If AROS is not going to sleep, set new CPU context */
     	    if (Sleep_Mode == SLEEP_MODE_OFF)
@@ -142,7 +145,7 @@ DWORD WINAPI TaskSwitcher()
 
 	    /* Leave supervisor mode */
 	    Supervisor = 0;
-	    core_LeaveInterrupt();
+	    core_LeaveInterrupt(intstate);
     	}
 	else
 	{
@@ -161,8 +164,6 @@ DWORD WINAPI TaskSwitcher()
 	else
 	    /* We've entered sleep mode */
             Sleep_Mode = SLEEP_MODE_ON;
-
-	
     }
     return 0;
 }
@@ -213,7 +214,12 @@ void __declspec(dllexport) core_raise(DWORD code, const ULONG_PTR n)
     while (Sleep_Mode);
 }
 
-int __declspec(dllexport) core_init(unsigned int TimerPeriod, char *idnestcnt)
+/*
+ * Start up virtual machine.
+ * Initializes IRQ engine, runs virtual supervisor thread and starts up main system timer.
+ * Trap and IRQ vectors must be already set up, we don't check them against NULLs.
+ */
+int __declspec(dllexport) core_init(unsigned int TimerPeriod)
 {
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
@@ -222,8 +228,7 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod, char *idnestcnt)
     int i;
     DWORD SwitcherId;
 
-    D(printf("[KRN] Setting up interrupts, IDNestCnt = 0x%p\n", idnestcnt));
-    IDNestCnt = idnestcnt;
+    D(printf("[KRN] Setting up interrupts\n"));
     Ints_Enabled = 0;
     Supervisor = 0;
     Sleep_Mode = 0;

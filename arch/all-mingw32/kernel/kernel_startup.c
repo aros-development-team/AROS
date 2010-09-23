@@ -177,7 +177,7 @@ int __startup startup(struct TagItem *msg)
     D(mykprintf("[Kernel] initializing host-side kernel module\n"));
     *KernelIFace.TrapVector = core_TrapHandler;
     *KernelIFace.IRQVector  = core_IRQHandler;
-    if (!KernelIFace.core_init(SysBase->VBlankFrequency, &SysBase->IDNestCnt)) {
+    if (!KernelIFace.core_init(SysBase->VBlankFrequency)) {
 	mykprintf("[Kernel] Failed to start up virtual machine!\n");
 	return -1;
     }
