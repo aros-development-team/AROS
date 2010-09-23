@@ -7,7 +7,7 @@ AROS_LH0I(int, KrnIsSuper,
 {
     AROS_LIBFUNC_INIT
 
-    return *KernelIFace.SuperState ? 1 : 0;
+    return *KernelIFace.SuperState;
 
     AROS_LIBFUNC_EXIT
 }

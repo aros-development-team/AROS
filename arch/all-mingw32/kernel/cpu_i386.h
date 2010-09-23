@@ -101,3 +101,4 @@ typedef struct _CONTEXT
 				  (ctx)->ContextFlags &= CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS
 
 #define PC(regs) regs->Eip
+#define R0(regs) regs->Eax

@@ -16,7 +16,7 @@
 extern struct HostInterface *HostIFace;
 
 int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs);
-int core_IRQHandler(unsigned int num, CONTEXT *regs);
+int core_IRQHandler(unsigned char *irqs, CONTEXT *regs);
 
 #undef kprintf
 #undef vkprintf

@@ -24,6 +24,8 @@
 #define Sleep_Mode   (*KernelIFace.SleepState)
 #define LastErrorPtr (*KernelIFace.LastErrorPtr)
 
+#define IRET return (SysBase->IDNestCnt < 0) ? INT_ENABLE : INT_DISABLE
+
 /*
  * User-mode part of exception handling. Save context, call
  * exec handler, then resume task.
@@ -175,18 +177,26 @@ static void core_ExitInterrupt(CONTEXT *regs)
 }
 
 /* This entry point is called by host-side DLL when an IRQ arrives */
-int core_IRQHandler(unsigned int num, CONTEXT *regs)
+int core_IRQHandler(unsigned char *irqs, CONTEXT *regs)
 {
-    krnRunIRQHandlers(num);
+    struct IntrNode *in, *in2;
+
+    /* Run handlers for all active IRQs */
+    ForeachNodeSafe(KernelBase->kb_Interrupts, in, in2)
+    {
+	irqhandler_t h = in->in_Handler;
+
+        if (h && (irqs[in->in_nr]))
+            h(in->in_HandlerData, in->in_HandlerData2);
+    }
+
     /* Timer IRQ is also used to emulate exec VBlank */
-    if (num == INT_TIMER)
+    if (irqs[INT_TIMER])
 	core_Cause(INTB_VERTB);
 
-    /* Do task scheduling */
+    /* Reschedule tasks and exit */
     core_ExitInterrupt(regs);
-
-    /* Report new interrupts state */
-    return (SysBase->IDNestCnt < 0) ? INT_ENABLE : INT_DISABLE;
+    IRET;
 }
 
 /* Trap handler entry point */
@@ -282,6 +292,5 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 	return INT_HALT;
     }
 
-    /* Report new interrupts state */
-    return (SysBase->IDNestCnt < 0) ? INT_ENABLE : INT_DISABLE;
+    IRET;
 }

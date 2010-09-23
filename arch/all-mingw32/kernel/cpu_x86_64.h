@@ -173,3 +173,6 @@ typedef struct _CONTEXT
 #define CONTEXT_RESTORE_REGS(ctx) (ctx)->SegCs = SegCS_Save; \
 				  (ctx)->SegSs = SegSS_Save; \
 				  (ctx)->ContextFlags &= CONTEXT_FULL
+
+#define PC(regs) regs->Rip
+#define R0(regs) regs->Rax
