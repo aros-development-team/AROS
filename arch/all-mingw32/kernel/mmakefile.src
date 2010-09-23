@@ -18,6 +18,7 @@ NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_LIBDIR := $(GENDIR)/lib
 
 NATIVE_FILES  := host_debug host_intr host_mmu
+NATIVE_AFILES := leaveinterrupt_$(CPU)
 
 NATIVE_LDFLAGS := -shared -Wl,--out-implib,$(NATIVE_LIBDIR)/libkernel.a
 
@@ -31,7 +32,7 @@ $(NATIVE_LIBDIR):
 
 %build_prog mmake=kernel-kernel-mingw32-native \
     progname=kernel.dll targetdir=$(NATIVE_BINDIR) \
-    files=$(NATIVE_FILES) compiler=kernel \
+    files=$(NATIVE_FILES) asmfiles=$(NATIVE_AFILES) compiler=kernel \
     ldflags=$(NATIVE_LDFLAGS)
 
 %common

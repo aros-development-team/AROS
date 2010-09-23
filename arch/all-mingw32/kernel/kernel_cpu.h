@@ -40,15 +40,14 @@ struct AROSCPUContext
 struct KernelInterface
 {
     int (*core_init)(unsigned int TimerPeriod);
-    void (*core_intr_disable)(void);
-    void (*core_intr_enable)(void);
     void (*core_raise)(ULONG num, const IPTR n);
     unsigned int (*core_protect)(void *addr, unsigned int len, unsigned int prot);
     void (*core_putc)(char c);
     int (*core_getc)(void);
     int (**TrapVector)(unsigned int num, IPTR *args, CONTEXT *regs);
-    int (**IRQVector)(unsigned int num, CONTEXT *regs);
-    unsigned char *SuperState;
+    int (**IRQVector)(unsigned char *irqs, CONTEXT *regs);
+    int *IntState;
+    int *SuperState;
     unsigned char *SleepState;
     ULONG **LastErrorPtr;
 };
@@ -59,12 +58,12 @@ extern struct KernelInterface KernelIFace;
 
 #endif
 
-/* Return values for trap and IRQ handlers */
+/* Interrupt enable states */
 #define INT_DISABLE 0
 #define INT_ENABLE  1
 #define INT_HALT    -1
 
-/* Virtual machine sleep states */
+/* Sleep states */
 #define SLEEP_MODE_OFF     0
 #define SLEEP_MODE_PENDING 1
 #define SLEEP_MODE_ON      2

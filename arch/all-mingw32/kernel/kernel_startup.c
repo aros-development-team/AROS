@@ -33,14 +33,13 @@ struct KernelInterface KernelIFace;
 
 static char *kernel_functions[] = {
     "core_init",
-    "core_intr_disable",
-    "core_intr_enable",
     "core_raise",
     "core_protect",
     "core_putc",
     "core_getc",
     "TrapVector",
     "IRQVector",
+    "Ints_Enabled",
     "Supervisor",
     "Sleep_Mode",
     "LastErrorPtr", 

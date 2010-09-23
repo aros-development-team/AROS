@@ -16,12 +16,10 @@
  * is safe to use.
  */
 #define D(x)	 /* Init debug		*/
-#define DI(x)    /* Interrupts debug    */
 #define DS(x)    /* Task switcher debug */
 
 HANDLE MainThread;
 DWORD MainThreadId;
-unsigned char Ints_Enabled;
 unsigned short Ints_Num;
 HANDLE IntObjects[256];
 unsigned char PendingInts[256];
@@ -29,18 +27,19 @@ unsigned char AllocatedInts[256];
 
 /* Virtual CPU control registers */
 int           __declspec(dllexport) (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
-int           __declspec(dllexport) (*IRQVector)(unsigned int num, CONTEXT *regs);
-unsigned char __declspec(dllexport) Supervisor;
+int           __declspec(dllexport) (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
+int           __declspec(dllexport) Ints_Enabled;
+int           __declspec(dllexport) Supervisor;
 unsigned char __declspec(dllexport) Sleep_Mode;
 DWORD *       __declspec(dllexport) LastErrorPtr;
 
-void core_intr_enable(void);
-
-static inline void core_LeaveInterrupt(int state)
-{
-    if (state)
-        core_intr_enable();
-}
+/*
+ * This can't be placed on stack because noone knows
+ * what happens to it upon returning from Windows exception.
+ * Luckily our trap handler is guaranteed to be single-threaded,
+ * so we can safely declare this structure static.
+ */
+static struct LeaveInterruptContext leavecontext;
 
 LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
 {
@@ -50,10 +49,14 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     int intstate;
     REG_SAVE_VAR;
 
-    /* We are already in interrupt and we must not be preempted by task switcher. 
-       Note that up to this point we still can be preempted by task switcher, i
-       really hope it's okay. */
-    Ints_Enabled = 0;
+    /*
+     * We are already in interrupt and we must not be preempted by task switcher. 
+     * Note that up to this point we still can be preempted by task switcher, in
+     * fact it's not good, but this will happen only upon CPU exception. core_raise()
+     * disables interrupts before raising an exception, so i really hope AROS will fail
+     * only in very rare cases and only upon software failure.
+     */
+    Ints_Enabled = INT_DISABLE;
 
     /* Exception in other thread, probably in virtual hardware. Die. */
     ThreadId = GetCurrentThreadId();
@@ -68,6 +71,7 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     /* Enter supervisor mode. We can already be in supervisor (crashed inside
        IRQ handler), so we increment in order to retain previous state. */
     Supervisor++;
+
     /* Save important registers that must not be modified */
     CONTEXT_SAVE_REGS(ContextRecord);
 
@@ -82,9 +86,35 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
 
     /* Restore important registers */
     CONTEXT_RESTORE_REGS(ContextRecord);
+
     /* Exit supervisor */
-    Supervisor--;
-    core_LeaveInterrupt(intstate);
+    if (--Supervisor == 0)
+    {
+	/* If we are leaving to user mode, we may need to enable interrupts */
+	if (intstate)
+	{
+	    /*
+	     * We must enable interrupts only after return from Windows
+	     * exception. Otherwise supervisor thread may preempt us
+	     * between enabling interrupts and actual exit, and this will
+	     * cause process abort. We use core_LeaveInterrupt() routine
+	     * written in asm to solve this task. We cause the task to jump
+	     * to it upon return, the routine enables interrupts and then
+	     * jumps to real task's PC, which is passed to it inside
+	     * struct LeaveInterruptContext.
+	     * The helper clobbers R0 register, so we also save it.
+	     */
+	    leavecontext.pc = PC(ContextRecord);
+	    leavecontext.r0 = R0(ContextRecord);
+	    R0(ContextRecord) = (UINT_PTR)&leavecontext;
+	    PC(ContextRecord) = (UINT_PTR)core_LeaveInterrupt;
+	    /*
+	     * If this is a newly created context, it may contain no integer registers.
+	     * Here we use R0, so explicitly turn on CONTEXT_INTEGER flag.
+	     */
+	    ContextRecord->ContextFlags |= CONTEXT_INTEGER;
+	}
+    }    
 
     return EXCEPTION_CONTINUE_EXECUTION;
 }
@@ -99,6 +129,7 @@ DWORD WINAPI TaskSwitcher()
     for (;;)
     {
         obj = WaitForMultipleObjects(Ints_Num, IntObjects, FALSE, INFINITE);
+	PendingInts[obj] = 1;
         DS(printf("[Task switcher] Object %lu signalled\n", obj));
 
 	/* Stop main thread if it's not sleeping */
@@ -114,13 +145,10 @@ DWORD WINAPI TaskSwitcher()
     	    DS(printf("[Task switcher] Get context result: %lu\n", res));
     	}
 
-	/* Process the interrupt if we are allowed to */
+	/* Process interrupts if we are allowed to */
         if (Ints_Enabled)
 	{
-	    int intstate;
-
     	    Supervisor = 1;
-    	    PendingInts[obj] = 0;
     	    /* 
     	     * We get and store the complete CPU context, but set only part of it
 	     * because changing some registers causes Windows to immediately shut down
@@ -130,8 +158,15 @@ DWORD WINAPI TaskSwitcher()
     	    DS(printf("[Task switcher] original CPU context: ****\n"));
     	    DS(PRINT_CPUCONTEXT(&MainCtx));
 
-	    /* Call IRQ handler */
-	    intstate = IRQVector(obj, &MainCtx);
+	    /*
+	     * Call IRQ handlers for all pending interrupts.
+	     * This means that deferred interrupts may be processed with
+	     * delay, meximum of one timer period, but anyway, who told
+	     * that Windows is a realtime OS?
+	     */
+	    Ints_Enabled = IRQVector(PendingInts, &MainCtx);
+	    /* All IRQs have been processed */
+	    ZeroMemory(PendingInts, sizeof(PendingInts));
 
 	    /* If AROS is not going to sleep, set new CPU context */
     	    if (Sleep_Mode == SLEEP_MODE_OFF)
@@ -143,16 +178,9 @@ DWORD WINAPI TaskSwitcher()
     	        DS(printf("[Task switcher] Set context result: %lu\n", res));
     	    }
 
-	    /* Leave supervisor mode */
+	    /* Leave supervisor mode. Interrupt state is already updated by IRQVector(). */
 	    Supervisor = 0;
-	    core_LeaveInterrupt(intstate);
     	}
-	else
-	{
-	    /* Otherwise remember the interrupt in order to re-submit it later */
-    	    PendingInts[obj] = 1;
-            DS(printf("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
-        }
 
 	/* Resuming main thread if AROS is not sleeping */
         if (Sleep_Mode == SLEEP_MODE_OFF)
@@ -170,42 +198,12 @@ DWORD WINAPI TaskSwitcher()
 
 /* ****** Interface functions ****** */
 
-void __declspec(dllexport) core_intr_disable(void)
-{
-    DI(printf("[KRN] disabling interrupts\n"));
-    Ints_Enabled = 0;
-}
-
-void __declspec(dllexport) core_intr_enable(void)
-{
-    unsigned char i;
-
-    /* If we are in supervisor mode, don't do anything. Interrupts will
-       be enabled upon leaving supervisor mode by core_LeaveInterrupt().
-       Otherwise we can end up in nested interrupts */
-    if (Supervisor)
-	return;
-
-    DI(printf("[KRN] enabling interrupts\n"));
-    Ints_Enabled = 1;
-    /* FIXME: here we do not force timer interrupt, probably this is wrong. However there's no way
-       to force-trigger a waitable timer in Windows. A workaround is possible, but the design will
-       be complicated then (we need a companion event in this case). Probably it will be implemented
-       in future. */
-    for (i = 1; i < Ints_Num; i++) {
-        if (PendingInts[i]) {
-            DI(printf("[KRN] enable: sigalling about pending interrupt %lu\n", i));
-            SetEvent(IntObjects[i]);
-        }
-    }
-}
-
 void __declspec(dllexport) core_raise(DWORD code, const ULONG_PTR n)
 {
     /* This ensures that we are never preempted inside RaiseException().
        Upon exit from the syscall interrupt state will be restored by
        core_LeaveInterrupt() */
-    Ints_Enabled = 0;
+    Ints_Enabled = INT_DISABLE;
     RaiseException(code, 0, 1, &n);
 
     /* If after RaiseException we are still here, but Sleep_Mode != 0, this likely means
@@ -229,9 +227,9 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
     DWORD SwitcherId;
 
     D(printf("[KRN] Setting up interrupts\n"));
-    Ints_Enabled = 0;
+    Ints_Enabled = INT_DISABLE;
     Supervisor = 0;
-    Sleep_Mode = 0;
+    Sleep_Mode = SLEEP_MODE_OFF;
     for (i = 1; i < 256; i++)
     {
 	IntObjects[i] = NULL;
