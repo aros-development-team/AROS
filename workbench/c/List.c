@@ -511,6 +511,9 @@ int printFileData(struct AnchorPath *ap,
     {
 	if (showDirs)
 	{
+	    ++*dirs;
+	    ++*nBlocks; /* dir entry uses 1 block on AROS, 2 on OS31) */
+
       	    if (lFormat != NULL)
 	    {
 		struct lfstruct lf = { ap, isDir, date, time, flags, filename,
@@ -518,8 +521,6 @@ int printFileData(struct AnchorPath *ap,
 
 		printLformat(lFormat, &lf);
 		Printf("\n");
-		
-		*dirs += 1;
 	    }
 	    else
 	    {
@@ -538,13 +539,14 @@ int printFileData(struct AnchorPath *ap,
 		}
 			
 		Printf("\n");
-		
-		*dirs += 1;
 	    }
 	}
     }
     else if (showFiles)
     {
+	++*files;
+	*nBlocks += roundUp(size, BLOCKSIZE);
+
 	if (lFormat != NULL)
         {
 	    struct lfstruct lf = { ap, isDir, date, time, flags, filename,
@@ -552,9 +554,6 @@ int printFileData(struct AnchorPath *ap,
 
 	    printLformat(lFormat, &lf);
 	    Printf("\n");
-	    
-	    *files += 1;
-	    *nBlocks += roundUp(size, BLOCKSIZE);
         }
         else
         {
@@ -605,8 +604,6 @@ int printFileData(struct AnchorPath *ap,
 	    }
 	    
 	    Printf("\n");
-	    *files  += 1;
-	    *nBlocks += roundUp(size, BLOCKSIZE);
         }
     }
     
@@ -615,36 +612,35 @@ int printFileData(struct AnchorPath *ap,
 
 
 /* Print directory summary information */
-void printSummary(int files, int dirs, int nBlocks, BOOL noHead, BOOL PrintEmpty)
+void printSummary(CONST_STRPTR dirname, int files, int dirs, int nBlocks,
+		  BOOL noHead, BOOL PrintEmpty)
 {
     if (noHead)
-    {
 	return;
-    }
 
-    if ((files == 0) && (dirs == 0) && PrintEmpty)
-    {
-	Printf("Directory is empty\n");
-    }
     if (files || dirs)
     {
-	if (files != 0)
-	{
+	if (files > 1)
 	    Printf("%ld files - ", files);
-	}
+	else if (files > 0)
+	    PutStr("1 file - ");
 	
-	if (dirs != 0)
-	{
+	if (dirs > 1)
 	    Printf("%ld directories - ", dirs);
-	}
-	
-	Printf("%ld bytes used\n", nBlocks * BLOCKSIZE);
+	else if (dirs > 0)
+	    PutStr("1 directory - ");
+
+	if (nBlocks > 1)
+	    Printf("%ld blocks used\n", nBlocks);
+	else if (nBlocks > 0)
+	    PutStr("1 block used\n");
     }
-    PutStr("\n");
+    else if (PrintEmpty)
+	Printf("Directory \"%s\" is empty\n", dirname);
 }
 
 
-int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
+int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
              STRPTR parsedPattern, BOOL noHead, STRPTR lFormat, BOOL quick,
 	     BOOL dates, BOOL noDates, BOOL block, struct DateStamp *sinceDate,
 	     struct DateStamp *uptoDate, BOOL doSince, BOOL doUpto,
@@ -716,7 +712,7 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 			STRPTR p;
 			UBYTE c;
 
-			if (!first) printSummary(files, dirs, nBlocks, noHead, TRUE);
+			if (!first) printSummary(filename, files, dirs, nBlocks, noHead, TRUE);
 
 			/* Update global statistics for (possiblr) ALL option */
 			stats->nFiles += files;
@@ -798,7 +794,8 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 
     	if ((error == 0) || (error == ERROR_BREAK))
 	{
-	    printSummary(files, dirs, nBlocks, noHead, TRUE);
+	    BOOL printEmpty = !(ap->ap_Flags & APF_ITSWILD);
+	    printSummary(filename, files, dirs, nBlocks, noHead, printEmpty);
 	}
 
 	/* Update global statistics for (possiblr) ALL option */
@@ -860,7 +857,7 @@ int main(void)
                FALSE,   // ARG_LFORMAT
                FALSE    // ARG_ALL
     };
-    static const STRPTR *default_directories[] = {(STRPTR)"", 0};
+    static CONST_STRPTR default_directories[] = {(CONST_STRPTR)"", 0};
     struct RDArgs *rda;		       
 
     LONG     error = RETURN_OK;
@@ -874,7 +871,7 @@ int main(void)
 
     if (rda != NULL)
     {
-	STRPTR *directories = (STRPTR *)args[ARG_DIR];
+	CONST_STRPTR *directories = (CONST_STRPTR *)args[ARG_DIR];
 	STRPTR  lFormat = (STRPTR)args[ARG_LFORMAT];
 	STRPTR  pattern = (STRPTR)args[ARG_PAT];
 	STRPTR  toFile = (STRPTR)args[ARG_TO];
@@ -1012,7 +1009,7 @@ int main(void)
 	
 	if ((directories == NULL) || (*directories == NULL))
 	{
-	    directories = (STRPTR *)default_directories;
+	    directories = default_directories;
 	}
 	
 	for (i = 0; directories[i] != NULL; i++)
