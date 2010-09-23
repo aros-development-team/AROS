@@ -8,14 +8,14 @@ include $(TOP)/config/make.cfg
 
 STUBS := hostio_stubs
 
-%make_hidd_stubs hidd=hostio parenttarget=kernel-hostio-hidd
+# DISABLED %make_hidd_stubs hidd=hostio parenttarget=kernel-hostio-hidd
 
 MY_INCLS := $(call WILDCARD, include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
 GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
+# DISABLED #MM
+hostio-includes-copy : $(DEST_INC) $(GEN_INC)
 
 $(AROS_INCLUDES)/hidd/%.h : include/%.h
 	$(CP) $< $@
