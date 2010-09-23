@@ -25,6 +25,10 @@ AROS_LH0I(int, KrnIsSuper,
 	Nonzero for supervisor mode, zero for user mode
 
     NOTES
+	Callers should only test the return value against zero.
+	Nonzero values may actually be different, since they
+	may carry some private implementation-dependent information
+	(like CPU privilege level, for example).
 
     EXAMPLE
 
