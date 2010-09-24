@@ -1,30 +1,267 @@
-## version $VER: wanderer.catalog 1.0 (10.11.2008)
+## version $VER: wanderer.catalog 2.0 (24.09.2010)
 ## language deutsch
 ## codeset 0
 ;
-; TODO: update me and set version to 2
 ;
 MSG_NAME
 Wanderer Einstellungen
+; Wanderer Prefs
+;
+MSG_DESCRIPTION
+Wanderer Einstellungen
+; Wanderer preferences
 ;
 MSG_BACKGROUNDS
 Hintergründe
+; Backgrounds
 ;
 MSG_BACKGROUND_WORKBENCH
 Workbench
+; Workbench
 ;
 MSG_BACKGROUND_DRAWERS
 Verzeichnisse
+; Drawers
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
 Wähle Workbench Hintergrund
+; Select Workbench Background
 ;
 MSG_SELECT_DRAWER_BACKGROUND
 Wähle Verzeichnis Hintergrund
+; Select Drawer Background
+;
+MSG_GENERAL
+Allgemein
+; General
+;
+MSG_APPEARANCE
+Aussehen
+; Appearance
+;
+MSG_TOOLBAR
+Toolbar
+; Toolbar
+;
+MSG_CLASSIC
+Klassisch
+; Classic
+;
+MSG_ENHANCED
+Erweitert
+; Enhanced
+;
+MSG_NAVIGATION
+Navigation
+; Navigation
+;
+MSG_METHOD
+Methode
+; Method
+;
+MSG_OBJECTS
+Objekte
+; Objects
+;
+MSG_PREVIEW
+Vorschau
+; Preview
+;
+MSG_TOOLBAR_ENABLED
+Toolbar aktiviert
+; Toolbar Enabled
+;
+MSG_ICONSPREFS
+Anzeige der Icons
+; Icons look and feel
+;
+MSG_ICONLISTMODE
+Icon listmode
+; Icon listmode
+;
+MSG_ICONLISTMODE_PLAIN
+List icons plainly
+; List icons plainly
+;
+MSG_ICONLISTMODE_GRID
+List icons by grid
+; List icons by grid
+;
+MSG_ICONTEXTMODE
+Darstellung der Icon Texte
+; Icons text drawmode
+;
+MSG_ICONTEXTMODE_OUTLINE
+Kontur
+; Outline
+;
+MSG_ICONTEXTMODE_PLAIN
+Einfach
+; Plain
+;
+MSG_ICONTEXTMODE_SHADOW
+Schatten
+; Drop shadow
+;
+MSG_ICONTEXTLENGTH
+Max. Icon Textlänge
+; Max icon textlength
 ;
 MSG_DOUBLEBUFFERED
 Gepufferte Anzeige
+; double buffering
 ;
 MSG_MISC
-Verschiedenes
+Sonstiges
+; misc
+;
+MSG_BUBBLESCREENTITLE
+%pc = Verfügbares Chip Ram\n\
+%pf = Verfügbares Fast Ram\n\
+%pt = Gesamter verfügbarer RAM\n\
+%PC = Chip Ram\n\
+%PF = Fast Ram\n\
+%PT = Gesamter RAM\n\
+%os = AROS Version\n\
+%wb = Wanderer Version\n\
+%ov = Genaue AROS Version\n\
+%wv = Genaue Version der workbench.library
+; %pc = Chip Ram free\n\
+; %pf = Fast Ram free\n\
+; %pt = Total Ram free\n\
+; %PC = Chip Ram\n\
+; %PF = Fast Ram\n\
+; %PT = Total Ram\n\
+; %os = AROS version\n\
+; %wb = Wanderer version\n\
+; %ov = Exact AROS version\n\
+; %wv = Exact workbench.library version
+;
+MSG_TILEMODE
+Kachelmodus :
+; Tile mode :
+;
+MSG_XOFFSET
+X Abstand :
+; X Offset :
+;
+MSG_YOFFSET
+Y Abstand :
+; Y Offset :
+;
+MSG_ICONLABELFONT
+Icon Text Zeichensatz ...
+; Icon Label Font...
+;
+MSG_ICONINFOFONT
+Icon Info Zeichensatz...
+; Icon Info Font...
+;
+MSG_HORIZSPACINGICON
+Horizontaler Abstand zwischen Icons
+; Horizontal spacing between icons
+;
+MSG_VERTSPACINGICON
+Vertikaler Abstand zwischen Icons
+; Vertical spacing between icons
+;
+MSG_PADDINGICONIMAGELABEL
+Abstand zwischen Icon Grafik und Text
+; Padding between Icon Image and Label
+;
+MSG_HORIZPADDINGLABELTEXT
+Horizontaler Abstand zwischen Textrahmen und Text
+; Horizontal Padding between Label Frame and Text
+;
+MSG_VERTPADDINGLABELTEXT
+Vertikaler Abstand zwischen Textrahmen und Text
+; Vertical Padding between Label Frame and Text
+;
+MSG_FRAMEWIDTH
+Textrahmen Breite
+; Label Frame Width
+;
+MSG_FRAMEHEIGHT
+Textrahmen Höhe
+; Label Frame Height
+;
+MSG_TILED
+Gekachelt
+; Tiled
+;
+MSG_SCALED
+Skaliert
+; Scaled
+;
+MSG_FLOATING
+Fortlaufend
+; Floating
+;
+MSG_FIXED
+Fixiert
+; Fixed
+;
+MSG_LABELLINELENGTH
+Max. Textzeilen Länge...
+; Max. Label line length...
+;
+MSG_USEMULTILINELABELS
+Mehzeiligen Icontext verwenden
+; Use MultiLine Labels
+;
+MSG_SHOWFOCUSEDICON
+Nur für fokusierte Icons anzeigen
+; Only show for Focus(ed) Icon
+;
+MSG_NDISPLAYLINES
+Anzahl der Zeilen...
+; No. of lines to display...
+;
+MSG_TILEMODEOPTIONS
+Kachelungseinstellungen...
+; Tile Mode Options...
+;
+MSG_SCALEMODEOPTIONS
+Skalierungseinstellungen...
+; Scale Mode Options...
+;
+MSG_ADVANCEDOPTIONS
+Erweiterte Einstellungen...
+; Advanced Options...
+;
+MSG_BACKGROUNDOPTIONS
+Hintergrund Einstellungen...
+; Background Options...
+;
+MSG_DRAWMODE
+Zeichenmodus :
+; Draw mode :
+;
+MSG_USERFILEONWB
+Dateiverzeichnis auf Workbench anzeigen
+; User Files Folder on Workbench
+;
+MSG_NETWORKONWB
+Netzwerk Browser auf Workbench anzeigen
+; Network Browser on Workbench
+;
+MSG_VIEWSETTINGS
+View Settings
+; View Settings
+;
+MSG_WANDERERSCREENTITLE
+Wanderer Titelzeile
+; Wanderer ScreenTitle
+;
+MSG_ADVANCED
+Erweitert
+; Advanced
+;
+MSG_USE
+_Benutzen
+; _Use
+;
+MSG_CANCEL
+_Abbrechen
+; C_ancel
 ;
