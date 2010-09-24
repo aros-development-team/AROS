@@ -682,7 +682,7 @@ Positionen:
 ; Positions:
 ;
 MSG_REDRAW
-Auffrischen:
+Aktualisieren:
 ; Redraw:
 ;
 MSG_TINY
@@ -796,6 +796,10 @@ MSG_GAD_CANCEL
 _Abbrechen
 ; _Cancel
 ;
+MSG_DSC_SYSTEM
+System
+; System
+;
 MSG_DSC_WINDOWS
 Fenster
 ; Windows
@@ -836,10 +840,84 @@ MSG_DSC_SPECIAL
 Spezial
 ; Special
 ;
+MSG_DSC_FRAMES
+Rahmen
+; Frames
+;
 ;=============================
 ; zunestuff.c
 ;------------
 MSG_ADJUST_PEN
 Stift einstellen
 ; Adjust Pen
+;
+;=============================
+; framesp.c
+;----------
+MSG_CUSTOMFRAMES
+Spezieller Rahmen
+; Customframes
+;
+;=============================
+; systemp.c
+;----------
+MSG_PUBLIC_SCREEN
+Öffentlicher Schirm
+; Public Screen
+;
+MSG_NAME
+Name:
+; Name:
+;
+MSG_CALL_INSPECTOR
+Inspector aufrufen
+; Call Inspector
+;
+MSG_POP_TO_FRONT
+Nach vorne holen:
+; Pop to front:
+;
+MSG_ICONIFICATION
+Ikonifizierung
+; Iconification
+;
+MSG_HOTKEY
+Hotkey:
+; Hotkey:
+;
+MSG_SHOW
+Anzeigen:
+; Show:
+;
+MSG_ICON
+Icon
+; Icon
+;
+MSG_MENU
+Menü
+; Menu
+;
+MSG_ON_STARTUP
+Beim Start:
+; On Startup:
+;
+MSG_INTERFACES
+Schnittstelle
+; Interfaces
+;
+MSG_AREXX
+ARexx:
+; ARexx:
+;
+MSG_BUBBLE_HELP
+Sprechblasenhilfe
+; Bubble Help
+;
+MSG_FIRST_BUBBLE
+Erster Hinweis:
+; First Bubble:
+;
+MSG_NEXT_BUBBLE
+Nächster Hinweis:
+; Next Bubble:
 ;
