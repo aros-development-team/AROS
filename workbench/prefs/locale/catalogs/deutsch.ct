@@ -1,103 +1,145 @@
-## version $VER: localeprefs.catalog 1.0 (23.02.2001)
+## version $VER: localeprefs.catalog 1.1 (24.09.2010)
 ## codeset 0
 ## language deutsch
 ;
+;
 MSG_CANT_OPEN_LIB
 Kann %s V%ld nicht öffnen!\n
+; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
 Kann public Screen nicht locken!
+; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
 Kann DrawInfo nicht ermitteln!
+; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
 Kann VisualInfo nicht ermitteln!
+; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
 Kann Gadgets nicht erzeugen!
+; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
 Kann Menus nicht erzeugen!
+; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
 Kann Fenster nicht erzeugen!
+; Can't create window!
 ;
 MSG_WINTITLE
 Landes-Voreinsteller (Locale)
+; Locale Preferences
 ;
 MSG_MEN_PROJECT
 Projekt
+; Project
 ;
 MSG_MEN_PROJECT_OPEN
 O\0Öffnen ...
+; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Speichern als ...
+; A\0Save As...
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Beenden
+; Q\0Quit
 ;
 MSG_MEN_EDIT
 Vorgaben
+; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
 D\0Auf Vorgaben zurücksetzen
+; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
 L\0Auf zuletzt gespeichertes
+; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
 R\0Auf vorherigen Stand
+; R\0Restore
 ;
 MSG_MEN_SETTINGS
 Einstellungen
+; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
 I\0Piktogramme erzeugen?
+; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
 Laden Locale-Vorgaben
+; Load Locale Preferences
 ;
 MSG_ASL_SAVE_TITLE
 Speichern Locale-Vorgaben
+; Save Locale Preferences
 ;
 MSG_OK
 Ok
+; Ok
 ;
 MSG_GAD_AVAIL_LANGUAGES
 Verfügbare Sprachen
+; Available Languages
 ;
 MSG_GAD_PREF_LANGUAGES
 Bevorzugte Sprachen
+; Preferred Languages
 ;
 MSG_GAD_CLEAR_LANGUAGES
 Sprachen löschen
+; Clear Languages
 ;
 MSG_GAD_SAVE
 Speichern
+; Save
 ;
 MSG_GAD_USE
 Benutzen
+; Use
 ;
 MSG_GAD_CANCEL
 Abbrechen
+; Cancel
 ;
 MSG_GAD_TAB_LANGUAGE
 Sprache
+; Language
 ;
 MSG_GAD_TAB_COUNTRY
 Land
+; Country
 ;
 MSG_GAD_TAB_TIMEZONE
 Zeitzone
+; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
 Zeitzone: 1 Stunde auf GMT
+; Time Zone: 1 Hour from GMT
 ;
 MSG_TIMEZONE_HOURS
 Zeitzone: %ld Stunden auf GMT
+; Time Zone: %ld Hours from GMT
 ;
 MSG_TIMEZONE_HOURSMINS
 Zeitzone: %ld Stunden %ld Minuten auf GMT
+; Time Zone: %ld Hours, %ld Minutes from GMT
+;
+MSG_CHARACTER_SET
+Standard Zeichensatz
+; Default character set
+;
+MSG_NOT_SPECIFIED
+Nicht spezifiziert
+; Not specified
 ;
