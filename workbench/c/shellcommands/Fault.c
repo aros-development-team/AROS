@@ -48,21 +48,20 @@
 
 #include <aros/shcommands.h>
 
-AROS_SH1H(Fault, 41.1,                   "Display the meaning of a DOS error code",
-AROS_SHAH(ULONG **, ,NUMBERS,/N/M, NULL, "The error numbers you wish to query"))
+AROS_SH1H(Fault, 41.1, "Display the meaning of a DOS error code",
+AROS_SHAH(LONG **, ,NUMBERS,/N/M, NULL, "The error numbers you wish to query"))
 {
     AROS_SHCOMMAND_INIT
 
-    ULONG **theNum = SHArg(NUMBERS);
-
+    LONG **theNum = SHArg(NUMBERS);
 
     if (theNum)
     {
 	while( *theNum != NULL )
 	{
-	    PutStr("Fault ");
-	    VPrintf("%ld", (IPTR *)*theNum);
-	    PrintFault(**theNum, "");
+	    LONG num = **theNum;
+	    Printf("Fault %ld", num);
+	    PrintFault(num, "");
 	    theNum++;
 	}
     }

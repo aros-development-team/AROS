@@ -106,7 +106,7 @@
 	/* String buffer/index for long 2 string */
 	UBYTE l2str[12], l2idx = 11;
 
-	theString = "Unknown error ";
+	theString = "Error";
 	while((index < len) && *theString)
 	{
 	    buffer[index++] = *theString++;
