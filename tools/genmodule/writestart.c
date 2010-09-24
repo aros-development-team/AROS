@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
     
     Print the library magic and init code in the file modname_start.c.
@@ -376,7 +376,7 @@ static void writedeclsets(FILE *out, struct config *cfg)
 	    "DECLARESET(INITLIB)\n"
 	    "DECLARESET(EXPUNGELIB)\n"
     );
-    if (cfg->modtype != RESOURCE)
+    if (!(cfg->options & OPTION_NOOPENCLOSE))
         fprintf(out,
 	    "DECLARESET(OPENLIB)\n"
 	    "DECLARESET(CLOSELIB)\n"
@@ -704,7 +704,19 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	fprintf(stderr, "Internal error: writeopenlib called for a resource\n");
 	break;
     case DEVICE:
-	fprintf(out,
+	if (cfg->options & OPTION_NOOPENCLOSE)
+	    fprintf(out,
+		"AROS_LD3 (void, GM_UNIQUENAME(OpenLib),\n"
+		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
+		"    AROS_LHA(ULONG, unitnum, D0),\n"
+		"    AROS_LHA(ULONG, flags, D1),\n"
+		"    LIBBASETYPEPTR, lh, 1, %s\n"
+		");\n",
+		cfg->basename
+	    );
+	else
+	{
+	    fprintf(out,
 		"AROS_LH3 (void, GM_UNIQUENAME(OpenLib),\n"
 		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
 		"    AROS_LHA(ULONG, unitnum, D0),\n"
@@ -712,8 +724,8 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		"    LIBBASETYPEPTR, lh, 1, %s\n"
 		")\n",
 		cfg->basename
-	);
-	fprintf(out,
+	    );
+	    fprintf(out,
 		"{\n"
 		"    AROS_LIBFUNC_INIT\n"
 		"\n"
@@ -737,9 +749,21 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		"    AROS_LIBFUNC_EXIT\n"
 		"}\n"
 		"\n"
-	);
+	    );
+	}
 	break;
     default:
+	if (cfg->options & OPTION_NOOPENCLOSE)
+	{
+	    fprintf(out,
+		"AROS_LD1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
+		"    AROS_LHA (ULONG, version, D0),\n"
+		"    LIBBASETYPEPTR, lh, 1, %s\n"
+		");\n",
+		cfg->basename
+	    );
+	    return;
+	}
 	fprintf(out,
 		"AROS_LH1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
 		"    AROS_LHA (ULONG, version, D0),\n"
@@ -882,6 +906,25 @@ static void writeopenlib(FILE *out, struct config *cfg)
 
 static void writecloselib(FILE *out, struct config *cfg)
 {
+    if (cfg->options & OPTION_NOOPENCLOSE)
+    {
+	if (cfg->modtype != DEVICE)
+	    fprintf(out,
+		"AROS_LD0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
+		"    LIBBASETYPEPTR, lh, 2, %s\n"
+		");\n",
+		cfg->basename
+	    );
+	else
+	    fprintf(out,
+		"AROS_LD1(BPTR, GM_UNIQUENAME(CloseLib),\n"
+		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
+		"    LIBBASETYPEPTR, lh, 2, %s\n"
+		");\n",
+		cfg->basename
+	    );
+	return;
+    }
     if (cfg->modtype != DEVICE)
 	fprintf(out,
 		"AROS_LH0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
@@ -1222,7 +1265,7 @@ static void writesets(FILE *out, struct config *cfg)
 	    "DEFINESET(INITLIB)\n"
 	    "DEFINESET(EXPUNGELIB)\n"
     );
-    if (cfg->modtype != RESOURCE)
+    if (!(cfg->options & OPTION_NOOPENCLOSE))
         fprintf(out,
 	    "DEFINESET(OPENLIB)\n"
 	    "DEFINESET(CLOSELIB)\n"
