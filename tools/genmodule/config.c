@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
     
     Code to parse the command line options and the module config file for
@@ -566,8 +566,11 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             }
         }
 	
-	/* Enforce using RTF_AUTOINIT for everything except resources */
-	if (cfg->modtype != RESOURCE)
+	if (cfg->modtype == RESOURCE)
+	    /* Enforce noopenclose for resources */
+	    cfg->options |= OPTION_NOOPENCLOSE;
+	else
+	    /* Enforce using RTF_AUTOINIT for everything except resources */
 	    cfg->options |= OPTION_RESAUTOINIT;
     }
     return NULL;
@@ -722,7 +725,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    {
 			"noautolib", "noexpunge", "noresident", "peropenerbase",
                         "peridbase", "includes", "noincludes", "nostubs",
-                        "autoinit", "noautoinit", "resautoinit"
+                        "autoinit", "noautoinit", "resautoinit", "noopenclose"
 		    };
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
@@ -789,6 +792,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 			    break;
 			case 11: /* resautoinit */
 			    cfg->options |= OPTION_RESAUTOINIT;
+			    break;
+			case 12:
+			    cfg->options |= OPTION_NOOPENCLOSE;
 			    break;
 			}
 			while (isspace(*s)) s++;
