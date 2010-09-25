@@ -1,0 +1,580 @@
+## version $VER: PSI.catalog 1.01 (25.09.2010)
+## language deutsch
+## codeset 0
+;
+MSG_MENU_PROJECT
+Projekt
+; Project
+;
+MSG_MENU_PROJECT_OPEN
+Öffnen...
+; Open...
+;
+MSG_MENU_PROJECT_APPEND
+Anfügen...
+; Append...
+;
+MSG_MENU_PROJECT_SAVEAS
+Speichern unter...
+; Save As...
+;
+MSG_MENU_PROJECT_ABOUT
+Über...
+; About...
+;
+MSG_MENU_PROJECT_QUIT
+Beenden
+; Quit
+;
+MSG_MENU_EDIT
+Bearbeiten
+; Edit
+;
+MSG_MENU_EDIT_LASTSAVED
+Zuletzt gespeichert
+; Last Saved
+;
+MSG_MENU_EDIT_RESTORE
+Wiederherstellen
+; Restore
+;
+MSG_MENU_SETTINGS
+Einstellungen
+; Settings
+;
+MSG_MENU_SETTINGS_MUI
+MUI...
+; MUI...
+;
+MSG_MENU_COLORS
+Farben
+; Colors
+;
+MSG_MENU_COLORS_PRESETS
+Standardwerte
+; Presets
+;
+MSG_MENU_COLORS_PRESETS_2COL
+Monochrom Einstellungen
+; Monochrome Settings
+;
+MSG_MENU_COLORS_PRESETS_4COL
+4 Farb Einstellungen
+; 4-Color Settings
+;
+MSG_MENU_COLORS_PRESETS_8COL
+MagicWB Einstellungen
+; MagicWB Settings
+;
+MSG_BUTTON_OK
+_OK
+; _OK
+;
+MSG_BUTTON_CANCEL
+Abbrechen
+; Cancel
+;
+MSG_BUTTON_SAVE
+_Speichern
+; Save
+;
+MSG_BUTTON_USE
+Benutzen
+; Use
+;
+MSG_BUTTON_NEW
+_Neu
+; _New
+;
+MSG_BUTTON_COPY
+_Kopieren
+; _Copy
+;
+MSG_BUTTON_DELETE
+_Löschen
+; _Delete
+;
+MSG_BUTTON_EDIT
+_Bearbeiten...
+; _Edit...
+;
+MSG_BUTTON_OPEN
+_Öffnen
+; _Open
+;
+MSG_BUTTON_CLOSE
+Schließen
+; _Close
+;
+MSG_BUTTON_JUMP
+_Gehe zu
+; _Jump
+;
+MSG_BUTTON_KILL
+Kill
+; Kill
+;
+MSG_TITLE_PUBSCREENWINDOW
+Bildschirm bearbeiten:
+; Edit Screen:
+;
+MSG_TITLE_SAVE
+Save PublicScreen File
+; Save PublicScreen File
+;
+MSG_TITLE_OPEN
+Load PublicScreen File
+; Load PublicScreen File
+;
+MSG_TITLE_APPEND
+Append PublicScreen File
+; Append PublicScreen File
+;
+MSG_LIST_SCREENNAME
+Name
+; Name
+;
+MSG_LIST_SCREENMODE
+Anzeigemodus
+; Display Mode
+;
+MSG_LIST_UNKNOWNMODE
+(unbekannt)
+; (unknown)
+;
+MSG_LIST_FOREIGNSCREEN
+(fremd)
+; (foreign)
+;
+MSG_LABEL_PUBLICNAME
+Öffentlicher Name:
+; Public _Name:
+;
+MSG_LABEL_SCREENTITLE
+Titelzeile:
+; Screen _Title:
+;
+MSG_LABEL_DISPLAYMODE
+_Anzeigemodus:
+; _Display Mode:
+;
+MSG_LABEL_DEFAULTFONT
+Standard Zeichensatz:
+; Default _Font:
+;
+MSG_LABEL_BACKGROUND
+_Hintergrund:
+; _Background:
+;
+MSG_LABEL_PUBLICFLAGS
+Flags:
+; Flags:
+;
+MSG_LABEL_AUTOSCROLL
+_Autoscroll
+; _Autoscroll
+;
+MSG_LABEL_NODRAG
+Nicht B_eweglich
+; No D_rag
+;
+MSG_LABEL_EXCLUSIVE
+_Exclusiv
+; _Exclusive
+;
+MSG_LABEL_INTERLEAVED
+Überlagert
+; _Interleaved
+;
+MSG_LABEL_OPENBEHIND
+Hinter allen anderen öffnen
+; Open Be_hind
+;
+MSG_LABEL_SYSTEMDEFAULT
+System Standardwerte
+; S_ystem Default
+;
+MSG_LABEL_AUTOCLOSE
+Automatisch schließen
+; Auto Close
+;
+MSG_LABEL_CLOSEGADGET
+Close Gadget
+; Close Gadget
+;
+MSG_LABEL_OVERSCAN
+O_verscan:
+; O_verscan:
+;
+MSG_LABEL_SIZE
+G_röße
+; _Size:
+;
+MSG_LABEL_CROSS
+_x
+; _x
+;
+MSG_LABEL_DEPTH
+_Tiefe
+; _Depth:
+;
+MSG_LABEL_VISIBLE
+Sichtbar
+; Visible:
+;
+MSG_LABEL_MINIMUM
+Minimum:
+; Minimum:
+;
+MSG_LABEL_MAXIMUM
+Maximum:
+; Maximum:
+;
+MSG_LABEL_BITSPERGUN
+Bits/Gun:
+; Bits/Gun:
+;
+MSG_LABEL_SCANRATE
+Scanrate:
+; Scanrate:
+;
+MSG_LABEL_SCANLINE
+Scanline:
+; Scanline:
+;
+MSG_CLI_SCREENOPENED
+Schirm geöffnet (0).\n
+; Screen opened (0).\n
+;
+MSG_CLI_SCREENOPENFAILED
+Schirm konnte nicht geöffnet werden (5).\n
+; Failed to open screen (5).\n
+;
+MSG_CLI_SCREENCLOSED
+Schirm geschlossen (0).\n
+; Screen closed (0).\n
+;
+MSG_CLI_SCREENCLOSEFAILED
+Schirm konnte nicht geschlossen werden (5).\n
+; Failed to close screen (5).\n
+;
+MSG_CLI_SYNTAXERROR
+Syntax Fehler in Zeile (10).\n
+; Syntax Error in command line (10).\n
+;
+MSG_CLI_SCREENNOTFOUND
+Schirm wurde nicht gefunden (5).\
+; Screen not found (5).\n
+;
+MSG_CLI_OUTOFMEMORY
+Speicherplatzmangel (20).\n
+; Out of memory (20).\n
+;
+MSG_CLI_NOAPPLICATION
+Applikation konnte nicht erzeugt werden (20).\n
+; Failed to create application (20).\n
+;
+MSG_CLI_NOMUIMASTER
+muimaster.library V11 konnte nicht geöffnet werden (20).\n
+; Failed to open muimaster.library V11 (20).\n
+;
+MSG_ABOUT_NUMBEROFSCREENS
+Anzahl an Schirmen:
+; Number of screens:
+;
+MSG_TEXT_UNKNOWNMODE
+Unbekannter Anzeigemodus
+; Unknown Display Mode
+;
+MSG_TEXT_FOREIGNSCREEN
+Fremder Öffentlicher Schirm
+; Foreign public screen
+;
+MSG_PALETTE_TITLE
+Palette
+; Palette
+;
+MSG_PALETTE_FIRST
+Erste 4 Farben
+; First 4 colors
+;
+MSG_PALETTE_LAST
+Letzte 4 Farben
+; Last 4 colors
+;
+MSG_SYSPENS_TITLE
+Systemfarben
+; System Pens
+;
+MSG_SYSPEN_DETAIL
+Detail
+; Detail
+;
+MSG_SYSPEN_BLOCK
+Block
+; Block
+;
+MSG_SYSPEN_TEXT
+Text
+; Text
+;
+MSG_SYSPEN_SHINE
+Leuchtend
+; Shine
+;
+MSG_SYSPEN_SHADOW
+Schatten
+; Shadow
+;
+MSG_SYSPEN_FILL
+Gefüllt
+; Fill
+;
+MSG_SYSPEN_FILLTEXT
+Fülltext
+; Filltext
+;
+MSG_SYSPEN_BACKGROUND
+Hintergrund
+; Background
+;
+MSG_SYSPEN_HIGHLIGHT
+Hervorgehoben
+; Highlight
+;
+MSG_SYSPEN_BARDETAIL
+Bardetail
+; Bardetail
+;
+MSG_SYSPEN_BARBLOCK
+Barblock
+; Barblock
+;
+MSG_SYSPEN_BARTRIM
+Bartrim
+; Bartrim
+;
+MSG_PALPRES_TITLE
+Standardfarben
+; Color Presets
+;
+MSG_PALPRES_STANDARD
+0\0Standard
+; 0\0Standard
+;
+MSG_PALPRES_TINT
+1\0Tint
+; 1\0Tint
+;
+MSG_PALPRES_PHARAO
+2\0Pharao
+; 2\0Pharao
+;
+MSG_PALPRES_SUNSET
+3\0Sunset
+; 3\0Sunset
+;
+MSG_PALPRES_OCEAN
+4\0Ocean
+; 4\0Ocean
+;
+MSG_PALPRES_STEEL
+5\0Steel
+; 5\0Steel
+;
+MSG_PALPRES_CHOCOLATE
+6\0Chocolate
+; 6\0Chocolate
+;
+MSG_PALPRES_PEWTER
+7\0Pewter
+; 7\0Pewter
+;
+MSG_PALPRES_WINE
+8\0Wine
+; 8\0Wine
+;
+MSG_PALPRES_MAGICWB
+9\0MagicWB
+; 9\0MagicWB
+;
+MSG_PALPRES_CLONEWB
+Clone WB
+; Clone WB
+;
+MSG_OVERSCAN_TEXT
+Text
+; Text
+;
+MSG_OVERSCAN_GRAPHICS
+Grafiken
+; Graphics
+;
+MSG_OVERSCAN_EXTREME
+Extrem
+; Extreme
+;
+MSG_OVERSCAN_MAXIMUM
+Maximum
+; Maximum
+;
+MSG_EDITPAGE_ATTRIBUTES
+Eigenschaften
+; Attributes
+;
+MSG_EDITPAGE_DISPLAY
+Anzeige
+; Display
+;
+MSG_EDITPAGE_COLORS
+Farben
+; Colors
+;
+MSG_HELP_WHEEL
+Fabre für eine\nGruppe anpassen
+; Adjust color for\ngroup of pens.
+;
+MSG_HELP_INFO
+Information über\nAnzeigemodus & Größe
+; Information about\nmode & size.
+;
+MSG_HELP_NAME
+Name des öffentlichen Schirms.\nPlatzhalter sind nur\nfür fremde Schirme möglich.
+; Name of Public Screen.\nWildcards allowed for\nforeign screens.
+;
+MSG_HELP_TITLE
+Text der in der\nTitelzeile erscheint
+; Text that appears in\nthe screen's title bar.
+;
+MSG_HELP_FONT
+Standard Zeichensatz\nfür den Schirm.
+; Default font\nfor the screen.
+;
+MSG_HELP_BACKGROUND
+Datatype Grafik, die\nals Hintergrundmuster verwendet wird
+; Datatype picture used\nas background pattern.
+;
+MSG_HELP_AUTOSCROLL
+Der Schirm scrollt,\nsobald die Maus den Rand berührt
+; The screen scrolls when\nthe mouse hits its borders.
+;
+MSG_HELP_NODRAG
+Der Schirm kann\nnicht bewegt werden.
+; The screen\nis undraggable.
+;
+MSG_HELP_EXCLUSIVE
+Der Schirm kann seine Anzeige\nnicht mit anderen teilen.
+; The screen cannot share\nits display with others.
+;
+MSG_HELP_INTERLEAVED
+Die Bitmap des Schirms wurde\nim interleaved modus allokiert.
+; The screen's bitmap is allocated\nin interleaved mode.
+;
+MSG_HELP_BEHIND
+Der Schirm wird hinter\nallen anderen Schirmen geöffnet.
+; The screen opens behind\nall other screens.
+;
+MSG_HELP_SYSTEMDEFAULT
+Der Schirm wird zum\nStandard Schirm des Systems.
+; The screen becomes the\nsystem's default screen.
+;
+MSG_HELP_AUTOCLOSE
+Der Schirm wird geschlossen,\nsobald das letzte Fenster geschlossen wurde.
+; The screen closes when\nthe last window is closed.
+;
+MSG_HELP_CLOSEGADGET
+Der Schirm erhält eine Schließen-Schaltfläche.
+; The screen gets\na close gadget.
+;
+MSG_HELP_MODELIST
+Liste aller verfügbaren Anzeigemodi.
+; List of available\ndisplay modes.
+;
+MSG_HELP_MODEINFO
+Information über den aktuellen Anzeigemodus.
+; Information about the\ncurrent display mode.
+;
+MSG_HELP_OVERSCAN
+Anpassung der Overscan Größe.
+; Overscan size adjustment.
+;
+MSG_HELP_WIDTH
+Breite des Schirms in Pixel.
+; Width of screen,\nmeasured in pixels.
+;
+MSG_HELP_HEIGHT
+Höhe des Schirms in Pixel.
+; Height of screen,\nmeasured in pixels.
+;
+MSG_HELP_DEPTH
+Farbtiefe des Schirms in Bitplanes.
+; Depth of screen,\nmeasured in planes.
+;
+MSG_HELP_PENLIST
+Systemfarben können in\nunterschiedliche Farbtöpfe gezogen werden.
+; System pens, draggable\nto different color pot.
+;
+MSG_HELP_COLORFIELD
+Die Aktuelle Farbe.\n Sie kann durch anklicken geändert werden.
+; Current color, click\non field to change it.
+;
+MSG_HELP_KILLCOLOR
+Entfernt diese Farbe\naus der Gruppe.
+; Remove this color\nfrom the group.
+;
+MSG_HELP_NEWCOLOR
+Fügt eine neue Farbe\nzur Gruppe hinzu.
+; Add a new color\nto the group.
+;
+MSG_HELP_EDITOK
+Beenden und Änderungen des Schirms\nvorübergehend behalten.
+; Exit and remember\nchanges for this screen.
+;
+MSG_HELP_EDITCANCEL
+Beenden und Änderungen des Schirms verwerfen.
+; Exit and \33bdiscard\33n\nchanges for this screen.
+;
+MSG_HELP_SCREENLIST
+Liste aller definierten öffentlichen Schirme.
+; List of defined\npublic screens.
+;
+MSG_HELP_NEWSCREEN
+Neuen öffentlichen\nSchirm erzeugen.
+; Create a new\npublic screen.
+;
+MSG_HELP_COPYSCREEN
+Kopie des aktuellen\Schirms erzeugen.
+; Create a copy\nof current screen.
+;
+MSG_HELP_DELETESCREEN
+Aktuellen Schirm löschen.
+; Delete current\npublic screen.
+;
+MSG_HELP_EDITSCREEN
+Aktuellen öffentlichen Schirm bearbeiten.
+; Edit current\npublic screen.
+;
+MSG_HELP_OPENSCREEN
+Aktuellen öffentlichen Schirm öffnen.
+; Open current\npublic screen.
+;
+MSG_HELP_CLOSESCREEN
+Aktuellen öffentlichen Schirm schließen.
+; Close current\npublic screen.
+;
+MSG_HELP_JUMPSCREEN
+Gehe zum aktuellen öffentlichen Schirm.
+; Jump to current\npublic screen.
+;
+MSG_HELP_SAVE
+Beenden und Änderungen speichern.
+; Exit and save\nchanges to disk.
+;
+MSG_HELP_USE
+Beenden und Änderungen für diese Sitzung speichern.
+; Exit and save changes\nfor current session.
+;
+MSG_HELP_CANCEL
+Beenden und Änderungen verwerfen.
+; Exit and\n\33bdiscard\33n changes.
+;
