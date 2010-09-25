@@ -12,8 +12,8 @@
 #include <devices/timer.h>
 #include <proto/cybergraphics.h>
 
+#define GL_GLEXT_PROTOTYPES
 #include <GL/arosmesa.h>
-#include <GL/gl.h>
 
 #include <stdio.h>
 
@@ -28,9 +28,72 @@ struct MsgPort      timeport;
 struct Library *    CyberGfxBase = NULL;
 BOOL                fullscreen = FALSE;
     
+GLuint              fragmentShader = 0;
+GLuint              vertexShader = 0;
+GLuint              shaderProgram = 0;
+GLint               angleLocation = 0;
+
+
+const GLchar * fragmentShaderSource =
+"uniform float angle;"
+"void main()"
+"{"
+"   vec4 v = vec4(gl_Color);"
+"   float intensity = abs(1.0 - (mod(angle, 1440) / 720));"
+"   v.b = v.b * intensity;"
+"   v.g = v.g * (1.0 - intensity);"
+"	gl_FragColor = v;"
+"}";
+
+const GLchar * vertexShaderSource =
+"void main()"
+"{	"
+"   gl_FrontColor = gl_Color;"
+"	gl_Position = ftransform();"
+"}";
+
+
 #define RAND_COL 1.0f
-#define DEGREES_PER_SECOND 180.0;
+#define DEGREES_PER_SECOND 180.0
 #define USE_PERSPECTIVE 1
+
+void prepare_shader_program()
+{
+#define BUFFER_LEN 2048
+    char buffer[BUFFER_LEN] = {0};
+    int len;
+
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    glGetShaderInfoLog(fragmentShader, BUFFER_LEN, &len, buffer);
+    printf("Fragment shader compile output: %s\n", buffer);
+    
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    glGetShaderInfoLog(vertexShader, BUFFER_LEN, &len, buffer);
+    printf("Vertex shader compile output: %s\n", buffer);
+
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram); 
+    glGetProgramInfoLog(shaderProgram, BUFFER_LEN, &len, buffer);
+    printf("Shader program compile output: %s\n", buffer);
+
+#undef BUFFER_LEN    
+}
+
+void cleanup_shader_program()
+{
+    glUseProgram(0);
+    glDetachShader(shaderProgram, fragmentShader);
+    glDetachShader(shaderProgram, vertexShader);
+    glDeleteShader(fragmentShader);
+    glDeleteShader(vertexShader);
+    glDeleteProgram(shaderProgram);
+}
 
 void render_face()
 {
@@ -111,6 +174,7 @@ void render()
     glEnable(GL_BLEND);
 
     angle += angle_inc;
+    glUniform1f(angleLocation, angle);
 
 #if USE_PERSPECTIVE == 1
     glTranslatef(0.0, 0.0, -6.0);
@@ -168,7 +232,10 @@ void initmesa()
         glLoadIdentity();
         glFrustum(-1.0, 1.0, -h, h, 5.0, 200.0);
         glMatrixMode(GL_MODELVIEW);
-#endif           
+#endif
+        prepare_shader_program();
+        glUseProgram(shaderProgram);
+        angleLocation = glGetUniformLocation(shaderProgram, "angle");
     }
     else
         finished = TRUE; /* Failure. Stop */
@@ -176,7 +243,11 @@ void initmesa()
 
 void deinitmesa()
 {
-    if (glcont) AROSMesaDestroyContext(glcont);
+    if (glcont) 
+    {
+        cleanup_shader_program();
+        AROSMesaDestroyContext(glcont);
+    }
 }
 
 static int init_timerbase()
