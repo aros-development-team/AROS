@@ -64,13 +64,12 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 {
     AROS_SHCOMMAND_INIT
 
-    BPTR from;
     struct CommandLineInterface *cli = Cli();
+    STRPTR arguments = SHArg(ARGUMENTS), s;
+    BPTR from;
 
     if (!cli)
-    {
         return RETURN_ERROR;
-    }
 
     from = Open(SHArg(NAME), FMF_READ);
 
@@ -79,11 +78,15 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	IPTR data[] = { (IPTR)SHArg(NAME) };
 	VFPrintf(Error(), "EXECUTE: can't open %s\n", data);
 	PrintFault(IoErr(), NULL);
-
 	return RETURN_FAIL;
     }
 
-    if (!cli->cli_Interactive)
+    if (cli->cli_Interactive)
+    {
+        cli->cli_Interactive  = FALSE;
+        cli->cli_CurrentInput = from;
+    }
+    else
     {
 	struct DateStamp ds;
 	BYTE tmpname[256];
@@ -102,8 +105,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
 	if (tmpfile)
 	{
-	    LONG c, len;
-	    STRPTR arguments, s;
+	    LONG c;
 
 	    if (FPuts(tmpfile, ".pushis\n") != -1)
 		while((c = FGetC(from)) != -1 && FPutC(tmpfile, c) != -1);
@@ -151,21 +153,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	        AROS_BSTR_setstrlen(cli->cli_CommandFile, len);
 	    }
 
-	    arguments = SHArg(ARGUMENTS);
-	    if (arguments)
-	    {
-		s = AROS_BSTR_ADDR(cli->cli_CommandName);
-		len = strlen(arguments);
-
-		AROS_BSTR_setstrlen(cli->cli_CommandName, len + 1);
-		CopyMem((APTR)arguments, s, len);
-		s[len] = '\n';
-	    }
-	    else
-		AROS_BSTR_setstrlen(cli->cli_CommandName, 0);
-
 	    cli->cli_CurrentInput = tmpfile;
-
 	    Seek(tmpfile, 0, OFFSET_BEGINNING);
 	}
 	else
@@ -182,27 +170,23 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	    return RETURN_FAIL;
 	}
     }
-    else
+
+    if (arguments)
     {
-	STRPTR arguments = SHArg(ARGUMENTS), s;
-	LONG len;
+	LONG len = strlen(arguments);
 
-	if (arguments)
-	{
-kprintf("[Execute] args: %s\n", arguments);
-	    s = AROS_BSTR_ADDR(cli->cli_CommandName);
-	    len = strlen(arguments);
+	D(bug("[Execute] args (len: %d): %s\n", len, arguments));
+	if (len >= 255)
+	    return ERROR_LINE_TOO_LONG;
 
-	    AROS_BSTR_setstrlen(cli->cli_CommandName, len + 1);
-	    CopyMem((APTR)arguments, s, len);
-	    s[len] = '\n';
-	}
-	else
-	    AROS_BSTR_setstrlen(cli->cli_CommandName, 0);
+	s = AROS_BSTR_ADDR(cli->cli_CommandName);
 
-        cli->cli_Interactive  = FALSE;
-        cli->cli_CurrentInput = from;
+	AROS_BSTR_setstrlen(cli->cli_CommandName, len);
+	CopyMem(arguments, s, len);
+	s[len] = '\0';
     }
+    else
+	AROS_BSTR_setstrlen(cli->cli_CommandName, 0);
 
     return RETURN_OK;
 
