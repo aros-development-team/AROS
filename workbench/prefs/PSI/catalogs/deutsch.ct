@@ -119,15 +119,15 @@ Bildschirm bearbeiten:
 ; Edit Screen:
 ;
 MSG_TITLE_SAVE
-Save PublicScreen File
+PublicScreen Datei speichern
 ; Save PublicScreen File
 ;
 MSG_TITLE_OPEN
-Load PublicScreen File
+PublicScreen Datei öffnen
 ; Load PublicScreen File
 ;
 MSG_TITLE_APPEND
-Append PublicScreen File
+PublicScreen Datei anfügen
 ; Append PublicScreen File
 ;
 MSG_LIST_SCREENNAME
@@ -183,7 +183,7 @@ _Exclusiv
 ; _Exclusive
 ;
 MSG_LABEL_INTERLEAVED
-Überlagert
+_Interleaved
 ; _Interleaved
 ;
 MSG_LABEL_OPENBEHIND
@@ -399,7 +399,7 @@ MSG_PALPRES_MAGICWB
 ; 9\0MagicWB
 ;
 MSG_PALPRES_CLONEWB
-Clone WB
+Workbench imitieren
 ; Clone WB
 ;
 MSG_OVERSCAN_TEXT
@@ -431,7 +431,7 @@ Farben
 ; Colors
 ;
 MSG_HELP_WHEEL
-Fabre für eine\nGruppe anpassen
+Farbe für eine\nGruppe anpassen
 ; Adjust color for\ngroup of pens.
 ;
 MSG_HELP_INFO
@@ -451,11 +451,11 @@ Standard Zeichensatz\nfür den Schirm.
 ; Default font\nfor the screen.
 ;
 MSG_HELP_BACKGROUND
-Datatype Grafik, die\nals Hintergrundmuster verwendet wird
+Datatype Grafik, die\nals Hintergrundmuster verwendet wird.
 ; Datatype picture used\nas background pattern.
 ;
 MSG_HELP_AUTOSCROLL
-Der Schirm scrollt,\nsobald die Maus den Rand berührt
+Der Schirm scrollt,\nsobald die Maus den Rand berührt.
 ; The screen scrolls when\nthe mouse hits its borders.
 ;
 MSG_HELP_NODRAG
@@ -467,7 +467,7 @@ Der Schirm kann seine Anzeige\nnicht mit anderen teilen.
 ; The screen cannot share\nits display with others.
 ;
 MSG_HELP_INTERLEAVED
-Die Bitmap des Schirms wurde\nim interleaved modus allokiert.
+Die Bitmap des Schirms wird\nim interleaved Modus allokiert.
 ; The screen's bitmap is allocated\nin interleaved mode.
 ;
 MSG_HELP_BEHIND
@@ -483,7 +483,7 @@ Der Schirm wird geschlossen,\nsobald das letzte Fenster geschlossen wurde.
 ; The screen closes when\nthe last window is closed.
 ;
 MSG_HELP_CLOSEGADGET
-Der Schirm erhält eine Schließen-Schaltfläche.
+Der Schirm erhält eine Schaltfläche zum Schließen.
 ; The screen gets\na close gadget.
 ;
 MSG_HELP_MODELIST
@@ -515,7 +515,7 @@ Systemfarben können in\nunterschiedliche Farbtöpfe gezogen werden.
 ; System pens, draggable\nto different color pot.
 ;
 MSG_HELP_COLORFIELD
-Die Aktuelle Farbe.\n Sie kann durch anklicken geändert werden.
+Die Aktuelle Farbe.\n Sie kann durch Anklicken geändert werden.
 ; Current color, click\non field to change it.
 ;
 MSG_HELP_KILLCOLOR
