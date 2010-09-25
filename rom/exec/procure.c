@@ -80,7 +80,7 @@
 	sigSem->ss_Owner = (struct Task *)bidMsg->ssm_Semaphore;
 	sigSem->ss_NestCount++;
 	bidMsg->ssm_Semaphore = sigSem;
-	ReplyMsg((struct Message *)sigSem);
+        ReplyMsg(&bidMsg->ssm_Message);
     }
     /*
 	Otherwise check if we already own it
@@ -90,7 +90,7 @@
 	/* Yes we do... */
 	sigSem->ss_NestCount++;
 	bidMsg->ssm_Semaphore = sigSem;
-	ReplyMsg((struct Message *)sigSem);
+        ReplyMsg(&bidMsg->ssm_Message);
     }
 
     /*
