@@ -48,7 +48,6 @@ COMMONTESTFILES := \
     serialmousetest \
     serialtest \
     unixio \
-    hostio \
     opendiskfont \
     openfromlock \
     partition \
