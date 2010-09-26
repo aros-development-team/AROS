@@ -459,7 +459,7 @@ static void MakeGUI(void)
 	    CxObj *trans;
 	    AttachCxObj(popfilter, popsig);
 	    trans = CxTranslate(NULL);
-	    if (trans) AttachCxObj(popsig, trans);
+	    if (trans) AttachCxObj(popfilter, trans);
 	}
 	AttachCxObj(broker, popfilter);
     }

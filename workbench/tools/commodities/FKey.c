@@ -522,7 +522,7 @@ static void MakeGUI(void)
 	    	AttachCxObj(popfilter, popsig);
 		
 		trans = CxTranslate(NULL);
-    	    	if (trans) AttachCxObj(popsig, trans);
+    	    	if (trans) AttachCxObj(popfilter, trans);
 	    }
 	    
 	    AttachCxObj(broker, popfilter);
@@ -592,11 +592,11 @@ static void RethinkKey(struct KeyInfo *ki)
 		   
     		if ((ki->custom = CxCustom(custom_func, 0)))
 		{
+		    AttachCxObj(ki->filter, ki->custom);
 		    if ((ki->trans = CxTranslate(NULL)))
 		    {
-		    	AttachCxObj(ki->custom, ki->trans);
+		    	AttachCxObj(ki->filter, ki->trans);
 		    }
-		    AttachCxObj(ki->filter, ki->custom);
 		}
 		break;
 		
