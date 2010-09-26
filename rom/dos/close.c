@@ -10,6 +10,7 @@
 #include <dos/filesystem.h>
 #include <proto/dos.h>
 #include "dos_intern.h"
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -93,6 +94,8 @@
 
     /* The returncode defaults to OK. */
     BOOL ret = 1;
+
+    ASSERT_VALID_PTR_OR_NULL(fh);
 
     /* 0 handles are OK */
     if(file == NULL)

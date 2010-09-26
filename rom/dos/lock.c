@@ -73,6 +73,7 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
     if (ret != NULL)
     {
+        ASSERT_VALID_PTR(ret);
 	if(InternalLock(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase))
     	{
     	    return MKBADDR(ret);
