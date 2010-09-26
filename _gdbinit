@@ -281,6 +281,9 @@ define loadseg
           printf " -s %s %p", $segnode->s_name, $segnode->s_lowest
           set $step = $step + 1
           set $segnode = (struct segment *)$segnode->s_node.mln_Succ
+          if strcmp($segnode->s_name, ".text") == 0
+            set $step = 5
+          end
         end
       end
       end_log
