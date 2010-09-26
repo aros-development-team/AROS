@@ -76,11 +76,11 @@ void handler(void) {
                             ULONG diskchgsig = 1 << diskchgsig_bit;
                             ULONG notifysig = 1 << glob->notifyport->mp_SigBit;
                             ULONG timersig = 1 << glob->timerport->mp_SigBit;
-			    ULONG mask = pktsig | diskchgsig | notifysig | timersig;
+                            ULONG mask = pktsig | diskchgsig | notifysig | timersig;
                             ULONG sigs;
                             struct MsgPort *rp;
 
-			    D(bug("\tInitiated device: %s\n", AROS_BSTR_ADDR(glob->devnode->dol_Name)));
+                            D(bug("\tInitiated device: %s\n", AROS_BSTR_ADDR(glob->devnode->dol_Name)));
 
                             glob->devnode->dol_Task = glob->ourport;
 
@@ -110,8 +110,8 @@ void handler(void) {
                                     ProcessPackets();
                                 if (sigs & notifysig)
                                     ProcessNotify();
-				if (sigs & timersig)
-				    HandleTimer();
+                                if (sigs & timersig)
+                                    HandleTimer();
                             }
 
                             D(bug("\nHandler shutdown initiated\n"));
@@ -121,8 +121,8 @@ void handler(void) {
 
                             CleanupDiskHandler(diskchgsig_bit);
                         }
-			CleanupTimer();
-		    }
+                        CleanupTimer();
+                    }
                     DeletePool(glob->mempool);
                 }
                 else
