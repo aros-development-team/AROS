@@ -9,6 +9,7 @@
 #include <exec/io.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -50,8 +51,14 @@
 	Prepare the message. Tell the device that it is OK to wait in the
 	BeginIO() call by setting the quick bit.
     */
+    ASSERT_VALID_PTR(iORequest);
+    if (!iORequest) return -1;
+
     iORequest->io_Flags=IOF_QUICK;
     iORequest->io_Message.mn_Node.ln_Type=0;
+
+    ASSERT_VALID_PTR(iORequest->io_Device);
+    if (!iORequest->io_Device) return -1;
 
     /* Call BeginIO() vector */
     AROS_LVO_CALL1NR(void,

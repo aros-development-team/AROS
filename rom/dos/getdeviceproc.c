@@ -488,7 +488,7 @@ BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
 
 static BOOL VolumeIsOffline(struct DosList *dl)
 {
-    if (strcmp(dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name,
+    if (dl->dol_Ext.dol_AROS.dol_Device && strcmp(dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name,
 	"packet.handler"))
 	return !dl->dol_Ext.dol_AROS.dol_Unit;
     else
