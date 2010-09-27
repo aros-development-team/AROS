@@ -113,4 +113,10 @@ struct ELF_DebugInfo
 typedef int (*exhandler_t)(void *ctx, void *data, void *data2);
 typedef void (*irqhandler_t)(void *data, void *data2);
 
+/* System attributes */
+#define KATTR_Architecture	(TAG_USER + 0x03F00000) /* [.G] (char *)   - Name of architecture, like "i386-pc"	 */
+#define KATTR_VBlankEnable	(TAG_USER + 0x03F00001) /* [SG] (BOOL)     - Enable or disable exec VBlank emulation	 */
+#define KATTR_TimerIRQ		(TAG_USER + 0x03F00002) /* [.G] (uint8_t)  - Number of high precision periodic timer IRQ */
+#define KATTR_TimerPeriod	(TAG_USER + 0x03F00003) /* [.G] (uint32_t) - Periodic timer frequency in Hz		 */
+
 #endif /* AROS_KERNEL_H */

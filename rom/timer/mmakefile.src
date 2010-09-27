@@ -13,4 +13,4 @@ FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
 
 INCLUDE_FILES := include/timer.h
 
-%copy_includes mmake=kernel-timer-includes path=hidd dir=include
+# %copy_includes mmake=kernel-timer-includes path=hidd dir=include

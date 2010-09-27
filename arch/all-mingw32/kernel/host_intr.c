@@ -6,7 +6,7 @@
 #define bug printf
 
 #include "host_intern.h"
-#include "host_irq.h"
+#include "kernel_arch.h"
 #include "kernel_cpu.h"
 
 /*
@@ -245,14 +245,14 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
     conout = GetStdHandle(STD_OUTPUT_HANDLE);
 
     /* Statically allocate main system timer */
-    IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
-    if (!IntObjects[INT_TIMER])
+    IntObjects[IRQ_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
+    if (!IntObjects[IRQ_TIMER])
     {
 	D(printf("[KRN] Failed to create timer interrupt\n");)
 	return FALSE;
     }
-    AllocatedInts[INT_TIMER] = 1;
-    PendingInts[INT_TIMER] = 0;
+    AllocatedInts[IRQ_TIMER] = 1;
+    PendingInts[IRQ_TIMER] = 0;
     Ints_Num = 1;
 
     ThisProcess = GetCurrentProcess();
@@ -313,13 +313,13 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
 	    TimerPeriod = 1000/TimerPeriod;
 #endif
 	    VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
-	    return SetWaitableTimer(IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
+	    return SetWaitableTimer(IntObjects[IRQ_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
 	}
 	    D(else printf("[KRN] Failed to run task switcher thread\n");)
     }
 	D(else printf("[KRN] failed to get thread handle\n");)
 
-    CloseHandle(IntObjects[INT_TIMER]);
+    CloseHandle(IntObjects[IRQ_TIMER]);
     return FALSE;
 }
 
