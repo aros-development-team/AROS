@@ -77,11 +77,16 @@ struct Task *core_Dispatch(void)
     D(bug("[KRN] core_Dispatch()\n"));
 
     task = (struct Task *)REMHEAD(&SysBase->TaskReady);
-    if (!task) {
+    if (!task)
+    {
+        /* Is the list of ready tasks empty? Well, go idle. */
 	D(bug("[KRN] No ready tasks, entering sleep mode\n"));
-        /*
-	 * Is the list of ready tasks empty? Well, go idle.
-	 */
+
+	/* Idle counter is incremented every time when we enter here,
+	   not only once. This is correct. */
+	SysBase->IdleCount++;
+        SysBase->AttnResched |= ARF_AttnSwitch;
+
 	return NULL;
     }
 

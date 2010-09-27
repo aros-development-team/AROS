@@ -118,9 +118,6 @@ static void cpu_Dispatch(CONTEXT *regs)
 	{
 	    /* This will enable interrupts in core_LeaveInterrupt() */
 	    SysBase->IDNestCnt = -1;
-
-            SysBase->IdleCount++;
-            SysBase->AttnResched |= ARF_AttnSwitch;
             DSLEEP(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
 
             /* We are entering sleep mode */
@@ -168,8 +165,8 @@ static void core_ExitInterrupt(CONTEXT *regs)
         core_Cause(INTB_SOFTINT);
     }
 
-    /* No tasks active (AROS is sleeping)? If yes, just pick up
-       a new ready task (if any) */
+    /* No tasks active (AROS is in idle state)? If yes, just pick up
+       a new ready task (if there is any) */
     if (Sleep_Mode != SLEEP_MODE_OFF)
     {
         cpu_Dispatch(regs);
