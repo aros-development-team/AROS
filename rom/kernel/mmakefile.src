@@ -8,15 +8,16 @@ include $(TOP)/config/make.cfg
 # so we also append $(GENINCDIR) and /usr/include.
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/arch/all-$(ARCH)/kernel \
 	       -I$(SRCDIR)/arch/$(CPU)-all/kernel \
-               -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) -idirafter /usr/include
+               -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) -idirafter /usr/include \
+	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\""
 
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
          dispatch getbootinfo getscheduler issuper mapglobal registermodule          \
 	 remexceptionhandler remirqhandler schedule setprotection setscheduler sti   \
 	 switch unmapglobal unregistermodule virtualtophysical decodelocation	     \
-	 putchar maygetchar allocpages freepages
+	 putchar maygetchar allocpages freepages getsystemattr setsystemattr
 
-FILES := kernel_init kernel_debug kernel_romtags kernel_scheduler kernel_tagitems
+FILES := kernel_init kernel_debug kernel_romtags kernel_scheduler kernel_tagitems kernel_timer
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource \

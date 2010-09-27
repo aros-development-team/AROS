@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -14,7 +14,6 @@
 #include <exec/alerts.h>
 #include <exec/initializers.h>
 #include <devices/timer.h>
-#include <hidd/timer.h>
 #include <hardware/intbits.h>
 
 #include <proto/exec.h>
@@ -50,8 +49,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     D(kprintf("Timer period: %ld secs, %ld micros\n",
 	LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
-
-    LIBBASE->tb_MiscFlags = TF_GO;
     
     /* Initialise the lists */
     NEWLIST( &LIBBASE->tb_Lists[0] );

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VBlank server for the timer.device/timer.hidd
@@ -26,15 +26,8 @@
 	(d)->tv_micro -= 1000000;\
     }
 
-AROS_UFH4(ULONG, VBlankInt,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct TimerBase *, TimerBase, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-    )
+void TimerIRQ(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
-    AROS_USERFUNC_INIT
-
     struct timerequest *tr, *next;
 
     /*
@@ -110,8 +103,20 @@ AROS_UFH4(ULONG, VBlankInt,
 	    tr = NULL;
 	}
     }
+}
 
+/* Wrapper for adding to exec.library interrupt servers chain */
+AROS_UFH4(ULONG, VBlankInt,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(struct TimerBase *, TimerBase, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6)
+    )
+{
+    AROS_USERFUNC_INIT
+
+    TimerIRQ(TimerBase, SysBase);
     return 0;
+
     AROS_USERFUNC_EXIT
 }
-	

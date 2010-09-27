@@ -13,4 +13,11 @@
  *
  * The whole described thing is experimental and subject to change.
  */
-#define INT_TIMER 0
+#define IRQ_TIMER 0
+
+/* We use only one list for all IRQs */
+#define IRQ_COUNT 1
+
+/* We have no interrupt controller */
+#define ictl_enable_irq(irq)
+#define ictl_disable_irq(irq)

@@ -17,6 +17,8 @@
 #include <exec/libraries.h>
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
+
+#include <stdlib.h>
 #include <string.h>
 
 #include <proto/exec.h>
@@ -178,9 +180,20 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
 
-    /* Enable mungwall before the first AllocMem() */
-    if (args && strstr(args, "mungwall"))
-	PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
+    /* Parse some arguments from command line */
+    if (args)
+    {
+	char *s;
+
+	/* Set VBlank frequency if specified */
+	s = strstr(args, "vblank=");
+	if (s)
+	    SysBase->VBlankFrequency = atoi(&s[7]);
+
+	/* Enable mungwall before the first AllocMem() */
+	if (strstr(args, "mungwall"))
+	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
+    }
 
     SysBase->DebugAROSBase  = PrepareAROSSupportBase(SysBase);
 

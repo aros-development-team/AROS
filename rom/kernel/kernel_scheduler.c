@@ -106,6 +106,7 @@ struct Task *core_Dispatch(void)
     return task;
 }
 
+/* Call exec interrupt vector, if present */
 void core_Cause(unsigned char n)
 {
     struct IntVector *iv = &SysBase->IntVects[n];

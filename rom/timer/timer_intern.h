@@ -27,9 +27,6 @@
 #ifndef DEVICES_TIMER_H
 #include <devices/timer.h>
 #endif
-#ifndef HIDD_TIMER_H
-#include <hidd/timer.h>
-#endif
 #ifndef DOS_BPTR_H
 #include <dos/bptr.h>
 #endif
@@ -50,19 +47,19 @@ struct TimerBase
     /* Required by the system */
     struct Device	 tb_Device;
 
-    struct IClass	*tb_TimerHIDD;
-    ULONG		 tb_MiscFlags;		/* miscellaneous flags */
+    APTR		 tb_KernelBase;		/* kernel.resource base */
     struct timeval	 tb_CurrentTime;	/* system time */
     struct timeval	 tb_Elapsed;		/* Elapsed Time for VBlank */
 
     /* This is required for the vertical blanking stuff */
-    struct Interrupt	 tb_VBlankInt;
-    struct IClass	*tb_VBlankHIDD;		/* vblank hidd class */
-    struct timeval	 tb_VBlankTime;		/* vblank interval */
-    
+    LONG		 tb_TimerIRQNum;	/* Timer IRQ number */
+    APTR		 tb_TimerIRQHandle;	/* Timer IRQ handle */
+    struct Interrupt	 tb_VBlankInt;		/* Used by older implementations, needs to be removed */
+    struct timeval	 tb_VBlankTime;		/* Periodic timer interval */
+
     /* Lists for waiting vblank, waituntil, microhz, eclock, waiteclock */
     struct MinList	 tb_Lists[NUM_LISTS];
-    
+
     UQUAD                tb_ticks_total;
     ULONG                tb_ticks_sec;
     ULONG                tb_ticks_elapsed;

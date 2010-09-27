@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -16,7 +16,6 @@
 #include <exec/alerts.h>
 #include <exec/initializers.h>
 #include <devices/timer.h>
-#include <hidd/timer.h>
 #include <hardware/intbits.h>
 
 #include <proto/exec.h>
@@ -61,8 +60,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     D(kprintf("Timer period: %ld secs, %ld micros\n",
         LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
-
-    LIBBASE->tb_MiscFlags = TF_GO;
     
     /* Initialise the lists */
     NEWLIST( &LIBBASE->tb_Lists[0] );
@@ -71,17 +68,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     NEWLIST( &LIBBASE->tb_Lists[3] );
     NEWLIST( &LIBBASE->tb_Lists[4] );
 
-    /* Start up the interrupt server. This is shared between us and the 
-        HIDD that deals with the vblank */
-    LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-//    LIBBASE->tb_VBlankInt.is_Code = (APTR)&VBlankInt;
-    LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
-
-//    AddIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
-//    KrnAddIRQHandler(0x20, VBlankInt, LIBBASE, SysBase);
-    LIBBASE->tb_VBlankInt.is_Code = KrnAddIRQHandler(INTR_GDP, GPTHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
+    /* Start up the interrupt server */
+    LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(INTR_GDP, GPTHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
     
     outl(GPT0_DCIS_DCIS, GPT0_DCIS);
     TimerSetup(TimerBase, inl(GPT0_TBC));
@@ -146,7 +134,7 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
     void *KernelBase = rdspr(SPRG4U);
     
-    KrnRemIRQHandler(LIBBASE->tb_VBlankInt.is_Code);
+    KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
     
     return TRUE;
 }

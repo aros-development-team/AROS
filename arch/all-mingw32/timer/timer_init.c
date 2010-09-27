@@ -1,12 +1,13 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Timer startup and device commands
+    Desc: Timer startup and device commands, generic hardware-independent version
 */
 
 /****************************************************************************************/
 
+#include <aros/kernel.h>
 #include <exec/types.h>
 #include <exec/io.h>
 #include <exec/errors.h>
@@ -14,19 +15,15 @@
 #include <exec/alerts.h>
 #include <exec/initializers.h>
 #include <devices/timer.h>
-#include <hidd/timer.h>
 #include <hardware/intbits.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/timer.h>
 
 #include <aros/symbolsets.h>
-
 #include <aros/debug.h>
-#undef kprintf
-#include <proto/arossupport.h>
 
-//#include "timer_intern.h"
 #include LC_LIBDEFS_FILE
 
 AROS_UFP4(ULONG, VBlankInt,
@@ -36,23 +33,40 @@ AROS_UFP4(ULONG, VBlankInt,
     AROS_UFPA(struct ExecBase *, SysBase, A6)
 );
 
+void TimerIRQ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
+
 /****************************************************************************************/
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
+    APTR KernelBase = OpenResource("kernel.resource");
+    ULONG TimerPeriod;
+
+    LIBBASE->tb_TimerIRQNum = -1;
+    if (KernelBase)
+    {
+	TimerPeriod = KrnGetSystemAttr(KATTR_TimerPeriod);
+	if (TimerPeriod)
+	    LIBBASE->tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
+    }
+
+    if (LIBBASE->tb_TimerIRQNum == -1)
+	TimerPeriod = SysBase->VBlankFrequency;
+
+    D(bug("[timer] Timer IRQ is 0x%d, frequency is %u\n", LIBBASE->tb_TimerIRQNum, TimerPeriod));
+    LIBBASE->tb_KernelBase = KernelBase;
+
     /* Setup the timer.device data */
     LIBBASE->tb_CurrentTime.tv_secs = 0;
     LIBBASE->tb_CurrentTime.tv_micro = 0;
     LIBBASE->tb_VBlankTime.tv_secs = 0;
-    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / (SysBase->VBlankFrequency);
+    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / TimerPeriod;
     LIBBASE->tb_Elapsed.tv_secs = 0;
     LIBBASE->tb_Elapsed.tv_micro = 0;
 
     D(kprintf("Timer period: %ld secs, %ld micros\n",
 	LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
 
-    LIBBASE->tb_MiscFlags = TF_GO;
-    
     /* Initialise the lists */
     NEWLIST( &LIBBASE->tb_Lists[0] );
     NEWLIST( &LIBBASE->tb_Lists[1] );
@@ -60,17 +74,29 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     NEWLIST( &LIBBASE->tb_Lists[3] );
     NEWLIST( &LIBBASE->tb_Lists[4] );
     
-    /* Start up the interrupt server. This is shared between us and the 
-	HIDD that deals with the vblank */
-    LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-    LIBBASE->tb_VBlankInt.is_Code = (APTR)&VBlankInt;
-    LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
+    /* Start up the interrupt server */
+    if (LIBBASE->tb_TimerIRQNum == -1)
+    {
+	/* If we don't have periodic timer IRQ number from kernel.resource,
+	   we assume that exec VBlank is working and attach to it */
+	struct Interrupt *is = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC);
+	
+	if (is)
+	{
+	    is->is_Node.ln_Pri = 0;
+	    is->is_Node.ln_Type = NT_INTERRUPT;
+	    is->is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
+	    is->is_Code = VBlankInt;
+	    is->is_Data = LIBBASE;
 
-    AddIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);
+	    AddIntServer(INTB_VERTB, is);
+	}
+	LIBBASE->tb_TimerIRQHandle = is;
+    }
+    else
+	LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(LIBBASE->tb_TimerIRQNum, TimerIRQ, LIBBASE, SysBase);
 
-    return TRUE;
+    return LIBBASE->tb_TimerIRQHandle ? TRUE : FALSE;
 }
 
 /****************************************************************************************/
@@ -115,7 +141,20 @@ static int GM_UNIQUENAME(Open)
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    RemIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);
+    if (LIBBASE->tb_TimerIRQHandle)
+    {
+	if (LIBBASE->tb_TimerIRQNum == -1)
+	{
+	    RemIntServer(INTB_VERTB, LIBBASE->tb_TimerIRQHandle);
+	    FreeMem(LIBBASE->tb_TimerIRQHandle, sizeof(struct Interrupt));
+	}
+	else
+	{
+	    APTR KernelBase = LIBBASE->tb_KernelBase;
+
+	    KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
+	}
+    }
     return TRUE;
 }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -14,7 +14,6 @@
 #include <exec/alerts.h>
 #include <exec/initializers.h>
 #include <devices/timer.h>
-#include <hidd/timer.h>
 #include <hardware/intbits.h>
 
 #include <proto/exec.h>
@@ -55,8 +54,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     D(kprintf("Timer period: %ld secs, %ld micros\n",
 	LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
-
-    LIBBASE->tb_MiscFlags = TF_GO;
     
     /* Initialise the lists */
     NEWLIST( &LIBBASE->tb_Lists[0] );
@@ -73,16 +70,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     
     LIBBASE->tb_prev_tick = 0xffff;
 
-    /* Start up the interrupt server. This is shared between us and the 
-	HIDD that deals with the vblank */
-    LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-    LIBBASE->tb_VBlankInt.is_Code = (APTR)&VBlankInt;
-    LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
-
-//    AddIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
-    KrnAddIRQHandler(0x20, VBlankInt, LIBBASE, SysBase);
+    /* Start up the interrupt server */
+    LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(0x20, VBlankInt, LIBBASE, SysBase);
 
     /* VBlank EMU */
     
@@ -142,7 +131,7 @@ static int GM_UNIQUENAME(Open)
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-    RemIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);
+    KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
     return TRUE;
 }
 

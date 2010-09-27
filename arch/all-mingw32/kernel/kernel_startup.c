@@ -2,6 +2,7 @@
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
+#include <aros/symbolsets.h>
 #include <exec/resident.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
@@ -165,21 +166,13 @@ int __startup startup(struct TagItem *msg)
     }
 
     /* In order for these functions to work before KernelBase and ExecBase are set up */
-    ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf = mykprintf;
+    ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf  = mykprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf = myrkprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf = myvkprintf;
 
     ranges[0] = klo;
     ranges[1] = khi;
     SysBase->ResModules = krnRomTagScanner(SysBase, ranges);
-
-    D(mykprintf("[Kernel] initializing host-side kernel module\n"));
-    *KernelIFace.TrapVector = core_TrapHandler;
-    *KernelIFace.IRQVector  = core_IRQHandler;
-    if (!KernelIFace.core_init(SysBase->VBlankFrequency)) {
-	mykprintf("[Kernel] Failed to start up virtual machine!\n");
-	return -1;
-    }
 
     mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
@@ -188,3 +181,14 @@ int __startup startup(struct TagItem *msg)
     HostIFace->HostLib_Close(hostlib, NULL);
     return 1;
 }
+
+int Platform_Init(struct KernelBase *KernelBase)
+{
+    D(mykprintf("[Kernel] initializing host-side kernel module, timer frequency is %u\n", KernelBase->kb_TimerFrequency));
+    *KernelIFace.TrapVector = core_TrapHandler;
+    *KernelIFace.IRQVector  = core_IRQHandler;
+
+    return KernelIFace.core_init(KernelBase->kb_TimerFrequency);
+}
+
+ADD2INITLIB(Platform_Init, 10);

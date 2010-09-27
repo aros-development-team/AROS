@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -16,7 +16,6 @@
 #include <exec/alerts.h>
 #include <exec/initializers.h>
 #include <devices/timer.h>
-#include <hidd/timer.h>
 #include <hardware/intbits.h>
 
 #include <proto/exec.h>
@@ -63,8 +62,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     D(bug("Timer period: %ld secs, %ld micros\n",
         LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
 
-    LIBBASE->tb_MiscFlags = TF_GO;
-
     /* Initialise the lists */
     NEWLIST( &LIBBASE->tb_Lists[0] );
     NEWLIST( &LIBBASE->tb_Lists[1] );
@@ -87,14 +84,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	}
     }
 
-    /* Start up the interrupt server. This is shared between us and the
-        HIDD that deals with the vblank */
-    LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-    LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
+    /* Start up the interrupt server */
 
-    LIBBASE->tb_VBlankInt.is_Code = KrnAddIRQHandler(MPC5200B_ST1, SliceHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
+    LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(MPC5200B_ST1, SliceHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
 
     /* Start the slice timer 1 */
 //    outl(SLT_CF_RUNWAIT | SLT_CF_INTRENA | SLT_CF_ENABLE, &slice_timer->slt_cf);
@@ -163,7 +155,7 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
     void *KernelBase = getKernelBase();
 
-    KrnRemIRQHandler(LIBBASE->tb_VBlankInt.is_Code);
+    KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
 
     return TRUE;
 }

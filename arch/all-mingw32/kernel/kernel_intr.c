@@ -6,13 +6,13 @@
 
 #include "etask.h"
 
-#include "host_irq.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
 #include "kernel_mingw32.h"
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
+#include "kernel_timer.h"
 #include "kernel_traps.h"
 
 #define D(x) /* This may lock up. See notes in host_intr.c */
@@ -70,9 +70,25 @@ static void core_Exception()
     KernelIFace.core_raise(AROS_EXCEPTION_RESUME, (IPTR)&save);
 }
 
+/* CPU-specific Switch() bits. Actually just context save. */
+static void cpu_Switch(CONTEXT *regs)
+{
+    struct Task *t = SysBase->ThisTask;
+    struct AROSCPUContext *ctx = GetIntETask(t)->iet_Context;
+
+    /* Actually save the context */
+    CopyMem(regs, ctx, sizeof(CONTEXT));
+    ctx->LastError = *LastErrorPtr;
+
+    /* Update tc_SPReg */
+    t->tc_SPReg = GET_SP(ctx);
+
+    core_Switch();
+}
+
 /*
- * CPU-dependent wrapper around core_Dispatch(). Handles sleep mode
- * and task exceptions
+ * CPU-dependent wrapper around core_Dispatch(). Implements
+ * context restore, CPU idle loop, and task exceptions.
  */
 static void cpu_Dispatch(CONTEXT *regs)
 {
@@ -81,7 +97,23 @@ static void cpu_Dispatch(CONTEXT *regs)
 
     if (!task)
     {
-	/*There are no ready tasks and we need to go asleep */
+	/*
+	 * There are no ready tasks and we need to go idle.
+	 * Because of the way how our emulation works, we do not
+	 * have a real loop here, unlike most ports. Instead we
+	 * signal idle state and exit. Then there can be two possibilities:
+	 * a) we are called by our virtual machine's supervisor thread.
+	 *    In this case it will just not resume usermode thread, and
+	 *    will go on with interrupts processing.
+	 * b) we are called by usermode thread using core_Rise(). In this
+	 *    case we will continue execution of the code and hit while(Sleep_Mode);
+	 *    spinlock in cire_Rise(). We will spin until supervisor thread interrupts
+	 *    us and actually puts us asleep.
+	 * We can't implement idle loop similar to other ports here because of (b)
+	 * case. We would just deadlock then since interrupt processing is actually
+	 * disabled during Windows exception processing (which is also an interrupt
+	 * for us).
+	 */
         if (Sleep_Mode == SLEEP_MODE_OFF)
 	{
 	    /* This will enable interrupts in core_LeaveInterrupt() */
@@ -119,21 +151,11 @@ static void cpu_Dispatch(CONTEXT *regs)
     }
 }
 
-static inline void SaveRegs(struct Task *t, CONTEXT *regs)
-{
-    struct AROSCPUContext *ctx = GetIntETask(t)->iet_Context;
-
-    /* Actually save the context */
-    CopyMem(regs, ctx, sizeof(CONTEXT));
-    ctx->LastError = *LastErrorPtr;
-
-    /* Update tc_SPReg */
-    t->tc_SPReg = GET_SP(ctx);
-}
-
 /*
  * Leave the interrupt. This function receives the register frame used to leave the supervisor
  * mode. It reschedules the task if it was asked for.
+ * This implementation differs from generic one because Windows-hosted AROS has very specific
+ * idle loop implementation.
  */
 static void core_ExitInterrupt(CONTEXT *regs)
 {
@@ -167,9 +189,7 @@ static void core_ExitInterrupt(CONTEXT *regs)
             D(bug("[Scheduler] Rescheduling\n"));
             if (core_Schedule())
 	    {
-		/* core_Switch() is machine-independent, so save registers before */
-		SaveRegs(SysBase->ThisTask, regs);
-		core_Switch();
+		cpu_Switch(regs);
 		cpu_Dispatch(regs);
 	    }
         }
@@ -191,8 +211,8 @@ int core_IRQHandler(unsigned char *irqs, CONTEXT *regs)
     }
 
     /* Timer IRQ is also used to emulate exec VBlank */
-    if (irqs[INT_TIMER])
-	core_Cause(INTB_VERTB);
+    if (irqs[IRQ_TIMER])
+	core_TimerTick();
 
     /* Reschedule tasks and exit */
     core_ExitInterrupt(regs);
@@ -217,9 +237,7 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 		break;
 
 	case SC_SWITCH:
-	    /* Save registers before core_Switch()! */
-	    SaveRegs(SysBase->ThisTask, regs);
-	    core_Switch();
+	    cpu_Switch(regs);
 
 	case SC_DISPATCH:
 	    cpu_Dispatch(regs);
@@ -227,7 +245,6 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 
 	case SC_CAUSE:
 	    core_ExitInterrupt(regs);
-//	    core_Cause(INTB_SOFTINT);
 	    break;
 	}
 	break;
