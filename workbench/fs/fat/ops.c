@@ -1051,14 +1051,17 @@ LONG OpRemoveNotify(struct NotifyRequest *nr) {
     struct NotifyNode *nn;
 
     D(bug("[fat] trying to remove notification for '%s'\n", nr->nr_FullName));
-
-    ForeachNode(&glob->sb->notifies, nn)
-        if (nn->nr == nr) {
-            D(bug("[fat] found notify request in list, removing it\n"));
-            REMOVE(nn);
-            FreeVecPooled(glob->mempool, nn);
-            return 0;
+    /* Notification removal can be requested after disk remove */
+    if (glob->sb) {
+        ForeachNode(&glob->sb->notifies, nn) {
+            if (nn->nr == nr) {
+                D(bug("[fat] found notify request in list, removing it\n"));
+                REMOVE(nn);
+                FreeVecPooled(glob->mempool, nn);
+                return 0;
+            }
         }
+    }
 
     D(bug("[fat] not found, doing nothing\n"));
 

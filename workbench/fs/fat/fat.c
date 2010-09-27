@@ -535,6 +535,12 @@ LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
 
 void FreeFATSuper(struct FSSuper *sb) {
     D(bug("\tRemoving Super Block from memory\n"));
+    struct NotifyNode *nn, *tmp;
+    ForeachNodeSafe(&sb->notifies, nn, tmp) {
+        REMOVE(nn);
+        FreeVecPooled(glob->mempool, nn);
+    }
+
     Cache_DestroyCache(sb->cache);
     FreeVecPooled(glob->mempool, sb->fat_buffers);
     sb->fat_buffers = NULL;

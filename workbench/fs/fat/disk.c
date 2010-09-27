@@ -262,7 +262,8 @@ void ProcessDiskChange(void) {
 }
 
 void UpdateDisk(void) {
-    Cache_Flush(glob->sb->cache);
+    if (glob->sb)
+        Cache_Flush(glob->sb->cache);
 
     glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
     DoIO((struct IORequest *)glob->diskioreq);
