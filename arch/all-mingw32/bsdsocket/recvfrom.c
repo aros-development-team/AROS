@@ -51,10 +51,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("recvfrom");
+/*  aros_print_not_implemented ("recvfrom");
     SetError(ENOSYS, taskBase);
 
-    return -1;
+    return -1; */
+    return 0;
 
     AROS_LIBFUNC_EXIT
 

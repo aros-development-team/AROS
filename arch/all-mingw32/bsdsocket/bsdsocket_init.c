@@ -11,7 +11,10 @@ static const char *ws_functions[] = {
     "getprotobyname",
     "socket",
     "closesocket",
+    "ioctlsocket",
     "setsockopt",
+    "recvfrom",
+    "sendto",
     "WSAEventSelect",
     NULL
 };

@@ -91,3 +91,18 @@ struct Socket *GetSocket(int s, struct TaskBase *taskBase)
 
     return sd;
 }
+
+struct WSsockaddr *MakeSockAddr(const struct sockaddr *src, int len, struct TaskBase *taskBase)
+{
+    struct WSsockaddr *sa = AllocPooled(taskBase->pool, len);
+
+    if (sa)
+    {
+	CopyMem(src, sa, len);
+	sa->sa_family = src->sa_family;
+    }
+    else
+	SetError(ENOMEM, taskBase);
+
+    return sa;
+}

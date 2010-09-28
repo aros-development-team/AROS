@@ -30,7 +30,10 @@ struct WinSockInterface
     struct PROTOENT * __stdcall (*WSgetprotobyname)(const char* name);
     int		      __stdcall (*WSsocket)(int af, int type, int protocol);
     int		      __stdcall (*WSclosesocket)(int s);
+    int		      __stdcall (*WSioctlsocket)(int s, LONG cmd, ULONG *argp);
     int		      __stdcall (*WSsetsockopt)(int s, int level, int optname, const char* optval, int optlen);
+    int		      __stdcall (*WSrecvfrom)(int s, char* buf, int len, int flags, struct WSsockaddr* from, int* fromlen);
+    int 	      __stdcall (*WSsendto)(int s, const char* buf, int len, int flags, const struct WSsockaddr* to, int tolen);
     int		      __stdcall (*WSAEventSelect)(int s, APTR hEventObject, ULONG lNetworkEvents);
 };
 
@@ -59,7 +62,10 @@ struct bsdsocketBase
 #define WSgetprotobyname SocketBase->WSIFace->WSgetprotobyname
 #define WSsocket	 SocketBase->WSIFace->WSsocket
 #define WSclosesocket	 SocketBase->WSIFace->WSclosesocket
+#define WSioctlsocket	 SocketBase->WSIFace->WSioctlsocket
 #define WSsetsockopt	 SocketBase->WSIFace->WSsetsockopt
+#define WSrecvfrom	 SocketBase->WSIFace->WSrecvfrom
+#define WSsendto	 SocketBase->WSIFace->WSsendto
 #define WSAEventSelect	 SocketBase->WSIFace->WSAEventSelect
 
 struct Socket;
