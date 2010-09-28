@@ -19,7 +19,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
     if (IntuitionBase && IntuitionBase->FirstScreen)
     {
-        char buffer[256];
+        char buffer[512];
 	char *buf;
         struct EasyStruct es = {
             sizeof (struct EasyStruct),
