@@ -535,11 +535,13 @@ LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
 
 void FreeFATSuper(struct FSSuper *sb) {
     D(bug("\tRemoving Super Block from memory\n"));
+    /* FIXME: Remove when notifications are corrected, see ops.c, OpRemoveNotify */
     struct NotifyNode *nn, *tmp;
     ForeachNodeSafe(&sb->notifies, nn, tmp) {
         REMOVE(nn);
         FreeVecPooled(glob->mempool, nn);
     }
+    /* FIXME */
 
     Cache_DestroyCache(sb->cache);
     FreeVecPooled(glob->mempool, sb->fat_buffers);
