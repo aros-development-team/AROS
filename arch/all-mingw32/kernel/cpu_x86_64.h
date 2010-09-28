@@ -117,7 +117,7 @@ typedef struct _CONTEXT
 #define GET_SP(ctx) (void *)ctx->Regs.Rsp
 #define SET_PC(ctx, addr) ctx->Regs.Rip = (IPTR)addr
 
-#define EXCEPTIONS_COUNT 19
+#define EXCEPTIONS_COUNT 18
 
 #define PRINT_CPUCONTEXT(ctx) \
 	bug ("    ContextFlags: 0x%08lX\n" \
