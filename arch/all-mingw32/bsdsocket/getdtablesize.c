@@ -17,7 +17,7 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-        struct Library *, SocketBase, 23, BSDSocket)
+        struct TaskBase *, taskBase, 23, BSDSocket)
 
 /*  FUNCTION
 
@@ -41,10 +41,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("getdtablesize");
-#warning TODO: Write BSDSocket/getdtablesize
-
-    return 0;
+    return taskBase->dTableSize;
 
     AROS_LIBFUNC_EXIT
 

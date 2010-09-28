@@ -52,8 +52,11 @@
     struct bsdsocketBase *SocketBase = taskBase->glob;
     struct Socket *sd;
     int err = 0;
-    int s = GetFreeFD(taskBase);
+    int s;
 
+    D(bug("[bsdsocket] socket(%d, %d, %d)\n", domain, type, protocol));
+
+    s = GetFreeFD(taskBase);
     if (s == -1)
 	return -1;
 
@@ -64,6 +67,8 @@
 	return -1;
     }
 
+    sd->flags = 0;
+
     Forbid();
 
     sd->s = WSsocket(domain, type, protocol);
@@ -71,15 +76,16 @@
 	err = WSAGetLastError();
     else
     {
-	err = WSAEventSelect(sd->s, SocketBase->ctl->SocketEvent, FD_READ|FD_WRITE|FD_OOB|FD_ACCEPT|FD_CONNECT|FD_CLOSE);
+	/* This implies setting the socket to non-blocking mode, so no ioctlsocket() is needed */
+	err = WSAEventSelect(sd->s, SocketBase->ctl->SocketEvent, WS_FD_READ|WS_FD_WRITE|WS_FD_OOB|WS_FD_ACCEPT|WS_FD_CONNECT|WS_FD_CLOSE);
 	if (err)
 	{
 	    err = WSAGetLastError();
-	    
+
 	    WSclosesocket(sd->s);
 	}
     }
-    
+
     Permit();
 
     if (err)
@@ -92,7 +98,7 @@
     AddTail((struct List *)&SocketBase->socks, (struct Node *)sd);
     taskBase->dTable[s] = sd;
 
-    D(bug("[socket] Created socket %u (descriptor 0x%p)\n", s, sd));
+    D(bug("[socket] Created socket %u (descriptor 0x%p, Windows socket %d)\n", s, sd, sd->s));
     return s;
 
     AROS_LIBFUNC_EXIT
