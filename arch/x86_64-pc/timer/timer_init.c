@@ -130,6 +130,8 @@ static int GM_UNIQUENAME(Open)
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
+    void *KernelBase = TLS_GET(KernelBase);
+
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
     return TRUE;
