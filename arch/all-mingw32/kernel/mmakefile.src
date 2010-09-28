@@ -7,7 +7,7 @@ USER_INCLUDES  := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel \
 #MM kernel-kernel-mingw32: kernel-kernel-mingw32-native
 
 FUNCS := bug addirqhandler cli issuper setprotection sti maygetchar putchar
-FILES := kernel_startup kernel_debug kernel_intr cpu_$(CPU)
+FILES := kernel_startup kernel_debug kernel_cpu kernel_intr cpu_$(CPU)
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \

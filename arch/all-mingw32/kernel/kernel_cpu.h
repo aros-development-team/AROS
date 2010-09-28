@@ -55,6 +55,8 @@ struct KernelInterface
 extern struct KernelInterface KernelIFace;
 
 #define krnSysCall(n) KernelIFace.core_raise(AROS_EXCEPTION_SYSCALL, n)
+#define Sleep_Mode   (*KernelIFace.SleepState)
+#define LastErrorPtr (*KernelIFace.LastErrorPtr)
 
 #endif
 
