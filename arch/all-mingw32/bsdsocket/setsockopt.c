@@ -7,6 +7,8 @@
 */
 
 #include "bsdsocket_intern.h"
+#include "bsdsocket_util.h"
+#include "socket_intern.h"
 
 /*****************************************************************************
 
@@ -22,7 +24,7 @@
         AROS_LHA(int,    optlen,  D3),
 
 /*  LOCATION */
-        struct Library *, SocketBase, 15, BSDSocket)
+        struct TaskBase *, taskBase, 15, BSDSocket)
 
 /*  FUNCTION
 
@@ -46,10 +48,27 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("setsockopt");
-#warning TODO: Write BSDSocket/setsockopt
+    struct Socket *sd = GetSocket(s, taskBase);
+    int res = -1;
+    int err;
+    
+    if (sd)
+    {
+	struct bsdsocketBase *SocketBase = taskBase->glob;
 
-    return 0;
+	Forbid();
+
+	res = WSsetsockopt(sd->s, level, optname, optval, optlen);
+	if (res)
+	    err = WSAGetLastError() - WSABASEERR;
+
+	Permit();
+
+	if (res)
+	    SetError(err, taskBase);
+    }
+
+    return res;
 
     AROS_LIBFUNC_EXIT
 

@@ -16,6 +16,7 @@
 #include <utility/tagitem.h>
 
 #include <sys/types.h>
+#include <netinet/in.h>
 #include <netdb.h>
 
 #include "host_socket.h"
@@ -25,9 +26,11 @@ struct WinSockInterface
 {
     int		      __stdcall (*WSAGetLastError)(void);
     ULONG	      __stdcall (*WSinet_addr)(const char* cp);
+    char* 	      __stdcall (*WSinet_ntoa)(struct in_addr in);
     struct PROTOENT * __stdcall (*WSgetprotobyname)(const char* name);
     int		      __stdcall (*WSsocket)(int af, int type, int protocol);
     int		      __stdcall (*WSclosesocket)(int s);
+    int		      __stdcall (*WSsetsockopt)(int s, int level, int optname, const char* optval, int optlen);
     int		      __stdcall (*WSAEventSelect)(int s, APTR hEventObject, ULONG lNetworkEvents);
 };
 
@@ -52,9 +55,11 @@ struct bsdsocketBase
 
 #define WSAGetLastError	 SocketBase->WSIFace->WSAGetLastError
 #define WSinet_addr	 SocketBase->WSIFace->WSinet_addr
+#define WSinet_ntoa	 SocketBase->WSIFace->WSinet_ntoa
 #define WSgetprotobyname SocketBase->WSIFace->WSgetprotobyname
 #define WSsocket	 SocketBase->WSIFace->WSsocket
 #define WSclosesocket	 SocketBase->WSIFace->WSclosesocket
+#define WSsetsockopt	 SocketBase->WSIFace->WSsetsockopt
 #define WSAEventSelect	 SocketBase->WSIFace->WSAEventSelect
 
 struct Socket;
@@ -82,8 +87,7 @@ struct TaskBase
     ULONG dTableSize;		/* Size of dtable		  */
     struct Socket **dTable;	/* Socket descriptors table	  */
     struct protoent *pe;	/* protoent buffer		  */
+    char *inaddr;		/* IP address buffer		  */
 };
-
-int IntCloseSocket(int s, struct TaskBase *taskBase);
 
 #endif /* BSDSOCKET_INTERN_H */

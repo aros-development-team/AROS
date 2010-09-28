@@ -46,49 +46,47 @@
 {
     AROS_LIBFUNC_INIT
 
-    int err;
+    struct Socket *sd;
 
     D(bug("[bsdsocket] CloseSocket(%u)\n", s));
 
-    err = IntCloseSocket(s, taskBase);
-    if (err)
+    sd = IntCloseSocket(s, taskBase);
+    if (sd)
     {
-	SetError(err, taskBase);
-	return -1;
-    }
-    else
-    {
-	struct Socket *sd = taskBase->dTable[s];
-
 	Remove((struct Node *)sd);
 	FreePooled(taskBase->pool, sd, sizeof(struct Socket));
 
 	taskBase->dTable[s] = NULL;
 	return 0;
     }
+    else
+	return -1;
 
     AROS_LIBFUNC_EXIT
 } /* CloseSocket */
 
-int IntCloseSocket(int s, struct TaskBase *taskBase)
+struct Socket *IntCloseSocket(int s, struct TaskBase *taskBase)
 {
-    struct bsdsocketBase *SocketBase = taskBase->glob;
-    struct Socket *sd;
-    int err;
+    struct Socket *sd = GetSocket(s, taskBase);
 
-    if (s >= taskBase->dTableSize)
-	return ENOTSOCK;
+    if (sd)
+    {
+        struct bsdsocketBase *SocketBase = taskBase->glob;
+	int err;
 
-    sd = taskBase->dTable[s];
-    if (!sd)
-	return ENOTSOCK;
+	Forbid();
+	err = WSclosesocket(sd->s);
+	if (err)
+	    err = WSAGetLastError() - WSABASEERR;
+	Permit();
+	D(bug("[CloseSocket] Closed socket %u, error %u\n", s, err));
+	
+	if (err)
+	{
+	    SetError(err, taskBase);
+	    sd = NULL;
+	}
+    }
 
-    Forbid();
-    err = WSclosesocket(sd->s);
-    if (err)
-	err = WSAGetLastError() - WSABASEERR;
-    Permit();
-    D(bug("[CloseSocket] Closed socket %u, error %u\n", s, err));
-
-    return err;
+    return sd;
 }
