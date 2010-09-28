@@ -6,6 +6,6 @@ struct SignalTranslation sigs[] = {
     {SIGBUS   ,  2, 13},
     {SIGFPE   , 11, 16},
     {SIGSEGV  ,  2, 14},
-    {SIGSTKFLT,  3, 12},
+    {SIGSTKFLT, 14, 12},
     {-1       , -1, -1}
 };
