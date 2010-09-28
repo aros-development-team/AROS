@@ -1,8 +1,11 @@
+#define DEBUG 1
+
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
 
 #include "bsdsocket_intern.h"
+#include "bsdsocket_util.h"
 
 extern APTR BSDSocket_FuncTable[];
 
@@ -71,7 +74,7 @@ AROS_LH1(struct TaskBase *, BSDSocket_OpenLib,
 	    DeletePool(pool);
 	    return NULL;
 	}
-
+	
 	tb->lib.lib_Node.ln_Name = SocketBase->lib.lib_Node.ln_Name;
 	tb->lib.lib_Node.ln_Type = NT_LIBRARY;
 	tb->lib.lib_Node.ln_Pri  = SocketBase->lib.lib_Node.ln_Pri;
@@ -89,6 +92,8 @@ AROS_LH1(struct TaskBase *, BSDSocket_OpenLib,
 	tb->errnoPtr = &tb->errnoVal;
 	tb->errnoSize = sizeof(tb->errnoVal);
 	tb->sigintr = SIGBREAKF_CTRL_C;
+
+	SetDTableSize(FD_SETSIZE, tb);
 
 	AVL_AddNode(&SocketBase->tasks, &tb->n.node, TaskNodeCompare);
     }
@@ -116,11 +121,16 @@ AROS_LH0(BPTR, BSDSocket_CloseLib,
 
     tb->lib.lib_OpenCnt--;
     SocketBase->lib.lib_OpenCnt--;
-    D(bug("[socket] Task open count %u, global open count %u\n", tb->lib.lib_OpenCnt, SocketBase->lib.lib_OpenCnt));
+    D(bug("[CloseLib] Task open count %u, global open count %u\n", tb->lib.lib_OpenCnt, SocketBase->lib.lib_OpenCnt));
 
     if (!tb->lib.lib_OpenCnt)
     {
 	APTR addr;
+	int i;
+
+	D(bug("[CloseLib] dTableSize is %u\n", tb->dTableSize));
+	for (i = 0; i < tb->dTableSize; i++)
+	    IntCloseSocket(i, tb);
 
 	AVL_RemNodeByAddress(&SocketBase->tasks, &tb->n.node);
 

@@ -1,20 +1,27 @@
 #include <aros/symbolsets.h>
+#include <proto/alib.h>
 #include <proto/hostlib.h>
 
 #include "bsdsocket_intern.h"
 
 static const char *ws_functions[] = {
-    "WSAStartup",
-    "WSACleanup",
     "WSAGetLastError",
     "inet_addr",
     "getprotobyname",
+    "socket",
+    "closesocket",
+    "WSAEventSelect",
+    NULL
+};
+
+static const char *res_functions[] = {
+    "sock_init",
+    "sock_shutdown",
     NULL
 };
 
 static int bsdsocket_Init(struct bsdsocketBase *SocketBase)
 {
-    struct WSAData wsdata;
     APTR HostLibBase = OpenResource("hostlib.resource");
 
     if (!HostLibBase)
@@ -25,6 +32,10 @@ static int bsdsocket_Init(struct bsdsocketBase *SocketBase)
     if (!SocketBase->winsock)
 	return FALSE;
 
+    SocketBase->resolver = HostLib_Open("Libs\\Host\\bsdsocket.dll", NULL);
+    if (!SocketBase->resolver)
+	return FALSE;
+
     SocketBase->WSIFace = (struct WinSockInterface *)HostLib_GetInterface(SocketBase->winsock, ws_functions, NULL);
     if (!SocketBase->WSIFace)
     {
@@ -32,18 +43,18 @@ static int bsdsocket_Init(struct bsdsocketBase *SocketBase)
 	return FALSE;
     }
 
+    SocketBase->ResIFace = (struct HostSocketInterface *)HostLib_GetInterface(SocketBase->resolver, res_functions, NULL);
+    if (!SocketBase->ResIFace)
+	return FALSE;
+
+    NewList((struct List *)&SocketBase->socks);
+
     Forbid();
-    SocketBase->state = WSAStartup(0x0002, &wsdata);
+    SocketBase->ctl = SocketBase->ResIFace->sock_init();
     Permit();
 
-    D(bug("[socket] WSAStartup reply: %u\n", SocketBase->state));
-    D(bug("[socket] Using WinSock v%u.%u (%s)\n", wsdata.wVersion & 0x00FF, wsdata.wVersion >> 8, wsdata.szDescription));
-    D(bug("[socket] Status: %s\n", wsdata.szSystemStatus));
-    if (SocketBase->state)
-    {
-	/* TODO: report failure using Intuition requester */
+    if (!SocketBase->ctl)
 	return FALSE;
-    }
 
     return TRUE;
 }
@@ -56,21 +67,23 @@ static int bsdsocket_Cleanup(struct bsdsocketBase *SocketBase)
     if (!HostLibBase)
 	return TRUE;
 
-    if (SocketBase->WSIFace)
+    if (SocketBase->ResIFace)
     {
-	if (!SocketBase->state)
+	if (SocketBase->ctl)
 	{
 	    int res;
 
 	    Forbid();
-	    res = WSACleanup();
+	    res = SocketBase->ResIFace->sock_shutdown(SocketBase->ctl);
 	    Permit();
-
+	    
 	    if (res)
 		return FALSE;
 	}
-	HostLib_DropInterface((void **)SocketBase->WSIFace);
     }
+	
+    if (SocketBase->WSIFace)
+	HostLib_DropInterface((void **)SocketBase->WSIFace);
 
     if (SocketBase->winsock)
 	HostLib_Close(SocketBase->winsock, NULL);
