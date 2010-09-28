@@ -7,7 +7,7 @@
 #include "winsock2.h"
 #include "netdb_util.h"
 
-static char *CopyString(char *src, APTR pool)
+char *CopyString(char *src, APTR pool)
 {
     char *dst;
     ULONG l = strlen(src) + 1;

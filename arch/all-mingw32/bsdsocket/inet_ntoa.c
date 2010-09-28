@@ -1,5 +1,5 @@
 /*
-    Copyright © 2000-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2000-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -7,6 +7,7 @@
 */
 
 #include "bsdsocket_intern.h"
+#include "netdb_util.h"
 
 /*****************************************************************************
 
@@ -18,7 +19,7 @@
         AROS_LHA(unsigned long, in, D0),
 
 /*  LOCATION */
-        struct Library *, SocketBase, 29, BSDSocket)
+        struct TaskBase *, taskBase, 29, BSDSocket)
 
 /*  FUNCTION
 
@@ -42,10 +43,32 @@
 {
     AROS_LIBFUNC_INIT
 
-    aros_print_not_implemented ("Inet_NtoA");
-#warning TODO: Write BSDSocket/Inet_NtoA
+    struct bsdsocketBase *SocketBase = taskBase->glob;
+    char *res;
+    struct in_addr a;
 
-    return NULL;
+    D(bug("[bsdsocket] Inet_NToA(0x%08lX)\n", in));
+    a.s_addr = in;
+
+    Forbid();    
+
+    res = WSinet_ntoa(a);
+    if (res)
+	res = CopyString(res, taskBase->pool);
+
+    Permit();
+
+    if (res)
+    {
+	if (taskBase->inaddr)
+	    FreeVecPooled(taskBase->inaddr, taskBase->pool);
+	taskBase->inaddr = res;
+    }
+
+    Permit();
+
+    D(bug("[inet_ntoa] Result: %s\n", res));
+    return res;
 
     AROS_LIBFUNC_EXIT
 

@@ -7,9 +7,11 @@
 static const char *ws_functions[] = {
     "WSAGetLastError",
     "inet_addr",
+    "inet_ntoa",
     "getprotobyname",
     "socket",
     "closesocket",
+    "setsockopt",
     "WSAEventSelect",
     NULL
 };

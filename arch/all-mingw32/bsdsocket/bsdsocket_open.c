@@ -1,5 +1,3 @@
-#define DEBUG 1
-
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 #include <proto/exec.h>

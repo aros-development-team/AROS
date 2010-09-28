@@ -74,3 +74,20 @@ int GetFreeFD(struct TaskBase *taskBase)
     SetError(EMFILE, taskBase);
     return -1;
 }
+
+struct Socket *GetSocket(int s, struct TaskBase *taskBase)
+{
+    struct Socket *sd;
+
+    if (s >= taskBase->dTableSize)
+    {
+	SetError(ENOTSOCK, taskBase);
+	return NULL;
+    }
+
+    sd = taskBase->dTable[s];
+    if (!sd)
+	SetError(ENOTSOCK, taskBase);
+
+    return sd;
+}
