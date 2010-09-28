@@ -1052,7 +1052,10 @@ LONG OpRemoveNotify(struct NotifyRequest *nr) {
 
     D(bug("[fat] trying to remove notification for '%s'\n", nr->nr_FullName));
     /* Notification removal can be requested after disk remove */
-    if (glob->sb) {
+    if (glob->sb) { /* FIXME: This is a workaround to solve crashing */
+    /*The notify requests are meant to be preserved when a volume is ejected, 
+    in a similar way to locks, so that they can be restored if the volume is 
+    re-inserted. */
         ForeachNode(&glob->sb->notifies, nn) {
             if (nn->nr == nr) {
                 D(bug("[fat] found notify request in list, removing it\n"));
