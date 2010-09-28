@@ -64,7 +64,7 @@ typedef struct _CONTEXT
 #define GET_SP(ctx) (void *)ctx->regs.Esp
 #define SET_PC(ctx, addr) ctx->regs.Eip = (unsigned long)addr
 
-#define EXCEPTIONS_COUNT 19
+#define EXCEPTIONS_COUNT 18
 
 #define PRINT_CPUCONTEXT(ctx) \
 	bug ("    ContextFlags: 0x%08lX\n" \
