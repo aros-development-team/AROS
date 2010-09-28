@@ -58,11 +58,22 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 
 	/* Calc the size all used planes */
 	plane_size = RASSIZE(src->Width,src->Height);
+    #if 0
 	for (i=0;i<8;i++)
 	{
 	    if (plane_pick & 1) data_size += plane_size;
 	    plane_pick >>= 1;
 	}
+    #else
+    	/* It seems planepick must be ignored. See drawer icon in MCC_TheBar-26.7.lha
+	   which seems to contain a SelectRender image with planepick == 0, but the image
+	   data is still there. */
+	   
+    	(void)plane_pick;
+	(void)i;
+	
+    	data_size = plane_size * src->Depth;
+    #endif
 
 	if ((dest->ImageData = AllocPooled(pool,data_size)))
 	{
