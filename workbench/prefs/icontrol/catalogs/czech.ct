@@ -1,72 +1,11 @@
-## version $VER: IControl.catalog 1.3 (13.4.2010)
+## version $VER: IControl.catalog 2.0 (29.9.2010)
 ## language czech
 ## codeset 5
 ;
-; TODO: update me and set version to 2
-;
-MSG_CANT_OPEN_LIB
-Nelze otevøít knihovnu %s V%ld!\n
-; Can't open %s V%ld!\n
-;
-MSG_CANT_CREATE_APP
-Nelze vytvoøit objekt application!
-; Can't create application object!
-;
-MSG_CANT_CREATE_CUSTOM_CLASS
-Nelze vytvoøit po¾adovanou tøídu objektu.
-; Can't create custom preferenceswindow class
 ;
 MSG_WINTITLE
 Vzhled a chování rozhraní (editor IControl)
 ; IControl Preferences
-;
-MSG_MEN_PROJECT
-Projekt
-; Project
-;
-MSG_MEN_PROJECT_OPEN
-O\0Otevøít...
-; O\0Open...
-;
-MSG_MEN_PROJECT_SAVEAS
-A\0Ulo¾it jako...
-; A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Ukonèit
-; Q\0Quit
-;
-MSG_MEN_EDIT
-Úpravy
-; Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Obnovit výchozí
-; D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Naposledy ulo¾ené
-; L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Obnovit pøedchozí
-; R\0Restore
-;
-MSG_MEN_SETTINGS
-Nastavení
-; Settings
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Vytváøet ikony?
-; I\0Create Icons?
-;
-MSG_ASL_OPEN_TITLE
-Naètení nastavení
-; Load IControl Preferences
-;
-MSG_ASL_SAVE_TITLE
-Ulo¾ení nastavení
-; Save IControl Preferences
 ;
 MSG_OK
 OK
@@ -114,7 +53,7 @@ Obrazovky
 ;
 MSG_FRONTMOST_DEFAULT
 Nastavit aktivní obrazovku jako výchozí
-; Frontmost set as DefaultPubScreen:
+; Frontmost set as default public screen:
 ;
 MSG_OFFSCREEN_DESC
 Umo¾ní vysunování oken mimo viditelnou\nplochu obrazovky
@@ -124,7 +63,27 @@ MSG_FRONTMOST_DEFAULT_DESC
 Pøiøadí právì aktivní obrazovce funkci\nvýchozí veøejné obrazovky
 ; Make the frontmost public screen\nthe default public screen
 ;
-MSG_BACKWARDS_DRAG
-Zakázat pøesun obrazovky smìrem nahoru doleva
-; Disable drag in top-left direction
+MSG_BOUND_LEFT_DRAG
+Zakázat pøesouvání obrazovky doleva
+; Bound drag in left direction
+;
+MSG_BOUND_RIGHT_DRAG
+Zakázat pøesouvání obrazovky doprava
+; Bound drag in right direction
+;
+MSG_BOUND_TOP_DRAG
+Zakázat pøesouvání obrazovky nahoru
+; Bound drag in top direction
+;
+MSG_BOUND_BOTTOM_DRAG
+Zakázat pøesouvání obrazovky dolù
+; Bound drag in bottom direction
+;
+MSG_META_DRAG
+Klávesová zkratka
+; Drag keys
+;
+MSG_MENUS_STICKY
+Nezavírat automaticky
+; Sticky
 ;
