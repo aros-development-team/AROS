@@ -166,7 +166,9 @@ DWORD WINAPI TaskSwitcher()
 	     */
 	    Ints_Enabled = IRQVector(PendingInts, &MainCtx);
 	    /* All IRQs have been processed */
-	    memset(PendingInts, 0, sizeof(PendingInts));
+/*	    memset(PendingInts, 0, sizeof(PendingInts)); */
+	    for (obj = 0; obj < Ints_Num; obj++)
+		PendingInts[obj] = 0;
 
 	    /* If AROS is not going to sleep, set new CPU context */
     	    if (Sleep_Mode == SLEEP_MODE_OFF)
