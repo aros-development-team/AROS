@@ -40,15 +40,11 @@ void TimerIRQ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     APTR KernelBase = OpenResource("kernel.resource");
-    ULONG TimerPeriod;
+    ULONG TimerPeriod = SysBase->ex_EClockFrequency;
 
     LIBBASE->tb_TimerIRQNum = -1;
-    if (KernelBase)
-    {
-	TimerPeriod = KrnGetSystemAttr(KATTR_TimerPeriod);
-	if (TimerPeriod)
-	    LIBBASE->tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
-    }
+    if (KernelBase && TimerPeriod)
+	LIBBASE->tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
 
     if (LIBBASE->tb_TimerIRQNum == -1)
 	TimerPeriod = SysBase->VBlankFrequency;
