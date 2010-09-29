@@ -177,6 +177,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     SysBase->TaskSigAlloc   = 0xFFFF;
     SysBase->TaskTrapAlloc  = 0;
 
+    /* Default frequencies */
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
 
@@ -185,13 +186,18 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     {
 	char *s;
 
-	/* Set VBlank frequency if specified */
+	/* Set VBlank and EClock frequencies if specified */
 	s = strstr(args, "vblank=");
 	if (s)
 	    SysBase->VBlankFrequency = atoi(&s[7]);
 
+	s = strstr(args, "eclock=");
+	if (s)
+	    SysBase->ex_EClockFrequency = atoi(&s[7]);
+
 	/* Enable mungwall before the first AllocMem() */
-	if (strstr(args, "mungwall"))
+	s = strstr(args, "mungwall");
+	if (s)
 	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
     }
 

@@ -18,7 +18,6 @@ int main(void)
     printf("Architecture   : %s\n", (char *)KrnGetSystemAttr(KATTR_Architecture));
     printf("VBlank enabled : %ld\n", KrnGetSystemAttr(KATTR_VBlankEnable));
     printf("Timer IRQ      : %ld\n", KrnGetSystemAttr(KATTR_TimerIRQ));
-    printf("Timer frequency: %ld\n", KrnGetSystemAttr(KATTR_TimerPeriod));
 #else
     printf("The test can't be built for this kernel.resource implementation\n");
 #endif

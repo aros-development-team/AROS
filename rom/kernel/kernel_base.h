@@ -16,7 +16,6 @@ struct KernelBase
     struct MinList         kb_Modules;
     dbg_seg_t		  *kb_KernelModules;
     struct SignalSemaphore kb_ModSem;
-    unsigned int	   kb_TimerFrequency;
     unsigned char	   kb_VBlankEnable;
     unsigned int	   kb_VBlankTicks;
     unsigned int	   kb_TimerCount;

@@ -34,9 +34,8 @@ AROS_LH1(intptr_t, KrnGetSystemAttr,
 	  KATTR_TimerIRQ     [.G] (int)		  - Number of high precision periodic timer IRQ to be used by timer.device.
 						    Needed if kernel.resource provides a timer which runs at frequency
 						    which is multiple of VBlank. Generic timer.device may use this IRQ
-						    for improved accuracy.
-	  KATTR_TimerPeriod  [.G] (unsigned int)  - Actual period of high precision timer in Hz. This value is always a
-						    multiple of SysBase->VBlankFrequency.
+						    for improved accuracy. Frequency of this timer is specified in
+						    SysBase->ex_EClockFrequency.
 
     INPUTS
 	id - ID of the attribute to get
@@ -73,9 +72,6 @@ AROS_LH1(intptr_t, KrnGetSystemAttr,
 
     case KATTR_TimerIRQ:
 	return IRQ_TIMER;
-
-    case KATTR_TimerPeriod:
-	return KernelBase->kb_TimerFrequency;
 
     default:
 	return -1;

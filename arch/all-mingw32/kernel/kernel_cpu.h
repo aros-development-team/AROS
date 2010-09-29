@@ -37,7 +37,7 @@ struct AROSCPUContext
 #define PRINT_CPU_CONTEXT(ctx) PRINT_CPUCONTEXT(&ctx->regs)
 
 /* Our virtual CPU interface. It's needed here for krnSysCall() definition */
-volatile struct KernelInterface
+struct KernelInterface
 {
     int (*core_init)(unsigned int TimerPeriod);
     void (*core_raise)(ULONG num, const IPTR n);
@@ -46,10 +46,10 @@ volatile struct KernelInterface
     int (*core_getc)(void);
     int (**TrapVector)(unsigned int num, IPTR *args, CONTEXT *regs);
     int (**IRQVector)(unsigned char *irqs, CONTEXT *regs);
-    int *IntState;
-    int *SuperState;
-    unsigned char *SleepState;
-    ULONG **LastErrorPtr;
+    volatile int *IntState;
+    volatile int *SuperState;
+    volatile unsigned char *SleepState;
+    volatile ULONG **LastErrorPtr;
 };
 
 extern struct KernelInterface KernelIFace;

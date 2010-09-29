@@ -3,6 +3,7 @@
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <aros/symbolsets.h>
+#include <exec/execbase.h>
 #include <exec/resident.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
@@ -184,11 +185,11 @@ int __startup startup(struct TagItem *msg)
 
 int Platform_Init(struct KernelBase *KernelBase)
 {
-    D(mykprintf("[Kernel] initializing host-side kernel module, timer frequency is %u\n", KernelBase->kb_TimerFrequency));
+    D(mykprintf("[Kernel] initializing host-side kernel module, timer frequency is %u\n", SysBase->ex_EClockFrequency));
     *KernelIFace.TrapVector = core_TrapHandler;
     *KernelIFace.IRQVector  = core_IRQHandler;
 
-    return KernelIFace.core_init(KernelBase->kb_TimerFrequency);
+    return KernelIFace.core_init(SysBase->ex_EClockFrequency);
 }
 
 ADD2INITLIB(Platform_Init, 10);
