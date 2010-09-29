@@ -3,3 +3,16 @@ include $(TOP)/config/make.cfg
 #MM- workbench-hosted:  $(SDL_HIDD_TARGET)     \
 #MM			contrib-cdvdfs-packet  \
 #MM			contrib-sfs-packet
+
+#MM- kernel-link-hosted: kernel-bootloader-kobj kernel-dosboot-kobj kernel-link-hosted-quick
+
+#MM
+kernel-link-hosted-quick: $(BINDIR)/boot/aros-strap-hosted
+
+KOBJS_HOSTED := $(KOBJSDIR)/bootloader_resource.o $(KOBJSDIR)/dosboot_resource.o
+
+$(BINDIR)/boot/aros-strap-hosted: $(KOBJS_HOSTED)
+	@$(ECHO) Linking $@...
+	@$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel-hosted.map \
+	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
+	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm

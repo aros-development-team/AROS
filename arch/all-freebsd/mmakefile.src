@@ -12,9 +12,8 @@ include $(TOP)/config/make.cfg
 %rule_archalias mainmmake=kernel-bootstrap-hosted arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-bootloader arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-exec arch=freebsd alias=unix
-%rule_archalias mainmmake=kernel-dos arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-battclock arch=freebsd alias=unix
-%rule_archalias mainmmake=kernel-dosboot arch=freebsd alias=unix
+%rule_archalias mainmmake=kernel-hostlib arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-dbus arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-kernel arch=freebsd alias=unix
 

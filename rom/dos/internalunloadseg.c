@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -61,15 +61,13 @@
 	    KrnUnregisterModule(seglist);
 #endif
 
-	while (seglist) {
-	    char *seg = (ULONG)seglist;
-
+	while (seglist)
+	{
 	    next = *(BPTR *)BADDR(seglist);
-	    seg += (*(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG))) / 2;
 
 	    AROS_CALL2NR(void, freefunc,
-			 AROS_LCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
-			 AROS_LCA(ULONG, *(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)), D0),
+			 AROS_LCA(APTR ,  (BPTR *)((IPTR)BADDR(seglist) - sizeof(ULONG)), A1),
+			 AROS_LCA(ULONG, *(LONG *)((IPTR)BADDR(seglist) - sizeof(ULONG)), D0),
 			 struct Library *, (struct Library *)SysBase);
 
 	    seglist = next;

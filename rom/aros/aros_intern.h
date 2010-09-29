@@ -23,8 +23,7 @@
 LIBBASETYPE
 {
     struct Library       aros_LibNode;
-
-    /* The following information is private! */
+    APTR		 aros_KernelBase;
 };
 
 #endif /* _AROS_INTERN_H */

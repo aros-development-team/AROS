@@ -16,4 +16,4 @@ USER_CFLAGS := -DVARIANT="\"$(AROS_TARGET_VARIANT)\"" -DAROS_ARCHITECTURE="\"$(A
 
 %build_module mmake=kernel-aros \
   modname=aros modtype=library \
-  files="arosinquirea"
+  files="aros_init arosinquirea"

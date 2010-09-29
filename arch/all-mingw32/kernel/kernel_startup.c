@@ -33,7 +33,7 @@ extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *, struct HostI
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
 
-static char *kernel_functions[] = {
+static const char *kernel_functions[] = {
     "core_init",
     "core_raise",
     "core_protect",
