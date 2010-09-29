@@ -1,4 +1,4 @@
-## version $VER: Input.catalog 1.4 (7.12.2007)
+## version $VER: Input.catalog 1.5 (29.9.2010)
 ## language czech
 ## codeset 5
 ;
@@ -106,6 +106,22 @@ Druh
 MSG_TIME_FORMAT
 %d.%02d sek.
 ; %d.%02d s
+;
+MSG_GAD_MOUSE_BUTTON_SETTINGS
+Tlaèítka my¹i
+; Mouse buttons
+;
+MSG_GAD_LEFT_HANDED_MOUSE
+Pro levoruké
+; Left-handed mouse
+;
+MSG_GAD_MOUSE_MAPPING_MENU
+Menu
+; Menu
+;
+MSG_GAD_MOUSE_MAPPING_THIRD
+Tøetí
+; Third
 ;
 MSG_GAD_MOUSE_DOUBLECLICK_DELAY
 Èas mezi dvojím kliknutím

@@ -1,8 +1,7 @@
-## version $VER: systemprefswindow.catalog 1.0 (21.11.2007)
+## version $VER: systemprefswindow.catalog 2.0 (29.9.2010)
 ## language czech
-## codeset 0
+## codeset 5
 ;
-; TODO: update me and set version to 2
 ;
 MSG_MENU_PREFS
 Projekt
@@ -36,3 +35,18 @@ MSG_MENU_PREFS_CANCEL
 C\0Zru¹it
 ; C\0Cancel
 ;
+MSG_MENU_PREFS_EXPORT_WITH_ICON
+Exportovat s ikonou...
+; Export with Icon...
+;
+MSG_MENU_RESET_TO_DEFAULTS
+Obnovit výchozí
+; Reset to Defaults
+;
+MSG_FILEREQ_EXPORT_TITLE
+Exportovat nastavení
+; Export
+;
+MSG_FILEREQ_IMPORT_TITLE
+Importovat nastavení
+; Import
