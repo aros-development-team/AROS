@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -9,6 +9,7 @@
 #include <aros/config.h>
 #include <exec/types.h>
 #include <utility/tagitem.h>
+#include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <proto/utility.h>
 #include "aros_intern.h"
@@ -114,6 +115,7 @@ IPTR kickbase(void);
 
     struct TagItem *tag;
     ULONG ret = 0;
+    IPTR data = 0;
 
 #   define SetData(tag,type,value)  \
 	D(bug("   Data was: %d\n", *((type *)(tag->ti_Data)))); \
@@ -190,8 +192,18 @@ IPTR kickbase(void);
             break;
         
         case AI_ArosArchitecture:
-            SetData (tag, IPTR, (IPTR) AROS_ARCHITECTURE);
-            break;
+#ifdef KrnGetSystemAttr
+	    if (ArosBase->aros_KernelBase)
+	    {
+		APTR KernelBase = ArosBase->aros_KernelBase;
+
+		data = KrnGetSystemAttr(KATTR_Architecture);
+	    }
+#else
+	    data = (IPTR)AROS_ARCHITECTURE;
+#endif
+	    SetData(tag, IPTR, data);
+	    break;
         
         default:
             SetData (tag, IPTR, 0);

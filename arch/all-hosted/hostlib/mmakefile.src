@@ -1,0 +1,7 @@
+include $(TOP)/config/make.cfg
+
+FUNCS := open close getpointer freeerrorstr getinterface dropinterface
+
+%build_module mmake=kernel-hostlib \
+    modname=hostlib modtype=resource \
+    files="hostlib_init $(FUNCS)"

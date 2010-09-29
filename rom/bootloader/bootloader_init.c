@@ -49,7 +49,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 
     /* Get kernel arguments */
     Kernel_Args = (STRPTR)GetTagData(KRN_CmdLine, 0, bootinfo);
-    if (Kernel_Args) {
+    if (Kernel_Args)
+    {
 	STRPTR cmd, buff;
 	ULONG temp;
 	struct Node *node;
@@ -84,14 +85,16 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     /* Get VESA mode information */
-    vmi = (struct vbe_mode *)GetTagData(KRN_VBEModeInfo, 0, msg);
-    vci = (struct vbe_controller *)GetTagData(KRN_VBEControllerInfo, 0, msg);
+    vmi = (struct vbe_mode *)GetTagData(KRN_VBEModeInfo, 0, bootinfo);
+    vci = (struct vbe_controller *)GetTagData(KRN_VBEControllerInfo, 0, bootinfo);
     D(bug("[BootLdr] VESA mode info 0x%p, controller info 0x%p\n", vmi, vci));
 
-    if (vmi && vci) {
+    if (vmi && vci)
+    {
 	BootLoaderBase->Vesa = AllocMem(sizeof(struct VesaInfo), MEMF_ANY);
 
-	if (BootLoaderBase->Vesa) {
+	if (BootLoaderBase->Vesa)
+	{
 	    ULONG masks [] = {0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff};
 
 	    BootLoaderBase->Vesa->FrameBuffer = (APTR)vmi->phys_base;
@@ -109,8 +112,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	    BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->green_field_position - vmi->green_mask_size;
 	    BootLoaderBase->Vesa->Shifts[VI_Alpha] = 32 - vmi->reserved_field_position - vmi->reserved_mask_size;
 
-	    BootLoaderBase->Vesa->ModeNumber   = GetTagData(KRN_VBEMode, 3, msg);
-	    BootLoaderBase->Vesa->PaletteWidth = GetTagData(KRN_VBEPaletteWidth, 6, msg);
+	    BootLoaderBase->Vesa->ModeNumber   = GetTagData(KRN_VBEMode, 3, bootinfo);
+	    BootLoaderBase->Vesa->PaletteWidth = GetTagData(KRN_VBEPaletteWidth, 6, bootinfo);
 
 	    D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08lx\n", vci->capabilities));
 	    D(bug("[BootLdr] Init: Vesa mode %x type (%dx%dx%d)\n", BootLoaderBase->Vesa->ModeNumber,

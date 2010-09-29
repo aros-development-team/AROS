@@ -9,7 +9,7 @@
  * and system rebooting should also be handled by kernel.resource.
  */
 
-static char *kernel_funcs[] = {
+static const char *kernel_funcs[] = {
     "ExitProcess",
     "FlushInstructionCache",
     "GetCurrentProcess",

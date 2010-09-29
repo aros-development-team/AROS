@@ -53,7 +53,7 @@ void *Host_HostLib_GetPointer(void *handle, const char *symbol, char **error)
     return ptr;
 }
 
-unsigned long Host_HostLib_GetInterface(void *handle, char **names, void **funcs)
+unsigned long Host_HostLib_GetInterface(void *handle, const char **names, void **funcs)
 {
     unsigned long unresolved = 0;
 
