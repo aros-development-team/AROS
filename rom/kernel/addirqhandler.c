@@ -102,3 +102,16 @@ AROS_LH4(void *, KrnAddIRQHandler,
 
     AROS_LIBFUNC_EXIT
 }
+
+/* Run IRQ handlers */
+void krnRunIRQHandlers(uint8_t irq)
+{
+    struct IntrNode *in, *in2;
+
+    ForeachNodeSafe(&KernelBase->kb_Interrupts[irq], in, in2)
+    {
+	irqhandler_t h = in->in_Handler;
+
+	h(in->in_HandlerData, in->in_HandlerData2);
+    }
+}
