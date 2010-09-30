@@ -166,7 +166,7 @@ static int x11_hostlib_init(LIBBASETYPEPTR LIBBASE) {
     D(bug("[x11] hostlib init\n"));
 
     if ((HostLibBase = OpenResource("hostlib.resource")) == NULL) {
-        kprintf("[x11] couldn't open hostlib.resource");
+        kprintf("[x11] couldn't open hostlib.resource\n");
         return FALSE;
     }
     if ((xf86vm_handle = x11_hostlib_load_so(XF86VM_SOFILE, xf86vm_func_names, XF86VM_NUM_FUNCS, (void **) &xf86vm_func)) == NULL)
