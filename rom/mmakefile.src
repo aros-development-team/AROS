@@ -25,6 +25,30 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
 #MM     kernel-processor-kobj
 
+#MM- kernel-modules : \
+#MM     kernel-aros \
+#MM     kernel-dos \
+#MM     kernel-boot \
+#MM	kernel-fs-con \
+#MM	kernel-fs-nil \
+#MM     kernel-fs-packet \
+#MM     kernel-graphics \
+#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-utility \
+#MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM     kernel-devs-console \
+#MM	kernel-devs-gameport \
+#MM	kernel-devs-input \
+#MM	kernel-devs-keyboard \
+#MM     kernel-hidd \
+#MM     kernel-oop \
+#MM     kernel-layers \
+#MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
+#MM	contrib-amberram
+
 #MM- includes-generate : \
 #MM     kernel-exec-includes \
 #MM     kernel-aros-includes \
@@ -45,6 +69,13 @@ include $(TOP)/config/make.cfg
 #MM     kernel-misc-includes \
 #MM     kernel-usb-includes-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
+BASE_DEVICES  := console input gameport keyboard
+BASE_HANDLERS := amberram con nil packet
+BASE_HIDD     := hiddclass graphics keyboard mouse
+BASE_LIBS     := aros boot dos graphics intuition keymap layers oop utility
+
+# *** ELF kickstart package ***
+
 # Workaround: kernel-kernel-includes is built before kernel-exec-kobj, otherwise building exec
 # fails (it needs kernel.resource includes). We still do it here because older ports use
 # own kernel.resource targets (and even different includes)
@@ -53,22 +84,35 @@ include $(TOP)/config/make.cfg
 #MM
 kernel-link-base-quick: $(BINDIR)/boot/aros-base
 
-BASE_DEVICES	:= $(KOBJSDIR)/gameport_device.o     $(KOBJSDIR)/keyboard_device.o	\
-		   $(KOBJSDIR)/input_device.o	     $(KOBJSDIR)/console_device.o
-BASE_HANDLERS	:= $(KOBJSDIR)/packet_handler.o	     $(KOBJSDIR)/con_handler.o		\
-		   $(KOBJSDIR)/amberram_handler.o    $(KOBJSDIR)/nil_handler.o
-BASE_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o	     $(KOBJSDIR)/graphics_hidd.o	\
-		   $(KOBJSDIR)/keyboard_hidd.o	     $(KOBJSDIR)/mouse_hidd.o
-BASE_LIBS	:= $(KOBJSDIR)/boot_library.o	     $(KOBJSDIR)/dos_library.o		\
-		   $(KOBJSDIR)/utility_library.o     $(KOBJSDIR)/intuition_library.o	\
-		   $(KOBJSDIR)/keymap_library.o	     $(KOBJSDIR)/expansion_library.o	\
-		   $(KOBJSDIR)/oop_library.o	     $(KOBJSDIR)/graphics_library.o	\
-		   $(KOBJSDIR)/layers_library.o	     $(KOBJSDIR)/aros_library.o
+KOBJ_DEVICES  := $(addprefix $(KOBJSDIR)/, $(addsuffix _device.o, $(BASE_DEVICES)))
+KOBJ_HANDLERS := $(addprefix $(KOBJSDIR)/, $(addsuffix _handler.o, $(BASE_HANDLERS)))
+KOBJ_HIDD     := $(addprefix $(KOBJSDIR)/, $(addsuffix _hidd.o, $(BASE_HIDD)))
+KOBJ_LIBS     := $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, $(BASE_LIBS)))
 
-KOBJS_BASE := $(BASE_HANDLERS) $(BASE_LIBS) $(BASE_DEVICES) $(BASE_HIDD)
+KOBJS_BASE := $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD)
 
 $(BINDIR)/boot/aros-base: $(KOBJS_BASE)
 	@$(ECHO) Linking $@...
 	@$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel-base.map \
 	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
+
+# *** PKG kickstart package ***
+
+#MM- kernel-package-base: kernel-modules kernel-package-base-quick
+
+#MM
+kernel-package-base-quick: $(BINDIR)/boot/aros-base.pkg
+
+PKG_DEVICES  := $(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(BASE_DEVICES)))
+PKG_HANDLERS := $(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(BASE_HANDLERS)))
+PKG_HIDD     := $(addprefix $(BINDIR)/Devs/Drivers, $(addsuffix .hidd, $(BASE_HIDD)))
+PKG_LIBS     := $(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(BASE_LIBS)))
+
+PKG_BASE := $(PKG_HANDLERS) $(PKG_LIBS) $(PKG_DEVICES) $(PKG_HIDD)
+
+$(BINDIR)/boot/aros-base.pkg: $(PKG_BASE)
+	$(MKDIR) $(GENDIR)/pkg
+	$(RM) $(GENDIR)/pkg/*
+	$(MV) $(PKG_BASE) $(GENDIR)/pkg/
+	$(SRCDIR)/tools/package/pkg c $(GENDIR)/pkg $(BINDIR)/boot/aros-base.pkg
