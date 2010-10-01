@@ -1,4 +1,4 @@
-#include <aros/libcall.h>
+#include <proto/exec.h>
 
 #include <stdarg.h>
 
@@ -13,7 +13,13 @@ AROS_LH3(void *, HostLib_GetPointer,
 {
     AROS_LIBFUNC_INIT
 
-    return HostLibBase->HostIFace->HostLib_GetPointer(handle, symbol, error);
+    void *ret;
+
+    Forbid();
+    ret = HostLibBase->HostIFace->HostLib_GetPointer(handle, symbol, error);
+    Permit();
+
+    return ret;
 
     AROS_LIBFUNC_EXIT
 }
