@@ -1,8 +1,8 @@
 #include <stdarg.h>
+#include <stdio.h>
 
-#include "hostinterface.h"
+#include "../kernel/hostinterface.h"
 
-#include "debug.h"
 #include "hostlib.h"
 #include "shutdown.h"
 
@@ -11,12 +11,12 @@
  * Without them we would not be able to estabilish any interaction with it.
  */
 static struct HostInterface _HostIFace = {
+    HOSTINTERFACE_VERSION,
     Host_HostLib_Open,
     Host_HostLib_Close,
     Host_HostLib_GetPointer,
     Host_HostLib_FreeErrorStr,
-    Host_HostLib_GetInterface,
-    Host_VKPrintF,
+    vprintf,
     Host_Shutdown
 };
 

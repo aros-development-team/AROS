@@ -74,7 +74,7 @@ AROS_LH3(APTR *, HostLib_GetInterface,
 	    for (i = 0; i < cnt; i++)
 	    {
 		iface[i] = HostLib_GetPointer(handle, symtable[i], NULL);
-		if (iface[i])
+		if (!iface[i])
 		    bad++;
 	    }
 

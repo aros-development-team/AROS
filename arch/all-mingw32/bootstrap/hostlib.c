@@ -36,7 +36,7 @@ int Host_HostLib_Close(void *handle, char **error)
 {
     int err;
 
-    D(printf("[hostlib] Close: handle=0x%08x\n", handle));
+    D(printf("[hostlib] Close: handle=0x%p\n", handle));
     err = !FreeLibrary(handle);
     GetErrorStr(error, err);
 
@@ -47,21 +47,8 @@ void *Host_HostLib_GetPointer(void *handle, const char *symbol, char **error)
 {
     void *ptr;
 
-    D(printf("[hostlib] GetPointer: handle=0x%08x, symbol=%s\n", handle, symbol));
+    D(printf("[hostlib] GetPointer: handle=0x%p, symbol=%s\n", handle, symbol));
     ptr = GetProcAddress(handle, symbol);
     GetErrorStr(error, !ptr);
     return ptr;
-}
-
-unsigned long Host_HostLib_GetInterface(void *handle, const char **names, void **funcs)
-{
-    unsigned long unresolved = 0;
-
-    for (; *names; names++) {
-        *funcs = GetProcAddress(handle, *names);
-        D(printf("[hostlib] GetInterface: handle=0x%08x, symbol=%s, value=0x%08x\n", handle, *names, *funcs));
-        if (*funcs++ == NULL)
-            unresolved++;
-    }
-    return unresolved;
 }
