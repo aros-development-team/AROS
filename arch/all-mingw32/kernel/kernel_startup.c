@@ -54,7 +54,7 @@ int __startup startup(struct TagItem *msg)
     struct ExecBase *SysBase;
     void *hostlib;
     char *errstr;
-    unsigned long badsyms;
+    unsigned int i;
     struct MemHeader *mh;
     void *memory;
     IPTR memlen;
@@ -104,6 +104,13 @@ int __startup startup(struct TagItem *msg)
 	return -1;
     }
 
+    if (HostIFace->Version < HOSTINTERFACE_VERSION)
+    {
+	mykprintf("[Kernel] Obsolete bootstrap interface (found v%u, need v%u)\n",
+		  HostIFace->Version, HOSTINTERFACE_VERSION);
+	return -1;
+   }
+    
     hostlib = HostIFace->HostLib_Open("Libs\\Host\\kernel.dll", &errstr);
     if (!hostlib) {
 	mykprintf("[Kernel] Failed to load host-side module: %s\n", errstr);
@@ -111,11 +118,18 @@ int __startup startup(struct TagItem *msg)
 	return -1;
     }
 
-    badsyms = HostIFace->HostLib_GetInterface(hostlib, kernel_functions, &KernelIFace);
-    if (badsyms) {
-	mykprintf("[Kernel] Failed to find %u symbols in host-side module\n", badsyms);
-	HostIFace->HostLib_Close(hostlib, NULL);
-	return -1;
+    for (i = 0; kernel_functions[i]; i++)
+    {
+	void *func = HostIFace->HostLib_GetPointer(hostlib, kernel_functions[i], &errstr);
+
+        if (!func)
+	{
+	    mykprintf("[Kernel] Failed to find symbol %s in host-side module: %s\n", kernel_functions[i], errstr);
+	    HostIFace->HostLib_FreeErrorStr(errstr);
+
+	    return -1;
+	}
+	((void **)&KernelIFace)[i] = func;
     }
 
     /* Turn kernel space read-only */

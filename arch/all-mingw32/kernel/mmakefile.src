@@ -22,7 +22,7 @@ NATIVE_AFILES := leaveinterrupt_$(CPU)
 
 NATIVE_LDFLAGS := -shared -Wl,--out-implib,$(NATIVE_LIBDIR)/libkernel.a
 
-USER_INCLUDES += -I$(GENINCDIR)
+USER_INCLUDES :=
 
 #MM
 kernel-kernel-mingw32-native: $(NATIVE_LIBDIR)
