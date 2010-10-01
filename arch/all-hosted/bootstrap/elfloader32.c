@@ -501,7 +501,8 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	}
 
 	/* Copy symbols to the debug info and free symbol tables */
-	for (i = 0; i < n->eh.shnum; i++) {
+	for (i = 0; i < n->eh.shnum; i++)
+	{
 	    struct sheader *sh = n->sh;
 
 	    if (sh[i].type == SHT_SYMTAB)
@@ -515,22 +516,28 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 
 		for (j=0; j < syms; j++)
 		{
-		    unsigned long idx;
+		    unsigned long idx = st[j].shindex;
 
-		    if (st[j].shindex == SHN_XINDEX)
+		    if (idx == SHN_XINDEX)
 			continue;
 
-		    idx = st[j].shindex;
-
-		    if (sh[idx].flags & SHF_ALLOC)
+		    if ((idx == SHN_ABS) || (sh[idx].flags & SHF_ALLOC))
 		    {
 			dbg_sym_t *sym = (dbg_sym_t *)ptr_ro;
 
 			ptr_ro += sizeof(dbg_sym_t);
 
 			sym->s_name    = n->sh[n->sh[i].link].addr + st[j].name;
-			sym->s_lowest  = n->sh[idx].addr + st[j].value;
-			sym->s_highest = sym->s_lowest + st[j].size - 1;
+
+			if (idx == SHN_ABS)
+			    sym->s_lowest = (void *)st[j].value;
+			else
+			    sym->s_lowest  = n->sh[idx].addr + st[j].value;
+
+			if (st[j].size)
+			    sym->s_highest = sym->s_lowest + st[j].size - 1;
+			else
+			    sym->s_highest = NULL;
 
 			DSYM(printf("[ELF Loader] Listed symbol %s (0x%p - 0x%p)\n", sym->s_name, sym->s_lowest, sym->s_highest));
 		    }
