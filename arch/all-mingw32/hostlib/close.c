@@ -1,4 +1,4 @@
-#include <aros/libcall.h>
+#include <proto/exec.h>
 
 #include <stdarg.h>
 
@@ -12,7 +12,13 @@ AROS_LH2(BOOL, HostLib_Close,
 {
     AROS_LIBFUNC_INIT
 
-    return HostLibBase->HostIFace->HostLib_Close(handle, error);
+    BOOL ret;
+
+    Forbid();
+    ret = HostLibBase->HostIFace->HostLib_Close(handle, error);
+    Permit();
+
+    return ret;
 
     AROS_LIBFUNC_EXIT
 }
