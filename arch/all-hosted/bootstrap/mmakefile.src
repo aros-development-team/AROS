@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 EXEDIR := $(BINDIR)/boot
 
-FILES         := bootstrap elfloader32 hostinterface debug memory support shutdown
+FILES         := bootstrap elfloader32 hostinterface memory support shutdown
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR)
 
 ifeq ($(ARCH),mingw32)

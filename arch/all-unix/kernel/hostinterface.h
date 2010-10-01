@@ -1,10 +1,12 @@
+#define HOSTINTERFACE_VERSION 1
+
 struct HostInterface
 {
-    void *(*HostLib_Open)(const char *);
-    int (*HostLib_Close)(void *);
+    unsigned int Version;
+
+    void *(*HostLib_Open)(const char *, char **);
+    int   (*HostLib_Close)(void *, char **);
     void *(*HostLib_GetPointer)(void *, const char *);
-    char *(*HostLib_GetErrorStr)(void);
-    unsigned long (*HostLib_GetInterface)(void *, char **, void **);
-    int (*VKPrintF)(const char *, va_list);
-    void (*Reboot)(unsigned char action);
+    int   (*VKPrintF)(const char *, va_list);
+    void  (*Reboot)(unsigned char action);
 };
