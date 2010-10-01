@@ -229,6 +229,26 @@ ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 }
 
 /****************************************************************************************/
+
+/* Raster operations for copying a bitmap */
+ULONG Copy_DrawModeTable[] = {
+    BLACKNESS,
+    SRCAND,  	 /* DSa  - src AND dest       */
+    SRCERASE,	 /* SDna - src AND NOT dest   */
+    SRCCOPY,	 /* S    - src		      */
+    0x00220326,  /* DSna - NOT src AND dest   */
+    0x00AA0029,  /* D    - dest		      */
+    SRCINVERT,   /* DSx  - src XOR dest	      */
+    SRCPAINT,	 /* DSo  - src OR dest	      */
+    NOTSRCERASE, /* DSon - NOT (src OR dest)  */
+    0x00990066,  /* DSxn - NOT (src XOR dest) */
+    DSTINVERT,	 /* Dn   - NOT dest	      */
+    0x00DD0228,  /* SDno - src OR NOT dest    */
+    NOTSRCCOPY,	 /* Sn   - NOT src	      */
+    MERGEPAINT,  /* DSno - NOT src OR dest    */
+    0x007700E6,  /* DSan - NOT (src AND dest) */
+    WHITENESS
+};
 	
 VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
@@ -238,7 +258,6 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     HIDDT_StdPixFmt src_stdpf;
     APTR buf, src, dst;
     ULONG bufmod, bufsize;
-    ULONG y;
     BITMAPINFOHEADER bitmapinfo = {
         sizeof(BITMAPINFOHEADER),
         0, 0,
@@ -263,7 +282,10 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     bufmod = msg->width * sizeof(HIDDT_Pixel);
     bufsize = bufmod * msg->height;
     buf = AllocMem(bufsize, MEMF_ANY);
-    if (buf) {
+    if (buf)
+    {
+        ULONG drmd = GC_DRMD(msg->gc);
+
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
         src_pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, src_stdpf);
         /* DIB pixels are expected to be 0x00RRGGBB */
@@ -275,7 +297,7 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	bitmapinfo.biWidth = msg->width;
     	bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
     	Forbid();
-        GDICALL(StretchDIBits, data->dc, msg->x, msg->y, msg->width, msg->height, 0, 0, msg->width, msg->height, buf, (BITMAPINFO *)&bitmapinfo, DIB_RGB_COLORS, SRCCOPY);
+        GDICALL(StretchDIBits, data->dc, msg->x, msg->y, msg->width, msg->height, 0, 0, msg->width, msg->height, buf, (BITMAPINFO *)&bitmapinfo, DIB_RGB_COLORS, Copy_DrawModeTable[drmd]);
         Permit();
         FreeMem(buf, bufsize);
     }
@@ -306,9 +328,6 @@ VOID GDIBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
-/* FIXME: GetImage() and PutImage() here do something wrong with pixelformat.
-   If you let the graphics class to create all objects with friend bitmaps as
-   GDI bitmaps, you'll see that mouse cursor is broken. */
 VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
@@ -318,7 +337,6 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     APTR tmp_dc, tmp_bitmap, dc_bitmap;
     APTR buf, src, dst;
     ULONG bufmod, bufsize;
-    ULONG y;
     BITMAPINFOHEADER bitmapinfo = {
         sizeof(BITMAPINFOHEADER),
         0, 0,
@@ -373,187 +391,6 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 			      msg->width, msg->height, NULL);
     	FreeMem(buf, bufsize);
     }
-    CHECK_STACK
-}
-
-/****************************************************************************************/
-
-/* Raster operations for a painting a bitmap with a brush */
-static ULONG Paint_DrawModeTable[] = {
-    BLACKNESS,
-    MERGECOPY,  /* PSa  - src AND brush       */
-    0x0030032A, /* PSna - NOT src AND brush   */
-    PATCOPY,	/* P    - brush		      */
-    0x000C0324, /* SPna - src AND NOT brush   */
-    SRCCOPY,    /* S    - src		      */
-    0x003C004A, /* PSx  - brush XOR src       */
-    0x00FC008A, /* PSo  - brush OR src        */
-    0x000300AA, /* PSon - NOT (brush OR src)  */
-    0x00C3006A, /* PSxn - NOT (brush XOR src) */
-    NOTSRCCOPY, /* Sn   - NOT src	      */
-    0x00F3022A, /* PSno - NOT src OR brush    */
-    0x000F0001, /* Pn   - NOT brush	      */
-    0x00CF0224, /* SPno - NOT brush OR src    */
-    0x003F00EA, /* PSan - NOT (brush AND src) */
-    WHITENESS
-};
-
-/* Raster operations for copying a bitmap */
-ULONG Copy_DrawModeTable[] = {
-    BLACKNESS,
-    SRCAND,  	 /* DSa  - src AND dest       */
-    SRCERASE,	 /* SDna - src AND NOT dest   */
-    SRCCOPY,	 /* S    - src		      */
-    0x00220326,  /* DSna - NOT src AND dest   */
-    0x00AA0029,  /* D    - dest		      */
-    SRCINVERT,   /* DSx  - src XOR dest	      */
-    SRCPAINT,	 /* DSo  - src OR dest	      */
-    NOTSRCERASE, /* DSon - NOT (src OR dest)  */
-    0x00990066,  /* DSxn - NOT (src XOR dest) */
-    DSTINVERT,	 /* Dn   - NOT dest	      */
-    0x00DD0228,  /* SDno - src OR NOT dest    */
-    NOTSRCCOPY,	 /* Sn   - NOT src	      */
-    MERGEPAINT,  /* DSno - NOT src OR dest    */
-    0x007700E6,  /* DSan - NOT (src AND dest) */
-    WHITENESS
-};
-
-VOID GDIBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
-					    struct pHidd_BitMap_BlitColorExpansion *msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    HIDDT_Pixel fg, bg;
-    ULONG drmd, cemd;
-    APTR d = NULL;
-    APTR buf_dc, buf_bm, buf_dc_bm;
-    APTR mask_dc, mask_bm, mask_dc_bm;
-    APTR br, dc_br;
-    struct BitMap planar_mask;
-    
-/*  EnterFunc(bug("GDIGfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n",
-    	    	  msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));*/
-
-    OOP_GetAttr(msg->srcBitMap, aHidd_GDIBitMap_DeviceContext, (IPTR *)&d);
-/*  D(bug("BlitColorExpansion(): Source DC: 0x%p\n", d));*/
-    
-    if (!d)
-    {
-	if (!HIDD_PlanarBM_GetBitMap(msg->srcBitMap, &planar_mask)) {
-    	    /* We know nothing about the source bitmap. Let the superclass handle this */
-    	    /* TODO: accelerate this also, generate a bit mask from superclass' bitmap */
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    return;
-	}
-    }
-
-    fg = GC_FG(msg->gc);
-    bg = GC_BG(msg->gc);
-    drmd = GC_DRMD(msg->gc);
-    cemd = GC_COLEXP(msg->gc);
-
-    Forbid();
-    /* Then we convert a source bitmap to 1-plane mask. We do it by creating a monochrome bitmap and copying our mask to it. */
-    mask_dc = GDICALL(CreateCompatibleDC, data->display);
-    if (mask_dc) {
-	/* The bitmap is compatible with memory DC, not display DC. This is what gives us 1-plane bitmap */
-	mask_bm = GDICALL(CreateCompatibleBitmap, mask_dc, msg->width, msg->height);
-	if (mask_bm) {
-	    mask_dc_bm = GDICALL(SelectObject, mask_dc, mask_bm);
-	    if (mask_dc_bm) {
-		if (d) {
-		    GDICALL(SetBkColor, d, 0);
-		    /* During this first blit, pixels equal to BkColor, become WHITE. Others become BLACK. This converts
-		       our truecolor display-compatible bitmap to a monochrome bitmap. A monochrome bitmap can be effectively
-		       used for masking in blit operations. AND operations with WHITE will leave pixels intact, AND with BLACK
-		       gives black. OR with black also leaves intact. */
-		    GDICALL(BitBlt, mask_dc, 0, 0, msg->width, msg->height, d, msg->srcX, msg->srcY, SRCCOPY);
-		} else {
-		    /* Generate a mask from planar data.
-		       TODO: this works correctly only with a monochrome bitmap.
-		       Currently the bitmap is always monochrome, however in future
-		       this may change. */
-		    struct bitmapinfo_mono bitmapinfo = {
-			{
-			    sizeof(BITMAPINFOHEADER),
-			    0, 0,
-			    1,
-			    1,
-			    BI_RGB,
-			    0, 0, 0, 0, 0
-			},
-			{
-			    1, 0
-			}
-		    };
-		    DEBUG_TEXT(bug("[GDIBitMap] Source bitmap: %ux%u\n", planar_mask.BytesPerRow * 8, planar_mask.Rows));
-		    DEBUG_TEXT(bug("[GDIBitMap] Source rectangle: (%u, %u), %ux%u\n", msg->srcX, msg->srcY, msg->width, msg->height));
-		    PRINT_PLANE(planar_mask, 0, 0, 64, msg->height);
-
-		    bitmapinfo.bmiHeader.biWidth = planar_mask.BytesPerRow * 8;
-		    bitmapinfo.bmiHeader.biHeight = -planar_mask.Rows; /* Minus here means top-down bitmap */
-		    GDICALL(StretchDIBits, mask_dc, 0, 0, msg->width, msg->height, msg->srcX, msg->srcY, msg->width, msg->height, planar_mask.Planes[0], (BITMAPINFO *)&bitmapinfo, DIB_PAL_COLORS, SRCINVERT);
-		    PRINT_MONO_DC(mask_dc, 0, 0, msg->width, msg->height);
-		}
-		if (cemd & vHidd_GC_ColExp_Opaque) {
-		    /* Opaque mode is simple. We simply blit our mask to the destination. Since the
-		       mask is monochrome, it will be implicitly converted to background and text
-		       colors specified for the destination device context. */
-		    GDICALL(SetBkColor, data->dc, bg);
-		    GDICALL(SetTextColor, data->dc, fg);
-		    GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, mask_dc, 0, 0, Copy_DrawModeTable[drmd]);
-		} else {
-		    /* Transparent mode is more diccifult. We will separately prepare foreground, background,
-		       and then merge them.
-		       TODO: This can also be more optimized. We can perform painting with the mask directly if we correctly specify
-		             background color. The rules should be the following:
-			     - With AND drawmodes - set background to all 1's.
-			     - With other drawmodes - set background to all 0's.
-			     - With copy drawmodes - mask out foreground area in the destination,
-			       then execute operation with OR drawmode.
-
-		       First we create a buffer for foreground pixels */
-		    buf_dc = GDICALL(CreateCompatibleDC, data->display);
-		    if (buf_dc) {
-			buf_bm = GDICALL(CreateCompatibleBitmap, data->display, msg->width, msg->height);
-			if (buf_bm) {
-			    buf_dc_bm = GDICALL(SelectObject, buf_dc, buf_bm);
-			    if (buf_dc_bm) {    
-				br = GDICALL(CreateSolidBrush, fg);
-				if (br) {
-				    dc_br = GDICALL(SelectObject, buf_dc, br);
-				    if (dc_br) {
-				    	/* Reset DC colors to defaults, in order for masking to work properly */
-					GDICALL(SetBkColor, data->dc, 0x00FFFFFF);
-					GDICALL(SetTextColor, data->dc, 0x00000000);
-				        /* Second we apply foreground color and DrawMode to the whole source rectangle. The result is stored in the buffer bitmap */
-				        GDICALL(BitBlt, buf_dc, 0, 0, msg->width, msg->height, data->dc, msg->destX, msg->destY, Paint_DrawModeTable[drmd]);
-					/* Second we mask out background pixels in the buffer using our mask with DSna (dest AND NOT src) opcode.
-					   Buffer's background will be black then */
-					GDICALL(BitBlt, buf_dc, 0, 0, msg->width, msg->height, mask_dc, 0, 0, 0x00220326);
-					GDICALL(SelectObject, buf_dc, dc_br);
-				    }
-				    GDICALL(DeleteObject, br);
-				}
-				/* Then we prepare a background. We do it by clearing foreground area using "dest = dest AND mask" operation */
-				GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, mask_dc, 0, 0, SRCAND);
-				/* And at last we merge our buffer with the prepared destination bitmap using OR operation. Remember that the
-				   destination now has completed background but black holes instead of foreground */
-				GDICALL(BitBlt, data->dc, msg->destX, msg->destY, msg->width, msg->height, buf_dc, 0, 0, SRCPAINT);
-				/* We're done, kill our temp buffer */
-				GDICALL(SelectObject, buf_dc, buf_dc_bm);
-			    }
-			    GDICALL(DeleteObject, buf_bm);
-			}
-			GDICALL(DeleteDC, buf_dc);
-		    }
-		}
-		GDICALL(SelectObject, mask_dc, mask_dc_bm);
-	    }
-	    GDICALL(DeleteObject, mask_bm);
-	}
-	GDICALL(DeleteDC, mask_dc);
-    }
-    Permit();
     CHECK_STACK
 }
 
@@ -638,16 +475,14 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     OOP_Object  *friend = NULL, *pixfmt;
-/*  APTR 	 friend_drawable = NULL;*/
-    APTR	 display, my_dc, my_bitmap, orig_bitmap;
+    APTR	 display, my_dc, my_bitmap;
+    APTR	 orig_bitmap = NULL;
     ULONG   	 width, height;
     HIDDT_ModeID modeid;
     IPTR	 win_width  = 0;
     IPTR	 win_height = 0;
     IPTR	 depth;
     IPTR    	 attrs[num_Hidd_BitMap_Attrs];
-    int     	 screen;
-    BOOL    	 ok = TRUE;
     struct bitmap_data *data;
     
     DECLARE_ATTRCHECK(bitmap);
