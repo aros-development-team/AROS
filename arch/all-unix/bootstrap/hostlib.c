@@ -3,37 +3,32 @@
 
 #include "hostlib.h"
 
-#define D(x)
-
-char *Host_HostLib_GetErrorStr(void)
+static inline void GetErrorStr(char **error)
 {
-    return dlerror();
+    if (error)
+	*error = dlerror()
 }
 
-void *Host_HostLib_Open(const char *filename)
+void *Host_HostLib_Open(const char *filename, char **error)
 {
-    return dlopen(filename, RTLD_NOW);
+    void *ret = dlopen(filename, RTLD_NOW);
+
+    GetErrorStr(error);
+    return ret;
 }
 
-int Host_HostLib_Close(void *handle)
+int Host_HostLib_Close(void *handle, char **error)
 {
-    return dlclose(handle);
+    int ret = dlclose(handle);
+
+    GetErrorStr(error);
+    return ret;
 }
 
-void *Host_HostLib_GetPointer(void *handle, const char *symbol)
+void *Host_HostLib_GetPointer(void *handle, const char *symbol, char **error)
 {
-    return dlsym(handle, symbol);
-}
+    void *ret = dlsym(handle, symbol);
 
-unsigned long Host_HostLib_GetInterface(void *handle, char **names, void **funcs)
-{
-    unsigned long unresolved = 0;
-
-    for (; *names; names++) {
-        *funcs = dlsym(handle, *names);
-        D(printf("[hostlib] GetInterface: handle=0x%08x, symbol=%s, value=0x%08x\n", handle, *names, *funcs));
-        if (*funcs++ == NULL)
-            unresolved++;
-    }
-    return unresolved;
+    GetErrorStr(error);
+    return ret;
 }

@@ -16,7 +16,6 @@
 #include <aros/multiboot.h>
 #include <utility/tagitem.h>
 
-#include "debug.h"
 #include "elfloader32.h"
 #include "memory.h"
 #include "support.h"
