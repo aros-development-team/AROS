@@ -30,6 +30,7 @@ char *malloc_options;
 
 extern const struct Resident
     Kernel_ROMTag,
+    HostLib_ROMTag,
     Expansion_ROMTag,
     Exec_resident,
     Utility_ROMTag,
@@ -38,7 +39,6 @@ extern const struct Resident
     OOP_ROMTag,
     HIDDCl_ROMTag,
     UXIO_ROMTag,
-    HostLib_ROMTag,
     Graphics_ROMTag,
     Layers_ROMTag,
     Timer_ROMTag,
@@ -77,6 +77,7 @@ extern const struct Resident
 static const struct Resident *romtagList[] =
 {
     &Kernel_ROMTag,			/* SingleTask,  127  */
+    &HostLib_ROMTag,                    /* SingleTask,  125  */
     &Expansion_ROMTag,                  /* SingleTask,  110  */
     &Exec_resident,                     /* SingleTask,  105  */
     &Utility_ROMTag,                    /* ColdStart,   103  */
@@ -85,7 +86,6 @@ static const struct Resident *romtagList[] =
     &OOP_ROMTag,                        /* ColdStart,   94   */
     &HIDDCl_ROMTag,                     /* ColdStart,   92   */
     &UXIO_ROMTag,                       /* ColdStart,   91   */
-    &HostLib_ROMTag,                    /* ColdStart,   91   */
     &GFX_ROMTag,			/* ColdStart,   66   */
     &Graphics_ROMTag,                   /* ColdStart,   65   */
     &Layers_ROMTag,                     /* ColdStart,   60   */
