@@ -29,6 +29,7 @@ FILES := \
 	pipe \
 	fcntl \
 	flock \
+	strtod \
 	strtoul \
 	strtoull \
 	snprintf \
