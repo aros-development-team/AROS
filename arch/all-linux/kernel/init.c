@@ -43,6 +43,7 @@
 
 extern const struct Resident
     Kernel_ROMTag,
+    HostLib_ROMTag,
     Expansion_ROMTag,
     Exec_resident,
     Utility_ROMTag,
@@ -51,7 +52,6 @@ extern const struct Resident
     OOP_ROMTag,
     HIDDCl_ROMTag,
     UXIO_ROMTag,
-    HostLib_ROMTag,
     Graphics_ROMTag,
     Layers_ROMTag,
     Timer_ROMTag,
@@ -91,17 +91,17 @@ extern const struct Resident
 static const struct Resident *romtagList[] =
 {
     &Kernel_ROMTag,			/* SingleTask,  127  */
+    &HostLib_ROMTag,                    /* SingleTask,  125  */
     &Expansion_ROMTag,                  /* SingleTask,  110  */
     &Exec_resident,                     /* SingleTask,  105  */
 //  &Partition_ROMTag,			/* ColdStart,   104  */
     &Utility_ROMTag,                    /* ColdStart,   103  */
     &Aros_ROMTag,                       /* ColdStart,   102  */
     &Bootloader_ROMTag,			/* ColdStart,	100  */
-    &Processor_ROMTag,                  /* Coldstart,   99 */
+    &Processor_ROMTag,                  /* Coldstart,   99   */
     &OOP_ROMTag,                        /* ColdStart,   94   */
     &HIDDCl_ROMTag,                     /* ColdStart,   92   */
     &UXIO_ROMTag,                       /* ColdStart,   91   */
-    &HostLib_ROMTag,                    /* ColdStart,   91   */
 #if defined(__i386__) || defined(__x86_64__)
     &PCI_ROMTag,                        /* ColdStart,   90   */
 //  &PCILx_ROMTag,                      /* ColdStart,   89   */
