@@ -15,7 +15,6 @@
 #include <ucontext.h>
 
 #include <signal.h>
-#include <errno.h>
 #include <stddef.h>
 
 #ifndef _SIGNAL_H
@@ -25,9 +24,9 @@
 #define __KERNEL_STRICT_NAMES
 #endif
 #include <bits/sigcontext.h>
-/* sigcontext_t is the type of the signals' context. Linux offers no way
+/* regs_t is the type of the signals' context. Linux offers no way
    to get this context in a legal way, so I have to use tricks. */
-typedef @sigcontext@ sigcontext_t;
+typedef @sigcontext@ regs_t;
 typedef @sighandler@ SignalHandler;
 
 /* name and type of the signal handler */
@@ -64,17 +63,11 @@ typedef @sighandler@ SignalHandler;
     so the address of the signal context is &sig+1.
 */
 
-#define GLOBAL_SIGNAL_INIT \
-	static void sighandler (int sig, sigcontext_t * sc);    		\
-										\
-	static void SIGHANDLER (int sig, siginfo_t *blub, struct ucontext *u) 	\
-	{ 									\
-	    sighandler(sig, (sigcontext_t *)&u->uc_mcontext); 			\
+#define GLOBAL_SIGNAL_INIT(sighandler) \
+	static void sighandler ## _gate (int sig, siginfo_t *blub, struct ucontext *u) 	\
+	{ 										\
+	    sighandler(sig, (regs_t *)&u->uc_mcontext); 				\
 	}
-
-/* How many general purpose registers are to be saved on the stack
-   when a task switch happens */
-#define CPU_NUMREGS		0
 
 /* Use this structure to save/restore registers if the stack is too
    small */
@@ -187,18 +180,6 @@ struct AROSCPUContext
          R14(sc) = (cc)->regs[14]; \
          FP(sc) = (cc)->regs[15]; \
          PC(sc) = (cc)->regs[16]; \
-    } while (0)
-
-#define SAVE_ERRNO(cc) \
-    do                 \
-    {                  \
-        (cc)->errno_backup = errno; \
-    } while (0) 
-	
-#define RESTORE_ERRNO(cc) \
-    do                    \
-    {                     \
-        errno = (cc)->errno_backup; \
     } while (0)
 
 /*
@@ -359,9 +340,8 @@ struct AROSCPUContext
 #define SAVEREGS(cc, sc)                 \
     do                                   \
     {                                    \
-	SAVE_FPU(cc,sc);                 \
-	SAVE_CPU(cc,sc);                 \
-	SAVE_ERRNO(cc);                  \
+	SAVE_FPU((cc),sc);               \
+	SAVE_CPU((cc),sc);               \
     } while (0)
 
 /*
@@ -374,9 +354,8 @@ struct AROSCPUContext
 #   define RESTOREREGS(cc, sc) \
     do                         \
     {                          \
-	RESTORE_ERRNO(cc);     \
-	RESTORE_FPU(cc,sc);    \
-	RESTORE_CPU(cc,sc);    \
+	RESTORE_FPU((cc),sc);  \
+	RESTORE_CPU((cc),sc);  \
     } while (0)
 
 

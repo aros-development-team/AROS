@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 
 #include <signal.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 /* These variables come from bootstrap */
@@ -60,7 +61,7 @@ extern char **Kernel_ArgV;
     switch(action)
     {
     case SD_ACTION_POWEROFF:
-	raise(SIGINT);
+	exit(0);
 	break;
 
     case SD_ACTION_COLDREBOOT:

@@ -3,12 +3,13 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES  := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
 
-FUNCS := bug cause cli dispatch issuper putchar schedule sti switch
+FUNCS := bug cause cli issuper putchar sti
+FILES := kernel kernel_cpu cpu_$(CPU)
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \
   arch=unix compiler=kernel \
-  files="$(FUNCS) kernel"
+  files="$(FILES) $(FUNCS)"
 
 #MM- kernel-kernel-includes-unix : kernel-$(ARCH)-sigcore
 

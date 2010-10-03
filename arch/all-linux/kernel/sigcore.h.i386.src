@@ -9,6 +9,8 @@
     Lang: english
 */
 
+#define EXCEPTIONS_COUNT 17
+
 #define USE_SA_SIGINFO 0
 
 #if USE_SA_SIGINFO
@@ -17,7 +19,6 @@
 #endif
 
 #include <signal.h>
-#include <errno.h>
 
 #ifndef _SIGNAL_H
 #define _SIGNAL_H
@@ -26,9 +27,9 @@
 #define __KERNEL_STRICT_NAMES
 #endif
 #include <bits/sigcontext.h>
-/* sigcontext_t is the type of the signals' context. Linux offers no way
+/* regs_t is the type of the signals' context. Linux offers no way
    to get this context in a legal way, so I have to use tricks. */
-typedef @sigcontext@ sigcontext_t;
+typedef @sigcontext@ regs_t;
 typedef @sighandler@ SignalHandler;
 
 /* name and type of the signal handler */
@@ -66,28 +67,20 @@ typedef @sighandler@ SignalHandler;
 */
 
 #if USE_SA_SIGINFO
-#define GLOBAL_SIGNAL_INIT \
-	static void sighandler (int sig, sigcontext_t * sc);    		\
-										\
-	static void SIGHANDLER (int sig, siginfo_t *blub, struct ucontext *u) 	\
-	{ 									\
-	    sighandler(sig, (sigcontext_t *)&u->uc_mcontext); 			\
+#define GLOBAL_SIGNAL_INIT(sighandler) \
+	static void sighandler ## _gate (int sig, siginfo_t *blub, struct ucontext *u) 	\
+	{ 										\
+	    sighandler(sig, (regs_t *)&u->uc_mcontext); 				\
 	}
 
 #else
 
-#define GLOBAL_SIGNAL_INIT \
-	static void sighandler (int sig, sigcontext_t * sc);    \
-								\
-	static void SIGHANDLER (int sig)                        \
-	{							\
-	    sighandler (sig, (sigcontext_t *)(&sig+1));         \
+#define GLOBAL_SIGNAL_INIT(sighandler)			\
+	static void sighandler ## _gate (int sig)       \
+	{						\
+	    sighandler (sig, (regs_t *)(&sig+1));       \
 	}
 #endif
-
-/* How many general purpose registers are to be saved on the stack
-   when a task switch happens */
-#define CPU_NUMREGS		0
 
 /* Use this structure to save/restore registers if the stack is too
    small */
@@ -162,18 +155,6 @@ struct AROSCPUContext
          R6(sc) = (cc)->regs[6]; \
          FP(sc) = (cc)->regs[7]; \
          PC(sc) = (cc)->regs[8]; \
-    } while (0)
-
-#define SAVE_ERRNO(cc) \
-    do                 \
-    {                  \
-        (cc)->errno_backup = errno; \
-    } while (0) 
-	
-#define RESTORE_ERRNO(cc) \
-    do                    \
-    {                     \
-        errno = (cc)->errno_backup; \
     } while (0)
 
 /*
@@ -337,9 +318,8 @@ struct AROSCPUContext
 #define SAVEREGS(cc, sc)                 \
     do                                   \
     {                                    \
-	SAVE_FPU(cc,sc);                 \
-	SAVE_CPU(cc,sc);                 \
-	SAVE_ERRNO(cc);                  \
+	SAVE_FPU((cc),sc);               \
+	SAVE_CPU((cc),sc);               \
     } while (0)
 
 /*
@@ -352,15 +332,14 @@ struct AROSCPUContext
 #   define RESTOREREGS(cc, sc) \
     do                         \
     {                          \
-	RESTORE_ERRNO(cc);    \
-	RESTORE_FPU(cc,sc);   \
-	RESTORE_CPU(cc,sc);   \
+	RESTORE_FPU((cc),sc);  \
+	RESTORE_CPU((cc),sc);  \
     } while (0)
 
 
     /* This macro prints the current signals' context */
 #define PRINT_SC(sc) \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
+	bug ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx\n" \
 	    , SP(sc), FP(sc), PC(sc) \

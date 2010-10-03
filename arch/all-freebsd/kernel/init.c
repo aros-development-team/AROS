@@ -131,7 +131,6 @@ static struct MemHeader *mh = &mhe.mhe_MemHeader;
 UBYTE *memory, *space;
 int memSize = 48;
 
-extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data);
 
 char *join_string(int argc, char **argv)
@@ -300,11 +299,6 @@ int main(int argc, char **argv)
         Forbid();
         Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
-
-    /* Ok, lets start up the kernel, we are probably using the UNIX
-       kernel, or a variant of that (see config/unix).
-    */
-    InitCore();
 
     /* On Linux/m68k where we can run old Amiga binaries, we should
        put SysBase at location 4. On other systems, DON'T DO THIS.

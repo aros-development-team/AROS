@@ -10,7 +10,7 @@ AROS_LH0I(void, KrnCause,
 {
     AROS_LIBFUNC_INIT
 
-    kill(getpid(), SIGUSR1);
+    kill(getpid(), SIGUSR2);
 
     AROS_LIBFUNC_EXIT
 }

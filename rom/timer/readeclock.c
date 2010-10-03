@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReadEClock() - read the base frequency of timers.
@@ -59,8 +59,10 @@
     dest->ev_hi = (ULONG)(TimerBase->tb_ticks_total >> 32);
     dest->ev_lo = (ULONG)(TimerBase->tb_ticks_total & 0xffffffff);
     Enable();
-    
-    return (SysBase->VBlankFrequency * SysBase->PowerSupplyFrequency);
+
+    /* We could use SysBase->ex_EClockFrequency here, but we avoid it for
+       the case if some dumb head attempts to change it */
+    return 1000000 / TimerBase->tb_VBlankTime.tv_micro;
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */
