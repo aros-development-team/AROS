@@ -120,6 +120,15 @@ struct DOSVolumeNode
     struct MsgPort		*dvn_Port;
 };
 
+static BOOL VolumeIsOffline(struct DosList *dl)
+{
+    if (strcmp(dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name,
+        "packet.handler"))
+        return dl->dol_Ext.dol_AROS.dol_Unit == NULL;
+    else
+        return dl->dol_Task == NULL;
+}
+
 ///IconVolumeList__CreateDOSList()
 static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 {
@@ -159,7 +168,8 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		    {
 			newdvn->dvn_VolName     = vn_VolName;
                         newdvn->dvn_Device      = __DL_DEVICE;
-			if ((newdvn->dvn_Unit = __DL_UNIT) == NULL)
+                        newdvn->dvn_Unit        = __DL_UNIT;
+                        if (VolumeIsOffline(dl))
                         {
                             D(bug("[IconVolumeList] %s: Volume '%s' is OFFLINE\n", __PRETTY_FUNCTION__, newdvn->dvn_VolName));
                             newdvn->dvn_FLags |= (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED);
@@ -291,9 +301,9 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 #endif
 			    ))
 			{
-			    if ((dvn->dvn_Unit) && ~(newdvn->dvn_FLags & ICONENTRY_VOL_OFFLINE))
+			    if ((dvn->dvn_Unit) && !(dvn->dvn_FLags & ICONENTRY_VOL_OFFLINE))
 			    {
-				if (dvn->dvn_Unit == __DL_UNIT)
+				if (dvn->dvn_Unit == __DL_UNIT || dvn->dvn_Port == dl->dol_Task)
 				{
 				    if ((nd_paramblock) && (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT))
 				    {
@@ -348,7 +358,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 
 		    if (!(found))
 		    {
-                        D(bug("[IconVolumeList] %s: '%s' : Couldnt find an associated Volume\n", __PRETTY_FUNCTION__, nd_nambuf));
+                        D(bug("[IconVolumeList] %s: '%s' : Couldn't find an associated Volume\n", __PRETTY_FUNCTION__, nd_nambuf));
                         if ((nd_paramblock) && (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT))
                         {
                             if ((newdvn = (struct DOSVolumeNode *)AllocPooled(newdvl->dvl_Pool, sizeof(struct DOSVolumeNode))))
