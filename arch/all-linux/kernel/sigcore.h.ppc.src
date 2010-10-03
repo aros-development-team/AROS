@@ -75,6 +75,10 @@ struct AROSCPUContext
 /* Macros to access the stack pointer and program counter,
    PC is the current address in the program code. */
 
+#define GET_PC(ctx) ((APTR)ctx->regs.nip)
+
+#define SET_PC(ctx, val) ctx->regs.nip = (IPTR)val
+
 #define SP(sc)	(sc->regs->gpr[1])
 #define PC(sc)	(sc->regs->nip)
 

@@ -9,6 +9,8 @@
     Lang: english
 */
 
+#define EXCEPTIONS_COUNT 17
+
 /* There's no need for USE_SA_SIGINFO, as we always use SA_SIGINFO
    on x86_64 - there's no other sane way to get ucontext. */ 
 #define SIGCORE_NEED_SA_SIGINFO 1
@@ -88,6 +90,10 @@ struct AROSCPUContext
     and local variables of a function and PC is the current address
     in the program code.
 */
+#define GET_PC(ctx) ((APTR)ctx->regs[0])
+
+#define SET_PC(ctx, val) ctx->regs[0] = (UQUAD)val
+
 #define SP(sc)           ((sc)->rsp)
 #define FP(sc)           ((sc)->rbp)
 #define PC(sc)           ((sc)->rip)
