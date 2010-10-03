@@ -41,6 +41,7 @@
 #include <linux/rbtree.h>
 #include <linux/bitmap.h>
 #else
+#include "drm_linux_list.h"
 #include "drm_compat_funcs.h"
 #endif
 

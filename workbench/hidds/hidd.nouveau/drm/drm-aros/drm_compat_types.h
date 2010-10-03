@@ -178,6 +178,4 @@ struct work_struct;
 struct module;
 struct edid;
 
-#include "drm_linux_list.h"
-
 #endif /* _DRM_COMPAT_TYPES_ */
