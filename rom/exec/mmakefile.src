@@ -35,7 +35,7 @@ ALL_FUNCTIONS	:= \
 
 INIT_FILE   := exec_init
 SYS_FILES   := prepareexecbase
-FILES	    := traphandler exec_util idletask
+FILES	    := traphandler exec_util
 
 ifeq ($(FLAVOUR),native)
 DEPLIBS := arossupport arosc

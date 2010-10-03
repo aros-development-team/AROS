@@ -44,6 +44,9 @@ void cpu_Dispatch(regs_t *regs)
 {
     struct Task *task;
     struct AROSCPUContext *ctx;
+    sigset_t sigs;
+
+    sigemptyset(&sigs);
 
     while (!(task = core_Dispatch()))
     {
@@ -56,8 +59,7 @@ void cpu_Dispatch(regs_t *regs)
         SysBase->AttnResched |= ARF_AttnSwitch;
 
         /* Sleep almost forever ;) */
-	bug("[KRN] Kernel panic, idle loop entered!\n");
-	for (;;);
+	sigsuspend(&sigs);
 
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT);
