@@ -1400,9 +1400,24 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
 
 IPTR IconWindowVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_UpdateEntry *message)
 {
+    struct VolumeIcon_Private   *volPrivate = NULL;
     struct IconEntry  		*this_Icon = NULL;
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
+
+    volPrivate = message->entry->ie_IconListEntry.udata;
+
+    if (message->entry->ie_IconListEntry.type == ST_ROOT
+        && (message->entry->ie_IconListEntry.flags &
+        (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) != 0)
+    {
+	if (volPrivate->vip_FSNotifyRequest.nr_Name != NULL)
+	{
+	    EndNotify(&volPrivate->vip_FSNotifyRequest);
+	    volPrivate->vip_FSNotifyRequest.nr_Name = NULL;
+	}
+
+    }
 
     this_Icon = DoSuperMethodA(CLASS, obj, (Msg) message);
 
@@ -1418,7 +1433,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Obje
 
     volPrivate = message->entry->ie_IconListEntry.udata;
 
-    if ((message->entry->ie_IconListEntry.type == ST_ROOT) && (volPrivate && ((volPrivate->vip_FLags & (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) == 0)))
+    if ((message->entry->ie_IconListEntry.type == ST_ROOT))
     {
 	if (volPrivate->vip_FSNotifyRequest.nr_Name != NULL)
 	{
