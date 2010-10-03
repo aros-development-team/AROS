@@ -28,6 +28,8 @@
  *    Eric Anholt <anholt@FreeBSD.org>
  *
  */
+#ifndef _DRM_LINUX_LIST_
+#define _DRM_LINUX_LIST_
 
 struct list_head {
 	struct list_head *next, *prev;
@@ -136,4 +138,4 @@ static inline void list_sort(void * priv, struct list_head *head,
         }
     }while(!finished);
 }
-
+#endif /* _DRM_LINUX_LIST_ */

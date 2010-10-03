@@ -43,6 +43,7 @@
 #endif
 #else
 #include "drm_compat_types.h"
+#include "drm_linux_list.h"
 #endif
 
 struct drm_mm_node {

@@ -46,8 +46,6 @@
 #include <linux/mm.h>
 #include <linux/file.h>
 #include <linux/module.h>
-#else
-#include "drm_compat_funcs.h"
 #endif
 
 

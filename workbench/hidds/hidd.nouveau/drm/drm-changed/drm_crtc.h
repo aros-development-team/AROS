@@ -32,6 +32,8 @@
 #include <linux/idr.h>
 
 #include <linux/fb.h>
+#else
+#include "drm_linux_list.h"
 #endif
 
 struct drm_device;
