@@ -19,7 +19,12 @@ struct KernelBase
     unsigned char	   kb_VBlankEnable;
     unsigned int	   kb_VBlankTicks;
     unsigned int	   kb_TimerCount;
+#ifdef HAVE_PLATFORM_DATA
+    struct PlatformData	   kb_PlatformData;
+#endif
 };
+
+#define PD(base) base->kb_PlatformData
 
 /*
  * Some useful global variables. They are global because:

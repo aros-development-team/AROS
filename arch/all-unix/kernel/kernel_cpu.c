@@ -8,8 +8,8 @@
 #include <unistd.h>
 
 #include "../exec/etask.h"
- 
-#include <kernel_cpu.h>
+
+#include <kernel_base.h>
 #include <kernel_scheduler.h>
 
 /*
@@ -26,7 +26,7 @@ static void cpu_Exception(void)
     /* Enter the kernel. We use an endless loop just in case the
        signal handler returns us to this point for whatever reason.
     */
-    kill(getpid(), SIGUSR1);
+    kill(PD(KernelBase).pid, SIGUSR1);
 }
 
 void cpu_Switch(regs_t *regs)

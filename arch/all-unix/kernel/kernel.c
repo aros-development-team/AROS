@@ -47,9 +47,6 @@
     sa.sa_handler = (SIGHANDLER_T)h ## _gate;
 #endif
 
-sigset_t sig_int_mask;	/* Mask of signals that Disable() block */
-unsigned int supervisor;
-
 static void core_Trap(int sig, regs_t *regs)
 {
     void (*trapHandler)(unsigned long, regs_t *) = NULL;
@@ -130,7 +127,7 @@ static void core_SysCall(int sig, regs_t *sc)
     struct Task *task = SysBase->ThisTask;
     struct AROSCPUContext *ctx;
 
-    AROS_ATOMIC_INC(supervisor);
+    AROS_ATOMIC_INC(PD(KernelBase).supervisor);
 
     krnRunIRQHandlers(sig);
 
@@ -170,12 +167,12 @@ static void core_SysCall(int sig, regs_t *sc)
 	break;
     }
 
-    AROS_ATOMIC_DEC(supervisor);
+    AROS_ATOMIC_DEC(PD(KernelBase).supervisor);
 }
 
 static void core_IRQ(int sig, regs_t *sc)
 {
-    AROS_ATOMIC_INC(supervisor);
+    AROS_ATOMIC_INC(PD(KernelBase).supervisor);
 
     /* Just additional protection - what if there's more than 32 signals? */
     if (sig < IRQ_COUNT)
@@ -186,7 +183,7 @@ static void core_IRQ(int sig, regs_t *sc)
 
     core_ExitInterrupt(sc);
 
-    AROS_ATOMIC_DEC(supervisor);
+    AROS_ATOMIC_DEC(PD(KernelBase).supervisor);
 }
 
 /*
@@ -206,14 +203,14 @@ static int InitCore(struct KernelBase *KernelBase)
     struct SignalTranslation *s;
 
     /* We only want signal that we can handle at the moment */
-    sigfillset(&sig_int_mask);
+    sigfillset(&PD(KernelBase).sig_int_mask);
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
 #ifdef __linux__
     sa.sa_restorer = NULL;
 #endif
 
-    supervisor = 0;
+    PD(KernelBase).pid = getpid();
 
     /* 
      * These ones we consider as processor traps.
@@ -225,14 +222,14 @@ static int InitCore(struct KernelBase *KernelBase)
 	/* Trap handling disabled for now because:
 	   1. It doesn't work, at least with SIGSEGV
 	   2. It can interfere with gdb debugging.
-	   Coming soon. */
-	sigaction(s->sig, &sa, NULL);
-	sigdelset(&sig_int_mask, s->sig);
+	   Coming soon.
+	sigaction(s->sig, &sa, NULL); */
+	sigdelset(&PD(KernelBase).sig_int_mask, s->sig);
     }
 
     /* SIGUSRs are software interrupts, we also never block them */
-    sigdelset(&sig_int_mask, SIGUSR1);
-    sigdelset(&sig_int_mask, SIGUSR2);
+    sigdelset(&PD(KernelBase).sig_int_mask, SIGUSR1);
+    sigdelset(&PD(KernelBase).sig_int_mask, SIGUSR2);
 
     /*
      * Any interrupt including software one must disable
@@ -240,7 +237,7 @@ static int InitCore(struct KernelBase *KernelBase)
      * between interrupt handler entry and supervisor mode
      * mark. This can cause bad things in cpu_Dispatch()
      */
-    sa.sa_mask = sig_int_mask;
+    sa.sa_mask = PD(KernelBase).sig_int_mask;
 
     /* Install interrupt handlers */
     SETHANDLER(sa, core_SysCall);
@@ -252,7 +249,7 @@ static int InitCore(struct KernelBase *KernelBase)
     sigaction(SIGIO  , &sa, NULL);
 
     /* We need to start up with disabled interrupts */
-    sigprocmask(SIG_BLOCK, &sig_int_mask, NULL);
+    sigprocmask(SIG_BLOCK, &PD(KernelBase).sig_int_mask, NULL);
 
     /* Set up the "pseudo" vertical blank interrupt. */
     D(bug("[InitCore] Timer frequency is %d\n", SysBase->ex_EClockFrequency));
@@ -272,5 +269,5 @@ ADD2INITLIB(InitCore, 10);
  */
 void krnSysCall(unsigned char n)
 {
-    kill(getpid(), SIGUSR1);
+    kill(PD(KernelBase).pid, SIGUSR1);
 }
