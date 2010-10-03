@@ -181,7 +181,8 @@ static void core_IRQ(int sig, regs_t *sc)
     if (sig == SIGALRM)
 	core_TimerTick();
 
-    core_ExitInterrupt(sc);
+    if (PD(KernelBase).supervisor == 1)
+	core_ExitInterrupt(sc);
 
     AROS_ATOMIC_DEC(PD(KernelBase).supervisor);
 }

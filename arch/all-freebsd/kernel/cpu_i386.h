@@ -63,6 +63,10 @@ struct AROSCPUContext
     struct AROSCPUContext *sc;
 };
 
+#define GET_PC(ctx) ((APTR)ctx->regs[8])
+
+#define SET_PC(ctx, val) ctx->regs[8] = (ULONG)val
+
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc); \
 							     \

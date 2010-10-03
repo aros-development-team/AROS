@@ -1,4 +1,5 @@
 handle SIGUSR1 pass noprint nostop
+handle SIGUSR2 pass noprint nostop
 
 define liblist
     set $lib = SysBase->LibList.lh_Head

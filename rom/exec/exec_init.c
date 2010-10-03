@@ -267,38 +267,6 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     sysBase->ThisTask = t;
     sysBase->Elapsed = sysBase->Quantum;
 
-    /* Add idle task.
-       Allocate MemEntry for this task and stack */
-    ml = (struct MemList *)AllocMem(sizeof(struct MemList)+sizeof(struct MemEntry), MEMF_PUBLIC|MEMF_CLEAR);
-    t = (struct Task *)    AllocMem(sizeof(struct Task), MEMF_CLEAR|MEMF_PUBLIC);
-    s = (UBYTE *)          AllocMem(AROS_STACKSIZE,      MEMF_CLEAR|MEMF_PUBLIC);
-
-    if (!ml || !t || !s) {
-	kprintf("ERROR: Cannot create Idle Task!\n");
-	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
-    }
-
-    ml->ml_NumEntries = 2;
-    ml->ml_ME[0].me_Addr = t;
-    ml->ml_ME[0].me_Length = sizeof(struct Task);
-    ml->ml_ME[1].me_Addr = s;
-    ml->ml_ME[1].me_Length = AROS_STACKSIZE;
-
-    NEWLIST(&t->tc_MemEntry);
-    AddHead(&t->tc_MemEntry, &ml->ml_Node);
-    t->tc_SPLower = s;
-    t->tc_SPUpper = s + AROS_STACKSIZE;
-
-    /* Pass SysBase in on the stack */
-    t->tc_SPReg = &(((struct ExecBase *)(s + AROS_STACKSIZE))[-1]);
-    *((struct ExecBase **)t->tc_SPReg) = sysBase;
-
-    t->tc_Node.ln_Name = "Idle Task";
-    t->tc_Node.ln_Pri = -128;
-    t->tc_Launch = &idleCount;
-    t->tc_Flags = TF_LAUNCH;
-    AddTask(t, &idleTask, NULL);
-
     /* Install the interrupt servers */
     for(i=0; i < 16; i++)
     {
