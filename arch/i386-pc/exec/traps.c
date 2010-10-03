@@ -106,7 +106,7 @@ void handleException(ULONG exceptionNo)
 {
     ULONG alert;
     struct Task *task;
-    VOID (*trapHandler)(ULONG);
+    VOID (*trapHandler)(ULONG, void *);
 
     // Determine alert number
     switch (exceptionNo)
@@ -124,7 +124,7 @@ void handleException(ULONG exceptionNo)
     // Call task's trap handler
     task = FindTask(NULL);
     trapHandler = task->tc_TrapCode;
-    trapHandler(alert);
+    trapHandler(alert, NULL);
 }
 
 void Init_Traps(void) {

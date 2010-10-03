@@ -11,7 +11,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0I(void, KrnCli,
+AROS_LH0(void, KrnCli,
 
 /*  SYNOPSIS */
 
@@ -38,7 +38,7 @@ AROS_LH0I(void, KrnCli,
 {
     AROS_LIBFUNC_INIT
 
-    sigprocmask(SIG_BLOCK, &sig_int_mask, NULL);
+    sigprocmask(SIG_BLOCK, &PD(KernelBase).sig_int_mask, NULL);
 
     AROS_LIBFUNC_EXIT
 }
