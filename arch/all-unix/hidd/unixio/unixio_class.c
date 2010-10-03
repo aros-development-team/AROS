@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
+#include <signal.h>
 #include <string.h>
 #include <errno.h>
 #undef timeval
@@ -39,6 +40,7 @@
 
 #include <oop/oop.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
@@ -77,21 +79,9 @@ static const struct newMemList MemTemplate =
 
 /************************************************************************/
 
-AROS_UFH5 (void, SigIO_IntServer,
-    AROS_UFHA (ULONG             ,dummy,  D0),
-    AROS_UFHA (struct Custom    *,custom, A0),
-    AROS_UFHA (struct List      *,intList,A1),
-    AROS_UFHA (APTR              ,ivCode, A5),
-    AROS_UFHA (struct ExecBase  *,SysBase,A6)
-)
+static void SigIO_IntServer(struct uio_data *ud, struct ExecBase *SysBase)
 {
-    AROS_USERFUNC_INIT
-
-    struct uio_data * ud = (struct uio_data *) intList;
-
     Signal (ud -> ud_WaitForIO, SIGBREAKF_CTRL_C);
-
-    AROS_USERFUNC_EXIT
 }
 
 
@@ -677,6 +667,10 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
     struct newMemList nml;
     struct MemList  * ml;
     struct Interrupt * is;
+    APTR KernelBase = OpenResource("kernel.resource");
+
+    if (!KernelBase)
+	return FALSE;
 
     LIBBASE->uio_csd.ud_Port = CreatePort (NULL, 0);
     if(LIBBASE->uio_csd.ud_Port == NULL)
@@ -736,17 +730,7 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->uio_csd.ud_Port->mp_Flags   = PA_SIGNAL;
     LIBBASE->uio_csd.ud_Port->mp_SigTask = task2;
 
-    is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
-    if (!is)
-    {
-	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-	return FALSE;
-    }
-    is->is_Code=(void (*)())&SigIO_IntServer;
-    is->is_Data=(APTR)&LIBBASE->uio_csd;
-    SetIntVector(INTB_DSKBLK,is);
-
-    return TRUE;
+    return KrnAddIRQHandler(SIGIO, SigIO_IntServer, &LIBBASE->uio_csd, SysBase) ? TRUE : FALSE;
 }
 
 ADD2INITLIB(UXIO_Init, 0)

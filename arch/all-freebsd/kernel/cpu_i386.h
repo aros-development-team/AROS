@@ -8,7 +8,6 @@
 #include <sys/param.h>
 #include <ucontext.h>
 #include <signal.h>
-#include <errno.h>
 #include "etask.h"
 
 #define EXCEPTIONS_COUNT 19
@@ -96,16 +95,6 @@ struct AROSCPUContext
 	R6(sc) = (cc)->regs[6];                                     \
         FP(sc) = (cc)->regs[7];                                     \
         PC(sc) = (cc)->regs[8];                                     \
-    } while (0)
-
-#define SAVE_ERRNO(cc)                                              \
-    do {                                                            \
-	(cc)->errno_backup = errno;                                 \
-    } while (0)
-
-#define RESTORE_ERRNO(cc)                                           \
-    do {                                                            \
-	errno = (cc)->errno_backup;                                 \
     } while (0)
 
 #ifndef NO_FPU
@@ -211,14 +200,12 @@ struct AROSCPUContext
     do {                                                            \
         if (HAS_FPU(sc))                                            \
             SAVE_FPU(cc,sc);                                        \
-        SAVE_CPU(cc,sc);                                            \
-        SAVE_ERRNO(cc);                                             \
+        SAVE_CPU(cc,sc);                                            \                                          \
         cc->eflags = sc->sc_efl & PSL_USERCHANGE;                   \
     } while (0)
 
 #define RESTOREREGS(cc, sc)                                         \
-    do {                                                            \
-	RESTORE_ERRNO(cc);                                          \
+    do {                                                            \                                       \
 	RESTORE_CPU(cc,sc);                                         \
         if (HAS_FPU(sc))                                            \
             RESTORE_FPU(cc,sc);                                     \

@@ -9,6 +9,13 @@
 #ifndef _SIGCORE_H
 #define _SIGCORE_H
 
+/*
+ * We support 14 exceptions for PPC (see arch/all-unix/kernel/cpu_ppc.c).
+ * Note that krnRunExceptionHandlers() does not check exception number,
+ * so increase this if you use higher numbers.
+ */
+#define EXCEPTIONS_COUNT 14
+
 #define USE_SA_SIGINFO 1
 
 #if USE_SA_SIGINFO
@@ -26,9 +33,9 @@
 #endif
 #include <bits/sigcontext.h>
 
-/* sigcontext_t is the type of the signals' context. Linux offers no way
+/* regs_t is the type of the signals' context. Linux offers no way
    to get this context in a legal way, so I have to use tricks. */
-typedef @sigcontext@ sigcontext_t;
+typedef @sigcontext@ regs_t;
 typedef @sighandler@ SignalHandler;
  
 /* name and type of the signal handler */
@@ -36,33 +43,23 @@ typedef @sighandler@ SignalHandler;
 #define SIGHANDLER_T	SignalHandler
 
 #if USE_SA_SIGINFO
-#define GLOBAL_SIGNAL_INIT \
-	static void sighandler (int sig, sigcontext_t * sc);    		\
-										\
-	static void SIGHANDLER (int sig, siginfo_t *blub, struct ucontext *u) 	\
-	{ 									\
-	    sighandler(sig, (sigcontext_t *)&u->uc_pad); 			\
+#define GLOBAL_SIGNAL_INIT(sighandler) \
+	static void sighandler ## _gate (int sig, siginfo_t *blub, struct ucontext *u) 	\
+	{ 										\
+	    sighandler(sig, (regs_t *)&u->uc_pad); 					\
 	}
 
 #else
 
 // Browsing the memory sc pattern was found at offset 24 + 64.
 // This did only work for -O0.
-#define GLOBAL_SIGNAL_INIT \
-	static void sighandler (int sig, sigcontext_t * sc);    \
-								\
-	static void SIGHANDLER (int sig)			\
+#define GLOBAL_SIGNAL_INIT(sighandler) \
+	static void sighandler ## _gate (int sig)		\
 	{							\
-	    sigcontext_t *sc =					\
-		(sigcontext_t *) ((BYTE *) &sig + 24 + 64);	\
+	    regs_t *sc = (regs_t *) ((BYTE *) &sig + 24 + 64);	\
 	    sighandler(sig, sc);				\
 	}
 #endif
-
-/* How many general purpose registers are to be saved on the stack
-   when a task switch happens. */
-
-#define CPU_NUMREGS	0
 
 /* This structure is used to save/restore registers, because the stack is too
    small. */
@@ -71,6 +68,7 @@ struct AROSCPUContext
 {
     struct pt_regs            regs;
     double                    fpregs[32];
+    int			      errno_backup;
     struct AROSCPUContext * sc;
 };
 
@@ -189,8 +187,8 @@ struct AROSCPUContext
 #define SAVEREGS(cc, sc)           \
     do                             \
     {                              \
-        SAVE_CPU(cc, sc);          \
-        SAVE_FPU(cc, sc);          \
+        SAVE_CPU((cc), sc);        \
+        SAVE_FPU((cc), sc);        \
     } while(0)
 
 /* This macro does the opposite to SAVEREGS(). It restores all
@@ -201,19 +199,15 @@ struct AROSCPUContext
 #define RESTOREREGS(cc, sc)           \
     do                                \
     {                                 \
-        RESTORE_FPU(cc, sc);          \
-        RESTORE_CPU(cc, sc);          \
+        RESTORE_FPU((cc), sc);        \
+        RESTORE_CPU((cc), sc);        \
     } while(0)
 
 /* This macro prints the current signals' context */
 
 #define PRINT_SC(sc) \
-	printf ("SC: SP=%08lx  PC=%08lx\n" \
+	bug ("SC: SP=%08lx  PC=%08lx\n" \
 	    , SP(sc), PC(sc) \
 	)
-
-/* This macro prints the current stack (after SAVEREGS()) */
-
-#define PRINT_STACK(sp)	/**/
 
 #endif /* _SIGCORE_H */

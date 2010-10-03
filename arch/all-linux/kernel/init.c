@@ -152,9 +152,7 @@ struct MemHeader *mh  = &mhe.mhe_MemHeader;
 UBYTE *memory, *space;
 int memSize = 32;
 
-extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, void *data);
-extern ULONG **Exec_RomTagScanner(struct ExecBase*, UWORD**);
 
 extern APTR __libc_malloc(size_t);
 extern VOID __libc_free(APTR);
@@ -346,7 +344,6 @@ int main(int argc, char **argv)
     struct stat st;
     struct utsname sysinfo;
     char *nameparts[4];
-    int ticrate = 100;
     BOOL mapSysBase   = FALSE;
     BOOL _use_hostmem = FALSE;
     unsigned char* _stack = AROS_GET_SP;
@@ -365,13 +362,9 @@ int main(int argc, char **argv)
             " -h                 show this page\n"
             " -m <size>          allocate <size> Megabytes of memory for AROS\n"
             " -M                 allows programs to read SysBase from Address $4\n"
-            " -t <value>         timer ticks per second. Must be Multiple of 50; max value\n"
-            "                    working on 2.4 kernels is 100; on 2.6 kernels it is 1000;\n"
-            "                    default is 100.\n"
             " --help             same as '-h'\n"
             " --memsize <size>   same as '-m <size>'\n"
             " --mapsysbase       same as '-M'\n"
-            " --tickrate <value> same as '-t <value>'\n"
             " --hostmem          Let AROS use the host operating system's facilities to\n"
             "                    manage memory, rather than the AROS' builtin ones.\n"
             " --fullscreen       start AROS in fullscreen mode\n"
@@ -396,18 +389,6 @@ int main(int argc, char **argv)
       else if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
       {
         mapSysBase = TRUE;
-        i++;
-      }
-      else if (!strcmp(argv[i], "--ticrate") || !strcmp(argv[i], "-t"))
-      {
-        i++;
-        x = 0;
-        ticrate = 0;
-        while ((argv[i])[x] >= '0' && (argv[i])[x] <= '9')
-        {
-          ticrate = ticrate * 10 + (argv[i])[x] - '0';
-          x++;
-        }
         i++;
       }
       else if (!strcmp(argv[i], "--hostmem"))
@@ -524,7 +505,6 @@ int main(int argc, char **argv)
     D(printf("[init] Preparing ExecBase...\n"));
     SysBase = PrepareExecBase(mh, Kernel_Args, NULL);
     D(printf("[init] SysBase 0x%p\n", SysBase));
-    SysBase->PowerSupplyFrequency = ticrate / SysBase->VBlankFrequency;
     
     use_hostmem = _use_hostmem;
     
@@ -562,16 +542,9 @@ int main(int argc, char **argv)
         Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
     
-    /* Ok, lets start up the kernel, we are probably using the UNIX
-       kernel, or a variant of that (see config/unix).
-    */
-    D(printf("[init] Initializing core...\n"));
-    InitCore();
-
     /* On Linux/m68k where we can run old Amiga binaries, we should
        put SysBase at location 4. On other systems, DON'T DO THIS.
     */
-
     if (TRUE == mapSysBase)
     {
       *(APTR *)4 = SysBase;

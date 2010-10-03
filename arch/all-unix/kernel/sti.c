@@ -11,7 +11,8 @@ AROS_LH0I(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-    sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
+    if (!supervisor)
+    	sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
 
     AROS_LIBFUNC_EXIT
 }

@@ -6,8 +6,6 @@
     Lang: english
 */
 
-#include <exec_intern.h>
-
 #include <exec/types.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
@@ -15,14 +13,21 @@
 #include <aros/asmcall.h>
 #include <aros/atomic.h>
 #include <aros/debug.h>
-#include <aros/config.h>
+#include <aros/symbolsets.h>
 #include <hardware/intbits.h>
 
 #define timeval sys_timeval
 #include "etask.h"
-#include "kernel_cpu.h"
-#include "kernel_scheduler.h"
 
+#include "kernel_base.h"
+#include "kernel_debug.h"
+#include "kernel_intr.h"
+#include "kernel_intern.h"
+#include "kernel_interrupts.h"
+#include "kernel_scheduler.h"
+#include "kernel_timer.h"
+
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -33,376 +38,239 @@
 
 #include <proto/exec.h>
 
-#define DEBUG_TT    0
-#if DEBUG_TT
-static struct Task * lastTask;
+#ifdef SIGCORE_NEED_SA_SIGINFO
+#define SETHANDLER(sa, h) 			\
+    sa.sa_sigaction = (void *)h ## _gate;	\
+    sa.sa_flags |= SA_SIGINFO
+#else
+#define SETHANDLER(sa, h) 			\
+    sa.sa_handler = (SIGHANDLER_T)h ## _gate;
 #endif
 
-/* Don't do any debugging. At 50Hz its far too quick to read anyway :-) */
-#define NOISY	0
-
-/* Try and emulate the Amiga hardware interrupts */
-static int sig2tab[NSIG];
 sigset_t sig_int_mask;	/* Mask of signals that Disable() block */
-int intrap;
-LONG supervisor;
+unsigned int supervisor;
 
-static BOOL sigactive[NSIG];
-
-/*
-    These tables are used to map signals to interrupts
-    and trap. There are two tables for the two different kinds
-    of events. We also remove all the signals in sig2trap from
-    the interrupt disable mask.
-*/
-static const int sig2int[][2] =
+static void core_Trap(int sig, regs_t *regs)
 {
-    { SIGALRM, INTB_TIMERTICK },
-    { SIGUSR1, INTB_SOFTINT },
-    { SIGIO,   INTB_DSKBLK }
-};
+    void (*trapHandler)(unsigned long, regs_t *) = NULL;
+    struct SignalTranslation *s;
+    struct AROSCPUContext ctx;
 
-static const int sig2trap[][2] =
-{
-    { SIGBUS,   2 },
-    { SIGSEGV,  3 },
-    { SIGILL,   4 },
-#ifdef SIGEMT
-    { SIGEMT,   13 },
-#endif
-    { SIGFPE,   13 }
-};
+    /* Just for completeness */
+    krnRunIRQHandlers(sig);
 
-/* This is from sigcore.h - it brings in the definition of the
-   systems initial signal handler, which simply calls
-   sighandler(int signum, sigcontext_t sigcontext)
-*/
-GLOBAL_SIGNAL_INIT
+    bug("[KRN] Trap signal %d, SysBase 0x%p, KernelBase 0x%p\n", sig, SysBase, KernelBase);
 
-/*
- * Task exception handler. Calls exec function, then jumps back
- * to kernel mode in order to resume the task
- */
-static void core_Exception(void)
-{
-    struct Task *task = FindTask(NULL);
-
-    Exception();
-
-    /* This tells task switcher that we are returning from the exception */
-    task->tc_State = TS_EXCEPT;
-
-    /* Enter the kernel. We use an endless loop just in case the
-       signal handler returns us to this point for whatever reason.
-    */
-    while (TRUE)
+    /* Find out trap handler for caught task */
+    if (SysBase)
     {
-        sigset_t temp_sig_int_mask;
+	struct Task *t = SysBase->ThisTask;
 
-        sigemptyset(&temp_sig_int_mask);
-        sigaddset(&temp_sig_int_mask, SIGUSR1);
-        sigprocmask(SIG_UNBLOCK, &temp_sig_int_mask, NULL);
-        kill(getpid(), SIGUSR1);
+        if (t)
+	{
+	    bug("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
+	    trapHandler = t->tc_TrapCode;
+	}
+	else
+	    bug("[KRN] No task\n");
+
+	if (!trapHandler)
+	    trapHandler = SysBase->TaskTrapCode;
     }
+
+    PRINT_SC(regs);
+
+    /* Translate UNIX trap number to CPU and exec trap numbers */
+    for (s = sigs; s->sig != -1; s++)
+    {
+	if (sig == s->sig)
+	    break;
+    }
+
+    /*
+     * Trap handler expects struct AROSCPUContext, but regs_t
+     * differs from it. Well, we could pass raw regs_t, but in
+     * future we are going to make struct AROSCPUContext public,
+     * so this won't do.
+     */
+    SAVEREGS(&ctx, regs);
+
+    if (s->CPUTrap != -1)
+    {
+	if (krnRunExceptionHandlers(s->CPUTrap, &ctx))
+	    /* Do not call exec trap handler */
+	    trapHandler = NULL;
+    }
+
+    if (trapHandler && (s->AmigaTrap != -1))
+	/* Call our trap handler. Note that we may return, this means that the handler has
+	   fixed the problem somehow and we may safely continue */
+	trapHandler(s->AmigaTrap, &ctx);
+
+    /* Trap handler(s) have possibly modified the context, so
+       we convert it back before returning */
+    RESTOREREGS(&ctx, regs);
 }
 
-/* sighandler() Handle the signals:
-    You can either turn them into interrupts, or alternatively,
-    you can turn them into traps (eg software failures)
-*/
-static void sighandler(int sig, sigcontext_t * sc)
+/*
+ * We do not have enough user-defined signals to map
+ * them to four required syscalls (CAUSE, SCHEDULE,
+ * SWITCH, DISPATCH). We get around this by assigning
+ * CAUSE to SIGUSR2 and others to SIGUSR1.
+ *
+ * What action is to be taken upon SIGUSR1 can be
+ * figured out by looking at caller task's state.
+ * exec.library calls KrnDispatch() only after task
+ * has been actually disposed, with state set to TS_REMOVED.
+ * Similarly, KrnSwitch() is called only in Wait(), after
+ * setting state to TS_WAIT. In other cases it's KrnSchedule().
+ */
+static void core_SysCall(int sig, regs_t *sc)
 {
-    struct IntVector *iv;
-
-    if(sig == SIGINT)
-    {
-	exit(0);
-    }
-
-#if !AROS_NESTING_SUPERVISOR
-    /* Hmm, interrupts are nesting, not a good idea... */
-    if(supervisor)
-    {
-#if NOISY
-	fprintf(stderr, "Illegal Supervisor %d\n", supervisor);
-	fflush(stderr);
-#endif
-
-	return;
-    }
-#endif
+    struct Task *task = SysBase->ThisTask;
+    struct AROSCPUContext *ctx;
 
     AROS_ATOMIC_INC(supervisor);
 
-    if (sigactive[sig])
+    krnRunIRQHandlers(sig);
+
+    switch(task->tc_State)
     {
-#if NOISY
-    	fprintf(stderr,"********* sighandler: sig %d already active **********\n", sig);
-	fflush(stderr);
-#endif
+    /* A running task needs to be put into TaskReady list first. It's SC_SCHEDULE. */
+    case TS_RUN:
+	if (!core_Schedule())
+	    break;
 
-    	return;
-    }
-    sigactive[sig] = TRUE;
-    
-    /* Map the Unix signal to an Amiga signal. */
-    iv = &SysBase->IntVects[sig2tab[sig]];
+    /* If the task is already in some list with appropriate state, it's SC_SWITCH */
+    case TS_READY:
+    case TS_WAIT:
+	cpu_Switch(sc);
 
-    if (iv->iv_Code)
-    {
-	/*  Call it. I call with all these parameters for a reason.
+    /* If the task is removed, it's simply SC_DISPATCH */
+    case TS_REMOVED:
+	cpu_Dispatch(sc);
+	break;
 
-	    In my `Amiga ROM Kernel Reference Manual: Libraries and
-	    Devices' (the 1.3 version), interrupt servers are called
-	    with the following 5 parameters.
-
-	    D1 - Mask of INTENAR and INTREQR
-	    A0 - 0xDFF000 (base of custom chips)
-	    A1 - Interrupt Data
-	    A5 - Interrupt Code vector
-	    A6 - SysBase
-
-	    It is quite possible that some code uses all of these, so
-	    I must supply them here. Obviously I will dummy some of these
-	    though.
-	*/
-	
-	/* If iv->iv_Code calls Disable()/Enable() we could end up
-	   having the signals unblocked, which then can cause nesting
-	   signals which we do not want. Therefore prevent this from
-	   happening by doing this manual Disable()ing/Enable()ing,
-	   ie. inc/dec of SysBase->IDNestCnt. */
-	   
-	AROS_ATOMIC_INC(SysBase->IDNestCnt);
-	
-	AROS_UFC5(void, iv->iv_Code,
-	    AROS_UFCA(ULONG, 0, D1),
-	    AROS_UFCA(ULONG, 0, A0),
-	    AROS_UFCA(APTR, iv->iv_Data, A1),
-	    AROS_UFCA(APTR, iv->iv_Code, A5),
-	    AROS_UFCA(struct ExecBase *, SysBase, A6)
-	);
-	
-	/* If this was 100 Hz VBlank timer, emulate 50 Hz VBlank timer if
-	   we are on an even 100 Hz tick count */
-	   
-	if (sig2tab[sig] == INTB_TIMERTICK)
-	{
-	    static int tick_counter;
-	    
-	    if ((tick_counter % SysBase->PowerSupplyFrequency) == 0)
-	    {
-	    	iv = &SysBase->IntVects[INTB_VERTB];
-		if (iv->iv_Code)
-		{
-		    AROS_UFC5(void, iv->iv_Code,
-			AROS_UFCA(ULONG, 0, D1),
-			AROS_UFCA(ULONG, 0, A0),
-			AROS_UFCA(APTR, iv->iv_Data, A1),
-			AROS_UFCA(APTR, iv->iv_Code, A5),
-			AROS_UFCA(struct ExecBase *, SysBase, A6)
-		    );
-		}
-		
-	    }
-	    
-	    tick_counter++;
-	}
-	
-	AROS_ATOMIC_DEC(SysBase->IDNestCnt);
-    }
-
-    /* Has an interrupt told us to dispatch when leaving */
-    
-#if AROS_NESTING_SUPERVISOR
-    if (supervisor == 1)
-#endif    
-    if (SysBase->AttnResched & ARF_AttnDispatch)
-    {
-	struct Task *task;
-	struct AROSCPUContext *ctx;
-
-    #if AROS_NESTING_SUPERVISOR
-    	// Disable(); commented out, as causes problems with IDNestCnt. Getting completely out of range. 
-    #endif
-        UWORD u = (UWORD) ~(ARF_AttnDispatch);
-        AROS_ATOMIC_AND(SysBase->AttnResched, u);
-
-	task = SysBase->ThisTask;
-	/* Save registers for this task (if there is one...) */
-	if (task && task->tc_State != TS_REMOVED)
-	{
-	    ctx = GetIntETask(task)->iet_Context;
-	    task->tc_SPReg = (APTR)SP(sc);
-	    SAVEREGS(ctx, sc);
-	    core_Switch();
-	}
-
-	/* Get the next task */
-	task = core_Dispatch();
-
-	/* Get the registers of the new task */
+    /* Special state is used for returning from exception */
+    case TS_EXCEPT:
 	ctx = GetIntETask(task)->iet_Context;
-	RESTOREREGS(ctx, sc);
-	SP(sc) = (IPTR)SysBase->ThisTask->tc_SPReg;
-
-	/* Make sure that the state of the interrupts is what the task
-	   expects.
-	*/
-	if (SysBase->IDNestCnt < 0)
-	    SC_ENABLE(sc);
-	else
-	    SC_DISABLE(sc);
-
-	/* Ok, the next step is to either drop back to the new task, or
-	    give it its Exception() if it wants one... */
-
-        if (SysBase->ThisTask->tc_Flags & TF_EXCEPT)
-        {
-            /* Exec_Exception will Enable() */
-            Disable();
-            /* Make room for the current cpu context. */
-            SysBase->ThisTask->tc_SPReg -= sizeof(struct AROSCPUContext);
-            ctx->sc = SysBase->ThisTask->tc_SPReg;
-            /* Copy current cpu context. */
-            memcpy(SysBase->ThisTask->tc_SPReg, ctx, sizeof(struct AROSCPUContext));
-            /* Manipulate the current cpu context so Exec_Exception gets
-               excecuted after we leave the kernel resp. the signal handler. */
-            SP(sc) = (IPTR) SysBase->ThisTask->tc_SPReg;
-            PC(sc) = (IPTR) core_Exception;
-
-            if (SysBase->ThisTask->tc_SPReg <= SysBase->ThisTask->tc_SPLower)
-            {
-                /* POW! */
-                Alert(AT_DeadEnd|AN_StackProbe);
-            }
-        }
-
-#if DEBUG_TT
-	if (lastTask != SysBase->ThisTask)
-	{
-	    fprintf (stderr, "TT %s\n", SysBase->ThisTask->tc_Node.ln_Name);
-	    lastTask = SysBase->ThisTask;
-	}
-#endif
-
-    #if AROS_NESTING_SUPERVISOR
-    	// Enable();  commented out, as causes problems with IDNestCnt. Getting completely out of range. 
-    #endif	
-    }
-
-    /* Are we returning from Exec_Exception? Then restore the saved cpu context. */
-    if (SysBase->ThisTask && SysBase->ThisTask->tc_State == TS_EXCEPT)
-    {
-	struct AROSCPUContext *ctx = GetIntETask(SysBase->ThisTask)->iet_Context;
 
         SysBase->ThisTask->tc_SPReg = ctx->sc;
         memcpy(ctx, SysBase->ThisTask->tc_SPReg, sizeof(struct AROSCPUContext));
         SysBase->ThisTask->tc_SPReg += sizeof(struct AROSCPUContext);
 
-        if (SysBase->ThisTask->tc_SPReg > SysBase->ThisTask->tc_SPUpper)
-        {
-            /* POW! */
-            Alert(AT_DeadEnd|AN_StackProbe);
-        }
-
         /* Restore the signaled context. */
         RESTOREREGS(ctx, sc);
+	errno = ctx->errno_backup;
 	SP(sc) = (IPTR)SysBase->ThisTask->tc_SPReg;
 
         SysBase->ThisTask->tc_State = TS_RUN;
-        Enable();
-    }
+	Enable();
 
-    /* Leave the interrupt. */
+	break;
+    }
 
     AROS_ATOMIC_DEC(supervisor);
-
-    sigactive[sig] = FALSE;
-    
-} /* sighandler */
-
-#if 0
-static void traphandler(int sig, sigcontext_t *sc)
-{
-    int trapNum = sig2tab[sig];
-    struct Task *this;
-
-    /* Something VERY bad has happened */
-    if( intrap )
-    {
-	fprintf(stderr, "Double TRAP! Aborting!\n");
-	fflush(stderr);
-	abort();
-    }
-    intrap++;
-
-    if( supervisor )
-    {
-	fprintf(stderr,"Illegal Supervisor %d - Inside TRAP\n", supervisor);
-	fflush(stderr);
-    }
-
-    /* This is the task that caused the trap... */
-    this = SysBase->ThisTask;
-    AROS_UFC1(void, this->tc_TrapCode,
-	AROS_UFCA(ULONG, trapNum, D0));
-
-    intrap--;
 }
-#endif
+
+static void core_IRQ(int sig, regs_t *sc)
+{
+    AROS_ATOMIC_INC(supervisor);
+
+    /* Just additional protection - what if there's more than 32 signals? */
+    if (sig < IRQ_COUNT)
+	krnRunIRQHandlers(sig);
+
+    if (sig == SIGALRM)
+	core_TimerTick();
+
+    core_ExitInterrupt(sc);
+
+    AROS_ATOMIC_DEC(supervisor);
+}
+
+/*
+ * This is from sigcore.h - it brings in the definition of the
+ * systems initial signal handler, which simply calls
+ * sighandler(int signum, regs_t sigcontext)
+*/
+GLOBAL_SIGNAL_INIT(core_Trap)
+GLOBAL_SIGNAL_INIT(core_SysCall)
+GLOBAL_SIGNAL_INIT(core_IRQ)
 
 /* Set up the kernel. */
-void InitCore(void)
+static int InitCore(struct KernelBase *KernelBase)
 {
-
     struct itimerval interval;
-    int i;
     struct sigaction sa;
+    struct SignalTranslation *s;
 
     /* We only want signal that we can handle at the moment */
-    sigfillset(&sa.sa_mask);
     sigfillset(&sig_int_mask);
+    sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
 #ifdef __linux__
     sa.sa_restorer = NULL;
 #endif
 
-    /* Initialize the translation table */
-    bzero(sig2tab, sizeof(sig2tab));
     supervisor = 0;
-    intrap = 0;
 
-#if 1
-    /* These ones we consider as processor traps */
-    //sa.sa_handler = (SIGHANDLER_T)TRAPHANDLER;
-    for(i=0; i < (sizeof(sig2trap) / sizeof(sig2trap[0])); i++)
+    /* 
+     * These ones we consider as processor traps.
+     * They are not be blocked by KrnCli()
+     */
+    SETHANDLER(sa, core_Trap);
+    for (s = sigs; s->sig != -1; s++)
     {
-	sig2tab[sig2trap[i][0]] = sig2trap[i][1];
-	// sigaction( sig2trap[i][0], &sa, NULL);
-	sigdelset( &sig_int_mask, sig2trap[i][0] );
+	/* Trap handling disabled for now because:
+	   1. It doesn't work, at least with SIGSEGV
+	   2. It can interfere with gdb debugging.
+	   Coming soon. */
+	sigaction(s->sig, &sa, NULL);
+	sigdelset(&sig_int_mask, s->sig);
     }
-#endif
 
-    /* We want to be signalled - make these interrupts. */
-#ifdef SIGCORE_NEED_SA_SIGINFO
-    sa.sa_sigaction = (void *)SIGHANDLER;
-    sa.sa_flags |= SA_SIGINFO;
-#else
-    sa.sa_handler = (SIGHANDLER_T)SIGHANDLER;
-#endif
+    /* SIGUSRs are software interrupts, we also never block them */
+    sigdelset(&sig_int_mask, SIGUSR1);
+    sigdelset(&sig_int_mask, SIGUSR2);
+
+    /*
+     * Any interrupt including software one must disable
+     * all interrupts. Otherwise one interrupt may happen
+     * between interrupt handler entry and supervisor mode
+     * mark. This can cause bad things in cpu_Dispatch()
+     */
     sa.sa_mask = sig_int_mask;
-    for(i=0; i < (sizeof(sig2int) / sizeof(sig2int[0])); i++)
-    {
-	sig2tab[sig2int[i][0]] = sig2int[i][1];
-	sigaction( sig2int[i][0], &sa, NULL );
-    }
-    sigaction( SIGINT, &sa, NULL );
+
+    /* Install interrupt handlers */
+    SETHANDLER(sa, core_SysCall);
+    sigaction(SIGUSR1, &sa, NULL);
+
+    SETHANDLER(sa, core_IRQ);
+    sigaction(SIGUSR2, &sa, NULL);
+    sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGIO  , &sa, NULL);
+
+    /* We need to start up with disabled interrupts */
+    sigprocmask(SIG_BLOCK, &sig_int_mask, NULL);
 
     /* Set up the "pseudo" vertical blank interrupt. */
+    D(bug("[InitCore] Timer frequency is %d\n", SysBase->ex_EClockFrequency));
     interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
     interval.it_interval.tv_usec =
-    interval.it_value.tv_usec = 1000000 / (SysBase->VBlankFrequency * SysBase->PowerSupplyFrequency);
+    interval.it_value.tv_usec = 1000000 / SysBase->ex_EClockFrequency;
 
-    setitimer(ITIMER_REAL, &interval, NULL);
+    return !setitimer(ITIMER_REAL, &interval, NULL);
+}
+
+ADD2INITLIB(InitCore, 10);
+
+/*
+ * All syscalls are mapped to single SIGUSR1.
+ * We look at task's tc_State to determine the
+ * needed action
+ */
+void krnSysCall(unsigned char n)
+{
+    kill(getpid(), SIGUSR1);
 }

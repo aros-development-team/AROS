@@ -455,7 +455,7 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
         UBYTE subsys = (alertnum & 0x7f000000) >> 24;
 
         if(subsys < 0x80)
-            buf = Alert_AddString(buf, getString(alertnum, stringlist[subsys]));
+            buf = Alert_AddString(buf, getString(alertnum & 0x7fffffff, stringlist[subsys]));
         else
             buf = Alert_AddString(buf, "unknown error");
     }
