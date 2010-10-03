@@ -100,6 +100,10 @@ struct AROSCPUContext
     and local variables of a function and PC is the current address
     in the program code.
 */
+#define GET_PC(ctx) ((APTR)ctx->regs[0])
+
+#define SET_PC(ctx, val) ctx->regs[0] = (ULONG)val
+
 #define SP(sc)           ((sc)->esp)
 #define FP(sc)           ((sc)->ebp)
 #define PC(sc)           ((sc)->eip)
