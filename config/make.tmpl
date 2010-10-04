@@ -518,7 +518,7 @@ endif
 #   it is put in the same directory as the .c file. When targetdir is not
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
-%define rule_assemble_multi basenames=/A aflags=$(AFLAGS) targetdir= suffix=.s
+%define rule_assemble_multi basenames=/A aflags=$(AFLAGS) targetdir= suffix=.s compiler=target
 
 ifeq (%(targetdir),)
 TMP_TARGETS := $(addsuffix .o,%(basenames))
@@ -541,9 +541,22 @@ endif
 
 endif
 
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+$(TMP_TARGETS) : TMP_CMD:=$(TARGET_CC)
+endif
+ifeq (%(compiler),host)
+$(TMP_TARGETS) : TMP_CMD:=$(HOST_CC)
+endif
+ifeq (%(compiler),kernel)
+$(TMP_TARGETS) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+endif
+
 $(TMP_TARGETS) : AFLAGS := %(aflags)
 $(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
-	%assemble_q opt=$(AFLAGS)
+	%assemble_q cmd=$(TMP_CMD) opt=$(AFLAGS)
 %end
 #------------------------------------------------------------------------------
 
@@ -1105,7 +1118,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile basename=%(srcdir)% targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
 %rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
-    aflags=$(BD_AFLAGS)
+    aflags=$(BD_AFLAGS) compiler=%(compiler)
 
 %rule_link_prog prog=$(BD_TARGETDIR)/$(BD_PROGNAME) \
     objs="$(BD_OBJS) $(BD_ARCHOBJS) $(USER_OBJS)" ldflags=$(BD_LDFLAGS) \

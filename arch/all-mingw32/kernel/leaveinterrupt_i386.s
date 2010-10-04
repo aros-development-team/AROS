@@ -1,5 +1,4 @@
         .globl  _core_LeaveInterrupt
-        .type   _core_LeaveInterrupt,@function
 
 # Note that we first get all the values from struct LeaveInterruptContext
 # and only then enable interrupts. After enabling interrupts our structure
