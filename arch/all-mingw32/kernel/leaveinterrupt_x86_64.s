@@ -1,5 +1,4 @@
         .globl  _core_LeaveInterrupt
-        .type   _core_LeaveInterrupt,@function
 
 _core_LeaveInterrupt:
 	pushq 0(%rax)		# Push real return address
