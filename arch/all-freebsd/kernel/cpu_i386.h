@@ -10,9 +10,9 @@
 #include <signal.h>
 #include "etask.h"
 
-#define EXCEPTIONS_COUNT 19
+#define EXCEPTIONS_COUNT 17
 
-typedef struct sigcontext sigcontext_t;
+typedef struct sigcontext regs_t;
 #define SIGHANDLER	bsd_sighandler
 #define SIGHANDLER_T	__sighandler_t *
 
@@ -67,12 +67,10 @@ struct AROSCPUContext
 
 #define SET_PC(ctx, val) ctx->regs[8] = (ULONG)val
 
-#define GLOBAL_SIGNAL_INIT \
-	static void sighandler (int sig, sigcontext_t * sc); \
-							     \
-	static void SIGHANDLER (int sig, int code, struct sigcontext *sc) \
-	{						     \
-	    sighandler( sig, (sigcontext_t*)sc);             \
+#define GLOBAL_SIGNAL_INIT(sighandler) \
+	static void sighandler ## _gate (int sig, int code, struct sigcontext *sc) \
+	{						     			   \
+	    sighandler( sig, (regs_t*)sc);             				   \
 	}
 
 #define SAVE_CPU(cc,sc)                                              \

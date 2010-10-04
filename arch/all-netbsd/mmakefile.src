@@ -1,0 +1,29 @@
+# $Id: mmakefile.src 34543 2010-09-29 13:50:06Z sonic $ 
+include $(TOP)/config/make.cfg
+
+UNIX := netbsd
+
+#MM- kernel-$(UNIX)-$(CPU) : \
+#MM     kernel-unix \
+#MM     kernel-$(CPU)
+
+#MM- includes-$(UNIX)-$(CPU) : includes-common-$(CPU)
+#MM- kernel-exec-includes-$(UNIX)-$(CPU) : kernel-exec-includes-unix
+#MM- kernel-link-$(UNIX)-$(CPU) : kernel-link-emul
+
+%rule_archalias mainmmake=kernel-bootstrap-hosted arch=$(UNIX) alias=unix
+%rule_archalias mainmmake=kernel-bootloader arch=$(UNIX) alias=unix
+%rule_archalias mainmmake=kernel-exec arch=$(UNIX) alias=unix
+%rule_archalias mainmmake=kernel-battclock arch=$(UNIX) alias=unix
+%rule_archalias mainmmake=kernel-hostlib arch=$(UNIX) alias=unix
+%rule_archalias mainmmake=kernel-dbus arch=$(UNIX) alias=unix
+%rule_archalias mainmmake=kernel-kernel arch=$(UNIX) alias=unix
+
+%rule_archalias mainmmake=workbench-libs-oss arch=$(UNIX) alias=unix
+
+#MM- workbench-$(UNIX)-$(CPU) : \
+#MM     workbench-unix
+
+#MM- contrib-$(UNIX) : contrib-complete
+
+%common
