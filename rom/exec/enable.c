@@ -85,7 +85,7 @@
     
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     
-    if( SysBase->IDNestCnt < 0)
+    if (KernelBase && (SysBase->IDNestCnt < 0))
     {
         D(bug("[Enable] Enabling interrupts\n"));
         KrnSti();

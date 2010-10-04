@@ -78,7 +78,9 @@
 
     AROS_LIBFUNC_INIT
 
-    KrnCli();
+    if (KernelBase)
+	KrnCli();
+
     AROS_ATOMIC_INC(SysBase->IDNestCnt);
 
     AROS_LIBFUNC_EXIT
