@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 #MM- kernel-dosboot-linux   : kernel-dosboot-hosted
 #MM- kernel-dosboot-darwin  : kernel-dosboot-hosted
 #MM- kernel-dosboot-freebsd : kernel-dosboot-hosted
+#MM- kernel-dosboot-netbsd : kernel-dosboot-hosted
+#MM- kernel-dosboot-openbsd : kernel-dosboot-hosted
 
 USER_INCLUDES	:= -I$(GENINCDIR)
 USER_CFLAGS	:= -I$(SRCDIR)/rom/dosboot -I..
