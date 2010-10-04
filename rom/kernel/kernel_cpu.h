@@ -13,11 +13,13 @@
 /* Number of exceptions supported by the CPU. Needed by kernel_base.h */
 #define EXCEPTIONS_COUNT 1
 
-/* CPU context stored in task's iet_Context */
+/* CPU context stored in task's iet_Context. Just a dummy sample definition. */
 struct AROSCPUContext
 {
     IPTR pc;
 };
+
+typedef struct AROSCPUContext regs_t;
 
 /* User/supervisor mode switching */
 #define cpumode_t __unused char
