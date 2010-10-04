@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute a loaded command synchronously
@@ -97,6 +97,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 
     sss.stk_Lower=stack;
     sss.stk_Upper=stack+stacksize;
+    sss.stk_Pointer = sss.stk_Upper;
 
     oldresult=me->pr_Result2;
     /* we have to save iet_startup field because it's overwritten in 
