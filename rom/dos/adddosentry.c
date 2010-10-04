@@ -5,12 +5,14 @@
     Desc:
     Lang: english
 */
-#define DEBUG 0
-
-#include <aros/debug.h>
 #include <dos/dosextens.h>
+#include <proto/exec.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
+#include "../devs/filesys/packet/packet.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -76,7 +78,8 @@
 
     if (dlist == NULL) return success;
 
-    D(bug("[AddDosEntry] Adding %b from Task %s\n", dlist->dol_Name, FindTask(NULL)->tc_Node.ln_Name));
+    D(bug("[AddDosEntry] Adding '%b' from Task '%s'\n", dlist->dol_Name,
+        FindTask(NULL)->tc_Node.ln_Name));
     dl = LockDosList(LDF_ALL | LDF_READ);
 
     /* If the passed entry has dol_Task defined, then it's a packet-based
@@ -104,9 +107,27 @@
                    used for example to enable utilities to pass packets directly to the filesystem without the need
                    to interact with wrapper. This will be used by SFS - Pavel Fedin <sonic.amiga@gmail.com> */
                 if (!strcmp(scan->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, "packet.handler")) {
+                    struct ph_handle *vol_handle;
+
                     dlist->dol_Ext.dol_AROS.dol_DevName = AROS_BSTR_ADDR(dlist->dol_Name);
                     dlist->dol_Ext.dol_AROS.dol_Device = scan->dol_Ext.dol_AROS.dol_Device;
-                    dlist->dol_Ext.dol_AROS.dol_Unit = scan->dol_Ext.dol_AROS.dol_Unit;
+
+                    /* A separate handle needs to be allocated for each volume,
+                     * because it may need to stay around after its original
+                     * DOS device has been destroyed */
+                    vol_handle = AllocMem(sizeof(struct ph_handle),
+                        MEMF_PUBLIC);
+                    if (vol_handle != NULL)
+                    {
+                        CopyMem(scan->dol_Ext.dol_AROS.dol_Unit, vol_handle,
+                            sizeof(struct ph_handle));
+                        vol_handle->msgport = dlist->dol_Task;
+                        vol_handle->volume = dlist;
+                        dlist->dol_Ext.dol_AROS.dol_Unit =
+                            (struct Unit *)vol_handle;
+                    }
+                    else
+                        success = 0;
                 }
                 break;
             }
