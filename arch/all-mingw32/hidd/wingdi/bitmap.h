@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: bitmap.h 23833 2005-12-20 14:41:50Z stegerg $
+    $Id$
 */
 
 #ifndef _BITMAP_H

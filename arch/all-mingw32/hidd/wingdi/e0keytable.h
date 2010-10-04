@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: e0keytable.h 12747 2001-12-08 20:11:50Z chodorowski $
+    $Id$
 */
 
 #define NUM_E0KEYS 94

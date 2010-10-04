@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: hostio_class.c 32324 2010-01-14 08:44:13Z sonic $
+    $Id$
 
     Desc: Host OS file I/O, Windows-hosted version
     Lang: english

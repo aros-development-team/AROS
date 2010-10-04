@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: hostio_stubs.c 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc: Host OS filedescriptor/socket IO
     Lang: english

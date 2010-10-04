@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: gdimouse.c 24652 2006-08-21 10:35:08Z verhaegs $
+    $Id$
 
     Desc: GDI hidd handling mouse events.
     Lang: English.

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: cachecleare.c 34408 2010-09-11 19:37:21Z sonic $
+    $Id$
 
     Desc: CacheClearE() - Clear the caches with extended control, Windows-hosted implementation
     Lang: english

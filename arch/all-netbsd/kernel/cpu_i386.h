@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: cpu_i386.h -1   $
+    $Id$
 */
 
 #ifndef _SIGCORE_H
