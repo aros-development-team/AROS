@@ -53,6 +53,9 @@ struct ph_handle {
     BOOL                        is_lock;
 
     struct ph_mount             *mount;
+
+    struct MsgPort		*msgport;    /* only valid for locks */
+    struct DosList		*volume;    /* only valid for volume locks */
 };
 
 struct ph_mount {
@@ -62,7 +65,6 @@ struct ph_mount {
     char                        mount_point[MAXFILENAMELENGTH];
 
     struct Process              *process;
-    struct MsgPort		*msgport;
     BPTR                        seglist;
     BOOL                        is_loaded;
 

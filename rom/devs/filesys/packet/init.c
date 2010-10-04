@@ -239,7 +239,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 	       FIXME: console-alike handlers may want to leave it NULL, this means that
 	       a new process needs to be started up upon next access. Current packet.handler
 	       does not support this at all and will crash. */
-	    mount->msgport = dn->dn_Task;
+            mount->root_handle.msgport = dn->dn_Task;
 
             iofs->IOFS.io_Unit = (struct Unit *) &(mount->root_handle);
             iofs->IOFS.io_Error = 0;

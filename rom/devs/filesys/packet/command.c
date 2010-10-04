@@ -170,14 +170,61 @@ static struct ph_packet *packet_alloc(void) {
 }
 
 void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase) {
-    struct ph_handle *handle;
+    struct ph_handle *handle, *root_handle;
     struct ph_packet *pkt;
     struct DosPacket *dp;
+    struct DosList *dl, *dlist, *scan;
+    struct FileLock *lock = NULL;
+    BOOL found = FALSE;
+    struct MsgPort *msgport = NULL;
 
     D(bug("[packet] got io request %d (%s)\n", iofs->IOFS.io_Command, fsa_str(iofs->IOFS.io_Command)));
 
     /* get our data back */
     handle = (struct ph_handle *) iofs->IOFS.io_Unit;
+
+    /* check for locks and volumes that have been transferred to a new DOS
+     * device */
+    if (handle->is_lock)
+        lock = BADDR(handle->actual);
+    if (handle->volume != NULL)
+        msgport = handle->volume->dol_Task;
+    else if (handle->is_lock && lock != NULL)
+        msgport = lock->fl_Task;
+
+    if (msgport != NULL && msgport != handle->msgport) {
+        D(bug("[packet] invalid lock handle detected. Updating...\n"));
+
+        /* find device node for this handle (we can't get it directly because
+         * handle->mount is invalid) */
+        dl = LockDosList(LDF_ALL | LDF_READ);
+        for (scan = dl; scan != NULL && !found; scan = BADDR(scan->dol_Next)) {
+            if (scan->dol_Task == msgport && scan->dol_Type == DLT_DEVICE) {
+                root_handle =
+                    (struct ph_handle *) scan->dol_Ext.dol_AROS.dol_Unit;
+                found = TRUE;
+            }
+        }
+        UnLockDosList(LDF_ALL | LDF_READ);
+
+        if (found) {
+            /* update handle */
+            D(bug("[packet] updating handle's msgport and mount fields\n"));
+            handle->msgport = msgport;
+            handle->mount = root_handle->mount;
+
+            /* update volume node */
+            if (handle->volume != NULL) {
+                D(bug("[packet] updating handle's volume\n"));
+                dlist = handle->volume;
+                dlist->dol_Ext.dol_AROS.dol_DevName =
+                    AROS_BSTR_ADDR(dlist->dol_Name);
+                dlist->dol_Ext.dol_AROS.dol_Device =
+                    scan->dol_Ext.dol_AROS.dol_Device;
+                dlist->dol_Ext.dol_AROS.dol_Unit = root_handle;
+            }
+        }
+    }
 
     /* make a fresh new packet */
     pkt = packet_alloc();
@@ -717,7 +764,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
     iofs->IOFS.io_Flags &= ~IOF_QUICK;
 
     /* send the packet */
-    PutMsg(handle->mount->msgport, dp->dp_Link);
+    PutMsg(handle->mount->root_handle.msgport, dp->dp_Link);
 
     return;
 
@@ -747,6 +794,7 @@ AROS_UFH3(void, packet_reply,
     struct ph_packet *pkt;
     struct IOFileSys *iofs;
     struct ph_handle *handle;
+    struct FileLock *lock;
 
     /* retrieve the message and fish the packet out */
     dp = (struct DosPacket *) GetMsg(&(mount->reply_port))->mn_Node.ln_Name;
@@ -831,6 +879,10 @@ AROS_UFH3(void, packet_reply,
             handle->actual = (void *) dp->dp_Res1;
             handle->is_lock = TRUE;
             handle->mount = mount;
+
+            /* record the lock's port so we can tell if it changes */
+            lock = BADDR(handle->actual);
+            handle->msgport = lock->fl_Task;
 
             iofs->IOFS.io_Unit = (struct Unit *) handle;
 
