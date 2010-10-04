@@ -61,12 +61,6 @@ static const UBYTE name[] = MOD_NAME_STRING;
 static const UBYTE version[] = VERSION_STRING;
 
 extern void debugmem(void);
-extern void idleTask(struct ExecBase *);
-
-/**************** GLOBAL SYSBASE ***************/
-#ifndef AROS_CREATE_ROM
-struct ExecBase * SysBase = NULL;
-#endif
 
 /*
     We temporarily redefine kprintf() so we use the real version in case
@@ -168,23 +162,7 @@ AROS_UFH5S(void, VBlankServer,
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH1(void, idleCount,
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-    /* This keeps track of how many times the idle task becomes active.
-	Apart from also testing the tc_Launch vector, it also keeps a
-	count of how many times we've gone idle since startup.
-    */
-    SysBase->IdleCount++;
-    AROS_USERFUNC_EXIT
-}
-
 extern ULONG SoftIntDispatch();
-
-#ifdef AROS_CREATE_ROM
-#	define sysBase SysBase
-#endif
 
 AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFHA(ULONG, dummy, D0),
@@ -196,14 +174,11 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 
     struct Task    *t;
     struct MemList *ml;
-    UBYTE *s;
     int i, j;
     UWORD sum;
     UWORD *ptr;
 
-#ifndef AROS_CREATE_ROM
     SysBase = sysBase;
-#endif
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
 	return NULL;
@@ -347,10 +322,6 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 
     AROS_USERFUNC_EXIT
 }
-
-#ifdef sysBase
-#undef sysBase
-#endif
 
 AROS_PLH1(struct ExecBase *, open,
     AROS_LHA(ULONG, version, D0),
