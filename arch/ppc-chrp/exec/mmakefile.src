@@ -11,7 +11,7 @@ endif
 
 CFILES          := \
         exec_init preparecontext rawputchar coldreboot prepareexecbase \
-        cachepostdma cachepredma supervisor superstate userstate idletask \
+        cachepostdma cachepredma supervisor superstate userstate \
         shutdowna
 
 #MM kernel-exec-chrp-ppc : kernel-kernel-ppc-includes kernel-exec-includes 
