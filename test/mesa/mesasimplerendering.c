@@ -39,9 +39,9 @@ const GLchar * fragmentShaderSource =
 "void main()"
 "{"
 "   vec4 v = vec4(gl_Color);"
-"   float intensity = abs(1.0 - (mod(angle, 1440) / 720));"
+"   float intensity = abs(1.0f - (mod(angle, 1440.0f) / 720.0f));"
 "   v.b = v.b * intensity;"
-"   v.g = v.g * (1.0 - intensity);"
+"   v.g = v.g * (1.0f - intensity);"
 "	gl_FragColor = v;"
 "}";
 
