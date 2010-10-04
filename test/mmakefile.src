@@ -58,6 +58,7 @@ COMMONTESTFILES := \
     showvisregion \
     showvisshape \
     sortlayercr \
+    stackswap \
     signaltest \
     strtodate \
     systemtags \
@@ -110,7 +111,7 @@ COMMONTESTFILES := \
     joystick \
     supertest \
     getcpuinfo \
-	printf_f
+	PrintF_f
 
 HOSTEDTESTFILES :=  \
     hostlib
