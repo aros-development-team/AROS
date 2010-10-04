@@ -22,7 +22,12 @@ struct Errors
 /* Get a string from an array of type Errors. */
 static STRPTR getString(ULONG alertnum, const struct Errors *errs)
 {
-    while((errs->number) && (errs->number != alertnum))
+    /* Some of alert codes have AT_DeadEnd bit set, others have it reset.
+       However in real life AT_DeadEnd bit may be set for any error, so
+       we mask it out for comparison */
+    alertnum &= ~AT_DeadEnd;
+
+    while((errs->number) && ((errs->number & ~AT_DeadEnd) != alertnum))
     {
         errs++;
     }
@@ -455,7 +460,7 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
         UBYTE subsys = (alertnum & 0x7f000000) >> 24;
 
         if(subsys < 0x80)
-            buf = Alert_AddString(buf, getString(alertnum & 0x7fffffff, stringlist[subsys]));
+            buf = Alert_AddString(buf, getString(alertnum, stringlist[subsys]));
         else
             buf = Alert_AddString(buf, "unknown error");
     }
