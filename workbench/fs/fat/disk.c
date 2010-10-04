@@ -13,13 +13,10 @@
 #define USE_INLINE_STDARG
 
 #include <exec/types.h>
-#include <exec/execbase.h>
-#include <exec/libraries.h>
 #include <exec/errors.h>
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
-#include <dos/dostags.h>
 #include <dos/filehandler.h>
 #include <devices/newstyle.h>
 #include <devices/trackdisk.h>
@@ -63,7 +60,8 @@ void FillDiskInfo (struct InfoData *id) {
 	id->id_DiskType = ID_DOS_DISK;
 
         id->id_VolumeNode = MKBADDR(glob->sb->doslist);
-        id->id_InUse = glob->sb->doslist->dol_misc.dol_volume.dol_LockList ? DOSTRUE : DOSFALSE;
+        id->id_InUse = (IsListEmpty(&glob->sb->info->locks)
+            && IsListEmpty(&glob->sb->info->notifies)) ? DOSFALSE : DOSTRUE;
     }
 
     else {
@@ -101,95 +99,149 @@ void SendVolumePacket(struct DosList *vol, ULONG action) {
 void DoDiskInsert(void) {
     struct FSSuper *sb;
     ULONG err;
+    struct DosList *dl;
+    struct VolumeInfo *vol_info = NULL;
+    struct GlobalLock *global_lock;
+    struct ExtFileLock *ext_lock;
+    struct MinNode *lock_node;
+    APTR pool;
+    struct NotifyNode *nn;
+    struct DosList *newvol = NULL;
 
     if (glob->sb == NULL && (sb = AllocVecPooled(glob->mempool, sizeof(struct FSSuper)))) {
         memset(sb, 0, sizeof(struct FSSuper));
 
-	err = ReadFATSuper(sb);
-	if (err == 0) {
-            LONG found = FALSE;
+        err = ReadFATSuper(sb);
+        if (err == 0) {
 
-            if (glob->sblist) {
-                struct FSSuper *ptr = glob->sblist, *prev = NULL;
+            /* Scan volume list for a matching volume (would be better to
+             * match by serial number) */
+            dl = LockDosList(LDF_VOLUMES | LDF_WRITE);
+            dl = FindDosEntry(dl, sb->volume.name + 1,
+               LDF_VOLUMES | LDF_WRITE);
+            UnLockDosList(LDF_VOLUMES | LDF_WRITE);
 
-                while (ptr != NULL) {
-                    if (CompareFATSuper(sb, ptr) == 0)
-                        break;
+            if (dl != NULL) {
+                dl->dol_Task = glob->ourport;
+                sb->doslist = dl;
 
-                    prev = ptr;
-                    ptr = ptr->next;
-                }
+                D(bug("\tFound old volume.\n"));
 
-                if (ptr) {
-                    D(bug("\tFound FAT FS Super Block in spare list, freeing obsolete old one\n"));
+                vol_info = dl->dol_misc.dol_volume.dol_LockList;
 
-                    sb->doslist = ptr->doslist;
-                    ptr->doslist = NULL;
-
+#if 0 /* no point until we match volumes by serial number */
+                /* update name */
 #ifdef AROS_FAST_BPTR
-                    /* ReadFATSuper() sets a null byte * after the string, so
-                     * this should be fine */
-                    sb->doslist->dol_Name = (BSTR)MKBADDR(&(sb->volume.name[1]));
+                /* ReadFATSuper() sets a null byte after the
+                 * string, so this should be fine */
+                CopyMem(sb->volume.name + 1, dl->dol_Name,
+                    sb->volume.name[0] + 1);
 #else
-                    sb->doslist->dol_Name = (BSTR)MKBADDR(&sb->volume.name);
+                CopyMem(sb->volume.name, dl->dol_Name,
+                    sb->volume.name[0] + 2);
+#endif
 #endif
 
-                    if (prev)
-                        prev->next = ptr->next;
-                    else
-                        glob->sblist = ptr->next;
-
-                    FreeFATSuper(ptr);
-                    FreeVecPooled(glob->mempool, ptr);
-
-                    found = TRUE;
+                /* patch locks and notifications to match this handler
+                 * instance */
+                ForeachNode(&vol_info->locks, global_lock) {
+                    ForeachNode(&global_lock->locks, lock_node) {
+                        ext_lock = LOCKFROMNODE(lock_node);
+                        D(bug("[fat] Patching adopted lock %p. old port = %p,"
+                            " new port = %p\n", ext_lock, ext_lock->fl_Task,
+                            glob->ourport));
+                        ext_lock->fl_Task = glob->ourport;
+                        ext_lock->sb = sb;
+                        ext_lock->ioh.sb = sb;
+                    }
                 }
+
+                ForeachNode(&vol_info->root_lock.locks, lock_node) {
+                    ext_lock = LOCKFROMNODE(lock_node);
+                    D(bug("[fat] Patching adopted ROOT lock %p. old port = %p,"
+                        " new port = %p\n", ext_lock, ext_lock->fl_Task,
+                        glob->ourport));
+                    ext_lock->fl_Task = glob->ourport;
+                    ext_lock->sb = sb;
+                    ext_lock->ioh.sb = sb;
+                }
+
+                ForeachNode(&vol_info->notifies, nn)
+                    nn->nr->nr_Handler = glob->ourport;
             }
-
-            if (!found) {
-                struct DosList *newvol;
-
+            else {
                 D(bug("\tCreating new volume.\n"));
 
-                if ((newvol = AllocVecPooled(glob->mempool, sizeof(struct DosList)))) {
-                    newvol->dol_Next = NULL;
-                    newvol->dol_Type = DLT_VOLUME;
-                    newvol->dol_Task = glob->ourport;
-                    newvol->dol_Lock = NULL;
+                /* create transferable core volume info */
+                pool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE, DEF_POOL_THRESHOLD);
+                if (pool != NULL) {
+                    vol_info = AllocVecPooled(pool, sizeof(struct VolumeInfo));
+                    if (vol_info != NULL) {
+                        vol_info->mem_pool = pool;
+                        vol_info->id = sb->volume_id;
+                        NEWLIST(&vol_info->locks);
+                        NEWLIST(&vol_info->notifies);
 
-                    CopyMem(&sb->volume.create_time, &newvol->dol_misc.dol_volume.dol_VolumeDate, sizeof(struct DateStamp));
+                        vol_info->root_lock.dir_cluster = FAT_ROOTDIR_MARK;
+                        vol_info->root_lock.dir_entry = FAT_ROOTDIR_MARK;
+                        vol_info->root_lock.access = SHARED_LOCK;
+                        vol_info->root_lock.first_cluster = 0;
+                        vol_info->root_lock.attr = ATTR_DIRECTORY;
+                        vol_info->root_lock.size = 0;
+                        CopyMem(sb->volume.name, vol_info->root_lock.name,
+                            sb->volume.name[0] + 1);
+                        NEWLIST(&vol_info->root_lock.locks);
+                    }
 
-                    newvol->dol_misc.dol_volume.dol_LockList = NULL;
+                    if ((newvol = AllocVecPooled(pool, sizeof(struct DosList)))) {
+                        newvol->dol_Next = NULL;
+                        newvol->dol_Type = DLT_VOLUME;
+                        newvol->dol_Task = glob->ourport;
+                        newvol->dol_Lock = NULL;
 
-                    newvol->dol_misc.dol_volume.dol_DiskType = (sb->type == 12) ? ID_FAT12_DISK :
-                                                               (sb->type == 16) ? ID_FAT16_DISK :
-                                                               (sb->type == 32) ? ID_FAT32_DISK :
-                                                               ID_FAT12_DISK;
+                        CopyMem(&sb->volume.create_time, &newvol->dol_misc.dol_volume.dol_VolumeDate, sizeof(struct DateStamp));
 
+                        newvol->dol_misc.dol_volume.dol_LockList = vol_info;
+
+                        newvol->dol_misc.dol_volume.dol_DiskType =
+                            (sb->type == 12) ? ID_FAT12_DISK :
+                            (sb->type == 16) ? ID_FAT16_DISK :
+                            (sb->type == 32) ? ID_FAT32_DISK :
+                            ID_FAT12_DISK;
+
+                        if ((newvol->dol_Name = AllocVecPooled(pool, 13))) {
 #ifdef AROS_FAST_BPTR
-                    /* ReadFATSuper() sets a null byte * after the string, so
-                     * this should be fine */
-                    newvol->dol_Name = (BSTR)MKBADDR(&(sb->volume.name[1]));
+                            /* ReadFATSuper() sets a null byte after the
+                             * string, so this should be fine */
+                            CopyMem(sb->volume.name + 1, newvol->dol_Name,
+                                sb->volume.name[0] + 1);
 #else
-                    newvol->dol_Name = (BSTR)MKBADDR(&sb->volume.name);
+                            CopyMem(sb->volume.name, newvol->dol_Name,
+                                sb->volume.name[0] + 2);
 #endif
 
-                    sb->doslist = newvol;
-
-                    SendVolumePacket(newvol, ACTION_VOLUME_ADD);
+                            sb->doslist = newvol;
+                        }
+                    }
+                    if (vol_info == NULL || newvol == NULL)
+                        DeletePool(pool);
                 }
             }
 
-            else
-                SendEvent(IECLASS_DISKINSERTED);
-
+            sb->info = vol_info;
             glob->sb = sb;
             glob->last_num = -1;
+
+            if (dl != NULL)
+                SendEvent(IECLASS_DISKINSERTED);
+            else
+                SendVolumePacket(newvol, ACTION_VOLUME_ADD);
 
             D(bug("\tDisk successfully initialised\n"));
 
             return;
-	} else if (err == IOERR_BADADDRESS)
+        }
+        else if (err == IOERR_BADADDRESS)
 	    ErrorMessage("Your device does not support 64-bit\n"
 			 "access to the disk while it is needed!\n"
 			 "In order to prevent data damage access to\n"
@@ -204,28 +256,41 @@ void DoDiskInsert(void) {
     return;
 }
 
+BOOL AttemptDestroyVolume(struct FSSuper *sb) {
+    BOOL destroyed = FALSE;
+
+    D(bug("[fat] Attempting to destroy volume\n"));
+
+    /* check if the volume can be removed */
+    if (IsListEmpty(&sb->info->locks) && IsListEmpty(&sb->info->notifies)) {
+        D(bug("\tRemoving volume completely\n"));
+
+        if (sb == glob->sb)
+            glob->sb = NULL;
+        else
+            Remove((struct Node *)sb);
+
+        SendVolumePacket(sb->doslist, ACTION_VOLUME_REMOVE);
+
+        FreeFATSuper(sb);
+        FreeVecPooled(glob->mempool, sb);
+        destroyed = TRUE;
+    }
+
+    return destroyed;
+}
+
 void DoDiskRemove(void) {
 
     if (glob->sb) {
         struct FSSuper *sb = glob->sb;
 
-        glob->sb = NULL;
-
-        if (sb->doslist->dol_misc.dol_volume.dol_LockList == NULL) { /* check if the device can be removed */
-            D(bug("\tRemoving disk completely\n"));
-
-            SendVolumePacket(sb->doslist, ACTION_VOLUME_REMOVE);
-
-            sb->doslist = NULL;
-            FreeFATSuper(sb);
-            FreeVecPooled(glob->mempool, sb);
-        }
-        else {
-            sb->next = glob->sblist;
-            glob->sblist = sb;
-
-            D(bug("\tMoved in-memory super block to spare list. Waiting for locks to be freed\n"));
-
+        if(!AttemptDestroyVolume(sb)) {
+            sb->doslist->dol_Task = NULL;
+            glob->sb = NULL;
+            D(bug("\tMoved in-memory super block to spare list. "
+                "Waiting for locks and notifications to be freed\n"));
+            AddTail((struct List *)&glob->sblist, (struct Node *)sb);
             SendEvent(IECLASS_DISKREMOVED);
         }
     }

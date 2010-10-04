@@ -215,7 +215,7 @@ void ProcessPackets(void) {
             case ACTION_READ: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
                 APTR buffer = (APTR)pkt->dp_Arg2;
-                ULONG want = pkt->dp_Arg3;
+                ULONG want = pkt->dp_Arg3, read;
 
                 D(bug("[fat] READ: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n",
                       pkt->dp_Arg1,
@@ -228,8 +228,10 @@ void ProcessPackets(void) {
                     break;
                 }
 
-                if ((err = OpRead(fl, buffer, want, &res)) != 0)
+                if ((err = OpRead(fl, buffer, want, &read)) != 0)
                     res = -1;
+                else
+                    res = read;
 
                 break;
             }
@@ -237,7 +239,7 @@ void ProcessPackets(void) {
             case ACTION_WRITE: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
                 APTR buffer = (APTR)pkt->dp_Arg2;
-                ULONG want = pkt->dp_Arg3;
+                ULONG want = pkt->dp_Arg3, written;
 
                 D(bug("[fat] WRITE: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n",
                       pkt->dp_Arg1,
@@ -250,8 +252,10 @@ void ProcessPackets(void) {
                     break;
                 }
 
-                if ((err = OpWrite(fl, buffer, want, &res)) != 0)
+                if ((err = OpWrite(fl, buffer, want, &written)) != 0)
                     res = -1;
+                else
+                    res = written;
 
                 break;
             }
@@ -303,6 +307,7 @@ void ProcessPackets(void) {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
                 LONG offset = pkt->dp_Arg2;
                 LONG whence = pkt->dp_Arg3;
+                LONG newsize;
 
                 D(bug("[fat] SET_FILE_SIZE: lock 0x%08x (dir %ld/%ld pos %ld) offset %ld whence %s\n",
                       pkt->dp_Arg1,
@@ -319,8 +324,10 @@ void ProcessPackets(void) {
                     break;
                 }
 
-                if ((err = OpSetFileSize(fl, offset, whence, &res)) != 0)
+                if ((err = OpSetFileSize(fl, offset, whence, &newsize)) != 0)
                     res = -1;
+                else
+                    res = newsize;
 
                 break;
             }
@@ -408,15 +415,31 @@ void ProcessPackets(void) {
             }
 
             case ACTION_DIE: {
+                struct FSSuper *sb;
+                struct NotifyNode *nn;
+
                 D(bug("[fat] DIE\n"));
 
-                if (glob->sblist != NULL || (glob->sb != NULL && glob->sb->doslist->dol_misc.dol_volume.dol_LockList != NULL)) {
-                    D(bug("\tThere are some locks/volumes left. Shutting down is not possible\n"));
+                /* clear our message port from notification requests so DOS won't send
+                 * notification-end packets to us after we're gone */
+                ForeachNode(&glob->sblist, sb) {
+                    ForeachNode(&sb->info->notifies, nn) {
+                        nn->nr->nr_Handler = NULL;
+                    }
+                }
+
+                if ((glob->sb != NULL
+                    && !(IsListEmpty(&glob->sb->info->locks)
+                    && IsListEmpty(&glob->sb->info->notifies)))) {
+
+                    D(bug("\tThere are remaining locks or notification "
+                        "requests. Shutting down is not possible\n"));
+
                     err = ERROR_OBJECT_IN_USE;
                     break;
                 }
 
-                D(bug("\tNo locks pending. Shutting down the handler\n"));
+                D(bug("\tNothing pending. Shutting down the handler\n"));
 
                 DoDiskRemove(); /* risky, because of async. volume remove, but works */
 
@@ -449,6 +472,8 @@ void ProcessPackets(void) {
 
             case ACTION_DISK_CHANGE: { /* internal */
                 struct DosList *vol = (struct DosList *)pkt->dp_Arg2;
+                struct VolumeInfo *vol_info =
+                    vol->dol_misc.dol_volume.dol_LockList;
                 ULONG type = pkt->dp_Arg3;
 
                 D(bug("[fat] DISK_CHANGE [INTERNAL]\n"));
@@ -467,7 +492,7 @@ void ProcessPackets(void) {
                         }
                         else if (type == ACTION_VOLUME_REMOVE) {
                             RemDosEntry(vol);
-                            FreeVecPooled(glob->mempool, vol);
+                            DeletePool(vol_info->mem_pool);
                             UnLockDosList(LDF_VOLUMES|LDF_WRITE);
 
                             SendEvent(IECLASS_DISKREMOVED);

@@ -117,7 +117,7 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent) {
 
     /* the root has no parent, but as a special case we have to return success
      * with the zero lock */
-    if (lock == NULL || lock->gl == &glob->sb->root_lock) {
+    if (lock == NULL || lock->gl == &glob->sb->info->root_lock) {
         *parent = NULL;
         return 0;
     }
@@ -501,7 +501,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
     UpdateDirEntry(&dde);
 
     /* update the global lock (if present) with the new dir cluster/entry */
-    ForeachNode(&sdh.ioh.sb->locks, gl)
+    ForeachNode(&sdh.ioh.sb->info->locks, gl)
         if (gl->dir_cluster == sde.cluster && gl->dir_entry == sde.index) {
             D(bug("[fat] found lock with old dir entry (%ld/%ld), changing to (%ld/%ld)\n", sde.cluster, sde.index, dde.cluster, dde.index));
 
@@ -989,7 +989,7 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
     /* if the request is for the volume root, then we just link to the root lock */
     if (nr->nr_FullName[strlen(nr->nr_FullName)-1] == ':') {
         D(bug("[fat] adding notify for root dir\n"));
-        gl = &glob->sb->root_lock;
+        gl = &glob->sb->info->root_lock;
     }
 
     else {
@@ -1007,7 +1007,7 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
 
             D(bug("[fat] file exists (%ld/%ld), looking for global lock\n", de.cluster, de.index));
 
-            ForeachNode(&glob->sb->locks, tmp)
+            ForeachNode(&glob->sb->info->locks, tmp)
                 if (tmp->dir_cluster == de.cluster && tmp->dir_entry == de.index) {
                     gl = tmp;
 
@@ -1027,8 +1027,9 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
     if (gl == NULL)
         D(bug("[fat] file not currently locked\n"));
 
-    /* allocate space to for the notify node */
-    if ((nn = AllocVecPooled(glob->mempool, sizeof(struct NotifyNode))) == NULL)
+    /* allocate space for the notify node */
+    if ((nn = AllocVecPooled(glob->sb->info->mem_pool,
+        sizeof(struct NotifyNode))) == NULL)
         return ERROR_NO_FREE_STORE;
 
     /* plug the bits in */
@@ -1036,7 +1037,7 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
     nn->nr = nr;
 
     /* add to the list */
-    ADDTAIL(&glob->sb->notifies, nn);
+    ADDTAIL(&glob->sb->info->notifies, nn);
 
     /* tell them that the file exists if they wanted to know */
     if (exists && nr->nr_Flags & NRF_NOTIFY_INITIAL)
@@ -1048,19 +1049,31 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
 }
 
 LONG OpRemoveNotify(struct NotifyRequest *nr) {
-    struct NotifyNode *nn;
+    struct FSSuper *sb;
+    struct NotifyNode *nn, *nn2;
 
     D(bug("[fat] trying to remove notification for '%s'\n", nr->nr_FullName));
-    /* Notification removal can be requested after disk remove */
-    if (glob->sb) { /* FIXME: This is a workaround to solve crashing */
-    /*The notify requests are meant to be preserved when a volume is ejected, 
-    in a similar way to locks, so that they can be restored if the volume is 
-    re-inserted. */
-        ForeachNode(&glob->sb->notifies, nn) {
+
+    /* search inserted volume for the request */
+    if (glob->sb != NULL) {
+        ForeachNodeSafe(&glob->sb->info->notifies, nn, nn2) {
             if (nn->nr == nr) {
                 D(bug("[fat] found notify request in list, removing it\n"));
                 REMOVE(nn);
-                FreeVecPooled(glob->mempool, nn);
+                FreeVecPooled(glob->sb->info->mem_pool, nn);
+                return 0;
+            }
+        }
+    }
+
+    /* search offline volumes for the request */
+    ForeachNode(&glob->sblist, sb) {
+        ForeachNodeSafe(&sb->info->notifies, nn, nn2) {
+            if (nn->nr == nr) {
+                D(bug("[fat] found notify request in list, removing it\n"));
+                REMOVE(nn);
+                FreeVecPooled(sb->info->mem_pool, nn);
+                AttemptDestroyVolume(sb);
                 return 0;
             }
         }

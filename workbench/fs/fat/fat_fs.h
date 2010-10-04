@@ -145,13 +145,23 @@ struct NotifyNode {
 };
 
 struct VolumeInfo {
+    APTR mem_pool;
+    ULONG id;
+    struct MinList locks;           /* global locks */
+    struct GlobalLock root_lock;
+    struct MinList notifies;
+};
+
+struct VolumeIdentity {
     UBYTE               name[32];     /* BCPL string */
     struct DateStamp    create_time;
 };
 
 struct FSSuper {
-    struct FSSuper *next;
+    struct Node node;
     struct DosList *doslist;
+
+    struct VolumeInfo *info;
 
     struct cache *cache;
     ULONG        first_device_sector;
@@ -191,12 +201,7 @@ struct FSSuper {
     ULONG rootdir_cluster;
     ULONG rootdir_sector;
 
-    struct VolumeInfo volume;
-
-    struct MinList locks;
-    struct GlobalLock root_lock;
-
-    struct MinList notifies;
+    struct VolumeIdentity volume;
 
     /* function table */
     ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);
@@ -223,6 +228,7 @@ struct Globals {
     struct IOExtTD *diskioreq;
     struct IOExtTD *diskchgreq;
     struct MsgPort *diskport;
+    ULONG diskchgsig_bit;
     struct timerequest *timereq;
     struct MsgPort *timerport;
     ULONG last_num;    /* last block number that was outside boundaries */
@@ -233,7 +239,7 @@ struct Globals {
 
     /* volumes */
     struct FSSuper *sb;    /* current sb */
-    struct FSSuper *sblist;   /* list of sbs with outstanding locks */
+    struct MinList sblist;   /* sbs with outstanding locks or notifies */
 
     /* disk status */
     LONG disk_inserted;
@@ -280,5 +286,9 @@ struct Globals {
         for (i = 0; i < 11; i++)                                                \
             checksum = ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + name[i]; \
     } while(0);
+
+#define LOCKFROMNODE(A) \
+    ((struct ExtFileLock *) \
+    (((BYTE *)(A)) - (IPTR)&((struct ExtFileLock *)NULL)->node))
 
 #endif

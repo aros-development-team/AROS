@@ -509,7 +509,7 @@ LONG DeleteDirEntry(struct DirEntry *de) {
 #define sb glob->sb
 
 LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
-    struct GlobalLock *gl = (fl != NULL ? fl->gl : &sb->root_lock);
+    struct GlobalLock *gl = (fl != NULL ? fl->gl : &sb->info->root_lock);
     struct DirHandle dh;
     struct DirEntry de;
     LONG result = 0;
