@@ -40,10 +40,10 @@ void DumpLocks(struct FSSuper *sb) {
 
     bug("[fat] global locks:\n");
 
-    ListLength(&sb->root_lock.locks, count);
+    ListLength(&sb->info->root_lock.locks, count);
     bug("    root: %ld references\n", count);
     
-    ForeachNode(&sb->locks, gl) {
+    ForeachNode(&sb->info->locks, gl) {
         ListLength(&gl->locks, count);
 	bug("    (%ld/%ld) ", gl->dir_cluster, gl->dir_entry); RawPutChars(&(gl->name[1]), gl->name[0]);
 	bug(": %ld references\n",  count);
@@ -143,7 +143,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
 
     /* first see if we already have a global lock for this file */
     gl = NULL;
-    ForeachNode(&glob->sb->locks, node)
+    ForeachNode(&glob->sb->info->locks, node)
         if (node->dir_cluster == dir_cluster && node->dir_entry == dir_entry) {
             gl = node;
             break;
@@ -158,13 +158,15 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
     /* allocate space for the lock. we do this first so that we don't go to
      * all the effort of setting up the global lock only to have to discard it
      * if the filelock allocation fails */
-    if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
+    if ((fl = AllocVecPooled(glob->sb->info->mem_pool,
+        sizeof(struct ExtFileLock))) == NULL)
         return ERROR_NO_FREE_STORE;
 
     /* if we don't have a global lock we need to build one */
     if (gl == NULL) {
-        if ((gl = AllocVecPooled(glob->mempool, sizeof(struct GlobalLock))) == NULL) {
-            FreeVecPooled(glob->mempool, fl);
+        if ((gl = AllocVecPooled(glob->sb->info->mem_pool,
+            sizeof(struct GlobalLock))) == NULL) {
+            FreeVecPooled(glob->sb->info->mem_pool, fl);
             return ERROR_NO_FREE_STORE;
         }
 
@@ -189,7 +191,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
 
         NEWLIST(&gl->locks);
 
-        ADDTAIL(&glob->sb->locks, gl);
+        ADDTAIL(&glob->sb->info->locks, gl);
 
         D(bug("[fat] created new global lock\n"));
 
@@ -199,7 +201,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
         {
             struct NotifyNode *nn;
 
-            ForeachNode(&glob->sb->notifies, nn)
+            ForeachNode(&glob->sb->info->notifies, nn)
                 if (nn->gl == NULL) {
                     D(bug("[fat] searching for notify name '%s'\n", nn->nr->nr_FullName));
 
@@ -257,7 +259,8 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock) {
         return ERROR_OBJECT_IN_USE;
     }
 
-    if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
+    if ((fl = AllocVecPooled(glob->sb->info->mem_pool,
+        sizeof(struct ExtFileLock))) == NULL)
         return ERROR_NO_FREE_STORE;
 
     fl->fl_Link = NULL;
@@ -277,9 +280,11 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock) {
 
     fl->do_notify = FALSE;
 
-    fl->gl = &glob->sb->root_lock;
+    if (IsListEmpty(&glob->sb->info->root_lock.locks))
+        ADDTAIL(&glob->sb->info->locks, &glob->sb->info->root_lock);
+    fl->gl = &glob->sb->info->root_lock;
     fl->sb = glob->sb;
-    ADDTAIL(&glob->sb->root_lock.locks, &fl->node);
+    ADDTAIL(&glob->sb->info->root_lock.locks, &fl->node);
 
     D(bug("[fat] created root lock 0x%08x\n", fl));
 
@@ -292,7 +297,7 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock) {
 LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock) {
     D(bug("[fat] copying lock\n"));
 
-    if (fl == NULL || fl->gl == &glob->sb->root_lock)
+    if (fl == NULL || fl->gl == &glob->sb->info->root_lock)
         return LockRoot(SHARED_LOCK, lock);
 
     if (fl->fl_Access == EXCLUSIVE_LOCK) {
@@ -316,14 +321,15 @@ void FreeLock(struct ExtFileLock *fl) {
 
     REMOVE(&fl->node);
 
-    if (IsListEmpty((struct List *)&fl->gl->locks) && fl->gl != &fl->sb->root_lock) {
+    if (IsListEmpty((struct List *)&fl->gl->locks)) {
         REMOVE(fl->gl);
 
-	ForeachNode(&fl->sb->notifies, nn)
+	ForeachNode(&fl->sb->info->notifies, nn)
             if(nn->gl == fl->gl)
                 nn->gl = NULL;
 
-        FreeVecPooled(glob->mempool, fl->gl);
+        if (fl->gl != &fl->sb->info->root_lock)
+            FreeVecPooled(glob->sb->info->mem_pool, fl->gl);
 
         D(bug("[fat] freed associated global lock\n"));
     }
@@ -332,82 +338,9 @@ void FreeLock(struct ExtFileLock *fl) {
     if (fl->ioh.block != NULL)
 	Cache_FreeBlock(fl->sb->cache, fl->ioh.block);
 
-    FreeVecPooled(glob->mempool, fl);
+    if (fl->sb != glob->sb)
+        AttemptDestroyVolume(fl->sb);
+
+    FreeVecPooled(glob->sb->info->mem_pool, fl);
 }
 
-#if 0
-LONG FreeLockSB(struct ExtFileLock *fl, struct FSSuper *sb) {
-    LONG found = FALSE;
-
-    if (sb == NULL)
-        return ERROR_OBJECT_NOT_FOUND;
-    if (fl->magic != ID_FAT_DISK)
-        return ERROR_OBJECT_WRONG_TYPE;
-
-    if (fl == BADDR(sb->doslist->dol_misc.dol_volume.dol_LockList)) {
-        sb->doslist->dol_misc.dol_volume.dol_LockList = fl->fl_Link;
-        found = TRUE;
-    }
-    else {
-        struct ExtFileLock *prev = NULL, *ptr = BADDR(sb->doslist->dol_misc.dol_volume.dol_LockList);
-
-        while (ptr != NULL) {
-            if (ptr == fl) {
-                prev->fl_Link = fl->fl_Link;
-                found = TRUE;
-                break;
-            }
-            prev = ptr;
-            ptr = BADDR(ptr->fl_Link);
-        }
-    }
-
-    if (found) {
-        D(bug("\tFreeing lock.\n"));
-
-        fl->fl_Task = NULL;
-
-        if (fl->ioh.block != NULL)
-            Cache_FreeBlock(sb->cache, fl->ioh.block);
-
-        FreeVecPooled(glob->mempool, fl);
-
-        return 0;
-    }
-
-    return ERROR_OBJECT_NOT_FOUND;
-}
-
-void FreeLock(struct ExtFileLock *fl) {
-    struct FSSuper *ptr = glob->sblist, *prev=NULL;
-
-    if (FreeLockSB(fl, glob->sb) == 0)
-        return;
-
-    while (ptr != NULL) {
-        if (FreeLockSB(fl, ptr) == 0)
-            break;
-
-        prev = ptr;
-        ptr = ptr->next;
-    }
-
-    if (ptr) {
-        if (ptr->doslist->dol_misc.dol_volume.dol_LockList == NULL) { /* check if the device can be removed */
-            D(bug("\tRemoving disk completely\n"));
-
-            SendVolumePacket(ptr->doslist, ACTION_VOLUME_REMOVE);
-
-            ptr->doslist = NULL;
-            FreeFATSuper(ptr);
-
-            if (prev)
-                prev->next = ptr->next;
-            else
-                glob->sblist = ptr->next;
-
-            FreeVecPooled(glob->mempool, ptr);
-        }
-    }
-}
-#endif

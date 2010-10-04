@@ -75,7 +75,7 @@ void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl) {
 
     D(bug("[fat] notifying for lock (%ld/%ld)\n", gl->dir_cluster, gl->dir_entry));
 
-    ForeachNode(&sb->notifies, nn)
+    ForeachNode(&sb->info->notifies, nn)
         if (nn->gl == gl)
             SendNotify(nn->nr);
 }
@@ -92,7 +92,7 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de) {
 
     D(bug("[fat] notifying for dir entry (%ld/%ld)\n", de->cluster, de->index));
 
-    ForeachNode(&sb->notifies, nn)
+    ForeachNode(&sb->info->notifies, nn)
         if (nn->gl != NULL) {
             if (nn->gl->dir_cluster == de->cluster && nn->gl->dir_entry == de->index)
                 SendNotify(nn->nr);

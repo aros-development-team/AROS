@@ -18,19 +18,19 @@ LONG ReadFATSuper (struct FSSuper *s);
 void FreeFATSuper(struct FSSuper *s);
 LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
 
-LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume);
+LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume);
 
 void CountFreeClusters(struct FSSuper *sb);
 
-/* diskchange */
+/* disk.c */
 void ProcessDiskChange (void);
 void DoDiskInsert();
+BOOL AttemptDestroyVolume(struct FSSuper *sb);
 void DoDiskRemove();
 void SendVolumePacket(struct DosList *vol, ULONG action);
 
-/* diskio */
-LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *ressigbit);
-void CleanupDiskHandler(ULONG diskchgsig_bit);
+LONG InitDiskHandler(struct FileSysStartupMsg *fssm);
+void CleanupDiskHandler(void);
 void UpdateDisk(void);
 void Probe_64bit_support(void);
 ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);

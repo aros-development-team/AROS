@@ -356,7 +356,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 
     D(bug("[fat] rootdir at cluster %ld sector %ld\n", sb->rootdir_cluster, sb->rootdir_sector));
 
-    if (GetVolumeInfo(sb, &(sb->volume)) != 0) {
+    if (GetVolumeIdentity(sb, &(sb->volume)) != 0) {
         LONG i;
         UBYTE *uu = (void *)&sb->volume_id;
 
@@ -378,25 +378,12 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->volume.name[0] = 9;
     }
 
-    NEWLIST(&(sb->locks));
-
-    sb->root_lock.dir_cluster = FAT_ROOTDIR_MARK;
-    sb->root_lock.dir_entry = FAT_ROOTDIR_MARK;
-    sb->root_lock.access = SHARED_LOCK;
-    sb->root_lock.first_cluster = 0;
-    sb->root_lock.attr = ATTR_DIRECTORY;
-    sb->root_lock.size = 0;
-    CopyMem(sb->volume.name, sb->root_lock.name, sb->volume.name[0]+1);
-    NEWLIST(&sb->root_lock.locks);
-
-    NEWLIST(&(sb->notifies));
-
-    D(bug("\tFAT Filesystem succesfully detected.\n"));
+    D(bug("\tFAT Filesystem successfully detected.\n"));
     FreeMem(boot, bsize);
     return 0;
 }
 
-LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
+LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume) {
     struct DirHandle dh;
     struct DirEntry de;
     LONG err;
@@ -419,18 +406,19 @@ LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
             /* copy the name in. volume->name is a BSTR */
 
             volume->name[1] = de.e.entry.name[0];
-            volume->name[12] = '\0';
 
-            for (i = 1; i < 11; i++)
-                volume->name[i+1] = tolower(de.e.entry.name[i]);
+            for (i = 1; i < 11; i++) {
+                if (volume->name[i] == ' ')
+                    volume->name[i+1] = de.e.entry.name[i];
+                else
+                    volume->name[i+1] = tolower(de.e.entry.name[i]);
+            }
 
-            for (i = 10; i > 1; i--)
-                if (volume->name[i+1] == ' ')
-                    volume->name[i+1] = '\0';
-
+            for (i = 10; volume->name[i+1] == ' '; i--);
+            volume->name[i+2] = '\0';
             volume->name[0] = strlen(&(volume->name[1]));
 
-            /* get the volume creation date date too */
+            /* get the volume creation date too */
             ConvertFATDate(de.e.entry.create_date, de.e.entry.create_time, &volume->create_time);
 
             D(bug("[fat] volume name is '%s'\n", &(volume->name[1])));
@@ -535,28 +523,11 @@ LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
 
 void FreeFATSuper(struct FSSuper *sb) {
     D(bug("\tRemoving Super Block from memory\n"));
-    /* FIXME: Remove when notifications are corrected, see ops.c, OpRemoveNotify */
-    struct NotifyNode *nn, *tmp;
-    ForeachNodeSafe(&sb->notifies, nn, tmp) {
-        REMOVE(nn);
-        FreeVecPooled(glob->mempool, nn);
-    }
-    /* FIXME */
-
     Cache_DestroyCache(sb->cache);
     FreeVecPooled(glob->mempool, sb->fat_buffers);
     sb->fat_buffers = NULL;
     FreeVecPooled(glob->mempool, sb->fat_blocks);
     sb->fat_blocks = NULL;
-}
-
-LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2) {
-    LONG res;
-
-    if ((res = memcmp(s1->volume.name, s2->volume.name, s1->volume.name[0])) != 0)
-        return res;
-
-    return s1->volume_id - s2->volume_id;
 }
 
 /* see how many unused clusters are available */

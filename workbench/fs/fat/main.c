@@ -46,6 +46,7 @@ void handler(void) {
     LONG error = ERROR_NO_FREE_STORE;
 
     memset(glob, 0, sizeof(struct Globals));
+    NEWLIST(&glob->sblist);
     glob->ourtask = FindTask(NULL);
     glob->ourport = &((struct Process *)glob->ourtask)->pr_MsgPort;
     WaitPort(glob->ourport);
@@ -68,12 +69,10 @@ void handler(void) {
 
 		    error = InitTimer();
 		    if (!error) {
-			ULONG diskchgsig_bit;
-
 			InitCharsetTables();
-                        if ((error = InitDiskHandler(glob->fssm, &diskchgsig_bit)) == 0) {
+                        if ((error = InitDiskHandler(glob->fssm)) == 0) {
                             ULONG pktsig = 1 << glob->ourport->mp_SigBit;
-                            ULONG diskchgsig = 1 << diskchgsig_bit;
+                            ULONG diskchgsig = 1 << glob->diskchgsig_bit;
                             ULONG notifysig = 1 << glob->notifyport->mp_SigBit;
                             ULONG timersig = 1 << glob->timerport->mp_SigBit;
                             ULONG mask = pktsig | diskchgsig | notifysig | timersig;
@@ -94,12 +93,6 @@ void handler(void) {
 
                             D(bug("Handler init finished.\n"));
 
-                            glob->sb = NULL;
-                            glob->sblist = NULL;
-                            glob->disk_inserted = FALSE;
-                            glob->disk_inhibited = FALSE;
-                            glob->quit = FALSE;
-
                             ProcessDiskChange(); /* insert disk */
 
                             while(!glob->quit) {
@@ -119,7 +112,7 @@ void handler(void) {
                             error = 0;
                             startuppacket = NULL;
 
-                            CleanupDiskHandler(diskchgsig_bit);
+                            CleanupDiskHandler();
                         }
                         CleanupTimer();
                     }
@@ -143,8 +136,6 @@ void handler(void) {
     D(bug("The end.\n"));
 
     if (startuppacket != NULL) {
-        struct MsgPort *rp;
-
         D(bug("[fat] returning startup packet\n"));
 
         startuppacket->dp_Res1 = DOSTRUE;
@@ -177,7 +168,7 @@ AROS_UFH3(static BOOL, DiskChangeIntHandler,
     AROS_USERFUNC_EXIT
 }
 
-LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
+LONG InitDiskHandler (struct FileSysStartupMsg *fssm) {
     LONG err;
     ULONG diskchgintbit, flags, unit;
     UBYTE *device;
@@ -188,7 +179,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
     device = AROS_BSTR_ADDR(fssm->fssm_Device);
 
     if ((diskchgintbit = AllocSignal(-1)) >= 0) {
-        *diskchgsig_bit = diskchgintbit;
+        glob->diskchgsig_bit = diskchgintbit;
 
         if ((glob->diskport = CreateMsgPort())) {
 
@@ -246,7 +237,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
 
         FreeSignal(diskchgintbit);
 
-        *diskchgsig_bit = 0;
+        glob->diskchgsig_bit = 0;
     }
     else
         err = ERROR_NO_FREE_STORE;
@@ -254,7 +245,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
     return err;
 }
 
-void CleanupDiskHandler(ULONG diskchgsig_bit) {
+void CleanupDiskHandler(void) {
     D(bug("\tFreeing handler resources:\n"));
 
     /* remove disk change interrupt */
@@ -276,7 +267,7 @@ void CleanupDiskHandler(ULONG diskchgsig_bit) {
     glob->diskchgreq = NULL;
     glob->diskport = NULL;    
 
-    FreeSignal(diskchgsig_bit);
+    FreeSignal(glob->diskchgsig_bit);
 
     D(bug("\tDone.\n"));
 }
