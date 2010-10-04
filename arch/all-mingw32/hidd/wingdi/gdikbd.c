@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: x11kbd.c 26918 2007-10-02 02:55:49Z rob $
+    $Id$
 
     Desc: GDI hidd handling keypresses.
     Lang: English.

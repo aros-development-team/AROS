@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: shutdowna.c 29957 2008-11-01 19:06:57Z neil $
+    $Id$
 
     Desc: ShutdownA() - Shut down the operating system.
     Lang: english

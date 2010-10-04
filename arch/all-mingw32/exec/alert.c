@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: alert.c 32172 2009-12-25 11:40:20Z sonic $
+    $Id$
 
     Desc: Display an alert.
     Lang: english

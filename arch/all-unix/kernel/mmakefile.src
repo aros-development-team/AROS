@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 34170 2010-08-16 11:58:02Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES  := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec

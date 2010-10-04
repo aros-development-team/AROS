@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 34117 2010-08-13 11:13:30Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 EXEDIR  := $(BINDIR)/boot

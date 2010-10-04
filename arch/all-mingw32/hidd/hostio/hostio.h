@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: unixio.h 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc: Unix filedescriptor/socket IO include file
 */
