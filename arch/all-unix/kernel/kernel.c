@@ -47,6 +47,13 @@
     sa.sa_handler = (SIGHANDLER_T)h ## _gate;
 #endif
 
+/*
+ * This is the global SysBase. It needs to be somewhere so it's placed
+ * here. When UNIX-hosted AROS is made modular, this goes away and SysBase
+ * will be handled by bootstrap, like in Windows-hosted port
+ */
+struct ExecBase *SysBase;
+
 static void core_Trap(int sig, regs_t *regs)
 {
     void (*trapHandler)(unsigned long, regs_t *) = NULL;
