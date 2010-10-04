@@ -26,8 +26,8 @@ unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
 
 /* Virtual CPU control registers */
-volatile int           __declspec(dllexport) (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
-volatile int           __declspec(dllexport) (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
+         int           __declspec(dllexport) (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
+         int           __declspec(dllexport) (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
 volatile int           __declspec(dllexport) Ints_Enabled;
 volatile int           __declspec(dllexport) Supervisor;
 volatile unsigned char __declspec(dllexport) Sleep_Mode;
