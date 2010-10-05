@@ -22,6 +22,7 @@ GALLIUM_SOFTPIPE_SOURCES = \
             drivers/softpipe/sp_fs_exec \
             drivers/softpipe/sp_fs_sse \
             drivers/softpipe/sp_clear \
+            drivers/softpipe/sp_fence \
             drivers/softpipe/sp_flush \
             drivers/softpipe/sp_query \
             drivers/softpipe/sp_context \
@@ -34,19 +35,20 @@ GALLIUM_SOFTPIPE_SOURCES = \
             drivers/softpipe/sp_quad_stipple \
             drivers/softpipe/sp_screen \
             drivers/softpipe/sp_setup \
+            drivers/softpipe/sp_surface \
             drivers/softpipe/sp_state_blend \
             drivers/softpipe/sp_state_clip \
             drivers/softpipe/sp_state_derived \
             drivers/softpipe/sp_state_fs \
             drivers/softpipe/sp_state_sampler \
             drivers/softpipe/sp_state_rasterizer \
+            drivers/softpipe/sp_state_so \
             drivers/softpipe/sp_state_surface \
             drivers/softpipe/sp_state_vertex \
             drivers/softpipe/sp_texture \
             drivers/softpipe/sp_tex_sample \
             drivers/softpipe/sp_tile_cache \
             drivers/softpipe/sp_tex_tile_cache \
-            drivers/softpipe/sp_surface
 
 GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
 
@@ -61,6 +63,7 @@ SOFTPIPE_HIDD_SOURCES := \
 USER_INCLUDES := \
             -I$(GALLIUM_PATH)/drivers \
             -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(GALLIUM_PATH)/include \
 
 USER_CFLAGS := $(FFIXED)
 

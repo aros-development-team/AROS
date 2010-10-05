@@ -7,13 +7,10 @@
 #include <proto/oop.h>
 #include <aros/debug.h>
 
+#include <gallium/pipe/p_screen.h>
 #include "softpipe/sp_texture.h"
-#include "softpipe/sp_winsys.h"
-#include "pipe/p_context.h"
-#include "util/u_simple_screen.h"
-#include "util/u_format.h"
-#include "util/u_math.h"
-#include "util/u_inlines.h"
+#include "softpipe/sp_public.h"
+#include "state_tracker/sw_winsys.h"
 
 #include "softpipe_intern.h"
 
@@ -32,119 +29,11 @@
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->hiddGalliumAB)
 
-struct HiddSoftpipeBuffer
-{
-    struct pipe_buffer  base;
-    APTR                buffer; /* Real buffer pointer */
-    APTR                data;   /* Aligned buffer pointer (inside real buffer) */
-    APTR                mapped;
-};
-
 struct HiddSoftpipeWinSys
 {
-    struct HIDDT_WinSys  base;
+    struct HIDDT_WinSys base;
+    struct sw_winsys    swws;
 };
-
-static struct pipe_buffer *
-HiddSoftpipeBufferCreate(struct pipe_winsys *pws, 
-                        unsigned alignment, 
-                        unsigned usage,
-                        unsigned size)
-{
-    struct HiddSoftpipeBuffer *buffer = AllocVec(sizeof(struct HiddSoftpipeBuffer), MEMF_PUBLIC|MEMF_CLEAR);
-
-    pipe_reference_init(&buffer->base.reference, 1);
-    buffer->base.alignment = alignment;
-    buffer->base.usage = usage;
-    buffer->base.size = size;
-    if (buffer->buffer == NULL) {
-        /* Alligment */
-        buffer->buffer = AllocVec(size + alignment - 1, MEMF_PUBLIC);
-        buffer->data = (void *)(((IPTR)buffer->buffer + (alignment - 1)) & ~(alignment - 1));
-    }
-
-    return &buffer->base;
-}
-
-static struct pipe_buffer *
-HiddSoftpipeUserBufferCreate(struct pipe_winsys *pws, void *ptr, unsigned bytes)
-{
-   struct HiddSoftpipeBuffer *buffer = AllocVec(sizeof(struct HiddSoftpipeBuffer), MEMF_PUBLIC|MEMF_CLEAR);
-   pipe_reference_init(&buffer->base.reference, 1);
-   buffer->base.size = bytes;
-   buffer->data = ptr;
-
-   return &buffer->base;
-}
-
-static void *
-HiddSoftpipeBufferMap(struct pipe_winsys *pws, struct pipe_buffer *buf,
-              unsigned flags)
-{
-    struct HiddSoftpipeBuffer *hiddsoftpipebuffer = (struct HiddSoftpipeBuffer *)buf;
-    hiddsoftpipebuffer->mapped = hiddsoftpipebuffer->data;
-    return hiddsoftpipebuffer->mapped;
-}
-
-static void
-HiddSoftpipeBufferUnmap(struct pipe_winsys *pws, struct pipe_buffer *buf)
-{
-    struct HiddSoftpipeBuffer *hiddsoftpipebuffer = (struct HiddSoftpipeBuffer *)buf;
-    hiddsoftpipebuffer->mapped = NULL;
-}
-
-static void
-HiddSoftpipeBufferDestroy(struct pipe_buffer *buf)
-{
-    struct HiddSoftpipeBuffer *hiddsoftpipebuffer = (struct HiddSoftpipeBuffer *)buf;
-
-    if (hiddsoftpipebuffer->buffer) {
-        FreeVec(hiddsoftpipebuffer->buffer);  
-        hiddsoftpipebuffer->data = NULL;
-        hiddsoftpipebuffer->buffer = NULL;
-    }
-
-    FreeVec(hiddsoftpipebuffer);
-}
-
-static struct pipe_buffer *
-HiddSoftpipeSurfaceBufferCreate(struct pipe_winsys *winsys,
-                         unsigned width, unsigned height,
-                         enum pipe_format format,
-                         unsigned usage,
-                         unsigned tex_usage,
-                         unsigned *stride)
-{
-    const unsigned alignment = 64;
-    unsigned nblocksy;
-
-    nblocksy = util_format_get_nblocksy(format, height);
-    *stride = align(util_format_get_stride(format, width), alignment);
-
-    return winsys->buffer_create(winsys, alignment,
-                                    usage,
-                                    *stride * nblocksy);
-}
-
-static void 
-HiddSoftpipeFlushFrontBuffer(struct pipe_winsys *ws,
-                                struct pipe_surface *surf,
-                                void *context_private)
-{
-    /* No Op */
-}
-
-static void 
-HiddSoftpipeUpdateBuffer( struct pipe_winsys *ws, void *context_private )
-{
-    /* No Op */
-}
-
-static void
-HiddSoftpipeDestroyWinSys( struct pipe_winsys *ws)
-{
-    FreeVec(ws);
-}
 
 static struct HiddSoftpipeWinSys *
 HiddSoftpipeCreateSoftpipeWinSys( void )
@@ -157,23 +46,32 @@ HiddSoftpipeCreateSoftpipeWinSys( void )
     /* Fill in this struct with callbacks that pipe will need to
     * communicate with the window system, buffer manager, etc. 
     */
-    ws->base.base.buffer_create = HiddSoftpipeBufferCreate;
-    ws->base.base.user_buffer_create = HiddSoftpipeUserBufferCreate;
-    ws->base.base.buffer_map = HiddSoftpipeBufferMap;
-    ws->base.base.buffer_unmap = HiddSoftpipeBufferUnmap;
-    ws->base.base.buffer_destroy = HiddSoftpipeBufferDestroy;
 
-    ws->base.base.surface_buffer_create = HiddSoftpipeSurfaceBufferCreate;
-
-    ws->base.base.fence_reference = NULL; /* FIXME */
-    ws->base.base.fence_signalled = NULL; /* FIXME */
-    ws->base.base.fence_finish = NULL; /* FIXME */
-
-    ws->base.base.flush_frontbuffer = HiddSoftpipeFlushFrontBuffer;
-    ws->base.base.update_buffer = HiddSoftpipeUpdateBuffer;
-    ws->base.base.get_name = NULL; /* FIXME */
-    ws->base.base.destroy = HiddSoftpipeDestroyWinSys;
-
+    /* Since Mesa 7.9 softpipe mo longer uses pipe_winsys - it uses sw_winsys */
+    ws->base.base.buffer_create         = NULL;
+    ws->base.base.user_buffer_create    = NULL;
+    ws->base.base.buffer_map            = NULL;
+    ws->base.base.buffer_unmap          = NULL;
+    ws->base.base.buffer_destroy        = NULL;
+    ws->base.base.surface_buffer_create = NULL;
+    ws->base.base.fence_reference       = NULL;
+    ws->base.base.fence_signalled       = NULL;
+    ws->base.base.fence_finish          = NULL;
+    ws->base.base.flush_frontbuffer     = NULL;
+    ws->base.base.get_name              = NULL;
+    ws->base.base.destroy               = NULL;
+    
+    /* Fill in with functions is displaytarget is ever used*/
+    ws->swws.destroy                            = NULL;
+    ws->swws.is_displaytarget_format_supported  = NULL;
+    ws->swws.displaytarget_create               = NULL;
+    ws->swws.displaytarget_from_handle          = NULL;
+    ws->swws.displaytarget_get_handle           = NULL;
+    ws->swws.displaytarget_map                  = NULL;
+    ws->swws.displaytarget_unmap                = NULL;
+    ws->swws.displaytarget_display              = NULL;
+    ws->swws.displaytarget_destroy              = NULL;
+    
     return ws;
 }
 
@@ -212,9 +110,12 @@ APTR METHOD(SoftpipeGallium, Hidd_Gallium, CreatePipeScreen)
     if (softpipews == NULL)
         return NULL;
 
-    screen = softpipe_create_screen((struct pipe_winsys *)softpipews);
+    screen = softpipe_create_screen(&softpipews->swws);
     if (screen == NULL)
         goto fail;
+
+    /* Force a pipe_winsys pointer (Mesa 7.9 or never) */
+    screen->winsys = (struct pipe_winsys *)softpipews;
 
     /* Preserve pointer to HIDD driver */
     softpipews->base.driver = o;
@@ -231,15 +132,14 @@ fail:
 VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplaySurface)
 {
     struct pipe_surface * surf = (struct pipe_surface *)msg->surface;
-    struct softpipe_texture *spt = softpipe_texture(surf->texture);
-    struct HiddSoftpipeBuffer *hiddsoftpipebuffer = (struct HiddSoftpipeBuffer *)(spt->buffer);
+    struct softpipe_resource *spr = softpipe_resource(surf->texture);
     struct RastPort * rp = CloneRastPort(msg->rastport);
 
     WritePixelArray(
-        hiddsoftpipebuffer->data, 
+        spr->data, 
         msg->left,
         msg->top,
-        spt->stride[surf->level],
+        spr->stride[surf->level],
         rp, 
         msg->relx, 
         msg->rely, 
