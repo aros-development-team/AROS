@@ -430,10 +430,12 @@ nouveau_card_init(struct drm_device *dev)
 	dev_priv->init_state = NOUVEAU_CARD_INIT_FAILED;
 	spin_lock_init(&dev_priv->context_switch_lock);
 
+#if !defined(HOSTED_BUILD)
 	/* Parse BIOS tables / Run init tables if card not POSTed */
 	ret = nouveau_bios_init(dev);
 	if (ret)
 		goto out;
+#endif
 
 	ret = nouveau_mem_detect(dev);
 	if (ret)

@@ -357,7 +357,7 @@ int
 nouveau_mem_detect(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
-
+#if !defined(HOSTED_BUILD)
 	if (dev_priv->card_type == NV_04) {
 		dev_priv->vram_size = nouveau_mem_detect_nv04(dev);
 	} else
@@ -376,6 +376,9 @@ nouveau_mem_detect(struct drm_device *dev)
 			dev_priv->vram_sys_base <<= 12;
 		}
 	}
+#else
+    dev_priv->vram_size = 128 << 20;
+#endif
 
 	NV_INFO(dev, "Detected %dMiB VRAM\n", (int)(dev_priv->vram_size >> 20));
 	if (dev_priv->vram_sys_base) {
