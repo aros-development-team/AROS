@@ -14,9 +14,6 @@
 
 #include "arosdrmmode.h"
 
-/* Declaration of nouveau initialization function */
-int nouveau_init(void);
-
 #undef HiddPixFmtAttrBase
 #undef HiddGfxAttrBase
 #undef HiddSyncAttrBase

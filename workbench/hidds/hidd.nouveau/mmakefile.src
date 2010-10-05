@@ -6,63 +6,44 @@ include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 
 GALLIUM_NVIDIA_SOURCES = \
             drivers/nouveau/nouveau_screen \
-            drivers/nouveau/nouveau_context \
-            drivers/nouveau/nv04_surface_2d \
-            drivers/nv40/nv40_clear \
-            drivers/nv40/nv40_context \
-            drivers/nv40/nv40_draw \
-            drivers/nv40/nv40_fragprog \
-            drivers/nv40/nv40_fragtex \
-            drivers/nv40/nv40_miptree \
-            drivers/nv40/nv40_query \
-            drivers/nv40/nv40_screen \
-            drivers/nv40/nv40_state \
-            drivers/nv40/nv40_state_blend \
-            drivers/nv40/nv40_state_emit \
-            drivers/nv40/nv40_state_fb \
-            drivers/nv40/nv40_state_rasterizer \
-            drivers/nv40/nv40_state_scissor \
-            drivers/nv40/nv40_state_stipple \
-            drivers/nv40/nv40_state_viewport \
-            drivers/nv40/nv40_state_zsa \
-            drivers/nv40/nv40_surface \
-            drivers/nv40/nv40_transfer \
-            drivers/nv40/nv40_vbo \
-            drivers/nv40/nv40_vertprog \
-            drivers/nv30/nv30_clear \
-            drivers/nv30/nv30_context \
-            drivers/nv30/nv30_draw \
-            drivers/nv30/nv30_fragprog \
-            drivers/nv30/nv30_fragtex \
-            drivers/nv30/nv30_miptree \
-            drivers/nv30/nv30_query \
-            drivers/nv30/nv30_screen \
-            drivers/nv30/nv30_state \
-            drivers/nv30/nv30_state_blend \
-            drivers/nv30/nv30_state_emit \
-            drivers/nv30/nv30_state_fb \
-            drivers/nv30/nv30_state_rasterizer \
-            drivers/nv30/nv30_state_scissor \
-            drivers/nv30/nv30_state_stipple \
-            drivers/nv30/nv30_state_viewport \
-            drivers/nv30/nv30_state_zsa \
-            drivers/nv30/nv30_surface \
-            drivers/nv30/nv30_transfer \
-            drivers/nv30/nv30_vbo \
-            drivers/nv30/nv30_vertprog \
+            drivers/nvfx/nv04_2d \
+            drivers/nvfx/nvfx_buffer \
+            drivers/nvfx/nvfx_context \
+            drivers/nvfx/nvfx_clear \
+            drivers/nvfx/nvfx_draw \
+            drivers/nvfx/nvfx_fragprog \
+            drivers/nvfx/nvfx_fragtex \
+            drivers/nvfx/nv30_fragtex \
+            drivers/nvfx/nv40_fragtex \
+            drivers/nvfx/nvfx_miptree \
+            drivers/nvfx/nvfx_push \
+            drivers/nvfx/nvfx_query \
+            drivers/nvfx/nvfx_resource \
+            drivers/nvfx/nvfx_screen \
+            drivers/nvfx/nvfx_state \
+            drivers/nvfx/nvfx_state_emit \
+            drivers/nvfx/nvfx_state_fb \
+            drivers/nvfx/nvfx_surface \
+            drivers/nvfx/nvfx_transfer \
+            drivers/nvfx/nvfx_vbo \
+            drivers/nvfx/nvfx_vertprog \
+            drivers/nv50/nv50_buffer \
             drivers/nv50/nv50_clear \
             drivers/nv50/nv50_context \
             drivers/nv50/nv50_draw \
             drivers/nv50/nv50_miptree \
             drivers/nv50/nv50_query \
             drivers/nv50/nv50_program \
+            drivers/nv50/nv50_resource \
             drivers/nv50/nv50_screen \
             drivers/nv50/nv50_state \
             drivers/nv50/nv50_state_validate \
-            drivers/nv50/nv50_tex \
-            drivers/nv50/nv50_vbo \
             drivers/nv50/nv50_surface \
+            drivers/nv50/nv50_tex \
             drivers/nv50/nv50_transfer \
+            drivers/nv50/nv50_vbo \
+            drivers/nv50/nv50_push \
+
 
 GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
 
@@ -90,6 +71,7 @@ NOUVEAU_HIDD_SOURCES := \
 USER_INCLUDES := \
             -I$(GALLIUM_PATH)/drivers \
             -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(GALLIUM_PATH)/include \
             -I$(DRM_PATH)/libdrm \
             -I$(DRM_PATH)/drm-aros \
             -I$(DRM_PATH)/drm-aros/nouveau \

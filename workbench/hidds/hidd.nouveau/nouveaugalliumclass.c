@@ -10,16 +10,16 @@
 
 #include "util/u_memory.h"
 #include "util/u_inlines.h"
-#include "nouveau/nouveau_screen.h"
-#include "nouveau/nouveau_drmif.h"
 #include "nouveau/nouveau_winsys.h"
+#include "nv50/nv50_resource.h"
+#include "nvfx/nvfx_resource.h"
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
 
-struct HiddNouveauWinSys {
+struct HiddNouveauWinSys 
+{
     struct HIDDT_WinSys base;
-
     struct pipe_screen *pscreen;
 };
 
@@ -45,11 +45,6 @@ HIDDNouveauDestroyWinSys(struct pipe_winsys *ws)
     FREE(nvws);
 }
 
-#include "nv40/nv40_state.h"
-#include "nv30/nv30_state.h"
-#include "nouveau/nv04_surface_2d.h"
-#include "nv50/nv50_context.h"
-
 /* Wraps the nouveau_bo from surface into 2D bitmap class data */
 static struct HIDDNouveauBitMapData * 
 HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface)
@@ -57,17 +52,14 @@ HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface
     struct HIDDNouveauBitMapData * bmdata = NULL;
     struct nouveau_bo * bo = NULL;
     ULONG pitch = 0; ULONG depth = 0;
-    
+
     /* Get buffer object and pitch */
     switch(carddata->architecture)
     {
         case NV_ARCH_30:
-            bo = ((struct nv30_miptree *)surface->texture)->bo;
-            pitch = ((struct nv04_surface *)surface)->pitch;
-            break;
         case NV_ARCH_40:
-            bo = ((struct nv40_miptree *)surface->texture)->bo;
-            pitch = ((struct nv04_surface *)surface)->pitch;
+            bo = nvfx_surface_buffer(surface);
+            pitch = ((struct nvfx_surface *)surface)->pitch;
             break;
         case NV_ARCH_50:
             bo = nv50_miptree(surface->texture)->base.bo;
@@ -180,12 +172,11 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     switch (dev->chipset & 0xf0) 
     {
     case 0x30:
-        init = nv30_screen_create;
-        break;
     case 0x40:
     case 0x60:
-        init = nv40_screen_create;
+        init = nvfx_screen_create;
         break;
+    case 0x50:
     case 0x80:
     case 0x90:
     case 0xa0:
@@ -227,7 +218,7 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
     
     if (!srcdata)
         return;
-    
+
     LOCK_MULTI_BITMAP
     LOCK_BITMAP_BM(srcdata)
     LOCK_BITMAP_BM(SD(cl)->screenbitmap)
