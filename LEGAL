@@ -15,6 +15,11 @@ GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
 + Classes/Zune/PrefsEditor.mcc [workbench/classes/zune/prefseditor]
 + Classes/Zune/SystemPrefsWindow.mcc [workbench/classes/zune/systemprefswindow]
 
+The following components are distributed under the terms of version 3.0 of the
+GNU Lesser General Public License. Please read the relevant "LEGAL" files that 
+accompanies these components' sources.
++ [workbench/libs/mesa/src/talloc]
+
 The following components are distributed under the terms of version 2 of the
 GNU General Public License, as specified in the file "LICENSE.GPL":
 
