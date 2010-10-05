@@ -4,10 +4,56 @@
 */
 
 #include "nouveau_intern.h"
+#include "drm_aros_config.h"
 
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
+
+#if defined(HOSTED_BUILD)
+static VOID Nouveau_HOSTED_BUILD_Init(LIBBASETYPEPTR LIBBASE)
+{
+    struct nouveau_device * dev = NULL;
+    struct nouveau_device_priv * nvdev = NULL;
+    struct CardData * carddata = &LIBBASE->sd.carddata;
+
+    nouveau_init();
+
+    nouveau_device_open(&dev, "");
+    nvdev = nouveau_device(dev);
+
+    carddata->dev = dev;
+    
+    /* Check chipset architecture */
+    switch (carddata->dev->chipset & 0xf0) 
+    {
+    case 0x00:
+        carddata->architecture = NV_ARCH_04;
+        break;
+    case 0x10:
+        carddata->architecture = NV_ARCH_10;
+        break;
+    case 0x20:
+        carddata->architecture = NV_ARCH_20;
+        break;
+    case 0x30:
+        carddata->architecture = NV_ARCH_30;
+        break;
+    case 0x40:
+    case 0x60:
+        carddata->architecture = NV_ARCH_40;
+        break;
+    case 0x50:
+    case 0x80:
+    case 0x90:
+    case 0xa0:
+        carddata->architecture = NV_ARCH_50;
+        break;
+    default:
+        break;
+    }
+}
+#endif
 
 static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
 {
@@ -42,6 +88,11 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
   
     
     InitSemaphore(&LIBBASE->sd.multibitmapsemaphore);
+
+#if defined(HOSTED_BUILD)
+    /* This is used only for HOSTED_BUILD initialization */
+    Nouveau_HOSTED_BUILD_Init(LIBBASE);
+#endif
 
     return TRUE;
 }

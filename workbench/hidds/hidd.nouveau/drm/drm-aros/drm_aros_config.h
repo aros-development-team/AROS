@@ -9,7 +9,7 @@
 /* HACK */
 
 /* Enable hacks for running under hosted AROS */
-/* THIS AND ALL "HOSTED_BUILD" MARKED CODE MUST BE DELETED IN FINAL VERSION */
+/* Procedure: C:LoadResource DEVS:Drivers/nouveau.hidd */
 //#define HOSTED_BUILD
 
 #if defined(HOSTED_BUILD)
@@ -22,7 +22,7 @@
 #define HOSTED_BUILD_BUS_PCI            1
 #define HOSTED_BUILD_BUS_AGP            2
 
-#define HOSTED_BUILD_BUS                HOSTED_BUILD_BUS_AGP
+#define HOSTED_BUILD_BUS                HOSTED_BUILD_BUS_PCI
 
 /* nVidia defines */
 //#define HOSTED_BUILD_CHIPSET    5       /* NV05 chip Riva TNT 2 */
@@ -31,9 +31,9 @@
 //#define HOSTED_BUILD_CHIPSET    32      /* NV20 chip GeForce 3 Ti 200 */
 //#define HOSTED_BUILD_CHIPSET    37      /* NV25 chip GeForce Ti 4200 */
 //#define HOSTED_BUILD_CHIPSET    52      /* NV34 chip GeForce FX 5200 */
-#define HOSTED_BUILD_CHIPSET    67      /* NV43 chip GeForce 6200 */
-//#define HOSTED_BUILD_CHIPSET    132     /* G84 chip GeForce 8600 GT */
-//#define HOSTED_BUILD_CHIPSET    134     /* G86 chip GeForce 8400 GS */
+//#define HOSTED_BUILD_CHIPSET    67      /* NV43 chip GeForce 6200 */
+#define HOSTED_BUILD_CHIPSET    132     /* G84 chip GeForce 8600 GT */ /* MUST BE PCI */
+//#define HOSTED_BUILD_CHIPSET    134     /* G86 chip GeForce 8400 GS */ /* MUST BE PCI */
 
 #endif
 /* HACK ENDS */

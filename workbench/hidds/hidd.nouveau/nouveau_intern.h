@@ -224,4 +224,8 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
 BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
     ULONG maxY, ULONG drawmode, ULONG color);
+
+/* Declaration of nouveau initialization function */
+extern int nouveau_init(void);
+
 #endif /* _NOUVEAU_INTERN_H */
