@@ -4,7 +4,6 @@
 */
 
 #include "arosmesa_funcs.h"
-#include "state_tracker/st_public.h"
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -44,22 +43,22 @@
 
     if (amesa)
     {
-        GET_CURRENT_CONTEXT(cur_ctx);
+        struct st_context_iface * cur_ctx = amesa->stapi->get_current(amesa->stapi);
         
-        if (GET_GL_CTX_PTR(amesa) != cur_ctx)
+        if (amesa->st != cur_ctx)
         {
-            /* Attach */
-            st_make_current(amesa->st, amesa->framebuffer, amesa->framebuffer);
-        }            
+            /* Recalculate buffer dimensions */
+            AROSMesaRecalculateBufferWidthHeight(amesa);
 
-        /* Resize must be done here */
-        AROSMesaRecalculateBufferWidthHeight(amesa);
-        st_resize_framebuffer(amesa->framebuffer, amesa->width, amesa->height);
+            /* Attach */
+            amesa->stapi->make_current(amesa->stapi, amesa->st, 
+                &amesa->framebuffer->base, &amesa->framebuffer->base);
+        }            
     }
     else
     {
         /* Detach */
-        st_make_current( NULL, NULL, NULL );
+        amesa->stapi->make_current(amesa->stapi, NULL, NULL, NULL);
     }
         
     RESTORE_REG

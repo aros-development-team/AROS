@@ -37,9 +37,9 @@
 #define LP_BLD_TYPE_H
 
 
-#include <llvm-c/Core.h>  
+#include "pipe/p_compiler.h"
+#include "gallivm/lp_bld.h"
 
-#include <pipe/p_compiler.h>
 
 
 /**
@@ -103,7 +103,7 @@ struct lp_type {
    unsigned width:14;
 
    /**
-    * Vector length.
+    * Vector length.  If length==1, this is a scalar (float/int) type.
     *
     * width*length should be a power of two greater or equal to eight.
     *
@@ -128,6 +128,18 @@ struct lp_build_context
     */
    struct lp_type type;
 
+   /** Same as lp_build_elem_type(type) */
+   LLVMTypeRef elem_type;
+
+   /** Same as lp_build_vec_type(type) */
+   LLVMTypeRef vec_type;
+
+   /** Same as lp_build_int_elem_type(type) */
+   LLVMTypeRef int_elem_type;
+
+   /** Same as lp_build_int_vec_type(type) */
+   LLVMTypeRef int_vec_type;
+
    /** Same as lp_build_undef(type) */
    LLVMValueRef undef;
 
@@ -139,8 +151,25 @@ struct lp_build_context
 };
 
 
+/** Create scalar float type */
 static INLINE struct lp_type
 lp_type_float(unsigned width)
+{
+   struct lp_type res_type;
+
+   memset(&res_type, 0, sizeof res_type);
+   res_type.floating = TRUE;
+   res_type.sign = TRUE;
+   res_type.width = width;
+   res_type.length = 1;
+
+   return res_type;
+}
+
+
+/** Create vector of float type */
+static INLINE struct lp_type
+lp_type_float_vec(unsigned width)
 {
    struct lp_type res_type;
 
@@ -154,8 +183,24 @@ lp_type_float(unsigned width)
 }
 
 
+/** Create scalar int type */
 static INLINE struct lp_type
 lp_type_int(unsigned width)
+{
+   struct lp_type res_type;
+
+   memset(&res_type, 0, sizeof res_type);
+   res_type.sign = TRUE;
+   res_type.width = width;
+   res_type.length = 1;
+
+   return res_type;
+}
+
+
+/** Create vector int type */
+static INLINE struct lp_type
+lp_type_int_vec(unsigned width)
 {
    struct lp_type res_type;
 
@@ -168,8 +213,23 @@ lp_type_int(unsigned width)
 }
 
 
+/** Create scalar uint type */
 static INLINE struct lp_type
 lp_type_uint(unsigned width)
+{
+   struct lp_type res_type;
+
+   memset(&res_type, 0, sizeof res_type);
+   res_type.width = width;
+   res_type.length = 1;
+
+   return res_type;
+}
+
+
+/** Create vector uint type */
+static INLINE struct lp_type
+lp_type_uint_vec(unsigned width)
 {
    struct lp_type res_type;
 
@@ -256,6 +316,54 @@ LLVMTypeRef
 lp_build_int32_vec4_type(void);
 
 
+static INLINE struct lp_type
+lp_float32_vec4_type(void)
+{
+   struct lp_type type;
+
+   memset(&type, 0, sizeof(type));
+   type.floating = TRUE;
+   type.sign = TRUE;
+   type.norm = FALSE;
+   type.width = 32;
+   type.length = 4;
+
+   return type;
+}
+
+
+static INLINE struct lp_type
+lp_int32_vec4_type(void)
+{
+   struct lp_type type;
+
+   memset(&type, 0, sizeof(type));
+   type.floating = FALSE;
+   type.sign = TRUE;
+   type.norm = FALSE;
+   type.width = 32;
+   type.length = 4;
+
+   return type;
+}
+
+
+static INLINE struct lp_type
+lp_unorm8_vec4_type(void)
+{
+   struct lp_type type;
+
+   memset(&type, 0, sizeof(type));
+   type.floating = FALSE;
+   type.sign = FALSE;
+   type.norm = TRUE;
+   type.width = 8;
+   type.length = 4;
+
+   return type;
+}
+
+
 struct lp_type
 lp_uint_type(struct lp_type type);
 
@@ -266,6 +374,18 @@ lp_int_type(struct lp_type type);
 
 struct lp_type
 lp_wider_type(struct lp_type type);
+
+
+unsigned
+lp_sizeof_llvm_type(LLVMTypeRef t);
+
+
+const char *
+lp_typekind_name(LLVMTypeKind t);
+
+
+void
+lp_dump_llvmtype(LLVMTypeRef t);
 
 
 void

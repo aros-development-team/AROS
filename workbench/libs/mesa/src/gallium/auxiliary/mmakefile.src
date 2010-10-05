@@ -5,7 +5,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM linklibs-galliumauxiliary : includes
+#MM linklibs-galliumauxiliary : includes linklibs-galliumauxiliary-generated
 
 ifeq ($(AROS_TARGET_CPU), i386)
   FFIXED = -ffixed-ebx
@@ -20,31 +20,9 @@ ifeq ($(AROS_TARGET_CPU), ppc)
 endif
 
 GALLIUM_AUXILIARY_SOURCES = \
-            util/u_debug \
-            util/u_debug_symbol \
-            util/u_debug_stack \
-            util/u_blit \
-            util/u_cache \
-            util/u_draw_quad \
-            util/u_format_access \
-            util/u_format_table \
-            util/u_gen_mipmap \
-            util/u_handle_table \
-            util/u_hash_table \
-            util/u_hash \
-            util/u_keymap \
-            util/u_linear \
-            util/u_mm \
-            util/u_math \
-            util/u_rect \
-            util/u_simple_shaders \
-            util/u_snprintf \
-            util/u_surface \
-            util/u_texture \
-            util/u_tile \
-            util/u_timed_winsys \
-            util/u_upload_mgr \
-            util/u_simple_screen \
+            cso_cache/cso_cache \
+            cso_cache/cso_context \
+            cso_cache/cso_hash \
             draw/draw_context \
             draw/draw_gs \
             draw/draw_pipe \
@@ -64,27 +42,54 @@ GALLIUM_AUXILIARY_SOURCES = \
             draw/draw_pipe_wide_line \
             draw/draw_pipe_wide_point \
             draw/draw_pt \
-            draw/draw_pt_elts \
             draw/draw_pt_emit \
             draw/draw_pt_fetch \
             draw/draw_pt_fetch_emit \
             draw/draw_pt_fetch_shade_emit \
             draw/draw_pt_fetch_shade_pipeline \
             draw/draw_pt_post_vs \
+            draw/draw_pt_so_emit \
             draw/draw_pt_util \
-            draw/draw_pt_varray \
-            draw/draw_pt_vcache \
+            draw/draw_pt_vsplit \
             draw/draw_vertex \
             draw/draw_vs \
-            draw/draw_vs_varient \
             draw/draw_vs_aos \
             draw/draw_vs_aos_io \
             draw/draw_vs_aos_machine \
             draw/draw_vs_exec \
-            draw/draw_vs_llvm \
-            draw/draw_vs_ppc  \
-            draw/draw_vs_sse  \
-            tgsi/tgsi_sanity \
+            draw/draw_vs_ppc \
+            draw/draw_vs_sse \
+            draw/draw_vs_varient \
+            indices/u_indices_gen \
+            indices/u_unfilled_gen \
+            os/os_misc \
+            os/os_stream \
+            os/os_stream_log \
+            os/os_stream_null \
+            os/os_stream_stdc \
+            os/os_stream_str \
+            os/os_time \
+            pipebuffer/pb_buffer_fenced \
+            pipebuffer/pb_buffer_malloc \
+            pipebuffer/pb_bufmgr_alt \
+            pipebuffer/pb_bufmgr_cache \
+            pipebuffer/pb_bufmgr_debug \
+            pipebuffer/pb_bufmgr_mm \
+            pipebuffer/pb_bufmgr_ondemand \
+            pipebuffer/pb_bufmgr_pool \
+            pipebuffer/pb_bufmgr_slab \
+            pipebuffer/pb_validate \
+            rbug/rbug_connection \
+            rbug/rbug_context \
+            rbug/rbug_core \
+            rbug/rbug_demarshal \
+            rbug/rbug_texture \
+            rbug/rbug_shader \
+            rtasm/rtasm_cpu \
+            rtasm/rtasm_execmem \
+            rtasm/rtasm_ppc \
+            rtasm/rtasm_ppc_spe \
+            rtasm/rtasm_x86sse \
             tgsi/tgsi_build \
             tgsi/tgsi_dump \
             tgsi/tgsi_exec \
@@ -92,26 +97,73 @@ GALLIUM_AUXILIARY_SOURCES = \
             tgsi/tgsi_iterate \
             tgsi/tgsi_parse \
             tgsi/tgsi_ppc \
+            tgsi/tgsi_sanity \
             tgsi/tgsi_scan \
             tgsi/tgsi_sse2 \
             tgsi/tgsi_text \
             tgsi/tgsi_transform \
             tgsi/tgsi_ureg \
             tgsi/tgsi_util \
-            rtasm/rtasm_cpu \
-            rtasm/rtasm_execmem \
-            rtasm/rtasm_x86sse \
-            rtasm/rtasm_ppc \
-            rtasm/rtasm_ppc_spe \
-            translate/translate_generic \
-            translate/translate_sse \
             translate/translate \
             translate/translate_cache \
-            cso_cache/cso_context \
-            cso_cache/cso_cache \
-            cso_cache/cso_hash \
-            os/os_misc \
-            os/os_time \
+            translate/translate_generic \
+            translate/translate_sse \
+            util/u_debug \
+            util/u_debug_describe \
+            util/u_debug_refcnt \
+            util/u_debug_stack \
+            util/u_debug_symbol \
+            util/u_dump_defines \
+            util/u_dump_state \
+            util/u_bitmask \
+            util/u_blit \
+            util/u_blitter \
+            util/u_cache \
+            util/u_caps \
+            util/u_cpu_detect \
+            util/u_dl \
+            util/u_draw_quad \
+            util/u_format \
+            util/u_format_other \
+            util/u_format_s3tc \
+            util/u_format_srgb \
+            util/u_format_table \
+            util/u_format_tests \
+            util/u_format_yuv \
+            util/u_format_zs \
+            util/u_framebuffer \
+            util/u_gen_mipmap \
+            util/u_half \
+            util/u_handle_table \
+            util/u_hash \
+            util/u_hash_table \
+            util/u_keymap \
+            util/u_linear \
+            util/u_linkage \
+            util/u_network \
+            util/u_math \
+            util/u_mempool \
+            util/u_mm \
+            util/u_rect \
+            util/u_ringbuffer \
+            util/u_sampler \
+            util/u_simple_shaders \
+            util/u_snprintf \
+            util/u_staging \
+            util/u_surface \
+            util/u_surfaces \
+            util/u_texture \
+            util/u_tile \
+            util/u_transfer \
+            util/u_resource \
+            util/u_upload_mgr \
+
+GALLIUM_AUXILIARY_GENERATED_SOURCES = \
+            indices/u_indices_gen \
+            indices/u_unfilled_gen \
+            util/u_format_srgb \
+            util/u_format_table \
+            util/u_half \
 
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
@@ -119,6 +171,24 @@ USER_INCLUDES := \
 USER_CFLAGS := -ffast-math $(FFIXED)
 
 %build_linklib mmake=linklibs-galliumauxiliary libname=galliumauxiliary \
-    files="$(GALLIUM_AUXILIARY_SOURCES)"
+    files="$(GALLIUM_AUXILIARY_SOURCES) $(GALLIUM_AUXILIARY_GENERATED_SOURCES)"
+
+#MM
+linklibs-galliumauxiliary-generated : $(SRCDIR)/$(CURDIR)/util/u_format_table.c $(SRCDIR)/$(CURDIR)/util/u_format_srgb.c $(SRCDIR)/$(CURDIR)/util/u_half.c $(SRCDIR)/$(CURDIR)/indices/u_unfilled_gen.c $(SRCDIR)/$(CURDIR)/indices/u_indices_gen.c
+
+$(SRCDIR)/$(CURDIR)/util/u_format_table.c :
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_format_table.py $(SRCDIR)/$(CURDIR)/util/u_format.csv > $@
+
+$(SRCDIR)/$(CURDIR)/indices/u_indices_gen.c :
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/indices/u_indices_gen.py > $@
+
+$(SRCDIR)/$(CURDIR)/indices/u_unfilled_gen.c :
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/indices/u_unfilled_gen.py > $@
+
+$(SRCDIR)/$(CURDIR)/util/u_format_srgb.c :
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_format_srgb.py > $@
+
+$(SRCDIR)/$(CURDIR)/util/u_half.c :
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_half.py > $@
 
 %common

@@ -37,9 +37,9 @@
 #define LP_BLD_CONST_H
 
 
-#include <llvm-c/Core.h>  
+#include "pipe/p_compiler.h"
+#include "gallivm/lp_bld.h"
 
-#include <pipe/p_compiler.h>
 
 
 struct lp_type;
@@ -85,13 +85,15 @@ lp_build_one(struct lp_type type);
 
 
 LLVMValueRef
-lp_build_const_scalar(struct lp_type type,
-                      double val);
+lp_build_const_elem(struct lp_type type,
+                    double val);
+
+LLVMValueRef
+lp_build_const_vec(struct lp_type type, double val);
 
 
 LLVMValueRef
-lp_build_int_const_scalar(struct lp_type type,
-                          long long val);
+lp_build_const_int_vec(struct lp_type type, long long val);
 
 
 LLVMValueRef
@@ -102,7 +104,15 @@ lp_build_const_aos(struct lp_type type,
 
 LLVMValueRef
 lp_build_const_mask_aos(struct lp_type type,
-                        const boolean cond[4]);
+                        unsigned mask);
+
+
+static INLINE LLVMValueRef
+lp_build_const_int32(int i)
+{
+   return LLVMConstInt(LLVMInt32Type(), i, 0);
+}
+
 
 
 #endif /* !LP_BLD_CONST_H */

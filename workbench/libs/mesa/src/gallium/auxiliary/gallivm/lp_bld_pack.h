@@ -37,7 +37,9 @@
 #define LP_BLD_PACK_H
 
 
-#include <llvm-c/Core.h>  
+#include "pipe/p_compiler.h"
+
+#include "gallivm/lp_bld.h"
 
 
 struct lp_type;
@@ -90,6 +92,14 @@ lp_build_pack(LLVMBuilderRef builder,
               struct lp_type dst_type,
               boolean clamped,
               const LLVMValueRef *src, unsigned num_srcs);
+
+
+void
+lp_build_resize(LLVMBuilderRef builder,
+                struct lp_type src_type,
+                struct lp_type dst_type,
+                const LLVMValueRef *src, unsigned num_srcs,
+                LLVMValueRef *dst, unsigned num_dsts);
 
 
 #endif /* !LP_BLD_PACK_H */

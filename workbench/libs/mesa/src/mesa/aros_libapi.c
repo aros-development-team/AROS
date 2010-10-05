@@ -18,7 +18,7 @@
 
 #include "arosmesa_intern.h"
 
-#include "glapi.h"
+#include "glapi/glapi.h"
 
 AROS_LH1(void, glClearIndex,
     AROS_LHA(GLfloat, c, D0),
@@ -8496,10 +8496,10 @@ AROS_LH2(void, glMultiTexCoord4svARB,
 }
 
 AROS_LH4(void, glBlendFuncSeparate,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
+    AROS_LHA(GLenum, sfactorRGB, D0),
+    AROS_LHA(GLenum, dfactorRGB, D1),
+    AROS_LHA(GLenum, sfactorAlpha, D2),
+    AROS_LHA(GLenum, dfactorAlpha, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8508,7 +8508,7 @@ AROS_LH4(void, glBlendFuncSeparate,
 
     PUT_MESABASE_IN_REG
 
-    mglBlendFuncSeparate(a, b, c, d);
+    mglBlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 
     RESTORE_REG
 
@@ -8516,7 +8516,7 @@ AROS_LH4(void, glBlendFuncSeparate,
 }
 
 AROS_LH1(void, glFogCoordf,
-    AROS_LHA(GLfloat, a, D0),
+    AROS_LHA(GLfloat, coord, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8525,7 +8525,7 @@ AROS_LH1(void, glFogCoordf,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoordf(a);
+    mglFogCoordf(coord);
 
     RESTORE_REG
 
@@ -8533,7 +8533,7 @@ AROS_LH1(void, glFogCoordf,
 }
 
 AROS_LH1(void, glFogCoordfv,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, coord, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8542,7 +8542,7 @@ AROS_LH1(void, glFogCoordfv,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoordfv(a);
+    mglFogCoordfv(coord);
 
     RESTORE_REG
 
@@ -8550,7 +8550,7 @@ AROS_LH1(void, glFogCoordfv,
 }
 
 AROS_LH1(void, glFogCoordd,
-    AROS_LHA(GLdouble, a, D0),
+    AROS_LHA(GLdouble, coord, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8559,7 +8559,7 @@ AROS_LH1(void, glFogCoordd,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoordd(a);
+    mglFogCoordd(coord);
 
     RESTORE_REG
 
@@ -8567,7 +8567,7 @@ AROS_LH1(void, glFogCoordd,
 }
 
 AROS_LH1(void, glFogCoorddv,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, coord, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8576,7 +8576,7 @@ AROS_LH1(void, glFogCoorddv,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoorddv(a);
+    mglFogCoorddv(coord);
 
     RESTORE_REG
 
@@ -8584,9 +8584,9 @@ AROS_LH1(void, glFogCoorddv,
 }
 
 AROS_LH3(void, glFogCoordPointer,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLvoid *, c, A0),
+    AROS_LHA(GLenum, type, D0),
+    AROS_LHA(GLsizei, stride, D1),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8595,7 +8595,7 @@ AROS_LH3(void, glFogCoordPointer,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoordPointer(a, b, c);
+    mglFogCoordPointer(type, stride, pointer);
 
     RESTORE_REG
 
@@ -8603,10 +8603,10 @@ AROS_LH3(void, glFogCoordPointer,
 }
 
 AROS_LH4(void, glMultiDrawArrays,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint *, b, A0),
-    AROS_LHA(GLsizei *, c, A1),
-    AROS_LHA(GLsizei, d, D1),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(const GLint *, first, A0),
+    AROS_LHA(const GLsizei *, count, A1),
+    AROS_LHA(GLsizei, primcount, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8615,7 +8615,7 @@ AROS_LH4(void, glMultiDrawArrays,
 
     PUT_MESABASE_IN_REG
 
-    mglMultiDrawArrays(a, b, c, d);
+    mglMultiDrawArrays(mode, first, count, primcount);
 
     RESTORE_REG
 
@@ -8623,11 +8623,11 @@ AROS_LH4(void, glMultiDrawArrays,
 }
 
 AROS_LH5(void, glMultiDrawElements,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLsizei *, b, A0),
-    AROS_LHA(GLenum, c, D1),
-    AROS_LHA(const GLvoid *  *, d, A1),
-    AROS_LHA(GLsizei, e, D2),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(const GLsizei *, count, A0),
+    AROS_LHA(GLenum, type, D1),
+    AROS_LHA(const GLvoid *  *, indices, A1),
+    AROS_LHA(GLsizei, primcount, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8636,7 +8636,7 @@ AROS_LH5(void, glMultiDrawElements,
 
     PUT_MESABASE_IN_REG
 
-    mglMultiDrawElements(a, b, c, d, e);
+    mglMultiDrawElements(mode, count, type, indices, primcount);
 
     RESTORE_REG
 
@@ -8644,8 +8644,8 @@ AROS_LH5(void, glMultiDrawElements,
 }
 
 AROS_LH2(void, glPointParameterf,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLfloat, param, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8654,7 +8654,7 @@ AROS_LH2(void, glPointParameterf,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameterf(a, b);
+    mglPointParameterf(pname, param);
 
     RESTORE_REG
 
@@ -8662,8 +8662,8 @@ AROS_LH2(void, glPointParameterf,
 }
 
 AROS_LH2(void, glPointParameterfv,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8672,7 +8672,7 @@ AROS_LH2(void, glPointParameterfv,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameterfv(a, b);
+    mglPointParameterfv(pname, params);
 
     RESTORE_REG
 
@@ -8680,8 +8680,8 @@ AROS_LH2(void, glPointParameterfv,
 }
 
 AROS_LH2(void, glPointParameteri,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLint, param, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8690,7 +8690,7 @@ AROS_LH2(void, glPointParameteri,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameteri(a, b);
+    mglPointParameteri(pname, param);
 
     RESTORE_REG
 
@@ -8698,8 +8698,8 @@ AROS_LH2(void, glPointParameteri,
 }
 
 AROS_LH2(void, glPointParameteriv,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLint *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8708,7 +8708,7 @@ AROS_LH2(void, glPointParameteriv,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameteriv(a, b);
+    mglPointParameteriv(pname, params);
 
     RESTORE_REG
 
@@ -8716,9 +8716,9 @@ AROS_LH2(void, glPointParameteriv,
 }
 
 AROS_LH3(void, glSecondaryColor3b,
-    AROS_LHA(GLbyte, a, D0),
-    AROS_LHA(GLbyte, b, D1),
-    AROS_LHA(GLbyte, c, D2),
+    AROS_LHA(GLbyte, red, D0),
+    AROS_LHA(GLbyte, green, D1),
+    AROS_LHA(GLbyte, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8727,7 +8727,7 @@ AROS_LH3(void, glSecondaryColor3b,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3b(a, b, c);
+    mglSecondaryColor3b(red, green, blue);
 
     RESTORE_REG
 
@@ -8735,7 +8735,7 @@ AROS_LH3(void, glSecondaryColor3b,
 }
 
 AROS_LH1(void, glSecondaryColor3bv,
-    AROS_LHA(const GLbyte *, a, A0),
+    AROS_LHA(const GLbyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8744,7 +8744,7 @@ AROS_LH1(void, glSecondaryColor3bv,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3bv(a);
+    mglSecondaryColor3bv(v);
 
     RESTORE_REG
 
@@ -8752,9 +8752,9 @@ AROS_LH1(void, glSecondaryColor3bv,
 }
 
 AROS_LH3(void, glSecondaryColor3d,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
+    AROS_LHA(GLdouble, red, D0),
+    AROS_LHA(GLdouble, green, D1),
+    AROS_LHA(GLdouble, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8763,7 +8763,7 @@ AROS_LH3(void, glSecondaryColor3d,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3d(a, b, c);
+    mglSecondaryColor3d(red, green, blue);
 
     RESTORE_REG
 
@@ -8771,7 +8771,7 @@ AROS_LH3(void, glSecondaryColor3d,
 }
 
 AROS_LH1(void, glSecondaryColor3dv,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8780,7 +8780,7 @@ AROS_LH1(void, glSecondaryColor3dv,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3dv(a);
+    mglSecondaryColor3dv(v);
 
     RESTORE_REG
 
@@ -8788,9 +8788,9 @@ AROS_LH1(void, glSecondaryColor3dv,
 }
 
 AROS_LH3(void, glSecondaryColor3f,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLfloat, red, D0),
+    AROS_LHA(GLfloat, green, D1),
+    AROS_LHA(GLfloat, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8799,7 +8799,7 @@ AROS_LH3(void, glSecondaryColor3f,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3f(a, b, c);
+    mglSecondaryColor3f(red, green, blue);
 
     RESTORE_REG
 
@@ -8807,7 +8807,7 @@ AROS_LH3(void, glSecondaryColor3f,
 }
 
 AROS_LH1(void, glSecondaryColor3fv,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8816,7 +8816,7 @@ AROS_LH1(void, glSecondaryColor3fv,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3fv(a);
+    mglSecondaryColor3fv(v);
 
     RESTORE_REG
 
@@ -8824,9 +8824,9 @@ AROS_LH1(void, glSecondaryColor3fv,
 }
 
 AROS_LH3(void, glSecondaryColor3i,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
+    AROS_LHA(GLint, red, D0),
+    AROS_LHA(GLint, green, D1),
+    AROS_LHA(GLint, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8835,7 +8835,7 @@ AROS_LH3(void, glSecondaryColor3i,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3i(a, b, c);
+    mglSecondaryColor3i(red, green, blue);
 
     RESTORE_REG
 
@@ -8843,7 +8843,7 @@ AROS_LH3(void, glSecondaryColor3i,
 }
 
 AROS_LH1(void, glSecondaryColor3iv,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8852,7 +8852,7 @@ AROS_LH1(void, glSecondaryColor3iv,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3iv(a);
+    mglSecondaryColor3iv(v);
 
     RESTORE_REG
 
@@ -8860,9 +8860,9 @@ AROS_LH1(void, glSecondaryColor3iv,
 }
 
 AROS_LH3(void, glSecondaryColor3s,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
+    AROS_LHA(GLshort, red, D0),
+    AROS_LHA(GLshort, green, D1),
+    AROS_LHA(GLshort, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8871,7 +8871,7 @@ AROS_LH3(void, glSecondaryColor3s,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3s(a, b, c);
+    mglSecondaryColor3s(red, green, blue);
 
     RESTORE_REG
 
@@ -8879,7 +8879,7 @@ AROS_LH3(void, glSecondaryColor3s,
 }
 
 AROS_LH1(void, glSecondaryColor3sv,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8888,7 +8888,7 @@ AROS_LH1(void, glSecondaryColor3sv,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3sv(a);
+    mglSecondaryColor3sv(v);
 
     RESTORE_REG
 
@@ -8896,9 +8896,9 @@ AROS_LH1(void, glSecondaryColor3sv,
 }
 
 AROS_LH3(void, glSecondaryColor3ub,
-    AROS_LHA(GLubyte, a, D0),
-    AROS_LHA(GLubyte, b, D1),
-    AROS_LHA(GLubyte, c, D2),
+    AROS_LHA(GLubyte, red, D0),
+    AROS_LHA(GLubyte, green, D1),
+    AROS_LHA(GLubyte, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8907,7 +8907,7 @@ AROS_LH3(void, glSecondaryColor3ub,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3ub(a, b, c);
+    mglSecondaryColor3ub(red, green, blue);
 
     RESTORE_REG
 
@@ -8915,7 +8915,7 @@ AROS_LH3(void, glSecondaryColor3ub,
 }
 
 AROS_LH1(void, glSecondaryColor3ubv,
-    AROS_LHA(const GLubyte *, a, A0),
+    AROS_LHA(const GLubyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8924,7 +8924,7 @@ AROS_LH1(void, glSecondaryColor3ubv,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3ubv(a);
+    mglSecondaryColor3ubv(v);
 
     RESTORE_REG
 
@@ -8932,9 +8932,9 @@ AROS_LH1(void, glSecondaryColor3ubv,
 }
 
 AROS_LH3(void, glSecondaryColor3ui,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
+    AROS_LHA(GLuint, red, D0),
+    AROS_LHA(GLuint, green, D1),
+    AROS_LHA(GLuint, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8943,7 +8943,7 @@ AROS_LH3(void, glSecondaryColor3ui,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3ui(a, b, c);
+    mglSecondaryColor3ui(red, green, blue);
 
     RESTORE_REG
 
@@ -8951,7 +8951,7 @@ AROS_LH3(void, glSecondaryColor3ui,
 }
 
 AROS_LH1(void, glSecondaryColor3uiv,
-    AROS_LHA(const GLuint *, a, A0),
+    AROS_LHA(const GLuint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8960,7 +8960,7 @@ AROS_LH1(void, glSecondaryColor3uiv,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3uiv(a);
+    mglSecondaryColor3uiv(v);
 
     RESTORE_REG
 
@@ -8968,9 +8968,9 @@ AROS_LH1(void, glSecondaryColor3uiv,
 }
 
 AROS_LH3(void, glSecondaryColor3us,
-    AROS_LHA(GLushort, a, D0),
-    AROS_LHA(GLushort, b, D1),
-    AROS_LHA(GLushort, c, D2),
+    AROS_LHA(GLushort, red, D0),
+    AROS_LHA(GLushort, green, D1),
+    AROS_LHA(GLushort, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8979,7 +8979,7 @@ AROS_LH3(void, glSecondaryColor3us,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3us(a, b, c);
+    mglSecondaryColor3us(red, green, blue);
 
     RESTORE_REG
 
@@ -8987,7 +8987,7 @@ AROS_LH3(void, glSecondaryColor3us,
 }
 
 AROS_LH1(void, glSecondaryColor3usv,
-    AROS_LHA(const GLushort *, a, A0),
+    AROS_LHA(const GLushort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -8996,7 +8996,7 @@ AROS_LH1(void, glSecondaryColor3usv,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3usv(a);
+    mglSecondaryColor3usv(v);
 
     RESTORE_REG
 
@@ -9004,10 +9004,10 @@ AROS_LH1(void, glSecondaryColor3usv,
 }
 
 AROS_LH4(void, glSecondaryColorPointer,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(const GLvoid *, d, A0),
+    AROS_LHA(GLint, size, D0),
+    AROS_LHA(GLenum, type, D1),
+    AROS_LHA(GLsizei, stride, D2),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9016,7 +9016,7 @@ AROS_LH4(void, glSecondaryColorPointer,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColorPointer(a, b, c, d);
+    mglSecondaryColorPointer(size, type, stride, pointer);
 
     RESTORE_REG
 
@@ -9024,8 +9024,8 @@ AROS_LH4(void, glSecondaryColorPointer,
 }
 
 AROS_LH2(void, glWindowPos2d,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
+    AROS_LHA(GLdouble, x, D0),
+    AROS_LHA(GLdouble, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9034,7 +9034,7 @@ AROS_LH2(void, glWindowPos2d,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2d(a, b);
+    mglWindowPos2d(x, y);
 
     RESTORE_REG
 
@@ -9042,7 +9042,7 @@ AROS_LH2(void, glWindowPos2d,
 }
 
 AROS_LH1(void, glWindowPos2dv,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9051,7 +9051,7 @@ AROS_LH1(void, glWindowPos2dv,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2dv(a);
+    mglWindowPos2dv(v);
 
     RESTORE_REG
 
@@ -9059,8 +9059,8 @@ AROS_LH1(void, glWindowPos2dv,
 }
 
 AROS_LH2(void, glWindowPos2f,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLfloat, x, D0),
+    AROS_LHA(GLfloat, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9069,7 +9069,7 @@ AROS_LH2(void, glWindowPos2f,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2f(a, b);
+    mglWindowPos2f(x, y);
 
     RESTORE_REG
 
@@ -9077,7 +9077,7 @@ AROS_LH2(void, glWindowPos2f,
 }
 
 AROS_LH1(void, glWindowPos2fv,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9086,7 +9086,7 @@ AROS_LH1(void, glWindowPos2fv,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2fv(a);
+    mglWindowPos2fv(v);
 
     RESTORE_REG
 
@@ -9094,8 +9094,8 @@ AROS_LH1(void, glWindowPos2fv,
 }
 
 AROS_LH2(void, glWindowPos2i,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
+    AROS_LHA(GLint, x, D0),
+    AROS_LHA(GLint, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9104,7 +9104,7 @@ AROS_LH2(void, glWindowPos2i,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2i(a, b);
+    mglWindowPos2i(x, y);
 
     RESTORE_REG
 
@@ -9112,7 +9112,7 @@ AROS_LH2(void, glWindowPos2i,
 }
 
 AROS_LH1(void, glWindowPos2iv,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9121,7 +9121,7 @@ AROS_LH1(void, glWindowPos2iv,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2iv(a);
+    mglWindowPos2iv(v);
 
     RESTORE_REG
 
@@ -9129,8 +9129,8 @@ AROS_LH1(void, glWindowPos2iv,
 }
 
 AROS_LH2(void, glWindowPos2s,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
+    AROS_LHA(GLshort, x, D0),
+    AROS_LHA(GLshort, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9139,7 +9139,7 @@ AROS_LH2(void, glWindowPos2s,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2s(a, b);
+    mglWindowPos2s(x, y);
 
     RESTORE_REG
 
@@ -9147,7 +9147,7 @@ AROS_LH2(void, glWindowPos2s,
 }
 
 AROS_LH1(void, glWindowPos2sv,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9156,7 +9156,7 @@ AROS_LH1(void, glWindowPos2sv,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2sv(a);
+    mglWindowPos2sv(v);
 
     RESTORE_REG
 
@@ -9164,9 +9164,9 @@ AROS_LH1(void, glWindowPos2sv,
 }
 
 AROS_LH3(void, glWindowPos3d,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
+    AROS_LHA(GLdouble, x, D0),
+    AROS_LHA(GLdouble, y, D1),
+    AROS_LHA(GLdouble, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9175,7 +9175,7 @@ AROS_LH3(void, glWindowPos3d,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3d(a, b, c);
+    mglWindowPos3d(x, y, z);
 
     RESTORE_REG
 
@@ -9183,7 +9183,7 @@ AROS_LH3(void, glWindowPos3d,
 }
 
 AROS_LH1(void, glWindowPos3dv,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9192,7 +9192,7 @@ AROS_LH1(void, glWindowPos3dv,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3dv(a);
+    mglWindowPos3dv(v);
 
     RESTORE_REG
 
@@ -9200,9 +9200,9 @@ AROS_LH1(void, glWindowPos3dv,
 }
 
 AROS_LH3(void, glWindowPos3f,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLfloat, x, D0),
+    AROS_LHA(GLfloat, y, D1),
+    AROS_LHA(GLfloat, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9211,7 +9211,7 @@ AROS_LH3(void, glWindowPos3f,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3f(a, b, c);
+    mglWindowPos3f(x, y, z);
 
     RESTORE_REG
 
@@ -9219,7 +9219,7 @@ AROS_LH3(void, glWindowPos3f,
 }
 
 AROS_LH1(void, glWindowPos3fv,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9228,7 +9228,7 @@ AROS_LH1(void, glWindowPos3fv,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3fv(a);
+    mglWindowPos3fv(v);
 
     RESTORE_REG
 
@@ -9236,9 +9236,9 @@ AROS_LH1(void, glWindowPos3fv,
 }
 
 AROS_LH3(void, glWindowPos3i,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
+    AROS_LHA(GLint, x, D0),
+    AROS_LHA(GLint, y, D1),
+    AROS_LHA(GLint, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9247,7 +9247,7 @@ AROS_LH3(void, glWindowPos3i,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3i(a, b, c);
+    mglWindowPos3i(x, y, z);
 
     RESTORE_REG
 
@@ -9255,7 +9255,7 @@ AROS_LH3(void, glWindowPos3i,
 }
 
 AROS_LH1(void, glWindowPos3iv,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9264,7 +9264,7 @@ AROS_LH1(void, glWindowPos3iv,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3iv(a);
+    mglWindowPos3iv(v);
 
     RESTORE_REG
 
@@ -9272,9 +9272,9 @@ AROS_LH1(void, glWindowPos3iv,
 }
 
 AROS_LH3(void, glWindowPos3s,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
+    AROS_LHA(GLshort, x, D0),
+    AROS_LHA(GLshort, y, D1),
+    AROS_LHA(GLshort, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9283,7 +9283,7 @@ AROS_LH3(void, glWindowPos3s,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3s(a, b, c);
+    mglWindowPos3s(x, y, z);
 
     RESTORE_REG
 
@@ -9291,7 +9291,7 @@ AROS_LH3(void, glWindowPos3s,
 }
 
 AROS_LH1(void, glWindowPos3sv,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9300,7 +9300,7 @@ AROS_LH1(void, glWindowPos3sv,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3sv(a);
+    mglWindowPos3sv(v);
 
     RESTORE_REG
 
@@ -9308,8 +9308,8 @@ AROS_LH1(void, glWindowPos3sv,
 }
 
 AROS_LH2(void, glGenQueries,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, ids, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9318,7 +9318,7 @@ AROS_LH2(void, glGenQueries,
 
     PUT_MESABASE_IN_REG
 
-    mglGenQueries(a, b);
+    mglGenQueries(n, ids);
 
     RESTORE_REG
 
@@ -9326,8 +9326,8 @@ AROS_LH2(void, glGenQueries,
 }
 
 AROS_LH2(void, glDeleteQueries,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, ids, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9336,7 +9336,7 @@ AROS_LH2(void, glDeleteQueries,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteQueries(a, b);
+    mglDeleteQueries(n, ids);
 
     RESTORE_REG
 
@@ -9344,7 +9344,7 @@ AROS_LH2(void, glDeleteQueries,
 }
 
 AROS_LH1(GLboolean, glIsQuery,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, id, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9353,7 +9353,7 @@ AROS_LH1(GLboolean, glIsQuery,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsQuery(a);
+    GLboolean _return = mglIsQuery(id);
 
     RESTORE_REG
 
@@ -9363,8 +9363,8 @@ AROS_LH1(GLboolean, glIsQuery,
 }
 
 AROS_LH2(void, glBeginQuery,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, id, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9373,7 +9373,7 @@ AROS_LH2(void, glBeginQuery,
 
     PUT_MESABASE_IN_REG
 
-    mglBeginQuery(a, b);
+    mglBeginQuery(target, id);
 
     RESTORE_REG
 
@@ -9381,7 +9381,7 @@ AROS_LH2(void, glBeginQuery,
 }
 
 AROS_LH1(void, glEndQuery,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, target, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9390,7 +9390,7 @@ AROS_LH1(void, glEndQuery,
 
     PUT_MESABASE_IN_REG
 
-    mglEndQuery(a);
+    mglEndQuery(target);
 
     RESTORE_REG
 
@@ -9398,9 +9398,9 @@ AROS_LH1(void, glEndQuery,
 }
 
 AROS_LH3(void, glGetQueryiv,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9409,7 +9409,7 @@ AROS_LH3(void, glGetQueryiv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetQueryiv(a, b, c);
+    mglGetQueryiv(target, pname, params);
 
     RESTORE_REG
 
@@ -9417,9 +9417,9 @@ AROS_LH3(void, glGetQueryiv,
 }
 
 AROS_LH3(void, glGetQueryObjectiv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9428,7 +9428,7 @@ AROS_LH3(void, glGetQueryObjectiv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetQueryObjectiv(a, b, c);
+    mglGetQueryObjectiv(id, pname, params);
 
     RESTORE_REG
 
@@ -9436,9 +9436,9 @@ AROS_LH3(void, glGetQueryObjectiv,
 }
 
 AROS_LH3(void, glGetQueryObjectuiv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLuint *, c, A0),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLuint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9447,7 +9447,7 @@ AROS_LH3(void, glGetQueryObjectuiv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetQueryObjectuiv(a, b, c);
+    mglGetQueryObjectuiv(id, pname, params);
 
     RESTORE_REG
 
@@ -9455,8 +9455,8 @@ AROS_LH3(void, glGetQueryObjectuiv,
 }
 
 AROS_LH2(void, glBindBuffer,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, buffer, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9465,7 +9465,7 @@ AROS_LH2(void, glBindBuffer,
 
     PUT_MESABASE_IN_REG
 
-    mglBindBuffer(a, b);
+    mglBindBuffer(target, buffer);
 
     RESTORE_REG
 
@@ -9473,8 +9473,8 @@ AROS_LH2(void, glBindBuffer,
 }
 
 AROS_LH2(void, glDeleteBuffers,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, buffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9483,7 +9483,7 @@ AROS_LH2(void, glDeleteBuffers,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteBuffers(a, b);
+    mglDeleteBuffers(n, buffers);
 
     RESTORE_REG
 
@@ -9491,8 +9491,8 @@ AROS_LH2(void, glDeleteBuffers,
 }
 
 AROS_LH2(void, glGenBuffers,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, buffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9501,7 +9501,7 @@ AROS_LH2(void, glGenBuffers,
 
     PUT_MESABASE_IN_REG
 
-    mglGenBuffers(a, b);
+    mglGenBuffers(n, buffers);
 
     RESTORE_REG
 
@@ -9509,7 +9509,7 @@ AROS_LH2(void, glGenBuffers,
 }
 
 AROS_LH1(GLboolean, glIsBuffer,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, buffer, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9518,7 +9518,7 @@ AROS_LH1(GLboolean, glIsBuffer,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsBuffer(a);
+    GLboolean _return = mglIsBuffer(buffer);
 
     RESTORE_REG
 
@@ -9528,10 +9528,10 @@ AROS_LH1(GLboolean, glIsBuffer,
 }
 
 AROS_LH4(void, glBufferData,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizeiptr, b, D1),
-    AROS_LHA(const GLvoid *, c, A0),
-    AROS_LHA(GLenum, d, D2),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLsizeiptr, size, D1),
+    AROS_LHA(const GLvoid *, data, A0),
+    AROS_LHA(GLenum, usage, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9540,7 +9540,7 @@ AROS_LH4(void, glBufferData,
 
     PUT_MESABASE_IN_REG
 
-    mglBufferData(a, b, c, d);
+    mglBufferData(target, size, data, usage);
 
     RESTORE_REG
 
@@ -9548,10 +9548,10 @@ AROS_LH4(void, glBufferData,
 }
 
 AROS_LH4(void, glBufferSubData,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLintptr, b, D1),
-    AROS_LHA(GLsizeiptr, c, D2),
-    AROS_LHA(const GLvoid *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLintptr, offset, D1),
+    AROS_LHA(GLsizeiptr, size, D2),
+    AROS_LHA(const GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9560,7 +9560,7 @@ AROS_LH4(void, glBufferSubData,
 
     PUT_MESABASE_IN_REG
 
-    mglBufferSubData(a, b, c, d);
+    mglBufferSubData(target, offset, size, data);
 
     RESTORE_REG
 
@@ -9568,10 +9568,10 @@ AROS_LH4(void, glBufferSubData,
 }
 
 AROS_LH4(void, glGetBufferSubData,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLintptr, b, D1),
-    AROS_LHA(GLsizeiptr, c, D2),
-    AROS_LHA(GLvoid *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLintptr, offset, D1),
+    AROS_LHA(GLsizeiptr, size, D2),
+    AROS_LHA(GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9580,7 +9580,7 @@ AROS_LH4(void, glGetBufferSubData,
 
     PUT_MESABASE_IN_REG
 
-    mglGetBufferSubData(a, b, c, d);
+    mglGetBufferSubData(target, offset, size, data);
 
     RESTORE_REG
 
@@ -9588,8 +9588,8 @@ AROS_LH4(void, glGetBufferSubData,
 }
 
 AROS_LH2(GLvoid*, glMapBuffer,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, access, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9598,7 +9598,7 @@ AROS_LH2(GLvoid*, glMapBuffer,
 
     PUT_MESABASE_IN_REG
 
-    GLvoid* _return = mglMapBuffer(a, b);
+    GLvoid* _return = mglMapBuffer(target, access);
 
     RESTORE_REG
 
@@ -9608,7 +9608,7 @@ AROS_LH2(GLvoid*, glMapBuffer,
 }
 
 AROS_LH1(GLboolean, glUnmapBuffer,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, target, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9617,7 +9617,7 @@ AROS_LH1(GLboolean, glUnmapBuffer,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglUnmapBuffer(a);
+    GLboolean _return = mglUnmapBuffer(target);
 
     RESTORE_REG
 
@@ -9627,9 +9627,9 @@ AROS_LH1(GLboolean, glUnmapBuffer,
 }
 
 AROS_LH3(void, glGetBufferParameteriv,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9638,7 +9638,7 @@ AROS_LH3(void, glGetBufferParameteriv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetBufferParameteriv(a, b, c);
+    mglGetBufferParameteriv(target, pname, params);
 
     RESTORE_REG
 
@@ -9646,9 +9646,9 @@ AROS_LH3(void, glGetBufferParameteriv,
 }
 
 AROS_LH3(void, glGetBufferPointerv,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLvoid *  *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLvoid *  *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9657,7 +9657,7 @@ AROS_LH3(void, glGetBufferPointerv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetBufferPointerv(a, b, c);
+    mglGetBufferPointerv(target, pname, params);
 
     RESTORE_REG
 
@@ -9665,8 +9665,8 @@ AROS_LH3(void, glGetBufferPointerv,
 }
 
 AROS_LH2(void, glBlendEquationSeparate,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
+    AROS_LHA(GLenum, modeRGB, D0),
+    AROS_LHA(GLenum, modeAlpha, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9675,7 +9675,7 @@ AROS_LH2(void, glBlendEquationSeparate,
 
     PUT_MESABASE_IN_REG
 
-    mglBlendEquationSeparate(a, b);
+    mglBlendEquationSeparate(modeRGB, modeAlpha);
 
     RESTORE_REG
 
@@ -9683,8 +9683,8 @@ AROS_LH2(void, glBlendEquationSeparate,
 }
 
 AROS_LH2(void, glDrawBuffers,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLenum *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLenum *, bufs, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9693,7 +9693,7 @@ AROS_LH2(void, glDrawBuffers,
 
     PUT_MESABASE_IN_REG
 
-    mglDrawBuffers(a, b);
+    mglDrawBuffers(n, bufs);
 
     RESTORE_REG
 
@@ -9701,10 +9701,10 @@ AROS_LH2(void, glDrawBuffers,
 }
 
 AROS_LH4(void, glStencilOpSeparate,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
+    AROS_LHA(GLenum, face, D0),
+    AROS_LHA(GLenum, sfail, D1),
+    AROS_LHA(GLenum, dpfail, D2),
+    AROS_LHA(GLenum, dppass, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9713,7 +9713,7 @@ AROS_LH4(void, glStencilOpSeparate,
 
     PUT_MESABASE_IN_REG
 
-    mglStencilOpSeparate(a, b, c, d);
+    mglStencilOpSeparate(face, sfail, dpfail, dppass);
 
     RESTORE_REG
 
@@ -9721,10 +9721,10 @@ AROS_LH4(void, glStencilOpSeparate,
 }
 
 AROS_LH4(void, glStencilFuncSeparate,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLuint, d, D3),
+    AROS_LHA(GLenum, face, D0),
+    AROS_LHA(GLenum, func, D1),
+    AROS_LHA(GLint, ref, D2),
+    AROS_LHA(GLuint, mask, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9733,7 +9733,7 @@ AROS_LH4(void, glStencilFuncSeparate,
 
     PUT_MESABASE_IN_REG
 
-    mglStencilFuncSeparate(a, b, c, d);
+    mglStencilFuncSeparate(face, func, ref, mask);
 
     RESTORE_REG
 
@@ -9741,8 +9741,8 @@ AROS_LH4(void, glStencilFuncSeparate,
 }
 
 AROS_LH2(void, glStencilMaskSeparate,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, face, D0),
+    AROS_LHA(GLuint, mask, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9751,7 +9751,7 @@ AROS_LH2(void, glStencilMaskSeparate,
 
     PUT_MESABASE_IN_REG
 
-    mglStencilMaskSeparate(a, b);
+    mglStencilMaskSeparate(face, mask);
 
     RESTORE_REG
 
@@ -9759,8 +9759,8 @@ AROS_LH2(void, glStencilMaskSeparate,
 }
 
 AROS_LH2(void, glAttachShader,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, shader, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9769,7 +9769,7 @@ AROS_LH2(void, glAttachShader,
 
     PUT_MESABASE_IN_REG
 
-    mglAttachShader(a, b);
+    mglAttachShader(program, shader);
 
     RESTORE_REG
 
@@ -9777,9 +9777,9 @@ AROS_LH2(void, glAttachShader,
 }
 
 AROS_LH3(void, glBindAttribLocation,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLchar *, c, A0),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(const GLchar *, name, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9788,7 +9788,7 @@ AROS_LH3(void, glBindAttribLocation,
 
     PUT_MESABASE_IN_REG
 
-    mglBindAttribLocation(a, b, c);
+    mglBindAttribLocation(program, index, name);
 
     RESTORE_REG
 
@@ -9796,7 +9796,7 @@ AROS_LH3(void, glBindAttribLocation,
 }
 
 AROS_LH1(void, glCompileShader,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, shader, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9805,7 +9805,7 @@ AROS_LH1(void, glCompileShader,
 
     PUT_MESABASE_IN_REG
 
-    mglCompileShader(a);
+    mglCompileShader(shader);
 
     RESTORE_REG
 
@@ -9831,7 +9831,7 @@ AROS_LH0(GLuint, glCreateProgram,
 }
 
 AROS_LH1(GLuint, glCreateShader,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, type, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9840,7 +9840,7 @@ AROS_LH1(GLuint, glCreateShader,
 
     PUT_MESABASE_IN_REG
 
-    GLuint _return = mglCreateShader(a);
+    GLuint _return = mglCreateShader(type);
 
     RESTORE_REG
 
@@ -9850,7 +9850,7 @@ AROS_LH1(GLuint, glCreateShader,
 }
 
 AROS_LH1(void, glDeleteProgram,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, program, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9859,7 +9859,7 @@ AROS_LH1(void, glDeleteProgram,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteProgram(a);
+    mglDeleteProgram(program);
 
     RESTORE_REG
 
@@ -9867,7 +9867,7 @@ AROS_LH1(void, glDeleteProgram,
 }
 
 AROS_LH1(void, glDeleteShader,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, shader, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9876,7 +9876,7 @@ AROS_LH1(void, glDeleteShader,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteShader(a);
+    mglDeleteShader(shader);
 
     RESTORE_REG
 
@@ -9884,8 +9884,8 @@ AROS_LH1(void, glDeleteShader,
 }
 
 AROS_LH2(void, glDetachShader,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, shader, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9894,7 +9894,7 @@ AROS_LH2(void, glDetachShader,
 
     PUT_MESABASE_IN_REG
 
-    mglDetachShader(a, b);
+    mglDetachShader(program, shader);
 
     RESTORE_REG
 
@@ -9902,7 +9902,7 @@ AROS_LH2(void, glDetachShader,
 }
 
 AROS_LH1(void, glDisableVertexAttribArray,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, index, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9911,7 +9911,7 @@ AROS_LH1(void, glDisableVertexAttribArray,
 
     PUT_MESABASE_IN_REG
 
-    mglDisableVertexAttribArray(a);
+    mglDisableVertexAttribArray(index);
 
     RESTORE_REG
 
@@ -9919,7 +9919,7 @@ AROS_LH1(void, glDisableVertexAttribArray,
 }
 
 AROS_LH1(void, glEnableVertexAttribArray,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, index, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9928,7 +9928,7 @@ AROS_LH1(void, glEnableVertexAttribArray,
 
     PUT_MESABASE_IN_REG
 
-    mglEnableVertexAttribArray(a);
+    mglEnableVertexAttribArray(index);
 
     RESTORE_REG
 
@@ -9936,13 +9936,13 @@ AROS_LH1(void, glEnableVertexAttribArray,
 }
 
 AROS_LH7(void, glGetActiveAttrib,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei *, d, A0),
-    AROS_LHA(GLint *, e, A1),
-    AROS_LHA(GLenum *, f, A2),
-    AROS_LHA(GLchar *, g, A3),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLsizei, bufSize, D2),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLint *, size, A1),
+    AROS_LHA(GLenum *, type, A2),
+    AROS_LHA(GLchar *, name, A3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9951,7 +9951,7 @@ AROS_LH7(void, glGetActiveAttrib,
 
     PUT_MESABASE_IN_REG
 
-    mglGetActiveAttrib(a, b, c, d, e, f, g);
+    mglGetActiveAttrib(program, index, bufSize, length, size, type, name);
 
     RESTORE_REG
 
@@ -9959,13 +9959,13 @@ AROS_LH7(void, glGetActiveAttrib,
 }
 
 AROS_LH7(void, glGetActiveUniform,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei *, d, A0),
-    AROS_LHA(GLint *, e, A1),
-    AROS_LHA(GLenum *, f, A2),
-    AROS_LHA(GLchar *, g, A3),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLsizei, bufSize, D2),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLint *, size, A1),
+    AROS_LHA(GLenum *, type, A2),
+    AROS_LHA(GLchar *, name, A3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9974,7 +9974,7 @@ AROS_LH7(void, glGetActiveUniform,
 
     PUT_MESABASE_IN_REG
 
-    mglGetActiveUniform(a, b, c, d, e, f, g);
+    mglGetActiveUniform(program, index, bufSize, length, size, type, name);
 
     RESTORE_REG
 
@@ -9982,10 +9982,10 @@ AROS_LH7(void, glGetActiveUniform,
 }
 
 AROS_LH4(void, glGetAttachedShaders,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei *, c, A0),
-    AROS_LHA(GLuint *, d, A1),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLsizei, maxCount, D1),
+    AROS_LHA(GLsizei *, count, A0),
+    AROS_LHA(GLuint *, obj, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -9994,7 +9994,7 @@ AROS_LH4(void, glGetAttachedShaders,
 
     PUT_MESABASE_IN_REG
 
-    mglGetAttachedShaders(a, b, c, d);
+    mglGetAttachedShaders(program, maxCount, count, obj);
 
     RESTORE_REG
 
@@ -10002,8 +10002,8 @@ AROS_LH4(void, glGetAttachedShaders,
 }
 
 AROS_LH2(GLint, glGetAttribLocation,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLchar *, b, A0),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(const GLchar *, name, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10012,7 +10012,7 @@ AROS_LH2(GLint, glGetAttribLocation,
 
     PUT_MESABASE_IN_REG
 
-    GLint _return = mglGetAttribLocation(a, b);
+    GLint _return = mglGetAttribLocation(program, name);
 
     RESTORE_REG
 
@@ -10022,9 +10022,9 @@ AROS_LH2(GLint, glGetAttribLocation,
 }
 
 AROS_LH3(void, glGetProgramiv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10033,7 +10033,7 @@ AROS_LH3(void, glGetProgramiv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramiv(a, b, c);
+    mglGetProgramiv(program, pname, params);
 
     RESTORE_REG
 
@@ -10041,10 +10041,10 @@ AROS_LH3(void, glGetProgramiv,
 }
 
 AROS_LH4(void, glGetProgramInfoLog,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei *, c, A0),
-    AROS_LHA(GLchar *, d, A1),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLsizei, bufSize, D1),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLchar *, infoLog, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10053,7 +10053,7 @@ AROS_LH4(void, glGetProgramInfoLog,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramInfoLog(a, b, c, d);
+    mglGetProgramInfoLog(program, bufSize, length, infoLog);
 
     RESTORE_REG
 
@@ -10061,9 +10061,9 @@ AROS_LH4(void, glGetProgramInfoLog,
 }
 
 AROS_LH3(void, glGetShaderiv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, shader, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10072,7 +10072,7 @@ AROS_LH3(void, glGetShaderiv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetShaderiv(a, b, c);
+    mglGetShaderiv(shader, pname, params);
 
     RESTORE_REG
 
@@ -10080,10 +10080,10 @@ AROS_LH3(void, glGetShaderiv,
 }
 
 AROS_LH4(void, glGetShaderInfoLog,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei *, c, A0),
-    AROS_LHA(GLchar *, d, A1),
+    AROS_LHA(GLuint, shader, D0),
+    AROS_LHA(GLsizei, bufSize, D1),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLchar *, infoLog, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10092,7 +10092,7 @@ AROS_LH4(void, glGetShaderInfoLog,
 
     PUT_MESABASE_IN_REG
 
-    mglGetShaderInfoLog(a, b, c, d);
+    mglGetShaderInfoLog(shader, bufSize, length, infoLog);
 
     RESTORE_REG
 
@@ -10100,10 +10100,10 @@ AROS_LH4(void, glGetShaderInfoLog,
 }
 
 AROS_LH4(void, glGetShaderSource,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei *, c, A0),
-    AROS_LHA(GLchar *, d, A1),
+    AROS_LHA(GLuint, shader, D0),
+    AROS_LHA(GLsizei, bufSize, D1),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLchar *, source, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10112,7 +10112,7 @@ AROS_LH4(void, glGetShaderSource,
 
     PUT_MESABASE_IN_REG
 
-    mglGetShaderSource(a, b, c, d);
+    mglGetShaderSource(shader, bufSize, length, source);
 
     RESTORE_REG
 
@@ -10120,8 +10120,8 @@ AROS_LH4(void, glGetShaderSource,
 }
 
 AROS_LH2(GLint, glGetUniformLocation,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLchar *, b, A0),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(const GLchar *, name, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10130,7 +10130,7 @@ AROS_LH2(GLint, glGetUniformLocation,
 
     PUT_MESABASE_IN_REG
 
-    GLint _return = mglGetUniformLocation(a, b);
+    GLint _return = mglGetUniformLocation(program, name);
 
     RESTORE_REG
 
@@ -10140,9 +10140,9 @@ AROS_LH2(GLint, glGetUniformLocation,
 }
 
 AROS_LH3(void, glGetUniformfv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLint, location, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10151,7 +10151,7 @@ AROS_LH3(void, glGetUniformfv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetUniformfv(a, b, c);
+    mglGetUniformfv(program, location, params);
 
     RESTORE_REG
 
@@ -10159,9 +10159,9 @@ AROS_LH3(void, glGetUniformfv,
 }
 
 AROS_LH3(void, glGetUniformiv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLint, location, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10170,7 +10170,7 @@ AROS_LH3(void, glGetUniformiv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetUniformiv(a, b, c);
+    mglGetUniformiv(program, location, params);
 
     RESTORE_REG
 
@@ -10178,9 +10178,9 @@ AROS_LH3(void, glGetUniformiv,
 }
 
 AROS_LH3(void, glGetVertexAttribdv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLdouble *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLdouble *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10189,7 +10189,7 @@ AROS_LH3(void, glGetVertexAttribdv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribdv(a, b, c);
+    mglGetVertexAttribdv(index, pname, params);
 
     RESTORE_REG
 
@@ -10197,9 +10197,9 @@ AROS_LH3(void, glGetVertexAttribdv,
 }
 
 AROS_LH3(void, glGetVertexAttribfv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10208,7 +10208,7 @@ AROS_LH3(void, glGetVertexAttribfv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribfv(a, b, c);
+    mglGetVertexAttribfv(index, pname, params);
 
     RESTORE_REG
 
@@ -10216,9 +10216,9 @@ AROS_LH3(void, glGetVertexAttribfv,
 }
 
 AROS_LH3(void, glGetVertexAttribiv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10227,7 +10227,7 @@ AROS_LH3(void, glGetVertexAttribiv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribiv(a, b, c);
+    mglGetVertexAttribiv(index, pname, params);
 
     RESTORE_REG
 
@@ -10235,9 +10235,9 @@ AROS_LH3(void, glGetVertexAttribiv,
 }
 
 AROS_LH3(void, glGetVertexAttribPointerv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLvoid *  *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLvoid *  *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10246,7 +10246,7 @@ AROS_LH3(void, glGetVertexAttribPointerv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribPointerv(a, b, c);
+    mglGetVertexAttribPointerv(index, pname, pointer);
 
     RESTORE_REG
 
@@ -10254,7 +10254,7 @@ AROS_LH3(void, glGetVertexAttribPointerv,
 }
 
 AROS_LH1(GLboolean, glIsProgram,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, program, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10263,7 +10263,7 @@ AROS_LH1(GLboolean, glIsProgram,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsProgram(a);
+    GLboolean _return = mglIsProgram(program);
 
     RESTORE_REG
 
@@ -10273,7 +10273,7 @@ AROS_LH1(GLboolean, glIsProgram,
 }
 
 AROS_LH1(GLboolean, glIsShader,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, shader, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10282,7 +10282,7 @@ AROS_LH1(GLboolean, glIsShader,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsShader(a);
+    GLboolean _return = mglIsShader(shader);
 
     RESTORE_REG
 
@@ -10292,7 +10292,7 @@ AROS_LH1(GLboolean, glIsShader,
 }
 
 AROS_LH1(void, glLinkProgram,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, program, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10301,7 +10301,7 @@ AROS_LH1(void, glLinkProgram,
 
     PUT_MESABASE_IN_REG
 
-    mglLinkProgram(a);
+    mglLinkProgram(program);
 
     RESTORE_REG
 
@@ -10309,10 +10309,10 @@ AROS_LH1(void, glLinkProgram,
 }
 
 AROS_LH4(void, glShaderSource,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLchar *  *, c, A0),
-    AROS_LHA(const GLint *, d, A1),
+    AROS_LHA(GLuint, shader, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLchar *  *, string, A0),
+    AROS_LHA(const GLint *, length, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10321,7 +10321,7 @@ AROS_LH4(void, glShaderSource,
 
     PUT_MESABASE_IN_REG
 
-    mglShaderSource(a, b, c, d);
+    mglShaderSource(shader, count, string, length);
 
     RESTORE_REG
 
@@ -10329,7 +10329,7 @@ AROS_LH4(void, glShaderSource,
 }
 
 AROS_LH1(void, glUseProgram,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, program, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10338,7 +10338,7 @@ AROS_LH1(void, glUseProgram,
 
     PUT_MESABASE_IN_REG
 
-    mglUseProgram(a);
+    mglUseProgram(program);
 
     RESTORE_REG
 
@@ -10346,8 +10346,8 @@ AROS_LH1(void, glUseProgram,
 }
 
 AROS_LH2(void, glUniform1f,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLfloat, v0, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10356,7 +10356,7 @@ AROS_LH2(void, glUniform1f,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform1f(a, b);
+    mglUniform1f(location, v0);
 
     RESTORE_REG
 
@@ -10364,9 +10364,9 @@ AROS_LH2(void, glUniform1f,
 }
 
 AROS_LH3(void, glUniform2f,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLfloat, v0, D1),
+    AROS_LHA(GLfloat, v1, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10375,7 +10375,7 @@ AROS_LH3(void, glUniform2f,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform2f(a, b, c);
+    mglUniform2f(location, v0, v1);
 
     RESTORE_REG
 
@@ -10383,10 +10383,10 @@ AROS_LH3(void, glUniform2f,
 }
 
 AROS_LH4(void, glUniform3f,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLfloat, v0, D1),
+    AROS_LHA(GLfloat, v1, D2),
+    AROS_LHA(GLfloat, v2, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10395,7 +10395,7 @@ AROS_LH4(void, glUniform3f,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform3f(a, b, c, d);
+    mglUniform3f(location, v0, v1, v2);
 
     RESTORE_REG
 
@@ -10403,11 +10403,11 @@ AROS_LH4(void, glUniform3f,
 }
 
 AROS_LH5(void, glUniform4f,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
-    AROS_LHA(GLfloat, e, D4),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLfloat, v0, D1),
+    AROS_LHA(GLfloat, v1, D2),
+    AROS_LHA(GLfloat, v2, D3),
+    AROS_LHA(GLfloat, v3, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10416,7 +10416,7 @@ AROS_LH5(void, glUniform4f,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform4f(a, b, c, d, e);
+    mglUniform4f(location, v0, v1, v2, v3);
 
     RESTORE_REG
 
@@ -10424,8 +10424,8 @@ AROS_LH5(void, glUniform4f,
 }
 
 AROS_LH2(void, glUniform1i,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLint, v0, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10434,7 +10434,7 @@ AROS_LH2(void, glUniform1i,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform1i(a, b);
+    mglUniform1i(location, v0);
 
     RESTORE_REG
 
@@ -10442,9 +10442,9 @@ AROS_LH2(void, glUniform1i,
 }
 
 AROS_LH3(void, glUniform2i,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLint, v0, D1),
+    AROS_LHA(GLint, v1, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10453,7 +10453,7 @@ AROS_LH3(void, glUniform2i,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform2i(a, b, c);
+    mglUniform2i(location, v0, v1);
 
     RESTORE_REG
 
@@ -10461,10 +10461,10 @@ AROS_LH3(void, glUniform2i,
 }
 
 AROS_LH4(void, glUniform3i,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLint, v0, D1),
+    AROS_LHA(GLint, v1, D2),
+    AROS_LHA(GLint, v2, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10473,7 +10473,7 @@ AROS_LH4(void, glUniform3i,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform3i(a, b, c, d);
+    mglUniform3i(location, v0, v1, v2);
 
     RESTORE_REG
 
@@ -10481,11 +10481,11 @@ AROS_LH4(void, glUniform3i,
 }
 
 AROS_LH5(void, glUniform4i,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLint, v0, D1),
+    AROS_LHA(GLint, v1, D2),
+    AROS_LHA(GLint, v2, D3),
+    AROS_LHA(GLint, v3, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10494,7 +10494,7 @@ AROS_LH5(void, glUniform4i,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform4i(a, b, c, d, e);
+    mglUniform4i(location, v0, v1, v2, v3);
 
     RESTORE_REG
 
@@ -10502,9 +10502,9 @@ AROS_LH5(void, glUniform4i,
 }
 
 AROS_LH3(void, glUniform1fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10513,7 +10513,7 @@ AROS_LH3(void, glUniform1fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform1fv(a, b, c);
+    mglUniform1fv(location, count, value);
 
     RESTORE_REG
 
@@ -10521,9 +10521,9 @@ AROS_LH3(void, glUniform1fv,
 }
 
 AROS_LH3(void, glUniform2fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10532,7 +10532,7 @@ AROS_LH3(void, glUniform2fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform2fv(a, b, c);
+    mglUniform2fv(location, count, value);
 
     RESTORE_REG
 
@@ -10540,9 +10540,9 @@ AROS_LH3(void, glUniform2fv,
 }
 
 AROS_LH3(void, glUniform3fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10551,7 +10551,7 @@ AROS_LH3(void, glUniform3fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform3fv(a, b, c);
+    mglUniform3fv(location, count, value);
 
     RESTORE_REG
 
@@ -10559,9 +10559,9 @@ AROS_LH3(void, glUniform3fv,
 }
 
 AROS_LH3(void, glUniform4fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10570,7 +10570,7 @@ AROS_LH3(void, glUniform4fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform4fv(a, b, c);
+    mglUniform4fv(location, count, value);
 
     RESTORE_REG
 
@@ -10578,9 +10578,9 @@ AROS_LH3(void, glUniform4fv,
 }
 
 AROS_LH3(void, glUniform1iv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLint *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLint *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10589,7 +10589,7 @@ AROS_LH3(void, glUniform1iv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform1iv(a, b, c);
+    mglUniform1iv(location, count, value);
 
     RESTORE_REG
 
@@ -10597,9 +10597,9 @@ AROS_LH3(void, glUniform1iv,
 }
 
 AROS_LH3(void, glUniform2iv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLint *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLint *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10608,7 +10608,7 @@ AROS_LH3(void, glUniform2iv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform2iv(a, b, c);
+    mglUniform2iv(location, count, value);
 
     RESTORE_REG
 
@@ -10616,9 +10616,9 @@ AROS_LH3(void, glUniform2iv,
 }
 
 AROS_LH3(void, glUniform3iv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLint *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLint *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10627,7 +10627,7 @@ AROS_LH3(void, glUniform3iv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform3iv(a, b, c);
+    mglUniform3iv(location, count, value);
 
     RESTORE_REG
 
@@ -10635,9 +10635,9 @@ AROS_LH3(void, glUniform3iv,
 }
 
 AROS_LH3(void, glUniform4iv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLint *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLint *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10646,7 +10646,7 @@ AROS_LH3(void, glUniform4iv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform4iv(a, b, c);
+    mglUniform4iv(location, count, value);
 
     RESTORE_REG
 
@@ -10654,10 +10654,10 @@ AROS_LH3(void, glUniform4iv,
 }
 
 AROS_LH4(void, glUniformMatrix2fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10666,7 +10666,7 @@ AROS_LH4(void, glUniformMatrix2fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix2fv(a, b, c, d);
+    mglUniformMatrix2fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -10674,10 +10674,10 @@ AROS_LH4(void, glUniformMatrix2fv,
 }
 
 AROS_LH4(void, glUniformMatrix3fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10686,7 +10686,7 @@ AROS_LH4(void, glUniformMatrix3fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix3fv(a, b, c, d);
+    mglUniformMatrix3fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -10694,10 +10694,10 @@ AROS_LH4(void, glUniformMatrix3fv,
 }
 
 AROS_LH4(void, glUniformMatrix4fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10706,7 +10706,7 @@ AROS_LH4(void, glUniformMatrix4fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix4fv(a, b, c, d);
+    mglUniformMatrix4fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -10714,7 +10714,7 @@ AROS_LH4(void, glUniformMatrix4fv,
 }
 
 AROS_LH1(void, glValidateProgram,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, program, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10723,7 +10723,7 @@ AROS_LH1(void, glValidateProgram,
 
     PUT_MESABASE_IN_REG
 
-    mglValidateProgram(a);
+    mglValidateProgram(program);
 
     RESTORE_REG
 
@@ -10731,8 +10731,8 @@ AROS_LH1(void, glValidateProgram,
 }
 
 AROS_LH2(void, glVertexAttrib1d,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10741,7 +10741,7 @@ AROS_LH2(void, glVertexAttrib1d,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1d(a, b);
+    mglVertexAttrib1d(index, x);
 
     RESTORE_REG
 
@@ -10749,8 +10749,8 @@ AROS_LH2(void, glVertexAttrib1d,
 }
 
 AROS_LH2(void, glVertexAttrib1dv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10759,7 +10759,7 @@ AROS_LH2(void, glVertexAttrib1dv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1dv(a, b);
+    mglVertexAttrib1dv(index, v);
 
     RESTORE_REG
 
@@ -10767,8 +10767,8 @@ AROS_LH2(void, glVertexAttrib1dv,
 }
 
 AROS_LH2(void, glVertexAttrib1f,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10777,7 +10777,7 @@ AROS_LH2(void, glVertexAttrib1f,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1f(a, b);
+    mglVertexAttrib1f(index, x);
 
     RESTORE_REG
 
@@ -10785,8 +10785,8 @@ AROS_LH2(void, glVertexAttrib1f,
 }
 
 AROS_LH2(void, glVertexAttrib1fv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10795,7 +10795,7 @@ AROS_LH2(void, glVertexAttrib1fv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1fv(a, b);
+    mglVertexAttrib1fv(index, v);
 
     RESTORE_REG
 
@@ -10803,8 +10803,8 @@ AROS_LH2(void, glVertexAttrib1fv,
 }
 
 AROS_LH2(void, glVertexAttrib1s,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10813,7 +10813,7 @@ AROS_LH2(void, glVertexAttrib1s,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1s(a, b);
+    mglVertexAttrib1s(index, x);
 
     RESTORE_REG
 
@@ -10821,8 +10821,8 @@ AROS_LH2(void, glVertexAttrib1s,
 }
 
 AROS_LH2(void, glVertexAttrib1sv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10831,7 +10831,7 @@ AROS_LH2(void, glVertexAttrib1sv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1sv(a, b);
+    mglVertexAttrib1sv(index, v);
 
     RESTORE_REG
 
@@ -10839,9 +10839,9 @@ AROS_LH2(void, glVertexAttrib1sv,
 }
 
 AROS_LH3(void, glVertexAttrib2d,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10850,7 +10850,7 @@ AROS_LH3(void, glVertexAttrib2d,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2d(a, b, c);
+    mglVertexAttrib2d(index, x, y);
 
     RESTORE_REG
 
@@ -10858,8 +10858,8 @@ AROS_LH3(void, glVertexAttrib2d,
 }
 
 AROS_LH2(void, glVertexAttrib2dv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10868,7 +10868,7 @@ AROS_LH2(void, glVertexAttrib2dv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2dv(a, b);
+    mglVertexAttrib2dv(index, v);
 
     RESTORE_REG
 
@@ -10876,9 +10876,9 @@ AROS_LH2(void, glVertexAttrib2dv,
 }
 
 AROS_LH3(void, glVertexAttrib2f,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10887,7 +10887,7 @@ AROS_LH3(void, glVertexAttrib2f,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2f(a, b, c);
+    mglVertexAttrib2f(index, x, y);
 
     RESTORE_REG
 
@@ -10895,8 +10895,8 @@ AROS_LH3(void, glVertexAttrib2f,
 }
 
 AROS_LH2(void, glVertexAttrib2fv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10905,7 +10905,7 @@ AROS_LH2(void, glVertexAttrib2fv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2fv(a, b);
+    mglVertexAttrib2fv(index, v);
 
     RESTORE_REG
 
@@ -10913,9 +10913,9 @@ AROS_LH2(void, glVertexAttrib2fv,
 }
 
 AROS_LH3(void, glVertexAttrib2s,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10924,7 +10924,7 @@ AROS_LH3(void, glVertexAttrib2s,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2s(a, b, c);
+    mglVertexAttrib2s(index, x, y);
 
     RESTORE_REG
 
@@ -10932,8 +10932,8 @@ AROS_LH3(void, glVertexAttrib2s,
 }
 
 AROS_LH2(void, glVertexAttrib2sv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10942,7 +10942,7 @@ AROS_LH2(void, glVertexAttrib2sv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2sv(a, b);
+    mglVertexAttrib2sv(index, v);
 
     RESTORE_REG
 
@@ -10950,10 +10950,10 @@ AROS_LH2(void, glVertexAttrib2sv,
 }
 
 AROS_LH4(void, glVertexAttrib3d,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
+    AROS_LHA(GLdouble, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10962,7 +10962,7 @@ AROS_LH4(void, glVertexAttrib3d,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3d(a, b, c, d);
+    mglVertexAttrib3d(index, x, y, z);
 
     RESTORE_REG
 
@@ -10970,8 +10970,8 @@ AROS_LH4(void, glVertexAttrib3d,
 }
 
 AROS_LH2(void, glVertexAttrib3dv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -10980,7 +10980,7 @@ AROS_LH2(void, glVertexAttrib3dv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3dv(a, b);
+    mglVertexAttrib3dv(index, v);
 
     RESTORE_REG
 
@@ -10988,10 +10988,10 @@ AROS_LH2(void, glVertexAttrib3dv,
 }
 
 AROS_LH4(void, glVertexAttrib3f,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
+    AROS_LHA(GLfloat, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11000,7 +11000,7 @@ AROS_LH4(void, glVertexAttrib3f,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3f(a, b, c, d);
+    mglVertexAttrib3f(index, x, y, z);
 
     RESTORE_REG
 
@@ -11008,8 +11008,8 @@ AROS_LH4(void, glVertexAttrib3f,
 }
 
 AROS_LH2(void, glVertexAttrib3fv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11018,7 +11018,7 @@ AROS_LH2(void, glVertexAttrib3fv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3fv(a, b);
+    mglVertexAttrib3fv(index, v);
 
     RESTORE_REG
 
@@ -11026,10 +11026,10 @@ AROS_LH2(void, glVertexAttrib3fv,
 }
 
 AROS_LH4(void, glVertexAttrib3s,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
-    AROS_LHA(GLshort, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
+    AROS_LHA(GLshort, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11038,7 +11038,7 @@ AROS_LH4(void, glVertexAttrib3s,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3s(a, b, c, d);
+    mglVertexAttrib3s(index, x, y, z);
 
     RESTORE_REG
 
@@ -11046,8 +11046,8 @@ AROS_LH4(void, glVertexAttrib3s,
 }
 
 AROS_LH2(void, glVertexAttrib3sv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11056,7 +11056,7 @@ AROS_LH2(void, glVertexAttrib3sv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3sv(a, b);
+    mglVertexAttrib3sv(index, v);
 
     RESTORE_REG
 
@@ -11064,8 +11064,8 @@ AROS_LH2(void, glVertexAttrib3sv,
 }
 
 AROS_LH2(void, glVertexAttrib4Nbv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLbyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLbyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11074,7 +11074,7 @@ AROS_LH2(void, glVertexAttrib4Nbv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4Nbv(a, b);
+    mglVertexAttrib4Nbv(index, v);
 
     RESTORE_REG
 
@@ -11082,8 +11082,8 @@ AROS_LH2(void, glVertexAttrib4Nbv,
 }
 
 AROS_LH2(void, glVertexAttrib4Niv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLint *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11092,7 +11092,7 @@ AROS_LH2(void, glVertexAttrib4Niv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4Niv(a, b);
+    mglVertexAttrib4Niv(index, v);
 
     RESTORE_REG
 
@@ -11100,8 +11100,8 @@ AROS_LH2(void, glVertexAttrib4Niv,
 }
 
 AROS_LH2(void, glVertexAttrib4Nsv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11110,7 +11110,7 @@ AROS_LH2(void, glVertexAttrib4Nsv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4Nsv(a, b);
+    mglVertexAttrib4Nsv(index, v);
 
     RESTORE_REG
 
@@ -11118,11 +11118,11 @@ AROS_LH2(void, glVertexAttrib4Nsv,
 }
 
 AROS_LH5(void, glVertexAttrib4Nub,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLubyte, b, D1),
-    AROS_LHA(GLubyte, c, D2),
-    AROS_LHA(GLubyte, d, D3),
-    AROS_LHA(GLubyte, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLubyte, x, D1),
+    AROS_LHA(GLubyte, y, D2),
+    AROS_LHA(GLubyte, z, D3),
+    AROS_LHA(GLubyte, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11131,7 +11131,7 @@ AROS_LH5(void, glVertexAttrib4Nub,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4Nub(a, b, c, d, e);
+    mglVertexAttrib4Nub(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -11139,8 +11139,8 @@ AROS_LH5(void, glVertexAttrib4Nub,
 }
 
 AROS_LH2(void, glVertexAttrib4Nubv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLubyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLubyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11149,7 +11149,7 @@ AROS_LH2(void, glVertexAttrib4Nubv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4Nubv(a, b);
+    mglVertexAttrib4Nubv(index, v);
 
     RESTORE_REG
 
@@ -11157,8 +11157,8 @@ AROS_LH2(void, glVertexAttrib4Nubv,
 }
 
 AROS_LH2(void, glVertexAttrib4Nuiv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11167,7 +11167,7 @@ AROS_LH2(void, glVertexAttrib4Nuiv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4Nuiv(a, b);
+    mglVertexAttrib4Nuiv(index, v);
 
     RESTORE_REG
 
@@ -11175,8 +11175,8 @@ AROS_LH2(void, glVertexAttrib4Nuiv,
 }
 
 AROS_LH2(void, glVertexAttrib4Nusv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLushort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLushort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11185,7 +11185,7 @@ AROS_LH2(void, glVertexAttrib4Nusv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4Nusv(a, b);
+    mglVertexAttrib4Nusv(index, v);
 
     RESTORE_REG
 
@@ -11193,8 +11193,8 @@ AROS_LH2(void, glVertexAttrib4Nusv,
 }
 
 AROS_LH2(void, glVertexAttrib4bv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLbyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLbyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11203,7 +11203,7 @@ AROS_LH2(void, glVertexAttrib4bv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4bv(a, b);
+    mglVertexAttrib4bv(index, v);
 
     RESTORE_REG
 
@@ -11211,11 +11211,11 @@ AROS_LH2(void, glVertexAttrib4bv,
 }
 
 AROS_LH5(void, glVertexAttrib4d,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
-    AROS_LHA(GLdouble, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
+    AROS_LHA(GLdouble, z, D3),
+    AROS_LHA(GLdouble, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11224,7 +11224,7 @@ AROS_LH5(void, glVertexAttrib4d,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4d(a, b, c, d, e);
+    mglVertexAttrib4d(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -11232,8 +11232,8 @@ AROS_LH5(void, glVertexAttrib4d,
 }
 
 AROS_LH2(void, glVertexAttrib4dv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11242,7 +11242,7 @@ AROS_LH2(void, glVertexAttrib4dv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4dv(a, b);
+    mglVertexAttrib4dv(index, v);
 
     RESTORE_REG
 
@@ -11250,11 +11250,11 @@ AROS_LH2(void, glVertexAttrib4dv,
 }
 
 AROS_LH5(void, glVertexAttrib4f,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
-    AROS_LHA(GLfloat, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
+    AROS_LHA(GLfloat, z, D3),
+    AROS_LHA(GLfloat, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11263,7 +11263,7 @@ AROS_LH5(void, glVertexAttrib4f,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4f(a, b, c, d, e);
+    mglVertexAttrib4f(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -11271,8 +11271,8 @@ AROS_LH5(void, glVertexAttrib4f,
 }
 
 AROS_LH2(void, glVertexAttrib4fv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11281,7 +11281,7 @@ AROS_LH2(void, glVertexAttrib4fv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4fv(a, b);
+    mglVertexAttrib4fv(index, v);
 
     RESTORE_REG
 
@@ -11289,8 +11289,8 @@ AROS_LH2(void, glVertexAttrib4fv,
 }
 
 AROS_LH2(void, glVertexAttrib4iv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLint *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11299,7 +11299,7 @@ AROS_LH2(void, glVertexAttrib4iv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4iv(a, b);
+    mglVertexAttrib4iv(index, v);
 
     RESTORE_REG
 
@@ -11307,11 +11307,11 @@ AROS_LH2(void, glVertexAttrib4iv,
 }
 
 AROS_LH5(void, glVertexAttrib4s,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
-    AROS_LHA(GLshort, d, D3),
-    AROS_LHA(GLshort, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
+    AROS_LHA(GLshort, z, D3),
+    AROS_LHA(GLshort, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11320,7 +11320,7 @@ AROS_LH5(void, glVertexAttrib4s,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4s(a, b, c, d, e);
+    mglVertexAttrib4s(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -11328,8 +11328,8 @@ AROS_LH5(void, glVertexAttrib4s,
 }
 
 AROS_LH2(void, glVertexAttrib4sv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11338,7 +11338,7 @@ AROS_LH2(void, glVertexAttrib4sv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4sv(a, b);
+    mglVertexAttrib4sv(index, v);
 
     RESTORE_REG
 
@@ -11346,8 +11346,8 @@ AROS_LH2(void, glVertexAttrib4sv,
 }
 
 AROS_LH2(void, glVertexAttrib4ubv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLubyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLubyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11356,7 +11356,7 @@ AROS_LH2(void, glVertexAttrib4ubv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4ubv(a, b);
+    mglVertexAttrib4ubv(index, v);
 
     RESTORE_REG
 
@@ -11364,8 +11364,8 @@ AROS_LH2(void, glVertexAttrib4ubv,
 }
 
 AROS_LH2(void, glVertexAttrib4uiv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11374,7 +11374,7 @@ AROS_LH2(void, glVertexAttrib4uiv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4uiv(a, b);
+    mglVertexAttrib4uiv(index, v);
 
     RESTORE_REG
 
@@ -11382,8 +11382,8 @@ AROS_LH2(void, glVertexAttrib4uiv,
 }
 
 AROS_LH2(void, glVertexAttrib4usv,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLushort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLushort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11392,7 +11392,7 @@ AROS_LH2(void, glVertexAttrib4usv,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4usv(a, b);
+    mglVertexAttrib4usv(index, v);
 
     RESTORE_REG
 
@@ -11400,12 +11400,12 @@ AROS_LH2(void, glVertexAttrib4usv,
 }
 
 AROS_LH6(void, glVertexAttribPointer,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLboolean, d, D3),
-    AROS_LHA(GLsizei, e, D4),
-    AROS_LHA(const GLvoid *, f, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, size, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(GLboolean, normalized, D3),
+    AROS_LHA(GLsizei, stride, D4),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11414,7 +11414,7 @@ AROS_LH6(void, glVertexAttribPointer,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribPointer(a, b, c, d, e, f);
+    mglVertexAttribPointer(index, size, type, normalized, stride, pointer);
 
     RESTORE_REG
 
@@ -11422,10 +11422,10 @@ AROS_LH6(void, glVertexAttribPointer,
 }
 
 AROS_LH4(void, glUniformMatrix2x3fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11434,7 +11434,7 @@ AROS_LH4(void, glUniformMatrix2x3fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix2x3fv(a, b, c, d);
+    mglUniformMatrix2x3fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -11442,10 +11442,10 @@ AROS_LH4(void, glUniformMatrix2x3fv,
 }
 
 AROS_LH4(void, glUniformMatrix3x2fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11454,7 +11454,7 @@ AROS_LH4(void, glUniformMatrix3x2fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix3x2fv(a, b, c, d);
+    mglUniformMatrix3x2fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -11462,10 +11462,10 @@ AROS_LH4(void, glUniformMatrix3x2fv,
 }
 
 AROS_LH4(void, glUniformMatrix2x4fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11474,7 +11474,7 @@ AROS_LH4(void, glUniformMatrix2x4fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix2x4fv(a, b, c, d);
+    mglUniformMatrix2x4fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -11482,10 +11482,10 @@ AROS_LH4(void, glUniformMatrix2x4fv,
 }
 
 AROS_LH4(void, glUniformMatrix4x2fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11494,7 +11494,7 @@ AROS_LH4(void, glUniformMatrix4x2fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix4x2fv(a, b, c, d);
+    mglUniformMatrix4x2fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -11502,10 +11502,10 @@ AROS_LH4(void, glUniformMatrix4x2fv,
 }
 
 AROS_LH4(void, glUniformMatrix3x4fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11514,7 +11514,7 @@ AROS_LH4(void, glUniformMatrix3x4fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix3x4fv(a, b, c, d);
+    mglUniformMatrix3x4fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -11522,10 +11522,10 @@ AROS_LH4(void, glUniformMatrix3x4fv,
 }
 
 AROS_LH4(void, glUniformMatrix4x3fv,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11534,7 +11534,7 @@ AROS_LH4(void, glUniformMatrix4x3fv,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix4x3fv(a, b, c, d);
+    mglUniformMatrix4x3fv(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -11542,7 +11542,7 @@ AROS_LH4(void, glUniformMatrix4x3fv,
 }
 
 AROS_LH1(void, glLoadTransposeMatrixfARB,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, m, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11551,7 +11551,7 @@ AROS_LH1(void, glLoadTransposeMatrixfARB,
 
     PUT_MESABASE_IN_REG
 
-    mglLoadTransposeMatrixfARB(a);
+    mglLoadTransposeMatrixfARB(m);
 
     RESTORE_REG
 
@@ -11559,7 +11559,7 @@ AROS_LH1(void, glLoadTransposeMatrixfARB,
 }
 
 AROS_LH1(void, glLoadTransposeMatrixdARB,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, m, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11568,7 +11568,7 @@ AROS_LH1(void, glLoadTransposeMatrixdARB,
 
     PUT_MESABASE_IN_REG
 
-    mglLoadTransposeMatrixdARB(a);
+    mglLoadTransposeMatrixdARB(m);
 
     RESTORE_REG
 
@@ -11576,7 +11576,7 @@ AROS_LH1(void, glLoadTransposeMatrixdARB,
 }
 
 AROS_LH1(void, glMultTransposeMatrixfARB,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, m, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11585,7 +11585,7 @@ AROS_LH1(void, glMultTransposeMatrixfARB,
 
     PUT_MESABASE_IN_REG
 
-    mglMultTransposeMatrixfARB(a);
+    mglMultTransposeMatrixfARB(m);
 
     RESTORE_REG
 
@@ -11593,7 +11593,7 @@ AROS_LH1(void, glMultTransposeMatrixfARB,
 }
 
 AROS_LH1(void, glMultTransposeMatrixdARB,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, m, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11602,7 +11602,7 @@ AROS_LH1(void, glMultTransposeMatrixdARB,
 
     PUT_MESABASE_IN_REG
 
-    mglMultTransposeMatrixdARB(a);
+    mglMultTransposeMatrixdARB(m);
 
     RESTORE_REG
 
@@ -11610,8 +11610,8 @@ AROS_LH1(void, glMultTransposeMatrixdARB,
 }
 
 AROS_LH2(void, glSampleCoverageARB,
-    AROS_LHA(GLclampf, a, D0),
-    AROS_LHA(GLboolean, b, D1),
+    AROS_LHA(GLclampf, value, D0),
+    AROS_LHA(GLboolean, invert, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11620,7 +11620,7 @@ AROS_LH2(void, glSampleCoverageARB,
 
     PUT_MESABASE_IN_REG
 
-    mglSampleCoverageARB(a, b);
+    mglSampleCoverageARB(value, invert);
 
     RESTORE_REG
 
@@ -11628,15 +11628,15 @@ AROS_LH2(void, glSampleCoverageARB,
 }
 
 AROS_LH9(void, glCompressedTexImage3DARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLsizei, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(GLint, g, D6),
-    AROS_LHA(GLsizei, h, D7),
-    AROS_LHA(const GLvoid *, i, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLenum, internalformat, D2),
+    AROS_LHA(GLsizei, width, D3),
+    AROS_LHA(GLsizei, height, D4),
+    AROS_LHA(GLsizei, depth, D5),
+    AROS_LHA(GLint, border, D6),
+    AROS_LHA(GLsizei, imageSize, D7),
+    AROS_LHA(const GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11645,7 +11645,7 @@ AROS_LH9(void, glCompressedTexImage3DARB,
 
     PUT_MESABASE_IN_REG
 
-    mglCompressedTexImage3DARB(a, b, c, d, e, f, g, h, i);
+    mglCompressedTexImage3DARB(target, level, internalformat, width, height, depth, border, imageSize, data);
 
     RESTORE_REG
 
@@ -11653,14 +11653,14 @@ AROS_LH9(void, glCompressedTexImage3DARB,
 }
 
 AROS_LH8(void, glCompressedTexImage2DARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLsizei, e, D4),
-    AROS_LHA(GLint, f, D5),
-    AROS_LHA(GLsizei, g, D6),
-    AROS_LHA(const GLvoid *, h, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLenum, internalformat, D2),
+    AROS_LHA(GLsizei, width, D3),
+    AROS_LHA(GLsizei, height, D4),
+    AROS_LHA(GLint, border, D5),
+    AROS_LHA(GLsizei, imageSize, D6),
+    AROS_LHA(const GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11669,7 +11669,7 @@ AROS_LH8(void, glCompressedTexImage2DARB,
 
     PUT_MESABASE_IN_REG
 
-    mglCompressedTexImage2DARB(a, b, c, d, e, f, g, h);
+    mglCompressedTexImage2DARB(target, level, internalformat, width, height, border, imageSize, data);
 
     RESTORE_REG
 
@@ -11677,13 +11677,13 @@ AROS_LH8(void, glCompressedTexImage2DARB,
 }
 
 AROS_LH7(void, glCompressedTexImage1DARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(const GLvoid *, g, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLenum, internalformat, D2),
+    AROS_LHA(GLsizei, width, D3),
+    AROS_LHA(GLint, border, D4),
+    AROS_LHA(GLsizei, imageSize, D5),
+    AROS_LHA(const GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11692,7 +11692,7 @@ AROS_LH7(void, glCompressedTexImage1DARB,
 
     PUT_MESABASE_IN_REG
 
-    mglCompressedTexImage1DARB(a, b, c, d, e, f, g);
+    mglCompressedTexImage1DARB(target, level, internalformat, width, border, imageSize, data);
 
     RESTORE_REG
 
@@ -11700,17 +11700,17 @@ AROS_LH7(void, glCompressedTexImage1DARB,
 }
 
 AROS_LH11(void, glCompressedTexSubImage3DARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(GLsizei, g, D6),
-    AROS_LHA(GLsizei, h, D7),
-    AROS_LHA(GLenum, i, A0),
-    AROS_LHA(GLsizei, j, A1),
-    AROS_LHA(const GLvoid *, k, A2),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLint, yoffset, D3),
+    AROS_LHA(GLint, zoffset, D4),
+    AROS_LHA(GLsizei, width, D5),
+    AROS_LHA(GLsizei, height, D6),
+    AROS_LHA(GLsizei, depth, D7),
+    AROS_LHA(GLenum, format, A0),
+    AROS_LHA(GLsizei, imageSize, A1),
+    AROS_LHA(const GLvoid *, data, A2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11719,7 +11719,7 @@ AROS_LH11(void, glCompressedTexSubImage3DARB,
 
     PUT_MESABASE_IN_REG
 
-    mglCompressedTexSubImage3DARB(a, b, c, d, e, f, g, h, i, j, k);
+    mglCompressedTexSubImage3DARB(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 
     RESTORE_REG
 
@@ -11727,15 +11727,15 @@ AROS_LH11(void, glCompressedTexSubImage3DARB,
 }
 
 AROS_LH9(void, glCompressedTexSubImage2DARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLsizei, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(GLenum, g, D6),
-    AROS_LHA(GLsizei, h, D7),
-    AROS_LHA(const GLvoid *, i, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLint, yoffset, D3),
+    AROS_LHA(GLsizei, width, D4),
+    AROS_LHA(GLsizei, height, D5),
+    AROS_LHA(GLenum, format, D6),
+    AROS_LHA(GLsizei, imageSize, D7),
+    AROS_LHA(const GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11744,7 +11744,7 @@ AROS_LH9(void, glCompressedTexSubImage2DARB,
 
     PUT_MESABASE_IN_REG
 
-    mglCompressedTexSubImage2DARB(a, b, c, d, e, f, g, h, i);
+    mglCompressedTexSubImage2DARB(target, level, xoffset, yoffset, width, height, format, imageSize, data);
 
     RESTORE_REG
 
@@ -11752,13 +11752,13 @@ AROS_LH9(void, glCompressedTexSubImage2DARB,
 }
 
 AROS_LH7(void, glCompressedTexSubImage1DARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLenum, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(const GLvoid *, g, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLsizei, width, D3),
+    AROS_LHA(GLenum, format, D4),
+    AROS_LHA(GLsizei, imageSize, D5),
+    AROS_LHA(const GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11767,7 +11767,7 @@ AROS_LH7(void, glCompressedTexSubImage1DARB,
 
     PUT_MESABASE_IN_REG
 
-    mglCompressedTexSubImage1DARB(a, b, c, d, e, f, g);
+    mglCompressedTexSubImage1DARB(target, level, xoffset, width, format, imageSize, data);
 
     RESTORE_REG
 
@@ -11775,9 +11775,9 @@ AROS_LH7(void, glCompressedTexSubImage1DARB,
 }
 
 AROS_LH3(void, glGetCompressedTexImageARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLvoid *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLvoid *, img, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11786,7 +11786,7 @@ AROS_LH3(void, glGetCompressedTexImageARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetCompressedTexImageARB(a, b, c);
+    mglGetCompressedTexImageARB(target, level, img);
 
     RESTORE_REG
 
@@ -11794,8 +11794,8 @@ AROS_LH3(void, glGetCompressedTexImageARB,
 }
 
 AROS_LH2(void, glPointParameterfARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLfloat, param, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11804,7 +11804,7 @@ AROS_LH2(void, glPointParameterfARB,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameterfARB(a, b);
+    mglPointParameterfARB(pname, param);
 
     RESTORE_REG
 
@@ -11812,8 +11812,8 @@ AROS_LH2(void, glPointParameterfARB,
 }
 
 AROS_LH2(void, glPointParameterfvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11822,7 +11822,7 @@ AROS_LH2(void, glPointParameterfvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameterfvARB(a, b);
+    mglPointParameterfvARB(pname, params);
 
     RESTORE_REG
 
@@ -11830,8 +11830,8 @@ AROS_LH2(void, glPointParameterfvARB,
 }
 
 AROS_LH2(void, glWindowPos2dARB,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
+    AROS_LHA(GLdouble, x, D0),
+    AROS_LHA(GLdouble, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11840,7 +11840,7 @@ AROS_LH2(void, glWindowPos2dARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2dARB(a, b);
+    mglWindowPos2dARB(x, y);
 
     RESTORE_REG
 
@@ -11848,7 +11848,7 @@ AROS_LH2(void, glWindowPos2dARB,
 }
 
 AROS_LH1(void, glWindowPos2dvARB,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11857,7 +11857,7 @@ AROS_LH1(void, glWindowPos2dvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2dvARB(a);
+    mglWindowPos2dvARB(v);
 
     RESTORE_REG
 
@@ -11865,8 +11865,8 @@ AROS_LH1(void, glWindowPos2dvARB,
 }
 
 AROS_LH2(void, glWindowPos2fARB,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLfloat, x, D0),
+    AROS_LHA(GLfloat, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11875,7 +11875,7 @@ AROS_LH2(void, glWindowPos2fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2fARB(a, b);
+    mglWindowPos2fARB(x, y);
 
     RESTORE_REG
 
@@ -11883,7 +11883,7 @@ AROS_LH2(void, glWindowPos2fARB,
 }
 
 AROS_LH1(void, glWindowPos2fvARB,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11892,7 +11892,7 @@ AROS_LH1(void, glWindowPos2fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2fvARB(a);
+    mglWindowPos2fvARB(v);
 
     RESTORE_REG
 
@@ -11900,8 +11900,8 @@ AROS_LH1(void, glWindowPos2fvARB,
 }
 
 AROS_LH2(void, glWindowPos2iARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
+    AROS_LHA(GLint, x, D0),
+    AROS_LHA(GLint, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11910,7 +11910,7 @@ AROS_LH2(void, glWindowPos2iARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2iARB(a, b);
+    mglWindowPos2iARB(x, y);
 
     RESTORE_REG
 
@@ -11918,7 +11918,7 @@ AROS_LH2(void, glWindowPos2iARB,
 }
 
 AROS_LH1(void, glWindowPos2ivARB,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11927,7 +11927,7 @@ AROS_LH1(void, glWindowPos2ivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2ivARB(a);
+    mglWindowPos2ivARB(v);
 
     RESTORE_REG
 
@@ -11935,8 +11935,8 @@ AROS_LH1(void, glWindowPos2ivARB,
 }
 
 AROS_LH2(void, glWindowPos2sARB,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
+    AROS_LHA(GLshort, x, D0),
+    AROS_LHA(GLshort, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11945,7 +11945,7 @@ AROS_LH2(void, glWindowPos2sARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2sARB(a, b);
+    mglWindowPos2sARB(x, y);
 
     RESTORE_REG
 
@@ -11953,7 +11953,7 @@ AROS_LH2(void, glWindowPos2sARB,
 }
 
 AROS_LH1(void, glWindowPos2svARB,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11962,7 +11962,7 @@ AROS_LH1(void, glWindowPos2svARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2svARB(a);
+    mglWindowPos2svARB(v);
 
     RESTORE_REG
 
@@ -11970,9 +11970,9 @@ AROS_LH1(void, glWindowPos2svARB,
 }
 
 AROS_LH3(void, glWindowPos3dARB,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
+    AROS_LHA(GLdouble, x, D0),
+    AROS_LHA(GLdouble, y, D1),
+    AROS_LHA(GLdouble, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11981,7 +11981,7 @@ AROS_LH3(void, glWindowPos3dARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3dARB(a, b, c);
+    mglWindowPos3dARB(x, y, z);
 
     RESTORE_REG
 
@@ -11989,7 +11989,7 @@ AROS_LH3(void, glWindowPos3dARB,
 }
 
 AROS_LH1(void, glWindowPos3dvARB,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -11998,7 +11998,7 @@ AROS_LH1(void, glWindowPos3dvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3dvARB(a);
+    mglWindowPos3dvARB(v);
 
     RESTORE_REG
 
@@ -12006,9 +12006,9 @@ AROS_LH1(void, glWindowPos3dvARB,
 }
 
 AROS_LH3(void, glWindowPos3fARB,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLfloat, x, D0),
+    AROS_LHA(GLfloat, y, D1),
+    AROS_LHA(GLfloat, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12017,7 +12017,7 @@ AROS_LH3(void, glWindowPos3fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3fARB(a, b, c);
+    mglWindowPos3fARB(x, y, z);
 
     RESTORE_REG
 
@@ -12025,7 +12025,7 @@ AROS_LH3(void, glWindowPos3fARB,
 }
 
 AROS_LH1(void, glWindowPos3fvARB,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12034,7 +12034,7 @@ AROS_LH1(void, glWindowPos3fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3fvARB(a);
+    mglWindowPos3fvARB(v);
 
     RESTORE_REG
 
@@ -12042,9 +12042,9 @@ AROS_LH1(void, glWindowPos3fvARB,
 }
 
 AROS_LH3(void, glWindowPos3iARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
+    AROS_LHA(GLint, x, D0),
+    AROS_LHA(GLint, y, D1),
+    AROS_LHA(GLint, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12053,7 +12053,7 @@ AROS_LH3(void, glWindowPos3iARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3iARB(a, b, c);
+    mglWindowPos3iARB(x, y, z);
 
     RESTORE_REG
 
@@ -12061,7 +12061,7 @@ AROS_LH3(void, glWindowPos3iARB,
 }
 
 AROS_LH1(void, glWindowPos3ivARB,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12070,7 +12070,7 @@ AROS_LH1(void, glWindowPos3ivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3ivARB(a);
+    mglWindowPos3ivARB(v);
 
     RESTORE_REG
 
@@ -12078,9 +12078,9 @@ AROS_LH1(void, glWindowPos3ivARB,
 }
 
 AROS_LH3(void, glWindowPos3sARB,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
+    AROS_LHA(GLshort, x, D0),
+    AROS_LHA(GLshort, y, D1),
+    AROS_LHA(GLshort, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12089,7 +12089,7 @@ AROS_LH3(void, glWindowPos3sARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3sARB(a, b, c);
+    mglWindowPos3sARB(x, y, z);
 
     RESTORE_REG
 
@@ -12097,7 +12097,7 @@ AROS_LH3(void, glWindowPos3sARB,
 }
 
 AROS_LH1(void, glWindowPos3svARB,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12106,7 +12106,7 @@ AROS_LH1(void, glWindowPos3svARB,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3svARB(a);
+    mglWindowPos3svARB(v);
 
     RESTORE_REG
 
@@ -12114,8 +12114,8 @@ AROS_LH1(void, glWindowPos3svARB,
 }
 
 AROS_LH2(void, glVertexAttrib1dARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12124,7 +12124,7 @@ AROS_LH2(void, glVertexAttrib1dARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1dARB(a, b);
+    mglVertexAttrib1dARB(index, x);
 
     RESTORE_REG
 
@@ -12132,8 +12132,8 @@ AROS_LH2(void, glVertexAttrib1dARB,
 }
 
 AROS_LH2(void, glVertexAttrib1dvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12142,7 +12142,7 @@ AROS_LH2(void, glVertexAttrib1dvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1dvARB(a, b);
+    mglVertexAttrib1dvARB(index, v);
 
     RESTORE_REG
 
@@ -12150,8 +12150,8 @@ AROS_LH2(void, glVertexAttrib1dvARB,
 }
 
 AROS_LH2(void, glVertexAttrib1fARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12160,7 +12160,7 @@ AROS_LH2(void, glVertexAttrib1fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1fARB(a, b);
+    mglVertexAttrib1fARB(index, x);
 
     RESTORE_REG
 
@@ -12168,8 +12168,8 @@ AROS_LH2(void, glVertexAttrib1fARB,
 }
 
 AROS_LH2(void, glVertexAttrib1fvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12178,7 +12178,7 @@ AROS_LH2(void, glVertexAttrib1fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1fvARB(a, b);
+    mglVertexAttrib1fvARB(index, v);
 
     RESTORE_REG
 
@@ -12186,8 +12186,8 @@ AROS_LH2(void, glVertexAttrib1fvARB,
 }
 
 AROS_LH2(void, glVertexAttrib1sARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12196,7 +12196,7 @@ AROS_LH2(void, glVertexAttrib1sARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1sARB(a, b);
+    mglVertexAttrib1sARB(index, x);
 
     RESTORE_REG
 
@@ -12204,8 +12204,8 @@ AROS_LH2(void, glVertexAttrib1sARB,
 }
 
 AROS_LH2(void, glVertexAttrib1svARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12214,7 +12214,7 @@ AROS_LH2(void, glVertexAttrib1svARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1svARB(a, b);
+    mglVertexAttrib1svARB(index, v);
 
     RESTORE_REG
 
@@ -12222,9 +12222,9 @@ AROS_LH2(void, glVertexAttrib1svARB,
 }
 
 AROS_LH3(void, glVertexAttrib2dARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12233,7 +12233,7 @@ AROS_LH3(void, glVertexAttrib2dARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2dARB(a, b, c);
+    mglVertexAttrib2dARB(index, x, y);
 
     RESTORE_REG
 
@@ -12241,8 +12241,8 @@ AROS_LH3(void, glVertexAttrib2dARB,
 }
 
 AROS_LH2(void, glVertexAttrib2dvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12251,7 +12251,7 @@ AROS_LH2(void, glVertexAttrib2dvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2dvARB(a, b);
+    mglVertexAttrib2dvARB(index, v);
 
     RESTORE_REG
 
@@ -12259,9 +12259,9 @@ AROS_LH2(void, glVertexAttrib2dvARB,
 }
 
 AROS_LH3(void, glVertexAttrib2fARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12270,7 +12270,7 @@ AROS_LH3(void, glVertexAttrib2fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2fARB(a, b, c);
+    mglVertexAttrib2fARB(index, x, y);
 
     RESTORE_REG
 
@@ -12278,8 +12278,8 @@ AROS_LH3(void, glVertexAttrib2fARB,
 }
 
 AROS_LH2(void, glVertexAttrib2fvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12288,7 +12288,7 @@ AROS_LH2(void, glVertexAttrib2fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2fvARB(a, b);
+    mglVertexAttrib2fvARB(index, v);
 
     RESTORE_REG
 
@@ -12296,9 +12296,9 @@ AROS_LH2(void, glVertexAttrib2fvARB,
 }
 
 AROS_LH3(void, glVertexAttrib2sARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12307,7 +12307,7 @@ AROS_LH3(void, glVertexAttrib2sARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2sARB(a, b, c);
+    mglVertexAttrib2sARB(index, x, y);
 
     RESTORE_REG
 
@@ -12315,8 +12315,8 @@ AROS_LH3(void, glVertexAttrib2sARB,
 }
 
 AROS_LH2(void, glVertexAttrib2svARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12325,7 +12325,7 @@ AROS_LH2(void, glVertexAttrib2svARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2svARB(a, b);
+    mglVertexAttrib2svARB(index, v);
 
     RESTORE_REG
 
@@ -12333,10 +12333,10 @@ AROS_LH2(void, glVertexAttrib2svARB,
 }
 
 AROS_LH4(void, glVertexAttrib3dARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
+    AROS_LHA(GLdouble, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12345,7 +12345,7 @@ AROS_LH4(void, glVertexAttrib3dARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3dARB(a, b, c, d);
+    mglVertexAttrib3dARB(index, x, y, z);
 
     RESTORE_REG
 
@@ -12353,8 +12353,8 @@ AROS_LH4(void, glVertexAttrib3dARB,
 }
 
 AROS_LH2(void, glVertexAttrib3dvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12363,7 +12363,7 @@ AROS_LH2(void, glVertexAttrib3dvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3dvARB(a, b);
+    mglVertexAttrib3dvARB(index, v);
 
     RESTORE_REG
 
@@ -12371,10 +12371,10 @@ AROS_LH2(void, glVertexAttrib3dvARB,
 }
 
 AROS_LH4(void, glVertexAttrib3fARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
+    AROS_LHA(GLfloat, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12383,7 +12383,7 @@ AROS_LH4(void, glVertexAttrib3fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3fARB(a, b, c, d);
+    mglVertexAttrib3fARB(index, x, y, z);
 
     RESTORE_REG
 
@@ -12391,8 +12391,8 @@ AROS_LH4(void, glVertexAttrib3fARB,
 }
 
 AROS_LH2(void, glVertexAttrib3fvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12401,7 +12401,7 @@ AROS_LH2(void, glVertexAttrib3fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3fvARB(a, b);
+    mglVertexAttrib3fvARB(index, v);
 
     RESTORE_REG
 
@@ -12409,10 +12409,10 @@ AROS_LH2(void, glVertexAttrib3fvARB,
 }
 
 AROS_LH4(void, glVertexAttrib3sARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
-    AROS_LHA(GLshort, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
+    AROS_LHA(GLshort, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12421,7 +12421,7 @@ AROS_LH4(void, glVertexAttrib3sARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3sARB(a, b, c, d);
+    mglVertexAttrib3sARB(index, x, y, z);
 
     RESTORE_REG
 
@@ -12429,8 +12429,8 @@ AROS_LH4(void, glVertexAttrib3sARB,
 }
 
 AROS_LH2(void, glVertexAttrib3svARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12439,7 +12439,7 @@ AROS_LH2(void, glVertexAttrib3svARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3svARB(a, b);
+    mglVertexAttrib3svARB(index, v);
 
     RESTORE_REG
 
@@ -12447,8 +12447,8 @@ AROS_LH2(void, glVertexAttrib3svARB,
 }
 
 AROS_LH2(void, glVertexAttrib4NbvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLbyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLbyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12457,7 +12457,7 @@ AROS_LH2(void, glVertexAttrib4NbvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4NbvARB(a, b);
+    mglVertexAttrib4NbvARB(index, v);
 
     RESTORE_REG
 
@@ -12465,8 +12465,8 @@ AROS_LH2(void, glVertexAttrib4NbvARB,
 }
 
 AROS_LH2(void, glVertexAttrib4NivARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLint *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12475,7 +12475,7 @@ AROS_LH2(void, glVertexAttrib4NivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4NivARB(a, b);
+    mglVertexAttrib4NivARB(index, v);
 
     RESTORE_REG
 
@@ -12483,8 +12483,8 @@ AROS_LH2(void, glVertexAttrib4NivARB,
 }
 
 AROS_LH2(void, glVertexAttrib4NsvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12493,7 +12493,7 @@ AROS_LH2(void, glVertexAttrib4NsvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4NsvARB(a, b);
+    mglVertexAttrib4NsvARB(index, v);
 
     RESTORE_REG
 
@@ -12501,11 +12501,11 @@ AROS_LH2(void, glVertexAttrib4NsvARB,
 }
 
 AROS_LH5(void, glVertexAttrib4NubARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLubyte, b, D1),
-    AROS_LHA(GLubyte, c, D2),
-    AROS_LHA(GLubyte, d, D3),
-    AROS_LHA(GLubyte, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLubyte, x, D1),
+    AROS_LHA(GLubyte, y, D2),
+    AROS_LHA(GLubyte, z, D3),
+    AROS_LHA(GLubyte, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12514,7 +12514,7 @@ AROS_LH5(void, glVertexAttrib4NubARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4NubARB(a, b, c, d, e);
+    mglVertexAttrib4NubARB(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -12522,8 +12522,8 @@ AROS_LH5(void, glVertexAttrib4NubARB,
 }
 
 AROS_LH2(void, glVertexAttrib4NubvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLubyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLubyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12532,7 +12532,7 @@ AROS_LH2(void, glVertexAttrib4NubvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4NubvARB(a, b);
+    mglVertexAttrib4NubvARB(index, v);
 
     RESTORE_REG
 
@@ -12540,8 +12540,8 @@ AROS_LH2(void, glVertexAttrib4NubvARB,
 }
 
 AROS_LH2(void, glVertexAttrib4NuivARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12550,7 +12550,7 @@ AROS_LH2(void, glVertexAttrib4NuivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4NuivARB(a, b);
+    mglVertexAttrib4NuivARB(index, v);
 
     RESTORE_REG
 
@@ -12558,8 +12558,8 @@ AROS_LH2(void, glVertexAttrib4NuivARB,
 }
 
 AROS_LH2(void, glVertexAttrib4NusvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLushort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLushort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12568,7 +12568,7 @@ AROS_LH2(void, glVertexAttrib4NusvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4NusvARB(a, b);
+    mglVertexAttrib4NusvARB(index, v);
 
     RESTORE_REG
 
@@ -12576,8 +12576,8 @@ AROS_LH2(void, glVertexAttrib4NusvARB,
 }
 
 AROS_LH2(void, glVertexAttrib4bvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLbyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLbyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12586,7 +12586,7 @@ AROS_LH2(void, glVertexAttrib4bvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4bvARB(a, b);
+    mglVertexAttrib4bvARB(index, v);
 
     RESTORE_REG
 
@@ -12594,11 +12594,11 @@ AROS_LH2(void, glVertexAttrib4bvARB,
 }
 
 AROS_LH5(void, glVertexAttrib4dARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
-    AROS_LHA(GLdouble, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
+    AROS_LHA(GLdouble, z, D3),
+    AROS_LHA(GLdouble, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12607,7 +12607,7 @@ AROS_LH5(void, glVertexAttrib4dARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4dARB(a, b, c, d, e);
+    mglVertexAttrib4dARB(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -12615,8 +12615,8 @@ AROS_LH5(void, glVertexAttrib4dARB,
 }
 
 AROS_LH2(void, glVertexAttrib4dvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12625,7 +12625,7 @@ AROS_LH2(void, glVertexAttrib4dvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4dvARB(a, b);
+    mglVertexAttrib4dvARB(index, v);
 
     RESTORE_REG
 
@@ -12633,11 +12633,11 @@ AROS_LH2(void, glVertexAttrib4dvARB,
 }
 
 AROS_LH5(void, glVertexAttrib4fARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
-    AROS_LHA(GLfloat, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
+    AROS_LHA(GLfloat, z, D3),
+    AROS_LHA(GLfloat, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12646,7 +12646,7 @@ AROS_LH5(void, glVertexAttrib4fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4fARB(a, b, c, d, e);
+    mglVertexAttrib4fARB(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -12654,8 +12654,8 @@ AROS_LH5(void, glVertexAttrib4fARB,
 }
 
 AROS_LH2(void, glVertexAttrib4fvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12664,7 +12664,7 @@ AROS_LH2(void, glVertexAttrib4fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4fvARB(a, b);
+    mglVertexAttrib4fvARB(index, v);
 
     RESTORE_REG
 
@@ -12672,8 +12672,8 @@ AROS_LH2(void, glVertexAttrib4fvARB,
 }
 
 AROS_LH2(void, glVertexAttrib4ivARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLint *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12682,7 +12682,7 @@ AROS_LH2(void, glVertexAttrib4ivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4ivARB(a, b);
+    mglVertexAttrib4ivARB(index, v);
 
     RESTORE_REG
 
@@ -12690,11 +12690,11 @@ AROS_LH2(void, glVertexAttrib4ivARB,
 }
 
 AROS_LH5(void, glVertexAttrib4sARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
-    AROS_LHA(GLshort, d, D3),
-    AROS_LHA(GLshort, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
+    AROS_LHA(GLshort, z, D3),
+    AROS_LHA(GLshort, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12703,7 +12703,7 @@ AROS_LH5(void, glVertexAttrib4sARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4sARB(a, b, c, d, e);
+    mglVertexAttrib4sARB(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -12711,8 +12711,8 @@ AROS_LH5(void, glVertexAttrib4sARB,
 }
 
 AROS_LH2(void, glVertexAttrib4svARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12721,7 +12721,7 @@ AROS_LH2(void, glVertexAttrib4svARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4svARB(a, b);
+    mglVertexAttrib4svARB(index, v);
 
     RESTORE_REG
 
@@ -12729,8 +12729,8 @@ AROS_LH2(void, glVertexAttrib4svARB,
 }
 
 AROS_LH2(void, glVertexAttrib4ubvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLubyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLubyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12739,7 +12739,7 @@ AROS_LH2(void, glVertexAttrib4ubvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4ubvARB(a, b);
+    mglVertexAttrib4ubvARB(index, v);
 
     RESTORE_REG
 
@@ -12747,8 +12747,8 @@ AROS_LH2(void, glVertexAttrib4ubvARB,
 }
 
 AROS_LH2(void, glVertexAttrib4uivARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12757,7 +12757,7 @@ AROS_LH2(void, glVertexAttrib4uivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4uivARB(a, b);
+    mglVertexAttrib4uivARB(index, v);
 
     RESTORE_REG
 
@@ -12765,8 +12765,8 @@ AROS_LH2(void, glVertexAttrib4uivARB,
 }
 
 AROS_LH2(void, glVertexAttrib4usvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLushort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLushort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12775,7 +12775,7 @@ AROS_LH2(void, glVertexAttrib4usvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4usvARB(a, b);
+    mglVertexAttrib4usvARB(index, v);
 
     RESTORE_REG
 
@@ -12783,12 +12783,12 @@ AROS_LH2(void, glVertexAttrib4usvARB,
 }
 
 AROS_LH6(void, glVertexAttribPointerARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLboolean, d, D3),
-    AROS_LHA(GLsizei, e, D4),
-    AROS_LHA(const GLvoid *, f, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, size, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(GLboolean, normalized, D3),
+    AROS_LHA(GLsizei, stride, D4),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12797,7 +12797,7 @@ AROS_LH6(void, glVertexAttribPointerARB,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribPointerARB(a, b, c, d, e, f);
+    mglVertexAttribPointerARB(index, size, type, normalized, stride, pointer);
 
     RESTORE_REG
 
@@ -12805,7 +12805,7 @@ AROS_LH6(void, glVertexAttribPointerARB,
 }
 
 AROS_LH1(void, glEnableVertexAttribArrayARB,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, index, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12814,7 +12814,7 @@ AROS_LH1(void, glEnableVertexAttribArrayARB,
 
     PUT_MESABASE_IN_REG
 
-    mglEnableVertexAttribArrayARB(a);
+    mglEnableVertexAttribArrayARB(index);
 
     RESTORE_REG
 
@@ -12822,7 +12822,7 @@ AROS_LH1(void, glEnableVertexAttribArrayARB,
 }
 
 AROS_LH1(void, glDisableVertexAttribArrayARB,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, index, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12831,7 +12831,7 @@ AROS_LH1(void, glDisableVertexAttribArrayARB,
 
     PUT_MESABASE_IN_REG
 
-    mglDisableVertexAttribArrayARB(a);
+    mglDisableVertexAttribArrayARB(index);
 
     RESTORE_REG
 
@@ -12839,10 +12839,10 @@ AROS_LH1(void, glDisableVertexAttribArrayARB,
 }
 
 AROS_LH4(void, glProgramStringARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(const GLvoid *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, format, D1),
+    AROS_LHA(GLsizei, len, D2),
+    AROS_LHA(const GLvoid *, string, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12851,7 +12851,7 @@ AROS_LH4(void, glProgramStringARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramStringARB(a, b, c, d);
+    mglProgramStringARB(target, format, len, string);
 
     RESTORE_REG
 
@@ -12859,8 +12859,8 @@ AROS_LH4(void, glProgramStringARB,
 }
 
 AROS_LH2(void, glBindProgramARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, program, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12869,7 +12869,7 @@ AROS_LH2(void, glBindProgramARB,
 
     PUT_MESABASE_IN_REG
 
-    mglBindProgramARB(a, b);
+    mglBindProgramARB(target, program);
 
     RESTORE_REG
 
@@ -12877,8 +12877,8 @@ AROS_LH2(void, glBindProgramARB,
 }
 
 AROS_LH2(void, glDeleteProgramsARB,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, programs, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12887,7 +12887,7 @@ AROS_LH2(void, glDeleteProgramsARB,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteProgramsARB(a, b);
+    mglDeleteProgramsARB(n, programs);
 
     RESTORE_REG
 
@@ -12895,8 +12895,8 @@ AROS_LH2(void, glDeleteProgramsARB,
 }
 
 AROS_LH2(void, glGenProgramsARB,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, programs, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12905,7 +12905,7 @@ AROS_LH2(void, glGenProgramsARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGenProgramsARB(a, b);
+    mglGenProgramsARB(n, programs);
 
     RESTORE_REG
 
@@ -12913,12 +12913,12 @@ AROS_LH2(void, glGenProgramsARB,
 }
 
 AROS_LH6(void, glProgramEnvParameter4dARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
-    AROS_LHA(GLdouble, e, D4),
-    AROS_LHA(GLdouble, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLdouble, x, D2),
+    AROS_LHA(GLdouble, y, D3),
+    AROS_LHA(GLdouble, z, D4),
+    AROS_LHA(GLdouble, w, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12927,7 +12927,7 @@ AROS_LH6(void, glProgramEnvParameter4dARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramEnvParameter4dARB(a, b, c, d, e, f);
+    mglProgramEnvParameter4dARB(target, index, x, y, z, w);
 
     RESTORE_REG
 
@@ -12935,9 +12935,9 @@ AROS_LH6(void, glProgramEnvParameter4dARB,
 }
 
 AROS_LH3(void, glProgramEnvParameter4dvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLdouble *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(const GLdouble *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12946,7 +12946,7 @@ AROS_LH3(void, glProgramEnvParameter4dvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramEnvParameter4dvARB(a, b, c);
+    mglProgramEnvParameter4dvARB(target, index, params);
 
     RESTORE_REG
 
@@ -12954,12 +12954,12 @@ AROS_LH3(void, glProgramEnvParameter4dvARB,
 }
 
 AROS_LH6(void, glProgramEnvParameter4fARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
-    AROS_LHA(GLfloat, e, D4),
-    AROS_LHA(GLfloat, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLfloat, x, D2),
+    AROS_LHA(GLfloat, y, D3),
+    AROS_LHA(GLfloat, z, D4),
+    AROS_LHA(GLfloat, w, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12968,7 +12968,7 @@ AROS_LH6(void, glProgramEnvParameter4fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramEnvParameter4fARB(a, b, c, d, e, f);
+    mglProgramEnvParameter4fARB(target, index, x, y, z, w);
 
     RESTORE_REG
 
@@ -12976,9 +12976,9 @@ AROS_LH6(void, glProgramEnvParameter4fARB,
 }
 
 AROS_LH3(void, glProgramEnvParameter4fvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(const GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -12987,7 +12987,7 @@ AROS_LH3(void, glProgramEnvParameter4fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramEnvParameter4fvARB(a, b, c);
+    mglProgramEnvParameter4fvARB(target, index, params);
 
     RESTORE_REG
 
@@ -12995,12 +12995,12 @@ AROS_LH3(void, glProgramEnvParameter4fvARB,
 }
 
 AROS_LH6(void, glProgramLocalParameter4dARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
-    AROS_LHA(GLdouble, e, D4),
-    AROS_LHA(GLdouble, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLdouble, x, D2),
+    AROS_LHA(GLdouble, y, D3),
+    AROS_LHA(GLdouble, z, D4),
+    AROS_LHA(GLdouble, w, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13009,7 +13009,7 @@ AROS_LH6(void, glProgramLocalParameter4dARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramLocalParameter4dARB(a, b, c, d, e, f);
+    mglProgramLocalParameter4dARB(target, index, x, y, z, w);
 
     RESTORE_REG
 
@@ -13017,9 +13017,9 @@ AROS_LH6(void, glProgramLocalParameter4dARB,
 }
 
 AROS_LH3(void, glProgramLocalParameter4dvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLdouble *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(const GLdouble *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13028,7 +13028,7 @@ AROS_LH3(void, glProgramLocalParameter4dvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramLocalParameter4dvARB(a, b, c);
+    mglProgramLocalParameter4dvARB(target, index, params);
 
     RESTORE_REG
 
@@ -13036,12 +13036,12 @@ AROS_LH3(void, glProgramLocalParameter4dvARB,
 }
 
 AROS_LH6(void, glProgramLocalParameter4fARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
-    AROS_LHA(GLfloat, e, D4),
-    AROS_LHA(GLfloat, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLfloat, x, D2),
+    AROS_LHA(GLfloat, y, D3),
+    AROS_LHA(GLfloat, z, D4),
+    AROS_LHA(GLfloat, w, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13050,7 +13050,7 @@ AROS_LH6(void, glProgramLocalParameter4fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramLocalParameter4fARB(a, b, c, d, e, f);
+    mglProgramLocalParameter4fARB(target, index, x, y, z, w);
 
     RESTORE_REG
 
@@ -13058,9 +13058,9 @@ AROS_LH6(void, glProgramLocalParameter4fARB,
 }
 
 AROS_LH3(void, glProgramLocalParameter4fvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(const GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13069,7 +13069,7 @@ AROS_LH3(void, glProgramLocalParameter4fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramLocalParameter4fvARB(a, b, c);
+    mglProgramLocalParameter4fvARB(target, index, params);
 
     RESTORE_REG
 
@@ -13077,9 +13077,9 @@ AROS_LH3(void, glProgramLocalParameter4fvARB,
 }
 
 AROS_LH3(void, glGetProgramEnvParameterdvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLdouble *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLdouble *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13088,7 +13088,7 @@ AROS_LH3(void, glGetProgramEnvParameterdvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramEnvParameterdvARB(a, b, c);
+    mglGetProgramEnvParameterdvARB(target, index, params);
 
     RESTORE_REG
 
@@ -13096,9 +13096,9 @@ AROS_LH3(void, glGetProgramEnvParameterdvARB,
 }
 
 AROS_LH3(void, glGetProgramEnvParameterfvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13107,7 +13107,7 @@ AROS_LH3(void, glGetProgramEnvParameterfvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramEnvParameterfvARB(a, b, c);
+    mglGetProgramEnvParameterfvARB(target, index, params);
 
     RESTORE_REG
 
@@ -13115,9 +13115,9 @@ AROS_LH3(void, glGetProgramEnvParameterfvARB,
 }
 
 AROS_LH3(void, glGetProgramLocalParameterdvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLdouble *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLdouble *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13126,7 +13126,7 @@ AROS_LH3(void, glGetProgramLocalParameterdvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramLocalParameterdvARB(a, b, c);
+    mglGetProgramLocalParameterdvARB(target, index, params);
 
     RESTORE_REG
 
@@ -13134,9 +13134,9 @@ AROS_LH3(void, glGetProgramLocalParameterdvARB,
 }
 
 AROS_LH3(void, glGetProgramLocalParameterfvARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13145,7 +13145,7 @@ AROS_LH3(void, glGetProgramLocalParameterfvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramLocalParameterfvARB(a, b, c);
+    mglGetProgramLocalParameterfvARB(target, index, params);
 
     RESTORE_REG
 
@@ -13153,9 +13153,9 @@ AROS_LH3(void, glGetProgramLocalParameterfvARB,
 }
 
 AROS_LH3(void, glGetProgramivARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13164,7 +13164,7 @@ AROS_LH3(void, glGetProgramivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramivARB(a, b, c);
+    mglGetProgramivARB(target, pname, params);
 
     RESTORE_REG
 
@@ -13172,9 +13172,9 @@ AROS_LH3(void, glGetProgramivARB,
 }
 
 AROS_LH3(void, glGetProgramStringARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLvoid *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLvoid *, string, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13183,7 +13183,7 @@ AROS_LH3(void, glGetProgramStringARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramStringARB(a, b, c);
+    mglGetProgramStringARB(target, pname, string);
 
     RESTORE_REG
 
@@ -13191,9 +13191,9 @@ AROS_LH3(void, glGetProgramStringARB,
 }
 
 AROS_LH3(void, glGetVertexAttribdvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLdouble *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLdouble *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13202,7 +13202,7 @@ AROS_LH3(void, glGetVertexAttribdvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribdvARB(a, b, c);
+    mglGetVertexAttribdvARB(index, pname, params);
 
     RESTORE_REG
 
@@ -13210,9 +13210,9 @@ AROS_LH3(void, glGetVertexAttribdvARB,
 }
 
 AROS_LH3(void, glGetVertexAttribfvARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13221,7 +13221,7 @@ AROS_LH3(void, glGetVertexAttribfvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribfvARB(a, b, c);
+    mglGetVertexAttribfvARB(index, pname, params);
 
     RESTORE_REG
 
@@ -13229,9 +13229,9 @@ AROS_LH3(void, glGetVertexAttribfvARB,
 }
 
 AROS_LH3(void, glGetVertexAttribivARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13240,7 +13240,7 @@ AROS_LH3(void, glGetVertexAttribivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribivARB(a, b, c);
+    mglGetVertexAttribivARB(index, pname, params);
 
     RESTORE_REG
 
@@ -13248,9 +13248,9 @@ AROS_LH3(void, glGetVertexAttribivARB,
 }
 
 AROS_LH3(void, glGetVertexAttribPointervARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLvoid *  *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLvoid *  *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13259,7 +13259,7 @@ AROS_LH3(void, glGetVertexAttribPointervARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribPointervARB(a, b, c);
+    mglGetVertexAttribPointervARB(index, pname, pointer);
 
     RESTORE_REG
 
@@ -13267,7 +13267,7 @@ AROS_LH3(void, glGetVertexAttribPointervARB,
 }
 
 AROS_LH1(GLboolean, glIsProgramARB,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, program, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13276,7 +13276,7 @@ AROS_LH1(GLboolean, glIsProgramARB,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsProgramARB(a);
+    GLboolean _return = mglIsProgramARB(program);
 
     RESTORE_REG
 
@@ -13286,8 +13286,8 @@ AROS_LH1(GLboolean, glIsProgramARB,
 }
 
 AROS_LH2(void, glBindBufferARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, buffer, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13296,7 +13296,7 @@ AROS_LH2(void, glBindBufferARB,
 
     PUT_MESABASE_IN_REG
 
-    mglBindBufferARB(a, b);
+    mglBindBufferARB(target, buffer);
 
     RESTORE_REG
 
@@ -13304,8 +13304,8 @@ AROS_LH2(void, glBindBufferARB,
 }
 
 AROS_LH2(void, glDeleteBuffersARB,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, buffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13314,7 +13314,7 @@ AROS_LH2(void, glDeleteBuffersARB,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteBuffersARB(a, b);
+    mglDeleteBuffersARB(n, buffers);
 
     RESTORE_REG
 
@@ -13322,8 +13322,8 @@ AROS_LH2(void, glDeleteBuffersARB,
 }
 
 AROS_LH2(void, glGenBuffersARB,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, buffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13332,7 +13332,7 @@ AROS_LH2(void, glGenBuffersARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGenBuffersARB(a, b);
+    mglGenBuffersARB(n, buffers);
 
     RESTORE_REG
 
@@ -13340,7 +13340,7 @@ AROS_LH2(void, glGenBuffersARB,
 }
 
 AROS_LH1(GLboolean, glIsBufferARB,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, buffer, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13349,7 +13349,7 @@ AROS_LH1(GLboolean, glIsBufferARB,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsBufferARB(a);
+    GLboolean _return = mglIsBufferARB(buffer);
 
     RESTORE_REG
 
@@ -13359,10 +13359,10 @@ AROS_LH1(GLboolean, glIsBufferARB,
 }
 
 AROS_LH4(void, glBufferDataARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizeiptrARB, b, D1),
-    AROS_LHA(const GLvoid *, c, A0),
-    AROS_LHA(GLenum, d, D2),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLsizeiptrARB, size, D1),
+    AROS_LHA(const GLvoid *, data, A0),
+    AROS_LHA(GLenum, usage, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13371,7 +13371,7 @@ AROS_LH4(void, glBufferDataARB,
 
     PUT_MESABASE_IN_REG
 
-    mglBufferDataARB(a, b, c, d);
+    mglBufferDataARB(target, size, data, usage);
 
     RESTORE_REG
 
@@ -13379,10 +13379,10 @@ AROS_LH4(void, glBufferDataARB,
 }
 
 AROS_LH4(void, glBufferSubDataARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLintptrARB, b, D1),
-    AROS_LHA(GLsizeiptrARB, c, D2),
-    AROS_LHA(const GLvoid *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLintptrARB, offset, D1),
+    AROS_LHA(GLsizeiptrARB, size, D2),
+    AROS_LHA(const GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13391,7 +13391,7 @@ AROS_LH4(void, glBufferSubDataARB,
 
     PUT_MESABASE_IN_REG
 
-    mglBufferSubDataARB(a, b, c, d);
+    mglBufferSubDataARB(target, offset, size, data);
 
     RESTORE_REG
 
@@ -13399,10 +13399,10 @@ AROS_LH4(void, glBufferSubDataARB,
 }
 
 AROS_LH4(void, glGetBufferSubDataARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLintptrARB, b, D1),
-    AROS_LHA(GLsizeiptrARB, c, D2),
-    AROS_LHA(GLvoid *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLintptrARB, offset, D1),
+    AROS_LHA(GLsizeiptrARB, size, D2),
+    AROS_LHA(GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13411,7 +13411,7 @@ AROS_LH4(void, glGetBufferSubDataARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetBufferSubDataARB(a, b, c, d);
+    mglGetBufferSubDataARB(target, offset, size, data);
 
     RESTORE_REG
 
@@ -13419,8 +13419,8 @@ AROS_LH4(void, glGetBufferSubDataARB,
 }
 
 AROS_LH2(GLvoid*, glMapBufferARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, access, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13429,7 +13429,7 @@ AROS_LH2(GLvoid*, glMapBufferARB,
 
     PUT_MESABASE_IN_REG
 
-    GLvoid* _return = mglMapBufferARB(a, b);
+    GLvoid* _return = mglMapBufferARB(target, access);
 
     RESTORE_REG
 
@@ -13439,7 +13439,7 @@ AROS_LH2(GLvoid*, glMapBufferARB,
 }
 
 AROS_LH1(GLboolean, glUnmapBufferARB,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, target, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13448,7 +13448,7 @@ AROS_LH1(GLboolean, glUnmapBufferARB,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglUnmapBufferARB(a);
+    GLboolean _return = mglUnmapBufferARB(target);
 
     RESTORE_REG
 
@@ -13458,9 +13458,9 @@ AROS_LH1(GLboolean, glUnmapBufferARB,
 }
 
 AROS_LH3(void, glGetBufferParameterivARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13469,7 +13469,7 @@ AROS_LH3(void, glGetBufferParameterivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetBufferParameterivARB(a, b, c);
+    mglGetBufferParameterivARB(target, pname, params);
 
     RESTORE_REG
 
@@ -13477,9 +13477,9 @@ AROS_LH3(void, glGetBufferParameterivARB,
 }
 
 AROS_LH3(void, glGetBufferPointervARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLvoid *  *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLvoid *  *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13488,7 +13488,7 @@ AROS_LH3(void, glGetBufferPointervARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetBufferPointervARB(a, b, c);
+    mglGetBufferPointervARB(target, pname, params);
 
     RESTORE_REG
 
@@ -13496,8 +13496,8 @@ AROS_LH3(void, glGetBufferPointervARB,
 }
 
 AROS_LH2(void, glGenQueriesARB,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, ids, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13506,7 +13506,7 @@ AROS_LH2(void, glGenQueriesARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGenQueriesARB(a, b);
+    mglGenQueriesARB(n, ids);
 
     RESTORE_REG
 
@@ -13514,8 +13514,8 @@ AROS_LH2(void, glGenQueriesARB,
 }
 
 AROS_LH2(void, glDeleteQueriesARB,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, ids, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13524,7 +13524,7 @@ AROS_LH2(void, glDeleteQueriesARB,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteQueriesARB(a, b);
+    mglDeleteQueriesARB(n, ids);
 
     RESTORE_REG
 
@@ -13532,7 +13532,7 @@ AROS_LH2(void, glDeleteQueriesARB,
 }
 
 AROS_LH1(GLboolean, glIsQueryARB,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, id, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13541,7 +13541,7 @@ AROS_LH1(GLboolean, glIsQueryARB,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsQueryARB(a);
+    GLboolean _return = mglIsQueryARB(id);
 
     RESTORE_REG
 
@@ -13551,8 +13551,8 @@ AROS_LH1(GLboolean, glIsQueryARB,
 }
 
 AROS_LH2(void, glBeginQueryARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, id, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13561,7 +13561,7 @@ AROS_LH2(void, glBeginQueryARB,
 
     PUT_MESABASE_IN_REG
 
-    mglBeginQueryARB(a, b);
+    mglBeginQueryARB(target, id);
 
     RESTORE_REG
 
@@ -13569,7 +13569,7 @@ AROS_LH2(void, glBeginQueryARB,
 }
 
 AROS_LH1(void, glEndQueryARB,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, target, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13578,7 +13578,7 @@ AROS_LH1(void, glEndQueryARB,
 
     PUT_MESABASE_IN_REG
 
-    mglEndQueryARB(a);
+    mglEndQueryARB(target);
 
     RESTORE_REG
 
@@ -13586,9 +13586,9 @@ AROS_LH1(void, glEndQueryARB,
 }
 
 AROS_LH3(void, glGetQueryivARB,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13597,7 +13597,7 @@ AROS_LH3(void, glGetQueryivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetQueryivARB(a, b, c);
+    mglGetQueryivARB(target, pname, params);
 
     RESTORE_REG
 
@@ -13605,9 +13605,9 @@ AROS_LH3(void, glGetQueryivARB,
 }
 
 AROS_LH3(void, glGetQueryObjectivARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13616,7 +13616,7 @@ AROS_LH3(void, glGetQueryObjectivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetQueryObjectivARB(a, b, c);
+    mglGetQueryObjectivARB(id, pname, params);
 
     RESTORE_REG
 
@@ -13624,9 +13624,9 @@ AROS_LH3(void, glGetQueryObjectivARB,
 }
 
 AROS_LH3(void, glGetQueryObjectuivARB,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLuint *, c, A0),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLuint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13635,7 +13635,7 @@ AROS_LH3(void, glGetQueryObjectuivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetQueryObjectuivARB(a, b, c);
+    mglGetQueryObjectuivARB(id, pname, params);
 
     RESTORE_REG
 
@@ -13643,7 +13643,7 @@ AROS_LH3(void, glGetQueryObjectuivARB,
 }
 
 AROS_LH1(void, glDeleteObjectARB,
-    AROS_LHA(GLhandleARB, a, D0),
+    AROS_LHA(GLhandleARB, obj, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13652,7 +13652,7 @@ AROS_LH1(void, glDeleteObjectARB,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteObjectARB(a);
+    mglDeleteObjectARB(obj);
 
     RESTORE_REG
 
@@ -13660,7 +13660,7 @@ AROS_LH1(void, glDeleteObjectARB,
 }
 
 AROS_LH1(GLhandleARB, glGetHandleARB,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, pname, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13669,7 +13669,7 @@ AROS_LH1(GLhandleARB, glGetHandleARB,
 
     PUT_MESABASE_IN_REG
 
-    GLhandleARB _return = mglGetHandleARB(a);
+    GLhandleARB _return = mglGetHandleARB(pname);
 
     RESTORE_REG
 
@@ -13679,8 +13679,8 @@ AROS_LH1(GLhandleARB, glGetHandleARB,
 }
 
 AROS_LH2(void, glDetachObjectARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLhandleARB, b, D1),
+    AROS_LHA(GLhandleARB, containerObj, D0),
+    AROS_LHA(GLhandleARB, attachedObj, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13689,7 +13689,7 @@ AROS_LH2(void, glDetachObjectARB,
 
     PUT_MESABASE_IN_REG
 
-    mglDetachObjectARB(a, b);
+    mglDetachObjectARB(containerObj, attachedObj);
 
     RESTORE_REG
 
@@ -13697,7 +13697,7 @@ AROS_LH2(void, glDetachObjectARB,
 }
 
 AROS_LH1(GLhandleARB, glCreateShaderObjectARB,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, shaderType, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13706,7 +13706,7 @@ AROS_LH1(GLhandleARB, glCreateShaderObjectARB,
 
     PUT_MESABASE_IN_REG
 
-    GLhandleARB _return = mglCreateShaderObjectARB(a);
+    GLhandleARB _return = mglCreateShaderObjectARB(shaderType);
 
     RESTORE_REG
 
@@ -13716,10 +13716,10 @@ AROS_LH1(GLhandleARB, glCreateShaderObjectARB,
 }
 
 AROS_LH4(void, glShaderSourceARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLcharARB *  *, c, A0),
-    AROS_LHA(const GLint *, d, A1),
+    AROS_LHA(GLhandleARB, shaderObj, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLcharARB *  *, string, A0),
+    AROS_LHA(const GLint *, length, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13728,7 +13728,7 @@ AROS_LH4(void, glShaderSourceARB,
 
     PUT_MESABASE_IN_REG
 
-    mglShaderSourceARB(a, b, c, d);
+    mglShaderSourceARB(shaderObj, count, string, length);
 
     RESTORE_REG
 
@@ -13736,7 +13736,7 @@ AROS_LH4(void, glShaderSourceARB,
 }
 
 AROS_LH1(void, glCompileShaderARB,
-    AROS_LHA(GLhandleARB, a, D0),
+    AROS_LHA(GLhandleARB, shaderObj, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13745,7 +13745,7 @@ AROS_LH1(void, glCompileShaderARB,
 
     PUT_MESABASE_IN_REG
 
-    mglCompileShaderARB(a);
+    mglCompileShaderARB(shaderObj);
 
     RESTORE_REG
 
@@ -13771,8 +13771,8 @@ AROS_LH0(GLhandleARB, glCreateProgramObjectARB,
 }
 
 AROS_LH2(void, glAttachObjectARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLhandleARB, b, D1),
+    AROS_LHA(GLhandleARB, containerObj, D0),
+    AROS_LHA(GLhandleARB, obj, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13781,7 +13781,7 @@ AROS_LH2(void, glAttachObjectARB,
 
     PUT_MESABASE_IN_REG
 
-    mglAttachObjectARB(a, b);
+    mglAttachObjectARB(containerObj, obj);
 
     RESTORE_REG
 
@@ -13789,7 +13789,7 @@ AROS_LH2(void, glAttachObjectARB,
 }
 
 AROS_LH1(void, glLinkProgramARB,
-    AROS_LHA(GLhandleARB, a, D0),
+    AROS_LHA(GLhandleARB, programObj, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13798,7 +13798,7 @@ AROS_LH1(void, glLinkProgramARB,
 
     PUT_MESABASE_IN_REG
 
-    mglLinkProgramARB(a);
+    mglLinkProgramARB(programObj);
 
     RESTORE_REG
 
@@ -13806,7 +13806,7 @@ AROS_LH1(void, glLinkProgramARB,
 }
 
 AROS_LH1(void, glUseProgramObjectARB,
-    AROS_LHA(GLhandleARB, a, D0),
+    AROS_LHA(GLhandleARB, programObj, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13815,7 +13815,7 @@ AROS_LH1(void, glUseProgramObjectARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUseProgramObjectARB(a);
+    mglUseProgramObjectARB(programObj);
 
     RESTORE_REG
 
@@ -13823,7 +13823,7 @@ AROS_LH1(void, glUseProgramObjectARB,
 }
 
 AROS_LH1(void, glValidateProgramARB,
-    AROS_LHA(GLhandleARB, a, D0),
+    AROS_LHA(GLhandleARB, programObj, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13832,7 +13832,7 @@ AROS_LH1(void, glValidateProgramARB,
 
     PUT_MESABASE_IN_REG
 
-    mglValidateProgramARB(a);
+    mglValidateProgramARB(programObj);
 
     RESTORE_REG
 
@@ -13840,8 +13840,8 @@ AROS_LH1(void, glValidateProgramARB,
 }
 
 AROS_LH2(void, glUniform1fARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLfloat, v0, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13850,7 +13850,7 @@ AROS_LH2(void, glUniform1fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform1fARB(a, b);
+    mglUniform1fARB(location, v0);
 
     RESTORE_REG
 
@@ -13858,9 +13858,9 @@ AROS_LH2(void, glUniform1fARB,
 }
 
 AROS_LH3(void, glUniform2fARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLfloat, v0, D1),
+    AROS_LHA(GLfloat, v1, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13869,7 +13869,7 @@ AROS_LH3(void, glUniform2fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform2fARB(a, b, c);
+    mglUniform2fARB(location, v0, v1);
 
     RESTORE_REG
 
@@ -13877,10 +13877,10 @@ AROS_LH3(void, glUniform2fARB,
 }
 
 AROS_LH4(void, glUniform3fARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLfloat, v0, D1),
+    AROS_LHA(GLfloat, v1, D2),
+    AROS_LHA(GLfloat, v2, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13889,7 +13889,7 @@ AROS_LH4(void, glUniform3fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform3fARB(a, b, c, d);
+    mglUniform3fARB(location, v0, v1, v2);
 
     RESTORE_REG
 
@@ -13897,11 +13897,11 @@ AROS_LH4(void, glUniform3fARB,
 }
 
 AROS_LH5(void, glUniform4fARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
-    AROS_LHA(GLfloat, e, D4),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLfloat, v0, D1),
+    AROS_LHA(GLfloat, v1, D2),
+    AROS_LHA(GLfloat, v2, D3),
+    AROS_LHA(GLfloat, v3, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13910,7 +13910,7 @@ AROS_LH5(void, glUniform4fARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform4fARB(a, b, c, d, e);
+    mglUniform4fARB(location, v0, v1, v2, v3);
 
     RESTORE_REG
 
@@ -13918,8 +13918,8 @@ AROS_LH5(void, glUniform4fARB,
 }
 
 AROS_LH2(void, glUniform1iARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLint, v0, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13928,7 +13928,7 @@ AROS_LH2(void, glUniform1iARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform1iARB(a, b);
+    mglUniform1iARB(location, v0);
 
     RESTORE_REG
 
@@ -13936,9 +13936,9 @@ AROS_LH2(void, glUniform1iARB,
 }
 
 AROS_LH3(void, glUniform2iARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLint, v0, D1),
+    AROS_LHA(GLint, v1, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13947,7 +13947,7 @@ AROS_LH3(void, glUniform2iARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform2iARB(a, b, c);
+    mglUniform2iARB(location, v0, v1);
 
     RESTORE_REG
 
@@ -13955,10 +13955,10 @@ AROS_LH3(void, glUniform2iARB,
 }
 
 AROS_LH4(void, glUniform3iARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLint, v0, D1),
+    AROS_LHA(GLint, v1, D2),
+    AROS_LHA(GLint, v2, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13967,7 +13967,7 @@ AROS_LH4(void, glUniform3iARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform3iARB(a, b, c, d);
+    mglUniform3iARB(location, v0, v1, v2);
 
     RESTORE_REG
 
@@ -13975,11 +13975,11 @@ AROS_LH4(void, glUniform3iARB,
 }
 
 AROS_LH5(void, glUniform4iARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLint, v0, D1),
+    AROS_LHA(GLint, v1, D2),
+    AROS_LHA(GLint, v2, D3),
+    AROS_LHA(GLint, v3, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -13988,7 +13988,7 @@ AROS_LH5(void, glUniform4iARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform4iARB(a, b, c, d, e);
+    mglUniform4iARB(location, v0, v1, v2, v3);
 
     RESTORE_REG
 
@@ -13996,9 +13996,9 @@ AROS_LH5(void, glUniform4iARB,
 }
 
 AROS_LH3(void, glUniform1fvARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14007,7 +14007,7 @@ AROS_LH3(void, glUniform1fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform1fvARB(a, b, c);
+    mglUniform1fvARB(location, count, value);
 
     RESTORE_REG
 
@@ -14015,9 +14015,9 @@ AROS_LH3(void, glUniform1fvARB,
 }
 
 AROS_LH3(void, glUniform2fvARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14026,7 +14026,7 @@ AROS_LH3(void, glUniform2fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform2fvARB(a, b, c);
+    mglUniform2fvARB(location, count, value);
 
     RESTORE_REG
 
@@ -14034,9 +14034,9 @@ AROS_LH3(void, glUniform2fvARB,
 }
 
 AROS_LH3(void, glUniform3fvARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14045,7 +14045,7 @@ AROS_LH3(void, glUniform3fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform3fvARB(a, b, c);
+    mglUniform3fvARB(location, count, value);
 
     RESTORE_REG
 
@@ -14053,9 +14053,9 @@ AROS_LH3(void, glUniform3fvARB,
 }
 
 AROS_LH3(void, glUniform4fvARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14064,7 +14064,7 @@ AROS_LH3(void, glUniform4fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform4fvARB(a, b, c);
+    mglUniform4fvARB(location, count, value);
 
     RESTORE_REG
 
@@ -14072,9 +14072,9 @@ AROS_LH3(void, glUniform4fvARB,
 }
 
 AROS_LH3(void, glUniform1ivARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLint *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLint *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14083,7 +14083,7 @@ AROS_LH3(void, glUniform1ivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform1ivARB(a, b, c);
+    mglUniform1ivARB(location, count, value);
 
     RESTORE_REG
 
@@ -14091,9 +14091,9 @@ AROS_LH3(void, glUniform1ivARB,
 }
 
 AROS_LH3(void, glUniform2ivARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLint *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLint *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14102,7 +14102,7 @@ AROS_LH3(void, glUniform2ivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform2ivARB(a, b, c);
+    mglUniform2ivARB(location, count, value);
 
     RESTORE_REG
 
@@ -14110,9 +14110,9 @@ AROS_LH3(void, glUniform2ivARB,
 }
 
 AROS_LH3(void, glUniform3ivARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLint *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLint *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14121,7 +14121,7 @@ AROS_LH3(void, glUniform3ivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform3ivARB(a, b, c);
+    mglUniform3ivARB(location, count, value);
 
     RESTORE_REG
 
@@ -14129,9 +14129,9 @@ AROS_LH3(void, glUniform3ivARB,
 }
 
 AROS_LH3(void, glUniform4ivARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLint *, c, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLint *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14140,7 +14140,7 @@ AROS_LH3(void, glUniform4ivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniform4ivARB(a, b, c);
+    mglUniform4ivARB(location, count, value);
 
     RESTORE_REG
 
@@ -14148,10 +14148,10 @@ AROS_LH3(void, glUniform4ivARB,
 }
 
 AROS_LH4(void, glUniformMatrix2fvARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14160,7 +14160,7 @@ AROS_LH4(void, glUniformMatrix2fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix2fvARB(a, b, c, d);
+    mglUniformMatrix2fvARB(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -14168,10 +14168,10 @@ AROS_LH4(void, glUniformMatrix2fvARB,
 }
 
 AROS_LH4(void, glUniformMatrix3fvARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14180,7 +14180,7 @@ AROS_LH4(void, glUniformMatrix3fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix3fvARB(a, b, c, d);
+    mglUniformMatrix3fvARB(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -14188,10 +14188,10 @@ AROS_LH4(void, glUniformMatrix3fvARB,
 }
 
 AROS_LH4(void, glUniformMatrix4fvARB,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLboolean, transpose, D2),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14200,7 +14200,7 @@ AROS_LH4(void, glUniformMatrix4fvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglUniformMatrix4fvARB(a, b, c, d);
+    mglUniformMatrix4fvARB(location, count, transpose, value);
 
     RESTORE_REG
 
@@ -14208,9 +14208,9 @@ AROS_LH4(void, glUniformMatrix4fvARB,
 }
 
 AROS_LH3(void, glGetObjectParameterfvARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLhandleARB, obj, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14219,7 +14219,7 @@ AROS_LH3(void, glGetObjectParameterfvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetObjectParameterfvARB(a, b, c);
+    mglGetObjectParameterfvARB(obj, pname, params);
 
     RESTORE_REG
 
@@ -14227,9 +14227,9 @@ AROS_LH3(void, glGetObjectParameterfvARB,
 }
 
 AROS_LH3(void, glGetObjectParameterivARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLhandleARB, obj, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14238,7 +14238,7 @@ AROS_LH3(void, glGetObjectParameterivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetObjectParameterivARB(a, b, c);
+    mglGetObjectParameterivARB(obj, pname, params);
 
     RESTORE_REG
 
@@ -14246,10 +14246,10 @@ AROS_LH3(void, glGetObjectParameterivARB,
 }
 
 AROS_LH4(void, glGetInfoLogARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei *, c, A0),
-    AROS_LHA(GLcharARB *, d, A1),
+    AROS_LHA(GLhandleARB, obj, D0),
+    AROS_LHA(GLsizei, maxLength, D1),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLcharARB *, infoLog, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14258,7 +14258,7 @@ AROS_LH4(void, glGetInfoLogARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetInfoLogARB(a, b, c, d);
+    mglGetInfoLogARB(obj, maxLength, length, infoLog);
 
     RESTORE_REG
 
@@ -14266,10 +14266,10 @@ AROS_LH4(void, glGetInfoLogARB,
 }
 
 AROS_LH4(void, glGetAttachedObjectsARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei *, c, A0),
-    AROS_LHA(GLhandleARB *, d, A1),
+    AROS_LHA(GLhandleARB, containerObj, D0),
+    AROS_LHA(GLsizei, maxCount, D1),
+    AROS_LHA(GLsizei *, count, A0),
+    AROS_LHA(GLhandleARB *, obj, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14278,7 +14278,7 @@ AROS_LH4(void, glGetAttachedObjectsARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetAttachedObjectsARB(a, b, c, d);
+    mglGetAttachedObjectsARB(containerObj, maxCount, count, obj);
 
     RESTORE_REG
 
@@ -14286,8 +14286,8 @@ AROS_LH4(void, glGetAttachedObjectsARB,
 }
 
 AROS_LH2(GLint, glGetUniformLocationARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(const GLcharARB *, b, A0),
+    AROS_LHA(GLhandleARB, programObj, D0),
+    AROS_LHA(const GLcharARB *, name, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14296,7 +14296,7 @@ AROS_LH2(GLint, glGetUniformLocationARB,
 
     PUT_MESABASE_IN_REG
 
-    GLint _return = mglGetUniformLocationARB(a, b);
+    GLint _return = mglGetUniformLocationARB(programObj, name);
 
     RESTORE_REG
 
@@ -14306,13 +14306,13 @@ AROS_LH2(GLint, glGetUniformLocationARB,
 }
 
 AROS_LH7(void, glGetActiveUniformARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei *, d, A0),
-    AROS_LHA(GLint *, e, A1),
-    AROS_LHA(GLenum *, f, A2),
-    AROS_LHA(GLcharARB *, g, A3),
+    AROS_LHA(GLhandleARB, programObj, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLsizei, maxLength, D2),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLint *, size, A1),
+    AROS_LHA(GLenum *, type, A2),
+    AROS_LHA(GLcharARB *, name, A3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14321,7 +14321,7 @@ AROS_LH7(void, glGetActiveUniformARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetActiveUniformARB(a, b, c, d, e, f, g);
+    mglGetActiveUniformARB(programObj, index, maxLength, length, size, type, name);
 
     RESTORE_REG
 
@@ -14329,9 +14329,9 @@ AROS_LH7(void, glGetActiveUniformARB,
 }
 
 AROS_LH3(void, glGetUniformfvARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLhandleARB, programObj, D0),
+    AROS_LHA(GLint, location, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14340,7 +14340,7 @@ AROS_LH3(void, glGetUniformfvARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetUniformfvARB(a, b, c);
+    mglGetUniformfvARB(programObj, location, params);
 
     RESTORE_REG
 
@@ -14348,9 +14348,9 @@ AROS_LH3(void, glGetUniformfvARB,
 }
 
 AROS_LH3(void, glGetUniformivARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLhandleARB, programObj, D0),
+    AROS_LHA(GLint, location, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14359,7 +14359,7 @@ AROS_LH3(void, glGetUniformivARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetUniformivARB(a, b, c);
+    mglGetUniformivARB(programObj, location, params);
 
     RESTORE_REG
 
@@ -14367,10 +14367,10 @@ AROS_LH3(void, glGetUniformivARB,
 }
 
 AROS_LH4(void, glGetShaderSourceARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei *, c, A0),
-    AROS_LHA(GLcharARB *, d, A1),
+    AROS_LHA(GLhandleARB, obj, D0),
+    AROS_LHA(GLsizei, maxLength, D1),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLcharARB *, source, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14379,7 +14379,7 @@ AROS_LH4(void, glGetShaderSourceARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetShaderSourceARB(a, b, c, d);
+    mglGetShaderSourceARB(obj, maxLength, length, source);
 
     RESTORE_REG
 
@@ -14387,9 +14387,9 @@ AROS_LH4(void, glGetShaderSourceARB,
 }
 
 AROS_LH3(void, glBindAttribLocationARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLcharARB *, c, A0),
+    AROS_LHA(GLhandleARB, programObj, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(const GLcharARB *, name, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14398,7 +14398,7 @@ AROS_LH3(void, glBindAttribLocationARB,
 
     PUT_MESABASE_IN_REG
 
-    mglBindAttribLocationARB(a, b, c);
+    mglBindAttribLocationARB(programObj, index, name);
 
     RESTORE_REG
 
@@ -14406,13 +14406,13 @@ AROS_LH3(void, glBindAttribLocationARB,
 }
 
 AROS_LH7(void, glGetActiveAttribARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei *, d, A0),
-    AROS_LHA(GLint *, e, A1),
-    AROS_LHA(GLenum *, f, A2),
-    AROS_LHA(GLcharARB *, g, A3),
+    AROS_LHA(GLhandleARB, programObj, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLsizei, maxLength, D2),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLint *, size, A1),
+    AROS_LHA(GLenum *, type, A2),
+    AROS_LHA(GLcharARB *, name, A3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14421,7 +14421,7 @@ AROS_LH7(void, glGetActiveAttribARB,
 
     PUT_MESABASE_IN_REG
 
-    mglGetActiveAttribARB(a, b, c, d, e, f, g);
+    mglGetActiveAttribARB(programObj, index, maxLength, length, size, type, name);
 
     RESTORE_REG
 
@@ -14429,8 +14429,8 @@ AROS_LH7(void, glGetActiveAttribARB,
 }
 
 AROS_LH2(GLint, glGetAttribLocationARB,
-    AROS_LHA(GLhandleARB, a, D0),
-    AROS_LHA(const GLcharARB *, b, A0),
+    AROS_LHA(GLhandleARB, programObj, D0),
+    AROS_LHA(const GLcharARB *, name, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14439,7 +14439,7 @@ AROS_LH2(GLint, glGetAttribLocationARB,
 
     PUT_MESABASE_IN_REG
 
-    GLint _return = mglGetAttribLocationARB(a, b);
+    GLint _return = mglGetAttribLocationARB(programObj, name);
 
     RESTORE_REG
 
@@ -14449,8 +14449,8 @@ AROS_LH2(GLint, glGetAttribLocationARB,
 }
 
 AROS_LH2(void, glDrawBuffersARB,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLenum *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLenum *, bufs, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14459,7 +14459,7 @@ AROS_LH2(void, glDrawBuffersARB,
 
     PUT_MESABASE_IN_REG
 
-    mglDrawBuffersARB(a, b);
+    mglDrawBuffersARB(n, bufs);
 
     RESTORE_REG
 
@@ -14467,7 +14467,7 @@ AROS_LH2(void, glDrawBuffersARB,
 }
 
 AROS_LH1(GLboolean, glIsRenderbuffer,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, renderbuffer, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14476,7 +14476,7 @@ AROS_LH1(GLboolean, glIsRenderbuffer,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsRenderbuffer(a);
+    GLboolean _return = mglIsRenderbuffer(renderbuffer);
 
     RESTORE_REG
 
@@ -14486,8 +14486,8 @@ AROS_LH1(GLboolean, glIsRenderbuffer,
 }
 
 AROS_LH2(void, glBindRenderbuffer,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, renderbuffer, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14496,7 +14496,7 @@ AROS_LH2(void, glBindRenderbuffer,
 
     PUT_MESABASE_IN_REG
 
-    mglBindRenderbuffer(a, b);
+    mglBindRenderbuffer(target, renderbuffer);
 
     RESTORE_REG
 
@@ -14504,8 +14504,8 @@ AROS_LH2(void, glBindRenderbuffer,
 }
 
 AROS_LH2(void, glDeleteRenderbuffers,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, renderbuffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14514,7 +14514,7 @@ AROS_LH2(void, glDeleteRenderbuffers,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteRenderbuffers(a, b);
+    mglDeleteRenderbuffers(n, renderbuffers);
 
     RESTORE_REG
 
@@ -14522,8 +14522,8 @@ AROS_LH2(void, glDeleteRenderbuffers,
 }
 
 AROS_LH2(void, glGenRenderbuffers,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, renderbuffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14532,7 +14532,7 @@ AROS_LH2(void, glGenRenderbuffers,
 
     PUT_MESABASE_IN_REG
 
-    mglGenRenderbuffers(a, b);
+    mglGenRenderbuffers(n, renderbuffers);
 
     RESTORE_REG
 
@@ -14540,10 +14540,10 @@ AROS_LH2(void, glGenRenderbuffers,
 }
 
 AROS_LH4(void, glRenderbufferStorage,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei, d, D3),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, internalformat, D1),
+    AROS_LHA(GLsizei, width, D2),
+    AROS_LHA(GLsizei, height, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14552,7 +14552,7 @@ AROS_LH4(void, glRenderbufferStorage,
 
     PUT_MESABASE_IN_REG
 
-    mglRenderbufferStorage(a, b, c, d);
+    mglRenderbufferStorage(target, internalformat, width, height);
 
     RESTORE_REG
 
@@ -14560,9 +14560,9 @@ AROS_LH4(void, glRenderbufferStorage,
 }
 
 AROS_LH3(void, glGetRenderbufferParameteriv,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14571,7 +14571,7 @@ AROS_LH3(void, glGetRenderbufferParameteriv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetRenderbufferParameteriv(a, b, c);
+    mglGetRenderbufferParameteriv(target, pname, params);
 
     RESTORE_REG
 
@@ -14579,7 +14579,7 @@ AROS_LH3(void, glGetRenderbufferParameteriv,
 }
 
 AROS_LH1(GLboolean, glIsFramebuffer,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, framebuffer, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14588,7 +14588,7 @@ AROS_LH1(GLboolean, glIsFramebuffer,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsFramebuffer(a);
+    GLboolean _return = mglIsFramebuffer(framebuffer);
 
     RESTORE_REG
 
@@ -14598,8 +14598,8 @@ AROS_LH1(GLboolean, glIsFramebuffer,
 }
 
 AROS_LH2(void, glBindFramebuffer,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, framebuffer, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14608,7 +14608,7 @@ AROS_LH2(void, glBindFramebuffer,
 
     PUT_MESABASE_IN_REG
 
-    mglBindFramebuffer(a, b);
+    mglBindFramebuffer(target, framebuffer);
 
     RESTORE_REG
 
@@ -14616,8 +14616,8 @@ AROS_LH2(void, glBindFramebuffer,
 }
 
 AROS_LH2(void, glDeleteFramebuffers,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, framebuffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14626,7 +14626,7 @@ AROS_LH2(void, glDeleteFramebuffers,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteFramebuffers(a, b);
+    mglDeleteFramebuffers(n, framebuffers);
 
     RESTORE_REG
 
@@ -14634,8 +14634,8 @@ AROS_LH2(void, glDeleteFramebuffers,
 }
 
 AROS_LH2(void, glGenFramebuffers,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, framebuffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14644,7 +14644,7 @@ AROS_LH2(void, glGenFramebuffers,
 
     PUT_MESABASE_IN_REG
 
-    mglGenFramebuffers(a, b);
+    mglGenFramebuffers(n, framebuffers);
 
     RESTORE_REG
 
@@ -14652,7 +14652,7 @@ AROS_LH2(void, glGenFramebuffers,
 }
 
 AROS_LH1(GLenum, glCheckFramebufferStatus,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, target, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14661,7 +14661,7 @@ AROS_LH1(GLenum, glCheckFramebufferStatus,
 
     PUT_MESABASE_IN_REG
 
-    GLenum _return = mglCheckFramebufferStatus(a);
+    GLenum _return = mglCheckFramebufferStatus(target);
 
     RESTORE_REG
 
@@ -14671,11 +14671,11 @@ AROS_LH1(GLenum, glCheckFramebufferStatus,
 }
 
 AROS_LH5(void, glFramebufferTexture1D,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLint, e, D4),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, textarget, D2),
+    AROS_LHA(GLuint, texture, D3),
+    AROS_LHA(GLint, level, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14684,7 +14684,7 @@ AROS_LH5(void, glFramebufferTexture1D,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferTexture1D(a, b, c, d, e);
+    mglFramebufferTexture1D(target, attachment, textarget, texture, level);
 
     RESTORE_REG
 
@@ -14692,11 +14692,11 @@ AROS_LH5(void, glFramebufferTexture1D,
 }
 
 AROS_LH5(void, glFramebufferTexture2D,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLint, e, D4),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, textarget, D2),
+    AROS_LHA(GLuint, texture, D3),
+    AROS_LHA(GLint, level, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14705,7 +14705,7 @@ AROS_LH5(void, glFramebufferTexture2D,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferTexture2D(a, b, c, d, e);
+    mglFramebufferTexture2D(target, attachment, textarget, texture, level);
 
     RESTORE_REG
 
@@ -14713,12 +14713,12 @@ AROS_LH5(void, glFramebufferTexture2D,
 }
 
 AROS_LH6(void, glFramebufferTexture3D,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLint, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, textarget, D2),
+    AROS_LHA(GLuint, texture, D3),
+    AROS_LHA(GLint, level, D4),
+    AROS_LHA(GLint, zoffset, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14727,7 +14727,7 @@ AROS_LH6(void, glFramebufferTexture3D,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferTexture3D(a, b, c, d, e, f);
+    mglFramebufferTexture3D(target, attachment, textarget, texture, level, zoffset);
 
     RESTORE_REG
 
@@ -14735,10 +14735,10 @@ AROS_LH6(void, glFramebufferTexture3D,
 }
 
 AROS_LH4(void, glFramebufferRenderbuffer,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLuint, d, D3),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, renderbuffertarget, D2),
+    AROS_LHA(GLuint, renderbuffer, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14747,7 +14747,7 @@ AROS_LH4(void, glFramebufferRenderbuffer,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferRenderbuffer(a, b, c, d);
+    mglFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 
     RESTORE_REG
 
@@ -14755,10 +14755,10 @@ AROS_LH4(void, glFramebufferRenderbuffer,
 }
 
 AROS_LH4(void, glGetFramebufferAttachmentParameteriv,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLint *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, pname, D2),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14767,7 +14767,7 @@ AROS_LH4(void, glGetFramebufferAttachmentParameteriv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetFramebufferAttachmentParameteriv(a, b, c, d);
+    mglGetFramebufferAttachmentParameteriv(target, attachment, pname, params);
 
     RESTORE_REG
 
@@ -14775,7 +14775,7 @@ AROS_LH4(void, glGetFramebufferAttachmentParameteriv,
 }
 
 AROS_LH1(void, glGenerateMipmap,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, target, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14784,7 +14784,7 @@ AROS_LH1(void, glGenerateMipmap,
 
     PUT_MESABASE_IN_REG
 
-    mglGenerateMipmap(a);
+    mglGenerateMipmap(target);
 
     RESTORE_REG
 
@@ -14792,16 +14792,16 @@ AROS_LH1(void, glGenerateMipmap,
 }
 
 AROS_LH10(void, glBlitFramebuffer,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLint, f, D5),
-    AROS_LHA(GLint, g, D6),
-    AROS_LHA(GLint, h, D7),
-    AROS_LHA(GLbitfield, i, A0),
-    AROS_LHA(GLenum, j, A1),
+    AROS_LHA(GLint, srcX0, D0),
+    AROS_LHA(GLint, srcY0, D1),
+    AROS_LHA(GLint, srcX1, D2),
+    AROS_LHA(GLint, srcY1, D3),
+    AROS_LHA(GLint, dstX0, D4),
+    AROS_LHA(GLint, dstY0, D5),
+    AROS_LHA(GLint, dstX1, D6),
+    AROS_LHA(GLint, dstY1, D7),
+    AROS_LHA(GLbitfield, mask, A0),
+    AROS_LHA(GLenum, filter, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14810,7 +14810,7 @@ AROS_LH10(void, glBlitFramebuffer,
 
     PUT_MESABASE_IN_REG
 
-    mglBlitFramebuffer(a, b, c, d, e, f, g, h, i, j);
+    mglBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
 
     RESTORE_REG
 
@@ -14818,11 +14818,11 @@ AROS_LH10(void, glBlitFramebuffer,
 }
 
 AROS_LH5(void, glRenderbufferStorageMultisample,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLsizei, e, D4),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLsizei, samples, D1),
+    AROS_LHA(GLenum, internalformat, D2),
+    AROS_LHA(GLsizei, width, D3),
+    AROS_LHA(GLsizei, height, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14831,7 +14831,7 @@ AROS_LH5(void, glRenderbufferStorageMultisample,
 
     PUT_MESABASE_IN_REG
 
-    mglRenderbufferStorageMultisample(a, b, c, d, e);
+    mglRenderbufferStorageMultisample(target, samples, internalformat, width, height);
 
     RESTORE_REG
 
@@ -14839,11 +14839,11 @@ AROS_LH5(void, glRenderbufferStorageMultisample,
 }
 
 AROS_LH5(void, glFramebufferTextureLayer,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLuint, texture, D2),
+    AROS_LHA(GLint, level, D3),
+    AROS_LHA(GLint, layer, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14852,7 +14852,7 @@ AROS_LH5(void, glFramebufferTextureLayer,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferTextureLayer(a, b, c, d, e);
+    mglFramebufferTextureLayer(target, attachment, texture, level, layer);
 
     RESTORE_REG
 
@@ -14860,10 +14860,10 @@ AROS_LH5(void, glFramebufferTextureLayer,
 }
 
 AROS_LH4(void, glBlendColorEXT,
-    AROS_LHA(GLclampf, a, D0),
-    AROS_LHA(GLclampf, b, D1),
-    AROS_LHA(GLclampf, c, D2),
-    AROS_LHA(GLclampf, d, D3),
+    AROS_LHA(GLclampf, red, D0),
+    AROS_LHA(GLclampf, green, D1),
+    AROS_LHA(GLclampf, blue, D2),
+    AROS_LHA(GLclampf, alpha, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14872,7 +14872,7 @@ AROS_LH4(void, glBlendColorEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglBlendColorEXT(a, b, c, d);
+    mglBlendColorEXT(red, green, blue, alpha);
 
     RESTORE_REG
 
@@ -14880,8 +14880,8 @@ AROS_LH4(void, glBlendColorEXT,
 }
 
 AROS_LH2(void, glPolygonOffsetEXT,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLfloat, factor, D0),
+    AROS_LHA(GLfloat, bias, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14890,7 +14890,7 @@ AROS_LH2(void, glPolygonOffsetEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglPolygonOffsetEXT(a, b);
+    mglPolygonOffsetEXT(factor, bias);
 
     RESTORE_REG
 
@@ -14898,16 +14898,16 @@ AROS_LH2(void, glPolygonOffsetEXT,
 }
 
 AROS_LH10(void, glTexImage3DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLsizei, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(GLint, g, D6),
-    AROS_LHA(GLenum, h, D7),
-    AROS_LHA(GLenum, i, A0),
-    AROS_LHA(const GLvoid *, j, A1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLenum, internalformat, D2),
+    AROS_LHA(GLsizei, width, D3),
+    AROS_LHA(GLsizei, height, D4),
+    AROS_LHA(GLsizei, depth, D5),
+    AROS_LHA(GLint, border, D6),
+    AROS_LHA(GLenum, format, D7),
+    AROS_LHA(GLenum, type, A0),
+    AROS_LHA(const GLvoid *, pixels, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14916,7 +14916,7 @@ AROS_LH10(void, glTexImage3DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglTexImage3DEXT(a, b, c, d, e, f, g, h, i, j);
+    mglTexImage3DEXT(target, level, internalformat, width, height, depth, border, format, type, pixels);
 
     RESTORE_REG
 
@@ -14924,17 +14924,17 @@ AROS_LH10(void, glTexImage3DEXT,
 }
 
 AROS_LH11(void, glTexSubImage3DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(GLsizei, g, D6),
-    AROS_LHA(GLsizei, h, D7),
-    AROS_LHA(GLenum, i, A0),
-    AROS_LHA(GLenum, j, A1),
-    AROS_LHA(const GLvoid *, k, A2),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLint, yoffset, D3),
+    AROS_LHA(GLint, zoffset, D4),
+    AROS_LHA(GLsizei, width, D5),
+    AROS_LHA(GLsizei, height, D6),
+    AROS_LHA(GLsizei, depth, D7),
+    AROS_LHA(GLenum, format, A0),
+    AROS_LHA(GLenum, type, A1),
+    AROS_LHA(const GLvoid *, pixels, A2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14943,7 +14943,7 @@ AROS_LH11(void, glTexSubImage3DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglTexSubImage3DEXT(a, b, c, d, e, f, g, h, i, j, k);
+    mglTexSubImage3DEXT(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 
     RESTORE_REG
 
@@ -14951,13 +14951,13 @@ AROS_LH11(void, glTexSubImage3DEXT,
 }
 
 AROS_LH7(void, glTexSubImage1DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLenum, e, D4),
-    AROS_LHA(GLenum, f, D5),
-    AROS_LHA(const GLvoid *, g, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLsizei, width, D3),
+    AROS_LHA(GLenum, format, D4),
+    AROS_LHA(GLenum, type, D5),
+    AROS_LHA(const GLvoid *, pixels, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14966,7 +14966,7 @@ AROS_LH7(void, glTexSubImage1DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglTexSubImage1DEXT(a, b, c, d, e, f, g);
+    mglTexSubImage1DEXT(target, level, xoffset, width, format, type, pixels);
 
     RESTORE_REG
 
@@ -14974,15 +14974,15 @@ AROS_LH7(void, glTexSubImage1DEXT,
 }
 
 AROS_LH9(void, glTexSubImage2DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLsizei, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(GLenum, g, D6),
-    AROS_LHA(GLenum, h, D7),
-    AROS_LHA(const GLvoid *, i, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLint, yoffset, D3),
+    AROS_LHA(GLsizei, width, D4),
+    AROS_LHA(GLsizei, height, D5),
+    AROS_LHA(GLenum, format, D6),
+    AROS_LHA(GLenum, type, D7),
+    AROS_LHA(const GLvoid *, pixels, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -14991,7 +14991,7 @@ AROS_LH9(void, glTexSubImage2DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglTexSubImage2DEXT(a, b, c, d, e, f, g, h, i);
+    mglTexSubImage2DEXT(target, level, xoffset, yoffset, width, height, format, type, pixels);
 
     RESTORE_REG
 
@@ -14999,13 +14999,13 @@ AROS_LH9(void, glTexSubImage2DEXT,
 }
 
 AROS_LH7(void, glCopyTexImage1DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(GLint, g, D6),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLenum, internalformat, D2),
+    AROS_LHA(GLint, x, D3),
+    AROS_LHA(GLint, y, D4),
+    AROS_LHA(GLsizei, width, D5),
+    AROS_LHA(GLint, border, D6),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15014,7 +15014,7 @@ AROS_LH7(void, glCopyTexImage1DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglCopyTexImage1DEXT(a, b, c, d, e, f, g);
+    mglCopyTexImage1DEXT(target, level, internalformat, x, y, width, border);
 
     RESTORE_REG
 
@@ -15022,14 +15022,14 @@ AROS_LH7(void, glCopyTexImage1DEXT,
 }
 
 AROS_LH8(void, glCopyTexImage2DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLsizei, f, D5),
-    AROS_LHA(GLsizei, g, D6),
-    AROS_LHA(GLint, h, D7),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLenum, internalformat, D2),
+    AROS_LHA(GLint, x, D3),
+    AROS_LHA(GLint, y, D4),
+    AROS_LHA(GLsizei, width, D5),
+    AROS_LHA(GLsizei, height, D6),
+    AROS_LHA(GLint, border, D7),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15038,7 +15038,7 @@ AROS_LH8(void, glCopyTexImage2DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglCopyTexImage2DEXT(a, b, c, d, e, f, g, h);
+    mglCopyTexImage2DEXT(target, level, internalformat, x, y, width, height, border);
 
     RESTORE_REG
 
@@ -15046,12 +15046,12 @@ AROS_LH8(void, glCopyTexImage2DEXT,
 }
 
 AROS_LH6(void, glCopyTexSubImage1DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLsizei, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLint, x, D3),
+    AROS_LHA(GLint, y, D4),
+    AROS_LHA(GLsizei, width, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15060,7 +15060,7 @@ AROS_LH6(void, glCopyTexSubImage1DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglCopyTexSubImage1DEXT(a, b, c, d, e, f);
+    mglCopyTexSubImage1DEXT(target, level, xoffset, x, y, width);
 
     RESTORE_REG
 
@@ -15068,14 +15068,14 @@ AROS_LH6(void, glCopyTexSubImage1DEXT,
 }
 
 AROS_LH8(void, glCopyTexSubImage2DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLint, f, D5),
-    AROS_LHA(GLsizei, g, D6),
-    AROS_LHA(GLsizei, h, D7),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLint, yoffset, D3),
+    AROS_LHA(GLint, x, D4),
+    AROS_LHA(GLint, y, D5),
+    AROS_LHA(GLsizei, width, D6),
+    AROS_LHA(GLsizei, height, D7),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15084,7 +15084,7 @@ AROS_LH8(void, glCopyTexSubImage2DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglCopyTexSubImage2DEXT(a, b, c, d, e, f, g, h);
+    mglCopyTexSubImage2DEXT(target, level, xoffset, yoffset, x, y, width, height);
 
     RESTORE_REG
 
@@ -15092,15 +15092,15 @@ AROS_LH8(void, glCopyTexSubImage2DEXT,
 }
 
 AROS_LH9(void, glCopyTexSubImage3DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLint, f, D5),
-    AROS_LHA(GLint, g, D6),
-    AROS_LHA(GLsizei, h, D7),
-    AROS_LHA(GLsizei, i, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLint, level, D1),
+    AROS_LHA(GLint, xoffset, D2),
+    AROS_LHA(GLint, yoffset, D3),
+    AROS_LHA(GLint, zoffset, D4),
+    AROS_LHA(GLint, x, D5),
+    AROS_LHA(GLint, y, D6),
+    AROS_LHA(GLsizei, width, D7),
+    AROS_LHA(GLsizei, height, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15109,7 +15109,7 @@ AROS_LH9(void, glCopyTexSubImage3DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglCopyTexSubImage3DEXT(a, b, c, d, e, f, g, h, i);
+    mglCopyTexSubImage3DEXT(target, level, xoffset, yoffset, zoffset, x, y, width, height);
 
     RESTORE_REG
 
@@ -15117,9 +15117,9 @@ AROS_LH9(void, glCopyTexSubImage3DEXT,
 }
 
 AROS_LH3(GLboolean, glAreTexturesResidentEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
-    AROS_LHA(GLboolean *, c, A1),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, textures, A0),
+    AROS_LHA(GLboolean *, residences, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15128,7 +15128,7 @@ AROS_LH3(GLboolean, glAreTexturesResidentEXT,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglAreTexturesResidentEXT(a, b, c);
+    GLboolean _return = mglAreTexturesResidentEXT(n, textures, residences);
 
     RESTORE_REG
 
@@ -15138,8 +15138,8 @@ AROS_LH3(GLboolean, glAreTexturesResidentEXT,
 }
 
 AROS_LH2(void, glBindTextureEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, texture, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15148,7 +15148,7 @@ AROS_LH2(void, glBindTextureEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglBindTextureEXT(a, b);
+    mglBindTextureEXT(target, texture);
 
     RESTORE_REG
 
@@ -15156,8 +15156,8 @@ AROS_LH2(void, glBindTextureEXT,
 }
 
 AROS_LH2(void, glDeleteTexturesEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, textures, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15166,7 +15166,7 @@ AROS_LH2(void, glDeleteTexturesEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteTexturesEXT(a, b);
+    mglDeleteTexturesEXT(n, textures);
 
     RESTORE_REG
 
@@ -15174,8 +15174,8 @@ AROS_LH2(void, glDeleteTexturesEXT,
 }
 
 AROS_LH2(void, glGenTexturesEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, textures, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15184,7 +15184,7 @@ AROS_LH2(void, glGenTexturesEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGenTexturesEXT(a, b);
+    mglGenTexturesEXT(n, textures);
 
     RESTORE_REG
 
@@ -15192,7 +15192,7 @@ AROS_LH2(void, glGenTexturesEXT,
 }
 
 AROS_LH1(GLboolean, glIsTextureEXT,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, texture, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15201,7 +15201,7 @@ AROS_LH1(GLboolean, glIsTextureEXT,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsTextureEXT(a);
+    GLboolean _return = mglIsTextureEXT(texture);
 
     RESTORE_REG
 
@@ -15211,9 +15211,9 @@ AROS_LH1(GLboolean, glIsTextureEXT,
 }
 
 AROS_LH3(void, glPrioritizeTexturesEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
-    AROS_LHA(const GLclampf *, c, A1),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, textures, A0),
+    AROS_LHA(const GLclampf *, priorities, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15222,7 +15222,7 @@ AROS_LH3(void, glPrioritizeTexturesEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglPrioritizeTexturesEXT(a, b, c);
+    mglPrioritizeTexturesEXT(n, textures, priorities);
 
     RESTORE_REG
 
@@ -15230,7 +15230,7 @@ AROS_LH3(void, glPrioritizeTexturesEXT,
 }
 
 AROS_LH1(void, glArrayElementEXT,
-    AROS_LHA(GLint, a, D0),
+    AROS_LHA(GLint, i, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15239,7 +15239,7 @@ AROS_LH1(void, glArrayElementEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglArrayElementEXT(a);
+    mglArrayElementEXT(i);
 
     RESTORE_REG
 
@@ -15247,11 +15247,11 @@ AROS_LH1(void, glArrayElementEXT,
 }
 
 AROS_LH5(void, glColorPointerEXT,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(const GLvoid *, e, A0),
+    AROS_LHA(GLint, size, D0),
+    AROS_LHA(GLenum, type, D1),
+    AROS_LHA(GLsizei, stride, D2),
+    AROS_LHA(GLsizei, count, D3),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15260,7 +15260,7 @@ AROS_LH5(void, glColorPointerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglColorPointerEXT(a, b, c, d, e);
+    mglColorPointerEXT(size, type, stride, count, pointer);
 
     RESTORE_REG
 
@@ -15268,9 +15268,9 @@ AROS_LH5(void, glColorPointerEXT,
 }
 
 AROS_LH3(void, glDrawArraysEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLsizei, c, D2),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLint, first, D1),
+    AROS_LHA(GLsizei, count, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15279,7 +15279,7 @@ AROS_LH3(void, glDrawArraysEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglDrawArraysEXT(a, b, c);
+    mglDrawArraysEXT(mode, first, count);
 
     RESTORE_REG
 
@@ -15287,9 +15287,9 @@ AROS_LH3(void, glDrawArraysEXT,
 }
 
 AROS_LH3(void, glEdgeFlagPointerEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLboolean *, c, A0),
+    AROS_LHA(GLsizei, stride, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLboolean *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15298,7 +15298,7 @@ AROS_LH3(void, glEdgeFlagPointerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglEdgeFlagPointerEXT(a, b, c);
+    mglEdgeFlagPointerEXT(stride, count, pointer);
 
     RESTORE_REG
 
@@ -15306,8 +15306,8 @@ AROS_LH3(void, glEdgeFlagPointerEXT,
 }
 
 AROS_LH2(void, glGetPointervEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLvoid *  *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLvoid *  *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15316,7 +15316,7 @@ AROS_LH2(void, glGetPointervEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGetPointervEXT(a, b);
+    mglGetPointervEXT(pname, params);
 
     RESTORE_REG
 
@@ -15324,10 +15324,10 @@ AROS_LH2(void, glGetPointervEXT,
 }
 
 AROS_LH4(void, glIndexPointerEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(const GLvoid *, d, A0),
+    AROS_LHA(GLenum, type, D0),
+    AROS_LHA(GLsizei, stride, D1),
+    AROS_LHA(GLsizei, count, D2),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15336,7 +15336,7 @@ AROS_LH4(void, glIndexPointerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglIndexPointerEXT(a, b, c, d);
+    mglIndexPointerEXT(type, stride, count, pointer);
 
     RESTORE_REG
 
@@ -15344,10 +15344,10 @@ AROS_LH4(void, glIndexPointerEXT,
 }
 
 AROS_LH4(void, glNormalPointerEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(const GLvoid *, d, A0),
+    AROS_LHA(GLenum, type, D0),
+    AROS_LHA(GLsizei, stride, D1),
+    AROS_LHA(GLsizei, count, D2),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15356,7 +15356,7 @@ AROS_LH4(void, glNormalPointerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglNormalPointerEXT(a, b, c, d);
+    mglNormalPointerEXT(type, stride, count, pointer);
 
     RESTORE_REG
 
@@ -15364,11 +15364,11 @@ AROS_LH4(void, glNormalPointerEXT,
 }
 
 AROS_LH5(void, glTexCoordPointerEXT,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(const GLvoid *, e, A0),
+    AROS_LHA(GLint, size, D0),
+    AROS_LHA(GLenum, type, D1),
+    AROS_LHA(GLsizei, stride, D2),
+    AROS_LHA(GLsizei, count, D3),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15377,7 +15377,7 @@ AROS_LH5(void, glTexCoordPointerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglTexCoordPointerEXT(a, b, c, d, e);
+    mglTexCoordPointerEXT(size, type, stride, count, pointer);
 
     RESTORE_REG
 
@@ -15385,11 +15385,11 @@ AROS_LH5(void, glTexCoordPointerEXT,
 }
 
 AROS_LH5(void, glVertexPointerEXT,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(const GLvoid *, e, A0),
+    AROS_LHA(GLint, size, D0),
+    AROS_LHA(GLenum, type, D1),
+    AROS_LHA(GLsizei, stride, D2),
+    AROS_LHA(GLsizei, count, D3),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15398,7 +15398,7 @@ AROS_LH5(void, glVertexPointerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexPointerEXT(a, b, c, d, e);
+    mglVertexPointerEXT(size, type, stride, count, pointer);
 
     RESTORE_REG
 
@@ -15406,7 +15406,7 @@ AROS_LH5(void, glVertexPointerEXT,
 }
 
 AROS_LH1(void, glBlendEquationEXT,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, mode, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15415,7 +15415,7 @@ AROS_LH1(void, glBlendEquationEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglBlendEquationEXT(a);
+    mglBlendEquationEXT(mode);
 
     RESTORE_REG
 
@@ -15423,8 +15423,8 @@ AROS_LH1(void, glBlendEquationEXT,
 }
 
 AROS_LH2(void, glPointParameterfEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLfloat, param, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15433,7 +15433,7 @@ AROS_LH2(void, glPointParameterfEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameterfEXT(a, b);
+    mglPointParameterfEXT(pname, param);
 
     RESTORE_REG
 
@@ -15441,8 +15441,8 @@ AROS_LH2(void, glPointParameterfEXT,
 }
 
 AROS_LH2(void, glPointParameterfvEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15451,7 +15451,7 @@ AROS_LH2(void, glPointParameterfvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameterfvEXT(a, b);
+    mglPointParameterfvEXT(pname, params);
 
     RESTORE_REG
 
@@ -15459,12 +15459,12 @@ AROS_LH2(void, glPointParameterfvEXT,
 }
 
 AROS_LH6(void, glColorTableEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLenum, d, D3),
-    AROS_LHA(GLenum, e, D4),
-    AROS_LHA(const GLvoid *, f, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, internalFormat, D1),
+    AROS_LHA(GLsizei, width, D2),
+    AROS_LHA(GLenum, format, D3),
+    AROS_LHA(GLenum, type, D4),
+    AROS_LHA(const GLvoid *, table, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15473,7 +15473,7 @@ AROS_LH6(void, glColorTableEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglColorTableEXT(a, b, c, d, e, f);
+    mglColorTableEXT(target, internalFormat, width, format, type, table);
 
     RESTORE_REG
 
@@ -15481,10 +15481,10 @@ AROS_LH6(void, glColorTableEXT,
 }
 
 AROS_LH4(void, glGetColorTableEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLvoid *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, format, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(GLvoid *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15493,7 +15493,7 @@ AROS_LH4(void, glGetColorTableEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGetColorTableEXT(a, b, c, d);
+    mglGetColorTableEXT(target, format, type, data);
 
     RESTORE_REG
 
@@ -15501,9 +15501,9 @@ AROS_LH4(void, glGetColorTableEXT,
 }
 
 AROS_LH3(void, glGetColorTableParameterivEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15512,7 +15512,7 @@ AROS_LH3(void, glGetColorTableParameterivEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGetColorTableParameterivEXT(a, b, c);
+    mglGetColorTableParameterivEXT(target, pname, params);
 
     RESTORE_REG
 
@@ -15520,9 +15520,9 @@ AROS_LH3(void, glGetColorTableParameterivEXT,
 }
 
 AROS_LH3(void, glGetColorTableParameterfvEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15531,7 +15531,7 @@ AROS_LH3(void, glGetColorTableParameterfvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGetColorTableParameterfvEXT(a, b, c);
+    mglGetColorTableParameterfvEXT(target, pname, params);
 
     RESTORE_REG
 
@@ -15539,8 +15539,8 @@ AROS_LH3(void, glGetColorTableParameterfvEXT,
 }
 
 AROS_LH2(void, glLockArraysEXT,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
+    AROS_LHA(GLint, first, D0),
+    AROS_LHA(GLsizei, count, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15549,7 +15549,7 @@ AROS_LH2(void, glLockArraysEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglLockArraysEXT(a, b);
+    mglLockArraysEXT(first, count);
 
     RESTORE_REG
 
@@ -15573,12 +15573,12 @@ AROS_LH0(void, glUnlockArraysEXT,
 }
 
 AROS_LH6(void, glDrawRangeElementsEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLenum, e, D4),
-    AROS_LHA(const GLvoid *, f, A0),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLuint, start, D1),
+    AROS_LHA(GLuint, end, D2),
+    AROS_LHA(GLsizei, count, D3),
+    AROS_LHA(GLenum, type, D4),
+    AROS_LHA(const GLvoid *, indices, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15587,7 +15587,7 @@ AROS_LH6(void, glDrawRangeElementsEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglDrawRangeElementsEXT(a, b, c, d, e, f);
+    mglDrawRangeElementsEXT(mode, start, end, count, type, indices);
 
     RESTORE_REG
 
@@ -15595,9 +15595,9 @@ AROS_LH6(void, glDrawRangeElementsEXT,
 }
 
 AROS_LH3(void, glSecondaryColor3bEXT,
-    AROS_LHA(GLbyte, a, D0),
-    AROS_LHA(GLbyte, b, D1),
-    AROS_LHA(GLbyte, c, D2),
+    AROS_LHA(GLbyte, red, D0),
+    AROS_LHA(GLbyte, green, D1),
+    AROS_LHA(GLbyte, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15606,7 +15606,7 @@ AROS_LH3(void, glSecondaryColor3bEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3bEXT(a, b, c);
+    mglSecondaryColor3bEXT(red, green, blue);
 
     RESTORE_REG
 
@@ -15614,7 +15614,7 @@ AROS_LH3(void, glSecondaryColor3bEXT,
 }
 
 AROS_LH1(void, glSecondaryColor3bvEXT,
-    AROS_LHA(const GLbyte *, a, A0),
+    AROS_LHA(const GLbyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15623,7 +15623,7 @@ AROS_LH1(void, glSecondaryColor3bvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3bvEXT(a);
+    mglSecondaryColor3bvEXT(v);
 
     RESTORE_REG
 
@@ -15631,9 +15631,9 @@ AROS_LH1(void, glSecondaryColor3bvEXT,
 }
 
 AROS_LH3(void, glSecondaryColor3dEXT,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
+    AROS_LHA(GLdouble, red, D0),
+    AROS_LHA(GLdouble, green, D1),
+    AROS_LHA(GLdouble, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15642,7 +15642,7 @@ AROS_LH3(void, glSecondaryColor3dEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3dEXT(a, b, c);
+    mglSecondaryColor3dEXT(red, green, blue);
 
     RESTORE_REG
 
@@ -15650,7 +15650,7 @@ AROS_LH3(void, glSecondaryColor3dEXT,
 }
 
 AROS_LH1(void, glSecondaryColor3dvEXT,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15659,7 +15659,7 @@ AROS_LH1(void, glSecondaryColor3dvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3dvEXT(a);
+    mglSecondaryColor3dvEXT(v);
 
     RESTORE_REG
 
@@ -15667,9 +15667,9 @@ AROS_LH1(void, glSecondaryColor3dvEXT,
 }
 
 AROS_LH3(void, glSecondaryColor3fEXT,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLfloat, red, D0),
+    AROS_LHA(GLfloat, green, D1),
+    AROS_LHA(GLfloat, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15678,7 +15678,7 @@ AROS_LH3(void, glSecondaryColor3fEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3fEXT(a, b, c);
+    mglSecondaryColor3fEXT(red, green, blue);
 
     RESTORE_REG
 
@@ -15686,7 +15686,7 @@ AROS_LH3(void, glSecondaryColor3fEXT,
 }
 
 AROS_LH1(void, glSecondaryColor3fvEXT,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15695,7 +15695,7 @@ AROS_LH1(void, glSecondaryColor3fvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3fvEXT(a);
+    mglSecondaryColor3fvEXT(v);
 
     RESTORE_REG
 
@@ -15703,9 +15703,9 @@ AROS_LH1(void, glSecondaryColor3fvEXT,
 }
 
 AROS_LH3(void, glSecondaryColor3iEXT,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
+    AROS_LHA(GLint, red, D0),
+    AROS_LHA(GLint, green, D1),
+    AROS_LHA(GLint, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15714,7 +15714,7 @@ AROS_LH3(void, glSecondaryColor3iEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3iEXT(a, b, c);
+    mglSecondaryColor3iEXT(red, green, blue);
 
     RESTORE_REG
 
@@ -15722,7 +15722,7 @@ AROS_LH3(void, glSecondaryColor3iEXT,
 }
 
 AROS_LH1(void, glSecondaryColor3ivEXT,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15731,7 +15731,7 @@ AROS_LH1(void, glSecondaryColor3ivEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3ivEXT(a);
+    mglSecondaryColor3ivEXT(v);
 
     RESTORE_REG
 
@@ -15739,9 +15739,9 @@ AROS_LH1(void, glSecondaryColor3ivEXT,
 }
 
 AROS_LH3(void, glSecondaryColor3sEXT,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
+    AROS_LHA(GLshort, red, D0),
+    AROS_LHA(GLshort, green, D1),
+    AROS_LHA(GLshort, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15750,7 +15750,7 @@ AROS_LH3(void, glSecondaryColor3sEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3sEXT(a, b, c);
+    mglSecondaryColor3sEXT(red, green, blue);
 
     RESTORE_REG
 
@@ -15758,7 +15758,7 @@ AROS_LH3(void, glSecondaryColor3sEXT,
 }
 
 AROS_LH1(void, glSecondaryColor3svEXT,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15767,7 +15767,7 @@ AROS_LH1(void, glSecondaryColor3svEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3svEXT(a);
+    mglSecondaryColor3svEXT(v);
 
     RESTORE_REG
 
@@ -15775,9 +15775,9 @@ AROS_LH1(void, glSecondaryColor3svEXT,
 }
 
 AROS_LH3(void, glSecondaryColor3ubEXT,
-    AROS_LHA(GLubyte, a, D0),
-    AROS_LHA(GLubyte, b, D1),
-    AROS_LHA(GLubyte, c, D2),
+    AROS_LHA(GLubyte, red, D0),
+    AROS_LHA(GLubyte, green, D1),
+    AROS_LHA(GLubyte, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15786,7 +15786,7 @@ AROS_LH3(void, glSecondaryColor3ubEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3ubEXT(a, b, c);
+    mglSecondaryColor3ubEXT(red, green, blue);
 
     RESTORE_REG
 
@@ -15794,7 +15794,7 @@ AROS_LH3(void, glSecondaryColor3ubEXT,
 }
 
 AROS_LH1(void, glSecondaryColor3ubvEXT,
-    AROS_LHA(const GLubyte *, a, A0),
+    AROS_LHA(const GLubyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15803,7 +15803,7 @@ AROS_LH1(void, glSecondaryColor3ubvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3ubvEXT(a);
+    mglSecondaryColor3ubvEXT(v);
 
     RESTORE_REG
 
@@ -15811,9 +15811,9 @@ AROS_LH1(void, glSecondaryColor3ubvEXT,
 }
 
 AROS_LH3(void, glSecondaryColor3uiEXT,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
+    AROS_LHA(GLuint, red, D0),
+    AROS_LHA(GLuint, green, D1),
+    AROS_LHA(GLuint, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15822,7 +15822,7 @@ AROS_LH3(void, glSecondaryColor3uiEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3uiEXT(a, b, c);
+    mglSecondaryColor3uiEXT(red, green, blue);
 
     RESTORE_REG
 
@@ -15830,7 +15830,7 @@ AROS_LH3(void, glSecondaryColor3uiEXT,
 }
 
 AROS_LH1(void, glSecondaryColor3uivEXT,
-    AROS_LHA(const GLuint *, a, A0),
+    AROS_LHA(const GLuint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15839,7 +15839,7 @@ AROS_LH1(void, glSecondaryColor3uivEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3uivEXT(a);
+    mglSecondaryColor3uivEXT(v);
 
     RESTORE_REG
 
@@ -15847,9 +15847,9 @@ AROS_LH1(void, glSecondaryColor3uivEXT,
 }
 
 AROS_LH3(void, glSecondaryColor3usEXT,
-    AROS_LHA(GLushort, a, D0),
-    AROS_LHA(GLushort, b, D1),
-    AROS_LHA(GLushort, c, D2),
+    AROS_LHA(GLushort, red, D0),
+    AROS_LHA(GLushort, green, D1),
+    AROS_LHA(GLushort, blue, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15858,7 +15858,7 @@ AROS_LH3(void, glSecondaryColor3usEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3usEXT(a, b, c);
+    mglSecondaryColor3usEXT(red, green, blue);
 
     RESTORE_REG
 
@@ -15866,7 +15866,7 @@ AROS_LH3(void, glSecondaryColor3usEXT,
 }
 
 AROS_LH1(void, glSecondaryColor3usvEXT,
-    AROS_LHA(const GLushort *, a, A0),
+    AROS_LHA(const GLushort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15875,7 +15875,7 @@ AROS_LH1(void, glSecondaryColor3usvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColor3usvEXT(a);
+    mglSecondaryColor3usvEXT(v);
 
     RESTORE_REG
 
@@ -15883,10 +15883,10 @@ AROS_LH1(void, glSecondaryColor3usvEXT,
 }
 
 AROS_LH4(void, glSecondaryColorPointerEXT,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(const GLvoid *, d, A0),
+    AROS_LHA(GLint, size, D0),
+    AROS_LHA(GLenum, type, D1),
+    AROS_LHA(GLsizei, stride, D2),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15895,7 +15895,7 @@ AROS_LH4(void, glSecondaryColorPointerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglSecondaryColorPointerEXT(a, b, c, d);
+    mglSecondaryColorPointerEXT(size, type, stride, pointer);
 
     RESTORE_REG
 
@@ -15903,10 +15903,10 @@ AROS_LH4(void, glSecondaryColorPointerEXT,
 }
 
 AROS_LH4(void, glMultiDrawArraysEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint *, b, A0),
-    AROS_LHA(GLsizei *, c, A1),
-    AROS_LHA(GLsizei, d, D1),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(const GLint *, first, A0),
+    AROS_LHA(const GLsizei *, count, A1),
+    AROS_LHA(GLsizei, primcount, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15915,7 +15915,7 @@ AROS_LH4(void, glMultiDrawArraysEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglMultiDrawArraysEXT(a, b, c, d);
+    mglMultiDrawArraysEXT(mode, first, count, primcount);
 
     RESTORE_REG
 
@@ -15923,11 +15923,11 @@ AROS_LH4(void, glMultiDrawArraysEXT,
 }
 
 AROS_LH5(void, glMultiDrawElementsEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLsizei *, b, A0),
-    AROS_LHA(GLenum, c, D1),
-    AROS_LHA(const GLvoid *  *, d, A1),
-    AROS_LHA(GLsizei, e, D2),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(const GLsizei *, count, A0),
+    AROS_LHA(GLenum, type, D1),
+    AROS_LHA(const GLvoid *  *, indices, A1),
+    AROS_LHA(GLsizei, primcount, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15936,7 +15936,7 @@ AROS_LH5(void, glMultiDrawElementsEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglMultiDrawElementsEXT(a, b, c, d, e);
+    mglMultiDrawElementsEXT(mode, count, type, indices, primcount);
 
     RESTORE_REG
 
@@ -15944,7 +15944,7 @@ AROS_LH5(void, glMultiDrawElementsEXT,
 }
 
 AROS_LH1(void, glFogCoordfEXT,
-    AROS_LHA(GLfloat, a, D0),
+    AROS_LHA(GLfloat, coord, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15953,7 +15953,7 @@ AROS_LH1(void, glFogCoordfEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoordfEXT(a);
+    mglFogCoordfEXT(coord);
 
     RESTORE_REG
 
@@ -15961,7 +15961,7 @@ AROS_LH1(void, glFogCoordfEXT,
 }
 
 AROS_LH1(void, glFogCoordfvEXT,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, coord, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15970,7 +15970,7 @@ AROS_LH1(void, glFogCoordfvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoordfvEXT(a);
+    mglFogCoordfvEXT(coord);
 
     RESTORE_REG
 
@@ -15978,7 +15978,7 @@ AROS_LH1(void, glFogCoordfvEXT,
 }
 
 AROS_LH1(void, glFogCoorddEXT,
-    AROS_LHA(GLdouble, a, D0),
+    AROS_LHA(GLdouble, coord, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -15987,7 +15987,7 @@ AROS_LH1(void, glFogCoorddEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoorddEXT(a);
+    mglFogCoorddEXT(coord);
 
     RESTORE_REG
 
@@ -15995,7 +15995,7 @@ AROS_LH1(void, glFogCoorddEXT,
 }
 
 AROS_LH1(void, glFogCoorddvEXT,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, coord, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16004,7 +16004,7 @@ AROS_LH1(void, glFogCoorddvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoorddvEXT(a);
+    mglFogCoorddvEXT(coord);
 
     RESTORE_REG
 
@@ -16012,9 +16012,9 @@ AROS_LH1(void, glFogCoorddvEXT,
 }
 
 AROS_LH3(void, glFogCoordPointerEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLvoid *, c, A0),
+    AROS_LHA(GLenum, type, D0),
+    AROS_LHA(GLsizei, stride, D1),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16023,7 +16023,7 @@ AROS_LH3(void, glFogCoordPointerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFogCoordPointerEXT(a, b, c);
+    mglFogCoordPointerEXT(type, stride, pointer);
 
     RESTORE_REG
 
@@ -16031,10 +16031,10 @@ AROS_LH3(void, glFogCoordPointerEXT,
 }
 
 AROS_LH4(void, glBlendFuncSeparateEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
+    AROS_LHA(GLenum, sfactorRGB, D0),
+    AROS_LHA(GLenum, dfactorRGB, D1),
+    AROS_LHA(GLenum, sfactorAlpha, D2),
+    AROS_LHA(GLenum, dfactorAlpha, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16043,7 +16043,7 @@ AROS_LH4(void, glBlendFuncSeparateEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglBlendFuncSeparateEXT(a, b, c, d);
+    mglBlendFuncSeparateEXT(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 
     RESTORE_REG
 
@@ -16067,8 +16067,8 @@ AROS_LH0(void, glFlushVertexArrayRangeNV,
 }
 
 AROS_LH2(void, glVertexArrayRangeNV,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLvoid *, b, A0),
+    AROS_LHA(GLsizei, length, D0),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16077,7 +16077,7 @@ AROS_LH2(void, glVertexArrayRangeNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexArrayRangeNV(a, b);
+    mglVertexArrayRangeNV(length, pointer);
 
     RESTORE_REG
 
@@ -16085,8 +16085,8 @@ AROS_LH2(void, glVertexArrayRangeNV,
 }
 
 AROS_LH2(void, glCombinerParameterfvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16095,7 +16095,7 @@ AROS_LH2(void, glCombinerParameterfvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglCombinerParameterfvNV(a, b);
+    mglCombinerParameterfvNV(pname, params);
 
     RESTORE_REG
 
@@ -16103,8 +16103,8 @@ AROS_LH2(void, glCombinerParameterfvNV,
 }
 
 AROS_LH2(void, glCombinerParameterfNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLfloat, param, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16113,7 +16113,7 @@ AROS_LH2(void, glCombinerParameterfNV,
 
     PUT_MESABASE_IN_REG
 
-    mglCombinerParameterfNV(a, b);
+    mglCombinerParameterfNV(pname, param);
 
     RESTORE_REG
 
@@ -16121,8 +16121,8 @@ AROS_LH2(void, glCombinerParameterfNV,
 }
 
 AROS_LH2(void, glCombinerParameterivNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLint *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16131,7 +16131,7 @@ AROS_LH2(void, glCombinerParameterivNV,
 
     PUT_MESABASE_IN_REG
 
-    mglCombinerParameterivNV(a, b);
+    mglCombinerParameterivNV(pname, params);
 
     RESTORE_REG
 
@@ -16139,8 +16139,8 @@ AROS_LH2(void, glCombinerParameterivNV,
 }
 
 AROS_LH2(void, glCombinerParameteriNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLint, param, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16149,7 +16149,7 @@ AROS_LH2(void, glCombinerParameteriNV,
 
     PUT_MESABASE_IN_REG
 
-    mglCombinerParameteriNV(a, b);
+    mglCombinerParameteriNV(pname, param);
 
     RESTORE_REG
 
@@ -16157,12 +16157,12 @@ AROS_LH2(void, glCombinerParameteriNV,
 }
 
 AROS_LH6(void, glCombinerInputNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
-    AROS_LHA(GLenum, e, D4),
-    AROS_LHA(GLenum, f, D5),
+    AROS_LHA(GLenum, stage, D0),
+    AROS_LHA(GLenum, portion, D1),
+    AROS_LHA(GLenum, variable, D2),
+    AROS_LHA(GLenum, input, D3),
+    AROS_LHA(GLenum, mapping, D4),
+    AROS_LHA(GLenum, componentUsage, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16171,7 +16171,7 @@ AROS_LH6(void, glCombinerInputNV,
 
     PUT_MESABASE_IN_REG
 
-    mglCombinerInputNV(a, b, c, d, e, f);
+    mglCombinerInputNV(stage, portion, variable, input, mapping, componentUsage);
 
     RESTORE_REG
 
@@ -16179,16 +16179,16 @@ AROS_LH6(void, glCombinerInputNV,
 }
 
 AROS_LH10(void, glCombinerOutputNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
-    AROS_LHA(GLenum, e, D4),
-    AROS_LHA(GLenum, f, D5),
-    AROS_LHA(GLenum, g, D6),
-    AROS_LHA(GLboolean, h, D7),
-    AROS_LHA(GLboolean, i, A0),
-    AROS_LHA(GLboolean, j, A1),
+    AROS_LHA(GLenum, stage, D0),
+    AROS_LHA(GLenum, portion, D1),
+    AROS_LHA(GLenum, abOutput, D2),
+    AROS_LHA(GLenum, cdOutput, D3),
+    AROS_LHA(GLenum, sumOutput, D4),
+    AROS_LHA(GLenum, scale, D5),
+    AROS_LHA(GLenum, bias, D6),
+    AROS_LHA(GLboolean, abDotProduct, D7),
+    AROS_LHA(GLboolean, cdDotProduct, A0),
+    AROS_LHA(GLboolean, muxSum, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16197,7 +16197,7 @@ AROS_LH10(void, glCombinerOutputNV,
 
     PUT_MESABASE_IN_REG
 
-    mglCombinerOutputNV(a, b, c, d, e, f, g, h, i, j);
+    mglCombinerOutputNV(stage, portion, abOutput, cdOutput, sumOutput, scale, bias, abDotProduct, cdDotProduct, muxSum);
 
     RESTORE_REG
 
@@ -16205,10 +16205,10 @@ AROS_LH10(void, glCombinerOutputNV,
 }
 
 AROS_LH4(void, glFinalCombinerInputNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
+    AROS_LHA(GLenum, variable, D0),
+    AROS_LHA(GLenum, input, D1),
+    AROS_LHA(GLenum, mapping, D2),
+    AROS_LHA(GLenum, componentUsage, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16217,7 +16217,7 @@ AROS_LH4(void, glFinalCombinerInputNV,
 
     PUT_MESABASE_IN_REG
 
-    mglFinalCombinerInputNV(a, b, c, d);
+    mglFinalCombinerInputNV(variable, input, mapping, componentUsage);
 
     RESTORE_REG
 
@@ -16225,11 +16225,11 @@ AROS_LH4(void, glFinalCombinerInputNV,
 }
 
 AROS_LH5(void, glGetCombinerInputParameterfvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
-    AROS_LHA(GLfloat *, e, A0),
+    AROS_LHA(GLenum, stage, D0),
+    AROS_LHA(GLenum, portion, D1),
+    AROS_LHA(GLenum, variable, D2),
+    AROS_LHA(GLenum, pname, D3),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16238,7 +16238,7 @@ AROS_LH5(void, glGetCombinerInputParameterfvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetCombinerInputParameterfvNV(a, b, c, d, e);
+    mglGetCombinerInputParameterfvNV(stage, portion, variable, pname, params);
 
     RESTORE_REG
 
@@ -16246,11 +16246,11 @@ AROS_LH5(void, glGetCombinerInputParameterfvNV,
 }
 
 AROS_LH5(void, glGetCombinerInputParameterivNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
-    AROS_LHA(GLint *, e, A0),
+    AROS_LHA(GLenum, stage, D0),
+    AROS_LHA(GLenum, portion, D1),
+    AROS_LHA(GLenum, variable, D2),
+    AROS_LHA(GLenum, pname, D3),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16259,7 +16259,7 @@ AROS_LH5(void, glGetCombinerInputParameterivNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetCombinerInputParameterivNV(a, b, c, d, e);
+    mglGetCombinerInputParameterivNV(stage, portion, variable, pname, params);
 
     RESTORE_REG
 
@@ -16267,10 +16267,10 @@ AROS_LH5(void, glGetCombinerInputParameterivNV,
 }
 
 AROS_LH4(void, glGetCombinerOutputParameterfvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLfloat *, d, A0),
+    AROS_LHA(GLenum, stage, D0),
+    AROS_LHA(GLenum, portion, D1),
+    AROS_LHA(GLenum, pname, D2),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16279,7 +16279,7 @@ AROS_LH4(void, glGetCombinerOutputParameterfvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetCombinerOutputParameterfvNV(a, b, c, d);
+    mglGetCombinerOutputParameterfvNV(stage, portion, pname, params);
 
     RESTORE_REG
 
@@ -16287,10 +16287,10 @@ AROS_LH4(void, glGetCombinerOutputParameterfvNV,
 }
 
 AROS_LH4(void, glGetCombinerOutputParameterivNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLint *, d, A0),
+    AROS_LHA(GLenum, stage, D0),
+    AROS_LHA(GLenum, portion, D1),
+    AROS_LHA(GLenum, pname, D2),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16299,7 +16299,7 @@ AROS_LH4(void, glGetCombinerOutputParameterivNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetCombinerOutputParameterivNV(a, b, c, d);
+    mglGetCombinerOutputParameterivNV(stage, portion, pname, params);
 
     RESTORE_REG
 
@@ -16307,9 +16307,9 @@ AROS_LH4(void, glGetCombinerOutputParameterivNV,
 }
 
 AROS_LH3(void, glGetFinalCombinerInputParameterfvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLenum, variable, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16318,7 +16318,7 @@ AROS_LH3(void, glGetFinalCombinerInputParameterfvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetFinalCombinerInputParameterfvNV(a, b, c);
+    mglGetFinalCombinerInputParameterfvNV(variable, pname, params);
 
     RESTORE_REG
 
@@ -16326,9 +16326,9 @@ AROS_LH3(void, glGetFinalCombinerInputParameterfvNV,
 }
 
 AROS_LH3(void, glGetFinalCombinerInputParameterivNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, variable, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16337,7 +16337,7 @@ AROS_LH3(void, glGetFinalCombinerInputParameterivNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetFinalCombinerInputParameterivNV(a, b, c);
+    mglGetFinalCombinerInputParameterivNV(variable, pname, params);
 
     RESTORE_REG
 
@@ -16361,8 +16361,8 @@ AROS_LH0(void, glResizeBuffersMESA,
 }
 
 AROS_LH2(void, glWindowPos2dMESA,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
+    AROS_LHA(GLdouble, x, D0),
+    AROS_LHA(GLdouble, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16371,7 +16371,7 @@ AROS_LH2(void, glWindowPos2dMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2dMESA(a, b);
+    mglWindowPos2dMESA(x, y);
 
     RESTORE_REG
 
@@ -16379,7 +16379,7 @@ AROS_LH2(void, glWindowPos2dMESA,
 }
 
 AROS_LH1(void, glWindowPos2dvMESA,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16388,7 +16388,7 @@ AROS_LH1(void, glWindowPos2dvMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2dvMESA(a);
+    mglWindowPos2dvMESA(v);
 
     RESTORE_REG
 
@@ -16396,8 +16396,8 @@ AROS_LH1(void, glWindowPos2dvMESA,
 }
 
 AROS_LH2(void, glWindowPos2fMESA,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLfloat, x, D0),
+    AROS_LHA(GLfloat, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16406,7 +16406,7 @@ AROS_LH2(void, glWindowPos2fMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2fMESA(a, b);
+    mglWindowPos2fMESA(x, y);
 
     RESTORE_REG
 
@@ -16414,7 +16414,7 @@ AROS_LH2(void, glWindowPos2fMESA,
 }
 
 AROS_LH1(void, glWindowPos2fvMESA,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16423,7 +16423,7 @@ AROS_LH1(void, glWindowPos2fvMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2fvMESA(a);
+    mglWindowPos2fvMESA(v);
 
     RESTORE_REG
 
@@ -16431,8 +16431,8 @@ AROS_LH1(void, glWindowPos2fvMESA,
 }
 
 AROS_LH2(void, glWindowPos2iMESA,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
+    AROS_LHA(GLint, x, D0),
+    AROS_LHA(GLint, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16441,7 +16441,7 @@ AROS_LH2(void, glWindowPos2iMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2iMESA(a, b);
+    mglWindowPos2iMESA(x, y);
 
     RESTORE_REG
 
@@ -16449,7 +16449,7 @@ AROS_LH2(void, glWindowPos2iMESA,
 }
 
 AROS_LH1(void, glWindowPos2ivMESA,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16458,7 +16458,7 @@ AROS_LH1(void, glWindowPos2ivMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2ivMESA(a);
+    mglWindowPos2ivMESA(v);
 
     RESTORE_REG
 
@@ -16466,8 +16466,8 @@ AROS_LH1(void, glWindowPos2ivMESA,
 }
 
 AROS_LH2(void, glWindowPos2sMESA,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
+    AROS_LHA(GLshort, x, D0),
+    AROS_LHA(GLshort, y, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16476,7 +16476,7 @@ AROS_LH2(void, glWindowPos2sMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2sMESA(a, b);
+    mglWindowPos2sMESA(x, y);
 
     RESTORE_REG
 
@@ -16484,7 +16484,7 @@ AROS_LH2(void, glWindowPos2sMESA,
 }
 
 AROS_LH1(void, glWindowPos2svMESA,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16493,7 +16493,7 @@ AROS_LH1(void, glWindowPos2svMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos2svMESA(a);
+    mglWindowPos2svMESA(v);
 
     RESTORE_REG
 
@@ -16501,9 +16501,9 @@ AROS_LH1(void, glWindowPos2svMESA,
 }
 
 AROS_LH3(void, glWindowPos3dMESA,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
+    AROS_LHA(GLdouble, x, D0),
+    AROS_LHA(GLdouble, y, D1),
+    AROS_LHA(GLdouble, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16512,7 +16512,7 @@ AROS_LH3(void, glWindowPos3dMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3dMESA(a, b, c);
+    mglWindowPos3dMESA(x, y, z);
 
     RESTORE_REG
 
@@ -16520,7 +16520,7 @@ AROS_LH3(void, glWindowPos3dMESA,
 }
 
 AROS_LH1(void, glWindowPos3dvMESA,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16529,7 +16529,7 @@ AROS_LH1(void, glWindowPos3dvMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3dvMESA(a);
+    mglWindowPos3dvMESA(v);
 
     RESTORE_REG
 
@@ -16537,9 +16537,9 @@ AROS_LH1(void, glWindowPos3dvMESA,
 }
 
 AROS_LH3(void, glWindowPos3fMESA,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLfloat, x, D0),
+    AROS_LHA(GLfloat, y, D1),
+    AROS_LHA(GLfloat, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16548,7 +16548,7 @@ AROS_LH3(void, glWindowPos3fMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3fMESA(a, b, c);
+    mglWindowPos3fMESA(x, y, z);
 
     RESTORE_REG
 
@@ -16556,7 +16556,7 @@ AROS_LH3(void, glWindowPos3fMESA,
 }
 
 AROS_LH1(void, glWindowPos3fvMESA,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16565,7 +16565,7 @@ AROS_LH1(void, glWindowPos3fvMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3fvMESA(a);
+    mglWindowPos3fvMESA(v);
 
     RESTORE_REG
 
@@ -16573,9 +16573,9 @@ AROS_LH1(void, glWindowPos3fvMESA,
 }
 
 AROS_LH3(void, glWindowPos3iMESA,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
+    AROS_LHA(GLint, x, D0),
+    AROS_LHA(GLint, y, D1),
+    AROS_LHA(GLint, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16584,7 +16584,7 @@ AROS_LH3(void, glWindowPos3iMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3iMESA(a, b, c);
+    mglWindowPos3iMESA(x, y, z);
 
     RESTORE_REG
 
@@ -16592,7 +16592,7 @@ AROS_LH3(void, glWindowPos3iMESA,
 }
 
 AROS_LH1(void, glWindowPos3ivMESA,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16601,7 +16601,7 @@ AROS_LH1(void, glWindowPos3ivMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3ivMESA(a);
+    mglWindowPos3ivMESA(v);
 
     RESTORE_REG
 
@@ -16609,9 +16609,9 @@ AROS_LH1(void, glWindowPos3ivMESA,
 }
 
 AROS_LH3(void, glWindowPos3sMESA,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
+    AROS_LHA(GLshort, x, D0),
+    AROS_LHA(GLshort, y, D1),
+    AROS_LHA(GLshort, z, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16620,7 +16620,7 @@ AROS_LH3(void, glWindowPos3sMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3sMESA(a, b, c);
+    mglWindowPos3sMESA(x, y, z);
 
     RESTORE_REG
 
@@ -16628,7 +16628,7 @@ AROS_LH3(void, glWindowPos3sMESA,
 }
 
 AROS_LH1(void, glWindowPos3svMESA,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16637,7 +16637,7 @@ AROS_LH1(void, glWindowPos3svMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos3svMESA(a);
+    mglWindowPos3svMESA(v);
 
     RESTORE_REG
 
@@ -16645,10 +16645,10 @@ AROS_LH1(void, glWindowPos3svMESA,
 }
 
 AROS_LH4(void, glWindowPos4dMESA,
-    AROS_LHA(GLdouble, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
+    AROS_LHA(GLdouble, x, D0),
+    AROS_LHA(GLdouble, y, D1),
+    AROS_LHA(GLdouble, z, D2),
+    AROS_LHA(GLdouble, w, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16657,7 +16657,7 @@ AROS_LH4(void, glWindowPos4dMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos4dMESA(a, b, c, d);
+    mglWindowPos4dMESA(x, y, z, w);
 
     RESTORE_REG
 
@@ -16665,7 +16665,7 @@ AROS_LH4(void, glWindowPos4dMESA,
 }
 
 AROS_LH1(void, glWindowPos4dvMESA,
-    AROS_LHA(const GLdouble *, a, A0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16674,7 +16674,7 @@ AROS_LH1(void, glWindowPos4dvMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos4dvMESA(a);
+    mglWindowPos4dvMESA(v);
 
     RESTORE_REG
 
@@ -16682,10 +16682,10 @@ AROS_LH1(void, glWindowPos4dvMESA,
 }
 
 AROS_LH4(void, glWindowPos4fMESA,
-    AROS_LHA(GLfloat, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
+    AROS_LHA(GLfloat, x, D0),
+    AROS_LHA(GLfloat, y, D1),
+    AROS_LHA(GLfloat, z, D2),
+    AROS_LHA(GLfloat, w, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16694,7 +16694,7 @@ AROS_LH4(void, glWindowPos4fMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos4fMESA(a, b, c, d);
+    mglWindowPos4fMESA(x, y, z, w);
 
     RESTORE_REG
 
@@ -16702,7 +16702,7 @@ AROS_LH4(void, glWindowPos4fMESA,
 }
 
 AROS_LH1(void, glWindowPos4fvMESA,
-    AROS_LHA(const GLfloat *, a, A0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16711,7 +16711,7 @@ AROS_LH1(void, glWindowPos4fvMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos4fvMESA(a);
+    mglWindowPos4fvMESA(v);
 
     RESTORE_REG
 
@@ -16719,10 +16719,10 @@ AROS_LH1(void, glWindowPos4fvMESA,
 }
 
 AROS_LH4(void, glWindowPos4iMESA,
-    AROS_LHA(GLint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLint, c, D2),
-    AROS_LHA(GLint, d, D3),
+    AROS_LHA(GLint, x, D0),
+    AROS_LHA(GLint, y, D1),
+    AROS_LHA(GLint, z, D2),
+    AROS_LHA(GLint, w, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16731,7 +16731,7 @@ AROS_LH4(void, glWindowPos4iMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos4iMESA(a, b, c, d);
+    mglWindowPos4iMESA(x, y, z, w);
 
     RESTORE_REG
 
@@ -16739,7 +16739,7 @@ AROS_LH4(void, glWindowPos4iMESA,
 }
 
 AROS_LH1(void, glWindowPos4ivMESA,
-    AROS_LHA(const GLint *, a, A0),
+    AROS_LHA(const GLint *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16748,7 +16748,7 @@ AROS_LH1(void, glWindowPos4ivMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos4ivMESA(a);
+    mglWindowPos4ivMESA(v);
 
     RESTORE_REG
 
@@ -16756,10 +16756,10 @@ AROS_LH1(void, glWindowPos4ivMESA,
 }
 
 AROS_LH4(void, glWindowPos4sMESA,
-    AROS_LHA(GLshort, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
-    AROS_LHA(GLshort, d, D3),
+    AROS_LHA(GLshort, x, D0),
+    AROS_LHA(GLshort, y, D1),
+    AROS_LHA(GLshort, z, D2),
+    AROS_LHA(GLshort, w, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16768,7 +16768,7 @@ AROS_LH4(void, glWindowPos4sMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos4sMESA(a, b, c, d);
+    mglWindowPos4sMESA(x, y, z, w);
 
     RESTORE_REG
 
@@ -16776,7 +16776,7 @@ AROS_LH4(void, glWindowPos4sMESA,
 }
 
 AROS_LH1(void, glWindowPos4svMESA,
-    AROS_LHA(const GLshort *, a, A0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16785,7 +16785,7 @@ AROS_LH1(void, glWindowPos4svMESA,
 
     PUT_MESABASE_IN_REG
 
-    mglWindowPos4svMESA(a);
+    mglWindowPos4svMESA(v);
 
     RESTORE_REG
 
@@ -16793,9 +16793,9 @@ AROS_LH1(void, glWindowPos4svMESA,
 }
 
 AROS_LH3(GLboolean, glAreProgramsResidentNV,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
-    AROS_LHA(GLboolean *, c, A1),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, programs, A0),
+    AROS_LHA(GLboolean *, residences, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16804,7 +16804,7 @@ AROS_LH3(GLboolean, glAreProgramsResidentNV,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglAreProgramsResidentNV(a, b, c);
+    GLboolean _return = mglAreProgramsResidentNV(n, programs, residences);
 
     RESTORE_REG
 
@@ -16814,8 +16814,8 @@ AROS_LH3(GLboolean, glAreProgramsResidentNV,
 }
 
 AROS_LH2(void, glBindProgramNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, id, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16824,7 +16824,7 @@ AROS_LH2(void, glBindProgramNV,
 
     PUT_MESABASE_IN_REG
 
-    mglBindProgramNV(a, b);
+    mglBindProgramNV(target, id);
 
     RESTORE_REG
 
@@ -16832,8 +16832,8 @@ AROS_LH2(void, glBindProgramNV,
 }
 
 AROS_LH2(void, glDeleteProgramsNV,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, programs, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16842,7 +16842,7 @@ AROS_LH2(void, glDeleteProgramsNV,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteProgramsNV(a, b);
+    mglDeleteProgramsNV(n, programs);
 
     RESTORE_REG
 
@@ -16850,9 +16850,9 @@ AROS_LH2(void, glDeleteProgramsNV,
 }
 
 AROS_LH3(void, glExecuteProgramNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, id, D1),
+    AROS_LHA(const GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16861,7 +16861,7 @@ AROS_LH3(void, glExecuteProgramNV,
 
     PUT_MESABASE_IN_REG
 
-    mglExecuteProgramNV(a, b, c);
+    mglExecuteProgramNV(target, id, params);
 
     RESTORE_REG
 
@@ -16869,8 +16869,8 @@ AROS_LH3(void, glExecuteProgramNV,
 }
 
 AROS_LH2(void, glGenProgramsNV,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, programs, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16879,7 +16879,7 @@ AROS_LH2(void, glGenProgramsNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGenProgramsNV(a, b);
+    mglGenProgramsNV(n, programs);
 
     RESTORE_REG
 
@@ -16887,10 +16887,10 @@ AROS_LH2(void, glGenProgramsNV,
 }
 
 AROS_LH4(void, glGetProgramParameterdvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLdouble *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLenum, pname, D2),
+    AROS_LHA(GLdouble *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16899,7 +16899,7 @@ AROS_LH4(void, glGetProgramParameterdvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramParameterdvNV(a, b, c, d);
+    mglGetProgramParameterdvNV(target, index, pname, params);
 
     RESTORE_REG
 
@@ -16907,10 +16907,10 @@ AROS_LH4(void, glGetProgramParameterdvNV,
 }
 
 AROS_LH4(void, glGetProgramParameterfvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLfloat *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLenum, pname, D2),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16919,7 +16919,7 @@ AROS_LH4(void, glGetProgramParameterfvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramParameterfvNV(a, b, c, d);
+    mglGetProgramParameterfvNV(target, index, pname, params);
 
     RESTORE_REG
 
@@ -16927,9 +16927,9 @@ AROS_LH4(void, glGetProgramParameterfvNV,
 }
 
 AROS_LH3(void, glGetProgramivNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16938,7 +16938,7 @@ AROS_LH3(void, glGetProgramivNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramivNV(a, b, c);
+    mglGetProgramivNV(id, pname, params);
 
     RESTORE_REG
 
@@ -16946,9 +16946,9 @@ AROS_LH3(void, glGetProgramivNV,
 }
 
 AROS_LH3(void, glGetProgramStringNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLubyte *, c, A0),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLubyte *, program, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16957,7 +16957,7 @@ AROS_LH3(void, glGetProgramStringNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramStringNV(a, b, c);
+    mglGetProgramStringNV(id, pname, program);
 
     RESTORE_REG
 
@@ -16965,10 +16965,10 @@ AROS_LH3(void, glGetProgramStringNV,
 }
 
 AROS_LH4(void, glGetTrackMatrixivNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLint *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, address, D1),
+    AROS_LHA(GLenum, pname, D2),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16977,7 +16977,7 @@ AROS_LH4(void, glGetTrackMatrixivNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetTrackMatrixivNV(a, b, c, d);
+    mglGetTrackMatrixivNV(target, address, pname, params);
 
     RESTORE_REG
 
@@ -16985,9 +16985,9 @@ AROS_LH4(void, glGetTrackMatrixivNV,
 }
 
 AROS_LH3(void, glGetVertexAttribdvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLdouble *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLdouble *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -16996,7 +16996,7 @@ AROS_LH3(void, glGetVertexAttribdvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribdvNV(a, b, c);
+    mglGetVertexAttribdvNV(index, pname, params);
 
     RESTORE_REG
 
@@ -17004,9 +17004,9 @@ AROS_LH3(void, glGetVertexAttribdvNV,
 }
 
 AROS_LH3(void, glGetVertexAttribfvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLfloat *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLfloat *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17015,7 +17015,7 @@ AROS_LH3(void, glGetVertexAttribfvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribfvNV(a, b, c);
+    mglGetVertexAttribfvNV(index, pname, params);
 
     RESTORE_REG
 
@@ -17023,9 +17023,9 @@ AROS_LH3(void, glGetVertexAttribfvNV,
 }
 
 AROS_LH3(void, glGetVertexAttribivNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17034,7 +17034,7 @@ AROS_LH3(void, glGetVertexAttribivNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribivNV(a, b, c);
+    mglGetVertexAttribivNV(index, pname, params);
 
     RESTORE_REG
 
@@ -17042,9 +17042,9 @@ AROS_LH3(void, glGetVertexAttribivNV,
 }
 
 AROS_LH3(void, glGetVertexAttribPointervNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLvoid *  *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLvoid *  *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17053,7 +17053,7 @@ AROS_LH3(void, glGetVertexAttribPointervNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetVertexAttribPointervNV(a, b, c);
+    mglGetVertexAttribPointervNV(index, pname, pointer);
 
     RESTORE_REG
 
@@ -17061,7 +17061,7 @@ AROS_LH3(void, glGetVertexAttribPointervNV,
 }
 
 AROS_LH1(GLboolean, glIsProgramNV,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, id, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17070,7 +17070,7 @@ AROS_LH1(GLboolean, glIsProgramNV,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsProgramNV(a);
+    GLboolean _return = mglIsProgramNV(id);
 
     RESTORE_REG
 
@@ -17080,10 +17080,10 @@ AROS_LH1(GLboolean, glIsProgramNV,
 }
 
 AROS_LH4(void, glLoadProgramNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(const GLubyte *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, id, D1),
+    AROS_LHA(GLsizei, len, D2),
+    AROS_LHA(const GLubyte *, program, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17092,7 +17092,7 @@ AROS_LH4(void, glLoadProgramNV,
 
     PUT_MESABASE_IN_REG
 
-    mglLoadProgramNV(a, b, c, d);
+    mglLoadProgramNV(target, id, len, program);
 
     RESTORE_REG
 
@@ -17100,12 +17100,12 @@ AROS_LH4(void, glLoadProgramNV,
 }
 
 AROS_LH6(void, glProgramParameter4dNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
-    AROS_LHA(GLdouble, e, D4),
-    AROS_LHA(GLdouble, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLdouble, x, D2),
+    AROS_LHA(GLdouble, y, D3),
+    AROS_LHA(GLdouble, z, D4),
+    AROS_LHA(GLdouble, w, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17114,7 +17114,7 @@ AROS_LH6(void, glProgramParameter4dNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramParameter4dNV(a, b, c, d, e, f);
+    mglProgramParameter4dNV(target, index, x, y, z, w);
 
     RESTORE_REG
 
@@ -17122,9 +17122,9 @@ AROS_LH6(void, glProgramParameter4dNV,
 }
 
 AROS_LH3(void, glProgramParameter4dvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLdouble *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17133,7 +17133,7 @@ AROS_LH3(void, glProgramParameter4dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramParameter4dvNV(a, b, c);
+    mglProgramParameter4dvNV(target, index, v);
 
     RESTORE_REG
 
@@ -17141,12 +17141,12 @@ AROS_LH3(void, glProgramParameter4dvNV,
 }
 
 AROS_LH6(void, glProgramParameter4fNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
-    AROS_LHA(GLfloat, e, D4),
-    AROS_LHA(GLfloat, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLfloat, x, D2),
+    AROS_LHA(GLfloat, y, D3),
+    AROS_LHA(GLfloat, z, D4),
+    AROS_LHA(GLfloat, w, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17155,7 +17155,7 @@ AROS_LH6(void, glProgramParameter4fNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramParameter4fNV(a, b, c, d, e, f);
+    mglProgramParameter4fNV(target, index, x, y, z, w);
 
     RESTORE_REG
 
@@ -17163,9 +17163,9 @@ AROS_LH6(void, glProgramParameter4fNV,
 }
 
 AROS_LH3(void, glProgramParameter4fvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17174,7 +17174,7 @@ AROS_LH3(void, glProgramParameter4fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramParameter4fvNV(a, b, c);
+    mglProgramParameter4fvNV(target, index, v);
 
     RESTORE_REG
 
@@ -17182,10 +17182,10 @@ AROS_LH3(void, glProgramParameter4fvNV,
 }
 
 AROS_LH4(void, glProgramParameters4dvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(const GLdouble *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLuint, count, D2),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17194,7 +17194,7 @@ AROS_LH4(void, glProgramParameters4dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramParameters4dvNV(a, b, c, d);
+    mglProgramParameters4dvNV(target, index, count, v);
 
     RESTORE_REG
 
@@ -17202,10 +17202,10 @@ AROS_LH4(void, glProgramParameters4dvNV,
 }
 
 AROS_LH4(void, glProgramParameters4fvNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(const GLfloat *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLuint, count, D2),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17214,7 +17214,7 @@ AROS_LH4(void, glProgramParameters4fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramParameters4fvNV(a, b, c, d);
+    mglProgramParameters4fvNV(target, index, count, v);
 
     RESTORE_REG
 
@@ -17222,8 +17222,8 @@ AROS_LH4(void, glProgramParameters4fvNV,
 }
 
 AROS_LH2(void, glRequestResidentProgramsNV,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, programs, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17232,7 +17232,7 @@ AROS_LH2(void, glRequestResidentProgramsNV,
 
     PUT_MESABASE_IN_REG
 
-    mglRequestResidentProgramsNV(a, b);
+    mglRequestResidentProgramsNV(n, programs);
 
     RESTORE_REG
 
@@ -17240,10 +17240,10 @@ AROS_LH2(void, glRequestResidentProgramsNV,
 }
 
 AROS_LH4(void, glTrackMatrixNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLenum, d, D3),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, address, D1),
+    AROS_LHA(GLenum, matrix, D2),
+    AROS_LHA(GLenum, transform, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17252,7 +17252,7 @@ AROS_LH4(void, glTrackMatrixNV,
 
     PUT_MESABASE_IN_REG
 
-    mglTrackMatrixNV(a, b, c, d);
+    mglTrackMatrixNV(target, address, matrix, transform);
 
     RESTORE_REG
 
@@ -17260,11 +17260,11 @@ AROS_LH4(void, glTrackMatrixNV,
 }
 
 AROS_LH5(void, glVertexAttribPointerNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(const GLvoid *, e, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, fsize, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(GLsizei, stride, D3),
+    AROS_LHA(const GLvoid *, pointer, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17273,7 +17273,7 @@ AROS_LH5(void, glVertexAttribPointerNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribPointerNV(a, b, c, d, e);
+    mglVertexAttribPointerNV(index, fsize, type, stride, pointer);
 
     RESTORE_REG
 
@@ -17281,8 +17281,8 @@ AROS_LH5(void, glVertexAttribPointerNV,
 }
 
 AROS_LH2(void, glVertexAttrib1dNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17291,7 +17291,7 @@ AROS_LH2(void, glVertexAttrib1dNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1dNV(a, b);
+    mglVertexAttrib1dNV(index, x);
 
     RESTORE_REG
 
@@ -17299,8 +17299,8 @@ AROS_LH2(void, glVertexAttrib1dNV,
 }
 
 AROS_LH2(void, glVertexAttrib1dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17309,7 +17309,7 @@ AROS_LH2(void, glVertexAttrib1dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1dvNV(a, b);
+    mglVertexAttrib1dvNV(index, v);
 
     RESTORE_REG
 
@@ -17317,8 +17317,8 @@ AROS_LH2(void, glVertexAttrib1dvNV,
 }
 
 AROS_LH2(void, glVertexAttrib1fNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17327,7 +17327,7 @@ AROS_LH2(void, glVertexAttrib1fNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1fNV(a, b);
+    mglVertexAttrib1fNV(index, x);
 
     RESTORE_REG
 
@@ -17335,8 +17335,8 @@ AROS_LH2(void, glVertexAttrib1fNV,
 }
 
 AROS_LH2(void, glVertexAttrib1fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17345,7 +17345,7 @@ AROS_LH2(void, glVertexAttrib1fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1fvNV(a, b);
+    mglVertexAttrib1fvNV(index, v);
 
     RESTORE_REG
 
@@ -17353,8 +17353,8 @@ AROS_LH2(void, glVertexAttrib1fvNV,
 }
 
 AROS_LH2(void, glVertexAttrib1sNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17363,7 +17363,7 @@ AROS_LH2(void, glVertexAttrib1sNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1sNV(a, b);
+    mglVertexAttrib1sNV(index, x);
 
     RESTORE_REG
 
@@ -17371,8 +17371,8 @@ AROS_LH2(void, glVertexAttrib1sNV,
 }
 
 AROS_LH2(void, glVertexAttrib1svNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17381,7 +17381,7 @@ AROS_LH2(void, glVertexAttrib1svNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib1svNV(a, b);
+    mglVertexAttrib1svNV(index, v);
 
     RESTORE_REG
 
@@ -17389,9 +17389,9 @@ AROS_LH2(void, glVertexAttrib1svNV,
 }
 
 AROS_LH3(void, glVertexAttrib2dNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17400,7 +17400,7 @@ AROS_LH3(void, glVertexAttrib2dNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2dNV(a, b, c);
+    mglVertexAttrib2dNV(index, x, y);
 
     RESTORE_REG
 
@@ -17408,8 +17408,8 @@ AROS_LH3(void, glVertexAttrib2dNV,
 }
 
 AROS_LH2(void, glVertexAttrib2dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17418,7 +17418,7 @@ AROS_LH2(void, glVertexAttrib2dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2dvNV(a, b);
+    mglVertexAttrib2dvNV(index, v);
 
     RESTORE_REG
 
@@ -17426,9 +17426,9 @@ AROS_LH2(void, glVertexAttrib2dvNV,
 }
 
 AROS_LH3(void, glVertexAttrib2fNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17437,7 +17437,7 @@ AROS_LH3(void, glVertexAttrib2fNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2fNV(a, b, c);
+    mglVertexAttrib2fNV(index, x, y);
 
     RESTORE_REG
 
@@ -17445,8 +17445,8 @@ AROS_LH3(void, glVertexAttrib2fNV,
 }
 
 AROS_LH2(void, glVertexAttrib2fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17455,7 +17455,7 @@ AROS_LH2(void, glVertexAttrib2fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2fvNV(a, b);
+    mglVertexAttrib2fvNV(index, v);
 
     RESTORE_REG
 
@@ -17463,9 +17463,9 @@ AROS_LH2(void, glVertexAttrib2fvNV,
 }
 
 AROS_LH3(void, glVertexAttrib2sNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17474,7 +17474,7 @@ AROS_LH3(void, glVertexAttrib2sNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2sNV(a, b, c);
+    mglVertexAttrib2sNV(index, x, y);
 
     RESTORE_REG
 
@@ -17482,8 +17482,8 @@ AROS_LH3(void, glVertexAttrib2sNV,
 }
 
 AROS_LH2(void, glVertexAttrib2svNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17492,7 +17492,7 @@ AROS_LH2(void, glVertexAttrib2svNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib2svNV(a, b);
+    mglVertexAttrib2svNV(index, v);
 
     RESTORE_REG
 
@@ -17500,10 +17500,10 @@ AROS_LH2(void, glVertexAttrib2svNV,
 }
 
 AROS_LH4(void, glVertexAttrib3dNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
+    AROS_LHA(GLdouble, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17512,7 +17512,7 @@ AROS_LH4(void, glVertexAttrib3dNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3dNV(a, b, c, d);
+    mglVertexAttrib3dNV(index, x, y, z);
 
     RESTORE_REG
 
@@ -17520,8 +17520,8 @@ AROS_LH4(void, glVertexAttrib3dNV,
 }
 
 AROS_LH2(void, glVertexAttrib3dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17530,7 +17530,7 @@ AROS_LH2(void, glVertexAttrib3dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3dvNV(a, b);
+    mglVertexAttrib3dvNV(index, v);
 
     RESTORE_REG
 
@@ -17538,10 +17538,10 @@ AROS_LH2(void, glVertexAttrib3dvNV,
 }
 
 AROS_LH4(void, glVertexAttrib3fNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
+    AROS_LHA(GLfloat, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17550,7 +17550,7 @@ AROS_LH4(void, glVertexAttrib3fNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3fNV(a, b, c, d);
+    mglVertexAttrib3fNV(index, x, y, z);
 
     RESTORE_REG
 
@@ -17558,8 +17558,8 @@ AROS_LH4(void, glVertexAttrib3fNV,
 }
 
 AROS_LH2(void, glVertexAttrib3fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17568,7 +17568,7 @@ AROS_LH2(void, glVertexAttrib3fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3fvNV(a, b);
+    mglVertexAttrib3fvNV(index, v);
 
     RESTORE_REG
 
@@ -17576,10 +17576,10 @@ AROS_LH2(void, glVertexAttrib3fvNV,
 }
 
 AROS_LH4(void, glVertexAttrib3sNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
-    AROS_LHA(GLshort, d, D3),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
+    AROS_LHA(GLshort, z, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17588,7 +17588,7 @@ AROS_LH4(void, glVertexAttrib3sNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3sNV(a, b, c, d);
+    mglVertexAttrib3sNV(index, x, y, z);
 
     RESTORE_REG
 
@@ -17596,8 +17596,8 @@ AROS_LH4(void, glVertexAttrib3sNV,
 }
 
 AROS_LH2(void, glVertexAttrib3svNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17606,7 +17606,7 @@ AROS_LH2(void, glVertexAttrib3svNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib3svNV(a, b);
+    mglVertexAttrib3svNV(index, v);
 
     RESTORE_REG
 
@@ -17614,11 +17614,11 @@ AROS_LH2(void, glVertexAttrib3svNV,
 }
 
 AROS_LH5(void, glVertexAttrib4dNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLdouble, b, D1),
-    AROS_LHA(GLdouble, c, D2),
-    AROS_LHA(GLdouble, d, D3),
-    AROS_LHA(GLdouble, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLdouble, x, D1),
+    AROS_LHA(GLdouble, y, D2),
+    AROS_LHA(GLdouble, z, D3),
+    AROS_LHA(GLdouble, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17627,7 +17627,7 @@ AROS_LH5(void, glVertexAttrib4dNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4dNV(a, b, c, d, e);
+    mglVertexAttrib4dNV(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -17635,8 +17635,8 @@ AROS_LH5(void, glVertexAttrib4dNV,
 }
 
 AROS_LH2(void, glVertexAttrib4dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLdouble *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17645,7 +17645,7 @@ AROS_LH2(void, glVertexAttrib4dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4dvNV(a, b);
+    mglVertexAttrib4dvNV(index, v);
 
     RESTORE_REG
 
@@ -17653,11 +17653,11 @@ AROS_LH2(void, glVertexAttrib4dvNV,
 }
 
 AROS_LH5(void, glVertexAttrib4fNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLfloat, b, D1),
-    AROS_LHA(GLfloat, c, D2),
-    AROS_LHA(GLfloat, d, D3),
-    AROS_LHA(GLfloat, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLfloat, x, D1),
+    AROS_LHA(GLfloat, y, D2),
+    AROS_LHA(GLfloat, z, D3),
+    AROS_LHA(GLfloat, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17666,7 +17666,7 @@ AROS_LH5(void, glVertexAttrib4fNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4fNV(a, b, c, d, e);
+    mglVertexAttrib4fNV(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -17674,8 +17674,8 @@ AROS_LH5(void, glVertexAttrib4fNV,
 }
 
 AROS_LH2(void, glVertexAttrib4fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17684,7 +17684,7 @@ AROS_LH2(void, glVertexAttrib4fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4fvNV(a, b);
+    mglVertexAttrib4fvNV(index, v);
 
     RESTORE_REG
 
@@ -17692,11 +17692,11 @@ AROS_LH2(void, glVertexAttrib4fvNV,
 }
 
 AROS_LH5(void, glVertexAttrib4sNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLshort, b, D1),
-    AROS_LHA(GLshort, c, D2),
-    AROS_LHA(GLshort, d, D3),
-    AROS_LHA(GLshort, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLshort, x, D1),
+    AROS_LHA(GLshort, y, D2),
+    AROS_LHA(GLshort, z, D3),
+    AROS_LHA(GLshort, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17705,7 +17705,7 @@ AROS_LH5(void, glVertexAttrib4sNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4sNV(a, b, c, d, e);
+    mglVertexAttrib4sNV(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -17713,8 +17713,8 @@ AROS_LH5(void, glVertexAttrib4sNV,
 }
 
 AROS_LH2(void, glVertexAttrib4svNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLshort *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17723,7 +17723,7 @@ AROS_LH2(void, glVertexAttrib4svNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4svNV(a, b);
+    mglVertexAttrib4svNV(index, v);
 
     RESTORE_REG
 
@@ -17731,11 +17731,11 @@ AROS_LH2(void, glVertexAttrib4svNV,
 }
 
 AROS_LH5(void, glVertexAttrib4ubNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLubyte, b, D1),
-    AROS_LHA(GLubyte, c, D2),
-    AROS_LHA(GLubyte, d, D3),
-    AROS_LHA(GLubyte, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLubyte, x, D1),
+    AROS_LHA(GLubyte, y, D2),
+    AROS_LHA(GLubyte, z, D3),
+    AROS_LHA(GLubyte, w, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17744,7 +17744,7 @@ AROS_LH5(void, glVertexAttrib4ubNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4ubNV(a, b, c, d, e);
+    mglVertexAttrib4ubNV(index, x, y, z, w);
 
     RESTORE_REG
 
@@ -17752,8 +17752,8 @@ AROS_LH5(void, glVertexAttrib4ubNV,
 }
 
 AROS_LH2(void, glVertexAttrib4ubvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLubyte *, b, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLubyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17762,7 +17762,7 @@ AROS_LH2(void, glVertexAttrib4ubvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttrib4ubvNV(a, b);
+    mglVertexAttrib4ubvNV(index, v);
 
     RESTORE_REG
 
@@ -17770,9 +17770,9 @@ AROS_LH2(void, glVertexAttrib4ubvNV,
 }
 
 AROS_LH3(void, glVertexAttribs1dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLdouble *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17781,7 +17781,7 @@ AROS_LH3(void, glVertexAttribs1dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs1dvNV(a, b, c);
+    mglVertexAttribs1dvNV(index, count, v);
 
     RESTORE_REG
 
@@ -17789,9 +17789,9 @@ AROS_LH3(void, glVertexAttribs1dvNV,
 }
 
 AROS_LH3(void, glVertexAttribs1fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17800,7 +17800,7 @@ AROS_LH3(void, glVertexAttribs1fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs1fvNV(a, b, c);
+    mglVertexAttribs1fvNV(index, count, v);
 
     RESTORE_REG
 
@@ -17808,9 +17808,9 @@ AROS_LH3(void, glVertexAttribs1fvNV,
 }
 
 AROS_LH3(void, glVertexAttribs1svNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLshort *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17819,7 +17819,7 @@ AROS_LH3(void, glVertexAttribs1svNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs1svNV(a, b, c);
+    mglVertexAttribs1svNV(index, count, v);
 
     RESTORE_REG
 
@@ -17827,9 +17827,9 @@ AROS_LH3(void, glVertexAttribs1svNV,
 }
 
 AROS_LH3(void, glVertexAttribs2dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLdouble *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17838,7 +17838,7 @@ AROS_LH3(void, glVertexAttribs2dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs2dvNV(a, b, c);
+    mglVertexAttribs2dvNV(index, count, v);
 
     RESTORE_REG
 
@@ -17846,9 +17846,9 @@ AROS_LH3(void, glVertexAttribs2dvNV,
 }
 
 AROS_LH3(void, glVertexAttribs2fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17857,7 +17857,7 @@ AROS_LH3(void, glVertexAttribs2fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs2fvNV(a, b, c);
+    mglVertexAttribs2fvNV(index, count, v);
 
     RESTORE_REG
 
@@ -17865,9 +17865,9 @@ AROS_LH3(void, glVertexAttribs2fvNV,
 }
 
 AROS_LH3(void, glVertexAttribs2svNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLshort *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17876,7 +17876,7 @@ AROS_LH3(void, glVertexAttribs2svNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs2svNV(a, b, c);
+    mglVertexAttribs2svNV(index, count, v);
 
     RESTORE_REG
 
@@ -17884,9 +17884,9 @@ AROS_LH3(void, glVertexAttribs2svNV,
 }
 
 AROS_LH3(void, glVertexAttribs3dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLdouble *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17895,7 +17895,7 @@ AROS_LH3(void, glVertexAttribs3dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs3dvNV(a, b, c);
+    mglVertexAttribs3dvNV(index, count, v);
 
     RESTORE_REG
 
@@ -17903,9 +17903,9 @@ AROS_LH3(void, glVertexAttribs3dvNV,
 }
 
 AROS_LH3(void, glVertexAttribs3fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17914,7 +17914,7 @@ AROS_LH3(void, glVertexAttribs3fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs3fvNV(a, b, c);
+    mglVertexAttribs3fvNV(index, count, v);
 
     RESTORE_REG
 
@@ -17922,9 +17922,9 @@ AROS_LH3(void, glVertexAttribs3fvNV,
 }
 
 AROS_LH3(void, glVertexAttribs3svNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLshort *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17933,7 +17933,7 @@ AROS_LH3(void, glVertexAttribs3svNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs3svNV(a, b, c);
+    mglVertexAttribs3svNV(index, count, v);
 
     RESTORE_REG
 
@@ -17941,9 +17941,9 @@ AROS_LH3(void, glVertexAttribs3svNV,
 }
 
 AROS_LH3(void, glVertexAttribs4dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLdouble *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17952,7 +17952,7 @@ AROS_LH3(void, glVertexAttribs4dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs4dvNV(a, b, c);
+    mglVertexAttribs4dvNV(index, count, v);
 
     RESTORE_REG
 
@@ -17960,9 +17960,9 @@ AROS_LH3(void, glVertexAttribs4dvNV,
 }
 
 AROS_LH3(void, glVertexAttribs4fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLfloat *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17971,7 +17971,7 @@ AROS_LH3(void, glVertexAttribs4fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs4fvNV(a, b, c);
+    mglVertexAttribs4fvNV(index, count, v);
 
     RESTORE_REG
 
@@ -17979,9 +17979,9 @@ AROS_LH3(void, glVertexAttribs4fvNV,
 }
 
 AROS_LH3(void, glVertexAttribs4svNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLshort *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLshort *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -17990,7 +17990,7 @@ AROS_LH3(void, glVertexAttribs4svNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs4svNV(a, b, c);
+    mglVertexAttribs4svNV(index, count, v);
 
     RESTORE_REG
 
@@ -17998,9 +17998,9 @@ AROS_LH3(void, glVertexAttribs4svNV,
 }
 
 AROS_LH3(void, glVertexAttribs4ubvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLubyte *, c, A0),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLubyte *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18009,7 +18009,7 @@ AROS_LH3(void, glVertexAttribs4ubvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglVertexAttribs4ubvNV(a, b, c);
+    mglVertexAttribs4ubvNV(index, count, v);
 
     RESTORE_REG
 
@@ -18017,8 +18017,8 @@ AROS_LH3(void, glVertexAttribs4ubvNV,
 }
 
 AROS_LH2(void, glTexBumpParameterivATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLint *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLint *, param, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18027,7 +18027,7 @@ AROS_LH2(void, glTexBumpParameterivATI,
 
     PUT_MESABASE_IN_REG
 
-    mglTexBumpParameterivATI(a, b);
+    mglTexBumpParameterivATI(pname, param);
 
     RESTORE_REG
 
@@ -18035,8 +18035,8 @@ AROS_LH2(void, glTexBumpParameterivATI,
 }
 
 AROS_LH2(void, glTexBumpParameterfvATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLfloat *, param, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18045,7 +18045,7 @@ AROS_LH2(void, glTexBumpParameterfvATI,
 
     PUT_MESABASE_IN_REG
 
-    mglTexBumpParameterfvATI(a, b);
+    mglTexBumpParameterfvATI(pname, param);
 
     RESTORE_REG
 
@@ -18053,8 +18053,8 @@ AROS_LH2(void, glTexBumpParameterfvATI,
 }
 
 AROS_LH2(void, glGetTexBumpParameterivATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLint *, param, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18063,7 +18063,7 @@ AROS_LH2(void, glGetTexBumpParameterivATI,
 
     PUT_MESABASE_IN_REG
 
-    mglGetTexBumpParameterivATI(a, b);
+    mglGetTexBumpParameterivATI(pname, param);
 
     RESTORE_REG
 
@@ -18071,8 +18071,8 @@ AROS_LH2(void, glGetTexBumpParameterivATI,
 }
 
 AROS_LH2(void, glGetTexBumpParameterfvATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLfloat *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLfloat *, param, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18081,7 +18081,7 @@ AROS_LH2(void, glGetTexBumpParameterfvATI,
 
     PUT_MESABASE_IN_REG
 
-    mglGetTexBumpParameterfvATI(a, b);
+    mglGetTexBumpParameterfvATI(pname, param);
 
     RESTORE_REG
 
@@ -18089,7 +18089,7 @@ AROS_LH2(void, glGetTexBumpParameterfvATI,
 }
 
 AROS_LH1(GLuint, glGenFragmentShadersATI,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, range, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18098,7 +18098,7 @@ AROS_LH1(GLuint, glGenFragmentShadersATI,
 
     PUT_MESABASE_IN_REG
 
-    GLuint _return = mglGenFragmentShadersATI(a);
+    GLuint _return = mglGenFragmentShadersATI(range);
 
     RESTORE_REG
 
@@ -18108,7 +18108,7 @@ AROS_LH1(GLuint, glGenFragmentShadersATI,
 }
 
 AROS_LH1(void, glBindFragmentShaderATI,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, id, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18117,7 +18117,7 @@ AROS_LH1(void, glBindFragmentShaderATI,
 
     PUT_MESABASE_IN_REG
 
-    mglBindFragmentShaderATI(a);
+    mglBindFragmentShaderATI(id);
 
     RESTORE_REG
 
@@ -18125,7 +18125,7 @@ AROS_LH1(void, glBindFragmentShaderATI,
 }
 
 AROS_LH1(void, glDeleteFragmentShaderATI,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, id, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18134,7 +18134,7 @@ AROS_LH1(void, glDeleteFragmentShaderATI,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteFragmentShaderATI(a);
+    mglDeleteFragmentShaderATI(id);
 
     RESTORE_REG
 
@@ -18174,9 +18174,9 @@ AROS_LH0(void, glEndFragmentShaderATI,
 }
 
 AROS_LH3(void, glPassTexCoordATI,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
+    AROS_LHA(GLuint, dst, D0),
+    AROS_LHA(GLuint, coord, D1),
+    AROS_LHA(GLenum, swizzle, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18185,7 +18185,7 @@ AROS_LH3(void, glPassTexCoordATI,
 
     PUT_MESABASE_IN_REG
 
-    mglPassTexCoordATI(a, b, c);
+    mglPassTexCoordATI(dst, coord, swizzle);
 
     RESTORE_REG
 
@@ -18193,9 +18193,9 @@ AROS_LH3(void, glPassTexCoordATI,
 }
 
 AROS_LH3(void, glSampleMapATI,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
+    AROS_LHA(GLuint, dst, D0),
+    AROS_LHA(GLuint, interp, D1),
+    AROS_LHA(GLenum, swizzle, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18204,7 +18204,7 @@ AROS_LH3(void, glSampleMapATI,
 
     PUT_MESABASE_IN_REG
 
-    mglSampleMapATI(a, b, c);
+    mglSampleMapATI(dst, interp, swizzle);
 
     RESTORE_REG
 
@@ -18212,13 +18212,13 @@ AROS_LH3(void, glSampleMapATI,
 }
 
 AROS_LH7(void, glColorFragmentOp1ATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLuint, e, D4),
-    AROS_LHA(GLuint, f, D5),
-    AROS_LHA(GLuint, g, D6),
+    AROS_LHA(GLenum, op, D0),
+    AROS_LHA(GLuint, dst, D1),
+    AROS_LHA(GLuint, dstMask, D2),
+    AROS_LHA(GLuint, dstMod, D3),
+    AROS_LHA(GLuint, arg1, D4),
+    AROS_LHA(GLuint, arg1Rep, D5),
+    AROS_LHA(GLuint, arg1Mod, D6),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18227,7 +18227,7 @@ AROS_LH7(void, glColorFragmentOp1ATI,
 
     PUT_MESABASE_IN_REG
 
-    mglColorFragmentOp1ATI(a, b, c, d, e, f, g);
+    mglColorFragmentOp1ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod);
 
     RESTORE_REG
 
@@ -18235,16 +18235,16 @@ AROS_LH7(void, glColorFragmentOp1ATI,
 }
 
 AROS_LH10(void, glColorFragmentOp2ATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLuint, e, D4),
-    AROS_LHA(GLuint, f, D5),
-    AROS_LHA(GLuint, g, D6),
-    AROS_LHA(GLuint, h, D7),
-    AROS_LHA(GLuint, i, A0),
-    AROS_LHA(GLuint, j, A1),
+    AROS_LHA(GLenum, op, D0),
+    AROS_LHA(GLuint, dst, D1),
+    AROS_LHA(GLuint, dstMask, D2),
+    AROS_LHA(GLuint, dstMod, D3),
+    AROS_LHA(GLuint, arg1, D4),
+    AROS_LHA(GLuint, arg1Rep, D5),
+    AROS_LHA(GLuint, arg1Mod, D6),
+    AROS_LHA(GLuint, arg2, D7),
+    AROS_LHA(GLuint, arg2Rep, A0),
+    AROS_LHA(GLuint, arg2Mod, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18253,7 +18253,7 @@ AROS_LH10(void, glColorFragmentOp2ATI,
 
     PUT_MESABASE_IN_REG
 
-    mglColorFragmentOp2ATI(a, b, c, d, e, f, g, h, i, j);
+    mglColorFragmentOp2ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod);
 
     RESTORE_REG
 
@@ -18261,19 +18261,19 @@ AROS_LH10(void, glColorFragmentOp2ATI,
 }
 
 AROS_LH13(void, glColorFragmentOp3ATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLuint, e, D4),
-    AROS_LHA(GLuint, f, D5),
-    AROS_LHA(GLuint, g, D6),
-    AROS_LHA(GLuint, h, D7),
-    AROS_LHA(GLuint, i, A0),
-    AROS_LHA(GLuint, j, A1),
-    AROS_LHA(GLuint, k, A2),
-    AROS_LHA(GLuint, l, A3),
-    AROS_LHA(GLuint, m, A4),
+    AROS_LHA(GLenum, op, D0),
+    AROS_LHA(GLuint, dst, D1),
+    AROS_LHA(GLuint, dstMask, D2),
+    AROS_LHA(GLuint, dstMod, D3),
+    AROS_LHA(GLuint, arg1, D4),
+    AROS_LHA(GLuint, arg1Rep, D5),
+    AROS_LHA(GLuint, arg1Mod, D6),
+    AROS_LHA(GLuint, arg2, D7),
+    AROS_LHA(GLuint, arg2Rep, A0),
+    AROS_LHA(GLuint, arg2Mod, A1),
+    AROS_LHA(GLuint, arg3, A2),
+    AROS_LHA(GLuint, arg3Rep, A3),
+    AROS_LHA(GLuint, arg3Mod, A4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18282,7 +18282,7 @@ AROS_LH13(void, glColorFragmentOp3ATI,
 
     PUT_MESABASE_IN_REG
 
-    mglColorFragmentOp3ATI(a, b, c, d, e, f, g, h, i, j, k, l, m);
+    mglColorFragmentOp3ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod, arg3, arg3Rep, arg3Mod);
 
     RESTORE_REG
 
@@ -18290,12 +18290,12 @@ AROS_LH13(void, glColorFragmentOp3ATI,
 }
 
 AROS_LH6(void, glAlphaFragmentOp1ATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLuint, e, D4),
-    AROS_LHA(GLuint, f, D5),
+    AROS_LHA(GLenum, op, D0),
+    AROS_LHA(GLuint, dst, D1),
+    AROS_LHA(GLuint, dstMod, D2),
+    AROS_LHA(GLuint, arg1, D3),
+    AROS_LHA(GLuint, arg1Rep, D4),
+    AROS_LHA(GLuint, arg1Mod, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18304,7 +18304,7 @@ AROS_LH6(void, glAlphaFragmentOp1ATI,
 
     PUT_MESABASE_IN_REG
 
-    mglAlphaFragmentOp1ATI(a, b, c, d, e, f);
+    mglAlphaFragmentOp1ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod);
 
     RESTORE_REG
 
@@ -18312,15 +18312,15 @@ AROS_LH6(void, glAlphaFragmentOp1ATI,
 }
 
 AROS_LH9(void, glAlphaFragmentOp2ATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLuint, e, D4),
-    AROS_LHA(GLuint, f, D5),
-    AROS_LHA(GLuint, g, D6),
-    AROS_LHA(GLuint, h, D7),
-    AROS_LHA(GLuint, i, A0),
+    AROS_LHA(GLenum, op, D0),
+    AROS_LHA(GLuint, dst, D1),
+    AROS_LHA(GLuint, dstMod, D2),
+    AROS_LHA(GLuint, arg1, D3),
+    AROS_LHA(GLuint, arg1Rep, D4),
+    AROS_LHA(GLuint, arg1Mod, D5),
+    AROS_LHA(GLuint, arg2, D6),
+    AROS_LHA(GLuint, arg2Rep, D7),
+    AROS_LHA(GLuint, arg2Mod, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18329,7 +18329,7 @@ AROS_LH9(void, glAlphaFragmentOp2ATI,
 
     PUT_MESABASE_IN_REG
 
-    mglAlphaFragmentOp2ATI(a, b, c, d, e, f, g, h, i);
+    mglAlphaFragmentOp2ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod);
 
     RESTORE_REG
 
@@ -18337,18 +18337,18 @@ AROS_LH9(void, glAlphaFragmentOp2ATI,
 }
 
 AROS_LH12(void, glAlphaFragmentOp3ATI,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLuint, e, D4),
-    AROS_LHA(GLuint, f, D5),
-    AROS_LHA(GLuint, g, D6),
-    AROS_LHA(GLuint, h, D7),
-    AROS_LHA(GLuint, i, A0),
-    AROS_LHA(GLuint, j, A1),
-    AROS_LHA(GLuint, k, A2),
-    AROS_LHA(GLuint, l, A3),
+    AROS_LHA(GLenum, op, D0),
+    AROS_LHA(GLuint, dst, D1),
+    AROS_LHA(GLuint, dstMod, D2),
+    AROS_LHA(GLuint, arg1, D3),
+    AROS_LHA(GLuint, arg1Rep, D4),
+    AROS_LHA(GLuint, arg1Mod, D5),
+    AROS_LHA(GLuint, arg2, D6),
+    AROS_LHA(GLuint, arg2Rep, D7),
+    AROS_LHA(GLuint, arg2Mod, A0),
+    AROS_LHA(GLuint, arg3, A1),
+    AROS_LHA(GLuint, arg3Rep, A2),
+    AROS_LHA(GLuint, arg3Mod, A3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18357,7 +18357,7 @@ AROS_LH12(void, glAlphaFragmentOp3ATI,
 
     PUT_MESABASE_IN_REG
 
-    mglAlphaFragmentOp3ATI(a, b, c, d, e, f, g, h, i, j, k, l);
+    mglAlphaFragmentOp3ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod, arg3, arg3Rep, arg3Mod);
 
     RESTORE_REG
 
@@ -18365,8 +18365,8 @@ AROS_LH12(void, glAlphaFragmentOp3ATI,
 }
 
 AROS_LH2(void, glSetFragmentShaderConstantATI,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(const GLfloat *, b, A0),
+    AROS_LHA(GLuint, dst, D0),
+    AROS_LHA(const GLfloat *, value, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18375,7 +18375,7 @@ AROS_LH2(void, glSetFragmentShaderConstantATI,
 
     PUT_MESABASE_IN_REG
 
-    mglSetFragmentShaderConstantATI(a, b);
+    mglSetFragmentShaderConstantATI(dst, value);
 
     RESTORE_REG
 
@@ -18383,8 +18383,8 @@ AROS_LH2(void, glSetFragmentShaderConstantATI,
 }
 
 AROS_LH2(void, glPointParameteriNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint, b, D1),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLint, param, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18393,7 +18393,7 @@ AROS_LH2(void, glPointParameteriNV,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameteriNV(a, b);
+    mglPointParameteriNV(pname, param);
 
     RESTORE_REG
 
@@ -18401,8 +18401,8 @@ AROS_LH2(void, glPointParameteriNV,
 }
 
 AROS_LH2(void, glPointParameterivNV,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLint *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(const GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18411,7 +18411,7 @@ AROS_LH2(void, glPointParameterivNV,
 
     PUT_MESABASE_IN_REG
 
-    mglPointParameterivNV(a, b);
+    mglPointParameterivNV(pname, params);
 
     RESTORE_REG
 
@@ -18419,8 +18419,8 @@ AROS_LH2(void, glPointParameterivNV,
 }
 
 AROS_LH2(void, glDrawBuffersATI,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLenum *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLenum *, bufs, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18429,7 +18429,7 @@ AROS_LH2(void, glDrawBuffersATI,
 
     PUT_MESABASE_IN_REG
 
-    mglDrawBuffersATI(a, b);
+    mglDrawBuffersATI(n, bufs);
 
     RESTORE_REG
 
@@ -18437,13 +18437,13 @@ AROS_LH2(void, glDrawBuffersATI,
 }
 
 AROS_LH7(void, glProgramNamedParameter4fNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLubyte *, c, A0),
-    AROS_LHA(GLfloat, d, D2),
-    AROS_LHA(GLfloat, e, D3),
-    AROS_LHA(GLfloat, f, D4),
-    AROS_LHA(GLfloat, g, D5),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLsizei, len, D1),
+    AROS_LHA(const GLubyte *, name, A0),
+    AROS_LHA(GLfloat, x, D2),
+    AROS_LHA(GLfloat, y, D3),
+    AROS_LHA(GLfloat, z, D4),
+    AROS_LHA(GLfloat, w, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18452,7 +18452,7 @@ AROS_LH7(void, glProgramNamedParameter4fNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramNamedParameter4fNV(a, b, c, d, e, f, g);
+    mglProgramNamedParameter4fNV(id, len, name, x, y, z, w);
 
     RESTORE_REG
 
@@ -18460,13 +18460,13 @@ AROS_LH7(void, glProgramNamedParameter4fNV,
 }
 
 AROS_LH7(void, glProgramNamedParameter4dNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLubyte *, c, A0),
-    AROS_LHA(GLdouble, d, D2),
-    AROS_LHA(GLdouble, e, D3),
-    AROS_LHA(GLdouble, f, D4),
-    AROS_LHA(GLdouble, g, D5),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLsizei, len, D1),
+    AROS_LHA(const GLubyte *, name, A0),
+    AROS_LHA(GLdouble, x, D2),
+    AROS_LHA(GLdouble, y, D3),
+    AROS_LHA(GLdouble, z, D4),
+    AROS_LHA(GLdouble, w, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18475,7 +18475,7 @@ AROS_LH7(void, glProgramNamedParameter4dNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramNamedParameter4dNV(a, b, c, d, e, f, g);
+    mglProgramNamedParameter4dNV(id, len, name, x, y, z, w);
 
     RESTORE_REG
 
@@ -18483,10 +18483,10 @@ AROS_LH7(void, glProgramNamedParameter4dNV,
 }
 
 AROS_LH4(void, glProgramNamedParameter4fvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLubyte *, c, A0),
-    AROS_LHA(const GLfloat *, d, A1),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLsizei, len, D1),
+    AROS_LHA(const GLubyte *, name, A0),
+    AROS_LHA(const GLfloat *, v, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18495,7 +18495,7 @@ AROS_LH4(void, glProgramNamedParameter4fvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramNamedParameter4fvNV(a, b, c, d);
+    mglProgramNamedParameter4fvNV(id, len, name, v);
 
     RESTORE_REG
 
@@ -18503,10 +18503,10 @@ AROS_LH4(void, glProgramNamedParameter4fvNV,
 }
 
 AROS_LH4(void, glProgramNamedParameter4dvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLubyte *, c, A0),
-    AROS_LHA(const GLdouble *, d, A1),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLsizei, len, D1),
+    AROS_LHA(const GLubyte *, name, A0),
+    AROS_LHA(const GLdouble *, v, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18515,7 +18515,7 @@ AROS_LH4(void, glProgramNamedParameter4dvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglProgramNamedParameter4dvNV(a, b, c, d);
+    mglProgramNamedParameter4dvNV(id, len, name, v);
 
     RESTORE_REG
 
@@ -18523,10 +18523,10 @@ AROS_LH4(void, glProgramNamedParameter4dvNV,
 }
 
 AROS_LH4(void, glGetProgramNamedParameterfvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLubyte *, c, A0),
-    AROS_LHA(GLfloat *, d, A1),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLsizei, len, D1),
+    AROS_LHA(const GLubyte *, name, A0),
+    AROS_LHA(GLfloat *, params, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18535,7 +18535,7 @@ AROS_LH4(void, glGetProgramNamedParameterfvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramNamedParameterfvNV(a, b, c, d);
+    mglGetProgramNamedParameterfvNV(id, len, name, params);
 
     RESTORE_REG
 
@@ -18543,10 +18543,10 @@ AROS_LH4(void, glGetProgramNamedParameterfvNV,
 }
 
 AROS_LH4(void, glGetProgramNamedParameterdvNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(const GLubyte *, c, A0),
-    AROS_LHA(GLdouble *, d, A1),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLsizei, len, D1),
+    AROS_LHA(const GLubyte *, name, A0),
+    AROS_LHA(GLdouble *, params, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18555,7 +18555,7 @@ AROS_LH4(void, glGetProgramNamedParameterdvNV,
 
     PUT_MESABASE_IN_REG
 
-    mglGetProgramNamedParameterdvNV(a, b, c, d);
+    mglGetProgramNamedParameterdvNV(id, len, name, params);
 
     RESTORE_REG
 
@@ -18563,7 +18563,7 @@ AROS_LH4(void, glGetProgramNamedParameterdvNV,
 }
 
 AROS_LH1(GLboolean, glIsRenderbufferEXT,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, renderbuffer, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18572,7 +18572,7 @@ AROS_LH1(GLboolean, glIsRenderbufferEXT,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsRenderbufferEXT(a);
+    GLboolean _return = mglIsRenderbufferEXT(renderbuffer);
 
     RESTORE_REG
 
@@ -18582,8 +18582,8 @@ AROS_LH1(GLboolean, glIsRenderbufferEXT,
 }
 
 AROS_LH2(void, glBindRenderbufferEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, renderbuffer, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18592,7 +18592,7 @@ AROS_LH2(void, glBindRenderbufferEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglBindRenderbufferEXT(a, b);
+    mglBindRenderbufferEXT(target, renderbuffer);
 
     RESTORE_REG
 
@@ -18600,8 +18600,8 @@ AROS_LH2(void, glBindRenderbufferEXT,
 }
 
 AROS_LH2(void, glDeleteRenderbuffersEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, renderbuffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18610,7 +18610,7 @@ AROS_LH2(void, glDeleteRenderbuffersEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteRenderbuffersEXT(a, b);
+    mglDeleteRenderbuffersEXT(n, renderbuffers);
 
     RESTORE_REG
 
@@ -18618,8 +18618,8 @@ AROS_LH2(void, glDeleteRenderbuffersEXT,
 }
 
 AROS_LH2(void, glGenRenderbuffersEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, renderbuffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18628,7 +18628,7 @@ AROS_LH2(void, glGenRenderbuffersEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGenRenderbuffersEXT(a, b);
+    mglGenRenderbuffersEXT(n, renderbuffers);
 
     RESTORE_REG
 
@@ -18636,10 +18636,10 @@ AROS_LH2(void, glGenRenderbuffersEXT,
 }
 
 AROS_LH4(void, glRenderbufferStorageEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei, d, D3),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, internalformat, D1),
+    AROS_LHA(GLsizei, width, D2),
+    AROS_LHA(GLsizei, height, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18648,7 +18648,7 @@ AROS_LH4(void, glRenderbufferStorageEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglRenderbufferStorageEXT(a, b, c, d);
+    mglRenderbufferStorageEXT(target, internalformat, width, height);
 
     RESTORE_REG
 
@@ -18656,9 +18656,9 @@ AROS_LH4(void, glRenderbufferStorageEXT,
 }
 
 AROS_LH3(void, glGetRenderbufferParameterivEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18667,7 +18667,7 @@ AROS_LH3(void, glGetRenderbufferParameterivEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGetRenderbufferParameterivEXT(a, b, c);
+    mglGetRenderbufferParameterivEXT(target, pname, params);
 
     RESTORE_REG
 
@@ -18675,7 +18675,7 @@ AROS_LH3(void, glGetRenderbufferParameterivEXT,
 }
 
 AROS_LH1(GLboolean, glIsFramebufferEXT,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, framebuffer, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18684,7 +18684,7 @@ AROS_LH1(GLboolean, glIsFramebufferEXT,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsFramebufferEXT(a);
+    GLboolean _return = mglIsFramebufferEXT(framebuffer);
 
     RESTORE_REG
 
@@ -18694,8 +18694,8 @@ AROS_LH1(GLboolean, glIsFramebufferEXT,
 }
 
 AROS_LH2(void, glBindFramebufferEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, framebuffer, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18704,7 +18704,7 @@ AROS_LH2(void, glBindFramebufferEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglBindFramebufferEXT(a, b);
+    mglBindFramebufferEXT(target, framebuffer);
 
     RESTORE_REG
 
@@ -18712,8 +18712,8 @@ AROS_LH2(void, glBindFramebufferEXT,
 }
 
 AROS_LH2(void, glDeleteFramebuffersEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, framebuffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18722,7 +18722,7 @@ AROS_LH2(void, glDeleteFramebuffersEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteFramebuffersEXT(a, b);
+    mglDeleteFramebuffersEXT(n, framebuffers);
 
     RESTORE_REG
 
@@ -18730,8 +18730,8 @@ AROS_LH2(void, glDeleteFramebuffersEXT,
 }
 
 AROS_LH2(void, glGenFramebuffersEXT,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, framebuffers, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18740,7 +18740,7 @@ AROS_LH2(void, glGenFramebuffersEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGenFramebuffersEXT(a, b);
+    mglGenFramebuffersEXT(n, framebuffers);
 
     RESTORE_REG
 
@@ -18748,7 +18748,7 @@ AROS_LH2(void, glGenFramebuffersEXT,
 }
 
 AROS_LH1(GLenum, glCheckFramebufferStatusEXT,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, target, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18757,7 +18757,7 @@ AROS_LH1(GLenum, glCheckFramebufferStatusEXT,
 
     PUT_MESABASE_IN_REG
 
-    GLenum _return = mglCheckFramebufferStatusEXT(a);
+    GLenum _return = mglCheckFramebufferStatusEXT(target);
 
     RESTORE_REG
 
@@ -18767,11 +18767,11 @@ AROS_LH1(GLenum, glCheckFramebufferStatusEXT,
 }
 
 AROS_LH5(void, glFramebufferTexture1DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLint, e, D4),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, textarget, D2),
+    AROS_LHA(GLuint, texture, D3),
+    AROS_LHA(GLint, level, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18780,7 +18780,7 @@ AROS_LH5(void, glFramebufferTexture1DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferTexture1DEXT(a, b, c, d, e);
+    mglFramebufferTexture1DEXT(target, attachment, textarget, texture, level);
 
     RESTORE_REG
 
@@ -18788,11 +18788,11 @@ AROS_LH5(void, glFramebufferTexture1DEXT,
 }
 
 AROS_LH5(void, glFramebufferTexture2DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLint, e, D4),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, textarget, D2),
+    AROS_LHA(GLuint, texture, D3),
+    AROS_LHA(GLint, level, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18801,7 +18801,7 @@ AROS_LH5(void, glFramebufferTexture2DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferTexture2DEXT(a, b, c, d, e);
+    mglFramebufferTexture2DEXT(target, attachment, textarget, texture, level);
 
     RESTORE_REG
 
@@ -18809,12 +18809,12 @@ AROS_LH5(void, glFramebufferTexture2DEXT,
 }
 
 AROS_LH6(void, glFramebufferTexture3DEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLuint, d, D3),
-    AROS_LHA(GLint, e, D4),
-    AROS_LHA(GLint, f, D5),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, textarget, D2),
+    AROS_LHA(GLuint, texture, D3),
+    AROS_LHA(GLint, level, D4),
+    AROS_LHA(GLint, zoffset, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18823,7 +18823,7 @@ AROS_LH6(void, glFramebufferTexture3DEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferTexture3DEXT(a, b, c, d, e, f);
+    mglFramebufferTexture3DEXT(target, attachment, textarget, texture, level, zoffset);
 
     RESTORE_REG
 
@@ -18831,10 +18831,10 @@ AROS_LH6(void, glFramebufferTexture3DEXT,
 }
 
 AROS_LH4(void, glFramebufferRenderbufferEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLuint, d, D3),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, renderbuffertarget, D2),
+    AROS_LHA(GLuint, renderbuffer, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18843,7 +18843,7 @@ AROS_LH4(void, glFramebufferRenderbufferEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferRenderbufferEXT(a, b, c, d);
+    mglFramebufferRenderbufferEXT(target, attachment, renderbuffertarget, renderbuffer);
 
     RESTORE_REG
 
@@ -18851,10 +18851,10 @@ AROS_LH4(void, glFramebufferRenderbufferEXT,
 }
 
 AROS_LH4(void, glGetFramebufferAttachmentParameterivEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLint *, d, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLenum, pname, D2),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18863,7 +18863,7 @@ AROS_LH4(void, glGetFramebufferAttachmentParameterivEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGetFramebufferAttachmentParameterivEXT(a, b, c, d);
+    mglGetFramebufferAttachmentParameterivEXT(target, attachment, pname, params);
 
     RESTORE_REG
 
@@ -18871,7 +18871,7 @@ AROS_LH4(void, glGetFramebufferAttachmentParameterivEXT,
 }
 
 AROS_LH1(void, glGenerateMipmapEXT,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, target, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18880,7 +18880,7 @@ AROS_LH1(void, glGenerateMipmapEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGenerateMipmapEXT(a);
+    mglGenerateMipmapEXT(target);
 
     RESTORE_REG
 
@@ -18888,11 +18888,11 @@ AROS_LH1(void, glGenerateMipmapEXT,
 }
 
 AROS_LH5(void, glFramebufferTextureLayerEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLint, d, D3),
-    AROS_LHA(GLint, e, D4),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLuint, texture, D2),
+    AROS_LHA(GLint, level, D3),
+    AROS_LHA(GLint, layer, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18901,7 +18901,7 @@ AROS_LH5(void, glFramebufferTextureLayerEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglFramebufferTextureLayerEXT(a, b, c, d, e);
+    mglFramebufferTextureLayerEXT(target, attachment, texture, level, layer);
 
     RESTORE_REG
 
@@ -18909,10 +18909,10 @@ AROS_LH5(void, glFramebufferTextureLayerEXT,
 }
 
 AROS_LH4(GLvoid*, glMapBufferRange,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLintptr, b, D1),
-    AROS_LHA(GLsizeiptr, c, D2),
-    AROS_LHA(GLbitfield, d, D3),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLintptr, offset, D1),
+    AROS_LHA(GLsizeiptr, length, D2),
+    AROS_LHA(GLbitfield, access, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18921,7 +18921,7 @@ AROS_LH4(GLvoid*, glMapBufferRange,
 
     PUT_MESABASE_IN_REG
 
-    GLvoid* _return = mglMapBufferRange(a, b, c, d);
+    GLvoid* _return = mglMapBufferRange(target, offset, length, access);
 
     RESTORE_REG
 
@@ -18931,9 +18931,9 @@ AROS_LH4(GLvoid*, glMapBufferRange,
 }
 
 AROS_LH3(void, glFlushMappedBufferRange,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLintptr, b, D1),
-    AROS_LHA(GLsizeiptr, c, D2),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLintptr, offset, D1),
+    AROS_LHA(GLsizeiptr, length, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18942,7 +18942,7 @@ AROS_LH3(void, glFlushMappedBufferRange,
 
     PUT_MESABASE_IN_REG
 
-    mglFlushMappedBufferRange(a, b, c);
+    mglFlushMappedBufferRange(target, offset, length);
 
     RESTORE_REG
 
@@ -18950,7 +18950,7 @@ AROS_LH3(void, glFlushMappedBufferRange,
 }
 
 AROS_LH1(void, glBindVertexArray,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, array, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18959,7 +18959,7 @@ AROS_LH1(void, glBindVertexArray,
 
     PUT_MESABASE_IN_REG
 
-    mglBindVertexArray(a);
+    mglBindVertexArray(array);
 
     RESTORE_REG
 
@@ -18967,8 +18967,8 @@ AROS_LH1(void, glBindVertexArray,
 }
 
 AROS_LH2(void, glDeleteVertexArrays,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(const GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, arrays, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18977,7 +18977,7 @@ AROS_LH2(void, glDeleteVertexArrays,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteVertexArrays(a, b);
+    mglDeleteVertexArrays(n, arrays);
 
     RESTORE_REG
 
@@ -18985,8 +18985,8 @@ AROS_LH2(void, glDeleteVertexArrays,
 }
 
 AROS_LH2(void, glGenVertexArrays,
-    AROS_LHA(GLsizei, a, D0),
-    AROS_LHA(GLuint *, b, A0),
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, arrays, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -18995,7 +18995,7 @@ AROS_LH2(void, glGenVertexArrays,
 
     PUT_MESABASE_IN_REG
 
-    mglGenVertexArrays(a, b);
+    mglGenVertexArrays(n, arrays);
 
     RESTORE_REG
 
@@ -19003,7 +19003,7 @@ AROS_LH2(void, glGenVertexArrays,
 }
 
 AROS_LH1(GLboolean, glIsVertexArray,
-    AROS_LHA(GLuint, a, D0),
+    AROS_LHA(GLuint, array, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19012,7 +19012,7 @@ AROS_LH1(GLboolean, glIsVertexArray,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsVertexArray(a);
+    GLboolean _return = mglIsVertexArray(array);
 
     RESTORE_REG
 
@@ -19022,11 +19022,11 @@ AROS_LH1(GLboolean, glIsVertexArray,
 }
 
 AROS_LH5(void, glCopyBufferSubData,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLintptr, c, D2),
-    AROS_LHA(GLintptr, d, D3),
-    AROS_LHA(GLsizeiptr, e, D4),
+    AROS_LHA(GLenum, readTarget, D0),
+    AROS_LHA(GLenum, writeTarget, D1),
+    AROS_LHA(GLintptr, readOffset, D2),
+    AROS_LHA(GLintptr, writeOffset, D3),
+    AROS_LHA(GLsizeiptr, size, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19035,7 +19035,7 @@ AROS_LH5(void, glCopyBufferSubData,
 
     PUT_MESABASE_IN_REG
 
-    mglCopyBufferSubData(a, b, c, d, e);
+    mglCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
 
     RESTORE_REG
 
@@ -19043,8 +19043,8 @@ AROS_LH5(void, glCopyBufferSubData,
 }
 
 AROS_LH2(GLsync, glFenceSync,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLbitfield, b, D1),
+    AROS_LHA(GLenum, condition, D0),
+    AROS_LHA(GLbitfield, flags, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19053,7 +19053,7 @@ AROS_LH2(GLsync, glFenceSync,
 
     PUT_MESABASE_IN_REG
 
-    GLsync _return = mglFenceSync(a, b);
+    GLsync _return = mglFenceSync(condition, flags);
 
     RESTORE_REG
 
@@ -19063,7 +19063,7 @@ AROS_LH2(GLsync, glFenceSync,
 }
 
 AROS_LH1(GLboolean, glIsSync,
-    AROS_LHA(GLsync, a, D0),
+    AROS_LHA(GLsync, sync, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19072,7 +19072,7 @@ AROS_LH1(GLboolean, glIsSync,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsSync(a);
+    GLboolean _return = mglIsSync(sync);
 
     RESTORE_REG
 
@@ -19082,7 +19082,7 @@ AROS_LH1(GLboolean, glIsSync,
 }
 
 AROS_LH1(void, glDeleteSync,
-    AROS_LHA(GLsync, a, D0),
+    AROS_LHA(GLsync, sync, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19091,7 +19091,7 @@ AROS_LH1(void, glDeleteSync,
 
     PUT_MESABASE_IN_REG
 
-    mglDeleteSync(a);
+    mglDeleteSync(sync);
 
     RESTORE_REG
 
@@ -19099,9 +19099,9 @@ AROS_LH1(void, glDeleteSync,
 }
 
 AROS_LH3(GLenum, glClientWaitSync,
-    AROS_LHA(GLsync, a, D0),
-    AROS_LHA(GLbitfield, b, D1),
-    AROS_LHA(GLuint64, c, D2),
+    AROS_LHA(GLsync, sync, D0),
+    AROS_LHA(GLbitfield, flags, D1),
+    AROS_LHA(GLuint64, timeout, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19110,7 +19110,7 @@ AROS_LH3(GLenum, glClientWaitSync,
 
     PUT_MESABASE_IN_REG
 
-    GLenum _return = mglClientWaitSync(a, b, c);
+    GLenum _return = mglClientWaitSync(sync, flags, timeout);
 
     RESTORE_REG
 
@@ -19120,9 +19120,9 @@ AROS_LH3(GLenum, glClientWaitSync,
 }
 
 AROS_LH3(void, glWaitSync,
-    AROS_LHA(GLsync, a, D0),
-    AROS_LHA(GLbitfield, b, D1),
-    AROS_LHA(GLuint64, c, D2),
+    AROS_LHA(GLsync, sync, D0),
+    AROS_LHA(GLbitfield, flags, D1),
+    AROS_LHA(GLuint64, timeout, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19131,7 +19131,7 @@ AROS_LH3(void, glWaitSync,
 
     PUT_MESABASE_IN_REG
 
-    mglWaitSync(a, b, c);
+    mglWaitSync(sync, flags, timeout);
 
     RESTORE_REG
 
@@ -19139,8 +19139,8 @@ AROS_LH3(void, glWaitSync,
 }
 
 AROS_LH2(void, glGetInteger64v,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLint64 *, b, A0),
+    AROS_LHA(GLenum, pname, D0),
+    AROS_LHA(GLint64 *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19149,7 +19149,7 @@ AROS_LH2(void, glGetInteger64v,
 
     PUT_MESABASE_IN_REG
 
-    mglGetInteger64v(a, b);
+    mglGetInteger64v(pname, params);
 
     RESTORE_REG
 
@@ -19157,11 +19157,11 @@ AROS_LH2(void, glGetInteger64v,
 }
 
 AROS_LH5(void, glGetSynciv,
-    AROS_LHA(GLsync, a, D0),
-    AROS_LHA(GLenum, b, D1),
-    AROS_LHA(GLsizei, c, D2),
-    AROS_LHA(GLsizei *, d, A0),
-    AROS_LHA(GLint *, e, A1),
+    AROS_LHA(GLsync, sync, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLsizei, bufSize, D2),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLint *, values, A1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19170,7 +19170,7 @@ AROS_LH5(void, glGetSynciv,
 
     PUT_MESABASE_IN_REG
 
-    mglGetSynciv(a, b, c, d, e);
+    mglGetSynciv(sync, pname, bufSize, length, values);
 
     RESTORE_REG
 
@@ -19178,7 +19178,7 @@ AROS_LH5(void, glGetSynciv,
 }
 
 AROS_LH1(void, glProvokingVertexEXT,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, mode, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19187,7 +19187,7 @@ AROS_LH1(void, glProvokingVertexEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglProvokingVertexEXT(a);
+    mglProvokingVertexEXT(mode);
 
     RESTORE_REG
 
@@ -19195,11 +19195,11 @@ AROS_LH1(void, glProvokingVertexEXT,
 }
 
 AROS_LH5(void, glDrawElementsBaseVertex,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(const GLvoid *, d, A0),
-    AROS_LHA(GLint, e, D3),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(const GLvoid *, indices, A0),
+    AROS_LHA(GLint, basevertex, D3),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19208,7 +19208,7 @@ AROS_LH5(void, glDrawElementsBaseVertex,
 
     PUT_MESABASE_IN_REG
 
-    mglDrawElementsBaseVertex(a, b, c, d, e);
+    mglDrawElementsBaseVertex(mode, count, type, indices, basevertex);
 
     RESTORE_REG
 
@@ -19216,13 +19216,13 @@ AROS_LH5(void, glDrawElementsBaseVertex,
 }
 
 AROS_LH7(void, glDrawRangeElementsBaseVertex,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLuint, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLenum, e, D4),
-    AROS_LHA(const GLvoid *, f, A0),
-    AROS_LHA(GLint, g, D5),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLuint, start, D1),
+    AROS_LHA(GLuint, end, D2),
+    AROS_LHA(GLsizei, count, D3),
+    AROS_LHA(GLenum, type, D4),
+    AROS_LHA(const GLvoid *, indices, A0),
+    AROS_LHA(GLint, basevertex, D5),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19231,7 +19231,7 @@ AROS_LH7(void, glDrawRangeElementsBaseVertex,
 
     PUT_MESABASE_IN_REG
 
-    mglDrawRangeElementsBaseVertex(a, b, c, d, e, f, g);
+    mglDrawRangeElementsBaseVertex(mode, start, end, count, type, indices, basevertex);
 
     RESTORE_REG
 
@@ -19239,12 +19239,12 @@ AROS_LH7(void, glDrawRangeElementsBaseVertex,
 }
 
 AROS_LH6(void, glMultiDrawElementsBaseVertex,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(const GLsizei *, b, A0),
-    AROS_LHA(GLenum, c, D1),
-    AROS_LHA(const GLvoid *  *, d, A1),
-    AROS_LHA(GLsizei, e, D2),
-    AROS_LHA(const GLint *, f, A2),
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(const GLsizei *, count, A0),
+    AROS_LHA(GLenum, type, D1),
+    AROS_LHA(const GLvoid *  *, indices, A1),
+    AROS_LHA(GLsizei, primcount, D2),
+    AROS_LHA(const GLint *, basevertex, A2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19253,7 +19253,7 @@ AROS_LH6(void, glMultiDrawElementsBaseVertex,
 
     PUT_MESABASE_IN_REG
 
-    mglMultiDrawElementsBaseVertex(a, b, c, d, e, f);
+    mglMultiDrawElementsBaseVertex(mode, count, type, indices, primcount, basevertex);
 
     RESTORE_REG
 
@@ -19261,7 +19261,7 @@ AROS_LH6(void, glMultiDrawElementsBaseVertex,
 }
 
 AROS_LH1(void, glProvokingVertex,
-    AROS_LHA(GLenum, a, D0),
+    AROS_LHA(GLenum, mode, D0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19270,7 +19270,7 @@ AROS_LH1(void, glProvokingVertex,
 
     PUT_MESABASE_IN_REG
 
-    mglProvokingVertex(a);
+    mglProvokingVertex(mode);
 
     RESTORE_REG
 
@@ -19278,11 +19278,11 @@ AROS_LH1(void, glProvokingVertex,
 }
 
 AROS_LH5(void, glRenderbufferStorageMultisampleEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLsizei, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLsizei, d, D3),
-    AROS_LHA(GLsizei, e, D4),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLsizei, samples, D1),
+    AROS_LHA(GLenum, internalformat, D2),
+    AROS_LHA(GLsizei, width, D3),
+    AROS_LHA(GLsizei, height, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19291,7 +19291,7 @@ AROS_LH5(void, glRenderbufferStorageMultisampleEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglRenderbufferStorageMultisampleEXT(a, b, c, d, e);
+    mglRenderbufferStorageMultisampleEXT(target, samples, internalformat, width, height);
 
     RESTORE_REG
 
@@ -19299,11 +19299,11 @@ AROS_LH5(void, glRenderbufferStorageMultisampleEXT,
 }
 
 AROS_LH5(void, glColorMaskIndexedEXT,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLboolean, b, D1),
-    AROS_LHA(GLboolean, c, D2),
-    AROS_LHA(GLboolean, d, D3),
-    AROS_LHA(GLboolean, e, D4),
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLboolean, r, D1),
+    AROS_LHA(GLboolean, g, D2),
+    AROS_LHA(GLboolean, b, D3),
+    AROS_LHA(GLboolean, a, D4),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19312,7 +19312,7 @@ AROS_LH5(void, glColorMaskIndexedEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglColorMaskIndexedEXT(a, b, c, d, e);
+    mglColorMaskIndexedEXT(index, r, g, b, a);
 
     RESTORE_REG
 
@@ -19320,9 +19320,9 @@ AROS_LH5(void, glColorMaskIndexedEXT,
 }
 
 AROS_LH3(void, glGetBooleanIndexedvEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLboolean *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLboolean *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19331,7 +19331,7 @@ AROS_LH3(void, glGetBooleanIndexedvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGetBooleanIndexedvEXT(a, b, c);
+    mglGetBooleanIndexedvEXT(target, index, data);
 
     RESTORE_REG
 
@@ -19339,9 +19339,9 @@ AROS_LH3(void, glGetBooleanIndexedvEXT,
 }
 
 AROS_LH3(void, glGetIntegerIndexedvEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLint *, c, A0),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLint *, data, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19350,7 +19350,7 @@ AROS_LH3(void, glGetIntegerIndexedvEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglGetIntegerIndexedvEXT(a, b, c);
+    mglGetIntegerIndexedvEXT(target, index, data);
 
     RESTORE_REG
 
@@ -19358,8 +19358,8 @@ AROS_LH3(void, glGetIntegerIndexedvEXT,
 }
 
 AROS_LH2(void, glEnableIndexedEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19368,7 +19368,7 @@ AROS_LH2(void, glEnableIndexedEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglEnableIndexedEXT(a, b);
+    mglEnableIndexedEXT(target, index);
 
     RESTORE_REG
 
@@ -19376,8 +19376,8 @@ AROS_LH2(void, glEnableIndexedEXT,
 }
 
 AROS_LH2(void, glDisableIndexedEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19386,7 +19386,7 @@ AROS_LH2(void, glDisableIndexedEXT,
 
     PUT_MESABASE_IN_REG
 
-    mglDisableIndexedEXT(a, b);
+    mglDisableIndexedEXT(target, index);
 
     RESTORE_REG
 
@@ -19394,8 +19394,8 @@ AROS_LH2(void, glDisableIndexedEXT,
 }
 
 AROS_LH2(GLboolean, glIsEnabledIndexedEXT,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19404,7 +19404,7 @@ AROS_LH2(GLboolean, glIsEnabledIndexedEXT,
 
     PUT_MESABASE_IN_REG
 
-    GLboolean _return = mglIsEnabledIndexedEXT(a, b);
+    GLboolean _return = mglIsEnabledIndexedEXT(target, index);
 
     RESTORE_REG
 
@@ -19414,8 +19414,8 @@ AROS_LH2(GLboolean, glIsEnabledIndexedEXT,
 }
 
 AROS_LH2(void, glBeginConditionalRenderNV,
-    AROS_LHA(GLuint, a, D0),
-    AROS_LHA(GLenum, b, D1),
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLenum, mode, D1),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19424,7 +19424,7 @@ AROS_LH2(void, glBeginConditionalRenderNV,
 
     PUT_MESABASE_IN_REG
 
-    mglBeginConditionalRenderNV(a, b);
+    mglBeginConditionalRenderNV(id, mode);
 
     RESTORE_REG
 
@@ -19448,9 +19448,9 @@ AROS_LH0(void, glEndConditionalRenderNV,
 }
 
 AROS_LH3(GLenum, glObjectPurgeableAPPLE,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
+    AROS_LHA(GLenum, objectType, D0),
+    AROS_LHA(GLuint, name, D1),
+    AROS_LHA(GLenum, option, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19459,7 +19459,7 @@ AROS_LH3(GLenum, glObjectPurgeableAPPLE,
 
     PUT_MESABASE_IN_REG
 
-    GLenum _return = mglObjectPurgeableAPPLE(a, b, c);
+    GLenum _return = mglObjectPurgeableAPPLE(objectType, name, option);
 
     RESTORE_REG
 
@@ -19469,9 +19469,9 @@ AROS_LH3(GLenum, glObjectPurgeableAPPLE,
 }
 
 AROS_LH3(GLenum, glObjectUnpurgeableAPPLE,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
+    AROS_LHA(GLenum, objectType, D0),
+    AROS_LHA(GLuint, name, D1),
+    AROS_LHA(GLenum, option, D2),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19480,7 +19480,7 @@ AROS_LH3(GLenum, glObjectUnpurgeableAPPLE,
 
     PUT_MESABASE_IN_REG
 
-    GLenum _return = mglObjectUnpurgeableAPPLE(a, b, c);
+    GLenum _return = mglObjectUnpurgeableAPPLE(objectType, name, option);
 
     RESTORE_REG
 
@@ -19490,10 +19490,10 @@ AROS_LH3(GLenum, glObjectUnpurgeableAPPLE,
 }
 
 AROS_LH4(void, glGetObjectParameterivAPPLE,
-    AROS_LHA(GLenum, a, D0),
-    AROS_LHA(GLuint, b, D1),
-    AROS_LHA(GLenum, c, D2),
-    AROS_LHA(GLint *, d, A0),
+    AROS_LHA(GLenum, objectType, D0),
+    AROS_LHA(GLuint, name, D1),
+    AROS_LHA(GLenum, pname, D2),
+    AROS_LHA(GLint *, params, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
     AROS_LIBFUNC_INIT
@@ -19502,7 +19502,601 @@ AROS_LH4(void, glGetObjectParameterivAPPLE,
 
     PUT_MESABASE_IN_REG
 
-    mglGetObjectParameterivAPPLE(a, b, c, d);
+    mglGetObjectParameterivAPPLE(objectType, name, pname, params);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(void, glBeginTransformFeedback,
+    AROS_LHA(GLenum, primitiveMode, D0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglBeginTransformFeedback(primitiveMode);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(void, glEndTransformFeedback,
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglEndTransformFeedback();
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glBindBufferRange,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLuint, buffer, D2),
+    AROS_LHA(GLintptr, offset, D3),
+    AROS_LHA(GLsizeiptr, size, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglBindBufferRange(target, index, buffer, offset, size);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glBindBufferBase,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLuint, buffer, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglBindBufferBase(target, index, buffer);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glTransformFeedbackVaryings,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLchar *  *, varyings, A0),
+    AROS_LHA(GLenum, bufferMode, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglTransformFeedbackVaryings(program, count, varyings, bufferMode);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH7(void, glGetTransformFeedbackVarying,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLsizei, bufSize, D2),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLsizei *, size, A1),
+    AROS_LHA(GLenum *, type, A2),
+    AROS_LHA(GLchar *, name, A3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglGetTransformFeedbackVarying(program, index, bufSize, length, size, type, name);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glDrawArraysInstanced,
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLint, first, D1),
+    AROS_LHA(GLsizei, count, D2),
+    AROS_LHA(GLsizei, primcount, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglDrawArraysInstanced(mode, first, count, primcount);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glDrawElementsInstanced,
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(const GLvoid *, indices, A0),
+    AROS_LHA(GLsizei, primcount, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglDrawElementsInstanced(mode, count, type, indices, primcount);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glDrawArraysInstancedARB,
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLint, first, D1),
+    AROS_LHA(GLsizei, count, D2),
+    AROS_LHA(GLsizei, primcount, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglDrawArraysInstancedARB(mode, first, count, primcount);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glDrawElementsInstancedARB,
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(const GLvoid *, indices, A0),
+    AROS_LHA(GLsizei, primcount, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglDrawElementsInstancedARB(mode, count, type, indices, primcount);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glProgramParameteriARB,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint, value, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglProgramParameteriARB(program, pname, value);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glFramebufferTextureARB,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLuint, texture, D2),
+    AROS_LHA(GLint, level, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglFramebufferTextureARB(target, attachment, texture, level);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glFramebufferTextureFaceARB,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLuint, texture, D2),
+    AROS_LHA(GLint, level, D3),
+    AROS_LHA(GLenum, face, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglFramebufferTextureFaceARB(target, attachment, texture, level, face);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glBindTransformFeedback,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, id, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglBindTransformFeedback(target, id);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glDeleteTransformFeedbacks,
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(const GLuint *, ids, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglDeleteTransformFeedbacks(n, ids);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glGenTransformFeedbacks,
+    AROS_LHA(GLsizei, n, D0),
+    AROS_LHA(GLuint *, ids, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglGenTransformFeedbacks(n, ids);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(GLboolean, glIsTransformFeedback,
+    AROS_LHA(GLuint, id, D0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    GLboolean _return = mglIsTransformFeedback(id);
+
+    RESTORE_REG
+
+    return _return;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(void, glPauseTransformFeedback,
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglPauseTransformFeedback();
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(void, glResumeTransformFeedback,
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglResumeTransformFeedback();
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glDrawTransformFeedback,
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLuint, id, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglDrawTransformFeedback(mode, id);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glDrawArraysInstancedEXT,
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLint, start, D1),
+    AROS_LHA(GLsizei, count, D2),
+    AROS_LHA(GLsizei, primcount, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglDrawArraysInstancedEXT(mode, start, count, primcount);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glDrawElementsInstancedEXT,
+    AROS_LHA(GLenum, mode, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(const GLvoid *, indices, A0),
+    AROS_LHA(GLsizei, primcount, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglDrawElementsInstancedEXT(mode, count, type, indices, primcount);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(void, glBeginTransformFeedbackEXT,
+    AROS_LHA(GLenum, primitiveMode, D0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglBeginTransformFeedbackEXT(primitiveMode);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(void, glEndTransformFeedbackEXT,
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglEndTransformFeedbackEXT();
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glBindBufferRangeEXT,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLuint, buffer, D2),
+    AROS_LHA(GLintptr, offset, D3),
+    AROS_LHA(GLsizeiptr, size, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglBindBufferRangeEXT(target, index, buffer, offset, size);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glBindBufferOffsetEXT,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLuint, buffer, D2),
+    AROS_LHA(GLintptr, offset, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglBindBufferOffsetEXT(target, index, buffer, offset);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glBindBufferBaseEXT,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLuint, buffer, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglBindBufferBaseEXT(target, index, buffer);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glTransformFeedbackVaryingsEXT,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLchar *  *, varyings, A0),
+    AROS_LHA(GLenum, bufferMode, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglTransformFeedbackVaryingsEXT(program, count, varyings, bufferMode);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH7(void, glGetTransformFeedbackVaryingEXT,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLsizei, bufSize, D2),
+    AROS_LHA(GLsizei *, length, A0),
+    AROS_LHA(GLsizei *, size, A1),
+    AROS_LHA(GLenum *, type, A2),
+    AROS_LHA(GLchar *, name, A3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglGetTransformFeedbackVaryingEXT(program, index, bufSize, length, size, type, name);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glEGLImageTargetTexture2DOES,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLeglImageOES, image, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglEGLImageTargetTexture2DOES(target, image);
+
+    RESTORE_REG
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glEGLImageTargetRenderbufferStorageOES,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLeglImageOES, image, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    SAVE_REG
+
+    PUT_MESABASE_IN_REG
+
+    mglEGLImageTargetRenderbufferStorageOES(target, image);
 
     RESTORE_REG
 

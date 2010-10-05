@@ -35,8 +35,11 @@ nv50_clear(struct pipe_context *pipe, unsigned buffers,
 	struct nouveau_grobj *tesla = nv50->screen->tesla;
 	struct pipe_framebuffer_state *fb = &nv50->framebuffer;
 	unsigned mode = 0, i;
+	const unsigned dirty = nv50->dirty;
 
-	if (!nv50_state_validate(nv50))
+	/* don't need NEW_BLEND, NV50TCL_COLOR_MASK doesn't affect CLEAR_BUFFERS */
+	nv50->dirty &= NV50_NEW_FRAMEBUFFER | NV50_NEW_SCISSOR;
+	if (!nv50_state_validate(nv50, 64))
 		return;
 
 	if (buffers & PIPE_CLEAR_COLOR && fb->nr_cbufs) {
@@ -48,13 +51,15 @@ nv50_clear(struct pipe_context *pipe, unsigned buffers,
 		mode |= 0x3c;
 	}
 
-	if (buffers & PIPE_CLEAR_DEPTHSTENCIL) {
+	if (buffers & PIPE_CLEAR_DEPTH) {
 		BEGIN_RING(chan, tesla, NV50TCL_CLEAR_DEPTH, 1);
 		OUT_RING  (chan, fui(depth));
+		mode |= NV50TCL_CLEAR_BUFFERS_Z;
+	}
+	if (buffers & PIPE_CLEAR_STENCIL) {
 		BEGIN_RING(chan, tesla, NV50TCL_CLEAR_STENCIL, 1);
 		OUT_RING  (chan, stencil & 0xff);
-
-		mode |= 0x03;
+		mode |= NV50TCL_CLEAR_BUFFERS_S;
 	}
 
 	BEGIN_RING(chan, tesla, NV50TCL_CLEAR_BUFFERS, 1);
@@ -64,5 +69,6 @@ nv50_clear(struct pipe_context *pipe, unsigned buffers,
 		BEGIN_RING(chan, tesla, NV50TCL_CLEAR_BUFFERS, 1);
 		OUT_RING  (chan, (i << 6) | 0x3c);
 	}
+	nv50->dirty = dirty;
 }
 

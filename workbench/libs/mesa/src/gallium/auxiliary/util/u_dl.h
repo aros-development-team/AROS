@@ -35,10 +35,13 @@
 
 #if defined(PIPE_OS_WINDOWS)
 #  define UTIL_DL_EXT ".dll"
+#  define UTIL_DL_PREFIX ""
 #elif defined(PIPE_OS_APPLE)
 #  define UTIL_DL_EXT ".dylib"
+#  define UTIL_DL_PREFIX "lib"
 #else
 #  define UTIL_DL_EXT ".so"
+#  define UTIL_DL_PREFIX "lib"
 #endif
 
 
@@ -68,6 +71,13 @@ util_dl_get_proc_address(struct util_dl_library *library,
  */
 void
 util_dl_close(struct util_dl_library *library);
+
+
+/**
+ * Return most recent error message.
+ */
+const char *
+util_dl_error(void);
 
 
 #endif /* U_DL_H_ */

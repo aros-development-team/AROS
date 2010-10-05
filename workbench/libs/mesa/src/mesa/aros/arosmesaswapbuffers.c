@@ -4,9 +4,10 @@
 */
 
 #include "arosmesa_funcs.h"
-#include "state_tracker/st_public.h"
 #include <proto/exec.h>
 #include <proto/gallium.h>
+#include <gallium/pipe/p_screen.h>
+#include <gallium/util/u_inlines.h>
 
 /*****************************************************************************
 
@@ -44,21 +45,14 @@
     
     PUT_MESABASE_IN_REG
 
-    struct pipe_surface *surf;
-
-    /* If we're swapping the buffer associated with the current context
-    * we have to flush any pending rendering commands first.
-    */
-    st_notify_swapbuffers(amesa->framebuffer);
-
-    /* ST_SURFACE_FRONT_LEFT is used because AROSMesa never renders directly to 
-       display, thus FRONT LEFT buffer actually is a "back buffer" */
-    st_get_framebuffer_surface(amesa->framebuffer, ST_SURFACE_FRONT_LEFT, &surf);
-
-    if (surf) 
+    if (amesa->framebuffer->render_surface) 
     {
-        BltPipeSurfaceRastPort(surf, 0, 0, amesa->visible_rp, amesa->left, 
-            amesa->top, amesa->width, amesa->height);
+        /* Flush rendering cache before blitting */
+        amesa->st->flush(amesa->st, PIPE_FLUSH_RENDER_CACHE, NULL);
+
+        BltPipeSurfaceRastPort(amesa->framebuffer->render_surface, 0, 0, 
+            amesa->visible_rp, amesa->left, amesa->top, 
+            amesa->framebuffer->width, amesa->framebuffer->height);
     }
 
     AROSMesaCheckAndUpdateBufferSize(amesa);

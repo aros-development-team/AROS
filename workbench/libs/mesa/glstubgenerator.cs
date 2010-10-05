@@ -165,12 +165,6 @@ namespace glstubgenerator
 			this.AddRange(tempList);
 		}
 	}
-	
-	enum HeaderType
-	{
-		GL_H,
-		GLEXT_H
-	}
 
 	class FunctionNameDictionary : Dictionary<string, object>
 	{
@@ -255,26 +249,6 @@ namespace glstubgenerator
 	
 	class GLHeaderParser
 	{
-		private HeaderType htype = HeaderType.GL_H;
-		public HeaderType HeaderType
-		{
-			get { return this.htype; }
-			set { this.htype = value; }
-		}
-		
-		protected string APIENTRYSTRING
-		{
-			get
-			{
-				switch(this.HeaderType)
-				{
-				case(HeaderType.GL_H): return "GLAPIENTRY";
-				case(HeaderType.GLEXT_H): return "APIENTRY";
-				default: throw new ApplicationException("Unsupported header type");
-				}
-			}
-		}
-		
 		public string readandnormalize(StreamReader sr)
 		{
 			string s = sr.ReadLine();
@@ -296,6 +270,7 @@ namespace glstubgenerator
 			
 			string line = null;
 			int GLAPIposition = -1;
+			string GLAPIENTRYstring = "";
 			int GLAPIENTRYposition = -1;
 			int openbracketposition = -1;
 			int closebracketpositiong = -1;
@@ -314,10 +289,19 @@ namespace glstubgenerator
 				if (GLAPIposition < 0)
 					continue;
 				
-				GLAPIENTRYposition = line.IndexOf(this.APIENTRYSTRING, GLAPIposition);
+				/* Check GLAPIENTRY first */
+				GLAPIENTRYstring = "GLAPIENTRY";
+				GLAPIENTRYposition = line.IndexOf(GLAPIENTRYstring, GLAPIposition);
 				
 				if (GLAPIENTRYposition < 0)
-					continue;
+				{
+					/* Try with APIENTRY */
+					GLAPIENTRYstring = "APIENTRY";
+					GLAPIENTRYposition = line.IndexOf(GLAPIENTRYstring, GLAPIposition);
+					if (GLAPIENTRYposition < 0)
+						continue;
+				}
+					
 				
 				openbracketposition = line.IndexOf("(", GLAPIENTRYposition);
 				
@@ -343,7 +327,7 @@ namespace glstubgenerator
 				/* create objects */
 				Function f = new Function();
 				f.ReturnType = line.Substring(GLAPIposition + 5, GLAPIENTRYposition - GLAPIposition - 5).Trim();
-				f.Name = line.Substring(GLAPIENTRYposition + this.APIENTRYSTRING.Length, openbracketposition - GLAPIENTRYposition - this.APIENTRYSTRING.Length).Trim();
+				f.Name = line.Substring(GLAPIENTRYposition + GLAPIENTRYstring.Length, openbracketposition - GLAPIENTRYposition - GLAPIENTRYstring.Length).Trim();
 				
 				string argumentsstring = line.Substring(openbracketposition + 1, closebracketpositiong - 1 - openbracketposition);
 
@@ -579,20 +563,18 @@ namespace glstubgenerator
 
 		public static void Main(string[] args)
 		{
-			string PATH_TO_MESA = @"/data/deadwood/AROS/AROS/contrib/gfx/libs/mesa/";
+			string PATH_TO_MESA = @"/data/deadwood/AROS/AROS/workbench/libs/mesa/";
 			GLApiTempParser apiParser = new GLApiTempParser();
 			FunctionNameDictionary implementedFunctions = 
-				apiParser.Parse(PATH_TO_MESA + @"/src/mesa/glapi/glapitemp.h");
+				apiParser.Parse(PATH_TO_MESA + @"/src/mapi/glapi/glapitemp.h");
 			
 			
 			Console.WriteLine("Implemented functions: {0}", implementedFunctions.Keys.Count);
 			
 			GLHeaderParser p = new GLHeaderParser();
 			
-			p.HeaderType = HeaderType.GL_H;
 			FunctionList functionsglh = p.Parse(PATH_TO_MESA + @"/include/GL/gl.h");
 			
-			p.HeaderType = HeaderType.GLEXT_H;
 			FunctionList functionsglexth = p.Parse(PATH_TO_MESA + @"/include/GL/glext.h");
 			
 			ConfParser confParser = new ConfParser();

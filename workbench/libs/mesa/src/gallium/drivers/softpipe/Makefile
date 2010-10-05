@@ -7,6 +7,7 @@ C_SOURCES = \
 	sp_fs_exec.c \
 	sp_fs_sse.c \
 	sp_clear.c \
+	sp_fence.c \
 	sp_flush.c \
 	sp_query.c \
 	sp_context.c \
@@ -24,6 +25,7 @@ C_SOURCES = \
 	sp_state_derived.c \
 	sp_state_fs.c \
 	sp_state_sampler.c \
+	sp_state_so.c \
 	sp_state_rasterizer.c \
 	sp_state_surface.c \
 	sp_state_vertex.c \
@@ -31,8 +33,6 @@ C_SOURCES = \
 	sp_tex_sample.c \
 	sp_tex_tile_cache.c \
 	sp_tile_cache.c \
-	sp_surface.c \
-	sp_video_context.c \
-	sp_winsys.c
+	sp_surface.c
 
 include ../../Makefile.template

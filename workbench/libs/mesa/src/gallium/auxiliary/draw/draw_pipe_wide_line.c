@@ -28,6 +28,7 @@
 /* Authors:  Keith Whitwell <keith@tungstengraphics.com>
  */
 
+#include "pipe/p_context.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_shader_tokens.h"
 #include "util/u_math.h"
@@ -53,7 +54,6 @@ static INLINE struct wideline_stage *wideline_stage( struct draw_stage *stage )
 
 /**
  * Draw a wide line by drawing a quad (two triangles).
- * XXX need to disable polygon stipple.
  */
 static void wideline_line( struct draw_stage *stage,
                            struct prim_header *header )
@@ -77,8 +77,11 @@ static void wideline_line( struct draw_stage *stage,
    const float dx = fabsf(pos0[0] - pos2[0]);
    const float dy = fabsf(pos0[1] - pos2[1]);
 
+   const boolean gl_rasterization_rules =
+      stage->draw->rasterizer->gl_rasterization_rules;
+
    /* small tweak to meet GL specification */
-   const float bias = 0.125f;
+   const float bias = gl_rasterization_rules ? 0.125f : 0.0f;
 
    /*
     * Draw wide line as a quad (two tris) by "stretching" the line along
@@ -92,19 +95,21 @@ static void wideline_line( struct draw_stage *stage,
       pos1[1] = pos1[1] + half_width - bias;
       pos2[1] = pos2[1] - half_width - bias;
       pos3[1] = pos3[1] + half_width - bias;
-      if (pos0[0] < pos2[0]) {
-         /* left to right line */
-         pos0[0] -= 0.5f;
-         pos1[0] -= 0.5f;
-         pos2[0] -= 0.5f;
-         pos3[0] -= 0.5f;
-      }
-      else {
-         /* right to left line */
-         pos0[0] += 0.5f;
-         pos1[0] += 0.5f;
-         pos2[0] += 0.5f;
-         pos3[0] += 0.5f;
+      if (gl_rasterization_rules) {
+         if (pos0[0] < pos2[0]) {
+            /* left to right line */
+            pos0[0] -= 0.5f;
+            pos1[0] -= 0.5f;
+            pos2[0] -= 0.5f;
+            pos3[0] -= 0.5f;
+         }
+         else {
+            /* right to left line */
+            pos0[0] += 0.5f;
+            pos1[0] += 0.5f;
+            pos2[0] += 0.5f;
+            pos3[0] += 0.5f;
+         }
       }
    }
    else {
@@ -113,19 +118,21 @@ static void wideline_line( struct draw_stage *stage,
       pos1[0] = pos1[0] + half_width + bias;
       pos2[0] = pos2[0] - half_width + bias;
       pos3[0] = pos3[0] + half_width + bias;
-      if (pos0[1] < pos2[1]) {
-         /* top to bottom line */
-         pos0[1] -= 0.5f;
-         pos1[1] -= 0.5f;
-         pos2[1] -= 0.5f;
-         pos3[1] -= 0.5f;
-      }
-      else {
-         /* bottom to top line */
-         pos0[1] += 0.5f;
-         pos1[1] += 0.5f;
-         pos2[1] += 0.5f;
-         pos3[1] += 0.5f;
+      if (gl_rasterization_rules) {
+         if (pos0[1] < pos2[1]) {
+            /* top to bottom line */
+            pos0[1] -= 0.5f;
+            pos1[1] -= 0.5f;
+            pos2[1] -= 0.5f;
+            pos3[1] -= 0.5f;
+         }
+         else {
+            /* bottom to top line */
+            pos0[1] += 0.5f;
+            pos1[1] += 0.5f;
+            pos2[1] += 0.5f;
+            pos3[1] += 0.5f;
+         }
       }
    }
 
@@ -142,9 +149,40 @@ static void wideline_line( struct draw_stage *stage,
 }
 
 
+static void wideline_first_line( struct draw_stage *stage, 
+                                 struct prim_header *header )
+{
+   struct draw_context *draw = stage->draw;
+   struct pipe_context *pipe = draw->pipe;
+   const struct pipe_rasterizer_state *rast = draw->rasterizer;
+   void *r;
+
+   /* Disable triangle culling, stippling, unfilled mode etc. */
+   r = draw_get_rasterizer_no_cull(draw, rast->scissor, rast->flatshade);
+   draw->suspend_flushing = TRUE;
+   pipe->bind_rasterizer_state(pipe, r);
+   draw->suspend_flushing = FALSE;
+
+   stage->line = wideline_line;
+
+   wideline_line(stage, header);
+}
+
+
 static void wideline_flush( struct draw_stage *stage, unsigned flags )
 {
+   struct draw_context *draw = stage->draw;
+   struct pipe_context *pipe = draw->pipe;
+
+   stage->line = wideline_first_line;
    stage->next->flush( stage->next, flags );
+
+   /* restore original rasterizer state */
+   if (draw->rast_handle) {
+      draw->suspend_flushing = TRUE;
+      pipe->bind_rasterizer_state(pipe, draw->rast_handle);
+      draw->suspend_flushing = FALSE;
+   }
 }
 
 
@@ -164,18 +202,27 @@ static void wideline_destroy( struct draw_stage *stage )
 struct draw_stage *draw_wide_line_stage( struct draw_context *draw )
 {
    struct wideline_stage *wide = CALLOC_STRUCT(wideline_stage);
-
-   draw_alloc_temp_verts( &wide->stage, 4 );
+   if (wide == NULL)
+      goto fail;
 
    wide->stage.draw = draw;
    wide->stage.name = "wide-line";
    wide->stage.next = NULL;
    wide->stage.point = draw_pipe_passthrough_point;
-   wide->stage.line = wideline_line;
+   wide->stage.line = wideline_first_line;
    wide->stage.tri = draw_pipe_passthrough_tri;
    wide->stage.flush = wideline_flush;
    wide->stage.reset_stipple_counter = wideline_reset_stipple_counter;
    wide->stage.destroy = wideline_destroy;
 
+   if (!draw_alloc_temp_verts( &wide->stage, 4 ))
+      goto fail;
+
    return &wide->stage;
+
+fail:
+   if (wide)
+      wide->stage.destroy( &wide->stage );
+
+   return NULL;
 }

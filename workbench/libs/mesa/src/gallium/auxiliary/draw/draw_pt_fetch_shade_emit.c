@@ -67,9 +67,8 @@ struct fetch_shade_emit {
 
 
 
-			       
 static void fse_prepare( struct draw_pt_middle_end *middle,
-                         unsigned prim, 
+                         unsigned prim,
                          unsigned opt,
                          unsigned *max_vertices )
 {
@@ -79,9 +78,12 @@ static void fse_prepare( struct draw_pt_middle_end *middle,
    const struct vertex_info *vinfo;
    unsigned i;
    unsigned nr_vbs = 0;
-   
 
-   if (!draw->render->set_primitive( draw->render, 
+   /* Can't support geometry shader on this path.
+    */
+   assert(!draw->gs.geometry_shader);
+
+   if (!draw->render->set_primitive( draw->render,
                                      prim )) {
       assert(0);
       return;
@@ -90,7 +92,6 @@ static void fse_prepare( struct draw_pt_middle_end *middle,
    /* Must do this after set_primitive() above:
     */
    fse->vinfo = vinfo = draw->render->get_vertex_info(draw->render);
-   
 
 
    fse->key.output_stride = vinfo->size * 4;
@@ -101,7 +102,7 @@ static void fse_prepare( struct draw_pt_middle_end *middle,
                                fse->key.nr_inputs);     /* inputs - fetch from api format */
 
    fse->key.viewport = !draw->identity_viewport;
-   fse->key.clip = !draw->bypass_clipping;
+   fse->key.clip = draw->clip_xy || draw->clip_z || draw->clip_user;
    fse->key.const_vbuffers = 0;
 
    memset(fse->key.element, 0, 
@@ -130,31 +131,10 @@ static void fse_prepare( struct draw_pt_middle_end *middle,
       unsigned dst_offset = 0;
 
       for (i = 0; i < vinfo->num_attribs; i++) {
-         unsigned emit_sz = 0;
+         unsigned emit_sz = draw_translate_vinfo_size(vinfo->attrib[i].emit);
 
-         switch (vinfo->attrib[i].emit) {
-         case EMIT_4F:
-            emit_sz = 4 * sizeof(float);
-            break;
-         case EMIT_3F:
-            emit_sz = 3 * sizeof(float);
-            break;
-         case EMIT_2F:
-            emit_sz = 2 * sizeof(float);
-            break;
-         case EMIT_1F:
-            emit_sz = 1 * sizeof(float);
-            break;
-         case EMIT_1F_PSIZE:
-            emit_sz = 1 * sizeof(float);
-            break;
-         case EMIT_4UB:
-            emit_sz = 4 * sizeof(ubyte);
-            break;
-         default:
-            assert(0);
-            break;
-         }
+         /* doesn't handle EMIT_OMIT */
+         assert(emit_sz != 0);
 
          /* The elements in the key correspond to vertex shader output
           * numbers, not to positions in the hw vertex description --
@@ -188,20 +168,12 @@ static void fse_prepare( struct draw_pt_middle_end *middle,
                                i, 
                                ((const ubyte *) draw->pt.user.vbuffer[i] + 
                                 draw->pt.vertex_buffer[i].buffer_offset),
-                              draw->pt.vertex_buffer[i].stride );
+                              draw->pt.vertex_buffer[i].stride,
+                              draw->pt.vertex_buffer[i].max_index );
    }
 
    *max_vertices = (draw->render->max_vertex_buffer_bytes / 
                     (vinfo->size * 4));
-
-   /* Return an even number of verts.
-    * This prevents "parity" errors when splitting long triangle strips which
-    * can lead to front/back culling mix-ups.
-    * Every other triangle in a strip has an alternate front/back orientation
-    * so splitting at an odd position can cause the orientation of subsequent
-    * triangles to get reversed.
-    */
-   *max_vertices = *max_vertices & ~1;
 
    /* Probably need to do this somewhere (or fix exec shader not to
     * need it):
@@ -216,7 +188,8 @@ static void fse_prepare( struct draw_pt_middle_end *middle,
 
 static void fse_run_linear( struct draw_pt_middle_end *middle, 
                             unsigned start, 
-                            unsigned count )
+                            unsigned count,
+                            unsigned prim_flags )
 {
    struct fetch_shade_emit *fse = (struct fetch_shade_emit *)middle;
    struct draw_context *draw = fse->draw;
@@ -225,9 +198,6 @@ static void fse_run_linear( struct draw_pt_middle_end *middle,
    /* XXX: need to flush to get prim_vbuf.c to release its allocation??
     */
    draw_do_flush( draw, DRAW_FLUSH_BACKEND );
-
-   if (count >= UNDEFINED_VERTEX_ID) 
-      goto fail;
 
    if (!draw->render->allocate_vertices( draw->render,
                                          (ushort)fse->key.output_stride,
@@ -284,7 +254,8 @@ fse_run(struct draw_pt_middle_end *middle,
         const unsigned *fetch_elts,
         unsigned fetch_count,
         const ushort *draw_elts,
-        unsigned draw_count )
+        unsigned draw_count,
+        unsigned prim_flags )
 {
    struct fetch_shade_emit *fse = (struct fetch_shade_emit *)middle;
    struct draw_context *draw = fse->draw;
@@ -293,9 +264,6 @@ fse_run(struct draw_pt_middle_end *middle,
    /* XXX: need to flush to get prim_vbuf.c to release its allocation?? 
     */
    draw_do_flush( draw, DRAW_FLUSH_BACKEND );
-
-   if (fetch_count >= UNDEFINED_VERTEX_ID) 
-      goto fail;
 
    if (!draw->render->allocate_vertices( draw->render,
                                          (ushort)fse->key.output_stride,
@@ -327,9 +295,9 @@ fse_run(struct draw_pt_middle_end *middle,
 
    draw->render->unmap_vertices( draw->render, 0, (ushort)(fetch_count - 1) );
    
-   draw->render->draw( draw->render, 
-                       draw_elts, 
-                       draw_count );
+   draw->render->draw_elements( draw->render, 
+                                draw_elts, 
+                                draw_count );
 
 
    draw->render->release_vertices( draw->render );
@@ -346,7 +314,8 @@ static boolean fse_run_linear_elts( struct draw_pt_middle_end *middle,
                                  unsigned start, 
                                  unsigned count,
                                  const ushort *draw_elts,
-                                 unsigned draw_count )
+                                 unsigned draw_count,
+                                 unsigned prim_flags )
 {
    struct fetch_shade_emit *fse = (struct fetch_shade_emit *)middle;
    struct draw_context *draw = fse->draw;
@@ -355,9 +324,6 @@ static boolean fse_run_linear_elts( struct draw_pt_middle_end *middle,
    /* XXX: need to flush to get prim_vbuf.c to release its allocation??
     */
    draw_do_flush( draw, DRAW_FLUSH_BACKEND );
-
-   if (count >= UNDEFINED_VERTEX_ID)
-      return FALSE;
 
    if (!draw->render->allocate_vertices( draw->render,
                                          (ushort)fse->key.output_stride,
@@ -377,9 +343,9 @@ static boolean fse_run_linear_elts( struct draw_pt_middle_end *middle,
                             hw_verts );
 
 
-   draw->render->draw( draw->render, 
-                       draw_elts, 
-                       draw_count );
+   draw->render->draw_elements( draw->render, 
+                                draw_elts, 
+                                draw_count );
    
 
    draw->render->unmap_vertices( draw->render, 0, (ushort)(count - 1) );

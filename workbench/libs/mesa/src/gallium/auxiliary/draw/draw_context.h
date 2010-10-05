@@ -39,7 +39,7 @@
 
 
 #include "pipe/p_state.h"
-
+#include "tgsi/tgsi_exec.h"
 
 struct pipe_context;
 struct draw_context;
@@ -48,10 +48,13 @@ struct draw_vertex_shader;
 struct draw_geometry_shader;
 struct tgsi_sampler;
 
+#define DRAW_MAX_TEXTURE_LEVELS 13  /* 4K x 4K for now */
 
-struct draw_context *draw_create( void );
+struct draw_context *draw_create( struct pipe_context *pipe );
 
 void draw_destroy( struct draw_context *draw );
+
+void draw_flush(struct draw_context *draw);
 
 void draw_set_viewport_state( struct draw_context *draw,
                               const struct pipe_viewport_state *viewport );
@@ -60,12 +63,15 @@ void draw_set_clip_state( struct draw_context *pipe,
                           const struct pipe_clip_state *clip );
 
 void draw_set_rasterizer_state( struct draw_context *draw,
-                                const struct pipe_rasterizer_state *raster );
+                                const struct pipe_rasterizer_state *raster,
+                                void *rast_handle );
 
 void draw_set_rasterize_stage( struct draw_context *draw,
                                struct draw_stage *stage );
 
 void draw_wide_point_threshold(struct draw_context *draw, float threshold);
+
+void draw_wide_point_sprites(struct draw_context *draw, boolean draw_sprite);
 
 void draw_wide_line_threshold(struct draw_context *draw, float threshold);
 
@@ -95,9 +101,27 @@ draw_num_shader_outputs(const struct draw_context *draw);
 
 void
 draw_texture_samplers(struct draw_context *draw,
+                      uint shader_type,
                       uint num_samplers,
                       struct tgsi_sampler **samplers);
 
+void
+draw_set_sampler_views(struct draw_context *draw,
+                       struct pipe_sampler_view **views,
+                       unsigned num);
+void
+draw_set_samplers(struct draw_context *draw,
+                  struct pipe_sampler_state **samplers,
+                  unsigned num);
+
+void
+draw_set_mapped_texture(struct draw_context *draw,
+                        unsigned sampler_idx,
+                        uint32_t width, uint32_t height, uint32_t depth,
+                        uint32_t last_level,
+                        uint32_t row_stride[DRAW_MAX_TEXTURE_LEVELS],
+                        uint32_t img_stride[DRAW_MAX_TEXTURE_LEVELS],
+                        const void *data[DRAW_MAX_TEXTURE_LEVELS]);
 
 
 /*
@@ -137,16 +161,11 @@ void draw_set_vertex_elements(struct draw_context *draw,
 			      unsigned count,
                               const struct pipe_vertex_element *elements);
 
-void
-draw_set_mapped_element_buffer_range( struct draw_context *draw,
-                                      unsigned eltSize,
-                                      unsigned min_index,
-                                      unsigned max_index,
-                                      const void *elements );
+void draw_set_index_buffer(struct draw_context *draw,
+                           const struct pipe_index_buffer *ib);
 
-void draw_set_mapped_element_buffer( struct draw_context *draw,
-                                     unsigned eltSize, 
-                                     const void *elements );
+void draw_set_mapped_index_buffer(struct draw_context *draw,
+                                  const void *elements);
 
 void draw_set_mapped_vertex_buffer(struct draw_context *draw,
                                    unsigned attr, const void *buffer);
@@ -158,10 +177,21 @@ draw_set_mapped_constant_buffer(struct draw_context *draw,
                                 const void *buffer,
                                 unsigned size);
 
+void
+draw_set_mapped_so_buffers(struct draw_context *draw,
+                           void *buffers[PIPE_MAX_SO_BUFFERS],
+                           unsigned num_buffers);
+void
+draw_set_so_state(struct draw_context *draw,
+                  struct pipe_stream_output_state *state);
+
 
 /***********************************************************************
- * draw_prim.c 
+ * draw_pt.c 
  */
+
+void draw_vbo(struct draw_context *draw,
+              const struct pipe_draw_info *info);
 
 void draw_arrays(struct draw_context *draw, unsigned prim,
 		 unsigned start, unsigned count);
@@ -174,8 +204,6 @@ draw_arrays_instanced(struct draw_context *draw,
                       unsigned startInstance,
                       unsigned instanceCount);
 
-void draw_flush(struct draw_context *draw);
-
 
 /*******************************************************************************
  * Driver backend interface 
@@ -185,7 +213,8 @@ void draw_set_render( struct draw_context *draw,
 		      struct vbuf_render *render );
 
 void draw_set_driver_clipping( struct draw_context *draw,
-                               boolean bypass_clipping );
+                               boolean bypass_clip_xy,
+                               boolean bypass_clip_z );
 
 void draw_set_force_passthrough( struct draw_context *draw, 
                                  boolean enable );
@@ -197,6 +226,16 @@ boolean draw_need_pipeline(const struct draw_context *draw,
                            const struct pipe_rasterizer_state *rasterizer,
                            unsigned prim );
 
-
+static INLINE int
+draw_get_shader_param(unsigned shader, enum pipe_cap param)
+{
+   switch(shader) {
+   case PIPE_SHADER_VERTEX:
+   case PIPE_SHADER_GEOMETRY:
+      return tgsi_exec_get_shader_param(param);
+   default:
+      return 0;
+   }
+}
 
 #endif /* DRAW_CONTEXT_H */
