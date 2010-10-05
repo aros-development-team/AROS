@@ -47,9 +47,7 @@ int main(void)
     sss.stk_Pointer = sss.stk_Upper;
     PrintSSS(&sss);
     PrintTaskStack();
-/* Commented out because it fails. I wonder why...
-   Perhaps out StackSwap() is broken, at least on i386...
-   Okay, let's see...
+
     Printf("Checking StackSwap()...\n");
     StackSwap(&sss);
 
@@ -59,7 +57,7 @@ int main(void)
     Printf("Came back from StackSwap()\n");
     PrintSSS(&sss);
     PrintTaskStack();
-*/
+
     Printf("Checking NewStackSwap()...\n");
     args.Args[0] = 0x1234ABCD;
     args.Args[1] = 0xC0DEC001;

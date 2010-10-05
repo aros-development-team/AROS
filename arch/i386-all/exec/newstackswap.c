@@ -1,88 +1,100 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: newstackswap.c 30792 2009-03-07 22:40:04Z sonic $
 
     Desc: NewStackSwap() - Call a function with swapped stack.
     Lang: english
 */
 
-/*****************************************************************************
-
-    NAME */
+#include <aros/config.h>
 #include <aros/debug.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
-	AROS_LH3(IPTR, NewStackSwap,
+#define _PUSH(sp, val) *--sp = (IPTR)val
 
-/*  SYNOPSIS */
+AROS_LH3(IPTR, NewStackSwap,
 	AROS_LHA(struct StackSwapStruct *,  sss, A0),
 	AROS_LHA(LONG_FUNC, entry, A1),
 	AROS_LHA(struct StackSwapArgs *, args, A2),
-
-/*  LOCATION */
 	struct ExecBase *, SysBase, 122, Exec)
-
-/*  FUNCTION
-	Calls a function with a new stack.
-
-    INPUTS
-	sss     -   A structure containing the values for the upper, lower
-		    and current bounds of the stack you wish to use.
-	entry	-   Address of the function to call.
-	args	-   A structure (actually an array) containing up to 8
-		    function arguments. The function is called using C calling
-		    convention (no AROS_UHFx macro needed).
-
-    RESULT
-	A value actually returned by your function. The function will be
-	running on a new stack.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-        Do not attempt to pass in a prebuilt stack - it will be erased.
-
-    SEE ALSO
-	StackSwap()
-
-    INTERNALS
-	This function MUST be replaced in $(KERNEL) or $(ARCH).
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    APTR *	oldSP;
-    APTR *	sp;
-    ULONG *	retptr;
-    ULONG	ret;
+    volatile struct Task *t = FindTask(NULL);
+    volatile IPTR *sp = sss->stk_Pointer;
+    volatile APTR splower = t->tc_SPLower;
+    volatile APTR spupper = t->tc_SPUpper;
+    IPTR ret;
+    BYTE i;
 
-    retptr = &ret;
-
-    sp = (APTR *)(sss->stk_Upper);
-    oldSP = &SysBase;
-
-    /* Copy stack + locals + regs + everything */
-    while ( oldSP != retptr )
+    /*
+     * In order to be able to restore the stack after calling the function
+     * we'll need to store original SP on the new stack. So we reserve a
+     * location for it.
+     */
+    _PUSH(sp, 0);
+    /* Then put arguments on stack in appropriate order */
+    for (i = 7; i >= 0; i--)
     {
-	*--sp = *oldSP--;
+	D(bug("[NewStackSwap] Argument %d value 0x%08lX\n", i, args->Args[i]));
+	_PUSH(sp, args->Args[i]);
     }
 
-    sss->stk_Pointer = sp;
+#if AROS_STACK_DEBUG
+    UBYTE* startfill = sss->stk_Lower;
 
-    D(bug("In NewStackSwap() entry=%lx, *entry=%lx\n", (IPTR)entry, (IPTR)*entry));
-    StackSwap(sss);
+    while (startfill < (UBYTE *)sp)
+	*startfill++ = 0xE1;
+#endif
 
-    /* Call the function with the new stack */
-    *retptr = entry(args->Args[0], args->Args[1], args->Args[2], args->Args[3],
-		    args->Args[4], args->Args[5], args->Args[6], args->Args[7]);
+    /*
+     * We need to Disable() before changing limits and SP, otherwise
+     * stack check will fail if we get interrupted in the middle of this
+     */
+    D(bug("[NewStackSwap] SP 0x%p, entry point 0x%p\n", sp, entry));
+    Disable();
 
-    StackSwap(sss);
+    /* Change limits. The rest is done in asm below */
+    t->tc_SPLower = sss->stk_Lower;
+    t->tc_SPUpper = sss->stk_Upper;
 
+    asm volatile(
+    /* Save original ESP to the location reserved before */
+    "movl %%esp, 32(%2)\n\t"
+    /* Actually change the stack */
+    "movl %2, %%esp\n\t"
+
+    /* Enable(). It preserves all registers by convention, so no EAX save/restore.
+       Note also that we use global SysBase here  because we are running on the new
+       stack and SysBase is lost. */
+    "movl SysBase, %%ebx\n\t"
+    "push %%ebx\n\t"
+    "call *-84(%%ebx)\n\t"
+    "pop %%ebx\n\t"
+
+    /* Call our function */
+    "call *%1\n\t"
+
+    /* Disable(). Also preserves registers. */
+    "movl SysBase, %%ebx\n\t"
+    "push %%ebx\n\t"
+    "call *-80(%%ebx)\n\t"
+    "pop %%ebx\n\t"
+
+    /* Restore original ESP. Function's return value is in EAX. */
+    "movl 32(%%esp), %%esp\n\t"
+    : "=a"(ret)
+    : "r"(entry), "r"(sp)
+    : "ebx", "ecx", "edx", "cc");
+
+    /* Change limits back and return */
+    t->tc_SPLower = splower;
+    t->tc_SPUpper = spupper;
+    Enable();
+
+    D(bug("[NewStackSwap] Returning 0x%08lX\n", ret));
     return ret;
-    
+
     AROS_LIBFUNC_EXIT
 } /* NewStackSwap() */

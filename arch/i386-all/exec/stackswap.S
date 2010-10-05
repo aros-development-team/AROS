@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: stackswap.S 25924 2007-04-28 00:14:49Z verhaegs $
 */
 
@@ -47,7 +47,7 @@
 AROS_SLIB_ENTRY(StackSwap,Exec):
 	/* Save %ebx content */
 	pushl	%ebx
-	
+
 	/* Take the function's parameters */
 	movl	8(%esp),  %ebx  //newStack
 	movl	12(%esp), %eax  //SysBase
@@ -59,7 +59,7 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 
 	/* FindTask(NULL) in %edx */
 	movl	ThisTask(%eax), %edx
-	
+
 	/* Swap Lower boundaries, %ecx is used as temp register */
 	movl    tc_SPLower(%edx), %ecx
 	xchgl	%ecx,             stk_Lower(%ebx)
@@ -69,13 +69,13 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	movl    tc_SPUpper(%edx), %ecx
 	xchgl	%ecx,             stk_Upper(%ebx)
 	movl    %ecx,             tc_SPUpper(%edx)
-	
+
 #if AROS_STACK_DEBUG
 	/* Fill [stk_Lower .. stk_Pointer - 16] with 0xE1 */
-	
+
 	pushl	%edi
 	pushl	%eax
-	
+
 	/* Destination register = %edi = NEW SPLower.
 	   Which was already swapped above, so to be found
 	   in task->tc_SPLower */
@@ -85,42 +85,50 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	movl	stk_Pointer(%ebx), %ecx
 	subl	$16, %ecx
 	subl	%edi, %ecx
-	
+
 	/* byte value to store */
 	movb	$0xE1, %al
-	
+
 	/* direction to store: forward */
 	cld
-	
+
 	/* do the store operation: put %ecx times %al into memory starting at %edi. */
 	rep
 	stosb
-	
+
 	popl	%eax
 	popl	%edi
-#endif	
+#endif
 
 	/* We need to restore %ebx before swapping stack pointers, so
 	   put its content in a register whose content doesn't matter
 	   anymore to us, like %edx.  */
-	movl    %ebx, %edx  // newStack, ThisTask is lost
+	movl    %ebx, %edx  // edx = newStack, ThisTask is lost
 
 	/* Now restore %ebx */
-	popl	%ebx        
-	
+	popl	%ebx
+
 	/* And take the function's return address, before we
 	   swap stacks.  */
 	popl    %ecx    // return address    
-	
+
 	/* Swap stack pointers */
 	xchgl	%esp, stk_Pointer(%edx) 
 
 	/* Reenable interrupts. */
 	pushl	%eax
 	call	*Enable(%eax)
-	popl	%eax
-	
+
+	/*
+	 * Now we should make the top of new stack to look exactly like the
+	 * old one. This means it should contain arguments passed to StackSwap(),
+	 * because the caller now will want to clear the stack and remove arguments.
+	 * Arguments were: SysBase, newStack (in the order in which they were
+	 * pushed). So we need to push them now to a new stack.
+	 * SysBase is already there, we supplied it to Enable(). Push newStack now.
+	 */
+	pushl %edx
+
 	/* Return. %ecx contains the return address, and the stack is already
 	   adjusted, we don't need, or even can, use ret here.  */
         jmp	*%ecx
-
