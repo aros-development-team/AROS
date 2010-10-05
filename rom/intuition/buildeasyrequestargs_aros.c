@@ -26,14 +26,6 @@
 #include <aros/debug.h>
 #include "intuition_intern.h"
 
-#define OUTERSPACING_X		4
-#define OUTERSPACING_Y		4
-#define GADGETGADGETSPACING	8
-#define TEXTGADGETSPACING	4
-#define TEXTBOXBORDER_X		16
-#define TEXTBOXBORDER_Y		4
-#define BUTTONBORDER_X		8
-#define BUTTONBORDER_Y		4
 
 /**********************************************************************************************/
 
