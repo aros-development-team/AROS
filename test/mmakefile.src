@@ -14,6 +14,7 @@ COMMONTESTFILES := \
     CGXTest \
     customscreen \
     date2amiga \
+    displayalert \
     dosvartest \
     exceptiontest \
     exceptiontest2 \
