@@ -4,7 +4,6 @@
 */
 
 #include "arosmesa_funcs.h"
-#include "state_tracker/st_public.h"
 #include <proto/exec.h>
 
 /*****************************************************************************

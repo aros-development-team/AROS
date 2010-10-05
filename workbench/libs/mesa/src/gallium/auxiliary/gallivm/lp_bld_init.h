@@ -30,18 +30,21 @@
 #define LP_BLD_INIT_H
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "lp_bld.h"
+#include <llvm-c/ExecutionEngine.h>
+
+
+extern LLVMModuleRef lp_build_module;
+extern LLVMExecutionEngineRef lp_build_engine;
+extern LLVMModuleProviderRef lp_build_provider;
+extern LLVMTargetDataRef lp_build_target;
+extern LLVMPassManagerRef lp_build_pass;
 
 
 void
 lp_build_init(void);
 
-
-#ifdef __cplusplus
-}
-#endif
-
+extern void
+lp_func_delete_body(LLVMValueRef func);
 
 #endif /* !LP_BLD_INIT_H */

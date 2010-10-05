@@ -32,13 +32,15 @@
  */
 
 
+#include "pipe/p_defines.h"
 #include "pipe/p_screen.h"
 #include "pipe/p_state.h"
-#include "pipe/p_defines.h"
-#include "util/u_inlines.h"
 
-#include "util/u_memory.h"
+#include "util/u_format.h"
+#include "util/u_inlines.h"
+#include "util/u_rect.h"
 #include "util/u_surface.h"
+#include "util/u_pack_color.h"
 
 
 /**
@@ -50,7 +52,8 @@
 boolean
 util_create_rgba_surface(struct pipe_screen *screen,
                          uint width, uint height,
-                         struct pipe_texture **textureOut,
+			 uint bind,
+                         struct pipe_resource **textureOut,
                          struct pipe_surface **surfaceOut)
 {
    static const enum pipe_format rgbaFormats[] = {
@@ -60,15 +63,14 @@ util_create_rgba_surface(struct pipe_screen *screen,
       PIPE_FORMAT_NONE
    };
    const uint target = PIPE_TEXTURE_2D;
-   const uint usage = PIPE_TEXTURE_USAGE_RENDER_TARGET;
    enum pipe_format format = PIPE_FORMAT_NONE;
-   struct pipe_texture templ;
+   struct pipe_resource templ;
    uint i;
 
    /* Choose surface format */
    for (i = 0; rgbaFormats[i]; i++) {
       if (screen->is_format_supported(screen, rgbaFormats[i],
-                                      target, usage, 0)) {
+                                      target, 0, bind, 0)) {
          format = rgbaFormats[i];
          break;
       }
@@ -84,16 +86,19 @@ util_create_rgba_surface(struct pipe_screen *screen,
    templ.width0 = width;
    templ.height0 = height;
    templ.depth0 = 1;
-   templ.tex_usage = usage;
+   templ.bind = bind;
 
-   *textureOut = screen->texture_create(screen, &templ);
+   *textureOut = screen->resource_create(screen, &templ);
    if (!*textureOut)
       return FALSE;
 
    /* create surface / view into texture */
-   *surfaceOut = screen->get_tex_surface(screen, *textureOut, 0, 0, 0, PIPE_BUFFER_USAGE_GPU_WRITE);
+   *surfaceOut = screen->get_tex_surface(screen, 
+					 *textureOut,
+					 0, 0, 0,
+					 bind);
    if (!*surfaceOut) {
-      pipe_texture_reference(textureOut, NULL);
+      pipe_resource_reference(textureOut, NULL);
       return FALSE;
    }
 
@@ -105,80 +110,241 @@ util_create_rgba_surface(struct pipe_screen *screen,
  * Release the surface and texture from util_create_rgba_surface().
  */
 void
-util_destroy_rgba_surface(struct pipe_texture *texture,
+util_destroy_rgba_surface(struct pipe_resource *texture,
                           struct pipe_surface *surface)
 {
    pipe_surface_reference(&surface, NULL);
-   pipe_texture_reference(&texture, NULL);
+   pipe_resource_reference(&texture, NULL);
 }
 
 
 
 /**
- * Compare pipe_framebuffer_state objects.
- * \return TRUE if same, FALSE if different
+ * Fallback function for pipe->resource_copy_region().
+ * Note: (X,Y)=(0,0) is always the upper-left corner.
  */
-boolean
-util_framebuffer_state_equal(const struct pipe_framebuffer_state *dst,
-                             const struct pipe_framebuffer_state *src)
+void
+util_resource_copy_region(struct pipe_context *pipe,
+                          struct pipe_resource *dst,
+                          struct pipe_subresource subdst,
+                          unsigned dst_x, unsigned dst_y, unsigned dst_z,
+                          struct pipe_resource *src,
+                          struct pipe_subresource subsrc,
+                          unsigned src_x, unsigned src_y, unsigned src_z,
+                          unsigned w, unsigned h)
 {
-   unsigned i;
+   struct pipe_transfer *src_trans, *dst_trans;
+   void *dst_map;
+   const void *src_map;
+   enum pipe_format src_format, dst_format;
 
-   if (dst->width != src->width ||
-       dst->height != src->height)
-      return FALSE;
+   assert(src && dst);
+   if (!src || !dst)
+      return;
 
-   for (i = 0; i < Elements(src->cbufs); i++) {
-      if (dst->cbufs[i] != src->cbufs[i]) {
-         return FALSE;
+   src_format = src->format;
+   dst_format = dst->format;
+
+   src_trans = pipe_get_transfer(pipe,
+				 src,
+				 subsrc.face,
+				 subsrc.level,
+				 src_z,
+				 PIPE_TRANSFER_READ,
+				 src_x, src_y, w, h);
+
+   dst_trans = pipe_get_transfer(pipe,
+				 dst,
+				 subdst.face,
+				 subdst.level,
+				 src_z,
+				 PIPE_TRANSFER_WRITE,
+				 dst_x, dst_y, w, h);
+
+   assert(util_format_get_blocksize(dst_format) == util_format_get_blocksize(src_format));
+   assert(util_format_get_blockwidth(dst_format) == util_format_get_blockwidth(src_format));
+   assert(util_format_get_blockheight(dst_format) == util_format_get_blockheight(src_format));
+
+   src_map = pipe->transfer_map(pipe, src_trans);
+   dst_map = pipe->transfer_map(pipe, dst_trans);
+
+   assert(src_map);
+   assert(dst_map);
+
+   if (src_map && dst_map) {
+      util_copy_rect(dst_map,
+                     dst_format,
+                     dst_trans->stride,
+                     0, 0,
+                     w, h,
+                     src_map,
+                     src_trans->stride,
+                     0,
+                     0);
+   }
+
+   pipe->transfer_unmap(pipe, src_trans);
+   pipe->transfer_unmap(pipe, dst_trans);
+
+   pipe->transfer_destroy(pipe, src_trans);
+   pipe->transfer_destroy(pipe, dst_trans);
+}
+
+
+
+#define UBYTE_TO_USHORT(B) ((B) | ((B) << 8))
+
+
+/**
+ * Fallback for pipe->clear_render_target() function.
+ * XXX this looks too hackish to be really useful.
+ * cpp > 4 looks like a gross hack at best...
+ * Plus can't use these transfer fallbacks when clearing
+ * multisampled surfaces for instance.
+ */
+void
+util_clear_render_target(struct pipe_context *pipe,
+                         struct pipe_surface *dst,
+                         const float *rgba,
+                         unsigned dstx, unsigned dsty,
+                         unsigned width, unsigned height)
+{
+   struct pipe_transfer *dst_trans;
+   void *dst_map;
+   union util_color uc;
+
+   assert(dst->texture);
+   if (!dst->texture)
+      return;
+
+   dst_trans = pipe_get_transfer(pipe,
+				 dst->texture,
+				 dst->face,
+				 dst->level,
+				 dst->zslice,
+				 PIPE_TRANSFER_WRITE,
+				 dstx, dsty, width, height);
+
+   dst_map = pipe->transfer_map(pipe, dst_trans);
+
+   assert(dst_map);
+
+   if (dst_map) {
+      assert(dst_trans->stride > 0);
+
+      util_pack_color(rgba, dst->texture->format, &uc);
+      util_fill_rect(dst_map, dst->texture->format,
+                     dst_trans->stride,
+                     0, 0, width, height, &uc);
+   }
+
+   pipe->transfer_unmap(pipe, dst_trans);
+   pipe->transfer_destroy(pipe, dst_trans);
+}
+
+/**
+ * Fallback for pipe->clear_stencil() function.
+ * sw fallback doesn't look terribly useful here.
+ * Plus can't use these transfer fallbacks when clearing
+ * multisampled surfaces for instance.
+ */
+void
+util_clear_depth_stencil(struct pipe_context *pipe,
+                         struct pipe_surface *dst,
+                         unsigned clear_flags,
+                         double depth,
+                         unsigned stencil,
+                         unsigned dstx, unsigned dsty,
+                         unsigned width, unsigned height)
+{
+   struct pipe_transfer *dst_trans;
+   ubyte *dst_map;
+   boolean need_rmw = FALSE;
+
+   if ((clear_flags & PIPE_CLEAR_DEPTHSTENCIL) &&
+       ((clear_flags & PIPE_CLEAR_DEPTHSTENCIL) != PIPE_CLEAR_DEPTHSTENCIL) &&
+       util_format_is_depth_and_stencil(dst->format))
+      need_rmw = TRUE;
+
+   assert(dst->texture);
+   if (!dst->texture)
+      return;
+   dst_trans = pipe_get_transfer(pipe,
+                                 dst->texture,
+                                 dst->face,
+                                 dst->level,
+                                 dst->zslice,
+                                 (need_rmw ? PIPE_TRANSFER_READ_WRITE :
+                                     PIPE_TRANSFER_WRITE),
+                                 dstx, dsty, width, height);
+
+   dst_map = pipe->transfer_map(pipe, dst_trans);
+
+   assert(dst_map);
+
+   if (dst_map) {
+      unsigned dst_stride = dst_trans->stride;
+      unsigned zstencil = util_pack_z_stencil(dst->texture->format, depth, stencil);
+      unsigned i, j;
+      assert(dst_trans->stride > 0);
+
+      switch (util_format_get_blocksize(dst->format)) {
+      case 1:
+         assert(dst->format == PIPE_FORMAT_S8_USCALED);
+         if(dst_stride == width)
+            memset(dst_map, (ubyte) zstencil, height * width);
+         else {
+            for (i = 0; i < height; i++) {
+               memset(dst_map, (ubyte) zstencil, width);
+               dst_map += dst_stride;
+            }
+         }
+         break;
+      case 2:
+         assert(dst->format == PIPE_FORMAT_Z16_UNORM);
+         for (i = 0; i < height; i++) {
+            uint16_t *row = (uint16_t *)dst_map;
+            for (j = 0; j < width; j++)
+               *row++ = (uint16_t) zstencil;
+            dst_map += dst_stride;
+            }
+         break;
+      case 4:
+         if (!need_rmw) {
+            for (i = 0; i < height; i++) {
+               uint32_t *row = (uint32_t *)dst_map;
+               for (j = 0; j < width; j++)
+                  *row++ = zstencil;
+               dst_map += dst_stride;
+            }
+         }
+         else {
+            uint32_t dst_mask;
+            if (dst->format == PIPE_FORMAT_Z24_UNORM_S8_USCALED)
+               dst_mask = 0xffffff00;
+            else {
+               assert(dst->format == PIPE_FORMAT_S8_USCALED_Z24_UNORM);
+               dst_mask = 0xffffff;
+            }
+            if (clear_flags & PIPE_CLEAR_DEPTH)
+               dst_mask = ~dst_mask;
+            for (i = 0; i < height; i++) {
+               uint32_t *row = (uint32_t *)dst_map;
+               for (j = 0; j < width; j++) {
+                  uint32_t tmp = *row & dst_mask;
+                  *row++ = tmp | (zstencil & ~dst_mask);
+               }
+               dst_map += dst_stride;
+            }
+         }
+        break;
+      case 8:
+      default:
+         assert(0);
+         break;
       }
    }
 
-   if (dst->nr_cbufs != src->nr_cbufs) {
-      return FALSE;
-   }
-
-   if (dst->zsbuf != src->zsbuf) {
-      return FALSE;
-   }
-
-   return TRUE;
-}
-
-
-/**
- * Copy framebuffer state from src to dst, updating refcounts.
- */
-void
-util_copy_framebuffer_state(struct pipe_framebuffer_state *dst,
-                            const struct pipe_framebuffer_state *src)
-{
-   unsigned i;
-
-   dst->width = src->width;
-   dst->height = src->height;
-
-   for (i = 0; i < Elements(src->cbufs); i++) {
-      pipe_surface_reference(&dst->cbufs[i], src->cbufs[i]);
-   }
-
-   dst->nr_cbufs = src->nr_cbufs;
-
-   pipe_surface_reference(&dst->zsbuf, src->zsbuf);
-}
-
-
-void
-util_unreference_framebuffer_state(struct pipe_framebuffer_state *fb)
-{
-   unsigned i;
-
-   for (i = 0; i < fb->nr_cbufs; i++) {
-      pipe_surface_reference(&fb->cbufs[i], NULL);
-   }
-
-   pipe_surface_reference(&fb->zsbuf, NULL);
-
-   fb->width = fb->height = 0;
-   fb->nr_cbufs = 0;
+   pipe->transfer_unmap(pipe, dst_trans);
+   pipe->transfer_destroy(pipe, dst_trans);
 }

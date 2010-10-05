@@ -4,7 +4,6 @@
 */
 
 #include "arosmesa_funcs.h"
-#include "state_tracker/st_public.h"
 #include <proto/exec.h>
 #include <proto/gallium.h>
 #include <aros/debug.h>
@@ -50,27 +49,24 @@
 
     if (amesa)
     {
-        GLcontext * ctx = GET_GL_CTX_PTR(amesa);
+        struct st_context_iface * ctx = amesa->st;
 
         if (ctx)
         {
-            GET_CURRENT_CONTEXT(cur_ctx);
+            struct st_context_iface * cur_ctx = amesa->stapi->get_current(amesa->stapi);
 
             if (cur_ctx == ctx)
             {
                 /* Unbind if current */
-                st_make_current( NULL, NULL, NULL );
+                amesa->st->flush(amesa->st, 0, NULL);
+                amesa->stapi->make_current(amesa->stapi, NULL, NULL, NULL);
             }
 
-            st_finish(ctx->st);
-
-            st_destroy_context(ctx->st);
-            
+            amesa->st->destroy(amesa->st);
             AROSMesaDestroyFrameBuffer(amesa->framebuffer);
-            AROSMesaDestroyVisual(amesa->visual);
-            DestroyPipeScreen(amesa->pscreen);
+            AROSMesaDestroyStManager(amesa->stmanager);
+            amesa->stapi->destroy(amesa->stapi);
             AROSMesaDestroyContext(amesa);
-
         }
     }
     

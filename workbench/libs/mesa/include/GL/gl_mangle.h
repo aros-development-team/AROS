@@ -1981,5 +1981,12 @@
 #define glWindowPos4sMESA		MANGLE(WindowPos4sMESA)
 #define glWindowPos4svMESA		MANGLE(WindowPos4svMESA)
 #define glWriteMaskEXT		MANGLE(WriteMaskEXT)
+#define glBindTransformFeedback     MANGLE(BindTransformFeedback)
+#define glDeleteTransformFeedbacks  MANGLE(DeleteTransformFeedbacks)
+#define glGenTransformFeedbacks     MANGLE(GenTransformFeedbacks)
+#define glIsTransformFeedback       MANGLE(IsTransformFeedback)
+#define glPauseTransformFeedback    MANGLE(PauseTransformFeedback)
+#define glResumeTransformFeedback   MANGLE(ResumeTransformFeedback)
+#define glDrawTransformFeedback     MANGLE(DrawTransformFeedback)
 
 #endif /* GL_MANGLE_H */

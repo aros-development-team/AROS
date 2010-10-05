@@ -85,7 +85,8 @@ static void
 vs_exec_run_linear( struct draw_vertex_shader *shader,
 		    const float (*input)[4],
 		    float (*output)[4],
-                   const void *constants[PIPE_MAX_CONSTANT_BUFFERS],
+                    const void *constants[PIPE_MAX_CONSTANT_BUFFERS],
+                    const unsigned const_size[PIPE_MAX_CONSTANT_BUFFERS],
 		    unsigned count,
 		    unsigned input_stride,
 		    unsigned output_stride )
@@ -95,9 +96,8 @@ vs_exec_run_linear( struct draw_vertex_shader *shader,
    unsigned int i, j;
    unsigned slot;
 
-   for (i = 0; i < PIPE_MAX_CONSTANT_BUFFERS; i++) {
-      machine->Consts[i] = constants[i];
-   }
+   tgsi_exec_set_constant_buffers(machine, PIPE_MAX_CONSTANT_BUFFERS,
+                                  constants, const_size);
 
    for (i = 0; i < count; i += MAX_TGSI_VERTICES) {
       unsigned int max_vertices = MIN2(MAX_TGSI_VERTICES, count - i);
@@ -203,7 +203,7 @@ draw_create_vs_exec(struct draw_context *draw,
    vs->base.prepare = vs_exec_prepare;
    vs->base.run_linear = vs_exec_run_linear;
    vs->base.delete = vs_exec_delete;
-   vs->base.create_varient = draw_vs_varient_generic;
+   vs->base.create_varient = draw_vs_create_varient_generic;
    vs->machine = draw->vs.machine;
 
    return &vs->base;

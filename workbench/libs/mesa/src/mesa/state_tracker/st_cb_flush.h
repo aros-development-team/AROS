@@ -30,8 +30,21 @@
 #define ST_CB_FLUSH_H
 
 
+#include "pipe/p_compiler.h"
+
+struct dd_function_table;
+struct pipe_fence_handle;
+struct st_context;
+
 extern void
 st_init_flush_functions(struct dd_function_table *functions);
+
+extern void
+st_flush(struct st_context *st, uint pipeFlushFlags,
+         struct pipe_fence_handle **fence);
+
+extern void
+st_finish(struct st_context *st);
 
 
 #endif /* ST_CB_FLUSH_H */

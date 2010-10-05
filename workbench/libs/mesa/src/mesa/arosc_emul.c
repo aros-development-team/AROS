@@ -184,6 +184,13 @@ int printf (const char * format, ...)
     return EOF;
 }
 
+#undef getc
+int getc (FILE * stream)
+{
+    IMPLEMENT();
+    return EOF;
+}
+
 /* File operations */
 FILE * fopen (const char * pathname, const char * mode)
 {
@@ -217,7 +224,10 @@ int fgetc (FILE * stream)
 
 size_t fwrite (const void * restrict buf, size_t size, size_t nblocks, FILE * restrict stream)
 {
-    IMPLEMENT();
+    ULONG i;
+    for (i = 0; i < size * nblocks; i++)
+        bug("%c", ((char*)buf)[i]);
+
     return 0;
 }
 

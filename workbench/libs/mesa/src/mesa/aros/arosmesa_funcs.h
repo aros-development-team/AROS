@@ -10,12 +10,12 @@
 
 VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList);
 BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList);
-AROSMesaVisual AROSMesaNewVisual(GLint bpp, struct pipe_screen * screen, struct TagItem *tagList);
-GLboolean AROSMesaRecalculateBufferWidthHeight(AROSMesaContext amesa);
-AROSMesaFrameBuffer AROSMesaNewFrameBuffer(AROSMesaContext amesa, AROSMesaVisual visual);
+BOOL AROSMesaFillVisual(struct st_visual * stvis, struct pipe_screen * screen, GLint bpp, struct TagItem *tagList);
+VOID AROSMesaRecalculateBufferWidthHeight(AROSMesaContext amesa);
+struct arosmesa_framebuffer * AROSMesaNewFrameBuffer(AROSMesaContext amesa, struct st_visual * stvis);
 VOID AROSMesaDestroyContext(AROSMesaContext amesa);
-VOID AROSMesaDestroyVisual(AROSMesaVisual aros_vis);
-VOID AROSMesaDestroyFrameBuffer(AROSMesaFrameBuffer aros_fb);
+VOID AROSMesaDestroyFrameBuffer(struct arosmesa_framebuffer * framebuffer);
 VOID AROSMesaCheckAndUpdateBufferSize(AROSMesaContext amesa);
-
+struct st_manager * AROSMesaNewStManager();
+VOID AROSMesaDestroyStManager(struct st_manager * stmanager);
 #endif

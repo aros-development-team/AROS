@@ -43,7 +43,6 @@
 #include "p_compiler.h"
 #include "p_defines.h"
 #include "p_format.h"
-#include "p_screen.h"
 
 
 #ifdef __cplusplus
@@ -60,9 +59,11 @@ extern "C" {
 #define PIPE_MAX_CONSTANT_BUFFERS 32
 #define PIPE_MAX_SAMPLERS         16
 #define PIPE_MAX_VERTEX_SAMPLERS  16
-#define PIPE_MAX_SHADER_INPUTS    16
-#define PIPE_MAX_SHADER_OUTPUTS   16
+#define PIPE_MAX_GEOMETRY_SAMPLERS  16
+#define PIPE_MAX_SHADER_INPUTS    32
+#define PIPE_MAX_SHADER_OUTPUTS   32
 #define PIPE_MAX_TEXTURE_LEVELS   16
+#define PIPE_MAX_SO_BUFFERS        4
 
 
 struct pipe_reference
@@ -70,19 +71,6 @@ struct pipe_reference
    int32_t count; /* atomic */
 };
 
-
-/**
- * The driver will certainly subclass this to include actual memory
- * management information.
- */
-struct pipe_buffer
-{
-   struct pipe_reference  reference;
-   unsigned               size;
-   struct pipe_screen    *screen;
-   unsigned               alignment;
-   unsigned               usage;
-};
 
 
 /**
@@ -92,12 +80,13 @@ struct pipe_rasterizer_state
 {
    unsigned flatshade:1;
    unsigned light_twoside:1;
-   unsigned front_winding:2;  /**< PIPE_WINDING_x */
-   unsigned cull_mode:2;      /**< PIPE_WINDING_x */
-   unsigned fill_cw:2;        /**< PIPE_POLYGON_MODE_x */
-   unsigned fill_ccw:2;       /**< PIPE_POLYGON_MODE_x */
-   unsigned offset_cw:1;
-   unsigned offset_ccw:1;
+   unsigned front_ccw:1;
+   unsigned cull_face:2;      /**< PIPE_FACE_x */
+   unsigned fill_front:2;     /**< PIPE_POLYGON_MODE_x */
+   unsigned fill_back:2;      /**< PIPE_POLYGON_MODE_x */
+   unsigned offset_point:1;
+   unsigned offset_line:1;
+   unsigned offset_tri:1;
    unsigned scissor:1;
    unsigned poly_smooth:1;
    unsigned poly_stipple_enable:1;
@@ -165,6 +154,7 @@ struct pipe_clip_state
 {
    float ucp[PIPE_MAX_CLIP_PLANES][4];
    unsigned nr;
+   unsigned depth_clamp:1;
 };
 
 
@@ -231,6 +221,8 @@ struct pipe_blend_state
    unsigned logicop_enable:1;
    unsigned logicop_func:4;      /**< PIPE_LOGICOP_x */
    unsigned dither:1;
+   unsigned alpha_to_coverage:1;
+   unsigned alpha_to_one:1;
    struct pipe_rt_blend_state rt[PIPE_MAX_COLOR_BUFS];
 };
 
@@ -249,7 +241,7 @@ struct pipe_framebuffer_state
 {
    unsigned width, height;
 
-   /** multiple colorbuffers for multiple render targets */
+   /** multiple color buffers for multiple render targets */
    unsigned nr_cbufs;
    struct pipe_surface *cbufs[PIPE_MAX_COLOR_BUFS];
 
@@ -285,46 +277,61 @@ struct pipe_sampler_state
 struct pipe_surface
 {
    struct pipe_reference reference;
-   enum pipe_format format;      /**< PIPE_FORMAT_x */
+   struct pipe_resource *texture; /**< resource into which this is a view  */
+   enum pipe_format format;
+
    unsigned width;               /**< logical width in pixels */
    unsigned height;              /**< logical height in pixels */
+
    unsigned layout;              /**< PIPE_SURFACE_LAYOUT_x */
    unsigned offset;              /**< offset from start of buffer, in bytes */
-   unsigned usage;               /**< PIPE_BUFFER_USAGE_*  */
+   unsigned usage;               /**< bitmask of PIPE_BIND_x */
 
    unsigned zslice;
-   struct pipe_texture *texture; /**< texture into which this is a view  */
    unsigned face;
    unsigned level;
 };
 
 
 /**
- * Transfer object.  For data transfer to/from a texture.
+ * A view into a texture that can be bound to a shader stage.
  */
-struct pipe_transfer
+struct pipe_sampler_view
 {
-   unsigned x;                   /**< x offset from start of texture image */
-   unsigned y;                   /**< y offset from start of texture image */
-   unsigned width;               /**< logical width in pixels */
-   unsigned height;              /**< logical height in pixels */
-   unsigned stride;              /**< stride in bytes between rows of blocks */
-   enum pipe_transfer_usage usage; /**< PIPE_TRANSFER_*  */
-
-   struct pipe_texture *texture; /**< texture to transfer to/from  */
-   unsigned face;
-   unsigned level;
-   unsigned zslice;
+   struct pipe_reference reference;
+   enum pipe_format format;      /**< typed PIPE_FORMAT_x */
+   struct pipe_resource *texture; /**< texture into which this is a view  */
+   struct pipe_context *context; /**< context this view belongs to */
+   unsigned first_level:8;       /**< first mipmap level */
+   unsigned last_level:8;        /**< last mipmap level */
+   unsigned swizzle_r:3;         /**< PIPE_SWIZZLE_x for red component */
+   unsigned swizzle_g:3;         /**< PIPE_SWIZZLE_x for green component */
+   unsigned swizzle_b:3;         /**< PIPE_SWIZZLE_x for blue component */
+   unsigned swizzle_a:3;         /**< PIPE_SWIZZLE_x for alpha component */
 };
 
 
 /**
- * Texture object.
+ * Subregion of 1D/2D/3D image resource.
  */
-struct pipe_texture
-{ 
-   struct pipe_reference reference;
+struct pipe_box
+{
+   unsigned x;
+   unsigned y;
+   unsigned z;
+   unsigned width;
+   unsigned height;
+   unsigned depth;
+};
 
+
+/**
+ * A memory object/resource such as a vertex buffer or texture.
+ */
+struct pipe_resource
+{
+   struct pipe_reference reference;
+   struct pipe_screen *screen; /**< screen that this texture belongs to */
    enum pipe_texture_target target; /**< PIPE_TEXTURE_x */
    enum pipe_format format;         /**< PIPE_FORMAT_x */
 
@@ -333,13 +340,53 @@ struct pipe_texture
    unsigned depth0;
 
    unsigned last_level:8;    /**< Index of last mipmap level present/defined */
-
    unsigned nr_samples:8;    /**< for multisampled surfaces, nr of samples */
+   unsigned usage:8;         /**< PIPE_USAGE_x (not a bitmask) */
 
-   unsigned tex_usage;       /* PIPE_TEXTURE_USAGE_* */
-
-   struct pipe_screen *screen; /**< screen that this texture belongs to */
+   unsigned bind;	     /**< bitmask of PIPE_BIND_x */
+   unsigned flags;	     /**< bitmask of PIPE_RESOURCE_FLAG_x */
 };
+
+struct pipe_stream_output_state
+{
+   /**< number of the output buffer to insert each element into */
+   int output_buffer[PIPE_MAX_SHADER_OUTPUTS];
+   /**< which register to grab each output from */
+   int register_index[PIPE_MAX_SHADER_OUTPUTS];
+   /**< TGSI_WRITEMASK signifying which components to output */
+   ubyte register_mask[PIPE_MAX_SHADER_OUTPUTS];
+   /**< number of outputs */
+   int num_outputs;
+
+   /**< stride for an entire vertex, only used if all output_buffers
+    * are 0 */
+   unsigned stride;
+};
+
+/**
+ * Extra indexing info for (cube) texture resources.
+ */
+struct pipe_subresource
+{
+   unsigned face:16;
+   unsigned level:16;
+};
+
+
+/**
+ * Transfer object.  For data transfer to/from a resource.
+ */
+struct pipe_transfer
+{
+   struct pipe_resource *resource; /**< resource to transfer to/from  */
+   struct pipe_subresource sr;
+   enum pipe_transfer_usage usage;
+   struct pipe_box box;
+   unsigned stride;
+   unsigned slice_stride;
+   void *data;
+};
+
 
 
 /**
@@ -352,7 +399,7 @@ struct pipe_vertex_buffer
    unsigned stride;    /**< stride to same attrib in next vertex, in bytes */
    unsigned max_index;   /**< number of vertices in this buffer */
    unsigned buffer_offset;  /**< offset to start of data in buffer, in bytes */
-   struct pipe_buffer *buffer;  /**< the actual buffer */
+   struct pipe_resource *buffer;  /**< the actual buffer */
 };
 
 
@@ -372,10 +419,44 @@ struct pipe_vertex_element
    /** Which vertex_buffer (as given to pipe->set_vertex_buffer()) does
     * this attribute live in?
     */
-   unsigned vertex_buffer_index:8;
-   unsigned nr_components:8;
+   unsigned vertex_buffer_index;
  
-   enum pipe_format src_format; 	   /**< PIPE_FORMAT_* */
+   enum pipe_format src_format;
+};
+
+
+/**
+ * An index buffer.  When an index buffer is bound, all indices to vertices
+ * will be looked up in the buffer.
+ */
+struct pipe_index_buffer
+{
+   unsigned index_size;  /**< size of an index, in bytes */
+   unsigned offset;  /**< offset to start of data in buffer, in bytes */
+   struct pipe_resource *buffer; /**< the actual buffer */
+};
+
+
+/**
+ * Information to describe a draw_vbo call.
+ */
+struct pipe_draw_info
+{
+   boolean indexed;  /**< use index buffer */
+
+   unsigned mode;  /**< the mode of the primitive */
+   unsigned start;  /**< the index of the first vertex */
+   unsigned count;  /**< number of vertices */
+
+   unsigned start_instance; /**< first instance id */
+   unsigned instance_count; /**< number of instances */
+
+   /**
+    * For indexed drawing, these fields apply after index lookup.
+    */
+   int index_bias; /**< a bias to be added to each index */
+   unsigned min_index; /**< the min index */
+   unsigned max_index; /**< the max index */
 };
 
 

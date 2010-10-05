@@ -36,6 +36,7 @@
 #include "draw/draw_vbuf.h"
 #include "draw/draw_vertex.h"
 #include "draw/draw_pt.h"
+#include "draw/draw_gs.h"
 #include "translate/translate.h"
 #include "translate/translate_cache.h"
 
@@ -100,9 +101,14 @@ static void fetch_emit_prepare( struct draw_pt_middle_end *middle,
    boolean ok;
    struct translate_key key;
 
+   unsigned gs_out_prim = (draw->gs.geometry_shader ? 
+                           draw->gs.geometry_shader->output_primitive :
+                           prim);
+
+
 
    ok = draw->render->set_primitive( draw->render, 
-                                     prim );
+                                     gs_out_prim );
    if (!ok) {
       assert(0);
       return;
@@ -129,41 +135,16 @@ static void fetch_emit_prepare( struct draw_pt_middle_end *middle,
       unsigned input_offset = src->src_offset;
       unsigned output_format;
 
-      switch (vinfo->attrib[i].emit) {
-      case EMIT_4UB:
-	 output_format = PIPE_FORMAT_R8G8B8A8_UNORM;
-	 emit_sz = 4 * sizeof(unsigned char);
-         break;
-      case EMIT_4F:
-	 output_format = PIPE_FORMAT_R32G32B32A32_FLOAT;
-	 emit_sz = 4 * sizeof(float);
-         break;
-      case EMIT_3F:
-	 output_format = PIPE_FORMAT_R32G32B32_FLOAT;
-	 emit_sz = 3 * sizeof(float);
-         break;
-      case EMIT_2F:
-	 output_format = PIPE_FORMAT_R32G32_FLOAT;
-	 emit_sz = 2 * sizeof(float);
-         break;
-      case EMIT_1F:
-	 output_format = PIPE_FORMAT_R32_FLOAT;
-	 emit_sz = 1 * sizeof(float);
-         break;
-      case EMIT_1F_PSIZE:
+      output_format = draw_translate_vinfo_format(vinfo->attrib[i].emit);
+      emit_sz = draw_translate_vinfo_size(vinfo->attrib[i].emit);
+
+      if (vinfo->attrib[i].emit == EMIT_OMIT)
+	 continue;
+
+      if (vinfo->attrib[i].emit == EMIT_1F_PSIZE) {
 	 input_format = PIPE_FORMAT_R32_FLOAT;
 	 input_buffer = draw->pt.nr_vertex_buffers;
 	 input_offset = 0;
-	 output_format = PIPE_FORMAT_R32_FLOAT;
-	 emit_sz = 1 * sizeof(float);
-         break;
-      case EMIT_OMIT:
-         continue;
-      default:
-         assert(0);
-	 output_format = PIPE_FORMAT_NONE;
-	 emit_sz = 0;
-	 continue;
       }
 
       key.element[i].type = TRANSLATE_ELEMENT_NORMAL;
@@ -193,7 +174,8 @@ static void fetch_emit_prepare( struct draw_pt_middle_end *middle,
       feme->translate->set_buffer(feme->translate, 
 				  draw->pt.nr_vertex_buffers, 
 				  &feme->point_size,
-				  0);
+				  0,
+				  ~0);
    }
    
    feme->point_size = draw->rasterizer->point_size;
@@ -203,20 +185,12 @@ static void fetch_emit_prepare( struct draw_pt_middle_end *middle,
                                   i, 
                                   ((char *)draw->pt.user.vbuffer[i] + 
                                    draw->pt.vertex_buffer[i].buffer_offset),
-                                  draw->pt.vertex_buffer[i].stride );
+                                  draw->pt.vertex_buffer[i].stride,
+                                  draw->pt.vertex_buffer[i].max_index);
    }
 
    *max_vertices = (draw->render->max_vertex_buffer_bytes / 
                     (vinfo->size * 4));
-
-   /* Return an even number of verts.
-    * This prevents "parity" errors when splitting long triangle strips which
-    * can lead to front/back culling mix-ups.
-    * Every other triangle in a strip has an alternate front/back orientation
-    * so splitting at an odd position can cause the orientation of subsequent
-    * triangles to get reversed.
-    */
-   *max_vertices = *max_vertices & ~1;
 }
 
 
@@ -227,7 +201,8 @@ static void fetch_emit_run( struct draw_pt_middle_end *middle,
                             const unsigned *fetch_elts,
                             unsigned fetch_count,
                             const ushort *draw_elts,
-                            unsigned draw_count )
+                            unsigned draw_count,
+                            unsigned prim_flags )
 {
    struct fetch_emit_middle_end *feme = (struct fetch_emit_middle_end *)middle;
    struct draw_context *draw = feme->draw;
@@ -236,11 +211,6 @@ static void fetch_emit_run( struct draw_pt_middle_end *middle,
    /* XXX: need to flush to get prim_vbuf.c to release its allocation?? 
     */
    draw_do_flush( draw, DRAW_FLUSH_BACKEND );
-
-   if (fetch_count >= UNDEFINED_VERTEX_ID) {
-      assert(0);
-      return;
-   }
 
    draw->render->allocate_vertices( draw->render,
                                     (ushort)feme->translate->key.output_stride,
@@ -277,9 +247,9 @@ static void fetch_emit_run( struct draw_pt_middle_end *middle,
    /* XXX: Draw arrays path to avoid re-emitting index list again and
     * again.
     */
-   draw->render->draw( draw->render, 
-                       draw_elts, 
-                       draw_count );
+   draw->render->draw_elements( draw->render, 
+                                draw_elts, 
+                                draw_count );
 
    /* Done -- that was easy, wasn't it: 
     */
@@ -290,7 +260,8 @@ static void fetch_emit_run( struct draw_pt_middle_end *middle,
 
 static void fetch_emit_run_linear( struct draw_pt_middle_end *middle,
                                    unsigned start,
-                                   unsigned count )
+                                   unsigned count,
+                                   unsigned prim_flags )
 {
    struct fetch_emit_middle_end *feme = (struct fetch_emit_middle_end *)middle;
    struct draw_context *draw = feme->draw;
@@ -299,9 +270,6 @@ static void fetch_emit_run_linear( struct draw_pt_middle_end *middle,
    /* XXX: need to flush to get prim_vbuf.c to release its allocation??
     */
    draw_do_flush( draw, DRAW_FLUSH_BACKEND );
-
-   if (count >= UNDEFINED_VERTEX_ID) 
-      goto fail;
 
    if (!draw->render->allocate_vertices( draw->render,
                                          (ushort)feme->translate->key.output_stride,
@@ -351,7 +319,8 @@ static boolean fetch_emit_run_linear_elts( struct draw_pt_middle_end *middle,
                                         unsigned start,
                                         unsigned count,
                                         const ushort *draw_elts,
-                                        unsigned draw_count )
+                                        unsigned draw_count,
+                                        unsigned prim_flags )
 {
    struct fetch_emit_middle_end *feme = (struct fetch_emit_middle_end *)middle;
    struct draw_context *draw = feme->draw;
@@ -360,9 +329,6 @@ static boolean fetch_emit_run_linear_elts( struct draw_pt_middle_end *middle,
    /* XXX: need to flush to get prim_vbuf.c to release its allocation??
     */
    draw_do_flush( draw, DRAW_FLUSH_BACKEND );
-
-   if (count >= UNDEFINED_VERTEX_ID)
-      return FALSE;
 
    if (!draw->render->allocate_vertices( draw->render,
                                          (ushort)feme->translate->key.output_stride,
@@ -386,9 +352,9 @@ static boolean fetch_emit_run_linear_elts( struct draw_pt_middle_end *middle,
    /* XXX: Draw arrays path to avoid re-emitting index list again and
     * again.
     */
-   draw->render->draw( draw->render, 
-                       draw_elts, 
-                       draw_count );
+   draw->render->draw_elements( draw->render, 
+                                draw_elts, 
+                                draw_count );
 
    /* Done -- that was easy, wasn't it:
     */
