@@ -7,7 +7,8 @@ FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
          intuition_misc inputhandler_support inputhandler_actions \
          menus barlabelclass fillrectclass groupgclass wbtasktalk \
          rootclass icclass modelclass itexticlass misc sysiclass menutask \
-	 windecorclass scrdecorclass menudecorclass monitorclass screennotifytask
+	 windecorclass scrdecorclass menudecorclass monitorclass screennotifytask \
+	 sysrequest_intern
 
 FUNCS := \
 	activategadget \
@@ -22,7 +23,7 @@ FUNCS := \
 	autorequest \
 	beginrefresh \
 	buildeasyrequestargs_aros \
-	buildsysrequest_aros \
+	buildsysrequest \
 	changedecorationa \
 	changescreenbuffer \
 	changewindowbox \
@@ -137,7 +138,7 @@ FUNCS := \
 	showwindow \
 	sizewindow \
         startscreennotifytaglist \
-	sysreqhandler_aros \
+	sysreqhandler \
 	timeddisplayalert \
 	unlockibase \
 	unlockpubscreen \

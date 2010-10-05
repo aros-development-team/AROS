@@ -80,6 +80,12 @@ void intrequest_initeasyreq(struct IntRequestUserData *udata,struct ExtEasyStruc
 #endif
 void render_requester(struct Requester *requester, struct IntuitionBase *IntuitionBase);
 
+struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct IntuiText *bodytext,
+				  struct IntuiText *postext, struct IntuiText *negtext,
+				  ULONG IDCMPFlags, WORD width, WORD height, struct IntuitionBase *IntuitionBase);
+LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput, struct IntuitionBase *IntuitionBase);
+void freesysreq_intern(struct Window *window, struct IntuitionBase *IntuitionBase);
+
 struct RawInfo
 {
     int Len;
@@ -104,7 +110,7 @@ AROS_UFP2(void, RequesterPutChar,
 //space between gadgets
 #define TEXTGADGETSPACING   4
 //space between textbox and gadgets row
-#define TEXTBOXBORDER_X     8
+#define TEXTBOXBORDER_X     16
 //min space between text and textboxborder
 #define TEXTBOXBORDER_Y     4
 #define BUTTONBORDER_X      8

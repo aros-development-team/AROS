@@ -5,11 +5,15 @@
 */
 
 #define	DEBUG_BUILDSYSREQUEST(x)
+#define DEBUG_FREESYSREQUEST(x)
+#define	DEBUG_SYSREQHANDLER(x)
 
 /**********************************************************************************************/
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/keymap.h>
+#include <proto/utility.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -24,17 +28,6 @@
 #include "intuition_intern.h"
 
 extern UWORD BgPattern[];
-
-/**********************************************************************************************/
-
-#define OUTERSPACING_X 		4
-#define OUTERSPACING_Y 		4
-#define GADGETGADGETSPACING 	8
-#define TEXTGADGETSPACING 	4
-#define TEXTBOXBORDER_X 	16
-#define TEXTBOXBORDER_Y 	4
-#define BUTTONBORDER_X 		8
-#define BUTTONBORDER_Y 		4
 
 /**********************************************************************************************/
 
@@ -72,62 +65,15 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
                           struct RastPort *rp, struct IntuiText *itext, WORD x, WORD y,
                           struct IntuitionBase *IntuitionBase);
 
-/*****************************************************************************
- 
-    NAME */
-#include <proto/intuition.h>
-#include <exec/types.h>
-#include <intuition/intuition.h>
+/**********************************************************************************************/
 
-    AROS_LH7(struct Window *, BuildSysRequest,
-
-/*  SYNOPSIS */
-         AROS_LHA(struct Window *   , window, A0),
-         AROS_LHA(struct IntuiText *, bodytext, A1),
-         AROS_LHA(struct IntuiText *, postext, A2),
-         AROS_LHA(struct IntuiText *, negtext, A3),
-         AROS_LHA(ULONG             , IDCMPFlags , D0),
-         AROS_LHA(WORD              , width, D2),
-         AROS_LHA(WORD              , height, D3),
-
-/*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 60, Intuition)
-
-/*  FUNCTION
-	Build and display a system requester.
-
-    INPUTS
-	window - The window in which the requester will appear
-	bodytext - The Text to be shown in the body of the requester
-	postext - The Text to be shown in the positive choice gadget
-	negtext - The Text to be shown in the negative choice gadget
-	IDCMPFlags - The IDCMP Flags for this requester
-	width, height - The dimensions of the requester
- 
-    RESULT
- 
-    NOTES
- 
-    EXAMPLE
- 
-    BUGS
- 
-    SEE ALSO
-	FreeSysRequest(), DisplayAlert(), ModifyIDCMP(), exec.library/Wait(),
-	Request(), AutoRequest(), EasyRequestArgs(), BuildEasyRequestArgs()
- 
-    INTERNALS
- 
-    HISTORY
- 
-*****************************************************************************/
+struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct IntuiText *bodytext,
+				  struct IntuiText *postext, struct IntuiText *negtext,
+				  ULONG IDCMPFlags, WORD width, WORD height, struct IntuitionBase *IntuitionBase)
 {
-    AROS_LIBFUNC_INIT
-
     struct Screen               *scr = NULL, *lockedscr = NULL;
     struct Window               *req;
     struct Gadget               *gadgets;
-    STRPTR                       reqtitle;
     STRPTR                       gadgetlabels[3];
     struct                       sysreqdims dims;
     struct IntRequestUserData   *requserdata;
@@ -145,10 +91,8 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
     if (!negtext || !bodytext) return NULL;
 
     /* get requester title */
-
-    reqtitle = NULL;
-    if (window) reqtitle = window->Title;
-    if (!reqtitle) reqtitle = "System Request"; /* stegerg: should be localized */
+    if (!reqtitle)
+	reqtitle = window ? window->Title : (STRPTR)"System Request"; /* stegerg: should be localized */
 
     /* get screen and screendrawinfo */
     if (window)
@@ -176,6 +120,12 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
         gadgetlabels[0] = negtext->IText;
         gadgetlabels[1] = NULL;
     }
+
+    /* EXPERIMENTAL: Obey user-supplied size if the text fits into it. Processed in buildsysreq_calculatedims().
+       This is experimental. Currently DisplayAlert() relies on ability to specify requester size.
+       Requester size actually determines inner text box size - sonic. */
+    dims.width  = width;
+    dims.height = height;
 
     /* create everything */
 
@@ -237,10 +187,154 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
     if (lockedscr) UnlockPubScreen(NULL, lockedscr);
 
     return NULL;
+}
 
-    AROS_LIBFUNC_EXIT
+/**********************************************************************************************/
 
-} /* BuildSysRequest */
+LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput, struct IntuitionBase *IntuitionBase)
+{
+    struct IntuiMessage *msg;
+    LONG                 result;
+
+    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: window 0x%lx IDCMPPtr 0x%lx WaitInput 0x%lx\n",
+                                (ULONG) window,
+                                (ULONG) IDCMPFlagsPtr,
+                                (ULONG) WaitInput));
+
+    if (window == 0)
+    {
+        result = 0;
+    }
+    else if (window == (struct Window *)1)
+    {
+        result = 1;
+    }
+    else
+    {
+        result = -2;
+
+        if (WaitInput)
+        {
+            WaitPort(window->UserPort);
+        }
+        while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)))
+        {
+            DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: msg 0x%lx class 0x%lx\n", (ULONG) msg, msg->Class));
+            switch (msg->Class)
+            {
+            /* we don't use VANILLA (filtered from useridcmp!) to get
+            all events we need */
+            case IDCMP_RAWKEY:
+            {
+    	    	#define RKBUFLEN 1
+		
+                struct InputEvent ie;
+                char 	    	  rawbuffer[RKBUFLEN];
+                
+                ie.ie_Class 	    = IECLASS_RAWKEY;
+                ie.ie_SubClass      = 0;
+                ie.ie_Code  	    = msg->Code;
+                ie.ie_Qualifier     = 0;
+                ie.ie_EventAddress  = (APTR *) *((ULONG *)msg->IAddress);
+		
+                if (KeymapBase && MapRawKey(&ie,rawbuffer,RKBUFLEN,0))
+                {
+                    if (msg->Qualifier & IEQUALIFIER_LCOMMAND)
+                    {
+                        if  (ToUpper(rawbuffer[0]) == ToUpper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue))
+                        {
+                            if (((struct IntRequestUserData *)window->UserData)->NumGadgets > 1)
+                            {
+                                result = 1;
+                            }
+			    else
+			    {
+                                result = 0;
+                            }
+                        }
+
+                        if  (ToUpper(rawbuffer[0]) == ToUpper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse))
+                        {
+                            result = 0;
+                        }
+                    }
+                }
+                break;
+            }
+
+            case IDCMP_GADGETUP:
+                result = ((struct Gadget *)msg->IAddress)->GadgetID;
+                break;
+
+            default:
+                DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: unknown IDCMP\n"));
+                if (result == -2)
+                {
+                    if (msg->Class & ((struct IntRequestUserData *)window->UserData)->IDCMP)
+                    {
+                        if (IDCMPFlagsPtr) *IDCMPFlagsPtr = msg->Class;
+                        result = -1;
+                    }
+                }
+                break;
+            }
+            ReplyMsg((struct Message *)msg);
+
+        } /* while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort))) */
+
+    } /* real window */
+
+    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: Result 0x%lx\n",result));
+
+    return result;
+}
+
+/**********************************************************************************************/
+
+void freesysreq_intern(struct Window *window, struct IntuitionBase *IntuitionBase)
+{
+    struct Screen   	    	*scr;
+    struct Gadget   	    	*gadgets;
+    STRPTR  	    	     	*gadgetlabels;
+    struct IntRequestUserData 	*requserdata;
+
+    DEBUG_FREESYSREQUEST(dprintf("intrequest_freesysrequest: window 0x%lx\n", (ULONG) window));
+
+    if ((window == NULL) || (window == (void *)1L))
+        return;
+
+    scr = window->WScreen;
+
+    requserdata = (struct IntRequestUserData *)window->UserData;
+
+    DEBUG_FREESYSREQUEST(dprintf("intrequest_freesysrequest: requserdata 0x%lx\n", (ULONG) requserdata));
+
+    gadgets = requserdata->Gadgets;
+
+    DEBUG_FREESYSREQUEST(dprintf("intrequest_freesysrequest: gadgets 0x%lx\n", (ULONG) gadgets));
+
+    /* Remove gadgets before closing window to avoid conflicts with system gadgets */
+    RemoveGList(window, gadgets, requserdata->NumGadgets);
+
+    gadgetlabels = requserdata->GadgetLabels;
+
+    DEBUG_FREESYSREQUEST(dprintf("intrequest_freesysrequest: gadgetlabels 0x%lx\n", (ULONG) gadgetlabels));
+
+    window->UserData = 0;
+    CloseWindow(window);
+    intrequest_freegadgets(gadgets, IntuitionBase);
+    intrequest_freelabels(gadgetlabels, IntuitionBase);
+
+#ifdef SKINS
+    DEBUG_FREESYSREQUEST(dprintf("intrequest_freesysrequest: freeitext 0x%lx\n", (ULONG) requserdata->freeitext));
+    if (requserdata->freeitext) intrequest_freeitext(requserdata->Text,IntuitionBase);
+    if (requserdata->backfilldata.image) int_FreeCustomImage(TYPE_REQUESTERCLASS,requserdata->dri,IntuitionBase);
+    if (requserdata->Logo) int_FreeCustomImage(TYPE_REQUESTERCLASS,requserdata->dri,IntuitionBase);
+    if (requserdata->ReqGadgets) FreeVec(requserdata->ReqGadgets);
+    if (requserdata->dri) FreeScreenDrawInfo(requserdata->ReqScreen,(struct DrawInfo *)requserdata->dri);
+#endif
+    FreeVec(requserdata);
+} /* FreeSysRequest */
 
 /**********************************************************************************************/
 
@@ -314,13 +408,14 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
     LONG  currentgadget = 0;
     WORD  itextwidth, itextheight;
     UWORD textboxwidth = 0, gadgetswidth; /* width of upper/lower part */
+    UWORD textboxheight;
 
     /* calculate height of requester */
     dims->fontheight = scr->RastPort.Font->tf_YSize;
 
     ReqITextSize(scr, itext, &itextwidth, &itextheight, IntuitionBase);
 
-    dims->height = scr->WBorTop + dims->fontheight + 1 +
+    textboxheight = scr->WBorTop + dims->fontheight + 1 +
                    OUTERSPACING_Y +
                    TEXTBOXBORDER_Y +
                    itextheight +
@@ -331,6 +426,16 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
                    BUTTONBORDER_Y +
                    OUTERSPACING_Y +
                    scr->WBorBottom;
+
+    /*
+     * Ensure that text fits into requested height.
+     * Note that calculated size will override user-supplied size if the latter
+     * is not large enough, but not vice versa.
+     * This behavior is experimental. DisplayAlert() currently relies on it - sonic
+     * See also similar check for width below.
+     */
+    if (textboxheight > dims->height)
+	dims->height = textboxheight;
 
     if (dims->height > scr->Height)
         return FALSE;
@@ -354,15 +459,15 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
 
     /* calculate width of requester and req text position */
     dims->itextleft = scr->WBorLeft + OUTERSPACING_X + TEXTBOXBORDER_X;
-    if (textboxwidth > gadgetswidth)
+    if (textboxwidth <= gadgetswidth)
     {
-        dims->width = textboxwidth;
+	dims->itextleft += (gadgetswidth - textboxwidth) / 2;
+	textboxwidth = gadgetswidth;
     }
-    else
-    {
-        dims->itextleft += (gadgetswidth - textboxwidth) / 2;
-        dims->width = gadgetswidth;
-    }
+
+    /* EXPERIMENTAL: Ensure that text fits into requested width */
+    if (textboxwidth > dims->width)
+	dims->width = textboxwidth;
 
     dims->width += OUTERSPACING_X * 2 + scr->WBorLeft + scr->WBorRight;
     if (dims->width > scr->Width)
@@ -490,6 +595,10 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
     SetDrMd(rp, JAM1);
     SetAPen(rp, dri->dri_Pens[TEXTPEN]);
 
+/* Experimental: obey font specified in supplied IntuiText structures.
+   Makes sense because coordinates specified in these structures are taken
+   into account, but i guess they are specified according to font size.
+   Currently DisplayAlert() relies on this behavior - sonic.
     while(itext)
     {
         Move(rp, x + itext->LeftEdge,
@@ -497,8 +606,8 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
         Text(rp, itext->IText, strlen(itext->IText));
 
         itext = itext->NextText;
-    }
+    }*/
+    int_PrintIText(rp, itext, x, y, TRUE, IntuitionBase);
 }
 
 /**********************************************************************************************/
-
