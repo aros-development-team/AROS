@@ -10,9 +10,14 @@ include $(SRCDIR)/$(CURDIR)/../mapi/glapi/sources.mak
 include $(SRCDIR)/$(CURDIR)/../mapi/mapi/sources.mak
 
 #MM- workbench-libs-complete : workbench-libs-mesa
-#MM workbench-libs-mesa : includes linklibs-galliumauxiliary \
-#MM workbench-libs-gallium workbench-libs-mesa-generated \
-#MM contrib-gnu-crosstools workbench-libs-mesa-cpp
+
+#MM- workbench-libs-mesa : workbench-libs-mesa-module test-mesa
+
+#MM- test-mesa : workbench-libs-mesa-module
+
+#MM workbench-libs-mesa-module : includes linklibs-galliumauxiliary \
+#MM workbench-libs-gallium workbench-libs-mesa-module-generated \
+#MM contrib-gnu-crosstools workbench-libs-mesa-module-cpp
 
 SHARED_LIB_SOURCES = \
             aros/arosmesacreatecontext \
@@ -149,15 +154,15 @@ else
   CXX_CC := $(TARGET_CXX)
 endif
 
-$(CXX_SOURCES) : workbench-libs-mesa-cpp-gendir
+$(CXX_SOURCES) : workbench-libs-mesa-module-cpp-gendir
 	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cpp to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
 
 #MM
-workbench-libs-mesa-cpp-gendir : 
+workbench-libs-mesa-module-cpp-gendir : 
 	@$(MKDIR) $(OBJDIR)/cpp
 
 #MM
-workbench-libs-mesa-cpp : $(CXX_SOURCES)
+workbench-libs-mesa-module-cpp : $(CXX_SOURCES)
 
 # Compilation of C++ GLSL compiler
 
@@ -167,15 +172,15 @@ workbench-libs-mesa-cpp : $(CXX_SOURCES)
 # Hack to get C++ objects linked into module
 LDFLAGS := $(CXX_OBJECTS)
 
-#MM- workbench-libs-mesa-quick : workbench-libs-mesa-cpp
+#MM- workbench-libs-mesa-module-quick : workbench-libs-mesa-module-cpp
 
-%build_module mmake=workbench-libs-mesa \
+%build_module mmake=workbench-libs-mesa-module \
     modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
     files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES)" \
     uselibs="galliumauxiliary rom gallium"
 
 #MM
-workbench-libs-mesa-generated : $(SRCDIR)/$(CURDIR)/main/api_exec_es1.c $(SRCDIR)/$(CURDIR)/main/api_exec_es2.c
+workbench-libs-mesa-module-generated : $(SRCDIR)/$(CURDIR)/main/api_exec_es1.c $(SRCDIR)/$(CURDIR)/main/api_exec_es2.c
 
 $(SRCDIR)/$(CURDIR)/main/api_exec_es1.c :
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/main/es_generator.py -S $(SRCDIR)/$(CURDIR)/main/APIspec.xml -V GLES1.1 > $@
