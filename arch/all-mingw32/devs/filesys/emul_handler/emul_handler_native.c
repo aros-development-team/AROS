@@ -11,7 +11,7 @@
 #include <shlobj.h>
 
 #include <stdio.h>
-#include <aros/kernel_host.h>
+#include <aros/irq.h>
 
 #include "dos_native.h"
 #include "emul_handler_intern.h"
