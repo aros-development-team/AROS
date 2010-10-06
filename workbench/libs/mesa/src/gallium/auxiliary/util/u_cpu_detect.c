@@ -195,7 +195,9 @@ cpuid(uint32_t ax, uint32_t *p)
    );
 #elif defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64)
    __asm __volatile (
+     "xchgq %%rbx, %1\n\t"
      "cpuid\n\t"
+     "xchgq %%rbx, %1"
      : "=a" (p[0]),
        "=S" (p[1]),
        "=c" (p[2]),
