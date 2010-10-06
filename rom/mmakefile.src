@@ -93,7 +93,8 @@ KOBJS_BASE := $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD)
 
 $(BINDIR)/boot/aros-base: $(KOBJS_BASE)
 	@$(ECHO) Linking $@...
-	@$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel-base.map \
+	@$(MKDIR) $(GENDIR)/boot
+	@$(TARGET_CC) $(GENMAP) $(GENDIR)/boot/kernel-base.map \
 	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
