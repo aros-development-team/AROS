@@ -20,17 +20,17 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
     files=$(DISK_FILES) uselibs="oop"
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
-NATIVE_LIBDIR := $(GENDIR)/lib
+NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := gdi_native
 
 NATIVE_LDFLAGS  := -shared -L$(NATIVE_LIBDIR)
 
-USER_INCLUDES := -I$(GENINCDIR)
+USER_INCLUDES := -I$(AROS_DEVELOPMENT)/$(CPU)-mingw32/include
 
 %build_prog mmake=kernel-hidd-wingdi-native \
     progname=wingdi.dll targetdir=$(NATIVE_BINDIR) \
-    files=$(NATIVE_FILES) compiler=kernel uselibs="kernel gdi32" \
+    files=$(NATIVE_FILES) compiler=kernel uselibs="aroskernel gdi32" \
     ldflags=$(NATIVE_LDFLAGS)
 
 %common

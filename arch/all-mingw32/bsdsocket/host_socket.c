@@ -1,4 +1,4 @@
-#include <aros/kernel_host.h>
+#include <aros/irq.h>
 
 #include <stdio.h>
 #include <windows.h>

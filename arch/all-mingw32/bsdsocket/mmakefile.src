@@ -58,17 +58,17 @@ FILES := bsdsocket_init bsdsocket_open bsdsocket_util netdb_util
     files="$(FILES) $(FUNCS)"
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
-NATIVE_LIBDIR := $(GENDIR)/lib
+NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := host_socket
 
 NATIVE_LDFLAGS := -shared -L$(NATIVE_LIBDIR)
 
-USER_INCLUDES := -I$(GENINCDIR)
+USER_INCLUDES := -I$(AROS_DEVELOPMENT)/$(CPU)-mingw32/include
 
 %build_prog mmake=bsdsocket-mingw32-native \
     progname=bsdsocket.dll targetdir=$(NATIVE_BINDIR) \
-    files=$(NATIVE_FILES) compiler=kernel uselibs="kernel Ws2_32" \
+    files=$(NATIVE_FILES) compiler=kernel uselibs="aroskernel Ws2_32" \
     ldflags=$(NATIVE_LDFLAGS)
 
 %common

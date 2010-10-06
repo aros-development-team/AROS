@@ -9,7 +9,7 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <stdio.h>
-#include <aros/kernel_host.h>
+#include <aros/irq.h>
 #include "gdi.h"
 #include "bitmap.h"
 

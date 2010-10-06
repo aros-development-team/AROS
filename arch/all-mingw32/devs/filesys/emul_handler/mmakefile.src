@@ -9,17 +9,17 @@ include $(TOP)/config/make.cfg
   files=emul_handler uselibs=rom
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
-NATIVE_LIBDIR := $(GENDIR)/lib
+NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := emul_handler_native
 
 NATIVE_LDFLAGS := -shared -L$(NATIVE_LIBDIR)
 
-USER_INCLUDES := -I$(GENINCDIR)
+USER_INCLUDES := -I$(AROS_DEVELOPMENT)/$(CPU)-mingw32/include
 
 %build_prog mmake=kernel-fs-emul-mingw32-native \
     progname=emul_handler.dll targetdir=$(NATIVE_BINDIR) \
-    files=$(NATIVE_FILES) compiler=kernel uselibs=kernel \
+    files=$(NATIVE_FILES) compiler=kernel uselibs=aroskernel \
     ldflags=$(NATIVE_LDFLAGS)
 
 %common
