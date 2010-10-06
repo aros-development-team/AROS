@@ -143,7 +143,11 @@ CXX_FLAGS := $(CFLAGS) $(USER_CFLAGS) -fno-rtti -fno-exceptions
 CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CXX_FLAGS)))
 
 # Define the use of cross compiler
-CXX_CC := $(TOOLDIR)/$(AROS_TARGET_CPU)-aros-g++
+ifeq ($(TARGET_CXX),)
+  CXX_CC := $(TOOLDIR)/$(AROS_TARGET_CPU)-aros-g++
+else
+  CXX_CC := $(TARGET_CXX)
+endif
 
 $(CXX_SOURCES) : workbench-libs-mesa-cpp-gendir
 	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cpp to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"

@@ -1,4 +1,4 @@
-#   Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: target.cfg - an autoconf output file for make variables.
@@ -13,6 +13,7 @@ SYS_INCLUDES	:= @aros_target_incl@
 
 TARGET_CC	:= @aros_cc_pre@ @aros_target_cc@
 KERNEL_CC	:= @aros_kernel_cc@
+TARGET_CXX	:= @aros_target_cxx@
 TARGET_AS	:= @aros_target_as@
 TARGET_LD	:= @aros_target_ld@
 SHARED_LD	:= @aros_shared_ld@
