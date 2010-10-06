@@ -197,7 +197,7 @@ cpuid(uint32_t ax, uint32_t *p)
    __asm __volatile (
      "cpuid\n\t"
      : "=a" (p[0]),
-       "=b" (p[1]),
+       "=S" (p[1]),
        "=c" (p[2]),
        "=d" (p[3])
      : "0" (ax)
