@@ -13,7 +13,7 @@ KOBJS_HOSTED := $(KOBJSDIR)/bootloader_resource.o $(KOBJSDIR)/dosboot_resource.o
 
 $(BINDIR)/boot/aros-strap-hosted: $(KOBJS_HOSTED)
 	@$(ECHO) Linking $@...
-	@$(MKDIR) $(GENDIR)/boot
+	@$(MKDIR) $(GENDIR)/boot $(BINDIR)/boot
 	@$(TARGET_CC) $(GENMAP) $(GENDIR)/boot/kernel-hosted.map \
 	  -o $@ $^ $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm

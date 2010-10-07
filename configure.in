@@ -813,22 +813,28 @@ case "$target_os" in
     darwin*)
 	aros_target_arch="darwin"
 	aros_flavour="emulation"
-	dnl FIXME
-	dnl This test bypass was implemented for Darwin by port's author.
-	dnl I wonder why, since darwin port needs this function.
-	dnl I left it here just because port author did it.
-	need_dlopen="no"
 	case "$target_cpu" in
-		*i?86*)
-			aros_target_cpu="i386"
-			aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-			gcc_target_cpu="i386"
-			aros_object_format="elf_i386"
-			aros_target_strip_flags="-x"
-			;;
-		*)
-			AC_MSG_ERROR("Unsupported target CPU for darwin hosted flavour -- $target_cpu")
-			;;
+	    *i?86*)
+		aros_target_cpu="i386"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+		gcc_target_cpu="i386"
+		aros_object_format="elf_i386"
+		aros_target_strip_flags="-x"
+		aros_target_cc="i386-aros-gcc"
+		aros_target_cxx="i386-aros-g++"
+		aros_target_ld="i386-aros-ld"
+		aros_target_as="i386-aros-as"
+		aros_target_ar="i386-aros-ar"
+		aros_target_ranlib="i386-aros-ranlib"
+		aros_target_nm="i386-aros-nm"
+		aros_target_strip="i386-aros-strip"
+		aros_target_objcopy="i386-aros-objcopy"
+		aros_target_objdump="i386-aros-objdump"
+		target_tool_prefix="i386-mingw32-"
+		;;
+	    *)
+		AC_MSG_ERROR("Unsupported target CPU for darwin hosted flavour -- $target_cpu")
+		;;
 	esac
 	;;
 
@@ -1198,9 +1204,6 @@ if test "$aros_host_cpu" == "x86_64" ; then
 	    cross_compiling=no
 	fi
     fi
-fi
-if test "$aros_host_arch" == "darwin" ; then
-    cross_compiling=yes
 fi
 
 # Set prefix for target compiler etc. if we're cross-compiling

@@ -1,35 +1,27 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _SIGCORE_H
-#define _SIGCORE_H
+/*
+ * This thing is defined in sys/_types.h which conflicts with AROS include.
+ * FIXME: such hacks are not good, perhaps we should supply
+ * "-I$(GENINCDIR) -nostdinc -idirafter /usr/include" to AROS gcc when
+ * building exec and kernel
+ * P.S. exec should really not depend on these things.
+ */
+#define __darwin_sigset_t __uint32_t
 
-#include <machine/psl.h>
-#include <sys/types.h>
-#include <sys/param.h>
+#include <machine/_types.h>
 #include <sys/ucontext.h>
-#include <signal.h>
-#include <errno.h>
-#include "etask.h"
 
-/* Put a value of type SP_TYPE on the stack or get it off the stack. */
-#define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
-#define _POP(sp)            (*sp++)
-
-typedef ucontext_t sigcontext_t;
+typedef ucontext_t regs_t;
 
 #define SIGHANDLER	bsd_sighandler
 #define SIGHANDLER_T	__sighandler_t *
 
-#define SP_TYPE		long
-#define CPU_NUMREGS	0
-
 #define SC_DISABLE(sc)   (sc->sc_mask = sig_int_mask)
 #define SC_ENABLE(sc)    (sigemptyset(&sc->sc_mask))
-
-/* this is from wine's dlls/ntdll/signal_i386.c, which is under lgpl */
 
 /* work around silly renaming of struct members in OS X 10.5 */
 #if __DARWIN_UNIX03 && defined(_STRUCT_X86_EXCEPTION_STATE32)
@@ -71,7 +63,7 @@ typedef ucontext_t sigcontext_t;
  * We can't have an #ifdef based on FreeBSD here because this structure
  * is (wrongly) accessed from rom/exec.
  */
-struct AROS_cpu_context
+struct AROSCPUContext
 {
     ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
     int	errno_backup;
@@ -79,17 +71,10 @@ struct AROS_cpu_context
 	int eflags;
 };
 
-#define SIZEOF_ALL_REGISTERS	(sizeof(struct AROS_cpu_context))
-#define GetCpuContext(task)	((struct AROS_cpu_context *)\
-				(GetIntETask(task)->iet_Context))
-#define GetSP(task)		(*(SP_TYPE **)(&task->tc_SPReg))
-
-#define GLOBAL_SIGNAL_INIT \
-	static void sighandler (int sig, sigcontext_t * sc); \
-							     \
-	static void SIGHANDLER (int sig, int code, struct sigcontext *sc) \
+#define GLOBAL_SIGNAL_INIT(sighandler) \
+	static void sighandler ## _gate (int sig, int code, struct sigcontext *sc) \
 	{						     \
-	    sighandler( sig, (sigcontext_t*)sc);             \
+	    sighandler( sig, (regs_t*)sc);             \
 	}
 
 #define SAVE_CPU(cc,sc)                                              \
@@ -118,17 +103,6 @@ struct AROS_cpu_context
         PC(sc) = (cc)->regs[8];                                     \
     } while (0)
 
-#define SAVE_ERRNO(cc)                                              \
-    do {                                                            \
-	(cc)->errno_backup = errno;                                 \
-    } while (0)
-
-#define RESTORE_ERRNO(cc)                                           \
-    do {                                                            \
-	errno = (cc)->errno_backup;                                 \
-    } while (0)
-
-
 #ifndef NO_FPU
 
 #       define SAVE_FPU(cc,sc)                                              \
@@ -143,7 +117,7 @@ struct AROS_cpu_context
 
 #       define HAS_FPU(sc)      1
 
-#       define PREPARE_FPU(cc)                                              \
+#       define PREPARE_INITIAL_CONTEXT(cc)                                  \
             do {                                                            \
             } while (0)
 
@@ -160,41 +134,30 @@ struct AROS_cpu_context
 
 #   define HAS_FPU(sc)      0
 
-#   define PREPARE_FPU(cc)                                          \
+#   define PREPARE_INITIAL_CONTEXT(cc)                              \
         do {                                                        \
         } while (0)
 
 #endif
 
-#define PREPARE_INITIAL_FRAME(sp,startpc)                           \
-    do {                                                            \
-        GetCpuContext(task)->regs[7] = 0;                           \
-        GetCpuContext(task)->regs[8] = (startpc);                   \
+#define PREPARE_INITIAL_FRAME(ctx, sp, startpc)     \
+    do {                                            \
+        ctx->regs[7] = 0;                           \
+        ctx->regs[8] = (startpc);                   \
     } while (0)
 
-#define PREPARE_INITIAL_CONTEXT(task,startpc)                       \
+#define SAVEREGS(cc, sc)                                            \
     do {                                                            \
-        PREPARE_FPU(GetCpuContext(task));                           \
-    } while (0)
-
-#define SAVEREGS(task,sc)                                           \
-    do {                                                            \
-        struct AROS_cpu_context *cc = GetCpuContext(task);          \
-        GetSP(task) = (SP_TYPE *)SP(sc);                            \
         if (HAS_FPU(sc))                                            \
-            SAVE_FPU(cc,sc);                                        \
-        SAVE_CPU(cc,sc);                                            \
-        SAVE_ERRNO(cc);                                             \
+            SAVE_FPU((cc),sc);                                      \
+        SAVE_CPU((cc),sc);                                          \
     } while (0)
 
-#define RESTOREREGS(task,sc)                                        \
+#define RESTOREREGS(cc, sc)                                         \
     do {                                                            \
-        struct AROS_cpu_context *cc = GetCpuContext(task);          \
-	RESTORE_ERRNO(cc);                                          \
-	RESTORE_CPU(cc,sc);                                         \
+	RESTORE_CPU((cc),sc);                                       \
         if (HAS_FPU(sc))                                            \
-            RESTORE_FPU(cc,sc);                                     \
-	SP(sc) = (SP_TYPE *)GetSP(task);                            \
+            RESTORE_FPU((cc),sc);                                   \
 	} while (0)
 
 #define PRINT_SC(sc) \
@@ -207,19 +170,16 @@ struct AROS_cpu_context
 	    , R4(sc), R5(sc), R6(sc) \
 	)
 
-#define PRINT_CPUCONTEXT(task) \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
+#define PRINT_CPU_CONTEXT(ctx) \
+	printf ("    FP=%08lx  PC=%08lx\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
-	    , (ULONG)(GetSP(task)) \
-	    , GetCpuContext(task)->fp, GetCpuContext(task)->pc, \
-	    , GetCpuContext(task)->regs[0] \
-	    , GetCpuContext(task)->regs[1] \
-	    , GetCpuContext(task)->regs[2] \
-	    , GetCpuContext(task)->regs[3] \
-	    , GetCpuContext(task)->regs[4] \
-	    , GetCpuContext(task)->regs[5] \
-	    , GetCpuContext(task)->regs[6] \
+	    , ctx->fp, ctx->pc, \
+	    , ctx->regs[0] \
+	    , ctx->regs[1] \
+	    , ctx->regs[2] \
+	    , ctx->regs[3] \
+	    , ctx->regs[4] \
+	    , ctx->regs[5] \
+	    , ctx->regs[6] \
 	)
-
-#endif /* _SIGCORE_H */
