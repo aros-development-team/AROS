@@ -193,7 +193,7 @@ cpuid(uint32_t ax, uint32_t *p)
        "=d" (p[3])
      : "0" (ax)
    );
-#elif defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64)
+#elif defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64) && !defined(PIPE_OS_AROS)
    __asm __volatile (
      "xchgq %%rbx, %1\n\t"
      "cpuid\n\t"
