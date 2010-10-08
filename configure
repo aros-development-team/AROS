@@ -3962,6 +3962,9 @@ case "$host_os" in
 	    *x86_64*)
 		aros_host_cpu="x86_64"
 		;;
+	    *powerpc*)
+	    	aros_host_cpu="ppc"
+	    	;;
 	    *)
 		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
 echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
@@ -4025,12 +4028,15 @@ echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 	    *i?86*)
 		aros_host_cpu="i386"
 		;;
+	    *x86_64*)
+		aros_host_cpu="x86_64"
+		;;
 	    *powerpc*)
 	    	aros_host_cpu="ppc"
 		;;
 	    *)
-		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
-echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
+		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for Darwin host -- $host_cpu\"" >&5
+echo "$as_me: WARNING: \"Unknown CPU for Darwin host -- $host_cpu\"" >&2;}
 		aros_host_cpu="$host_cpu"
 		;;
 	esac
@@ -8497,6 +8503,7 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 	    *i?86*)
 		aros_target_cpu="i386"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 		aros_object_format="elf_i386"
 		aros_target_strip_flags="-x"
@@ -8510,7 +8517,43 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 		aros_target_strip="i386-aros-strip"
 		aros_target_objcopy="i386-aros-objcopy"
 		aros_target_objdump="i386-aros-objdump"
-		target_tool_prefix="i386-mingw32-"
+		target_tool_prefix="i686-apple-darwin10-"
+		;;
+	    *x86_64*)
+		aros_target_cpu="x86_64"
+                aros_object_format="elf_x86_64"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
+		aros_default_wbdepth=8
+		gcc_target_cpu="x86_64"
+		aros_target_cc="x86_64-aros-gcc"
+		aros_target_cxx="x86_64-aros-g++"
+		aros_target_ld="x86_64-aros-ld"
+		aros_target_as="x86_64-aros-as"
+		aros_target_ar="x86_64-aros-ar"
+		aros_target_ranlib="x86_64-aros-ranlib"
+		aros_target_nm="x86_64-aros-nm"
+		aros_target_strip="x86_64-aros-strip"
+		aros_target_objcopy="x86_64-aros-objcopy"
+		aros_target_objdump="x86_64-aros-objdump"
+		target_tool_prefix="i686-apple-darwin10-"
+		;;
+	    *ppc*)
+		aros_target_cpu="ppc"
+                aros_object_format="elf32_ppc"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+		aros_default_wbdepth=8
+		gcc_target_cpu="ppc"
+		aros_target_cc="ppc-aros-gcc"
+		aros_target_cxx="ppc-aros-g++"
+		aros_target_ld="ppc-aros-ld"
+		aros_target_as="ppc-aros-as"
+		aros_target_ar="ppc-aros-ar"
+		aros_target_ranlib="ppc-aros-ranlib"
+		aros_target_nm="ppc-aros-nm"
+		aros_target_strip="ppc-aros-strip"
+		aros_target_objcopy="ppc-aros-objcopy"
+		aros_target_objdump="ppc-aros-objdump"
+		target_tool_prefix="powerpc-apple-darwin10-"
 		;;
 	    *)
 		{ { echo "$as_me:$LINENO: error: \"Unsupported target CPU for darwin hosted flavour -- $target_cpu\"" >&5
