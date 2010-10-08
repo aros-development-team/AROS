@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <dirent.h>
+#include <limits.h>
 #include <locale.h>
 #include <stdarg.h>
 #include <stdio.h>
