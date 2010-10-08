@@ -5,7 +5,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM linklibs-galliumauxiliary : includes linklibs-galliumauxiliary-generated
+##MM linklibs-galliumauxiliary : includes linklibs-galliumauxiliary-generated
 
 ifeq ($(AROS_TARGET_CPU), i386)
   FFIXED = -ffixed-ebx
@@ -170,8 +170,8 @@ USER_INCLUDES := \
 
 USER_CFLAGS := -ffast-math $(FFIXED)
 
-%build_linklib mmake=linklibs-galliumauxiliary libname=galliumauxiliary \
-    files="$(GALLIUM_AUXILIARY_SOURCES) $(GALLIUM_AUXILIARY_GENERATED_SOURCES)"
+#%build_linklib mmake=linklibs-galliumauxiliary libname=galliumauxiliary \
+#    files="$(GALLIUM_AUXILIARY_SOURCES) $(GALLIUM_AUXILIARY_GENERATED_SOURCES)"
 
 #MM
 linklibs-galliumauxiliary-generated : $(SRCDIR)/$(CURDIR)/util/u_format_table.c $(SRCDIR)/$(CURDIR)/util/u_format_srgb.c $(SRCDIR)/$(CURDIR)/util/u_half.c $(SRCDIR)/$(CURDIR)/indices/u_unfilled_gen.c $(SRCDIR)/$(CURDIR)/indices/u_indices_gen.c
