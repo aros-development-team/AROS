@@ -606,7 +606,7 @@ ifeq (%(linker),host)
 %(prog) : STRIPCMD:=$(HOST_STRIP)
 endif
 ifeq (%(linker),kernel)
-%(prog) : CMD:=$(KERNEL_CC)
+%(prog) : CMD:=$(KERNEL_CC) $(KERNEL_LDFLAGS)
 %(prog) : STRIPCMD:=$(ECHO) >/dev/null
 endif
 
