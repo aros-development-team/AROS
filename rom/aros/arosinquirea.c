@@ -11,7 +11,9 @@
 #include <utility/tagitem.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
+
 #include "aros_intern.h"
 
 #define DEBUG 0
