@@ -9,9 +9,9 @@ include $(SRCDIR)/$(CURDIR)/sources.mak
 include $(SRCDIR)/$(CURDIR)/../mapi/glapi/sources.mak
 include $(SRCDIR)/$(CURDIR)/../mapi/mapi/sources.mak
 
-#MM- workbench-libs-complete : workbench-libs-mesa
+##MM- workbench-libs-complete : workbench-libs-mesa
 
-#MM- workbench-libs-mesa : workbench-libs-mesa-module test-mesa
+##MM- workbench-libs-mesa : workbench-libs-mesa-module test-mesa
 
 #MM- test-mesa : workbench-libs-mesa-module
 
@@ -179,10 +179,10 @@ LDFLAGS := $(CXX_OBJECTS)
 
 #MM- workbench-libs-mesa-module-quick : workbench-libs-mesa-module-cpp-quick
 
-%build_module mmake=workbench-libs-mesa-module \
-    modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
-    files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES)" \
-    uselibs="galliumauxiliary rom gallium"
+#%build_module mmake=workbench-libs-mesa-module \
+#    modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
+#    files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES)" \
+#    uselibs="galliumauxiliary rom gallium"
 
 #MM
 workbench-libs-mesa-module-generated : $(SRCDIR)/$(CURDIR)/main/api_exec_es1.c $(SRCDIR)/$(CURDIR)/main/api_exec_es2.c
