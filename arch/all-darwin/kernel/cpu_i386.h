@@ -171,10 +171,10 @@ struct AROSCPUContext
 	)
 
 #define PRINT_CPU_CONTEXT(ctx) \
-	printf ("    FP=%08lx  PC=%08lx\n" \
+	bug ("    FP=%08lx  PC=%08lx\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
-	    , ctx->fp, ctx->pc, \
+	    , ctx->regs[7], ctx->regs[8] \
 	    , ctx->regs[0] \
 	    , ctx->regs[1] \
 	    , ctx->regs[2] \
