@@ -8503,6 +8503,7 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 	    *i?86*)
 		aros_target_cpu="i386"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+		aros_kernel_cflags="$aros_kernel_cflags -m32"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 		aros_object_format="elf_i386"
@@ -8523,6 +8524,7 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 		aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
+                aros_kernel_cflags="$aros_kernel_cflags -m64"
 		aros_default_wbdepth=8
 		gcc_target_cpu="x86_64"
 		aros_target_cc="x86_64-aros-gcc"
