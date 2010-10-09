@@ -135,7 +135,7 @@ static void SendEvent(struct emulbase *emulbase, LONG event) {
     struct IOStdReq *InputRequest;
     struct MsgPort *InputPort;
     struct InputEvent *ie;
-    D(bug("[afs] os_aros_support/SendEvent\n"));
+    D(bug("[emul] SendEvent\n"));
     if ((InputPort = (struct MsgPort*)CreateMsgPort())) {
 
         if ((InputRequest = (struct IOStdReq*)CreateIORequest(InputPort, sizeof(struct IOStdReq)))) {
