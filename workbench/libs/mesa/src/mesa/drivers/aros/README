@@ -1,2 +1,0 @@
-The sources are left for reference. AROS port of Mesa currently uses Gallium
-and software rendering is done via Softpipe Gallium driver.
