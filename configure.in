@@ -1322,10 +1322,11 @@ if test "$crosstools" != "yes"; then
     AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
     AROS_TOOL_TARGET(aros_target_strip_ln,strip,$aros_target_strip)
     AROS_REQUIRED(strip,$aros_target_strip_ln)
-    if test "$aros_target_cxx" != ""; then
-	AC_PATH_PROG(aros_target_cxx,$aros_target_cxx)
-	AROS_REQUIRED(c++,$aros_target_cxx)
-    fi
+# Temporarily disabled in order to let Windows-hosted port to build.
+#    if test "$aros_target_cxx" != ""; then
+#	AC_PATH_PROG(aros_target_cxx,$aros_target_cxx)
+#	AROS_REQUIRED(c++,$aros_target_cxx)
+#    fi
 else
 # Cancel preinstalled C++ compiler because it will be built as part of crosstools
     aros_target_cxx=""
