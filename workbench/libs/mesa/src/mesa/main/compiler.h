@@ -320,6 +320,9 @@ static INLINE GLuint CPU_TO_LE32(GLuint x)
 /**
  * ASSERT macro
  */
+#if defined(__AROS__)
+#undef ASSERT
+#endif
 #if !defined(_WIN32_WCE)
 #if defined(BUILD_FOR_SNAP) && defined(CHECKED)
 #  define ASSERT(X)   _CHECK(X) 
