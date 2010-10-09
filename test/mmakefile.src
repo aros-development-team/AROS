@@ -59,6 +59,7 @@ COMMONTESTFILES := \
     showvisregion \
     showvisshape \
     sortlayercr \
+    stackcheck \
     stackswap \
     signaltest \
     strtodate \
