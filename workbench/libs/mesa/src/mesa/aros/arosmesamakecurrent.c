@@ -43,7 +43,7 @@
 
     if (amesa)
     {
-        struct st_context_iface * cur_ctx = amesa->stapi->get_current(amesa->stapi);
+        struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
         
         if (amesa->st != cur_ctx)
         {
@@ -51,14 +51,14 @@
             AROSMesaRecalculateBufferWidthHeight(amesa);
 
             /* Attach */
-            amesa->stapi->make_current(amesa->stapi, amesa->st, 
+            glstapi->make_current(glstapi, amesa->st, 
                 &amesa->framebuffer->base, &amesa->framebuffer->base);
         }            
     }
     else
     {
         /* Detach */
-        amesa->stapi->make_current(amesa->stapi, NULL, NULL, NULL);
+        glstapi->make_current(glstapi, NULL, NULL, NULL);
     }
         
     RESTORE_REG

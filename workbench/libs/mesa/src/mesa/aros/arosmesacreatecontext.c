@@ -4,7 +4,6 @@
 */
 
 #include "arosmesa_funcs.h"
-#include "state_tracker/st_gl_api.h"
 #include <proto/exec.h>
 #include <aros/debug.h>
 #include <proto/gallium.h>
@@ -146,12 +145,6 @@
         return NULL;
     }
     
-    if (!(amesa->stapi = st_gl_api_create()))
-    {
-        D(bug("[AROSMESA] AROSMesaCreateContext: ERROR - failed to create ST GL API\n"));
-        goto error_out;
-    }
-    
     AROSMesaSelectRastPort(amesa, tagList);
     if (!amesa->visible_rp)
     {
@@ -185,7 +178,7 @@
     attribs.profile = ST_PROFILE_DEFAULT;
     attribs.visual = amesa->stvis;
    
-    amesa->st = amesa->stapi->create_context(amesa->stapi, amesa->stmanager, &attribs, NULL);
+    amesa->st = glstapi->create_context(glstapi, amesa->stmanager, &attribs, NULL);
     if (!amesa->st)
     {
         D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to create mesa state tracker context\n"));
@@ -204,7 +197,6 @@
 
 error_out:
     if (amesa->stmanager) AROSMesaDestroyStManager(amesa->stmanager);
-    if (amesa->stapi) amesa->stapi->destroy(amesa->stapi);
     if (amesa) AROSMesaDestroyContext(amesa);
     return NULL;
 }

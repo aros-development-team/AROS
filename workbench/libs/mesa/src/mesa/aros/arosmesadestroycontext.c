@@ -53,19 +53,19 @@
 
         if (ctx)
         {
-            struct st_context_iface * cur_ctx = amesa->stapi->get_current(amesa->stapi);
+            struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
 
             if (cur_ctx == ctx)
             {
                 /* Unbind if current */
                 amesa->st->flush(amesa->st, 0, NULL);
-                amesa->stapi->make_current(amesa->stapi, NULL, NULL, NULL);
+                glstapi->make_current(glstapi, NULL, NULL, NULL);
             }
 
             amesa->st->destroy(amesa->st);
             AROSMesaDestroyFrameBuffer(amesa->framebuffer);
             AROSMesaDestroyStManager(amesa->stmanager);
-            amesa->stapi->destroy(amesa->stapi);
+            glstapi->destroy(glstapi);
             AROSMesaDestroyContext(amesa);
         }
     }
