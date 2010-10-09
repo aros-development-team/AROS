@@ -37,7 +37,6 @@ struct arosmesa_context
 {
     struct st_context_iface     *st;
     struct st_visual            stvis;
-    struct st_api               *stapi;
     struct st_manager           *stmanager;
 
     struct arosmesa_framebuffer *framebuffer;
@@ -55,5 +54,8 @@ struct arosmesa_context
     ULONG                      top, bottom;            /* offsets due to window border */
     ULONG                      left, right;            /* offsets due to window border */    
 };
+
+/* GL API for state tracker */
+extern struct st_api * glstapi;
 
 #endif /* AROSMESA_INTERNAL_H */
