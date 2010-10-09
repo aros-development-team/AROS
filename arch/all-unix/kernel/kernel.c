@@ -56,7 +56,7 @@ struct ExecBase *SysBase;
 
 static void core_Trap(int sig, regs_t *regs)
 {
-    void (*trapHandler)(unsigned long, regs_t *) = NULL;
+    void (*trapHandler)(unsigned long, struct AROSCPUContext *) = NULL;
     struct SignalTranslation *s;
     struct AROSCPUContext ctx;
 
@@ -238,23 +238,30 @@ static int InitCore(struct KernelBase *KernelBase)
     /* SIGUSRs are software interrupts, we also never block them */
     sigdelset(&PD(KernelBase).sig_int_mask, SIGUSR1);
     sigdelset(&PD(KernelBase).sig_int_mask, SIGUSR2);
+    /* We want to be able to interrupt AROS using Ctrl-C in its console,
+       so exclude SIGINT too. */
+    sigdelset(&PD(KernelBase).sig_int_mask, SIGINT);
 
     /*
      * Any interrupt including software one must disable
      * all interrupts. Otherwise one interrupt may happen
-     * between interrupt handler entry and supervisor mode
-     * mark. This can cause bad things in cpu_Dispatch()
+     * between interrupt handler entry and supervisor count
+     * increment. This can cause bad things in cpu_Dispatch()
      */
     sa.sa_mask = PD(KernelBase).sig_int_mask;
 
     /* Install interrupt handlers */
-    SETHANDLER(sa, core_SysCall);
-    sigaction(SIGUSR1, &sa, NULL);
-
     SETHANDLER(sa, core_IRQ);
-    sigaction(SIGUSR2, &sa, NULL);
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGIO  , &sa, NULL);
+
+    /* Software IRQs do not need to block themselves. Anyway we know when we send them. */
+    sa.sa_flags |= SA_NODEFER;
+
+    sigaction(SIGUSR2, &sa, NULL);
+
+    SETHANDLER(sa, core_SysCall);
+    sigaction(SIGUSR1, &sa, NULL);
 
     /* We need to start up with disabled interrupts */
     sigprocmask(SIG_BLOCK, &PD(KernelBase).sig_int_mask, NULL);
