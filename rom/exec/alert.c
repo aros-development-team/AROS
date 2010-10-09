@@ -10,12 +10,18 @@
 #include <exec/execbase.h>
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <string.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"
 
 #define ALERT_WIDTH 80
+
+/* x86/64 kernel.resource doesn't have KrnIsSuper() */
+#ifndef KrnIsSuper
+#define KrnIsSuper() 0
+#endif
 
 static UBYTE *const fmtstring = "Task %08lx - %s";
 static UBYTE *const errstring = "Error %08lx - ";
@@ -95,10 +101,14 @@ static void PrintFrame(void)
     UBYTE buffer[256], *buf;
     struct Task *task = SysBase->ThisTask;
 
-    /* First try to issue an Intuition requester */
-    alertNum = Exec_UserAlert(alertNum, task, SysBase);
-    if (!alertNum)
-	return;
+    /* If we are running in user mode we should first try to report a problem using AROS'
+       own way to do it */
+    if (!KrnIsSuper())
+    {
+        alertNum = Exec_UserAlert(alertNum, task, SysBase);
+	if (!alertNum)
+	    return;
+    }
 
     /* We're here if Intuition failed. Print alert to the debug output and reboot.
        In future we should have more intelligent handling for such a case. For
