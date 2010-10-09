@@ -1,67 +1,51 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReadBattClock() function.
     Lang: english
 */
 
-#include "battclock_intern.h"
 #include <proto/battclock.h>
 #include <proto/utility.h>
 #include <utility/date.h>
-#if 0
-#include <aros/host-conf.h>
-#endif
 
 #include <time.h>
 
+#include "battclock_intern.h"
 
 AROS_LH0(ULONG, ReadBattClock, struct BattClockBase *, BattClockBase, 2, Battclock)
 {
     AROS_LIBFUNC_INIT
 
     /*
-	This is mostly an example.
-	It is quite possible that this time value is not for the local
-	timezone, so it has to be converted.
-    */
+     * Here we hope that AROS definition of time_t and struct tm are the same
+     * on both host OS and AROS. This seems to always be true, time_t always
+     * has CPU word size and struct tm is pretty standard thing.
+     */
     time_t t;
     struct tm *tm;
+    struct ClockData date;
 
-    time(&t);
-    tm = localtime(&t);
+    BattClockBase->SysIFace->time(&t);
 
-#if 1
-    {
-    	struct ClockData date;
-	
-	date.year  = tm->tm_year + 1900;
-	date.month = tm->tm_mon + 1;
-	date.mday  = tm->tm_mday;
-	date.hour  = tm->tm_hour;
-	date.min   = tm->tm_min;
-	date.sec   = tm->tm_sec;
-	
-	return Date2Amiga(&date);
-    }
-    
-#else
     /*
-	This time is however relative to 1.1.1970, so we have to subtract a
-	large number of seconds so that things actually work correctly.
+     * On UNIX time() returns local time instead of GMT.
+     * So we have all this clutter. Note that we use host function
+     * in order to convert to GMT while we could in fact use AROS one.
+     * This is because theoretically AROS and our host can be set
+     * to different time zones.
+     */
+    tm = BattClockBase->SysIFace->localtime(&t);
 
-	There is a problem here that 8 years before the Amiga clock dies,
-	the Unix system clock will have problems as it will wrap around.
-	Still, I'll be dead, and by then they won't be using 32-bit clocks
-	I expect...
-    */
-#ifdef HAVE_STRUCT_TM_TM_GMTOFF
-    return (t - 252460800 + tm->tm_gmtoff);
-#else
-    return (t - 252460800);
-#endif
-#endif
+    date.year  = tm->tm_year + 1900;
+    date.month = tm->tm_mon + 1;
+    date.mday  = tm->tm_mday;
+    date.hour  = tm->tm_hour;
+    date.min   = tm->tm_min;
+    date.sec   = tm->tm_sec;
+
+    return Date2Amiga(&date);
 
     AROS_LIBFUNC_EXIT
 } /* ReadBattClock */
