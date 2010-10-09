@@ -111,8 +111,13 @@ struct AROSCPUContext
 /*
     Macros to enable or disable all signals after the signal handler
     has returned and the normal execution commences.
+
+    WARNING!!! If you change #define USE_SA_SIGINFO to 1, this will
+    stop working! In this case Linux will use ucontext->uc_sigmask
+    to store original signal mask. See x86-64 and PPC implementation
+    of these macros for examples.
 */
-#define SC_DISABLE(sc)   ((sc)->oldmask = ~0L)
+#define SC_DISABLE(sc)   ((sc)->oldmask = PD(KernelBase).sig_int_mask.__val[0])
 #define SC_ENABLE(sc)    ((sc)->oldmask = 0L)
 
 /*
