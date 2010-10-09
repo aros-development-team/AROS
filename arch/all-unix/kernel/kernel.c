@@ -129,7 +129,7 @@ static void core_Trap(int sig, regs_t *regs)
  * Similarly, KrnSwitch() is called only in Wait(), after
  * setting state to TS_WAIT. In other cases it's KrnSchedule().
  */
-static void core_SysCall(int sig, regs_t *sc)
+static void core_SysCall(int sig, regs_t *regs)
 {
     struct Task *task = SysBase->ThisTask;
     struct AROSCPUContext *ctx;
@@ -148,11 +148,11 @@ static void core_SysCall(int sig, regs_t *sc)
     /* If the task is already in some list with appropriate state, it's SC_SWITCH */
     case TS_READY:
     case TS_WAIT:
-	cpu_Switch(sc);
+	cpu_Switch(regs);
 
     /* If the task is removed, it's simply SC_DISPATCH */
     case TS_REMOVED:
-	cpu_Dispatch(sc);
+	cpu_Dispatch(regs);
 	break;
 
     /* Special state is used for returning from exception */
@@ -164,9 +164,9 @@ static void core_SysCall(int sig, regs_t *sc)
         SysBase->ThisTask->tc_SPReg += sizeof(struct AROSCPUContext);
 
         /* Restore the signaled context. */
-        RESTOREREGS(ctx, sc);
+        RESTOREREGS(ctx, regs);
 	errno = ctx->errno_backup;
-	SP(sc) = (IPTR)SysBase->ThisTask->tc_SPReg;
+	SP(regs) = (IPTR)SysBase->ThisTask->tc_SPReg;
 
         SysBase->ThisTask->tc_State = TS_RUN;
 	Enable();

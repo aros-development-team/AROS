@@ -2,7 +2,7 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Macros to handle unix signals
+    Desc: Macros to handle unix signals, PPC version
     Lang: english
 */
 
@@ -16,13 +16,10 @@
  */
 #define EXCEPTIONS_COUNT 14
 
-#define USE_SA_SIGINFO 1
-
-#if USE_SA_SIGINFO
+/* We don't use any hacks any more. With modern kernel and libc it's okay */
 #define SIGCORE_NEED_SA_SIGINFO 1
-#endif
-#include <ucontext.h>
 
+#include <ucontext.h>
 #include <signal.h>
 
 #ifndef _SIGNAL_H
@@ -33,33 +30,19 @@
 #endif
 #include <bits/sigcontext.h>
 
-/* regs_t is the type of the signals' context. Linux offers no way
-   to get this context in a legal way, so I have to use tricks. */
-typedef @sigcontext@ regs_t;
+/* regs_t is the type of the signals' context */
 typedef @sighandler@ SignalHandler;
- 
+typedef struct ucontext regs_t;
+
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
 #define SIGHANDLER_T	SignalHandler
 
-#if USE_SA_SIGINFO
 #define GLOBAL_SIGNAL_INIT(sighandler) \
 	static void sighandler ## _gate (int sig, siginfo_t *blub, struct ucontext *u) 	\
 	{ 										\
-	    sighandler(sig, (regs_t *)&u->uc_pad); 					\
+	    sighandler(sig, u); 							\
 	}
-
-#else
-
-// Browsing the memory sc pattern was found at offset 24 + 64.
-// This did only work for -O0.
-#define GLOBAL_SIGNAL_INIT(sighandler) \
-	static void sighandler ## _gate (int sig)		\
-	{							\
-	    regs_t *sc = (regs_t *) ((BYTE *) &sig + 24 + 64);	\
-	    sighandler(sig, sc);				\
-	}
-#endif
 
 /* This structure is used to save/restore registers, because the stack is too
    small. */
@@ -79,67 +62,67 @@ struct AROSCPUContext
 
 #define SET_PC(ctx, val) ctx->regs.nip = (IPTR)val
 
-#define SP(sc)	(sc->regs->gpr[1])
-#define PC(sc)	(sc->regs->nip)
+#define SP(uc)	(uc->uc_mcontext.regs->gpr[1])
+#define PC(uc)	(uc->uc_mcontext.regs->nip)
 
 /* Macros to enable or disable all signals after the signal handler
-   has returned and the normal execution commences. */
-
-#define SC_DISABLE(sc)	(sc->oldmask = ~0L)
-#define SC_ENABLE(sc)	(sc->oldmask = 0L)
+   has returned and the normal execution commences.
+   On PowerPC this is the same as on x86-64. */
+#define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
+#define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
 
 /* This stuff is not used on Linux/m68k, because the signal handler context
    doesn't contain enough registers. Some assembler is needed for the signal
    handler instead. */
 
-#define SAVE_CPU(cc, sc)\
-{						\
-    long i;					\
-    for (i = 0; i < 32; i++)			\
-	cc->regs.gpr[i] = sc->regs->gpr[i];	\
-    cc->regs.nip 	= sc->regs->nip;	\
-    cc->regs.msr	= sc->regs->msr;	\
-    cc->regs.orig_gpr3	= sc->regs->orig_gpr3;	\
-    cc->regs.ctr	= sc->regs->ctr;	\
-    cc->regs.link	= sc->regs->link;	\
-    cc->regs.xer	= sc->regs->xer;	\
-    cc->regs.ccr	= sc->regs->ccr;	\
-    cc->regs.trap	= sc->regs->trap;	\
-    cc->regs.dar	= sc->regs->dar;	\
-    cc->regs.dsisr	= sc->regs->dsisr;	\
-    cc->regs.result	= sc->regs->result;	\
+#define SAVE_CPU(cc, uc)					\
+{								\
+    long i;							\
+    for (i = 0; i < 32; i++)					\
+	cc->regs.gpr[i] = uc->uc_mcontext.regs->gpr[i];		\
+    cc->regs.nip 	= uc->uc_mcontext.regs->nip;		\
+    cc->regs.msr	= uc->uc_mcontext.regs->msr;		\
+    cc->regs.orig_gpr3	= uc->uc_mcontext.regs->orig_gpr3;	\
+    cc->regs.ctr	= uc->uc_mcontext.regs->ctr;		\
+    cc->regs.link	= uc->uc_mcontext.regs->link;		\
+    cc->regs.xer	= uc->uc_mcontext.regs->xer;		\
+    cc->regs.ccr	= uc->uc_mcontext.regs->ccr;		\
+    cc->regs.trap	= uc->uc_mcontext.regs->trap;		\
+    cc->regs.dar	= uc->uc_mcontext.regs->dar;		\
+    cc->regs.dsisr	= uc->uc_mcontext.regs->dsisr;		\
+    cc->regs.result	= uc->uc_mcontext.regs->result;		\
 }
 
-#define SAVE_FPU(cc, sc)\
+#define SAVE_FPU(cc, uc) \
 {\
     long i;\
     for (i = 0; i < 32; i++)\
-	cc->fpregs[i] = *(double*)&(sc->regs->gpr[PT_FPR0 + 2 * i]);\
+	cc->fpregs[i] = *(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]);\
 }
 
-#define RESTORE_CPU(cc, sc)\
+#define RESTORE_CPU(cc, uc)			\
 {						\
     long i;					\
     for (i = 0; i < 32; i++)			\
-	sc->regs->gpr[i] = cc->regs.gpr[i];	\
-    sc->regs->nip	= cc->regs.nip; 	\
-    sc->regs->msr	= cc->regs.msr;		\
-    sc->regs->orig_gpr3 = cc->regs.orig_gpr3;	\
-    sc->regs->ctr	= cc->regs.ctr;		\
-    sc->regs->link	= cc->regs.link;	\
-    sc->regs->xer	= cc->regs.xer;		\
-    sc->regs->ccr	= cc->regs.ccr;		\
-    sc->regs->trap	= cc->regs.trap;	\
-    sc->regs->dar	= cc->regs.dar;		\
-    sc->regs->dsisr	= cc->regs.dsisr;	\
-    sc->regs->result	= cc->regs.result;	\
+	uc->uc_mcontext.regs->gpr[i] = cc->regs.gpr[i];		\
+    uc->uc_mcontext.regs->nip	= cc->regs.nip; 		\
+    uc->uc_mcontext.regs->msr	= cc->regs.msr;			\
+    uc->uc_mcontext.regs->orig_gpr3 = cc->regs.orig_gpr3;	\
+    uc->uc_mcontext.regs->ctr	= cc->regs.ctr;			\
+    uc->uc_mcontext.regs->link	= cc->regs.link;		\
+    uc->uc_mcontext.regs->xer	= cc->regs.xer;			\
+    uc->uc_mcontext.regs->ccr	= cc->regs.ccr;			\
+    uc->uc_mcontext.regs->trap	= cc->regs.trap;		\
+    uc->uc_mcontext.regs->dar	= cc->regs.dar;			\
+    uc->uc_mcontext.regs->dsisr	= cc->regs.dsisr;		\
+    uc->uc_mcontext.regs->result = cc->regs.result;		\
 }
 
-#define RESTORE_FPU(cc, sc)\
+#define RESTORE_FPU(cc, uc)\
 {\
     long i;\
     for (i = 0; i < 32; i++)\
-	*(double*)&(sc->regs->gpr[PT_FPR0 + 2 * i]) = cc->fpregs[i];\
+	*(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]) = cc->fpregs[i];\
 }
 
 #define PREPARE_RETURN_ADDRESS(cc, addr)                      \
@@ -188,11 +171,11 @@ struct AROSCPUContext
    must store the value of "sp" after the macro and hand it to
    RESTOREREGS() below to restore this context. */
 
-#define SAVEREGS(cc, sc)           \
+#define SAVEREGS(cc, uc)           \
     do                             \
     {                              \
-        SAVE_CPU((cc), sc);        \
-        SAVE_FPU((cc), sc);        \
+        SAVE_CPU((cc), uc);        \
+        SAVE_FPU((cc), uc);        \
     } while(0)
 
 /* This macro does the opposite to SAVEREGS(). It restores all
@@ -200,11 +183,11 @@ struct AROSCPUContext
    tasks' context. Both "sp" and "sc" must be initialized.
    The macro will save the new SP into the sigcontext "sc". */
 
-#define RESTOREREGS(cc, sc)           \
+#define RESTOREREGS(cc, uc)           \
     do                                \
     {                                 \
-        RESTORE_FPU((cc), sc);        \
-        RESTORE_CPU((cc), sc);        \
+	RESTORE_FPU((cc), uc);        \
+        RESTORE_CPU((cc), uc);        \
     } while(0)
 
 /* This macro prints the current signals' context */
