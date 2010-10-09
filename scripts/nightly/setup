@@ -61,6 +61,7 @@ alias    copy='execute cp -pRL'
 alias    move='execute mv -f'
 
 export CC=$CFG_CC
+export PYTHON=$CFG_PYTHON
 
 # Initial setup, if requested
 if [[ $1 == "initial" ]]; then
