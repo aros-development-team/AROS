@@ -26,10 +26,10 @@
 #define __KERNEL_STRICT_NAMES
 #endif
 #include <bits/sigcontext.h>
-/* regs_t is the type of the signals' context. Linux offers no way
-   to get this context in a legal way, so I have to use tricks. */
-typedef @sigcontext@ regs_t;
+
+/* regs_t is the type of the signals' context */
 typedef @sighandler@ SignalHandler;
+typedef struct ucontext regs_t;
 
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
@@ -68,12 +68,10 @@ typedef @sighandler@ SignalHandler;
 #define GLOBAL_SIGNAL_INIT(sighandler) \
 	static void sighandler ## _gate (int sig, siginfo_t *blub, struct ucontext *u) 	\
 	{ 										\
-	    sighandler(sig, (regs_t *)&u->uc_mcontext); 				\
+	    sighandler(sig, u); 							\
 	}
 
-/* Use this structure to save/restore registers if the stack is too
-   small */
-
+/* Use this structure to save/restore registers small */
 struct AROSCPUContext
 {
     UQUAD regs[17];  	     /* rip (PC), rbp (FP), rax, rbx, rcx,
@@ -94,29 +92,19 @@ struct AROSCPUContext
 
 #define SET_PC(ctx, val) ctx->regs[0] = (UQUAD)val
 
-#define SP(sc)           ((sc)->rsp)
-#define FP(sc)           ((sc)->rbp)
-#define PC(sc)           ((sc)->rip)
+#define SP(uc)           ((uc)->uc_mcontext.regs->rsp)
+#define FP(uc)           ((uc)->uc_mcontext.regs->rbp)
+#define PC(uc)           ((uc)->uc_mcontext.regs->rip)
 
 /*
     Macros to enable or disable all signals after the signal handler
     has returned and the normal execution commences.
 
     On Linux x86-64 signal mask is restored from uc_sigmask field of ucontext
-    structure. We are computing address of uc_sigmask field from address of 
-    uc_mcontext field given as sc parameter.
+    structure.
 */
-#define SC_DISABLE(sc) \
-    sigfillset((sigset_t*)((char*) sc + \
-        offsetof(struct ucontext, uc_sigmask) - \
-        offsetof(struct ucontext, uc_mcontext)) \
-    )
-
-#define SC_ENABLE(sc) \
-    sigemptyset((sigset_t*)((char*) sc + \
-        offsetof(struct ucontext, uc_sigmask) - \
-        offsetof(struct ucontext, uc_mcontext)) \
-    )
+#define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
+#define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
 
 /*
     The names of the general purpose registers which are to be saved.
@@ -125,21 +113,21 @@ struct AROSCPUContext
     modified by the task (ie. data and address registers) and which are
     not saved by the CPU when an interrupt happens.
 */
-#define R0(sc)           ((sc)->rax)
-#define R1(sc)           ((sc)->rbx)
-#define R2(sc)           ((sc)->rcx)
-#define R3(sc)           ((sc)->rdx)
-#define R4(sc)           ((sc)->rdi)
-#define R5(sc)           ((sc)->rsi)
-#define R6(sc)           ((sc)->r8)
-#define R7(sc)           ((sc)->r9)
-#define R8(sc)           ((sc)->r10)
-#define R9(sc)           ((sc)->r11)
-#define R10(sc)           ((sc)->r12)
-#define R11(sc)           ((sc)->r13)
-#define R12(sc)           ((sc)->r14)
-#define R13(sc)           ((sc)->r15)
-#define R14(sc)           ((sc)->eflags)
+#define R0(uc)           ((uc)->uc_mcontext.regs->rax)
+#define R1(uc)           ((uc)->uc_mcontext.regs->rbx)
+#define R2(uc)           ((uc)->uc_mcontext.regs->rcx)
+#define R3(uc)           ((uc)->uc_mcontext.regs->rdx)
+#define R4(uc)           ((uc)->uc_mcontext.regs->rdi)
+#define R5(uc)           ((uc)->uc_mcontext.regs->rsi)
+#define R6(uc)           ((uc)->uc_mcontext.regs->r8)
+#define R7(uc)           ((uc)->uc_mcontext.regs->r9)
+#define R8(uc)           ((uc)->uc_mcontext.regs->r10)
+#define R9(uc)           ((uc)->uc_mcontext.regs->r11)
+#define R10(uc)           ((uc)->uc_mcontext.regs->r12)
+#define R11(uc)           ((uc)->uc_mcontext.regs->r13)
+#define R12(uc)           ((uc)->uc_mcontext.regs->r14)
+#define R13(uc)           ((uc)->uc_mcontext.regs->r15)
+#define R14(uc)           ((uc)->uc_mcontext.regs->eflags)
 
 /*
     Save and restore the CPU GPRs in the CPU context
@@ -220,23 +208,23 @@ struct AROSCPUContext
     This macro returns 1 if an FPU is available.
 */
 #ifndef NO_FPU
-#   define HAS_FPU(sc)      (sc->fpstate)
+#   define HAS_FPU(uc)      (uc->uc_mcontext.regs->fpstate)
 #else
 #   define HAS_FPU(sc)      0
 #endif
 
-#define SAVE_FPU(cc,sc)                         \
+#define SAVE_FPU(cc, uc)                        \
         do                                      \
 	{                                       \
-    	    if (HAS_FPU(sc))                    \
-	        (cc)->fpstate = *(sc)->fpstate; \
+    	    if (HAS_FPU(uc))                    \
+	        (cc)->fpstate = *(uc)->uc_mcontext.regs->fpstate; \
 	} while (0)
 
-#define RESTORE_FPU(cc,sc)                      \
+#define RESTORE_FPU(cc, uc)                     \
         do                                      \
 	{                                       \
-    	    if (HAS_FPU(sc))                    \
-	        *(sc)->fpstate = (cc)->fpstate; \
+    	    if (HAS_FPU(uc))                    \
+	        *(uc)->uc_mcontext.regs->fpstate = (cc)->fpstate; \
 	} while (0)
 
 /*
