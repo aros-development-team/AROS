@@ -100,7 +100,7 @@ static BOOL HIDDNouveauNV50AcquireSurface2D(struct CardData * carddata,
     return TRUE;
 }
 
-static VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
+/*static VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
     LONG col1, LONG pat0, LONG pat1)
 {
     struct nouveau_channel * chan = carddata->chan;
@@ -111,7 +111,7 @@ static VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0,
     OUT_RING  (chan, col1);
     OUT_RING  (chan, pat0);
     OUT_RING  (chan, pat1);
-}
+}*/
 
 static VOID HIDDNouveauNV50SetROP(struct CardData * carddata, ULONG drawmode,
     struct HIDDNouveauBitMapData * bmdata) /*, Pixel planemask) */
@@ -158,8 +158,9 @@ static VOID HIDDNouveauNV50SetROP(struct CardData * carddata, ULONG drawmode,
 //        alu += 16;
 //        NV50EXASetPattern(pdpix, 0, planemask, ~0, ~0);
 //    } else {
+//FIXME AROS currently does not have drawmodes above 15
 //        if (pNv->currentRop > 15)
-        HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
+//        HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
 //    }
 
 //    if (pNv->currentRop != alu) {
