@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 
-##MM hidd-nouveau : hidd-i2c hidd-agp hidd-gallium
+#MM hidd-nouveau : hidd-i2c hidd-agp hidd-gallium
 
 GALLIUM_NVIDIA_SOURCES = \
             drivers/nouveau/nouveau_screen \
@@ -80,10 +80,10 @@ USER_INCLUDES := \
             -I$(DRM_PATH)/drm-unchanged \
             -I$(DRM_PATH)/drm-unchanged/nouveau \
 
-#%build_module mmake=hidd-nouveau \
-#    modname=nouveau modtype=hidd \
-#    files="$(NOUVEAU_HIDD_SOURCES)" \
-#    uselibs="oop amiga hiddgraphicsstubs hiddstubs galliumauxiliary rom"
+%build_module mmake=hidd-nouveau \
+    modname=nouveau modtype=hidd \
+    files="$(NOUVEAU_HIDD_SOURCES)" \
+    uselibs="oop amiga hiddgraphicsstubs hiddstubs galliumauxiliary rom"
 
-#%build_archspecific mainmmake=hidd-nouveau asmfiles=aros_wbinvd_hack \
-#    maindir=$(CURDIR) arch=i386 modulename=nouveau
+%build_archspecific mainmmake=hidd-nouveau asmfiles=aros_wbinvd_hack \
+    maindir=$(CURDIR) arch=i386 modulename=nouveau
