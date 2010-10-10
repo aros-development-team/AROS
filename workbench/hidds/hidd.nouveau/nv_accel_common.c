@@ -390,6 +390,7 @@ NVAccelInitClipRectangle(ScrnInfoPtr pScrn)
 
 	return TRUE;
 }
+#endif
 
 /* FLAGS_NONE, NvDmaFB, NvDmaAGP, NvDmaNotifier0 */
 static Bool
@@ -421,6 +422,7 @@ NVAccelInitMemFormat(ScrnInfoPtr pScrn)
 	return TRUE;
 }
 
+#if !defined(__AROS__)
 static Bool
 NVAccelInitImageFromCpu(ScrnInfoPtr pScrn)
 {
@@ -555,7 +557,7 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	} else {
 		INIT_CONTEXT_OBJECT(2D_NV50);
 	}
-//	INIT_CONTEXT_OBJECT(MemFormat);
+	INIT_CONTEXT_OBJECT(MemFormat);
 
 	/* 3D init */
 //	switch (pNv->Architecture) {
@@ -605,7 +607,7 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 	} else {
 		nouveau_grobj_free(&pNv->Nv2D);
 	}
-//	nouveau_grobj_free(&pNv->NvMemFormat);
+	nouveau_grobj_free(&pNv->NvMemFormat);
 
 //	nouveau_grobj_free(&pNv->NvSW);
 //	nouveau_grobj_free(&pNv->Nv3D);

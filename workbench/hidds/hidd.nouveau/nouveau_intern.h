@@ -102,6 +102,7 @@ struct CardData
     struct nouveau_grobj    *NvRop;
     struct nouveau_grobj    *NvImagePattern;
     struct nouveau_grobj    *NvRectangle;
+    struct nouveau_grobj    *NvMemFormat;
     struct nouveau_grobj    *Nv2D;
 };
 
