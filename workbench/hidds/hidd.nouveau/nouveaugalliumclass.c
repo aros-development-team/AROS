@@ -219,10 +219,9 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
     if (!srcdata)
         return;
 
-    LOCK_MULTI_BITMAP
-    LOCK_BITMAP_BM(srcdata)
+    /* srcdata does not require a lock, because it's a local object that is
+       access only by one task at a time */
     LOCK_BITMAP_BM(SD(cl)->screenbitmap)
-    UNLOCK_MULTI_BITMAP
 
     if (carddata->architecture < NV_ARCH_50)
     {
@@ -238,7 +237,6 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
     }
 
     UNLOCK_BITMAP_BM(SD(cl)->screenbitmap)
-    UNLOCK_BITMAP_BM(srcdata)
 
     HIDDNouveauReleaseWrap(srcdata);
 }
