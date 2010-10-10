@@ -25,7 +25,7 @@
 #include "nv_rop.h"
 #include "nouveau/nouveau_class.h"
 
-static VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,
+/*static VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,
 		  ULONG pat0, ULONG pat1)
 {
     struct nouveau_channel *chan = carddata->chan;
@@ -36,7 +36,7 @@ static VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, UL
     OUT_RING  (chan, clr1);
     OUT_RING  (chan, pat0);
     OUT_RING  (chan, pat1);
-}
+}*/
 
 static VOID HIDDNouveauNV04SetROP(struct CardData * carddata, ULONG drawmode)/*, CARD32 planemask)*/
 {
@@ -53,8 +53,9 @@ static VOID HIDDNouveauNV04SetROP(struct CardData * carddata, ULONG drawmode)/*,
 //        }
 //    } else
 //    if (pNv->currentRop != alu) {
+//FIXME AROS currently does not have drawmodes above 15
 //        if(pNv->currentRop >= 16)
-            HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
+//            HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
         BEGIN_RING(chan, rop, NV03_CONTEXT_ROP_ROP, 1);
         OUT_RING  (chan, NVROP[drawmode].copy);
 //        pNv->currentRop = alu;
