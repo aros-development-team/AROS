@@ -26,6 +26,7 @@ SHARED_LIB_SOURCES = \
             aros/arosmesaswapbuffers \
             aros/arosmesagetcurrentcontext \
             aros/arosmesa_funcs \
+            aros/arosmesa_init \
             aros_libapi \
             arosc_emul \
 
