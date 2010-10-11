@@ -24,6 +24,7 @@ static inline int do_alpha(int a, int v)
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes buffer is mapped */
 static VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
     APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height)
 {
@@ -103,6 +104,7 @@ static VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmda
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes buffer is mapped */
 static VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
     APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height)
 {
@@ -182,6 +184,7 @@ static VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmda
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes buffer is mapped */
 static VOID HIDDNouveauBitMapPutAlphaImage15(struct HIDDNouveauBitMapData * bmdata,
     APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height)
 {
@@ -296,9 +299,6 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         nouveau_bo_new(SD(cl)->carddata.dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
 	            bmdata->pitch * bmdata->height,
 	            &bmdata->bo);
-
-        /* FIXME: if (!bmdata->bo) */
-        nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR);
     }
     
     return o;
@@ -320,7 +320,7 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     if (bmdata->bo)
     {
-        nouveau_bo_unmap(bmdata->bo);
+        UNMAP_BUFFER
         nouveau_bo_ref(NULL, &bmdata->bo); /* Release reference */
     }
 
@@ -336,10 +336,11 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
     IPTR map = (IPTR)bmdata->bo->map;
     
     /* If the current map was NULL, wait until bitmap lock is released. 
-       When it happens, it is guaranteed that bo->map is not NULL */
+       When it happens, map the buffer */
     if (map == (IPTR)NULL)
     {
         LOCK_BITMAP
+        MAP_BUFFER
         addr += (IPTR)bmdata->bo->map;
     }
     else
@@ -372,10 +373,11 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
     IPTR map = (IPTR)bmdata->bo->map;
 
     /* If the current map was NULL, wait until bitmap lock is released. 
-       When it happens, it is guaranteed that bo->map is not NULL */
+       When it happens, map the buffer */
     if (map == (IPTR)NULL)
     {
         LOCK_BITMAP
+        MAP_BUFFER
         addr += (IPTR)bmdata->bo->map;
     }
     else
@@ -407,6 +409,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     BOOL ret = FALSE;
     
     LOCK_BITMAP
+    UNMAP_BUFFER
     
     if (carddata->architecture < NV_ARCH_50)
     {
@@ -438,6 +441,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
     BOOL ret = FALSE;
     
     LOCK_BITMAP
+    UNMAP_BUFFER
     
     if (carddata->architecture < NV_ARCH_50)
     {
@@ -471,6 +475,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
        || msg->pixFmt == vHidd_StdPixFmt_BGRA32 || msg->pixFmt == vHidd_StdPixFmt_BGR032))
     {
         LOCK_BITMAP
+        MAP_BUFFER
         ULONG srcpitch = msg->modulo ? msg->modulo : bmdata->pitch;
         ULONG x,y;
         
@@ -498,6 +503,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
     /* Generic approach */
         
     LOCK_BITMAP
+    MAP_BUFFER
     
     switch(msg->pixFmt)
     {
@@ -600,6 +606,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     /* TODO: Try bulk transfers from VRAM to RAM */
 
     LOCK_BITMAP
+    MAP_BUFFER
 
     switch(msg->pixFmt)
     {
@@ -714,6 +721,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
     if (bmdata->bytesperpixel == 4)
     {
         LOCK_BITMAP
+        MAP_BUFFER
         HIDDNouveauBitMapPutAlphaImage32(bmdata, msg->pixels, msg->modulo, msg->x, 
             msg->y, msg->width, msg->height);
         UNLOCK_BITMAP
@@ -724,6 +732,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
         if (bmdata->depth == 16)
         {
             LOCK_BITMAP
+            MAP_BUFFER
             HIDDNouveauBitMapPutAlphaImage16(bmdata, msg->pixels, msg->modulo, msg->x, 
                 msg->y, msg->width, msg->height);
             UNLOCK_BITMAP
@@ -732,6 +741,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
         else if (bmdata->depth == 15)
         {
             LOCK_BITMAP
+            MAP_BUFFER
             HIDDNouveauBitMapPutAlphaImage15(bmdata, msg->pixels, msg->modulo, msg->x, 
                 msg->y, msg->width, msg->height);
             UNLOCK_BITMAP
@@ -755,6 +765,7 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, ObtainDirectAccess)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
     LOCK_BITMAP
+    MAP_BUFFER
 
     *msg->addressReturn = (UBYTE*)bmdata->bo->map;
     *msg->widthReturn = bmdata->pitch / bmdata->bytesperpixel;
@@ -776,6 +787,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
     LOCK_BITMAP
+    MAP_BUFFER
 
     switch(bmdata->bytesperpixel)
     {
@@ -824,6 +836,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
     LOCK_BITMAP
+    MAP_BUFFER
 
     switch(bmdata->bytesperpixel)
     {

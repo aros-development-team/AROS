@@ -30,12 +30,13 @@ struct HIDDNouveauData
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
 #define CLID_Hidd_BitMap_NouveauPlanar  "hidd.bitmap.nouveauplanar"
 
-/* Synchoronization note: when semaphore is not obtained, it is guranteed that
-   bo->map is correct */
 struct HIDDNouveauBitMapData
 {
     struct SignalSemaphore  semaphore;
-    struct nouveau_bo       *bo; /* Buffer object behind bitmap */
+    struct nouveau_bo       *bo; /* Buffer object behind bitmap. Don't make any
+                                    assumptions about buffer mapping (bo->map)
+                                    state. This state however can only be changed
+                                    when lock is held on bitmap */
 
     ULONG                   height;
     ULONG                   width;
@@ -44,7 +45,8 @@ struct HIDDNouveauBitMapData
     UBYTE                   depth;            /* In bits */
     
     ULONG                   fbid;             /* Contains ID under which bitmap 
-                                                is registered as framebuffer or 0 otherwise */
+                                                is registered as framebuffer or 
+                                                0 otherwise */
 };
 
 struct planarbm_data
@@ -166,6 +168,12 @@ LIBBASETYPE
 
 #define LOCK_MULTI_BITMAP    { ObtainSemaphore(&(SD(cl))->multibitmapsemaphore); }
 #define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&(SD(cl))->multibitmapsemaphore); }
+
+#define UNMAP_BUFFER { if (bmdata->bo->map) nouveau_bo_unmap(bmdata->bo); }
+#define UNMAP_BUFFER_BM(bmdata) { if ((bmdata)->bo->map) nouveau_bo_unmap((bmdata)->bo); }
+
+#define MAP_BUFFER { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR); }
+#define MAP_BUFFER_BM(bmdata) { if (!(bmdata)->bo->map) nouveau_bo_map((bmdata)->bo, NOUVEAU_BO_RDWR); }
 
 #define writel(val, addr)               (*(volatile ULONG*)(addr) = (val))
 #define readl(addr)                     (*(volatile ULONG*)(addr))

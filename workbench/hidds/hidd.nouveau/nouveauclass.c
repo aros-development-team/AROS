@@ -589,10 +589,12 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         struct CardData * carddata = &(SD(cl)->carddata);
         BOOL ret = FALSE;
         
-        LOCK_MULTI_BITMAP;
-        LOCK_BITMAP_BM(srcdata);
-        LOCK_BITMAP_BM(destdata);
-        UNLOCK_MULTI_BITMAP;
+        LOCK_MULTI_BITMAP
+        LOCK_BITMAP_BM(srcdata)
+        LOCK_BITMAP_BM(destdata)
+        UNLOCK_MULTI_BITMAP
+        UNMAP_BUFFER_BM(srcdata)
+        UNMAP_BUFFER_BM(destdata)
         
         if (carddata->architecture < NV_ARCH_50)
         {
