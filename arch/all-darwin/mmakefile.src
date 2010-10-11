@@ -1,0 +1,26 @@
+# $Id: mmakefile.src 34543 2010-09-29 13:50:06Z sonic $ 
+include $(TOP)/config/make.cfg
+
+#MM- kernel-darwin-$(CPU) : \
+#MM     kernel-unix \
+#MM     kernel-$(CPU)
+
+#MM- includes-darwin-$(CPU) : includes-common-$(CPU)
+#MM- kernel-exec-includes-darwin-$(CPU) : kernel-exec-includes-unix
+#MM- kernel-link-darwin-$(CPU) : kernel-link-emul
+
+%rule_archalias mainmmake=kernel-bootstrap-hosted arch=darwin alias=unix
+%rule_archalias mainmmake=kernel-exec arch=darwin alias=unix
+%rule_archalias mainmmake=kernel-battclock arch=darwin alias=unix
+%rule_archalias mainmmake=kernel-hostlib arch=darwin alias=unix
+%rule_archalias mainmmake=kernel-dbus arch=darwin alias=unix
+%rule_archalias mainmmake=kernel-kernel arch=darwin alias=unix
+
+%rule_archalias mainmmake=workbench-libs-oss arch=darwin alias=unix
+
+#MM- workbench-darwin-$(CPU) : \
+#MM     workbench-unix
+
+#MM- contrib-darwin : contrib-complete
+
+%common
