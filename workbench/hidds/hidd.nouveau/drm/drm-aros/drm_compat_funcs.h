@@ -80,7 +80,7 @@ static inline ULONG copy_to_user(APTR to, APTR from, IPTR size)
     return 0;
 }
 
-static inline VOID memcpy_toio(APTR dst, APTR src, ULONG size)
+static inline VOID memcpy_toio(APTR dst, CONST_APTR src, ULONG size)
 {
     /* TODO: optimize by using writel */
     UBYTE * srcp = (UBYTE*)src;
@@ -90,7 +90,7 @@ static inline VOID memcpy_toio(APTR dst, APTR src, ULONG size)
         writeb(*(srcp + i), dst + i);
 }
 
-static inline VOID memcpy_fromio(APTR dst, APTR src, ULONG size)
+static inline VOID memcpy_fromio(APTR dst, CONST_APTR src, ULONG size)
 {
     /* TODO: optimize by using readl */
     UBYTE * dstp = (UBYTE*)dst;
