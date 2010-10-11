@@ -2,8 +2,39 @@
 openurl.library - ChangeLog
 ---------------------------
 
-$Id: ChangeLog 145 2010-09-01 19:16:21Z damato $
-$URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/releases/7.7/ChangeLog $
+$Id: ChangeLog 156 2010-09-23 21:55:24Z damato $
+$URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/releases/7.8/ChangeLog $
+
+#### v7.8 RELEASE ##############################################################
+
+2009-09-23  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.8 release preparations
+
+2010-09-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/utils.c: added a missing ENTER() statement and let the debug build
+    output which command is sent to which ARexx port.
+
+2010-09-08 Mariusz Danilewicz <mandi@interia.pl>
+
+  * AUTHORS: added translators section (please check and update missing persons).
+
+2010-09-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/init.c: create the pool with MEMF_CLEAR set to avoid unnecessary
+    junk to be saved in the prefs file.
+  * library/prefs.c: saving the prefs will now also mask out invalid flags.
+  * library/prefs.c: upon loading the prefs file all invalid flags are now
+    masked out. This fixed bug #3059088 where the split off MorphOS V8 version
+    incorrectly saved some internal flags which then lead to a memory block
+    being freed twice when being read again by the V7 library and used by the
+    MUI prefs application. The ReAction prefs application was not affected due
+    to its different handling of the prefs.
+
+2010-09-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: clear all semaphore structures before calling InitSemaphore().
 
 #### v7.7 RELEASE ##############################################################
 

@@ -127,10 +127,11 @@ struct URL_Prefs
 /* up_Flags */
 enum
 {
-   UPF_ISDEFAULTS  = 1<<0, /* structure contains the default settings     */
-   UPF_PREPENDHTTP = 1<<1, /* prepend "http://" to URLs w/o scheme        */
-   UPF_DOMAILTO    = 1<<2, /* mailto: URLs get special treatment          */
-   UPF_DOFTP       = 1<<3, /* ftp:// URLs get special treatment           */
+   UPF_ISDEFAULTS  = (1<<0),     /* structure contains the default settings     */
+   UPF_PREPENDHTTP = (1<<1),     /* prepend "http://" to URLs w/o scheme        */
+   UPF_DOMAILTO    = (1<<2),     /* mailto: URLs get special treatment          */
+   UPF_DOFTP       = (1<<3),     /* ftp:// URLs get special treatment           */
+   UPF_VALID_MASK  = ((1<<3)-1), /* used to mask out any unused flags           */
 };
 
 /**************************************************************************/
@@ -140,10 +141,11 @@ enum
 
 enum
 {
-   UNF_DISABLED = 1<<1,  /* The entry is disabled */
+   UNF_DISABLED   = (1<<1),     /* The entry is disabled                        */
+   UNF_VALID_MASK = ((1<<1)-1), /* used to mask out any unused flags            */
 
-   UNF_NEW      = 1<<16, /* Reserved for OpenURL preferences application */
-   UNF_NTALLOC  = 1<<17, /* Reserved for OpenURL preferences application */
+   UNF_NEW        = (1<<16),    /* Reserved for OpenURL preferences application */
+   UNF_NTALLOC    = (1<<17),    /* Reserved for OpenURL preferences application */
 };
 
 /**************************************************************************/

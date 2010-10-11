@@ -153,6 +153,8 @@ static STRPTR waitForRexxPort(STRPTR port)
     STRPTR name = NULL;
     int i;
 
+    ENTER();
+
     /* (busy) wait for the port to appear */
 
     for(i = 0; i<FINDPORT_NUM; i++)
@@ -191,11 +193,13 @@ static BOOL sendRexxMsg(STRPTR rxport, STRPTR rxcmd)
 
   ENTER();
 
+  D(DBF_STARTUP, "sending command '%s' to port '%s'", rxcmd, rxport);
+
   #if defined(__MORPHOS__)
   proc = CreateNewProcTags(NP_Entry,        handler,
                            NP_CodeType,     CODETYPE_PPC,
                            NP_PPCStackSize, 8192,
-                           NP_StackSize,    4196,
+                           NP_StackSize,    4096,
                            NP_Name,         "OpenURL - Handler",
                            NP_CopyVars,     FALSE,
                            NP_Input,        NULL,
@@ -207,7 +211,7 @@ static BOOL sendRexxMsg(STRPTR rxport, STRPTR rxcmd)
                            TAG_DONE);
   #else
   proc = CreateNewProcTags(NP_Entry,        handler,
-                           NP_StackSize,    4196,
+                           NP_StackSize,    4096,
                            NP_Name,         "OpenURL - Handler",
                            NP_CopyVars,     FALSE,
                            NP_Input,        NULL,
@@ -757,7 +761,6 @@ BOOL sendToMailer(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScre
                     *end='\0';
                     end++;
                 }
-
                 if (!(res = sendRexxMsg(rxport,start)))
                 {
                     /* send failed, try next mailer */
