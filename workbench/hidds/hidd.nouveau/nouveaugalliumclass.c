@@ -46,10 +46,10 @@ HIDDNouveauDestroyWinSys(struct pipe_winsys *ws)
 }
 
 /* Wraps the nouveau_bo from surface into 2D bitmap class data */
-static struct HIDDNouveauBitMapData * 
-HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface)
+static BOOL
+HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface,
+    struct HIDDNouveauBitMapData * bmdata)
 {
-    struct HIDDNouveauBitMapData * bmdata = NULL;
     struct nouveau_bo * bo = NULL;
     ULONG pitch = 0; ULONG depth = 0;
 
@@ -68,7 +68,7 @@ HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface
     }
     
     if ((NULL == bo) || (0 == pitch))
-        return NULL;
+        return FALSE;
 
     switch(surface->format)
     {
@@ -91,11 +91,8 @@ HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface
     }
     
     if (0 == depth)
-        return NULL;
+        return FALSE;
     
-    /* Create wrapper object */
-    bmdata = AllocVec(sizeof(struct HIDDNouveauBitMapData), MEMF_ANY | MEMF_CLEAR);
-
     /* Set all fields */
     bmdata->bo = bo;
     bmdata->width = surface->width;
@@ -111,15 +108,8 @@ HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface
     bmdata->fbid = 0; /* Default value */
     InitSemaphore(&bmdata->semaphore);
 
-    return bmdata;
+    return TRUE;
 }
-
-static VOID 
-HIDDNouveauReleaseWrap(struct HIDDNouveauBitMapData * bmdata)
-{
-    FreeVec(bmdata);
-}
-
 
 
 /* METHODS */
@@ -214,30 +204,29 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
 {
     struct pipe_surface * surface = (struct pipe_surface *)msg->surface;
     struct CardData * carddata = &(SD(cl)->carddata);
-    struct HIDDNouveauBitMapData * srcdata = HIDDNouveauWrapSurface(carddata, surface);
+    struct HIDDNouveauBitMapData srcdata; 
     
-    if (!srcdata)
+    if (!HIDDNouveauWrapSurface(carddata, surface, &srcdata))
         return;
 
     /* srcdata does not require a lock, because it's a local object that is
        access only by one task at a time */
     LOCK_BITMAP_BM(SD(cl)->screenbitmap)
+    UNMAP_BUFFER_BM(SD(cl)->screenbitmap)
 
     if (carddata->architecture < NV_ARCH_50)
     {
-        HIDDNouveauNV04CopySameFormat(carddata, srcdata, SD(cl)->screenbitmap, 
+        HIDDNouveauNV04CopySameFormat(carddata, &srcdata, SD(cl)->screenbitmap, 
             msg->left, msg->top, msg->absx, msg->absy, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
     }
     else
     {
-        HIDDNouveauNV50CopySameFormat(carddata, srcdata, SD(cl)->screenbitmap, 
+        HIDDNouveauNV50CopySameFormat(carddata, &srcdata, SD(cl)->screenbitmap, 
             msg->left, msg->top, msg->absx, msg->absy, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
     }
 
     UNLOCK_BITMAP_BM(SD(cl)->screenbitmap)
-
-    HIDDNouveauReleaseWrap(srcdata);
 }
 

@@ -170,6 +170,8 @@ static VOID HIDDNouveauNV50SetROP(struct CardData * carddata, ULONG drawmode,
 //    }
 }
 
+/* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes buffer is not mapped */
 BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
@@ -177,10 +179,6 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
 {
     struct nouveau_channel * chan = carddata->chan;
     struct nouveau_grobj *eng2d = carddata->Nv2D;
-    struct nouveau_bo * src_bo = srcdata->bo;
-    struct nouveau_bo * dst_bo = destdata->bo;
-    BOOL srcmapped = NULL != src_bo->map;
-    BOOL dstmapped = NULL != dst_bo->map;
 
     if (srcdata->bytesperpixel != destdata->bytesperpixel)
         return FALSE;
@@ -226,25 +224,19 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     OUT_RING  (chan, 0);
     OUT_RING  (chan, srcY);
 
-    /* NOTE: Reads/writes via bo->map need to be protected where they exist (PutPixel/GetPixel) */
-    if (srcmapped) nouveau_bo_unmap(src_bo);
-    if (dstmapped) nouveau_bo_unmap(dst_bo);
-
     FIRE_RING (chan);
-    
-    if (srcmapped) nouveau_bo_map(src_bo, NOUVEAU_BO_RDWR);
-    if (dstmapped) nouveau_bo_map(dst_bo, NOUVEAU_BO_RDWR);
     
     return TRUE;
 }
 
+/* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes buffer is not mapped */
 BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
     ULONG maxY, ULONG drawmode, ULONG color)
 {
     struct nouveau_channel * chan = carddata->chan;
     struct nouveau_grobj *eng2d = carddata->Nv2D;
-    struct nouveau_bo * bo = bmdata->bo;
     uint32_t fmt;
 
     /* Prepare solid fill */
@@ -278,12 +270,7 @@ BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     OUT_RING  (chan, maxX + 1);
     OUT_RING  (chan, maxY + 1);
 
-    /* NOTE: Reads/writes via bo->map need to be protected where they exist (PutPixel/GetPixel) */
-    nouveau_bo_unmap(bo);
-
     FIRE_RING (chan);
-
-    nouveau_bo_map(bo, NOUVEAU_BO_RDWR); 
 
     return TRUE;
 }
