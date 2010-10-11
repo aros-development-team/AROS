@@ -50,6 +50,7 @@ BOOL CreateSharedPool(void)
   sharedPool = CreatePool(MEMF_SEM_PROTECTED, 512, 256);
   #else
   sharedPool = CreatePool(MEMF_ANY, 512, 256);
+  memset(&sharedPoolSema, 0, sizeof(sharedPoolSema));
   InitSemaphore(&sharedPoolSema);
   #endif
 
