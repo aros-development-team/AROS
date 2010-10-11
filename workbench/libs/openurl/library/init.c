@@ -147,13 +147,13 @@ initBase(struct LibraryHeader *lib)
          GETINTERFACE(IRexxSys, RexxSysBase))
       {
         #if defined(__amigaos4__)
-        lib->pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags,    MEMF_SHARED,
+        lib->pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags,    MEMF_SHARED|MEMF_CLEAR,
                                                      ASOPOOL_Puddle,    4096,
                                                      ASOPOOL_Threshold, 512,
                                                      ASOPOOL_Name, "openurl.library pool",
                                                      TAG_DONE);
         #else
-        lib->pool = CreatePool(MEMF_ANY, 4096, 512);
+        lib->pool = CreatePool(MEMF_CLEAR, 4096, 512);
         #endif
         if(lib->pool != NULL)
         {

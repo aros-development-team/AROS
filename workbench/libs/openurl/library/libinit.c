@@ -503,8 +503,11 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
     base->libBase.lib_Revision     = LIB_REVISION;
     base->libBase.lib_IdString     = (char *)(UserLibID+6);
 
+    memset(&base->libSem, 0, sizeof(base->libSem));
     InitSemaphore(&base->libSem);
+    memset(&base->poolSem, 0, sizeof(base->poolSem));
     InitSemaphore(&base->poolSem);
+    memset(&base->prefsSem, 0, sizeof(base->prefsSem));
     InitSemaphore(&base->prefsSem);
 
     base->sysBase = (APTR)SysBase;
