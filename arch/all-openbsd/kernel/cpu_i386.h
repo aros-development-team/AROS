@@ -14,7 +14,7 @@ typedef struct sigcontext regs_t;
 #define SIGHANDLER	bsd_sighandler
 #define SIGHANDLER_T	void *	
 
-#define SC_DISABLE(sc)   (sc->sc_mask = sig_int_mask)
+#define SC_DISABLE(sc)   (sc->sc_mask = PD(KernelBase).sig_int_mask)
 #define SC_ENABLE(sc)    (sigemptyset(&sc->sc_mask))
 
 #define SP(sc)       (sc->sc_esp)
