@@ -5,8 +5,10 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Macros to handle unix signals
+    Desc: Macros to handle unix signals, x86_64 version.
     Lang: english
+
+    Todo: rewrite when our own ucontext.h is more complete
 */
 
 #define EXCEPTIONS_COUNT 17
@@ -14,7 +16,11 @@
 /* There's no need for USE_SA_SIGINFO, as we always use SA_SIGINFO
    on x86_64 - there's no other sane way to get ucontext. */ 
 #define SIGCORE_NEED_SA_SIGINFO 1
+
+/* We want to use some predefined register names */
+#define __USE_GNU 1
 #include <ucontext.h>
+#undef __USE_GNU
 
 #include <signal.h>
 #include <stddef.h>
@@ -63,6 +69,9 @@ typedef struct ucontext regs_t;
 		    |			       |
 
     so the address of the signal context is &sig+1.
+
+    Well, we use the SIGCORE_NEED_SA_SIGINFO approach, so part of
+    the above is only kept for historical reasons.
 */
 
 #define GLOBAL_SIGNAL_INIT(sighandler) \
@@ -71,7 +80,7 @@ typedef struct ucontext regs_t;
 	    sighandler(sig, u); 							\
 	}
 
-/* Use this structure to save/restore registers small */
+/* Use this structure to save/restore registers because the stack is too small. */
 struct AROSCPUContext
 {
     UQUAD regs[17];  	     /* rip (PC), rbp (FP), rax, rbx, rcx,
@@ -88,13 +97,13 @@ struct AROSCPUContext
     and local variables of a function and PC is the current address
     in the program code.
 */
-#define GET_PC(ctx) ((APTR)ctx->regs[0])
+#define GET_PC(ctx) ((APTR)ctx->regs[16])
 
-#define SET_PC(ctx, val) ctx->regs[0] = (UQUAD)val
+#define SET_PC(ctx, val) ctx->regs[16] = (UQUAD)val
 
-#define SP(uc)           ((uc)->uc_mcontext.regs->rsp)
-#define FP(uc)           ((uc)->uc_mcontext.regs->rbp)
-#define PC(uc)           ((uc)->uc_mcontext.regs->rip)
+#define SP(uc)          ((uc)->uc_mcontext.gregs[REG_RSP])
+#define FP(uc)          ((uc)->uc_mcontext.gregs[REG_RBP])
+#define PC(uc)          ((uc)->uc_mcontext.gregs[REG_RIP])
 
 /*
     Macros to enable or disable all signals after the signal handler
@@ -113,21 +122,21 @@ struct AROSCPUContext
     modified by the task (ie. data and address registers) and which are
     not saved by the CPU when an interrupt happens.
 */
-#define R0(uc)           ((uc)->uc_mcontext.regs->rax)
-#define R1(uc)           ((uc)->uc_mcontext.regs->rbx)
-#define R2(uc)           ((uc)->uc_mcontext.regs->rcx)
-#define R3(uc)           ((uc)->uc_mcontext.regs->rdx)
-#define R4(uc)           ((uc)->uc_mcontext.regs->rdi)
-#define R5(uc)           ((uc)->uc_mcontext.regs->rsi)
-#define R6(uc)           ((uc)->uc_mcontext.regs->r8)
-#define R7(uc)           ((uc)->uc_mcontext.regs->r9)
-#define R8(uc)           ((uc)->uc_mcontext.regs->r10)
-#define R9(uc)           ((uc)->uc_mcontext.regs->r11)
-#define R10(uc)           ((uc)->uc_mcontext.regs->r12)
-#define R11(uc)           ((uc)->uc_mcontext.regs->r13)
-#define R12(uc)           ((uc)->uc_mcontext.regs->r14)
-#define R13(uc)           ((uc)->uc_mcontext.regs->r15)
-#define R14(uc)           ((uc)->uc_mcontext.regs->eflags)
+#define R0(uc)          ((uc)->uc_mcontext.gregs[REG_RAX])
+#define R1(uc)          ((uc)->uc_mcontext.gregs[REG_RBX])
+#define R2(uc)          ((uc)->uc_mcontext.gregs[REG_RCX])
+#define R3(uc)          ((uc)->uc_mcontext.gregs[REG_RDX])
+#define R4(uc)          ((uc)->uc_mcontext.gregs[REG_RDI])
+#define R5(uc)          ((uc)->uc_mcontext.gregs[REG_RSI])
+#define R6(uc)          ((uc)->uc_mcontext.gregs[REG_R8])
+#define R7(uc)          ((uc)->uc_mcontext.gregs[REG_R9])
+#define R8(uc)          ((uc)->uc_mcontext.gregs[REG_R10])
+#define R9(uc)          ((uc)->uc_mcontext.gregs[REG_R11])
+#define R10(uc)         ((uc)->uc_mcontext.gregs[REG_R12])
+#define R11(uc)         ((uc)->uc_mcontext.gregs[REG_R13])
+#define R12(uc)         ((uc)->uc_mcontext.gregs[REG_R14])
+#define R13(uc)         ((uc)->uc_mcontext.gregs[REG_R15])
+#define R14(uc)         ((uc)->uc_mcontext.gregs[REG_EFL])
 
 /*
     Save and restore the CPU GPRs in the CPU context
@@ -200,15 +209,12 @@ struct AROSCPUContext
     Attention: The above WAS TRUE for 2.0.x kernels but now the stack layout
                looks different. See above!
 
-    Update: We store the registers in our own structure now
+    Update: We store the registers in our own structure now.
 */
 
-/*  define NO_FPU */
-/*
-    This macro returns 1 if an FPU is available.
-*/
+/* This macro returns 1 if an FPU is available. */
 #ifndef NO_FPU
-#   define HAS_FPU(uc)      (uc->uc_mcontext.regs->fpstate)
+#   define HAS_FPU(uc)      ((uc)->uc_mcontext.fpregs)
 #else
 #   define HAS_FPU(sc)      0
 #endif
@@ -216,15 +222,19 @@ struct AROSCPUContext
 #define SAVE_FPU(cc, uc)                        \
         do                                      \
 	{                                       \
-    	    if (HAS_FPU(uc))                    \
-	        (cc)->fpstate = *(uc)->uc_mcontext.regs->fpstate; \
+	    if (HAS_FPU(uc))                    \
+                bcopy((uc)->uc_mcontext.fpregs, \
+                      &(cc)->fpstate,           \
+                      SIZEOF_FPU_CONTEXT);      \
 	} while (0)
 
 #define RESTORE_FPU(cc, uc)                     \
         do                                      \
 	{                                       \
-    	    if (HAS_FPU(uc))                    \
-	        *(uc)->uc_mcontext.regs->fpstate = (cc)->fpstate; \
+	    if (HAS_FPU(uc))                    \
+	        bcopy(&(cc)->fpstate,           \
+                      (uc)->uc_mcontext.fpregs, \
+                      SIZEOF_FPU_CONTEXT);      \
 	} while (0)
 
 /*
