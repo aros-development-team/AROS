@@ -1111,7 +1111,7 @@ BD_LDFLAGS   := %(ldflags)
 #MM
 %(mmake)-quick : %(mmake)
 
-#MM %(mmake) : includes-generate-deps core-linklibs
+#MM %(mmake) : includes-generate-deps linklibs-core
 %(mmake) : $(BD_TARGETDIR)/$(BD_PROGNAME)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
