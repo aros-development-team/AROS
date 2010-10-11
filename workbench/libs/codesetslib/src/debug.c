@@ -81,6 +81,7 @@ void _DBPRINTF(const char *format, ...)
 
 void InitDebug(void)
 {
+  memset(&debug_sema, 0, sizeof(debug_sema));
   InitSemaphore(&debug_sema);
 }
 

@@ -2180,6 +2180,7 @@ STRPTR LIBFUNC CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
 {
   UTF8 *src;
   ULONG srcLen;
+  ULONG destLen = 0;
   ULONG *destLenPtr;
   ULONG n = 0;
   STRPTR dest = NULL;
@@ -2196,7 +2197,6 @@ STRPTR LIBFUNC CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
     char buf[256];
     STRPTR destIter = NULL;
     char *b = NULL;
-    ULONG destLen = 0;
     int i = 0;
     unsigned char *s = src;
     unsigned char *e = (src+srcLen);
@@ -2452,6 +2452,9 @@ STRPTR LIBFUNC CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
                   // stay in the loop as long as one replacement function delivers
                   // further UTF8 replacement sequences
                   src = (unsigned char *)repstr;
+                  // remember the length of the replaced string, as we might do another
+                  // iteration in the loop which might result in a further replacement
+                  lenStr = -replen;
                 }
                 else if(replen == 0)
                 {
@@ -2583,7 +2586,12 @@ STRPTR LIBFUNC CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
   // put the final length of our destination buffer
   // into the destLenPtr
   if((destLenPtr = (ULONG *)GetTagData(CSA_DestLenPtr, 0, attrs)) != NULL)
-    *destLenPtr = n;
+  {
+    if(destLen > 0)
+      *destLenPtr = destLen-1;
+    else
+      *destLenPtr = 0;
+  }
 
   RETURN(dest);
   return dest;
