@@ -43,6 +43,7 @@
 
 #if defined(DEBUG)
 
+#include <string.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <assert.h>
@@ -121,6 +122,7 @@ void _UNMEMTRACK(const char *file, const int line, const char *func, const void 
 #if !defined(DEBUG_USE_MALLOC_REDEFINE) && !defined(__SASC) && !defined(__VBCC__)
 
 // standard C-library memory functions
+
 #define malloc(s)               ({void *P = malloc(s);     _MEMTRACK(__FILE__, __LINE__, "malloc", P, s); P;})
 #define calloc(n, s)            ({void *P = calloc(n, s);  _MEMTRACK(__FILE__, __LINE__, "calloc", P, s); P;})
 #define realloc(p, s)           ({void *P; _UNMEMTRACK(__FILE__, __LINE__, "malloc|calloc|strdup|memdup|asprintf", p); P = realloc(p, s); _MEMTRACK(__FILE__, __LINE__, "realloc", P, s); P;})

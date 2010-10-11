@@ -639,6 +639,7 @@ static void SetupDbgMalloc(void)
     DbgMallocCount = 0;
     DbgUnsuitableFreeCount = 0;
 
+    memset(&DbgMallocListSema, 0, sizeof(DbgMallocListSema));
     InitSemaphore(&DbgMallocListSema);
   }
 

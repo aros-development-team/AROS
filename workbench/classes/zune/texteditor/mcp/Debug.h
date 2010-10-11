@@ -43,6 +43,7 @@
 
 #if defined(DEBUG)
 
+#include <string.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <assert.h>
