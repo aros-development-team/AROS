@@ -1,5 +1,5 @@
 @DataBase TextEditor.guide
-@$VER: TextEditor.guide 15.35 (01.09.2010)
+@$VER: TextEditor.guide 15.36 (23.09.2010)
 
 @Node Main "TextEditor - AmigaGuide(R) documentation"
 
@@ -339,6 +339,10 @@ History
 list of changes since 15.9)
 
 Quick summary:
+
+15.36 (23.09.2010)
+
+- minor fixes and improvements
 
 15.35 (01.09.2010)
 

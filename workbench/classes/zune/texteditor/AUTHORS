@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: AUTHORS 612 2010-04-21 15:54:05Z damato $
+ $Id: AUTHORS 747 2010-09-08 06:46:46Z mandi78 $
 
 ***************************************************************************/
 
@@ -29,5 +29,15 @@ Ilkka Lehtoranta   <ilkleht@isoveli.org>
 Jens Langner       <damato@users.sourceforge.net>
 Sebastian Bauer    <sba@users.sourceforge.net>
 Thore Böckelmann   <thboeckel@users.sourceforge.net>
+
+Translations provided and maintained by following people:
+
+Czech:     Vit Sindlar <sindlarv at centrum dot cz>
+Danish:    Niels Bache
+French:    Alexandre Balaban
+German:    Thore Böckelmann <tboeckel@gmx.de>
+Polish:    Mariusz Danilewicz <mandi@interia.pl>
+Russian:   Michael Malyshev <Michael_Malyshev@mail.ru>
+Swedish:   Pär Boberg <pbobbenb@spray.se>
 
 The development of TextEditor.mcc is hosted by SourceForge http://www.sf.net/
