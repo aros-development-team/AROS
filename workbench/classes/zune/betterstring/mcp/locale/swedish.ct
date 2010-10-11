@@ -1,206 +1,212 @@
-## chunk AUTH Pär Boberg
-## language svenska
 ## version $VER: BetterString_mcp.ct 2.2 (20.04.09)
+## language svenska
 ## codeset 0
 ;
+## chunk AUTH Pär Boberg
 ;
 ; BetterString_mcp.ct - BetterString MUI custom prefs catalog translation file
 ; $Id$
 ;
+;#version 2
+;#language english
+;
 ;
 MSG_Label_Active
 Aktiv:
-;#DEF Active:
-;#SET (0//)
+; Active:
+;
 MSG_Label_Background
 Bakgrund
-;#DEF Background
-;#SET (1//)
+; Background
+;
 MSG_Label_Cursor
 Markör:
-;#DEF Cursor:
-;#SET (2//)
+; Cursor:
+;
 MSG_Label_Fonts
 Typsnitt:
-;#DEF Font:
-;#SET (3//)
+; Font:
+;
 MSG_Label_Frame
 Ram:
-;#DEF Frame:
-;#SET (4//)
+; Frame:
+;
 MSG_Label_Inactive
 Inaktiv:
-;#DEF Inactive:
-;#SET (5//)
+; Inactive:
+;
 MSG_Label_Marked
 Markerad:
-;#DEF Marked:
-;#SET (6//)
+; Marked:
+;
 MSG_Label_Text
 Text
-;#DEF Text
-;#SET (7//)
+; Text
+;
 MSG_String_TestString
 Testa BetterStrings styrka här!
-;#DEF Test the power of BetterString here!
-;#SET (8//)
+; Test the power of BetterString here!
+;
 MSG_Help_Copy
 Kopiera allt eller markerad text
-;#DEF Copy all or marked text
-;#SET (9//)
+; Copy all or marked text
+;
 MSG_Help_Copy_Shortcut
 Amiga + c
-;#DEF Amiga + c
-;#SET (10//)
+; Amiga + c
+;
 MSG_Help_Cut
 Klipp ut allt eller markerad text
-;#DEF Cut all or marked text
-;#SET (11//)
+; Cut all or marked text
+;
 MSG_Help_Cut_Shortcut
 Amiga + x
-;#DEF Amiga + x
-;#SET (12//)
+; Amiga + x
+;
 MSG_Help_Paste
 Klistra in
-;#DEF Paste
-;#SET (13//)
+; Paste
+;
 MSG_Help_Paste_Shortcut
 Amiga + v
-;#DEF Amiga + v
-;#SET (14//)
+; Amiga + v
+;
 MSG_Help_Undo
 Ångra senaste radering
-;#DEF Undo last deletion
-;#SET (15//)
+; Undo last deletion
+;
 MSG_Help_Undo_Shortcut
 Amiga + z
-;#DEF Amiga + z
-;#SET (16//)
+; Amiga + z
+;
 MSG_Help_Redo
 Gör om senaste radering
-;#DEF Redo last deletion
-;#SET (17//)
+; Redo last deletion
+;
 MSG_Help_Redo_Shortcut
 Amiga + Z
-;#DEF Amiga + Z
-;#SET (18//)
+; Amiga + Z
+;
 MSG_Help_ToggleBuffer
 Växla mellan original och modifierad buffer
-;#DEF Toggle between original and modified buffer
-;#SET (19//)
+; Toggle between original and modified buffer
+;
 MSG_Help_ToggleBuffer_Shortcut
 Amiga + q
-;#DEF Amiga + q
-;#SET (20//)
+; Amiga + q
+;
 MSG_Help_ToggleCaseChar
 Växla mellan stor och liten bokstav
-;#DEF Toggle case on character
-;#SET (21//)
+; Toggle case on character
+;
 MSG_Help_ToggleCaseChar_Shortcut
 Amiga + g
-;#DEF Amiga + g
-;#SET (22//)
+; Amiga + g
+;
 MSG_Help_ToggleCaseWord
 Växla mellan stor och liten bokstav på ord
-;#DEF Toggle case on word
-;#SET (23//)
+; Toggle case on word
+;
 MSG_Help_ToggleCaseWord_Shortcut
 Amiga + G
-;#DEF Amiga + G
-;#SET (24//)
+; Amiga + G
+;
 MSG_Help_IncreaseNumber
 Öka nummer
-;#DEF Increase number
-;#SET (25//)
+; Increase number
+;
 MSG_Help_IncreaseNumber_Shortcut
 Amiga + i
-;#DEF Amiga + i
-;#SET (26//)
+; Amiga + i
+;
 MSG_Help_DecreaseNumber
 Minska nummer
-;#DEF Decrease number
-;#SET (27//)
+; Decrease number
+;
 MSG_Help_DecreaseNumber_Shortcut
 Amiga + d
-;#DEF Amiga + d
-;#SET (28//)
+; Amiga + d
+;
 MSG_Help_HexToDecimal
 Hex till decimal
-;#DEF Hex to Decimal
-;#SET (29//)
+; Hex to Decimal
+;
 MSG_Help_HexToDecimal_Shortcut
 Amiga + #
-;#DEF Amiga + #
-;#SET (30//)
+; Amiga + #
+;
 MSG_Help_DecimalToHex
 Decimal till hex
-;#DEF Decimal to Hex
-;#SET (31//)
+; Decimal to Hex
+;
 MSG_Help_DecimalToHex_Shortcut
 Amiga + $
-;#DEF Amiga + $
-;#SET (32//)
+; Amiga + $
+;
 MSG_Help_FilenameCompletition
 Filnamnskomplettering (använd SHIFT för att gå bakåt)
-;#DEF Filenamecompletion (use SHIFT to cycle back)
-;#SET (33//)
+; Filenamecompletion (use SHIFT to cycle back)
+;
 MSG_Help_FilenameCompletition_Shortcut
 Amiga + TAB
-;#DEF Amiga + TAB
-;#SET (34//)
+; Amiga + TAB
+;
 MSG_Help_Mark
 Markera
-;#DEF Mark
-;#SET (35//)
+; Mark
+;
 MSG_Help_Mark_Shortcut
 CTRL + markör
-;#DEF CTRL + cursor
-;#SET (36//)
+; CTRL + cursor
+;
 MSG_Help_GotoToStartEndOfLine
 Gå till början/slutet av rad
-;#DEF Goto to start/end of line
-;#SET (37//)
+; Goto to start/end of line
+;
 MSG_Help_GotoToStartEndOfLine_Shortcut
 SHIFT + markör
-;#DEF SHIFT + cursor
-;#SET (38//)
+; SHIFT + cursor
+;
 MSG_Help_DeleteToStartEndOfLine
 Radera till början/slutet av rad
-;#DEF Delete to start/end of line
-;#SET (39//)
+; Delete to start/end of line
+;
 MSG_Help_DeleteToStartEndOfLine_Shortcut
 SHIFT + BACKSPACE/DELETE
-;#DEF SHIFT + BACKSPACE/DELETE
-;#SET (40//)
+; SHIFT + BACKSPACE/DELETE
+;
 MSG_Help_GotoToPrevNextWord
 Gå till föregående/nästa ord
-;#DEF Goto to previous/next word
-;#SET (41//)
+; Goto to previous/next word
+;
 MSG_Help_GotoToPrevNextWord_Shortcut
 ALT + markör
-;#DEF ALT + cursor
-;#SET (42//)
+; ALT + cursor
+;
 MSG_Help_DeleteToPrevNextWord
 Radera föregående/nästa ord
-;#DEF Delete previous/next word
-;#SET (43//)
+; Delete previous/next word
+;
 MSG_Help_DeleteToPrevNextWord_Shortcut
 ALT + BACKSPACE/DELETE
-;#DEF ALT + BACKSPACE/DELETE
-;#SET (44//)
+; ALT + BACKSPACE/DELETE
+;
 MSG_SelectOnActive
 Markera när aktiv:
-;#DEF Select on Active:
-;#SET (45//)
+; Select on Active:
+;
 MSG_HELP_SelectOnActive
 Markera automatiskt all text när ett\nBetterString objekt blir aktivt, via\nTAB cykling eller mus aktivering.
-;#DEF Automatically select all text when a\nBetterString object gets activated\nvia TAB cycling or mouse activation.
-;#SET (46//)
+; Automatically select all text when a\n\
+; BetterString object gets activated\n\
+; via TAB cycling or mouse activation.
+;
 MSG_SelectPointer
 Markeringspekare:
-;#DEF Selection Pointer:
-;#SET (47//)
+; Selection Pointer:
+;
 MSG_HELP_SelectPointer
 Om vald, kommer en specialpekare att visas\nnär muspekaren är ovanför ett betterstring objekt.
-;#DEF If enabled, a custom selection pointer will appear\nwhen the mouse pointer is above a betterstring gadget.
-;#SET (48//)
+; If enabled, a custom selection pointer will appear\n\
+; when the mouse pointer is above a betterstring gadget.
+;
