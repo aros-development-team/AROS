@@ -405,6 +405,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
             gfxdata->selectedconnectorid = selectedconnectorid;
             gfxdata->selectedcrtcid = selectedcrtcid;
             carddata->dev = dev;
+            ULONG gartsize = 0;
             
             /* Check chipset architecture */
             switch (carddata->dev->chipset & 0xf0) 
@@ -448,6 +449,18 @@ OOP_Object * METHOD(Nouveau, Root, New)
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
                 0, 64 * 64 * 4, &gfxdata->cursor);
             /* TODO: Check return, hot to handle */
+            
+            /* Allocate GART scratch buffer */
+            if (carddata->dev->vm_gart_size > (16 * 1024 * 1024))
+                gartsize = 16 * 1024 * 1024;
+            else
+                /* always leave 512kb for other things like the fifos */
+                gartsize = carddata->dev->vm_gart_size - 512*1024;
+
+            /* This can fail */
+            nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP,
+                0, gartsize, &carddata->GART);
+            InitSemaphore(&carddata->gartsemaphore);
         }
 
         return o;
@@ -456,7 +469,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     return NULL;
 }
 
-/* FIXME: IMPLEMENT DISPOSE - calling nouveau_close() */
+/* FIXME: IMPLEMENT DISPOSE - calling nouveau_close(), freeing cursor bo, gart bo */
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
