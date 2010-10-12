@@ -106,6 +106,9 @@ struct CardData
     struct nouveau_grobj    *NvRectangle;
     struct nouveau_grobj    *NvMemFormat;
     struct nouveau_grobj    *Nv2D;
+    
+    struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
+    struct SignalSemaphore  gartsemaphore;
 };
 
 struct staticdata
@@ -233,6 +236,9 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
 BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
     ULONG maxY, ULONG drawmode, ULONG color);
+BOOL HiddNouveauNVAccelUploadM2MF(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, UBYTE * pixels, ULONG x, ULONG y, 
+    ULONG width, ULONG height, ULONG srcpitch);
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);

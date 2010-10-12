@@ -467,39 +467,53 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
-    /* TODO : try bulk transfers from RAM to VRAM */
-
     /* Non-generic, simplified, faster version of BRGA mode */
     if (bmdata->bytesperpixel == 4 && (msg->pixFmt == vHidd_StdPixFmt_Native 
         || msg->pixFmt == vHidd_StdPixFmt_Native32 
        || msg->pixFmt == vHidd_StdPixFmt_BGRA32 || msg->pixFmt == vHidd_StdPixFmt_BGR032))
     {
+        struct CardData * carddata = &(SD(cl)->carddata);
+
         LOCK_BITMAP
-        MAP_BUFFER
-        ULONG srcpitch = msg->modulo ? msg->modulo : bmdata->pitch;
-        ULONG x,y;
         
-        for(y = 0; y < msg->height; y++)
+        /* For small transfers use direct access, for larger use GART */
+        if (((msg->width * msg->height) < (128 * 128)) || (!carddata->GART))
         {
-            /* Calculate line start addresses */
-            ULONG bytesperpixel = bmdata->bytesperpixel;
-            IPTR srcaddr = (srcpitch * y) + (IPTR)msg->pixels;
-            IPTR destaddr = (msg->x * bytesperpixel) + (bmdata->pitch * (msg->y + y)) + (IPTR)bmdata->bo->map;
-            for (x = 0; x < msg->width; x++)
+            MAP_BUFFER
+            ULONG srcpitch = msg->modulo ? msg->modulo : bmdata->pitch;
+            ULONG x,y;
+            
+            for(y = 0; y < msg->height; y++)
             {
-                writel(readl(srcaddr), destaddr);
-                srcaddr += bytesperpixel;
-                destaddr += bytesperpixel;
+                /* Calculate line start addresses */
+                ULONG bytesperpixel = bmdata->bytesperpixel;
+                IPTR srcaddr = (srcpitch * y) + (IPTR)msg->pixels;
+                IPTR destaddr = (msg->x * bytesperpixel) + (bmdata->pitch * (msg->y + y)) + (IPTR)bmdata->bo->map;
+                for (x = 0; x < msg->width; x++)
+                {
+                    writel(readl(srcaddr), destaddr);
+                    srcaddr += bytesperpixel;
+                    destaddr += bytesperpixel;
+                }
             }
         }
+        else
+        {
+            UNMAP_BUFFER
 
-        
+            ObtainSemaphore(&carddata->gartsemaphore);
+            
+            HiddNouveauNVAccelUploadM2MF(carddata, bmdata, msg->pixels, msg->x, msg->y, 
+                msg->width, msg->height, msg->modulo);    
+            
+            ReleaseSemaphore(&carddata->gartsemaphore);
+        }
+    
         UNLOCK_BITMAP
         
         return;
     }
     
-
     /* Generic approach */
         
     LOCK_BITMAP
