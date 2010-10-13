@@ -16,8 +16,8 @@
 	AROS_LH2(char *, AllocMiscResource,
 
 /*  SYNOPSIS */
-		 AROS_LHA(ULONG,  unitNum, d0),
-		 AROS_LHA(char *, name,    a0),
+		 AROS_LHA(ULONG,  unitNum, D0),
+		 AROS_LHA(char *, name,    A0),
 
 /*  LOCATION */
 		 APTR, MiscBase, 1, Misc)
