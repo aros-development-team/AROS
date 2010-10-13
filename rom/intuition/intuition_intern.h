@@ -1008,7 +1008,11 @@ extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBas
 extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
 extern void UpdateMouseCoords(struct Window *win);
 extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
-extern struct Region *DefaultWindowShapeFunc(struct Hook *hook, struct Layer *lay, struct ShapeHookMsg *msg);
+
+AROS_UFP3(struct Region *, DefaultWindowShapeFunc,
+    AROS_UFPA(struct Hook *, hook, A0),
+    AROS_UFPA(struct Layer *, lay, A2),
+    AROS_UFPA(struct ShapeHookMsg *, msg, A1));
 
 extern LONG CalcResourceHash(APTR resource);
 extern void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
