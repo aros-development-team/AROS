@@ -63,10 +63,13 @@ LONG PartitionRDBCheckPartitionTable
     )
 {
 UBYTE i;
-UBYTE space[root->de.de_SizeBlock<<2];
+UBYTE space[4096];
 struct RigidDiskBlock *rdb = (struct RigidDiskBlock *)space;
 struct PartitionType type;
 struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
+
+    if (sizeof(space) < (root->de.de_SizeBlock << 2))
+        return 0;
 
     if (root->root != NULL)
     {
@@ -279,10 +282,12 @@ LONG PartitionRDBOpenPartitionTable
         struct PartitionHandle *root
     )
 {
-UBYTE buffer[root->de.de_SizeBlock << 2];
+UBYTE buffer[4096];
 struct RDBData *data;
 UBYTE i;
 
+    if (sizeof(buffer) < (root->de.de_SizeBlock << 2))
+        return 0;
     data = AllocMem(sizeof(struct RDBData), MEMF_PUBLIC);
     if (data)
     {
@@ -450,7 +455,7 @@ LONG PartitionRDBWritePartitionTable
         struct PartitionHandle *root
     )
 {
-UBYTE buffer[root->de.de_SizeBlock << 2];
+UBYTE buffer[4096];
 struct RDBData *data;
 struct PartitionHandle *ph;
 struct PartitionBlock *pblock;
@@ -458,6 +463,8 @@ struct BadBlockNode *bn;
 struct FileSysNode *fn;
 ULONG block;
 
+    if (sizeof(buffer) < (root->de.de_SizeBlock << 2))
+	return 0;
     data = root->table->data;
     block = data->rdbblock+1; /* RDB will be written at the end */
     fillMem((UBYTE *)buffer, root->de.de_SizeBlock << 2, 0);
@@ -863,7 +870,10 @@ ULONG PartitionRDBDestroyPartitionTable
     )
 {
 struct RDBData *data;
-UBYTE buffer[root->de.de_SizeBlock << 2];
+UBYTE buffer[4096];
+
+    if (sizeof(buffer) < (root->de.de_SizeBlock << 2))
+    	    return 0;
 
     data = root->table->data;
     CopyMem(&data->rdb, buffer, sizeof(struct RigidDiskBlock));
