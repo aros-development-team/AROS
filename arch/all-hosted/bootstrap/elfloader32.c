@@ -16,6 +16,7 @@
 
 #include "elfloader32.h"
 #include "support.h"
+#include "ui.h"
 
 #define D(x)
 #define DREL(x)
@@ -341,7 +342,7 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
 	D(printf("[ELF Loader] Checking file %s\n", n->Name));
 	file = fopen(n->Name, "rb");
 	if (!file) {
-	    printf("Failed to open file %s!\n", n->Name);
+	    DisplayError("Failed to open file %s!\n", n->Name);
 	    return 0;
 	}
 
@@ -357,8 +358,9 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
 	}
 
 	fclose(file);
-	if (err) {
-	    printf("%s: %s\n", n->Name, err);
+	if (err)
+	{
+	    DisplayError("%s: %s\n", n->Name, err);
 	    return 0;
 	}
 
@@ -411,8 +413,9 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	D(printf("[ELF Loader] Loading file %s\n", n->Name));
 
 	file = fopen(n->Name, "rb");
-	if (!file) {
-	    printf("Failed to open file %s!\n", n->Name);
+	if (!file)
+	{
+	    DisplayError("Failed to open file %s!\n", n->Name);
 	    return 0;
 	}
 
@@ -435,16 +438,18 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 		if (sh[i].flags & SHF_WRITE)
 		{
 		    ptr_rw = load_hunk(file, &sh[i], ptr_rw, &tracker);
-		    if (!ptr_rw) {
-			printf("%s: Error loading hunk %u!\n", n->Name, i);
+		    if (!ptr_rw)
+		    {
+			DisplayError("%s: Error loading hunk %u!\n", n->Name, i);
 			return 0;
 		    }
 		}
 		else
 		{
 		    ptr_ro = load_hunk(file, &sh[i], ptr_ro, &tracker);
-		    if (!ptr_ro) {
-			printf("%s: Error loading hunk %u!\n", n->Name, i);
+		    if (!ptr_ro)
+		    {
+			DisplayError("%s: Error loading hunk %u!\n", n->Name, i);
 			return 0;
 		    }
 		}
@@ -467,8 +472,9 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	    if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
 	    {
 		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
-		if (!sh[i].addr || !relocate(&n->eh, sh, i, 0)) {
-		    printf("%s: Relocation error in hunk %u!\n", n->Name, i);
+		if (!sh[i].addr || !relocate(&n->eh, sh, i, 0))
+		{
+		    DisplayError("%s: Relocation error in hunk %u!\n", n->Name, i);
 		    return 0;
 		}
 

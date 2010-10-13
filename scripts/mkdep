@@ -21,6 +21,9 @@ while [ $# != 0 ]; do
 	*.cc)
 	    files="$files '$1'"
 	    ;;
+	*.m)
+	    files="$files '$1'"
+	    ;;
 	*)
 	    args="$args '$1'"
 	    ;;

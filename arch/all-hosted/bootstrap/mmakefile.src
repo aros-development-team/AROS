@@ -3,7 +3,8 @@ include $(TOP)/config/make.cfg
 
 EXEDIR := $(BINDIR)/boot
 
-FILES         := bootstrap elfloader32 hostinterface memory support shutdown
+FILES         := main bootstrap elfloader32 filesystem hostinterface memory support shutdown ui
+PROG	      := AROSBootstrap
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR)
 
 ifeq ($(ARCH),mingw32)
@@ -12,8 +13,13 @@ else
     LIBS := dl
 endif
 
+ifeq ($(ARCH),ios)
+    KERNEL_LDFLAGS += $(IOS_LDFLAGS) -framework Foundation -framework UIKit
+    EXEDIR := $(EXEDIR)/$(PROG).app
+endif
+
 %build_prog mmake=kernel-bootstrap-hosted \
-    progname=AROSBootstrap$(EXE_SUFFIX) targetdir=$(EXEDIR) \
+    progname=$(PROG)$(EXE_SUFFIX) targetdir=$(EXEDIR) \
     files=$(FILES) compiler=kernel uselibs=$(LIBS)
 
 %common

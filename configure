@@ -791,6 +791,7 @@ aros_shared_cflags
 aros_shared_aflags
 aros_shared_ldflags
 aros_kernel_cflags
+aros_kernel_objcflags
 aros_kernel_ldflags
 aros_debug_cflags
 aros_debug_aflags
@@ -811,6 +812,10 @@ aros_host_sdl_libs
 aros_serial_debug
 aros_palm_debug_hack
 aros_nesting_supervisor
+aros_xcode_path
+aros_ios_platform
+aros_ios_version
+aros_ios_sdk
 ENABLE_DBUS
 DBUS_CFLAGS
 DBUS_LIBFLAGS
@@ -8567,6 +8572,47 @@ echo "$as_me: error: \"Unsupported target CPU for darwin hosted flavour -- $targ
 	esac
 	;;
 
+    ios*)
+        # TODO: these should be specified with arguments: --with-xcode, --with-ios-version, --with-ios-sdk
+	aros_xcode_path="/Developer"
+	aros_ios_version="2.0"
+	aros_ios_sdk="4.1"
+
+	aros_target_arch="ios"
+	aros_flavour="emulation"
+	# This is here because it may depend on iOS or SDK version
+	aros_kernel_objcflags="-fobjc-abi-version=2 -fobjc-legacy-dispatch"
+	case "$target_cpu" in
+	    *i?86*)
+	    	aros_ios_platform="iPhoneSimulator"
+		aros_target_cpu="i386"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+		aros_kernel_cflags="$aros_kernel_cflags -m32"
+		aros_kernel_ldflags="-m32"
+		aros_default_wbdepth=8
+		gcc_target_cpu="i386"
+		aros_object_format="elf_i386"
+		aros_target_strip_flags="-x"
+		aros_target_cc="i386-aros-gcc"
+		aros_target_cxx="i386-aros-g++"
+		aros_target_ld="i386-aros-ld"
+		aros_target_as="i386-aros-as"
+		aros_target_ar="i386-aros-ar"
+		aros_target_ranlib="i386-aros-ranlib"
+		aros_target_nm="i386-aros-nm"
+		aros_target_strip="i386-aros-strip"
+		aros_target_objcopy="i386-aros-objcopy"
+		aros_target_objdump="i386-aros-objdump"
+		target_tool_prefix="i686-apple-darwin10-"
+		;;
+	    *)
+		{ { echo "$as_me:$LINENO: error: \"Unsupported target CPU for iOS hosted flavour -- $target_cpu\"" >&5
+echo "$as_me: error: \"Unsupported target CPU for iOS hosted flavour -- $target_cpu\"" >&2;}
+   { (exit 1); exit 1; }; }
+		;;
+	esac
+	;;
+
     dragonfly*)
         aros_target_arch="dragonfly"
         aros_flavour="emulation"
@@ -12520,6 +12566,7 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
 # Graphics Related
 
 
@@ -12542,6 +12589,12 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 # Unix/Hosted version related
+
+
+# Apple iOS related
+
+
+
 
 
 # DBUS related
@@ -13497,6 +13550,7 @@ aros_shared_cflags!$aros_shared_cflags$ac_delim
 aros_shared_aflags!$aros_shared_aflags$ac_delim
 aros_shared_ldflags!$aros_shared_ldflags$ac_delim
 aros_kernel_cflags!$aros_kernel_cflags$ac_delim
+aros_kernel_objcflags!$aros_kernel_objcflags$ac_delim
 aros_kernel_ldflags!$aros_kernel_ldflags$ac_delim
 aros_debug_cflags!$aros_debug_cflags$ac_delim
 aros_debug_aflags!$aros_debug_aflags$ac_delim
@@ -13512,7 +13566,6 @@ DO_XSHM_SUPPORT!$DO_XSHM_SUPPORT$ac_delim
 DO_VIDMODE_SUPPORT!$DO_VIDMODE_SUPPORT$ac_delim
 aros_host_x11_includes!$aros_host_x11_includes$ac_delim
 aros_host_x11_libdirs!$aros_host_x11_libdirs$ac_delim
-aros_host_sdl_cflags!$aros_host_sdl_cflags$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -13554,10 +13607,15 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+aros_host_sdl_cflags!$aros_host_sdl_cflags$ac_delim
 aros_host_sdl_libs!$aros_host_sdl_libs$ac_delim
 aros_serial_debug!$aros_serial_debug$ac_delim
 aros_palm_debug_hack!$aros_palm_debug_hack$ac_delim
 aros_nesting_supervisor!$aros_nesting_supervisor$ac_delim
+aros_xcode_path!$aros_xcode_path$ac_delim
+aros_ios_platform!$aros_ios_platform$ac_delim
+aros_ios_version!$aros_ios_version$ac_delim
+aros_ios_sdk!$aros_ios_sdk$ac_delim
 ENABLE_DBUS!$ENABLE_DBUS$ac_delim
 DBUS_CFLAGS!$DBUS_CFLAGS$ac_delim
 DBUS_LIBFLAGS!$DBUS_LIBFLAGS$ac_delim
@@ -13573,7 +13631,7 @@ gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 17; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 22; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

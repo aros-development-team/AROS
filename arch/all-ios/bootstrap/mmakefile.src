@@ -1,0 +1,31 @@
+# $Id: mmakefile.src 34578 2010-10-04 07:19:30Z sonic $
+include $(TOP)/config/make.cfg
+
+EXEDIR := $(BINDIR)/boot/AROSBootstrap.app
+OBJDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
+
+FILES         := main appdelegate filesystem ui
+USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap
+
+#MM kernel-bootstrap-hosted-ios: kernel-bootstrap-bundle-ios
+
+OBJS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
+DEPS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
+
+#MM
+kernel-bootstrap-hosted-ios :: $(OBJS) $(DEPS)
+
+$(OBJDIR$)/%.o : %.m
+	%compile_q cmd=$(KERNEL_CC) opt="$(CFLAGS) $(KERNEL_CFLAGS) $(KERNEL_OBJCFLAGS) $(IOS_CFLAGS)"
+
+$(OBJDIR)/%.d : %.m
+	%mkdepend_q cc=$(KERNEL_CC) flags="$(CFLAGS) $(IOS_CFLAGS)"
+
+%include_deps depstargets="kernel-bootstrap-hosted-ios" deps=$(DEPS)
+
+#MM
+kernel-bootstrap-bundle-ios:
+	$(MKDIR) $(EXEDIR)
+	$(CP) -f $(SRCDIR)/$(CURDIR)/Info.plist $(SRCDIR)/$(CURDIR)/PkgInfo $(EXEDIR)/
+
+%common
