@@ -4,7 +4,7 @@
 
     Desc: russian.language description file.
     Lang: russian
-    Char: CP-1251
+    Char: Amiga-1251
 */
 
 /*  Language file for the Russian language. Collation tables need to be implemented */
@@ -21,10 +21,10 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "russian"    /* String version of above */
+#define LANGSTR     "russian"   /* String version of above */
 #define LANGVER     41          /* Version number of language */
-#define LANGREV     1           /* Revision number of language */
-#define LANGTAG     "\0$VER: russian.language 41.1 (16.08.2010)"
+#define LANGREV     2           /* Revision number of language */
+#define LANGTAG     "\0$VER: "LANGSTR".language 41.2 (13.10.2010)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -292,7 +292,7 @@ const STRPTR __russian_strings[] =
 
     /* Abbreviated months of the year */
     "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
-    "Июл", "авг", "Сен", "Окт", "Ноя", "Дек",
+    "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
 
     "Да", /* Yes, affirmative response */
     "Нет", /* No/negative response */
