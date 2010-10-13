@@ -131,7 +131,7 @@ AROS_UFH5(void, SoftIntDispatch,
 {
     AROS_USERFUNC_INIT
 
-    struct Interrupt *intr;
+    struct Interrupt *intr = NULL;
     BYTE i;
 
     /* Don't bother if there are no software ints queued. */

@@ -13,6 +13,8 @@
 #include <exec/types.h>
 #include <stdarg.h>
 
+#include "exec_intern.h"
+
 #ifndef EXEC_TASKS_H
 struct Task;
 #endif
