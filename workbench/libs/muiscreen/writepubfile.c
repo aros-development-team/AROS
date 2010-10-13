@@ -22,7 +22,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR, pf,  A0),
-	AROS_LHA(struct MUI_PubScreenDesc *, desc,  A0),
+	AROS_LHA(struct MUI_PubScreenDesc *, desc,  A1),
 
 /*  LOCATION */
 	struct Library *, MUIScreenBase, 0x3c, MUIScreen)
