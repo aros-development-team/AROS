@@ -82,7 +82,7 @@ const struct Resident LDDemon_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&LDDemon_resident,
-    &LIBEND,
+    (APTR)&LIBEND,
     RTF_AFTERDOS,
     VERSION_NUMBER,
     NT_PROCESS,
@@ -112,7 +112,7 @@ LDLoad(
 {
     struct ExecBase *SysBase = DOSBase->dl_SysBase;
     struct Process *me = (struct Process *)FindTask(NULL);
-    BPTR seglist = NULL;
+    BPTR seglist = BNULL;
     STRPTR path;
     ULONG pathLen;
     int delimPos;
@@ -133,7 +133,7 @@ LDLoad(
 	/* Special case for explicit PROGDIR-based path */
 	if (__is_process(caller))
 	{
-	    if (caller->pr_HomeDir != NULL)
+	    if (caller->pr_HomeDir != BNULL)
 	    {
 		BPTR oldHomeDir = me->pr_HomeDir;
 		D(bug("[LDLoad] Trying homedir\n"));
@@ -166,7 +166,7 @@ LDLoad(
 		seglist = LoadSeg(path);
 
 	/* The the program directory of the caller */
-	    if((!seglist) && (caller->pr_HomeDir != NULL))
+	    if((!seglist) && (caller->pr_HomeDir != BNULL))
 	    {
 		D(bug("[LDLoad] Trying homedir\n"));
 		me->pr_CurrentDir = caller->pr_HomeDir;
@@ -451,7 +451,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 	WaitPort(&ldd.ldd_ReplyPort);
 	D(bug("[LDCaller] Returned\n"));
 
-	library = LDInit(ldd.ldd_Return, DOSBase);
+	library = LDInit(MKBADDR(ldd.ldd_Return), DOSBase);
 
         if( library != NULL )
         {
@@ -503,7 +503,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 	{
 	    if (resident->rt_Version >= version)
 	    {
-		if (InitResident(resident, NULL))
+		if (InitResident(resident, BNULL))
 		    library = ExecOpenLibrary(stripped_libname, version);
 	    }
 	}
@@ -623,7 +623,7 @@ AROS_LH4(BYTE, OpenDevice,
 	WaitPort(&ldd.ldd_ReplyPort);
 	D(bug("[LDCaller] Returned\n"));
 
-	iORequest->io_Device = (struct Device *)LDInit(ldd.ldd_Return, DOSBase);
+	iORequest->io_Device = (struct Device *)LDInit(MKBADDR(ldd.ldd_Return), DOSBase);
 
 	if(iORequest->io_Device)
         {
@@ -703,7 +703,7 @@ AROS_LH1(void, CloseDevice,
 {
     AROS_LIBFUNC_INIT
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
-    BPTR seglist = NULL;
+    BPTR seglist = BNULL;
 
     Forbid();
     if( iORequest->io_Device != NULL )
@@ -842,14 +842,17 @@ AROS_UFH3(void, LDDemon,
 	WaitPort(DOSBase->dl_LDDemonPort);
 	while( (ldd = (struct LDDMsg *)GetMsg(DOSBase->dl_LDDemonPort)) )
 	{
+	    BPTR libSeg;
+
 	    D(bug("[LDDemon] Got a request for %s in %s\n",
 		    ldd->ldd_Name, ldd->ldd_BaseDir));
 
-	    ldd->ldd_Return = LDLoad(
+	    libSeg = LDLoad(
 		ldd->ldd_ReplyPort.mp_SigTask,
 		ldd->ldd_Name,
 		ldd->ldd_BaseDir,
 		DOSBase);
+	    ldd->ldd_Return = BADDR(libSeg);
 
 	    D(bug("[LDDemon] Replying with %p as result\n", ldd->ldd_Return));
 	    ReplyMsg((struct Message *)ldd);

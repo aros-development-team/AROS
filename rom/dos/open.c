@@ -69,7 +69,7 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     LONG error;
 
     /* Sanity check */
-    if (name == NULL) return NULL;
+    if (name == NULL) return BNULL;
 
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
@@ -90,7 +90,7 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 	error = ERROR_NO_FREE_STORE;
 
     SetIoErr(error);
-    return NULL;
+    return BNULL;
 
     AROS_LIBFUNC_EXIT
 } /* Open */

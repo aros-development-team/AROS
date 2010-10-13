@@ -68,7 +68,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
     char vol[32];
     LONG len;
     char buf[256];
-    BPTR cur = NULL, lock = NULL;
+    BPTR cur = BNULL, lock = BNULL;
     BOOL stdio = FALSE;
     BOOL res;
 
@@ -102,16 +102,16 @@ static BOOL VolumeIsOffline(struct DosList *dl);
 
         /* handle standard I/O streams as "virtual" devices */
         if (Stricmp(name, "IN:") == 0 || Stricmp(name, "STDIN:") == 0) {
-            cur = pr->pr_CIS != NULL ? pr->pr_CIS : (BPTR) -1;
+            cur = pr->pr_CIS != BNULL ? pr->pr_CIS : (BPTR) -1;
             stdio = TRUE;
         }
         else if (Stricmp(name, "OUT:") == 0 || Stricmp(name, "STDOUT:") == 0) {
-            cur = pr->pr_COS != NULL ? pr->pr_COS : (BPTR) -1;
+            cur = pr->pr_COS != BNULL ? pr->pr_COS : (BPTR) -1;
             stdio = TRUE;
         }
         else if (Stricmp(name, "ERR:") == 0 || Stricmp(name, "STDERR:") == 0) {
-            cur = pr->pr_CES != NULL ? pr->pr_CES :
-                  pr->pr_COS != NULL ? pr->pr_COS : (BPTR) -1;
+            cur = pr->pr_CES != BNULL ? pr->pr_CES :
+                  pr->pr_COS != BNULL ? pr->pr_COS : (BPTR) -1;
             stdio = TRUE;
         }
 
@@ -129,7 +129,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
             }
 
             /* we need a lock for the devproc */
-            if ((lock = DupLockFromFH(cur)) == NULL) {
+            if ((lock = DupLockFromFH(cur)) == BNULL) {
                 FreeMem(dp, sizeof(struct DevProc));
                 return NULL;
             }
@@ -180,7 +180,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
             cur = pr->pr_CurrentDir;
 
         /* if we got NULL, then it's relative to the system root lock */
-        if (cur == NULL)
+        if (cur == BNULL)
             cur = DOSBase->dl_SYSLock;
 
         /* extract the volume name */
@@ -243,7 +243,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
         } while(dl == NULL);
 
         /* relative to the current dir, then we have enough to get out of here */
-        if (lock != NULL) {
+        if (lock != BNULL) {
             dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(cur))->fh_Device;
             dp->dvp_Lock = lock;
             dp->dvp_Flags = 0;
@@ -274,7 +274,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
          * everything up. need more tuits before attempting a fix */
 
         /* didn't find the target */
-        if (lock == NULL) {
+        if (lock == BNULL) {
             FreeMem(dp, sizeof(struct DevProc));
             return NULL;
         }
@@ -347,7 +347,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
             return NULL;
 	}
         dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
-        dp->dvp_Lock = NULL;
+        dp->dvp_Lock = BNULL;
         dp->dvp_Flags = 0;
         dp->dvp_DevNode = dl;
 
@@ -443,7 +443,7 @@ BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
 	    struct FileSysStartupMsg *fssm;
 	    ULONG fssmFlags = 0;
 
-	    if (deviceNode->dn_Handler == NULL)
+	    if (deviceNode->dn_Handler == BNULL)
 	    {
 		handler = "afs.handler";
 	    }

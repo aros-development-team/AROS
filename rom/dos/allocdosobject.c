@@ -114,7 +114,7 @@
 	    
 	    cli->cli_FailLevel  = RETURN_ERROR;
 	    cli->cli_Background = DOSTRUE;
-	    ApplyTagChanges(defaults, tags);
+	    ApplyTagChanges(defaults, (struct TagItem *)tags);
 	    
 	    dir = AllocVec(defaults[0].ti_Data + 1, MEMF_PUBLIC | MEMF_CLEAR);
 	    ENOMEM_IF(dir == NULL);

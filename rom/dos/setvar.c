@@ -208,7 +208,7 @@
 	    /* Just try and open the file */
 	    file = Open(nameBuffer, MODE_NEWFILE);
 
-	    if (file != NULL)
+	    if (file != BNULL)
 	    {
 		/* Write the data to the file */
 		/* size = -1 means that the value is a null-terminated
@@ -239,7 +239,7 @@
 
 		file = Open(nameBuffer, MODE_NEWFILE);
 
-		if (file != NULL)
+		if (file != BNULL)
 		{
 		    /* Write the data to the file */
 		    /* size = -1 means that the value is a null-terminated

@@ -57,9 +57,9 @@
     AROS_LIBFUNC_INIT
 
     struct IOFileSys iofs;
-    struct FileHandle *fileH = fh;
+    struct FileHandle *fileH = BADDR(fh);
 
-    if (fh == NULL)
+    if (fh == BNULL)
     {
 	return DOSFALSE;
     }

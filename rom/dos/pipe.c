@@ -24,9 +24,9 @@
 	AROS_LH3(LONG, Pipe,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name,       D1),
-        AROS_LHA(BPTR,         *reader,    D2),
-        AROS_LHA(BPTR,         *writer,    D3),
+	AROS_LHA(CONST_STRPTR, name,      D1),
+        AROS_LHA(BPTR *,       reader,    D2),
+        AROS_LHA(BPTR *,       writer,    D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 160, Dos)

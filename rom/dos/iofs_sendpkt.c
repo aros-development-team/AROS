@@ -266,7 +266,7 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport, struct DosLib
 	    iofs->IOFS.io_Unit   = fh->fh_Unit;
 	    
 	    iofs->IOFS.io_Command = FSA_EXAMINE_NEXT;
-	    iofs->io_Union.io_EXAMINE_NEXT.io_fib = (BPTR)dp->dp_Arg2;
+	    iofs->io_Union.io_EXAMINE_NEXT.io_fib = BADDR(dp->dp_Arg2);
 	    
 	    break;	    
 
@@ -568,7 +568,7 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport, struct DosLib
 		}
 		else
 		{
-		    dir = BADDR(CurrentDir(NULL));
+		    dir = BADDR(CurrentDir(BNULL));
 		    CurrentDir(MKBADDR(dir));	/* Set back the current dir */
 		    
 		    if (dir == NULL)
@@ -810,7 +810,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 	    UnLockDosList(LDF_ALL | LDF_READ);
 
-	    if (lock != NULL)
+	    if (lock != BNULL)
 	    {
 		AssignLock(volname, lock);
 		dl = LockDosList(LDF_ALL | LDF_READ);

@@ -117,7 +117,7 @@ void removefromrootnode(struct Process *process, struct DosLibrary *DOSBase)
     struct CLIInfo  *cliNode;
     struct RootNode *root = DOSBase->dl_Root;
 
-    if (!__is_process(process) || process->pr_CLI == NULL)
+    if (!__is_process(process) || process->pr_CLI == BNULL)
     {
 	return;
     }

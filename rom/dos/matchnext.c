@@ -373,7 +373,7 @@
 	    
 	    UnLock(ac->an_Lock);
 	    
-	    ac->an_Lock = NULL;
+	    ac->an_Lock = BNULL;
 	    ac->an_Flags &= ~DDF_ExaminedBit;
 	    
 	    /* Make ac and AP->ap_Current point to the previous AChain */

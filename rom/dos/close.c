@@ -98,7 +98,7 @@
     ASSERT_VALID_PTR_OR_NULL(fh);
 
     /* 0 handles are OK */
-    if(file == NULL)
+    if(file == BNULL)
 	return ret;
 
     /* If the filehandle has a pending write on it Flush() the buffer. */

@@ -63,12 +63,12 @@
     /* get the device pointer and dir lock. The lock is only needed for
      * packet.handler, and has been stored by it during FSA_ADD_NOTIFY */
     iofs.IOFS.io_Device = (struct Device *) notify->nr_Handler;
-    iofs.IOFS.io_Unit = ((APTR *)notify->nr_Reserved)[0];
+    iofs.IOFS.io_Unit = (APTR)notify->nr_Reserved[0];
 
     /* go */
     do {
         DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, iofs.IOFS.io_Device) == DOSFALSE);
+    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, &iofs.IOFS.io_Unit->unit_MsgPort) == DOSFALSE);
 
     /* free fullname if it was built in StartNotify() */
     if (notify->nr_FullName != notify->nr_Name)

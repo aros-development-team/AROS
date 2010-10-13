@@ -83,7 +83,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     struct CommandLineInterface *cli = NULL;
     struct Process  	    	*me = (struct Process *)FindTask(NULL);
     STRPTR          	    	 s;
-    ULONG                        old_sig;
+    ULONG                        old_sig = 0;
 
     /* TODO: NP_CommandName, NP_ConsoleTask, NP_NotifyOnDeath */
 
@@ -468,27 +468,27 @@ error:
 	FreeDosObject(DOS_CLI, cli);
     }
 
-    if (homedir != NULL)
+    if (homedir != BNULL)
     {
     	UnLock(homedir);
     }
 
-    if (curdir != NULL)
+    if (curdir != BNULL)
     {
 	UnLock(curdir);
     }
 
-    if (output != NULL)
+    if (output != BNULL)
     {
 	Close(output);
     }
 
-    if (input != NULL)
+    if (input != BNULL)
     {
 	Close(input);
     }
 
-    if (ces != NULL)
+    if (ces != BNULL)
     {
 	Close(ces);
     }
@@ -618,13 +618,14 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
     return TRUE;
 }
 
-#warning Q: Is there a better way to pass DOSBase to KillCurrentProcess ?
+/* FIXME: Is there a better way to pass DOSBase to KillCurrentProcess ?
+ */
 static struct DosLibrary *DOSBase;
 
 static int SetDosBase(LIBBASETYPEPTR __DOSBase)
 {
     D(bug("SetDosBase\n"));
-    DOSBase = __DOSBase;
+    DOSBase = (struct DosLibrary *)__DOSBase;
     return TRUE;
 }
 

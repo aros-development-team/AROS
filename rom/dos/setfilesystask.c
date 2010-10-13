@@ -48,10 +48,10 @@
     AROS_LIBFUNC_INIT
 
     struct Process *pr = (struct Process *)FindTask(NULL);
-    BPTR old;
+    APTR old;
 
     old = pr->pr_FileSystemTask;
-    pr->pr_FileSystemTask = MKBADDR(task);
+    pr->pr_FileSystemTask = task;
     return BADDR(old);
 
     AROS_LIBFUNC_EXIT

@@ -69,13 +69,13 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase);
 {
     AROS_LIBFUNC_INIT
 
-    BPTR file = NULL, test_lock, old_dir;
+    BPTR file = BNULL, test_lock, old_dir;
     ULONG mode;
 
-    if (lock == NULL)
+    if (lock == BNULL)
     {
 	SetIoErr(ERROR_INVALID_LOCK);
-	return NULL;
+	return BNULL;
     }
 
     /* Try SFS hack first */
@@ -83,11 +83,11 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase);
 
     /* If SFS hack failed, try more general method that should work for both
      * device-based and packet-based handlers */
-    if (file == NULL)
+    if (file == BNULL)
     {
         /* Get lock's mode */
         test_lock = DupLock(lock);
-        if (test_lock != (BPTR)NULL)
+        if (test_lock != BNULL)
         {
             mode = SHARED_LOCK;
             UnLock(test_lock);
@@ -104,13 +104,13 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase);
         old_dir = CurrentDir(lock);
         file = Open("", MODE_OLDFILE);
         CurrentDir(old_dir);
-        if (file != (BPTR)NULL)
+        if (file != BNULL)
             UnLock(lock);
 
         /* Restore old mode */
         if (mode == EXCLUSIVE_LOCK)
         {
-            if (file != (BPTR)NULL)
+            if (file != BNULL)
                 ChangeMode(CHANGE_FH, file, mode);
             else
                 ChangeMode(CHANGE_LOCK, lock, mode);
@@ -128,7 +128,7 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase)
     struct IOFileSys iofs;
     struct DosPacket pkt = {0};
     struct FileHandle *fh;
-    BPTR file = NULL;
+    BPTR file = BNULL;
 
     struct ASFSHandle
     {
@@ -149,7 +149,7 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase)
 	if (!mp)
 	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
-	    return NULL;
+	    return BNULL;
 	}
 
 	InitIOFS(&iofs, SFS_SPECIFIC_MESSAGE, DOSBase);
@@ -162,7 +162,7 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase)
 	{
 	    DeleteMsgPort(mp);
 	    SetIoErr(ERROR_NO_FREE_STORE);
-	    return NULL;
+	    return BNULL;
 	}
 
 	fh->fh_Pos = fh->fh_End = (UBYTE *)-1;
@@ -182,7 +182,7 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase)
 	case ERROR_ACTION_NOT_KNOWN:
 	case ERROR_NOT_IMPLEMENTED:
 	    FreeDosObject(DOS_FILEHANDLE, fh);
-            file = NULL;
+            file = BNULL;
             break;
 	default:
 	    if (pkt.dp_Res1)
@@ -195,7 +195,7 @@ static BPTR SFSOpenFromLock(BPTR lock, struct DosLibrary *DOSBase)
 	    {
 		SetIoErr(iofs.io_DosError);
 		FreeDosObject(DOS_FILEHANDLE, fh);
-		file = NULL;
+		file = BNULL;
 	    }
 	}
 
