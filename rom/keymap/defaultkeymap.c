@@ -27,7 +27,7 @@
 #define ST KCF_STRING
 #define NOP KCF_NOP
 
-static UBYTE lokeymaptypes[] =
+static CONST UBYTE lokeymaptypes[] =
 {
     S, 		/* 00 */
     S|A, 	/* 01 */
@@ -96,7 +96,7 @@ static UBYTE lokeymaptypes[] =
     
 };
 
-static UBYTE hikeymaptypes[] =
+static CONST UBYTE hikeymaptypes[] =
 {
     N, 		/* 40 SPACE */
     N, 		/* 41 BACKSPACE */
@@ -184,7 +184,7 @@ static UBYTE hikeymaptypes[] =
 #define BYTES(b0, b1, b2, b3) \
 	(((UBYTE)b0)<<24) | (((UBYTE)b1)<<16) | (((UBYTE)b2)<<8) | (((UBYTE)b3)<<0)
 
-static IPTR lokeymap[] =
+static CONST IPTR lokeymap[] =
 {
     BYTES('~', '`', '~', '`'), 		/* 00 Left of 1 Key */
     BYTES(0xB9, 0xA1, '!', '1'), 	/* 01 1 */
@@ -275,7 +275,7 @@ static IPTR lokeymap[] =
 ** set in the keymap type.
 */
 
-UBYTE f1_descr[] =
+CONST UBYTE f1_descr[] =
 {
     3,4,
     4,7,
@@ -284,7 +284,7 @@ UBYTE f1_descr[] =
     0x9B,'1','0','~'
 };
 
-UBYTE f2_descr[] =
+CONST UBYTE f2_descr[] =
 {
     3,4,
     4,7,
@@ -293,7 +293,7 @@ UBYTE f2_descr[] =
     0x9B,'1','1','~'
 };
 
-UBYTE f3_descr[] =
+CONST UBYTE f3_descr[] =
 {
     3,4,
     4,7,
@@ -302,7 +302,7 @@ UBYTE f3_descr[] =
     0x9B,'1','2','~'
 };
 
-UBYTE f4_descr[] =
+CONST UBYTE f4_descr[] =
 {
     3,4,
     4,7,
@@ -311,7 +311,7 @@ UBYTE f4_descr[] =
     0x9B,'1','3','~'
 };
 
-UBYTE f5_descr[] =
+CONST UBYTE f5_descr[] =
 {
     3,4,
     4,7,
@@ -320,7 +320,7 @@ UBYTE f5_descr[] =
     0x9B,'1','4','~'
 };
 
-UBYTE f6_descr[] =
+CONST UBYTE f6_descr[] =
 {
     3,4,
     4,7,
@@ -329,7 +329,7 @@ UBYTE f6_descr[] =
     0x9B,'1','5','~'
 };
 
-UBYTE f7_descr[] =
+CONST UBYTE f7_descr[] =
 {
     3,4,
     4,7,
@@ -338,7 +338,7 @@ UBYTE f7_descr[] =
     0x9B,'1','6','~'
 };
 
-UBYTE f8_descr[] =
+CONST UBYTE f8_descr[] =
 {
     3,4,
     4,7,
@@ -347,7 +347,7 @@ UBYTE f8_descr[] =
     0x9B,'1','7','~'
 };
 
-UBYTE f9_descr[] =
+CONST UBYTE f9_descr[] =
 {
     3,4,
     4,7,
@@ -356,7 +356,7 @@ UBYTE f9_descr[] =
     0x9B,'1','8','~'
 };
 
-UBYTE f10_descr[] =
+CONST UBYTE f10_descr[] =
 {
     3,4,
     4,7,
@@ -365,7 +365,7 @@ UBYTE f10_descr[] =
     0x9B,'1','9','~'
 };
 
-UBYTE f11_descr[] =
+CONST UBYTE f11_descr[] =
 {
     4,4,
     4,8,
@@ -374,7 +374,7 @@ UBYTE f11_descr[] =
     0x9B,'3','0','~'
 };
 
-UBYTE f12_descr[] =
+CONST UBYTE f12_descr[] =
 {
     4,4,
     4,8,
@@ -383,7 +383,7 @@ UBYTE f12_descr[] =
     0x9B,'3','1','~'
 };
 
-UBYTE insert_descr[] =
+CONST UBYTE insert_descr[] =
 {
     4,4,
     4,8,
@@ -392,7 +392,7 @@ UBYTE insert_descr[] =
     0x9B,'5','0','~'
 };
 
-UBYTE pageup_descr[] =
+CONST UBYTE pageup_descr[] =
 {
     4,4,
     4,8,
@@ -401,7 +401,7 @@ UBYTE pageup_descr[] =
     0x9B,'5','1','~'
 };
 
-UBYTE pagedown_descr[] =
+CONST UBYTE pagedown_descr[] =
 {
     4,4,
     4,8,
@@ -410,7 +410,7 @@ UBYTE pagedown_descr[] =
     0x9B,'5','2','~'
 };
 
-UBYTE pausebreak_descr[] =
+CONST UBYTE pausebreak_descr[] =
 {
     4,4,
     4,8,
@@ -419,7 +419,7 @@ UBYTE pausebreak_descr[] =
     0x9B,'5','3','~'
 };
 
-UBYTE home_descr[] =
+CONST UBYTE home_descr[] =
 {
     4,4,
     4,8,
@@ -428,7 +428,7 @@ UBYTE home_descr[] =
     0x9B,'5','4','~'
 };
 
-UBYTE end_descr[] =
+CONST UBYTE end_descr[] =
 {
     4,4,
     4,8,
@@ -437,7 +437,7 @@ UBYTE end_descr[] =
     0x9B,'5','5','~'
 };
 
-UBYTE up_descr[] =
+CONST UBYTE up_descr[] =
 {
     2,4,
     2,6,
@@ -446,7 +446,7 @@ UBYTE up_descr[] =
     0x9B,'T'
 };
 
-UBYTE down_descr[] =
+CONST UBYTE down_descr[] =
 {
     2,4,
     2,6,
@@ -455,7 +455,7 @@ UBYTE down_descr[] =
     0x9B,'S'
 };
 
-UBYTE left_descr[] =
+CONST UBYTE left_descr[] =
 {
     2,4,
     3,6,
@@ -464,7 +464,7 @@ UBYTE left_descr[] =
     0x9B,' ','A'
 };
 
-UBYTE right_descr[] =
+CONST UBYTE right_descr[] =
 {
     2,4,
     3,6,
@@ -473,7 +473,7 @@ UBYTE right_descr[] =
     0x9B,' ','@'
 };
 
-UBYTE tab_descr[] =
+CONST UBYTE tab_descr[] =
 {
     1,4,
     2,5,
@@ -482,14 +482,14 @@ UBYTE tab_descr[] =
     0x9B,'Z'
 };
 
-UBYTE help_descr[] =
+CONST UBYTE help_descr[] =
 {
     3,2,
     
     0x9B,'?','~'
 };
 
-static IPTR hikeymap[] =
+static CONST IPTR hikeymap[] =
 {
     BYTES(' ', ' ', ' ', ' '),	/* 40 */
     BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
@@ -562,7 +562,7 @@ static IPTR hikeymap[] =
 #define SETBITS(b0, b1, b2, b3, b4, b5, b6, b7) \
 	(b0<<0)|(b1<<1)|(b2<<2)|(b3<<3)|(b4<<4)|(b5<<5)|(b6<<6)|(b7<<7)
 	
-static UBYTE locapsable[] =
+static CONST UBYTE locapsable[] =
 {
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 00 - 07 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 08 - 0F */
@@ -577,7 +577,7 @@ static UBYTE locapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */
 };
 
-static UBYTE hicapsable[] =
+static CONST UBYTE hicapsable[] =
 {
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 40 - 47 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 48 - 4F */
@@ -592,7 +592,7 @@ static UBYTE hicapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
 
-static UBYTE lorepeatable[] =
+static CONST UBYTE lorepeatable[] =
 {
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 00 - 07 */
     SETBITS(1, 1, 1, 1, 1, 1, 0, 1),	/* 08 - 0F */
@@ -607,7 +607,7 @@ static UBYTE lorepeatable[] =
     SETBITS(1, 1, 1, 0, 1, 1, 1, 1)	/* 38 - 3F */
 };
 
-static UBYTE hirepeatable[] =
+static CONST UBYTE hirepeatable[] =
 {
     SETBITS(1, 1, 1, 0, 0, 0, 1, 0),	/* 40 - 47 */
     SETBITS(1, 1, 0, 0, 1, 1, 1, 1),	/* 48 - 4F */
@@ -622,7 +622,7 @@ static UBYTE hirepeatable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
 
-struct KeyMap def_km =
+CONST struct KeyMap def_km =
 {
     lokeymaptypes,
     lokeymap,

@@ -56,7 +56,7 @@ struct EString
     STRPTR String;
 };
 
-extern struct EString EString[];
+extern CONST struct EString EString[];
 
 #ifndef EOF
 #define EOF -1
