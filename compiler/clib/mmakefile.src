@@ -486,7 +486,7 @@ DEP_LIBS := arosm autoinit
 #MM- linklibs-core : linklibs-clib
 #MM- linklibs : linklibs-clib
 #MM linklibs-clib : setup-clib includes linklibs-mlib linklibs-autoinit \
-#MM			clib-stubs
+#MM			clib-stubs linklibs-arossupport
 
 #MM
 linklibs-clib-quick : linklibs-clib
