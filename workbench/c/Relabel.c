@@ -68,10 +68,10 @@ int main(void)
 	if(strchr((STRPTR)args[ARG_NAME], ':') == NULL)
 	{
 		ULONG len = strlen((STRPTR)args[ARG_DRIVE]);
-		UBYTE tmp[len + 1];
+		UBYTE *tmp = AllocVec(len + 1, MEMF_ANY);
 		struct DosList *dl;
 
-		if (!len || ((STRPTR)args[ARG_DRIVE])[len - 1] != ':')
+		if (tmp == NULL || !len || ((STRPTR)args[ARG_DRIVE])[len - 1] != ':')
 			goto invalid;
 
 		len--;
@@ -99,6 +99,8 @@ invalid:
 			PutStr("Invalid device or volume name\n");
 		}
 
+		if (tmp != NULL)
+			FreeVec(tmp);
 	}
 	else
 	{
