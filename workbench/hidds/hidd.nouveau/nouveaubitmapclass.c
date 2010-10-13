@@ -519,96 +519,16 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
     LOCK_BITMAP
     MAP_BUFFER
     
-    switch(msg->pixFmt)
     {
-    case vHidd_StdPixFmt_Native:
-        switch(bmdata->bytesperpixel)
-        {
-        case 1:
-            {
-                struct pHidd_BitMap_CopyMemBox8 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox8, msg->pixels, 0, 0, bmdata->bo->map,
-                    msg->x, msg->y, msg->width, msg->height, msg->modulo,
-                    bmdata->pitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 2:
-            {
-                struct pHidd_BitMap_CopyMemBox16 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox16, msg->pixels, 0, 0, bmdata->bo->map,
-                    msg->x, msg->y, msg->width, msg->height, msg->modulo,
-                    bmdata->pitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 4:
-            {
-                struct pHidd_BitMap_CopyMemBox32 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox32, msg->pixels, 0, 0, bmdata->bo->map,
-                    msg->x, msg->y, msg->width, msg->height, msg->modulo,
-                    bmdata->pitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        } /* switch(data->bytesperpixel) */
-        break;
-
-    case vHidd_StdPixFmt_Native32:
-        switch(bmdata->bytesperpixel)
-        {
-        case 1:
-            {
-                struct pHidd_BitMap_PutMem32Image8 __m = 
-                {
-                    SD(cl)->mid_PutMem32Image8, msg->pixels, bmdata->bo->map,
-                    msg->x, msg->y, msg->width, msg->height, msg->modulo,
-                    bmdata->pitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 2:
-            {
-                struct pHidd_BitMap_PutMem32Image16 __m = 
-                {
-                    SD(cl)->mid_PutMem32Image16, msg->pixels, bmdata->bo->map,
-                    msg->x, msg->y, msg->width, msg->height, msg->modulo,
-                    bmdata->pitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 4:
-            {
-                struct pHidd_BitMap_CopyMemBox32 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox32, msg->pixels, 0, 0, bmdata->bo->map,
-                    msg->x, msg->y, msg->width, msg->height, msg->modulo,
-                    bmdata->pitch
-                }, *m = &__m;
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        } /* switch(data->bytesperpixel) */
-        break;
-
-    default:
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        break;
-    } /* switch(msg->pixFmt) */
+        /* Calculate destination buffer pointer */
+        APTR dstBuff = (APTR)((IPTR)bmdata->bo->map + (msg->y * bmdata->pitch) + (msg->x * bmdata->bytesperpixel));
+        
+        HiddNouveauConvertAndCopy(
+            msg->pixels, msg->modulo, msg->pixFmt,
+            dstBuff, bmdata->pitch,
+            msg->width, msg->height,
+            cl, o);
+    }
     
     UNLOCK_BITMAP
 }
