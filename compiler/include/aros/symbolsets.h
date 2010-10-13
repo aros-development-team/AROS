@@ -24,17 +24,17 @@ struct libraryset
 #define SETNAME(set) __##set##_LIST__
 
 #define DECLARESET(set) \
-extern const void * SETNAME(set)[] __attribute__((weak));
+extern const void * const SETNAME(set)[] __attribute__((weak));
 
 #define DEFINESET(set) \
-const void * SETNAME(set)[] __attribute__((weak))={0,0};
+const void * const SETNAME(set)[] __attribute__((weak))={0,0};
 
 #define ADD2SET(symbol, _set, pri)\
-	static const void *__aros_set_##_set##_##symbol __attribute__((__section__(".aros.set." #_set "." #pri))) __used = (void *)&symbol;
+	static const void * const __aros_set_##_set##_##symbol __attribute__((__section__(".aros.set." #_set "." #pri))) __used = (void *)&symbol;
 
 #define SETELEM(symbol, _set)                        \
 ({                                                   \
-    extern const void *__aros_set_##_set##_##symbol; \
+    extern const void * const __aros_set_##_set##_##symbol; \
     &__aros_set_##_set##_##symbol;                   \
 })
 
