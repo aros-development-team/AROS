@@ -90,30 +90,68 @@ void writestubs(struct config *cfg)
 		    fprintf(out, "%s", arglistit->arg);
 		}
 
-		fprintf(out,
-			")\n"
-			"{\n"
-			"    return AROS_LC%d%s(%s, %s,\n",
-			funclistit->argcount, (isvoid) ? "NR" : "",
-			funclistit->type, funclistit->name
-		);
-
-		for (arglistit = funclistit->arguments;
-		     arglistit!=NULL;
-		     arglistit = arglistit->next
-		)
+		if (funclistit->arguments == NULL
+		    || strchr(funclistit->arguments->reg, '/') == NULL)
 		{
-		    type = getargtype(arglistit);
-		    name = getargname(arglistit);
-		    assert(type != NULL && name != NULL);
-		    
-		    fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
-			    type, name, arglistit->reg
-		    );
-		    free(type);
-		    free(name);
+			fprintf(out,
+				")\n"
+				"{\n"
+				"    return AROS_LC%d%s(%s, %s,\n",
+				funclistit->argcount, (isvoid) ? "NR" : "",
+				funclistit->type, funclistit->name
+			);
+
+			for (arglistit = funclistit->arguments;
+			     arglistit!=NULL;
+			     arglistit = arglistit->next
+			)
+			{
+			    type = getargtype(arglistit);
+			    name = getargname(arglistit);
+			    assert(type != NULL && name != NULL);
+			    
+			    fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
+				    type, name, arglistit->reg
+			    );
+			    free(type);
+			    free(name);
+			}
+
+	    	} else {
+			 fprintf(out,
+				    ") \\\n"
+				    "{\n"
+				    "    return AROS_LCQUAD%d%s(%s, %s, \\\n",
+				    funclistit->argcount, (isvoid) ? "NR" : "",
+				    funclistit->type, funclistit->name
+			);
+
+			for (arglistit = funclistit->arguments;
+			     arglistit != NULL;
+			     arglistit = arglistit->next
+			)
+			{
+			    if (strlen(arglistit->reg) != 5)
+			    {
+				fprintf(stderr, "Internal error: ../.. register format expected\n");
+				exit(20);
+			    }
+			    arglistit->reg[2] = 0;
+
+			    type = getargtype(arglistit);
+			    name = getargname(arglistit);
+			    assert(type != NULL && name != NULL);
+			
+			    fprintf(out,
+				    "         AROS_LCAQUAD(%s, %s, %s, %s), \\\n",
+				    type, name, arglistit->reg, arglistit->reg+3
+			    );
+			    arglistit->reg[2] = '/';
+			    free(type);
+			    free(name);
+			}
 		}
-	    
+ 
 		fprintf(out, "                    %s, %s, %u, %s);\n}\n",
 			cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
 		);
