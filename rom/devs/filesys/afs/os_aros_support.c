@@ -288,7 +288,10 @@ LONG getGeometry
 	return DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
 }
 
-VOID changeIntCode(struct IOHandle *, APTR, struct ExecBase *);
+AROS_UFP3(VOID, changeIntCode,
+    AROS_UFPA(struct IOHandle *, ioh, A1),
+    AROS_UFPA(APTR, is_Code, A5),
+    AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 LONG addChangeInt(struct AFSBase *afsbase, struct IOHandle *ioh) {
 
