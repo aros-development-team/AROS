@@ -33,11 +33,14 @@ static LONG PartitionEBRCheckPartitionTable
 {
 union {
     struct MBR mbr;
-    UBYTE space[root->de.de_SizeBlock << 2];
+    UBYTE space[4096];
 } sector;
 
 struct PartitionType type;
 struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
+
+    if ((root->de.de_SizeBlock << 2) > sizeof(sector))
+    	return 0;
 
     if (readBlock(PartitionBase, root, 0, &sector.mbr) == 0)
     {
