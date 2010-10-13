@@ -64,6 +64,9 @@ ENABLE_DBUS		:= @ENABLE_DBUS@
 DBUS_CFLAGS		:= @DBUS_CFLAGS@
 DBUS_LIBFLAGS		:= @DBUS_LIBFLAGS@
 
+# Apple XCode path (for iOS target)
+XCODE_PATH   := @aros_xcode_path@
+
 # --------------------------------------------------------------------------
 # MAGIC: This is needed here for MetaMake to work. mmake will read the
 # configured version of this file to find out a number of variables.

@@ -885,6 +885,45 @@ case "$target_os" in
 	esac
 	;;
 
+    ios*)
+        # TODO: these should be specified with arguments: --with-xcode, --with-ios-version, --with-ios-sdk
+	aros_xcode_path="/Developer"
+	aros_ios_version="2.0"
+	aros_ios_sdk="4.1"
+
+	aros_target_arch="ios"
+	aros_flavour="emulation"
+	# This is here because it may depend on iOS or SDK version
+	aros_kernel_objcflags="-fobjc-abi-version=2 -fobjc-legacy-dispatch"
+	case "$target_cpu" in
+	    *i?86*)
+	    	aros_ios_platform="iPhoneSimulator"
+		aros_target_cpu="i386"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+		aros_kernel_cflags="$aros_kernel_cflags -m32"
+		aros_kernel_ldflags="-m32"
+		aros_default_wbdepth=8
+		gcc_target_cpu="i386"
+		aros_object_format="elf_i386"
+		aros_target_strip_flags="-x"
+		aros_target_cc="i386-aros-gcc"
+		aros_target_cxx="i386-aros-g++"
+		aros_target_ld="i386-aros-ld"
+		aros_target_as="i386-aros-as"
+		aros_target_ar="i386-aros-ar"
+		aros_target_ranlib="i386-aros-ranlib"
+		aros_target_nm="i386-aros-nm"
+		aros_target_strip="i386-aros-strip"
+		aros_target_objcopy="i386-aros-objcopy"
+		aros_target_objdump="i386-aros-objdump"
+		target_tool_prefix="i686-apple-darwin10-"
+		;;
+	    *)
+		AC_MSG_ERROR("Unsupported target CPU for iOS hosted flavour -- $target_cpu")
+		;;
+	esac
+	;;
+
     dragonfly*)
         aros_target_arch="dragonfly"
         aros_flavour="emulation"
@@ -1849,6 +1888,7 @@ AC_SUBST(aros_shared_cflags)
 AC_SUBST(aros_shared_aflags)
 AC_SUBST(aros_shared_ldflags)
 AC_SUBST(aros_kernel_cflags)
+AC_SUBST(aros_kernel_objcflags)
 AC_SUBST(aros_kernel_ldflags)
 AC_SUBST(aros_debug_cflags)
 AC_SUBST(aros_debug_aflags)
@@ -1879,6 +1919,12 @@ AC_SUBST(aros_palm_debug_hack)
 
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)
+
+# Apple iOS related
+AC_SUBST(aros_xcode_path)
+AC_SUBST(aros_ios_platform)
+AC_SUBST(aros_ios_version)
+AC_SUBST(aros_ios_sdk)
 
 # DBUS related
 AC_SUBST(ENABLE_DBUS)

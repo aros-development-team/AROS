@@ -17,10 +17,13 @@
 #include <aros/multiboot.h>
 #include <utility/tagitem.h>
 
+#include "bootstrap.h"
 #include "elfloader32.h"
+#include "filesystem.h"
 #include "memory.h"
 #include "support.h"
 #include "shutdown.h"
+#include "ui.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX _MAX_PATH
@@ -102,9 +105,8 @@ char *join_string(int argc, char **argv)
     return str;
 }
 
-int main(int argc, char ** argv)
+int bootstrap(int argc, char ** argv)
 {
-    struct stat st;
     int i = 1;
     unsigned int memSize = 64;
     int def_memSize = 1;
@@ -159,14 +161,15 @@ int main(int argc, char ** argv)
     SystemVersion = getosversion();
     D(printf("[Bootstrap] OS version: %s\n", SystemVersion));
 
-    /* If AROSBootstrap.exe is found in the current directory, this means the bootstrap
-       was started in its own dir. Go one level up in order to reach the root */
-    if (!stat("AROSBootstrap.exe", &st))
-	chdir("..");
+    if (SetRootDirectory())
+    {
+	DisplayError("Failed to locate root directory!");
+	return -1;
+    }
 
     file = fopen(config, "r");
     if (!file) {
-	printf("Failed to load configuration file %s!\n", config);
+	DisplayError("Failed to load configuration file %s!", config);
 	return -1;
     }
 
@@ -202,13 +205,13 @@ int main(int argc, char ** argv)
 
     ro_addr = AllocateRO(ro_size);
     if (!ro_addr) {
-	printf("Failed to allocate %u bytes for the kernel!\n", ro_size);
+	DisplayError("Failed to allocate %u bytes for the kernel!", ro_size);
 	return -1;
     }
 
     rw_addr = AllocateRW(rw_size);
     if (!rw_addr) {
-	printf("Failed to allocate %u bytes for the kernel!\n", rw_size);
+	DisplayError("Failed to allocate %u bytes for the kernel!", rw_size);
 	return -1;
     }
 
@@ -225,7 +228,7 @@ int main(int argc, char ** argv)
     MemoryMap.addr = (IPTR)AllocateRAM(MemoryMap.len);
 
     if (!MemoryMap.addr) {
-	printf("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
+	DisplayError("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
 	return -1;
     }
     D(printf("[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", (void *)MemoryMap.addr, (void *)MemoryMap.addr + MemoryMap.len, MemoryMap.len));
@@ -240,5 +243,8 @@ int main(int argc, char ** argv)
     km[7].ti_Data = (IPTR)&MemoryMap;
 
     printf("[Bootstrap] entering kernel@%p...\n", kernel_entry);
-    return kernel_entry(km);
+    i = kernel_entry(km);
+    
+    DisplayError("Kernel exited with code %d\n", i);
+    return i;
 }
