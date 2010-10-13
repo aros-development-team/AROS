@@ -30,6 +30,10 @@ const static char LDSCRIPT_PART1[] =
 "    *(.rodata)\n"
 "    *(.rodata.*)\n"
 "    *(.gnu.linkonce.r.*)\n"
+"    . = ALIGN(0x10);\n";
+
+
+static const char LDSCRIPT_PART2[] =
 "  }\n"
 "  .rodata1 0 : { *(.rodata1) }\n"
 "\n"
@@ -47,10 +51,6 @@ const static char LDSCRIPT_PART1[] =
 "    *(.data)\n"
 "    *(.data.*)\n"
 "    *(.gnu.linkonce.d.*)\n"
-"    . = ALIGN(0x10);\n";
-
-
-static const char LDSCRIPT_PART2[] =
 "  }\n"
 "  .data1            0 : { *(.data1) }\n"
 "  .eh_frame         0 : { KEEP (*(.eh_frame)) }\n"
