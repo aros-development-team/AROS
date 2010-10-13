@@ -467,9 +467,9 @@ STATIC IPTR Timezone__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw
 
 AROS_UFH3(
         static ULONG, LayoutHook,
-        AROS_UFHA(struct Hook *, hook, a0),
-        AROS_UFHA(APTR, obj, a2),
-        AROS_UFHA(struct MUI_LayoutMsg *, lm, a1))
+        AROS_UFHA(struct Hook *, hook, A0),
+        AROS_UFHA(APTR, obj, A2),
+        AROS_UFHA(struct MUI_LayoutMsg *, lm, A1))
 {
     AROS_USERFUNC_INIT
         struct Timezone_DATA *data = hook->h_Data;
