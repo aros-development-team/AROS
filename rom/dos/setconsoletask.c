@@ -54,7 +54,7 @@
     
     pr = (struct Process *)FindTask(NULL);
     old = pr->pr_ConsoleTask;
-    pr->pr_ConsoleTask = MKBADDR(handler);
+    pr->pr_ConsoleTask = handler;
 
     return BADDR(old);
 

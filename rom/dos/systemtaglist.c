@@ -103,8 +103,8 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 {
     AROS_LIBFUNC_INIT
 
-    BPTR   cis = Input(), cos = Output(), ces = Error(), script = NULL;
-    BPTR   shellseg = NULL;
+    BPTR   cis = Input(), cos = Output(), ces = Error(), script = BNULL;
+    BPTR   shellseg = BNULL;
     STRPTR cShell   = NULL;
     BOOL script_opened = FALSE;
     BOOL cis_opened    = FALSE;
@@ -219,7 +219,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     }
 
     /* Load the shell */
-#warning implement UserShell and BootShell
+    /* FIXME: implement UserShell and BootShell */
     shellseg = LoadSeg("C:Shell");
     if (!shellseg)
     {
@@ -316,7 +316,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	    cos_opened    =
 	    ces_opened    = FALSE;
 
-	    shellseg = NULL;
+	    shellseg = BNULL;
 	}
 	FreeTagItems(newtags);
     }
@@ -335,7 +335,7 @@ end:
 
 static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
 {
-    BPTR ret = NULL;
+    BPTR ret = BNULL;
 
     if (fh)
     {

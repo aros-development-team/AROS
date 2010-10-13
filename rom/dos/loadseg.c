@@ -69,7 +69,7 @@
     {
 	D(bug("[LoadSeg] Loading '%s'...\n", name));
 
-	segs = InternalLoadSeg(file, NULL, (void *)FunctionArray, NULL);
+	segs = InternalLoadSeg(file, BNULL, (void *)FunctionArray, NULL);
 
 	if (segs)
             SetIoErr(0);

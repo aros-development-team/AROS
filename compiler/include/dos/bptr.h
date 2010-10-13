@@ -47,9 +47,11 @@ typedef AROS_BSTR_TYPE BSTR;
 #ifdef AROS_FAST_BPTR
 #   define MKBADDR(a)               ((BPTR)(a))
 #   define BADDR(a)                 ((APTR)a)
+#   define BNULL                    (NULL)
 #else
 #   define MKBADDR(a)               ((BPTR)(((IPTR)a)>>2))
 #   define BADDR(a)                 ((APTR)(((IPTR)a)<<2))
+#   define BNULL                    (0)
 #endif
 
 /* BCPL strings used the first byte as the length of the string followed by the string.

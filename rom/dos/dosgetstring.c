@@ -56,7 +56,7 @@
 
     if (!retval)
     {
-    	struct EString *es = EString;
+    	const struct EString *es = EString;
 	
 	while(es->Number)
 	{

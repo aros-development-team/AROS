@@ -281,7 +281,7 @@ static int load_hunk
         D(bug("[dos] hunk @ %p\n", sh->addr));
         
         /* Update the pointer to the previous one, which is now the current one */
-        *next_hunk_ptr = HUNK2BPTR(hunk);
+        *next_hunk_ptr = &hunk->next;
 
         if (sh->type != SHT_NOBITS)
             return read_block(file, sh->offset, sh->addr, sh->size, funcarray, DOSBase);
@@ -527,7 +527,7 @@ BPTR InternalLoadSeg_ELF
     struct sheader   *sh;
     struct sheader   *symtab_shndx = NULL;
     BPTR   hunks         = 0;
-    BPTR  *next_hunk_ptr = MKBADDR(&hunks);
+    BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
 

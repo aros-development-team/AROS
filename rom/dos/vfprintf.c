@@ -81,7 +81,7 @@ AROS_UFH2(void,vfp_hook,
     vfp.count = 0;
     vfp.DOSBase = DOSBase;
 
-    (void)RawDoFmt(format, argarray,
+    (void)RawDoFmt(format, (APTR)argarray,
 		   (VOID_FUNC)AROS_ASMSYMNAME(vfp_hook), &vfp);
 
     /* Remove the last character (which is a NUL character) */

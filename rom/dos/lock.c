@@ -66,7 +66,7 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
     /* Sanity check */
     if (name == NULL)
-        return NULL;
+        return BNULL;
     
     /* Create filehandle */
     struct FileHandle *ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
@@ -90,7 +90,7 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     }
 
     SetIoErr(error);
-    return NULL;
+    return BNULL;
 
     AROS_LIBFUNC_EXIT
 } /* Lock */
@@ -147,7 +147,7 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 	if (!cur)
 	    cur = DOSBase->dl_SYSLock;
 
-        if (cur && (fh = BADDR(cur)) != -1) 
+        if (cur && (cur != -1))
         {
             fh = BADDR(cur);
     

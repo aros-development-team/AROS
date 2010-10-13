@@ -62,7 +62,7 @@
     struct DevProc *dvp;
     UBYTE buf[MAXFILENAMELENGTH+1], *buf2, *p;
     ULONG len, len2;
-    BPTR lock = NULL;
+    BPTR lock = BNULL;
 
     /* set up some defaults */
     notify->nr_MsgCount = 0;
@@ -83,7 +83,7 @@
     /* if no lock is returned by GetDeviceProc() (eg if the path is for a
      * device or volume root), then get the handler to resolve the name of the
      * device root lock */
-    if (dvp->dvp_Lock == NULL) {
+    if (dvp->dvp_Lock == BNULL) {
         UBYTE name[MAXFILENAMELENGTH+1], *src, *dst;
         struct FileInfoBlock *fib;
 
@@ -101,7 +101,7 @@
             return DOSFALSE;
         }
 
-        if((lock = Lock(name, SHARED_LOCK)) == NULL) {
+        if((lock = Lock(name, SHARED_LOCK)) == BNULL) {
             FreeDosObject(DOS_FIB, fib);
             FreeDeviceProc(dvp);
             return DOSFALSE;
@@ -170,7 +170,7 @@
         SetIoErr(ERROR_NO_FREE_STORE);
 
         /* cleanup */
-        if (lock != NULL)
+        if (lock != BNULL)
             UnLock(lock);
         FreeDeviceProc(dvp);
 
@@ -192,7 +192,7 @@
     SetIoErr(iofs.io_DosError);
 
     /* cleanup */
-    if (lock != NULL)
+    if (lock != BNULL)
         UnLock(lock);
     FreeDeviceProc(dvp);
 
