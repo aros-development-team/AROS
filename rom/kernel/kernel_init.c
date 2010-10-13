@@ -21,7 +21,7 @@ struct KernelBase *KernelBase = NULL;
 static struct MinList *Debug_ModList = NULL;
 #endif
 
-void __clear_bss(struct KernelBSS *bss)
+void __clear_bss(const struct KernelBSS *bss)
 {
     while (bss->addr) {
 	bzero((void*)bss->addr, bss->len);
