@@ -480,7 +480,7 @@ ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
 		$(foreach f,$(ROM_STATIC),$(OBJDIR)/static/$(f).o)
 
 # These are added to the link step of arosc.library
-LIBS := $(ARCH_LIBS) -lgcc -L$(AROS_LIB) -larosm -lautoinit 
+LIBS := $(ARCH_LIBS) -L$(AROS_LIB) -larosm -lautoinit 
 DEP_LIBS := arosm autoinit
 
 #MM- linklibs-core : linklibs-clib
@@ -506,7 +506,7 @@ $(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ) $(OBJDIR)/libarosccommon.a
 	%link_module_q \
 	    objs="$(OBJDIR)/shared/arosc_init.o $(OBJDIR)/shared/arosc_functable.o $(MODULE_OBJ)" \
 	    endtag="$(OBJDIR)/shared/arosc_endtag.o" \
-	    ldflags="$(LDFLAGS) -L$(OBJDIR) $(NOSTDLIB_LDFLAGS)" \
+	    ldflags="$(LDFLAGS) -L$(OBJDIR)" \
 	    libs="$(LIBS) -larosccommon"
 
 $(OBJDIR)/static/%.o : %.c
