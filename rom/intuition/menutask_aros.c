@@ -1755,7 +1755,7 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
 static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
                                   struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
-    static UWORD pattern [] = {0x8888, 0x2222};
+    static CONST UWORD pattern [] = {0x8888, 0x2222};
 
     SetDrMd(rp, JAM1);
     

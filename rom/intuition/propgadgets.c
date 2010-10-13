@@ -66,7 +66,7 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
     }
     else
     {
-	static UWORD	 pattern[] = {0x5555,0xAAAA};
+	static CONST UWORD pattern[] = {0x5555,0xAAAA};
         struct Hook *dhook = NULL;
 
         if ((gad->Flags & GFLG_EXTENDED) != 0)

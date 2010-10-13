@@ -43,60 +43,60 @@
 
 /******************************************************************************************/
 
-static UBYTE up_seq[] 			= {'A'};
-static UBYTE down_seq[] 		= {'B'};
-static UBYTE right_seq[]		= {'C'};
-static UBYTE left_seq[]			= {'D'};
-static UBYTE shift_up_seq[]		= {'T'};
-static UBYTE shift_down_seq[]		= {'S'}; 
-static UBYTE shift_right_seq[]		= {' ', '@'};
-static UBYTE shift_left_seq[]		= {' ', 'A'};
-static UBYTE shift_tab_seq[]		= {'Z'};
-static UBYTE help_seq[]			= {'?', '~'};
-static UBYTE f1_seq[]			= {'0', '~'};
-static UBYTE f2_seq[]			= {'1', '~'};
-static UBYTE f3_seq[]			= {'2', '~'};
-static UBYTE f4_seq[]			= {'3', '~'};
-static UBYTE f5_seq[]			= {'4', '~'};
-static UBYTE f6_seq[]			= {'5', '~'};
-static UBYTE f7_seq[]			= {'6', '~'};
-static UBYTE f8_seq[]			= {'7', '~'};
-static UBYTE f9_seq[]			= {'8', '~'};
-static UBYTE f10_seq[]			= {'9', '~'};
-static UBYTE paste_seq[]                = {'0', ' ', 'v'};
-static UBYTE f11_seq[]			= {'2', '0', '~'};
-static UBYTE f12_seq[]			= {'2', '1', '~'};
-static UBYTE shift_f1_seq[]		= {'1', '0', '~'};
-static UBYTE shift_f2_seq[]		= {'1', '1', '~'};
-static UBYTE shift_f3_seq[]		= {'1', '2', '~'};
-static UBYTE shift_f4_seq[]		= {'1', '3', '~'};
-static UBYTE shift_f5_seq[]		= {'1', '4', '~'};
-static UBYTE shift_f6_seq[]		= {'1', '5', '~'};
-static UBYTE shift_f7_seq[]		= {'1', '6', '~'};
-static UBYTE shift_f8_seq[]		= {'1', '7', '~'};
-static UBYTE shift_f9_seq[]		= {'1', '8', '~'};
-static UBYTE shift_f10_seq[]		= {'1', '9', '~'};
-static UBYTE shift_f11_seq[]		= {'3', '0', '~'};
-static UBYTE shift_f12_seq[]		= {'3', '1', '~'};
-static UBYTE insert_seq[] 		= {'4', '0', '~'};
-static UBYTE pageup_seq[] 		= {'4', '1', '~'};
-static UBYTE pagedown_seq[] 		= {'4', '2', '~'};
-static UBYTE pause_seq[] 		= {'4', '3', '~'};
-static UBYTE break_seq[] 		= {'5', '3', '~'};
-static UBYTE home_seq[] 		= {'4', '4', '~'};
-static UBYTE end_seq[]	 		= {'4', '5', '~'};
-static UBYTE shift_insert_seq[] 	= {'5', '0', '~'};
-static UBYTE shift_pageup_seq[] 	= {'5', '1', '~'};
-static UBYTE shift_pagedown_seq[] 	= {'5', '2', '~'};
-static UBYTE shift_home_seq[] 		= {'5', '4', '~'};
-static UBYTE shift_end_seq[]	 	= {'5', '5', '~'};
+static const UBYTE up_seq[] 			= {'A'};
+static const UBYTE down_seq[] 		= {'B'};
+static const UBYTE right_seq[]		= {'C'};
+static const UBYTE left_seq[]			= {'D'};
+static const UBYTE shift_up_seq[]		= {'T'};
+static const UBYTE shift_down_seq[]		= {'S'}; 
+static const UBYTE shift_right_seq[]		= {' ', '@'};
+static const UBYTE shift_left_seq[]		= {' ', 'A'};
+static const UBYTE shift_tab_seq[]		= {'Z'};
+static const UBYTE help_seq[]			= {'?', '~'};
+static const UBYTE f1_seq[]			= {'0', '~'};
+static const UBYTE f2_seq[]			= {'1', '~'};
+static const UBYTE f3_seq[]			= {'2', '~'};
+static const UBYTE f4_seq[]			= {'3', '~'};
+static const UBYTE f5_seq[]			= {'4', '~'};
+static const UBYTE f6_seq[]			= {'5', '~'};
+static const UBYTE f7_seq[]			= {'6', '~'};
+static const UBYTE f8_seq[]			= {'7', '~'};
+static const UBYTE f9_seq[]			= {'8', '~'};
+static const UBYTE f10_seq[]			= {'9', '~'};
+static const UBYTE paste_seq[]                = {'0', ' ', 'v'};
+static const UBYTE f11_seq[]			= {'2', '0', '~'};
+static const UBYTE f12_seq[]			= {'2', '1', '~'};
+static const UBYTE shift_f1_seq[]		= {'1', '0', '~'};
+static const UBYTE shift_f2_seq[]		= {'1', '1', '~'};
+static const UBYTE shift_f3_seq[]		= {'1', '2', '~'};
+static const UBYTE shift_f4_seq[]		= {'1', '3', '~'};
+static const UBYTE shift_f5_seq[]		= {'1', '4', '~'};
+static const UBYTE shift_f6_seq[]		= {'1', '5', '~'};
+static const UBYTE shift_f7_seq[]		= {'1', '6', '~'};
+static const UBYTE shift_f8_seq[]		= {'1', '7', '~'};
+static const UBYTE shift_f9_seq[]		= {'1', '8', '~'};
+static const UBYTE shift_f10_seq[]		= {'1', '9', '~'};
+static const UBYTE shift_f11_seq[]		= {'3', '0', '~'};
+static const UBYTE shift_f12_seq[]		= {'3', '1', '~'};
+static const UBYTE insert_seq[] 		= {'4', '0', '~'};
+static const UBYTE pageup_seq[] 		= {'4', '1', '~'};
+static const UBYTE pagedown_seq[] 		= {'4', '2', '~'};
+static const UBYTE pause_seq[] 		= {'4', '3', '~'};
+static const UBYTE break_seq[] 		= {'5', '3', '~'};
+static const UBYTE home_seq[] 		= {'4', '4', '~'};
+static const UBYTE end_seq[]	 		= {'4', '5', '~'};
+static const UBYTE shift_insert_seq[] 	= {'5', '0', '~'};
+static const UBYTE shift_pageup_seq[] 	= {'5', '1', '~'};
+static const UBYTE shift_pagedown_seq[] 	= {'5', '2', '~'};
+static const UBYTE shift_home_seq[] 		= {'5', '4', '~'};
+static const UBYTE shift_end_seq[]	 	= {'5', '5', '~'};
 
 /* F11, F12, insert, pageup, pagedown, ... seq taken from
    RKRM: Devices/Console/Reading from the Console Device/Information about the Input Stream */
    
-static struct csimatch
+static CONST struct csimatch
 {
-    UBYTE *seq;
+    CONST UBYTE *seq;
     WORD len;
     WORD inp;
 }
@@ -182,8 +182,9 @@ struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 BOOL parse_filename(struct conbase *conbase, struct filehandle *fh,
 		    struct IOFileSys *iofs, struct NewWindow *nw)
 {
-    UBYTE   *filename;
-    UBYTE   *param, c;
+    CONST UBYTE   *filename;
+    CONST UBYTE   *param;
+    UBYTE   c;
     WORD    paramid = 1;
     LONG    paramval = 0;
     BOOL    ok = TRUE, done = FALSE, paramok = FALSE;
@@ -456,7 +457,7 @@ static void copy_from_pastebuf(struct filehandle * fh)
 
 WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 {
-  struct csimatch *match;
+  CONST struct csimatch *match;
   UBYTE c;
   WORD result = INP_DONE;
 

@@ -12,7 +12,7 @@
 
 #include <proto/dos.h>
 
-struct EString EString[]=
+CONST struct EString EString[]=
 {
 { ERROR_NO_FREE_STORE,		"not enough memory available" },
 { ERROR_TASK_TABLE_FULL,	"process table full" },

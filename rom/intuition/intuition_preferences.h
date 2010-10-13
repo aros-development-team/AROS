@@ -6,7 +6,7 @@
 ** The intuition default preferences structure
 */
 
-struct Preferences IntuitionDefaultPreferences =
+CONST struct Preferences IntuitionDefaultPreferences =
 {
     0,      // FontHeight
     0,      // PrinterPort

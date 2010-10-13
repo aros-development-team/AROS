@@ -100,7 +100,7 @@ struct charmapcondata
 
 
 /* Template used to quickly fill constant fields */
-struct Scroll ScrollBar = {
+CONST struct Scroll ScrollBar = {
 {	/* PropGadget */
 	NULL, 0,0, 0,0,
 	GFLG_RELRIGHT|GFLG_RELHEIGHT,

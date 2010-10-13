@@ -1179,7 +1179,7 @@ IPTR WinDecorClass__WDM_DRAW_BORDERPROPBACK(Class *cl, Object *obj, struct wdpDr
     
     if (pi->Flags & PROPNEWLOOK)
     {
-        static UWORD pattern[] = {0x5555,0xAAAA};
+        static CONST UWORD pattern[] = {0x5555,0xAAAA};
 	
     	SetAfPt(rp, pattern, 1);
 	SetAPen(rp, pens[SHADOWPEN]);
