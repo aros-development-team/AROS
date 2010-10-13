@@ -40,7 +40,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write exec/SumKickData()
+    /* TODO: Write exec/SumKickData() */
     aros_print_not_implemented ("SumKickData");
 
     return 0L;

@@ -520,7 +520,7 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	int bal = scan->avl_balance - (dir * 2 - 1);
 	struct AVLNode *next;
 	struct AVLNode *parent;
-	struct AVLNode *subroot;
+	struct AVLNode *subroot = NULL;
 
 	switch (bal)
 	{

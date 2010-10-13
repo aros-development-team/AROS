@@ -79,7 +79,7 @@ struct Library * PrepareAROSSupportBase (struct ExecBase * SysBase)
 	AROSSupportBase->vkprintf = (void *)vkprintf;
     	NEWLIST(&AROSSupportBase->AllocMemList);
 
-#warning FIXME Add code to read in the debug options
+	/* FIXME: Add code to read in the debug options */
 
 	return (struct Library *)AROSSupportBase;
 }

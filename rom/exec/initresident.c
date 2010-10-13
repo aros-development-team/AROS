@@ -113,13 +113,13 @@
 		mean the same as a lib's priority.
 	    */
 	    library->lib_Node.ln_Type = resident->rt_Type;
-	    library->lib_Node.ln_Name = resident->rt_Name;
+	    library->lib_Node.ln_Name = (char *)resident->rt_Name;
 /*	    Even if this is a resource, it was created using MakeLibrary(), this assumes
 	    that it has struct Library in the beginning - sonic
 	    if (resident->rt_Type != NT_RESOURCE)
 	    {*/
 		library->lib_Version      = resident->rt_Version;
-		library->lib_IdString     = resident->rt_IdString;
+		library->lib_IdString     = (char *)resident->rt_IdString;
 		library->lib_Flags	  = LIBF_SUMUSED|LIBF_CHANGED;
 		
 		if (resident->rt_Flags & RTF_EXTENDED)

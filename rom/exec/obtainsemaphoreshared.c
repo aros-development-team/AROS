@@ -137,7 +137,7 @@
 	    request, so we must be the last to get the semaphore.
 	*/
     	
-#warning this must be atomic
+	/* WARNING: this must be atomic! */
         AROS_ATOMIC_AND(me->tc_SigRecvd, ~SIGF_SINGLE);
         
         AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);

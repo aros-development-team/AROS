@@ -81,7 +81,7 @@
 	    {
 		D(bug("calling InitResident(\"%s\", NULL)\n", 
 			((struct Resident *)(*list))->rt_Name));
-		InitResident((struct Resident *)*list, NULL);
+		InitResident((struct Resident *)*list, 0);
 	    }
 	    else
 		D(bug("NOT calling InitResident(\"%s\", NULL)\n",
