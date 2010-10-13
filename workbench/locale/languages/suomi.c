@@ -20,10 +20,10 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "suomi"   /* String version of above */
+#define LANGSTR     "suomi"     /* String version of above */
 #define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: suomi.language 41.0 (03.02.2001)"
+#define LANGREV     1           /* Revision number of language */
+#define LANGTAG     "\0$VER: "LANGSTR".language 41.1 (13.10.2010)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -307,10 +307,10 @@ const STRPTR __suomi_strings[] =
     "ap", "ip",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "­", "-",
 
     /* Open and close quotes */
-    "\"", "\"",
+    "»", "»",
 
     /* Days: But not actual day names
        Yesterday - the day before the current
