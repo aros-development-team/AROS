@@ -289,7 +289,7 @@ regcomp(regex_t * __restrict preg,
  */
 static void
 p_ere(struct parse *p,
-	int stop)		/* character this ERE should end at */
+	wint_t stop)		/* character this ERE should end at */
 {
 	char c;
 	sopno prevback;
@@ -503,8 +503,8 @@ p_str(struct parse *p)
  */
 static void
 p_bre(struct parse *p,
-	int end1,		/* first terminating character */
-	int end2)		/* second terminating character */
+	wint_t end1,		/* first terminating character */
+	wint_t end2)		/* second terminating character */
 {
 	sopno start = HERE();
 	int first = 1;			/* first subexpression? */
