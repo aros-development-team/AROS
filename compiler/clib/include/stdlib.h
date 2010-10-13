@@ -84,13 +84,8 @@ void srand (unsigned int seed);
 
 /* Unix pseudo-random functions */
 #if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
-#ifndef AROS_NOFPU
 double drand48(void);
 double erand48(unsigned short int xsubi[3]);
-#else
-void drand48(void);
-void erand48(unsigned short int xsubi[3]);
-#endif
 long int lrand48(void);
 long int nrand48(unsigned short int xsubi[3]);
 long int mrand48(void);
