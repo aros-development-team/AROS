@@ -111,7 +111,7 @@
     struct DataType  *DataType;
     APTR              Handle;
     ULONG             GroupID;
-    BPTR              lock = NULL;
+    BPTR              lock = 0;
     struct IFFHandle *iff = NULL;
     Object           *dtobj = NULL;
     UBYTE            *BaseName = NULL;
@@ -198,7 +198,7 @@
 			    if(Handle == NULL)
 			    {
 				UnLock(lock);
-				lock = NULL;
+				lock = 0;
 			    }
 			    
 			} /* if lock aquired */
@@ -312,7 +312,7 @@
 
     		    D(bug("datatypes.library/NewDTObjectA: NewObjectA returned %x\n", dtobj));
 		    
-		    lock = NULL;
+		    lock = 0;
 		    iff = NULL;
 		    
 		} /* ObtainEngine okay */
@@ -328,7 +328,7 @@
 	{
     	    D(bug("datatypes.library/NewDTObjectA: dtobj is NULL. Cleaning up\n"));
 
-	    if(lock != NULL)
+	    if(lock != 0)
 		UnLock(lock);
 	    
 	    if(iff != NULL)
