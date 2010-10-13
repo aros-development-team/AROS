@@ -31,7 +31,7 @@
 #define bstrcpy strcpy
 #else
 #define bstrcpy(d, s) \
-    d = (d + 3) & ~3; \
+    d = (STRPTR)(((ULONG)d + 3) & ~3); \
     strcpy(d + 1, s); \
     d[0] = strlen(s);
 #endif
