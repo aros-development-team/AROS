@@ -112,6 +112,9 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
 	LIBBASE->sd.mid_PutMemPattern8  = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
 	LIBBASE->sd.mid_PutMemPattern16 = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
 	LIBBASE->sd.mid_PutMemPattern32 = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
+	LIBBASE->sd.mid_ConvertPixels   = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
+	LIBBASE->sd.mid_GetPixFmt       = OOP_GetMethodID((STRPTR)CLID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
+
   
     
     InitSemaphore(&LIBBASE->sd.multibitmapsemaphore);

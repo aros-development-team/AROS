@@ -140,6 +140,8 @@ struct staticdata
     OOP_MethodID    mid_PutMemPattern8;
     OOP_MethodID    mid_PutMemPattern16;
     OOP_MethodID    mid_PutMemPattern32;
+    OOP_MethodID    mid_ConvertPixels;
+    OOP_MethodID    mid_GetPixFmt;
 
     struct CardData carddata;
     
@@ -236,6 +238,12 @@ BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
 BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
     ULONG maxY, ULONG drawmode, ULONG color);
+    
+BOOL HiddNouveauConvertAndCopy(
+    APTR src, ULONG srcPitch, HIDDT_StdPixFmt srcPixFmt,
+    APTR dst, ULONG dstPitch,
+    ULONG width, ULONG height,
+    OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauNVAccelUploadM2MF(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, UBYTE * pixels, ULONG x, ULONG y, 
     ULONG width, ULONG height, ULONG srcpitch);

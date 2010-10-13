@@ -1,5 +1,6 @@
 /*
  * Copyright 2009 Nouveau Project
+ * Copyright (C) 2010, The AROS Development Team. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -22,6 +23,138 @@
 
 #include "nouveau_intern.h"
 #include "nouveau/nouveau_class.h"
+
+#include <proto/oop.h>
+
+#undef HiddBitMapAttrBase
+#define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
+
+/* Takes pixels from source and writes it to destination performing conversion */
+/* Assumes input and output buffers are lock-protected */
+BOOL HiddNouveauConvertAndCopy(
+    APTR src, ULONG srcPitch, HIDDT_StdPixFmt srcPixFmt,
+    APTR dst, ULONG dstPitch,
+    ULONG width, ULONG height,
+    OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    UBYTE dstBpp = bmdata->bytesperpixel;
+
+    switch(srcPixFmt)
+    {
+    case vHidd_StdPixFmt_Native:
+        switch(dstBpp)
+        {
+        case 1:
+            {
+                struct pHidd_BitMap_CopyMemBox8 __m = 
+                {
+                    SD(cl)->mid_CopyMemBox8, src, 0, 0, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        case 2:
+            {
+                struct pHidd_BitMap_CopyMemBox16 __m = 
+                {
+                    SD(cl)->mid_CopyMemBox16, src, 0, 0, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        case 4:
+            {
+                struct pHidd_BitMap_CopyMemBox32 __m = 
+                {
+                    SD(cl)->mid_CopyMemBox32, src, 0, 0, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        } /* switch(data->bytesperpixel) */
+        break;
+
+    case vHidd_StdPixFmt_Native32:
+        switch(dstBpp)
+        {
+        case 1:
+            {
+                struct pHidd_BitMap_PutMem32Image8 __m = 
+                {
+                    SD(cl)->mid_PutMem32Image8, src, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        case 2:
+            {
+                struct pHidd_BitMap_PutMem32Image16 __m = 
+                {
+                    SD(cl)->mid_PutMem32Image16, src, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        case 4:
+            {
+                struct pHidd_BitMap_CopyMemBox32 __m = 
+                {
+                    SD(cl)->mid_CopyMemBox32, src, 0, 0, dst,
+                    0, 0, width, height, srcPitch, dstPitch
+                }, *m = &__m;
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+            break;
+
+        } /* switch(data->bytesperpixel) */
+        break;
+    default:
+        {
+            /* Use ConvertPixels to convert that data to destination format */
+            APTR csrc = src;
+            APTR * psrc = &csrc;
+            APTR cdst = dst;
+            APTR * pdst = &cdst;
+            OOP_Object * dstPF = NULL;
+            OOP_Object * srcPF = NULL;
+            OOP_Object * gfxHidd = NULL;
+            struct pHidd_Gfx_GetPixFmt __gpf =
+            {
+                SD(cl)->mid_GetPixFmt, srcPixFmt
+            }, *gpf = &__gpf;
+            
+            OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstPF);
+            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
+            srcPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpf);
+
+            {
+                struct pHidd_BitMap_ConvertPixels __m =
+                {
+                    SD(cl)->mid_ConvertPixels, 
+                    psrc, (HIDDT_PixelFormat *)srcPF, srcPitch,
+                    pdst, (HIDDT_PixelFormat *)dstPF, dstPitch,
+                    width, height, NULL
+                }, *m = &__m;            
+                OOP_DoMethod(o, (OOP_Msg)m);
+            }
+        }
+        
+        break;
+    }
+
+    return TRUE;
+}
 
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
