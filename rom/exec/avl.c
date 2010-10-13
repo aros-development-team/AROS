@@ -238,7 +238,9 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	LONG cmp;
 
 	scan = next;
-	cmp = func(scan, node);
+	cmp = AROS_UFC2(LONG, func,
+			AROS_UFCA(const struct AVLNode *, scan, A0),
+			AROS_UFCA(const struct AVLNode *, node, A1));
 	if (cmp == 0)
 	    return (struct AVLNode *)scan;
 
@@ -743,7 +745,10 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
     struct AVLNode *node = (struct AVLNode *)Root;
     LONG cmp;
 
-    while (node != NULL && (cmp = func((struct AVLNode *)node, key)) != 0)
+    while (node != NULL &&
+	   (cmp = AROS_UFC2(LONG, func,
+			AROS_UFCA(const struct AVLNode *, node, A0),
+			AROS_UFCA(AVLKey,                 key,  A1))) != 0)
     {
 	node = node->avl_link[cmp < 0];
     }
@@ -885,7 +890,10 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
     struct AVLNode *lesser = NULL;
     LONG cmp;
 
-    while (node != NULL && (cmp = func((struct AVLNode *)node, key)) != 0)
+    while (node != NULL &&
+	   (cmp = AROS_UFC2(LONG, func,
+			AROS_UFCA(const struct AVLNode *, node, A0),
+			AROS_UFCA(AVLKey,                 key,  A1))) != 0)
     {
 	if (cmp < 0)
 	    lesser = node;
@@ -1029,7 +1037,10 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
     struct AVLNode *greater = NULL;
     LONG cmp;
 
-    while (node != NULL && (cmp = func((struct AVLNode *)node, key)) != 0)
+    while (node != NULL &&
+	   (cmp = AROS_UFC2(LONG, func,
+			AROS_UFCA(const struct AVLNode *, node, A0),
+			AROS_UFCA(AVLKey,                 key,  A1))) != 0)
     {
 	if (cmp > 0)
 	    greater = node;
