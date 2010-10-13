@@ -4,6 +4,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "env.h"
+
 static FILE *my_popen(const char *command, const char *file)
 {
     static char command_buf[MAXPATHLEN];
@@ -38,7 +40,7 @@ void collect_sets(const char *file, setnode **setlist_ptr)
 {
     char secname[201];
 
-    FILE *pipe = my_popen("objdump -h ", file);
+    FILE *pipe = my_popen(OBJDUMP_NAME " -h ", file);
 
     /* This fscanf() simply splits the whole stream into separate words */
     while (fscanf(pipe, " %200s ", secname) > 0)
@@ -56,7 +58,7 @@ int check_and_print_undefined_symbols(const char *file)
     char buf[200];
     size_t cnt;
 
-    FILE *pipe = my_popen("nm -ulC ", file);
+    FILE *pipe = my_popen(NM_NAME " -ulC ", file);
 
     while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0)
     {
