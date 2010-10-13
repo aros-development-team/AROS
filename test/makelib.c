@@ -70,7 +70,7 @@ AROS_LH1(struct DummyBase *, LIB_open,
 /********/
 
 AROS_UFH1(ULONG,LIB_expunge,
-        AROS_LHA(struct DummyBase *, DummyBase, A6))
+        AROS_UFHA(struct DummyBase *, DummyBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -86,7 +86,7 @@ AROS_UFH1(ULONG,LIB_expunge,
 /********/
 
 AROS_UFH1(ULONG,LIB_close,
-        AROS_LHA(struct DummyBase *, DummyBase, D0))
+        AROS_UFHA(struct DummyBase *, DummyBase, D0))
 {
     AROS_USERFUNC_INIT
     
@@ -95,7 +95,8 @@ AROS_UFH1(ULONG,LIB_close,
     DummyBase->library.lib_OpenCnt--;
     if (!DummyBase->library.lib_OpenCnt)
 	if (DummyBase->library.lib_Flags & LIBF_DELEXP)
-	    ret = LIB_expunge(DummyBase);
+	    ret = AROS_UFC1(ULONG,LIB_expunge,
+                            AROS_UFCA(struct DummyBase *, DummyBase, A6));
     return ret;
 
     AROS_USERFUNC_EXIT
