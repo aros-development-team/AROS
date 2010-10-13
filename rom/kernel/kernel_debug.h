@@ -26,10 +26,10 @@ static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
     /* We call the function directly. Not using vector table,
        because KernelBase can be NULL here (during very early
        startup). */
-    AROS_UFC3(int, AROS_SLIB_ENTRY(KrnBug, Kernel),
-	      AROS_UFCA(const char *, format, A0),
-	      AROS_UFCA(va_list, args, A1),
-	      AROS_UFCA(struct KernelBase *, KernelBase, A6));
+    AROS_CALL2(int, AROS_SLIB_ENTRY(KrnBug, Kernel),
+	      AROS_LCA(const char *, format, A0),
+	      AROS_LCA(va_list, args, A1),
+	      struct KernelBase *, KernelBase);
 
     va_end(args);
 }
