@@ -35,4 +35,4 @@ extern struct TagItem *BootMsg;
 extern struct KernelBase *KernelBase;
 
 /* Utility function to clear BSS segments. Call it before storing any globals!!! */
-void __clear_bss(struct KernelBSS *bss);
+void __clear_bss(const struct KernelBSS *bss);
