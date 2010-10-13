@@ -14,7 +14,7 @@
     NAME */
 
 	AROS_LH1(VOID , FreeMiscResource,
-		 AROS_LHA(ULONG,  unitNum, d0),
+		 AROS_LHA(ULONG,  unitNum, D0),
 /*  SYNOPSIS */
 
 /*  LOCATION */
