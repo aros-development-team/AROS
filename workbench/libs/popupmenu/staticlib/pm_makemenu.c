@@ -41,9 +41,9 @@ extern struct PopupMenuBase * PopupMenuBase;
 
 *****************************************************************************/
 {
-    AROS_SLOWSTACKTAGS_PRE(tag1)
+    AROS_SLOWSTACKTAGS_PRE_AS(tag1, struct PopupMenu *)
 
-    retval = (IPTR)PM_MakeMenuA(AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = PM_MakeMenuA(AROS_SLOWSTACKTAGS_ARG(tag1));
     
     AROS_SLOWSTACKTAGS_POST
 } /* PM_MakeMenu */

@@ -76,8 +76,8 @@ __END_DECLS
 	    if ((tags = GetTagsFromStack (arg, args)))	\
 	    {
 
-#	define AROS_SLOWSTACKTAGS_PRE(arg)		\
-	    AROS_TAGRETURNTYPE	  retval;		\
+#	define AROS_SLOWSTACKTAGS_PRE_AS(arg, rettype)	\
+	    rettype		  retval;		\
 	    va_list		  args;			\
 	    struct TagItem	* tags;			\
 							\
@@ -86,13 +86,16 @@ __END_DECLS
 	    if ((tags = GetTagsFromStack (arg, args)))	\
 	    {
 
+#	define AROS_SLOWSTACKTAGS_PRE(arg)		\
+	    AROS_SLOWSTACKTAGS_PRE_AS(arg, AROS_TAGRETURNTYPE)
+
 #	define AROS_SLOWSTACKTAGS_ARG(arg) tags
 
 #	define AROS_SLOWSTACKTAGS_POST			\
 		FreeTagsFromStack (tags);		\
 	    }						\
 	    else					\
-		retval = (AROS_TAGRETURNTYPE)0L;	\
+		retval = 0;				\
 							\
 	    va_end (args);				\
 							\
