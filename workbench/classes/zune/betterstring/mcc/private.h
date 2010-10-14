@@ -218,13 +218,13 @@ BOOL OverwriteA(STRPTR, UWORD, UWORD, UWORD, struct InstData *);
 BOOL FileNameComplete(Object *, BOOL, struct InstData *);
 LONG FileNameStart(struct MUIP_BetterString_FileNameStart *msg);
 
-WORD CmpStrings(REG(A0, STRPTR), REG(A1, STRPTR));
+WORD CmpStrings(REG(a0, STRPTR), REG(a1, STRPTR));
 
 VOID InitConfig(Object *, struct InstData *);
 VOID FreeConfig(struct MUI_RenderInfo *, struct InstData *);
 
-struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(D0, LONG), REG(D1, LONG), REG(D2, LONG), REG(D3, LONG flags), REG(A0, struct BitMap *));
-VOID SAVEDS ASM MUIG_FreeBitMap(REG(A0, struct BitMap *));
+struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG), REG(d1, LONG), REG(d2, LONG), REG(d3, LONG flags), REG(a0, struct BitMap *));
+VOID SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *));
 
 // Pointer.c
 void SetupSelectPointer(struct InstData *data);
