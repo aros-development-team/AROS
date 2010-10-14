@@ -4,6 +4,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -36,8 +37,9 @@
 
 ******************************************************************************/
 {
-#   warning Implement getgroups()
+    /* Implement getgroups() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
 
     return 0;
 }

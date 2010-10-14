@@ -110,7 +110,7 @@ static BPTR __lock(
     LONG error;
 
     if (name == NULL)
-        return NULL;
+        return BNULL;
 
     if (*name == '\0')
         return Lock(name, accessMode);
@@ -144,7 +144,7 @@ static BPTR __lock(
 		    D(bug("[Lock] incompatible mode %d\n", accessMode));
 	            FreeDosObject(DOS_FILEHANDLE, ret);
 		    SetIoErr(ERROR_ACTION_NOT_KNOWN);
-		    return NULL;
+		    return BNULL;
      	}
  
         iofs.io_Union.io_OPEN.io_Filename = StripVolume(name);
@@ -182,5 +182,5 @@ static BPTR __lock(
         SetIoErr(ERROR_NO_FREE_STORE);
     }
 
-    return NULL;
+    return BNULL;
 }

@@ -35,7 +35,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement getpgrp()
+    /* FIXME: Implement getpgrp() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return 0;

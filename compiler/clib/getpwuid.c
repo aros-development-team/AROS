@@ -4,6 +4,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -34,7 +35,9 @@
 
 ******************************************************************************/
 {
-#   warning Implement getpwuid()
+    /* FIXME: Implement getpwuid() */
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
 
     return NULL;
 }

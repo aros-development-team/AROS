@@ -39,10 +39,10 @@
 
 ******************************************************************************/
 {
-#   warning Implement ioctl()
+    /* FIXME: Implement ioctl() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
-
     errno = ENOSYS;
+
     return -1;
 }
 

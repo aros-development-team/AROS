@@ -46,7 +46,7 @@ LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
 
     iofs->IOFS.io_Device = (struct Device *) dvp->dvp_Port;
 
-    if (dvp->dvp_Lock != NULL)
+    if (dvp->dvp_Lock != BNULL)
         iofs->IOFS.io_Unit = ((struct FileHandle *) BADDR(dvp->dvp_Lock))->fh_Unit;
     else
         iofs->IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;

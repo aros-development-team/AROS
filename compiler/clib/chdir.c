@@ -65,7 +65,7 @@
 	    
     newlock = Lock( path, SHARED_LOCK );
 
-    if( newlock == NULL )
+    if( newlock == BNULL )
     {
     	errno = IoErr2errno( IoErr() );
 	goto error;
@@ -86,7 +86,7 @@
     return 0;
 
 error:
-    if( newlock != NULL ) UnLock( newlock );
+    if( newlock != BNULL ) UnLock( newlock );
     
     return -1;
 }

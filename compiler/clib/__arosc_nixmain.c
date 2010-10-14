@@ -35,7 +35,7 @@ static void update_PATH(void);
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
     char *old_argv0 = NULL;
-    char *new_argv0;
+    char *new_argv0 = NULL;
     struct MinList old_vars;
 
     /* Trigger *nix path handling on.  */

@@ -37,7 +37,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement setuid()
+    /* FIXME: Implement setuid() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return 0;

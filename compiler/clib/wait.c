@@ -96,7 +96,7 @@
     }
 
     et = (struct ETask *)ChildWait(0);
-    if (et != CHILD_NOTNEW)
+    if (et != (struct ETask *)CHILD_NOTNEW)
     {
 	if(status && IntETask(et)->iet_startup)
 	{
@@ -104,7 +104,7 @@
 	    *status = startup->as_startup_error;
 	}
         ret = et->et_UniqueID;
-        ChildFree(et->et_UniqueID);
+        ChildFree((APTR)et->et_UniqueID);
     }
     else
 	errno = ECHILD;

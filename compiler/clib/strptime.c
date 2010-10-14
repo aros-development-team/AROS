@@ -91,5 +91,5 @@ char *strptime(const char *s, const char *format, struct tm *tm)
         format++;
     }
 
-    return s;
+    return (char *)s;
 }

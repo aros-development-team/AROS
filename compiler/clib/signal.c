@@ -39,7 +39,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement signal()
+    /* FIXME: Implement signal() */
 
     errno = ENOSYS;
     return (__sighandler_t *) -1;

@@ -42,8 +42,8 @@
 ******************************************************************************/
 {
     BPTR reader, writer;
-    fcb *rfcb, *wfcb;
-    fdesc *rdesc, *wdesc;
+    fcb *rfcb = NULL, *wfcb = NULL;
+    fdesc *rdesc = NULL, *wdesc = NULL;
 
     if (!pipedes)
     {

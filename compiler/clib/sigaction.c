@@ -6,6 +6,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -37,7 +38,9 @@
 
 ******************************************************************************/
 {
-#   warning Implement sigaction()
+    /* FIXME: Implement sigaction() */
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
     
     return -1;
 } /* sigaction */

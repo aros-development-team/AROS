@@ -50,9 +50,9 @@
 
 ******************************************************************************/
 {
-    BPTR oldlock = NULL;
-    BPTR newlock = NULL;
-    BPTR handle = NULL;
+    BPTR oldlock = BNULL;
+    BPTR newlock = BNULL;
+    BPTR handle = BNULL;
     
     if ( __get_default_file(fd, (long*) &handle) != 0 )
     {
@@ -62,7 +62,7 @@
 
     newlock = DupLockFromFH(handle);
 
-    if( newlock == NULL )
+    if( newlock == BNULL )
     {
         errno = IoErr2errno( IoErr() );
         goto error;
@@ -81,7 +81,7 @@
     return 0;
 
 error:
-    if( newlock != NULL ) 
+    if( newlock != BNULL ) 
         UnLock( newlock );
     
     return -1;

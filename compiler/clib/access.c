@@ -59,7 +59,7 @@
 
 ******************************************************************************/
 {
-    BPTR lock = NULL;
+    BPTR lock = BNULL;
     struct FileInfoBlock *fib = NULL;
     int result = -1;
     char vol[32];
@@ -112,7 +112,7 @@
     /* Create a lock and examine a lock */
 
     lock = Lock(apath, SHARED_LOCK);
-    if (lock == NULL)
+    if (lock == BNULL)
     {
         errno = IoErr2errno(IoErr());
         return -1;

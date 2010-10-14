@@ -33,7 +33,8 @@
 
 ******************************************************************************/
 {
-    #warning Implement setpwent()
+    /* FIXME: Implement setpwent() */
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return;
 }
