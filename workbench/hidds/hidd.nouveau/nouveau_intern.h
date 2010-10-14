@@ -244,9 +244,10 @@ BOOL HiddNouveauConvertAndCopy(
     APTR dst, ULONG dstPitch,
     ULONG width, ULONG height,
     OOP_Class *cl, OOP_Object *o);
-BOOL HiddNouveauNVAccelUploadM2MF(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, UBYTE * pixels, ULONG x, ULONG y, 
-    ULONG width, ULONG height, ULONG srcpitch);
+BOOL HiddNouveauNVAccelUploadM2MF(
+    UBYTE * pixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
+    OOP_Class *cl, OOP_Object *o);
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);
