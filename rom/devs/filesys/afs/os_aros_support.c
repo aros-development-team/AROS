@@ -93,14 +93,14 @@ UBYTE i;
 		AROS_BE2LONG(rootblock->buffer[BLK_ROOT_TICKS(volume)]);
 	volume->devicelist.dl_LockList = 0;
 	volume->devicelist.dl_DiskType = volume->dostype;
-	if (volume->devicelist.dl_Name != NULL)
+	if (volume->devicelist.dl_Name != BNULL)
 	{
 		newname = volume->devicelist.dl_Name;
 	}
 	else
 	{
-		newname = (BSTR)AllocVec(32,MEMF_CLEAR | MEMF_PUBLIC);
-		if (newname == (BSTR)NULL)
+		newname = MKBADDR(AllocVec(32,MEMF_CLEAR | MEMF_PUBLIC));
+		if (newname == BNULL)
 			return DOSFALSE;
 	}
 	for (i=0; i<name[0]; i++)
@@ -143,11 +143,11 @@ UBYTE i;
 			if ((dl->dol_Ext.dol_AROS.dol_Device == volume->device) &&
 			    (dl->dol_Ext.dol_AROS.dol_Unit == NULL))
 			{
-				if (dl->dol_misc.dol_volume.dol_LockList != NULL)
+				if (dl->dol_misc.dol_volume.dol_LockList != BNULL)
 				{
 					dl->dol_Ext.dol_AROS.dol_Unit = (struct Unit *)&volume->ah;
-					volume->locklist = dl->dol_misc.dol_volume.dol_LockList;
-					dl->dol_misc.dol_volume.dol_LockList = NULL;
+					volume->locklist = BADDR(dl->dol_misc.dol_volume.dol_LockList);
+					dl->dol_misc.dol_volume.dol_LockList = BNULL;
 				}
 			}
 			else
@@ -201,7 +201,7 @@ struct DosList *dl;
 		if (volume->locklist != NULL)
 		{
 			D(bug("[afs 0x%08lX] VolumeNode in use, keeping as offline\n", volume));
-			dl->dol_misc.dol_volume.dol_LockList = volume->locklist;
+			dl->dol_misc.dol_volume.dol_LockList = MKBADDR(volume->locklist);
 			dl->dol_Ext.dol_AROS.dol_Unit = NULL;
 		}
 		else
@@ -243,7 +243,7 @@ LONG osMediumInit
 void osMediumFree(struct AFSBase *afsbase, struct Volume *volume, LONG all) {
 	remDosVolume(afsbase, volume);
 	if (all)
-		if (volume->devicelist.dl_Name != NULL)
+		if (volume->devicelist.dl_Name != BNULL)
 			FreeVec(BADDR(volume->devicelist.dl_Name));
 }
 

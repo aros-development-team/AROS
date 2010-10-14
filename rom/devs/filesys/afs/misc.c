@@ -83,7 +83,7 @@ LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
 	id->id_NumBlocksUsed = volume->usedblockscount;
 	id->id_BytesPerBlock = volume->dosflags==0 ? BLOCK_SIZE(volume)-24 : BLOCK_SIZE(volume);
 	id->id_DiskType = volume->dostype | volume->dosflags;
-	id->id_VolumeNode = volume->volumenode;
+	id->id_VolumeNode = MKBADDR(volume->volumenode);
 	id->id_InUse = (LONG)TRUE; /* if we are here the device should be in use! */
 	return 0;
 }
