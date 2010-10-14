@@ -21,7 +21,7 @@ OOP_Object *HIDD_Mouse_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass
     p.driverClass = driverClass;
     p.tags = tags;
 
-    OOP_DoMethod(obj, (OOP_Msg) msg);
+    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 void HIDD_Mouse_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver)
@@ -34,5 +34,5 @@ void HIDD_Mouse_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver)
     p.mID = mid;
     p.driverObject = driver;
 
-    return OOP_DoMethod(obj, (OOP_Msg) msg);
+    OOP_DoMethod(obj, (OOP_Msg) msg);
 }

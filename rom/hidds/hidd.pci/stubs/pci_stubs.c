@@ -85,7 +85,7 @@ APTR HIDD_PCIDriver_CPUtoPCI(OOP_Object *obj, APTR address)
     p.mID = mid;
     p.address = address;
 
-    return OOP_DoMethod(obj, (OOP_Msg) msg);
+    return (APTR)OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 APTR HIDD_PCIDriver_PCItoCPU(OOP_Object *obj, APTR address)
@@ -98,7 +98,7 @@ APTR HIDD_PCIDriver_PCItoCPU(OOP_Object *obj, APTR address)
     p.mID = mid;
     p.address = address;
 
-    return OOP_DoMethod(obj, (OOP_Msg) msg);
+    return (APTR)OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 APTR HIDD_PCIDriver_MapPCI(OOP_Object *obj, APTR address, ULONG length)
@@ -112,7 +112,7 @@ APTR HIDD_PCIDriver_MapPCI(OOP_Object *obj, APTR address, ULONG length)
     p.PCIAddress = address;
     p.Length = length;
 
-    return OOP_DoMethod(obj, (OOP_Msg) msg);
+    return (APTR)OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 VOID HIDD_PCIDriver_UnmapPCI(OOP_Object *obj, APTR address, ULONG length)
@@ -139,7 +139,7 @@ APTR HIDD_PCIDriver_AllocPCIMem(OOP_Object *obj, ULONG length)
     p.mID = mid;
     p.Size = length;
 
-    return OOP_DoMethod(obj, (OOP_Msg) msg);
+    return (APTR)OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 VOID HIDD_PCIDriver_FreePCIMem(OOP_Object *obj, APTR address)
