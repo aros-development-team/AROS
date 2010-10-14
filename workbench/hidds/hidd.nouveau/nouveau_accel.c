@@ -159,10 +159,13 @@ BOOL HiddNouveauConvertAndCopy(
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HiddNouveauNVAccelUploadM2MF(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, UBYTE * pixels, ULONG x, ULONG y, 
-    ULONG width, ULONG height, ULONG srcpitch)
+BOOL HiddNouveauNVAccelUploadM2MF(
+    UBYTE * pixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
+    ULONG x, ULONG y, ULONG width, ULONG height, 
+    OOP_Class *cl, OOP_Object *o)
 {
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_channel *chan = carddata->chan;
     struct nouveau_grobj *m2mf = carddata->NvMemFormat;
     struct nouveau_bo *bo = bmdata->bo;
@@ -178,7 +181,7 @@ BOOL HiddNouveauNVAccelUploadM2MF(struct CardData * carddata,
 //    }
 
     while (height) {
-        int line_count, i;
+        int line_count;
         char *dst;
 
         /* Determine max amount of data we can DMA at once */
@@ -198,16 +201,13 @@ BOOL HiddNouveauNVAccelUploadM2MF(struct CardData * carddata,
         if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR))
             return FALSE;
         dst = carddata->GART->map;
-        if (srcpitch == line_len) {
-            memcpy(dst, src, srcpitch * line_count);
-            src += srcpitch * line_count;
-        } else {
-            for (i = 0; i < line_count; i++) {
-                memcpy(dst, src, line_len);
-                src += srcpitch;
-                dst += line_len;
-            }
-        }
+
+        HiddNouveauConvertAndCopy(
+            src, srcpitch, srcPixFmt,
+            dst, line_len,
+            width, line_count,
+            cl, o);
+        src += srcpitch * line_count;
         nouveau_bo_unmap(carddata->GART);
 
         if (MARK_RING(chan, 32, 6))
