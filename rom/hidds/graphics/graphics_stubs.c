@@ -38,10 +38,9 @@
 #endif
 
 /* A small utility function for using varargs when setting attrs */
-
+#ifndef OOP_SetAttrsTags
 #warning OOP_SetAttrsTags is defined in inline/oop.h
 
-#ifndef OOP_SetAttrsTags
 IPTR OOP_SetAttrsTags(OOP_Object *obj, IPTR tag1, ...)
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
@@ -412,7 +411,7 @@ BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
     p.Green = Green;
     p.Blue  = Blue;
 
-    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 /***************************************************************/
@@ -429,7 +428,7 @@ BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
     p.Green = Green;
     p.Blue  = Blue;
 
-    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 /***************************************************************/
@@ -444,7 +443,7 @@ BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt)
     p.mID    = mid;
     p.pixFmt = pixFmt;
 
-    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 /***************************************************************/
@@ -461,7 +460,7 @@ BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *obj, ULONG Type, ULONG *Width, ULONG 
     p.Width  = Width;
     p.Height = Height;
 
-    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 /***************************************************************/
@@ -495,7 +494,7 @@ ULONG HIDD_BM_PutPixel(OOP_Object *obj, WORD x, WORD y, HIDDT_Pixel val)
     p.y    = y;
     p.pixel  = val;
 
-    return(OOP_DoMethod(obj, (OOP_Msg) msg));
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 /***************************************************************/
 
@@ -511,7 +510,7 @@ ULONG HIDD_BM_DrawPixel(OOP_Object *obj, OOP_Object *gc, WORD x, WORD y)
     p.x    = x;
     p.y    = y;
 
-    return(OOP_DoMethod(obj, (OOP_Msg) msg));
+    return OOP_DoMethod(obj, (OOP_Msg) msg) ;
 }
 /***************************************************************/
 
@@ -526,7 +525,7 @@ HIDDT_Pixel HIDD_BM_GetPixel(OOP_Object *obj, WORD x, WORD y)
     p.x    = x;
     p.y    = y;
 
-    return(OOP_DoMethod(obj, (OOP_Msg) msg));
+    return OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 /***************************************************************/
 
