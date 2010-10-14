@@ -16,8 +16,6 @@ include $(TOP)/config/make.cfg
 %rule_archalias mainmmake=kernel-dbus arch=darwin alias=unix
 %rule_archalias mainmmake=kernel-kernel arch=darwin alias=unix
 
-%rule_archalias mainmmake=workbench-libs-oss arch=darwin alias=unix
-
 #MM- workbench-darwin-$(CPU) : \
 #MM     workbench-unix
 
