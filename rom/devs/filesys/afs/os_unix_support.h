@@ -52,6 +52,9 @@ struct Node {};
 /* dos/asl.h */
 #define ERROR_BUFFER_OVERFLOW 303
 
+/* dos/bptr.h */
+#define MKBADDR(x) x
+
 /* dos/dos.h */
 #define DOSTRUE (-1)
 #define DOSFALSE  0

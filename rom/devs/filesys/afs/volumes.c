@@ -11,6 +11,8 @@
  * 												 to allow volume validation during boot-up
  */
 
+#include <string.h>
+
 #ifndef DEBUG
 #define DEBUG 0
 #endif
