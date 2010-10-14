@@ -85,7 +85,7 @@ static IPTR RT_Open (RTData * rtd, FileResource * rt, va_list args, BOOL * succe
 
     rt->Mode = va_arg (args, LONG);
 
-    rt->FH = NULL;
+    rt->FH = BNULL;
 
     if
     (
