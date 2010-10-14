@@ -75,7 +75,7 @@ int __stat(BPTR lock, struct stat *sb)
             break;
         else if(   IoErr() == ERROR_OBJECT_IN_USE
                 || IoErr() == ERROR_NOT_IMPLEMENTED
-                || IoErr() == ERROR_OBJECT_NOT_FOUND && fib->fib_EntryType == ST_PIPEFILE)
+                || (IoErr() == ERROR_OBJECT_NOT_FOUND && fib->fib_EntryType == ST_PIPEFILE))
         {
             /* We can't retrieve name because lock is an exclusive lock
                or Examine is not implemented in this handler
@@ -114,7 +114,7 @@ int __stat_from_path(const char *path, struct stat *sb)
     char                 *filepart = NULL;
     char                 *split;
     struct FileInfoBlock *fib = NULL;
-    BPTR                 lock = NULL;
+    BPTR                 lock = BNULL;
     BPTR                 cwdlock;
     int                  fallback_to_defaults = 0;
     BOOL                 loop;
@@ -135,7 +135,7 @@ int __stat_from_path(const char *path, struct stat *sb)
     if (!strchr(mypath, ':'))
     {
         /* no, then create one */
-        cwdlock = CurrentDir(NULL);
+        cwdlock = CurrentDir(BNULL);
         CurrentDir(cwdlock);
         do
         {

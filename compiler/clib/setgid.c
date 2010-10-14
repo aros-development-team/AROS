@@ -37,7 +37,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement setgid()
+    /* FIXME: Implement setgid() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return 0;

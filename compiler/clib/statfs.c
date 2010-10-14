@@ -52,7 +52,7 @@ short getnixfilesystemtype(LONG id_DiskType);
     BPTR lock;
     LONG ioerr = 0;
     struct InfoData data;
-    char *apath;
+    const char *apath;
     
     if (path == NULL)
     {
@@ -84,7 +84,7 @@ short getnixfilesystemtype(LONG id_DiskType);
 	    buf->f_ffree = 0;
 	    buf->f_fsid.val[0] = 0;
 	    buf->f_fsid.val[1] = 0;
-	    strncpy(buf->f_mntonname, __path_a2u(((struct DeviceList *)BADDR(data.id_VolumeNode))->dl_Name), MNAMELEN);
+	    strncpy(buf->f_mntonname, __path_a2u(AROS_BSTR_ADDR(((struct DeviceList *)BADDR(data.id_VolumeNode))->dl_Name)), MNAMELEN);
 	    buf->f_mntfromname[0] = '\0';
 	}
 	else

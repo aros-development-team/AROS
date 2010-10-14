@@ -4,6 +4,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -34,8 +35,9 @@
     INTERNALS
 
 ******************************************************************************/{
-#   warning Implement getpwent()
+    /* FIXME: Implement getpwent() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
 
     return NULL;
 }

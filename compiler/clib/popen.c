@@ -92,7 +92,7 @@
 	if (SystemTagList(command, tags) != -1)
 	{
 	    /* Little trick to deallocate memory which otherwise wouldn't get deallocated */
-            __getfdesc(pipefds[fdtopass])->fcb->fh = NULL;
+            __getfdesc(pipefds[fdtopass])->fcb->fh = BNULL;
   	    close(pipefds[fdtopass]);
 
             return fdopen(pipefds[1 - fdtopass], NULL);

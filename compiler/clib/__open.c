@@ -109,7 +109,7 @@ LONG __oflags2amode(int flags)
 
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
-    BPTR fh = NULL, lock = NULL;
+    BPTR fh = BNULL, lock = BNULL;
     fdesc *currdesc = NULL;
     fcb *cblock = NULL;
     struct FileInfoBlock *fib = NULL;
@@ -223,7 +223,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     if (lock)
     {
 	UnLock(lock);
-	lock = NULL;
+	lock = BNULL;
     }
 
     if (openmode & (FMF_APPEND | FMF_WRITE))

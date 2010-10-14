@@ -52,7 +52,7 @@
 ******************************************************************************/
 {
     int                  res     = -1;
-    BPTR                 lock    = NULL;
+    BPTR                 lock    = BNULL;
     struct FileInfoBlock *fib    = NULL;
     BOOL                 changed = TRUE;
 

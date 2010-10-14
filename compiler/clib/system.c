@@ -139,9 +139,9 @@ static int system_no_sh(const char *string)
     ret = (int)SystemTags
     (
          fullcmd,
-         SYS_Input, (IPTR)(in ? in->fcb->fh : NULL),
-         SYS_Output, (IPTR)(out ? out->fcb->fh : NULL),
-         SYS_Error, (IPTR)(err ? err->fcb->fh : NULL),
+         SYS_Input, (IPTR)(in ? in->fcb->fh : BNULL),
+         SYS_Output, (IPTR)(out ? out->fcb->fh : BNULL),
+         SYS_Error, (IPTR)(err ? err->fcb->fh : BNULL),
          NULL
     );
 

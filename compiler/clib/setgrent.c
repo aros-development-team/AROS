@@ -35,7 +35,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement setgrent()
+    /* Implement setgrent() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return;

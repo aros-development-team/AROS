@@ -62,7 +62,7 @@
     int finalseekposition = 0;
     int eofposition = 0;
     struct FileInfoBlock *fib = NULL;
-    BPTR fh = NULL;
+    BPTR fh = BNULL;
     fdesc *fdesc = __getfdesc(stream->fd);
 
     if (!fdesc)

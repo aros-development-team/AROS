@@ -42,7 +42,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement strcoll() properly
+    /* FIXME: Implement strcoll() properly */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return strcmp(str1, str2);

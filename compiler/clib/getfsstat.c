@@ -83,7 +83,7 @@ short getnixfilesystemtype(LONG id_DiskType)
     dlist = LockDosList(LDF_READ | LDF_VOLUMES);
     while ((dlist = NextDosEntry(dlist, LDF_VOLUMES)) != NULL)
     {
-	if(IsFileSystem(dlist->dol_Name) == FALSE)
+	if(IsFileSystem(AROS_BSTR_ADDR(dlist->dol_Name)) == FALSE)
 		continue;
 	fscount++;
 
@@ -100,14 +100,14 @@ short getnixfilesystemtype(LONG id_DiskType)
 	}
 	
 	/* Create a volume name */
-	if(!(name = (STRPTR) AllocVec(strlen(dlist->dol_Name) + 2,
+	if(!(name = (STRPTR) AllocVec(AROS_BSTR_strlen(dlist->dol_Name) + 2,
 	    MEMF_CLEAR | MEMF_ANY)))
 	{
 	    ioerr = ERROR_NO_FREE_STORE;
 	    break;
 	}
 	
-	strcpy(name, dlist->dol_Name);
+	strcpy(name, AROS_BSTR_ADDR(dlist->dol_Name));
 	strcat(name, ":");
 
 	/* Get filesystem data from lock */

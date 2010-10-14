@@ -39,7 +39,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement mblen() properly
+    /* FIXME: Implement mblen() properly */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return strlen(s);

@@ -6,6 +6,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -36,7 +37,9 @@
 
 ******************************************************************************/
 {
-#   warning Implement times()
+    /* FIXME: Implement times() */
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
     
     tms->tms_utime  = 0;
     tms->tms_stime  = 0;

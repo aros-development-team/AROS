@@ -35,7 +35,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement getlogin()
+    /* Implement getlogin() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     errno = ENOSYS;

@@ -6,6 +6,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -37,8 +38,9 @@
 
 ******************************************************************************/
 {
-#   warning Implement kill()
+    /* warning Implement kill() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
     
     return -1;
 } /* kill() */

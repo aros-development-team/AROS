@@ -12,7 +12,7 @@
 #include "__errno.h"
 #include "__open.h"
 
-static int __putc(int c, BPTR fh);
+static int __putc(int c, void *fh);
 
 /*****************************************************************************
 
@@ -58,12 +58,13 @@ static int __putc(int c, BPTR fh);
 	return 0;
     }
 
-    return __vcformat (fdesc->fcb->fh, __putc, format, args);
+    return __vcformat ((void *)BADDR(fdesc->fcb->fh), __putc, format, args);
 } /* vfprintf */
 
 
-static int __putc(int c, BPTR fh)
+static int __putc(int c, void *fhp)
 {
+    BPTR fh = MKBADDR(fhp);
     if (FPutC(fh, c) == EOF)
     {
 	errno = IoErr2errno(IoErr());

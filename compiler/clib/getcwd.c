@@ -58,10 +58,10 @@
 ******************************************************************************/
 {
     char pathname[FILENAME_MAX];
-    char *tpath;
+    const char *tpath;
     BPTR lock;
   
-    lock = CurrentDir(NULL);
+    lock = CurrentDir(BNULL);
     CurrentDir(lock);
     if (NameFromLock (lock, pathname, FILENAME_MAX) == 0)
     {

@@ -61,7 +61,7 @@
     fcb *cblock;
     fdesc *desc;
     BPTR lock;
-    char *aname;
+    const char *aname;
 #ifndef ExNext_IS_WORKING_WITHOUT_ASSIGN
     char assign[32];
 #endif
@@ -106,7 +106,7 @@
     UnLock(lock);
     lock = Lock(aname, SHARED_LOCK);
 
-    AssignLock(assign, NULL);
+    AssignLock(assign, BNULL);
 #endif
 
     if (!Examine(lock, dir->priv))

@@ -6,6 +6,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -36,8 +37,9 @@
 
 ******************************************************************************/
 {
-#   warning Implement sigsuspend()
+    /* FIXME: Implement sigsuspend() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
 
     return -1;
 } /* sigsuspend */

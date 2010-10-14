@@ -40,8 +40,9 @@
 
 ******************************************************************************/
 {
-#   warning Implement pclose()
+    /* Implement pclose() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
 
     return -1;
 } /* pclose() */

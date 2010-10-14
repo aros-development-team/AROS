@@ -43,10 +43,10 @@
 {
     char *c = template + strlen(template);
     char *c_start;
-    BPTR  lock= NULL;
+    BPTR  lock= BNULL;
     int ctr = 0;
-    static char filename_letters[] = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZFILLTO64";
-    char *atemplate;
+    const char filename_letters[] = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZFILLTO64";
+    const char *atemplate;
 
     while (c > template && *--c == 'X') {
         ctr++;
