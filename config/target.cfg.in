@@ -60,4 +60,4 @@ OBJDUMP		:= @aros_target_objdump@
 # Apple iOS specific
 IOS_PLATFORM    := @aros_ios_platform@
 IOS_OS_VERSION  := @aros_ios_version@
-IOS_SDK_VERSION := @aros_ios_sdk@
+IOS_SDK_PATH    := @aros_ios_sdk@

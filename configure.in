@@ -647,6 +647,11 @@ else
 fi
 
 #-----------------------------------------------------------------------------
+AC_MSG_CHECKING([what specific gcc version to use])
+AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-gcc-version=VERSION],[Use gcc-VERSION for building AROS]),target_tool_version="$withval",target_tool_version="default")
+AC_MSG_RESULT($target_tool_version)
+
+#-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what optimization flags to use])
 AC_ARG_WITH(optimization,AC_HELP_STRING([--with-optimization=FLAGS],[Use optimization flags FLAGS (default=-O2).]),optimization="$withval",optimization="unknown")
 if test "$optimization" = "unknown"; then
@@ -659,6 +664,23 @@ if test "$optimization" = "unknown"; then
 fi
 aros_config_cflags="$aros_config_cflags $optimization"
 AC_MSG_RESULT($optimization)
+
+#-----------------------------------------------------------------------------
+if test "$target_os" = "ios"; then
+
+AC_MSG_CHECKING([XCode path])
+AC_ARG_WITH(xcode-path,AC_HELP_STRING([--with-xcode=PATH],[Specify XCode path for iOS targets (default=/Developer).]),aros_xcode_path="$withval",aros_xcode_path="/Developer")
+AC_MSG_RESULT($aros_xcode_path)
+
+AC_MSG_CHECKING([for minimum supported iOS version])
+AC_ARG_WITH(ios-version,AC_HELP_STRING([--with-ios-version=VERSION],[Specify minimum supported iOS version (default=2.0).]),aros_ios_version="$withval",aros_ios_version="2.0")
+AC_MSG_RESULT($aros_ios_version)
+
+AC_MSG_CHECKING([what iOS SDK version to use])
+AC_ARG_WITH(ios-sdk,AC_HELP_STRING([--with-ios-sdk=VERSION],[Use iOS SDK version VERSION (default=4.1).]),aros_ios_sdk="$withval",aros_ios_sdk="4.1")
+AC_MSG_RESULT($aros_ios_sdk)
+
+fi
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what target variant to enable])
@@ -886,11 +908,6 @@ case "$target_os" in
 	;;
 
     ios*)
-        # TODO: these should be specified with arguments: --with-xcode, --with-ios-version, --with-ios-sdk
-	aros_xcode_path="/Developer"
-	aros_ios_version="2.0"
-	aros_ios_sdk="4.1"
-
 	aros_target_arch="ios"
 	aros_flavour="emulation"
 	# This is here because it may depend on iOS or SDK version
@@ -900,8 +917,6 @@ case "$target_os" in
 	    	aros_ios_platform="iPhoneSimulator"
 		aros_target_cpu="i386"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-		aros_kernel_cflags="$aros_kernel_cflags -m32"
-		aros_kernel_ldflags="-m32"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 		aros_object_format="elf_i386"
@@ -917,11 +932,36 @@ case "$target_os" in
 		aros_target_objcopy="i386-aros-objcopy"
 		aros_target_objdump="i386-aros-objdump"
 		target_tool_prefix="i686-apple-darwin10-"
+		target_tool_flags="-m32"
+		;;
+	    *arm*)
+	    	aros_ios_platform="iPhoneOS"
+		aros_target_cpu="arm"
+                aros_object_format="armelf_linux_eabi"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
+		aros_default_wbdepth=8
+		gcc_target_cpu="arm"
+		aros_kernel_ld="ld -arch armv6"
+		aros_target_cc="arm-elf-gcc"
+		aros_target_ld="arm-elf-ld"
+		aros_target_as="arm-elf-as"
+		aros_target_ar="arm-elf-ar"
+		aros_target_ranlib="arm-elf-ranlib"
+		aros_target_nm="arm-elf-nm"
+		aros_target_strip="arm-elf-strip"
+		aros_target_objcopy="arm-elf-objcopy"
+		aros_target_objdump="arm-elf-objdump"
+		target_tool_prefix="arm-apple-darwin10-" 
+		aros_default_wbwidth=320
+                aros_default_wbheight=480
+                export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
 		;;
 	    *)
 		AC_MSG_ERROR("Unsupported target CPU for iOS hosted flavour -- $target_cpu")
 		;;
 	esac
+	aros_ios_sdk="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/SDKs/$aros_ios_platform$aros_ios_sdk.sdk"
+	target_tool_flags="$target_tool_flags --sysroot $aros_ios_sdk"
 	;;
 
     dragonfly*)
@@ -1299,7 +1339,13 @@ if test "$cross_compiling" = "yes" ; then
 	target_tool_prefix=${target_cpu}-elf-
     fi
     CC=${target_tool_prefix}gcc
+    if test "$target_tool_version" != "default"; then
+        CC="$CC-$target_tool_version"
+    fi
+    AC_PATH_PROG(CC,$CC)
+    AROS_REQUIRED(gcc,$CC)
 fi
+CC="$CC $target_tool_flags"
 
 #-----------------------------------------------------------------------------
 
@@ -1921,7 +1967,6 @@ AC_SUBST(aros_palm_debug_hack)
 AC_SUBST(aros_nesting_supervisor)
 
 # Apple iOS related
-AC_SUBST(aros_xcode_path)
 AC_SUBST(aros_ios_platform)
 AC_SUBST(aros_ios_version)
 AC_SUBST(aros_ios_sdk)
