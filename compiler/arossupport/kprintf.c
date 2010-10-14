@@ -84,7 +84,7 @@ int vkprintf (const UBYTE * fmt, va_list args)
     static const char lhex[] = "0123456789abcdef";
     char       * fill;
     ULONG	 val;
-    LONG	 lval;
+    LONG	 lval = 0;
 
     if (!fmt)
     {

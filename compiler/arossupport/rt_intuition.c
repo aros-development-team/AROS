@@ -162,8 +162,7 @@ static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt)
 
 	while ((win = rt->Screen->FirstWindow))
 	{
-		va_list ap;
-	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)prtwin, ap) == RT_SEARCH_FOUND)
+	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)prtwin, 0) == RT_SEARCH_FOUND)
 	    {
 		RT_FreeResource (rtd, RTT_WINDOW, (RTNode *)rtwin);
 	    }
