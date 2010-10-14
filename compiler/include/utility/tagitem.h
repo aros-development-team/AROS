@@ -110,6 +110,7 @@ __END_DECLS
 #	define AROS_NR_SLOWSTACKTAGS_PRE(arg)
 #	define AROS_NR_SLOWSTACKTAGS_POST
 #	define AROS_SLOWSTACKTAGS_PRE(arg) AROS_TAGRETURNTYPE retval;
+#	define AROS_SLOWSTACKTAGS_PRE_AS(arg, rettype) rettype retval;
 #	define AROS_SLOWSTACKTAGS_ARG(arg) ((struct TagItem *)&(arg))
 #	define AROS_SLOWSTACKTAGS_POST     return retval;
 #endif
