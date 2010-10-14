@@ -54,7 +54,7 @@ static void __startup_detach(void)
 {
     struct CommandLineInterface *cli;
     struct Process              *newproc;
-    BPTR                         mysegment = NULL;
+    BPTR                         mysegment = BNULL;
     STRPTR                       detached_name;
 
     D(bug("Entering __startup_detach()\n"));
@@ -71,7 +71,7 @@ static void __startup_detach(void)
     {
         D(bug("Was started from cli.\n"));
         mysegment = cli->cli_Module;
-        cli->cli_Module = NULL;
+        cli->cli_Module = BNULL;
 
         detached_name = __detached_name ? __detached_name : (STRPTR) FindTask(NULL)->tc_Node.ln_Name;
     

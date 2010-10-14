@@ -53,7 +53,7 @@ asm(".set __importnowbsupport, __nowbsupport");
 extern int __noinitexitsets;
 asm(".set __importnoinitexitsets, __noinitexitsets");
 
-static void __startup_entries_init(void);
+extern void __startup_entries_init(void);
 
 /* Guarantee that __startup_entry is placed at the beginning of the binary */
 AROS_UFP3(LONG, __startup_entry,
@@ -62,8 +62,8 @@ AROS_UFP3(LONG, __startup_entry,
     AROS_UFHA(struct ExecBase *,sysbase,A6)
 ) __attribute__((section(".aros.startup")));
 
-#warning TODO: reset and initialize the FPU
-#warning TODO: resident startup
+/* TODO: reset and initialize the FPU */
+/* TODO: resident startup */
 AROS_UFH3(LONG, __startup_entry,
     AROS_UFHA(char *,argstr,A0),
     AROS_UFHA(ULONG,argsize,D0),
