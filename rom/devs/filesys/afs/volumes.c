@@ -138,11 +138,12 @@ struct Volume *initVolume
 {
 struct Volume *volume;
 
-	volume = AllocMem(sizeof(struct Volume),MEMF_PUBLIC | MEMF_CLEAR);
+	volume = AllocMem(sizeof(struct Volume) + strlen(blockdevice) + 1,MEMF_PUBLIC | MEMF_CLEAR);
 	if (volume != NULL)
 	{
 		volume->device = device;
-		volume->ioh.blockdevice = blockdevice;
+		volume->ioh.blockdevice = (STRPTR)(&volume[1]); /* Data after the volume alloc */
+		strcpy(volume->ioh.blockdevice, blockdevice);
 		volume->ioh.unit = unit;
 		volume->ioh.flags = 0;
 		volume->SizeBlock = devicedef->de_SizeBlock
@@ -203,7 +204,7 @@ struct Volume *volume;
 		{
 			*error=ERROR_NO_FREE_STORE;
 		}
-		FreeMem(volume,sizeof(struct Volume));
+		FreeMem(volume,sizeof(struct Volume) + strlen(volume->blockdevice + 1));
 	}
 	else
 		*error=ERROR_NO_FREE_STORE;
@@ -223,7 +224,7 @@ void uninitVolume(struct AFSBase *afsbase, struct Volume *volume) {
 	if (volume->blockcache != NULL)
 		freeCache(afsbase, volume->blockcache);
 	closeBlockDevice(afsbase, &volume->ioh);
-	FreeMem(volume,sizeof(struct Volume));
+	FreeMem(volume,sizeof(struct Volume) + strlen(volume->blockdevice + 1));
 }
 
 /* vim: set noet ts=3 ai fdm=marker fmr={,} :*/

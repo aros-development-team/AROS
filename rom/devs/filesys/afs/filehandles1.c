@@ -295,15 +295,15 @@ struct AfsHandle *old = NULL;
 #ifdef __AROS__
 	else {
 	    D(bug("[afs 0x%08lX] Lock's volume is offline\n", ah->volume));
-	    if (ah->volumenode->dol_misc.dol_volume.dol_LockList == ah)
+	    if (BADDR(ah->volumenode->dol_misc.dol_volume.dol_LockList) == ah)
 		if (ah->next)
-		    ah->volumenode->dol_misc.dol_volume.dol_LockList = ah->next;
+		    ah->volumenode->dol_misc.dol_volume.dol_LockList = MKBADDR(ah->next);
 		else {
 		    D(bug("[afs 0x%08lX] Last lock removed, removing VolumeNode\n", ah->volume));
 		    remDosNode(afsbase, ah->volumenode);
 		}
 	    else
-		old = ah->volumenode->dol_misc.dol_volume.dol_LockList;
+		old = BADDR(ah->volumenode->dol_misc.dol_volume.dol_LockList);
 	}
 #endif
 	while (old)
