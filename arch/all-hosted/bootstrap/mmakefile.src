@@ -15,7 +15,7 @@ endif
 
 ifeq ($(ARCH),ios)
     KERNEL_LDFLAGS += $(IOS_LDFLAGS) -framework Foundation -framework UIKit
-    EXEDIR := $(EXEDIR)/$(PROG).app
+    EXEDIR := $(TARGETDIR)/Payload/$(PROG).app
 endif
 
 %build_prog mmake=kernel-bootstrap-hosted \
