@@ -27,15 +27,6 @@
 
 #include "nil_handler.h"
 
-#ifdef AROS_FAST_BSTR
-#define bstrcpy strcpy
-#else
-#define bstrcpy(d, s) \
-    d = (STRPTR)(((ULONG)d + 3) & ~3); \
-    strcpy(d + 1, s); \
-    d[0] = strlen(s);
-#endif
-
 static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
@@ -46,21 +37,29 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
      * can be expunged
      */
     struct DeviceNode *dn;
+    const char *devName = "NIL";
+    const char *hndName = "nil.handler";
 
     /* Install NIL: handler into device list */
     if((dn = AllocMem(sizeof (struct DeviceNode) + 6 +
-		      AROS_BSTR_MEMSIZE4LEN(3) + AROS_BSTR_MEMSIZE4LEN(11),
+		      AROS_BSTR_MEMSIZE4LEN(strlen(devName)) +
+		      AROS_BSTR_MEMSIZE4LEN(strlen(hndName)),
                       MEMF_CLEAR|MEMF_PUBLIC)))
     {
-	STRPTR str = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
+	BSTR str = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
 
-	bstrcpy(str, "NIL");
-	dn->dn_Name = MKBADDR(str);
-	dn->dn_Ext.dn_AROS.dn_DevName = str;
+        strcpy(AROS_BSTR_ADDR(str), devName);
+        AROS_BSTR_setstrlen(str, strlen(devName));
 
-	str = (STRPTR)(((IPTR)str + AROS_BSTR_MEMSIZE4LEN(3) + 3) & ~3);
-	bstrcpy(str, "nil.handler");
-	dn->dn_Handler = MKBADDR(str);
+	dn->dn_Name = str;
+	dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(str);
+
+	str = (BSTR)MKBADDR(((IPTR)str + AROS_BSTR_MEMSIZE4LEN(strlen(devName)) + 3) & ~3);
+
+        strcpy(AROS_BSTR_ADDR(str), hndName);
+        AROS_BSTR_setstrlen(str, strlen(hndName));
+
+	dn->dn_Handler = str;
 
         dn->dn_Type    = DLT_DEVICE;
 
