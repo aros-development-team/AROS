@@ -44,9 +44,9 @@ extern struct PopupMenuBase * PopupMenuBase;
 
 *****************************************************************************/
 {
-    AROS_SLOWSTACKTAGS_PRE(tag1)
+    AROS_SLOWSTACKTAGS_PRE_AS(tag1, APTR)
 
-    retval = (IPTR)PM_FilterIMsgA(w, pm, im, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = PM_FilterIMsgA(w, pm, im, AROS_SLOWSTACKTAGS_ARG(tag1));
     
     AROS_SLOWSTACKTAGS_POST
 } /* PM_FilterIMsg */
