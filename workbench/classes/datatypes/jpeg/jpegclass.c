@@ -142,10 +142,16 @@ my_skip_input_data (j_decompress_ptr cinfo, long num_bytes)
   }
 }
 
-/* Dummy function for the linker */
+/* Dummy functions for the linker */
+void abort(void)
+{
+  exit(1);
+}
+
 void exit(int bla)
 {
   D(bug("jpeg.datatype/exit\n"));
+  abort();
 }
 
 /**************************************************************************************************/

@@ -18,7 +18,13 @@ void *calloc(size_t nmemb, size_t size)
     return AllocVec(nmemb * size, MEMF_ANY | MEMF_CLEAR);
 }
 
+void exit(int code)
+{
+    abort();
+}
+
 void abort(void)
 {
     bug("png.datatype - abort() called - needs proper implementation");
+    exit(1);
 }
