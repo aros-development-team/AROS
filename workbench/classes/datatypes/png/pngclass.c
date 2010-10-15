@@ -106,7 +106,7 @@ void my_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
 
 void my_read_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
-    BPTR    	file = png_get_io_ptr(png_ptr);
+    BPTR    	file = MKBADDR(png_get_io_ptr(png_ptr));
     png_uint_32 count;
 
     count = Read(file, data, length);
@@ -118,7 +118,7 @@ void my_read_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 
 void my_write_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
-    BPTR	file = png_get_io_ptr(png_ptr);
+    BPTR	file = MKBADDR(png_get_io_ptr(png_ptr));
     png_uint_32 count;
 
     count = Write(file, data, length);
@@ -130,7 +130,7 @@ void my_write_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 
 void my_flush_fn(png_structp png_ptr)
 {
-    BPTR	file = png_get_io_ptr(png_ptr);
+    BPTR	file = MKBADDR(png_get_io_ptr(png_ptr));
 
     if (Flush(file))
     {
@@ -151,7 +151,10 @@ static void PNG_Exit(struct PNGStuff *png, LONG errorcode)
 static BOOL LoadPNG(struct IClass *cl, Object *o)
 {
     struct PNGStuff 	    png;
-    struct IFFHandle	    *filehandle;
+    union {
+    	struct IFFHandle    *iff;
+    	BPTR                 bptr;
+    } filehandle;
     struct BitMapHeader     *bmhd;
     UBYTE   	    	    *buffer = NULL;
     IPTR                    sourcetype;
@@ -169,21 +172,21 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	return FALSE;
     }
 
-    if ( sourcetype == DTST_RAM && filehandle == NULL && bmhd )
+    if ( sourcetype == DTST_RAM && filehandle.iff == NULL && bmhd )
     {
 	D(bug("png.datatype/LoadPNG(): Creating an empty object\n"));
 	PNG_Exit(&png, 0);
 	return TRUE;
     }
 
-    if ( sourcetype != DTST_FILE || !filehandle || !bmhd )
+    if ( sourcetype != DTST_FILE || !filehandle.bptr || !bmhd )
     {
 	D(bug("png.datatype/LoadPNG(): unsupported mode\n"));
 	PNG_Exit(&png, ERROR_NOT_IMPLEMENTED);
 	return FALSE;
     }
 
-    if (Read(filehandle, fileheader, sizeof(fileheader)) != sizeof(fileheader))
+    if (Read(filehandle.bptr, fileheader, sizeof(fileheader)) != sizeof(fileheader))
     {
     	return FALSE;
     }
@@ -231,7 +234,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	return FALSE;
     }
 
-    png_set_read_fn(png.png_ptr, filehandle, my_read_fn);
+    png_set_read_fn(png.png_ptr, BADDR(filehandle.bptr), my_read_fn);
 
     png_set_sig_bytes(png.png_ptr, HEADER_CHECK_SIZE);
 

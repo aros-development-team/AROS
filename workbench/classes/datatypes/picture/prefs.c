@@ -112,5 +112,5 @@ BOOL ReadPrefs(struct Picture_Data *pd)
 			(int)pd->FreeSource, (int)!pd->DestMode));
 	}
 
-	return((BOOL) (fh == NULL));
+	return((BOOL) (fh == BNULL));
 }

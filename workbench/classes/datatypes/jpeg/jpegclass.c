@@ -108,7 +108,7 @@ my_fill_input_buffer (j_decompress_ptr cinfo)
   size_t nbytes;
 
 //  D(bug("jpeg.datatype/my_fill_input_buffer\n"));
-  nbytes = Read(src->infile, src->buffer, INPUT_BUF_SIZE);
+  nbytes = Read(MKBADDR(src->infile), src->buffer, INPUT_BUF_SIZE);
 
   if (nbytes <= 0) {
     if (src->start_of_file)	/* Treat empty input file as fatal error */
@@ -164,7 +164,10 @@ static void JPEG_Exit(JpegHandleType *jpeghandle, LONG errorcode)
 static BOOL LoadJPEG(struct IClass *cl, Object *o)
 {
     JpegHandleType          *jpeghandle;
-    struct IFFHandle	    *filehandle;
+    union {
+    	struct IFFHandle   *iff;
+    	BPTR                bptr;
+    } filehandle;
     long		    width, height;
     IPTR                    sourcetype;
     struct BitMapHeader     *bmhd;
@@ -193,13 +196,13 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
 	return FALSE;
     }
     
-    if ( sourcetype == DTST_RAM && filehandle == NULL && bmhd )
+    if ( sourcetype == DTST_RAM && filehandle.iff == NULL && bmhd )
     {
 	D(bug("jpeg.datatype/LoadJPEG(): Creating an empty object\n"));
 	JPEG_Exit(jpeghandle, ERROR_NOT_IMPLEMENTED);
 	return TRUE;
     }
-    if ( sourcetype != DTST_FILE || !filehandle || !bmhd )
+    if ( sourcetype != DTST_FILE || !filehandle.bptr || !bmhd )
     {
 	D(bug("jpeg.datatype/LoadJPEG(): unsupported mode\n"));
 	JPEG_Exit(jpeghandle, ERROR_NOT_IMPLEMENTED);
@@ -221,7 +224,7 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
 
     D(bug("jpeg.datatype/LoadJPEG(): Create decompressor\n"));
     jpeg_create_decompress(&cinfo);
-    jpeg_stdio_src(&cinfo, (FILE *)filehandle);
+    jpeg_stdio_src(&cinfo, BADDR(filehandle.bptr));
     src = (my_src_ptr) cinfo.src;
     src->pub.fill_input_buffer = my_fill_input_buffer;
     src->pub.skip_input_data = my_skip_input_data;
@@ -310,7 +313,7 @@ my_empty_output_buffer (j_compress_ptr cinfo)
   my_dest_ptr dest = (my_dest_ptr) cinfo->dest;
 
   // D(bug("jpeg.datatype/my_empty_output_buffer\n"));
-  if (Write(dest->outfile, dest->buffer, OUTPUT_BUF_SIZE) !=
+  if (Write(MKBADDR(dest->outfile), dest->buffer, OUTPUT_BUF_SIZE) !=
       (size_t) OUTPUT_BUF_SIZE)
     ERREXIT(cinfo, JERR_FILE_WRITE);
 
@@ -328,7 +331,7 @@ my_term_destination (j_compress_ptr cinfo)
 
   /* Write any data remaining in the buffer */
   if (datacount > 0) {
-    if (Write(dest->outfile, dest->buffer, datacount) != datacount)
+    if (Write(MKBADDR(dest->outfile), dest->buffer, datacount) != datacount)
       ERREXIT(cinfo, JERR_FILE_WRITE);
   }
 }

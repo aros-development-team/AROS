@@ -210,7 +210,7 @@ RegCall GetA4 void asyncmethodfunc(void)
    struct MsgPort *port,*rexxport;
    Class *cl = NULL;
    Object *obj = NULL;
-   ULONG procmask, rexxmask;
+   ULONG procmask, rexxmask = 0;
    ULONG rcvd;
 
 
@@ -312,7 +312,7 @@ RegCall GetA4 void asyncmethodfunc(void)
 	       if(rxmsg->rm_Node.mn_Node.ln_Type == NT_REPLYMSG)
 	       {
 	          DB(("command returned : %s\n",rxmsg->rm_Args[0]));
-	       	  if(rxmsg->rm_Stdout != NULL)
+	       	  if(rxmsg->rm_Stdout != BNULL)
 	             Close(rxmsg->rm_Stdout);
 
 	          /* delete commandstring */
@@ -351,7 +351,7 @@ RegCall GetA4 void asyncmethodfunc(void)
          {
             if(rxmsg->rm_Node.mn_Node.ln_Type == NT_REPLYMSG)
             {
-	       if(rxmsg->rm_Stdout != NULL)
+	       if(rxmsg->rm_Stdout != BNULL)
 	          Close(rxmsg->rm_Stdout);
 
 	       /* delete commandstring */

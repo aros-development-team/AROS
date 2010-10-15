@@ -160,10 +160,10 @@ short DecodeLines(GifHandleType *gifhandle)
     struct codecvars *d;
     struct code_entry *code_table;
     short code;
-    short old_code;
+    short old_code = 0;
     short input_code;
     short suffix_char;
-    short final_char;
+    short final_char = 0;
     short sp;
     
     d = gifhandle->codecvars;

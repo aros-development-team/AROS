@@ -317,11 +317,11 @@ IPTR om_dispose(Class *cl,Object *obj,Msg msg)
    /* close and unlock files, memory will be free's by DeletePool() */
    while((agf = (struct AmigaGuideFile *) RemHead(&data->ag_Files)) != NULL)
    {
-      if(agf->agf_Handle != NULL)
+      if(agf->agf_Handle != BNULL)
          if(agf->agf_Flags.CloseHandle)
             Close(agf->agf_Handle);
 
-      if(agf->agf_Lock != NULL)
+      if(agf->agf_Lock != BNULL)
          UnLock(agf->agf_Lock);
    }
 
@@ -807,7 +807,7 @@ IPTR dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
    struct DTSpecialInfo *si = (struct DTSpecialInfo *) CAST_GAD(obj)->SpecialInfo;
    struct DTSpecialInfo *sosi = (struct DTSpecialInfo *) CAST_GAD(data->ag_Actual)->SpecialInfo;
    struct IBox domain;
-   LONG topv,totv,unitv;
+   LONG topv,totv = 0,unitv;
    LONG toph,toth,unith;
    STRPTR title = "amigaguide.datatype";
 
@@ -1168,7 +1168,7 @@ void UpdateNavigator(Class *cl, Object *obj, struct GadgetInfo *ginfo)
    {
       BOOL nodetype;
       BPTR lock = GetFileLock(cl, obj, "sys/amigaguide.guide", &nodetype);
-      if(lock != NULL)
+      if(lock != BNULL)
       {
          UnLock(lock);
          help = "sys/amigaguide.guide";
@@ -1363,7 +1363,7 @@ IPTR dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
 
          DB(("node \"%s\" not found (lock=%lx)\n", file, lock));
 
-         if(lock != NULL)
+         if(lock != BNULL)
          {
             if((dt = ObtainDataTypeA(DTST_FILE, (APTR) lock, NULL)) != NULL)
             {
@@ -1395,11 +1395,11 @@ IPTR dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
                      agf = AllocAGFile(cl, obj);
                      if(agf != NULL)
                      {
-                        if((agf->agf_Handle = OpenFromLock(lock)) != NULL)
+                        if((agf->agf_Handle = OpenFromLock(lock)) != BNULL)
                         {
                            agf->agf_Lock = DupLockFromFH(agf->agf_Handle);
                            agf->agf_Flags.CloseHandle = TRUE;
-                           lock = NULL;
+                           lock = BNULL;
                            ScanFile(cl, obj, agf);
                            data->ag_File = agf;
                            agnode = GetAGNode(cl, obj, data->ag_File, FilePart(msg->dtg_NodeName));
@@ -1475,8 +1475,8 @@ IPTR dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
             {
                mysprintf(cb, buf, sizeof(buf), "T:%s_%ld", FilePart(msg->dtg_NodeName), ++i);
                agobj->ago_TmpHandle = Open(buf, MODE_NEWFILE);
-            } while(agobj->ago_TmpHandle == NULL && i<100);
-            if(agobj->ago_TmpHandle != NULL)
+            } while(agobj->ago_TmpHandle == BNULL && i<100);
+            if(agobj->ago_TmpHandle != BNULL)
             {
                Write(agobj->ago_TmpHandle, agobj->ago_Buffer, agobj->ago_BufferLen);
                Close(agobj->ago_TmpHandle);
@@ -1523,7 +1523,7 @@ IPTR dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
    		                 (msg->dtg_AttrList != NULL) ? TAG_MORE : TAG_DONE, (IPTR) msg->dtg_AttrList);
                if(dtobj != NULL)
                {
-                  agobj->ago_TmpHandle = NULL;
+                  agobj->ago_TmpHandle = BNULL;
                   data->ag_Flags.InitialLayout = TRUE;
                }
                ReleaseDataType(dt);

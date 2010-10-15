@@ -89,7 +89,7 @@ BOOL SaveGIF_EmptyBuf(GifHandleType *gifhandle, long minbytes)
     
     bytestowrite = gifhandle->filebufsize - (gifhandle->filebufbytes + minbytes);
     D(bug("gif.datatype/SaveGIF_EmptyBuf() --- minimum %ld bytes, %ld bytes to write\n", (long)minbytes, (long)bytestowrite));
-    bytes = Write(gifhandle->filehandle, gifhandle->filebuf, bytestowrite);
+    bytes = Write(gifhandle->filehandle.bptr, gifhandle->filebuf, bytestowrite);
     if ( bytes < bytestowrite )
     {
 	D(bug("gif.datatype/SaveGIF_EmptyBuf() --- writing failed, wrote %ld bytes\n", (long)bytes));
@@ -119,7 +119,7 @@ BOOL LoadGIF_FillBuf(GifHandleType *gifhandle, long minbytes)
 	    gifhandle->filebuf[i] = gifhandle->filebufpos[i];
     }
     gifhandle->filebufpos = gifhandle->filebuf;
-    bytes = Read(gifhandle->filehandle, gifhandle->filebuf + bytes, gifhandle->filebufsize - bytes);
+    bytes = Read(gifhandle->filehandle.bptr, gifhandle->filebuf + bytes, gifhandle->filebufsize - bytes);
     if (bytes < 0 ) bytes = 0;
     gifhandle->filebufbytes += bytes;
 //  D(bug("gif.datatype/LoadGIF_FillBuf() --- read %ld bytes, remaining new %ld bytes\n", (long)bytes, (long)gifhandle->filebufbytes));
@@ -202,13 +202,13 @@ static BOOL LoadGIF(struct IClass *cl, Object *o)
 	return FALSE;
     }
     
-    if ( sourcetype == DTST_RAM && gifhandle->filehandle == NULL && bmhd )
+    if ( sourcetype == DTST_RAM && gifhandle->filehandle.iff == NULL && bmhd )
     {
 	D(bug("gif.datatype/LoadGIF() --- Creating an empty object\n"));
 	GIF_Exit(gifhandle, 0);
 	return TRUE;
     }
-    if ( sourcetype != DTST_FILE || !gifhandle->filehandle || !bmhd )
+    if ( sourcetype != DTST_FILE || !gifhandle->filehandle.bptr || !bmhd )
     {
 	D(bug("gif.datatype/LoadGIF() --- unsupported mode\n"));
 	GIF_Exit(gifhandle, ERROR_NOT_IMPLEMENTED);
@@ -541,7 +541,7 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 	GIF_Exit(gifhandle, 0);
 	return TRUE;
     }
-    gifhandle->filehandle = dtw->dtw_FileHandle;
+    gifhandle->filehandle.bptr = dtw->dtw_FileHandle;
 
 #if LEGACY
     /* Get BitMap, BitMapHeader and color palette */
