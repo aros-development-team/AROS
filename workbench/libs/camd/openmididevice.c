@@ -71,11 +71,11 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 
 	seg=seglist=LoadSeg(name);
 
-	if(seglist==NULL) return NULL;
+	if(seglist==BNULL) return NULL;
 
 // The code here is partly taken from AROS/rom/dos/lddemon.c - LDInit()
 
-	while(seg!=NULL){
+	while(seg!=BNULL){
 		addr=(STRPTR)(BADDR(seg)-sizeof(ULONG));
 		size=*(ULONG *)addr;
 
