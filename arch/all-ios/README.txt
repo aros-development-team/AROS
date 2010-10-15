@@ -35,7 +35,7 @@ not have to contain the bootstrap itself.
  3. RUNNING.
 
  Simulator version runs without problems. Device version is of course not signed, it runs only on jailbroken machines. There is
-some support for creating signed version; because if semi-proprietary nature of the thing i won't describe it here. In fact it's very
+some support for creating signed version, but because of proprietary nature of the thing i won't describe it here. In fact it's very
 easy to discover how to create a signed bundle, just read the mmakefile.src and accompanying shell scripts. Of course you need a
 developer certificate and provisioning profile for this. I use my company's test profile and it works. However i would not expect
 that Apple would ever permit to release such an application in their AppStore, so code signing is a purely experimental feature,
