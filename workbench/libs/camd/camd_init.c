@@ -26,11 +26,13 @@
 
 /****************************************************************************************/
 
+#ifndef __AROS__
 static int Expunge(struct CamdBase *CamdBase)
 {
     UninitCamd(CamdBase);
     return TRUE;
 }
+#endif
 
 ADD2INITLIB(InitCamd, 0);
 ADD2EXPUNGELIB(UninitCamd, 0);
