@@ -18,8 +18,8 @@
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #    define AMIGANATIVETRICK            \
      asm("\t.text                  \n"  \
-         "\tmovel	#4,%a6    \n"  \
-	 "\tjra		_entry     \n");
+         "\tmove.l	4.w,a6     \n"  \
+	 "\tjra		__entry(pc) \n");
 #else
 #    define AMIGANATIVETRICK
 #endif
@@ -57,7 +57,7 @@ AMIGANATIVETRICK                                               \
 DECLARE_main(name);                                            \
 DECLARE_DOSBase_global                                         \
                                                                \
-AROS_UFH3(__startup LONG, _entry,                       \
+AROS_UFH3(__startup static LONG, _entry,                       \
     AROS_UFHA(char *,argstr,A0),                               \
     AROS_UFHA(ULONG,argsize,D0),                               \
     AROS_UFHA(struct ExecBase *,SysBase,A6)                    \

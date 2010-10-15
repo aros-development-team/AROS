@@ -173,9 +173,7 @@ FILES := \
 # XXX use configure to determine this
 ifneq ($(AROS_TARGET_CPU), ppc)
 ifneq ($(AROS_TARGET_CPU), arm)
-ifneq ($(AROS_TARGET_CPU), m68k)
 FILES += s_fmal s_frexpl s_nextafterl s_nexttoward s_scalbnl
-endif
 endif
 endif
 

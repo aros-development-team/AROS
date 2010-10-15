@@ -24,7 +24,7 @@
 #include <sys/cdefs.h>
 #include <sys/_types.h>
 
-typedef	struct { __uint32_t val; } fenv_t;
+typedef	__uint32_t	fenv_t;
 typedef	__uint32_t	fexcept_t;
 
 #define FE_ALL_EXCEPT   0
