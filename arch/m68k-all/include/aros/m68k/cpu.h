@@ -1,6 +1,8 @@
 #ifndef AROS_M68K_CPU_H
 #define AROS_M68K_CPU_H
 
+#include <aros/config.h>
+
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: cpu.h 30792 2009-03-07 22:40:04Z neil $
@@ -25,7 +27,7 @@
 #define AROS_PTRALIGN		   2 /* Alignment for PTR */
 #define AROS_IPTRALIGN		   2 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   2 /* Alignment for double */
-#define AROS_WORSTALIGN 	   8 /* Worst case alignment */
+#define AROS_WORSTALIGN 	   4 /* Worst case alignment */
 
 #define AROS_NOFPU 1
 
@@ -51,7 +53,7 @@ register unsigned char * AROS_GET_SP asm("%sp");
 struct JumpVec
 {
     unsigned short jmp;
-    unsigned char vec[4];
+    void *vec;
 };
 
 
@@ -60,27 +62,26 @@ struct JumpVec
 
 /* Internal macros */
 #define __AROS_ASMJMP			0x4EF9
-#define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
-#define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec))
+#define __AROS_SET_VEC(v,a)             ((v)->vec=(a))
+#define __AROS_GET_VEC(v)               ((v)->vec)
 
 struct FullJumpVec
 {
     unsigned short jmp;
-    unsigned char  vec[4];
+    unsigned int   vec;
 };
 #define __AROS_SET_FULLJMP(v,a)                          \
 do                                                       \
 {                                                        \
 	struct FullJumpVec *_v = v;                      \
 	_v->jmp = __AROS_ASMJMP;                         \
-	*((ULONG *)(_v->vec)) = (ULONG)(a)-(ULONG)(_v)-6;\
+	_v->vec = (((void *)(a))-((void *)(_v)))-6;\
 } while(0)
 
 
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
-#define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((unsigned char *)lib)-(n*LIB_VECTSIZE)))
-//#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n*LIB_VECTSIZE)])
+#define __AROS_GETJUMPVEC(lib,n)        (&(((struct JumpVec *)(lib))[-(n)]))
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
@@ -143,19 +144,27 @@ do                                                       \
 */
 #define AROS_ALIGN(x)        (((x)+AROS_WORSTALIGN-1)&-AROS_WORSTALIGN)
 
-/*
-    This define is only used only M68K as some programs depend on the
-    contents of the D0 register
-*/
-#define AROS_COMPAT_SETD0(x) \
-    do { \
-        register IPTR d0 __asm("d0") = x; \
-        asm volatile("": : "r" d0); \
-    } while(0)
-
 /* Prototypes */
 extern void _aros_not_implemented ();
 extern void aros_not_implemented ();
+
+#define AROS_COMPAT_SETD0(x)	do { } while (0)
+
+#define A0	a0
+#define A1	a1
+#define A2	a2
+#define A3	a3
+#define A4	a4
+#define A5	a5
+#define A6	a6
+#define D0	d0
+#define D1	d1
+#define D2	d2
+#define D3	d3
+#define D4	d4
+#define D5	d5
+#define D6	d6
+#define D7	d7
 
 /*
     How much stack do we need ? Lots :-) ?
@@ -164,33 +173,9 @@ extern void aros_not_implemented ();
 
 #define AROS_STACKSIZE	0x4000
 
+//#define AROS_NEEDS___MAIN
+
 /* How to map function arguments to CPU registers */
-/*
-    The i386 processor doesn't have enough registers to map the m68k
-    register set onto them - so simply use the compiler's calling
-    convention. The library base is mapped to the last argument so that
-    it can be ignored by the function.
-*/
-
-/* What to do with the library base in header, prototype and call */
-#define __AROS_LH_BASE(basetype,basename)   register basetype basename __asm("a6")
-#define __AROS_LP_BASE(basetype,basename)   register void * __asm("a6")
-#define __AROS_LC_BASE(basetype,basename)   basename
-#define __AROS_LD_BASE(basetype,basename)   register basetype __asm("a6")
-
-/* How to transform an argument in header, opt prototype, call and forced
-   prototype. */
-#define __AROS_LHA(type,name,reg)     register type name __asm(reg)
-#define __AROS_LPA(type,name,reg)     register type __asm(reg)
-#define __AROS_LCA(type,name,reg)     name
-#define __AROS_LDA(type,name,reg)     register type __asm(reg)
-#define __AROS_UFHA(type,name,reg)    register type name __asm(reg)
-#define __AROS_UFPA(type,name,reg)    register type __asm(reg)
-#define __AROS_UFCA(type,name,reg)    name
-#define __AROS_UFDA(type,name,reg)    register type __asm(reg)
-#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
-#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
-#define __AROS_LCAQUAD(type,name,reg1,reg2)     name
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */
@@ -202,7 +187,9 @@ extern void aros_not_implemented ();
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
 
-
+/* Special stack-swapping call to a user function,
+ * used in rom/dos/runprocess.c
+ */
 #define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
 ({\
     long _n1 = (long)(n1);\
@@ -224,6 +211,163 @@ extern void aros_not_implemented ();
     (t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
+
+
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+
+/* What to do with the library base in header, prototype and call */
+#define __AROS_LH_BASE(basetype,basename)   basetype basename
+#define __AROS_LP_BASE(basetype,basename)   void *
+#define __AROS_LC_BASE(basetype,basename)   basename
+#define __AROS_LD_BASE(basetype,basename)   basetype
+
+/* How to transform an argument in header, opt prototype, call and forced
+   prototype. */
+#define __AROS_LHA(type,name,reg)     type name
+#define __AROS_LPA(type,name,reg)     type
+#define __AROS_LCA(type,name,reg)     name
+#define __AROS_LDA(type,name,reg)     type
+#define __AROS_UFHA(type,name,reg)    type name
+#define __AROS_UFPA(type,name,reg)    type
+#define __AROS_UFCA(type,name,reg)    name
+#define __AROS_UFDA(type,name,reg)    type
+#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
+#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
+#define __AROS_LCAQUAD(type,name,reg1,reg2)     name
+
+#else /* NATIVE */
+
+/* What to do with the library base in header, prototype and call */
+#define __AROS_LH_BASE(basetype,basename)   basetype basename
+#define __AROS_LP_BASE(basetype,basename)   basetype
+#define __AROS_LC_BASE(basetype,basename)   basename
+#define __AROS_LD_BASE(basetype,basename)   basetype
+
+/* Get the register from a triplet */
+#define __AROS_LRA(type,name,reg)             reg
+#define __AROS_UFRA(type,name,reg)            reg
+#define __AROS_LRAQUAD1(type,name,reg1,reg2)  reg1
+#define __AROS_LRAQUAD2(type,name,reg1,reg2)  reg2
+
+/* Temporary variables */
+#define __AROS_LTA(type,name,reg)             reg##_tmp
+#define __AROS_UFTA(type,name,reg)            reg##_tmp
+#define __AROS_LTAQUAD(type,name,reg1,reg2)   reg1##_##reg2##_tmp
+#define __AROS_LTAQUAD1(type,name,reg1,reg2)  reg1##_tmp
+#define __AROS_LTAQUAD2(type,name,reg1,reg2)  reg2##_tmp
+
+/* Get the register as a string from the triplet */
+#define __AROS_LSA(type,name,reg)             "%"#reg
+#define __AROS_UFSA(type,name,reg)            "%"#reg
+#define __AROS_LSAQUAD1(type,name,reg1,reg2)  "%"#reg1
+#define __AROS_LSAQUAD2(type,name,reg1,reg2)  "%"#reg2
+
+/* How to transform an argument in header, opt prototype, call and forced
+   prototype. */
+#define __AROS_LHA(type,name,reg)     type name
+#define __AROS_LPA(type,name,reg)     type
+#define __AROS_LCA(type,name,reg)     name
+#define __AROS_LDA(type,name,reg)     type
+#define __AROS_UFHA(type,name,reg)    type name
+#define __AROS_UFPA(type,name,reg)    type
+#define __AROS_UFCA(type,name,reg)    name
+#define __AROS_UFDA(type,name,reg)    type
+#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
+#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
+#define __AROS_LCAQUAD(type,name,reg1,reg2)     name
+#define __AROS_LDAQUAD(type,name,reg1,reg2)     type
+
+/* Call a libary function which requires the libbase */
+#include <aros/m68k/libcall.h>
+
+#define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
+	t AROS_SLIB_ENTRY(n,s) (void) { \
+		register ULONG __AROS_LTAQUAD1(a1) asm(__AROS_LSAQUAD1(a1)); \
+		register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)); \
+		register bt bn asm("%a6"); \
+		union { \
+			__AROS_LPAQUAD(a1) val; \
+			ULONG reg[2]; \
+		} __AROS_LTAQUAD(a1); \
+		__AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \
+		__AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \
+		__AROS_LPAQUAD(a1) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val;
+
+#define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
+	t AROS_SLIB_ENTRY(n,s) (void) { \
+		register ULONG __AROS_LTAQUAD1(a1) asm(__AROS_LSAQUAD1(a1)); \
+		register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)); \
+		register ULONG __AROS_LTAQUAD1(a2) asm(__AROS_LSAQUAD1(a2)); \
+		register ULONG __AROS_LTAQUAD2(a2) asm(__AROS_LSAQUAD2(a2)); \
+		register bt bn asm("%a6"); \
+		union { \
+			__AROS_LPAQUAD(a1) val; \
+			ULONG reg[2]; \
+		} __AROS_LTAQUAD(a1); \
+		union { \
+			__AROS_LPAQUAD(a2) val; \
+			ULONG reg[2]; \
+		} __AROS_LTAQUAD(a2); \
+		__AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \
+		__AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \
+		__AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \
+		__AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \
+		__AROS_LPAQUAD(a1) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val; \
+		__AROS_LPAQUAD(a2) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val; \
+
+#define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \
+	({ \
+		union { \
+			__AROS_LPAQUAD(a1) val; \
+			ULONG reg[2]; \
+		} _q1 = { .val = __AROS_LCAQUAD(a1) }; \
+	 	register unsigned int _ret asm("%d0"); \
+	 	bt bt_tmp = bn; \
+	 	register ULONG __AROS_LTAQUAD1(a1) asm(__AROS_LSAQUAD1(a1)) = _q1.reg[0]; \
+	 	register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)) = _q1.reg[1]; \
+	 	asm("jsr %c1(%%a6)\n" : \
+	 		"=r" (_ret) : \
+	 		 "n" (o), \
+			 "r" (__AROS_LTAQUAD1(a1)), \
+			 "r" (__AROS_LTAQUAD2(a1)), \
+	 		 "r" (bt_tmp) \
+	 	); \
+	 (t)_ret;})
+
+#define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \
+	({ \
+		union { \
+			__AROS_LPAQUAD(a1) val; \
+			ULONG reg[2]; \
+		} _q1 = { .val = __AROS_LCAQUAD(a1) }; \
+		union { \
+			__AROS_LPAQUAD(a2) val; \
+			ULONG reg[2]; \
+		} _q2 = { .val = __AROS_LCAQUAD(a2) }; \
+	 	register unsigned int _ret asm("%d0"); \
+	 	bt bt_tmp = bn; \
+	 	register ULONG __AROS_LTAQUAD1(a1) asm(__AROS_LSAQUAD1(a1)) = _q1.reg[0]; \
+	 	register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)) = _q1.reg[1]; \
+	 	register ULONG __AROS_LTAQUAD1(a2) asm(__AROS_LSAQUAD1(a2)) = _q2.reg[0]; \
+	 	register ULONG __AROS_LTAQUAD2(a2) asm(__AROS_LSAQUAD2(a2)) = _q2.reg[1]; \
+	 	asm("jsr %c1(%%a6)\n" : \
+	 		"=r" (_ret) : \
+	 		 "n" (o), \
+			 "r" (__AROS_LTAQUAD1(a1)), \
+			 "r" (__AROS_LTAQUAD2(a1)), \
+			 "r" (__AROS_LTAQUAD1(a2)), \
+			 "r" (__AROS_LTAQUAD2(a2)), \
+	 		 "r" (bt_tmp) \
+	 	); \
+	 (t)_ret;})
+
+#   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDAQUAD(a1), __AROS_LD_BASE(bt,bn))
+#   define AROS_LDQUAD2(t,n,a1,a2,bt,bn,o,s) \
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDAQUAD(a1), \
+	__AROS_LDAQUAD(a2),__AROS_LD_BASE(bt,bn))
 
 /* Library prototypes expand to nothing */
 #define __AROS_CPU_SPECIFIC_LP
@@ -264,5 +408,7 @@ extern void aros_not_implemented ();
 #define AROS_LP13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
 #define AROS_LP14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
 #define AROS_LP15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
+
+#endif /* AROS_FLAVOUR_NATIVE */
 
 #endif /* AROS_M68K_CPU_H */

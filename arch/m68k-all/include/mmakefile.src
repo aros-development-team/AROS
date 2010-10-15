@@ -1,5 +1,21 @@
 # $Id: mmakefile.src 32263 2010-01-02 01:12:16Z verhaegs $
 include $(TOP)/config/make.cfg
 
-INCLUDE_FILES := aros/m68k/cpu.h aros/m68k/_fpmath.h aros/m68k/fenv.h
+INCLUDE_FILES := $(call WILDCARD, aros/m68k/*.h)
 %copy_includes mmake=compiler-includes
+
+INCLUDE_FILES := jmpdefs.h
+%copy_includes mmake=includes-common-m68k
+
+#MM- compiler-includes: includes-generated-m68k
+
+#MM includes-generated-m68k
+includes-generated-m68k: $(GENINCDIR)/aros/m68k/libcall.h
+
+$(GENINCDIR)/aros/m68k/libcall.h: $(HOSTGENDIR)/tools/gencall
+	$(MKDIR) $(GENINCDIR)/aros/m68k
+	$(HOSTGENDIR)/tools/gencall >$@
+
+$(HOSTGENDIR)/tools/gencall: $(SRCDIR)/$(CURDIR)/gencall.c
+	$(Q)$(HOST_CC) -o $@ $<
+

@@ -1,16 +1,16 @@
-# $Id: mmakefile.src 32303 2010-01-12 12:27:11Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
-CFILES          := \
-        exec_init
+CFILES          := coldreboot
+AFILES		:= 
 
 #MM kernel-exec : kernel-exec-amiga-m68k
-#MM kernel-exec-amiga-m68k : kernel-kernel-m68k-includes kernel-exec-includes
+#MM kernel-exec-amiga-m68k : kernel-kernel-amiga-m68k-includes kernel-exec-includes includes-asm_h-m68k
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/exec -Os
 USER_AFLAGS     := -I$(SRCDIR)/rom/exec -I$(GENINCDIR) -Os
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=amiga-m68k \
-  files=$(CFILES) modulename=exec
+  files=$(CFILES) asmfiles=$(AFILES) modulename=exec
 
 TARGETDIR = $(BD_OBJDIR$(BDID))
