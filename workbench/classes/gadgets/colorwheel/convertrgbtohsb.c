@@ -111,7 +111,7 @@
 
 #if 1
 
-    DOUBLE R, G, B, H, S, I, max, min, delta;
+    DOUBLE R, G, B, H = 0.0, S, I, max, min, delta;
 
     R = (DOUBLE) rgb->cw_Red / (DOUBLE) 0xFFFFFFFF;
     G = (DOUBLE) rgb->cw_Green / (DOUBLE) 0xFFFFFFFF;

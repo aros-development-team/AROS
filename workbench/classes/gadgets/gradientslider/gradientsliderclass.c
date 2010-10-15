@@ -521,7 +521,7 @@ IPTR GradientSlider__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
     struct IBox			gbox, sbox, kbox;
     WORD			mousex, mousey;
     ULONG			old_curval = data->curval;
-    ULONG			new_curval;
+    ULONG			new_curval = data->curval;
     BOOL			knobhit = TRUE;
     IPTR 			retval = 0UL;
 
@@ -606,7 +606,7 @@ IPTR GradientSlider__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
     struct GradientSliderData	*data = INST_DATA(cl, o);
     struct IBox			gbox, sbox, kbox;
     struct InputEvent 		*ie = msg->gpi_IEvent;
-    LONG			new_curval; 			/* use LONG instead of ULONG for easier checks against < 0 */
+    LONG			new_curval = 0;	/* use LONG instead of ULONG for easier checks against < 0 */
     WORD			mousex, mousey;
     IPTR 			retval = GMR_MEACTIVE;
     
@@ -695,7 +695,7 @@ IPTR GradientSlider__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
     struct GradientSliderData *data = INST_DATA(cl, o);
     struct DrawInfo	      *dri = (struct DrawInfo *) GetTagData( GA_DrawInfo, 0, msg->gpd_Attrs );
     struct RastPort	      *rp = msg->gpd_RPort;
-    UWORD		       width, height, x=1,y=1;
+    UWORD		       width = 0, height = 0, x=1,y=1;
 
     if( dri )
     {

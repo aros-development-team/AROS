@@ -126,7 +126,7 @@
 
 #if 1
 
-    DOUBLE H, S, I, R, G, B, f, w, q, t;
+    DOUBLE H, S, I, R = 0.0, G = 0.0, B = 0.0, f, w, q, t;
     LONG   i;
 
     H = ((DOUBLE) hsb->cw_Hue) / ((DOUBLE) 0xFFFFFFFF);
