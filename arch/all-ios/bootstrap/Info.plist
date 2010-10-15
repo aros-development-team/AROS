@@ -9,7 +9,7 @@
 	<key>CFBundleExecutable</key>
 	<string>AROSBootstrap</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.aros.aros</string>
+	<string>@aros_application_id@</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
