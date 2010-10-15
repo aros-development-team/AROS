@@ -533,7 +533,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 	    CloseRootPartition(ph);
 	}
 	else
-	    printf("Error OpenRootPartition(%s,%d)\n", device, unit);
+	    printf("Error OpenRootPartition(%s,%lu)\n", device, unit);
 	CloseLibrary((struct Library *) PartitionBase);
     }
     else
@@ -633,7 +633,7 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
 			else
 			{
 			    printf
-				("partition %d not found on device %s unit %d\n",
+				("partition %ld not found on device %s unit %lu\n",
 				 *pnum, device, unit);
 			}
 		    }
@@ -669,7 +669,7 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
 	    CloseRootPartition(ph);
 	}
 	else
-	    printf("Error OpenRootPartition(%s,%d)\n", device, unit);
+	    printf("Error OpenRootPartition(%s,%lu)\n", device, unit);
 	CloseLibrary((struct Library *) PartitionBase);
     }
     else
@@ -790,12 +790,12 @@ BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume 
 		        error = writeBlock(bootimgvol, 0, bootimgvol->blockbuffer, 512);
                 
 		        if (error)
-		            printf("WriteError %d\n", error);
+		            printf("WriteError %lu\n", error);
 		        else
 		            retval = TRUE;
 	        }
 	        else
-		        printf("WriteError %d\n", error);
+		        printf("WriteError %lu\n", error);
 	    }
 	    else
 	        printf("%s: Read Error\n", bootimgpath);
@@ -831,7 +831,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode 
     if (retval)
     {
         D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld\n", retval));
-		printf("ReadError %d\n", retval);
+		printf("ReadError %lu\n", retval);
 		return 0;
 	}
 
@@ -849,7 +849,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode 
 		if (retval)
 		{
             D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld)\n", retval));
-			printf("ReadError %d\n", retval);
+			printf("ReadError %lu\n", retval);
 			return 0;
 		}
         
@@ -956,7 +956,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
     if (retval)
     {
         D(bug("[install] collectBlockListSFS: ERROR reading root block (error: %ld)\n", retval));
-		printf("ReadError %d\n", retval);
+		printf("ReadError %lu\n", retval);
 		return 0;
 	}
 
@@ -1019,7 +1019,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
         if (retval)
         {
             D(bug("[install] collectBlockListSFS: ERROR reading block (error: %ld)\n", retval));
-		    printf("ReadError %d\n", retval);
+		    printf("ReadError %lu\n", retval);
 		    return 0;
 	    }
 
@@ -1444,7 +1444,7 @@ int main(int argc, char **argv)
 	        }
 	        else
 	        {
-		        printf("%s is not on device %s unit %d\n",
+		        printf("%s is not on device %s unit %ld\n",
 		           grubpath, bootDevice, unit);
 		        ret = RETURN_ERROR;
 	        }

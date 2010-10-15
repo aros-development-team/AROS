@@ -65,7 +65,7 @@ struct TagItem tags[2];
 		tags[0].ti_Tag = PT_POSITION;
 		tags[0].ti_Data = (STACKIPTR)&pos;
 		GetPartitionAttrs(ph, tags);
-		printf("position: %d\n", pos);
+		printf("position: %lu\n", pos);
 	}
 	if (existsAttr(pattr, PTA_ACTIVE))
 	{
@@ -74,7 +74,7 @@ struct TagItem tags[2];
 		tags[0].ti_Tag = PT_ACTIVE;
 		tags[0].ti_Data = (STACKIPTR)&active;
 		GetPartitionAttrs(ph, tags);
-		printf("active: %d\n", active);
+		printf("active: %lu\n", active);
 	}
 	if (existsAttr(pattr, PTA_NAME))
 	{
@@ -92,7 +92,7 @@ struct TagItem tags[2];
 		tags[0].ti_Tag = PT_ACTIVE;
 		tags[0].ti_Data = (STACKIPTR)&ba;
 		GetPartitionAttrs(ph, tags);
-		printf("bootable: %d\n", ba);
+		printf("bootable: %lu\n", ba);
 	}
 	if (existsAttr(pattr, PTA_AUTOMOUNT))
 	{
@@ -101,7 +101,7 @@ struct TagItem tags[2];
 		tags[0].ti_Tag = PT_ACTIVE;
 		tags[0].ti_Data = (STACKIPTR)&am;
 		GetPartitionAttrs(ph, tags);
-		printf("automount: %d\n", am);
+		printf("automount: %lu\n", am);
 	}
 }
 
@@ -169,7 +169,7 @@ struct PartitionHandle *ph;
 			CloseRootPartition(ph);
 		}
 		else
-			printf("Could not open root partition on device %s unit %d\n", device, unit);
+			printf("Could not open root partition on device %s unit %lu\n", device, unit);
 		CloseLibrary((struct Library *)PartitionBase);
 	}
 	return retval;
@@ -189,7 +189,7 @@ WORD i,j;
 		tags[0].ti_Data = (STACKIPTR)&type;
 		GetPartitionTableAttrs(root, tags);
 		for (i=0;i<depth;i++) printf("\t");
-		printf("Partition table type = %d\n", type);
+		printf("Partition table type = %lu\n", type);
 		ph = (struct PartitionHandle *)root->table->list.lh_Head;
 		j = 0;
 		while (ph->ln.ln_Succ)
@@ -241,7 +241,7 @@ struct DeviceIO dio;
 	{
 		if (iscorrectType(dio.iotd))
 		{
-			printf("\tUnit=%d: ", unit);
+			printf("\tUnit=%lu: ", unit);
 			if (identify(dio.iotd, id))
 				printf("id\n");
 			else
