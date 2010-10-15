@@ -122,7 +122,7 @@ static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase)
     ForeachNode(monitorsList, node)
     {
 	D(bug("%4d %s\n", node->n.ln_Pri, node->Name));
-	Execute(node->Name, NULL, NULL);
+	Execute(node->Name, BNULL, BNULL);
     }
 
     D(bug("--------------------------\n"));
