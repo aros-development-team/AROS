@@ -205,8 +205,8 @@ static const struct TagItem map_tag_list[] =
    if(tag_item != NULL)
    {
       new_owner = (APTR)tag_item->ti_Data;
-      if(new_owner != NULL && board->owner == NULL
-         || new_owner == NULL && board->owner != NULL)
+      if((new_owner != NULL && board->owner == NULL) ||
+         (new_owner == NULL && board->owner != NULL))
       {
          board->owner = new_owner;
          count++;
