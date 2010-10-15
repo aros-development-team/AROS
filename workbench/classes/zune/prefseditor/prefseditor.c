@@ -79,7 +79,7 @@ IPTR PrefsEditor__MUIM_Setup
     
     /*-- Store backup of initial preferences -------------------------------*/
     data->ped_BackupFH = CreateTemporary(data->ped_BackupPath, BACKUP_PREFIX);    
-    if (data->ped_BackupFH != NULL)
+    if (data->ped_BackupFH != BNULL)
     {    
         if
         (
@@ -92,18 +92,18 @@ IPTR PrefsEditor__MUIM_Setup
             /* Remove the incomplete backup file */
             Close(data->ped_BackupFH);
             DeleteFile(data->ped_BackupPath);
-            data->ped_BackupFH = NULL;
+            data->ped_BackupFH = BNULL;
         }
     }
     
-    if (data->ped_BackupFH == NULL)
+    if (data->ped_BackupFH == BNULL)
     {
         data->ped_CanTest = FALSE;
     }
     
     /*-- Completely disable save if ENVARC: is write-protected -------------*/
     lock = Lock("ENVARC:", SHARED_LOCK);
-    if (lock != NULL)
+    if (lock != BNULL)
     {
         struct InfoData id;
         
@@ -132,7 +132,7 @@ IPTR PrefsEditor__MUIM_Cleanup
 {
     SETUP_INST_DATA;
     
-    if (data->ped_BackupFH != NULL)
+    if (data->ped_BackupFH != BNULL)
     {
         Close(data->ped_BackupFH);
         DeleteFile(data->ped_BackupPath);
@@ -258,7 +258,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_ExportToDirectory
     BOOL success = FALSE;
     BPTR lock    = Lock(message->directory, ACCESS_READ);
     
-    if (lock != NULL)
+    if (lock != BNULL)
     {
         BPTR oldcd = CurrentDir(lock);
         
@@ -285,7 +285,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_ImportFromDirectory
     BOOL success = FALSE;
     BPTR lock    = Lock(message->directory, ACCESS_READ);
     
-    if (lock != NULL)
+    if (lock != BNULL)
     {
         BPTR oldcd = CurrentDir(lock);
         
@@ -311,7 +311,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Import
     BOOL success = FALSE;
     BPTR fh;
     
-    if ((fh = Open(message->filename, MODE_OLDFILE)) != NULL)
+    if ((fh = Open(message->filename, MODE_OLDFILE)) != BNULL)
     {
         success = DoMethod(self, MUIM_PrefsEditor_ImportFH, (IPTR) fh);
         Close(fh);
@@ -330,7 +330,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Export
     
     fh = Open(message->filename, MODE_NEWFILE);
     
-    if (fh == NULL && IoErr() == ERROR_OBJECT_NOT_FOUND)
+    if (fh == BNULL && IoErr() == ERROR_OBJECT_NOT_FOUND)
     {
         /* Attempt to create missing directories */
         /* MakeDirs() will modify the string in-place */
@@ -343,7 +343,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Export
         }
     }
     
-    if (fh != NULL)
+    if (fh != BNULL)
     {
         success = DoMethod(self, MUIM_PrefsEditor_ExportFH, (IPTR) fh);
         Close(fh);
