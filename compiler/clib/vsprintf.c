@@ -7,17 +7,17 @@
 /* Original source from libnix */
 
 
-static int _vsprintf_uc (int c, char ** str)
-{
-    *(*str)++ = c;
-    return 1;
-}
-
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
 #include <stdarg.h>
+
+static int _vsprintf_uc (int c, char ** str)
+{
+    *(*str)++ = c;
+    return 1;
+}
 
 	int vsprintf (
 

@@ -144,7 +144,7 @@ static void writedecl(FILE *out, struct config *cfg)
     {
 	fprintf(out,
 		"#ifndef GM_SEGLIST_FIELD\n"
-		"static BPTR GM_UNIQUENAME(seglist);\n"
+		"static __attribute__((unused)) BPTR GM_UNIQUENAME(seglist);\n"
 		"#define GM_SEGLIST_FIELD(lh) (GM_UNIQUENAME(seglist))\n"
 		"#endif\n"
 	);
@@ -479,7 +479,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "AROS_UFP3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 	    "    AROS_UFPA(LIBBASETYPEPTR, lh, D0),\n"
 	    "    AROS_UFPA(BPTR, segList, A0),\n"
-	    "    AROS_UFPA(struct ExecBase *, sysBase, A6)\n"
+	    "    AROS_UFPA(struct ExecBase *, SysBase, A6)\n"
 	    ");\n"
     );
     if (cfg->modtype != RESOURCE)
@@ -570,7 +570,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 	    "    AROS_UFHA(LIBBASETYPEPTR, lh, D0),\n"
 	    "    AROS_UFHA(BPTR, segList, A0),\n"
-	    "    AROS_UFHA(struct ExecBase *, sysBase, A6)\n"
+	    "    AROS_UFHA(struct ExecBase *, SysBase, A6)\n"
 	    ")\n"
 	    "{\n"
 	    "    AROS_USERFUNC_INIT\n"
@@ -580,11 +580,8 @@ static void writeinitlib(FILE *out, struct config *cfg)
     );
 	
     fprintf(out,
-            "#ifndef __AROS__\n"
-            "    SysBase = sysBase;\n"
-            "#endif\n"
             "#ifdef GM_SYSBASE_FIELD\n"
-            "    GM_SYSBASE_FIELD(lh) = sysBase;\n"
+            "    GM_SYSBASE_FIELD(lh) = SysBase;\n"
             "#endif\n"
     );
     

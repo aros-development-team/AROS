@@ -21,7 +21,7 @@ DECLARESET(LIBS);
 AROS_MAKE_ASM_SYM(int, dummy, __includelibrarieshandling, 0);
 AROS_EXPORT_ASM_SYM(__includelibrarieshandling);
                              
-int set_open_libraries_list(const void *list[])
+int set_open_libraries_list(const void * const list[])
 {
     int pos;
     struct libraryset *set;
@@ -44,7 +44,7 @@ int set_open_libraries_list(const void *list[])
 	    __showerror
 	    (
 	        "Could not open version %ld or higher of library \"%s\".",
-		(const IPTR []){version, set->name}
+		(const IPTR []){version, (IPTR)set->name}
 	    );
 
 	    return 0;
@@ -54,7 +54,7 @@ int set_open_libraries_list(const void *list[])
     return 1;
 }
 
-void set_close_libraries_list(const void *list[])
+void set_close_libraries_list(const void * const list[])
 {
     int pos;
     struct libraryset *set;
