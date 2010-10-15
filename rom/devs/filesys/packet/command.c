@@ -970,7 +970,7 @@ AROS_UFH3(void, packet_reply,
                      * the filename */
                     ead->ed_Comment = (UBYTE *) ead + sizeof(struct ExAllData) + filename_len + 1;
                     strcpy(ead->ed_Comment,
-                        mkcstr(pkt->pool, fib->fib_Comment));
+                        mkcstr(pkt->pool, MKBADDR(fib->fib_Comment)));
 
                 case ED_DATE:
                     ead->ed_Days = fib->fib_Date.ds_Days;
@@ -989,7 +989,7 @@ AROS_UFH3(void, packet_reply,
                 case ED_NAME:
                     /* store the name in the spare space after the ead */
                     ead->ed_Name = (UBYTE *) ead + sizeof(struct ExAllData);
-                    strcpy(ead->ed_Name, mkcstr(pkt->pool, fib->fib_FileName));
+                    strcpy(ead->ed_Name, mkcstr(pkt->pool, MKBADDR(fib->fib_FileName)));
                
                 case 0:
                     ead->ed_Next = NULL;
@@ -1007,8 +1007,8 @@ AROS_UFH3(void, packet_reply,
 
         case ACTION_EXAMINE_NEXT: {
             struct FileInfoBlock *fib = iofs->io_Union.io_EXAMINE_NEXT.io_fib;
-            strcpy(fib->fib_FileName, mkcstr(pkt->pool, fib->fib_FileName));
-            strcpy(fib->fib_Comment, mkcstr(pkt->pool, fib->fib_Comment));
+            strcpy(fib->fib_FileName, mkcstr(pkt->pool, MKBADDR(fib->fib_FileName)));
+            strcpy(fib->fib_Comment, mkcstr(pkt->pool, MKBADDR(fib->fib_Comment)));
             break;
         }
 
