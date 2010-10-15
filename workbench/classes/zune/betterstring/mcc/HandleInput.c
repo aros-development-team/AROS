@@ -441,7 +441,7 @@ static BOOL DecreaseNearNumber(struct InstData *data)
     {
       if(res)
       {
-        char *format;
+        const char *format = "%lx";
         char string[12];
         char format2[12];
 
@@ -504,7 +504,7 @@ static BOOL DecToHex(struct InstData *data)
 
     if((cut = StrToLong(data->Contents+pos, (LONG *)&res)))
     {
-      char format[] = "%lx";
+      const char *format = "%lx";
       char string[12];
 
       MySPrintf(string, format, res);
