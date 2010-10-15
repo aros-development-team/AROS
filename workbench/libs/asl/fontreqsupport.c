@@ -87,7 +87,7 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct FOUserData 	 *udata = (struct FOUserData *)ld->ld_UserData;	
     struct IntFontReq 	 *iforeq = (struct IntFontReq *)ld->ld_IntReq;
     struct AvailFonts	 *avf;
-    ULONG   	    	 afshortage, afsize = 100;
+    ULONG   	    	 afshortage = 0, afsize = 100;
     WORD   	    	 i;
     
     FOFreeFonts(ld, AslBase);
