@@ -6,20 +6,14 @@
     Lang: english
 */
 
-#include <aros/asmcall.h>
-#include <aros/libcall.h>
+#include <proto/kernel.h>
 
 #include "exec_intern.h"
-#include <proto/exec.h>
 
-/* FIXME: Cross-library call! */
-AROS_LD1(void, KrnPutChar,
-    	 AROS_LDA(char, chr, D0),
-         void *, KernelBase, 25, Kernel);
-
-/****************************************************************************
+/*****i***********************************************************************
 
     NAME */
+#include <proto/exec.h>
 
 	AROS_LH1(void, RawPutChar,
 
@@ -57,10 +51,8 @@ AROS_LD1(void, KrnPutChar,
     AROS_LIBFUNC_INIT
 
     /* Don't write 0 bytes */
-    if (chr)
-    	AROS_CALL1(void, AROS_SLIB_ENTRY(KrnPutChar, Kernel),
-    		   AROS_LHA(char, chr, D0),
-		   void *, KernelBase);
+    if (KernelBase && chr)
+	KrnPutChar(chr);
 
     AROS_LIBFUNC_EXIT
 } /* RawPutChar */

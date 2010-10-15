@@ -157,7 +157,7 @@
 						
 						if (ySrc >= crY0) {
 							bltSrcY	 = ySrc - srcLayer->Scroll_Y;
-							bltDestY = 0;
+							bltDestX = 0;
 						} else {
 							bltSrcY	 = crY0 - srcLayer->Scroll_Y;
 							bltDestY = crY0 - ySrc;

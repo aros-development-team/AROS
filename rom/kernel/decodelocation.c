@@ -114,9 +114,9 @@ AROS_LH2(int, KrnDecodeLocationA,
     void **secend   = &dummy;
     void **funstart = &dummy;
     void **funend   = &dummy;
-    BPTR  *secptr   = (BPTR *)&dummy;
+    BPTR  *secptr   = &dummy;
     unsigned int *secnum = (unsigned int *)&dummy;
-    const struct TagItem *tstate = tags;
+    struct TagItem *tstate = tags;
     struct TagItem *tag;
     void *symaddr = NULL;
     int ret = 0;

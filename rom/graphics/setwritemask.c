@@ -5,7 +5,6 @@
     Desc: Graphics function SetWriteMask()
     Lang: english
 */
-#include <aros/debug.h>
 #include "graphics_intern.h"
 
 /*****************************************************************************
@@ -47,9 +46,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* TODO: Write graphics/SetWriteMask() */
-    aros_print_not_implemented ("SetWriteMask");
+#if 0
+    rp->Mask = mask;
+    return TRUE;
+#else
+#warning SetWriteMask not yet implemented
     return FALSE;
+#endif
  
     AROS_LIBFUNC_EXIT
     

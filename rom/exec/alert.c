@@ -26,39 +26,31 @@
 static UBYTE *const fmtstring = "Task %08lx - %s";
 static UBYTE *const errstring = "Error %08lx - ";
 
-static void PrintChars(char c, ULONG n, struct ExecBase *SysBase)
+static void PrintChars(char c, ULONG n)
 {
     while (n--)
         RawPutChar(c);
 }
 
-static void PrintCentered(char *str, struct ExecBase *SysBase)
+static void PrintCentered(char *str)
 {
-    int len = strlen(str);
-    ULONG s;
-   
-    if (len < 0)
-    	    len = 0;
-    if (len > (ALERT_WIDTH - 2))
-    	    len = (ALERT_WIDTH - 2);
-
-    s = ALERT_WIDTH - 2 - len;
+    ULONG s = ALERT_WIDTH - 2 - strlen(str);
     
     RawPutChar('#');
     if (s & 1)
         RawPutChar(' ');
     s >>= 1;
-    PrintChars(' ', s, SysBase);
-    for (; len > 0; len--)
-        RawPutChar(*(str++));
-    PrintChars(' ', s, SysBase);
+    PrintChars(' ', s);
+    while (*str)
+        RawPutChar(*str++);
+    PrintChars(' ', s);
     RawPutChar('#');
     RawPutChar('\n');
 }
 
-static void PrintFrame(struct ExecBase *SysBase)
+static void PrintFrame(void)
 {
-    PrintChars('#', ALERT_WIDTH, SysBase);
+    PrintChars('#', ALERT_WIDTH);
     RawPutChar('\n');
 }
 
@@ -121,14 +113,14 @@ static void PrintFrame(struct ExecBase *SysBase)
     /* We're here if Intuition failed. Print alert to the debug output and reboot.
        In future we should have more intelligent handling for such a case. For
        example we should report what was wrong after we rebooted. */
-    PrintFrame(SysBase);
-    PrintCentered(Alert_GetTitle(alertNum), SysBase);
+    PrintFrame();
+    PrintCentered(Alert_GetTitle(alertNum));
     NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(task));
-    PrintCentered(buffer, SysBase);
+    PrintCentered(buffer);
     buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buffer, alertNum);
     Alert_GetString(alertNum, --buf);
-    PrintCentered(buffer, SysBase);
-    PrintFrame(SysBase);
+    PrintCentered(buffer);
+    PrintFrame();
     RawPutChar('\n');
     
     if (alertNum & AT_DeadEnd)

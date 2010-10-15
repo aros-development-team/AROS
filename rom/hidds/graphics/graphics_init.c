@@ -23,13 +23,6 @@
 
 #undef csd
 
-#undef bug
-#undef kprintf
-#define bug kprintf
-#undef EnterFunc
-#undef ReturnInt
-#define EnterFunc(x) x
-#define ReturnInt(x,a,b) kprintf(x); return (a)(b);
 static int GFX_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct class_static_data *csd = &LIBBASE->hdg_csd;

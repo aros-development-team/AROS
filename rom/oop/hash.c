@@ -286,7 +286,6 @@ static ULONG CalcHashStr_KR(struct HashTable *ht, IPTR id)
     return  (val & HashSize(ht));
 }
 
-#if 0 /* Unused */
 static ULONG CalcHashStr_DJB2(struct HashTable *ht, IPTR id)
 {
     STRPTR str = (STRPTR)id;
@@ -297,7 +296,6 @@ static ULONG CalcHashStr_DJB2(struct HashTable *ht, IPTR id)
 
     return  (val & HashSize(ht));
 }
-#endif
 
 ULONG CalcHashStr_SDBM(struct HashTable *ht, IPTR id)
 {

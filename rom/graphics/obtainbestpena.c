@@ -110,7 +110,7 @@
 	    index = PALEXTRA_ALLOCLIST(pe, index);
 	}
 
-    	/* FIXME: The color distance calc might be different than in AmigaOS. */
+    	#warning The color distance calc might be different than in AmigaOS. 
 
 	/* 
 	** If the best distance to an available color is greater than

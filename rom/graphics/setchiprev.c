@@ -46,7 +46,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* TODO: Write graphics/SetChipRev() */
+#warning TODO: Write graphics/SetChipRev()
     aros_print_not_implemented ("SetChipRev");
 
     return GfxBase->ChipRevBits0;

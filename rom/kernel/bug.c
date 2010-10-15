@@ -19,7 +19,7 @@ AROS_LH2(int, KrnBug,
         AROS_LHA(va_list, args, A1),
 
 /*  LOCATION */
-        void *, KernelBase, 12, Kernel)
+        struct KernelBase *, KernelBase, 12, Kernel)
 
 /*  FUNCTION
 	Output a formatted string to low-level debug output stream.
@@ -51,7 +51,7 @@ AROS_LH2(int, KrnBug,
 {
     AROS_LIBFUNC_INIT
 
-    return __vcformat(KernelBase, (int (*)(int, void *))krnPutC, format, args);
+    return __vcformat(KernelBase, krnPutC, format, args);
 
     AROS_LIBFUNC_EXIT
 }

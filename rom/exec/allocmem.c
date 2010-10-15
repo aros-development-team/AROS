@@ -231,9 +231,6 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
         struct Process *process = (struct Process *)FindTask(NULL);
         if (process->pr_Task.tc_Node.ln_Type == NT_PROCESS)
             process->pr_Result2 = ERROR_NO_FREE_STORE;
-#undef kprintf
-#undef bug
-kprintf("AllocMem Failed: size %d\n", byteSize);
     }
 
 #if DEBUG

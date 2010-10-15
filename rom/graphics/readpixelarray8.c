@@ -96,9 +96,7 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;
 	
-    /* FIXME: ReadPixelArray8 on hi/truecolor screens or
-     * a LUT for it does not really make sense
-     */
+#warning "ReadPixelArray8 on hi/truecolor screens or a LUT for it does not really make sense"
 
     pixlut.entries = AROS_PALETTE_SIZE;
     pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;

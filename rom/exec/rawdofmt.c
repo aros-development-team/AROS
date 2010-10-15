@@ -115,6 +115,11 @@ do                                        \
 APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
 		      APTR PutChData, va_list VaListStream)
 {
+#ifdef __mc68000
+    register APTR __PutChData asm("a3") = PutChData;
+#   define PutChData __PutChData
+#endif
+
     UBYTE   *UPutChData = PutChData;
 
     /* As long as there is something to format left */

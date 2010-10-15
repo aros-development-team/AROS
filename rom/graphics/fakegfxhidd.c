@@ -809,7 +809,7 @@ static IPTR fakefb_drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
     	y2 = msg->y1; y1 = msg->y2;
     }
 
-    /* FIXME: Maybe do some more intelligent checking for DrawLine */
+#warning Maybe do some more intelligent checking for DrawLine    
     if (RECT_INSIDE(fgh, x1, y1, x2, y2))
     {
     	REMOVE_CURSOR(data);
@@ -960,7 +960,7 @@ static IPTR fakefb_drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 {
     BITMAP_METHOD_INIT
 
-    /* FIXME: Maybe do something clever here to see if the rectangle is drawn around the cursor     */
+#warning Maybe do something clever here to see if the rectangle is drawn around the cursor    
     if (RECT_INSIDE(fgh, msg->minX, msg->minY, msg->maxX, msg->maxY))
     {
     	REMOVE_CURSOR(data);
@@ -1004,7 +1004,7 @@ static IPTR fakefb_drawellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     y1 = msg->y - msg->ry;
     x2 = msg->x + msg->rx;
     y2 = msg->y + msg->ry;
-    /* FIXME: Maybe do something clever here to see if the rectangle is drawn around the cursor     */
+#warning Maybe do something clever here to see if the rectangle is drawn around the cursor    
     
     if (RECT_INSIDE(fgh, x1, y1, x2, y2))
     {
@@ -1041,7 +1041,7 @@ static IPTR fakefb_fillellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 static IPTR fakefb_drawpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPolygon *msg)
 {
     BITMAP_METHOD_INIT
-    /* FIXME: Maybe do checking here, but it probably is not worth it     */
+#warning Maybe do checking here, but it probably is not worth it    
     REMOVE_CURSOR(data);
     inside = TRUE;
     
@@ -1053,7 +1053,7 @@ static IPTR fakefb_drawpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 static IPTR fakefb_fillpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPolygon *msg)
 {
     BITMAP_METHOD_INIT
-    /* FIXME: Maybe do checking here, but it probably is not worth it     */
+#warning Maybe do checking here, but it probably is not worth it    
     REMOVE_CURSOR(data);
     inside = TRUE;
     
@@ -1067,7 +1067,7 @@ static IPTR fakefb_drawtext(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 {
     BITMAP_METHOD_INIT
 
-    /* FIXME: Maybe do testing here, but probably not wirth it     */
+#warning Maybe do testing here, but probably not wirth it    
     REMOVE_CURSOR(data);
     
     FORWARD_METHOD
@@ -1079,7 +1079,7 @@ static IPTR fakefb_drawfilltext(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 {
     BITMAP_METHOD_INIT
 
-    /* FIXME: Maybe do testing here, but probably not worth it     */
+#warning Maybe do testing here, but probably not worth it    
     REMOVE_CURSOR(data);
     
     FORWARD_METHOD

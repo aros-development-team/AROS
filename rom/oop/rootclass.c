@@ -439,7 +439,7 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase)
     bmo->oclass = BASEMETAPTR;
     
     bmo->inst.data.public.ClassNode.ln_Name = "private base metaclass";
-    bmo->inst.data.public.OOPBasePtr	= OOPBase;
+    bmo->inst.data.public.OOPBasePtr	= (struct Library *)OOPBase;
     bmo->inst.data.public.InstOffset 	= 0UL;
     bmo->inst.data.public.UserData 	= OOPBase;
     bmo->inst.data.public.cl_DoSuperMethod = basemeta_dosupermethod;
@@ -569,7 +569,7 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     rco->oclass = &(OOPBase->ob_BaseMetaObject.inst.data.public);
     
     rco->inst.data.public.ClassNode.ln_Name = CLID_Root;
-    rco->inst.data.public.OOPBasePtr	= OOPBase;
+    rco->inst.data.public.OOPBasePtr	= (struct Library *)OOPBase;
     rco->inst.data.public.InstOffset	= 0;
     rco->inst.data.public.UserData	= (APTR)OOPBase;
     

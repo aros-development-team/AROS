@@ -15,7 +15,7 @@
 AROS_LD2(int, KrnBug,
          AROS_LDA(const char *, format, A0),
          AROS_LDA(va_list, args, A1),
-         void *, KernelBase, 12, Kernel);
+         struct KernelBase *, KernelBase, 12, Kernel);
 
 static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
 {
@@ -29,7 +29,7 @@ static inline void _bug(struct KernelBase *KernelBase, const char *format, ...)
     AROS_CALL2(int, AROS_SLIB_ENTRY(KrnBug, Kernel),
 	      AROS_LCA(const char *, format, A0),
 	      AROS_LCA(va_list, args, A1),
-	      void *, KernelBase);
+	      struct KernelBase *, KernelBase);
 
     va_end(args);
 }

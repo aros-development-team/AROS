@@ -5,7 +5,6 @@
     Desc: Wait for the Blitter to finish
     Lang: english
 */
-#include <aros/debug.h>
 #include "graphics_intern.h"
 
 /*****************************************************************************
@@ -48,8 +47,9 @@
     AROS_LIBFUNC_INIT
 
 
-    /* TODO: Write graphics/WaitBlit() */
-    aros_print_not_implemented ("WaitBlit");
+#warning TODO: Write graphics/WaitBlit()
+
+/*    aros_print_not_implemented ("WaitBlit"); */
 
 /*    driver_WaitBlit (GfxBase); */
 
