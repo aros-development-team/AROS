@@ -116,7 +116,7 @@ AROS_LH2(void, UUID_Unparse,
     AROS_LIBFUNC_INIT
 
     snprintf(out, UUID_STRLEN, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-            uuid->time_low,
+            (unsigned int)uuid->time_low,
             uuid->time_mid,
             uuid->time_hi_and_version,
             uuid->clock_seq_hi_and_reserved,
