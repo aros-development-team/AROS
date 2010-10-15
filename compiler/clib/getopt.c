@@ -124,10 +124,9 @@ char	*optarg;		/* argument associated with option */
     {
 	if (*place == 0)
 	    ++optind;
-#warning FIXME: Implement progname in error output
 	if (opterr && *ostr != ':')
 	    fprintf(stderr,
-		    "%s: illegal option -- %c\n", "???Prog",
+		    "%s: illegal option -- %c\n", nargv[0],
 		    optopt
 	    );
 	return (BADCH);
@@ -158,7 +157,7 @@ char	*optarg;		/* argument associated with option */
 	    if (opterr)
 		(void)fprintf(stderr,
 			      "%s: option requires an argument -- %c\n",
-			      "???Prog", optopt
+			      nargv[0], optopt
 		);
 	    return (BADCH);
 	}
