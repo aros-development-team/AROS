@@ -43,7 +43,7 @@ APTR BZ2_Open( CONST_STRPTR path, LONG mode )
     bzf->bzf_BufferAmount = 0;
     
     bzf->bzf_File = FILE_Open( path, MODE_READ );
-    if( bzf->bzf_File == NULL ) goto error;    
+    if( bzf->bzf_File == BNULL ) goto error;    
 
     rc = BZ2_bzDecompressInit( &(bzf->bzf_Stream), 0, 0 );
     if( rc != BZ_OK ) goto error;

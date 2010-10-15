@@ -150,7 +150,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 	BOOL    destIsDir = FALSE;
 	BOOL    destExists = FALSE;
 	LONG    match;
-	BPTR    tolock = NULL;
+	BPTR    tolock = BNULL;
 	ULONG   i;
 	int     retval;
 	LONG    ioerr = 0;

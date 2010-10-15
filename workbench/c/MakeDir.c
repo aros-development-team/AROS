@@ -100,7 +100,7 @@ int main(void)
 		   impossible to create a certain directory, MakeDir goes on
 		   to try to create the rest of the specified directories and
 		   returns the LAST return value for the operation. */
-		if(lock != NULL)
+		if(lock != BNULL)
 		{
 		    UnLock(lock);
 		    error = RETURN_OK;
@@ -252,5 +252,5 @@ BPTR CreateDirAll(STRPTR name)
     }
 
     //Printf("return error\n");
-    return NULL;
+    return BNULL;
 }

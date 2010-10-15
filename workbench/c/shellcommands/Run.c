@@ -77,7 +77,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
     AROS_SHCOMMAND_INIT
 
     struct CommandLineInterface *cli = Cli();
-    BPTR cis = NULL, cos = NULL, ces = NULL;
+    BPTR cis = BNULL, cos = BNULL, ces = BNULL;
     LONG CliNum;
 
 
@@ -118,7 +118,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 
     struct DateStamp  ds;
     BYTE              tmpname[256];
-    BPTR              tmpfile      = NULL;
+    BPTR              tmpfile      = BNULL;
     int               count        = 0;
 
     if ( (SHArg(EXECUTE)) && (SHArg(COMMAND)) )
@@ -131,7 +131,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
                       ((struct Process *)FindTask(NULL))->pr_TaskNum,
                       ds.ds_Days, ds.ds_Minute, ds.ds_Tick, count);
             tmpfile = Open(tmpname, MODE_NEWFILE);
-        } while (tmpfile == NULL && IoErr() == ERROR_OBJECT_IN_USE);
+        } while (tmpfile == BNULL && IoErr() == ERROR_OBJECT_IN_USE);
 
         if (tmpfile)
         {

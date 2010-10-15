@@ -420,7 +420,7 @@ BOOL ScanDosList(STRPTR *filter)
 	}
 	else
 	{
-	    BPTR ptr = BADDR(ndl->dol_misc.dol_handler.dol_Startup);
+	    BPTR ptr = ndl->dol_misc.dol_handler.dol_Startup;
 	    struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)ptr;
 	    
 	    idn->DosType = ID_DOS_DISK;
@@ -679,9 +679,9 @@ void doInfo()
 			D(bug("Locking \"%s\"\n", name));
 			lock = Lock(name, SHARED_LOCK);
 
-			D(bug("Lock = %p\n", lock));
+			D(bug("Lock = %p\n", (APTR)lock));
 
-			if(lock != NULL)
+			if(lock != BNULL)
 			{
 			    D(bug("Got lock on %s\n", name));
 

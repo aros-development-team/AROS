@@ -1490,7 +1490,7 @@ int makefilever(CONST_STRPTR name)
 
 						UnLoadSeg(file);
 					}
-					file = NULL;
+					file = BNULL;
 
 					if (error != RETURN_OK)
 					{

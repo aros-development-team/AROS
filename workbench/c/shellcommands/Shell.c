@@ -533,7 +533,7 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
     setupResidentCommands();
 
     cli = Cli();
-    setPath(NULL);
+    setPath(BNULL);
 
     is.cliNumber = me->pr_TaskNum;
 
@@ -669,10 +669,10 @@ LONG interact(struct InterpreterState *is)
 void releaseFiles(struct Redirection *rd)
 {
    if (rd->newIn) Close(rd->newIn);
-   rd->newIn = NULL;
+   rd->newIn = BNULL;
 
    if (rd->newOut) Close(rd->newOut);
-   rd->newOut = NULL;
+   rd->newOut = BNULL;
 }
 
 char avBuffer[256];
@@ -2014,7 +2014,7 @@ void unloadCommand(BPTR commandSeg, struct ShellState *ss)
 BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 {
     BPTR   oldCurDir;
-    BPTR   commandSeg = NULL;
+    BPTR   commandSeg = BNULL;
     BPTR  *paths;
     struct Segment *residentSeg;
     BOOL   absolutePath = strpbrk(commandName, "/:") != NULL;
@@ -2056,7 +2056,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 
     D(bug("Trying to load command1: %s\n", commandName));
 
-    oldCurDir = CurrentDir(NULL);
+    oldCurDir = CurrentDir(BNULL);
     CurrentDir(oldCurDir);
 
     file = Open(commandName, MODE_OLDFILE);
@@ -2069,14 +2069,14 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	                                       'path' or the C: multiassign */
 	    IoErr() == ERROR_OBJECT_IN_USE  /* The object might be exclusively locked */
 	)
-	return NULL;
+	return BNULL;
 
         /* Search the command in the path */
 
 	for
 	(
 	    paths = (BPTR *)BADDR(cli->cli_CommandDir);
-	    file == NULL && paths != NULL;
+	    file == BNULL && paths != NULL;
  	    paths = (BPTR *)BADDR(paths[0])    /* Go on with the next path */
 	)
 	{
@@ -2159,12 +2159,12 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
        report errors correctly */
     SetProgramName(command);
 
-    if(module != NULL)
+    if(module != BNULL)
     {
 	struct Task *me = FindTask(NULL);
 	STRPTR oldtaskname = me->tc_Node.ln_Name;
 	BOOL  __debug_mem;
-	LONG mem_before;
+	LONG mem_before = 0;
 	ULONG sig_before = ((struct Process *)me)->pr_Task.tc_SigAlloc;
 	ULONG sig_after;
 	BYTE sigbit;
@@ -2283,7 +2283,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
         {
 	    BPTR lock = Lock(command, SHARED_LOCK);
 
-	    if(lock != NULL)
+	    if(lock != BNULL)
 	    {
 		struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 
@@ -2389,8 +2389,8 @@ static void setPath(BPTR lock)
     STRPTR  buf;
     ULONG   i;
 
-    if(lock == NULL)
-	dir = CurrentDir(NULL);
+    if(lock == BNULL)
+	dir = CurrentDir(BNULL);
     else
 	dir = lock;
 
@@ -2411,7 +2411,7 @@ static void setPath(BPTR lock)
 	FreeVec(buf);
     }
 
-    if(lock == NULL)
+    if(lock == BNULL)
 	CurrentDir(dir);
 }
 

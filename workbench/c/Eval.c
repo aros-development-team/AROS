@@ -143,8 +143,8 @@ int main(void)
 
 	STRPTR  argString;
 	
-	BPTR  oldout = NULL;	/* Former output stream if using TO */
-	BPTR  file = NULL;	/* Output redirection stream */
+	BPTR  oldout = BNULL;	/* Former output stream if using TO */
+	BPTR  file = BNULL;	/* Output redirection stream */
 	
 	/* The Amiga Eval command is totally brain-dead and, at the same time,
 	   ReadArgs() is not really suitable for these arguments. To be
@@ -171,7 +171,7 @@ int main(void)
 	{
 	    file = Open(toFile, MODE_NEWFILE);
 	    
-	    if (file != NULL)
+	    if (file != BNULL)
 	    {
 		oldout = SelectOutput(file);
 	    }
@@ -194,7 +194,7 @@ int main(void)
 	}
 	
 	/* Reinstall output stream if we changed it */
-	if (oldout != NULL)
+	if (oldout != BNULL)
 	{
 	    SelectOutput(oldout);
 	    

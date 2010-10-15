@@ -205,7 +205,7 @@ static inline BOOL isDirectory(struct AnchorPath *ap, BOOL followflag)
 int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 	     BOOL force, BOOL forcelinks)
 {
-    LONG  match;
+    LONG  match = 0;
     int   i;
     char  name[MAX_PATH_LEN];
     BOOL  isfile = TRUE;

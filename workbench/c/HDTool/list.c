@@ -28,7 +28,7 @@ void printPartitionInfo(struct PartitionHandle *ph) {
 ULONG *pattr;
 struct TagItem tags[2];
 
-	pattr = QueryPartitionAttrs(ph->root);
+	pattr = (void *)QueryPartitionAttrs(ph->root);
 	tags[1].ti_Tag = TAG_DONE;
 	/* get size */
 	{

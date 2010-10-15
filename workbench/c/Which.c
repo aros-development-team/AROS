@@ -195,7 +195,7 @@ BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
     if(FilePart(name) != name)
 	return FALSE;
     
-    oldCurDir = CurrentDir(NULL);     /* Just to save the old current dir... */
+    oldCurDir = CurrentDir(BNULL);     /* Just to save the old current dir... */
     // oldFST    = GetFileSysTask();  /* ... and the filesystem task */
     
     while(((dp = GetDeviceProc("C:", dp)) != NULL) && (!found || checkAll))
@@ -233,7 +233,7 @@ BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 //  Printf("Calling CheckDirectory()\n");
     found = CheckDirectory(name, fib);
 
-    oldCurDir = CurrentDir(NULL);
+    oldCurDir = CurrentDir(BNULL);
 
     /* Check all paths */
     paths = (BPTR *)BADDR(cli->cli_CommandDir);
@@ -265,7 +265,7 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 
 //  Printf("Locked command %s\n", name);
     
-    if(lock != NULL)
+    if(lock != BNULL)
     {
 //	Printf("Calling Examine()\n");
 
