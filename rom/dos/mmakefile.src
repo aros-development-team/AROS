@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/devs
-USER_CFLAGS := -D__DOS_NOLIBBASE__
+USER_CFLAGS := -D__DOS_NOLIBBASE__ -Wall -Werror
 
 IMAGE_TYPES := aos elf
 FILES	  := errorlist lddemon runprocess iofs_sendpkt \

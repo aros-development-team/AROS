@@ -54,6 +54,10 @@
     INTERNALS
 
 *****************************************************************************/
+#undef D
+#undef bug
+#define D(x) x
+#define bug kprintf
 {
     AROS_LIBFUNC_INIT
 

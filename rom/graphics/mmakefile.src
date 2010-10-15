@@ -3,6 +3,8 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/cgfx
 
+USER_CFLAGS := -Wall -Werror
+
 FILES	  := \
 	intregions \
 	graphics_misc \
