@@ -129,9 +129,9 @@
 		    dthc.dthc_DOSBase = (struct Library *)DOSBase;
 		    dthc.dthc_IFFParseBase = IFFParseBase;
 		    dthc.dthc_UtilityBase = (struct Library *)UtilityBase;
-		    dthc.dthc_Lock = NULL;
+		    dthc.dthc_Lock = BNULL;
 		    dthc.dthc_FIB = NULL;
-		    dthc.dthc_FileHandle = NULL;
+		    dthc.dthc_FileHandle = BNULL;
 		    dthc.dthc_IFF = (struct IFFHandle *)handle;
 		    dthc.dthc_Buffer = CheckArray;
 		    dthc.dthc_BufferLength = cbh->cbh_Req.io_Actual;
