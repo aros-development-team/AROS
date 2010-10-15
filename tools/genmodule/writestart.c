@@ -950,7 +950,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 	fprintf(out,
 		"    if (!set_call_devfuncs(SETNAME(CLOSEDEV), -1, 1, lh, ioreq, 0, 0))\n"
                 "    {\n"
-		"        return NULL;\n"
+		"        return BNULL;\n"
                 "    }\n"
 	);
     if (!(cfg->options & OPTION_DUPBASE))
@@ -971,12 +971,12 @@ static void writecloselib(FILE *out, struct config *cfg)
                     "    struct __GM_AVLNode *avlnode = ((struct __GM_BaseAVL *)lh)->avlnode;\n"
                     "    avlnode->dupopencount--;\n"
                     "    if (avlnode->dupopencount != 0)\n"
-                    "        return (BPTR)NULL;\n"
+                    "        return BNULL;\n"
                     "#else\n"
                     "    struct __GM_ID2Node *id2node = ((struct __GM_BaseAVL *)lh)->id2node;\n"
                     "    id2node->dupopencount--;\n"
                     "    if (id2node->dupopencount != 0)\n"
-                    "        return (BPTR)NULL;\n"
+                    "        return BNULL;\n"
                     "#endif\n"
             );
         fprintf(out,
@@ -1005,7 +1005,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 	);
     fprintf(out,
 	    "\n"
-	    "    return NULL;\n"
+	    "    return BNULL;\n"
 	    "\n"
 	    "    AROS_LIBFUNC_EXIT\n"
 	    "}\n"
@@ -1039,7 +1039,7 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 		"        if(!set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 1, lh))\n"
 		"        {\n"
 		"            ((struct Library *)lh)->lib_Flags |= LIBF_DELEXP;\n"
-		"            return NULL;\n"
+		"            return BNULL;\n"
 		"        }\n"
 		"\n"
 		"        Remove((struct Node *)lh);\n"
@@ -1063,7 +1063,7 @@ static void writeexpungelib(FILE *out, struct config *cfg)
     }
     fprintf(out,
 	    "\n"
-	    "    return NULL;\n"
+	    "    return BNULL;\n"
 	    "\n"
 	    "    AROS_LIBFUNC_EXIT\n"
 	    "}\n"
