@@ -56,6 +56,14 @@
 {
     AROS_LIBFUNC_INIT
 
+#if (AROS_SIZEOFPTR != AROS_SIZEOFULONG)
+    /* We can't safely return the lock ID via
+     * SetIoErr() on this architecture.
+     */
+    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+
+    return NULL;
+#else
     struct MsgPort *res = NULL;
     struct DevProc *dvp;
 
@@ -78,6 +86,6 @@
     FreeDeviceProc(dvp);
 
     return res;
-
+#endif
     AROS_LIBFUNC_EXIT
 } /* DeviceProc */
