@@ -12,7 +12,9 @@
 /*****************************************************************************
 
     NAME */
+#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
         __attribute__((regparm(2)))
+#endif
 	static inline struct MinNode *Merge(
 
 /*  SYNOPSIS */
