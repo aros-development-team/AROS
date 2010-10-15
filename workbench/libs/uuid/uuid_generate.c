@@ -145,7 +145,7 @@ static void uuid_get_node(uuid_node_t *node, struct uuid_base *UUIDBase)
     if (!UUIDBase->uuid_Initialized)
     {
         if (!DOSBase)
-            DOSBase = OpenLibrary("dos.library", 0);
+            DOSBase = (void *)OpenLibrary("dos.library", 0);
         
         if (!(DOSBase && GetVar("uuid_state", (UBYTE*)&LIBBASE->uuid_State, sizeof(uuid_state_t),
                               GVF_BINARY_VAR | GVF_DONT_NULL_TERM) == sizeof(uuid_state_t)))
@@ -173,7 +173,7 @@ static void uuid_get_state(uint16_t *cs, uuid_time_t *timestamp, uuid_node_t *no
     if (!UUIDBase->uuid_Initialized)
     {
         if (!DOSBase)
-            DOSBase = OpenLibrary("dos.library", 0);
+            DOSBase = (void *)OpenLibrary("dos.library", 0);
 
         if (!(DOSBase && GetVar("uuid_state", (UBYTE*)&LIBBASE->uuid_State, sizeof(uuid_state_t),
                                 GVF_BINARY_VAR | GVF_DONT_NULL_TERM) == sizeof(uuid_state_t)))
@@ -211,7 +211,7 @@ static void uuid_set_state(uint16_t cs, uuid_time_t timestamp, uuid_node_t node,
         D(bug("[UUID] updating nonvolatile variable\n"));
         
         if (!DOSBase)
-            DOSBase = OpenLibrary("dos.library", 0);
+            DOSBase = (void *)OpenLibrary("dos.library", 0);
         
         if (DOSBase)
             SetVar("uuid_state", (UBYTE*)&LIBBASE->uuid_State, sizeof(uuid_state_t),

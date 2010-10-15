@@ -28,7 +28,7 @@ static int UUID_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->uuid_Initialized = 0;
     
     /* I need timer.device in order to obtain system time */
-    if (OpenDevice("timer.device", UNIT_MICROHZ, &LIBBASE->uuid_TR, 0))
+    if (OpenDevice("timer.device", UNIT_MICROHZ, &LIBBASE->uuid_TR.tr_node, 0))
     {
         D(bug("[UUID] Could not open timer.device. ABORT!\n"));
         return FALSE;
@@ -52,7 +52,7 @@ static int UUID_Init(LIBBASETYPEPTR LIBBASE)
     UUIDBase->uuid_UUIDs_ThisTick = 0;
     
     /* Try to open dos.library for GetVar/SetVar */
-    DOSBase = OpenLibrary("dos.library", 0);
+    DOSBase = (void *)OpenLibrary("dos.library", 0);
     if (DOSBase)
     {
         D(bug("[UUID] dos.library opened. Trying to get the UUID state.\n"));
@@ -79,7 +79,7 @@ static int UUID_Expunge(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[UUID] Expunge. Byebye.\n"));
     
-    CloseDevice(&LIBBASE->uuid_TR);
+    CloseDevice(&LIBBASE->uuid_TR.tr_node);
     
     if (DOSBase)
     {
@@ -87,7 +87,7 @@ static int UUID_Expunge(LIBBASETYPEPTR LIBBASE)
         SetVar("uuid_state", (UBYTE*)&LIBBASE->uuid_State, sizeof(uuid_state_t),
                GVF_GLOBAL_ONLY | GVF_SAVE_VAR | LV_VAR);
         
-        CloseLibrary(DOSBase);
+        CloseLibrary((void *)DOSBase);
     }
     
     return TRUE;
