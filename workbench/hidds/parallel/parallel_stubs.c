@@ -35,9 +35,8 @@
 
 /* A small utility function for using varargs when setting attrs */
 
-#warning OOP_SetAttrsTags is defined in inline/oop.h
-
 #ifndef OOP_SetAttrsTags
+#warning OOP_SetAttrsTags is defined in inline/oop.h
 IPTR OOP_SetAttrsTags(OOP_Object *obj, IPTR tag1, ...)
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)

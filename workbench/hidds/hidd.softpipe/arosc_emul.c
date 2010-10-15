@@ -130,7 +130,7 @@ copy:
 char *getenv (const char *name)
 { 
     /* This function is not thread-safe */
-    static TEXT buff[128] = {NULL};
+    static TEXT buff[128] = { };
     
     D(bug("arosc_emul_getenv: %s\n", name));
 
@@ -140,6 +140,7 @@ char *getenv (const char *name)
         return buff;
 }
 
+struct timezone;
 int gettimeofday (struct timeval * tv,struct timezone * tz)
 {
     IMPLEMENT();

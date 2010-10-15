@@ -28,9 +28,7 @@
 
 static int I2C_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct i2c_staticdata *sd = &LIBBASE->sd;
     D(bug("[I2C] Init\n"));
-    
     
     return TRUE;
 }
