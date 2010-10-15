@@ -34,7 +34,7 @@ static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootB
 
     D(bug("[BootMenu] init_gfx('%s')\n", gfxclassname));
     
-    GfxBase = OpenLibrary("graphics.library", 41);
+    GfxBase = (void *)OpenLibrary("graphics.library", 41);
     if (!GfxBase)
         return FALSE;
 
@@ -333,9 +333,9 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
         bmi_RetVal = FALSE;
 
         D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
-	GfxBase = OpenLibrary("graphics.library", 37);
+	GfxBase = (void *)OpenLibrary("graphics.library", 37);
 	if (GfxBase) {
-	    IntuitionBase = OpenLibrary("intuition.library", 37);
+	    IntuitionBase = (void *)OpenLibrary("intuition.library", 37);
 	    if (IntuitionBase) {		    
 		bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
 		CloseLibrary((struct Library *)IntuitionBase);

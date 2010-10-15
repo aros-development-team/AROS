@@ -12,9 +12,9 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
 {
     struct Screen *scr = NULL;
 
-    GfxBase = OpenLibrary("graphics.library", 36);
+    GfxBase = (void *)OpenLibrary("graphics.library", 36);
     if (GfxBase) {
-	IntuitionBase = OpenLibrary("intuition.library", 36);
+	IntuitionBase = (void *)OpenLibrary("intuition.library", 36);
 	if (IntuitionBase) {
 	    /* The same as in menu.c/initScreen() */
 	    ULONG mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 480,
@@ -33,9 +33,9 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
 		    return scr;
 		}
 	    }
-	    CloseLibrary(IntuitionBase);
+	    CloseLibrary((struct Library *)IntuitionBase);
 	}
-	CloseLibrary(GfxBase);
+	CloseLibrary((struct Library *)GfxBase);
     }
     return NULL;
 }
