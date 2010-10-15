@@ -79,12 +79,12 @@
 
     AROS_LIBFUNC_INIT
 
-    /* Only disable interrupts if they are not already disabled. The
-       initial (enabled) value of IDNestCnt is -1
-    */
-    
+#ifdef AROS_NO_ATOMIC_OPERATIONS
+    SysBase->IDNestCnt--;
+#else
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
-    
+#endif
+
     if (KernelBase && (SysBase->IDNestCnt < 0))
     {
         D(bug("[Enable] Enabling interrupts\n"));

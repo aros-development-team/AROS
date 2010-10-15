@@ -67,6 +67,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-oop-includes \
 #MM     kernel-battclock-includes \
 #MM     kernel-misc-includes \
+#MM     kernel-processor-includes \
 #MM     kernel-usb-includes-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 BASE_DEVICES  := console input gameport keyboard
