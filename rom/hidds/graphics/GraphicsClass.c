@@ -113,8 +113,6 @@
 
 static BOOL create_std_pixfmts(struct class_static_data *_csd);
 static VOID delete_pixfmts(struct class_static_data *_csd);
-static VOID free_objectlist(struct List *list, BOOL OOP_DisposeObjects,
-    	    	    	    struct class_static_data *_csd);
 static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetags);
 
 static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, OOP_Class *cl);
@@ -3027,7 +3025,7 @@ VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *o,
     if (pixfmt->refcount) {
         if (--pixfmt->refcount == 0) {
 	    Remove((struct Node *)&pixfmt->node);
-	    OOP_DisposeObject(pixfmt);
+	    OOP_DisposeObject((OOP_Object *)pixfmt);
 	}
     }
 

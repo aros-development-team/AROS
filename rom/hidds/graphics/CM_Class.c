@@ -124,8 +124,8 @@ VOID CM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     {
 	FreeMem(data->clut.colors, data->clut.entries * sizeof (HIDDT_Color));
 
-	/* To detect use of allready freed mem */
-	data->clut.colors = 0xDEADBEEF;
+	/* To detect use of already freed mem */
+	data->clut.colors = (void *)0xDEADBEEF;
     }
 	     
     OOP_DoSuperMethod(cl, o, msg);

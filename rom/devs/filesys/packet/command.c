@@ -170,7 +170,7 @@ static struct ph_packet *packet_alloc(void) {
 }
 
 void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase) {
-    struct ph_handle *handle, *root_handle;
+    struct ph_handle *handle, *root_handle = NULL;
     struct ph_packet *pkt;
     struct DosPacket *dp;
     struct DosList *dl, *dlist, *scan;
@@ -221,7 +221,11 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                     AROS_BSTR_ADDR(dlist->dol_Name);
                 dlist->dol_Ext.dol_AROS.dol_Device =
                     scan->dol_Ext.dol_AROS.dol_Device;
-                dlist->dol_Ext.dol_AROS.dol_Unit = root_handle;
+                /* WARNING: dol_Unit is begin assigned a
+                 *          pointer that NOT COMPATIBLE with
+                 *          'struct Unit *'. Tread carefully!
+                 */
+                dlist->dol_Ext.dol_AROS.dol_Unit = (void *)root_handle;
             }
         }
     }
