@@ -6,9 +6,11 @@ OBJDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
 
 FILES         := main appdelegate filesystem ui
 ICON          := arch/all-hosted/hidd/x11/icon.png
+PACKAGE	      := AROSBootstrap.ipa
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap
 
 #MM- kernel-bootstrap-package-ios: kernel-bootstrap-hosted kernel-bootstrap-package-ios-quick
+#MM- kernel-bootstrap-package-ios-signed: kernel-bootstrap-codesign-ios kernel-bootstrap-package-ios-quick
 #MM kernel-bootstrap-hosted-ios: kernel-bootstrap-bundle-ios
 
 OBJS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
@@ -27,11 +29,22 @@ $(OBJDIR)/%.d : %.m
 
 #MM
 kernel-bootstrap-bundle-ios:
-	$(MKDIR) $(EXEDIR)
-	$(CP) -f $(SRCDIR)/$(CURDIR)/Info.plist $(SRCDIR)/$(CURDIR)/PkgInfo $(SRCDIR)/$(ICON) $(EXEDIR)/
+	@$(MKDIR) $(EXEDIR)
+	@$(RM) $(EXEDIR)/CodeResources $(EXEDIR)/_CodeSignature $(EXEDIR)/embedded.mobileprovision
+	@$(ECHO) Making property list...
+	@$(SRCDIR)/$(CURDIR)/mkplist.sh $(SRCDIR)/$(CURDIR) >$(EXEDIR)/Info.plist
+	@$(ECHO) Writing resource rules...
+	@$(CP) -f $(IOS_SDK_PATH)/ResourceRules.plist $(EXEDIR)/
+	@$(ECHO) Writing PkgInfo...
+	@$(CP) -f $(SRCDIR)/$(CURDIR)/PkgInfo $(SRCDIR)/$(ICON) $(EXEDIR)/
+
+#MM
+kernel-bootstrap-codesign-ios:
+	@$(SRCDIR)/$(CURDIR)/appsign.sh $(EXEDIR)
 
 #MM
 kernel-bootstrap-package-ios-quick:
-	cd $(TARGETDIR); zip -r AROSBootstrap.ipa Payload
+	@$(ECHO) Building package...
+	@cd $(TARGETDIR); $(RM) $(PACKAGE); zip -ry $(PACKAGE) Payload
 
 %common
