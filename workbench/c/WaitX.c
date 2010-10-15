@@ -134,9 +134,9 @@ LONG MainEntry(struct ExecBase *SysBase)
     struct Interval *interval = NULL;
     struct MsgPort *TimerPort = NULL;
     struct timerequest *TimerReq = NULL;
-    ULONG i, loop, step, unit, seconds, signal = 0, timesig, usersig = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_E;
+    ULONG i, loop, step, unit, seconds = 0, signal = 0, timesig = 0, usersig = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_E;
 
-    BPTR StdErr, StdIn;
+    BPTR StdErr = BNULL, StdIn;
     char ProgName[256];
     struct RDArgs *rdargs = NULL;
     STRPTR Template = "D=DATE/K,T=TIME/K,YR=YEARS/K/N,MN=MONTHS/K/N,DY=DAYS/K/N,H=HOURS/K/N,M=MINS/K/N,S=SECS/K/N,L=LOOP/K/N,A=ALWAYS/S,V=VERBOSE/S,HELP/S,CMDLINE/F";
@@ -402,7 +402,7 @@ LONG MainEntry(struct ExecBase *SysBase)
     }
 
     if (IsInteractive((StdIn = Input())))
-        StdIn = NULL; /* Don't use StdIn if it isn't redirected */
+        StdIn = BNULL; /* Don't use StdIn if it isn't redirected */
 
     for (i=0; i<loop; i+=step)
     {

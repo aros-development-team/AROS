@@ -115,12 +115,12 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
 
             UnLock(cur->lock);
 
-            FreeVec(cur->next);
+            FreeVec(BADDR(cur->next));
 
             cur = next;
         }
         
-        cli->cli_CommandDir = NULL;
+        cli->cli_CommandDir = BNULL;
     }
 
         STRPTR*
@@ -153,7 +153,7 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
                         cli->cli_CommandDir = entry->next;
                     }
 
-                    if (NULL != entry->lock)
+                    if (BNULL != entry->lock)
                     {
                         UnLock(entry->lock);
                     }
@@ -170,7 +170,7 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
             if (!SHArg(HEAD))
             {
                 /* Search last entry */
-                while (NULL != insertAfter->next)
+                while (BNULL != insertAfter->next)
                 {
                     insertAfter = PE(insertAfter->next);
                 }
@@ -236,12 +236,12 @@ FindPathEntry(CommandLineInterfacePtr cli, STRPTR pathName,
         PathEntryPtr
     entry = NULL;
     
-    if (NULL != cli && NULL != cli->cli_CommandDir && NULL != pathName)
+    if (NULL != cli && BNULL != cli->cli_CommandDir && NULL != pathName)
     {
             BPTR
         pathLock = Lock(pathName, ACCESS_READ);
 
-        if (NULL != pathLock)
+        if (BNULL != pathLock)
         {
                 PathEntryPtr
             pred = NULL,
@@ -298,11 +298,11 @@ InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName)
         lock = Lock(pathName, SHARED_LOCK);
 
             BOOL
-        isDirectory = (NULL != lock)
+        isDirectory = (BNULL != lock)
             ? IsDirectory(lock)
             : FALSE;
         
-        if (newEntry != NULL && lock != NULL && isDirectory)
+        if (newEntry != NULL && lock != BNULL && isDirectory)
         {
             newEntry->lock = lock;
             newEntry->next = predecessor->next;
@@ -313,7 +313,7 @@ InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName)
         }
         else
         {
-            if (lock == NULL)
+            if (lock == BNULL)
             {
                 PrintFault(IoErr(), pathName);
             }
@@ -364,12 +364,12 @@ IsDirectory(BPTR lock)
                     BPTR
                 dupLock = DupLock(lock);
                 
-                if (NULL != dupLock)
+                if (BNULL != dupLock)
                 {
                         BPTR
                     file = OpenFromLock(dupLock);
                     
-                    if (NULL != file)
+                    if (BNULL != file)
                     {
 /* lock was on a file. dupLock is relinquished by OpenFromLock */
                         Close(file);

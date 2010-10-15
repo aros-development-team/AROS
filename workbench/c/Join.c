@@ -98,7 +98,7 @@ int main( void )
     IPTR    args[ARG_COUNT] = { (IPTR) NULL , (IPTR) NULL };
     STRPTR *files;
     STRPTR  destination;
-    BPTR    destfile = NULL;
+    BPTR    destfile = BNULL;
     LONG    rc = RETURN_OK;
 
     if( (rda = ReadArgs( ARG_TEMPLATE , args , NULL )) )
@@ -206,7 +206,7 @@ LONG append(BPTR destfile, STRPTR srcfilename)
 {
     BYTE  *buffer       = NULL;
     LONG   actualLength = 0;
-    BPTR   srcfile      = NULL;
+    BPTR   srcfile      = BNULL;
     
     BOOL   rc           = RETURN_OK;
     

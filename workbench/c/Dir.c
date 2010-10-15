@@ -519,7 +519,7 @@ LONG doPatternDir(STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter
                     if (doDirs)
                     {
                         BPTR l = Lock(ap->ap_Buf, SHARED_LOCK);
-                        if (l != NULL)
+                        if (l != BNULL)
                         {
                             UBYTE name[512];
                             name[0] = 0;
@@ -597,7 +597,7 @@ LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter, struct d
 
     lock = Lock(dir, SHARED_LOCK);
 
-    if (lock != NULL)
+    if (lock != BNULL)
     {
         eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
 

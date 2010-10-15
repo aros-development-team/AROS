@@ -106,9 +106,9 @@ int identify(CONST_STRPTR filename, BOOL verbose)
     int  rc   = RETURN_OK;
     BPTR lock = Lock(filename, ACCESS_READ);
     
-    if (lock != NULL)
+    if (lock != BNULL)
     {
-        struct DataType *dt = ObtainDataType(DTST_FILE, lock, TAG_DONE);
+        struct DataType *dt = ObtainDataType(DTST_FILE, (APTR)lock, TAG_DONE);
         if (dt != NULL)
         {
             struct DataTypeHeader *dth = dt->dtn_Header;

@@ -82,7 +82,7 @@ int main(void)
 
             lock = Lock((STRPTR)args[ARG_TO], SHARED_LOCK);
 
-            if(lock != NULL)
+            if(lock != BNULL)
             {
                 struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 
@@ -100,7 +100,7 @@ int main(void)
                         else
                         {
                             /* Check loops? */
-                            if(MakeLink((STRPTR)args[ARG_FROM], lock, FALSE))
+                            if(MakeLink((STRPTR)args[ARG_FROM], (APTR)lock, FALSE))
                                 retval = RETURN_OK;
                             else
                                 PrintFault(IoErr(), "MakeLink");

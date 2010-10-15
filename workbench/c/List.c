@@ -863,7 +863,7 @@ int main(void)
     LONG     error = RETURN_OK;
     STRPTR   parsedPattern = NULL;
     STRPTR   subpatternStr = NULL;
-    BPTR     oldOutput = NULL;
+    BPTR     oldOutput = BNULL;
 
     Statistics stats = { 0, 0, 0 };
 
@@ -979,7 +979,7 @@ int main(void)
 	{
 	    BPTR file = Open(toFile, MODE_NEWFILE);
 
-	    if (file == NULL)
+	    if (file == BNULL)
 	    {
 		FreeVec(subpatternStr);
 		FreeVec(parsedPattern);
@@ -1069,7 +1069,7 @@ int main(void)
 	FreeVec(subpatternStr);
     }
 
-    if (oldOutput != NULL)
+    if (oldOutput != BNULL)
     {
 	Close(SelectOutput(oldOutput));
     }

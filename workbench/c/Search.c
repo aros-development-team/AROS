@@ -138,7 +138,7 @@ int main(void)
     TEXT              *text, *spaces, *pattern = NULL, *path_buffer,
 	              *user_pattern = NULL, *p, ch, **from;
     BOOL               found, success = TRUE, new_dir, print_names;
-    UWORD              indent = 0, pat_buf_length, cut_off, pat_length;
+    UWORD              indent = 0, pat_buf_length = 0, cut_off = 0, pat_length = 0;
     UBYTE              k, q;
     struct Locale     *locale;
 
@@ -453,7 +453,7 @@ BOOL FindString(struct AnchorPath *anchor, IPTR *args, TEXT *pattern,
     
     /* Open the file for reading */
     
-    if((file = Open((TEXT *)&(anchor->ap_Info.fib_FileName), MODE_OLDFILE)) != NULL)
+    if((file = Open(anchor->ap_Info.fib_FileName, MODE_OLDFILE)) != BNULL)
     {
 	/* Get a buffer for the file */
 	

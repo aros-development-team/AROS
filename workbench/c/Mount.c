@@ -1867,7 +1867,7 @@ LONG mount(IPTR	*params, STRPTR	name)
 	    PatchDosNode(dn,vec->de_DosType);
         }
 
-        if (ForceLoad || dn->dn_SegList==NULL)
+        if (ForceLoad || dn->dn_SegList==BNULL)
         {
 	    DEBUG_MOUNT(Printf("MountDev: Load Handler\n"));
 	    dn->dn_Handler = MKBADDR(HandlerString);

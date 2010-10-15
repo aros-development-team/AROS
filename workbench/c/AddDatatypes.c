@@ -857,7 +857,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 			HookBufSize = cdt->DTCDSize;
 			HookPosition = 0;
 
-			if((SegList = InternalLoadSeg((BPTR)sv, NULL,
+			if((SegList = InternalLoadSeg(MKBADDR(sv), BNULL,
 						      (LONG_FUNC)FunctionArray,
 						      &DefaultStack)))
 			{
@@ -1052,7 +1052,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 					    HookBufSize = cdt->DTCDSize;
 					    HookPosition = 0;
 
-					    if((SegList = InternalLoadSeg((BPTR)sv, NULL, (LONG_FUNC)FunctionArray, &DefaultStack)))
+					    if((SegList = InternalLoadSeg(MKBADDR(sv), BNULL, (LONG_FUNC)FunctionArray, &DefaultStack)))
 					    {
 						cdt->SegList = SegList;
 						cdt->Function = BADDR(SegList) + sizeof(BPTR);  // FIXME: is this portable?
@@ -1137,7 +1137,7 @@ void DeleteDatatype(struct StackVars *sv, struct CompoundDatatype *cdt)
 	if(cdt->SegList)
 	{
 	    UnLoadSeg(cdt->SegList);
-	    cdt->SegList = NULL;
+	    cdt->SegList = BNULL;
 	    cdt->Function = NULL;
 	}
 		

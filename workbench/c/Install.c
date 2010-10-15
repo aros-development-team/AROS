@@ -440,7 +440,7 @@ STRPTR errstr=NULL;
 							volume->iotd = (struct IOExtTD *)CreateIORequest(volume->mp, sizeof(struct IOExtTD));
 							if (volume->iotd)
 							{
-								de = volume->fssm->fssm_Environ;
+								de = BADDR(volume->fssm->fssm_Environ);
 								volume->SizeBlock = de->de_SizeBlock;
 								volume->blockbuffer = AllocVec(volume->SizeBlock*4, MEMF_PUBLIC | MEMF_CLEAR);
 								if (volume->blockbuffer)

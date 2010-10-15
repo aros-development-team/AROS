@@ -591,7 +591,7 @@ AROS_UFH3(__startup static int, Start,
         STRPTR a[2] = { "", 0 };
         struct RDArgs *rda;
         struct IptrArgs iArgs;
-        struct Args args;
+        struct Args args = {};
 
         cd->SysBase = SysBase;
         cd->DOSBase = DOSBase;
@@ -1428,7 +1428,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
     {
         cd->RetVal = RETURN_FAIL;
 
-        if (!cd->Flags & COPYFLAG_QUIET)
+        if (!(cd->Flags & COPYFLAG_QUIET))
         {
             PrintFault(ERROR_NO_FREE_STORE, NULL);
         }
@@ -1741,7 +1741,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
                 ULONG h;
 
                 h = CopyFile(in, out, cd->BufferSize, cd);
-                Close(out); out = NULL;
+                Close(out); out = BNULL;
                 Close(in);
 
                 if (!h)
@@ -2040,7 +2040,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
                 if ((in = Open(cd->FileName, MODE_OLDFILE)))
                 {
                     h = CopyFile(in, out, cd->BufferSize, cd);
-                    Close(out); out = NULL;
+                    Close(out); out = BNULL;
                     Close(in);
 
                     if (!h)
@@ -2231,7 +2231,7 @@ LONG LinkFile(BPTR from, STRPTR to, ULONG soft, struct CopyData *cd)
     }
     else
     {
-        return MakeLink(to, from, LINK_HARD);
+        return MakeLink(to, (void *)from, LINK_HARD);
     }
 }
 

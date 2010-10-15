@@ -163,7 +163,7 @@ STRPTR BuildCommandLine(struct WBStartup *startup)
     for (i = 1 ; i < wbsstate->sm_NumArgs ; i++)
     {
         BPTR lock = Lock((STRPTR) wbsstate->sm_ArgList[i].wa_Name, ACCESS_READ);
-        if (lock != NULL)
+        if (lock != BNULL)
         {
             BPTR cd   = CurrentDir(lock);
             STRPTR path = AllocateNameFromLock(lock);
@@ -191,7 +191,7 @@ STRPTR BuildCommandLine(struct WBStartup *startup)
         for (i = 1 ; i < wbsstate->sm_NumArgs ; i++)
         {
             BPTR lock = Lock((STRPTR) wbsstate->sm_ArgList[i].wa_Name, ACCESS_READ);
-            if (lock != NULL)
+            if (lock != BNULL)
             {
                 BPTR cd   = CurrentDir(lock);
                 STRPTR path = AllocateNameFromLock(lock);
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
     BOOL               ixUShell      =       DEFUSHELL;
     BPTR               oldlock       = (BPTR)-1,
                        dirlock       = (BPTR)-1,
-                       window        =       NULL;
+                       window        =       BNULL;
     struct DiskObject *dobj          =       NULL;
 
     D(bug("IconX argc %d\n", argc));
@@ -315,7 +315,7 @@ int main(int argc, char **argv)
     D(bug("[IconX] commandLine: '%s'\n", commandLine));
 
     window  = Open(ixWindow, MODE_OLDFILE);
-    if (window == NULL)
+    if (window == BNULL)
     {
 	/* try to open default window */
 	window = Open(DEFWINDOW, MODE_OLDFILE);

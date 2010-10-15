@@ -325,7 +325,7 @@ int main (void)
     {
        BPTR file_out = Open((STRPTR)args[ARG_TO], MODE_NEWFILE);
 
-       if (NULL != file_out)
+       if (BNULL != file_out)
        {
           struct FileInfoBlock fib;
           UBYTE * data = NULL;

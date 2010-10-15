@@ -126,8 +126,8 @@ AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"))
         rc = SystemTagList("", tags);
 	if (rc != -1)
 	{
-	    win  = NULL;
-	    from = NULL;
+	    win  = BNULL;
+	    from = BNULL;
 	}
 	else
 	    rc = RETURN_FAIL;

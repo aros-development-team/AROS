@@ -90,7 +90,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     {
 	struct DateStamp ds;
 	BYTE tmpname[256];
-	BPTR tmpfile = NULL;
+	BPTR tmpfile = BNULL;
         int count = 0;
 
 	DateStamp(&ds);
@@ -101,7 +101,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
                       ((struct Process *)FindTask(NULL))->pr_TaskNum,
                       ds.ds_Days, ds.ds_Minute, ds.ds_Tick, count);
 	    tmpfile = Open(tmpname, MODE_NEWFILE);
-        } while (tmpfile == NULL && IoErr() == ERROR_OBJECT_IN_USE);
+        } while (tmpfile == BNULL && IoErr() == ERROR_OBJECT_IN_USE);
 
 	if (tmpfile)
 	{

@@ -467,7 +467,7 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
              BOOL add, BOOL remove)
 {
 	STRPTR colon;
-	BPTR   lock = NULL;
+	BPTR   lock = BNULL;
 	int    i;
 
 	int  error = RETURN_OK;
@@ -612,7 +612,7 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 						if (AssignLock(name, lock))
 						{
 							error = RETURN_OK;
-							lock = NULL;
+							lock = BNULL;
 						}
 						else
 						{
@@ -691,7 +691,7 @@ int removeAssign(struct localdata *ld, STRPTR name)
 	 * code is never set even if the assign didn't exist.
 	 */
 
-	if (!AssignLock(name, NULL))
+	if (!AssignLock(name, BNULL))
 	{
 		return RETURN_FAIL;
 	}
@@ -899,7 +899,7 @@ void _DeferFlush(struct localdata *ld, BPTR fh)
 
 	Flush(fh);
 
-	while ((node = REMHEAD(&DeferList)))
+	while ((node = (struct deferbufnode *)REMHEAD(&DeferList)))
 	{
 		LONG offs = 0;
 		LONG left = node->pos;

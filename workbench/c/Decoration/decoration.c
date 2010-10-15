@@ -625,7 +625,7 @@ struct NewImage *NewImageContainer(UWORD w, UWORD h)
 
 struct NewImage *GetImageFromFile(STRPTR path, STRPTR name, BOOL fixmode)
 {
-    struct	BitMapHeader       *bmhd;
+    struct	BitMapHeader       *bmhd = NULL;
     struct	NewImage           *ni = NULL;
     struct  BitMap             *map = NULL;
     struct  RastPort           *rp = NULL;
@@ -2923,7 +2923,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
                 {
                     if ((((struct ExtGadget *) gadget)->MoreFlags & GMORE_BOOPSIGADGET) != 0)
                     {
-                        ULONG   rtsm;
+                        ULONG   rtsm = 0;
                         get((Object *) gadget, GA_RightBorder, &rtsm);
                         if (rtsm)
                         {
@@ -4879,7 +4879,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
         if (nd->nd_Screen)
         {
-            APTR    screendata;
+            APTR    screendata = NULL;
 
             get(nd->nd_Screen, SDA_ScreenData, &screendata);
 

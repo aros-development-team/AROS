@@ -97,7 +97,7 @@ struct Args
 
 int main(void)
 {
-    struct RDArgs *read_args;
+    struct RDArgs *read_args = NULL;
     LONG error = 0, result = RETURN_OK;
     struct Args args = {NULL};
     struct MsgPort *port = NULL;
@@ -107,7 +107,7 @@ int main(void)
     TEXT node_name[NAME_BUFFER_SIZE];
     UWORD i;
     struct FileSysStartupMsg *fssm;
-    struct DeviceNode *dev_node;
+    struct DeviceNode *dev_node = NULL;
     BOOL load = FALSE;
 
     port = CreateMsgPort();
