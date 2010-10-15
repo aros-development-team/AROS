@@ -11,14 +11,14 @@
 
 DEFINESET(LIBS)
 
-int set_open_libraries_list(const void * const list[])   __attribute__ ((weak));
-void set_close_libraries_list(const void * const list[]) __attribute__ ((weak));
+int set_open_libraries_list(const void *list[])   __attribute__ ((weak));
+void set_close_libraries_list(const void *list[]) __attribute__ ((weak));
 
-int set_open_libraries_list(const void * const list[])
+int set_open_libraries_list(const void *list[])
 {
     return 1;
 }
 
-void set_close_libraries_list(const void * const list[])
+void set_close_libraries_list(const void *list[])
 {
 }

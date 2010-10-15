@@ -134,11 +134,11 @@ for                                                                          \
 #endif
 
 /* Function prototypes from autoinit and libinit */
-extern int set_call_funcs(const void * const set[], int direction, int test_fail);
-extern int set_call_libfuncs(const void * const *set, int order, int test_fail, void *libbase);
+extern int set_call_funcs(const void *set[], int direction, int test_fail);
+extern int set_call_libfuncs(const void **set, int order, int test_fail, void *libbase);
 extern int set_call_devfuncs
 (
-    const void * const *set,
+    const void **set,
     int order,
     int test_fail,
     void *libbase,
@@ -151,5 +151,5 @@ DECLARESET(LIBS)
 
 #define set_open_libraries() set_open_libraries_list(SETNAME(LIBS))
 #define set_close_libraries() set_close_libraries_list(SETNAME(LIBS))
-extern int set_open_libraries_list(const void * const list[]);
-extern void set_close_libraries_list(const void * const list[]);
+extern int set_open_libraries_list(const void *list[]);
+extern void set_close_libraries_list(const void *list[]);

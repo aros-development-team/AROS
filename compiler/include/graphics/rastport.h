@@ -47,7 +47,7 @@ struct GelsInfo
 
 struct TmpRas
 {
-    UBYTE * RasPtr;
+    BYTE * RasPtr;
     LONG   Size;
 };
 

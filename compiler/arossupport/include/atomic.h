@@ -20,10 +20,6 @@
 
 #include <aros/ppc/atomic.h>
 
-#elif defined(__mc68000)
-
-#include <aros/m68k/atomic.h>
-
 #else
 /* Porting to other archs? Just define your asm atomics as above... else deadlock below will hit you! */
 #include <proto/exec.h>
