@@ -83,7 +83,7 @@ typedef struct
 	u_char		hasnotext;
 	u_char		prelayout;
 	style_flags	styleflags;
-} stack_struct __attribute__((packed));
+} __attribute__((packed)) stack_struct;
 
 /*******************************************************************************************/
 /* Inline Functions */
