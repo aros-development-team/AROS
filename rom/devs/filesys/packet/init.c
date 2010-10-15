@@ -127,10 +127,10 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         /* try to load the named handler from each dir in the search path if
          * not already loaded */
         seglist = dn->dn_SegList;
-        for (i = 0; seglist == NULL && search_path[i] != NULL; i++) {
+        for (i = 0; seglist == BNULL && search_path[i] != NULL; i++) {
             snprintf(filename, MAXFILENAMELENGTH, search_path[i], AROS_BSTR_ADDR(dn->dn_Handler));
             seglist = LoadSeg(filename);
-            if (seglist != NULL) {
+            if (seglist != BNULL) {
                 loaded = TRUE;
                 D(bug("[packet] loaded %s\n", filename));
             }
@@ -138,15 +138,20 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
                 D(bug("[packet] couldn't load %s\n", filename));
         }
 
-        if (seglist == NULL) {
+        if (seglist == BNULL) {
             kprintf("[packet] couldn't open %s\n", AROS_BSTR_ADDR(dn->dn_Handler));
             iofs->IOFS.io_Error = IOERR_OPENFAIL;
             return FALSE;
         }
 
         /* got it, create our mount struct */
-#warning TO DO: check if mount is allocated
         mount = (struct ph_mount *) AllocVec(sizeof(struct ph_mount), MEMF_PUBLIC | MEMF_CLEAR);
+        if (mount == NULL) {
+        	kprintf("[packet] Allocation of mount for %s failed\n",
+			iofs->io_Union.io_OpenDevice.io_DosName);
+		iofs->IOFS.io_Error = IOERR_OPENFAIL;
+		return FALSE;
+	}
 
         strncpy(mount->handler_name, AROS_BSTR_ADDR(dn->dn_Handler), MAXFILENAMELENGTH);
         strncpy(mount->mount_point, iofs->io_Union.io_OpenDevice.io_DosName, MAXFILENAMELENGTH);
@@ -182,9 +187,9 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 
         /* build the startup packet */
         dp = (struct DosPacket *) AllocDosObject(DOS_STDPKT, NULL);
-        n = strlen(dn->dn_Name);
+        n = AROS_BSTR_strlen(dn->dn_Name);
         dos_path = AllocVec(n + 3, MEMF_PUBLIC);
-        sprintf(dos_path + 1, "%s:", dn->dn_Name);
+        sprintf(dos_path + 1, "%s:", AROS_BSTR_ADDR(dn->dn_Name));
         dos_path[0] = n + 1;
         dp->dp_Arg1 = (SIPTR)MKBADDR(dos_path);
         dp->dp_Arg2 = (SIPTR)MKBADDR(dn->dn_Startup);
