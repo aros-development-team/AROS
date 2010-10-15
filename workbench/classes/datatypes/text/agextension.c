@@ -101,7 +101,7 @@ void DrawLineBevel(struct Text_Data *td, struct RastPort *rp,
     LONG y2;
     UBYTE above,below;
 
-    ULONG apen, bpen, mode;
+    ULONG apen, bpen = 0, mode = 0;
     struct TextFont *oldfont;
     struct Region *new_region = NULL;
     struct Region *old_region = NULL;

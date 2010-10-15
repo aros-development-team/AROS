@@ -2647,7 +2647,7 @@ LONG __regargs WriteSVX( struct ClassBase *cb, Object *o, struct IFFHandle *iff,
 							{
 								LONG	length = sampleLength, samples = 0L;
 								BYTE	c0 = 0, *src = &sample[i], add = stereo?2:1;
-								UBYTE	o, x = 1; 
+								UBYTE	o = 0, x = 1; 
 								
 								if( length & 1 )
 								{
@@ -3094,12 +3094,12 @@ void PlayerProc( void )
 	struct Process	*pr = (struct Process *) FindTask( NULL );
 	struct MsgPort	*mp, *mpaudio = NULL;
 	struct IOAudio	*ioaudio[NUM_REQUESTS] = { };
-	struct ClassBase	*cb;
-	struct InstanceData *id;
-	LONG			numChAllocated, samples, buffersize, length, cycles, 
-					loops, audiompmsk = 0, mpmsk;
-	BOOL			releaseAudio = FALSE, restart, paused = FALSE;
-	BYTE			*sample, *buffer[4] = {};
+	struct ClassBase	*cb = NULL;
+	struct InstanceData *id = NULL;
+	LONG			numChAllocated = 0, samples = 0, buffersize = 0, length = 0, cycles = 0, 
+					loops = 0, audiompmsk = 0, mpmsk;
+	BOOL			releaseAudio = FALSE, restart = 0, paused = FALSE;
+	BYTE			*sample = NULL, *buffer[4] = {};
 	
 	mp = &pr->pr_MsgPort;
 	mpmsk = 1L << mp->mp_SigBit;
@@ -3867,12 +3867,12 @@ void PlayerProcAHI( void )
 	struct Process		*pr = (struct Process *) FindTask( NULL );
 	struct MsgPort		*mp, *AHImp;
 	struct AHIRequest		*ahir;
-	struct AHIAudioCtrl 	*actrl;
-	struct SoundFuncData	*sfd;
+	struct AHIAudioCtrl 	*actrl = NULL;
+	struct SoundFuncData	*sfd = NULL;
 	struct Hook			*SoundHook = NULL;
-	struct ClassBase		*cb;
-	struct InstanceData	*id;
-	ULONG				mpmsk, numCh, buffersize;
+	struct ClassBase		*cb = NULL;
+	struct InstanceData	*id = NULL;
+	ULONG				mpmsk, numCh = 0, buffersize = 0;
 	BOOL				stereo, paused = FALSE, failed;
 	static UBYTE			sdtst2ahist[] = { AHIST_M8S, AHIST_S8S, AHIST_M16S, AHIST_S16S };
 	BYTE				*buffer = NULL;

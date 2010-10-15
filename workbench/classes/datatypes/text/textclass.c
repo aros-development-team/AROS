@@ -114,6 +114,7 @@ static int GetLineStartX(struct Line *line)
     return 0;
 }
 
+#ifndef __AROS__
 /**************************************************************************
  Returns the x pos of the line start
 **************************************************************************/
@@ -128,6 +129,7 @@ static int GetLineCharX(struct Line *line)
   }
   return x;
 }
+#endif
 
 /**************************************************************************
 

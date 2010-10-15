@@ -16,7 +16,7 @@ void free(void *mem)
 char *getenv (const char *name)
 { 
     /* This function is not thread-safe */
-    static TEXT buff[128] = {NULL};
+    static TEXT buff[128] = {};
     
     if (GetVar(name, buff, 128, GVF_BINARY_VAR) == -1)
         return NULL;

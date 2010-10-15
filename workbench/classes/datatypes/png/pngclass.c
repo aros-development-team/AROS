@@ -558,7 +558,7 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
     }
 
     /* Replace default write functions with our own */
-    png_set_write_fn(png.png_ptr, filehandle, my_write_fn, my_flush_fn);
+    png_set_write_fn(png.png_ptr, BADDR(filehandle), my_write_fn, my_flush_fn);
 
     png.png_info_ptr = png_create_info_struct(png.png_ptr);
     if (!png.png_info_ptr)
