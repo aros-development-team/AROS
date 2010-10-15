@@ -23,16 +23,16 @@ BPTR CreateTemporary(STRPTR buffer, CONST_STRPTR prefix)
     
     while (TRUE)
     {
-        sprintf(buffer, "%s%08lx", prefix, GetUniqueID());
+        sprintf(buffer, "%s%08x", prefix, GetUniqueID());
         fh = Open(buffer, MODE_NEWFILE);
         
-        if (fh != BNULL)
+        if (fh != NULL)
         {
             return fh;
         }
         else if (IoErr() != ERROR_OBJECT_EXISTS)
         {
-            return BNULL;
+            return NULL;
         }
     }
 }
@@ -41,7 +41,7 @@ BOOL MakeDir(CONST_STRPTR path)
 {
     BPTR lock = CreateDir(path);
     
-    if (lock != BNULL)
+    if (lock != NULL)
     {
         UnLock(lock);
         return TRUE;
@@ -54,7 +54,7 @@ BOOL MakeDirs(STRPTR path)
 {
     STRPTR position; 
     BOOL   success = FALSE;
-    BPTR   lock    = BNULL;
+    BPTR   lock    = NULL;
     
     for (position = path; *position != '\0'; position++)
     {
@@ -62,7 +62,7 @@ BOOL MakeDirs(STRPTR path)
         {
             *position = '\0';
             
-            if ((lock = Lock(path, SHARED_LOCK)) != BNULL)
+            if ((lock = Lock(path, SHARED_LOCK)) != NULL)
             {
                 UnLock(lock);
                 success = TRUE;

@@ -224,7 +224,7 @@ void InitConfig(struct InstData *data, Object *obj)
     else  set(obj, MUIA_Frame, MUIV_Frame_String);
   #else
      set(obj, MUIA_Frame, MUIV_Frame_String);
-//     #warning "FIXME AROS/Zune: does not support things like MUIA_Frame, "302200"!"
+     #warning "FIXME AROS/Zune: does not support things like MUIA_Frame, "302200"!"
   #endif
   }
 

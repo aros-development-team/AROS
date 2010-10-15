@@ -85,7 +85,7 @@ Object *SystemPrefsWindow__OM_NEW
     struct SystemPrefsWindow_DATA *data = NULL; 
     struct TagItem *tag        = NULL;    
     struct Catalog *catalog    = NULL;
-    Object         *editor = NULL, *importMI, *exportMI, *exportIconMI, *defaultsMI,
+    Object         *editor, *importMI, *exportMI, *exportIconMI, *defaultsMI,
                    *testMI, *revertMI, *saveMI, *useMI, *cancelMI;
     
     tag = FindTagItem(WindowContents, message->ops_AttrList);
