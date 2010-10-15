@@ -9,7 +9,8 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/arch/all-$(ARCH)/kernel \
 	       -I$(SRCDIR)/arch/$(CPU)-all/kernel \
                -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) -idirafter /usr/include \
-	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\""
+	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+	       -Wall -Werror
 
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
          dispatch getbootinfo getscheduler issuper mapglobal registermodule          \

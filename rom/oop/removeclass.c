@@ -8,8 +8,6 @@
 #include <proto/exec.h>
 #include "intern.h"
 
-static int test; /* cxref bug */
-
 /*****************************************************************************
 
     NAME */

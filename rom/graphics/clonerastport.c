@@ -80,7 +80,7 @@
 	    SetABPenDrMd(newRP, GetAPen(rp), GetBPen(rp), GetDrMd(rp));
 	    Move(newRP, rp->cp_x, rp->cp_y);
 
-	    #warning Some attributes not copied 
+	    /* FIXME: Some attributes not copied  */
 	    
 	    RELEASE_DRIVERDATA(newRP, GfxBase);   
  	}

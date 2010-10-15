@@ -26,31 +26,39 @@
 static UBYTE *const fmtstring = "Task %08lx - %s";
 static UBYTE *const errstring = "Error %08lx - ";
 
-static void PrintChars(char c, ULONG n)
+static void PrintChars(char c, ULONG n, struct ExecBase *SysBase)
 {
     while (n--)
         RawPutChar(c);
 }
 
-static void PrintCentered(char *str)
+static void PrintCentered(char *str, struct ExecBase *SysBase)
 {
-    ULONG s = ALERT_WIDTH - 2 - strlen(str);
+    int len = strlen(str);
+    ULONG s;
+   
+    if (len < 0)
+    	    len = 0;
+    if (len > (ALERT_WIDTH - 2))
+    	    len = (ALERT_WIDTH - 2);
+
+    s = ALERT_WIDTH - 2 - len;
     
     RawPutChar('#');
     if (s & 1)
         RawPutChar(' ');
     s >>= 1;
-    PrintChars(' ', s);
-    while (*str)
-        RawPutChar(*str++);
-    PrintChars(' ', s);
+    PrintChars(' ', s, SysBase);
+    for (; len > 0; len--)
+        RawPutChar(*(str++));
+    PrintChars(' ', s, SysBase);
     RawPutChar('#');
     RawPutChar('\n');
 }
 
-static void PrintFrame(void)
+static void PrintFrame(struct ExecBase *SysBase)
 {
-    PrintChars('#', ALERT_WIDTH);
+    PrintChars('#', ALERT_WIDTH, SysBase);
     RawPutChar('\n');
 }
 
@@ -113,14 +121,14 @@ static void PrintFrame(void)
     /* We're here if Intuition failed. Print alert to the debug output and reboot.
        In future we should have more intelligent handling for such a case. For
        example we should report what was wrong after we rebooted. */
-    PrintFrame();
-    PrintCentered(Alert_GetTitle(alertNum));
+    PrintFrame(SysBase);
+    PrintCentered(Alert_GetTitle(alertNum), SysBase);
     NewRawDoFmt(fmtstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(task));
-    PrintCentered(buffer);
+    PrintCentered(buffer, SysBase);
     buf = NewRawDoFmt(errstring, RAWFMTFUNC_STRING, buffer, alertNum);
     Alert_GetString(alertNum, --buf);
-    PrintCentered(buffer);
-    PrintFrame();
+    PrintCentered(buffer, SysBase);
+    PrintFrame(SysBase);
     RawPutChar('\n');
     
     if (alertNum & AT_DeadEnd)

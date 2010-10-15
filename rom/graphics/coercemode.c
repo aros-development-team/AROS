@@ -54,7 +54,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write graphics/CoerceMode()
+    /* TODO: Write graphics/CoerceMode() */
     aros_print_not_implemented ("CoerceMode");
 
     return INVALID_ID;

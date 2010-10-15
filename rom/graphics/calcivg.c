@@ -51,7 +51,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write graphics/CalcIVG()
+    /* TODO: Write graphics/CalcIVG() */
     aros_print_not_implemented ("CalcIVG");
 
     return 0;
