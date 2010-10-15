@@ -76,11 +76,11 @@ struct usernode
     ULONG            mode;
 };
 
-static size_t           LenFirstPart (STRPTR path);
-static struct filenode *FindFile     (struct pipefsbase *pipefsbase, struct dirnode   **dn_ptr,      STRPTR path);
-static struct filenode *GetFile      (struct pipefsbase *pipefsbase, STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err);
+static size_t           LenFirstPart (CONST_STRPTR path);
+static struct filenode *FindFile     (struct pipefsbase *pipefsbase, struct dirnode   **dn_ptr,      CONST_STRPTR path);
+static struct filenode *GetFile      (struct pipefsbase *pipefsbase, CONST_STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err);
 static ULONG            SendRequest  (struct pipefsbase *pipefsbase, struct IOFileSys *iofs, BOOL abort);
-static STRPTR           StrDup       (struct pipefsbase *pipefsbase, STRPTR str);
+static STRPTR           StrDup       (struct pipefsbase *pipefsbase, CONST_STRPTR str);
 
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR pipefsbase)
@@ -304,7 +304,7 @@ static ULONG SendRequest(struct pipefsbase *pipefsbase, struct IOFileSys *iofs, 
     FreeVec(msg);                            \
 }
 
-static STRPTR StrDup(struct pipefsbase *pipefsbase, STRPTR str)
+static STRPTR StrDup(struct pipefsbase *pipefsbase, CONST_STRPTR str)
 {
     size_t len = strlen(str)+1;
     STRPTR ret = AllocVec(len, MEMF_ANY);
@@ -323,7 +323,7 @@ static STRPTR StrDup(struct pipefsbase *pipefsbase, STRPTR str)
     LenFirstPart("xxxx") would return 4
 */
 
-static size_t LenFirstPart(STRPTR path)
+static size_t LenFirstPart(CONST_STRPTR path)
 {
     size_t len = 0;
 
@@ -332,12 +332,12 @@ static size_t LenFirstPart(STRPTR path)
     return len;
 }
 
-static struct filenode *FindFile(struct pipefsbase *pipefsbase, struct dirnode **dn_ptr, STRPTR path)
+static struct filenode *FindFile(struct pipefsbase *pipefsbase, struct dirnode **dn_ptr, CONST_STRPTR path)
 {
     #define dn (*dn_ptr)
 
     size_t len;
-    STRPTR nextpart;
+    CONST_STRPTR nextpart;
     struct filenode *fn;
 
     while (path[0] == '/' && dn)
@@ -417,7 +417,7 @@ static struct filenode *NewFileNode(struct pipefsbase *pipefsbase, STRPTR filena
     return NULL;
 }
 
-static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err)
+static struct filenode *GetFile(struct pipefsbase *pipefsbase, CONST_STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err)
 {
     struct filenode *fn;
 
@@ -916,7 +916,7 @@ AROS_UFH3(LONG, pipefsproc,
 		}
 		case FSA_CREATE_DIR:
 		{
-		    STRPTR filename        = msg->iofs->io_Union.io_CREATE_DIR.io_Filename;
+		    CONST_STRPTR filename  = msg->iofs->io_Union.io_CREATE_DIR.io_Filename;
 		    struct dirnode *parent = (struct dirnode *)fn;
 		    struct dirnode *dn;
 
@@ -978,7 +978,7 @@ AROS_UFH3(LONG, pipefsproc,
 		    continue;
 		case FSA_DELETE_OBJECT:
 		{
-		    STRPTR filename    = msg->iofs->io_Union.io_DELETE_OBJECT.io_Filename;
+		    CONST_STRPTR filename = msg->iofs->io_Union.io_DELETE_OBJECT.io_Filename;
 		    struct dirnode *dn = (struct dirnode *)fn;
 
                     if (fn->name == NULL) {

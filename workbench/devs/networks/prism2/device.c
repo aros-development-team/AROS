@@ -597,7 +597,10 @@ VOID DeleteDevice(struct DevBase *base)
 static struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 {
    struct DevUnit *unit;
-   ULONG pci_limit, pccard_limit;
+   ULONG pci_limit;
+#if defined(__mc68000) && !defined(__ELF__)
+   ULONG pccard_limit;
+#endif
 
    pci_limit = GetPCICount(base);
 #ifdef __mc68000

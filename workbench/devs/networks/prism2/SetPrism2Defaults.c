@@ -140,7 +140,7 @@ LONG Main(VOID)
 
       if(options == NULL)
       {
-         options = AllocNamedObjectA(options_name, name_tag_list);
+         options = AllocNamedObjectA(options_name,(struct TagItem *)name_tag_list);
          if(options != NULL)
          {
             if(AddNamedObject(NULL, options))
