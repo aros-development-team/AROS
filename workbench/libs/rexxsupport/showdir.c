@@ -71,7 +71,7 @@ LONG rxsupp_showdir(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE 
     }
 
     lock = Lock(RXARG(msg,1), ACCESS_READ);
-    if (lock == NULL)
+    if (lock == BNULL)
     {
 	*argstring = CreateArgstring("", 0);
 	return RC_OK;

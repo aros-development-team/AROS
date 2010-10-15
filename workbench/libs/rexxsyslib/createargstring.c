@@ -62,7 +62,7 @@
   
     ra->ra_Size = size;
     ra->ra_Length = length;
-#warning FIXME: Maybe the next two fields only need to be intialized on m68k
+    /* FIXME: Maybe the next two fields only need to be intialized on m68k? */
     /* Initialize the depricated fields to a sane value for compatibility under AmigaOS */
     ra->ra_Depricated1 = 1<<1 | 1<<2 | 1<<6; /* Was ra_Flags = NSF_ALPHA | NSF_EXT */
     for (i=0; i<length; i++)

@@ -44,7 +44,7 @@ LONG rxsupp_statef(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE *
     UBYTE *string;
     
     lock = Lock(RXARG(msg,1), ACCESS_READ);
-    if (lock == NULL)
+    if (lock == BNULL)
     {
 	*argstring = CreateArgstring("", 0);
 	return RC_OK;
