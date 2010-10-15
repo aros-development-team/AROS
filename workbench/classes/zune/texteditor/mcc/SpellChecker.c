@@ -100,7 +100,7 @@ static BOOL SafePutMsg(CONST_STRPTR portName, struct Message *msg)
   // forbid task switching before we look up the port
   Forbid();
 
-  if((port = FindPort(portName)) != NULL)
+  if((port = FindPort((STRPTR)portName)) != NULL)
   {
     // send off the message while the Forbid() is still active
     PutMsg(port, msg);
@@ -142,7 +142,7 @@ static BOOL SendRexx(CONST_STRPTR word, CONST_STRPTR command)
       SHOWSTRING(DBF_SPELL, buffer);
 
       rxmsg->rm_Action = RXCOMM;
-      if((rxmsg->rm_Args[0] = (APTR)CreateArgstring(buffer, strlen(buffer))) != 0)
+      if((rxmsg->rm_Args[0] = (IPTR)CreateArgstring(buffer, strlen(buffer))) != 0)
       {
         if(SafePutMsg("REXX", (struct Message *)rxmsg) == TRUE)
         {
