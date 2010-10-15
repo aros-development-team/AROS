@@ -183,7 +183,7 @@ static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
     mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 480,
 				    BIDTAG_Depth, 4, TAG_DONE);
     if (mode == INVALID_ID)
-	return NULL;
+	return FALSE;
 
     DOSBootBase->bm_Screen = OpenScreenTags(NULL, NULL, SA_DisplayID, mode, SA_Draggable, FALSE, 
 					    SA_ShowTitle, FALSE, TAG_DONE);

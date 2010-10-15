@@ -30,7 +30,7 @@
 void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags)
 {
     LONG rc = RETURN_FAIL;
-    BPTR cis = NULL;
+    BPTR cis = BNULL;
 
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
@@ -41,7 +41,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
     cis = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
     if (cis)
     {
-        BPTR sseq = NULL;
+        BPTR sseq = BNULL;
 
         struct TagItem tags[] =
             {
@@ -100,12 +100,12 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
         rc = SystemTagList("", tags);
         if (rc != -1)
         {
-            cis  = NULL;
-            sseq = NULL;
+            cis  = BNULL;
+            sseq = BNULL;
         }
         else
             rc = RETURN_FAIL;
-        if (sseq != NULL)
+        if (sseq != BNULL)
             Close(sseq);
     } else
 	kprintf("Cannot open boot console\n");

@@ -67,7 +67,7 @@ BOOL __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSB
 	    struct FileSysStartupMsg *fssm;
 	    ULONG fssmFlags = 0;
 
-	    if (deviceNode->dn_Handler == NULL)
+	    if (deviceNode->dn_Handler == BNULL)
 	    {
 		handler = "afs.handler";
 	    }
@@ -205,7 +205,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, char *archName, struct
         }
     }
     Close(lock);
-    lock = NULL;
+    lock = BNULL;
 
 #else
 #define SHELL_FILE ":C/Shell"
@@ -390,7 +390,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
         lock =  Lock(bootName, SHARED_LOCK);
         if (lock) DOSBase->dl_SYSLock = DupLock(lock);
 
-        if ((lock != NULL) && (DOSBase->dl_SYSLock != NULL))
+        if ((lock != BNULL) && (DOSBase->dl_SYSLock != BNULL))
         {
             AssignLock("SYS", lock);
         }
@@ -401,7 +401,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
         FreeMem( bootName, bootNameLength );
 
-        if ((lock = Lock("SYS:", SHARED_LOCK)) != NULL)
+        if ((lock = Lock("SYS:", SHARED_LOCK)) != BNULL)
         {
             CurrentDir(lock);
         }
@@ -410,33 +410,33 @@ AROS_UFH3(void, __dosboot_BootProcess,
             Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
         }
 
-        if ((lock = Lock("SYS:C", SHARED_LOCK)) != NULL)
+        if ((lock = Lock("SYS:C", SHARED_LOCK)) != BNULL)
         {
             AssignLock("C", lock);
         }
 
-        if ((lock = Lock("SYS:S", SHARED_LOCK)) != NULL)
+        if ((lock = Lock("SYS:S", SHARED_LOCK)) != BNULL)
         {
             AssignLock("S", lock);
         }
 
-        if ((lock = Lock("SYS:Libs", SHARED_LOCK)) != NULL)
+        if ((lock = Lock("SYS:Libs", SHARED_LOCK)) != BNULL)
         {
             AssignLock("LIBS", lock);
         }
 
-        if ((lock = Lock("SYS:Devs", SHARED_LOCK)) != NULL)
+        if ((lock = Lock("SYS:Devs", SHARED_LOCK)) != BNULL)
         {
             AssignLock("DEVS", lock);
         }
 
-        if ((lock = Lock("DEVS:Drivers", SHARED_LOCK)) != NULL)
+        if ((lock = Lock("DEVS:Drivers", SHARED_LOCK)) != BNULL)
         {
             AssignLock("DRIVERS", lock);
             AssignAdd("LIBS", lock);        /* Let hidds in DRIVERS: directory be found by OpenLibrary */
         }
 
-        if ((lock = Lock("SYS:L", SHARED_LOCK)) != NULL)
+        if ((lock = Lock("SYS:L", SHARED_LOCK)) != BNULL)
         {
             AssignLock("L", lock);
         }
