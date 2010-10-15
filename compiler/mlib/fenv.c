@@ -14,7 +14,7 @@
 
 #include <fenv.h>
 
-const fenv_t __fe_dfl_env = 0;
+const fenv_t __fe_dfl_env = {};
 
 int feclearexcept(int excepts) {
     AROS_FUNCTION_NOT_IMPLEMENTED("arosm");

@@ -10,7 +10,7 @@
 #include <aros/debug.h>
 
 #define DEBUG 0
-int set_call_funcs(const void *set[], int direction, int test_fail)
+int set_call_funcs(const void * const set[], int direction, int test_fail)
 {
     int pos, (*func)(void);
 

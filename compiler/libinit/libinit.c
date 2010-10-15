@@ -24,7 +24,7 @@ typedef int (*closedevfunc)
 
 int set_call_libfuncs
 (
-    const void *set[],
+    const void * const set[],
     int order,
     int test_fail,
     APTR libbase
@@ -50,7 +50,7 @@ int set_call_libfuncs
 
 int set_call_devfuncs
 (
-    const void *set[],
+    const void * const set[],
     int order,
     int test_fail,
     void *libbase,
