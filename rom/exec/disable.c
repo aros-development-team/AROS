@@ -81,7 +81,15 @@
     if (KernelBase)
 	KrnCli();
 
+#ifdef AROS_NO_ATOMIC_OPERATIONS
+    /* Generic atomic operations in aros/atomic.h rely on Disable()/Enable() themselves,
+       so we have to take care about it here. Otherwise we fall into endless loop.
+       It is strongly recommended to implement real atomic operations in assembler.
+       The same is done in Enable() */
+    SysBase->IDNestCnt++;
+#else
     AROS_ATOMIC_INC(SysBase->IDNestCnt);
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* Disable() */
