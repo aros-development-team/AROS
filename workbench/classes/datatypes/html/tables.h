@@ -32,7 +32,7 @@ typedef struct
 #define TSF_NESTING	0x0008
 #define TSF_HASNOTEXT	0x0010
 #define TSF_PRELAYOUT	0x0020
-} tag_struct __attribute__((packed));
+} __attribute__((packed)) tag_struct;
 
 extern tag_struct	List_of_Tags[MAX_Tags];
 
@@ -48,7 +48,7 @@ typedef struct
 {
 	string	name;
 	int	pad;
-} attr_struct __attribute__((packed));
+} __attribute__((packed)) attr_struct;
 
 extern attr_struct	List_of_Attrs[MAX_Attrs];
 
@@ -69,7 +69,7 @@ typedef struct
 	string		fontname;
 	u_short		fontsize;
 	int		indent;
-} para_struct __attribute__((packed));
+} __attribute__((packed)) para_struct;
 
 extern para_struct	List_of_Paras[MAX_Paras];
 
@@ -81,7 +81,7 @@ typedef struct
 {
 	string	name;
 	char	value;
-} esc_struct __attribute__((packed));
+} __attribute__((packed)) esc_struct;
 
 extern esc_struct	List_of_Escs[MAX_Escs];
 
@@ -98,7 +98,7 @@ typedef struct
 {
 	string	name;
 	long	value;
-} color_struct __attribute__((packed));
+} __attribute__((packed)) color_struct;
 
 /*******************************************************************************************/
 /* Levels */

@@ -71,7 +71,7 @@ typedef struct
     WORD        bfReserved1;        //  6 Zero
     WORD        bfReserved2;        //  8 Zero
     ULONG       bfOffBits;          // 10 Byte offset in files where image begins
-} FileBitMapHeader __attribute__((packed));    // 14
+} __attribute__((packed)) FileBitMapHeader; // 14
 
 typedef struct
 {
@@ -86,7 +86,7 @@ typedef struct
     LONG        biYPelsPerMeter;    // 28 Vertical resolution, in pixels/meter
     ULONG       biClrUsed;          // 32 Number of colors used, below
     ULONG       biClrImportant;     // 36 Number of "important" colors
-} BitmapInfoHeader __attribute__((packed));    // 40
+} __attribute__((packed)) BitmapInfoHeader;    // 40
 
 /* "BM" backwards, due to LE byte order */
 #define BITMAP_ID "MB"
