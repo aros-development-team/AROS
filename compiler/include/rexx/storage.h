@@ -31,8 +31,8 @@ struct RexxMsg
 	struct MsgPort *rm_PassPort;
 	STRPTR		rm_CommAddr; /* The starting host environment */
 	STRPTR		rm_FileExt; /* The file extension for macro files */
-	struct FileHandle *rm_Stdin; /* Input filehandle to use */
-	struct FileHandle *rm_Stdout; /* Output filehandle to use */
+	BPTR            rm_Stdin; /* Input filehandle to use */
+	BPTR            rm_Stdout; /* Output filehandle to use */
 	LONG		rm_Unused1; /* Was rm_avail */
 };
 /* AROS comment: rm_Private1 and rm_Private2 are implementation specific.
