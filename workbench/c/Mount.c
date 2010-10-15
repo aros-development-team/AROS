@@ -262,7 +262,7 @@ extern struct WBStartup *_WBenchMsg;
 
 int main(void)
 {
-  STRPTR args[2];
+  IPTR args[2];
   IPTR *params;
   LONG error = RETURN_FAIL;
   struct RDArgs	*rda;
@@ -320,7 +320,7 @@ int main(void)
                     {
                       if (args[1])
                       {
-			error=readmountlist(params, dirname, args[1]);
+			error=readmountlist(params, dirname, (STRPTR)(args[1]));
 			DEBUG_MOUNT(Printf("Mount: readmountlist(%s) returned %ld\n", args[1], error));
                       }
                       else
@@ -623,8 +623,9 @@ void FreeStuff(void)
 /************************************************************************************************/
 /************************************************************************************************/
 
-ULONG GetValue(char *buf, char **end)
+ULONG GetValue(IPTR bufp, char **end)
 {
+	char *buf = (char *)bufp;
         int base;
         char *c = buf;
 
@@ -697,7 +698,7 @@ ULONG	Sign;
 ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 {
 	struct DosEnvec *vec;
-	STRPTR args[NUM_ARGS];
+	IPTR args[NUM_ARGS];
 	struct RDArgs *MyRDA;
 	ULONG result = RETURN_OK;
 	int i;
@@ -717,25 +718,25 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	for (i = 0; i < NUM_ARGS; i++)
 	{
-		if (args[i] != NULL)
+		if (args[i] != 0)
 		{
 			flagargs[i] = TRUE;
 		}
 	}
 
-	if (args[ARG_HANDLER] != NULL)
+	if (args[ARG_HANDLER] != 0)
 	{
 		s = (STRPTR)args[ARG_HANDLER];
 		IsEHandler = FALSE;
 		IsFilesystem = FALSE;
 	}
-	else if (args[ARG_EHANDLER] != NULL)
+	else if (args[ARG_EHANDLER] != 0)
 	{
 		s = (STRPTR)args[ARG_EHANDLER];
 		IsEHandler = TRUE;
 		IsFilesystem = FALSE;
 	}
-	else if (args[ARG_FILESYSTEM] != NULL)
+	else if (args[ARG_FILESYSTEM] != 0)
 	{
 		s = (STRPTR)args[ARG_FILESYSTEM];
 		IsEHandler = TRUE;
@@ -756,36 +757,36 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 			bstrcpy(HandlerString, s, len);
 		}
 	}
-	if (args[ARG_STACKSIZE] != NULL)
+	if (args[ARG_STACKSIZE] != 0)
 	{
 		StackSize = GetValue(args[ARG_STACKSIZE], NULL);
 	}
 
-	if (args[ARG_PRIORITY] != NULL)
+	if (args[ARG_PRIORITY] != 0)
 	{
 		Priority = GetValue(args[ARG_PRIORITY], NULL);
 	}
 
-	if (args[ARG_GLOBVEC] != NULL)
+	if (args[ARG_GLOBVEC] != 0)
 	{
 		GlobalVec = GetValue(args[ARG_GLOBVEC], NULL);
 	}
 
-	if (args[ARG_FORCELOAD] != NULL)
+	if (args[ARG_FORCELOAD] != 0)
 	{
-		ForceLoad = GetValue((STRPTR)args[ARG_FORCELOAD], NULL);
+		ForceLoad = GetValue(args[ARG_FORCELOAD], NULL);
 	}
 
-	if (args[ARG_ACTIVATE] != NULL)
+	if (args[ARG_ACTIVATE] != 0)
 	{
 		Activate = GetValue(args[ARG_ACTIVATE], NULL);
 	}
 
-	if (args[ARG_DEVICE] != NULL)
+	if (args[ARG_DEVICE] != 0)
 	{
 		int len;
 
-		DEBUG_MOUNT(Printf("ReadMountArgs: Device <%s>\n",args[ARG_DEVICE]));
+		DEBUG_MOUNT(Printf("ReadMountArgs: Device <%s>\n",(STRPTR)args[ARG_DEVICE]));
 
 		len = strlen((STRPTR)args[ARG_DEVICE]);
 
@@ -797,11 +798,11 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		{
 			//Printf("copying...\n");
 
-			strcpy(DeviceString, args[ARG_DEVICE]);
+			strcpy(DeviceString, (STRPTR)args[ARG_DEVICE]);
 		}
 	}
 
-	if (args[ARG_UNIT] != NULL)
+	if (args[ARG_UNIT] != 0)
 	{
 		if (UnitString)
 		{
@@ -813,13 +814,13 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		{
 			int len;
 
-			len = strlen(args[ARG_UNIT]);
+			len = strlen((STRPTR)args[ARG_UNIT]);
 
 			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
 
 			if ((UnitString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
-				strcpy(UnitString, args[ARG_UNIT]);
+				strcpy(UnitString, (STRPTR)args[ARG_UNIT]);
 				params[2] = (IPTR)UnitString;
 				DEBUG_MOUNT(Printf("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
 			}
@@ -832,11 +833,11 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
         	else
 			DEBUG_MOUNT(Printf("ReadMountArgs: Unit Value %ld\n",params[2]));
 	}
-	if (args[ARG_FLAGS] != NULL)
+	if (args[ARG_FLAGS] != 0)
 	{
 //			char *String;
 
-		DEBUG_MOUNT(Printf("ReadMountArgs: Flags <%s>\n",args[ARG_FLAGS]));
+		DEBUG_MOUNT(Printf("ReadMountArgs: Flags <%s>\n",(STRPTR)args[ARG_FLAGS]));
 		if (FlagsString)
 		{
 			FreeVec(FlagsString);
@@ -857,13 +858,13 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		{
 			int len;
 
-			len = strlen(args[ARG_FLAGS]);
+			len = strlen((STRPTR)args[ARG_FLAGS]);
 
 			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
 
 			if ((FlagsString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
-				strcpy(FlagsString, args[ARG_FLAGS]);
+				strcpy(FlagsString, (STRPTR)args[ARG_FLAGS]);
 				params[3] = (IPTR) FlagsString;
 				DEBUG_MOUNT(Printf("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
 			}
@@ -879,73 +880,73 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
         vec = (struct DosEnvec *)&params[4];
 
-	if (args[ARG_BLOCKSIZE] != NULL)
+	if (args[ARG_BLOCKSIZE] != 0)
 	{
 		vec->de_SizeBlock = GetValue(args[ARG_BLOCKSIZE], NULL) >> 2;
 	}
-	if (args[ARG_SURFACES] != NULL)
+	if (args[ARG_SURFACES] != 0)
 	{
 		vec->de_Surfaces = GetValue(args[ARG_SURFACES], NULL);
 	}
-	if (args[ARG_SECTORSPERBLOCK] != NULL)
+	if (args[ARG_SECTORSPERBLOCK] != 0)
 	{
 		vec->de_SectorPerBlock = GetValue(args[ARG_SECTORSPERBLOCK], NULL);
 	}
-	if (args[ARG_BLOCKSPERTRACK] != NULL)
+	if (args[ARG_BLOCKSPERTRACK] != 0)
 	{
 		vec->de_BlocksPerTrack = GetValue(args[ARG_BLOCKSPERTRACK], NULL);
 	}
-	if (args[ARG_RESERVED] != NULL)
+	if (args[ARG_RESERVED] != 0)
 	{
 		vec->de_Reserved = GetValue(args[ARG_RESERVED], NULL);
 	}
-	if (args[ARG_PREALLOC] != NULL)
+	if (args[ARG_PREALLOC] != 0)
 	{
 		vec->de_PreAlloc = GetValue(args[ARG_PREALLOC], NULL);
 	}
-	if (args[ARG_INTERLEAVE] != NULL)
+	if (args[ARG_INTERLEAVE] != 0)
 	{
 		vec->de_Interleave = GetValue(args[ARG_INTERLEAVE], NULL);
 	}
-	if (args[ARG_LOWCYL] != NULL)
+	if (args[ARG_LOWCYL] != 0)
 	{
 		vec->de_LowCyl = GetValue(args[ARG_LOWCYL], NULL);
 	}
-	if (args[ARG_HIGHCYL] != NULL)
+	if (args[ARG_HIGHCYL] != 0)
 	{
 		vec->de_HighCyl	= GetValue(args[ARG_HIGHCYL], NULL);
 	}
-	if (args[ARG_BUFFERS] != NULL)
+	if (args[ARG_BUFFERS] != 0)
 	{
 		vec->de_NumBuffers = GetValue(args[ARG_BUFFERS], NULL);
 	}
-	if (args[ARG_BUFMEMTYPE] != NULL)
+	if (args[ARG_BUFMEMTYPE] != 0)
 	{
 		vec->de_BufMemType = GetValue(args[ARG_BUFMEMTYPE], NULL);
 	}
-	if (args[ARG_BOOTPRI] != NULL)
+	if (args[ARG_BOOTPRI] != 0)
 	{
 		vec->de_BootPri	= GetValue(args[ARG_BOOTPRI], NULL);
 	}
-	if (args[ARG_BAUD] != NULL)
+	if (args[ARG_BAUD] != 0)
 	{
 		vec->de_Baud = GetValue(args[ARG_BAUD], NULL);
 	}
-	if (args[ARG_MAXTRANSFER] != NULL)
+	if (args[ARG_MAXTRANSFER] != 0)
 	{
 		vec->de_MaxTransfer = GetValue(args[ARG_MAXTRANSFER], NULL);
 	}
-	if (args[ARG_MASK] != NULL)
+	if (args[ARG_MASK] != 0)
 	{
 		vec->de_Mask = GetValue(args[ARG_MASK], NULL);
 	}
 
-	if (args[ARG_DOSTYPE] != NULL)
+	if (args[ARG_DOSTYPE] != 0)
 	{
 		vec->de_DosType	= (IPTR)GetValue(args[ARG_DOSTYPE], NULL);
 	}
 
-	if (args[ARG_CONTROL] != NULL)
+	if (args[ARG_CONTROL] != 0)
 	{
 		int len;
 		DEBUG_MOUNT(Printf("ReadMountArgs: Control <%s>\n",args[ARG_CONTROL]));
@@ -954,13 +955,13 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 			FreeVec(ControlString);
 			ControlString =	NULL;
 		}
-		len = strlen(args[ARG_CONTROL]);
+		len = strlen((STRPTR)args[ARG_CONTROL]);
 		if (len < 0x100)
 		{
 			if ((ControlString=AllocVec(len + BSTR_EXTRA, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
-				bstrcpy(ControlString, args[ARG_CONTROL], len);
-				vec->de_Control	= (IPTR)MKBADDR((char*)ControlString);
+				bstrcpy(ControlString, (STRPTR)args[ARG_CONTROL], len);
+				vec->de_Control	= (IPTR)MKBADDR(ControlString);
 			}
 			else
 			{
@@ -978,7 +979,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		}
 	}
 
-	if (args[ARG_STARTUP] != NULL)
+	if (args[ARG_STARTUP] != 0)
 	{
 //		      char *String;
 
@@ -1001,13 +1002,13 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		{
 			int len;
 
-			len = strlen(args[ARG_STARTUP]);
+			len = strlen((STRPTR)args[ARG_STARTUP]);
 
 			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
 
 			if ((StartupString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
-				strcpy(StartupString,args[ARG_STARTUP]);
+				strcpy(StartupString,(STRPTR)args[ARG_STARTUP]);
 			}
 			else
 			{
