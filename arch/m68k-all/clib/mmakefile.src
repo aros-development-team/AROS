@@ -13,6 +13,7 @@ USER_AFLAGS  := -I$(GENINCDIR)
   arch=m68k \
   asmfiles="vfork vfork_longjmp"
 
-#MM linklibs-clib-m68k : linklibs-gcc1-m68k includes-asm_h-m68k
+#MM linklibs-clib-m68k : linklibs-gcc1-m68000 includes-asm_h-m68k
 
 %common
+
