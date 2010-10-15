@@ -440,7 +440,7 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     				OpenDevice("timer.device", UNIT_VBLANK,
                         (struct IORequest *)tr, 0);
 
-    				sscanf(node->ln_Name, "bootdelay=%d", &delay);
+    				sscanf(node->ln_Name, "bootdelay=%lu", &delay);
     				D(bug("[Boot] delay of %d seconds requested.", delay));
 
     				tr->tr_node.io_Command = TR_ADDREQUEST;
@@ -475,7 +475,7 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
         Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_DOSLib );
     }
 
-    InitResident( DOSResident, NULL );
+    InitResident( DOSResident, BNULL );
 
     /* We don't get here if everything went well */
     return 0;
