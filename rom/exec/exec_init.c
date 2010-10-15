@@ -41,7 +41,7 @@ extern const char LIBEND;
 AROS_UFP3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFPA(ULONG, dummy, D0),
     AROS_UFPA(BPTR, segList, A0),
-    AROS_UFPA(struct ExecBase *, SysBase, A6));
+    AROS_UFPA(struct ExecBase *, sysBase, A6));
 
 const struct Resident Exec_resident =
 {
@@ -167,7 +167,7 @@ extern ULONG SoftIntDispatch();
 AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(BPTR, segList, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
@@ -178,11 +178,10 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     UWORD sum;
     UWORD *ptr;
 
+    SysBase = sysBase;
     KernelBase = OpenResource("kernel.resource");
-    if (!KernelBase) {
-    	bug("[exec] Can't open kernel.resource\n");
+    if (!KernelBase)
 	return NULL;
-    }
 
     /* We print the notice here because kprintf() works only after KernelBase is set up */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
@@ -240,8 +239,8 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
 
-    SysBase->ThisTask = t;
-    SysBase->Elapsed = SysBase->Quantum;
+    sysBase->ThisTask = t;
+    sysBase->Elapsed = sysBase->Quantum;
 
     /* Install the interrupt servers */
     for(i=0; i < 16; i++)
@@ -310,8 +309,6 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     SysBase->ChkSum = ~sum;
 
     D(debugmem());
-
-    bug("[exec] Starting the world\n");
 
     /* This will cause everything else to run. This call will not return.
 	This is because it eventually falls into strap, which will call

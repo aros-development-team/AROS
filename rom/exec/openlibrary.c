@@ -71,7 +71,6 @@
 
     /* Look for the library in our list */
     library = (struct Library *) FindName (&SysBase->LibList, libName);
-kprintf("[exec.OpenLibrary: %s v%d = 0x%x (list @0x%x = 0x%x)\n", libName, version, library, &SysBase->LibList, SysBase->LibList);
 
     /* Something found ? */
     if(library!=NULL)

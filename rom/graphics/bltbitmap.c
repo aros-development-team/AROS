@@ -223,7 +223,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	    release_cache_object(driver->gc_cache, tmp_gc, GfxBase);
 	}
 
-    	/* FIXME: dummy return value of 8 planes */
+    	#warning: dummy return value
 	planecnt = 8;
  
     }

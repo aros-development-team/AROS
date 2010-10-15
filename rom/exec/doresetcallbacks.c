@@ -17,17 +17,16 @@
    For improved safety callbacks are called in a Disable()d state.
    This function does not need to Enable(). */
 
-void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase)
+void Exec_DoResetCallbacks(struct IntExecBase *SysBase)
 {
     struct Interrupt *i;
-    struct ExecBase *SysBase = &IntSysBase->pub;
 
     Disable();
 
-    for (i = (struct Interrupt *)IntSysBase->ResetHandlers.lh_Head; i->is_Node.ln_Succ;
+    for (i = (struct Interrupt *)SysBase->ResetHandlers.lh_Head; i->is_Node.ln_Succ;
          i = (struct Interrupt *)i->is_Node.ln_Succ)
 	AROS_UFC3(void, i->is_Code,
 		  AROS_UFCA(APTR, NULL, A0),
-		  AROS_UFCA(struct ExecBase *, &IntSysBase->pub, A6),
+		  AROS_UFCA(struct ExecBase *, &SysBase->pub, A6),
 		  AROS_UFCA(APTR, i->is_Data, A1));
 }

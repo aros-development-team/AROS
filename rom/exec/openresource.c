@@ -11,9 +11,6 @@
 #include <exec/libraries.h>
 #include <proto/exec.h>
 
-#include <aros/debug.h>
-#include "exec_debug.h"
-
 /*****************************************************************************
 
     NAME */

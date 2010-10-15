@@ -46,7 +46,7 @@
     AROS_LIBFUNC_INIT
 
 
-    /* TODO: Write graphics/VBeamPos() */
+#warning TODO: Write graphics/VBeamPos()
     aros_print_not_implemented ("VBeamPos");
 
     return 10;

@@ -47,7 +47,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* TODO: Write graphics/ChangeSprite() */
+#warning TODO: Write graphics/ChangeSprite()
     aros_print_not_implemented ("ChangeSprite");
 
     AROS_LIBFUNC_EXIT

@@ -64,7 +64,7 @@ struct OOP_IClass
 {
     /* Array of pointers to methodtables for this class */
     struct Node 	ClassNode;    
-    struct IntOOPBase 	*OOPBasePtr;
+    struct Library  	*OOPBasePtr;
     ULONG   	    	InstOffset;
     APTR    	    	UserData;
     IPTR    	    	(*cl_DoMethod)(OOP_Object *, OOP_Msg);

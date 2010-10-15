@@ -2,7 +2,6 @@
 include $(TOP)/config/make.cfg
 
 #MM kernel-exec-includes : \
-#MM     kernel-kernel-includes \
 #MM     compiler-includes \
 #MM     kernel-exec-includes-$(ARCH)-$(CPU) \
 #MM     includes-$(ARCH)-$(CPU)
@@ -20,7 +19,7 @@ ALL_FUNCTIONS	:= \
 	exception findname findport findresident findsemaphore findtask \
 	forbid freeentry freemem freepooled freesignal freetrap freevec getcc \
 	getmsg initcode initresident initsemaphore initstruct insert \
-	makefunctions makelibrary newstackswap obtainquickvector obtainsemaphore \
+	makefunctions makelibrary obtainquickvector obtainsemaphore \
 	obtainsemaphorelist obtainsemaphoreshared oldopenlibrary opendevice \
 	openlibrary openresource permit preparecontext procure putmsg rawdofmt \
 	rawioinit rawmaygetchar rawputchar releasesemaphore \
@@ -38,13 +37,17 @@ INIT_FILE   := exec_init
 SYS_FILES   := prepareexecbase
 FILES	    := traphandler exec_util
 
-DEPLIBS := #arosc
+ifeq ($(FLAVOUR),native)
+DEPLIBS := arossupport arosc
+else
+DEPLIBS :=
+endif
 
 # I need the private includes (for SIZEOF_ALL_REGISTERS) and they
 # have to be first in the list
 USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/exec -I$(SRCDIR)/$(CURDIR) \
                -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel \
-	       -I$(GENINCDIR) -idirafter /usr/include -Wall -Werror
+	       -I$(GENINCDIR) -idirafter /usr/include
 
 # As a hack the SYS_FILES are added as the initfile.
 %build_module mmake=kernel-exec \

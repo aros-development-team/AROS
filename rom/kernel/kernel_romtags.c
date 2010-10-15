@@ -140,7 +140,7 @@ ULONG **krnRomTagScanner(struct ExecBase *SysBase, UWORD *ranges[])
      * Now, we will have to analyze used-defined RomTags (via KickTagPtr and
      * KickMemPtr)
      */
-    /* TODO: Implement external modules! */
+#warning TODO: Implement external modules!
 
     /*
      * Everything is done now. Allocate buffer for normal RomTag and convert

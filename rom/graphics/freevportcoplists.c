@@ -82,11 +82,11 @@
     vp->UCopIns = NULL;
   }
 
-  vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+  vpe = GfxLookUp(vp);
   D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
   if (vpe && (vpe->Flags & VPXF_FREE_ME)) {
     D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
-    GfxFree(&vpe->n);
+    GfxFree(vpe);
   }
 
   AROS_LIBFUNC_EXIT

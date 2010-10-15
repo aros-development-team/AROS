@@ -131,8 +131,6 @@
 	    /*
 		Call the library init vector, if set.
 	    */
-#undef kprintf
-kprintf("[exec InitResident: %s]\n", library->lib_Node.ln_Name);
 	    if(init->init)
 	    {
 		library = AROS_UFC3(struct Library *, init->init,
@@ -146,8 +144,6 @@ kprintf("[exec InitResident: %s]\n", library->lib_Node.ln_Name);
 		Test the library base, in case the init routine failed in
 		some way.
 	    */
-#undef kprintf
-kprintf("[exec InitResident: base = %p]\n", library);
 	    if(library != NULL)
 	    {
 		/*

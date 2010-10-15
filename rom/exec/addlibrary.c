@@ -64,8 +64,6 @@
     Forbid();
 
     /* And add the library */
-#undef kprintf
-kprintf("[AddLibrary: %s]\n", library->lib_Node.ln_Name);
     Enqueue(&SysBase->LibList,&library->lib_Node);
 
     /* All done. */
