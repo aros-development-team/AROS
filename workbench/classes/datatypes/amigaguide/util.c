@@ -418,9 +418,9 @@ void FreeAGObject(Class *cl, Object *obj, struct AmigaGuideObject *agobj)
          /* if this is a amigaguidenode object delete tempory file */
          if(agobj->ago_AGNode != NULL && name != NULL)
          {
-            BPTR handle = NULL;
+            BPTR handle = BNULL;
             if(GetDTAttrs(agobj->ago_Object, DTA_Handle, (IPTR) &handle, TAG_DONE) == 1 &&
-               handle != NULL)
+               handle != BNULL)
             {
                NameFromFH(handle, name, 1024);
             }
@@ -440,7 +440,7 @@ void FreeAGObject(Class *cl, Object *obj, struct AmigaGuideObject *agobj)
             FreeAGMem(cl, obj, name, 1024);
          }
       }
-      if(agobj->ago_TmpHandle != NULL)
+      if(agobj->ago_TmpHandle != BNULL)
 	 UnLock(agobj->ago_TmpHandle);
       if(agobj->ago_Buffer != NULL)
 	 FreeAGMem(cl, obj, agobj->ago_Buffer, agobj->ago_BufferLen);
@@ -499,16 +499,16 @@ static BOOL AbsolutePath(STRPTR path)
 static BPTR MyLock(struct ClassBase *cb,STRPTR file, BOOL *nodetype, BPTR dir)
 {
    BPTR fh;
-   BPTR olddir = NULL;
+   BPTR olddir = BNULL;
 
-   if(dir != NULL)
+   if(dir != BNULL)
       olddir = CurrentDir(dir);
 
    fh = Lock(file,SHARED_LOCK);
 
    DB(("test : %s\n",file));
 
-   if(fh == NULL && nodetype != NULL)
+   if(fh == BNULL && nodetype != NULL)
    {
       STRPTR ptr = PathPart(file);
 
@@ -519,14 +519,14 @@ static BPTR MyLock(struct ClassBase *cb,STRPTR file, BOOL *nodetype, BPTR dir)
 
 	 DB(("test PathPart() : %s\n",file));
 
-	 if((fh = Lock(file,SHARED_LOCK)) != NULL)
+	 if((fh = Lock(file,SHARED_LOCK)) != BNULL)
 	    *nodetype = TRUE;
 
 	 *ptr = chr;
       }
    }
 
-   if(olddir != NULL)
+   if(olddir != BNULL)
       if(CurrentDir(olddir) == dir)
          UnLock(dir);
    DB(("lock : %lx\n",fh));
@@ -539,7 +539,7 @@ static BPTR GetObjectDir(Class *cl, Object *obj)
    struct DataType *dt;
    BPTR handle;
    ULONG type;
-   BPTR dir = NULL;
+   BPTR dir = BNULL;
 
    IPTR val;
 
@@ -550,7 +550,7 @@ static BPTR GetObjectDir(Class *cl, Object *obj)
    {
       type = val;
 
-      if(handle != NULL && type == DTST_FILE)
+      if(handle != BNULL && type == DTST_FILE)
       {
          DB(("handle : %lx, type : %ld\n",handle,type));
 
@@ -578,18 +578,18 @@ BPTR GetFileLock(Class *cl, Object *obj,
    CLASSBASE;
    INSTDATA;
    struct Process *thisproc = (struct Process *) FindTask(NULL);
-   BPTR lock = NULL;
+   BPTR lock = BNULL;
    APTR winptr = thisproc->pr_WindowPtr;
 
    if(file == NULL)
-      return NULL;
+      return BNULL;
 
    /* disable possible unknown assign requester */
    thisproc->pr_WindowPtr = (APTR) -1;
 
    if(AbsolutePath(file))
    {
-      lock = MyLock(cb, file, nodetype, NULL);
+      lock = MyLock(cb, file, nodetype, BNULL);
    } else
    {
       UBYTE path[128];
@@ -600,50 +600,50 @@ BPTR GetFileLock(Class *cl, Object *obj,
       mysprintf(cb, path, sizeof(path), "PROGDIR:Help/%s", language);
       {
          dir = Lock(path, SHARED_LOCK);
-         if(dir != NULL)
+         if(dir != BNULL)
          {
             lock = MyLock(cb, file, nodetype, dir);
          }
 
-         if(lock == NULL)
+         if(lock == BNULL)
          {
             mysprintf(cb, path, sizeof(path), "Help:%s", language);
             dir = Lock(path, SHARED_LOCK);
-            if(dir != NULL)
+            if(dir != BNULL)
             {
                lock = MyLock(cb, file, nodetype, dir);
             }
          }
       }
 
-      if(lock == NULL)
+      if(lock == BNULL)
       {
          /* use current dir */
-         lock = MyLock(cb, file, nodetype, NULL);
+         lock = MyLock(cb, file, nodetype, BNULL);
 
-         if(lock == NULL)
+         if(lock == BNULL)
          {
             dir = GetObjectDir(cl, obj);
-            if(dir != NULL)
+            if(dir != BNULL)
             {
                lock = MyLock(cb, file, nodetype, dir);
             }
 
-            if(lock == NULL)
+            if(lock == BNULL)
             {
                if(data->ag_ActualObject->ago_AGNode != NULL)
                {
                   dir = ParentDir(data->ag_ActualObject->ago_AGNode->agn_File->agf_Lock);
-                  if(dir != NULL)
+                  if(dir != BNULL)
                   {
                      lock = MyLock(cb, file, nodetype, dir);
                   }
                }
 
-               if(lock == NULL)
+               if(lock == BNULL)
                {
       	          /* amigaguide compatibility!!!*/
-      	          if((dir = Lock(":", SHARED_LOCK)) != NULL)
+      	          if((dir = Lock(":", SHARED_LOCK)) != BNULL)
       	          {
       	             lock = MyLock(cb, file, nodetype, dir);
       	          }
@@ -764,7 +764,7 @@ ULONG SendRexxCommand(Class *cl, Object *obj, STRPTR command, ULONG mode)
    struct MsgPort *arexxport;
    struct RexxMsg *rxmsg;
    ULONG retval = RC_ERROR;
-   BPTR olddir = NULL;
+   BPTR olddir = BNULL;
    BPTR dir;
 
    DB(("rexx cmd: %s\n",command));
@@ -774,7 +774,7 @@ ULONG SendRexxCommand(Class *cl, Object *obj, STRPTR command, ULONG mode)
       return RC_OK;
 
    dir = GetObjectDir(cl, obj);
-   if(dir != NULL)
+   if(dir != BNULL)
       olddir = CurrentDir(dir);
 
    if((rxport = data->ag_RexxPort) != NULL)
@@ -797,7 +797,7 @@ ULONG SendRexxCommand(Class *cl, Object *obj, STRPTR command, ULONG mode)
 		  if(FindTask(NULL)->tc_Node.ln_Type == NT_PROCESS && mode == AGRX_RX)
 		     rxmsg->rm_Stdout = Open("CON:////AmigaGuide ARexx/AUTO/WAIT/CLOSE", MODE_NEWFILE);
 		  else
-		     rxmsg->rm_Stdout = NULL;
+		     rxmsg->rm_Stdout = BNULL;
 
 		  data->ag_RexxOutstanding++;
 		  PutMsg(arexxport,(struct Message *) rxmsg);
@@ -810,7 +810,7 @@ ULONG SendRexxCommand(Class *cl, Object *obj, STRPTR command, ULONG mode)
       Permit();
    }
 
-   if(dir != NULL)
+   if(dir != BNULL)
       UnLock(CurrentDir(olddir));
    return retval;
 }
@@ -820,25 +820,25 @@ ULONG SystemCommand(Class *cl, Object *obj, STRPTR command)
    struct TagItem tags[] = { {SYS_Output, 0}, {TAG_DONE, 0} };
    ULONG rc = 0;
    BPTR dir = GetObjectDir(cl, obj);
-   BPTR olddir = NULL;
+   BPTR olddir = BNULL;
    BPTR cos;
 
-   if(dir != NULL)
+   if(dir != BNULL)
       olddir = CurrentDir(dir);
 
-   if((cos = Open("CON:////Output/WAIT/CLOSE/AUTO", MODE_NEWFILE)) != NULL)
+   if((cos = Open("CON:////Output/WAIT/CLOSE/AUTO", MODE_NEWFILE)) != BNULL)
       tags[0].ti_Data = (IPTR) cos;
    else
       tags[0].ti_Tag = TAG_IGNORE;
 
    rc = System(command, tags);
 
-   if(cos != NULL)
+   if(cos != BNULL)
       Close(cos);
 
    DB(("System() returned with %ld\n",rc));
 
-   if(dir != NULL)
+   if(dir != BNULL)
    {
       CurrentDir(olddir);
       UnLock(dir);

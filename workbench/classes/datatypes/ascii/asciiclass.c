@@ -228,7 +228,7 @@ IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
 
     /* Line information */
     ULONG 			num, offset, swidth;
-    ULONG 			anchor = 0, newanchor;
+    ULONG 			anchor = 0, newanchor = 0;
     ULONG 			style = FS_NORMAL;
     struct Line 		*line;
     ULONG 			yoffset = 0;

@@ -46,7 +46,10 @@ ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 #define MAXCOLORS   256
 
 typedef struct {
-    struct IFFHandle    *filehandle;
+    union {
+    	struct IFFHandle *iff;
+    	BPTR              bptr;
+    } filehandle;
 
     UBYTE               *filebuf;
     UBYTE               *filebufpos;
@@ -117,7 +120,7 @@ BOOL SaveBMP_EmptyBuf(BmpHandleType *bmphandle, long minbytes)
     
     bytestowrite = bmphandle->filebufsize - (bmphandle->filebufbytes + minbytes);
     D(bug("bmp.datatype/SaveBMP_EmptyBuf() --- minimum %ld bytes, %ld bytes to write\n", (long)minbytes, (long)bytestowrite));
-    bytes = Write(bmphandle->filehandle, bmphandle->filebuf, bytestowrite);
+    bytes = Write(bmphandle->filehandle.bptr, bmphandle->filebuf, bytestowrite);
     if ( bytes < bytestowrite )
     {
 	D(bug("bmp.datatype/SaveBMP_EmptyBuf() --- writing failed, wrote %ld bytes\n", (long)bytes));
@@ -146,7 +149,7 @@ BOOL LoadBMP_FillBuf(BmpHandleType *bmphandle, long minbytes)
 	    bmphandle->filebuf[i] = bmphandle->filebufpos[i];
     }
     bmphandle->filebufpos = bmphandle->filebuf;
-    bytes = Read(bmphandle->filehandle, bmphandle->filebuf + bytes, bmphandle->filebufsize - bytes);
+    bytes = Read(bmphandle->filehandle.bptr, bmphandle->filebuf + bytes, bmphandle->filebufsize - bytes);
     if (bytes < 0 ) bytes = 0;
     bmphandle->filebufbytes += bytes;
     //D(bug("bmp.datatype/LoadBMP_FillBuf() --- read %ld bytes, remaining new %ld bytes\n", (long)bytes, (long)bmphandle->filebufbytes));
@@ -225,13 +228,13 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	return FALSE;
     }
     
-    if ( sourcetype == DTST_RAM && bmphandle->filehandle == NULL && bmhd )
+    if ( sourcetype == DTST_RAM && bmphandle->filehandle.iff == NULL && bmhd )
     {
 	D(bug("bmp.datatype/LoadBMP() --- Creating an empty object\n"));
 	BMP_Exit(bmphandle, 0);
 	return TRUE;
     }
-    if ( sourcetype != DTST_FILE || !bmphandle->filehandle || !bmhd )
+    if ( sourcetype != DTST_FILE || !bmphandle->filehandle.bptr || !bmhd )
     {
 	D(bug("bmp.datatype/LoadBMP() --- unsupported mode\n"));
 	BMP_Exit(bmphandle, ERROR_NOT_IMPLEMENTED);
@@ -492,7 +495,7 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
 	BMP_Exit(bmphandle, 0);
 	return TRUE;
     }
-    bmphandle->filehandle = dtw->dtw_FileHandle;
+    bmphandle->filehandle.bptr = dtw->dtw_FileHandle;
 
     /* Get BitMap and color palette */
     if( GetDTAttrs( o,  PDTA_BitMapHeader, (IPTR)&bmhd,

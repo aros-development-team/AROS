@@ -220,7 +220,7 @@ IPTR Binary__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
     /* Line information */
     ULONG                       style = FS_NORMAL;
     struct Line                 *line;
-    LONG                        lines, linelen, offsetlen;
+    LONG                        lines = 0, linelen = 0, offsetlen;
     ULONG                       yoffset = 0;
     UBYTE                       fgpen = 1;
     UBYTE                       bgpen = 0;

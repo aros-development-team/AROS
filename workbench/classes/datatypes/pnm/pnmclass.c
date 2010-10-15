@@ -98,7 +98,7 @@ static BOOL LoadPNM(struct IClass *cl, Object *o)
 	}
 	D(bug("pnm.datatype/LoadPNM(): GetDTAttrs(DTA_Handle, DTA_BitMapHeader) successful\n"));
 	
-	if ( sourcetype == DTST_RAM && FileHandle == NULL )
+	if ( sourcetype == DTST_RAM && FileHandle == BNULL )
 	{
 		D(bug("pnm.datatype/LoadPNM(): Creating an empty object\n"));
 		return TRUE;

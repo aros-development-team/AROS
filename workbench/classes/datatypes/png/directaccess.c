@@ -133,7 +133,7 @@ static APTR PNG_LoadImageInternal(APTR handle, STRPTR *chunkstoread, APTR *chunk
     
     if (handletype == HANDLETYPE_FILE)
     {
-    	if (Read((BPTR)handle, header, sizeof(header)) != sizeof(header)) ok = FALSE;
+    	if (Read(MKBADDR(handle), header, sizeof(header)) != sizeof(header)) ok = FALSE;
     }
     else if (handletype == HANDLETYPE_MEM)
     {
@@ -474,7 +474,7 @@ AROS_LH4(APTR, PNG_LoadImageFH,
 {
     AROS_LIBFUNC_INIT
         
-    return PNG_LoadImageInternal(fh, chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
+    return PNG_LoadImageInternal(BADDR(fh), chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
     
     AROS_LIBFUNC_EXIT
 }
@@ -495,7 +495,7 @@ AROS_LH4(APTR, PNG_LoadImage,
     
     if ((fh = Open(name, MODE_OLDFILE)))
     {
-    	retval = PNG_LoadImageInternal(fh, chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
+    	retval = PNG_LoadImageInternal(BADDR(fh), chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
 	Close(fh);
     }
    

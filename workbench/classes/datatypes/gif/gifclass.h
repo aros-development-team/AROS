@@ -4,7 +4,10 @@
 */
 
 typedef	struct {
-    struct IFFHandle	*filehandle;
+    union {
+	struct IFFHandle *iff;
+	BPTR bptr;
+    } filehandle;
 
     UBYTE		*filebuf;
     UBYTE		*filebufpos;
