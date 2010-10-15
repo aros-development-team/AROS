@@ -605,7 +605,10 @@ VOID CloseUnit(struct IOSana2Req *request, struct DevBase *base)
 struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 {
    struct DevUnit *unit;
-   ULONG pci_limit, pccard_limit;
+   ULONG pci_limit;
+#ifndef __AROS__
+   ULONG pccard_limit;
+#endif
 
    pci_limit = GetPCICount(base);
 #ifndef __AROS__
