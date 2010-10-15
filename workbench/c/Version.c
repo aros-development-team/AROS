@@ -1216,8 +1216,8 @@ int createdefvers(CONST_STRPTR name)
 	    parsedver.pv_vername &&
 	    parsedver.pv_revname)
 	{
-		sprintf(parsedver.pv_vername, "%d", parsedver.pv_version);
-		sprintf(parsedver.pv_revname, ".%d", parsedver.pv_revision);
+		sprintf(parsedver.pv_vername, "%ld", parsedver.pv_version);
+		sprintf(parsedver.pv_revname, ".%ld", parsedver.pv_revision);
 
 		return RETURN_OK;
 	}
@@ -1589,7 +1589,7 @@ int setvervar(CONST_STRPTR name, LONG ver, LONG rev)
 {
 	UBYTE buf[32];
 
-	sprintf(buf, "%d.%d", (LONG) ver, (LONG) rev);
+	sprintf(buf, "%ld.%ld", (LONG) ver, (LONG) rev);
 
 	return SetVar((STRPTR) name, buf, -1, GVF_LOCAL_ONLY | LV_VAR) ? RETURN_OK : -1;
 }

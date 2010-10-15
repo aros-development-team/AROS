@@ -469,7 +469,7 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 			CloseRootPartition(ph);
 		}
 		else
-			printf("Error OpenRootPartition(%s,%d)\n", device, unit);
+			printf("Error OpenRootPartition(%s,%lu)\n", device, unit);
 		CloseLibrary((struct Library *)PartitionBase);
 	}
 	else
@@ -575,7 +575,7 @@ D(bug("[install-i386] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
 						{
 							printf
 							(
-								"partition %d not found on device %s unit %d\n",
+								"partition %ld not found on device %s unit %lu\n",
 								*pnum, device, unit
 							);
 						}
@@ -610,7 +610,7 @@ D(bug("[install-i386] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
 			CloseRootPartition(ph);		
 		}
 		else
-			printf("Error OpenRootPartition(%s,%d)\n", device, unit);
+			printf("Error OpenRootPartition(%s,%lu)\n", device, unit);
 		CloseLibrary((struct Library *)PartitionBase);
 	}
 	else
@@ -677,7 +677,7 @@ D(bug("[install-i386] collectBlockList: Cleared sector list (20 entries) [start:
    if (retval)
 	{
 D(bug("[install-i386] collectBlockList: ERROR reading block (error: %ld\n", retval));
-			printf("ReadError %d\n", retval);
+			printf("ReadError %lu\n", retval);
 			return 0;
 		}
 
@@ -698,7 +698,7 @@ D(bug("[install-i386] collectBlockList: First block @ %x, i:%d\n", first_block, 
 		if (retval)
 		{
 D(bug("[install-i386] collectBlockList: ERROR reading block (error: %ld)\n", retval));
-			printf("ReadError %d\n", retval);
+			printf("ReadError %lu\n", retval);
 			return 0;
 		}
 D(bug("[install-i386] collectBlockList: read block %lx, i = %d\n", block, i));
@@ -1005,12 +1005,12 @@ D(bug("[install-i386] writeStage1: Install to FLOPPY\n"));
 				error = readwriteBlock
 					(volume, 0, volume->blockbuffer, 512, volume->writecmd);
 				if (error)
-					printf("WriteError %d\n", error);
+					printf("WriteError %lu\n", error);
 				else
 					retval = TRUE;
 			}
 			else
-				printf("WriteError %d\n", error);
+				printf("WriteError %lu\n", error);
 		}
 		else
 			printf("%s: Read Error\n", stage1path);
@@ -1128,7 +1128,7 @@ D(bug("[install-i386] FORCELBA = %d\n",myargs[4]));
 								);
 						}
 						else
-							printf("Read Error: %d\n", retval);
+							printf("Read Error: %lu\n", retval);
 						uninitVolume(bbvol);
 					}
 					uninitVolume(grubvol);
@@ -1138,8 +1138,8 @@ D(bug("[install-i386] FORCELBA = %d\n",myargs[4]));
 			{
 				printf
 				(
-					"%s is not on device %s unit %d\n",
-					(STRPTR)myargs[3], (STRPTR)myargs[0], *((LONG *)myargs[1])
+					"%s is not on device %s unit %lu\n",
+					(STRPTR)myargs[3], (STRPTR)myargs[0], *((ULONG *)myargs[1])
 				);
 			}
 		}

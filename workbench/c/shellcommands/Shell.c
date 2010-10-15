@@ -890,8 +890,8 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 					    appendString(filtered, " ", 1);
 
 					value = **m;
-					bug("%d ", value);
-			 		len = sprintf(buf, "%d", value);
+					bug("%ld ", value);
+			 		len = sprintf(buf, "%ld", value);
 					appendString(filtered, buf, len);
 					++m;
 				    }
@@ -902,7 +902,7 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 				else
 				{
 				    value = *(LONG*)is->arg[i];
-				    len = sprintf(buf, "%d", value);
+				    len = sprintf(buf, "%ld", value);
 				    arg = buf;
 				}
 			    }
@@ -1085,7 +1085,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                  (cookingCS.CS_Buffer[cookingCS.CS_CurChr + 2] == is->dollar) &&
                  (cookingCS.CS_Buffer[cookingCS.CS_CurChr + 3] == is->ket)       )
 	    {
-                len = sprintf(buf, "%d", is->cliNumber);
+                len = sprintf(buf, "%ld", is->cliNumber);
                 appendString(filtered, buf, len);
                 advance(4);
 	    }
