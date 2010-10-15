@@ -931,8 +931,8 @@ IPTR AslListView__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
 IPTR AslListView__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct AslListViewData 	*data;
-    struct Region   	    	*clip, *oldclip;
-    BOOL    	    	    	updating;
+    struct Region   	    	*clip, *oldclip = NULL;
+    BOOL    	    	    	updating = FALSE;
     IPTR 			retval = 0;
     
     data = INST_DATA(cl, o);

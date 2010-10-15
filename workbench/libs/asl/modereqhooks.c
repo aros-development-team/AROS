@@ -259,6 +259,7 @@ AROS_UFH3(ULONG, SMGadgetryHook,
 
 	case LDCMD_WINDOWOPENED:
 	    SMWindowOpened(ld, ASLB(AslBase));
+	    retval = GHRET_OK;
 	    break;
 
 	case LDCMD_LAYOUT:

@@ -98,7 +98,7 @@ BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *l
     };
     
     struct TagItem *ti, *h_ti, *w_ti;
-    WORD x, y, w, h, aw, ah;
+    WORD x = 0, y = 0, w = 0, h = 0, aw, ah;
     UWORD flags = 0;
     BOOL freehoriz = (GetTagData(PGA_Freedom, FREEVERT, tags) == FREEHORIZ);
     BOOL result = FALSE;

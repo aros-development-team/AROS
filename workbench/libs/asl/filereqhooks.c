@@ -480,7 +480,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     Object 			*gad;
     STRPTR 			butstr[NUMBUTS];
     LONG			error = ERROR_NO_FREE_STORE;
-    WORD 			gadrows, x, y, w, h, i, y2;
+    WORD 			gadrows, x, y, w, h, i, y2 = 0;
     
     NEWLIST(&udata->ListviewList);
     
