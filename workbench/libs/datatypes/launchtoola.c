@@ -174,7 +174,7 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 
     case TF_RX:
 	/* Sorry, no Arexx in AROS yet. */
-#warning No Arexx compatibility yet
+        /* FIXME: No Arexx compatibility yet */
 
 	/* Do some "RX command" here */
 	return 0;
