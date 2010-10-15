@@ -127,7 +127,7 @@ struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
 BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 	     ULONG Length)
 {
-    BPTR returnfh = NULL;
+    BPTR returnfh = BNULL;
     //    struct XpkFib *xpkfib=NULL;
     BPTR dosfile;
 

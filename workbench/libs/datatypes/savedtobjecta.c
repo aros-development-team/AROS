@@ -101,7 +101,7 @@ STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
     }
 
     write.dtw_FileHandle = Open(file, MODE_NEWFILE);
-    if (write.dtw_FileHandle == NULL)
+    if (write.dtw_FileHandle == BNULL)
     {
         rc = 0;
 	goto cleanup;
