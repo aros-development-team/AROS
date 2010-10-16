@@ -301,6 +301,16 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 	            &bmdata->bo);
     }
     
+    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
+    /* Yes, it can be called more than once */
+    if (!SD(cl)->rgbpatched)
+    {
+        SD(cl)->rgbpatched = TRUE;
+        HACK_PATCHRGBCONV(o);
+    }
+    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
+    
+    
     return o;
 }
 
@@ -471,7 +481,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
     LOCK_BITMAP
 
     /* For larger transfers use GART */
-    if (((msg->width * msg->height) > (64 * 64)) && (carddata->GART))
+    if (((msg->width * msg->height) >= (64 * 64)) && (carddata->GART))
     {
         BOOL result = FALSE;
         
