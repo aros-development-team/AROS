@@ -1,36 +1,134 @@
-diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c ./mesa/glapi/glapi.c
---- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.c	2010-04-05 10:05:16.000000000 +0200
-+++ ./mesa/glapi/glapi.c	2010-06-25 20:21:12.000000000 +0200
-@@ -120,9 +120,24 @@
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/os/os_time.c ./src/gallium/auxiliary/os/os_time.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/os/os_time.c	2010-10-02 00:51:28.000000000 +0200
++++ ./src/gallium/auxiliary/os/os_time.c	2010-09-27 23:01:59.000000000 +0200
+@@ -37,7 +37,7 @@
  
- #endif /* defined(THREADS) */
+ #if !defined(PIPE_OS_EMBEDDED)
  
-+#if defined(__AROS__)
-+
-+#include "arosmesa_intern.h"
-+void **GETMESABASECTX(void)
-+{
-+    return &(REGMesaBase->mglb_CurrentContext);
-+}
-+
-+struct _glapi_table **GETMESABASEDDISPATCH(void)
-+{
-+    return (struct _glapi_table **)&(REGMesaBase->mglb_Dispatch);
-+}
-+
-+#else
- PUBLIC struct _glapi_table *_glapi_Dispatch = (struct _glapi_table *) __glapi_noop_table;
+-#if defined(PIPE_OS_LINUX) || defined(PIPE_OS_BSD) || defined(PIPE_OS_SOLARIS) || defined(PIPE_OS_APPLE) || defined(PIPE_OS_HAIKU) || defined(PIPE_OS_CYGWIN)
++#if defined(PIPE_OS_LINUX) || defined(PIPE_OS_BSD) || defined(PIPE_OS_SOLARIS) || defined(PIPE_OS_APPLE) || defined(PIPE_OS_HAIKU) || defined(PIPE_OS_CYGWIN) || defined(PIPE_OS_AROS)
+ #  include <sys/time.h> /* timeval */
+ #elif defined(PIPE_SUBSYSTEM_WINDOWS_DISPLAY)
+ #  include <windows.h>
+@@ -57,7 +57,7 @@
+ int64_t
+ os_time_get(void)
+ {
+-#if defined(PIPE_OS_UNIX)
++#if defined(PIPE_OS_UNIX) || defined(PIPE_OS_AROS)
  
- PUBLIC void *_glapi_Context = NULL;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_cpu_detect.c ./src/gallium/auxiliary/util/u_cpu_detect.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_cpu_detect.c	2010-10-02 00:51:28.000000000 +0200
++++ ./src/gallium/auxiliary/util/u_cpu_detect.c	2010-10-09 17:41:21.000000000 +0200
+@@ -195,9 +195,12 @@
+    );
+ #elif defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64)
+    __asm __volatile (
++     "pushq %%rbx\n\t"
+      "cpuid\n\t"
++     "movl %%ebx, %%esi\n\t"
++     "popq %%rbx"
+      : "=a" (p[0]),
+-       "=b" (p[1]),
++       "=S" (p[1]),
+        "=c" (p[2]),
+        "=d" (p[3])
+      : "0" (ax)
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_math.c ./src/gallium/auxiliary/util/u_math.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_math.c	2010-02-05 01:10:39.000000000 +0100
++++ ./src/gallium/auxiliary/util/u_math.c	2010-09-27 23:04:13.000000000 +0200
+@@ -42,6 +42,13 @@
+       pow2_table[i] = (float) pow(2.0, (i - POW2_TABLE_OFFSET) / POW2_TABLE_SCALE);
+ }
+ 
++#if defined(PIPE_OS_AROS)
++/*
++ * NOTE: log_base_2(x) = log(x) / log(2)
++ * NOTE: 1.442695 = 1/log(2).
++ */
++#define log2(x)  ((float) (log(x) * 1.442695f))
 +#endif
  
- #endif /* defined(GLX_USE_TLS) */
- /*@}*/
-diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h ./mesa/glapi/glapi.h
---- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h	2010-04-05 10:05:16.000000000 +0200
-+++ ./mesa/glapi/glapi.h	2010-06-25 20:26:03.000000000 +0200
-@@ -49,6 +49,30 @@
+ /** log2(x), for x in [1.0, 2.0) */
+ float log2_table[LOG2_TABLE_SIZE];
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_math.h ./src/gallium/auxiliary/util/u_math.h
+--- /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_math.h	2010-10-02 00:51:28.000000000 +0200
++++ ./src/gallium/auxiliary/util/u_math.h	2010-09-27 23:03:36.000000000 +0200
+@@ -394,6 +394,8 @@
+ }
+ #elif defined(__MINGW32__)
+ #define ffs __builtin_ffs
++#elif defined(PIPE_OS_AROS)
++#define ffs __builtin_ffs
+ #endif
  
+ #ifdef __MINGW32__
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/drivers/nvfx/nvfx_fragprog.c ./src/gallium/drivers/nvfx/nvfx_fragprog.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/gallium/drivers/nvfx/nvfx_fragprog.c	2010-10-05 03:58:00.000000000 +0200
++++ ./src/gallium/drivers/nvfx/nvfx_fragprog.c	2010-10-04 20:18:13.000000000 +0200
+@@ -1556,7 +1556,7 @@
+ 			struct nvfx_fragment_program_bo* next = fpbo->next;
+ 			nouveau_bo_unmap(fpbo->bo);
+ 			nouveau_bo_ref(0, &fpbo->bo);
+-			free(fpbo);
++			os_free_aligned(fpbo);
+ 			fpbo = next;
+ 		}
+ 		while(fpbo != fp->fpbo);
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/include/pipe/p_config.h ./src/gallium/include/pipe/p_config.h
+--- /data/deadwood/source/Mesa-7.9-staging/src/gallium/include/pipe/p_config.h	2010-10-02 00:51:28.000000000 +0200
++++ ./src/gallium/include/pipe/p_config.h	2010-09-27 23:02:50.000000000 +0200
+@@ -180,6 +180,10 @@
+ #define PIPE_OS_UNIX
+ #endif
+ 
++#if defined(__AROS__)
++#define PIPE_OS_AROS
++#endif
++
+ /*
+  * Try to auto-detect the subsystem.
+  * 
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/glsl/ir.h ./src/glsl/ir.h
+--- /data/deadwood/source/Mesa-7.9-staging/src/glsl/ir.h	2010-10-02 00:51:28.000000000 +0200
++++ ./src/glsl/ir.h	2010-10-05 20:07:00.000000000 +0200
+@@ -41,6 +41,14 @@
+ #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+ #endif
+ 
++#if defined(__AROS__)
++#include <aros/debug.h>
++#undef VOLATILE
++#undef STATIC
++#define log2(x)             ((float) (log(x) * 1.442695f))
++#define printf(fmt, ...)    bug(fmt, ##__VA_ARGS__)
++#endif
++
+ /**
+  * \defgroup IR Intermediate representation nodes
+  *
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/glsl/s_expression.cpp ./src/glsl/s_expression.cpp
+--- /data/deadwood/source/Mesa-7.9-staging/src/glsl/s_expression.cpp	2010-10-02 00:51:28.000000000 +0200
++++ ./src/glsl/s_expression.cpp	2010-10-02 18:45:57.000000000 +0200
+@@ -28,6 +28,11 @@
+ #include <assert.h>
+ #include "s_expression.h"
+ 
++#if defined(__AROS__)
++#include <aros/debug.h>
++#define printf(fmt, ...)    bug(fmt, ##__VA_ARGS__)
++#endif
++
+ s_symbol::s_symbol(const char *tmp, size_t n)
+ {
+    this->str = talloc_strndup (this, tmp, n);
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mapi/glapi/glapi.h ./src/mapi/glapi/glapi.h
+--- /data/deadwood/source/Mesa-7.9-staging/src/mapi/glapi/glapi.h	2010-10-02 00:51:28.000000000 +0200
++++ ./src/mapi/glapi/glapi.h	2010-09-29 19:26:16.000000000 +0200
+@@ -82,6 +82,30 @@
+ typedef void (*_glapi_proc)(void);
  struct _glapi_table;
  
 +#if defined(__AROS__)
@@ -57,16 +155,13 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h
 +extern struct _glapi_table      **GETMESABASEDDISPATCH(void);
 +#endif
 +
- typedef void (*_glapi_proc)(void); /* generic function pointer */
  
+ #if defined (GLX_USE_TLS)
  
-@@ -94,9 +118,15 @@
+@@ -99,8 +123,18 @@
  
  #else
  
--extern struct _glapi_table *_glapi_Dispatch;
--
--extern void *_glapi_Context;
 +#if defined(__AROS__)
 +# if defined(USE_MGL_NAMESPACE)
 +#  define _mglapi_Context *(GETMESABASECTX())
@@ -75,14 +170,55 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/glapi/glapi.h
 +#  define _glapi_Context *(GETMESABASECTX())
 +#  define _glapi_Dispatch *(GETMESABASEDDISPATCH())
 +# endif
++#else
+ _GLAPI_EXPORT extern struct _glapi_table *_glapi_Dispatch;
+ _GLAPI_EXPORT extern void *_glapi_Context;
 +#endif
  
  # ifdef THREADS
  
-diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler.h ./mesa/main/compiler.h
---- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler.h	2010-04-04 17:46:26.000000000 +0200
-+++ ./mesa/main/compiler.h	2010-04-08 20:08:28.000000000 +0200
-@@ -234,6 +234,8 @@
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mapi/mapi/u_current.c ./src/mapi/mapi/u_current.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/mapi/mapi/u_current.c	2010-10-02 00:51:28.000000000 +0200
++++ ./src/mapi/mapi/u_current.c	2010-09-30 19:11:42.000000000 +0200
+@@ -111,9 +111,22 @@
+ 
+ #else
+ 
++#if defined(__AROS__)
++#include "arosmesa_intern.h"
++void **GETMESABASECTX(void)
++{
++    return &(REGMesaBase->mglb_CurrentContext);
++}
++
++struct _glapi_table **GETMESABASEDDISPATCH(void)
++{
++    return (struct _glapi_table **)&(REGMesaBase->mglb_Dispatch);
++}
++#else
+ struct mapi_table *u_current_table =
+    (struct mapi_table *) table_noop_array;
+ void *u_current_user;
++#endif
+ 
+ #ifdef THREADS
+ struct u_tsd u_current_table_tsd;
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mapi/mapi/u_thread.c ./src/mapi/mapi/u_thread.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/mapi/mapi/u_thread.c	2010-10-02 00:51:28.000000000 +0200
++++ ./src/mapi/mapi/u_thread.c	2010-09-30 19:13:50.000000000 +0200
+@@ -222,7 +222,7 @@
+  */
+ 
+ unsigned long
+-_glthread_GetID(void)
++u_thread_self(void)
+ {
+    return 0;
+ }
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mesa/main/compiler.h ./src/mesa/main/compiler.h
+--- /data/deadwood/source/Mesa-7.9-staging/src/mesa/main/compiler.h	2010-10-02 00:51:28.000000000 +0200
++++ ./src/mesa/main/compiler.h	2010-10-09 12:23:01.000000000 +0200
+@@ -251,6 +251,8 @@
  #elif defined(__APPLE__)
  #include <CoreFoundation/CFByteOrder.h>
  #define CPU_TO_LE32( x )	CFSwapInt32HostToLittle( x )
@@ -91,10 +227,32 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/compiler
  #elif (defined(_AIX) || defined(__blrts))
  static INLINE GLuint CPU_TO_LE32(GLuint x)
  {
-diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/imports.c ./mesa/main/imports.c
---- /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/imports.c	2010-04-04 17:46:26.000000000 +0200
-+++ ./mesa/main/imports.c	2010-04-08 23:09:15.000000000 +0200
-@@ -501,7 +501,7 @@
+@@ -318,6 +320,9 @@
+ /**
+  * ASSERT macro
+  */
++#if defined(__AROS__)
++#undef ASSERT
++#endif
+ #if !defined(_WIN32_WCE)
+ #if defined(BUILD_FOR_SNAP) && defined(CHECKED)
+ #  define ASSERT(X)   _CHECK(X) 
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mesa/main/context.c ./src/mesa/main/context.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/mesa/main/context.c	2010-10-05 03:58:00.000000000 +0200
++++ ./src/mesa/main/context.c	2010-09-30 21:43:08.000000000 +0200
+@@ -439,7 +439,7 @@
+    /* Hopefully atexit() is widely available.  If not, we may need some
+     * #ifdef tests here.
+     */
+-   atexit(_mesa_destroy_shader_compiler);
++//TODO FIXME   atexit(_mesa_destroy_shader_compiler);
+ 
+    dummy_enum_func();
+ }
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mesa/main/imports.c ./src/mesa/main/imports.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/mesa/main/imports.c	2010-10-02 00:51:28.000000000 +0200
++++ ./src/mesa/main/imports.c	2010-10-01 19:45:05.000000000 +0200
+@@ -457,7 +457,7 @@
  int
  _mesa_ffs(int32_t i)
  {
@@ -103,12 +261,27 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.8.1-staging/src/mesa/main/imports.
     register int bit = 0;
     if (i != 0) {
        if ((i & 0xffff) == 0) {
-@@ -564,7 +564,7 @@
+@@ -520,7 +520,8 @@
  unsigned int
  _mesa_bitcount(unsigned int n)
  {
--#if defined(__GNUC__)
-+#if !defined(__AROS__) && defined(__GNUC__)
+-#if defined(__GNUC__) && \
++/* AROS: don't use __builtin_popcount */
++#if !defined(__AROS__) && defined(__GNUC__) && \
+ 	((_GNUC__ == 3 && __GNUC_MINOR__ >= 4) || __GNUC__ >= 4)
     return __builtin_popcount(n);
  #else
-    unsigned int bits;
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mesa/main/querymatrix.c ./src/mesa/main/querymatrix.c
+--- /data/deadwood/source/Mesa-7.9-staging/src/mesa/main/querymatrix.c	2010-10-05 03:58:00.000000000 +0200
++++ ./src/mesa/main/querymatrix.c	2010-09-30 21:42:13.000000000 +0200
+@@ -76,6 +76,10 @@
+      (defined(__sun) && defined(__GNUC__))
+ 
+ /* fpclassify is available. */
++#elif defined(__AROS__)
++
++#undef fpclassify
++#define fpclassify(x)   FP_NORMAL
+ 
+ #elif !defined(_XOPEN_SOURCE) || _XOPEN_SOURCE < 600
+ 
