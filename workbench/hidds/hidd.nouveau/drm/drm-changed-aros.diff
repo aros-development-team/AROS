@@ -285,8 +285,8 @@ diff -ur -x .svn drm/drm_crtc.c drm-changed/drm_crtc.c
 +
 diff -ur -x .svn drm/drm_crtc.h drm-changed/drm_crtc.h
 --- drm/drm_crtc.h	2010-06-20 18:44:23.000000000 +0200
-+++ drm-changed/drm_crtc.h	2010-06-27 21:17:19.000000000 +0200
-@@ -25,12 +25,14 @@
++++ drm-changed/drm_crtc.h	2010-10-03 11:57:23.000000000 +0200
+@@ -25,12 +25,16 @@
  #ifndef __DRM_CRTC_H__
  #define __DRM_CRTC_H__
  
@@ -297,11 +297,13 @@ diff -ur -x .svn drm/drm_crtc.h drm-changed/drm_crtc.h
  #include <linux/idr.h>
  
  #include <linux/fb.h>
++#else
++#include "drm_linux_list.h"
 +#endif
  
  struct drm_device;
  struct drm_mode_set;
-@@ -485,7 +487,7 @@
+@@ -485,7 +489,7 @@
   */
  struct drm_connector {
  	struct drm_device *dev;
@@ -310,7 +312,7 @@ diff -ur -x .svn drm/drm_crtc.h drm-changed/drm_crtc.h
  	struct device_attribute *attr;
  	struct list_head head;
  
-@@ -666,8 +668,8 @@
+@@ -666,8 +670,8 @@
  extern int drm_mode_group_init_legacy_group(struct drm_device *dev, struct drm_mode_group *group);
  extern struct edid *drm_get_edid(struct drm_connector *connector,
  				 struct i2c_adapter *adapter);
@@ -321,7 +323,7 @@ diff -ur -x .svn drm/drm_crtc.h drm-changed/drm_crtc.h
  extern int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid);
  extern void drm_mode_probed_add(struct drm_connector *connector, struct drm_display_mode *mode);
  extern void drm_mode_remove(struct drm_connector *connector, struct drm_display_mode *mode);
-@@ -790,7 +792,7 @@
+@@ -790,7 +794,7 @@
  				    void *data, struct drm_file *file_priv);
  extern int drm_mode_gamma_set_ioctl(struct drm_device *dev,
  				    void *data, struct drm_file *file_priv);
@@ -795,8 +797,8 @@ diff -ur -x .svn drm/drm_mm.c drm-changed/drm_mm.c
  
 diff -ur -x .svn drm/drm_mm.h drm-changed/drm_mm.h
 --- drm/drm_mm.h	2010-06-20 18:44:23.000000000 +0200
-+++ drm-changed/drm_mm.h	2010-06-27 21:17:19.000000000 +0200
-@@ -36,10 +36,14 @@
++++ drm-changed/drm_mm.h	2010-10-03 11:57:09.000000000 +0200
+@@ -36,10 +36,15 @@
  /*
   * Generic range manager structs
   */
@@ -807,6 +809,7 @@ diff -ur -x .svn drm/drm_mm.h drm-changed/drm_mm.h
  #endif
 +#else
 +#include "drm_compat_types.h"
++#include "drm_linux_list.h"
 +#endif
  
  struct drm_mm_node {
@@ -1700,8 +1703,27 @@ diff -ur -x .svn drm/nouveau/nouveau_irq.c drm-changed/nouveau/nouveau_irq.c
  
 diff -ur -x .svn drm/nouveau/nouveau_mem.c drm-changed/nouveau/nouveau_mem.c
 --- drm/nouveau/nouveau_mem.c	2010-06-20 18:44:23.000000000 +0200
-+++ drm-changed/nouveau/nouveau_mem.c	2010-06-27 22:29:57.000000000 +0200
-@@ -469,6 +469,7 @@
++++ drm-changed/nouveau/nouveau_mem.c	2010-10-03 13:55:39.000000000 +0200
+@@ -357,7 +357,7 @@
+ nouveau_mem_detect(struct drm_device *dev)
+ {
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+-
++#if !defined(HOSTED_BUILD)
+ 	if (dev_priv->card_type == NV_04) {
+ 		dev_priv->vram_size = nouveau_mem_detect_nv04(dev);
+ 	} else
+@@ -376,6 +376,9 @@
+ 			dev_priv->vram_sys_base <<= 12;
+ 		}
+ 	}
++#else
++    dev_priv->vram_size = 128 << 20;
++#endif
+ 
+ 	NV_INFO(dev, "Detected %dMiB VRAM\n", (int)(dev_priv->vram_size >> 20));
+ 	if (dev_priv->vram_sys_base) {
+@@ -469,6 +472,7 @@
  	dev_priv->fb_phys = drm_get_resource_start(dev, 1);
  	dev_priv->gart_info.type = NOUVEAU_GART_NONE;
  
@@ -1709,7 +1731,7 @@ diff -ur -x .svn drm/nouveau/nouveau_mem.c drm-changed/nouveau/nouveau_mem.c
  	if (dev_priv->card_type >= NV_50 &&
  	    pci_dma_supported(dev->pdev, DMA_BIT_MASK(40)))
  		dma_bits = 40;
-@@ -478,6 +479,7 @@
+@@ -478,6 +482,7 @@
  		NV_ERROR(dev, "Error setting DMA mask: %d\n", ret);
  		return ret;
  	}
@@ -1756,7 +1778,7 @@ diff -ur -x .svn drm/nouveau/nouveau_sgdma.c drm-changed/nouveau/nouveau_sgdma.c
  		dev_priv->gart_info.sg_dummy_bus = 0;
 diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
 --- drm/nouveau/nouveau_state.c	2010-06-20 18:44:23.000000000 +0200
-+++ drm-changed/nouveau/nouveau_state.c	2010-06-28 20:49:14.000000000 +0200
++++ drm-changed/nouveau/nouveau_state.c	2010-10-04 21:28:01.000000000 +0200
 @@ -23,14 +23,18 @@
   * DEALINGS IN THE SOFTWARE.
   */
@@ -1820,7 +1842,20 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  
  	/* Initialise internal driver API hooks */
  	ret = nouveau_init_engine_ptrs(dev);
-@@ -486,9 +496,11 @@
+@@ -420,10 +430,12 @@
+ 	dev_priv->init_state = NOUVEAU_CARD_INIT_FAILED;
+ 	spin_lock_init(&dev_priv->context_switch_lock);
+ 
++#if !defined(HOSTED_BUILD)
+ 	/* Parse BIOS tables / Run init tables if card not POSTed */
+ 	ret = nouveau_bios_init(dev);
+ 	if (ret)
+ 		goto out;
++#endif
+ 
+ 	ret = nouveau_mem_detect(dev);
+ 	if (ret)
+@@ -486,9 +498,11 @@
  	if (ret)
  		goto out_fifo;
  
@@ -1832,7 +1867,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  
  	/* what about PVIDEO/PCRTC/PRAMDAC etc? */
  
-@@ -545,7 +557,9 @@
+@@ -545,7 +559,9 @@
  out_bios:
  	nouveau_bios_takedown(dev);
  out:
@@ -1842,7 +1877,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  	return ret;
  }
  
-@@ -563,7 +577,7 @@
+@@ -563,7 +579,7 @@
  			nouveau_channel_free(dev_priv->channel);
  			dev_priv->channel = NULL;
  		}
@@ -1851,7 +1886,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  		if (!nouveau_noaccel) {
  			engine->fifo.takedown(dev);
  			engine->graph.takedown(dev);
-@@ -587,7 +601,11 @@
+@@ -587,7 +603,11 @@
  		nouveau_gpuobj_late_takedown(dev);
  		nouveau_bios_takedown(dev);
  
@@ -1863,7 +1898,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  
  		dev_priv->init_state = NOUVEAU_CARD_INIT_DOWN;
  	}
-@@ -646,12 +664,19 @@
+@@ -646,12 +666,19 @@
  	dev_priv->flags = flags & NOUVEAU_FLAGS;
  	dev_priv->init_state = NOUVEAU_CARD_INIT_DOWN;
  
@@ -1883,7 +1918,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  
  	/* resource 0 is mmio regs */
  	/* resource 1 is linear FB */
-@@ -693,6 +718,10 @@
+@@ -693,6 +720,10 @@
  	} else
  		dev_priv->chipset = 0xff;
  
@@ -1894,7 +1929,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  	switch (dev_priv->chipset & 0xf0) {
  	case 0x00:
  	case 0x10:
-@@ -714,7 +743,7 @@
+@@ -714,7 +745,7 @@
  		NV_INFO(dev, "Unsupported chipset 0x%08x\n", reg0);
  		return -EINVAL;
  	}
@@ -1903,7 +1938,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  	NV_INFO(dev, "Detected an NV%2x generation card (0x%08x)\n",
  		dev_priv->card_type, reg0);
  
-@@ -772,11 +801,14 @@
+@@ -772,11 +803,14 @@
  		nv04_display_destroy(dev);
  	nouveau_card_takedown(dev);
  
@@ -1923,7 +1958,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  	return 0;
  }
  
-@@ -813,9 +845,13 @@
+@@ -813,9 +847,13 @@
  		getparam->value = dev_priv->gart_info.aper_base;
  		break;
  	case NOUVEAU_GETPARAM_PCI_PHYSICAL:
@@ -1937,7 +1972,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  			NV_ERROR(dev, "Requested PCIGART address, "
  					"while no PCIGART was created\n");
  			return -EINVAL;
-@@ -871,6 +907,7 @@
+@@ -871,6 +909,7 @@
  bool nouveau_wait_until(struct drm_device *dev, uint64_t timeout,
  			uint32_t reg, uint32_t mask, uint32_t val)
  {
@@ -1945,7 +1980,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
  	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
  	uint64_t start = ptimer->read(dev);
-@@ -881,6 +918,9 @@
+@@ -881,6 +920,9 @@
  	} while (ptimer->read(dev) - start < timeout);
  
  	return false;
@@ -1955,7 +1990,7 @@ diff -ur -x .svn drm/nouveau/nouveau_state.c drm-changed/nouveau/nouveau_state.c
  }
  
  /* Waits for PGRAPH to go completely idle */
-@@ -894,4 +934,3 @@
+@@ -894,4 +936,3 @@
  
  	return true;
  }
@@ -2210,7 +2245,7 @@ diff -ur -x .svn drm/ttm/ttm_agp_backend.c drm-changed/ttm/ttm_agp_backend.c
  
 diff -ur -x .svn drm/ttm/ttm_bo_api.h drm-changed/ttm/ttm_bo_api.h
 --- drm/ttm/ttm_bo_api.h	2010-06-20 18:44:23.000000000 +0200
-+++ drm-changed/ttm/ttm_bo_api.h	2010-06-27 21:17:29.000000000 +0200
++++ drm-changed/ttm/ttm_bo_api.h	2010-10-03 12:02:18.000000000 +0200
 @@ -32,6 +32,7 @@
  #define _TTM_BO_API_H_
  
@@ -2219,17 +2254,18 @@ diff -ur -x .svn drm/ttm/ttm_bo_api.h drm-changed/ttm/ttm_bo_api.h
  #include <linux/kref.h>
  #include <linux/list.h>
  #include <linux/wait.h>
-@@ -39,6 +40,9 @@
+@@ -39,6 +40,10 @@
  #include <linux/mm.h>
  #include <linux/rbtree.h>
  #include <linux/bitmap.h>
 +#else
++#include "drm_linux_list.h"
 +#include "drm_compat_funcs.h"
 +#endif
  
  struct ttm_bo_device;
  
-@@ -189,7 +193,7 @@
+@@ -189,7 +194,7 @@
  
  	struct kref kref;
  	struct kref list_kref;
@@ -2238,7 +2274,7 @@ diff -ur -x .svn drm/ttm/ttm_bo_api.h drm-changed/ttm/ttm_bo_api.h
  	spinlock_t lock;
  
  	/**
-@@ -237,7 +241,9 @@
+@@ -237,7 +242,9 @@
  	 * Members protected by the bdev::vm_lock
  	 */
  
@@ -2248,7 +2284,7 @@ diff -ur -x .svn drm/ttm/ttm_bo_api.h drm-changed/ttm/ttm_bo_api.h
  	struct drm_mm_node *vm_node;
  
  
-@@ -576,6 +582,7 @@
+@@ -576,6 +583,7 @@
  #if 0
  #endif
  
@@ -2256,7 +2292,7 @@ diff -ur -x .svn drm/ttm/ttm_bo_api.h drm-changed/ttm/ttm_bo_api.h
  /**
   * ttm_fbdev_mmap - mmap fbdev memory backed by a ttm buffer object.
   *
-@@ -628,6 +635,7 @@
+@@ -628,6 +636,7 @@
  extern ssize_t ttm_bo_io(struct ttm_bo_device *bdev, struct file *filp,
  			 const char __user *wbuf, char __user *rbuf,
  			 size_t count, loff_t *f_pos, bool write);
@@ -2266,8 +2302,8 @@ diff -ur -x .svn drm/ttm/ttm_bo_api.h drm-changed/ttm/ttm_bo_api.h
  
 diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
 --- drm/ttm/ttm_bo.c	2010-06-20 18:44:23.000000000 +0200
-+++ drm-changed/ttm/ttm_bo.c	2010-06-27 22:41:18.000000000 +0200
-@@ -39,25 +39,31 @@
++++ drm-changed/ttm/ttm_bo.c	2010-10-03 12:02:30.000000000 +0200
+@@ -39,25 +39,29 @@
  #include "ttm/ttm_module.h"
  #include "ttm/ttm_bo_driver.h"
  #include "ttm/ttm_placement.h"
@@ -2278,8 +2314,6 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  #include <linux/mm.h>
  #include <linux/file.h>
  #include <linux/module.h>
-+#else
-+#include "drm_compat_funcs.h"
 +#endif
 +
  
@@ -2300,7 +2334,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  static inline int ttm_mem_type_from_flags(uint32_t flags, uint32_t *mem_type)
  {
-@@ -112,6 +118,7 @@
+@@ -112,6 +116,7 @@
  	}
  }
  
@@ -2308,7 +2342,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  static ssize_t ttm_bo_global_show(struct kobject *kobj,
  				  struct attribute *attr,
  				  char *buffer)
-@@ -137,6 +144,7 @@
+@@ -137,6 +142,7 @@
  	.sysfs_ops = &ttm_bo_global_ops,
  	.default_attrs = ttm_bo_global_attrs
  };
@@ -2316,7 +2350,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  
  static inline uint32_t ttm_bo_type_flags(unsigned type)
-@@ -148,7 +156,9 @@
+@@ -148,7 +154,9 @@
  {
  	struct ttm_buffer_object *bo =
  	    container_of(list_kref, struct ttm_buffer_object, list_kref);
@@ -2326,7 +2360,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  	BUG_ON(atomic_read(&bo->list_kref.refcount));
  	BUG_ON(atomic_read(&bo->kref.refcount));
-@@ -164,14 +174,17 @@
+@@ -164,14 +172,17 @@
  	if (bo->destroy)
  		bo->destroy(bo);
  	else {
@@ -2345,7 +2379,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  	if (interruptible) {
  		int ret = 0;
  
-@@ -182,10 +195,14 @@
+@@ -182,10 +193,14 @@
  	} else {
  		wait_event(bo->event_queue, atomic_read(&bo->reserved) == 0);
  	}
@@ -2360,7 +2394,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  static void ttm_bo_add_to_lru(struct ttm_buffer_object *bo)
  {
  	struct ttm_bo_device *bdev = bo->bdev;
-@@ -208,6 +225,7 @@
+@@ -208,6 +223,7 @@
  	}
  }
  
@@ -2368,7 +2402,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  /**
   * Call with the lru_lock held.
   */
-@@ -301,7 +319,7 @@
+@@ -301,7 +317,7 @@
  	spin_lock(&glob->lru_lock);
  	ttm_bo_add_to_lru(bo);
  	atomic_set(&bo->reserved, 0);
@@ -2377,7 +2411,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  	spin_unlock(&glob->lru_lock);
  }
  EXPORT_SYMBOL(ttm_bo_unreserve);
-@@ -341,8 +359,12 @@
+@@ -341,8 +357,12 @@
  			break;
  		}
  
@@ -2390,7 +2424,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  		if (unlikely(ret != 0))
  			ttm_tt_destroy(bo->ttm);
  		break;
-@@ -503,8 +525,16 @@
+@@ -503,8 +523,16 @@
  
  		if (sync_obj)
  			driver->sync_obj_flush(sync_obj, sync_obj_arg);
@@ -2407,7 +2441,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  		ret = 0;
  
  	} else {
-@@ -565,6 +595,7 @@
+@@ -565,6 +593,7 @@
  	return ret;
  }
  
@@ -2415,7 +2449,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  static void ttm_bo_delayed_workqueue(struct work_struct *work)
  {
  	struct ttm_bo_device *bdev =
-@@ -575,6 +606,7 @@
+@@ -575,6 +604,7 @@
  				      ((HZ / 100) < 1) ? 1 : HZ / 100);
  	}
  }
@@ -2423,7 +2457,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  static void ttm_bo_release(struct kref *kref)
  {
-@@ -583,7 +615,9 @@
+@@ -583,7 +613,9 @@
  	struct ttm_bo_device *bdev = bo->bdev;
  
  	if (likely(bo->vm_node != NULL)) {
@@ -2433,7 +2467,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  		drm_mm_put_block(bo->vm_node);
  		bo->vm_node = NULL;
  	}
-@@ -968,11 +1002,19 @@
+@@ -968,11 +1000,19 @@
  
  int ttm_bo_wait_cpu(struct ttm_buffer_object *bo, bool no_wait)
  {
@@ -2453,7 +2487,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  }
  EXPORT_SYMBOL(ttm_bo_wait_cpu);
  
-@@ -1140,7 +1182,7 @@
+@@ -1140,7 +1180,7 @@
  	kref_init(&bo->list_kref);
  	atomic_set(&bo->cpu_writers, 0);
  	atomic_set(&bo->reserved, 1);
@@ -2462,7 +2496,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  	INIT_LIST_HEAD(&bo->lru);
  	INIT_LIST_HEAD(&bo->ddestroy);
  	INIT_LIST_HEAD(&bo->swap);
-@@ -1190,6 +1232,7 @@
+@@ -1190,6 +1230,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_init);
  
@@ -2470,7 +2504,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  static inline size_t ttm_bo_size(struct ttm_bo_global *glob,
  				 unsigned long num_pages)
  {
-@@ -1234,6 +1277,7 @@
+@@ -1234,6 +1275,7 @@
  
  	return ret;
  }
@@ -2478,7 +2512,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  static int ttm_bo_force_list_clean(struct ttm_bo_device *bdev,
  					unsigned mem_type, bool allow_errors)
-@@ -1302,6 +1346,7 @@
+@@ -1302,6 +1344,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_clean_mm);
  
@@ -2486,7 +2520,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  int ttm_bo_evict_mm(struct ttm_bo_device *bdev, unsigned mem_type)
  {
  	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
-@@ -1323,6 +1368,7 @@
+@@ -1323,6 +1366,7 @@
  	return ttm_bo_force_list_clean(bdev, mem_type, true);
  }
  EXPORT_SYMBOL(ttm_bo_evict_mm);
@@ -2494,7 +2528,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  int ttm_bo_init_mm(struct ttm_bo_device *bdev, unsigned type,
  			unsigned long p_size)
-@@ -1369,6 +1415,7 @@
+@@ -1369,6 +1413,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_init_mm);
  
@@ -2502,7 +2536,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  static void ttm_bo_global_kobj_release(struct kobject *kobj)
  {
  	struct ttm_bo_global *glob =
-@@ -1378,27 +1425,34 @@
+@@ -1378,27 +1423,34 @@
  	__free_page(glob->dummy_read_page);
  	kfree(glob);
  }
@@ -2541,7 +2575,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  	if (unlikely(glob->dummy_read_page == NULL)) {
  		ret = -ENOMEM;
-@@ -1408,6 +1462,7 @@
+@@ -1408,6 +1460,7 @@
  	INIT_LIST_HEAD(&glob->swap_lru);
  	INIT_LIST_HEAD(&glob->device_list);
  
@@ -2549,7 +2583,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  	ttm_mem_init_shrink(&glob->shrink, ttm_bo_swapout);
  	ret = ttm_mem_register_shrink(glob->mem_glob, &glob->shrink);
  	if (unlikely(ret != 0)) {
-@@ -1415,6 +1470,7 @@
+@@ -1415,6 +1468,7 @@
  		       "Could not register buffer object swapout.\n");
  		goto out_no_shrink;
  	}
@@ -2557,7 +2591,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  	glob->ttm_bo_extra_size =
  		ttm_round_pot(sizeof(struct ttm_tt)) +
-@@ -1425,13 +1481,16 @@
+@@ -1425,13 +1479,16 @@
  
  	atomic_set(&glob->bo_count, 0);
  
@@ -2578,7 +2612,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  out_no_drp:
  	kfree(glob);
  	return ret;
-@@ -1464,8 +1523,11 @@
+@@ -1464,8 +1521,11 @@
  	list_del(&bdev->device_list);
  	mutex_unlock(&glob->device_list_mutex);
  
@@ -2590,7 +2624,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  	while (ttm_bo_delayed_delete(bdev, true))
  		;
-@@ -1508,12 +1570,17 @@
+@@ -1508,12 +1568,17 @@
  	if (unlikely(ret != 0))
  		goto out_no_sys;
  
@@ -2608,7 +2642,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  	bdev->nice_mode = true;
  	INIT_LIST_HEAD(&bdev->ddestroy);
  	bdev->dev_mapping = NULL;
-@@ -1575,6 +1642,7 @@
+@@ -1575,6 +1640,7 @@
  
  void ttm_bo_unmap_virtual(struct ttm_buffer_object *bo)
  {
@@ -2616,7 +2650,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  	struct ttm_bo_device *bdev = bo->bdev;
  	loff_t offset = (loff_t) bo->addr_space_offset;
  	loff_t holelen = ((loff_t) bo->mem.num_pages) << PAGE_SHIFT;
-@@ -1583,9 +1651,13 @@
+@@ -1583,9 +1649,13 @@
  		return;
  
  	unmap_mapping_range(bdev->dev_mapping, offset, holelen, 1);
@@ -2630,7 +2664,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  static void ttm_bo_vm_insert_rb(struct ttm_buffer_object *bo)
  {
  	struct ttm_bo_device *bdev = bo->bdev;
-@@ -1610,6 +1682,7 @@
+@@ -1610,6 +1680,7 @@
  	rb_link_node(&bo->vm_rb, parent, cur);
  	rb_insert_color(&bo->vm_rb, &bdev->addr_space_rb);
  }
@@ -2638,7 +2672,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  /**
   * ttm_bo_setup_vm:
-@@ -1649,7 +1722,9 @@
+@@ -1649,7 +1720,9 @@
  		goto retry_pre_get;
  	}
  
@@ -2648,7 +2682,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  	write_unlock(&bdev->vm_lock);
  	bo->addr_space_offset = ((uint64_t) bo->vm_node->start) << PAGE_SHIFT;
  
-@@ -1669,9 +1744,13 @@
+@@ -1669,9 +1742,13 @@
  
  	if (likely(bo->sync_obj == NULL))
  		return 0;
@@ -2663,7 +2697,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  		if (driver->sync_obj_signaled(bo->sync_obj, bo->sync_obj_arg)) {
  			void *tmp_obj = bo->sync_obj;
  			bo->sync_obj = NULL;
-@@ -1716,6 +1795,7 @@
+@@ -1716,6 +1793,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_wait);
  
@@ -2671,7 +2705,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  void ttm_bo_unblock_reservation(struct ttm_buffer_object *bo)
  {
  	atomic_set(&bo->reserved, 0);
-@@ -1742,6 +1822,7 @@
+@@ -1742,6 +1820,7 @@
  	}
  	return 0;
  }
@@ -2679,7 +2713,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  
  int ttm_bo_synccpu_write_grab(struct ttm_buffer_object *bo, bool no_wait)
  {
-@@ -1754,7 +1835,9 @@
+@@ -1754,7 +1833,9 @@
  
  	ret = ttm_bo_reserve(bo, true, no_wait, false, 0);
  	if (unlikely(ret != 0))
@@ -2689,7 +2723,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  	spin_lock(&bo->lock);
  	ret = ttm_bo_wait(bo, false, true, no_wait);
  	spin_unlock(&bo->lock);
-@@ -1765,13 +1848,20 @@
+@@ -1765,13 +1846,20 @@
  }
  EXPORT_SYMBOL(ttm_bo_synccpu_write_grab);
  
@@ -2710,7 +2744,7 @@ diff -ur -x .svn drm/ttm/ttm_bo.c drm-changed/ttm/ttm_bo.c
  /**
   * A buffer object shrink method that tries to swap out the first
   * buffer object on the bo_global::swap_lru list.
-@@ -1875,3 +1965,4 @@
+@@ -1875,3 +1963,4 @@
  		;
  }
  EXPORT_SYMBOL(ttm_bo_swapout_all);
