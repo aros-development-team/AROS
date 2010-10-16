@@ -150,6 +150,10 @@ struct staticdata
     /* TEMP - FIXME HACK FOR GALLIUM */
     
     struct SignalSemaphore multibitmapsemaphore;
+    
+    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
+    volatile BOOL rgbpatched;
+    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
 };
 
 LIBBASETYPE 

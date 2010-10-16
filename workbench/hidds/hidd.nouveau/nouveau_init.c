@@ -124,6 +124,10 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
     Nouveau_HOSTED_BUILD_Init(LIBBASE);
 #endif
 
+    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
+    LIBBASE->sd.rgbpatched = FALSE;
+    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
+
     return TRUE;
 }
 
