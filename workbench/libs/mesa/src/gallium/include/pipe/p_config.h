@@ -106,6 +106,10 @@
 #endif
 #endif
 
+#if defined(__mc68000) /* gcc */
+#define PIPE_ARCH_M68K
+#endif
+
 
 /*
  * Endian detection.
