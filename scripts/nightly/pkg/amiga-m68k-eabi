@@ -1,0 +1,37 @@
+#!/bin/zsh
+# Creates amiga-m68k-eabi binary packages.
+
+BUILDTARGET=amiga-m68k-eabi
+
+source $SP/setup
+# The log-name MUST match the name of the package script
+setl   $BUILDTARGET.log
+
+ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+
+printi "Creating AROS/"$BUILDTARGET" system package..."
+PACKAGE=$BASENAME-$BUILDTARGET-system
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+delete  $BUILD_BASE/AROS
+copy    $SOURCE_AROS      $BUILD_BASE/AROS
+copy    $SOURCE_NECESSARY/necessary $BUILD_BASE/AROS/contrib
+
+cd      $BUILD_BASE/AROS
+export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
+execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-optimization="-Os" --with-serial-debug
+make
+make kernel-link-amiga-m68k
+
+cd      $BUILD_BASE/AROS/bin/amiga-m68k
+move    AROS $PACKAGE
+
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
+delete  $PACKAGE/aros-amiga-m68k.elf
+delete  $PACAKGE/Development/lib
+
+archive $ARCHIVE $PACKAGE
+
+cd      $ROOT
+resetl
