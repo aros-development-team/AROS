@@ -19,6 +19,8 @@
 #ifndef _FENV_H
 #define _FENV_H	1
 
+#include <aros/system.h>
+
 /* Define bits representing the exception.  We use the bit positions of
    the appropriate bits in the FPSR Accrued Exception Byte.  */
 enum
@@ -75,6 +77,8 @@ fenv_t;
 /* Floating-point environment where none of the exceptions are masked.  */
 # define FE_NOMASK_ENV	((__const fenv_t *) -2)
 #endif
+
+__BEGIN_DECLS
 
 /* Floating-point exception handling.  */
 
