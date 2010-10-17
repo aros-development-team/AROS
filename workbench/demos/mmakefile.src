@@ -10,13 +10,6 @@ include $(TOP)/config/make.cfg
 #   2) Missing functions because we don't link with libc.a
 #   3) "Fixed or forbidden register was spilled"
 
-ifeq ($(FLAVOUR),native)
-FILES	:= \
-    font2c gtdemo helloworld inquire intuitext librarytest listfonts \
-    keymaptest mxgads  readicon regiontest shadowborder sift strtest \
-    consoledemo serialtest window test_text cons cons_charmap
-
-else
 FILES	:= \
     childchild \
     childwindow \
@@ -70,7 +63,6 @@ FILES	:= \
     winbackfill \
     window \
     winshape
-endif
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 
