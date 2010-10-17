@@ -710,7 +710,7 @@ AROS_LH1(void, CloseDevice,
     {
 	seglist = AROS_LVO_CALL1(BPTR,
 		    AROS_LCA(struct IORequest *, iORequest, A1),
-		    struct Device, iORequest->io_Device, 2, );
+		    struct Device *, iORequest->io_Device, 2, );
 	iORequest->io_Device=(struct Device *)-1;
 	if( seglist )
 	{
