@@ -35,7 +35,7 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/ut
  #endif
  
  
-+#if defined(PIPE_ATOMIC_OS_AROS_CPU_M68K)
++#if defined(PIPE_ATOMIC_OS_AROS_M68K)
 +
 +#define PIPE_ATOMIC "AROS OS atomic functions"
 +
