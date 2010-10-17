@@ -19,6 +19,83 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/os
  
     struct timeval tv;
     gettimeofday(&tv, NULL);
+diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_atomic.h ./src/gallium/auxiliary/util/u_atomic.h
+--- /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_atomic.h	2010-10-02 01:55:56.000000000 +0200
++++ ./src/gallium/auxiliary/util/u_atomic.h	2010-10-17 07:59:10.000000000 +0200
+@@ -31,6 +31,8 @@
+ #define PIPE_ATOMIC_ASM_GCC_X86
+ #elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64))
+ #define PIPE_ATOMIC_ASM_GCC_X86_64
++#elif defined(PIPE_OS_AROS) && defined(PIPE_ARCH_M68K)
++#define PIPE_ATOMIC_OS_AROS_M68K
+ #elif defined(PIPE_CC_GCC) && (PIPE_CC_GCC_VERSION >= 401)
+ #define PIPE_ATOMIC_GCC_INTRINSIC
+ #else
+@@ -343,6 +345,64 @@
+ #endif
+ 
+ 
++#if defined(PIPE_ATOMIC_OS_AROS_CPU_M68K)
++
++#define PIPE_ATOMIC "AROS OS atomic functions"
++
++#include <aros/atomic.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define p_atomic_set(_v, _i) (*(_v) = (_i))
++#define p_atomic_read(_v) (*(_v))
++
++static INLINE boolean
++p_atomic_dec_zero(int32_t *v)
++{
++   boolean n;
++ 
++   /* FIXME: AROS needs an atomic decrement and return... */
++   Disable();
++   AROS_ATOMIC_DEC(*(LONG *)v);
++   n = (*v != 0) ? TRUE : FALSE;
++   Enable();
++
++   return n;
++}
++
++#define p_atomic_inc(_v) AROS_ATOMIC_INC(*(LONG *)_v)
++#define p_atomic_dec(_v) AROS_ATOMIC_DEC(*(LONG *)_v)
++
++static INLINE int32_t
++p_atomic_cmpxchg(int32_t *v, int32_t o, int32_t n)
++{
++	int32_t ret;
++
++	/* FIXME: AROS needs an atomic cmpxchg, using CAS.
++	 * However we can't do this if:
++	 *  a) We are on a 68000 or
++	 *  b) The 'v' points to Chip RAM (no r/m/w possible)
++	 *
++	 *  Settle for Disable()/Enable() for now.
++	 */
++	Disable();
++	if (*v == o)
++		*v = (n);
++	ret = *v;
++	Enable();
++
++	return ret;
++}
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
++
++
+ #ifndef PIPE_ATOMIC
+ #error "No pipe_atomic implementation selected"
+ #endif
 diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_cpu_detect.c ./src/gallium/auxiliary/util/u_cpu_detect.c
 --- /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_cpu_detect.c	2010-10-02 00:51:28.000000000 +0200
 +++ ./src/gallium/auxiliary/util/u_cpu_detect.c	2010-10-09 17:41:21.000000000 +0200
@@ -79,8 +156,19 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/drivers/nvfx
  		while(fpbo != fp->fpbo);
 diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/include/pipe/p_config.h ./src/gallium/include/pipe/p_config.h
 --- /data/deadwood/source/Mesa-7.9-staging/src/gallium/include/pipe/p_config.h	2010-10-02 00:51:28.000000000 +0200
-+++ ./src/gallium/include/pipe/p_config.h	2010-09-27 23:02:50.000000000 +0200
-@@ -180,6 +180,10 @@
++++ ./src/gallium/include/pipe/p_config.h	2010-10-17 07:59:10.000000000 +0200
+@@ -106,6 +106,10 @@
+ #endif
+ #endif
+ 
++#if defined(__mc68000) /* gcc */
++#define PIPE_ARCH_M68K
++#endif
++
+ 
+ /*
+  * Endian detection.
+@@ -180,6 +184,10 @@
  #define PIPE_OS_UNIX
  #endif
  
