@@ -32,7 +32,7 @@
 #elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64))
 #define PIPE_ATOMIC_ASM_GCC_X86_64
 #elif defined(PIPE_OS_AROS) && defined(PIPE_ARCH_M68K)
-#define PIPE_ATOMIC_OS_AROS_M68K
+#define PIPE_ATOMIC_OS_AROS_CPU_M68K
 #elif defined(PIPE_CC_GCC) && (PIPE_CC_GCC_VERSION >= 401)
 #define PIPE_ATOMIC_GCC_INTRINSIC
 #else
