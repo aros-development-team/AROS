@@ -33,6 +33,7 @@ GNU General Public License, as specified in the file "LICENSE.GPL":
 + [tools/MetaMake]
 + [tools/mkfsaffs]
 + [tools/adflib]
++ [contrib/necessary/AHI] (as it is needed to compile AROS)
     
 The following components are distributed under the terms various different
 open source licenses, most of them similar to the BSD license. Please read the
