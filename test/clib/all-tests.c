@@ -11,6 +11,7 @@ char *tests[] =
     "tmpfile",
     "ctype",
     "sscanf",
+    "mnt_names",
 
      NULL
 };

@@ -25,6 +25,7 @@ FILES := \
 	wait \
 	waitpid \
 	lseek \
+	mnt_names \
 	opendir \
 	pipe \
 	fcntl \
