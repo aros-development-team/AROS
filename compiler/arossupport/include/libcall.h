@@ -795,7 +795,7 @@ typedef unsigned int (*ULONG_FUNC)();
 /* Special calls: Call a library function without the name just by the ADDRESS */
 #ifndef AROS_CALL0
 #define AROS_CALL0(returntype,address,basetype,basename) \
-    (((__AROS_LC_PREFIX returntype(*)(__AROS_LP_BASE(basetype,basename)))\
+    (((__AROS_LC_PREFIX returntype(*)(__AROS_LD_BASE(basetype,basename)))\
     (void *)(address))(basename))
 #define AROS_CALL0NR AROS_CALL0
 #endif
@@ -803,8 +803,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL1
 #define AROS_CALL1(t,a,a1,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     bn))
@@ -814,9 +814,9 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL2
 #define AROS_CALL2(t,a,a1,a2,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
@@ -827,10 +827,10 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL3
 #define AROS_CALL3(t,a,a1,a2,a3,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LDA(a3),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
@@ -842,11 +842,11 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL4
 #define AROS_CALL4(t,a,a1,a2,a3,a4,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LDA(a3),\
+    __AROS_LDA(a4),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
@@ -859,12 +859,12 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL5
 #define AROS_CALL5(t,a,a1,a2,a3,a4,a5,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LPA(a5),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LDA(a3),\
+    __AROS_LDA(a4),\
+    __AROS_LDA(a5),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
@@ -878,13 +878,13 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL6
 #define AROS_CALL6(t,a,a1,a2,a3,a4,a5,a6,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LPA(a5),\
-    __AROS_LPA(a6),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LDA(a3),\
+    __AROS_LDA(a4),\
+    __AROS_LDA(a5),\
+    __AROS_LDA(a6),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
@@ -899,14 +899,14 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL7
 #define AROS_CALL7(t,a,a1,a2,a3,a4,a5,a6,a7,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LPA(a5),\
-    __AROS_LPA(a6),\
-    __AROS_LPA(a7),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LDA(a3),\
+    __AROS_LDA(a4),\
+    __AROS_LDA(a5),\
+    __AROS_LDA(a6),\
+    __AROS_LDA(a7),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
@@ -922,15 +922,15 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL8
 #define AROS_CALL8(t,a,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LPA(a5),\
-    __AROS_LPA(a6),\
-    __AROS_LPA(a7),\
-    __AROS_LPA(a8),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LDA(a3),\
+    __AROS_LDA(a4),\
+    __AROS_LDA(a5),\
+    __AROS_LDA(a6),\
+    __AROS_LDA(a7),\
+    __AROS_LDA(a8),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
@@ -947,16 +947,16 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL9
 #define AROS_CALL9(t,a,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LPA(a5),\
-    __AROS_LPA(a6),\
-    __AROS_LPA(a7),\
-    __AROS_LPA(a8),\
-    __AROS_LPA(a9),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LDA(a3),\
+    __AROS_LDA(a4),\
+    __AROS_LDA(a5),\
+    __AROS_LDA(a6),\
+    __AROS_LDA(a7),\
+    __AROS_LDA(a8),\
+    __AROS_LDA(a9),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
@@ -974,17 +974,17 @@ typedef unsigned int (*ULONG_FUNC)();
 #ifndef AROS_CALL10
 #define AROS_CALL10(t,a,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LPA(a5),\
-    __AROS_LPA(a6),\
-    __AROS_LPA(a7),\
-    __AROS_LPA(a8),\
-    __AROS_LPA(a9),\
-    __AROS_LPA(a10),\
-    __AROS_LP_BASE(bt,bn)))\
+    __AROS_LDA(a1),\
+    __AROS_LDA(a2),\
+    __AROS_LDA(a3),\
+    __AROS_LDA(a4),\
+    __AROS_LDA(a5),\
+    __AROS_LDA(a6),\
+    __AROS_LDA(a7),\
+    __AROS_LDA(a8),\
+    __AROS_LDA(a9),\
+    __AROS_LDA(a10),\
+    __AROS_LD_BASE(bt,bn)))\
     (void *)(a))(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
