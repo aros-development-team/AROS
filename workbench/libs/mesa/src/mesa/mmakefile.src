@@ -185,13 +185,15 @@ LDFLAGS := $(CXX_OBJECTS)
     files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES)" \
     uselibs="galliumauxiliary rom gallium"
 
-#MM
-workbench-libs-mesa-module-generated : $(SRCDIR)/$(CURDIR)/main/api_exec_es1.c $(SRCDIR)/$(CURDIR)/main/api_exec_es2.c
-
-$(SRCDIR)/$(CURDIR)/main/api_exec_es1.c :
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/main/es_generator.py -S $(SRCDIR)/$(CURDIR)/main/APIspec.xml -V GLES1.1 > $@
-
-$(SRCDIR)/$(CURDIR)/main/api_exec_es2.c :
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/main/es_generator.py -S $(SRCDIR)/$(CURDIR)/main/APIspec.xml -V GLES2.0 > $@
+# NOTE: Both files have been generate and added to AROS repository. Once all 
+# build machines support python 2.5 with libxml2, these targets can be enabled
+##MM
+#workbench-libs-mesa-module-generated : $(SRCDIR)/$(CURDIR)/main/api_exec_es1.c $(SRCDIR)/$(CURDIR)/main/api_exec_es2.c
+#
+#$(SRCDIR)/$(CURDIR)/main/api_exec_es1.c :
+#	@$(PYTHON) $(SRCDIR)/$(CURDIR)/main/es_generator.py -S $(SRCDIR)/$(CURDIR)/main/APIspec.xml -V GLES1.1 > $@
+#
+#$(SRCDIR)/$(CURDIR)/main/api_exec_es2.c :
+#	@$(PYTHON) $(SRCDIR)/$(CURDIR)/main/es_generator.py -S $(SRCDIR)/$(CURDIR)/main/APIspec.xml -V GLES2.0 > $@
 
 %common
