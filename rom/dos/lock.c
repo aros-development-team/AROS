@@ -182,7 +182,11 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
             error = DoIOFS(&iofs, dvp, NULL, DOSBase);
         } while (error == ERROR_OBJECT_NOT_FOUND);
 
-        if (error == ERROR_NO_MORE_ENTRIES)
+	/* FIXME: On Linux hosted we sometimes get ERROR_IS_SOFTLINK with dvp == NULL,
+	 * which causes segfaults below if we don't change "error". Adding !dvp below
+         * is probably a hack
+         */
+        if (error == ERROR_NO_MORE_ENTRIES || !dvp)
             error = me->pr_Result2 = ERROR_OBJECT_NOT_FOUND;
 
         if(error == ERROR_IS_SOFT_LINK)
