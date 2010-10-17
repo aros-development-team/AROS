@@ -1119,14 +1119,30 @@ case "$target_os" in
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
 	aros_shared_default="no"
 
-	aros_config_cflags="$aros_config_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
-
 	case "$target_cpu" in
+	    *m68k-eabi)
+		aros_target_cpu="m68k"
+		aros_object_format="m68kelf"
+		aros_flavour="standalone"
+		gcc_target_cpu="mc68000"
+		aros_config_cflags="$aros_config_cflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin"
+		aros_config_aflags="$aros_config_aflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu}"
+		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -${gcc_target_cpu}"
+		target_tool_prefix="m68k-elf-"
+		aros_target_nostdlib_ldflags="" # We always need -lgcc
+		aros_target_strip_flags="-R.comment"
+		;;
 	    *m68k*)
 		aros_target_cpu="m68k"
 		aros_object_format="m68kelf"
-		aros_flavour="nativecompat"
+		aros_flavour="standcompat"
 		gcc_target_cpu="mc68000"
+		aros_config_cflags="$aros_config_cflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin"
+		aros_config_aflags="$aros_config_aflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu}"
+		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -${gcc_target_cpu}"
+		target_tool_prefix="m68k-elf-"
+		aros_target_nostdlib_ldflags="" # We always need -lgcc
+		aros_target_strip_flags="-R.comment"
 		;;
 	    *ppc*)
 		aros_cpu="ppc"
@@ -2000,6 +2016,8 @@ emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION"
 emulcompat)	aros_flavour_uc="(AROS_FLAVOUR_EMULATION|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="emulation" ;;
 standalone)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE"
+		aros_flavour="standalone";;
+standcompat)	aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="standalone";;
 native) 	aros_flavour_uc="AROS_FLAVOUR_NATIVE"
 		aros_flavour="native" ;;
