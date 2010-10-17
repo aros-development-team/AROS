@@ -1,4 +1,4 @@
-CFG_PACKAGES=(sources.svn.all documentation.svn.all sdk.svn.pc-i386 hosted.svn.linux-i386 hosted.svn.mingw32-i386 contrib.svn.pc-i386 bootiso-grub2.svn.pc-i386 bootfloppy.svn.pc-i386)
+CFG_PACKAGES=(sources.svn.all documentation.svn.all sdk.svn.pc-i386 hosted.svn.linux-i386 hosted.svn.mingw32-i386 contrib.svn.pc-i386 bootiso-grub2.svn.pc-i386 bootfloppy.svn.pc-i386 amiga.svn.m68k-eabi)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=caffer@cs.ucc.ie
@@ -8,3 +8,4 @@ CFG_DS_USER=ncafferkey,aros
 CFG_BACKUP_ENABLE=no
 
 CFG_PYTHON=/usr/bin/python26
+CFG_M68K_CROSSTOOLS=/home/aros/m68k-elf/bin/
