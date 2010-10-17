@@ -5,33 +5,30 @@
 int main(int argc, char **argv)
 {
     BPTR fh;
-
+    
     if (argc < 2)
     {
 	printf("Usage: %s <file name>\n", argv[0]);
 	return 1;
     }
-
-    fh = Open(argv[1], MODE_OLDFILE);
-
+    
+    fh = Lock(argv[1], SHARED_LOCK);
+    
     if (fh != NULL)
     {
-        struct FileInfoBlock *fib;
-
-	printf("IsInteractive: %d\n", IsInteractive(fh));
-	
-	fib = AllocDosObject(DOS_FIB, NULL);
+        struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+        
         if (fib != NULL)
         {
-            if (ExamineFH(fh, fib))
+            if (Examine(fh, fib))
             {
                 printf("Got FIB:\n");
 		printf("Filename   = %s\n"    , fib->fib_FileName);
 		printf("Protection = 0x%08X\n", fib->fib_Protection);
-	    }
+            }
             else
             {
-                printf("examinefh failed, ioerr = %d\n", IoErr());
+                printf("Examine() failed, ioerr = %d\n", IoErr());
             }
             FreeDosObject(DOS_FIB, fib);
         }
@@ -40,11 +37,11 @@ int main(int argc, char **argv)
             printf("couldn't allocate fileinfoblock\n");
         }
 
-        Close(fh);
+        UnLock(fh);
     }
     else
     {
-        printf("Couldn't open file\n");
+        printf("couldn't lock file\n");
     }
 
     return 0;
