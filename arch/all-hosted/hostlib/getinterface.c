@@ -13,7 +13,7 @@ AROS_LH3(APTR *, HostLib_GetInterface,
     	AROS_LHA(ULONG *, unresolved, A2),
 
 /*  LOCATION */
-    	struct HostLibBase *, HostLibBase, 5, HostLib)
+    	APTR, HostLibBase, 5, HostLib)
 
 /*  FUNCTION
 	Resolve array of symbols in the host operating system library.
