@@ -68,26 +68,13 @@ to Mesa_glA or mglA function.
 When upgrading to new version of Mesa3D several tasks need to be performed.
 
 a) regenerate library interface (see point 1.)
-b) regenerate files in /mesa/src/gallium/auxiliary/util - the following files
+b) regenerate files in /mesa/main - the following files
    need to be regenerated:
-    - u_format_access.c
-    - u_format_pack.h
-    - u_format_table.c
-   To perform this action, use the python scripts with the matching names,
-   passing u_format.csv as argument and redirecting output to file
-c) regenerate files in /mesa/src/mesa/shader/slang/library - the following files
-   need to be regenerated:
-    - slang_120_core_gc.h
-    - slang_builtin_120_common_gc.h
-    - slang_builtin_120_fragment_gc.h
-    - slang_common_builtin_gc.h
-    - slang_core_gc.h
-    - slang_fragment_builtin_gc.h
-    - slang_vertex_builtin_gc.h
-   To perform this action, compile the /mesa/src/glsl/apps/compile.c file and
-   check the Makefile located in /mesa/src/mesa/shader/slang/library on how to
-   invoke the "compile" command to generate the .h files
-d) "implement" the missing dispatch stubs
+    - api_exec_es1.c
+    - api_exec_es2.c
+   To perform this action, check the end of mmakefile.src for mesa. Suitable
+   commands are available there.
+c) "implement" the missing dispatch stubs
    Go to /mesa/src/mesa/glapi/glprocs.h and find block of dispatch stubs.
    Example stub:
    
