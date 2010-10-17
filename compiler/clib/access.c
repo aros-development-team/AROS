@@ -148,13 +148,42 @@
     }
     else
     {
-        errno = EBADF;
-        result = -1;
+	/* We get here if Examine() failed. However it can be a character device
+	   (NIL:, ZERO:, etc) which does not support EXAMINE action.
+	   Currently we consider them read-write. If really needded, the routine
+	   can be modified in order to try to open the device in different modes. */
+	BOOL ischar = FALSE;
+	BPTR fh = OpenFromLock(lock);
+
+	if (fh)
+	{
+	    ischar = IsInteractive(fh);
+
+	    Close(fh);
+	    lock = NULL;
+	}
+
+	if (ischar)
+	{
+	    if (mode & X_OK)
+	    {
+		/* Character devices are not executable in any way */
+		errno = EACCES;
+		result = -1;
+	    }
+	    else
+		result = 0;
+	}
+	else
+	{
+            errno = EBADF;
+            result = -1;
+	}
     }
 
     FreeDosObject(DOS_FIB, fib);
-    fib = NULL;
+    if (lock);
+	UnLock(lock);
 
-    UnLock(lock);
     return result;
 }
