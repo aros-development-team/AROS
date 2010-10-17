@@ -37,12 +37,6 @@ INIT_FILE   := exec_init
 SYS_FILES   := prepareexecbase
 FILES	    := traphandler exec_util
 
-ifeq ($(FLAVOUR),native)
-DEPLIBS := arossupport arosc
-else
-DEPLIBS :=
-endif
-
 # I need the private includes (for SIZEOF_ALL_REGISTERS) and they
 # have to be first in the list
 USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/exec -I$(SRCDIR)/$(CURDIR) \
@@ -55,36 +49,3 @@ USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/exec -I$(SRCDIR)/$(CURDIR) \
   files="$(SYS_FILES) $(INIT_FILE) $(ALL_FUNCTIONS) $(FILES)" \
   uselibs=$(DEPLIBS)
 
-# ***** Native ***************
-# Uncommented because unsupported at the moment
-#ifeq ($(FLAVOUR),native)
-#
-## Main function for exec.strap. Need this apart as an anchor for the link:
-#INIT_FILE   := execstrap_init
-#OSMODULE    := exec.strap
-#LIB	    := $(LIBDIR)/lib$(LIBNAME).a
-#
-## Other support files:
-#FILES	    :=
-#FUNCTIONS   := \
-#	initcode initstruct makelibrary makefunctions findresident	    \
-#	initresident setintvector addintserver remintserver		    \
-#	availmem allocentry freeentry typeofmem addmemlist		    \
-#	addmemhandler remmemhandler insert addhead addtail remove remhead   \
-#	remtail enqueue findname setsignal allocsignal freesignal addport   \
-#	remport waitport findport createmsgport deletemsgport putmsg getmsg \
-#	replymsg doio sendio checkio waitio abortio createiorequest	    \
-#	deleteiorequest addresource remresource openresource addlibrary     \
-#	remlibrary oldopenlibrary closelibrary setfunction sumlibrary	    \
-#	openlibrary taggedopenlibrary adddevice remdevice opendevice	    \
-#	closedevice findtask rawdofmt allocvec freevec initsemaphore	    \
-#	attemptsemaphore findsemaphore addsemaphore remsemaphore	    \
-#	obtainsemaphoreshared attemptsemaphoreshared createpool deletepool  \
-#	allocpooled freepooled \
-#	cacheclearu cachepredma cachepostdma \
-#	disable forbid coldreboot getcc
-#
-#
-#
-## ***** Not Native ***************
-#else
