@@ -1,17 +1,15 @@
-/****************************************************************************
+/*
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
 
-		THIS SOFTWARE IS NOT COPYRIGHTED  
-   
-   HP offers the following for use in the public domain.  HP makes no
-   warranty with regard to the software or it's performance and the 
-   user accepts the software "AS IS" with all faults.
-
-   HP DISCLAIMS ANY WARRANTIES, EXPRESS OR IMPLIED, WITH REGARD
-   TO THIS SOFTWARE INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-   OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-
-****************************************************************************/
-
+    Desc: m68k-amiga gdb stub
+    Lang: english
+ */
+/* Adapted from public domain code from:
+ * ftp://ftp.jyu.fi/pub/PalmOS/ryeham/ALPHA/m68k-gdbstub.c
+ *
+ *  vvvvvvv The below are the original comments from m68k-gdbstub.c vvvvvvv
+ */
 /****************************************************************************
  *  Header: remcom.c,v 1.34 91/03/09 12:29:49 glenne Exp $                   
  *
