@@ -719,7 +719,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	    fprintf(out,
 		"AROS_LH3 (void, GM_UNIQUENAME(OpenLib),\n"
 		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
-		"    AROS_LHA(ULONG, unitnum, D0),\n"
+		"    AROS_LHA(IPTR, unitnum, D0),\n"
 		"    AROS_LHA(ULONG, flags, D1),\n"
 		"    LIBBASETYPEPTR, lh, 1, %s\n"
 		")\n",

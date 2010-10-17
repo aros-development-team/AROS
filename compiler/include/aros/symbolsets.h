@@ -143,7 +143,7 @@ extern int set_call_devfuncs
     int test_fail,
     void *libbase,
     void *ioreq,
-    ULONG unitnum,
+    IPTR unitnum,
     ULONG flags
 );
 

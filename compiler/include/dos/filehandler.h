@@ -90,7 +90,7 @@ struct DosEnvec
    handlers. */
 struct FileSysStartupMsg
 {
-    ULONG fssm_Unit;    /* Unit number of device used. */
+    IPTR  fssm_Unit;    /* Unit number of device used. Can also be an STRPTR */
     BSTR  fssm_Device;  /* Device name. */
     BPTR  fssm_Environ; /* Pointer to disk environment array, like the one
                            above. */
