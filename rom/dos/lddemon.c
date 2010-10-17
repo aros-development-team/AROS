@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Loader for shared libraries and devices.
@@ -40,7 +40,7 @@ AROS_LD2(struct Library *, OpenLibrary,
     struct ExecBase *, SysBase, 0, Dos);
 AROS_LD4(BYTE, OpenDevice,
     AROS_LDA(STRPTR, devname, A0),
-    AROS_LDA(ULONG, unitNumber, D0),
+    AROS_LDA(IPTR, unitNumber, D0),
     AROS_LDA(struct IORequest *, iORequest, A1),
     AROS_LDA(ULONG, flags, D1),
     struct ExecBase *, SysBase, 0, Dos);
@@ -249,29 +249,10 @@ AROS_CALL2(struct Library *, __OpenLibrary,                       \
 #define ExecOpenDevice(devname, unitNumber, iORequest, flags)     \
 AROS_CALL4(BYTE, __OpenDevice,                                    \
     AROS_LCA(STRPTR, devname, A0),                                \
-    AROS_LCA(ULONG, unitNumber, D0),                              \
+    AROS_LCA(IPTR, unitNumber, D0),                              \
     AROS_LCA(struct IORequest *, iORequest, A1),                  \
     AROS_LCA(ULONG, flags, D1),                                   \
     struct ExecBase *, SysBase)
-
-/*
-struct Library *AROS_SLIB_ENTRY(OpenLibrary, Exec)();
-BYTE            AROS_SLIB_ENTRY(OpenDevice,  Exec)();
-
-#define ExecOpenLibrary(libname, version)                         \
-AROS_CALL2(struct Library *, &AROS_SLIB_ENTRY(OpenLibrary, Exec), \
-    AROS_LCA(STRPTR, libname, A1),                                \
-    AROS_LCA(ULONG, version, D0),                                 \
-    struct ExecBase *, SysBase)
-
-#define ExecOpenDevice(devname, unitNumber, iORequest, flags)     \
-AROS_CALL4(BYTE, &AROS_SLIB_ENTRY(OpenDevice, Exec),              \
-    AROS_LCA(STRPTR, devname, A0),                                \
-    AROS_LCA(ULONG, unitNumber, D0),                              \
-    AROS_LCA(struct IORequest *, iORequest, A1),                  \
-    AROS_LCA(ULONG, flags, D1),                                   \
-    struct ExecBase *, SysBase)
-*/
 
 struct LDObjectNode
 {
@@ -533,7 +514,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 
 AROS_LH4(BYTE, OpenDevice,
     AROS_LHA(STRPTR, devname, A0),
-    AROS_LHA(ULONG, unitNumber, D0),
+    AROS_LHA(IPTR, unitNumber, D0),
     AROS_LHA(struct IORequest *, iORequest, A1),
     AROS_LHA(ULONG, flags, D1),
     struct ExecBase *, SysBase, 0, Dos)
@@ -642,7 +623,7 @@ AROS_LH4(BYTE, OpenDevice,
 
 	    AROS_LVO_CALL3NR(void,
 	        AROS_LCA(struct IORequest *, iORequest, A1),
-	        AROS_LCA(ULONG, unitNumber, D0),
+	        AROS_LCA(IPTR, unitNumber, D0),
 	        AROS_LCA(ULONG, flags, D1),
 	        struct Device *, iORequest->io_Device, 1,
 	    );

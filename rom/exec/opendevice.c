@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a device.
@@ -35,7 +35,7 @@ char *const inputname = "input.device";
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR,       devName,    A0),
-	AROS_LHA(ULONG,              unitNumber, D0),
+	AROS_LHA(IPTR,               unitNumber, D0),
 	AROS_LHA(struct IORequest *, iORequest,  A1),
 	AROS_LHA(ULONG,              flags,      D1),
 
@@ -52,7 +52,8 @@ char *const inputname = "input.device";
 
     INPUTS
 	devName    - Pointer to the devices's name.
-	unitNumber - The unit number. Most often 0.
+	unitNumber - The unit number. Most often 0. In some special cases this can be
+		     a pointer to something (device-dependent).
 	iORequest  - Pointer to device specific information.
 		     Will be filled out by the device.
 		     Must lie in public (or at least shared) memory.
@@ -107,7 +108,7 @@ char *const inputname = "input.device";
 	/* Call Open vector. */
 	AROS_LVO_CALL3NR(void,
 	    AROS_LCA(struct IORequest *,iORequest,A1),
-	    AROS_LCA(ULONG,unitNumber,D0),
+	    AROS_LCA(IPTR, unitNumber,D0),
 	    AROS_LCA(ULONG,flags,D1),
 	    struct Device *, device, 1, dev
 	);

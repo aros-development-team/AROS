@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: libinit library - functions calling when opening/closing libs
@@ -55,7 +55,7 @@ int set_call_devfuncs
     int test_fail,
     void *libbase,
     void *ioreq,
-    ULONG unitnum,
+    IPTR unitnum,
     ULONG flags
 )
 {
@@ -63,7 +63,7 @@ int set_call_devfuncs
 
     if (order>=0)
     {
-	int (*func)(APTR, APTR, ULONG, ULONG);
+	int (*func)(APTR, APTR, IPTR, ULONG);
 	
 	ForeachElementInSet(set, order, pos, func)
 	{
