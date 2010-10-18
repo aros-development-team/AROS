@@ -28,6 +28,8 @@
 /* Porting to other archs? Just define your asm atomics as above... else deadlock below will hit you! */
 #include <proto/exec.h>
 
+#define AROS_NO_ATOMIC_OPERATIONS
+
 #define __AROS_ATOMIC_INC_B(var) do {Disable(); (var)++; Enable(); } while(0)
 #define __AROS_ATOMIC_INC_W(var) do {Disable(); (var)++; Enable(); } while(0)
 #define __AROS_ATOMIC_INC_L(var) do {Disable(); (var)++; Enable(); } while(0)
