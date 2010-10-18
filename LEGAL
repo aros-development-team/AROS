@@ -14,6 +14,7 @@ GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
 + Classes/Zune/PrefsWindow.mcc [workbench/classes/zune/prefswindow]
 + Classes/Zune/PrefsEditor.mcc [workbench/classes/zune/prefseditor]
 + Classes/Zune/SystemPrefsWindow.mcc [workbench/classes/zune/systemprefswindow]
++ AmberRAM (linked in some AROS kernels) [contrib/necessary/AmberRAM]
 
 The following components are distributed under the terms of version 3.0 of the
 GNU Lesser General Public License. Please read the relevant "LEGAL" files that 
