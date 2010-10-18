@@ -3,8 +3,8 @@ include $(TOP)/config/make.cfg
 
 ifneq ($(AROS_TARGET_VARIANT),)
 #MM- kernel-exec-$(ARCH)-$(CPU) : \
-#MM     kernel-exec-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-includes \
-#MM     kernel-kernel-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-includes \
+#MM     kernel-exec-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM     kernel-kernel-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
 #MM     kernel-rtas-$(ARCH)-$(CPU) \
 #MM     includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
 endif

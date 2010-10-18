@@ -8,7 +8,7 @@ FILES := kernel_init tags debug intr mmu syscall scheduler ictl
 kernel-chrp-ppc-efika: $(BINDIR)/boot/aros-efika
 
 $(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/rtas_resource.o
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/rtas_resource.o -L$(LIBDIR) -lrom -larosm -lautoinit -llibinit
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/rtas_resource.o -L$(LIBDIR) -lrom -larosm -lautoinit -llibinit
 	$(STRIP) --strip-unneeded $@ 
 
 #MM kernel-kernel-chrp-ppc-efika : includes includes-copy-chrp-ppc-efika linklibs 
@@ -16,7 +16,7 @@ $(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 
 %build_module mmake=kernel-kernel-chrp-ppc-efika 	\
   modname=kernel modtype=resource		\
-  cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
+  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"		\
   files="$(FILES)" uselibs="rom"
 
 #MM setup-chrp-ppc-efika

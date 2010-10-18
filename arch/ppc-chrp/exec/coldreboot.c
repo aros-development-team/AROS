@@ -11,6 +11,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_util.h"
+
 /*****************************************************************************
 
     NAME */

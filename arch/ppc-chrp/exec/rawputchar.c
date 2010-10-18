@@ -17,7 +17,9 @@
 
 #include "exec_intern.h"
 
-static inline void bug(APTR KernelBase, const char *format, ...)
+#undef bug
+
+static inline void bug(const char *format, ...)
 {
     va_list args;
 
@@ -64,7 +66,7 @@ static inline void bug(APTR KernelBase, const char *format, ...)
     /* Don't write 0 bytes */
     if (chr)
     {
-        bug(KernelBase, "%c",chr);
+        bug("%c", chr);
     }
 
     AROS_LIBFUNC_EXIT

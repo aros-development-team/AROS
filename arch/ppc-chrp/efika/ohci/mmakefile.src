@@ -1,7 +1,7 @@
 # $Id: mmakefile.src 29732 2008-10-12 18:14:15Z schulz $
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.. -I$(TOP)/contrib/necessary/USB/drivers/OHCI
+USER_INCLUDES := -I.. -I$(SRCDIR)/contrib/necessary/USB/drivers/OHCI
 
 %build_archspecific \
   mainmmake=hidd-usb-drivers-ohci maindir=contrib/necessary/USB/drivers/OHCI \
