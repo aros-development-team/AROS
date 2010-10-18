@@ -547,7 +547,6 @@ void idleTask(struct ExecBase *SysBase, struct KernelBase *KernelBase)
 	}
 }
 
-extern void *priv_KernelBase;
 struct MemHeader KernelMemory;
 
 void *(*__AllocMem)();
@@ -652,8 +651,6 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     wrmsr(rdmsr() | (MSR_PR));
     D(bug("[KRN] Entered user mode\n"));
-
-    priv_KernelBase = LIBBASE;
 
     {
     	/* Add idle task now. */

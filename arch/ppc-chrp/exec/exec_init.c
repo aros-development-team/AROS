@@ -23,6 +23,8 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
+#undef KernelBase
+
 int exec_main(struct TagItem *msg, void *entry);
 extern const APTR Exec_FuncTable[];
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
@@ -370,7 +372,7 @@ int exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
     InitCode(RTF_SINGLETASK, 0);
 
-    KernelBase = OpenResource("kernel.resource");
+    PrivExecBase(SysBase)->KernelBase = OpenResource("kernel.resource");
 
     Permit();
 

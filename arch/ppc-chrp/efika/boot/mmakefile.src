@@ -95,29 +95,33 @@ kernel-package-chrp-ppc-efika:
 	%mkdirs_q $(BINDIR)/boot/modules
 	%mkdirs_q $(BINDIR)/.pkg
 	@mv $(MODULES_GENERIC) $(BINDIR)/.pkg
-	$(TOP)/tools/package/pkg c $(BINDIR)/boot/modules/aros-ppc-generic.pkg $(BINDIR)/.pkg
+	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/modules/aros-ppc-generic.pkg $(BINDIR)/.pkg
 	$(RM) -rf $(BINDIR)/.pkg/*
 	@mv $(MODULES_EFIKA) $(BINDIR)/.pkg
-	$(TOP)/tools/package/pkg c $(BINDIR)/boot/modules/aros-ppc-efika.pkg $(BINDIR)/.pkg
+	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/modules/aros-ppc-efika.pkg $(BINDIR)/.pkg
 	$(RM) -rf $(BINDIR)/.pkg/*
 	@mv $(MODULES_USB) $(BINDIR)/.pkg
-	$(TOP)/tools/package/pkg c $(BINDIR)/boot/modules/aros-usb.pkg $(BINDIR)/.pkg
+	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/modules/aros-usb.pkg $(BINDIR)/.pkg
 	$(RM) -rf $(BINDIR)/.pkg
 
 
 
+TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
+.PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
+bootiso-chrp-ppc-efika: $(AROSDIR)/.backdrop $(TARGET_ISO)
 
-bootiso-chrp-ppc-efika: $(PORTSDIR)/aros-efika.iso
+$(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
+	@$(CP) $< $@
 
-$(PORTSDIR)/aros-efika.iso:
+$(TARGET_ISO):
 		%mkdirs_q $(AROSDIR)/S
-		@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+		@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 		@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
 		@$(MKDIR) -p "$(PORTSDIR)"
 		@mkisofs -f \
-                -o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
+                -o $@ \
                 -allow-leading-dots \
                 -iso-level 4 \
                 -V "AROS Live CD" \

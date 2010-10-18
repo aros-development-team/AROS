@@ -1,16 +1,16 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: internalunloadseg.c 29642 2008-10-02 00:06:13Z mazze $
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
+    $Id: internalunloadseg.c 30792 2009-03-07 22:40:04Z neil $
 
     Desc:
     Lang: english
 */
 #include "dos_intern.h"
 #include <proto/exec.h>
-#include <proto/kernel.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <exec/libraries.h>
+#include <proto/kernel.h>
 
 /*****************************************************************************
 
@@ -28,7 +28,7 @@
 
 /*  FUNCTION
 	Unloads a seglist loaded with InternalLoadSeg().
-	
+
     INPUTS
 	seglist  - Seglist
 	freefunc - Function to be called to free memory
@@ -51,7 +51,6 @@
   AROS_LIBFUNC_INIT
 
   BPTR next;
-  void *KernelBase = OpenResource("kernel.resource");
 
   if (seglist)
   {
@@ -87,17 +86,18 @@
     while (seglist)
     {
       next = *(BPTR *)BADDR(seglist);
-      
+
       char *seg = (ULONG)seglist;
       seg += (*(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG))) / 2;
-      KrnUnregisterModule(seg);
+      if (KernelBase)
+        KrnUnregisterModule(seg);
 
       AROS_CALL2NR(void, freefunc,
         AROS_LCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
         AROS_LCA(ULONG, *(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)), D0),
         struct Library *, (struct Library *)SysBase
       );
-      
+
       seglist = next;
     }
     return TRUE;

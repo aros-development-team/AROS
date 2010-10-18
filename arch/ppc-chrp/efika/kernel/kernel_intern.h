@@ -13,6 +13,8 @@
 
 #include "syscall.h"
 
+#undef KernelBase
+
 #define KERNEL_PHYS_BASE        0x07800000
 #define KERNEL_VIRT_BASE        0xff800000
 
@@ -46,11 +48,6 @@ struct OFWProperty {
 	void			*op_value;
 
 	uint8_t			op_storage[];
-};
-
-struct KernelBSS {
-    void *addr;
-    uint32_t len;
 };
 
 enum intr_types {
