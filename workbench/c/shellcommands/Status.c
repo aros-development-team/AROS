@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -89,7 +89,6 @@
 
 static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
 			 struct Process *process);
-static void PrintF(struct DosLibrary *DOSBase, STRPTR format, ...);
 
 AROS_SH5(Status,41.1,
 AROS_SHA(LONG *, ,PROCESS,/N,NULL),
@@ -138,7 +137,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 	{
 	    if (ci->ci_Process->pr_TaskNum != 0)
 	    {
-		PrintF(DOSBase," %ld\n", ci->ci_Process->pr_TaskNum);
+		Printf(" %ld\n", ci->ci_Process->pr_TaskNum);
 	    }
 	}
 	else
@@ -168,7 +167,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 	}
 	else
 	{
-	    PrintF(DOSBase,"Process %ld does not exist\n", (int)processNum);
+	    Printf("Process %ld does not exist\n", processNum);
 	}
     }
     else
@@ -208,29 +207,19 @@ static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
 	return;
     }
 
-    PrintF(DOSBase,"Process %ld ", process->pr_TaskNum);
+    Printf("Process %ld ", process->pr_TaskNum);
 
     if (tcb || full)
     {
-	PrintF(DOSBase,"stk %lu, pri %ld ",
+	Printf("stk %lu, pri %ld ",
 	       (ULONG)cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 	       (LONG)process->pr_Task.tc_Node.ln_Pri);
     }
 
     if (!tcb || full)
     {
-	PrintF(DOSBase, "Loaded as command: %b", cli->cli_CommandName);
+	Printf("Loaded as command: %b", cli->cli_CommandName);
     }
 
-    PrintF(DOSBase,"\n");
-}
-
-static void PrintF(struct DosLibrary *DOSBase, STRPTR format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    VPrintf(format, (IPTR *) args);
-
-    va_end(args);
+    Printf("\n");
 }
