@@ -59,6 +59,8 @@ SDL_HIDD_TARGET := @sdl_hidd_target@
 
 SDL_CFLAGS      := @SDL_CFLAGS@
 
+CROSSTOOLS_TARGET := @crosstools_target@
+
 # DBUS flags
 ENABLE_DBUS		:= @ENABLE_DBUS@
 DBUS_CFLAGS		:= @DBUS_CFLAGS@

@@ -720,6 +720,7 @@ aros_target_objcopy_ln
 aros_target_objdump_ln
 aros_target_ranlib_ln
 aros_target_strip_ln
+aros_target_cxx
 aros_kernel_rescomp
 aros_target_nostdinc_cflags
 aros_target_nostartup_ldflags
@@ -769,7 +770,6 @@ aros_target_ar
 aros_target_ranlib
 aros_kernel_nm
 orig_target_cc
-aros_target_cxx
 aros_kernel_cc
 aros_target_as
 orig_target_ld
@@ -798,6 +798,7 @@ aros_debug_aflags
 aros_debug_ldflags
 aros_target_genmap
 aros_target_strip_flags
+crosstools_target
 x11_hidd_target
 sdl_hidd_target
 aros_default_wbwidth
@@ -10789,14 +10790,58 @@ fi
 echo "$as_me: error: strip is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
 fi
-# Temporarily disabled in order to let Windows-hosted port to build.
-#    if test "$aros_target_cxx" != ""; then
-#	AC_PATH_PROG(aros_target_cxx,$aros_target_cxx)
+    if test "$aros_target_cxx" != ""; then
+	# Extract the first word of "$aros_target_cxx", so it can be a program name with args.
+set dummy $aros_target_cxx; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_aros_target_cxx+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $aros_target_cxx in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_target_cxx="$aros_target_cxx" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_target_cxx="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_target_cxx=$ac_cv_path_aros_target_cxx
+if test -n "$aros_target_cxx"; then
+  { echo "$as_me:$LINENO: result: $aros_target_cxx" >&5
+echo "${ECHO_T}$aros_target_cxx" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+# Temporarily disabled in order to let Mingw32-hosted nightly build to work
 #	AROS_REQUIRED(c++,$aros_target_cxx)
-#    fi
+    fi
 else
 # Cancel preinstalled C++ compiler because it will be built as part of crosstools
     aros_target_cxx=""
+fi
+
+# Build crosstools if we have no C++ - temporary thing
+if test "$aros_target_cxx" = ""; then
+    crosstools_target=tools-crosstools
 fi
 
 if test "$rescomp" != ""; then
@@ -12716,6 +12761,8 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
+
 # Graphics Related
 
 
@@ -13629,6 +13676,7 @@ aros_target_objcopy_ln!$aros_target_objcopy_ln$ac_delim
 aros_target_objdump_ln!$aros_target_objdump_ln$ac_delim
 aros_target_ranlib_ln!$aros_target_ranlib_ln$ac_delim
 aros_target_strip_ln!$aros_target_strip_ln$ac_delim
+aros_target_cxx!$aros_target_cxx$ac_delim
 aros_kernel_rescomp!$aros_kernel_rescomp$ac_delim
 aros_target_nostdinc_cflags!$aros_target_nostdinc_cflags$ac_delim
 aros_target_nostartup_ldflags!$aros_target_nostartup_ldflags$ac_delim
@@ -13678,7 +13726,6 @@ aros_target_ar!$aros_target_ar$ac_delim
 aros_target_ranlib!$aros_target_ranlib$ac_delim
 aros_kernel_nm!$aros_kernel_nm$ac_delim
 orig_target_cc!$orig_target_cc$ac_delim
-aros_target_cxx!$aros_target_cxx$ac_delim
 aros_kernel_cc!$aros_kernel_cc$ac_delim
 aros_target_as!$aros_target_as$ac_delim
 orig_target_ld!$orig_target_ld$ac_delim
@@ -13707,6 +13754,7 @@ aros_debug_aflags!$aros_debug_aflags$ac_delim
 aros_debug_ldflags!$aros_debug_ldflags$ac_delim
 aros_target_genmap!$aros_target_genmap$ac_delim
 aros_target_strip_flags!$aros_target_strip_flags$ac_delim
+crosstools_target!$crosstools_target$ac_delim
 x11_hidd_target!$x11_hidd_target$ac_delim
 sdl_hidd_target!$sdl_hidd_target$ac_delim
 aros_default_wbwidth!$aros_default_wbwidth$ac_delim
@@ -13715,7 +13763,6 @@ aros_default_wbdepth!$aros_default_wbdepth$ac_delim
 DO_XSHM_SUPPORT!$DO_XSHM_SUPPORT$ac_delim
 DO_VIDMODE_SUPPORT!$DO_VIDMODE_SUPPORT$ac_delim
 aros_host_x11_includes!$aros_host_x11_includes$ac_delim
-aros_host_x11_libdirs!$aros_host_x11_libdirs$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -13757,6 +13804,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+aros_host_x11_libdirs!$aros_host_x11_libdirs$ac_delim
 aros_host_sdl_cflags!$aros_host_sdl_cflags$ac_delim
 aros_host_sdl_libs!$aros_host_sdl_libs$ac_delim
 aros_serial_debug!$aros_serial_debug$ac_delim
@@ -13780,7 +13828,7 @@ gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 21; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 22; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
