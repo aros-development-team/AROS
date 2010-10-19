@@ -4,12 +4,12 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#include "env.h"
 #include "misc.h"
 #include "docommand.h"
 #include "backend.h"
 #include "ldscript.h"
 #include "gensets.h"
-#include "env.h"
 
 #define EXTRA_ARG_CNT 2
 
