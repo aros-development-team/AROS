@@ -132,6 +132,15 @@
  * See subsystem below for a more fine-grained distinction.
  */
 
+/*
+ * In some situations __AROS__ definition can coexist with anything of
+ * the below (for example this happens on ARM port which is compiled using Linux
+ * compiler at the moment). So if we have __AROS__ we don't evaluate anything else
+ */
+#if defined(__AROS__)
+#define PIPE_OS_AROS
+#else
+
 #if defined(__linux__)
 #define PIPE_OS_LINUX
 #define PIPE_OS_UNIX
@@ -184,8 +193,6 @@
 #define PIPE_OS_UNIX
 #endif
 
-#if defined(__AROS__)
-#define PIPE_OS_AROS
 #endif
 
 /*
