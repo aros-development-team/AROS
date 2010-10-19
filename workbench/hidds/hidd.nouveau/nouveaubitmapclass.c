@@ -263,6 +263,10 @@ static VOID HIDDNouveauBitMapPutAlphaImage15(struct HIDDNouveauBitMapData * bmda
     }
 }
 
+/* TEMP - FIXME HACK FOR PATCHRGBCONV */
+void HACK_PATCHRGBCONV(OOP_Object * bitmap);
+/* TEMP - FIXME HACK FOR PATCHRGBCONV */
+
 /* PUBLIC METHODS */
 OOP_Object * METHOD(NouveauBitMap, Root, New)
 {
