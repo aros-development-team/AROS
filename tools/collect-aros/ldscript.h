@@ -53,6 +53,12 @@ static const char LDSCRIPT_PART2[] =
 "    *(.gnu.linkonce.d.*)\n"
 "  }\n"
 "  .data1            0 : { *(.data1) }\n"
+#ifdef TARGET_CPU_arm
+"  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) }\n"
+"   __exidx_start = .;\n"
+"  .ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) }\n"
+"   __exidx_end = .;\n"
+#endif
 "  .eh_frame         0 : { KEEP (*(.eh_frame)) }\n"
 "  .gcc_except_table 0 : { *(.gcc_except_table) }\n"
 "\n"
