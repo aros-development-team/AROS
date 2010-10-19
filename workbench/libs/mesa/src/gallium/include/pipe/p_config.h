@@ -82,6 +82,10 @@
 #define PIPE_ARCH_X86
 #endif
 
+#if defined(__arm__)
+#define PIPE_ARCH_ARM
+#endif
+
 #if defined(__x86_64__) /* gcc */ || defined(_M_X64) /* msvc */ || defined(_M_AMD64) /* msvc */ || defined(__x86_64) /* Sun cc */
 #define PIPE_ARCH_X86_64
 #endif
@@ -115,7 +119,7 @@
  * Endian detection.
  */
 
-#if defined(PIPE_ARCH_X86) || defined(PIPE_ARCH_X86_64)
+#if defined(PIPE_ARCH_X86) || defined(PIPE_ARCH_X86_64) || defined(PIPE_ARCH_ARM)
 #define PIPE_ARCH_LITTLE_ENDIAN
 #elif defined(PIPE_ARCH_PPC) || defined(PIPE_ARCH_PPC_64)
 #define PIPE_ARCH_BIG_ENDIAN
