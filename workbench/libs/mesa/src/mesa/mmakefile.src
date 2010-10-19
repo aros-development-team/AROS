@@ -176,7 +176,7 @@ workbench-libs-mesa-module-cpp-quick : $(CXX_SOURCES)
 
 
 # Hack to get C++ objects linked into module
-LDFLAGS := $(CXX_OBJECTS) -nodefaultlibs
+LDFLAGS := $(CXX_OBJECTS)
 
 # TEMPORARY HACK FOR i386
 ifeq ($(AROS_TARGET_CPU), i386)
