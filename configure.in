@@ -1425,14 +1425,19 @@ if test "$crosstools" != "yes"; then
     AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
     AROS_TOOL_TARGET(aros_target_strip_ln,strip,$aros_target_strip)
     AROS_REQUIRED(strip,$aros_target_strip_ln)
-# Temporarily disabled in order to let Windows-hosted port to build.
-#    if test "$aros_target_cxx" != ""; then
-#	AC_PATH_PROG(aros_target_cxx,$aros_target_cxx)
+    if test "$aros_target_cxx" != ""; then
+	AC_PATH_PROG(aros_target_cxx,$aros_target_cxx)
+# Temporarily disabled in order to let Mingw32-hosted nightly build to work
 #	AROS_REQUIRED(c++,$aros_target_cxx)
-#    fi
+    fi
 else
 # Cancel preinstalled C++ compiler because it will be built as part of crosstools
     aros_target_cxx=""
+fi
+
+# Build crosstools if we have no C++ - temporary thing 
+if test "$aros_target_cxx" = ""; then
+    crosstools_target=tools-crosstools
 fi
 
 if test "$rescomp" != ""; then
@@ -1959,6 +1964,8 @@ AC_SUBST(aros_debug_aflags)
 AC_SUBST(aros_debug_ldflags)
 AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
+
+AC_SUBST(crosstools_target)
 
 # Graphics Related
 AC_SUBST(x11_hidd_target)
