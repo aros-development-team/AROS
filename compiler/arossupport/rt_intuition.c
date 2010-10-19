@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic functions for ressource tracking
@@ -162,7 +162,9 @@ static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt)
 
 	while ((win = rt->Screen->FirstWindow))
 	{
-	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)prtwin, 0) == RT_SEARCH_FOUND)
+	    va_list ap;
+
+	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)prtwin, ap) == RT_SEARCH_FOUND)
 	    {
 		RT_FreeResource (rtd, RTT_WINDOW, (RTNode *)rtwin);
 	    }

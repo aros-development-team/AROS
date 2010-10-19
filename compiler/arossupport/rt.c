@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic functions for ressource tracking
@@ -856,6 +856,8 @@ RTDesc const * RT_Resources[RTT_MAX];
 
     if (!(rtnode->Flags & RTNF_DONT_FREE) )
     {
+    	va_list ap;
+
 	/* Print an error */
 	(void) (*(GetRTShowError(rtt)))
 	(
@@ -866,7 +868,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 	    RT_EXIT,
 	    NULL,
 	    0L,
-	    0 
+	    ap
 	);
 
 	/* free the resource */
