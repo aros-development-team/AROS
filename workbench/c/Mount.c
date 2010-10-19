@@ -194,17 +194,10 @@ const UBYTE options[]=
 
 #ifdef __MORPHOS__
 #define PROGNAME "Mount unofficial"
-#define __stackparm __attribute__((varargs68k))
 typedef struct Library *UtilityBase_t;
 #else
 #define PROGNAME "Mount"
 typedef struct UtilityBase *UtilityBase_t;
-#endif
-
-#ifdef __PPC__
-#define ARGS(ap) ap->overflow_arg_area
-#else
-#define ARGS(ap) (IPTR *)ap
 #endif
 
 #ifdef __AROS__
@@ -235,8 +228,14 @@ void preparefile(STRPTR buf, LONG size);
 LONG parsemountfile(IPTR *params, STRPTR buf, LONG size);
 LONG parsemountlist(IPTR *params, STRPTR name, STRPTR buf, LONG	size);
 LONG mount(IPTR	*params, STRPTR	name);
-void __stackparm ShowError(char *s, ...);
+void ShowErrorArgs(char *s, IPTR *ap);
 void ShowFault(LONG code, char *s, ...);
+
+#define ShowError(s, ...)	\
+{				\
+    IPTR args[] = {__VA_ARGS__};\
+    ShowErrorArgs(s, &args);	\
+}
 
 struct DosLibrary *DOSBase;
 struct IntuitionBase *IntuitionBase;
@@ -1942,15 +1941,12 @@ LONG mount(IPTR	*params, STRPTR	name)
     return error;
 }
 
-void ShowError(char *s, ...)
+void ShowErrorArgs(char *s, IPTR *ap)
 {
-	va_list ap;
-
-	va_start(ap, s);
 	if (IsCli)
 	{
 		PutStr("ERROR: ");
-		VPrintf(s, ARGS(ap));
+		VPrintf(s, ap);
 		PutStr("\n");
 	}
 	else
@@ -1967,11 +1963,10 @@ void ShowError(char *s, ...)
 		IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
 		if (IntuitionBase)
 		{
-			EasyRequestArgs(NULL, &es, NULL, ARGS(ap));
+			EasyRequestArgs(NULL, &es, NULL, ap);
 			CloseLibrary((struct Library *)IntuitionBase);
 		}
 	}
-	va_end(ap);
 }
 
 void ShowFault(LONG code, char *s, ...)
