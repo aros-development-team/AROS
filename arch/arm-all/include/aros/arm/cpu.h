@@ -104,9 +104,9 @@ struct JumpVec
 		"#define EMITSTUB(fname, bname, vec) " \
 		".weak fname ; "                       \
 		"fname : "                             \
-		"ldr  r12, .L1; "                      \
+		"ldr  r12, 1f; "                      \
 		"ldr  pc , [r12, $ vec ]; "            \
-		".L1: .word bname;\n"                  \
+		"1: .word bname;\n"                  \
 		"#define EMITALIAS(fname, alias) "     \
 		".weak alias; .set alias, fname\n"
 #define STUBCODE                               \
