@@ -73,7 +73,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
     align = GetTagData(aHidd_BitMap_Align, 16, msg->attrList) - 1;
     
-    #warning Fix this hack
+    /* FIXME: Fix this hack */
     /* Because this class is used to emulate Amiga bitmaps, we
        have to see if it should have late initalisation
     */

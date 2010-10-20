@@ -67,7 +67,7 @@ LONG showPtrArgsText(struct AFSBase *afsbase, char *string, enum showReqType typ
 	}
 	else
 	{
-#warning "kprintf for error printing when gfx.hidd is not initialized"
+      /* We use kprintf for error printing when gfx.hidd is not initialized */
 		vkprintf(string, args);
 		kprintf("\n");
 	}
