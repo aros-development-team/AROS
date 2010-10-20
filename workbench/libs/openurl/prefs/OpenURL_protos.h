@@ -23,7 +23,11 @@
 #ifdef __MORPHOS__
 APTR DoSuperNew(struct IClass *cl, APTR obj, ...);
 #elif defined(__AROS__)
-IPTR VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...);
+#define DoSuperNew(cl, obj, ...)				\
+({								\
+    IPTR __args[] = {__VA_ARGS__};				\
+    DoSuperNewTagList(cl, obj, NULL, (struct TagItem *)__args);	\
+})
 #else
 Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...);
 #endif
