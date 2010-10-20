@@ -22,5 +22,10 @@ void gui_snapshot(void);
 void gui_process_refresh(void);
 void gui_process_msg(struct SysLogPacket *msg);
 void gui_set_interface_state(struct ifnet *ifp, long state);
-void error_request(STRPTR Text, ...) VA68K;
+void error_requestArgs(STRPTR Text, IPTR *args);
 
+#define error_request(Text, ...)	\
+{					\
+    IPTR __args[] = {__VA_ARGS__};	\
+    error_requestArgs(Text, __args);	\
+}
