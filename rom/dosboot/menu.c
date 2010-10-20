@@ -71,7 +71,7 @@ static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
 
 static struct Gadget *createGadgets(LIBBASETYPEPTR DOSBootBase) 
 {
-#warning "TOD: This is very unclean! free-up resources if we fail!"
+    /* FIXME: This is very unclean! free-up resources if we fail! */
 
     /* Create Option Gadgets */
     DOSBootBase->bm_MainGadgets.bootopt = createButton(

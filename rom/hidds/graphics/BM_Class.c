@@ -889,7 +889,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 		           The PixelFormat will be set later.
 			*/
 
-    	    	    	#warning Find a better way to do this.
+    	    	    	/* FIXME: Find a better way to do this. */
 
 	    	    	/* One could maybe fix this by implementing a separate AmigaPitMap class
 	    	    	*/
@@ -1750,7 +1750,7 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
 
 *****************************************************************************************/
 
-#warning Try to opimize clipping here
+/* TODO: Try to opimize clipping here */
 
 VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
 				  struct pHidd_BitMap_DrawEllipse *msg)
@@ -4239,7 +4239,7 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 			    vHidd_StdPixFmt_Native32);
     	    if (lut)
 	    {
-	    	#warning "This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway"
+	    	/* FIXME: This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway */
     		for(x = 0; x < msg->width; x++)
 		{
     	    	    pixarray[x] = (UBYTE)linebuf[x];
@@ -4259,7 +4259,7 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 	{
     	    if (lut)
 	    {
-	    	#warning "This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway"
+	    	/* FIXME: This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway */
     		for(x = 0; x < msg->width; x++)
 		{
 		    pixarray[x] = (UBYTE)HIDD_BM_GetPixel(o, msg->x + x, msg->y + y);
@@ -4624,7 +4624,7 @@ HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
     {
     	if (HIDD_PF_SWAPPIXELBYTES(pf))
 	{
-	    #warning "BM__Hidd_BitMap__MapColor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
+	    /* FIXME: BM__Hidd_BitMap__MapColor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats */
 
 	    HIDDT_Pixel pixel = MAP_RGBA(red, green, blue, alpha, pf);
 
@@ -4642,7 +4642,7 @@ HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
 
 	ctab = ((HIDDT_ColorLUT *)data->colmap)->colors;
 	/* Search for the best match in the color table */
-#warning Implement this
+	/* FIXME: Implement this */
 
     }
 
@@ -4694,7 +4694,7 @@ VOID BM__Hidd_BitMap__UnmapPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
 	if (HIDD_PF_SWAPPIXELBYTES(pf))
 	{
-	    #warning "bitmap_unmappixel assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
+	    /* FIXME: bitmap_unmappixel assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats */
 	    pixel = SWAPBYTES_WORD(pixel);
 	}
 
@@ -4712,7 +4712,7 @@ VOID BM__Hidd_BitMap__UnmapPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
 
 
-#warning Use CLUT shift and CLUT mask here
+	/* FIXME: Use CLUT shift and CLUT mask here */
 	if (msg->pixel < 0 || msg->pixel >= clut->entries)
 	    return;
 

@@ -232,7 +232,7 @@ LONG retval;
 									&iofs->io_DirPos
 								);
 							break;
-						#warning FIXME: Disabled FSA_EXAMINE_ALL support since it seems to have bugs
+						/* FIXME: Disabled FSA_EXAMINE_ALL support since it seems to have bugs */
 						#if 0
 						case FSA_EXAMINE_ALL :
 							error=examineAll
@@ -374,7 +374,7 @@ LONG retval;
 						case FSA_SET_FILE_SIZE :
 						case FSA_FILE_MODE :
 						case FSA_EXAMINE :
-						#warning FIXME: Disabled FSA_EXAMINE_ALL support
+						/* FIXME: Disabled FSA_EXAMINE_ALL support */
                                         	#if 0
 	                                        case FSA_EXAMINE_ALL :
 						#endif

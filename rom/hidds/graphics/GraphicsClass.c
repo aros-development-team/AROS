@@ -2839,7 +2839,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	     */
     	    // bug("COPY FROM PALETTE TO PALETTE\n");
 
-    	    #warning This might not work very well with two StaticPalette bitmaps
+    	    /* FIXME: This might not work very well with two StaticPalette bitmaps */
 
 	    for(y = startY; y != endY; y += deltaY)
 	    {
@@ -2860,7 +2860,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     	/* Two unlike bitmaps */
 	if (IS_TRUECOLOR(srcpf))
 	{
-    	    #warning Implement this
+    	    /* FIXME: Implement this */
 	     D(bug("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n"));
 	}
 	else if (IS_TRUECOLOR(dstpf))

@@ -181,7 +181,7 @@ static inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelForma
 
     if (HIDD_PF_SWAPPIXELBYTES(pf))
     {
-        #warning "int_map_truecolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
+        /* FIXME: int_map_truecolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats */
 
         HIDDT_Pixel pixel = MAP_RGBA(red, green, blue, alpha, pf);
 
