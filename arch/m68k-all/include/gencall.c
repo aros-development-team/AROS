@@ -16,9 +16,6 @@
 
 #define GENCALL_MAX	(13 + 1)	/* Max number of arguments */
 
-//#define CLOBBER_ALL	"\"%d0\", \"%d1\", \"%a0\", \"%a1\", \"cc\", \"memory\""
-#define CLOBBER_ALL	"\"cc\", \"memory\""
-
 /* NOTE: For all 'call' macros, ie AROS_LC5(), the
  *       'bt' parameter is frequently garbled by
  *       callers who use '#define's like:
@@ -64,22 +61,19 @@ static void aros_ufc(int id)
 	for (i = 0; i < id; i++)
 		printf(",a%d", i + 1);
 	printf(") \\\n");
-	printf("\t({ \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t   __AROS_UFPA(a%d) __AROS_UFTA(a%d) = __AROS_UFCA(a%d); \\\n", i + 1, i + 1, i + 1);
-	printf("\t   (t)({\\\n");
-	for (i = 0; i < id; i++)
-		printf("\t     register __AROS_UFPA(a%d) __AROS_UFRA(a%d) asm(__AROS_UFSA(a%d)) = __AROS_UFTA(a%d); \\\n", i + 1, i + 1, i + 1, i + 1);
-	printf("\t     register ULONG _ret asm(\"%%d0\"); \\\n");
-	printf("\t     asm volatile (\"jsr (%%1)\\n\" : \\\n");
-	printf("\t             \"=r\" (_ret) : \\\n");
-	printf("\t              \"a\" (n), \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t              \"r\" (__AROS_UFRA(a%d))%s \\\n", i + 1, (i == (id-1)) ? "" : ",");
-	printf("\t     : %s ); \\\n", CLOBBER_ALL);
-	printf("\t     _ret;});})\n\n");
+	printf("\t({ register ULONG _ret asm(\"%%d0\"); \\\n");
+	printf("\t\tasm volatile ( \"pea ufc%d_%%c0\\n\" : : \"i\" (__LINE__) ); \\\n", id);
+	printf("\t\tasm volatile ( \"move.l %%0,%%%%sp@-\\n\" : : \"g\" (n) ); \\\n");
+	for (i = 0; i < id; i++) {
+		printf("\t\tasm volatile ( \"");
+		printf("move.l %%0,%%\" __AROS_LSA(a%d) \"", i + 1);
+		printf("\\n\" : : \"g\" (__AROS_LCA(a%d)) : __AROS_LSA(a%d) ); \\\n", i + 1, i + 1);
+	}
+	printf("\t\tasm volatile (\"");
+	printf("rts\\nufc%d_%%c1:", id);
+	printf("\\n\" : \"=r\" (_ret) : \"i\" (__LINE__) : \"cc\", \"memory\"); \\\n");
+	printf("\t     (t)_ret;})\n\n");
 }
-
 
 void aros_lc(int id)
 {
@@ -88,22 +82,19 @@ void aros_lc(int id)
 	for (i = 0; i < id; i++)
 		printf("a%d,", i + 1);
 	printf("bt,bn,o,s) \\\n");
-	printf("\t({ void *bt_tmp = bn; \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t   __AROS_LPA(a%d) __AROS_LTA(a%d) = __AROS_LCA(a%d); \\\n", i + 1, i + 1, i + 1);
-	printf("\t   (t)({\\\n");
-	for (i = 0; i < id; i++)
-		printf("\t     register __AROS_LPA(a%d) __AROS_LRA(a%d) asm(__AROS_LSA(a%d)) = __AROS_LTA(a%d); \\\n", i + 1, i + 1, i + 1, i + 1);
-	printf("\t     register void *_bt asm(\"%%a6\") = bt_tmp; \\\n");
-	printf("\t     register ULONG _ret asm(\"%%d0\"); \\\n");
-	printf("\t     asm volatile (\"jsr %%c1(%%%%a6)\\n\" : \\\n");
-	printf("\t             \"=r\" (_ret) : \\\n");
-	printf("\t              \"i\" (-1 * o * LIB_VECTSIZE), \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t              \"r\" (__AROS_LRA(a%d)), \\\n", i + 1);
-	printf("\t              \"r\" (_bt) \\\n");
-	printf("\t     : %s ); \\\n", CLOBBER_ALL);
-	printf("\t     _ret;});})\n\n");
+	printf("\t({ register ULONG _ret asm(\"%%d0\"); \\\n");
+	for (i = 0; i < id; i++) {
+		printf("\t\tasm volatile ( \"");
+		printf("move.l %%0,%%\" __AROS_LSA(a%d) \"", i + 1);
+		printf("\\n\" : : \"g\" (__AROS_LCA(a%d)) : __AROS_LSA(a%d) ); \\\n", i + 1, i + 1);
+	}
+	printf("\t\tasm volatile ( \"");
+	printf("move.l %%0,%%%%a6");
+	printf("\\n\" : : \"g\" (bn) : \"%%a6\" ); \\\n");
+	printf("\t\tasm volatile (\"");
+	printf("jsr %%c1(%%%%a6)");
+	printf("\\n\" : \"=r\" (_ret) : \"i\" (-1 * (o) * LIB_VECTSIZE) : \"cc\", \"memory\"); \\\n");
+	printf("\t     (t)_ret;})\n\n");
 }
 
 void aros_lh(int id, int is_ignored)
@@ -114,10 +105,12 @@ void aros_lh(int id, int is_ignored)
 	for (i = 0; i < id; i++)
 		printf("a%d,", i + 1);
 	printf("bt,bn,o,s) \\\n");
-	printf("\tt AROS_SLIB_ENTRY(n,s) (void) { \\\n");
+	printf("\tt AROS_SLIB_ENTRY(n,s) (void) {");
 	for (i = 0; i < id; i++)
-		printf("\t__AROS_LPA(a%d) __attribute__((unused)) __AROS_LCA(a%d) = ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_LPA(a%d))__r;}); \\\n", i+1, i+1, i+1, i+1);
-	printf("\tregister bt __attribute__((unused)) bn = ({register ULONG __r asm(\"%%a6\");(bt)__r;});\n");
+		printf(" \\\n\t__AROS_LPA(a%d) __attribute__((unused)) __AROS_LCA(a%d) = ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_LPA(a%d))__r;});", i+1, i+1, i+1, i+1);
+	if (!is_ignored)
+		printf(" \\\n\tregister bt __attribute__((unused)) bn = ({register ULONG __r asm(\"%%a6\");(bt)__r;});");
+	printf("\n");
 }
 
 static void aros_lcnr(int id)
@@ -128,26 +121,15 @@ static void aros_lcnr(int id)
 static void aros_call(int id)
 {
 	int i;
-	printf("#define AROS_CALL%d(t,addr,", id);
+	printf("#define AROS_CALL%d(t,n,", id);
 	for (i = 0; i < id; i++)
 		printf("a%d,", i + 1);
 	printf("bt,bn) \\\n");
-	printf("\t({ void *bt_tmp = bn; \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t   __AROS_LPA(a%d) __AROS_LTA(a%d) = __AROS_LCA(a%d); \\\n", i + 1, i + 1, i + 1);
-	printf("\t   (t)({\\\n");
-	printf("\t     register void *_bt asm(\"%%a6\") = bt_tmp; \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t     register __AROS_LPA(a%d) __AROS_LRA(a%d) asm(__AROS_LSA(a%d)) = __AROS_LTA(a%d); \\\n", i + 1, i + 1, i + 1, i + 1);
-	printf("\t     register ULONG _ret asm(\"%%d0\"); \\\n");
-	printf("\t     asm volatile (\"jsr (%%1)\\n\" : \\\n");
-	printf("\t             \"=r\" (_ret) : \\\n");
-	printf("\t              \"a\" (addr), \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t              \"r\" (__AROS_LRA(a%d)), \\\n", i + 1);
-	printf("\t              \"r\" (_bt) \\\n");
-	printf("\t     : %s ); \\\n", CLOBBER_ALL);
-	printf("\t     _ret;});})\n\n");
+	printf("\tAROS_UFC%d(t,n", id + 1);
+	for (i = 0; i < id; i++) {
+		printf(",AROS_UFCA(a%d)", i + 1);
+	}
+	printf(",AROS_UFCA(bt,bn,A6))\n");
 }
 
 static void aros_callnr(int id)
@@ -181,26 +163,15 @@ static void aros_lvo_callnr(int id)
 	printf("\t\tbt,bn)\n");
 }
 
-static void aros_ld(int id)
+static void aros_ld(int id, int is_ignored)
 {
 	int i;
 
-	printf("#define AROS_LD%d(t,n,", id);
+	printf("#define AROS_LD%d%s(t,n,", id, is_ignored ? "I" : "");
 	for (i = 0; i < id; i++)
 		printf("a%d,", i + 1);
 	printf("bt,bn,o,s) \\\n");
 	printf("\t__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) (void)\n");
-}
-
-static void aros_ldi(int id)
-{
-	int i;
-
-	printf("#define AROS_LD%dI(t,n,", id);
-	for (i = 0; i < id; i++)
-		printf("a%d,", i + 1);
-	printf("bt,bn,o,s) \\\n");
-	printf("\t__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s)(void)\n");
 }
 
 int main(int argc, char **argv)
@@ -266,10 +237,10 @@ int main(int argc, char **argv)
 	printf("#define __AROS_CPU_SPECIFIC_LD\n\n");
 	
 	for (i = 0; i < GENCALL_MAX; i++)
-		aros_ld(i);
+		aros_ld(i, 0);
 
 	for (i = 0; i < GENCALL_MAX; i++)
-		aros_ldi(i);
+		aros_ld(i, 1);
 
 	printf("#endif /* AROS_M68K_LIBCALL_H */\n");
 	return 0;
