@@ -18,6 +18,10 @@ ifeq ($(AROS_TARGET_CPU), ppc)
   FFIXED = -ffixed-r14
 endif
 
+ifeq ($(AROS_TARGET_CPU), arm)
+  FFIXED = -ffixed-r10
+endif
+
 GALLIUM_SOFTPIPE_SOURCES = \
             drivers/softpipe/sp_fs_exec \
             drivers/softpipe/sp_fs_sse \

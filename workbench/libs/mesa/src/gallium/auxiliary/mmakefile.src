@@ -19,6 +19,10 @@ ifeq ($(AROS_TARGET_CPU), ppc)
   FFIXED = -ffixed-r14
 endif
 
+ifeq ($(AROS_TARGET_CPU), arm)
+  FFIXED = -ffixed-r10
+endif
+
 GALLIUM_AUXILIARY_SOURCES = \
             cso_cache/cso_cache \
             cso_cache/cso_context \
