@@ -1084,7 +1084,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     D(bug("set fonts\n"));
 
-#warning Remove workaround!
+    /* FIXME: Remove workaround! */
     /* lbischoff: The following 4 Setxxx lines are a workaround for the InitRastPort
        problem (Bug #75 in docs/BUGS). They ensure that at least a window's rastport
        is initialized correctly. Remove them if they are not needed any longer!

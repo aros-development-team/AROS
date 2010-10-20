@@ -63,7 +63,7 @@
 {
     AROS_LIBFUNC_INIT
     
-#   warning TODO: Write intuition/WindowAction()
+    /* TODO: Write intuition/WindowAction() */
 
     switch (action)
     {

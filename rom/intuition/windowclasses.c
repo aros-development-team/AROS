@@ -423,7 +423,7 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
                                         TAG_DONE);
     	    	#else
     	    	// FIXME!
-    	    	#warning Implemente MOVEHACK support for AROS (?)
+    	    	/* FIXME: Implemente MOVEHACK support for AROS (?) */
     	    	#endif
                 }
             }

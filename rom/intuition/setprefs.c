@@ -225,7 +225,7 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
         }
     }
 
-    #warning Is there any further immediate action to be taken when the prefences are updated?
+    /* TODO: Is there any further immediate action to be taken when the prefences are updated? */
 
     return (struct Preferences *) prefbuffer;
 

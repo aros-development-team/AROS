@@ -57,9 +57,10 @@
 static void RenderBoolLabel(struct RastPort *rp, struct Gadget *gadget, struct BBox *bbox,
                             struct DrawInfo *dri, struct IntuitionBase *IntuitionBase)
 {
-    #warning Amiga handmade (non-boopsi) bool gadgets do not seem to know anything about
-    #warning GFLG_LABELSTRING/GFLG_LABELIMAGE. Instead they always assume GadgetText to
-    #warning point to a struct IntuiText!!!
+    /* FIXME: Amiga handmade (non-boopsi) bool gadgets do not seem to know anything about
+     * GFLG_LABELSTRING/GFLG_LABELIMAGE. Instead they always assume GadgetText to
+     * point to a struct IntuiText!!!
+     */
 
     if (gadget->GadgetText)
     {
