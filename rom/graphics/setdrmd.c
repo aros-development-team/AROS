@@ -74,7 +74,7 @@
     	    drmd_tags[0].ti_Data = vHidd_GC_ColExp_Transparent;
 	}
 
-    	#warning Handle INVERSVID by swapping apen and bpen ?
+    	/* FIXME: Handle INVERSVID by swapping apen and bpen ? */
 
 	dd = GetDriverData(rp);
 	if (dd)

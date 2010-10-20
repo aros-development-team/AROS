@@ -47,9 +47,8 @@
     AROS_LIBFUNC_INIT
 
 
-#warning TODO: Write graphics/WaitBlit()
-
 /*    aros_print_not_implemented ("WaitBlit"); */
+    /* TODO: Write graphics/WaitBlit() */
 
 /*    driver_WaitBlit (GfxBase); */
 

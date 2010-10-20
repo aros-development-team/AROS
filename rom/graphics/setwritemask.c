@@ -46,13 +46,8 @@
 {
     AROS_LIBFUNC_INIT
 
-#if 0
-    rp->Mask = mask;
-    return TRUE;
-#else
-#warning SetWriteMask not yet implemented
+    /* TODO: Write graphics/SetWriteMask() */
     return FALSE;
-#endif
  
     AROS_LIBFUNC_EXIT
     
