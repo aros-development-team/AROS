@@ -87,7 +87,7 @@
     va_list	 ap;
     int 	 ret;
 
-#warning FIXME check the systems and the debug level
+    /* FIXME check the systems and the debug level */
     // Check SysBase->DebugAROSBase->DebugConfig
 
     va_start(ap, fmt);

@@ -52,7 +52,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement strxfrm() properly
+    /* FIXME: Implement strxfrm() properly */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     size_t srclen = strlen(src);

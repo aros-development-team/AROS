@@ -37,7 +37,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement fchown()
+    /* FIXME: Implement fchown() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return 0;

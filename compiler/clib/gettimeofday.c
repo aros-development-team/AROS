@@ -112,7 +112,7 @@
     if (tz)
     {
 	tz->tz_minuteswest = __gmtoffset;
-#warning FIXME: set tz->tz_dsttime
+	/* FIXME: set tz->tz_dsttime */
 	tz->tz_dsttime	   = DST_NONE;
     }
 

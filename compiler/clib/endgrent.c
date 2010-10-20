@@ -34,7 +34,7 @@
 
 ******************************************************************************/
 {
-#   warning Implement endgrent()
+    /* FIXME: Implement endgrent() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return;

@@ -104,7 +104,7 @@ extern struct Library *CxBase;
 		ansiCode = '\\';
 		break;
 	    default  :
-    	    	#warning FIXME: What to do if "\x" comes?	    	
+    	    	/* FIXME: What to do if "\x" comes? */
 		/* stegerg: This? */
 		ansiCode = *str;
 		break;

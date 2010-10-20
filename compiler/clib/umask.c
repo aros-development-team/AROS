@@ -9,8 +9,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#warning FIXME: Implement umask() properly
-
 /*****************************************************************************
 
     NAME */
@@ -48,6 +46,8 @@
 static int __umask_init(void)
 {
     struct arosc_privdata *privdata = __get_arosc_privdata();
+
+    /* FIXME: Implement umask() properly */
 
     if (privdata->acpd_oldprivdata)
         privdata->acpd_umask = privdata->acpd_oldprivdata->acpd_umask;

@@ -195,7 +195,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
            fib->fib_DirEntryType = 0;
         }
 
-#       warning implement softlink handling
+	/* FIXME: implement softlink handling */
 
         /* Check if it's a directory or a softlink.
            Softlinks are not handled yet, though */
@@ -336,7 +336,7 @@ int __register_init_fdarray(fdesc **__fdarray, int numslots)
     return 1;
 }
 
-#warning perhaps this has to be handled in a different way...
+/* FIXME: perhaps this has to be handled in a different way...  */
 int __init_stdfiles(void)
 {
     struct Process *me;

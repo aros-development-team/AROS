@@ -65,7 +65,7 @@ char *strptime(const char *s, const char *format, struct tm *tm)
                 format--;
                 break;
             default:
-#warning Implement remaining conversions
+                /* FIXME: Implement remaining conversions */
         	return 0;
             }
             

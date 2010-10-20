@@ -74,7 +74,7 @@
 	    return -1;
         }
         */
-#warning Damn dos.library! We cannot report the error code correctly! This oughta change someday...
+	/* FIXME: Damn dos.library! We cannot report the error code correctly! This oughta change someday... */
 	/* Since the dos.library destroyes the file handle anyway, even if the closing fails, we cannot
            report the error code correctly, so just close the file and get out of here */
 

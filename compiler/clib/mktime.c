@@ -70,7 +70,7 @@ static char monthtable[] =
                      year,
                      i;
 
-#warning TODO: Add struct tm normalization code here
+    /* TODO: Add struct tm normalization code here */
 
     /* Compute number of days in the years before this year and after 1970.
      * 1972 is the first leapyear
