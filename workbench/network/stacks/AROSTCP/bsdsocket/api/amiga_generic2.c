@@ -41,6 +41,37 @@
 
 #include <bsdsocket/socketbasetags.h>
 
+/*
+ * va_set() macro is used to convert from AmigaOS-style arguments array
+ * to standard SVR4 va_list structure. We just fabricate such a structure
+ * where reg_save_area is already ended up and next argument will be
+ * picked up from overflow_arg_area which is our array. Note that we
+ * don't need va_start() and va_end() in this case
+ */
+#ifdef __PPC__
+#define va_set(ap, args)	\
+  ap->gpr = 8;			\
+  ap->fpr = 8;			\
+  ap->overflow_arg_area = args;
+#endif
+
+#ifdef __x86_64__
+#define va_set(ap, args)	\
+  ap->gp_offset = 48;		\
+  ap->fp_offset = 304;		\
+  ap->overflow_arg_area = args;
+#endif
+
+#ifdef __arm__
+#define va_set(ap, args)	\
+  ap.__ap = args;
+#endif
+
+#ifndef va_set
+#define va_set(ap, args)	\
+  ap = args;
+#endif
+
 extern const char * const __sys_errlist[];
 extern const int __sys_nerr;
 extern const char * const h_errlist[];
@@ -103,50 +134,14 @@ AROS_LH3(VOID, Syslog,
   int saved_errno;
   char fmt_cpy[1024];
   char tag_cpy[256];
-
-  /* This cool trick is used to convert from AmigaOS-style arguments array
-     to standard SVR4 va_list structure. We just fabricate such a structure
-     where reg_save_area is already ended up and next argument will be
-     picked up from overflow_arg_area which is our array. Note that we
-     don't need va_start() and va_end() in this case. */
-#ifdef __PPC__
-#define COMPLEX_VA_LIST
-  va_list _ap = {{
-    8,                 /* gpr - no more left */
-    8,                 /* fpr - no more left */
-#if __GNUC_PREREQ(3,4)
-    0,                 /* reserved - must be set if existing */
-#endif
-    (void *) ap,       /* overflow_arg_area - here is our data */
-  }};
-#endif
-
-#ifdef __x86_64__
-#define COMPLEX_VA_LIST
-  va_list _ap = {{
-    48,			/* gp                */
-    304,		/* fp		     */
-    (void *) ap,	/* overflow_arg_area */
-  }};
-#endif
-
-#ifdef __arm__
-#define COMPLEX_VA_LIST
-/* Arm guys just decided to make the life worse */
-  va_list _ap = {
-    (void *) ap
-  };
-#endif
-
-#ifndef COMPLEX_VA_LIST
-#define _ap ap
-#endif
-
+  va_list _ap;
   register char *p = fmt_cpy;
   char *t = NULL;
   char *t1;
 
   CHECK_TASK_VOID();
+
+  va_set(_ap, ap);
 
   /* check for invalid bits or no priority set */
   if (!LOG_PRI(pri)) {
@@ -183,7 +178,7 @@ AROS_LH3(VOID, Syslog,
       t = tag_cpy;
       t1 = tag_cpy;
     }
-    sprintf(t1, "[%lx]", libPtr->thisTask);
+    sprintf(t1, "[%p]", libPtr->thisTask);
   }
 
   /* 
