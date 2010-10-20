@@ -79,7 +79,7 @@
     }
     else if (type != CUSTOMSCREEN)
     {
-#warning TODO:
+	/* FIXME: Handle CUSTOMSCREEN */
         screen = NULL;
     }
     

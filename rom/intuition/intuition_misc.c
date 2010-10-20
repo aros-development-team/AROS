@@ -93,7 +93,7 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
      */
     GetPrivIBase(IntuitionBase)->DefaultPreferences->PointerTicks = 2;
 
-#warning FIXME: Try to load preferences from a file!
+    /* FIXME: Try to load preferences from a file! */
 
 
     /*******************************************************************

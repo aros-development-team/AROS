@@ -143,7 +143,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                      set/clear WFLG_RMBTRAP. It is not certain that every 
                      compiler on every machine produces an atomic instruction.
                 */
-                #warning check that window->Flags is atomically set everywhere!
+                /* FIXME: check that window->Flags is atomically set everywhere */
                 AROS_ATOMIC_OR(window->Flags, WFLG_WINDOWACTIVE);
                 
                 pointer = IW(window)->pointer;

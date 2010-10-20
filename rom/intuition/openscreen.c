@@ -326,7 +326,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
                     if (strcmp((char *)tag->ti_Data, "Workbench") == 0)
                     {
-#warning This would still not be safe, if a normal app tried to open its own screen with SA_PubName=Workbench
+			/* FIXME: This would still not be safe, if a normal app tried to open its own screen with SA_PubName=Workbench */
                         if (GetPrivIBase(IntuitionBase)->WorkBench)
                         {
                             UnlockPubScreenList();
@@ -557,7 +557,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_MinimizeISG 0x%lx\n",tag->ti_Data));
                 break;
 
-#warning TODO: Missing SA_ Tags
+	    /* TODO: Missing SA_ Tags */
             default:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: unknown tag 0x%lx data 0x%lx\n",
                                          tag->ti_Tag,
@@ -1132,7 +1132,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         screen->DInfo.dri.dri_Pens = screen->Pens;
         /* dri_Depth is 8 on hi/true color screens like in AmigaOS with picasso96/cybergraphx */
         screen->DInfo.dri.dri_Depth = (ns.Depth <= 8) ? ns.Depth : 8;
-#warning These are probably monitor dependent
+	/* FIXME: Resolution should be monitor dependent */
         screen->DInfo.dri.dri_Resolution.X = 44;
         screen->DInfo.dri.dri_Resolution.Y = 44;
 

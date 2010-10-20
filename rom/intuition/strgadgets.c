@@ -270,7 +270,7 @@ STATIC UWORD GetTextLeft(struct Gadget      *gad,
     switch (gad->Activation & STRALIGNMASK)
     {
 	case GACT_STRINGLEFT:
-    	#warning FIXME: is this default: correct?
+    	/* FIXME: is this default: correct? */
 	default:
             text_left = bbox->Left;
             break;
@@ -319,7 +319,7 @@ STATIC UWORD GetTextRight(struct Gadget     *gad,
     switch (gad->Activation & STRALIGNMASK)
     {
     case GACT_STRINGLEFT:
-    	#warning FIXME: is this default: correct?
+    	/* FIXME: is this default: correct? */
 	default:
             text_right =  bbox->Left + TextLength(rp, dispstr, dispstrlen);
             break;
@@ -839,7 +839,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 
     /* stegerg: URGENTCHECMKE. Why disabled for AROS? */
     #ifndef __MORPHOS__
-        #warning we need to handle RAMIGA-Q,RAMIGA-X here
+        /* FIXME:  we need to handle RAMIGA-Q,RAMIGA-X here */
     #else
         if(letter == 'Q')
         {
@@ -1172,7 +1172,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
                 else /* Integer gadget ? */
                 {
                     /* Is key a printable character ? */
-#warning Locale should be used here...
+		    /* FIXME: Locale should be used here... */
                     if ((letter & 0x60) == 0)
                     {
                         sgw->EditOp = EO_BADFORMAT;

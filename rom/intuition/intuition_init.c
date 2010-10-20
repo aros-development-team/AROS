@@ -95,8 +95,8 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     if (!OOP_ObtainAttrBases(attrbases))
 	return FALSE;
 
-#warning "FIXME: This libInit is all broken if something should fail, but do we care?"
-#warning "FIXME: If something fails we're screwed anyway..."
+    /* FIXME: This libInit is all broken if something should fail, but do we care? */
+    /* FIXME: If something fails we're screwed anyway... */
 
     /*  We have to open this here, but it doesn't do any allocations,
         so it shouldn't fail...
