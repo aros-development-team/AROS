@@ -59,7 +59,7 @@
 	if (var)
 	{
 	    /*This should not fail, unless someone stealt our variable*/
-#warning FIXME: maybe this function should be atomic
+            /* FIXME: maybe this function should be atomic? */
     	    GetVar((char *)name, var->value, len+1, GVF_BINARY_VAR);
 	}
     }

@@ -27,11 +27,11 @@ struct arosc_userdata * __get_arosc_userdata(void)
     
     if (acpd == NULL)
     {
-	#warning FIXME: This is a quick hack to make old programs which use
-	#warning        the libc from inside newly created tasks/processes
-	#warning        without going trough special libc routines
-	#warning        (yet to be written).
-
+	/* FIXME: This is a quick hack to make old programs which use
+	 *        the libc from inside newly created tasks/processes
+	 *        without going trough special libc routines
+	 *       (yet to be written).
+	 */
         struct Task *parent = GetETask(curtask)->et_Parent;
 	    while (parent != NULL)
 	    {

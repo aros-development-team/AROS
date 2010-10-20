@@ -54,7 +54,7 @@
 
     longjmp (__aros_startup_jmp_buf, 1);
 
-#   warning TODO: _exit() is not properly implemented
+    /* TODO: _exit() is not properly implemented */
 
     /* never reached */
 } /* _exit */

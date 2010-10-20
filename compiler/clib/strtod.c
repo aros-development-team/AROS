@@ -56,7 +56,7 @@
 ******************************************************************************/
 {
     /* Unit tests available in : tests/clib/strtod.c */
-#warning TODO: implement NAN handling
+    /* FIXME: implement NAN handling */
     double  val = 0, precision;
     int     exp = 0;
     char    c = 0, c2 = 0;

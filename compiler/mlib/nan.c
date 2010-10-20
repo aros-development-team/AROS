@@ -6,7 +6,7 @@
 */
 #include <math.h>
 
-#warning FIXME: check handling of NAN for different argument types
+/* FIXME: check handling of NAN for different argument types */
 
 float nanf(const char *tagp)
 {
