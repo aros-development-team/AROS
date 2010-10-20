@@ -410,7 +410,7 @@ p_atomic_dec_zero(int32_t *v)
 #endif
 
 
-#if defined(PIPE_ATOMIC_OS_AROS_M68K)
+#if defined(PIPE_ATOMIC_OS_AROS_CPU_M68K)
 
 #define PIPE_ATOMIC "AROS OS atomic functions"
 
