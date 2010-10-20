@@ -170,7 +170,7 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
 	    if (dataStream) {
                 for (i = 0; i <= max_argpos; i++)
 		    indices[i] = (IPTR)stream_addr(&dataStream, indices[i]);
-	    } else if (VaListStream) {
+	    } else {
 		for (i = 0; i <= max_argpos; i++)
 		    indices[i] = (IPTR)va_addr(VaListStream, indices[i]);
 	    }
@@ -724,9 +724,11 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  return InternalFormatString(locale, fmtTemplate, dataStream, putCharFunc, NULL);
+    va_list args;
 
-  AROS_LIBFUNC_EXIT
+    return InternalFormatString(locale, fmtTemplate, dataStream, putCharFunc, args);
+
+    AROS_LIBFUNC_EXIT
 } /* FormatString */
