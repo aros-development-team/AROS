@@ -796,6 +796,7 @@ aros_kernel_ldflags
 aros_debug_cflags
 aros_debug_aflags
 aros_debug_ldflags
+aros_paranoia_cflags
 aros_target_genmap
 aros_target_strip_flags
 crosstools_target
@@ -1456,6 +1457,7 @@ Optional Packages:
                           Use gcc-VERSION for building AROS
   --with-optimization=FLAGS
                           Use optimization flags FLAGS (default=-O2).
+  --with-paranoia=FLAGS   CC flags to enable paranoia
   --with-xcode=PATH       Specify XCode path for iOS targets
                           (default=/Developer).
   --with-ios-version=VERSION
@@ -8359,6 +8361,26 @@ aros_config_cflags="$aros_config_cflags $optimization"
 echo "${ECHO_T}$optimization" >&6; }
 
 #-----------------------------------------------------------------------------
+{ echo "$as_me:$LINENO: checking what paranoia flags to use" >&5
+echo $ECHO_N "checking what paranoia flags to use... $ECHO_C" >&6; }
+
+# Check whether --with-paranoia was given.
+if test "${with_paranoia+set}" = set; then
+  withval=$with_paranoia; paranoia_flags="$withval"
+else
+  paranoia_flags="default"
+fi
+
+if test "$paranoia_flags" = "default"; then
+	paranoia_flags=""
+else if test "$paranoia_flags" = "yes"; then
+	paranoia_flags="-Wall -W -Werror"
+fi fi
+{ echo "$as_me:$LINENO: result: $paranoia_flags" >&5
+echo "${ECHO_T}$paranoia_flags" >&6; }
+aros_paranoia_cflags="$paranoia_flags"
+
+#-----------------------------------------------------------------------------
 if test "$target_os" = "ios"; then
 
 { echo "$as_me:$LINENO: checking XCode path" >&5
@@ -8675,15 +8697,16 @@ echo "$as_me: error: \"Unsupported target CPU for darwin hosted flavour -- $targ
 		aros_default_wbdepth=8
 		gcc_target_cpu="arm"
 		aros_kernel_ld="ld -arch armv6"
-		aros_target_cc="arm-linux-gnueabi-gcc"
-		aros_target_ld="arm-linux-gnueabi-ld"
-		aros_target_as="arm-linux-gnueabi-as"
-		aros_target_ar="arm-linux-gnueabi-ar"
-		aros_target_ranlib="arm-linux-gnueabi-ranlib"
-		aros_target_nm="arm-linux-gnueabi-nm"
-		aros_target_strip="arm-linux-gnueabi-strip"
-		aros_target_objcopy="arm-linux-gnueabi-objcopy"
-		aros_target_objdump="arm-linux-gnueabi-objdump"
+		aros_target_cc="arm-aros-gcc"
+		aros_target_cxx="arm-aros-g++"
+		aros_target_ld="arm-aros-ld"
+		aros_target_as="arm-aros-as"
+		aros_target_ar="arm-aros-ar"
+		aros_target_ranlib="arm-aros-ranlib"
+		aros_target_nm="arm-aros-nm"
+		aros_target_strip="arm-aros-strip"
+		aros_target_objcopy="arm-aros-objcopy"
+		aros_target_objdump="arm-aros-objdump"
 		target_tool_prefix="arm-apple-darwin10-"
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
@@ -8948,17 +8971,19 @@ echo "$as_me: error: \"Unknown CPU for Amiga $target_cpu\"" >&2;}
 		aros_target_cpu="arm"
                 aros_object_format="armelf_linux_eabi"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
+                aros_arch_libs="-laeabi"
 		aros_default_wbdepth=8
 		gcc_target_cpu="arm"
-		aros_target_cc="arm-linux-gnueabi-gcc"
-		aros_target_ld="arm-linux-gnueabi-ld"
-		aros_target_as="arm-linux-gnueabi-as"
-		aros_target_ar="arm-linux-gnueabi-ar"
-		aros_target_ranlib="arm-linux-gnueabi-ranlib"
-		aros_target_nm="arm-linux-gnueabi-nm"
-		aros_target_strip="arm-linux-gnueabi-strip"
-		aros_target_objcopy="arm-linux-gnueabi-objcopy"
-		aros_target_objdump="arm-linux-gnueabi-objdump"
+		aros_target_cc="arm-aros-gcc"
+		aros_target_cxx="arm-aros-g++"
+		aros_target_ld="arm-aros-ld"
+		aros_target_as="arm-aros-as"
+		aros_target_ar="arm-aros-ar"
+		aros_target_ranlib="arm-aros-ranlib"
+		aros_target_nm="arm-aros-nm"
+		aros_target_strip="arm-aros-strip"
+		aros_target_objcopy="arm-aros-objcopy"
+		aros_target_objdump="arm-aros-objdump"
 		target_tool_prefix="arm-mingw32ce-"
 		aros_default_wbwidth=160
                 aros_default_wbheight=160
@@ -12764,6 +12789,7 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
 # Graphics Related
 
 
@@ -13753,6 +13779,7 @@ aros_kernel_ldflags!$aros_kernel_ldflags$ac_delim
 aros_debug_cflags!$aros_debug_cflags$ac_delim
 aros_debug_aflags!$aros_debug_aflags$ac_delim
 aros_debug_ldflags!$aros_debug_ldflags$ac_delim
+aros_paranoia_cflags!$aros_paranoia_cflags$ac_delim
 aros_target_genmap!$aros_target_genmap$ac_delim
 aros_target_strip_flags!$aros_target_strip_flags$ac_delim
 crosstools_target!$crosstools_target$ac_delim
@@ -13763,7 +13790,6 @@ aros_default_wbheight!$aros_default_wbheight$ac_delim
 aros_default_wbdepth!$aros_default_wbdepth$ac_delim
 DO_XSHM_SUPPORT!$DO_XSHM_SUPPORT$ac_delim
 DO_VIDMODE_SUPPORT!$DO_VIDMODE_SUPPORT$ac_delim
-aros_host_x11_includes!$aros_host_x11_includes$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -13805,6 +13831,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+aros_host_x11_includes!$aros_host_x11_includes$ac_delim
 aros_host_x11_libdirs!$aros_host_x11_libdirs$ac_delim
 aros_host_sdl_cflags!$aros_host_sdl_cflags$ac_delim
 aros_host_sdl_libs!$aros_host_sdl_libs$ac_delim
@@ -13829,7 +13856,7 @@ gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 22; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 23; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
