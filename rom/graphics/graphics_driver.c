@@ -554,7 +554,7 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata 
     if (fb) {
     	IPTR width, height;
 
-#warning THIS IS NOT THREADSAFE
+        /* FIXME: THIS IS NOT THREADSAFE */
 
 	/* To make this threadsafe we have to lock
 	   all gfx access in all the rendering calls

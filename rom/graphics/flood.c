@@ -296,8 +296,7 @@ static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
 static VOID putfillpixel(struct fillinfo *fi, LONG x, LONG y)
 {
 
-#warning Implement use of patterns
-   
+    /* TODO: Implement use of patterns */
 
 #ifdef USE_WRITEPIXEL
     ULONG pixval, set_pixel = 0UL;
