@@ -91,6 +91,10 @@ static inline APTR va_addr(va_list args, ULONG len)
     return ret;
 }
 
+#elif defined(__arm__)
+
+#define va_addr(args, len) stream_addr(&args.__ap, len)
+
 #else
 
 #define va_addr(args, len) stream_addr(&args, len)
@@ -169,7 +173,7 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
             */
 	    if (dataStream) {
                 for (i = 0; i <= max_argpos; i++)
-		    indices[i] = (IPTR)stream_addr(&dataStream, indices[i]);
+		    indices[i] = (IPTR)stream_addr((APTR *)&dataStream, indices[i]);
 	    } else {
 		for (i = 0; i <= max_argpos; i++)
 		    indices[i] = (IPTR)va_addr(VaListStream, indices[i]);
