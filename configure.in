@@ -666,6 +666,17 @@ aros_config_cflags="$aros_config_cflags $optimization"
 AC_MSG_RESULT($optimization)
 
 #-----------------------------------------------------------------------------
+AC_MSG_CHECKING([what paranoia flags to use])
+AC_ARG_WITH(paranoia,AC_HELP_STRING([--with-paranoia=FLAGS],[CC flags to enable paranoia]),[paranoia_flags="$withval"],[paranoia_flags="default"])
+if test "$paranoia_flags" = "default"; then
+	paranoia_flags=""
+else if test "$paranoia_flags" = "yes"; then
+	paranoia_flags="-Wall -W -Werror"
+fi fi
+AC_MSG_RESULT($paranoia_flags)
+aros_paranoia_cflags="$paranoia_flags"
+
+#-----------------------------------------------------------------------------
 if test "$target_os" = "ios"; then
 
 AC_MSG_CHECKING([XCode path])
@@ -1963,6 +1974,7 @@ AC_SUBST(aros_kernel_ldflags)
 AC_SUBST(aros_debug_cflags)
 AC_SUBST(aros_debug_aflags)
 AC_SUBST(aros_debug_ldflags)
+AC_SUBST(aros_paranoia_cflags)
 AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
 
