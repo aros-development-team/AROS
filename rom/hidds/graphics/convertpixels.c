@@ -8,11 +8,11 @@
 #include <hidd/graphics.h>
 #include "graphics_intern.h"
 
-/****************************************************************************************/
-
-#warning "Does not yet handle SwapPixelBytes flag of HIDDT_PixelFormat structure!"
-
-/****************************************************************************************/
+/****************************************************************************************
+ *
+ * FIXME: Does not yet handle SwapPixelBytes flag of HIDDT_PixelFormat structure!
+ *
+ ****************************************************************************************/
 
 #define SHIFT_PIX(pix, shift)	\
     (( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
@@ -489,7 +489,7 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
     HIDDT_PixelFormat 	*srcfmt = msg->srcPixFmt;    
     ULONG   	    	bpl = msg->width * srcfmt->bytes_per_pixel;
     
-    #warning This does not work well for formats with bytes_per_pixel < 1
+    /* FIXME: This does not work well for formats with bytes_per_pixel < 1 */
     
     if (msg->srcMod == bpl && msg->dstMod == bpl)
     {
@@ -517,7 +517,7 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-#warning Discuss this design decision:
+/* TODO: Discuss this design decision: */
 
 /* Should we pass HIDDT_PixelFormat * or HIDDT_StdPixFmt ?
   The first is more flexible for the user, as he will not only be restricted
