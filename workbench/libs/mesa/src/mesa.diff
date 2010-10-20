@@ -21,21 +21,95 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/os
     gettimeofday(&tv, NULL);
 diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_atomic.h ./src/gallium/auxiliary/util/u_atomic.h
 --- /data/deadwood/source/Mesa-7.9-staging/src/gallium/auxiliary/util/u_atomic.h	2010-10-02 01:55:56.000000000 +0200
-+++ ./src/gallium/auxiliary/util/u_atomic.h	2010-10-17 07:59:10.000000000 +0200
-@@ -31,6 +31,8 @@
++++ ./src/gallium/auxiliary/util/u_atomic.h	2010-10-20 18:29:33.000000000 +0200
+@@ -29,8 +29,12 @@
+ #define PIPE_ATOMIC_ASM_MSVC_X86                
+ #elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86))
  #define PIPE_ATOMIC_ASM_GCC_X86
++#elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_ARM))
++#define PIPE_ATOMIC_ASM_GCC_ARM
  #elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64))
  #define PIPE_ATOMIC_ASM_GCC_X86_64
 +#elif defined(PIPE_OS_AROS) && defined(PIPE_ARCH_M68K)
-+#define PIPE_ATOMIC_OS_AROS_M68K
++#define PIPE_ATOMIC_OS_AROS_CPU_M68K
  #elif defined(PIPE_CC_GCC) && (PIPE_CC_GCC_VERSION >= 401)
  #define PIPE_ATOMIC_GCC_INTRINSIC
  #else
-@@ -343,6 +345,64 @@
+@@ -130,6 +134,69 @@
+ 
+ #endif
+ 
++#if defined(PIPE_ATOMIC_ASM_GCC_ARM)
++
++#define PIPE_ATOMIC "GCC ARM assembly"
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define p_atomic_set(_v, _i) (*(_v) = (_i))
++#define p_atomic_read(_v) (*(_v))
++
++static INLINE boolean
++p_atomic_dec_zero(int32_t *v)
++{
++   unsigned long temp;
++   int result;
++   unsigned long cc;
++   __asm__ __volatile__("\n1: ldrex %0, [%3]; subs %0, %0, #1; moveq %2, #1; movne %2, #0; strex %1, %0, [%3]; teq %1, #0; bne 1b"
++						   :"=&r"(result), "=&r"(temp), "=&r"(cc)
++						   :"r"(v)
++						   :"cc");
++   return cc;
++}
++
++static INLINE void
++p_atomic_inc(int32_t *v)
++{
++   unsigned long temp;
++   int result;
++   __asm__ __volatile__("\n1: ldrex %0, [%2]; add %0, %0, #1; strex %1, %0, [%2]; teq %1, #0; bne 1b"
++		   	   	   	   	   :"=&r"(result), "=&r"(temp)
++		   	   	   	   	   :"r"(v)
++		   	   	   	   	   :"cc");
++}
++
++static INLINE void
++p_atomic_dec(int32_t *v)
++{
++   unsigned long temp;
++   int result;
++   __asm__ __volatile__("\n1: ldrex %0, [%2]; sub %0, %0, #1; strex %1, %0, [%2]; teq %1, #0; bne 1b"
++			   	   	   	   :"=&r"(result), "=&r"(temp)
++			   	   	   	   :"r"(v)
++			   	   	   	   :"cc");
++}
++
++static INLINE int32_t
++p_atomic_cmpxchg(int32_t *v, int32_t old, int32_t _new)
++{
++	  int32_t oldval;
++	   unsigned long temp;
++	   __asm__ __volatile__("\n1: ldrex %0,[%2]; teq %0, %3; strexeq %1, %4, [%2]; teq %1, #0; bne 1b"
++	                                                   :"=&r"(oldval), "=&r"(temp)
++	                                                   :"r"(v), "Ir"(old), "r"(_new)
++	                                                   :"cc");
++	   return oldval;
++}
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
+ 
+ 
+ /* Implementation using GCC-provided synchronization intrinsics
+@@ -343,6 +410,64 @@
  #endif
  
  
-+#if defined(PIPE_ATOMIC_OS_AROS_M68K)
++#if defined(PIPE_ATOMIC_OS_AROS_CPU_M68K)
 +
 +#define PIPE_ATOMIC "AROS OS atomic functions"
 +
@@ -156,8 +230,19 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/drivers/nvfx
  		while(fpbo != fp->fpbo);
 diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/include/pipe/p_config.h ./src/gallium/include/pipe/p_config.h
 --- /data/deadwood/source/Mesa-7.9-staging/src/gallium/include/pipe/p_config.h	2010-10-02 00:51:28.000000000 +0200
-+++ ./src/gallium/include/pipe/p_config.h	2010-10-17 07:59:10.000000000 +0200
-@@ -106,6 +106,10 @@
++++ ./src/gallium/include/pipe/p_config.h	2010-10-20 18:29:33.000000000 +0200
+@@ -82,6 +82,10 @@
+ #define PIPE_ARCH_X86
+ #endif
+ 
++#if defined(__arm__)
++#define PIPE_ARCH_ARM
++#endif
++
+ #if defined(__x86_64__) /* gcc */ || defined(_M_X64) /* msvc */ || defined(_M_AMD64) /* msvc */ || defined(__x86_64) /* Sun cc */
+ #define PIPE_ARCH_X86_64
+ #endif
+@@ -106,12 +110,16 @@
  #endif
  #endif
  
@@ -168,12 +253,33 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/gallium/include/pipe
  
  /*
   * Endian detection.
-@@ -180,6 +184,10 @@
+  */
+ 
+-#if defined(PIPE_ARCH_X86) || defined(PIPE_ARCH_X86_64)
++#if defined(PIPE_ARCH_X86) || defined(PIPE_ARCH_X86_64) || defined(PIPE_ARCH_ARM)
+ #define PIPE_ARCH_LITTLE_ENDIAN
+ #elif defined(PIPE_ARCH_PPC) || defined(PIPE_ARCH_PPC_64)
+ #define PIPE_ARCH_BIG_ENDIAN
+@@ -128,6 +136,15 @@
+  * See subsystem below for a more fine-grained distinction.
+  */
+ 
++/*
++ * In some situations __AROS__ definition can coexist with anything of
++ * the below (for example this happens on ARM port which is compiled using Linux
++ * compiler at the moment). So if we have __AROS__ we don't evaluate anything else
++ */
++#if defined(__AROS__)
++#define PIPE_OS_AROS
++#else
++
+ #if defined(__linux__)
+ #define PIPE_OS_LINUX
+ #define PIPE_OS_UNIX
+@@ -180,6 +197,8 @@
  #define PIPE_OS_UNIX
  #endif
  
-+#if defined(__AROS__)
-+#define PIPE_OS_AROS
 +#endif
 +
  /*
@@ -214,8 +320,8 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/glsl/s_expression.cp
     this->str = talloc_strndup (this, tmp, n);
 diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mapi/glapi/glapi.h ./src/mapi/glapi/glapi.h
 --- /data/deadwood/source/Mesa-7.9-staging/src/mapi/glapi/glapi.h	2010-10-02 00:51:28.000000000 +0200
-+++ ./src/mapi/glapi/glapi.h	2010-09-29 19:26:16.000000000 +0200
-@@ -82,6 +82,30 @@
++++ ./src/mapi/glapi/glapi.h	2010-10-20 18:29:32.000000000 +0200
+@@ -82,6 +82,32 @@
  typedef void (*_glapi_proc)(void);
  struct _glapi_table;
  
@@ -225,6 +331,8 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mapi/glapi/glapi.h .
 +register struct MesaBase * REGMesaBase __asm__("ebx");
 +#elif defined(__x86_64__)
 +register struct MesaBase * REGMesaBase __asm__("rbx");
++#elif defined(__arm__)
++register struct MesaBase * REGMesaBase __asm__("r10");
 +#elif defined(PPC) || defined (__powerpc__)
 +/*
 + * r11 or r12 emit call clobbered register warnings
@@ -246,7 +354,7 @@ diff -ur -x .svn /data/deadwood/source/Mesa-7.9-staging/src/mapi/glapi/glapi.h .
  
  #if defined (GLX_USE_TLS)
  
-@@ -99,8 +123,18 @@
+@@ -99,8 +125,18 @@
  
  #else
  
