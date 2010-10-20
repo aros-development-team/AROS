@@ -649,6 +649,12 @@ VOID METHOD(Nouveau, Root, Get)
         case aoHidd_Gfx_SupportsHWCursor:
             *msg->storage = (IPTR)TRUE;
             return;
+        case aoHidd_Gfx_HWSpriteTypes:
+            *msg->storage = vHidd_SpriteType_DirectColor;
+            return;
+	    case aoHidd_Gfx_DriverName:
+    		*msg->storage = (IPTR)"Nouveau";
+    		return;
         }
     }
 
@@ -730,18 +736,23 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
             }
 
         nouveau_bo_unmap(gfxdata->cursor);
+        
+        /* Show updated cursor */
+        HIDDNouveauShowCursor(cl, o, TRUE);
     }
 
     return TRUE;   
 }
 
-VOID METHOD(Nouveau, Hidd_Gfx, SetCursorPos)
+BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorPos)
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device_priv * nvdev = nouveau_device(carddata->dev);
 
     drmModeMoveCursor(nvdev->fd, gfxdata->selectedcrtcid, msg->x, msg->y);
+    
+    return TRUE;
 }
 
 VOID METHOD(Nouveau, Hidd_Gfx, SetCursorVisible)
