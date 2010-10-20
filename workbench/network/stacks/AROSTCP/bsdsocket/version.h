@@ -7,6 +7,9 @@
 #ifdef __i386__
 #define CPU_TYPE "x86"
 #endif
+#ifdef __arm__
+#define CPU_TYPE "ARM"
+#endif
 #ifdef __x86_64__
 #define CPU_TYPE "amd64"
 #endif
