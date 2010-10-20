@@ -242,11 +242,11 @@ void DoDiskInsert(void) {
             return;
         }
         else if (err == IOERR_BADADDRESS)
-	    ErrorMessage("Your device does not support 64-bit\n"
+	    ErrorMessageArgs("Your device does not support 64-bit\n"
 			 "access to the disk while it is needed!\n"
 			 "In order to prevent data damage access to\n"
 			 "this disk was blocked.\n"
-			 "Please upgrade your device driver.");
+			 "Please upgrade your device driver.", NULL);
 
         FreeVecPooled(glob->mempool, sb);
     }

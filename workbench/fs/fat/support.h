@@ -17,7 +17,13 @@
 #include <dos/dosextens.h>
 
 void SendEvent(LONG event);
-void __stackparm ErrorMessage(char *fmt, ...);
+void ErrorMessageArgs(char *fmt, IPTR *args);
+
+#define ErrorMessage(fmt, ...)		\
+{					\
+    IPTR __args[] = {__VA_ARGS__};	\
+    ErrorMessageArgs(fmt, __args);	\
+}
 
 int ilog2(ULONG data);
 #define log2 ilog2
