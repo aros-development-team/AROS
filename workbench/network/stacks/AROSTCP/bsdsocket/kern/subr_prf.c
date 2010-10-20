@@ -452,7 +452,11 @@ reswitch:
 	break;
       case 'r':
 	p = va_arg(ap, char *);
+#ifdef __arm__
+	vcsprintf(cs, p, va_arg(ap, va_list));
+#else
 	vcsprintf(cs, p, va_arg(ap, void *));
+#endif
 /*	vcsprintf(cs, p, va_arg(ap, va_list));*/
 	break;
       case 'c':

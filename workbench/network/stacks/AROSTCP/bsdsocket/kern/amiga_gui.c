@@ -355,15 +355,8 @@ D(bug("[AROSTCP](amiga_gui.c) gui_set_interface_state()\n"));
 	}
 }
 
-#ifdef __MORPHOS__
-#define VA_ARGS(x) (x)->overflow_arg_area
-#else
-#define VA_ARGS(x) x
-#endif
-
-void error_request(STRPTR Text, ...)
+void error_requestArgs(STRPTR Text, IPTR *ap)
 {
-	va_list ap;
 	struct EasyStruct es = {
 		sizeof(struct EasyStruct),
 		0,
@@ -372,9 +365,7 @@ void error_request(STRPTR Text, ...)
 		"Ok"
 	};
 
-	va_start(ap, Text);
 	es.es_TextFormat = Text;
-	EasyRequestArgs(NULL, &es, NULL, VA_ARGS(ap));
-	va_end(ap);
+	EasyRequestArgs(NULL, &es, NULL, ap);
 }
 
