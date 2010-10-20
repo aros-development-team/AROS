@@ -88,6 +88,8 @@ struct _glapi_table;
 register struct MesaBase * REGMesaBase __asm__("ebx");
 #elif defined(__x86_64__)
 register struct MesaBase * REGMesaBase __asm__("rbx");
+#elif defined(__arm__)
+register struct MesaBase * REGMesaBase __asm__("r10");
 #elif defined(PPC) || defined (__powerpc__)
 /*
  * r11 or r12 emit call clobbered register warnings
