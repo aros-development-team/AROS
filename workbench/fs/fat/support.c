@@ -27,12 +27,6 @@
 
 #include "fat_fs.h"
 
-#ifdef __PPC__
-#define ARGS(ap) ap->overflow_arg_area
-#else
-#define ARGS(ap) (ULONG *)ap
-#endif
-
 void SendEvent(LONG event) {
     struct IOStdReq *InputRequest;
     struct MsgPort *InputPort;
@@ -81,9 +75,8 @@ int ilog2(ULONG data) {
 
 /*-----------------------------------------------------------------------*/
 
-void ErrorMessage(char *fmt, ...)
+void ErrorMessageArgs(char *fmt, IPTR *ap)
 {
-	va_list ap;
 	struct IntuitionBase *IntuitionBase;
 
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
@@ -95,11 +88,9 @@ void ErrorMessage(char *fmt, ...)
 			NULL,
 			"Ok"
 		};
-		va_start(ap, fmt);
 
 		es.es_TextFormat = fmt;
-		EasyRequestArgs(NULL, &es, NULL, ARGS(ap));
-		va_end(ap);
+		EasyRequestArgs(NULL, &es, NULL, ap);
 		CloseLibrary((struct Library *)IntuitionBase);
 	}
 }
