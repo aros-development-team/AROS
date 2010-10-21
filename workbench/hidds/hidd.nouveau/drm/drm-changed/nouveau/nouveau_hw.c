@@ -492,11 +492,10 @@ nouveau_hw_get_clock(struct drm_device *dev, enum pll_types plltype)
 {
 	struct nouveau_pll_vals pllvals;
 
-#if !defined(__AROS__)
 	if (plltype == MPLL && (dev->pci_device & 0x0ff0) == CHIPSET_NFORCE) {
 		uint32_t mpllP;
 
-		pci_read_config_dword(pci_get_bus_and_slot(0, 3), 0x6c, &mpllP);
+		pci_read_config_dword(pci_get_bus_and_slot(0, PCI_DEVFN(0, 3)), 0x6c, &mpllP);
 		if (!mpllP)
 			mpllP = 4;
 
@@ -505,12 +504,9 @@ nouveau_hw_get_clock(struct drm_device *dev, enum pll_types plltype)
 	if (plltype == MPLL && (dev->pci_device & 0xff0) == CHIPSET_NFORCE2) {
 		uint32_t clock;
 
-		pci_read_config_dword(pci_get_bus_and_slot(0, 5), 0x4c, &clock);
+		pci_read_config_dword(pci_get_bus_and_slot(0, PCI_DEVFN(0, 5)), 0x4c, &clock);
 		return clock;
 	}
-#else
-IMPLEMENT("Support for NFORCE/NFORCE2 chipset\n");
-#endif
 
 	nouveau_hw_get_pllvals(dev, plltype, &pllvals);
 
