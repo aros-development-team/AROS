@@ -1,6 +1,13 @@
 include $(TOP)/config/make.cfg
 
-GCC_VERSION = 4.2.2
+ifeq ($(AROS_TARGET_CPU, arm)
+  GCC_VERSION = 4.4.2
+  GCC_EXTRA_FLAGS = 
+else
+  GCC_VERSION = 4.2.2
+  GCC_EXTRA_FLAGS = --enable-sjlj-exceptions
+endif
+
 BINUTILS_VERSION = 2.20.1
 
 GCC_LANGUAGES = c,c++
@@ -19,4 +26,4 @@ GNU_REPOSITORY := gnu://
 	package_repo="$(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)" \
 	patch=yes \
 	prefix="$(TOOLDIR)" \
-	extraoptions="--target=$(AROS_TARGET_CPU)-aros --bindir=$(TOOLDIR) --enable-languages=$(GCC_LANGUAGES) --enable-sjlj-exceptions --enable-long-long --enable-version-specific-runtime-libs --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib"
+	extraoptions="--target=$(AROS_TARGET_CPU)-aros --bindir=$(TOOLDIR) --enable-languages=$(GCC_LANGUAGES) --enable-long-long --enable-version-specific-runtime-libs $(GCC_EXTRA_FLAGS) --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib"
