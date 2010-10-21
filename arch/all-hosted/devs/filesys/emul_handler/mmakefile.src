@@ -1,0 +1,10 @@
+#   $Id: mmakefile.src 34602 2010-10-06 06:12:47Z sonic $
+include $(TOP)/config/make.cfg
+
+FILES := emul_handler filenames emul_host
+
+%build_module mmake=kernel-fs-emul-new \
+  modname=emul modtype=device modsuffix=handler \
+  files="$(FILES)" uselibs=rom
+
+%common
