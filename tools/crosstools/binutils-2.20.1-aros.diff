@@ -1,6 +1,15 @@
-diff -Naur binutils-2.20.1/bfd/config.bfd binutils-2.20.1-aros/bfd/config.bfd
---- binutils-2.20.1/bfd/config.bfd	2009-08-06 19:38:00.000000000 +0200
-+++ binutils-2.20.1-aros/bfd/config.bfd	2010-03-05 21:07:12.000000000 +0100
+diff -ru binutils-2.20.1.orig/bfd/config.bfd binutils-2.20.1/bfd/config.bfd
+--- binutils-2.20.1.orig/bfd/config.bfd	2009-08-06 21:38:00.000000000 +0400
++++ binutils-2.20.1/bfd/config.bfd	2010-10-20 08:24:36.000000000 +0400
+@@ -282,7 +282,7 @@
+     ;;
+   arm-*-elf | arm-*-freebsd* | arm*-*-linux-* | arm*-*-conix* | \
+   arm*-*-uclinux* | arm-*-kfreebsd*-gnu | \
+-  arm*-*-eabi* )
++  arm*-*-eabi* | arm-*-aros)
+     targ_defvec=bfd_elf32_littlearm_vec
+     targ_selvecs=bfd_elf32_bigarm_vec
+     ;;
 @@ -521,6 +521,8 @@
      ;;
    i[3-7]86-*-aros*)
@@ -34,9 +43,9 @@ diff -Naur binutils-2.20.1/bfd/config.bfd binutils-2.20.1-aros/bfd/config.bfd
  
    s390-*-linux*)
      targ_defvec=bfd_elf32_s390_vec
-diff -Naur binutils-2.20.1/config.guess binutils-2.20.1-aros/config.guess
---- binutils-2.20.1/config.guess	2009-08-17 06:10:29.000000000 +0200
-+++ binutils-2.20.1-aros/config.guess	2010-03-05 21:10:13.000000000 +0100
+diff -ru binutils-2.20.1.orig/config.guess binutils-2.20.1/config.guess
+--- binutils-2.20.1.orig/config.guess	2009-08-17 08:10:29.000000000 +0400
++++ binutils-2.20.1/config.guess	2010-10-20 08:20:36.000000000 +0400
 @@ -288,6 +288,9 @@
      *:[Mm]orph[Oo][Ss]:*:*)
  	echo ${UNAME_MACHINE}-unknown-morphos
@@ -47,9 +56,9 @@ diff -Naur binutils-2.20.1/config.guess binutils-2.20.1-aros/config.guess
      *:OS/390:*:*)
  	echo i370-ibm-openedition
  	exit ;;
-diff -Naur binutils-2.20.1/intl/configure binutils-2.20.1-aros/intl/configure
---- binutils-2.20.1/intl/configure	2010-03-03 14:52:20.000000000 +0100
-+++ binutils-2.20.1-aros/intl/configure	2010-03-05 21:12:23.000000000 +0100
+diff -ru binutils-2.20.1.orig/intl/configure binutils-2.20.1/intl/configure
+--- binutils-2.20.1.orig/intl/configure	2010-03-03 16:52:20.000000000 +0300
++++ binutils-2.20.1/intl/configure	2010-10-20 08:20:36.000000000 +0400
 @@ -4606,6 +4606,9 @@
  
  int main ()
@@ -60,10 +69,21 @@ diff -Naur binutils-2.20.1/intl/configure binutils-2.20.1-aros/intl/configure
    signal (SIGFPE, sigfpe_handler);
  /* IRIX and AIX (when "xlc -qcheck" is used) yield signal SIGTRAP.  */
  #if (defined (__sgi) || defined (_AIX)) && defined (SIGTRAP)
-diff -Naur binutils-2.20.1/ld/configure.tgt binutils-2.20.1-aros/ld/configure.tgt
---- binutils-2.20.1/ld/configure.tgt	2009-08-06 19:38:03.000000000 +0200
-+++ binutils-2.20.1-aros/ld/configure.tgt	2010-03-05 21:14:48.000000000 +0100
-@@ -244,6 +244,9 @@
+diff -ru binutils-2.20.1.orig/ld/configure.tgt binutils-2.20.1/ld/configure.tgt
+--- binutils-2.20.1.orig/ld/configure.tgt	2010-10-18 18:10:17.000000000 +0400
++++ binutils-2.20.1/ld/configure.tgt	2010-10-20 08:29:18.000000000 +0400
+@@ -78,6 +78,10 @@
+ 			targ_extra_emuls="armelfb armelf armelf_linux"
+ 			targ_extra_libpath="armelf_linux"
+ 			;;
++arm*-*-aros*)		targ_emul=armelf_linux_eabi
++			targ_extra_emuls=armelfb_linux_eabi
++			targ_extra_libpath=$targ_extra_emuls
++			;;
+ arm*-*-linux-*eabi)	targ_emul=armelf_linux_eabi
+ 			targ_extra_emuls=armelfb_linux_eabi
+ 			targ_extra_libpath=$targ_extra_emuls
+@@ -244,6 +248,9 @@
  x86_64-*-elf*)		targ_emul=elf_x86_64
  			targ_extra_emuls="elf_i386 elf_l1om"
  			;;
@@ -73,7 +93,7 @@ diff -Naur binutils-2.20.1/ld/configure.tgt binutils-2.20.1-aros/ld/configure.tg
  i[3-7]86-*-kaos*)	targ_emul=elf_i386 ;;
  i[3-7]86-*-freebsdaout* | i[3-7]86-*-freebsd[12].* | i[3-7]86-*-freebsd[12])
  			targ_emul=i386bsd ;;
-@@ -500,6 +503,7 @@
+@@ -500,6 +507,7 @@
  powerpc-*-beos*)	targ_emul=aixppc ;;
  powerpc-*-windiss*)	targ_emul=elf32ppcwindiss ;;
  powerpc-*-lynxos*)	targ_emul=ppclynx ;;
