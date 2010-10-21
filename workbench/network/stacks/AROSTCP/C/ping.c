@@ -245,12 +245,8 @@
 
 #include <fcntl.h>
 #include <signal.h>
-#if 0 /* NC */
-#include <fcntl.h>
-#include <signal.h>
-/*#include <sys/file.h>*/
-/*#include <sys/signal.h>*/
-#endif
+#include <sys/file.h>
+#include <sys/signal.h>
 
 #include <netinet/in_systm.h>
 #include <netinet/in.h>
@@ -809,7 +805,7 @@ pinger()
 	icp->icmp_type = ICMP_ECHO;
 	icp->icmp_code = 0;
 	icp->icmp_cksum = 0;
-	icp->icmp_seq = ntransmitted++;
+	icp->icmp_seq = htons(ntransmitted++);
 	icp->icmp_id = ident;			/* ID */
 
 	CLR(icp->icmp_seq % mx_dup_ck);
@@ -931,7 +927,7 @@ pr_pack(buf, cc, from)
 		else {
 			(void)printf("%d bytes from %s: icmp_seq=%u", cc,
 			   inet_ntoa(*(struct in_addr *)&from->sin_addr.s_addr),
-			   icp->icmp_seq);
+			   ntohs(icp->icmp_seq));
 			(void)printf(" ttl=%d", ip->ip_ttl);
 			if (timing)
 				(void)printf(" time=%ld ms", triptime);
@@ -1213,7 +1209,8 @@ pr_icmph(icp)
 			(void)printf("Redirect, Bad Code: %d", icp->icmp_code);
 			break;
 		}
-		(void)printf("(New addr: 0x%08lx)\n", icp->icmp_gwaddr.s_addr);
+		(void)printf("(New addr: 0x%08lx)\n",
+			(long unsigned)icp->icmp_gwaddr.s_addr);
 #ifndef icmp_data
 		pr_retip(&icp->icmp_ip);
 #else
