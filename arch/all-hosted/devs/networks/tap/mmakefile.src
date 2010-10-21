@@ -1,9 +1,0 @@
-include $(TOP)/config/make.cfg
-
-%build_module mmake=workbench-devs-tap \
-    modname=tap modtype=device \
-    moduledir=Devs/Networks \
-    files="init command iotask" \
-    uselibs="oop amiga rom m hiddstubs"
-
-%common
