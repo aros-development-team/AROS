@@ -1063,25 +1063,16 @@ diff -ur -x .svn drm/nouveau/nouveau_bo_renamed.c drm-changed/nouveau/nouveau_bo
  nouveau_bo_del_ttm(struct ttm_buffer_object *bo)
 diff -ur -x .svn drm/nouveau/nouveau_calc.c drm-changed/nouveau/nouveau_calc.c
 --- drm/nouveau/nouveau_calc.c	2010-06-20 18:44:23.000000000 +0200
-+++ drm-changed/nouveau/nouveau_calc.c	2010-06-27 21:17:36.000000000 +0200
-@@ -209,6 +209,7 @@
- 	sim_data.two_heads = nv_two_heads(dev);
- 	if ((dev->pci_device & 0xffff) == 0x01a0 /*CHIPSET_NFORCE*/ ||
++++ drm-changed/nouveau/nouveau_calc.c	2010-10-21 22:14:01.000000000 +0200
+@@ -211,7 +211,7 @@
  	    (dev->pci_device & 0xffff) == 0x01f0 /*CHIPSET_NFORCE2*/) {
-+#if !defined(__AROS__)
  		uint32_t type;
  
- 		pci_read_config_dword(pci_get_bus_and_slot(0, 1), 0x7c, &type);
-@@ -217,6 +218,9 @@
+-		pci_read_config_dword(pci_get_bus_and_slot(0, 1), 0x7c, &type);
++		pci_read_config_dword(pci_get_bus_and_slot(0, PCI_DEVFN(0, 1)), 0x7c, &type);
+ 
+ 		sim_data.memory_type = (type >> 12) & 1;
  		sim_data.memory_width = 64;
- 		sim_data.mem_latency = 3;
- 		sim_data.mem_page_miss = 10;
-+#else
-+IMPLEMENT("Support for NFORCE/NFORCE2 chipsets\n");
-+#endif
- 	} else {
- 		sim_data.memory_type = nvReadFB(dev, NV_PFB_CFG0) & 0x1;
- 		sim_data.memory_width = (nvReadEXTDEV(dev, NV_PEXTDEV_BOOT_0) & 0x10) ? 128 : 64;
 diff -ur -x .svn drm/nouveau/nouveau_connector.c drm-changed/nouveau/nouveau_connector.c
 --- drm/nouveau/nouveau_connector.c	2010-06-20 18:44:23.000000000 +0200
 +++ drm-changed/nouveau/nouveau_connector.c	2010-06-27 22:07:48.000000000 +0200
@@ -1474,24 +1465,24 @@ diff -ur -x .svn drm/nouveau/nouveau_grctx.c drm-changed/nouveau/nouveau_grctx.c
  
 diff -ur -x .svn drm/nouveau/nouveau_hw.c drm-changed/nouveau/nouveau_hw.c
 --- drm/nouveau/nouveau_hw.c	2010-06-20 18:44:23.000000000 +0200
-+++ drm-changed/nouveau/nouveau_hw.c	2010-06-27 21:17:36.000000000 +0200
-@@ -492,6 +492,7 @@
- {
- 	struct nouveau_pll_vals pllvals;
- 
-+#if !defined(__AROS__)
++++ drm-changed/nouveau/nouveau_hw.c	2010-10-21 22:13:40.000000000 +0200
+@@ -495,7 +495,7 @@
  	if (plltype == MPLL && (dev->pci_device & 0x0ff0) == CHIPSET_NFORCE) {
  		uint32_t mpllP;
  
-@@ -507,6 +508,9 @@
- 		pci_read_config_dword(pci_get_bus_and_slot(0, 5), 0x4c, &clock);
+-		pci_read_config_dword(pci_get_bus_and_slot(0, 3), 0x6c, &mpllP);
++		pci_read_config_dword(pci_get_bus_and_slot(0, PCI_DEVFN(0, 3)), 0x6c, &mpllP);
+ 		if (!mpllP)
+ 			mpllP = 4;
+ 
+@@ -504,7 +504,7 @@
+ 	if (plltype == MPLL && (dev->pci_device & 0xff0) == CHIPSET_NFORCE2) {
+ 		uint32_t clock;
+ 
+-		pci_read_config_dword(pci_get_bus_and_slot(0, 5), 0x4c, &clock);
++		pci_read_config_dword(pci_get_bus_and_slot(0, PCI_DEVFN(0, 5)), 0x4c, &clock);
  		return clock;
  	}
-+#else
-+IMPLEMENT("Support for NFORCE/NFORCE2 chipset\n");
-+#endif
- 
- 	nouveau_hw_get_pllvals(dev, plltype, &pllvals);
  
 diff -ur -x .svn drm/nouveau/nouveau_i2c.c drm-changed/nouveau/nouveau_i2c.c
 --- drm/nouveau/nouveau_i2c.c	2010-06-20 18:44:23.000000000 +0200
