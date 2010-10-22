@@ -126,7 +126,7 @@ case "$aros_host_cc" in
 	;;
 esac
 
-dnl Despite the name, this is really a host configuration variable.
+aros_kernel_cc_includes=""
 aros_target_cc_includes=""
 
 # This is the main host configuration section. It is where the host
@@ -188,10 +188,6 @@ case "$host_os" in
 	aros_host_cpu="i386"
 
         aros_host_ldflags="$aros_host_ldflags -L/usr/local/lib -liconv"
-
-	dnl Need to override this here, it's just too hard later.
-        dnl This shouldn't be here at all...
-	dnl aros_target_cc_includes="/usr/include"
 
 	dnl FreeBSD 5.x (and later) has changed the default object format.
         dnl The double [[]] is necessary to get around m4's quoting rules.
@@ -712,6 +708,7 @@ target_bootloader="none"
 case "$target_os" in
     linux*)
 	aros_target_arch="linux"
+	aros_target_family="unix"
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
@@ -841,6 +838,7 @@ case "$target_os" in
 
     freebsd*)
 	aros_target_arch="freebsd"
+	aros_target_family="unix"
 	aros_target_cpu="i386"
 	aros_flavour="emulation"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
@@ -851,6 +849,7 @@ case "$target_os" in
 
     darwin*)
 	aros_target_arch="darwin"
+	aros_target_family="unix"
 	aros_flavour="emulation"
 	case "$target_cpu" in
 	    *i?86*)
@@ -920,6 +919,7 @@ case "$target_os" in
 
     ios*)
 	aros_target_arch="ios"
+	aros_target_family="unix"
 	aros_flavour="emulation"
 	# This is here because it may depend on iOS or SDK version
 	aros_kernel_objcflags="-fobjc-abi-version=2 -fobjc-legacy-dispatch"
@@ -981,6 +981,7 @@ case "$target_os" in
 
     dragonfly*)
         aros_target_arch="dragonfly"
+        aros_target_family="unix"
         aros_flavour="emulation"
         case "$target_cpu" in
             *i?86*)
@@ -1001,6 +1002,7 @@ case "$target_os" in
 
     netbsd*)
         aros_target_arch="netbsd"
+        aros_target_family="unix"
 	case "$target_cpu" in
             *m68k*)
         	aros_target_cpu="m68k"
@@ -1028,6 +1030,7 @@ case "$target_os" in
 
     openbsd*)
         aros_target_arch="openbsd"
+        aros_target_family="unix"
         case "$target_cpu" in
             *i?86*)
                 aros_target_cpu="i386"
@@ -1047,6 +1050,7 @@ case "$target_os" in
 
     solaris*)
         aros_target_arch="solaris"
+        aros_target_family="unix"
         case "$target_cpu" in
            *i?86*)
                aros_target_cpu="i386"
@@ -1314,6 +1318,14 @@ case "$target_os" in
 	;;
 esac
 
+# FIXME: for cross-compiling this should point to another location
+if test "$aros_flavour" = "emulation"; then
+    aros_kernel_includes="-isystem /usr/include"
+fi
+if test "$aros_flavour" = "emulcompat"; then
+    aros_kernel_includes="-isystem /usr/include"
+fi
+
 AC_MSG_CHECKING([Where to download sourcecode for external ports])
 AC_ARG_WITH(portssources,AC_HELP_STRING([--with-portssources=DIR],[Where to download sourcecode for external ports]),with_portssrcdir=$withval,with_portssrcdir="default")
 if test "$with_portssrcdir" = "default"; then
@@ -1530,6 +1542,43 @@ AC_ARG_ENABLE(includes,
 AC_HELP_STRING([--enable-includes=dir],[Alternative system include directory]),
 [aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
 
+if test "$aros_kernel_includes" != "" ; then
+    dnl find out about the kernel cc's include path
+    AC_MSG_CHECKING([for the kernel compiler's include path])
+    if test "$aros_kernel_cc_includes" = "" ; then
+    	#try to guess where the directory is
+    	aros_kernel_cc_includes=`dirname \`${aros_kernel_cc} ${aros_kernel_cflags} -print-libgcc-file-name\``/include
+    	if ! test -d $aros_kernel_cc_includes; then
+            #the directory doesn't exist, we need to do some more work
+            aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
+
+	    #these are the headers we're looling for
+	    headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
+	             stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
+		     zutil.h"
+
+            dirs=
+	    for h in $headers; do
+	        #which other headers each of the above headers needs?
+	        deps=$(echo "#include <$h>" | \
+	               $aros_kernel_cc -E -M - 2>/dev/null | \
+		       sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
+
+	        #copy all the needed headers to a directory beneath gendir
+		for d in $deps; do
+	            h=$(basename $d)
+	            dir=${aros_kernel_cc_includes}$(echo $(dirname $d) | \
+		                                sed -n "s,^.*/include\(/.*\),\1,p")
+		    ! test -d $dir && mkdir -p $dir
+		    ! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
+	        done
+	    done	    
+	fi
+    fi
+    AC_MSG_RESULT($aros_kernel_cc_includes)
+    aros_kernel_includes="$aros_kernel_includes -isystem $aros_kernel_cc_includes"
+fi
+
 dnl find out about the target cc's include path
 AC_MSG_CHECKING([for the target compiler's include path])
 if test "$aros_target_cc_includes" = "" ; then
@@ -1548,7 +1597,7 @@ if test "$aros_target_cc_includes" = "" ; then
 	for h in $headers; do
 	    #which other headers each of the above headers needs?
 	    deps=$(echo "#include <$h>" | \
-	           $aros_host_cc -E -M - 2>/dev/null | \
+	           $orig_target_cc -E -M - 2>/dev/null | \
 		   sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
 	    
             #copy all the needed headers to a directory beneath gendir
@@ -1936,6 +1985,7 @@ AC_SUBST(aros_target_guitheme)
 AC_SUBST(aros_target_iconset)
 AC_SUBST(aros_target_bootloader)
 AC_SUBST(aros_target_arch)
+AC_SUBST(aros_target_family)
 AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_variant)
 AC_SUBST(aros_target_suffix)
@@ -1972,6 +2022,7 @@ AC_SUBST(aros_shared_cflags)
 AC_SUBST(aros_shared_aflags)
 AC_SUBST(aros_shared_ldflags)
 AC_SUBST(aros_kernel_cflags)
+AC_SUBST(aros_kernel_includes)
 AC_SUBST(aros_kernel_objcflags)
 AC_SUBST(aros_kernel_ldflags)
 AC_SUBST(aros_debug_cflags)

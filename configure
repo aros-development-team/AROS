@@ -762,6 +762,7 @@ aros_target_guitheme
 aros_target_iconset
 aros_target_bootloader
 aros_target_arch
+aros_target_family
 aros_target_cpu
 aros_target_variant
 aros_target_suffix
@@ -791,6 +792,7 @@ aros_shared_cflags
 aros_shared_aflags
 aros_shared_ldflags
 aros_kernel_cflags
+aros_kernel_includes
 aros_kernel_objcflags
 aros_kernel_ldflags
 aros_debug_cflags
@@ -3958,6 +3960,7 @@ case "$aros_host_cc" in
 	;;
 esac
 
+aros_kernel_cc_includes=""
 aros_target_cc_includes=""
 
 # This is the main host configuration section. It is where the host
@@ -4021,7 +4024,6 @@ echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 	aros_host_cpu="i386"
 
         aros_host_ldflags="$aros_host_ldflags -L/usr/local/lib -liconv"
-
 
 	        	case $host_os in
 	    freebsd[234]*)
@@ -8451,6 +8453,7 @@ target_bootloader="none"
 case "$target_os" in
     linux*)
 	aros_target_arch="linux"
+	aros_target_family="unix"
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
@@ -8580,6 +8583,7 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 
     freebsd*)
 	aros_target_arch="freebsd"
+	aros_target_family="unix"
 	aros_target_cpu="i386"
 	aros_flavour="emulation"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
@@ -8590,6 +8594,7 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 
     darwin*)
 	aros_target_arch="darwin"
+	aros_target_family="unix"
 	aros_flavour="emulation"
 	case "$target_cpu" in
 	    *i?86*)
@@ -8661,6 +8666,7 @@ echo "$as_me: error: \"Unsupported target CPU for darwin hosted flavour -- $targ
 
     ios*)
 	aros_target_arch="ios"
+	aros_target_family="unix"
 	aros_flavour="emulation"
 	# This is here because it may depend on iOS or SDK version
 	aros_kernel_objcflags="-fobjc-abi-version=2 -fobjc-legacy-dispatch"
@@ -8724,6 +8730,7 @@ echo "$as_me: error: \"Unsupported target CPU for iOS hosted flavour -- $target_
 
     dragonfly*)
         aros_target_arch="dragonfly"
+        aros_target_family="unix"
         aros_flavour="emulation"
         case "$target_cpu" in
             *i?86*)
@@ -8746,6 +8753,7 @@ echo "$as_me: error: \"Unknown CPU for DragonFly -- $target_cpu\"" >&2;}
 
     netbsd*)
         aros_target_arch="netbsd"
+        aros_target_family="unix"
 	case "$target_cpu" in
             *m68k*)
         	aros_target_cpu="m68k"
@@ -8775,6 +8783,7 @@ echo "$as_me: error: \"Unknown CPU for NetBSD -- $target_cpu\"" >&2;}
 
     openbsd*)
         aros_target_arch="openbsd"
+        aros_target_family="unix"
         case "$target_cpu" in
             *i?86*)
                 aros_target_cpu="i386"
@@ -8796,6 +8805,7 @@ echo "$as_me: error: \"Unknown CPU for OpenBSD -- $target_cpu\"" >&2;}
 
     solaris*)
         aros_target_arch="solaris"
+        aros_target_family="unix"
         case "$target_cpu" in
            *i?86*)
                aros_target_cpu="i386"
@@ -9074,6 +9084,14 @@ echo "$as_me: error: Unsupported target architecture $target" >&2;}
    { (exit 1); exit 1; }; }
 	;;
 esac
+
+# FIXME: for cross-compiling this should point to another location
+if test "$aros_flavour" = "emulation"; then
+    aros_kernel_includes="-isystem /usr/include"
+fi
+if test "$aros_flavour" = "emulcompat"; then
+    aros_kernel_includes="-isystem /usr/include"
+fi
 
 { echo "$as_me:$LINENO: checking Where to download sourcecode for external ports" >&5
 echo $ECHO_N "checking Where to download sourcecode for external ports... $ECHO_C" >&6; }
@@ -10997,6 +11015,44 @@ else
 fi
 
 
+if test "$aros_kernel_includes" != "" ; then
+        { echo "$as_me:$LINENO: checking for the kernel compiler's include path" >&5
+echo $ECHO_N "checking for the kernel compiler's include path... $ECHO_C" >&6; }
+    if test "$aros_kernel_cc_includes" = "" ; then
+    	#try to guess where the directory is
+    	aros_kernel_cc_includes=`dirname \`${aros_kernel_cc} ${aros_kernel_cflags} -print-libgcc-file-name\``/include
+    	if ! test -d $aros_kernel_cc_includes; then
+            #the directory doesn't exist, we need to do some more work
+            aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
+
+	    #these are the headers we're looling for
+	    headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
+	             stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
+		     zutil.h"
+
+            dirs=
+	    for h in $headers; do
+	        #which other headers each of the above headers needs?
+	        deps=$(echo "#include <$h>" | \
+	               $aros_kernel_cc -E -M - 2>/dev/null | \
+		       sed 's/^.*://; s/\\$/ /g; s/[ \t]\+/ /g')
+
+	        #copy all the needed headers to a directory beneath gendir
+		for d in $deps; do
+	            h=$(basename $d)
+	            dir=${aros_kernel_cc_includes}$(echo $(dirname $d) | \
+		                                sed -n "s,^.*/include\(/.*\),\1,p")
+		    ! test -d $dir && mkdir -p $dir
+		    ! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
+	        done
+	    done
+	fi
+    fi
+    { echo "$as_me:$LINENO: result: $aros_kernel_cc_includes" >&5
+echo "${ECHO_T}$aros_kernel_cc_includes" >&6; }
+    aros_kernel_includes="$aros_kernel_includes -isystem $aros_kernel_cc_includes"
+fi
+
 { echo "$as_me:$LINENO: checking for the target compiler's include path" >&5
 echo $ECHO_N "checking for the target compiler's include path... $ECHO_C" >&6; }
 if test "$aros_target_cc_includes" = "" ; then
@@ -11015,7 +11071,7 @@ if test "$aros_target_cc_includes" = "" ; then
 	for h in $headers; do
 	    #which other headers each of the above headers needs?
 	    deps=$(echo "#include <$h>" | \
-	           $aros_host_cc -E -M - 2>/dev/null | \
+	           $orig_target_cc -E -M - 2>/dev/null | \
 		   sed 's/^.*://; s/\\$/ /g; s/[ \t]\+/ /g')
 
             #copy all the needed headers to a directory beneath gendir
@@ -12790,6 +12846,8 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
+
 # Graphics Related
 
 
@@ -13745,6 +13803,7 @@ aros_target_guitheme!$aros_target_guitheme$ac_delim
 aros_target_iconset!$aros_target_iconset$ac_delim
 aros_target_bootloader!$aros_target_bootloader$ac_delim
 aros_target_arch!$aros_target_arch$ac_delim
+aros_target_family!$aros_target_family$ac_delim
 aros_target_cpu!$aros_target_cpu$ac_delim
 aros_target_variant!$aros_target_variant$ac_delim
 aros_target_suffix!$aros_target_suffix$ac_delim
@@ -13774,6 +13833,7 @@ aros_shared_cflags!$aros_shared_cflags$ac_delim
 aros_shared_aflags!$aros_shared_aflags$ac_delim
 aros_shared_ldflags!$aros_shared_ldflags$ac_delim
 aros_kernel_cflags!$aros_kernel_cflags$ac_delim
+aros_kernel_includes!$aros_kernel_includes$ac_delim
 aros_kernel_objcflags!$aros_kernel_objcflags$ac_delim
 aros_kernel_ldflags!$aros_kernel_ldflags$ac_delim
 aros_debug_cflags!$aros_debug_cflags$ac_delim
@@ -13788,8 +13848,6 @@ sdl_hidd_target!$sdl_hidd_target$ac_delim
 aros_default_wbwidth!$aros_default_wbwidth$ac_delim
 aros_default_wbheight!$aros_default_wbheight$ac_delim
 aros_default_wbdepth!$aros_default_wbdepth$ac_delim
-DO_XSHM_SUPPORT!$DO_XSHM_SUPPORT$ac_delim
-DO_VIDMODE_SUPPORT!$DO_VIDMODE_SUPPORT$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -13831,6 +13889,8 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+DO_XSHM_SUPPORT!$DO_XSHM_SUPPORT$ac_delim
+DO_VIDMODE_SUPPORT!$DO_VIDMODE_SUPPORT$ac_delim
 aros_host_x11_includes!$aros_host_x11_includes$ac_delim
 aros_host_x11_libdirs!$aros_host_x11_libdirs$ac_delim
 aros_host_sdl_cflags!$aros_host_sdl_cflags$ac_delim
@@ -13856,7 +13916,7 @@ gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 23; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 25; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
