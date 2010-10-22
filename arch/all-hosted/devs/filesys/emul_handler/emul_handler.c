@@ -37,7 +37,7 @@
 #include <limits.h>
 #include <string.h>
 
-#include "emul_handler_intern.h"
+#include "emul_intern.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -208,7 +208,10 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
 	{
 	    ret = DoOpen(emulbase, fh, mode, protect, AllowDir);
 	    if (!ret)
+	    {
+	    	*handle = fh;
 	    	return 0;
+	    }
 
 	    DOPEN(bug("[emul] Freeing pathname\n"));
 	    FreeVecPooled(emulbase->mempool, fh->hostname);
@@ -221,19 +224,6 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
     return ret;
 }
 
-/*********************************************************************************************/
-
-static LONG seek_file(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK *io_SEEK, UQUAD *newpos)
-{
-    ULONG error;
-
-    if (fh->type == FHD_FILE)
-        error = DoSeek(emulbase, fh->fd, &io_SEEK->io_Offset, io_SEEK->io_SeekMode);
-    else
-	error = ERROR_OBJECT_WRONG_TYPE;
-
-    return error;
-}
 
 /*********************************************************************************************/
 
@@ -417,28 +407,6 @@ char *pathname_from_name (struct emulbase *emulbase, char *name)
 
 /*********************************************************************************************/
 
-static LONG examine(struct emulbase *emulbase, struct filehandle *fh,
-                    struct ExAllData *ead,
-                    ULONG  size,
-                    ULONG  type,
-                    LONG  *dirpos)
-{
-    LONG error;
-
-    /* Return an error, if supplied type is not supported. */
-    if (type > ED_OWNER)
-	return ERROR_BAD_NUMBER;
-
-    error = DoRewindDir(emulbase, fh);
-    if (error)
-    	return error;
-
-    *dirpos = 0;
-    return examine_entry(emulbase, fh, NULL, ead, size, type);
-}
-
-/*********************************************************************************************/
-
 static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle, const char *name, struct filehandle *oldfile)
 {
     LONG error;
@@ -583,7 +551,7 @@ static LONG read_softlink(struct emulbase *emulbase,
 
 /*********************************************************************************************/
 
-ULONG parent_dir(struct emulbase *emulbase,
+static ULONG parent_dir(struct emulbase *emulbase,
 				 struct filehandle *fh,
 				 char ** DirectoryName)
 {
@@ -594,7 +562,7 @@ ULONG parent_dir(struct emulbase *emulbase,
 
 /*********************************************************************************************/
 
-void parent_dir_post(struct emulbase *emulbase, char ** DirectoryName)
+static void parent_dir_post(struct emulbase *emulbase, char ** DirectoryName)
 {
     /* free the previously allocated memory */
     FreeVecPooled(emulbase->mempool, *DirectoryName);
@@ -783,7 +751,20 @@ AROS_LH1(void, beginio,
 	fh = (struct filehandle *)iofs->IOFS.io_Unit;  
 
 	if (fh->type & FHD_FILE)
-	    error = DoRead(emulbase, fh->fd, iofs->io_Union.io_READ.io_Buffer, &iofs->io_Union.io_READ.io_Length);
+	{
+	    if (fh->type & FHD_STDIO)
+	    {
+	    	error = DoAsyncRead(emulbase, fh->fd, iofs->io_Union.io_READ.io_Buffer, &iofs->io_Union.io_READ.io_Length);
+	    	if (!error)
+	    	{
+	    	    /* Asynchronous request sent, reset QUICK flag and return */
+		    iofs->IOFS.io_Flags &= ~IOF_QUICK;
+		    return;
+		}
+	    }
+	    else
+	    	error = DoRead(emulbase, fh->fd, iofs->io_Union.io_READ.io_Buffer, &iofs->io_Union.io_READ.io_Length);
+	}
 	else
 	    error = ERROR_OBJECT_WRONG_TYPE;
 	break;
@@ -801,7 +782,12 @@ AROS_LH1(void, beginio,
 	fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
     	DCMD(bug("[emul] FSA_SEEK, mode %ld, offset %llu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
-	error = seek_file(emulbase, fh, &iofs->io_Union.io_SEEK, NULL);
+
+	if (fh->type == FHD_FILE)
+	    error = DoSeek(emulbase, fh->fd, &iofs->io_Union.io_SEEK.io_Offset, iofs->io_Union.io_SEEK.io_SeekMode);
+	else
+	    error = ERROR_OBJECT_WRONG_TYPE;
+
 	DSEEK(bug("[emul] FSA_SEEK returning %lu\n", error));
 	break;
 
@@ -941,9 +927,9 @@ AROS_LH1(void, beginio,
 	fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	id = iofs->io_Union.io_INFO.io_Info;
 
-	error = DoStatFS(fh->hostname, id);
+	error = DoStatFS(emulbase, fh->hostname, id);
 	if (!error)
-	    id->id_VolumeNode = fh->dl;
+	    id->id_VolumeNode = MKBADDR(fh->dl);
 
 	break;
 

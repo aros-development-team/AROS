@@ -27,6 +27,12 @@ LONG DoRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
     return ERROR_NOT_IMPLEMENTED;
 }
 
+LONG DoAsyncRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
+{
+    /* Asynchronous read from a file */
+    return ERROR_NOT_IMPLEMENTED;
+}
+
 LONG DoWrite(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
 {
     /* Write to a file */
@@ -106,7 +112,7 @@ BOOL DoGetType(struct emulbase *emulbase, void *fd)
     return FALSE;
 }
 
-LONG DoStatFS(char *path, struct InfoData *id)
+LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
 {
     /* Get disk information */
     return ERROR_NOT_IMPLEMENTED;
