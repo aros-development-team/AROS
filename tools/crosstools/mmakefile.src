@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-ifeq ($(AROS_TARGET_CPU, arm)
+ifeq ($(AROS_TARGET_CPU), arm)
   GCC_VERSION = 4.4.2
   GCC_EXTRA_FLAGS = 
 else
