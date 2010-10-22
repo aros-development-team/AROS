@@ -50,14 +50,6 @@ void cpu_Dispatch(regs_t *regs)
 
     while (!(task = core_Dispatch()))
     {
-	/* 
-	 * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
-	 * It should be extended by some plugin mechanism which would put CPU and whole machine
-	 * into some more sophisticated sleep states (ACPI?)
-	 */
-        SysBase->IdleCount++;
-        SysBase->AttnResched |= ARF_AttnSwitch;
-
         /* Sleep almost forever ;) */
 	sigsuspend(&sigs);
 
