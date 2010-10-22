@@ -9,7 +9,7 @@
 
 #include <devices/keymap.h>
 
-STATIC char  keymapname[] = "pc105_ir";
+STATIC char  keymapname[] = "pc105_irl";
 
 STATIC CONST UBYTE lokeymaptypes[];
 STATIC CONST IPTR  lokeymap[];
@@ -224,7 +224,7 @@ STATIC CONST IPTR lokeymap[] ={
     BYTES(0xB9,0xA1,'!' ,'1' ),
     BYTES(0xB2,0xB1,0x22,'2' ),
     BYTES(0xB3,'.' ,0xA3,'3' ),
-    BYTES(0xBC,0x80,'$' ,'4' ),
+    BYTES(0xBC,EUR ,'$' ,'4' ),
     BYTES(0xBD,0xA7,'%' ,'5' ),
     BYTES(0xBE,0x83,0x5E,'6' ),
     BYTES('.' ,'{' ,'&' ,'7' ),
