@@ -9,7 +9,7 @@
 
 #include <devices/keymap.h>
 
-STATIC char  keymapname[] = "pc105_sf";
+STATIC char  keymapname[] = "pc105_ch2";
 
 STATIC CONST UBYTE lokeymaptypes[];
 STATIC CONST IPTR  lokeymap[];
