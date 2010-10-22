@@ -3,13 +3,13 @@
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
     
-    Desc: Ucranian PC105 Keymap
+    Desc: Ukranian PC105 Keymap
     Lang: English
 */
 
 #include <devices/keymap.h>
 
-STATIC char  keymapname[] = "pc105_ur";
+STATIC char  keymapname[] = "pc105_ua";
 
 STATIC CONST UBYTE lokeymaptypes[];
 STATIC CONST IPTR  lokeymap[];
