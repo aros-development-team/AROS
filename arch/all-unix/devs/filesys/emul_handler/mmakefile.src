@@ -12,4 +12,10 @@ USER_INCLUDES := -I$(GENINCDIR)
   files=emul_handler \
   compiler=kernel
 
+USER_CFLAGS := -DHOST_OS_$(ARCH) -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-hosted/devs/filesys/emul_handler -isystem $(GENINCDIR) $(KERNEL_INCLUDES) -nostdinc
 
+%build_archspecific mainmmake=kernel-fs-emul-new \
+  maindir=arch/all-hosted/devs/filesys/emul_handler \
+  arch=darwin files=emul_host
+
+%common

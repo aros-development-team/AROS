@@ -8,12 +8,12 @@
     Lang: english
 */
 
-#define __DOS_NOLIBBASE__
-
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
+
+#include <emul_host.h>
 
 struct filehandle
 {
@@ -34,16 +34,19 @@ struct filehandle
 
 struct emulbase
 {
-    struct Device	 device;
-    			 /* nlorentz: Cal it eb_std* because std* is reserved */
-    struct filehandle  	*eb_stdin;
-    struct filehandle 	*eb_stdout;
-    struct filehandle 	*eb_stderr;
-    APTR		 mempool;
-    struct DosLibrary	*DOSBase;
+    struct Device	      device;
+    			      /* nlorentz: Cal it eb_std* because std* is reserved */
+    struct filehandle  	     *eb_stdin;
+    struct filehandle 	     *eb_stdout;
+    struct filehandle 	     *eb_stderr;
+    APTR		      mempool;
+    APTR		      HostLibBase;
+    struct DosLibrary	     *DOSBase;
+    struct Emul_PlatformData  pdata;	/* Platform-specific portion */
 };
 
-#define DOSBase emulbase->DOSBase
+#define HostLibBase emulbase->HostLibBase
+#define DOSBase     emulbase->DOSBase
 
 /* File name manipulation functions (filenames.c) */
 BOOL shrink(char *filename);
@@ -58,9 +61,9 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 void DoClose(struct emulbase *emulbase, void *file);
 void DoCloseDir(struct emulbase *emulbase, void *dir);
 LONG DoRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length);
+LONG DoAsyncRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length);
 LONG DoWrite(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length);
 LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG Mode);
-LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh);
 LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect);
 LONG DoDelete(struct emulbase *emulbase, char *name);
 LONG DoChMod(struct emulbase *emulbase, char *filename, ULONG prot);
@@ -71,10 +74,13 @@ int DoReadLink(struct emulbase *emulbase, char *filename, char *buffer, ULONG si
 LONG DoSetDate(struct emulbase *emulbase, char *fullname, struct DateStamp *date);
 LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK *io_SEEK);
 BOOL DoGetType(struct emulbase *emulbase, void *fd);
-LONG DoStatFS(char *path, struct InfoData *id);
+LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id);
 
-LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName,
-		    struct ExAllData *ead, ULONG size, ULONG type);
+extern const ULONG sizes[];
+
+LONG examine(struct emulbase *emulbase, struct filehandle *fh,
+             struct ExAllData *ead, ULONG size, ULONG type,
+             LONG *dirpos);
 LONG examine_next(struct emulbase *emulbase,  struct filehandle *fh, struct FileInfoBlock *FIB);
 LONG examine_all(struct emulbase *emulbase, struct filehandle *fh, struct ExAllData *ead,
                   struct ExAllControl *eac, ULONG size, ULONG  type);
