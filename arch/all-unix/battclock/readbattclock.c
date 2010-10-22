@@ -18,11 +18,6 @@ AROS_LH0(ULONG, ReadBattClock, struct BattClockBase *, BattClockBase, 2, Battclo
 {
     AROS_LIBFUNC_INIT
 
-    /*
-     * Here we hope that AROS definition of time_t and struct tm are the same
-     * on both host OS and AROS. This seems to always be true, time_t always
-     * has CPU word size and struct tm is pretty standard thing.
-     */
     time_t t;
     struct tm *tm;
     struct ClockData date;
@@ -34,7 +29,8 @@ AROS_LH0(ULONG, ReadBattClock, struct BattClockBase *, BattClockBase, 2, Battclo
      * So we have all this clutter. Note that we use host function
      * in order to convert to GMT while we could in fact use AROS one.
      * This is because theoretically AROS and our host can be set
-     * to different time zones.
+     * to different time zones. Additionally we use host OS includes
+     * for definitions of struct tm and time_t.
      */
     tm = BattClockBase->SysIFace->localtime(&t);
 

@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := -isystem $(GENINCDIR) $(KERNEL_INCLUDES) -nostdinc
+
 %build_archspecific \
   mainmmake=kernel-battclock maindir=rom/battclock \
   arch=unix \
