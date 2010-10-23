@@ -123,11 +123,14 @@ void OutputMessage(CONST_STRPTR msg)
 void WinCleanup(void)
 {
 
-    wincoords.MinX = win->LeftEdge;
-    wincoords.MinY = win->TopEdge;
-    wincoords.MaxX = win->Width;
-    wincoords.MaxY = win->Height;
-    D(bug("[Multiview] MinX = %d  MinY = %d  MaxX = %d  MaxY = %d\n",
+    if (win)
+    {
+        wincoords.MinX = win->LeftEdge;
+        wincoords.MinY = win->TopEdge;
+        wincoords.MaxX = win->Width;
+        wincoords.MaxY = win->Height;
+    }
+    D(bug("[Multiview] WinCleanup() MinX = %d  MinY = %d  MaxX = %d  MaxY = %d\n",
         wincoords.MinX, wincoords.MinY, wincoords.MaxX, wincoords.MaxY));
 
     if (msgport)
