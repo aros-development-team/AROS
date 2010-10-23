@@ -57,7 +57,6 @@ NOUVEAU_HIDD_SOURCES := \
             nouveaubitmapclass \
             nouveaui2c \
             nouveaugalliumclass \
-            planarbm \
             nv_accel_common \
             nv04_accel \
             nv50_accel \
