@@ -20,6 +20,10 @@
 
 #include <aros/ppc/atomic.h>
 
+#elif defined(__arm__)
+
+#include <aros/arm/atomic.h>
+
 #elif defined(__mc68000)
 
 #include <aros/m68k/atomic.h>
