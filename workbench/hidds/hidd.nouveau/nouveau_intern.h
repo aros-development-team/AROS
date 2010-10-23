@@ -28,7 +28,6 @@ struct HIDDNouveauData
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
-#define CLID_Hidd_BitMap_NouveauPlanar  "hidd.bitmap.nouveauplanar"
 
 struct HIDDNouveauBitMapData
 {
@@ -47,16 +46,6 @@ struct HIDDNouveauBitMapData
     ULONG                   fbid;             /* Contains ID under which bitmap 
                                                 is registered as framebuffer or 
                                                 0 otherwise */
-};
-
-struct planarbm_data
-{
-    UBYTE   **planes;
-    ULONG   planebuf_size;
-    ULONG   bytesperrow;
-    ULONG   rows;
-    UBYTE   depth;
-    BOOL    planes_alloced;
 };
 
 #define CLID_Hidd_I2C_Nouveau           "hidd.i2c.nouveau"
@@ -115,7 +104,6 @@ struct staticdata
 {
     OOP_Class       *gfxclass;
     OOP_Class       *bmclass;
-    OOP_Class       *planarbmclass;
     OOP_Class       *i2cclass;
     OOP_Class       *galliumclass;
     
@@ -165,31 +153,31 @@ LIBBASETYPE
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
 
-#define BASE(lib) ((LIBBASETYPEPTR)(lib))
+#define BASE(lib)                   ((LIBBASETYPEPTR)(lib))
 
-#define SD(cl) (&BASE(cl->UserData)->sd)
+#define SD(cl)                      (&BASE(cl->UserData)->sd)
 
-#define LOCK_BITMAP      { ObtainSemaphore(&bmdata->semaphore); }
-#define UNLOCK_BITMAP        { ReleaseSemaphore(&bmdata->semaphore); }
+#define LOCK_BITMAP                 { ObtainSemaphore(&bmdata->semaphore); }
+#define UNLOCK_BITMAP               { ReleaseSemaphore(&bmdata->semaphore); }
 
-#define LOCK_BITMAP_BM(bmdata)   { ObtainSemaphore(&(bmdata)->semaphore); }
-#define UNLOCK_BITMAP_BM(bmdata) { ReleaseSemaphore(&(bmdata)->semaphore); }
+#define LOCK_BITMAP_BM(bmdata)      { ObtainSemaphore(&(bmdata)->semaphore); }
+#define UNLOCK_BITMAP_BM(bmdata)    { ReleaseSemaphore(&(bmdata)->semaphore); }
 
-#define LOCK_MULTI_BITMAP    { ObtainSemaphore(&(SD(cl))->multibitmapsemaphore); }
-#define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&(SD(cl))->multibitmapsemaphore); }
+#define LOCK_MULTI_BITMAP           { ObtainSemaphore(&(SD(cl))->multibitmapsemaphore); }
+#define UNLOCK_MULTI_BITMAP         { ReleaseSemaphore(&(SD(cl))->multibitmapsemaphore); }
 
-#define UNMAP_BUFFER { if (bmdata->bo->map) nouveau_bo_unmap(bmdata->bo); }
-#define UNMAP_BUFFER_BM(bmdata) { if ((bmdata)->bo->map) nouveau_bo_unmap((bmdata)->bo); }
+#define UNMAP_BUFFER                { if (bmdata->bo->map) nouveau_bo_unmap(bmdata->bo); }
+#define UNMAP_BUFFER_BM(bmdata)     { if ((bmdata)->bo->map) nouveau_bo_unmap((bmdata)->bo); }
 
-#define MAP_BUFFER { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR); }
-#define MAP_BUFFER_BM(bmdata) { if (!(bmdata)->bo->map) nouveau_bo_map((bmdata)->bo, NOUVEAU_BO_RDWR); }
+#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR); }
+#define MAP_BUFFER_BM(bmdata)       { if (!(bmdata)->bo->map) nouveau_bo_map((bmdata)->bo, NOUVEAU_BO_RDWR); }
 
-#define writel(val, addr)               (*(volatile ULONG*)(addr) = (val))
-#define readl(addr)                     (*(volatile ULONG*)(addr))
-#define writew(val, addr)               (*(volatile UWORD*)(addr) = (val))
-#define readw(addr)                     (*(volatile UWORD*)(addr))
-#define writeb(val, addr)               (*(volatile UBYTE*)(addr) = (val))
-#define readb(addr)                     (*(volatile UBYTE*)(addr))
+#define writel(val, addr)           (*(volatile ULONG*)(addr) = (val))
+#define readl(addr)                 (*(volatile ULONG*)(addr))
+#define writew(val, addr)           (*(volatile UWORD*)(addr) = (val))
+#define readw(addr)                 (*(volatile UWORD*)(addr))
+#define writeb(val, addr)           (*(volatile UBYTE*)(addr) = (val))
+#define readb(addr)                 (*(volatile UBYTE*)(addr))
 
 enum DMAObjects 
 {
