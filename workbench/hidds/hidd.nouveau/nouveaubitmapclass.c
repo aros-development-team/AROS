@@ -532,109 +532,51 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
 VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
-
-    /* TODO: Try bulk transfers from VRAM to RAM */
+    struct CardData * carddata = &(SD(cl)->carddata);
 
     LOCK_BITMAP
+
+    /* For larger transfers use GART */
+    if (((msg->width * msg->height) >= (64 * 64)) && (carddata->GART))
+    {
+        BOOL result = FALSE;
+        
+        /* RAM->CPU->GART GART->GPU->VRAM */
+        UNMAP_BUFFER
+
+        ObtainSemaphore(&carddata->gartsemaphore);
+        
+        result = HiddNouveauNVAccelDownloadM2MF(
+                    msg->pixels, msg->modulo, msg->pixFmt,
+                    msg->x, msg->y, msg->width, msg->height, 
+                    cl, o);
+        
+        ReleaseSemaphore(&carddata->gartsemaphore);
+
+        if (result)
+        {
+            UNLOCK_BITMAP;
+            return;
+        }
+    }
+
+    /* Fallback */
+
+    /* RAM->CPU->VRAM */
+    {
+    APTR srcBuff = NULL;
+    
     MAP_BUFFER
 
-    switch(msg->pixFmt)
-    {
-    case vHidd_StdPixFmt_Native:
-        switch(bmdata->bytesperpixel)
-        {
-        case 1:
-            {
-                struct pHidd_BitMap_CopyMemBox8 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox8, bmdata->bo->map, msg->x, msg->y, 
-                    msg->pixels, 0, 0, msg->width, msg->height, bmdata->pitch, 
-                    msg->modulo
-                }, *m = &__m;
-
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 2:
-            {
-                struct pHidd_BitMap_CopyMemBox16 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox16, bmdata->bo->map, msg->x, msg->y,
-                    msg->pixels, 0, 0, msg->width, msg->height, bmdata->pitch,
-                    msg->modulo
-                }, *m = &__m;
-
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 4:
-            {
-                struct pHidd_BitMap_CopyMemBox32 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox32, bmdata->bo->map, msg->x, msg->y,
-                    msg->pixels, 0, 0, msg->width, msg->height, bmdata->pitch,
-                    msg->modulo
-                }, *m = &__m;
-
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        } /* switch(bmdata->bytesperpixel) */
-        break;
-
-    case vHidd_StdPixFmt_Native32:
-        switch(bmdata->bytesperpixel)
-        {
-        case 1:
-            {
-                struct pHidd_BitMap_GetMem32Image8 __m = 
-                {
-                    SD(cl)->mid_GetMem32Image8, bmdata->bo->map, msg->x, msg->y,
-                    msg->pixels, msg->width, msg->height, bmdata->pitch,
-                    msg->modulo
-                }, *m = &__m;
-
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 2:
-            {
-                struct pHidd_BitMap_GetMem32Image16 __m = 
-                {
-                    SD(cl)->mid_GetMem32Image16, bmdata->bo->map, msg->x, msg->y,
-                    msg->pixels, msg->width, msg->height, bmdata->pitch,
-                    msg->modulo
-                }, *m = &__m;
-
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        case 4:
-            {
-                struct pHidd_BitMap_CopyMemBox32 __m = 
-                {
-                    SD(cl)->mid_CopyMemBox32, bmdata->bo->map, msg->x, msg->y,
-                    msg->pixels, 0, 0, msg->width, msg->height, bmdata->pitch,
-                    msg->modulo
-                }, *m = &__m;
-
-                OOP_DoMethod(o, (OOP_Msg)m);
-            }
-            break;
-
-        } /* switch(data->bytesperpixel) */
-        break;
-
-    default:
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        break;
-
-    } /* switch(msg->pixFmt) */
+    /* Calculate destination buffer pointer */
+    srcBuff = (APTR)((IPTR)bmdata->bo->map + (msg->y * bmdata->pitch) + (msg->x * bmdata->bytesperpixel));
+    
+    HiddNouveauConvertAndCopy2(
+        srcBuff, bmdata->pitch,
+        msg->pixels, msg->modulo, msg->pixFmt,
+        msg->width, msg->height,
+        cl, o);
+    }
 
     UNLOCK_BITMAP
 }
