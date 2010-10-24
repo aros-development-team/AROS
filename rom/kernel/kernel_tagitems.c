@@ -5,7 +5,7 @@
 
 #include <kernel_tagitems.h>
 
-struct TagItem *krnNextTagItem(struct TagItem **tagListPtr)
+struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 {
     if (!(*tagListPtr))
 	return NULL;
@@ -40,7 +40,7 @@ struct TagItem *krnNextTagItem(struct TagItem **tagListPtr)
 
 intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, struct TagItem *tagList)
 {
-    struct TagItem *tstate = tagList;
+    const struct TagItem *tstate = tagList;
     struct TagItem *tag;
     
     while ((tag = krnNextTagItem(&tstate)))
