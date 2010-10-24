@@ -76,24 +76,13 @@
     UBYTE *it,*dst;
     int   s,t;
 
-    /* Clear Memory area fast. Get number of longs and clear them. */
-    cnt=size/sizeof(LONG);
-    size&=(sizeof(LONG)-1);
-    dst=(UBYTE *)memory;
-    if(cnt)
-	do
-	{
-	    *(LONG *)dst=0;
-	    dst+=sizeof(LONG);
-	}
-	while(--cnt);
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    /* On 'real' Amigas, only the lower 16 bits are valid */
+    size &= 0xffff;
+#endif
 
-    /* Clear the rest. */
-    cnt=size;
-    if(cnt)
-	do
-	    *dst++=0;
-	while(--cnt);
+    /* Clear Memory area. Use librom's memset() */
+    memset(memory, 0x00, size);
 
     it =(UBYTE *)initTable;
     dst=(UBYTE *)memory;
