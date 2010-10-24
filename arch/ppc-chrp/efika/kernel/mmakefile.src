@@ -18,7 +18,3 @@ $(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
   modname=kernel modtype=resource		\
   cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"		\
   files="$(FILES)" uselibs="rom"
-
-#MM setup-chrp-ppc-efika
-setup-chrp-ppc-efika : 
-    %mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)

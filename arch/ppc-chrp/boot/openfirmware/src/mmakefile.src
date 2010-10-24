@@ -1,0 +1,28 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+TARGETDIR := $(GENDIR)/$(CURDIR)
+FILES     := bootstrap elf menu of1275 support
+DEPS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+OBJS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
+
+USER_CFLAGS += -Os -ffreestanding -nostdlib -Wall -I$(SRCDIR)/$(CURDIR)/../include -DVERSION=\"94\"
+
+#MM ub2lb-chrp-ppc-efika: linklibs
+ub2lb-chrp-ppc-efika: $(AROSDIR)/os_image
+
+$(AROSDIR)/os_image: $(OBJS) $(DEPS)
+	$(KERNEL_LD) -N --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(OBJS) -o $@
+
+$(TARGETDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS)"
+
+$(TARGETDIR)/%.o : %.S
+	%compile_q opt="$(CFLAGS)"
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+-include $(DEPS)
+
+%common
