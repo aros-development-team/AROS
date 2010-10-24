@@ -77,8 +77,8 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/dos
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
-#MM workbench-c : includes linklibs workbench-c-pure contrib-cdvdfs-checkcd workbench-libs-uuid
-#MM workbench-c-quick : workbench-c-pure-quick
+#MM workbench-c : includes linklibs workbench-c-pure workbench-c-requeststring contrib-cdvdfs-checkcd workbench-libs-uuid
+#MM workbench-c-quick : workbench-c-pure-quick workbench-c-requeststring-quick
 
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
@@ -87,6 +87,10 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/dos
 %build_progs mmake=workbench-c-pure \
     files=$(PURE_FILES) targetdir=$(AROS_C) \
     uselibs="arossupport amiga rom m" usestartup=no
+
+%build_prog mmake=workbench-c-requeststring progname=RequestString \
+    files=RequestString targetdir=$(AROS_C) \
+    uselibs="arossupport amiga rom mui"
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...
