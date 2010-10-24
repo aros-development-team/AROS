@@ -36,9 +36,9 @@ extern struct Resident Exec_resident; /* Need this for lib_IdString */
 
 extern void Exec_TrapHandler(ULONG trapNum);
 AROS_LD3(ULONG, MakeFunctions,
-	 AROS_LHA(APTR, target, A0),
-	 AROS_LHA(CONST_APTR, functionArray, A1),
-	 AROS_LHA(CONST_APTR, funcDispBase, A2),
+	 AROS_LDA(APTR, target, A0),
+	 AROS_LDA(CONST_APTR, functionArray, A1),
+	 AROS_LDA(CONST_APTR, funcDispBase, A2),
          struct ExecBase *, SysBase, 15, Exec);
 
 static APTR allocmem(struct MemHeader *mh, ULONG size)
@@ -102,11 +102,11 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 #endif
 
     /* Setup function vectors */
-    AROS_UFC4(ULONG, AROS_SLIB_ENTRY(MakeFunctions, Exec),
+    AROS_CALL3(ULONG, AROS_SLIB_ENTRY(MakeFunctions, Exec),
 	      AROS_UFCA(APTR, SysBase, A0),
 	      AROS_UFCA(CONST_APTR, LIBFUNCTABLE, A1),
 	      AROS_UFCA(CONST_APTR, NULL, A2),
-	      AROS_UFCA(struct ExecBase *, SysBase, A6));
+	      struct ExecBase *, SysBase);
 
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;

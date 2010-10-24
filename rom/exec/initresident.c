@@ -133,10 +133,11 @@
 	    */
 	    if(init->init)
 	    {
-		library = AROS_UFC3(struct Library *, init->init,
-		    AROS_UFCA(struct Library *,  library, D0),
-		    AROS_UFCA(BPTR,              segList, A0),
-		    AROS_UFCA(struct ExecBase *, SysBase, A6)
+        	D(bug("Initresident call init @%p\n", init->init));
+		library = AROS_CALL2(struct Library *, init->init,
+		    AROS_LCA(struct Library *,  library, D0),
+		    AROS_LCA(BPTR,              segList, A0),
+		    struct ExecBase *, SysBase
 		);
 	    }
 
@@ -170,10 +171,10 @@
         D(bug("Initresident !RTF_AUTOINIT\n"));
 
 	/* ...or let the library do it. */
-	library = AROS_UFC3(struct Library *, resident->rt_Init,
-	    AROS_UFCA(ULONG,             0L,      D0),
-	    AROS_UFCA(BPTR,              segList, A0),
-	    AROS_UFCA(struct ExecBase *, SysBase, A6)
+	library = AROS_CALL2(struct Library *, resident->rt_Init,
+	    AROS_LCA(ULONG,             0L,      D0),
+	    AROS_LCA(BPTR,              segList, A0),
+	    struct ExecBase *, SysBase
 	);
     }
 
