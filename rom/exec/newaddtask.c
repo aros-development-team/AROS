@@ -86,6 +86,10 @@
     ));
     ASSERT_VALID_PTR(task);
 
+    /* Initialize the memory entry list if the caller forgot */
+    if (!task->tc_Node.lh_Head)
+    	NEWLIST(&task->tc_MemEntry);
+	  
     /* Set node type to NT_TASK if not set to something else. */
     if(!task->tc_Node.ln_Type)
         task->tc_Node.ln_Type=NT_TASK;
