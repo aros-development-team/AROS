@@ -76,7 +76,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    /* APTR sp; */
 
     D(bug("[exec] Call NewAddTask (%012lx (\"%s\"), %012lx, %012lx)\n"
         , task
@@ -87,9 +86,9 @@
     ASSERT_VALID_PTR(task);
 
     /* Initialize the memory entry list if the caller forgot */
-    if (!task->tc_Node.lh_Head)
-    	NEWLIST(&task->tc_MemEntry);
-	  
+    if (!task->tc_MemEntry.lh_Head)
+        NEWLIST(&task->tc_MemEntry);
+
     /* Set node type to NT_TASK if not set to something else. */
     if(!task->tc_Node.ln_Type)
         task->tc_Node.ln_Type=NT_TASK;
@@ -149,13 +148,14 @@
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     if ((IPTR)task->tc_SPReg & 0xf)
     {
-	D(bug("[exec] NewAddTask with unaligned stack pointer! fixing %08x->%08x\n",
-	      task->tc_SPReg, (IPTR)task->tc_SPReg & 0xfffffff0));
-	
-	task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & 0xfffffff0);
+        D(bug("[exec] NewAddTask with unaligned stack pointer! fixing %08x->%08x\n",
+              task->tc_SPReg, (IPTR)task->tc_SPReg & 0xfffffff0));
+
+        task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & 0xfffffff0);
     }
 #endif
-    D(bug("[exec] NewAddTask: SPLower: 0x%08lX SPUpper: 0x%08lX SP: 0x%08lX\n", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg));
+    D(bug("[exec] NewAddTask: SPLower: 0x%08lX SPUpper: 0x%08lX SP: 0x%08lX\n",
+          task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg));
 
 #if AROS_STACK_DEBUG
     {
@@ -173,7 +173,6 @@
         {
             *startfill++ = 0xE1;
         }
-        
     }
 #endif
 
@@ -188,17 +187,12 @@
         return NULL;
     }
 
-    /* store sp */
-    /* task->tc_SPReg=sp; */
-
     /* Set the task flags for switch and launch. */
     if(task->tc_Switch)
         task->tc_Flags|=TF_SWITCH;
 
     if(task->tc_Launch)
         task->tc_Flags|=TF_LAUNCH;
-
-    /* tc_MemEntry _must_ already be set. */
 
     /*
         Protect the task lists. This must be done with Disable() because
