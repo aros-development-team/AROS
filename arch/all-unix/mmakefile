@@ -17,7 +17,7 @@ include $(TOP)/config/make.cfg
 #MM	arch-common-boot-generatebootsig \
 #MM     kernel-processor-kobj
 
-#MM- workbench-unix : workbench-hidd-unix workbench-hosted
+#MM- workbench-unix : workbench-hidd-unix workbench-libs-oss-unix workbench-hosted
 
 #MM kernel-link-emul : kernel-kernel-kobj kernel-objs
 kernel-link-emul : $(BINDIR)/boot/aros-unix
