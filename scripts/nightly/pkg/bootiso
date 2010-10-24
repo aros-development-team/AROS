@@ -3,6 +3,11 @@
 
 BOOTLOADER=$1
 
+TARGET=$BUILDTARGET
+if [ -n $VARIANT ]; then
+    BUILDTARGET=$VARIANT-$TARGET
+fi
+
 source  $SP/setup
 
 # The log-name MUST match the name of the package script
@@ -17,7 +22,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-ccache --with-bootloader=$BOOTLOADER --enable-build-type=nightly
+execute ./configure --target=$TARGET --enable-target-variant=$VARIANT --enable-ccache --with-bootloader=$BOOTLOADER --enable-build-type=nightly --with-portssources=$ROOT/Sources
 make
 
 ISOFILE=aros-$BUILDTARGET.iso
