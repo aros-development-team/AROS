@@ -34,15 +34,23 @@ static void PrintChars(char c, ULONG n)
 
 static void PrintCentered(char *str)
 {
-    ULONG s = ALERT_WIDTH - 2 - strlen(str);
+    int len = strlen(str);
+    ULONG s;
+   
+    if (len < 0)
+    	    len = 0;
+    if (len > (ALERT_WIDTH - 2))
+    	    len = (ALERT_WIDTH - 2);
+
+    s = ALERT_WIDTH - 2 - len;
     
     RawPutChar('#');
     if (s & 1)
         RawPutChar(' ');
     s >>= 1;
     PrintChars(' ', s);
-    while (*str)
-        RawPutChar(*str++);
+    for (; len > 0; len--)
+        RawPutChar(*(str++));
     PrintChars(' ', s);
     RawPutChar('#');
     RawPutChar('\n');
