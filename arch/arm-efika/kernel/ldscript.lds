@@ -2,8 +2,6 @@ FORCE_COMMON_ALLOCATION
 
 SECTIONS
 {
-	. = 0x90008000;
-	
     .text : {
         __text_start = .;
 	*(.aros.init)
