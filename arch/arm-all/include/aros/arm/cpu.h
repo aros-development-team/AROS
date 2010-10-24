@@ -72,7 +72,7 @@ do \
 
 struct JumpVec
 {
-	unsigned char vec[4];
+	unsigned long vec;
 };
 
 /* Internal macros */
