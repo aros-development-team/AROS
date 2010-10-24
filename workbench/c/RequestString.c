@@ -1,17 +1,9 @@
 /*
- * RequestString
- *
- * A program which requests a string from the user and prints it on
- * the standard output.
- *
- * Written by Peter Bengtsson who does not agree to be held responsible
- * for any damage or loss resulting from the use of this program.
- *
- * Use it as you wish for any and all nice things you can think of.
- *
- * $Id$
- *
- */
+    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Request string from user
+*/
 
 /******************************************************************************
  
@@ -51,400 +43,174 @@
         PUBSCREEN  -- Open requester on given pubscreen.
 
     RESULT
- 
+
     NOTES
-        TODO: improve layout
 
     EXAMPLE
- 
+
     BUGS
- 
+        PERSIST doesn't allways work.
+        WIDTH not implemented.
+
     SEE ALSO
- 
+
     INTERNALS
- 
+
 ******************************************************************************/
 
-#include <exec/memory.h>
-#include <graphics/gfxbase.h>
-#include <utility/tagitem.h>
-#include <utility/hooks.h>
-#include <intuition/sghooks.h>
-#include <intuition/intuition.h>
+#include <aros/debug.h>
+#include <libraries/mui.h>
 
-#include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
-#include <proto/graphics.h>
-#include <proto/gadtools.h>
+#include <proto/muimaster.h>
 #include <clib/alib_protos.h>
 
 #include <string.h>
 
-
-AROS_UFP3(ULONG, HookFunc,
-    AROS_UFPA(struct Hook *,   TheHook, A0),
-    AROS_UFPA(struct SGWork *, Obj,     A2),
-    AROS_UFPA(UBYTE *,         Mess,    A1));
-
-
-#define  TEMPLATE "STRING,TEXT/K,TITLE/K,NOGADS/S,WIDTH/N,SAFE/S,PERSIST/S,ENCRYPT/S,COMPARE/K,PUBSCREEN/K"
-
-#define  NArgs 10          /* Number of arguments */
-
-#define  STRING      0
-#define  TEXT        1
-#define  TITLE       2
-#define  NOGADS      3
-#define  WIDTH       4
-#define  SAFE        5
-#define  PERSIST     6
-#define  ENCRYPT     7
-#define  COMPARE     8
-#define  PUBSCREEN   9
-
-#define  MINWIDTH    8     /* Minimum width of gadget in characters */
-
-const char version[] = "\0$VER: RequestString 39.5 (06.07.2009)";
-
-int main(void)
-{
-    IPTR                    ArgList[NArgs];
-    ULONG                   MsgClass = 0;
-    APTR                    VisInfo = NULL;
-    char                    CBuffer[12], UName[48];
-    struct TextExtent       TExtent;
-    struct Hook             SGHook = { {0} , 0, 0, 0};
-    struct RDArgs           *Args = NULL;
-    struct ExtIntuiMessage  *EIMess = NULL;
-    struct Gadget           *Gad = NULL, *GList = NULL;
-    struct Window           *Win = NULL;
-    struct Screen           *Scr = NULL;
-    char                    *ReturnText = NULL;
-
-    int                     WWidth = 0, WHeight = 0;
-    int                     GWidth = 32, GHeight = 0;
-    long                    TXPos = 0, TYPos = 0;
-    int                     TLength = 0;
-    int                     TWidth = 0, THeight = 0;
-
-    LONG                    Ret = 20;
-
-    struct TagItem WindowTags[] =
-    {
-        {WA_PubScreen,   0},
-        {WA_Gadgets,     0},
-        {WA_Left,        0},
-        {WA_Top,         0},
-        {WA_Width,       0},
-        {WA_Height,      0},
-        {WA_DragBar,     FALSE},
-        {WA_DepthGadget, FALSE},
-        {WA_CloseGadget, FALSE},
-        {WA_Title,       0},
-        {WA_IDCMP,       IDCMP_GADGETUP | IDCMP_INACTIVEWINDOW | IDCMP_ACTIVEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_CLOSEWINDOW},
-        {WA_SizeGadget,  FALSE},
-        {WA_Activate,    TRUE}
-    };
-
-    struct NewGadget StringGad = {10, 5, 80, 15, NULL, NULL, 0, 0, NULL, NULL};
-
-    memset(ArgList, 0, sizeof(ArgList)); /* Clear the ArgList array */
-
-    if ((Args = ReadArgs(TEMPLATE, ArgList, NULL)) != NULL)
-    {
-        if ((Scr = LockPubScreen((UBYTE *)ArgList[PUBSCREEN])) != NULL)
-        {
-            if ((VisInfo = GetVisualInfo(Scr, NULL)) != NULL)
-            {
-                if ((Gad = CreateContext(&GList)) != NULL)
-                {
-                    if (ArgList[WIDTH] != 0)
-                        GWidth = *((LONG *)ArgList[WIDTH]);
-                    if (GWidth < MINWIDTH)
-                        GWidth = MINWIDTH;
-
-                    GHeight = Scr->RastPort.TxHeight + 6;
-                    WHeight = GHeight + Scr->WBorTop + Scr->WBorBottom + 8;
-
-                    GWidth = GWidth * Scr->RastPort.TxWidth;
-
-                    /* Forbid()/Permit() around this following poking in GfxBase? */
-                    FontExtent(GfxBase->DefaultFont, &TExtent);
-
-                    if (ArgList[TEXT] != 0)
-                    {
-                        TLength = strlen((char *)ArgList[TEXT]);
-                        TWidth = TExtent.te_Width * TLength;
-                        THeight = TExtent.te_Height;
-                        WHeight += THeight;
-                    }
-
-                    if (GWidth > TWidth)
-                    {
-                        WWidth = GWidth + Scr->WBorLeft + Scr->WBorRight + 6;
-                    }
-                    else
-                    {
-                        WWidth = TWidth + Scr->WBorLeft + Scr->WBorRight + 6;
-                    }
-
-                    if (WWidth > Scr->Width)
-                    {
-                        WWidth = Scr->Width;
-                        if (GWidth + Scr->WBorLeft + Scr->WBorRight > WWidth)
-                        {
-                            GWidth = WWidth - Scr->WBorLeft - Scr->WBorRight;
-                        }
-                        if (TWidth + Scr->WBorLeft + Scr->WBorRight > WWidth)
-                        {
-                            TWidth = WWidth - Scr->WBorLeft - Scr->WBorRight;
-                        }
-                    }
-
-                    /* If the window has a title, it will also have a dragbar, closegadget
-                     * and a depthgadget.
-                     */
-                    if (ArgList[TITLE] != 0)
-                    {
-                        WindowTags[6].ti_Data = TRUE;
-                        if (ArgList[NOGADS] == 0)
-                        {
-                            WindowTags[7].ti_Data = TRUE;
-                            WindowTags[8].ti_Data = TRUE;
-                        }
-                        WindowTags[9].ti_Data = ArgList[TITLE];
-                        WHeight += Scr->BarHeight;
-                    }
-
-                    StringGad.ng_VisualInfo = VisInfo;
-                    StringGad.ng_Width = GWidth;
-                    StringGad.ng_Height = GHeight;
-                    StringGad.ng_TopEdge = WHeight - GHeight - Scr->WBorBottom - 3;
-                    StringGad.ng_LeftEdge = (WWidth - GWidth) / 2;
-
-                    /* Initialize the Hook if we are using a safe stringgadget.
-                     * SGHook.d_Data points to storage space for the string which
-                     * will be returned. Memory should be cleared.
-                     */
-
-                    if (ArgList[SAFE] != 0)
-                    {
-                        SGHook.h_Entry = (HOOKFUNC)HookFunc;
-                        /* SGHook.h_SubEntry=NULL; */
-                        SGHook.h_Data = AllocVec(98, MEMF_ANY | MEMF_CLEAR); /* Should be made dynamic if possible */
-                        if (ArgList[STRING] != 0)
-                        {
-                            int i = -1;
-                            strcpy((char *)SGHook.h_Data, (char *)ArgList[STRING]);
-                            while (((char *)ArgList[STRING])[++i] != 0)
-                                ((char *)ArgList[STRING])[i] = '*';
-                        }
-                    }
-
-                    if
-                    (
-                        (
-                            Gad = CreateGadget
-                            (
-                                STRING_KIND,
-                                Gad, &StringGad,
-                                GTST_EditHook, (ArgList[SAFE] == 0) ? NULL : &SGHook,
-                                GTST_String, ArgList[STRING],
-                                TAG_END
-                            )
-                        ) != NULL
-                    )
-                    {
-                        /* Screen Gadget */
-                        WindowTags[0].ti_Data = (IPTR)Scr;
-                        WindowTags[1].ti_Data = (IPTR)GList;
-                        /* Width & Height */
-                        WindowTags[4].ti_Data = WWidth;
-                        WindowTags[5].ti_Data = WHeight;
-                        /* X & Y Pos */
-                        WindowTags[2].ti_Data = (Scr->Width-WWidth) >> 1;
-                        WindowTags[3].ti_Data = (Scr->Height-WHeight) >> 1;
-
-                        if ((Win = OpenWindowTagList(NULL, WindowTags)) != NULL)
-                        {
-                            /* Is there some (un)informative text in the window? */
-
-                            if (ArgList[TEXT] != 0)
-                            {
-                                /* Colour should rather be selected with thougt to the background of the window, fix this. */
-                                SetAPen(Win->RPort, 1);
-                                TXPos = (WWidth - TWidth) / 2;
-                                TYPos = GfxBase->DefaultFont->tf_Baseline + Win->BorderTop + 1;
-                                Move(Win->RPort, TXPos, TYPos);
-                                Text(Win->RPort, (char *)ArgList[TEXT], TLength);
-                            }
-
-                            do
-                            {
-                                WaitPort(Win->UserPort);
-                                EIMess = (struct ExtIntuiMessage *)GT_GetIMsg(Win->UserPort);
-                                MsgClass=EIMess->eim_IntuiMessage.Class;
-                                GT_ReplyIMsg((struct IntuiMessage *)EIMess);
-
-                                switch(MsgClass)
-                                {
-                                    case  IDCMP_ACTIVEWINDOW   :
-                                        ActivateGadget(Gad, Win, NULL);
-                                        break;
-
-                                    case  IDCMP_INACTIVEWINDOW :
-                                        if (ArgList[PERSIST])
-                                        {
-                                            ScreenToFront(Win->WScreen);
-                                            WindowToFront(Win);
-                                            ActivateWindow(Win);
-                                        }
-                                        break;
-
-                                    case  IDCMP_REFRESHWINDOW  :
-                                        GT_BeginRefresh(Win);
-                                        if (ArgList[TEXT] != 0)
-                                        {
-                                            Move(Win->RPort, TXPos, TYPos);
-                                            Text(Win->RPort, (char *)ArgList[TEXT], TLength);
-                                        }
-                                        GT_EndRefresh(Win,TRUE);
-                                        break;
-
-                                }
-                            }
-                            while ((MsgClass != IDCMP_GADGETUP) && (MsgClass != IDCMP_CLOSEWINDOW));
-
-                            GT_GetGadgetAttrs(Gad, Win, NULL, GTST_String, &ReturnText, TAG_END);
-
-                            if (ArgList[SAFE] != 0)
-                                ReturnText = (char *)SGHook.h_Data;
-
-                            /* Try to find out who the user is if we are to encrypt the output.   */
-                            /* I really don't know how to acquire the username, but this might    */
-                            /* be a good guess of how to do it.                                   */
-
-                            if (ArgList[ENCRYPT] != 0)
-                            {
-                                if (GetVar("USER", UName, 47, 0) == -1)
-                                    if (GetVar("USERNAME", UName, 47, 0) == -1)
-                                        if (GetVar("LOGIN", UName, 47, 0) == -1)
-                                            UName[0] = 0;
-                                ACrypt(CBuffer, ReturnText, UName);
-                                ReturnText = CBuffer;
-                            }
-
-                            Printf("\"%s\"\n", ReturnText);
-
-                            /* Here follows the COMPARE parameter. If the input string is not equal
-                             * to the argument of COMPARE we return WARN.
-                             */
-
-                            if (ArgList[COMPARE] != 0)
-                                Ret = (strcmp(ReturnText, (char *)ArgList[COMPARE])) ? RETURN_WARN : 0;
-                            else
-                                Ret = 0;
-
-                        }
-                    }
-                }
-            }
-        }
-        else if (ArgList[PUBSCREEN] != 0)
-            Ret = 10;
-    }
-    else
-    {
-        PrintFault(IoErr(), "RequestString");
-    }
-
-    /* Clean up. */
-    if (SGHook.h_Data != NULL)
-        FreeVec(SGHook.h_Data);
-    if (Args)
-        FreeArgs(Args);
-    if (Win)
-        CloseWindow(Win);
-    if (GList)
-        FreeGadgets(GList);
-    if (VisInfo)
-        FreeVisualInfo(VisInfo);
-    if (Scr)
-        UnlockPubScreen(NULL, Scr);
-
-    return Ret;
-}
-
-
-/* EditHook function for safe stringgadgets */
-
-AROS_UFH3(ULONG, HookFunc,
-    AROS_UFHA(struct Hook *, TheHook, A0),
-    AROS_UFHA(struct SGWork *, Obj, A2),
-    AROS_UFHA(UBYTE *, Mess, A1))
+AROS_UFH3(VOID, persistfunc,
+    AROS_UFPA(struct Hook *     , hook, A0),
+    AROS_UFPA(Object *          , obj,  A2),
+    AROS_UFPA(Msg               , msg,  A1))
 {
     AROS_USERFUNC_INIT
 
-    int   i0,i1;
-    char  * const Tmp=(char *)TheHook->h_Data;
-
-    if (Mess[0] == SGH_KEY)
-    {
-        Obj->Actions |= SGA_USE;
-
-        switch(Obj->EditOp)
-        {
-            case  EO_DELBACKWARD :
-                i0 = Obj->StringInfo->BufferPos;
-                i1 = Obj->StringInfo->NumChars - Obj->NumChars;
-                strcpy(&Tmp[i0 - i1], &Tmp[i0]);
-                break;
-
-            case  EO_DELFORWARD :
-                i0 = Obj->StringInfo->BufferPos;
-                i1 = Obj->StringInfo->NumChars - Obj->NumChars;
-                strcpy(&Tmp[i0], &Tmp[i0 + i1]);
-                break;
-
-            case  EO_ENTER :
-                /* Exit handling. */
-                break;
-
-            case  EO_RESET :
-                Tmp[0] = 0;
-                break;
-
-            case  EO_INSERTCHAR :
-                if (strlen(Tmp) > 96)
-                    Obj->Actions &= ~SGA_USE;
-                i0 = Obj->StringInfo->BufferPos;
-                Obj->WorkBuffer[i0] = '*';
-                i1 = strlen(Tmp) + 1;
-                while (i1-- != i0)
-                    Tmp[i1 + 1] = Tmp[i1];
-                Tmp[i0] = Obj->Code;
-                break;
-
-            case  EO_CLEAR :
-                Tmp[0] = 0;
-                break;
-
-            case  EO_BIGCHANGE : /* Not Allowed */
-            case  EO_UNDO :
-            case  EO_SPECIAL : 
-                Obj->Actions &= ~SGA_USE;
-                break;
-        }
-        return ~0;
-    }
-    else
-    {
-        Obj->Actions &= ~ SGA_USE;
-        return 0;
-    }
-    
-    return 0;
+    DoMethod(obj, MUIM_Window_ScreenToFront);
+    DoMethod(obj, MUIM_Window_ToFront);
+    SET(obj, MUIA_Window_Activate, TRUE);
 
     AROS_USERFUNC_EXIT
+}
+
+#define  TEMPLATE "STRING,TEXT/K,TITLE/K,NOGADS/S,WIDTH/N,SAFE/S,PERSIST/S,ENCRYPT/S,COMPARE/K,PUBSCREEN/K"
+
+enum {
+    ARG_STRING,
+    ARG_TEXT,
+    ARG_TITLE,
+    ARG_NOGADS,
+    ARG_WIDTH,
+    ARG_SAFE,
+    ARG_PERSIST,
+    ARG_ENCRYPT,
+    ARG_COMPARE,
+    ARG_PUBSCREEN,
+    ARG_COUNT
+};
+
+const char version[] = "\0$VER: RequestString 40.0 (24.10.2010)";
+
+int main(void)
+{
+    IPTR                args[ARG_COUNT] = {0};
+    struct RDArgs      *rdargs = NULL;
+    Object             *app, *win, *string;
+    TEXT                cbuffer[12], uname[48];
+    struct Hook         persisthook = { {0} , 0, 0, 0};
+    STRPTR              returntext = NULL;
+    BOOL                havegads = FALSE;
+    LONG                retval = RETURN_FAIL;
+
+    if ((rdargs = ReadArgs(TEMPLATE, args, NULL)) == NULL)
+    {
+        PrintFault(IoErr(), "RequestString");
+        return RETURN_FAIL;
+    }
+
+    if (args[ARG_TITLE] && !args[ARG_NOGADS])
+    {
+        havegads = TRUE;
+    }
+
+    app = ApplicationObject,
+        MUIA_Application_Title, "RequestString",
+        MUIA_Application_Version, version,
+        MUIA_Application_Copyright, "© 2009-2010 The AROS Development Team",
+        MUIA_Application_Author, "The AROS Development Team",
+        MUIA_Application_Description, "Request string from user",
+        MUIA_Application_Base, "REQUESTSTRING",
+        MUIA_Application_UseCommodities, FALSE,
+        MUIA_Application_UseRexx, FALSE,
+        SubWindow, win = WindowObject,
+            MUIA_Window_Title, args[ARG_TITLE], // safe to use with NULL
+            MUIA_Window_PublicScreen, args[ARG_PUBSCREEN], // silently ignored when NULL or not available
+            MUIA_Window_CloseGadget, havegads,
+            MUIA_Window_DepthGadget, havegads,
+            MUIA_Window_DragBar, havegads,
+            MUIA_Window_NoMenus, TRUE,
+            WindowContents, VGroup,
+                Child, TextObject,
+                    MUIA_Text_PreParse, "\33c", // center text
+                    MUIA_Text_Contents, args[ARG_TEXT],  // safe to use with NULL
+                End,
+                Child, string = StringObject,
+                    StringFrame,
+                    MUIA_String_Contents, args[ARG_STRING], // safe to use with NULL
+                    MUIA_String_Secret, args[ARG_SAFE],
+                End,
+            End,
+        End,
+    End;
+
+    if (app)
+    {
+        persisthook.h_Entry = (HOOKFUNC)persistfunc;
+
+        DoMethod
+        (
+            win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+            app, 2,
+            MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
+        );
+        DoMethod
+        (
+            string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+            app, 2,
+            MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
+        );
+
+        if (args[ARG_PERSIST])
+        {
+            DoMethod
+            (
+                win, MUIM_Notify, MUIA_Window_Activate, FALSE,
+                win, 2,
+                MUIM_CallHook, &persisthook
+            );
+        }
+
+        SET(win, MUIA_Window_Open, TRUE);
+        SET(win, MUIA_Window_ActiveObject, string);
+        DoMethod(app, MUIM_Application_Execute);
+
+        returntext = (STRPTR)XGET(string, MUIA_String_Contents);
+
+        /* Try to find out who the user is if we are to encrypt the output.
+         * I really don't know how to acquire the username, but this might
+         * be a good guess of how to do it.
+         */
+        if (args[ARG_ENCRYPT] != 0)
+        {
+            if (GetVar("USER", uname, 47, 0) == -1)
+                if (GetVar("USERNAME", uname, 47, 0) == -1)
+                    if (GetVar("LOGIN", uname, 47, 0) == -1)
+                        uname[0] = 0;
+            ACrypt(cbuffer, returntext, uname);
+            returntext = cbuffer;
+        }
+
+        Printf("\"%s\"\n", returntext);
+
+        /* Here follows the COMPARE parameter. If the input string is not equal
+         * to the argument of COMPARE we return WARN.
+         */
+        if (args[ARG_COMPARE] != 0)
+            retval = (strcmp(returntext, (STRPTR)args[ARG_COMPARE])) ? RETURN_WARN : 0;
+        else
+            retval = 0;
+
+        MUI_DisposeObject(app);
+    }
+
+    return retval;
 }
