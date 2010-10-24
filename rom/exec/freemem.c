@@ -33,6 +33,8 @@
 #include "exec_intern.h"
 #include "memory.h"
 
+#undef FreeMem	/* If we're debugging, AROS Clib will try to remap this */
+
 /*****************************************************************************
 
     NAME */
