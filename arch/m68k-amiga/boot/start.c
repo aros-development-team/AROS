@@ -147,6 +147,8 @@ void DebugPutHex(const char *what, ULONG val)
 	DebugPutChar('\n');
 }
 
+extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
+
 void start(void)
 {
 	extern void *_bss;
@@ -188,6 +190,11 @@ void start(void)
 	tmp = (APTR *)(NULL + 0x8);
 	for (i = 0; i < 46; i++)
 		tmp[i] = Exec_FatalException;
+
+	/* Set privilige violation trap - we
+	 * need this to support the Exec/Supervisor call
+	 */
+	tmp[8] = Exec_Supervisor_Trap;
 
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
