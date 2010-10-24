@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := coldreboot preparecontext
-AFILES		:= 
+AFILES		:= enable disable
 
 #MM kernel-exec : kernel-exec-amiga-m68k
 #MM kernel-exec-amiga-m68k : kernel-kernel-amiga-m68k-includes kernel-exec-includes includes-asm_h-m68k
