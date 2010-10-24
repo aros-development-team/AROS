@@ -1,0 +1,8 @@
+#!/bin/zsh
+# Creates AROS/chrp-ppc-efika bootiso binary packages.
+
+BUILDTARGET=chrp-ppc
+VARIANT=efika
+BOOTLOADER=ub2lb
+
+source $SP/pkg/bootiso $BOOTLOADER
