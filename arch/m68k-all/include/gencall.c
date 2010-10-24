@@ -61,9 +61,9 @@ static void aros_ufc(int id)
 	for (i = 0; i < id; i++)
 		printf(",a%d", i + 1);
 	printf(") \\\n");
-	printf("\t({ volatile register ULONG _ret asm(\"%%d0\"); \\\n");
+	printf("\t({ register volatile ULONG _ret asm(\"%%d0\"); \\\n");
 	for (i = 0; i < id; i++) {
-		printf("\t   volatile register ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)) = (ULONG)__AROS_LCA(a%d); \\\n",
+		printf("\t   register volatile ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)) = (ULONG)__AROS_LCA(a%d); \\\n",
 				i + 1, i + 1, i + 1);
 	}
 	printf("\t   asm volatile ( \\\n");
@@ -86,12 +86,12 @@ void aros_lc(int id)
 	for (i = 0; i < id; i++)
 		printf("a%d,", i + 1);
 	printf("bt,bn,o,s) \\\n");
-	printf("\t({ volatile register ULONG _ret asm(\"%%d0\"); \\\n");
+	printf("\t({ register volatile ULONG _ret asm(\"%%d0\"); \\\n");
 	for (i = 0; i < id; i++) {
-		printf("\t   volatile register ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)) = (ULONG)__AROS_LCA(a%d); \\\n",
+		printf("\t   register volatile ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)) = (ULONG)__AROS_LCA(a%d); \\\n",
 				i + 1, i + 1, i + 1);
 	}
-	printf("\t   volatile register ULONG _bn asm(\"%%a6\") = (ULONG)bn; \\\n");
+	printf("\t   register volatile ULONG _bn asm(\"%%a6\") = (ULONG)bn; \\\n");
 	printf("\t   asm volatile ( \\\n");
 	printf("\t\t\"jsr %%c0(%%%%a6)\" \\\n");
 	printf("\t\t: : \\\n");
