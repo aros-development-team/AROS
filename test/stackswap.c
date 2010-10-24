@@ -4,6 +4,11 @@
 
 #define STACK_SIZE 16384
 
+#ifdef __MORPHOS__
+#define StackSwapArgs PPCStackSwapArgs
+#define NewStackSwap NewPPCStackSwap
+#endif
+
 struct StackSwapStruct sss;
 
 int __nocommandline = 1;
