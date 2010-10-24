@@ -2,7 +2,7 @@
  Copyright  1995-2010, The AROS Development Team. All rights reserved.
  $Id: emul_handler.c 34306 2010-08-31 07:47:37Z sonic $
  
- Desc: Filesystem that accesses an underlying Windows filesystem.
+ Desc: Filesystem that accesses an underlying host OS filesystem.
  Lang: english
 
  Please always update the version-string below, if you modify the code!
@@ -14,6 +14,7 @@
 #define DCHDIR(x)
 #define DCMD(x)
 #define DERROR(x)
+#define DEXAM(x)
 #define DFNAME(x)
 #define DFSIZE(x)
 #define DLINK(x)
@@ -140,27 +141,7 @@ static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, st
 static void free_lock(struct emulbase *emulbase, struct filehandle *current)
 {
     DLOCK(bug("[emul] Lock type = %lu\n", current->type));
-    switch(current->type)
-    {
-    case FHD_FILE:
-	/* Nothing will happen if type has FHD_STDIO set, this is intentional */
-	DB2(bug("[emul] CloseHandle(), fd = 0x%P\n", current->fd));
-
-	DoClose(emulbase, current->fd);
-	break;
-
-    case FHD_DIRECTORY:
-	DLOCK(bug("[emul] Closing directory search handle 0x%P\n", current->fd));
-
-    	DoCloseDir(emulbase, current->fd);
-	break;
-    }
-
-    if (current->pathname)
-    {
-	DLOCK(bug("[emul] Freeing pathname: \"%s\"\n", current->pathname));
-	FreeVecPooled(emulbase->mempool, current->pathname);
-    }
+    DoClose(emulbase, current);
 
     DLOCK(bug("[emul] Freeing name: \"%s\"\n", current->hostname));
     FreeVecPooled(emulbase->mempool, current->hostname);
@@ -180,10 +161,9 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
   
     DOPEN(bug("[emul] open_(\"%s\"), directories allowed: %lu\n", name, AllowDir));
   
-    fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+    fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
     if (fh)
     {
-	fh->pathname = NULL; /* just to make sure... */
 	fh->dl = (*handle)->dl;
 
 	/* If no filename is given and the file-descriptor is one of the
@@ -233,12 +213,10 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
   LONG ret = 0;
   struct filehandle *fh;
   
-  fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+  fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
   if (fh)
   {
-	fh->pathname   = NULL; /* just to make sure... */
 	fh->type       = FHD_DIRECTORY;
-	fh->dirpos     = 0;
 	fh->volumename = (*handle)->volumename;
 	fh->dl	       = (*handle)->dl;
 	
@@ -380,6 +358,33 @@ const ULONG sizes[] = {
     offsetof(struct ExAllData,ed_OwnerUID),
     sizeof(struct ExAllData)
 };
+
+LONG examine(struct emulbase *emulbase, struct filehandle *fh,
+             struct ExAllData *ead, ULONG size, ULONG type,
+             LONG *dirpos)
+{
+    LONG err;
+
+    if (fh->type == FHD_DIRECTORY)
+    {
+	DEXAM(bug("[emul] examine(): Resetting search handle\n"));
+	err = DoRewindDir(emulbase, fh);
+	if (err)
+	    return err;
+    }
+    /* Directory search position has been reset */
+    *dirpos = 0;
+
+    err = examine_entry(emulbase, fh, NULL, ead, size, type);
+    if (!err)
+    {
+	/* Fix up type if the object is a root directory */
+	if ((type >= ED_TYPE) && (!fh->name[0]))
+	    ead->ed_Type = ST_ROOT;
+    }
+
+    return err;
+}
 
 /*********************************************************************************************/
 
@@ -557,7 +562,8 @@ static ULONG parent_dir(struct emulbase *emulbase,
 {
     *DirectoryName = pathname_from_name(emulbase, fh->name);
     DCHDIR(bug("[emul] Parent directory: \"%s\"\n", *DirectoryName));
-    return 0;
+
+    return (*DirectoryName) ? 0 : ERROR_NO_FREE_STORE;
 }
 
 /*********************************************************************************************/
@@ -626,11 +632,14 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
     {
         ULONG res;
 
+	DMOUNT(bug("[emul] Mounting root volume\n"));
+
         unixpath = AllocVec(PATH_MAX, MEMF_PUBLIC);
 	if (!unixpath)
 	    return FALSE;
 
 	res = GetCurrentDir(emulbase, unixpath, PATH_MAX);
+	DMOUNT(bug("[emul] GetCurrentDir() returned %d\n", res));
 	if(!res)
 	{
 	    FreeVec(unixpath);
@@ -643,7 +652,13 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 	vol_len = VOLNAME_LEN + 1;
     }
 
-    fhv = AllocMem(sizeof(struct filehandle) + vol_len, MEMF_PUBLIC);
+    if (CheckDir(emulbase, unixpath))
+    {
+	FreeVec(unixpath);
+	return FALSE;
+    }
+
+    fhv = AllocMem(sizeof(struct filehandle) + vol_len, MEMF_PUBLIC|MEMF_CLEAR);
     DMOUNT(bug("[emul] Volume file handle: 0x%p\n", fhv));
     if (fhv)
     {
@@ -655,7 +670,6 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 	fhv->hostname   = unixpath;
 	fhv->name       = unixpath + strlen(unixpath);
 	fhv->type       = FHD_DIRECTORY;
-	fhv->pathname   = NULL; /* just to make sure... */
 	fhv->volumename = volname;
 	AllocMem(12, MEMF_PUBLIC);
 	DMOUNT(bug("[emul] Making volume node %s\n", volname));
@@ -674,6 +688,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 
 	    SendEvent(emulbase, IECLASS_DISKINSERTED);
 
+	    DMOUNT(bug("[emul] Mounting done\n"));
 	    return TRUE;		
 	}
 
@@ -734,6 +749,8 @@ AROS_LH1(void, beginio,
      Do everything quick no matter what. This is possible
      because I never need to Wait().
      */
+    DB2(bug("[emul] Got command %u\n", iofs->IOFS.io_Command));
+
     switch(iofs->IOFS.io_Command)
     {
     case FSA_OPEN:
@@ -752,18 +769,15 @@ AROS_LH1(void, beginio,
 
 	if (fh->type & FHD_FILE)
 	{
-	    if (fh->type & FHD_STDIO)
+	    BOOL async = FALSE;
+
+	    error = DoRead(emulbase, iofs, &async);
+	    if (async)
 	    {
-	    	error = DoAsyncRead(emulbase, fh->fd, iofs->io_Union.io_READ.io_Buffer, &iofs->io_Union.io_READ.io_Length);
-	    	if (!error)
-	    	{
-	    	    /* Asynchronous request sent, reset QUICK flag and return */
-		    iofs->IOFS.io_Flags &= ~IOF_QUICK;
-		    return;
-		}
+	    	/* Asynchronous request sent, reset QUICK flag and return */
+		iofs->IOFS.io_Flags &= ~IOF_QUICK;
+		return;
 	    }
-	    else
-	    	error = DoRead(emulbase, fh->fd, iofs->io_Union.io_READ.io_Buffer, &iofs->io_Union.io_READ.io_Length);
 	}
 	else
 	    error = ERROR_OBJECT_WRONG_TYPE;
@@ -773,7 +787,17 @@ AROS_LH1(void, beginio,
 	fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
 	if (fh->type & FHD_FILE)
-	    error = DoWrite(emulbase, fh->fd, iofs->io_Union.io_WRITE.io_Buffer, &iofs->io_Union.io_WRITE.io_Length);
+	{
+	    BOOL async = FALSE;
+
+	    error = DoWrite(emulbase, iofs, &async);
+	    if (async)
+	    {
+	    	/* Asynchronous request sent, reset QUICK flag and return */
+		iofs->IOFS.io_Flags &= ~IOF_QUICK;
+		return;
+	    }
+	}
 	else
 	    error = ERROR_OBJECT_WRONG_TYPE;
 	break;
@@ -929,7 +953,13 @@ AROS_LH1(void, beginio,
 
 	error = DoStatFS(emulbase, fh->hostname, id);
 	if (!error)
+	{
+	    /* Fill in host-independent part */
+	    id->id_UnitNumber = 0;
+    	    id->id_DiskType   = ID_DOS_DISK; /* Well, not really true... */
 	    id->id_VolumeNode = MKBADDR(fh->dl);
+    	    id->id_InUse      = TRUE; /* Perhaps we should count locks? */
+	}
 
 	break;
 
@@ -953,6 +983,7 @@ AROS_LH1(void, beginio,
 
     /* Set error code */
     iofs->io_DosError = error;
+    DB2(bug("[emul] Replying with error %u\n", error));
 
     /* If the quick bit is not set send the message to the port */
     if(!(iofs->IOFS.io_Flags & IOF_QUICK))

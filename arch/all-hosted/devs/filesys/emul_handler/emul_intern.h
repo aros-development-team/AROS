@@ -17,14 +17,13 @@
 
 struct filehandle
 {
-    char * hostname;	/* full host's pathname (includes volume root prefix 	  */
-    char * name;	/* full name including pathname				  */
-    int    type;	/* type flags, see below		       		  */
-    char * pathname;	/* if type == FHD_FILE then you'll find the pathname here */
-    char * volumename;	/* volume name						  */
-    void * fd;		/* Object itself					  */
-    ULONG  dirpos;	/* directory position during searching			  */
-    struct DosList *dl; /* Volume node						  */
+    char * hostname;		/* full host pathname (includes volume root prefix) */
+    char * name;		/* full AROS name including pathname		    */
+    int    type;		/* type flags, see below		       	    */
+    char * volumename;		/* volume name					    */
+    void * fd;			/* Object itself				    */
+    struct DosList *dl;		/* Volume node					    */
+    struct PlatformHandle ph;	/* Platform-specific data			    */
 };
 
 /* type flags */
@@ -40,12 +39,15 @@ struct emulbase
     struct filehandle 	     *eb_stdout;
     struct filehandle 	     *eb_stderr;
     APTR		      mempool;
+    APTR		      ReadIRQ;
     APTR		      HostLibBase;
+    APTR		      KernelBase;
     struct DosLibrary	     *DOSBase;
     struct Emul_PlatformData  pdata;	/* Platform-specific portion */
 };
 
 #define HostLibBase emulbase->HostLibBase
+#define KernelBase  emulbase->KernelBase
 #define DOSBase     emulbase->DOSBase
 
 /* File name manipulation functions (filenames.c) */
@@ -58,11 +60,10 @@ char *nextpart(char *sp);
 
 /* Host OS file manipulation functions */
 LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir);
-void DoClose(struct emulbase *emulbase, void *file);
-void DoCloseDir(struct emulbase *emulbase, void *dir);
-LONG DoRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length);
-LONG DoAsyncRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length);
-LONG DoWrite(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length);
+void DoClose(struct emulbase *emulbase, struct filehandle *fh);
+LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh);
+LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async);
+LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async);
 LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG Mode);
 LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect);
 LONG DoDelete(struct emulbase *emulbase, char *name);
@@ -78,9 +79,8 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id);
 
 extern const ULONG sizes[];
 
-LONG examine(struct emulbase *emulbase, struct filehandle *fh,
-             struct ExAllData *ead, ULONG size, ULONG type,
-             LONG *dirpos);
+LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *EntryName,
+		   struct ExAllData *ead, ULONG size, ULONG type);
 LONG examine_next(struct emulbase *emulbase,  struct filehandle *fh, struct FileInfoBlock *FIB);
 LONG examine_all(struct emulbase *emulbase, struct filehandle *fh, struct ExAllData *ead,
                   struct ExAllControl *eac, ULONG size, ULONG  type);
@@ -88,5 +88,6 @@ LONG examine_all_end(struct emulbase *emulbase, struct filehandle *fh);
 
 char *GetHomeDir(struct emulbase *emulbase, char *user);
 ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len);
+int CheckDir(struct emulbase *emulbase, char *name);
 
 #endif /* __EMUL_HANDLER_INTERN_H */

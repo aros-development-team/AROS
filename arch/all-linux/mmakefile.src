@@ -19,6 +19,7 @@ include $(TOP)/config/make.cfg
 %rule_archalias mainmmake=kernel-hostlib arch=linux alias=unix
 %rule_archalias mainmmake=kernel-dbus arch=linux alias=unix
 %rule_archalias mainmmake=kernel-kernel arch=linux alias=unix
+%rule_archalias mainmmake=kernel-fs-emul arch=linux alias=unix
 
 %rule_archalias mainmmake=workbench-libs-oss arch=linux alias=unix
 
