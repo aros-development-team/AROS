@@ -11,15 +11,13 @@
 
 #include <stddef.h>
 
-#define DEFINE(sym, val) \
-    asm volatile("\n#define " #sym " %0 ": : "i" (val))
-
 #ifdef __mc68000
     /* m68k relative addresses must *not* start with a '#' */
-#define DEFUNC(sym, val) \
+#define DEFINE(sym, val) \
     asm volatile("\n#define " #sym " %c0 ": : "i" (val))
 #else
-#define DEFUNC(sym, val) DEFINE(sym, val)
+#define DEFINE(sym, val) \
+    asm volatile("\n#define " #sym " %0 ": : "i" (val))
 #endif
 
 #define FuncOffset(x)       (int)__AROS_GETJUMPVEC(0,x)
@@ -78,16 +76,16 @@ int main(void) {
     DEFINE(TF_LAUNCH     , TF_LAUNCH);
 
     asm volatile("\n/* Exec functions */" ::);
-    DEFUNC(Reschedule    , FuncOffset (8));
-    DEFUNC(Switch        , FuncOffset (9));
-    DEFUNC(Dispatch      , FuncOffset (10));
-    DEFUNC(Exception     , FuncOffset (11));
-    DEFUNC(Alert         , FuncOffset (18));
-    DEFUNC(Disable       , FuncOffset (20));
-    DEFUNC(Enable        , FuncOffset (21));
-    DEFUNC(Enqueue       , FuncOffset (45));
-    DEFUNC(FindTask      , FuncOffset (49));
-    DEFUNC(StackSwap     , FuncOffset (122));
+    DEFINE(Reschedule    , FuncOffset (8));
+    DEFINE(Switch        , FuncOffset (9));
+    DEFINE(Dispatch      , FuncOffset (10));
+    DEFINE(Exception     , FuncOffset (11));
+    DEFINE(Alert         , FuncOffset (18));
+    DEFINE(Disable       , FuncOffset (20));
+    DEFINE(Enable        , FuncOffset (21));
+    DEFINE(Enqueue       , FuncOffset (45));
+    DEFINE(FindTask      , FuncOffset (49));
+    DEFINE(StackSwap     , FuncOffset (122));
 
     asm volatile("\n/* Constants */" ::);
     DEFINE(AT_DeadEnd    , AT_DeadEnd);
