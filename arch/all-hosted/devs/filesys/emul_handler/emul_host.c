@@ -3,6 +3,9 @@
  * need host-specific implementations.
  */
 
+#include <dos/dosasl.h>
+#include <dos/filesystem.h>
+
 #include "emul_handler_intern.h"
 
 LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir)
@@ -11,29 +14,18 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     return ERROR_NOT_IMPLEMENTED;
 }
 
-void DoClose(struct emulbase *emulbase, void *file)
+void DoClose(struct emulbase *emulbase, struct filehandle *fh)
 {
-    /* Close file */
+    /* Close handle */
 }
 
-void DoCloseDir(struct emulbase *emulbase, void *dir)
-{
-    /* Close directory */
-}
-
-LONG DoRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
+LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 {
     /* Read from a file */
     return ERROR_NOT_IMPLEMENTED;
 }
 
-LONG DoAsyncRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
-{
-    /* Asynchronous read from a file */
-    return ERROR_NOT_IMPLEMENTED;
-}
-
-LONG DoWrite(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
+LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 {
     /* Write to a file */
     return ERROR_NOT_IMPLEMENTED;
@@ -118,10 +110,10 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
     return ERROR_NOT_IMPLEMENTED;
 }
 
-LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName,
-		    struct ExAllData *ead, ULONG size, ULONG type)
+LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *name,
+		   struct ExAllData *ead, ULONG size, ULONG type)
 {
-    /* Examine current directory entry */
+    /* Examine named object */
     return ERROR_NOT_IMPLEMENTED;
 }
 
@@ -154,4 +146,10 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
 {
     /* Get AROS root directory */
     return 0;
+}
+
+int CheckDir(struct emulbase *emulbase, char *path)
+{
+    /* Check if the directory is accessible */
+    return -1;
 }

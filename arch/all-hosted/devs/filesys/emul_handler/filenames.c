@@ -79,7 +79,7 @@ char *append(char *c, char *filename)
 {
     char *s;
 
-    *c++ = '\\';
+    *c++ = '/';
     for (s = filename; *s; s++)
 	*c++ = *s;
     return c;

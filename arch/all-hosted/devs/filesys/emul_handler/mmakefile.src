@@ -9,7 +9,7 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/devs/filesys/emul_handler $(FAMILY
 
 FILES := emul_handler filenames emul_host
 
-%build_module mmake=kernel-fs-emul-new \
+%build_module mmake=kernel-fs-emul \
   modname=emul modtype=device modsuffix=handler \
   files="$(FILES)" uselibs=rom
 

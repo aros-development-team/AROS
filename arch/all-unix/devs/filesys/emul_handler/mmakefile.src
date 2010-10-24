@@ -3,19 +3,13 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(GENINCDIR)
 
-#MM- kernel-fs-emul : includes linklibs kernel-battclock-includes
-#MM- kernel-fs-emul-linklib : includes linklibs kernel-battclock-includes
-#MM- kernel-fs-emul-kobj : includes linklibs kernel-battclock-includes
+USER_CFLAGS := -DHOST_OS_$(ARCH) \
+	       -I$(SRCDIR)/$(CURDIR) \
+	       -I$(SRCDIR)/arch/all-hosted/devs/filesys/emul_handler \
+	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES) -nostdinc
 
-%build_module mmake=kernel-fs-emul \
-  modname=emul modtype=device modsuffix=handler \
-  files=emul_handler \
-  compiler=kernel
-
-USER_CFLAGS := -DHOST_OS_$(ARCH) -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-hosted/devs/filesys/emul_handler -isystem $(GENINCDIR) $(KERNEL_INCLUDES) -nostdinc
-
-%build_archspecific mainmmake=kernel-fs-emul-new \
+%build_archspecific mainmmake=kernel-fs-emul \
   maindir=arch/all-hosted/devs/filesys/emul_handler \
-  arch=darwin files=emul_host
+  arch=unix files=emul_host
 
 %common

@@ -1,5 +1,17 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <unistd.h>
+
 /* This prevents redefinition of struct timeval */
 #define _AROS_TIMEVAL_H_
+
+#define DEBUG 0
+#define DASYNC(x)
+#define DEXAM(x)
+#define DMOUNT(x)
+#define DOPEN(x)
+#define DREAD(x)
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -8,15 +20,80 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
-
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #include "emul_intern.h"
 
 #define NO_CASE_SENSITIVITY
+
+#ifdef DEBUG_INTERFACE
+#define DUMP_INTERFACE					\
+{							\
+    int i;						\
+    APTR *iface = (APTR *)emulbase->pdata.SysIFace;	\
+							\
+    for (i = 0; libcSymbols[i]; i++)			\
+	bug("%s\t\t0x%P\n", libcSymbols[i], iface[i]);	\
+}
+#else
+#define DUMP_INTERFACE
+#endif
+
+/*********************************************************************************************/
+
+static int TryRead(struct LibCInterface *iface, int fd, void *buf, size_t len)
+{
+    fd_set rfds;
+    struct timeval tv = {0, 0};
+    int res;
+
+    FD_ZERO (&rfds);
+    FD_SET(fd, &rfds);
+
+    res = iface->select(fd+1, &rfds, NULL, NULL, &tv);
+
+    if (res == -1)
+    {
+	DASYNC(bug("[emul] Select error\n"));
+	return -1;
+    }
+
+    if (res == 0)
+	return -2;
+    
+    return iface->read(fd, buf, len);
+}
+
+static void SigIOHandler(struct emulbase *emulbase, void *unused)
+{
+    struct IOFileSys *req, *req2;
+
+    ForeachNodeSafe(&emulbase->pdata.readList, req, req2)
+    {
+	int len;
+	struct filehandle *fh = (struct filehandle *)req->IOFS.io_Unit;
+
+	/* Try to process the request */
+        len = TryRead(emulbase->pdata.SysIFace, (int)fh->fd, req->io_Union.io_READ.io_Buffer, req->io_Union.io_READ.io_Length);
+	if (len != -2)
+	{
+	    /* Reply the requst if it is done */
+	    Remove((struct Node *)req);	
+	    if (len == 1)
+		req->io_DosError = *emulbase->pdata.errnoPtr;
+	    else {
+		req->io_Union.io_READ.io_Length = len;
+		req->io_DosError = 0;
+	    }
+	    DASYNC(bug("[emul] Replying request 0x%P, result %d, error %d\n", req, len, req->io_DosError));
+	    ReplyMsg(&req->IOFS.io_Message);
+	}
+	DASYNC(bug("-"));
+    };
+}
+
+/*********************************************************************************************/
 
 static inline struct filehandle *CreateStdHandle(int fd)
 {
@@ -32,20 +109,18 @@ static inline struct filehandle *CreateStdHandle(int fd)
     return fh;
 }
 
-/*********************************************************************************************/
-
 static const char *libcSymbols[] = {
     "open",
     "close",
     "closedir",
     "opendir",
+    "readdir",
     "rewinddir",
     "seekdir",
     "telldir",
     "read",
     "write",
     "lseek",
-    "lstat",
     "mkdir",
     "rmdir",
     "unlink",
@@ -56,10 +131,27 @@ static const char *libcSymbols[] = {
     "chmod",
     "ftruncate",
     "isatty",
+    "statfs",
     "utime",
     "localtime",
     "mktime",
+    "getcwd",
+    "getenv",
+    "getpwent",
+    "endpwent",
+    "fcntl",
+    "select",
+    "kill",
+    "getpid",
+#ifdef HOST_OS_linux
+    "__errno_location",
+    "__xstat",
+    "__lxstat",
+#else
     "__error",
+    "stat",
+    "lstat",
+#endif
     NULL
 };
 
@@ -71,6 +163,10 @@ static int host_startup(struct emulbase *emulbase)
 
     D(bug("[EmulHandler] got hostlib.resource %p\n", HostLibBase));
     if (!HostLibBase)
+	return FALSE;
+
+    KernelBase = OpenResource("kernel.resource");
+    if (!KernelBase)
 	return FALSE;
 
     emulbase->pdata.libcHandle = HostLib_Open(LIBC_NAME, NULL);
@@ -85,14 +181,21 @@ static int host_startup(struct emulbase *emulbase)
     }
 
     D(bug("[EmulHandler] %lu unresolved symbols!\n", r));
+    DUMP_INTERFACE
     if (r)
     	return FALSE;
+
+    emulbase->ReadIRQ = KrnAddIRQHandler(SIGIO, SigIOHandler, emulbase, NULL);
+    if (!emulbase->ReadIRQ)
+	return FALSE;
 
     emulbase->eb_stdin  = CreateStdHandle(STDIN_FILENO);
     emulbase->eb_stdout = CreateStdHandle(STDOUT_FILENO);
     emulbase->eb_stderr = CreateStdHandle(STDERR_FILENO);
 
     InitSemaphore(&emulbase->pdata.sem);
+    NEWLIST(&emulbase->pdata.readList);
+    emulbase->pdata.my_pid   = emulbase->pdata.SysIFace->getpid();
     emulbase->pdata.errnoPtr = emulbase->pdata.SysIFace->__error();
 
     return TRUE;
@@ -102,6 +205,8 @@ ADD2INITLIB(host_startup, 0);
 
 static int host_cleanup(struct emulbase *emulbase)
 {
+    D(bug("[EmulHandler] Expunge\n"));
+
     if (!HostLibBase)
     	return TRUE;
 
@@ -111,11 +216,16 @@ static int host_cleanup(struct emulbase *emulbase)
     if (emulbase->pdata.libcHandle)
     	HostLib_Close(emulbase->pdata.libcHandle, NULL);
 
+    if (!KernelBase)
+	return TRUE;
+
+    KrnRemIRQHandler(emulbase->ReadIRQ);
+
     return TRUE;
 }
 
 ADD2EXPUNGELIB(host_cleanup, 0);
-
+ 
 /*********************************************************************************************/
 
 /* Make an AROS error-code (<dos/dos.h>) out of an unix error-code. */
@@ -143,34 +253,19 @@ static LONG u2a[][2]=
 static LONG err_u2a(struct emulbase *emulbase)
 {
     ULONG i;
+    int err = *emulbase->pdata.errnoPtr;
 
     for (i = 0; i < sizeof(u2a)/sizeof(u2a[0]); i++)
     {
-	if (u2a[i][0] == *emulbase->pdata.errnoPtr)
+	if (u2a[i][0] == err)
 	    return u2a[i][1];
     }
 
-#if PassThroughErrnos
-    return errno+PassThroughErrnos;
+#ifdef PassThroughErrnos
+    return err + PassThroughErrnos;
 #else
     return ERROR_UNKNOWN;
 #endif
-}
-
-/*********************************************************************************************/
-
-static BOOL is_root_filename(char *filename)
-{
-    BOOL result = FALSE;
-    
-    if ((*filename == '\0') ||
-        (!strcmp(filename, ".")) ||
-	(!strcmp(filename, "./")))
-    {
-        result = TRUE;
-    }
-    
-    return result;
 }
 
 /*********************************************************************************************/
@@ -474,6 +569,8 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     int r;
     long flags;
 
+    DOPEN(bug("[emul] Opening host name: %s\n", fh->hostname));
+
     ObtainSemaphore(&emulbase->pdata.sem);
 
     r = nocase_lstat(emulbase->pdata.SysIFace, fh->hostname, &st);
@@ -482,6 +579,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     if (r == -1)
         /* Non-existing objects can be files opened for writing */
     	st.st_mode = S_IFREG;
+    DOPEN(bug("[emul] lstat() returned %d, st_mode is 0x%08X\n", r, st.st_mode));
 
     if (S_ISREG(st.st_mode))
     {
@@ -501,11 +599,13 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     if (AllowDir && S_ISDIR(st.st_mode))
     {
 	/* Object is a directory */
-	fh->type = FHD_DIRECTORY;
 	fh->fd   = emulbase->pdata.SysIFace->opendir(fh->hostname);
 
 	if (fh->fd)
+	{
+	    fh->type = FHD_DIRECTORY;
 	    ret = 0;
+	}
 	else
 	    ret = err_u2a(emulbase);
     }
@@ -519,59 +619,89 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     return ret;
 }
 
-void DoClose(struct emulbase *emulbase, void *file)
-{
-    emulbase->pdata.SysIFace->close((int)file);
-}
-
-void DoCloseDir(struct emulbase *emulbase, void *dir)
+void DoClose(struct emulbase *emulbase, struct filehandle *current)
 {
     ObtainSemaphore(&emulbase->pdata.sem);
 
-    emulbase->pdata.SysIFace->closedir(dir);
+    switch(current->type)
+    {
+    case FHD_FILE:
+	/* Nothing will happen if type has FHD_STDIO set, this is intentional */
+	emulbase->pdata.SysIFace->close((int)current->fd);
+	break;
+
+    case FHD_DIRECTORY:
+    	emulbase->pdata.SysIFace->closedir(current->fd);
+	break;
+    }
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 }
 
-LONG DoRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
+LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 {
+    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
     int len;
     LONG error = 0;
 
+    DREAD(bug("[emul] Reading %u bytes from fd %d\n", iofs->io_Union.io_READ.io_Length, (int)fh->fd));
+
     ObtainSemaphore(&emulbase->pdata.sem);
 
-    len = emulbase->pdata.SysIFace->read((int)File, Buffer, *Length);
+    len = TryRead(emulbase->pdata.SysIFace, (int)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
     if (len == -1)
 	error = err_u2a(emulbase);
 
     ReleaseSemaphore(&emulbase->pdata.sem);
+
+    if (len == -2)
+    {
+	/* There was no data available, perform an asynchronous read */
+	DREAD(bug("[emul] Putting request 0x%P to asynchronous queue\n", iofs));
+
+	Disable();
+	AddTail((struct List *)&emulbase->pdata.readList, (struct Node *)iofs);
+	Enable();
+
+	ObtainSemaphore(&emulbase->pdata.sem);
+
+	/* Own the filedescriptor and enable SIGIO on it */
+	emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_SETOWN, emulbase->pdata.my_pid);
+	len = emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_GETFL);
+	len |= O_ASYNC;
+	emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_SETFL, len);
+
+	/* Kick processing loop once because SIGIO could arrive after read attempt
+	   but before we added the request to the queue. */
+	emulbase->pdata.SysIFace->kill(emulbase->pdata.my_pid, SIGIO);
+
+	ReleaseSemaphore(&emulbase->pdata.sem);
+	*async = TRUE;
+	return 0;
+    }
 	
     if (!error)
-	*Length = len;
+	iofs->io_Union.io_READ.io_Length = len;
     return error;
 }
 
-LONG DoAsyncRead(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
+LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 {
-    /* Asynchronous read from a file */
-    return ERROR_NOT_IMPLEMENTED;
-}
-
-LONG DoWrite(struct emulbase *emulbase, void *File, void *Buffer, ULONG *Length)
-{
+    /* Our write routine is always synchronous */
+    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
     int len;
     LONG error = 0;
     
     ObtainSemaphore(&emulbase->pdata.sem);
 
-    len = emulbase->pdata.SysIFace->write((int)File, Buffer, *Length);
+    len = emulbase->pdata.SysIFace->write((int)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
     if (len == -1)
 	error = err_u2a(emulbase);
 
     ReleaseSemaphore(&emulbase->pdata.sem);
-    
+ 
     if (!error)
-    	*Length = len;
+    	iofs->io_Union.io_READ.io_Length = len;
     return error;
 }
 
@@ -760,7 +890,7 @@ LONG DoSetDate(struct emulbase *emulbase, char *name, struct DateStamp *date)
 
 LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK *io_SEEK)
 {
-    off_t absolute;
+    off_t absolute = 0;
     LONG err = 0;
 
     ObtainSemaphore(&emulbase->pdata.sem);
@@ -833,21 +963,70 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
     if (!err)
     {
     	id->id_NumSoftErrors = 0;
-    	id->id_UnitNumber = 0;
     	id->id_DiskState = ID_VALIDATED;
     	id->id_NumBlocks = buf.f_blocks;
     	id->id_NumBlocksUsed = buf.f_blocks - buf.f_bavail;
     	id->id_BytesPerBlock = buf.f_bsize;
-    	id->id_DiskType = ID_DOS_DISK; /* Well, not really true... */
-    	id->id_InUse = TRUE;
     }
 
     return err;
 }
 
-LONG examine(struct emulbase *emulbase, struct filehandle *fh,
-             struct ExAllData *ead, ULONG size, ULONG type,
-             LONG *dirpos)
+LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
+{
+    ObtainSemaphore(&emulbase->pdata.sem);
+
+    emulbase->pdata.SysIFace->rewinddir(fh->fd);
+
+    ReleaseSemaphore(&emulbase->pdata.sem);
+
+    /* rewinddir() never fails */
+    return 0;
+}
+
+static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, struct stat *st)
+{
+    STRPTR filename, name;
+    ULONG plen, flen;
+    LONG err = 0;
+
+    DEXAM(bug("[emul] stat_entry(): filehandle's path: %s\n", fh->hostname));
+    if (FoundName)
+    {
+	DEXAM(bug("[emul] ...containing object: %s\n", FoundName));
+	plen = strlen(fh->hostname);
+	flen = strlen(FoundName);
+	name = AllocVecPooled(emulbase->mempool, plen + flen + 2);
+	if (NULL == name)
+	    return ERROR_NO_FREE_STORE;
+
+	strcpy(name, fh->hostname);
+	filename = name + plen;
+	*filename++ = '/';
+	strcpy(filename, FoundName);
+    } else
+	name = fh->hostname;
+  
+    DEXAM(bug("[emul] Full name: %s\n", name));
+
+    ObtainSemaphore(&emulbase->pdata.sem);
+
+    err = emulbase->pdata.SysIFace->lstat(name, st);
+    if (err)
+	err = err_u2a(emulbase);
+
+    ReleaseSemaphore(&emulbase->pdata.sem);
+
+    if (FoundName)
+    {
+	DEXAM(bug("[emul] Freeing full name\n"));
+	FreeVecPooled(emulbase->mempool, name);
+    }
+    return err;
+}	
+
+LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *EntryName,
+		   struct ExAllData *ead, ULONG size, ULONG type)
 {
     STRPTR next, end, last, name;
     struct stat st;
@@ -864,19 +1043,7 @@ LONG examine(struct emulbase *emulbase, struct filehandle *fh,
     if(next>end) /* > is correct. Not >= */
 	return ERROR_BUFFER_OVERFLOW;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
-
-    if (fh->type == FHD_DIRECTORY)
-        emulbase->pdata.SysIFace->rewinddir(fh->fd);
-
-    err = emulbase->pdata.SysIFace->lstat(fh->hostname, &st);
-    if (err)
-	err = err_u2a(emulbase);
-
-    ReleaseSemaphore(&emulbase->pdata.sem);
-
-    /* Directory search position has been reset */
-    *dirpos = 0;
+    err = stat_entry(emulbase, fh, EntryName, &st);
     if (err)
     	return err;
 
@@ -902,31 +1069,30 @@ LONG examine(struct emulbase *emulbase, struct filehandle *fh,
 	case ED_SIZE:
 	    ead->ed_Size	= st.st_size;
 	case ED_TYPE:
-            if (S_ISDIR(st.st_mode))
-	    {
-	        if (is_root_filename(fh->name))
-		{
-                   ead->ed_Type = ST_ROOT;
-		} else {
-		   ead->ed_Type = ST_USERDIR;
-		}
-	    } else if(S_ISLNK(st.st_mode)) {
-		ead->ed_Type    = ST_SOFTLINK;
-	    } else {
-	        ead->ed_Type 	= ST_FILE;
-	    }
+            if (S_ISDIR(st.st_mode)) {
+		if (EntryName || fh->name[0])
+		    ead->ed_Type = ST_USERDIR;
+		else
+		    ead->ed_Type = ST_ROOT;
+	    } else if (S_ISLNK(st.st_mode))
+		ead->ed_Type = ST_SOFTLINK;
+	    else
+	        ead->ed_Type = ST_FILE;
 	    
 	case ED_NAME:
+	    if (EntryName)
+		last = EntryName;
+	    else if (*fh->name) {
+	        name = fh->name;
+	        last = name;
+	        while(*name) {
+		    if(*name++ == '/')
+			last = name;
+		}
+	    } else
+	        last = fh->volumename;
+
 	    ead->ed_Name=next;
-	    last=name=is_root_filename(fh->name)?fh->volumename:fh->name;
-
-            /* do not show the "." but "" instead */
-	    if (last[0] == '.' && last[1] == '\0')
-	      last=name="";
-
-	    while(*name)
-		if(*name++=='/')
-		    last=name;
 	    for(;;)
 	    {
 		if(next>=end)
@@ -942,13 +1108,16 @@ LONG examine(struct emulbase *emulbase, struct filehandle *fh,
 
 /*********************************************************************************************/
 
+#define is_special_dir(x) (x[0] == '.' && (!x[1] || (x[1] == '.' && !x[2])))
+
 LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
                   struct FileInfoBlock *FIB)
 {
     int	i;
     struct stat st;
     struct dirent *dir;
-    char *name, *src, *dest;
+    char *src, *dest;
+    off_t pos;
     LONG err;
 
     /* This operation does not make any sense on a file */
@@ -964,7 +1133,7 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     /* hm, let's read the data now! 
        but skip '.' and '..' (they're not available on Amigas and
        Amiga progs wouldn't know how to treat '.' and '..', i.e. they
-       might want to scan recursively the directory and end up scanning
+       might want to scan recursively the directory and end up scanning    ObtainSemaphore(&emulbase->pdata.sem);
        ./././ etc. */
     do
     {
@@ -972,50 +1141,27 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
 	if (NULL == dir)
 	    break;
 
-    } while ( 0 == strcmp(dir->d_name,"." ) || 
-	      0 == strcmp(dir->d_name,"..") ); 
+    } while (is_special_dir(dir->d_name));
+    pos = emulbase->pdata.SysIFace->telldir(fh->fd);
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
     if (!dir)
     	return ERROR_NO_MORE_ENTRIES;
 
-    i = strlen(fh->hostname) + strlen(dir->d_name) + 2;
-    name = AllocPooled(emulbase->mempool, i);
-    
-    if (NULL == name)
-	return ERROR_NO_FREE_STORE;
-  
-    strcpy(name, fh->hostname);
-    
-    if (*name)
-	strcat(name, "/");
-    
-    strcat(name, dir->d_name);
-
-    ObtainSemaphore(&emulbase->pdata.sem);
-
-    err = emulbase->pdata.SysIFace->lstat(name, &st);
-    if (err)
-    	err = err_u2a(emulbase);
-    else
-	FIB->fib_DiskKey = emulbase->pdata.SysIFace->telldir(fh->fd);
-
-    ReleaseSemaphore(&emulbase->pdata.sem);    
-    FreePooled(emulbase->mempool, name, i);
-
-    if (err)
-    {
-        D(bug("lstat() failed for %s\n", name));
+    err = stat_entry(emulbase, fh, dir->d_name, &st);
+    if (err) {
+        DEXAM(bug("stat_entry() failed for %s\n", dir->d_name));
         return err;
     }
-    
-    FIB->fib_OwnerUID	    = st.st_uid;
-    FIB->fib_OwnerGID	    = st.st_gid;
-    FIB->fib_Comment[0]	    = '\0'; /* no comments available yet! */
+
+    FIB->fib_DiskKey    = pos;
+    FIB->fib_OwnerUID	= st.st_uid;
+    FIB->fib_OwnerGID	= st.st_gid;
+    FIB->fib_Comment[0]	= '\0'; /* no comments available yet! */
     timestamp2datestamp(emulbase, &st.st_mtime, &FIB->fib_Date);
-    FIB->fib_Protection	    = prot_u2a(st.st_mode);
-    FIB->fib_Size           = st.st_size;
+    FIB->fib_Protection	= prot_u2a(st.st_mode);
+    FIB->fib_Size       = st.st_size;
 
     if (S_ISDIR(st.st_mode))
     {
@@ -1055,56 +1201,52 @@ LONG examine_all(struct emulbase *emulbase,
                         ULONG  type)
 {
     struct ExAllData *last=NULL;
-    STRPTR end=(STRPTR)ead+size, name, old;
+    STRPTR end=(STRPTR)ead+size;
     off_t oldpos;
     struct dirent *dir;
     LONG error;
-    LONG dummy; /* not anything is done with this value but passed to examine */
-    int l;
 
     eac->eac_Entries = 0;
     if(fh->type!=FHD_DIRECTORY)
 	return ERROR_OBJECT_WRONG_TYPE;
 
-    ObtainSemaphore(&emulbase->pdata.sem);
+    DEXAM(bug("[emul] examine_all()\n"));
 
     for(;;)
     {
+	ObtainSemaphore(&emulbase->pdata.sem);
+
 	oldpos = emulbase->pdata.SysIFace->telldir(fh->fd);
 
         *emulbase->pdata.errnoPtr = 0;
 	dir = emulbase->pdata.SysIFace->readdir(fh->fd);
-
-	if (dir==NULL)
-	{
+	if (!dir)
 	    error = err_u2a(emulbase);
-	    break;
-	}
-	if(dir->d_name[0]=='.'&&(!dir->d_name[1]||(dir->d_name[1]=='.'&&!dir->d_name[2])))
-	    continue;
-	if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, dir->d_name))
-	  continue;
 
-	l = strlen(fh->name)+strlen(dir->d_name)+2;
-	name = AllocPooled(emulbase->mempool, l);
-	if(name==NULL)
-	{
-	    error=ERROR_NO_FREE_STORE;
+	ReleaseSemaphore(&emulbase->pdata.sem);
+
+	if (!dir)
 	    break;
+
+	DEXAM(bug("[emul] Found entry %s\n", dir->d_name));
+
+	if (is_special_dir(dir->d_name)) {
+	    DEXAM(bug("[emul] Special entry, skipping\n"));
+	    continue;
 	}
-	strcpy(name,fh->name);
-	if(*name)
-	    strcat(name,"/");
-	strcat(name,dir->d_name);
-	old=fh->name;
-	fh->name=name;
-	error=examine(emulbase,fh,ead,end-(STRPTR)ead,type,&dummy);
-	fh->name=old;
-	FreePooled(emulbase->mempool, name, l);
+
+	if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, dir->d_name)) {
+	    DEXAM(bug("[emul] Entry does not match, skipping\n"));
+	    continue;
+	}
+
+	error = examine_entry(emulbase, fh, dir->d_name, ead, end-(STRPTR)ead, type);
 	if(error)
 	    break;
+
 	if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
 	  continue;
+
 	eac->eac_Entries++;
 	last=ead;
 	ead=ead->ed_Next;
@@ -1114,34 +1256,116 @@ LONG examine_all(struct emulbase *emulbase,
 
     if ((error==ERROR_BUFFER_OVERFLOW) && last)
     {
+	ObtainSemaphore(&emulbase->pdata.sem);
 	emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
+	ReleaseSemaphore(&emulbase->pdata.sem);
+
 	error = 0;
     }
 
-    emulbase->pdata.SysIFace->rewinddir(fh->fd);
-
-    ReleaseSemaphore(&emulbase->pdata.sem);
-
     if(!error)
-	error=ERROR_NO_MORE_ENTRIES;
+	error = ERROR_NO_MORE_ENTRIES;
     return error;
 }
 
-
 LONG examine_all_end(struct emulbase *emulbase, struct filehandle *fh)
 {
-    /* Nothing to do here */
-    return 0;
+    /* Just rewind */
+    return DoRewindDir(emulbase, fh);
 }
 
-char *GetHomeDir(struct emulbase *emulbase, char *user)
+char *GetHomeDir(struct emulbase *emulbase, char *sp)
 {
-    /* Get user's home directory */
-    return NULL;
+    char *home = NULL;
+    char *newunixpath = NULL;
+    char *sp_end;
+    BOOL do_endpwent = FALSE;
+
+    ObtainSemaphore(&emulbase->pdata.sem);
+
+    /* "~<name>" means home of user <name> */
+    if ((sp[1] == '\0') || (sp[1] == '/'))
+    {
+    	sp_end = sp + 1;
+	home = emulbase->pdata.SysIFace->getenv("HOME");
+    }
+    else
+    {
+    	struct passwd *pwd;
+	WORD  	       cmplen;
+		
+	for(sp_end = sp + 1; sp_end[0] != '\0' && sp_end[0] != '/'; sp_end++);
+	cmplen = sp_end - sp - 1;
+
+	while((pwd = emulbase->pdata.SysIFace->getpwent()))
+	{
+	    if(memcmp(pwd->pw_name, sp + 1, cmplen) == 0)
+	    {
+	    	if (pwd->pw_name[cmplen] == '\0')
+		{
+	    	    home = pwd->pw_dir;
+		    break;
+		}
+	    }
+	}
+	do_endpwent = TRUE;
+    }
+
+    if (home)
+    {
+	int hlen = strlen(home);
+	int splen = strlen(sp_end);
+
+	newunixpath = AllocVec(hlen + splen + 1, MEMF_PUBLIC);
+	if (newunixpath)
+	{
+	    char *s = newunixpath;
+
+	    CopyMem(home, s, hlen);
+	    s += hlen;
+	    CopyMem(sp_end, s, splen);
+	    s += splen;
+	    *s = 0;
+	}
+    }
+
+    if (do_endpwent)
+	emulbase->pdata.SysIFace->endpwent();
+
+    ReleaseSemaphore(&emulbase->pdata.sem);
+
+    return newunixpath;
 }
 
 ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
 {
-    /* Get AROS root directory */
-    return 0;
+    char *res;
+
+    DMOUNT(bug("[emul] GetCurrentDir(0x%P, %u)\n", path, len)); 
+
+    ObtainSemaphore(&emulbase->pdata.sem);
+
+    res = emulbase->pdata.SysIFace->getcwd(path, len);
+
+    ReleaseSemaphore(&emulbase->pdata.sem);
+
+    DMOUNT(bug("[emul] getcwd() returned %s\n", res));
+    return res ? TRUE : FALSE;
+}
+
+int CheckDir(struct emulbase *emulbase, char *path)
+{
+    int res;
+    struct stat st;
+
+    ObtainSemaphore(&emulbase->pdata.sem);
+
+    res = emulbase->pdata.SysIFace->stat(path, &st);
+
+    ReleaseSemaphore(&emulbase->pdata.sem);
+
+    if ((!res) && S_ISDIR(st.st_mode))
+	return 0;
+
+    return -1;
 }
