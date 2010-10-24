@@ -42,7 +42,7 @@ AROS_LH0I(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-    asm volatile ("andi.w %0,%%sr" : : "i" (0xf8ff) : "memory");
+    asm volatile ("move.w #0xc000,0xdff09a\n");
 
     AROS_LIBFUNC_EXIT
 }
