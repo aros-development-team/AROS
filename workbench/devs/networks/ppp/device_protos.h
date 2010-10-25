@@ -44,3 +44,5 @@ void SendTerminateReq();
 void RunRoute();
 BYTE Phase();
 void Set_phase(UBYTE ph);
+void ppp_timer(int dt);
+
