@@ -220,7 +220,7 @@ struct tm as={0, 0, 0, 1, 0, 78, -1, -1, -1};
 STRPTR PathPart(STRPTR path) {
 STRPTR ptr;
 
-	/* '/' at the begining of the string really is part of the path */
+	/* '/' at the beginning of the string really is part of the path */
 	while (*path == '/')
 	{
 		++path;

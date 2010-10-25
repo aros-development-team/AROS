@@ -206,7 +206,7 @@ struct Volume *volume;
 		{
 			*error=ERROR_NO_FREE_STORE;
 		}
-		FreeMem(volume,sizeof(struct Volume) + strlen(volume->blockdevice + 1));
+		FreeMem(volume,sizeof(struct Volume) + strlen(volume->ioh.blockdevice) + 1);
 	}
 	else
 		*error=ERROR_NO_FREE_STORE;
@@ -226,7 +226,7 @@ void uninitVolume(struct AFSBase *afsbase, struct Volume *volume) {
 	if (volume->blockcache != NULL)
 		freeCache(afsbase, volume->blockcache);
 	closeBlockDevice(afsbase, &volume->ioh);
-	FreeMem(volume,sizeof(struct Volume) + strlen(volume->blockdevice + 1));
+	FreeMem(volume,sizeof(struct Volume) + strlen(volume->ioh.blockdevice) + 1);
 }
 
 /* vim: set noet ts=3 ai fdm=marker fmr={,} :*/
