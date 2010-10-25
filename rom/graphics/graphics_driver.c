@@ -524,7 +524,8 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata 
     HIDDT_ColorModel colmod;
 
     vpd = vp ? VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp)) : NULL;
-    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Showing ViewPort 0x%p, data 0x%p, BitMap 0x%p, BitMap object 0x%p\n", vp, vpd, bitmap, vpd->Bitmap));
+    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Showing ViewPort 0x%p, data 0x%p, BitMap object 0x%p\n", 
+                    vp, vpd, vpd ? vpd->Bitmap : NULL));
     mdd->display = vpd;
 
     /* First try the new method */
@@ -534,14 +535,14 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata 
     }
 
     /* If it failed, we may be working with a framebuffer. First check if the bitmap
-       is already displayed. If so, do nothing (because displaying the same bitmap twice may
-       cause some problems */
+    is already displayed. If so, do nothing (because displaying the same bitmap twice may
+    cause some problems */
     if (vp) {
-	bitmap = vp->RasInfo->BitMap;
-	bm = vpd->Bitmap;
+        bitmap = vp->RasInfo->BitMap;
+        bm = vpd->Bitmap;
     } else {
         bitmap = NULL;
-	bm = NULL;
+        bm = NULL;
     }
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Old bitmap 0x%p, New bitmap 0x%p, object 0x%p\n", mdd->frontbm, bitmap, bm));
 
@@ -552,49 +553,49 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata 
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
 
     if (fb) {
-    	IPTR width, height;
+        IPTR width, height;
 
         /* FIXME: THIS IS NOT THREADSAFE */
 
-	/* To make this threadsafe we have to lock
-	   all gfx access in all the rendering calls
-	*/
+        /* To make this threadsafe we have to lock
+        all gfx access in all the rendering calls
+        */
 
-	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Replacing framebuffer\n"));
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Replacing framebuffer\n"));
 
-	 /* Set this as the active screen */
-    	if (NULL != mdd->frontbm)
-	{
-    	    struct BitMap *oldbm;
-    	    /* Put back the old values into the old bitmap */
-	    oldbm = mdd->frontbm;
-	    HIDD_BM_OBJ(oldbm)		= mdd->bm_bak;
-	    HIDD_BM_COLMOD(oldbm)	= mdd->colmod_bak;
-	    HIDD_BM_COLMAP(oldbm)	= mdd->colmap_bak;
-	}
+        /* Set this as the active screen */
+        if (NULL != mdd->frontbm)
+        {
+            struct BitMap *oldbm;
+            /* Put back the old values into the old bitmap */
+            oldbm = mdd->frontbm;
+            HIDD_BM_OBJ(oldbm)      = mdd->bm_bak;
+            HIDD_BM_COLMOD(oldbm)   = mdd->colmod_bak;
+            HIDD_BM_COLMAP(oldbm)   = mdd->colmap_bak;
+        }
 
-	mdd->frontbm		= bitmap;
-	mdd->bm_bak		= bm;
-	mdd->colmod_bak	= bitmap ? HIDD_BM_COLMOD(bitmap) : 0;
-	mdd->colmap_bak	= bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
+        mdd->frontbm    = bitmap;
+        mdd->bm_bak     = bm;
+        mdd->colmod_bak = bitmap ? HIDD_BM_COLMOD(bitmap) : 0;
+        mdd->colmap_bak = bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
 
-	if (bitmap)
-	{
-	    /* Insert the framebuffer in its place */
-	    OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
-	    OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-	    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+        if (bitmap)
+        {
+            /* Insert the framebuffer in its place */
+            OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+            OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+            OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
 
-	    HIDD_BM_OBJ(bitmap)	= fb;
-	    HIDD_BM_COLMOD(bitmap)	= colmod;
-	    HIDD_BM_COLMAP(bitmap)	= cmap;
-	}
+            HIDD_BM_OBJ(bitmap)     = fb;
+            HIDD_BM_COLMOD(bitmap)	= colmod;
+            HIDD_BM_COLMAP(bitmap)	= cmap;
+        }
 
         OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
-    	OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
-	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Updating framebuffer, new size: %d x %d\n", width, height));
+        OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Updating framebuffer, new size: %d x %d\n", width, height));
 
-	HIDD_BM_UpdateRect(fb, 0, 0, width, height);
+        HIDD_BM_UpdateRect(fb, 0, 0, width, height);
     }
 }
 
