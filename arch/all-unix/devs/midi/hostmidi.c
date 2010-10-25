@@ -91,10 +91,11 @@ SAVEDS ASM BOOL Init(REG(a6) APTR sysbase)
     HostLibBase = OpenResource("hostlib.resource");
     if (!HostLibBase)
     	return FALSE;
-    	
+
     LibcHandle = HostLib_Open("libc.so.6", NULL);
+    /* We can also work under BSD, there's no libc.so.6 but just libc.so */
     if (!LibcHandle)
-    	LibcHandle = HostLib_Open("c", NULL);
+    	LibcHandle = HostLib_Open("libc.so", NULL);
 
     if (!LibcHandle)
     	return FALSE;
