@@ -22,7 +22,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$TARGET --enable-target-variant=$VARIANT --enable-ccache --with-bootloader=$BOOTLOADER --enable-build-type=nightly --with-portssources=$ROOT/Sources
+execute ./configure --target=$TARGET --enable-target-variant=$VARIANT --enable-ccache --with-bootloader=$BOOTLOADER --enable-build-type=nightly
 make
 
 ISOFILE=aros-$BUILDTARGET.iso
