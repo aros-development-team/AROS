@@ -1,9 +1,0 @@
-#   $Id$
-#
-#   Generate the libarosm for arm. Not much content so far.
-#
-include $(TOP)/config/make.cfg
-
-%build_linklib mmake=linklibs-arosm-arm libname=arosm files=dummy
-
-%common

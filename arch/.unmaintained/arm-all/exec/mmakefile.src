@@ -21,7 +21,6 @@ FILES :=  \
 	rawputchar \
 	setsr \
 	set_sp \
-	stackswap \
 	switchtouser \
 	sys_dispatch \
 	sys_swi_handler \
