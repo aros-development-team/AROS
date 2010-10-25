@@ -1,7 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES  := debugdriver
 EXEDIR := $(AROS_DEVS)/Midi
 
 #MM- workbench-unix : workbench-devs-hostmidi-unix
