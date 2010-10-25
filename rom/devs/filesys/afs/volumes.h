@@ -21,7 +21,6 @@ struct Volume {
 	
 	struct AfsHandle *locklist;
 	struct AfsHandle ah;         /* root handle (unfilled except header_block) */
-	char *blockdevice;
 	ULONG unit;
 	struct IOHandle ioh;
 	struct BlockCache *blockcache;

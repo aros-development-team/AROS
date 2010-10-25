@@ -2,7 +2,7 @@
 #define OS_UNIX_SUPPORT_H
 
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -53,7 +53,9 @@ struct Node {};
 #define ERROR_BUFFER_OVERFLOW 303
 
 /* dos/bptr.h */
-#define MKBADDR(x) x
+#define BADDR(x) (x)
+#define MKBADDR(x) (x)
+#define BNULL NULL
 
 /* dos/dos.h */
 #define DOSTRUE (-1)
