@@ -1,0 +1,13 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES  := debugdriver
+EXEDIR := $(AROS_DEVS)/Midi
+
+#MM- workbench-unix : workbench-devs-hostmidi-unix
+
+%build_prog mmake=workbench-devs-hostmidi-unix \
+    progname=hostmidi targetdir=$(EXEDIR) \
+    files=hostmidi uselibs="arossupport rom" usestartup=no
+
+%common
