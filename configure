@@ -8433,12 +8433,13 @@ echo $ECHO_N "checking what target variant to enable... $ECHO_C" >&6; }
 if test "${enable_target_variant+set}" = set; then
   enableval=$enable_target_variant; target_variant=$enableval
 else
-  target_variant="none"
+  target_variant=""
 fi
 
-if test "$target_variant" = "none"; then
+if test "$target_variant" = ""; then
     aros_target_variant=""
     aros_target_suffix=""
+    enableval="none"
 else
     aros_target_variant="$target_variant"
     aros_target_suffix="-$target_variant"
