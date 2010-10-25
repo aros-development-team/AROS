@@ -3,7 +3,7 @@ source $SP/cfg/defaults
 source $SP/cfg/$CFG_NAME
 
 # Determine version
-VERSION=$(date -u +"%Y%m%d")
+VERSION=$(date +"%Y%m%d")
 BASENAME=AROS-$VERSION
 
 # Setup important paths
