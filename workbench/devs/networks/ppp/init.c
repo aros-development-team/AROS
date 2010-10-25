@@ -268,7 +268,7 @@ VOID PPP_Process(VOID){
 		((struct IORequest *)LIBBASE->TimeReq)->io_Command = TR_ADDREQUEST;
 		SendIO( (struct IORequest *)LIBBASE->TimeReq );
 		Delay(10);
-		SetTimer(LIBBASE,4);
+		SetTimer(LIBBASE,5);
 
 		ReadConfig(LIBBASE);
 
@@ -300,6 +300,9 @@ VOID PPP_Process(VOID){
                             CloseSerial(LIBBASE);
 						}
 					}
+				}
+				else if(LIBBASE->device_up && LIBBASE->serial_ok ){
+					ppp_timer(5);
 				}
 				SetTimer(LIBBASE,5);
 			}
