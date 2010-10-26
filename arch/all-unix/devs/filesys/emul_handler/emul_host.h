@@ -1,3 +1,6 @@
+/* avoid conflicts between our __unused define and the ones that might come in
+   via sys/stat.h */
+#undef __unused
 #include <sys/stat.h>
 #include <dirent.h>
 #include <pwd.h>
