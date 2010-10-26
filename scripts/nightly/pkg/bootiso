@@ -4,7 +4,7 @@
 BOOTLOADER=$1
 
 TARGET=$BUILDTARGET
-if [ -n $VARIANT ]; then
+if [ "$VARIANT" != "" ]; then
     BUILDTARGET=$VARIANT-$TARGET
 fi
 
