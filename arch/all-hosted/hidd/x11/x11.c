@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -12,7 +12,6 @@
 #include <proto/utility.h>
 
 #define size_t aros_size_t
-#include <hidd/unixio.h>
 #include <hidd/hidd.h>
 
 #include <oop/ifmeta.h>
@@ -54,7 +53,6 @@
 
 /****************************************************************************************/
 
-#define NOUNIXIO    	    	1
 #define BETTER_REPEAT_HANDLING  1
 
 #define XTASK_NAME "x11hidd task"
@@ -80,10 +78,6 @@ Cause() a software irq, but Cause() does not work at the moment..
 
 /****************************************************************************************/
 
-#if NOUNIXIO
-
-/****************************************************************************************/
-
 AROS_UFH4(ULONG, x11VBlank,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(void *, data, A1),
@@ -101,27 +95,6 @@ AROS_UFH4(ULONG, x11VBlank,
 
 /****************************************************************************************/
 
-#else
-
-/****************************************************************************************/
-
-static int unixio_callback(int displayfd, struct x11_staticdata *xsd)
-{
-    int pending;
-    
-    LOCK_X11    
-    pending = XCALL(XPending, xsd->display);
-    UNLOCK_X11
-
-    return pending;
-}
-
-/****************************************************************************************/
-
-#endif
-
-/****************************************************************************************/
-
 VOID x11task_entry(struct x11task_params *xtpparam)
 {
     struct x11_staticdata   *xsd;
@@ -131,19 +104,8 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     ULONG   	    	     hostclipboardmask;
     BOOL    	    	     f12_down = FALSE;
     KeySym  	    	     ks;
-    
-#if NOUNIXIO
+
     struct Interrupt 	     myint;
-#else
-    struct MsgPort  	    *unixio_port = NULL;
-    HIDD    	    	    *unixio = NULL;
-    IPTR    	    	     ret;
-    ULONG   	    	     unixiosig;
-    BOOL    	    	     domouse = FALSE;
-    LONG    	    	     last_mouse_x;
-    LONG    	    	     last_mouse_y;    
-    BOOL    	    	     dounixio = TRUE;    
-#endif
 
     /* We must copy the parameter struct because they are allocated
      on the parent's stack */
@@ -158,8 +120,6 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     NEWLIST(&nmsg_list);
     NEWLIST(&xwindowlist);
   
-#if NOUNIXIO
-    
     myint.is_Code         = (APTR)&x11VBlank;
     myint.is_Data         = FindTask(NULL);
     myint.is_Node.ln_Name = "X11 VBlank server";
@@ -169,23 +129,6 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     AddIntServer(INTB_VERTB, &myint);
 
     Signal(xtp.parent, xtp.ok_signal);
-
-#else
-    
-    unixio = (HIDD)New_UnixIO(OOPBase, SysBase);
-    if (unixio)
-    {
-    	unixio_port = CreateMsgPort();
-	if (unixio_port)
-	{
-	    unixiosig = 1L << unixio_port->mp_SigBit;
-	    Signal(xtp.parent, xtp.ok_signal);
-	     
-	}
-	else goto failexit;
-    }
-    else goto failexit;
-#endif    
 
     hostclipboardmask = x11clipboard_init(xsd);
     
@@ -200,77 +143,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 	ULONG 	    	     notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
 	ULONG 	    	     sigs;
 
-#if NOUNIXIO
-
 	sigs = Wait(SIGBREAKF_CTRL_D | notifysig | xtp.kill_signal | hostclipboardmask);
-	
-#else	
-
-
-    #if 0
-
-
-    	ret = (int)Hidd_UnixIO_Wait(unixio,
-	    	    	    	    ConnectionNumber( xsd->display ),
-				    vHidd_UnixIO_Read,
-				    unixio_callback,
-				    (APTR)xsd,
-				    xtp.kill_signal | notifysig | hostclipboardmask);
-			
-			
-    #else
-
-	if (dounixio)
-	{
-	    ret = Hidd_UnixIO_AsyncIO(unixio,
-	     	    	    	       ConnectionNumber(xsd->display),  vHidd_UnixIO_Terminal,
-				       unixio_port, vHidd_UnixIO_Read, SysBase);
-	
-	    if (ret)
-	    {
-	    
-	    	kprintf("ERROR WHEN CALLING UNIXIO: %d\n", ret);
-		dounixio = TRUE;
-		
-	        continue;
-	    }
-	    else
-	    {
-	    	dounixio = FALSE;
-	    }
-	}
-	
-	sigs = Wait(notifysig | unixiosig | xtp.kill_signal | hostclipboardmask);			
-D(bug("Got input from unixio\n"));
-/*			
-	if (ret != 0)
-	{
-	    continue;
-	}
-	
-	
-*/
-	
-	if (sigs & unixiosig)
-	{
-	     struct uioMessage *uiomsg;
-	     int    	    	result;
-	     
-	     uiomsg = (struct uioMessage *)GetMsg(unixio_port);
-	     result = uiomsg->result;
-	     
-	     FreeMem(uiomsg, sizeof (struct uioMessage));
-	     
-	     dounixio = TRUE;
-	     
-	     if (result)
-	     	continue;
-	}
-	
-    #endif
-
-
-#endif
 	if (sigs & xtp.kill_signal)
 	    goto failexit;
 	
@@ -737,19 +610,6 @@ failexit:
     {
 	DeleteMsgPort(xsd->x11task_notify_port);
     }
-		
-
-#if (!NOUNIXIO)
-    if (NULL != unixio_port)
-    {
-    	DeleteMsgPort(unixio_port);
-    }
-	
-    if (NULL != unixio)
-    {
-    	OOP_DisposeObject(unixio);
-    }
-#endif
 
     Signal(xtp.parent, xtp.fail_signal);
     

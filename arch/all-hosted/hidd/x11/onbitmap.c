@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for X11 hidd.
@@ -599,7 +599,7 @@ static void init_empty_cursor(Window w, GC gc, struct x11_staticdata *xsd)
 	    /* Define cursor for window */
 	    XColor fg, bg;
 	    Cursor c;
-	    int    x, y;
+/*	    int    x, y; */
 
     	    LOCK_X11
 	    XCALL(XSetForeground, xsd->display, gc, 0);
