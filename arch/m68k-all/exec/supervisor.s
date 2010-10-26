@@ -5,24 +5,20 @@
     Desc: Supervisor() - Execute some code in a priviledged environment.
     Lang: english
 */
-
-#include <exec/execbase.h>
-#include <exec/alerts.h>
-
 /*****************************************************************************
 
-    NAME */
+    NAME
 #include <proto/exec.h>
 
 	AROS_LH1(ULONG, Supervisor,
 
-/*  SYNOPSIS */
+    SYNOPSIS
 	AROS_LHA(ULONG_FUNC, userFunction, A5),
 
-/*  LOCATION */
+    LOCATION
 	struct ExecBase *, SysBase, 5, Exec)
 
-/*  FUNCTION
+    FUNCTION
 	Supervisor will allow a short priviledged instruction sequence to
 	be called from user mode. This has very few uses, and it is probably
 	better to use any system supplied method to do anything.
@@ -73,45 +69,47 @@
 	You should trust that the programmer know what they are doing :-)
 
 ******************************************************************************/
-{
-    AROS_LIBFUNC_INIT
-
-    ULONG ret;
-
-    /* If this fails (called via user mode), then
-     * the trap code below will get called to
-     * finish the job.
+    /* If this fails (called via user mode), then the trap code below
+     * will get called to finish the job. Regardless, we can't use
+     * anything on the stack, since if we *did* switch from User
+     * to Supervisor, our stack swapped!
      */
-    asm volatile ("Exec_Supervisor_Entry:\n"
-    		  "or.w #0x2000, %sr\n"
-    		  "Exec_Supervisor_Entered:\n");
-    if (SysBase->AttnFlags & (AFB_68010 | AFB_68020)) {
-    	    asm volatile (
-    	    	"move.w #0x0020,%%sp@-\n"
-    	    	"pea 0f\n"
-    	    	"move.w %%sr,%%sp@-\n"
-    	    	"jmp (%1)\n"
-    	    	"0:\n"
-    	    	: "=r" (ret)
-    	    	: "a" (userFunction)
-    	    	:);
-    } else {
-    	    asm volatile (
-    	    	"pea 0f\n"
-    	    	"move.w %%sr,%%sp@-\n"
-    	    	"jmp (%1)\n"
-    	    	"0:\n"
-    	    	: "=r" (ret)
-    	    	: "a" (userFunction)
-    	    	:);
-    }
+	#include "aros/m68k/asm.h"
 
-    return ret;
+	.text
+	.balign 4
+	.globl AROS_SLIB_ENTRY(Supervisor,Exec)
+AROS_SLIB_ENTRY(Supervisor,Exec):
+#ifndef DoRegisterCalls
+	move.l	%a5,%sp@-
+	move.l	%sp@(-8),%a5
+#endif
+	btst	#0, %a6@(AttnFlags)	// If 68010, push frame id
+	bne.s	0f
+	btst	#1, %a6@(AttnFlags)	// If not 68020, skip
+	beq.s	Exec_Supervisor_Entry_10
+0:	move.w	#0x0020,%sp@-   // push the 68010/20 frame id
 
-    AROS_LIBFUNC_EXIT
-} /* Supervisor() */
+Exec_Supervisor_Entry_10:
+	move.w	%sr, %d0	// Caused exception on 68010/20
+Exec_Supervisor_Entry_00:
+	or.w	#0x2000, %sr	// Caused exception on 68000
+Exec_Supervisor_Entered:	// %d0 will always have the old SR
+	pea	1f
+	move.w	%d0,%sp@-	// Fix up return mode & flags
+	jmp	(%a5)		// D0 will be set after the
+1:				//  caller's RTE gets back here.
+#ifndef DoRegisterCalls
+	move.l	%sp@+,%a5
+#endif
+    	rts
 
 	/* 68000 privilege violation stack frame:
+	 *   ULONG PC
+	 *   UWORD STATUS
+	 *
+	 * 68010 privilege violation stack frame:
+	 *   UWORD 0x0020
 	 *   ULONG PC
 	 *   UWORD STATUS
 	 */
@@ -121,19 +119,22 @@
 	 * Both the asmcall and stackcall interface
 	 * should work with this code.
 	 */
-asm (
-	".text\n"
-	".align 4\n"
-	".globl Exec_Supervisor_Trap\n"
-	"Exec_Supervisor_Trap:\n"
-	"	cmp.l #Exec_Supervisor_Entry, %sp@(2)\n"
-	"	bne.s 0f\n"
-	"	move.l #Exec_Supervisor_Entered, %sp@(2)\n"
-	"	or.w #(1 << 13),%sp@(0)\n"
-	"	rte\n"
-	"0:\n"
-	"	move.l #0x80000008,%d7\n"	// ACPU_PrivErr
-	"	jsr	Exec_Alert\n"
-	"1:\n"
-	"	jmp	1b\n"
-	);
+	.text
+	.align 4
+	.globl Exec_Supervisor_Trap
+Exec_Supervisor_Trap:
+	cmp.l	#Exec_Supervisor_Entry_00, %sp@(2)
+	beq.s	0f
+	cmp.l	#Exec_Supervisor_Entry_10, %sp@(2)
+	bne.s	1f
+0:
+	move.w	%sr,%d0
+	move.l	#Exec_Supervisor_Entered, %sp@(2)
+	or.w	#(1 << 13),%sp@(0)
+	rte
+1:
+	move.l	#0x80000008,%d7	// ACPU_PrivErr
+	move.l	(0x4),%a6
+	jsr	%a6@(Alert)
+2:
+	jmp	2b
