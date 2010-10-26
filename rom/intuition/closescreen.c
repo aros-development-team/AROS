@@ -100,7 +100,7 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
     /* there's a second check below for public screens */
     if (screen->FirstWindow)
     {
-        D(bug("CloseScreen: fail, window still opened\n"));
+        DEBUG_CLOSESCREEN(dprintf("CloseScreen: fail, window still opened\n"));
         ReturnBool("CloseScreen",FALSE);
     }
 
