@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -53,7 +53,7 @@ readvars (struct Project * prj)
     struct Node * node, * next;
     struct Dep * dep;
 
-    debug(printf("MMAKE:project.c->readvars(Project @ %x)\n", prj));
+    debug(printf("MMAKE:project.c->readvars(Project @ 0x%p)\n", prj));
 
     if (!prj->readvars)
 	return;
@@ -66,17 +66,17 @@ readvars (struct Project * prj)
     setvar (&prj->vars, "SRCDIR", prj->srctop);
     setvar (&prj->vars, "CURDIR", "");
 
-    if (prj->globalvarfile)
+    ForeachNode(&prj->globalvarfiles, node)
     {
 	char * fn;
 	FILE * fh;
 	char line[256];
 	char * name, * value, * ptr;
 
-	fn = xstrdup (substvars (&prj->vars, prj->globalvarfile));
+	fn = xstrdup (substvars (&prj->vars, node->name));
 	fh = fopen (fn, "r");
 
-	/* if prj->globalvarfile doesn't exist execute prj->genglobalvarfile */
+	/* if the file doesn't exist execute prj->genglobalvarfile */
 	if (!fh && prj->genglobalvarfile)
 	{
 	    char * gen = xstrdup (substvars (&prj->vars, prj->genglobalvarfile));
@@ -173,7 +173,7 @@ initproject (char * name)
     memset (prj, 0, sizeof(struct Project));
 
     debug(printf("MMAKE:project.c->initproject('%s')\n", name));
-    debug(printf("MMAKE:project.c->initproject: Project node @ %x\n", prj));
+    debug(printf("MMAKE:project.c->initproject: Project node @ 0x%p\n", prj));
 
     if (!defaultprj)
     {
@@ -183,7 +183,6 @@ initproject (char * name)
 	prj->buildtop = mm_builddir;
 	prj->defaulttarget = xstrdup ("all");
 	prj->genmakefilescript = NULL;
-	prj->globalvarfile = NULL;
 	prj->genglobalvarfile = NULL;
     }
     else
@@ -194,7 +193,6 @@ initproject (char * name)
 	prj->buildtop = xstrdup (defaultprj->buildtop);
 	prj->defaulttarget = xstrdup (defaultprj->defaulttarget);
 	SETSTR (prj->genmakefilescript, defaultprj->genmakefilescript);
-	SETSTR (prj->globalvarfile, defaultprj->globalvarfile);
 	SETSTR (prj->genglobalvarfile, defaultprj->genglobalvarfile);
     }
 
@@ -202,6 +200,7 @@ initproject (char * name)
 
     prj->readvars = 1;
 
+    NewList(&prj->globalvarfiles);
     NewList(&prj->genmakefiledeps);
     NewList(&prj->ignoredirs);
     NewList(&prj->vars);
@@ -224,12 +223,12 @@ freeproject (struct Project * prj)
 	cfree (prj->buildtop);
     cfree (prj->defaulttarget);
     cfree (prj->genmakefilescript);
-    cfree (prj->globalvarfile);
     cfree (prj->genglobalvarfile);
 
     if (prj->cache)
 	closecache (prj->cache);
 
+    freelist(&prj->globalvarfiles);
     freelist (&prj->genmakefiledeps);
     freelist (&prj->ignoredirs);
     freevarlist (&prj->vars);
@@ -421,7 +420,10 @@ initprojects (void)
 	    }
 	    else if (!strcmp (cmd, "globalvarfile"))
 	    {
-		SETSTR(project->globalvarfile,args);
+	    	struct Node *n = newnode(args);
+	    	
+	    	if (n)
+	    		AddTail(&project->globalvarfiles, n);
 	    }
 	    else if (!strcmp (cmd, "genglobalvarfile"))
 	    {
