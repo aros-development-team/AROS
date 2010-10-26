@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES          := coldreboot preparecontext dispatch switch
+CFILES          := coldreboot
 AFILES		:= enable disable
 
 #MM kernel-exec : kernel-exec-amiga-m68k
