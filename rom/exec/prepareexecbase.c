@@ -164,9 +164,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 	                    = SysBase->WarmCapture
 			    = NULL;
 
-    SysBase->SysStkUpper    = (APTR)~0;
-    SysBase->SysStkLower    = (APTR)0;
-
     SysBase->MaxLocMem      = (IPTR)mh->mh_Upper;
 
     SysBase->Quantum        = 4;
@@ -180,6 +177,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     /* Default frequencies */
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
+
+    SysBase->ChkBase=~(IPTR)SysBase;
 
     /* Parse some arguments from command line */
     if (args)
