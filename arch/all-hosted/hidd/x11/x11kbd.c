@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd handling keypresses.
@@ -475,7 +475,6 @@ static struct _keytable template_keytable[] =
 OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL    	    has_kbd_hidd = FALSE;
-    struct Task    *me;
     struct TagItem *tag, *tstate;
     APTR    	    callback = NULL;
     APTR    	    callbackdata = NULL;

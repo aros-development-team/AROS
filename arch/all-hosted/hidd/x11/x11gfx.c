@@ -111,11 +111,11 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     struct TagItem mytags[] =
     {
-		{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	},
-		{ aHidd_Name		, (IPTR)"x11_1.monitor"	},
-		{ aHidd_HardwareName	, (IPTR)"X Window system"},
-		{ aHidd_ProducerName	, (IPTR)"X.Org Foundation"},
-		{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
+	{ aHidd_Gfx_ModeTags	, 0			  },
+	{ aHidd_Name		, (IPTR)"x11_1.monitor"	  },
+	{ aHidd_HardwareName	, (IPTR)"X Window system" },
+	{ aHidd_ProducerName	, (IPTR)"X.Org Foundation"},
+	{ TAG_MORE  	    	, (IPTR)msg->attrList	  }
     };
  
     struct pRoot_New mymsg = { msg->mID, mytags };
@@ -123,7 +123,6 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct TagItem *resolution;
     XF86VidModeModeInfo**	modes;
     static int		modeNum;
-    STRPTR modename;
 	
     ULONG i, realmode, screen;
     Display *disp;
@@ -140,11 +139,11 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	/* Get supported X11 resolution from RandR resources */
 	
     disp = XCALL(XOpenDisplay, NULL);
-	screen = XCALL(XDefaultScreen, disp);	
-// 	rootwin = XCALL(XRootWindow, disp, screen);
-	
-	XVMCALL(XF86VidModeGetAllModeLines, disp, screen, &modeNum, &modes);
-	
+    screen = XCALL(XDefaultScreen, disp);	
+//  rootwin = XCALL(XRootWindow, disp, screen);
+
+    XVMCALL(XF86VidModeGetAllModeLines, disp, screen, &modeNum, &modes);
+
     if((resolution = AllocMem(modeNum * sizeof(struct TagItem) * 4, MEMF_PUBLIC)) == NULL)
     {
 		XCALL(XCloseDisplay, disp);
@@ -178,19 +177,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 			resolution[realmode * 4 + 1].ti_Tag = aHidd_Sync_VDisp;
 			resolution[realmode * 4 + 1].ti_Data = modes[i]->vdisplay;
 			
-			modename = AllocMem(64, MEMF_PUBLIC);
-			
-			if(modename)
-			{
-				sprintf(modename, "X11: %dx%d", modes[i]->hdisplay, modes[i]->vdisplay);
-				resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
-				resolution[realmode * 4 + 2].ti_Data = (IPTR)modename;
-			} 
-			else
-			{
-				resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
-				resolution[realmode * 4 + 2].ti_Data = (IPTR)"Failed to allocate memory";				
-			}
+			resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
+			resolution[realmode * 4 + 2].ti_Data = (IPTR)"X11: %hx%v";
 	
 			resolution[realmode * 4 + 3].ti_Tag = TAG_DONE;
 			resolution[realmode * 4 + 3].ti_Data = 0UL;
@@ -273,7 +261,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	/* Free strings for modename */
 	for(i=0; i < realmode; i++)
 	{
-		FreeMem(resolution[4*i + 2].ti_Data, 64);
+		FreeMem((APTR)resolution[4*i + 2].ti_Data, 64);
 	}
 	
 	FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
@@ -418,7 +406,6 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     else
     {
 	OOP_Object  	*friend;
-	BOOL 	    	 usex11 = FALSE;
     	HIDDT_StdPixFmt  stdpf;
 
 	friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);

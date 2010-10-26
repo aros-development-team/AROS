@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -116,9 +116,9 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 
 static int MySysErrorHandler (Display * display)
 {
-    perror ("X11-Error");
-
-    // *((ULONG *)0) = 0;
+/*  This should have been host's perror(), not AROS perror()
+    perror ("X11-Error"); */
+    bug("X11 system error!\n");
 
     return 0;
 }
