@@ -2,15 +2,16 @@
 include $(TOP)/config/make.cfg
 
 FILES=newstackswap offsets getcc \
-      cachecleare cacheclearu cachecontrol cachepostdma cachepredma \
-      supervisor
+      cachecleare cacheclearu cachecontrol cachepostdma cachepredma
+
+AFILES=stackswap permit supervisor
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec $(PARANOIA_CFLAGS)
+USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls
 
-USER_AFLAGS := -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
-  asmfiles="stackswap" \
+  asmfiles="$(AFILES)" \
   files="$(FILES)" \
   arch=m68k
 
