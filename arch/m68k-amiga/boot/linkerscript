@@ -1,22 +1,26 @@
 MEMORY 
 {
   rom (rx)  : org = 0x00f80000 , l = 512K
-  ram (rwx) : org = 0x00000000 , l = 128K
+  ram (rwx) : org = 0x00000000 , l = 2M
 }
 
 SECTIONS 
 {
   .sysbase                    : { . = 4; SysBase = .; . += 4; } >ram
-  .stack                      : { _stack = .;
-                                  . = 0x10000 - 8;
+  .stack               0x1000 : { 
+  	  		          _stack = .;
+                                  . = . + 0xf000;
                                   _stack_end = .;      } >ram
-  .bss                        : { _bss = .;
+  .bss                        : {  _bss = .;
                                   *(.bss)
                                   _bss_end = .;        } >ram
+  .ram  ALIGN(0x10)           : { _ram_start = .; } >ram
   /* This should cause angry complaints if .data exists
    * We don't want .data, and we don't need it.
    */
   .data                       : { *(.data)             } >ram
-  .text 0x00f80000            : { *(.text)             } >rom =0x0000
+  .text 0x00f80000            : { _text_start = .;
+  	                          *(.text)
+                                  _text_end = .;       } >rom =0x0000
   .rodata                     : { *(.rodata .rodata.*) } >rom =0x0000
 }
