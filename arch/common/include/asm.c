@@ -76,6 +76,7 @@ int main(void) {
     DEFINE(TF_LAUNCH     , TF_LAUNCH);
 
     asm volatile("\n/* Exec functions */" ::);
+    DEFINE(Supervisor    , FuncOffset (5));
     DEFINE(Reschedule    , FuncOffset (8));
     DEFINE(Switch        , FuncOffset (9));
     DEFINE(Dispatch      , FuncOffset (10));
