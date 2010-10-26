@@ -82,8 +82,7 @@ create-mf-inc-again :
 
 #MM- kernel-exec-pp-m68k : exec-$(ARCH)-$(CPU) kernel-exec-linklib
 
-#MM- kernel-intuition-pp-m68k : intuition-$(GFXSYSTEM) \
-#MM	intuition-$(CPU) kernel-intuition-linklib
+#MM- kernel-intuition-pp-m68k: intuition-$(CPU) kernel-intuition-linklib
 
 #MM- kernel-battclock-pp-m68k : battclock-$(CPU) kernel-battclock-linklib
 

@@ -28,11 +28,6 @@ HOST_STRIP	:= @aros_host_strip@
 HOST_EXE_SUFFIX	:= @aros_host_exe_suffix@
 HOST_LIB_SUFFIX := @aros_host_lib_suffix@
 
-HOST_X11_CFLAGS := $(addprefix -I,@aros_host_x11_includes@)
-HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@) -lX11
-HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
-HOST_SDL_LIBS   := @aros_host_sdl_libs@
-
 MMAKE		:= @MMAKE@
 AWK		:= @AWK@
 RM		:= @RM@
@@ -54,40 +49,7 @@ PPMTOILBM   	:= @PPMTOILBM@
 SED		:= @SED@
 CHMOD		:= @CHMOD@
 
-X11_HIDD_TARGET := @x11_hidd_target@
-SDL_HIDD_TARGET := @sdl_hidd_target@
-
-SDL_CFLAGS      := @SDL_CFLAGS@
-
-CROSSTOOLS_TARGET := @crosstools_target@
-
-# DBUS flags
-ENABLE_DBUS		:= @ENABLE_DBUS@
-DBUS_CFLAGS		:= @DBUS_CFLAGS@
-DBUS_LIBFLAGS		:= @DBUS_LIBFLAGS@
-
 # Apple XCode path (for iOS target)
 XCODE_PATH   := @aros_xcode_path@
 
-# --------------------------------------------------------------------------
-# MAGIC: This is needed here for MetaMake to work. mmake will read the
-# configured version of this file to find out a number of variables.
-# --------------------------------------------------------------------------
-HOSTDIR         := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
-TOOLDIR         := $(HOSTDIR)/tools
-GENMF           := $(TOOLDIR)/genmf.py
-
-# -------------------------------------------------------------------------- 
-# COMPATABILITY SECTION - WILL BE REMOVED IN THE FUTURE
-# This is a hack. Keep it here so mmake will find these variables although
-# the target values are not known yet here.
-# --------------------------------------------------------------------------
-ARCH            := $(AROS_TARGET_ARCH)
-CPU             := $(AROS_TARGET_CPU)
-GFXSYSTEM	:= gfxhidd
-CC		:= $(TARGET_CC)
-AS		:= $(TARGET_AS)
-COMMON_CFLAGS	:= $(TARGET_CFLAGS)
-COMMON_AFLAGS	:= $(TARGET_AFLAGS)
-ILDFLAGS	= $(TARGET_LDFLAGS)
 # --------------------------------------------------------------------------

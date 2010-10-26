@@ -53,24 +53,4 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
   files="dos_init $(FUNCTIONS) $(FILES)" \
   noref=lddemon uselibs="rom"
 
-TESTS := datetostr runprocess strtodate splitname readargs
-TEST_DEPLIBS := arossupport arosc amiga
-TEST_DEPS := $(foreach f,$(TEST_DEPLIBS),$(LIBDIR)/lib$(f).a)
-
-#MM
-check : setup-check $(foreach f,$(TESTS),$(EXEDIR)/$(f))
-	@$(NOP)
-
-$(TESTDIR)/% : %.c $(TEST_DEPS)
-	%link_q opt="$(ILDFLAGS) -DTEST $(COMMON_CFLAGS) $(LIBS)"
-
-setup-check :
-	%mkdirs_q $(TESTOBJDIR) $(EXEDIR)
-
-$(TESTDIR)/runprocess : runprocess.c ../../config/unix/exec/stackswap.c
-	$(CC) -DTEST -DNO_MAIN $(CFLAGS) -c ../../config/unix/exec/stackswap.c \
-	    -o $(TESTOBJDIR)/ss.o
-	$(CC) -DTEST $(CFLAGS) $< $(TESTOBJDIR)/ss.o -o $@
-	$(RM) $(TESTOBJDIR)/ss.o
-
 %common

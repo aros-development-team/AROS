@@ -72,9 +72,9 @@ exec-solaris : $(OSGENDIR)/exec/init.o
 
 #MM- setup-battclock-solaris : setup-battclock-unix
 
-#MM- kernel-graphics-solaris : graphics-$(GFXSYSTEM) hidd-graphics-x11 kernel-graphics-linklib
+#MM- kernel-graphics-solaris : hidd-graphics-x11 kernel-graphics-linklib
 
-#MM- kernel-intuition-solaris : intuition-$(GFXSYSTEM) kernel-intuition-linklib
+#MM- kernel-intuition-solaris : kernel-intuition-linklib
 
 #MM- kernel-hidd-solaris : kernel-hidd-linklib kernel-hidd-unix
 

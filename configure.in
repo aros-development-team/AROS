@@ -1927,6 +1927,11 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         fi
     fi
 
+    dnl oss.library
+    AC_CHECK_HEADER(sys/soundcard.h)
+    if test "x-$ac_cv_header_sys_soundcard_h" = "x-yes" ; then
+    	oss_library_target=workbench-libs-oss-unix
+    fi
 fi
 
 
@@ -2039,6 +2044,7 @@ AC_SUBST(crosstools_target)
 # Graphics Related
 AC_SUBST(x11_hidd_target)
 AC_SUBST(sdl_hidd_target)
+AC_SUBST(oss_library_target)
 
 AC_SUBST(aros_default_wbwidth)
 AC_SUBST(aros_default_wbheight)
