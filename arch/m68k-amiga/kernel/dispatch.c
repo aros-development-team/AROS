@@ -1,21 +1,30 @@
 #include <aros/kernel.h>
 
+#include <exec/alerts.h>
 #include <exec/execbase.h>
-#include <defines/kernel.h>
+#include <proto/exec.h>
 
-#include "exec_intern.h"
+#include <kernel_base.h>
+#include <kernel_syscall.h>
+#include <kernel_debug.h>
+
+#if defined(DEBUG) && (DEBUG == 1)
+#define D(x) x
+#else
+#define D(x)
+#endif
 
 /*****************************************************************************
 
     NAME */
-#include <proto/exec.h>
+#include <proto/kernel.h>
 
-/*  NAME */
+AROS_LH0(void, KrnDispatch,
 
-	AROS_LH0(void, Dispatch,
+/*  SYNOPSIS */
 
 /*  LOCATION */
-         struct ExecBase *, SysBase, 10, Exec)
+         struct KernelBase *, KernelBase, 4, Kernel)
 
 /*  FUNCTION
 
@@ -50,23 +59,29 @@
     	asm volatile ("stop #0x2000\n"); // Wait for an interrupt
     }
 
+    bug(" Dispatch Task=%p, SP=%p (0x%04x, %p)\n",
+    	 next, next->tc_SPReg, *(UWORD *)(next->tc_SPReg - 6),
+    	 *(ULONG *)(next->tc_SPReg - 4));
+
     SysBase->DispCount++;
 
+    SysBase->IDNestCnt = next->tc_IDNestCnt;
     SysBase->ThisTask = next;
-    SysBase->Quantum = SysBase->Elapsed;
+    SysBase->Elapsed = SysBase->Quantum;
+    SysBase->SysFlags &= ~SFF_QuantumOver;
     next->tc_State = TS_RUN;
 
-    SysBase->IDNestCnt = next->tc_IDNestCnt;
     if (SysBase->IDNestCnt < 0)
     	    KrnSti();
     else
     	    KrnCli();
 
-    if (next->tc_Flags & TB_LAUNCH) {
+    if (next->tc_Flags & TF_LAUNCH) {
     	    D(bug("%s:%d task->Launch called for %p\n", __func__, __LINE__, next->tc_Launch));
     	    AROS_UFC0(void, next->tc_Launch);
     }
-    if (next->tc_Flags & TB_EXCEPT) {
+
+    if (next->tc_Flags & TF_EXCEPT) {
     	    D(bug("%s:%d task exception - what to do?\n"));
     	    extern int breakpoint(void); breakpoint();
 
@@ -81,18 +96,25 @@
 
     /* Copy from the user stack to the supervisor stack,
      * then 'rte' to the original frame, which should
-     * be Switch().
+     * be in Switch().
      */
     asm volatile (
-    	"move.l %0,%%usp\n"
-    	"move.w %0@+,%%sp@-\n"		// %sr
-    	"move.l %0@+,%%sp@-\n"		// Return PC
-    	"movem.l (%0),%%d0-%%d7/%%a0-%%a6\n"
-    	"rte\n"
+    	"    move.l  %0,%%usp\n"
+    	"    btst    #0,%1\n"			// Are we a 68010/68020?
+    	"    beq.s   0f\n"			// Nope!
+    	"    move.w  #0x0020,%%sp@-\n"		// Yep!
+    	"0:\n"
+    	"    move.l  %0@(-(4)),%%sp@-\n"	// Return PC
+    	"    move.w  %0@(-(4+2)),%%sp@-\n"	// %sr
+    	"    movem.l %0@(-(4+2+15*4)),%%d0-%%d7/%%a0-%%a6\n" // restore everything
+    	"    rte\n"
     	:
-    	: "a" (next->tc_SPReg)
+    	: "a" (next->tc_SPReg),
+    	  "r" ((SysBase->AttnFlags & (AFB_68010 | AFB_68020)) ? 1 : 0)
     	: );
 
     /* NOTE: We should never get here! */
+    D(bug("[KrnDispatch] Oh noes! Unpossible code executed!\n"));
+
     AROS_LIBFUNC_EXIT
 }

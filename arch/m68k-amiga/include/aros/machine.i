@@ -20,4 +20,8 @@
  * Define the following when function calls pass arguments via registers.
  * This is used for conditional compilation in some assembly functions here.
  */
-#undef DoRegisterCalls
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#define DoRegisterCalls
+#else
+#undef  DoRegisterCalls
+#endif

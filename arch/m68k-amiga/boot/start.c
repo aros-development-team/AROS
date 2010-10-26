@@ -131,10 +131,9 @@ static void DebugPuts(register const char *buff)
 		DebugPutChar(*buff);
 }
 
-#define MEM_START	0x00040000
-#define MEM_SIZE        0x001c0000
-
-struct MemHeader ChipRAM;
+extern void *_ram_start;
+#define MEM_START	((ULONG)(&_ram_start))
+#define MEM_SIZE        (0x00200000-MEM_START)
 
 void DebugPutHex(const char *what, ULONG val)
 {
@@ -157,9 +156,13 @@ void start(void)
 	extern void *_stack_end;
 	APTR *tmp;
 	int i;
-	UWORD *kickrom[4] = {
+	UWORD *kickrom[] = {
 		(UWORD *)0x00f80000,
 		(UWORD *)0x01000000,
+		(UWORD *)0x00f00000,
+		(UWORD *)0x00f80000,
+		(UWORD *)0x00e00000,
+		(UWORD *)0x00e80000,
 		(UWORD *)~0,
 		(UWORD *)~0,
 	};
@@ -175,11 +178,12 @@ void start(void)
 
 	struct ExecBase *sysBase;
 	struct MemChunk *mc;
+	struct MemHeader ChipRAM;
 	struct MemHeader *mh = &ChipRAM;
 
 	*((APTR *)(NULL + 0x4)) = NULL;
 
-	/* Set the world know we exist
+	/* Let the world know we exist
 	 */
 	DebugInit();
 	DebugPuts("[reset]\n");
@@ -191,11 +195,6 @@ void start(void)
 	for (i = 0; i < 46; i++)
 		tmp[i] = Exec_FatalException;
 
-	/* Set privilige violation trap - we
-	 * need this to support the Exec/Supervisor call
-	 */
-	tmp[8] = Exec_Supervisor_Trap;
-
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
 	DebugPuts("[bss clear]\n");
@@ -204,6 +203,11 @@ void start(void)
 	/* Must be after the BSS clear! */
 	gdbstub();
 #endif
+
+	/* Set privilige violation trap - we
+	 * need this to support the Exec/Supervisor call
+	 */
+	tmp[6] = Exec_Supervisor_Trap;
 
 	Exec_ScreenCode(CODE_RAM_CHECK);
 
@@ -231,6 +235,9 @@ void start(void)
         sysBase->SysStkUpper    = (APTR)&_stack_end-1;
         sysBase->SysStkLower    = (APTR)&_stack;
 	sysBase->ChkBase=~(ULONG)sysBase;
+
+	/* TODO: Actually check this! */
+	sysBase->AttnFlags |= AFF_68020;
 
 	/* Scan for all other ROM Tags */
 	sysBase->ResModules = krnRomTagScanner(sysBase, kickrom);
