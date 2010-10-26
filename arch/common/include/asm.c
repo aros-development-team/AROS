@@ -34,6 +34,7 @@ int main(void) {
 
     asm volatile("\n/* ExecBase */" ::);
     DEFINE(AttnResched   , offsetof (struct ExecBase, AttnResched));
+    DEFINE(AttnFlags     , offsetof (struct ExecBase, AttnFlags));
     DEFINE(IDNestCnt     , offsetof (struct ExecBase, IDNestCnt));
     DEFINE(TDNestCnt     , offsetof (struct ExecBase, TDNestCnt));
     DEFINE(TaskReady     , offsetof (struct ExecBase, TaskReady));
