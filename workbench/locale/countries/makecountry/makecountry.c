@@ -1,18 +1,18 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Program that makes country files
     Lang: english
 */
 
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <iconv.h>
 
-/* COUNTRY_NAME is a tag for awk for extracting country names list */
-#define COUNTRY_NAME
+#define D(x)
 
 struct CountryEntry
 {
@@ -82,71 +82,72 @@ extern struct CountryPrefs
     vaticanoPrefs,
     zhonghuaPrefs;
 
-/* Please keep this in alphabetical order, ie the order of Latin 1 */
+/* Please keep this in alphabetical order, ie the order of Latin 1.
+   Character set of this file is also Latin 1 */
 
 struct CountryEntry CountryArray[] =
 {
-    { COUNTRY_NAME "andorra"     	 , &andorraPrefs     	},
-    { COUNTRY_NAME "angola"     	 , &angolaPrefs     	},
-    { COUNTRY_NAME "argentina"     	 , &argentinaPrefs     	},
-    { COUNTRY_NAME "australia"   	 , &australiaPrefs 	},
-    { COUNTRY_NAME "belgië"	    	 , &belgiePrefs    	},
-    { COUNTRY_NAME "belgique"    	 , &belgiquePrefs  	},
-    { COUNTRY_NAME "bosna_i_hercegovina" , &bosna_i_hercegovinaPrefs},
-    { COUNTRY_NAME "brasil"	         , &brasilPrefs         },
-    { COUNTRY_NAME "bulgarija"		 , &bulgarijaPrefs	},
-    { COUNTRY_NAME "cabo_verde"		 , &cabo_verdePrefs  	},
-    { COUNTRY_NAME "canada"	    	 , &canadaPrefs    	},
-    { COUNTRY_NAME "canada_français"	 , &canada_francaisPrefs},
-    { COUNTRY_NAME "costa_rica"		 , &costa_ricaPrefs	},
-    { COUNTRY_NAME "czech_republic" 	 , &czech_republicPrefs },
-    { COUNTRY_NAME "danmark"     	 , &danmarkPrefs   	},
-    { COUNTRY_NAME "deutschland" 	 , &deutschPrefs   	},
-    { COUNTRY_NAME "éire"		 , &eirePrefs		},
-    { COUNTRY_NAME "españa"	    	 , &espanaPrefs    	},
-    { COUNTRY_NAME "france"	    	 , &francePrefs    	},
-    { COUNTRY_NAME "great_britain"	 , &greatBritainPrefs   },
-    { COUNTRY_NAME "haïti"		 , &haitiPrefs		},
-    { COUNTRY_NAME "hanguk"	         , &hangukPrefs         },
-    { COUNTRY_NAME "hellas"	         , &hellasPrefs         },
-    { COUNTRY_NAME "hrvatska"    	 , &hrvatskaPrefs    	},
-    { COUNTRY_NAME "indonesia"		 , &indonesiaPrefs	},
-    { COUNTRY_NAME "iran"		 , &iranPrefs		},
-    { COUNTRY_NAME "ireland"		 , &irelandPrefs	},
-    { COUNTRY_NAME "ísland"		 , &islandPrefs		},
-    { COUNTRY_NAME "italia"	    	 , &italiaPrefs    	},
-    { COUNTRY_NAME "jugoslavija" 	 , &jugoslavijaPrefs 	},
-    { COUNTRY_NAME "liechtenstein"	 , &liechtensteinPrefs	},
-    { COUNTRY_NAME "lëtzebuerg"		 , &letzebuergPrefs	},
-    { COUNTRY_NAME "lietuva"		 , &lietuvaPrefs	},
-    { COUNTRY_NAME "magyarország" 	 , &magyarorszagPrefs	},
-    { COUNTRY_NAME "moldova"		 , &moldovaPrefs	},
-    { COUNTRY_NAME "monaco"	    	 , &monacoPrefs	    	},
-    { COUNTRY_NAME "new_zealand"    	 , &new_zealandPrefs	},
-    { COUNTRY_NAME "nihon"	    	 , &nihonPrefs	    	},
-    { COUNTRY_NAME "nederland"   	 , &nederlandPrefs 	},
-    { COUNTRY_NAME "norge"	    	 , &norgePrefs     	},
-    { COUNTRY_NAME "österreich"    	 , &osterreichPrefs 	},
-    { COUNTRY_NAME "polska"	    	 , &polskaPrefs    	},
-    { COUNTRY_NAME "portugal"    	 , &portugalPrefs  	},
-    { COUNTRY_NAME "românia"		 , &romaniaPrefs	},
-    { COUNTRY_NAME "rossija"		 , &rossijaPrefs	},
-    { COUNTRY_NAME "san_marino"  	 , &san_marinoPrefs  	},
-    { COUNTRY_NAME "schweiz"     	 , &schweizPrefs   	},
-    { COUNTRY_NAME "slovensko"		 , &slovenskoPrefs	},
-    { COUNTRY_NAME "slovenija"   	 , &slovenijaPrefs   	},
-    { COUNTRY_NAME "suisse"	    	 , &suissePrefs    	},
-    { COUNTRY_NAME "suomi"	    	 , &suomiPrefs     	},
-    { COUNTRY_NAME "sverige"     	 , &sverigePrefs   	},
-    { COUNTRY_NAME "svizzera"    	 , &svizzeraPrefs    	},
-    { COUNTRY_NAME "timor-leste"    	 , &timor_lestePrefs    },
-    { COUNTRY_NAME "türkiye"     	 , &turkiyePrefs     	},
-    { COUNTRY_NAME "ukrajina"		 , &ukrajinaPrefs	},
-    { COUNTRY_NAME "united_kingdom"	 , &united_kingdomPrefs	},
-    { COUNTRY_NAME "united_states"	 , &united_statesPrefs	},
-    { COUNTRY_NAME "vaticano"		 , &vaticanoPrefs	},
-    { COUNTRY_NAME "zhonghua"		 , &zhonghuaPrefs	},
-    { NULL				 , NULL			}
+    { "andorra"     	 , &andorraPrefs     	},
+    { "angola"     	 , &angolaPrefs     	},
+    { "argentina"     	 , &argentinaPrefs     	},
+    { "australia"   	 , &australiaPrefs 	},
+    { "belgië"	    	 , &belgiePrefs    	},
+    { "belgique"    	 , &belgiquePrefs  	},
+    { "bosna_i_hercegovina", &bosna_i_hercegovinaPrefs},
+    { "brasil"	         , &brasilPrefs         },
+    { "bulgarija"	 , &bulgarijaPrefs	},
+    { "cabo_verde"	 , &cabo_verdePrefs  	},
+    { "canada"	    	 , &canadaPrefs    	},
+    { "canada_français"	 , &canada_francaisPrefs},
+    { "costa_rica"	 , &costa_ricaPrefs	},
+    { "czech_republic" 	 , &czech_republicPrefs },
+    { "danmark"     	 , &danmarkPrefs   	},
+    { "deutschland" 	 , &deutschPrefs   	},
+    { "éire"		 , &eirePrefs		},
+    { "españa"	    	 , &espanaPrefs    	},
+    { "france"	    	 , &francePrefs    	},
+    { "great_britain"	 , &greatBritainPrefs   },
+    { "haïti"		 , &haitiPrefs		},
+    { "hanguk"	         , &hangukPrefs         },
+    { "hellas"	         , &hellasPrefs         },
+    { "hrvatska"    	 , &hrvatskaPrefs    	},
+    { "indonesia"	 , &indonesiaPrefs	},
+    { "iran"		 , &iranPrefs		},
+    { "ireland"		 , &irelandPrefs	},
+    { "ísland"		 , &islandPrefs		},
+    { "italia"	    	 , &italiaPrefs    	},
+    { "jugoslavija" 	 , &jugoslavijaPrefs 	},
+    { "liechtenstein"	 , &liechtensteinPrefs	},
+    { "lëtzebuerg"	 , &letzebuergPrefs	},
+    { "lietuva"		 , &lietuvaPrefs	},
+    { "magyarország" 	 , &magyarorszagPrefs	},
+    { "moldova"		 , &moldovaPrefs	},
+    { "monaco"	    	 , &monacoPrefs	    	},
+    { "new_zealand"    	 , &new_zealandPrefs	},
+    { "nihon"	    	 , &nihonPrefs	    	},
+    { "nederland"   	 , &nederlandPrefs 	},
+    { "norge"	    	 , &norgePrefs     	},
+    { "österreich"    	 , &osterreichPrefs 	},
+    { "polska"	    	 , &polskaPrefs    	},
+    { "portugal"    	 , &portugalPrefs  	},
+    { "românia"		 , &romaniaPrefs	},
+    { "rossija"		 , &rossijaPrefs	},
+    { "san_marino"  	 , &san_marinoPrefs  	},
+    { "schweiz"     	 , &schweizPrefs   	},
+    { "slovensko"	 , &slovenskoPrefs	},
+    { "slovenija"   	 , &slovenijaPrefs   	},
+    { "suisse"	    	 , &suissePrefs    	},
+    { "suomi"	    	 , &suomiPrefs     	},
+    { "sverige"     	 , &sverigePrefs   	},
+    { "svizzera"    	 , &svizzeraPrefs    	},
+    { "timor-leste"    	 , &timor_lestePrefs    },
+    { "türkiye"     	 , &turkiyePrefs     	},
+    { "ukrajina"	 , &ukrajinaPrefs	},
+    { "united_kingdom"	 , &united_kingdomPrefs	},
+    { "united_states"	 , &united_statesPrefs	},
+    { "vaticano"	 , &vaticanoPrefs	},
+    { "zhonghua"	 , &zhonghuaPrefs	},
+    { NULL		 , NULL			}
 };
 
 /* This is equivalent to the start of the catalog file.
@@ -206,11 +207,10 @@ int doCountry(struct CountryPrefs *cp, char *progname, char *filename)
 int main(int argc, char **argv)
 {
     int i,j,res = 0;
-    char buffer[1024];
-    char *inpos;
-    char *outpos;
-    size_t inbytes, outbytes;
-    iconv_t cd;
+    int do_all;
+    char buffer[64];
+    char *name;
+    iconv_t cd = (iconv_t)-1;
 
     if(argc < 3)
     {
@@ -218,46 +218,62 @@ int main(int argc, char **argv)
 	return(20);
     }
 
-    cd = iconv_open("ISO-8859-1", "ISO-8859-1");
-    if(cd == (iconv_t)(-1))
+    do_all = strcmp("--all", argv[2]);
+
+    /* Check host OS locale. If it's UTF-8, use UTF-8 file names. Otherwise use Latin-1 names. */
+    name = setlocale(LC_CTYPE, "");
+    D(printf("System locale: %s\n", name));
+
+    /* Use strstr() because for example on Linux this will be "en_US.UTF-8" while on MacOS it's just "UTF-8" */
+    if (strstr(name, "UTF-8"))
     {
-	printf("%s: Error converting character sets\n", argv[0]);
-	return(20);
+	cd = iconv_open("UTF-8", "ISO-8859-1");
+	if (cd == (iconv_t)(-1))
+	{
+	    printf("%s: Error converting character sets\n", argv[0]);
+	    return(20);
+	}
     }
 
-    for(i=2; i < argc; i++)
+    for(j=0; CountryArray[j].ca_Name != NULL; j++)
     {
-	for(j=0; CountryArray[j].ca_Name != NULL; j++)
-	{
+	name = CountryArray[j].ca_Name;
+
+    	if (cd != (iconv_t)-1)
+    	{
+    	    char *out = buffer;
+    	    size_t inbytes, outbytes;
+
 	    /* Convert country name to local character set */
-	    inpos = CountryArray[j].ca_Name;
-	    inbytes = strlen(inpos) + 1;
-	    outpos = buffer;
-	    outbytes = 1024;
-	    iconv(cd, &inpos, &inbytes, &outpos, &outbytes);
-
-	    res = strcmp(buffer, argv[i]);
-	    if(res == 0)
-	    {
-		strcpy(buffer, argv[1]);
-		strcat(buffer, argv[i]);
-		strcat(buffer, ".country");
-		doCountry(CountryArray[j].ca_Data, argv[0], buffer);
-		break;
-	    }
-#if 0
-/* stegerg: does not work because of 'ö' in österreich */
-	    /* If countryArray < argv[] don't bother searching */
-	    else if(res > 0)
-		break;
-#endif
-
+	    inbytes = strlen(name) + 1;
+	    outbytes = sizeof(buffer);
+	    iconv(cd, &name, &inbytes, &out, &outbytes);
+	    name = buffer;
 	}
-	if(res != 0)
+
+	res = do_all;
+	if (res)
 	{
-	    printf("Unknown country %s\n", argv[i]);
-	    //return(20);
+	    for(i=2; i < argc; i++)
+    	    {
+		res = strcmp(name, argv[i]);
+		if (!res)
+		    break;
+	    }
+	}
+
+	if (res == 0)
+	{
+	    char path[1024];
+
+	    printf("Generating %s.country\n", name);
+
+	    strcpy(path, argv[1]);
+	    strcat(path, name);
+	    strcat(path, ".country");
+	    doCountry(CountryArray[j].ca_Data, argv[0], path);
 	}
     }
+
     return 0;
 }

@@ -6,7 +6,6 @@ COUNTRIES    := $(basename $(call WILDCARD, *.c))
 COUNTRYDIR   := $(AROS_LOCALE)/Countries
 MAKECOUNTRY  := $(OBJDIR)/makecountry
 OBJDIR 	     := $(GENDIR)/$(CURDIR)
-COUNTIFF     := $(shell awk '($$2 == "COUNTRY_NAME") {gsub(/"/,"",$$3); printf "$(COUNTRYDIR)/%s.country ", $$3}' $(SRCDIR)/$(CURDIR)/makecountry/makecountry.c)
 OBJS         := $(foreach f,countryprefs $(COUNTRIES),$(OBJDIR)/$(f).o)
 DEPS         := $(foreach f,countryprefs $(COUNTRIES),$(OBJDIR)/$(f).d)
 USER_CFLAGS  := -D_EURO
@@ -22,16 +21,14 @@ endif
 #MM- workbench-locale : workbench-locale-countries
 #MM workbench-locale-countries : includes
 
-workbench-locale-countries: $(MAKECOUNTRY) $(COUNTIFF)
+#MM
+workbench-locale-countries: $(MAKECOUNTRY) $(COUNTRYDIR) workbench-locale-countries-quick
 
 #MM
-workbench-locale-countries-quick : workbench-locale-countries
-
-$(COUNTIFF) : | $(MAKECOUNTRY) $(COUNTRYDIR)
-$(COUNTRYDIR)/%.country : $(MAKECOUNTRY)
-	@$(ECHO) "Making $(notdir $@)..."
-	@cd $(SRCDIR)/$(CURDIR); $(MAKECOUNTRY) $(COUNTRYDIR)/ $*
-
+workbench-locale-countries-quick:
+	@$(ECHO) Making country files...
+	@cd $(SRCDIR)/$(CURDIR); $(MAKECOUNTRY) $(COUNTRYDIR)/ --all
+	
 $(MAKECOUNTRY) : $(OBJS) $(OBJDIR)/makecountry.o
 	@$(ECHO) "Making $(@F)..."
 	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@ $(LIBICONV)
