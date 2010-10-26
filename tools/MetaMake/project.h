@@ -5,7 +5,7 @@
 #define __MMAKE_PROJECT_H
 
 /* MetaMake - A Make extension
-   Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -37,11 +37,11 @@ struct Project
     char * buildtop;
     char * defaulttarget;
     char * genmakefilescript;
-    char * globalvarfile;
     char * genglobalvarfile;
 
     int readvars;
 
+    struct List globalvarfiles;
     struct List genmakefiledeps;
     struct List ignoredirs;
     struct List vars;
