@@ -40,7 +40,9 @@ FILES	    := traphandler exec_util
 # I need the private includes (for SIZEOF_ALL_REGISTERS) and they
 # have to be first in the list
 USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/exec -I$(SRCDIR)/$(CURDIR) \
-               -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel \
+               -I$(SRCDIR)/arch/all-$(ARCH)/kernel \
+               -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
+               -I$(SRCDIR)/rom/kernel \
 	       -I$(GENINCDIR) -idirafter /usr/include
 
 # As a hack the SYS_FILES are added as the initfile.
