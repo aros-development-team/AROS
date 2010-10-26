@@ -258,12 +258,6 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	
     D(bug("Super method called\n"));
 
-	/* Free strings for modename */
-	for(i=0; i < realmode; i++)
-	{
-		FreeMem((APTR)resolution[4*i + 2].ti_Data, 64);
-	}
-	
 	FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
 	FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 2));
 	XCALL(XCloseDisplay, disp);
