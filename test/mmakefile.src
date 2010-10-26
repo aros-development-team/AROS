@@ -113,7 +113,8 @@ COMMONTESTFILES := \
     joystick \
     supertest \
     getcpuinfo \
-	printf_f
+    printf_f \
+    pubscreen
 
 HOSTEDTESTFILES :=  \
     hostlib
