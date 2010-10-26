@@ -234,7 +234,6 @@ void start(void)
 
         sysBase->SysStkUpper    = (APTR)&_stack_end-1;
         sysBase->SysStkLower    = (APTR)&_stack;
-	sysBase->ChkBase=~(ULONG)sysBase;
 
 	/* TODO: Actually check this! */
 	sysBase->AttnFlags |= AFF_68020;
