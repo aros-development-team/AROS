@@ -80,7 +80,7 @@ static void SigIOHandler(struct emulbase *emulbase, void *unused)
 	{
 	    /* Reply the requst if it is done */
 	    Remove((struct Node *)req);	
-	    if (len == 1)
+	    if (len == -1)
 		req->io_DosError = *emulbase->pdata.errnoPtr;
 	    else {
 		req->io_Union.io_READ.io_Length = len;
