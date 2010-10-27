@@ -612,8 +612,14 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
             }
         }
     }
+    else
+    {
+        /* TODO: Implement blanking out display */
+    }
 
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    /* Specification for NoFrameBuffer drivers says to return the received 
+       bitmap and not to call the base Show method */
+    return msg->bitMap;
 }
 
 #if AROS_BIG_ENDIAN
