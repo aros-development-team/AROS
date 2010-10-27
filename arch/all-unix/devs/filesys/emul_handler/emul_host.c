@@ -1260,11 +1260,15 @@ LONG examine_all(struct emulbase *emulbase,
 	emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
 	ReleaseSemaphore(&emulbase->pdata.sem);
 
-	error = 0;
+	/* Examination will continue from the current position */
+	return 0;
     }
 
     if(!error)
 	error = ERROR_NO_MORE_ENTRIES;
+    /* Reading the whole directory has been completed, so reset position */
+    DoRewindDir(emulbase, fh);
+
     return error;
 }
 
