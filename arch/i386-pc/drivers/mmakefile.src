@@ -28,7 +28,6 @@ include $(TOP)/config/make.cfg
 
 #MM- AROS-pc-i386-drivers : \
 #MM    hidd-vmwaresvga \
-#MM    hidd-nvidia \
 #MM    hidd-radeon \
 #MM    hidd-nouveau \
 #MM    hidd-intelG45

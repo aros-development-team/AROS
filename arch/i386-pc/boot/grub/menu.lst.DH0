@@ -1,8 +1,8 @@
 timeout 5
 default 3
 
-title AROS (NVidia graphics)
-    kernel /dh0/boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit floppy=disabled
+title AROS (NVidia Nouveau graphics)
+    kernel /dh0/boot/aros-pc-i386.gz gfx=hidd.gfx.nouveau lib=DRIVERS:nouveau.hidd ATA=32bit floppy=disabled
 
 title AROS (ATI graphics)
     kernel /dh0/boot/aros-pc-i386.gz gfx=RadeonDriver lib=DRIVERS:radeon.hidd ATA=32bit floppy=disabled
