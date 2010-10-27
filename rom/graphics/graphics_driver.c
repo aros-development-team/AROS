@@ -551,7 +551,16 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata 
 
     fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
+    
+    /* The code below is only valid for drivers having NoFrameBuffer == TRUE */
+    /* Detection: these kind of drivers must return the same bitmap they received */
+    if (fb == bm)
+    {
+        mdd->frontbm = bitmap;
+        return;
+    }
 
+    /* The code below is only valid for drivers having NoFrameBuffer == FALSE */
     if (fb) {
         IPTR width, height;
 
