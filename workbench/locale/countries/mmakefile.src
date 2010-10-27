@@ -22,10 +22,10 @@ endif
 #MM workbench-locale-countries : includes
 
 #MM
-workbench-locale-countries: $(MAKECOUNTRY) $(COUNTRYDIR) workbench-locale-countries-quick
+workbench-locale-countries: workbench-locale-countries-quick
 
 #MM
-workbench-locale-countries-quick:
+workbench-locale-countries-quick: $(MAKECOUNTRY) $(COUNTRYDIR)
 	@$(ECHO) Making country files...
 	@cd $(SRCDIR)/$(CURDIR); $(MAKECOUNTRY) $(COUNTRYDIR)/ --all
 	
