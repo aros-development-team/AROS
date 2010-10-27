@@ -6,7 +6,6 @@
  */
 
 #include "debug.h"
-
 #include "cdcacm.class.h"
 
 /* /// "Lib Stuff" */
@@ -23,6 +22,8 @@ const APTR DevFuncTable[] =
     &AROS_SLIB_ENTRY(devAbortIO, dev),
     (APTR) -1,
 };
+
+static const struct NepClassSerial fake_binding;
 
 static int libInit(LIBBASETYPEPTR nh)
 {
@@ -119,7 +120,7 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
     IPTR numintf;
     struct PsdPipe *pp;
     struct MsgPort *mp;
-
+	
     KPRINTF(1, ("nepSerialAttemptInterfaceBinding(%08lx)\n", pif));
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
@@ -142,106 +143,120 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
                     DA_VendorID, &vendid,
                     TAG_END);
 
-        // huawei ModeSwitch
-		
-        if( (vendid == 0x12d1 ) && ( numintf < 4 ) && (
-                                    prodid == 0x1001 ||    // e169
-                                    prodid == 0x1003       // e220
-        )){
-            if((mp = CreateMsgPort()))
-            {
-                if((pp = psdAllocPipe(pd, mp, NULL)))
-                {
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                     "Huawei ModeSwitch...");
-                    psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE,
-                            USR_SET_FEATURE, UFS_DEVICE_REMOTE_WAKEUP, 0);
-                    psdDoPipe(pp, NULL, 0);
-                    psdFreePipe(pp);
-                }
-                DeleteMsgPort(mp);
-            }
-            CloseLibrary(ps);
-            return(NULL);
-        }
-		
-		// AnyDATA ADU-500A, ADU-510A, ADU-510L, ADU-520A ModeSwitch
-		
-		if( vendid == 0x05c6  &&  prodid == 0x1000 ){ 
-			bug("Experimental ANYDATA ModeSwitch..\n");
-			
-			struct PsdInterface *DataIf = 0;
-            struct PsdEndpoint *EPOut = 0;
-            struct PsdPipeStream *EPOutStream;	
-			LONG out;	
-				
-			do{
-				bug("FindInterface...\n");
-				DataIf = psdFindInterface( pd , DataIf , TAG_END );
-				if(!DataIf)
+
+		//bug("cdcacm.class: vendor id=%x  product id=%x\n",vendid,prodid);
+
+
+		// huawei ModeSwitch
+		if( (vendid == 0x12d1 ) && ( numintf < 4 ) && (
+									prodid == 0x1001 ||    // e169
+									prodid == 0x1003       // e220
+			)){
+				if((mp = CreateMsgPort()))
 				{
-					break;
+					if((pp = psdAllocPipe(pd, mp, NULL)))
+					{
+						psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+						"Huawei ModeSwitch...");
+						psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE,
+										USR_SET_FEATURE, UFS_DEVICE_REMOTE_WAKEUP, 0);
+						psdDoPipe(pp, NULL, 0);
+						psdFreePipe(pp);
+					}
+					DeleteMsgPort(mp);
 				}
-				bug("FindEndpoint...\n");			
+				CloseLibrary(ps);
+				if( ifclass == MASSSTORE_CLASSCODE ){
+					bug("cdcacm.class: fake massstorage binding\n");
+					return (struct NepClassSerial *)&fake_binding;
+				}
+				return(NULL);
+		}
+
+
+		//  Huawei, e122  and many others.
+		if( (vendid == 0x12d1 ) && ( prodid == 0x1446 )){
+
+			struct PsdInterface *DataIf = 0;
+			struct PsdEndpoint *EPOut;
+			IPTR EPnum=0,IFnum=0,IFEPnum=0;
+			UBYTE magic_cmd[31];
+		
+			//  magic command from BSD u3g driver sources.
+			memset(magic_cmd, 0, sizeof(magic_cmd));
+			magic_cmd[0] = 0x55; 
+			magic_cmd[1] = 0x53;
+			magic_cmd[2] = 0x42;
+			magic_cmd[3] = 0x43;
+			magic_cmd[15]= 0x11;
+			magic_cmd[16]= 0x06;
+
+			bug("Huawei e122 ModeSwitch: FindInterface...\n");
+			if( ( DataIf = psdFindInterface( pd , DataIf , TAG_END ) ) ){
+
+				psdGetAttrs(PGA_INTERFACE,DataIf,
+							IFA_InterfaceNum,&IFnum,
+							IFA_NumEndpoints,&IFEPnum,
+							TAG_END);
+				bug("...interface num:%d  number of endpoints:%d\n",IFnum,IFEPnum);
+
+				bug("Find BULK OUT Endpoint...\n");
 				EPOut = psdFindEndpoint( DataIf, NULL,
-                                             EA_IsIn, FALSE,
-                                             EA_EndpointNum, 8,
-											 EA_TransferType, USEAF_BULK,
-                                             TAG_END);
-			}while( ! EPOut );
-																					
-            if( EPOut )
-            {
-				bug("OpenStream...\n");
-                if((EPOutStream = psdOpenStream( EPOut,
-                                                        PSA_BufferedWrite, FALSE,
-                                                        PSA_NoZeroPktTerm, TRUE,
-                                                        PSA_NakTimeout, TRUE,
-                                                        PSA_NakTimeoutTime, 5000,
-                                                        PSA_AbortSigMask,SIGBREAKF_CTRL_C,
-                                                        TAG_END)))
-                {
-					/*
-                    UBYTE data[] = {0x55,0x53,0x42,0x43,0x28,0x93,0x2a,0x86,
-									0x00,0x00,0x00,0x00,0x00,0x00,0x06,0x1b,
-									0x00,0x00,0x00,0x02,0x00,0x00,0x00,0x00,
-									0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
-					*/				
-					UBYTE data[] = {0x55,0x53,0x42,0x43,0x12,0x34,0x56,0x78,
-									0x00,0x00,0x00,0x00,0x00,0x00,0x06,0x1b,
-									0x00,0x00,0x00,0x02,0x00,0x00,0x00,0x00,
-									0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
-					
-					
-                    bug("StreamWrite %d bytes ...\n",sizeof(data));
-                    out = psdStreamWrite( EPOutStream , data , sizeof(data) );
-                    bug("%d bytes writed.\n",out);
-                    psdCloseStream(EPOutStream);
+										EA_IsIn, FALSE,
+										EA_TransferType, USEAF_BULK,
+										TAG_END);
+				if( EPOut ){
+					psdGetAttrs(PGA_ENDPOINT,EPOut,
+								EA_EndpointNum, &EPnum,
+								TAG_END);
+					bug("...endpoint address:%d\n",EPnum);
 
-                }
-            }
+					if((mp = CreateMsgPort())){
+						bug("OpenPipe...\n");
+						if((pp = psdAllocPipe(pd, mp, EPOut))){
+							psdSetAttrs(PGA_PIPE, pp,
+										PPA_NakTimeout,TRUE,
+										PPA_NakTimeoutTime, 5000,
+										TAG_END);
+							bug("Write %d bytes ...\n",sizeof(magic_cmd));
+							bug("Error = %d\n", psdDoPipe(pp, magic_cmd, sizeof(magic_cmd)));
+							psdFreePipe(pp);
+						}
+						DeleteMsgPort(mp);
+					}
+				}
+			}
 		
-            CloseLibrary(ps);
-            return(NULL);
-        }
-		
+			CloseLibrary(ps);
+			if( ifclass == MASSSTORE_CLASSCODE ){
+				bug("cdcacm.class: fake massstorage binding\n");
+				return (struct NepClassSerial *)&fake_binding;
+			}
+			return(NULL);
+		}
+
 		CloseLibrary(ps);
-				
-		// AnyDATA
-		if( vendid == 0x16d5  &&  prodid == 0x6502 ){ 
-			bug("AnyDATA found: ifclass=%d subclass=%d protocol=%d NumEndpoints=%d\n",
-				ifclass,subclass,proto,NumEndpoints );
-			return(usbForceInterfaceBinding(nh, pif));
-        }
-
+	
 		// Huawei
-		if( (vendid == 0x12d1) && 
-			(ifclass == 255) && (subclass == 255) && (proto == 255) && 
-			(NumEndpoints == 3) && ( // modem interface
+		if( (vendid == 0x12d1) && (
 			prodid == 0x1001 ||    // e169
-			prodid == 0x1003       // e220
+			prodid == 0x1003 ||    // e220
+			prodid == 0x1406 ||
+			prodid == 0x140b ||
+			prodid == 0x140c ||
+			prodid == 0x1412 ||
+			prodid == 0x141b ||
+			prodid == 0x14ac
         )){
-			return(usbForceInterfaceBinding(nh, pif));
+			//FAKE massstorage binding
+			if( ifclass == MASSSTORE_CLASSCODE ){
+				bug("cdcacm.class: fake massstorage binding\n");
+				return (struct NepClassSerial *)&fake_binding;
+			}
+
+			if((ifclass == 255) && (subclass == 255) && (proto == 255) && (NumEndpoints == 3)){
+				return(usbForceInterfaceBinding(nh, pif));
+			}
         }
 
         if((ifclass == CDCCTRL_CLASSCODE) &&
@@ -251,16 +266,18 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
         {
             return(usbForceInterfaceBinding(nh, pif));
         }
-		
+
         if((ifclass == CDCCTRL_CLASSCODE) &&
            (subclass == CDC_OBEX_SUBCLASS))
         {
             return(usbForceInterfaceBinding(nh, pif));
         }
-		
+
     }
+	
     return(NULL);
 }
+
 /* \\\ */
 
 /* /// "usbForceInterfaceBinding()" */
@@ -399,6 +416,12 @@ void usbReleaseInterfaceBinding(struct NepSerialBase *nh, struct NepClassSerial 
     STRPTR devname;
 
     KPRINTF(1, ("nepSerialReleaseInterfaceBinding(%08lx)\n", ncp));
+
+	if( ncp == &fake_binding ){
+		bug("cdcacm.class: fake massstorage binding released\n");
+		return;
+	}
+
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         Forbid();
