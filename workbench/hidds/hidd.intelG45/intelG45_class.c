@@ -552,6 +552,11 @@ void METHOD(INTELG45, Root, Get)
     		found = TRUE;
     		break;
 
+        case aoHidd_Gfx_HWSpriteTypes:
+            *msg->storage = vHidd_SpriteType_DirectColor;
+            found = TRUE;
+            return;
+
     	case aoHidd_Gfx_DPMSLevel:
     		*msg->storage = SD(cl)->dpms;
     		found = TRUE;
@@ -627,15 +632,6 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
 
                 LOCK_HW
                 G45_LoadState(sd, bm->state);
-#if 0
-                DPMS(sd, sd->dpms);
-
-                fb = bm->BitMap;
-                ShowHideCursor(sd, sd->Card.cursorVisible);
-
-                RADEONEngineReset(sd);
-                RADEONEngineRestore(sd);
-#endif
 
                 sd->VisibleBitmap = bm;
 
@@ -648,7 +644,9 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
     	/* Blank screen */
     }
 
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    /* Specification for NoFrameBuffer drivers says to return the received 
+       bitmap and not to call the base Show method */
+    return msg->bitMap;
 }
 
 OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
