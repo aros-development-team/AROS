@@ -35,9 +35,14 @@ VOID free_ximage(XImage *image);
 /****************************************************************************************/
 
 #define USE_X11_DRAWFUNCS  	1
+#define USE_FRAMEBUFFER     1
 #define X11SOFTMOUSE		1
 #define ADJUST_XWIN_SIZE	1	/* Resize the xwindow to the size of the actual visible screen */
-#define DELAY_XWIN_MAPPING  	1       /* Do not map (show) X window as long as there's no screen */
+#define DELAY_XWIN_MAPPING  1   /* Do not map (show) X window as long as there's no screen */
+
+#if ((USE_FRAMEBUFFER && !X11SOFTMOUSE) || (!USE_FRAMEBUFFER && X11SOFTMOUSE))
+#error Invalid combination of USE_FRAMEBUFFER and X11SOFTMOUSE
+#endif
 
 /****************************************************************************************/
 

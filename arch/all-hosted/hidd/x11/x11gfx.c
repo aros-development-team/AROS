@@ -350,15 +350,16 @@ VOID X11Cl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-    BOOL    	    	    	 framebuffer;    
-    struct pHidd_Gfx_NewBitMap   p;
-    OOP_Object      	    	*newbm;
-    IPTR    	    	    	 drawable;
-    HIDDT_ModeID		 modeid;
-    struct gfx_data 	    	*data;
-    struct TagItem  	    	 tags[] =
+    BOOL                        framebuffer = FALSE;
+    BOOL                        displayable = FALSE;
+    struct pHidd_Gfx_NewBitMap  p;
+    OOP_Object                  *newbm;
+    IPTR                        drawable;
+    HIDDT_ModeID                modeid;
+    struct gfx_data             *data;
+    struct TagItem              tags[] =
     {
-    	{ aHidd_X11Gfx_SysDisplay   , (IPTR) NULL   },	/* 0 */
+	{ aHidd_X11Gfx_SysDisplay   , (IPTR) NULL   },	/* 0 */
 	{ aHidd_X11Gfx_SysScreen    , 0UL   	    },	/* 1 */	
 	{ aHidd_X11Gfx_SysCursor    , 0UL   	    },	/* 2 */
 	{ aHidd_X11Gfx_ColorMap     , 0UL   	    },	/* 3 */
@@ -368,7 +369,7 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     };
     
     EnterFunc(bug("X11Gfx::NewBitMap()\n"));
-    
+
     data = OOP_INST_DATA(cl, o);
     
     tags[0].ti_Data = (IPTR)data->display;
@@ -379,10 +380,14 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     tags[6].ti_Data = (IPTR)msg->attrList;
     
     /* Displayable bitmap ? */
+#if USE_FRAMEBUFFER
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+#else
+    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+#endif
     modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
 		
-    if (framebuffer)
+    if (framebuffer || displayable)
     {
     	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
 	tags[5].ti_Data	= (IPTR)XSD(cl)->onbmclass;
@@ -429,7 +434,7 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     
     newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
     
-    if (NULL != newbm && framebuffer)
+    if (NULL != newbm && (framebuffer || displayable))
     {
     	OOP_GetAttr(newbm, aHidd_X11BitMap_Drawable, &drawable);
 	data->fbwin = (Window)drawable;
@@ -466,6 +471,9 @@ VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
     	switch (idx)
 	{
+#if !USE_FRAMEBUFFER
+	    case aoHidd_Gfx_NoFrameBuffer:
+#endif
 	    case aoHidd_Gfx_IsWindowed:
 	    	*msg->storage = TRUE;
 		return;
@@ -525,7 +533,11 @@ OOP_Object *X11Cl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
     if (!msg->bitMap)
     {
+#if USE_FRAMEBUFFER    
     	return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+#else
+    	return msg->bitMap;
+#endif
     }
     
     OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
@@ -564,8 +576,11 @@ OOP_Object *X11Cl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 		WaitPort(port);
 		FreeMem(nmsg, sizeof (*nmsg));
     #endif		
-		
+		#if USE_FRAMEBUFFER        
 		fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+		#else
+		fb = msg->bitMap;
+		#endif
     #if ADJUST_XWIN_SIZE		
 	    }
 	    DeleteMsgPort(port);
