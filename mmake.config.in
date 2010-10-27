@@ -8,7 +8,7 @@ defaulttarget AROS
 genmakefilescript $(GENMF) $(SRCDIR)/config/make.tmpl --listfile $(MMLIST)
 genmakefiledeps $(GENMF) $(SRCDIR)/config/make.tmpl
 globalvarfile $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/gen/config/host.cfg
-globalvarfile $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/gen/config/target.cfg
+globalvarfile $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)/gen/config/target.cfg
 genglobalvarfile sh $(TOP)/configure
 
 ignoredir CVS
