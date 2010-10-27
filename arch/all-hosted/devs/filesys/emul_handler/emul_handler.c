@@ -859,14 +859,6 @@ AROS_LH1(void, beginio,
 			     iofs->io_Union.io_EXAMINE_NEXT.io_fib);
 	break;
 
-    /*
-    Call disabled because it does not work as expected - returns that there
-    are no more entries to read after the first call while there are actually
-    more files present in the directory. Problem can be seen with diskfont.library
-    trying to load arial.font and not finding it in the FONTS: directory 
-
-    dos.library will emulate this function using Examine
-
     case FSA_EXAMINE_ALL:
 	DCMD(bug("[emul] FSA_EXAMINE_ALL\n"));
 	error = examine_all(emulbase,
@@ -875,7 +867,7 @@ AROS_LH1(void, beginio,
 						  iofs->io_Union.io_EXAMINE_ALL.io_eac,
 						  iofs->io_Union.io_EXAMINE_ALL.io_Size,
 						  iofs->io_Union.io_EXAMINE_ALL.io_Mode);
-	break; */
+	break;
 	  
     case FSA_EXAMINE_ALL_END:
 	error = examine_all_end(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
