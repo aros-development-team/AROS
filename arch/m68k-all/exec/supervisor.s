@@ -90,15 +90,18 @@ AROS_SLIB_ENTRY(Supervisor,Exec):
 	beq.s	Exec_Supervisor_Entry_10
 0:	move.w	#0x0020,%sp@-   // push the 68010/20 frame id
 
+	/* CRITICAL SECTION - DO NOT USE THE STACK */
 Exec_Supervisor_Entry_10:
 	move.w	%sr, %d0	// Caused exception on 68010/20
 Exec_Supervisor_Entry_00:
 	or.w	#0x2000, %sr	// Caused exception on 68000
 Exec_Supervisor_Entered:	// %d0 will always have the old SR
+	/* CRITICAL SECTION - SUPERVISOR STACK */
 	pea	1f
 	move.w	%d0,%sp@-	// Fix up return mode & flags
 	jmp	(%a5)		// D0 will be set after the
 1:				//  caller's RTE gets back here.
+	/* END CRITICAL SECTION - CALLER'S STACK */
 #ifndef DoRegisterCalls
 	move.l	%sp@+,%a5
 #endif
@@ -129,6 +132,7 @@ Exec_Supervisor_Trap:
 	bne.s	1f
 0:
 	move.w	%sr,%d0
+	bclr	#13, %d0	// Make it look userish
 	move.l	#Exec_Supervisor_Entered, %sp@(2)
 	or.w	#(1 << 13),%sp@(0)
 	rte
