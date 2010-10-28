@@ -31,7 +31,7 @@ static inline void atomic_and_l(ULONG *var, ULONG mask)
 
     __asm__ __volatile__("\n1: ldrex %0, [%2]; and %0, %0, %3; strex %1, %0, [%2]; teq %1, #0; bne 1b"
                         :"=&r"(result), "=&r"(temp)
-                        :"r"(&var), "Ir"(mask)
+                        :"r"(var), "Ir"(mask)
                         :"cc");
 }
 
@@ -41,7 +41,7 @@ static inline void atomic_or_l(ULONG *var, ULONG mask)
 
     __asm__ __volatile__("\n1: ldrex %0, [%2]; or %0, %0, %3; strex %1, %0, [%2]; teq %1, #0; bne 1b"
                         :"=&r"(result), "=&r"(temp)
-                        :"r"(&var), "Ir"(mask)
+                        :"r"(var), "Ir"(mask)
                         :"cc");
 }
 
