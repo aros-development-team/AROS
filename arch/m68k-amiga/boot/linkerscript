@@ -9,8 +9,11 @@ SECTIONS
   .sysbase                    : { . = 4; SysBase = .; . += 4; } >ram
   .stack               0x1000 : { 
   	  		          _stack = .;
-                                  . = . + 0xf000;
-                                  _stack_end = .;      } >ram
+                                  . = . + 0x7000;
+                                  _us_stack_end = .;
+                                  . = . + 0x8000;
+                                  _ss_stack_end = .;
+  				  _stack_end = .;      } >ram
   .bss                        : {  _bss = .;
                                   *(.bss)
                                   _bss_end = .;        } >ram
