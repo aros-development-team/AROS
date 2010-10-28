@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=cli sti issuper kernel_debug \
+FILES=cli sti kernel_debug \
       cause schedule switch dispatch
 
 USER_INCLUDES := -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) -I$(BINDIR)/Development/include -I$(SRCDIR)/rom/exec
