@@ -15,6 +15,7 @@
 #include "kernel_romtags.h"
 
 #include "amiga_hwreg.h"
+#include "amiga_irq.h"
 
 extern const struct Resident Exec_resident;
 
@@ -194,6 +195,9 @@ void start(void)
 
 	/* TODO: Actually check this! */
 	sysBase->AttnFlags |= AFF_68020;
+
+	/* Initialize IRQ subsystem */
+	AmigaIRQInit(sysBase);
 
 	/* Scan for all other ROM Tags */
 	sysBase->ResModules = krnRomTagScanner(sysBase, kickrom);
