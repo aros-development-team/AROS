@@ -179,7 +179,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     sysBase->VBlankFrequency = 50;
     sysBase->PowerSupplyFrequency = 1;
 
-    SysBase->ChkBase=~(IPTR)SysBase;
+    sysBase->ChkBase=~(IPTR)sysBase;
 
     /* Parse some arguments from command line */
     if (args)
