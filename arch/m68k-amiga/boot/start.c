@@ -14,7 +14,6 @@
 #include "exec_intern.h"
 #include "kernel_romtags.h"
 
-#define USE_GDBSTUB
 #include "amiga_hwreg.h"
 
 extern const struct Resident Exec_resident;
