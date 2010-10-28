@@ -32,6 +32,8 @@ ROM_LIB	    :=	$(AROS_LIB)/librom.a
 # All of the above
 LIB	    := $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 
+TESTDIR := $(BINDIR)/Tests
+
 # Lists of files
 #   - Common always exist in the link library.
 
@@ -545,10 +547,10 @@ setup-clib :
 	%mkdirs_q $(AROS_LIB) $(AROS_LIBS)
 
 #MM
-check : $(TESTDIR)/snprint
+check : $(TESTDIR)/snprintf
 
 $(TESTDIR)/snprintf : snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+	$(CC) -DTEST $(ILDFLAGS) $< -o $@ $(LIBS)
 
 #MM
 clean ::
