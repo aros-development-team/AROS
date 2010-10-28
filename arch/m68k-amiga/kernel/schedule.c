@@ -1,11 +1,11 @@
 #include <aros/kernel.h>
 
-#include <exec/alerts.h>
-#include <exec/execbase.h>
 #include <proto/exec.h>
-
+#include <exec/execbase.h>
 #include <kernel_base.h>
-#include <kernel_scheduler.h>
+#include <kernel_syscall.h>
+
+#include "kernel_scheduler.h"
 
 /*****************************************************************************
 
@@ -38,11 +38,17 @@ AROS_LH0(void, KrnSchedule,
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    BOOL wants_switch;
 
-    wants_switch = core_Schedule();
-    if (wants_switch)
-    	    KrnSwitch();
+    /* Task switching enabled? */
+    if (SysBase->TDNestCnt >= 0)
+    	    return;
+
+    /* Anything need to be scheduled? */
+    if (!(SysBase->AttnResched & ARF_AttnSwitch))
+    	    return;
+
+    if (core_Schedule())
+    	    Switch();
 
     AROS_LIBFUNC_EXIT
 }
