@@ -39,8 +39,10 @@ typedef struct AROSCPUContext regs_t;
 #define PREPARE_INITIAL_FRAME(cc, sp, startpc) \
 	do { \
 		void *_sp = (sp); \
-		*(ULONG *)(_sp - (4)) = (ULONG)(startpc); \
-		*(UWORD *)(_sp - (4 + 2)) = 0x0009; \
+		_sp -= 4; \
+		*(ULONG *)(_sp) = (ULONG)(startpc); \
+		_sp -= 2; \
+		*(UWORD *)(_sp) = 0x0000; \
 	} while (0)
 
 #endif /* _KERNEL_CPU_H */
