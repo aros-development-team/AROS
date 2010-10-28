@@ -38,7 +38,7 @@ USER_CFLAGS := -DUSE_GDBSTUB
 
 #MM- includes-amiga-m68k : includes-common-i386 includes-copy-amiga-m68k includes-copy
 
-FILES=start
+FILES=start amiga_irq m68k_exception
 AFILES=rom_entry rom_init
 
 USELIBS := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
