@@ -375,15 +375,7 @@ LONG examine(struct emulbase *emulbase, struct filehandle *fh,
     /* Directory search position has been reset */
     *dirpos = 0;
 
-    err = examine_entry(emulbase, fh, NULL, ead, size, type);
-    if (!err)
-    {
-	/* Fix up type if the object is a root directory */
-	if ((type >= ED_TYPE) && (!fh->name[0]))
-	    ead->ed_Type = ST_ROOT;
-    }
-
-    return err;
+    return examine_entry(emulbase, fh, NULL, ead, size, type);
 }
 
 /*********************************************************************************************/
