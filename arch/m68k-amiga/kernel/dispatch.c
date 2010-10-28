@@ -49,7 +49,7 @@ AROS_LH0(void, KrnDispatch,
     struct Task *next;
 
     for (;;) { 
-    	KrnCli();
+    	asm volatile ("move #0x2700, %sr\n");	// Disable CPU interrupts
     	next = (struct Task *)RemHead(&SysBase->TaskReady);
     	if (next != NULL)
     		break;
@@ -59,9 +59,10 @@ AROS_LH0(void, KrnDispatch,
     	asm volatile ("stop #0x2000\n"); // Wait for an interrupt
     }
 
-    bug(" Dispatch Task=%p, SP=%p (0x%04x, %p)\n",
-    	 next, next->tc_SPReg, *(UWORD *)(next->tc_SPReg - 6),
-    	 *(ULONG *)(next->tc_SPReg - 4));
+    D(bug(" Dispatch (%s) Task=%p, SP=%p (0x%04x, %p), TDnc=%d, IDnc=%d\n",
+    	 next->tc_Node.ln_Name, next, next->tc_SPReg, *(UWORD *)(next->tc_SPReg - 6),
+    	 *(ULONG *)(next->tc_SPReg - 4),
+    	 next->tc_TDNestCnt,next->tc_IDNestCnt));
 
     SysBase->DispCount++;
 
@@ -96,7 +97,8 @@ AROS_LH0(void, KrnDispatch,
 
     /* Copy from the user stack to the supervisor stack,
      * then 'rte' to the original frame, which should
-     * be in Switch().
+     * be in Switch(), which can only be called from
+     * Supervisor mode.
      */
     asm volatile (
     	"    move.l  %0,%%usp\n"
