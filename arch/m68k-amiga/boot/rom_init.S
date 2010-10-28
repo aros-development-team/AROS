@@ -20,5 +20,7 @@ rom_init:
 	/* TODO: Check the stack RAM
 	 *       before we start the ROM proper.
 	 */
-	lea.l	_stack_end,%sp
+	lea.l	_ss_stack_end,%sp
+	move.w	#0,%sr		/* Go to user mode */
+	lea.l	_us_stack_end,%sp
 	jra	start
