@@ -19,6 +19,6 @@ TESTS		:= coretest
 check-kernel-unix : $(TESTS)
 
 % : %.c
-	$(CC) -DTEST $(CFLAGS) $< -o $@
+	$(KERNEL_CC) -DTEST $(CFLAGS) $(KERNEL_CFLAGS) $< -o $@
 
 %common
