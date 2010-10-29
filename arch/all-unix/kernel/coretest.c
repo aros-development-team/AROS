@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,13 +7,14 @@
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <unistd.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sigcore.h>
-#define timeval     sys_timeval
+#include <kernel_cpu.h>
 #include <sys/time.h>
-#undef timeval
+
+#include "etask.h"
 
 /* Prototypes */
 void Dispatch (void);
@@ -24,15 +25,23 @@ void Switch (void);
 /* This is used to count the number of interrupts. */
 ULONG cnt;
 
-/* Let the sigcore do it's magic */
-GLOBAL_SIGNAL_INIT
-
 /* This flag means that a task switch is pending */
 #define SB_SAR 15
 #define SF_SAR 0x8000
 
 /* Dummy SysBase */
-struct ExecBase _SysBase, * SysBase = &_SysBase;
+struct ExecBase _SysBase;
+struct ExecBase* SysBase = &_SysBase;
+
+/* Dummy KernelBase */
+struct PlatformData
+{
+    sigset_t	 sig_int_mask;
+};
+
+struct PlatformData Kernel_PlatformData;
+
+#define PD(x) Kernel_PlatformData
 
 /* Some tasks */
 struct Task Task1, Task2, Task3, Task4, TaskMain;
@@ -106,8 +115,8 @@ void PrintList (struct List * list)
     because then some signal might break the signal handler and then
     stack will overflow.
 */
-#define DISABLE 	({sigset_t set; sigfillset(&set); sigprocmask (SIG_BLOCK, &set, NULL);})
-#define ENABLE		({sigset_t set; sigfillset(&set); sigprocmask (SIG_UNBLOCK, &set, NULL);})
+#define DISABLE 	sigprocmask (SIG_BLOCK, &Kernel_PlatformData.sig_int_mask, NULL)
+#define ENABLE		sigprocmask (SIG_UNBLOCK, &Kernel_PlatformData.sig_int_mask, NULL)
 
 /* Enable/Disable interrupts */
 void Disable (void)
@@ -294,21 +303,22 @@ void Main2 (void)
     The signal handler. It will store the current tasks context and
     switch to another task if this is allowed right now.
 */
-static void sighandler (int sig, sigcontext_t * sc)
+static void sighandler (int sig, regs_t *sc)
 {
     cnt ++;
 
     /* Are task switches allowed ? */
     if (SysBase->TDNestCnt < 0)
     {
-	/* Save all registers and the stack pointer */
+        struct AROSCPUContext *ctx = GetIntETask(THISTASK)->iet_Context;
 
-	SAVEREGS(THISTASK,sc);
-	
 #if DEBUG_STACK
 	PRINT_SC(sc);
-	PRINT_STACK(sp);
 #endif
+
+	/* Save all registers and the stack pointer */
+	SAVEREGS(ctx, sc);
+	THISTASK->tc_SPReg = (APTR)SP(sc);
 
 	/* Find a new task to run */
 	Dispatch ();
@@ -318,13 +328,14 @@ static void sighandler (int sig, sigcontext_t * sc)
 	else
 	    SC_DISABLE(sc);
 
+	ctx = GetIntETask(THISTASK)->iet_Context;
+	RESTOREREGS(ctx, sc);
+	SP(sc) = (IPTR)THISTASK->tc_SPReg;
+
 #if DEBUG_STACK
-	PRINT_STACK(sp);
-	printf ("\n");
+	PRINT_SC(sc);
 #endif
 
-	RESTOREREGS(THISTASK,sc);
-	
     }
     else
     {
@@ -332,6 +343,9 @@ static void sighandler (int sig, sigcontext_t * sc)
 	SysBase->SysFlags |= SF_SAR;
     }
 } /* sighandler */
+
+/* Let the sigcore do it's magic */
+GLOBAL_SIGNAL_INIT(sighandler)
 
 /* Find another task which is allowed to run and modify SysBase accordingly */
 void Dispatch (void)
@@ -344,18 +358,16 @@ void Dispatch (void)
 	|| this->tc_SPReg >= this->tc_SPUpper
     )
     {
-	printf ("illegal stack\n");
+	printf ("illegal stack (SP %p, lower %p, upper %p)\n", this->tc_SPReg, this->tc_SPLower, this->tc_SPUpper);
     }
 
     /* Try to find a task which is ready to run */
-    if ((task = GetHead (&SysBase->TaskReady)))
+    if ((task = (struct Task *)GetHead (&SysBase->TaskReady)))
     {
-#if 1
-printf ("Dispatch: Old = %s (Stack = %x), new = %s\n",
-    this->tc_Node.ln_Name,
-    (IPTR)this->tc_SPUpper - (IPTR)this->tc_SPReg,
-    task->tc_Node.ln_Name);
-#endif
+	printf ("Dispatch: Old = %s (Stack = %lx), new = %s\n",
+	this->tc_Node.ln_Name,
+	(IPTR)this->tc_SPUpper - (IPTR)this->tc_SPReg,
+    	task->tc_Node.ln_Name);
 
 	/* Remove new task from the list */
 	Remove ((struct Node *)task);
@@ -378,7 +390,7 @@ printf ("Dispatch: Old = %s (Stack = %x), new = %s\n",
 	this->tc_State = TS_READY;
 	task->tc_State = TS_RUN;
     }
-printf("leaving dispatch!\n");
+    printf("leaving dispatch!\n");
 } /* Dispatch */
 
 /*
@@ -391,7 +403,7 @@ void InitCore(void)
     struct itimerval interval;
 
     /* Install a handler for the ALARM signal */
-    sa.sa_handler  = (SIGHANDLER_T)SIGHANDLER;
+    sa.sa_handler  = (SIGHANDLER_T)sighandler_gate;
     sa.sa_flags    = SA_RESTART;
 #ifdef __linux__
     sa.sa_restorer = NULL;
@@ -412,7 +424,8 @@ void InitCore(void)
 /* Create a new task */
 void AddTask (struct Task * task, STRPTR name, BYTE pri, APTR pc)
 {
-    SP_TYPE * sp;
+    IPTR *sp;
+    struct AROSCPUContext *ctx;
 
     /* Init task structure */
     memset (task, 0, sizeof (struct Task));
@@ -427,7 +440,7 @@ void AddTask (struct Task * task, STRPTR name, BYTE pri, APTR pc)
     task->tc_IDNestCnt = -1;
 
     /* Allocate a stack */
-    sp = malloc (STACK_SIZE * sizeof (SP_TYPE));
+    sp = malloc (STACK_SIZE * sizeof(IPTR));
 
     /*
 	Copy bounds of stack in task structure. Note that the stack
@@ -443,13 +456,14 @@ void AddTask (struct Task * task, STRPTR name, BYTE pri, APTR pc)
 	initial task context can be restored from.
     */
  
-    GetIntETask(task) = malloc(sizeof(struct IntETask));
+    task->tc_UnionETask.tc_ETask = malloc(sizeof(struct IntETask));
     task->tc_Flags |= TF_ETASK;
-    GetCpuContext(task) = malloc(SIZEOF_ALL_REGISTERS);
+    ctx = malloc(sizeof(struct AROSCPUContext));
+    GetIntETask(task)->iet_Context = ctx;
 
-    PREPARE_INITIAL_FRAME(sp,pc); 
-    PREPARE_INITIAL_CONTEXT(task,pc);
-		
+    PREPARE_INITIAL_CONTEXT(ctx);
+    PREPARE_INITIAL_FRAME(ctx, sp, (IPTR)pc);
+
     /* Save new stack pointer */
     task->tc_SPReg = sp;
 
@@ -466,6 +480,8 @@ int main (int argc, char ** argv)
     /* Init SysBase */
     NEWLIST (&SysBase->TaskReady);
     NEWLIST (&SysBase->TaskWait);
+
+    sigfillset(&Kernel_PlatformData.sig_int_mask);
 
     /* Signals and task switches are not allowed right now */
     SysBase->IDNestCnt = 0;
@@ -484,18 +500,13 @@ int main (int argc, char ** argv)
 
 	Also a trick with the stack: This is the stack of the Unix process.
 	We don't know where it lies in memory nor how big it is (it can
-	grow), so we use "reasonable" defaults. The upper bounds is the
-	first argument (or the last local variable but we don't have any
-	right now). If the stack ever passes by this, we begin to trash
-	data on our stack. The lower bounds is 0 (well, we could restrict
-	the stack to, say, STACK_SIZE from SPUpper, but Unix is responsible
-	for this stack, so I don't really care).
+	grow), so we set the maximum possible limits.
     */
     TaskMain.tc_Node.ln_Pri = 0;
     TaskMain.tc_Node.ln_Name = "Main";
     TaskMain.tc_State = TS_READY;
     TaskMain.tc_SPLower = 0;
-    TaskMain.tc_SPUpper = &argc;
+    TaskMain.tc_SPUpper = (APTR)-1;
 
     TaskMain.tc_UnionETask.tc_ETask = malloc(sizeof(struct IntETask));
     TaskMain.tc_Flags |= TF_ETASK;
@@ -512,7 +523,7 @@ int main (int argc, char ** argv)
     /* Wait for 10000 signals */
     while (cnt < 20)
     {
-	printf ("%6ld\n", cnt);
+	printf ("%6d\n", cnt);
 
 	/* Wait for a "signal" from another task. */
 	Wait (1);
@@ -522,7 +533,7 @@ int main (int argc, char ** argv)
     Disable ();
 
     /* Show how many signals have been processed */
-    printf ("Exit after %ld signals\n", cnt);
+    printf ("Exit after %d signals\n", cnt);
 
     return 0;
 } /* main */
