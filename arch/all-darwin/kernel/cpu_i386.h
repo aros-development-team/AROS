@@ -160,9 +160,9 @@ struct AROSCPUContext
 	} while (0)
 
 #define PRINT_SC(sc) \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
+	printf ("    ESP=%08x  EBP=%08x  EIP=%08x  FPU=%s\n" \
+		"    EAX=%08x  EBX=%08x  ECX=%08x  EDX=%08x\n" \
+		"    EDI=%08x  ESI=%08x  EFLAGS=%08x\n" \
 	    , SP(sc), FP(sc), PC(sc) \
 	    , HAS_FPU(sc) ? "yes" : "no" \
 	    , R0(sc), R1(sc), R2(sc), R3(sc) \
@@ -170,9 +170,9 @@ struct AROSCPUContext
 	)
 
 #define PRINT_CPU_CONTEXT(ctx) \
-	bug ("    FP=%08lx  PC=%08lx\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
+	bug ("    EBP=%08x  EIP=%08x\n" \
+	     "    EAX=%08x  EBX=%08x  ECX=%08x  EDX=%08x\n" \
+	     "    EDI=%08x  ESI=%08x  EFLAGS=%08x\n" \
 	    , ctx->regs[7], ctx->regs[8] \
 	    , ctx->regs[0] \
 	    , ctx->regs[1] \
