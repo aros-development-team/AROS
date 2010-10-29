@@ -9,6 +9,61 @@
     Lang: english
 */
 
+#ifdef __AROS_EXEC_LIBRARY__
+
+struct _fpreg
+{
+    unsigned short significand[4];
+    unsigned short exponent;
+};
+
+struct _fpxreg
+{
+    unsigned short significand[4];
+    unsigned short exponent;
+    unsigned short padding[3];
+};
+
+struct _xmmreg
+{
+    unsigned long element[4];
+};
+
+struct _fpx_sw_bytes
+{
+    ULONG magic1;
+    ULONG extended_size;
+    UQUAD xstate_bv;
+    ULONG xstate_size;
+    ULONG padding[7];
+};
+
+struct _fpstate
+{
+    unsigned long  cw;
+    unsigned long  sw;
+    unsigned long  tag;
+    unsigned long  ipoff;
+    unsigned long  cssel;
+    unsigned long  dataoff;
+    unsigned long  datasel;
+    struct _fpreg  _st[8];
+    unsigned short status;
+    unsigned short magic;
+    unsigned long  _fxsr_env[6];
+    unsigned long  mxcsr;
+    unsigned long  reserved;
+    struct _fpxreg _fxsr_st[8];
+    struct _xmmreg _xmm[8];
+    unsigned long  padding1[44];
+    union {
+	unsigned long        padding2[12];
+	struct _fpx_sw_bytes sw_reserved;
+    };
+};
+
+#else
+
 #define EXCEPTIONS_COUNT 17
 
 #define USE_SA_SIGINFO 0
@@ -82,27 +137,12 @@ typedef @sighandler@ SignalHandler;
 	}
 #endif
 
-/* Use this structure to save/restore registers if the stack is too
-   small */
-
-struct AROSCPUContext
-{
-    ULONG                     regs[9]; /* eip (PC), ebp (FP), eax, ebx, ecx, edx, edi, esi, eflags */
-    UBYTE                     fpbuffer[sizeof(struct _fpstate) + 15]; /* Buffer for FPU state */
-    struct _fpstate *         fpstate; /* FPU state pointer inside fpbuffer */
-    int                       errno_backup;
-    struct AROSCPUContext * sc;
-};
-
 /*
     Macros to access the stack pointer, frame pointer and program
     counter. The FP is the base address for accesses to arguments
     and local variables of a function and PC is the current address
     in the program code.
 */
-#define GET_PC(ctx) ((APTR)ctx->regs[0])
-
-#define SET_PC(ctx, val) ctx->regs[0] = (ULONG)val
 
 #define SP(sc)           ((sc)->esp)
 #define FP(sc)           ((sc)->ebp)
@@ -262,13 +302,6 @@ struct AROSCPUContext
 
 */
 
-#   define PREPARE_INITIAL_FRAME(cc, sp, pc)  \
-        do                                    \
-	{                                     \
-	    cc->regs[7] = 0;		      \
-	    cc->regs[8] = (ULONG)pc;	      \
-	} while (0)
-
 /*
     Prepare the cpu context
 */
@@ -356,5 +389,28 @@ struct AROSCPUContext
 	    , R0(sc), R1(sc), R2(sc), R3(sc) \
 	    , R4(sc), R5(sc) \
 	)
+
+#endif /* __AROS_EXEC_LIBRARY__ */
+
+/* Use this structure to save/restore registers */
+
+struct AROSCPUContext
+{
+    ULONG                     regs[9]; /* eip (PC), ebp (FP), eax, ebx, ecx, edx, edi, esi, eflags */
+    UBYTE                     fpbuffer[sizeof(struct _fpstate) + 15]; /* Buffer for FPU state */
+    struct _fpstate *         fpstate; /* FPU state pointer inside fpbuffer */
+    int                       errno_backup;
+    struct AROSCPUContext * sc;
+};
+
+#define GET_PC(ctx) ((APTR)ctx->regs[0])
+#define SET_PC(ctx, val) ctx->regs[0] = (ULONG)val
+
+#define PREPARE_INITIAL_FRAME(cc, sp, pc)  \
+        do                                 \
+	{                                  \
+	    cc->regs[7] = 0;		   \
+	    cc->regs[8] = (ULONG)pc;	   \
+	} while (0)
 
 #endif /* _SIGCORE_H */

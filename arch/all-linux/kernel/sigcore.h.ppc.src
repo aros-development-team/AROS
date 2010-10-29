@@ -9,6 +9,27 @@
 #ifndef _SIGCORE_H
 #define _SIGCORE_H
 
+#ifdef __AROS_EXEC_LIBRARY__
+
+struct pt_regs
+{
+    unsigned long gpr[32];
+    unsigned long nip;
+    unsigned long msr;
+    unsigned long orig_gpr3;
+    unsigned long ctr;
+    unsigned long link;
+    unsigned long xer;
+    unsigned long ccr;
+    unsigned long mq;
+    unsigned long trap;
+    unsigned long dar;
+    unsigned long dsisr;
+    unsigned long result;
+};
+
+#else
+
 /*
  * We support 14 exceptions for PPC (see arch/all-unix/kernel/cpu_ppc.c).
  * Note that krnRunExceptionHandlers() does not check exception number,
@@ -44,23 +65,8 @@ typedef struct ucontext regs_t;
 	    sighandler(sig, u); 							\
 	}
 
-/* This structure is used to save/restore registers, because the stack is too
-   small. */
-
-struct AROSCPUContext
-{
-    struct pt_regs            regs;
-    double                    fpregs[32];
-    int			      errno_backup;
-    struct AROSCPUContext * sc;
-};
-
 /* Macros to access the stack pointer and program counter,
    PC is the current address in the program code. */
-
-#define GET_PC(ctx) ((APTR)ctx->regs.nip)
-
-#define SET_PC(ctx, val) ctx->regs.nip = (IPTR)val
 
 #define SP(uc)	(uc->uc_mcontext.regs->gpr[1])
 #define PC(uc)	(uc->uc_mcontext.regs->nip)
@@ -138,13 +144,6 @@ struct AROSCPUContext
 	cc->regs.gpr[3+i] = args[i];\
 }
 
-#define PREPARE_INITIAL_FRAME(cc, sp, pc)     \
-    do                                        \
-    {                                         \
-        cc->regs.gpr[1] = (unsigned long) sp; \
-        cc->regs.nip    = (unsigned long) pc; \
-    } while (0)
-
 /* Prepare the cpu context
    Sys V PPC ABI says r2 is reserved
    so we copy the current one and it
@@ -196,5 +195,27 @@ struct AROSCPUContext
 	bug ("SC: SP=%08lx  PC=%08lx\n" \
 	    , SP(sc), PC(sc) \
 	)
+
+#endif /* __AROS_EXEC_LIBRARY__ */
+
+/* This structure is used to save/restore registers */
+
+struct AROSCPUContext
+{
+    struct pt_regs            regs;
+    double                    fpregs[32];
+    int			      errno_backup;
+    struct AROSCPUContext * sc;
+};
+
+#define GET_PC(ctx) ((APTR)ctx->regs.nip)
+#define SET_PC(ctx, val) ctx->regs.nip = (IPTR)val
+
+#define PREPARE_INITIAL_FRAME(cc, sp, pc)     \
+    do                                        \
+    {                                         \
+        cc->regs.gpr[1] = (unsigned long) sp; \
+        cc->regs.nip    = (unsigned long) pc; \
+    } while (0)
 
 #endif /* _SIGCORE_H */
