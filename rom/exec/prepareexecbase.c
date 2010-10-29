@@ -75,7 +75,7 @@ static void Exec_TaskFinaliser(void)
 /*
  *  PrepareExecBase() will initialize the ExecBase to default values,
  *  and not add anything yet (except for the MemHeader).
- *  WARNING: this routine really sets up global Sysbase.
+ *  WARNING: this routine intentionally sets up global SysBase.
  *  This is done because:
  *  1. PrepareAROSSupportBase() calls AllocMem() which relies on functional SysBase
  *  2. After PrepareAROSSupportBase() it is possible to call debug output functions
@@ -83,7 +83,11 @@ static void Exec_TaskFinaliser(void)
  *     may have patched functions in AROSSupportBase so that KernelBase is not needed there.
  *  3. Existing ports (at least UNIX-hosted and Windows-hosted) rely on the fact that SysBase is
  *     set up here.
- *  Resume: please be extremely careful if you decide to change this. You may break many things.
+ *
+ *  Resume: please be extremely careful, study existing code, and think five times if you decide to
+ *  change this. You WILL break existing ports if you do not modify their code accordingly. There's
+ *  nothing really bad in the fact that global SysBase is touched here and changing this does not
+ *  really win something.
  *						Pavel Fedin <pavel_fedin@mail.ru>
 */
 
@@ -109,7 +113,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     memset(SysBase, 0, sizeof(struct IntExecBase));
 
 #ifdef HAVE_PREPAREPLATFORM
-    /* Setup platform-specific data. This is needed for CacheClearU() and CacleClearE() on MinGW32 */
+    /* Setup platform-specific data. This is needed for CacheClearU() and CacheClearE() on MinGW32 */
     if (!Exec_PreparePlatform(&PD(SysBase), data))
 	return NULL;
 #endif
