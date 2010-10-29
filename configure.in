@@ -1386,8 +1386,11 @@ if test "$cross_compiling" = "yes" ; then
 	target_tool_prefix=${target_cpu}-elf-
     fi
     CC=${target_tool_prefix}gcc
+    dnl CPP is needed for AC_CHECK_HEADER to work correctly
+    CPP=${target_tool_prefix}cpp
     if test "$target_tool_version" != "default"; then
         CC="$CC-$target_tool_version"
+        CPP="$CC-$target_tool_version"
     fi
     AC_PATH_PROG(CC,$CC)
     AROS_REQUIRED(gcc,$CC)
