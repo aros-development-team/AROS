@@ -3,6 +3,65 @@
     $Id$
 */
 
+#ifdef __AROS_EXEC_LIBRARY__
+
+/*
+ * We need these definitions here because struct AROSCPUContext below
+ * is (wrongly) accessed from rom/exec, and we don't need generic AROS code
+ * to depend on host OS includes.
+ * In fact this is a hack. We urgently need to unify CPU context structure and
+ * make it public. In this case exec will not need refer to this file any more.
+ */
+
+typedef struct 
+{
+    char mmst_reg[10];
+    char mmst_rsrv[6];
+} _STRUCT_MMST_REG;
+
+typedef struct
+{
+    char xmm_reg[16];
+} _STRUCT_XMM_REG;
+
+typedef struct
+{
+    int 	     fpu_reserved[2];
+    unsigned short   fpu_fcw;
+    unsigned short   fpu_fsw;
+    uint8_t	     fpu_ftw;
+    uint8_t	     fpu_rsrv1;
+    uint16_t	     fpu_fop;
+    uint32_t	     fpu_ip;
+    uint16_t	     fpu_cs;
+    uint16_t	     fpu_rsrv2;
+    uint32_t	     fpu_dp;
+    uint16_t	     fpu_ds;
+    uint16_t	     fpu_rsrv3;
+    uint32_t	     fpu_mxcsr;
+    uint32_t	     fpu_mxcsrmask;
+    _STRUCT_MMST_REG fpu_stmm0;
+    _STRUCT_MMST_REG fpu_stmm1;
+    _STRUCT_MMST_REG fpu_stmm2;
+    _STRUCT_MMST_REG fpu_stmm3;
+    _STRUCT_MMST_REG fpu_stmm4;
+    _STRUCT_MMST_REG fpu_stmm5;
+    _STRUCT_MMST_REG fpu_stmm6;
+    _STRUCT_MMST_REG fpu_stmm7;
+    _STRUCT_XMM_REG  fpu_xmm0;
+    _STRUCT_XMM_REG  fpu_xmm1;
+    _STRUCT_XMM_REG  fpu_xmm2;
+    _STRUCT_XMM_REG  fpu_xmm3;
+    _STRUCT_XMM_REG  fpu_xmm4;
+    _STRUCT_XMM_REG  fpu_xmm5;
+    _STRUCT_XMM_REG  fpu_xmm6;
+    _STRUCT_XMM_REG  fpu_xmm7;
+    char	     fpu_rsrv4[14*16];
+    int 	     fpu_reserved1;
+} _STRUCT_X86_FLOAT_STATE32;
+
+#else
+
 /*
  * This thing is defined in sys/_types.h which conflicts with AROS include.
  * FIXME: such hacks are not good, perhaps we should supply
@@ -57,18 +116,6 @@ typedef void (*SIGHANDLER_T)(int);
 #define FPSTATE(context) ((context)->uc_mcontext->fs)
 
 #endif 
-
-/*
- * We can't have an #ifdef based on FreeBSD here because this structure
- * is (wrongly) accessed from rom/exec.
- */
-struct AROSCPUContext
-{
-    ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
-    int	errno_backup;
-  _STRUCT_X86_FLOAT_STATE32 fpstate;
-	int eflags;
-};
 
 #define GLOBAL_SIGNAL_INIT(sighandler) \
 	static void sighandler ## _gate (int sig, int code, ucontext_t *sc) \
@@ -139,12 +186,6 @@ struct AROSCPUContext
 
 #endif
 
-#define PREPARE_INITIAL_FRAME(ctx, sp, startpc)     \
-    do {                                            \
-        ctx->regs[7] = 0;                           \
-        ctx->regs[8] = (startpc);                   \
-    } while (0)
-
 #define SAVEREGS(cc, sc)                                            \
     do {                                                            \
         if (HAS_FPU(sc))                                            \
@@ -168,6 +209,26 @@ struct AROSCPUContext
 	    , R0(sc), R1(sc), R2(sc), R3(sc) \
 	    , R4(sc), R5(sc), R6(sc) \
 	)
+
+#endif /* __AROS_EXEC_LIBRARY__ */
+
+struct AROSCPUContext
+{
+    ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
+    int	errno_backup;
+    _STRUCT_X86_FLOAT_STATE32 fpstate;
+    int eflags;
+};
+
+#define GET_PC(ctx) (APTR)ctx->regs[8]
+#define SET_PC(ctx, pc) ctx->regs[8] = (ULONG)pc
+
+#define PREPARE_INITIAL_FRAME(ctx, sp, startpc)     \
+    do {                                            \
+        ctx->regs[7] = 0;                           \
+        ctx->regs[8] = (startpc);                   \
+    } while (0)
+
 
 #define PRINT_CPU_CONTEXT(ctx) \
 	bug ("    EBP=%08x  EIP=%08x\n" \
