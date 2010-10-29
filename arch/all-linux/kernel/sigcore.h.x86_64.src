@@ -11,6 +11,38 @@
     Todo: rewrite when our own ucontext.h is more complete
 */
 
+#ifdef __AROS_EXEC_LIBRARY__
+
+struct _fpx_sw_bytes
+{
+    ULONG magic1;
+    ULONG extended_size;
+    UQUAD xstate_bv;
+    ULONG xstate_size;
+    ULONG padding[7];
+};
+
+struct _fpstate
+{
+    UWORD   cwd;
+    UWORD   swd;
+    UWORD   twd;            /* Note this is not the same as the
+    UWORD   fop;
+    UQUAD   rip;
+    UQUAD   rdp;
+    ULONG   mxcsr;
+    ULONG   mxcsr_mask;
+    ULONG   st_space[32];
+    ULONG   xmm_space[64];
+    ULONG   reserved2[12];
+    union {
+	ULONG                reserved3[12];
+	struct _fpx_sw_bytes sw_reserved;
+    };
+};
+
+#else
+
 #define EXCEPTIONS_COUNT 17
 
 /* There's no need for USE_SA_SIGINFO, as we always use SA_SIGINFO
@@ -80,26 +112,12 @@ typedef struct ucontext regs_t;
 	    sighandler(sig, u); 							\
 	}
 
-/* Use this structure to save/restore registers because the stack is too small. */
-struct AROSCPUContext
-{
-    UQUAD regs[17];  	     /* rip (PC), rbp (FP), rax, rbx, rcx,
-                             rdx, rdi, rsi, r8, r9, r10, r11, r12,
-			     r13, r14, r15, eflags */
-    struct _fpstate fpstate __attribute__ ((aligned (16))); /* FPU state */
-    struct AROSCPUContext * sc;
-    int	errno_backup;
-};
-
 /*
     Macros to access the stack pointer, frame pointer and program
     counter. The FP is the base address for accesses to arguments
     and local variables of a function and PC is the current address
     in the program code.
 */
-#define GET_PC(ctx) ((APTR)ctx->regs[16])
-
-#define SET_PC(ctx, val) ctx->regs[16] = (UQUAD)val
 
 #define SP(uc)          ((uc)->uc_mcontext.gregs[REG_RSP])
 #define FP(uc)          ((uc)->uc_mcontext.gregs[REG_RBP])
@@ -282,13 +300,6 @@ struct AROSCPUContext
 
 */
 
-#   define PREPARE_INITIAL_FRAME(cc, sp, pc)  \
-        do                                    \
-	{                                     \
-	    cc->regs[15] = 0;		      \
-	    cc->regs[16] = (UQUAD)pc;	      \
-	} while (0)
-
 /*
     Prepare the cpu context
 */
@@ -376,5 +387,28 @@ struct AROSCPUContext
 	    , R4(sc), R5(sc), R6(sc), R7(sc), R8(sc), R9(sc) \
 	    , R10(sc), R11(sc), R12(sc), R13(sc), R14(sc) \
 	)
+
+#endif /* __AROS_EXEC_LIBRARY__ */
+
+/* Use this structure to save/restore registers because the stack is too small. */
+struct AROSCPUContext
+{
+    UQUAD regs[17];  	     /* rip (PC), rbp (FP), rax, rbx, rcx,
+                             rdx, rdi, rsi, r8, r9, r10, r11, r12,
+			     r13, r14, r15, eflags */
+    struct _fpstate fpstate __attribute__ ((aligned (16))); /* FPU state */
+    struct AROSCPUContext * sc;
+    int	errno_backup;
+};
+
+#define GET_PC(ctx) ((APTR)ctx->regs[16])
+#define SET_PC(ctx, val) ctx->regs[16] = (UQUAD)val
+
+#define PREPARE_INITIAL_FRAME(cc, sp, pc)  \
+        do                                 \
+	{                                  \
+	    cc->regs[15] = 0;		   \
+	    cc->regs[16] = (UQUAD)pc;	   \
+	} while (0)
 
 #endif /* _SIGCORE_H */
