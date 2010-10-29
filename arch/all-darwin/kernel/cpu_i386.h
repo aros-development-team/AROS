@@ -18,10 +18,10 @@
 typedef ucontext_t regs_t;
 
 #define SIGHANDLER	bsd_sighandler
-#define SIGHANDLER_T	__sighandler_t *
+typedef void (*SIGHANDLER_T)(int);
 
-#define SC_DISABLE(sc)   (sc->sc_mask = PD(KernelBase).sig_int_mask)
-#define SC_ENABLE(sc)    (sigemptyset(&sc->sc_mask))
+#define SC_DISABLE(sc)   sc->uc_sigmask = PD(KernelBase).sig_int_mask
+#define SC_ENABLE(sc)    sigemptyset(&(sc)->uc_sigmask)
 
 /* work around silly renaming of struct members in OS X 10.5 */
 #if __DARWIN_UNIX03 && defined(_STRUCT_X86_EXCEPTION_STATE32)
@@ -35,14 +35,13 @@ typedef ucontext_t regs_t;
 #define R6(context)     ((context)->uc_mcontext->__ss.__eflags)
 
 #define FP(context)     ((context)->uc_mcontext->__ss.__ebp)
-#define PC(context)     ((context)->uc_mcontext->__ss.__eip))
-#define SP(context)     ((context)->uc_mcontext->__ss.__esp))
+#define PC(context)     ((context)->uc_mcontext->__ss.__eip)
+#define SP(context)     ((context)->uc_mcontext->__ss.__esp)
 
 #define FPSTATE(context) ((context)->uc_mcontext->__fs)
 
 #else
 
-#define R0(context)     ((context)->uc_mcontext->ss.eax)
 #define R0(context)     ((context)->uc_mcontext->ss.eax)
 #define R1(context)     ((context)->uc_mcontext->ss.ebx)
 #define R2(context)     ((context)->uc_mcontext->ss.ecx)
@@ -52,8 +51,8 @@ typedef ucontext_t regs_t;
 #define R6(context)     ((context)->uc_mcontext->ss.eflags)
 
 #define FP(context)     ((context)->uc_mcontext->ss.ebp)
-#define PC(context)     ((context)->uc_mcontext->ss.eip))
-#define SP(context)     ((context)->uc_mcontext->ss.esp))
+#define PC(context)     ((context)->uc_mcontext->ss.eip)
+#define SP(context)     ((context)->uc_mcontext->ss.esp)
 
 #define FPSTATE(context) ((context)->uc_mcontext->fs)
 
@@ -67,14 +66,14 @@ struct AROSCPUContext
 {
     ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
     int	errno_backup;
-  _STRUCT_X86_FLOAT_STATE64 fpstate;
+  _STRUCT_X86_FLOAT_STATE32 fpstate;
 	int eflags;
 };
 
 #define GLOBAL_SIGNAL_INIT(sighandler) \
-	static void sighandler ## _gate (int sig, int code, struct sigcontext *sc) \
+	static void sighandler ## _gate (int sig, int code, ucontext_t *sc) \
 	{						     \
-	    sighandler( sig, (regs_t*)sc);             \
+	    sighandler(sig, sc);		             \
 	}
 
 #define SAVE_CPU(cc,sc)                                              \
@@ -149,8 +148,8 @@ struct AROSCPUContext
 #define SAVEREGS(cc, sc)                                            \
     do {                                                            \
         if (HAS_FPU(sc))                                            \
-            SAVE_FPU((cc),sc);                                      \
-        SAVE_CPU((cc),sc);                                          \
+            SAVE_FPU(cc, sc);                                       \
+        SAVE_CPU(cc, sc);                                           \
     } while (0)
 
 #define RESTOREREGS(cc, sc)                                         \
