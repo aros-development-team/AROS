@@ -338,7 +338,6 @@ char **Kernel_ArgV;
 
 int main(int argc, char **argv)
 {
-    struct ExecBase *SysBase;
     int psize = 0;
     int i = 1, x;
     struct stat st;
