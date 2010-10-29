@@ -9190,8 +9190,10 @@ if test "$cross_compiling" = "yes" ; then
 	target_tool_prefix=${target_cpu}-elf-
     fi
     CC=${target_tool_prefix}gcc
+        CPP=${target_tool_prefix}cpp
     if test "$target_tool_version" != "default"; then
         CC="$CC-$target_tool_version"
+        CPP="$CC-$target_tool_version"
     fi
     # Extract the first word of "$CC", so it can be a program name with args.
 set dummy $CC; ac_word=$2
