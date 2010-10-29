@@ -910,6 +910,7 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 		if (data->disp) {
 		    if (data->DAC)
 			DACLoad(XSD(cl), data->DAC, 0, 256);
+		    vesaDoRefreshArea(&XSD(cl)->data, data, 0, 0, data->width, data->height);
 		}
 		break;
 	    case aoHidd_BitMap_LeftEdge:
