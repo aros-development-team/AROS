@@ -3,8 +3,7 @@
     $Id$
 */
 
-#ifndef _SIGCORE_H
-#define _SIGCORE_H
+#ifndef __AROS_EXEC_LIBRARY__
 
 #include <signal.h>
 
@@ -28,13 +27,6 @@ typedef struct sigcontext regs_t;
 #define R4(sc)           (sc->sc_edi)
 #define R5(sc)           (sc->sc_esi)
 #define R6(sc)           (sc->sc_eflags) 
-
-struct AROS_cpu_context
-{
-    ULONG regs[7];	/* eax, ebx, ecx, edx, edi, esi, isp */
-    ULONG pc,fp;	/* store these on the stack to avoid sighandlers */
-    int	errno_backup;
-};
 
 #define GLOBAL_SIGNAL_INIT(sighandler)						   \
 	static void sighandler ## _gate (int sig, int code, struct sigcontext *sc) \
@@ -66,10 +58,6 @@ struct AROS_cpu_context
 
 #define PREPARE_INITIAL_FRAME(sp,pc) 	/* nop */
 
-#define PREPARE_INITIAL_CONTEXT(task,startpc) \
-	( ctx->pc = (ULONG)startpc, \
-	  ctx->fp = 0 )
-
 #define SAVEREGS(ctx, sc)     \
 	((ctx)->pc = PC(sc)), \
 	((ctx)->fp = FP(sc)), \
@@ -92,7 +80,23 @@ struct AROS_cpu_context
 	    , R4(sc), R5(sc), R6(sc) \
 	)
 
-#define PRINT_CPUCONTEXT(task) \
+#endif /* __AROS_EXEC_LIBRARY__ */
+
+struct AROSCPUContext
+{
+    ULONG regs[7];	/* eax, ebx, ecx, edx, edi, esi, isp */
+    ULONG pc,fp;	/* store these on the stack to avoid sighandlers */
+    int	errno_backup;
+};
+
+#define GET_PC(ctx) ((APTR)ctx->pc)
+#define SET_PC(ctx, val) ctx->pc = (ULONG)val
+
+#define PREPARE_INITIAL_CONTEXT(ctx, sp,startpc) \
+	ctx->pc = (ULONG)startpc; \
+	ctx->fp = 0
+
+#define PRINT_CPUCONTEXT(ctx) \
 	printf ("    FP=%08lx  PC=%08lx\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
@@ -105,5 +109,3 @@ struct AROS_cpu_context
 	    , ctx->regs[5] \
 	    , ctx->regs[6] \
 	)
-
-#endif /* _SIGCORE_H */

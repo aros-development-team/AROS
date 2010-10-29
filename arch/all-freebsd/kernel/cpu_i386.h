@@ -3,6 +3,8 @@
     $Id$
 */
 
+#ifndef __AROS_EXEC_LIBRARY__
+
 #include <machine/psl.h>
 #include <sys/types.h>
 #include <sys/param.h>
@@ -30,40 +32,6 @@ typedef struct sigcontext regs_t;
 #define R4(sc)           (sc->sc_edi)
 #define R5(sc)           (sc->sc_esi)
 #define R6(sc)           (sc->sc_isp)
-
-/*
- * We can't have an #ifdef based on FreeBSD here because this structure
- * is (wrongly) accessed from rom/exec.
- */
-struct AROSCPUContext
-{
-    ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
-    int	errno_backup;
-    union
-    {
-        struct
-        {
-            int fpformat;
-            int ownedfp;
-            int fpstate[128] __attribute__ ((aligned (16)));
-        }
-            acc_f5;
-
-        struct
-        {
-            int fpstate[17];
-        }
-            acc_f4;
-    }
-        acc_u;
-
-    int eflags;
-    struct AROSCPUContext *sc;
-};
-
-#define GET_PC(ctx) ((APTR)ctx->regs[8])
-
-#define SET_PC(ctx, val) ctx->regs[8] = (ULONG)val
 
 #define GLOBAL_SIGNAL_INIT(sighandler) \
 	static void sighandler ## _gate (int sig, int code, struct sigcontext *sc) \
@@ -184,18 +152,6 @@ struct AROSCPUContext
 
 #endif
 
-#define SETUP_EXCEPTION(sc,arg)                                     \
-    do {                                                            \
-        _PUSH(GetSP(SysBase->ThisTask), arg);                       \
-        _PUSH(GetSP(SysBase->ThisTask), arg);                       \
-    } while (0)
-
-#define PREPARE_INITIAL_FRAME(cc, sp, startpc)     \
-    do {                                           \
-        cc->regs[7] = 0;                           \
-        cc->regs[8] = (startpc);                   \
-    } while (0)
-
 #define SAVEREGS(cc, sc)                                            \
     do {                                                            \
         if (HAS_FPU(sc))                                            \
@@ -221,3 +177,40 @@ struct AROSCPUContext
 	    , R0(sc), R1(sc), R2(sc), R3(sc)                        \
 	    , R4(sc), R5(sc), R6(sc)                                \
 	)
+
+#endif /* __AROS_EXEC_LIBRARY__ */
+
+struct AROSCPUContext
+{
+    ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
+    int	errno_backup;
+    union
+    {
+        struct
+        {
+            int fpformat;
+            int ownedfp;
+            int fpstate[128] __attribute__ ((aligned (16)));
+        }
+            acc_f5;
+
+        struct
+        {
+            int fpstate[17];
+        }
+            acc_f4;
+    }
+        acc_u;
+
+    int eflags;
+    struct AROSCPUContext *sc;
+};
+
+#define GET_PC(ctx) ((APTR)ctx->regs[8])
+#define SET_PC(ctx, val) ctx->regs[8] = (ULONG)val
+
+#define PREPARE_INITIAL_FRAME(cc, sp, startpc)     \
+    do {                                           \
+        cc->regs[7] = 0;                           \
+        cc->regs[8] = (startpc);                   \
+    } while (0)
