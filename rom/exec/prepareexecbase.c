@@ -73,16 +73,28 @@ static void Exec_TaskFinaliser(void)
 }
 
 /*
-    PrepareExecBase() will initialize the ExecBase to default values,
-    and not add anything yet (except for the MemHeader).
+ *  PrepareExecBase() will initialize the ExecBase to default values,
+ *  and not add anything yet (except for the MemHeader).
+ *  WARNING: this routine really sets up global Sysbase.
+ *  This is done because:
+ *  1. PrepareAROSSupportBase() calls AllocMem() which relies on functional SysBase
+ *  2. After PrepareAROSSupportBase() it is possible to call debug output functions
+ *     (kprintf() etc). Yes, KernelBase is not set up yet, but remember that kernel.resource
+ *     may have patched functions in AROSSupportBase so that KernelBase is not needed there.
+ *  3. Existing ports (at least UNIX-hosted and Windows-hosted) rely on the fact that SysBase is
+ *     set up here.
+ *  Resume: please be extremely careful if you decide to change this. You may break many things.
+ *						Pavel Fedin <pavel_fedin@mail.ru>
 */
 
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *data)
 {
     ULONG   negsize = 0, i;
     VOID  **fp      = LIBFUNCTABLE;
-    struct ExecBase *sysBase;
-    
+
+    /* TODO: at this point we should check if SysBase already exists and, if so,
+       take special care about reset-surviving things. */
+
     /* Calculate the size of the vector table */
     while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;
     
@@ -90,96 +102,96 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     negsize = AROS_ALIGN(negsize);
     
     /* Allocate memory for library base */
-    sysBase = (struct ExecBase *)
+    SysBase = (struct ExecBase *)
 	    ((UBYTE *)allocmem(mh, negsize + sizeof(struct IntExecBase)) + negsize);
 
     /* Clear the library base */
-    memset(sysBase, 0, sizeof(struct IntExecBase));
+    memset(SysBase, 0, sizeof(struct IntExecBase));
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data. This is needed for CacheClearU() and CacleClearE() on MinGW32 */
-    if (!Exec_PreparePlatform(&PD(sysBase), data))
+    if (!Exec_PreparePlatform(&PD(SysBase), data))
 	return NULL;
 #endif
 
     /* Setup function vectors */
     AROS_CALL3(ULONG, AROS_SLIB_ENTRY(MakeFunctions, Exec),
-	      AROS_LCA(APTR, sysBase, A0),
-	      AROS_LCA(CONST_APTR, LIBFUNCTABLE, A1),
-	      AROS_LCA(CONST_APTR, NULL, A2),
-	      struct ExecBase *, sysBase);
+	      AROS_UFCA(APTR, SysBase, A0),
+	      AROS_UFCA(CONST_APTR, LIBFUNCTABLE, A1),
+	      AROS_UFCA(CONST_APTR, NULL, A2),
+	      struct ExecBase *, SysBase);
 
-    sysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
-    sysBase->LibNode.lib_Node.ln_Pri  = -100;
-    sysBase->LibNode.lib_Node.ln_Name = "exec.library";
-    sysBase->LibNode.lib_IdString     = (char *)Exec_resident.rt_IdString;
-    sysBase->LibNode.lib_Version      = VERSION_NUMBER;
-    sysBase->LibNode.lib_Revision     = REVISION_NUMBER;
-    sysBase->LibNode.lib_OpenCnt      = 1;
-    sysBase->LibNode.lib_NegSize      = negsize;
-    sysBase->LibNode.lib_PosSize      = sizeof(struct IntExecBase);
-    sysBase->LibNode.lib_Flags        = 0;
+    SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
+    SysBase->LibNode.lib_Node.ln_Pri  = -100;
+    SysBase->LibNode.lib_Node.ln_Name = "exec.library";
+    SysBase->LibNode.lib_IdString     = (char *)Exec_resident.rt_IdString;
+    SysBase->LibNode.lib_Version      = VERSION_NUMBER;
+    SysBase->LibNode.lib_Revision     = REVISION_NUMBER;
+    SysBase->LibNode.lib_OpenCnt      = 1;
+    SysBase->LibNode.lib_NegSize      = negsize;
+    SysBase->LibNode.lib_PosSize      = sizeof(struct IntExecBase);
+    SysBase->LibNode.lib_Flags        = 0;
 
-    NEWLIST(&sysBase->MemList);
-    sysBase->MemList.lh_Type = NT_MEMORY;
-    ADDHEAD(&sysBase->MemList, &mh->mh_Node);
+    NEWLIST(&SysBase->MemList);
+    SysBase->MemList.lh_Type = NT_MEMORY;
+    ADDHEAD(&SysBase->MemList, &mh->mh_Node);
     
-    NEWLIST(&sysBase->ResourceList);
-    sysBase->ResourceList.lh_Type = NT_RESOURCE;
+    NEWLIST(&SysBase->ResourceList);
+    SysBase->ResourceList.lh_Type = NT_RESOURCE;
     
-    NEWLIST(&sysBase->DeviceList);
-    sysBase->DeviceList.lh_Type = NT_DEVICE;
+    NEWLIST(&SysBase->DeviceList);
+    SysBase->DeviceList.lh_Type = NT_DEVICE;
 
-    NEWLIST(&sysBase->IntrList);
-    sysBase->IntrList.lh_Type = NT_INTERRUPT;
+    NEWLIST(&SysBase->IntrList);
+    SysBase->IntrList.lh_Type = NT_INTERRUPT;
 
-    NEWLIST(&sysBase->LibList);
-    sysBase->LibList.lh_Type = NT_LIBRARY;
-    ADDHEAD(&sysBase->LibList, &sysBase->LibNode.lib_Node);
+    NEWLIST(&SysBase->LibList);
+    SysBase->LibList.lh_Type = NT_LIBRARY;
+    ADDHEAD(&SysBase->LibList, &SysBase->LibNode.lib_Node);
 
-    NEWLIST(&sysBase->PortList);
-    sysBase->PortList.lh_Type = NT_MSGPORT;
+    NEWLIST(&SysBase->PortList);
+    SysBase->PortList.lh_Type = NT_MSGPORT;
 
-    NEWLIST(&sysBase->TaskReady);
-    sysBase->TaskReady.lh_Type = NT_TASK;
+    NEWLIST(&SysBase->TaskReady);
+    SysBase->TaskReady.lh_Type = NT_TASK;
 
-    NEWLIST(&sysBase->TaskWait);
-    sysBase->TaskWait.lh_Type = NT_TASK;
+    NEWLIST(&SysBase->TaskWait);
+    SysBase->TaskWait.lh_Type = NT_TASK;
 
-    NEWLIST(&sysBase->SemaphoreList);
-    sysBase->TaskWait.lh_Type = NT_SEMAPHORE;
+    NEWLIST(&SysBase->SemaphoreList);
+    SysBase->TaskWait.lh_Type = NT_SEMAPHORE;
 
-    NEWLIST(&sysBase->ex_MemHandlers);
+    NEWLIST(&SysBase->ex_MemHandlers);
 
     for (i = 0; i < 5; i++)
     {
-	NEWLIST(&sysBase->SoftInts[i].sh_List);
-	sysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
+	NEWLIST(&SysBase->SoftInts[i].sh_List);
+	SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
     }
 
-    NEWLIST(&((struct IntExecBase *)sysBase)->ResetHandlers);
+    NEWLIST(&((struct IntExecBase *)SysBase)->ResetHandlers);
 
-    sysBase->SoftVer        = VERSION_NUMBER;
+    SysBase->SoftVer        = VERSION_NUMBER;
 
-    sysBase->ColdCapture    = sysBase->CoolCapture
-	                    = sysBase->WarmCapture
+    SysBase->ColdCapture    = SysBase->CoolCapture
+	                    = SysBase->WarmCapture
 			    = NULL;
 
-    sysBase->MaxLocMem      = (IPTR)mh->mh_Upper;
+    SysBase->MaxLocMem      = (IPTR)mh->mh_Upper;
 
-    sysBase->Quantum        = 4;
+    SysBase->Quantum        = 4;
 
-    sysBase->TaskTrapCode   = Exec_TrapHandler;
-    sysBase->TaskExceptCode = NULL;
-    sysBase->TaskExitCode   = Exec_TaskFinaliser;
-    sysBase->TaskSigAlloc   = 0xFFFF;
-    sysBase->TaskTrapAlloc  = 0;
+    SysBase->TaskTrapCode   = Exec_TrapHandler;
+    SysBase->TaskExceptCode = NULL;
+    SysBase->TaskExitCode   = Exec_TaskFinaliser;
+    SysBase->TaskSigAlloc   = 0xFFFF;
+    SysBase->TaskTrapAlloc  = 0;
 
     /* Default frequencies */
-    sysBase->VBlankFrequency = 50;
-    sysBase->PowerSupplyFrequency = 1;
+    SysBase->VBlankFrequency = 50;
+    SysBase->PowerSupplyFrequency = 1;
 
-    sysBase->ChkBase=~(IPTR)sysBase;
+    SysBase->ChkBase=~(IPTR)SysBase;
 
     /* Parse some arguments from command line */
     if (args)
@@ -189,19 +201,19 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 	/* Set VBlank and EClock frequencies if specified */
 	s = strstr(args, "vblank=");
 	if (s)
-	    sysBase->VBlankFrequency = atoi(&s[7]);
+	    SysBase->VBlankFrequency = atoi(&s[7]);
 
 	s = strstr(args, "eclock=");
 	if (s)
-	    sysBase->ex_EClockFrequency = atoi(&s[7]);
+	    SysBase->ex_EClockFrequency = atoi(&s[7]);
 
 	/* Enable mungwall before the first AllocMem() */
 	s = strstr(args, "mungwall");
 	if (s)
-	    PrivExecBase(sysBase)->IntFlags = EXECF_MungWall;
+	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
     }
 
-    sysBase->DebugAROSBase  = PrepareAROSSupportBase(sysBase);
+    SysBase->DebugAROSBase  = PrepareAROSSupportBase(SysBase);
 
-    return sysBase;
+    return SysBase;
 }
