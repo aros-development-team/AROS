@@ -100,7 +100,7 @@ static BOOL HIDDNouveauNV50AcquireSurface2D(struct CardData * carddata,
     return TRUE;
 }
 
-/*static VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
+VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
     LONG col1, LONG pat0, LONG pat1)
 {
     struct nouveau_channel * chan = carddata->chan;
@@ -111,7 +111,7 @@ static BOOL HIDDNouveauNV50AcquireSurface2D(struct CardData * carddata,
     OUT_RING  (chan, col1);
     OUT_RING  (chan, pat0);
     OUT_RING  (chan, pat1);
-}*/
+}
 
 static VOID HIDDNouveauNV50SetROP(struct CardData * carddata, ULONG drawmode,
     struct HIDDNouveauBitMapData * bmdata) /*, Pixel planemask) */

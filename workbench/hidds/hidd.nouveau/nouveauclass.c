@@ -461,6 +461,12 @@ OOP_Object * METHOD(Nouveau, Root, New)
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP,
                 0, gartsize, &carddata->GART);
             InitSemaphore(&carddata->gartsemaphore);
+            
+            /* Set initial pattern (else 16-bit ROPs are not working) */
+            if (carddata->architecture == NV_ARCH_50)
+                HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
+            else
+                HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
         }
 
         return o;
