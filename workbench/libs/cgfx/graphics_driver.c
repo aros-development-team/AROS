@@ -729,6 +729,13 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     
     struct Rectangle rr;
     struct rpa_render_data rpard;
+    
+    /* Filter out unsupported modes */
+    if ((dstformat == RECTFMT_LUT8) || (dstformat == RECTFMT_GREY8))
+    {
+        D(bug("RECTFMT_LUT8 and RECTFMT_GREY8 are not supported by ReadPixelArray()\n"));
+        return 0;
+    }
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap))
@@ -751,17 +758,17 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     	case RECTFMT_BGR16  : dstfmt_hidd = vHidd_StdPixFmt_BGR16   ; break;
     	case RECTFMT_RGB16PC: dstfmt_hidd = vHidd_StdPixFmt_RGB16_LE; break;
     	case RECTFMT_BGR16PC: dstfmt_hidd = vHidd_StdPixFmt_BGR16_LE; break;
-	case RECTFMT_RGB24  : dstfmt_hidd = vHidd_StdPixFmt_RGB24   ; break;
+    	case RECTFMT_RGB24  : dstfmt_hidd = vHidd_StdPixFmt_RGB24   ; break;
     	case RECTFMT_BGR24  : dstfmt_hidd = vHidd_StdPixFmt_BGR24   ; break;
     	case RECTFMT_0RGB32 : dstfmt_hidd = vHidd_StdPixFmt_0RGB32  ; break;
     	case RECTFMT_BGR032 : dstfmt_hidd = vHidd_StdPixFmt_BGR032  ; break;
     	case RECTFMT_RGB032 : dstfmt_hidd = vHidd_StdPixFmt_RGB032  ; break;
     	case RECTFMT_0BGR32 : dstfmt_hidd = vHidd_StdPixFmt_0BGR32  ; break;
-	case RECTFMT_ARGB32 : dstfmt_hidd = vHidd_StdPixFmt_ARGB32  ; morphfmt_hidd = vHidd_StdPixFmt_0RGB32; break;
+    	case RECTFMT_ARGB32 : dstfmt_hidd = vHidd_StdPixFmt_ARGB32  ; morphfmt_hidd = vHidd_StdPixFmt_0RGB32; break;
     	case RECTFMT_BGRA32 : dstfmt_hidd = vHidd_StdPixFmt_BGRA32  ; morphfmt_hidd = vHidd_StdPixFmt_BGR032; break;
-	case RECTFMT_RGBA32 : dstfmt_hidd = vHidd_StdPixFmt_RGBA32  ; morphfmt_hidd = vHidd_StdPixFmt_RGB032; break;
-	case RECTFMT_ABGR32 : dstfmt_hidd = vHidd_StdPixFmt_ABGR32  ; morphfmt_hidd = vHidd_StdPixFmt_0BGR32; break;
-	case RECTFMT_RAW  : dstfmt_hidd = vHidd_StdPixFmt_Native; break;
+    	case RECTFMT_RGBA32 : dstfmt_hidd = vHidd_StdPixFmt_RGBA32  ; morphfmt_hidd = vHidd_StdPixFmt_RGB032; break;
+    	case RECTFMT_ABGR32 : dstfmt_hidd = vHidd_StdPixFmt_ABGR32  ; morphfmt_hidd = vHidd_StdPixFmt_0BGR32; break;
+    	case RECTFMT_RAW  : dstfmt_hidd = vHidd_StdPixFmt_Native; break;
     }
 
 #warning Get rid of the below code ?
