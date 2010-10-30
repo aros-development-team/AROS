@@ -2,33 +2,11 @@
 include $(TOP)/config/make.cfg
 
 #MM- kernel-linux-$(CPU) : \
-#MM    kernel-unix \
 #MM    kernel-hidd-linux-kobj \
-#MM    kernel-$(CPU) \
 #MM    kernel-pci-linux-kobj \
 #MM    kernel-pci-kobj
 
-#MM- includes-linux-$(CPU) : includes-common-$(CPU)
-#MM- kernel-exec-includes-linux-$(CPU) : kernel-exec-includes-unix
-#MM- kernel-link-linux-$(CPU) : kernel-link-emul
-
-%rule_archalias mainmmake=kernel-bootstrap-hosted arch=linux alias=unix
-%rule_archalias mainmmake=kernel-bootloader arch=linux alias=unix
-%rule_archalias mainmmake=kernel-exec arch=linux alias=unix
-%rule_archalias mainmmake=kernel-battclock arch=linux alias=unix
-%rule_archalias mainmmake=kernel-hostlib arch=linux alias=unix
-%rule_archalias mainmmake=kernel-dbus arch=linux alias=unix
-%rule_archalias mainmmake=kernel-kernel arch=linux alias=unix
-%rule_archalias mainmmake=kernel-fs-emul arch=linux alias=unix
-
-%rule_archalias mainmmake=workbench-libs-oss arch=linux alias=unix
-
-MM- check : check-exec-unix
-
-#MM- contrib-linux : contrib-complete
-
 #MM- workbench-linux-$(CPU) : \
-#MM      workbench-unix \
 #MM      workbench-devs-tap-unix
 
 %common

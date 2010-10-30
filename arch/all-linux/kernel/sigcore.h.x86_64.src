@@ -26,7 +26,7 @@ struct _fpstate
 {
     UWORD   cwd;
     UWORD   swd;
-    UWORD   twd;            /* Note this is not the same as the
+    UWORD   twd;
     UWORD   fop;
     UQUAD   rip;
     UQUAD   rdp;
@@ -318,31 +318,6 @@ typedef struct ucontext regs_t;
 #endif
 
 /*
-    Store first six arguments in registers, the rest on stack
-*/
-
-#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)   \
-    int argcounter = numargs;                     \
-    while (argcounter > 6)                        \
-        _PUSH(sp, args[--argcounter]);   \
-    switch (argcounter)                           \
-    {                                             \
-        case 6:                                   \
-            cc->regs[7] = args[5];                \
-        case 5:                                   \
-            cc->regs[6] = args[4];                \
-        case 4:                                   \
-            cc->regs[2] = args[3];                \
-        case 3:                                   \
-            cc->regs[3] = args[2];                \
-        case 2:                                   \
-            cc->regs[5] = args[1];                \
-        case 1:                                   \
-            cc->regs[4] = args[0];                \
-            break;                                \
-    }
-
-/*
     This macro is similar to PREPARE_INITIAL_FRAME() but also saves
     all general purpose registers. Use this macro when you want to
     leave the current tasks' context to save the registers. Note that
@@ -403,6 +378,32 @@ struct AROSCPUContext
 
 #define GET_PC(ctx) ((APTR)ctx->regs[16])
 #define SET_PC(ctx, val) ctx->regs[16] = (UQUAD)val
+
+/*
+    Store first six arguments in registers, the rest on stack
+*/
+
+#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)   \
+    int argcounter = numargs;                     \
+    while (argcounter > 6)                        \
+        _PUSH(sp, args[--argcounter]);   \
+    switch (argcounter)                           \
+    {                                             \
+        case 6:                                   \
+            cc->regs[7] = args[5];                \
+        case 5:                                   \
+            cc->regs[6] = args[4];                \
+        case 4:                                   \
+            cc->regs[2] = args[3];                \
+        case 3:                                   \
+            cc->regs[3] = args[2];                \
+        case 2:                                   \
+            cc->regs[5] = args[1];                \
+        case 1:                                   \
+            cc->regs[4] = args[0];                \
+            break;                                \
+    }
+
 
 #define PREPARE_INITIAL_FRAME(cc, sp, pc)  \
         do                                 \
