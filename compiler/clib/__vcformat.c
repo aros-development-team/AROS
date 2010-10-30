@@ -164,7 +164,7 @@ const unsigned char *const __decimalpoint = ".";
 	}
       }
 
-      if(*ptr=='h'||*ptr=='l'||*ptr=='L')
+      if(*ptr=='h'||*ptr=='l'||*ptr=='L'||*ptr=='z')
 	subtype=*ptr++;
 
 #ifdef AROS_HAVE_LONG_LONG
@@ -217,6 +217,8 @@ const unsigned char *const __decimalpoint = ".";
 #else
 	      v2=va_arg(args,signed long);
 #endif
+	    else if(subtype=='z')
+	      v2=va_arg(args,size_t);
 	    else
 	      v2=va_arg(args,signed int);
 	    if(v2<0)
@@ -238,6 +240,8 @@ const unsigned char *const __decimalpoint = ".";
 #else
 	      v=va_arg(args,unsigned long);
 #endif
+	    else if(subtype=='z')
+	      v=va_arg(args,size_t);
 	    else
 	      v=va_arg(args,unsigned int);
 	    if(flags&ALTERNATEFLAG)
