@@ -649,6 +649,7 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
         ULONG i;
         ULONG x, y;
         ULONG curimage[64 * 64];
+        struct CardData * carddata = &(SD(cl)->carddata);
         
         OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
         OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
@@ -667,6 +668,29 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
         /* Get data from the bitmap */
         HIDD_BM_GetImage(msg->shape, (UBYTE *)curimage, 64 * 4, 0, 0, 
             width, height, Machine_ARGB32);
+        
+        if (carddata->architecture < NV_ARCH_50)
+        {
+            ULONG offset, pixel, blue, green, red, alpha;
+
+            /* The image needs to be premultiplied */
+            for (y = 0; y < height; y++)
+                for (x = 0; x < width; x++)
+                {
+                    offset = y * 64 + x;
+                    pixel = curimage[offset];
+                    blue  = (pixel & 0x000000FF);
+                    green = (pixel & 0x0000FF00) >> 8;
+                    red   = (pixel & 0x00FF0000) >> 16;
+                    alpha = (pixel & 0xFF000000) >> 24;
+                    
+                    blue    = (blue * alpha) / 255;
+                    green   = (green * alpha) / 255;
+                    red     = (red * alpha) / 255;
+
+                    curimage[offset]    = (alpha << 24) | (red << 16) | (green << 8) | blue;
+                }
+        }
 
         for (y = 0; y < height; y++)
             for (x = 0; x < width; x++)
