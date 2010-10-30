@@ -215,6 +215,8 @@ BOOL NVAccelCommonInit(struct CardData * carddata);
 VOID NVAccelFree(struct CardData * carddata);
 BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
 
+VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,
+		  ULONG pat0, ULONG pat1);
 BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
@@ -222,7 +224,9 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
 BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
     ULONG maxY, ULONG drawmode, ULONG color);
-    
+
+VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
+    LONG col1, LONG pat0, LONG pat1);
 BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
     ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,

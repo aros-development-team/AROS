@@ -25,7 +25,7 @@
 #include "nv_rop.h"
 #include "nouveau/nouveau_class.h"
 
-/*static VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,
+VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,
 		  ULONG pat0, ULONG pat1)
 {
     struct nouveau_channel *chan = carddata->chan;
@@ -36,7 +36,7 @@
     OUT_RING  (chan, clr1);
     OUT_RING  (chan, pat0);
     OUT_RING  (chan, pat1);
-}*/
+}
 
 static VOID HIDDNouveauNV04SetROP(struct CardData * carddata, ULONG drawmode)/*, CARD32 planemask)*/
 {
