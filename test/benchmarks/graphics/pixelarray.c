@@ -111,7 +111,7 @@ static void cleanup(STRPTR msg, ULONG retcode)
 {
     if (msg) 
     {
-        fprintf(stderr, "writepixelarray: %s\n", msg);
+        fprintf(stderr, "pixelarray: %s\n", msg);
     }
     
     if (myargs) FreeArgs(myargs);
@@ -150,7 +150,7 @@ static void getarguments(void)
     
         if (pixfmt_table[i].name == NULL)
         {
-            fprintf(stderr, "writepixelarray: Bad pixel format! Valid ones are:\n\n");
+            fprintf(stderr, "pixelarray: Bad pixel format! Valid ones are:\n\n");
             
             for(i = 0; pixfmt_table[i].name; i++)
             {
