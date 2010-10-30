@@ -33,7 +33,45 @@
 
     INPUTS
 
+        dstformat - A RECTFMT_xxx value describing requested format in which
+                    data in dst will be available. Currently supported original
+                    values are:
+                    
+                    RECTFMT_RGB
+                    RECTFMT_RGBA
+                    RECTFMT_ARGB
+                    RECTFMT_RAW
+                    
+                    Currently supported AROS extensions are:
+
+                    RECTFMT_RGB15
+                    RECTFMT_BGR15
+                    RECTFMT_RGB15PC
+                    RECTFMT_BGR15PC
+                    RECTFMT_RGB16
+                    RECTFMT_BGR16
+                    RECTFMT_RGB16PC
+                    RECTFMT_BGR16PC
+                    RECTFMT_RGB24
+                    RECTFMT_BGR24
+                    RECTFMT_0RGB32
+                    RECTFMT_BGR032
+                    RECTFMT_RGB032
+                    RECTFMT_0BGR32
+                    RECTFMT_ARGB32
+                    RECTFMT_BGRA32
+                    RECTFMT_RGBA32
+                    RECTFMT_ABGR32
+                    
+                    Following values are not supported and will cause function
+                    to return 0:
+                    
+                    RECTFMT_LUT8
+                    RECTFMT_GREY8
+
     RESULT
+
+        Number of pixels read.
 
     NOTES
 
