@@ -519,7 +519,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
     /* Calculate destination buffer pointer */
     dstBuff = (APTR)((IPTR)bmdata->bo->map + (msg->y * bmdata->pitch) + (msg->x * bmdata->bytesperpixel));
     
-    HiddNouveauConvertAndCopy(
+    HiddNouveauWriteFromRAM(
         msg->pixels, msg->modulo, msg->pixFmt,
         dstBuff, bmdata->pitch,
         msg->width, msg->height,
@@ -571,7 +571,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     /* Calculate source buffer pointer */
     srcBuff = (APTR)((IPTR)bmdata->bo->map + (msg->y * bmdata->pitch) + (msg->x * bmdata->bytesperpixel));
     
-    HiddNouveauConvertAndCopy2(
+    HiddNouveauReadIntoRAM(
         srcBuff, bmdata->pitch,
         msg->pixels, msg->modulo, msg->pixFmt,
         msg->width, msg->height,

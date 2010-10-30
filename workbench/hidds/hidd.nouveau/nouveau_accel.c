@@ -29,9 +29,10 @@
 #undef HiddBitMapAttrBase
 #define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
 
-/* Takes pixels from source and writes it to destination performing conversion */
 /* Assumes input and output buffers are lock-protected */
-BOOL HiddNouveauConvertAndCopy(
+/* Takes pixels from RAM buffer, converts them and puts them into destination
+   buffer. The destination buffer can be in VRAM or GART or RAM */
+BOOL HiddNouveauWriteFromRAM(
     APTR src, ULONG srcPitch, HIDDT_StdPixFmt srcPixFmt,
     APTR dst, ULONG dstPitch,
     ULONG width, ULONG height,
@@ -202,7 +203,7 @@ BOOL HiddNouveauNVAccelUploadM2MF(
             return FALSE;
         dst = carddata->GART->map;
 
-        HiddNouveauConvertAndCopy(
+        HiddNouveauWriteFromRAM(
             src, srcpitch, srcPixFmt,
             dst, line_len,
             width, line_count,
@@ -277,9 +278,10 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     return TRUE;
 }
 
-/* Takes pixels from source and writes it to destination performing conversion */
 /* Assumes input and output buffers are lock-protected */
-BOOL HiddNouveauConvertAndCopy2(
+/* Takes pixels from source buffer, converts them and puts them into RAM
+   buffer. The source buffer can be in VRAM or GART or RAM */
+BOOL HiddNouveauReadIntoRAM(
     APTR src, ULONG srcPitch, 
     APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG width, ULONG height,
@@ -507,7 +509,7 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
         }
         src = carddata->GART->map;
 
-        HiddNouveauConvertAndCopy2(
+        HiddNouveauReadIntoRAM(
             src, line_len,
             dst, dstpitch, dstPixFmt,
             width, line_count,

@@ -231,7 +231,7 @@ BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
     ULONG maxY, ULONG drawmode, ULONG color);
     
-BOOL HiddNouveauConvertAndCopy(
+BOOL HiddNouveauWriteFromRAM(
     APTR src, ULONG srcPitch, HIDDT_StdPixFmt srcPixFmt,
     APTR dst, ULONG dstPitch,
     ULONG width, ULONG height,
@@ -241,7 +241,7 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);
 
-BOOL HiddNouveauConvertAndCopy2(
+BOOL HiddNouveauReadIntoRAM(
     APTR src, ULONG srcPitch, 
     APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG width, ULONG height,
