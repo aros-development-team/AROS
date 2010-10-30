@@ -568,7 +568,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     
     MAP_BUFFER
 
-    /* Calculate destination buffer pointer */
+    /* Calculate source buffer pointer */
     srcBuff = (APTR)((IPTR)bmdata->bo->map + (msg->y * bmdata->pitch) + (msg->x * bmdata->bytesperpixel));
     
     HiddNouveauConvertAndCopy2(

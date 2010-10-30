@@ -334,10 +334,10 @@ BOOL HiddNouveauConvertAndCopy2(
         {
         case 1:
             {
-                struct pHidd_BitMap_PutMem32Image8 __m = 
+                struct pHidd_BitMap_GetMem32Image8 __m = 
                 {
-                    SD(cl)->mid_PutMem32Image8, src, dst,
-                    0, 0, width, height, srcPitch, dstPitch
+                    SD(cl)->mid_GetMem32Image8, src, 0, 0, dst, 
+                    width, height, srcPitch, dstPitch
                 }, *m = &__m;
                 OOP_DoMethod(o, (OOP_Msg)m);
             }
@@ -345,10 +345,10 @@ BOOL HiddNouveauConvertAndCopy2(
 
         case 2:
             {
-                struct pHidd_BitMap_PutMem32Image16 __m = 
+                struct pHidd_BitMap_GetMem32Image16 __m = 
                 {
-                    SD(cl)->mid_PutMem32Image16, src, dst,
-                    0, 0, width, height, srcPitch, dstPitch
+                    SD(cl)->mid_GetMem32Image16, src, 0, 0, dst, 
+                    width, height, srcPitch, dstPitch
                 }, *m = &__m;
                 OOP_DoMethod(o, (OOP_Msg)m);
             }
