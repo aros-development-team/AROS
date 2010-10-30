@@ -11,8 +11,6 @@ FILES := kernel kernel_cpu cpu_$(CPU)
   arch=unix compiler=kernel \
   files="$(FILES) $(FUNCS)"
 
-#MM- kernel-kernel-includes-unix : kernel-$(ARCH)-sigcore
-
 TESTS		:= coretest
 
 #MM

@@ -131,19 +131,6 @@ typedef struct ucontext regs_t;
 	*(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]) = cc->fpregs[i];\
 }
 
-#define PREPARE_RETURN_ADDRESS(cc, addr)                      \
-    do                                                        \
-    {                                                         \
-        cc->regs.link = (unsigned long) addr;\
-    } while (0)
-
-#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)\
-{\
-    long i;\
-    for (i = 0; i < numargs; i++)\
-	cc->regs.gpr[3+i] = args[i];\
-}
-
 /* Prepare the cpu context
    Sys V PPC ABI says r2 is reserved
    so we copy the current one and it
@@ -210,6 +197,19 @@ struct AROSCPUContext
 
 #define GET_PC(ctx) ((APTR)ctx->regs.nip)
 #define SET_PC(ctx, val) ctx->regs.nip = (IPTR)val
+
+#define PREPARE_RETURN_ADDRESS(cc, addr)                      \
+    do                                                        \
+    {                                                         \
+        cc->regs.link = (unsigned long) addr;\
+    } while (0)
+
+#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)\
+{\
+    long i;\
+    for (i = 0; i < numargs; i++)\
+	cc->regs.gpr[3+i] = args[i];\
+}
 
 #define PREPARE_INITIAL_FRAME(cc, sp, pc)     \
     do                                        \

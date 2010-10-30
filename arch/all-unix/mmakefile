@@ -17,6 +17,8 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-unix : workbench-hidd-unix $(OSS_LIBRARY_TARGET) workbench-hosted
 
+#MM- kernel-link-unix: kernel-link-emul
+
 #MM kernel-link-emul : kernel-kernel-kobj kernel-objs
 kernel-link-emul : $(BINDIR)/boot/aros-unix
 
