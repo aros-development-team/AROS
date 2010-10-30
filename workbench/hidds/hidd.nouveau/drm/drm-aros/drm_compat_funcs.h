@@ -174,7 +174,7 @@ static inline void atomic_add(int i, atomic_t *v)
 
 static inline void atomic_inc(atomic_t *v)
 {
-    __sync_add_and_fetch(&v->count, 1);
+    (void)__sync_add_and_fetch(&v->count, 1);
 }
 
 static inline void atomic_set(atomic_t *v, int i)
@@ -194,7 +194,7 @@ static inline void atomic_sub(int i, atomic_t *v)
 
 static inline void atomic_dec(atomic_t *v)
 {
-    __sync_sub_and_fetch(&v->count, 1);
+    (void)__sync_sub_and_fetch(&v->count, 1);
 }
 
 static inline int atomic_dec_and_test(atomic_t *v)
