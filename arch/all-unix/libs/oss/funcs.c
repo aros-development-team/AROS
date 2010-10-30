@@ -1,24 +1,26 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#include "oss_intern.h"
-#include <hidd/unixio.h>
 
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 
-#ifndef __FreeBSD__ = 5 
-/* FreeBSD 5 souncard.h include deps already include this */
 #include <sys/ioctl.h>
-#endif /* FreeBSD */
 
 #include <sys/soundcard.h>
-//#include <sys/mman.h>
+#include <sys/mman.h>
 
 #include <aros/debug.h>
+
+#define OSSBase GlobalOSSBase
+
+#include "oss_intern.h"
+
+/* Temporary hack. We do not get our library base as a parameter
+   so we have to store it globally. */
+struct OSS_Base *GlobalOSSBase;
 
 /******************************************************************************/
 
@@ -42,9 +44,13 @@ BOOL OSS_Open(char *filename, BOOL read, BOOL write, BOOL blocking)
     }
     
     if (!blocking) openflags |= O_NONBLOCK;
-    
-    audio_fd = Hidd_UnixIO_OpenFile((HIDD *)unixio, filename, openflags, 0, NULL);
-    
+
+    ObtainSemaphore(&OSSBase->sem);    
+
+    audio_fd = OSSBase->OSSIFace->open(filename, openflags, 0);
+
+    ReleaseSemaphore(&OSSBase->sem);
+
     return (audio_fd >= 0) ? TRUE : FALSE;
 }
 
@@ -52,9 +58,12 @@ BOOL OSS_Open(char *filename, BOOL read, BOOL write, BOOL blocking)
 
 void OSS_Close(void)
 {
-    if (audio_fd >= 0)
+    if (audio_fd != -1)
     {
-    	Hidd_UnixIO_CloseFile((HIDD *)unixio, audio_fd, NULL);
+	ObtainSemaphore(&OSSBase->sem);
+	OSSBase->OSSIFace->close(audio_fd);
+	ReleaseSemaphore(&OSSBase->sem);
+
 	audio_fd = -1;
     }
 }
@@ -66,8 +75,10 @@ void OSS_Reset(void)
     if (audio_fd >= 0)
     {
     	int value = 0;
-	
-    	Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_RESET, &value, NULL);
+
+	ObtainSemaphore(&OSSBase->sem);
+	OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_RESET, &value);
+	ReleaseSemaphore(&OSSBase->sem);
     }
 }
 
@@ -81,8 +92,11 @@ BOOL OSS_SetFragmentSize(int num_fragments, int fragment_size)
 	int retval;
 	
 	value = (num_fragments << 16) | fragment_size;
-	
-	retval = Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_SETFRAGMENT, &value, NULL);
+
+	ObtainSemaphore(&OSSBase->sem);
+	retval = OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &value);
+	ReleaseSemaphore(&OSSBase->sem);
+
 	return (retval < 0) ? FALSE : TRUE;
     }
     else
@@ -100,9 +114,11 @@ BOOL OSS_GetOutputInfo(int *num_fragments_available, int *num_fragments_allocate
     if (audio_fd >= 0)
     {
     	audio_buf_info info;
-	
-	Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_GETOSPACE, &info, NULL);
-	
+
+	ObtainSemaphore(&OSSBase->sem);
+	OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info);
+	ReleaseSemaphore(&OSSBase->sem);
+
 	if (num_fragments_available) *num_fragments_available = info.fragments;
 	if (num_fragments_allocated) *num_fragments_allocated = info.fragstotal;
 	if (fragment_size) *fragment_size = info.fragsize;
@@ -123,9 +139,11 @@ BOOL OSS_GetOutputPointer(int *processed_bytes, int *fragment_transitions, int *
     if (audio_fd >= 0)
     {
     	count_info info;
-	
-	Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_GETOPTR, &info, NULL);
-	
+
+	ObtainSemaphore(&OSSBase->sem);
+	OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_GETOPTR, &info);
+	ReleaseSemaphore(&OSSBase->sem);
+
 	if (processed_bytes) *processed_bytes = info.bytes;
 	if (fragment_transitions) *fragment_transitions = info.blocks;
 	if (dmapointer) *dmapointer = info.ptr;
@@ -148,11 +166,12 @@ static BOOL get_supported_fmts(void)
 {
     if (audio_supported_fmts) return TRUE;
     if (audio_fd < 0) return FALSE;
-    
-    Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_GETFMTS, &audio_supported_fmts, NULL);
-    
+
+    ObtainSemaphore(&OSSBase->sem);
+    OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &audio_supported_fmts);
+    ReleaseSemaphore(&OSSBase->sem);
+
     return TRUE;
-    
 }
 
 /******************************************************************************/
@@ -217,11 +236,12 @@ static BOOL get_capabilities(void)
 {    
     if (audio_capabilities) return TRUE;
     if (audio_fd < 0) return FALSE;
-    
-    Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_GETCAPS, &audio_capabilities, NULL);
-    
+
+    ObtainSemaphore(&OSSBase->sem);
+    OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_GETCAPS, &audio_capabilities);
+    ReleaseSemaphore(&OSSBase->sem);
+
     return TRUE;
-    
 }
 
 /******************************************************************************/
@@ -276,7 +296,11 @@ static BOOL set_format(int fmt)
     if (audio_fd >= 0)
     {
     	int val = fmt;	
-    	int retval = Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_SETFMT, &val, NULL);
+    	int retval;
+
+	ObtainSemaphore(&OSSBase->sem);
+	retval = OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_SETFMT, &val);
+	ReleaseSemaphore(&OSSBase->sem);
 
 	if ((val != fmt) || (retval < 0))
 	{
@@ -342,9 +366,11 @@ BOOL OSS_SetMono(void)
     int retval;
     
     if (audio_fd < 0) return FALSE;
-    
-    retval = Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_STEREO, &val, NULL);
-    
+
+    ObtainSemaphore(&OSSBase->sem);
+    retval = OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_STEREO, &val);
+    ReleaseSemaphore(&OSSBase->sem);
+
     if ((retval < 0) || (val != 0)) return FALSE;
     
     return TRUE;
@@ -359,7 +385,9 @@ BOOL OSS_SetStereo(void)
     
     if (audio_fd < 0) return FALSE;
     
-    retval = Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_STEREO, &val, NULL);
+    ObtainSemaphore(&OSSBase->sem);
+    retval = OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_STEREO, &val);
+    ReleaseSemaphore(&OSSBase->sem);
     
     if ((retval < 0) || (val != 1)) return FALSE;
     
@@ -374,8 +402,11 @@ BOOL OSS_SetNumChannels(int numchannels)
     int retval;
     
     if (audio_fd < 0) return FALSE;
-    
-    retval = Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_CHANNELS, &val, NULL);   
+
+    ObtainSemaphore(&OSSBase->sem);
+    retval = OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_CHANNELS, &val);
+    ReleaseSemaphore(&OSSBase->sem);
+
     if (retval < 0)
     {
     	return (numchannels > 1) ? OSS_SetStereo() : OSS_SetMono();
@@ -392,8 +423,11 @@ BOOL OSS_SetWriteRate(int rate, int *used_rate)
     int retval;
     
     if (audio_fd < 0) return FALSE;
-    
-    retval = Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SOUND_PCM_WRITE_RATE, &val, NULL);   
+
+    ObtainSemaphore(&OSSBase->sem);
+    retval = OSSBase->OSSIFace->ioctl(audio_fd, SOUND_PCM_WRITE_RATE, &val);
+    ReleaseSemaphore(&OSSBase->sem);
+
     if (retval < 0)
     {
     	return FALSE;
@@ -431,7 +465,10 @@ BOOL OSS_MMap(APTR *mapped_address, int len, BOOL read, BOOL write)
     	protection = PROT_WRITE;
     }
 
-    buf = (APTR)mmap(NULL, len, protection, MAP_SHARED, audio_fd, 0);
+    ObtainSemaphore(&OSSBase->sem);
+    buf = OSSBase->OSSIFace->mmap(NULL, len, protection, MAP_SHARED, audio_fd, 0);
+    ReleaseSemaphore(&OSSBase->sem);
+
     if (buf == MAP_FAILED)
     {
     	return FALSE;
@@ -454,7 +491,9 @@ void OSS_MUnmap(APTR mapped_address, int len)
 #else
     if ((audio_fd >= 0) && (mapped_address != MAP_FAILED))
     {
-    	munmap(mapped_address, len);
+	ObtainSemaphore(&OSSBase->sem);
+    	OSSBase->OSSIFace->munmap(mapped_address, len);
+	ReleaseSemaphore(&OSSBase->sem);
     }
 #endif
 }
@@ -471,7 +510,9 @@ BOOL OSS_SetTrigger(BOOL input, BOOL output)
     if (input) val |= PCM_ENABLE_INPUT;
     if (output) val |= PCM_ENABLE_OUTPUT;
 
-    retval = Hidd_UnixIO_IOControlFile((HIDD *)unixio, audio_fd, SNDCTL_DSP_SETTRIGGER, &val, NULL);   
+    ObtainSemaphore(&OSSBase->sem);
+    retval = OSSBase->OSSIFace->ioctl(audio_fd, SNDCTL_DSP_SETTRIGGER, &val);
+    ReleaseSemaphore(&OSSBase->sem);
     
     return (retval < 0) ? FALSE : TRUE;
 }
@@ -481,17 +522,23 @@ BOOL OSS_SetTrigger(BOOL input, BOOL output)
 int OSS_Write(APTR buf, int size)
 {
     int written;
-    int errno;
+    int err;
     
     if (audio_fd < 0)
     {
     	return -1;
     }
     
-    written = Hidd_UnixIO_WriteFile((HIDD *)unixio, audio_fd, buf, size, &errno);
+    ObtainSemaphore(&OSSBase->sem);
+
+    written = OSSBase->OSSIFace->write(audio_fd, buf, size);
+    err = *OSSBase->errnoPtr;
+
+    ReleaseSemaphore(&OSSBase->sem);
+
     if (written == -1)
     {
-    	switch(errno)
+    	switch(err)
 	{
 	    case EAGAIN:
 	    	written = -2; /* Retval -2. Caller should treat it like EAGAIN. */
