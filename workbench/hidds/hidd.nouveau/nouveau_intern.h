@@ -22,9 +22,10 @@
 
 struct HIDDNouveauData
 {
-    struct nouveau_bo       *cursor;
-    ULONG                   selectedcrtcid;
-    ULONG                   selectedconnectorid;
+    struct nouveau_bo   *cursor;
+    ULONG               selectedcrtcid;
+    APTR                selectedmode;
+    APTR                selectedconnector;
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
@@ -37,15 +38,20 @@ struct HIDDNouveauBitMapData
                                     state. This state however can only be changed
                                     when lock is held on bitmap */
 
-    ULONG                   height;
-    ULONG                   width;
-    ULONG                   pitch;
-    UBYTE                   bytesperpixel;    /* In bytes */
-    UBYTE                   depth;            /* In bits */
+    ULONG   height;         /* Height of bitmap in pixels */
+    ULONG   width;          /* Width of bitmap in pixels */
+    ULONG   pitch;          /* Width of single data row in bytes */
+    UBYTE   bytesperpixel;  /* In bytes */
+    UBYTE   depth;          /* In bits */
     
-    ULONG                   fbid;             /* Contains ID under which bitmap 
-                                                is registered as framebuffer or 
-                                                0 otherwise */
+    /* Information connected with display */
+    LONG    xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
+    LONG    yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
+    ULONG   displayedwidth; /* Width of displayed part of bitmap in pixels */
+    ULONG   displayedheight;/* Height of displayed part of bitmap in pixels */
+    ULONG   fbid;           /* Contains ID under which bitmap 
+                                              is registered as framebuffer or 
+                                              0 otherwise */
 };
 
 #define CLID_Hidd_I2C_Nouveau           "hidd.i2c.nouveau"
@@ -254,6 +260,8 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);   
+
+BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm);
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);

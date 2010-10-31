@@ -8,6 +8,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 #include <proto/oop.h>
+#include <proto/utility.h>
 
 #include "arosdrmmode.h"
 
@@ -295,8 +296,14 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
             bmdata->bytesperpixel = 4;
         bmdata->pitch = (bmdata->width + 63) & ~63;
         bmdata->pitch *= bmdata->bytesperpixel;
-        bmdata->fbid = 0; /* Default value */
         InitSemaphore(&bmdata->semaphore);
+
+        /* Display information */
+        bmdata->fbid = 0; /* Default value */
+        bmdata->displayedwidth = 0;
+        bmdata->displayedheight = 0;
+        bmdata->xoffset = 0;
+        bmdata->yoffset = 0;
 
 	    /* Creation of buffer object */
 	    /* FIXME: check result of call */
@@ -339,6 +346,75 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     }
 
     OOP_DoSuperMethod(cl, o, msg);
+}
+
+VOID METHOD(NouveauBitMap, Root, Get)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    ULONG idx;
+
+    if (IS_BITMAP_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_BitMap_LeftEdge:
+            *msg->storage = bmdata->xoffset;
+            return;
+        case aoHidd_BitMap_TopEdge:
+            *msg->storage = bmdata->yoffset;
+            return;
+        }
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID METHOD(NouveauBitMap, Root, Set)
+{
+    struct TagItem  *tag, *tstate;
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    ULONG idx;
+    LONG limit;
+    LONG newxoffset = bmdata->xoffset;
+    LONG newyoffset = bmdata->yoffset;
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+            case aoHidd_BitMap_LeftEdge:
+                newxoffset = tag->ti_Data;
+                limit = bmdata->displayedwidth - bmdata->width;
+                if (newxoffset > 0)
+                    newxoffset = 0;
+                else
+                    if (newxoffset < limit)
+                        newxoffset = limit;
+                break;
+            case aoHidd_BitMap_TopEdge:
+                newyoffset = tag->ti_Data;
+                limit = bmdata->displayedheight - bmdata->height;
+                if (newyoffset > 0)
+                    newyoffset = 0;
+                else
+                    if (newyoffset < limit)
+                        newyoffset = limit;
+                break;
+            }
+        }
+    }
+
+    if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
+    {
+        bmdata->xoffset = newxoffset;
+        bmdata->yoffset = newyoffset;
+        HIDDNouveauShowBitmapForSelectedMode(o);
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)

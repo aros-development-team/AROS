@@ -120,12 +120,8 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device_priv *nvdev = nouveau_device(carddata->dev);
-    uint32_t output_ids[] = {gfxdata->selectedconnectorid};
-    uint32_t output_count = 1;
     LONG i;
-    drmModeConnectorPtr selectedconnector = NULL;
-    drmModeModeInfoPtr  selectedmode = NULL;
-    drmModeCrtcPtr      selectedcrtc = NULL;
+    drmModeConnectorPtr selectedconnector = (drmModeConnectorPtr)gfxdata->selectedconnector;
     HIDDT_ModeID modeid;
     OOP_Object * sync;
     OOP_Object * pf;
@@ -168,47 +164,33 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
     D(bug("[Nouveau] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
     pixel, hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal));
 
-    selectedconnector = drmModeGetConnector(nvdev->fd, gfxdata->selectedconnectorid);
-    if (!selectedconnector)
-    {
-        D(bug("[Nouveau] Failed to read connector %d information\n", gfxdata->selectedconnectorid));
-        return FALSE;
-    }
-    
-    selectedcrtc = drmModeGetCrtc(nvdev->fd, gfxdata->selectedcrtcid);
-    if (!selectedcrtc)
-    {
-        drmModeFreeConnector(selectedconnector);
-        D(bug("[Nouveau] Failed to read crtc %d information\n", gfxdata->selectedcrtcid));
-        return FALSE;
-    }
-
-    D(bug("[Nouveau] Connector %d, CRTC %d\n", selectedconnector->connector_id, 
-        selectedcrtc->crtc_id));
-
-    
+    D(bug("[Nouveau] Connector %d, CRTC %d\n", 
+        selectedconnector->connector_id, gfxdata->selectedcrtcid));
 
     /* Select mode */
+    gfxdata->selectedmode = NULL;
     for (i = 0; i < selectedconnector->count_modes; i++)
     {
         drmModeModeInfoPtr mode = &selectedconnector->modes[i];
         
-        /* FIXME: Maybe take clock into account? */
         if ((mode->hdisplay == hdisp) && (mode->vdisplay == vdisp) &&
             (mode->hsync_start == hstart) && (mode->vsync_start == vstart) &&
             (mode->hsync_end == hend) && (mode->vsync_end == vend))
         {
-            selectedmode = mode;
+            gfxdata->selectedmode = mode;
             break;
         }
     }
     
-    if (!selectedmode)
+    if (!gfxdata->selectedmode)
     {
         D(bug("[Nouveau] Not able to select mode\n"));
         return FALSE;
     }
 
+    /* Set the displayed width and height of bitmap */
+    bmdata->displayedwidth = hdisp;
+    bmdata->displayedheight = vdisp;
 
 
     /* For screen switching the bitmap might have already once been a framebuffer 
@@ -223,8 +205,6 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
 	                bmdata->pitch, bmdata->bo->handle, &bmdata->fbid);
         if (ret)
         {
-            drmModeFreeConnector(selectedconnector);
-            drmModeFreeCrtc(selectedcrtc);
             D(bug("[Nouveau] Not able to add framebuffer\n"));
             return FALSE;
         }
@@ -232,23 +212,53 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_O
 
 
     /* Switch mode */
-    ret = drmModeSetCrtc(nvdev->fd, selectedcrtc->crtc_id,
-	        bmdata->fbid, selectedcrtc->x, selectedcrtc->y, output_ids, 
-	        output_count, selectedmode);
-    if (ret)
+    if (!HIDDNouveauShowBitmapForSelectedMode(bm))
     {
-        drmModeFreeConnector(selectedconnector);
-        drmModeFreeCrtc(selectedcrtc);
         D(bug("[Nouveau] Not able to set crtc\n"));
         return FALSE;        
     }
 
     HIDDNouveauShowCursor(cl , gfx, TRUE);
         
-    drmModeFreeConnector(selectedconnector);
-    drmModeFreeCrtc(selectedcrtc);
-    
     return TRUE;
+}
+
+/* This function assumes that the mode, crtc and output are already selected */
+BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
+{
+    OOP_Class * cl = OOP_OCLASS(bm);
+    struct HIDDNouveauData * gfxdata = NULL;
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    struct CardData * carddata = &(SD(cl)->carddata);
+    struct nouveau_device_priv *nvdev = nouveau_device(carddata->dev);
+    uint32_t output_ids[] = {0};
+    uint32_t output_count = 1;
+    IPTR e = (IPTR)NULL;
+    OOP_Object * gfx = NULL;
+    LONG ret;
+
+    LOCK_BITMAP
+    
+    /* Check if passed bitmap has been registered as framebuffer */
+    if (bmdata->fbid == 0)
+    {
+        UNLOCK_BITMAP
+        return FALSE;
+    }
+    
+    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
+    gfx = (OOP_Object *)e;
+    gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
+    output_ids[0] = ((drmModeConnectorPtr)gfxdata->selectedconnector)->connector_id;
+    
+
+    ret = drmModeSetCrtc(nvdev->fd, gfxdata->selectedcrtcid,
+	        bmdata->fbid, -bmdata->xoffset, -bmdata->yoffset, output_ids, 
+	        output_count, gfxdata->selectedmode);
+
+    UNLOCK_BITMAP
+    
+    if (ret) return FALSE; else return TRUE;
 }
 
 #include <stdio.h>
@@ -267,27 +277,34 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
     
     for (i = 0; i < modescount; i++)
     {
-        struct TagItem * sync = AllocVec(sizeof(struct TagItem) * 11, MEMF_ANY);
+        struct TagItem * sync = AllocVec(sizeof(struct TagItem) * 15, MEMF_ANY);
+        LONG j = 0;
         
         drmModeModeInfoPtr mode = &connector->modes[i];
 
-        sync[0].ti_Tag = aHidd_Sync_PixelClock;     sync[0].ti_Data = mode->clock;
-        sync[1].ti_Tag = aHidd_Sync_HDisp;          sync[1].ti_Data = mode->hdisplay;
-        sync[2].ti_Tag = aHidd_Sync_HSyncStart;     sync[2].ti_Data = mode->hsync_start;
-        sync[3].ti_Tag = aHidd_Sync_HSyncEnd;       sync[3].ti_Data = mode->hsync_end;
-        sync[4].ti_Tag = aHidd_Sync_HTotal;         sync[4].ti_Data = mode->htotal;
-        sync[5].ti_Tag = aHidd_Sync_VDisp;          sync[5].ti_Data = mode->vdisplay;
-        sync[6].ti_Tag = aHidd_Sync_VSyncStart;     sync[6].ti_Data = mode->vsync_start;
-        sync[7].ti_Tag = aHidd_Sync_VSyncEnd;       sync[7].ti_Data = mode->vsync_end;
-        sync[8].ti_Tag = aHidd_Sync_VTotal;         sync[8].ti_Data = mode->vtotal;
+        sync[j].ti_Tag = aHidd_Sync_PixelClock;     sync[j++].ti_Data = mode->clock;
+
+        sync[j].ti_Tag = aHidd_Sync_HDisp;          sync[j++].ti_Data = mode->hdisplay;
+        sync[j].ti_Tag = aHidd_Sync_HSyncStart;     sync[j++].ti_Data = mode->hsync_start;
+        sync[j].ti_Tag = aHidd_Sync_HSyncEnd;       sync[j++].ti_Data = mode->hsync_end;
+        sync[j].ti_Tag = aHidd_Sync_HTotal;         sync[j++].ti_Data = mode->htotal;
+        sync[j].ti_Tag = aHidd_Sync_HMin;           sync[j++].ti_Data = mode->hdisplay;
+        sync[j].ti_Tag = aHidd_Sync_HMax;           sync[j++].ti_Data = 2048;
+
+        sync[j].ti_Tag = aHidd_Sync_VDisp;          sync[j++].ti_Data = mode->vdisplay;
+        sync[j].ti_Tag = aHidd_Sync_VSyncStart;     sync[j++].ti_Data = mode->vsync_start;
+        sync[j].ti_Tag = aHidd_Sync_VSyncEnd;       sync[j++].ti_Data = mode->vsync_end;
+        sync[j].ti_Tag = aHidd_Sync_VTotal;         sync[j++].ti_Data = mode->vtotal;
+        sync[j].ti_Tag = aHidd_Sync_VMin;           sync[j++].ti_Data = mode->vdisplay;
+        sync[j].ti_Tag = aHidd_Sync_VMax;           sync[j++].ti_Data = 2048;
         
         /* Name */
         STRPTR syncname = AllocVec(32, MEMF_ANY | MEMF_CLEAR);
         sprintf(syncname, "NV:%dx%d@%d", mode->hdisplay, mode->vdisplay, mode->vrefresh);
         
-        sync[9].ti_Tag = aHidd_Sync_Description;    sync[9].ti_Data = (IPTR)syncname;
+        sync[j].ti_Tag = aHidd_Sync_Description;   sync[j++].ti_Data = (IPTR)syncname;
         
-        sync[10].ti_Tag = TAG_DONE;                 sync[10].ti_Data = 0UL;
+        sync[j].ti_Tag = TAG_DONE;                 sync[j++].ti_Data = 0UL;
         
         syncs[i].ti_Tag = aHidd_Gfx_SyncTags;
         syncs[i].ti_Data = (IPTR)sync;
@@ -306,7 +323,6 @@ OOP_Object * METHOD(Nouveau, Root, New)
     struct TagItem * syncs = NULL;
     struct CardData * carddata = &(SD(cl)->carddata);
     LONG ret;
-    ULONG selectedconnectorid;
     ULONG selectedcrtcid;
     
     nouveau_init();
@@ -321,14 +337,11 @@ OOP_Object * METHOD(Nouveau, Root, New)
         return NULL;
     }
     
-    selectedconnectorid = selectedconnector->connector_id;
     selectedcrtcid = selectedcrtc->crtc_id;
-        
     drmModeFreeCrtc(selectedcrtc);
 
     /* Read connector and build sync tags */
     syncs = HIDDNouveauCreateSyncTagsFromConnector(cl, selectedconnector);
-    drmModeFreeConnector(selectedconnector);
     if (syncs == NULL)
     {
         D(bug("[Nouveau] Not able to read any sync modes\n"));
@@ -402,8 +415,9 @@ OOP_Object * METHOD(Nouveau, Root, New)
         {
             struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
             /* Pass local information to class */
-            gfxdata->selectedconnectorid = selectedconnectorid;
             gfxdata->selectedcrtcid = selectedcrtcid;
+            gfxdata->selectedmode = NULL;
+            gfxdata->selectedconnector = selectedconnector;
             carddata->dev = dev;
             ULONG gartsize = 0;
             
@@ -475,7 +489,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     return NULL;
 }
 
-/* FIXME: IMPLEMENT DISPOSE - calling nouveau_close(), freeing cursor bo, gart bo */
+/* FIXME: IMPLEMENT DISPOSE - calling nouveau_close(), freeing cursor bo, gart bo, selectedconnector */
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
