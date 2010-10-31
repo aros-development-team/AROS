@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM kernel-unixio-kobj : kernel-kernel-includes
+
 USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
 %build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd \
