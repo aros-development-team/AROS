@@ -378,7 +378,7 @@ static APTR DevClose(REG(a1, struct IOSana2Req *request),
          case PLX_BUS:
             DeletePCIUnit(unit, base);
             break;
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
          case PCCARD_BUS:
             DeletePCCardUnit(unit, base);
             break;
@@ -598,18 +598,18 @@ static struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 {
    struct DevUnit *unit;
    ULONG pci_limit;
-#if defined(__mc68000) && !defined(__ELF__)
+#if defined(__mc68000) && !defined(__AROS__)
    ULONG pccard_limit;
 #endif
 
    pci_limit = GetPCICount(base);
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
    pccard_limit = pci_limit + GetPCCardCount(base);
 #endif
 
    if(unit_num < pci_limit)
       unit = GetPCIUnit(unit_num, base);
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
    else if(unit_num < pccard_limit)
       unit = GetPCCardUnit(unit_num - pci_limit, base);
 #endif
