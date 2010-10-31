@@ -57,7 +57,7 @@ typedef LONG PINT;
 #endif
 
 #ifndef REG
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
 #define _REG(A, B) B __asm(#A)
 #define REG(A, B) _REG(A, B)
 #else
