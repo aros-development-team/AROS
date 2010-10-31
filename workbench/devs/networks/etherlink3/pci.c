@@ -149,7 +149,7 @@ ULONG GetPCICount(struct DevBase *base)
    if(base->prometheus_base != NULL)
       count = GetPrometheusCount(base);
 #endif
-#ifdef __mc68000__
+#if defined(__mc68000__) && !defined(__AROS__)
    if(base->powerpci_base != NULL)
       count = GetPowerPCICount(base);
 #endif
@@ -376,7 +376,7 @@ static struct BusContext *AllocCard(ULONG index, struct DevBase *base)
    if(base->prometheus_base != NULL)
       context = AllocPrometheusCard(index, base);
 #endif
-#ifdef __mc68000__
+#if defined(__mc68000__) && !defined(__AROS__)
    if(base->powerpci_base != NULL)
       context = AllocPowerPCICard(index, base);
 #endif
@@ -417,7 +417,7 @@ static VOID FreeCard(struct BusContext *context, struct DevBase *base)
       if(base->prometheus_base != NULL)
          FreePrometheusCard(context, base);
 #endif
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
       if(base->powerpci_base != NULL)
          FreePowerPCICard(context, base);
 #endif
@@ -459,7 +459,7 @@ static BOOL AddPCIIntServer(APTR card, struct Interrupt *interrupt,
    if(base->prometheus_base != NULL)
       success = AddPrometheusIntServer(card, interrupt, base);
 #endif
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
    if(base->powerpci_base != NULL)
       success = AddPowerPCIIntServer(card, interrupt, base);
 #endif
@@ -498,7 +498,7 @@ static VOID RemPCIIntServer(APTR card, struct Interrupt *interrupt,
    if(base->prometheus_base != NULL)
       RemPrometheusIntServer(card, interrupt, base);
 #endif
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
    if(base->powerpci_base != NULL)
       RemPowerPCIIntServer(card, interrupt, base);
 #endif
