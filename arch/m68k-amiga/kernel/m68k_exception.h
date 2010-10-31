@@ -11,6 +11,8 @@
 #include <aros/kernel.h>
 #include <exec/execbase.h>
 
+#include <kernel_cpu.h>
+
 /* Here's how it's all laid out:
  *    M68K Exception
  *      0	Reset: Initial SP
@@ -52,7 +54,7 @@
  */
 struct M68KException {
 	UBYTE Id;
-	void (*Handler)(int id, UWORD SRReg, struct ExecBase *SysBase);
+	void (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
 };
 
 void M68KExceptionInit(const struct M68KException *Table, struct ExecBase *SysBase);

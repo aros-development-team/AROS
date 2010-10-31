@@ -47,13 +47,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    UWORD sr;
+    register volatile UWORD sr asm("%d0");
 
     /*  As with SetSR() you can either do nothing, or alternatively read
 	you own registers and assemble them into the form of the MC680x0
 	condition codes.
      */
-    asm volatile ( "move.w %%sr,%0\n" : "=g" (sr) : : );
+    if (SysBase->AttnFlags & AFF_68010) {
+    	// Sad trick to get this to compile with -m68000
+    	// asm volatile ( "move.w %%ccr,%%d0\n" : "=d" (sr) : : );
+    	asm volatile ( ".word 0x42c0\n" : "=d" (sr) : : );
+    } else {
+    	asm volatile ( "move.w %%sr,%0\n" : "=g" (sr) : : );
+    }
 
     return sr;
 

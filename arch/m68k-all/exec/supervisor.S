@@ -96,8 +96,11 @@ Exec_Supervisor_Entry_10:
 Exec_Supervisor_Entry_00:
 	or.w	#0x2000, %sr	// Caused exception on 68000
 Exec_Supervisor_Entered:	// %d0 will always have the old SR
+	btst	#13, %d0
+	beq	2f
+	trap	#1
 	/* CRITICAL SECTION - SUPERVISOR STACK */
-	pea	1f
+2:	pea	1f
 	move.w	%d0,%sp@-	// Fix up return mode & flags
 	jmp	(%a5)		// D0 will be set after the
 1:				//  caller's RTE gets back here.

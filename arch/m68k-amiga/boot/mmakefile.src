@@ -38,7 +38,7 @@ USER_CFLAGS := -DUSE_GDBSTUB
 
 #MM- includes-amiga-m68k : includes-common-i386 includes-copy-amiga-m68k includes-copy
 
-FILES=start amiga_irq m68k_exception
+FILES=start
 AFILES=rom_entry rom_init
 
 USELIBS := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
@@ -74,7 +74,7 @@ kernel-link-amiga-m68k-quick : $(BINDIR)/aros-amiga-m68k.rom
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) -o $@ $<
 
-$(BINDIR)/aros-amiga-m68k.elf : $(OBJS) $(KOBJS) $(DEPLIBS) $(SRCDIR)/$(CURDIR)/linkerscript
+$(BINDIR)/aros-amiga-m68k.elf : $(OBJS) $(KOBJS) $(DEPLIBS) $(SRCDIR)/$(CURDIR)/linkerscript $(SRCDIR)/$(CURDIR)/mmakefile.src
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -static \
 		$(CFLAGS) \
@@ -94,10 +94,10 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(KOBJSDIR)/%.o : %.c
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/rom/kernel"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/exec -I$(SRCDIR)/rom/kernel"
 
 $(KOBJSDIR)/%.o : %.S
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/rom/kernel"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
 
 $(KOBJSDIR)/%.d : %.c
 	%mkdepend_q

@@ -13,11 +13,36 @@
 #include <exec/execbase.h>
 #include <defines/kernel.h>
 
+#include "kernel_cpu.h"
+#include "kernel_intr.h"
+#include "kernel_syscall.h"
+#include "kernel_scheduler.h"
+
 #include "m68k_exception.h"
-#include "amiga_hwreg.h"
 #include "amiga_irq.h"
 
 #include "exec_intern.h"
+
+/** Interrupts */
+#define INTENAR			0x1c
+#define INTREQR			0x1e
+#define INTENA			0x9a
+#define INTREQ			0x9c
+
+static inline void custom_w(ULONG reg, UWORD val)
+{
+	volatile UWORD *r = (void *)(0xdff000 + reg);
+
+	*r = val;
+}
+
+static inline UWORD custom_r(ULONG reg)
+{
+	volatile UWORD *r = (void *)(0xdff000 + reg);
+
+	return *r;
+}
+
 
 /* Here's how it's all laid out on the Amiga
  *    M68K Exception
@@ -74,9 +99,41 @@
  *      ..
  *      255	User 191
  */
-static void Amiga_Paula_IRQ(int id, UWORD SRReg, struct ExecBase *SysBase)
+static void LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-	UWORD irqs = reg_r(INTENAR) & reg_r(INTREQR);
+	if (*((UWORD *)regs->pc) == KRN_SYSCALL_INST &&
+	     regs->a[0] == KRN_SYSCALL_MAGIC &&
+	     (regs->sr & 0x2000) == 0) {
+	     	/* Move past the instruction */
+		regs->pc += 4;	
+
+	     	/* AROS syscall */
+		switch (regs->d[0]) {
+		case SC_SCHEDULE:
+			if (!core_Schedule())
+				break;
+			/* FALLTHROUGH */
+		case SC_SWITCH:
+			cpu_Switch(regs);
+			/* FALLTHROUGH */
+		case SC_DISPATCH:
+			cpu_Dispatch(regs);
+			break;
+		case SC_CAUSE:
+			core_ExitInterrupt(regs);
+			break;
+		}
+
+		return;
+	}
+
+	Alert(ACPU_LineF);
+	for (;;);
+}
+
+static void Amiga_Paula_IRQ(regs_t *regs, int id, struct ExecBase *SysBase)
+{
+	UWORD irqs = custom_r(INTENAR) & custom_r(INTREQR);
 	int i;
 
 	for (i = 0; i < 14; i++) {
@@ -89,20 +146,18 @@ static void Amiga_Paula_IRQ(int id, UWORD SRReg, struct ExecBase *SysBase)
 					AROS_UFCA(APTR, SysBase->IntVects[i].iv_Code, A5),
 					AROS_UFCA(struct ExecBase *, SysBase, A6));
 			/* Mark the IRQ as serviced */
-			reg_w(INTREQ, (1 << i));
+			custom_w(INTREQ, (1 << i));
 		}
 	}
 
-	/* If the caller was not superuser, attempt to schedule
+	/* If the caller was not nested, call core_ExitInterrupt
 	 */
-	if (!(SRReg & 0x2000))
-		KrnSchedule();
-
-	/* Remove any IRQ masks */
-	asm volatile ("move.w #0x2000,%sr");
+	if (!(regs->sr & 0x2000))
+		core_ExitInterrupt(regs);
 }
 
 const struct M68KException AmigaExceptionTable[] = {
+	{ .Id =  11, .Handler = LineF_Decode },
 	{ .Id =  16, .Handler = NULL },
 	{ .Id =  17, .Handler = NULL },
 	{ .Id =  18, .Handler = NULL },
@@ -125,9 +180,9 @@ const struct M68KException AmigaExceptionTable[] = {
 void AmigaIRQInit(struct ExecBase *SysBase)
 {
 	/* Disable all interrupts */
-	reg_w(INTENA, 0x7fff);
+	custom_w(INTENA, 0x7fff);
 	/* Clear any requests */
-	reg_w(INTREQ, 0x7fff);
+	custom_w(INTREQ, 0x7fff);
 
 	M68KExceptionInit(AmigaExceptionTable, SysBase);
 }

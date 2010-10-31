@@ -94,32 +94,65 @@ asm (
 	"	.text\n"
 	"	.globl M68KExceptionHelper\n"
 	"M68KExceptionHelper:\n"
-	"	movem.l	%d0-%d1/%a0-%a1/%a6,%sp@-\n"	// What we destory
-	"	move.l	%sp@(5*4),%d0\n"	// Exception *
-	"	clr.l	%d1\n"
-	"	move.w	%sp@(5*4+4),%d1\n"	// SR
+	"	movem.l	%d0-%d7/%a0-%a6,%sp@-\n"// Push everything - SP is now 'regs_t'
+	"	move.l	%sp@(15*4),%d1\n"	// Exception *
+	"	move.l	%sp,%a0\n"		// Supervisor SP
+	"	btst	#5,%sp@(4*16)\n"	// From Supervisor?
+	"	bne.s	0f\n"			// Nope.
+	"	move.l	%usp,%a0\n"
+	"0:\n"
+	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs
+	"	move.l	%sp,%d0\n"		// regs_t
 	"	move.l	4, %a6\n"		// Global SysBase
 	"	move.l	%a6, %sp@-\n"		// Push SysBase
-	"	move.l	%d1, %sp@-\n"		// Push SR
-	"	move.l	%d0, %sp@-\n"		// Push Exception *
+	"	move.l	%d1, %sp@-\n"		// Push Exception *
+	"	move.l	%d0, %sp@-\n"		// Push regs_t *
 	"	jsr	M68KExceptionAction\n"
 	"	lea	%sp@(12),%sp\n"		// Drop all stack args
-	"	movem.l	%sp@+,%d0-%d1/%a0-%a1/%a6\n"	// Restore
-	"	addq.l	#4, %sp\n"		// Remove Exception *
-	"	rte\n"				// And return
+	"	movem.l	%sp@+,%d0-%d7/%a0-%a5\n"	// Restore all but a6
+	"	btst	#5,%sp@(4)\n"		// Back to Supervisor?
+	"	bne.s	1f\n"			// No:
+	"	move.l	%sp@(4),%a6\n"		//   Get USP from regs_t
+	"	move.l	%a6,%usp\n"		//   Set USP (FALLTHROUGH)
+	"1:\n"					// Yes:
+	"	move.l	%sp@+,%a6\n"		//   Restore A6
+	"	addq.l	#4,%sp\n"		//   Pop off A7
+	"	rte\n"				//   And return
 );
 
 #undef kprintf
 
-void M68KExceptionAction(struct M68KException *Exception, UWORD SRReg, struct ExecBase *SysBase)
+#define PARANOIA_STACK
+void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct ExecBase *SysBase)
 {
+#ifdef PARANOIA_STACK
+	extern void breakpoint(void);
+	if (regs->sr & 0x2000) {
+		if ((APTR)regs->a[7] < (SysBase->SysStkLower+0x100) || (APTR)(regs->a[7]-1) > SysBase->SysStkUpper) {
+			bug("Supervisor: YOUR STACK A SPLODE!\n");
+			breakpoint();
+		}
+	} else {
+		struct Task *t = SysBase->ThisTask;
+		extern void *_us_stack_upper, *_us_stack_lower;
+		if ((IPTR)t->tc_SPUpper == ~0 && (IPTR)t->tc_SPLower == 0) {
+			t->tc_SPUpper = (void *)(&_us_stack_upper-1);
+			t->tc_SPLower = (void *)&_us_stack_lower;
+		}
+		if ((APTR)regs->a[7] < (t->tc_SPLower+0x100) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
+			bug("[%s]: YOUR STACK A SPLODE!\n", t->tc_Node.ln_Name);
+			breakpoint();
+		}
+	}
+#endif
+
 	if (Exception->Handler == NULL) {
 		kprintf("-- Exception %d\n", Exception->Id);
 		Alert(AN_BogusExcpt);
 		for (;;);
 	}
 
-	Exception->Handler(Exception->Id, SRReg, SysBase);
+	Exception->Handler(regs, Exception->Id, SysBase);
 }
 
 /* We assume that the caller has already set up
