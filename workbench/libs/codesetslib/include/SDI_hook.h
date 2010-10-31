@@ -114,7 +114,7 @@
 ** The ENTRY macro, which also gets the function name as argument.
 */
 
-#if defined(_M68000) || defined(__M68000) || defined(__mc68000)
+#if (defined(_M68000) || defined(__M68000) || defined(__mc68000)) && !defined(__AROS__)
   #define HOOKPROTO(name, ret, obj, param) static SAVEDS ASM ret             \
     name(REG(a0, struct Hook *hook), REG(a2, obj), REG(a1, param))
   #define HOOKPROTONO(name, ret, param) static SAVEDS ASM ret                \
