@@ -138,7 +138,7 @@
     #define INLINE static __inline __attribute__((always_inline))
   #endif
   /* we have to distinguish between AmigaOS4 and MorphOS */
-  #if defined(_M68000) || defined(__M68000) || defined(__mc68000)
+  #if (defined(_M68000) || defined(__M68000) || defined(__mc68000)) && !defined(__AROS__)
     #define REG(reg,arg) arg __asm(#reg)
     #define LREG(reg,arg) register REG(reg,arg)
   #else
