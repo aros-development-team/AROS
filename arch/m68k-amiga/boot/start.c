@@ -105,13 +105,48 @@ void DebugPutHex(const char *what, ULONG val)
 }
 
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
+	
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+/*
+ * Create a call stub like so:
+ * foo:
+ *   movem.l %d0-%d1/%a0-%a1,%sp@-
+ *     0x48e7 0xc0c0
+ *   jsr AROS_SLIB_ENTRY(funcname, libname)
+ *     0x4eb9 .... ....
+ *   movem.l %sp@+,%d0-%d1/%d0-%a1
+ *     0x4cdf 0x0303
+ *   rts
+ *     0x4e75
+ */
+#define PRESERVE_ALL(lib, libname, funcname, funcid) \
+	do { \
+		UWORD *asmcall; \
+		IPTR func = (IPTR)__AROS_GETVECADDR(lib, funcid); \
+		asmcall = AllocMem(8 * sizeof(UWORD), MEMF_PUBLIC); \
+		/* NOTE: 'asmcall' will intentionally never be freed */ \
+		asmcall[0] = 0x48e7; \
+		asmcall[1] = 0xc0c0; \
+		asmcall[2] = 0x4eb9; \
+		asmcall[3] = (func >> 16) & 0xffff; \
+		asmcall[4] = (func >>  0) & 0xffff; \
+		asmcall[5] = 0x4cdf; \
+		asmcall[6] = 0x0303; \
+		asmcall[7] = 0x4e75; \
+		/* Insert into the library's jumptable */ \
+		__AROS_SETVECADDR(lib, funcid, asmcall); \
+	} while (0)
+#else
+/* Not needed on EABI */
+#define PRESERVE_ALL(lib, libname, funcname, funcid) do { } while (0)
+#endif
 
 void start(void)
 {
 	extern void *_bss;
 	extern void *_bss_end;
-	extern void *_stack;
-	extern void *_stack_end;
+	extern void *_ss_stack_upper;
+	extern void *_ss_stack_lower;
 	APTR *tmp;
 	int i;
 	UWORD *kickrom[] = {
@@ -190,11 +225,27 @@ void start(void)
 	*((APTR *)(NULL + 0x4)) = sysBase;
 	DebugPuts("[init SysBase]\n");
 
-        sysBase->SysStkUpper    = (APTR)&_stack_end-1;
-        sysBase->SysStkLower    = (APTR)&_stack;
+	/* Fix up functions that need 'preserves all registers'
+	 * semantics. This AllocMem()s a little wrapper routine
+	 * that pushes the %d0-%d1/%a0-%a1 registers before
+	 * calling the routine.
+	 */
+#ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
+	PERSERVE_ALL(SysBase, Exec, Disable, 20);
+	PERSERVE_ALL(SysBase, Exec, Enable, 21);
+	PRESERVE_ALL(SysBase, Exec, Forbid, 22);
+#endif
+	PRESERVE_ALL(SysBase, Exec, Permit, 23);
+	PRESERVE_ALL(SysBase, Exec, ObtainSemaphore, 94);
+	PRESERVE_ALL(SysBase, Exec, ReleaseSemaphore, 95);
+	PRESERVE_ALL(SysBase, Exec, ObtainSemaphoreShared, 113);
+
+
+        sysBase->SysStkUpper    = (APTR)(&_ss_stack_upper)-1;
+        sysBase->SysStkLower    = (APTR)&_ss_stack_lower;
 
 	/* TODO: Actually check this! */
-	sysBase->AttnFlags |= AFF_68020;
+	sysBase->AttnFlags |= AFF_68010 | AFF_68020;
 
 	/* Initialize IRQ subsystem */
 	AmigaIRQInit(sysBase);

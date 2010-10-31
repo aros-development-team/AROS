@@ -1,28 +1,17 @@
 /*
- * CPU-specific definitions.
+ * M68K CPU-specific definitions.
  *
- * Architectures with the same CPU will likely share single kernel_cpu.h
- * in arch/$(CPU)-all/kernel/kernel_cpu.h
- *
- * As you can see, this file is just a sample.
  */
 
 #ifndef KERNEL_CPU_H_
 #define KERNEL_CPU_H_
+
+#include <proto/exec.h>
+
+#include "cpu_m68k.h"
  
-/* Number of exceptions supported by the CPU. Needed by kernel_base.h */
-#define EXCEPTIONS_COUNT 1
-
-/* CPU context stored in task's iet_Context. Just a dummy sample definition. */
-struct AROSCPUContext
-{
-	ULONG pc;
-};
-
-typedef struct AROSCPUContext regs_t;
-
 /* User/supervisor mode switching */
-#define cpumode_t __unused UWORD
+#define cpumode_t __unused int
 
 /* Only used on protected memory systems. On the
  * m68k-amiga, these are unneeded.
@@ -30,19 +19,26 @@ typedef struct AROSCPUContext regs_t;
 #define goSuper() (0)
 #define goUser()  do { } while (0)
 #define goBack(mode)  do { } while (0)
-		                   
 
-/*
- * Only Exec/PrepareContext needs this file.
+
+/* Syscalls use the F-line emulation trap,
+ * via instruction 'F405' (AROS), with
+ * %a0 set to 0x41524f53 ("AROS")
+ * %d0 is the syscall function to call
+ * %d1-%d7,%a1-%a6 are available for
+ * arguments. All registers *except* for
+ * %d0 are preserved.
+ *
+ * I would like to use 0xA405, but UAE stole
+ * all the A-Line instructions!
  */
-
-#define PREPARE_INITIAL_FRAME(cc, sp, startpc) \
-	do { \
-		void *_sp = (sp); \
-		_sp -= 4; \
-		*(ULONG *)(_sp) = (ULONG)(startpc); \
-		_sp -= 2; \
-		*(UWORD *)(_sp) = 0x0000; \
-	} while (0)
+#define KRN_SYSCALL_INST	0xF405
+#define KRN_SYSCALL_MAGIC	0x41524F53
+#define krnSysCall(x)	asm volatile ( \
+				"move.l %0,%%d0\n" \
+				"move.l %2,%%a0\n" \
+				".word %c1\n" \
+				: : "g" (x), "i" (KRN_SYSCALL_INST), "i" (KRN_SYSCALL_MAGIC) \
+				: "%d0", "%a0");
 
 #endif /* _KERNEL_CPU_H */
