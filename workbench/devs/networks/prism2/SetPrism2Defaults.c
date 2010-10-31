@@ -103,7 +103,7 @@ LONG Main(VOID)
 
    /* Open libraries */
 
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
    SysBase = AbsExecBase;
 #endif
    DOSBase = (struct DosLibrary *)OpenLibrary(dos_name, DOS_VERSION);
