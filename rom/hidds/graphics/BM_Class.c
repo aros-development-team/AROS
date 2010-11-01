@@ -4995,16 +4995,31 @@ HIDDT_RGBConversionFunction BM__Hidd_BitMap__SetRGBConversionFunction(OOP_Class 
         hidd.graphics.bitmap
 
     FUNCTION
+	Update displayed image of the given rectangle.
+
+	Some drivers (like VGA and VESA) may work not with VRAM directly, but with a mirrored
+	copy of it. Usually it is done in case if VRAM reading is slow. This method is called
+	by the system after it completes any drawing operation, in order to make sure that
+	changes made are visible on the actual screen. If your driver uses mirroring, this method
+	should copy the given rectangle (at least) from the mirror buffer to the actual VRAM.
+
+	This method is also called after changing currently visible bitmap (after moHidd_Gfx_Show
+	method call) in order to allow the mirroring driver to refresh the screen after current bitmap
+	changed. Note that moHidd_Gfx_ShowViewPorts is very different and moHidd_BitMap_UpdateRect
+	will not be called if it succeeded!
 
     INPUTS
-        obj    -
-        x, y   -
-        width  -
-        height -
+        obj    - an object whose image to refresh
+        x, y   - A top-left edge of the rectangle to refresh
+        width  - Width of the rectangle to refresh
+        height - Height of the rectangle to refresh
 
     RESULT
+    	None.
 
     NOTES
+    	This method is called also on offscreen bitmaps. You should track visible state of your bitmap
+    	and ignore these calls if it's not currently visible on the screen.
 
     EXAMPLE
 
