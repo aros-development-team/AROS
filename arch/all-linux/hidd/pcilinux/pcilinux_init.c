@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/oop.h>
 
 #include <aros/symbolsets.h>
@@ -29,8 +30,8 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-
 #include "pci.h"
+#include "syscall.h"
 
 #define __NR_iopl   (110)
 #define __NR_open   (5)
@@ -38,39 +39,35 @@
 
 static int PCILx_Init(LIBBASETYPEPTR LIBBASE)
 {
+    APTR KernelBase;
+    STRPTR arch;
+    int ret;
+
     D(bug("LinuxPCI: Initializing\n"));
 
+    KernelBase = OpenResource("kernel.resource");
+    if (!KernelBase)
+    	return FALSE;
+
+    /* Make sure we are running on Linux. Otherwise we will just
+       crash at first syscall. */
+    arch = (STRPTR)KrnGetSystemAttr(KATTR_Architecture);
+    if (strncmp(arch, "linux", 5))
     {
-	int ret;
-
-/* TODO: when AROS goes modular, syscalls need to be inlined
-         in some include files. For now i leave this fragment
-         here for reference.
-	asm volatile(
-		"int $0x80"
-		:"=a"(ret)
-		:"a"(__NR_iopl),"b"(3)
-	);
-
-	asm volatile(
-		"int $0x80"
-		:"=a"(LIBBASE->psd.fd)
-		:"a"(__NR_open),"b"("/dev/mem"),"c"(2)
-	);*/
-
-	ret = syscall(__NR_iopl, 3);
-	LIBBASE->psd.fd = syscall(__NR_open, "/dev/mem", 2);
-
-	D(bug("LinuxPCI: iopl(3)=%d\n", ret));
-	D(bug("LinuxPCI: /dev/mem fd=%d\n", LIBBASE->psd.fd));
-
-	if (ret==0)
-	{
-	    return TRUE;
-	}
-
-	D(bug("LinuxPCI: has to be root in order to use this hidd\n"));
+    	D(bug("LinuxPCI: Running on %s, not on Linux\n", arch));
+    	return FALSE;
     }
+
+    ret = syscall1(__NR_iopl, 3);
+    D(bug("LinuxPCI: iopl(3)=%d\n", ret));
+
+    LIBBASE->psd.fd = syscall2(__NR_open, (IPTR)"/dev/mem", 2);
+    D(bug("LinuxPCI: /dev/mem fd=%d\n", LIBBASE->psd.fd));
+
+    if (ret==0)
+	return TRUE;
+
+    D(bug("LinuxPCI: has to be root in order to use this hidd\n"));
 
     return FALSE;
 }

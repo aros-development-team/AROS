@@ -804,6 +804,7 @@ aros_target_strip_flags
 crosstools_target
 x11_hidd_target
 sdl_hidd_target
+pci_hidd_target
 oss_library_target
 aros_default_wbwidth
 aros_default_wbheight
@@ -8478,6 +8479,7 @@ case "$target_os" in
 		aros_kernel_ldflags="-melf_i386"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
+		pci_hidd_target="hidd-pci-linux"
 		;;
 	    *x86_64*)
 		aros_target_cpu="x86_64"
@@ -8487,6 +8489,7 @@ case "$target_os" in
 		aros_config_cflags="$aros_config_cflags -mno-red-zone"
 		aros_default_wbdepth=8
 		gcc_target_cpu="x86_64"
+		pci_hidd_target="hidd-pci-linux"
 		;;
 	    *powerpc*)
 	    	aros_target_cpu="ppc"
@@ -12999,6 +13002,7 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
 # Native version related
 
 
@@ -13981,9 +13985,9 @@ aros_target_strip_flags!$aros_target_strip_flags$ac_delim
 crosstools_target!$crosstools_target$ac_delim
 x11_hidd_target!$x11_hidd_target$ac_delim
 sdl_hidd_target!$sdl_hidd_target$ac_delim
+pci_hidd_target!$pci_hidd_target$ac_delim
 oss_library_target!$oss_library_target$ac_delim
 aros_default_wbwidth!$aros_default_wbwidth$ac_delim
-aros_default_wbheight!$aros_default_wbheight$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -14025,6 +14029,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+aros_default_wbheight!$aros_default_wbheight$ac_delim
 aros_default_wbdepth!$aros_default_wbdepth$ac_delim
 DO_XSHM_SUPPORT!$DO_XSHM_SUPPORT$ac_delim
 DO_VIDMODE_SUPPORT!$DO_VIDMODE_SUPPORT$ac_delim
@@ -14053,7 +14058,7 @@ gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 26; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 27; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

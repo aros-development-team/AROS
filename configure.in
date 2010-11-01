@@ -732,6 +732,7 @@ case "$target_os" in
 		aros_kernel_ldflags="-melf_i386"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
+		pci_hidd_target="hidd-pci-linux"
 		;;
 	    *x86_64*)
 		aros_target_cpu="x86_64"
@@ -741,6 +742,7 @@ case "$target_os" in
 		aros_config_cflags="$aros_config_cflags -mno-red-zone"
 		aros_default_wbdepth=8
 		gcc_target_cpu="x86_64"
+		pci_hidd_target="hidd-pci-linux"
 		;;
 	    *powerpc*)
 	    	aros_target_cpu="ppc"
@@ -2047,6 +2049,7 @@ AC_SUBST(crosstools_target)
 # Graphics Related
 AC_SUBST(x11_hidd_target)
 AC_SUBST(sdl_hidd_target)
+AC_SUBST(pci_hidd_target)
 AC_SUBST(oss_library_target)
 
 AC_SUBST(aros_default_wbwidth)

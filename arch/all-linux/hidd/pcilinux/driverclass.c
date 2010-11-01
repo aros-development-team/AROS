@@ -2,7 +2,7 @@
     Copyright © 2004-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PCI direct driver for x86_64 linux.
+    Desc: PCI direct driver for x86 linux.
     Lang: English
 */
 #include <exec/types.h>
@@ -19,6 +19,7 @@
 #include <aros/symbolsets.h>
 
 #include "pci.h"
+#include "syscall.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -77,23 +78,6 @@ OOP_Object *PCILx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 /*
     Some in/out magic to access PCI bus on PCs
 */
-
-#ifdef __PPC__
-
-/* FIXME: on PPC this driver will not work because PCI configuration
-   access is not implemented. */
-static inline ULONG inl(UWORD port)
-{
-    return 0;
-}
-
-static inline void outl(ULONG val, UWORD port)
-{
-
-}
-
-#else
-
 static inline ULONG inl(UWORD port)
 {
     ULONG val;
@@ -107,8 +91,6 @@ static inline void outl(ULONG val, UWORD port)
 {
     asm volatile ("outl %0,%w1"::"a"(val),"Nd"(port));
 }
-
-#endif
 
 ULONG PCILx__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
     struct pHidd_PCIDriver_ReadConfigLong *msg)
@@ -146,12 +128,20 @@ IPTR PCILx__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
     IPTR ret;
 
     D(bug("[PCILinux] PCIDriver::MapPCI(%x, %x)\n", offs, size));
-/*  asm volatile(
+
+#ifdef __x86_64__
+    asm volatile(
        "push %%rbp; mov %%rax,%%rbp; mov %1,%%rax; int $0x80; pop %%rbp"
 	:"=a"(ret)
 	:"i"(192), "b"(0), "c"(size), "d"(0x03), "S"(0x01), "D"(PSD(cl)->fd), "0"(offs)
-    );*/
-    ret = syscall(192, 0, size, 0x03, 0x01, PSD(cl)->fd, 0);
+    );
+#else
+    asm volatile(
+	"push %%ebp; movl %%eax,%%ebp; movl %1,%%eax; int $0x80; pop %%ebp"
+	:"=a"(ret)
+	:"i"(192), "b"(0), "c"(size), "d"(0x03), "S"(0x01), "D"(PSD(cl)->fd), "0"(offs)
+    );
+#endif
 
     D(bug("[PCILinux] mmap syscall returned %x\n", ret));
 
@@ -161,14 +151,10 @@ IPTR PCILx__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
 VOID PCILx__Hidd_PCIDriver__UnmapPCI(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_UnmapPCI *msg)
 {
-    ULONG offs = (ULONG)msg->CPUAddress;
+    IPTR offs = (IPTR)msg->CPUAddress;
     ULONG size = msg->Length;
 
-/*  asm volatile(
-	"int $0x80"
-	:
-	:"a"(91),"b"(offs),"c"(size));*/
-    syscall(91, offs, size);
+    syscall2(91, offs, size);
 }
 
 /* Class initialization and destruction */
