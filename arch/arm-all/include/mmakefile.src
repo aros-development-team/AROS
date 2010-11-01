@@ -3,6 +3,3 @@ include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := aros/arm/cpu.h aros/arm/_fpmath.h aros/arm/fenv.h aros/arm/atomic.h aros/arm/atomic_v6.h aros/arm/atomic_v7.h
 %copy_includes mmake=compiler-includes
-
-#INCLUDE_FILES := jmpdefs.h
-#%copy_includes mmake=includes-common-arm compiler=kernel
