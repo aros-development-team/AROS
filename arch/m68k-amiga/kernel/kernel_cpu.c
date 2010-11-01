@@ -47,6 +47,7 @@ void cpu_Dispatch(regs_t *regs)
         if (task != NULL)
             break;
         D(bug("-- IDLE HALT --\n"));
+        KrnSti();	// Enable hardware IRQs
         asm volatile ("stop #0x2000\n"); // Wait for an interrupt
     }
 
