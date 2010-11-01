@@ -38,12 +38,6 @@ KHNDLRS := con nil packet emul amberram
 KHIDDS  := hiddclass unixio parallel serial graphics keyboard mouse
 ifeq ("$(AROS_HOST_ARCH)","linux")
 KHIDDS  += linux
-    ifeq ("$(AROS_HOST_CPU)","i386")
-	KHIDDS	+= pci pcilinux
-    endif
-    ifeq ("$(AROS_HOST_CPU)","x86_64")
-	KHIDDS	+= pci pcilinux
-    endif
 endif
 ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
     KHIDDS += x11gfx

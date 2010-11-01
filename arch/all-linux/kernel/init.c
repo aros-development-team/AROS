@@ -78,8 +78,6 @@ extern const struct Resident
     Con_ROMTag,
     Nil_ROMTag,
     Ram_ROMTag,
-    PCI_ROMTag,
-    PCILx_ROMTag,
     GFX_ROMTag,
 #if ENABLE_X11 == 1
     X11Cl_ROMTag,
@@ -102,10 +100,6 @@ static const struct Resident *romtagList[] =
     &OOP_ROMTag,                        /* ColdStart,   94   */
     &HIDDCl_ROMTag,                     /* ColdStart,   92   */
     &UXIO_ROMTag,                       /* ColdStart,   91   */
-#if defined(__i386__) || defined(__x86_64__)
-    &PCI_ROMTag,                        /* ColdStart,   90   */
-//  &PCILx_ROMTag,                      /* ColdStart,   89   */
-#endif
     &GFX_ROMTag,			/* ColdStart,   66   */
     &Graphics_ROMTag,                   /* ColdStart,   65   */
     &Layers_ROMTag,                     /* ColdStart,   60   */

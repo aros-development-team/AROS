@@ -81,6 +81,7 @@ AS		:= $(TARGET_AS)
 # Optional components
 X11_HIDD_TARGET    := @x11_hidd_target@
 SDL_HIDD_TARGET    := @sdl_hidd_target@
+PCI_HIDD_TARGET    := @pci_hidd_target@
 OSS_LIBRARY_TARGET := @oss_library_target@
 CROSSTOOLS_TARGET  := @crosstools_target@
 

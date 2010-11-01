@@ -2,11 +2,11 @@
 include $(TOP)/config/make.cfg
 
 #MM- kernel-linux-$(CPU) : \
-#MM    kernel-hidd-linux-kobj \
-#MM    kernel-pci-linux-kobj \
-#MM    kernel-pci-kobj
+#MM    kernel-hidd-linux-kobj
 
 #MM- workbench-linux-$(CPU) : \
-#MM      workbench-devs-tap-unix
+#MM      workbench-devs-tap-unix \
+#MM	 kernel-pci		 \
+#MM	 $(PCI_HIDD_TARGET)
 
 %common
