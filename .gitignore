@@ -17,12 +17,6 @@
 /.externalToolBuilders
 /autom4te.cache
 
-# /arch/.unmaintained/all-netbsd/
-/arch/.unmaintained/all-netbsd/mmakefile
-
-# /arch/.unmaintained/all-openbsd/
-/arch/.unmaintained/all-openbsd/mmakefile
-
 # /arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/
 /arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/*.bak
 /arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/mmakefile
@@ -32,23 +26,29 @@
 # /arch/.unmaintained/arm-all/Drivers/irq.hidd.sa1100/
 /arch/.unmaintained/arm-all/Drivers/irq.hidd.sa1100/mmakefile
 
-# /arch/.unmaintained/arm-all/clib/
-/arch/.unmaintained/arm-all/clib/mmakefile
-
-# /arch/.unmaintained/arm-all/dos/
-/arch/.unmaintained/arm-all/dos/mmakefile
-
 # /arch/.unmaintained/arm-all/exec/
 /arch/.unmaintained/arm-all/exec/mmakefile
 
 # /arch/.unmaintained/arm-all/include/
 /arch/.unmaintained/arm-all/include/mmakefile
 
-# /arch/.unmaintained/arm-all/mlib/
-/arch/.unmaintained/arm-all/mlib/mmakefile
-
 # /arch/.unmaintained/hidd/
 /arch/.unmaintained/hidd/mmakefile
+
+# /arch/.unmaintained/i386-darwin/
+/arch/.unmaintained/i386-darwin/mmakefile
+
+# /arch/.unmaintained/i386-darwin/bootstrap/
+/arch/.unmaintained/i386-darwin/bootstrap/mmakefile
+
+# /arch/.unmaintained/i386-darwin/exec/
+/arch/.unmaintained/i386-darwin/exec/mmakefile
+
+# /arch/.unmaintained/i386-darwin/kernel/
+/arch/.unmaintained/i386-darwin/kernel/mmakefile
+
+# /arch/.unmaintained/i386-darwin/kernel/include/
+/arch/.unmaintained/i386-darwin/kernel/include/mmakefile
 
 # /arch/.unmaintained/m68k-emul/
 /arch/.unmaintained/m68k-emul/mmakefile
@@ -184,17 +184,20 @@
 # /arch/.unmaintained/ppc-native/exec/
 /arch/.unmaintained/ppc-native/exec/mmakefile
 
-# /arch/.unmaintained/solaris/
-/arch/.unmaintained/solaris/mmakefile
+# /arch/all-darwin/
+/arch/all-darwin/mmakefile
 
 # /arch/all-freebsd/
 /arch/all-freebsd/mmakefile
 
-# /arch/all-freebsd/exec/
-/arch/all-freebsd/exec/mmakefile
+# /arch/all-freebsd/kernel/
+/arch/all-freebsd/kernel/mmakefile
 
-# /arch/all-hosted/devs/networks/tap/
-/arch/all-hosted/devs/networks/tap/mmakefile
+# /arch/all-hosted/bootstrap/
+/arch/all-hosted/bootstrap/mmakefile
+
+# /arch/all-hosted/devs/filesys/emul_handler/
+/arch/all-hosted/devs/filesys/emul_handler/mmakefile
 
 # /arch/all-hosted/dosboot/
 /arch/all-hosted/dosboot/mmakefile
@@ -209,15 +212,27 @@
 # /arch/all-hosted/hidd/x11/icons/Gorilla/
 /arch/all-hosted/hidd/x11/icons/Gorilla/mmakefile
 
+# /arch/all-hosted/hostlib/
+/arch/all-hosted/hostlib/mmakefile
+
+# /arch/all-ios/
+/arch/all-ios/mmakefile
+
+# /arch/all-ios/bootstrap/
+/arch/all-ios/bootstrap/mmakefile
+
 # /arch/all-linux/
 /arch/all-linux/mmakefile
 
-# /arch/all-linux/exec/
-/arch/all-linux/exec/mmakefile
+# /arch/all-linux/hidd/linuxfb/
+/arch/all-linux/hidd/linuxfb/mmakefile
+/arch/all-linux/hidd/linuxfb/libdefs.h
 
-# /arch/all-linux/hidd/
-/arch/all-linux/hidd/mmakefile
-/arch/all-linux/hidd/libdefs.h
+# /arch/all-linux/hidd/pcilinux/
+/arch/all-linux/hidd/pcilinux/mmakefile
+
+# /arch/all-linux/kernel/
+/arch/all-linux/kernel/mmakefile
 
 # /arch/all-mingw32/
 /arch/all-mingw32/mmakefile
@@ -225,17 +240,21 @@
 # /arch/all-mingw32/battclock/
 /arch/all-mingw32/battclock/mmakefile
 
+# /arch/all-mingw32/boot/
+/arch/all-mingw32/boot/mmakefile
+
 # /arch/all-mingw32/bootstrap/
 /arch/all-mingw32/bootstrap/mmakefile
+
+# /arch/all-mingw32/bsdsocket/
+/arch/all-mingw32/bsdsocket/libdefs.h
+/arch/all-mingw32/bsdsocket/mmakefile
 
 # /arch/all-mingw32/devs/filesys/emul_handler/
 /arch/all-mingw32/devs/filesys/emul_handler/mmakefile
 
 # /arch/all-mingw32/exec/
 /arch/all-mingw32/exec/mmakefile
-
-# /arch/all-mingw32/hidd/hostio/
-/arch/all-mingw32/hidd/hostio/mmakefile
 
 # /arch/all-mingw32/hidd/wingdi/
 /arch/all-mingw32/hidd/wingdi/mmakefile
@@ -246,11 +265,20 @@
 # /arch/all-mingw32/hostlib/
 /arch/all-mingw32/hostlib/mmakefile
 
+# /arch/all-mingw32/include/
+/arch/all-mingw32/include/mmakefile
+
+# /arch/all-mingw32/include/mingw32/aros/
+/arch/all-mingw32/include/mingw32/aros/mmakefile
+
 # /arch/all-mingw32/kernel/
 /arch/all-mingw32/kernel/mmakefile
 
-# /arch/all-mingw32/timer/
-/arch/all-mingw32/timer/mmakefile
+# /arch/all-netbsd/
+/arch/all-netbsd/mmakefile
+
+# /arch/all-openbsd/
+/arch/all-openbsd/mmakefile
 
 # /arch/all-unix/
 /arch/all-unix/*.err
@@ -262,6 +290,9 @@
 
 # /arch/all-unix/bootloader/
 /arch/all-unix/bootloader/mmakefile
+
+# /arch/all-unix/bootstrap/
+/arch/all-unix/bootstrap/mmakefile
 
 # /arch/all-unix/devs/filesys/emul_handler/
 /arch/all-unix/devs/filesys/emul_handler/mmakefile
@@ -291,6 +322,9 @@
 # /arch/all-unix/hostlib/
 /arch/all-unix/hostlib/mmakefile
 
+# /arch/all-unix/kernel/
+/arch/all-unix/kernel/mmakefile
+
 # /arch/all-unix/libs/dbus/
 /arch/all-unix/libs/dbus/mmakefile
 /arch/all-unix/libs/dbus/*.bak
@@ -304,11 +338,20 @@
 # /arch/arm-all/clib/
 /arch/arm-all/clib/mmakefile
 
+# /arch/arm-all/exec/
+/arch/arm-all/exec/mmakefile
+
 # /arch/arm-all/include/
 /arch/arm-all/include/mmakefile
 
 # /arch/arm-all/mlib/
 /arch/arm-all/mlib/mmakefile
+
+# /arch/arm-efika/boot/
+/arch/arm-efika/boot/mmakefile
+
+# /arch/arm-efika/kernel/
+/arch/arm-efika/kernel/mmakefile
 
 # /arch/common/boot/
 /arch/common/boot/mmakefile
@@ -409,35 +452,8 @@
 # /arch/i386-all/mlib/
 /arch/i386-all/mlib/mmakefile
 
-# /arch/i386-darwin/
-/arch/i386-darwin/mmakefile
-
-# /arch/i386-darwin/bootstrap/
-/arch/i386-darwin/bootstrap/mmakefile
-
-# /arch/i386-darwin/devs/filesys/emul_handler/
-/arch/i386-darwin/devs/filesys/emul_handler/mmakefile
-
-# /arch/i386-darwin/dos/
-/arch/i386-darwin/dos/mmakefile
-
-# /arch/i386-darwin/exec/
-/arch/i386-darwin/exec/mmakefile
-
-# /arch/i386-darwin/kernel/
-/arch/i386-darwin/kernel/mmakefile
-
-# /arch/i386-darwin/kernel/include/
-/arch/i386-darwin/kernel/include/mmakefile
-
-# /arch/i386-freebsd/bootloader/
-/arch/i386-freebsd/bootloader/mmakefile
-
-# /arch/i386-linux/bootloader/
-/arch/i386-linux/bootloader/mmakefile
-
-# /arch/i386-linux/pcilinux/
-/arch/i386-linux/pcilinux/mmakefile
+# /arch/i386-all/processor/
+/arch/i386-all/processor/mmakefile
 
 # /arch/i386-pc/
 /arch/i386-pc/build
@@ -528,11 +544,17 @@
 # /arch/i386-pc/intuition/
 /arch/i386-pc/intuition/mmakefile
 
+# /arch/i386-pc/processor/
+/arch/i386-pc/processor/mmakefile
+
 # /arch/i386-pc/timer/
 /arch/i386-pc/timer/mmakefile
 
 # /arch/m68k-all/clib/
 /arch/m68k-all/clib/mmakefile
+
+# /arch/m68k-all/exec/
+/arch/m68k-all/exec/mmakefile
 
 # /arch/m68k-all/include/
 /arch/m68k-all/include/mmakefile
@@ -540,8 +562,14 @@
 # /arch/m68k-all/libgcc1/
 /arch/m68k-all/libgcc1/mmakefile
 
+# /arch/m68k-all/mlib/
+/arch/m68k-all/mlib/mmakefile
+
 # /arch/m68k-amiga/
 /arch/m68k-amiga/mmakefile
+
+# /arch/m68k-amiga/boot/
+/arch/m68k-amiga/boot/mmakefile
 
 # /arch/m68k-amiga/exec/
 /arch/m68k-amiga/exec/mmakefile
@@ -595,27 +623,12 @@
 # /arch/ppc-all/exec/
 /arch/ppc-all/exec/mmakefile
 
-# /arch/ppc-all/graphics/
-/arch/ppc-all/graphics/mmakefile
-
-# /arch/ppc-all/hidd.graphics/
-/arch/ppc-all/hidd.graphics/mmakefile
-
 # /arch/ppc-all/include/
 /arch/ppc-all/include/mmakefile
 /arch/ppc-all/include/machine.i
 
-# /arch/ppc-all/intuition/
-/arch/ppc-all/intuition/mmakefile
-
 # /arch/ppc-all/mlib/
 /arch/ppc-all/mlib/mmakefile
-
-# /arch/ppc-all/oop/
-/arch/ppc-all/oop/mmakefile
-
-# /arch/ppc-all/pci/
-/arch/ppc-all/pci/mmakefile
 
 # /arch/ppc-all/prep/
 /arch/ppc-all/prep/mmakefile
@@ -626,9 +639,6 @@
 
 # /arch/ppc-all/prep/startup/
 /arch/ppc-all/prep/startup/mmakefile
-
-# /arch/ppc-all/workbench/
-/arch/ppc-all/workbench/mmakefile
 
 # /arch/ppc-chrp/battclock/
 /arch/ppc-chrp/battclock/mmakefile
@@ -680,9 +690,6 @@
 
 # /arch/ppc-chrp/rtas/
 /arch/ppc-chrp/rtas/mmakefile
-
-# /arch/ppc-linux/bootloader/
-/arch/ppc-linux/bootloader/mmakefile
 
 # /arch/ppc-morphos/include/
 /arch/ppc-morphos/include/mmakefile
@@ -749,12 +756,6 @@
 
 # /arch/x86_64-all/mlib/
 /arch/x86_64-all/mlib/mmakefile
-
-# /arch/x86_64-linux/bootloader/
-/arch/x86_64-linux/bootloader/mmakefile
-
-# /arch/x86_64-linux/pcilinux/
-/arch/x86_64-linux/pcilinux/mmakefile
 
 # /arch/x86_64-pc/battclock/
 /arch/x86_64-pc/battclock/mmakefile
@@ -1132,6 +1133,9 @@
 # /rom/devs/filesys/console_handler/
 /rom/devs/filesys/console_handler/mmakefile
 
+# /rom/devs/filesys/nil_handler/
+/rom/devs/filesys/nil_handler/mmakefile
+
 # /rom/devs/filesys/packet/
 /rom/devs/filesys/packet/mmakefile
 
@@ -1167,6 +1171,9 @@
 # /rom/expansion/
 /rom/expansion/mmakefile
 /rom/expansion/libdefs.h
+
+# /rom/filesystem/
+/rom/filesystem/mmakefile
 
 # /rom/graphics/
 /rom/graphics/libdefs.h
@@ -1214,14 +1221,11 @@
 # /rom/isapnp/
 /rom/isapnp/mmakefile
 
+# /rom/kernel/
+/rom/kernel/mmakefile
+
 # /rom/keymap/
 /rom/keymap/mmakefile
-
-# /rom/mathffp/
-/rom/mathffp/mmakefile
-
-# /rom/mathieeesingbas/
-/rom/mathieeesingbas/mmakefile
 
 # /rom/misc/
 /rom/misc/mmakefile
@@ -1233,6 +1237,9 @@
 
 # /rom/openfirmware/
 /rom/openfirmware/mmakefile
+
+# /rom/processor/
+/rom/processor/mmakefile
 
 # /rom/timer/
 /rom/timer/mmakefile
@@ -1332,10 +1339,6 @@
 # /rom/utility/
 /rom/utility/mmakefile
 /rom/utility/archspecific.h
-
-# /rom/workbench/
-/rom/workbench/libdefs.h
-/rom/workbench/mmakefile
 
 # /scripts/
 /scripts/checkmem.awk
@@ -1442,9 +1445,6 @@
 /tools/collect-aros/collect-aros.h
 /tools/collect-aros/env.h
 /tools/collect-aros/getlinkername
-
-# /tools/cpak/
-/tools/cpak/mmakefile
 
 # /tools/crosstools/
 /tools/crosstools/mmakefile
@@ -1655,25 +1655,6 @@
 /workbench/classes/gadgets/gradientslider/libdefs.h
 /workbench/classes/gadgets/gradientslider/mmakefile
 
-# /workbench/classes/gadgets/texteditor/
-/workbench/classes/gadgets/texteditor/mmakefile
-
-# /workbench/classes/gadgets/texteditor/demo/
-/workbench/classes/gadgets/texteditor/demo/mmakefile
-
-# /workbench/classes/gadgets/texteditor/mcc/
-/workbench/classes/gadgets/texteditor/mcc/*.o
-/workbench/classes/gadgets/texteditor/mcc/.obj_*
-/workbench/classes/gadgets/texteditor/mcc/bin_*
-/workbench/classes/gadgets/texteditor/mcc/mmakefile
-
-# /workbench/classes/gadgets/texteditor/mcp/
-/workbench/classes/gadgets/texteditor/mcp/.obj_*
-/workbench/classes/gadgets/texteditor/mcp/locale.h
-/workbench/classes/gadgets/texteditor/mcp/locale.c
-/workbench/classes/gadgets/texteditor/mcp/bin_*
-/workbench/classes/gadgets/texteditor/mcp/mmakefile
-
 # /workbench/classes/zune/aboutwindow/
 /workbench/classes/zune/aboutwindow/mmakefile
 /workbench/classes/zune/aboutwindow/strings.h
@@ -1727,6 +1708,25 @@
 
 # /workbench/classes/zune/systemprefswindow/catalogs/
 /workbench/classes/zune/systemprefswindow/catalogs/mmakefile
+
+# /workbench/classes/zune/texteditor/
+/workbench/classes/zune/texteditor/mmakefile
+
+# /workbench/classes/zune/texteditor/demo/
+/workbench/classes/zune/texteditor/demo/mmakefile
+
+# /workbench/classes/zune/texteditor/mcc/
+/workbench/classes/zune/texteditor/mcc/*.o
+/workbench/classes/zune/texteditor/mcc/.obj_*
+/workbench/classes/zune/texteditor/mcc/bin_*
+/workbench/classes/zune/texteditor/mcc/mmakefile
+
+# /workbench/classes/zune/texteditor/mcp/
+/workbench/classes/zune/texteditor/mcp/.obj_*
+/workbench/classes/zune/texteditor/mcp/locale.h
+/workbench/classes/zune/texteditor/mcp/locale.c
+/workbench/classes/zune/texteditor/mcp/bin_*
+/workbench/classes/zune/texteditor/mcp/mmakefile
 
 # /workbench/demos/
 /workbench/demos/Talk2boopsi.c
@@ -1822,9 +1822,6 @@
 # /workbench/devs/networks/via-rhine/
 /workbench/devs/networks/via-rhine/mmakefile
 
-# /workbench/devs/nil_handler/
-/workbench/devs/nil_handler/mmakefile
-
 # /workbench/devs/parallel/
 /workbench/devs/parallel/mmakefile
 
@@ -1899,10 +1896,6 @@
 
 # /workbench/libs/asl/catalogs/
 /workbench/libs/asl/catalogs/mmakefile
-
-# /workbench/libs/bsdsocket/
-/workbench/libs/bsdsocket/libdefs.h
-/workbench/libs/bsdsocket/mmakefile
 
 # /workbench/libs/bullet/
 /workbench/libs/bullet/libdefs.h
@@ -2042,6 +2035,9 @@
 /workbench/libs/lowlevel/libdefs.h
 /workbench/libs/lowlevel/mmakefile
 
+# /workbench/libs/mathffp/
+/workbench/libs/mathffp/mmakefile
+
 # /workbench/libs/mathieeedoubbas/
 /workbench/libs/mathieeedoubbas/libdefs.h
 /workbench/libs/mathieeedoubbas/mmakefile
@@ -2051,6 +2047,9 @@
 /workbench/libs/mathieeedoubtrans/libdefs.h
 /workbench/libs/mathieeedoubtrans/mmakefile
 /workbench/libs/mathieeedoubtrans/*.err
+
+# /workbench/libs/mathieeesingbas/
+/workbench/libs/mathieeesingbas/mmakefile
 
 # /workbench/libs/mathieeesingtrans/
 /workbench/libs/mathieeesingtrans/libdefs.h
@@ -2072,8 +2071,19 @@
 # /workbench/libs/mesa/src/gallium/auxiliary/draw/
 /workbench/libs/mesa/src/gallium/auxiliary/draw/mmakefile
 
+# /workbench/libs/mesa/src/gallium/auxiliary/indices/
+/workbench/libs/mesa/src/gallium/auxiliary/indices/u_indices_gen.c
+/workbench/libs/mesa/src/gallium/auxiliary/indices/u_unfilled_gen.c
+/workbench/libs/mesa/src/gallium/auxiliary/indices/mmakefile
+
 # /workbench/libs/mesa/src/gallium/auxiliary/os/
 /workbench/libs/mesa/src/gallium/auxiliary/os/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/pipebuffer/
+/workbench/libs/mesa/src/gallium/auxiliary/pipebuffer/mmakefile
+
+# /workbench/libs/mesa/src/gallium/auxiliary/rbug/
+/workbench/libs/mesa/src/gallium/auxiliary/rbug/mmakefile
 
 # /workbench/libs/mesa/src/gallium/auxiliary/rtasm/
 /workbench/libs/mesa/src/gallium/auxiliary/rtasm/mmakefile
@@ -2086,12 +2096,20 @@
 
 # /workbench/libs/mesa/src/gallium/auxiliary/util/
 /workbench/libs/mesa/src/gallium/auxiliary/util/mmakefile
+/workbench/libs/mesa/src/gallium/auxiliary/util/u_format_srgb.c
+/workbench/libs/mesa/src/gallium/auxiliary/util/u_half.c
+/workbench/libs/mesa/src/gallium/auxiliary/util/u_format_table.c
+/workbench/libs/mesa/src/gallium/auxiliary/util/u_format_pack.pyc
+/workbench/libs/mesa/src/gallium/auxiliary/util/u_format_parse.pyc
 
 # /workbench/libs/mesa/src/gallium/include/pipe/
 /workbench/libs/mesa/src/gallium/include/pipe/mmakefile
 
 # /workbench/libs/mesa/src/mesa/
 /workbench/libs/mesa/src/mesa/mmakefile
+
+# /workbench/libs/mesa/src/mesa/main/
+/workbench/libs/mesa/src/mesa/main/
 
 # /workbench/libs/muimaster/
 /workbench/libs/muimaster/*_end.c
@@ -2219,6 +2237,10 @@
 
 # /workbench/libs/uuid/
 /workbench/libs/uuid/mmakefile
+
+# /workbench/libs/workbench/
+/workbench/libs/workbench/libdefs.h
+/workbench/libs/workbench/mmakefile
 
 # /workbench/locale/
 /workbench/locale/makefile
@@ -2438,6 +2460,9 @@
 
 # /workbench/system/BHFormat/catalogs/
 /workbench/system/BHFormat/catalogs/mmakefile
+
+# /workbench/system/SysMon/
+/workbench/system/SysMon/mmakefile
 
 # /workbench/system/Wanderer/
 /workbench/system/Wanderer/mmakefile
