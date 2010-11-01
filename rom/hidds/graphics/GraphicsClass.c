@@ -2313,6 +2313,10 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	detailed description)
 
     NOTES
+	Drivers which use mirrored video data buffer do not have to update the display
+	immediately in this method. moHidd_BitMap_UpdateRect will be sent to the returned
+	bitmap if it's not NULL. Of course display blanking (if NULL bitmap was received)
+	needs to be performed immediately.
 
     EXAMPLE
 
