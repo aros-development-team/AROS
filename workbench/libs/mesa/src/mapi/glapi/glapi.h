@@ -97,6 +97,9 @@ register struct MesaBase * REGMesaBase __asm__("r10");
  * in SysV ABI, which we might use in the future
  */
 register struct MesaBase * REGMesaBase __asm__("r14");
+#elif defined(__arm__)
+/* Experimental, this register is commonly used as stack limit but seems to be safe on AROS */
+register struct MesaBase *REGMesaBase __asm__("r10");
 #else
 #error Select register for your architecture
 #endif
