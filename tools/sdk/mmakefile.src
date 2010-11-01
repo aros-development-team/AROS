@@ -1,4 +1,4 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2010, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -13,8 +13,8 @@ sdk:
 	$(CP) -a $(AROS_INCLUDES)/* $(SDKINCDIR)
 	$(CP) -a $(LIBDIR)/* $(SDKLIBDIR)
 	$(CP) -a $(TOP)/tools/collect-aros/* $(SDKTOOLDIR)/collect-aros
-	$(CP) -a scripts $(SDKDIR)
-	$(CP) AROS-SDK-Install $(TOP)/LICENSE $(TOP)/ACKNOWLEDGEMENTS $(SDKDIR)
+	$(CP) -a $(SRCDIR)/$(CURDIR)/scripts $(SDKDIR)
+	$(CP) $(SRCDIR)/$(CURDIR)/AROS-SDK-Install $(SRCDIR)/LICENSE $(SRCDIR)/ACKNOWLEDGEMENTS $(SDKDIR)
 
 #MM
 sdk-setup ::
