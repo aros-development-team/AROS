@@ -31,11 +31,12 @@
 #include "smeditor.h"
 #include "smselector.h"
 #include "smproperties.h"
+#include "smattributes.h"
 
 
 struct SMEditor_DATA
 {
-    Object *selector, *properties;
+    Object *selector, *properties, *attributes;
 };
 
 #define SMEditorObject BOOPSIOBJMACRO_START(SMEditor_CLASS->mcc_Class)
@@ -88,12 +89,19 @@ static BOOL ScreenmodePrefs2Gadgets
     SetAttrs
     (
         data->properties,
-	MUIA_NoNotify,			      TRUE,
+        MUIA_NoNotify,                        TRUE,
         MUIA_ScreenModeProperties_DisplayID,  screenmodeprefs.smp_DisplayID,
         MUIA_ScreenModeProperties_Width,      screenmodeprefs.smp_Width,
         MUIA_ScreenModeProperties_Height,     screenmodeprefs.smp_Height,
         MUIA_ScreenModeProperties_Depth,      screenmodeprefs.smp_Depth,
         MUIA_ScreenModeProperties_Autoscroll, screenmodeprefs.smp_Control & SMF_AUTOSCROLL,
+        TAG_DONE
+    );
+    
+    SetAttrs
+    (
+        data->attributes,
+        MUIA_ScreenModeAttributes_DisplayID, screenmodeprefs.smp_DisplayID,
         TAG_DONE
     );
 
@@ -102,7 +110,7 @@ static BOOL ScreenmodePrefs2Gadgets
 
 static Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    Object *selector, *properties;
+    Object *selector, *properties, *attributes;
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
@@ -111,10 +119,19 @@ static Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messag
         MUIA_PrefsEditor_Path, (IPTR)"SYS/screenmode.prefs",
         MUIA_PrefsEditor_IconTool, (IPTR)"SYS:Prefs/Screenmode",
 
-        Child, (IPTR)VGroup,
-            Child, (IPTR) CLabel(_(MSG_DISPLAY_MODE)),
-            Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
-            Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
+        Child, (IPTR)HGroup,
+        
+            Child, (IPTR)VGroup,
+                Child, (IPTR) CLabel(_(MSG_DISPLAY_MODE)),
+                Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
+                Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
+            End,
+
+            Child, (IPTR)VGroup,
+                Child, (IPTR) CLabel("Mode Attributes"), /* FIXME: Localize */
+                Child, (IPTR)(attributes = (Object *)ScreenModeAttributesObject, GroupFrame, End),
+            End,
+
         End,
         
         TAG_DONE
@@ -126,6 +143,7 @@ static Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messag
         
         data->selector   = selector;
         data->properties = properties;
+        data->attributes = attributes;
              
         /*-- Setup notifications -------------------------------------------*/
         DoMethod
@@ -133,6 +151,13 @@ static Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messag
             selector, MUIM_Notify, MUIA_ScreenModeSelector_Active, MUIV_EveryTime,
             (IPTR)properties, 3,
             MUIM_Set, MUIA_ScreenModeProperties_DisplayID, MUIV_TriggerValue
+        );
+        
+        DoMethod
+        (
+            selector, MUIM_Notify, MUIA_ScreenModeSelector_Active, MUIV_EveryTime,
+            (IPTR)attributes, 3,
+            MUIM_Set, MUIA_ScreenModeAttributes_DisplayID, MUIV_TriggerValue
         );
                 
         DoMethod
