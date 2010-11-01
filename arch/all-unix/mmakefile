@@ -2,6 +2,12 @@
 
 include $(TOP)/config/make.cfg
 
+#MM- includes-generate: \
+#MM	workbench-libs-oss-unix-module-includes
+
+#MM- linklibs: \
+#MM	workbench-libs-oss-unix-module-linklib
+
 #MM- kernel-unix : \
 #MM     kernel-unixio-kobj kernel-hostlib-kobj        \
 #MM     $(X11_HIDD_TARGET)		              \
