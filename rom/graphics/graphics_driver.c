@@ -552,57 +552,62 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata 
     fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Show() returned 0x%p\n", fb));
 
-    /* The code below is only valid for drivers having NoFrameBuffer == FALSE */
+    /* Summary of possible responses (when no error happened):
+       NoFrameBuffer = FALSE: bm = NULL  -> fb != NULL and bm != fb
+       NoFrameBuffer = FALSE: bm != NULL -> fb != NULL and bm != fb
+       NoFrameBuffer = TRUE : bm = NULL  -> fb == NULL and bm == fb
+       NoFrameBuffer = TRUE : bm != NULL -> fb != NULL and bm == fb
+    */
     if (fb)
     {
         IPTR width, height;
 
-	/* Do not swap bitmaps for NoFrameBuffer drivers */
-	/* Detection: these kind of drivers must return the same bitmap they received */
-	if (fb != bm)
-	{
-	    /*
-	     * FIXME: THIS IS NOT THREADSAFE
-	     * To make this threadsafe we have to lock
-	     * all gfx access in all the rendering calls
-	     */
+        /* Do not swap bitmaps for NoFrameBuffer drivers */
+        /* Detection: these kind of drivers must return the same bitmap they received */
+        if (fb != bm)
+        {
+            /*
+             * FIXME: THIS IS NOT THREADSAFE
+             * To make this threadsafe we have to lock
+             * all gfx access in all the rendering calls
+             */
 
-	    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Replacing framebuffer\n"));
+            DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Replacing framebuffer\n"));
 
-	    /* Set this as the active screen */
-	    if (NULL != mdd->frontbm)
-	    {
-		struct BitMap *oldbm;
+            /* Set this as the active screen */
+            if (NULL != mdd->frontbm)
+            {
+                struct BitMap *oldbm;
 
-		/* Put back the old values into the old bitmap */
-		oldbm = mdd->frontbm;
-		HIDD_BM_OBJ(oldbm)      = mdd->bm_bak;
-		HIDD_BM_COLMOD(oldbm)   = mdd->colmod_bak;
-		HIDD_BM_COLMAP(oldbm)   = mdd->colmap_bak;
-	    }
+                /* Put back the old values into the old bitmap */
+                oldbm = mdd->frontbm;
+                HIDD_BM_OBJ(oldbm)      = mdd->bm_bak;
+                HIDD_BM_COLMOD(oldbm)   = mdd->colmod_bak;
+                HIDD_BM_COLMAP(oldbm)   = mdd->colmap_bak;
+            }
 
-	    mdd->bm_bak     = bm;
-	    mdd->colmod_bak = bitmap ? HIDD_BM_COLMOD(bitmap) : 0;
-	    mdd->colmap_bak = bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
+            mdd->bm_bak     = bm;
+            mdd->colmod_bak = bitmap ? HIDD_BM_COLMOD(bitmap) : 0;
+            mdd->colmap_bak = bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
 
-	    if (bitmap)
-	    {
-		/* Insert the framebuffer in its place */
-		OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
-		OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-		OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+            if (bitmap)
+            {
+                /* Insert the framebuffer in its place */
+                OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+                OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+                OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
 
-		HIDD_BM_OBJ(bitmap)     = fb;
-		HIDD_BM_COLMOD(bitmap)	= colmod;
-		HIDD_BM_COLMAP(bitmap)	= cmap;
-	    }
-	}
+                HIDD_BM_OBJ(bitmap)     = fb;
+                HIDD_BM_COLMOD(bitmap)  = colmod;
+                HIDD_BM_COLMAP(bitmap)  = cmap;
+            }
+        }
 
-	/* We need to always remember our new frontmost bitmap, even if we do not work
-	   with a framebuffer */
-	mdd->frontbm = bitmap;
+        /* We need to always remember our new frontmost bitmap, even if we do not work
+           with a framebuffer */
+        mdd->frontbm = bitmap;
 
-	/* Tell the driver to refresh the screen */
+        /* Tell the driver to refresh the screen */
         OOP_GetAttr(fb, aHidd_BitMap_Width, &width);
         OOP_GetAttr(fb, aHidd_BitMap_Height, &height);
         DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Updating framebuffer, new size: %d x %d\n", width, height));
@@ -610,7 +615,7 @@ static void driver_LoadViewPorts(struct ViewPort *vp, struct monitor_driverdata 
         HIDD_BM_UpdateRect(fb, 0, 0, width, height);
     }
     else
-	mdd->frontbm = NULL;
+        mdd->frontbm = NULL;
 }
 
 void driver_LoadView(struct View *view, struct GfxBase *GfxBase)
