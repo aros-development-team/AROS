@@ -48,7 +48,7 @@ AROS_SLIB_ENTRY(KrnIsSuper,Kernel):
 	movem.l	%sp@+,%d1/%a0-%a1/%a5-%a6
 	rts
 
-1:	move.w	%sr,%d0
-	and.l	0x2000,%d0
+1:	move.w	%sp@,%d0
+	and.l	#0x2000,%d0
 	rte
 
