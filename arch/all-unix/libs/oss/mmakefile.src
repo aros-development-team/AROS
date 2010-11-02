@@ -26,7 +26,7 @@ FILES := funcs
     progname=playossunix targetdir=$(AROS_TESTS) uselibs="ossshared"
 
 USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
-	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES) -nostdinc
 
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
