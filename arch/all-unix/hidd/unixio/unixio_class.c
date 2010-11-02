@@ -449,9 +449,66 @@ IPTR UXIO__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     return OOP_DoSuperMethod(cl, o, msg);
 }
 
-/*********************
-**  UnixIO::Wait()  **
-*********************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_Wait
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsg *msg);
+
+        IPTR Hidd_UnixIO_Wait(OOP_Object *obj, ULONG fd, ULONG mode, APTR callback, APTR callbackdata, struct ExecBase *SysBase);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Wait for an event on the file descriptor
+
+	The user may supply a callback function which will be called before the
+	method returns. The function is called using C calling convention and
+	should be declared as:
+
+	  int callback(APTR fh, APTR data);
+
+	Parameters of the callback are:
+	  fh   - A file descriptor number.
+	  data - User-defined data specified for the method.
+
+	The callback is expected to return nonzero value in order to terminate the
+	operation and return, and zero value in order to continue waiting. For
+	example this can be used in order to read data in portions until some condition
+	is met.
+
+    INPUTS
+        obj          - A pointer to a UnixIO object
+        fd           - A file descriptor to wait on
+        mode	     - A combination of two flags:
+        		- vHidd_UnixIO_Read - to request waiting until read is permitted
+        		- vHidd_UnixIO_Write - to request waiting until write is permitted
+	callback     - An optional callback which will be called when the operation
+		        completes
+	callbackdata - User-defined data which will be passed to a callback
+	SysBase      - A pointer to exec.library base. Historical and ignored.
+
+    RESULT
+    	0 in case of success or UNIX errno value in case if exception happens on the
+    	socket (select() call sets corresponding flag in third fd_set).
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+    	Callback routine is called only for read events (if they were requested)
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
 IPTR UXIO__Hidd_UnixIO__Wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
 {
     IPTR retval = 0UL;
@@ -568,9 +625,48 @@ VOID UXIO__Hidd_UnixIO__AbortAsyncIO(OOP_Class *cl, OOP_Object *o, struct uioMsg
         DeletePort(port);
 }
 
-/*****************************
-**  UnixIO::OpenFile()      **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_OpenFile
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsgOpenFile *msg);
+
+        int Hidd_UnixIO_OpenFile (OOP_Object *obj, const char *filename, int flags, int mode, int *errno_ptr);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Open a UNIX file descriptor
+
+    INPUTS
+        obj       - An pointer to a UnixIO object
+        filename  - File name to open. File name should meet host OS conventions.
+	flags     - Flags specifying open mode. These are the same flags as for
+		    open() C function. Note that this value is passed directly to
+		    the host OS, and its definition can differ from AROS one.
+	errno_ptr - An optional pointer to a location where error code (value of
+		    UNIX errno variable) will be written
+
+    RESULT
+	A number of the opened file descriptor or -1 for an error. 
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_UnixIO_CloseFile
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
 APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpenFile *msg)
 {
     APTR retval = (APTR)open((const char *)msg->um_FileName, (int)msg->um_Flags, (int)msg->um_Mode);
@@ -580,18 +676,96 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
     return retval;
 }
 
-/*****************************
-**  UnixIO::CloseFile()      **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_CloseFile
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsgCloseFile *msg);
+
+        void Hidd_UnixIO_CloseFile (OOP_Object *obj, int fd, int *errno_ptr);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Close a UNIX file descriptor.
+
+    INPUTS
+        obj	  - A pointer to a UnixIO object.
+        fd        - A file descriptor to close.
+	errno_ptr - An optional pointer to a location where error code (a value of UNIX
+		    errno variable) will be written.
+
+    RESULT
+	None.
+
+    NOTES
+	Despite there's no return value, error code still can be set.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_UnixIO_OpenFile
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
 VOID UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgCloseFile *msg)
 {
     if (msg->um_FD != (APTR)-1) close((int)msg->um_FD);
     if (msg->um_ErrNoPtr) *msg->um_ErrNoPtr = errno;
 }
 
-/*****************************
-**  UnixIO::ReadFile()     **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_ReadFile
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsgReadFile *msg);
+
+        int Hidd_UnixIO_ReadFile(OOP_Object *obj, int fd, void *buffer, int count, int *errno_ptr);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Read data from a UNIX file descriptor.
+
+    INPUTS
+        obj	  - A pointer to a UnixIO object.
+        fd        - A file descriptor to read from.
+        buffer    - A pointer to a buffer for data.
+        count     - Number of bytes to read.
+	errno_ptr - An optional pointer to a location where error code (a value of UNIX
+		    errno variable) will be written.
+
+    RESULT
+	Number of bytes actually read or -1 if error happened.
+
+    NOTES
+	If there's no errno pointer supplied read operation will be automatically repeated if one
+	of EINTR or EAGAIN error happens. If you supplied valid own errno_ptr you should be ready
+	to handle these conditions yourself.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_UnixIO_WriteFile
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
 IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgReadFile *msg)
 {
     IPTR retval = (IPTR)-1;
@@ -615,9 +789,50 @@ IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgRead
     return retval;
 }
 
-/*****************************
-**  UnixIO::WriteFile()     **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_WriteFile
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsgWriteFile *msg);
+
+        int Hidd_UnixIO_WriteFile(OOP_Object *obj, int fd, void *buffer, int count, int *errno_ptr);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Write data to a UNIX file descriptor.
+
+    INPUTS
+        obj	  - A pointer to a UnixIO object.
+        fd        - A file descriptor to write to.
+        buffer    - A pointer to a buffer containing data.
+        count     - Number of bytes to write.
+	errno_ptr - An optional pointer to a location where error code (a value of UNIX
+		    errno variable) will be written.
+
+    RESULT
+	Number of bytes actually written or -1 if error happened.
+
+    NOTES
+	If there's no errno pointer supplied read operation will be automatically repeated if one
+	of EINTR or EAGAIN error happens. If you supplied valid own errno_ptr you should be ready
+	to handle these conditions yourself.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_UnixIO_ReadFile
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
 IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFile *msg)
 {
     IPTR retval = (IPTR)-1;
@@ -641,9 +856,46 @@ IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWri
     return retval;
 }
 
-/*****************************
-**  UnixIO::IOControlFile() **
-*****************************/
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_ReadFile
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsgIOControlFile *msg);
+
+        int Hidd_UnixIO_IOControlFile(OOP_Object *obj, int fd, int request, void *param, int *errno_ptr);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Perform a special operation (ioctl) on a UNIX file descriptor.
+
+    INPUTS
+        obj	  - A pointer to a UnixIO object.
+        fd        - A file descriptor to operate on.
+        request   - A device-specific operation code.
+        param     - A pointer to a request-specific parameter block.
+	errno_ptr - An optional pointer to a location where error code (a value of UNIX
+		    errno variable) will be written.
+
+    RESULT
+	Operation-specific value (actually a return value of ioctl() function called).
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
 IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMsgIOControlFile *msg)
 {
     IPTR retval = (IPTR)-1;
