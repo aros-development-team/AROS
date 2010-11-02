@@ -120,17 +120,13 @@ asm (
 	"	rte\n"				//   And return
 );
 
-#undef kprintf
-
-#define PARANOIA_STACK
 void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct ExecBase *SysBase)
 {
 #ifdef PARANOIA_STACK
-	extern void breakpoint(void);
 	if (regs->sr & 0x2000) {
-		if ((APTR)regs->a[7] < (SysBase->SysStkLower+0x100) || (APTR)(regs->a[7]-1) > SysBase->SysStkUpper) {
-			bug("Supervisor: YOUR STACK A SPLODE!\n");
-			breakpoint();
+		if ((APTR)regs->a[7] < (SysBase->SysStkLower+0x10) || (APTR)(regs->a[7]-1) > SysBase->SysStkUpper) {
+			Alert(AT_DeadEnd | AN_MemCorrupt);
+			D(bug("Supervisor: Stack overflow detected!\n"));
 		}
 	} else {
 		struct Task *t = SysBase->ThisTask;
@@ -139,15 +135,15 @@ void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct E
 			t->tc_SPUpper = (void *)(&_us_stack_upper-1);
 			t->tc_SPLower = (void *)&_us_stack_lower;
 		}
-		if ((APTR)regs->a[7] < (t->tc_SPLower+0x100) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
-			bug("[%s]: YOUR STACK A SPLODE!\n", t->tc_Node.ln_Name);
-			breakpoint();
+		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
+			Alert(AT_DeadEnd | AN_MemCorrupt);
+			D(bug("[%s]: Stack overflow detected!\n", t->tc_Node.ln_Name));
 		}
 	}
 #endif
 
 	if (Exception->Handler == NULL) {
-		kprintf("-- Exception %d\n", Exception->Id);
+		D(bug("-- Exception %d\n", Exception->Id));
 		Alert(AN_BogusExcpt);
 		for (;;);
 	}
