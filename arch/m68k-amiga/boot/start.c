@@ -191,7 +191,7 @@ void start(void)
 	extern void *_bss_end;
 	extern void *_ss_stack_upper;
 	extern void *_ss_stack_lower;
-	APTR *tmp;
+	volatile APTR *tmp;
 	int i;
 	UWORD *kickrom[] = {
 		(UWORD *)0x00f80000,
@@ -275,8 +275,8 @@ void start(void)
 	 * calling the routine.
 	 */
 #ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
-	PERSERVE_ALL(SysBase, Exec, Disable, 20);
-	PERSERVE_ALL(SysBase, Exec, Enable, 21);
+	PRESERVE_ALL(SysBase, Exec, Disable, 20);
+	PRESERVE_ALL(SysBase, Exec, Enable, 21);
 	PRESERVE_ALL(SysBase, Exec, Forbid, 22);
 #endif
 	PRESERVE_ALL(SysBase, Exec, Permit, 23);
