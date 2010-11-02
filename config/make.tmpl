@@ -1273,8 +1273,12 @@ ifeq ($(BD_MODDIR),)
   $(error Don't know where to put the file for modtype %(modtype). Specify moduledir=)
 endif
 
+BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
+BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
+BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),%(files))
+
 %rule_compile_multi \
-    basenames="%(files)" targetdir="%(objdir)" \
+    basenames="$(BD_NARCHFILES)" targetdir="%(objdir)" \
     cflags="%(cflags)" dflags="%(dflags)" \
     compiler=%(compiler)
 
@@ -1286,7 +1290,7 @@ BD_KOBJ := $(KOBJSDIR)/%(modname)_%(modtype).o
 %(mmake)-kobj : $(BD_KOBJ)
 
 # The module is linked from all the compiled .o files
-BD_OBJS       := $(addprefix %(objdir)/, $(addsuffix .o,%(files)))
+BD_OBJS       := $(BD_ARCHOBJS) $(addprefix %(objdir)/, $(addsuffix .o,$(notdir $(BD_NARCHFILES))))
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
 		 endobj= err=%(modname).err objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
