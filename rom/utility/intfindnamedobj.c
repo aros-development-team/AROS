@@ -20,7 +20,7 @@
 struct IntNamedObject *
 IntFindNamedObj(struct NameSpace *ns,
 		struct Node *start,
-		STRPTR name,
+		CONST_STRPTR name,
 		struct UtilityBase *UtilityBase)
 {
     struct IntNamedObject *no = NULL;

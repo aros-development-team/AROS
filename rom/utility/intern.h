@@ -114,7 +114,7 @@ struct IntNamedObject
 
 /* Internal function prototypes */
 struct NameSpace *GetNameSpace(struct NamedObject *, struct UtilityBase *);
-struct IntNamedObject *IntFindNamedObj(struct NameSpace *, struct Node *, STRPTR, struct UtilityBase *);
+struct IntNamedObject *IntFindNamedObj(struct NameSpace *, struct Node *, CONST_STRPTR, struct UtilityBase *);
 
 /*
     Access union to get a some memory in Pack|UnpackStructureTags(). I use
