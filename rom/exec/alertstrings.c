@@ -402,7 +402,7 @@ static const struct Errors *const stringlist[] =
 
 /* Similar to strcpy() but returns a pointer to the next byte beyond the
    copied string. Useful for concatenation. */
-STRPTR Alert_AddString(STRPTR dest, STRPTR src)
+STRPTR Alert_AddString(STRPTR dest, CONST_STRPTR src)
 {
     while(*src)
     {
