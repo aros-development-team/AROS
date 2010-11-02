@@ -52,7 +52,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem *tstate = tags;
+    const struct TagItem *tstate = tags;
     struct TagItem *tag;
     LONG *immediate = NULL;
     ULONG res = 0;
@@ -61,40 +61,40 @@
         switch(tag->ti_Tag) {
 
 	case VTAG_ATTACH_CM_SET:
-	    cm->cm_vp = tag->ti_Data;
+	    cm->cm_vp = (struct ViewPort *)tag->ti_Data;
 	    break;
 
 	case VTAG_ATTACH_CM_GET:
 	    tag->ti_Tag = VTAG_ATTACH_CM_SET;
-	    tag->ti_Data = cm->cm_vp;
+	    tag->ti_Data = (STACKIPTR)cm->cm_vp;
 	    break;
 
 	case VTAG_VIEWPORTEXTRA_SET:
-	    cm->cm_vpe = tag->ti_Data;
-	    GfxAssociate(cm->cm_vp, cm->cm_vpe);
+	    cm->cm_vpe = (struct ViewPortExtra *)tag->ti_Data;
+	    GfxAssociate(cm->cm_vp, &cm->cm_vpe->n);
 	    break;
 
 	case VTAG_VIEWPORTEXTRA_GET:
 	    tag->ti_Tag = VTAG_VIEWPORTEXTRA_SET;
-	    tag->ti_Data = cm->cm_vpe;
+	    tag->ti_Data = (STACKIPTR)cm->cm_vpe;
 	    break;
 
 	case VTAG_NORMAL_DISP_SET:
-	    cm->NormalDisplayInfo = tag->ti_Data;
+	    cm->NormalDisplayInfo = (APTR)tag->ti_Data;
 	    break;
 
 	case VTAG_NORMAL_DISP_GET:
 	    tag->ti_Tag = VTAG_NORMAL_DISP_SET;
-	    tag->ti_Data = cm->NormalDisplayInfo;
+	    tag->ti_Data = (STACKIPTR)cm->NormalDisplayInfo;
 	    break;
 	
 	case VTAG_COERCE_DISP_SET:
-	    cm->CoerceDisplayInfo = tag->ti_Data;
+	    cm->CoerceDisplayInfo = (APTR)tag->ti_Data;
 	    break;
 
 	case VTAG_COERCE_DISP_GET:
 	    tag->ti_Tag = VTAG_COERCE_DISP_SET;
-	    tag->ti_Data = cm->CoerceDisplayInfo;
+	    tag->ti_Data = (STACKIPTR)cm->CoerceDisplayInfo;
 	    break;
 
 	case VTAG_PF1_BASE_SET:
@@ -258,7 +258,7 @@
 	    break;
 
 	case VTAG_IMMEDIATE:
-	    immediate = tag->ti_Data;
+	    immediate = (LONG *)tag->ti_Data;
 	    break;
 
 	case VTAG_FULLPALETTE_SET:
@@ -331,7 +331,7 @@
 	    break;
 
 	case VTAG_NEXTBUF_CM:
-	    tstate = tag->ti_Data;
+	    tstate = (const struct TagItem *)tag->ti_Data;
 	    break;
 
 	case VTAG_BATCH_CM_SET:
@@ -353,7 +353,7 @@
 	    break;
 
 	case VTAG_BATCH_ITEMS_SET:
-	    cm->cm_batch_items = tag->ti_Data;
+	    cm->cm_batch_items = (struct TagItem *)tag->ti_Data;
 	    break;
 
 /* TODO: implement this */
@@ -362,7 +362,7 @@
 
 	case VTAG_BATCH_ITEMS_GET:
 	    tag->ti_Tag = VTAG_BATCH_ITEMS_SET;
-	    tag->ti_Data = cm->cm_batch_items;
+	    tag->ti_Data = (STACKIPTR)cm->cm_batch_items;
 	    break;
 
 	case VTAG_VPMODEID_SET:

@@ -56,10 +56,10 @@
        operating also on planar bitmaps, which can aid in porting AROS
        to m68k Amiga */
     OOP_Object *bitmap = OBTAIN_HIDD_BM(vp->RasInfo->BitMap);
-    IPTR tags[] = {
-        aHidd_BitMap_LeftEdge, vp->DxOffset,
-	aHidd_BitMap_TopEdge,  vp->DyOffset,
-	TAG_DONE
+    struct TagItem tags[] = {
+        { .ti_Tag = aHidd_BitMap_LeftEdge, .ti_Data = vp->DxOffset, },
+        { .ti_Tag = aHidd_BitMap_TopEdge,  .ti_Data = vp->DyOffset, },
+	{ .ti_Tag = TAG_DONE, }
     };
     IPTR offset;
 
