@@ -240,7 +240,7 @@ static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
 {
     HIDDT_PixelLUT *lut = msg->pixlut;
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
-    HIDDT_ColorLUT *cmap = data->colmap;
+    HIDDT_ColorLUT *cmap = (HIDDT_ColorLUT *)data->colmap;
     INIT_VARS()
     INIT_FMTVARS()
     ULONG x, y, c;

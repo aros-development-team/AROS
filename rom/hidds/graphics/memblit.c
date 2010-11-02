@@ -1518,7 +1518,7 @@ VOID BM__Hidd_BitMap__PutMemPattern8(OOP_Class *cl, OOP_Object *o, struct pHidd_
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *patarray, *buf, *maskarray = 0;
-    UWORD   	    	     patmask, maskmask;
+    UWORD   	    	     patmask, maskmask = 0;
     OOP_Object	    	    *gc = msg->gc;
     ULONG	     	     fg = GC_FG(gc);
     ULONG	    	     bg = GC_BG(gc);
@@ -1566,8 +1566,8 @@ VOID BM__Hidd_BitMap__PutMemPattern8(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	UWORD  mmask = maskmask;
 	UWORD *parray = ((UWORD *)patarray) + ((y + msg->patternsrcy) % msg->patternheight);
 	UWORD  patword = AROS_BE2WORD(*parray);
-	UWORD *marray;
-	UWORD  maskword;
+	UWORD *marray = NULL;
+	UWORD  maskword = 0;
 	UBYTE *xbuf = (UBYTE *)buf;
 
 	if (maskarray)
@@ -1780,7 +1780,7 @@ VOID BM__Hidd_BitMap__PutMemPattern16(OOP_Class *cl, OOP_Object *o, struct pHidd
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *patarray, *buf, *maskarray = 0;
-    UWORD   	    	     patmask, maskmask;
+    UWORD   	    	     patmask, maskmask = 0;
     OOP_Object	    	    *gc = msg->gc;
     ULONG	     	     fg = GC_FG(gc);
     ULONG	    	     bg = GC_BG(gc);
@@ -1828,8 +1828,8 @@ VOID BM__Hidd_BitMap__PutMemPattern16(OOP_Class *cl, OOP_Object *o, struct pHidd
 	UWORD  mmask = maskmask;
 	UWORD *parray = ((UWORD *)patarray) + ((y + msg->patternsrcy) % msg->patternheight);
 	UWORD  patword = AROS_BE2WORD(*parray);
-	UWORD *marray;
-	UWORD  maskword;
+	UWORD *marray = NULL;
+	UWORD  maskword = 0;
 	UWORD *xbuf = (UWORD *)buf;
 
 	if (maskarray)
@@ -2041,7 +2041,7 @@ VOID BM__Hidd_BitMap__PutMemPattern24(OOP_Class *cl, OOP_Object *o, struct pHidd
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *patarray, *buf, *maskarray = 0;
-    UWORD   	    	     patmask, maskmask;
+    UWORD   	    	     patmask, maskmask = 0;
     OOP_Object	    	    *gc = msg->gc;
     ULONG	     	     fg = GC_FG(gc);
     UBYTE   	    	     fg1, fg2, fg3;
@@ -2109,8 +2109,8 @@ VOID BM__Hidd_BitMap__PutMemPattern24(OOP_Class *cl, OOP_Object *o, struct pHidd
 	UWORD  mmask = maskmask;
 	UWORD *parray = ((UWORD *)patarray) + ((y + msg->patternsrcy) % msg->patternheight);
 	UWORD  patword = AROS_BE2WORD(*parray);
-	UWORD *marray;
-	UWORD  maskword;
+	UWORD *marray = NULL;
+	UWORD  maskword = 0;
 	UBYTE *xbuf = (UBYTE *)buf;
 
 	if (maskarray)
@@ -2376,7 +2376,7 @@ VOID BM__Hidd_BitMap__PutMemPattern32(OOP_Class *cl, OOP_Object *o, struct pHidd
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *patarray, *buf, *maskarray = 0;
-    UWORD   	    	     patmask, maskmask;
+    UWORD   	    	     patmask, maskmask = 0;
     OOP_Object	    	    *gc = msg->gc;
     ULONG	     	     fg = GC_FG(gc);
     ULONG	    	     bg = GC_BG(gc);
@@ -2424,8 +2424,8 @@ VOID BM__Hidd_BitMap__PutMemPattern32(OOP_Class *cl, OOP_Object *o, struct pHidd
 	UWORD  mmask = maskmask;
 	UWORD *parray = ((UWORD *)patarray) + ((y + msg->patternsrcy) % msg->patternheight);
 	UWORD  patword = AROS_BE2WORD(*parray);
-	UWORD *marray;
-	UWORD  maskword;
+	UWORD *marray = NULL;
+	UWORD  maskword = 0;
 	ULONG *xbuf = (ULONG *)buf;
 
 	if (maskarray)
