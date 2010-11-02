@@ -10,6 +10,7 @@
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <proto/exec.h>
 
 #include "exec_intern.h"
 #include "kernel_romtags.h"
@@ -105,6 +106,37 @@ void DebugPutHex(const char *what, ULONG val)
 }
 
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
+
+void __attribute__((interrupt)) cpu_detect_trap(void);
+asm (
+	"	.text\n"
+	"	.globl cpu_detect_trap\n"
+	"cpu_detect_trap:\n"
+	"	addq.l	#2,%sp@(2)\n"
+	"	move.w	%sr,%d0\n"
+	"	rte\n"
+);
+
+/* Detect 68000 vs 68010/68020 */
+ULONG cpu_detect(void)
+{
+	volatile APTR *trap = (NULL + 8);
+	APTR old_trap6;
+	UWORD ret;
+
+	old_trap6 = trap[6];
+	trap[6] = cpu_detect_trap;
+	asm volatile (	
+		"move.w	%%sr,%%d0\n"
+		"move.w	%%d0,%0\n"
+		: "=m" (ret) : : "%d0" );
+	trap[6] = old_trap6;
+
+	if (ret & 0x2000)
+		return AFF_68010;
+	else 
+		return 0;
+}
 	
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 /*
@@ -244,8 +276,8 @@ void start(void)
         sysBase->SysStkUpper    = (APTR)(&_ss_stack_upper)-1;
         sysBase->SysStkLower    = (APTR)&_ss_stack_lower;
 
-	/* TODO: Actually check this! */
-	sysBase->AttnFlags |= AFF_68010 | AFF_68020;
+	/* Determine CPU model */
+	sysBase->AttnFlags |= cpu_detect();
 
 	/* Initialize IRQ subsystem */
 	AmigaIRQInit(sysBase);
