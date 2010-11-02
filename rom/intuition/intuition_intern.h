@@ -1120,9 +1120,9 @@ AROS_UFPA(APTR  , args      , A1));
 #ifdef __MORPHOS__
 #define DEBUG_INIT(x)               	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_INIT(x)               	x
+#define DEBUG_INIT(x)               	;
 #endif
-#define DEBUG_OPEN(x)               	x
+#define DEBUG_OPEN(x)               	;
 #define DEBUG_CLOSE(x)              	;
 #define DEBUG_INPUTEVENT(x)         	;
 #define DEBUG_INTREFRESHGLIST(x)    	;
