@@ -84,23 +84,18 @@ AROS_SLIB_ENTRY(Supervisor,Exec):
 	move.l	%a5,%sp@-
 	move.l	%sp@(-8),%a5
 #endif
-	btst	#0, %a6@(AttnFlags)	// If 68010, push frame id
-	bne.s	0f
-	btst	#1, %a6@(AttnFlags)	// If not 68020, skip
-	beq.s	Exec_Supervisor_Entry_10
-0:	move.w	#0x0020,%sp@-   // push the 68010/20 frame id
-
 	/* CRITICAL SECTION - DO NOT USE THE STACK */
 Exec_Supervisor_Entry_10:
 	move.w	%sr, %d0	// Caused exception on 68010/20
 Exec_Supervisor_Entry_00:
 	or.w	#0x2000, %sr	// Caused exception on 68000
 Exec_Supervisor_Entered:	// %d0 will always have the old SR
-	btst	#13, %d0
-	beq	2f
-	trap	#1
+
 	/* CRITICAL SECTION - SUPERVISOR STACK */
-2:	pea	1f
+	btst	#0, %a6@(AttnFlags+1)	// If 68010, push frame id
+	beq.s	Exec_Supervisor_Entry_10
+	move.w	#0x0020,%sp@-   // push the 68010/20 frame id
+	pea	1f
 	move.w	%d0,%sp@-	// Fix up return mode & flags
 	jmp	(%a5)		// D0 will be set after the
 1:				//  caller's RTE gets back here.
