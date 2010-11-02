@@ -2,7 +2,8 @@
 include $(TOP)/config/make.cfg
 
 FILES=cli sti kernel_debug maygetchar \
-      m68k_exception amiga_irq kernel_cpu
+      m68k_exception amiga_irq kernel_cpu \
+      getbootinfo
 
 AFILES=issuper
 
