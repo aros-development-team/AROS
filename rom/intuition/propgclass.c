@@ -455,7 +455,7 @@ IPTR PropGClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         data->propinfo.VertBody = MAXBODY;
         data->propinfo.HorizPot = 0;
         data->propinfo.HorizBody = MAXBODY;
-        data->DisplayHook = GetTagData(PGA_DisplayHook, 0, msg->ops_AttrList);
+        data->DisplayHook = (struct Hook *)GetTagData(PGA_DisplayHook, 0, msg->ops_AttrList);
         data->top     = 0;
         data->visible = 1;
         data->total   = 1;

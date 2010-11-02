@@ -251,7 +251,6 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
                             struct IntuitionBase *IntuitionBase)
 {
     struct Screen *parent,*screen = msg->Screen;
-    struct Window *win = 0;
     ULONG   	   lock;
 
     /* If this is a public screen, free related information if there are
@@ -331,6 +330,7 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
             if (IntuitionBase->FirstScreen && ((GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_SCREENACTIVATION) || !IntuitionBase->ActiveWindow))
             {
                 struct Window *scanw = 0;
+                struct Window *win = 0;
 
                 for (scanw = IntuitionBase->FirstScreen->FirstWindow; scanw ; scanw = scanw->NextWindow)
                 {

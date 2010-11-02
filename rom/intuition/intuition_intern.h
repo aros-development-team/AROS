@@ -102,12 +102,12 @@
 #define ASSERT_VALID_PTR_ROMOK(ptr)                                                        \
 do {                                                                                       \
     if (!((IPTR)ptr & 1)) {                                                                \
-        if (TypeOfMem(ptr))                                                                \
+        if (TypeOfMem((APTR)ptr))                                                                \
             break;                                                                         \
         else {                                                                             \
             struct Task *me = FindTask(NULL);                                              \
                                                                                            \
-            if ((ptr >= me->tc_SPLower) && (ptr < me->tc_SPUpper))                         \
+            if (((IPTR)(ptr) >= (IPTR)me->tc_SPLower) && ((IPTR)(ptr) < (IPTR)me->tc_SPUpper))                         \
                 break;                                                                     \
         }                                                                                  \
     }                                                                                      \
@@ -1120,9 +1120,9 @@ AROS_UFPA(APTR  , args      , A1));
 #ifdef __MORPHOS__
 #define DEBUG_INIT(x)               	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_INIT(x)               	;
+#define DEBUG_INIT(x)               	x
 #endif
-#define DEBUG_OPEN(x)               	;
+#define DEBUG_OPEN(x)               	x
 #define DEBUG_CLOSE(x)              	;
 #define DEBUG_INPUTEVENT(x)         	;
 #define DEBUG_INTREFRESHGLIST(x)    	;

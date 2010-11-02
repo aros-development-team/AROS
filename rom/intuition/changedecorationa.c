@@ -94,7 +94,7 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
                 nd->nd_IntPattern = AllocVec(strlen(nd->nd_Pattern) * 2 + 1, MEMF_CLEAR);
                 if (nd->nd_IntPattern) {
                     struct DosLibrary    *DOSBase;
-                    DOSBase = (struct DOSLibrary *)OpenLibrary("dos.library", 40);
+                    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 40);
                     if (DOSBase)
                     {
                         if (ParsePattern(nd->nd_Pattern, nd->nd_IntPattern, strlen(nd->nd_Pattern) * 2 + 1) == -1) {

@@ -104,7 +104,8 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
     }
     else
     {
-        window->Title = windowTitle;
+        /* FIXME: Should we be strdup()ing this? */
+        window->Title = (UBYTE *)windowTitle;
         if (windowTitle)
         if (strncmp(windowTitle,IW(window)->titlebuffer,TITLEBUFFERLEN) == 0) change = FALSE;
     }
@@ -122,12 +123,14 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
     {
         //LONG lock = LockIBase(0);
 
-        window->ScreenTitle = screenTitle;
+        /* FIXME: Should we be strdup()ing this? */
+        window->ScreenTitle = (UBYTE *)screenTitle;
         
         if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
         {
             if (screenTitle)
-                window->WScreen->Title = screenTitle;
+        	/* FIXME: Should we be strdup()ing this? */
+                window->WScreen->Title = (UBYTE *)screenTitle;
             else
                 window->WScreen->Title = window->WScreen->DefaultTitle;
 

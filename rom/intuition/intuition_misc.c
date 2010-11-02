@@ -306,7 +306,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             };
             Object *im;
 
-            im = CreateStdSysImage(DEPTHIMAGE, TITLEBAR_HEIGHT, w->WScreen, ((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
+            im = CreateStdSysImage(DEPTHIMAGE, TITLEBAR_HEIGHT, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -372,7 +372,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
             Object *im;
 
-            im = CreateStdSysImage(ZOOMIMAGE, TITLEBAR_HEIGHT, w->WScreen, ((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
+            im = CreateStdSysImage(ZOOMIMAGE, TITLEBAR_HEIGHT, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -472,7 +472,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             };
             Object *im;
 
-            im = CreateStdSysImage(CLOSEIMAGE, TITLEBAR_HEIGHT, w->WScreen, ((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
+            im = CreateStdSysImage(CLOSEIMAGE, TITLEBAR_HEIGHT, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -1105,7 +1105,7 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
                             reply = (struct ReplyPort *)CreateMsgPort();
                             if (reply)
                             {
-                                msg->snm_Message.mn_ReplyPort = reply;
+                                msg->snm_Message.mn_ReplyPort = (struct MsgPort *)reply;
 
                                 PutMsg((struct MsgPort *)sn->port, (struct Message *) msg);
                                 WaitPort((struct MsgPort *)reply);
