@@ -10,8 +10,6 @@
 #include <exec/tasks.h>
 #include <graphics/gfxbase.h>
 
-static int bug; /* Added because of bug in cxref */
-
 /*****************************************************************************
 
     NAME */

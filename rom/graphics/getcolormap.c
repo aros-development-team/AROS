@@ -60,7 +60,7 @@
 
     struct ColorMap * NewCM = (struct ColorMap *)AllocMem(sizeof(struct ColorMap),
                                                           MEMF_PUBLIC|MEMF_CLEAR);
-    LONG 	    * ptr1, * ptr2;
+    UWORD 	    * ptr1, * ptr2;
 							  
 #if 0
     /* ColorTable with some preference values; !!! incomplete */

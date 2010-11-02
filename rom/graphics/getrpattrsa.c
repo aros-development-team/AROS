@@ -88,7 +88,7 @@
     ULONG   	    MaxPen, z;
     BOOL    	    havedriverdata = FALSE;
 
-    while ((tag = NextTagItem ((const struct Tagitem **)&tstate)))
+    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
     {
 	switch(tag->ti_Tag)
 	{
