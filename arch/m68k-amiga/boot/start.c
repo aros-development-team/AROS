@@ -168,9 +168,21 @@ ULONG cpu_detect(void)
 		/* Insert into the library's jumptable */ \
 		__AROS_SETVECADDR(lib, funcid, asmcall); \
 	} while (0)
+/* Inject a 'move.w #value,%d0; rts" sequence into the
+ * jump table, to fake an private syscall.
+ */
+#define FAKE_ID(lib, funcid, value) \
+	do { \
+		UWORD *asmcall = (UWORD *)__AROS_GETJUMPVEC(lib, funcid); \
+		asmcall[0] = 0x4660;	/* move.w #...,%d0 */ \
+		asmcall[1] = ((ULONG)(value) >>  0) & 0xffff; \
+		asmcall[2] = 0x4e75;	/* rts */ \
+	} while (0);
+
 #else
 /* Not needed on EABI */
 #define PRESERVE_ALL(lib, libname, funcname, funcid) do { } while (0)
+#define FAKE_ID(lib, funcid, value) do { } while (0)
 #endif
 
 void start(void)
@@ -272,6 +284,8 @@ void start(void)
 	PRESERVE_ALL(SysBase, Exec, ReleaseSemaphore, 95);
 	PRESERVE_ALL(SysBase, Exec, ObtainSemaphoreShared, 113);
 
+	/* Needed for card.resource */
+	FAKE_ID(SysBase, 136, 0x0000);
 
         sysBase->SysStkUpper    = (APTR)(&_ss_stack_upper)-1;
         sysBase->SysStkLower    = (APTR)&_ss_stack_lower;
