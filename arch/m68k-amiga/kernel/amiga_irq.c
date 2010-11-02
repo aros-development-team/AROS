@@ -29,6 +29,9 @@
 #define INTENA			0x9a
 #define INTREQ			0x9c
 
+/** DMA **/
+#define DMACON			0x96
+
 static inline void custom_w(ULONG reg, UWORD val)
 {
 	volatile UWORD *r = (void *)(0xdff000 + reg);
@@ -185,4 +188,9 @@ void AmigaIRQInit(struct ExecBase *SysBase)
 	custom_w(INTREQ, 0x7fff);
 
 	M68KExceptionInit(AmigaExceptionTable, SysBase);
+
+	/* Enable DMA */
+	custom_w(DMACON, 0x8200);
+
+	/* IRQs will be enabled by the first Enable() in Exec's init */
 }
