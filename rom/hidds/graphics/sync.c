@@ -47,7 +47,7 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
        graphics.library */
     ObtainSemaphore(&csd->sema);
     if (!GfxBase) {
-        GfxBase = OpenLibrary("graphics.library", 41);
+        GfxBase = (void *)OpenLibrary("graphics.library", 41);
         if (!GfxBase)
 	    ok = FALSE;
     }
@@ -267,7 +267,7 @@ void Sync__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
  * more straightforward and flexible.
  */
 
-static void do_monitor(struct MonitorSpec *mspc)
+static LONG do_monitor(struct MonitorSpec *mspc)
 {
     struct sync_data *data = (struct sync_data *)mspc->ms_Special->reserved1;
 
@@ -275,6 +275,8 @@ static void do_monitor(struct MonitorSpec *mspc)
 
     if (data->gfxhidd)
         HIDD_Gfx_SetMode(data->gfxhidd, (OOP_Object *)mspc->ms_Object);
+
+    return 0;
 }
 
 /****************************************************************************************/
@@ -319,7 +321,7 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
 	        return FALSE;
 	    data->mspc->ms_Node.xln_Name = data->description;
 	    InitSemaphore(&data->mspc->DisplayInfoDataBaseSemaphore);
-	    data->mspc->ms_Object = o;
+	    data->mspc->ms_Object = (void *)o;
 
 	    data->InternalFlags |= SYNC_FREE_MONITORSPEC;
 	}
@@ -382,10 +384,10 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
 		        l = snprintf(d, dlen, "%lu", attrs[SYAO(BoardNumber)]);
 		        break;
 		    case 'h':
-		        l = snprintf(d, dlen, "%u", data->hdisp);
+		        l = snprintf(d, dlen, "%lu", data->hdisp);
 			break;
 		    case 'v':
-		        l = snprintf(d, dlen, "%u", data->vdisp);
+		        l = snprintf(d, dlen, "%lu", data->vdisp);
 			break;
 		    default:
 			/* Just copy over two chars */
@@ -488,7 +490,7 @@ static BOOL parse_sync_tags(OOP_Class *cl, OOP_Object *o, struct TagItem *tags, 
 		if (data->mspc->ms_Special) {
 		    if (data->InternalFlags & SYNC_VARIABLE) {
 			data->mspc->ms_Special->do_monitor = do_monitor;
-			data->mspc->ms_Special->reserved1 = data;
+			data->mspc->ms_Special->reserved1 = (LONG (*)(void))data;
 		    }
 		    data->mspc->ms_Flags |= MSF_REQUEST_SPECIAL;
 		    data->InternalFlags |= SYNC_FREE_SPECIALMONITOR;
