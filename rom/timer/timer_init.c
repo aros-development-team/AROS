@@ -82,7 +82,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 	    is->is_Node.ln_Pri = 0;
 	    is->is_Node.ln_Type = NT_INTERRUPT;
 	    is->is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-	    is->is_Code = VBlankInt;
+	    is->is_Code = (void *)VBlankInt;
 	    is->is_Data = LIBBASE;
 
 	    AddIntServer(INTB_VERTB, is);
@@ -120,7 +120,7 @@ static int GM_UNIQUENAME(Open)
 	case UNIT_MICROHZ:
 	case UNIT_WAITUNTIL:
 	    tr->tr_node.io_Error = 0;
-	    tr->tr_node.io_Unit = (struct Unit *)unitNum;
+	    tr->tr_node.io_Unit = (NULL + unitNum);
 	    tr->tr_node.io_Device = (struct Device *)LIBBASE;
 	    break;
 
