@@ -138,7 +138,7 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 			col[i].blue  = q[i + 7].blue >> 16;
 			col[i].alpha = GetPrivIBase(IntuitionBase)->PointerAlpha;
 		    }
-		    HIDD_BM_SetColors(sprite->es_BitMap->Planes[0], col, 0, DEF_POINTER_DEPTH);
+		    HIDD_BM_SetColors((OOP_Object *)sprite->es_BitMap->Planes[0], col, 0, DEF_POINTER_DEPTH);
 		}
 	    
 		shared = CreateSharedPointer(sprite,

@@ -97,7 +97,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     struct OpenWindowActionMsg   msg;
     struct NewWindow        	 nw;
     struct Window   	    	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
-    struct TagItem  	    	*tag, *tagList, *shapeti = NULL, *shapehookti = NULL;
+    struct TagItem  	    	*tag, *shapeti = NULL, *shapehookti = NULL;
+    const struct TagItem	*tagList;
     struct RastPort 	    	*rp;
     struct Hook     	    	*backfillhook = LAYERS_BACKFILL, *shapehook = NULL;
     struct Region   	    	*shape = NULL;
@@ -589,7 +590,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
          *  to open on the default public screen that way 
          */
 
-    if (pubScreenNameSet || nw.Type == PUBLICSCREEN && nw.Screen == NULL)
+    if (pubScreenNameSet || (nw.Type == PUBLICSCREEN && nw.Screen == NULL))
     {
         struct Screen *pubs = 0;
 
@@ -1113,7 +1114,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 	msg.wdp_Gadgets     	= nw.FirstGadget;
 	msg.wdp_Flags   	= WDF_LBG_INITIAL | WDF_LBG_MULTIPLE;
     msg.wdp_ExtraButtons = ((struct IntWindow *)w)->extrabuttons;
-	msg.wdp_Dri             = dri;
+	msg.wdp_Dri             = (struct DrawInfo *)dri;
 
 	DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&msg);	
 
@@ -1146,7 +1147,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
         //jDc: main for () loop destroys original taglist pointer, we need to get
         //it once again here!
         tagList = (struct TagItem *)((struct ExtNewWindow *)newWindow)->Extension;
-        SetWindowPointerA(w, tagList);
+        SetWindowPointerA(w, (struct TagItem *)tagList);
     }
 
 #if 0

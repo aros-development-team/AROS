@@ -181,16 +181,16 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     DEBUG_INIT(dprintf("LIB_Init: create menu handler task\n"));
     /* FIXME: no cleanup routines for MenuHandler task */
-    if (!InitDefaultMenuHandler((struct IntuitionBase *)IntuitionBase))
+    if (!InitDefaultMenuHandler(GetPubIBase(LIBBASE)))
 	return FALSE;
 
     /* FIXME: no cleanup routines for ScreennotifyHandler task */
-    if (!InitDefaultScreennotifyHandler((struct IntuitionBase *)IntuitionBase))
+    if (!InitDefaultScreennotifyHandler(GetPubIBase(LIBBASE)))
 	return FALSE;
 
 
     DEBUG_INIT(dprintf("LIB_Init: load default preferences\n"));
-    LoadDefaultPreferences(LIBBASE);
+    LoadDefaultPreferences(GetPubIBase(LIBBASE));
 #ifdef USEGETIPREFS
     GetPrivIBase(LIBBASE)->IPrefsLoaded = FALSE;
 #endif
@@ -205,7 +205,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     if (!(GetPrivIBase(LIBBASE)->IDCMPPool = CreatePool(MEMF_SEM_PROTECTED,(sizeof (struct IntIntuiMessage)) * 100,sizeof (struct IntIntuiMessage)))) return FALSE;
 
 #ifdef SKINS
-    strcpy(GetPrivIBase(IntuitionBase)->IControlExtensions.ice_ClockFormat,"%X");
+    strcpy(GetPrivIBase(LIBBASE)->IControlExtensions.ice_ClockFormat,"%X");
 #endif
       
     GetPrivIBase(LIBBASE)->FrameSize = FRAMESIZE_THIN;
@@ -230,27 +230,27 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     DEBUG_INIT(dprintf("LIB_Init: Setting up pointers...\n"));
 
-    GetPrivIBase(IntuitionBase)->DefaultPointer = MakePointerFromPrefs
+    GetPrivIBase(LIBBASE)->DefaultPointer = MakePointerFromPrefs
     (
-        IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences
+        GetPubIBase(LIBBASE), GetPrivIBase(LIBBASE)->ActivePreferences
     );
-    GetPrivIBase(IntuitionBase)->BusyPointer = MakePointerFromPrefs
+    GetPrivIBase(LIBBASE)->BusyPointer = MakePointerFromPrefs
     (
-        IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences
+        GetPubIBase(LIBBASE), GetPrivIBase(LIBBASE)->ActivePreferences
     );
 
     if
     (
-           !GetPrivIBase(IntuitionBase)->DefaultPointer 
-        || !GetPrivIBase(IntuitionBase)->BusyPointer
+           !GetPrivIBase(LIBBASE)->DefaultPointer 
+        || !GetPrivIBase(LIBBASE)->BusyPointer
     )
     {
         return FALSE;
     }
 
-    NEWLIST(&GetPrivIBase(IntuitionBase)->MonitorList);
-    InitSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
-    SetDisplayDriverCallback(DisplayDriverNotify, IntuitionBase);
+    NEWLIST(&GetPrivIBase(LIBBASE)->MonitorList);
+    InitSemaphore(&GetPrivIBase(LIBBASE)->MonitorListSem);
+    SetDisplayDriverCallback(DisplayDriverNotify, LIBBASE);
 
     DEBUG_INIT(dprintf("LIB_Init: done\n"));
 
@@ -317,7 +317,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
     if (!GetPrivIBase(LIBBASE)->InputHandler)
     {
 	D(bug("Initializing inputhandler\n"));
-	if ( !(GetPrivIBase(LIBBASE)->InputHandler = InitIIH(LIBBASE)) )
+	if ( !(GetPrivIBase(LIBBASE)->InputHandler = InitIIH(GetPubIBase(LIBBASE))) )
 	{
 	    DEBUG_OPEN(dprintf("LIB_Open: can't init input handler\n"));
 	    return FALSE;
@@ -408,7 +408,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 # ifdef SKINS
     if (((struct Library *)LIBBASE)->lib_OpenCnt == 0)
     {
-	InitSkinManager(IntuitionBase);
+	InitSkinManager(GetPubIBase(LIBBASE));
     }
 # endif
 #endif
@@ -416,14 +416,14 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
     /* FIXME: no cleanup routines for MenuHandler task */
     if (!GetPrivIBase(LIBBASE)->MenuHandlerPort)
     {
-	if (!InitDefaultMenuHandler((struct IntuitionBase *)LIBBASE))
+	if (!InitDefaultMenuHandler(GetPubIBase(LIBBASE)))
 	    return FALSE;
     }
 
     /* FIXME: no cleanup routines for ScreennotifyHandler task */
     if (!GetPrivIBase(LIBBASE)->ScreenNotifyReplyPort)
     {
-	if (!InitDefaultScreennotifyHandler((struct IntuitionBase *)LIBBASE))
+	if (!InitDefaultScreennotifyHandler(GetPubIBase(LIBBASE)))
 	    return FALSE;
     }
 
@@ -432,7 +432,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
      */
     if (!GetPrivIBase(LIBBASE)->ScreenNotifyBase)
     {
-	GetPrivIBase(LIBBASE)->ScreenNotifyBase = sn_Init(IntuitionBase);
+	GetPrivIBase(LIBBASE)->ScreenNotifyBase = sn_Init(GetPubIBase(LIBBASE));
     }
 
 # if 0 /* not finished yet - Piru */
@@ -440,7 +440,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
      */
     if (!GetPrivIBase(LIBBASE)->NotifyIntuitionBase)
     {
-	GetPrivIBase(LIBBASE)->NotifyIntuitionBase = ni_Init(IntuitionBase);
+	GetPrivIBase(LIBBASE)->NotifyIntuitionBase = ni_Init(GetPubIBase(LIBBASE));
     }
 # endif
 #endif

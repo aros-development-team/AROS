@@ -42,8 +42,8 @@ struct reqdims
 
 /**********************************************************************************************/
 
-static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,STRPTR labeltext, APTR args, struct IntuitionBase *IntuitionBase);
-static STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args, APTR *nextargptr, struct IntuitionBase *IntuitionBase);
+static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,CONST_STRPTR labeltext, APTR args, struct IntuitionBase *IntuitionBase);
+static STRPTR buildeasyreq_formattext(CONST_STRPTR textformat, APTR args, APTR *nextargptr, struct IntuitionBase *IntuitionBase);
 static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
                                        struct Screen *scr,
                                        STRPTR formattedtext,
@@ -58,7 +58,7 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
                               struct Gadget *gadgets,
                               struct IntuitionBase *IntuitionBase);
 
-static int charsinstring(STRPTR string, char c);
+static int charsinstring(CONST_STRPTR string, char c);
 
 /*****************************************************************************
  
@@ -119,7 +119,7 @@ static int charsinstring(STRPTR string, char c);
     struct Screen           	*scr = NULL, *lockedscr = NULL;
     struct Window           	*req;
     struct Gadget           	*gadgets;
-    STRPTR                  	 reqtitle;
+    CONST_STRPTR              	 reqtitle;
     STRPTR                  	 formattedtext;
     STRPTR                  	*gadgetlabels;
     struct                  	 reqdims dims;
@@ -371,7 +371,7 @@ AROS_UFH2 (void, EasyReqCountChar,
 
 /* create an array of gadgetlabels */
 static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
-                                       STRPTR labeltext,
+                                       CONST_STRPTR labeltext,
 				       APTR args,
                                        struct IntuitionBase *IntuitionBase)
 {
@@ -426,7 +426,7 @@ static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
 /**********************************************************************************************/
 
 /* format the supplied text string by using the supplied args */
-static STRPTR buildeasyreq_formattext(STRPTR textformat,
+static STRPTR buildeasyreq_formattext(CONST_STRPTR textformat,
                                       APTR args,
 				      APTR *nextargptr,
                                       struct IntuitionBase *IntuitionBase)
@@ -643,7 +643,7 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 
 /**********************************************************************************************/
 
-static int charsinstring(STRPTR string, char c)
+static int charsinstring(CONST_STRPTR string, char c)
 {
     int count = 0;
 

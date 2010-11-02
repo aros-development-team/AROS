@@ -888,7 +888,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
     if (ok)
     {
-        struct ViewPortExtra *vpe = GfxNew(VIEWPORT_EXTRA_TYPE);
+        struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxNew(VIEWPORT_EXTRA_TYPE);
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: ViewPortExtra 0x%lx\n", vpe));
 
