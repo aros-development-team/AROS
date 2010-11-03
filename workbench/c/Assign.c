@@ -860,7 +860,7 @@ void _DeferPutStr(struct localdata *ld, CONST_STRPTR str)
 }
 
 #ifdef __AROS__
-AROS_UFH2(static void, deferputch_gate,
+AROS_UFH2S(void, deferputch_gate,
 	  AROS_UFHA(UBYTE, ch, D0),
 	  AROS_UFHA(struct localdata *, ld, A3))
 {
