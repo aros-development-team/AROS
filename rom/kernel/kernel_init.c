@@ -2,7 +2,6 @@
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
-#include <defines/kernel.h>
 
 #include <inttypes.h>
 #include <stdlib.h>
@@ -15,13 +14,11 @@
 
 #define D(x)
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 /* Some globals we can't live without */
 struct TagItem *BootMsg = NULL;
 struct KernelBase *KernelBase = NULL;
 #if AROS_MODULES_DEBUG
 static struct MinList *Debug_ModList = NULL;
-#endif
 #endif
 
 void __clear_bss(const struct KernelBSS *bss)
@@ -51,7 +48,7 @@ static int Kernel_Init(struct KernelBase *kBase)
 #endif
     InitSemaphore(&KernelBase->kb_ModSem);
 
-    KernelBase->kb_KernelModules = (dbg_seg_t *)krnGetTagData(KRN_DebugInfo, 0, KrnGetBootInfo());
+    KernelBase->kb_KernelModules = (dbg_seg_t *)krnGetTagData(KRN_DebugInfo, 0, BootMsg);
 
     D(bug("[KRN] Kernel_Init() done\n"));
     return 1;
