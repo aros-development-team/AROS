@@ -25,8 +25,15 @@ FILES := funcs
 %build_prog mmake=test-playoss \
     progname=playossunix targetdir=$(AROS_TESTS) uselibs="ossshared"
 
+# Only switch of standard includes for hosted builds.
+ifeq ($(FLAVOUR), emulation)
+NOSTDINC := $(NOSTDINC_CFLAGS)
+else
+NOSTDINC :=
+endif
+
 USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
-	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES) -nostdinc
+	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES) $(NOSTDINC) 
 
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
