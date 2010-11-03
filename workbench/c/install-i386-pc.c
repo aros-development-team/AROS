@@ -603,7 +603,7 @@ D(bug("[install-i386] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
 			}
 			else
 			{
-#warning "FIXME: GetPartitionAttr() should always work for root partition"
+				/* FIXME: GetPartitionAttr() should always work for root partition */
 				CopyMem(&ph->de, de, sizeof(struct DosEnvec));
 				retval = TRUE;
 			}
@@ -653,7 +653,7 @@ UWORD i;
 
 D(bug("[install-i386] collectBlockList(%x, %d, %x)\n", volume, block, blocklist));
 
-#warning "TODO: logical/physical blocks"
+	/* TODO: logical/physical blocks */
 	/*
 		initialze stage2-blocklist
 		(it is NULL-terminated)
@@ -668,7 +668,7 @@ D(bug("[install-i386] collectBlockList: Cleared sector list (20 entries) [start:
 		the first block of stage2 will be stored in stage1
 		so skip the first filekey in the first loop
 	*/
-#warning "Block read twice"
+	/* FIXME: Block read twice */
 	retval=readwriteBlock
 		(
 			volume, block, volume->blockbuffer, volume->SizeBlock<<2,

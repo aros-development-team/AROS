@@ -88,7 +88,7 @@ int compare(struct sorted_data * sd1,
 {
   ULONG len = MIN(sd1->len, sd2->len);
  
-#warning It seems like StrnCmp of locale does not work.
+  /* FIXME:  It seems like StrnCmp of locale does not work. */
 #if 1
   LONG retval = 0;
   

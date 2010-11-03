@@ -662,7 +662,7 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
 	    }
 	    else
 	    {
-#warning "FIXME: GetPartitionAttr() should always work for root partition"
+		/* FIXME: GetPartitionAttr() should always work for root partition */
 		CopyMem(&ph->de, de, sizeof(struct DosEnvec));
 		retval = TRUE;
 	    }
