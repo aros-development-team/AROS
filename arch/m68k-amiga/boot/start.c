@@ -120,17 +120,17 @@ asm (
 /* Detect 68000 vs 68010/68020 */
 ULONG cpu_detect(void)
 {
-	volatile APTR *trap = (NULL + 8);
-	APTR old_trap6;
+	volatile APTR *trap = NULL;
+	APTR old_trap8;
 	UWORD ret;
 
-	old_trap6 = trap[6];
-	trap[6] = cpu_detect_trap;
+	old_trap8 = trap[8];
+	trap[8] = cpu_detect_trap;
 	asm volatile (	
 		"move.w	%%sr,%%d0\n"
 		"move.w	%%d0,%0\n"
 		: "=m" (ret) : : "%d0" );
-	trap[6] = old_trap6;
+	trap[8] = old_trap8;
 
 	if (ret & 0x2000)
 		return AFF_68010;
@@ -168,21 +168,27 @@ ULONG cpu_detect(void)
 		/* Insert into the library's jumptable */ \
 		__AROS_SETVECADDR(lib, funcid, asmcall); \
 	} while (0)
+/* Inject arbitrary code into the jump table
+ * Used for GetCC and nano-stubs
+ */
+#define FAKE_IT(lib, libname, funcname, funcid, ...) \
+	do { \
+		UWORD *asmcall = (UWORD *)__AROS_GETJUMPVEC(lib, funcid); \
+		const UWORD code[] = { __VA_ARGS__ }; \
+		asmcall[0] = code[0]; \
+		asmcall[1] = code[1]; \
+		asmcall[2] = code[2]; \
+	} while (0)
 /* Inject a 'move.w #value,%d0; rts" sequence into the
  * jump table, to fake an private syscall.
  */
-#define FAKE_ID(lib, funcid, value) \
-	do { \
-		UWORD *asmcall = (UWORD *)__AROS_GETJUMPVEC(lib, funcid); \
-		asmcall[0] = 0x4660;	/* move.w #...,%d0 */ \
-		asmcall[1] = ((ULONG)(value) >>  0) & 0xffff; \
-		asmcall[2] = 0x4e75;	/* rts */ \
-	} while (0);
-
+#define FAKE_ID(lib, libname, funcname, funcid, value) \
+	FAKE_IT(lib, libname, funcname, funcid, 0x303c, value, 0x4e75)
 #else
 /* Not needed on EABI */
 #define PRESERVE_ALL(lib, libname, funcname, funcid) do { } while (0)
-#define FAKE_ID(lib, funcid, value) do { } while (0)
+#define FAKE_IT(lib, libname, funcname, funcid, asmcode) do { } while (0)
+#define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
 #endif
 
 void start(void)
@@ -191,7 +197,7 @@ void start(void)
 	extern void *_bss_end;
 	extern void *_ss_stack_upper;
 	extern void *_ss_stack_lower;
-	volatile APTR *tmp;
+	volatile APTR *trap;
 	int i;
 	UWORD *kickrom[] = {
 		(UWORD *)0x00f80000,
@@ -218,7 +224,8 @@ void start(void)
 	struct MemHeader ChipRAM;
 	struct MemHeader *mh = &ChipRAM;
 
-	*((APTR *)(NULL + 0x4)) = NULL;
+	trap = (APTR *)(NULL);
+	trap[1] = NULL;	/* Zap out old SysBase */
 
 	/* Let the world know we exist
 	 */
@@ -228,9 +235,8 @@ void start(void)
 	/* Fill exception table with a stub that will
 	 * reset the ROM
 	 */
-	tmp = (APTR *)(NULL + 0x8);
-	for (i = 0; i < 46; i++)
-		tmp[i] = Exec_FatalException;
+	for (i = 2; i < 64; i++)
+		trap[i] = Exec_FatalException;
 
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
@@ -244,7 +250,7 @@ void start(void)
 	/* Set privilige violation trap - we
 	 * need this to support the Exec/Supervisor call
 	 */
-	tmp[6] = Exec_Supervisor_Trap;
+	trap[8] = Exec_Supervisor_Trap;
 
 	Exec_ScreenCode(CODE_RAM_CHECK);
 
@@ -269,29 +275,38 @@ void start(void)
 	*((APTR *)(NULL + 0x4)) = sysBase;
 	DebugPuts("[init SysBase]\n");
 
+        sysBase->SysStkUpper    = (APTR)(&_ss_stack_upper)-1;
+        sysBase->SysStkLower    = (APTR)&_ss_stack_lower;
+
+	/* Determine CPU model */
+	sysBase->AttnFlags |= cpu_detect();
+
 	/* Fix up functions that need 'preserves all registers'
 	 * semantics. This AllocMem()s a little wrapper routine
 	 * that pushes the %d0-%d1/%a0-%a1 registers before
 	 * calling the routine.
 	 */
 #ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
-	PRESERVE_ALL(SysBase, Exec, Disable, 20);
-	PRESERVE_ALL(SysBase, Exec, Enable, 21);
-	PRESERVE_ALL(SysBase, Exec, Forbid, 22);
+	PRESERVE_ALL(sysBase, Exec, Disable, 20);
+	PRESERVE_ALL(sysBase, Exec, Enable, 21);
+	PRESERVE_ALL(sysBase, Exec, Forbid, 22);
 #endif
-	PRESERVE_ALL(SysBase, Exec, Permit, 23);
-	PRESERVE_ALL(SysBase, Exec, ObtainSemaphore, 94);
-	PRESERVE_ALL(SysBase, Exec, ReleaseSemaphore, 95);
-	PRESERVE_ALL(SysBase, Exec, ObtainSemaphoreShared, 113);
+	PRESERVE_ALL(sysBase, Exec, Permit, 23);
+	PRESERVE_ALL(sysBase, Exec, ObtainSemaphore, 94);
+	PRESERVE_ALL(sysBase, Exec, ReleaseSemaphore, 95);
+	PRESERVE_ALL(sysBase, Exec, ObtainSemaphoreShared, 113);
 
 	/* Needed for card.resource */
-	FAKE_ID(SysBase, 136, 0x0000);
+	FAKE_ID(sysBase, Exec, ReadGayle, 136, 0x00d0);	/* ReadGayle */
 
-        sysBase->SysStkUpper    = (APTR)(&_ss_stack_upper)-1;
-        sysBase->SysStkLower    = (APTR)&_ss_stack_lower;
-
-	/* Determine CPU model */
-	sysBase->AttnFlags |= cpu_detect();
+	/* Inject code for GetCC, depending on CPU model */
+	if (sysBase->AttnFlags & AFF_68010) {
+		/* move.w %ccr,%d0; rts; nop */
+		FAKE_IT(sysBase, Exec, GetCC, 88, 0x42c0, 0x4e75, 0x4e71);
+	} else {
+		/* move.w %sr,%d0; rts; nop */
+		FAKE_IT(sysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
+	}
 
 	/* Initialize IRQ subsystem */
 	AmigaIRQInit(sysBase);
