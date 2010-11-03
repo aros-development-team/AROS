@@ -144,7 +144,7 @@ static void writedecl(FILE *out, struct config *cfg)
     {
 	fprintf(out,
 		"#ifndef GM_SEGLIST_FIELD\n"
-		"static BPTR GM_UNIQUENAME(seglist);\n"
+		"static BPTR __attribute__((unused)) GM_UNIQUENAME(seglist);\n"
 		"#define GM_SEGLIST_FIELD(lh) (GM_UNIQUENAME(seglist))\n"
 		"#endif\n"
 	);
