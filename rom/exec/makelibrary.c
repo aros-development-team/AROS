@@ -114,7 +114,7 @@
 
 	/* Create structure */
 	if(structInit!=NULL)
-	    InitStruct(structInit,library,0);
+	    InitStruct(structInit,library,dataSize);
 
 	/* Call init vector */
 	if(libInit!=NULL)
