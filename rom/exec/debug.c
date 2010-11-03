@@ -141,7 +141,7 @@ static char *NextWord(char *s)
 	    RawPutChar(key);
 	    comm[i++] = key;
 	}
-	while (i < sizeof(comm)-1);
+	while (i < (int)sizeof(comm)-1);
 	comm[i] = 0;
 	RawPutChar('\n');
 
