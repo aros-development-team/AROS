@@ -6,11 +6,8 @@ MEMORY
 
 SECTIONS 
 {
-  .sysbase                    : { KernelBase = .;
-  	                          . += 4;
-  	                          SysBase = .;
-  	                          . += 4; } >ram
-  .stack                0x1000 : { 
+  .sysbase                    : { . = 4; SysBase = .; . += 4; } >ram
+  .stack               0x1000 : { 
   	  		          _stack = .;
                                   _us_stack_lower = .;
                                   . = . + 0xe000;
