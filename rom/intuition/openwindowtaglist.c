@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -111,7 +111,7 @@
 	    TRUE means that Intuition can move or shrink the window
 	    to fit on the screen, within the limits given with
 	    WA_MinWidth and WA_MinHeight. This attribute defaults
-	    to TRUE when you call OpenWindowTags with a NULL pointer
+	    to TRUE when you call OpenWindowTags() with a NULL pointer
 	    for NewWindow.
 
 	WA_InnerWidth
@@ -131,7 +131,7 @@
 	WA_PubScreen (struct Screen *)
 	    Open the window on the public screen with the given address.
 	    An address of NULL means default public screen. You're
-	    responsible that the screen stays open until OpenScreenTags()
+	    responsible that the screen stays open until OpenWindowTags()
 	    has finished, i.e. 
 	    you're the owner of the screen,
 	    you have already a window open on the screen
