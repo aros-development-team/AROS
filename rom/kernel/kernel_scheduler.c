@@ -101,7 +101,7 @@ struct Task *core_Dispatch(void)
     D(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
     /* Check the stack of the task we are about to launch */
-    if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg >= task->tc_SPUpper)
+    if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
 	Alert(AT_DeadEnd|AN_StackProbe);
 
     if (task->tc_Flags & TF_LAUNCH)
