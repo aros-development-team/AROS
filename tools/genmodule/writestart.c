@@ -1176,7 +1176,7 @@ writefunctable(FILE *out,
 	    if (neednull)
 		fprintf(out,
 			"\n"
-			"AROS_UFH1(static int, %s_null,\n"
+			"AROS_UFH1S(int, %s_null,\n"
 			"          AROS_UFHA(struct Library *, libbase, A6)\n"
 			")\n"
 			"{\n"
