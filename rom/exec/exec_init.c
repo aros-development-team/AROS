@@ -38,7 +38,7 @@
 static const UBYTE name[];
 static const UBYTE version[];
 extern const char LIBEND;
-AROS_UFP3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
+AROS_UFP3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFPA(ULONG, dummy, D0),
     AROS_UFPA(BPTR, segList, A0),
     AROS_UFPA(struct ExecBase *, sysBase, A6));
@@ -164,7 +164,7 @@ AROS_UFH5S(void, VBlankServer,
 
 extern ULONG SoftIntDispatch();
 
-AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
+AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(BPTR, segList, A0),
     AROS_UFHA(struct ExecBase *, sysBase, A6)

@@ -45,10 +45,10 @@ STRPTR          __detached_name;
 LONG            __detached_return_value;
 struct Process *__detacher_process;
 
-AROS_UFP3(static LONG, __detach_trampoline,
-AROS_UFHA(char *,argstr,A0),
-AROS_UFHA(ULONG,argsize,D0),
-AROS_UFHA(struct ExecBase *,SysBase,A6));
+AROS_UFP3S(LONG, __detach_trampoline,
+AROS_UFPA(char *,argstr,A0),
+AROS_UFPA(ULONG,argsize,D0),
+AROS_UFPA(struct ExecBase *,SysBase,A6));
 
 static void __startup_detach(void)
 {
@@ -123,7 +123,7 @@ ADD2SET(__startup_detach, program_entries, -100);
 
 void __Detach(LONG retval);
 
-AROS_UFH3(static LONG, __detach_trampoline,
+AROS_UFH3S(LONG, __detach_trampoline,
 AROS_UFHA(char *,argstr,A0),
 AROS_UFHA(ULONG,argsize,D0),
 AROS_UFHA(struct ExecBase *,SysBase,A6))
