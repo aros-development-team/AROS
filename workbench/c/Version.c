@@ -1401,7 +1401,7 @@ int makedevicever(CONST_STRPTR name)
 		if (MyDevProc->dvp_DevNode->dol_Type == DLT_DEVICE)
 		{
 		#ifdef __AROS__
-		#warning "FIXME: AROS specific version info for devices"		
+			/* FIXME: AROS specific version info for devices */
 		    	error = RETURN_FAIL;
     	    	#else			
 			BPTR SegList;

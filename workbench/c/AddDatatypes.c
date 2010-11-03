@@ -681,7 +681,7 @@ void LoadDatatype(struct StackVars *sv, STRPTR name)
 			    while((error = ParseIFF(iff, IFFPARSE_SCAN)) == IFFERR_EOC) 
 			    {
 				CreateDatatype(sv, iff);
-#warning The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix
+				/* FIXME: The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix */
 				break;
 			    }
 			}

@@ -129,7 +129,7 @@ ULONG retval, first_block;
 WORD blk_count,count;
 UWORD i;
 
-#warning "TODO: logical/physical blocks"
+	/* TODO: logical/physical blocks */
 	/*
 		initialze stage2-blocklist
 		(it is NULL-terminated)
@@ -140,7 +140,7 @@ UWORD i;
 		the first block of stage2 will be stored in stage1
 		so skip the first filekey in the first loop
 	*/
-#warning "Block read twice"
+	/* FIXME: Block read twice */
 	retval=readwriteBlock
 		(
 			volume, block, volume->blockbuffer, volume->SizeBlock*4,

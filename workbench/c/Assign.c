@@ -328,8 +328,9 @@ void showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices)
 
 	dl = LockDosList(lockBits);
 
-#warning "FIXME: GetFullPath() breaks LockDosList()'s Forbid()!"
-#warning "Note: This should be ok as long as we don't have ks 1.x compatibility."
+	/* FIXME: GetFullPath() breaks LockDosList()'s Forbid()! */
+	/* Note: This should be ok as long as we don't have ks 1.x compatibility.
+	 */
 
 	if (vols)
 	{
@@ -717,8 +718,9 @@ int checkAssign(struct localdata *ld, STRPTR name)
 
 	dl = LockDosList(LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
 
-#warning "Note: GetFullPath() breaks LockDosList()'s Forbid()!"
-#warning "Note: This should be ok as long as we don't have ks 1.x compatibility."
+	/* FIXME: GetFullPath() breaks LockDosList()'s Forbid()! */
+	/* Note: This should be ok as long as we don't have ks 1.x compatibility.
+	 */
 
 	dl = FindDosEntry(dl, name, LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES);
 	if (dl)
