@@ -154,7 +154,7 @@ ULONG cpu_detect(void)
 #define PRESERVE_ALL(lib, libname, funcname, funcid) \
 	do { \
 		UWORD *asmcall; \
-		IPTR func = (IPTR)__AROS_GETVECADDR(lib, funcid); \
+		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
 		asmcall = AllocMem(8 * sizeof(UWORD), MEMF_PUBLIC); \
 		/* NOTE: 'asmcall' will intentionally never be freed */ \
 		asmcall[0] = 0x48e7; \
