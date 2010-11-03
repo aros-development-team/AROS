@@ -223,6 +223,7 @@ void start(void)
 	struct MemChunk *mc;
 	struct MemHeader ChipRAM;
 	struct MemHeader *mh = &ChipRAM;
+	ULONG LastAlert[4] = { 0, 0, 0, 0};
 
 	trap = (APTR *)(NULL);
 	trap[1] = NULL;	/* Zap out old SysBase */
@@ -231,6 +232,19 @@ void start(void)
 	 */
 	DebugInit();
 	DebugPuts("[reset]\n");
+
+	/* Look for 'HELP' at address 0 - we're recovering
+	 * from a fatal alert
+	 */
+	if (trap[0] == (APTR)0x48454c50) {
+		for (i = 0; i < 4; i++)
+			LastAlert[i] = trap[64 + i];
+	}
+
+	/* Clear last alert area */
+	trap[0] = 0;
+	for (i = 0; i < 4; i++)
+		trap[64 + i] = 0;
 
 	/* Fill exception table with a stub that will
 	 * reset the ROM
@@ -277,6 +291,10 @@ void start(void)
 
         sysBase->SysStkUpper    = (APTR)(&_ss_stack_upper)-1;
         sysBase->SysStkLower    = (APTR)&_ss_stack_lower;
+
+        /* Mark what the last alert was */
+        for (i = 0; i < 4; i++)
+        	sysBase->LastAlert[i] = LastAlert[i];
 
 	/* Determine CPU model */
 	sysBase->AttnFlags |= cpu_detect();
