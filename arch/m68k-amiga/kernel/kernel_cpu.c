@@ -7,11 +7,11 @@
 #include <proto/exec.h>
 #include <defines/kernel.h>
 
-#include "etask.h"
+#include <etask.h>
 
-#include "kernel_base.h"
-#include "kernel_debug.h"
-#include "kernel_scheduler.h"
+#include <kernel_base.h>
+#include <kernel_debug.h>
+#include <kernel_scheduler.h>
 
 #ifndef D
 # ifdef DEBUG
@@ -60,7 +60,12 @@ void cpu_Dispatch(regs_t *regs)
         if (task != NULL)
             break;
         D(bug("-- IDLE HALT --\n"));
-        KrnSti();	// Enable hardware IRQs
+
+	/* Break IDNestCnt */
+	if (SysBase->IDNestCnt >= 0) {
+	    SysBase->IDNestCnt=-1;
+	    KrnSti();
+	}
         asm volatile ("stop #0x2000\n"); // Wait for an interrupt
     }
 
@@ -86,7 +91,7 @@ void cpu_Dispatch(regs_t *regs)
     		Alert(AT_DeadEnd|AN_StackProbe);
     	*(ULONG *)(task->tc_SPReg) = regs->pc;
 
-	regs->a[7] = task->tc_SPReg;
+	regs->a[7] = (IPTR)task->tc_SPReg;
 	regs->pc   = (IPTR)cpu_Exception;
     }
 }

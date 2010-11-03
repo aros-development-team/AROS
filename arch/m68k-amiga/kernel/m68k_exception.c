@@ -15,6 +15,10 @@
 
 #include "m68k_exception.h"
 
+#ifndef D
+#define D(x)	do { } while (0)
+#endif
+
 /* Here's how it's all laid out on the Amiga
  *    M68K Exception
  *      0	Reset: Initial SP
