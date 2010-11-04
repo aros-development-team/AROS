@@ -201,7 +201,7 @@ IPTR AROSList__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 VOID AROSList__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
-#warning TODO: Call destructhook too
+    /* TODO: Call destructhook too */
 
     struct ListData *data;
     struct ListEntry *entry, *next;
