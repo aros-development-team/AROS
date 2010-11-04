@@ -848,7 +848,7 @@ struct PartitionAttribute *PartitionRDBQueryPartitionTableAttrs(struct Library *
 
 struct PartitionAttribute PartitionRDBPartitionAttrs[]=
 {
-#warning "TODO: implement write"
+    /* TODO: implement write */
     {PTA_GEOMETRY,  PLAM_READ},
     {PTA_DOSENVEC,  PLAM_READ | PLAM_WRITE},
     {PTA_TYPE,      PLAM_READ | PLAM_WRITE},
