@@ -28,7 +28,7 @@ void drawdisabledpattern(struct RastPort *rport, UWORD pen,
     rport->AreaPtSz = 1;
     RectFill(rport, left, top, left+width-1, top+height-1);
 
-#warning FIXME: drawdisabledpattern ??? Fix what?
+    /*  FIXME: drawdisabledpattern ??? Fix what? */
     /*FIXME    for (y=0; y<(height-1); y++)
     {
         for (x=0; x<(width-1); x++)
