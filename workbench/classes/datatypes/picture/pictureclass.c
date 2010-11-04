@@ -1336,7 +1336,7 @@ STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
     pd->DestWidth = msg->ps_NewWidth;
     pd->DestHeight = msg->ps_NewHeight;
     
-#warning "CHECKME: PDT_Scale() set bmh_Width/bmh_Height to new size yes or no?"    
+    /* FIXME: PDT_Scale() set bmh_Width/bmh_Height to new size yes or no? */
     pd->bmhd.bmh_Width = msg->ps_NewWidth;   
     pd->bmhd.bmh_Height = msg->ps_NewHeight;   
 
@@ -1389,7 +1389,7 @@ STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
     D(bug("picture.datatype/DTM_FRAMEBOX: Height %ld\n", (long) Height));
     D(bug("picture.datatype/DTM_FRAMEBOX: Depth %ld\n", (long) Depth));
 
-#warning "CHECKME: DT_FrameBox implementation"
+    /* FIXME: DT_FrameBox implementation may need to be checked */
 
     /* It is not really clear/documented what's the correct thing to do
        here. And what effect FRAMEF_SPECIFY has *here*. The demo sources on 
