@@ -109,13 +109,13 @@ struct PTableData {
     BOOL pensallocated;
 };
 
-STATIC UWORD pattern[] =
+STATIC CONST UWORD pattern[] =
 {
     0xAAAA, 0xAAAA,
     0x5555, 0x5555
 };
 
-STATIC UWORD pattern2[] =
+STATIC CONST UWORD pattern2[] =
 {
         0xFF00,
         0xFF00,
