@@ -315,7 +315,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	#if 0
 	    png.png_format = PBPAFMT_RGBA;
 	#else
-	#warning "PBPAFMT_RGBA not supported by picture.datatype, therefore using PBPAFMT_ARGB"
+	    /* FIXME: PBPAFMT_RGBA not supported by picture.datatype, therefore using PBPAFMT_ARGB */
 	    png.png_format = PBPAFMT_ARGB;
 	    png_set_swap_alpha(png.png_ptr);
 	#endif
