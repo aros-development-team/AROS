@@ -38,7 +38,7 @@
 #define ALIGNED
 #define ASM
 #ifndef REG
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
 #define REG(A, B) B __asm(#A)
 #else
 #define REG(A, B) B
