@@ -131,7 +131,7 @@ static int GM_UNIQUENAME(Open)
     }
 
 #ifndef __MORPHOS__
-#warning "You shouldn't check this..only leads to trouble"
+    /* FIXME: You shouldn't check this..only leads to trouble */
     if (ioreq->io_Message.mn_Length < sizeof(struct IOClipReq))
     {
         D(bug("clipboard.device/open: IORequest structure passed to OpenDevice is too small!\n"));

@@ -393,7 +393,7 @@ AROS_LH0(STRPTR, killrad0,
 {
     AROS_LIBFUNC_INIT
 
-#warning KillRAD0 not implemented yet
+    /* FIXME: KillRAD0 not implemented yet */
 
     return 0;
     
@@ -408,7 +408,7 @@ AROS_LH1(STRPTR, killrad,
 {
     AROS_LIBFUNC_INIT
 
-#warning KillRAD not implemented yet
+    /* FIXME: KillRAD not implemented yet */
  
     return 0;
     
