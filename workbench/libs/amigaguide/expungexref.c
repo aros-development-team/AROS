@@ -42,7 +42,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/ExpungeXRef()
+    /* FIXME: amigaguide/ExpungeXRef() */
     aros_print_not_implemented ("amigaguide/ExpungeXRef");
 
     AROS_LIBFUNC_EXIT

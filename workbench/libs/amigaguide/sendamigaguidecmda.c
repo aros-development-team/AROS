@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/SendAmigaGuideCmdA()
+    /* FIXME: amigaguide/SendAmigaGuideCmdA() */
     aros_print_not_implemented ("amigaguide/SendAmigaGuideCmdA");
 
     return FALSE;

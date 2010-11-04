@@ -43,7 +43,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/AmigaGuideSignal()
+    /* FIXME: Write amigaguide/AmigaGuideSignal() */
     aros_print_not_implemented ("amigaguide/AmigaGuideSignal");
 
     return 0;
