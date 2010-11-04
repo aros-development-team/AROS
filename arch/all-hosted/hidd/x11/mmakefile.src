@@ -10,7 +10,7 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
     progname=X11 targetdir=$(DISK_EXEDIR) \
     files=$(DISK_FILES) uselibs="oop"
 
-USER_CFLAGS := -isystem $(GENINCDIR) $(HOST_X11_CFLAGS) $(KERNEL_INCLUDES) -nostdinc
+USER_CFLAGS := -isystem $(GENINCDIR) $(HOST_X11_CFLAGS) $(KERNEL_INCLUDES)
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 X11KEYMAPTABLE_ALT_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey-alt.table
