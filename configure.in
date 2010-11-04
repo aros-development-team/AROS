@@ -1553,25 +1553,25 @@ if test "$aros_kernel_includes" != "" ; then
     dnl find out about the kernel cc's include path
     AC_MSG_CHECKING([for the kernel compiler's include path])
     if test "$aros_kernel_cc_includes" = "" ; then
-    	#try to guess where the directory is
+    	# Try to guess where the directory is.
     	aros_kernel_cc_includes=`dirname \`${aros_kernel_cc} ${aros_kernel_cflags} -print-libgcc-file-name\``/include
     	if ! test -d $aros_kernel_cc_includes; then
-            #the directory doesn't exist, we need to do some more work
+            # The directory doesn't exist, we need to do some more work.
             aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
 
-	    #these are the headers we're looling for
+	    # These are the headers we're looking for.
 	    headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
 	             stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
 		     zutil.h"
 
             dirs=
 	    for h in $headers; do
-	        #which other headers each of the above headers needs?
+	        # Which other headers are needed by each of the above?
 	        deps=$(echo "#include <$h>" | \
 	               $aros_kernel_cc -E -M - 2>/dev/null | \
 		       sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
 
-	        #copy all the needed headers to a directory beneath gendir
+	        # Copy all the needed headers to a directory beneath gendir.
 		for d in $deps; do
 	            h=$(basename $d)
 	            dir=${aros_kernel_cc_includes}$(echo $(dirname $d) | \
@@ -1583,7 +1583,8 @@ if test "$aros_kernel_includes" != "" ; then
 	fi
     fi
     AC_MSG_RESULT($aros_kernel_cc_includes)
-    aros_kernel_includes="$aros_kernel_includes -isystem $aros_kernel_cc_includes"
+    # Adding -nostdinc to kernel includes as they are always used together.
+    aros_kernel_includes="$aros_kernel_includes $aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes"
 fi
 
 dnl find out about the target cc's include path
