@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-objs : \
 #MM     kernel-exec-kobj \
 #MM     kernel-aros-kobj \
+#MM     kernel-disk-kobj \
 #MM     kernel-dos-kobj \
 #MM     kernel-boot-kobj \
 #MM     kernel-dosboot-kobj \
@@ -27,6 +28,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-modules : \
 #MM     kernel-aros \
+#MM	kernel-disk \
 #MM     kernel-dos \
 #MM     kernel-boot \
 #MM	kernel-fs-con \
