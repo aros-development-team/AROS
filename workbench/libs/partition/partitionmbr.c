@@ -273,7 +273,7 @@ static LONG PartitionMBRWritePartitionTable
         struct PartitionHandle *root
     )
 {
-#warning "FIXME: readBlock(0) and synchronize data"
+    /* FIXME: readBlock(0) and synchronize data */
 
     /* root->data = mbr is up to date */
     if (writeBlock(PartitionBase, root, 0, root->table->data))
