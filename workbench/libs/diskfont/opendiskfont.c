@@ -162,7 +162,7 @@
 	D(bug("extend font\n"));
 	if (ExtendFont(tf, NULL))
 	{
-#warning CHECKME
+	    /* FIXME: Check if this is correct for this case */
 	    TFE(tf->tf_Extension)->tfe_Flags0 |= TE0F_NOREMFONT;
 	}
     }
