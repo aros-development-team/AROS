@@ -18,7 +18,7 @@ extern ULONG AROS_SLIB_ENTRY(UMult64_020,Utility)();
 extern ULONG AROS_SLIB_ENTRY(SDivMod32_020,Utility)();
 extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility)();
 
-#define SetFunc(a,b) SetFunction((struct Library *)LIBBASETYPE, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
+#define SetFunc(a,b) SetFunction((struct Library *)LIBBASE, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
 
 static int UtilityInit(LIBBASETYPEPTR LIBBASE)
 {
@@ -41,21 +41,17 @@ static int UtilityInit(LIBBASETYPEPTR LIBBASE)
     */
     if(SysBase->AttnFlags & AFF_68020)
     {
-/*
 	SetFunc(23, SMult32_020);
 	SetFunc(24, UMult32_020);
 	SetFunc(25, SDivMod32_020);
 	SetFunc(26, UDivMod32_020);
-*/
 
-#if 0
 	/* The 060 doesn't have some of the instructions I use... */
 	if((SysBase->AttnFlags & AFF_68060) == 0)
 	{
 	    SetFunc(33, SMult64_020);
 	    SetFunc(34, UMult64_020);
 	}
-#endif
     }
 #endif
 
