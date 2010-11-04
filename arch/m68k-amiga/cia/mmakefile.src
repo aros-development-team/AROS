@@ -1,0 +1,14 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+CFILES          := addicrvector ableicr seticr \
+		   cia_init cia_interrupt
+
+USER_CFLAGS     := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/cia \
+		   -I$(SRCDIR)/rom/cia
+
+%build_archspecific_simple \
+  mainmmake=kernel-cia maindir=rom/cia arch=amiga-m68k \
+  files=$(CFILES) modulename=cia
+
+%common
