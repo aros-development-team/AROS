@@ -44,7 +44,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/SetAmigaGuideAttrsA()
+    /* FIXME: amigaguide/SetAmigaGuideAttrsA() */
     aros_print_not_implemented ("amigaguide/SetAmigaGuideAttrsA");
 
     return 0;

@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/SetAmigaGuideContextA()
+    /* FIXME: amigaguide/SetAmigaGuideContextA() */
     aros_print_not_implemented ("amigaguide/SetAmigaGuideContextA");
 
     return FALSE;

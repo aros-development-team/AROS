@@ -43,7 +43,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/UnlockAmigaGuideBase()
+    /* FIXME: amigaguide/UnlockAmigaGuideBase() */
     aros_print_not_implemented ("amigaguide/UnlockAmigaGuideBase");
 
     AROS_LIBFUNC_EXIT

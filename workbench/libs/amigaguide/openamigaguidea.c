@@ -44,7 +44,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/OpenAmigaGuideA()
+    /* FIXME: amigaguide/OpenAmigaGuideA() */
     aros_print_not_implemented ("amigaguide/OpenAmigaGuideA");
 
     return NULL;

@@ -44,7 +44,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/RemoveAmigaGuideHostA()
+    /* FIXME: amigaguide/RemoveAmigaGuideHostA() */
     aros_print_not_implemented ("amigaguide/RemoveAmigaGuideHostA");
 
     return 0;

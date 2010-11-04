@@ -43,7 +43,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/ReplyAmigaGuideMsg()
+    /* FIXME: amigaguide/ReplyAmigaGuideMsg() */
     aros_print_not_implemented ("amigaguide/ReplyAmigaGuideMsg");
 
     AROS_LIBFUNC_EXIT

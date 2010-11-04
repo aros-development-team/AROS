@@ -44,7 +44,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write amigaguide/LoadXRef()
+    /* FIXME: amigaguide/LoadXRef() */
     aros_print_not_implemented ("amigaguide/LoadXRef");
 
     return 0;
