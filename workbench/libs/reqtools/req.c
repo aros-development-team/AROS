@@ -128,7 +128,7 @@ struct Req_RealHandlerInfo
 
 /****************************************************************************************/
 
-static UWORD pattern[] = { 0xAAAA,0x5555 };
+static CONST UWORD pattern[] = { 0xAAAA,0x5555 };
 
 static ULONG REGARGS ReqExit (Req_GlobData *, int);
 static struct Image * REGARGS CreateRectImage
