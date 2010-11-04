@@ -1,11 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel-potgo : includes kernel-potgo-$(ARCH)-$(CPU)
+#MM kernel-potgo : includes kernel-potgo-$(ARCH)-$(CPU)
 
 FUNCTIONS := allocpotbits freepotbits writepotgo
 
-%build_module_simple mmake=kernel-potgo \
+%build_module mmake=kernel-potgo \
     modname=potgo modtype=resource \
     files="$(FUNCTIONS)"
 
