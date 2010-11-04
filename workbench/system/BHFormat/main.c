@@ -341,7 +341,7 @@ BOOL bGetDosDevice(struct DosList *pdlDevice, ULONG flags)
     ibyStart = pdenDevice->de_LowCyl * cbyCylinder;
     ibyEnd = (pdenDevice->de_HighCyl + 1) * cbyCylinder;
 
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
     /* If the device has a native Amiga file-system, we can check for
        various limitations and also apply the various command-line
        flags that specify which variant to use for the new volume. */
