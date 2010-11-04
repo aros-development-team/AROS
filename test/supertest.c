@@ -12,16 +12,16 @@ extern UWORD b(void);
 
 #ifdef __GNUC__
 #ifdef __mc68000
-asm("
-	.globl	_a
-_a:
-	movew	sr,d0
-	rts
-	.globl	_b
-_b:
-	movew	sp@,d0
-	rte
-");
+asm(
+"	.globl	a\n"
+"a:\n"
+"	movew	%sr,%d0\n"
+"	rts\n"
+"	.globl	b\n"
+"b:\n"
+"	movew	%sp@,%d0\n"
+"	rte\n"
+);
 #else
 #ifdef __i386__
 __asm__(
