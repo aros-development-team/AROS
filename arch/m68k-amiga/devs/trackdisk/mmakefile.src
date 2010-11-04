@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel-amiga-m68k-trackdisk : includes
-#MM- kernel-amiga-m68k-trackdisk-kobj : includes
+#MM- kernel-amiga-m68k-trackdisk : includes kernel-disk-includes
+#MM- kernel-amiga-m68k-trackdisk-kobj : includes kernel-disk-includes
 
 USER_CFLAGS := $(PARANOIA_CFLAGS)
 
