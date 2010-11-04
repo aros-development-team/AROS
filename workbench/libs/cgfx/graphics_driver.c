@@ -362,7 +362,7 @@ static ULONG dm_render(APTR dmr_data
 	/* Colormodel allready set */
     
 	/* Compute the adress for the start pixel */
-	#warning "We should maybe use something else than the BytesPerLine method since we may have alignment"
+	/* FIXME: We should maybe use something else than the BytesPerLine method since we may have alignment */
 	msg->bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
 #if 1
 	msg->memptr = addr;
@@ -627,7 +627,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 
     /* Compute the start of the array */
 
-#warning Get rid of the below code ?
+/* FIXME: Get rid of the below code ? */
 /* This can be done by passing the srcx and srcy parameters on to
    the HIDD bitmap and let it take care of it itself.
    This means that HIDD_BM_PutImage() gets a lot of parameters,
@@ -771,7 +771,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     	case RECTFMT_RAW  : dstfmt_hidd = vHidd_StdPixFmt_Native; break;
     }
 
-#warning Get rid of the below code ?
+/* FIXME: Get rid of the below code ? */
 /* This can be done by passing the srcx and srcy parameters on to
    the HIDD bitmap and let it take care of it itself.
    This means that HIDD_BM_PutImage() gets a lot of parameters,
