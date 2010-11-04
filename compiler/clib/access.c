@@ -160,7 +160,7 @@
 	    ischar = IsInteractive(fh);
 
 	    Close(fh);
-	    lock = NULL;
+	    lock = BNULL;
 	}
 
 	if (ischar)
