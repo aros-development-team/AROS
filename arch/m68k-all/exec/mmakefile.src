@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=newstackswap offsets \
+FILES=newstackswap offsets getcc \
       cachecleare cacheclearu cachecontrol cachepostdma cachepredma
 
 AFILES=stackswap supervisor forbid
