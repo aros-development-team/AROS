@@ -1,0 +1,6 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-amiga-m68k-mouse \
+    modname=amigamouse modtype=hidd \
+    files="startup mouse_init mouseclass" uselibs="rom oop hiddstubs"
