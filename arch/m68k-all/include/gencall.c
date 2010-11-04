@@ -67,14 +67,14 @@ static void aros_ufc(int id)
 				i + 1, i + 1, i + 1);
 	}
 	printf("\t   asm volatile ( \\\n");
-	printf("\t\t\"pea.l ufc%d_%%c1\\n\" \\\n", id);
+	printf("\t\t\"pea.l .Lufc%d_%%c1\\n\" \\\n", id);
 	printf("\t\t\"move.l %%0, %%%%sp@-\\n\" \\\n");
 	printf("\t\t: : \\\n");
 	printf("\t\t  \"g\" (n), \"i\" (__LINE__) \\\n");
 	for (i = 0; i < id; i++)
 		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", i + 1);
 	printf("\t\t); \\\n");
-	printf("\t   asm volatile (\"rts\\nufc%d_%%c0:\\n\" : : \"i\" (__LINE__) : ); \\\n", id);
+	printf("\t   asm volatile (\"rts\\n.Lufc%d_%%c0:\\n\" : : \"i\" (__LINE__) : ); \\\n", id);
 	printf("\t   asm volatile (\"\" : \"=r\" (_ret) : : \"%%a0\", \"%%a1\", \"%%d1\", \"cc\", \"memory\"); \\\n");
 	printf("\t   (t)_ret;})\n\n");
 }
