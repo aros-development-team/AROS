@@ -187,7 +187,7 @@ ULONG cpu_detect(void)
 #else
 /* Not needed on EABI */
 #define PRESERVE_ALL(lib, libname, funcname, funcid) do { } while (0)
-#define FAKE_IT(lib, libname, funcname, funcid, asmcode) do { } while (0)
+#define FAKE_IT(lib, libname, funcname, funcid, ...) do { } while (0)
 #define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
 #endif
 
