@@ -1,6 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- kernel-amiga-m68k-mouse : includes kernel-potgo-includes
+#MM- kernel-amiga-m68k-mouse-kobj : includes kernel-potgo-includes
+
 %build_module mmake=kernel-amiga-m68k-mouse \
     modname=amigamouse modtype=hidd \
     files="startup mouse_init mouseclass" uselibs="rom oop hiddstubs"
