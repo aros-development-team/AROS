@@ -105,6 +105,71 @@ static const struct _pt {
     { 0, 0 }
 };
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+static BOOL BootBlockChecksum(UBYTE *bootblock)
+{
+       ULONG crc = 0, crc2 = 0;
+       UWORD i;
+       for (i = 0; i < 1024; i += 4) {
+           ULONG v = (bootblock[i] << 24) | (bootblock[i + 1] << 16) |
+(bootblock[i + 2] << 8) | bootblock[i + 3];
+           if (i == 4) {
+               crc2 = v;
+               v = 0;
+           }
+           if (crc + v < crc)
+               crc++;
+           crc += v;
+       }
+       crc ^= 0xffffffff;
+       D(bug("bootblock checksum %s\n", crc == crc2 ? "ok" : "error"));
+       return crc == crc2;
+}
+#define BOOTBLOCK_SIZE 1024
+static void BootBlock(void)
+{
+       struct MsgPort *msgport;
+       struct IOExtTD *io;
+       UWORD i;
+
+       UBYTE *buffer = AllocMem(BOOTBLOCK_SIZE, MEMF_CHIP);
+       D(bug("bootblock address %8x\n", buffer));
+       if (buffer) {
+           if ((msgport = CreateMsgPort())) {
+               if ((io = (struct IOExtTD*)CreateIORequest(msgport, sizeof(struct IOExtTD)))) {
+                   for (i = 0; i < 4; i++) {
+                       if (!OpenDevice("trackdisk.device", i, (struct IORequest*)io, 0)) {
+                           D(bug("track.device:%d open\n", i));
+                           io->iotd_Req.io_Length = BOOTBLOCK_SIZE;
+                           io->iotd_Req.io_Data = buffer;
+                           io->iotd_Req.io_Offset = 0;
+                           io->iotd_Req.io_Command = CMD_READ;
+                           DoIO((struct IORequest*)io);
+                           if (io->iotd_Req.io_Error == 0) {
+                               D(bug("bootblock read ok\n"));
+                               if (!memcmp (buffer, "DOS", 3) && BootBlockChecksum(buffer)) {
+                               	       ULONG retval;
+                               	       D(bug("calling bootblock!\n", buffer));
+                               	       retval = AROS_UFC2(ULONG, buffer + 12, 
+                               	       		 AROS_UFCA(APTR, io, A1),
+                               	       		 AROS_UFCA(APTR, SysBase, A6));
+                               	       D(bug("returned 0x%08x\n", retval));
+                               }
+                           } else {
+                               D(bug("ioerror %d\n", io->iotd_Req.io_Error));
+                           }
+                           CloseDevice((struct IORequest*)io);
+                       }
+                   }
+                   DeleteIORequest((struct IORequest*)io);
+               }
+               DeleteMsgPort(msgport);
+           }
+           FreeMem(buffer, BOOTBLOCK_SIZE);
+       }
+}
+#endif
+
 static STRPTR MatchHandler(IPTR DosType)
 {
     int i;
@@ -466,6 +531,11 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     while ((bootNode = (struct BootNode *)RemHead(&list)))
         CheckPartitions(ExpansionBase, SysBase, bootNode);
     CloseLibrary((struct Library *)ExpansionBase);
+#endif
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    /* Try to get a boot-block from the trackdisk.device */
+    BootBlock();
 #endif
 
     DOSResident = FindResident( "dos.library" );
