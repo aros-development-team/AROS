@@ -12,14 +12,15 @@
     NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH2(void, FreeExpansionMem,
+	AROS_LH3(void, WriteExpansionWord,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, startSlot, D0),
-	AROS_LHA(ULONG, numSlots, D1),
+	AROS_LHA(APTR , board, A0),
+	AROS_LHA(ULONG, offset, D0),
+	AROS_LHA(ULONG, word, D1),
 
 /*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 15, Expansion)
+	struct ExpansionBase *, ExpansionBase, 27, Expansion)
 
 /*  FUNCTION
 
@@ -37,16 +38,12 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    /* TODO: Write expansion/FreeExpansionMem() */
-    aros_print_not_implemented ("FreeExpansionMem");
+#warning TODO: Write expansion/WriteExpansionWord()
+    aros_print_not_implemented ("WriteExpansionWord");
 
     AROS_LIBFUNC_EXIT
-} /* FreeExpansionMem */
+} /* WriteExpansionWord */

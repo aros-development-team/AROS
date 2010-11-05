@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/AllocExpansionMem()
+    /* TODO: Write expansion/AllocExpansionMem() */
     aros_print_not_implemented ("AllocExpansionMem");
     return 0;
 

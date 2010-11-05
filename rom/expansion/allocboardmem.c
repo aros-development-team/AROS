@@ -44,7 +44,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/AllocBoardMem()
+    /* TODO: Write expansion/AllocBoardMem() */
     aros_print_not_implemented ("AllocBoardMem");
 
     AROS_LIBFUNC_EXIT

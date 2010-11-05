@@ -12,7 +12,7 @@
     NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH2(void, ReadExpansionRom,
+	AROS_LH2(BOOL, ReadExpansionRom,
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR              , board, A0),
@@ -47,6 +47,8 @@
 
 #warning TODO: Write expansion/ReadExpansionRom()
     aros_print_not_implemented ("ReadExpansionRom");
+
+	return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* ReadExpansionRom */

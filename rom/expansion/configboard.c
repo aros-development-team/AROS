@@ -12,7 +12,7 @@
     NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH2(void, ConfigBoard,
+	AROS_LH2(BOOL, ConfigBoard,
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR              , board, A0),
@@ -47,6 +47,8 @@
 
 #warning TODO: Write expansion/ConfigBoard()
     aros_print_not_implemented ("ConfigBoard");
+    
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* ConfigBoard */
