@@ -7,8 +7,8 @@ CFILES          := addicrvector ableicr seticr \
 USER_CFLAGS     := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/cia \
 		   -I$(SRCDIR)/rom/cia
 
-%build_archspecific_simple \
+%build_archspecific \
   mainmmake=kernel-cia maindir=rom/cia arch=amiga-m68k \
-  files=$(CFILES) modulename=cia
+  files=$(CFILES) 
 
 %common
