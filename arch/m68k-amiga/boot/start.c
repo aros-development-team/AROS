@@ -7,10 +7,13 @@
  */
 
 #include <aros/kernel.h>
+#include <aros/debug.h>
+#include <exec/memory.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
-#include <exec/memory.h>
 #include <proto/exec.h>
+
+#include "memory.h"
 
 #include "exec_intern.h"
 #include "kernel_romtags.h"
@@ -89,10 +92,6 @@ static void DebugPuts(register const char *buff)
 	for (; *buff != 0; buff++)
 		DebugPutChar(*buff);
 }
-
-extern void *_ram_start;
-#define MEM_START	((ULONG)(&_ram_start))
-#define MEM_SIZE        (0x00200000-MEM_START)
 
 void DebugPutHex(const char *what, ULONG val)
 {
@@ -191,12 +190,42 @@ ULONG cpu_detect(void)
 #define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
 #endif
 
-void start(void)
+static struct MemHeader *SetupMemory(CONST_STRPTR name, BYTE pri,
+				      ULONG start, ULONG size, UWORD flags)
+{
+	struct MemHeader *mh;
+	ULONG aligned_start;
+
+	/* Align the start in MEMCHUNK_TOTAL sections */
+	aligned_start = (start + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL-1);
+	size -= (aligned_start - start);
+	start = aligned_start;
+
+	mh = (APTR)start;
+	mh->mh_Node.ln_Succ    = NULL;
+	mh->mh_Node.ln_Pred    = NULL;
+	mh->mh_Node.ln_Type    = NT_MEMORY;
+	mh->mh_Node.ln_Name    = (STRPTR)name;
+	mh->mh_Node.ln_Pri     = pri;
+	mh->mh_Attributes      = flags | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA;
+	mh->mh_First           = (struct MemChunk *)(start+MEMHEADER_TOTAL);
+	mh->mh_First->mc_Next  = NULL;
+	mh->mh_First->mc_Bytes = size - MEMHEADER_TOTAL;
+
+	mh->mh_Lower           = mh->mh_First;
+	mh->mh_Upper           = (APTR)(start + size);
+	mh->mh_Free            = mh->mh_First->mc_Bytes;
+
+	return mh;
+}
+
+void start(IPTR chip_start, ULONG chip_size,
+           IPTR fast_start, ULONG fast_size,
+           IPTR ss_stack_upper, IPTR ss_stack_lower,
+           IPTR us_stack_upper, IPTR us_stack_lower)
 {
 	extern void *_bss;
 	extern void *_bss_end;
-	extern void *_ss_stack_upper;
-	extern void *_ss_stack_lower;
 	volatile APTR *trap;
 	int i;
 	UWORD *kickrom[] = {
@@ -218,11 +247,8 @@ void start(void)
 			.len = 0,
 		}
 	};
-
 	struct ExecBase *sysBase;
-	struct MemChunk *mc;
-	struct MemHeader ChipRAM;
-	struct MemHeader *mh = &ChipRAM;
+	struct MemHeader *mh;
 	ULONG LastAlert[4] = { 0, 0, 0, 0};
 
 	trap = (APTR *)(NULL);
@@ -233,12 +259,23 @@ void start(void)
 	DebugInit();
 	DebugPuts("[reset]\n");
 
+	if (fast_size != 0) {
+		DebugPutHex("Fast_Upper ",(ULONG)(fast_start + fast_size - 1));
+		DebugPutHex("Fast_Lower ",(ULONG)fast_start);
+	}
+	DebugPutHex("Chip_Upper ",(ULONG)(chip_start + chip_size - 1));
+	DebugPutHex("Chip_Lower ",(ULONG)chip_start);
+	DebugPutHex("SS_Stack_Upper",(ULONG)(ss_stack_upper - 1));
+	DebugPutHex("SS_Stack_Lower",(ULONG)ss_stack_lower);
+	DebugPutHex("US_Stack_Upper",(ULONG)(us_stack_upper - 1));
+	DebugPutHex("US_Stack_Lower",(ULONG)us_stack_lower);
+
 	/* Look for 'HELP' at address 0 - we're recovering
 	 * from a fatal alert
 	 */
 	if (trap[0] == (APTR)0x48454c50) {
 		for (i = 0; i < 4; i++)
-			LastAlert[i] = trap[64 + i];
+			LastAlert[i] = (ULONG)trap[64 + i];
 	}
 
 	/* Clear last alert area */
@@ -266,31 +303,27 @@ void start(void)
 	 */
 	trap[8] = Exec_Supervisor_Trap;
 
+	DebugPuts("[prep RAM]\n");
 	Exec_ScreenCode(CODE_RAM_CHECK);
+
+	if (fast_size == 0) {
+		mh = SetupMemory("Chip Memory", -5,
+				 chip_start, chip_size, MEMF_CHIP);
+	} else {
+		mh = SetupMemory("Fast Memory", 0,
+				 fast_start, fast_size, MEMF_FAST);
+	}
 
 	DebugPuts("[prep SysBase]\n");
 	Exec_ScreenCode(CODE_EXEC_CHECK);
-	mc = (struct MemChunk *)(NULL + MEM_START);
-	mc->mc_Next = NULL;
-	mc->mc_Bytes = MEM_SIZE;
 
-	mh->mh_Node.ln_Succ    = NULL;
-	mh->mh_Node.ln_Pred    = NULL;
-	mh->mh_Node.ln_Type    = NT_MEMORY;
-	mh->mh_Node.ln_Name    = "chip memory";
-	mh->mh_Node.ln_Pri     = -5;
-	mh->mh_Attributes      = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK;
-	mh->mh_First           = mc;
-	mh->mh_Lower           = (APTR)mc;
-	mh->mh_Upper           = ((APTR)mc) + mc->mc_Bytes;
-	mh->mh_Free            = mc->mc_Bytes;
 	sysBase = PrepareExecBase(mh, NULL, NULL);
 	DebugPutHex("PrepareExecBase [ret]",(ULONG)sysBase);
 	*((APTR *)(NULL + 0x4)) = sysBase;
 	DebugPuts("[init SysBase]\n");
 
-        sysBase->SysStkUpper    = (APTR)(&_ss_stack_upper)-1;
-        sysBase->SysStkLower    = (APTR)&_ss_stack_lower;
+        sysBase->SysStkUpper    = (APTR)ss_stack_upper;
+        sysBase->SysStkLower    = (APTR)ss_stack_lower;
 
         /* Mark what the last alert was */
         for (i = 0; i < 4; i++)
@@ -324,6 +357,16 @@ void start(void)
 	} else {
 		/* move.w %sr,%d0; rts; nop */
 		FAKE_IT(sysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
+	}
+
+	/* If we had Fast memory, don't forget to add
+	 * Chip memory now!
+	 */
+	if (fast_size != 0) {
+		mh = SetupMemory("Chip Memory", -5,
+				 chip_start, chip_size, MEMF_CHIP);
+		if (mh != NULL)
+			Enqueue(&sysBase->MemList,&mh->mh_Node);
 	}
 
 	/* Initialize IRQ subsystem */

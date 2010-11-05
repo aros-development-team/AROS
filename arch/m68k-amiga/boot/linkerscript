@@ -1,29 +1,22 @@
 MEMORY 
 {
-  rom (rx)  : org = 0x00f80000 , l = 512K
-  ram (rwx) : org = 0x00000000 , l = 2M
+  trap (rwx) : org = 0x00000000 , l = 0x400
+  bss  (rw)  : org = 0x00000400 , l = 0x2000
+  rom  (rx)  : org = 0x00f80000 , l = 512K
 }
 
 SECTIONS 
 {
-  .sysbase                    : { . = 4; SysBase = .; . += 4; } >ram
-  .stack               0x1000 : { 
-  	  		          _stack = .;
-                                  _us_stack_lower = .;
-                                  . = . + 0xe000;
-                                  _us_stack_upper = .;
-                                  _ss_stack_lower = .;
-                                  . = . + 0x1000;
-                                  _ss_stack_upper = .;
-  				  _stack_end = .;      } >ram
+  .sysbase                    : { . = 4; SysBase = .; } >trap
   .bss                        : {  _bss = .;
                                   *(.bss)
-                                  _bss_end = .;        } >ram
-  .ram  ALIGN(0x100)          : { _ram_start = .; } >ram
+                                  _bss_end = .;        } >bss
+
   /* This should cause angry complaints if .data exists
    * We don't want .data, and we don't need it.
    */
-  .data                       : { *(.data)             } >ram
+  .data 0x00f80000            : { *(.data)             } >bss
+
   .text 0x00f80000            : { _text_start = .;
   	                          *(.text)
                                   _text_end = .;       } >rom =0x0000

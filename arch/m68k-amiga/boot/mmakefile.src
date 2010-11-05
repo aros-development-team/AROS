@@ -98,7 +98,7 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(KOBJSDIR)/%.o : %.c
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/exec -I$(SRCDIR)/rom/kernel"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec -I$(SRCDIR)/rom/exec -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
 
 $(KOBJSDIR)/%.o : %.S
 	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
