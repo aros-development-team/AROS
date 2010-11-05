@@ -2,6 +2,9 @@
 
 	.align 4 
 
+#define SS_STACK_SIZE	0x08000
+#define US_STACK_SIZE	0x10000
+
 	.globl rom_init
 rom_init:
 	/* In ROM, so disable the overlay */
@@ -10,6 +13,11 @@ rom_init:
 	moveq	#0x2, %d0
 	move.b	%d0, 0xbfe001
 
+	/* Wait a bit for reset to finish */
+	move.l	#0x100000,%d0
+0:	subq.l	#1,%d0
+	bge.s	0b
+
 	/* Disable interrupts and DMA */
 	lea.l	0xdff000, %a0
 	move.w	#0x7fff, %d0
@@ -17,10 +25,145 @@ rom_init:
 	move.w	%d0,0x9c(%a0)	/* Clear interrupts */
 	move.w	%d0,0x96(%a0)	/* Stop DMA */
 
-	/* TODO: Check the stack RAM
-	 *       before we start the ROM proper.
+	/* Check for 000000 - 200000 Chip Ram
 	 */
-	lea.l	_ss_stack_upper,%sp
+.L_chip_mem:
+	move.l	#0x000000, %a0
+	move.l	#0x200000, %d0
+	lea.l	0f,%a7
+	jmp	.L_memtest
+0:
+
+	/* Stash away fast mem config in:
+	 *    %a4 (start)
+	 *    %d4 (size)
+	 */
+	move.l	%a0,%a4
+	move.l	%d0,%d4
+
+	/* Check for C00000 - D80000 Fast Ram 
+	 * We really want to put our stacks there.
+	 */
+.L_fast_mem:
+	move.l	#0xc00000, %a0
+	move.l	#0x180000, %d0
+	lea.l	0f,%a7
+	jmp	.L_memtest
+0:
+	/* %d0 is now the memory size */
+
+	/* Default stack is the end of chip memory */
+	move.l	%d4,%d1
+	move.l	%a4,%a1
+
+	/* Do we have fast memory? */
+	tst.l	%d0
+	beq	.L_stack_setup
+
+	/* Yes! We have some fast memory! */
+	move.l	%d0,%d1
+	move.l	%a0,%a1
+
+	/* Put the Exec Supervisor stack at the top 64K,
+	 * and the Exec User stack as the next 64K under that
+	 */
+.L_stack_setup:
+	subi.l	#0x10,%d1
+	lea.l	%a1@(%d1),%sp
 	move.w	#0,%sr		/* Go to user mode */
-	lea.l	_us_stack_upper,%sp
-	jra	start
+	subi.l	#SS_STACK_SIZE,%d1
+	lea.l	%a1@(%d1),%sp
+	subi.l	#US_STACK_SIZE,%d1
+
+	/* Was this fast memory? */
+	tst.l	%d0
+	beq	0f
+	/* Yes - shrink fast memory */
+	move.l	%d1,%d0
+	jmp	1f
+0:	/* No - shrink chip memory */
+	move.l	%d1,%d4
+1:
+
+	/* Fix up chipmem offsets.
+	 *  We need some for exceptions and for some BSS
+	 *  ( _bss_end is the end marker )
+	 */
+	lea.l	_bss_end,%a4
+	sub.l	%a4,%d4
+
+	/* Args for start:
+	 *   ChipMem Start
+	 *   ChipMem Size
+	 *   FastMem Start
+	 *   FastMem Size
+	 *   ss_stack_upper
+	 *   ss_stack_lower
+	 *   us_stack_upper
+	 *   us_stack_lower
+	 */
+	pea.l	%a1@(%d1)
+	pea.l	%a1@(%d1)
+	addi.l	#(US_STACK_SIZE),%sp@
+	pea.l	%a1@(%d1)
+	addi.l	#(US_STACK_SIZE),%sp@
+	pea.l	%a1@(%d1)
+	addi.l	#(SS_STACK_SIZE+US_STACK_SIZE),%sp@
+	move.l	%d0,%sp@-
+	move.l	%a0,%sp@-
+	move.l	%d4,%sp@-
+	move.l	%a4,%sp@-
+	jsr	start
+
+	/******** Memory tester *******/
+	/* TODO: Check for mirrored chip registers
+	 * IN: A0 - Address, D0 - Possible Size
+	 *     A7 - Return address
+	 * OUT: D0 - Detected size
+	 * TRASH: D1, D2, A1
+	 */
+.L_memtest:
+	clr.l	%d1
+.L_memtest_chipcheck:                   /* Can we turn off interrupts? */
+	addi.l	#0x40000,%d1
+	cmp.l	%d0,%d1
+	bgt.s	.L_memtest_chipcheck_done
+
+	lea.l	%a0@(%d1),%a1
+	move.w	#0x7fff,%a1@(-(0x40000 - 0x3f09a))
+	tst.w	%a1@(-(0x40000 - 0x3f01c))	/* If non-zero, this is not INTENAR */
+	bne.s	1f
+	/* It was zero ... */
+	move.w	#0xc000,%a1@(-(0x40000 - 0x3f09a))    /* Try the master enable */
+	tst.w	%a1@(-(0x40000 - 0x3f01c))           /* If still zero, not INTENAR */
+	beq.s	1f
+0:	/* It was a custom chip. */
+	jmp	.L_memtest_chipcheck_done
+1:	bra	.L_memtest_chipcheck
+.L_memtest_chipcheck_done:
+	move.l	%d1,%d0
+	subi.l	#0x40000,%d0
+
+	/* TODO: Better pattern checks */
+	clr.l	%d1
+	move.l	#0xcafed00d,%d2
+.L_memtest_pattern:
+	move.l	%d2,%a0@(%d1)
+	addi.l	#0x40000,%d1	/* 256K is the minimum block size */
+	addi.l	#0x40000,%d2	/* 256K is the minimum block size */
+	cmp.l	%d0,%d1
+	blt.s	.L_memtest_pattern
+
+	clr.l	%d1
+	move.l	#0xcafed00d,%d2
+.L_memtest_check:
+	cmp.l	%a0@(%d1),%d2
+	bne	.L_memtest_done
+	addi.l	#0x40000,%d1
+	addi.l	#0x40000,%d2
+	cmp.l	%d0,%d1
+	blt.s	.L_memtest_check
+.L_memtest_done:
+	move.l	%d1,%d0
+	jmp	(%a7)
+

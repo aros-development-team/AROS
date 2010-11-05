@@ -134,11 +134,6 @@ void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct E
 		}
 	} else {
 		struct Task *t = SysBase->ThisTask;
-		extern void *_us_stack_upper, *_us_stack_lower;
-		if ((IPTR)t->tc_SPUpper == ~0 && (IPTR)t->tc_SPLower == 0) {
-			t->tc_SPUpper = (void *)(&_us_stack_upper-1);
-			t->tc_SPLower = (void *)&_us_stack_lower;
-		}
 		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
 			Alert(AT_DeadEnd | AN_MemCorrupt);
 			D(bug("[%s]: Stack overflow detected!\n", t->tc_Node.ln_Name));
