@@ -61,7 +61,7 @@ AROS_LD1(WORD, SetICR,
 );
 
 #define RESIDENT_FLAGS    RTF_COLDSTART
-#define RESIDENT_PRIORITY 80         /* I set this value just for sample, i don't know the correct one */
+#define RESIDENT_PRIORITY 49	/* Just below timer.device */
 #define RESIDENT_NAME     "cia.resource"
 #define RESIDENT_VERSION  0
 #define RESIDENT_REVISION 1
