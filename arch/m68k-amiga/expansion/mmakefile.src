@@ -1,0 +1,11 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS     := -I$(SRCDIR)/rom/expansion \
+		   $(PARANOIA_CFLAGS)
+
+FUNCTIONS := readexpansionbyte readexpansionrom configchain configboard writeexpansionbyte writeexpansionword
+
+%build_archspecific \
+  mainmmake=kernel-expansion maindir=rom/expansion arch=amiga-m68k \
+  files="$(FUNCTIONS)" modulename=expansion
