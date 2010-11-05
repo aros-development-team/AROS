@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/FreeBoardMem()
+    /* TODO: Write expansion/FreeBoardMem() */
     aros_print_not_implemented ("FreeBoardMem");
 
     AROS_LIBFUNC_EXIT

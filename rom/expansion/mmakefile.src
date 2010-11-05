@@ -9,13 +9,16 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 	    findconfigdev freeboardmem freeconfigdev freeexpansionmem \
 	    getcurrentbinding makedosnode obtainconfigbinding \
 	    readexpansionbyte readexpansionrom releaseconfigbinding \
-	    remconfigdev setcurrentbinding writeexpansionbyte
+	    remconfigdev setcurrentbinding writeexpansionbyte \
+	    writeexpansionword
 
 #MM- kernel-expansion : linklibs
 
 #MM- kernel-expansion-includes : \
 #MM      kernel-exec-includes \
 #MM      kernel-dos-includes
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 %build_module mmake=kernel-expansion \
   modname=expansion modtype=library \
