@@ -27,6 +27,7 @@ USER_CFLAGS := -DUSE_GDBSTUB
 #MM	kernel-amiga-m68k-devs \
 #MM     kernel-amiga-m68k-kbd-kobj \
 #MM     kernel-amiga-m68k-mouse-kobj \
+#MM     kernel-cia-kobj \
 #MM     kernel-disk-kobj \
 #MM	kernel-potgo-kobj \
 #MM	kernel-kernel-kobj \
@@ -50,12 +51,12 @@ LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 KLIBS   := exec aros dos graphics utility oop expansion \
-	   intuition layers keymap
+	   intuition layers keymap boot
 	   # mathieeesingbas workbench cybergraphics
 
-KDEVS   := timer input keyboard console
+KDEVS   := timer input keyboard console trackdisk gameport
 KHNDLRS := con nil
-KHIDDS  := hiddclass graphics amigakbd amigamouse
+KHIDDS  := hiddclass graphics keyboard amigakbd mouse amigamouse
 KRSRCS  := battclock kernel processor dosboot cia potgo disk
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
