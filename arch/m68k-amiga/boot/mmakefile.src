@@ -49,9 +49,9 @@ USELIBS := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libi
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KLIBS   := exec aros dos graphics utility oop \
+KLIBS   := exec aros dos graphics utility oop expansion \
 	   intuition layers keymap
-	   # mathieeesingbas expansion workbench cybergraphics
+	   # mathieeesingbas workbench cybergraphics
 
 KDEVS   := timer input keyboard console
 KHNDLRS := con nil
