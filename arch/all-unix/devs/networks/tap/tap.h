@@ -1,6 +1,7 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright © 2010, The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -9,7 +10,6 @@
 #ifndef _TAP_DEVICE_H
 #define _TAP_DEVICE_H 1
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -23,15 +23,10 @@
 
 #include <dos/bptr.h>
 
-#include <oop/oop.h>
-
 #include <devices/sana2.h>
 #include <devices/sana2specialstats.h>
 #include <devices/newstyle.h>
 
-#include <hidd/unixio.h>
-
-#include <proto/oop.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
@@ -52,6 +47,7 @@
 #include <linux/if_tun.h>
 #include <linux/if_ether.h>
 
+#include <poll.h>
 #include <stdio.h>
 
 #undef timeval
@@ -61,6 +57,17 @@
 /* explicitly prototype rand() so we don't have pull in stdlib.h */
 extern int rand(void);
 
+#ifdef HOST_OS_linux
+#define LIBC_NAME "libc.so.6"
+#endif
+
+#ifdef HOST_OS_darwin
+#define LIBC_NAME "libSystem.dylib"
+#endif
+
+#ifndef LIBC_NAME
+#define LIBC_NAME "libc.so"
+#endif
 
 #define MAX_TAP_UNITS (4)
 
@@ -68,9 +75,6 @@ extern int rand(void);
 
 #define TAP_IFACE_FORMAT "aros%ld"
 #define TAP_TASK_FORMAT "TAP IO: unit %d"
-
-
-extern HIDD *unixio;
 
 struct tap_opener {
     struct MinNode              node;
@@ -90,7 +94,8 @@ struct tap_tracker {
     struct Sana2PacketTypeStats stats;
 };
 
-struct tap_unit {
+struct tap_unit
+{
     ULONG                       num;
     ULONG                       refcount;
 
@@ -111,20 +116,42 @@ struct tap_unit {
     char                        iotask_name[32];
 
     struct MsgPort              *iosyncport;
-    struct Process              *iotask;
+    struct Task              	*iotask;
 
-    LONG                        write_signal;
     LONG                        abort_signal;
+    LONG			io_signal;
 
-    struct MsgPort              write_queue;
+    struct MsgPort              *write_queue;
 };
 
-struct tap_base {
-    struct Device               tap_device;
-
-    struct tap_unit             unit[MAX_TAP_UNITS];
+struct LibCInterface
+{
+    int	    (*open)(char *path, int oflag, ...);
+    int	    (*close)(int filedes);
+    int	    (*ioctl)(int d, int request, ...);
+    int	    (*fcntl)(int fd, int cmd, ...);
+    int     (*poll)(struct pollfd *fds, nfds_t nfds, int timeout);
+    ssize_t (*read)(int fd, void *buf, size_t count);
+    ssize_t (*write)(int fildes, const void *buf, size_t nbyte);
+    pid_t   (*getpid)(void);
+    int	   *(*__error)(void);
 };
 
+struct tap_base
+{
+    struct Device           tap_device;
+    struct tap_unit         unit[MAX_TAP_UNITS];
+    APTR		    KernelBase;
+    APTR		    HostLibBase;
+    APTR		    LibCHandle;
+    struct LibCInterface   *TAPIFace;
+    pid_t		    aros_pid;
+    int			   *errnoPtr;
+    struct SignalSemaphore  sem;
+};
+
+#define HostLibBase TAPBase->HostLibBase
+#define KernelBase  TAPBase->KernelBase
 
 /* unit flags */
 #define tu_CONFIGURED   (1<<0)
@@ -134,5 +161,7 @@ struct tap_base {
 extern void tap_handle_request(struct IOSana2Req *req);
 
 extern void tap_hexdump(unsigned char *buf, int bufsz);
+
+extern void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit);
 
 #endif

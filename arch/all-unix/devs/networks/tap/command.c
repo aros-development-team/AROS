@@ -1,10 +1,14 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (c) 2007 Robert Norris. All rights reserved.
+ * Copyright © 2010, The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  */
+
+#define DEBUG 0
+#define DWRITE(x)
 
 #include "tap.h"
 
@@ -123,7 +127,7 @@ static BOOL tap_read(struct IOSana2Req *req, struct tap_unit *unit) {
 
 static BOOL tap_write(struct IOSana2Req *req, struct tap_unit *unit) {
     if (!(unit->flags & tu_ONLINE)) {
-        D(bug("[tap] [%d] not online\n", unit->num));
+        DWRITE(bug("[tap] [%d] not online\n", unit->num));
 
         req->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
         req->ios2_WireError = S2WERR_UNIT_OFFLINE;
@@ -132,13 +136,9 @@ static BOOL tap_write(struct IOSana2Req *req, struct tap_unit *unit) {
     }
 
     req->ios2_Req.io_Flags &= ~IOF_QUICK;
-    PutMsg(&(unit->write_queue), (struct Message *) req);
+    PutMsg(unit->write_queue, (struct Message *) req);
 
-    D(bug("[tap] [%d] queued write request\n", unit->num));
-
-    /* tell the iotask to write */
-    /* XXX just use the write queue signal for this */
-    Signal((struct Task *) unit->iotask, 1 << unit->write_signal);
+    DWRITE(bug("[tap] [%d] queued write request\n", unit->num));
 
     return FALSE;
 }
