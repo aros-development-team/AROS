@@ -46,23 +46,23 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         MUIA_Group_Horiz, TRUE,
         Child, (IPTR)VGroup,
             Child, (IPTR)ColGroup(4),
-                Child, (IPTR)LLabel1("Visible Size:"), /* FIXME: Localize */
+                Child, (IPTR)LLabel1(_(MSG_VISIBLE_SIZE)),
                 Child, (IPTR)(objVisibleW = (Object *)Label1("16368")),
                 Child, (IPTR)Label1("x"),
                 Child, (IPTR)(objVisibleH = (Object *)Label1("16384")),
 
-                Child, (IPTR)LLabel1("Minimum Size:"), /* FIXME: Localize */
+                Child, (IPTR)LLabel1(_(MSG_MINIMUM_SIZE)),
                 Child, (IPTR)(objMinimumW = (Object *)Label1("16368")),
                 Child, (IPTR)Label1("x"),
                 Child, (IPTR)(objMinimumH = (Object *)Label1("16368")),
 
-                Child, (IPTR)LLabel1("Maximum Size:"), /* FIXME: Localize */
+                Child, (IPTR)LLabel1(_(MSG_MAXIMUM_SIZE)),
                 Child, (IPTR)(objMaximumW = (Object *)Label1("16368")),
                 Child, (IPTR)Label1("x"),
                 Child, (IPTR)(objMaximumH = (Object *)Label1("16368")),
 
-                Child, (IPTR)LLabel1("Maximum Colors:"), /* FIXME: Localize */
-                Child, (IPTR)(objMaximumColors = (Object *)LLabel1("16 M.")),
+                Child, (IPTR)LLabel1(_(MSG_MAXIMUM_COLORS)),
+                Child, (IPTR)(objMaximumColors = (Object *)LLabel1("16777216")),
                 Child, (IPTR)RectangleObject, End,
                 Child, (IPTR)RectangleObject, End,
                 
@@ -144,6 +144,9 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     RawDoFmt("%ld", &val, RAWFMTFUNC_STRING, buffer);
                     set(data->objMaximumColors, MUIA_Text_Contents, buffer);
                 }
+                
+                SetAttrs(self, MUIA_Disabled, tag->ti_Data == INVALID_ID, TAG_DONE);
+
                 break;
             }
         }

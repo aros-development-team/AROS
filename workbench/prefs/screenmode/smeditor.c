@@ -128,7 +128,7 @@ static Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messag
             End,
 
             Child, (IPTR)VGroup,
-                Child, (IPTR) CLabel("Mode Attributes"), /* FIXME: Localize */
+                Child, (IPTR) CLabel(_(MSG_MODE_ATTRIBUTES)),
                 Child, (IPTR)(attributes = (Object *)ScreenModeAttributesObject, GroupFrame, End),
             End,
 
