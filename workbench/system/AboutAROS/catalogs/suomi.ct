@@ -84,7 +84,7 @@ Ydin
 MSG_SECTION_DOS
 DOS
 ;
-MSG_SECTION_NETWORK (//)
+MSG_SECTION_NETWORK
 Networking Components
 ;Networking Components
 ;

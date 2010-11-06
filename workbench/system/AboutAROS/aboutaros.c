@@ -73,13 +73,14 @@ STRPTR Section2Name(ULONG section)
         case SID_ZUNE:           return _(MSG_SECTION_ZUNE);
         case SID_KERNEL:         return _(MSG_SECTION_KERNEL);
         case SID_DOS:            return _(MSG_SECTION_DOS);
-        case SID_NETWORKING:            return _(MSG_SECTION_NETWORK);
+        case SID_NETWORKING:     return _(MSG_SECTION_NETWORK);
         case SID_LIBC_POSIX:     return _(MSG_SECTION_LIBC_POSIX);
         case SID_DOCUMENTATION:  return _(MSG_SECTION_DOCUMENTATION);
         case SID_TRANSLATION:    return _(MSG_SECTION_TRANSLATION);
         case SID_ARTISTRY:       return _(MSG_SECTION_ARTISTRY);
         case SID_WEBSITE:        return _(MSG_SECTION_WEBSITE);
         case SID_DATATYPES:      return _(MSG_SECTION_DATATYPES);
+        case SID_TESTING:        return _(MSG_SECTION_TESTING);
         default:                 return NULL;
     }
 }
