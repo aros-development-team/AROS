@@ -105,7 +105,7 @@ static const struct _pt {
     { 0, 0 }
 };
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
 static BOOL BootBlockChecksum(UBYTE *bootblock)
 {
        ULONG crc = 0, crc2 = 0;
@@ -125,6 +125,32 @@ static BOOL BootBlockChecksum(UBYTE *bootblock)
        D(bug("bootblock checksum %s\n", crc == crc2 ? "ok" : "error"));
        return crc == crc2;
 }
+
+struct InitTable {
+	ULONG dSize;
+	APTR  vectors;
+	APTR  structure;
+	ULONG_FUNC init;
+};
+
+static void CallInitCode(struct InitTable *init)
+{
+	struct Library *library;
+	BPTR segList = BNULL;
+
+	D(bug(" CallInitCode: MakeLibrary(%p, %p, %p, %d, 0) = %p\n",
+				init->vectors, init->structure,
+				init->init, init->dSize));
+
+	library = MakeLibrary(init->vectors, init->structure,
+			      init->init, init->dSize, segList);
+
+	if (library == NULL) {
+		Alert(AT_DeadEnd | AO_BootStrap);
+		return;
+	}
+}
+
 #define BOOTBLOCK_SIZE 1024
 static void BootBlock(void)
 {
@@ -149,11 +175,22 @@ static void BootBlock(void)
                                D(bug("bootblock read ok\n"));
                                if (!memcmp (buffer, "DOS", 3) && BootBlockChecksum(buffer)) {
                                	       ULONG retval;
+                               	       APTR  init;
+                               	       APTR bootcode = buffer + 12;
                                	       D(bug("calling bootblock!\n", buffer));
-                               	       retval = AROS_UFC2(ULONG, buffer + 12, 
-                               	       		 AROS_UFCA(APTR, io, A1),
-                               	       		 AROS_UFCA(APTR, SysBase, A6));
-                               	       D(bug("returned 0x%08x\n", retval));
+                               	       asm volatile ("nop\nnop\nmove.l %2,%%a1\n"
+                               	       		     "move.l %3,%%a6\n"
+                               	       		     "move.l %4,%%a0\n"
+                               	       		     "jsr.l (%%a0)\n"
+                               	       		     "move.l %%d0,%0\n"
+                               	       		     "move.l %%a0,%1\n"
+                               	       		     : "=m" (retval), "=m" (init)
+                               	       		     : "m" (io), "m" (SysBase),
+                               	       		       "m" (bootcode)
+                               	       		     : "%d0", "%d1", "%a0", "%a1");
+                               	       D(bug("bootblock: D0=0x%08x A0=%p\n", retval, init));
+                               	       if (retval == 0)
+                               	       	       CallInitCode(init);
                                }
                            } else {
                                D(bug("ioerror %d\n", io->iotd_Req.io_Error));
@@ -533,7 +570,7 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     CloseLibrary((struct Library *)ExpansionBase);
 #endif
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
     /* Try to get a boot-block from the trackdisk.device */
     BootBlock();
 #endif
