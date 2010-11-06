@@ -2413,8 +2413,8 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	It is valid to get NULL pointer as data parameter. This means that there's
 	nothing to show and the screen should go blank.
 
-	Bitmaps display offsets are stored in their aHidd_BitMap_XOffset and
-	aHidd_BitMap_YOffset attributes. This function is not expected to modify their
+	Bitmaps display offsets are stored in their aHidd_BitMap_LeftEdge and
+	aHidd_BitMap_TopEdge attributes. This function is not expected to modify their
 	values somehow. They are assumed to be preserved between calls unless changed
 	explicitly by the system.
 
