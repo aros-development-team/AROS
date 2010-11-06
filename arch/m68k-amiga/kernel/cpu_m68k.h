@@ -10,12 +10,8 @@
 #ifndef CPU_M68K_H_
 #define CPU_M68K_H_
 
-#ifndef __AROS_EXEC_LIBRARY__
-
 /* Number of exceptions supported by the CPU. Needed by kernel_base.h */
 #define EXCEPTIONS_COUNT 256
-
-#endif
 
 /* CPU context stored in task's iet_Context. */
 struct AROSCPUContext
