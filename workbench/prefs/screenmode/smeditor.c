@@ -122,12 +122,14 @@ static Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messag
         Child, (IPTR)HGroup,
         
             Child, (IPTR)VGroup,
+                MUIA_Weight, 70,
                 Child, (IPTR) CLabel(_(MSG_DISPLAY_MODE)),
                 Child, (IPTR)(selector   = (Object *)ScreenModeSelectorObject, End),
                 Child, (IPTR)(properties = (Object *)ScreenModePropertiesObject, GroupFrame, End),
             End,
 
             Child, (IPTR)VGroup,
+                MUIA_Weight, 30,
                 Child, (IPTR) CLabel(_(MSG_MODE_ATTRIBUTES)),
                 Child, (IPTR)(attributes = (Object *)ScreenModeAttributesObject, GroupFrame, End),
             End,
