@@ -100,3 +100,7 @@ Website
 ;
 MSG_SECTION_DATATYPES (//)
 Datatypes
+;
+MSG_SECTION_TESTING (//)
+Testing
+;
