@@ -589,7 +589,6 @@ moreFlags |= (name); else moreFlags &= ~(name)
          *  like TurboPrint GraphicPublisher specify {WA_PubScreen, NULL} and want
          *  to open on the default public screen that way 
          */
-
     if (pubScreenNameSet || (nw.Type == PUBLICSCREEN && nw.Screen == NULL))
     {
         struct Screen *pubs = 0;
@@ -606,6 +605,27 @@ moreFlags |= (name); else moreFlags &= ~(name)
         }
         nw.Type = PUBLICSCREEN;
         if (nw.Screen) nw.Flags |= WFLG_VISITOR;
+    }
+    else if (nw.Type == PUBLICSCREEN)
+    {
+        /* There is no LockPubScreen() with a "struct Screen *" argument, so we have to do
+         * the necessary steps ourself
+         */
+        LockPubScreenList();
+        if (GetPrivScreen(nw.Screen)->pubScrNode)
+        {
+            GetPrivScreen(nw.Screen)->pubScrNode->psn_VisitorCount++;
+            moreFlags |= WMFLG_DO_UNLOCKPUBSCREEN;
+            nw.Flags  |= WFLG_VISITOR;
+            FireScreenNotifyMessage((IPTR) nw.Screen, SNOTIFY_LOCKPUBSCREEN, IntuitionBase);
+        }
+        else
+        {
+            /* The screen wasn't a PublicScreen */
+            UnlockPubScreenList();
+            goto failexit;
+        }
+        UnlockPubScreenList();
     }
 
     if (nw.Type == WBENCHSCREEN)
@@ -648,7 +668,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     IPTR	userbuffersize;
 
     GetAttr(WDA_UserBuffer, ((struct IntScreen *)(nw.Screen))->WinDecorObj, &userbuffersize);
-	
+
     if (userbuffersize)
     {
 	((struct IntWindow *)w)->DecorUserBufferSize = userbuffersize;
@@ -656,7 +676,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 	if (0 == ((struct IntWindow *)w)->DecorUserBuffer)
 		goto failexit;
     }
-	
+
     struct wdpInitWindow       initmsg;
     BOOL                       ok;
 
