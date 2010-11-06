@@ -55,7 +55,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
     InitSemaphore(&dosinfo->di_DeleteLock);
 
     /* Initialize for the fools that illegally used this field */
-    LIBBASE->dl_UtilityBase = (struct Library*) UtilityBase;
+    LIBBASE->dl_UtilityBase = OpenLibrary("utility.library", 0);
 
     LIBBASE->dl_IntuitionBase = NULL;
 
