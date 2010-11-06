@@ -11,6 +11,22 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
+extern void Exec_MagicResetCode(void);
+    /* Reset everything but the CPU, then restart
+     * at the ROM exception vector
+     */
+asm (
+	"	.text\n"
+	"	.align 4\n"
+	"	.globl Exec_MagicResetCode\n"
+	"Exec_MagicResetCode:\n"
+	"	nop\n"
+        "	move.l #2,%a0\n"
+        "	reset\n"
+        "	jmp    (%a0)\n"
+     );
+
+
 /*****************************************************************************
 
     NAME */
@@ -55,12 +71,7 @@
      */
     Exec_DoResetCallbacks((struct IntExecBase *)SysBase);
 
-    /* Reset everything but the CPU, then restart
-     * at the ROM exception vector
-     */
-    asm("reset\n"
-        "move.l #4,%a0\n"
-        "jmp    (%a0)\n");
+    Supervisor(Exec_MagicResetCode);
 
     AROS_LIBFUNC_EXIT
 } /* ColdReboot() */
