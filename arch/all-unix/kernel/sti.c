@@ -11,8 +11,8 @@ AROS_LH0(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-    if (!PD(KernelBase).supervisor)
-    	sigprocmask(SIG_UNBLOCK, &PD(KernelBase).sig_int_mask, NULL);
+    if (!KernelBase->kb_PlatformData->supervisor)
+    	sigprocmask(SIG_UNBLOCK, &KernelBase->kb_PlatformData->sig_int_mask, NULL);
 
     AROS_LIBFUNC_EXIT
 }

@@ -28,14 +28,9 @@ struct pt_regs
     unsigned long result;
 };
 
-#else
+struct ucontext;
 
-/*
- * We support 14 exceptions for PPC (see arch/all-unix/kernel/cpu_ppc.c).
- * Note that krnRunExceptionHandlers() does not check exception number,
- * so increase this if you use higher numbers.
- */
-#define EXCEPTIONS_COUNT 14
+#else
 
 /* We don't use any hacks any more. With modern kernel and libc it's okay */
 #define SIGCORE_NEED_SA_SIGINFO 1
@@ -53,7 +48,6 @@ struct pt_regs
 
 /* regs_t is the type of the signals' context */
 typedef @sighandler@ SignalHandler;
-typedef struct ucontext regs_t;
 
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
@@ -74,7 +68,7 @@ typedef struct ucontext regs_t;
 /* Macros to enable or disable all signals after the signal handler
    has returned and the normal execution commences.
    On PowerPC this is the same as on x86-64. */
-#define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
+#define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
 #define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
 
 /* This stuff is not used on Linux/m68k, because the signal handler context
@@ -131,24 +125,6 @@ typedef struct ucontext regs_t;
 	*(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]) = cc->fpregs[i];\
 }
 
-/* Prepare the cpu context
-   Sys V PPC ABI says r2 is reserved
-   so we copy the current one and it
-   will never be changed again */
-#define PREPARE_INITIAL_CONTEXT(cc)               \
-{                                                 \
-    __asm__ __volatile__ (                        \
-    "stw 2,%0 \n\t"                               \
-    : "=m"(cc->regs.gpr[2])			  \
-    :                                             \
-    : "memory");                                  \
-    {                                             \
-        long i;                                   \
-        for (i = 0; i < 32; i++)                  \
-            cc->fpregs[i] = 0.0;		  \
-    }                                             \
-}
-
 /* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
    all general purpose registers. Use this macro when you want to
    leave the current tasks' context to save the registers. Note that
@@ -185,8 +161,16 @@ typedef struct ucontext regs_t;
 
 #endif /* __AROS_EXEC_LIBRARY__ */
 
-/* This structure is used to save/restore registers */
+/*
+ * We support 14 exceptions for PPC (see arch/all-unix/kernel/cpu_ppc.c).
+ * Note that krnRunExceptionHandlers() does not check exception number,
+ * so increase this if you use higher numbers.
+ */
+#define EXCEPTIONS_COUNT 14
 
+typedef struct ucontext regs_t;
+
+/* This structure is used to save/restore registers */
 struct AROSCPUContext
 {
     struct pt_regs            regs;
@@ -197,6 +181,24 @@ struct AROSCPUContext
 
 #define GET_PC(ctx) ((APTR)ctx->regs.nip)
 #define SET_PC(ctx, val) ctx->regs.nip = (IPTR)val
+
+/* Prepare the cpu context
+   Sys V PPC ABI says r2 is reserved
+   so we copy the current one and it
+   will never be changed again */
+#define PREPARE_INITIAL_CONTEXT(cc)               \
+{                                                 \
+    __asm__ __volatile__ (                        \
+    "stw 2,%0 \n\t"                               \
+    : "=m"(cc->regs.gpr[2])			  \
+    :                                             \
+    : "memory");                                  \
+    {                                             \
+        long i;                                   \
+        for (i = 0; i < 32; i++)                  \
+            cc->fpregs[i] = 0.0;		  \
+    }                                             \
+}
 
 #define PREPARE_RETURN_ADDRESS(cc, addr)                      \
     do                                                        \

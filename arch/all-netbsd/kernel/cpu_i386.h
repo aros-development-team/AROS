@@ -13,7 +13,7 @@ typedef struct sigcontext regs_t;
 #define SIGHANDLER	bsd_sighandler
 #define SIGHANDLER_T	void *	
 
-#define SC_DISABLE(sc)   (sc->sc_mask = PD(KernelBase).sig_int_mask)
+#define SC_DISABLE(sc)   (sc->sc_mask = KernelBase->kb_PlatformData->sig_int_mask)
 #define SC_ENABLE(sc)    (sigemptyset(&sc->sc_mask))
 
 #define SP(sc)       (sc->sc_esp)
@@ -56,8 +56,6 @@ typedef struct sigcontext regs_t;
 #define SAVE_FPU(task,sc)	/* nop */
 #define RESTORE_FPU(task,sc)	/* nop */
 
-#define PREPARE_INITIAL_FRAME(sp,pc) 	/* nop */
-
 #define SAVEREGS(ctx, sc)     \
 	((ctx)->pc = PC(sc)), \
 	((ctx)->fp = FP(sc)), \
@@ -92,7 +90,9 @@ struct AROSCPUContext
 #define GET_PC(ctx) ((APTR)ctx->pc)
 #define SET_PC(ctx, val) ctx->pc = (ULONG)val
 
-#define PREPARE_INITIAL_CONTEXT(ctx, sp, startpc) \
+#define PREPARE_INITIAL_CONTEXT(ctx) 	/* nop */
+
+#define PREPARE_INITIAL_FRAME(ctx, sp, startpc) \
 	ctx->pc = (ULONG)startpc; \
 	ctx->fp = 0
 

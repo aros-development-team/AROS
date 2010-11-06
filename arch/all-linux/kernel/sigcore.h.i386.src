@@ -62,9 +62,10 @@ struct _fpstate
     };
 };
 
-#else
+struct sigcontext;
+typedef struct sigcontext reg_t;
 
-#define EXCEPTIONS_COUNT 17
+#else
 
 #define USE_SA_SIGINFO 0
 
@@ -157,7 +158,7 @@ typedef @sighandler@ SignalHandler;
     to store original signal mask. See x86-64 and PPC implementation
     of these macros for examples.
 */
-#define SC_DISABLE(sc)   ((sc)->oldmask = PD(KernelBase).sig_int_mask.__val[0])
+#define SC_DISABLE(sc)   ((sc)->oldmask = KernelBase->kb_PlatformData->sig_int_mask.__val[0])
 #define SC_ENABLE(sc)    ((sc)->oldmask = 0L)
 
 /*
@@ -303,51 +304,6 @@ typedef @sighandler@ SignalHandler;
 */
 
 /*
-    Prepare the cpu context
-*/
-
-#ifndef NO_FPU
-
-#define cpuid(num, eax, ebx, ecx, edx) \
-    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
-
-#define PREPARE_INITIAL_CONTEXT(cc) \
-    do \
-    { \
-    UBYTE * ptr = cc->fpbuffer; \
-    UBYTE current_xmm[512+16], *curr = current_xmm; \
-    curr = (UBYTE*)(((IPTR)curr + 15) & ~15); \
-    ptr = (UBYTE*)(((IPTR)ptr+15)&~15); /* Realign to next 16 byte boundary (needed for SSE, won't hurt for FPU only) */ \
-    cc->fpstate = (struct _fpstate *)ptr; \
-    UBYTE * fxsr_frame = ptr + 112; /* See definition of struct _fpstate for 32bit systems */ \
-    /* Detect SEE capability */ \
-    ULONG v1,v2,v3,v4; \
-    cpuid(1, v1,v2,v3,v4); \
-    if (v4 & (1 << 24)) \
-    { \
-    switch ((v4 >> 25) & 3) \
-    { \
-        case 3:\
-        case 2:\
-        case 1:\
-        /* FPU + SSE */ \
-        asm volatile("fxsave (%0); fninit; fwait; fxsave (%1); fnsave (%2); fxrstor (%0);"\
-        ::"r"(curr),"r"(fxsr_frame), "r"(cc->fpstate)); \
-    }\
-    }\
-    else\
-    { \
-        /* FPU only */ \
-        asm volatile("fnsave (%0); fninit; fwait; fnsave (%1); frstor (%0);"::"r"(curr), "r"(cc->fpstate)); \
-    } \
-    }while (0)
-#else
-
-#define PREPARE_INITIAL_CONTEXT(cc, startpc)
-
-#endif
-
-/*
     This macro is similar to PREPARE_INITIAL_FRAME() but also saves
     all general purpose registers. Use this macro when you want to
     leave the current tasks' context to save the registers. Note that
@@ -392,8 +348,9 @@ typedef @sighandler@ SignalHandler;
 
 #endif /* __AROS_EXEC_LIBRARY__ */
 
-/* Use this structure to save/restore registers */
+#define EXCEPTIONS_COUNT 17
 
+/* Use this structure to save/restore registers */
 struct AROSCPUContext
 {
     ULONG                     regs[9]; /* eip (PC), ebp (FP), eax, ebx, ecx, edx, edi, esi, eflags */
@@ -405,6 +362,51 @@ struct AROSCPUContext
 
 #define GET_PC(ctx) ((APTR)ctx->regs[0])
 #define SET_PC(ctx, val) ctx->regs[0] = (ULONG)val
+
+/*
+    Prepare the cpu context
+*/
+
+#ifndef NO_FPU
+
+#define cpuid(num, eax, ebx, ecx, edx) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
+
+#define PREPARE_INITIAL_CONTEXT(cc) \
+    do \
+    { \
+    UBYTE * ptr = cc->fpbuffer; \
+    UBYTE current_xmm[512+16], *curr = current_xmm; \
+    curr = (UBYTE*)(((IPTR)curr + 15) & ~15); \
+    ptr = (UBYTE*)(((IPTR)ptr+15)&~15); /* Realign to next 16 byte boundary (needed for SSE, won't hurt for FPU only) */ \
+    cc->fpstate = (struct _fpstate *)ptr; \
+    UBYTE * fxsr_frame = ptr + 112; /* See definition of struct _fpstate for 32bit systems */ \
+    /* Detect SEE capability */ \
+    ULONG v1,v2,v3,v4; \
+    cpuid(1, v1,v2,v3,v4); \
+    if (v4 & (1 << 24)) \
+    { \
+    switch ((v4 >> 25) & 3) \
+    { \
+        case 3:\
+        case 2:\
+        case 1:\
+        /* FPU + SSE */ \
+        asm volatile("fxsave (%0); fninit; fwait; fxsave (%1); fnsave (%2); fxrstor (%0);"\
+        ::"r"(curr),"r"(fxsr_frame), "r"(cc->fpstate)); \
+    }\
+    }\
+    else\
+    { \
+        /* FPU only */ \
+        asm volatile("fnsave (%0); fninit; fwait; fnsave (%1); frstor (%0);"::"r"(curr), "r"(cc->fpstate)); \
+    } \
+    }while (0)
+#else
+
+#define PREPARE_INITIAL_CONTEXT(cc, startpc)
+
+#endif
 
 #define PREPARE_INITIAL_FRAME(cc, sp, pc)  \
         do                                 \
