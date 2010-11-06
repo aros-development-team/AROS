@@ -1,3 +1,6 @@
+// Opens a PubScreen. The name can be given as argument.
+// Default name is "MYPUBSCREEN".
+
 #include <proto/intuition.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -23,12 +26,22 @@ void clean_exit(STRPTR txt)
     exit(RETURN_OK);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     BOOL done = FALSE;
     BOOL closewindow = FALSE;
     ULONG signals, winsig, pubsig;
     struct IntuiMessage *message;
+    char *name;
+
+    if (argc == 2)
+    {
+        name = argv[1];
+    }
+    else
+    {
+        name = "MYPUBSCREEN";
+    }
 
     if ((signalnum = AllocSignal(-1)) == -1)
     {
@@ -41,10 +54,10 @@ int main(void)
             myscreen = OpenScreenTags
             (
                 NULL,
-                SA_PubName, "MYPUBSCREEN",
+                SA_PubName, name,
                 SA_PubSig, signalnum,
                 SA_LikeWorkbench, TRUE,
-                SA_Title, "Pubscreenname: MYPUBSCREEN",
+                SA_Title, name,
                 TAG_DONE
             )
         ) == NULL
