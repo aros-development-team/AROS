@@ -28,6 +28,11 @@
 #endif
 #define TimerBase (DOSBase->dl_TimerBase)
 
+#ifdef UtilityBase
+#undef UtilityBase
+#endif
+#define UtilityBase (DOSBase->dl_UtilityBase)
+
 /* Needed for close() */
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
