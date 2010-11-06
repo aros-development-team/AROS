@@ -6,13 +6,14 @@
     Lang: english
 */
 
-#define DEBUG 0
-
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
+extern void AROS_SLIB_ENTRY(CachePostDMA_00,Exec)(void);
+extern void AROS_SLIB_ENTRY(CachePostDMA_30,Exec)(void);
+extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec)(void);
 /*****************************************************************************
 
     NAME */
@@ -43,7 +44,7 @@
     RESULT
 
     NOTES
-	DMA must follow a call to CachePreDMA() and must be followed
+	DMA must follow a call to CachePostDMA() and must be followed
 	by a call to CachePostDMA().
 
     EXAMPLE
@@ -51,17 +52,35 @@
     BUGS
 
     SEE ALSO
-	CachePreDMA()
+	CachePostDMA()
 
     INTERNALS
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    void (*func)(void);
 
-#ifdef __mc68020
-#error CachePostDMA is not defined, but needed!
-#endif
+    /* When called the first time, this patches up the
+     * Exec syscall table to directly point to the right routine.
+     */
+    Disable();
+    if (SysBase->AttnFlags & AFF_68040) {
+        /* 68040 support */
+        func = AROS_SLIB_ENTRY(CachePostDMA_40, Exec);
+    } else if (SysBase->AttnFlags & AFF_68030) {
+        /* 68030 support */
+        func = AROS_SLIB_ENTRY(CachePostDMA_30, Exec);
+    } else {
+        /* Everybody else (68000, 68010) */
+        func = AROS_SLIB_ENTRY(CachePostDMA_00, Exec);
+    }
+
+    SetFunction(SysBase, -LIB_VECTSIZE * 128, func);
+    Enable();
+
+    /* Call 'myself', which is now pointing to the correct routine */
+    return CachePostDMA(address, length, flags);
 
     AROS_LIBFUNC_EXIT
 } /* CachePostDMA */
