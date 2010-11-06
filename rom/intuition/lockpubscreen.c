@@ -1,11 +1,13 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
 #include <string.h>
 #include "intuition_intern.h"
+
+static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
 /*****************************************************************************
  
@@ -36,6 +38,7 @@
  
     Name   --  Name of the public screen or NULL for the default public
                screen. The name "Workbench" refers to the Workbench screen.
+               The name is case insensitive.
  
     RESULT
  
@@ -120,7 +123,7 @@
         ASSERT_VALID_PTR(name);
 
         /* Browse the public screen list */
-        if( (psn = (struct PubScreenNode *) FindName(list, (UBYTE *)name )) )
+        if( (psn = findcasename(list, (UBYTE *)name )) )
         {
             ASSERT_VALID_PTR(psn);
 
@@ -145,7 +148,7 @@
 
     /* If no screen was found and the requested one was the Workbench screen or
      * the default public screen, open the Workbench screen and lock it. */
-    if( (screen == NULL) && ((name == NULL) || (strcmp( name, "Workbench" ) == 0)) )
+    if( (screen == NULL) && ((name == NULL) || (strcasecmp( name, "Workbench" ) == 0)) )
     {
         OpenWorkBench();
         DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: opened workbench\n"));
@@ -159,7 +162,7 @@
 
             /* Maybe something patched OpenWorkbench, and there is a 'Workbench'
              * screen in the list. Our private pointer is just not set. */
-            if( (psn = (struct PubScreenNode *) FindName(list, "Workbench" )) )
+            if( (psn = findcasename(list, "Workbench" )) )
             {
                 /* Don't lock screens in private state */
                 if( (psn != NULL) && !(psn->psn_Flags & PSNF_PRIVATE) )
@@ -190,3 +193,20 @@
 
     AROS_LIBFUNC_EXIT
 } /* LockPubScreen */
+
+
+/* case insensitive FindName() */
+static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name)
+{
+    struct Node *node;
+
+    for (node = GetHead(list); node; node = GetSucc(node))
+    {
+        if(node->ln_Name)
+        {
+            if (!strcasecmp (node->ln_Name, name))
+                break;
+        }
+    }
+    return (struct PubScreenNode *)node;
+}
