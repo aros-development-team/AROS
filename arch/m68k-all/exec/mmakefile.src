@@ -4,8 +4,10 @@ include $(TOP)/config/make.cfg
 FILES=newstackswap offsets getcc \
       cachecleare cacheclearu cachecontrol cachepostdma cachepredma
 
-AFILES=stackswap supervisor forbid \
-      cacheclearu_ cachepostdma_ cachepredma_
+AFILES=stackswap \
+       supervisor superstate userstate \
+       forbid \
+       cacheclearu_ cachepostdma_ cachepredma_
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec $(PARANOIA_CFLAGS)
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
