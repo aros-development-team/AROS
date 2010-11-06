@@ -324,7 +324,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
                     LockPubScreenList();
 
-                    if (strcmp((char *)tag->ti_Data, "Workbench") == 0)
+                    if (strcasecmp((char *)tag->ti_Data, "Workbench") == 0)
                     {
 			/* FIXME: This would still not be safe, if a normal app tried to open its own screen with SA_PubName=Workbench */
                         if (GetPrivIBase(IntuitionBase)->WorkBench)
