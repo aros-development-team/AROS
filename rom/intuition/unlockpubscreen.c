@@ -1,10 +1,12 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
 #include "intuition_intern.h"
+
+static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
 /*****************************************************************************
  
@@ -28,7 +30,7 @@
     this case the screen pointer will be ignored.
  
     INPUTS
-    name - Name of the public screen to unlock
+    name - Name of the public screen to unlock. The name is case insensitive.
     screen - Pointer to the screen to unlock
  
     RESULT
@@ -46,8 +48,6 @@
     INTERNALS
  
     HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
@@ -68,7 +68,7 @@
         struct PubScreenNode *psn;
 
         /* Get screen by its name */
-        if ((psn = (struct PubScreenNode *)FindName(publist, name)))
+        if ((psn = findcasename(publist, name)))
             screen = psn->psn_Screen;
         else
             screen = NULL;
@@ -111,3 +111,20 @@
 
     AROS_LIBFUNC_EXIT
 } /* UnlockPubScreen */
+
+
+/* case insensitive FindName() */
+static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name)
+{
+    struct Node *node;
+
+    for (node = GetHead(list); node; node = GetSucc(node))
+    {
+        if(node->ln_Name)
+        {
+            if (!strcasecmp (node->ln_Name, name))
+                break;
+        }
+    }
+    return (struct PubScreenNode *)node;
+}
