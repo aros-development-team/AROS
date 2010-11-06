@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NewStackSwap() - Call a function with swapped stack.
@@ -10,21 +10,10 @@
 #include <aros/debug.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
+
 #include <ucontext.h>
 
-static void SwapTaskStackLimits(struct StackSwapStruct *sss)
-{
-    struct Task* this = FindTask(NULL);
-    APTR tmp;
-
-    tmp              = this->tc_SPLower;
-    this->tc_SPLower = sss->stk_Lower;
-    sss->stk_Lower   = tmp;
-	
-    tmp              = this->tc_SPUpper;
-    this->tc_SPUpper = sss->stk_Upper;
-    sss->stk_Upper   = tmp;
-}
+#include "exec_intern.h"
 
 static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
 {
@@ -38,79 +27,47 @@ static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
     Disable();
 }
 
-/*****************************************************************************
-
-    NAME */
-
-	AROS_LH3(IPTR, NewStackSwap,
-
-/*  SYNOPSIS */
-	AROS_LHA(struct StackSwapStruct *,  sss, A0),
-	AROS_LHA(LONG_FUNC, entry, A1),
-	AROS_LHA(struct StackSwapArgs *, args, A2),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 122, Exec)
-
-/*  FUNCTION
-	Calls a function with a new stack.
-
-    INPUTS
-	sss     -   A structure containing the values for the upper, lower
-		    and current bounds of the stack you wish to use.
-	entry	-   Address of the function to call.
-	args	-   A structure (actually an array) containing up to 8
-		    function arguments
-
-    RESULT
-	A value actually returned by your function. The function will be
-	running on a new stack.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-        Do not attempt to pass in a prebuilt stack - it will be erased.
-
-	getcontext(), makecontext() and swapcontext() theoretically may
-	fail, we do not check for this.
-
-    SEE ALSO
-	StackSwap()
-
-    INTERNALS
-	This function MUST be replaced in $(KERNEL) or $(ARCH).
-
-******************************************************************************/
+AROS_LH3(IPTR, NewStackSwap,
+	 AROS_LHA(struct StackSwapStruct *,  sss, A0),
+	 AROS_LHA(LONG_FUNC, entry, A1),
+	 AROS_LHA(struct StackSwapArgs *, args, A2),
+	 struct ExecBase *, SysBase, 122, Exec)
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *me = FindTask(NULL);
     IPTR ret;
+    APTR splower, spupper;
     ucontext_t ucx, ucx_return;
-    
+
     Disable();  /* To avoid random crashes during startup */
-    getcontext(&ucx);
+    PD(SysBase).SysIFace->getcontext(&ucx);
     Enable();
-    
+
+    /* Prepare the alternate stack */
     ucx.uc_stack.ss_sp    = sss->stk_Lower;
-    ucx.uc_stack.ss_size  = (size_t)sss->stk_Upper - (size_t)sss->stk_Lower;
+    ucx.uc_stack.ss_size  = (size_t)sss->stk_Pointer - (size_t)sss->stk_Lower;
     ucx.uc_stack.ss_flags = SS_ONSTACK;
-    
-    ucx.uc_link = &ucx_return;
+    ucx.uc_link           = &ucx_return;
 
-    makecontext(&ucx, (void (*)()) trampoline, 3, entry, &ret, args->Args);
-    
-    /*
-       we enable again in trampoline, after we have swapped
-       the new stack borders into the task structure
-    */
+    PD(SysBase).SysIFace->makecontext(&ucx, (void (*)()) trampoline, 3, entry, &ret, args->Args);
+
+    /* Remember original stack limits */
+    splower = me->tc_SPLower;
+    spupper = me->tc_SPUpper;
+
+    /* Disable(), otherwise stack check will fail */
     Disable();
-    SwapTaskStackLimits(sss);
 
-    swapcontext(&ucx_return, &ucx);
+    /* Set new stack limits, swapcontext() will change the stack itself */
+    me->tc_SPLower = sss->stk_Lower;
+    me->tc_SPUpper = sss->stk_Upper;
 
-    SwapTaskStackLimits(sss);
+    /* We Enable() in trampoline */
+    PD(SysBase).SysIFace->swapcontext(&ucx_return, &ucx);
+
+    me->tc_SPLower = splower;
+    me->tc_SPUpper = spupper;
     Enable();
 
     return ret;
