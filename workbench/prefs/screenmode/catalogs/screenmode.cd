@@ -26,3 +26,18 @@ Mode ID
 MSG_DESCRIPTION (//)
 Description
 ;
+MSG_MODE_ATTRIBUTES (//)
+Mode Attributes
+;
+MSG_VISIBLE_SIZE (//)
+Visible Size:
+;
+MSG_MINIMUM_SIZE (//)
+Minimum Size:
+;
+MSG_MAXIMUM_SIZE (//)
+Maximum Size:
+;
+MSG_MAXIMUM_COLORS (//)
+Maximum Colors:
+;

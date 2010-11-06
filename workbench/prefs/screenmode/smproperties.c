@@ -318,7 +318,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 {
                     nnset(data->def_width, MUIA_Selected, TRUE);
                     nnset(data->def_height, MUIA_Selected, TRUE);
-		    depth_tags[4].ti_Tag = TAG_DONE;
+                    depth_tags[4].ti_Tag = TAG_DONE;
                 }
 
                 SetAttrsA(data->width,  width_tags);
