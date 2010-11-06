@@ -119,9 +119,9 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
     UBYTE temp;
     BOOL reply;
 
-	D(bug("TD%d PerformIO cmd=%d\n", tdu->tdu_UnitNum, iotd->iotd_Req.io_Command));
+    D(bug("TD%d PerformIO cmd=%d\n", tdu->tdu_UnitNum, iotd->iotd_Req.io_Command));
 
-	getunit(tdb);
+    getunit(tdb);
     reply = TRUE;
     switch(iotd->iotd_Req.io_Command)
     {
