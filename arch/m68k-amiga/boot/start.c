@@ -329,7 +329,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	 * reset the ROM
 	 */
 	for (i = 2; i < 64; i++)
-		trap[i] = 0xdead0000 | i;
+		trap[i] = Exec_FatalException;
 
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
@@ -338,8 +338,6 @@ void start(IPTR chip_start, ULONG chip_size,
 #ifdef USE_GDBSTUB
 	/* Must be after the BSS clear! */
 	gdbstub();
-	for (i = 2; i < 64; i++)
-		trap[i] = trap[i] + i;
 #endif
 
 	/* Set privilige violation trap - we
