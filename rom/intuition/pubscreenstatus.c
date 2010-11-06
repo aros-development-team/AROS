@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -49,8 +49,7 @@
     INTERNALS
  
     HISTORY
-        21-06-98    SDuvan  Implemented
- 
+
 *****************************************************************************/
 #define GPB(x) GetPrivIBase(x)
 
@@ -63,8 +62,16 @@
 
     LockPubScreenList();
 
-    if (GetPrivScreen(Scr)->pubScrNode == NULL ||
-        GetPrivScreen(Scr)->pubScrNode->psn_VisitorCount != 0)
+    if
+    (
+        (GetPrivScreen(Scr)->pubScrNode == NULL)
+        ||
+        (
+            (StatusFlags & PSNF_PRIVATE)
+            &&
+            (GetPrivScreen(Scr)->pubScrNode->psn_VisitorCount != 0)
+        )
+    )
     {
         retval = 0x0;
     }
