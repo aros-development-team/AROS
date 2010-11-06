@@ -23,9 +23,10 @@
 
 struct ScreenModeProperties_DATA
 {
-    Object *width, *height, *depth,
-           *def_width, *def_height;
-           
+    Object *depth, *def_width, *def_height;
+
+    Object *objWidth;
+    Object *objHeight;
     Object *autoscroll;
     
     ULONG DisplayID;
@@ -56,7 +57,7 @@ struct ScreenModeProperties_DATA
 Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct ScreenModeProperties_DATA *data;
-    Object *width, *height, *depth,
+    Object *objWidth, *objHeight, *depth,
            *def_width, *def_height;
 
     Object *autoscroll;
@@ -69,27 +70,36 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         MUIA_Group_Horiz, TRUE,
         Child, (IPTR)ColGroup(4),
             Child, (IPTR)Label1(__(MSG_WIDTH)),
-            Child, HLeft(width = (Object *)NumericbuttonObject, MUIA_CycleChain, TRUE, End),
+            Child, HLeft(objWidth = (Object *)StringObject,
+                StringFrame,
+                MUIA_String_Accept, (IPTR)"0123456789",
+                MUIA_String_MaxLen, 6,
+                MUIA_CycleChain, TRUE,
+            End),
             Child, (IPTR)(def_width = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)Label1(__(MSG_DEFAULT)),
                 
             Child, (IPTR)Label1(__(MSG_HEIGHT)),
-            Child, HLeft(height = (Object *)NumericbuttonObject, MUIA_CycleChain, TRUE, End),
-            Child, (IPTR)(def_height = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
+            Child, HLeft(objHeight = (Object *)StringObject,
+                StringFrame,
+                MUIA_String_Accept, (IPTR)"0123456789",
+                MUIA_String_MaxLen, 6,
+                MUIA_CycleChain, TRUE,
+            End),
+            Child, HLeft(def_height = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)Label1(__(MSG_DEFAULT)),
                 
             Child, (IPTR)Label1(__(MSG_DEPTH)),
             Child, HLeft(depth = (Object *)NumericbuttonObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)RectangleObject, End,
             Child, (IPTR)RectangleObject, End,
-        End,  
-            
-        Child, (IPTR)MUI_MakeObject(MUIO_VBar, 20),
-            
-        Child, (IPTR)HCenter(HGroup,
+
             Child, (IPTR)Label1(__(MSG_AUTOSCROLL)),
-            Child, (IPTR)(autoscroll = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
-        End),
+            Child, HLeft(autoscroll = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
+            Child, (IPTR)RectangleObject, End,
+            Child, (IPTR)RectangleObject, End,
+
+        End,  
         
         TAG_MORE, (IPTR)message->ops_AttrList
     );
@@ -100,8 +110,8 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     D(bug("[smproperties] Created ScreenModeProperties object 0x%p\n", self));
     data = INST_DATA(CLASS, self);    
     
-    data->width      = width;
-    data->height     = height;
+    data->objWidth   = objWidth;
+    data->objHeight  = objHeight;
     data->depth      = depth;
     data->def_width  = def_width;
     data->def_height = def_height;
@@ -109,16 +119,16 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
 
     DoMethod
     (
-        width, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+        objWidth, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
         (IPTR)self, 3,
-        MUIM_Set, MUIA_ScreenModeProperties_Width, MUIV_TriggerValue
+        MUIM_Set, MUIA_ScreenModeProperties_WidthString, MUIV_TriggerValue
     );
     
     DoMethod
     (
-        height, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+        objHeight, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
         (IPTR)self, 3,
-        MUIM_Set, MUIA_ScreenModeProperties_Height, MUIV_TriggerValue
+        MUIM_Set, MUIA_ScreenModeProperties_HeightString, MUIV_TriggerValue
     );
     
     DoMethod
@@ -137,9 +147,9 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
 
     DoMethod
     (
-        width, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-        (IPTR)def_width, 3,
-        MUIM_Set, MUIA_Selected, FALSE
+        def_width, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR)objWidth, 3,
+        MUIM_Set, MUIA_Disabled, MUIV_TriggerValue
     );
     
     DoMethod
@@ -148,12 +158,12 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         (IPTR)self, 3,
         MUIM_Set, MUIA_ScreenModeProperties_Height, -1
     );
-
+    
     DoMethod
     (
-        height, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
-        (IPTR)def_height, 3,
-        MUIM_Set, MUIA_Selected, FALSE
+        def_height, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR)objHeight, 3,
+        MUIM_Set, MUIA_Disabled, MUIV_TriggerValue
     );
 
     id = GetTagData(MUIA_ScreenModeProperties_DisplayID, INVALID_ID, message->ops_AttrList);
@@ -195,7 +205,8 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
     ULONG id        = INVALID_ID;
     IPTR  no_notify = TAG_IGNORE;
     IPTR ret;
-    WORD width, height, depth;
+    WORD depth;
+    LONG width, height;
     
     DB2(bug("[smproperties] OM_SET called\n"));
     for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -208,24 +219,6 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 
             case MUIA_ScreenModeProperties_DisplayID:
             {
-                struct TagItem width_tags[] =
-                {
-                    { MUIA_NoNotify,        TRUE },
-                    { MUIA_Numeric_Min,        0 },
-                    { MUIA_Numeric_Max,        0 },
-                    { MUIA_Numeric_Default,    0 },
-                    { MUIA_Numeric_Value,      0 },
-                    { TAG_DONE,                0 }
-                };
-                struct TagItem height_tags[] =
-                {
-                    { MUIA_NoNotify,        TRUE },
-                    { MUIA_Numeric_Min,        0 },
-                    { MUIA_Numeric_Max,        0 },
-                    { MUIA_Numeric_Default,    0 },
-                    { MUIA_Numeric_Value,      0 },
-                    { TAG_DONE,                0 }
-                };
                 struct TagItem depth_tags[] =
                 {
                     { MUIA_NoNotify,        TRUE },
@@ -245,49 +238,42 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 
                 if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
                 {
-                    IPTR width, height;
+                    IPTR isdefault, val;
 
-                    width_tags[1].ti_Data  = dim.MinRasterWidth;
-                    height_tags[1].ti_Data = dim.MinRasterHeight;
                     depth_tags[1].ti_Data  = 1;
-            
-                    width_tags[2].ti_Data  = dim.MaxRasterWidth;
-                    height_tags[2].ti_Data = dim.MaxRasterHeight;
                     depth_tags[2].ti_Data  = dim.MaxDepth;
-            
-                    width_tags[3].ti_Data  = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
-                    height_tags[3].ti_Data = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
                     depth_tags[3].ti_Data  = dim.MaxDepth;
 
-                    D(bug("[smproperties] Obtained DimensionsInfo:\n"));
-                    D(bug("[smproperties] Minimum raster: %lux%lux1\n", dim.MinRasterWidth, dim.MinRasterHeight));
-                    D(bug("[smproperties] Maximum raster: %lux%lux%lu\n", dim.MaxRasterWidth, dim.MaxRasterHeight, dim. MaxDepth));
-                    D(bug("[smproperties] Display size: %lux%lu\n", width_tags[3].ti_Data, height_tags[3].ti_Data));
-                    
                     id = tag->ti_Data;
-                    data->DefWidth = width_tags[3].ti_Data;
-                    data->DefHeight = height_tags[3].ti_Data;
+                    data->DefWidth = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
+                    data->DefHeight = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
                     data->DefDepth = depth_tags[3].ti_Data;
                     data->MinWidth = dim.MinRasterWidth;
                     data->MinHeight = dim.MinRasterHeight;
                     data->MaxWidth = dim.MaxRasterWidth;
                     data->MaxHeight = dim.MaxRasterHeight;
 
-                    GetAttr(MUIA_Selected, data->def_width, &width);
-                    GetAttr(MUIA_Selected, data->def_height, &height);
-                    if (width)
-                        width_tags[4].ti_Data = width_tags[3].ti_Data;
+                    D(bug("[smproperties] Obtained DimensionsInfo:\n"));
+                    D(bug("[smproperties] Minimum raster: %lux%lux1\n", dim.MinRasterWidth, dim.MinRasterHeight));
+                    D(bug("[smproperties] Maximum raster: %lux%lux%lu\n", dim.MaxRasterWidth, dim.MaxRasterHeight, dim. MaxDepth));
+                    D(bug("[smproperties] Display size: %lux%lu\n", data->DefWidth, data->DefHeight));
+ 
+                    GetAttr(MUIA_Selected, data->def_width, &isdefault);
+                    if (isdefault)
+                        width = data->DefWidth;
                     else
                     {
-                        GetAttr(MUIA_Numeric_Value, data->width, &width);
-                        width_tags[4].ti_Data = AdjustWidth(width, data);
+                        GetAttr(MUIA_Numeric_Value, data->objWidth, &val);
+                        width = AdjustWidth((LONG)val, data);
                     }
-                    if (height)
-                        height_tags[4].ti_Data = height_tags[3].ti_Data;
+
+                    GetAttr(MUIA_Selected, data->def_height, &isdefault);
+                    if (isdefault)
+                        height = data->DefHeight;
                     else
                     {
-                        GetAttr(MUIA_Numeric_Value, data->height, &height);
-                        height_tags[4].ti_Data = AdjustHeight(height, data);
+                        GetAttr(MUIA_String_Integer, data->objHeight, &val);
+                        height = AdjustHeight((LONG)val, data);
                     }
                 }
 
@@ -305,11 +291,11 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     }
                 }
                 
-                /* Enable autoscroll only if the maximum sizes are bigger than 
+                /* Enable autoscroll if one of the maximum sizes is bigger than 
                    the resolution.  */
                    
-                autoscroll = width_tags[2].ti_Data  > width_tags[3].ti_Data  &&
-                             height_tags[2].ti_Data > height_tags[3].ti_Data;
+                autoscroll = data->MaxWidth > data->DefWidth  ||
+                             data->MaxHeight > data->DefHeight;
     
                 data->DisplayID = id;
 
@@ -320,9 +306,17 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     nnset(data->def_height, MUIA_Selected, TRUE);
                     depth_tags[4].ti_Tag = TAG_DONE;
                 }
+                else
+                {
+                    IPTR isdefault;
+                    GetAttr(MUIA_Selected, data->def_height, &isdefault);
+                    SetAttrs(data->objHeight, MUIA_Disabled, isdefault, TAG_DONE);
+                    GetAttr(MUIA_Selected, data->def_width, &isdefault);
+                    SetAttrs(data->objWidth, MUIA_Disabled, isdefault, TAG_DONE);
+                }
 
-                SetAttrsA(data->width,  width_tags);
-                SetAttrsA(data->height, height_tags);
+                SetAttrs(data->objWidth, MUIA_String_Integer, width, TAG_DONE);
+                SetAttrs(data->objHeight, MUIA_String_Integer, height, TAG_DONE);
                 SetAttrsA(data->depth,  depth_tags);
 
                 SetAttrs(data->autoscroll, no_notify, TRUE, 
@@ -332,31 +326,43 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 
                 break;
             }
-            
+
+            case MUIA_ScreenModeProperties_WidthString:
+                D(bug("[smproperties] Set WidthString = %s\n", (CONST_STRPTR)tag->ti_Data));
+                StrToLong((CONST_STRPTR)tag->ti_Data, &width);
+                SetAttrs(self, MUIA_ScreenModeProperties_Width, width, TAG_DONE);
+                break;
+
             case MUIA_ScreenModeProperties_Width:
                 width = tag->ti_Data;
 
                 D(bug("[smproperties] Set Width = %ld\n", width));
-                if (no_notify == TAG_IGNORE)
-                    nnset(data->def_width, MUIA_Selected, width == -1);
                 if (width == -1)
                     width = data->DefWidth;
                 else
                     width = AdjustWidth(width, data);
-                SetAttrs(data->width, no_notify, TRUE, MUIA_Numeric_Value, width, TAG_DONE);
+                SetAttrs(data->objWidth, MUIA_NoNotify, TRUE, MUIA_String_Integer, width, TAG_DONE);
+                SetAttrs(data->def_width, MUIA_NoNotify, TRUE, MUIA_Selected, width == data->DefWidth, TAG_DONE);
+                SetAttrs(data->objWidth, MUIA_NoNotify, TRUE, MUIA_Disabled, width == data->DefWidth, TAG_DONE);
+                break;
+
+            case MUIA_ScreenModeProperties_HeightString:
+                D(bug("[smproperties] Set HeightString = %s\n", (CONST_STRPTR)tag->ti_Data));
+                StrToLong((CONST_STRPTR)tag->ti_Data, &height);
+                SetAttrs(self, MUIA_ScreenModeProperties_Height, height, TAG_DONE);
                 break;
                 
             case MUIA_ScreenModeProperties_Height:
                 height = tag->ti_Data;
 
                 D(bug("[smproperties] Set Height = %ld\n", height));
-                if (no_notify == TAG_IGNORE)
-                    nnset(data->def_height, MUIA_Selected, height == -1);
                 if (height == -1)
                     height = data->DefHeight;
                 else
                     height = AdjustHeight(height, data);
-                SetAttrs(data->height, no_notify, TRUE, MUIA_Numeric_Value, height, TAG_DONE);
+                SetAttrs(data->objHeight, MUIA_NoNotify, TRUE, MUIA_String_Integer, height, TAG_DONE);
+                SetAttrs(data->def_height, MUIA_NoNotify, TRUE, MUIA_Selected, height == data->DefHeight, TAG_DONE);
+                SetAttrs(data->objHeight, MUIA_NoNotify, TRUE, MUIA_Disabled, height == data->DefHeight, TAG_DONE);
                 break;
             
             case MUIA_ScreenModeProperties_Depth:
@@ -397,17 +403,11 @@ IPTR ScreenModeProperties__OM_GET(Class *CLASS, Object *self, struct opGet *mess
             break;
         
         case MUIA_ScreenModeProperties_Width:
-            if (XGET(data->def_width, MUIA_Selected) == TRUE)
-                *message->opg_Storage = -1;
-            else
-                *message->opg_Storage = XGET(data->width, MUIA_Numeric_Value);
+            *message->opg_Storage = XGET(data->objWidth, MUIA_String_Integer);
             break;
         
         case MUIA_ScreenModeProperties_Height:
-            if (XGET(data->def_height, MUIA_Selected) == TRUE)
-                *message->opg_Storage = -1;
-            else
-                *message->opg_Storage = XGET(data->height, MUIA_Numeric_Value);
+            *message->opg_Storage = XGET(data->objHeight, MUIA_String_Integer);
             break;
         
         case MUIA_ScreenModeProperties_Depth:
