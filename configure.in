@@ -1380,6 +1380,11 @@ if test "$aros_host_cpu" == "x86_64" ; then
 	fi
     fi
 fi
+if test "$aros_host_arch" == "darwin" ; then
+    if test "$aros_target_arch" != "darwin" ; then
+	cross_compiling=yes
+    fi
+fi
 
 # Set prefix for target compiler etc. if we're cross-compiling
 # (should possibly be earlier but needs to be after AC_PROG_CC)
