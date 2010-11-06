@@ -68,7 +68,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#ifdef __mc68020
+#ifdef __mc68030
 #error CacheControl is not defined, but needed!
 #endif
 

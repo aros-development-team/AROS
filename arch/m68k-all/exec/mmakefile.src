@@ -4,10 +4,11 @@ include $(TOP)/config/make.cfg
 FILES=newstackswap offsets getcc \
       cachecleare cacheclearu cachecontrol cachepostdma cachepredma
 
-AFILES=stackswap supervisor forbid
+AFILES=stackswap supervisor forbid \
+      cacheclearu_ cachepostdma_ cachepredma_
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec $(PARANOIA_CFLAGS)
-USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls
+USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \

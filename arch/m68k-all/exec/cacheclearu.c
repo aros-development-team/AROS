@@ -10,6 +10,9 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
+extern void AROS_SLIB_ENTRY(CacheClearU_00,Exec)(void);
+extern void AROS_SLIB_ENTRY(CacheClearU_20,Exec)(void);
+extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec)(void);
 /*****************************************************************************
 
     NAME */
@@ -56,13 +59,28 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    void (*func)(void);
 
-#ifdef __mc68020
-#error CacheClearU is not defined, but needed!
-#endif
+    /* When called the first time, this patches up the
+     * Exec syscall table to directly point to the right routine.
+     */
+    Disable();
+    if (SysBase->AttnFlags & AFF_68060) {
+        /* 68060 support */
+        func = AROS_SLIB_ENTRY(CacheClearU_60, Exec);
+    } else if (SysBase->AttnFlags & AFF_68020) {
+        /* 68020 support */
+        func = AROS_SLIB_ENTRY(CacheClearU_20, Exec);
+    } else {
+        /* Everybody else (68000, 68010) */
+        func = AROS_SLIB_ENTRY(CacheClearU_00, Exec);
+    }
 
-    /* Just dump the whole lot */
-    CacheClearE(0, 0xFFFFFFFF, CACRF_ClearI | CACRF_ClearD);
+    SetFunction(SysBase, -LIB_VECTSIZE * 106, func);
+    Enable();
+
+    /* Call 'myself', which is now pointing to the correct routine */
+    CacheClearU();
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearU */

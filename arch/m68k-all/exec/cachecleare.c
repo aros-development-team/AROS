@@ -66,16 +66,14 @@
 	CacheClearU(), CacheControl()
 
     INTERNALS
-	This is a rather CPU dependant function. You should replace it
-	in your $(KERNEL).
+	This is a rather CPU dependant function.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-#ifdef __mc68020
-#error CacheClearE is not defined, but needed!
-#endif
+    /* Just clear everything */
+    CacheClearU();
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */

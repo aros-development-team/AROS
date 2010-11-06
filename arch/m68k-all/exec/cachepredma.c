@@ -12,6 +12,8 @@
 #include <exec/types.h>
 #include <aros/libcall.h>
 
+extern void AROS_SLIB_ENTRY(CachePreDMA_00,Exec)(void);
+extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec)(void);
 /*****************************************************************************
 
     NAME */
@@ -66,12 +68,25 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    void (*func)(void);
 
-#ifdef __mc68020
-#error CachePostDMA is not defined, but needed!
-#endif
+    /* When called the first time, this patches up the
+     * Exec syscall table to directly point to the right routine.
+     */
+    Disable();
+    if (SysBase->AttnFlags & AFF_68040) {
+        /* 68040 support */
+        func = AROS_SLIB_ENTRY(CachePreDMA_40, Exec);
+    } else {
+        /* Everybody else (68000, 68010) */
+        func = AROS_SLIB_ENTRY(CachePreDMA_00, Exec);
+    }
 
-    return address;
+    SetFunction(SysBase, -LIB_VECTSIZE * 127, func);
+    Enable();
+
+    /* Call 'myself', which is now pointing to the correct routine */
+    return CachePreDMA(address, length, flags);
 
     AROS_LIBFUNC_EXIT
 } /* CachePreDMA() */
