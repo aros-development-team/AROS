@@ -138,8 +138,48 @@ ULONG cpu_detect(void)
 }
 	
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+/* Create a sign extending call stub:
+ * foo:
+ *   jsr AROS_SLIB_ENTRY(funcname, libname)
+ *     0x4eb9 .... ....
+ *   ext.w %d0	// EXT_BYTE only
+ *     0x4880	
+ *   ext.l %d0	// EXT_BYTE and EXT_WORD
+ *     0x48c0
+ *   rts
+ *     0x4e75
+ */
+#define EXT_BYTE(lib, libname, funcname, funcid) \
+	do { \
+		UWORD *asmcall; \
+		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
+		asmcall = AllocMem(6 * sizeof(UWORD), MEMF_PUBLIC); \
+		/* NOTE: 'asmcall' will intentionally never be freed */ \
+		asmcall[0] = 0x4eb9; \
+		asmcall[1] = (func >> 16) & 0xffff; \
+		asmcall[2] = (func >>  0) & 0xffff; \
+		asmcall[3] = 0x4880; \
+		asmcall[4] = 0x48c0; \
+		asmcall[5] = 0x4e75; \
+		/* Insert into the library's jumptable */ \
+		__AROS_SETVECADDR(lib, funcid, asmcall); \
+	} while (0)
+#define EXT_WORD(lib, libname, funcname, funcid) \
+	do { \
+		UWORD *asmcall; \
+		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
+		asmcall = AllocMem(5 * sizeof(UWORD), MEMF_PUBLIC); \
+		/* NOTE: 'asmcall' will intentionally never be freed */ \
+		asmcall[0] = 0x4eb9; \
+		asmcall[1] = (func >> 16) & 0xffff; \
+		asmcall[2] = (func >>  0) & 0xffff; \
+		asmcall[3] = 0x48c0; \
+		asmcall[4] = 0x4e75; \
+		/* Insert into the library's jumptable */ \
+		__AROS_SETVECADDR(lib, funcid, asmcall); \
+	} while (0)
 /*
- * Create a call stub like so:
+ * Create a register preserving call stub:
  * foo:
  *   movem.l %d0-%d1/%a0-%a1,%sp@-
  *     0x48e7 0xc0c0
@@ -186,6 +226,8 @@ ULONG cpu_detect(void)
 #else
 /* Not needed on EABI */
 #define PRESERVE_ALL(lib, libname, funcname, funcid) do { } while (0)
+#define EXT_BYTE(lib, libname, funcname, funcid) do { } while (0)
+#define EXT_WORD(lib, libname, funcname, funcid) do { } while (0)
 #define FAKE_IT(lib, libname, funcname, funcid, ...) do { } while (0)
 #define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
 #endif
@@ -287,7 +329,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	 * reset the ROM
 	 */
 	for (i = 2; i < 64; i++)
-		trap[i] = Exec_FatalException;
+		trap[i] = 0xdead0000 | i;
 
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
@@ -296,6 +338,8 @@ void start(IPTR chip_start, ULONG chip_size,
 #ifdef USE_GDBSTUB
 	/* Must be after the BSS clear! */
 	gdbstub();
+	for (i = 2; i < 64; i++)
+		trap[i] = trap[i] + i;
 #endif
 
 	/* Set privilige violation trap - we
@@ -346,6 +390,15 @@ void start(IPTR chip_start, ULONG chip_size,
 	PRESERVE_ALL(sysBase, Exec, ObtainSemaphore, 94);
 	PRESERVE_ALL(sysBase, Exec, ReleaseSemaphore, 95);
 	PRESERVE_ALL(sysBase, Exec, ObtainSemaphoreShared, 113);
+
+	/* Functions that need sign extension */
+	EXT_BYTE(sysBase, Exec, SetTaskPri, 50);
+	EXT_BYTE(sysBase, Exec, AllocSignal, 55);
+	EXT_BYTE(sysBase, Exec, OpenDevice, 74);
+	EXT_BYTE(sysBase, Exec, DoIO, 76);
+	EXT_BYTE(sysBase, Exec, WaitIO, 79);
+
+	EXT_WORD(sysBase, Exec, GetCC, 88);
 
 	/* Needed for card.resource */
 	FAKE_ID(sysBase, Exec, ReadGayle, 136, 0x00d0);	/* ReadGayle */
