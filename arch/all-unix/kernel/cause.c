@@ -10,7 +10,7 @@ AROS_LH0I(void, KrnCause,
 {
     AROS_LIBFUNC_INIT
 
-    kill(PD(KernelBase).pid, SIGUSR2);
+    raise(SIGUSR2);
 
     AROS_LIBFUNC_EXIT
 }

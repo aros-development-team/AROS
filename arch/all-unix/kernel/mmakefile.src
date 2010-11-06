@@ -1,9 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES  := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec
+USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/arch/all-unix/kernel \
+	       -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/rom/exec \
+	       -isystem $(GENINCDIR) \
+	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 
-FUNCS := bug cause cli issuper putchar sti
+FUNCS := bug cause cli getsystemattr issuper putchar sti
 FILES := kernel kernel_cpu cpu_$(CPU)
 
 %build_archspecific \

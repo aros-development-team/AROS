@@ -38,7 +38,7 @@ AROS_LH0(void, KrnCli,
 {
     AROS_LIBFUNC_INIT
 
-    sigprocmask(SIG_BLOCK, &PD(KernelBase).sig_int_mask, NULL);
+    sigprocmask(SIG_BLOCK, &KernelBase->kb_PlatformData->sig_int_mask, NULL);
 
     AROS_LIBFUNC_EXIT
 }

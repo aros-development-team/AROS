@@ -3,7 +3,15 @@
     $Id$
 */
 
-#ifndef __AROS_EXEC_LIBRARY__
+#ifdef __AROS_EXEC_LIBRARY__
+
+#define _MC_FPOWNED_NONE 0x020000
+#define _MC_FPFMT_NODEV  0x010000
+
+/* FreeBSD v4 is an ancient history now */
+#define __FreeBSD_version 500001
+
+#else
 
 #include <machine/psl.h>
 #include <sys/types.h>
@@ -18,7 +26,7 @@ typedef struct sigcontext regs_t;
 #define SIGHANDLER	bsd_sighandler
 #define SIGHANDLER_T	__sighandler_t *
 
-#define SC_DISABLE(sc)   (sc->sc_mask = PD(KernelBase).sig_int_mask)
+#define SC_DISABLE(sc)   (sc->sc_mask = KernelBase->kb_PlatformData->sig_int_mask)
 #define SC_ENABLE(sc)    (sigemptyset(&sc->sc_mask))
 
 #define SP(sc)           (sc->sc_esp)
@@ -96,12 +104,6 @@ typedef struct sigcontext regs_t;
                 ((sc)->sc_fpformat != _MC_FPFMT_NODEV)                      \
             )
 
-#       define PREPARE_INITIAL_CONTEXT(cc)                                              \
-            do {                                                            \
-                (cc)->acc_u.acc_f5.fpformat = _MC_FPFMT_NODEV;              \
-                (cc)->acc_u.acc_f5.ownedfp = _MC_FPOWNED_NONE;              \
-            } while (0)
-
 #   else
 
         /*
@@ -123,14 +125,6 @@ typedef struct sigcontext regs_t;
 
 #       define HAS_FPU(sc)      0
 
-#       define PREPARE_INITIAL_CONTEXT(cc)                                  \
-            do {                                                            \
-                asm volatile("fninit\n\t"                                   \
-                             "fnsave %0\n\t"                                \
-                             "fwait" : "=m" ((cc)->acc_u.acc_f4.fpstate)    \
-                             );                                             \
-            } while (0)
-
 #   endif
 
 #else
@@ -145,10 +139,6 @@ typedef struct sigcontext regs_t;
         } while (0)
 
 #   define HAS_FPU(sc)      0
-
-#   define PREPARE_INITIAL_CONTEXT(cc)                              \
-        do {                                                        \
-        } while (0)
 
 #endif
 
@@ -208,6 +198,29 @@ struct AROSCPUContext
 
 #define GET_PC(ctx) ((APTR)ctx->regs[8])
 #define SET_PC(ctx, val) ctx->regs[8] = (ULONG)val
+
+#ifndef NO_FPU
+
+#if __FreeBSD_version >= 500001
+/*
+ * This is the FreeBSD 5.x and higher version
+ */
+#define PREPARE_INITIAL_CONTEXT(cc)                                         \
+            do {                                                            \
+                (cc)->acc_u.acc_f5.fpformat = _MC_FPFMT_NODEV;              \
+                (cc)->acc_u.acc_f5.ownedfp = _MC_FPOWNED_NONE;              \
+            } while (0)
+#else
+
+#define PREPARE_INITIAL_CONTEXT(cc)                                         \
+            do {                                                            \
+                asm volatile("fninit\n\t"                                   \
+                             "fnsave %0\n\t"                                \
+                             "fwait" : "=m" ((cc)->acc_u.acc_f4.fpstate)    \
+                             );                                             \
+            } while (0)
+
+#endif
 
 #define PREPARE_INITIAL_FRAME(cc, sp, startpc)     \
     do {                                           \

@@ -9,7 +9,7 @@ AROS_LH0(int, KrnIsSuper,
 {
     AROS_LIBFUNC_INIT
 
-    return PD(KernelBase).supervisor;
+    return KernelBase->kb_PlatformData->supervisor;
 
     AROS_LIBFUNC_EXIT
 }

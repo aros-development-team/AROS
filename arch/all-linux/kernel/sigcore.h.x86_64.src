@@ -41,9 +41,9 @@ struct _fpstate
     };
 };
 
-#else
+struct ucontext;
 
-#define EXCEPTIONS_COUNT 17
+#else
 
 /* There's no need for USE_SA_SIGINFO, as we always use SA_SIGINFO
    on x86_64 - there's no other sane way to get ucontext. */ 
@@ -67,7 +67,6 @@ struct _fpstate
 
 /* regs_t is the type of the signals' context */
 typedef @sighandler@ SignalHandler;
-typedef struct ucontext regs_t;
 
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
@@ -130,7 +129,7 @@ typedef struct ucontext regs_t;
     On Linux x86-64 signal mask is restored from uc_sigmask field of ucontext
     structure.
 */
-#define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
+#define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
 #define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
 
 /*
@@ -301,23 +300,6 @@ typedef struct ucontext regs_t;
 */
 
 /*
-    Prepare the cpu context
-*/
-
-#ifndef NO_FPU
-
-#define PREPARE_INITIAL_CONTEXT(cc) \
-   asm volatile("fninit\n\t" \
-    	    	"fxsave %0\n\t" \
-		"fwait" : "=m" (cc->fpstate))
-
-#else
-
-#define PREPARE_INITIAL_CONTEXT(cc)
-
-#endif
-
-/*
     This macro is similar to PREPARE_INITIAL_FRAME() but also saves
     all general purpose registers. Use this macro when you want to
     leave the current tasks' context to save the registers. Note that
@@ -365,7 +347,11 @@ typedef struct ucontext regs_t;
 
 #endif /* __AROS_EXEC_LIBRARY__ */
 
-/* Use this structure to save/restore registers because the stack is too small. */
+#define EXCEPTIONS_COUNT 17
+
+typedef struct ucontext regs_t;
+
+/* Use this structure to save/restore registers */
 struct AROSCPUContext
 {
     UQUAD regs[17];  	     /* rip (PC), rbp (FP), rax, rbx, rcx,
@@ -378,6 +364,23 @@ struct AROSCPUContext
 
 #define GET_PC(ctx) ((APTR)ctx->regs[16])
 #define SET_PC(ctx, val) ctx->regs[16] = (UQUAD)val
+
+/*
+    Prepare the cpu context
+*/
+
+#ifndef NO_FPU
+
+#define PREPARE_INITIAL_CONTEXT(cc) \
+   asm volatile("fninit\n\t" \
+    	    	"fxsave %0\n\t" \
+		"fwait" : "=m" (cc->fpstate))
+
+#else
+
+#define PREPARE_INITIAL_CONTEXT(cc)
+
+#endif
 
 /*
     Store first six arguments in registers, the rest on stack

@@ -79,7 +79,7 @@ typedef ucontext_t regs_t;
 #define SIGHANDLER	bsd_sighandler
 typedef void (*SIGHANDLER_T)(int);
 
-#define SC_DISABLE(sc)   sc->uc_sigmask = PD(KernelBase).sig_int_mask
+#define SC_DISABLE(sc)   sc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
 #define SC_ENABLE(sc)    sigemptyset(&(sc)->uc_sigmask)
 
 /* work around silly renaming of struct members in OS X 10.5 */
@@ -163,10 +163,6 @@ typedef void (*SIGHANDLER_T)(int);
 
 #       define HAS_FPU(sc)      1
 
-#       define PREPARE_INITIAL_CONTEXT(cc)                                  \
-            do {                                                            \
-            } while (0)
-
 #else
     /* NO FPU VERSION */
 
@@ -179,10 +175,6 @@ typedef void (*SIGHANDLER_T)(int);
         } while (0)
 
 #   define HAS_FPU(sc)      0
-
-#   define PREPARE_INITIAL_CONTEXT(cc)                              \
-        do {                                                        \
-        } while (0)
 
 #endif
 
@@ -222,6 +214,10 @@ struct AROSCPUContext
 
 #define GET_PC(ctx) (APTR)ctx->regs[8]
 #define SET_PC(ctx, pc) ctx->regs[8] = (ULONG)pc
+
+#   define PREPARE_INITIAL_CONTEXT(cc)                              \
+        do {                                                        \
+        } while (0)
 
 #define PREPARE_INITIAL_FRAME(ctx, sp, startpc)     \
     do {                                            \

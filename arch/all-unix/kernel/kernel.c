@@ -134,7 +134,7 @@ static void core_SysCall(int sig, regs_t *regs)
     struct Task *task = SysBase->ThisTask;
     struct AROSCPUContext *ctx;
 
-    AROS_ATOMIC_INC(PD(KernelBase).supervisor);
+    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
 
     krnRunIRQHandlers(sig);
 
@@ -174,12 +174,12 @@ static void core_SysCall(int sig, regs_t *regs)
 	break;
     }
 
-    AROS_ATOMIC_DEC(PD(KernelBase).supervisor);
+    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
 }
 
 static void core_IRQ(int sig, regs_t *sc)
 {
-    AROS_ATOMIC_INC(PD(KernelBase).supervisor);
+    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
 
     /* Just additional protection - what if there's more than 32 signals? */
     if (sig < IRQ_COUNT)
@@ -188,10 +188,10 @@ static void core_IRQ(int sig, regs_t *sc)
     if (sig == SIGALRM)
 	core_TimerTick();
 
-    if (PD(KernelBase).supervisor == 1)
+    if (KernelBase->kb_PlatformData->supervisor == 1)
 	core_ExitInterrupt(sc);
 
-    AROS_ATOMIC_DEC(PD(KernelBase).supervisor);
+    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
 }
 
 /*
@@ -206,19 +206,29 @@ GLOBAL_SIGNAL_INIT(core_IRQ)
 /* Set up the kernel. */
 static int InitCore(struct KernelBase *KernelBase)
 {
+    struct PlatformData *pd;
     struct itimerval interval;
     struct sigaction sa;
     struct SignalTranslation *s;
 
+    /*
+     * We allocate PlatformData separately from KernelBase because
+     * its definition relies on host includes (sigset_t), and
+     * we don't want generic code to depend on host includes
+     */
+    pd = AllocMem(sizeof(struct PlatformData), MEMF_ANY);
+    if (!pd)
+	return FALSE;
+
+    KernelBase->kb_PlatformData = pd;
+
     /* We only want signal that we can handle at the moment */
-    sigfillset(&PD(KernelBase).sig_int_mask);
+    sigfillset(&pd->sig_int_mask);
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
 #ifdef __linux__
     sa.sa_restorer = NULL;
 #endif
-
-    PD(KernelBase).pid = getpid();
 
     /* 
      * These ones we consider as processor traps.
@@ -232,15 +242,15 @@ static int InitCore(struct KernelBase *KernelBase)
 	   2. It can interfere with gdb debugging.
 	   Coming soon.
 	sigaction(s->sig, &sa, NULL); */
-	sigdelset(&PD(KernelBase).sig_int_mask, s->sig);
+	sigdelset(&pd->sig_int_mask, s->sig);
     }
 
     /* SIGUSRs are software interrupts, we also never block them */
-    sigdelset(&PD(KernelBase).sig_int_mask, SIGUSR1);
-    sigdelset(&PD(KernelBase).sig_int_mask, SIGUSR2);
+    sigdelset(&pd->sig_int_mask, SIGUSR1);
+    sigdelset(&pd->sig_int_mask, SIGUSR2);
     /* We want to be able to interrupt AROS using Ctrl-C in its console,
        so exclude SIGINT too. */
-    sigdelset(&PD(KernelBase).sig_int_mask, SIGINT);
+    sigdelset(&pd->sig_int_mask, SIGINT);
 
     /*
      * Any interrupt including software one must disable
@@ -248,7 +258,7 @@ static int InitCore(struct KernelBase *KernelBase)
      * between interrupt handler entry and supervisor count
      * increment. This can cause bad things in cpu_Dispatch()
      */
-    sa.sa_mask = PD(KernelBase).sig_int_mask;
+    sa.sa_mask = pd->sig_int_mask;
 
     /* Install interrupt handlers */
     SETHANDLER(sa, core_IRQ);
@@ -264,7 +274,7 @@ static int InitCore(struct KernelBase *KernelBase)
     sigaction(SIGUSR1, &sa, NULL);
 
     /* We need to start up with disabled interrupts */
-    sigprocmask(SIG_BLOCK, &PD(KernelBase).sig_int_mask, NULL);
+    sigprocmask(SIG_BLOCK, &pd->sig_int_mask, NULL);
 
     /* Set up the "pseudo" vertical blank interrupt. */
     D(bug("[InitCore] Timer frequency is %d\n", SysBase->ex_EClockFrequency));
@@ -284,5 +294,5 @@ ADD2INITLIB(InitCore, 10);
  */
 void krnSysCall(unsigned char n)
 {
-    kill(PD(KernelBase).pid, SIGUSR1);
+    raise(SIGUSR1);
 }

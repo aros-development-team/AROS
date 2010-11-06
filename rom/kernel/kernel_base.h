@@ -7,6 +7,9 @@
 #include <kernel_arch.h>
 #include <kernel_cpu.h>
 
+/* Platform-specific stuff. Black box here. */
+struct PlatformData;
+
 /* kernel.resource base. Nothing spectacular, really. */
 struct KernelBase
 {
@@ -19,12 +22,8 @@ struct KernelBase
     unsigned char	   kb_VBlankEnable;
     unsigned int	   kb_VBlankTicks;
     unsigned int	   kb_TimerCount;
-#ifdef HAVE_PLATFORM_DATA
-    struct PlatformData	   kb_PlatformData;
-#endif
+    struct PlatformData	  *kb_PlatformData;
 };
-
-#define PD(base) base->kb_PlatformData
 
 /*
  * Some useful global variables. They are global because:
