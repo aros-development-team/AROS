@@ -18,6 +18,7 @@
 #include <hardware/custom.h>
 #include <dos/dosextens.h>
 
+#include <aros/symbolsets.h>
 #include <aros/system.h>
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
@@ -164,6 +165,8 @@ AROS_UFH5S(void, VBlankServer,
 
 extern ULONG SoftIntDispatch();
 
+DEFINESET(INITLIB);
+
 AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(BPTR, segList, A0),
@@ -309,6 +312,10 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     SysBase->ChkSum = ~sum;
 
     D(debugmem());
+
+    /* Call platform-specific init code (if any) */
+    if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase))
+	return NULL;
 
     /* This will cause everything else to run. This call will not return.
 	This is because it eventually falls into strap, which will call
