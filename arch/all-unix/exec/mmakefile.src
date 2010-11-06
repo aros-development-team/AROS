@@ -1,14 +1,16 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := stackswap shutdowna newstackswap
+FILES := platform_init shutdowna newstackswap
 
-USER_INCLUDES   := -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/$(CURDIR)/..
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
+		 -I$(SRCDIR)/rom/exec -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
+		 -DHOST_OS_$(ARCH)
+
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
-  arch=unix compiler=kernel \
-  files=$(FILES)
+  arch=unix files=$(FILES)
 
-#MM kernel-exec-unix: kernel-kernel-includes
+#MM kernel-exec-unix: kernel-kernel-includes kernel-hostlib-includes
 
 %common

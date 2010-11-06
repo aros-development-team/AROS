@@ -10,9 +10,9 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 
-#include <signal.h>
-#include <stdlib.h>
 #include <unistd.h>
+
+#include "exec_intern.h"
 
 /* These variables come from bootstrap */
 extern char bootstrapdir[];
@@ -61,7 +61,7 @@ extern char **Kernel_ArgV;
     switch(action)
     {
     case SD_ACTION_POWEROFF:
-	exit(0);
+	PD(SysBase).SysIFace->exit(0);
 	break;
 
     case SD_ACTION_COLDREBOOT:
