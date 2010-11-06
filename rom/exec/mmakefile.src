@@ -39,7 +39,11 @@ FILES	    := traphandler exec_util
 
 # I need the private includes (for struct AROSCPUContext) and they
 # have to be first in the list
-USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/exec -I$(SRCDIR)/$(CURDIR) \
+USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/exec
+ifneq ($(FAMILY),)
+USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
+endif
+USER_CFLAGS += -I$(SRCDIR)/$(CURDIR) \
                -I$(SRCDIR)/arch/all-$(ARCH)/kernel \
                -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
                -I$(SRCDIR)/rom/kernel \
