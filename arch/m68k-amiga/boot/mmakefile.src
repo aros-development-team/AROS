@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 # Rules to create AROS for amiga-m68k
 #
 
-USER_CFLAGS := -DUSE_GDBSTUB
+USER_CFLAGS := 
 
 #MM- AROS-amiga-m68k : general-setup-amiga-m68k kernel-amiga-m68k software-amiga-m68k
 
