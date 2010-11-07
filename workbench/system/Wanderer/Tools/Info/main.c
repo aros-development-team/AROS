@@ -366,8 +366,8 @@ void FreeToolTypes(UBYTE **ttypes)
 #if USE_TEXTEDITOR
     if (ttypes)
     {
-        DeletePool((APTR)ttypes[-2]);
 	FreeVec((APTR)ttypes[-1]);
+        DeletePool((APTR)ttypes[-2]);
     }
 #else
     if (ttypes)
