@@ -638,6 +638,11 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     	return TRUE;
     }
     
+    if (icon->icon35.img1.imagedata == NULL)
+    {
+    	return TRUE;
+    }
+    
     iffhook.h_Entry    = (HOOKFUNC)HookEntry;
     iffhook.h_SubEntry = (HOOKFUNC)MyDOSStreamHandler;
     
