@@ -15,10 +15,11 @@ SECTIONS
   /* This should cause angry complaints if .data exists
    * We don't want .data, and we don't need it.
    */
-  .data 0x00f80000            : { *(.data)             } >bss
+  .data     0x00f80000        : { *(.data)             } >bss
 
-  .text 0x00f80000            : { _text_start = .;
-  	                          *(.text)
+  .text     0x00f80000        : { _text_start = .;
+  	                              *(.text)
                                   _text_end = .;       } >rom =0x0000
   .rodata                     : { *(.rodata .rodata.*) } >rom =0x0000
+  .eh_frame                   : { *(.eh_frame)         } >rom =0x0000
 }
