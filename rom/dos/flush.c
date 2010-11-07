@@ -6,7 +6,7 @@
 #include <proto/dos.h>
 #include "dos_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************
