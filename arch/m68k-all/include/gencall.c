@@ -49,9 +49,8 @@ void aros_ufh(int id, int is_static)
 	printf(") \\\n");
 	printf("\t%st n (void) {%s\n", is_static ? "static " : "", (i==0) ? "" : " \\");
 	for (i = 0; i < id; i++)
-		printf("\tregister __AROS_UFPA(a%d) __AROS_UFTA(a%d) asm(__AROS_UFSA(a%d)); \\\n", i+1, i+1, i+1);
-	for (i = 0; i < id; i++)
-		printf("\t__AROS_UFPA(a%d) __attribute__((unused)) __AROS_UFCA(a%d) = __AROS_UFTA(a%d);%s\n", i+1, i+1, i+1, (i == (id-1)) ? "" : " \\");
+		printf(" \\\n\t__AROS_UFPA(a%d) __attribute__((unused)) __AROS_UFCA(a%d) = ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_UFPA(a%d))__r;});", i+1, i+1, i+1, i+1);
+	printf("\n");
 }
 
 static void aros_ufc(int id)
