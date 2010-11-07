@@ -225,7 +225,6 @@ static ULONG td_readwritetrack(UBYTE track, UBYTE write, struct TDU *tdu, struct
     sigs = Wait((1L << tdb->td_TimerMP2->mp_SigBit) | (1L << tdb->td_IntBit));
 
     tdb->custom->dsklen = 0x4000;
-    tdb->custom->dmacon = 0x0010;
     tdb->custom->intena = 0x0002;
 
     err = TDERR_BadSecPreamble;
@@ -287,9 +286,12 @@ static int td_read2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase 
 
         if (tdb->td_buffer_unit != tdu->tdu_UnitNum || tdb->td_buffer_track != track) {
             int ret = td_readwritetrack(track, 0, tdu, tdb);
-            if (ret)
-                return ret;
-            tdb->td_buffer_unit = tdu->tdu_UnitNum;
+            if (ret) {
+                totalsectorsneeded = 0;
+	    		lasterr = ret;
+	    		goto end;
+	    	}
+	    	tdb->td_buffer_unit = tdu->tdu_UnitNum;
             tdb->td_buffer_track = track;
         }
 
