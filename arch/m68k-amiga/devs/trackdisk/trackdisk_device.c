@@ -352,7 +352,7 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
     tdb->td_TimerIO = (struct timerequest *) CreateIORequest(tdb->td_TimerMP, sizeof(struct timerequest));
     tdb->td_TimerIO2 = (struct timerequest *) CreateIORequest(tdb->td_TimerMP2, sizeof(struct timerequest));
     OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tdb->td_TimerIO, 0);
-    OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tdb->td_TimerIO2, 0);
+    OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)tdb->td_TimerIO2, 0);
 
 	NewList(&tdb->td_druport.mp_MsgList);
 	tdb->td_dru.dru_Message.mn_ReplyPort = &tdb->td_druport;
