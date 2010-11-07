@@ -73,17 +73,16 @@ static __attribute__((interrupt)) void Exec_FatalException(void)
 
 	Exec_ScreenCode(CODE_TRAP_FAIL);
 
-	/* FIXME: Idle loop delay
-	 * We should really wait for a number of
-	 * verical retrace intervals
-	 */
-	for (i = 0; i < 150000; i++);
+    Debug(0);
 
 	/* Reset everything but the CPU, then restart
 	 * at the ROM exception vector
 	 */
-	asm("reset\n"
+	asm volatile (
+	    "nop\n"
+	    "nop\n"
 	    "move.l #4,%a0\n"
+	    "reset\n"
 	    "jmp    (%a0)\n");
 }
 
@@ -431,5 +430,5 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* We shouldn't get here */
 	DebugPuts("[DOS Task failed to start]\n");
 	for (;;)
-		breakpoint();
+	    Debug(0);
 }
