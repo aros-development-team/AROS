@@ -14,7 +14,6 @@
 #include <exec/alerts.h>
 #include <exec/tasks.h>
 #include <exec/interrupts.h>
-#include <libraries/expansion.h>
 #include <libraries/expansionbase.h>
 #include <libraries/configvars.h>
 #include <dos/filehandler.h>
@@ -180,18 +179,18 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
         iotd->iotd_Req.io_Error=0;
 	    break;
 	case TD_CHANGESTATE:
-	    if ((tdu->pub.tdu_PubFlags & TDPF_NOCLICK) && (tdu->tdu_DiskIn == TDU_NODISK)) {
+	    if (tdu->tdu_DiskIn == TDU_NODISK)
 			TestInsert(tdb, tdu);
-	    }
 	    if (tdu->tdu_DiskIn == TDU_DISK) {
 			/* test if disk is still in there */
 			temp = td_getDiskChange(tdu, tdb);
-			iotd->iotd_Req.io_Actual = temp;
-			tdu->tdu_DiskIn = temp ^ 1;
+			iotd->iotd_Req.io_Actual = temp ? 0 : 1;
+			tdu->tdu_DiskIn = temp ? TDU_DISK : TDU_NODISK;
 	    } else {
 			/* No disk in drive */
 			iotd->iotd_Req.io_Actual = 1;
 	    }
+	    D(bug("TD%d_CHANGESTATE=%d\n", tdu->tdu_UnitNum, iotd->iotd_Req.io_Actual));
 	    iotd->iotd_Req.io_Error=0;
 	    break;
 	case ETD_FORMAT:
