@@ -1,8 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel-linux-$(CPU) : \
-#MM    kernel-hidd-linux-kobj
+# Disabled until ported - sonic
+##MM- kernel-linux-$(CPU) : \
+##MM    kernel-hidd-linux-kobj
 
 #MM- workbench-linux-$(CPU) : \
 #MM      workbench-devs-tap-unix \

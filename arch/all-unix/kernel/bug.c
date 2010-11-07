@@ -4,7 +4,11 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "hostinterface.h"
 #include "kernel_base.h"
+#include "kernel_intern.h"
+
+extern struct HostInterface *HostIFace;
 
 AROS_LH2I(int, KrnBug,
          AROS_LHA(char *, format, A0),
@@ -13,13 +17,7 @@ AROS_LH2I(int, KrnBug,
 {
     AROS_LIBFUNC_INIT
 
-    int res = vfprintf(stderr, format, args);
-
-#if !(defined(__linux__) || defined(__FreeBSD__))
-    fsync (STDERR_FILENO);
-#endif
-
-    return res;
+    return HostIFace->VKPrintF(format, args);
 
     AROS_LIBFUNC_EXIT
 }

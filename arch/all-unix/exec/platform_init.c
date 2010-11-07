@@ -2,6 +2,8 @@
 #include <aros/symbolsets.h>
 #include <proto/hostlib.h>
 
+#include "../kernel/hostinterface.h"
+
 #include "exec_intern.h"
 
 static const char *libc_symbols[] = {
@@ -11,6 +13,12 @@ static const char *libc_symbols[] = {
     "exit",
     NULL
 };
+
+BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct HostInterface *HostIFace)
+{
+    pd->Reboot = HostIFace->Reboot;
+    return TRUE;
+}
 
 static int Platform_Init(struct ExecBase *SysBase)
 {

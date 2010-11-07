@@ -10,13 +10,7 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 
-#include <unistd.h>
-
 #include "exec_intern.h"
-
-/* These variables come from bootstrap */
-extern char bootstrapdir[];
-extern char **Kernel_ArgV;
 
 /*****************************************************************************
 
@@ -69,8 +63,7 @@ extern char **Kernel_ArgV;
 	/* SIGARLM during execvp() aborts the whole thing.
            In order to avoid it we Disable() */
 	Disable();
-	chdir(bootstrapdir);
-	execvp(Kernel_ArgV[0], Kernel_ArgV);
+	PD(SysBase).Reboot(0);
 	Enable();
     }
     return 0;
