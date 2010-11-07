@@ -36,12 +36,12 @@ void readunitid_internal (struct DiscResource *DiskBase, LONG unitNum)
 	for (i = 0; i < 32; i++) {
 		ciab->ciaprb &= ~unitmask; // SELx
 		id <<= 1;
-		if (!(ciaa->ciapra & 0x20))
+		if (ciaa->ciapra & 0x20)
 			id |= 1;
 		ciab->ciaprb |= unitmask; // SELX
 	}
-	if (unitNum == 0 && HAVE_NO_DF0_DISK_ID && id == 0)
-		id = 0xffffffff;
+	if (unitNum == 0 && HAVE_NO_DF0_DISK_ID && id == DRT_EMPTY)
+		id = DRT_AMIGA;
 	DiskBase->dr_UnitID[unitNum] = id;
 }
 
