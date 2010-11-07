@@ -2367,7 +2367,7 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(HOST_CC)" \
+	CC="$(HOST_CC) $(HOST_CFLAGS)" \
 	    TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
 	    TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
 	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
