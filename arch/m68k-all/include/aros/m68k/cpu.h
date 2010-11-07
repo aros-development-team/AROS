@@ -230,7 +230,7 @@ extern void aros_not_implemented ();
 
 #else /* BINCOMPAT */
 
-#define AROS_COMPAT_SETD0(x)	do { } while (0)
+#define AROS_COMPAT_SETD0(x)	do { asm volatile ( "move.l %0,%%d0\n" : "=g" (x)); return; } while (0)
 
 #define A0	a0
 #define A1	a1
