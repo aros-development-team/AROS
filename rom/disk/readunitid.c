@@ -11,7 +11,7 @@
 
 extern void readunitid_internal (struct DiscResource*, LONG unitNum);
 
-AROS_LH1(LONG, ReadUnitID,
+AROS_LH1(ULONG, ReadUnitID,
 	 AROS_LHA(LONG, unitNum, D0),
 	 struct DiscResource *, DiskBase, 6, Disk)
 {
