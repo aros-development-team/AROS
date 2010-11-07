@@ -81,6 +81,8 @@ USER_INCLUDES := \
             -I$(DRM_PATH)/drm-unchanged \
             -I$(DRM_PATH)/drm-unchanged/nouveau \
 
+USER_CFLAGS := -std=gnu99
+
 %build_module mmake=hidd-nouveau \
     modname=nouveau modtype=hidd \
     files="$(NOUVEAU_HIDD_SOURCES)" \
