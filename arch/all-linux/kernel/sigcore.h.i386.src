@@ -63,7 +63,7 @@ struct _fpstate
 };
 
 struct sigcontext;
-typedef struct sigcontext reg_t;
+typedef struct sigcontext regs_t;
 
 #else
 
