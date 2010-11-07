@@ -1,0 +1,14 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := timer_init abortio beginio readeclock lowlevel getsystime
+
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer \
+                 -I$(SRCDIR)/rom/timer
+
+%build_archspecific \
+  mainmmake=kernel-timer maindir=rom/timer \
+  arch=amiga-m68k modulename=timer \
+  files="$(FILES)"
+
+%common
