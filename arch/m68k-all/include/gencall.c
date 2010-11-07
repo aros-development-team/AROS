@@ -60,7 +60,8 @@ static void aros_ufc(int id)
 	for (i = 0; i < id; i++)
 		printf(",a%d", i + 1);
 	printf(") \\\n");
-	printf("\t({ register volatile ULONG _ret asm(\"%%d0\"); \\\n");
+	printf("\t({ APTR _n = (n);\\\n");
+	printf("\t   register volatile ULONG _ret asm(\"%%d0\"); \\\n");
 	for (i = 0; i < id; i++) {
 		printf("\t   register volatile ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)) = (ULONG)__AROS_LCA(a%d); \\\n",
 				i + 1, i + 1, i + 1);
@@ -69,7 +70,7 @@ static void aros_ufc(int id)
 	printf("\t\t\"pea.l .Lufc%d_%%c1\\n\" \\\n", id);
 	printf("\t\t\"move.l %%0, %%%%sp@-\\n\" \\\n");
 	printf("\t\t: : \\\n");
-	printf("\t\t  \"g\" (n), \"i\" (__LINE__) \\\n");
+	printf("\t\t  \"r\" (_n), \"i\" (__LINE__) \\\n");
 	for (i = 0; i < id; i++)
 		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", i + 1);
 	printf("\t\t); \\\n");
