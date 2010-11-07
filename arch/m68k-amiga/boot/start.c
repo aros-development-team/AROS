@@ -62,11 +62,6 @@ int DebugGetChar(void)
 	return SERDATR_DB8_of(reg_r(SERDATR));
 }
 
-#ifdef USE_GDBSTUB
-#define mc68020
-#include "m68k-gdbstub.c"
-#endif
-
 static __attribute__((interrupt)) void Exec_FatalException(void)
 {
 	volatile int i;
@@ -333,11 +328,6 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
 	DebugPuts("[bss clear]\n");
-
-#ifdef USE_GDBSTUB
-	/* Must be after the BSS clear! */
-	gdbstub();
-#endif
 
 	/* Set privilige violation trap - we
 	 * need this to support the Exec/Supervisor call
