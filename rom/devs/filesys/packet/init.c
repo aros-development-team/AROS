@@ -12,7 +12,7 @@
 #include "packet.h"
 
 /* places we might find handlers */
-const char *search_path[] = {
+const char * const search_path[] = {
     "%s",
     "DEVS:%s",
     "DEVS:Filesystems/%s",
