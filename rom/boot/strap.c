@@ -491,6 +491,9 @@ static VOID CheckPartitions
             Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
         }
         CloseLibrary((struct Library *)PartitionBase);
+    } else {
+        /* If no partition.library, put it back. */
+        Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
     }
 }
 
