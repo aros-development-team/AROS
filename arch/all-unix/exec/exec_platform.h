@@ -12,6 +12,8 @@
 #define LIBC_NAME "libc.so"
 #endif
 
+#define HAVE_PREPAREPLATFORM
+
 struct LibCInterface
 {
     int  (*getcontext)(ucontext_t *ucp);

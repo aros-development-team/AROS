@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #MM- kernel-exec-linux : kernel-kernel-linux-sigcore
-#MM kernel-kernel-linux : kernel-kernel-linux-sigcore
+#MM- kernel-kernel-linux : kernel-kernel-linux-sigcore
 
 #MM
 kernel-kernel-linux-sigcore : $(GENINCDIR)/sigcore.h
@@ -10,8 +10,3 @@ kernel-kernel-linux-sigcore : $(GENINCDIR)/sigcore.h
 $(GENINCDIR)/sigcore.h : sigcore.h.$(AROS_TARGET_CPU).src mksigcore.sh
 	%mkdirs_q $(GENINCDIR)
 	CC="$(KERNEL_CC)" CPU=$(AROS_TARGET_CPU) $(SHELL) $(SRCDIR)/$(CURDIR)/mksigcore.sh $(SRCDIR)/$(CURDIR) $(GENINCDIR)/sigcore.h
-
-USER_INCLUDES := -I$(SRCDIR)/rom/kernel -I$(GENINCDIR)
-%build_archspecific \
-  mainmmake=kernel-kernel maindir=rom/kernel arch=linux \
-  files=init compiler=kernel

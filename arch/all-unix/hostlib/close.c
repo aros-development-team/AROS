@@ -1,7 +1,9 @@
 #include <aros/debug.h>
 #include <aros/libcall.h>
 
-#include <dlfcn.h>
+#include "../kernel/hostinterface.h"
+
+#include "hostlib_intern.h"
 
 AROS_LH2(int, HostLib_Close,
          AROS_LHA(void *,  handle, A0),
@@ -10,16 +12,7 @@ AROS_LH2(int, HostLib_Close,
 {
     AROS_LIBFUNC_INIT
 
-    int ret;
-
-    D(bug("[hostlib] Close: handle=0x%08x\n", handle));
-
-    ret = dlclose(handle);
-
-    if (error != NULL)
-        *error = ret != 0 ? dlerror() : NULL;
-
-    return ret;
+    return HostLibBase->HostIFace->HostLib_Close(handle, error);
 
     AROS_LIBFUNC_EXIT
 }

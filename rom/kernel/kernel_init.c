@@ -1,4 +1,3 @@
-#include <aros/config.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
@@ -17,9 +16,6 @@
 /* Some globals we can't live without */
 struct TagItem *BootMsg = NULL;
 struct KernelBase *KernelBase = NULL;
-#if AROS_MODULES_DEBUG
-static struct MinList *Debug_ModList = NULL;
-#endif
 
 void __clear_bss(const struct KernelBSS *bss)
 {
@@ -43,9 +39,6 @@ static int Kernel_Init(struct KernelBase *kBase)
         NEWLIST(&KernelBase->kb_Interrupts[i]);
 
     NEWLIST(&KernelBase->kb_Modules);
-#if AROS_MODULES_DEBUG
-    Debug_ModList = &KernelBase->kb_Modules;
-#endif
     InitSemaphore(&KernelBase->kb_ModSem);
 
     KernelBase->kb_KernelModules = (dbg_seg_t *)krnGetTagData(KRN_DebugInfo, 0, BootMsg);

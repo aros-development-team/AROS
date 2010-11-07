@@ -6,19 +6,20 @@
     Lang: english
 */
 
+#include <aros/config.h>
 #include <exec/types.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
 #include <aros/atomic.h>
-#include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <hardware/intbits.h>
 
 #define timeval sys_timeval
 #include "etask.h"
 
+#include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intr.h"
@@ -27,7 +28,6 @@
 #include "kernel_scheduler.h"
 #include "kernel_timer.h"
 
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -38,6 +38,9 @@
 
 #include <proto/exec.h>
 
+#define D(x)
+#define DSC(x)
+
 #ifdef SIGCORE_NEED_SA_SIGINFO
 #define SETHANDLER(sa, h) 			\
     sa.sa_sigaction = (void *)h ## _gate;	\
@@ -46,13 +49,6 @@
 #define SETHANDLER(sa, h) 			\
     sa.sa_handler = (SIGHANDLER_T)h ## _gate;
 #endif
-
-/*
- * This is the global SysBase. It needs to be somewhere so it's placed
- * here. When UNIX-hosted AROS is made modular, this goes away and SysBase
- * will be handled by bootstrap, like in Windows-hosted port
- */
-struct ExecBase *SysBase;
 
 static void core_Trap(int sig, regs_t *regs)
 {
@@ -136,6 +132,8 @@ static void core_SysCall(int sig, regs_t *regs)
 
     AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
 
+    DSC(bug("[KRN] core_SysCall entered\n"));
+
     krnRunIRQHandlers(sig);
 
     switch(task->tc_State)
@@ -165,7 +163,7 @@ static void core_SysCall(int sig, regs_t *regs)
 
         /* Restore the signaled context. */
         RESTOREREGS(ctx, regs);
-	errno = ctx->errno_backup;
+	*KernelBase->kb_PlatformData->errnoPtr = ctx->errno_backup;
 	SP(regs) = (IPTR)SysBase->ThisTask->tc_SPReg;
 
         SysBase->ThisTask->tc_State = TS_RUN;
@@ -203,6 +201,8 @@ GLOBAL_SIGNAL_INIT(core_Trap)
 GLOBAL_SIGNAL_INIT(core_SysCall)
 GLOBAL_SIGNAL_INIT(core_IRQ)
 
+extern struct HostInterface *HostIFace;
+
 /* Set up the kernel. */
 static int InitCore(struct KernelBase *KernelBase)
 {
@@ -211,22 +211,37 @@ static int InitCore(struct KernelBase *KernelBase)
     struct sigaction sa;
     struct SignalTranslation *s;
 
+    D(bug("[KRN] InitCore()\n"));
+
+#if AROS_MODULES_DEBUG
+    /*
+     * Provide a pointer to our modules list to the bootstrap.
+     * This is needed because gdb is actually debugging bootstrap
+     * and it can read debug information only from there
+     */
+    if (HostIFace->ModListPtr)
+	*HostIFace->ModListPtr = &KernelBase->kb_Modules;
+#endif
+
     /*
      * We allocate PlatformData separately from KernelBase because
      * its definition relies on host includes (sigset_t), and
      * we don't want generic code to depend on host includes
      */
     pd = AllocMem(sizeof(struct PlatformData), MEMF_ANY);
+    D(bug("[KRN] PlatformData %p\n", pd));
     if (!pd)
 	return FALSE;
 
+    pd->supervisor = 0;
+    pd->errnoPtr = KernelIFace.__error();
     KernelBase->kb_PlatformData = pd;
 
     /* We only want signal that we can handle at the moment */
-    sigfillset(&pd->sig_int_mask);
-    sigemptyset(&sa.sa_mask);
+    KernelIFace.sigfillset(&pd->sig_int_mask);
+    KernelIFace.sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
-#ifdef __linux__
+#ifdef HOST_OS_linux
     sa.sa_restorer = NULL;
 #endif
 
@@ -241,16 +256,16 @@ static int InitCore(struct KernelBase *KernelBase)
 	   1. It doesn't work, at least with SIGSEGV
 	   2. It can interfere with gdb debugging.
 	   Coming soon.
-	sigaction(s->sig, &sa, NULL); */
-	sigdelset(&pd->sig_int_mask, s->sig);
+	KernelIFace.sigaction(s->sig, &sa, NULL); */
+	KernelIFace.sigdelset(&pd->sig_int_mask, s->sig);
     }
 
     /* SIGUSRs are software interrupts, we also never block them */
-    sigdelset(&pd->sig_int_mask, SIGUSR1);
-    sigdelset(&pd->sig_int_mask, SIGUSR2);
+    KernelIFace.sigdelset(&pd->sig_int_mask, SIGUSR1);
+    KernelIFace.sigdelset(&pd->sig_int_mask, SIGUSR2);
     /* We want to be able to interrupt AROS using Ctrl-C in its console,
        so exclude SIGINT too. */
-    sigdelset(&pd->sig_int_mask, SIGINT);
+    KernelIFace.sigdelset(&pd->sig_int_mask, SIGINT);
 
     /*
      * Any interrupt including software one must disable
@@ -262,19 +277,19 @@ static int InitCore(struct KernelBase *KernelBase)
 
     /* Install interrupt handlers */
     SETHANDLER(sa, core_IRQ);
-    sigaction(SIGALRM, &sa, NULL);
-    sigaction(SIGIO  , &sa, NULL);
+    KernelIFace.sigaction(SIGALRM, &sa, NULL);
+    KernelIFace.sigaction(SIGIO  , &sa, NULL);
 
     /* Software IRQs do not need to block themselves. Anyway we know when we send them. */
     sa.sa_flags |= SA_NODEFER;
 
-    sigaction(SIGUSR2, &sa, NULL);
+    KernelIFace.sigaction(SIGUSR2, &sa, NULL);
 
     SETHANDLER(sa, core_SysCall);
-    sigaction(SIGUSR1, &sa, NULL);
+    KernelIFace.sigaction(SIGUSR1, &sa, NULL);
 
     /* We need to start up with disabled interrupts */
-    sigprocmask(SIG_BLOCK, &pd->sig_int_mask, NULL);
+    KernelIFace.sigprocmask(SIG_BLOCK, &pd->sig_int_mask, NULL);
 
     /* Set up the "pseudo" vertical blank interrupt. */
     D(bug("[InitCore] Timer frequency is %d\n", SysBase->ex_EClockFrequency));
@@ -282,7 +297,7 @@ static int InitCore(struct KernelBase *KernelBase)
     interval.it_interval.tv_usec =
     interval.it_value.tv_usec = 1000000 / SysBase->ex_EClockFrequency;
 
-    return !setitimer(ITIMER_REAL, &interval, NULL);
+    return !KernelIFace.setitimer(ITIMER_REAL, &interval, NULL);
 }
 
 ADD2INITLIB(InitCore, 10);
@@ -294,5 +309,6 @@ ADD2INITLIB(InitCore, 10);
  */
 void krnSysCall(unsigned char n)
 {
-    raise(SIGUSR1);
+    DSC(bug("[KRN] SysCall %d\n", n));
+    KernelIFace.raise(SIGUSR1);
 }

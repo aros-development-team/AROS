@@ -11,12 +11,27 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <aros/config.h>
 #include <aros/kernel.h>
+#include <exec/execbase.h>
+#include <dos/bptr.h>
 #include <dos/elf.h>
 
 #include "elfloader32.h"
 #include "support.h"
 #include "ui.h"
+
+#if AROS_MODULES_DEBUG
+
+/*
+ * This is needed in order to bring in definition of struct segment.
+ * It will be read by gdb.
+ */
+#include "../../../rom/kernel/debug_intern.h"
+
+struct segment *seg = NULL;
+
+#endif
 
 #define D(x)
 #define DREL(x)
@@ -37,7 +52,7 @@ struct ELFNode *FirstELF = NULL;
 struct ELFNode *LastELF = (struct ELFNode *)&FirstELF;
 
 /* ***** This is the global SysBase ***** */
-void *SysBase;
+struct ExecBase *SysBase;
 
 /*
  * read_block interface. we want to read from files here
@@ -307,7 +322,11 @@ int AddKernelFile(char *name)
     
     n->Next  = NULL;
     strcpy(n->Name, name);
+#if AROS_MODULES_DEBUG
+    n->NamePtr = n->Name;
+#else
     n->NamePtr = namepart(n->Name);
+#endif
 
     LastELF->Next = n;
     LastELF = n;

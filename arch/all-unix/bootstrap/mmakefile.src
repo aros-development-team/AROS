@@ -6,7 +6,8 @@ EXEDIR  := $(BINDIR)/boot
 FILES         := hostinterface hostlib memory shutdown support
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(SRCDIR)/arch/all-unix/kernel   \
-		 -I$(GENINCDIR)
+		 -I$(GENINCDIR) \
+		 -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 
 %build_archspecific \
 	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=unix \

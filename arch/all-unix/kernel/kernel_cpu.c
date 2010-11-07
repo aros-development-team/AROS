@@ -4,7 +4,6 @@
 #include <hardware/intbits.h>
 #include <proto/exec.h>
 
-#include <errno.h>
 #include <unistd.h>
 
 #include "../exec/etask.h"
@@ -27,7 +26,7 @@ static void cpu_Exception(void)
     /* Enter the kernel. We use an endless loop just in case the
        signal handler returns us to this point for whatever reason.
     */
-    raise(SIGUSR1);
+    KernelIFace.raise(SIGUSR1);
 }
 
 void cpu_Switch(regs_t *regs)
@@ -36,7 +35,7 @@ void cpu_Switch(regs_t *regs)
     struct AROSCPUContext *ctx = GetIntETask(task)->iet_Context;
 
     SAVEREGS(ctx, regs);
-    ctx->errno_backup = errno;
+    ctx->errno_backup = *KernelBase->kb_PlatformData->errnoPtr;
     task->tc_SPReg = (APTR)SP(regs);
     core_Switch();
 }
@@ -47,12 +46,12 @@ void cpu_Dispatch(regs_t *regs)
     struct AROSCPUContext *ctx;
     sigset_t sigs;
 
-    sigemptyset(&sigs);
+    KernelIFace.sigemptyset(&sigs);
 
     while (!(task = core_Dispatch()))
     {
         /* Sleep almost forever ;) */
-	sigsuspend(&sigs);
+	KernelIFace.sigsuspend(&sigs);
 
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT);
@@ -60,7 +59,7 @@ void cpu_Dispatch(regs_t *regs)
 
     ctx = GetIntETask(task)->iet_Context;
     RESTOREREGS(ctx, regs);
-    errno = ctx->errno_backup;
+    *KernelBase->kb_PlatformData->errnoPtr = ctx->errno_backup;
     SP(regs) = (IPTR)task->tc_SPReg;
 
     /* Adjust user mode interrupts state */
