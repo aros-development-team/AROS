@@ -22,7 +22,7 @@ ALL_FUNCTIONS	:= \
 	makefunctions makelibrary obtainquickvector obtainsemaphore \
 	obtainsemaphorelist obtainsemaphoreshared oldopenlibrary opendevice \
 	openlibrary openresource permit preparecontext procure putmsg rawdofmt \
-	rawioinit rawmaygetchar rawputchar releasesemaphore \
+	rawioinit rawmaygetchar rawputchar readgayle releasesemaphore \
 	releasesemaphorelist remdevice remhead remintserver remlibrary \
 	remmemhandler remove remport remresource remsemaphore remtail remtask \
 	replymsg reschedule sendio setexcept setfunction setintvector \
