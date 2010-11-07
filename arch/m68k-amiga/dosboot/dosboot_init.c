@@ -147,6 +147,11 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, char *archName, struct
     STRPTR          buffer;
     LONG            bufferLength;
 
+    /* FIXME: Need a better way to see if this device is removable.
+     */
+    if (strncmp(deviceName,"DF",2) == 0)
+        return TRUE;
+
 #if defined(AROS_BOOT_CHECKSIG)
 #define AROSBOOTSIG_FILE ":AROS.boot"
 
