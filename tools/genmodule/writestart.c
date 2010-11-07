@@ -678,7 +678,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    {\n"
     );
     
-    if (!(cfg->options & OPTION_RESAUTOINIT))
+    if (!(cfg->options & OPTION_RESAUTOINIT) && !(cfg->options & OPTION_SELFINIT))
     {
     	fprintf(out,
 	    	    "        AddResource(lh);\n"
