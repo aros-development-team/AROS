@@ -36,8 +36,6 @@ typedef struct AROSCPUContext regs_t;
 		cc->pc   = (IPTR)startpc; \
 		cc->a[7] = (IPTR)sp; \
 		cc->sr   = 0x0000; \
-		*(IPTR *)(cc->a[7] - 4) = (IPTR)startpc; \
-		*(UWORD *)(cc->a[7] - 6) = 0x0000; \
 	} while (0)
 
 #endif /* _CPU_M68K_H */
