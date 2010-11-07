@@ -56,7 +56,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
 
     /* Initialize for the fools that illegally used this field */
     LIBBASE->dl_UtilityBase = OpenLibrary("utility.library", 0);
-
+    LIBBASE->dl_SysBase = SysBase;
     LIBBASE->dl_IntuitionBase = NULL;
 
     {
@@ -99,6 +99,10 @@ static int DosInit(struct DosLibrary *LIBBASE)
 		      &LIBBASE->dl_TimerIO.tr_node, 0) == 0)
 	{
 	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
+
+	    LIBBASE->dl_lib.lib_Node.ln_Name = "dos.library";
+	    LIBBASE->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
+	    LIBBASE->dl_lib.lib_Version = VERSION_NUMBER;
 
 	    AddLibrary((struct Library *)LIBBASE);
 
