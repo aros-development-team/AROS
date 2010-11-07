@@ -571,6 +571,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	    cfg->options |= OPTION_NOOPENCLOSE;
 	else
 	    /* Enforce using RTF_AUTOINIT for everything except resources */
+	    if (!(cfg->options & OPTION_SELFINIT))
 	    cfg->options |= OPTION_RESAUTOINIT;
     }
     return NULL;
@@ -725,7 +726,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    {
 			"noautolib", "noexpunge", "noresident", "peropenerbase",
                         "peridbase", "includes", "noincludes", "nostubs",
-                        "autoinit", "noautoinit", "resautoinit", "noopenclose"
+                        "autoinit", "noautoinit", "resautoinit", "noopenclose",
+                        "selfinit"
 		    };
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
@@ -791,10 +793,17 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
                             cfg->options |= OPTION_NOAUTOINIT;
 			    break;
 			case 11: /* resautoinit */
+				if (cfg->options & OPTION_SELFINIT)
+					exitfileerror(20, "option resautoinit and selfinit are incompatible\n");
 			    cfg->options |= OPTION_RESAUTOINIT;
 			    break;
 			case 12:
 			    cfg->options |= OPTION_NOOPENCLOSE;
+			    break;
+			case 13: /* noresautoinit */
+				if (cfg->options & OPTION_RESAUTOINIT)
+					exitfileerror(20, "option resautoinit and selfinit are incompatible\n");
+			    cfg->options |= OPTION_SELFINIT;
 			    break;
 			}
 			while (isspace(*s)) s++;
