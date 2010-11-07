@@ -16,9 +16,10 @@ AROS_UFH4(APTR, Cia_Handler,
 
     struct CIABase *CiaBase = (struct CIABase *)data;
 
-    UBYTE mask = CiaBase->hw->ciaicr & 0x1f;
+    UBYTE mask;
      
-    mask &= CiaBase->enable_mask;
+    CiaBase->active_mask |= CiaBase->hw->ciaicr & 0x1f;
+    mask = CiaBase->enable_mask & CiaBase->active_mask;
      
     if (mask) {
         int i;
