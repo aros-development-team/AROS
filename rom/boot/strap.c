@@ -156,6 +156,7 @@ static void BootBlock(void)
 {
        struct MsgPort *msgport;
        struct IOExtTD *io;
+       CONST_STRPTR driver = "trackdisk.device";
        UWORD i;
 
        UBYTE *buffer = AllocMem(BOOTBLOCK_SIZE, MEMF_CHIP);
@@ -164,8 +165,8 @@ static void BootBlock(void)
            if ((msgport = CreateMsgPort())) {
                if ((io = (struct IOExtTD*)CreateIORequest(msgport, sizeof(struct IOExtTD)))) {
                    for (i = 0; i < 4; i++) {
-                       if (!OpenDevice("trackdisk.device", i, (struct IORequest*)io, 0)) {
-                           D(bug("track.device:%d open\n", i));
+                       if (!OpenDevice(driver, i, (struct IORequest*)io, 0)) {
+                           D(bug("%s:%d open\n", driver, i));
                            io->iotd_Req.io_Length = BOOTBLOCK_SIZE;
                            io->iotd_Req.io_Data = buffer;
                            io->iotd_Req.io_Offset = 0;
