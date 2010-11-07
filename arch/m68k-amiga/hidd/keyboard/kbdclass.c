@@ -34,7 +34,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -53,22 +53,48 @@ static AROS_UFH4(ULONG, keyboard_interrupt,
 
 	struct kbd_data *kbddata = (struct kbd_data*)data;
 	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
+	UBYTE lo, hi;
 	
 	UBYTE keycode = ciaa->ciasdr;
 
 	// handshake, delay may not be correct yet (should be about 85us or more)
+	if (ciaa->ciacra & 1) {
+		// timer active -> assume timer.device has started it
+		for (;;) {
+			hi = ciaa->ciatahi;
+			lo = ciaa->ciatalo;
+			if (hi == ciaa->ciatahi)
+				break;
+		}
+	} else {
+		// not active, assume no one is using it
 	ciaa->ciatahi = 0;
 	ciaa->ciatalo = 100;
 	// oneshot, force load, set serial output (=handshake signal to keyboard)
 	ciaa->ciacra = 0x08 | 0x10 | 0x40;
 	// start timer
 	ciaa->ciacra |= 0x01;
+		hi = 0;
+		lo = 0;
+	}
 
 	keycode = ~((keycode >> 1) | (keycode << 7));
 	kbddata->kbd_callback(kbddata->callbackdata, keycode);
 
 	// timer still not finished? busy wait
-	while (ciaa->ciacra & 1);
+	while (ciaa->ciacra & 1) {
+		UBYTE lo2, hi2;
+		while (ciaa->ciacra & 1) {
+			hi2 = ciaa->ciatahi;
+			lo2 = ciaa->ciatalo;
+			if (hi2 == ciaa->ciatahi)
+				break;
+		}
+		if (hi2 != hi && hi2 != hi - 1)
+			break;
+		if (hi2 == hi && lo2 <= lo)
+			break;
+	}
 	ciaa->ciacra &= ~0x40; // back to input mode
 	
 	return 0;
@@ -140,7 +166,7 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 		if (!(XSD(cl)->ciares = OpenResource("ciaa.resource")))
 			Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
 	
-		ciaa->ciacra = 0;
+		ciaa->ciacra &= ~0x40;
 
 		inter = &XSD(cl)->kbint;
 		inter->is_Node.ln_Pri = 0;
