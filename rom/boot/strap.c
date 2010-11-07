@@ -19,6 +19,7 @@
 #include <exec/resident.h>
 #include <exec/types.h>
 #include <libraries/configvars.h>
+#include <libraries/expansion.h>
 #include <libraries/expansionbase.h>
 #include <libraries/partition.h>
 #include <utility/tagitem.h>
@@ -133,6 +134,7 @@ struct InitTable {
 	ULONG_FUNC init;
 };
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
 static void CallInitCode(struct InitTable *init)
 {
 	struct Library *library;
@@ -150,9 +152,61 @@ static void CallInitCode(struct InitTable *init)
 		return;
 	}
 }
+#endif
+
+static void FloppyBootNode(
+        struct ExpansionBase *ExpansionBase,
+        CONST_STRPTR driver, int unit, ULONG type)
+{
+    TEXT dosdevname[4] = "DF0";
+    CONST_STRPTR handler = "afs.handler";
+    IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
+    struct DeviceNode *devnode;
+
+    /* TODO: Get geometry from device 
+     * For now we assume DD 3.5" floppies
+     */
+
+    dosdevname[2] += unit;
+    D(bug("strap: Adding bootnode %s:\n", dosdevname));
+
+    pp[0] = (IPTR)dosdevname;
+    pp[1] = (IPTR)driver;
+    pp[2] = unit;
+    pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
+    pp[DE_SIZEBLOCK + 4] = 128;
+    pp[DE_NUMHEADS + 4] = 2;
+    pp[DE_SECSPERBLOCK + 4] = 1;
+    pp[DE_BLKSPERTRACK + 4] = 11;
+    pp[DE_RESERVEDBLKS + 4] = 2;
+    pp[DE_LOWCYL + 4] = 0;
+    pp[DE_HIGHCYL + 4] = 79;
+    pp[DE_NUMBUFFERS + 4] = 10;
+    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
+    pp[DE_MAXTRANSFER + 4] = 0x00200000;
+    pp[DE_MASK + 4] = 0x7FFFFFFE;
+    pp[DE_BOOTPRI + 4] = 5 - (unit * 10);
+    pp[DE_DOSTYPE + 4] = type;
+    pp[DE_BOOTBLOCKS + 4] = 2;
+    devnode = MakeDosNode(pp);
+
+    if (devnode) {
+#if 0
+        int len = strlen(handler);
+        devnode->dn_Handler = MKBADDR(AllocMem(AROS_BSTR_MEMSIZE4LEN(len), MEMF_PUBLIC | MEMF_CLEAR));
+        if (devnode->dn_Handler) {
+            CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler), len);
+            AROS_BSTR_setstrlen(devnode->dn_Handler, len);
+            AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
+        }
+#else
+        AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
+#endif
+    }
+}
 
 #define BOOTBLOCK_SIZE 1024
-static void BootBlock(void)
+static void BootBlock(struct ExpansionBase *ExpansionBase)
 {
        struct MsgPort *msgport;
        struct IOExtTD *io;
@@ -174,10 +228,13 @@ static void BootBlock(void)
                            DoIO((struct IORequest*)io);
                            if (io->iotd_Req.io_Error == 0) {
                                D(bug("bootblock read ok\n"));
-                               if (!memcmp (buffer, "DOS", 3) && BootBlockChecksum(buffer)) {
+                               if (BootBlockChecksum(buffer)) {
                                	       ULONG retval;
                                	       APTR  init;
                                	       APTR bootcode = buffer + 12;
+                               	       D(bug("creating BootNode\n"));
+                                       FloppyBootNode(ExpansionBase, driver, i, *(ULONG *)buffer);
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
                                	       D(bug("calling bootblock!\n", buffer));
                                	       asm volatile ("nop\nnop\nmove.l %2,%%a1\n"
                                	       		     "move.l %3,%%a6\n"
@@ -192,6 +249,7 @@ static void BootBlock(void)
                                	       D(bug("bootblock: D0=0x%08x A0=%p\n", retval, init));
                                	       if (retval == 0)
                                	       	       CallInitCode(init);
+#endif
                                }
                            } else {
                                D(bug("ioerror %d\n", io->iotd_Req.io_Error));
@@ -576,7 +634,10 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
     /* Try to get a boot-block from the trackdisk.device */
-    BootBlock();
+    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
+    if (ExpansionBase != NULL)
+        BootBlock(ExpansionBase);
+    CloseLibrary((struct Library *)ExpansionBase);
 #endif
 
     DOSResident = FindResident( "dos.library" );
