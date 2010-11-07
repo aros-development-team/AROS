@@ -19,6 +19,8 @@
 #define timeval sys_timeval
 #include "etask.h"
 
+#include <stdarg.h>
+
 #include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
