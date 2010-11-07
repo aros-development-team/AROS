@@ -338,10 +338,10 @@ void start(IPTR chip_start, ULONG chip_size,
 	Exec_ScreenCode(CODE_RAM_CHECK);
 
 	if (fast_size == 0) {
-		mh = SetupMemory("Chip Memory", -5,
+		mh = SetupMemory("Chip Mem", -10,
 				 chip_start, chip_size, MEMF_CHIP);
 	} else {
-		mh = SetupMemory("Fast Memory", 0,
+		mh = SetupMemory("Fast Mem", -5,
 				 fast_start, fast_size, MEMF_FAST);
 	}
 
