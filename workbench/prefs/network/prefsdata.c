@@ -387,6 +387,9 @@ BOOL RestartStack()
 
     /* Startup */
     {
+        CONST_STRPTR srcdir = GetDefaultStackLocation();
+        ULONG arostcppathlen = strlen(srcdir) + 3 + 20;
+        TEXT arostcppath[arostcppathlen];
         struct TagItem tags[] =
         {
             { SYS_Input,        (IPTR)NULL          },
@@ -396,7 +399,9 @@ BOOL RestartStack()
             { TAG_DONE,         0                   }
         };
 
-        SystemTagList("AROSTCP", tags);
+        CombinePath3P(arostcppath, arostcppathlen, srcdir, "C", "AROSTCP");
+
+        SystemTagList(arostcppath, tags);
     }
 
     /* Check if startup successful */
