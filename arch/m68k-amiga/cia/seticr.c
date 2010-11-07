@@ -23,13 +23,13 @@ AROS_LH1(WORD, SetICR,
 
     struct CIABase *CiaBase = (struct CIABase *)resource;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    UBYTE mask;
+    WORD old;
      
     Disable();
      
     // I think this needs to return interrupt=active status
     // if called inside CIA interrupt handler
-    mask = CiaBase->active_mask | CiaBase->executing_mask;
+    old = CiaBase->active_mask | CiaBase->executing_mask;
 
     CiaBase->active_mask |= CiaBase->hw->ciaicr;
     if (mask & 0x80)
@@ -43,7 +43,7 @@ AROS_LH1(WORD, SetICR,
 
     Enable();
 
-    return mask;
+    return old;
 
     AROS_LIBFUNC_EXIT
 }
