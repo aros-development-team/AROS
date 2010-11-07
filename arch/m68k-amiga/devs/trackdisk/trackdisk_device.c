@@ -380,6 +380,8 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 		    tdu->tdu_broken = td_recalibrate(tdu, tdb) == 0;
 		    if (tdu->tdu_broken)
 		    	D(bug("DF%d failed to recalibrate!?\n", i));
+		    else
+		    	D(bug("DF%d initialized\n", i));
 		    tdu->pub.tdu_CurrTrk = 0;
 		    tdu->tdu_DiskIn = td_getDiskChange(tdu, tdb) ? TDU_DISK : TDU_NODISK;
 		    tdu->tdu_ProtStatus = td_getprotstatus(tdu,tdb);
@@ -549,11 +551,7 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
 struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 {
     struct TDU     *unit;
-    struct ExpansionBase *ExpansionBase = NULL;
    	struct DiskBase *DiskBase = tdb->td_DiskBase;
-    struct DeviceNode *devnode;
-    IPTR *pp;
-    UWORD len;
 
 	if (AllocUnit(num) == 0)
 		return NULL;
@@ -561,8 +559,6 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     /* Try to get memory for structure */
     unit = AllocMem(sizeof(struct TDU), MEMF_PUBLIC | MEMF_CLEAR);
  
-    if (!tdb->td_nomount)
-		ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",40);
     if (unit) {
 		unit->tdu_DiskIn = TDU_NODISK;	/* Assume there is no floppy in there */
 		unit->pub.tdu_StepDelay = 3;	/* Standard values here */
@@ -574,49 +570,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 
 		/* Store the unit in TDBase */
 		tdb->td_Units[num] = unit;
-
-		if (ExpansionBase) {
-		    D(bug("TD: Adding bootnode\n"));
-		    pp = (IPTR *)AllocMem(sizeof(struct DosEnvec)+sizeof(IPTR)*4,MEMF_PUBLIC|MEMF_CLEAR);
-	
-		    if (pp) {
-		    	TEXT dosdevname[4] = "DF0", *handler = "afs.handler";
-	       		dosdevname[2] += num;
-				pp[0] = (IPTR)dosdevname;
-				pp[1] = (IPTR)MOD_NAME_STRING;
-				pp[2] = num;
-				pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
-				pp[DE_SIZEBLOCK + 4] = 128;
-				pp[DE_NUMHEADS + 4] = 2;
-				pp[DE_SECSPERBLOCK + 4] = 1;
-				pp[DE_BLKSPERTRACK + 4] = 11 * (unit->tdu_hddisk ? 2 : 1);
-				pp[DE_RESERVEDBLKS + 4] = 2;
-				pp[DE_LOWCYL + 4] = 0;
-				pp[DE_HIGHCYL + 4] = 79;
-				pp[DE_NUMBUFFERS + 4] = 10;
-				pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
-				pp[DE_MAXTRANSFER + 4] = 0x00200000;
-				pp[DE_MASK + 4] = 0x7FFFFFFE;
-				pp[DE_BOOTPRI + 4] = 5 - (num * 10);
-				pp[DE_DOSTYPE + 4] = 0x444F5300;
-				pp[DE_BOOTBLOCKS + 4] = 2;
-				devnode = MakeDosNode(pp);
-	
-				if (devnode) {
-		         	len = strlen(handler);
-				    devnode->dn_Handler = MKBADDR(AllocMem(AROS_BSTR_MEMSIZE4LEN(len), MEMF_PUBLIC | MEMF_CLEAR));
-					if (devnode->dn_Name) {
-		            	CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler), len);
-		            	AROS_BSTR_setstrlen(devnode->dn_Handler, len);
-						AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
-				    }
-				}
-			}
-		}
 	}
-    if (ExpansionBase) {
-		CloseLibrary((struct Library *)ExpansionBase);
-    }
     return unit;
 }
 
@@ -639,8 +593,8 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 
 	drives = 0;
  	for (i = 0; i < TD_NUMUNITS; i++) {
-  		ULONG id = GetUnitID (i);
-  		if (id != 0x00000000)
+  		ULONG id = GetUnitID(i);
+  		if (id != DRT_EMPTY)
   			drives++;
   	}
   	
@@ -658,15 +612,15 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
 
   	for (i = 0; i < TD_NUMUNITS; i++) {
 		TDBase->td_Units[i] = NULL;
-  		ULONG id = GetUnitID (i);
-  		if (id != 0x00000000)
+  		ULONG id = GetUnitID(i);
+  		if (id != DRT_EMPTY)
   			TD_InitUnit(i, TDBase);
   	}
 
     /* Create the message processor task */
     TD_InitTask(TDBase);
 
-    D(bug("TD: done\n"));
+    D(bug("TD: done %d\n", drives));
 
     return TRUE;
 }
@@ -679,7 +633,7 @@ static int GM_UNIQUENAME(open)
     ULONG flags
 )
 {
-    D(bug("TD: Open\n"));
+    D(bug("TD%d: Open\n", unitnum));
     iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
 
     /* Is the requested unitNumber valid? */
