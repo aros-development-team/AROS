@@ -2,8 +2,8 @@
 
 	.align 4 
 
-#define SS_STACK_SIZE	0x08000
-#define US_STACK_SIZE	0x10000
+#define SS_STACK_SIZE	0x01000
+#define US_STACK_SIZE	0x0f000
 
 	.globl rom_init
 rom_init:
@@ -68,7 +68,6 @@ rom_init:
 	 * and the Exec User stack as the next 64K under that
 	 */
 .L_stack_setup:
-	subi.l	#0x10,%d1
 	lea.l	%a1@(%d1),%sp
 	move.w	#0,%sr		/* Go to user mode */
 	subi.l	#SS_STACK_SIZE,%d1
