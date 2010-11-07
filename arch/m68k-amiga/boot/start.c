@@ -387,9 +387,6 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	EXT_WORD(sysBase, Exec, GetCC, 88);
 
-	/* Needed for card.resource */
-	FAKE_ID(sysBase, Exec, ReadGayle, 136, 0x00d0);	/* ReadGayle */
-
 	/* Inject code for GetCC, depending on CPU model */
 	if (sysBase->AttnFlags & AFF_68010) {
 		/* move.w %ccr,%d0; rts; nop */
@@ -398,6 +395,8 @@ void start(IPTR chip_start, ULONG chip_size,
 		/* move.w %sr,%d0; rts; nop */
 		FAKE_IT(sysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
 	}
+
+	DebugPutHex("GayleID", ReadGayle());
 
 	/* If we had Fast memory, don't forget to add
 	 * Chip memory now!
