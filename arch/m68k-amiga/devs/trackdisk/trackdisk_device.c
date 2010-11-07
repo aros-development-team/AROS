@@ -14,6 +14,7 @@
 #include <exec/alerts.h>
 #include <exec/tasks.h>
 #include <exec/interrupts.h>
+#include <libraries/expansion.h>
 #include <libraries/expansionbase.h>
 #include <libraries/configvars.h>
 #include <dos/filehandler.h>
@@ -607,7 +608,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 					if (devnode->dn_Name) {
 		            	CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler), len);
 		            	AROS_BSTR_setstrlen(devnode->dn_Handler, len);
-						AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
+						AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
 				    }
 				}
 			}
