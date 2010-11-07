@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := coldreboot
-AFILES		:= enable disable
+AFILES		:= enable disable readgayle
 
 #MM kernel-exec : kernel-exec-amiga-m68k
 #MM kernel-exec-amiga-m68k : kernel-kernel-amiga-m68k-includes kernel-exec-includes includes-asm_h-m68k

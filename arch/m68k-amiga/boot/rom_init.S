@@ -25,6 +25,12 @@ rom_init:
 	move.w	%d0,0x9c(%a0)	/* Clear interrupts */
 	move.w	%d0,0x96(%a0)	/* Stop DMA */
 
+	/* Do we have a Gayle? */
+	move.l  #0f,%a7
+	jsr     Exec_ReadGayle
+0:
+    move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
+
 	/* Check for 000000 - 200000 Chip Ram
 	 */
 .L_chip_mem:
@@ -47,6 +53,10 @@ rom_init:
 .L_fast_mem:
 	move.l	#0xc00000, %a0
 	move.l	#0x180000, %d0
+	tst.l   %d6                 /* Gayle? */
+	bne.s   0f                  /* Yes, limit to 0x180000 */
+	add.l   #0x040000, %d0      /* No, look for ram in Gayle space */
+0:
 	lea.l	0f,%a7
 	jmp	.L_memtest
 0:
@@ -115,7 +125,7 @@ rom_init:
 	jsr	start
 
 	/******** Memory tester *******/
-	/* TODO: Check for mirrored chip registers
+	/* TODO: Don't clobber memory of SysBase is valid
 	 * IN: A0 - Address, D0 - Possible Size
 	 *     A7 - Return address
 	 * OUT: D0 - Detected size
