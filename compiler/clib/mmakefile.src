@@ -381,6 +381,8 @@ SHARED_ARCH := \
     vfork_longjmp
 
 ROM_ONLY := \
+	__ctype \
+	__arosc_userdata \
 	__assert_kernel
 
 ROM_COMMON := \
@@ -390,9 +392,9 @@ ROM_COMMON := \
 	div \
 	ldiv \
 	lldiv \
-        mblen \
-        mbtowc \
-        mbstowcs \
+	mblen \
+	mbtowc \
+	mbstowcs \
 	memchr \
 	memcmp \
 	memcpy \
@@ -421,9 +423,8 @@ ROM_COMMON := \
 	strspn \
 	strstr \
 	strtod \
-	strtok \
-        wctomb \
-        wcstombs
+	wctomb \
+	wcstombs
 
 ROM_COMMON_ARCH := \
 	longjmp \
@@ -431,8 +432,6 @@ ROM_COMMON_ARCH := \
 
 # Objects for rom.lib, from the static build.
 ROM_STATIC := \
-        __arosc_userdata \
-	__ctype \
 	__filesystem_support \
 	__isinf \
 	__vcformat \
@@ -518,7 +517,7 @@ $(OBJDIR)/shared/%.o : %.c
 	%compile_q opt="$(CFLAGS) -DAROSC_SHARED"
 
 $(OBJDIR)/rom/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
+	%compile_q opt="$(CFLAGS) -DAROSC_ROM"
 
 $(OBJDIR)/%.o : %.c
 	%compile_q opt="$(CFLAGS)"
