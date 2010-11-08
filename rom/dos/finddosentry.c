@@ -32,8 +32,8 @@
 /*  FUNCTION
 	Looks for the next dos list entry with the right name. The list
 	must be locked for this. There may be not more than one device
-	or assign node of the same name. There are no restrictions on
-	volume nodes.
+	or assign node of the same name. There are no such restrictions
+	on volume nodes.
 
     INPUTS
 	dlist - the value given by LockDosList() or the last call to

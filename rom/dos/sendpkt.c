@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 #include "dos_intern.h"
 #include <dos/dosextens.h>
@@ -61,7 +62,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* If port address is NULL, the called grabbed it manually from DosNode of IOFS handler.
+    /* If port address is NULL, the caller grabbed it manually from DosNode of IOFS handler.
        Forward the packet to emulator. */
     if (!port) {
         D(bug("[DOS] SendPkt(): port is NULL, using IOFS\n"));
