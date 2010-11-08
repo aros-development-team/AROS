@@ -624,12 +624,6 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
                 bug("[Nouveau] Video mode not set\n");
                 return NULL;
             }
-            else
-            {
-                /* TEMP - FIXME HACK FOR GALLIUM */
-                SD(cl)->screenbitmap = (struct HIDDNouveauBitMapData *)OOP_INST_DATA(bmclass, msg->bitMap);
-                /* TEMP - FIXME HACK FOR GALLIUM */
-            }
         }
     }
     else

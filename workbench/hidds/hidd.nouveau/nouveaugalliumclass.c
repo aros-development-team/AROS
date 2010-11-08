@@ -7,6 +7,7 @@
 
 #include <aros/debug.h>
 #include <proto/oop.h>
+#include <graphics/rastport.h>
 
 #include "util/u_memory.h"
 #include "util/u_inlines.h"
@@ -16,6 +17,8 @@
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
+
+#define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))
 
 struct HiddNouveauWinSys 
 {
@@ -204,29 +207,32 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
 {
     struct pipe_surface * surface = (struct pipe_surface *)msg->surface;
     struct CardData * carddata = &(SD(cl)->carddata);
-    struct HIDDNouveauBitMapData srcdata; 
+    struct HIDDNouveauBitMapData srcdata;
+    struct RastPort * rp = (struct RastPort *)msg->rastport;
+    OOP_Object * bm = HIDD_BM_OBJ(rp->BitMap);
+    struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
     
     if (!HIDDNouveauWrapSurface(carddata, surface, &srcdata))
         return;
 
     /* srcdata does not require a lock, because it's a local object that is
        access only by one task at a time */
-    LOCK_BITMAP_BM(SD(cl)->screenbitmap)
-    UNMAP_BUFFER_BM(SD(cl)->screenbitmap)
+    LOCK_BITMAP_BM(dstdata)
+    UNMAP_BUFFER_BM(dstdata)
 
     if (carddata->architecture < NV_ARCH_50)
     {
-        HIDDNouveauNV04CopySameFormat(carddata, &srcdata, SD(cl)->screenbitmap, 
+        HIDDNouveauNV04CopySameFormat(carddata, &srcdata, dstdata, 
             msg->left, msg->top, msg->absx, msg->absy, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
     }
     else
     {
-        HIDDNouveauNV50CopySameFormat(carddata, &srcdata, SD(cl)->screenbitmap, 
+        HIDDNouveauNV50CopySameFormat(carddata, &srcdata, dstdata, 
             msg->left, msg->top, msg->absx, msg->absy, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
     }
 
-    UNLOCK_BITMAP_BM(SD(cl)->screenbitmap)
+    UNLOCK_BITMAP_BM(dstdata)
 }
 
