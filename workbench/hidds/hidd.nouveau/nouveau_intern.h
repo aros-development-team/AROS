@@ -139,10 +139,6 @@ struct staticdata
 
     struct CardData carddata;
     
-    /* TEMP - FIXME HACK FOR GALLIUM */
-    struct HIDDNouveauBitMapData * screenbitmap;
-    /* TEMP - FIXME HACK FOR GALLIUM */
-    
     struct SignalSemaphore multibitmapsemaphore;
     
     /* TEMP - FIXME HACK FOR PATCHRGBCONV */
