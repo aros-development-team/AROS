@@ -190,19 +190,8 @@ static void FloppyBootNode(
     pp[DE_BOOTBLOCKS + 4] = 2;
     devnode = MakeDosNode(pp);
 
-    if (devnode) {
-#if 0
-        int len = strlen(handler);
-        devnode->dn_Handler = MKBADDR(AllocMem(AROS_BSTR_MEMSIZE4LEN(len), MEMF_PUBLIC | MEMF_CLEAR));
-        if (devnode->dn_Handler) {
-            CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler), len);
-            AROS_BSTR_setstrlen(devnode->dn_Handler, len);
-            AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
-        }
-#else
+    if (devnode)
         AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
-#endif
-    }
 }
 
 #define BOOTBLOCK_SIZE 1024
