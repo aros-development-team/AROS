@@ -46,13 +46,22 @@ AROS_UFP4(ULONG, TOF_VBlank,
 #   define SYSFONTNAME  "topaz.font"
 #endif
 
-static struct TextAttr sysTA;
 BOOL InitROMFont(struct GfxBase *);
 
 static int GfxInit(struct GfxBase *LIBBASE)
 {
     WORD i;
     
+    OOPBase = (APTR)OpenLibrary("oop.library", 41);
+    if (OOPBase == NULL)
+        return FALSE;
+
+    UtilityBase = (APTR)OpenLibrary("utility.library", 0);
+    if (UtilityBase == NULL) {
+        CloseLibrary((APTR)OOPBase);
+        return FALSE;
+    }
+
     NEWLIST(&LIBBASE->TextFonts);
     InitSemaphore( &PrivGBase(GfxBase)->hashtab_sema );
     InitSemaphore( &PrivGBase(GfxBase)->view_sema );
@@ -107,6 +116,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
 
     if (!LIBBASE->DefaultFont)
     {
+    	struct TextAttr sysTA;
         sysTA.ta_Name  = (STRPTR)SYSFONTNAME;
         sysTA.ta_YSize = 8;
         sysTA.ta_Style = FS_NORMAL;

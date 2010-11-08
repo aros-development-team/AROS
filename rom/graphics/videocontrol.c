@@ -11,6 +11,8 @@
 #include <utility/tagitem.h>
 #include <proto/utility.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */
