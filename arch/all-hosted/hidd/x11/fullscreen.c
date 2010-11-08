@@ -17,6 +17,8 @@ typedef unsigned char UBYTE;
 
 #include <proto/hostlib.h>
 
+/* TODO: libXxf86vm is already loaded in x11_hostlib.c. Need to merge the code */
+
 static void *xvm_handle = NULL;
 
 static struct {
@@ -35,7 +37,17 @@ static const char *xvm_func_names[] = {
     "XF86VidModeGetAllModeLines"
 };
 
+#ifdef HOST_OS_linux
 #define XVM_SOFILE "libXxf86vm.so.1"
+#endif
+
+#ifdef HOST_OS_darwin
+#define XVM_SOFILE "/usr/X11/lib/libXxf86vm.1.dylib"
+#endif
+
+#ifndef XVM_SOFILE
+#define XVM_SOFILE "libXxf86vm.so"
+#endif
 
 #define XVMCALL(func,...)   (xvm_func.func(__VA_ARGS__))
 

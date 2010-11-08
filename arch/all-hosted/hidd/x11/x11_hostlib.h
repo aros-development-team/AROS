@@ -138,14 +138,22 @@ extern struct x11_func x11_func;
 extern void *libc_handle;
 extern struct libc_func libc_func;
 
-#if defined __FreeBSD__
-#   define X11_SOFILE   "libX11.so"
-#   define LIBC_SOFILE  "libc.so"
-#	define XF86VM_SOFILE "libXxf86vm.so"
-#else
-#   define X11_SOFILE  "libX11.so.6"
-#   define LIBC_SOFILE "libc.so.6"
-#	define XF86VM_SOFILE "libXxf86vm.so.1"
+#ifdef HOST_OS_linux
+#define X11_SOFILE    "libX11.so.6"
+#define LIBC_SOFILE   "libc.so.6"
+#define XF86VM_SOFILE "libXxf86vm.so.1"
+#endif
+
+#ifdef HOST_OS_darwin
+#define X11_SOFILE    "/usr/X11/lib/libX11.6.dylib"
+#define LIBC_SOFILE   "libSystem.dylib"
+#define XF86VM_SOFILE "/usr/X11/lib/libXxf86vm.1.dylib"
+#endif
+
+#ifndef X11_SOFILE
+#define X11_SOFILE    "libX11.so"
+#define LIBC_SOFILE   "libc.so"
+#define XF86VM_SOFILE "libXxf86vm.so"
 #endif
 
 #define XVMCALL(func,...) (xf86vm_func.func(__VA_ARGS__))
