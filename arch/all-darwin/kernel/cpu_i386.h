@@ -149,7 +149,8 @@ typedef void (*SIGHANDLER_T)(int);
 
 #       define SAVE_FPU(cc,sc)                                              \
             do {                                                            \
-				(cc)->fpstate = FPSTATE(sc);								\
+		(cc)->fpstate = FPSTATE(sc);				    \
+		(cc)->have_fpu_data = 1;				    \
             } while (0)
 
 #       define RESTORE_FPU(cc,sc)                                           \
@@ -184,7 +185,7 @@ typedef void (*SIGHANDLER_T)(int);
 #define RESTOREREGS(cc, sc)                                         \
     do {                                                            \
 	RESTORE_CPU((cc),sc);                                       \
-        if (HAS_FPU(sc))                                            \
+        if (HAS_FPU(sc) && (cc)->have_fpu_data)                     \
             RESTORE_FPU((cc),sc);                                   \
 	} while (0)
 
@@ -209,14 +210,19 @@ struct AROSCPUContext
     _STRUCT_X86_FLOAT_STATE32 fpstate;
     int eflags;
     struct AROSCPUContext *sc;
+    char have_fpu_data;
 };
 
 #define GET_PC(ctx) (APTR)ctx->regs[8]
 #define SET_PC(ctx, pc) ctx->regs[8] = (ULONG)pc
 
-#   define PREPARE_INITIAL_CONTEXT(cc)                              \
-        do {                                                        \
-        } while (0)
+/*
+ * _STRUCT_X86_FLOAT_STATE32 is defined in such a way that aligning it is problematic
+ * (it has 8 reserved bytes in the beginning). In order to work around this we just will not
+ * restore FPU state from a newly allocated context. This is a temporary workaround until
+ * CPU context format is unified accross all systems
+ */
+#define PREPARE_INITIAL_CONTEXT(cc) cc->have_fpu_data = 0;
 
 #define PREPARE_INITIAL_FRAME(ctx, sp, startpc)     \
     do {                                            \
