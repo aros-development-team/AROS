@@ -8,11 +8,12 @@
 #include <proto/exec.h>
 #include <exec/types.h>
 #include <exec/memory.h>
-#include "layers_intern.h"
 #include <aros/libcall.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <utility/hooks.h>
+
+#include "layers_intern.h"
 #include "basicfuncs.h"
 
 /*****************************************************************************

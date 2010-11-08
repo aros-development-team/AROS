@@ -7,9 +7,10 @@
 */
 #include <proto/exec.h>
 #include <exec/types.h>
-#include "layers_intern.h"
 #include <aros/libcall.h>
 #include <proto/graphics.h>
+
+#include "layers_intern.h"
 #include "basicfuncs.h"
 #include "../graphics/intregions.h"
 

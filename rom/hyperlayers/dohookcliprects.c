@@ -7,10 +7,10 @@
 */
 #include <aros/debug.h>
 #include <aros/libcall.h>
-#include "layers_intern.h"
-#include "basicfuncs.h"
 #include <exec/types.h>
 
+#include "layers_intern.h"
+#include "basicfuncs.h"
 /*****************************************************************************
 
     NAME */
