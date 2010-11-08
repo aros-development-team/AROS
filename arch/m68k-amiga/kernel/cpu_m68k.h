@@ -38,4 +38,25 @@ typedef struct AROSCPUContext regs_t;
 		cc->sr   = 0x0000; \
 	} while (0)
 
+/*
+ * Only used by Exec/Debug()
+ */
+#define PRINT_CPU_CONTEXT(ctx) \
+    do { \
+        int i; \
+        UWORD sr = (ctx)->sr; \
+        for (i = 0; i < 8; i++) { \
+            bug("D%d: %08x%s", i, (ctx)->d[i], ((i%4) == 3) ? "\n" : " "); \
+        } \
+        for (i = 0; i < 8; i++) { \
+            bug("A%d: %08x%s", i, (ctx)->a[i], ((i%4) == 3) ? "\n" : " "); \
+        } \
+        bug("SR: T=%02d S=%d M=%d X=%d N=%d Z=%d V=%d C=%d IMASK=%d\n", \
+                (sr >> 14) & 3, (sr >> 13) & 1, (sr >> 5) & 1, \
+                (sr >>  4) & 1, (sr >>  3) & 1, (sr >> 2) & 1, \
+                (sr >>  1) & 1, (sr >>  0) & 1, (sr >> 8) & 7); \
+        bug("PC: %08x\n", (ctx)->pc); \
+    } while (0)
+
+
 #endif /* _CPU_M68K_H */
