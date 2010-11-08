@@ -42,55 +42,77 @@ USER_CFLAGS :=
 
 #MM- includes-amiga-m68k : includes-common-i386 includes-copy-amiga-m68k includes-copy
 
-FILES=start
-AFILES=rom_entry rom_init
-
-USELIBS := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
-#USELIBS := arossupport rom autoinit libinit
+USELIBS := amiga arossupport rom arosm autoinit libinit \
+	   hiddgraphicsstubs hiddstubs 
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KLIBS   := exec aros dos graphics utility oop expansion \
-	   intuition layers keymap boot
-	   # mathieeesingbas workbench cybergraphics
+# Main ROM (0xf80000 - 0xffffff)
+FILES=start
+AFILES=rom_entry rom_init
 
+ROMPAD_rom := 0x1000000
+KLIBS   := exec aros dos utility oop expansion boot
 KDEVS   := timer input keyboard console trackdisk gameport
-KHNDLRS := con nil
-KHIDDS  := hiddclass graphics keyboard amigakbd mouse amigamouse
+KHNDLRS := con nil afs packet
+KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse
 KRSRCS  := battclock kernel processor dosboot cia potgo disk
 
-KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
+KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS)))
+
+OBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
+	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+$(BINDIR)/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
+
+# Expansion ROM (0xe00000-0xe7ffff)
+FILES   := 
+AFILES  := ext_entry
+
+KLIBS   :=  keymap graphics layers intuition
+KDEVS   := 
+KHNDLRS := 
+KHIDDS  :=
+KRSRCS  :=
+
+ROMPAD_ext := 0xe80000
+KOBJS_ext := \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
-
-OBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix .o        ,$(AFILES))) \
-	$(addprefix $(KOBJSDIR)/,$(addsuffix .o        ,$(FILES)))
+OBJS_ext := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
+	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+$(BINDIR)/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
 
 #MM kernel-link-amiga-m68k : setup-amiga-m68k
 #MM kernel-link-amiga-m68k-quick: 
 
-kernel-link-amiga-m68k : $(BINDIR)/aros-amiga-m68k.rom
+kernel-link-amiga-m68k : $(BINDIR)/aros-amiga-m68k-rom.bin $(BINDIR)/aros-amiga-m68k-ext.bin
 
-kernel-link-amiga-m68k-quick : $(BINDIR)/aros-amiga-m68k.rom
+kernel-link-amiga-m68k-quick : $(BINDIR)/aros-amiga-m68k-rom.bin $(BINDIR)/aros-amiga-m68k-ext.bin
 
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) -o $@ $<
 
-$(BINDIR)/aros-amiga-m68k.elf : $(OBJS) $(KOBJS) $(DEPLIBS) $(SRCDIR)/$(CURDIR)/linkerscript $(SRCDIR)/$(CURDIR)/mmakefile.src
+$(BINDIR)/aros-amiga-m68k-%.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/%.ld $(SRCDIR)/$(CURDIR)/mmakefile.src
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -static \
 		$(CFLAGS) \
-		$(OBJS) $(KOBJS) -nostartfiles -nostdlib \
-		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/linkerscript \
+		$(OBJS_$*) $(KOBJS_$*) -nostartfiles -nostdlib \
+		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/$*.ld \
 		-L$(LIBDIR) $(LIBS) -lgcc
 
-$(BINDIR)/aros-amiga-m68k.rom : $(BINDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/tools/romcheck
+$(BINDIR)/aros-amiga-m68k-%.bin : $(BINDIR)/aros-amiga-m68k-%.elf $(HOSTGENDIR)/tools/romcheck
 	$(Q)$(TARGET_OBJCOPY) \
 		--output-target binary \
-		--pad-to 0x01000000 \
+		--pad-to $(ROMPAD_$*) \
 		$< $@
 	$(Q)$(HOSTGENDIR)/tools/romcheck $@
 
