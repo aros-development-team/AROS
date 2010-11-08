@@ -2,7 +2,6 @@
 #MM     devs-networks-drivers-nforce-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-pcnet32-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-viarhine-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-e1000-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-sis900-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-rtl8139-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-rtl8168-$(AROS_TARGET_CPU) \
