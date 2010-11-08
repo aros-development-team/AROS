@@ -15,6 +15,7 @@
 #include <graphics/rastport.h>
 #include <graphics/clip.h>
 #include <graphics/layers.h>
+#include <utility/utility.h>
 #include <setjmp.h>
 #include <dos/dos.h>   /* BPTR below */
 
@@ -29,7 +30,13 @@ LIBBASETYPE
 
     struct SignalSemaphore  lb_MemLock;
     APTR    	    	    lb_ClipRectPool;
+
+    struct GfxBase *        lb_GfxBase;
+    struct UtilityBase *    lb_UtilityBase;
 };
+
+#define GfxBase     (LIBBASE->lb_GfxBase)
+#define UtilityBase (LIBBASE->lb_UtilityBase)
 
 struct IntLayer
 {
