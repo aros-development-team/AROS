@@ -46,7 +46,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     path will be used to find the command.
         Normally, the boot shell is used but other shells may be specified
     via tags. The tags are passed through to CreateNewProc() except those
-    who conflict with SystemTagList(). Currently, these are
+    that conflict with SystemTagList(). Currently, these are
 
         NP_Seglist
 	NP_FreeSeglist
@@ -72,7 +72,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 
     RESULT
 
-    The return code of the command executed or -1 or if the command could
+    The return code of the command executed or -1 if the command could
     not run because the shell couldn't be created. If the command is not
     found, the shell will return an error code, usually RETURN_ERROR.
 

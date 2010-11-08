@@ -42,7 +42,7 @@ void IOFS_SendPkt(struct DosPacket *dp, struct MsgPort *replyport, struct DosLib
     /*
      * Trying to emulate the packet system by rewriting the
      * packets to IO Requests. Sometimes there are too many
-     * parameters in the packet but thats fine. If there are
+     * parameters in the packet but that's fine. If there are
      * not enough parameters or the wrong type etc. then
      * it is more difficult to translate the packet.
      *

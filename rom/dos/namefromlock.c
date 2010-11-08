@@ -2,13 +2,14 @@
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Retrieve thew full pathname from a lock.
+    Desc: Retrieve the full pathname from a lock.
     Lang: english
 */
 #include <proto/exec.h>
 #include <dos/exall.h>
 #include <dos/filesystem.h>
 #include "dos_intern.h"
+
 #include <aros/debug.h>
 
 struct MyExAllData
