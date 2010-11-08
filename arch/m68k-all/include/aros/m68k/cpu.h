@@ -183,17 +183,19 @@ extern void aros_not_implemented ();
     long _n3 = (long)(n3);\
     long _re;\
     __asm__ __volatile__(\
-	"move.l %5,-(%%sp)\n\t"\
-	"move.l %4,-(%%sp)\n\t"\
-	"move.l %3,-(%%sp)\n\t"\
-	"move.l %%sp,%1\n\t"\
+	"move.l %%sp,%%a1\n\t"\
+	"move.l %5,%%a1@-\n\t"\
+	"move.l %4,%%a1@-\n\t"\
+	"move.l %3,%%a1@-\n\t"\
+	"move.l %%a1,%1\n\t"\
 	"move.l %2,%%a0\n\t"\
+	"move.l %%a1,%%sp\n\t"\
 	"jsr    (%%a0)\n\t"\
-	"adda.l #12,%%sp\n\t"\
+	"lea.l  %%sp@(12),%%sp\n\t"\
 	"movl   %%d0,%0"\
-	: "=g"(_re), "=m"(*(APTR *)p)\
-	: "ad"(n), "g"(_n1), "g"(_n2), "g"(_n3)\
-	: "cc", "memory", "%d0" );\
+	: "=g" (_re), "=m"(*(APTR *)p)\
+	: "g" (n), "g"(_n1), "g"(_n2), "g"(_n3)\
+	: "cc", "memory", "%d0", "%a0", "%a1" );\
     (t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
