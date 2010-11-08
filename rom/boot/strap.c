@@ -428,7 +428,11 @@ static VOID AddPartitionVolume
         i = GetOffset(PartitionBase, pn);
         blockspercyl = pp[4 + DE_BLKSPERTRACK] * pp[4 + DE_NUMHEADS];
         if (i % blockspercyl != 0)
+        {
+            D(bug("[Boot] Start block of subtable not on cylinder boundary: "
+                "%ld (Blocks per Cylinder = %ld)\n", i, blockspercyl));
             return;
+        }
         i /= blockspercyl;
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
