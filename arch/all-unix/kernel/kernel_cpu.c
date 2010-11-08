@@ -46,7 +46,7 @@ void cpu_Dispatch(regs_t *regs)
     struct AROSCPUContext *ctx;
     sigset_t sigs;
 
-    KernelIFace.sigemptyset(&sigs);
+    KernelIFace.SigEmptySet(&sigs);
 
     while (!(task = core_Dispatch()))
     {

@@ -1,3 +1,6 @@
+/* On Darwin this definition is required by ucontext.h (which is marked as deprecated) */
+#define _XOPEN_SOURCE
+
 #include <ucontext.h>
 
 #ifdef HOST_OS_linux

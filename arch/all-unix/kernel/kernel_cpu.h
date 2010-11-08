@@ -8,7 +8,7 @@
 #endif
 
 /* This macro serves as an indicator of included file */
-#ifndef SAVEREGS
+#ifndef PREPARE_INITIAL_FRAME
 #error Unsupported CPU
 #endif
 

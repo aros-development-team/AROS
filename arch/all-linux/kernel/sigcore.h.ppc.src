@@ -69,7 +69,7 @@ typedef @sighandler@ SignalHandler;
    has returned and the normal execution commences.
    On PowerPC this is the same as on x86-64. */
 #define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
-#define SC_ENABLE(uc)  KernelIFace.sigemptyset(&uc->uc_sigmask)
+#define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
 
 /* This stuff is not used on Linux/m68k, because the signal handler context
    doesn't contain enough registers. Some assembler is needed for the signal
