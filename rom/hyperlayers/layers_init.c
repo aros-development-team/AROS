@@ -6,11 +6,12 @@
     Lang: english
 */
 
-#include "layers_intern.h"
 #include LC_LIBDEFS_FILE
 #include <graphics/gfxbase.h>
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
+
+#include "layers_intern.h"
 
 static int LayersInit(LIBBASETYPEPTR LIBBASE)
 {

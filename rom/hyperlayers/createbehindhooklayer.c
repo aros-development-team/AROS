@@ -9,6 +9,8 @@
 #include <graphics/clip.h>
 #include <graphics/layers.h>
 #include <utility/tagitem.h>
+
+#include "layers_intern.h"
 #include "basicfuncs.h"
 
 /*****************************************************************************
