@@ -15,6 +15,16 @@
 
 static int LayersInit(LIBBASETYPEPTR LIBBASE)
 {
+    GfxBase = (APTR)OpenLibrary("graphics.library", 41);
+    if (GfxBase == NULL)
+        return FALSE;
+
+    UtilityBase = (APTR)OpenLibrary("utility.library", 0);
+    if (UtilityBase == NULL) {
+        CloseLibrary(GfxBase);
+        return FALSE;
+    }
+
     InitSemaphore(&LIBBASE->lb_MemLock);
  
     LIBBASE->lb_ClipRectPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);

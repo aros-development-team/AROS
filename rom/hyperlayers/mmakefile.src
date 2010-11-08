@@ -54,6 +54,8 @@ FUNCS := \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 
+USER_CFLAGS := -D__UTILITY_NOLIBBASE__ -D__GRAPHICS_NOLIBBASE__
+
 %build_module mmake=kernel-layers \
   modname=layers modtype=library \
   files="layers_init $(FUNCS) $(FILES)" \
