@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES  := bootconfig menu bootscreen gadgets dosboot_init
+CFILES  := boot bootconfig menu bootscreen gadgets dosboot_init
 AFILES  :=
 
 #MM kernel-dosboot : kernel-dosboot-amiga-m68k

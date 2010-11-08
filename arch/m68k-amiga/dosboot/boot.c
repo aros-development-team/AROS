@@ -54,12 +54,12 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
                 { TAG_DONE,       0           }
             };
 
-        D(bug("[DOSBoot] __dosboot_Boot: Open Startup Sequence = %d\n", opensseq));
 
         if (!(Flags & BF_NO_STARTUP_SEQUENCE))
         {
             sseq = Open("S:Startup-Sequence", FMF_READ);
             tags[5].ti_Data = (IPTR)sseq;
+            D(bug("[DOSBoot] __dosboot_Boot: Open Startup Sequence = %d\n", sseq));
         }
         else
         {
