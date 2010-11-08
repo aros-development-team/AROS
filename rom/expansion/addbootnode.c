@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a bootable device into the system.
@@ -11,6 +11,9 @@
 #include <exec/execbase.h>
 #include <dos/filehandler.h>
 #include <proto/exec.h>
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -38,7 +41,7 @@
 	2. Otherwise, save the information for later use by DOS, possibly
 	   as a boot device.
 
-	This allows device drivers to add devices into the systems disk
+	This allows device drivers to add devices into the system's disk
 	device list at any time, without having to worry about whether DOS
 	is available.
 
@@ -56,7 +59,7 @@
 	floppy disk.
 
 	AddBootNode() will also perform a second bit of magic, that if there
-	is no filesystem specified for this device, (ie dn_SegList, dn_Task
+	is no filesystem specified for this device, (i.e. dn_SegList, dn_Task
 	and dn_Handler are all NULL), then the standard DOS filesystem
 	will be used for this device.
 
@@ -115,6 +118,7 @@
     /* This basically uses AddDosNode() to do all its work, however we
        ourselves have to add the bootnode. Unfortunately
     */
+    D(bug("[AddBootNode] Adding %b from Task %s\n", deviceNode->dn_Name, FindTask(NULL)->tc_Node.ln_Name));
 
     /* Is this enough of a test? */
     if(!(ExpansionBase->Flags & EBF_BOOTFINISHED))
@@ -125,6 +129,7 @@
 	    if(stricmp(AROS_BSTR_ADDR(((struct DeviceNode *) bn->bn_DeviceNode)->dn_Name), AROS_BSTR_ADDR(deviceNode->dn_Name)) == 0)
 	    {
 		// so there was already an entry with that DOS name.
+                D(bug("[AddBootNode] Rejecting attempt to add duplicate device\n"));
 		return FALSE;
 	    }
 	}
