@@ -153,7 +153,13 @@ FUNCS := \
 	windowtofront \
 	zipwindow
 
-USER_INCLUDES := -I$(SRCDIR)/rom/dos
+USER_INCLUDES := -I$(SRCDIR)/rom/dos \
+                 -D__INTUITION_NOLIBBASE__ \
+                 -D__LAYERS_NOLIBBASE__ \
+                 -D__UTILITY_NOLIBBASE__ \
+                 -D__OOP_NOLIBBASE__ \
+                 -D__GRAPHICS_NOLIBBASE__ \
+                 -D__KEYMAP_NOLIBBASE__
 
 #MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
 #MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)

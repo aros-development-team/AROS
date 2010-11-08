@@ -92,6 +92,29 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     DEBUG_INIT(dprintf("LIB_Init: base 0x%lx\n", (ULONG) LIBBASE));
 
+    /* Open our dependencies */
+    if (!(UtilityBase = (APTR)OpenLibrary("utility.library", 0))) {
+        return FALSE;
+    } else if (!(GfxBase = (APTR)OpenLibrary("graphics.library", 41))) {
+        CloseLibrary((APTR)UtilityBase);
+        return FALSE;
+    } else if (!(LayersBase = (APTR)OpenLibrary("layers.library", 41))) {
+        CloseLibrary((APTR)GfxBase);
+        CloseLibrary((APTR)UtilityBase);
+        return FALSE;
+    } else if (!(KeymapBase = (APTR)OpenLibrary("keymap.library", 41))) {
+        CloseLibrary((APTR)LayersBase);
+        CloseLibrary((APTR)GfxBase);
+        CloseLibrary((APTR)UtilityBase);
+        return FALSE;
+    } else if (!(OOPBase = (APTR)OpenLibrary("oop.library", 41))) {
+        CloseLibrary((APTR)KeymapBase);
+        CloseLibrary((APTR)LayersBase);
+        CloseLibrary((APTR)GfxBase);
+        CloseLibrary((APTR)UtilityBase);
+        return FALSE;
+    }
+
     if (!OOP_ObtainAttrBases(attrbases))
 	return FALSE;
 

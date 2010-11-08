@@ -75,7 +75,7 @@
 #include <aros/debug.h>
 /**************************************************************************************************/
 
-void menu_draw_thick_line(struct RastPort *rport,
+void menu_draw_thick_line(Class *cl, struct RastPort *rport,
                      LONG x1, LONG y1, LONG x2, LONG y2,
                      UWORD thickness)
 {
@@ -211,8 +211,8 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
             RectFill(rport, left, top, right, bottom);
 
             SetAPen(rport, pens[BARDETAILPEN]);
-            menu_draw_thick_line(rport, left + 1, top + height / 3 , left + 1, bottom, 0);
-            menu_draw_thick_line(rport, left + 2, bottom, right - 2, top, 0);
+            menu_draw_thick_line(cl, rport, left + 1, top + height / 3 , left + 1, bottom, 0);
+            menu_draw_thick_line(cl, rport, left + 2, bottom, right - 2, top, 0);
 
             break;
         }

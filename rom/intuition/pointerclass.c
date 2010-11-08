@@ -33,7 +33,7 @@
 /***********************************************************************************/
 
 /* Empty sprite */
-UWORD posctldata[] =
+const UWORD posctldata[] =
 {
     0x0000,0x0000, /* posctl		     */
     0x0000,0x0000, /* Empty pixels, one line */

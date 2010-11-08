@@ -4,11 +4,11 @@
     $Id$
 */
 
-#include "intuition_intern.h"
-
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+
+#include "intuition_intern.h"
 
 /*****************************************************************************
 
