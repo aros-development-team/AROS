@@ -1,3 +1,9 @@
+/* 
+ * Use 32-bit inode_t on Darwin. Otherwise we are expected to use "stat$INODE64"
+ * instead of "stat" function which is available only on MacOS 10.6.
+ */
+#define _DARWIN_NO_64_BIT_INODE
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -1362,12 +1368,15 @@ int CheckDir(struct emulbase *emulbase, char *path)
     int res;
     struct stat st;
 
+    DMOUNT(bug("[emul] CheckDir(%s)\n", path));
+
     ObtainSemaphore(&emulbase->pdata.sem);
 
     res = emulbase->pdata.SysIFace->stat(path, &st);
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
+    DMOUNT(bug("[emul] Result: %d, mode: %o\n", res, st.st_mode));
     if ((!res) && S_ISDIR(st.st_mode))
 	return 0;
 
