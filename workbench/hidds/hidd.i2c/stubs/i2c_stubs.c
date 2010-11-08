@@ -27,7 +27,7 @@
 #define OOPBase	(OOP_OOPBASE(obj))
 
 #ifdef AROS_CREATE_ROM
-#error	Do not use stubs in ROM code!!!
+#define	STATIC_MID  OOP_MethodID mid = 0
 #else
 #define	STATIC_MID  static OOP_MethodID mid
 #endif
