@@ -1,0 +1,9 @@
+# $1 = src (file or path), $2 = dst
+
+if [ -d $1 ]; then
+    mkdir -p $2/$1
+    cp -R $1/* $2/$1
+else
+    mkdir -p $2/$(dirname $1)
+    cp $1 $2/$(dirname $1)/
+fi
