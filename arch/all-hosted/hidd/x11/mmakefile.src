@@ -12,6 +12,13 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
 
 USER_CFLAGS := -DHOST_OS_$(ARCH) -isystem $(GENINCDIR) $(HOST_X11_CFLAGS) $(KERNEL_INCLUDES)
 
+# TODO: What if the system is pure Darwin running a regular PC?
+ifeq ($(ARCH),darwin)
+X11KEYMAPTABLE_SRC_FILE := mac-x11-keycode2rawkey.table
+else
+X11KEYMAPTABLE_SRC_FILE := def-x11-keycode2rawkey.table
+endif
+
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 X11KEYMAPTABLE_ALT_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey-alt.table
 
@@ -37,7 +44,7 @@ change-x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable
 default-x11keymaptable : $(X11KEYMAPTABLE_FILE)
 	@$(NOP)
 
-$(X11KEYMAPTABLE_FILE) : def-x11-keycode2rawkey.table  setup-x11keymaptable
+$(X11KEYMAPTABLE_FILE) : $(X11KEYMAPTABLE_SRC_FILE) setup-x11keymaptable
 	@$(CP) $< $@
 
 $(X11KEYMAPTABLE_ALT_FILE) : alt-x11-keycode2rawkey.table  setup-x11keymaptable
