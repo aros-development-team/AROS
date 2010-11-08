@@ -2,7 +2,12 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#define STACK_SIZE 16384
+#define print Printf
+/*
+#include <aros/debug.h>
+#define print bug
+*/
+#define STACK_SIZE 32768
 
 #ifdef __MORPHOS__
 #define StackSwapArgs PPCStackSwapArgs
@@ -15,25 +20,25 @@ int __nocommandline = 1;
 
 void PrintSSS(struct StackSwapStruct *ss)
 {
-    Printf("StackSwapStruct contents:\n");
-    Printf("Lower: 0x%P, Upper: 0x%P, SP: 0x%P\n", ss->stk_Lower, ss->stk_Upper, ss->stk_Pointer);
+    print("StackSwapStruct contents:\n");
+    print("Lower: 0x%P, Upper: 0x%P, SP: 0x%P\n", ss->stk_Lower, ss->stk_Upper, ss->stk_Pointer);
 }
 
 void PrintTaskStack(void)
 {
     struct Task *t = FindTask(NULL);
     
-    Printf("Current program stack:\n");
-    Printf("Lower: 0x%P, Upper: 0x%P, SP: 0x%P\n", t->tc_SPLower, t->tc_SPUpper, t->tc_SPReg);
+    print("Current program stack:\n");
+    print("Lower: 0x%P, Upper: 0x%P, SP: 0x%P\n", t->tc_SPLower, t->tc_SPUpper, t->tc_SPReg);
 }
 
 void Sub(IPTR a1, IPTR a2)
 {
-    Printf("Stack swap done\n");
+    print("Stack swap done\n");
     PrintSSS(&sss);
     PrintTaskStack();
-    Printf("Arguments: %08lX, %08lX\n", a1, a2);
-    Printf("Coming back to original stack...\n");
+    print("Arguments: %08lX, %08lX\n", a1, a2);
+    print("Coming back to original stack...\n");
 }
 
 int main(void)
@@ -43,7 +48,7 @@ int main(void)
     sss.stk_Lower = AllocMem(STACK_SIZE, MEMF_ANY);
     if (!sss.stk_Lower)
     {
-	Printf("Failed to allocate new stack!\n");
+	print("Failed to allocate new stack!\n");
 
 	return 1;
     }
@@ -53,27 +58,27 @@ int main(void)
     PrintSSS(&sss);
     PrintTaskStack();
 
-    Printf("Checking StackSwap()...\n");
+    print("Checking StackSwap()...\n");
     StackSwap(&sss);
 
     Sub(0x12345678, 0xC001C0DE);
 
     StackSwap(&sss);
-    Printf("Came back from StackSwap()\n");
+    print("Came back from StackSwap()\n");
     PrintSSS(&sss);
     PrintTaskStack();
 
-    Printf("Checking NewStackSwap()...\n");
+    print("Checking NewStackSwap()...\n");
     args.Args[0] = 0x1234ABCD;
     args.Args[1] = 0xC0DEC001;
 
     NewStackSwap(&sss, Sub, &args);
-    Printf("Came back from StackSwap()\n");
+    print("Came back from StackSwap()\n");
     PrintSSS(&sss);
     PrintTaskStack();
 
     FreeMem(sss.stk_Lower, STACK_SIZE);
 
-    Printf("Done!\n");
+    print("Done!\n");
     return 0;
 }
