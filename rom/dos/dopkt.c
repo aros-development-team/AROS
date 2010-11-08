@@ -75,7 +75,7 @@
 	return FALSE;
     }
     
-    kprintf("Allocated packet %p\n", dp);
+    kprintf("Allocated packet %p for action %ld\n", dp, action);
 
     if (__is_process(me))
     {
@@ -88,6 +88,7 @@
 
 	if (NULL == replyPort)
 	{
+	    FreeDosObject(DOS_STDPKT, dp);
 	    return FALSE;
 	}
 
