@@ -11,15 +11,31 @@
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
-#include <signal.h>
-
+/*
+ * The following includes need to go in this particular order!
+ * We need to define _XOPEN_SOURCE (done in the first line of exec_platform.h)
+ * for the proper context definition under Darwin before include any host headers,
+ * otherwise ucontext_t will get only partial definition and getcontext() will clobber
+ * your stack!
+ */
 #include "exec_intern.h"
+
+#include <signal.h>
 
 static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
 {
     /* this was called from NewStackSwap() which also called Disable */
     Enable();
-    
+
+#if DEBUG
+    int i;
+
+    bug("[NewStackSwap] Stack swapping done\n");
+    bug("[NewStackSwap] Function address: 0x%P\n", func);
+    for (i = 0; i < 8; i++)
+    	bug("[NewStackSwap] args[%u] = 0x%P\n", i, (void *)args[i]);
+#endif
+
     *ret = func(args[0], args[1], args[2], args[3],
 		args[4], args[5], args[6], args[7]);
 
@@ -40,15 +56,22 @@ AROS_LH3(IPTR, NewStackSwap,
     APTR splower, spupper;
     ucontext_t ucx, ucx_return;
 
+    D(bug("NewStackSwap(0x%P, 0x%P, 0x%P, 0x%P)\n", sss, entry, args, SysBase));
+    DB2(bug("[NewStackSwap] Context size: %u\n", sizeof(ucontext_t)));
+
     Disable();  /* To avoid random crashes during startup */
     PD(SysBase).SysIFace->getcontext(&ucx);
     Enable();
+
+    DB2(bug("NewStackSwap(0x%P, 0x%P, 0x%P, 0x%P)\n", sss, entry, args, SysBase));
 
     /* Prepare the alternate stack */
     ucx.uc_stack.ss_sp    = sss->stk_Lower;
     ucx.uc_stack.ss_size  = (size_t)sss->stk_Pointer - (size_t)sss->stk_Lower;
     ucx.uc_stack.ss_flags = SS_ONSTACK;
     ucx.uc_link           = &ucx_return;
+
+    D(bug("[NewStackSwap] Prepared stack: 0x%P - 0x%P (size %u bytes)\n", sss->stk_Lower, sss->stk_Pointer, ucx.uc_stack.ss_size));
 
     PD(SysBase).SysIFace->makecontext(&ucx, (void *(*)()) trampoline, 3, entry, &ret, args->Args);
 
