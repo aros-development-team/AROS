@@ -226,6 +226,8 @@ struct GfxBase_intern
 
     /* Private library bases */
     struct Library	       *CyberGfxBase;
+    struct Library	       *OOPBase;
+    struct Library	       *UtilityBase;
 };
 
 
@@ -233,6 +235,8 @@ struct GfxBase_intern
 
 #define PrivGBase(x)   	    	((struct GfxBase_intern *)x)
 #define CyberGfxBase		(PrivGBase(GfxBase)->CyberGfxBase)
+#define OOPBase			(PrivGBase(GfxBase)->OOPBase)
+#define UtilityBase		(PrivGBase(GfxBase)->UtilityBase)
 
 #define WIDTH_TO_BYTES(width) 	((( (width) + 15) & ~15) >> 3)
 #define WIDTH_TO_WORDS(width) 	((( (width) + 15) & ~15) >> 4)

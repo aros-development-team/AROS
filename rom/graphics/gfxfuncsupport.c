@@ -62,7 +62,7 @@ OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase)
 ULONG do_render_func(struct RastPort *rp
 	, Point *src
 	, struct Rectangle *rr
-	, ULONG (*render_func)(APTR, LONG, LONG, OOP_Object *, OOP_Object *, LONG, LONG, LONG, LONG, struct GfxBase *)
+	, RENDERFUNC render_func
 	, APTR funcdata
         , BOOL do_update
 	, BOOL get_special_info
@@ -275,7 +275,7 @@ ULONG do_render_func(struct RastPort *rp
 
 ULONG do_pixel_func(struct RastPort *rp
 	, LONG x, LONG y
-	, LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *)
+	, PIXELFUNC render_func
 	, APTR funcdata
         , BOOL do_update
 	, struct GfxBase *GfxBase)
