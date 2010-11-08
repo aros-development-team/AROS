@@ -14,13 +14,17 @@
 #define LIBC_NAME "libc.so"
 #endif
 
+/* 
+ * On Darwin sigset manipulation functions are redefined as macros, so they are slightly renamed here.
+ * However they still present in libc as normal functions.
+ */
 struct KernelInterface
 {
     int     (*raise)(int sig);
     int     (*sigprocmask)(int how, const sigset_t *set, sigset_t *oldset);
-    int     (*sigemptyset)(sigset_t *set);
-    int     (*sigfillset)(sigset_t *set);
-    int     (*sigdelset)(sigset_t *set, int signum);
+    int     (*SigEmptySet)(sigset_t *set);
+    int     (*SigFillSet)(sigset_t *set);
+    int     (*SigDelSet)(sigset_t *set, int signum);
     int     (*sigsuspend)(const sigset_t *mask);
     int     (*sigaction)(int signum, const struct sigaction *act, struct sigaction *oldact);
     int     (*setitimer)(int which, const struct itimerval *value, struct itimerval *ovalue);

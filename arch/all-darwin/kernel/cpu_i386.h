@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <sys/types.h>
+
 #ifdef __AROS_EXEC_LIBRARY__
 
 /*
@@ -60,18 +62,12 @@ typedef struct
     int 	     fpu_reserved1;
 } _STRUCT_X86_FLOAT_STATE32;
 
+/* regs_t is a black box here */
+struct ucontext;
+typedef struct ucontext *regs_t;
+
 #else
 
-/*
- * This thing is defined in sys/_types.h which conflicts with AROS include.
- * FIXME: such hacks are not good, perhaps we should supply
- * "-I$(GENINCDIR) -nostdinc -idirafter /usr/include" to AROS gcc when
- * building exec and kernel
- * P.S. exec should really not depend on these things.
- */
-#define __darwin_sigset_t __uint32_t
-
-#include <machine/_types.h>
 #include <sys/ucontext.h>
 
 typedef ucontext_t regs_t;
@@ -80,7 +76,7 @@ typedef ucontext_t regs_t;
 typedef void (*SIGHANDLER_T)(int);
 
 #define SC_DISABLE(sc)   sc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
-#define SC_ENABLE(sc)    KernelIFace.sigemptyset(&(sc)->uc_sigmask)
+#define SC_ENABLE(sc)    KernelIFace.SigEmptySet(&(sc)->uc_sigmask)
 
 /* work around silly renaming of struct members in OS X 10.5 */
 #if __DARWIN_UNIX03 && defined(_STRUCT_X86_EXCEPTION_STATE32)
@@ -193,7 +189,7 @@ typedef void (*SIGHANDLER_T)(int);
 	} while (0)
 
 #define PRINT_SC(sc) \
-	printf ("    ESP=%08x  EBP=%08x  EIP=%08x  FPU=%s\n" \
+	bug ("    ESP=%08x  EBP=%08x  EIP=%08x  FPU=%s\n" \
 		"    EAX=%08x  EBX=%08x  ECX=%08x  EDX=%08x\n" \
 		"    EDI=%08x  ESI=%08x  EFLAGS=%08x\n" \
 	    , SP(sc), FP(sc), PC(sc) \
@@ -204,12 +200,15 @@ typedef void (*SIGHANDLER_T)(int);
 
 #endif /* __AROS_EXEC_LIBRARY__ */
 
+#define EXCEPTIONS_COUNT 17
+
 struct AROSCPUContext
 {
     ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
     int	errno_backup;
     _STRUCT_X86_FLOAT_STATE32 fpstate;
     int eflags;
+    struct AROSCPUContext *sc;
 };
 
 #define GET_PC(ctx) (APTR)ctx->regs[8]
@@ -224,7 +223,6 @@ struct AROSCPUContext
         ctx->regs[7] = 0;                           \
         ctx->regs[8] = (startpc);                   \
     } while (0)
-
 
 #define PRINT_CPU_CONTEXT(ctx) \
 	bug ("    EBP=%08x  EIP=%08x\n" \

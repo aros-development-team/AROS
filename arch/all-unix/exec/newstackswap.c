@@ -11,7 +11,7 @@
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
-#include <ucontext.h>
+#include <signal.h>
 
 #include "exec_intern.h"
 
@@ -50,7 +50,7 @@ AROS_LH3(IPTR, NewStackSwap,
     ucx.uc_stack.ss_flags = SS_ONSTACK;
     ucx.uc_link           = &ucx_return;
 
-    PD(SysBase).SysIFace->makecontext(&ucx, (void (*)()) trampoline, 3, entry, &ret, args->Args);
+    PD(SysBase).SysIFace->makecontext(&ucx, (void *(*)()) trampoline, 3, entry, &ret, args->Args);
 
     /* Remember original stack limits */
     splower = me->tc_SPLower;

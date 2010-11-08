@@ -240,8 +240,8 @@ static int InitCore(struct KernelBase *KernelBase)
     KernelBase->kb_PlatformData = pd;
 
     /* We only want signal that we can handle at the moment */
-    KernelIFace.sigfillset(&pd->sig_int_mask);
-    KernelIFace.sigemptyset(&sa.sa_mask);
+    KernelIFace.SigFillSet(&pd->sig_int_mask);
+    KernelIFace.SigEmptySet(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
 #ifdef HOST_OS_linux
     sa.sa_restorer = NULL;
@@ -259,15 +259,15 @@ static int InitCore(struct KernelBase *KernelBase)
 	   2. It can interfere with gdb debugging.
 	   Coming soon.
 	KernelIFace.sigaction(s->sig, &sa, NULL); */
-	KernelIFace.sigdelset(&pd->sig_int_mask, s->sig);
+	KernelIFace.SigDelSet(&pd->sig_int_mask, s->sig);
     }
 
     /* SIGUSRs are software interrupts, we also never block them */
-    KernelIFace.sigdelset(&pd->sig_int_mask, SIGUSR1);
-    KernelIFace.sigdelset(&pd->sig_int_mask, SIGUSR2);
+    KernelIFace.SigDelSet(&pd->sig_int_mask, SIGUSR1);
+    KernelIFace.SigDelSet(&pd->sig_int_mask, SIGUSR2);
     /* We want to be able to interrupt AROS using Ctrl-C in its console,
        so exclude SIGINT too. */
-    KernelIFace.sigdelset(&pd->sig_int_mask, SIGINT);
+    KernelIFace.SigDelSet(&pd->sig_int_mask, SIGINT);
 
     /*
      * Any interrupt including software one must disable
