@@ -44,6 +44,17 @@ struct arosc_userdata * __get_arosc_userdata(void)
 
     if (acpd == NULL)
     {
+#ifdef AROSC_ROM
+        /* JUST the user data - we really only want the ctype arrays */
+        static const struct arosc_userdata acud = {
+            .acud_ctype_b       = &__ctype_b_array[128],
+            .acud_ctype_toupper = &__ctype_toupper_array[128],
+            .acud_ctype_tolower = &__ctype_tolower_array[128],
+        };
+
+        /* Remove the 'const' when passing back */
+        return (struct arosc_userdata *)&acud;
+#else
         /* No acpd found? Fall back to the builtin one.  */
         static struct arosc_privdata acpd_static;
 
@@ -51,7 +62,8 @@ struct arosc_userdata * __get_arosc_userdata(void)
         acpd_static.acpd_acud.acud_ctype_toupper = &__ctype_toupper_array[128];
         acpd_static.acpd_acud.acud_ctype_tolower = &__ctype_tolower_array[128];
 
-        return &acpd_static.acpd_acud;
+        acpd = &acpd_static;
+#endif
     }
    
     return &acpd->acpd_acud;
