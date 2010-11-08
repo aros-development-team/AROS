@@ -1,10 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=newstackswap offsets getcc \
+FILES=offsets getcc \
       cachecleare cacheclearu cachecontrol cachepostdma cachepredma
 
-AFILES=stackswap \
+AFILES=newstackswap stackswap \
        supervisor superstate userstate \
        forbid \
        cacheclearu_ cachepostdma_ cachepredma_
