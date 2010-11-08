@@ -438,6 +438,12 @@ struct IntIntuitionBase
     struct Library          	*MUIMasterBase;
 #endif
     
+    struct LayersBase       	*LayersBase;
+    struct Library          	*UtilityBase;
+    struct GfxBase          	*GfxBase;
+    struct Library          	*OOPBase;
+    struct Library          	*KeymapBase;
+
     struct Library          	*InputBase;
     struct Library          	*TimerBase;
     struct MsgPort          	*TimerMP;
@@ -739,6 +745,31 @@ struct IntIntuiMessage
 #define MUIMasterBase 	    	(GetPrivIBase(IntuitionBase)->MUIMasterBase)
 #endif
 #endif
+
+#ifdef UtilityBase
+#undef UtilityBase
+#endif
+#define UtilityBase   	    	(GetPrivIBase(IntuitionBase)->UtilityBase)
+
+#ifdef LayersBase
+#undef LayersBase
+#endif
+#define LayersBase   	    	(GetPrivIBase(IntuitionBase)->LayersBase)
+
+#ifdef OOPBase
+#undef OOPBase
+#endif
+#define OOPBase   	    	(GetPrivIBase(IntuitionBase)->OOPBase)
+
+#ifdef GfxBase
+#undef GfxBase
+#endif
+#define GfxBase   	    	(GetPrivIBase(IntuitionBase)->GfxBase)
+
+#ifdef KeymapBase
+#undef KeymapBase
+#endif
+#define KeymapBase   	    	(GetPrivIBase(IntuitionBase)->KeymapBase)
 
 #ifdef InputBase
 #undef InputBase
