@@ -12,8 +12,6 @@
 
 #include <expansion_intern.h>
 
-static void diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev);
-
 /*****************************************************************************
 
     NAME */
@@ -91,9 +89,7 @@ static void diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *confi
 	configDev->cd_BoardSize = size;
 	configDev->cd_BoardAddr	 = board;
 	
-	diagrom(ExpansionBase, configDev);
-
-	bug("manufacturer=%d product=%d size=%08x\n", rom->er_Manufacturer, rom->er_Product, size);
+	D(bug("manufacturer=%d product=%d size=%08x\n", rom->er_Manufacturer, rom->er_Product, size));
 	
 	return TRUE;
 
@@ -101,56 +97,4 @@ static void diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *confi
 } /* ReadExpansionRom */
 
 
-
-static UBYTE getromdata(struct ConfigDev *configDev, UWORD offset)
-{
-	volatile UBYTE *romb = (UBYTE*)(configDev->cd_BoardAddr + configDev->cd_Rom.er_InitDiagVec);
-	volatile UWORD *romw = (UWORD*)(configDev->cd_BoardAddr + configDev->cd_Rom.er_InitDiagVec);
-	struct DiagArea *da = configDev->cd_Rom.er_DiagArea;
-	
-	switch (da->da_Config & DAC_BUSWIDTH)
-	{
-		case DAC_NIBBLEWIDE:
-		{
-			offset *= 2;
-			return (romb[offset] & 0xf0) | ((romb[offset + 1] & 0xf0) >> 4);
-		}
-		case DAC_BYTEWIDE:
-			return romb[offset];
-		case DAC_WORDWIDE:
-		{
-			UWORD v = romw[offset / 2];
-			if (offset & 1)
-				return v;
-			else
-				return v >> 8;
-		}
-	}
-	return 0xff;
-}
-			
-static void diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
-{
-	volatile UBYTE *rom = (UBYTE*)(configDev->cd_BoardAddr + configDev->cd_Rom.er_InitDiagVec);
-	struct DiagArea *da;
-
-	if (!(configDev->cd_Rom.er_Type & ERTF_DIAGVALID))
-		return;
-	da = AllocMem(sizeof(struct DiagArea), MEMF_CLEAR | MEMF_PUBLIC);
-	if (!da)
-		return;
-	configDev->cd_Rom.er_DiagArea = da;
-	da->da_Config = rom[0];
-	da->da_Config = getromdata(configDev, 0);
-	da->da_Flags = getromdata(configDev, 1);
-	da->da_Size = getromdata(configDev, 2) << 8;
-	da->da_Size |= getromdata(configDev, 3) << 0;
-	da->da_DiagPoint = getromdata(configDev, 4) << 8;
-	da->da_DiagPoint |= getromdata(configDev, 5) << 0;
-	da->da_BootPoint = getromdata(configDev, 6) << 8;
-	da->da_BootPoint |= getromdata(configDev, 7) << 0;
-	da->da_Name = getromdata(configDev, 8) << 8;
-	da->da_Name |= getromdata(configDev, 9) << 0;
-
-}
 

@@ -9,6 +9,15 @@
 
 #include <proto/expansion.h>
 
+static void writeexpansion(struct ExpansionBase *ExpansionBase, UBYTE type, APTR board, UWORD startaddr)
+{
+	if (type == ERT_ZORROII) {
+		WriteExpansionByte(board, 18, startaddr);
+	} else {
+		WriteExpansionWord(board, 17, startaddr);
+	}
+}
+
 /*****************************************************************************
 
     NAME */
@@ -48,7 +57,7 @@
     AROS_LIBFUNC_INIT
 
 	UBYTE type = configDev->cd_Rom.er_Type & ERT_TYPEMASK;
-	BOOL memorydevice = configDev->cd_Rom.er_Type & ERTF_MEMLIST;
+	BOOL memorydevice;
 	UBYTE *space;
 	ULONG align;
 	ULONG size = configDev->cd_BoardSize;
@@ -59,13 +68,15 @@
 		end   = 0x009FFFFF;
 		space = IntExpBase(ExpansionBase)->eb_z2Slots;
 		align = configDev->cd_BoardSize;
+		memorydevice = configDev->cd_Rom.er_Type & ERTF_MEMLIST;
 	} else {
 		start = 0x10000000;
 		end   = 0x7FFFFFFF;
 		space = IntExpBase(ExpansionBase)->eb_z3Slots;
 		align = 0x00100000;
+		memorydevice = configDev->cd_Rom.er_Flags & ERFF_MEMSPACE;
 	}
-	if (!memorydevice) {
+	if (!memorydevice && size <= E_SLOTSIZE) {
 		start = 0x00E90000;
 		end   = 0x00EFFFFF;
 		align = 0x00010000;
@@ -98,17 +109,16 @@
 		if (sizeleft > 0)
 			continue;
 		
-		if (type == ERT_ZORROII) {
-			WriteExpansionByte(board, 18, startaddr >> 16);
-		} else {
-			WriteExpansionWord(board, 17, startaddr >> 16);
-		}
+		writeexpansion(ExpansionBase, type, board, startaddr >> 16);
 		configDev->cd_BoardAddr	 = (APTR)startaddr;
 		return TRUE;
 	}
-
-	configDev->cd_Flags |= CDF_SHUTUP;
-	WriteExpansionByte(board, 19, 0); // SHUT-UP!
+	if (!(configDev->cd_Flags & ERFF_NOSHUTUP)) {
+		configDev->cd_Flags |= CDF_SHUTUP;
+		WriteExpansionByte(board, 19, 0); // SHUT-UP!
+	} else {
+		// uh?
+	}
 	return FALSE;
 
     AROS_LIBFUNC_EXIT
