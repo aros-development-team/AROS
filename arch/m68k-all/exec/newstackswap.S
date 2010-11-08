@@ -5,25 +5,23 @@
     Desc: NewStackSwap() - Call a function with swapped stack.
     Lang: english
 */
-
 /*****************************************************************************
 
-    NAME */
-#include <aros/debug.h>
+    NAME  
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
 	AROS_LH3(IPTR, NewStackSwap,
 
-/*  SYNOPSIS */
+    SYNOPSIS
 	AROS_LHA(struct StackSwapStruct *,  sss, A0),
 	AROS_LHA(LONG_FUNC, entry, A1),
 	AROS_LHA(struct StackSwapArgs *, args, A2),
 
-/*  LOCATION */
+    LOCATION
 	struct ExecBase *, SysBase, 122, Exec)
 
-/*  FUNCTION
+    FUNCTION
 	Calls a function with a new stack.
 
     INPUTS
@@ -49,40 +47,41 @@
 	StackSwap()
 
     INTERNALS
-	This function MUST be replaced in $(KERNEL) or $(ARCH).
+	This function is be replaced in $(ARCH).
 
 ******************************************************************************/
-{
-    AROS_LIBFUNC_INIT
+	#include "aros/m68k/asm.h"
 
-    APTR *	oldSP;
-    APTR *	sp;
-    ULONG *	retptr;
-    ULONG	ret;
+	.text
+	.balign 4
+	.globl	AROS_SLIB_ENTRY(NewStackSwap,Exec)
+AROS_SLIB_ENTRY(NewStackSwap,Exec):
+    /* Stackswap will clobber %d0, %d1, %a0, and %a1,
+     * so we need to save %a0/%a1 in %a3/%a4
+     */
+    movem.l     %a3/%a4,%sp@-
+    move.l      %a0,%a3
+    move.l      %a1,%a4
 
-    retptr = &ret;
+    jsr         %a6@(StackSwap)
 
-    sp = (APTR *)(sss->stk_Upper);
-    oldSP = __builtin_frame_address(0);
+    move.l      %a2@(7*4),%sp@- // Put the C arguments on the stack
+    move.l      %a2@(6*4),%sp@-
+    move.l      %a2@(5*4),%sp@-
+    move.l      %a2@(4*4),%sp@-
+    move.l      %a2@(3*4),%sp@-
+    move.l      %a2@(2*4),%sp@-
+    move.l      %a2@(1*4),%sp@-
+    move.l      %a2@(0*4),%sp@-
 
-    /* Copy stack + locals + regs + everything */
-    while ( oldSP != (APTR)retptr )
-    {
-	*--sp = *oldSP--;
-    }
+    jsr         %a4@            // Call the C function
 
-    sss->stk_Pointer = sp;
+    lea.l       %sp@(8*4),%sp   // Remove the C arguments
 
-    D(bug("In NewStackSwap() entry=%lx, *entry=%lx\n", (IPTR)entry, (IPTR)*entry));
-    StackSwap(sss);
+    move.l      %a3,%a0
+    jsr         %a6@(StackSwap)
 
-    /* Call the function with the new stack */
-    *retptr = entry(args->Args[0], args->Args[1], args->Args[2], args->Args[3],
-		    args->Args[4], args->Args[5], args->Args[6], args->Args[7]);
-
-    StackSwap(sss);
-
-    return ret;
-    
-    AROS_LIBFUNC_EXIT
-} /* NewStackSwap() */
+    /* Now we can restore %a3/%a4
+     */
+    movem.l     %sp@+,%a3/%a4
+    rts
