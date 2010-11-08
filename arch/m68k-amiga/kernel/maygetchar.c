@@ -41,8 +41,10 @@ AROS_LH0(int, KrnMayGetChar,
 {
     AROS_LIBFUNC_INIT
 
+    extern int DebugMayGetChar(void);
+
     /* The implementation is entirely architecture-specific */
-    return -1;
+    return DebugMayGetChar();
 
     AROS_LIBFUNC_EXIT
 }
