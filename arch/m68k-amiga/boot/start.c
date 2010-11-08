@@ -62,6 +62,14 @@ int DebugGetChar(void)
 	return SERDATR_DB8_of(reg_r(SERDATR));
 }
 
+int DebugMayGetChar(void)
+{
+	if ((reg_r(SERDATR) & SERDATR_RBF) == 0)
+	    return -1;
+
+	return SERDATR_DB8_of(reg_r(SERDATR));
+}
+
 static __attribute__((interrupt)) void Exec_FatalException(void)
 {
 	volatile int i;
