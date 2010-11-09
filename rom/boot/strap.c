@@ -123,7 +123,7 @@ static BOOL BootBlockChecksum(UBYTE *bootblock)
            crc += v;
        }
        crc ^= 0xffffffff;
-       D(bug("bootblock checksum %s\n", crc == crc2 ? "ok" : "error"));
+       D(bug("bootblock checksum %s (%08x %08x)\n", crc == crc2 ? "ok" : "error", crc, crc2));
        return crc == crc2;
 }
 
@@ -134,32 +134,11 @@ struct InitTable {
 	ULONG_FUNC init;
 };
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-static void CallInitCode(struct InitTable *init)
-{
-	struct Library *library;
-	BPTR segList = BNULL;
-
-	D(bug(" CallInitCode: MakeLibrary(%p, %p, %p, %d, 0) = %p\n",
-				init->vectors, init->structure,
-				init->init, init->dSize));
-
-	library = MakeLibrary(init->vectors, init->structure,
-			      init->init, init->dSize, segList);
-
-	if (library == NULL) {
-		Alert(AT_DeadEnd | AO_BootStrap);
-		return;
-	}
-}
-#endif
-
 static void FloppyBootNode(
         struct ExpansionBase *ExpansionBase,
         CONST_STRPTR driver, int unit, ULONG type)
 {
     TEXT dosdevname[4] = "DF0";
-    CONST_STRPTR handler = "afs.handler";
     IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
     struct DeviceNode *devnode;
 
@@ -201,6 +180,8 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
        struct IOExtTD *io;
        CONST_STRPTR driver = "trackdisk.device";
        UWORD i;
+       LONG retval = -1;
+       void (*init)(void) = NULL;
 
        UBYTE *buffer = AllocMem(BOOTBLOCK_SIZE, MEMF_CHIP);
        D(bug("bootblock address %8x\n", buffer));
@@ -218,11 +199,8 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                            if (io->iotd_Req.io_Error == 0) {
                                D(bug("bootblock read ok\n"));
                                if (BootBlockChecksum(buffer)) {
-                               	       ULONG retval;
-                               	       APTR  init;
                                	       APTR bootcode = buffer + 12;
                                	       D(bug("creating BootNode\n"));
-                                       FloppyBootNode(ExpansionBase, driver, i, *(ULONG *)buffer);
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
                                	       D(bug("calling bootblock!\n", buffer));
                                	       asm volatile ("nop\nnop\nmove.l %2,%%a1\n"
@@ -236,8 +214,11 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                	       		       "m" (bootcode)
                                	       		     : "%d0", "%d1", "%a0", "%a1");
                                	       D(bug("bootblock: D0=0x%08x A0=%p\n", retval, init));
-                               	       if (retval == 0)
-                               	       	       CallInitCode(init);
+                               	       if (retval == 0) {
+                                           FloppyBootNode(ExpansionBase, driver, i, *(ULONG *)buffer);
+                               	           break;
+                                       } else
+                                           Alert(AN_BootError);
 #endif
                                }
                            } else {
@@ -250,7 +231,13 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                }
                DeleteMsgPort(msgport);
            }
+
            FreeMem(buffer, BOOTBLOCK_SIZE);
+       }
+
+       if (retval == 0 && init != NULL) {
+           CloseLibrary((APTR)ExpansionBase);
+           init();
        }
 }
 #endif
