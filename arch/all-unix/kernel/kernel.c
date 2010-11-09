@@ -254,11 +254,7 @@ static int InitCore(struct KernelBase *KernelBase)
     SETHANDLER(sa, core_Trap);
     for (s = sigs; s->sig != -1; s++)
     {
-	/* Trap handling disabled for now because:
-	   1. It doesn't work, at least with SIGSEGV
-	   2. It can interfere with gdb debugging.
-	   Coming soon.
-	KernelIFace.sigaction(s->sig, &sa, NULL); */
+	KernelIFace.sigaction(s->sig, &sa, NULL);
 	KernelIFace.SigDelSet(&pd->sig_int_mask, s->sig);
     }
 
