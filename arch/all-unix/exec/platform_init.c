@@ -22,7 +22,6 @@ BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct HostInterface *Ho
 
 static int Platform_Init(struct ExecBase *SysBase)
 {
-    APTR HostLibBase;
     APTR LibCHandle;
     ULONG r;
 
