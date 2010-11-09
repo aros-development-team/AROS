@@ -27,7 +27,7 @@ rom_init:
 
 	/* Do we have a Gayle? */
 	move.l  #0f,%a7
-	jsr     Exec_ReadGayle
+	jmp     Exec_ReadGayle
 0:
     move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
 
