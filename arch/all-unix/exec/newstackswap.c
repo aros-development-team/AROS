@@ -63,7 +63,7 @@ AROS_LH3(IPTR, NewStackSwap,
     PD(SysBase).SysIFace->getcontext(&ucx);
     Enable();
 
-    DB2(bug("NewStackSwap(0x%P, 0x%P, 0x%P, 0x%P)\n", sss, entry, args, SysBase));
+    D(bug("[NewStackSwap] getcontext() done, arguments: 0x%P, 0x%P, 0x%P, 0x%P\n", sss, entry, args, SysBase));
 
     /* Prepare the alternate stack */
     ucx.uc_stack.ss_sp    = sss->stk_Lower;
@@ -74,6 +74,8 @@ AROS_LH3(IPTR, NewStackSwap,
     D(bug("[NewStackSwap] Prepared stack: 0x%P - 0x%P (size %u bytes)\n", sss->stk_Lower, sss->stk_Pointer, ucx.uc_stack.ss_size));
 
     PD(SysBase).SysIFace->makecontext(&ucx, (void *(*)()) trampoline, 3, entry, &ret, args->Args);
+    
+    D(bug("[NewStackSwap] Prepared context, doing stack swap\n"));
 
     /* Remember original stack limits */
     splower = me->tc_SPLower;
