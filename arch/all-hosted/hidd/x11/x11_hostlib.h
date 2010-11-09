@@ -97,6 +97,8 @@ struct x11_func {
 #endif
 };
 
+#ifndef HAVE_XF86VMODE_H
+
 /* Taken from xf86vmode.h */
 typedef struct {
     unsigned int	dotclock;
@@ -114,8 +116,14 @@ typedef struct {
     long		*c_private;
 } XF86VidModeModeInfo;
 
+#endif
+
 struct xf86vm_func {
-	void (*XF86VidModeGetAllModeLines) (Display *, int, int *, XF86VidModeModeInfo***);
+    Bool (*XF86VidModeGetAllModeLines) (Display *, int, int *, XF86VidModeModeInfo***);
+    Bool (*XF86VidModeSwitchToMode) ( Display* , int , XF86VidModeModeInfo* );
+    Bool (*XF86VidModeSetViewPort) ( Display* , int , int , int );
+    Bool (*XF86VidModeQueryVersion) ( Display* , int* , int* );
+    Bool (*XF86VidModeQueryExtension) ( Display* , int* , int* );
 };
 
 struct libc_func {

@@ -274,8 +274,9 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct TagItem *resolution = NULL;
     XF86VidModeModeInfo** modes = NULL;
     static int modeNum = 0;
+    ULONG realmode = 0;
 
-    ULONG i, realmode, screen;
+    ULONG i, screen;
     Display *disp;
 	
     EnterFunc(bug("X11Gfx::New()\n"));
@@ -306,8 +307,6 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		cleanupx11stuff(XSD(cl));
 		ReturnPtr("X11Gfx::New", OOP_Object *, NULL);		
 	}
-
-	realmode = 0;
 	
 	for(i = 0; i < modeNum; i++)
 	{
