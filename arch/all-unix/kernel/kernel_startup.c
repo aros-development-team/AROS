@@ -57,6 +57,7 @@ static const char *kernel_functions[] = {
 /* rom startup */
 int __startup startup(struct TagItem *msg)
 {
+    void* _stack = AROS_GET_SP;
     struct ExecBase *SysBase;
     void *hostlib;
     char *errstr;
@@ -191,6 +192,23 @@ int __startup startup(struct TagItem *msg)
 	mh->mh_Upper = khi;
 	mh->mh_Free = 0;                        /* Never allocate from this chunk! */
 	Enqueue(&SysBase->MemList, &mh->mh_Node);
+    }
+
+    /* Stack memory header. This special memory header covers a little part of the programs
+     * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
+     * during initialization.
+     */
+    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
+    {
+        mh->mh_Node.ln_Type = NT_MEMORY;
+        mh->mh_Node.ln_Name = "stack memory";
+        mh->mh_Node.ln_Pri = -128;
+        mh->mh_Attributes = MEMF_KICK;
+        mh->mh_First = NULL;
+        mh->mh_Lower = _stack - 3072;
+        mh->mh_Upper = _stack;
+        mh->mh_Free = 0;                        /* Never allocate from this chunk! */
+        Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
 
     ranges[0] = klo;
