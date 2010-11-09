@@ -42,7 +42,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 static BOOL ishd(ULONG id)
