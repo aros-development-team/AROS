@@ -10,7 +10,7 @@ static int Alert_Init(struct ExecBase *SysBase)
 
     /* We use local variable for the handle because we never expunge
        so we will never close it */
-    ExecHandle = HostLib_Open("Libs/Host/exec.dylib", NULL);
+    ExecHandle = HostLib_Open("Libs/Host/alert.dylib", NULL);
     if (!ExecHandle)
 	return FALSE;
 

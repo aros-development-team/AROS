@@ -17,7 +17,7 @@ NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_OBJDIR := $(GENDIR)/arch/all-ios/exec
 
 NATIVE_FILES   := host_alert
-NATIVE_LIBNAME := exec.dylib
+NATIVE_LIBNAME := alert.dylib
 
 NATIVE_LDFLAGS := $(IOS_LDFLAGS) -framework Foundation -framework UIKit -shared
 USER_INCLUDES  :=
