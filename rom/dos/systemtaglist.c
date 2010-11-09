@@ -222,10 +222,13 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     /* FIXME: implement UserShell and BootShell */
     shellseg = LoadSeg("C:Shell");
     if (!shellseg)
-        shellseg = LoadSeg("C:NewCLI");
+    {
+        D(bug("Could not load C:Shell\n"));
+        shellseg = LoadSeg("L:Shell-Seg");
+    }
     if (!shellseg)
     {
-	D(bug("Could not load C:Shell\n"));
+        D(bug("Could not load L:Shell-Seg\n"));
         goto end;
     }
 
