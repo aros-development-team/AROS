@@ -9,20 +9,13 @@
 @synthesize alert;
 @synthesize rc;
 
-- (void)ShowAlert:(NSString *)text
+- (void)ShowAlert:(NSString *)text withTitle:(NSString *)title
 {
-    self.alert = [[UIAlertView alloc] initWithTitle:@"AROS bootstrap error" message:text delegate:self
+    self.alert = [[UIAlertView alloc] initWithTitle:title message:text delegate:self
     					   cancelButtonTitle:@"Abort" otherButtonTitles:nil];
 
     [self.alert show];
     [self.alert release];
-}
-
-+(void)DisplayAlert:(NSString *)text
-{
-    BootstrapDelegate *ad = (BootstrapDelegate *)[[UIApplication sharedApplication] delegate];
-
-    [ad ShowAlert:text];
 }
 
 - (void)RunBootstrap

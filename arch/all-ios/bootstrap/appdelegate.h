@@ -13,7 +13,6 @@ extern char **_argv;
 @property(nonatomic, retain) UIAlertView *alert;
 @property int rc;
 
-- (void)ShowAlert:(NSString *)text;
-+ (void)DisplayAlert:(NSString *)text;
+- (void)ShowAlert:(NSString *)text withTitle:(NSString *)title;
 
 @end
