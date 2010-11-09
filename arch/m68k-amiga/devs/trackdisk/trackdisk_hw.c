@@ -20,7 +20,7 @@
 #include "trackdisk_device.h"
 #include "trackdisk_hw.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define ioStd(x)  ((struct IOStdReq *)x)
