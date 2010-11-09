@@ -1,5 +1,6 @@
 #include <aros/config.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 #if USE_VIDMODE
 
@@ -14,66 +15,9 @@ typedef unsigned char UBYTE;
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define HAVE_XF86VMODE_H
 
-#include <proto/hostlib.h>
-
-/* TODO: libXxf86vm is already loaded in x11_hostlib.c. Need to merge the code */
-
-static void *xvm_handle = NULL;
-
-static struct {
-    Bool (*XF86VidModeSwitchToMode) ( Display* , int , XF86VidModeModeInfo* );
-    Bool (*XF86VidModeSetViewPort) ( Display* , int , int , int );
-    Bool (*XF86VidModeQueryVersion) ( Display* , int* , int* );
-    Bool (*XF86VidModeQueryExtension) ( Display* , int* , int* );
-    Bool (*XF86VidModeGetAllModeLines) ( Display* , int , int* , XF86VidModeModeInfo*** );
-} xvm_func;
-
-static const char *xvm_func_names[] = {
-    "XF86VidModeSwitchToMode",
-    "XF86VidModeSetViewPort",
-    "XF86VidModeQueryVersion",
-    "XF86VidModeQueryExtension",
-    "XF86VidModeGetAllModeLines"
-};
-
-#ifdef HOST_OS_linux
-#define XVM_SOFILE "libXxf86vm.so.1"
-#endif
-
-#ifdef HOST_OS_darwin
-#define XVM_SOFILE "/usr/X11/lib/libXxf86vm.1.dylib"
-#endif
-
-#ifndef XVM_SOFILE
-#define XVM_SOFILE "libXxf86vm.so"
-#endif
-
-#define XVMCALL(func,...)   (xvm_func.func(__VA_ARGS__))
-
-extern void *x11_hostlib_load_so(const char *, const char **, int, void **);
-
-static int xvm_hostlib_init(void *libbase) {
-    D(bug("[x11] xvm hostlib init\n"));
-
-    if ((xvm_handle = x11_hostlib_load_so(XVM_SOFILE, xvm_func_names, 5, (void **) &xvm_func)) == NULL)
-        return FALSE;
-
-    return TRUE;
-}
-
-static int xvm_hostlib_expunge(void *libbase) {
-    D(bug("[x11] xvm hostlib expunge\n"));
-
-    if (xvm_handle != NULL)
-        HostLib_Close(xvm_handle, NULL);
-
-    return TRUE;
-}
-
-ADD2INITLIB(xvm_hostlib_init, 1)
-ADD2EXPUNGELIB(xvm_hostlib_expunge, 1)
-
+#include "x11_hostlib.h"
 
 static XF86VidModeModeInfo **videomodes;
 static int  	    	     num_videomodes;

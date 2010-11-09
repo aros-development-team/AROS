@@ -21,10 +21,14 @@ struct libc_func libc_func;
 struct xf86vm_func xf86vm_func;
 
 static const char *xf86vm_func_names[] = {
-	"XF86VidModeGetAllModeLines"
+    "XF86VidModeGetAllModeLines",
+    "XF86VidModeSwitchToMode",
+    "XF86VidModeSetViewPort",
+    "XF86VidModeQueryVersion",
+    "XF86VidModeQueryExtension"
 };
 
-#define XF86VM_NUM_FUNCS (1)
+#define XF86VM_NUM_FUNCS (5)
 
 static const char *x11_func_names[] = {
     "XCreateImage",
