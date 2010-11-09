@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Offscreen bitmap class for X11 hidd.
@@ -274,8 +274,7 @@ VOID X11OffBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     LOCK_X11 
     XCALL(XSetForeground, data->display, data->gc, GC_BG(msg->gc));
     XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc,
-    	    	   0 , 0, width, height);    
-    XCALL(XFlush, data->display);
+    	    	   0 , 0, width, height);
     UNLOCK_X11
     
 }

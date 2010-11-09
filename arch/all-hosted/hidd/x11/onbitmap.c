@@ -523,8 +523,7 @@ VOID X11OnBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 	    0, 0,
 	    width, height,
 	    FALSE);
-    
-    XCALL(XFlush, data->display);
+
     UNLOCK_X11            
 }
 
