@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,9 +41,6 @@
 #define SWAP16(x) AROS_WORD2BE(x)
 #define SWAP32(x) AROS_LONG2BE(x)
 #endif
-
-#define XFLUSH(x) XCALL(XFlush, x)
-//#define XFLUSH(x)
 
 /****************************************************************************************/
 
@@ -169,7 +166,6 @@ VOID MNAME(Hidd_BitMap__PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     XCALL(XSetForeground, data->display, data->gc, msg->pixel);
     XCALL(XSetFunction, data->display, data->gc, GXcopy);
     XCALL(XDrawPoint, data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
-    XFLUSH(data->display);
 
     UNLOCK_X11
 }
@@ -215,7 +211,6 @@ ULONG MNAME(Hidd_BitMap__DrawPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     LOCK_X11
     XCALL(XChangeGC, data->display, data->gc, GCFunction | GCForeground | GCBackground, &gcval);    
     XCALL(XDrawPoint, data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
-    XFLUSH(data->display); /* stegerg: uncommented */
     UNLOCK_X11    
     
     return 0;    
@@ -244,7 +239,6 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	    	   msg->minX, msg->minY,
 		   msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
 
-    XFLUSH(data->display);
     UNLOCK_X11    
     
     ReturnVoid("X11Gfx.BitMap::FillRect");    
@@ -1071,7 +1065,6 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     ReleaseSemaphore(&XSD(cl)->shm_sema);
 
     LOCK_X11
-    XFLUSH(data->display); /* stegerg: added */
     destroy_xshm_ximage(image);    
     UNLOCK_X11    
 
@@ -1151,7 +1144,6 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     XCALL(XSetFunction, data->display, data->gc, GC_DRMD(gc));
     XCALL(XPutImage, data->display, DRAWABLE(data), data->gc, image,
     	      0, 0, x, y, width, height);
-    XFLUSH(data->display);
     UNLOCK_X11 
     
 #if NO_MALLOC
@@ -1214,143 +1206,6 @@ VOID MNAME(Hidd_BitMap__PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     }
 
     ReturnVoid("X11Gfx.BitMap::PutImageLUT");
-}
-
-/****************************************************************************************/
-
-#undef DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
-
-/****************************************************************************************/
-
-VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
-					    struct pHidd_BitMap_BlitColorExpansion *msg
-)
-{
-    struct bitmap_data  *data = OOP_INST_DATA(cl, o);
-    XImage  	    	*dest_im;
-    HIDDT_Pixel     	 fg, bg;
-    ULONG   	    	 cemd;
-    LONG    	    	 x, y;    
-    Drawable 	    	 d = 0;
-    
-    EnterFunc(bug("X11Gfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n",
-    	    	  msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
-    
-    
-    OOP_GetAttr(msg->srcBitMap, aHidd_X11BitMap_Drawable, (IPTR *)&d);
-    
-    if (0 == d)
-    {
-    	/* We know nothing about the source bitmap. Let the superclass handle this */
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	return;
-    }
-    
-    fg = GC_FG(msg->gc);
-    bg = GC_BG(msg->gc);
-    cemd = GC_COLEXP(msg->gc);
-
-    if (0 != d)
-    {
-    	LOCK_X11    
-
-	XCALL(XSetForeground, data->display, data->gc, fg);
-		
-    	if (cemd & vHidd_GC_ColExp_Opaque)  
-	{
-	    XCALL(XSetBackground, data->display, data->gc, bg);
-	    XCALL(XSetFunction, data->display, data->gc, GXcopy);
-	    
-	    XCALL(XCopyPlane, data->display, d, DRAWABLE(data), data->gc,
-	    	       msg->srcX, msg->srcY, msg->width, msg->height,
-		       msg->destX, msg->destY, 0x01);
-	}
-	else
-	{
-	    /* Do transparent blit */
-	    
-	    XGCValues val;
-	    
-	    val.stipple		= d;
-	    val.ts_x_origin	= msg->destX - msg->srcX;
-	    val.ts_y_origin	= msg->destY - msg->srcY;
-	    val.fill_style	= FillStippled;
-
-	    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(msg->gc));
-	    
-	    XCALL(XChangeGC, data->display, data->gc,
-	    	      GCStipple|GCTileStipXOrigin|GCTileStipYOrigin|GCFillStyle,
-		      &val);
-		      
-	    XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc,
-	    	    	   msg->destX, msg->destY, msg->width, msg->height);
-	    
-	    XCALL(XSetFillStyle, data->display, data->gc, FillSolid);
-
-	}
-	
-    	UNLOCK_X11	
-
-    }
-    else
-    {
-    	/* We know nothing about the format of the source bitmap
-	   an must get single pixels
-	*/
-
-    	LOCK_X11    
-	dest_im = XCALL(XGetImage, data->display, DRAWABLE(data),
-	    	    	    msg->destX, msg->destY, msg->width, msg->height,
-			    AllPlanes, ZPixmap);    	
-    	UNLOCK_X11   
-	 
-	if (!dest_im)
-    	    ReturnVoid("X11Gfx.BitMap::BlitColorExpansion()");
-
-	D(bug("Src bm: %p\n", msg->srcBitMap));
-	
-	for (y = 0; y < msg->height; y ++)
-	{
-	    for (x = 0; x < msg->width; x ++)
-	    {
-		ULONG is_set;
-	    
-	    	is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
-	    
-	    	if (is_set)
-	    	{
-	    	    XPutPixel(dest_im, x, y, fg);
-		
-	    	}
-	    	else
-	    	{
-		    if (cemd & vHidd_GC_ColExp_Opaque)
-		    {
-			XPutPixel(dest_im, x, y, bg);
-		    }
-		}
-		
-	    } /* for (each x) */
-	    
-    	} /* for (each y) */
-    
-	/* Put image back into display */
-
-    	LOCK_X11    
-	XCALL(XSetFunction, data->display, data->gc, GC_DRMD(msg->gc));
-	XCALL(XPutImage, data->display, DRAWABLE(data), data->gc, dest_im,
-	    	  0, 0, msg->destX, msg->destY, msg->width, msg->height);
-    	XDestroyImage(dest_im);
-    	UNLOCK_X11
-    }
-
-    LOCK_X11
-    XFLUSH(data->display);
-    UNLOCK_X11 
-    
-    ReturnVoid("X11Gfx.BitMap::BlitColorExpansion");
 }
 
 /****************************************************************************************/
@@ -1430,8 +1285,6 @@ VOID MNAME(Hidd_BitMap__DrawLine)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	XCALL(XSetClipMask, data->display, data->gc, None);
     }	
     
-    XFLUSH(data->display);
-    
     UNLOCK_X11
 }
 
@@ -1478,9 +1331,18 @@ VOID MNAME(Hidd_BitMap__DrawEllipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     	XCALL(XSetClipMask, data->display, data->gc, None);
     }	
     
-    XFLUSH(data->display);
-    
     UNLOCK_X11
 }
 
 /****************************************************************************************/
+
+VOID MNAME(Hidd_BitMap__UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+
+    LOCK_X11
+
+    XCALL(XFlush, data->display);
+    
+    UNLOCK_X11
+}
