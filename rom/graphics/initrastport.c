@@ -51,7 +51,7 @@ static const struct RastPort defaultRastPort =
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(void, InitRastPort,
+	AROS_LH1(BOOL, InitRastPort,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
@@ -95,6 +95,8 @@ static const struct RastPort defaultRastPort =
     RP_BACKPOINTER(rp) = rp; /* Mark rastport as valid (no manual clone) */
     
     SetFont (rp, GfxBase->DefaultFont);
+
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
     
