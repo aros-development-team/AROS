@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: boot.c 34737 2010-10-15 14:56:41Z jmcmullan $
+    $Id$
 
     Desc: DOS startup-sequence starter, iOS version
     Lang: english
