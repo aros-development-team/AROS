@@ -27,6 +27,10 @@ struct LibCInterface
 
 struct Exec_PlatformData
 {
+    APTR HostLibBase;
     struct LibCInterface *SysIFace;
     void (*Reboot)(unsigned char warm);
+    void (*DisplayAlert)(char *text);	/* Currently used only on iOS */
 };
+
+#define HostLibBase PD(SysBase).HostLibBase
