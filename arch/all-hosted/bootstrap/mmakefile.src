@@ -13,7 +13,7 @@ else
     LIBS := dl
 endif
 
-ifeq ($(ARCH),ios)
+ifeq ($(AROS_TARGET_VARIANT),ios)
     KERNEL_LDFLAGS += $(IOS_LDFLAGS) -framework Foundation -framework UIKit
     EXEDIR := $(TARGETDIR)/Payload/$(PROG).app
 endif
