@@ -1,0 +1,210 @@
+/*
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Macros to handle unix signals, ARM version
+    Lang: english
+*/
+
+#ifndef _SIGCORE_H
+#define _SIGCORE_H
+
+/*
+ * WARNING! Initial version, highly untested!!!
+ */
+
+/*
+ * We support 14 exceptions for ARM (see arch/all-unix/kernel/cpu_ppc.c).
+ * Note that krnRunExceptionHandlers() does not check exception number,
+ * so increase this if you use higher numbers.
+ */
+#define EXCEPTIONS_COUNT 14
+
+/* We don't use any hacks any more. With modern kernel and libc it's okay
+   Schulz: NO, it's NOT in case of ARM! */
+//#define SIGCORE_NEED_SA_SIGINFO 0
+
+#include <ucontext.h>
+#include <signal.h>
+
+#ifndef _SIGNAL_H
+#define _SIGNAL_H
+#endif
+#ifndef __KERNEL_STRICT_NAMES
+#define __KERNEL_STRICT_NAMES
+#endif
+#include <bits/sigcontext.h>
+
+/* regs_t is the type of the signals' context */
+typedef @sighandler@ SignalHandler;
+typedef struct ucontext regs_t;
+
+/* name and type of the signal handler */
+#define SIGHANDLER	linux_sighandler
+#define SIGHANDLER_T	SignalHandler
+
+/* This blob is quite strange on ARM. The ucontext frame is not passed to any register, but rather created on stack.
+   I will use gcc builtin here, to get that value... */
+   
+#define GLOBAL_SIGNAL_INIT(sighandler) \
+	static void sighandler ## _gate (int sig) 					\
+	{ 										\
+	    struct ucontext *u = (struct ucontext *)(__builtin_frame_address(0)+4);     \
+	    sighandler(sig, u); 							\
+	}
+
+/* This structure is used to save/restore registers, because the stack is too
+   small. */
+
+struct AROSCPUContext
+{
+    struct sigcontext     regs;
+    int		          errno_backup;
+    struct AROSCPUContext * sc;
+};
+
+/* Macros to access the stack pointer and program counter,
+   PC is the current address in the program code. */
+
+#define GET_PC(ctx) ((APTR)ctx->regs.arm_pc)
+
+#define SET_PC(ctx, val) ctx->regs.arm_pc = (IPTR)val
+
+#define SP(uc)	(uc->uc_mcontext.arm_sp)
+#define PC(uc)	(uc->uc_mcontext.arm_pc)
+
+/* Macros to enable or disable all signals after the signal handler
+   has returned and the normal execution commences.
+   On PowerPC this is the same as on x86-64. */
+#define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
+#define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
+
+/* This stuff is not used on Linux/m68k, because the signal handler context
+   doesn't contain enough registers. Some assembler is needed for the signal
+   handler instead. */
+
+#define SAVE_CPU(cc, uc)					\
+{								\
+    cc->regs.arm_r0 	= uc->uc_mcontext.arm_r0;		\
+    cc->regs.arm_r1	= uc->uc_mcontext.arm_r1;		\
+    cc->regs.arm_r2	= uc->uc_mcontext.arm_r2;		\
+    cc->regs.arm_r3 	= uc->uc_mcontext.arm_r3;		\
+    cc->regs.arm_r4	= uc->uc_mcontext.arm_r4;		\
+    cc->regs.arm_r5	= uc->uc_mcontext.arm_r5;		\
+    cc->regs.arm_r6 	= uc->uc_mcontext.arm_r6;		\
+    cc->regs.arm_r7	= uc->uc_mcontext.arm_r7;		\
+    cc->regs.arm_r8	= uc->uc_mcontext.arm_r8;		\
+    cc->regs.arm_r9 	= uc->uc_mcontext.arm_r9;		\
+    cc->regs.arm_r10	= uc->uc_mcontext.arm_r10;		\
+    cc->regs.arm_fp	= uc->uc_mcontext.arm_fp;		\
+    cc->regs.arm_ip	= uc->uc_mcontext.arm_ip;		\
+    cc->regs.arm_sp	= uc->uc_mcontext.arm_sp;		\
+    cc->regs.arm_lr	= uc->uc_mcontext.arm_lr;		\
+    cc->regs.arm_pc	= uc->uc_mcontext.arm_pc;		\
+    cc->regs.arm_cpsr	= uc->uc_mcontext.arm_cpsr;		\
+}
+
+#define SAVE_FPU(cc, uc) \
+{\
+//    long i;\
+//    for (i = 0; i < 32; i++)\
+//	cc->fpregs[i] = *(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]);\
+}
+
+#define RESTORE_CPU(cc, uc)			\
+{						\
+    uc->uc_mcontext.arm_r0	= cc->regs.arm_r0;		\
+    uc->uc_mcontext.arm_r1	= cc->regs.arm_r1;		\
+    uc->uc_mcontext.arm_r2	= cc->regs.arm_r2;		\
+    uc->uc_mcontext.arm_r3	= cc->regs.arm_r3;		\
+    uc->uc_mcontext.arm_r4	= cc->regs.arm_r4;		\
+    uc->uc_mcontext.arm_r5	= cc->regs.arm_r5;		\
+    uc->uc_mcontext.arm_r6	= cc->regs.arm_r6;		\
+    uc->uc_mcontext.arm_r7	= cc->regs.arm_r7;		\
+    uc->uc_mcontext.arm_r8	= cc->regs.arm_r8;		\
+    uc->uc_mcontext.arm_r9	= cc->regs.arm_r9;		\
+    uc->uc_mcontext.arm_r10	= cc->regs.arm_r10;		\
+    uc->uc_mcontext.arm_fp	= cc->regs.arm_fp;		\
+    uc->uc_mcontext.arm_ip	= cc->regs.arm_ip;		\
+    uc->uc_mcontext.arm_sp	= cc->regs.arm_sp;		\
+    uc->uc_mcontext.arm_lr	= cc->regs.arm_lr;		\
+    uc->uc_mcontext.arm_pc	= cc->regs.arm_pc;		\
+    uc->uc_mcontext.arm_cpsr 	= cc->regs.arm_cpsr;		\
+}
+
+#define RESTORE_FPU(cc, uc)\
+{\
+//    long i;\
+//    for (i = 0; i < 32; i++)\
+//	*(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]) = cc->fpregs[i];\
+}
+
+#define PREPARE_RETURN_ADDRESS(cc, addr)                      \
+    do                                                        \
+    {                                                         \
+        cc->regs.arm_lr = (unsigned long) addr;\
+    } while (0)
+
+#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)\
+{\
+//    long i;\
+//    for (i = 0; i < numargs; i++)\
+//	cc->regs.gpr[3+i] = args[i];\
+}
+
+#define PREPARE_INITIAL_FRAME(cc, sp, pc)     \
+    do                                        \
+    {                                         \
+        cc->regs.arm_sp = (unsigned long) sp; \
+        cc->regs.arm_pc = (unsigned long) pc; \
+    } while (0)
+
+#define PREPARE_INITIAL_CONTEXT(cc)               \
+{                                                 \
+//    __asm__ __volatile__ (                        \
+//    "stw 2,%0 \n\t"                               \
+//    : "=m"(cc->regs.gpr[2])			  \
+//    :                                             \
+//    : "memory");                                  \
+//    {                                             \
+//        long i;                                   \
+//        for (i = 0; i < 32; i++)                  \
+//            cc->fpregs[i] = 0.0;		  \
+//    }                                             \
+}
+
+/* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
+   all general purpose registers. Use this macro when you want to
+   leave the current tasks' context to save the registers. Note that
+   the argument "sp" of the macro is just the name of the stack
+   pointer. The macro will load it from the sigcontext "sc". You
+   must store the value of "sp" after the macro and hand it to
+   RESTOREREGS() below to restore this context. */
+
+#define SAVEREGS(cc, uc)           \
+    do                             \
+    {                              \
+        SAVE_CPU((cc), uc);        \
+        SAVE_FPU((cc), uc);        \
+    } while(0)
+
+/* This macro does the opposite to SAVEREGS(). It restores all
+   general purpose registers. After that, you can enter the new
+   tasks' context. Both "sp" and "sc" must be initialized.
+   The macro will save the new SP into the sigcontext "sc". */
+
+#define RESTOREREGS(cc, uc)           \
+    do                                \
+    {                                 \
+	RESTORE_FPU((cc), uc);        \
+        RESTORE_CPU((cc), uc);        \
+    } while(0)
+
+/* This macro prints the current signals' context */
+
+#define PRINT_SC(sc) \
+	bug ("SC: SP=%08lx  PC=%08lx\n" \
+	    , SP(sc), PC(sc) \
+	)
+
+#endif /* _SIGCORE_H */
