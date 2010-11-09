@@ -1,7 +1,7 @@
 #!/bin/zsh
-# Creates amiga-m68k-eabi binary packages.
+# Creates amiga-m68k binary packages.
 
-BUILDTARGET=amiga-m68k-eabi
+BUILDTARGET=amiga-m68k
 
 source $SP/setup
 # The log-name MUST match the name of the package script
@@ -21,14 +21,14 @@ cd      $BUILD_BASE/AROS
 export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
 execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-optimization="-Os" --with-serial-debug
 make
-make kernel-link-amiga-m68k
 
 cd      $BUILD_BASE/AROS/bin/amiga-m68k
 move    AROS $PACKAGE
 
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
-delete  $PACKAGE/aros-amiga-m68k.elf
+delete  $PACKAGE/aros-amiga-m68k-ext.elf
+delete  $PACKAGE/aros-amiga-m68k-rom.elf
 delete  $PACAKGE/Development/lib
 
 archive $ARCHIVE $PACKAGE
