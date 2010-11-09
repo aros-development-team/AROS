@@ -108,9 +108,13 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	/* Now restore %ebx */
 	popl	%ebx
 
-	/* And take the function's return address, before we
-	   swap stacks.  */
-	popl    %ecx    // return address    
+	/* Pop function's return address and arguments before we swap stacks.
+	   This is needed for proper stack balancing (saved value of sp must be
+	   caller's stack pointer, right before StackSwap() was called. This way
+	   second StackSwap() call will restore the stack to exactly the same state. */
+	popl    %ecx    // return address
+	popl    %edx    // newStack
+	popl    %eax	// SysBase
 
 	/* Swap stack pointers */
 	xchgl	%esp, stk_Pointer(%edx) 
