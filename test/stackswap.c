@@ -73,7 +73,7 @@ int main(void)
     args.Args[1] = 0xC0DEC001;
 
     NewStackSwap(&sss, Sub, &args);
-    print("Came back from StackSwap()\n");
+    print("Came back from NewStackSwap()\n");
     PrintSSS(&sss);
     PrintTaskStack();
 
