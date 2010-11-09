@@ -578,15 +578,17 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    int ok;\n"
 	    "\n"
     );
-	
-    fprintf(out,
-            "#ifndef __AROS__\n"
-            "    SysBase = sysBase;\n"
-            "#endif\n"
-            "#ifdef GM_SYSBASE_FIELD\n"
-            "    GM_SYSBASE_FIELD(lh) = sysBase;\n"
-            "#endif\n"
-    );
+
+    if (cfg->options & OPTION_RESAUTOINIT) {
+        fprintf(out,
+                "#ifndef __AROS__\n"
+                "    SysBase = sysBase;\n"
+                "#endif\n"
+                "#ifdef GM_SYSBASE_FIELD\n"
+                "    GM_SYSBASE_FIELD(lh) = sysBase;\n"
+                "#endif\n"
+        );
+    }
     
     if (!(cfg->options & OPTION_RESAUTOINIT))
     {
