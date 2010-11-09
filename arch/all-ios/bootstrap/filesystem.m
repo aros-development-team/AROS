@@ -7,20 +7,20 @@
  *
  */
 
-#include <Foundation/Foundation.h>
-#include <unistd.h>
+#import <Foundation/Foundation.h>
 
 #include "filesystem.h"
 
 int SetRootDirectory(void)
 {
-    int ret;
+    BOOL ret;
 
     NSString *home = NSHomeDirectory();
-    
-    ret = chdir([home UTF8String]);
-    if (!ret)
-	ret = chdir("Documents/AROS");
-    
-    return ret;
+    NSString *dir = [home stringByAppendingPathComponent:@"Documents/AROS"];
+    NSFileManager *fm = [NSFileManager defaultManager];
+
+    ret = [fm changeCurrentDirectoryPath:dir];
+    [fm release];
+
+    return !ret;
 }
