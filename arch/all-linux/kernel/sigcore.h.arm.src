@@ -73,11 +73,6 @@ typedef struct ucontext regs_t;
 //	cc->fpregs[i] = *(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]);\
 }
 
-#define RESTORE_CPU(cc, uc)			\
-{						\
-
-}
-
 #define RESTORE_FPU(cc, uc)\
 {\
 //    long i;\
