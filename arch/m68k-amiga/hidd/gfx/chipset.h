@@ -11,4 +11,6 @@ void setsprite(struct amigavideo_staticdata *data, WORD width, WORD height);
 void resetsprite(struct amigavideo_staticdata *data);
 void setspritevisible(struct amigavideo_staticdata *data, BOOL visible);
 
+BOOL setcolors(struct amigavideo_staticdata *data, struct pHidd_BitMap_SetColors *msg, BOOL visible);
+
 #endif
