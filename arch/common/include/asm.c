@@ -8,6 +8,7 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <dos/dosextens.h>
+#include <graphics/clip.h>
 
 #include <stddef.h>
 
@@ -69,6 +70,9 @@ int main(void) {
     DEFINE(stk_Upper     , offsetof (struct StackSwapStruct, stk_Upper));
     DEFINE(stk_Pointer   , offsetof (struct StackSwapStruct, stk_Pointer));
 
+    asm volatile("\n/* struct Layer */" ::);
+    DEFINE(ly_Lock       , offsetof (struct Layer, Lock));
+
     asm volatile("\n/* Task Flags */" ::);
     DEFINE(TS_RUN        , TS_RUN);
     DEFINE(TS_READY      , TS_READY);
@@ -87,6 +91,9 @@ int main(void) {
     DEFINE(Enable        , FuncOffset (21));
     DEFINE(Enqueue       , FuncOffset (45));
     DEFINE(FindTask      , FuncOffset (49));
+    DEFINE(ObtainSemaphore,  FuncOffset (94));
+    DEFINE(ReleaseSemaphore, FuncOffset (95));
+    DEFINE(AttemptSemaphore, FuncOffset (96));
     DEFINE(StackSwap     , FuncOffset (122));
 
     asm volatile("\n/* Constants */" ::);
