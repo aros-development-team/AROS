@@ -81,6 +81,9 @@ typedef void (*SIGHANDLER_T)(int);
  * SAVEREGS and RESTOREREGS rely on the fact that layout of
  * struct ExceptionContext is actually the same as layout of
  * Darwin's context.
+ *
+ * Note that we assume that VFP area is always present in our context.
+ * In fact it should (Darwin seems not to support anything else than VFP)
  */
 #define SAVEREGS(cc, sc)							\
     CopyMemQuick(&GPSTATE(sc), cc->regs.r, sizeof(_STRUCT_ARM_THREAD_STATE));	\
@@ -104,7 +107,8 @@ typedef void (*SIGHANDLER_T)(int);
 
 #endif /* __AROS_EXEC_LIBRARY__ */
 
-#define EXCEPTIONS_COUNT 17
+/* ARM CPU has 7 exceptions */
+#define EXCEPTIONS_COUNT 7
 
 struct AROSCPUContext
 {
