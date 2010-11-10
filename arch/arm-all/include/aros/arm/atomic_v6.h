@@ -25,7 +25,7 @@ do { \
 		   	   	   	   	   :"cc"); \
 } while (0)
 
-static inline void atomic_and_l(ULONG *var, ULONG mask)
+static inline void atomic_and_l(const ULONG *var, ULONG mask)
 {
     unsigned long temp; int result;
 
@@ -35,7 +35,7 @@ static inline void atomic_and_l(ULONG *var, ULONG mask)
                         :"cc");
 }
 
-static inline void atomic_or_l(ULONG *var, ULONG mask)
+static inline void atomic_or_l(const ULONG *var, ULONG mask)
 {
     unsigned long temp; int result;
 
