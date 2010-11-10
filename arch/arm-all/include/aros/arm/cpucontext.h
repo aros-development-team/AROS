@@ -12,11 +12,11 @@ struct ExceptionContext
     UBYTE FPUType;	/* FPU type (see below)		*/
     UBYTE Reserved;	/* Unused			*/
     ULONG r[11];	/* General purpose registers	*/
-    ULONG fp;		/* r13				*/
-    ULONG ip;		/* r14				*/
-    ULONG sp;		/* r15				*/
-    ULONG lr;		/* r16				*/
-    ULONG pc;		/* r17				*/
+    ULONG fp;		/* r11				*/
+    ULONG ip;		/* r12				*/
+    ULONG sp;		/* r13				*/
+    ULONG lr;		/* r14				*/
+    ULONG pc;		/* r15				*/
     ULONG cpsr;
     APTR  fpuContext;	/* Pointer to FPU context area	*/
 };
