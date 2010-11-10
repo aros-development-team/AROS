@@ -61,7 +61,7 @@ static void core_Trap(int sig, regs_t *regs)
     /* Just for completeness */
     krnRunIRQHandlers(sig);
 
-    bug("[KRN] Trap signal %d, SysBase 0x%p, KernelBase 0x%p\n", sig, SysBase, KernelBase);
+    bug("[KRN] Trap signal %d, SysBase %p, KernelBase %p\n", sig, SysBase, KernelBase);
 
     /* Find out trap handler for caught task */
     if (SysBase)
@@ -70,7 +70,7 @@ static void core_Trap(int sig, regs_t *regs)
 
         if (t)
 	{
-	    bug("[KRN] %s 0x%p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
+	    bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
 	    trapHandler = t->tc_TrapCode;
 	}
 	else

@@ -9,24 +9,10 @@
 #ifndef _SIGCORE_H
 #define _SIGCORE_H
 
-#ifdef __AROS_EXEC_LIBRARY__
+#include <exec/types.h>
+#include <aros/ppc/cpucontext.h>
 
-struct pt_regs
-{
-    unsigned long gpr[32];
-    unsigned long nip;
-    unsigned long msr;
-    unsigned long orig_gpr3;
-    unsigned long ctr;
-    unsigned long link;
-    unsigned long xer;
-    unsigned long ccr;
-    unsigned long mq;
-    unsigned long trap;
-    unsigned long dar;
-    unsigned long dsisr;
-    unsigned long result;
-};
+#ifdef __AROS_EXEC_LIBRARY__
 
 struct ucontext;
 
@@ -71,85 +57,63 @@ typedef @sighandler@ SignalHandler;
 #define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
 #define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
 
-/* This stuff is not used on Linux/m68k, because the signal handler context
-   doesn't contain enough registers. Some assembler is needed for the signal
-   handler instead. */
-
-#define SAVE_CPU(cc, uc)					\
-{								\
-    long i;							\
-    for (i = 0; i < 32; i++)					\
-	cc->regs.gpr[i] = uc->uc_mcontext.regs->gpr[i];		\
-    cc->regs.nip 	= uc->uc_mcontext.regs->nip;		\
-    cc->regs.msr	= uc->uc_mcontext.regs->msr;		\
-    cc->regs.orig_gpr3	= uc->uc_mcontext.regs->orig_gpr3;	\
-    cc->regs.ctr	= uc->uc_mcontext.regs->ctr;		\
-    cc->regs.link	= uc->uc_mcontext.regs->link;		\
-    cc->regs.xer	= uc->uc_mcontext.regs->xer;		\
-    cc->regs.ccr	= uc->uc_mcontext.regs->ccr;		\
-    cc->regs.trap	= uc->uc_mcontext.regs->trap;		\
-    cc->regs.dar	= uc->uc_mcontext.regs->dar;		\
-    cc->regs.dsisr	= uc->uc_mcontext.regs->dsisr;		\
-    cc->regs.result	= uc->uc_mcontext.regs->result;		\
-}
-
-#define SAVE_FPU(cc, uc) \
-{\
-    long i;\
-    for (i = 0; i < 32; i++)\
-	cc->fpregs[i] = *(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]);\
-}
-
-#define RESTORE_CPU(cc, uc)			\
-{						\
-    long i;					\
-    for (i = 0; i < 32; i++)			\
-	uc->uc_mcontext.regs->gpr[i] = cc->regs.gpr[i];		\
-    uc->uc_mcontext.regs->nip	= cc->regs.nip; 		\
-    uc->uc_mcontext.regs->msr	= cc->regs.msr;			\
-    uc->uc_mcontext.regs->orig_gpr3 = cc->regs.orig_gpr3;	\
-    uc->uc_mcontext.regs->ctr	= cc->regs.ctr;			\
-    uc->uc_mcontext.regs->link	= cc->regs.link;		\
-    uc->uc_mcontext.regs->xer	= cc->regs.xer;			\
-    uc->uc_mcontext.regs->ccr	= cc->regs.ccr;			\
-    uc->uc_mcontext.regs->trap	= cc->regs.trap;		\
-    uc->uc_mcontext.regs->dar	= cc->regs.dar;			\
-    uc->uc_mcontext.regs->dsisr	= cc->regs.dsisr;		\
-    uc->uc_mcontext.regs->result = cc->regs.result;		\
-}
-
-#define RESTORE_FPU(cc, uc)\
-{\
-    long i;\
-    for (i = 0; i < 32; i++)\
-	*(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]) = cc->fpregs[i];\
-}
-
-/* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
-   all general purpose registers. Use this macro when you want to
-   leave the current tasks' context to save the registers. Note that
-   the argument "sp" of the macro is just the name of the stack
-   pointer. The macro will load it from the sigcontext "sc". You
-   must store the value of "sp" after the macro and hand it to
-   RESTOREREGS() below to restore this context. */
-
-#define SAVEREGS(cc, uc)           \
-    do                             \
-    {                              \
-        SAVE_CPU((cc), uc);        \
-        SAVE_FPU((cc), uc);        \
+/*
+ * This macro saves all registers. Use this macro when you want
+ * to leave the current tasks' context.
+ * It saves as much is possible and sets appropriate flags in
+ * context structure.
+ * TODO: check if Traptype usage is correct.
+ */
+#define SAVEREGS(cc, uc)           				\
+    do                             				\
+    {                              				\
+	long i;							\
+	(cc)->regs.Flags = ECF_FULL_GPRS|ECF_FPU;		\
+	for (i = 0; i < 32; i++)				\
+	    (cc)->regs.gpr[i] = uc->uc_mcontext.regs->gpr[i];	\
+	(cc)->regs.ip 	= uc->uc_mcontext.regs->nip;		\
+	(cc)->regs.msr	= uc->uc_mcontext.regs->msr;		\
+	(cc)->regs.ctr	= uc->uc_mcontext.regs->ctr;		\
+	(cc)->regs.lr 	= uc->uc_mcontext.regs->link;		\
+	(cc)->regs.xer	= uc->uc_mcontext.regs->xer;		\
+	(cc)->regs.cr 	= uc->uc_mcontext.regs->ccr;		\
+	(cc)->regs.Traptype = uc->uc_mcontext.regs->trap;	\
+	(cc)->regs.dar	= uc->uc_mcontext.regs->dar;		\
+	(cc)->regs.dsisr = uc->uc_mcontext.regs->dsisr;		\
+	(cc)->orig_gpr3	= uc->uc_mcontext.regs->orig_gpr3;	\
+	(cc)->result	= uc->uc_mcontext.regs->result;		\
+	for (i = 0; i < 32; i++)				\
+	    (cc)->regs.fpr[i] = *(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]); \
     } while(0)
 
-/* This macro does the opposite to SAVEREGS(). It restores all
-   general purpose registers. After that, you can enter the new
-   tasks' context. Both "sp" and "sc" must be initialized.
-   The macro will save the new SP into the sigcontext "sc". */
-
-#define RESTOREREGS(cc, uc)           \
-    do                                \
-    {                                 \
-	RESTORE_FPU((cc), uc);        \
-        RESTORE_CPU((cc), uc);        \
+/*
+ * This macro does the opposite to SAVEREGS(). It restores all
+ * registers which are present in context (indicated by its flags).
+ * After that, you can enter the new task's context.
+ */
+#define RESTOREREGS(cc, uc)           				\
+    do								\
+    {								\
+    	long i;							\
+	long n = ((cc)->regs.Flags & ECF_FULL_GPRS) ? 32 : 14;	\
+    	for (i = 0; i < n; i++)					\
+	    uc->uc_mcontext.regs->gpr[i] = (cc)->regs.gpr[i];	\
+	uc->uc_mcontext.regs->nip	= (cc)->regs.ip;	\
+	uc->uc_mcontext.regs->msr	= (cc)->regs.msr;	\
+	uc->uc_mcontext.regs->ctr	= (cc)->regs.ctr;	\
+	uc->uc_mcontext.regs->link	= (cc)->regs.lr;	\
+	uc->uc_mcontext.regs->xer	= (cc)->regs.xer;	\
+	uc->uc_mcontext.regs->ccr	= (cc)->regs.cr;	\
+	uc->uc_mcontext.regs->trap	= (cc)->regs.Traptype;	\
+	uc->uc_mcontext.regs->dar	= (cc)->regs.dar;	\
+	uc->uc_mcontext.regs->dsisr	= (cc)->regs.dsisr;	\
+	uc->uc_mcontext.regs->orig_gpr3 = (cc)->orig_gpr3;	\
+	uc->uc_mcontext.regs->result    = (cc)->result;		\
+	if ((cc)->regs.Flags & ECF_FPU)				\
+	{							\
+	    for (i = 0; i < 32; i++)				\
+		*(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]) = (cc)->regs.fpr[i]; \
+	}							\
     } while(0)
 
 /* This macro prints the current signals' context */
@@ -173,51 +137,14 @@ typedef struct ucontext regs_t;
 /* This structure is used to save/restore registers */
 struct AROSCPUContext
 {
-    struct pt_regs            regs;
-    double                    fpregs[32];
-    int			      errno_backup;
+    struct ExceptionContext regs;	  /* Public portion	 */
+    unsigned long	    orig_gpr3;	  /* Host-specific magic */
+    unsigned long	    result;
+    int			    errno_backup;
     struct AROSCPUContext * sc;
 };
 
-#define GET_PC(ctx) ((APTR)ctx->regs.nip)
-#define SET_PC(ctx, val) ctx->regs.nip = (IPTR)val
-
-/* Prepare the cpu context
-   Sys V PPC ABI says r2 is reserved
-   so we copy the current one and it
-   will never be changed again */
-#define PREPARE_INITIAL_CONTEXT(cc)               \
-{                                                 \
-    __asm__ __volatile__ (                        \
-    "stw 2,%0 \n\t"                               \
-    : "=m"(cc->regs.gpr[2])			  \
-    :                                             \
-    : "memory");                                  \
-    {                                             \
-        long i;                                   \
-        for (i = 0; i < 32; i++)                  \
-            cc->fpregs[i] = 0.0;		  \
-    }                                             \
-}
-
-#define PREPARE_RETURN_ADDRESS(cc, addr)                      \
-    do                                                        \
-    {                                                         \
-        cc->regs.link = (unsigned long) addr;\
-    } while (0)
-
-#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)\
-{\
-    long i;\
-    for (i = 0; i < numargs; i++)\
-	cc->regs.gpr[3+i] = args[i];\
-}
-
-#define PREPARE_INITIAL_FRAME(cc, sp, pc)     \
-    do                                        \
-    {                                         \
-        cc->regs.gpr[1] = (unsigned long) sp; \
-        cc->regs.nip    = (unsigned long) pc; \
-    } while (0)
+#define GET_PC(ctx) ((APTR)ctx->regs.ip)
+#define SET_PC(ctx, val) ctx->regs.ip = (ULONG)val
 
 #endif /* _SIGCORE_H */
