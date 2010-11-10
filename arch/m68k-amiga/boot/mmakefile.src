@@ -11,6 +11,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-amiga-m68k-devs \
 #MM     kernel-amiga-m68k-kbd-kobj \
 #MM     kernel-amiga-m68k-mouse-kobj \
+#MM     kernel-amiga-m68k-amigavideo-kobj \
 #MM     kernel-disk-kobj \
 #MM     kernel-potgo-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
@@ -35,7 +36,7 @@ ROMPAD_rom := 0x1000000
 KLIBS   := exec aros dos utility oop expansion boot
 KDEVS   := timer input keyboard console trackdisk gameport
 KHNDLRS := con nil afs packet
-KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse
+KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo
 KRSRCS  := battclock kernel processor dosboot cia potgo disk
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS))) \
