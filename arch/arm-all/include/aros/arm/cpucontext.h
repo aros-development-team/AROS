@@ -1,0 +1,34 @@
+/*
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: CPU context definition for ARM processors
+    Lang: english
+*/
+
+struct ExceptionContext
+{
+    UWORD Flags;	/* Currently reserved		*/
+    UBYTE FPUType;	/* FPU type (see below)		*/
+    UBYTE Reserved;	/* Unused			*/
+    ULONG r[11];	/* General purpose registers	*/
+    ULONG fp;		/* r13				*/
+    ULONG ip;		/* r14				*/
+    ULONG sp;		/* r15				*/
+    ULONG lr;		/* r16				*/
+    ULONG pc;		/* r17				*/
+    ULONG cpsr;
+    APTR  fpuContext;	/* Pointer to FPU context area	*/
+};
+
+/* FPU types */
+#define FPU_NONE 0
+#define FPU_AFP  1
+#define FPU_VFP  2
+
+/* VFP context */
+struct VFPContext
+{
+    ULONG fpr[64];
+    ULONG fpscr;
+};
