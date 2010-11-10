@@ -107,8 +107,8 @@ typedef void (*SIGHANDLER_T)(int);
 
 #endif /* __AROS_EXEC_LIBRARY__ */
 
-/* ARM CPU has 7 exceptions */
-#define EXCEPTIONS_COUNT 7
+/* We emulate 6 exceptions of ARM CPU (all but softint) */
+#define EXCEPTIONS_COUNT 6
 
 struct AROSCPUContext
 {
