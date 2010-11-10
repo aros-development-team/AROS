@@ -19,7 +19,7 @@
 #define DEBUG 0
 #define DASYNC(x)
 #define DEXAM(x)
-#define DMOUNT(x) x
+#define DMOUNT(x)
 #define DOPEN(x)
 #define DREAD(x)
 
