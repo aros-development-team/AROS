@@ -13,6 +13,7 @@ AROS_LH0I(void *, KrnCreateContext,
     AROS_LIBFUNC_INIT
 
     struct AROSCPUContext *ctx;
+    UBYTE fpu_type;
     ULONG fpu_size;
 
     /*
@@ -25,11 +26,13 @@ AROS_LH0I(void *, KrnCreateContext,
      * available VPU type and select appropriate context type
      * here.
      */
+    fpu_type = FPU_VFP;
     fpu_size = sizeof(struct VFPContext);
 
     ctx = krnAllocMem(sizeof(struct AROSCPUContext) + fpu_size);
     if (ctx)
     {
+        ctx->FPUType    = fpu_type;
 	ctx->fpuContext = &ctx[1];
 	/* TODO: initialize FPU context ? */
     }

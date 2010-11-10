@@ -26,7 +26,6 @@ AROS_LH4(BOOL, PrepareContext,
 {
     AROS_LIBFUNC_INIT
 
-    IPTR *sp = task->tc_SPReg;
     struct ExceptionContext *ctx;
 
     if (!(task->tc_Flags & TF_ETASK) )
@@ -56,7 +55,7 @@ AROS_LH4(BOOL, PrepareContext,
 
 #define HANDLEARG(x)				   \
 	    case TASKTAG_ARG ## x:		   \
-	        ctx[3 + x - 1] = tagList->ti_Data; \
+	        ctx->r[3 + x - 1] = tagList->ti_Data; \
 	        break;
 		
 	    HANDLEARG(1)
@@ -76,12 +75,9 @@ AROS_LH4(BOOL, PrepareContext,
     ctx->lr = (ULONG)fallBack;
     
     /* Then set up the frame to be used by Dispatch() */
-    PREPARE_INITIAL_FRAME(ctx, sp, entryPoint);
-    ctx->sp = (ULONG)sp;
-    cc->regs.arm_pc = (ULONG)entryPoint;
+    ctx->sp = (ULONG)task->tc_SPReg;
+    ctx->pc = (ULONG)entryPoint;
 
-    /* We return the new stack pointer back to the caller. */
-    task->tc_SPReg = sp;
     return TRUE;
 
     AROS_LIBFUNC_EXIT
