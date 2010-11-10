@@ -1,46 +1,26 @@
 include $(TOP)/config/make.cfg
 
 #
-# Rules to create AROS for amiga-m68k
+# Rules to create AROS Kernel for amiga-m68k
 #
 
-USER_CFLAGS := 
+#MM- kernel-link-amiga-m68k : general-setup-amiga-m68k
 
-#MM- AROS-amiga-m68k : general-setup-amiga-m68k kernel-amiga-m68k software-amiga-m68k
-
-#MM- software-amiga-m68k : general-setup binary-amiga-m68k \
-#MM	    workbench-amiga-m68k demos contrib-necessary
-
-#MM- workbench-amiga-m68k : workbench-complete workbench
-
-#MM- AROS-complete-amiga-m68k : general-setup-amiga-m68k kernel-amiga-m68k software-amiga-m68k contrib
-
-#MM- general-setup-amiga-m68k: setup-amiga-m68k includes compiler
-
-#
-# Kernel modules
-#
-
-#MM- kernel-amiga-m68k : general-setup-amiga-m68k
-
-#MM- kernel-amiga-m68k : \
-#MM	kernel-amiga-m68k-devs \
+#MM- kernel-link-amiga-m68k : \
+#MM     kernel-objs \
+#MM     kernel-amiga-m68k-devs \
 #MM     kernel-amiga-m68k-kbd-kobj \
 #MM     kernel-amiga-m68k-mouse-kobj \
-#MM     kernel-cia-kobj \
 #MM     kernel-disk-kobj \
-#MM	kernel-potgo-kobj \
-#MM	kernel-kernel-kobj \
-#MM	kernel-bootloader-amiga-m68k-kobj \
+#MM     kernel-potgo-kobj \
+#MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     workbench-libs-partition-kobj \
-#MM     kernel-fs-afs-kobj \
 #MM     kernel-contrib-necessary-amiga-m68k \
-#MM     kernel-usb-amiga-m68k \
-#MM     kernel-processor-kobj
+#MM     kernel-usb-amiga-m68k
 
 #MM- kernel-contrib-necessary-amiga-m68k : contrib-necessary-amiga-m68k
 
-#MM- includes-amiga-m68k : includes-common-i386 includes-copy-amiga-m68k includes-copy
+USER_CFLAGS := 
 
 USELIBS := amiga arossupport rom arosm autoinit libinit \
 	   hiddgraphicsstubs hiddstubs 
@@ -91,11 +71,10 @@ OBJS_ext := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
 $(BINDIR)/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
 
-#MM kernel-link-amiga-m68k : setup-amiga-m68k
-#MM kernel-link-amiga-m68k-quick: 
-
+#MM kernel-link-amiga-m68k:
 kernel-link-amiga-m68k : $(BINDIR)/aros-amiga-m68k-rom.bin $(BINDIR)/aros-amiga-m68k-ext.bin
 
+#MM kernel-link-amiga-m68k-quick: 
 kernel-link-amiga-m68k-quick : $(BINDIR)/aros-amiga-m68k-rom.bin $(BINDIR)/aros-amiga-m68k-ext.bin
 
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
