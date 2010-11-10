@@ -1,0 +1,19 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+CFILES  := 
+AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom
+
+#MM kernel-graphics : kernel-graphics-amiga-m68k
+#MM kernel-graphics-amiga-m68k : kernel-graphics-includes includes-asm_h-m68k
+
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/graphics \
+               -I$(SRCDIR)/rom/graphics
+USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
+
+%build_archspecific \
+  mainmmake=kernel-graphics maindir=rom/graphics arch=amiga-m68k \
+  files="$(CFILES)" asmfiles="$(AFILES)" \
+  modulename=graphics
+
+%common
