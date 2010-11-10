@@ -61,24 +61,10 @@ typedef struct ucontext regs_t;
 #define PC(uc)	(uc->uc_mcontext.arm_pc)
 
 /* Macros to enable or disable all signals after the signal handler
-   has returned and the normal execution commences.
-   On PowerPC this is the same as on x86-64. */
+   has returned and the normal execution commences. */
 #define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
 #define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
 
-#define SAVE_FPU(cc, uc) \
-{\
-//    long i;\
-//    for (i = 0; i < 32; i++)\
-//	cc->fpregs[i] = *(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]);\
-}
-
-#define RESTORE_FPU(cc, uc)\
-{\
-//    long i;\
-//    for (i = 0; i < 32; i++)\
-//	*(double*)&(uc->uc_mcontext.regs->gpr[PT_FPR0 + 2 * i]) = cc->fpregs[i];\
-}
 
 /* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
    all general purpose registers. Use this macro when you want to
@@ -88,59 +74,20 @@ typedef struct ucontext regs_t;
    must store the value of "sp" after the macro and hand it to
    RESTOREREGS() below to restore this context. */
 
-#define SAVEREGS(cc, uc)           \
-    do                             \
-    {                              \
-    	cc->regs.r[0] 	= uc->uc_mcontext.arm_r0;		\
-    	cc->regs.r[1]	= uc->uc_mcontext.arm_r1;		\
-    	cc->regs.r[2]	= uc->uc_mcontext.arm_r2;		\
-    	cc->regs.r[3] 	= uc->uc_mcontext.arm_r3;		\
-    	cc->regs.r[4]	= uc->uc_mcontext.arm_r4;		\
-    	cc->regs.r[5]	= uc->uc_mcontext.arm_r5;		\
-    	cc->regs.r[6] 	= uc->uc_mcontext.arm_r6;		\
-    	cc->regs.r[7]	= uc->uc_mcontext.arm_r7;		\
-    	cc->regs.r[8]	= uc->uc_mcontext.arm_r8;		\
-    	cc->regs.r[9] 	= uc->uc_mcontext.arm_r9;		\
-    	cc->regs.r[10]	= uc->uc_mcontext.arm_r10;		\
-    	cc->regs.fp	= uc->uc_mcontext.arm_fp;		\
-    	cc->regs.ip	= uc->uc_mcontext.arm_ip;		\
-    	cc->regs.sp	= uc->uc_mcontext.arm_sp;		\
-    	cc->regs.lr	= uc->uc_mcontext.arm_lr;		\
-    	cc->regs.pc	= uc->uc_mcontext.arm_pc;		\
-    	cc->regs.cpsr	= uc->uc_mcontext.arm_cpsr;		\
-        SAVE_FPU((cc), uc);        \
-    } while(0)
+#define SAVEREGS(cc, uc)           						\
+    CopyMemQuick(&uc->uc_mcontext.arm_r0, (cc)->regs.r, sizeof(ULONG) * 17);	\
+    CopyMemQuick(&uc->uc_mcontext.regs->gpr[PT_FPR0], (cc)->regs.fpuContext, sizeof(struct VFPContext));
 
 /* This macro does the opposite to SAVEREGS(). It restores all
    general purpose registers. After that, you can enter the new
    tasks' context. Both "sp" and "sc" must be initialized.
    The macro will save the new SP into the sigcontext "sc". */
 
-#define RESTOREREGS(cc, uc)           \
-    do                                \
-    {                                 \
-    	uc->uc_mcontext.arm_r0	 = cc->regs.r[0];		\
-    	uc->uc_mcontext.arm_r1	 = cc->regs.r[1];		\
-    	uc->uc_mcontext.arm_r2	 = cc->regs.r[2];		\
-    	uc->uc_mcontext.arm_r3	 = cc->regs.r[3];		\
-    	uc->uc_mcontext.arm_r4	 = cc->regs.r[4];		\
-    	uc->uc_mcontext.arm_r5	 = cc->regs.r[5];		\
-    	uc->uc_mcontext.arm_r6	 = cc->regs.r[6];		\
-    	uc->uc_mcontext.arm_r7	 = cc->regs.r[7];		\
-    	uc->uc_mcontext.arm_r8	 = cc->regs.r[8];		\
-    	uc->uc_mcontext.arm_r9	 = cc->regs.r[9];		\
-    	uc->uc_mcontext.arm_r10	 = cc->regs.r[10];		\
-    	uc->uc_mcontext.arm_fp	 = cc->regs.fp;			\
-    	uc->uc_mcontext.arm_ip	 = cc->regs.ip;			\
-    	uc->uc_mcontext.arm_sp	 = cc->regs.sp;			\
-    	uc->uc_mcontext.arm_lr	 = cc->regs.lr;			\
-    	uc->uc_mcontext.arm_pc	 = cc->regs.pc;			\
-    	uc->uc_mcontext.arm_cpsr = cc->regs.cpsr;		\
-	RESTORE_FPU((cc), uc);        \
-    } while(0)
+#define RESTOREREGS(cc, uc)							\
+    CopyMemQuick((cc)->regs.r, &uc->uc_mcontext.arm_r0, sizeof(ULONG) * 17);	\
+    CopyMemQuick((cc)->regs.fpuContext, &uc->uc_mcontext.regs->gpr[PT_FPR0], sizeof(struct VFPContext));
 
 /* This macro prints the current signals' context */
-
 #define PRINT_SC(sc) \
 	bug ("SC: SP=%08lx  PC=%08lx\n" \
 	    , SP(sc), PC(sc) \
@@ -148,16 +95,10 @@ typedef struct ucontext regs_t;
 
 #endif /* __AROS_EXEC_LIBRARY__ */
 
-/*
- * We support 14 exceptions for ARM (see arch/all-unix/kernel/cpu_ppc.c).
- * Note that krnRunExceptionHandlers() does not check exception number,
- * so increase this if you use higher numbers.
- */
-#define EXCEPTIONS_COUNT 14
+/* We emulate 6 exceptions of ARM CPU (all but softint) */
+#define EXCEPTIONS_COUNT 6
 
-/* This structure is used to save/restore registers, because the stack is too
-   small. */
-
+/* This structure is used to save/restore registers */
 struct AROSCPUContext
 {
     struct ExceptionContext regs;		/* Public portion	       */
