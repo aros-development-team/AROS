@@ -257,7 +257,7 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     ULONG x, ULONG y, ULONG width, ULONG height, 
     OOP_Class *cl, OOP_Object *o);   
 
-BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm);
+VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);
