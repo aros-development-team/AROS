@@ -1,9 +1,7 @@
 #include <aros/kernel.h>
 #include <aros/libcall.h>
-#include <aros/arm/cpucontext.h>
 
 #include <kernel_base.h>
-#include <kernel_cpu.h>
 #include <kernel_memory.h>
 
 AROS_LH0I(void *, KrnCreateContext,
