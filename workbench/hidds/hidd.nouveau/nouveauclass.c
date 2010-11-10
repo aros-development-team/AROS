@@ -114,20 +114,28 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
     return TRUE;
 }    
 
-static BOOL HIDDNouveauSwitchToVideoMode(OOP_Class * cl, OOP_Object * gfx, OOP_Object * bm)
+static BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
 {
-    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    OOP_Class * cl = OOP_OCLASS(bm);
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
+    OOP_Object * gfx = NULL;
+    struct HIDDNouveauData * gfxdata = NULL; 
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device_priv *nvdev = nouveau_device(carddata->dev);
     LONG i;
-    drmModeConnectorPtr selectedconnector = (drmModeConnectorPtr)gfxdata->selectedconnector;
+    drmModeConnectorPtr selectedconnector = NULL;
     HIDDT_ModeID modeid;
     OOP_Object * sync;
     OOP_Object * pf;
-    IPTR pixel;
+    IPTR pixel, e;
     IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
     LONG ret;
+    
+    
+    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
+    gfx = (OOP_Object *)e;
+    gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
+    selectedconnector = (drmModeConnectorPtr)gfxdata->selectedconnector;
 
     D(bug("[Nouveau] HIDDNouveauSwitchToVideoMode\n"));
     
@@ -228,7 +236,7 @@ BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
     struct HIDDNouveauData * gfxdata = NULL;
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device_priv *nvdev = nouveau_device(carddata->dev);
     uint32_t output_ids[] = {0};
@@ -619,7 +627,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
         
         if (IS_NOUVEAU_CLASS(bmclass))
         {
-            if (!HIDDNouveauSwitchToVideoMode(cl, o, msg->bitMap))
+            if (!HIDDNouveauSwitchToVideoMode(msg->bitMap))
             {
                 bug("[Nouveau] Video mode not set\n");
                 return NULL;
