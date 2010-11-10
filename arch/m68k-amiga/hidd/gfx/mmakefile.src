@@ -1,0 +1,6 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-amiga-m68k-amigavideo \
+    modname=amigavideo modtype=hidd \
+    files="startup amigavideogfx amigavideobitmap chipset" uselibs="rom oop hiddstubs"
