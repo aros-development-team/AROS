@@ -19,7 +19,7 @@
 #define DEBUG 0
 #define DASYNC(x)
 #define DEXAM(x)
-#define DMOUNT(x)
+#define DMOUNT(x) x
 #define DOPEN(x)
 #define DREAD(x)
 
@@ -124,7 +124,11 @@ static const char *libcSymbols[] = {
     "close",
     "closedir",
     "opendir",
+#ifdef HOST_OS_ios
+    "readdir$INODE64",
+#else
     "readdir",
+#endif
     "rewinddir",
     "seekdir",
     "telldir",
