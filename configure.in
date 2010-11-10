@@ -952,6 +952,7 @@ case "$target_os" in
                 aros_default_wbheight=480
                	aros_ios_sdk="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/SDKs/$aros_ios_platform$aros_ios_sdk.sdk"
 		target_tool_flags="$target_tool_flags --sysroot $aros_ios_sdk"
+		aros_kernel_includes="-isystem $aros_ios_sdk/usr/include"
 		need_x11=no
 		# This is here because it may depend on iOS or SDK version
 		aros_kernel_objcflags="-fobjc-abi-version=2 -fobjc-legacy-dispatch"
@@ -1299,12 +1300,11 @@ case "$target_os" in
 	;;
 esac
 
-# FIXME: for cross-compiling this should point to another location
-if test "$aros_flavour" = "emulation"; then
-    aros_kernel_includes="-isystem /usr/include"
-fi
-if test "$aros_flavour" = "emulcompat"; then
-    aros_kernel_includes="-isystem /usr/include"
+if test "$aros_kernel_includes" = ""; then
+    if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
+        # FIXME: for cross-compiling this should point to another location
+	aros_kernel_includes="-isystem /usr/include"
+    fi
 fi
 
 AC_MSG_CHECKING([Where to download sourcecode for external ports])

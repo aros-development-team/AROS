@@ -345,7 +345,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     PutCh('\0');
 
     /* Return the rest of the DataStream or buffer. */
-    return VaListStream ? UPutChData : DataStream;
+    return DataStream ? DataStream : UPutChData;
 }
 
 
@@ -452,7 +452,10 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 {
     AROS_LIBFUNC_INIT
 
-    return InternalRawDoFmt(FormatString, DataStream, PutChProc, PutChData, NULL);
+    /* This va_list is intentionally empty. It is not used. */
+    va_list vaListStream;
+
+    return InternalRawDoFmt(FormatString, DataStream, PutChProc, PutChData, vaListStream);
 
     AROS_LIBFUNC_EXIT
 } /* RawDoFmt */

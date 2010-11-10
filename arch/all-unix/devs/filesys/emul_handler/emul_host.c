@@ -1,8 +1,12 @@
+#ifndef HOST_OS_ios
+
 /* 
  * Use 32-bit inode_t on Darwin. Otherwise we are expected to use "stat$INODE64"
  * instead of "stat" function which is available only on MacOS 10.6.
+ * iOS v4 SDK forbids this definition.
  */
 #define _DARWIN_NO_64_BIT_INODE
+#endif
 
 #include <errno.h>
 #include <fcntl.h>
@@ -155,8 +159,13 @@ static const char *libcSymbols[] = {
     "__lxstat",
 #else
     "__error",
+#ifdef HOST_OS_ios
+    "stat$INODE64",
+    "lstat$INODE64",
+#else
     "stat",
     "lstat",
+#endif
 #endif
     NULL
 };

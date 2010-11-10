@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(GENINCDIR)
 
-USER_CFLAGS := -DHOST_OS_$(ARCH) \
+USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
 	       -I$(SRCDIR)/$(CURDIR) \
 	       -I$(SRCDIR)/arch/all-hosted/devs/filesys/emul_handler \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
