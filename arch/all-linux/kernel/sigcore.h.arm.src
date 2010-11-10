@@ -41,7 +41,6 @@
 
 /* regs_t is the type of the signals' context */
 typedef @sighandler@ SignalHandler;
-typedef struct ucontext regs_t;
 
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
@@ -62,8 +61,13 @@ typedef struct ucontext regs_t;
 
 /* Macros to enable or disable all signals after the signal handler
    has returned and the normal execution commences. */
-#define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
-#define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
+//#define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
+//#define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
+/* Macros to enable or disable all signals after the signal handler
+   has returned and the normal execution commences.
+   On PowerPC this is the same as on x86-64. */
+#define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
+#define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
 
 
 /* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
@@ -75,8 +79,17 @@ typedef struct ucontext regs_t;
    RESTOREREGS() below to restore this context. */
 
 #define SAVEREGS(cc, uc)           						\
+do {										\
     CopyMemQuick(&uc->uc_mcontext.arm_r0, (cc)->regs.r, sizeof(ULONG) * 17);	\
-    CopyMemQuick(&uc->uc_mcontext.regs->gpr[PT_FPR0], (cc)->regs.fpuContext, sizeof(struct VFPContext));
+    int i = 0;									\
+    while(i < 128) {								\
+	if (uc->uc_regspace[i] == 0x56465001)					\
+	{									\
+	    CopyMemQuick(&uc->uc_regspace[i], (cc)->regs.fpuContext, uc->uc_regspace[i+1]);	\
+	    break;								\
+	} else i = i + uc->uc_regspace[i+1]/4;					\
+    } 										\
+} while(0);
 
 /* This macro does the opposite to SAVEREGS(). It restores all
    general purpose registers. After that, you can enter the new
@@ -84,8 +97,17 @@ typedef struct ucontext regs_t;
    The macro will save the new SP into the sigcontext "sc". */
 
 #define RESTOREREGS(cc, uc)							\
+do {										\
     CopyMemQuick((cc)->regs.r, &uc->uc_mcontext.arm_r0, sizeof(ULONG) * 17);	\
-    CopyMemQuick((cc)->regs.fpuContext, &uc->uc_mcontext.regs->gpr[PT_FPR0], sizeof(struct VFPContext));
+    int i = 0;									\
+    while(i < 128) {								\
+	if (uc->uc_regspace[i] == 0x56465001)					\
+	{									\
+	    CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[i], uc->uc_regspace[i+1]);	\
+	    break;								\
+	} else i = i + uc->uc_regspace[i+1]/4;					\
+    }										\
+} while(0);
 
 /* This macro prints the current signals' context */
 #define PRINT_SC(sc) \
@@ -97,6 +119,8 @@ typedef struct ucontext regs_t;
 
 /* We emulate 6 exceptions of ARM CPU (all but softint) */
 #define EXCEPTIONS_COUNT 6
+
+typedef struct ucontext regs_t;
 
 /* This structure is used to save/restore registers */
 struct AROSCPUContext
