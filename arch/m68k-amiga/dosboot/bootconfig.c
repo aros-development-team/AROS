@@ -7,12 +7,9 @@
 
 void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase)
 {
-    /* No video drivers yet! */
-    bootcfg->gfxlib  = NULL; //"vgah.hidd";
-    bootcfg->gfxhidd = NULL; //"hidd.gfx.vga";
+    bootcfg->gfxlib  = "amigavideo.hidd";
+    bootcfg->gfxhidd = "hidd.gfx.amigavideo";
     
-    /* HIDD may need to be unloaded when another GFX driver is found */
+    /* Boot driver may need to be unloaded when another GFX driver is found */
     bootcfg->bootmode = TRUE;
-
-	return;
 }
