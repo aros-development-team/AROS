@@ -45,7 +45,7 @@ AROS_LH0I(void *, KrnCreateContext,
     struct AROSCPUContext *ctx;
     cpumode_t mode = goSuper();
 
-    ctx = krnAllocMem(sizeof(struct AROSCPUContext));
+    ctx = krnAllocVec(sizeof(struct AROSCPUContext));
 
     /* Initialize the storage if needed */
 #ifdef PREPARE_INITIAL_CONTEXT
