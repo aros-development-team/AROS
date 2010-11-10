@@ -39,7 +39,7 @@ static inline void atomic_or_l(const ULONG *var, ULONG mask)
 {
     unsigned long temp; int result;
 
-    __asm__ __volatile__("\n1: ldrex %0, [%2]; or %0, %0, %3; strex %1, %0, [%2]; teq %1, #0; bne 1b"
+    __asm__ __volatile__("\n1: ldrex %0, [%2]; orr %0, %0, %3; strex %1, %0, [%2]; teq %1, #0; bne 1b"
                         :"=&r"(result), "=&r"(temp)
                         :"r"(var), "Ir"(mask)
                         :"cc");

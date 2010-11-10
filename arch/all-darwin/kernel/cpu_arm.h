@@ -118,4 +118,4 @@ struct AROSCPUContext
 };
 
 #define GET_PC(ctx) (APTR)ctx->regs.pc
-#define SET_PC(ctx, pc) ctx->regs.pc = (ULONG)pc
+#define SET_PC(ctx, val) ctx->regs.pc = (ULONG)val
