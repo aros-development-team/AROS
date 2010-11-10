@@ -1,0 +1,17 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+CFILES  := 
+AFILES  := bcpl
+
+#MM kernel-dos : kernel-dos-amiga-m68k
+#MM kernel-dos-amiga-m68k : kernel-dos-includes includes-asm_h-m68k
+
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
+               -I$(SRCDIR)/rom/dos
+
+%build_archspecific \
+  mainmmake=kernel-dos maindir=rom/dos arch=amiga-m68k \
+  files="$(CFILES)" asmfiles="$(AFILES)" modulename=dos
+
+%common
