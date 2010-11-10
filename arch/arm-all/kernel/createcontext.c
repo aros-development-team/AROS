@@ -33,7 +33,7 @@ AROS_LH0I(void *, KrnCreateContext,
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,
      * so we refer struct AROSCPUContext only for size calculation.
      */
-    ctx = krnAllocMem(sizeof(struct AROSCPUContext) + fpu_size);
+    ctx = krnAllocVec(sizeof(struct AROSCPUContext) + fpu_size);
     if (ctx)
     {
         ctx->FPUType    = fpu_type;
