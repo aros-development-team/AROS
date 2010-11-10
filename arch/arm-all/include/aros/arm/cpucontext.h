@@ -29,7 +29,6 @@ struct ExceptionContext
 /* VFP context */
 struct VFPContext
 {
-    ULONG private[80];
-//    ULONG fpr[64];
-//    ULONG fpscr;
+    ULONG fpr[64];
+    ULONG fpscr;
 };

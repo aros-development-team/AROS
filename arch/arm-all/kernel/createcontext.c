@@ -18,14 +18,11 @@ AROS_LH0I(void *, KrnCreateContext,
      * Allocate common data block and FPU data block in one
      * chunk. This way we may use FreeVec()-alike operation
      * in order to free the whole context.
-     *
-     * TODO: Currently we support only VFP and assume
-     * it is always present. In future we need to check
-     * available VPU type and select appropriate context type
-     * here.
+     * TODO: in future this can be extended to support more than
+     * a single FPU type.
      */
-    fpu_type = FPU_VFP;
-    fpu_size = sizeof(struct VFPContext);
+    fpu_type = ARM_FPU_TYPE;
+    fpu_size = ARM_FPU_SIZE;
 
     /*
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,

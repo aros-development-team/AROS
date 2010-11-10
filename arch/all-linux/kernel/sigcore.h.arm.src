@@ -61,11 +61,6 @@ typedef @sighandler@ SignalHandler;
 
 /* Macros to enable or disable all signals after the signal handler
    has returned and the normal execution commences. */
-//#define SC_DISABLE(uc) uc->uc_sigmask = PD(KernelBase).sig_int_mask
-//#define SC_ENABLE(uc)  sigemptyset(&uc->uc_sigmask)
-/* Macros to enable or disable all signals after the signal handler
-   has returned and the normal execution commences.
-   On PowerPC this is the same as on x86-64. */
 #define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
 #define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
 
@@ -129,6 +124,13 @@ struct AROSCPUContext
     int		            errno_backup;	/* Host-specific magic follows */
     struct AROSCPUContext * sc;
 };
+
+/*
+ * ARM FPU context under Linux is currently private.
+ * So we set type to FPU_NONE (so that noone tries to mess with it).
+ */
+#define ARM_FPU_TYPE FPU_NONE
+#define ARM_FPU_SIZE 320
 
 /* Macros to access the program counter */
 
