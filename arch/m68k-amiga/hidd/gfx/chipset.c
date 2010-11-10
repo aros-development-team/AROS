@@ -2,6 +2,7 @@
 #include <proto/exec.h>
 
 #include <hardware/custom.h>
+#include <hidd/graphics.h>
 
 #include "amigavideogfx.h"
 #include "amigavideobitmap.h"
@@ -37,6 +38,8 @@ void initcustom(struct amigavideo_staticdata *data)
 	
 	resetcustom();
 	
+	data->max_colors = 32;
+	data->palette = AllocVec(data->max_colors * 3, MEMF_CLEAR);
 	data->copper1 = AllocVec(100 * 2, MEMF_CLEAR | MEMF_CHIP);
 	data->sprite_null = AllocVec(2 * 8, MEMF_CLEAR | MEMF_CHIP);
 	c = data->copper1;
@@ -62,9 +65,22 @@ void initcustom(struct amigavideo_staticdata *data)
 	custom->dmacon = 0x8000 | 0x0080 | 0x0020;
 }	
 
+static void setcoppercolors(struct amigavideo_staticdata *data)
+{
+	UWORD i;
+	if (!data->copper2_palette)
+		return;
+	for (i = 0; i < data->max_colors && i < (1 << data->depth); i++) {
+		UWORD ocs = ((data->palette[i * 3 + 0] >> 4) << 8) | ((data->palette[i * 3 + 1] >> 4) << 4) | ((data->palette[i * 3 + 0] >> 4) << 0);
+		data->copper2_palette[i * 2] = ocs;
+	}
+}
+
 void resetmode(struct amigavideo_staticdata *data)
 {
 	volatile struct Custom *custom = (struct Custom*)0xdff000;
+
+	bug("resetmode\n");
 
 	custom->dmacon = 0x0100;
 
@@ -78,14 +94,14 @@ void resetmode(struct amigavideo_staticdata *data)
 	data->copper2i = NULL;
 
 	resetcustom();
+
+	data->depth = 0;
 }
 
 static int get_copper_list_length(UBYTE depth)
 {
 	return 100 * 2;
 }
-
-static WORD palette[] = { 0x444, 0xfff,0x000,0xf80 };
 
 BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
 {
@@ -94,31 +110,41 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
 	UWORD *c, *ci;
 	UWORD bplcon0;
 	UWORD fmode = 0;
-	UWORD ddfstrt = 0x38;
-	UWORD ddfend;
-	UBYTE fetchunit = 1 << fetchunits[fmode * 4 + data->res];
-	UBYTE fetchstart = fetchstarts[fmode * 4 + data->res];
+	UWORD startx = 0x40;
+	UWORD ddfstrt, ddfstop;
+	UBYTE fetchunit, fetchstart;
 	
-	ddfstrt &= ~(1 << ddfstrt);
-	ddfend = ddfstrt + ((bm->width + fetchunit + fetchunit - 1) & (fetchunit - 1));
-	ddfstrt -= fetchunit - (1 << fetchstart);
+	resetmode(data);
 
 	data->res = 1;
-	resetmode(data);
+
+	bug("setmode bm=%x w=%d h=%d d=%d\n", bm, bm->width, bm->rows, bm->depth);
+	
+	fetchunit = fetchunits[fmode * 4 + data->res];
+	fetchstart = fetchstarts[fmode * 4 + data->res];
+	ddfstrt = startx & ~(1 << fetchunit);
+	ddfstop = ddfstrt + ((bm->width / 4 + ((1 << fetchunit) - 1) - (1 << fetchunit)) & ~((1 << fetchunit) - 1));
+	ddfstrt -= (1 << fetchunit) - (1 << fetchstart);
+	if (ddfstop >= 0xd4)
+		ddfstop = 0xd4;
+
 	c = data->copper2 = AllocVec(get_copper_list_length(bm->depth), MEMF_CLEAR | MEMF_CHIP);
 	ci = NULL;
 	if (data->interlace)
 		ci = data->copper2i = AllocVec(get_copper_list_length(bm->depth), MEMF_CLEAR | MEMF_CHIP);
 
 	for (i = 0; i < bm->depth; i++) {
-		*c++ = 0xe0;
-		*c++ = (UWORD)(((ULONG)bm->planes[i]) >> 16);
-		*c++ = 0xe2;
-		*c++ = (UWORD)(((ULONG)bm->planes[i]) >> 0);
+		ULONG pptr = (ULONG)(bm->planes[i]);
+		*c++ = 0xe0 + i * 4;
+		*c++ = (UWORD)(pptr >> 16);
+		*c++ = 0xe2 + i * 4;
+		*c++ = (UWORD)(pptr >> 0);
 	}
 	for (i = 0; i < (1 << bm->depth); i++) {
 		*c++ = 0x180 + i * 2;
-		*c++ = palette[i];
+		if (i == 0)
+			data->copper2_palette = c;
+		*c++ = 0x000;
 	}
 	*c++ = 0x008e;
 	*c++ = 0x2881;
@@ -127,7 +153,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
 	*c++ = 0x0092;
 	*c++ = ddfstrt;
 	*c++ = 0x0094;
-	*c++ = ddfend;
+	*c++ = ddfstop;
 	*c++ = 0x0108;
 	*c++ = 0x0000;
 	*c++ = 0x010a;
@@ -135,7 +161,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
 	*c++ = 0x0104;
 	*c++ = 0x0024;
 	*c++ = 0x0100;
-	bplcon0 = 0;
+	bplcon0 = 0x0200;
 	if (data->res == 1)
 		bplcon0 |= 0x8000;
 	else if (data->res == 2)
@@ -153,6 +179,8 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
 	custom->cop2lc = (ULONG)data->copper2;
 	custom->dmacon = 0x8100;
 	
+	data->depth = bm->depth;
+	setcoppercolors(data);
 	return 1;
 }
 
@@ -189,3 +217,21 @@ void setspritevisible(struct amigavideo_staticdata *data, BOOL visible)
 {
 }
 
+BOOL setcolors(struct amigavideo_staticdata *data, struct pHidd_BitMap_SetColors *msg, BOOL visible)
+{
+	UWORD i;
+	if (msg->firstColor + msg->firstColor > data->max_colors)
+		return FALSE;
+	for (i = msg->firstColor; i < msg->firstColor + msg->numColors; i++) {
+    	HIDDT_Pixel	red, green, blue;
+		red   = msg->colors[i].red   >> 8;
+		green = msg->colors[i].green >> 8;
+		blue  = msg->colors[i].blue  >> 8;
+		data->palette[i * 3 + 0] = red;
+		data->palette[i * 3 + 1] = green;
+		data->palette[i * 3 + 2] = blue;
+	}
+	if (visible)
+		setcoppercolors(data);
+	return TRUE;
+}

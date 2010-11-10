@@ -41,8 +41,14 @@ struct amigavideo_staticdata
 	UWORD *copper2;
 	UWORD *copper2i;
 	UWORD *copper2_backup;
+	UWORD *copper2_palette;
 	UWORD *sprite_null;
 	UWORD *sprite;
+
+	UWORD max_colors;
+
+	UBYTE *palette;
+	UBYTE depth;
 	UBYTE res; // 0 = lores, 1 = hires, 2 = shres
 	UBYTE interlace;
 

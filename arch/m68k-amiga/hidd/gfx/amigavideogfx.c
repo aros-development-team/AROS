@@ -246,28 +246,26 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pH
 	OOP_Object *pixfmt;
 
 	bug("SHOW %x\n", msg->bitMap);
-	if (msg->bitMap) {
-		OOP_GetAttr(msg->bitMap, aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
-		OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
-		setmode(csd, (struct planarbm_data*)msg->bitMap);
-	} else {
-		resetmode(csd);
-	}
 
+	if (msg->bitMap) {
+		IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+		OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
+	}
 	return msg->bitMap;
 }
+#if 0
 ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, struct HIDD_ViewPortData *data)
 {
 	struct amigavideo_staticdata *csd = CSD(cl);
-	bug("ShowViewPorts %x\n", data);
-	if (data) {
+	bug("ShowViewPorts %x, bm=%x\n", data, data->Bitmap);
+	if (data && data->Bitmap) {
 		setmode(csd, (struct planarbm_data*)data->Bitmap);
 	} else {
 		resetmode(csd);
 	}
 	return TRUE;
 }
-
+#endif
 
 VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
@@ -280,7 +278,7 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, LO
 	struct amigavideo_staticdata *csd = CSD(cl);
 	OOP_GetAttr(shape, aHidd_BitMap_Width, &width);
 	OOP_GetAttr(shape, aHidd_BitMap_Height, &height);
-	bug("setsprite w=%d h=%d\n", width, height);
+	bug("setcursor w=%d h=%d\n", width, height);
 	setsprite(csd, (WORD)width, (WORD)height);
 	return TRUE;
 }
@@ -297,12 +295,13 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, LONG x, LONG y)
 {
 	struct amigavideo_staticdata *csd = CSD(cl);
 	setspritepos(csd, (WORD)x, (WORD)y);
-	bug("sprite x=%d y=%d\n", x, y);
+	bug("cursor x=%d y=%d\n", x, y);
 	return TRUE;
 }
 VOID AmigaVideoCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
 	struct amigavideo_staticdata *csd = CSD(cl);
+	bug("cursorvisible=%d\n", msg->visible);
 	setspritevisible(csd, msg->visible);
 }
 
