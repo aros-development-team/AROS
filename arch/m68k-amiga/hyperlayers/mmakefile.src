@@ -1,9 +1,0 @@
-include $(TOP)/config/make.cfg
-
-USER_CFLAGS     := -I$(SRCDIR)/rom/hyperlayers
-
-%build_archspecific \
-  mainmmake=kernel-layers maindir=rom/hyperlayers arch=amiga-m68k \
-  files="createlayertaglist" modulename=layers
-
-%common
