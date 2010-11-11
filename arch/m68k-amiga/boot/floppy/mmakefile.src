@@ -18,8 +18,7 @@ SYSTEM_FILES := \
     Devs/DataTypes/ILBM \
     Devs/DataTypes/FTXT \
     Devs/Mountlist \
-    S/Shell-Startup \
-    S/Startup-Sequence
+    S/Shell-Startup
 
 SYSTEM_SRC_DIR  := $(AROSDIR)
 SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
@@ -31,7 +30,7 @@ systemdisk-setup-amiga-m68k :
 	%mkdirs_q "$(AROSDIR)/Tools/Boot"
 	-$(RM) -rf $(SYSTEM_DEST_DIR)
 	%mkdirs_q $(SYSTEM_DEST_DIR)
-	touch     $(SYSTEM_DEST_DIR)/AROS.boot
+	echo -n $(AROS_ARCH)-$(AROS_CPU) >$(SYSTEM_DEST_DIR)/AROS.boot
 	%mkdirs_q $(SYSTEM_DEST_DIR)/C
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/DataTypes
