@@ -1120,18 +1120,6 @@ case "$target_os" in
 	aros_shared_default="no"
 
 	case "$target_cpu" in
-	    *m68k-eabi)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="standalone"
-		gcc_target_cpu="mc68000"
-		aros_config_cflags="$aros_config_cflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin"
-		aros_config_aflags="$aros_config_aflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu}"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -${gcc_target_cpu}"
-		target_tool_prefix="m68k-elf-"
-		aros_target_nostdlib_ldflags="" # We always need -lgcc
-		aros_target_strip_flags="-R.comment"
-		;;
 	    *m68k*)
 		aros_target_cpu="m68k"
 		aros_object_format="m68kelf"
