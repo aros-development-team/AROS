@@ -560,6 +560,11 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     /* Call the expansion initializations */
     ConfigChain(NULL);
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+    /* Try to get a boot-block from the trackdisk.device */
+    BootBlock(ExpansionBase);
+#endif
+
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
     /* Try to open bootloader.resource */
     if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
@@ -612,11 +617,6 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     /* check boot nodes for partition tables */
     while ((bootNode = (struct BootNode *)RemHead(&list)))
         CheckPartitions(ExpansionBase, SysBase, bootNode);
-#endif
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-    /* Try to get a boot-block from the trackdisk.device */
-    BootBlock(ExpansionBase);
 #endif
 
     CloseLibrary((struct Library *)ExpansionBase);
