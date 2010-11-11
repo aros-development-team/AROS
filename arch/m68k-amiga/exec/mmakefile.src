@@ -5,7 +5,11 @@ CFILES          := coldreboot
 AFILES		:= enable disable readgayle
 
 #MM kernel-exec : kernel-exec-amiga-m68k
-#MM kernel-exec-amiga-m68k : kernel-kernel-amiga-m68k-includes kernel-exec-includes includes-asm_h-m68k
+#MM kernel-exec-amiga-m68k : \
+#MM     kernel-kernel-amiga-m68k-includes \
+#MM     kernel-exec-includes \
+#MM     includes-asm_h-m68k \
+#MM     kernel-kernel-includes
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/exec -Os
 USER_AFLAGS     := -I$(SRCDIR)/rom/exec -I$(GENINCDIR) -Os
