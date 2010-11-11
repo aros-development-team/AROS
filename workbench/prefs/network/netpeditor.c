@@ -8,6 +8,7 @@
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/asl.h>
+#include <libraries/locale.h>
 #include <libraries/mui.h>
 #include <prefs/prefhdr.h>
 #include <zune/customclasses.h>
@@ -31,12 +32,17 @@
 #include <proto/alib.h>
 #include <utility/hooks.h>
 
-static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL };
+static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
+static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
+static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
 
 static struct Hook  netpeditor_displayHook,
                     netpeditor_constructHook,
                     netpeditor_destructHook;
+static struct Hook  wireless_displayHook,
+                    wireless_constructHook,
+                    wireless_destructHook;
 
 /*** Instance Data **********************************************************/
 struct NetPEditor_DATA
@@ -52,7 +58,12 @@ struct NetPEditor_DATA
             *netped_addButton,
             *netped_editButton,
             *netped_removeButton,
-            *netped_inputGroup;
+            *netped_inputGroup,
+            *netped_networkList,
+            *netped_netAddButton,
+            *netped_netEditButton,
+            *netped_netRemoveButton,
+            *netped_wirelessAutostart;
 
     // Interface window
     Object  *netped_ifWindow,
@@ -65,6 +76,17 @@ struct NetPEditor_DATA
             *netped_maskString,
             *netped_applyButton,
             *netped_closeButton;
+
+    // SSID window
+    Object  *netped_netWindow,
+            *netped_sSIDString,
+            *netped_encType,
+            *netped_keyType,
+            *netped_keyString,
+            *netped_hiddenState,
+            *netped_adHocState,
+            *netped_netApplyButton,
+            *netped_netCloseButton;
 };
 
 AROS_UFH3S(APTR, constructFunc,
@@ -129,6 +151,72 @@ AROS_UFHA(struct Interface *, entry, A1))
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3S(APTR, netConstructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Network *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Network *new;
+
+    if ((new = AllocPooled(pool, sizeof(*new))))
+    {
+        *new = *entry;
+    }
+    return new;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, netDestructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Network *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreePooled(pool, entry, sizeof(struct Network));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(LONG, netDisplayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct Network *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        *array++ = entry->name;
+        switch(entry->encType)
+        {
+            case 2:
+                *array++ = (STRPTR)_(MSG_ENC_WPA);
+                break;
+            case 1:
+                *array++ = (STRPTR)_(MSG_ENC_WEP);
+                break;
+            default:
+                *array++ = (STRPTR)_(MSG_ENC_NONE);
+        }
+        *array++ = (STRPTR)L_(entry->hidden ? YESSTR : NOSTR);
+        *array++ = (STRPTR)L_(entry->adHoc ? YESSTR : NOSTR);
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_SSID);
+        *array++ = (STRPTR)_(MSG_ENCTYPE);
+        *array++   = (STRPTR)_(MSG_HIDDEN);
+        *array++   = (STRPTR)_(MSG_ADHOC);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
 BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
 {
     STRPTR str = NULL;
@@ -169,6 +257,27 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
     SetAutostart(lng);
     GET(data->netped_DHCPState, MUIA_Cycle_Active, &lng);
     SetDHCP(lng);
+
+    entries = XGET(data->netped_networkList, MUIA_List_Entries);
+    for(i = 0; i < entries; i++)
+    {
+        struct Network *net = GetNetwork(i);
+        struct Network *netentry;
+        DoMethod
+        (
+            data->netped_networkList,
+            MUIM_List_GetEntry, i, &netentry
+        );
+        SetNetworkName(net, netentry->name);
+        SetEncType(net, netentry->encType);
+        SetKey(net, netentry->key, netentry->keyIsHex);
+        SetHidden(net, netentry->hidden);
+        SetAdHoc(net, netentry->adHoc);
+    }
+    SetNetworkCount(entries);
+
+    GET(data->netped_wirelessAutostart, MUIA_Selected, &lng);
+    SetWirelessAutostart(lng);
 
     return TRUE;
 }
@@ -217,6 +326,36 @@ BOOL NetworkPrefs2Gadgets
     NNSET(data->netped_Autostart, MUIA_Selected, (IPTR)GetAutostart());
     NNSET(data->netped_DHCPState, MUIA_Cycle_Active, (IPTR)GetDHCP() ? 1 : 0);
 
+    SET(data->netped_networkList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_networkList, MUIM_List_Clear);
+    entries = GetNetworkCount();
+    for(i = 0; i < entries; i++)
+    {
+        struct Network *net = GetNetwork(i);
+        struct Network netentry;
+
+        SetNetwork
+        (
+            &netentry,
+            GetNetworkName(net),
+            GetEncType(net),
+            GetKey(net),
+            net->keyIsHex,
+            GetHidden(net),
+            GetAdHoc(net)
+        );
+
+        DoMethod
+        (
+            data->netped_networkList,
+            MUIM_List_InsertSingle, &netentry, MUIV_List_Insert_Bottom
+        );
+    }
+
+    SET(data->netped_networkList, MUIA_List_Quiet, FALSE);
+
+    NNSET(data->netped_wirelessAutostart, MUIA_Selected, (IPTR)GetWirelessAutostart());
+
     return TRUE;
 }
 
@@ -234,6 +373,9 @@ void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
     {
         case UNKNOWN_ERROR:
             errormessage = _(MSG_ERR_UNKNOWN_ERROR);
+            break;
+        case NOT_RESTARTED_WIRELESS:
+            errormessage = _(MSG_ERR_NOT_RESTARTED_WIRELESS);
             break;
         case NOT_RESTARTED_STACK:
             errormessage = _(MSG_ERR_NOT_RESTARTED_STACK);
@@ -267,22 +409,40 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     // main window
     Object  *gateString, *DNSString[2], *hostString, *domainString,
             *autostart, *interfaceList, *DHCPState,
-            *addButton, *editButton, *removeButton, *inputGroup;
+            *addButton, *editButton, *removeButton, *inputGroup,
+            *networkList, *netAddButton, *netEditButton, *netRemoveButton,
+            *wirelessAutostart;
 
     // inferface window
     Object  *deviceString, *IPString, *maskString,
             *ifDHCPState, *unitString, *nameString, *upState,
             *ifWindow, *applyButton, *closeButton;
 
+    // network window
+    Object  *sSIDString, *keyString, *encType, *keyType, *hiddenState,
+            *adHocState, *netWindow, *netApplyButton, *netCloseButton;
+
     DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
     DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
 
+    EncCycle[0] = _(MSG_ENC_NONE);
+    EncCycle[1] = _(MSG_ENC_WEP);
+    EncCycle[2] = _(MSG_ENC_WPA);
+
+    KeyCycle[0] = _(MSG_KEY_TEXT);
+    KeyCycle[1] = _(MSG_KEY_HEX);
+
     NetworkTabs[0] = _(MSG_TAB_IP_CONFIGURATION);
     NetworkTabs[1] = _(MSG_TAB_COMPUTER_NAME);
+    NetworkTabs[2] = _(MSG_TAB_WIRELESS);
 
     netpeditor_constructHook.h_Entry = (HOOKFUNC)constructFunc;
     netpeditor_destructHook.h_Entry = (HOOKFUNC)destructFunc;
     netpeditor_displayHook.h_Entry = (HOOKFUNC)displayFunc;
+
+    wireless_constructHook.h_Entry = (HOOKFUNC)netConstructFunc;
+    wireless_destructHook.h_Entry = (HOOKFUNC)netDestructFunc;
+    wireless_displayHook.h_Entry = (HOOKFUNC)netDisplayFunc;
 
     self = (Object *)DoSuperNewTags
     (
@@ -339,9 +499,9 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     End),
                 End),
                 Child, (IPTR)ColGroup(2),
-                    Child, (IPTR)Label2(__(MSG_AUTOSTART_STACK)),
+                    Child, (IPTR)(autostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
                     Child, (IPTR)HGroup,
-                        Child, (IPTR)(autostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                        Child, (IPTR)Label2(__(MSG_AUTOSTART_STACK)),
                         Child, (IPTR)HVSpace,
                     End,
                 End,
@@ -362,6 +522,36 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End),
             End,
 
+            Child, VGroup,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    Child, ListviewObject,
+                        MUIA_Listview_List, (IPTR)(networkList = (Object *)ListObject,
+                            ReadListFrame,
+                            MUIA_List_Title, TRUE,
+                            MUIA_List_Format, (IPTR)"BAR,BAR,BAR,",
+                            MUIA_List_ConstructHook, (IPTR)&wireless_constructHook,
+                            MUIA_List_DestructHook, (IPTR)&wireless_destructHook,
+                            MUIA_List_DisplayHook, (IPTR)&wireless_displayHook,
+                        End),
+                    End,
+                    Child, (IPTR)(VGroup,
+                        MUIA_HorizWeight, 0,
+                        Child, (IPTR)(netAddButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                        Child, (IPTR)(netEditButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                        Child, (IPTR)(netRemoveButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
+                        Child, (IPTR)HVSpace,
+                    End),
+                End),
+                Child, (IPTR)ColGroup(2),
+                    Child, (IPTR)(wirelessAutostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)HGroup,
+                        Child, (IPTR)Label2(__(MSG_AUTOSTART_WIRELESS)),
+                        Child, (IPTR)HVSpace,
+                    End,
+                End,
+            End,
+
         End, // register
 
         TAG_DONE
@@ -373,10 +563,14 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_Window_CloseGadget, FALSE,
         WindowContents, VGroup,
             GroupFrame,
-            Child, ImageObject,
-                MUIA_Image_Spec, (IPTR)"3:Images:interface",
-                MUIA_FixWidth, 52,
-                MUIA_FixHeight, 48,
+            Child, HGroup,
+                Child, (IPTR)HVSpace,
+                Child, ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:interface",
+                    MUIA_FixWidth, 52,
+                    MUIA_FixHeight, 48,
+                End,
+                Child, (IPTR)HVSpace,
             End,
             Child, (IPTR)ColGroup(2),
                 GroupFrame,
@@ -433,8 +627,64 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         End,
     End;
 
+    netWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_NETWINDOW_TITLE),
+        MUIA_Window_ID, MAKE_ID('W', 'I', 'F', 'I'),
+        MUIA_Window_CloseGadget, FALSE,
+        MUIA_Window_SizeGadget, TRUE,
+        WindowContents, VGroup,
+            GroupFrame,
+#if 0 // Awaiting an appropriate image
+            Child, HGroup,
+                Child, (IPTR)HVSpace,
+                Child, ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:interface",
+                    MUIA_FixWidth, 52,
+                    MUIA_FixHeight, 48,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+#endif
+            Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                Child, (IPTR)Label2(_(MSG_SSID)),
+                Child, (IPTR)(sSIDString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
 
-    if (self != NULL && ifWindow != NULL)
+                Child, (IPTR)Label2(__(MSG_ENCTYPE)),
+                Child, (IPTR)(encType = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)EncCycle,
+                End),
+                Child, (IPTR)Label2(__(MSG_KEYTYPE)),
+                Child, (IPTR)(keyType = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)KeyCycle,
+                End),
+                Child, (IPTR)Label2(__(MSG_KEY)),
+                Child, (IPTR)(keyString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(_(MSG_HIDDEN)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(hiddenState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)HVSpace,
+                End,
+                Child, (IPTR)Label2(_(MSG_ADHOC)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(adHocState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)HVSpace,
+                End,
+            End,
+            Child, HGroup,
+                Child, (IPTR)(netApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
+                Child, (IPTR)(netCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+            End,
+        End,
+    End;
+
+    if (self != NULL && ifWindow != NULL && netWindow != NULL)
     {
         struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
@@ -451,6 +701,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_addButton = addButton;
         data->netped_editButton = editButton;
         data->netped_removeButton = removeButton;
+        data->netped_wirelessAutostart = wirelessAutostart;
+        data->netped_networkList = networkList;
+        data->netped_netAddButton = netAddButton;
+        data->netped_netEditButton = netEditButton;
+        data->netped_netRemoveButton = netRemoveButton;
 
         // interface window
         data->netped_ifWindow = ifWindow;
@@ -464,10 +719,24 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_applyButton = applyButton;
         data->netped_closeButton = closeButton;
 
+        // wireless window
+        data->netped_netWindow = netWindow;
+        data->netped_hiddenState = hiddenState;
+        data->netped_adHocState = adHocState;
+        data->netped_sSIDString = sSIDString;
+        data->netped_encType = encType;
+        data->netped_keyType = keyType;
+        data->netped_keyString = keyString;
+        data->netped_netApplyButton = netApplyButton;
+        data->netped_netCloseButton = netCloseButton;
+
         SET(removeButton, MUIA_Disabled, TRUE);
         SET(editButton, MUIA_Disabled, TRUE);
 
-        /*-- Setup notifications -------------------------------------------*/
+        SET(netRemoveButton, MUIA_Disabled, TRUE);
+        SET(netEditButton, MUIA_Disabled, TRUE);
+
+        /*-- Set up notifications ------------------------------------------*/
 
         // main window
         DoMethod
@@ -533,6 +802,39 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR)interfaceList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
         );
 
+        DoMethod
+        (
+            networkList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowNetEntry
+        );
+        DoMethod
+        (
+            networkList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_NetPEditor_EditNetEntry, FALSE
+        );
+
+        DoMethod
+        (
+            netAddButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 2, MUIM_NetPEditor_EditNetEntry, TRUE
+        );
+        DoMethod
+        (
+            netEditButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditNetEntry, FALSE
+        );
+        DoMethod
+        (
+            netRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)networkList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+
+        DoMethod
+        (
+            wirelessAutostart, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
         // interface window
         DoMethod
         (
@@ -555,6 +857,18 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             closeButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)ifWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
+
+        // network window
+        DoMethod
+        (
+            netApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyNetEntry
+        );
+        DoMethod
+        (
+            netCloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)netWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
     }
 
     return self;
@@ -570,6 +884,7 @@ IPTR NetPEditor__MUIM_Setup
     if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_netWindow);
 
     return TRUE;
 }
@@ -582,6 +897,7 @@ IPTR NetPEditor__MUIM_Cleanup
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
     DoMethod(_app(self), OM_REMMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_netWindow);
 
     return DoSuperMethodA(CLASS, self, message);
 }
@@ -893,8 +1209,117 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
     return 0;
 }
 
+/*
+    Shows content of current list entry in the network window.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ShowNetEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    struct Network *net;
+
+    DoMethod
+    (
+        data->netped_networkList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &net
+    );
+    if (net)
+    {
+        SET(data->netped_netRemoveButton, MUIA_Disabled, FALSE);
+        SET(data->netped_netEditButton, MUIA_Disabled, FALSE);
+
+        SET(data->netped_sSIDString, MUIA_String_Contents, GetNetworkName(net));
+        SET(data->netped_encType, MUIA_Cycle_Active, GetEncType(net));
+        SET(data->netped_keyType, MUIA_Cycle_Active, net->keyIsHex ? 1 : 0);
+        SET(data->netped_keyString, MUIA_String_Contents, GetKey(net));
+        SET(data->netped_adHocState, MUIA_Selected, GetAdHoc(net) ? 1 : 0);
+        SET(data->netped_hiddenState, MUIA_Selected, GetHidden(net) ? 1 : 0);
+    }
+    else
+    {
+        SET(data->netped_netRemoveButton, MUIA_Disabled, TRUE);
+        SET(data->netped_netEditButton, MUIA_Disabled, TRUE);
+        SET(data->netped_netWindow, MUIA_Window_Open, FALSE);
+    }
+    return 0;
+}
+
+IPTR NetPEditor__MUIM_NetPEditor_EditNetEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (message->addEntry)
+    {
+        /*
+            Create a new entry and make it the current one
+        */
+        LONG entries = XGET(data->netped_networkList, MUIA_List_Entries);
+        if (entries < MAXNETWORKS)
+        {
+            struct Network net;
+            InitNetwork(&net);
+            DoMethod
+            (
+                data->netped_networkList,
+                MUIM_List_InsertSingle, &net, MUIV_List_Insert_Bottom
+            );
+        }
+        SET(data->netped_networkList, MUIA_List_Active, entries + 1);
+    }
+
+    LONG active = XGET(data->netped_networkList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        SET(data->netped_netWindow, MUIA_Window_Open, TRUE);
+    }
+
+    return 0;
+}
+
+/*
+    Store data from network window back in current list entry
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyNetEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG active = XGET(data->netped_networkList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Network net;
+        SetNetwork
+        (
+            &net,
+            (STRPTR)XGET(data->netped_sSIDString, MUIA_String_Contents),
+            XGET(data->netped_encType, MUIA_Cycle_Active),
+            (STRPTR)XGET(data->netped_keyString, MUIA_String_Contents),
+            XGET(data->netped_keyType, MUIA_Cycle_Active),
+            XGET(data->netped_hiddenState, MUIA_Selected),
+            XGET(data->netped_adHocState, MUIA_Selected)
+        );
+        DoMethod(data->netped_networkList, MUIM_List_Remove, active);
+        DoMethod(data->netped_networkList, MUIM_List_InsertSingle, &net, active);
+        SET(data->netped_networkList, MUIA_List_Active, active);
+        SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    }
+
+    return 0;
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_11
+ZUNE_CUSTOMCLASS_14
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                         struct opSet *,
@@ -907,5 +1332,8 @@ ZUNE_CUSTOMCLASS_11
     MUIM_NetPEditor_IPModeChanged,  struct MUIP_NetPEditor_IPModeChanged *,
     MUIM_NetPEditor_ShowEntry,      Msg,
     MUIM_NetPEditor_EditEntry,      struct MUIP_NetPEditor_EditEntry *,
-    MUIM_NetPEditor_ApplyEntry,     Msg
+    MUIM_NetPEditor_ApplyEntry,     Msg,
+    MUIM_NetPEditor_ShowNetEntry,   Msg,
+    MUIM_NetPEditor_EditNetEntry,   struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyNetEntry,  Msg
 );

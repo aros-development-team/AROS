@@ -22,8 +22,12 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_ShowEntry       (MUIB_NetPEditor | 0x00000002)
 #define MUIM_NetPEditor_EditEntry       (MUIB_NetPEditor | 0x00000003)
 #define MUIM_NetPEditor_ApplyEntry      (MUIB_NetPEditor | 0x00000004)
+#define MUIM_NetPEditor_ShowNetEntry    (MUIB_NetPEditor | 0x00000005)
+#define MUIM_NetPEditor_EditNetEntry    (MUIB_NetPEditor | 0x00000006)
+#define MUIM_NetPEditor_ApplyNetEntry   (MUIB_NetPEditor | 0x00000007)
 
 struct MUIP_NetPEditor_EditEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
+struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_IPModeChanged {STACKED ULONG MethodID; STACKED ULONG interface;};
 
 #endif /* _FWPEDITOR_H_ */
