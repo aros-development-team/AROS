@@ -53,7 +53,8 @@ AROS_LH1(void, BeginIO,
     
     unitNum = (ULONG)timereq->tr_node.io_Unit;
     
-    D(bug("timer: %d %d %x %d/%d\n", unitNum, timereq->tr_node.io_Command, timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro));
+    D(bug("timer: %d %d %x %d/%d\n", unitNum, timereq->tr_node.io_Command,
+    	timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro));
     
     switch(timereq->tr_node.io_Command)
     {
@@ -86,8 +87,7 @@ AROS_LH1(void, BeginIO,
 
         case TR_GETSYSTIME:
             GetSysTime(&timereq->tr_time);
-            if(!(timereq->tr_node.io_Flags & IOF_QUICK))
-            {
+            if(!(timereq->tr_node.io_Flags & IOF_QUICK)) {
                 ReplyMsg((struct Message *)timereq);
             }
             replyit = FALSE; /* Because replyit will clear the timeval */
@@ -106,54 +106,51 @@ AROS_LH1(void, BeginIO,
             {
                 case UNIT_WAITUNTIL:
                 {
-                	convertunits(TimerBase, &timereq->tr_time, UNIT_VBLANK);
+                    convertunits(TimerBase, &timereq->tr_time, UNIT_VBLANK);
                     /* Firstly, check to see if request is for past */
                     Disable();
-                    if(!cmp64(&TimerBase->tb_vb_count, &timereq->tr_time))
-                    {
+                    if(!cmp64(&TimerBase->tb_vb_count, &timereq->tr_time)) {
                         Enable();
                         timereq->tr_time.tv_secs = timereq->tr_time.tv_micro = 0;
                         timereq->tr_node.io_Error = 0;
                         replyit = TRUE;
-                    }
-                    else
-                    {
+                    } else {
                         timer_addToWaitList(TimerBase, UNIT_VBLANK, timereq);
                         Enable();
                         replyit = FALSE;
                         timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     }
                     break;
-        		}
+        	}
                 case UNIT_MICROHZ:
-                	convertunits(TimerBase, &timereq->tr_time, UNIT_MICROHZ);
-                	add64(&timereq->tr_time, &TimerBase->tb_cia_count);
+                    convertunits(TimerBase, &timereq->tr_time, UNIT_MICROHZ);
+                    add64(&timereq->tr_time, &TimerBase->tb_cia_count);
                     Disable();
-                    timer_addToWaitList(TimerBase, unitNum, timereq);
+                    timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     replyit = FALSE;
                     break;
                 case UNIT_VBLANK:
-                 	convertunits(TimerBase, &timereq->tr_time, UNIT_VBLANK);
-                	add64(&timereq->tr_time, &TimerBase->tb_vb_count);
-	               	Disable();
-                    timer_addToWaitList(TimerBase, unitNum, timereq);
+                    convertunits(TimerBase, &timereq->tr_time, UNIT_VBLANK);
+                    add64(&timereq->tr_time, &TimerBase->tb_vb_count);
+	            Disable();
+                    timer_addToWaitList(TimerBase, UNIT_VBLANK, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     replyit = FALSE;
                     break;
                 case UNIT_ECLOCK:
-               		add64(&timereq->tr_time, &TimerBase->tb_cia_count);
-	               	Disable();
-                    timer_addToWaitList(TimerBase, unitNum, timereq);
+               	    add64(&timereq->tr_time, &TimerBase->tb_cia_count);
+	            Disable();
+                    timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     replyit = FALSE;
-					break;
+		    break;
                	case UNIT_WAITECLOCK:
-	               	Disable();
-                    timer_addToWaitList(TimerBase, unitNum, timereq);
+	            Disable();
+                    timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     replyit = FALSE;
@@ -199,19 +196,17 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, ULONG unit, struct 
     /* We are disabled, so we should take as little time as possible. */
     struct timerequest *tr;
     BOOL added = FALSE, first = TRUE;
-	struct MinList *list = &TimerBase->tb_Lists[unit];
+    struct MinList *list = &TimerBase->tb_Lists[unit];
 
-	// wait at least 1 vblank
-	if (unit == UNIT_VBLANK) {
-		if (equ64(&iotr->tr_time, &TimerBase->tb_vb_count))
-			inc64(&iotr->tr_time);
-	}
+    // wait at least 1 vblank
+    if (unit == UNIT_VBLANK) {
+	if (equ64(&iotr->tr_time, &TimerBase->tb_vb_count))
+	    inc64(&iotr->tr_time);
+    }
 
-    ForeachNode(list, tr)
-    {
+    ForeachNode(list, tr) {
     	/* If the time in the new request is less than the next request */
-    	if(CmpTime(&tr->tr_time, &iotr->tr_time) < 0)
-    	{
+    	if(CmpTime(&tr->tr_time, &iotr->tr_time) < 0) {
     	    /* Add the node before the next request */
     	    Insert((struct List *)list, (struct Node *)iotr, tr->tr_node.io_Message.mn_Node.ln_Pred);
     	    added = TRUE;
@@ -228,11 +223,13 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, ULONG unit, struct 
     if(!added)
     	AddTail((struct List *)list, (struct Node *)iotr);
 
-	/* recalculate timers list was empty or was added to head of list */
-	if (!added || first)
-		CheckTimer(TimerBase, unit);   
+    /* recalculate timers list was empty or was added to head of list */
+    if (!added || first)
+	CheckTimer(TimerBase, unit);   
 
-	D(bug("added %x: %d/%d->%d/%d\n", iotr,
-		TimerBase->tb_vb_count.tv_secs, TimerBase->tb_vb_count.tv_usec, iotr->tr_time.tv_secs, iotr->tr_time.tv_micro));
+    D(bug("added %x: %d/%d->%d/%d\n", iotr,
+	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_secs : TimerBase->tb_cia_count.tv_secs),
+	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_usec : TimerBase->tb_cia_count.tv_secs),
+	iotr->tr_time.tv_secs, iotr->tr_time.tv_micro));
 
 }
