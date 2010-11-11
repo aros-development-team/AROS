@@ -7447,6 +7447,8 @@ case "$target_os" in
 		target_tool_prefix="m68k-elf-"
 		aros_target_nostdlib_ldflags="" # We always need -lgcc
 		aros_target_strip_flags="-R.comment --strip-debug"
+		aros_default_wbwidth=640
+		aros_default_wbheight=480
 		;;
 	    *ppc*)
 		aros_cpu="ppc"
