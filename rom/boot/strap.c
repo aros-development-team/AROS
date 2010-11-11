@@ -549,7 +549,6 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     struct Resident *DOSResident;
     void *BootLoaderBase;
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
     ExpansionBase =
         (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
     if( ExpansionBase == NULL )
@@ -558,6 +557,10 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
         Alert(AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib);
     }
 
+    /* Call the expansion initializations */
+    ConfigChain(NULL);
+
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
     /* Try to open bootloader.resource */
     if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
     {
@@ -609,16 +612,14 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     /* check boot nodes for partition tables */
     while ((bootNode = (struct BootNode *)RemHead(&list)))
         CheckPartitions(ExpansionBase, SysBase, bootNode);
-    CloseLibrary((struct Library *)ExpansionBase);
 #endif
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
     /* Try to get a boot-block from the trackdisk.device */
-    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
-    if (ExpansionBase != NULL)
-        BootBlock(ExpansionBase);
-    CloseLibrary((struct Library *)ExpansionBase);
+    BootBlock(ExpansionBase);
 #endif
+
+    CloseLibrary((struct Library *)ExpansionBase);
 
     DOSResident = FindResident( "dos.library" );
 
