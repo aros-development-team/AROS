@@ -7,7 +7,10 @@
 
 #include <proto/oop.h>
 
-BOOL Composing_TopBitMapChanged(OOP_Object * newTopBitMap);
+#define ENABLE_COMPOSING 0
+
+BOOL Composing_TopBitMapChanged(OOP_Object * bm);
 BOOL Composing_BitMapPositionChanged(OOP_Object * bm);
+VOID Composing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WORD height);
 
 #endif /* _NOUVEAU_INTERN_H */

@@ -43,6 +43,7 @@ struct HIDDNouveauBitMapData
     ULONG   pitch;          /* Width of single data row in bytes */
     UBYTE   bytesperpixel;  /* In bytes */
     UBYTE   depth;          /* In bits */
+    BOOL    displayable;    /* Can bitmap be displayed on screen */
     
     /* Information connected with display */
     LONG    xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */

@@ -276,7 +276,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 
     if (o)
     {
-        IPTR width, height, depth;
+        IPTR width, height, depth, displayable;
         OOP_Object * pf;
         struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
         
@@ -284,6 +284,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 	    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+        OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
         
         /* Initialize properties */
 	    bmdata->width = width;
@@ -297,6 +298,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
             bmdata->bytesperpixel = 4;
         bmdata->pitch = (bmdata->width + 63) & ~63;
         bmdata->pitch *= bmdata->bytesperpixel;
+        if (displayable) bmdata->displayable = TRUE; else bmdata->displayable = FALSE;
         InitSemaphore(&bmdata->semaphore);
 
         /* Display information */
@@ -830,3 +832,10 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
     UNLOCK_BITMAP
 }
 
+VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    
+    if (bmdata->displayable)
+        Composing_BitMapRectChanged(o, msg->x, msg->y, msg->width, msg->height);
+}
