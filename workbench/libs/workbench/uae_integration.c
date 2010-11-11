@@ -20,7 +20,7 @@
 #include <workbench/workbench.h>
 
 #ifdef __AROS__
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
