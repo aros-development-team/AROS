@@ -10,6 +10,8 @@
 #include <gallium/pipe/p_state.h>
 #include <aros/debug.h>
 
+#define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))
+
 /*****************************************************************************
 
     NAME */
@@ -61,10 +63,6 @@
     struct HIDDT_WinSys * ws = (struct HIDDT_WinSys *)srcPipeSurface->texture->screen->winsys;
     if (!ws)
         return;
-
-    /* TODO: Render only if screen is visible */
-//    if (amesa->window->WScreen != IntuitionBase->FirstScreen)
-//        return;
 
     if (!IsLayerVisible(L))
         return;
@@ -131,6 +129,22 @@
                             result.MaxY - result.MinY + 1);*/
             }
         }
+    }
+    
+    /* Notify the bitmap about blitting */
+    /* TODO: don't do this call if nothing was blitted */
+    /* TODO: are coords correct in respect to screen with moved LeftEdge/TopEdge ? */
+    {
+        struct pHidd_BitMap_UpdateRect urmsg = {
+            mID     :   OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect),
+            x       :   renderableLayerRect.MinX,
+            y       :   renderableLayerRect.MinY,
+            width   :   renderableLayerRect.MaxX - renderableLayerRect.MinX + 1,
+            height  :   renderableLayerRect.MaxY - renderableLayerRect.MinY + 1
+        };
+        
+        OOP_Object * bm = HIDD_BM_OBJ(destRP->BitMap);
+        OOP_DoMethod(bm, (OOP_Msg)&urmsg);
     }
 
     /* Flush all copy operations done */
