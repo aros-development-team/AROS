@@ -13,10 +13,12 @@
 #undef HiddGfxAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
+#undef HiddGCAttrBase
 #define HiddPixFmtAttrBase  (SD(cl)->pixFmtAttrBase)
 #define HiddGfxAttrBase     (SD(cl)->gfxAttrBase)
 #define HiddSyncAttrBase    (SD(cl)->syncAttrBase)
 #define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
+#define HiddGCAttrBase  (SD(cl)->gcAttrBase)
 
 /* This function assumes that the mode, crtc and output are already selected */
 static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
@@ -174,8 +176,40 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
 }
 
 #if ENABLE_COMPOSING
+/* struct Rectangle and AndRectRect are present in graphics.library.
+   They are "doubled" here so that there is no dependency from nouveau.hidd
+   to graphics.library */
+
+struct Rectangle
+{
+    WORD MinX;
+    WORD MinY;
+    WORD MaxX;
+    WORD MaxY;
+};
+
+#define MAX(a,b) a > b ? a : b
+#define MIN(a,b) a < b ? a : b
+
+static BOOL AndRectRect(struct Rectangle * rect1, struct Rectangle * rect2,
+    struct Rectangle * intersect)
+{
+    intersect->MinX = MAX(rect1->MinX, rect2->MinX);
+    intersect->MinY = MAX(rect1->MinY, rect2->MinY);
+    intersect->MaxX = MIN(rect1->MaxX, rect2->MaxX);
+    intersect->MaxY = MIN(rect1->MaxY, rect2->MaxY);
+    
+    if ((intersect->MinX > intersect->MaxX) ||
+        (intersect->MinY > intersect->MaxY))
+        return FALSE;
+    else
+        return TRUE;
+}
+
 OOP_Object * visiblebitmap = NULL;
 HIDDT_ModeID visiblemodeid = vHidd_ModeID_Invalid;
+struct Rectangle visiblerect;
+
 OOP_Object * topbitmap = NULL;
 #endif
 
@@ -197,6 +231,7 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
     OOP_Object * fbbitmap = NULL;
     IPTR modeid, hdisp, vdisp, e;
     struct TagItem bmtags[5];
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
 
     OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
     gfx = (OOP_Object *)e;
@@ -209,13 +244,6 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
         return FALSE;
     }
     
-    /* If the mode is alrady visible, just switch top bitmap */
-    if (modeid == visiblemodeid)
-    {
-        topbitmap = bm;
-        return TRUE;
-    }
-
     /* Get width and height of mode */
     struct pHidd_Gfx_GetMode __getmodemsg = 
     {
@@ -230,8 +258,15 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &hdisp);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &vdisp);
 
-    bug("TBCH: %d, %d, %d\n", modeid, hdisp, vdisp);
-    
+    /* If the mode is already visible, just switch top bitmap and provide limits */
+    if (modeid == visiblemodeid)
+    {
+        topbitmap               = bm;
+        bmdata->displayedwidth  = hdisp;
+        bmdata->displayedheight = vdisp;
+        return TRUE;
+    }
+
     /* Create a new bitmap that will be used for framebuffer */
     bmtags[0].ti_Tag = aHidd_BitMap_Width;          bmtags[0].ti_Data = hdisp;
     bmtags[1].ti_Tag = aHidd_BitMap_Height;         bmtags[1].ti_Data = vdisp;
@@ -249,9 +284,17 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
             HIDD_Gfx_DisposeBitMap(gfx, visiblebitmap);
 
             /* Store bitmap/mode information */ 
-            topbitmap       = bm;
-            visiblemodeid   = modeid;
-            visiblebitmap   = fbbitmap;
+            topbitmap           = bm;
+            visiblemodeid       = modeid;
+            visiblebitmap       = fbbitmap;
+            visiblerect.MinX    = 0;
+            visiblerect.MinY    = 0;
+            visiblerect.MaxX    = hdisp - 1;
+            visiblerect.MaxY    = vdisp - 1;
+            
+            /* Update displayed width/height for input bitmap */
+            bmdata->displayedwidth      = hdisp;
+            bmdata->displayedheight     = vdisp;
             return TRUE;
         }
         else
@@ -262,16 +305,55 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
         }
     }
 
+    /* TODO: probably needs to call Composing_BitMapPositionChanged to make sure
+        revealed part of screen is erased (passed bitmap can be already lowered)
+        Call needs to happen in case of same mode as well */
     return FALSE;
 #else
     return HIDDNouveauSwitchToVideoMode(bm);
 #endif
 }
 
+/* Assumes LeftEdge and TopEdge are already set to new values */
 BOOL Composing_BitMapPositionChanged(OOP_Object * bm)
 {
 #if ENABLE_COMPOSING
-    return FALSE;
+    /* Reblit the complete bitmap */
+    OOP_Class * cl = OOP_OCLASS(bm);
+    IPTR width, height, topedge;
+    
+    if (bm != topbitmap)
+        return TRUE; /* Ignore */
+    
+    OOP_GetAttr(bm, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(bm, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(bm, aHidd_BitMap_TopEdge, &topedge);
+    
+    /* Clean up area revealed by drag */
+    if (topedge > 0)
+    {
+        IPTR e, viswidth;
+        OOP_Object * gfx = NULL;
+        OOP_Object * tmpgc = NULL;
+        struct TagItem gctags[] =
+        {
+            { aHidd_GC_Foreground, (HIDDT_Pixel)0x99999999 }, /* TODO: value depends on depth */
+            { TAG_DONE, TAG_DONE }
+        };
+        
+        OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
+        gfx = (OOP_Object *)e;
+        OOP_GetAttr(visiblebitmap, aHidd_BitMap_Width, &viswidth); 
+
+        /* TODO: Cache this option in gfxdata */
+        tmpgc = HIDD_Gfx_NewGC(gfx, gctags);
+        HIDD_BM_FillRect(visiblebitmap, tmpgc, 0, 0, viswidth, topedge);
+        HIDD_Gfx_DisposeGC(gfx, tmpgc);
+    }
+    
+    Composing_BitMapRectChanged(bm, 0, 0, width, height);
+
+    return TRUE;
 #else
     return HIDDNouveauShowBitmapForSelectedMode(bm);
 #endif
@@ -288,15 +370,45 @@ VOID Composing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WO
         OOP_Class * cl = OOP_OCLASS(bm);
         OOP_Object * gfx = NULL;
         OOP_Object * tmpgc = NULL;
-        IPTR e;
+        IPTR e, leftedge, topedge;
+        struct Rectangle srcrect;
+        struct Rectangle srcindstrect;
+        struct Rectangle dstandvisrect;
 
         OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
         gfx = (OOP_Object *)e;
+        OOP_GetAttr(bm, aHidd_BitMap_LeftEdge, &leftedge);
+        OOP_GetAttr(bm, aHidd_BitMap_TopEdge, &topedge);
         
-        /* TODO: stubs have performance hit, change to direct DoMethod call with cached MethodID */
-        tmpgc = HIDD_Gfx_NewGC(gfx, NULL);        
-        HIDD_Gfx_CopyBox(gfx, bm, x, y, visiblebitmap, x, y, width, height, tmpgc);
-        HIDD_Gfx_DisposeGC(gfx, tmpgc);
+        /* Rectangle in source bitmap coord system */
+        srcrect.MinX = x; srcrect.MinY = y;
+        srcrect.MaxX = x + width - 1; srcrect.MaxY = y + height - 1;
+        
+        /* Source bitmap rectangle in destination (screen) coord system */
+        srcindstrect.MinX = srcrect.MinX + leftedge; 
+        srcindstrect.MaxX = srcrect.MaxX + leftedge;
+        srcindstrect.MinY = srcrect.MinY + topedge;
+        srcindstrect.MaxY = srcrect.MaxY + topedge;
+        
+        /* Find intersection of screen rect and srcindst rect */
+        if (AndRectRect(&srcindstrect, &visiblerect, &dstandvisrect))
+        {
+            /* Intersection is valid. Blit. */        
+            /* TODO: stubs have performance hit, change to direct DoMethod call with cached MethodID */
+
+            /* TODO: Cache this option in gfxdata */
+            tmpgc = HIDD_Gfx_NewGC(gfx, NULL);        
+            HIDD_Gfx_CopyBox(gfx,
+                bm,
+                /* Transform back to source bitmap coord system */
+                dstandvisrect.MinX - leftedge, dstandvisrect.MinY - topedge,
+                visiblebitmap,
+                dstandvisrect.MinX, dstandvisrect.MinY,
+                dstandvisrect.MaxX - dstandvisrect.MinX + 1,
+                dstandvisrect.MaxY - dstandvisrect.MinY + 1,
+                tmpgc);
+            HIDD_Gfx_DisposeGC(gfx, tmpgc);
+        }
     }
 #endif
 }
