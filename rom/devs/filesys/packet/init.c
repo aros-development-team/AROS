@@ -103,7 +103,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 
     dn = iofs->io_Union.io_OpenDevice.io_DeviceNode;
 
-    D(bug("[packet] devicenode=%08lx devicename '%s' unit %d dosname '%s' handler '%s'\n",
+    D(bug("[packet] devicenode=%08lx devicename '%s' unit %d dosname '%s' handler '%s' seg=%08lx startup=%08lx\n",
             dn,
             iofs->io_Union.io_OpenDevice.io_DeviceName,
             iofs->io_Union.io_OpenDevice.io_Unit,
@@ -192,7 +192,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         sprintf(dos_path + 1, "%s:", AROS_BSTR_ADDR(dn->dn_Name));
         dos_path[0] = n + 1;
         dp->dp_Arg1 = (SIPTR)MKBADDR(dos_path);
-        dp->dp_Arg2 = (SIPTR)MKBADDR(dn->dn_Startup);
+        dp->dp_Arg2 = (SIPTR)dn->dn_Startup;
         dp->dp_Arg3 = (SIPTR)MKBADDR(dn);
         dp->dp_Port = reply_port;
 
