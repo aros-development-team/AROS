@@ -1131,7 +1131,7 @@ case "$target_os" in
 		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -${gcc_target_cpu}"
 		target_tool_prefix="m68k-elf-"
 		aros_target_nostdlib_ldflags="" # We always need -lgcc
-		aros_target_strip_flags="-R.comment"
+		aros_target_strip_flags="-R.comment --strip-debug"
 		;;
 	    *ppc*)
 		aros_cpu="ppc"
