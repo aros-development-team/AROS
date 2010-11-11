@@ -13,6 +13,8 @@ extern UWORD b(void);
 #ifdef __GNUC__
 #ifdef __mc68000
 asm(
+"	.text\n"
+"	.balign 2\n"
 "	.globl	a\n"
 "a:\n"
 "	movew	%sr,%d0\n"
