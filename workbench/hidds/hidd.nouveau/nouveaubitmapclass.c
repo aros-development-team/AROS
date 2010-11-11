@@ -400,11 +400,22 @@ VOID METHOD(NouveauBitMap, Root, Set)
             case aoHidd_BitMap_TopEdge:
                 newyoffset = tag->ti_Data;
                 limit = bmdata->displayedheight - bmdata->height;
+#if ENABLE_COMPOSING
+                /* TODO: remove hack */
+                /* HACK: value 0 is set on creation before bmdata->displayedheight is
+                    set, so newyoffset is set to -15 on bitmap creation */
+                if (newyoffset == 0)
+                    ;   /* HACK: Skip the comparison with bmdata->displayedheight */
+                else
+                    if (newyoffset > (LONG)bmdata->displayedheight - 15) /* Limit for drag */
+                        newyoffset = (LONG)bmdata->displayedheight - 15;
+#else
                 if (newyoffset > 0)
                     newyoffset = 0;
-                else
-                    if (newyoffset < limit)
-                        newyoffset = limit;
+#endif
+                if (newyoffset < limit) /* Limit for scroll */
+                    newyoffset = limit;
+bug("[requested %d, calculated : %d, limit %d]\n", tag->ti_Data, newyoffset, limit);
                 break;
             }
         }
