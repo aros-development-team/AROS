@@ -85,7 +85,7 @@ void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum)
 	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 	if (unitnum == UNIT_VBLANK) {
 		TimerBase->tb_vblank_on = 1;
-	} else if (unitnum == UNIT_MICROHZ || unitnum == UNIT_ECLOCK) {
+	} else if (unitnum == UNIT_MICROHZ) {
 		if (!TimerBase->tb_cia_on) {
 			// not active, kickstart it
 			TimerBase->tb_cia_on = 1;

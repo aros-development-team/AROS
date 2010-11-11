@@ -20,6 +20,9 @@
 	Unit conversions and misuse of tv_sec/tv_usec fields probably looks strange..
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <aros/kernel.h>
 #include <exec/types.h>
 #include <exec/io.h>
@@ -37,9 +40,6 @@
 #include <proto/cia.h>
 
 #include <aros/symbolsets.h>
-#define DEBUG 1
-#include <aros/debug.h>
-#include <proto/arossupport.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -79,7 +79,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     /* Initialise the lists */
     NEWLIST(&LIBBASE->tb_Lists[UNIT_VBLANK]);
     NEWLIST(&LIBBASE->tb_Lists[UNIT_MICROHZ]);
-    NEWLIST(&LIBBASE->tb_Lists[UNIT_ECLOCK]);
  
 	inter = &LIBBASE->vbint;
    	inter->is_Code = (APTR)cia_vbint;

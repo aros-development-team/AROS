@@ -27,15 +27,8 @@
 #ifndef DEVICES_TIMER_H
 #include <devices/timer.h>
 #endif
-#ifndef DOS_BPTR_H
-#include <dos/bptr.h>
-#endif
 
-#include <aros/system.h>
-#include <aros/libcall.h>
-#include <aros/asmcall.h>
-
-#define NUM_LISTS	3
+#define NUM_LISTS	2
 
 #define ECLOCK_BASE 0x7000
 
