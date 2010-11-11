@@ -191,7 +191,5 @@ AROS_LH1(void, ConfigChain,
 
 	readroms(ExpansionBase);
 
-	//callroms(ExpansionBase, DAC_CONFIGTIME);
-
     AROS_LIBFUNC_EXIT
 } /* ConfigChain */
