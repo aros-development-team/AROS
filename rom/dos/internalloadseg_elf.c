@@ -49,7 +49,7 @@ struct hunk
     char  data[0];
 } __attribute__((packed));
 
-#define BPTR2HUNK(bptr) ((struct hunk *)((char *)BADDR(bptr) - offsetof(struct hunk, next)))
+#define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
 #undef MyRead
@@ -642,8 +642,8 @@ end:
     
     /* Clear the caches to let the CPU see the new data and instructions */
     {
-        BPTR curr = hunks;
-        while (curr)
+        BPTR *curr = &hunks;
+        while (*curr)
         {
              struct hunk *hunk = BPTR2HUNK(curr);
              
