@@ -75,7 +75,7 @@ do                                                       \
 {                                                        \
 	struct FullJumpVec *_v = v;                      \
 	_v->jmp = __AROS_ASMJMP;                         \
-	_v->vec = (((void *)(a))-((void *)(_v)))-6;\
+	_v->vec = ((void *)(a));                         \
 } while(0)
 
 
