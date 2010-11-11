@@ -2,7 +2,7 @@ MSG_NAME (//)
 Network Preferences
 ;
 MSG_DESCRIPTION (//)
-TCP/IP Network preferences
+Network preferences
 ;
 MSG_IFNAME (//)
 Name
@@ -46,20 +46,62 @@ Manual
 MSG_IP_MODE_DHCP (//)
 Get address from DHCP
 ;
+MSG_ENC_NONE (//)
+None
+;
+MSG_ENC_WEP (//)
+WEP
+;
+MSG_ENC_WPA (//)
+WPA
+;
+MSG_KEY_TEXT (//)
+Passphrase
+;
+MSG_KEY_HEX (//)
+Hexadecimal
+;
+MSG_SSID (//)
+Network Name
+;
+MSG_ENCTYPE (//)
+Encryption
+;
+MSG_KEYTYPE (//)
+Key Type
+;
+MSG_KEY (//)
+Key
+;
+MSG_HIDDEN (//)
+Hidden
+;
+MSG_ADHOC (//)
+Ad-hoc
+;
 MSG_TAB_IP_CONFIGURATION (//)
 IPv4 Configuration
 ;
 MSG_TAB_COMPUTER_NAME (//)
 Computer Name
 ;
+MSG_TAB_WIRELESS (//)
+Wireless
+;
 MSG_AUTOSTART_STACK (//)
-Automatically start network during system boot?
+Start networking during system boot
+;
+MSG_AUTOSTART_WIRELESS (//)
+Enable wireless networking
 ;
 MSG_ERR_UNKNOWN_ERROR (//)
 Unknown error
 ;
 MSG_ERR_NOT_RESTARTED_STACK (//)
 Failed to restart network stack
+;
+MSG_ERR_NOT_RESTARTED_WIRELESS (//)
+Failed to restart wireless networking
 ;
 MSG_BUTTON_OK (//)
 Ok
@@ -96,4 +138,7 @@ Preferences have been saved to %s.\nRestart AROS for them to take effect.
 ;
 MSG_IFWINDOW_TITLE (//)
 Interface
+;
+MSG_NETWINDOW_TITLE (//)
+Wireless Network
 ;

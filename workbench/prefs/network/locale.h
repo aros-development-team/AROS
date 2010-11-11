@@ -14,6 +14,7 @@
 /*** Prototypes *************************************************************/
 /* Main *********************************************************************/
 CONST_STRPTR _(ULONG ID);       /* Get a message, as a STRPTR */
+CONST_STRPTR L_(ULONG ID);      /* Get a locale string, as a STRPTR */
 #define __(id) ((IPTR)_(id))    /* Get a message, as an IPTR */
 
 /* Setup ********************************************************************/

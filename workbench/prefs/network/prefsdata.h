@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -26,6 +26,14 @@
 #define DEFAULTHOST "arosbox"
 #define DEFAULTDOMAIN "arosnet"
 
+#define MAXNETWORKS 100
+
+#define WIRELESS_PATH_ENV              "ENV:"
+#define WIRELESS_PATH_ENVARC           "ENVARC:"
+
+#define SSIDBUFLEN 32
+#define KEYBUFLEN 64
+
 enum ErrorCode
 {
     ALL_OK,
@@ -34,7 +42,8 @@ enum ErrorCode
     NOT_SAVED_PREFS_ENVARC,
     NOT_COPIED_FILES_ENV,
     NOT_COPIED_FILES_ENVARC,
-    NOT_RESTARTED_STACK
+    NOT_RESTARTED_STACK,
+    NOT_RESTARTED_WIRELESS
 };
 
 struct Interface
@@ -48,6 +57,16 @@ struct Interface
     BOOL up;
 };
 
+struct Network
+{
+    TEXT name[NAMEBUFLEN];
+    TEXT key[KEYBUFLEN];
+    UWORD encType;
+    BOOL hidden;
+    BOOL adHoc;
+    BOOL keyIsHex;
+};
+
 struct TCPPrefs
 {
     struct Interface interface[MAXINTERFACES];
@@ -58,6 +77,9 @@ struct TCPPrefs
     TEXT host[NAMEBUFLEN];
     TEXT domain[NAMEBUFLEN];
     BOOL autostart;
+    struct Network networks[MAXNETWORKS];
+    LONG networkCount;
+    BOOL wirelessAutostart;
 };
 
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save);
@@ -102,3 +124,29 @@ void SetHost(STRPTR w);
 void SetDomain(STRPTR w);
 void SetInterfaceCount(LONG w);
 void SetAutostart(BOOL w);
+
+void InitNetwork(struct Network *net);
+
+struct Network *GetNetwork(LONG index);
+STRPTR GetNetworkName(struct Network *net);
+STRPTR GetKey(struct Network *net);
+UWORD GetEncType(struct Network *net);
+BOOL GetHidden(struct Network *net);
+BOOL GetAdHoc(struct Network *net);
+
+LONG GetNetworkCount(void);
+BOOL GetWirelessAutostart(void);
+
+void SetNetwork
+(
+    struct Network *net, STRPTR name, UWORD encType, STRPTR key,
+    BOOL keyIsHex, BOOL hidden, BOOL adHoc
+);
+void SetNetworkName(struct Network *net, STRPTR w);
+void SetKey(struct Network *net, STRPTR w, BOOL keyIsHex);
+void SetEncType(struct Network *net, UWORD w);
+void SetHidden(struct Network *net, BOOL w);
+void SetAdHoc(struct Network *net, BOOL w);
+
+void SetNetworkCount(LONG w);
+void SetWirelessAutostart(BOOL w);

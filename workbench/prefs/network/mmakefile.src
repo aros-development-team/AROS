@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Makefile to make TCP prefs program.
+#   Makefile to make Network prefs program.
 
 include $(TOP)/config/make.cfg
 

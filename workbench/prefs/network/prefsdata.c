@@ -99,6 +99,18 @@ void SetDefaultNetworkPrefsValues()
     SetAutostart(FALSE);
 }
 
+void SetDefaultWirelessPrefsValues()
+{
+    LONG i;
+    for (i = 0; i < MAXNETWORKS; i++)
+    {
+        InitNetwork(GetNetwork(i));
+    }
+    SetNetworkCount(0);
+
+    SetWirelessAutostart(FALSE);
+}
+
 void InitInterface(struct Interface *iface)
 {
     SetName(iface, DEFAULTNAME);
@@ -235,6 +247,12 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
+    CombinePath2P(filename, filenamelen, destdir, "WirelessAutoRun");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetWirelessAutostart()) ? "True" : "False");
+    fclose(ConfFile);
+
     /* Write configuration files */
     CombinePath2P(filename, filenamelen, destdbdir, "general.config");
     ConfFile = fopen(filename, "w");
@@ -301,6 +319,58 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
     }
     fclose(ConfFile);
+
+    return TRUE;
+}
+
+BOOL WriteWirelessPrefs(CONST_STRPTR destdir)
+{
+    FILE *ConfFile;
+    LONG i;
+    struct Network *net;
+    ULONG filenamelen = strlen(destdir) + 4 + 20;
+    TEXT filename[filenamelen];
+
+    /* Write wireless config */
+    if (prefs.networkCount > 0)
+    {
+        CombinePath2P(filename, filenamelen, destdir, "Wireless.prefs");
+        ConfFile = fopen(filename, "w");
+        if (!ConfFile) return FALSE;
+
+        for (i = 0; i < prefs.networkCount; i++)
+        {
+            net = &prefs.networks[i];
+            fprintf(ConfFile, "network={\n");
+            if (net->name[0] != '\0')
+                fprintf(ConfFile, "\tssid=\"%s\"\n", net->name);
+            switch (net->encType)
+            {
+                case 2:
+                    if (net->keyIsHex)
+                        fprintf(ConfFile, "\tpsk=%s\n", net->key);
+                    else
+                        fprintf(ConfFile, "\tpsk=\"%s\"\n", net->key);
+                    fprintf(ConfFile, "\tkey_mgmt=WPA-PSK\n");
+                    break;
+                case 1:
+                    if (net->keyIsHex)
+                        fprintf(ConfFile, "\twep_key0=%s\n", net->key);
+                    else
+                        fprintf(ConfFile, "\twep_key0=\"%s\"\n", net->key);
+                    fprintf(ConfFile, "\twep_tx_keyidx=0\n");
+                default:
+                    fprintf(ConfFile, "\tkey_mgmt=NONE\n");
+            }
+            if (net->hidden)
+                fprintf(ConfFile, "\tscan_ssid=1\n");
+            if (net->adHoc)
+                fprintf(ConfFile, "\tmode=1\n");
+            fprintf(ConfFile, "}\n\n");
+        }
+
+        fclose(ConfFile);
+    }
 
     return TRUE;
 }
@@ -417,6 +487,61 @@ BOOL RestartStack()
     return TRUE;
 }
 
+BOOL StopWireless()
+{
+    ULONG trycount = 0;
+
+    /* Shutdown */
+    {
+        struct Task *task = FindTask("C:WirelessManager");
+        if (task != NULL)
+            Signal(task, SIGBREAKF_CTRL_C);
+    }
+
+    /* Check if shutdown successful */
+    trycount = 0;
+    while(FindTask("C:WirelessManager") != NULL)
+    {
+        if (trycount > 4) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
+BOOL StartWireless()
+{
+    ULONG trycount = 0;
+
+    /* Startup */
+    {
+        struct TagItem tags[] =
+        {
+            { SYS_Input,        (IPTR)NULL          },
+            { SYS_Output,       (IPTR)NULL          },
+            { SYS_Error,        (IPTR)NULL          },
+            { SYS_Asynch,       (IPTR)TRUE          },
+            { TAG_DONE,         0                   }
+        };
+
+        SystemTagList("C:WirelessManager \"atheros5000.device\"", tags);
+    }
+
+    /* Check if startup successful */
+    trycount = 0;
+    while(FindTask("C:WirelessManager") == NULL)
+    {
+        if (trycount > 9) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
 /* This is not a general use function! It assumes destinations directory exists */
 BOOL AddFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
 {
@@ -468,6 +593,7 @@ enum ErrorCode SaveNetworkPrefs()
 {
     if (!CopyDefaultConfiguration(PREFS_PATH_ENVARC)) return NOT_COPIED_FILES_ENVARC;
     if (!WriteNetworkPrefs(PREFS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
+    if (!WriteWirelessPrefs(WIRELESS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
     return UseNetworkPrefs();
 }
 
@@ -475,6 +601,10 @@ enum ErrorCode UseNetworkPrefs()
 {
     if (!CopyDefaultConfiguration(PREFS_PATH_ENV)) return NOT_COPIED_FILES_ENV;
     if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if (!WriteWirelessPrefs(WIRELESS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if(StopWireless())
+        if (GetWirelessAutostart())
+            if (!StartWireless()) return NOT_RESTARTED_WIRELESS;
     if (!RestartStack()) return NOT_RESTARTED_STACK;
     return ALL_OK;
 }
@@ -642,13 +772,108 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
         }
     }
     CloseTokenFile(&tok);
+
+    CombinePath2P(filename, filenamelen, directory, "WirelessAutorun");
+    OpenTokenFile(&tok, filename);
+    while (!tok.fend)
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token)
+        {
+            if (strncmp(tok.token, "True", 4) == 0)
+            {
+                SetWirelessAutostart(TRUE);
+                break;
+            }
+            else
+            {
+                SetWirelessAutostart(FALSE);
+                break;
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+}
+
+void ReadWirelessPrefs(CONST_STRPTR directory)
+{
+    ULONG filenamelen = strlen(directory) + 4 + 20;
+    TEXT filename[filenamelen];
+    BOOL comment = FALSE;
+    STRPTR tstring;
+    struct Tokenizer tok;
+    LONG networkCount;
+    struct Network *net = NULL;
+    BOOL keyIsHex;
+
+    CombinePath2P(filename, filenamelen, directory, "Wireless.prefs");
+    OpenTokenFile(&tok, filename);
+
+    SetNetworkCount(0);
+    networkCount = 0;
+
+    while (!tok.fend && (networkCount < MAXNETWORKS))
+    {
+        GetNextToken(&tok, " \n\t");
+        if (tok.token)
+        {
+            if (tok.newline) comment = FALSE;
+            if (strncmp(tok.token, "#", 1) == 0) comment = TRUE;
+
+            if (!comment)
+            {
+                if (strncmp(tok.token, "network=", 8) == 0)
+                {
+                    net = GetNetwork(networkCount);
+                    net->adHoc = FALSE;
+                    net->hidden = FALSE;
+                    networkCount++;
+                    SetNetworkCount(networkCount);
+                }
+                else if (strncmp(tok.token, "ssid=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=') + 2;
+                    *strchr(tstring, '\"') = '\0';
+                    SetNetworkName(net, tstring);
+                }
+                else if (strncmp(tok.token, "psk=", 4) == 0
+                    || strncmp(tok.token, "wep_key0=", 9) == 0)
+                {
+                    tstring = strchr(tok.token, '=') + 1;
+                    if (*tstring == '\"')
+                    {
+                        keyIsHex = FALSE;
+                        tstring++;
+                        *strchr(tstring, '\"') = '\0';
+                    }
+                    else
+                        keyIsHex = TRUE;
+                    SetKey(net, tstring, keyIsHex);
+                    SetEncType(net, (*tok.token == 'p') ? 2 : 1);
+                }
+                else if (strncmp(tok.token, "scan_ssid=", 10) == 0)
+                {
+                    tstring = strchr(tok.token, '=') + 1;
+                    SetHidden(net, *tstring == 1);
+                }
+                else if (strncmp(tok.token, "mode=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=') + 1;
+                    SetAdHoc(net, *tstring == 1);
+                }
+            }
+        }
+    }
+    CloseTokenFile(&tok);
 }
 
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
 {
     SetDefaultNetworkPrefsValues();
+    SetDefaultWirelessPrefsValues();
 
     ReadNetworkPrefs(directory);
+    ReadWirelessPrefs(WIRELESS_PATH_ENV);
 
     if (save)
     {
@@ -882,3 +1107,111 @@ void SetDHCP(BOOL w)
 {
     prefs.DHCP = w;
 }
+
+void InitNetwork(struct Network *net)
+{
+    SetNetworkName(net, "");
+    SetKey(net, "", FALSE);
+    SetEncType(net, 0);
+    SetAdHoc(net, FALSE);
+}
+
+
+/* Getters */
+
+struct Network *GetNetwork(LONG index)
+{
+    return &prefs.networks[index];
+}
+
+STRPTR GetNetworkName(struct Network *net)
+{
+    return net->name;
+}
+
+UWORD GetEncType(struct Network *net)
+{
+    return net->encType;
+}
+
+STRPTR GetKey(struct Network *net)
+{
+    return net->key;
+}
+
+BOOL GetHidden(struct Network *net)
+{
+    return net->hidden;
+}
+
+BOOL GetAdHoc(struct Network *net)
+{
+    return net->adHoc;
+}
+
+LONG GetNetworkCount(void)
+{
+    return prefs.networkCount;
+}
+
+BOOL GetWirelessAutostart(void)
+{
+    return prefs.wirelessAutostart;
+}
+
+
+/* Setters */
+
+void SetNetwork 
+(                                
+    struct Network *net, STRPTR name, UWORD encType, STRPTR key,
+    BOOL keyIsHex, BOOL hidden, BOOL adHoc
+)
+{
+    SetNetworkName(net, name);
+    SetEncType(net, encType);
+    SetKey(net, key, keyIsHex);
+    SetHidden(net, hidden);
+    SetAdHoc(net, adHoc);
+}
+
+void SetNetworkName(struct Network *net, STRPTR w)
+{
+    if (!IsLegal(w, NAMECHARS))
+    {
+        w = "";
+    }
+    strlcpy(net->name, w, SSIDBUFLEN);
+}
+
+void SetEncType(struct Network *net, UWORD w)
+{
+    net->encType = w;
+}
+
+void SetKey(struct Network *net, STRPTR w, BOOL keyIsHex)
+{
+    strlcpy(net->key, w, KEYBUFLEN);
+    net->keyIsHex = keyIsHex;
+}
+
+void SetHidden(struct Network *net, BOOL w)
+{
+    net->hidden = w;
+}
+
+void SetAdHoc(struct Network *net, BOOL w)
+{
+    net->adHoc = w;
+}
+
+void SetNetworkCount(LONG w)
+{
+    prefs.networkCount = w;
+}
+
+void SetWirelessAutostart(BOOL w)
+{
+    prefs.wirelessAutostart = w;
+}
+

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -10,10 +10,13 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Prefs/Network.catalog"
-#define CATALOG_VERSION  2
+#define CATALOG_VERSION  3
+
+static const TEXT DEFYES[] = "Yes", DEFNO[] = "No";
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
+struct Locale *locale;
 
 
 /*** Functions **************************************************************/
@@ -26,6 +29,14 @@ CONST_STRPTR _(ULONG id)
         return CatCompArray[id].cca_Str;
 }
 
+CONST_STRPTR L_(ULONG id)
+{
+    if (LocaleBase != NULL && locale != NULL)
+        return GetLocaleStr(locale, id);
+    else
+        return (id == YESSTR) ? DEFYES : DEFNO;
+}
+
 /* Setup ********************************************************************/
 VOID Locale_Initialize(VOID)
 {
@@ -35,9 +46,13 @@ VOID Locale_Initialize(VOID)
               (
             NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE
               );
+        locale = OpenLocale(NULL);
     }
     else
+    {
         catalog = NULL;
+        locale = NULL;
+    }
 }
 
 VOID Locale_Deinitialize(VOID)
