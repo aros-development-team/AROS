@@ -2174,6 +2174,7 @@ localecopydone:
 
 
 /** STEP : EXECUTE EXTERNAL POST-INSTALL SCRIPT **/
+    if ((BOOL)XGET(data->instc_options_main->opt_copycore, MUIA_Selected))
     {
         BPTR scriptfile = Open(POST_INSTALL_SCRIPT, MODE_OLDFILE);
         if (scriptfile)
@@ -2207,6 +2208,7 @@ localecopydone:
 
             SET(data->gauge2, MUIA_Gauge_Current, 100);
         }
+        D(else bug("[INSTALLER] no post-install script\n"));
     }
 
 /** STEP : UNDORECORD CLEANUP **/
@@ -3096,7 +3098,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.9 (6.6.2010)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.10 (11.11.2010)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2010, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
