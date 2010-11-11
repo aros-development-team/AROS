@@ -206,7 +206,7 @@ struct Volume *volume;
 		{
 			*error=ERROR_NO_FREE_STORE;
 		}
-		FreeMem(volume,sizeof(struct Volume) + strlen(volume->ioh.blockdevice) + 1);
+		FreeMem(volume,sizeof(struct Volume) + strlen(blockdevice) + 1);
 	}
 	else
 		*error=ERROR_NO_FREE_STORE;
