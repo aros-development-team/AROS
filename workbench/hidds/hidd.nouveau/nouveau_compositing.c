@@ -292,6 +292,63 @@ static struct StackBitMapNode * Compositing_IsBitMapOnStack(OOP_Object * bm)
     return NULL;
 }
 
+static BOOL Compositing_CanCompositeWithScreenBitMap(OOP_Object * bm)
+{
+    OOP_Object * screenbm = screenbitmap;
+    IPTR screenbmgfx, screenbmmodeid, screenbmwidth, screenbmheight, screenbmstdpixfmt;
+    IPTR bmgfx, bmmodeid, bmwidth, bmheight, bmstdpixfmt;
+
+    
+    /* HINT: both bitmaps can have different classes */
+    {
+        OOP_Class * cl = OOP_OCLASS(screenbm);
+        IPTR pf;
+        OOP_GetAttr(screenbm, aHidd_BitMap_GfxHidd, &screenbmgfx);
+        OOP_GetAttr(screenbm, aHidd_BitMap_ModeID, &screenbmmodeid);
+        OOP_GetAttr(screenbm, aHidd_BitMap_Width, &screenbmwidth);
+        OOP_GetAttr(screenbm, aHidd_BitMap_Height, &screenbmheight);
+        OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, &pf);
+        OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &screenbmstdpixfmt);
+    }
+
+    {
+        OOP_Class * cl = OOP_OCLASS(bm);
+        IPTR pf;
+        OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &bmgfx);
+        OOP_GetAttr(bm, aHidd_BitMap_ModeID, &bmmodeid);
+        OOP_GetAttr(bm, aHidd_BitMap_Width, &bmwidth);
+        OOP_GetAttr(bm, aHidd_BitMap_Height, &bmheight);
+        OOP_GetAttr(bm, aHidd_BitMap_PixFmt, &pf);
+        OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &bmstdpixfmt);
+    }
+
+    /* If bitmaps use different instances of gfx hidd, they cannot be composited */
+    if (screenbmgfx != bmgfx)
+        return FALSE;
+    
+    /* If bitmaps have the same modeid, they can be composited */
+    if (screenbmmodeid == bmmodeid)
+        return TRUE;
+
+    /* If bitmaps have different pixel formats, they cannot be composited */
+    /* FIXME: actually they can, but CopyBox for different formats is not
+       optimized so let's not make user experience worse */
+    if (screenbmstdpixfmt != bmstdpixfmt)
+        return FALSE;
+
+    /* If screenbm is not bigger than bm, bitmaps can be composited, because
+       bm will start scrolling on smaller resolution of screenbm */
+    /* FIXME: the opposite situation might also work - smaller bitmap on bigger
+       resolution. In such case, left out areas need to be cleared up. Also it
+       needs to be checked if mouse clicks outside of bitmap will not cause
+       problems */
+    if ((screenbmwidth <= bmwidth) && (screenbmheight <= bmheight))
+        return TRUE;
+
+    /* Last decision, bitmaps cannot be composited */
+    return FALSE;
+}
+
 #endif
 
 BOOL Compositing_TopBitMapChanged(OOP_Object * bm)
@@ -376,9 +433,6 @@ BOOL Compositing_TopBitMapChanged(OOP_Object * bm)
         }
     }
 
-    /* TODO: probably needs to call Compositing_BitMapPositionChanged to make sure
-        revealed part of screen is erased (passed bitmap can be already lowered)
-        Call needs to happen in case of same mode as well */
     return FALSE;
 #else
     return HIDDNouveauSwitchToVideoMode(bm);
@@ -400,14 +454,18 @@ VOID Compositing_BitMapStackChanged(struct HIDD_ViewPortData * vpdata)
     /* Switch mode if needed */    
     Compositing_TopBitMapChanged(vpdata->Bitmap);
     
-    /* TODO: what to do with bitmaps which have different modeid? skip them? add them and stretch during blitting?*/
     /* Copy bitmaps pointers to our stack */
     for (vp = vpdata; vp; vp = vp->Next)
     {
-        struct StackBitMapNode * n = AllocVec(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
-        n->bm = vp->Bitmap;
-        n->isscreenvisible = FALSE;
-        AddTail(&bitmapstack, (struct Node *)n);
+        /* Check if the passed bitmap can be composited together with screen
+           bitmap */
+        if (Compositing_CanCompositeWithScreenBitMap(vp->Bitmap))
+        {
+            struct StackBitMapNode * n = AllocVec(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
+            n->bm = vp->Bitmap;
+            n->isscreenvisible = FALSE;
+            AddTail(&bitmapstack, (struct Node *)n);
+        }
     }
 
     /* Recalculate visible rects per screen */
@@ -435,6 +493,10 @@ BOOL Compositing_BitMapPositionChanged(OOP_Object * bm)
     
     /* Recalculate visible rects per screen */
     Compositing_RecalculateVisibleRects();
+    
+    /* TODO: Optimization - if top bitmap covers the complete physical screen,
+       the driver can turn off mirroring mode and use the top bitmap as
+       framebuffer */
 
     /* Refresh all bitmaps on stack */
     ForeachNode(&bitmapstack, n)
@@ -452,6 +514,8 @@ BOOL Compositing_BitMapPositionChanged(OOP_Object * bm)
     }
 
     /* Clean up area revealed by drag */
+    /* TODO: Find all areas which might have been releaved, not only top - 
+       This will happen when there are bitmaps of different sizes composited */
     if (lastscreenvisibleline > 0)
     {
         OOP_Class * cl = OOP_OCLASS(screenbitmap);
