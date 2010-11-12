@@ -90,7 +90,7 @@ char *join_string(int argc, char **argv)
 
     for (j = 0; j < argc; j++)
 	x += (strlen(argv[j]) + 1);
-    D(printf("[Init] Allocating %u bytes for string\n", x));
+    D(fprintf(stderr, "[Init] Allocating %u bytes for string\n", x));
     str = malloc(x);
     if (str) {
 	s = str;
@@ -100,7 +100,7 @@ char *join_string(int argc, char **argv)
 	    *s++ = ' ';
 	}
 	s[-1] = 0;
-	D(printf("[Init] Joined line: %s\n", str));
+	D(fprintf(stderr, "[Init] Joined line: %s\n", str));
     }
     return str;
 }
@@ -118,6 +118,8 @@ int bootstrap(int argc, char ** argv)
     void *debug_addr;
     void *ro_addr, *rw_addr;
     size_t ro_size, rw_size;
+
+    D(fprintf(stderr, "[Bootstrap] Started\n"));
 
     /* This makes national characters to be output properly into
        the debug log under Windows */
@@ -151,15 +153,15 @@ int bootstrap(int argc, char ** argv)
         } else
 	    break;
     }
-    D(printf("[Bootstrap] %u arguments processed\n", i));
+    D(fprintf(stderr, "[Bootstrap] %u arguments processed\n", i));
 
     if (i < argc) {
 	KernelArgs = join_string(argc - i, &argv[i]);
-	D(printf("[Bootstrap] Kernel arguments: %s\n", KernelArgs));
+	D(fprintf(stderr, "[Bootstrap] Kernel arguments: %s\n", KernelArgs));
     }
 
     SystemVersion = getosversion();
-    D(printf("[Bootstrap] OS version: %s\n", SystemVersion));
+    D(fprintf(stderr, "[Bootstrap] OS version: %s\n", SystemVersion));
 
     if (SetRootDirectory())
     {
@@ -201,7 +203,7 @@ int bootstrap(int argc, char ** argv)
 
     if (!GetKernelSize(&ro_size, &rw_size))
 	return -1;
-    D(printf("[Bootstrap] Kernel size %u\n", ro_size));
+    D(fprintf(stderr, "[Bootstrap] Kernel size %u\n", ro_size));
 
     ro_addr = AllocateRO(ro_size);
     if (!ro_addr) {
@@ -217,12 +219,12 @@ int bootstrap(int argc, char ** argv)
 
     if (!LoadKernel(ro_addr, rw_addr, __bss_track, &kernel_entry, &debug_addr))
 	return -1;
-    D(printf("[Bootstrap] Read-only 0x%p - 0x%p, Read-write 0x%p - 0x%p, Entry 0x%p, Debug info 0x%p\n",
+    D(fprintf(stderr, "[Bootstrap] Read-only 0x%p - 0x%p, Read-write 0x%p - 0x%p, Entry 0x%p, Debug info 0x%p\n",
 	     ro_addr, ro_addr + ro_size - 1, rw_addr, rw_addr + rw_size - 1, kernel_entry, debug_addr));
 
     FreeKernelList();
 
-    D(printf("[Bootstrap] allocating working mem: %iMb\n",memSize));
+    D(fprintf(stderr, "[Bootstrap] allocating working mem: %iMb\n",memSize));
 
     MemoryMap.len = memSize << 20;
     MemoryMap.addr = (IPTR)AllocateRAM(MemoryMap.len);
@@ -231,7 +233,7 @@ int bootstrap(int argc, char ** argv)
 	DisplayError("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
 	return -1;
     }
-    D(printf("[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", (void *)MemoryMap.addr, (void *)MemoryMap.addr + MemoryMap.len, MemoryMap.len));
+    D(fprintf(stderr, "[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", (void *)MemoryMap.addr, (void *)MemoryMap.addr + MemoryMap.len, MemoryMap.len));
 
     km[0].ti_Data = (IPTR)ro_addr;
     km[1].ti_Data = (IPTR)ro_addr + ro_size - 1;
@@ -242,7 +244,7 @@ int bootstrap(int argc, char ** argv)
     km[6].ti_Data = (IPTR)HostIFace;
     km[7].ti_Data = (IPTR)&MemoryMap;
 
-    printf("[Bootstrap] entering kernel@%p...\n", kernel_entry);
+    fprintf(stderr, "[Bootstrap] entering kernel@%p...\n", kernel_entry);
     i = kernel_entry(km);
     
     DisplayError("Kernel exited with code %d\n", i);
