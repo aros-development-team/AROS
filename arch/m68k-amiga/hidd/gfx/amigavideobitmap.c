@@ -784,6 +784,7 @@ VOID AmigaVideoBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 
 VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 

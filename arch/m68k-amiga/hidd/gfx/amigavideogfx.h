@@ -42,8 +42,12 @@ struct amigavideo_staticdata
 	UWORD *copper2i;
 	UWORD *copper2_backup;
 	UWORD *copper2_palette;
+	UWORD *copper2i_palette;
+	UWORD *copper2_palette_aga_lo;
+	UWORD *copper2i_palette_aga_lo;
 	UWORD *sprite_null;
 	UWORD *sprite;
+	UWORD bplcon3;
 
 	UWORD max_colors;
 
@@ -51,6 +55,7 @@ struct amigavideo_staticdata
 	UBYTE depth;
 	UBYTE res; // 0 = lores, 1 = hires, 2 = shres
 	UBYTE interlace;
+	BOOL aga;
 
 	UBYTE initialized;
 };

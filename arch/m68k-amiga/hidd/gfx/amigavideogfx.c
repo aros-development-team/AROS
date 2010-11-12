@@ -41,7 +41,6 @@
 OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    volatile struct Custom *custom = (struct Custom*)0xdff000;
     
     struct TagItem tags_640_512[] = 
     {
@@ -107,8 +106,8 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 		{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette	},
 		{ aHidd_PixFmt_Depth	    , 4			 	},
 		{ aHidd_PixFmt_BytesPerPixel, 1			   	},
-		{ aHidd_PixFmt_BitsPerPixel , 1			   	},
-		{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Native	},
+		{ aHidd_PixFmt_BitsPerPixel , 4			   	},
+		{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Plane	},
 		{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Planar	},
 		{ TAG_DONE  	    	    , 0UL			} 
     };
@@ -144,9 +143,6 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     mymsg.mID	= msg->mID;
     mymsg.attrList = mytags;
     msg = &mymsg;
-
-    bug("%x\n", msg);
-    custom->color[1] = 0xfff;
 
     /* Register gfxmodes */
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
