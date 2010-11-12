@@ -472,37 +472,15 @@ ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
     /* TODO: probably needs a driver level lock? */
     Compositing_BitMapStackChanged(msg->Data);
     
-    return TRUE; /* Indicate driver supports this method */
 #else
-    return FALSE;
-#endif
-}
-
-OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
-{
-    D(bug("[Nouveau] Show enter BM %x\n", msg->bitMap));
-
-    if (msg->bitMap)
-    {
-        OOP_Class * bmclass = OOP_OCLASS(msg->bitMap);
-        
-        if (IS_NOUVEAU_CLASS(bmclass))
-        {
-            if (!Compositing_TopBitMapChanged(msg->bitMap))
-            {
-                bug("[Nouveau] Video mode not set\n");
-                return NULL;
-            }
-        }
-    }
+    if (msg->Data)
+        Compositing_TopBitMapChanged(msg->Data->Bitmap);
     else
     {
         /* TODO: Implement blanking out display */
-    }
-
-    /* Specification for NoFrameBuffer drivers says to return the received 
-       bitmap and not to call the base Show method */
-    return msg->bitMap;
+    }    
+#endif
+    return TRUE; /* Indicate driver supports this method */
 }
 
 #if AROS_BIG_ENDIAN
