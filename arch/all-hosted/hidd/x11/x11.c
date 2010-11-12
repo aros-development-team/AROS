@@ -196,17 +196,26 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 		    case NOTY_RESIZEWINDOW:
 		    {
 			XWindowChanges xwc;
+			XSizeHints sizehint;
     	    	    	BOOL replymsg = TRUE;
 			struct xwinnode *node;
-			
+
 			xwc.width  = nmsg->width;
 			xwc.height = nmsg->height;
+
+			sizehint.flags      = PMinSize | PMaxSize;
+			sizehint.min_width  = nmsg->width;
+			sizehint.min_height = nmsg->height;
+			sizehint.max_width  = nmsg->width;
+			sizehint.max_height = nmsg->height;
 
     	    		LOCK_X11
 			if (xsd->fullscreen)
 			{
 			    x11_fullscreen_switchmode(nmsg->xdisplay, &xwc.width, &xwc.height);   
-			}	
+			}
+	    
+			XCALL(XSetWMNormalHints, nmsg->xdisplay, nmsg->masterxwindow, &sizehint);
 			XCALL(XConfigureWindow, nmsg->xdisplay
 		    	    , nmsg->masterxwindow
 		    	    , CWWidth | CWHeight
