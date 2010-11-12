@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
@@ -53,7 +55,9 @@ static const char *kernel_functions[] = {
     NULL
 };
 
-/* rom startup */
+/*
+ * Kickstart entry point. Note that our code area is already made read-only by the bootstrap.
+ */
 int __startup startup(struct TagItem *msg)
 {
     void* _stack = AROS_GET_SP;
@@ -146,9 +150,6 @@ int __startup startup(struct TagItem *msg)
 	}
 	((void **)&KernelIFace)[i] = func;
     }
-
-    /* Turn kernel space read-only */
-    KernelIFace.mprotect(klo, khi - klo + 1, PROT_READ|PROT_EXEC);
 
     bug("[Kernel] preparing first mem header\n");
     /* We know that memory map has only one RAM element */
