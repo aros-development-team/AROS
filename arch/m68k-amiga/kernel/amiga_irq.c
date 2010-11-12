@@ -136,158 +136,156 @@ static void LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
 	for (;;);
 }
 
-static void Amiga_Paula_IRQ(UWORD mask, regs_t *regs, int i, struct ExecBase *SysBase)
+/* Wrapper to work around GCC frame pointer bugs
+ */
+static inline void Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase)
 {
-    AROS_UFC5(void, SysBase->IntVects[i].iv_Code,
-		    AROS_UFCA(ULONG, mask, D1),
-		    AROS_UFCA(ULONG, 0xDFF000, A0),
-		    AROS_UFCA(APTR, SysBase->IntVects[i].iv_Data, A1),
-		    AROS_UFCA(APTR, SysBase->IntVects[i].iv_Code, A5),
+    /* If we don't have handler, ignore it */
+    if (SysBase->IntVects[irq].iv_Code == NULL) {
+    	bug("SPURIOUS IRQ: %d mask=0x%04x\n", irq, mask);
+    	return;
+    }
+
+#if 1
+    AROS_UFC5(void, SysBase->IntVects[irq].iv_Code,			\
+		    AROS_UFCA(ULONG, mask, D1),				\
+		    AROS_UFCA(ULONG, 0xDFF000, A0),			\
+		    AROS_UFCA(APTR, SysBase->IntVects[irq].iv_Data, A1),\
+		    AROS_UFCA(APTR, SysBase->IntVects[irq].iv_Code, A5),\
 		    AROS_UFCA(struct ExecBase *, SysBase, A6));
-
-    /* Clear any but NMI (15) */
-    if (i < 15)
-    	custom_w(INTREQ, (1 << i));
-
-    /* If the caller was not nested, call core_ExitInterrupt
-     */
-    if (!(regs->sr & 0x2000))
-    	core_ExitInterrupt(regs);
+#else
+    asm volatile (
+    	    "move.l	%0,%%d1\n"
+    	    "move.l	%1,%%a0\n"
+    	    "move.l	%2,%%a1\n"
+    	    "move.l	%4,%%a6\n"
+    	    "move.l	%%a5,%%sp@-\n"
+    	    "move.l	%3,%%a5\n"
+    	    "jsr.l	(%%a5)\n"
+    	    "move.l	%%sp@+,%%a5\n"
+    	    :
+    	    : "g" (mask),
+    	      "g" (0xdff000),
+    	      "g" (SysBase->IntVects[irq].iv_Data),
+    	      "r" (SysBase->IntVects[irq].iv_Code),
+    	      "g" (SysBase)
+    	    : "%d0", "%d1", "%a0", "%a1", "%a6");
+#endif
 }
+
+#define PAULA_IRQ_CHECK(valid_mask) \
+    const UWORD irq_mask = valid_mask; \
+    UWORD mask = custom_r(INTENAR) & custom_r(INTREQR) & (irq_mask); \
+    custom_w(INTREQ, mask);
+
+#define PAULA_IRQ_HANDLE(irq) \
+    do { \
+    	if ((mask) & (1 << (irq))) \
+    	    Amiga_Paula_IRQ(irq, mask, SysBase); \
+    } while (0)
+
+#define PAULA_IRQ_EXIT()	\
+    /* If the caller was not nested, call core_ExitInterrupt */	\
+    if (!(regs->sr & 0x2000))					\
+    	core_ExitInterrupt(regs);
 
 static void Amiga_Level_1(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-    UWORD mask = custom_r(INTENAR) & custom_r(INTREQR);
-
     /* Paula IRQs 0 - Serial port TX done
      *            1 - Disk DMA finished
      *            2 - SoftInt
      */
+    PAULA_IRQ_CHECK(INTF_SOFTINT | INTF_DSKBLK | INTF_TBE);
 
-    if (mask & INTF_TBE) {
-	Amiga_Paula_IRQ(mask, regs, INTB_TBE, SysBase);
-	return;
-    }
+    PAULA_IRQ_HANDLE(INTB_TBE);
+    PAULA_IRQ_HANDLE(INTB_DSKBLK);
+    PAULA_IRQ_HANDLE(INTB_SOFTINT);
 
-    if (mask & INTF_DSKBLK) {
-	Amiga_Paula_IRQ(mask, regs, INTB_DSKBLK, SysBase);
-	return;
-    }
-
-    if (mask & INTF_SOFTINT) {
-	Amiga_Paula_IRQ(mask, regs, INTB_SOFTINT, SysBase);
-	return;
-    }
+    PAULA_IRQ_EXIT();
 }
 
 static void Amiga_Level_2(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-    UWORD mask = custom_r(INTENAR) & custom_r(INTREQR);
-
     /* Paula IRQs 3 - CIAA/CIAB
      */
+    PAULA_IRQ_CHECK(INTF_PORTS);
 
-    if (mask & INTF_PORTS) {
-	Amiga_Paula_IRQ(mask, regs, INTB_PORTS, SysBase);
-	return;
-    }
+    PAULA_IRQ_HANDLE(INTB_PORTS);
+
+    PAULA_IRQ_EXIT();
 }
 
 static void Amiga_Level_3(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-    UWORD mask = custom_r(INTENAR) & custom_r(INTREQR);
-
     /* Paula IRQs 4 - Copper
      *            5 - Vert Blank
      *            6 - Blitter
      */
+    PAULA_IRQ_CHECK(INTF_COPER | INTF_VERTB | INTF_BLIT);
 
-    if (mask & INTF_COPER) {
-	Amiga_Paula_IRQ(mask, regs, INTB_COPER, SysBase);
-	return;
-    }
+    PAULA_IRQ_HANDLE(INTB_COPER);
+    PAULA_IRQ_HANDLE(INTB_VERTB);
+    PAULA_IRQ_HANDLE(INTB_BLIT);
 
-    if (mask & INTF_VERTB) {
-	Amiga_Paula_IRQ(mask, regs, INTB_VERTB, SysBase);
-	return;
-    }
+    PAULA_IRQ_EXIT();
 }
 
 static void Amiga_Level_4(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-    UWORD mask = custom_r(INTENAR) & custom_r(INTREQR);
-
     /* Paula IRQs  7 - Audio 0
      *             8 - Audio 1
      *             9 - Audio 2
      *            10 - Audio 3
      */
+    PAULA_IRQ_CHECK(INTF_AUD0 | INTF_AUD1 | INTF_AUD2 | INTF_AUD3);
 
-    if (mask & INTF_AUD0) {
-	Amiga_Paula_IRQ(mask, regs, INTB_AUD0, SysBase);
-	return;
-    }
-
-    if (mask & INTF_AUD1) {
-	Amiga_Paula_IRQ(mask, regs, INTB_AUD1, SysBase);
-	return;
-    }
-
-    if (mask & INTF_AUD2) {
-	Amiga_Paula_IRQ(mask, regs, INTB_AUD2, SysBase);
-	return;
-    }
-
-    if (mask & INTF_AUD3) {
-	Amiga_Paula_IRQ(mask, regs, INTB_AUD3, SysBase);
-	return;
-    }
+    PAULA_IRQ_HANDLE(INTB_AUD0);
+    PAULA_IRQ_HANDLE(INTB_AUD1);
+    PAULA_IRQ_HANDLE(INTB_AUD2);
+    PAULA_IRQ_HANDLE(INTB_AUD3);
+    
+    PAULA_IRQ_EXIT();
 }
 
 static void Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-    UWORD mask = custom_r(INTENAR) & custom_r(INTREQR);
-
-    /* Paula IRQs  11 - Disk Sync
-     *             12 - Serial RX
+    /* Paula IRQs  11 - Serial RX
+     *             12 - Disk Sync
      */
+    PAULA_IRQ_CHECK(INTF_RBF | INTF_DSKSYNC);
 
-    if (mask & INTF_RBF) {
-	Amiga_Paula_IRQ(mask, regs, INTB_RBF, SysBase);
-	return;
-    }
+    PAULA_IRQ_HANDLE(INTB_RBF);
+    PAULA_IRQ_HANDLE(INTB_DSKSYNC);
 
-    if (mask & INTF_DSKSYNC) {
-	Amiga_Paula_IRQ(mask, regs, INTB_DSKSYNC, SysBase);
-	return;
-    }
+    PAULA_IRQ_EXIT();
 }
 
 static void Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-    UWORD mask = custom_r(INTENAR) & custom_r(INTREQR);
-
     /* Paula IRQs  13 - External 
      *             14 - Copper 'special'
      */
+    PAULA_IRQ_CHECK(INTF_EXTER | (1 << 14));
 
-    if (mask & INTF_EXTER) {
-	Amiga_Paula_IRQ(mask, regs, INTB_EXTER, SysBase);
-	return;
-    }
+    PAULA_IRQ_HANDLE(INTB_EXTER);
 
     /* 14 is the Copper 'special' bit. */
-    if (mask & INTF_INTEN) {
-	Amiga_Paula_IRQ(mask, regs, INTB_INTEN, SysBase);
-	return;
-    }
+    PAULA_IRQ_HANDLE(14);
+
+    PAULA_IRQ_EXIT();
 }
 
 static void Amiga_Level_7(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* NMI - no way around it.
      */
-    Amiga_Paula_IRQ(1 << 15, regs, 15, SysBase);
+    const UWORD mask = (1 << 15);
+
+    PAULA_IRQ_HANDLE(15);
+
+    /* Don't reschedule on the way out - so don't
+     * call PAULA_IRQ_EXIT()
+     */
 }
 
 const struct M68KException AmigaExceptionTable[] = {
