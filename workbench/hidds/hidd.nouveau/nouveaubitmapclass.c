@@ -415,7 +415,8 @@ VOID METHOD(NouveauBitMap, Root, Set)
 #endif
                 if (newyoffset < limit) /* Limit for scroll */
                     newyoffset = limit;
-bug("[requested %d, calculated : %d, limit %d]\n", tag->ti_Data, newyoffset, limit);
+                
+                D(bug("[requested %d, calculated : %d, limit %d]\n", tag->ti_Data, newyoffset, limit));
                 break;
             }
         }

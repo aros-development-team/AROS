@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,6 +7,7 @@
 #include "nouveau_composing.h"
 #include "nouveau/nouveau_class.h"
 
+#include <graphics/displayinfo.h>
 #include <proto/utility.h>
 
 #define DEBUG 0
@@ -462,6 +463,19 @@ VOID METHOD(Nouveau, Root, Get)
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
+{
+    D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
+#if ENABLE_COMPOSING
+    /* TODO: probably needs a driver level lock? */
+    Composing_BitMapStackChanged(msg->Data);
+    
+    return TRUE; /* Indicate driver supports this method */
+#else
+    return FALSE;
+#endif
 }
 
 OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
