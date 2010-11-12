@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -44,8 +44,10 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/ConfigChain()
-    aros_print_not_implemented ("ConfigChain");
+    /*
+     * This function can actually be implemented only on classic Amiga(tm)
+     * because only Amigas have Zorro bus
+     */
 
     AROS_LIBFUNC_EXIT
 } /* ConfigChain */
