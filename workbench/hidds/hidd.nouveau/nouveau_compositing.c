@@ -4,7 +4,7 @@
 */
 
 #include "nouveau_intern.h"
-#include "nouveau_composing.h"
+#include "nouveau_compositing.h"
 
 #include "arosdrmmode.h"
 #include <aros/debug.h>
@@ -175,7 +175,7 @@ static BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     return TRUE;
 }
 
-#if ENABLE_COMPOSING
+#if ENABLE_COMPOSITING
 /* struct Rectangle and AndRectRect are present in graphics.library.
    They are "doubled" here so that there is no dependency from nouveau.hidd
    to graphics.library */
@@ -222,7 +222,7 @@ struct StackBitMapNode
     BOOL                isscreenvisible;
 };
 
-static VOID Composing_RecalculateVisibleRects()
+static VOID Compositing_RecalculateVisibleRects()
 {
     ULONG lastscreenvisibleline = screenrect.MaxY;
     struct StackBitMapNode * n = NULL;
@@ -258,7 +258,7 @@ static VOID Composing_RecalculateVisibleRects()
     }
 }
 
-static VOID Composing_RecalculateDisplayedWidthHeight()
+static VOID Compositing_RecalculateDisplayedWidthHeight()
 {
     OOP_Class * cl = OOP_OCLASS(screenbitmap);
     struct StackBitMapNode * n = NULL;
@@ -277,7 +277,7 @@ static VOID Composing_RecalculateDisplayedWidthHeight()
     }
 }
 
-static struct StackBitMapNode * Composing_IsBitMapOnStack(OOP_Object * bm)
+static struct StackBitMapNode * Compositing_IsBitMapOnStack(OOP_Object * bm)
 {
     struct StackBitMapNode * n = NULL;
     
@@ -294,9 +294,9 @@ static struct StackBitMapNode * Composing_IsBitMapOnStack(OOP_Object * bm)
 
 #endif
 
-BOOL Composing_TopBitMapChanged(OOP_Object * bm)
+BOOL Compositing_TopBitMapChanged(OOP_Object * bm)
 {
-#if ENABLE_COMPOSING
+#if ENABLE_COMPOSITING
     /* 
         Desctiption: 
         take incomming top bitmap
@@ -376,7 +376,7 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
         }
     }
 
-    /* TODO: probably needs to call Composing_BitMapPositionChanged to make sure
+    /* TODO: probably needs to call Compositing_BitMapPositionChanged to make sure
         revealed part of screen is erased (passed bitmap can be already lowered)
         Call needs to happen in case of same mode as well */
     return FALSE;
@@ -385,9 +385,9 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
 #endif
 }
 
-VOID Composing_BitMapStackChanged(struct HIDD_ViewPortData * vpdata)
+VOID Compositing_BitMapStackChanged(struct HIDD_ViewPortData * vpdata)
 {
-#if ENABLE_COMPOSING
+#if ENABLE_COMPOSITING
     struct HIDD_ViewPortData * vp;
     /* TODO: probably needs driver wide lock */
     /* TODO: free all items which are already on the list */
@@ -398,7 +398,7 @@ VOID Composing_BitMapStackChanged(struct HIDD_ViewPortData * vpdata)
         return; /* TODO: BLANK SCREEN */
 
     /* Switch mode if needed */    
-    Composing_TopBitMapChanged(vpdata->Bitmap);
+    Compositing_TopBitMapChanged(vpdata->Bitmap);
     
     /* TODO: what to do with bitmaps which have different modeid? skip them? add them and stretch during blitting?*/
     /* Copy bitmaps pointers to our stack */
@@ -411,30 +411,30 @@ VOID Composing_BitMapStackChanged(struct HIDD_ViewPortData * vpdata)
     }
 
     /* Recalculate visible rects per screen */
-    Composing_RecalculateVisibleRects();
+    Compositing_RecalculateVisibleRects();
     
     /* Set displayedwidth/displayedheight on all screen bitmaps */
-    Composing_RecalculateDisplayedWidthHeight();
+    Compositing_RecalculateDisplayedWidthHeight();
 
-    Composing_BitMapPositionChanged(vpdata->Bitmap);
+    Compositing_BitMapPositionChanged(vpdata->Bitmap);
 #endif   
 }
 
 
 /* Assumes LeftEdge and TopEdge are already set to new values */
-BOOL Composing_BitMapPositionChanged(OOP_Object * bm)
+BOOL Compositing_BitMapPositionChanged(OOP_Object * bm)
 {
-#if ENABLE_COMPOSING
+#if ENABLE_COMPOSITING
     /* TODO:probabaly needs a compositing wide read lock */
     struct StackBitMapNode * n = NULL;
     ULONG lastscreenvisibleline = screenrect.MaxY;
     
     /* Check is passed bitmap is in stack, ignore if not */
-    if ((n = Composing_IsBitMapOnStack(bm)) == NULL)
+    if ((n = Compositing_IsBitMapOnStack(bm)) == NULL)
         return TRUE;
     
     /* Recalculate visible rects per screen */
-    Composing_RecalculateVisibleRects();
+    Compositing_RecalculateVisibleRects();
 
     /* Refresh all bitmaps on stack */
     ForeachNode(&bitmapstack, n)
@@ -445,7 +445,7 @@ BOOL Composing_BitMapPositionChanged(OOP_Object * bm)
             IPTR width, height;
             OOP_GetAttr(n->bm, aHidd_BitMap_Width, &width);
             OOP_GetAttr(n->bm, aHidd_BitMap_Height, &height);
-            Composing_BitMapRectChanged(n->bm, 0, 0, width, height);
+            Compositing_BitMapRectChanged(n->bm, 0, 0, width, height);
             if (lastscreenvisibleline > n->screenvisiblerect.MinY)
                 lastscreenvisibleline = n->screenvisiblerect.MinY;
         }
@@ -481,14 +481,14 @@ BOOL Composing_BitMapPositionChanged(OOP_Object * bm)
 #endif
 }
 
-VOID Composing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WORD height)
+VOID Compositing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WORD height)
 {
-#if ENABLE_COMPOSING
+#if ENABLE_COMPOSITING
     /* TODO:probabaly needs a compositing wide read lock */
     struct StackBitMapNode * n = NULL;
     
     /* Check if passed bitmap is in stack, ignore if not */
-    if ((n = Composing_IsBitMapOnStack(bm)) == NULL)
+    if ((n = Compositing_IsBitMapOnStack(bm)) == NULL)
         return;
 
     if (!n->isscreenvisible)
@@ -542,12 +542,4 @@ VOID Composing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WO
 #endif
 }
 
-/* TODO: remove */
-#include <aros/symbolsets.h>
-VOID Compositing_Init()
-{
-    NEWLIST(&bitmapstack);   
-}
-
-ADD2INIT(Compositing_Init, 0);
 

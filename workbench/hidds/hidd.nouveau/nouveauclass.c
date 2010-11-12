@@ -4,7 +4,7 @@
 */
 
 #include "nouveau_intern.h"
-#include "nouveau_composing.h"
+#include "nouveau_compositing.h"
 #include "nouveau/nouveau_class.h"
 
 #include <graphics/displayinfo.h>
@@ -468,9 +468,9 @@ VOID METHOD(Nouveau, Root, Get)
 ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
 {
     D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
-#if ENABLE_COMPOSING
+#if ENABLE_COMPOSITING
     /* TODO: probably needs a driver level lock? */
-    Composing_BitMapStackChanged(msg->Data);
+    Compositing_BitMapStackChanged(msg->Data);
     
     return TRUE; /* Indicate driver supports this method */
 #else
@@ -488,7 +488,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, Show)
         
         if (IS_NOUVEAU_CLASS(bmclass))
         {
-            if (!Composing_TopBitMapChanged(msg->bitMap))
+            if (!Compositing_TopBitMapChanged(msg->bitMap))
             {
                 bug("[Nouveau] Video mode not set\n");
                 return NULL;
