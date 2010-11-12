@@ -1,48 +1,54 @@
-#define _XOPEN_SOURCE 600L
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
 
-static long pagesize;
-
+/*
+ * Allocate memory for kickstart's .code and .rodata. We allocate is as writable
+ * because we will load the kickstart into it. We will enable execution later in SetRO().
+ * We have to use mmap() and not posix_memalign() here because posix_memalign()
+ * does not pad the allocated memory up to next page boundary. As a result, setting
+ * it read-only will affect the whole page, but the page will still have some unallocated
+ * space which can be reused by malloc().
+ * This causes DisplayError() function to crash on iOS. This also may cause similar effects
+ * on other systems.
+ */
 void *AllocateRO(size_t len)
 {
-    void *ret;
+    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE, -1, 0);
 
-    /* This routine is called first, so we set uo pagesize here */
-    pagesize = sysconf(_SC_PAGESIZE);
-
-    if (posix_memalign(&ret, pagesize, len))
-	return NULL;
-
-    /* Enable execution from the allocated area */
-    if (mprotect(ret, len, PROT_READ | PROT_WRITE | PROT_EXEC)) {
-	free(ret);
-	return NULL;
-    }
-
-    return ret;
+    return (ret == MAP_FAILED) ? NULL : ret;
 }
 
+/*
+ * Disable write and enable execution.
+ * We actually have to do this in two steps because some systems
+ * (Apple iOS) do not allow read-write-execute permissions.
+ */
+int SetRO(void *addr, size_t len)
+{
+    return mprotect(addr, len, PROT_READ|PROT_EXEC);
+}
+
+/*
+ * Allocate kickstart's .data and .bss. Nothing is executed from there, so we
+ * don't have to take some special care about it. Simple malloc() is enough here.
+ */
 void *AllocateRW(size_t len)
 {
     return malloc(len);
 }
 
-/* TODO: implement shared memory for RAM */
+/*
+ * This routine allocates memory usable as AROS ram. This means it
+ * needs to have full permissions.
+ * Yes, iOS will silently mask out PROT_EXEC here. This is bad.
+ * Well, iOS will be a little bit special story in InternalLoadSeg()...
+ * TODO: Make it shared for passing RAM between AROS instances upon
+ * warm reboot.
+ */
 void *AllocateRAM(size_t len)
 {
-    void *ret;
+    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_PRIVATE, -1, 0);
 
-    if (posix_memalign(&ret, pagesize, len))
-	return NULL;
-
-    /* Enable execution from the allocated area */
-    if (mprotect(ret, len, PROT_READ | PROT_WRITE | PROT_EXEC)) {
-	free(ret);
-	return NULL;
-    }
-
-    return ret;
+    return (ret == MAP_FAILED) ? NULL : ret;
 }

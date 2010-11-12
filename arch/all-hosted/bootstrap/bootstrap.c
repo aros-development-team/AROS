@@ -224,6 +224,13 @@ int bootstrap(int argc, char ** argv)
 
     FreeKernelList();
 
+    D(fprintf(stderr, "[Bootstrap] Sealing kernel code memory\n"));
+    if (SetRO(ro_addr, ro_size))
+    {
+    	DisplayError("Failed to set kernel memory permissions");
+    	return -1;
+    }
+
     D(fprintf(stderr, "[Bootstrap] allocating working mem: %iMb\n",memSize));
 
     MemoryMap.len = memSize << 20;
@@ -244,9 +251,26 @@ int bootstrap(int argc, char ** argv)
     km[6].ti_Data = (IPTR)HostIFace;
     km[7].ti_Data = (IPTR)&MemoryMap;
 
+#ifdef DEBUG_CODE
+    /* This is a quickly hacked up sanity test which was used during iOS port development */
+    if (ro_size > 256)
+    	ro_size = 256;
+    
+    fprintf(stderr, "[Bootstrap] Dumping %u bytes of code at %p\n", ro_size, ro_addr);
+    for (i = 0; i < ro_size;)
+    {
+    	if (i % 8 == 0)
+    	    fprintf(stderr, "%p ", ro_addr + i);
+    	fprintf(stderr, "%02X ", ((unsigned char *)ro_addr)[i++]);
+    	if (i % 8 == 0)
+    	    fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+#endif
+
     fprintf(stderr, "[Bootstrap] entering kernel@%p...\n", kernel_entry);
     i = kernel_entry(km);
-    
-    DisplayError("Kernel exited with code %d\n", i);
+
+    DisplayError("Kernel exited with code %d", i);
     return i;
 }

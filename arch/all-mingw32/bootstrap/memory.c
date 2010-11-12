@@ -21,6 +21,15 @@ void *AllocateRO(size_t len)
     return VirtualAlloc(NULL, len, MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 }
 
+/*
+ * Commit executable and read-only state for kickstart's .code
+ */
+int SetRO(void *addr, size_t len)
+{
+    /* Currently this is actually done in the kernel itself */
+    return 0;
+}
+
 void *AllocateRW(size_t len)
 {
     return VirtualAlloc(NULL, len, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
