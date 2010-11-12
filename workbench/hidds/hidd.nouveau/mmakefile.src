@@ -61,7 +61,7 @@ NOUVEAU_HIDD_SOURCES := \
             nv04_accel \
             nv50_accel \
             nouveau_accel \
-            nouveau_composing \
+            nouveau_compositing \
             arosc_emul \
             hack_patchrgbconv \
             $(addprefix $(GALLIUM_PATH), $(GALLIUM_NVIDIA_SOURCES)) \

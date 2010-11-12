@@ -4,7 +4,7 @@
 */
 
 #include "nouveau_intern.h"
-#include "nouveau_composing.h"
+#include "nouveau_compositing.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -400,7 +400,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
             case aoHidd_BitMap_TopEdge:
                 newyoffset = tag->ti_Data;
                 limit = bmdata->displayedheight - bmdata->height;
-#if ENABLE_COMPOSING
+#if ENABLE_COMPOSITING
                 /* TODO: remove hack */
                 /* HACK: value 0 is set on creation before bmdata->displayedheight is
                     set, so newyoffset is set to -15 on bitmap creation */
@@ -426,7 +426,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
     {
         bmdata->xoffset = newxoffset;
         bmdata->yoffset = newyoffset;
-        Composing_BitMapPositionChanged(o);
+        Compositing_BitMapPositionChanged(o);
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -849,5 +849,5 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     
     if (bmdata->displayable)
-        Composing_BitMapRectChanged(o, msg->x, msg->y, msg->width, msg->height);
+        Compositing_BitMapRectChanged(o, msg->x, msg->y, msg->width, msg->height);
 }
