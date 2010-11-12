@@ -17,6 +17,8 @@
 #include "fakegfxhidd.h"
 
 #define DEBUG 0
+#define DCURS(x)
+#define DPOS(x)
 /* DISABLE_ARGB_POINTER actually makes the software mouse pointer code to always
    behave like if a LUT framebuffer is used.
    Useful for debugging if you have only truecolor display modes.
@@ -51,6 +53,8 @@ struct gfx_data
     OOP_Object      	    *gc;
 
     ULONG		    fakefb_attr;
+    IPTR		    fb_width;
+    IPTR		    fb_height;
 
     OOP_Object      	    *curs_bm;
     OOP_Object      	    *curs_backup;
@@ -70,6 +74,7 @@ struct gfx_data
 
 /******************************************************************************/
 
+static void gfx_setFrameBuffer(struct class_static_data *csd, struct gfx_data *data, OOP_Object *fb);
 static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd);
 static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd);
 static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd);
@@ -437,7 +442,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	OOP_GetAttr(shape, aHidd_BitMap_Width,  &curs_width);
 	OOP_GetAttr(shape, aHidd_BitMap_Height, &curs_height);
 
-	D(bug("[FakeGfx] New cursor size: %lu x %lu, framebuffer 0x%p\n", curs_width, curs_height, data->framebuffer));
+	DCURS(bug("[FakeGfx] New cursor size: %lu x %lu, framebuffer 0x%p\n", curs_width, curs_height, data->framebuffer));
 	
 	/* Create new cursor pixelbuffer. We multiply size by 4 because we want ARGB data
 	   to fit in. */
@@ -483,7 +488,7 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     IPTR yoffset = 0;
     
     data = OOP_INST_DATA(cl, o);
-    DB2(bug("[FakeGfx] SetCursorPos(%u, %u)\n", msg->x, msg->y));
+    DPOS(bug("[FakeGfx] SetCursorPos(%d, %d)\n", msg->x, msg->y));
 
     if (!data->framebuffer)
 	return TRUE;
@@ -614,7 +619,7 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
 
     ret = HIDD_Gfx_Show(data->gfxhidd, ret, msg->flags);
     D(bug("[FakeGfx] Real framebuffer object 0x%p\n", ret));
-    data->framebuffer = ret;
+    gfx_setFrameBuffer(CSD(cl), data, ret);
     if (NULL != ret)
     	ret = data->fakefb;
     /* FIXME: temporary workaround: at this point Intuition has already destroyed
@@ -1460,11 +1465,12 @@ static BOOL rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 
 static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struct class_static_data *csd)
 {
-    IPTR width, height;
-    IPTR fb_width, fb_height;
-    ULONG x, y;
-    LONG w2end;
-    LONG h2end;
+    LONG width, height;
+    LONG fbwidth, fbheight;
+    LONG x, y;
+    LONG w2end, h2end;
+    ULONG xoffset = 0;
+    ULONG yoffset = 0;
     
     struct TagItem gctags[] =
     {
@@ -1481,27 +1487,49 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 	DB2(bug("CURS BM: 0x%p, FB: 0x%p\n", data->curs_bm, data->framebuffer));
     	return;
     }
-    
-    width = data->curs_width;
-    height = data->curs_height;
-    OOP_GetAttr(data->framebuffer, aHidd_BitMap_Width,  &fb_width);
-    OOP_GetAttr(data->framebuffer, aHidd_BitMap_Height, &fb_height);
-    
+
+    fbwidth  = data->fb_width;
+    fbheight = data->fb_height;
+    width    = data->curs_width;
+    height   = data->curs_height;
+    x        = data->curs_x;
+    y        = data->curs_y;
+
+    /* Do nothing if sprite went outside of bitmap */
+    if ((x < -width) || (y < -height)) {
+        DCURS(bug("[FakeGfx] Cursor is beyond left or top edge\n"));
+    	return;
+    }
+    if ((x >= fbwidth) || (y >= fbheight)) {
+    	DCURS(bug("[FakeGfx] Cursor is beyond right or bottom edge\n"));
+    	return;
+    }
+
     /* Do some clipping */
-    x = data->curs_x;
-    y = data->curs_y;
+    if (x < 0) {
+        xoffset = -x;
+        width += x;
+    	x = 0;
+    }
     
-    w2end = fb_width - data->curs_x;
-    h2end = fb_height - data->curs_y;
-    
-    if (w2end <= 0 || h2end <= 0) /* Cursor outside framebuffer */
-	return;
+    if (y < 0) {
+    	yoffset = -y;
+    	height += y;
+    	y = 0;
+    }
 
-    if (w2end < width)
-	width -= (width - w2end);
+    w2end = data->fb_width - width;
+    h2end = data->fb_height - width;
 
-    if (h2end < height)
-	height -= (height - h2end);
+    if (x > w2end) {
+	width -= (x - w2end);
+	DCURS(bug("[FakeGfx] Clipped sprite width to %d\n", width));
+    }
+
+    if (y > h2end) {
+	height -= (y - h2end);
+	DCURS(bug("[FakeGfx] Clipped sprite height to %d\n", height));
+    }
 
     /* FIXME: clip negative coordinates */
 
@@ -1509,6 +1537,10 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     
     if (draw)
     {
+    	/* Calculate origin of sprite image according to offsets */
+        ULONG modulo = data->curs_width * data->curs_bpp;
+    	UBYTE *pixels = data->curs_pixels + yoffset * modulo + xoffset * data->curs_bpp;
+
 	/* Backup under the new cursor image */
     	// bug("BACKING UP RENDERED AREA\n");	
 	HIDD_Gfx_CopyBox(data->gfxhidd
@@ -1525,12 +1557,13 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     	DB2(bug("[FakeGfx] Rendering cursor, framebuffer 0x%p\n", data->framebuffer));
 	/* Render the cursor image */
 	if (data->curs_pixfmt == vHidd_StdPixFmt_ARGB32)
-	    HIDD_BM_PutAlphaImage(data->framebuffer, data->gc, data->curs_pixels, data->curs_width * data->curs_bpp, x, y, width, height);
+	    HIDD_BM_PutAlphaImage(data->framebuffer, data->gc, pixels, modulo, x, y, width, height);
 	else
 	    /* data->curs_bpp is always 1 here so we safely ignore it */
-	    HIDD_BM_PutTranspImageLUT(data->framebuffer, data->gc, data->curs_pixels, data->curs_width, x, y, width, height, NULL, 0);
+	    HIDD_BM_PutTranspImageLUT(data->framebuffer, data->gc, pixels, modulo, x, y, width, height, NULL, 0);
 
-        if (updaterect) HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
+        if (updaterect)
+            HIDD_BM_UpdateRect(data->framebuffer, x, y, width, height);
     
     }
     else
@@ -1554,6 +1587,20 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     return;
 }
 
+static void gfx_setFrameBuffer(struct class_static_data *csd, struct gfx_data *data, OOP_Object *fb)
+{
+    data->framebuffer = fb;
+
+    if (fb)
+    {
+    	/* Cache framebuffer size, needed by sprite rendering routine */
+    	OOP_GetAttr(fb, aHidd_BitMap_Width, &data->fb_width);
+    	OOP_GetAttr(fb, aHidd_BitMap_Height, &data->fb_height);
+
+    	DCURS(bug("[FakeGfx] Framebuffer size: %u x %u\n", data->fb_width, data->fb_height));
+    }
+}
+
 static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd)
 {
     OOP_Object *fakebm;
@@ -1569,7 +1616,7 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
     fakebm = OOP_NewObject(csd->fakefbclass, NULL, fakebmtags);
     if (data->fakefb_attr == aHidd_BitMap_FrameBuffer) {
 	data->fakefb      = fakebm;
-	data->framebuffer = framebuffer;
+	gfx_setFrameBuffer(csd, data, framebuffer);
     }
 
     return fakebm;
