@@ -1,4 +1,3 @@
-#include <aros/arossupportbase.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
@@ -109,6 +108,8 @@ int __startup startup(struct TagItem *msg)
     /* If there's no HostIFace, we can't even say anything */
     if (!HostIFace)
 	return -1;
+
+    D(bug("[Kernel] Starting up...\n"));
 
     if ((!klo) || (!khi) || (!mmap)) {
 	bug("[Kernel] Not enough parameters from bootstrap!\n");
