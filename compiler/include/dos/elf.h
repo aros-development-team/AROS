@@ -164,7 +164,7 @@ struct relo
 {
     IPTR  offset;   /* Address of the relocation relative to the section it refers to */
     IPTR  info;     /* Type of the relocation */
-#ifndef __i386__
+#if !defined(__i386__) && !defined(__arm__)
     SIPTR addend;   /* Constant addend used to compute value */
 #endif
 };
