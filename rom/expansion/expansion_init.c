@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Expansion Resident and initialization.
@@ -22,7 +22,7 @@
 
 static int ExpansionInit(LIBBASETYPEPTR LIBBASE)
 {
-	bug("expansion init\n");
+    D(bug("expansion init\n"));
 
     NEWLIST(&LIBBASE->eb_MountList);
     NEWLIST(&LIBBASE->eb_BoardList);
