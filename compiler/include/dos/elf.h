@@ -191,7 +191,7 @@ struct relo
 #endif
 #ifdef __arm__
 #define AROS_ELF_MACHINE EM_ARM
-#define AROS_ELF_REL     SHT_RELA
+#define AROS_ELF_REL     SHT_REL
 #endif
 
 #endif
