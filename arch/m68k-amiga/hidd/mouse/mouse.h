@@ -83,10 +83,8 @@ struct mouse_data
     VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
     APTR callbackdata;
     struct pHidd_Mouse_Event event;
-    UWORD potinp;
     UWORD buttons;
     UWORD joydat;
-    UBYTE ciapra;
     UBYTE port;
 };
 
