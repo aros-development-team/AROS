@@ -21,18 +21,6 @@
 #include "support.h"
 #include "ui.h"
 
-#if AROS_MODULES_DEBUG
-
-/*
- * This is needed in order to bring in definition of struct segment.
- * It will be read by gdb.
- */
-#include "../../../rom/kernel/debug_intern.h"
-
-struct segment *seg = NULL;
-
-#endif
-
 #define D(x)
 #define DREL(x)
 #define DSYM(x)
