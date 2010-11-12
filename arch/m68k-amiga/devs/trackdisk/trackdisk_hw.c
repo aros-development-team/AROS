@@ -30,7 +30,7 @@ static void td_wait_start(struct TrackDiskBase *tdb, UWORD millis)
     // do not remove, AbortIO()+WaitIO() does not clear signal bit
     // if AbortIO() finishes before WaitIO() waits.
     SetSignal(0, 1L << tdb->td_TimerMP2->mp_SigBit);
-       tdb->td_TimerIO2->tr_node.io_Command = TR_ADDREQUEST;
+    tdb->td_TimerIO2->tr_node.io_Command = TR_ADDREQUEST;
     tdb->td_TimerIO2->tr_time.tv_secs = millis / 1000;
     tdb->td_TimerIO2->tr_time.tv_micro = (millis % 1000) * 1000;
     SendIO((struct IORequest *)tdb->td_TimerIO2);
@@ -41,24 +41,43 @@ static void td_wait_end(struct TrackDiskBase *tdb)
 }
 static void td_wait(struct TrackDiskBase *tdb, UWORD millis)
 {
-    td_wait_start (tdb, millis);
-    td_wait_end (tdb);
+    td_wait_start(tdb, millis);
+    td_wait_end(tdb);
 }
 
-static void td_select(struct TDU *tdu, struct TrackDiskBase *tdb)
+static UBYTE drvmask[] = { ~0x08, ~0x10, ~0x20, ~0x40 };
+void td_select(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-    tdb->ciab->ciaprb |= 0x08 | 0x10 | 0x20 | 0x40;
+    UBYTE tmp;
+
+    if (tdu->tdu_selected)
+    	return;
+    tdu->tdu_selected = TRUE;
+    tmp = tdb->ciab->ciaprb;
+    tmp |= 0x08 | 0x10 | 0x20 | 0x40;
+    tdb->ciab->ciaprb = tmp;
     if (tdu->tdu_MotorOn)
-        tdb->ciab->ciaprb &= ~0x80;
+       tmp &= ~0x80;
     else
-        tdb->ciab->ciaprb |= 0x80;
-    tdb->ciab->ciaprb &= ~(8 << tdu->tdu_UnitNum);
+       tmp |= 0x80;
+    tdb->ciab->ciaprb = tmp;
+    tmp &= drvmask[tdu->tdu_UnitNum];
+    tdb->ciab->ciaprb = tmp;
 }
-static void td_deselect(struct TDU *tdu, struct TrackDiskBase *tdb)
+
+void td_deselect(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-    tdb->ciab->ciaprb |= 0x08 | 0x10 | 0x20 | 0x40;
-    tdb->ciab->ciaprb |= 0x80;
+    UBYTE tmp;
+    if (!tdu->tdu_selected)
+    	return;
+    tdu->tdu_selected = FALSE;
+    tmp = tdb->ciab->ciaprb;
+    tmp |= 0x08 | 0x10 | 0x20 | 0x40;
+    tdb->ciab->ciaprb = tmp;
+    tmp |= 0x80;
+    tdb->ciab->ciaprb = tmp;
 }
+
 static void td_setside(UBYTE side, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
     if (!side) {
@@ -69,6 +88,7 @@ static void td_setside(UBYTE side, struct TDU *tdu, struct TrackDiskBase *tdb)
         tdu->pub.tdu_CurrTrk &= ~1;
     }
 }
+
 static void td_setdirection(UBYTE dir, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
     if (dir)
@@ -76,40 +96,47 @@ static void td_setdirection(UBYTE dir, struct TDU *tdu, struct TrackDiskBase *td
     else
         tdb->ciab->ciaprb &= ~0x02;
 }
+
 static void td_step(struct TDU *tdu, struct TrackDiskBase *tdb, UBYTE delay)
 {
     tdb->ciab->ciaprb &= ~0x01;
     tdb->ciab->ciaprb |= 0x01;
-    td_wait (tdb, delay);
+    td_wait(tdb, delay);
 }
 
 /* start motor */
 void td_motoron(struct TDU *tdu, struct TrackDiskBase *tdb, BOOL wait)
 {
+    if (tdu->tdu_MotorOn)
+	return;
+    tdu->tdu_MotorOn = 1;
+
     td_deselect(tdu, tdb);
     td_select(tdu, tdb);
-    td_deselect(tdu, tdb);
-    td_wait(tdb, 500);
+    if (wait)
+	td_wait(tdb, 500);
 }
 
 /* stop motor */
 void td_motoroff(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
+    if (!tdu->tdu_MotorOn)
+	return;
+    tdu->tdu_MotorOn = 0;
+
     td_deselect(tdu, tdb);
     td_select(tdu, tdb);
-    td_deselect(tdu, tdb);
 }
 
 static BOOL td_istrackzero(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
     return (tdb->ciaa->ciapra & 0x10) == 0;
 }
+
 UBYTE td_getprotstatus(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
     UBYTE v;
-    td_select(tdu, tdb);
     v = (tdb->ciaa->ciapra & 0x08) ? 0 : 1;
-    td_deselect(tdu, tdb);
     return v;
 }
 
@@ -134,7 +161,6 @@ int td_recalibrate(struct TDU *tdu, struct TrackDiskBase *tdb)
         steps--;
     }
     td_wait(tdb, tdu->pub.tdu_SettleDelay);
-    td_deselect(tdu, tdb);
     tdu->pub.tdu_CurrTrk = 0;
     return 1;
 }
@@ -142,8 +168,8 @@ int td_recalibrate(struct TDU *tdu, struct TrackDiskBase *tdb)
 static int td_seek2(struct TDU *tdu, UBYTE cyl, UBYTE side, struct TrackDiskBase *tdb, int nowait)
 {
     int dir;
-    td_select(tdu, tdb);
-    td_setside (side, tdu, tdb);
+    D(bug("seek=%d/%d\n", cyl, side));
+    td_setside(side, tdu, tdb);
     if (tdu->pub.tdu_CurrTrk / 2 == cyl)
         return 1;
     if (tdu->pub.tdu_CurrTrk / 2 > cyl)
@@ -169,11 +195,11 @@ static int td_seek2(struct TDU *tdu, UBYTE cyl, UBYTE side, struct TrackDiskBase
 }
 int td_seek(struct TDU *tdu, int cyl, int side, struct TrackDiskBase *tdb)
 {
-    return td_seek2 (tdu, cyl, side, tdb, 0);
+    return td_seek2(tdu, cyl, side, tdb, 0);
 }
 int td_seek_nowait(struct TDU *tdu, int cyl, int side, struct TrackDiskBase *tdb)
 {
-    return td_seek2 (tdu, cyl, side, tdb, 1);
+    return td_seek2(tdu, cyl, side, tdb, 1);
 }
 
 
@@ -181,9 +207,7 @@ int td_seek_nowait(struct TDU *tdu, int cyl, int side, struct TrackDiskBase *tdb
 UBYTE td_getDiskChange(struct TDU *tdu, struct TrackDiskBase *tdb)
 {
     UBYTE v;
-    td_select(tdu, tdb);
     v = (tdb->ciaa->ciapra & 0x04) ? 1 : 0;
-    td_deselect(tdu, tdb);
     return v;
 }
 
@@ -210,6 +234,8 @@ static ULONG td_readwritetrack(UBYTE track, UBYTE write, struct TDU *tdu, struct
     ULONG err = 0;
     ULONG sigs;
     UWORD dsklen = 0x8000 | ((DISK_BUFFERSIZE / 2) * (tdu->tdu_hddisk ? 2 : 1)) | (write ? 0x4000 : 0);
+
+    td_motoron(tdu, tdb, TRUE);
 
     SetSignal(0, 1L << tdb->td_IntBit);
 
@@ -269,29 +295,30 @@ static int td_read2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase 
     offset = iotd->iotd_Req.io_Offset;
     len = iotd->iotd_Req.io_Length;
     data = iotd->iotd_Req.io_Data;
-    track = offset / (512 * tdu->tdu_sectors);
 
     D(bug(" Offset=%d, Len=%d, Data=%p\n", offset, len, data));
 
-    td_seek (tdu, track >> 1, track & 1, tdb);
-
     while (len != 0) {
-         UBYTE sectorcount = 0;
-         UBYTE largestsectorneeded, smallestsectorneeded, totalsectorsneeded;
-         UWORD *raw, *rawend;
+        UBYTE sectorcount = 0;
+        UBYTE largestsectorneeded, smallestsectorneeded, totalsectorsneeded;
+        UWORD *raw, *rawend;
 
-        if (seeking)
-            td_wait_end(tdb);
-        seeking = 0;
+        track = offset / (512 * tdu->tdu_sectors);
 
         if (tdb->td_buffer_unit != tdu->tdu_UnitNum || tdb->td_buffer_track != track) {
-            int ret = td_readwritetrack(track, 0, tdu, tdb);
+    	    int ret;
+   	    td_select(tdu, tdb);
+            if (seeking)
+		td_wait_end(tdb);
+	    seeking = 0;
+    	    td_seek (tdu, track >> 1, track & 1, tdb);
+            ret = td_readwritetrack(track, 0, tdu, tdb);
             if (ret) {
                 totalsectorsneeded = 0;
-	    		lasterr = ret;
-	    		goto end;
-	    	}
-	    	tdb->td_buffer_unit = tdu->tdu_UnitNum;
+	    	lasterr = ret;
+	    	goto end;
+	    }
+	    tdb->td_buffer_unit = tdu->tdu_UnitNum;
             tdb->td_buffer_track = track;
         }
 
@@ -299,7 +326,7 @@ static int td_read2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase 
             // new track, new beginning
             memset(sectortable, 0, sizeof (sectortable));
             oldtrack = track;
-            quickretries = 3;
+            quickretries = QUICKRETRYRCNT;
         }
 
         smallestsectorneeded = (offset / 512) % tdu->tdu_sectors;
@@ -379,8 +406,7 @@ static int td_read2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase 
                 lasterr = TDERR_BadSecHdr;
                 continue;
             }
-                
-                
+
             // decode data
             odd = getmfmlong (raw);
             even = getmfmlong (raw + 2);
@@ -413,11 +439,6 @@ static int td_read2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase 
                 if (len != 0) {
                     data += totalsectorsneeded * 512;
                     offset += totalsectorsneeded * 512;
-                    if (seeking)
-                        td_wait_end(tdb);
-                    seeking = 0;
-                    track++;
-                    td_seek (tdu, track >> 1, track & 1, tdb);
                 }
                 break;
             }
@@ -458,12 +479,10 @@ end:;
 
 int td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 {
-     ULONG err;
+    ULONG err;
     if (tdu->tdu_DiskIn == TDU_NODISK)
         return TDERR_DiskChanged;
-    td_select (tdu, tdb);
     err = td_read2(iotd, tdu, tdb);
-    td_deselect (tdu, tdb);
     return err;
 }
 
@@ -507,7 +526,6 @@ int td_write(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
     ULONG err;
     if (tdu->tdu_DiskIn == TDU_NODISK)
         return TDERR_DiskChanged;
-    td_select (tdu, tdb);
     if (!td_getprotstatus(tdu, tdb)) {
         if (0 /* FIXME: NO WRITE SUPPORT YET */) {
             err = td_write2(iotd, tdu, tdb);
@@ -517,7 +535,6 @@ int td_write(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
     } else {
         err = TDERR_WriteProt;
     }
-    td_deselect (tdu, tdb);
     return err;
 }
 
@@ -535,7 +552,7 @@ static int td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBas
     while (len >= tdu->tdu_sectors * 512) {
         ULONG err;
         int track = offset / (512 * tdu->tdu_sectors);
-        td_seek (tdu, track >> 1, track & 1, tdb);
+        td_seek(tdu, track >> 1, track & 1, tdb);
         err = td_readwritetrack(track, 1, tdu, tdb);
         if (err)
             return err;
@@ -543,7 +560,7 @@ static int td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBas
         offset += tdu->tdu_sectors * 512;
         iotd->iotd_Req.io_Actual += tdu->tdu_sectors * 512;
         len -= tdu->tdu_sectors * 512;
-        td_wait (tdb, 1);
+        td_wait(tdb, 1);
     }
     return 0;
 }
@@ -553,12 +570,10 @@ int td_format(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
     ULONG err;
     if (tdu->tdu_DiskIn == TDU_NODISK)
         return TDERR_DiskChanged;
-    td_select (tdu, tdb);
     if (!td_getprotstatus(tdu, tdb)) {
         err = td_format2(iotd, tdu, tdb);
     } else {
         err = TDERR_WriteProt;
     }
-    td_deselect (tdu, tdb);
     return err;
 }

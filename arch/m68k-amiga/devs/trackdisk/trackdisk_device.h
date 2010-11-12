@@ -43,7 +43,6 @@ struct TDU
 {
     struct	TDU_PublicUnit pub;
     struct List	tdu_Listeners;
-    BOOL	tdu_Busy;			/* Unit working? */
     UBYTE	tdu_UnitNum;		/* Unit number */
     UBYTE	tdu_DiskIn;			/* Disk in drive? */
     UBYTE	tdu_MotorOn;		/* Motor on? */
@@ -54,6 +53,7 @@ struct TDU
     BOOL    tdu_broken;			/* recalibrate didn't find TRACK0, drive ignored */
     UBYTE	tdu_lastdir;		/* last step direction */
     UBYTE	tdu_sectors;		/* number of sectors per track */
+    BOOL    tdu_selected;
 };
 
 struct TrackDiskBase
