@@ -47,7 +47,7 @@
 
 OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-	struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigavideo_staticdata *csd = CSD(cl);
     IPTR width, height, depth;
     BOOL  ok = TRUE;      
     struct planarbm_data *data;
@@ -55,7 +55,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     APTR		 p_pf = &pf;
     ULONG		 align;
 
-	bug("AmigaVideoBM__Root__New\n");
+    bug("AmigaVideoBM__Root__New\n");
 
     o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o) {
@@ -63,7 +63,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     	return NULL;
     }
 	
-	data = OOP_INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof  (*data));
 
     /* Get some data about the dimensions of the bitmap */
@@ -76,8 +76,8 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     */
     if (!data->planes_alloced) {
     	bug("late init\n");
-		return o; /* Late initialization */
-	}
+	return o; /* Late initialization */
+    }
 
     /* Not late initalization. Get some info on the bitmap */	
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
@@ -91,32 +91,31 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->rows		  = height;
     data->depth		  = depth;
 
-	bug("%dx%dx%d\n", width, height, depth);
+    bug("%dx%dx%d\n", width, height, depth);
 
     if (ok) {
-		/* Allocate memory for plane array */
-		data->planes = AllocVec(sizeof (UBYTE *) * depth, MEMF_ANY|MEMF_CLEAR);
-		if (NULL == data->planes) {
-		    ok = FALSE;
-		} else {
-		    UBYTE i;
-		    /* Allocate all the planes */
-		    for (i = 0; i < depth && ok; i++) {
-		    	data->planes[i] = AllocVec(height * data->bytesperrow, MEMF_CHIP|MEMF_CLEAR);
-		    	if (NULL == data->planes[i])
-		    	    ok = FALSE;
-		    }
-		}
+	/* Allocate memory for plane array */
+	data->planes = AllocVec(sizeof (UBYTE *) * depth, MEMF_ANY|MEMF_CLEAR);
+	if (NULL == data->planes) {
+	    ok = FALSE;
+	} else {
+	    UBYTE i;
+	    /* Allocate all the planes */
+	    for (i = 0; i < depth && ok; i++) {
+	    	data->planes[i] = AllocVec(height * data->bytesperrow, MEMF_CHIP|MEMF_CLEAR);
+	    	if (NULL == data->planes[i])
+	    	    ok = FALSE;
+	    }
+	}
     }
       
-    if (!ok)
-    {
- 		OOP_MethodID dispose_mid;
+    if (!ok) {
+ 	OOP_MethodID dispose_mid;
 	    
-		dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-		OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
 		
-		o = NULL;
+	o = NULL;
     }
     
     bug("ret=%x\n", o);
@@ -135,17 +134,17 @@ VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     if (data->planes_alloced)
     {
-		if (NULL != data->planes)
+	if (NULL != data->planes)
+	{
+	    for (i = 0; i < data->depth; i ++)
+	    {
+		if (NULL != data->planes[i])
 		{
-	   	    for (i = 0; i < data->depth; i ++)
-		    {
-				if (NULL != data->planes[i])
-				{
-			    	FreeVec(data->planes[i]);
-				}
-		    }
-		    FreeVec(data->planes);
+		    FreeVec(data->planes[i]);
 		}
+	    }
+	    FreeVec(data->planes);
+	}
     }
     
     OOP_DoSuperMethod(cl, o, msg);
@@ -156,32 +155,32 @@ VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
-	struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigavideo_staticdata *csd = CSD(cl);
     struct planarbm_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
 
-	bug("AmigaVideoBM__Root__Set\n");
+    bug("AmigaVideoBM__Root__Set\n");
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
- 		bug("%d/%d\n", tag->ti_Tag, tag->ti_Data);
+ 	bug("%d/%d\n", tag->ti_Tag, tag->ti_Data);
         if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
         {
-        	bug("->%d\n", idx);
+            bug("->%d\n", idx);
             switch(idx)
             {
-	            case aoHidd_BitMap_Visible:
-	            	data->disp = tag->ti_Data;
-	            	if (data->disp)
-	            		setmode(csd, data);
-				break;
-		    	case aoHidd_BitMap_LeftEdge:
-				break;
-		    	case aoHidd_BitMap_TopEdge:
-				break;
-			}
+	        case aoHidd_BitMap_Visible:
+	        data->disp = tag->ti_Data;
+	        if (data->disp)
+	            setmode(csd, data);
+		    break;
+		case aoHidd_BitMap_LeftEdge:
+		    break;
+		case aoHidd_BitMap_TopEdge:
+		    break;
 	    }
+	}
     }
     bug("AmigaVideoBM__Root__Set Exit\n");
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -189,34 +188,34 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 
 VOID AmigaVideoBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-	struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigavideo_staticdata *csd = CSD(cl);
     struct planarbm_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
- 	bug("AmigaVideoBM__Root__Get\n");
- 	if (IS_BITMAP_ATTR(msg->attrID, idx)) {
- 		bug("=%d\n", idx);
-		switch (idx) {
-		case aoHidd_BitMap_LeftEdge:
-		    *msg->storage = 0;
-		    return;
-		case aoHidd_BitMap_TopEdge:
-		    *msg->storage = 0;
-		    return;
-		case aoHidd_BitMap_Visible:
-		    *msg->storage = data->disp;
-		    return;
-		}
+    bug("AmigaVideoBM__Root__Get\n");
+    if (IS_BITMAP_ATTR(msg->attrID, idx)) {
+ 	bug("=%d\n", idx);
+	switch (idx) {
+	case aoHidd_BitMap_LeftEdge:
+	    *msg->storage = 0;
+	    return;
+	case aoHidd_BitMap_TopEdge:
+	    *msg->storage = 0;
+	    return;
+	case aoHidd_BitMap_Visible:
+	    *msg->storage = data->disp;
+	    return;
 	}
+    }
     bug("AmigaVideoBM__Root__Get Exit\n");
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
 
 static int AmigaVideoBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-	bug("AmigaVideoBM_Init\n");
+    bug("AmigaVideoBM_Init\n");
     return TRUE; //return OOP_ObtainAttrBases(attrbases);
 }
 
@@ -224,7 +223,7 @@ static int AmigaVideoBM_Init(LIBBASETYPEPTR LIBBASE)
 
 static int AmigaVideoBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-	bug("AmigaVideoBM_Expunge\n");
+    bug("AmigaVideoBM_Expunge\n");
     //OOP_ReleaseAttrBases(attrbases);
     return TRUE;
 }
@@ -238,7 +237,7 @@ ADD2EXPUNGELIB(AmigaVideoBM_Expunge, 0);
 BOOL AmigaVideoBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     struct planarbm_data *data = OOP_INST_DATA(cl, o);
- 	struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigavideo_staticdata *csd = CSD(cl);
     HIDDT_PixelFormat *pf;
 
     pf = BM_PIXFMT(o);
@@ -248,7 +247,7 @@ BOOL AmigaVideoBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     }
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
     	return FALSE;
-	return setcolors(csd, msg, data->disp);
+    return setcolors(csd, msg, data->disp);
 }
 
 
@@ -793,7 +792,7 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 BOOL AmigaVideoBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_PlanarBM_SetBitMap *msg)
 {
- 	struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigavideo_staticdata *csd = CSD(cl);
     struct planarbm_data *data;
     struct BitMap   	 *bm;
     
