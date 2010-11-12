@@ -206,11 +206,92 @@ static BOOL AndRectRect(struct Rectangle * rect1, struct Rectangle * rect2,
         return TRUE;
 }
 
-OOP_Object * visiblebitmap = NULL;
-HIDDT_ModeID visiblemodeid = vHidd_ModeID_Invalid;
-struct Rectangle visiblerect;
+/* Information related to current screen mode */
+OOP_Object *        screenbitmap = NULL;
+HIDDT_ModeID        screenmodeid = vHidd_ModeID_Invalid;
+struct Rectangle    screenrect;
 
-OOP_Object * topbitmap = NULL;
+/* This is z-ordered stack of visible bitmaps */
+struct List bitmapstack;
+
+struct StackBitMapNode
+{
+    struct Node         n;
+    OOP_Object *        bm;
+    struct Rectangle    screenvisiblerect;
+    BOOL                isscreenvisible;
+};
+
+static VOID Composing_RecalculateVisibleRects()
+{
+    ULONG lastscreenvisibleline = screenrect.MaxY;
+    struct StackBitMapNode * n = NULL;
+    
+    /* TODO: probably add composing wide read lock */
+    
+    ForeachNode(&bitmapstack, n)
+    {
+        /*  Stack bitmap bounding boxes equal screen bounding box taking into
+            account topedge */
+        IPTR topedge;
+        struct Rectangle tmprect;
+        OOP_Class * cl = OOP_OCLASS(n->bm);
+        
+        OOP_GetAttr(n->bm, aHidd_BitMap_TopEdge, &topedge);
+        /* Copy screen rect */
+        tmprect = screenrect;
+        /* Set bottom and top values */
+        tmprect.MinY = topedge;
+        tmprect.MaxY = lastscreenvisibleline;
+        /* Intersect both to make sure values are withint screen limit */
+        if (AndRectRect(&tmprect, &screenrect, &n->screenvisiblerect))
+        {
+            lastscreenvisibleline = n->screenvisiblerect.MinY;
+            n->isscreenvisible = TRUE;
+        }
+        else
+            n->isscreenvisible = FALSE;
+
+        bug("Bitmap %x, visible %d, (%d, %d) , (%d, %d)\n", n->bm, n->isscreenvisible, 
+            n->screenvisiblerect.MinX, n->screenvisiblerect.MinY, 
+            n->screenvisiblerect.MaxX, n->screenvisiblerect.MaxY);
+    }
+}
+
+static VOID Composing_RecalculateDisplayedWidthHeight()
+{
+    OOP_Class * cl = OOP_OCLASS(screenbitmap);
+    struct StackBitMapNode * n = NULL;
+    IPTR displayedwidth, displayedheight;
+
+    /* TODO: probably add composing wide read lock */
+    
+    OOP_GetAttr(screenbitmap, aHidd_BitMap_Width, &displayedwidth);
+    OOP_GetAttr(screenbitmap, aHidd_BitMap_Height, &displayedheight);
+    
+    ForeachNode(&bitmapstack, n)
+    {
+        struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(n->bm), n->bm);
+        bmdata->displayedwidth  = displayedwidth;
+        bmdata->displayedheight = displayedheight;
+    }
+}
+
+static struct StackBitMapNode * Composing_IsBitMapOnStack(OOP_Object * bm)
+{
+    struct StackBitMapNode * n = NULL;
+    
+    /* TODO: probably add composing wide read lock */
+
+    ForeachNode(&bitmapstack, n)
+    {
+        if (n->bm == bm)
+            return n;
+    }
+
+    return NULL;
+}
+
 #endif
 
 BOOL Composing_TopBitMapChanged(OOP_Object * bm)
@@ -231,7 +312,6 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
     OOP_Object * fbbitmap = NULL;
     IPTR modeid, hdisp, vdisp, e;
     struct TagItem bmtags[5];
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
 
     OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
     gfx = (OOP_Object *)e;
@@ -243,6 +323,10 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
         D(bug("[Nouveau] Invalid ModeID\n"));
         return FALSE;
     }
+
+    /* If the mode is already visible do nothing */
+    if (modeid == screenmodeid)
+        return TRUE;
     
     /* Get width and height of mode */
     struct pHidd_Gfx_GetMode __getmodemsg = 
@@ -258,15 +342,6 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &hdisp);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &vdisp);
 
-    /* If the mode is already visible, just switch top bitmap and provide limits */
-    if (modeid == visiblemodeid)
-    {
-        topbitmap               = bm;
-        bmdata->displayedwidth  = hdisp;
-        bmdata->displayedheight = vdisp;
-        return TRUE;
-    }
-
     /* Create a new bitmap that will be used for framebuffer */
     bmtags[0].ti_Tag = aHidd_BitMap_Width;          bmtags[0].ti_Data = hdisp;
     bmtags[1].ti_Tag = aHidd_BitMap_Height;         bmtags[1].ti_Data = vdisp;
@@ -280,21 +355,17 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
         BOOL ret = HIDDNouveauSwitchToVideoMode(fbbitmap);
         if (ret)
         {
-            /* Dispose the previous visiblebitmap */
-            HIDD_Gfx_DisposeBitMap(gfx, visiblebitmap);
+            /* Dispose the previous screenbitmap */
+            HIDD_Gfx_DisposeBitMap(gfx, screenbitmap);
 
             /* Store bitmap/mode information */ 
-            topbitmap           = bm;
-            visiblemodeid       = modeid;
-            visiblebitmap       = fbbitmap;
-            visiblerect.MinX    = 0;
-            visiblerect.MinY    = 0;
-            visiblerect.MaxX    = hdisp - 1;
-            visiblerect.MaxY    = vdisp - 1;
+            screenmodeid    = modeid;
+            screenbitmap    = fbbitmap;
+            screenrect.MinX = 0;
+            screenrect.MinY = 0;
+            screenrect.MaxX = hdisp - 1;
+            screenrect.MaxY = vdisp - 1;
             
-            /* Update displayed width/height for input bitmap */
-            bmdata->displayedwidth      = hdisp;
-            bmdata->displayedheight     = vdisp;
             return TRUE;
         }
         else
@@ -314,24 +385,76 @@ BOOL Composing_TopBitMapChanged(OOP_Object * bm)
 #endif
 }
 
+VOID Composing_BitMapStackChanged(struct HIDD_ViewPortData * vpdata)
+{
+#if ENABLE_COMPOSING
+    struct HIDD_ViewPortData * vp;
+    /* TODO: probably needs driver wide lock */
+    /* TODO: free all items which are already on the list */
+    NEWLIST(&bitmapstack); /* YES THIS IS MEMORY LEAK */
+    
+    
+    if (!vpdata)
+        return; /* TODO: BLANK SCREEN */
+
+    /* Switch mode if needed */    
+    Composing_TopBitMapChanged(vpdata->Bitmap);
+    
+    /* TODO: what to do with bitmaps which have different modeid? skip them? add them and stretch during blitting?*/
+    /* Copy bitmaps pointers to our stack */
+    for (vp = vpdata; vp; vp = vp->Next)
+    {
+        struct StackBitMapNode * n = AllocVec(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
+        n->bm = vp->Bitmap;
+        n->isscreenvisible = FALSE;
+        AddTail(&bitmapstack, (struct Node *)n);
+    }
+
+    /* Recalculate visible rects per screen */
+    Composing_RecalculateVisibleRects();
+    
+    /* Set displayedwidth/displayedheight on all screen bitmaps */
+    Composing_RecalculateDisplayedWidthHeight();
+
+    Composing_BitMapPositionChanged(vpdata->Bitmap);
+#endif   
+}
+
+
 /* Assumes LeftEdge and TopEdge are already set to new values */
 BOOL Composing_BitMapPositionChanged(OOP_Object * bm)
 {
 #if ENABLE_COMPOSING
-    /* Reblit the complete bitmap */
-    OOP_Class * cl = OOP_OCLASS(bm);
-    IPTR width, height, topedge;
+    /* TODO:probabaly needs a compositing wide read lock */
+    struct StackBitMapNode * n = NULL;
+    ULONG lastscreenvisibleline = screenrect.MaxY;
     
-    if (bm != topbitmap)
-        return TRUE; /* Ignore */
+    /* Check is passed bitmap is in stack, ignore if not */
+    if ((n = Composing_IsBitMapOnStack(bm)) == NULL)
+        return TRUE;
     
-    OOP_GetAttr(bm, aHidd_BitMap_Width, &width);
-    OOP_GetAttr(bm, aHidd_BitMap_Height, &height);
-    OOP_GetAttr(bm, aHidd_BitMap_TopEdge, &topedge);
-    
-    /* Clean up area revealed by drag */
-    if (topedge > 0)
+    /* Recalculate visible rects per screen */
+    Composing_RecalculateVisibleRects();
+
+    /* Refresh all bitmaps on stack */
+    ForeachNode(&bitmapstack, n)
     {
+        if (n->isscreenvisible)
+        {
+            OOP_Class * cl = OOP_OCLASS(n->bm);
+            IPTR width, height;
+            OOP_GetAttr(n->bm, aHidd_BitMap_Width, &width);
+            OOP_GetAttr(n->bm, aHidd_BitMap_Height, &height);
+            Composing_BitMapRectChanged(n->bm, 0, 0, width, height);
+            if (lastscreenvisibleline > n->screenvisiblerect.MinY)
+                lastscreenvisibleline = n->screenvisiblerect.MinY;
+        }
+    }
+
+    /* Clean up area revealed by drag */
+    if (lastscreenvisibleline > 0)
+    {
+        OOP_Class * cl = OOP_OCLASS(screenbitmap);
         IPTR e, viswidth;
         OOP_Object * gfx = NULL;
         OOP_Object * tmpgc = NULL;
@@ -343,15 +466,14 @@ BOOL Composing_BitMapPositionChanged(OOP_Object * bm)
         
         OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
         gfx = (OOP_Object *)e;
-        OOP_GetAttr(visiblebitmap, aHidd_BitMap_Width, &viswidth); 
+        OOP_GetAttr(screenbitmap, aHidd_BitMap_Width, &viswidth); 
 
         /* TODO: Cache this option in gfxdata */
         tmpgc = HIDD_Gfx_NewGC(gfx, gctags);
-        HIDD_BM_FillRect(visiblebitmap, tmpgc, 0, 0, viswidth, topedge);
+        HIDD_BM_FillRect(screenbitmap, tmpgc, 0, 0, viswidth, lastscreenvisibleline);
         HIDD_Gfx_DisposeGC(gfx, tmpgc);
     }
     
-    Composing_BitMapRectChanged(bm, 0, 0, width, height);
 
     return TRUE;
 #else
@@ -362,10 +484,17 @@ BOOL Composing_BitMapPositionChanged(OOP_Object * bm)
 VOID Composing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WORD height)
 {
 #if ENABLE_COMPOSING
-    if (bm != topbitmap)
+    /* TODO:probabaly needs a compositing wide read lock */
+    struct StackBitMapNode * n = NULL;
+    
+    /* Check if passed bitmap is in stack, ignore if not */
+    if ((n = Composing_IsBitMapOnStack(bm)) == NULL)
         return;
 
-    if (visiblebitmap)
+    if (!n->isscreenvisible)
+        return;
+
+    if (screenbitmap)
     {
         OOP_Class * cl = OOP_OCLASS(bm);
         OOP_Object * gfx = NULL;
@@ -390,8 +519,8 @@ VOID Composing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WO
         srcindstrect.MinY = srcrect.MinY + topedge;
         srcindstrect.MaxY = srcrect.MaxY + topedge;
         
-        /* Find intersection of screen rect and srcindst rect */
-        if (AndRectRect(&srcindstrect, &visiblerect, &dstandvisrect))
+        /* Find intersection of bitmap visible screen rect and srcindst rect */
+        if (AndRectRect(&srcindstrect, &n->screenvisiblerect, &dstandvisrect))
         {
             /* Intersection is valid. Blit. */        
             /* TODO: stubs have performance hit, change to direct DoMethod call with cached MethodID */
@@ -402,7 +531,7 @@ VOID Composing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WO
                 bm,
                 /* Transform back to source bitmap coord system */
                 dstandvisrect.MinX - leftedge, dstandvisrect.MinY - topedge,
-                visiblebitmap,
+                screenbitmap,
                 dstandvisrect.MinX, dstandvisrect.MinY,
                 dstandvisrect.MaxX - dstandvisrect.MinX + 1,
                 dstandvisrect.MaxY - dstandvisrect.MinY + 1,
@@ -412,4 +541,13 @@ VOID Composing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, WO
     }
 #endif
 }
+
+/* TODO: remove */
+#include <aros/symbolsets.h>
+VOID Compositing_Init()
+{
+    NEWLIST(&bitmapstack);   
+}
+
+ADD2INIT(Compositing_Init, 0);
 
