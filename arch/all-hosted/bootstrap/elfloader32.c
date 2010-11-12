@@ -280,12 +280,43 @@ SysBase_no:     s = sym->value;
             break;
 #endif
 #ifdef __arm__
+	case R_ARM_CALL:
+	case R_ARM_JUMP24:
         case R_ARM_PC24:
-            *p = s + rel->addend - (uint32_t)p;
+	    {
+		/* On ARM the 24 bit offset is shifted by 2 to the right */
+		signed long offset = (*p & 0x00ffffff) << 2;
+		/* If highest bit set, make offset negative */
+		if (offset & 0x02000000)
+		    offset -= 0x04000000;
+		
+		offset += s - (uint32_t)p;
+		
+		offset >>= 2;
+		*p &= 0xff000000;
+		*p |= offset & 0x00ffffff;
+            }
             break;
 
+	case R_ARM_MOVW_ABS_NC:
+	case R_ARM_MOVT_ABS:
+	    {
+		signed long offset = *p;
+		offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
+		offset = (offset ^ 0x8000) - 0x8000;
+		
+		offset += s;
+		
+		if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
+		    offset >>= 16;
+		    
+		*p &= 0xfff0f000;
+		*p |= ((offset & 0xf000) << 4) | (offset & 0x0fff);
+	    }
+	    break;
+	    
         case R_ARM_ABS32:
-            *p = s + rel->addend;
+            *p += s;
             break;
 
         case R_ARM_NONE:
