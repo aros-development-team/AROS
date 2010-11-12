@@ -31,7 +31,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #ifdef HiddMouseAB
@@ -53,8 +53,8 @@ static AROS_UFH4(ULONG, mouse_vblank,
 { 
     AROS_USERFUNC_INIT
 
-	struct mouse_data *mousedata = (struct mouse_data*)data;
-	volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct mouse_data *mousedata = (struct mouse_data*)data;
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
     volatile struct CIA *cia = (struct CIA*)0xbfe001;
     struct pHidd_Mouse_Event *e = &mousedata->event;
     UWORD potinp = custom->potinp;
@@ -62,20 +62,20 @@ static AROS_UFH4(ULONG, mouse_vblank,
     UWORD buttons = 0;
     BYTE x, y;
 
-	x = (BYTE)(joydat >> 8);
-	x -= (BYTE)(mousedata->joydat >> 8);
-	y = (BYTE)(joydat & 0xff);
-	y -= (BYTE)(mousedata->joydat & 0xff);
+    x = (BYTE)(joydat >> 8);
+    x -= (BYTE)(mousedata->joydat >> 8);
+    y = (BYTE)(joydat & 0xff);
+    y -= (BYTE)(mousedata->joydat & 0xff);
 	
-	mousedata->joydat = joydat;
+    mousedata->joydat = joydat;
 
-	e->x = x;
-	e->y = y;
-	if (e->x || e->y) {
-		e->button = vHidd_Mouse_NoButton;
-		e->type = vHidd_Mouse_Motion;
-		mousedata->mouse_callback(mousedata->callbackdata, e);
-	}	
+    e->x = x;
+    e->y = y;
+    if (e->x || e->y) {
+	e->button = vHidd_Mouse_NoButton;
+	e->type = vHidd_Mouse_Motion;
+	mousedata->mouse_callback(mousedata->callbackdata, e);
+    }	
 
     if ((cia->ciapra & (0x40 << mousedata->port)) == 0)
     	buttons |= LEFT_BUTTON;
@@ -83,22 +83,21 @@ static AROS_UFH4(ULONG, mouse_vblank,
     	buttons |= RIGHT_BUTTON;
     if ((potinp & (0x0100 << (mousedata->port * 4))) == 0)
     	buttons |= MIDDLE_BUTTON;
-    	
-	if (buttons != mousedata->buttons) {
-		int i;
-		for (i = 0; i < 3; i++) {
-			if ((buttons & (1 << i)) != (mousedata->buttons & (1 << i))) {
-                e->button = vHidd_Mouse_Button1 + i;
-                e->type = (buttons & (1 << i)) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
-                mousedata->mouse_callback(mousedata->callbackdata, e);
+    if (buttons != mousedata->buttons) {
+	int i;
+	for (i = 0; i < 3; i++) {
+	    if ((buttons & (1 << i)) != (mousedata->buttons & (1 << i))) {
+            	e->button = vHidd_Mouse_Button1 + i;
+            	e->type = (buttons & (1 << i)) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
+            	mousedata->mouse_callback(mousedata->callbackdata, e);
             }
-        }
+   	}
         mousedata->buttons = buttons;
     }
 
-	return 0;
+    return 0;
 	
-	AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /***** Mouse::New()  ***************************************/
@@ -153,28 +152,25 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
         } /* while (tags to process) */
 
+	PotgoBase = OpenResource("potgo.resource");
+	if (!PotgoBase)
+	    Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
 
+	MSD(cl)->potgo = PotgoBase;
 
-		PotgoBase = OpenResource("potgo.resource");
-		if (!PotgoBase)
-			Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
-
-		MSD(cl)->potgo = PotgoBase;
-
-		data->port = 0;
-		potgobits = 0x0f00 << (data->port * 4);
-		if (AllocPotBits(potgobits) != potgobits)
-			Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+	data->port = 0;
+	potgobits = 0x0f00 << (data->port * 4);
+	if (AllocPotBits(potgobits) != potgobits)
+	    Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
 			
-		WritePotgo(potgobits, potgobits);
-		cia->ciaddra |= 0x40 << data->port; // left button line = output
-		custom->potgo = 0xff00; // other buttons = output
-		data->joydat = data->port ? custom->joy1dat : custom->joy0dat;
-		data->potinp = custom->potinp;
-		data->ciapra = cia->ciapra;
+	WritePotgo(potgobits, potgobits);
+	cia->ciaddra &= ~(0x40 << data->port); // left button line = input
+	cia->ciapra |= 0x40 << data->port; // left button line = one
+	custom->potgo = 0xff00; // other buttons = output and set to ones
+	data->joydat = data->port ? custom->joy1dat : custom->joy0dat;
    
-   		MSD(cl)->potgobits = potgobits;
-  		inter = &MSD(cl)->mouseint;
+   	MSD(cl)->potgobits = potgobits;
+  	inter = &MSD(cl)->mouseint;
  
        	inter->is_Code         = (APTR)mouse_vblank;
     	inter->is_Data         = data;
@@ -182,7 +178,7 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
     	inter->is_Node.ln_Pri  = 10;
     	inter->is_Node.ln_Type = NT_INTERRUPT;
 	
- 		AddIntServer(INTB_VERTB, inter);
+ 	AddIntServer(INTB_VERTB, inter);
    
        	ObtainSemaphore( &MSD(cl)->sema);
         MSD(cl)->mousehidd = o;
@@ -200,7 +196,7 @@ VOID AmigaMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     	struct PotgoBase *PotgoBase = MSD(cl)->potgo;
 	    RemIntServer(INTB_VERTB, &MSD(cl)->mouseint);
 	    FreePotBits(MSD(cl)->potgobits);
-	}
+    }
     ReleaseSemaphore( &MSD(cl)->sema);
 
     OOP_DoSuperMethod(cl, o, msg);
@@ -227,9 +223,9 @@ VOID AmigaMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_Mouse_State:
 		return;
 
-    	case aoHidd_Mouse_RelativeCoords:
-	    *msg->storage = TRUE;
-	    return;
+    	    case aoHidd_Mouse_RelativeCoords:
+	    	*msg->storage = TRUE;
+		return;
 	}
 
     }
