@@ -34,6 +34,7 @@ struct x11_func {
     XErrorHandler (*XSetErrorHandler) ( XErrorHandler );
     XIOErrorHandler (*XSetIOErrorHandler) ( XIOErrorHandler );
     int (*XSetWMHints) ( Display* , Window , XWMHints* );
+    void (*XSetWMNormalHints)(Display *display, Window w, XSizeHints *hints);
     int (*XSetWMProtocols) ( Display* , Window , Atom* , int );
     int (*XAutoRepeatOff) ( Display* );
     int (*XAutoRepeatOn) ( Display* );
