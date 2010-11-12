@@ -1,21 +1,19 @@
  1. INTRODUCTION.
 
- This is TOTALLY EXPERIMENTAL start of Apple iOS-hosted port of AROS.
-Bootstrap builds and works for both targets (Simulator and Device). Workbench and hosted strap
-build okay for simulator. I haven't tried to build them for device because of missing ARM CPU
-support in AROS.
- Things to do (in the order of increasing complexity):
- 1. Complete Darwin-hosted port (untie kickstart from static linking, use hostlib.resource for
-    access to host OS functions instead) and build the board support package.
- 2. Implement ARM CPU support (write ARM atomic operations)
- 3. Implement Cocoa display driver.
- After completion of these two tasks we'll get AROS running hosted on all Apple devices.
+ This is Apple iOS-hosted port of AROS.
+ i386 architecture support is complete and the port succesfully runs in iPhone Simulator.
+The bootstrap is also compiled and tested on ARM CPU on a real iPhone. It works. However ARM
+AROS kernel is still in progress.
+ Note that currently there's no UIKit display driver, so AROS currently displays "Unknown type of system screen"
+guru. However it boots up into Workbench.
 
  2. COMPILING.
 
  In order to compile iOS-hosted AROS you currently need Apple XCode with iOS SDK. This assumes you
 are running on Mac. Cross-compiling of the port seems to be possible using source code of Darwin tools,
 but i haven't tried it yet.
+ When configuring you need to supply --enable-target-variant=ios argument and select one of supported targets:
+darwin-i386 for Simulator version and darwin-arm for real hardware.
  The following iOS-specific options are added to configure for supporting this build:
  --with-xcode       - specifies where XCode is located on your machine. Default is /Developer (this is where
                       XCode v3.2.4 installed itself by default on my machine)
@@ -29,10 +27,14 @@ but i haven't tried it yet.
                         $aros_ios_platform - "iPhoneSimulator" for ios-i386 target and "iPhoneOS" for ios-arm target
                         $aros_ios_sdk      - what is supplied by --with-ios-sdk
 
- The bootstrap expects to locate AROS root directory inside Documents directory of its sandbox (i.e. Documents/AROS). The root does
-not have to contain the bootstrap itself.
+ 3. INSTALLING.
 
- 3. RUNNING.
+ The bootstrap expects to locate AROS root directory inside Documents directory of its sandbox (i.e. Documents/AROS). The root does
+not have to contain the bootstrap itself. The bootstrap is built as standard application bundle and is located one level up relating to
+AROS directory. You have to install it as a usual application, on jailbroken iPhone the easiest way to do this is using iPhone Explorer
+(http://www.macroplant.com/iphoneexplorer/).
+
+ 4. RUNNING.
 
  Simulator version runs without problems. Device version is of course not signed, it runs only on jailbroken machines. There is
 some support for creating signed version, but because of proprietary nature of the thing i won't describe it here. In fact it's very
@@ -40,5 +42,8 @@ easy to discover how to create a signed bundle, just read the mmakefile.src and 
 developer certificate and provisioning profile for this. I use my company's test profile and it works. However i would not expect
 that Apple would ever permit to release such an application in their AppStore, so code signing is a purely experimental feature,
 written as part of my company's research project.
+ Remember that Apple would never approve AROS for their AppStore! AROS violates at least 25% of their rules by its nature. So
+do not even try it. And it's better not to distribute signed versions. If you do so, do not complain about being banned from
+AppStore and/or Apple developer site. You have been warned!
 
 									Pavel Fedin <pavel_fedin@mail.ru>
