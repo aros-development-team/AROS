@@ -34,11 +34,19 @@ VOID free_ximage(XImage *image);
 
 /****************************************************************************************/
 
-#define USE_X11_DRAWFUNCS  	1
-#define USE_FRAMEBUFFER     1
-#define X11SOFTMOUSE		1
-#define ADJUST_XWIN_SIZE	1	/* Resize the xwindow to the size of the actual visible screen */
+#define USE_X11_DRAWFUNCS   1
+#define USE_FRAMEBUFFER     1	/* Only for debug. Do not attempt to set to 0 in production! Managing several screens will break. */
+#define X11SOFTMOUSE	    1	/* Use software mouse sprite */
+#define ADJUST_XWIN_SIZE    1	/* Resize the xwindow to the size of the actual visible screen */
+#ifdef HOST_OS_darwin
+/*
+ * XQuartz does not like operations on unmapped window, strange effects occur (bootmenu breaks, for example).
+ * X11 driver needs serious rewrite. For now i hope this will do.
+ */
+#define DELAY_XWIN_MAPPING  0
+#else
 #define DELAY_XWIN_MAPPING  1   /* Do not map (show) X window as long as there's no screen */
+#endif
 
 #if ((USE_FRAMEBUFFER && !X11SOFTMOUSE) || (!USE_FRAMEBUFFER && X11SOFTMOUSE))
 #error Invalid combination of USE_FRAMEBUFFER and X11SOFTMOUSE
