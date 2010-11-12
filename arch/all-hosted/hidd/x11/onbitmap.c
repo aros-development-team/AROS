@@ -364,7 +364,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 		WaitPort(port);		
 		GetMsg(port);
 
-    	    	kprintf("NOTY_MAPWINDOW request returned\n");		
+    	    	D(kprintf("NOTY_MAPWINDOW request returned\n"));
     	    #endif
 	    		
 	    	gcval.plane_mask = AllPlanes;
