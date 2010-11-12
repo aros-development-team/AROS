@@ -21,15 +21,17 @@ cd      $BUILD_BASE/AROS
 export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
 execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-optimization="-Os" --with-serial-debug
 make
+make    systemdisk-amiga-m68k
 
 cd      $BUILD_BASE/AROS/bin/amiga-m68k
 move    AROS $PACKAGE
 
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
+copy    $BUILD_BASE/AROS/distfiles/systemdisk-$BUILDTARGET.img $PACKAGE
 delete  $PACKAGE/aros-amiga-m68k-ext.elf
 delete  $PACKAGE/aros-amiga-m68k-rom.elf
-delete  $PACAKGE/Development/lib
+
 
 archive $ARCHIVE $PACKAGE
 
