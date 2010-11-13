@@ -62,10 +62,10 @@ static AROS_UFH4(ULONG, mouse_vblank,
     UWORD buttons = 0;
     BYTE x, y;
 
-    x = (BYTE)(joydat >> 8);
-    x -= (BYTE)(mousedata->joydat >> 8);
-    y = (BYTE)(joydat & 0xff);
-    y -= (BYTE)(mousedata->joydat & 0xff);
+    y = (BYTE)(joydat >> 8);
+    y -= (BYTE)(mousedata->joydat >> 8);
+    x = (BYTE)(joydat & 0xff);
+    x -= (BYTE)(mousedata->joydat & 0xff);
 	
     mousedata->joydat = joydat;
 
