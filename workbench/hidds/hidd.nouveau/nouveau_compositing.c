@@ -606,4 +606,13 @@ VOID Compositing_BitMapRectChanged(OOP_Object * bm, WORD x, WORD y, WORD width, 
 #endif
 }
 
+#if ENABLE_COMPOSITING
+/* TODO: remove */
+#include <aros/symbolsets.h>
+VOID Compositing_Init()
+{
+    NEWLIST(&bitmapstack);   
+}
 
+ADD2INIT(Compositing_Init, 0);
+#endif

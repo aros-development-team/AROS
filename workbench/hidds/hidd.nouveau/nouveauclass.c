@@ -579,4 +579,26 @@ VOID METHOD(Nouveau, Hidd_Gfx, SetCursorVisible)
     HIDDNouveauShowCursor(o, msg->visible);
 }
 
+static struct HIDD_ModeProperties modeprops = 
+{
+    DIPF_IS_SPRITES,
+    1,
+#if ENABLE_COMPOSITING
+    COMPF_ABOVE
+#else
+    0
+#endif
+};
+
+ULONG METHOD(Nouveau, Hidd_Gfx, ModeProperties)
+{
+    ULONG len = msg->propsLen;
+
+    if (len > sizeof(modeprops))
+        len = sizeof(modeprops);
+    CopyMem(&modeprops, msg->props, len);
+
+    return len;
+}
+
 
