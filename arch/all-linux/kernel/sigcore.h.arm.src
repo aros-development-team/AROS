@@ -26,7 +26,7 @@
 
 /* We don't use any hacks any more. With modern kernel and libc it's okay
    Schulz: NO, it's NOT in case of ARM! */
-//#define SIGCORE_NEED_SA_SIGINFO 0
+#define SIGCORE_NEED_SA_SIGINFO 1
 
 #include <ucontext.h>
 #include <signal.h>
@@ -50,11 +50,10 @@ typedef @sighandler@ SignalHandler;
    I will use gcc builtin here, to get that value... */
    
 #define GLOBAL_SIGNAL_INIT(sighandler) \
-	static void sighandler ## _gate (int sig) 					\
-	{ 										\
-	    struct ucontext *u = (struct ucontext *)(__builtin_frame_address(0)+4);     \
-	    sighandler(sig, u); 							\
-	}
+        static void sighandler ## _gate (int sig, siginfo_t *blub, struct ucontext *u)  \
+        {                                                                               \
+            sighandler(sig, u);                                                         \
+        }
 
 #define SP(uc)	(uc->uc_mcontext.arm_sp)
 #define PC(uc)	(uc->uc_mcontext.arm_pc)
@@ -63,7 +62,6 @@ typedef @sighandler@ SignalHandler;
    has returned and the normal execution commences. */
 #define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
 #define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
-
 
 /* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
    all general purpose registers. Use this macro when you want to
@@ -76,15 +74,18 @@ typedef @sighandler@ SignalHandler;
 #define SAVEREGS(cc, uc)           						\
 do {										\
     CopyMemQuick(&uc->uc_mcontext.arm_r0, (cc)->regs.r, sizeof(ULONG) * 17);	\
-    int i = 0;									\
+    unsigned int i = 0;								\
     while(i < 128) {								\
 	if (uc->uc_regspace[i] == 0x56465001)					\
 	{									\
-	    CopyMemQuick(&uc->uc_regspace[i], (cc)->regs.fpuContext, uc->uc_regspace[i+1]);	\
+	    CopyMemQuick(&uc->uc_regspace[i+2], (cc)->regs.fpuContext, uc->uc_regspace[i+1]-8);	\
 	    break;								\
-	} else i = i + uc->uc_regspace[i+1]/4;					\
+	} else if (uc->uc_regspace[i+1] > 0) {					\
+	    i = i + uc->uc_regspace[i+1]/4;					\
+	} else i++;								\
     } 										\
 } while(0);
+
 
 /* This macro does the opposite to SAVEREGS(). It restores all
    general purpose registers. After that, you can enter the new
@@ -94,15 +95,18 @@ do {										\
 #define RESTOREREGS(cc, uc)							\
 do {										\
     CopyMemQuick((cc)->regs.r, &uc->uc_mcontext.arm_r0, sizeof(ULONG) * 17);	\
-    int i = 0;									\
+    unsigned int i = 0;								\
     while(i < 128) {								\
 	if (uc->uc_regspace[i] == 0x56465001)					\
 	{									\
-	    CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[i], uc->uc_regspace[i+1]);	\
+	    CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[i+2], uc->uc_regspace[i+1]-8);	\
 	    break;								\
-	} else i = i + uc->uc_regspace[i+1]/4;					\
+	} else if (uc->uc_regspace[i+1] > 0) {					\
+	    i = i + uc->uc_regspace[i+1]/4;					\
+	} else i++;								\
     }										\
 } while(0);
+
 
 /* This macro prints the current signals' context */
 #define PRINT_SC(sc) \
