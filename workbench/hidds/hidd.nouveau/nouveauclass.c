@@ -4,7 +4,6 @@
 */
 
 #include "nouveau_intern.h"
-#include "nouveau_compositing.h" //TODO: remove
 #include "nouveau/nouveau_class.h"
 #include "compositing.h"
 
@@ -171,7 +170,7 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
 }
 
 /* This function assumes that the mode, crtc and output are already selected */
-BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
+static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
     struct HIDDNouveauData * gfxdata = NULL;
@@ -628,7 +627,6 @@ VOID METHOD(Nouveau, Root, Get)
 
 ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
 {
-#if ENABLE_COMPOSITING
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
     struct pHidd_Compositing_BitMapStackChanged bscmsg =
     {
@@ -639,14 +637,7 @@ ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
     D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
 
     OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&bscmsg);
-#else
-    if (msg->Data)
-        HIDDNouveauSwitchToVideoMode(msg->Data->Bitmap);
-    else
-    {
-        /* TODO: Implement blanking out display */
-    }    
-#endif
+
     return TRUE; /* Indicate driver supports this method */
 }
 
@@ -750,11 +741,7 @@ static struct HIDD_ModeProperties modeprops =
 {
     DIPF_IS_SPRITES,
     1,
-#if ENABLE_COMPOSITING
     COMPF_ABOVE
-#else
-    0
-#endif
 };
 
 ULONG METHOD(Nouveau, Hidd_Gfx, ModeProperties)
