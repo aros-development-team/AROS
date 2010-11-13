@@ -2,6 +2,7 @@
 #include <proto/exec.h>
 
 #include <hardware/custom.h>
+#include <hardware/intbits.h>
 #include <hidd/graphics.h>
 
 #include "amigavideogfx.h"
@@ -27,11 +28,49 @@ void resetcustom(void)
     custom->vposw = 0x8000;
 }
 
-static void waitvblank(void)
-{
+static AROS_UFH4(ULONG, gfx_vblank,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, datap, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+{ 
+    AROS_USERFUNC_INIT
+
+    struct amigavideo_staticdata *data = (struct amigavideo_staticdata*)datap;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    while((custom->vposr & 0x000f) == 0);
-    while((custom->vposr & 0x000f) != 0);
+    BOOL start = FALSE;
+
+    data->framecounter++;
+    if (data->sprite) {
+    	data->sprite[0] = data->spritepos;
+    	data->sprite[1] = data->spritectl;
+    }
+    if (data->mode == 1) {
+    	if (data->interlace) {
+	    custom->bplcon0 = 0x0204;
+	    if (custom->vposr & 0x8000)
+	    	start = TRUE;
+	} else {
+	    start = TRUE;
+	}
+    	if (start) {
+            custom->cop2lc = (ULONG)data->copper2;
+  	    custom->copjmp1 = 0x0000;
+    	    custom->dmacon = 0x8100;
+    	    data->mode = 0;
+    	}
+    }
+
+    return 0;
+	
+    AROS_USERFUNC_EXIT
+}
+
+static void waitvblank(struct amigavideo_staticdata *data)
+{
+    // ugly busy loop for now..
+    UWORD fc = data->framecounter;
+    while (fc == data->framecounter);
 }
 
 static UBYTE cursorcolors[] = { 0xdd,0x22,0x22,  0x00,0x00,0x00, 0xff,0xcc,0xaa };
@@ -43,6 +82,12 @@ void initcustom(struct amigavideo_staticdata *data)
 
     resetcustom();
 
+    data->inter.is_Code         = (APTR)gfx_vblank;
+    data->inter.is_Data         = data;
+    data->inter.is_Node.ln_Name = "GFX VBlank server";
+    data->inter.is_Node.ln_Pri  = 25;
+    data->inter.is_Node.ln_Type = NT_INTERRUPT;
+    AddIntServer(INTB_VERTB, &data->inter);
 
     data->startx = 0x80;
     data->starty = 0x28;
@@ -123,7 +168,7 @@ void resetmode(struct amigavideo_staticdata *data)
 
     custom->cop2lc = (ULONG)data->copper2_backup;
 
-    waitvblank();
+    waitvblank(data);
 
     FreeVec(data->copper2);
     data->copper2 = NULL;
@@ -289,22 +334,10 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
     *c++ = 0xffff;
     *c++ = 0xfffe;
 
-    custom->cop2lc = (ULONG)data->copper2;
-
-    if (data->interlace) {
-	for (;;) {
-	    custom->bplcon0 = 0x0204;
-	    while (!(custom->vposr & 0x8000));
-	    while (custom->vposr & 0x8000);
-	    custom->copjmp1 = 0;
-	    if (!(custom->vposr & 0x8000))
-		break;
-    	}
-    }
-
-    custom->dmacon = 0x8100;
-    
     data->depth = bm->depth;
+
+    data->mode = 1;
+    while (data->mode);
 
     setcoppercolors(data);
     return 1;
@@ -320,9 +353,10 @@ static void setnullsprite(struct amigavideo_staticdata *data)
  
 void resetsprite(struct amigavideo_staticdata *data)
 {
+    UWORD *sprite = data->sprite;
     setnullsprite(data);
-    FreeVec(data->sprite);
     data->sprite = NULL;
+    FreeVec(sprite);
     data->sprite_width = data->sprite_height = 0;
 }
 
@@ -335,7 +369,6 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
     	data->sprite = AllocVec(2 + 2 + (width + 15) / 8 * height * 2 + (2 + 2) * 2, MEMF_CHIP | MEMF_CLEAR);
     	if (!data->sprite)
 	    return FALSE;
-	memset(data->sprite + 2, 0xaa, width / 8 * height * 2);
 	data->sprite_width = width;
 	data->sprite_height = height;
     }
@@ -369,11 +402,11 @@ void setspritepos(struct amigavideo_staticdata *data, WORD x, WORD y)
     if (data->interlace)
     	y /= 2; // y is always in nonlaced
     y += data->starty;
-    ctl = (y << 8) | (x >> 3);
-    pos = ((y + data->sprite_height) << 8);
-    pos |= ((y >> 8) << 2) | (((y + data->sprite_height) >> 8) << 1) | ((x >> 2) & 1) | ((x & 3) << 3);
-    data->sprite[0] = ctl;
-    data->sprite[1] = pos;
+    pos = (y << 8) | (x >> 3);
+    ctl = ((y + data->sprite_height) << 8);
+    ctl |= ((y >> 8) << 2) | (((y + data->sprite_height) >> 8) << 1) | ((x >> 2) & 1) | ((x & 3) << 3);
+    data->spritepos = pos;
+    data->spritectl = ctl;
 }
 
 void setspritevisible(struct amigavideo_staticdata *data, BOOL visible)
