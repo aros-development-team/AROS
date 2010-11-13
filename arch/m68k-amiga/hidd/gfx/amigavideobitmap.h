@@ -16,7 +16,8 @@
 struct planarbm_data
 {
     struct MinNode node;
-    UBYTE **planes;
+    UBYTE **planes; // bitmap pointers (aligned to 8-byte if AGA)
+    UBYTE **planesmem; // allocated memory
     WORD width;
     WORD rows;
     WORD bytesperrow;
