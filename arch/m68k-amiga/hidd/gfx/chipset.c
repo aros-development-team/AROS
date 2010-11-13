@@ -292,13 +292,13 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
     custom->cop2lc = (ULONG)data->copper2;
 
     if (data->interlace) {
-    	for (;;) {
-    	    custom->bplcon0 = 0x0204;
-    	    while ((custom->vposr & 0x8000));
-   	    while (!(custom->vposr & 0x8000));
-    	    custom->copjmp1 = 0;
-    	    if (!(custom->vposr & 0x8000))
-    	    	break;
+	for (;;) {
+	    custom->bplcon0 = 0x0204;
+	    while (!(custom->vposr & 0x8000));
+	    while (custom->vposr & 0x8000);
+	    custom->copjmp1 = 0;
+	    if (!(custom->vposr & 0x8000))
+		break;
     	}
     }
 
