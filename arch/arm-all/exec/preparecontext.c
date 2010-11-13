@@ -27,6 +27,8 @@ AROS_LH4(BOOL, PrepareContext,
     AROS_LIBFUNC_INIT
 
     struct ExceptionContext *ctx;
+    STACKULONG args[8] = {0};
+    int numargs = 0;
 
     if (!(task->tc_Flags & TF_ETASK) )
 	return FALSE;
@@ -55,7 +57,8 @@ AROS_LH4(BOOL, PrepareContext,
 
 #define HANDLEARG(x)				   \
 	    case TASKTAG_ARG ## x:		   \
-	        ctx->r[3 + x - 1] = tagList->ti_Data; \
+	        args[x-1] = tagList->ti_Data;      \
+		if (numargs < x) numargs = x;
 	        break;
 		
 	    HANDLEARG(1)
@@ -71,12 +74,37 @@ AROS_LH4(BOOL, PrepareContext,
 	if (tagList) tagList++;
     }
 
+    if (numargs)
+    {
+	switch (numargs)
+	{
+	    case 8:
+		*--sp = args[7];
+	    case 7:
+		*--sp = args[6];
+	    case 6:
+		*--sp = args[5];
+	    case 5:
+		*--sp = args[4];
+	    case 4:
+		ctx->r3 = args[3];
+	    case 3:
+		ctx->r2 = args[2];
+	    case 2:
+		ctx->r1 = args[1];
+	    case 1:
+		ctx->r0 = args[0];
+		break;
+	}
+    }
+
     /* Now prepare return address */
     ctx->lr = (ULONG)fallBack;
     
     /* Then set up the frame to be used by Dispatch() */
     ctx->sp = (ULONG)task->tc_SPReg;
     ctx->pc = (ULONG)entryPoint;
+    ctx->cpsr = 0x10;
 
     return TRUE;
 
