@@ -4,8 +4,9 @@
 */
 
 #include "nouveau_intern.h"
-#include "nouveau_compositing.h"
+#include "nouveau_compositing.h" //TODO: remove
 #include "nouveau/nouveau_class.h"
+#include "compositing.h"
 
 #include <graphics/displayinfo.h>
 #include <proto/utility.h>
@@ -337,6 +338,10 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
             else
                 HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
+
+            /* Create compositing object */
+            gfxdata->compositing = OOP_NewObject(SD(cl)->compositingclass, NULL, NULL);
+            /* TODO: Check if object was created, how to handle ? */
         }
 
         return o;
@@ -345,7 +350,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
     return NULL;
 }
 
-/* FIXME: IMPLEMENT DISPOSE - calling nouveau_close(), freeing cursor bo, gart bo, selectedconnector */
+/* FIXME: IMPLEMENT DISPOSE - calling nouveau_close(), freeing cursor bo, gart bo, 
+    selectedconnector, gfxdata->compositing */
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
@@ -467,11 +473,17 @@ VOID METHOD(Nouveau, Root, Get)
 
 ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
 {
-    D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
 #if ENABLE_COMPOSITING
-    /* TODO: probably needs a driver level lock? */
-    Compositing_BitMapStackChanged(msg->Data);
+    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+    struct pHidd_Compositing_BitMapStackChanged bscmsg =
+    {
+        mID : OOP_GetMethodID(IID_Hidd_Compositing, moHidd_Compositing_BitMapStackChanged),
+        data : msg->Data
+    };
     
+    D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
+
+    OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&bscmsg);
 #else
     if (msg->Data)
         Compositing_TopBitMapChanged(msg->Data->Bitmap);

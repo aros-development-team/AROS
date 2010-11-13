@@ -4,7 +4,6 @@
 */
 
 #include "nouveau_intern.h"
-#include "nouveau_compositing.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -424,9 +423,26 @@ VOID METHOD(NouveauBitMap, Root, Set)
 
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
+    //FIXME: HACK
+        IPTR e;
+        OOP_Object * gfx;
+        struct HIDDNouveauData * gfxdata;
+        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, &e);
+        gfx = (OOP_Object *)e;
+        gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
+    //FIXME: HACK
+        
+        struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
+        {
+            mID : SD(cl)->mid_BitMapPositionChanged,
+            bm : o
+        };
+        
+        
         bmdata->xoffset = newxoffset;
         bmdata->yoffset = newyoffset;
-        Compositing_BitMapPositionChanged(o);
+        
+        OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&bpcmsg);
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -849,5 +865,26 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     
     if (bmdata->displayable)
-        Compositing_BitMapRectChanged(o, msg->x, msg->y, msg->width, msg->height);
+    {
+    //FIXME: HACK
+        IPTR e;
+        OOP_Object * gfx;
+        struct HIDDNouveauData * gfxdata;
+        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, &e);
+        gfx = (OOP_Object *)e;
+        gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
+    //FIXME: HACK
+        
+        struct pHidd_Compositing_BitMapRectChanged brcmsg =
+        {
+            mID : SD(cl)->mid_BitMapRectChanged,
+            bm : o,
+            x : msg->x,
+            y : msg->y,
+            width : msg->width,
+            height : msg->height
+        };
+        
+        OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&brcmsg);    
+    }
 }

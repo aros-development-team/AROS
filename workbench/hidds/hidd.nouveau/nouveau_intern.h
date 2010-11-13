@@ -1,7 +1,7 @@
 #ifndef _NOUVEAU_INTERN_H
 #define _NOUVEAU_INTERN_H
 /*
-    Copyright (C) 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,6 +26,7 @@ struct HIDDNouveauData
     ULONG               selectedcrtcid;
     APTR                selectedmode;
     APTR                selectedconnector;
+    OOP_Object          *compositing;
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
@@ -113,6 +114,7 @@ struct staticdata
     OOP_Class       *bmclass;
     OOP_Class       *i2cclass;
     OOP_Class       *galliumclass;
+    OOP_Class       *compositingclass;
     
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
@@ -138,6 +140,9 @@ struct staticdata
     OOP_MethodID    mid_PutMemPattern32;
     OOP_MethodID    mid_ConvertPixels;
     OOP_MethodID    mid_GetPixFmt;
+    
+    OOP_MethodID    mid_BitMapPositionChanged;
+    OOP_MethodID    mid_BitMapRectChanged;
 
     struct CardData carddata;
     
