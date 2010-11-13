@@ -59,7 +59,7 @@ AROS_LH4(BOOL, PrepareContext,
 #define HANDLEARG(x)				   \
 	    case TASKTAG_ARG ## x:		   \
 	        args[x-1] = tagList->ti_Data;      \
-		if (numargs < x) numargs = x;
+		if (numargs < x) numargs = x;	   \
 	        break;
 		
 	    HANDLEARG(1)
