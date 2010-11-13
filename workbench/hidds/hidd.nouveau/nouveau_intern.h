@@ -266,7 +266,6 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
 
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
 BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
-BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm); //FIXME remove, can be private
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);
