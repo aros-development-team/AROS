@@ -4,6 +4,7 @@
 #include <exec/libraries.h>
 #include <oop/oop.h>
 #include <exec/semaphores.h>
+#include <exec/interrupts.h>
 
 #include "amigavideoclass.h"
 
@@ -32,6 +33,10 @@ struct amigavideo_staticdata
 	OOP_AttrBase hiddAttrBase;
 	OOP_AttrBase hiddColorMapAttrBase;
 
+	struct Interrupt inter;
+	volatile UWORD framecounter;
+	volatile UWORD mode;
+
 	UWORD width_alignment;
 	UWORD startx, starty;
 
@@ -39,6 +44,7 @@ struct amigavideo_staticdata
 	UWORD *copper1_pt2;
 	UWORD *copper1_spritept;
 	WORD sprite_width, sprite_height;
+	UWORD spritepos, spritectl;
 	UWORD *copper2;
 	UWORD *copper2i;
 	UWORD *copper2_backup;
