@@ -64,6 +64,8 @@ static void asm_regs_init(int id, int has_bn)
     if (has_bn)
     	printf("\t   ULONG _bn_arg = (ULONG)bn; \\\n");
 
+    printf("\t    asm volatile (\"move.l %%a5,%%sp@(-4)\\n\"); \\\n");
+
     /* Define registers */
     printf("\t   register volatile ULONG _ret asm(\"%%d0\"); \\\n");
     if (has_bn)
@@ -79,10 +81,13 @@ static void asm_regs_init(int id, int has_bn)
     if (has_bn)
     	printf("\t   _bn = _bn_arg; \\\n");
 
+    printf("\t    asm volatile (\"subq.l #4,%%%%sp\\n\" \\\n");
 }
 
 static void asm_regs_exit(int id, int has_bn)
 {
+    printf("\t    asm volatile (\"move.l %%sp@+,%%a5\\n\"); \\\n");
+
     /* Save retval */
     printf("\t  (t)_ret; \\\n");
 }
@@ -96,7 +101,6 @@ static void aros_ufc(int id)
 	printf(") \\\n");
 	printf("\t({ APTR _n = (n);\\\n");
 	asm_regs_init(i, 0);
-	printf("\t   asm volatile ( \\\n");
 	printf("\t\t\"pea.l .Lufc%d_%%c1\\n\" \\\n", id);
 	printf("\t\t\"move.l %%0, %%%%sp@-\\n\" \\\n");
 	printf("\t\t: : \\\n");
@@ -119,7 +123,6 @@ void aros_lc(int id)
 	printf("bt,bn,o,s) \\\n");
 	printf("\t({ \\\n");
 	asm_regs_init(id, 1);
-	printf("\t   asm volatile ( \\\n");
 	printf("\t\t\"jsr %%c0(%%%%a6)\" \\\n");
 	printf("\t\t: : \\\n");
 	printf("\t\t  \"i\" (-1 * (o) * LIB_VECTSIZE) \\\n");
