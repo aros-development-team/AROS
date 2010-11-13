@@ -305,8 +305,6 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
 
         /* Display information */
         bmdata->fbid = 0; /* Default value */
-        bmdata->displayedwidth = 0;
-        bmdata->displayedheight = 0;
         bmdata->xoffset = 0;
         bmdata->yoffset = 0;
 
@@ -382,7 +380,6 @@ VOID METHOD(NouveauBitMap, Root, Set)
     struct TagItem  *tag, *tstate;
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     ULONG idx;
-    LONG limit;
     LONG newxoffset = bmdata->xoffset;
     LONG newyoffset = bmdata->yoffset;
 
@@ -395,30 +392,9 @@ VOID METHOD(NouveauBitMap, Root, Set)
             {
             case aoHidd_BitMap_LeftEdge:
                 newxoffset = tag->ti_Data;
-                limit = bmdata->displayedwidth - bmdata->width;
-                if (newxoffset > 0)
-                    newxoffset = 0;
-                else
-                    if (newxoffset < limit)
-                        newxoffset = limit;
                 break;
             case aoHidd_BitMap_TopEdge:
                 newyoffset = tag->ti_Data;
-                limit = bmdata->displayedheight - bmdata->height;
-
-                /* TODO: remove hack */
-                /* HACK: value 0 is set on creation before bmdata->displayedheight is
-                    set, so newyoffset is set to -15 on bitmap creation */
-                if (newyoffset == 0)
-                    ;   /* HACK: Skip the comparison with bmdata->displayedheight */
-                else
-                    if (newyoffset > (LONG)bmdata->displayedheight - 15) /* Limit for drag */
-                        newyoffset = (LONG)bmdata->displayedheight - 15;
-
-                if (newyoffset < limit) /* Limit for scroll */
-                    newyoffset = limit;
-                
-                D(bug("[requested %d, calculated : %d, limit %d]\n", tag->ti_Data, newyoffset, limit));
                 break;
             }
         }
@@ -426,17 +402,31 @@ VOID METHOD(NouveauBitMap, Root, Set)
 
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
-        struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
+        /* If there was a change requested, validate it */
+        struct pHidd_Compositing_ValidateBitMapPositionChange vbpcmsg =
         {
-            mID : SD(cl)->mid_BitMapPositionChanged,
-            bm : o
+            mID : SD(cl)->mid_ValidateBitMapPositionChange,
+            bm : o,
+            newxoffset : &newxoffset,
+            newyoffset : &newyoffset
         };
         
+        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&vbpcmsg);
         
-        bmdata->xoffset = newxoffset;
-        bmdata->yoffset = newyoffset;
+        if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
+        {
+            /* If change passed validation, execute it */
+            struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
+            {
+                mID : SD(cl)->mid_BitMapPositionChanged,
+                bm : o
+            };
+
+            bmdata->xoffset = newxoffset;
+            bmdata->yoffset = newyoffset;
         
-        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
+            OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
+        }
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
