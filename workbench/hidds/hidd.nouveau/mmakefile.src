@@ -61,7 +61,6 @@ NOUVEAU_HIDD_SOURCES := \
             nv04_accel \
             nv50_accel \
             nouveau_accel \
-            nouveau_compositing \
             arosc_emul \
             hack_patchrgbconv \
             compositingclass \

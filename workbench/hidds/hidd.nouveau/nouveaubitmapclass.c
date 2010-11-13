@@ -4,6 +4,7 @@
 */
 
 #include "nouveau_intern.h"
+#include "nouveau_compositing.h" //FIXME remove when ENABLE_COMPOSITING is removed
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -421,6 +422,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
         }
     }
 
+#if ENABLE_COMPOSITING
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
     //FIXME: HACK
@@ -444,6 +446,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
         
         OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&bpcmsg);
     }
+#endif
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
