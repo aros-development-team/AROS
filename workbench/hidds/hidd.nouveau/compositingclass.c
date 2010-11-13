@@ -64,8 +64,6 @@ static struct StackBitMapNode * HIDDCompositingIsBitMapOnStack(struct HIDDCompos
 {
     struct StackBitMapNode * n = NULL;
     
-    /* TODO: probably add composing wide read lock or lock at upper level? */
-
     ForeachNode(&compdata->bitmapstack, n)
     {
         if (n->bm == bm)
@@ -79,8 +77,6 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
 {
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
     struct StackBitMapNode * n = NULL;
-    
-    /* TODO: probably add composing wide read lock or lock at upper level? */
     
     ForeachNode(&compdata->bitmapstack, n)
     {
@@ -118,8 +114,6 @@ static VOID HIDDCompositingRecalculateDisplayedWidthHeight(struct HIDDCompositin
     struct StackBitMapNode * n = NULL;
     IPTR displayedwidth, displayedheight;
 
-    /* TODO: probably add composing wide read lock or lock at upper level? */
-    
     OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Width, &displayedwidth);
     OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Height, &displayedheight);
     
@@ -135,17 +129,17 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
 {
     /* 
         Desctiption: 
-        take incomming top bitmap
-        read its mode and sizes,
-        create a mirroring bitmap that fits the mode
-        switch mode 
+        a) take incomming top bitmap
+        b) read its mode and sizes,
+        c) create a mirroring bitmap that fits the mode
+        d) switch mode (driver dependandant)
     */
-    /* TODO: needs locking mechanism or maybe lock at upper level?*/
+
     OOP_Class * cl = OOP_OCLASS(bm);
     OOP_Object * sync = NULL;
     OOP_Object * pf = NULL;
     OOP_Object * fbbitmap = NULL;
-    IPTR modeid, hdisp, vdisp, e;
+    IPTR modeid, hdisp, vdisp, e, depth;
     struct TagItem bmtags[5];
 
     OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
@@ -183,6 +177,7 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
 
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &hdisp);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &vdisp);
+    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 
     /* Create a new bitmap that will be used for framebuffer */
     bmtags[0].ti_Tag = aHidd_BitMap_Width;          bmtags[0].ti_Data = hdisp;
@@ -197,17 +192,16 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
         BOOL ret = HIDDNouveauSwitchToVideoMode(fbbitmap);
         if (ret)
         {
+            struct TagItem gctags[] =
+            {
+                { aHidd_GC_Foreground, (HIDDT_Pixel)0x99999999 }, 
+                { TAG_DONE, TAG_DONE }
+            };
+
+
             /* Dispose the previous screenbitmap */
             if (compdata->screenbitmap)
                 HIDD_Gfx_DisposeBitMap(compdata->gfx, compdata->screenbitmap);
-
-            /* TODO: set grey of compdata->gc based on depth */
-            /* 
-        struct TagItem gctags[] =
-        {
-            { aHidd_GC_Foreground, (HIDDT_Pixel)0x99999999 }, 
-            { TAG_DONE, TAG_DONE }
-        }; */
 
             /* Store bitmap/mode information */ 
             compdata->screenmodeid    = modeid;
@@ -216,6 +210,10 @@ static BOOL HIDDCompositingTopBitMapChanged(struct HIDDCompositingData * compdat
             compdata->screenrect.MinY = 0;
             compdata->screenrect.MaxX = hdisp - 1;
             compdata->screenrect.MaxY = vdisp - 1;
+            
+            /* Get gray foregound */
+            if (depth < 24) gctags[0].ti_Data = (HIDDT_Pixel)0x9492;
+            OOP_SetAttrs(compdata->gc, gctags);
             
             return TRUE;
         }
@@ -324,7 +322,6 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
         if (AndRectRect(&srcindstrect, &n->screenvisiblerect, &dstandvisrect))
         {
             /* Intersection is valid. Blit. */        
-            /* TODO: stubs have performance hit, change to direct DoMethod call with cached MethodID */
 
             HIDD_Gfx_CopyBox(
                 compdata->gfx,
@@ -342,7 +339,6 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
 
 static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * compdata)
 {
-    /* TODO:probabaly needs a compositing wide read lock or lock at upper level?*/
     struct StackBitMapNode * n = NULL;
     ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
     
@@ -408,6 +404,7 @@ OOP_Object *METHOD(Compositing, Root, New)
         NEWLIST(&compdata->bitmapstack);
         compdata->screenbitmap  = NULL;
         compdata->screenmodeid  = vHidd_ModeID_Invalid;
+        InitSemaphore(&compdata->semaphore);
         
         compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositing_GfxHidd, 0, msg->attrList);
         
@@ -434,20 +431,25 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
 {
     struct HIDD_ViewPortData * vpdata;
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
-    /* TODO: probably needs driver wide lock */
-    
+
+    LOCK_COMPOSITING_WRITE
+        
     /* Free all items which are already on the list */
     HIDDCompositingPurgeBitMapStack(compdata);
     
     
     if (!msg->data)
+    {
+        UNLOCK_COMPOSITING
         return; /* TODO: BLANK SCREEN */
-
+    }
+    
     /* Switch mode if needed */    
     if (!HIDDCompositingTopBitMapChanged(compdata, msg->data->Bitmap))
     {
         /* Something bad happened. Yes, bitmap stack is already erased - that's ok */
         D(bug("[Compositing] Failed to change top bitmap\n"));
+        UNLOCK_COMPOSITING
         return; 
     }
     
@@ -470,27 +472,36 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     
     /* Redraw bitmap stack */
     HIDDCompositingRedrawVisibleScreen(compdata);
+    
+    UNLOCK_COMPOSITING
 }
 
 VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
 {
-    /* TODO:probabaly needs a compositing wide read lock */
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
+    
+    LOCK_COMPOSITING_READ
 
     HIDDCompositingRedrawBitmap(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height);
+    
+    UNLOCK_COMPOSITING
 }
 
 VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChanged)
 {
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
-    /* TODO: probably needs driver wide lock */
+    
+    LOCK_COMPOSITING_READ
 
     /* Check is passed bitmap is in stack, ignore if not */
-    if (HIDDCompositingIsBitMapOnStack(compdata, msg->bm) == NULL)
-        return; /* Ignore */
-        
-    /* Redraw bitmap stack */
-    HIDDCompositingRedrawVisibleScreen(compdata);
+    if (HIDDCompositingIsBitMapOnStack(compdata, msg->bm) != NULL)
+    {        
+        /* Redraw bitmap stack */
+        HIDDCompositingRedrawVisibleScreen(compdata);
+    }
+    
+    UNLOCK_COMPOSITING
 }
+
 
 
