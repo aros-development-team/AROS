@@ -30,6 +30,9 @@
 #define HiddCompositingAttrBase     (SD(cl)->compositingAttrBase)
 #define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
 
+#define MAX_BITMAP_WIDTH    4096
+#define MAX_BITMAP_HEIGHT   4096
+
 /* HELPER FUNCTIONS */
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
 {
@@ -150,14 +153,14 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
         sync[j].ti_Tag = aHidd_Sync_HSyncEnd;       sync[j++].ti_Data = mode->hsync_end;
         sync[j].ti_Tag = aHidd_Sync_HTotal;         sync[j++].ti_Data = mode->htotal;
         sync[j].ti_Tag = aHidd_Sync_HMin;           sync[j++].ti_Data = mode->hdisplay;
-        sync[j].ti_Tag = aHidd_Sync_HMax;           sync[j++].ti_Data = 2048;
+        sync[j].ti_Tag = aHidd_Sync_HMax;           sync[j++].ti_Data = MAX_BITMAP_WIDTH;
 
         sync[j].ti_Tag = aHidd_Sync_VDisp;          sync[j++].ti_Data = mode->vdisplay;
         sync[j].ti_Tag = aHidd_Sync_VSyncStart;     sync[j++].ti_Data = mode->vsync_start;
         sync[j].ti_Tag = aHidd_Sync_VSyncEnd;       sync[j++].ti_Data = mode->vsync_end;
         sync[j].ti_Tag = aHidd_Sync_VTotal;         sync[j++].ti_Data = mode->vtotal;
         sync[j].ti_Tag = aHidd_Sync_VMin;           sync[j++].ti_Data = mode->vdisplay;
-        sync[j].ti_Tag = aHidd_Sync_VMax;           sync[j++].ti_Data = 2048;
+        sync[j].ti_Tag = aHidd_Sync_VMax;           sync[j++].ti_Data = MAX_BITMAP_HEIGHT;
         
         /* Name */
         STRPTR syncname = AllocVec(32, MEMF_ANY | MEMF_CLEAR);
