@@ -1,6 +1,6 @@
-## version $VER: Network.catalog 2.0 (21.1.2010)
+## version $VER: network.catalog 2.1 (13.11.2010)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 MSG_NAME
 Pøipojení k síti (editor Network)
@@ -8,7 +8,7 @@ Pøipojení k síti (editor Network)
 ;
 MSG_DESCRIPTION
 Nastavení pøipojení k síti
-; TCP/IP Network preferences
+; Network preferences
 ;
 MSG_IFNAME
 Název
@@ -66,6 +66,50 @@ MSG_IP_MODE_DHCP
 Automaticky z DHCP
 ; Get address from DHCP
 ;
+MSG_ENC_NONE
+---
+; None
+;
+MSG_ENC_WEP
+WEP
+; WEP
+;
+MSG_ENC_WPA
+WPA
+; WPA
+;
+MSG_KEY_TEXT
+Heslo
+; Passphrase
+;
+MSG_KEY_HEX
+Hexadecimální
+; Hexadecimal
+;
+MSG_SSID
+Název
+; Network Name
+;
+MSG_ENCTYPE
+©ifrování
+; Encryption
+;
+MSG_KEYTYPE
+Druh klíèe
+; Key Type
+;
+MSG_KEY
+Klíè
+; Key
+;
+MSG_HIDDEN
+Skrytá
+; Hidden
+;
+MSG_ADHOC
+Ad-hoc
+; Ad-hoc
+;
 MSG_TAB_IP_CONFIGURATION
 Konfigurace TCP/IP
 ; IPv4 Configuration
@@ -74,9 +118,17 @@ MSG_TAB_COMPUTER_NAME
 Název poèítaèe
 ; Computer Name
 ;
+MSG_TAB_WIRELESS
+Bezdrátové pøipojení
+; Wireless
+;
 MSG_AUTOSTART_STACK
-Automaticky pøipojit k síti pøi ka¾dém spu¹tìní?
-; Automatically start network during system boot?
+Pøi spu¹tìní automaticky pøipojit k síti
+; Start networking during system boot
+;
+MSG_AUTOSTART_WIRELESS
+Povolit bezdrátové pøipojení
+; Enable wireless networking
 ;
 MSG_ERR_UNKNOWN_ERROR
 Neznámá chyba
@@ -85,6 +137,10 @@ Neznámá chyba
 MSG_ERR_NOT_RESTARTED_STACK
 Chyba pøi restartu sí»ových slu¾eb.
 ; Failed to restart network stack
+;
+MSG_ERR_NOT_RESTARTED_WIRELESS
+Chyba pøi restartu bezdrátového pøipojení.
+; Failed to restart wireless networking
 ;
 MSG_BUTTON_OK
 OK
@@ -133,4 +189,8 @@ Konfiguraèní soubory byly úspì¹nì ulo¾eny.\n(cesta: %s)\nProvedené zmìny vy¾aduj
 MSG_IFWINDOW_TITLE
 Rozhraní
 ; Interface
+;
+MSG_NETWINDOW_TITLE
+Bezdrátová sí»
+; Wireless Network
 ;

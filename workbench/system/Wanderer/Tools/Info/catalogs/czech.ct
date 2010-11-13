@@ -1,19 +1,19 @@
-## version $VER: Info.catalog 1.2 (7.12.2007)
+## version $VER: info.catalog 1.3 (12.11.2010)
 ## language czech
 ## codeset 5
 ;
 ;
 MSG_TITLE
 Information
-; Informations
+; Information
 ;
 MSG_DESCRIPTION
 Informace o objektu
-; Icon informations
+; Display Icon information
 ;
 MSG_COPYRIGHT
 Informace o objektu\nCopyright (C) AROS Dev Team
-; Icon informations\n©AROS Dev Team
+; Icon information\n© 2003-2010 The AROS Dev Team
 ;
 MSG_ICON
 Ikona
