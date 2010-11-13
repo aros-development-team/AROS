@@ -380,6 +380,18 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     }
 }
 
+static VOID HIDDCompositingPurgeBitMapStack(struct HIDDCompositingData * compdata)
+{
+    struct StackBitMapNode * curr, * next;
+
+    ForeachNodeSafe(&compdata->bitmapstack, curr, next)
+    {
+        Remove((struct Node *)curr);
+        FreeMem(curr, sizeof(struct StackBitMapNode));
+    }
+    
+    NEWLIST(&compdata->bitmapstack);
+}
 
 
 
@@ -423,8 +435,9 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
     struct HIDD_ViewPortData * vpdata;
     struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
     /* TODO: probably needs driver wide lock */
-    /* TODO: free all items which are already on the list */
-    NEWLIST(&compdata->bitmapstack); /* YES THIS IS MEMORY LEAK */
+    
+    /* Free all items which are already on the list */
+    HIDDCompositingPurgeBitMapStack(compdata);
     
     
     if (!msg->data)
@@ -445,7 +458,7 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
            bitmap */
         if (HIDDCompositingCanCompositeWithScreenBitMap(compdata, vpdata->Bitmap))
         {
-            struct StackBitMapNode * n = AllocVec(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
+            struct StackBitMapNode * n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
             n->bm = vpdata->Bitmap;
             n->isscreenvisible = FALSE;
             AddTail(&compdata->bitmapstack, (struct Node *)n);
