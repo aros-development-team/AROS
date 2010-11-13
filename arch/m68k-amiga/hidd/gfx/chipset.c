@@ -301,14 +301,15 @@ void setspritevisible(struct amigavideo_staticdata *data, BOOL visible)
 
 BOOL setcolors(struct amigavideo_staticdata *data, struct pHidd_BitMap_SetColors *msg, BOOL visible)
 {
-    UWORD i;
+    UWORD i, j;
     if (msg->firstColor + msg->numColors > data->max_colors)
 	return FALSE;
-    for (i = msg->firstColor; i < msg->firstColor + msg->numColors; i++) {
-	HIDDT_Pixel red, green, blue;
-	red   = msg->colors[i].red   >> 8;
-	green = msg->colors[i].green >> 8;
-	blue  = msg->colors[i].blue  >> 8;
+    j = 0;
+    for (i = msg->firstColor; j < msg->numColors; i++, j++) {
+	UBYTE red, green, blue;
+	red   = msg->colors[j].red   >> 8;
+	green = msg->colors[j].green >> 8;
+	blue  = msg->colors[j].blue  >> 8;
 	data->palette[i * 3 + 0] = red;
 	data->palette[i * 3 + 1] = green;
 	data->palette[i * 3 + 2] = blue;
