@@ -33,6 +33,7 @@ struct amigavideo_staticdata
 	OOP_AttrBase hiddColorMapAttrBase;
 
 	UWORD width_alignment;
+	UWORD startx, starty;
 
 	UWORD *copper1;
 	UWORD *copper1_pt2;
@@ -47,15 +48,18 @@ struct amigavideo_staticdata
 	UWORD *copper2i_palette_aga_lo;
 	UWORD *sprite_null;
 	UWORD *sprite;
+	UWORD spritex, spritey;
 	UWORD bplcon3;
 
 	UWORD max_colors;
+	UWORD use_colors;
 
 	UBYTE *palette;
 	UBYTE depth;
 	UBYTE res; // 0 = lores, 1 = hires, 2 = shres
 	UBYTE interlace;
 	BOOL aga;
+	BOOL cursorvisible;
 
 	UBYTE initialized;
 };
