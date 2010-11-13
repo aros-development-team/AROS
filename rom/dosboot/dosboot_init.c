@@ -330,8 +330,11 @@ AROS_UFH3(void, __dosboot_BootProcess,
                 it's probably some kind of transient error (ie. no disk
                 in drive or wrong disk) so we only move it to the end of
                 the list. */
-            if ((!(bootNode->bn_Flags & BNF_RETRY)) && (bootNode->bn_Node.ln_Pri != -128) &&
-		__dosboot_IsBootable(deviceName, archName, DOSBase))
+            if ((!(bootNode->bn_Flags & BNF_RETRY)) && (bootNode->bn_Node.ln_Pri != -128)
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+		&& __dosboot_IsBootable(deviceName, archName, DOSBase)
+#endif
+            )
             {
                 LIBBASE->db_BootDevice = deviceName;
                 break;
