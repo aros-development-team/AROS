@@ -42,6 +42,18 @@ enum
     NUM_COMPOSITING_METHODS
 };
 
+enum
+{
+    aoHidd_Compositing_GfxHidd = 0, /* [I..] Gfx driver object connected with this compositing object */
+    
+    num_Hidd_Compositing_Attrs
+};
+
+#define aHidd_Compositing_GfxHidd  (HiddCompositingAttrBase + aoHidd_Compositing_GfxHidd)
+
+#define IS_COMPOSITING_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddCompositingAttrBase) < num_Hidd_Compositing_Attrs)
+
 struct pHidd_Compositing_BitMapStackChanged
 {
     OOP_MethodID                mID;
