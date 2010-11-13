@@ -29,6 +29,7 @@ AROS_LH4(BOOL, PrepareContext,
     struct ExceptionContext *ctx;
     STACKULONG args[8] = {0};
     int numargs = 0;
+    STACKULONG *sp = task->tc_SPReg;
 
     if (!(task->tc_Flags & TF_ETASK) )
 	return FALSE;
@@ -87,16 +88,18 @@ AROS_LH4(BOOL, PrepareContext,
 	    case 5:
 		*--sp = args[4];
 	    case 4:
-		ctx->r3 = args[3];
+		ctx->r[3] = args[3];
 	    case 3:
-		ctx->r2 = args[2];
+		ctx->r[2] = args[2];
 	    case 2:
-		ctx->r1 = args[1];
+		ctx->r[1] = args[1];
 	    case 1:
-		ctx->r0 = args[0];
+		ctx->r[0] = args[0];
 		break;
 	}
     }
+
+    task->tc_SPReg = sp;
 
     /* Now prepare return address */
     ctx->lr = (ULONG)fallBack;
