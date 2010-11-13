@@ -7,8 +7,31 @@
 
 #include "compositing.h"
 
-struct HIDDCompositing
+#include <exec/lists.h>
+
+struct _Rectangle
 {
+    WORD MinX;
+    WORD MinY;
+    WORD MaxX;
+    WORD MaxY;
+};
+
+struct StackBitMapNode
+{
+    struct Node         n;
+    OOP_Object *        bm;
+    struct _Rectangle   screenvisiblerect;
+    BOOL                isscreenvisible;
+};
+
+struct HIDDCompositingData
+{
+    OOP_Object          *screenbitmap;
+    HIDDT_ModeID        screenmodeid;
+    struct _Rectangle   screenrect;
+
+    struct List         bitmapstack;
 };
 
 #define METHOD(base, id, name) \
