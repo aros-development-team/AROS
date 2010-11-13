@@ -21,12 +21,14 @@
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddCompositingAttrBase
+#undef HiddBitMapNouveauAttrBase
 
-#define HiddPixFmtAttrBase      (SD(cl)->pixFmtAttrBase)
-#define HiddGfxAttrBase         (SD(cl)->gfxAttrBase)
-#define HiddSyncAttrBase        (SD(cl)->syncAttrBase)
-#define HiddBitMapAttrBase      (SD(cl)->bitMapAttrBase)
-#define HiddCompositingAttrBase (SD(cl)->compositingAttrBase)
+#define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
+#define HiddGfxAttrBase             (SD(cl)->gfxAttrBase)
+#define HiddSyncAttrBase            (SD(cl)->syncAttrBase)
+#define HiddBitMapAttrBase          (SD(cl)->bitMapAttrBase)
+#define HiddCompositingAttrBase     (SD(cl)->compositingAttrBase)
+#define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
 
 /* HELPER FUNCTIONS */
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
@@ -525,10 +527,12 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
     struct pHidd_Gfx_NewBitMap mymsg;
     HIDDT_ModeID modeid;
     HIDDT_StdPixFmt stdpf;
+    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
     struct TagItem mytags [] =
     {
         { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
         { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
+        { aHidd_BitMap_Nouveau_CompositingHidd, (IPTR)gfxdata->compositing },
         { TAG_MORE, (IPTR)msg->attrList }
     };
 

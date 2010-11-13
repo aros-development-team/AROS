@@ -14,8 +14,11 @@
 
 #undef HiddBitMapAttrBase
 #undef HiddPixFmtAttrBase
-#define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
-#define HiddPixFmtAttrBase  (SD(cl)->pixFmtAttrBase)
+#undef HiddBitMapNouveauAttrBase
+
+#define HiddBitMapAttrBase          (SD(cl)->bitMapAttrBase)
+#define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
+#define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
 
 /* HELPER FUNCTIONS */
 static inline int do_alpha(int a, int v)
@@ -312,6 +315,9 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         nouveau_bo_new(SD(cl)->carddata.dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
 	            bmdata->pitch * bmdata->height,
 	            &bmdata->bo);
+
+        bmdata->compositing = (OOP_Object *)GetTagData(aHidd_BitMap_Nouveau_CompositingHidd, 0, msg->attrList);
+        /* FIXME: check if compositing hidd was passed */
     }
     
     /* TEMP - FIXME HACK FOR PATCHRGBCONV */
@@ -420,15 +426,6 @@ VOID METHOD(NouveauBitMap, Root, Set)
 
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
-    //FIXME: HACK
-        IPTR e;
-        OOP_Object * gfx;
-        struct HIDDNouveauData * gfxdata;
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, &e);
-        gfx = (OOP_Object *)e;
-        gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
-    //FIXME: HACK
-        
         struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
         {
             mID : SD(cl)->mid_BitMapPositionChanged,
@@ -439,7 +436,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
         bmdata->xoffset = newxoffset;
         bmdata->yoffset = newyoffset;
         
-        OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&bpcmsg);
+        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -863,15 +860,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
     
     if (bmdata->displayable)
     {
-    //FIXME: HACK
-        IPTR e;
-        OOP_Object * gfx;
-        struct HIDDNouveauData * gfxdata;
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, &e);
-        gfx = (OOP_Object *)e;
-        gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
-    //FIXME: HACK
-        
         struct pHidd_Compositing_BitMapRectChanged brcmsg =
         {
             mID : SD(cl)->mid_BitMapRectChanged,
@@ -882,6 +870,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
             height : msg->height
         };
         
-        OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&brcmsg);    
+        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&brcmsg);    
     }
 }
