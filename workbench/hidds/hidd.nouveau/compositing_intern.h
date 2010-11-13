@@ -27,14 +27,16 @@ struct StackBitMapNode
 
 struct HIDDCompositingData
 {
-    OOP_Object          *screenbitmap;
-    HIDDT_ModeID        screenmodeid;
-    struct _Rectangle   screenrect;
+    OOP_Object              *screenbitmap;
+    HIDDT_ModeID            screenmodeid;
+    struct _Rectangle       screenrect;
 
-    struct List         bitmapstack;
+    struct List             bitmapstack;
     
-    OOP_Object          *gfx;           /* GFX driver object */
-    OOP_Object          *gc;            /* GC object used for drawing operations */
+    struct SignalSemaphore  semaphore;
+    
+    OOP_Object              *gfx;           /* GFX driver object */
+    OOP_Object              *gc;            /* GC object used for drawing operations */
 };
 
 #define METHOD(base, id, name) \
@@ -44,5 +46,8 @@ struct HIDDCompositingData
 
 #define SD(cl)                      (&BASE(cl->UserData)->sd)
 
+#define LOCK_COMPOSITING_READ       { ObtainSemaphoreShared(&compdata->semaphore); }
+#define LOCK_COMPOSITING_WRITE      { ObtainSemaphore(&compdata->semaphore); }
+#define UNLOCK_COMPOSITING          { ReleaseSemaphore(&compdata->semaphore); }
 
 #endif /* _COMPOSITING_INTERN_H */
