@@ -20,10 +20,13 @@
 #undef HiddGfxAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#define HiddPixFmtAttrBase  (SD(cl)->pixFmtAttrBase)
-#define HiddGfxAttrBase     (SD(cl)->gfxAttrBase)
-#define HiddSyncAttrBase    (SD(cl)->syncAttrBase)
-#define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
+#undef HiddCompositingAttrBase
+
+#define HiddPixFmtAttrBase      (SD(cl)->pixFmtAttrBase)
+#define HiddGfxAttrBase         (SD(cl)->gfxAttrBase)
+#define HiddSyncAttrBase        (SD(cl)->syncAttrBase)
+#define HiddBitMapAttrBase      (SD(cl)->bitMapAttrBase)
+#define HiddCompositingAttrBase (SD(cl)->compositingAttrBase)
 
 /* HELPER FUNCTIONS */
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
@@ -494,8 +497,16 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
 
             /* Create compositing object */
-            gfxdata->compositing = OOP_NewObject(SD(cl)->compositingclass, NULL, NULL);
-            /* TODO: Check if object was created, how to handle ? */
+            {
+                struct TagItem comptags [] =
+                {
+                    { aHidd_Compositing_GfxHidd, (IPTR)o },
+                    { TAG_DONE, TAG_DONE }
+                };
+                gfxdata->compositing = OOP_NewObject(SD(cl)->compositingclass, NULL, comptags);
+                /* TODO: Check if object was created, how to handle ? */
+            }
+
         }
 
         return o;

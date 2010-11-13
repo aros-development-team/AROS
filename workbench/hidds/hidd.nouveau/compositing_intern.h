@@ -32,6 +32,9 @@ struct HIDDCompositingData
     struct _Rectangle   screenrect;
 
     struct List         bitmapstack;
+    
+    OOP_Object          *gfx;           /* GFX driver object */
+    OOP_Object          *gc;            /* GC object used for drawing operations */
 };
 
 #define METHOD(base, id, name) \

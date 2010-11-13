@@ -124,6 +124,7 @@ struct staticdata
     OOP_AttrBase    i2cNouveauAttrBase;
     OOP_AttrBase    galliumAttrBase;
     OOP_AttrBase    gcAttrBase;
+    OOP_AttrBase    compositingAttrBase;
     
     OOP_MethodID    mid_CopyMemBox8;
     OOP_MethodID    mid_CopyMemBox16;

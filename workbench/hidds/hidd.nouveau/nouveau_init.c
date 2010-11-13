@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -94,6 +94,7 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_I2C_Nouveau, &LIBBASE->sd.i2cNouveauAttrBase },
     { IID_Hidd_Gallium,     &LIBBASE->sd.galliumAttrBase },
     { IID_Hidd_GC,          &LIBBASE->sd.gcAttrBase },
+    { IID_Hidd_Compositing, &LIBBASE->sd.compositingAttrBase },
     { NULL, NULL }
     };
 
