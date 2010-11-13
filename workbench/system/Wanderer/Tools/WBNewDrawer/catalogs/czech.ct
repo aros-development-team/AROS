@@ -1,6 +1,6 @@
-## version $VER: wbnewdrawer.catalog 1.1 (22.11.2007)
+## version $VER: wbnewdrawer.catalog 1.2 (12.11.2010)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_TITLE
@@ -44,8 +44,8 @@ nový_adresáø
 ; Rename_Me
 ;
 MSG_ERROR_TITLE
-WBNewDrawer :: Chyba
-; WBNewDrawer: Error
+Chyba
+; Error
 ;
 MSG_ALREADY_EXIST
 Objekt s názvem "%s" ji¾ existuje!

@@ -1,4 +1,4 @@
-## version $VER: WBRename.catalog 1.2 (7.12.2007)
+## version $VER: wbrename.catalog 1.3 (12.11.2010)
 ## language czech
 ## codeset 5
 ;
@@ -36,8 +36,8 @@ _Zru¹it
 ; Ca_ncel
 ;
 MSG_ERROR_TITLE
-WBRename :: Chyba
-; WBRename: Error
+Chyba
+; Error
 ;
 MSG_ALREADY_EXIST
 Objekt s názvem "%s" ji¾ existuje!
