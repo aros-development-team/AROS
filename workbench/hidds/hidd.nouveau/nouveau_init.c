@@ -86,15 +86,16 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] = 
     {
-    { IID_Hidd_BitMap,      &LIBBASE->sd.bitMapAttrBase },
-    { IID_Hidd_PixFmt,	    &LIBBASE->sd.pixFmtAttrBase },
-    { IID_Hidd_Sync,        &LIBBASE->sd.syncAttrBase },
-    { IID_Hidd_Gfx,         &LIBBASE->sd.gfxAttrBase },
-    { IID_Hidd_PlanarBM,    &LIBBASE->sd.planarAttrBase },
-    { IID_Hidd_I2C_Nouveau, &LIBBASE->sd.i2cNouveauAttrBase },
-    { IID_Hidd_Gallium,     &LIBBASE->sd.galliumAttrBase },
-    { IID_Hidd_GC,          &LIBBASE->sd.gcAttrBase },
-    { IID_Hidd_Compositing, &LIBBASE->sd.compositingAttrBase },
+    { IID_Hidd_BitMap,          &LIBBASE->sd.bitMapAttrBase },
+    { IID_Hidd_PixFmt,	        &LIBBASE->sd.pixFmtAttrBase },
+    { IID_Hidd_Sync,            &LIBBASE->sd.syncAttrBase },
+    { IID_Hidd_Gfx,             &LIBBASE->sd.gfxAttrBase },
+    { IID_Hidd_PlanarBM,        &LIBBASE->sd.planarAttrBase },
+    { IID_Hidd_I2C_Nouveau,     &LIBBASE->sd.i2cNouveauAttrBase },
+    { IID_Hidd_Gallium,         &LIBBASE->sd.galliumAttrBase },
+    { IID_Hidd_GC,              &LIBBASE->sd.gcAttrBase },
+    { IID_Hidd_Compositing,     &LIBBASE->sd.compositingAttrBase },
+    { IID_Hidd_Bitmap_Nouveau,  &LIBBASE->sd.bitMapNouveauAttrBase },
     { NULL, NULL }
     };
 
@@ -108,17 +109,17 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sd.mid_PutMem32Image16 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image16);
     LIBBASE->sd.mid_GetMem32Image8  = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image8);
     LIBBASE->sd.mid_GetMem32Image16 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
-	LIBBASE->sd.mid_PutMemTemplate8 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
-	LIBBASE->sd.mid_PutMemTemplate16= OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
-	LIBBASE->sd.mid_PutMemTemplate32= OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
-	LIBBASE->sd.mid_PutMemPattern8  = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
-	LIBBASE->sd.mid_PutMemPattern16 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
-	LIBBASE->sd.mid_PutMemPattern32 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
-	LIBBASE->sd.mid_ConvertPixels   = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
-	LIBBASE->sd.mid_GetPixFmt       = OOP_GetMethodID((STRPTR)IID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
+    LIBBASE->sd.mid_PutMemTemplate8 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
+    LIBBASE->sd.mid_PutMemTemplate16= OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
+    LIBBASE->sd.mid_PutMemTemplate32= OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
+    LIBBASE->sd.mid_PutMemPattern8  = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
+    LIBBASE->sd.mid_PutMemPattern16 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
+    LIBBASE->sd.mid_PutMemPattern32 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
+    LIBBASE->sd.mid_ConvertPixels   = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
+    LIBBASE->sd.mid_GetPixFmt       = OOP_GetMethodID((STRPTR)IID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
 
-	LIBBASE->sd.mid_BitMapPositionChanged   = OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapPositionChanged);
-	LIBBASE->sd.mid_BitMapRectChanged       = OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapRectChanged);
+    LIBBASE->sd.mid_BitMapPositionChanged   = OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapPositionChanged);
+    LIBBASE->sd.mid_BitMapRectChanged       = OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapRectChanged);
 
   
     

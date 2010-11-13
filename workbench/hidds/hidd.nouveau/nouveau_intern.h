@@ -30,6 +30,25 @@ struct HIDDNouveauData
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
+#define IID_Hidd_Bitmap_Nouveau         "hidd.bitmap.nouveau"
+
+#define HiddBitMapNouveauAttrBase __IHidd_BitMap_Nouveau
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddBitMapNouveauAttrBase;
+#endif
+
+enum
+{
+    aoHidd_BitMap_Nouveau_CompositingHidd,       /* [I..] The compositing object that will be used by bitmap */
+    
+    num_Hidd_BitMap_Nouveau_Attrs
+};
+
+#define aHidd_BitMap_Nouveau_CompositingHidd    (HiddBitMapNouveauAttrBase + aoHidd_BitMap_Nouveau_CompositingHidd)
+
+#define IS_BITMAPNOUVEAU_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddBitMapNouveauAttrBase) < num_Hidd_BitMap_Nouveau_Attrs)
 
 struct HIDDNouveauBitMapData
 {
@@ -47,11 +66,12 @@ struct HIDDNouveauBitMapData
     BOOL    displayable;    /* Can bitmap be displayed on screen */
     
     /* Information connected with display */
-    LONG    xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
-    LONG    yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
-    ULONG   displayedwidth; /* Width of displayed part of bitmap in pixels */
-    ULONG   displayedheight;/* Height of displayed part of bitmap in pixels */
-    ULONG   fbid;           /* Contains ID under which bitmap 
+    OOP_Object  *compositing;   /* Compositing object used by bitmap */
+    LONG        xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
+    LONG        yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
+    ULONG       displayedwidth; /* Width of displayed part of bitmap in pixels */
+    ULONG       displayedheight;/* Height of displayed part of bitmap in pixels */
+    ULONG       fbid;           /* Contains ID under which bitmap 
                                               is registered as framebuffer or 
                                               0 otherwise */
 };
@@ -125,6 +145,7 @@ struct staticdata
     OOP_AttrBase    galliumAttrBase;
     OOP_AttrBase    gcAttrBase;
     OOP_AttrBase    compositingAttrBase;
+    OOP_AttrBase    bitMapNouveauAttrBase;
     
     OOP_MethodID    mid_CopyMemBox8;
     OOP_MethodID    mid_CopyMemBox16;
