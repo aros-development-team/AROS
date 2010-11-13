@@ -38,6 +38,7 @@ enum
     moHidd_Compositing_BitMapStackChanged = 0,
     moHidd_Compositing_BitMapRectChanged,
     moHidd_Compositing_BitMapPositionChanged,
+    moHidd_Compositing_ValidateBitMapPositionChange,
 
     NUM_COMPOSITING_METHODS
 };
@@ -74,6 +75,14 @@ struct pHidd_Compositing_BitMapPositionChanged
 {
     OOP_MethodID    mID;
     OOP_Object      *bm;
+};
+
+struct pHidd_Compositing_ValidateBitMapPositionChange
+{
+    OOP_MethodID    mID;
+    OOP_Object      *bm;
+    LONG            *newxoffset;
+    LONG            *newyoffset;
 };
 
 #endif /* HIDD_COMPOSITING_H */

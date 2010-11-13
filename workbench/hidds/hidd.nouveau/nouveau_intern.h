@@ -69,8 +69,6 @@ struct HIDDNouveauBitMapData
     OOP_Object  *compositing;   /* Compositing object used by bitmap */
     LONG        xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
     LONG        yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
-    ULONG       displayedwidth; /* Width of displayed part of bitmap in pixels */
-    ULONG       displayedheight;/* Height of displayed part of bitmap in pixels */
     ULONG       fbid;           /* Contains ID under which bitmap 
                                               is registered as framebuffer or 
                                               0 otherwise */
@@ -165,6 +163,7 @@ struct staticdata
     
     OOP_MethodID    mid_BitMapPositionChanged;
     OOP_MethodID    mid_BitMapRectChanged;
+    OOP_MethodID    mid_ValidateBitMapPositionChange;
 
     struct CardData carddata;
     

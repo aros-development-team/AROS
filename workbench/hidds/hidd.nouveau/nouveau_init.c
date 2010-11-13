@@ -118,8 +118,12 @@ static ULONG Novueau_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sd.mid_ConvertPixels   = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
     LIBBASE->sd.mid_GetPixFmt       = OOP_GetMethodID((STRPTR)IID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
 
-    LIBBASE->sd.mid_BitMapPositionChanged   = OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapPositionChanged);
-    LIBBASE->sd.mid_BitMapRectChanged       = OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapRectChanged);
+    LIBBASE->sd.mid_BitMapPositionChanged   =
+        OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapPositionChanged);
+    LIBBASE->sd.mid_BitMapRectChanged       = 
+        OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapRectChanged);
+    LIBBASE->sd.mid_ValidateBitMapPositionChange =
+        OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_ValidateBitMapPositionChange);
 
   
     

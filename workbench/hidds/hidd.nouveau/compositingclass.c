@@ -119,9 +119,8 @@ static VOID HIDDCompositingRecalculateDisplayedWidthHeight(struct HIDDCompositin
     
     ForeachNode(&compdata->bitmapstack, n)
     {
-        struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(OOP_OCLASS(n->bm), n->bm);
-        bmdata->displayedwidth  = displayedwidth;
-        bmdata->displayedheight = displayedheight;
+        n->displayedwidth   = displayedwidth;
+        n->displayedheight  = displayedheight;
     }
 }
 
@@ -461,8 +460,10 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapStackChanged)
         if (HIDDCompositingCanCompositeWithScreenBitMap(compdata, vpdata->Bitmap))
         {
             struct StackBitMapNode * n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
-            n->bm = vpdata->Bitmap;
-            n->isscreenvisible = FALSE;
+            n->bm               = vpdata->Bitmap;
+            n->isscreenvisible  = FALSE;
+            n->displayedwidth   = 0;
+            n->displayedheight  = 0;
             AddTail(&compdata->bitmapstack, (struct Node *)n);
         }
     }
@@ -503,5 +504,39 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapPositionChanged)
     UNLOCK_COMPOSITING
 }
 
+VOID METHOD(Compositing, Hidd_Compositing, ValidateBitMapPositionChange)
+{
+    struct HIDDCompositingData * compdata = OOP_INST_DATA(cl, o);
+    struct StackBitMapNode * n = NULL;
+    
+    LOCK_COMPOSITING_READ
+    
+    /* Check if passed bitmap is in stack, ignore if not */
+    if ((n = HIDDCompositingIsBitMapOnStack(compdata, msg->bm)) != NULL)
+    {
+        IPTR width, height;
+        LONG limit;
+        
+        OOP_GetAttr(msg->bm, aHidd_BitMap_Width, &width);
+        OOP_GetAttr(msg->bm, aHidd_BitMap_Height, &height);
+        
+        /* Check x position */
+        limit = n->displayedwidth - width;
+        if (*(msg->newxoffset) > 0)
+            *(msg->newxoffset) = 0;
 
+        if (*(msg->newxoffset) < limit)
+            *(msg->newxoffset) = limit;
+
+        /* Check y position */
+        limit = n->displayedheight - height;
+        if (*(msg->newyoffset) > n->displayedheight - 15) /* Limit for drag */
+            *(msg->newyoffset) = n->displayedheight - 15;
+
+        if (*(msg->newyoffset) < limit) /* Limit for scroll */
+            *(msg->newyoffset) = limit;
+    }
+    
+    UNLOCK_COMPOSITING
+}
 

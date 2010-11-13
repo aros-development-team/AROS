@@ -23,6 +23,8 @@ struct StackBitMapNode
     OOP_Object *        bm;
     struct _Rectangle   screenvisiblerect;
     BOOL                isscreenvisible;
+    LONG                displayedwidth;
+    LONG                displayedheight;
 };
 
 struct HIDDCompositingData

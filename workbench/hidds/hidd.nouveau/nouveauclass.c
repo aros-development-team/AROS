@@ -297,11 +297,6 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
         return FALSE;
     }
 
-    /* Set the displayed width and height of bitmap */
-    bmdata->displayedwidth = hdisp;
-    bmdata->displayedheight = vdisp;
-
-
     /* For screen switching the bitmap might have already once been a framebuffer 
        - check bmdata->fbid. Also the bitmap itself needs to know whether it is 
        added as framebuffer so that it can unregister itself in Dispose */
