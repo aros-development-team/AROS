@@ -4,7 +4,6 @@ include $(TOP)/config/make.cfg
 CFILES  := 
 AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom
 
-#MM kernel-graphics : kernel-graphics-amiga-m68k
 #MM kernel-graphics-amiga-m68k : kernel-graphics-includes includes-asm_h-m68k
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/graphics \

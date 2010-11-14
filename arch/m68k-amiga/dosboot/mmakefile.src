@@ -4,7 +4,6 @@ include $(TOP)/config/make.cfg
 CFILES  := bootconfig
 AFILES  :=
 
-#MM kernel-dosboot : kernel-dosboot-amiga-m68k
 #MM kernel-dosboot-amiga-m68k : kernel-kernel-amiga-m68k-includes kernel-dosboot-includes includes-asm_h-m68k
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dosboot \
