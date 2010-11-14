@@ -8,17 +8,45 @@ include $(TOP)/config/make.cfg
 
 SYSTEM_FILES := \
     AROS.boot \
+    C/AddDatatypes \
+    C/Alias \
+    C/Assign \
+    C/CD \
+    C/Copy \
+    C/Delete \
     C/Dir \
+    C/EndCLI \
+    C/EndIf \
+    C/Execute \
+    C/FailAt \
+    C/IPrefs \
+    C/If \
+    C/List \
+    C/MakeDir \
+    C/Mount \
+    C/NewCLI \
+    C/Path \
+    C/Prompt \
+    C/Protect \
+    C/Run \
+    C/SetClock \
     C/Shell \
+    C/Touch \
     C/Unpack \
-    Libs/locale.library \
-    Libs/iffparse.library \
     Devs/DataTypes/ELF \
     Devs/DataTypes/ELF_EXE \
-    Devs/DataTypes/ILBM \
     Devs/DataTypes/FTXT \
+    Devs/DataTypes/ILBM \
+    Devs/DOSDrivers/PIPEFS \
     Devs/Mountlist \
-    S/Shell-Startup
+    Libs/iffparse.library \
+    Libs/locale.library \
+    S/Shell-Startup \
+    S/Startup-Sequence \
+    System/FixFonts \
+    System/Format \
+    System/Wanderer/Wanderer
+
 
 SYSTEM_SRC_DIR  := $(AROSDIR)
 SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
@@ -32,17 +60,25 @@ systemdisk-setup-amiga-m68k :
 	%mkdirs_q $(SYSTEM_DEST_DIR)
 	echo -n $(ARCH)-$(CPU) >$(SYSTEM_DEST_DIR)/AROS.boot
 	%mkdirs_q $(SYSTEM_DEST_DIR)/C
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Classes
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/DOSDrivers
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/Keymaps
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Devs/DataTypes
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Fonts
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Libs
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Locale
 	%mkdirs_q $(SYSTEM_DEST_DIR)/S
+	%mkdirs_q $(SYSTEM_DEST_DIR)/System
+	%mkdirs_q $(SYSTEM_DEST_DIR)/System/Wanderer
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Tools
 
 systemdisk-amiga-m68k: $(DISTDIR)/systemdisk-amiga-m68k.img
 
 .PHONY: systemdisk-amiga-m68k-quick
 
 #MM
-systemdisk-amiga-m68k-quick : systemdisk-amiga-m68k
+systemdisk-amiga-m68k-quick : systemdisk-setup-amiga-m68k systemdisk-amiga-m68k
 
 $(DISTDIR)/systemdisk-amiga-m68k.img: $(SYSTEM_DEST_FILES) $(SYSTEM_EXTRA_FILES) \
  $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
@@ -51,8 +87,8 @@ $(DISTDIR)/systemdisk-amiga-m68k.img: $(SYSTEM_DEST_FILES) $(SYSTEM_EXTRA_FILES)
 	$(COPYTOAFS) $@ --name "AROS Boot Floppy" --size 1760 $(SYSTEM_DEST_DIR)
 	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
 
-$(SYSTEM_DEST_DIR)/S/Startup-Sequence:
-	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
+#$(SYSTEM_DEST_DIR)/S/Startup-Sequence:
+#	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c
 	echo $(GENDIR)/$(CURDIR)
