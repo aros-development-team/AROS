@@ -95,7 +95,7 @@ static inline UWORD custom_r(ULONG reg)
  *      		Paula 1: Disk DMA done
  *      		Paula 2: Software Int
  *      26	Level 2 Interrupt
- *      		Paula 3: CIA
+ *      		Paula 3: CIAA & IRQ2
  *      27	Level 3 Interrupt
  *      		Paula 4: Copper
  *      		Paula 5: Vert Blank
@@ -110,7 +110,7 @@ static inline UWORD custom_r(ULONG reg)
  *      		Paula 12: Disk Sync
  *      30	Level 6 Interrupt
  *      		Paula 13: External
- *      		Paula 14: Copper (special)
+ *      		Paula 14: CIAB & IRQ6
  *      31	Level 7 Interrupt
  *      		Paula 15: NMI
  *      32	TRAP #0
@@ -165,45 +165,28 @@ static inline void Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase
     	return;
     }
 
-#if 1
     AROS_UFC5(void, SysBase->IntVects[irq].iv_Code,			\
 		    AROS_UFCA(ULONG, mask, D1),				\
 		    AROS_UFCA(ULONG, 0xDFF000, A0),			\
 		    AROS_UFCA(APTR, SysBase->IntVects[irq].iv_Data, A1),\
 		    AROS_UFCA(APTR, SysBase->IntVects[irq].iv_Code, A5),\
 		    AROS_UFCA(struct ExecBase *, SysBase, A6));
-#else
-    asm volatile (
-    	    "move.l	%0,%%d1\n"
-    	    "move.l	%1,%%a0\n"
-    	    "move.l	%2,%%a1\n"
-    	    "move.l	%4,%%a6\n"
-    	    "move.l	%%a5,%%sp@-\n"
-    	    "move.l	%3,%%a5\n"
-    	    "jsr.l	(%%a5)\n"
-    	    "move.l	%%sp@+,%%a5\n"
-    	    :
-    	    : "g" (mask),
-    	      "g" (0xdff000),
-    	      "g" (SysBase->IntVects[irq].iv_Data),
-    	      "r" (SysBase->IntVects[irq].iv_Code),
-    	      "g" (SysBase)
-    	    : "%d0", "%d1", "%a0", "%a1", "%a6");
-#endif
 }
 
 #define PAULA_IRQ_CHECK(valid_mask) \
     const UWORD irq_mask = valid_mask; \
     UWORD mask = custom_r(INTENAR) & custom_r(INTREQR) & (irq_mask); \
-    custom_w(INTREQ, mask);
+    custom_w(INTREQ, mask & 0x7fff); \
+    do { \
 
 #define PAULA_IRQ_HANDLE(irq) \
-    do { \
-    	if ((mask) & (1 << (irq))) \
+    	if ((mask) & (1 << (irq))) { \
     	    Amiga_Paula_IRQ(irq, mask, SysBase); \
-    } while (0)
+    	} \
 
 #define PAULA_IRQ_EXIT()	\
+	/* mask = custom_r(INTENAR) & custom_r(INTREQR) & (irq_mask); */ \
+    } while (0); \
     /* If the caller was not nested, call core_ExitInterrupt */	\
     if (!(regs->sr & 0x2000))					\
     	core_ExitInterrupt(regs);
@@ -281,15 +264,11 @@ static void Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
 
 static void Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-    /* Paula IRQs  13 - External 
-     *             14 - Copper 'special'
+    /* Paula IRQ  13 - CIAB & IRQ6
      */
-    PAULA_IRQ_CHECK(INTF_EXTER | (1 << 14));
+    PAULA_IRQ_CHECK(INTF_EXTER);
 
     PAULA_IRQ_HANDLE(INTB_EXTER);
-
-    /* 14 is the Copper 'special' bit. */
-    PAULA_IRQ_HANDLE(14);
 
     PAULA_IRQ_EXIT();
 }
