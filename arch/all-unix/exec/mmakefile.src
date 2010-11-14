@@ -1,7 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+ifeq ($(AROS_TARGET_CPU), arm)
+FILES := platform_init shutdowna 
+else
 FILES := platform_init shutdowna newstackswap
+endif
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
 		 -I$(SRCDIR)/rom/exec -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
