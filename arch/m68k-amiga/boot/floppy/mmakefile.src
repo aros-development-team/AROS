@@ -41,6 +41,8 @@ SYSTEM_FILES := \
     Devs/Mountlist \
     Libs/iffparse.library \
     Libs/locale.library \
+    Libs/arosc.library \
+    Libs/datatypes.library \
     S/Shell-Startup \
     S/Startup-Sequence \
     System/FixFonts \
