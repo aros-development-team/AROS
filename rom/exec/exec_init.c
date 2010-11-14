@@ -251,7 +251,7 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     {
 	struct Interrupt *is;
 
-	if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
+	if (i != INTB_SOFTINT)
 	{	
 	    struct SoftIntList *sil;
 
@@ -275,22 +275,18 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	{
 	    struct Interrupt * is;
 
-	    switch(i) {
-	    case INTB_SOFTINT:
-	        is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-	        if (NULL == is) {
-	            kprintf("Error: Cannot install SoftInt Handler!\n");
-	            Alert( AT_DeadEnd | AN_IntrMem );
-	        }
-
-	        is->is_Node.ln_Type = NT_INTERRUPT;
-	        is->is_Node.ln_Pri = 0;
-	        is->is_Node.ln_Name = "SW Interrupt Dispatcher";
-	        is->is_Data = NULL;
-	        is->is_Code = (void *)SoftIntDispatch;
-	        SetIntVector(i,is);
-	        break;
+	    is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+	    if (NULL == is) {
+		kprintf("Error: Cannot install SoftInt Handler!\n");
+		Alert( AT_DeadEnd | AN_IntrMem );
 	    }
+
+	    is->is_Node.ln_Type = NT_INTERRUPT;
+	    is->is_Node.ln_Pri = 0;
+	    is->is_Node.ln_Name = "SW Interrupt Dispatcher";
+	    is->is_Data = NULL;
+	    is->is_Code = (void *)SoftIntDispatch;
+	    SetIntVector(i,is);
 	}
     }
 
