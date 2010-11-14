@@ -41,7 +41,7 @@
 
     NOTES
 		Sending an illegal message may have serious consequences. If you for
-		some reason are not completely shure whether your message is legal,
+		some reason are not completely sure whether your message is legal,
 		you could do the following test:
 
 		if((msg>>24)<0x80 || (msg>>24)==0xf0 || (msg>>24)==0xf7 || (msg>>16&0xff)>0x7f || (msg>>8&0xff)>0x7f){
