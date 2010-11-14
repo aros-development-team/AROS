@@ -1,3 +1,4 @@
+#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
@@ -32,7 +33,7 @@ AROS_LH0I(void *, KrnCreateContext,
     if (ctx)
     {
         ctx->FPUType    = fpu_type;
-	ctx->fpuContext = (APTR)ctx + sizeof(struct AROSCPUContext);
+	ctx->fpuContext = (APTR)((IPTR)ctx + sizeof(struct AROSCPUContext));
 	/* TODO: initialize FPU context ? */
     }
 
