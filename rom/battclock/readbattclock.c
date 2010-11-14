@@ -40,13 +40,11 @@
     BUGS
 
     SEE ALSO
-	WriteBattClock, ResetBattClock
+	WriteBattClock(), ResetBattClock()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    battclock_lib.fd and clib/battclock_protos.h
 
 *****************************************************************************/
 {
