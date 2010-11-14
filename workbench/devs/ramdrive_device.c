@@ -15,9 +15,6 @@
 
 /****************************************************************************************/
 
-#define __DOS_NOLIBBASE__
-#define __EXPANSION_NOLIBBASE__
-
 #include <devices/trackdisk.h>
 #include <devices/newstyle.h>
 #include <exec/resident.h>
@@ -25,9 +22,6 @@
 #include <exec/memory.h>
 #include <exec/initializers.h>
 #include <proto/exec.h>
-#include <libraries/expansion.h>
-#include <libraries/expansionbase.h>
-#include <proto/expansion.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <proto/dos.h>
@@ -94,15 +88,7 @@ static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ramdrivebase)
 {
-    struct ExpansionBase *ExpansionBase;
-    IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
-    struct DeviceNode *devnode;
-
     D(bug("ramdrive_device: in libinit func\n"));
-
-    ExpansionBase = (APTR)OpenLibrary("expansion.library",0);
-    if (ExpansionBase == NULL)
-    	return FALSE;
 
     InitSemaphore(&ramdrivebase->sigsem);
     NEWLIST((struct List *)&ramdrivebase->units);
@@ -110,33 +96,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ramdrivebase)
     ramdrivebase->port.mp_Flags = PA_SIGNAL;
     ramdrivebase->port.mp_SigBit = SIGB_SINGLE;
     NEWLIST((struct List *)&ramdrivebase->port.mp_MsgList);
-
-    D(bug("Make DOSNode\n"));
-    pp[0] = (IPTR)"RAM";
-    pp[1] = (IPTR)"ramdrive.device";
-    pp[2] = 0;
-    pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
-    pp[DE_SIZEBLOCK + 4] = BLOCKSIZE / sizeof(ULONG);
-    pp[DE_NUMHEADS + 4] = NUM_HEADS;
-    pp[DE_SECSPERBLOCK + 4] = 1;
-    pp[DE_BLKSPERTRACK + 4] = NUM_SECS;
-    pp[DE_RESERVEDBLKS + 4] = 2;
-    pp[DE_LOWCYL + 4] = 0;
-    pp[DE_HIGHCYL + 4] = NUM_CYL-1;
-    pp[DE_NUMBUFFERS + 4] = 10;
-    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
-    pp[DE_MAXTRANSFER + 4] = 0x00200000;
-    pp[DE_MASK + 4] = 0x7FFFFFFE;
-    pp[DE_BOOTPRI + 4] = -127;
-    pp[DE_DOSTYPE + 4] = 0x444f5300;	/* DOS\000 */
-    devnode = MakeDosNode(pp);
-
-    if (devnode)
-	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
-
+    
     D(bug("ramdrive_device: in libinit func. Returning %x (success) :-)\n", ramdrivebase));
-
-    CloseLibrary((APTR)ExpansionBase);
     return TRUE;
 }
 
@@ -171,7 +132,6 @@ static int GM_UNIQUENAME(Open)
     	{ TAG_END	, 0 				}
     };
     struct unit *unit;
-    struct DOSBase *DOSBase;
 
     D(bug("ramdrive_device: in libopen func.\n"));
 
@@ -181,10 +141,6 @@ static int GM_UNIQUENAME(Open)
 	iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
 	return FALSE;
     }
-
-    DOSBase = (APTR)OpenLibrary("dos.library", 0);
-    if (DOSBase == NULL)
-    	return FALSE;
 
     D(bug("ramdrive_device: in libopen func. Looking if unit is already open\n"));
 
@@ -203,7 +159,7 @@ static int GM_UNIQUENAME(Open)
 	    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
    	   
 	    D(bug("ramdrive_device: in libopen func. Yep. Unit is already open\n"));
-	    CloseLibrary((APTR)DOSBase);
+	    
 	    return TRUE;
 	}
 
@@ -248,7 +204,6 @@ static int GM_UNIQUENAME(Open)
 		/* Set returncode */
 		iotd->iotd_Req.io_Error = 0;
 		ReleaseSemaphore(&ramdrivebase->sigsem);
-	    	CloseLibrary((APTR)DOSBase);
 		return TRUE;
 	    }else
 		iotd->iotd_Req.io_Error = TDERR_NotSpecified;
@@ -260,7 +215,6 @@ static int GM_UNIQUENAME(Open)
 
     ReleaseSemaphore(&ramdrivebase->sigsem);
 
-    CloseLibrary((APTR)DOSBase);
     return FALSE;
 }
 
@@ -709,10 +663,9 @@ VOID CalcBitMapCheckSum(UBYTE *buf)
 VOID InstallRootBlock(UBYTE *buf, STRPTR diskname, ULONG bitmap,
     	    	      struct unit *unit)
 {
-    struct DateStamp ds = {};
+    struct DateStamp ds;    
     ULONG   	     *long_ptr;
     LONG    	     i;
-    struct DOSBase *DOSBase;
     
     long_ptr 	  = (ULONG *)buf;
     long_ptr[0]   = AROS_LONG2BE(2);
@@ -720,12 +673,8 @@ VOID InstallRootBlock(UBYTE *buf, STRPTR diskname, ULONG bitmap,
     long_ptr[78]  = AROS_LONG2BE(-1);
     long_ptr[79]  = AROS_LONG2BE(bitmap);
     long_ptr[127] = AROS_LONG2BE(1);
-   
-    DOSBase = (APTR)OpenLibrary("dos.library", 0);
-    if (DOSBase != NULL) {
-	DateStamp(&ds);
-	CloseLibrary((APTR)DOSBase);
-    }
+    
+    DateStamp(&ds);
     
     long_ptr[121] = AROS_LONG2BE(ds.ds_Days);
     long_ptr[122] = AROS_LONG2BE(ds.ds_Minute);
