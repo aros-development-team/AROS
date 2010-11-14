@@ -265,8 +265,7 @@ static struct MemHeader *SetupMemory(CONST_STRPTR name, BYTE pri,
 
 void start(IPTR chip_start, ULONG chip_size,
            IPTR fast_start, ULONG fast_size,
-           IPTR ss_stack_upper, IPTR ss_stack_lower,
-           IPTR us_stack_upper, IPTR us_stack_lower)
+           IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	extern void *_bss;
 	extern void *_bss_end;
@@ -311,8 +310,6 @@ void start(IPTR chip_start, ULONG chip_size,
 	DebugPutHex("Chip_Lower ",(ULONG)chip_start);
 	DebugPutHex("SS_Stack_Upper",(ULONG)(ss_stack_upper - 1));
 	DebugPutHex("SS_Stack_Lower",(ULONG)ss_stack_lower);
-	DebugPutHex("US_Stack_Upper",(ULONG)(us_stack_upper - 1));
-	DebugPutHex("US_Stack_Lower",(ULONG)us_stack_lower);
 
 	/* Look for 'HELP' at address 0 - we're recovering
 	 * from a fatal alert
@@ -422,6 +419,8 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Scan for all other ROM Tags */
 	sysBase->ResModules = krnRomTagScanner(sysBase, kickrom);
 	DebugPuts("[start] InitCode(RTF_SINGLETASK, 0)\n");
+
+	/* Ok, let's start the system */
 	InitCode(RTF_SINGLETASK, 0);
 
 	/* We shouldn't get here */
