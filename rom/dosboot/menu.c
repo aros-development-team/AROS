@@ -305,9 +305,20 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
     InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
 #endif
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    {
+    	volatile UBYTE *cia = (UBYTE*)0xbfe001;
+    	volatile UWORD *potinp = (UWORD*)0xdff016;
+    	/* check left + right mouse button state */
+    	if ((cia[0] & 0x40) == 0 && (potinp[0] & 0x0400) == 0)
+	    WantBootMenu = TRUE;
+    }
+    /* native hardware have resident ROM drivers */
+#else
     /* Initialize default HIDDs */
     if (!initHidds(LIBBASE))
 	return FALSE;
+#endif
 
     /* Check for command line argument */
     if (BootLoaderBase) {
