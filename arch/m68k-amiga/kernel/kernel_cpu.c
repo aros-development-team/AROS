@@ -67,6 +67,11 @@ void cpu_Dispatch(regs_t *regs)
 	    KrnSti();
 	}
         asm volatile ("stop #0x2000\n"); // Wait for an interrupt
+	/* Ok, I don't like this, but we lose
+	 * VBLANK interrupts on UAE if we don't add some
+	 * delay after we come out of the STOP.
+	 */
+	{ volatile int i; for (i = 0; i < 1000; i++); }
     }
 
     ctx = GetIntETask(task)->iet_Context;
