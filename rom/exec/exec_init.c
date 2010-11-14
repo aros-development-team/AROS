@@ -124,7 +124,11 @@ AROS_UFH5S(void, IntServer,
 		AROS_UFCA(APTR, irq->is_Code, A5),
 		AROS_UFCA(struct ExecBase *, SysBase, A6)
 	))
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+	    ;
+#else
 	    break;
+#endif
     }
 
     AROS_USERFUNC_EXIT
