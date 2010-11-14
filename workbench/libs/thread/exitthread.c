@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-        WaitThread(), WaitAllThreads(), exit()
+        WaitThread(), WaitAllThreads(), clib.library/exit()
 
     INTERNALS
 
