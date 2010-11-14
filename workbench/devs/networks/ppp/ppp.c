@@ -145,9 +145,19 @@ void AddChkSum(struct packet *p){
 
 void ppp_timer(int dt){
 	
+	// No timeouts in network & dead phases.
 	if( (phase ==  PPP_PHASE_NETWORK) || (phase ==  PPP_PHASE_DEAD)) return;
-	
+
 	timer += dt;
+	
+	if(phase ==  PPP_PHASE_PROTOCOL_CONF ){ // sometimes IPCP takes a looong time...
+		if( timer > 60 ){
+			bug("PPP Giveup :-(\n");
+			Set_phase( PPP_PHASE_DEAD );
+		}	
+		return;
+	}
+	
 	if( timer < TIMEOUT ) return;
 	timer = 0;
 	
@@ -222,7 +232,7 @@ void Set_phase(UBYTE ph){
 		SecondaryDNS[1]=0;
 		SecondaryDNS[2]=0;
 		SecondaryDNS[3]=0;
-		
+				
 		Send_IPCP_req();
 		break;
 
@@ -681,9 +691,8 @@ void IPCP_Packet(struct packet * p){
 				SecondaryDNS[2]=ptr[4];
 				SecondaryDNS[3]=ptr[5];
 				bug("SecondaryDNS address is %d.%d.%d.%d\n",SecondaryDNS[0],SecondaryDNS[1],
-														SecondaryDNS[2],SecondaryDNS[3]);												
+														SecondaryDNS[2],SecondaryDNS[3]);										
 			}
-				
 			else {
 				bug("  Unknown type %d\n",type);
 			}
@@ -719,6 +728,9 @@ void Send_IPCP_ack(struct packet *p){
 void Send_IPCP_req(){
 	struct packet p;
 	bug("\nsend IPCP req\n");
+	
+	Delay(100);
+	
 	p.packetsize=0;
 	AddByte( &p, 0x80 );
 	AddByte( &p, 0x21 );
@@ -749,7 +761,6 @@ void Send_IPCP_req(){
 		AddByte( &p, SecondaryDNS[2] );
 		AddByte( &p, SecondaryDNS[3] );
 	//}
-
 	p.data[5] = p.packetsize - 2; // size
 
 	printpacket(&p);

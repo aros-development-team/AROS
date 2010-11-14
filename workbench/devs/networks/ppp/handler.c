@@ -241,9 +241,8 @@ VOID Offline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 	D(bug("Offline\n"));
 
 	if( LIBBASE->serial_ok ){
-		SendTerminateReq();  // 3 times just in case
-		SendTerminateReq();
-		SendTerminateReq();
+		SendTerminateReq(); 
+		Delay(300);
 		CloseSerial(LIBBASE);
 	}
 	Set_phase( PPP_PHASE_DEAD );
