@@ -24,8 +24,7 @@
  * host-independent code
  */
 
-/* We don't use any hacks any more. With modern kernel and libc it's okay
-   Schulz: NO, it's NOT in case of ARM! */
+/* We don't use any hacks any more. With modern kernel and libc it's okay */
 #define SIGCORE_NEED_SA_SIGINFO 1
 
 #include <ucontext.h>
@@ -74,16 +73,8 @@ typedef @sighandler@ SignalHandler;
 #define SAVEREGS(cc, uc)           						\
 do {										\
     CopyMemQuick(&uc->uc_mcontext.arm_r0, (cc)->regs.r, sizeof(ULONG) * 17);	\
-    unsigned int i = 0;								\
-    while(i < 128) {								\
-	if (uc->uc_regspace[i] == 0x56465001)					\
-	{									\
-	    CopyMemQuick(&uc->uc_regspace[i+2], (cc)->regs.fpuContext, uc->uc_regspace[i+1]-8);	\
-	    break;								\
-	} else if (uc->uc_regspace[i+1] > 0) {					\
-	    i = i + uc->uc_regspace[i+1]/4;					\
-	} else i++;								\
-    } 										\
+    CopyMemQuick(&uc->uc_regspace[0], (cc)->regs.fpuContext, 128*sizeof(ULONG));\
+    (cc)->regs.Flags |= CTX_FPU_SAVED;
 } while(0);
 
 
@@ -95,16 +86,8 @@ do {										\
 #define RESTOREREGS(cc, uc)							\
 do {										\
     CopyMemQuick((cc)->regs.r, &uc->uc_mcontext.arm_r0, sizeof(ULONG) * 17);	\
-    unsigned int i = 0;								\
-    while(i < 128) {								\
-	if (uc->uc_regspace[i] == 0x56465001)					\
-	{									\
-	    CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[i+2], uc->uc_regspace[i+1]-8);	\
-	    break;								\
-	} else if (uc->uc_regspace[i+1] > 0) {					\
-	    i = i + uc->uc_regspace[i+1]/4;					\
-	} else i++;								\
-    }										\
+    if ((cc)->regs.Flags & CTX_FPU_SAVED)					\
+	CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[0], 128*sizeof(ULONG));\
 } while(0);
 
 
@@ -134,7 +117,7 @@ struct AROSCPUContext
  * So we set type to FPU_NONE (so that noone tries to mess with it).
  */
 #define ARM_FPU_TYPE FPU_NONE
-#define ARM_FPU_SIZE 320
+#define ARM_FPU_SIZE (128*sizeof(ULONG))
 
 /* Macros to access the program counter */
 
