@@ -188,8 +188,7 @@ extern void aros_not_implemented ();
         "mov    %%r2,%5\n\t"\
         "mov    %%r1,%4\n\t"\
         "mov    %%r0,%3\n\t"\
-        "mov    %%lr,%%pc\n\t"\
-        "mov    %%pc,%2\n\t"\
+        "blx    %2\n\t"\
         "str    %%r0,%0"\
         : "=m"(_re), "=m"(*(int *)p)\
         : "r"(n), "r"(_n1), "r"(_n2), "r"(_n3)\
