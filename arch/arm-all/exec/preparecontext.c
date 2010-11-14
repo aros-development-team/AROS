@@ -103,7 +103,9 @@ AROS_LH4(BOOL, PrepareContext,
 
     /* Now prepare return address */
     ctx->lr = (ULONG)fallBack;
-    
+
+    ctx->Flags = 0;
+
     /* Then set up the frame to be used by Dispatch() */
     ctx->sp = (ULONG)task->tc_SPReg;
     ctx->pc = (ULONG)entryPoint;
