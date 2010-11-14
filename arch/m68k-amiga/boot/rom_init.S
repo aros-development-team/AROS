@@ -2,8 +2,8 @@
 
 	.align 4 
 
-#define SS_STACK_SIZE	0x01000
-#define US_STACK_SIZE	0x0f000
+#define SS_STACK_SIZE	0x04000
+#define US_STACK_SIZE	0x0c000
 
 	.globl rom_init
 rom_init:
@@ -82,15 +82,14 @@ rom_init:
 	move.w	#0,%sr		/* Go to user mode */
 	subi.l	#SS_STACK_SIZE,%d1
 	lea.l	%a1@(%d1),%sp
-	subi.l	#US_STACK_SIZE,%d1
 
 	/* Was this fast memory? */
 	tst.l	%d0
 	beq	0f
-	/* Yes - shrink fast memory */
+	/* Yes - shrink fast memory by size of SS */
 	move.l	%d1,%d0
 	jmp	1f
-0:	/* No - shrink chip memory */
+0:	/* No - shrink chip memory by size of SS */
 	move.l	%d1,%d4
 1:
 
@@ -108,16 +107,10 @@ rom_init:
 	 *   FastMem Size
 	 *   ss_stack_upper
 	 *   ss_stack_lower
-	 *   us_stack_upper
-	 *   us_stack_lower
 	 */
 	pea.l	%a1@(%d1)
 	pea.l	%a1@(%d1)
-	addi.l	#(US_STACK_SIZE),%sp@
-	pea.l	%a1@(%d1)
-	addi.l	#(US_STACK_SIZE),%sp@
-	pea.l	%a1@(%d1)
-	addi.l	#(SS_STACK_SIZE+US_STACK_SIZE),%sp@
+	addi.l	#(SS_STACK_SIZE),%sp@
 	move.l	%d0,%sp@-
 	move.l	%a0,%sp@-
 	move.l	%d4,%sp@-
