@@ -84,6 +84,7 @@ AROS_SLIB_ENTRY(Supervisor,Exec):
 	move.l	%a5,%sp@-
 	move.l	%sp@(-8),%a5
 #endif
+	jsr	Disable(%a6)
 	/* CRITICAL SECTION - DO NOT USE THE STACK */
 Exec_Supervisor_Entry_10:
 	move.w	%sr, %d1	// Caused exception on 68010/20
@@ -100,6 +101,7 @@ Exec_Supervisor_Entered:	// %d1 will always have the old SR
 	jmp	(%a5)		// D0 will be set after the
 1:				//  caller's RTE gets back here.
 	/* END CRITICAL SECTION - CALLER'S STACK */
+	jsr	Enable(%a6)
 #ifndef DoRegisterCalls
 	move.l	%sp@+,%a5
 #endif
