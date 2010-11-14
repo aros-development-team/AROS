@@ -1467,18 +1467,25 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 		}
 	    }
 
-	    if ((ie->ie_Y < 0) || (ie->ie_Y >= DHeight)) {
-		yval -= iihdata->DeltaMouseY;
+        if ((ie->ie_Y < 0) || (ie->ie_Y >= DHeight)) {
+            yval -= iihdata->DeltaMouseY;
 
-		if (ie->ie_Y < 0) {
-		    if (yval > 0)
-			yval = 0;
-		} else if (ie->ie_Y >= DHeight) {
-		    min = DHeight - scr->Height;
-		    if (yval < min)
-			yval = min;
-		}
-	    }
+            if (ie->ie_Y < 0) {
+                /* If screen is dragged down and user touched upper screen boundry,
+                do nothing */
+                if (scr->TopEdge >= 0)
+                    yval = scr->TopEdge;
+                else
+                    /* If scrolled down screen is beeing scrolled up, make sure it
+                       does not go over 0 */
+                    if (yval > 0)
+                        yval = 0;
+            } else if (ie->ie_Y >= DHeight) {
+                min = DHeight - scr->Height;
+                if (yval < min)
+                    yval = min;
+            }
+        }
 
 	    if ((xval != scr->LeftEdge) || (yval != scr->TopEdge))
 		ScreenPosition(scr, SPOS_ABSOLUTE, xval, yval, 0, 0);
