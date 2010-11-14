@@ -91,11 +91,6 @@
         Remove(&task->tc_Node);         
     }
 
-    /* Free all memory in the tc_MemEntry list. */
-    while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
-        /* Free one MemList node */
-        FreeEntry(mb);
-
     /* Uninitialize ETask structure */
     et = GetETask(task);
     if(et != NULL)
@@ -103,6 +98,11 @@
         KrnDeleteContext(((struct IntETask *)et)->iet_Context);
 	CleanupETask(task, et);
     }
+
+    /* Free all memory in the tc_MemEntry list. */
+    while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
+        /* Free one MemList node */
+        FreeEntry(mb);
 
     /* Changing the task lists always needs a Disable(). */
     Disable();
