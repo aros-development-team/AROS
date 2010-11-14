@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	ReadBattClock, ResetBattClock
+	ReadBattClock(), ResetBattClock()
 
     INTERNALS
 
