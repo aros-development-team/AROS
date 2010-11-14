@@ -2,6 +2,21 @@
 #include <asm/io.h>
 #include <asm/amcc440.h>
 
+VOID ata_out(UBYTE val, UWORD offset, IPTR port)
+{
+    outb(val, (uint8_t *)(port + offset + PCIC0_IO));
+}
+
+UBYTE ata_in(UWORD offset, IPTR port)
+{
+    return inb((uint8_t *)(port + offset + PCIC0_IO));
+}
+
+VOID ata_outl(ULONG val, UWORD offset, IPTR port)
+{
+    outl(val, (uint32_t *)(port + offset + PCIC0_IO));
+}
+
 VOID ata_insw(APTR address, UWORD port, ULONG count)
 {
     UWORD *addr = address;

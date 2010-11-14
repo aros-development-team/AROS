@@ -392,10 +392,6 @@ typedef enum
 #define ata_out(val, offset, port)  outb((val), (offset)+(port))
 #define ata_in(offset, port)        inb((offset)+(port))
 #define ata_outl(val, offset, port) outl((val), (offset)+(port))
-#elif defined(AROS_PCI_IO_FUNCS)
-#define ata_out(val, offset, port)  pci_outb((val), (offset)+(port))
-#define ata_in(offset, port)        pci_inb((offset)+(port))
-#define ata_outl(val, offset, port) pci_outl_le((val), (offset)+(port))
 #else
 void ata_out(UBYTE val, UWORD offset, IPTR port);
 UBYTE ata_in(UWORD offset, IPTR port);
