@@ -4,7 +4,6 @@ include $(TOP)/config/make.cfg
 CFILES  := 
 AFILES  := bcpl
 
-#MM kernel-dos : kernel-dos-amiga-m68k
 #MM kernel-dos-amiga-m68k : kernel-dos-includes includes-asm_h-m68k
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
