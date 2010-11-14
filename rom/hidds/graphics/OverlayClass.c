@@ -14,7 +14,7 @@
 /*****************************************************************************************
 
     NAME
-	--background--
+	--background_overlay--
 
     LOCATION
 	hidd.graphics.overlay

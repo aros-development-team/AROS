@@ -42,7 +42,7 @@
 /*****************************************************************************************
 
     NAME
-	--background--
+	--background_bitmap--
 
     LOCATION
 	hidd.graphics.bitmap
@@ -281,7 +281,8 @@
 	drivers actually provide linear memory.
 
     SEE ALSO
-	moHidd_ObtainDirectAccess, moHidd_ReleaseDirectAccess, moHidd_UpdateRect
+	moHidd_BitMap_ObtainDirectAccess, moHidd_BitMap_ReleaseDirectAccess,
+	moHidd_BitMap_UpdateRect
 
     INTERNALS
 

@@ -43,7 +43,7 @@
 /*****************************************************************************************
 
     NAME
-	--background--
+	--background_graphics--
 
     LOCATION
 	hidd.graphics.graphics
