@@ -41,11 +41,11 @@ AROS_LH0I(int, KrnIsSuper,
 	.globl	AROS_SLIB_ENTRY(KrnIsSuper,Kernel)
 
 AROS_SLIB_ENTRY(KrnIsSuper,Kernel):
-	movem.l	%d1/%a0-%a1/%a5-%a6,%sp@-
+	movem.l	%a5-%a6,%sp@-
 	movem.l	(4),%a6
 	lea	1f,%a5
 	jsr	%a6@(Supervisor)
-	movem.l	%sp@+,%d1/%a0-%a1/%a5-%a6
+	movem.l	%sp@+,%a5-%a6
 	rts
 
 1:	move.w	%sp@,%d0
