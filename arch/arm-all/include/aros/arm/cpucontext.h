@@ -21,6 +21,9 @@ struct ExceptionContext
     APTR  fpuContext;	/* Pointer to FPU context area	*/
 };
 
+/* Flags */
+#define CTX_FPU_SAVED	1
+
 /* FPU types */
 #define FPU_NONE 0
 #define FPU_AFP  1
