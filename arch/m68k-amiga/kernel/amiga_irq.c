@@ -34,6 +34,25 @@
 /** DMA **/
 #define DMACON			0x96
 
+/** Display Control **/
+#define DIWSTRT	0x8e
+#define DIWSTOP	0x90
+
+#define DIWSTRT_NTSC	0x2c81
+#define DIWSTOP_NTSC	0xf4c1
+
+#define DIWSTRT_PAL	0x2c81
+#define DIWSTOP_PAL	0x2cc1
+
+#define DDFSTRT	0x92
+#define DDFSTOP	0x94
+
+#define DDFSTRT_LOW	0x0038
+#define DDFSTOP_LOW	0x00d0
+
+#define DDFSTRT_HIGH	0x003c
+#define DDFSTOP_HIGH	0x00d4
+
 static inline void custom_w(ULONG reg, UWORD val)
 {
 	volatile UWORD *r = (void *)(0xdff000 + reg);
@@ -311,6 +330,17 @@ void AmigaIRQInit(struct ExecBase *SysBase)
 
 	/* Enable DMA */
 	custom_w(DMACON, 0x8200);
+
+	/* Set up Vert. & Horiz. interval
+	 * PAL 320x200x4
+	 */
+	custom_w(DIWSTRT, DIWSTRT_PAL);
+	custom_w(DIWSTOP, DIWSTOP_PAL);
+	custom_w(DDFSTRT, DDFSTRT_LOW);
+	custom_w(DDFSTOP, DDFSTOP_LOW);
+
+	/* Enable Vertical Blank */
+	custom_w(INTENA, INTF_SETCLR | INTF_VERTB);
 
 	/* IRQs will be enabled by the first Enable() in Exec's init */
 }
