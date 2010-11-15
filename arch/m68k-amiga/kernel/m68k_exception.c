@@ -77,12 +77,14 @@
 
 /* The stack frame here:
  *     Return PC          +(0 + 2 + 4)
- *     Return SP          +(0 + 2)
+ *     Return SR          +(0 + 2)
  *     Exception struct * +(0)
  * SP ->
  *
  * When we call M68KExceptionAction:
- *     D0-D1/A0-A1/A6		(5 * 4)	<= NO TOUCHING!
+ *     Return PC                (4)
+ *     Return SR                (2)
+ *     D0-D7/A0-A7		(16 * 4)	<= NO TOUCHING!
  *     SysBase			(4)	A6
  *     SP			(4)	D1
  *     Exception struct *	(4)	D0
@@ -100,12 +102,8 @@ asm (
 	"M68KExceptionHelper:\n"
 	"	movem.l	%d0-%d7/%a0-%a6,%sp@-\n"// Push everything - SP is now 'regs_t'
 	"	move.l	%sp@(15*4),%d1\n"	// Exception *
-	"	move.l	%sp,%a0\n"		// Supervisor SP
-	"	btst	#5,%sp@(4*16)\n"	// From Supervisor?
-	"	bne.s	0f\n"			// Nope.
 	"	move.l	%usp,%a0\n"
-	"0:\n"
-	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs
+	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs as USP
 	"	move.l	%sp,%d0\n"		// regs_t
 	"	move.l	4, %a6\n"		// Global SysBase
 	"	move.l	%a6, %sp@-\n"		// Push SysBase
@@ -114,11 +112,8 @@ asm (
 	"	jsr	M68KExceptionAction\n"
 	"	lea	%sp@(12),%sp\n"		// Drop all stack args
 	"	movem.l	%sp@+,%d0-%d7/%a0-%a5\n"	// Restore all but a6
-	"	btst	#5,%sp@(4)\n"		// Back to Supervisor?
-	"	bne.s	1f\n"			// No:
 	"	move.l	%sp@(4),%a6\n"		//   Get USP from regs_t
 	"	move.l	%a6,%usp\n"		//   Set USP (FALLTHROUGH)
-	"1:\n"					// Yes:
 	"	move.l	%sp@+,%a6\n"		//   Restore A6
 	"	addq.l	#4,%sp\n"		//   Pop off A7
 	"	rte\n"				//   And return
