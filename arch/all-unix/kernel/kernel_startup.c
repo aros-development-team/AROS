@@ -135,6 +135,7 @@ int __startup startup(struct TagItem *msg)
     }
 
     hostlib = HostIFace->HostLib_Open(LIBC_NAME, &errstr);
+    AROS_HOST_BARRIER
     if (!hostlib) {
 	bug("[Kernel] Failed to load %s: %s\n", LIBC_NAME, errstr);
 	return -1;
@@ -144,6 +145,7 @@ int __startup startup(struct TagItem *msg)
     {
 	void *func = HostIFace->HostLib_GetPointer(hostlib, kernel_functions[i], &errstr);
 
+	AROS_HOST_BARRIER
         if (!func) {
 	    bug("[Kernel] Failed to find symbol %s in host-side module: %s\n", kernel_functions[i], errstr);
 	    return -1;
@@ -222,5 +224,7 @@ int __startup startup(struct TagItem *msg)
 
     bug("[Kernel] leaving startup!\n");
     HostIFace->HostLib_Close(hostlib, NULL);
+    AROS_HOST_BARRIER
+
     return 1;
 }

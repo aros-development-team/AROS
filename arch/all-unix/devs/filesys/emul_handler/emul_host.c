@@ -62,6 +62,7 @@ static int TryRead(struct LibCInterface *iface, int fd, void *buf, size_t len)
     FD_SET(fd, &rfds);
 
     res = iface->select(fd+1, &rfds, NULL, NULL, &tv);
+    AROS_HOST_BARRIER
 
     if (res == -1)
     {
@@ -72,7 +73,10 @@ static int TryRead(struct LibCInterface *iface, int fd, void *buf, size_t len)
     if (res == 0)
 	return -2;
     
-    return iface->read(fd, buf, len);
+    res = iface->read(fd, buf, len);
+    AROS_HOST_BARRIER
+    
+    return res;
 }
 
 static void SigIOHandler(struct emulbase *emulbase, void *unused)
@@ -215,7 +219,9 @@ static int host_startup(struct emulbase *emulbase)
     InitSemaphore(&emulbase->pdata.sem);
     NEWLIST(&emulbase->pdata.readList);
     emulbase->pdata.my_pid   = emulbase->pdata.SysIFace->getpid();
+    AROS_HOST_BARRIER
     emulbase->pdata.errnoPtr = emulbase->pdata.SysIFace->__error();
+    AROS_HOST_BARRIER
 
     return TRUE;
 }
@@ -412,6 +418,7 @@ static time_t datestamp2timestamp(struct LibCInterface *iface, struct DateStamp 
     
     struct ClockData date;
     struct tm tm;
+    time_t ret;
 
     Amiga2Date(secs, &date);
 
@@ -422,7 +429,10 @@ static time_t datestamp2timestamp(struct LibCInterface *iface, struct DateStamp 
     tm.tm_min = date.min;
     tm.tm_sec = date.sec;
     
-    return iface->mktime(&tm);
+    ret = iface->mktime(&tm);
+    AROS_HOST_BARRIER
+
+    return ret;
 }
 
 /*********************************************************************************************/
@@ -436,10 +446,14 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
     DIR			*dir;
     char		*pathstart, *pathend;
     BOOL		dirfound;
+    int			res;
 
     pathstart = pathname;
 
-    if (iface->lstat((const char *)pathname, &st) == 0)
+    res = iface->lstat((const char *)pathname, &st);
+    AROS_HOST_BARRIER
+
+    if (res == 0)
         /* Pathname exists, no need to fix anything */
 	return;
 
@@ -452,18 +466,26 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 
 	dirfound = TRUE;
 	    
-	if (iface->lstat(pathname, &st) != 0)
+	res = iface->lstat(pathname, &st);
+	AROS_HOST_BARRIER
+	if (res != 0)
 	{
 	    dirfound = FALSE;
 
             pathstart[-1] = '\0';
 	    dir = iface->opendir(pathname);
+	    AROS_HOST_BARRIER
 	    pathstart[-1] = '/';
 
 	    if (dir)
 	    {
-		while((de = iface->readdir(dir)))
+		while(1)
 		{
+		    de = iface->readdir(dir);
+		    AROS_HOST_BARRIER
+		    if (!de)
+		    	break;
+		    
         	    if (strcasecmp(de->d_name, pathstart) == 0)
 		    {
 			dirfound = TRUE;
@@ -472,6 +494,7 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 		    }
 		}	    
 		iface->closedir(dir);
+		AROS_HOST_BARRIER
 
 	    }
 	} /* if (stat((const char *)pathname, &st) != 0) */
@@ -493,42 +516,67 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 
 static int inline nocase_lstat(struct LibCInterface *iface, char *file_name, struct stat *st)
 {
+    int ret;
+
     fixcase(iface, file_name);
-    return iface->lstat(file_name, st);
+    ret = iface->lstat(file_name, st);
+    AROS_HOST_BARRIER
+
+    return ret;
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
 static inline int nocase_unlink(struct LibCInterface *iface, char *pathname)
 {
+    int ret;
+
     fixcase(iface, pathname);
-    return iface->unlink((const char *)pathname);
+    ret = iface->unlink((const char *)pathname);
+    AROS_HOST_BARRIER
+    
+    return ret;
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
 static inline int nocase_mkdir(struct LibCInterface *iface, char *pathname, mode_t mode)
 {
+    int ret;
+
     fixcase(iface, pathname);
-    return iface->mkdir(pathname, mode);
+    ret = iface->mkdir(pathname, mode);
+    AROS_HOST_BARRIER
+
+    return ret;
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
 static inline int nocase_rmdir(struct LibCInterface *iface, char *pathname)
 {
+    int ret;
+
     fixcase(iface, pathname);
-    return iface->rmdir(pathname);
+    ret = iface->rmdir(pathname);
+    AROS_HOST_BARRIER
+    
+    return ret;
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
 static inline int nocase_link(struct LibCInterface *iface, char *oldpath, char *newpath)
 {
+    int ret;
+
     fixcase(iface, oldpath);
     fixcase(iface, newpath);
 
-    return iface->link(oldpath, newpath);
+    ret = iface->link(oldpath, newpath);
+    AROS_HOST_BARRIER
+
+    return ret;
 }
 
 /*-------------------------------------------------------------------------------------------*/
@@ -546,37 +594,60 @@ static inline int nocase_symlink(struct LibCInterface *iface, char *oldpath, cha
 static inline int nocase_rename(struct LibCInterface *iface, char *oldpath, char *newpath)
 {
     struct stat st;
+    int ret;
     
     fixcase(iface, oldpath);
     fixcase(iface, newpath);
 
     /* AmigaDOS Rename does not allow overwriting */
-    if (iface->lstat(newpath, &st) == 0)
+    ret = iface->lstat(newpath, &st);
+    AROS_HOST_BARRIER
+    if (ret == 0)
     	return ERROR_OBJECT_EXISTS;
 
-    return iface->rename(oldpath, newpath);
+    ret = iface->rename(oldpath, newpath);
+    AROS_HOST_BARRIER
+
+    return ret;
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
 static inline int nocase_chmod(struct LibCInterface *iface, char *path, mode_t mode)
 {
+    int ret;
+
     fixcase(iface, path);
-    return iface->chmod(path, mode);
+
+    ret = iface->chmod(path, mode);
+    AROS_HOST_BARRIER
+    
+    return ret;
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
 static inline int nocase_readlink(struct LibCInterface *iface, char *path, char *buffer, size_t size)
 {
+    int ret;
+
     fixcase(iface, path);
-    return iface->readlink(path, buffer, size);
+
+    ret = iface->readlink(path, buffer, size);
+    AROS_HOST_BARRIER
+    
+    return ret;
 }
 
 static inline int nocase_utime(struct LibCInterface *iface, char *path, const struct utimbuf *times)
 {
+    int ret;
+
     fixcase(iface, path);
-    return iface->utime(path, times);
+    ret = iface->utime(path, times);
+    AROS_HOST_BARRIER
+    
+    return ret;
 }
 
 /*-------------------------------------------------------------------------------------------*/
@@ -605,6 +676,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 	/* Object is a plain file */
 	flags = mode2flags(mode);
 	r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
+	AROS_HOST_BARRIER
 	if (r >= 0)
 	{
 	    fh->type = FHD_FILE;
@@ -618,7 +690,8 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     if (AllowDir && S_ISDIR(st.st_mode))
     {
 	/* Object is a directory */
-	fh->fd   = emulbase->pdata.SysIFace->opendir(fh->hostname);
+	fh->fd = emulbase->pdata.SysIFace->opendir(fh->hostname);
+	AROS_HOST_BARRIER
 
 	if (fh->fd)
 	{
@@ -647,10 +720,12 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     case FHD_FILE:
 	/* Nothing will happen if type has FHD_STDIO set, this is intentional */
 	emulbase->pdata.SysIFace->close((int)current->fd);
+	AROS_HOST_BARRIER
 	break;
 
     case FHD_DIRECTORY:
     	emulbase->pdata.SysIFace->closedir(current->fd);
+    	AROS_HOST_BARRIER
 	break;
     }
 
@@ -686,13 +761,17 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 
 	/* Own the filedescriptor and enable SIGIO on it */
 	emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_SETOWN, emulbase->pdata.my_pid);
+	AROS_HOST_BARRIER
 	len = emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_GETFL);
+	AROS_HOST_BARRIER
 	len |= O_ASYNC;
 	emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_SETFL, len);
+	AROS_HOST_BARRIER
 
 	/* Kick processing loop once because SIGIO could arrive after read attempt
 	   but before we added the request to the queue. */
 	emulbase->pdata.SysIFace->kill(emulbase->pdata.my_pid, SIGIO);
+	AROS_HOST_BARRIER
 
 	ReleaseSemaphore(&emulbase->pdata.sem);
 	*async = TRUE;
@@ -714,6 +793,7 @@ LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
     ObtainSemaphore(&emulbase->pdata.sem);
 
     len = emulbase->pdata.SysIFace->write((int)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
+    AROS_HOST_BARRIER
     if (len == -1)
 	error = err_u2a(emulbase);
 
@@ -746,10 +826,12 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
     ObtainSemaphore(&emulbase->pdata.sem);
 
     res = emulbase->pdata.SysIFace->lseek((int)file, 0, SEEK_CUR);
+    AROS_HOST_BARRIER
     if (res != -1)
     {
         oldpos = res;
         res = emulbase->pdata.SysIFace->lseek((int)file, *Offset, mode);
+        AROS_HOST_BARRIER
     }
 
     if (res == -1)
@@ -775,6 +857,7 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
     {
 	fh->type = FHD_DIRECTORY;
 	fh->fd   = emulbase->pdata.SysIFace->opendir(fh->hostname);
+	AROS_HOST_BARRIER
     }
 
     if ((ret == -1) || (fh->fd == NULL))
@@ -797,9 +880,15 @@ LONG DoDelete(struct emulbase *emulbase, char *name)
     if (!ret)
     {
         if (S_ISDIR(st.st_mode))
+        {
 	    ret = emulbase->pdata.SysIFace->rmdir(name);
+	    AROS_HOST_BARRIER
+	}
     	else
+    	{
 	    ret = emulbase->pdata.SysIFace->unlink(name);
+	    AROS_HOST_BARRIER
+	}
     }
 
     if (ret)
@@ -921,6 +1010,8 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
 
     case OFFSET_CURRENT:
        	absolute = emulbase->pdata.SysIFace->lseek((int)fh->fd, 0, SEEK_CUR); 
+       	AROS_HOST_BARRIER
+
         if (absolute == -1)
             err = err_u2a(emulbase);
 	else
@@ -929,6 +1020,8 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
 
     case OFFSET_END:
         absolute = emulbase->pdata.SysIFace->lseek((int)fh->fd, 0, SEEK_END); 
+        AROS_HOST_BARRIER
+
         if (absolute == -1)
             err = err_u2a(emulbase);
 	else
@@ -942,6 +1035,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
     if (!err)
     {
 	err = emulbase->pdata.SysIFace->ftruncate((int)fh->fd, absolute);
+	AROS_HOST_BARRIER
 	if (err)
 	    err = err_u2a(emulbase);
     }
@@ -960,6 +1054,7 @@ BOOL DoGetType(struct emulbase *emulbase, void *fd)
     ObtainSemaphore(&emulbase->pdata.sem);
     
     ret = emulbase->pdata.SysIFace->isatty((int)fd);
+    AROS_HOST_BARRIER
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
@@ -974,6 +1069,7 @@ LONG DoStatFS(struct emulbase *emulbase, char *path, struct InfoData *id)
     ObtainSemaphore(&emulbase->pdata.sem);
 
     err = emulbase->pdata.SysIFace->statfs(path, &buf);
+    AROS_HOST_BARRIER
     if (err)
     	err = err_u2a(emulbase);
 
@@ -996,6 +1092,7 @@ LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
     ObtainSemaphore(&emulbase->pdata.sem);
 
     emulbase->pdata.SysIFace->rewinddir(fh->fd);
+    AROS_HOST_BARRIER
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
@@ -1031,6 +1128,7 @@ static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR 
     ObtainSemaphore(&emulbase->pdata.sem);
 
     err = emulbase->pdata.SysIFace->lstat(name, st);
+    AROS_HOST_BARRIER
     if (err)
 	err = err_u2a(emulbase);
 
@@ -1148,6 +1246,7 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     /* first of all we have to go to the position where Examine() or
        ExNext() stopped the previous time so we can read the next entry! */
     emulbase->pdata.SysIFace->seekdir(fh->fd, FIB->fib_DiskKey);
+    AROS_HOST_BARRIER
 
     /* hm, let's read the data now! 
        but skip '.' and '..' (they're not available on Amigas and
@@ -1157,11 +1256,14 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     do
     {
 	dir = emulbase->pdata.SysIFace->readdir(fh->fd);
+	AROS_HOST_BARRIER
 	if (NULL == dir)
 	    break;
 
     } while (is_special_dir(dir->d_name));
+
     pos = emulbase->pdata.SysIFace->telldir(fh->fd);
+    AROS_HOST_BARRIER
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
@@ -1236,9 +1338,12 @@ LONG examine_all(struct emulbase *emulbase,
 	ObtainSemaphore(&emulbase->pdata.sem);
 
 	oldpos = emulbase->pdata.SysIFace->telldir(fh->fd);
+	AROS_HOST_BARRIER
 
         *emulbase->pdata.errnoPtr = 0;
 	dir = emulbase->pdata.SysIFace->readdir(fh->fd);
+	AROS_HOST_BARRIER
+
 	if (!dir)
 	    error = err_u2a(emulbase);
 
@@ -1276,7 +1381,10 @@ LONG examine_all(struct emulbase *emulbase,
     if ((error==ERROR_BUFFER_OVERFLOW) && last)
     {
 	ObtainSemaphore(&emulbase->pdata.sem);
+
 	emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
+	AROS_HOST_BARRIER
+
 	ReleaseSemaphore(&emulbase->pdata.sem);
 
 	/* Examination will continue from the current position */
@@ -1311,6 +1419,7 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
     {
     	sp_end = sp + 1;
 	home = emulbase->pdata.SysIFace->getenv("HOME");
+	AROS_HOST_BARRIER
     }
     else
     {
@@ -1320,8 +1429,14 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
 	for(sp_end = sp + 1; sp_end[0] != '\0' && sp_end[0] != '/'; sp_end++);
 	cmplen = sp_end - sp - 1;
 
-	while((pwd = emulbase->pdata.SysIFace->getpwent()))
+	while(1)
 	{
+	    pwd = emulbase->pdata.SysIFace->getpwent();
+	    AROS_HOST_BARRIER
+
+	    if (!pwd)
+	    	break;
+
 	    if(memcmp(pwd->pw_name, sp + 1, cmplen) == 0)
 	    {
 	    	if (pwd->pw_name[cmplen] == '\0')
@@ -1353,7 +1468,10 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
     }
 
     if (do_endpwent)
+    {
 	emulbase->pdata.SysIFace->endpwent();
+	AROS_HOST_BARRIER
+    }
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
@@ -1369,6 +1487,7 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
     ObtainSemaphore(&emulbase->pdata.sem);
 
     res = emulbase->pdata.SysIFace->getcwd(path, len);
+    AROS_HOST_BARRIER
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
@@ -1386,6 +1505,7 @@ int CheckDir(struct emulbase *emulbase, char *path)
     ObtainSemaphore(&emulbase->pdata.sem);
 
     res = emulbase->pdata.SysIFace->stat(path, &st);
+    AROS_HOST_BARRIER
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 

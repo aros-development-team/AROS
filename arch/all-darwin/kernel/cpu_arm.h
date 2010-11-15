@@ -22,7 +22,11 @@ typedef ucontext_t regs_t;
 typedef void (*SIGHANDLER_T)(int);
 
 #define SC_DISABLE(sc)   sc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
-#define SC_ENABLE(sc)    KernelIFace.SigEmptySet(&(sc)->uc_sigmask)
+#define SC_ENABLE(sc)				\
+do {						\
+    KernelIFace.SigEmptySet(&(sc)->uc_sigmask);	\
+    AROS_HOST_BARRIER				\
+} while(0)
 
 /* work around silly renaming of struct members in OS X 10.5 */
 #if __DARWIN_UNIX03

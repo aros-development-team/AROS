@@ -14,6 +14,7 @@ AROS_LH2(void *, HostLib_Open,
 
     AROS_LIBFUNC_INIT
 
+    AROS_HOST_BARRIER
     return HostLibBase->HostIFace->HostLib_Open(filename, error);
 
     AROS_LIBFUNC_EXIT

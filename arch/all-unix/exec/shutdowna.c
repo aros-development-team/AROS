@@ -56,6 +56,7 @@
     {
     case SD_ACTION_POWEROFF:
 	PD(SysBase).SysIFace->exit(0);
+	AROS_HOST_BARRIER
 	break;
 
     case SD_ACTION_COLDREBOOT:
@@ -64,6 +65,7 @@
            In order to avoid it we Disable() */
 	Disable();
 	PD(SysBase).Reboot(0);
+	AROS_HOST_BARRIER
 	Enable();
     }
     return 0;

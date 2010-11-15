@@ -212,6 +212,7 @@ static int InitCore(struct KernelBase *KernelBase)
     struct itimerval interval;
     struct sigaction sa;
     struct SignalTranslation *s;
+    int ret;
 
     D(bug("[KRN] InitCore()\n"));
 
@@ -237,11 +238,14 @@ static int InitCore(struct KernelBase *KernelBase)
 
     pd->supervisor = 0;
     pd->errnoPtr = KernelIFace.__error();
+    AROS_HOST_BARRIER
     KernelBase->kb_PlatformData = pd;
 
     /* We only want signal that we can handle at the moment */
     KernelIFace.SigFillSet(&pd->sig_int_mask);
+    AROS_HOST_BARRIER
     KernelIFace.SigEmptySet(&sa.sa_mask);
+    AROS_HOST_BARRIER
     sa.sa_flags = SA_RESTART;
 #ifdef HOST_OS_linux
     sa.sa_restorer = NULL;
@@ -255,15 +259,20 @@ static int InitCore(struct KernelBase *KernelBase)
     for (s = sigs; s->sig != -1; s++)
     {
 	KernelIFace.sigaction(s->sig, &sa, NULL);
+	AROS_HOST_BARRIER
 	KernelIFace.SigDelSet(&pd->sig_int_mask, s->sig);
+	AROS_HOST_BARRIER
     }
 
     /* SIGUSRs are software interrupts, we also never block them */
     KernelIFace.SigDelSet(&pd->sig_int_mask, SIGUSR1);
+    AROS_HOST_BARRIER
     KernelIFace.SigDelSet(&pd->sig_int_mask, SIGUSR2);
+    AROS_HOST_BARRIER
     /* We want to be able to interrupt AROS using Ctrl-C in its console,
        so exclude SIGINT too. */
     KernelIFace.SigDelSet(&pd->sig_int_mask, SIGINT);
+    AROS_HOST_BARRIER
 
     /*
      * Any interrupt including software one must disable
@@ -276,18 +285,23 @@ static int InitCore(struct KernelBase *KernelBase)
     /* Install interrupt handlers */
     SETHANDLER(sa, core_IRQ);
     KernelIFace.sigaction(SIGALRM, &sa, NULL);
+    AROS_HOST_BARRIER
     KernelIFace.sigaction(SIGIO  , &sa, NULL);
+    AROS_HOST_BARRIER
 
     /* Software IRQs do not need to block themselves. Anyway we know when we send them. */
     sa.sa_flags |= SA_NODEFER;
 
     KernelIFace.sigaction(SIGUSR2, &sa, NULL);
+    AROS_HOST_BARRIER
 
     SETHANDLER(sa, core_SysCall);
     KernelIFace.sigaction(SIGUSR1, &sa, NULL);
+    AROS_HOST_BARRIER
 
     /* We need to start up with disabled interrupts */
     KernelIFace.sigprocmask(SIG_BLOCK, &pd->sig_int_mask, NULL);
+    AROS_HOST_BARRIER
 
     /* Set up the "pseudo" vertical blank interrupt. */
     D(bug("[InitCore] Timer frequency is %d\n", SysBase->ex_EClockFrequency));
@@ -295,7 +309,10 @@ static int InitCore(struct KernelBase *KernelBase)
     interval.it_interval.tv_usec =
     interval.it_value.tv_usec = 1000000 / SysBase->ex_EClockFrequency;
 
-    return !KernelIFace.setitimer(ITIMER_REAL, &interval, NULL);
+    ret = !KernelIFace.setitimer(ITIMER_REAL, &interval, NULL);
+    AROS_HOST_BARRIER
+
+    return ret;
 }
 
 ADD2INITLIB(InitCore, 10);
@@ -309,4 +326,5 @@ void krnSysCall(unsigned char n)
 {
     DSC(bug("[KRN] SysCall %d\n", n));
     KernelIFace.raise(SIGUSR1);
+    AROS_HOST_BARRIER
 }

@@ -13,6 +13,7 @@ AROS_LH3(void *, HostLib_GetPointer,
 {
     AROS_LIBFUNC_INIT
 
+    AROS_HOST_BARRIER
     return HostLibBase->HostIFace->HostLib_GetPointer(handle, symbol, error);
 
     AROS_LIBFUNC_EXIT

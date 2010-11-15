@@ -17,7 +17,12 @@ AROS_LH2I(int, KrnBug,
 {
     AROS_LIBFUNC_INIT
 
-    return HostIFace->VKPrintF(format, args);
+    int ret;
+
+    ret = HostIFace->VKPrintF(format, args);
+    AROS_HOST_BARRIER
+
+    return ret;
 
     AROS_LIBFUNC_EXIT
 }

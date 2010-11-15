@@ -11,6 +11,7 @@ AROS_LH0I(void, KrnCause,
     AROS_LIBFUNC_INIT
 
     KernelIFace.raise(SIGUSR2);
+    AROS_HOST_BARRIER
 
     AROS_LIBFUNC_EXIT
 }

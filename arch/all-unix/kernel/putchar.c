@@ -12,6 +12,7 @@ AROS_LH1I(void, KrnPutChar,
     AROS_LIBFUNC_INIT
 
     KernelIFace.write (STDERR_FILENO, &c, 1);
+    AROS_HOST_BARRIER
 
     AROS_LIBFUNC_EXIT
 }
