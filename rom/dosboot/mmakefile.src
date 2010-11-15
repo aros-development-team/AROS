@@ -7,7 +7,7 @@ FILES := dosboot_init inithidds boot menu gadgets bootscreen bootconfig
 #MM- kernel-dosboot : includes linklibs kernel-bootloader-includes
 
 USER_INCLUDES := -I$(SRCDIR)/rom/devs
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\""
+USER_CFLAGS := -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 
 %build_module mmake=kernel-dosboot \
   modname=dosboot modtype=resource \

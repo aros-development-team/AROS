@@ -11,14 +11,12 @@
 # define  DEBUG 0
 # include <aros/debug.h>
 
-#include <aros/kernel.h>
 #include <aros/macros.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/kernel.h>
 
 #include <exec/types.h>
 #include <exec/nodes.h>
@@ -143,7 +141,7 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
     return rc;
 }
 
-static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, char *archName, struct DosLibrary * DOSBase)
+static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
 {
     BOOL            result = FALSE;
     STRPTR          buffer;
@@ -197,7 +195,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, char *archName, struct
                 buffer[bufferLength - 1] = '\0';
 
             D(bug("[DOSBoot] __dosboot_IsBootable: Buffer contains '%s'\n", buffer));
-            if ((sigptr = strstr(buffer, archName)) != 0)
+            if ((sigptr = strstr(buffer, AROS_CPU)) != 0)
             {
                 D(bug("[DOSBoot] __dosboot_IsBootable: Signature '%s' found\n", sigptr));
                 result = TRUE;
@@ -258,11 +256,9 @@ AROS_UFH3(void, __dosboot_BootProcess,
     struct BootNode             *bootNode      = NULL;
     struct Node                 *tmpNode       = NULL;
     STRPTR                      bootName;
-    char			*archName;
     LONG                        bootNameLength;
     BPTR                        lock;
     APTR                        BootLoaderBase = OpenResource("bootloader.resource");
-    APTR			KernelBase;
     struct Screen *bootScreen = NULL;
 
     D(bug("[DOSBoot] __dosboot_BootProcess()\n"));
@@ -281,16 +277,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
         D(bug("[DOSBoot] __dosboot_BootProcess: Failed to open expansion.library.\n"));
         Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
     }
-
-#ifdef KrnGetSystemAttr
-    KernelBase = OpenResource("kernel.resource");
-    if (!KernelBase)
-	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_Unknown);
-
-    archName = (char *)KrnGetSystemAttr(KATTR_Architecture);
-#else
-    archName = AROS_ARCHITECTURE;
-#endif
 
     /**** Try to mount all filesystems in the MountList ****************************/
     D(bug("[DOSBoot] __dosboot_BootProcess: Checking expansion.library/MountList for useable nodes:\n"));
@@ -332,7 +318,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
                 the list. */
             if ((!(bootNode->bn_Flags & BNF_RETRY)) && (bootNode->bn_Node.ln_Pri != -128)
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-		&& __dosboot_IsBootable(deviceName, archName, DOSBase)
+		&& __dosboot_IsBootable(deviceName, DOSBase)
 #endif
             )
             {

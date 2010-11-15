@@ -172,70 +172,63 @@ static void msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
 
 static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
 {
+    struct Screen *bm_Screen;
     struct Gadget *first = NULL;
     BOOL res = FALSE;
     ULONG mode;
 
     D(bug("[BootMenu] initScreen()\n"));
 
-    /* We want the screen to occupy the whole display, so we find best maching
-       mode ID and then open a screen with that mode */
-    mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 480,
-				    BIDTAG_Depth, 4, TAG_DONE);
-    if (mode == INVALID_ID)
-	return FALSE;
+    bm_Screen = OpenBootScreen(DOSBootBase);
+    D(bug("[BootMenu] initScreen: Screen opened @ %p\n", bm_Screen));
 
-    DOSBootBase->bm_Screen = OpenScreenTags(NULL, NULL, SA_DisplayID, mode, SA_Draggable, FALSE, 
-					    SA_ShowTitle, FALSE, TAG_DONE);
-    if (DOSBootBase->bm_Screen) {
-        D(bug("[BootMenu] initScreen: Screen opened @ %p\n", DOSBootBase->bm_Screen));
-        if ((first = createGadgets(DOSBootBase)) != NULL)
+    if ((first = createGadgets(DOSBootBase)) != NULL)
+    {
+        struct NewWindow nw =
         {
-            struct NewWindow nw =
-            {
-                0, 0,                            /* Left, Top */
-                DOSBootBase->bm_Screen->Width,  /* Width, Height */
-                DOSBootBase->bm_Screen->Height,
-                0, 1,                            /* DetailPen, BlockPen */
-                IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN, /* IDCMPFlags */
-                WFLG_SMART_REFRESH | WFLG_BORDERLESS | WFLG_ACTIVATE, /* Flags */
-                first,       	                 /* FirstGadget */
-                NULL,       	                 /* CheckMark */
-                NULL,       	                 /* Title */
-                DOSBootBase->bm_Screen,       	 /* Screen */
-                NULL,                          	 /* BitMap */
-                0, 0,                   	 /* MinWidth, MinHeight */
-                0, 0,                         	 /* MaxWidth, MaxHeight */
-                CUSTOMSCREEN,                    /* Type */
-            };
+            0, 0,                            /* Left, Top */
+            bm_Screen->Width,		     /* Width, Height */
+            bm_Screen->Height,
+            0, 1,                            /* DetailPen, BlockPen */
+            IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN, /* IDCMPFlags */
+            WFLG_SMART_REFRESH | WFLG_BORDERLESS | WFLG_ACTIVATE, /* Flags */
+            first,       	             /* FirstGadget */
+            NULL,       	             /* CheckMark */
+            NULL,       	             /* Title */
+            bm_Screen,			     /* Screen */
+            NULL,                            /* BitMap */
+            0, 0,                   	     /* MinWidth, MinHeight */
+            0, 0,                            /* MaxWidth, MaxHeight */
+            CUSTOMSCREEN,                    /* Type */
+        };
 
-            D(bug("[BootMenu] initScreen: Gadgets created @ %p\n", first));
+        D(bug("[BootMenu] initScreen: Gadgets created @ %p\n", first));
 
-            if ((DOSBootBase->bm_Window = OpenWindow(&nw)) != NULL)
-            {
-                D(bug("[BootMenu] initScreen: Window opened @ %p\n", DOSBootBase->bm_Window));
-                D(bug("[BootMenu] initScreen: Window RastPort @ %p\n", DOSBootBase->bm_Window->RPort));
-                D(bug("[BootMenu] initScreen: Window UserPort @ %p\n", DOSBootBase->bm_Window->UserPort));
-                SetAPen(DOSBootBase->bm_Window->RPort, 2);
-                D(bug("[BootMenu] initScreen: SetAPen 2\n"));
-                Move(DOSBootBase->bm_Window->RPort, 215, 20);
-                D(bug("[BootMenu] initScreen: Move(d) to 215, 20\n"));
-                Text(DOSBootBase->bm_Window->RPort, "AROS Early Startup Control", 26);
-                D(bug("[BootMenu] initScreen: Early Startup text displayed\n"));
+        if ((DOSBootBase->bm_Window = OpenWindow(&nw)) != NULL)
+        {
+            D(bug("[BootMenu] initScreen: Window opened @ %p\n", DOSBootBase->bm_Window));
+            D(bug("[BootMenu] initScreen: Window RastPort @ %p\n", DOSBootBase->bm_Window->RPort));
+            D(bug("[BootMenu] initScreen: Window UserPort @ %p\n", DOSBootBase->bm_Window->UserPort));
+            SetAPen(DOSBootBase->bm_Window->RPort, 2);
+            D(bug("[BootMenu] initScreen: SetAPen 2\n"));
+            Move(DOSBootBase->bm_Window->RPort, 215, 20);
+            D(bug("[BootMenu] initScreen: Move(d) to 215, 20\n"));
+            Text(DOSBootBase->bm_Window->RPort, "AROS Early Startup Control", 26);
+            D(bug("[BootMenu] initScreen: Early Startup text displayed\n"));
 #if  defined(USE_PALNTSC)
 #warning "TODO: Check if we are using a PAL/NTSC display mode ..."
-                SetAPen(DOSBootBase->bm_Window->RPort, 1);
-                Move(DOSBootBase->bm_Window->RPort, 225, 40);
-                Text(DOSBootBase->bm_Window->RPort, "(press a key to toggle the display between PAL and NTSC)", 23);
+            SetAPen(DOSBootBase->bm_Window->RPort, 1);
+            Move(DOSBootBase->bm_Window->RPort, 225, 40);
+            Text(DOSBootBase->bm_Window->RPort, "(press a key to toggle the display between PAL and NTSC)", 23);
 #endif
-                msgLoop(DOSBootBase, DOSBootBase->bm_Window);
-                res = TRUE;
-            }
-            CloseWindow(DOSBootBase->bm_Window);
-            freeGadgets(DOSBootBase);
+            msgLoop(DOSBootBase, DOSBootBase->bm_Window);
+            res = TRUE;
         }
-        CloseScreen(DOSBootBase->bm_Screen);
+        CloseWindow(DOSBootBase->bm_Window);
+        freeGadgets(DOSBootBase);
     }
+    
+    CloseBootScreen(bm_Screen, DOSBootBase);
 
     return res;
 }
@@ -340,19 +333,12 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
         WantBootMenu = buttonsPressed(LIBBASE);
 
     /* Bring up early startup menu if requested */
-    if (WantBootMenu) {
+    if (WantBootMenu)
+    {
         bmi_RetVal = FALSE;
 
         D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
-	GfxBase = (void *)OpenLibrary("graphics.library", 37);
-	if (GfxBase) {
-	    IntuitionBase = (void *)OpenLibrary("intuition.library", 37);
-	    if (IntuitionBase) {		    
-		bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
-		CloseLibrary((struct Library *)IntuitionBase);
-	    }
-	    CloseLibrary((struct Library *)GfxBase);
-        }
+	bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
     }
 
     return bmi_RetVal;
