@@ -24,4 +24,11 @@ The following options need to be added to configure arguments:
 This assumes that you installed iconv, gmp and mpfr libraries from macports (this is what i did).
 This was tested with binutils v2.20.1 and gcc v4.4.2.
 
+ 3. Linux specifics.
+
+Linux kernel does not provide any standarized view of VFP context on signal frame. The ARM linux-hosted
+port assumes, that the VFP frame is stored in uc_regspace[] area. This is the case on nearly all linux kernel 
+compiled with VFP/NEON support. If this is not the case, or of linux misses the VFP frame in sigcontext, AROS 
+will probably fail.
+
 									Pavel Fedin <pavel_fedin@mail.ru>
