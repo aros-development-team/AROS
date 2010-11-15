@@ -6,7 +6,9 @@
     lang: english
  */
 
+#define DEBUG 0
 #include <aros/kernel.h>
+#include <aros/debug.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -14,10 +16,6 @@
 #include "exec_intern.h"
 
 #include "m68k_exception.h"
-
-#ifndef D
-#define D(x)	do { } while (0)
-#endif
 
 /* Here's how it's all laid out on the Amiga
  *    M68K Exception
@@ -123,15 +121,19 @@ void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct E
 {
 #ifdef PARANOIA_STACK
 	if (regs->sr & 0x2000) {
-		if ((APTR)regs->a[7] < (SysBase->SysStkLower+0x10) || (APTR)(regs->a[7]-1) > SysBase->SysStkUpper) {
-			Alert(AT_DeadEnd | AN_MemCorrupt);
-			D(bug("Supervisor: Stack overflow detected!\n"));
+		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (APTR)(regs->a[7]-1) > SysBase->SysStkUpper) {
+			D(bug("Supervisor: iStack overflow %p (%p-%p)\n", (APTR)regs->a[7], SysBase->SysStkLower, SysBase->SysStkUpper));
+			D(bug("Exception: %d\n", Exception->Id));
+			D(PRINT_CPU_CONTEXT(regs));
+			Alert(AT_DeadEnd | AN_StackProbe);
 		}
 	} else {
 		struct Task *t = SysBase->ThisTask;
 		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
-			Alert(AT_DeadEnd | AN_MemCorrupt);
-			D(bug("[%s]: Stack overflow detected!\n", t->tc_Node.ln_Name));
+			D(bug("[%s]: iStack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
+			D(bug("Exception: %d\n", Exception->Id));
+			D(PRINT_CPU_CONTEXT(regs));
+			Alert(AT_DeadEnd | AN_StackProbe);
 		}
 	}
 #endif
@@ -143,6 +145,26 @@ void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct E
 	}
 
 	Exception->Handler(regs, Exception->Id, SysBase);
+
+#ifdef PARANOIA_STACK
+	if (regs->sr & 0x2000) {
+		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (APTR)(regs->a[7]-1) > SysBase->SysStkUpper) {
+			D(bug("Supervisor: Stack overflow %p (%p-%p)\n", (APTR)regs->a[7], SysBase->SysStkLower, SysBase->SysStkUpper));
+			D(bug("Exception: %d\n", Exception->Id));
+			D(PRINT_CPU_CONTEXT(regs));
+			Alert(AT_DeadEnd | AN_StackProbe);
+		}
+	} else {
+		struct Task *t = SysBase->ThisTask;
+		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
+			D(bug("[%s]: Stack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
+			D(bug("Exception: %d\n", Exception->Id));
+			D(PRINT_CPU_CONTEXT(regs));
+			Alert(AT_DeadEnd | AN_StackProbe);
+		}
+	}
+#endif
+
 }
 
 /* We assume that the caller has already set up
