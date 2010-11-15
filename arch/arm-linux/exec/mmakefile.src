@@ -1,0 +1,8 @@
+# $Id: mmakefile.src 33802 2010-07-13 17:44:31Z weissms $
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec \
+  files="cachecleare" arch=arm-linux
+
+%common

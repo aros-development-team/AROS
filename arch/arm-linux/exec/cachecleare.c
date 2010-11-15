@@ -2,15 +2,13 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id: cachecleare.c 34578 2010-10-04 07:19:30Z sonic $
 
-    Desc: CacheClearE() - Clear the caches with extended control, Windows-hosted implementation
+    Desc: CacheClearE() - Clear the caches with extended control, ARM Linux-hosted implementation
     Lang: english
 */
 
 #include <exec/execbase.h>
 #include <aros/atomic.h>
 #include <aros/libcall.h>
-
-#include "exec_intern.h"
 
 AROS_LH3(void, CacheClearE,
 	 AROS_LHA(APTR, address, A0),
@@ -20,7 +18,7 @@ AROS_LH3(void, CacheClearE,
 {
     AROS_LIBFUNC_INIT
 
-    /* Windows supports only instruction cache flush */
+    /* Linux supports only instruction cache flush */
     if (caches & CACRF_ClearI)
     {
 	/* Forbid(). We inline it because we could use real executable jumptable,
