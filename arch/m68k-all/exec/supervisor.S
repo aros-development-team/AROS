@@ -84,24 +84,22 @@ AROS_SLIB_ENTRY(Supervisor,Exec):
 	move.l	%a5,%sp@-
 	move.l	%sp@(-8),%a5
 #endif
-	jsr	Disable(%a6)
 	/* CRITICAL SECTION - DO NOT USE THE STACK */
-Exec_Supervisor_Entry_10:
-	move.w	%sr, %d1	// Caused exception on 68010/20
-Exec_Supervisor_Entry_00:
+Exec_Supervisor_Entry:
 	or.w	#0x2000, %sr	// Caused exception on 68000
-Exec_Supervisor_Entered:	// %d1 will always have the old SR
 
-	/* CRITICAL SECTION - SUPERVISOR STACK */
+	/* If we're here, we need to fake a stack frame,
+	 * because we were already supervisor.
+	 */
 	btst	#0, %a6@(AttnFlags+1)	// If 68010, push frame id
-	beq.s	Exec_Supervisor_Entry_10
+	beq.s	0f
 	move.w	#0x0020,%sp@-   // push the 68010/20 frame id
-	pea	1f
-	move.w	%d1,%sp@-	// Fix up return mode & flags
-	jmp	(%a5)		// D0 will be set after the
-1:				//  caller's RTE gets back here.
+0:
+	pea	Exec_Supervisor_Exit
+	move.w	%sr,%sp@-	// Fix up return mode & flags
+	jmp	(%a5)
+Exec_Supervisor_Exit:
 	/* END CRITICAL SECTION - CALLER'S STACK */
-	jsr	Enable(%a6)
 #ifndef DoRegisterCalls
 	move.l	%sp@+,%a5
 #endif
@@ -126,16 +124,17 @@ Exec_Supervisor_Entered:	// %d1 will always have the old SR
 	.align 4
 	.globl Exec_Supervisor_Trap
 Exec_Supervisor_Trap:
-	cmp.l	#Exec_Supervisor_Entry_00, %sp@(2)
-	beq.s	0f
-	cmp.l	#Exec_Supervisor_Entry_10, %sp@(2)
+	cmp.l	#Exec_Supervisor_Entry, %sp@(2)
 	bne.s	1f
-0:
-	move.w	%sr,%d1
-	bclr	#13, %d1	// Make it look userish
-	move.l	#Exec_Supervisor_Entered, %sp@(2)
-	or.w	#(1 << 13),%sp@(0)
-	rte
+
+	/* No need to wait - we're supervisor,
+	 * we have the right frame, all we need
+	 * now is to fix up the return address
+	 * and jump to the user's function in A5
+	 */
+	move.l	#Exec_Supervisor_Exit, %sp@(2)
+	jmp	(%a5)
+
 1:
 	move.l	#0x80000008,%d7	// ACPU_PrivErr
 	move.l	(0x4),%a6
