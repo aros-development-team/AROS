@@ -87,14 +87,14 @@ do {						\
  * SAVEREGS and RESTOREREGS rely on the fact that layout of
  * struct ExceptionContext is actually the same as layout of
  * Darwin's context.
- *
- * Note that we assume that VFP area is always present in our context.
- * In fact it should (Darwin seems not to support anything else than VFP)
  */
-#define SAVEREGS(cc, sc)							\
-    (cc)->regs.Flags = ECF_FPU;							\
-    CopyMemQuick(&GPSTATE(sc), (cc)->regs.r, sizeof(_STRUCT_ARM_THREAD_STATE));	\
-    CopyMemQuick(&FPSTATE(sc), (cc)->regs.fpuContext, sizeof(struct VFPContext));
+#define SAVEREGS(cc, sc)								\
+    CopyMemQuick(&GPSTATE(sc), (cc)->regs.r, sizeof(_STRUCT_ARM_THREAD_STATE));		\
+    if ((cc)->regs.fpuContext)								\
+    {											\
+	(cc)->regs.Flags |= ECF_FPU;							\
+	CopyMemQuick(&FPSTATE(sc), (cc)->regs.fpuContext, sizeof(struct VFPContext));	\
+    }
 
 #define RESTOREREGS(cc, sc)                                         		\
     CopyMemQuick((cc)->regs.r, &GPSTATE(sc), sizeof(_STRUCT_ARM_THREAD_STATE));	\

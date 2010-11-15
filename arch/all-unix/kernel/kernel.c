@@ -90,11 +90,13 @@ static void core_Trap(int sig, regs_t *regs)
     }
 
     /*
-     * Trap handler expects struct AROSCPUContext, but regs_t
-     * differs from it. Well, we could pass raw regs_t, but in
-     * future we are going to make struct AROSCPUContext public,
-     * so this won't do.
+     * Initialize all context area to zero, this is important since it may include pointers to FPU state buffers.
+     * TODO: FPU state also can be interesting for debuggers, we need to prepare space for it too. Needs to be
+     * enclosed in some macros.
      */
+    memset(&ctx, 0, sizeof(ctx));
+
+    /* Trap handler expects struct ExceptionContext, so we have to convert regs_t to it */
     SAVEREGS(&ctx, regs);
 
     if (s->CPUTrap != -1)
