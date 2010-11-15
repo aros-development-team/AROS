@@ -18,6 +18,15 @@
 #define __IHidd_Attr		(csd->hiddAttrBase)
 #define __IHidd_ColorMap	(csd->hiddColorMapAttrBase)
 
+struct copper2data
+{
+	UWORD *copper2;
+	UWORD *copper2_palette;
+	UWORD *copper2_palette_aga_lo;
+	UWORD *copper2_scroll;
+	UWORD *copper2bplcon0;
+};
+
 struct amigavideo_staticdata
 {
     OOP_Class 	    	    *gfxclass;
@@ -32,30 +41,31 @@ struct amigavideo_staticdata
 	OOP_AttrBase hiddGfxAttrBase;
 	OOP_AttrBase hiddAttrBase;
 	OOP_AttrBase hiddColorMapAttrBase;
+	
+	struct Library *GfxBase;
 
+	struct planarbm_data *disp;
 	struct Interrupt inter;
 	volatile UWORD framecounter;
 	volatile UWORD mode;
 
-	UWORD width_alignment;
-	UWORD startx, starty;
+	WORD width_alignment;
+	WORD startx, starty;
 
 	UWORD *copper1;
 	UWORD *copper1_pt2;
 	UWORD *copper1_spritept;
+	UWORD *copper2_backup;
 	WORD sprite_width, sprite_height;
 	UWORD spritepos, spritectl;
-	UWORD *copper2;
-	UWORD *copper2i;
-	UWORD *copper2_backup;
-	UWORD *copper2_palette;
-	UWORD *copper2i_palette;
-	UWORD *copper2_palette_aga_lo;
-	UWORD *copper2i_palette_aga_lo;
 	UWORD *sprite_null;
 	UWORD *sprite;
 	UWORD spritex, spritey;
 	UWORD bplcon3;
+	UWORD fmode;
+	UWORD ddfstrt, ddfstop;
+	struct copper2data copper2;
+	struct copper2data copper2i;
 
 	UWORD max_colors;
 	UWORD use_colors;
