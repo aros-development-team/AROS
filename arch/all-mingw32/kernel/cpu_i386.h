@@ -1,5 +1,7 @@
 #ifdef __AROS__
 
+#include <aros/i386/cpucontext.h>
+
 /* This was taken from Mingw32's w32api/winnt.h */
 
 /* Context flags */
