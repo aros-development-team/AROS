@@ -33,6 +33,7 @@ AROS_LH0I(void *, KrnCreateContext,
     if (ctx)
     {
         ctx->FPUType    = fpu_type;
+        ctx->cpsr       = 0x10;		/* Initial value for user mode */
 	ctx->fpuContext = (APTR)((IPTR)ctx + sizeof(struct AROSCPUContext));
 	/* TODO: initialize FPU context ? */
     }
