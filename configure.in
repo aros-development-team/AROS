@@ -698,7 +698,7 @@ AC_ARG_WITH(xcode-path,AC_HELP_STRING([--with-xcode=PATH],[Specify XCode path fo
 AC_MSG_RESULT($aros_xcode_path)
 
 AC_MSG_CHECKING([for minimum supported iOS version])
-AC_ARG_WITH(ios-version,AC_HELP_STRING([--with-ios-version=VERSION],[Specify minimum supported iOS version (default=2.0).]),aros_ios_version="$withval",aros_ios_version="2.0")
+AC_ARG_WITH(ios-version,AC_HELP_STRING([--with-ios-version=VERSION],[Specify minimum supported iOS version (default=3.0).]),aros_ios_version="$withval",aros_ios_version="3.0")
 AC_MSG_RESULT($aros_ios_version)
 
 AC_MSG_CHECKING([what iOS SDK version to use])
