@@ -42,7 +42,7 @@ kernel-bootstrap-bundle-ios:
 
 #MM
 kernel-bootstrap-codesign-ios:
-	@$(SRCDIR)/$(CURDIR)/appsign.sh $(EXEDIR)
+	@cd $(SRCDIR)/$(CURDIR); ./appsign.sh $(EXEDIR)
 
 #MM
 kernel-bootstrap-package-ios-quick:
