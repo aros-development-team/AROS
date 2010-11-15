@@ -6,7 +6,7 @@
     lang: english
  */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/kernel.h>
 #include <aros/debug.h>
 #include <exec/resident.h>
@@ -121,8 +121,8 @@ void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct E
 {
 #ifdef PARANOIA_STACK
 	if (regs->sr & 0x2000) {
-		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (APTR)(regs->a[7]-1) > SysBase->SysStkUpper) {
-			D(bug("Supervisor: iStack overflow %p (%p-%p)\n", (APTR)regs->a[7], SysBase->SysStkLower, SysBase->SysStkUpper));
+		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (((APTR)regs)-1) > SysBase->SysStkUpper) {
+			D(bug("Supervisor: iStack overflow %p (%p-%p)\n", (APTR)regs, SysBase->SysStkLower, SysBase->SysStkUpper));
 			D(bug("Exception: %d\n", Exception->Id));
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
@@ -148,8 +148,8 @@ void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct E
 
 #ifdef PARANOIA_STACK
 	if (regs->sr & 0x2000) {
-		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (APTR)(regs->a[7]-1) > SysBase->SysStkUpper) {
-			D(bug("Supervisor: Stack overflow %p (%p-%p)\n", (APTR)regs->a[7], SysBase->SysStkLower, SysBase->SysStkUpper));
+		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (((APTR)regs)-1) > SysBase->SysStkUpper) {
+			D(bug("Supervisor: Stack overflow %p (%p-%p)\n", (APTR)regs, SysBase->SysStkLower, SysBase->SysStkUpper));
 			D(bug("Exception: %d\n", Exception->Id));
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
