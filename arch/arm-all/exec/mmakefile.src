@@ -6,7 +6,7 @@ USER_AFLAGS	:= -I$(SRCDIR)/rom/exec -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
-  files="preparecontext cachecleare" asmfiles="stackswap newstackswap" \
+  files="preparecontext" asmfiles="stackswap newstackswap" \
   arch=arm
 
 %common
