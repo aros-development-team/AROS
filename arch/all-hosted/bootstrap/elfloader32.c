@@ -519,7 +519,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 		free(sh[i].addr);
 	    }
 
-	    if (sh[i].flags & SHF_ALLOC)
+	    if ((sh[i].flags & SHF_ALLOC) && sh[i].size)
 	    {
 		/* Link new segment descriptor with the previous one */
 		if (seg)
