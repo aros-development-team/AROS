@@ -23,7 +23,13 @@ static void FindSymbol(dbg_mod_t *mod, char **function, void **funstart, void **
 
     for (i = 0; i < mod->m_symcnt; i++)
     {
-	if (sym[i].s_lowest <= addr && sym[i].s_highest >= addr) {
+        APTR highest = sym[i].s_highest;
+
+	/* Symbols with zero length have zero in s_highest */
+	if (!highest)
+	    highest = sym[i].s_lowest;
+
+	if (sym[i].s_lowest <= addr && highest >= addr) {
 	    *function = sym[i].s_name;
 	    *funstart = sym[i].s_lowest;
 	    *funend   = sym[i].s_highest;
