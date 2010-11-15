@@ -56,13 +56,16 @@ AROS_LH1(void, Alert,
     Disable();
     D(bug("[Alert] Message:\n%s\n", buffer));
     PD(SysBase).DisplayAlert(buffer);
+    AROS_HOST_BARRIER
 
     if (alertNum & AT_DeadEnd)
     {
 	/* Um, we have to do something here in order to prevent the
 	   computer from continuing... */
 	PD(SysBase).Reboot(TRUE);
+	AROS_HOST_BARRIER
 	PD(SysBase).SysIFace->exit(0);
+	AROS_HOST_BARRIER
     }
     Enable();
 
