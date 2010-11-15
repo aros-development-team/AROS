@@ -16,6 +16,8 @@ typedef struct ucontext *regs_t;
 
 #include <sys/ucontext.h>
 
+#define SIGCORE_NEED_SA_SIGINFO
+
 typedef ucontext_t regs_t;
 
 #define SIGHANDLER	bsd_sighandler
