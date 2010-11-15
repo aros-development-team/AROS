@@ -86,13 +86,13 @@ typedef void (*SIGHANDLER_T)(int);
  * In fact it should (Darwin seems not to support anything else than VFP)
  */
 #define SAVEREGS(cc, sc)							\
-    (cc)->Flags = ECF_FPU;							\
+    (cc)->regs.Flags = ECF_FPU;							\
     CopyMemQuick(&GPSTATE(sc), (cc)->regs.r, sizeof(_STRUCT_ARM_THREAD_STATE));	\
     CopyMemQuick(&FPSTATE(sc), (cc)->regs.fpuContext, sizeof(struct VFPContext));
 
 #define RESTOREREGS(cc, sc)                                         		\
     CopyMemQuick((cc)->regs.r, &GPSTATE(sc), sizeof(_STRUCT_ARM_THREAD_STATE));	\
-    if ((cc)->Flags & ECF_FPU)							\
+    if ((cc)->regs.Flags & ECF_FPU)						\
 	CopyMemQuick((cc)->regs.fpuContext, &FPSTATE(sc), sizeof(struct VFPContext));
 
 /* Print signal context. Used in crash handler */
