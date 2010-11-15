@@ -72,7 +72,7 @@ do {						\
 #define LR(context)     ((context)->uc_mcontext->ss.lr)
 #define PC(context)     ((context)->uc_mcontext->ss.pc)
 
-#define GPSTATE(context) ((context)->uc_mcontext->__ss)
+#define GPSTATE(context) ((context)->uc_mcontext->ss)
 #define FPSTATE(context) ((context)->uc_mcontext->fs)
 
 #endif 
