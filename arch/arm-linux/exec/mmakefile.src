@@ -3,6 +3,6 @@ include $(TOP)/config/make.cfg
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
-  files="cachecleare" arch=arm-linux
+  files="cachecleare" arch=linux-arm
 
 %common
