@@ -22,7 +22,8 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-amiga-m68k \
 #MM     kernel-fs-afs-kobj \
 #MM     kernel-kernel-kobj \
-#MM     kernel-cia-kobj
+#MM     kernel-cia-kobj \
+#MM     contrib-amberram-kobj
 
 #MM- kernel-contrib-necessary-amiga-m68k : contrib-necessary-amiga-m68k
 
@@ -40,7 +41,7 @@ AFILES=rom_entry rom_init
 ROMPAD_rom := 0x1000000
 KLIBS   := exec aros dos utility oop expansion boot
 KDEVS   := timer input keyboard console trackdisk gameport
-KHNDLRS := con nil afs packet pipefs xpipe
+KHNDLRS := con nil afs packet pipefs xpipe amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo
 KRSRCS  := battclock kernel processor dosboot cia potgo disk
 
