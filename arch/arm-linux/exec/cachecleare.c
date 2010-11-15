@@ -9,6 +9,7 @@
 #include <exec/execbase.h>
 #include <aros/atomic.h>
 #include <aros/libcall.h>
+#include <proto/exec.h>
 
 AROS_LH3(void, CacheClearE,
 	 AROS_LHA(APTR, address, A0),
