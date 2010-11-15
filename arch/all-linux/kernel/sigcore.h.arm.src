@@ -62,32 +62,31 @@ typedef @sighandler@ SignalHandler;
 #define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
 #define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
 
-/* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
-   all general purpose registers. Use this macro when you want to
-   leave the current tasks' context to save the registers. Note that
-   the argument "sp" of the macro is just the name of the stack
-   pointer. The macro will load it from the sigcontext "sc". You
-   must store the value of "sp" after the macro and hand it to
-   RESTOREREGS() below to restore this context. */
-
-#define SAVEREGS(cc, uc)           						\
-do {										\
-    CopyMemQuick(&uc->uc_mcontext.arm_r0, (cc)->regs.r, sizeof(ULONG) * 17);	\
-    CopyMemQuick(&uc->uc_regspace[0], (cc)->regs.fpuContext, 128*sizeof(ULONG));\
-    (cc)->regs.Flags |= ECF_FPU;						\
+/*
+ * This macro saves all registers. Use this macro when you want to
+ * leave the current tasks' context. Note that fpuContext area can
+ * be absent, this happens at least in trap handler.
+ */
+#define SAVEREGS(cc, uc)           							\
+do {											\
+    CopyMemQuick(&uc->uc_mcontext.arm_r0, (cc)->regs.r, sizeof(ULONG) * 17);		\
+    if ((cc)->regs.fpuContext))								\
+    {											\
+	CopyMemQuick(&uc->uc_regspace[0], (cc)->regs.fpuContext, 128*sizeof(ULONG));	\
+	(cc)->regs.Flags |= ECF_FPU;							\
+    }											\
 } while(0);
 
-
-/* This macro does the opposite to SAVEREGS(). It restores all
-   general purpose registers. After that, you can enter the new
-   tasks' context. Both "sp" and "sc" must be initialized.
-   The macro will save the new SP into the sigcontext "sc". */
-
-#define RESTOREREGS(cc, uc)							\
-do {										\
-    CopyMemQuick((cc)->regs.r, &uc->uc_mcontext.arm_r0, sizeof(ULONG) * 17);	\
-    if ((cc)->regs.Flags & ECF_FPU)					\
-	CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[0], 128*sizeof(ULONG));\
+/*
+ * This macro does the opposite to SAVEREGS(). It restores all
+ * registers which are present in the context (depending on its flags).
+ * After that, you can enter the new tasks' context.
+ */
+#define RESTOREREGS(cc, uc)								\
+do {											\
+    CopyMemQuick((cc)->regs.r, &uc->uc_mcontext.arm_r0, sizeof(ULONG) * 17);		\
+    if ((cc)->regs.Flags & ECF_FPU)							\
+	CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[0], 128*sizeof(ULONG));	\
 } while(0);
 
 
