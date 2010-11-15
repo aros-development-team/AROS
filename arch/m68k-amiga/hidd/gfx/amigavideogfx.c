@@ -31,6 +31,7 @@
 #include "amigavideobitmap.h"
 
 #include "chipset.h"
+#include "blitter.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -46,12 +47,14 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     {
 	{ aHidd_Sync_HDisp  	, 640 },
 	{ aHidd_Sync_VDisp  	, 512 },
+	{ aHidd_Sync_Flags , vHidd_Sync_Interlaced },
 	{ TAG_DONE  	    	, 0UL }
     };
     struct TagItem tags_640_400[] = 
     {
 	{ aHidd_Sync_HDisp  	, 640 },
 	{ aHidd_Sync_VDisp  	, 400 },
+	{ aHidd_Sync_Flags , vHidd_Sync_Interlaced },
 	{ TAG_DONE  	    	, 0UL }
     };
     struct TagItem tags_640_256[] = 
@@ -70,12 +73,14 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     {
 	{ aHidd_Sync_HDisp  	, 320 },
 	{ aHidd_Sync_VDisp  	, 512 },
+	{ aHidd_Sync_Flags , vHidd_Sync_Interlaced },
 	{ TAG_DONE  	    	, 0UL }
     };
     struct TagItem tags_320_400[] = 
     {
 	{ aHidd_Sync_HDisp  	, 320 },
 	{ aHidd_Sync_VDisp  	, 400 },
+	{ aHidd_Sync_Flags , vHidd_Sync_Interlaced },
 	{ TAG_DONE  	    	, 0UL }
     };
     struct TagItem tags_320_256[] = 
@@ -103,9 +108,9 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	{ aHidd_PixFmt_CLUTMask     , 0x000000FF	},
       	{ aHidd_PixFmt_CLUTShift    , 0				},
 	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette	},
-	{ aHidd_PixFmt_Depth	    , 5			 	},
+	{ aHidd_PixFmt_Depth	    , 4			 	},
 	{ aHidd_PixFmt_BytesPerPixel, 1			   	},
-	{ aHidd_PixFmt_BitsPerPixel , 5			   	},
+	{ aHidd_PixFmt_BitsPerPixel , 4			   	},
 	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Plane	},
 	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Planar	},
 	{ TAG_DONE  	    	    , 0UL			} 
@@ -277,13 +282,24 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pH
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     struct gfx_data *data = OOP_INST_DATA(cl, o);
-    IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
-    OOP_Object *pixfmt;
 
     bug("SHOW %x\n", msg->bitMap);
 
     if (msg->bitMap) {
-	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+    	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+    	OOP_Object *gfxhidd, *sync, *pf;
+    	IPTR modeid = vHidd_ModeID_Invalid;
+    	IPTR dwidth, dheight, dflags;
+
+	OOP_GetAttr(msg->bitMap, aHidd_BitMap_ModeID , &modeid);
+    	OOP_GetAttr(msg->bitMap, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+	HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
+	OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
+	OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
+	OOP_GetAttr(sync, aHidd_Sync_Flags, &dflags);
+
+	csd->interlace = (dflags & vHidd_Sync_Interlaced) ? 1 : 0;
+	csd->res = dwidth < 400 ? 0 : (dwidth > 800 ? 2 : 1);
 	OOP_SetAttrs(msg->bitMap, (struct TagItem *)tags);
     }
     return msg->bitMap;
@@ -304,7 +320,13 @@ ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, struct HIDD_ViewPortD
 
 VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    struct amigavideo_staticdata *csd = CSD(cl);
+    HIDDT_DrawMode mode = GC_DRMD(msg->gc);
+    struct planarbm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+    struct planarbm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+
+    if (!blit_copybox(csd, sdata, ddata, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode))
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)

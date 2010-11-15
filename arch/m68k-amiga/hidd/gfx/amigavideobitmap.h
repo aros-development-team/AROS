@@ -24,6 +24,7 @@ struct planarbm_data
     UBYTE depth;
     UBYTE planes_alloced;
     UBYTE planebuf_size;
+    WORD topedge, leftedge;
     BOOL disp;
 };
 

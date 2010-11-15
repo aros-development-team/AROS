@@ -12,5 +12,5 @@ void resetsprite(struct amigavideo_staticdata *data);
 void setspritevisible(struct amigavideo_staticdata *data, BOOL visible);
 
 BOOL setcolors(struct amigavideo_staticdata *data, struct pHidd_BitMap_SetColors *msg, BOOL visible);
-
+void setscroll(struct amigavideo_staticdata *data, struct planarbm_data*);
 #endif
