@@ -23,6 +23,7 @@ AROS_LH0(ULONG, ReadBattClock, struct BattClockBase *, BattClockBase, 2, Battclo
     struct ClockData date;
 
     BattClockBase->SysIFace->time(&t);
+    AROS_HOST_BARRIER
 
     /*
      * On UNIX time() returns local time instead of GMT.
@@ -33,6 +34,7 @@ AROS_LH0(ULONG, ReadBattClock, struct BattClockBase *, BattClockBase, 2, Battclo
      * for definitions of struct tm and time_t.
      */
     tm = BattClockBase->SysIFace->localtime(&t);
+    AROS_HOST_BARRIER
 
     date.year  = tm->tm_year + 1900;
     date.month = tm->tm_mon + 1;

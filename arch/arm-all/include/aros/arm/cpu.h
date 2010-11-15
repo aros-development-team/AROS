@@ -1,7 +1,7 @@
 #ifndef AROS_ARM_CPU_H
 #define AROS_ARM_CPU_H
 /*
-    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -196,5 +196,14 @@ extern void aros_not_implemented ();
     (t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
+
+/*
+ * This must be placed before every call to host OS on hosted AROS.
+ * On ARM it tells that r9 register is clobbered. Some OSes (iOS again)
+ * define r9 as volatile. It can be used as scratchpad but calls will
+ * not preserve it.
+ * AROS code expects it is nonvolatile (as defined in the AAPCS).
+ */
+#define AROS_HOST_BARRIER asm volatile("":::"r9");
 
 #endif /* AROS_ARM_CPU_H */

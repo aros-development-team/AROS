@@ -12,6 +12,7 @@ AROS_LH2(int, HostLib_Close,
 {
     AROS_LIBFUNC_INIT
 
+    AROS_HOST_BARRIER
     return HostLibBase->HostIFace->HostLib_Close(handle, error);
 
     AROS_LIBFUNC_EXIT

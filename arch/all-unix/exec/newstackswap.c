@@ -61,6 +61,7 @@ AROS_LH3(IPTR, NewStackSwap,
 
     Disable();  /* To avoid random crashes during startup */
     PD(SysBase).SysIFace->getcontext(&ucx);
+    AROS_HOST_BARRIER
     Enable();
 
     D(bug("[NewStackSwap] getcontext() done, arguments: 0x%P, 0x%P, 0x%P, 0x%P\n", sss, entry, args, SysBase));
@@ -74,6 +75,7 @@ AROS_LH3(IPTR, NewStackSwap,
     D(bug("[NewStackSwap] Prepared stack: 0x%P - 0x%P (size %u bytes)\n", sss->stk_Lower, sss->stk_Pointer, ucx.uc_stack.ss_size));
 
     PD(SysBase).SysIFace->makecontext(&ucx, (void *(*)()) trampoline, 3, entry, &ret, args->Args);
+    AROS_HOST_BARRIER
     
     D(bug("[NewStackSwap] Prepared context, doing stack swap\n"));
 
@@ -90,6 +92,7 @@ AROS_LH3(IPTR, NewStackSwap,
 
     /* We Enable() in trampoline */
     PD(SysBase).SysIFace->swapcontext(&ucx_return, &ucx);
+    AROS_HOST_BARRIER
 
     me->tc_SPLower = splower;
     me->tc_SPUpper = spupper;

@@ -27,6 +27,7 @@ static void cpu_Exception(void)
        signal handler returns us to this point for whatever reason.
     */
     KernelIFace.raise(SIGUSR1);
+    AROS_HOST_BARRIER
 }
 
 void cpu_Switch(regs_t *regs)
@@ -52,6 +53,7 @@ void cpu_Dispatch(regs_t *regs)
     {
         /* Sleep almost forever ;) */
 	KernelIFace.sigsuspend(&sigs);
+	AROS_HOST_BARRIER
 
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT);
