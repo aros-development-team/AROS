@@ -70,7 +70,7 @@ typedef @sighandler@ SignalHandler;
 #define SAVEREGS(cc, uc)           							\
 do {											\
     CopyMemQuick(&uc->uc_mcontext.arm_r0, (cc)->regs.r, sizeof(ULONG) * 17);		\
-    if ((cc)->regs.fpuContext))								\
+    if ((cc)->regs.fpuContext)								\
     {											\
 	CopyMemQuick(&uc->uc_regspace[0], (cc)->regs.fpuContext, 128*sizeof(ULONG));	\
 	(cc)->regs.Flags |= ECF_FPU;							\
