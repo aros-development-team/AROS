@@ -8,7 +8,6 @@ include $(TOP)/config/make.cfg
 
 SYSTEM_FILES := \
     AROS.boot \
-    C/AddDatatypes \
     C/Alias \
     C/Assign \
     C/CD \
@@ -32,7 +31,6 @@ SYSTEM_FILES := \
     C/SetClock \
     C/Shell \
     C/Touch \
-    C/Unpack \
     Devs/DataTypes/ELF \
     Devs/DataTypes/ELF_EXE \
     Devs/DataTypes/FTXT \
@@ -45,9 +43,7 @@ SYSTEM_FILES := \
     Libs/datatypes.library \
     S/Shell-Startup \
     S/Startup-Sequence \
-    System/FixFonts \
-    System/Format \
-    System/Wanderer/Wanderer
+    System/FixFonts
 
 
 SYSTEM_SRC_DIR  := $(AROSDIR)
