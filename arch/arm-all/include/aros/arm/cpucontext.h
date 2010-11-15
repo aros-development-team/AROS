@@ -22,7 +22,10 @@ struct ExceptionContext
 };
 
 /* Flags */
-#define CTX_FPU_SAVED	1
+enum enECFlags
+{
+    ECF_FPU = 1<<0	/* FPU data is present */
+};
 
 /* FPU types */
 #define FPU_NONE 0

@@ -74,7 +74,7 @@ typedef @sighandler@ SignalHandler;
 do {										\
     CopyMemQuick(&uc->uc_mcontext.arm_r0, (cc)->regs.r, sizeof(ULONG) * 17);	\
     CopyMemQuick(&uc->uc_regspace[0], (cc)->regs.fpuContext, 128*sizeof(ULONG));\
-    (cc)->regs.Flags |= CTX_FPU_SAVED;						\
+    (cc)->regs.Flags |= ECF_FPU;						\
 } while(0);
 
 
@@ -86,7 +86,7 @@ do {										\
 #define RESTOREREGS(cc, uc)							\
 do {										\
     CopyMemQuick((cc)->regs.r, &uc->uc_mcontext.arm_r0, sizeof(ULONG) * 17);	\
-    if ((cc)->regs.Flags & CTX_FPU_SAVED)					\
+    if ((cc)->regs.Flags & ECF_FPU)					\
 	CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[0], 128*sizeof(ULONG));\
 } while(0);
 
