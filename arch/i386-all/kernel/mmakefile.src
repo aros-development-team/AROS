@@ -1,0 +1,18 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
+	       -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+ifneq ($(FAMILY),)
+USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
+endif
+USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
+	       -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) \
+	       -D__AROS_EXEC_LIBRARY__
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel \
+  files="cpu_init" \
+  arch=i386
+
+%common

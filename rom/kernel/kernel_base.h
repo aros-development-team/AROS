@@ -22,6 +22,7 @@ struct KernelBase
     unsigned char	   kb_VBlankEnable;
     unsigned int	   kb_VBlankTicks;
     unsigned int	   kb_TimerCount;
+    ULONG		   kb_ContextFlags;	/* Hints for KrnCreateContext() */
     struct PlatformData	  *kb_PlatformData;
 };
 
