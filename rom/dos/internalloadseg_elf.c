@@ -278,7 +278,7 @@ static int load_hunk
         /* Link the previous one with the new one */
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
 
-        D(bug("[dos] hunk @ %p\n", sh->addr));
+        D(bug("[dos] hunk @ %p, size=%08x, addr @ %p\n", hunk, hunk->size, sh->addr));
         
         /* Update the pointer to the previous one, which is now the current one */
         *next_hunk_ptr = &hunk->next;
@@ -669,7 +669,9 @@ end:
     /* Clear the caches to let the CPU see the new data and instructions */
     {
         BPTR *curr = &hunks;
-        while (*curr)
+        curr = BPTR2HUNK(curr)->next;
+        
+        while (curr)
         {
              struct hunk *hunk = BPTR2HUNK(curr);
              
