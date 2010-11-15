@@ -32,8 +32,7 @@ struct DOSBootBase
 
     struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
     struct IntuitionBase *bm_IntuitionBase;
-    struct Screen        *bm_Screen;		/* Screen, window and gadgets     */
-    struct Window        *bm_Window;
+    struct Window        *bm_Window;		/* Window and gadgets		  */
     struct MainGadgets    bm_MainGadgets;
 
     struct BootConfig     bm_BootConfig;	/* Current HIDD configuration     */
@@ -48,6 +47,7 @@ BOOL __dosboot_InitHidds(struct DosLibrary *dosBase);
 void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags);
 
 struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase);
+struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase);
 void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase);
 
 #undef GfxBase
