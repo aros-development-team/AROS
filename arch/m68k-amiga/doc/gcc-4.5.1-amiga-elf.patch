@@ -1,0 +1,106 @@
+commit f68b80717efec2ccf4c181c9a3fc4184fde27be1
+Author: Jason S. McMullan <jason.mcmullan@netronome.com>
+Date:   Sun Oct 10 00:38:26 2010 -0400
+
+    [m68k-amiga] Amiga ABI support
+    
+    Moves the FP to A5, doubling up with the PIC
+    Breaks all -fpic modes.
+    
+    NOT FOR UPSTREAM: This breaks *all* other m68k APIs!!!
+    
+    Signed-off-by: Jason S. McMullan <jason.mcmullan@netronome.com>
+
+diff --git a/gcc/config/m68k/m68k.c b/gcc/config/m68k/m68k.c
+index c22f3b8..9718ccb 100644
+--- a/gcc/config/m68k/m68k.c
++++ b/gcc/config/m68k/m68k.c
+@@ -920,7 +920,7 @@ m68k_initial_elimination_offset (int from, int to)
+ static bool
+ m68k_save_reg (unsigned int regno, bool interrupt_handler)
+ {
+-  if (flag_pic && regno == PIC_REG)
++  if (flag_pic && regno == A5_REG)
+     {
+       if (crtl->saves_all_registers)
+ 	return true;
+@@ -2186,7 +2186,7 @@ static rtx
+ m68k_get_gp (void)
+ {
+   if (pic_offset_table_rtx == NULL_RTX)
+-    pic_offset_table_rtx = gen_rtx_REG (Pmode, PIC_REG);
++    pic_offset_table_rtx = gen_rtx_REG (Pmode, A5_REG);
+ 
+   crtl->uses_pic_offset_table = 1;
+ 
+@@ -4640,7 +4640,7 @@ m68k_delegitimize_address (rtx orig_x)
+   if (GET_CODE (x) == PLUS
+       && GET_CODE (XEXP (x, 1)) == CONST
+       && REG_P (XEXP (x, 0))
+-      && REGNO (XEXP (x, 0)) == PIC_REG)
++      && REGNO (XEXP (x, 0)) == A5_REG)
+     {
+       y = x = XEXP (XEXP (x, 1), 0);
+ 
+@@ -5145,7 +5145,7 @@ m68k_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
+ 
+   /* Restore the original PIC register.  */
+   if (flag_pic)
+-    SET_REGNO (pic_offset_table_rtx, PIC_REG);
++    SET_REGNO (pic_offset_table_rtx, A5_REG);
+ }
+ 
+ /* Worker function for TARGET_STRUCT_VALUE_RTX.  */
+diff --git a/gcc/config/m68k/m68k.h b/gcc/config/m68k/m68k.h
+index 5787e8a..1d36a63 100644
+--- a/gcc/config/m68k/m68k.h
++++ b/gcc/config/m68k/m68k.h
+@@ -348,7 +348,7 @@ along with GCC; see the file COPYING3.  If not see
+ #define PIC_OFFSET_TABLE_REGNUM				\
+   (!flag_pic ? INVALID_REGNUM				\
+    : reload_completed ? REGNO (pic_offset_table_rtx)	\
+-   : PIC_REG)
++   : A5_REG)
+ 
+ /* 1 for registers that have pervasive standard uses
+    and are not available for the register allocator.
+@@ -416,7 +416,7 @@ along with GCC; see the file COPYING3.  If not see
+ 	  fixed_regs[i] = call_used_regs[i] = 1;		\
+     }								\
+   if (flag_pic)							\
+-    fixed_regs[PIC_REG] = call_used_regs[PIC_REG] = 1;		\
++    fixed_regs[A5_REG] = call_used_regs[A5_REG] = 1;		\
+ }
+ 
+ /* On the m68k, ordinary registers hold 32 bits worth;
+@@ -453,7 +453,7 @@ along with GCC; see the file COPYING3.  If not see
+ /* Most m68k targets use %a6 as a frame pointer.  The AmigaOS
+    ABI uses %a6 for shared library calls, therefore the frame
+    pointer is shifted to %a5 on this target.  */
+-#define FRAME_POINTER_REGNUM A6_REG
++#define FRAME_POINTER_REGNUM A5_REG
+ 
+ /* Base register for access to arguments of the function.
+  * This isn't a hardware register. It will be eliminated to the
+diff --git a/gcc/config/m68k/m68k.md b/gcc/config/m68k/m68k.md
+index f89037f..9f3da5a 100644
+--- a/gcc/config/m68k/m68k.md
++++ b/gcc/config/m68k/m68k.md
+@@ -131,7 +131,7 @@
+   [(D0_REG		0)
+    (A0_REG		8)
+    (A1_REG		9)
+-   (PIC_REG		13)
++   (A5_REG		13)
+    (A6_REG		14)
+    (SP_REG		15)
+    (FP0_REG		16)
+@@ -7295,7 +7295,7 @@
+ {
+   if (TARGET_ID_SHARED_LIBRARY)
+     {
+-      operands[1] = gen_rtx_REG (Pmode, PIC_REG);
++      operands[1] = gen_rtx_REG (Pmode, A5_REG);
+       return MOTOROLA ? "move.l %?(%1),%0" : "movel %1@(%?), %0";
+     }
+   else if (MOTOROLA)
