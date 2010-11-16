@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: coldreboot.c 18441 2003-07-07 20:01:00Z hkiel $
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: ShutdownA() - Shut down the operating system.
     Lang: english
@@ -8,6 +8,7 @@
 
 #include <asm/io.h>
 #include <exec/tasks.h>
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -31,7 +32,7 @@
 	 * SD_ACTION_COLDREBOOT - cold reboot the machine (not only AROS).
 
     RESULT
-	This function does not return in case of success. Otherwise is returns
+	This function does not return in case of success. Otherwise it returns
 	zero.
 
     NOTES
@@ -51,7 +52,11 @@
     AROS_LIBFUNC_INIT
 
     if (action == SD_ACTION_COLDREBOOT)
-	outb(0xFE, 0x64);
+    {
+        Exec_DoResetCallbacks(SysBase);
+        outb(0xFE, 0x64);
+        Wait(0);
+    }
     return 0;
 
     AROS_LIBFUNC_EXIT
