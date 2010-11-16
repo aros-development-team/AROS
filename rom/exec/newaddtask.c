@@ -77,7 +77,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[exec] Call NewAddTask (%012lx (\"%s\"), %012lx, %012lx)\n"
+    D(bug("[exec] Call NewAddTask (0x%P (\"%s\"), 0x%P, 0x%P)\n"
         , task
         , task->tc_Node.ln_Name
         , initialPC
@@ -148,13 +148,13 @@
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     if ((IPTR)task->tc_SPReg & 0xf)
     {
-        D(bug("[exec] NewAddTask with unaligned stack pointer! fixing %08x->%08x\n",
+        D(bug("[exec] NewAddTask with unaligned stack pointer! fixing 0x%P->0x%P\n",
               task->tc_SPReg, (IPTR)task->tc_SPReg & 0xfffffff0));
 
         task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & 0xfffffff0);
     }
 #endif
-    D(bug("[exec] NewAddTask: SPLower: 0x%08lX SPUpper: 0x%08lX SP: 0x%08lX\n",
+    D(bug("[exec] NewAddTask: SPLower: 0x%P SPUpper: 0x%P SP: 0x%P\n",
           task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg));
 
 #if AROS_STACK_DEBUG
