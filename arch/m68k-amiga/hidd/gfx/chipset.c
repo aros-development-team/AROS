@@ -86,6 +86,7 @@ void initcustom(struct amigavideo_staticdata *data)
 {
     UBYTE i;
     UWORD *c;
+    UWORD vposr;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
     resetcustom();
@@ -102,7 +103,9 @@ void initcustom(struct amigavideo_staticdata *data)
     data->startx = 0x80;
     data->starty = 0x28;
 
-    data->aga = (custom->vposr & 0x7f00) >= 0x2200;
+    vposr = custom->vposr & 0x7f00;
+    data->aga = vposr >= 0x2200;
+    data->ecs_agnus = vposr >= 0x2000;
     data->max_colors = data->aga ? 256 : 32;
     data->palette = AllocVec(data->max_colors * 3, MEMF_CLEAR);
     data->copper1 = AllocVec(100 * 2, MEMF_CLEAR | MEMF_CHIP);
@@ -396,6 +399,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
     while (data->mode);
 
     setcoppercolors(data);
+    setspritepos(data, data->spritex, data->spritey);
 
     data->disp = bm;
     return 1;
@@ -451,7 +455,6 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
 void setspritepos(struct amigavideo_staticdata *data, WORD x, WORD y)
 {
     UWORD ctl, pos;
-
     data->spritex = x;
     data->spritey = y;
     if (!data->sprite || data->sprite_height == 0)
@@ -477,7 +480,7 @@ void setspritevisible(struct amigavideo_staticdata *data, BOOL visible)
     	if (data->copper1_spritept) {
 	    data->copper1_spritept[0] = (UWORD)(((ULONG)data->sprite) >> 16);
 	    data->copper1_spritept[2] = (UWORD)(((ULONG)data->sprite) >> 0);
-    	}
+}
     } else {
     	setnullsprite(data);
     }	

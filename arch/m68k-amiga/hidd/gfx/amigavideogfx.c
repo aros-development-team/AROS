@@ -36,7 +36,7 @@
 #include LC_LIBDEFS_FILE
 
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -108,9 +108,9 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	{ aHidd_PixFmt_CLUTMask     , 0x000000FF	},
       	{ aHidd_PixFmt_CLUTShift    , 0				},
 	{ aHidd_PixFmt_ColorModel   , vHidd_ColorModel_Palette	},
-	{ aHidd_PixFmt_Depth	    , 4			 	},
+	{ aHidd_PixFmt_Depth	    , 5			 	},
 	{ aHidd_PixFmt_BytesPerPixel, 1			   	},
-	{ aHidd_PixFmt_BitsPerPixel , 4			   	},
+	{ aHidd_PixFmt_BitsPerPixel , 5			   	},
 	{ aHidd_PixFmt_StdPixFmt    , vHidd_StdPixFmt_Plane	},
 	{ aHidd_PixFmt_BitMapType   , vHidd_BitMapType_Planar	},
 	{ TAG_DONE  	    	    , 0UL			} 
@@ -214,7 +214,7 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, stru
     EnterFunc(bug("AGFX::NewBitMap()\n"));
     
     modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-    bug("modeid=%08x\n", modeid);
+    D(bug("modeid=%08x\n", modeid));
     if (modeid != vHidd_ModeID_Invalid) {
 	tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
 	tags[0].ti_Data = (IPTR)CSD(cl)->bmclass;
@@ -283,7 +283,7 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pH
     struct amigavideo_staticdata *csd = CSD(cl);
     struct gfx_data *data = OOP_INST_DATA(cl, o);
 
-    bug("SHOW %x\n", msg->bitMap);
+    D(bug("SHOW %x\n", msg->bitMap));
 
     if (msg->bitMap) {
     	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
@@ -308,7 +308,7 @@ OOP_Object *AmigaVideoCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pH
 ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, struct HIDD_ViewPortData *data)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    bug("ShowViewPorts %x, bm=%x\n", data, data->Bitmap);
+    D(bug("ShowViewPorts %x, bm=%x\n", data, data->Bitmap));
     if (data && data->Bitmap) {
 	setmode(csd, (struct planarbm_data*)data->Bitmap);
     } else {
