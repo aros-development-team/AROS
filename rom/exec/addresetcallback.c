@@ -24,15 +24,12 @@
 	struct ExecBase *, SysBase, 167, Exec)
 
 /*  FUNCTION
-	Install a system warm reset notification callback. The callback
-	will be called whenever system warm reboot is performed.
+	Install a system reset notification callback. The callback
+	will be called whenever system reboot is performed.
 
-	The given Interrupt structure is inserted into list according to
-	its proirity. The callback code is called with the following arguments:
-	
-	    A0 - scratch (set to NULL)
-	    A6 - struct ExecBase *
-	    A1 - is_Data
+	The given Interrupt structure is inserted into the callback list
+	according to its priority. The callback code is called with the same
+	arguments as an interrupt server.
 
     INPUTS
 	interrupt - A pointer to an Interrupt structure
