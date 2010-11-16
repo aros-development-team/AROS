@@ -49,6 +49,7 @@ do {						\
 #define SP(context)     ((context)->uc_mcontext->__ss.__sp)
 #define LR(context)     ((context)->uc_mcontext->__ss.__lr)
 #define PC(context)     ((context)->uc_mcontext->__ss.__pc)
+#define CPSR(context)	((context)->uc_mcontext->__ss.__cpsr)
 
 #define GPSTATE(context) ((context)->uc_mcontext->__ss)
 #define FPSTATE(context) ((context)->uc_mcontext->__fs)
@@ -71,6 +72,7 @@ do {						\
 #define SP(context)     ((context)->uc_mcontext->ss.sp)
 #define LR(context)     ((context)->uc_mcontext->ss.lr)
 #define PC(context)     ((context)->uc_mcontext->ss.pc)
+#define CPSR(context)	((context)->uc_mcontext->ss.cpsr)
 
 #define GPSTATE(context) ((context)->uc_mcontext->ss)
 #define FPSTATE(context) ((context)->uc_mcontext->fs)
@@ -103,14 +105,16 @@ do {						\
 
 /* Print signal context. Used in crash handler */
 #define PRINT_SC(sc) \
-    bug ("    R0=%08X  R1=%08X  R2 =%08X  R3=%08X\n" \
-    	 "    R4=%08X  R5=%08X  R6 =%08X  R7=%08X\n" \
-    	 "    R8=%08x  R9=%08X  R10=%08X  FP=%08X\n" \
-    	 "    IP=%08x  SP=%08X  LR=%08X   PC=%08X\n" \
+    bug ("    R0=%08X  R1=%08X  R2 =%08X  R3 =%08X\n" \
+    	 "    R4=%08X  R5=%08X  R6 =%08X  R7 =%08X\n" \
+    	 "    R8=%08X  R9=%08X  R10=%08X  R11=%08X\n" \
+    	 "    IP=%08X  SP=%08X  LR =%08X  PC =%08X\n" \
+    	 "    CPSR=%08X\n"			      \
 	    , R0(sc), R1(sc), R2(sc), R3(sc)	\
 	    , R4(sc), R5(sc), R6(sc), R7(sc)	\
 	    , R8(sc), R9(sc), R10(sc), R11(sc)	\
 	    , R12(sc), SP(sc), LR(sc), PC(sc)	\
+	    , CPSR(sc)				\
 	)
 
 #endif /* __AROS_EXEC_LIBRARY__ */
