@@ -1,6 +1,9 @@
+#ifndef AROS_I386_CPUCONTEXT_H
+#define AROS_I386_CPUCONTEXT_H
+
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: $
+    $Id$
 
     Desc: CPU context definition for x86 processors
     Lang: english
@@ -40,3 +43,5 @@ enum enECFlags
     ECF_FPU      = 1<<1, /* 8087 FPU context is present   */
     ECF_FPX      = 1<<2, /* SSE context is present	  */
 };
+
+#endif

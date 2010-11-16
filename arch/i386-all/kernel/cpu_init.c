@@ -1,4 +1,6 @@
 #include <aros/symbolsets.h>
+#include <exec/types.h>
+#include <aros/i386/cpucontext.h>
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
