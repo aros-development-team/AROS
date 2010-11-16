@@ -34,9 +34,11 @@ unpack () {
 		tar -C src -jxvf `pwd`/download/"${unpackSRC}" || exit 1
 		HERE=`pwd`
 		for d in `pwd`/download/"$1"-*.patch; do
+		    if [ -f "$d" ]; then
 			cd "src/${unpackDST}"
 			patch -p1 <$d || exit 1
 			cd "$HERE"
+		    fi
 		done
 	fi
 	[ -f "src/$unpackDST/configure" ] || exit 1
