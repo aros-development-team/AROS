@@ -37,9 +37,9 @@
 #include <aros/debug.h>
 
 static AROS_UFH3(void, ResetHandler,
-		 AROS_UFHA(APTR, unused, A0),
-		 AROS_UFHA(struct ExecBase *, SysBase, A6),
-		 AROS_UFHA(struct vga_staticdata *, xsd, A1))
+		 AROS_UFHA(struct vga_staticdata *, xsd, A1),
+		 AROS_UFHA(APTR, unused, A5),
+		 AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
 
