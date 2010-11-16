@@ -308,7 +308,7 @@ void AmigaIRQInit(struct ExecBase *SysBase)
 	M68KExceptionInit(AmigaExceptionTable, SysBase);
 
 	/* Enable DMA */
-	custom_w(DMACON, 0x8200);
+	custom_w(DMACON, 0x8240);
 
 	/* Set up Vert. & Horiz. interval
 	 * PAL 320x200x4
