@@ -36,8 +36,28 @@ static const UWORD rightmask[] = {
     0xfff8, 0xfffc, 0xfffe, 0xffff
 };
 
-static UBYTE copy_minterm[] = { 0x00, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00 };
-	
+static UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff };
+// A-DAT = edge masking
+// B     = source
+// C     = destination
+// D     = destination
+//  0: zero (->fillrect)
+//  1: src AND dst 		/AC + ABC
+//  2: src AND NOT dst 		/AC + AB/C
+//  3: src 			/AC + AB
+//  4: NOT src AND dst		/AC + A/B/C
+//  5: dst (nop)
+//  6: src XOR dst		/AC + A
+//  7:
+//  8:
+//  9:
+// 10: NOT dst (->fillrect)
+// 11:
+// 12:
+// 13:
+// 14:
+// 15: one (->fillrect)
+
 BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcbm, struct planarbm_data *dstbm,
     WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode)
 {
@@ -48,6 +68,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     WORD srcx2, dstx2;
     UWORD shifta, shiftb;
     UWORD afwm, alwm;
+    UWORD bltcon0;
     BOOL reverse = FALSE;
 
     if (USE_BLITTER == 0)
@@ -55,7 +76,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
 
     srcx2 = srcx + w - 1;
     dstx2 = dstx + w - 1;
-    if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set)
+    if (copy_minterm[mode] == 0xff)
     	return blit_fillrect(data, dstbm, dstx, dsty, dstx2, dsty + h - 1, 0, mode);
 
     if (copy_minterm[mode] == 0)
@@ -70,12 +91,8 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     dstoffset = dstbm->bytesperrow * dsty + (dstx / 16) * 2;
     shift = (dstx & 15) - (srcx & 15);
 
-    srcwidth = (((srcx2 + 15) & ~15) - (srcx & ~15)) / 16;
-    dstwidth = (((dstx2 + 15) & ~15) - (dstx & ~15)) / 16;
-    if (srcwidth == 0)
-    	srcwidth = 1;
-    if (dstwidth == 0)
-    	dstwidth = 1;
+    srcwidth = srcx2 / 16 - srcx / 16 + 1;
+    dstwidth = dstx2 / 16 - dstx / 16 + 1;
 
     if (shift < 0) {
    	shift = -shift;
@@ -122,12 +139,24 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     custom->bltcmod = dstbm->bytesperrow - width * 2;
     custom->bltdmod = dstbm->bytesperrow - width * 2;
     custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
-    custom->bltcon0 = 0x0700 | copy_minterm[mode] | shifta;
+    bltcon0 = 0x0700 | copy_minterm[mode] | shifta;
     custom->bltadat = 0xffff;
     
-    for (i = 0; i < srcbm->depth && i < dstbm->depth; i++) {
+    for (i = 0; i < dstbm->depth; i++) {
+    	UWORD bltcon0b = bltcon0;
+    	if (dstbm->planes[i] == (UBYTE*)0x00000000 || dstbm->planes[i] == (UBYTE*)0xffffffff)
+  	    continue;
     	waitblitter();
-     	custom->bltbpt = (APTR)(srcbm->planes[i] + srcoffset);
+    	if (i >= srcbm->depth || srcbm->planes[i] == (UBYTE*)0x00000000) {
+    	    bltcon0b &= ~0x0400;
+    	    custom->bltbdat = 0x0000;
+    	} else if (srcbm->planes[i] == (UBYTE*)0xffffffff) {
+    	    bltcon0b &= ~0x0400;
+    	    custom->bltbdat = 0xffff;
+    	} else {
+     	    custom->bltbpt = (APTR)(srcbm->planes[i] + srcoffset);
+     	}
+    	custom->bltcon0 = bltcon0b;
     	custom->bltcpt = (APTR)(dstbm->planes[i] + dstoffset);
     	custom->bltdpt = (APTR)(dstbm->planes[i] + dstoffset);
     	custom->bltsize = (h << 6) | width;
@@ -161,9 +190,7 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm,
     	return FALSE;
 
     offset = bm->bytesperrow * y1 + (x1 / 16) * 2;
-    width = ((x2 + 15) / 16) - (x1 / 16);
-    if (width == 0)
-    	width = 1;
+    width = x2 / 16 - x1 / 16 + 1;
     height = y2 - y1 + 1;
 
     OwnBlitter();
@@ -183,6 +210,8 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm,
     	pixel = 0xff;
     
     for (i = 0; i < bm->depth; i++) {
+    	if (bm->planes[i] == (UBYTE*)0x00000000 || bm->planes[i] == (UBYTE*)0xffffffff)
+  	    continue;
     	waitblitter();
     	custom->bltbdat = (pixel & 1) ? 0xffff : 0x0000;
     	custom->bltcpt = (APTR)(bm->planes[i] + offset);
