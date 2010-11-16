@@ -57,7 +57,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     APTR		 p_pf = &pf;
     ULONG		 align, bmadd;
 
-    bug("AmigaVideoBM__Root__New\n");
+    DB2(bug("AmigaVideoBM__Root__New\n"));
 
     o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
@@ -90,7 +90,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->rows		  = height;
     data->depth		  = depth;
 
-    bug("%dx%dx%d\n", width, height, depth);
+    DB2(bug("%dx%dx%d\n", width, height, depth));
 
     if (ok) {
 	/* Allocate memory for plane array */
@@ -119,7 +119,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	o = NULL;
     }
     
-    bug("ret=%x bm=%x\n", o, data);
+    DB2(bug("ret=%x bm=%x\n", o, data));
   	
     return o;
 }
@@ -131,9 +131,9 @@ VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     data = OOP_INST_DATA(cl, o);
     
-    bug("AmigaVideoBM__Root__Dispose %x bm=%x\n", o, data);
+    DB2(bug("AmigaVideoBM__Root__Dispose %x bm=%x\n", o, data));
     if (data->disp)
-    	bug("removing displayed bitmap?!\n");
+    	DB2(bug("removing displayed bitmap?!\n"));
     
     if (data->planes_alloced)
     {
@@ -358,11 +358,123 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
     UBYTE   	    	    **plane;
     ULONG   	    	    planeoffset;
-    struct planarbm_data    *data;  
+    struct planarbm_data    *data = OOP_INST_DATA(cl, o);
 
-    data = OOP_INST_DATA(cl, o);
+    if ((msg->pixFmt != vHidd_StdPixFmt_Native) &&
+    	(msg->pixFmt != vHidd_StdPixFmt_Native32))
+    {
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	return;
+    }
+    
+    planeoffset = msg->y * data->bytesperrow + msg->x / 8;
+    
+    for(y = 0; y < msg->height; y++)
+    {
+    	switch(msg->pixFmt)
+	{
+	    case vHidd_StdPixFmt_Native:
+	    {
+	     	UBYTE *src = pixarray;
+	
+    		plane = data->planes;
 
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    		for(d = 0; d < data->depth; d++)
+		{
+		    ULONG dmask = 1L << d;
+		    ULONG pmask = 0x80 >> (msg->x & 7);
+		    UBYTE *pl = *plane;
+
+		    if (pl == (UBYTE *)-1) continue;
+		    if (pl == NULL) continue;
+
+		    pl += planeoffset;
+
+    		    for(x = 0; x < msg->width; x++)
+		    {
+	    		if (src[x] & dmask)
+			{
+			    *pl |= pmask;
+			}
+			else
+			{
+			    *pl &= ~pmask;
+			}
+
+			if (pmask == 0x1)
+			{
+			    pmask = 0x80;
+			    pl++;
+			}
+			else
+			{
+			    pmask >>= 1;
+			}
+
+		    } /* for(x = 0; x < msg->width; x++) */
+
+		    plane++;
+
+		} /* for(d = 0; d < data->depth; d++) */
+
+		pixarray += msg->modulo;
+		planeoffset += data->bytesperrow;
+	    }
+	    break;
+
+	    case vHidd_StdPixFmt_Native32:
+	    {
+	     	HIDDT_Pixel *src = (HIDDT_Pixel *)pixarray;
+	
+    		plane = data->planes;
+
+    		for(d = 0; d < data->depth; d++)
+		{
+		    ULONG dmask = 1L << d;
+		    ULONG pmask = 0x80 >> (msg->x & 7);
+		    UBYTE *pl = *plane;
+
+		    if (pl == (UBYTE *)-1) continue;
+		    if (pl == NULL) continue;
+
+		    pl += planeoffset;
+
+    		    for(x = 0; x < msg->width; x++)
+		    {
+	    		if (src[x] & dmask)
+			{
+			    *pl |= pmask;
+			}
+			else
+			{
+			    *pl &= ~pmask;
+			}
+
+			if (pmask == 0x1)
+			{
+			    pmask = 0x80;
+			    pl++;
+			}
+			else
+			{
+			    pmask >>= 1;
+			}
+
+		    } /* for(x = 0; x < msg->width; x++) */
+
+		    plane++;
+
+		} /* for(d = 0; d < data->depth; d++) */
+
+		pixarray += msg->modulo;
+		planeoffset += data->bytesperrow;
+	    }
+	    
+	    break;
+	    
+	} /* switch(msg->pixFmt) */    
+	
+    } /* for(y = 0; y < msg->height; y++) */
 }
 
 /****************************************************************************************/
@@ -374,10 +486,8 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
     UBYTE   	    	    **plane;
     ULONG   	    	    planeoffset;
-    struct planarbm_data   *data;  
-    
-    data = OOP_INST_DATA(cl, o);
-    
+    struct planarbm_data   *data = OOP_INST_DATA(cl, o);
+
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -390,10 +500,7 @@ VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
     UBYTE   	    	    **plane;
     ULONG   	    	    planeoffset;
-    struct planarbm_data    *data;  
-    UBYTE   	    	    prefill;
-    
-    data = OOP_INST_DATA(cl, o);
+    struct planarbm_data    *data = OOP_INST_DATA(cl, o);
     
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

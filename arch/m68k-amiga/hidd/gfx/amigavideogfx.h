@@ -74,7 +74,7 @@ struct amigavideo_staticdata
 	UBYTE depth;
 	UBYTE res; // 0 = lores, 1 = hires, 2 = shres
 	UBYTE interlace;
-	BOOL aga;
+	BOOL ecs_agnus, ecs_denise, aga;
 	BOOL cursorvisible;
 
 	UBYTE initialized;

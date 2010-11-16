@@ -14,15 +14,18 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-static void waitblitter(void)
+static void startblitter(struct amigavideo_staticdata *data, UWORD w, UWORD h)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    for(;;) {
-    	if (!(custom->dmaconr & 0x4000))
-    	    break;
+    if (data->ecs_agnus) {
+    	custom->bltsizv = h;
+    	custom->bltsizh = w;
+    } else {
+    	if (h > 1024 || w > 64)
+    	    return;
+    	custom->bltsize = (h << 6) | (w & 63);
     }
 }
-
 static const UWORD leftmask[] = {
     0xffff, 0x7fff, 0x3fff, 0x1fff,
     0x0fff, 0x07ff, 0x03ff, 0x01ff,
@@ -70,6 +73,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     UWORD afwm, alwm;
     UWORD bltcon0;
     BOOL reverse = FALSE;
+    BOOL intersect = FALSE;
 
     if (USE_BLITTER == 0)
     	return FALSE;
@@ -82,21 +86,35 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     if (copy_minterm[mode] == 0)
     	return FALSE;
 
-    if (srcbm == dstbm) // we can't handle overlapping yet
-    	return FALSE;
+    //D(bug("%x %x %dx%d %dx%d %dx%d %d\n", srcbm, dstbm, srcx, srcy, dstx, dsty, w, h, mode));
 
-    D(bug("%x %x %dx%d %dx%d %dx%d %d\n", srcbm, dstbm, srcx, srcy, dstx, dsty, w, h, mode));
+    if (srcbm == dstbm) {
+	intersect = !(srcx > dstx2 || srcx2 < dstx || srcy > dsty + h - 1 || srcy + h - 1 < dsty);
+    }
  
     srcoffset = srcbm->bytesperrow * srcy + (srcx / 16) * 2;
     dstoffset = dstbm->bytesperrow * dsty + (dstx / 16) * 2;
     shift = (dstx & 15) - (srcx & 15);
 
+    if (intersect) {
+   	// do we need >16 bit edge mask? (not handled yet)
+    	if (dstoffset < srcoffset && shift < 0) // asc + desc
+    	    return FALSE;
+    	if (dstoffset > srcoffset && shift > 0) // desc + asc
+    	    return FALSE;
+    }
+
+    if (shift < 0) {
+    	reverse = TRUE;
+    	shift = -shift;
+    } else if (intersect && dstoffset > srcoffset) {
+    	reverse = TRUE;
+    }
+
     srcwidth = srcx2 / 16 - srcx / 16 + 1;
     dstwidth = dstx2 / 16 - dstx / 16 + 1;
 
-    if (shift < 0) {
-   	shift = -shift;
-    	reverse = TRUE;
+    if (reverse) {
      	if (dstwidth >= srcwidth) {
     	    width = dstwidth;
     	    shifta = 0;
@@ -110,8 +128,8 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
      	   alwm = leftmask[srcx & 15];
     	   afwm = rightmask[srcx2 & 15];
     	}
-    	srcoffset += srcbm->bytesperrow * (h - 1) + width * 2 - 2;
-    	dstoffset += dstbm->bytesperrow * (h - 1) + width * 2 - 2;
+    	srcoffset += srcbm->bytesperrow * (h - 1) + (width - 1) * 2;
+    	dstoffset += dstbm->bytesperrow * (h - 1) + (width - 1) * 2;
     } else {
      	if (dstwidth >= srcwidth) {
     	    width = dstwidth;
@@ -128,10 +146,10 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     	}
     }
 
-    D(bug("shift=%d rev=%d sw=%d dw=%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, afwm, alwm));
+    //D(bug("shift=%d rev=%d sw=%d dw=%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, afwm, alwm));
 
     OwnBlitter();
-    waitblitter();
+    WaitBlit();
 
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
@@ -146,7 +164,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     	UWORD bltcon0b = bltcon0;
     	if (dstbm->planes[i] == (UBYTE*)0x00000000 || dstbm->planes[i] == (UBYTE*)0xffffffff)
   	    continue;
-    	waitblitter();
+    	WaitBlit();
     	if (i >= srcbm->depth || srcbm->planes[i] == (UBYTE*)0x00000000) {
     	    bltcon0b &= ~0x0400;
     	    custom->bltbdat = 0x0000;
@@ -159,10 +177,10 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     	custom->bltcon0 = bltcon0b;
     	custom->bltcpt = (APTR)(dstbm->planes[i] + dstoffset);
     	custom->bltdpt = (APTR)(dstbm->planes[i] + dstoffset);
-    	custom->bltsize = (h << 6) | width;
+    	startblitter(data, width, h);
     }
 
-    waitblitter();
+    WaitBlit();
     DisownBlitter();
 
     return TRUE;
@@ -194,7 +212,7 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm,
     height = y2 - y1 + 1;
 
     OwnBlitter();
-    waitblitter();
+    WaitBlit();
 
     custom->bltafwm = leftmask[x1 & 15];
     custom->bltalwm = rightmask[x2 & 15];
@@ -212,15 +230,15 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm,
     for (i = 0; i < bm->depth; i++) {
     	if (bm->planes[i] == (UBYTE*)0x00000000 || bm->planes[i] == (UBYTE*)0xffffffff)
   	    continue;
-    	waitblitter();
+    	WaitBlit();
     	custom->bltbdat = (pixel & 1) ? 0xffff : 0x0000;
     	custom->bltcpt = (APTR)(bm->planes[i] + offset);
     	custom->bltdpt = (APTR)(bm->planes[i] + offset);
-    	custom->bltsize = (height << 6) | width;
+    	startblitter(data, width, height);
     	pixel >>= 1;
     }
 
-    waitblitter();
+    WaitBlit();
     DisownBlitter();
 
     return TRUE;
