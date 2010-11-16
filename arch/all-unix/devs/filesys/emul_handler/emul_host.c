@@ -38,6 +38,44 @@
 #include <proto/kernel.h>
 #include <proto/utility.h>
 
+#include <stddef.h>
+#include <sys/types.h>
+
+#ifdef HOST_OS_ios
+
+/*
+ * Dirty hack against one more iOS weirdness. off_t is 64-bit-sized
+ *  vairiable here but it's not aligned at UQUAD boundary.
+ * Looks like Apple's ARM gcc aligns quadwords like longwords
+ */
+struct host_stat
+{
+    dev_t	    st_dev;
+    mode_t	    st_mode;
+    nlink_t	    st_nlink;
+    uint64_t	    st_ino;
+    uid_t	    st_uid;
+    gid_t	    st_gid;
+    dev_t	    st_rdev;
+    struct timespec st_atimespec;
+    struct timespec st_mtimespec;
+    struct timespec st_ctimespec;
+    struct timespec st_birthtimespec;
+    off_t	    st_size;
+    blkcnt_t	    st_blocks;
+    blksize_t	    st_blksize;
+    uint32_t	    st_flags;
+    uint32_t	    st_gen;
+    int32_t	    st_lspare;
+    int64_t	    st_qspare[2];
+} __attribute__((packed));
+
+#else
+
+#define host_stat stat
+
+#endif
+
 #include "emul_intern.h"
 
 #define NO_CASE_SENSITIVITY
@@ -438,7 +476,7 @@ static time_t datestamp2timestamp(struct LibCInterface *iface, struct DateStamp 
 static void fixcase(struct LibCInterface *iface, char *pathname)
 {
     struct dirent 	*de;
-    struct stat		st;
+    struct host_stat	st;
     DIR			*dir;
     char		*pathstart, *pathend;
     BOOL		dirfound;
@@ -510,7 +548,7 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 
 /*-------------------------------------------------------------------------------------------*/
 
-static int inline nocase_lstat(struct LibCInterface *iface, char *file_name, struct stat *st)
+static int inline nocase_lstat(struct LibCInterface *iface, char *file_name, struct host_stat *st)
 {
     int ret;
 
@@ -589,7 +627,7 @@ static inline int nocase_symlink(struct LibCInterface *iface, char *oldpath, cha
 
 static inline int nocase_rename(struct LibCInterface *iface, char *oldpath, char *newpath)
 {
-    struct stat st;
+    struct host_stat st;
     int ret;
     
     fixcase(iface, oldpath);
@@ -650,7 +688,7 @@ static inline int nocase_utime(struct LibCInterface *iface, char *path, const st
 
 LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir)
 {
-    struct stat st;
+    struct host_stat st;
     LONG ret = ERROR_OBJECT_WRONG_TYPE;
     int r;
     long flags;
@@ -867,7 +905,7 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
 LONG DoDelete(struct emulbase *emulbase, char *name)
 {
     LONG ret;
-    struct stat st;
+    struct host_stat st;
 
     ObtainSemaphore(&emulbase->pdata.sem);
 
@@ -1096,7 +1134,7 @@ LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
     return 0;
 }
 
-static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, struct stat *st)
+static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, struct host_stat *st)
 {
     STRPTR filename, name;
     ULONG plen, flen;
@@ -1142,8 +1180,10 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
 		   struct ExAllData *ead, ULONG size, ULONG type)
 {
     STRPTR next, end, last, name;
-    struct stat st;
+    struct host_stat st;
     LONG err;
+
+    DEXAM(bug("[emul] examine_entry(0x%P, %s, 0x%P, %u, %u)\n", fh, EntryName, ead, size, type));
 
     /* Return an error, if supplied type is not supported. */
     if(type>ED_OWNER)
@@ -1152,13 +1192,19 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
     /* Check, if the supplied buffer is large enough. */
     next=(STRPTR)ead+sizes[type];
     end =(STRPTR)ead+size;
-    
+    DEXAM(bug("[emul] ead 0x%P, next 0x%P, end 0x%P\n", ead, next, end));
+
     if(next>end) /* > is correct. Not >= */
 	return ERROR_BUFFER_OVERFLOW;
 
     err = stat_entry(emulbase, fh, EntryName, &st);
     if (err)
     	return err;
+
+    DEXAM(bug("[emul] File mode: %o\n", st.st_mode));
+    DEXAM(bug("[emul] File size: %u\n", st.st_size));
+    DEXAM(bug("[emul] Filling in information\n"));
+    DEXAM(bug("[emul] ead 0x%P, next 0x%P, end 0x%P, size %u, type %u\n", ead, next, end, size, type));
 
     switch(type)
     {
@@ -1227,7 +1273,7 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
                   struct FileInfoBlock *FIB)
 {
     int	i;
-    struct stat st;
+    struct host_stat st;
     struct dirent *dir;
     char *src, *dest;
     off_t pos;
@@ -1494,7 +1540,7 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
 int CheckDir(struct emulbase *emulbase, char *path)
 {
     int res;
-    struct stat st;
+    struct host_stat st;
 
     DMOUNT(bug("[emul] CheckDir(%s)\n", path));
 

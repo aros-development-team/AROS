@@ -22,6 +22,8 @@
 #define LIBC_NAME "libc.so"
 #endif
 
+struct host_stat;
+
 struct LibCInterface
 {
     int		   (*open)(char *path, int oflag, ...);
@@ -59,13 +61,13 @@ struct LibCInterface
     int		   (*getpid)(void);
     int		  *(*__error)(void);
 #ifdef HOST_OS_linux
-    int		   (*__xstat)(int ver, char *path, struct stat *buf);
-    int		   (*__lxstat)(int ver, const char *path, struct stat *buf);
+    int		   (*__xstat)(int ver, char *path, struct host_stat *buf);
+    int		   (*__lxstat)(int ver, const char *path, struct host_stat *buf);
     #define stat(path, buf)  __xstat(_STAT_VER, path, buf)
     #define lstat(path, buf) __lxstat(_STAT_VER, path, buf)
 #else
-    int		   (*stat)(char *path, struct stat *buf);
-    int		   (*lstat)(const char *path, struct stat *buf);
+    int		   (*stat)(char *path, struct host_stat *buf);
+    int		   (*lstat)(const char *path, struct host_stat *buf);
 #endif
 };
 
