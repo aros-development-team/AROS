@@ -98,7 +98,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR InputDevice)
 	stack = AllocMem(IDTASK_STACKSIZE, MEMF_CLEAR|MEMF_PUBLIC);
 	if(stack != NULL)
 	{
-#if 1
     	    struct TagItem tags[] =
 	    {
 	    	{TASKTAG_ARG1, (IPTR)InputDevice},
@@ -114,27 +113,13 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR InputDevice)
 	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET;
     	#endif
 
+	    D(bug("[InputDev] Starting up task, inputbase 0x%P\n", InputDevice));
+
 	    if(NewAddTask(task, ProcessEvents, NULL, tags) != NULL)
 	    {
+	    	D(bug("[InputDev] Done\n"));
 		return TRUE;
 	    }
-#else
-	    task->tc_SPLower = stack;
-	    task->tc_SPUpper = (UBYTE *)stack + IDTASK_STACKSIZE;
-
-    	#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET - sizeof(APTR);
-	    ((APTR *)task->tc_SPUpper)[-1] = InputDevice;
-    	#else
-	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET + sizeof(APTR);
-	    ((APTR *)task->tc_SPLower)[0] = InputDevice;
-    	#endif
-
-	    if(AddTask(task, ProcessEvents, NULL) != NULL)
-	    {
-		return TRUE;
-	    }
-#endif
 	}
     }
 
