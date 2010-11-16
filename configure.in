@@ -923,8 +923,8 @@ case "$target_os" in
 		aros_target_cpu="arm"
                 aros_object_format="armelf_linux_eabi"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
-		aros_config_cflags="$aros_config_cflags -marm -march=armv6 -mfpu=neon -mfloat-abi=softfp -fno-asynchronous-unwind-tables -fno-exceptions"
-		aros_config_aflags="$aros_config_aflags -marm -march=armv6 -mfpu=neon -mfloat-abi=softfp -fno-asynchronous-unwind-tables -fno-exceptions"
+		aros_config_cflags="$aros_config_cflags -marm -march=armv6 -mfpu=vfp -mfloat-abi=softfp -fno-asynchronous-unwind-tables -fno-exceptions"
+		aros_config_aflags="$aros_config_aflags -marm -march=armv6 -mfpu=vfp -mfloat-abi=softfp -fno-asynchronous-unwind-tables -fno-exceptions"
 		aros_arch_libs="-laeabi"
 		aros_default_wbdepth=8
 		gcc_target_cpu="arm"
