@@ -33,6 +33,12 @@
 
 extern void *HostIFace;
 
+/* 
+ * External libgcc routine which eventually clears instruction cache. 
+ * It is equivalent to gcc's __builtin___clear_cache(char *, char*)
+ */
+extern void __clear_cache(char *begin, char *end);
+
 char bootstrapdir[PATH_MAX];
 char buf[256];
 
@@ -251,6 +257,9 @@ int bootstrap(int argc, char ** argv)
     km[6].ti_Data = (IPTR)HostIFace;
     km[7].ti_Data = (IPTR)&MemoryMap;
 
+    /* Flush instruction cache */
+    __clear_cache((char *)ro_addr, (char *)ro_addr + ro_size);
+    
 #ifdef DEBUG_CODE
     /* This is a quickly hacked up sanity test which was used during iOS port development */
     if (ro_size > 256)
