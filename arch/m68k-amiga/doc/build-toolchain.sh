@@ -33,7 +33,7 @@ unpack () {
  		rm -rf "src/${unpackDST}"
 		tar -C src -jxvf `pwd`/download/"${unpackSRC}" || exit 1
 		HERE=`pwd`
-		for d in `pwd`/download/"$1"-*.patch; do
+		for d in `pwd`/download/"$unpackDST"-*.patch; do
 		    if [ -f "$d" ]; then
 			cd "src/${unpackDST}"
 			patch -p1 <$d || exit 1
