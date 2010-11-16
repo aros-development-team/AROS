@@ -39,10 +39,19 @@ BOOL mediumPresent(struct IOHandle *ioh) {
 LONG newMedium(struct AFSBase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 UWORD i;
+BOOL gotdostype = FALSE;
 LONG error;
 
 	/* Check validity of root block first, since boot block may be left over
-	   from an overwritten partition of a different size */
+	   from an overwritten partition of a different size
+	   Read bootblock first to prevent multiple seeks when using floppies
+	*/ 
+	blockbuffer=getBlock(afsbase, volume,0);
+	if (blockbuffer != NULL) {
+		gotdostype = TRUE;
+		volume->dostype=OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+	}
+
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
 	if (blockbuffer == NULL)
 		return ERROR_UNKNOWN;
@@ -54,10 +63,8 @@ LONG error;
 		return ERROR_NOT_A_DOS_DISK;
 	}
 
-	blockbuffer=getBlock(afsbase, volume,0);
-	if (blockbuffer == NULL)
+	if (gotdostype == FALSE)
 		return ERROR_UNKNOWN;
-	volume->dostype=OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 	if (volume->dostype != 0x444F5300)
 	{
 		blockbuffer=getBlock(afsbase, volume, 1);
