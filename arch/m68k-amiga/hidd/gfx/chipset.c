@@ -28,6 +28,12 @@ void resetcustom(void)
     custom->bplcon4 = 0x0011;
     custom->vposw = 0x8000;
     custom->color[0] = 0x0444;
+
+    /* workaround for recent WinUAE initial blit bug */
+    custom->bltapt = 0;
+    custom->bltcon0 = 0x0800;
+    custom->bltcon1 = 0x0000;
+    custom->bltsize = (1 << 6) | 1;
     
 }
 
@@ -358,7 +364,6 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct planarbm
 
 BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
 {
-    UWORD fmode;
     UWORD ddfstrt, ddfstop;
     UBYTE fetchunit, fetchstart;
     
