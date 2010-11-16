@@ -129,7 +129,7 @@ static void LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
 	     regs->a[0] == KRN_SYSCALL_MAGIC &&
 	     (regs->sr & 0x2000) == 0) {
 	     	/* Move past the instruction */
-		regs->pc += 4;	
+		regs->pc += 2;	
 
 	     	/* AROS syscall */
 		switch (regs->d[0]) {
