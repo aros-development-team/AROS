@@ -89,11 +89,18 @@ do {											\
 	CopyMemQuick((cc)->regs.fpuContext, &uc->uc_regspace[0], 128*sizeof(ULONG));	\
 } while(0);
 
-
-/* This macro prints the current signals' context */
+/* Print signal context. Used in crash handler */
 #define PRINT_SC(sc) \
-	bug ("SC: SP=%08lx  PC=%08lx\n" \
-	    , SP(sc), PC(sc) \
+    bug ("    R0=%08X  R1=%08X  R2 =%08X  R3 =%08X\n" \
+    	 "    R4=%08X  R5=%08X  R6 =%08X  R7 =%08X\n" \
+    	 "    R8=%08X  R9=%08X  R10=%08X  R11=%08X\n" \
+    	 "    IP=%08X  SP=%08X  LR =%08X  PC =%08X\n" \
+    	 "    CPSR=%08X\n"			      \
+	    , (sc)->uc_mcontext.arm_r0, (sc)->uc_mcontext.arm_r1, (sc)->uc_mcontext.arm_r2, (sc)->uc_mcontext.arm_r3	\
+	    , (sc)->uc_mcontext.arm_r4, (sc)->uc_mcontext.arm_r5, (sc)->uc_mcontext.arm_r6, (sc)->uc_mcontext.arm_r7	\
+    	    , (sc)->uc_mcontext.arm_r8, (sc)->uc_mcontext.arm_r9, (sc)->uc_mcontext.arm_r10, (sc)->uc_mcontext.arm_fp	\
+	    , (sc)->uc_mcontext.arm_ip, (sc)->uc_mcontext.arm_sp, (sc)->uc_mcontext.arm_lr, (sc)->uc_mcontext.arm_pc	\
+	    , (sc)->uc_mcontext.arm_cpsr										\
 	)
 
 #endif /* __AROS_EXEC_LIBRARY__ */
