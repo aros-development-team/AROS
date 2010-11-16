@@ -8,6 +8,11 @@
 #define _DARWIN_NO_64_BIT_INODE
 #endif
 
+/* This thing adds "$INODE64" suffix to function names in certain cases on Darwin */
+#ifndef __DARWIN_SUF_64_BIT_INO_T
+#define __DARWIN_SUF_64_BIT_INO_T
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -128,11 +133,7 @@ static const char *libcSymbols[] = {
     "close",
     "closedir",
     "opendir",
-#ifdef HOST_OS_ios
-    "readdir$INODE64",
-#else
-    "readdir",
-#endif
+    "readdir" __DARWIN_SUF_64_BIT_INO_T,
     "rewinddir",
     "seekdir",
     "telldir",
@@ -167,13 +168,8 @@ static const char *libcSymbols[] = {
     "__lxstat",
 #else
     "__error",
-#ifdef HOST_OS_ios
-    "stat$INODE64",
-    "lstat$INODE64",
-#else
-    "stat",
-    "lstat",
-#endif
+    "stat" __DARWIN_SUF_64_BIT_INO_T,
+    "lstat" __DARWIN_SUF_64_BIT_INO_T,
 #endif
     NULL
 };
