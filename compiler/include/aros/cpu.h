@@ -1,7 +1,7 @@
 #ifndef AROS_CPU_H
 #define AROS_CPU_H
 /*
-    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     CPU independent version of the <aros/cpu.h> header. This is the one
@@ -232,6 +232,10 @@
 
 #ifndef STACKED
 #define STACKED __attribute__((aligned(4)))
+#endif
+
+#ifndef AROS_HOST_BARRIER
+#define AROS_HOST_BARRIER
 #endif
 
 #endif /* AROS_CPU_H */
