@@ -14,13 +14,13 @@
  */
 
 struct SignalTranslation sigs[] = {
-    {SIGILL   ,  5,  6},
-    {SIGTRAP  ,  5,  1},
-    {SIGBUS   ,  1, 13},
-    {SIGFPE   ,  1, 16},
-    {SIGSEGV  ,  1, 14},
+    {SIGILL   ,  4,  5},
+    {SIGTRAP  ,  9,  5},
+    {SIGBUS   ,  2,  1},
+    {SIGFPE   , 11,  1},
+    {SIGSEGV  ,  2,  1},
 #ifdef HOST_OS_linux
-    {SIGSTKFLT,  1, 12},
+    {SIGSTKFLT, 14,  1},
 #endif
     {-1       , -1, -1}
 };
