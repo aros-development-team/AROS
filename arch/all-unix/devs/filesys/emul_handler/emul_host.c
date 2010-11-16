@@ -423,7 +423,10 @@ static void timestamp2datestamp(struct emulbase *emulbase, time_t *timestamp, st
     struct tm *tm;
 
     ObtainSemaphore(&emulbase->pdata.sem);
+
     tm = emulbase->pdata.SysIFace->localtime(timestamp);
+    AROS_HOST_BARRIER
+    
     ReleaseSemaphore(&emulbase->pdata.sem);
 
     date.year  = tm->tm_year + 1900;
