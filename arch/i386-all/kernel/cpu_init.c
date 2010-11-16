@@ -5,7 +5,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 
-#define D(x) x
+#define D(x)
 
 static int cpu_Init(struct KernelBase *KernelBase)
 {
