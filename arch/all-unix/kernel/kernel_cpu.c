@@ -1,4 +1,3 @@
-#include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
@@ -9,8 +8,11 @@
 #include "../exec/etask.h"
 
 #include "kernel_base.h"
+#include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "kernel_scheduler.h"
+
+#define D(x)
 
 /*
  * Task exception handler. Calls exec function, then jumps back
@@ -34,6 +36,9 @@ void cpu_Switch(regs_t *regs)
 {
     struct Task *task = SysBase->ThisTask;
     struct AROSCPUContext *ctx = GetIntETask(task)->iet_Context;
+
+    D(bug("[KRN] cpu_Switch(), task %p (%s)\n", task, task->tc_Node.ln_Name));
+    D(PRINT_SC(regs));
 
     SAVEREGS(ctx, regs);
     ctx->errno_backup = *KernelBase->kb_PlatformData->errnoPtr;
@@ -60,9 +65,14 @@ void cpu_Dispatch(regs_t *regs)
     }
 
     ctx = GetIntETask(task)->iet_Context;
+    
+    D(bug("[KRN] cpu_Dispatch(), task %p (%s)\n", task, task->tc_Node.ln_Name));
+    
     RESTOREREGS(ctx, regs);
     *KernelBase->kb_PlatformData->errnoPtr = ctx->errno_backup;
     SP(regs) = (IPTR)task->tc_SPReg;
+
+    D(PRINT_SC(regs));
 
     /* Adjust user mode interrupts state */
     if (SysBase->IDNestCnt < 0)
