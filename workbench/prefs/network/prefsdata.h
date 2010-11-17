@@ -31,8 +31,8 @@
 #define WIRELESS_PATH_ENV              "ENV:"
 #define WIRELESS_PATH_ENVARC           "ENVARC:"
 
-#define SSIDBUFLEN 32
-#define KEYBUFLEN 64
+#define SSIDBUFLEN (32 + 1)
+#define KEYBUFLEN (64 + 1)
 
 enum ErrorCode
 {
