@@ -1,4 +1,13 @@
-#ifndef HOST_OS_ios
+#ifdef HOST_OS_ios
+#ifdef __arm__
+
+/*
+ * Under ARM iOS quadwords are long-aligned, however in AROS (according to AAPCS)
+ * they are quad-aligned. This macro turns on some tricks which bypass this problem
+ */
+#define HOST_LONG_ALIGNED
+#endif
+#else
 
 /* 
  * Use 32-bit inode_t on Darwin. Otherwise we are expected to use "stat$INODE64"
@@ -13,10 +22,16 @@
 #define __DARWIN_SUF_64_BIT_INO_T
 #endif
 
+#ifdef HOST_LONG_ALIGNED
+#pragma pack(4)
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
+
+#pragma pack()
 
 /* This prevents redefinition of struct timeval */
 #define _AROS_TIMEVAL_H_
@@ -27,6 +42,7 @@
 #define DMOUNT(x)
 #define DOPEN(x)
 #define DREAD(x)
+#define DSEEK(x)
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -37,44 +53,6 @@
 #include <proto/hostlib.h>
 #include <proto/kernel.h>
 #include <proto/utility.h>
-
-#include <stddef.h>
-#include <sys/types.h>
-
-#ifdef HOST_OS_ios
-
-/*
- * Dirty hack against one more iOS weirdness. off_t is 64-bit-sized
- *  vairiable here but it's not aligned at UQUAD boundary.
- * Looks like Apple's ARM gcc aligns quadwords like longwords
- */
-struct host_stat
-{
-    dev_t	    st_dev;
-    mode_t	    st_mode;
-    nlink_t	    st_nlink;
-    uint64_t	    st_ino;
-    uid_t	    st_uid;
-    gid_t	    st_gid;
-    dev_t	    st_rdev;
-    struct timespec st_atimespec;
-    struct timespec st_mtimespec;
-    struct timespec st_ctimespec;
-    struct timespec st_birthtimespec;
-    off_t	    st_size;
-    blkcnt_t	    st_blocks;
-    blksize_t	    st_blksize;
-    uint32_t	    st_flags;
-    uint32_t	    st_gen;
-    int32_t	    st_lspare;
-    int64_t	    st_qspare[2];
-} __attribute__((packed));
-
-#else
-
-#define host_stat stat
-
-#endif
 
 #include "emul_intern.h"
 
@@ -178,6 +156,7 @@ static const char *libcSymbols[] = {
     "read",
     "write",
     "lseek",
+    "ftruncate",
     "mkdir",
     "rmdir",
     "unlink",
@@ -186,7 +165,6 @@ static const char *libcSymbols[] = {
     "readlink",
     "rename",
     "chmod",
-    "ftruncate",
     "isatty",
     "statfs",
     "utime",
@@ -479,7 +457,7 @@ static time_t datestamp2timestamp(struct LibCInterface *iface, struct DateStamp 
 static void fixcase(struct LibCInterface *iface, char *pathname)
 {
     struct dirent 	*de;
-    struct host_stat	st;
+    struct stat	st;
     DIR			*dir;
     char		*pathstart, *pathend;
     BOOL		dirfound;
@@ -551,7 +529,7 @@ static void fixcase(struct LibCInterface *iface, char *pathname)
 
 /*-------------------------------------------------------------------------------------------*/
 
-static int inline nocase_lstat(struct LibCInterface *iface, char *file_name, struct host_stat *st)
+static int inline nocase_lstat(struct LibCInterface *iface, char *file_name, struct stat *st)
 {
     int ret;
 
@@ -630,7 +608,7 @@ static inline int nocase_symlink(struct LibCInterface *iface, char *oldpath, cha
 
 static inline int nocase_rename(struct LibCInterface *iface, char *oldpath, char *newpath)
 {
-    struct host_stat st;
+    struct stat st;
     int ret;
     
     fixcase(iface, oldpath);
@@ -691,7 +669,7 @@ static inline int nocase_utime(struct LibCInterface *iface, char *path, const st
 
 LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir)
 {
-    struct host_stat st;
+    struct stat st;
     LONG ret = ERROR_OBJECT_WRONG_TYPE;
     int r;
     long flags;
@@ -780,6 +758,7 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
     ObtainSemaphore(&emulbase->pdata.sem);
 
     len = TryRead(emulbase->pdata.SysIFace, (int)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
+    DREAD(bug("[emul] Result: %d\n", len));
     if (len == -1)
 	error = err_u2a(emulbase);
 
@@ -847,6 +826,9 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
     off_t oldpos = 0;
     LONG error = 0;
 
+    /* kprintf() does not understand UQUAD values */
+    DSEEK(bug("[emul] DoSeek(%d, 0x%08X%08X, %d)\n", (int)file, (ULONG)(*Offset >> 32), (ULONG)*Offset, mode));
+
     switch (mode) {
     case OFFSET_BEGINNING:
 	mode = SEEK_SET;
@@ -862,13 +844,19 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
 
     ObtainSemaphore(&emulbase->pdata.sem);
 
-    res = emulbase->pdata.SysIFace->lseek((int)file, 0, SEEK_CUR);
+    res = LSeek((int)file, 0, SEEK_CUR);
     AROS_HOST_BARRIER
+
+    DSEEK(bug("[emul] Original position: 0x%08X%08X\n", (ULONG)(res >> 32), (ULONG)res));
     if (res != -1)
     {
+        UQUAD offs = *Offset;
+
         oldpos = res;
-        res = emulbase->pdata.SysIFace->lseek((int)file, *Offset, mode);
+        res = LSeek((int)file, offs, mode);
         AROS_HOST_BARRIER
+
+	DSEEK(bug("[emul] New position: 0x%08X%08X\n", (ULONG)(res >> 32), (ULONG)res));
     }
 
     if (res == -1)
@@ -908,7 +896,7 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
 LONG DoDelete(struct emulbase *emulbase, char *name)
 {
     LONG ret;
-    struct host_stat st;
+    struct stat st;
 
     ObtainSemaphore(&emulbase->pdata.sem);
 
@@ -1046,7 +1034,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
         break;
 
     case OFFSET_CURRENT:
-       	absolute = emulbase->pdata.SysIFace->lseek((int)fh->fd, 0, SEEK_CUR); 
+       	absolute = LSeek((int)fh->fd, 0, SEEK_CUR);
        	AROS_HOST_BARRIER
 
         if (absolute == -1)
@@ -1056,7 +1044,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
         break;
 
     case OFFSET_END:
-        absolute = emulbase->pdata.SysIFace->lseek((int)fh->fd, 0, SEEK_END); 
+        absolute = LSeek((int)fh->fd, 0, SEEK_END); 
         AROS_HOST_BARRIER
 
         if (absolute == -1)
@@ -1071,7 +1059,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
 
     if (!err)
     {
-	err = emulbase->pdata.SysIFace->ftruncate((int)fh->fd, absolute);
+	err = FTruncate((int)fh->fd, absolute);
 	AROS_HOST_BARRIER
 	if (err)
 	    err = err_u2a(emulbase);
@@ -1137,7 +1125,7 @@ LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
     return 0;
 }
 
-static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, struct host_stat *st)
+static LONG stat_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, struct stat *st)
 {
     STRPTR filename, name;
     ULONG plen, flen;
@@ -1183,7 +1171,7 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
 		   struct ExAllData *ead, ULONG size, ULONG type)
 {
     STRPTR next, end, last, name;
-    struct host_stat st;
+    struct stat st;
     LONG err;
 
     DEXAM(bug("[emul] examine_entry(0x%P, %s, 0x%P, %u, %u)\n", fh, EntryName, ead, size, type));
@@ -1276,7 +1264,7 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
                   struct FileInfoBlock *FIB)
 {
     int	i;
-    struct host_stat st;
+    struct stat st;
     struct dirent *dir;
     char *src, *dest;
     off_t pos;
@@ -1543,7 +1531,7 @@ ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len)
 int CheckDir(struct emulbase *emulbase, char *path)
 {
     int res;
-    struct host_stat st;
+    struct stat st;
 
     DMOUNT(bug("[emul] CheckDir(%s)\n", path));
 
