@@ -238,7 +238,7 @@ AROS_UFH4(APTR, cia_vbint,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(struct TimerBase *, TimerBase, A1),
     AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
 	
