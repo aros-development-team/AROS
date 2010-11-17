@@ -35,6 +35,7 @@ struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
     }
     /* We can't open a screen. Likely there are no display modes in the database at all */
     Alert(AN_SysScrnType);
+    return NULL;
 }
 
 struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
