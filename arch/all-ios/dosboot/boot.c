@@ -15,7 +15,7 @@
 
 void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags)
 {
-    LONG rc = RETURN_FAIL;
+    LONG rc;
     BPTR cis = BNULL;
 
     /*
@@ -59,7 +59,11 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
             sseq = BNULL;
         }
         else
-            rc = RETURN_FAIL;
+        {
+	    D(bug("[DOSBoot] __dosboot_Boot: Cannot run boot shell\n"));
+            Alert(AT_DeadEnd|AN_BootError);
+        }
+
         if (sseq != BNULL)
             Close(sseq);
     } else
