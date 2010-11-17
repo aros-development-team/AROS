@@ -1,6 +1,11 @@
 /* avoid conflicts between our __unused define and the ones that might come in
    via sys/stat.h */
 #undef __unused
+
+#ifdef HOST_LONG_ALIGNED
+#pragma pack(4)
+#endif
+
 #include <sys/stat.h>
 #include <dirent.h>
 #include <pwd.h>
@@ -22,7 +27,7 @@
 #define LIBC_NAME "libc.so"
 #endif
 
-struct host_stat;
+#pragma pack()
 
 struct LibCInterface
 {
@@ -36,7 +41,13 @@ struct LibCInterface
     long	   (*telldir)(DIR *dirp);
     ssize_t        (*read)(int fildes, void *buf, size_t nbyte);
     ssize_t	   (*write)(int fildes, const void *buf, size_t nbyte);
+#ifdef HOST_LONG_ALIGNED
+    off_t	   (*lseek)(int fildes, unsigned long offset_l, unsigned long offset_h, int whence);
+    int		   (*ftruncate)(int fildes, unsigned long length_l, unsigned long length_h);
+#else
     off_t          (*lseek)(int fildes, off_t offset, int whence);
+    int		   (*ftruncate)(int fildes, off_t length);
+#endif
     int            (*mkdir)(char *path, mode_t mode);
     int		   (*rmdir)(const char *path);
     int            (*unlink)(const char *path);
@@ -45,7 +56,6 @@ struct LibCInterface
     ssize_t	   (*readlink)(char *path, char *buf, size_t bufsize);
     int		   (*rename)(char *old, char *new);
     int		   (*chmod)(char *path, mode_t mode);
-    int		   (*ftruncate)(int fildes, off_t length);
     int		   (*isatty)(int fildes);
     int		   (*statfs)(char *path, struct statfs *buf);
     int		   (*utime)(char *path, const struct utimbuf *times);
@@ -61,15 +71,28 @@ struct LibCInterface
     int		   (*getpid)(void);
     int		  *(*__error)(void);
 #ifdef HOST_OS_linux
-    int		   (*__xstat)(int ver, char *path, struct host_stat *buf);
-    int		   (*__lxstat)(int ver, const char *path, struct host_stat *buf);
+    int		   (*__xstat)(int ver, char *path, struct stat *buf);
+    int		   (*__lxstat)(int ver, const char *path, struct stat *buf);
     #define stat(path, buf)  __xstat(_STAT_VER, path, buf)
     #define lstat(path, buf) __lxstat(_STAT_VER, path, buf)
 #else
-    int		   (*stat)(char *path, struct host_stat *buf);
-    int		   (*lstat)(const char *path, struct host_stat *buf);
+    int		   (*stat)(char *path, struct stat *buf);
+    int		   (*lstat)(const char *path, struct stat *buf);
 #endif
 };
+
+#ifdef HOST_LONG_ALIGNED
+/*
+ * Somewhat dirty hack to adjust data packing to iOS ARM ABI.
+ * Perhaps this can be done in a cleaner and more CPU-abstract way.
+ * FIXME: Always assuming little-endian CPU
+ */
+#define LSeek(fildes, offset, whence) emulbase->pdata.SysIFace->lseek(fildes, (ULONG)offset, (ULONG)((UQUAD)offset >> 32), whence)
+#define FTruncate(fildes, length)     emulbase->pdata.SysIFace->ftruncate(fildes, (ULONG)length, (ULONG)((UQUAD)length >> 32))
+#else
+#define LSeek(fildes, offset, whence) emulbase->pdata.SysIFace->lseek(fildes, offset, whence)
+#define FTruncate(fildes, length)     emulbase->pdata.SysIFace->ftruncate(fildes, length)
+#endif
 
 struct PlatformHandle
 {
