@@ -40,7 +40,7 @@ extern void *HostIFace;
 extern void __clear_cache(char *begin, char *end);
 
 char bootstrapdir[PATH_MAX];
-char buf[256];
+char buf[512];
 
 static struct mb_mmap MemoryMap = {
     sizeof(struct mb_mmap),
@@ -202,6 +202,41 @@ int bootstrap(int argc, char ** argv)
 	    if (c) {
 		memSize = atoi(c);
 		continue;
+	    }
+	}
+	
+	c = GetConfigArg(buf, "logfile");
+	if (c)
+	{
+	    freopen(c, "a", stderr);
+	    fprintf(stderr, "----\n");
+	}
+	
+	c = GetConfigArg(buf, "arguments");
+	if (c)
+	{
+	    /* If we already have some arguments, append our line to them */
+	    if (KernelArgs)
+	    {
+	    	char *parts[] = {KernelArgs, c};
+	    	char *args = join_string(2, parts);
+	    
+		if (args)
+		{
+		    free(KernelArgs);
+		    KernelArgs = args;
+		}
+	    }
+	    else
+	    {
+	    	/* Otherwise just copy the line */
+	    	i = strlen(c);
+	    	if (i)
+	    	{
+	    	    i++;
+	    	    KernelArgs = malloc(i);
+	    	    memcpy(KernelArgs, c, i);
+	    	}
 	    }
 	}
     }
