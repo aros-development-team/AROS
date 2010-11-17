@@ -62,6 +62,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
         return FALSE;
     }
 
+    NEWLIST(&LIBBASE->BlitWaitQ);
     NEWLIST(&LIBBASE->TextFonts);
     InitSemaphore( &PrivGBase(GfxBase)->hashtab_sema );
     InitSemaphore( &PrivGBase(GfxBase)->view_sema );
