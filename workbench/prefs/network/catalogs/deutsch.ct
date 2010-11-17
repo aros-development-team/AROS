@@ -1,4 +1,4 @@
-## version $VER: networkprefs.catalog 2.0 (22.12.2009)
+## version $VER: networkprefs.catalog 3.0 (17.11.2010)
 ## language deutsch
 ## codeset 0
 ;
@@ -8,7 +8,7 @@ Netzwerkvoreinstellungen
 ;
 MSG_DESCRIPTION
 TCP/IP Netzwerkvoreinstellungen
-; TCP/IP Network preferences
+; Network preferences
 ;
 MSG_IFNAME
 Name
@@ -66,6 +66,50 @@ MSG_IP_MODE_DHCP
 Hole Adresse von DHCP
 ; Get address from DHCP
 ;
+MSG_ENC_NONE
+Ohne
+; None
+;
+MSG_ENC_WEP
+WEP
+; WEP
+;
+MSG_ENC_WPA
+WPA
+; WPA
+;
+MSG_KEY_TEXT
+Passwort
+; Passphrase
+;
+MSG_KEY_HEX
+Hexadezimal
+; Hexadecimal
+;
+MSG_SSID
+Netzwerkname
+; Network Name
+;
+MSG_ENCTYPE
+Verschlüsselung
+; Encryption
+;
+MSG_KEYTYPE
+Schlüsseltyp
+; Key Type
+;
+MSG_KEY
+Schlüssel
+; Key
+;
+MSG_HIDDEN
+Verborgen
+; Hidden
+;
+MSG_ADHOC
+Ad hoc
+; Ad-hoc
+;
 MSG_TAB_IP_CONFIGURATION
 IPv4-Konfiguration
 ; IPv4 Configuration
@@ -74,9 +118,17 @@ MSG_TAB_COMPUTER_NAME
 Computername
 ; Computer Name
 ;
+MSG_TAB_WIRELESS
+Drahtlos
+; Wireless
+;
 MSG_AUTOSTART_STACK
 Automatischer Start des Netzwerks beim Systembooten?
-; Automatically start network during system boot?
+; Start networking during system boot
+;
+MSG_AUTOSTART_WIRELESS
+Drahtloses Netzwerk aktivieren
+; Enable wireless networking
 ;
 MSG_ERR_UNKNOWN_ERROR
 Unbekannter Fehler
@@ -85,6 +137,10 @@ Unbekannter Fehler
 MSG_ERR_NOT_RESTARTED_STACK
 Neustart des Netzwerks fehlgeschlagen
 ; Failed to restart network stack
+;
+MSG_ERR_NOT_RESTARTED_WIRELESS
+Neustart des drahtloses Netzwerks fehlgeschlagen
+; Failed to restart wireless networking
 ;
 MSG_BUTTON_OK
 OK
@@ -133,4 +189,8 @@ Voreinstellungen wurden in %s gespeichert.\nStarte AROS neu um sie anzuwenden.
 MSG_IFWINDOW_TITLE
 Schnittstelle
 ; Interface
+;
+MSG_NETWINDOW_TITLE
+Drahtloses Netzwerk
+; Wireless Network
 ;
