@@ -250,6 +250,17 @@ extern void aros_not_implemented ();
 #define D6	d6
 #define D7	d7
 
+#ifdef CONFIG_GCC_FP_A6
+#define __AROS_FP_REG	A6
+#define __AROS_FP_SREG	"A6"
+#else
+#define __AROS_FP_REG	A5
+#define __AROS_FP_SREG	"A5"
+#endif
+
+#define ___AROS_ISREG(reg,regcmp)		(0x##reg == 0x##regcmp)
+#define __AROS_ISREG(type,name,reg,regcmp)	___AROS_ISREG(reg,regcmp)
+
 /* What to do with the library base in header, prototype and call */
 #define __AROS_LH_BASE(basetype,basename)   basetype basename
 #define __AROS_LP_BASE(basetype,basename)   basetype

@@ -17,5 +17,5 @@ $(AROS_INCLUDES)/aros/m68k/libcall.h: $(HOSTGENDIR)/tools/gencall
 	$(HOSTGENDIR)/tools/gencall >$@
 
 $(HOSTGENDIR)/tools/gencall: $(SRCDIR)/$(CURDIR)/gencall.c
-	@$(HOST_CC) -o $@ $<
+	@$(HOST_CC) -Wall -Werror -o $@ $<
 
