@@ -1,9 +1,11 @@
  1. INTRODUCTION.
 
- This is Apple iOS-hosted port of AROS.
+ This is Apple iOS-hosted port of AROS. Currently it's incomplete and under development.
  i386 architecture support is complete and the port succesfully runs in iPhone Simulator.
-The bootstrap is also compiled and tested on ARM CPU on a real iPhone. It works. However ARM
-AROS kernel is still in progress.
+Support for ARM architecture is still in progress. ARM iOS puts some limitations on application's behavior so
+running AROS under iOS is slightly more complex task than running it on ARM Linux. Currently ARM versions boots
+up to the point where it runs contents of DEVS:Monitors directory. The first loaded binary crashes because of
+iOS' no-execution protection.
  Note that currently there's no UIKit display driver, so AROS currently displays "Unknown type of system screen"
 guru. However it boots up into Workbench.
 
@@ -17,7 +19,7 @@ darwin-i386 for Simulator version and darwin-arm for real hardware.
  The following iOS-specific options are added to configure for supporting this build:
  --with-xcode       - specifies where XCode is located on your machine. Default is /Developer (this is where
                       XCode v3.2.4 installed itself by default on my machine)
- --with-ios-version - specifies minimum supported iOS version, defaults to 2.0. Actually this value is supplied
+ --with-ios-version - specifies minimum supported iOS version, defaults to 3.0. Actually this value is supplied
                       to gcc via -miphoneos-version-min and nothing else.
  --with-ios-sdk     - specifies iOS SDK version to use. Defaults to 4.1 (the latest SDK available with my XCode).
                       Actually this value sets the SDK's root directory (used for locating headers and libraries) in the form of:
@@ -31,19 +33,32 @@ darwin-i386 for Simulator version and darwin-arm for real hardware.
 
  The bootstrap expects to locate AROS root directory inside Documents directory of its sandbox (i.e. Documents/AROS). The root does
 not have to contain the bootstrap itself. The bootstrap is built as standard application bundle and is located one level up relating to
-AROS directory. You have to install it as a usual application, on jailbroken iPhone the easiest way to do this is using iPhone Explorer
-(http://www.macroplant.com/iphoneexplorer/).
+AROS directory. iTunes is known not to accept unsigned applications, so you'll have to use any third-party tools. Personally i use
+Installous program (http://hackulo.us/forums/). You can put an IPA into its download directory (/var/mobile/Documents/Installous/Downloads),
+then run the program, go to "Downloads" section, and you'll see AROSBootstrap there and be able to install it.
+ For transfering files i use iPhone Explorer (http://www.macroplant.com/iphoneexplorer/). Unfortunately you can't install and/or
+update bootstrap bundle using it, because during copying files lose their 'executable' permission bit.
+ If you have Mac and XCode, you can also use XCode's organizer for installing the bootstrap application.
 
  4. RUNNING.
 
- Simulator version runs without problems. Device version is of course not signed, it runs only on jailbroken machines. There is
-some support for creating signed version, but because of proprietary nature of the thing i won't describe it here. In fact it's very
-easy to discover how to create a signed bundle, just read the mmakefile.src and accompanying shell scripts. Of course you need a
-developer certificate and provisioning profile for this. I use my company's test profile and it works. However i would not expect
-that Apple would ever permit to release such an application in their AppStore, so code signing is a purely experimental feature,
-written as part of my company's research project.
- Remember that Apple would never approve AROS for their AppStore! AROS violates at least 25% of their rules by its nature. So
-do not even try it. And it's better not to distribute signed versions. If you do so, do not complain about being banned from
-AppStore and/or Apple developer site. You have been warned!
+ Simulator version runs without problems.
+ Device version is a little bit more problematic. One of iOS limitations is that it disallows to set protection for allocated memory to
+both writable and executable at once. This means that AROS can't run any binary from disk. This is not a stopper and can be bypassed.
+Currently a protected memory management system for AROS is being developed, which will allow ARM iOS version to run.
+ AROS requires a jailbreak to run. I tried to create a signed version of the bootstrap and ran it on un-jailbroken iOS v3.1. As soon
+as bootstrap launches the loaded kickstart it gets SIGKILL from the system. Apple does not allow applications to load and run any code.
+ A RedsnOw jailbreak is known to be compatible with AROS, it is used on iPhone model 2G which i use for testing AROS.
+ Debug log from AROS is directed to stderr. The easiest way to read it is using XCode's organizer window. Connect your device and go to
+'console' tab. You'll see a log there. Unfortunately it's not transferred instantly, so you may have to wait a while until the last line
+pops up. Re-running crashed AROS helps, the log gets flushed when new large data portion arrives.
+ Attaching remote gdb to a device is a big problem. First, you need to sign your executable with valid developer certificate and
+debugging entitlements. Second, you'll have to compose XCode project for the bootstrap, listing all its source files. XCode integrates
+very poorly with external build systems, so personally i abandoned this idea after some tests. Attaching remote gdb to an iPhone without
+XCode seems to be impossible. Communication is performed through a UNIX socket which exists only while XCode debugging session is
+running.
+ To make life simpler, something needs to be done in the bootstrap, like redirecting the log to a text file. Also perhaps some
+third-party tools exist, which i don't know about.
+ With Simulator everything is way simpler. You just open MacOS' system console and read the output.
 
 									Pavel Fedin <pavel_fedin@mail.ru>
