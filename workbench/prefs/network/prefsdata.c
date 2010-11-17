@@ -1177,10 +1177,6 @@ void SetNetwork
 
 void SetNetworkName(struct Network *net, STRPTR w)
 {
-    if (!IsLegal(w, NAMECHARS))
-    {
-        w = "";
-    }
     strlcpy(net->name, w, SSIDBUFLEN);
 }
 
