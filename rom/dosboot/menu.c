@@ -175,7 +175,6 @@ static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
     struct Screen *bm_Screen;
     struct Gadget *first = NULL;
     BOOL res = FALSE;
-    ULONG mode;
 
     D(bug("[BootMenu] initScreen()\n"));
 
