@@ -29,7 +29,13 @@ struct MinList *Debug_ModList = NULL;
  */
 static int VKPrintf(const char *format, va_list ap)
 {
-    return vfprintf(stderr, format, ap);
+    int ret;
+
+    ret = vfprintf(stderr, format, ap);
+    /* Sync up with unbuffered output from KrnPutChar() */
+    fflush(stderr);
+
+    return ret;
 }
 
 /*
