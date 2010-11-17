@@ -1,5 +1,5 @@
 /*
-    copyright Â© 1995-2010, the aros development team. all rights reserved.
+    copyright © 1995-2010, the aros development team. all rights reserved.
     $id$
 
     desc: m68k-amiga IRQ handling
@@ -318,8 +318,8 @@ void AmigaIRQInit(struct ExecBase *SysBase)
 	custom_w(DDFSTRT, DDFSTRT_LOW);
 	custom_w(DDFSTOP, DDFSTOP_LOW);
 
-	/* Enable Vertical Blank */
-	custom_w(INTENA, INTF_SETCLR | INTF_VERTB);
+	/* Enable Vertical Blank and SoftInt */
+	custom_w(INTENA, INTF_SETCLR | INTF_VERTB | INTF_SOFTINT);
 
 	/* IRQs will be enabled by the first Enable() in Exec's init */
 }
