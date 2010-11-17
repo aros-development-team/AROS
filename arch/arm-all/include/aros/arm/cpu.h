@@ -179,21 +179,17 @@ extern void aros_not_implemented ();
 /* Untested! This macro *may* be wrong... */
 #define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
 ({\
-    long _n1 = (long)(n1);\
-    long _n2 = (long)(n2);\
-    long _n3 = (long)(n3);\
-    long _re;\
+    register long _n1 asm("r0") = (long)(n1);\
+    register long _n2 asm("r1") = (long)(n2);\
+    register long _n3 asm("r2") = (long)(n3);\
+    register long _re asm("r0");\
     __asm__ __volatile__(\
-        "ldr    %%r0, %1\n\t"\
-        "str    %%sp,[%%r0, $0]\n\t"\
-        "mov    %%r2,%5\n\t"\
-        "mov    %%r1,%4\n\t"\
-        "mov    %%r0,%3\n\t"\
+        "ldr    %%ip, %1\n\t"\
+        "str    %%sp,[%%ip, $0]\n\t"\
         "blx    %2\n\t"\
-        "str    %%r0,%0"\
-        : "=m"(_re), "=m"(*(int *)p)\
+        : "=r"(_re), "=m"(*(int *)p)\
         : "r"(n), "r"(_n1), "r"(_n2), "r"(_n3)\
-        : "cc", "memory", "%r0", "%r1", "%r2" );\
+        : "cc", "memory");\
     (t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
