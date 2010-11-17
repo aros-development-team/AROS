@@ -52,6 +52,8 @@ static const char *kernel_functions[] = {
 #else
     "__error",
 #endif
+    "mmap",
+    "munmap",
     NULL
 };
 
