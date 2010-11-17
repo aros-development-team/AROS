@@ -189,7 +189,7 @@ extern void aros_not_implemented ();
         "blx    %2\n\t"\
         : "=r"(_re), "=m"(*(int *)p)\
         : "r"(n), "r"(_n1), "r"(_n2), "r"(_n3)\
-        : "cc", "memory");\
+        : "cc", "memory", "lr");\
     (t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
