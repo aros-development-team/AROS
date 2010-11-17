@@ -7,7 +7,7 @@ Netzwerkvoreinstellungen
 ; Network Preferences
 ;
 MSG_DESCRIPTION
-TCP/IP Netzwerkvoreinstellungen
+Netzwerkvoreinstellungen
 ; Network preferences
 ;
 MSG_IFNAME
@@ -123,7 +123,7 @@ Drahtlos
 ; Wireless
 ;
 MSG_AUTOSTART_STACK
-Automatischer Start des Netzwerks beim Systembooten?
+Starte Netzwerk beim Booten des Systems
 ; Start networking during system boot
 ;
 MSG_AUTOSTART_WIRELESS
