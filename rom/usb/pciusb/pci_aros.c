@@ -72,7 +72,7 @@ AROS_UFH3(void, pciEnumerator,
 #if defined(__powerpc__)
     else if((hcitype == HCITYPE_OHCI))
 #else
-    else if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI))
+    else if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI) || (hcitype == HCITYPE_XHCI))
 #endif
     {
         KPRINTF(10, ("Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline));
@@ -153,7 +153,11 @@ BOOL pciInit(struct PCIDevice *hd)
 
         OOP_ObtainAttrBases(attrbases);
 
-        KPRINTF(20, ("Searching for xHCI devices...\n"));
+#if defined(__powerpc__)
+        KPRINTF(20, ("Searching for OHCI devices...\n"));
+#else
+        KPRINTF(20, ("Searching for (U/O/E/X)HCI devices...\n"));
+#endif
 
         HIDD_PCI_EnumDevices(hd->hd_PCIHidd, &findHook, (struct TagItem *) &tags);
     } else {
