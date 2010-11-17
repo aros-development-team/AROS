@@ -9057,13 +9057,6 @@ echo "$as_me: error: Unsupported target architecture $target" >&2;}
 	;;
 esac
 
-if test "$aros_kernel_includes" = ""; then
-    if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
-        # FIXME: for cross-compiling this should point to another location
-	aros_kernel_includes="-isystem /usr/include"
-    fi
-fi
-
 { echo "$as_me:$LINENO: checking Where to download sourcecode for external ports" >&5
 echo $ECHO_N "checking Where to download sourcecode for external ports... $ECHO_C" >&6; }
 
@@ -10992,6 +10985,12 @@ else
   aros_target_incl=$aros_target_incl_def
 fi
 
+if test "$aros_kernel_includes" = ""; then
+    if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
+        # FIXME: for cross-compiling this should point to another location
+	aros_kernel_includes="-isystem $aros_target_incl"
+    fi
+fi
 
 if test "$aros_kernel_includes" != "" ; then
         { echo "$as_me:$LINENO: checking for the kernel compiler's include path" >&5
