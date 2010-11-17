@@ -59,8 +59,7 @@
   if (NULL == GfxBase->  blthd &&
       NULL == GfxBase->bsblthd)
   {
-     if((struct Node *) GfxBase->BlitWaitQ.lh_Head != 
-        (struct Node *)&GfxBase->BlitWaitQ.lh_TailPred )
+     if(!IsListEmpty(&GfxBase->BlitWaitQ))
      {
        /* make that task ready again! */
        struct Task * first = (struct Task *)RemHead(&GfxBase->BlitWaitQ);
