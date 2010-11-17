@@ -49,11 +49,11 @@ void aros_ufh(int id, int is_static)
 	printf(") \\\n");
 	printf("\t%st n (void) {%s\n", is_static ? "static " : "", (i==0) ? "" : " \\");
 	for (i = 0; i < id; i++)
-		printf(" \\\n\t__AROS_UFPA(a%d) __attribute__((unused)) __AROS_UFCA(a%d) = ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_UFPA(a%d))__r;});", i+1, i+1, i+1, i+1);
+		printf(" \\\n\t__AROS_UFPA(a%d) __attribute__((unused)) __AROS_UFCA(a%d) = __AROS_ISREG(a%d,__AROS_FP_REG) ? (__AROS_UFPA(a%d))(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_UFPA(a%d))__r;});", i+1, i+1, i+1, i+1, i+1, i+1);
 	printf("\n");
 }
 
-static void asm_regs_init(int id, int has_bn)
+static void asm_regs_init(int id, int has_bn, const char *jmp, const char *addr)
 {
     int i;
 
@@ -64,29 +64,61 @@ static void asm_regs_init(int id, int has_bn)
     if (has_bn)
     	printf("\t   ULONG _bn_arg = (ULONG)bn; \\\n");
 
-    printf("\t    asm volatile (\"move.l %%a5,%%sp@(-4)\\n\"); \\\n");
-
     /* Define registers */
     printf("\t   register volatile ULONG _ret asm(\"%%d0\"); \\\n");
-    if (has_bn)
-    	printf("\t   register volatile ULONG _bn asm(\"%%a6\") = _bn_arg; \\\n");
     for (i = 0; i < id; i++)
 	printf("\t   register volatile ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)); \\\n",
 		i + 1, i + 1);
-
-    /* Set registers */
-    for (i = 0; i < id; i++)
-	printf("\t   __AROS_LTA(a%d) = _arg%d; \\\n",
-		i + 1, i + 1);
     if (has_bn)
-    	printf("\t   _bn = _bn_arg; \\\n");
+    	printf("\t   register volatile ULONG _bn asm(\"%%a6\"); \\\n");
 
-    printf("\t    asm volatile (\"subq.l #4,%%%%sp\\n\" \\\n");
+
+    /* Set registers (non FP) */
+    for (i = 1; i <= id; i++)
+	printf("\t   if (! __AROS_ISREG(a%d,__AROS_FP_REG)) { \\\n"
+	       "\t      __AROS_LTA(a%d) = _arg%d; } \\\n",
+		i, i, i);
+    if (has_bn)
+	printf("\t   if (! __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)) { \\\n"
+	       "\t      _bn = _bn_arg; } \\\n");
+
+    /* Set FP register */
+    for (i = 1; i <= id; i++) {
+    	int j;
+	printf("\t   if ( __AROS_ISREG(a%d,__AROS_FP_REG)) { \\\n"
+	       "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_arg%d), %s \\\n",
+		i, jmp, i, addr);
+	for (j = 0; j < id; j++)
+		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+        printf("\t       ); }\\\n");
+    }
+    if (has_bn) {
+    	int j;
+	printf("\t   if ( __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)) { \\\n"
+	       "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_bn_arg), %s \\\n", jmp, addr);
+	for (j = 0; j < id; j++)
+		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+        printf("\t       ); }\\\n");
+    }
+    if (has_bn || id > 0) {
+    	int j;
+	printf("\t   if (!(0");
+	if (has_bn)
+	    printf(" || __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)");
+	for (i = 0; i < id; i++)
+	    printf(" || __AROS_ISREG(a%d,__AROS_FP_REG)", i+1);
+	printf(")) {\\\n"
+	       "\t      asm volatile (\"%s\\n\" : : \"i\" (0), %s \\\n", jmp, addr);
+	for (j = 0; j < id; j++)
+		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+        printf("\t       ); }\\\n");
+    }
 }
 
 static void asm_regs_exit(int id, int has_bn)
 {
-    printf("\t    asm volatile (\"move.l %%sp@+,%%a5\\n\"); \\\n");
+    /* Get the return code */
+    printf("\t   asm volatile (\"\" : \"=r\" (_ret) : : \"%%a0\", \"%%a1\", \"%%d1\", \"cc\", \"memory\"); \\\n");
 
     /* Save retval */
     printf("\t  (t)_ret; \\\n");
@@ -95,21 +127,21 @@ static void asm_regs_exit(int id, int has_bn)
 static void aros_ufc(int id)
 {
 	int i;
+	char jmp[256];
+
 	printf("#define AROS_UFC%d(t,n", id);
 	for (i = 0; i < id; i++)
 		printf(",a%d", i + 1);
 	printf(") \\\n");
 	printf("\t({ APTR _n = (n);\\\n");
-	asm_regs_init(i, 0);
-	printf("\t\t\"pea.l .Lufc%d_%%c1\\n\" \\\n", id);
-	printf("\t\t\"move.l %%0, %%%%sp@-\\n\" \\\n");
-	printf("\t\t: : \\\n");
-	printf("\t\t  \"r\" (_n), \"i\" (__LINE__) \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", i + 1);
-	printf("\t\t); \\\n");
-	printf("\t   asm volatile (\"rts\\n.Lufc%d_%%c0:\\n\" : : \"i\" (__LINE__) : ); \\\n", id);
-	printf("\t   asm volatile (\"\" : \"=r\" (_ret) : : \"%%a0\", \"%%a1\", \"%%d1\", \"cc\", \"memory\"); \\\n");
+	snprintf(jmp, sizeof(jmp), "pea.l .Lufc%d_%%c2\\n"
+		                   "move.l %%1, %%%%sp@-\\n"
+		                   "rts\\n"
+		                   ".Lufc%d_%%c2:\\n"
+		                   , id, id);
+	jmp[sizeof(jmp)-1]=0;
+	asm_regs_init(i, 0, jmp, "\"r\" (_n), \"i\" (__LINE__)");
+
 	asm_regs_exit(i, 0);
 	printf("\t  })\n\n");
 }
@@ -122,14 +154,7 @@ void aros_lc(int id)
 		printf("a%d,", i + 1);
 	printf("bt,bn,o,s) \\\n");
 	printf("\t({ \\\n");
-	asm_regs_init(id, 1);
-	printf("\t\t\"jsr %%c0(%%%%a6)\" \\\n");
-	printf("\t\t: : \\\n");
-	printf("\t\t  \"i\" (-1 * (o) * LIB_VECTSIZE) \\\n");
-	for (i = 0; i < id; i++)
-		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", i + 1);
-	printf("\t\t, \"r\" (_bn)); \\\n");
-	printf("\t   asm volatile (\"\" : \"=r\" (_ret) : : \"%%a0\", \"%%a1\", \"%%d1\", \"cc\", \"memory\"); \\\n");
+	asm_regs_init(id, 1, "jsr %c1(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
 	asm_regs_exit(id, 1);
 	printf("\t  })\n\n");
 }
@@ -144,9 +169,9 @@ void aros_lh(int id, int is_ignored)
 	printf("bt,bn,o,s) \\\n");
 	printf("\tt AROS_SLIB_ENTRY(n,s) (void) {");
 	for (i = 0; i < id; i++)
-		printf(" \\\n\t__AROS_LPA(a%d) __attribute__((unused)) __AROS_LCA(a%d) = ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_LPA(a%d))__r;});", i+1, i+1, i+1, i+1);
+		printf(" \\\n\t__AROS_LPA(a%d) __attribute__((unused)) __AROS_LCA(a%d) = __AROS_ISREG(a%d,__AROS_FP_REG) ? (__AROS_LPA(a%d))(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_LPA(a%d))__r;});", i+1, i+1, i+1, i+1, i+1, i+1);
 	if (!is_ignored)
-		printf(" \\\n\tregister bt __attribute__((unused)) bn = ({register ULONG __r asm(\"%%a6\");(bt)__r;});");
+		printf(" \\\n\tregister bt __attribute__((unused)) bn = __AROS_ISREG(bn,bt,A6,__AROS_FP_REG) ? (bt)(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(\"%%a6\");(bt)__r;});");
 	printf("\n");
 }
 
