@@ -203,14 +203,17 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                	       D(bug("creating BootNode\n"));
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
                                	       D(bug("calling bootblock!\n", buffer));
-                               	       asm volatile ("nop\nnop\nmove.l %2,%%a1\n"
-                               	       		     "move.l %3,%%a6\n"
+                               	       asm volatile (
+                               	       	             "move.l %2,%%a1\n"
                                	       		     "move.l %4,%%a0\n"
+                               	       		     "move.l %%a6,%%sp@-\n"
+                               	       		     "move.l %3,%%a6\n"
                                	       		     "jsr.l (%%a0)\n"
+                               	       		     "move.l %%sp@+,%%a6\n"
                                	       		     "move.l %%d0,%0\n"
                                	       		     "move.l %%a0,%1\n"
                                	       		     : "=m" (retval), "=m" (init)
-                               	       		     : "m" (io), "m" (SysBase),
+                               	       		     : "m" (io), "r" (SysBase),
                                	       		       "m" (bootcode)
                                	       		     : "%d0", "%d1", "%a0", "%a1");
                                	       D(bug("bootblock: D0=0x%08x A0=%p\n", retval, init));
