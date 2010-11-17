@@ -52,6 +52,11 @@ while true; do
 	    cc_cpu=i386
 	    break
 	    ;;
+        x86_64)
+	    echo "$OK"
+	    cc_cpu=x86_64
+	    break
+	    ;;
 	*)
 	    echo "$FAILED"
 
@@ -127,7 +132,7 @@ while true; do
     fi
 
     while true; do
-        if ! test -a $aros_sdk_path; then
+        if ! test -d $aros_sdk_path; then
             echo -n "The directory ${B}$aros_sdk_path${N} does not exist, "
 	    echo -n "create it [${B}yes${N}]? "
             read answer
