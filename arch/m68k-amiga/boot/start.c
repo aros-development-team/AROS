@@ -29,7 +29,7 @@ extern void __clear_bss(const struct KernelBSS *bss);
 
 #define CODE_ROM_CHECK	RGB( 4,  4, 4)
 #define CODE_RAM_CHECK	RGB( 9,  9, 9)
-#define CODE_EXEC_CHECK	RGB( 9,  0, 9)
+#define CODE_EXEC_CHECK	RGB( 1,  1, 1)
 #define CODE_TRAP_FAIL	RGB(12, 12, 0)
 
 static void Exec_ScreenCode(UWORD code)
