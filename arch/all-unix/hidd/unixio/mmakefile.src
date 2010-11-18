@@ -1,13 +1,15 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-unixio-kobj : kernel-kernel-includes
+#MM kernel-unixio : kernel-kernel-includes hidd-unixio-stubs
+#MM kernel-unixio-kobj : kernel-kernel-includes hidd-unixio-stubs
 
-USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
+USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
 %build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd \
-    files=unixio_class \
-    compiler=kernel
+    files=unixio_class uselibs="hiddstubs oop rom"
 
 STUBS := unixio_stubs
 
@@ -29,4 +31,3 @@ $(GENINCDIR)/hidd/%.h : include/%.h
 #MM
 setup-includes :
 	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/hidd $(AROS_INCLUDES)/hidd
-
