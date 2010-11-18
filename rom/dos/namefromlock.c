@@ -121,10 +121,14 @@ struct MyExAllData
     name = buffer + length;
     *--name = 0;
     curlock = fh->fh_Unit;
-    
+
+    iofs->io_DirPos = -1;
+
     /* Loop over path */
     do
     {
+    	LONG last_dirpos = iofs->io_DirPos;
+
     	/* Read name of current lock (into the user supplied buffer) */
     	iofs->IOFS.io_Unit  	    	    = curlock;
     	iofs->IOFS.io_Command	    	    = FSA_EXAMINE;
@@ -135,6 +139,12 @@ struct MyExAllData
     	DosDoIO(&iofs->IOFS);
 
     	error = iofs->io_DosError;
+
+	/* Detect filesystems that always return a type
+	 * of ST_USERDIR when queried for '/' at the root.
+	 */
+    	if (!error && iofs->io_DirPos == last_dirpos && ead->ed_Type == ST_USERDIR)
+    	    ead->ed_Type = ST_ROOT;
     
     	/* Move name to the top of the buffer. */
     	if(!error)
