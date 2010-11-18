@@ -11,9 +11,10 @@
 
 struct Library *OOPBase = NULL;
 
-int main (int argc, char **argv) {
+int main (int argc, char **argv)
+{
     int failed = 1;
-    HIDD *unixio = NULL;
+    OOP_Object *unixio = NULL;
     int fd = -1;
     int nbytes, ioerr;
     char buf[1024];
@@ -117,7 +118,7 @@ int main (int argc, char **argv) {
     printf("now type something on the unix console that you\n"
            "ran aros from, then press enter. I'll wait...\n");
 
-    Hidd_UnixIO_Wait(unixio, 0, vHidd_UnixIO_Read, NULL, NULL, SysBase);
+    Hidd_UnixIO_Wait(unixio, 0, vHidd_UnixIO_Read);
 
     printf("reading it... ");
     nbytes = Hidd_UnixIO_ReadFile(unixio, 0, buf, 1024, &ioerr);
@@ -132,7 +133,7 @@ int main (int argc, char **argv) {
 
 exit:
     if (fd >= 0) Hidd_UnixIO_CloseFile(unixio, fd, NULL);
-    if (unixio != NULL)  OOP_DisposeObject((OOP_Object) unixio);
+    if (unixio != NULL)  OOP_DisposeObject(unixio);
     if (OOPBase != NULL) CloseLibrary(OOPBase);
 
     return failed ? 1 : 0;
