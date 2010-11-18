@@ -113,7 +113,7 @@ do                                                       \
 		".globl fname ; "                      \
 		"fname : "                             \
 		"movl bname , %%a0; "                  \
-		"movl vec(%%a0),%%a0;"                 \
+		"lea.l vec(%%a0),%%a0;"                 \
 		"jmp (%%a0);\n"                        \
 		"#define EMITALIAS(fname, alias) "     \
 		".weak alias; .set alias, fname\n"
