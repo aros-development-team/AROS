@@ -191,6 +191,7 @@ int __startup startup(struct TagItem *msg)
 
     mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
+    InitCode(RTF_COLDSTART, 0);
 
     mykprintf("[Kernel] leaving startup!\n");
     HostIFace->HostLib_Close(hostlib, NULL);
