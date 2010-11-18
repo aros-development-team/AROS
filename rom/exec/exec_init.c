@@ -52,7 +52,7 @@ const struct Resident Exec_resident =
     RTF_SINGLETASK,
     VERSION_NUMBER,
     NT_LIBRARY,
-    105,
+    120,
     (STRPTR)name,
     (STRPTR)&version[6],
     &GM_UNIQUENAME(init)
