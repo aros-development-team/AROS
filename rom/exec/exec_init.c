@@ -169,13 +169,6 @@ AROS_UFH5S(void, VBlankServer,
 
 extern ULONG SoftIntDispatch();
 
-static LONG doInitCode(ULONG startClass, ULONG version)
-{
-    InitCode(startClass, version);
-
-    return 0;
-}
-
 THIS_PROGRAM_HANDLES_SYMBOLSETS
 DEFINESET(INITLIB)
 
@@ -322,37 +315,12 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     D(debugmem());
 
     /* Call platform-specific init code (if any) */
-    if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase))
-	return NULL;
+    set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
 
-    /* Attempt to allocate a real stack, and switch to it. */
-    do {
-    	struct StackSwapStruct sss;
-    	struct StackSwapArgs ssa;
-    	const ULONG size = AROS_STACKSIZE * sizeof(ULONG);
-
-    	sss.stk_Lower = AllocMem(size, MEMF_PUBLIC);
-    	if (sss.stk_Lower == NULL) {
-    	    bug("Can't allocate a new stack for Exec... Strange.\n");
-    	    break;
-    	}
-    	sss.stk_Upper = sss.stk_Lower + size;
-    	sss.stk_Pointer = sss.stk_Upper;
-
-    	ssa.Args[0] = RTF_COLDSTART;
-    	ssa.Args[1] = 0;
-
-    	NewStackSwap(&sss, doInitCode, &ssa);
-    } while (0);
-
-    /* This will cause everything else to run. This call will not return.
-	This is because it eventually falls into strap, which will call
-	the bootcode, which itself is not supposed to return. It is up
-	to the DOS (whatever it is) to Permit(); RemTask(NULL);
-    */
-    InitCode(RTF_COLDSTART, 0);
-
-    /* There had better be some kind of task waiting to run. */
+    /*
+     * This code returns, allowing more RTF_SINGLETASK modules to get initialized after us.
+     * Kernel.resource's startup code has to InitCode(RTF_COLDSTART) itself.
+     */
     return NULL;
 
     AROS_USERFUNC_EXIT

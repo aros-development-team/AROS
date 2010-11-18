@@ -263,6 +263,13 @@ static struct MemHeader *SetupMemory(CONST_STRPTR name, BYTE pri,
 	return mh;
 }
 
+static LONG doInitCode(ULONG startClass, ULONG version)
+{
+    InitCode(startClass, version);
+
+    return 0;
+}
+
 void start(IPTR chip_start, ULONG chip_size,
            IPTR fast_start, ULONG fast_size,
            IPTR ss_stack_upper, IPTR ss_stack_lower)
@@ -422,6 +429,26 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	/* Ok, let's start the system */
 	InitCode(RTF_SINGLETASK, 0);
+
+	/* Attempt to allocate a real stack, and switch to it. */
+	do {
+	    struct StackSwapStruct sss;
+	    struct StackSwapArgs ssa;
+	    const ULONG size = AROS_STACKSIZE * sizeof(ULONG);
+	
+	    sss.stk_Lower = AllocMem(size, MEMF_PUBLIC);
+	    if (sss.stk_Lower == NULL) {
+		bug("Can't allocate a new stack for Exec... Strange.\n");
+		break;
+	    }
+	    sss.stk_Upper = sss.stk_Lower + size;
+	    sss.stk_Pointer = sss.stk_Upper;
+
+	    ssa.Args[0] = RTF_COLDSTART;
+	    ssa.Args[1] = 0;
+
+	    NewStackSwap(&sss, doInitCode, &ssa);
+	} while (0);
 
 	/* We shouldn't get here */
 	DebugPuts("[DOS Task failed to start]\n");
