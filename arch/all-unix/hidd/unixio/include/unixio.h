@@ -2,25 +2,15 @@
 #define HIDD_UNIXIO_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO Include File
     Lang: english
 */
 
-#ifndef HIDD_HIDD_H
-#   include <hidd/hidd.h>
-#endif
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef EXEC_PORTS_H
-#   include <exec/ports.h>
-#endif
-#ifndef EXEC_EXECBASE_H
-#   include <exec/execbase.h>
-#endif
+#include <exec/ports.h>
+#include <oop/oop.h>
 
 #define CLID_Hidd_UnixIO "unixio.hidd"
 #define IID_Hidd_UnixIO	"I_Hidd_UnixIO"
@@ -36,6 +26,14 @@ struct uioMessage
     void *callbackdata;
 };
 
+struct uioInterrupt
+{
+    struct MinNode Node;
+    int		   fd;
+    int		   mode;
+    void	   (*handler)(int, int, void *);
+    void	   *handlerData;
+};
 
 enum {
     moHidd_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
@@ -46,6 +44,8 @@ enum {
     moHidd_UnixIO_WriteFile,
     moHidd_UnixIO_IOControlFile,    
     moHidd_UnixIO_ReadFile,
+    moHidd_UnixIO_AddInterrupt,
+    moHidd_UnixIO_RemInterrupt,
     num_Hidd_UnixIO_Attrs
     
 };
@@ -56,8 +56,6 @@ struct uioMsg
     STACKULONG um_Filedesc;
     STACKULONG um_Filedesc_Type;
     STACKULONG um_Mode;
-    APTR um_CallBack;
-    APTR um_CallBackData;
 };
 
 struct uioMsgAsyncIO
@@ -118,30 +116,42 @@ struct uioMsgReadFile
     int        *um_ErrNoPtr;
 };
 
-/* UnixIO HIDD Values */
+struct uioMsgAddInterrupt
+{
+    STACKULONG	         um_MethodID;
+    struct uioInterrupt *um_Int;
+};
+
+struct uioMsgRemInterrupt
+{
+    STACKULONG	         um_MethodID;
+    struct uioInterrupt *um_Int;
+};
+
+/* UnixIO OOP_Object *Values */
 #define vHidd_UnixIO_Read       0x1
 #define vHidd_UnixIO_Write      0x2
 #define vHidd_UnixIO_RW         (vHidd_UnixIO_Read | vHidd_UnixIO_Write)
 #define vHidd_UnixIO_Abort	0x4
 #define vHidd_UnixIO_Keep       0x8
+#define vHidd_UnixIO_Error	0x10
 
 /* Types of Filedescriptors */
 #define vHidd_UnixIO_Terminal   0x1
 #define vHidd_UnixIO_Socket     0x2
 
 /* Stubs */
-IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode, APTR callback,  APTR callbackdata, struct ExecBase *);
-HIDD *New_UnixIO(struct Library * /* OOPBase */, struct ExecBase *);
-IPTR Hidd_UnixIO_AsyncIO(HIDD *h, ULONG fd, ULONG fd_type, struct MsgPort *port, ULONG mode, struct ExecBase *);
-VOID Hidd_UnixIO_AbortAsyncIO(HIDD *h, ULONG fd, struct ExecBase *);
+IPTR Hidd_UnixIO_Wait(OOP_Object *h, ULONG fd, ULONG mode);
+IPTR Hidd_UnixIO_AsyncIO(OOP_Object *h, ULONG fd, ULONG fd_type, struct MsgPort *port, ULONG mode, struct ExecBase *);
+VOID Hidd_UnixIO_AbortAsyncIO(OOP_Object *h, ULONG fd, struct ExecBase *);
 
-int Hidd_UnixIO_OpenFile(HIDD *o, const char *filename, int flags, int mode, int *errno_ptr);
-VOID Hidd_UnixIO_CloseFile(HIDD *o, int fd, int *errno_ptr);
-int Hidd_UnixIO_ReadFile(HIDD *o, int fd, void *buffer, int count, int *errno_ptr);
-int Hidd_UnixIO_WriteFile(HIDD *o, int fd, const void *buffer, int count, int *errno_ptr);
-int Hidd_UnixIO_IOControlFile(HIDD *o, int fd, int request, void *param, int *errno_ptr);
-
-
+int Hidd_UnixIO_OpenFile(OOP_Object *o, const char *filename, int flags, int mode, int *errno_ptr);
+VOID Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr);
+int Hidd_UnixIO_ReadFile(OOP_Object *o, int fd, void *buffer, int count, int *errno_ptr);
+int Hidd_UnixIO_WriteFile(OOP_Object *o, int fd, const void *buffer, int count, int *errno_ptr);
+int Hidd_UnixIO_IOControlFile(OOP_Object *o, int fd, int request, void *param, int *errno_ptr);
+int Hidd_UnixIO_AddInterrupt(OOP_Object *o, struct uioInterrupt *interrupt);
+void Hidd_UnixIO_RemInterrupt(OOP_Object *o, struct uioInterrupt *interrupt);
 
 #endif /* HIDD_UNIXIO_H */
 

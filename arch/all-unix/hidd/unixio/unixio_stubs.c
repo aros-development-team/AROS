@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -18,7 +18,7 @@
 
 #define OOPBase (OOP_OCLASS(o)->OOPBasePtr)
 
-IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata, struct ExecBase * SysBase)
+IPTR Hidd_UnixIO_Wait(OOP_Object *o, ULONG fd, ULONG mode)
 {
      static OOP_MethodID mid;
      struct uioMsg  	 p, *msg = &p;
@@ -29,13 +29,11 @@ IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbac
      p.um_MethodID  	= mid;
      p.um_Filedesc  	= fd;
      p.um_Mode	    	= mode;
-     p.um_CallBack  	= callback;
-     p.um_CallBackData  = callbackdata;
          
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, ULONG fd_type, struct MsgPort * port, ULONG mode, struct ExecBase * SysBase)
+IPTR Hidd_UnixIO_AsyncIO(OOP_Object *o, ULONG fd, ULONG fd_type, struct MsgPort * port, ULONG mode, struct ExecBase * SysBase)
 {
      static OOP_MethodID    mid;
      struct uioMsgAsyncIO   p, *msg = &p;
@@ -53,7 +51,7 @@ IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, ULONG fd_type, struct MsgPort * port
 }
 
 
-VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd, struct ExecBase * SysBase)
+VOID Hidd_UnixIO_AbortAsyncIO(OOP_Object *o, ULONG fd, struct ExecBase * SysBase)
 {
      static OOP_MethodID    	mid;
      struct uioMsgAbortAsyncIO  p, *msg = &p;
@@ -67,7 +65,7 @@ VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd, struct ExecBase * SysBase)
      OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-int Hidd_UnixIO_OpenFile(HIDD *o, const char *filename, int flags, int mode, int *errno_ptr)
+int Hidd_UnixIO_OpenFile(OOP_Object *o, const char *filename, int flags, int mode, int *errno_ptr)
 {
      static OOP_MethodID    mid;
      struct uioMsgOpenFile  p, *msg = &p;
@@ -84,7 +82,7 @@ int Hidd_UnixIO_OpenFile(HIDD *o, const char *filename, int flags, int mode, int
      return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-VOID Hidd_UnixIO_CloseFile(HIDD *o, int fd, int *errno_ptr)
+VOID Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr)
 {
      static OOP_MethodID    mid;
      struct uioMsgCloseFile p, *msg = &p;
@@ -99,7 +97,7 @@ VOID Hidd_UnixIO_CloseFile(HIDD *o, int fd, int *errno_ptr)
      OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-int Hidd_UnixIO_ReadFile(HIDD *o, int fd, void *buffer, int count, int *errno_ptr)
+int Hidd_UnixIO_ReadFile(OOP_Object *o, int fd, void *buffer, int count, int *errno_ptr)
 {
      static OOP_MethodID    mid;
      struct uioMsgReadFile p, *msg = &p;
@@ -116,7 +114,7 @@ int Hidd_UnixIO_ReadFile(HIDD *o, int fd, void *buffer, int count, int *errno_pt
      return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-int Hidd_UnixIO_WriteFile(HIDD *o, int fd, const void *buffer, int count, int *errno_ptr)
+int Hidd_UnixIO_WriteFile(OOP_Object *o, int fd, const void *buffer, int count, int *errno_ptr)
 {
      static OOP_MethodID    mid;
      struct uioMsgWriteFile p, *msg = &p;
@@ -133,7 +131,7 @@ int Hidd_UnixIO_WriteFile(HIDD *o, int fd, const void *buffer, int count, int *e
      return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-int Hidd_UnixIO_IOControlFile(HIDD *o, int fd, int request, void *param, int *errno_ptr)
+int Hidd_UnixIO_IOControlFile(OOP_Object *o, int fd, int request, void *param, int *errno_ptr)
 {
      static OOP_MethodID    	mid;
      struct uioMsgIOControlFile p, *msg = &p;
@@ -150,15 +148,30 @@ int Hidd_UnixIO_IOControlFile(HIDD *o, int fd, int request, void *param, int *er
      return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-/* The below function is just a hack to avoid
-   name conflicts inside intuition_driver.c
-*/
-
-#undef OOPBase
-
-HIDD *New_UnixIO(struct Library *OOPBase, struct ExecBase * SysBase)
+int Hidd_UnixIO_AddInterrupt(OOP_Object *o, struct uioInterrupt *interrupt)
 {
-   struct TagItem tags[] = {{ TAG_END, 0 }};
-   
-   return (HIDD)OOP_NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
+    static OOP_MethodID mid;
+    struct uioMsgAddInterrupt p, *msg = &p;
+    
+    if (!mid)
+	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AddInterrupt);
+
+    p.um_MethodID  = mid;
+    p.um_Int	    = interrupt;
+
+    return OOP_DoMethod(o, (OOP_Msg)msg);
+}
+
+void Hidd_UnixIO_RemInterrupt(OOP_Object *o, struct uioInterrupt *interrupt)
+{
+    static OOP_MethodID mid;
+    struct uioMsgRemInterrupt p, *msg = &p;
+
+    if (!mid)
+     	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_RemInterrupt);
+
+    p.um_MethodID  = mid;
+    p.um_Int	    = interrupt;
+     
+    OOP_DoMethod(o, (OOP_Msg)msg);
 }
