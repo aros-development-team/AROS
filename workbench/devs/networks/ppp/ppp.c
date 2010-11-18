@@ -11,6 +11,19 @@
 #define CONTROL_SKIP_HEADER2 3
 #define CONTROL_READ_DATA 4
 
+#define LCP 0xc021
+#define PAP 0xc023
+#define IPCP 0x8021
+#define IP 0x0021
+
+#define REQUEST 1
+#define ACK  2
+#define NAK 3
+#define REJECT  4
+#define TERMINATE_REQUEST 5
+#define TERMINATE_ACK 6
+#define PROTOCOL_REJECT 8
+
 struct packet {
 	ULONG packetsize;
 	UBYTE header[4];
@@ -23,7 +36,6 @@ void ConfNetWork();
 
 void Set_phase(UBYTE ph);
 
-void byte_received(UBYTE c);
 void ProcessPacket(struct packet * p);
 void SendPPP_Packet(struct packet *);
 void EscapePacket(struct packet *);
@@ -32,19 +44,12 @@ void AddChkSum(struct packet * );
 void AddByte(struct packet *p,const UBYTE b);
 
 void LCP_packet(struct packet *);
-void SendConfACK(struct packet *);
 void SendConfReq();
-void SendConfNack( UBYTE *ptr, ULONG len,BYTE num);
-void SendConfReject( UBYTE *ptr, ULONG len,BYTE num);
 void SendEchoReply(struct packet *);
 void SendTerminateReq();
 
 void IPCP_Packet(struct packet * );
-void Send_IPCP_ack();
 void Send_IPCP_req();
-void Send_IPCP_Nack( UBYTE *ptr, ULONG len,BYTE num);
-void Send_IPCP_Reject( UBYTE *ptr, ULONG len,BYTE num);
-
 
 void PAP_Packet(struct packet * );
 void Send_PAP_Req();
@@ -408,7 +413,7 @@ void inline AddByte(struct packet *p,const UBYTE b){
 	p->packetsize ++;
 }
 
-
+/*
 void  byte_received( UBYTE c ){
 	//  bug("Control=%d c=%d,%c,%x \n",Control,c,c,c);
 	
@@ -466,6 +471,69 @@ void  byte_received( UBYTE c ){
 		return;
 	}
 }
+*/
+
+void  bytes_received( UBYTE *bytes,ULONG len ){
+	UBYTE c;
+	ULONG lenT=len;
+	
+	while(lenT--){
+		c = *bytes++;
+		do{
+	//  bug("Control=%d c=%d,%c,%x \n",Control,c,c,c);
+	
+			if( c == 0x7e ){   // start/end mark
+		
+				if( Control == CONTROL_READ_DATA ){
+					// bug("stop\n");
+					Control = CONTROL_SEARCH_BEGIN;
+					ProcessPacket(&recdpacket);
+					recdpacket.packetsize = 0;
+					break;
+				}else if( Control == CONTROL_SEARCH_BEGIN ){
+					//  bug("start\n");
+					recdpacket.packetsize=0;
+					Control = CONTROL_SKIP_HEADER1;
+					break;
+				}
+				bug("PPP control sync error, unexpected start/end mark!\n");
+		
+			}else if( c == 0x7d ){ // next byte is escaped
+				escape = TRUE;
+				break;
+			}	
+	
+			if( escape ){
+				c ^= 0x20;
+				escape = FALSE;
+			}	 
+	
+			if( Control == CONTROL_READ_DATA ){
+				AddByte(&recdpacket,c);
+				break;
+			}
+
+			else if( Control == CONTROL_SKIP_HEADER1 ){
+				if( c == 0xff ){ 
+					Control = CONTROL_SKIP_HEADER2;
+					break;
+				}
+				bug("PPP control sync error, byte=0x%x, should be 0xff\n",c);
+				Control = CONTROL_SEARCH_BEGIN;
+				break;
+			}
+	
+			else if( Control == CONTROL_SKIP_HEADER2 ){
+				if( c == 0x03 ){ 
+					Control = CONTROL_READ_DATA;
+				}else{
+					bug("PPP control sync error, byte=0x%x, should be 0x03\n",c);
+					Control = CONTROL_SEARCH_BEGIN;
+				}
+			}
+		}while(0);
+	}
+}
 
 
 void ProcessPacket(struct packet * p){
@@ -482,20 +550,20 @@ void ProcessPacket(struct packet * p){
 	type = ( p->data[0] << 8 ) | p->data[1];
 	switch ( type ){
 
-	case 0xc021:
+	case LCP:
 		LCP_packet(p);
 		break;
 
-	case 0x8021:
+	case IPCP:
 		IPCP_Packet(p);
 		break;
 
-	case 0xc023:
+	case PAP:
 		PAP_Packet(p);
 		break;
 
-	case 0x0021:
-		//bug("IP packet received\n");
+	case IP:
+	//	bug("IP packet received,size %d\n",p->packetsize);
 		if( ( p->packetsize - 2 ) <=  1500 ){
 			Incoming_IP_Packet( ppp_libbase , p->data + 2  , p->packetsize - 2  );
 		}else{
@@ -541,7 +609,7 @@ void PAP_Packet(struct packet * f){
 		break;
 
 	case 3:
-		bug("PAP NAck received\n");
+		bug("PAP Nak received\n");
 		break;
 
 	case 4:
@@ -584,6 +652,42 @@ void Send_PAP_Req(){
 	SendPPP_Packet(&p);
 }
 
+void Send_response( UWORD type,UBYTE code,UBYTE *ptr,ULONG len,BYTE num){
+
+	struct packet p;
+	ULONG i;
+	bug("\nsend ");
+	if(type==IPCP){ bug("IPCP "); }else
+	if(type==LCP){ bug("LCP "); }else 
+	bug("unknown type 0x%x\n",type);
+	
+	if(code==NAK){ bug("Nak\n"); }else
+	if(code==REJECT){ bug("Reject\n"); }else 
+	bug("unknown code 0x%x\n",code);
+	
+	p.packetsize=0;
+	AddByte( &p , type >> 8 );
+	AddByte( &p , type & 0x00ff );
+	AddByte( &p , code); 
+	AddByte( &p , num ); // number
+	AddByte( &p , 0x00 ); // size
+	AddByte( &p , 0x00 ); // <- data[5]
+
+	for( i=0 ; i<len ;i++ ) AddByte( &p , ptr[i] );
+
+	p.data[5] = p.packetsize - 2; // size
+	printpacket(&p);
+	AddChkSum(&p);
+	SendPPP_Packet(&p);
+}
+
+void Send_Ack(struct packet *p){
+	bug("\nsend Ack\n");
+	p->data[2]=ACK;
+	printpacket(p);
+	AddChkSum(p);
+	SendPPP_Packet(p);
+}
 
 void IPCP_Packet(struct packet * p){
 	bug("\nIPCP_Packet size=%d\n",p->packetsize);
@@ -592,7 +696,7 @@ void IPCP_Packet(struct packet * p){
 	ULONG i;
 	UBYTE *ptr = p->data + 6 ;
 	UBYTE type,len;
-
+/*
 	if( p->data[2] >= 1 && p->data[2] <= 4 ){
 		while( (IPTR)ptr < (IPTR)( p->data + p->packetsize ) ){
 			type = ptr[0];
@@ -603,17 +707,19 @@ void IPCP_Packet(struct packet * p){
 			ptr += len;
 		}
 	}
-
+*/
 	switch ( p->data[2] ){
 
-	case 1:
+	case REQUEST:
 	
 		bug("ipcp Req Received\n");		
 		BOOL ok = TRUE;
 		ptr = p->data + 6 ;
 		while( (IPTR)ptr < (IPTR)( p->data + p->packetsize ) ){
 			type = ptr[0];
-			len =  ptr[1];
+			len =  ptr[1];		
+			bug("  Type %d,len %d: ",type,len);
+			for( i=0 ; i < len ; i++ ) bug("%x,",ptr[i]);bug("\n");
 
 			if( type == 3 ){ // remote IP address
 		    	RemoteIP[0]=ptr[2];
@@ -626,7 +732,7 @@ void IPCP_Packet(struct packet * p){
 			
 			else {
 				bug("  Unknown type %d ,send reject response...\n",type);
-				Send_IPCP_Reject( ptr , len , p->data[3] );
+				Send_response( IPCP , REJECT , ptr , len , p->data[3] );
 				ok = FALSE;
 				break;
 			}
@@ -636,7 +742,7 @@ void IPCP_Packet(struct packet * p){
 
 		if(ok){
 			
-			Send_IPCP_ack(p);
+			Send_Ack(p);
 			
 			device_conf_ok = TRUE;
 			if( ( phase == PPP_PHASE_PROTOCOL_CONF ) && my_conf_ok ){
@@ -646,7 +752,7 @@ void IPCP_Packet(struct packet * p){
 
 	break;
 		
-	case 2:
+	case ACK:
 	
 		bug("IPCP Ack Received\n");
 	    if( (LocalIP[0] | LocalIP[1] | LocalIP[2] | LocalIP[3]) == 0 ){
@@ -661,15 +767,17 @@ void IPCP_Packet(struct packet * p){
 		
 	break;
 
-	case 3:
+	case NAK:
 	
-		bug("ipcp NAck received\n");
+		bug("ipcp Nak received\n");
 		
 		ptr = p->data + 6 ;
 		while( (IPTR)ptr < (IPTR)( p->data + p->packetsize ) ){
 			type = ptr[0];
 			len =  ptr[1];
-
+			bug("  Type %d,len %d: ",type,len);
+			for( i=0 ; i < len ; i++ ) bug("%x,",ptr[i]);bug("\n");
+			
 			if( type == 3 ){ // local IP address
 		    	LocalIP[0]=ptr[2];
 				LocalIP[1]=ptr[3];
@@ -704,7 +812,7 @@ void IPCP_Packet(struct packet * p){
 		
 	break;
 
-	case 4:
+	case REJECT:
 		bug("IPCP Reject received\n");
 	break;
 
@@ -714,16 +822,6 @@ void IPCP_Packet(struct packet * p){
 
 	}
 }
-
-
-void Send_IPCP_ack(struct packet *p){
-	bug("\nsend IPCP act\n");
-	p->data[2]=2;
-	printpacket(p);
-	AddChkSum(p);
-	SendPPP_Packet(p);
-}
-
 
 void Send_IPCP_req(){
 	struct packet p;
@@ -768,51 +866,6 @@ void Send_IPCP_req(){
 	SendPPP_Packet(&p);
 }
 
-void Send_IPCP_Nack( UBYTE *ptr, ULONG len,BYTE num){
-
-	struct packet p;
-	ULONG i;
-	bug("\nsend IPCP Nack\n");
-	p.packetsize=0;
-	AddByte( &p , 0x80 );//ipcp
-	AddByte( &p , 0x21 );
-	AddByte( &p , 0x03 ); // conf Nact
-	AddByte( &p , num ); // number
-	AddByte( &p , 0x00 ); // size
-	AddByte( &p , 0x00 ); // <- data[5]
-
-	for( i=0 ; i<len ;i++ ) AddByte( &p , ptr[i] );
-
-	p.data[5] = p.packetsize - 2; // size
-	printpacket(&p);
-	AddChkSum(&p);
-	SendPPP_Packet(&p);
-}
-
-
-void Send_IPCP_Reject( UBYTE *ptr, ULONG len,BYTE num){
-
-	struct packet p;
-	ULONG i;
-	bug("\nsend IPCP reject\n");
-	p.packetsize=0;
-	AddByte( &p , 0x80 );//ipcp
-	AddByte( &p , 0x21 );
-	AddByte( &p , 0x04 ); // conf reject
-	AddByte( &p , num ); // number
-	AddByte( &p , 0x00 ); // size
-	AddByte( &p , 0x00 ); // <- data[5]
-
-	for( i=0 ; i<len ;i++ ) AddByte( &p , ptr[i] );
-
-	p.data[5] = p.packetsize - 2; // size
-	printpacket(&p);
-	AddChkSum(&p);
-	SendPPP_Packet(&p);
-}
-
-
-
 
 void LCP_packet(struct packet *p){
 
@@ -822,7 +875,7 @@ void LCP_packet(struct packet *p){
 	ULONG i;
 	UBYTE *ptr ;
 	UBYTE type,len;
-
+/*
 	if( p->data[2] >= 1 && p->data[2] <= 4 ){
 		ptr = p->data + 6 ;
 		while( (IPTR)ptr < (IPTR)( p->data + p->packetsize ) ){
@@ -834,11 +887,11 @@ void LCP_packet(struct packet *p){
 			ptr += len;
 		}
 	}
-
+*/
 	switch ( p->data[2] ){
 
-	case 1:
-		bug("LCP Req Received\n");
+	case REQUEST:
+		bug("LCP Request Received\n");
 
 		BOOL ok = TRUE;
 
@@ -846,7 +899,10 @@ void LCP_packet(struct packet *p){
 		while( (IPTR)ptr < (IPTR)( p->data + p->packetsize ) ){
 			type = ptr[0];
 			len =  ptr[1];
-
+	
+			bug("  Type %d,len %d: ",type,len);
+			for( i=0 ; i < len ; i++ ) bug("%x,",ptr[i]);bug("\n");
+			
 			if( type == 2 ){ // async control character map
 				async_map = ( ptr[2] << 24) | ( ptr[3] << 16) | ( ptr[4] << 8) | (ptr[5] );
 				bug("  Async_map = %x\n",async_map);
@@ -856,7 +912,7 @@ void LCP_packet(struct packet *p){
 				//  if( mru !=1500 ){  // unlikely
 				//  ptr[2] = 0x05;
 				//  ptr[3] = 0xdc;
-				//  SendConfNack( ptr , len , p->data[3] );
+				//  SendConfNak( ptr , len , p->data[3] );
 				//  ok = FALSE;
 				//  break;
 				//  }
@@ -869,7 +925,7 @@ void LCP_packet(struct packet *p){
 				}else{
 					ptr[2] = 0xc0; // PAP
 					ptr[3] = 0x23;
-					SendConfNack( ptr , len , p->data[3] );
+					Send_response( LCP , NAK , ptr , len , p->data[3] );
 					ok = FALSE;
 					break;
 
@@ -877,7 +933,7 @@ void LCP_packet(struct packet *p){
 					ptr[2] = 0xc2; // CHAP md5
 					ptr[3] = 0x23;
 					ptr[4] = 0x5;
-					SendConfNack( ptr , 5 , p->data[3] );
+					SendConfNak( ptr , 5 , p->data[3] );
 					ok = FALSE;
 					break;
 					*/
@@ -886,7 +942,7 @@ void LCP_packet(struct packet *p){
 
 			else {
 				bug("  Unknown type %d ,send reject response...\n",type);
-				SendConfReject( ptr , len , p->data[3] );
+				Send_response( LCP , REJECT , ptr , len , p->data[3] );
 				ok = FALSE;
 				break;
 			}
@@ -896,7 +952,7 @@ void LCP_packet(struct packet *p){
 
 
 		if(ok){
-			SendConfACK(p);
+			Send_Ack(p);
 			device_conf_ok = TRUE;
 			if( phase == PPP_PHASE_CONFIGURATION &&
 					my_conf_ok &&
@@ -907,7 +963,7 @@ void LCP_packet(struct packet *p){
 
 		break;
 
-	case 2:
+	case ACK:
 		bug("LCP Ack Received !\n");
 		my_conf_ok = TRUE;
 		if( phase == PPP_PHASE_CONFIGURATION &&
@@ -918,11 +974,11 @@ void LCP_packet(struct packet *p){
 
 		break;
 
-	case 3:
-		bug("LCP NAck Received HELP !\n");
+	case NAK:
+		bug("LCP Nak Received HELP !\n");
 		break;
 
-	case 4:
+	case REJECT:
 		bug("LCP Reject Received HELP !\n");
 		break;
 
@@ -930,23 +986,22 @@ void LCP_packet(struct packet *p){
 		SendEchoReply(p);
 		break;
 
-	case 8:
+	case PROTOCOL_REJECT:
 		bug("LCP Protocol-Reject ( %d bytes ) Received WTF!???????\n" , p->packetsize );
 		break;
 
-	case 5:
+	case TERMINATE_REQUEST:
 		bug("LCP Terminate request Received :-(\n");
 		Set_phase( PPP_PHASE_DEAD );
 		break;
 
-	case 6:
+	case TERMINATE_ACK:
 		bug("LCP Terminate Act Received\n");
 		Set_phase( PPP_PHASE_DEAD );
 		break;
 
 	case 11:
 		bug("LCP Discard-Request Received ????\n");
-		//if( phase == PPP_PHASE_AUTHENTICATION ) Send_PAP_Req(); //huawei workaround
 		break;
 
 	case 12:
@@ -961,51 +1016,6 @@ void LCP_packet(struct packet *p){
 
 }
 
-
-void SendConfNack( UBYTE *ptr, ULONG len,BYTE num){
-
-	struct packet p;
-	ULONG i;
-	bug("\nsend LCP Nack\n");
-	p.packetsize=0;
-	AddByte( &p , 0xc0 );//LPC
-	AddByte( &p , 0x21 );
-	AddByte( &p , 0x03 ); // conf Nact
-	AddByte( &p , num ); // number
-	AddByte( &p , 0x00 ); // size
-	AddByte( &p , 0x00 ); // <- data[5]
-
-	for( i=0 ; i<len ;i++ ) AddByte( &p , ptr[i] );
-
-	p.data[5] = p.packetsize - 2; // size
-	printpacket(&p);
-	AddChkSum(&p);
-	SendPPP_Packet(&p);
-}
-
-
-void SendConfReject( UBYTE *ptr, ULONG len,BYTE num){
-
-	struct packet p;
-	ULONG i;
-	bug("\nsend LCP reject\n");
-	p.packetsize=0;
-	AddByte( &p , 0xc0 );//LPC
-	AddByte( &p , 0x21 );
-	AddByte( &p , 0x04 ); // conf reject
-	AddByte( &p , num ); // number
-	AddByte( &p , 0x00 ); // size
-	AddByte( &p , 0x00 ); // <- data[5]
-
-	for( i=0 ; i<len ;i++ ) AddByte( &p , ptr[i] );
-
-	p.data[5] = p.packetsize - 2; // size
-	printpacket(&p);
-	AddChkSum(&p);
-	SendPPP_Packet(&p);
-}
-
-
 void SendEchoReply(struct packet *p){
 	bug("\nLCP Send Echo Reply \n");
 	p->data[2]=10;
@@ -1013,7 +1023,6 @@ void SendEchoReply(struct packet *p){
 	AddChkSum(p);
 	SendPPP_Packet(p);
 }
-
 
 
 void SendConfReq(){
@@ -1050,17 +1059,6 @@ void SendConfReq(){
 	SendPPP_Packet(&p);
 
 }
-
-
-
-void SendConfACK(struct packet *p){
-	bug("\nsend LCP act\n");
-	p->data[2]=2;
-	printpacket(p);
-	AddChkSum(p);
-	SendPPP_Packet(p);
-}
-
 
 
 void SendTerminateReq(){
@@ -1169,9 +1167,4 @@ void SendPPP_Packet(struct packet * p){
 	DoBYTES( ppp_libbase , p->header , p->packetsize + 4 ); // 4 = header size
 	// SendBYTES( ppp_libbase , p->header , p->packetsize + 4 ); // 4 = header size
 }
-
-
-
-
-
 
