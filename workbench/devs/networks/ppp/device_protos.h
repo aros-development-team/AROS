@@ -38,7 +38,7 @@ BOOL WaitStr(LIBBASETYPEPTR LIBBASE,const STRPTR str, LONG timeout);
 void SetTimer(LIBBASETYPEPTR LIBBASE,const ULONG t);
 
 void init_ppp(LIBBASETYPEPTR LIBBASE);
-void byte_received(UBYTE c);
+void bytes_received( UBYTE *bytes,ULONG len );
 void send_IP_packet( BYTE *ptr ,ULONG len );
 void SendTerminateReq();
 void RunRoute();

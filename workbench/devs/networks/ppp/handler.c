@@ -273,12 +273,14 @@ VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE, struct IOExtSer *ioSer){
 	ptr = LIBBASE->sdu_RxBuff;
 
 	length = ioSer->IOSer.io_Actual;
-
+/*
 	while(length--){
 		byte_received( *ptr );
 		ptr++;
 	}
-
+*/
+	bytes_received( ptr,length );
+   
 	QueueSerRequest( LIBBASE ,  PPP_MAXBUFF );
 }
 
