@@ -99,6 +99,56 @@ ADD2INITLIB(libInit, 0)
 ADD2EXPUNGELIB(libExpunge, 0)
 /* \\\ */
 
+void SendBulk( struct PsdDevice *pd,UBYTE *cmd,ULONG len)
+{
+	struct Library *ps;
+    struct MsgPort *mp;
+	struct PsdPipe *pp;
+	struct PsdInterface *DataIf = 0;
+	struct PsdEndpoint *EPOut;
+	IPTR EPnum=0,IFnum=0,IFEPnum=0;
+		
+    if((ps = OpenLibrary("poseidon.library", 4)))
+    {
+		bug("SendBulk: FindInterface...");
+		if( ( DataIf = psdFindInterface( pd , DataIf , TAG_END ) ) ){
+
+			psdGetAttrs(PGA_INTERFACE,DataIf,
+						IFA_InterfaceNum,&IFnum,
+						IFA_NumEndpoints,&IFEPnum,
+						TAG_END);
+			bug(" ...OK num:%d  number of endpoints:%d\n",IFnum,IFEPnum);
+
+			bug("Find BULK OUT Endpoint...");
+			EPOut = psdFindEndpoint( DataIf, NULL,
+									EA_IsIn, FALSE,
+									EA_TransferType, USEAF_BULK,
+									TAG_END);
+			if( EPOut ){
+				psdGetAttrs(PGA_ENDPOINT,EPOut,
+							EA_EndpointNum, &EPnum,
+							TAG_END);
+				bug(" ...OK address:%d\n",EPnum);
+
+				if((mp = CreateMsgPort())){
+					bug("OpenPipe...\n");
+					if((pp = psdAllocPipe(pd, mp, EPOut))){
+						psdSetAttrs(PGA_PIPE, pp,
+									PPA_NakTimeout,TRUE,
+									PPA_NakTimeoutTime, 5000,
+									TAG_END);
+						bug("Write %d bytes ...\n",len);
+						bug("Error = %d\n", psdDoPipe( pp , cmd , len ));
+						psdFreePipe(pp);
+					}
+					DeleteMsgPort(mp);
+				}
+			}
+		}	
+		CloseLibrary(ps);
+	}		
+}
+
 /*
  * ***********************************************************************
  * * Library functions                                                   *
@@ -143,9 +193,32 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
                     DA_VendorID, &vendid,
                     TAG_END);
 
+//		bug("cdcacm.class:AttemptInterfaceBinding vendor id=%x  product id=%x\n",vendid,prodid);
+		
+		// ZTE ModeSwitch
+		if( vendid == 0x19d2 && prodid == 0x2000 ){	
 
-		//bug("cdcacm.class: vendor id=%x  product id=%x\n",vendid,prodid);
+			UBYTE cmd[31];	
+			// from BSD u3g.c
+			memset(cmd, 0, sizeof(cmd));
+			cmd[0] = 0x55; 
+			cmd[1] = 0x53;
+			cmd[2] = 0x42;
+			cmd[3] = 0x43;
+			cmd[4] = 0x01;
+			cmd[14] = 0x06;
+			cmd[15] = 0x1b;
+			cmd[19] = 0x02;
+			
+			SendBulk(pd,cmd,sizeof(cmd));
 
+			CloseLibrary(ps);
+			if( ifclass == MASSSTORE_CLASSCODE ){
+				bug("cdcacm.class: fake massstorage binding\n");
+				return (struct NepClassSerial *)&fake_binding;
+			}
+			return(NULL);
+		}
 
 		// huawei ModeSwitch
 		if( (vendid == 0x12d1 ) && ( numintf < 4 ) && (
@@ -177,11 +250,7 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
 		//  Huawei, e122  and many others.
 		if( (vendid == 0x12d1 ) && ( prodid == 0x1446 )){
 
-			struct PsdInterface *DataIf = 0;
-			struct PsdEndpoint *EPOut;
-			IPTR EPnum=0,IFnum=0,IFEPnum=0;
-			UBYTE magic_cmd[31];
-		
+			UBYTE magic_cmd[31];	
 			//  magic command from BSD u3g driver sources.
 			memset(magic_cmd, 0, sizeof(magic_cmd));
 			magic_cmd[0] = 0x55; 
@@ -190,42 +259,8 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
 			magic_cmd[3] = 0x43;
 			magic_cmd[15]= 0x11;
 			magic_cmd[16]= 0x06;
-
-			bug("Huawei e122 ModeSwitch: FindInterface...\n");
-			if( ( DataIf = psdFindInterface( pd , DataIf , TAG_END ) ) ){
-
-				psdGetAttrs(PGA_INTERFACE,DataIf,
-							IFA_InterfaceNum,&IFnum,
-							IFA_NumEndpoints,&IFEPnum,
-							TAG_END);
-				bug("...interface num:%d  number of endpoints:%d\n",IFnum,IFEPnum);
-
-				bug("Find BULK OUT Endpoint...\n");
-				EPOut = psdFindEndpoint( DataIf, NULL,
-										EA_IsIn, FALSE,
-										EA_TransferType, USEAF_BULK,
-										TAG_END);
-				if( EPOut ){
-					psdGetAttrs(PGA_ENDPOINT,EPOut,
-								EA_EndpointNum, &EPnum,
-								TAG_END);
-					bug("...endpoint address:%d\n",EPnum);
-
-					if((mp = CreateMsgPort())){
-						bug("OpenPipe...\n");
-						if((pp = psdAllocPipe(pd, mp, EPOut))){
-							psdSetAttrs(PGA_PIPE, pp,
-										PPA_NakTimeout,TRUE,
-										PPA_NakTimeoutTime, 5000,
-										TAG_END);
-							bug("Write %d bytes ...\n",sizeof(magic_cmd));
-							bug("Error = %d\n", psdDoPipe(pp, magic_cmd, sizeof(magic_cmd)));
-							psdFreePipe(pp);
-						}
-						DeleteMsgPort(mp);
-					}
-				}
-			}
+			
+			SendBulk(pd,magic_cmd,sizeof(magic_cmd));
 		
 			CloseLibrary(ps);
 			if( ifclass == MASSSTORE_CLASSCODE ){
@@ -236,6 +271,33 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
 		}
 
 		CloseLibrary(ps);
+		
+		// ZTE 
+		if( (vendid == 0x19d2) && (
+			prodid == 0x0001 ||    
+			prodid == 0x0002 ||    
+			prodid == 0x0015 ||    
+			prodid == 0x0016 ||    
+			prodid == 0x0017 ||    
+			prodid == 0x0031 ||    
+			prodid == 0x0037 ||    
+			prodid == 0x0052 ||    
+			prodid == 0x0055 ||    
+			prodid == 0x0063 ||    
+			prodid == 0x0064 ||    
+			prodid == 0x0108 ||    
+			prodid == 0x0128
+        )){	
+			if( ifclass == MASSSTORE_CLASSCODE ){
+				bug("cdcacm.class: fake massstorage binding\n");
+				return (struct NepClassSerial *)&fake_binding;
+			}
+
+			if((ifclass == 255) && (subclass == 255) && (proto == 255) && (NumEndpoints == 3)){
+				return(usbForceInterfaceBinding(nh, pif));
+			}			
+		}
+	
 	
 		// Huawei
 		if( (vendid == 0x12d1) && (
@@ -248,7 +310,6 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
 			prodid == 0x141b ||
 			prodid == 0x14ac
         )){
-			//FAKE massstorage binding
 			if( ifclass == MASSSTORE_CLASSCODE ){
 				bug("cdcacm.class: fake massstorage binding\n");
 				return (struct NepClassSerial *)&fake_binding;
@@ -382,6 +443,9 @@ struct NepClassSerial * usbForceInterfaceBinding(struct NepSerialBase *nh, struc
                 //FreeSignal(ncp->ncp_ReadySignal);
                 if(subclass != CDC_OBEX_SUBCLASS)
                 {
+					bug("Modem '%s' at %s unit %ld!\n",
+                                   devname, nh->nh_DevBase->np_Library.lib_Node.ln_Name,
+                                   ncp->ncp_UnitNo);
                     psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                    "Mode(m) mess '%s' at %s unit %ld!",
                                    devname, nh->nh_DevBase->np_Library.lib_Node.ln_Name,
