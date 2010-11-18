@@ -52,10 +52,4 @@ FUNCS := adddtobject \
     files="datatypes_init $(FUNCS) $(FILES)" \
     uselibs="amiga rom"
 
-
-INCLUDE_FILES := $(call WILDCARD, include/*.h)
-
-#MM copy-includes
-%copy_lib_includes path=datatypes
-
 %common
