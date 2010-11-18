@@ -408,6 +408,10 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
 	/* Go through all sections and calculate kernel size */
 	for(i = 0; i < n->eh.shnum; i++)
 	{
+	    /* Ignore sections with zero lengths */
+	    if (!n->sh[i].size)
+	    	continue;
+	
 	    /* We include also string tables for debug info */
 	    if ((n->sh[i].flags & SHF_ALLOC) || (n->sh[i].type == SHT_STRTAB))
 	    {
