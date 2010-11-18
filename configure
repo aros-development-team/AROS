@@ -8626,6 +8626,10 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 		aros_target_objdump="i386-aros-objdump"
 		target_tool_prefix="i686-apple-darwin10-"
 		target_tool_flags="-m32"
+		if test "$aros_target_variant" = "" ; then
+		    aros_kernel_cflags="-mmacosx-version-min=10.1"
+		    aros_kernel_ldflags="-mmacosx-version-min=10.1"
+		fi
 		;;
 	    *x86_64*)
 		aros_target_cpu="x86_64"
@@ -10984,6 +10988,7 @@ if test "${enable_includes+set}" = set; then
 else
   aros_target_incl=$aros_target_incl_def
 fi
+
 
 if test "$aros_kernel_includes" = ""; then
     if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
