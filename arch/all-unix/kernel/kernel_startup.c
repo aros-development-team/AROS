@@ -67,7 +67,7 @@ int __startup startup(struct TagItem *msg)
     void *hostlib;
     char *errstr;
     unsigned int i;
-    struct MemHeader *mh;
+    struct MemHeader *bootmh, *mh;
     void *memory;
     IPTR memlen;
     struct TagItem *tag;
@@ -161,37 +161,38 @@ int __startup startup(struct TagItem *msg)
     memlen = mmap->len;
 
     /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
-    mh = memory;
-    mh->mh_Node.ln_Type  = NT_MEMORY;
-    mh->mh_Node.ln_Name = "chip memory";
-    mh->mh_Node.ln_Pri = -5;
-    mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK;
-    mh->mh_First = memory + MEMHEADER_TOTAL;
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_First->mc_Bytes = memlen - MEMHEADER_TOTAL;
-    mh->mh_Lower = memory;
-    mh->mh_Upper = memory + memlen - 1;
-    mh->mh_Free = mh->mh_First->mc_Bytes;
+    bootmh = memory;
+    bootmh->mh_Node.ln_Type  = NT_MEMORY;
+    bootmh->mh_Node.ln_Name = "chip memory";
+    bootmh->mh_Node.ln_Pri = -5;
+    bootmh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_KICK;
+    bootmh->mh_First = memory + MEMHEADER_TOTAL;
+    bootmh->mh_First->mc_Next = NULL;
+    bootmh->mh_First->mc_Bytes = memlen - MEMHEADER_TOTAL;
+    bootmh->mh_Lower = memory;
+    bootmh->mh_Upper = memory + memlen - 1;
+    bootmh->mh_Free = bootmh->mh_First->mc_Bytes;
 
-    D(bug("[Kernel] calling PrepareExecBase(), mh_First = 0x%p, args = %s\n", mh->mh_First, args));
+    D(bug("[Kernel] calling PrepareExecBase(), mh_First = 0x%p, args = %s\n", bootmh->mh_First, args));
     /*
      * FIXME: This routine is part of exec.library, however it doesn't have an LVO
      * (it can't have one because exec.library is not initialized yet) and is called
      * only from here. Probably the code should be reorganized and this routine needs
      * to be moved to kernel.resource
      */
-    SysBase = PrepareExecBase(mh, args, HostIFace);
-    D(bug("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
+    SysBase = PrepareExecBase(bootmh, args, HostIFace);
+    D(bug("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, bootmh->mh_First);)
 
     ranges[0] = klo;
     ranges[1] = khi;
-    SysBase->ResModules = krnRomTagScanner(mh, ranges);
+    SysBase->ResModules = krnRomTagScanner(bootmh, ranges);
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
      */
-    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
+    mh = krnAllocBootMem(bootmh, sizeof(struct MemHeader));
+    if (mh)
     {
 	mh->mh_Node.ln_Type = NT_MEMORY;
 	mh->mh_Node.ln_Name = "rom memory";
@@ -208,12 +209,13 @@ int __startup startup(struct TagItem *msg)
      * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
      * during initialization.
      */
-    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
+    mh = krnAllocBootMem(bootmh, sizeof(struct MemHeader));
+    if (mh)
     {
         mh->mh_Node.ln_Type = NT_MEMORY;
         mh->mh_Node.ln_Name = "stack memory";
         mh->mh_Node.ln_Pri = -128;
-        mh->mh_Attributes = MEMF_KICK;
+        mh->mh_Attributes = 0;
         mh->mh_First = NULL;
         mh->mh_Lower = _stack - 3072;
         mh->mh_Upper = _stack;
