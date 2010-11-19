@@ -13,6 +13,12 @@
 #include <unistd.h>
 #endif
 
+/* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
+#undef __pure
+#undef __const
+#undef __pure2
+#undef __deprecated
+
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <utility/tagitem.h>
