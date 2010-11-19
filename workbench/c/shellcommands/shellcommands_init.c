@@ -34,7 +34,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     pos--;
     D(bug("[ShellCommands] %d commands\n", pos));
 
-    if (pos <= 1)
+    if (pos <= 0)
     	return FALSE;
 
     D(bug("[ShellCommands] Init\n"));
