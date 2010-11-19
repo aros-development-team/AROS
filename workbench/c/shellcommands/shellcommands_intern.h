@@ -24,11 +24,11 @@ struct ShellCommandsBase {
      * We will feed in to DOS/AddSegment() the BPTR to 
      * &sc_Command[i].scs_Next as the 'seglist' to add.
      */
-    struct ShellCommand {
+    struct ShellCommandSeg {
     	ULONG              scs_Size;      /* Length of segment in # of ULONGs */
     	ULONG              scs_Next;      /* Next segment (always 0 for this) */
     	struct FullJumpVec scs_Code;      /* Code to jump to shell command */
-    	CONST_STRPTR       scs_Name;      /* Name of the segment */
+    	CONST_STRPTR __attribute__((aligned(4)))  scs_Name;      /* Name of the segment */
     } *sc_Command;
 
     /* Bookkeeping */
