@@ -68,7 +68,7 @@ struct JumpVec
 struct FullJumpVec
 {
     unsigned short jmp;
-    unsigned int   vec;
+    void *vec;
 };
 #define __AROS_SET_FULLJMP(v,a)                          \
 do                                                       \
