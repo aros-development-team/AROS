@@ -44,24 +44,13 @@ AROS_LD3(ULONG, MakeFunctions,
 /* Boot-time memory allocator */
 static APTR allocmem(struct MemHeader *mh, ULONG size)
 {
-    UBYTE *ret = NULL;
+    UBYTE *ret  = (UBYTE *)mh->mh_First;
     
-    if (mh->mh_Attributes & MEMF_MANAGED)
-    {
-        struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
-        if (mhe->mhe_Alloc)
-	    ret = mhe->mhe_Alloc(mhe, size, NULL);
-    }
-    else
-    {
-        size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
-        ret  = (UBYTE *)mh->mh_First;
+    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
 
-        mh->mh_First          = (struct MemChunk *)(ret + size);
-        mh->mh_First->mc_Next = NULL;
-        mh->mh_Free           = mh->mh_First->mc_Bytes
-	                      = ((struct MemChunk *)ret)->mc_Bytes - size;
-    }
+    mh->mh_First          = (struct MemChunk *)(ret + size);
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
 
     return ret;
 }
