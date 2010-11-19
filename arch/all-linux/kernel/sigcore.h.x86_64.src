@@ -50,10 +50,9 @@ struct ucontext;
 #define SIGCORE_NEED_SA_SIGINFO 1
 
 /* We want to use some predefined register names */
-#define __USE_GNU 1
-#include <ucontext.h>
-#undef __USE_GNU
+#define _GNU_SOURCE
 
+#include <ucontext.h>
 #include <signal.h>
 #include <stddef.h>
 
