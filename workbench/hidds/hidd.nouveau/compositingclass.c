@@ -363,7 +363,7 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     /* Clean up area revealed by drag */
     /* TODO: Find all areas which might have been releaved, not only top - 
        This will happen when there are bitmaps of different sizes composited */
-    if (lastscreenvisibleline > 0)
+    if (lastscreenvisibleline > 1)
     {
         OOP_Class * cl = OOP_OCLASS(compdata->screenbitmap);
         IPTR viswidth;
@@ -371,7 +371,7 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
         OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Width, &viswidth); 
 
         HIDD_BM_FillRect(compdata->screenbitmap, 
-            compdata->gc, 0, 0, viswidth, lastscreenvisibleline);
+            compdata->gc, 0, 0, viswidth - 1, lastscreenvisibleline - 1);
     }
 }
 
