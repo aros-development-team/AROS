@@ -8610,6 +8610,8 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 	    	aros_ios_platform="iPhoneSimulator"
 		aros_target_cpu="i386"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+		aros_kernel_ldflags=""
+		aros_macosx_version="10.4"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
 		aros_object_format="elf_i386"
@@ -8626,17 +8628,14 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 		aros_target_objdump="i386-aros-objdump"
 		target_tool_prefix="i686-apple-darwin10-"
 		target_tool_flags="-m32"
-		if test "$aros_target_variant" = "" ; then
-		    aros_kernel_cflags="-mmacosx-version-min=10.1"
-		    aros_kernel_ldflags="-mmacosx-version-min=10.1"
-		fi
 		;;
 	    *x86_64*)
 		aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
-                aros_kernel_cflags="$aros_kernel_cflags -m64"
-                aros_kernel_ldflags="$aros_kernel_ldflags -m64"
+                aros_macosx_version="10.6"
+                aros_kernel_cflags="-m64"
+                aros_kernel_ldflags="-m64"
 		aros_default_wbdepth=8
 		gcc_target_cpu="x86_64"
 		aros_target_cc="x86_64-aros-gcc"
@@ -8655,6 +8654,8 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 		aros_target_cpu="ppc"
                 aros_object_format="elf32_ppc"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+                aros_kernel_ldflags=""
+                aros_macosx_version="10.0"
 		aros_default_wbdepth=8
 		gcc_target_cpu="ppc"
 		aros_target_cc="ppc-aros-gcc"
@@ -8708,7 +8709,13 @@ echo "$as_me: error: \"Unsupported target CPU for darwin hosted flavour -- $targ
 		aros_kernel_includes="-isystem $aros_ios_sdk/usr/include"
 		need_x11=no
 		# This is here because it may depend on iOS or SDK version
+		aros_kernel_cflags="$aros_kernel_cflags -miphoneos-version-min=$aros_ios_version"
+		aros_kernel_ldflags="$aros_kernel_ldflags -miphoneos-version-min=$aros_ios_version"
 		aros_kernel_objcflags="-fobjc-abi-version=2 -fobjc-legacy-dispatch"
+            ;;
+            *)
+            	aros_kernel_cflags="$aros_kernel_cflags -mmacosx-version-min=$aros_macosx_version"
+            	aros_kernel_ldflags="$aros_kernel_ldflags -mmacosx-version-min=$aros_macosx_version"
             ;;
         esac
 	;;
