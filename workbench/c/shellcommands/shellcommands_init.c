@@ -52,13 +52,13 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     }
 
     ForeachElementInSet(SETNAME(SHCOMMANDS), 1, pos, sh) {
-    	struct ShellCommand *sc = &LIBBASE->sc_Command[pos-1];
+    	struct ShellCommandSeg *scs = &LIBBASE->sc_Command[pos-1];
 
-    	sc->scs_Size = AROS_ALIGN(sizeof(*sc))/sizeof(ULONG);
-    	sc->scs_Next = 0;
-    	sc->scs_Name = sh->sh_Name;
-    	__AROS_SET_FULLJMP(&sc->scs_Code, sh->sh_Command);
-    	AddSegment(sh->sh_Name, MKBADDR(&sc->scs_Next), 0);
+    	scs->scs_Size = AROS_ALIGN(sizeof(*scs))/sizeof(ULONG);
+    	scs->scs_Next = 0;
+    	scs->scs_Name = sh->sh_Name;
+    	__AROS_SET_FULLJMP(&scs->scs_Code, sh->sh_Command);
+    	AddSegment(sh->sh_Name, MKBADDR(&scs->scs_Next), 0);
     }
 
     return TRUE;
