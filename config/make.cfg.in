@@ -155,7 +155,6 @@ AFLAGS	    = $(USER_AFLAGS) $(CONFIG_AFLAGS)
 LDFLAGS     = $(USER_LDFLAGS) $(CONFIG_LDFLAGS)
 
 # Apple iOS stuff for gcc
-IOS_CFLAGS   := -miphoneos-version-min=$(IOS_OS_VERSION)
 IOS_LDFLAGS  := -F$(IOS_SDK_PATH)/System/Library/Frameworks
 
 # Compatibility with old variables
