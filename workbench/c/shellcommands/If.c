@@ -95,11 +95,10 @@
 #include <dos_commanderrors.h>
 
 #define SH_GLOBAL_DOSBASE 1
-struct UtilityBase *UtilityBase;
 
 #include <aros/shcommands.h>
 
-static BOOL doeval(STRPTR arg1, STRPTR arg2, BYTE op, IPTR numeric);
+static BOOL doeval(STRPTR arg1, STRPTR arg2, BYTE op, IPTR numeric, APTR DOSBase, APTR UtilityBase);
 
 AROS_SH10(If, 41.1,
 AROS_SHA(BOOL, ,NOT,/S, FALSE),
@@ -117,7 +116,7 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
     AROS_SHCOMMAND_INIT
 
     BOOL result = FALSE;
-
+    struct UtilityBase *UtilityBase;
     struct CommandLineInterface *cli = Cli();
 
     UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
@@ -147,15 +146,15 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 	}    
 	else if(SHArg(EQ))
 	{
-	    result = doeval(SHArg( ), SHArg(EQ), 0, SHArg(VAL));
+	    result = doeval(SHArg( ), SHArg(EQ), 0, SHArg(VAL), DOSBase, UtilityBase);
 	}
 	else if (SHArg(GT))
 	{
-	    result = doeval(SHArg( ), SHArg(GT), 1, SHArg(VAL));	    	
+	    result = doeval(SHArg( ), SHArg(GT), 1, SHArg(VAL), DOSBase, UtilityBase);
 	}
 	else if (SHArg(GE))
 	{
-	    result = doeval(SHArg( ), SHArg(GE), 2, SHArg(VAL));
+	    result = doeval(SHArg( ), SHArg(GE), 2, SHArg(VAL), DOSBase, UtilityBase);
 	}
 	else if(SHArg(EXISTS))
 	{
@@ -244,7 +243,7 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
     AROS_SHCOMMAND_EXIT
 }
 
-static BOOL doeval(STRPTR arg1, STRPTR arg2, BYTE op, IPTR numeric)
+static BOOL doeval(STRPTR arg1, STRPTR arg2, BYTE op, IPTR numeric, APTR DOSBase, APTR UtilityBase)
 {
     STRPTR s1 = (STRPTR)arg1;
     STRPTR s2 = (STRPTR)arg2;
