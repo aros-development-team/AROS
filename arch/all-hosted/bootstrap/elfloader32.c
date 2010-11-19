@@ -11,6 +11,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
+#undef __pure
+#undef __const
+#undef __pure2
+#undef __deprecated
+
 #include <aros/config.h>
 #include <aros/kernel.h>
 #include <exec/execbase.h>
