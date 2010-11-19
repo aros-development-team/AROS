@@ -221,14 +221,23 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     /* Load the shell */
     /* FIXME: implement UserShell and BootShell */
     shellseg = LoadSeg("C:Shell");
-    if (!shellseg)
+    if (shellseg == BNULL)
     {
         D(bug("Could not load C:Shell\n"));
         shellseg = LoadSeg("L:Shell-Seg");
     }
-    if (!shellseg)
+    if (shellseg == BNULL)
     {
+    	struct Segment *seg;
+
         D(bug("Could not load L:Shell-Seg\n"));
+        seg = FindSegment("Shell", NULL, TRUE);
+        if (seg != NULL && seg->seg_UC == 0)
+            shellseg = seg->seg_Seg;
+    }
+    if (shellseg == BNULL)
+    {
+        D(bug("Could not load SYSTEM:Shell\n"));
         goto end;
     }
 
