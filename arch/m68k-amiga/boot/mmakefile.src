@@ -17,7 +17,7 @@ include $(TOP)/config/make.cfg
 #MM     workbench-fs-pipefs-kobj \
 #MM     workbench-fs-xpipe-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
-#MM     workbench-libs-partition-kobj \
+#MM     kernel-c-shellcommands-kobj \
 #MM     kernel-contrib-necessary-amiga-m68k \
 #MM     kernel-usb-amiga-m68k \
 #MM     kernel-fs-afs-kobj \
@@ -64,7 +64,7 @@ KLIBS   :=  keymap graphics layers intuition
 KDEVS   := 
 KHNDLRS := 
 KHIDDS  :=
-KRSRCS  :=
+KRSRCS  := shellcommands
 
 ROMPAD_ext := 0xe80000
 KOBJS_ext := \

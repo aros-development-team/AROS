@@ -10,16 +10,11 @@ SYSTEM_FILES := \
     AROS.boot \
     C/Alias \
     C/Assign \
-    C/CD \
     C/Copy \
     C/Delete \
     C/Dir \
     C/EndCLI \
-    C/EndIf \
-    C/Execute \
-    C/FailAt \
     C/IPrefs \
-    C/If \
     C/List \
     C/MakeDir \
     C/Mount \
@@ -29,7 +24,6 @@ SYSTEM_FILES := \
     C/Protect \
     C/Run \
     C/SetClock \
-    C/Shell \
     C/Touch \
     Devs/DataTypes/ELF \
     Devs/DataTypes/ELF_EXE \
