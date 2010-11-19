@@ -183,6 +183,10 @@ int __startup startup(struct TagItem *msg)
     SysBase = PrepareExecBase(mh, args, HostIFace);
     D(bug("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
+    ranges[0] = klo;
+    ranges[1] = khi;
+    SysBase->ResModules = krnRomTagScanner(mh, ranges);
+
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
@@ -216,10 +220,6 @@ int __startup startup(struct TagItem *msg)
         mh->mh_Free = 0;                        /* Never allocate from this chunk! */
         Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
-
-    ranges[0] = klo;
-    ranges[1] = khi;
-    SysBase->ResModules = krnRomTagScanner(SysBase, ranges);
 
     bug("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
