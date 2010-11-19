@@ -1364,9 +1364,10 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
 	while(item == ' ' || item == '\t')
 	{
-	    STRPTR temp = " ";
+	    TEXT temp[2];
 
 	    temp[0] = item;
+	    temp[1] = 0;
 
 	    appendString(filtered, temp, 1, is);
 	    advance(1);
