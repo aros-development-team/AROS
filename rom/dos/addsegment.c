@@ -81,7 +81,7 @@
 	CopyMem(name, sptr->seg_Name, namelen);
 #else
 	CopyMem(name, &sptr->seg_Name[1], namelen);
-	*sptr->seg_Name = namelen;
+	sptr->seg_Name[0] = namelen;
 #endif
 
 	/* Sigh, we just add the segment to the start of the list */
