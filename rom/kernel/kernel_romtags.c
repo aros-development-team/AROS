@@ -19,23 +19,7 @@
 #include <kernel_debug.h>
 #include <kernel_romtags.h>
 
-/*
- * Private exec.library include, needed for MEMHEADER_TOTAL.
- * TODO: may be bring it out to public includes ?
- */
-#include "memory.h"
-
 #define PRINT_LIST
-
-/* Mark the memory as allocated */
-static void allocmem(struct MemHeader *mh, ULONG size)
-{
-    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
-
-    mh->mh_First          = (struct MemChunk *)((APTR)mh->mh_First + size);
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
-}
 
 static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 {
@@ -144,7 +128,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     RomTag[num] = NULL;
 
     /* Seal our used memory as allocated */
-    allocmem(mh, (num + 1) * sizeof(struct Resident *));
+    krnAllocBootMem(mh, (num + 1) * sizeof(struct Resident *));
 
     /*
      * By now we have valid list of kickstart resident modules.

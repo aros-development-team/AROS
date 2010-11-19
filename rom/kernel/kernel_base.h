@@ -1,5 +1,6 @@
 #define __KERNEL_NOLIBBASE__
 
+#include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <aros/kernel.h>
 
@@ -36,3 +37,6 @@ extern struct KernelBase *KernelBase;
 
 /* Utility function to clear BSS segments. Call it before storing any globals!!! */
 void __clear_bss(const struct KernelBSS *bss);
+
+/* Boot-time memory allocator */
+APTR krnAllocBootMem(struct MemHeader *mh, ULONG len);

@@ -1,3 +1,4 @@
+#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
@@ -11,7 +12,11 @@
 #include <kernel_tagitems.h>
 #include <kernel_timer.h>
 
-#define D(x)
+/*
+ * Private exec.library include, needed for MEMCHUNK_TOTAL.
+ * TODO: may be bring it out to public includes ?
+ */
+#include "memory.h"
 
 /* Some globals we can't live without */
 struct TagItem *BootMsg = NULL;
@@ -23,6 +28,19 @@ void __clear_bss(const struct KernelBSS *bss)
 	bzero((void*)bss->addr, bss->len);
         bss++;
     }
+}
+
+APTR krnAllocBootMem(struct MemHeader *mh, ULONG size)
+{
+    APTR ret = mh->mh_First;
+
+    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+
+    mh->mh_First          = (struct MemChunk *)(ret + size);
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
+
+    return ret;
 }
 
 static int Kernel_Init(struct KernelBase *kBase)
