@@ -143,8 +143,17 @@ struct MyExAllData
 	/* Detect filesystems that always return a type
 	 * of ST_USERDIR when queried for '/' at the root.
 	 */
+/* 
+ * Please find another way to do this.
+ * In some handlers (for example in emul.handler) values of io_DirPos are not unique
+ * accross different directories. They really reflect position within the directory,
+ * but not absolute position of the object on disk.
+ * This detection will always give ST_ROOT with such handlers.
+ * May be use SameLock() for objects comparison ?
+ *	Pavel Fedin.
+ 
     	if (!error && iofs->io_DirPos == last_dirpos && ead->ed_Type == ST_USERDIR)
-    	    ead->ed_Type = ST_ROOT;
+    	    ead->ed_Type = ST_ROOT; */
     
     	/* Move name to the top of the buffer. */
     	if(!error)
