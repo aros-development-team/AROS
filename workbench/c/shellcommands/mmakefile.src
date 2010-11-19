@@ -66,7 +66,18 @@ USER_CFLAGS := -I$(SRCDIR)/rom/dos \
 
 OBJDIR := $(OBJDIR).kernel
 
-FILES := Shell
+# These are the built-ins for AmigaOS 3.x and above
+FILES := \
+	 CD \
+	 EndIf \
+	 Execute \
+	 FailAt \
+	 If \
+	 Shell \
+	 Setenv \
+	 Unset \
+	 Unsetenv \
+	# End of list
 
 %build_module mmake=kernel-c-shellcommands \
   modname=shellcommands modtype=resource \
