@@ -163,6 +163,10 @@ int __startup startup(struct TagItem *msg)
     SysBase = PrepareExecBase(mh, args, HostIFace);
     D(mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
+    ranges[0] = klo;
+    ranges[1] = khi;
+    SysBase->ResModules = krnRomTagScanner(mh, ranges);
+
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
@@ -184,10 +188,6 @@ int __startup startup(struct TagItem *msg)
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf  = mykprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf = myrkprintf;
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf = myvkprintf;
-
-    ranges[0] = klo;
-    ranges[1] = khi;
-    SysBase->ResModules = krnRomTagScanner(SysBase, ranges);
 
     mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);

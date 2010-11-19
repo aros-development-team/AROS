@@ -9,7 +9,8 @@ USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
 ifneq ($(FAMILY),)
 USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
-USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) \
+USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
+	       -I$(SRCDIR)/rom/exec -I$(GENINCDIR) \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 	       -D__AROS_EXEC_LIBRARY__
 

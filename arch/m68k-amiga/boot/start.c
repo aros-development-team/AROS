@@ -365,6 +365,9 @@ void start(IPTR chip_start, ULONG chip_size,
 	*((APTR *)(NULL + 0x4)) = sysBase;
 	DebugPuts("[init SysBase]\n");
 
+	/* Scan for all other ROM Tags */
+	sysBase->ResModules = krnRomTagScanner(sysBase, kickrom);
+
         sysBase->SysStkUpper    = (APTR)ss_stack_upper;
         sysBase->SysStkLower    = (APTR)ss_stack_lower;
 
@@ -423,8 +426,6 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Initialize IRQ subsystem */
 	AmigaIRQInit(sysBase);
 
-	/* Scan for all other ROM Tags */
-	sysBase->ResModules = krnRomTagScanner(sysBase, kickrom);
 	DebugPuts("[start] InitCode(RTF_SINGLETASK, 0)\n");
 
 	/* Ok, let's start the system */

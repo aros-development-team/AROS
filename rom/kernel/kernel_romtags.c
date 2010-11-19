@@ -5,6 +5,7 @@
     ROMTag scanner.
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
@@ -12,15 +13,42 @@
 #include <exec/resident.h>
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
 #include <kernel_romtags.h>
 
-struct rt_node
+/*
+ * Private exec.library include, needed for MEMHEADER_TOTAL.
+ * TODO: may be bring it out to public includes ?
+ */
+#include "memory.h"
+
+#define PRINT_LIST
+
+/* Mark the memory as allocated */
+static void allocmem(struct MemHeader *mh, ULONG size)
 {
-    struct Node     node;
-    struct Resident *module;
-};
+    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+
+    mh->mh_First          = (struct MemChunk *)((APTR)mh->mh_First + size);
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
+}
+
+static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
+{
+    ULONG i;
+    
+    for (i = 0; i < len; i++)
+    {
+    	if (!strcmp(name, list[i]->rt_Name))
+    	    return i;
+    }
+
+    return -1;
+}
 
 /*
  * RomTag scanner.
@@ -40,21 +68,25 @@ struct rt_node
  * -1 used to break the loop.
  */
 
-ULONG **krnRomTagScanner(struct ExecBase *SysBase, UWORD *ranges[])
+APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 {
-    struct List     rtList;             /* List of modules */
     UWORD	    *end;
     UWORD	    *ptr;		/* Start looking here */
-
     struct Resident *res;               /* module found */
+    ULONG	    i;
+    BOOL	    sorted;
+    /* 
+     * We take the beginning of free memory from our boot MemHeader
+     * and construct resident list there.
+     * When we are done we know list length, so we can seal the used
+     * memory by allocating it from the MemHeader.
+     * This is 100% safe because we are here long before multitasking
+     * is started up.
+     */
+    struct Resident **RomTag = (struct Resident **)mh->mh_First;
+    ULONG	    num = 0;
 
-    int     i;
-    ULONG   **RomTag;
-
-    /* Initialize list */
-    NEWLIST(&rtList);
-
-    /* Look in whole kernel for resident modules */
+    /* Look in whole kickstart for resident modules */
     while (*ranges != (UWORD *)~0)
     {
 	ptr = *ranges++;
@@ -66,55 +98,29 @@ ULONG **krnRomTagScanner(struct ExecBase *SysBase, UWORD *ranges[])
 	    res = (struct Resident *)ptr;
 
 	    /* Do we have RTC_MATCHWORD and rt_MatchTag*/
-	    if (    res->rt_MatchWord	== RTC_MATCHWORD
-		&&  res->rt_MatchTag	== res
-	    )
+	    if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res)
 	    {
-		/* Yes, it is Resident module */
-		struct rt_node  *node;
-
-		/* Check if there is module with such name already */
-		node = (struct rt_node*)FindName(&rtList, res->rt_Name);
-		if (node)
+		/* Yes, it is Resident module. Check if there is module with such name already */
+		i = findname((struct Resident **)mh->mh_First, num, res->rt_Name);
+		if (i != -1)
 		{
+		    struct Resident *old = RomTag[i];
 		    /*
 			Rules for replacing modules:
 			1. Higher version always wins.
 			2. If the versions are equal, then lower priority
 			    looses.
 		    */
-		    if
-		    (
-			node->module->rt_Version < res->rt_Version
-			||
-			(
-			    node->module->rt_Version == res->rt_Version
-			    && node->node.ln_Pri <= res->rt_Pri
-			)
-		    )
+		    if ((old->rt_Version < res->rt_Version) ||
+			(old->rt_Version == res->rt_Version && old->rt_Pri <= res->rt_Pri))
 		    {
-			node->node.ln_Pri   = res->rt_Pri;
-			node->module        = res;
-
-			/* Have to re-add the node at it's new position. */
-			Remove((struct Node *)node);
-			Enqueue(&rtList, (struct Node *)node);
+		    	RomTag[i] = res;
 		    }
 		}
 		else
 		{
-		    /* New module. Allocate some memory for it */
-		    node = (struct rt_node *)
-			AllocMem(sizeof(struct rt_node),MEMF_PUBLIC|MEMF_CLEAR);
-
-		    if (node)
-		    {
-			node->node.ln_Name  = (char *)res->rt_Name;
-			node->node.ln_Pri   = res->rt_Pri;
-			node->module        = res;
-
-			Enqueue(&rtList,(struct Node*)node);
-		    }
+		    /* New module */
+		    RomTag[num++] = res;
 		}
 
 		/* Get address of EndOfResident from RomTag but only when
@@ -134,8 +140,14 @@ ULONG **krnRomTagScanner(struct ExecBase *SysBase, UWORD *ranges[])
 	} while (ptr < (UWORD*)end);
     }
 
+    /* Terminate the list */
+    RomTag[num] = NULL;
+
+    /* Seal our used memory as allocated */
+    allocmem(mh, (num + 1) * sizeof(struct Resident *));
+
     /*
-     * By now we have valid (and sorted) list of kernel resident modules.
+     * By now we have valid list of kickstart resident modules.
      *
      * Now, we will have to analyze used-defined RomTags (via KickTagPtr and
      * KickMemPtr)
@@ -143,33 +155,39 @@ ULONG **krnRomTagScanner(struct ExecBase *SysBase, UWORD *ranges[])
     /* TODO: Implement external modules! */
 
     /*
-     * Everything is done now. Allocate buffer for normal RomTag and convert
-     * list to RomTag
+     * Building list is complete, sort RomTags according to their priority.
+     * I use BubbleSort algorithm.
      */
-
-    ListLength(&rtList,i);      /* Get length of the list */
-
-    RomTag = AllocMem((i+1)*4,MEMF_PUBLIC | MEMF_CLEAR);
-
-    bug("Resident modules (addr: pri version name):\n");
-    if (RomTag)
+    do
     {
-        int             j;
-        struct rt_node  *n;
+    	sorted = TRUE;
 
-        for (j=0; j<i; j++)
-        {
-            n = (struct rt_node *)RemHead(&rtList);
-            bug("+ 0x%08.8lx: %3d %3d \"%s\"\n",
-                n->module,
-                n->node.ln_Pri,
-                n->module->rt_Version,
-                n->node.ln_Name);
-            RomTag[j] = (ULONG*)n->module;
+    	for (i = 0; i < num - 1; i++)
+    	{
+    	    if (RomTag[i]->rt_Pri < RomTag[i+1]->rt_Pri)
+    	    {
+    	    	struct Resident *tmp;
 
-            FreeMem(n, sizeof(struct rt_node));
-        }
-        RomTag[i] = 0;
+    	    	tmp = RomTag[i+1];
+    	    	RomTag[i+1] = RomTag[i];
+    	    	RomTag[i] = tmp;
+
+    	    	sorted = FALSE;
+    	    }
+    	}
+    } while (!sorted);
+
+#ifdef PRINT_LIST
+    bug("Resident modules (addr: pri version name):\n");
+    for (i = 0; i < num; i++)
+    {
+        bug("+ %p: %3d %3d \"%s\"\n",
+            RomTag[i],
+            RomTag[i]->rt_Pri,
+            RomTag[i]->rt_Version,
+            RomTag[i]->rt_Name);
     }
+#endif
+
     return RomTag;
 }
