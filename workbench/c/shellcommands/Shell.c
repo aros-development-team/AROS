@@ -103,6 +103,8 @@
 #define  COMMANDSTR_LEN  (256 + 2)  /* Maximum length of a 'command' */
 #define  FILENAME_LEN    256	    /* Maximum length of a redirection filename */
 
+struct InterpreterState;
+
 struct Redirection
 {
     BPTR  newIn;
@@ -141,7 +143,6 @@ struct ShellState
     BPTR  scriptLock;
 };
 
-struct CommandLineInterface *cli;
 
 #define MAXARGS    32
 #define MAXARGLEN  32
@@ -155,6 +156,16 @@ struct CommandLineInterface *cli;
 #define TOGGLE   0x02           /* /T, implies /K */
 #define NUMERIC  0x04           /* /N */
 #define REST     0x08           /* /F */
+
+struct ShellBase {
+    char   sb_avBuffer[256];
+    char   sb_varBuffer[256];
+    char   sb_argBuffer[256];
+    struct CommandLineInterface *sb_Cli;
+    APTR   sb_DOSBase;
+    APTR   sb_SysBase;
+    APTR   sb_UtilityBase;
+};
 
 struct InterpreterState
 {
@@ -174,6 +185,8 @@ struct InterpreterState
     struct RDArgs *rdargs;
 
     struct InterpreterState *stack;
+
+    struct ShellBase *sb;
 };
 
 
@@ -235,6 +248,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
  * Input:    struct CommandLine *cl           --  the result will be stored
  *                                                here
  *           BPTR                inputStream  --  stream to read the line from
+ *           struct InterpreterState *is      --  interpreter
  *
  * Note:     This routine deals with buffering internally so "infinite" command
  *           lines are supported. You may specify NULL as the cl->line. The
@@ -242,7 +256,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
  *
  * Output:   BOOL  --  FALSE if error, TRUE if everything went OK
  */
-BOOL readLine(struct CommandLine *cl, BPTR inputStream);
+BOOL readLine(struct CommandLine *cl, BPTR inputStream, struct InterpreterState *is);
 
 
 /* Function: checkLine
@@ -265,10 +279,11 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
  *           standard input and output streams.
  *
  * Input:    struct Redirection *rd  --  state
+ *           struct InterpreterState *is  --  interpreter state
  *
  * Output:   --
  */
-void releaseFiles(struct Redirection *rd);
+void releaseFiles(struct Redirection *rd, struct InterpreterState *is);
 
 
 /* Function: appendString
@@ -278,10 +293,11 @@ void releaseFiles(struct Redirection *rd);
  * Input:    struct CSource *cs    --  output stream (command line)
  *           STRPTR          from  --  string to append
  *           LONG            size  --  number of chars to copy
+ *           struct InterpreterState *is -- interpreter
  *
  * Output:   BOOL  --  success/failure indicator
  */
-BOOL appendString(struct CSource *cs, CONST_STRPTR from, LONG size);
+BOOL appendString(struct CSource *cs, CONST_STRPTR from, LONG size, struct InterpreterState *is);
 
 
 /* Function: printFlush
@@ -313,11 +329,12 @@ LONG interact(struct InterpreterState *is);
  *
  * Input:    STRPTR             commandName  --  the command to load
  *           struct ShellState *ss           --  state
+ *           struct InterpreterState *is    -- interpreter
  *
  * Output:   BPTR  --  segment of the loaded command or NULL if there was an
  *                     error
  */
-BPTR loadCommand(STRPTR commandName, struct ShellState *ss);
+BPTR loadCommand(STRPTR commandName, struct ShellState *ss, struct InterpreterState *is);
 
 
 /* Function: unloadCommand
@@ -327,10 +344,11 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss);
  * Input:    BPTR               commandSeg  --  segment of the program to
  *                                              unload
  *           struct ShellState *ss          --  state
+ *           struct InterpreterState *is    -- interpreter
  *
  * Output:   --
  */
-void unloadCommand(BPTR commandSeg, struct ShellState *ss);
+void unloadCommand(BPTR commandSeg, struct ShellState *ss, struct InterpreterState *is);
 
 
 /* Function: Redirection_release
@@ -341,7 +359,7 @@ void unloadCommand(BPTR commandSeg, struct ShellState *ss);
  *
  * Output:   --
  */
-void Redirection_release(struct Redirection *rd);
+void Redirection_release(struct Redirection *rd, struct InterpreterState *is);
 
 
 /* Function: Redirection_init
@@ -349,10 +367,11 @@ void Redirection_release(struct Redirection *rd);
  * Action:   Initialize a state structure
  *
  * Input:    struct Redirection *rd  --  state
+ *           struct InterpreterState *is -- interpreter
  *
  * Output:   BOOL  --  success/failure indicator
  */
-BOOL Redirection_init(struct Redirection *rd);
+BOOL Redirection_init(struct Redirection *rd, struct InterpreterState *is);
 
 
 /* Function: setPath
@@ -366,7 +385,7 @@ BOOL Redirection_init(struct Redirection *rd);
  *
  * Output:   --
  */
-static void setPath(BPTR lock);
+static void setPath(BPTR lock, struct InterpreterState *is);
 
 
 /* Function: printPath
@@ -379,7 +398,7 @@ static void setPath(BPTR lock);
  *
  * Output:   --
  */
-static void printPath(void);
+static void printPath(struct InterpreterState *is);
 
 
 /* Function: printPrompt
@@ -419,10 +438,11 @@ BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs);
  *
  * Input:    struct CSource     *filtered  --  output stream (command line)
  *           struct Redirection *rd        --  state
+ *           struct InterpreterState *is   --  interpreter
  *
  * Output:   BOOL  --  success/failure indicator
  */
-BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd);
+BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd, struct InterpreterState *is);
 
 
 /*****************************************************************************/
@@ -459,6 +479,7 @@ static void initDefaultInterpreterState(struct InterpreterState *is)
 static LONG pushInterpreterState(struct InterpreterState *is)
 {
     struct InterpreterState *tmp_is;
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
 
     tmp_is = (struct InterpreterState *)AllocMem(sizeof(*is), MEMF_LOCAL);
 
@@ -474,6 +495,8 @@ static LONG pushInterpreterState(struct InterpreterState *is)
 static void popInterpreterState(struct InterpreterState *is)
 {
     struct InterpreterState *tmp_is = is->stack;
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
     LONG i;
 
     for (i = 0; i < is->argcount; ++i)
@@ -499,6 +522,7 @@ static LONG getArgumentIdx(struct InterpreterState *is,
 			   CONST_STRPTR name, LONG len)
 {
     LONG i;
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
 
     for (i = 0; i < is->argcount; ++i)
     {
@@ -522,18 +546,23 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
     AROS_SHCOMMAND_INIT
 
     struct Process *me = (struct Process *)FindTask(NULL);
+    struct ShellBase sb;
     struct InterpreterState is;
     LONG error = RETURN_OK;
 
     D(bug("Executing shell\n"));
 
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
-    if (!UtilityBase) return RETURN_FAIL;
+    /* Setup up private data for this instance */
+    memset(&sb, 0, sizeof(sb));
+    sb.sb_SysBase = SysBase;
+    sb.sb_DOSBase = DOSBase;
+    sb.sb_Cli = Cli();
+
+    is.sb = &sb;
 
     setupResidentCommands();
 
-    cli = Cli();
-    setPath(BNULL);
+    setPath(BNULL, &is);
 
     is.cliNumber = me->pr_TaskNum;
 
@@ -550,15 +579,15 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
     if(SHArg(COMMAND) && SHArg(COMMAND)[0])
     {
 	struct Redirection rd;
- 	struct CommandLine cl = {SHArgLine(),
+ 	struct CommandLine cl = {(STRPTR)SHArgLine(),
        			         0,
 				 strlen(SHArg(COMMAND))};
         
-	if(Redirection_init(&rd))
+	if(Redirection_init(&rd, &is))
 	{
 	    D(bug("Running command %s\n", SHArg(COMMAND)));
 	    error = checkLine(&rd, &cl, &is);
-	    Redirection_release(&rd);
+	    Redirection_release(&rd, &is);
 	}
         
 	D(bug("Command done\n"));
@@ -568,16 +597,12 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
         error = interact(&is);
     }
 
-    CloseLibrary((struct Library *)UtilityBase);
-
     D(bug("Exiting shell\n"));
 
     return error;
 
     AROS_SHCOMMAND_EXIT
 }
-
-struct UtilityBase *UtilityBase;
 
 void setupResidentCommands(void)
 {
@@ -591,6 +616,9 @@ LONG interact(struct InterpreterState *is)
 {
     LONG  error = 0;
     BOOL  moreLeft = FALSE;
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
+    struct CommandLineInterface *cli = is->sb->sb_Cli;
 
     if (!cli->cli_Background)
     {
@@ -620,20 +648,22 @@ LONG interact(struct InterpreterState *is)
  	struct CommandLine cl = { NULL, 0, 0 };
 	struct Redirection rd;
 
-	if(Redirection_init(&rd))
+	if(Redirection_init(&rd, is))
 	{
 	    if (cli->cli_Interactive)
 	        printPrompt(is);
 
-	    moreLeft = readLine(&cl, cli->cli_CurrentInput);
+	    moreLeft = readLine(&cl, cli->cli_CurrentInput, is);
 	    error = checkLine(&rd, &cl, is);
 
-	    Redirection_release(&rd);
+	    Redirection_release(&rd, is);
 	    FreeVec(cl.line);
 	}
 
 	if (!moreLeft)
 	{
+	    struct CommandLineInterface *cli = is->sb->sb_Cli;
+
 	    popInterpreterState(is);
 
 	    if (!cli->cli_Interactive)
@@ -666,18 +696,16 @@ LONG interact(struct InterpreterState *is)
 
 
 /* Close redirection files and install regular input and output streams */
-void releaseFiles(struct Redirection *rd)
+void releaseFiles(struct Redirection *rd, struct InterpreterState *is)
 {
+   APTR DOSBase = is->sb->sb_DOSBase;
+
    if (rd->newIn) Close(rd->newIn);
    rd->newIn = BNULL;
 
    if (rd->newOut) Close(rd->newOut);
    rd->newOut = BNULL;
 }
-
-char avBuffer[256];
-char varBuffer[256];
-char argBuffer[256];
 
 
 /* Take care of one command line */
@@ -689,6 +717,9 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
     struct CSource cs       = { cl->line, strlen(cl->line), 0 };
     struct LocalVar *lv;
     LONG result = ERROR_UNKNOWN;
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
+    struct CommandLineInterface *cli = is->sb->sb_Cli;
     
     D(bug("[Shell] checkLine() Calling convertLine(), line = %s\n", cl->line));
 
@@ -697,7 +728,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
 	D(bug("Position %i\n", filtered.CS_CurChr));
 
 	/* End string */
-	appendString(&filtered, "\n\0", 2);
+	appendString(&filtered, "\n\0", 2, is);
 
 	/* Consistency checks */
 	if(rd->haveOutRD && rd->haveAppRD)
@@ -827,6 +858,7 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 {
     CONST_STRPTR send = s + size;
     LONG i, len;
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
 
     while (s < send)
     {
@@ -847,7 +879,7 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 		    {
 			/* default argument */
 			s += len + 1;
-			appendString(filtered, s, pos - s);
+			appendString(filtered, s, pos - s, is);
 			s = pos + 1;
 			break;
 		    }
@@ -887,12 +919,12 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 					if (arg == (STRPTR)1)
 					    arg = 0;
 					else
-					    appendString(filtered, " ", 1);
+					    appendString(filtered, " ", 1, is);
 
 					value = **m;
 					bug("%ld ", value);
 			 		len = sprintf(buf, "%ld", value);
-					appendString(filtered, buf, len);
+					appendString(filtered, buf, len, is);
 					++m;
 				    }
 
@@ -925,7 +957,7 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 				bug("%s\n", arg);
 
 				if (arg > 0)
-				    appendString(filtered, arg, len);
+				    appendString(filtered, arg, len, is);
 				break;
 			    }
 
@@ -935,11 +967,11 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 				if (arg == (STRPTR)1)
 				    arg = 0;
 				else
-				    appendString(filtered, " ", 1);
+				    appendString(filtered, " ", 1, is);
 
 				bug("%s ", *m);
 				len = strlen(*m);
-				appendString(filtered, *m, len);
+				appendString(filtered, *m, len, is);
 
 				++m;
 			    }
@@ -963,16 +995,16 @@ static void substArgs(struct CSource *filtered, CONST_STRPTR s, LONG size,
 			    is->argname[i], arg);
 
 			if (arg > 0)
-			    appendString(filtered, arg, len);
+			    appendString(filtered, arg, len, is);
 			break;
 		    }
 		}
 	    }
 	    if (is->argcount == i)
-		appendString(filtered, s - 1, 1);
+		appendString(filtered, s - 1, 1, is);
 	}
 	else
-	    appendString(filtered, s++, 1);
+	    appendString(filtered, s++, 1, is);
     }
 }
 
@@ -1003,8 +1035,8 @@ static BOOL doCommand(struct CSource *cs, struct CSource *filtered,
 		
 	if (s[0] == '\n' || s[0] == '\0')
 	{
-	    appendString(filtered, &is->dot, 1);
-	    appendString(filtered, start, len);
+	    appendString(filtered, &is->dot, 1, is);
+	    appendString(filtered, start, len, is);
 	    *error = ERROR_REQUIRED_ARG_MISSING;
 	    return TRUE;
 	}
@@ -1045,8 +1077,11 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
            doNotExpandVar    = FALSE;
     STRPTR varNameString     = NULL;
     struct CSource cookingCS = {NULL, 0, 0};
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
+    struct CommandLineInterface *cli = is->sb->sb_Cli;
     
-    appendString(&cookingCS, cs->CS_Buffer, cs->CS_Length + 1);
+    appendString(&cookingCS, cs->CS_Buffer, cs->CS_Length + 1, is);
     cookingCS.CS_CurChr = cs->CS_CurChr;
     cookingCS.CS_Length = cs->CS_Length;
 
@@ -1086,17 +1121,17 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                  (cookingCS.CS_Buffer[cookingCS.CS_CurChr + 3] == is->ket)       )
 	    {
                 len = sprintf(buf, "%ld", is->cliNumber);
-                appendString(filtered, buf, len);
+                appendString(filtered, buf, len, is);
                 advance(4);
 	    }
             else
             {
-                appendString(filtered, (CONST_STRPTR) &item, 1);
+                appendString(filtered, (CONST_STRPTR) &item, 1, is);
                 advance(1);
             }
         }
 
-        appendString(filtered, "\0", 1);
+        appendString(filtered, "\0", 1, is);
 
         if ( filtered->CS_Buffer != NULL )
         {
@@ -1139,7 +1174,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
             if ( (item != '$') || (doNotExpandVar) )
             {
-                appendString(filtered, (CONST_STRPTR) &item, 1);
+                appendString(filtered, (CONST_STRPTR) &item, 1, is);
             }
             else
             {
@@ -1148,8 +1183,8 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
                 if (item == '$')
                 {
-                    appendString(filtered, (CONST_STRPTR) &cookingCS.CS_Buffer[cookingCS.CS_CurChr - 1], 1);
-                    appendString(filtered, (CONST_STRPTR) &item, 1);
+                    appendString(filtered, (CONST_STRPTR) &cookingCS.CS_Buffer[cookingCS.CS_CurChr - 1], 1, is);
+                    appendString(filtered, (CONST_STRPTR) &item, 1, is);
                     advance(1);
                     continue;
                 }
@@ -1195,11 +1230,11 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                 (
                     ( foundOpeningBrace == foundClosingBrace )                           &&
                     ( !doNotExpandVar )                                                  &&
-                    ( GetVar(varNameString, varBuffer, sizeof(varBuffer), LV_VAR) != -1)
+                    ( GetVar(varNameString, is->sb->sb_varBuffer, sizeof(is->sb->sb_varBuffer), LV_VAR) != -1)
                 )
                 {
-                    D(bug("[Shell] Real variable! Value = '%s'\n", varBuffer));
-                    appendString(filtered, varBuffer, strlen(varBuffer));
+                    D(bug("[Shell] Real variable! Value = '%s'\n", is->sb->sb_varBuffer));
+                    appendString(filtered, is->sb->sb_varBuffer, strlen(is->sb->sb_varBuffer), is);
                 }
                 else
                 {
@@ -1209,7 +1244,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                     }
                     /* We don't reach back the dollar char as it would lead to
                        endless loop, but we put it in the string nevertheless */
-                    appendString(filtered, "$", 1);
+                    appendString(filtered, "$", 1, is);
                 }
 
                 foundOpeningBrace = foundClosingBrace = FALSE;
@@ -1220,7 +1255,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
         } // while( cookingCS.CS_CurChr < cookingCS.CS_Length )
 
-        appendString(filtered, "\0", 1);
+        appendString(filtered, "\0", 1, is);
         {
             FreeVec(cookingCS.CS_Buffer);
             cookingCS.CS_Buffer = filtered->CS_Buffer;
@@ -1259,7 +1294,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                     struct Redirection embedRd;
 
                     /* No memory? */
-                    if(!Redirection_init(&embedRd))
+                    if(!Redirection_init(&embedRd, is))
                     {
                         FreeVec(cookingCS.CS_Buffer);
                         return FALSE;
@@ -1282,9 +1317,9 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
                     D(bug("Embedded command done.\n"));
 
-                    copyEmbedResult(filtered, &embedRd);
+                    copyEmbedResult(filtered, &embedRd, is);
 
-                    Redirection_release(&embedRd);
+                    Redirection_release(&embedRd, is);
 
                     /* Now, go on with the original argument string */
                     continue;
@@ -1296,12 +1331,12 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
             } // if (item = '`')
 
-            appendString(filtered, (CONST_STRPTR) &item, 1);
+            appendString(filtered, (CONST_STRPTR) &item, 1, is);
             advance(1);
 
         } // while ( item != '\0' )
 
-        appendString(filtered, &item, 1);
+        appendString(filtered, &item, 1, is);
 
         if ( filtered->CS_Buffer != NULL )
         {
@@ -1333,7 +1368,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
 	    temp[0] = item;
 
-	    appendString(filtered, temp, 1);
+	    appendString(filtered, temp, 1, is);
 	    advance(1);
 	}
 
@@ -1558,13 +1593,13 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		    struct RDArgs *rd;
 
 		    len = s[1] == ' ' ? 2 : 4;
-		    appendString(filtered, &is->dot, 1);
-		    appendString(filtered, s, len);
+		    appendString(filtered, &is->dot, 1, is);
+		    appendString(filtered, s, len, is);
 		    advance(++len);
 
 		    if (is->rdargs)
 		    {
-			appendString(filtered, "duplicate", 10);
+			appendString(filtered, "duplicate", 10, is);
 			FreeDosObject(DOS_RDARGS, is->rdargs);
 			is->rdargs = NULL;
 			FreeVec(cookingCS.CS_Buffer);
@@ -1574,7 +1609,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		    is->rdargs = AllocDosObject(DOS_RDARGS, NULL);
 		    if (is->rdargs)
 		    {
-			result = ReadItem(argBuffer, sizeof(argBuffer), &cookingCS);
+			result = ReadItem(is->sb->sb_argBuffer, sizeof(is->sb->sb_argBuffer), &cookingCS);
 
 			if (result == ITEM_ERROR)
 			{
@@ -1588,8 +1623,8 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 			    return ERROR_KEY_NEEDS_ARG;
 			}
 
-			len = strlen(argBuffer);
-		        appendString(filtered, argBuffer, len + 1);
+			len = strlen(is->sb->sb_argBuffer);
+		        appendString(filtered, is->sb->sb_argBuffer, len + 1, is);
 
 			s = AROS_BSTR_ADDR(cli->cli_CommandName);
 			len = AROS_BSTR_strlen(cli->cli_CommandName);
@@ -1597,12 +1632,12 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 			is->rdargs->RDA_Source.CS_Length = len;
 			is->rdargs->RDA_Source.CS_CurChr = 0;
 
-			rd = ReadArgs(argBuffer, is->arg, is->rdargs);
+			rd = ReadArgs(is->sb->sb_argBuffer, is->arg, is->rdargs);
 			if (rd)
 			{
 			    UBYTE t;
 
-			    s = argBuffer;
+			    s = is->sb->sb_argBuffer;
 			    is->argcount = 0;
 
 			    for (i = 0; i < MAXARGS; ++i)
@@ -1692,7 +1727,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 			else
 			{
 			    error = IoErr();
-			    D(bug("[Shell] bad args for: %s\n", argBuffer));
+			    D(bug("[Shell] bad args for: %s\n", is->sb->sb_argBuffer));
 			    FreeDosObject(DOS_RDARGS, is->rdargs);
 			    is->rdargs = NULL;
 			    FreeVec(cookingCS.CS_Buffer);
@@ -1716,13 +1751,13 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		    advance(len);
 
 		    i = cookingCS.CS_CurChr;
-		    result = ReadItem(argBuffer, sizeof(argBuffer), &cookingCS);
+		    result = ReadItem(is->sb->sb_argBuffer, sizeof(is->sb->sb_argBuffer), &cookingCS);
 
 		    if (result == ITEM_UNQUOTED)
 		    {
 			len = cookingCS.CS_CurChr - i;
 
-			i = getArgumentIdx(is, argBuffer, len);
+			i = getArgumentIdx(is, is->sb->sb_argBuffer, len);
 			if (i < 0)
 			{
 			    FreeVec(cookingCS.CS_Buffer);
@@ -1731,7 +1766,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
 			advance(1);
 			len = cookingCS.CS_CurChr;
-		    	result = ReadItem(argBuffer, sizeof(argBuffer), &cookingCS);
+		    	result = ReadItem(is->sb->sb_argBuffer, sizeof(is->sb->sb_argBuffer), &cookingCS);
 			len = cookingCS.CS_CurChr - len;
 			switch (result)
 			{
@@ -1746,7 +1781,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 				FreeMem((APTR)is->argdef[i], is->argdeflen[i] + 1);
 
 			    is->argdef[i] = (IPTR)AllocMem(len + 1, MEMF_LOCAL);
-			    CopyMem(argBuffer, (APTR)is->argdef[i], len);
+			    CopyMem(is->sb->sb_argBuffer, (APTR)is->argdef[i], len);
 			    ((STRPTR)is->argdef[i])[len] = '\0';
 			    is->argdeflen[i] = len;
 			    advance(len);
@@ -1769,7 +1804,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		/* Copy argument */
 		LONG size = cookingCS.CS_CurChr;
 
-		result = ReadItem(argBuffer, sizeof(argBuffer), /*cs*/&cookingCS);
+		result = ReadItem(is->sb->sb_argBuffer, sizeof(is->sb->sb_argBuffer), /*cs*/&cookingCS);
 
 		/*??AGR who coded this shit ? */
 		if(result == ITEM_ERROR || ITEM_NOTHING)
@@ -1778,7 +1813,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		    return ERROR_UNKNOWN;
 		}
 
-		D(bug("\nFound argument %s\n", argBuffer));
+		D(bug("\nFound argument %s\n", is->sb->sb_argBuffer));
 		substArgs(filtered, from + size, cookingCS.CS_CurChr - size, is);
 	    }
 	}
@@ -1843,18 +1878,19 @@ BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs)
 }
 
 /* Currently, no error checking is involved */
-BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd)
+BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd, struct InterpreterState *is)
 {
     char a = 0;
+    APTR DOSBase = is->sb->sb_DOSBase;
 
     Seek(embedRd->newOut, 0, OFFSET_BEGINNING);
 
     while(((a = FGetC(embedRd->newOut)) != '\0') && (a != EOF))
     {
         if (a != '\n')
-            appendString(filtered, &a, 1);
+            appendString(filtered, &a, 1, is);
         else
-            appendString(filtered, " ", 1);
+            appendString(filtered, " ", 1, is);
     }
 
     return TRUE;
@@ -1867,6 +1903,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 		struct Redirection *rd, struct InterpreterState *is)
 {
     LONG  result;
+    APTR DOSBase = is->sb->sb_DOSBase;
 
     rd->haveCommand = TRUE;
 
@@ -1878,14 +1915,14 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 	return FALSE;
 
     /* Is this command an alias? */
-    if(GetVar(rd->commandStr, avBuffer, sizeof(avBuffer),
+    if(GetVar(rd->commandStr, is->sb->sb_avBuffer, sizeof(is->sb->sb_avBuffer),
 	      GVF_LOCAL_ONLY | LV_ALIAS) != -1)
     {
-	struct CSource aliasCs = { avBuffer, sizeof(avBuffer), 0 };
+	struct CSource aliasCs = { is->sb->sb_avBuffer, sizeof(is->sb->sb_avBuffer), 0 };
 
 	result = ReadItem(rd->commandStr, COMMANDSTR_LEN, &aliasCs);
 
-	D(bug("Found alias! value = %s\n", avBuffer));
+	D(bug("Found alias! value = %s\n", is->sb->sb_avBuffer));
 
 	if(result == ITEM_ERROR || result == ITEM_NOTHING)
 	    return FALSE;
@@ -1910,9 +1947,11 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 #define __extendSize  512	/* How much to increase buffer if it's full */
 
 
-BOOL readLine(struct CommandLine *cl, BPTR inputStream)
+BOOL readLine(struct CommandLine *cl, BPTR inputStream, struct InterpreterState *is)
 {
     LONG letter; 
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
 
     while(TRUE)
     {
@@ -1958,8 +1997,10 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
 
 
 /* Currently, there is no error checking involved */
-BOOL appendString(struct CSource *cs, CONST_STRPTR fromStr, LONG size)
+BOOL appendString(struct CSource *cs, CONST_STRPTR fromStr, LONG size, struct InterpreterState *is)
 {
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+
     /* +2 for additional null bytes, '\n', \0' */
     while(cs->CS_CurChr + size + 2 > (cs->CS_Length - cs->CS_CurChr))
     {
@@ -1980,8 +2021,12 @@ BOOL appendString(struct CSource *cs, CONST_STRPTR fromStr, LONG size)
     return TRUE;
 }
 
-void unloadCommand(BPTR commandSeg, struct ShellState *ss)
+void unloadCommand(BPTR commandSeg, struct ShellState *ss, struct InterpreterState *is)
 {
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
+    struct CommandLineInterface *cli = is->sb->sb_Cli;
+
 #if SET_HOMEDIR
     if (ss->homeDirChanged)
     {
@@ -2011,8 +2056,12 @@ void unloadCommand(BPTR commandSeg, struct ShellState *ss)
 }
 
 
-BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
+BPTR loadCommand(STRPTR commandName, struct ShellState *ss, struct InterpreterState *is)
 {
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
+    struct CommandLineInterface *cli = is->sb->sb_Cli;
+
     BPTR   oldCurDir;
     BPTR   commandSeg = BNULL;
     BPTR  *paths;
@@ -2137,6 +2186,10 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 		 struct InterpreterState *is)
 {
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
+    struct CommandLineInterface *cli = is->sb->sb_Cli;
+
     BPTR              module;
     LONG              error = 0;
     struct ShellState ss = {FALSE};
@@ -2153,7 +2206,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
     D(bug("Trying to load command: %s\nArguments: %s\n", command,
 	     commandArgs));
 
-    module = loadCommand(command, &ss);
+    module = loadCommand(command, &ss, is);
 
     /* Set command name even if we couldn't load the command to be able to
        report errors correctly */
@@ -2194,7 +2247,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 	    if (error)
 	    {
 		D(bug("Returned from command %s\n", command));
-		unloadCommand(module, &ss);
+		unloadCommand(module, &ss, is);
 		cli->cli_Result2 = error;
 		return RETURN_FAIL;
 	    }
@@ -2270,7 +2323,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 	me->tc_Node.ln_Name = oldtaskname;
 
 	D(bug("Returned from command %s\n", command));
-	unloadCommand(module, &ss);
+	unloadCommand(module, &ss, is);
 
 	cli->cli_Result2 = IoErr();
     }
@@ -2293,7 +2346,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 		    {
 			if(fib->fib_DirEntryType > 0)
 			{
-			    setPath(lock);
+			    setPath(lock, is);
 			    lock = CurrentDir(lock);
 			}
 			else
@@ -2321,8 +2374,10 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 }
 
 
-BOOL Redirection_init(struct Redirection *rd)
+BOOL Redirection_init(struct Redirection *rd, struct InterpreterState *is)
 {
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+
     bzero(rd, sizeof(struct Redirection));
 
     rd->commandStr  = AllocVec(COMMANDSTR_LEN, MEMF_CLEAR);
@@ -2333,7 +2388,7 @@ BOOL Redirection_init(struct Redirection *rd)
     if(rd->commandStr == NULL || rd->outFileName == NULL ||
        rd->inFileName == NULL)
     {
-	Redirection_release(rd);
+	Redirection_release(rd, is);
 	return FALSE;
     }
 
@@ -2345,19 +2400,24 @@ BOOL Redirection_init(struct Redirection *rd)
 }
 
 
-void Redirection_release(struct Redirection *rd)
+void Redirection_release(struct Redirection *rd, struct InterpreterState *is)
 {
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+
     /* -2 as we set pointer 2 bytes ahead to be able to use C: as a multi-
        assign in a smooth way */
     FreeVec(rd->commandStr - 2);
     FreeVec(rd->outFileName);
     FreeVec(rd->inFileName);
 
-    releaseFiles(rd);
+    releaseFiles(rd, is);
 }
 
-static void printPath(void)
+static void printPath(struct InterpreterState *is)
 {
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+    APTR DOSBase = is->sb->sb_DOSBase;
+
     STRPTR  buf;
     ULONG   i;
 
@@ -2383,8 +2443,10 @@ static void printPath(void)
 }
 
 
-static void setPath(BPTR lock)
+static void setPath(BPTR lock, struct InterpreterState *is)
 {
+    APTR DOSBase = is->sb->sb_DOSBase;
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
     BPTR    dir;
     STRPTR  buf;
     ULONG   i;
@@ -2417,6 +2479,9 @@ static void setPath(BPTR lock)
 
 static void printPrompt(struct InterpreterState *is)
 {
+    APTR DOSBase = is->sb->sb_DOSBase;
+    struct CommandLineInterface *cli = is->sb->sb_Cli;
+
     BSTR prompt = cli->cli_Prompt;
     LONG length = AROS_BSTR_strlen(prompt);
     ULONG i;
@@ -2442,7 +2507,7 @@ static void printPrompt(struct InterpreterState *is)
 		break;
 	    case 'S':
 	    case 's':
-		printPath();
+		printPath(is);
 		break;
 	    default:
 		FPutC(Output(), '%');
