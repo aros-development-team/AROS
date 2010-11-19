@@ -471,9 +471,9 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
 
 static char *hdrstring = "Task : 0x%P - %s\n"
 			 "Error: 0x%08lx - ";
-static char *locstring = "PC   : 0x%P\n";
-static char *modstring = "Module %s Segment %lu %s (0x%P) Offset 0x%P\n";
-static char *funstring = "Function %s (0x%P) Offset 0x%P\n";
+static char *locstring = "PC   : 0x%P";
+static char *modstring = "Module %s Segment %lu %s (0x%P) Offset 0x%P";
+static char *funstring = "Function %s (0x%P) Offset 0x%P";
 
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
 {
@@ -504,17 +504,21 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 				  KDL_SymbolName , &symname, KDL_SymbolStart  , &symaddr,
 				  TAG_DONE))
 	    {
+	    	buf[-1] = '\n';
+	    
 		if (!segname)
 		    segname = "- unknown -";
 
-		buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, --buf, modname, segnum, segname, segaddr, iet->iet_AlertLocation - segaddr);
+		buf = NewRawDoFmt(modstring, RAWFMTFUNC_STRING, buf, modname, segnum, segname, segaddr, iet->iet_AlertLocation - segaddr);
 
 		if (symaddr)
 		{
+		    buf[-1] = '\n';
+
 		    if (!symname)
 			symname = "- unknown -";
 
-		    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, --buf, symname, symaddr, iet->iet_AlertLocation - symaddr);
+		    buf = NewRawDoFmt(funstring, RAWFMTFUNC_STRING, buf, symname, symaddr, iet->iet_AlertLocation - symaddr);
 		}
 	    }
 #endif

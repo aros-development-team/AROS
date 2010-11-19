@@ -10,7 +10,7 @@
 #include "exec_util.h"
 
 static char *startstring = "Program failed\n";
-static char *endstring   = "Wait for disk activity to finish.";
+static char *endstring   = "\nWait for disk activity to finish.";
 
 static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)
 {
