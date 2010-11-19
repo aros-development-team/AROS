@@ -29,7 +29,6 @@
 #include <proto/arossupport.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
-#include <clib/macros.h> /* need ABS() */
 
 #include "exec_intern.h"
 #include "exec_util.h"
@@ -62,38 +61,6 @@ static const UBYTE name[] = MOD_NAME_STRING;
 static const UBYTE version[] = VERSION_STRING;
 
 extern void debugmem(void);
-
-/*
-    We temporarily redefine kprintf() so we use the real version in case
-    we have one of these two fn's called before AROSSupportBase is ready.
-*/
-
-#undef kprintf
-#undef rkprintf
-#undef vkprintf
-struct Library * PrepareAROSSupportBase (struct ExecBase * SysBase)
-{
-	struct AROSSupportBase * AROSSupportBase;
-	AROSSupportBase = AllocMem(sizeof(struct AROSSupportBase), MEMF_CLEAR);
-	AROSSupportBase->kprintf = (void *)kprintf;
-	AROSSupportBase->rkprintf = (void *)rkprintf;
-	AROSSupportBase->vkprintf = (void *)vkprintf;
-    	NEWLIST(&AROSSupportBase->AllocMemList);
-
-	/* FIXME: Add code to read in the debug options */
-
-	return (struct Library *)AROSSupportBase;
-}
-
-void _aros_not_implemented(char *X)
-{
-    kprintf("Unsupported function at offset -0x%h in %s\n",
-	    ABS(*(WORD *)((&X)[-1]-2)),
-	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
-}
-#define kprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
-#define rkprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
-#define vkprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf)
 
 /* IntServer:
     This interrupt handler will send an interrupt to a series of queued

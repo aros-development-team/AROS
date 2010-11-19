@@ -8,6 +8,7 @@
 
 #include <aros/asmcall.h>
 #include <aros/debug.h>
+#include <clib/macros.h>
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
@@ -31,7 +32,6 @@
 
 extern void *LIBFUNCTABLE[];
 
-extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 
 extern void Exec_TrapHandler(ULONG trapNum);
@@ -41,6 +41,7 @@ AROS_LD3(ULONG, MakeFunctions,
 	 AROS_LDA(CONST_APTR, funcDispBase, A2),
          struct ExecBase *, SysBase, 15, Exec);
 
+/* Boot-time memory allocator */
 static APTR allocmem(struct MemHeader *mh, ULONG size)
 {
     UBYTE *ret = NULL;
@@ -70,6 +71,35 @@ static void Exec_TaskFinaliser(void)
 {
     /* Get rid of current task. */
     RemTask(SysBase->ThisTask);
+}
+
+#undef kprintf
+#undef rkprintf
+#undef vkprintf
+
+void _aros_not_implemented(char *X)
+{
+    kprintf("Unsupported function at offset -0x%h in %s\n",
+	    ABS(*(WORD *)((&X)[-1]-2)),
+	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
+}
+
+struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
+{
+	struct AROSSupportBase *AROSSupportBase;
+
+	AROSSupportBase = allocmem(mh, sizeof(struct AROSSupportBase));
+	
+	AROSSupportBase->kprintf = (void *)kprintf;
+	AROSSupportBase->rkprintf = (void *)rkprintf;
+	AROSSupportBase->vkprintf = (void *)vkprintf;
+    	NEWLIST(&AROSSupportBase->AllocMemList);
+
+	/* FIXME: Add code to read in the debug options */
+	AROSSupportBase->StdOut = NULL;
+	AROSSupportBase->DebugConfig = NULL;
+
+	return (struct Library *)AROSSupportBase;
 }
 
 /*
@@ -217,7 +247,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
     }
 
-    SysBase->DebugAROSBase  = PrepareAROSSupportBase(SysBase);
+    SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
 
     return SysBase;
 }
