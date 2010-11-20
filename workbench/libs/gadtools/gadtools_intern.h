@@ -272,6 +272,15 @@ struct GadToolsBase_intern
     
     /* RenderHook for GTListView class */
     struct Hook                 lv_RenderHook;
+
+    /* Seglist pointer */
+    BPTR			gt_SegList;
+
+    /* Required libraies */
+    APTR			gt_IntuitionBase;
+    APTR			gt_UtilityBase;
+    APTR			gt_GfxBase;
+    APTR			gt_LayersBase;
 };
 
 /* extended intuimsg as used by GT_GetIMsg, GT_FilterIMsg, ... */
@@ -359,6 +368,13 @@ struct GT_GenericGadget
 /****************************************************************************************/
 
 #define GTB(gtb)        	((struct GadToolsBase_intern *)gtb)
+
+extern struct ExecBase *SysBase;
+#define IntuitionBase	(GTB(GadToolsBase)->gt_IntuitionBase)
+#define UtilityBase	(GTB(GadToolsBase)->gt_UtilityBase)
+#define GfxBase		(GTB(GadToolsBase)->gt_GfxBase)
+#define LayersBase	(GTB(GadToolsBase)->gt_LayersBase)
+
 
 #ifdef __MORPHOS__
 #define DeinitRastPort(x) ((void)0)

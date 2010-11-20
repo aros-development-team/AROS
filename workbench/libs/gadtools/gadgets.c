@@ -1343,8 +1343,9 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 	    D(bug("makelistview: Scroller gadget created: %p\n", scrollergad));
                 
 	    /* the scrollergadget is a multigadget gadget: arrowinc->arrowdec->prop */
-#warning This relies on scroller gadget to always contain arrow gadgets
-#warning If this ever changes the line below must be updated.
+	    /* FIXME: This relies on scroller gadget to always contain arrow gadgets
+	     *        If this ever changes the line below must be updated.
+	     */
 	    prop_of_scrollergad = scrollergad->NextGadget->NextGadget;
 		
 	    scrollergad->Activation &= ~GACT_FOLLOWMOUSE;

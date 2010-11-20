@@ -152,7 +152,7 @@ struct Menu * makemenutitle(struct NewMenu * newmenu,
     *p = 0;
     menu = (struct Menu *)(p + 1);
     menu->Flags    	      = (newmenu->nm_Flags & NM_MENUDISABLED) ^ MENUENABLED;
-    menu->MenuName 	      = newmenu->nm_Label;
+    menu->MenuName 	      = (STRPTR)newmenu->nm_Label;
     GTMENU_USERDATA(menu) = newmenu->nm_UserData;
 
     return menu;
@@ -247,7 +247,7 @@ struct MenuItem * makemenuitem(struct NewMenu * newmenu,
 	    it->FrontPen = GetTagData(GTMN_FrontPen, 0, taglist);
 	    it->DrawMode = JAM1;
 
-	    it->IText    = newmenu->nm_Label;
+	    it->IText    = (STRPTR)newmenu->nm_Label;
 	    DEBUG_ALLOCMENUS(bug("makemenuitem: FillName <%s>\n",it->IText));
 
 	    menuitem->Flags |= ITEMTEXT;
@@ -257,7 +257,7 @@ struct MenuItem * makemenuitem(struct NewMenu * newmenu,
         	struct IntuiText *it2 = it + 1;
 
 		*it2 = *it;
-		it2->IText = newmenu->nm_CommKey;
+		it2->IText = (STRPTR)newmenu->nm_CommKey;
 		it->NextText = it2;
 	    }
 

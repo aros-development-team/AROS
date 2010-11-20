@@ -76,7 +76,7 @@
 	for (i=0;i<BarLabels;i++)
 	{
 		// get the next Image pointer address
-		p = (IPTR) p - sizeof(APTR);
+		p = (ULONG *)((IPTR) p - sizeof(APTR));
 		if (*(APTR*)p)
 		{
 			DEBUG_FREEMENUS(bug("FreeMenus: Free Image 0x%lx\n", *(APTR*)p));
