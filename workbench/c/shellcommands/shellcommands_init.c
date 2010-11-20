@@ -26,6 +26,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     struct shcommand *sh;
     int pos;
 
+    D(bug("[ShellCommands] Init\n"));
+
     D(bug("[ShellCommands] shset = %p\n", SETNAME(SHCOMMANDS)));
     ForeachElementInSet(SETNAME(SHCOMMANDS), 1, pos, sh) {
     	D(bug("[ShellCommands] SYSTEM:%s\n", sh->sh_Name));
@@ -37,7 +39,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     if (pos <= 0)
     	return FALSE;
 
-    D(bug("[ShellCommands] Init\n"));
     DOSBase = OpenLibrary("dos.library", 0);
     if ( DOSBase == NULL ) {
     	D(bug("[ShellCommands] What? No dos.library?\n"));
@@ -54,8 +55,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     ForeachElementInSet(SETNAME(SHCOMMANDS), 1, pos, sh) {
     	struct ShellCommandSeg *scs = &LIBBASE->sc_Command[pos-1];
 
-    	scs->scs_Size = AROS_ALIGN(sizeof(*scs))/sizeof(ULONG);
-    	scs->scs_Next = 0;
+    	scs->scs_Size = 0;	// Must be 0 to prevent UnLoadSeg
+    	scs->scs_Next = 0;	// from killing us after CLI[1] exits
     	scs->scs_Name = sh->sh_Name;
     	__AROS_SET_FULLJMP(&scs->scs_Code, sh->sh_Command);
     	AddSegment(sh->sh_Name, MKBADDR(&scs->scs_Next), 0);
