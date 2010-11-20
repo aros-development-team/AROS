@@ -16,6 +16,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-potgo-kobj \
 #MM     workbench-fs-pipefs-kobj \
 #MM     workbench-fs-xpipe-kobj \
+#MM     workbench-libs-workbench-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \
 #MM     workbench-libs-icon-kobj \
@@ -41,7 +42,7 @@ FILES=start
 AFILES=rom_entry rom_init
 
 ROMPAD_rom := 0x1000000
-KLIBS   := exec aros dos utility oop expansion boot
+KLIBS   := exec aros dos utility oop expansion boot workbench
 KDEVS   := timer input keyboard console trackdisk gameport
 KHNDLRS := con nil afs packet pipefs xpipe amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo
