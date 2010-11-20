@@ -23,11 +23,39 @@
 #endif
 /****************************************************************************************/
 
+static int openall(LIBBASETYPEPTR LIBBASE)
+{
+    if ((UtilityBase = OpenLibrary("utility.library", 0)) != NULL) {
+    	if ((GfxBase = OpenLibrary("graphics.library", 0)) != NULL) {
+    	    if ((LayersBase = OpenLibrary("layers.library", 0)) != NULL) {
+    	    	if ((IntuitionBase = OpenLibrary("intuition.library", 0)) != NULL) {
+    	    	    return TRUE;
+    	    	}
+    	    	CloseLibrary(LayersBase);
+    	    }
+    	    CloseLibrary(GfxBase);
+    	}
+    	CloseLibrary(UtilityBase);
+    }
+    return FALSE;
+}
+
+static void closeall(LIBBASETYPEPTR LIBBASE)
+{
+    CloseLibrary(IntuitionBase);
+    CloseLibrary(LayersBase);
+    CloseLibrary(GfxBase);
+    CloseLibrary(UtilityBase);
+}
+
+static int InitRootClass(LIBBASETYPEPTR LIBBASE)
+{
+    return openall(LIBBASE);
+}
 
 static int Init(LIBBASETYPEPTR LIBBASE)
 {
     /* This function is single-threaded by exec by calling Forbid. */
-
     InitSemaphore(&LIBBASE->bevelsema);
     LIBBASE->bevel = NULL;
     
@@ -85,11 +113,16 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
     if (LIBBASE->bevel)
 	DisposeObject(LIBBASE->bevel);
     LIBBASE->bevel = NULL;
-    
+   
+    closeall(LIBBASE);
+
     return TRUE;
 }
 
 /****************************************************************************************/
+
+DECLARESET(CLASSESINIT);
+ADD2SET(InitRootClass, classesinit, -20);
 
 ADD2INITLIB(Init, 0);
 ADD2OPENLIB(Open, 0);

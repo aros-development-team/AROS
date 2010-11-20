@@ -146,7 +146,7 @@ IPTR GTString__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     	{
     	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
     	    
-    	    retval = (IPTR)NULL;
+    	    retval = NULL;
     	}
 
     	if (tattr)
