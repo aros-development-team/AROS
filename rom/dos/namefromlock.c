@@ -127,7 +127,7 @@ struct MyExAllData
     /* Loop over path */
     do
     {
-    	LONG last_dirpos = iofs->io_DirPos;
+    	STRPTR sep = NULL;
 
     	/* Read name of current lock (into the user supplied buffer) */
     	iofs->IOFS.io_Unit  	    	    = curlock;
@@ -140,21 +140,6 @@ struct MyExAllData
 
     	error = iofs->io_DosError;
 
-	/* Detect filesystems that always return a type
-	 * of ST_USERDIR when queried for '/' at the root.
-	 */
-/* 
- * Please find another way to do this.
- * In some handlers (for example in emul.handler) values of io_DirPos are not unique
- * accross different directories. They really reflect position within the directory,
- * but not absolute position of the object on disk.
- * This detection will always give ST_ROOT with such handlers.
- * May be use SameLock() for objects comparison ?
- *	Pavel Fedin.
- 
-    	if (!error && iofs->io_DirPos == last_dirpos && ead->ed_Type == ST_USERDIR)
-    	    ead->ed_Type = ST_ROOT; */
-    
     	/* Move name to the top of the buffer. */
     	if(!error)
     	{
@@ -187,6 +172,9 @@ struct MyExAllData
                     error = ERROR_LINE_TOO_LONG;
                 }
     	    }
+
+    	    /* Stash away the location of the directory separator */
+    	    sep = name;
     	    
     	    if (!error)
     	    {
@@ -219,6 +207,27 @@ struct MyExAllData
     	    curlock = iofs->IOFS.io_Unit;
     	    error = iofs->io_DosError;
     	}
+
+    	/* Some 'classic' filesystems don't ever return ST_ROOT.
+    	 * We check to see if the lock is the same as the previous
+    	 * lock, and if so, assume we're reached the root.
+    	 */
+    	if (!error && ead->ed_Type == ST_USERDIR &&
+    	     oldlock != BNULL && sep != NULL) {
+    	    iofs->IOFS.io_Unit = curlock;
+    	    iofs->IOFS.io_Command = FSA_SAME_LOCK;
+    	    iofs->io_Union.io_SAME_LOCK.io_Lock[0] = curlock;
+    	    iofs->io_Union.io_SAME_LOCK.io_Lock[1] = oldlock;
+    	    iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
+    	    DosDoIO(&iofs->IOFS);
+
+    	    if (iofs->io_DosError == 0 &&
+    	    	iofs->io_Union.io_SAME_LOCK.io_Same == LOCK_SAME) {
+    	    	*sep = ':';
+    	    	ead->ed_Type = ST_ROOT;
+    	    }
+    	}
+
     
     	/* Free the old lock if it was allocated by NameFromLock(). */
     	if(oldlock != NULL)
@@ -235,7 +244,7 @@ struct MyExAllData
     while(!error && (ead->ed_Type != ST_ROOT));
 
     /* Move the name from the top to the bottom of the buffer. */
-    
+
     if (!error)
     {
         UBYTE c, old_c = '\0';
