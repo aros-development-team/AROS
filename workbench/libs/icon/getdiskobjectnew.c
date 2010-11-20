@@ -16,7 +16,7 @@
 	AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
-	struct Library *, IconBase, 22, Icon)
+	struct IconBase *, IconBase, 22, Icon)
 
 /*  FUNCTION
 	Tries to open the supplied info file via GetDiskObject(). If this

@@ -21,7 +21,7 @@
 	AROS_LHA(CONST_STRPTR, name, A0),
 	AROS_LHA(const struct TagItem *, tags, A1),
 /*  LOCATION */
-	struct Library *, IconBase, 30, Icon)
+	struct IconBase *, IconBase, 30, Icon)
 
 /*  FUNCTION
 	Open icon from disk
@@ -133,7 +133,7 @@
 	{
             BPTR file = OpenDefaultIcon(defaultName, MODE_OLDFILE);
             
-            if (file != NULL)
+            if (file != BNULL)
 	    {
 	    	icon = ReadIcon(file);
 		CloseDefaultIcon(file);
@@ -166,7 +166,7 @@
     {
         BPTR file = OpenIcon(name, MODE_OLDFILE);
         
-        if (file != NULL)
+        if (file != BNULL)
         {
             icon = ReadIcon(file);
             CloseIcon(file);
@@ -175,7 +175,7 @@
             {
                 /* Force the icon type */
                 BPTR lock = LockObject(name, ACCESS_READ);
-                if (lock != NULL)
+                if (lock != BNULL)
                 {
                     LONG type = FindType(lock);
                     if (type != -1) icon->do_Type = type;
@@ -188,7 +188,7 @@
         {
             struct IconIdentifyMsg iim;
             
-            if ((iim.iim_FileLock = LockObject(name, ACCESS_READ)) != NULL)
+            if ((iim.iim_FileLock = LockObject(name, ACCESS_READ)) != BNULL)
             {
                 if ((iim.iim_FIB = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
                 {
@@ -197,7 +197,7 @@
                         iim.iim_SysBase     = (struct Library *) SysBase;
                         iim.iim_DOSBase     = (struct Library *) DOSBase;
                         iim.iim_UtilityBase = (struct Library *) UtilityBase;
-                        iim.iim_IconBase    =                    IconBase;
+                        iim.iim_IconBase    = (struct Library *) IconBase;
                         iim.iim_Tags        = tags;
                         
                         iim.iim_ParentLock  = ParentDir(iim.iim_FileLock);
@@ -229,8 +229,8 @@
                             icon = FindDefaultIcon(&iim);
                         }
                         
-                        if (iim.iim_ParentLock != NULL) UnLock(iim.iim_ParentLock);
-                        if (iim.iim_FileHandle != NULL) Close(iim.iim_FileHandle);
+                        if (iim.iim_ParentLock != BNULL) UnLock(iim.iim_ParentLock);
+                        if (iim.iim_FileHandle != BNULL) Close(iim.iim_FileHandle);
                     }
                     
                     FreeDosObject(DOS_FIB, iim.iim_FIB);

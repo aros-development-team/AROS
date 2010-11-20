@@ -15,21 +15,17 @@
 
 #include LC_LIBDEFS_FILE
 
-LONG IFFParseBase_version = -39,
-     GfxBase_version      = -39,
-     CyberGfxBase_version = -39;
-
-LIBBASETYPE *IconBase;
+const LONG IFFParseBase_version = 39,
+           GfxBase_version      = 39,
+           CyberGfxBase_version = 39;
 
 /****************************************************************************************/
 
-static int Init(LIBBASETYPEPTR lh)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
 {
     LONG i;
 
-    IconBase = lh;
-    
-    /* Initialize memory pool ----------------------------------------------*/
+     /* Initialize memory pool ----------------------------------------------*/
     if (!(LB(lh)->ib_MemoryPool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 8194, 8194)))
     {
         return FALSE;
@@ -60,15 +56,56 @@ static int Init(LIBBASETYPEPTR lh)
     return TRUE;
 }
 
-static int Expunge(LIBBASETYPEPTR lh)
+static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE)
 {
-    DeletePool(LB(lh)->ib_MemoryPool);
-    
+    UtilityBase = OpenLibrary("utility.library", 0);
+    if (UtilityBase != NULL) {
+    	DOSBase = OpenLibrary("dos.library", 0);
+    	if (DOSBase != NULL) {
+    	    GfxBase = OpenLibrary("graphics.library", GfxBase_version);
+    	    if (GfxBase != NULL) {
+    	    	IntuitionBase = OpenLibrary("intuition.library", 0);
+    	    	if (IntuitionBase != NULL) {
+		    /* Optional libraries */
+		    CyberGfxBase = (APTR)OpenLibrary("cybergraphics.library", CyberGfxBase_version);
+		    IFFParseBase = OpenLibrary("iffparse.library", IFFParseBase_version);
+		    DataTypesBase = OpenLibrary("datatypes.library", 0);
+
+
+    	    	    return TRUE;
+    	    	}
+    	    	CloseLibrary(GfxBase);
+    	    }
+    	    CloseLibrary(DOSBase);
+    	}
+        CloseLibrary(UtilityBase);
+    }
+
+    return FALSE;
+}
+
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
+{
+    DeletePool(LB(LIBBASE)->ib_MemoryPool);
+   
+    /* Drop dynamic libraries */
     if (PNGBase) CloseLibrary(PNGBase);
+
+    /* Drop optional libraries */
+    if (CyberGfxBase)  CloseLibrary(CyberGfxBase);
+    if (DataTypesBase) CloseLibrary(DataTypesBase);
+    if (IFFParseBase)  CloseLibrary(IFFParseBase);
+
+    /* Drop the rest */
+    if (IntuitionBase) CloseLibrary(IntuitionBase);
+    if (GfxBase)       CloseLibrary(GfxBase);
+    if (DOSBase)       CloseLibrary(DOSBase);
+    if (IntuitionBase) CloseLibrary(IntuitionBase);
     
     return TRUE;
 }
 
 
-ADD2INITLIB(Init, 0);
-ADD2EXPUNGELIB(Expunge, 0);
+ADD2INITLIB(GM_UNIQUENAME(Init), 0);
+ADD2INITLIB(GM_UNIQUENAME(Open), 0);
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0);

@@ -18,7 +18,7 @@
 	AROS_LHA(struct FreeList *, freelist, A0),
 
 /*  LOCATION */
-	struct Library *, IconBase, 9, Icon)
+	struct IconBase *, IconBase, 9, Icon)
 
 /*  FUNCTION
 	Frees all memory chunks in the freelist (previously inserted into

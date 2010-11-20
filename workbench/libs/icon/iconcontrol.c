@@ -23,7 +23,7 @@
         AROS_LHA(struct TagItem *,    tags, A1),
 
 /*  LOCATION */
-        struct Library *, IconBase, 26, Icon)
+        struct IconBase *, IconBase, 26, Icon)
 
 /*  FUNCTION
 	Set and get icon and icon.library options.

@@ -21,7 +21,7 @@
         AROS_LHA(ULONG, type, D0),
         
 /*  LOCATION */
-        struct Library *, IconBase, 29, Icon)
+        struct IconBase *, IconBase, 29, Icon)
 
 /*  FUNCTION
 	Create empty diskobject structure.
@@ -47,7 +47,7 @@
 {
     AROS_LIBFUNC_INIT
     
-#   warning TODO: Implement icon/NewDiskObject()
+    /* TODO: Implement icon/NewDiskObject() */
     aros_print_not_implemented("icon/NewDiskObject()");
 
     return NULL;

@@ -17,7 +17,7 @@
 	AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
-	struct Library *, IconBase, 13, Icon)
+	struct IconBase *, IconBase, 13, Icon)
 
 /*  FUNCTION
 	Opens an icon from disk.

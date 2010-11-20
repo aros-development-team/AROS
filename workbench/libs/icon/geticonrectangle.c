@@ -19,7 +19,7 @@
 	AROS_LHA(struct Rectangle *, rectangle, A3),
 	AROS_LHA(struct TagItem *, tags, A4),
 /*  LOCATION */
-	struct Library *, IconBase, 28, Icon)
+	struct IconBase *, IconBase, 28, Icon)
 
 /*  FUNCTION
 	Query size of icon.
@@ -67,7 +67,7 @@
 	rectangle->MaxY = icon->do_Gadget.Height - 1;
     }
 
-#warning GetIconRectangleA() is only very limited implemented
+    /* FIXME: GetIconRectangleA() is only very limited implemented */
     
     return TRUE;
     

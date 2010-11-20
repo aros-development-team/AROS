@@ -20,7 +20,7 @@
 	AROS_LHA(UBYTE *, value, A1),
 
 /*  LOCATION */
-	struct Library *, IconBase, 17, Icon)
+	struct IconBase *, IconBase, 17, Icon)
 
 /*  FUNCTION
 	Checks if the given tooltype has the supplied value.

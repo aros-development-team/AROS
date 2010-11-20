@@ -10,11 +10,11 @@
 #include <workbench/icon.h>
 
 /*** Prototypes *************************************************************/
-LONG               __FindType_WB(struct IconIdentifyMsg *iim, struct Library *IconBase);
-struct DiskObject *__FindDefaultIcon_WB(struct IconIdentifyMsg *iim, struct Library *IconBase);
+LONG               __FindType_WB(BPTR lock, struct IconBase *IconBase);
+struct DiskObject *__FindDefaultIcon_WB(struct IconIdentifyMsg *iim, struct IconBase *IconBase);
 
 /*** Macros *****************************************************************/
-#define FindType(iim) (__FindType_WB((iim), IconBase))
+#define FindType(lock) (__FindType_WB((lock), IconBase))
 #define FindDefaultIcon(iim) (__FindDefaultIcon_WB((iim), IconBase))
 
 #endif /* _IDENTIFY_H_ */

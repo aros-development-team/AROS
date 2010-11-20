@@ -20,7 +20,7 @@
 	AROS_LHA(unsigned long    , size, A2),
 
 /*  LOCATION */
-	struct Library *, IconBase, 12, Icon)
+	struct IconBase *, IconBase, 12, Icon)
 
 /*  FUNCTION
 	Adds supplied memory chunk to the supplied freelist.
