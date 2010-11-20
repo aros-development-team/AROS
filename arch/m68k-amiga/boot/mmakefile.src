@@ -18,6 +18,7 @@ include $(TOP)/config/make.cfg
 #MM     workbench-fs-xpipe-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-c-shellcommands-kobj \
+#MM     kernel-c-shellcommands-kobj \
 #MM     kernel-contrib-necessary-amiga-m68k \
 #MM     kernel-usb-amiga-m68k \
 #MM     kernel-fs-afs-kobj \
