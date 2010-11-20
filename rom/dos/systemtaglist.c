@@ -231,9 +231,11 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     	struct Segment *seg;
 
         D(bug("Could not load L:Shell-Seg\n"));
+        Forbid();
         seg = FindSegment("Shell", NULL, TRUE);
         if (seg != NULL && seg->seg_UC == 0)
             shellseg = seg->seg_Seg;
+        Permit();
     }
     if (shellseg == BNULL)
     {
