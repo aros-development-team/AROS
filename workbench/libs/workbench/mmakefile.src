@@ -12,17 +12,20 @@ FUNCS := \
     getnextappicon \
     makeworkbenchobjectvisiblea \
     openworkbenchobjecta \
+    quoteworkbench \
     registerworkbench \
     removeappicon \
     removeappmenuitem \
     removeappwindow \
     removeappwindowdropzone \
     sendappwindowmessage \
+    startworkbench \
     unregisterworkbench \
     updateworkbenchobjecta \
     wbinfo \
     workbenchcontrola \
-    uae_integration
+    uae_integration \
+    updateworkbench
 
 #MM workbench-libs-workbench-includes : \
 #MM     kernel-exec-includes \
