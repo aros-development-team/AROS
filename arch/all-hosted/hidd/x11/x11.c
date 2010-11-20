@@ -311,11 +311,13 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 	    #if BETTER_REPEAT_HANDLING
 	    	if (keyrelease_pending)
 		{
+		    LOCK_X11
 		    if (XCALL(XLookupKeysym, (XKeyEvent *)&keyrelease_event, 0) == XK_F12)
 		    {
 			f12_down = FALSE;
 		    }
-
+		    UNLOCK_X11
+		    
 	    	    ObtainSemaphoreShared( &xsd->sema );
 		    if (xsd->kbdhidd)
 		    {
