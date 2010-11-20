@@ -73,10 +73,129 @@
  *      255	User 191
  */
 
+extern ULONG M68KFaultTable_00[];
+asm (
+	"	.text\n"
+	"	.align	4\n"
+	"	.globl M68KFaultTable_00\n"
+	"M68KFaultTable_00:\n"
+	".Lfault_0:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_1:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_2:	bsr.w	.Lfault\n"	// Bus Error
+	".Lfault_3:	bsr.w	.Lfault\n"	// Address Error
+	".Lfault_4:	bsr.w	.Lfault\n"	// Illegal instruction
+	".Lfault_5:	bsr.w	.Lfault\n"	// Zero divide
+	".Lfault_6:	bsr.w	.Lfault\n"	// CHK
+	".Lfault_7:	bsr.w	.Lfault\n"	// TRAPV
+	".Lfault_8:	bsr.w	.Lfault\n"	// Privilege violation
+	".Lfault_9:	bsr.w	.Lfault\n"	// Trace
+	".Lfault_10:	bsr.w	.Lfault\n"	// Line A
+	".Lfault_11:	bsr.w	.Lfault\n"	// Line F
+	".Lfault_12:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_13:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_14:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault_15:	bsr.w	.Lfault\n"	// Placeholder
+	".Lfault:	subi.l	#(M68KFaultTable_00 + 1*4 - 0*4),%sp@\n"
+	"		jmp	M68KExceptionHelper\n"
+);
+
+extern ULONG M68KLevelTable_00[];
+asm (
+	"	.text\n"
+	"	.align	4\n"
+	"	.globl M68KLevelTable_00\n"
+	"M68KLevelTable_00:\n"
+	".Llevel_0:	bsr.w	.Llevel\n"	// Spurious Interrupt
+	".Llevel_1:	bsr.w	.Llevel\n"	// Level 1 Interrupt
+	".Llevel_2:	bsr.w	.Llevel\n"	// Level 2 Interrupt
+	".Llevel_3:	bsr.w	.Llevel\n"	// Level 3 Interrupt
+	".Llevel_4:	bsr.w	.Llevel\n"	// Level 4 Interrupt
+	".Llevel_5:	bsr.w	.Llevel\n"	// Level 5 Interrupt
+	".Llevel_6:	bsr.w	.Llevel\n"	// Level 6 Interrupt
+	".Llevel_7:	bsr.w	.Llevel\n"	// Level 7 Interrupt
+	".Llevel:	subi.l	#(M68KLevelTable_00 + 1*4 - 24*4),%sp@\n"
+	"		jmp	M68KExceptionHelper\n"
+);
+
+extern ULONG M68KTrapTable_00[];
+asm (
+	"	.text\n"
+	"	.align	4\n"
+	"	.globl M68KTrapTable_00\n"
+	"M68KTrapTable_00:\n"
+	".Ltrap_0:	bsr.w	.Ltrap\n"	// TRAP #0
+	".Ltrap_1:	bsr.w	.Ltrap\n"	// TRAP #1
+	".Ltrap_2:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_3:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_4:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_5:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_6:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_7:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_8:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_9:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_10:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_11:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_12:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_13:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_14:	bsr.w	.Ltrap\n"	// ...
+	".Ltrap_15:	bsr.w	.Ltrap\n"	// TRAP #15
+	".Ltrap:	subi.l	#(M68KTrapTable_00 + 1*4 - 32*4),%sp@\n"
+	"		jmp	M68KExceptionHelper\n"
+);
+
+/* 68000 Exceptions */
+static void M68KExceptionInit_00(struct ExecBase *SysBase)
+{
+	APTR *exception = (APTR *)0;
+	int i;
+
+	/* Faults */
+	for (i = 2; i < 16; i++)
+	    exception[i] = &M68KFaultTable_00[i];
+
+	/* Level interrupts */
+	for (i = 0; i < 7; i++)
+	    exception[i + 24] = &M68KLevelTable_00[i];
+
+	/* Traps */
+	for (i = 0; i < 16; i++)
+	    exception[i + 32] = &M68KTrapTable_00[i];
+}
+
+/* 68010 Traps */
+
+/* For the 68010+, the lower 12 bits of the UWORD
+ * at %sp@(6) contains the vector number.
+ * Convenience!
+ */
+extern void M68KTrapHelper_10(void);
+asm (
+	"	.text\n"
+	"	.align 4\n"
+	"	.globl	M68KTrapHelper_10\n"
+	"M68KTrapHelper_10:\n"
+	"	move.w	#0,%sp@-\n"		// Make some room
+	"	move.w	%sp@(2 + 6),%sp@-\n"	// Copy the vector
+	"	andi.w	#0x0fff,%sp@\n"		// Clear the upper bits
+	"	jmp	M68KExceptionHelper\n"
+);
+
+static void M68KExceptionInit_10(struct ExecBase *SysBase)
+{
+	APTR *exception = (APTR *)0;
+	int i;
+
+	/* We can use the same code for all M68010+ traps */
+	for (i = 2; i < 63; i++)
+	    exception[i] = M68KTrapHelper_10;
+}
+
+/******************** Exceptions *****************/
+
 /* The stack frame here:
- *     Return PC          +(0 + 2 + 4)
- *     Return SR          +(0 + 2)
- *     Exception struct * +(0)
+ *     Return PC          ULONG@(6)
+ *     Return SR          UWORD@(4)
+ *     Exception Vector   ULONG@(0)
  * SP ->
  *
  * When we call M68KExceptionAction:
@@ -85,7 +204,7 @@
  *     D0-D7/A0-A7		(16 * 4)	<= NO TOUCHING!
  *     SysBase			(4)	A6
  *     SP			(4)	D1
- *     Exception struct *	(4)	D0
+ *     Exception Vector		(4)	D0
  *
  * When we come back:
  *     Drop SysBase, SP, and Exception args
@@ -99,13 +218,13 @@ asm (
 	"	.globl M68KExceptionHelper\n"
 	"M68KExceptionHelper:\n"
 	"	movem.l	%d0-%d7/%a0-%a6,%sp@-\n"// Push everything - SP is now 'regs_t'
-	"	move.l	%sp@(15*4),%d1\n"	// Exception *
+	"	move.l	%sp@(15*4),%d1\n"	// Exception Id
 	"	move.l	%usp,%a0\n"
 	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs as USP
 	"	move.l	%sp,%d0\n"		// regs_t
 	"	move.l	4, %a6\n"		// Global SysBase
 	"	move.l	%a6, %sp@-\n"		// Push SysBase
-	"	move.l	%d1, %sp@-\n"		// Push Exception *
+	"	move.l	%d1, %sp@-\n"		// Push Exception Id
 	"	move.l	%d0, %sp@-\n"		// Push regs_t *
 	"	jsr	M68KExceptionAction\n"
 	"	lea	%sp@(12),%sp\n"		// Drop all stack args
@@ -117,13 +236,54 @@ asm (
 	"	rte\n"				//   And return
 );
 
-void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct ExecBase *SysBase)
+/* Default handler */
+void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
 {
+    ULONG alert;
+    VOID (*trapHandler)(ULONG, void *);
+
+    /* Conveniently, the ACPU_* traps are identical to
+     * id | AT_DeadEnd!
+     */
+    alert = AT_DeadEnd | id;
+
+    if (SysBase == NULL || KernelBase == NULL) {
+    	/* Ok, we're trapping early. */
+    	void Early_Alert(ULONG alert);
+
+    	Early_Alert(alert);
+    	return;
+    }
+
+    trapHandler = FindTask(NULL)->tc_TrapCode;
+    trapHandler(alert, regs);
+}
+
+void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
+{
+    int Id;
+    void (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
+
+    if (vector & 1) {
+    	/* vector is really a pointer to a M68KException table entry */
+    	struct M68KException *Exception;
+
+    	Exception = (APTR)(vector & ~1);
+
+    	Id = Exception->Id;
+    	Handler = Exception->Handler;
+
+    } else {
+    	Id = vector >> 2;
+    	Handler = M68KExceptionHandler;
+    }
+
 #ifdef PARANOIA_STACK
+    if (KernelBase != NULL) {	// Prevents early failure
 	if (regs->sr & 0x2000) {
 		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (((APTR)regs)-1) > SysBase->SysStkUpper) {
 			D(bug("Supervisor: iStack overflow %p (%p-%p)\n", (APTR)regs, SysBase->SysStkLower, SysBase->SysStkUpper));
-			D(bug("Exception: %d\n", Exception->Id));
+			D(bug("Exception: %d\n", Id));
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
@@ -131,26 +291,22 @@ void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct E
 		struct Task *t = SysBase->ThisTask;
 		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
 			D(bug("[%s]: iStack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
-			D(bug("Exception: %d\n", Exception->Id));
+			D(bug("Exception: %d\n", Id));
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
 	}
+    }
 #endif
 
-	if (Exception->Handler == NULL) {
-		D(bug("-- Exception %d\n", Exception->Id));
-		Alert(AN_BogusExcpt);
-		for (;;);
-	}
-
-	Exception->Handler(regs, Exception->Id, SysBase);
+    Handler(regs, Id, SysBase);
 
 #ifdef PARANOIA_STACK
+    if (KernelBase != NULL) {
 	if (regs->sr & 0x2000) {
 		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (((APTR)regs)-1) > SysBase->SysStkUpper) {
 			D(bug("Supervisor: Stack overflow %p (%p-%p)\n", (APTR)regs, SysBase->SysStkLower, SysBase->SysStkUpper));
-			D(bug("Exception: %d\n", Exception->Id));
+			D(bug("Exception: %d\n", Id));
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
@@ -158,13 +314,13 @@ void M68KExceptionAction(regs_t *regs, struct M68KException *Exception, struct E
 		struct Task *t = SysBase->ThisTask;
 		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
 			D(bug("[%s]: Stack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
-			D(bug("Exception: %d\n", Exception->Id));
+			D(bug("Exception: %d\n", Id));
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
 	}
+    }
 #endif
-
 }
 
 /* We assume that the caller has already set up
@@ -178,12 +334,24 @@ void M68KExceptionInit(const struct M68KException *Table, struct ExecBase *SysBa
 	int i;
 	int size;
 
+	/* Initialize the Well Known Traps */
+	if (SysBase->AttnFlags & AFF_68010) {
+	    M68KExceptionInit_10(SysBase);
+	} else {
+	    M68KExceptionInit_00(SysBase);
+	}
+
+	if ((ULONG)Table & 1) {
+	    /* Exception Table must be UWORD aligned! */
+	    return;
+	}
+
 	for (size = 0; Table[size].Id > 0; size++);
 
 	/* A little explanation. jmptab will be 
 	 * constructed as follows:
-	 *    move.l &Table[i], %sp@+
-	 *      0x2f3c (&Table[i] >> 16) (&Table[i] & 0xffff)
+	 *    move.l (i << 1) | 1, %sp@+
+	 *      0x2f3c ((i << 1) | 1) >> 16) ((i << 1) | 1) & 0xffff)
 	 *    jmp %pc@(((size - 1) - i) * (5 * sizeof(UWORD)) + 2)
 	 *      0x4efa (((size - 1) - i) * (5 * sizeof(UWORD)) + 2)
 	 *    ...
@@ -195,9 +363,16 @@ void M68KExceptionInit(const struct M68KException *Table, struct ExecBase *SysBa
 	jmptab = AllocMem(size * (5 * sizeof(UWORD)) + 3 * sizeof(UWORD), 0);
 
 	for (i = 0; i < size; i++, jmptab += 5) {
+		/* This little trick is why we want
+		 * the Table UWORD aligned.
+		 *
+		 * See the rest of this in M68KExceptionHelper
+		 */
+		ULONG vecid = (ULONG)(&Table[i]) | 1;
+
 		jmptab[0] = 0x2f3c;	// movel #...,%sp@-
-		jmptab[1] = ((IPTR)(&Table[i]) >> 16) & 0xffff;
-		jmptab[2] = ((IPTR)(&Table[i]) >>  0) & 0xffff;
+		jmptab[1] = ((IPTR)(vecid) >> 16) & 0xffff;
+		jmptab[2] = ((IPTR)(vecid) >>  0) & 0xffff;
 		jmptab[3] = 0x4efa;	// jmp %pc@...
 		jmptab[4] = ((size - 1) - i) * (5 * sizeof(UWORD)) + 2;
 		exception[Table[i].Id] = (IPTR)(&jmptab[0]);
