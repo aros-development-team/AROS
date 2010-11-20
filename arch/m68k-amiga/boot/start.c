@@ -366,7 +366,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	DebugPuts("[init SysBase]\n");
 
 	/* Scan for all other ROM Tags */
-	sysBase->ResModules = krnRomTagScanner(sysBase, kickrom);
+	SysBase->ResModules = krnRomTagScanner(mh, kickrom);
 
         sysBase->SysStkUpper    = (APTR)ss_stack_upper;
         sysBase->SysStkLower    = (APTR)ss_stack_lower;
