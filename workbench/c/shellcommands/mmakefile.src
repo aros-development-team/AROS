@@ -73,6 +73,7 @@ FILES := \
 	 Execute \
 	 FailAt \
 	 If \
+	 Resident \
 	 Shell \
 	 Setenv \
 	 Unset \
