@@ -12,7 +12,8 @@ endif
 USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
 	       -I$(SRCDIR)/rom/exec -I$(GENINCDIR) \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
-	       -D__AROS_EXEC_LIBRARY__
+	       -D__AROS_EXEC_LIBRARY__ \
+	       $(PARANOIA_CFLAGS)
 
 FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecontext \
          dispatch getbootinfo getscheduler issuper mapglobal registermodule          \
