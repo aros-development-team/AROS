@@ -49,12 +49,15 @@ struct ucontext;
    on x86_64 - there's no other sane way to get ucontext. */ 
 #define SIGCORE_NEED_SA_SIGINFO 1
 
+/* Make _GNU_SOURCE work */
+#undef _FEATURES_H
 /* We want to use some predefined register names */
 #define _GNU_SOURCE
 
 #include <ucontext.h>
 #include <signal.h>
 #include <stddef.h>
+#include <strings.h>
 
 #ifndef _SIGNAL_H
 #define _SIGNAL_H
