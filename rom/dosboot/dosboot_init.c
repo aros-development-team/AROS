@@ -432,6 +432,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
         /* Late binding ENVARC: assign, only if used */
         AssignLate("ENVARC", "SYS:Prefs/env-archive");
+        /* AmigaOS 3.x wants ENV early. */
+        AssignLate("ENV", "RAM:");
 
         /*
             Attempt to mount filesystems marked for retry. If it fails again,
