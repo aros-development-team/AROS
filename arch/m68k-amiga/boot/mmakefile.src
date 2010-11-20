@@ -27,7 +27,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-contrib-necessary-amiga-m68k : contrib-necessary-amiga-m68k
 
-USER_CFLAGS := 
+USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 USELIBS := amiga arossupport rom arosm autoinit libinit \
 	   hiddgraphicsstubs hiddstubs 
