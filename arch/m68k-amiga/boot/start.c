@@ -17,6 +17,7 @@
 
 #include "exec_intern.h"
 #include "kernel_romtags.h"
+#include "kernel_cpu.h"
 
 #include "amiga_hwreg.h"
 #include "amiga_irq.h"
@@ -32,7 +33,7 @@ extern void __clear_bss(const struct KernelBSS *bss);
 #define CODE_EXEC_CHECK	RGB( 1,  1, 1)
 #define CODE_TRAP_FAIL	RGB(12, 12, 0)
 
-static void Exec_ScreenCode(UWORD code)
+void Early_ScreenCode(UWORD code)
 {
 	reg_w(BPLCON0, 0x0200);
 	reg_w(BPL1DAT, 0x0000);
@@ -70,25 +71,6 @@ int DebugMayGetChar(void)
 	return SERDATR_DB8_of(reg_r(SERDATR));
 }
 
-static __attribute__((interrupt)) void Exec_FatalException(void)
-{
-	volatile int i;
-
-	Exec_ScreenCode(CODE_TRAP_FAIL);
-
-    Debug(0);
-
-	/* Reset everything but the CPU, then restart
-	 * at the ROM exception vector
-	 */
-	asm volatile (
-	    "nop\n"
-	    "nop\n"
-	    "move.l #4,%a0\n"
-	    "reset\n"
-	    "jmp    (%a0)\n");
-}
-
 static void DebugPuts(register const char *buff)
 {
 	for (; *buff != 0; buff++)
@@ -104,6 +86,52 @@ void DebugPutHex(const char *what, ULONG val)
 		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
 	}
 	DebugPutChar('\n');
+}
+
+void Early_Alert(ULONG alert)
+{
+    const int bright = ((alert >> 4) & 1) ? 0xf : 0x7;
+    const int color = 
+    		RGB(((alert >> 2) & 1) * bright,
+    		    ((alert >> 1) & 1) * bright,
+    		    ((alert >> 0) & 1) * bright);
+
+    DebugPutHex("Early_Alert", alert);
+
+    for (;;) {
+    	volatile int i;
+    	Early_ScreenCode(color);
+    	for (i = 0; i < 100000; i++);
+    	Early_ScreenCode(0x000);
+    	for (i = 0; i < 100000; i++);
+
+    	if (!(alert & AT_DeadEnd))
+    	    break;
+    }
+}
+
+/* Fatal trap for early problems */
+extern void Exec_MagicResetCode(void);
+static void __attribute__((interrupt)) Early_TrapHandler(void)
+{
+    volatile int i;
+    Early_ScreenCode(CODE_TRAP_FAIL);
+
+    /* If we have a valid KernelBase, then
+     * we can run the debugger.
+     */
+    if (SysBase != NULL && KernelBase != NULL)
+	Debug(0);
+    else
+    	Early_Alert(AT_DeadEnd | 1);
+
+    /* Sleep for a while */
+    for (i = 0; i < 100000; i++);
+
+    /* Reset everything but the CPU, then restart
+     * at the ROM exception vector
+     */
+    Exec_MagicResetCode();
 }
 
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
@@ -297,17 +325,26 @@ void start(IPTR chip_start, ULONG chip_size,
 			.len = 0,
 		}
 	};
-	struct ExecBase *sysBase;
 	struct MemHeader *mh;
 	ULONG LastAlert[4] = { 0, 0, 0, 0};
 
 	trap = (APTR *)(NULL);
-	trap[1] = NULL;	/* Zap out old SysBase */
+
+	/* Set all the exceptions to the Early_TrapHandler
+	 */
+	for (i = 2; i < 64; i++)
+	    trap[i] = Early_TrapHandler;
 
 	/* Let the world know we exist
 	 */
 	DebugInit();
 	DebugPuts("[reset]\n");
+
+	/* Zap out old SysBase if invalid */
+	if (SysBase != NULL && SysBase->ChkBase != ~(IPTR)SysBase)
+	    SysBase = NULL;
+	else
+	    DebugPutHex("[SysBase] was at", (ULONG)SysBase);
 
 	if (fast_size != 0) {
 		DebugPutHex("Fast_Upper ",(ULONG)(fast_start + fast_size - 1));
@@ -331,23 +368,12 @@ void start(IPTR chip_start, ULONG chip_size,
 	for (i = 0; i < 4; i++)
 		trap[64 + i] = 0;
 
-	/* Fill exception table with a stub that will
-	 * reset the ROM
-	 */
-	for (i = 2; i < 64; i++)
-		trap[i] = Exec_FatalException;
-
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
 	DebugPuts("[bss clear]\n");
 
-	/* Set privilige violation trap - we
-	 * need this to support the Exec/Supervisor call
-	 */
-	trap[8] = Exec_Supervisor_Trap;
-
 	DebugPuts("[prep RAM]\n");
-	Exec_ScreenCode(CODE_RAM_CHECK);
+	Early_ScreenCode(CODE_RAM_CHECK);
 
 	if (fast_size == 0) {
 		mh = SetupMemory("Chip Mem", -10,
@@ -358,25 +384,22 @@ void start(IPTR chip_start, ULONG chip_size,
 	}
 
 	DebugPuts("[prep SysBase]\n");
-	Exec_ScreenCode(CODE_EXEC_CHECK);
+	Early_ScreenCode(CODE_EXEC_CHECK);
 
-	sysBase = PrepareExecBase(mh, NULL, NULL);
-	DebugPutHex("PrepareExecBase [ret]",(ULONG)sysBase);
-	*((APTR *)(NULL + 0x4)) = sysBase;
-	DebugPuts("[init SysBase]\n");
+	PrepareExecBase(mh, NULL, NULL);
 
 	/* Scan for all other ROM Tags */
 	SysBase->ResModules = krnRomTagScanner(mh, kickrom);
 
-        sysBase->SysStkUpper    = (APTR)ss_stack_upper;
-        sysBase->SysStkLower    = (APTR)ss_stack_lower;
+        SysBase->SysStkUpper    = (APTR)ss_stack_upper;
+        SysBase->SysStkLower    = (APTR)ss_stack_lower;
 
         /* Mark what the last alert was */
         for (i = 0; i < 4; i++)
-        	sysBase->LastAlert[i] = LastAlert[i];
+        	SysBase->LastAlert[i] = LastAlert[i];
 
 	/* Determine CPU model */
-	sysBase->AttnFlags |= cpu_detect();
+	SysBase->AttnFlags |= cpu_detect();
 
 	/* Fix up functions that need 'preserves all registers'
 	 * semantics. This AllocMem()s a little wrapper routine
@@ -384,31 +407,31 @@ void start(IPTR chip_start, ULONG chip_size,
 	 * calling the routine.
 	 */
 #ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
-	PRESERVE_ALL(sysBase, Exec, Disable, 20);
-	PRESERVE_ALL(sysBase, Exec, Enable, 21);
-	PRESERVE_ALL(sysBase, Exec, Forbid, 22);
+	PRESERVE_ALL(SysBase, Exec, Disable, 20);
+	PRESERVE_ALL(SysBase, Exec, Enable, 21);
+	PRESERVE_ALL(SysBase, Exec, Forbid, 22);
 #endif
-	PRESERVE_ALL(sysBase, Exec, Permit, 23);
-	PRESERVE_ALL(sysBase, Exec, ObtainSemaphore, 94);
-	PRESERVE_ALL(sysBase, Exec, ReleaseSemaphore, 95);
-	PRESERVE_ALL(sysBase, Exec, ObtainSemaphoreShared, 113);
+	PRESERVE_ALL(SysBase, Exec, Permit, 23);
+	PRESERVE_ALL(SysBase, Exec, ObtainSemaphore, 94);
+	PRESERVE_ALL(SysBase, Exec, ReleaseSemaphore, 95);
+	PRESERVE_ALL(SysBase, Exec, ObtainSemaphoreShared, 113);
 
 	/* Functions that need sign extension */
-	EXT_BYTE(sysBase, Exec, SetTaskPri, 50);
-	EXT_BYTE(sysBase, Exec, AllocSignal, 55);
-	EXT_BYTE(sysBase, Exec, OpenDevice, 74);
-	EXT_BYTE(sysBase, Exec, DoIO, 76);
-	EXT_BYTE(sysBase, Exec, WaitIO, 79);
+	EXT_BYTE(SysBase, Exec, SetTaskPri, 50);
+	EXT_BYTE(SysBase, Exec, AllocSignal, 55);
+	EXT_BYTE(SysBase, Exec, OpenDevice, 74);
+	EXT_BYTE(SysBase, Exec, DoIO, 76);
+	EXT_BYTE(SysBase, Exec, WaitIO, 79);
 
-	EXT_WORD(sysBase, Exec, GetCC, 88);
+	EXT_WORD(SysBase, Exec, GetCC, 88);
 
 	/* Inject code for GetCC, depending on CPU model */
-	if (sysBase->AttnFlags & AFF_68010) {
+	if (SysBase->AttnFlags & AFF_68010) {
 		/* move.w %ccr,%d0; rts; nop */
-		FAKE_IT(sysBase, Exec, GetCC, 88, 0x42c0, 0x4e75, 0x4e71);
+		FAKE_IT(SysBase, Exec, GetCC, 88, 0x42c0, 0x4e75, 0x4e71);
 	} else {
 		/* move.w %sr,%d0; rts; nop */
-		FAKE_IT(sysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
+		FAKE_IT(SysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
 	}
 
 	DebugPutHex("GayleID", ReadGayle());
@@ -420,15 +443,19 @@ void start(IPTR chip_start, ULONG chip_size,
 		mh = SetupMemory("Chip Memory", -5,
 				 chip_start, chip_size, MEMF_CHIP);
 		if (mh != NULL)
-			Enqueue(&sysBase->MemList,&mh->mh_Node);
+			Enqueue(&SysBase->MemList,&mh->mh_Node);
 	}
 
 	/* Initialize IRQ subsystem */
-	AmigaIRQInit(sysBase);
+	AmigaIRQInit(SysBase);
 
-	DebugPuts("[start] InitCode(RTF_SINGLETASK, 0)\n");
+	/* Set privilige violation trap - we
+	 * need this to support the Exec/Supervisor call
+	 */
+	trap[8] = Exec_Supervisor_Trap;
 
 	/* Ok, let's start the system */
+	DebugPuts("[start] InitCode(RTF_SINGLETASK, 0)\n");
 	InitCode(RTF_SINGLETASK, 0);
 
 	/* Attempt to allocate a real stack, and switch to it. */
