@@ -53,7 +53,7 @@
  *      255	User 191
  */
 struct M68KException {
-	UBYTE Id;
+	UWORD Id;
 	void (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
 };
 
