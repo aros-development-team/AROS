@@ -19,13 +19,15 @@
 #include <proto/utility.h>
 #include <proto/datatypes.h>
 
+#include "icon_intern.h"
+
 #include <string.h>
 
 
 /*** Prototypes *************************************************************/
-BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, CONST_STRPTR volume, struct DosLibrary *DOSBase);
-struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, const struct TagItem *tags, struct Library *IconBase);
-struct DiskObject *__GetDefaultIconFromType_WB(LONG type, const struct TagItem *tags, struct Library *IconBase);
+BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, CONST_STRPTR volume, APTR *theDOSBase);
+struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, const struct TagItem *tags, struct IconBase *IconBase);
+struct DiskObject *__GetDefaultIconFromType_WB(LONG type, const struct TagItem *tags, struct IconBase *IconBase);
 
 /*** Macros *****************************************************************/
 #define FindDeviceName(buffer, length, volume) (__FindDeviceName_WB((buffer), (length), (volume), DOSBase))
@@ -33,7 +35,7 @@ struct DiskObject *__GetDefaultIconFromType_WB(LONG type, const struct TagItem *
 #define GetDefaultIconFromType(type, tags) (__GetDefaultIconFromType_WB((type), (tags), IconBase))
 
 /*** Functions **************************************************************/
-LONG __FindType_WB(BPTR lock, struct Library *IconBase) 
+LONG __FindType_WB(BPTR lock, struct IconBase *IconBase) 
 {
     LONG                  type = -1;
     struct FileInfoBlock *fib  = AllocDosObject(DOS_FIB, TAG_DONE);
@@ -111,7 +113,7 @@ LONG __FindType_WB(BPTR lock, struct Library *IconBase)
 
 struct DiskObject *__FindDefaultIcon_WB
 (
-    struct IconIdentifyMsg *iim, struct Library *IconBase
+    struct IconIdentifyMsg *iim, struct IconBase *IconBase
 )
 {
     struct DiskObject *icon = NULL;
@@ -189,12 +191,12 @@ struct DiskObject *__FindDefaultIcon_WB
     {
         /* It's a directory --------------------------------------------*/
         /* Check if it is a trashcan directory */
-        if (iim->iim_ParentLock != NULL)
+        if (iim->iim_ParentLock != BNULL)
         {
             /* Is iim_ParentLock a root? */
             BPTR root = ParentDir(iim->iim_ParentLock);
 
-            if (root == NULL)
+            if (root == BNULL)
             {
                 /* Yes, it's a root. See if it contains our trashcan. */
                 BPTR cd   = CurrentDir(iim->iim_ParentLock);
@@ -205,7 +207,7 @@ struct DiskObject *__FindDefaultIcon_WB
                 BPTR lock = Lock(".recycled", ACCESS_READ);
                 NameFromLock(iim->iim_FileLock, buffer, MAXFILENAMELENGTH);
 
-                if (lock != NULL)
+                if (lock != BNULL)
                 {
                     NameFromLock(lock, buffer1, MAXFILENAMELENGTH);
                     if (strcasecmp(buffer, buffer1) == 0)
@@ -345,9 +347,11 @@ struct DiskObject *__FindDefaultIcon_WB
 BOOL __FindDeviceName_WB
 (
     STRPTR buffer, LONG length, CONST_STRPTR volume, 
-    struct DosLibrary *DOSBase
+    APTR *theDOSBase
 )
 {
+#undef DOSBase
+#define DOSBase theDOSBase
     struct DosList *dl      = LockDosList(LDF_DEVICES | LDF_READ);
     BOOL            success = FALSE;
     
@@ -368,7 +372,7 @@ BOOL __FindDeviceName_WB
                 if
                 (       
                        IsFileSystem(device)
-                    && (lock = Lock(device, ACCESS_READ)) != NULL
+                    && (lock = Lock(device, ACCESS_READ)) != BNULL
                 )
                 {
                     if (NameFromLock(lock, buffer, length))
@@ -398,7 +402,7 @@ BOOL __FindDeviceName_WB
 
 struct DiskObject *__GetDefaultIconFromName_WB
 (
-    CONST_STRPTR name, const struct TagItem *tags, struct Library *IconBase
+    CONST_STRPTR name, const struct TagItem *tags, struct IconBase *IconBase
 )
 {
     return GetIconTags
@@ -411,7 +415,7 @@ struct DiskObject *__GetDefaultIconFromName_WB
 
 struct DiskObject *__GetDefaultIconFromType_WB
 (
-    LONG type, const struct TagItem *tags, struct Library *IconBase
+    LONG type, const struct TagItem *tags, struct IconBase *IconBase
 )
 {
     return GetIconTags

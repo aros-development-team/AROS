@@ -20,7 +20,7 @@
         AROS_LHA(struct TagItem *,    tags, A2),
 
 /*  LOCATION */
-        struct Library *, IconBase, 31, Icon)
+        struct IconBase *, IconBase, 31, Icon)
 
 /*  FUNCTION
 
@@ -133,7 +133,7 @@
     {
         BPTR file = OpenDefaultIcon(defaultName, MODE_NEWFILE);
         
-        if (file != NULL)
+        if (file != BNULL)
         {
             success = WriteIcon(file, icon);
             CloseDefaultIcon(file);
@@ -143,7 +143,7 @@
     {
         BPTR file = OpenIcon(name, MODE_NEWFILE);
         
-        if (file != NULL)
+        if (file != BNULL)
         {
             success = WriteIcon(file, icon);
             CloseIcon(file);

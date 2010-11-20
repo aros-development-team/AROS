@@ -237,7 +237,7 @@ STATIC BOOL MakePlanarImages(struct NativeIcon *icon, struct IconBase *IconBase)
 
 BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 {
-    static STRPTR chunknames[] =
+    static const STRPTR const chunknames[] =
     {
     	"icOn",
 	NULL
@@ -251,6 +251,9 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
     struct NativeIcon  *icon;
     ULONG   	    	filesize;
     APTR    	    	pool;
+
+    if (PNGBase == NULL)
+    	return FALSE;
 
     if (Seek(file, 0, OFFSET_END) < 0) return FALSE;
     if ((filesize = Seek(file, 0, OFFSET_BEGINNING)) < 0) return FALSE;
@@ -506,12 +509,14 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	} /* if (chunkpointer[0]) */
 
 	#undef DO
-	
-#warning "FIXME: Someone killed PNG Icon do_Type detection here which causes"
-#warning "       following lines to always free DrawerData even when it"
-#warning "       shouldn't be freed (only possible to know if do_Type is"
-#warning "       known). So for now following lines disabled and DrawerData"
-#warning "       is always kept (even when it shouldn't)."
+
+	/*
+	 * FIXME: Someone killed PNG Icon do_Type detection here which causes
+	 *        following lines to always free DrawerData even when it
+	 *        shouldn't be freed (only possible to know if do_Type is
+	 *        known). So for now following lines disabled and DrawerData
+	 *        is always kept (even when it shouldn't).
+	 */
 
 #if 0	
 	if (icon->dobj.do_DrawerData &&
@@ -867,6 +872,9 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
     UBYTE   	    	*mempos = iconpng->filebuffer;
     BOOL    	    	 done = FALSE;
     
+    if (PNGBase == NULL)
+    	return FALSE;
+
     /* Write PNG header */
     if (Write(file, iconpng->filebuffer, 8) != 8) return FALSE;
     
@@ -915,6 +923,9 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 
 VOID FreeIconPNG(struct DiskObject *dobj, struct IconBase *IconBase)
 {
+    if (PNGBase == NULL)
+    	return;
+
     if (dobj)
     {
     	struct NativeIcon *nativeicon = NATIVEICON(dobj);

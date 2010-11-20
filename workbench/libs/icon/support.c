@@ -17,14 +17,14 @@ extern const IPTR IconDesc[];
 
 BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
 {
-    BPTR  file       = NULL;
+    BPTR  file       = BNULL;
     ULONG nameLength = strlen(name);
        
     if (name[nameLength - 1] == ':')
     {
         BPTR lock = Lock(name, ACCESS_READ);
         
-        if (lock != NULL)
+        if (lock != BNULL)
         {
             BPTR cd = CurrentDir(lock);
             
@@ -51,7 +51,7 @@ BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
         else
         {
             SetIoErr(ERROR_NO_FREE_STORE);
-            return NULL;
+            return BNULL;
         }
     }
     
@@ -69,11 +69,11 @@ BPTR __OpenDefaultIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBas
     static const char * const  writePaths[] = { "ENV:SYS", NULL }; 
     const char * const        *paths        = NULL;
     CONST_STRPTR               path         = NULL;
-    BPTR                       file         = NULL;
+    BPTR                       file         = BNULL;
     UBYTE                      i;
     
     /* Make sure it's a plain filename; paths are not allowed */
-    if (strpbrk(name, "/:") != NULL) return NULL;
+    if (strpbrk(name, "/:") != NULL) return BNULL;
     
     if (mode == MODE_OLDFILE) paths = readPaths;
     else                      paths = writePaths;
@@ -88,7 +88,7 @@ BPTR __OpenDefaultIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBas
         
         if (copied < sizeof(buffer)) /* check for truncation */
         {
-            if ((file = Open(buffer, mode)) != NULL)
+            if ((file = Open(buffer, mode)) != BNULL)
             {
                 break;
             }
@@ -108,7 +108,7 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
     struct DiskObject *temp = NULL, /* Temporary icon data */
                       *icon = NULL; /* Final icon data */
             
-    if (ReadStruct(&(LB(IconBase)->dsh), (APTR *) &temp, file, IconDesc))
+    if (ReadStruct(&(LB(IconBase)->dsh), (APTR *) &temp, (APTR)file, IconDesc))
     {
         // FIXME: consistency checks! (ie that WBDISK IS for a disk, WBDRAWER for a dir, WBTOOL for an executable)
         /*
@@ -169,15 +169,15 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBas
     }
     else
     {
-    	return WriteStruct(&(LB(IconBase)->dsh), (APTR) icon, file, IconDesc);
+    	return WriteStruct(&(LB(IconBase)->dsh), (APTR) icon, (APTR) file, IconDesc);
     }
 }
 
-BPTR __LockObject_WB(CONST_STRPTR name, LONG mode, struct Library *IconBase)
+BPTR __LockObject_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
 {
     BPTR lock = Lock(name, mode);
     
-    if (lock == NULL && strcasecmp(name + strlen(name) - 5, ":Disk") == 0)
+    if (lock == BNULL && strcasecmp(name + strlen(name) - 5, ":Disk") == 0)
     {
         // FIXME: perhaps allocate buffer from heap?
         TEXT  buffer[256];               /* Path buffer */
@@ -193,9 +193,9 @@ BPTR __LockObject_WB(CONST_STRPTR name, LONG mode, struct Library *IconBase)
     return lock;
 }
 
-VOID __UnLockObject_WB(BPTR lock, struct Library *IconBase)
+VOID __UnLockObject_WB(BPTR lock, struct IconBase *IconBase)
 {
-    if (lock != NULL) UnLock(lock);
+    if (lock != BNULL) UnLock(lock);
 }
 
 

@@ -18,7 +18,7 @@
 	AROS_LHA(CONST STRPTR,   typeName,      A1),
 
 /*  LOCATION */
-	struct Library *, IconBase, 16, Icon)
+	struct IconBase *, IconBase, 16, Icon)
 
 /*  FUNCTION
 	Finds the supplied typeName inside the given toolTypeArray.

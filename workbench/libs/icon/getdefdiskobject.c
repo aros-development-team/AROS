@@ -16,7 +16,7 @@
 	AROS_LHA(LONG, type, D0),
 
 /*  LOCATION */
-	struct Library *, IconBase, 20, Icon)
+	struct IconBase *, IconBase, 20, Icon)
 
 /*  FUNCTION
 	Gets the default icon for the supplied type of icon.

@@ -53,6 +53,8 @@ struct FileImageChunk
 LONG MyDOSStreamHandler(struct Hook *hook, struct IFFHandle * iff, struct IFFStreamCmd * cmd)
 {
     LONG error = 0;
+
+    struct IconBase *IconBase = hook->h_Data;
     
     switch(cmd->sc_Command)
     {
@@ -317,7 +319,7 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
 BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     	    	void *stream, struct IconBase *IconBase)
 {
-    static LONG stopchunks[] =
+    static const LONG const stopchunks[] =
     {
     	ID_ICON, ID_FACE,
 	ID_ICON, ID_IMAG
@@ -333,6 +335,10 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     BOOL  have_face = FALSE, have_imag1 = FALSE, have_imag2 = FALSE;
     
     D(bug("ReadIcon35\n"));
+
+    if (IFFParseBase == NULL)
+    	return FALSE;
+    
     
     iffhook.h_Entry    = (HOOKFUNC)HookEntry;
     iffhook.h_SubEntry = (HOOKFUNC)MyDOSStreamHandler;
@@ -552,7 +558,7 @@ static BOOL WriteImage35(struct IFFHandle *iff, struct Icon35 *icon35,
     UBYTE   	    	    imagepacked, palpacked = 0;
     UBYTE   	    	    imageflags;
     BOOL    	    	    ok = FALSE;
-    
+
     imageflags = img->flags;
     
     if (img->palette && (img->flags & IMAGE35F_HASPALETTE))
@@ -632,6 +638,9 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     BOOL    	    	     ok = FALSE;
     
     D(bug("WriteIcon35\n"));
+    
+    if (IFFParseBase == NULL)
+    	return FALSE;
     
     if (!GetNativeIcon(&icon->dobj, IconBase))
     {
@@ -740,6 +749,9 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase)
 {
+    if (IFFParseBase == NULL)
+    	return;
+    
     if (icon->icon35.img1.imagedata) FreeVec(icon->icon35.img1.imagedata);
     if (icon->icon35.img2.imagedata) FreeVec(icon->icon35.img2.imagedata);
     

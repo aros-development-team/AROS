@@ -24,7 +24,7 @@
         AROS_LHA(struct TagItem *,    tags,   A2),
 
 /*  LOCATION */
-        struct Library *, IconBase, 32, Icon)
+        struct IconBase *, IconBase, 32, Icon)
 
 /*  FUNCTION
 	Adapt a palette-mapped icon for display.
@@ -48,7 +48,7 @@
 {
     AROS_LIBFUNC_INIT
     
-#   warning TODO: Implement icon/LayoutIconA()
+    /* TODO: Implement icon/LayoutIconA() */
     aros_print_not_implemented("icon/LayoutIconA()");
     
     return FALSE;

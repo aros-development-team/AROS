@@ -17,8 +17,8 @@ BOOL __CloseDefaultIcon_WB(BPTR file, struct IconBase *IconBase);
 struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase);
 BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBase);
 
-BPTR __LockObject_WB(CONST_STRPTR name, LONG mode, struct Library *IconBase);
-VOID __UnLockObject_WB(BPTR lock, struct Library *IconBase);
+BPTR __LockObject_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase);
+VOID __UnLockObject_WB(BPTR lock, struct IconBase *IconBase);
 
 CONST_STRPTR GetDefaultIconName(LONG type);
 

@@ -28,7 +28,7 @@
 	AROS_LHA(struct TagItem *,    tags,     A3),
 
 /*  LOCATION */
-	struct Library *, IconBase, 27, Icon)
+	struct IconBase *, IconBase, 27, Icon)
 
 /*  FUNCTION
 	Draw an icon like an image.
@@ -189,7 +189,7 @@
 	    }
     }
 
-#warning DrawIconStateA() is only very limited implemented
+    /* FIXME: DrawIconStateA() is only very limited implemented */
 
     AROS_LIBFUNC_EXIT
 } /* DrawIconStateA() */

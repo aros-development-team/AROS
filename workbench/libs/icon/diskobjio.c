@@ -307,6 +307,7 @@ AROS_UFH3(LONG, dosstreamhook,
 {
     AROS_USERFUNC_INIT
 
+    struct IconBase *IconBase = hook->h_Data;
     LONG rc = 0;
 
     switch (*msg)
@@ -454,7 +455,7 @@ static struct Image * ReadImage (struct Hook * streamhook, BPTR file)
     ULONG	   size;
     ULONG	   t;
 
-    if (!ReadStruct (streamhook, (APTR *)&image, file, ImageDesc))
+    if (!ReadStruct (streamhook, (APTR *)&image, (APTR)file, ImageDesc))
 	return NULL;
 
     /* Size of imagedata in bytes */
@@ -483,7 +484,7 @@ kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
 	{
 	    UWORD data;
 
-	    if (!ReadWord (streamhook, &data, file))
+	    if (!ReadWord (streamhook, &data, (APTR)file))
 		break;
 
 	    image->ImageData[t] = AROS_WORD2BE(data);
@@ -507,7 +508,7 @@ static int WriteImage (struct Hook * streamhook, BPTR file,
     ULONG size;
     ULONG t;
 
-    if (!WriteStruct (streamhook, image, file, ImageDesc) )
+    if (!WriteStruct (streamhook, image, (APTR)file, ImageDesc) )
 	return FALSE;
 
     /* Get size in words */
@@ -526,7 +527,7 @@ kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
     {
     	UWORD data = image->ImageData[t];
 
-	if (!WriteWord (streamhook, AROS_WORD2BE(data), file))
+	if (!WriteWord (streamhook, AROS_WORD2BE(data), (APTR)file))
 	    break;
     }
 
@@ -569,7 +570,7 @@ kprintf ("ProcessGadgetRender\n");
     switch (data->sdd_Mode)
     {
     case SDV_SPECIALMODE_READ:
-	image = ReadImage (streamhook, data->sdd_Stream);
+	image = ReadImage (streamhook, (BPTR)data->sdd_Stream);
 
 	if (!image)
 	    return FALSE;
@@ -581,7 +582,7 @@ kprintf ("ProcessGadgetRender\n");
     case SDV_SPECIALMODE_WRITE:
 	image = DO(data->sdd_Dest)->do_Gadget.GadgetRender;
 
-	return WriteImage (streamhook, data->sdd_Stream, image);
+	return WriteImage (streamhook, (BPTR)data->sdd_Stream, image);
 
     case SDV_SPECIALMODE_FREE:
 	image = DO(data->sdd_Dest)->do_Gadget.GadgetRender;
@@ -621,7 +622,7 @@ kprintf ("ProcessSelectRender\n");
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    image = ReadImage (streamhook, data->sdd_Stream);
+	    image = ReadImage (streamhook, (BPTR)data->sdd_Stream);
 
 	    if (!image)
 		return FALSE;
@@ -633,7 +634,7 @@ kprintf ("ProcessSelectRender\n");
 	case SDV_SPECIALMODE_WRITE:
 	    image = DO(data->sdd_Dest)->do_Gadget.SelectRender;
 
-	    return WriteImage (streamhook, data->sdd_Stream, image);
+	    return WriteImage (streamhook, (BPTR)data->sdd_Stream, image);
 
 	case SDV_SPECIALMODE_FREE:
 	    image = DO(data->sdd_Dest)->do_Gadget.SelectRender;
@@ -660,12 +661,14 @@ AROS_UFH3S(ULONG, ProcessFlagPtr,
 {
     AROS_USERFUNC_INIT
 
+    struct IconBase *IconBase = streamhook->h_Data;
+
     LONG ptr;
 
     switch (data->sdd_Mode)
     {
     case SDV_SPECIALMODE_READ:
-	if (FRead (data->sdd_Stream, &ptr, 1, 4) != 4)
+	if (FRead ((BPTR)data->sdd_Stream, &ptr, 1, 4) != 4)
 	    return FALSE;
 
 #if 0
@@ -704,7 +707,9 @@ static STRPTR ReadIconString (struct Hook * streamhook, BPTR file)
     ULONG  len;
     STRPTR str;
 
-    if (!ReadLong (streamhook, &len, file))
+    struct IconBase *IconBase = streamhook->h_Data;
+
+    if (!ReadLong (streamhook, &len, (APTR)file))
 	return NULL;
 
     str = AllocVec (len, MEMF_ANY);
@@ -712,7 +717,7 @@ static STRPTR ReadIconString (struct Hook * streamhook, BPTR file)
     if (!str)
 	return NULL;
 
-    if (FRead (file, str, len, 1) == EOF)
+    if (FRead ((BPTR)file, str, len, 1) == EOF)
     {
 	FreeVec (str);
 	return NULL;
@@ -731,9 +736,11 @@ static int WriteIconString (struct Hook * streamhook, BPTR file, STRPTR str)
 {
     ULONG len;
 
+    struct IconBase *IconBase = streamhook->h_Data;
+
     len = strlen (str) + 1;
 
-    if (!WriteLong (streamhook, len, file))
+    if (!WriteLong (streamhook, len, (APTR)file))
 	return FALSE;
 
     return FWrite (file, str, len, 1) != EOF;
@@ -760,7 +767,7 @@ kprintf ("ProcessDefaultTool\n");
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    str = ReadIconString (streamhook, data->sdd_Stream);
+	    str = ReadIconString (streamhook, (BPTR) data->sdd_Stream);
 
 	    if (!str)
 		return FALSE;
@@ -772,7 +779,7 @@ kprintf ("ProcessDefaultTool\n");
 	case SDV_SPECIALMODE_WRITE: {
 	    str = DO(data->sdd_Dest)->do_DefaultTool;
 
-	    WriteIconString (streamhook, data->sdd_Stream, str);
+	    WriteIconString (streamhook, (BPTR) data->sdd_Stream, str);
 
 	    break; }
 
@@ -812,7 +819,7 @@ kprintf ("ProcessToolWindow\n");
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    str = ReadIconString (streamhook, data->sdd_Stream);
+	    str = ReadIconString (streamhook, (BPTR)data->sdd_Stream);
 
 	    if (!str)
 		return FALSE;
@@ -824,7 +831,7 @@ kprintf ("ProcessToolWindow\n");
 	case SDV_SPECIALMODE_WRITE: {
 	    str = DO(data->sdd_Dest)->do_ToolWindow;
 
-	    WriteIconString (streamhook, data->sdd_Stream, str);
+	    WriteIconString (streamhook, (BPTR)data->sdd_Stream, str);
 
 	    break; }
 
@@ -888,7 +895,7 @@ kprintf ("Read %d tooltypes (tt=%p)\n", count, ttarray);
 
 	    for (t=0; t<count; t++)
 	    {
-		ttarray[t] = ReadIconString (streamhook, data->sdd_Stream);
+		ttarray[t] = ReadIconString (streamhook, (BPTR)data->sdd_Stream);
 #if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 #endif
@@ -935,7 +942,7 @@ kprintf ("Write %d tooltypes (%p)\n", count, ttarray);
 #if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 #endif
-		if (!WriteIconString (streamhook, data->sdd_Stream, ttarray[t]))
+		if (!WriteIconString (streamhook, (BPTR)data->sdd_Stream, ttarray[t]))
 		    return FALSE;
 	    }
 

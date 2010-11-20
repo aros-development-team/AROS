@@ -22,7 +22,7 @@ extern const IPTR IconDesc[];
 	AROS_LHA(struct DiskObject *, diskobj, A0),
 
 /*  LOCATION */
-	struct Library *, IconBase, 15, Icon)
+	struct IconBase *, IconBase, 15, Icon)
 
 /*  FUNCTION
 	Frees all memory for a DiskObject structure.

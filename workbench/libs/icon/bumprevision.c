@@ -18,7 +18,7 @@
 	AROS_LHA(UBYTE *, oldname, A1),
 
 /*  LOCATION */
-	struct Library *, IconBase, 18, Icon)
+	struct IconBase *, IconBase, 18, Icon)
 
 /*  FUNCTION
 	Computes the right copy revision for a file name.

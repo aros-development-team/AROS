@@ -19,7 +19,7 @@
 	AROS_LHA(UBYTE *, name, A0),
 
 /*  LOCATION */
-	struct Library *, IconBase, 23, Icon)
+	struct IconBase *, IconBase, 23, Icon)
 
 /*  FUNCTION
 	Deletes an icon description file.

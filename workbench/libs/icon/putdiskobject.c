@@ -17,7 +17,7 @@
 	AROS_LHA(struct DiskObject *, icon, A1),
 
 /*  LOCATION */
-	struct Library *, IconBase, 14, Icon)
+	struct IconBase *, IconBase, 14, Icon)
 
 /*  FUNCTION
 	Writes icon to disk.

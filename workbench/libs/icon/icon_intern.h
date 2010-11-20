@@ -129,7 +129,6 @@ struct IconBase
 {
     struct Library          ib_Lib;
 
-    struct Library  	   *pngbase;
     struct Hook             dsh;
     struct SignalSemaphore  iconlistlock;
     struct MinList          iconlists[ICONLIST_HASHSIZE];
@@ -147,16 +146,37 @@ struct IconBase
     LONG                    ib_MaxNameLength;
     BOOL                    ib_NewIconsSupport;
     BOOL                    ib_ColorIconSupport;
+    IPTR                    ib_SegList;
+
+    /* Required External libraries */
+    APTR                    ib_DOSBase;
+    APTR                    ib_DataTypesBase;
+    APTR                    ib_GfxBase;
+    APTR                    ib_IFFParseBase;
+    APTR                    ib_IntuitionBase;
+    APTR                    ib_UtilityBase;
+
+    /* Optional external libraries */
+    APTR                    ib_CyberGfxBase;
+
+    /* Dynamic external libraries */
+    APTR                    ib_PNGBase;
 };
 
 typedef struct IconBase IconBase_T;
 
-#define PNGBase IconBase->pngbase
+#define CyberGfxBase	(IconBase->ib_CyberGfxBase)
+#define DOSBase		(IconBase->ib_DOSBase)
+#define DataTypesBase	(IconBase->ib_DataTypesBase)
+#define GfxBase		(IconBase->ib_GfxBase)
+#define IFFParseBase	(IconBase->ib_IFFParseBase)
+#define IntuitionBase	(IconBase->ib_IntuitionBase)
+#define PNGBase 	(IconBase->ib_PNGBase)
+#define UtilityBase	(IconBase->ib_UtilityBase)
 
 /****************************************************************************************/
 
-extern struct ExecBase * SysBase;
-extern struct DosLibrary * DOSBase;
+extern struct ExecBase *SysBase;
 
 /****************************************************************************************/
 

@@ -16,7 +16,7 @@
 	AROS_LHA(struct DiskObject *, icon, A0),
 
 /*  LOCATION */
-	struct Library *, IconBase, 21, Icon)
+	struct IconBase *, IconBase, 21, Icon)
 
 /*  FUNCTION
 	Puts a new default icon for a certain type.

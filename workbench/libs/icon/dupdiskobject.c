@@ -111,7 +111,7 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-	struct Library *, IconBase, 25, Icon)
+	struct IconBase *, IconBase, 25, Icon)
 
 /*  FUNCTION
 
@@ -261,7 +261,7 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 #endif
 
     /* and now the pointers and the rest */
-#warning TODO: check for errors here
+    /* TODO: check for errors here */
 
     if (dobj->do_DefaultTool)
     {
