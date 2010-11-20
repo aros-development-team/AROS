@@ -100,7 +100,9 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
     }
 #endif
 
+    Disable();
     XCALL(XGetErrorText, display, errevent->error_code, buffer, sizeof (buffer));
+    Enable();
 
     kprintf("XError %d (Major=%d, Minor=%d) task = %s\n%s\n",
 	    errevent->error_code,
