@@ -72,8 +72,8 @@ static void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu)
     if (tdu->pub.tdu_PubFlags & TDPF_NOCLICK) {
     	td_seek(tdu, -1, 0, tdb);
     } else {
-    	tdu->tdu_click = !tdu->tdu_click;
-    	td_seek(tdu, tdu->tdu_click ? 1 : 0, 0, tdb);
+    	// step towards cyl 0 if > 0, it not, step to cyl 1
+    	td_seek(tdu, tdu->pub.tdu_CurrTrk >= 2 ? tdu->pub.tdu_CurrTrk - 2 : 2, 0, tdb);
     }
     if (td_getDiskChange (tdu, tdb)) {
 	struct DiskBase *DiskBase = tdb->td_DiskBase;
@@ -354,10 +354,8 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 	 	bug("DF%d failed to recalibrate!?\n", i);
 	    else
 		D(bug("DF%d initialized\n", i));
-	    tdu->pub.tdu_CurrTrk = 0;
 	    tdu->tdu_DiskIn = td_getDiskChange(tdu, tdb) ? TDU_DISK : TDU_NODISK;
 	    tdu->tdu_ProtStatus = td_getprotstatus(tdu,tdb);
-	    tdu->tdu_click = 0;
 	    tdu->tdu_hddisk = ishd (GetUnitID(i));
 	    tdu->tdu_sectors = tdu->tdu_hddisk ? 22 : 11;
 	    td_deselect(tdu, tdb);
@@ -421,7 +419,6 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 				Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
 			    }
 			    Permit();
-			    tdu->tdu_click = 0;
 			}
 			break;
 		    }

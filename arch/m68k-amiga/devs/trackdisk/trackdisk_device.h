@@ -48,7 +48,6 @@ struct TDU
     UBYTE	tdu_MotorOn;		/* Motor on? */
     UBYTE	tdu_ProtStatus;
     UBYTE	tdu_flags;
-    UBYTE	tdu_click;			/* disk insertion check toggle */
     BOOL    tdu_hddisk;			/* HD disk inserted */
     BOOL    tdu_broken;			/* recalibrate didn't find TRACK0, drive ignored */
     UBYTE	tdu_lastdir;		/* last step direction */
