@@ -163,6 +163,7 @@ struct PCIController
     struct List           hc_BulkXFerQueue;
 
     struct Interrupt      hc_CompleteInt;
+    struct Interrupt      hc_ResetInt;
 
     UBYTE                 hc_PortNum20[MAX_ROOT_PORTS]; /* Global Port number the local controller port corresponds with */
 
