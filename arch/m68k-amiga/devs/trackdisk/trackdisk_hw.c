@@ -145,8 +145,8 @@ int td_recalibrate(struct TDU *tdu, struct TrackDiskBase *tdb)
     int steps = 80 + 15;
     td_select(tdu, tdb);
     td_setside(0, tdu, tdb);
-    if (tdu->pub.tdu_CurrTrk == 0) {
-        // step to track 1 if current track == 0
+    if (td_istrackzero(tdu, tdb)) {
+        // step to cyl 1 if current cyl == 0
         td_setdirection(0, tdu, tdb);
         td_wait(tdb, tdu->pub.tdu_SettleDelay);
         td_step(tdu, tdb, tdu->pub.tdu_CalibrateDelay);
@@ -518,7 +518,7 @@ static int td_write2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase
         offset += totalsectorsneeded * 512;
         data += totalsectorsneeded * 512;
     }
-    return TDERR_SeekError;
+    return TDERR_WriteProt;
 }
 
 int td_write(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
@@ -562,7 +562,7 @@ static int td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBas
         len -= tdu->tdu_sectors * 512;
         td_wait(tdb, 1);
     }
-    return 0;
+    return TDERR_WriteProt;
 }
 
 int td_format(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
