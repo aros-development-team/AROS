@@ -335,7 +335,7 @@ typedef @sighandler@ SignalHandler;
 
     /* This macro prints the current signals' context */
 #define PRINT_SC(sc) \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
+	bug ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx  R6=%08lx  R7=%08lx\n" \
 		"    R8=%08lx  R9=%08lx  R10=%08lx  R11=%08lx\n" \
