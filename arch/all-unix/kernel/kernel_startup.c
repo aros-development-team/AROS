@@ -25,6 +25,9 @@
 #include "kernel_romtags.h"
 #include "kernel_tagitems.h"
 
+/* This macro is defined in both UNIX and AROS headers. Get rid of warnings. */
+#undef __const
+
 /*
  * External early init function from exec.library
  * TODO: find some way to discover it dynamically
@@ -157,7 +160,7 @@ int __startup startup(struct TagItem *msg)
 
     bug("[Kernel] preparing first mem header\n");
     /* We know that memory map has only one RAM element */
-    memory = (void *)mmap->addr;
+    memory = (void *)(IPTR)mmap->addr;
     memlen = mmap->len;
 
     /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
