@@ -13,12 +13,6 @@
 #include <unistd.h>
 #endif
 
-/* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
-#undef __pure
-#undef __const
-#undef __pure2
-#undef __deprecated
-
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <utility/tagitem.h>
@@ -38,6 +32,12 @@
 #endif
 
 #define D(x)
+
+/* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
+#undef __pure
+#undef __const
+#undef __pure2
+#undef __deprecated
 
 extern void *HostIFace;
 
@@ -104,7 +104,7 @@ char *join_string(int argc, char **argv)
 
     for (j = 0; j < argc; j++)
 	x += (strlen(argv[j]) + 1);
-    D(fprintf(stderr, "[Init] Allocating %u bytes for string\n", x));
+    D(fprintf(stderr, "[Bootstrap] Allocating %u bytes for string\n", x));
     str = malloc(x);
     if (str) {
 	s = str;
@@ -114,7 +114,7 @@ char *join_string(int argc, char **argv)
 	    *s++ = ' ';
 	}
 	s[-1] = 0;
-	D(fprintf(stderr, "[Init] Joined line: %s\n", str));
+	D(fprintf(stderr, "[Bootstrap] Joined line: %s\n", str));
     }
     return str;
 }
@@ -183,7 +183,11 @@ int bootstrap(int argc, char ** argv)
     /* This makes national characters to be output properly into
        the debug log under Windows */
     setlocale(LC_ALL, "");
-    getcwd(bootstrapdir, sizeof(bootstrapdir));;
+    if (!getcwd(bootstrapdir, sizeof(bootstrapdir)))
+    {
+	DisplayError("Failed to get current working directory!");
+	return -1;
+    }
     SaveArgs(argv);
 
     while (i < argc) {
@@ -261,7 +265,11 @@ int bootstrap(int argc, char ** argv)
 	c = GetConfigArg(buf, "logfile");
 	if (c)
 	{
-	    freopen(c, "a", stderr);
+	    if (!freopen(c, "a", stderr))
+	    {
+		DisplayError("Failed to redirect debug output to %s", c);
+		return -1;
+	    }
 	    fprintf(stderr, "----\n");
 	}
 	
@@ -297,7 +305,7 @@ int bootstrap(int argc, char ** argv)
 
     if (!GetKernelSize(&ro_size, &rw_size))
 	return -1;
-    D(fprintf(stderr, "[Bootstrap] Kernel size %u\n", ro_size));
+    D(fprintf(stderr, "[Bootstrap] Kernel size %zu\n", ro_size));
 
     ro_addr = AllocateRO(ro_size);
     if (!ro_addr) {
@@ -313,7 +321,7 @@ int bootstrap(int argc, char ** argv)
 
     if (!LoadKernel(ro_addr, rw_addr, __bss_track, &kernel_entry, &debug_addr))
 	return -1;
-    D(fprintf(stderr, "[Bootstrap] Read-only 0x%p - 0x%p, Read-write 0x%p - 0x%p, Entry 0x%p, Debug info 0x%p\n",
+    D(fprintf(stderr, "[Bootstrap] Read-only %p - %p, Read-write %p - %p, Entry %p, Debug info %p\n",
 	     ro_addr, ro_addr + ro_size - 1, rw_addr, rw_addr + rw_size - 1, kernel_entry, debug_addr));
 
     FreeKernelList();
@@ -334,7 +342,8 @@ int bootstrap(int argc, char ** argv)
 	DisplayError("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
 	return -1;
     }
-    D(fprintf(stderr, "[Bootstrap] RAM memory allocated: 0x%p - 0x%p (%u bytes)\n", (void *)MemoryMap.addr, (void *)MemoryMap.addr + MemoryMap.len, MemoryMap.len));
+    D(fprintf(stderr, "[Bootstrap] RAM memory allocated: %p - %p (%u bytes)\n",
+	      (void *)(IPTR)MemoryMap.addr, (void *)(IPTR)MemoryMap.addr + MemoryMap.len, MemoryMap.len));
 
     km[0].ti_Data = (IPTR)ro_addr;
     km[1].ti_Data = (IPTR)ro_addr + ro_size - 1;
