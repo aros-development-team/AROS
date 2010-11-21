@@ -309,10 +309,11 @@ AROS_UFH3(void, RTL8139_TX_IntF,
 	int nr, try_count=1;
 	BOOL proceed = FALSE; /* Fails by default */
 
+	Disable();
 	RTLD(bug("[%s] RTL8139_TX_IntF()\n", unit->rtl8139u_name))
 
 	/* send packet only if there is free space on tx queue. Otherwise do nothing */
-	if (!netif_queue_stopped(unit))
+	if (np->tx_current - np->tx_dirty < NUM_TX_DESC)
 	{
 		UWORD packet_size, data_size;
 		struct IOSana2Req *request;
@@ -338,8 +339,6 @@ AROS_UFH3(void, RTL8139_TX_IntF,
 
 			opener = (APTR)request->ios2_BufferManagement;
 
-			//if (np->tx_pbuf[nr] == NULL)
-//			{
 				np->tx_pbuf[nr] = np->tx_buf[nr];
 				if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
 				{
@@ -376,11 +375,10 @@ AROS_UFH3(void, RTL8139_TX_IntF,
 				/* Now the packet is already in TX buffer, update flags for NIC */
 				if (error == 0)
 				{
+#ifdef DEBUG
 					Disable();
 RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.", unit->rtl8139u_name, nr, np->tx_buf[nr], AROS_BE2WORD(((struct eth_frame *)np->tx_buf[nr])->eth_packet_type)))
 
-
-#ifdef DEBUG
 					RTLD( int j;
 						for (j=0; j<64; j++) {
 							if ((j%16) == 0)
@@ -388,11 +386,11 @@ RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmiss
 							bug(" %02x", ((unsigned char*)np->tx_buf[nr])[j]);
 						}
 						bug("\n");)
-#endif
 
 					Enable();
+#endif
 
-					/* Set the ring details for the packet .. */
+					/* Set the ring details for the packet */
 					LONGOUT(base + RTLr_TxAddr0 + (nr << 2), np->tx_buf[nr]);
 					LONGOUT(base + RTLr_TxStatus0 + (nr << 2), np->tx_flag |
 															   (packet_size >= ETH_ZLEN ?
@@ -410,6 +408,8 @@ RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmiss
 				/* Update statistics */
 				if(error == 0)
 				{
+					unit->rtl8139u_stats.PacketsSent++;
+
 					tracker = FindTypeStats(LIBBASE, unit, &unit->rtl8139u_type_trackers, request->ios2_PacketType);
 
 					if(tracker != NULL)
@@ -419,19 +419,16 @@ RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmiss
 					}
 				}
 				try_count = 0;
-			//}
 			np->tx_current++;
-//			try_count++;
 
-			/* 
+			/*
 			* If we've just run out of free space on the TX queue, stop
 			* it and give up pushing further frames */
-//			if ( (try_count + 1) >= NUM_TX_DESC)
-//			{
-//RTLD(bug("[%s] output queue full!. Stopping [count = %d, NUM_TX_DESC = %d\n", unit->rtl8139u_name, try_count, NUM_TX_DESC))
-//				netif_stop_queue(unit);
-//				proceed = FALSE;
-//			}            
+			if (np->tx_current - np->tx_dirty >= NUM_TX_DESC)
+			{
+RTLD(bug("[%s] output queue full!. Stopping [count = %d, NUM_TX_DESC = %d\n", unit->rtl8139u_name, try_count, NUM_TX_DESC))
+				proceed = FALSE;
+			}
 		} /* while */
 	}
 
@@ -444,6 +441,7 @@ RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmiss
 	{
 		unit->rtl8139u_request_ports[WRITE_QUEUE]->mp_Flags = PA_IGNORE;
 	}
+	Enable();
 
 	AROS_USERFUNC_EXIT
 }
@@ -541,8 +539,6 @@ RTLD(bug("[%s] RTL8139_IntHandlerF: Packet Transmition Attempt detected!\n", uni
 				BOOL transmit_error = FALSE;
 				int entry = dirty_tx % NUM_TX_DESC;
 
-//				if (np->tx_pbuf[entry] != NULL)
-//				{
 					ULONG txstatus = LONGIN(base + RTLr_TxStatus0 + (entry << 2));
 
 					// Still transmitting
@@ -574,9 +570,12 @@ RTLD(bug("[%s] RTL8139_IntHandlerF: Packet %d Transmition Underrun Error! Adjust
 					}
 					np->tx_pbuf[entry] = NULL;
 					dirty_tx++;
-//				}
 			}
 			np->tx_dirty = dirty_tx;
+
+			// Restart transmissions if they had stopped due to ring being full
+			if(unit->rtl8139u_request_ports[WRITE_QUEUE]->mp_Flags == PA_IGNORE)
+				Cause(&unit->rtl8139u_tx_int);
 		}
 
 		if (status & (PCIErr | PCSTimeout | TxUnderrun | RxOverflow | RxFIFOOver | TxErr | RxErr)) // Chipset has Reported an ERROR
