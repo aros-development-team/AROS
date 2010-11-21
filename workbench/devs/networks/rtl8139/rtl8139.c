@@ -571,7 +571,7 @@ RTLD(bug("[%s] rtl8139nic_open: Enabled Tx/Rx\n",unit->rtl8139u_name))
 		/* check_duplex */
 		if (np->mii_phys[0] >= 0 || (unit->rtl8139u_rtl_chipcapabilities & RTLc_HAS_MII_XCVR))
 		{
-			UBYTE mii_reg5 = mdio_read(unit, np->mii_phys[0], 5);
+			UWORD mii_reg5 = mdio_read(unit, np->mii_phys[0], 5);
 			if (mii_reg5 != 0xffff)
 			{
 				if (((mii_reg5 & 0x0100) == 0x0100) || ((mii_reg5 & 0x00c0) == 0x0040))
@@ -649,7 +649,6 @@ static int rtl8139nic_close(struct net_device *unit)
 
 	unit->rtl8139u_toutNEED = FALSE;
 
-	netif_stop_queue(unit);
 	ObtainSemaphore(&np->lock);
 
 	rtl8139nic_deinitialize(unit);    // Stop the chipset and set it in 16bit-mode
