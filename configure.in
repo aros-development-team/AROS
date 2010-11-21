@@ -1135,13 +1135,18 @@ case "$target_os" in
 		aros_target_cpu="m68k"
 		aros_object_format="m68kelf"
 		aros_flavour="standcompat"
-		gcc_target_cpu="mc68000"
+		gcc_target_cpu="m68000"
 		aros_config_cflags="$aros_config_cflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -DAROS_CREATE_ROM"
 		aros_config_aflags="$aros_config_aflags -g3 -${gcc_target_cpu}"
 		aros_paranoia_cflags="$aros_paranoia_cflags -Wno-volatile-register-var"
 		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -${gcc_target_cpu}"
 		target_tool_prefix="m68k-elf-"
-		aros_target_nostdlib_ldflags="" # We always need -lgcc
+		# Needed to get the correct multilib
+		aros_config_ldflags="-${gcc_target_cpu}"
+		aros_debug_ldflags="-${gcc_target_cpu}"
+		aros_shared_ldflags="-${gcc_target_cpu}"
+		aros_kernel_ldflags="-${gcc_target_cpu}"
+		aros_target_nostdlib_ldflags="-${gcc_target_cpu}"
 		aros_target_strip_flags="-R.comment --strip-debug"
 		aros_default_wbwidth=640
 		aros_default_wbheight=480
