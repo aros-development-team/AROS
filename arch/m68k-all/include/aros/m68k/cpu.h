@@ -183,18 +183,21 @@ extern void aros_not_implemented ();
     long _n3 = (long)(n3);\
     long _re;\
     __asm__ __volatile__(\
-	"move.l %%sp,%%a1\n\t"\
-	"move.l %5,%%a1@-\n\t"\
-	"move.l %4,%%a1@-\n\t"\
-	"move.l %3,%%a1@-\n\t"\
+	"move.l %%sp,%%a0\n\t"\
+	"move.l %5,%%a0@-\n\t"\
+	"move.l %4,%%a0@-\n\t"\
+	"move.l %3,%%a0@-\n\t"\
+	"lea.l  %%a0@(-4),%%a1\n\t"\
 	"move.l %%a1,%1\n\t"\
-	"move.l %2,%%a0\n\t"\
-	"move.l %%a1,%%sp\n\t"\
-	"jsr    (%%a0)\n\t"\
+	"move.l %2,%%a1\n\t"\
+	"move.l %%a0,%%sp\n\t"\
+	"move.l %%sp@(0),%%a0\n\t" \
+	"move.l %%sp@(4),%%d0\n\t" \
+	"jsr    (%%a1)\n\t"\
 	"lea.l  %%sp@(12),%%sp\n\t"\
 	"movl   %%d0,%0"\
 	: "=g" (_re), "=m"(*(APTR *)p)\
-	: "g" (n), "g"(_n1), "g"(_n2), "g"(_n3)\
+	: "m" (n), "m"(_n1), "m"(_n2), "m"(_n3)\
 	: "cc", "memory", "%d0", "%a0", "%a1" );\
     (t)_re;\
 })
