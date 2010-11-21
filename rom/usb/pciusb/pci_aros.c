@@ -100,6 +100,51 @@ AROS_UFH3(void, pciEnumerator,
     AROS_USERFUNC_EXIT
 }
 
+/* /// "UhciResetHandler()" */
+static AROS_UFH3(void, UhciResetHandler,
+                 AROS_UFHA(struct PCIController *, hc, A1),
+                 AROS_UFHA(APTR, unused, A5),
+                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    // stop controller and disable all interrupts
+    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
+    WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
+
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "OhciResetHandler()" */
+static AROS_UFH3(void, OhciResetHandler,
+                 AROS_UFHA(struct PCIController *, hc, A1),
+                 AROS_UFHA(APTR, unused, A5),
+                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    // reset controller
+    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
+
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "EhciResetHandler()" */
+static AROS_UFH3(void, EhciResetHandler,
+                 AROS_UFHA(struct PCIController *, hc, A1),
+                 AROS_UFHA(APTR, unused, A5),
+                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    // reset controller
+    CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
+
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
 
 /* /// "pciInit()" */
 BOOL pciInit(struct PCIDevice *hd)
@@ -272,7 +317,6 @@ void PCIXWriteConfigWord(struct PCIController *hc, ULONG offset, UWORD value)
     OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
 }
 /* \\\ */
-
 
 /* /// "PCIXWriteConfigLong()" */
 void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value)
@@ -498,7 +542,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         *tabptr++ = uqh->uqh_Self;
                     }
 
-                    // this will cause more PCI memory access, but faster USB transfers aswell
+                    // this will cause more PCI memory access, but faster USB transfers as well
                     //WRITEMEM32_LE(&hc->hc_UhciTermQH->uqh_Link, AROS_LONG2LE(hc->hc_UhciBulkQH->uqh_Self));
 
                     // time to initialize hardware...
@@ -560,6 +604,11 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     WRITEIO32_LE(hc->hc_RegBase, UHCI_FRAMELISTADDR, (ULONG) pciGetPhysical(hc, hc->hc_UhciFrameList));
 
                     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
+
+                    // install reset handler
+                    hc->hc_ResetInt.is_Code = UhciResetHandler;
+                    hc->hc_ResetInt.is_Data = hc;
+                    AddResetCallback(&hc->hc_ResetInt);
 
                     // add interrupt
                     hc->hc_PCIIntHandler.h_Node.ln_Name = "UHCI PCI (pciusb.device)";
@@ -821,6 +870,11 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, OISF_ALL_INTS);
                     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_INTDIS, OISF_ALL_INTS);
                     SYNC;
+
+                    // install reset handler
+                    hc->hc_ResetInt.is_Code = OhciResetHandler;
+                    hc->hc_ResetInt.is_Data = hc;
+                    AddResetCallback(&hc->hc_ResetInt);
 
                     // add interrupt
                     hc->hc_PCIIntHandler.h_Node.ln_Name = "OHCI PCI (pciusb.device)";
@@ -1106,6 +1160,11 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     WRITEREG32_LE(hc->hc_RegBase, EHCI_ASYNCADDR, AROS_LONG2LE(hc->hc_EhciAsyncQH->eqh_Self));
 
                     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, EHSF_ALL_INTS);
+
+                    // install reset handler
+                    hc->hc_ResetInt.is_Code = EhciResetHandler;
+                    hc->hc_ResetInt.is_Data = hc;
+                    AddResetCallback(&hc->hc_ResetInt);
 
                     // add interrupt
                     hc->hc_PCIIntHandler.h_Node.ln_Name = "EHCI PCI (pciusb.device)";
