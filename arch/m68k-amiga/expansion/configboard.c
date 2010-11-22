@@ -8,14 +8,26 @@
 #include "expansion_intern.h"
 
 #include <proto/expansion.h>
+#include <aros/asmcall.h>
 
-static void writeexpansion(struct ExpansionBase *ExpansionBase, UBYTE type, APTR board, UWORD startaddr)
-{
-	if (type == ERT_ZORROII) {
-		WriteExpansionByte(board, 18, startaddr);
-	} else {
-		WriteExpansionWord(board, 17, startaddr);
-	}
+/* do not touch. Ugly hack. UAE direct JIT versions need this */
+/* check UAE expansion.c for ugly details */
+AROS_UFH5(BOOL, writeexpansion,
+    AROS_UFHA(APTR, board, A0),
+    AROS_UFHA(APTR, configdev, A3), // <- configdev = A3. This is important.
+    AROS_UFHA(UBYTE, type, D0),
+    AROS_UFHA(UWORD, startaddr, D1),
+    AROS_UFHA(struct ExpansionBase *, ExpansionBase, A6))
+{ 
+    AROS_USERFUNC_INIT
+
+    if (type == ERT_ZORROII) {
+	WriteExpansionByte(board, 18, startaddr);
+    } else {
+	WriteExpansionWord(board, 17, startaddr);
+    }
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************
@@ -73,7 +85,7 @@ static void writeexpansion(struct ExpansionBase *ExpansionBase, UBYTE type, APTR
 		start = 0x10000000;
 		end   = 0x7FFFFFFF;
 		space = IntExpBase(ExpansionBase)->eb_z3Slots;
-		align = 0x00100000;
+		align = 0x01000000;
 		memorydevice = configDev->cd_Rom.er_Flags & ERFF_MEMSPACE;
 	}
 	if (!memorydevice && size <= E_SLOTSIZE) {
@@ -85,11 +97,11 @@ static void writeexpansion(struct ExpansionBase *ExpansionBase, UBYTE type, APTR
 	for (addr = start; addr < end; addr += align) {
 		IPTR startaddr = addr;
 		UWORD offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
-		UBYTE bit = (startaddr / E_SLOTSIZE) % SLOTSPERBYTE;
+		BYTE bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
 		UBYTE res = space[offset];
 		ULONG sizeleft = size;
 
-		if (res & (7 - (1 << bit)))
+		if (res & (1 << bit))
 			continue;
 
 		// found free start address
@@ -101,16 +113,40 @@ static void writeexpansion(struct ExpansionBase *ExpansionBase, UBYTE type, APTR
 			}
 		} else {
 			// bit by bit small board check (fits in one byte)
-			while ((res & (7 - (1 << bit))) == 0 && sizeleft > 0) {
+			while ((res & (1 << bit)) == 0 && sizeleft > 0 && bit >= 0) {
 				sizeleft -= E_SLOTSIZE;
-				res++;
+				bit--;
 			}
 		}
 		if (sizeleft > 0)
 			continue;
 		
-		writeexpansion(ExpansionBase, type, board, startaddr >> 16);
 		configDev->cd_BoardAddr	 = (APTR)startaddr;
+
+		AROS_UFC5(void, writeexpansion,
+			AROS_UFCA(ULONG, board, A0),
+			AROS_UFCA(ULONG, configDev, A3),
+			AROS_UFCA(UBYTE, type, D0),
+                	AROS_UFCA(UWORD, (startaddr >> 16), D1),
+                       	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
+             	);
+		
+		// do not remove this, it might have changed inside writeexpansion
+		startaddr = configDev->cd_BoardAddr;
+		offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
+		bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
+		sizeleft = size;
+		// now allocate area we reserved
+		if (size >= E_SLOTSIZE * SLOTSPERBYTE) {
+			memset(space + offset, 0xff, sizeleft / (E_SLOTSIZE * SLOTSPERBYTE));
+		} else {
+			while (sizeleft > 0) {
+				space[offset] |= 1 << bit;
+				sizeleft -= E_SLOTSIZE;
+				bit--;
+			}
+		}
+
 		return TRUE;
 	}
 	if (!(configDev->cd_Flags & ERFF_NOSHUTUP)) {
