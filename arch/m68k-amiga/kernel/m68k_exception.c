@@ -262,7 +262,7 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
 void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
 {
     int Id;
-    void (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
+    BOOL (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
 
     if (vector & 1) {
     	/* vector is really a pointer to a M68KException table entry */
@@ -272,10 +272,9 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
 
     	Id = Exception->Id;
     	Handler = Exception->Handler;
-
     } else {
     	Id = vector >> 2;
-    	Handler = M68KExceptionHandler;
+    	Handler = NULL;
     }
 
 #ifdef PARANOIA_STACK
@@ -299,7 +298,8 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
     }
 #endif
 
-    Handler(regs, Id, SysBase);
+    if (Handler == NULL || !Handler(regs, Id, SysBase))
+    	M68KExceptionHandler(regs, Id, SysBase);
 
 #ifdef PARANOIA_STACK
     if (KernelBase != NULL) {

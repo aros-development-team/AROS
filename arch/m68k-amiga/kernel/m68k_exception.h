@@ -54,7 +54,8 @@
  */
 struct M68KException {
 	UWORD Id;
-	void (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
+	/* Returns TRUE if handled, FALSE if it didn't */
+	BOOL (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
 };
 
 void M68KExceptionInit(const struct M68KException *Table, struct ExecBase *SysBase);
