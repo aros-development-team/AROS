@@ -32,6 +32,8 @@
 #   include <aros/morphos/cpu.h>
 #elif defined __powerpc__
 #   include <aros/ppc/cpu.h>
+#elif defined __ppc__
+#   include <aros/ppc/cpu.h>
 #elif defined __arm__
 #	include <aros/arm/cpu.h>
 #else
