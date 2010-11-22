@@ -418,6 +418,7 @@ int Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     csd->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last, MEMF_CLEAR | MEMF_PUBLIC);
     if (!csd->boardinfo)
     	return FALSE;
+    NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList));
     csd->bitmapextra = csd->boardinfo + PSSO_BoardInfo_SizeOf;
     pl(csd->boardinfo + PSSO_BoardInfo_BitMapExtra, (ULONG)csd->bitmapextra);
     if (!FindCard(csd)) {
