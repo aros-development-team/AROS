@@ -7,6 +7,10 @@
 #include <cpu_i386.h>
 #endif
 
+#ifdef __ppc__
+#include <cpu_ppc.h>
+#endif
+
 #ifdef __arm__
 #include <cpu_arm.h>
 #endif
