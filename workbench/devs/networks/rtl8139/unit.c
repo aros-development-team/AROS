@@ -339,86 +339,86 @@ AROS_UFH3(void, RTL8139_TX_IntF,
 
 			opener = (APTR)request->ios2_BufferManagement;
 
-				np->tx_pbuf[nr] = np->tx_buf[nr];
-				if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
-				{
-					packet_size += ETH_PACKET_DATA;
-					CopyMem(request->ios2_DstAddr,
-							&((struct eth_frame *) np->tx_buf[nr])->eth_packet_dest,
-							ETH_ADDRESSSIZE);
-					CopyMem(unit->rtl8139u_dev_addr,
-							&((struct eth_frame *) np->tx_buf[nr])->eth_packet_source,
-							ETH_ADDRESSSIZE);
-					((struct eth_frame *)np->tx_buf[nr])->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
+			np->tx_pbuf[nr] = np->tx_buf[nr];
+			if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
+			{
+				packet_size += ETH_PACKET_DATA;
+				CopyMem(request->ios2_DstAddr,
+						&((struct eth_frame *) np->tx_buf[nr])->eth_packet_dest,
+						ETH_ADDRESSSIZE);
+				CopyMem(unit->rtl8139u_dev_addr,
+						&((struct eth_frame *) np->tx_buf[nr])->eth_packet_source,
+						ETH_ADDRESSSIZE);
+				((struct eth_frame *)np->tx_buf[nr])->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
 
-					buffer = &((struct eth_frame *) np->tx_buf[nr])->eth_packet_data;
-				}
-				else
-				{
-					buffer = np->tx_buf[nr];
-				}
+				buffer = &((struct eth_frame *) np->tx_buf[nr])->eth_packet_data;
+			}
+			else
+			{
+				buffer = np->tx_buf[nr];
+			}
 
-				if (packet_size < TX_BUF_SIZE)
-				{
-					memset(buffer, 0, TX_BUF_SIZE - packet_size);
-				}
+			if (packet_size < TX_BUF_SIZE)
+			{
+				memset(buffer, 0, TX_BUF_SIZE - packet_size);
+			}
 
-				if (!opener->tx_function(buffer, request->ios2_Data, data_size))
-				{
-					error = S2ERR_NO_RESOURCES;
-					wire_error = S2WERR_BUFF_ERROR;
-					ReportEvents(LIBBASE, unit,
-								 S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF |
-								 S2EVENT_TX);
-				}
+			if (!opener->tx_function(buffer, request->ios2_Data, data_size))
+			{
+				error = S2ERR_NO_RESOURCES;
+				wire_error = S2WERR_BUFF_ERROR;
+				ReportEvents(LIBBASE, unit,
+							 S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF |
+							 S2EVENT_TX);
+			}
 
-				/* Now the packet is already in TX buffer, update flags for NIC */
-				if (error == 0)
-				{
+			/* Now the packet is already in TX buffer, update flags for NIC */
+			if (error == 0)
+			{
 #ifdef DEBUG
-					Disable();
+				Disable();
 RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.", unit->rtl8139u_name, nr, np->tx_buf[nr], AROS_BE2WORD(((struct eth_frame *)np->tx_buf[nr])->eth_packet_type)))
 
-					RTLD( int j;
-						for (j=0; j<64; j++) {
-							if ((j%16) == 0)
-								bug("\n%03x:", j);
-							bug(" %02x", ((unsigned char*)np->tx_buf[nr])[j]);
-						}
-						bug("\n");)
+				RTLD( int j;
+					for (j=0; j<64; j++) {
+						if ((j%16) == 0)
+							bug("\n%03x:", j);
+						bug(" %02x", ((unsigned char*)np->tx_buf[nr])[j]);
+					}
+					bug("\n");)
 
-					Enable();
+				Enable();
 #endif
 
-					/* Set the ring details for the packet */
-					LONGOUT(base + RTLr_TxAddr0 + (nr << 2), np->tx_buf[nr]);
-					LONGOUT(base + RTLr_TxStatus0 + (nr << 2), np->tx_flag |
-															   (packet_size >= ETH_ZLEN ?
-															    packet_size : ETH_ZLEN));
-				}
+				/* Set the ring details for the packet */
+				LONGOUT(base + RTLr_TxAddr0 + (nr << 2), np->tx_buf[nr]);
+				LONGOUT(base + RTLr_TxStatus0 + (nr << 2), np->tx_flag |
+														   (packet_size >= ETH_ZLEN ?
+														    packet_size : ETH_ZLEN));
+			}
 
-				/* Reply packet */
-				request->ios2_Req.io_Error = error;
-				request->ios2_WireError = wire_error;
-				Disable();
-				Remove((APTR)request);
-				Enable();
-				ReplyMsg((APTR)request);
+			/* Reply packet */
+			request->ios2_Req.io_Error = error;
+			request->ios2_WireError = wire_error;
+			Disable();
+			Remove((APTR)request);
+			Enable();
+			ReplyMsg((APTR)request);
 
-				/* Update statistics */
-				if(error == 0)
+			/* Update statistics */
+			if(error == 0)
+			{
+				unit->rtl8139u_stats.PacketsSent++;
+
+				tracker = FindTypeStats(LIBBASE, unit, &unit->rtl8139u_type_trackers, request->ios2_PacketType);
+
+				if(tracker != NULL)
 				{
-					unit->rtl8139u_stats.PacketsSent++;
-
-					tracker = FindTypeStats(LIBBASE, unit, &unit->rtl8139u_type_trackers, request->ios2_PacketType);
-
-					if(tracker != NULL)
-					{
-						tracker->stats.PacketsSent++;
-						tracker->stats.BytesSent += packet_size;
-					}
+					tracker->stats.PacketsSent++;
+					tracker->stats.BytesSent += packet_size;
 				}
-				try_count = 0;
+			}
+			try_count = 0;
 			np->tx_current++;
 
 			/*
