@@ -403,6 +403,7 @@ AROS_UFH3(void, RTL8169_TX_IntF,
 				// Now the packet is already in TX buffer, update flags for NIC
 				if (error == 0)
 				{
+#ifdef DEBUG
 					Disable();
 	                RTLD(bug("[%s] RTL8139_TX_IntF: packet %d  @ %p [type = %d] queued for transmission.",
 	                         unit->rtl8169u_name,
@@ -410,7 +411,6 @@ AROS_UFH3(void, RTL8169_TX_IntF,
 	                         np->TxDescArray[nr].addr,
 	                         AROS_BE2WORD(((struct eth_frame *) np->TxDescArray[nr].addr)->eth_packet_type)))
 
-#ifdef DEBUG
 					RTLD( int j;
 						for (j = 0; j < 64; j++)
 						{
@@ -421,10 +421,10 @@ AROS_UFH3(void, RTL8169_TX_IntF,
 							bug(" %02x", ((unsigned char*) np->TxDescArray[nr].addr)[j]);
 						}
 						bug("\n");)
-#endif
+
 
 					Enable();
-
+#endif
 	    			// Set the ring details for the packet ..
 	    			np->TxDescArray[nr].opts1 = AROS_LONG2LE(DescOwn | FirstFrag | LastFrag | packet_size | (RingEnd * !((nr + 1) % NUM_TX_DESC)));
 	    			np->TxDescArray[nr].opts2 = AROS_LONG2LE(0);
