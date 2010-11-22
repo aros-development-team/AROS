@@ -24,6 +24,7 @@ struct KernelBase
     unsigned int	   kb_VBlankTicks;
     unsigned int	   kb_TimerCount;
     ULONG		   kb_ContextFlags;	/* Hints for KrnCreateContext() */
+    ULONG		   kb_ContextSize;	/* Total length of CPU context  */
     struct PlatformData	  *kb_PlatformData;
 };
 

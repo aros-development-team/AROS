@@ -12,30 +12,20 @@ AROS_LH0I(void *, KrnCreateContext,
     AROS_LIBFUNC_INIT
 
     struct ExceptionContext *ctx;
-    UBYTE fpu_type;
-    ULONG fpu_size;
 
     /*
      * Allocate common data block and FPU data block in one
-     * chunk. This way we may use FreeVec()-alike operation
-     * in order to free the whole context.
-     * TODO: in future this can be extended to support more than
-     * a single FPU type.
-     */
-    fpu_type = ARM_FPU_TYPE;
-    fpu_size = ARM_FPU_SIZE;
-
-    /*
+     * chunk. This way we simplify things a lot.
+     * 
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,
      * so we refer struct AROSCPUContext only for size calculation.
      */
-    ctx = krnAllocVec(sizeof(struct AROSCPUContext) + fpu_size);
+    ctx = krnAllocVec(KernelBase->kb_ContextSize);
     if (ctx)
     {
-        ctx->FPUType    = fpu_type;
+        ctx->FPUType    = KernelBase->kb_ContextFlags;
         ctx->cpsr       = 0x10;		/* Initial value for user mode */
 	ctx->fpuContext = (APTR)((IPTR)ctx + sizeof(struct AROSCPUContext));
-	/* TODO: initialize FPU context ? */
     }
 
     return ctx;
