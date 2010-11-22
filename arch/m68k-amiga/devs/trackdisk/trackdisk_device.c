@@ -73,7 +73,7 @@ static void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu)
     	td_seek(tdu, -1, 0, tdb);
     } else {
     	// step towards cyl 0 if > 0, it not, step to cyl 1
-    	td_seek(tdu, tdu->pub.tdu_CurrTrk >= 2 ? tdu->pub.tdu_CurrTrk - 2 : 2, 0, tdb);
+    	td_seek(tdu, tdu->pub.tdu_CurrTrk >= 2 ? (tdu->pub.tdu_CurrTrk - 2) / 2 : 1, 0, tdb);
     }
     if (td_getDiskChange (tdu, tdb)) {
 	struct DiskBase *DiskBase = tdb->td_DiskBase;
