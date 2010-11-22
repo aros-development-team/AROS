@@ -123,7 +123,7 @@ static inline UWORD custom_r(ULONG reg)
  *      ..
  *      255	User 191
  */
-static void LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
+static BOOL LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
 {
 	if (*((UWORD *)regs->pc) == KRN_SYSCALL_INST &&
 	     regs->a[0] == KRN_SYSCALL_MAGIC &&
@@ -148,21 +148,20 @@ static void LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
 			break;
 		}
 
-		return;
+		return TRUE;
 	}
 
-	Alert(ACPU_LineF);
-	for (;;);
+	return FALSE;
 }
 
 /* Wrapper to work around GCC frame pointer bugs
  */
-static inline void Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase)
+static inline BOOL Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase)
 {
     /* If we don't have handler, ignore it */
     if (SysBase->IntVects[irq].iv_Code == NULL) {
     	bug("SPURIOUS IRQ: %d mask=0x%04x\n", irq, mask);
-    	return;
+    	return FALSE;
     }
 
     AROS_UFC5(void, SysBase->IntVects[irq].iv_Code,			\
@@ -171,6 +170,8 @@ static inline void Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase
 		    AROS_UFCA(APTR, SysBase->IntVects[irq].iv_Data, A1),\
 		    AROS_UFCA(APTR, SysBase->IntVects[irq].iv_Code, A5),\
 		    AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+    return TRUE;
 }
 
 #define PAULA_IRQ_CHECK(valid_mask) \
@@ -189,9 +190,10 @@ static inline void Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase
     } while (0); \
     /* If the caller was not nested, call core_ExitInterrupt */	\
     if (!(regs->sr & 0x2000))					\
-    	core_ExitInterrupt(regs);
+    	core_ExitInterrupt(regs); \
+    return TRUE;
 
-static void Amiga_Level_1(regs_t *regs, int id, struct ExecBase *SysBase)
+static BOOL Amiga_Level_1(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* Paula IRQs 0 - Serial port TX done
      *            1 - Disk DMA finished
@@ -206,7 +208,7 @@ static void Amiga_Level_1(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static void Amiga_Level_2(regs_t *regs, int id, struct ExecBase *SysBase)
+static BOOL Amiga_Level_2(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* Paula IRQs 3 - CIAA/CIAB
      */
@@ -217,7 +219,7 @@ static void Amiga_Level_2(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static void Amiga_Level_3(regs_t *regs, int id, struct ExecBase *SysBase)
+static BOOL Amiga_Level_3(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* Paula IRQs 4 - Copper
      *            5 - Vert Blank
@@ -232,7 +234,7 @@ static void Amiga_Level_3(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static void Amiga_Level_4(regs_t *regs, int id, struct ExecBase *SysBase)
+static BOOL Amiga_Level_4(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* Paula IRQs  7 - Audio 0
      *             8 - Audio 1
@@ -249,7 +251,7 @@ static void Amiga_Level_4(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static void Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
+static BOOL Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* Paula IRQs  11 - Serial RX
      *             12 - Disk Sync
@@ -262,7 +264,7 @@ static void Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static void Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
+static BOOL Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* Paula IRQ  13 - CIAB & IRQ6
      */
@@ -273,7 +275,7 @@ static void Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static void Amiga_Level_7(regs_t *regs, int id, struct ExecBase *SysBase)
+static BOOL Amiga_Level_7(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* NMI - no way around it.
      */
@@ -284,6 +286,8 @@ static void Amiga_Level_7(regs_t *regs, int id, struct ExecBase *SysBase)
     /* Don't reschedule on the way out - so don't
      * call PAULA_IRQ_EXIT()
      */
+
+    return TRUE;
 }
 
 const struct M68KException AmigaExceptionTable[] = {
