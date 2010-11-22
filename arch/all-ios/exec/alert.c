@@ -31,6 +31,7 @@ AROS_LH1(void, Alert,
     AROS_LIBFUNC_INIT
 
     struct Task *task = SysBase->ThisTask;
+    UBYTE *buf;
 
     /* If we are running in user mode we should first try to report a problem using AROS'
        own way to do it */
@@ -41,11 +42,10 @@ AROS_LH1(void, Alert,
 	    return;
     }
 
-    /* User-mode alert routine failed. We allocate the buffer on stack
-       only here in order to avoid excessive stack usage. */
-    UBYTE buffer[256], *buf;
+    /* User-mode alert routine failed */
+    Disable();
 
-    buf = Alert_AddString(buffer, Alert_GetTitle(alertNum));
+    buf = Alert_AddString(PrivExecBase(SysBase)->AlertBuffer, Alert_GetTitle(alertNum));
     *buf++ = '\n';
     FormatAlert(buf, alertNum, task, SysBase);
 
@@ -53,9 +53,7 @@ AROS_LH1(void, Alert,
      * Display an alert using UIKit. This takes a long time and we don't want
      * task switcher to mess with us, so Disable() before.
      */
-    Disable();
-    D(bug("[Alert] Message:\n%s\n", buffer));
-    PD(SysBase).DisplayAlert(buffer);
+    PD(SysBase).DisplayAlert(PrivExecBase(SysBase)->AlertBuffer);
     AROS_HOST_BARRIER
 
     if (alertNum & AT_DeadEnd)
