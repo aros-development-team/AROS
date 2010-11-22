@@ -1,10 +1,10 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 */
 
 #include <exec/types.h>
-#include <aros/arm/cpucontext.h>
+#include <aros/ppc/cpucontext.h>
 
 #ifdef __AROS_EXEC_LIBRARY__
 
@@ -32,10 +32,10 @@ typedef void (*SIGHANDLER_T)(int);
 #define DAR(context)	 ((context)->uc_mcontext->__es.__dar)
 #define DSISR(context)	 ((context)->uc_mcontext->__es.__dsisr)
 
-#define SRR0(context)	 ((context)->uc_mcontext->__ss.___srr0)
-#define SRR1(context)	 ((context)->uc_mcontext->__ss.___srr1)
+#define PC(context)	 ((context)->uc_mcontext->__ss.__srr0)
+#define SRR1(context)	 ((context)->uc_mcontext->__ss.__srr1)
 #define R0(context)      ((context)->uc_mcontext->__ss.__r0)
-#define R1(context)      ((context)->uc_mcontext->__ss.__r1)
+#define SP(context)      ((context)->uc_mcontext->__ss.__r1)
 #define R2(context)      ((context)->uc_mcontext->__ss.__r2)
 #define R3(context)      ((context)->uc_mcontext->__ss.__r3)
 #define R4(context)      ((context)->uc_mcontext->__ss.__r4)
@@ -51,9 +51,9 @@ typedef void (*SIGHANDLER_T)(int);
 #define XER(context)     ((context)->uc_mcontext->__ss.__xer)
 #define CTR(context)     ((context)->uc_mcontext->__ss.__ctr)
 #define LR(context)      ((context)->uc_mcontext->__ss.__lr)
-#define DSISR(context)   ((context)->uc_mcontext->__ss.__dsisr)
-#define DAR(context)     ((context)->uc_mcontext->__ss.__dar)
 #define VRSAVE(context)	 ((context)->uc_mcontext->__ss.__vrsave)
+
+#define FPSCR(context)	 ((context)->uc_mcontext->__fs.__fpscr)
 
 #define VR(context)	 ((context)->uc_mcontext->__vs.__save_vr)
 #define VSCR(context)	 ((context)->uc_mcontext->__vs.__save_vscr)
@@ -66,10 +66,10 @@ typedef void (*SIGHANDLER_T)(int);
 #define DAR(context)	 ((context)->uc_mcontext->es.dar)
 #define DSISR(context)	 ((context)->uc_mcontext->es.dsisr)
 
-#define SRR0(context)	 ((context)->uc_mcontext->ss.srr0)
+#define PC(context)	 ((context)->uc_mcontext->ss.srr0)
 #define SRR1(context)	 ((context)->uc_mcontext->ss.srr1)
 #define R0(context)      ((context)->uc_mcontext->ss.r0)
-#define R1(context)      ((context)->uc_mcontext->ss.r1)
+#define SP(context)      ((context)->uc_mcontext->ss.r1)
 #define R2(context)      ((context)->uc_mcontext->ss.r2)
 #define R3(context)      ((context)->uc_mcontext->ss.r3)
 #define R4(context)      ((context)->uc_mcontext->ss.r4)
@@ -85,9 +85,9 @@ typedef void (*SIGHANDLER_T)(int);
 #define XER(context)     ((context)->uc_mcontext->ss.xer)
 #define CTR(context)     ((context)->uc_mcontext->ss.ctr)
 #define LR(context)      ((context)->uc_mcontext->ss.lr)
-#define DSISR(context)   ((context)->uc_mcontext->ss.dsisr)
-#define DAR(context)     ((context)->uc_mcontext->ss.dar)
 #define VRSAVE(context)	 ((context)->uc_mcontext->ss.vrsave)
+
+#define FPSCR(context)	 ((context)->uc_mcontext->fs.fpscr)
 
 #define VR(context)	 ((context)->uc_mcontext->vs.save_vr)
 #define VSCR(context)	 ((context)->uc_mcontext->vs.save_vscr)
@@ -111,13 +111,13 @@ typedef void (*SIGHANDLER_T)(int);
 #define SAVEREGS(cc, sc)							\
     (cc)->regs.Flags  = ECF_FULL_GPRS|ECF_FPU|ECF_FULL_FPU|ECF_VRSAVE;		\
     (cc)->regs.msr    = SRR1(sc);						\
-    (cc)->regs.ip     = SRR0(sc);
+    (cc)->regs.ip     = PC(sc);							\
     CopyMemQuick(&R0(sc), (cc)->regs.gpr, 34 * sizeof(ULONG));			\
     (cc)->regs.ctr    = CTR(sc);						\
     (cc)->regs.lr     = LR(sc);							\
     (cc)->regs.dsisr  = DSISR(sc);						\
     (cc)->regs.dar    = DAR(sc);						\
-    CopyMemQuick(&FPSTATE(sc), (cc)->regs.fpr, sizeof(_STRUCT_PPC_FLOAT_STATE);	\
+    CopyMemQuick(&FPSTATE(sc), (cc)->regs.fpr, sizeof(_STRUCT_PPC_FLOAT_STATE)); \
     (cc)->regs.vrsave = VRSAVE(sc);						\
     if (VRVALID(sc))								\
     {										\
@@ -127,10 +127,10 @@ typedef void (*SIGHANDLER_T)(int);
     }
 
 #define RESTOREREGS(cc, sc)                                         		\
-{
-    ULONG n = (cc)->Flags & ECF_FULL_GPRS) ? 32 : 14;				\
+{										\
+    ULONG n    = ((cc)->regs.Flags & ECF_FULL_GPRS) ? 32 : 14;			\
     SRR1(sc)   = (cc)->regs.msr;						\
-    SRR0(sc)   = (cc)->regs.ip;							\
+    PC(sc)     = (cc)->regs.ip;							\
     CopyMemQuick((cc)->regs.gpr, &R0(sc), n * sizeof(ULONG));			\
     CR(sc)     = (cc)->regs.cr;							\
     XER(sc)    = (cc)->regs.xer;						\
@@ -138,13 +138,13 @@ typedef void (*SIGHANDLER_T)(int);
     LR(sc)     = (cc)->regs.lr;							\
     DSISR(sc)  = (cc)->regs.dsisr;						\
     DAR(sc)    = (cc)->regs.dar;						\
-    if ((cc)->Flags & ECF_FPU)							\
+    if ((cc)->regs.Flags & ECF_FPU)						\
 	CopyMemQuick(&FPSTATE(sc), (cc)->regs.fpr, 32 * sizeof(double));	\
-    if ((cc)->Flags & ECF_FPU_FULL)						\
+    if ((cc)->regs.Flags & ECF_FULL_FPU)					\
     	FPSCR(sc)  = (cc)->regs.fpscr;						\
     if ((cc)->regs.Flags & ECF_VRSAVE)						\
     	VRSAVE(sc) = (cc)->regs.vrsave;						\
-    if ((cc)->Flags & ECF_VECTOR)						\
+    if ((cc)->regs.Flags & ECF_VECTOR)						\
     {										\
     	CopyMemQuick((cc)->regs.vr, VR(sc), 512);				\
     	CopyMemQuick((cc)->regs.vscr, VSCR(sc), 16);				\
@@ -152,15 +152,15 @@ typedef void (*SIGHANDLER_T)(int);
 }
 
 /* Print signal context. Used in crash handler */
-#define PRINT_SC(sc) \
-    bug ("    R0 =%08X  R1=%08X  R2 =%08X  R3 =%08X\n" \
-    	 "    R4 =%08X  R5=%08X  R6 =%08X  R7 =%08X\n" \
-    	 "    R8 =%08X  R9=%08X  R10=%08X  R11=%08X\n" \
-    	 "    R12=%08X  LR=%08X  MSR=%08X  IP =%08X\n" \
-	    , R0(sc), R1(sc), R2(sc), R3(sc)	\
-	    , R4(sc), R5(sc), R6(sc), R7(sc)	\
-	    , R8(sc), R9(sc), R10(sc), R11(sc)	\
-	    , R12(sc), LR(sc), SRR1(sc), SRR0(sc)
+#define PRINT_SC(sc)					\
+    bug ("    R0 =%08X  R1=%08X  R2 =%08X  R3 =%08X\n"	\
+    	 "    R4 =%08X  R5=%08X  R6 =%08X  R7 =%08X\n"	\
+    	 "    R8 =%08X  R9=%08X  R10=%08X  R11=%08X\n"	\
+    	 "    R12=%08X  LR=%08X  MSR=%08X  IP =%08X\n"	\
+	    , R0(sc), SP(sc), R2(sc), R3(sc)		\
+	    , R4(sc), R5(sc), R6(sc), R7(sc)		\
+	    , R8(sc), R9(sc), R10(sc), R11(sc)		\
+	    , R12(sc), LR(sc), SRR1(sc), PC(sc)	\
 	)
 
 #endif /* __AROS_EXEC_LIBRARY__ */
