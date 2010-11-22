@@ -1,16 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR  := $(BINDIR)/boot
-
-FILES         := hostinterface hostlib memory shutdown support
+FILES         := malloc
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
-		 -I$(SRCDIR)/arch/all-unix/kernel   \
-		 -I$(GENINCDIR) \
-		 -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+		 -I$(GENINCDIR)
 
 %build_archspecific \
-	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=unix \
+	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=linux \
 	files=$(FILES) compiler=kernel
 
 %common
