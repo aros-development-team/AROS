@@ -787,13 +787,8 @@ reply:
     ReplyMsg((APTR) iofs);
 }
 
-AROS_UFH3(void, packet_reply,
-          AROS_UFHA(struct ph_mount *, mount,     A1),
-          AROS_UFHA(APTR,              dummy,   A5),
-          AROS_UFHA(struct ExecBase *, SysBase, A6)) {   
-
-    AROS_USERFUNC_INIT
-
+static BOOL packet_doreply(struct ph_mount *mount)
+{
     struct DosPacket *dp;
     struct ph_packet *pkt;
     struct IOFileSys *iofs;
@@ -801,7 +796,10 @@ AROS_UFH3(void, packet_reply,
     struct FileLock *lock;
 
     /* retrieve the message and fish the packet out */
-    dp = (struct DosPacket *) GetMsg(&(mount->reply_port))->mn_Node.ln_Name;
+    struct Message *msg = GetMsg(&(mount->reply_port));
+    if (!msg)
+    	return FALSE;
+    dp = (struct DosPacket *) msg->mn_Node.ln_Name;
     pkt = (struct ph_packet *) dp->dp_Link;
 
     D(bug("[packet] got reply packet %d (%s)\n", dp->dp_Type, act_str(dp->dp_Type)));
@@ -857,7 +855,7 @@ AROS_UFH3(void, packet_reply,
         /* and tell them */
         ReplyMsg((APTR) iofs);
 
-        return;
+        return TRUE;
     }
 
     /* no error */
@@ -1050,6 +1048,20 @@ AROS_UFH3(void, packet_reply,
 
     /* send it back */
     ReplyMsg((APTR) iofs);
+
+    return TRUE;
+}
+
+
+AROS_UFH3(void, packet_reply,
+          AROS_UFHA(struct ph_mount *, mount,     A1),
+          AROS_UFHA(APTR,              dummy,   A5),
+          AROS_UFHA(struct ExecBase *, SysBase, A6)) {   
+
+    AROS_USERFUNC_INIT
+    
+    /* we might have more than one packet waiting */
+    while (packet_doreply(mount));
 
     AROS_USERFUNC_EXIT
 }
