@@ -71,8 +71,12 @@ AROS_UFH2(void, putChProc,
     AROS_UFHA(UBYTE, chr, D0),
     AROS_UFHA(STRPTR *, buf, A3))
 {
+    AROS_LIBFUNC_INIT
+
     **buf = chr;
     *buf += 1;
+
+    AROS_LIBFUNC_EXIT
 }
 
 /* This function copies a string, but also returns a pointer to the
@@ -99,6 +103,8 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
     AROS_UFHA(struct ExecBase *,    SysBase, A6)
 )
 {
+    AROS_LIBFUNC_INIT
+
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
 	Clear memory location zero (a cookie for the delayed guru after reset).
@@ -177,6 +183,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
 #endif
     return NULL;
 
+    AROS_LIBFUNC_EXIT
 }
 
 /* Get a string from an array of type Errors. */
