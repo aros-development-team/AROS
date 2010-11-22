@@ -905,7 +905,7 @@ case "$target_os" in
 		;;
 	    *ppc*)
 		aros_target_cpu="ppc"
-                aros_object_format="elf32_ppc"
+                aros_object_format="elf32ppc"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
                 aros_kernel_ldflags=""
                 aros_macosx_version="10.0"
