@@ -69,10 +69,13 @@ AROS_UFH3(void, pciEnumerator,
         // BIOS needs plug & play os option disabled. Alternatively AROS must support APIC reconfiguration
         KPRINTF(200, ("ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n"));
     }
+
 #if defined(__powerpc__)
     else if((hcitype == HCITYPE_OHCI))
-#else
+#elif defined(USB3) 
     else if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI) || (hcitype == HCITYPE_XHCI))
+#else
+    else if((hcitype == HCITYPE_UHCI) || (hcitype == HCITYPE_OHCI) || (hcitype == HCITYPE_EHCI))
 #endif
     {
         KPRINTF(10, ("Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline));
@@ -146,6 +149,20 @@ static AROS_UFH3(void, EhciResetHandler,
 }
 /* \\\ */
 
+#if defined(USB3)
+/* /// "XhciResetHandler()" */
+static AROS_UFH3(void, XhciResetHandler,
+                 AROS_UFHA(struct PCIController *, hc, A1),
+                 AROS_UFHA(APTR, unused, A5),
+                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+#endif
+
 /* /// "pciInit()" */
 BOOL pciInit(struct PCIDevice *hd)
 {
@@ -200,8 +217,10 @@ BOOL pciInit(struct PCIDevice *hd)
 
 #if defined(__powerpc__)
         KPRINTF(20, ("Searching for OHCI devices...\n"));
-#else
+#elif defined(USB3)
         KPRINTF(20, ("Searching for (U/O/E/X)HCI devices...\n"));
+#else
+        KPRINTF(20, ("Searching for (U/O/E)HCI devices...\n"));
 #endif
 
         HIDD_PCI_EnumDevices(hd->hd_PCIHidd, &findHook, (struct TagItem *) &tags);
@@ -354,6 +373,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     ULONG ohcicnt = 0;
     ULONG uhcicnt = 0;
     ULONG ehcicnt = 0;
+#if defined(USB3)
+    ULONG xhcicnt = 0;
+#endif
     STRPTR prodname;
 
     struct TagItem pciActivateMem[] =
@@ -1192,6 +1214,38 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     KPRINTF(10, ("HW Regs FRAMECOUNT=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT)));
                     break;
                 }
+#ifdef ENABLE_USB3
+                case HCITYPE_XHCI:
+                {
+                    IPTR pciecap;
+
+                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_CapabilityPCIE, (IPTR *) &pciecap);
+
+                    if(pciecap) {
+                        KPRINTF(1000, ("XHCI has PCIE capabilities %p\n",pciecap));
+                    }
+
+                    hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
+                    hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
+                    hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
+                    hc->hc_CompleteInt.is_Data = hc;
+                    hc->hc_CompleteInt.is_Code = (void (*)(void)) &xhciCompleteInt;
+
+                    // install reset handler
+                    hc->hc_ResetInt.is_Code = XhciResetHandler;
+                    hc->hc_ResetInt.is_Data = hc;
+                    AddResetCallback(&hc->hc_ResetInt);
+
+                    // add interrupt
+                    hc->hc_PCIIntHandler.h_Node.ln_Name = "XHCI PCI (pciusb.device)";
+                    hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
+                    hc->hc_PCIIntHandler.h_Code = xhciIntCode;
+                    hc->hc_PCIIntHandler.h_Data = hc;
+                    HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+
+                    break;
+                }
+#endif
             }
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
@@ -1223,7 +1277,15 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
+#if defined(USB3)
+        if(hc->hc_HCIType == HCITYPE_XHCI)
+        {
+            xhcicnt++;
+        }
+        else if(hc->hc_HCIType == HCITYPE_EHCI)
+#else
         if(hc->hc_HCIType == HCITYPE_EHCI)
+#endif
         {
             ehcicnt++;
             if(usb20ports)
@@ -1329,6 +1391,13 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     {
         pciStrcat(prodname, "EHCI USB 2.0");
     }
+#if defined(USB3)
+    if(xhcicnt)
+    {
+        pciStrcat(prodname, "XHCI USB 3.0");
+    }
+#endif
+#if 0 // user can use pcitool to check what the chipset is and not guess it from this
     pciStrcat(prodname, " Host Controller (");
     if(ohcicnt + uhcicnt)
     {
@@ -1336,6 +1405,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     } else {
 		pciStrcat(prodname, "Emulated?)");
 	}
+#else
+    pciStrcat(prodname, " Host Controller");
+#endif
     KPRINTF(10, ("Unit allocated!\n", hd));
 
     return TRUE;

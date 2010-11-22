@@ -92,7 +92,9 @@ struct PCIUnit
 #define HCITYPE_UHCI     0x00
 #define HCITYPE_OHCI     0x10
 #define HCITYPE_EHCI     0x20
+#if defined(USB3)
 #define HCITYPE_XHCI     0x30
+#endif
 
 struct PCIController
 {

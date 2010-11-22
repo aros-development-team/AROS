@@ -5287,6 +5287,27 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 }
 /* \\\ */
 
+#if defined(USB3)
+/* /// "xhciCompleteInt()" */
+void xhciCompleteInt(struct PCIController *hc)
+{
+    KPRINTF(1, ("CompleteInt!\n"));
+
+    KPRINTF(1, ("CompleteDone\n"));
+}
+/* \\\ */
+
+/* /// "xhciIntCode()" */
+void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+{
+    struct PCIController *hc = (struct PCIController *) irq->h_Data;
+    struct PCIDevice *base = hc->hc_Device;
+    struct PCIUnit *unit = hc->hc_Unit;
+
+}
+/* \\\ */
+#endif
+
 /* /// "uhwNakTimeoutInt()" */
 AROS_UFH1(void, uhwNakTimeoutInt,
           AROS_UFHA(struct PCIUnit *,  unit, A1))
