@@ -9,6 +9,8 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
+#define ALERT_BUFFER_SIZE 2048
+
 static char *startstring = "Program failed\n";
 static char *endstring   = "\nWait for disk activity to finish.";
 
@@ -17,31 +19,37 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
     LONG choice = -1;
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
 
-    if (IntuitionBase && IntuitionBase->FirstScreen)
+    if (IntuitionBase)
     {
-        char buffer[512];
-	char *buf;
-        struct EasyStruct es = {
-            sizeof (struct EasyStruct),
-            0,
-            NULL,
-	    buffer,
-            NULL,
-        };
+        char *buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
 
-	buf = Alert_AddString(buffer, startstring);
-	buf = FormatAlert(buf, alertNum, task, SysBase);
-	buf = Alert_AddString(buf, endstring);
-	*buf = 0;
+        if (buffer)
+        {
+	    char *buf;
+	    struct EasyStruct es = {
+        	sizeof (struct EasyStruct),
+            	0,
+            	NULL,
+	    	buffer,
+            	NULL,
+            };
 
-	es.es_Title = Alert_GetTitle(alertNum);
-        if (alertNum & AT_DeadEnd)
-            es.es_GadgetFormat = "Suspend|Reboot";
-        else
-            es.es_GadgetFormat = "Continue";
+	    buf = Alert_AddString(buffer, startstring);
+	    buf = FormatAlert(buf, alertNum, task, SysBase);
+	    buf = Alert_AddString(buf, endstring);
+	    *buf = 0;
 
-	D(bug("[UserAlert] Body text:\n%s\n", buffer));
-        choice = EasyRequestArgs(NULL, &es, NULL, NULL);
+	    es.es_Title = Alert_GetTitle(alertNum);
+	    if (alertNum & AT_DeadEnd)
+        	es.es_GadgetFormat = "Suspend|Reboot";
+            else
+            	es.es_GadgetFormat = "Continue";
+
+	    D(bug("[UserAlert] Body text:\n%s\n", buffer));
+	    choice = EasyRequestArgs(NULL, &es, NULL, NULL);
+	    
+	    FreeMem(buffer, ALERT_BUFFER_SIZE);
+	}
 
 	CloseLibrary(&IntuitionBase->LibNode);
     }
@@ -86,10 +94,13 @@ ULONG Exec_UserAlert(ULONG alertNum, struct Task *task, struct ExecBase *SysBase
     /* Halt if we need to */
     if (alertNum & AT_DeadEnd)
     {
-        if (res == 0) {
+        if (res == 0)
+        {
 	    ColdReboot();
 	    /* In case if ColdReboot() doesn't work */
             ShutdownA(SD_ACTION_COLDREBOOT);
+
+            D(bug("[UserAlert] Returned from ShutdownA()!\n"));
 	}
         /* Well, stop if the user wants so (or if the reboot didn't work at all) */
         Wait(0);
