@@ -10,7 +10,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0I(void *, KrnCreateContext,
+AROS_LH0(void *, KrnCreateContext,
 
 /*  SYNOPSIS */
 
@@ -35,6 +35,7 @@ AROS_LH0I(void *, KrnCreateContext,
     BUGS
 
     SEE ALSO
+    	KrnDeleteContext()
 
     INTERNALS
 
@@ -45,7 +46,7 @@ AROS_LH0I(void *, KrnCreateContext,
     struct AROSCPUContext *ctx;
     cpumode_t mode = goSuper();
 
-    ctx = krnAllocVec(sizeof(struct AROSCPUContext));
+    ctx = krnAllocMem(KernelBase->kb_ContextSize);
 
     /* Initialize the storage if needed */
 #ifdef PREPARE_INITIAL_CONTEXT
