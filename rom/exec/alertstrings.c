@@ -481,7 +481,7 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 
     buf = NewRawDoFmt(hdrstring, RAWFMTFUNC_STRING, buffer, task, Alert_GetTaskName(task), alertNum);
     buf = Alert_GetString(alertNum, --buf);
-    *buf++ = '\n';
+    *buf++ = 0;
     D(bug("[FormatAlert] Header:\n%s\n", buffer));
 
     if (task)
@@ -494,6 +494,7 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 	    void *segaddr, *symaddr;
 	    unsigned int segnum;
 
+	    buf[-1] = '\n';
 	    buf = NewRawDoFmt(locstring, RAWFMTFUNC_STRING, buf, iet->iet_AlertLocation);
 	    D(bug("[FormatAlert] Location string:\n%s\n", buffer));
 
@@ -527,6 +528,5 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 	}
     }
 
-    *buf = 0;
-    return buf;
+    return buf - 1;
 }
