@@ -80,6 +80,11 @@ static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
 static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
 static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
 
+#if defined(USB3)
+void xhciCompleteInt(struct PCIController *hc);
+void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
+#endif
+
 struct my_NSDeviceQueryResult
 {
     ULONG   DevQueryFormat;         /* this is type 0               */
