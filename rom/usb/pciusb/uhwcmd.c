@@ -420,7 +420,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_Copyright, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) = "�2007-2009 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) ="©2007-2009 Chris Hodges";
         count++;
     }
     if((tag = FindTagItem(UHA_Version, taglist)))
@@ -524,7 +524,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             if(unit->hu_RootHub20Ports)
                             {
                                 struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[9+9];
-                                usepd->bInterval = 12; // 2048 �Frames
+                                usepd->bInterval = 12; // 2048 µFrames
                             }
                             ioreq->iouh_Actual = (len > 9+9+7) ? 9+9+7 : len;
                             CopyMem(tmpbuf, ioreq->iouh_Data, ioreq->iouh_Actual);
@@ -4843,15 +4843,15 @@ void ehciScheduleIntTDs(struct PCIController *hc)
             } else {
                 splitctrl = EQSF_MULTI_1;
             }
-            if(ioreq->iouh_Interval < 2) // 0-1 �Frames
+            if(ioreq->iouh_Interval < 2) // 0-1 µFrames
             {
                 splitctrl |= (0xff<<EQSS_MUSOFACTIVE);
             }
-            else if(ioreq->iouh_Interval < 4) // 2-3 �Frames
+            else if(ioreq->iouh_Interval < 4) // 2-3 µFrames
             {
                 splitctrl |= (0x55<<EQSS_MUSOFACTIVE);
             }
-            else if(ioreq->iouh_Interval < 8) // 4-7 �Frames
+            else if(ioreq->iouh_Interval < 8) // 4-7 µFrames
             {
                 splitctrl |= (0x22<<EQSS_MUSOFACTIVE);
             }
@@ -4866,7 +4866,7 @@ void ehciScheduleIntTDs(struct PCIController *hc)
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, splitctrl);
             if(ioreq->iouh_Interval >= 1024)
             {
-                inteqh = hc->hc_EhciIntQH[10]; // 1024�Frames interval
+                inteqh = hc->hc_EhciIntQH[10]; // 1024µFrames interval
             } else {
                 cnt = 0;
                 do
