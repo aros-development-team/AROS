@@ -58,6 +58,8 @@ static BOOL CmdBroadcast(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request);
 static BOOL CmdTrackType(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request);
 static BOOL CmdUntrackType(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request);
 static BOOL CmdGetTypeStats(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request);
+static BOOL CmdGetSpecialStats(LIBBASETYPEPTR LIBBASE,
+	struct IOSana2Req *request);
 static BOOL CmdGetGlobalStats(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request);
 static BOOL CmdDeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOStdReq *request);
 static BOOL CmdOnEvent(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request);
@@ -82,7 +84,7 @@ static const UWORD supported_commands[] =
 	S2_TRACKTYPE,
 	S2_UNTRACKTYPE,
 	S2_GETTYPESTATS,
-//    S2_GETSPECIALSTATS,
+	S2_GETSPECIALSTATS,
 	S2_GETGLOBALSTATS,
 	S2_ONEVENT,
 	S2_READORPHAN,
@@ -92,6 +94,17 @@ static const UWORD supported_commands[] =
 	S2_ADDMULTICASTADDRESSES,
 	S2_DELMULTICASTADDRESSES,
 	0
+};
+
+const TEXT badmulticast_name[] = "Bad multicasts";
+const TEXT retries_name[] = "Retries";
+const TEXT fifo_underruns_name[] = "Underruns";
+
+static const TEXT *const special_stat_names[] =
+{
+	badmulticast_name,
+	retries_name,
+	fifo_underruns_name,
 };
 
 void handle_request(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
@@ -139,6 +152,10 @@ void handle_request(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
 		case S2_GETTYPESTATS:
 			complete = CmdGetTypeStats(LIBBASE, request);
+			break;
+
+		case S2_GETSPECIALSTATS:
+			complete = CmdGetSpecialStats(LIBBASE, request);
 			break;
 
 		case S2_GETGLOBALSTATS:
@@ -516,6 +533,39 @@ RTLD(bug("[%s] S2CmdGetTypeStats()\n", unit->rtl8139u_name))
 	return TRUE;
 }
 
+static BOOL CmdGetSpecialStats(LIBBASETYPEPTR LIBBASE,
+	struct IOSana2Req *request)
+{
+	struct RTL8139Unit *unit;
+	UWORD i, stat_count;
+	struct Sana2SpecialStatHeader *header;
+	struct Sana2SpecialStatRecord *record;
+
+	/* Fill in stats */
+
+	unit = (APTR)request->ios2_Req.io_Unit;
+	header = request->ios2_StatData;
+	record = (APTR)(header + 1);
+
+	stat_count = header->RecordCountMax;
+	if(stat_count > STAT_COUNT)
+		stat_count = STAT_COUNT;
+
+	for(i = 0; i < stat_count; i++)
+	{
+		record->Type = (S2WireType_Ethernet << 16) + i;
+		record->Count = unit->rtl8139u_special_stats[i];
+		record->String = special_stat_names[i];
+		record++;
+	}
+
+	header->RecordCountSupplied = stat_count;
+
+	/* Return */
+
+	return TRUE;
+}
+
 static BOOL CmdGetGlobalStats(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
 	struct RTL8139Unit *unit;
@@ -646,6 +696,7 @@ static BOOL CmdOnline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 	ULONG wire_error = 0;
 	UWORD i;
 
+#if 0 // FIXME: some of what's done here is duplicated in device init
 RTLD(bug("[%s] S2CmdOnline()\n", unit->rtl8139u_name))
 
 	/* Check request is valid */
@@ -674,6 +725,7 @@ RTLD(bug("[%s] S2CmdOnline()\n", unit->rtl8139u_name))
 			wire_error = S2WERR_GENERIC_ERROR;
 		}
 	}
+#endif
 
 	/* Return */
 
@@ -686,6 +738,7 @@ static BOOL CmdOffline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
 	struct RTL8139Unit *unit;
 
+#if 0 // FIXME: some of what's done here is duplicated in device de-init
 	/* Put adapter offline */
 
 	unit = (APTR)request->ios2_Req.io_Unit;
@@ -694,6 +747,7 @@ RTLD(bug("[%s] S2CmdOffline()\n", unit->rtl8139u_name))
 
 	if((unit->rtl8139u_flags & IFF_UP) != 0)
 		unit->stop(unit);
+#endif
 
 	/* Return */
 	return TRUE;
