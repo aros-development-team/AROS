@@ -1,9 +1,10 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "shutdown.h"
 
-#define D(x)
+#define D(x) 
 
 static char **Kernel_ArgV;
 
@@ -18,7 +19,7 @@ void Host_Shutdown(unsigned char warm)
     if (warm)
 	return;
 
-    D(printf("[Shutdown] Cold reboot, dir: %s, name: %s, command line: %s\n", bootstrapdir, bootstrapname, cmdline));
+    D(printf("[Shutdown] Cold reboot, dir: %s, name: %s\n", bootstrapdir, Kernel_ArgV[0]));
     chdir(bootstrapdir);
     execvp(Kernel_ArgV[0], Kernel_ArgV);
 
