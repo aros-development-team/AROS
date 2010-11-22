@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: cpu_i386.h 35261 2010-11-08 08:41:28Z sonic $
+    $Id$
 */
 
 #include <exec/types.h>
