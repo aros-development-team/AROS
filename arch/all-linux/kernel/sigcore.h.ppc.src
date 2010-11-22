@@ -141,7 +141,6 @@ struct AROSCPUContext
     unsigned long	    orig_gpr3;	  /* Host-specific magic */
     unsigned long	    result;
     int			    errno_backup;
-    struct AROSCPUContext * sc;
 };
 
 #define GET_PC(ctx) ((APTR)ctx->regs.ip)

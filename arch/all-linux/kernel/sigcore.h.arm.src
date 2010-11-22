@@ -115,7 +115,6 @@ struct AROSCPUContext
 {
     struct ExceptionContext regs;		/* Public portion	       */
     int		            errno_backup;	/* Host-specific magic follows */
-    struct AROSCPUContext * sc;
 };
 
 /*

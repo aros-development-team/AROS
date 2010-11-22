@@ -360,7 +360,6 @@ struct AROSCPUContext
                              rdx, rdi, rsi, r8, r9, r10, r11, r12,
 			     r13, r14, r15, eflags */
     struct _fpstate fpstate __attribute__ ((aligned (16))); /* FPU state */
-    struct AROSCPUContext * sc;
     int	errno_backup;
 };
 

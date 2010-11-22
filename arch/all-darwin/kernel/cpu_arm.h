@@ -126,7 +126,6 @@ struct AROSCPUContext
 {
     struct ExceptionContext regs;
     int	errno_backup;
-    struct AROSCPUContext *sc;
 };
 
 /* Darwin supports only VFP */

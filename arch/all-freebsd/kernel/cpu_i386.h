@@ -193,7 +193,6 @@ struct AROSCPUContext
         acc_u;
 
     int eflags;
-    struct AROSCPUContext *sc;
 };
 
 #define GET_PC(ctx) ((APTR)ctx->regs[8])
