@@ -13,6 +13,3 @@
 
 #define krnAllocMem(len) AllocMem(len, MEMF_PUBLIC|MEMF_CLEAR)
 #define krnFreeMem(addr, len) FreeMem(addr, len)
-
-#define krnAllocVec(len) AllocVec(len, MEMF_PUBLIC|MEMF_CLEAR)
-#define krnFreeVec(addr) FreeVec(addr)

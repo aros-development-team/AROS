@@ -10,7 +10,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1I(void, KrnDeleteContext,
+AROS_LH1(void, KrnDeleteContext,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, context, A0),
@@ -19,10 +19,14 @@ AROS_LH1I(void, KrnDeleteContext,
 	struct KernelBase *, KernelBase, 19, Kernel)
 
 /*  FUNCTION
+	Free CPU context storage area
 
     INPUTS
+    	context - a pointer to a CPU context storage previously allocated using
+    		  KrnCreateContext()
 
     RESULT
+    	None.
 
     NOTES
 
@@ -31,6 +35,7 @@ AROS_LH1I(void, KrnDeleteContext,
     BUGS
 
     SEE ALSO
+    	KrnCreateContext()
 
     INTERNALS
 
@@ -40,7 +45,7 @@ AROS_LH1I(void, KrnDeleteContext,
 
     cpumode_t mode = goSuper();
 
-    krnFreeVec(context);
+    krnFreeMem(context, KernelBase->kb_ContextSize);
 
     goBack(mode);
 
