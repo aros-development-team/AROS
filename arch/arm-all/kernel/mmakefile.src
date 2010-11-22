@@ -12,7 +12,7 @@ USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \
-  files="createcontext" \
+  files="cpu_init createcontext" \
   arch=arm
 
 %common

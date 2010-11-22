@@ -21,7 +21,7 @@ FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecon
 	 switch unmapglobal unregistermodule virtualtophysical decodelocation	     \
 	 putchar maygetchar allocpages freepages getsystemattr setsystemattr
 
-FILES := kernel_init kernel_cpu kernel_debug kernel_intr kernel_romtags kernel_scheduler kernel_tagitems kernel_timer
+FILES := kernel_init cpu_init kernel_cpu kernel_debug kernel_intr kernel_romtags kernel_scheduler kernel_tagitems kernel_timer
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource \

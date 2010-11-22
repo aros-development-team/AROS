@@ -34,11 +34,11 @@ static void cpu_Exception(void)
     /* Save return context and IDNestCnt on stack */
     struct Task *task = SysBase->ThisTask;
     char nestCnt = task->tc_IDNestCnt;
-    struct AROSCPUContext save;
+    char save[KernelBase->kb_ContextSize];
     APTR savesp;
 
     /* Save original context */
-    CopyMem(GetIntETask(task)->iet_Context, &save, sizeof(struct AROSCPUContext));
+    CopyMem(GetIntETask(task)->iet_Context, save, KernelBase->kb_ContextSize);
     savesp = task->tc_SPReg;
 
     Exception();
@@ -49,7 +49,7 @@ static void cpu_Exception(void)
     SysBase->IDNestCnt = nestCnt;
 
     /* Restore saved context */
-    CopyMem(&save, GetIntETask(task)->iet_Context, sizeof(struct AROSCPUContext));
+    CopyMem(&save, GetIntETask(task)->iet_Context, KernelBase->kb_ContextSize);
     task->tc_SPReg = savesp;
 
     /* This tells task switcher that we are returning from the exception */
