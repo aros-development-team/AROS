@@ -1,6 +1,7 @@
 /* AROS-thread-safe versions of libc memory allocation routines */
 
 #include <proto/exec.h>
+#include <sys/types.h>
 
 static int memnest;
 #define MEMLOCK if (SysBase != NULL) Forbid();
