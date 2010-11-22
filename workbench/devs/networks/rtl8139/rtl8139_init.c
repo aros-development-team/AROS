@@ -342,7 +342,7 @@ RTLD(bug("[rtl8139] OpenDevice: Unit %d @ %p\n", unitnum, unit));
 
 		if (error != 0)
 			CloseDevice((struct IORequest *)req);
-		else
+		else if (unit->rtl8139u_open_count == 1)
 			unit->start(unit);
 	}
     else
@@ -365,9 +365,7 @@ static int GM_UNIQUENAME(Close)
 	struct RTL8139Unit *unit = (struct RTL8139Unit *)req->ios2_Req.io_Unit;
 	struct Opener *opener;
 
-RTLD(bug("[rtl8139] CloseDevice(unit @ %p, unitno %d)\n", unit, unit->rtl8139u_UnitNum))
-
-	unit->stop(unit);
+RTLD(bug("[rtl8139] CloseDevice(unit @ %p, unitno %d)\n", unit, unit->rtl8139u_UnitNum));
 
 	opener = (APTR)req->ios2_BufferManagement;
 	if (opener != NULL)
@@ -377,6 +375,9 @@ RTLD(bug("[rtl8139] CloseDevice(unit @ %p, unitno %d)\n", unit, unit->rtl8139u_U
 		Enable();
 		FreeVec(opener);
 	}
+
+	if (--unit->rtl8139u_open_count == 0)
+		unit->stop(unit);
 
 	return TRUE;
 }
@@ -394,10 +395,10 @@ AROS_LH1(void, BeginIO,
 	AROS_LIBFUNC_INIT
 	struct RTL8139Unit *unit;
 
-RTLD(bug("[rtl8139] BeginIO()\n"));
-
 	req->ios2_Req.io_Error = 0;
 	unit = (APTR)req->ios2_Req.io_Unit;
+
+RTLD(bug("[rtl8139] BeginIO()\n"));
 
 	if (AttemptSemaphore(&unit->rtl8139u_unit_lock))
 	{
