@@ -357,7 +357,6 @@ struct AROSCPUContext
     UBYTE                     fpbuffer[sizeof(struct _fpstate) + 15]; /* Buffer for FPU state */
     struct _fpstate *         fpstate; /* FPU state pointer inside fpbuffer */
     int                       errno_backup;
-    struct AROSCPUContext * sc;
 };
 
 #define GET_PC(ctx) ((APTR)ctx->regs[0])

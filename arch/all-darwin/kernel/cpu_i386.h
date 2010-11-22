@@ -211,7 +211,6 @@ struct AROSCPUContext
     int	errno_backup;
     _STRUCT_X86_FLOAT_STATE32 fpstate;
     int eflags;
-    struct AROSCPUContext *sc;
     char have_fpu_data;
 };
 
