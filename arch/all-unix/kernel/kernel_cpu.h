@@ -25,4 +25,6 @@
 
 void krnSysCall(unsigned char n);
 
+void cpu_DispatchContext(struct Task *task, regs_t *regs);
+
 #endif

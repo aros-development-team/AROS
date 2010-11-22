@@ -132,7 +132,6 @@ static void core_Trap(int sig, regs_t *regs)
 static void core_SysCall(int sig, regs_t *regs)
 {
     struct Task *task = SysBase->ThisTask;
-    struct AROSCPUContext *ctx;
 
     AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
 
@@ -159,20 +158,7 @@ static void core_SysCall(int sig, regs_t *regs)
 
     /* Special state is used for returning from exception */
     case TS_EXCEPT:
-	ctx = GetIntETask(task)->iet_Context;
-
-        SysBase->ThisTask->tc_SPReg = ctx->sc;
-        memcpy(ctx, SysBase->ThisTask->tc_SPReg, sizeof(struct AROSCPUContext));
-        SysBase->ThisTask->tc_SPReg += sizeof(struct AROSCPUContext);
-
-        /* Restore the signaled context. */
-        RESTOREREGS(ctx, regs);
-	*KernelBase->kb_PlatformData->errnoPtr = ctx->errno_backup;
-	SP(regs) = (IPTR)SysBase->ThisTask->tc_SPReg;
-
-        SysBase->ThisTask->tc_State = TS_RUN;
-	Enable();
-
+	cpu_DispatchContext(task, regs);
 	break;
     }
 
