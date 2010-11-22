@@ -5,8 +5,6 @@
     Desc: ShutdownA() - Shut down the operating system.
     Lang: english
 */
-#define DEBUG 0
-
 #include <aros/debug.h>
 #include <proto/exec.h>
 
@@ -60,12 +58,16 @@
 	break;
 
     case SD_ACTION_COLDREBOOT:
-	D(bug("[exec] Machine reboot, re-executing %s\n", Kernel_ArgV[0]));
+	D(bug("[exec] Machine reboot\n"));
+
 	/* SIGARLM during execvp() aborts the whole thing.
            In order to avoid it we Disable() */
 	Disable();
+
+	D(bug("[exec] SysBase 0x%P, reboot function: 0x%P\n", SysBase, PD(SysBase).Reboot));
 	PD(SysBase).Reboot(0);
 	AROS_HOST_BARRIER
+
 	Enable();
     }
     return 0;
