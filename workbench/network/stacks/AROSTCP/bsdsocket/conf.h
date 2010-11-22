@@ -46,6 +46,13 @@
 #endif
 #endif
 
+/* __PPC__ definition is dropped in gcc 4.4.2, but our code relies on it. Fix this up. */
+#ifdef __powerpc__
+#ifndef __PPC__
+#define __PPC__
+#endif
+#endif
+
 /*
  * For m68k, AmigaOS4 and AROS we build Roadshow-compatible version
  */
