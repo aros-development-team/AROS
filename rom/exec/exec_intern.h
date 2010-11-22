@@ -40,6 +40,7 @@ struct IntExecBase
     ULONG  IntFlags;				/* Internal flags, see below */
     APTR   KernelBase;				/* kernel.resource base      */
     struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   */
+    char   AlertBuffer[2048];			/* Buffer for alert text     */
 };
 
 #define PrivExecBase(base) ((struct IntExecBase *)base)

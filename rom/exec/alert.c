@@ -135,6 +135,7 @@ static void PrintFrame(void)
     AROS_LIBFUNC_INIT
 
     struct Task *task = SysBase->ThisTask;
+    char *buf;
 
     /* If we are running in user mode we should first try to report a problem using AROS'
        own way to do it */
@@ -145,26 +146,31 @@ static void PrintFrame(void)
 	    return;
     }
 
-    /* We're here if Intuition failed. Print alert to the debug output and reboot.
-       In future we should have more intelligent handling for such a case. For
-       example we should report what was wrong after we rebooted. */
-    char buffer[256], *buf;
+    /* 
+     * We're here if Intuition failed. Print alert to the debug output and reboot.
+     * In future we should have more intelligent handling for such a case. For
+     * example we should report what was wrong after we rebooted.
+     *
+     * Note that we use shared buffer in SysBase for alert text, so we Disable()
+     */
+    Disable();
 
     PrintFrame();
     PrintCentered(Alert_GetTitle(alertNum));
 
-    FormatAlert(buffer, alertNum, task, SysBase);
+    FormatAlert(PrivExecBase(SysBase)->AlertBuffer, alertNum, task, SysBase);
     /* Print first two lines (task and error) centered */
-    buf = PrintCentered(buffer);
+    buf = PrintCentered(PrivExecBase(SysBase)->AlertBuffer);
     buf = PrintCentered(buf + 1);
     /* The rest is left-justified */
     while (*buf)
     	buf = PrintLeftJustified(buf + 1);
 
     PrintFrame();
-
     RawPutChar('\n');
-    
+
+    Enable();
+
     if (alertNum & AT_DeadEnd)
     {
 	/* Um, we have to do something here in order to prevent the
