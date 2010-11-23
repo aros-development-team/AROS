@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Parallel hidd class implementation.
@@ -154,4 +154,6 @@ static int UXPar_ExpungeAttrBases(LIBBASETYPEPTR LIBBASE)
 }
 
 ADD2INITLIB(UXPar_InitAttrBases, 0)
-ADD2EXPUNGELIB(UXPar_InitAttrBases, 0)
+ADD2EXPUNGELIB(UXPar_ExpungeAttrBases, 0)
+
+ADD2LIBS("Devs:Drivers/unixio.hidd", 42, struct Library *, UnixIOBase)
