@@ -84,6 +84,8 @@ static void SigIO_IntServer(struct uio_data *ud, void *unused)
 	    if (pfd.revents & (POLLERR|POLLHUP))
 	    	mode |= vHidd_UnixIO_Error;
 
+	    D(bug("[UnixIO] Events 0x%02X for fd %d\n", mode, intnode->fd));
+
 	    intnode->handler(intnode->fd, mode, intnode->handlerData);
 	}
     }
@@ -228,9 +230,14 @@ IPTR UXIO__Hidd_UnixIO__Wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
     myInt.handler = WaitIntHandler;
     myInt.handlerData = &w;
 
+    D(bug("[UnixIO] Adding interrupt 0x%P\n", &myInt));
+
     retval = Hidd_UnixIO_AddInterrupt(o, &myInt);
+    D(bug("[UnixIO] Result: %d\n", retval));
+
     if (!retval)
     {
+    	D(bug("[UnixIO] Waiting for signal...\n"));
     	Wait(1 << w.signal);
     	Hidd_UnixIO_RemInterrupt(o, &myInt);
     }
@@ -670,12 +677,12 @@ int UXIO__Hidd_UnixIO__AddInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsgA
     ReleaseSemaphore(&data->sem);
 
     if (res != -1)
-    	return err;
+    	return 0;
 
     /* Remove the interrupt if something went wrong */
     Hidd_UnixIO_RemInterrupt(o, msg->um_Int);
 
-    return 0;
+    return err;
 }
 
 /*****************************************************************************************
@@ -746,6 +753,8 @@ static const char *libc_symbols[] = {
 static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
 {
     ULONG i;
+
+    D(bug("[UnixIO] Init\n"));
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
