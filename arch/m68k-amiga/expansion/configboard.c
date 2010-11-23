@@ -12,7 +12,7 @@
 
 /* do not touch. Ugly hack. UAE direct JIT versions need this */
 /* check UAE expansion.c for ugly details */
-AROS_UFH5(BOOL, writeexpansion,
+AROS_UFH5(void, writeexpansion,
     AROS_UFHA(APTR, board, A0),
     AROS_UFHA(APTR, configdev, A3), // <- configdev = A3. This is important.
     AROS_UFHA(UBYTE, type, D0),
@@ -132,7 +132,7 @@ AROS_UFH5(BOOL, writeexpansion,
              	);
 		
 		// do not remove this, it might have changed inside writeexpansion
-		startaddr = configDev->cd_BoardAddr;
+		startaddr = (IPTR)configDev->cd_BoardAddr;
 		offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
 		bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
 		sizeleft = size;
