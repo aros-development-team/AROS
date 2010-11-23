@@ -54,7 +54,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
 	dn->dn_Name = str;
 	dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(str);
 
-	str = (BSTR)MKBADDR(((IPTR)str + AROS_BSTR_MEMSIZE4LEN(strlen(devName)) + 3) & ~3);
+	str = (BSTR)MKBADDR(((IPTR)AROS_BSTR_ADDR(str) + AROS_BSTR_MEMSIZE4LEN(strlen(devName)) + 3) & ~3);
 
         strcpy(AROS_BSTR_ADDR(str), hndName);
         AROS_BSTR_setstrlen(str, strlen(hndName));
