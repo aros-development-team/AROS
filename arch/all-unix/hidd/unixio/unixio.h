@@ -39,6 +39,7 @@ struct UnixIO_Waiter
 /* static data for the unixioclass */
 struct uio_data
 {
+    OOP_AttrBase	    UnixIOAB;
     struct LibCInterface   *SysIFace;
     int		   	   *errnoPtr;
     pid_t		    aros_PID;
