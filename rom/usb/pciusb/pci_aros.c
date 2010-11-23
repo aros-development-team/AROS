@@ -1214,7 +1214,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     KPRINTF(10, ("HW Regs FRAMECOUNT=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT)));
                     break;
                 }
-#ifdef ENABLE_USB3
+#if defined(USB3)
                 case HCITYPE_XHCI:
                 {
                     IPTR pciecap;
