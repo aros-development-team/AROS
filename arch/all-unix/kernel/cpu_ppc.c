@@ -1,6 +1,8 @@
 #include <signal.h>
 
+#include "kernel_base.h"
 #include "kernel_intern.h"
+
 
 struct SignalTranslation sigs[] = {
     {SIGILL   ,  4,  7},

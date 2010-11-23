@@ -51,3 +51,5 @@ struct SignalTranslation
 
 extern struct SignalTranslation sigs[];
 extern struct KernelInterface KernelIFace;
+
+void cpu_DispatchContext(struct Task *task, regs_t *regs);
