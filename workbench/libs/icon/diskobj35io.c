@@ -342,6 +342,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     
     iffhook.h_Entry    = (HOOKFUNC)HookEntry;
     iffhook.h_SubEntry = (HOOKFUNC)MyDOSStreamHandler;
+    iffhook.h_Data     = (APTR)IconBase;
     
     if ((iff = AllocIFF()))
     {
@@ -654,6 +655,7 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     
     iffhook.h_Entry    = (HOOKFUNC)HookEntry;
     iffhook.h_SubEntry = (HOOKFUNC)MyDOSStreamHandler;
+    iffhook.h_Data     = (APTR)IconBase;
     
     if ((iff = AllocIFF()))
     {
