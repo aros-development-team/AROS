@@ -13,6 +13,12 @@
 #include <unistd.h>
 #endif
 
+/* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
+#undef __pure
+#undef __const
+#undef __pure2
+#undef __deprecated
+
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <utility/tagitem.h>
@@ -58,6 +64,9 @@ static struct mb_mmap MemoryMap = {
 };
 
 static struct KernelBSS __bss_track[256];
+
+/* gdb can pick up kickstart segments from here */
+static dbg_seg_t *Debug_KickList = NULL;
 
 /* Kernel message */
 static struct TagItem km[] = {
@@ -127,7 +136,6 @@ int bootstrap(int argc, char ** argv)
     char *SystemVersion;
     FILE *file;
     kernel_entry_fun_t kernel_entry;
-    void *debug_addr;
     void *ro_addr, *rw_addr;
     size_t ro_size, rw_size;
 
@@ -272,10 +280,10 @@ int bootstrap(int argc, char ** argv)
 	return -1;
     }
 
-    if (!LoadKernel(ro_addr, rw_addr, __bss_track, &kernel_entry, &debug_addr))
+    if (!LoadKernel(ro_addr, rw_addr, __bss_track, &kernel_entry, &Debug_KickList))
 	return -1;
     D(fprintf(stderr, "[Bootstrap] Read-only %p - %p, Read-write %p - %p, Entry %p, Debug info %p\n",
-	     ro_addr, ro_addr + ro_size - 1, rw_addr, rw_addr + rw_size - 1, kernel_entry, debug_addr));
+	     ro_addr, ro_addr + ro_size - 1, rw_addr, rw_addr + rw_size - 1, kernel_entry, Debug_KickList));
 
     FreeKernelList();
 
@@ -303,7 +311,7 @@ int bootstrap(int argc, char ** argv)
     km[2].ti_Data = (IPTR)__bss_track;
     km[3].ti_Data = (IPTR)SystemVersion;
     km[4].ti_Data = (IPTR)KernelArgs;
-    km[5].ti_Data = (IPTR)debug_addr;
+    km[5].ti_Data = (IPTR)Debug_KickList;
     km[6].ti_Data = (IPTR)HostIFace;
     km[7].ti_Data = (IPTR)&MemoryMap;
 
