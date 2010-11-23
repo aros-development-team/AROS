@@ -25,7 +25,7 @@ int main (int argc, char **argv)
         goto exit;
     }
 
-    UnixIOBase = OpenLibrary("DEVS:Drivers/unixio.hidd", 0);
+    UnixIOBase = OpenLibrary("DEVS:Drivers/unixio.hidd", 42);
     if (!UnixIOBase)
     {
     	fprintf(stderr, "can't open unixio.hidd\n");
@@ -42,7 +42,7 @@ int main (int argc, char **argv)
 
     printf("opening /dev/zero for read... ");
     fd = Hidd_UnixIO_OpenFile(unixio, "/dev/zero", O_RDONLY, 0, &ioerr);
-    if (ioerr != 0) {
+    if (fd == -1) {
         printf("failed (ioerr is %d)\n)", ioerr);
         goto exit;
     }
@@ -50,15 +50,15 @@ int main (int argc, char **argv)
 
     printf("reading... ");
     nbytes = Hidd_UnixIO_ReadFile(unixio, fd, buf, 1024, &ioerr);
-    if (ioerr != 0) {
+    if (nbytes == -1) {
         printf("failed (ioerr is %d\n)", ioerr);
         goto exit;
     }
     printf("ok (read %d bytes)\n", nbytes);
 
     printf("closing file... ");
-    Hidd_UnixIO_CloseFile(unixio, fd, &ioerr);
-    if (ioerr != 0) {
+    if (Hidd_UnixIO_CloseFile(unixio, fd, &ioerr) == -1)
+    {
         printf("failed (ioerr is %d\n)", ioerr);
         goto exit;
     }
@@ -69,7 +69,7 @@ int main (int argc, char **argv)
 
     printf("opening /dev/null for write... ");
     fd = Hidd_UnixIO_OpenFile(unixio, "/dev/null", O_WRONLY, 0, &ioerr);
-    if (ioerr != 0) {
+    if (fd == -1) {
         printf("failed (ioerr is %d)\n)", ioerr);
         goto exit;
     }
@@ -77,15 +77,15 @@ int main (int argc, char **argv)
 
     printf("writing... ");
     nbytes = Hidd_UnixIO_WriteFile(unixio, fd, buf, 1024, &ioerr);
-    if (ioerr != 0) {
+    if (nbytes == -1) {
         printf("failed (ioerr is %d\n)", ioerr);
         goto exit;
     }
     printf("ok (wrote %d bytes)\n", nbytes);
 
     printf("closing file... ");
-    Hidd_UnixIO_CloseFile(unixio, fd, &ioerr);
-    if (ioerr != 0) {
+    if (Hidd_UnixIO_CloseFile(unixio, fd, &ioerr) == -1)
+    {
         printf("failed (ioerr is %d\n)", ioerr);
         goto exit;
     }
@@ -94,9 +94,9 @@ int main (int argc, char **argv)
 
     printf("just for fun, lets read and print the contents of a file\n\n");
 
-    printf("opening /etc/motd for read... ");
-    fd = Hidd_UnixIO_OpenFile(unixio, "/etc/motd", O_RDONLY, 0, &ioerr);
-    if (ioerr != 0) {
+    printf("opening /etc/hosts for read... ");
+    fd = Hidd_UnixIO_OpenFile(unixio, "/etc/hosts", O_RDONLY, 0, &ioerr);
+    if (fd == -1) {
         printf("failed (ioerr is %d)\n)", ioerr);
         goto exit;
     }
@@ -104,17 +104,17 @@ int main (int argc, char **argv)
 
     printf("reading... ");
     nbytes = Hidd_UnixIO_ReadFile(unixio, fd, buf, 1024, &ioerr);
-    if (ioerr != 0) {
+    if (nbytes == -1) {
         printf("failed (ioerr is %d\n)", ioerr);
         goto exit;
     }
     printf("ok (read %d bytes)\n", nbytes);
 
-    printf("system motd:\n\n%.*s\n", nbytes, buf);
+    printf("system hosts file:\n\n%.*s\n", nbytes, buf);
 
     printf("closing file... ");
-    Hidd_UnixIO_CloseFile(unixio, fd, &ioerr);
-    if (ioerr != 0) {
+    if (Hidd_UnixIO_CloseFile(unixio, fd, &ioerr) == -1)
+    {
         printf("failed (ioerr is %d\n)", ioerr);
         goto exit;
     }
@@ -130,7 +130,7 @@ int main (int argc, char **argv)
 
     printf("reading it... ");
     nbytes = Hidd_UnixIO_ReadFile(unixio, 0, buf, 1024, &ioerr);
-    if (ioerr != 0) {
+    if (nbytes == -1) {
         printf("failed (ioerr is %d\n)", ioerr);
         goto exit;
     }
