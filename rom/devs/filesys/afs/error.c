@@ -56,14 +56,21 @@ LONG showPtrArgsText(struct AFSBase *afsbase, char *string, enum showReqType typ
 		NULL
 	};
 	struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,options[type]};
+	struct IntuitionBase *IntuitionBase;
 
-	es.es_TextFormat=string;
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
-	if (IntuitionBase->FirstScreen != NULL)
+	IntuitionBase = OpenLibrary("intuition.library", 39);
+	if (IntuitionBase != NULL)
 	{
+	    es.es_TextFormat=string;
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	    if (IntuitionBase->FirstScreen != NULL)
+	    {
 #endif
 		return EasyRequestArgs(NULL,&es,NULL,args);
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	    }
+#endif
+	    CloseLibrary(IntuitionBase);
 	}
 	else
 	{
@@ -71,7 +78,6 @@ LONG showPtrArgsText(struct AFSBase *afsbase, char *string, enum showReqType typ
 		vkprintf(string, args);
 		kprintf("\n");
 	}
-#endif
 	return 0;
 }
 

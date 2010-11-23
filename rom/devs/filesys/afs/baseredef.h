@@ -9,10 +9,6 @@
 #ifdef DOSBase
 #	undef DOSBase
 #endif
-#ifdef IntuitionBase
-#	undef IntuitionBase
-#endif
 #define DOSBase afsbase->dosbase
-#define IntuitionBase afsbase->intuitionbase
 #endif
 
