@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007 The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010 The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,17 +8,10 @@
 
 /* Include files */
 
-#include <sys/termios.h>
-
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef OOP_OOP_H
-#   include <oop/oop.h>
-#endif
-#ifndef HIDD_PARALLEL_H
-#   include <hidd/parallel.h>
-#endif
+#include <exec/libraries.h>
+#include <oop/oop.h>
+#include <hidd/parallel.h>
+#include <hidd/unixio.h>
 #include <dos/dos.h>
 
 #define PAR_MAX_UNITS	3
@@ -66,6 +59,8 @@ struct HIDDParallelUnitData
     struct Interrupt 	*softint_write;
     HIDD		unixio_write;
     
+    struct uioInterrupt  unixio_int;
+    OOP_Object		*unixio;
 };
 
 

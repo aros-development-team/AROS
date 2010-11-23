@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Parallel Unit hidd class implementation.
@@ -45,8 +45,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-void parallelunit_receive_data();
-void parallelunit_write_more_data();
+void parallelunit_io(int fd, int mode, struct HIDDParallelUnitData *data);
 
 static char * unitname[] =
 {
@@ -58,10 +57,12 @@ static char * unitname[] =
 /*************************** Classes *****************************/
 
 static OOP_AttrBase HiddParallelUnitAB;
+static OOP_AttrBase HiddUnixIOAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
+    { IID_Hidd_UnixIO      , &HiddUnixIOAttrBase },
     { NULL,	NULL }
 };
 
@@ -69,7 +70,11 @@ static struct OOP_ABDescr attrbases[] =
 OOP_Object *UXParUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
 	struct HIDDParallelUnitData * data;
-	static const struct TagItem tags[] = {{ TAG_END, 0}};
+	const struct TagItem tags[] = {
+	    {aHidd_UnixIO_Opener      , (IPTR)"parallel.hidd"},
+	    {aHidd_UnixIO_Architecture, (IPTR)AROS_ARCHITECTURE},
+	    {TAG_END, 0}
+	};
 	struct TagItem *tag, *tstate;
 	ULONG unitnum = 0;
 	
@@ -93,106 +98,44 @@ OOP_Object *UXParUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
 
 	obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 
-	if (obj) {
-		data = OOP_INST_DATA(cl, obj);
-		
-		data->unitnum = unitnum;
+	if (obj)
+	{
+	    data = OOP_INST_DATA(cl, obj);
 
+	    data->unitnum = unitnum;
+
+	    data->unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
+	    if (NULL != data->unixio)
+	    {
 		D(bug("Opening %s.\n",unitname[data->unitnum]));
 
-		data->filedescriptor = unix_open_nonblock(unitname[data->unitnum]);
+		data->unixio_int.fd = Hidd_UnixIO_OpenFile(data->unixio, unitname[data->unitnum], O_NONBLOCK|O_RDWR, 0, NULL);
 
-		D(bug("Opened %s on handle %d\n",unitname[data->unitnum], data->filedescriptor));
-		
-		if (-1 != data->filedescriptor) {
-			/*
-			** Configure the tty driver ?!?!?!
-			*/
-			{
-				data->replyport_read = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
-				data->replyport_write= AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
+		D(bug("Opened %s on handle %d\n",unitname[data->unitnum], data->unixio_int.fd));
 
-				if (data->replyport_read && data->replyport_write) {
-					/*
-					** Init the msg ports. They don't need a signal to be allocated
-					*/
-					NEWLIST(&data->replyport_read->mp_MsgList);
-					data->replyport_read ->mp_Node.ln_Type = NT_MSGPORT;
+		if (-1 != data->unixio_int.fd)
+		{
+		    int error;
 
-					NEWLIST(&data->replyport_write->mp_MsgList);
-					data->replyport_write->mp_Node.ln_Type = NT_MSGPORT;
+		    data->unixio_int.mode = vHidd_UnixIO_RW;
+		    data->unixio_int.handler = parallelunit_io;
+		    data->unixio_int.handlerData = data;
 
-					data->softint_read	= AllocMem(sizeof(struct Interrupt), MEMF_CLEAR);
-					data->softint_write = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR);
+		    D(bug("Adding UnixIO AsyncIO interrupt!\n"));
+		    error = Hidd_UnixIO_AddInterrupt(data->unixio, &data->unixio_int);
 
-					if (data->softint_read && data->softint_write) {
-						data->softint_read->is_Data = data;
-						data->softint_read->is_Code = parallelunit_receive_data;
+		    if (!error)
+			ReturnPtr("ParallelUnit::New()", OOP_Object *, obj);
 
-						data->softint_write->is_Data = data;
-						data->softint_write->is_Code = parallelunit_write_more_data;
-
-						data->replyport_read->mp_Flags = PA_SOFTINT;
-						data->replyport_read->mp_SoftInt = data->softint_read;
-
-						data->replyport_write->mp_Flags = PA_SOFTINT;
-						data->replyport_write->mp_SoftInt = data->softint_write;
-
-						data->unixio_read	= OOP_NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
-						data->unixio_write = OOP_NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
-
-						if (NULL != data->unixio_read && NULL != data->unixio_write) {
-							ULONG error;
-							D(bug("Creating UnixIO AsyncIO command!\n"));
-
-							error = Hidd_UnixIO_AsyncIO(data->unixio_read,
-							                            data->filedescriptor,
-							                            vHidd_UnixIO_Terminal,
-							                            data->replyport_read,
-							                            vHidd_UnixIO_Read | vHidd_UnixIO_Keep,
-							                            SysBase);
-
-							error = Hidd_UnixIO_AsyncIO(data->unixio_write,
-							                            data->filedescriptor,
-							                            vHidd_UnixIO_Terminal,
-							                            data->replyport_write,
-							                            vHidd_UnixIO_Write | vHidd_UnixIO_Keep,
-							                            SysBase);
-							goto exit;
-
-						}
-
-						if (NULL != data->unixio_read)
-							OOP_DisposeObject(data->unixio_read);
-
-						if (NULL != data->unixio_write)
-							OOP_DisposeObject(data->unixio_write);
-					}
-					
-					if (data->softint_read) 
-						FreeMem(data->softint_read, sizeof(struct Interrupt));
-					if (data->softint_write)
-						FreeMem(data->softint_write, sizeof(struct Interrupt));
-				}
-				
-				if (data->replyport_read)
-					FreeMem(data->replyport_read , sizeof(struct MsgPort));
-				if (data->replyport_write)
-					FreeMem(data->replyport_write, sizeof(struct MsgPort));
-
-			} 
-			
-			close(data->filedescriptor);	
+		    Hidd_UnixIO_CloseFile(data->unixio, data->unixio_int.fd, NULL);
 		}
+		/* There's no need to dispose UnixIO object */
+	    }
 
-		OOP_DisposeObject(obj);
-		obj = NULL;
+	    OOP_DisposeObject(obj);
 	} /* if (obj) */
 
-	D(bug("%s - an error occurred!\n",__FUNCTION__));
-
-exit:
-	ReturnPtr("ParallelUnit::New()", OOP_Object *, obj);
+	ReturnPtr("ParallelUnit::New()", OOP_Object *, NULL);
 }
 
 /******* ParallelUnit::Dispose() ***********************************/
@@ -202,29 +145,16 @@ OOP_Object *UXParUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg
 	EnterFunc(bug("ParallelUnit::Dispose()\n"));
 
 	data = OOP_INST_DATA(cl, obj);
-	D(bug("Freeing filedescriptor (%d)!\n",data->filedescriptor));
+	D(bug("Freeing filedescriptor (%d)!\n",data->unixio_int.fd));
 
-	if (-1 != data->filedescriptor) { 
-		Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
-		                         data->filedescriptor,
-		                         SysBase);
-
-		close(data->filedescriptor);
-	
-		FreeMem(data->replyport_read,	sizeof(struct MsgPort));
-		FreeMem(data->replyport_write, sizeof(struct MsgPort));
-
-		FreeMem(data->softint_read , sizeof(struct Interrupt));
-		FreeMem(data->softint_write, sizeof(struct Interrupt));
-
-		OOP_DisposeObject(data->unixio_read);
-		OOP_DisposeObject(data->unixio_write);
+	if (-1 != data->unixio_int.fd)
+	{ 
+		Hidd_UnixIO_RemInterrupt(data->unixio, &data->unixio_int);
+		Hidd_UnixIO_CloseFile(data->unixio, data->unixio_int.fd, NULL);
 	}
 	OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 	ReturnPtr("ParallelUnit::Dispose()", OOP_Object *, obj);
 }
-
-
 
 /******* ParallelUnit::Init() **********************************/
 BOOL UXParUnit__Hidd_ParallelUnit__Init(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Init *msg)
@@ -253,13 +183,10 @@ ULONG UXParUnit__Hidd_ParallelUnit__Write(OOP_Class *cl, OOP_Object *o, struct p
 
 	D(bug("Writing %d bytes to fd %d (stream: %s)\n",
 				msg->Length,
-				data->filedescriptor,
+				data->unixio_int.fd,
 				msg->Outbuffer));
 
-	len = write(data->filedescriptor,
-	            msg->Outbuffer,
-	            msg->Length);
-
+	len = Hidd_UnixIO_WriteFile(data->unixio, data->unixio_int.fd, msg->Outbuffer, msg->Length, NULL);
 
 	ReturnInt("ParallelUnit::Write()",ULONG, len);
 }
@@ -311,52 +238,32 @@ UWORD UXParUnit__Hidd_ParallelUnit__GetStatus(OOP_Class *cl, OOP_Object *o, stru
 
 #define READBUFFER_SIZE 513
 
-AROS_UFH3(void, parallelunit_receive_data,
-	 AROS_UFHA(APTR, iD, A1),
-	 AROS_UFHA(APTR, iC, A5),
-	 AROS_UFHA(struct ExecBase *, SysBase, A6))
+void parallelunit_io(int fd, int mode, struct HIDDParallelUnitData *data)
 {
-	AROS_USERFUNC_INIT
-
-	struct HIDDParallelUnitData * data = iD;
-	ssize_t len;
-	UBYTE buffer[READBUFFER_SIZE];
+    if (mode & vHidd_UnixIO_Read)
+    {
+    	ssize_t len;
+    	UBYTE buffer[READBUFFER_SIZE];
 
 	/*
 	** Read the data from the port ...
 	*/
-	len = read(data->filedescriptor, buffer, READBUFFER_SIZE);
+	len = Hidd_UnixIO_ReadFile(data->unixio, fd, buffer, READBUFFER_SIZE, NULL);
+
 	/*
 	** ... and deliver them to whoever is interested. 
 	*/
-
 	if (NULL != data->DataReceivedCallBack)
 		data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
-	AROS_USERFUNC_EXIT
-}
+    }
 
-AROS_UFH3(void, parallelunit_write_more_data,
-	 AROS_UFHA(APTR, iD, A1),
-	 AROS_UFHA(APTR, iC, A5),
-	 AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-	AROS_USERFUNC_INIT
-
-	struct HIDDParallelUnitData * data = iD;
-	struct Message * msg;
-
-	/*
-	** Ask for more data be written to the unit
-	*/
-	D(bug("Asking for more data to be written to unit %d\n",data->unitnum));
-
+    if (mode & vHidd_UnixIO_Write)
+    {
 	if (NULL != data->DataWriteCallBack)
 		data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
-
-	AROS_USERFUNC_EXIT
+    }
 }
-
 
 /******* init_parallelunitclass ********************************/
 
