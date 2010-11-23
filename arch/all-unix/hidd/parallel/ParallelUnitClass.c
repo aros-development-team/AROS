@@ -9,12 +9,10 @@
 #define __OOP_NOATTRBASES__
 
 /* Some POSIX includes */
+#include <fcntl.h>
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
-
-#include "unix_funcs.h"
-
 
 /* the rest are Amiga includes */
 #define timeval aros_timeval
