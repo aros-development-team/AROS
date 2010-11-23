@@ -446,7 +446,7 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
     return 1;
 }
 
-int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, void **kernel_debug)
+int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, dbg_seg_t **kernel_debug)
 {
     struct ELFNode *n;
     FILE *file;
