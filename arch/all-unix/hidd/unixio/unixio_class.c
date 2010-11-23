@@ -58,7 +58,47 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-/************************************************************************/
+/*****************************************************************************************
+
+    NAME
+	--background--
+
+    LOCATION
+	unixio.hidd
+
+    NOTES
+	unixio.hidd is a simple driver for host-side I/O on UNIX system. Its primary
+	purpose is to handle non-blocking I/O on AROS task level. Also it provides
+	common file access operations (open, close, read, write and ioctl) in order
+	to avoid code duplication.
+
+	I/O operations you perform must never block. The whole AROS with all its tasks
+	is just one process from host OS' point of view, so blocking operation would
+	halt all the system. In order to avoid this you need to make sure that the
+	file descriptor is actually ready to perform I/O. If this is not the case,
+	your task needs to wait until file descriptor becomes available. unixio.hidd
+	offers a simple way of doing it by adding an interrupt handler to the file
+	descriptor using moHidd_UnixIO_AddInterrupt method. The interrupt handler
+	will be called whenever SIGIO arrives from the specified descriptor and specified
+	conditions are met. You do not need to explicitly enable asynchronous I/O
+	on the file descriptor, unixio.hidd takes care about all this itself.
+	
+	There's also a convenience moHidd_UnixIO_Wait method. It allows you to simulate
+	a normal blocking I/O in a simple way.
+
+    	Starting from v42 unixio.hidd is a singletone. This means that all calls to
+    	OOP_NewObject() will actually return the same object which is never really
+    	disposed. This object pointer can be freely transferred between tasks. It's
+    	not necessary t call OOP_DisposeObject() on it. It is safe, but will do nothing.
+	Usage counter is maintained by OpenLibrary()/CloseLibrary() calls.
+
+	Remember that all values (like file mode flags and errno values) are host-specific!
+	Different hosts may use different values, and even different structure layouts
+	(especially this affects ioctl). When opening unixio.hidd it is adviced to check
+	that host OS matches what is expected (what your client program/driver/whatever
+	is compiled for). Use aoHidd_UnixIO_Architecture attribute for this.
+
+*****************************************************************************************/
 
 static void SigIO_IntServer(struct uio_data *ud, void *unused)
 {
@@ -138,6 +178,89 @@ static BOOL CheckArch(struct uio_data *data, STRPTR Component, STRPTR MyArch)
 #undef HiddUnixIOAttrBase
 #define HiddUnixIOAttrBase data->UnixIOAB
 
+/*****************************************************************************************
+
+    NAME
+        aoHidd_UnixIO_Opener
+
+    SYNOPSIS
+        [I..], STRPTR
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Specifiers opener name for architecture check routine.
+
+    NOTES
+    	This attribute's sole purpose is to be presented to the user in an error requester
+    	if the architecture check fails. For example if you specify "tap.device" here,
+    	the user will see a requester telling that "This version of tap.device is built
+    	for XXX architecture, while current system architecture is YYY".
+
+    	If this attribute is not specified, but architecture check is requested using
+    	aoHidd_UnixIO_Architecture, current task's name will be used. This can be not
+    	always approptiate, so it's adviced to always specify your driver or program
+    	name here.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_UnixIO_Architecture
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        aoHidd_UnixIO_Architecture
+
+    SYNOPSIS
+        [I..], STRPTR
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Specifiers architecture name to match against current system's architecture.
+        Architecture name needs to be supplied in the form "arch-cpu", for example
+        "linux-ppc" or "darwin-i386". Usually this comes from a definition when
+        you compile your module.
+
+    NOTES
+    	This attribute allows you to ensure that your module is running on the same
+    	architecture it was compiled for. This is needed because unixio.hidd by its
+    	nature works with host OS structures and values (especially ioctl operation).
+    	Different host OSes (for example Linux and Darwin) are not binary compatible
+    	even on the same CPU. This is why the architecture check is generally needed,
+    	especially for disk-based components.
+
+	It is adviced to specify your module name using aoHidd_UnixIO_Opener. This needed
+	in order to display the correct name to the user if the check fails, so the user
+	will see what module causes the error.
+
+    EXAMPLE
+
+	struct TagItem tags = {
+	    {aHidd_UnixIO_Opener, "tap.device"},
+	    {aHidd_UnixIO_Architecture, "linux-i386"},
+	    {TAG_DONE, 0}
+	};
+	uio = OOP_NewObject(CLID_Hidd_UnixIO, tags);
+	// If uio == NULL, the system you're running on is not linux-i386. The error
+	// requester has been already presented to the user.
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_UnixIO_Opener
+
+    INTERNALS
+
+*****************************************************************************************/
 /* The following are methods of the UnixIO HIDD class. */
 
 /********************
@@ -743,6 +866,12 @@ void UXIO__Hidd_UnixIO__RemInterrupt(OOP_Class *cl, OOP_Object *o, struct uioMsg
     Remove((struct Node *)msg->um_Int);
 
     Enable();
+    /*
+     * We do not disable O_ASYNC because theoretically we can have more
+     * than one interrupt on a single fd.
+     * Anyway typically removing interrupt handler means the fd is not
+     * going to be used any more and will be closed soon.
+     */
 }
 
 /* This is the initialisation code for the HIDD class itself. */
