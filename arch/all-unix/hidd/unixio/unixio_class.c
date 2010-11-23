@@ -18,6 +18,8 @@
 #include <errno.h>
 #undef timeval
 
+#define __OOP_NOATTRBASES__
+
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/interrupts.h>
@@ -96,14 +98,11 @@ static void WaitIntHandler(int fd, int mode, struct UnixIO_Waiter *w)
     Signal(w->task, 1 << w->signal);
 }
 
-static BOOL CheckArch(APTR KernelBase, STRPTR Component, STRPTR MyArch)
+static BOOL CheckArch(struct uio_data *data, STRPTR Component, STRPTR MyArch)
 {
-    STRPTR arg[3] = {Component, MyArch, NULL};
+    STRPTR arg[3] = {Component, MyArch, data->SystemArch};
 
-    arg[2] = (STRPTR)KrnGetSystemAttr(KATTR_Architecture);
     D(bug("[UnixIO] My architecture: %s, kernel architecture: %s\n", arg[1], arg[2]));
-    if (!arg[2])
-	return FALSE;
 
     if (strcmp(arg[1], arg[2]))
     {
@@ -136,6 +135,9 @@ static BOOL CheckArch(APTR KernelBase, STRPTR Component, STRPTR MyArch)
 #define KernelBase  LIBBASE->KernelBase
 #define HostLibBase LIBBASE->HostLibBase
 
+#undef HiddUnixIOAttrBase
+#define HiddUnixIOAttrBase data->UnixIOAB
+
 /* The following are methods of the UnixIO HIDD class. */
 
 /********************
@@ -144,7 +146,19 @@ static BOOL CheckArch(APTR KernelBase, STRPTR Component, STRPTR MyArch)
 OOP_Object *UXIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct uio_data *data = UD(cl);
+    STRPTR archName;
+
     EnterFunc(bug("UnixIO::New(cl=%s)\n", cl->ClassNode.ln_Name));
+
+    archName = (STRPTR)GetTagData(aHidd_UnixIO_Architecture, 0, msg->attrList);
+    if (archName)
+    {
+        struct Task *t = FindTask(NULL);
+    	STRPTR moduleName = (STRPTR)GetTagData(aHidd_UnixIO_Opener, (IPTR)t->tc_Node.ln_Name, msg->attrList);
+    	
+    	if (!CheckArch(data, moduleName, archName))
+    	    return NULL;
+    }
 
     /* We are a true singletone */
     ObtainSemaphore(&data->sem);
@@ -764,7 +778,11 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
     if (!HostLibBase)
     	return FALSE;
 
-    if (!CheckArch(KernelBase, "unixio.hidd", AROS_ARCHITECTURE))
+    LIBBASE->uio_csd.SystemArch = (STRPTR)KrnGetSystemAttr(KATTR_Architecture);
+    if (!LIBBASE->uio_csd.SystemArch)
+    	return FALSE;
+
+    if (!CheckArch(&LIBBASE->uio_csd, "unixio.hidd", AROS_ARCHITECTURE))
     	return FALSE;
 
     LIBBASE->uio_csd.UnixIOAB = OOP_ObtainAttrBase(IID_Hidd_UnixIO);

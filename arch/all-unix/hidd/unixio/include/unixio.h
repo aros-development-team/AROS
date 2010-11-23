@@ -48,12 +48,12 @@ enum {
 enum
 {
     aoHidd_UnixIO_Opener,	    	/* [I..] Opener name		    */
-    aoHidd_UnixIO_Architectire,		/* [I..] Opener's architecture name */
+    aoHidd_UnixIO_Architecture,		/* [I..] Opener's architecture name */
     num_Hidd_UnixIO_Attrs
 };
 
 #define aHidd_UnixIO_Opener		(HiddUnixIOAttrBase + aoHidd_UnixIO_Opener)
-#define aHodd_UnixIO_Architecture	(HiddUnixIOAttrBase + aoHidd_UnixIO_Architecture)
+#define aHidd_UnixIO_Architecture	(HiddUnixIOAttrBase + aoHidd_UnixIO_Architecture)
 
 struct uioMsg
 {
