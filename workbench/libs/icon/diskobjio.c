@@ -308,6 +308,7 @@ AROS_UFH3(LONG, dosstreamhook,
     AROS_USERFUNC_INIT
 
     struct IconBase *IconBase = hook->h_Data;
+
     LONG rc = 0;
 
     switch (*msg)
@@ -661,13 +662,13 @@ AROS_UFH3S(ULONG, ProcessFlagPtr,
 {
     AROS_USERFUNC_INIT
 
-    struct IconBase *IconBase = streamhook->h_Data;
-
     LONG ptr;
+    struct IconBase *IconBase;
 
     switch (data->sdd_Mode)
     {
     case SDV_SPECIALMODE_READ:
+    	IconBase = streamhook->h_Data;
 	if (FRead ((BPTR)data->sdd_Stream, &ptr, 1, 4) != 4)
 	    return FALSE;
 
@@ -680,6 +681,7 @@ kprintf ("ProcessFlagPtr: %08lx %ld\n", ptr);
 	break;
 
     case SDV_SPECIALMODE_WRITE:
+    	IconBase = streamhook->h_Data;
 	if (*((APTR *)data->sdd_Dest))
 	    ptr = 0xABADCAFEL;
 	else
