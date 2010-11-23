@@ -14,6 +14,7 @@ struct Library *OOPBase = NULL;
 int main (int argc, char **argv)
 {
     int failed = 1;
+    struct Library *UnixIOBase = NULL;
     OOP_Object *unixio = NULL;
     int fd = -1;
     int nbytes, ioerr;
@@ -22,6 +23,13 @@ int main (int argc, char **argv)
     if ((OOPBase = OpenLibrary("oop.library", 0)) == NULL) {
         fprintf(stderr, "can't open oop.library\n");
         goto exit;
+    }
+
+    UnixIOBase = OpenLibrary("DEVS:Drivers/unixio.hidd", 0);
+    if (!UnixIOBase)
+    {
+    	fprintf(stderr, "can't open unixio.hidd\n");
+    	goto exit;
     }
 
     if ((unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL)) == NULL) {
@@ -134,6 +142,8 @@ int main (int argc, char **argv)
 exit:
     if (fd >= 0) Hidd_UnixIO_CloseFile(unixio, fd, NULL);
     if (unixio != NULL)  OOP_DisposeObject(unixio);
+    if (UnixIOBase)
+    	CloseLibrary(UnixIOBase);
     if (OOPBase != NULL) CloseLibrary(OOPBase);
 
     return failed ? 1 : 0;
