@@ -22,7 +22,8 @@ endif
 
 #MM- kernel-fs-afs : includes linklibs
 
-USER_CFLAGS := -DDEBUG=0
+USER_CFLAGS := -DDEBUG=0 \
+	       -D__INTUITION_NOLIBBASE__
 
 %build_module mmake=kernel-fs-afs \
     modname=afs modtype=device modsuffix=handler \

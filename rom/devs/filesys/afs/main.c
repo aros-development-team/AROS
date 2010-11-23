@@ -11,7 +11,6 @@
 #include <proto/exec.h>
 
 #include <dos/filesystem.h>
-#include <intuition/intuitionbase.h>
 
 #include <aros/macros.h>
 #include <aros/debug.h>

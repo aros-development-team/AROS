@@ -13,7 +13,6 @@
 struct AFSBase
 {
 	struct Device device;
-	struct IntuitionBase *intuitionbase;
 	struct DosLibrary *dosbase;
 	struct MsgPort port;			/* MsgPort of the handler */
 	struct MsgPort rport;		/* replyport of the handler */
