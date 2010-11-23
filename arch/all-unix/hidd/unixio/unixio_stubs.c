@@ -33,38 +33,6 @@ IPTR Hidd_UnixIO_Wait(OOP_Object *o, ULONG fd, ULONG mode)
      return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-IPTR Hidd_UnixIO_AsyncIO(OOP_Object *o, ULONG fd, ULONG fd_type, struct MsgPort * port, ULONG mode, struct ExecBase * SysBase)
-{
-     static OOP_MethodID    mid;
-     struct uioMsgAsyncIO   p, *msg = &p;
-     
-     if (!mid)
-     	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AsyncIO);
-	
-     p.um_MethodID      = mid;
-     p.um_Filedesc      = fd;
-     p.um_Filedesc_Type = fd_type;
-     p.um_ReplyPort     = port;
-     p.um_Mode	        = mode;
-     
-     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
-}
-
-
-VOID Hidd_UnixIO_AbortAsyncIO(OOP_Object *o, ULONG fd, struct ExecBase * SysBase)
-{
-     static OOP_MethodID    	mid;
-     struct uioMsgAbortAsyncIO  p, *msg = &p;
-     
-     if (!mid)
-     	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AbortAsyncIO);
-     
-     p.um_MethodID = mid;
-     p.um_Filedesc = fd;
-     
-     OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
-}
-
 int Hidd_UnixIO_OpenFile(OOP_Object *o, const char *filename, int flags, int mode, int *errno_ptr)
 {
      static OOP_MethodID    mid;
