@@ -149,7 +149,7 @@ OOP_Object *UXIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     if (!data->obj)
     {
-    	D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
+    	D(bug("[UnixIO] Creating object\n"));
     	data->obj = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 
@@ -296,6 +296,8 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
     struct uio_data *data = UD(cl);
     APTR retval;
 
+    D(bug("[UnixIO] OpenFile(%s, 0x%04X, %o)\n", msg->um_FileName, msg->um_Flags, msg->um_Mode));
+
     ObtainSemaphore(&data->sem);
 
     retval = (APTR)data->SysIFace->open(msg->um_FileName, (int)msg->um_Flags, (int)msg->um_Mode);
@@ -305,6 +307,8 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
     	*msg->um_ErrNoPtr = *data->errnoPtr;
 
     ReleaseSemaphore(&data->sem);
+
+    D(bug("[UnixIO] FD is %d, errno is %d\n", retval, *data->errnoPtr));
 
     return retval;
 }
@@ -317,7 +321,7 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
     SYNOPSIS
         OOP_DoMethod(OOP_Object *obj, struct uioMsgCloseFile *msg);
 
-        void Hidd_UnixIO_CloseFile (OOP_Object *obj, int fd, int *errno_ptr);
+        int Hidd_UnixIO_CloseFile (OOP_Object *obj, int fd, int *errno_ptr);
 
     LOCATION
         unixio.hidd
@@ -332,7 +336,7 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
 		    errno variable) will be written.
 
     RESULT
-	None.
+	0 in case of success and -1 on failure.
 
     NOTES
 	Despite there's no return value, error code still can be set.
@@ -349,15 +353,16 @@ APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpen
     TODO
 
 *****************************************************************************************/
-VOID UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgCloseFile *msg)
+int UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgCloseFile *msg)
 {
     struct uio_data *data = UD(cl);
+    int ret = 0;
 
     if (msg->um_FD != (APTR)-1)
     {
     	ObtainSemaphore(&data->sem);
-    	
-    	data->SysIFace->close((int)msg->um_FD);
+
+    	ret = data->SysIFace->close((int)msg->um_FD);
     	AROS_HOST_BARRIER
 
     	if (msg->um_ErrNoPtr)
@@ -365,6 +370,8 @@ VOID UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgClo
 
     	ReleaseSemaphore(&data->sem);
     }
+
+    return ret;
 }
 
 /*****************************************************************************************
@@ -427,7 +434,7 @@ IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgRead
     	    AROS_HOST_BARRIER
 
     	    err = *data->errnoPtr;
-    	    D(kprintf(" UXIO__Hidd_UnixIO__ReadFile[%04ld]: retval %d errno %d  buff %x  count %d\n", count++, retval, err, msg->um_Buffer, msg->um_Count));
+    	    D(kprintf(" UXIO__Hidd_UnixIO__ReadFile: retval %d errno %d  buff %x  count %d\n", retval, err, msg->um_Buffer, msg->um_Count));
 
     	    if (msg->um_ErrNoPtr)
     	    	break;
@@ -505,7 +512,7 @@ IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWri
     	    AROS_HOST_BARRIER
 
 	    err = *data->errnoPtr;
-    	    D(kprintf(" UXIO__Hidd_UnixIO__WriteFile[%04ld]: retval %d errno %d  buff %x  count %d\n", count++, retval, err, msg->um_Buffer, msg->um_Count));
+    	    D(kprintf(" UXIO__Hidd_UnixIO__WriteFile: retval %d errno %d  buff %x  count %d\n", retval, err, msg->um_Buffer, msg->um_Count));
 
     	    if (msg->um_ErrNoPtr)
     	    	break;
@@ -751,6 +758,10 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
     if (!CheckArch(KernelBase, "unixio.hidd", AROS_ARCHITECTURE))
     	return FALSE;
 
+    LIBBASE->uio_csd.UnixIOAB = OOP_ObtainAttrBase(IID_Hidd_UnixIO);
+    if (!LIBBASE->uio_csd.UnixIOAB)
+    	return FALSE;
+
     LIBBASE->libcHandle = HostLib_Open(LIBC_NAME, NULL);
     if (!LIBBASE->libcHandle)
     	return FALSE;
@@ -781,14 +792,17 @@ static int UXIO_Cleanup(struct unixio_base *LIBBASE)
     if ((!KernelBase) || (!HostLibBase))
     	return TRUE;
 
+    if (LIBBASE->irqHandle)
+	KrnRemIRQHandler(LIBBASE->irqHandle);
+
     if (LIBBASE->uio_csd.SysIFace)
 	HostLib_DropInterface ((APTR *)LIBBASE->uio_csd.SysIFace);
 
     if (LIBBASE->libcHandle)
     	HostLib_Close(LIBBASE->libcHandle, NULL);
 
-    if (LIBBASE->irqHandle)
-	KrnRemIRQHandler(LIBBASE->irqHandle);
+    if (LIBBASE->uio_csd.UnixIOAB)
+    	OOP_ReleaseAttrBase(IID_Hidd_UnixIO);
 
     return TRUE;
 }

@@ -50,7 +50,7 @@ int Hidd_UnixIO_OpenFile(OOP_Object *o, const char *filename, int flags, int mod
      return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
-VOID Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr)
+int Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr)
 {
      static OOP_MethodID    mid;
      struct uioMsgCloseFile p, *msg = &p;
@@ -62,7 +62,7 @@ VOID Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr)
      p.um_FD 	    = (APTR)fd;
      p.um_ErrNoPtr  = errno_ptr;
      
-     OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
+     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
 int Hidd_UnixIO_ReadFile(OOP_Object *o, int fd, void *buffer, int count, int *errno_ptr)

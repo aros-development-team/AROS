@@ -15,6 +15,13 @@
 #define CLID_Hidd_UnixIO "unixio.hidd"
 #define IID_Hidd_UnixIO	"I_Hidd_UnixIO"
 
+/* Attrbases */
+#define HiddUnixIOAttrBase      __IHidd_UnixIO
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddUnixIOAttrBase;
+#endif
+
 struct uioInterrupt
 {
     struct MinNode Node;
@@ -35,9 +42,18 @@ enum {
     moHidd_UnixIO_ReadFile,
     moHidd_UnixIO_AddInterrupt,
     moHidd_UnixIO_RemInterrupt,
-    num_Hidd_UnixIO_Attrs
-    
+    num_Hidd_UnixIO_Methods
 };
+
+enum
+{
+    aoHidd_UnixIO_Opener,	    	/* [I..] Opener name		    */
+    aoHidd_UnixIO_Architectire,		/* [I..] Opener's architecture name */
+    num_Hidd_UnixIO_Attrs
+};
+
+#define aHidd_UnixIO_Opener		(HiddUnixIOAttrBase + aoHidd_UnixIO_Opener)
+#define aHodd_UnixIO_Architecture	(HiddUnixIOAttrBase + aoHidd_UnixIO_Architecture)
 
 struct uioMsg
 {
@@ -102,7 +118,7 @@ struct uioMsgRemInterrupt
     struct uioInterrupt *um_Int;
 };
 
-/* UnixIO OOP_Object *Values */
+/* I/O mode flags */
 #define vHidd_UnixIO_Read       0x1
 #define vHidd_UnixIO_Write      0x2
 #define vHidd_UnixIO_RW         (vHidd_UnixIO_Read | vHidd_UnixIO_Write)
@@ -112,7 +128,7 @@ struct uioMsgRemInterrupt
 IPTR Hidd_UnixIO_Wait(OOP_Object *h, ULONG fd, ULONG mode);
 
 int Hidd_UnixIO_OpenFile(OOP_Object *o, const char *filename, int flags, int mode, int *errno_ptr);
-VOID Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr);
+int Hidd_UnixIO_CloseFile(OOP_Object *o, int fd, int *errno_ptr);
 int Hidd_UnixIO_ReadFile(OOP_Object *o, int fd, void *buffer, int count, int *errno_ptr);
 int Hidd_UnixIO_WriteFile(OOP_Object *o, int fd, const void *buffer, int count, int *errno_ptr);
 int Hidd_UnixIO_IOControlFile(OOP_Object *o, int fd, int request, void *param, int *errno_ptr);
