@@ -243,21 +243,10 @@ IPTR UXIO__Hidd_UnixIO__Wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
 /************************
 **  UnixIO::AsyncIO()  **
 ************************/
-IPTR UXIO__Hidd_UnixIO__AsyncIO(OOP_Class *cl, OOP_Object *o, struct uioMsgAsyncIO *msg)
+IPTR UXIO__Hidd_UnixIO__AsyncIO(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    IPTR retval = 0UL;
-
-    /* Not implemented yet */
-
-    return retval;
-}
-
-/*****************************
-**  UnixIO::AbortAsyncIO()  **
-*****************************/
-VOID UXIO__Hidd_UnixIO__AbortAsyncIO(OOP_Class *cl, OOP_Object *o, struct uioMsgAbortAsyncIO *msg)
-{
-    /* Not implemented yet */
+    /* Obsolete and not implemented */
+    return ENOSYS;
 }
 
 /*****************************************************************************************
