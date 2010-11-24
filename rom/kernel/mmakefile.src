@@ -19,7 +19,8 @@ FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecon
          dispatch getbootinfo getscheduler issuper mapglobal registermodule          \
 	 remexceptionhandler remirqhandler schedule setprotection setscheduler sti   \
 	 switch unmapglobal unregistermodule virtualtophysical decodelocation	     \
-	 putchar maygetchar allocpages freepages getsystemattr setsystemattr
+	 putchar maygetchar allocpages freepages getsystemattr setsystemattr	     \
+	 initmemory
 
 FILES := kernel_init cpu_init kernel_cpu kernel_debug kernel_intr kernel_romtags kernel_scheduler kernel_tagitems kernel_timer
 
