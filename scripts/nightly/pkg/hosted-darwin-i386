@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Creates linux-i386 "hosted" binary packages.
+# Creates darwin-i386 "hosted" binary packages.
 
 BUILDTARGET=darwin-i386
 
