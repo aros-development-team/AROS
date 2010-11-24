@@ -4,7 +4,12 @@ STOP_TIME="N/A"
 UPLOAD_START_TIME="N/A"
 UPLOAD_STOP_TIME="N/A"
 
-export LANG=en_US.ISO8859-1
+if [ "$2" != "" ]; then
+    export LANG=$2
+else
+    export LANG=en=US.ISO8859-1
+fi
+
 export SP=$(dirname $0)
 export CFG_NAME=$1
 source $SP/setup initial
