@@ -44,6 +44,7 @@ struct uaegfx_staticdata
 	
 	WORD sprite_width, sprite_height;
 	BOOL hardwaresprite;
+	WORD spritecolors;
 
 	UBYTE initialized;
 };

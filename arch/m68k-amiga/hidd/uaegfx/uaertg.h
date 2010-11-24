@@ -67,7 +67,7 @@ typedef enum {
 #define	RGBFB_PLANAR	RGBFB_NONE
 #define	RGBFB_CHUNKY	RGBFB_CLUT
 
-#define RGBFB_SUPPORTMASK (RGBFF_CLUT | RGBFF_B8G8R8A8)
+#define RGBFB_SUPPORTMASK (RGBFF_CLUT | RGBFF_A8R8G8B8 | RGBFF_A8B8G8R8 | RGBFF_R8G8B8A8 | RGBFF_B8G8R8A8)
 
 /* BoardInfo flags */
 #define BIB_HARDWARESPRITE		0		/* board has hardware sprite */
@@ -350,12 +350,12 @@ void SetColorArray(struct uaegfx_staticdata *csd, UWORD start, UWORD count);
 void SetDAC(struct uaegfx_staticdata *csd);
 void SetGC(struct uaegfx_staticdata *csd, struct ModeInfo *mi, BOOL border);
 void SetPanning(struct uaegfx_staticdata *csd, UBYTE *video, UWORD width, WORD x, WORD y);
-BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask);
-BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask);
+BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat);
+BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *risrc, struct RenderInfo *ridst,
-    WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE opcode);
+    WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE opcode, ULONG rgbformat);
 BOOL BlitTemplate(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct Template *tmpl,
-    WORD x, WORD y, WORD w, WORD h, UBYTE mask);
+    WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 
 WORD CalculateBytesPerRow(struct uaegfx_staticdata *csd, WORD width, ULONG rgbformat);
 BOOL SetSprite(struct uaegfx_staticdata *sd, BOOL activate);

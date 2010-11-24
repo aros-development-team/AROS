@@ -63,7 +63,7 @@ void SetPanning(struct uaegfx_staticdata *csd, UBYTE *video, UWORD width, WORD x
     	AROS_LCA(WORD, y, D2),
     	AROS_LCA(ULONG, csd->rgbformat, D7));
 }
-BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask)
+BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat)
 {
     return P96_LC9(BOOL, csd->uaeromvector, 17,
     	AROS_LCA(APTR, csd->boardinfo, A0),
@@ -74,9 +74,9 @@ BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD
     	AROS_LCA(WORD, h, D3),
     	AROS_LCA(ULONG, pen, D4),
     	AROS_LCA(UBYTE, mask, D5),
-    	AROS_LCA(ULONG, csd->rgbformat, D7));
+    	AROS_LCA(ULONG, rgbformat, D7));
 }
-BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask)
+BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
 {
     return P96_LC8(BOOL, csd->uaeromvector, 31,
     	AROS_LCA(APTR, csd->boardinfo, A0),
@@ -86,10 +86,10 @@ BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WO
     	AROS_LCA(WORD, w, D2),
     	AROS_LCA(WORD, h, D3),
      	AROS_LCA(UBYTE, mask, D4),
-    	AROS_LCA(ULONG, csd->rgbformat, D7));
+    	AROS_LCA(ULONG, rgbformat, D7));
 }
 BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *risrc, struct RenderInfo *ridst,
-    WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE opcode)
+    WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE opcode, ULONG rgbformat)
 {
     return P96_LC11(BOOL, csd->uaeromvector, 28,
     	AROS_LCA(APTR, csd->boardinfo, A0),
@@ -102,10 +102,10 @@ BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *ri
     	AROS_LCA(WORD, w, D4),
     	AROS_LCA(WORD, h, D5),
      	AROS_LCA(UBYTE, opcode, D6),
-    	AROS_LCA(ULONG, csd->rgbformat, D7));
+    	AROS_LCA(ULONG, rgbformat, D7));
 };
 BOOL BlitTemplate(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct Template *tmpl,
-    WORD x, WORD y, WORD w, WORD h, UBYTE mask)
+    WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
 {
     return P96_LC9(BOOL, csd->uaeromvector, 27,
     	AROS_LCA(APTR, csd->boardinfo, A0),
@@ -116,7 +116,7 @@ BOOL BlitTemplate(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct T
     	AROS_LCA(WORD, w, D2),
     	AROS_LCA(WORD, h, D3),
      	AROS_LCA(UBYTE, mask, D4),
-    	AROS_LCA(ULONG, csd->rgbformat, D7));
+    	AROS_LCA(ULONG, rgbformat, D7));
 }
 
 WORD CalculateBytesPerRow(struct uaegfx_staticdata *csd, WORD width, ULONG rgbformat)
@@ -187,8 +187,16 @@ ULONG getrtgformat(struct uaegfx_staticdata *csd, OOP_Object *pixfmt)
     if (depth == 8)
     	return RGBFB_CLUT;
     if (depth == 16)
-    	return RGBFF_B8G8R8;
-    return RGBFB_B8G8R8A8;
+    	return RGBFB_R5G6B5PC;
+    if (redmask == 0x0000ff00)
+    	return RGBFB_B8G8R8A8;
+    if (redmask == 0xff000000)
+    	return RGBFB_R8G8B8A8;
+    if (redmask == 0x000000ff)
+    	return RGBFB_A8B8G8R8;
+    if (redmask == 0x00ff0000)
+    	return RGBFB_A8R8G8B8;
+    return RGBFB_NONE;
 }
 
 void makerenderinfo(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct bm_data *bm)

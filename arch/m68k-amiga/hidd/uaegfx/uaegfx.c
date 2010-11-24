@@ -41,12 +41,29 @@
 #define SIZE_PFLIST 17
 #define SIZE_MODELIST (5 + RGBFB_MaxFormats)
 
+struct RTGFormat
+{
+    UWORD rgbformat;
+    ULONG rm, gm, bm;
+    UWORD rs, gs, bs;
+};
+
+static const struct RTGFormat formats[] =
+{
+    { RGBFB_CLUT,	0x00ff0000, 0x0000ff00, 0x000000ff,   8, 16, 24 },
+    { RGBFB_B8G8R8A8,	0x0000ff00, 0x00ff0000, 0xff000000,  16,  8,  0 },
+    { RGBFB_A8R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff,   8, 16, 24 },
+    { RGBFB_A8B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000,  24, 16,  8 },
+    { RGBFB_R8G8B8A8,	0xff000000, 0x00ff0000, 0x0000ff00,   0,  8, 16 },
+    { 0 }
+};
+
 OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
     struct LibResolution *r;
     struct Node *node;
-    WORD rescnt, i, j, k, depth;
+    WORD rescnt, i, j, k, l, depth;
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct pRoot_New mymsg;
     struct TagItem mytags[2];
@@ -95,30 +112,42 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	    j++;
     	    continue;
     	}
+    	for (l = 0; formats[l].rgbformat; l++) {
+    	    if (formats[l].rgbformat == i)
+    	    	break;
+    	}
+    	if (formats[l].rgbformat == 0) {
+       	    pflist[j].ti_Tag = TAG_DONE;
+     	    pflist[j].ti_Data = 0;
+    	    j++;
+    	    continue;
+    	}
+   	D(bug("RTGFORMAT=%d added. Depth=%d\n", i, depth));
+
     	modetags[k].ti_Tag = aHidd_Gfx_PixFmtTags;
     	modetags[k].ti_Data = (IPTR)&pflist[j];
     	k++;
     	    
     	pflist[j].ti_Tag = aHidd_PixFmt_RedShift;
-    	pflist[j].ti_Data = 0;
+     	pflist[j].ti_Data = formats[l].rs;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_GreenShift;
-    	pflist[j].ti_Data = 0;
+     	pflist[j].ti_Data = formats[l].gs;
     	j++;
      	pflist[j].ti_Tag = aHidd_PixFmt_BlueShift;
-     	pflist[j].ti_Data = 0;
+     	pflist[j].ti_Data = formats[l].bs;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_AlphaShift;
      	pflist[j].ti_Data = 0;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_RedMask;
-     	pflist[j].ti_Data = 0x000000FF;
+     	pflist[j].ti_Data = formats[l].rm;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_GreenMask;
-     	pflist[j].ti_Data = 0x0000FF00;
+     	pflist[j].ti_Data = formats[l].gm;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_BlueMask;
-     	pflist[j].ti_Data = 0x00FF0000;
+     	pflist[j].ti_Data = formats[l].bm;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_AlphaMask;
      	pflist[j].ti_Data = 0x00000000;
@@ -186,6 +215,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	D(bug("UAEGFX::New(): Got object from super\n"));
 	NewList((struct List *)&data->bitmaps);
 	csd->initialized = 1;
+	csd->spritecolors = 16;
     }
     
     FreeVec(restags);
@@ -251,7 +281,7 @@ VOID UAEGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     	switch (idx)
     	{
     	    case aoHidd_Gfx_HWSpriteTypes:
-	    	*msg->storage = vHidd_SpriteType_3Plus1;
+	    	*msg->storage = csd->hardwaresprite ? vHidd_SpriteType_3Plus1 : 0;
 	    return;
 	    case aoHidd_Gfx_SupportsHWCursor:
 	    	*msg->storage = csd->hardwaresprite;
@@ -314,11 +344,15 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     struct bm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
     struct RenderInfo risrc, ridst;
 
+    if (sdata->rgbformat != ddata->rgbformat) {
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	return;
+    }
     makerenderinfo(csd, &risrc, sdata);
     makerenderinfo(csd, &ridst, ddata);
     if (!BlitRectNoMaskComplete(csd, &risrc, &ridst,
     	msg->srcX, msg->srcY, msg->destX, msg->destY,
-    	msg->width, msg->height, modetable[mode]))
+    	msg->width, msg->height, modetable[mode], sdata->rgbformat))
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -402,18 +436,17 @@ static void freeattrbases(struct uaegfx_staticdata *csd)
     OOP_ReleaseAttrBase(__IHidd_ColorMap);
 }
 
-int Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
+BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
     struct uaegfx_staticdata *csd = &LIBBASE->csd;
     struct MemChunk *mc;
     ULONG size;
-    volatile UWORD *c = (UWORD*)0xdff180;
 
     D(bug("Init_UAEGFXClass\n"));
     csd->uaeromvector = (APTR)(0xf00000 + 0xff60);
     if ((gl(csd->uaeromvector) & 0xff00ffff) != 0xa0004e75) {
     	D(bug("UAE boot ROM entry point not found. UAEGFX not enabled.\n"));
-    	return 0;
+    	return FALSE;
     }
     csd->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last, MEMF_CLEAR | MEMF_PUBLIC);
     if (!csd->boardinfo)
@@ -427,8 +460,9 @@ int Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     	return FALSE;
     }
     D(bug("FindCard done\n"));
-    if (!InitCard(csd)) {
-     	D(bug("InitCard() returned false\n"));
+    InitCard(csd);
+    if (IsListEmpty((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))) {
+     	D(bug("InitCard() failed\n"));
     	FreeVec(csd->boardinfo);
     	return FALSE;
     }
