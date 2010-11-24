@@ -57,6 +57,7 @@ static const char *kernel_functions[] = {
 #endif
     "mmap",
     "munmap",
+    "getpagesize",
     NULL
 };
 

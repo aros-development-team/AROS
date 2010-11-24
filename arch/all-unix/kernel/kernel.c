@@ -204,6 +204,10 @@ static int InitCore(struct KernelBase *KernelBase)
 
     D(bug("[KRN] InitCore()\n"));
 
+    KernelBase->kb_PageSize = KernelIFace.getpagesize();
+    AROS_HOST_BARRIER
+    D(bug("[KRN] Memory page size is %u\n", KernelBase->kb_PageSize));
+
 #if AROS_MODULES_DEBUG
     /*
      * Provide a pointer to our modules list to the bootstrap.

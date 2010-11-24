@@ -33,6 +33,7 @@ struct KernelInterface
     int    *(*__error)(void);
     void *  (*mmap)(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
     int     (*munmap)(void *addr, size_t length);
+    int     (*getpagesize)(void);
 };
 
 struct PlatformData
