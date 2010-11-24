@@ -6,9 +6,10 @@
 #include <sys/mman.h>
 #include <inttypes.h>
 
-AROS_LH2I(void *, KrnAllocPages,
+AROS_LH3I(void *, KrnAllocPages,
 	 AROS_LHA(uint32_t, length, D0),
-	 AROS_LHA(KRN_MapAttr, flags, D1),
+	 AROS_LHA(uint32_t, flags, D1),
+	 AROS_LHA(KRN_MapAttr, protection, D2),
 	 struct KernelBase *, KernelBase, 27, Kernel)
 {
     AROS_LIBFUNC_INIT
@@ -16,11 +17,11 @@ AROS_LH2I(void *, KrnAllocPages,
     int flags_unix = 0;
     void *map = 0;
 
-    if (flags & MAP_Readable)
+    if (protection & MAP_Readable)
 	flags_unix |= PROT_READ;
-    if (flags & MAP_Writable)
+    if (protection & MAP_Writable)
 	flags_unix |= PROT_WRITE;
-    if (flags & MAP_Executable)
+    if (protection & MAP_Executable)
 	flags_unix |= PROT_EXEC;
 
     /* Darwin does not define MAP_ANONYMOUS */
