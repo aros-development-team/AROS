@@ -1,0 +1,6 @@
+#!/bin/zsh
+# Creates linux-i386 "hosted" binary packages.
+
+BUILDTARGET=darwin-i386
+
+source $SP/pkg/hosted
