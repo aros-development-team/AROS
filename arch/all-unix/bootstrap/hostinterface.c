@@ -18,6 +18,7 @@
 #include "../../../rom/kernel/debug_intern.h"
 
 struct segment *seg = NULL;
+struct Resident *res = NULL;
 struct MinList *Debug_ModList = NULL;
 #endif
 
