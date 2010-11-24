@@ -41,12 +41,14 @@ static void cpu_Exception()
 {
     /* Save return context and IDNestCnt on stack */
     struct Task *task = SysBase->ThisTask;
+    struct ExceptionContext *ctx = GetIntETask(task)->iet_Context;
     char nestCnt = task->tc_IDNestCnt;
-    struct AROSCPUContext save;
+    char ContextSave[KernelBase->kb_ContextSize];
 
     DEXCEPT(bug("[KRN] Entered exception, task 0x%p, IDNestCnt %d\n", task, SysBase->IDNestCnt));
     /* Save original context */
-    CopyMem(GetIntETask(task)->iet_Context, &save, sizeof(struct AROSCPUContext));
+    CopyMem(ctx, ContextSave, sizeof(struct AROSCPUContext));
+    COPY_FPU(ctx, (struct ExceptionContext *)ContextSave);
 
     /* Call exec exception processing */
     Exception();
@@ -57,7 +59,7 @@ static void cpu_Exception()
     SysBase->IDNestCnt = nestCnt;
 
     D(bug("[KRN] Leaving exception, IDNestCnt %d\n", SysBase->IDNestCnt));
-    KernelIFace.core_raise(AROS_EXCEPTION_RESUME, (IPTR)&save);
+    KernelIFace.core_raise(AROS_EXCEPTION_RESUME, (IPTR)ContextSave);
 }
 
 /* CPU-specific Switch() bits. Actually just context save. */
@@ -67,7 +69,7 @@ void cpu_Switch(CONTEXT *regs)
     struct AROSCPUContext *ctx = GetIntETask(t)->iet_Context;
 
     /* Actually save the context */
-    CopyMem(regs, ctx, sizeof(CONTEXT));
+    SAVEREGS(regs, ctx);
     ctx->LastError = *LastErrorPtr;
 
     /* Update tc_SPReg */
@@ -121,7 +123,7 @@ void cpu_Dispatch(CONTEXT *regs)
     D(bug("[KRN] Dispatched task 0x%p (%s)\n", task, task->tc_Node.ln_Name));
     /* Restore the task's context */
     ctx = GetIntETask(task)->iet_Context;
-    CopyMem(ctx, regs, sizeof(CONTEXT));
+    RESTOREREGS(regs, ctx);
     *LastErrorPtr = ctx->LastError;
 
     /* Handle exception if requested */

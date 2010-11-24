@@ -62,9 +62,143 @@ typedef struct _CONTEXT
 
 #endif
 
-#define GET_PC(ctx) (void *)ctx->regs.Eip
-#define GET_SP(ctx) (void *)ctx->regs.Esp
-#define SET_PC(ctx, addr) ctx->regs.Eip = (unsigned long)addr
+/*
+ * Common part of SAVEREGS and TRAP_SAVEREGS.
+ * Saves CPU registers from CONTEXT in struct ExceptionContext.
+ */
+#define SAVE_CPU(regs, ctx)			\
+    ctx.Flags = 0;				\
+    ctx.eax = regs->Eax;			\
+    ctx.ebx = regs->Ebx;			\
+    ctx.ecx = regs->Ecx;			\
+    ctx.edx = regs->Edx;			\
+    ctx.esi = regs->Esi;			\
+    ctx.edi = regs->Edi;			\
+    ctx.ebp = regs->Ebp;			\
+    ctx.eip = regs->Eip;			\
+    ctx.eflags = regs->EFlags;			\
+    ctx.esp = regs->Esp;			\
+    if (regs->ContextFlags & CONTEXT_SEGMENTS)	\
+    {						\
+        ctx.Flags |= ECF_SEGMENTS;		\
+	ctx.ds = regs->SegDs;			\
+	ctx.es = regs->SegEs;			\
+	ctx.fs = regs->SegFs;			\
+	ctx.gs = regs->SegGs;			\
+	ctx.cs = regs->SegCs;			\
+	ctx.ss = regs->SegSs;			\
+    }
+
+/* 
+ * Restore CPU registers.
+ * Does not restore segment registers because they are of private use
+ * by Windows. We can't modify them.
+ */
+#define RESTORE_CPU(regs, ctx)					\
+    regs->ContextFlags = CONTEXT_CONTROL|CONTEXT_INTEGER;	\
+    regs->Eax = ctx.eax;					\
+    regs->Ebx = ctx.ebx;					\
+    regs->Ecx = ctx.ecx;					\
+    regs->Edx = ctx.edx;					\
+    regs->Esi = ctx.esi;					\
+    regs->Edi = ctx.edi;					\
+    regs->Ebp = ctx.ebp;					\
+    regs->Eip = ctx.eip;					\
+    regs->EFlags = ctx.eflags;					\
+    regs->Esp = ctx.esp;
+
+/*
+ * Save the whole set of registers in the allocated context space.
+ * Also saves FPU and SSE, if available.
+ */
+#define SAVEREGS(regs, ctx)									\
+    SAVE_CPU(regs, ctx->regs);									\
+    if (regs->ContextFlags & CONTEXT_FLOATING_POINT)						\
+    {												\
+	ctx->regs.Flags |= ECF_FPU;								\
+	CopyMemQuick(&regs->FloatSave, ctx->regs.FPData, sizeof(FLOATING_SAVE_AREA));		\
+    }												\
+    if (regs->ContextFlags & CONTEXT_EXTENDED_REGISTERS)					\
+    {												\
+	ctx->regs.Flags |= ECF_FPX;								\
+	CopyMemQuick(regs->ExtendedRegisters, ctx->regs.FXData, MAXIMUM_SUPPORTED_EXTENSION);	\
+    }
+
+/*
+ * Restore complete set of registers.
+ * Restores FPU and SSE only if they present both in CONTEXT and in struct ExceptionContext.
+ * This is done because a debugger may want to modify one of frames. In this case it will
+ * reset flag of the second frame (which is still unmodified).
+ */
+#define RESTOREREGS(regs, ctx)									\
+{												\
+    ULONG orig = regs->ContextFlags;								\
+    RESTORE_CPU(regs, ctx->regs);								\
+    if (ctx->regs.Flags & ECF_FPU)								\
+    {												\
+	regs->ContextFlags |= CONTEXT_FLOATING_POINT;						\
+	CopyMemQuick(ctx->regs.FPData, &regs->FloatSave, sizeof(FLOATING_SAVE_AREA));		\
+    }												\
+    if ((ctx->regs.Flags & ECF_FPX) && (orig & CONTEXT_EXTENDED_REGISTERS))			\
+    {												\
+	regs->ContextFlags |= CONTEXT_EXTENDED_REGISTERS;					\
+	CopyMemQuick(ctx->regs.FXData, regs->ExtendedRegisters, MAXIMUM_SUPPORTED_EXTENSION);	\
+    }												\
+}
+
+/*
+ * Similar to SAVEREGS and RESTOREREGS, but actually copies only CPU part.
+ * FPU and SSE are specified by references (frames format in host and AROS match).
+ * This is for use within trap handling code.
+ */
+#define TRAP_SAVEREGS(src, dest)			\
+    SAVE_CPU(src, dest)					\
+    if (src->ContextFlags & CONTEXT_FLOATING_POINT)	\
+    {							\
+	dest.Flags |= ECF_FPU;				\
+	dest.FPData = &src->FloatSave;			\
+    }							\
+    if (src->ContextFlags & CONTEXT_EXTENDED_REGISTERS)	\
+    {							\
+	dest.Flags |= ECF_FPX;				\
+	dest.FXData = src->ExtendedRegisters;		\
+    }
+
+#define TRAP_RESTOREREGS(dest, src)				\
+    RESTORE_CPU(dest, src);					\
+    if (src.Flags & ECF_FPU)					\
+	dest->ContextFlags |= CONTEXT_FLOATING_POINT;		\
+    if (src.Flags & ECF_FPX)					\
+	dest->ContextFlags |= CONTEXT_EXTENDED_REGISTERS;
+
+/*
+ * Realign and copy FPU portion from src to dest. It is supposed
+ * that common part is already copied.
+ */
+#define COPY_FPU(src, dest)					\
+{								\
+    IPTR fpdata = (IPTR)(dest) + sizeof(struct AROSCPUContext);	\
+    if ((src)->Flags & ECF_FPU)					\
+    {								\
+	(dest)->FPData = (struct FPUContext *)fpdata;		\
+	fpdata += 112;						\
+	CopyMemQuick((src)->FPData, (dest)->FPData, 112);	\
+    }								\
+    else							\
+	(dest)->FPData = NULL;					\
+    if ((src)->Flags & ECF_FPX)					\
+    {								\
+	fpdata = (fpdata + 15) & ~15;				\
+	(dest)->FXData = (struct FPXContext *)fpdata;		\
+	CopyMemQuick((src)->FXData, (dest)->FXData, 512);	\
+    }								\
+    else							\
+	(dest)->FXData = NULL;					\
+}
+
+#define GET_PC(ctx) (void *)ctx->regs.eip
+#define GET_SP(ctx) (void *)ctx->regs.esp
+#define SET_PC(ctx, addr) ctx->regs.eip = (unsigned long)addr
 
 #define EXCEPTIONS_COUNT 18
 
@@ -86,21 +220,10 @@ typedef struct _CONTEXT
 	    , (ctx)->EFlags \
       );
 
-#define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->regs.Ebp = 0;			 \
-					   ctx->regs.Eip = (IPTR)pc;		 \
-					   ctx->regs.Esp = (IPTR)sp;		 \
-					   ctx->regs.ContextFlags = CONTEXT_CONTROL;
-
-#define REG_SAVE_VAR DWORD SegCS_Save, SegSS_Save
-
 #define CONTEXT_INIT_FLAGS(ctx) (ctx)->ContextFlags = CONTEXT_FULL|CONTEXT_FLOATING_POINT|CONTEXT_DEBUG_REGISTERS|CONTEXT_EXTENDED_REGISTERS
-
-#define CONTEXT_SAVE_REGS(ctx)    SegCS_Save = (ctx)->SegCs; \
-    			          SegSS_Save = (ctx)->SegSs
-
-#define CONTEXT_RESTORE_REGS(ctx) (ctx)->SegCs = SegCS_Save; \
-				  (ctx)->SegSs = SegSS_Save; \
-				  (ctx)->ContextFlags &= CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS
 
 #define PC(regs) regs->Eip
 #define R0(regs) regs->Eax
+
+/* Provide legacy 8087 context together with SSE one */
+#define USE_LEGACY_8087

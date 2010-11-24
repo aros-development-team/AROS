@@ -96,8 +96,9 @@ int core_IRQHandler(unsigned char *irqs, CONTEXT *regs)
 /* Trap handler entry point */
 int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 {
-    void (*trapHandler)(unsigned long, CONTEXT *) = NULL;
+    void (*trapHandler)(unsigned long, struct ExceptionContext *) = NULL;
     struct ExceptionTranslation *ex;
+    struct AROSCPUContext *ctx;
 
     switch (num)
     {
@@ -125,9 +126,9 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 
     case AROS_EXCEPTION_RESUME:
         /* Restore saved context and continue */
-	CopyMem((void *)args[0], regs, sizeof(CONTEXT));
-	*LastErrorPtr = ((struct AROSCPUContext *)args[0])->LastError;
-
+	ctx = (struct AROSCPUContext *)args[0];
+	RESTOREREGS(regs, ctx);
+	*LastErrorPtr = ctx->LastError;
 	break;
 
     default:
@@ -163,24 +164,33 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 	}
 	DTRAP(bug("[KRN] CPU exception %d, AROS exception %d\n", ex->CPUTrap, ex->AROSTrap));
 
-	if (ex->CPUTrap != -1)
+	/* Convert CPU context to AROS structure */
+	struct ExceptionContext tmpContext;
+	TRAP_SAVEREGS(regs, tmpContext);
+
+	do
 	{
-	    if (krnRunExceptionHandlers(ex->CPUTrap, regs))
+	    if (ex->CPUTrap != -1)
+	    {
+		if (krnRunExceptionHandlers(ex->CPUTrap, &tmpContext))
+		    break;
+	    }
+
+	    if (trapHandler && (ex->AmigaTrap != -1))
+	    {
+		/* Call our trap handler. Note that we may return, this means that the handler has
+		   fixed the problem somehow and we may safely continue */
+		DTRAP(bug("[KRN] Amiga trap %d\n", ex->AmigaTrap));
+		trapHandler(ex->AmigaTrap, &tmpContext);
+
 		break;
-	}
+	    }
 
-	if (trapHandler && (ex->AmigaTrap != -1))
-	{
-	    /* Call our trap handler. Note that we may return, this means that the handler has
-	       fixed the problem somehow and we may safely continue */
-	    DTRAP(bug("[KRN] Amiga trap %d\n", ex->AmigaTrap));
-	    trapHandler(ex->AmigaTrap, regs);
+	    /* If we reach here, the trap is unhandled and we request the virtual machine to stop */
+	    return INT_HALT;
+	} while(0);
 
-	    break;
-	}
-
-	/* If we reach here, the trap is unhandled and we request the virtual machine to stop */
-	return INT_HALT;
+	TRAP_RESTOREREGS(regs, tmpContext);
     }
 
     IRET;

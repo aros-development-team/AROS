@@ -30,11 +30,9 @@
 /* On AROS side we save also LastError code */
 struct AROSCPUContext
 {
-    CONTEXT regs;
-    ULONG LastError;
+    struct ExceptionContext regs; /* Public portion */
+    ULONG LastError;		  /* LastError code */
 };
-
-#define PRINT_CPU_CONTEXT(ctx) PRINT_CPUCONTEXT(&ctx->regs)
 
 /* Our virtual CPU interface. It's needed here for krnSysCall() definition */
 struct KernelInterface
