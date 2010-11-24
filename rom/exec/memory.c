@@ -30,6 +30,12 @@ APTR AllocMemHeader(IPTR size, ULONG flags, KRN_MapAttr prot, struct ExecBase *S
     return mh;
 }
 
+/* Free a region allocated by AllocMemHeader() */
+void FreeMemHeader(APTR addr, struct ExecBase *SysBase)
+{
+    KrnFreePages(addr, ((struct MemHeader *)addr)->mh_Upper - addr + 1);
+}
+
 /* Allocate puddle of a requested size and add it to the pool */
 APTR AllocPuddle(struct Pool *pool, IPTR size, struct ExecBase *SysBase)
 {
