@@ -73,7 +73,7 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->rgbformat = getrtgformat(csd, data->pixfmtobj);
     data->width = width;
     width = CalculateBytesPerRow(csd, width, data->rgbformat);
-    data->bytesperline = width * multi;
+    data->bytesperline = width;
     data->height = height;
     data->bytesperpixel = multi;
     data->VideoData = Allocate(csd->vmem, data->bytesperline * data->height);
@@ -164,7 +164,15 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    csd->rgbformat = data->rgbformat;
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, dwidth);
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, dheight);
-		    bug("%dx%dx%d BF=%08x\n", dwidth, dheight, depth, data->rgbformat);
+		    D(bug("%dx%dx%d BF=%08x\n", dwidth, dheight, depth, data->rgbformat));
+
+		    if (csd->hardwaresprite) {
+		    	UWORD i;
+    			UBYTE *clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
+		    	for (i = csd->spritecolors; i < csd->spritecolors + 4; i++)
+		            SetSpriteColor(csd, i - csd->spritecolors,  clut[i * 3 + 0],  clut[i * 3 + 1],  clut[i * 3 + 2]);
+		    }
+ 
 		    SetDAC(csd);
 		    SetGC(csd, &data->modeinfo, 0);
 		    SetPanning(csd, data->VideoData, dwidth, 0, 0);
@@ -254,7 +262,7 @@ BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     struct uaegfx_staticdata *csd = CSD(cl);
     WORD i, j;
     UBYTE *clut;
-
+    
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
     	return FALSE;
     clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
@@ -262,8 +270,7 @@ BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
         clut[i * 3 + 0] = msg->colors[j].red >> 8;
         clut[i * 3 + 1] = msg->colors[j].green >> 8;
         clut[i * 3 + 2] = msg->colors[j].blue >> 8;
-        if ((i == 17 || i == 18 || i == 19) && csd->hardwaresprite)
-            SetSpriteColor(csd, i - 16,  clut[i * 3 + 0],  clut[i * 3 + 1],  clut[i * 3 + 2]);
+	//bug("%d %02x%02x%02x\n", i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8);
     }
     SetColorArray(csd, msg->firstColor, msg->numColors);
     return TRUE;
@@ -413,11 +420,11 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     makerenderinfo(csd, &ri, data);
     if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
     	ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
-    	v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff);
+    	v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff, data->rgbformat);
     } else if (mode == vHidd_GC_DrawMode_Copy) {
-        v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, 0xff);
+        v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, 0xff, data->rgbformat);
     } else if (mode == vHidd_GC_DrawMode_Invert) {
-       v = InvertRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff);
+       v = InvertRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
     }
     if (!v)
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -452,7 +459,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     tmpl.FgPen = fg;
     tmpl.BgPen = bg;
     
-    if (!BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff))
+    if (!BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat))
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
