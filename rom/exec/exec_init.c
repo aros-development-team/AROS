@@ -166,6 +166,8 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     	bug("[exec] Mungwall enabled\n");
 
+    PrivExecBase(SysBase)->PageSize = KrnGetSystemAttr(KATTR_PageSize);
+
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,
 	since DOS needs to call things which think it has a Process and
