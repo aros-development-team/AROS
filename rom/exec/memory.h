@@ -65,6 +65,7 @@ struct Block
 APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct ExecBase *SysBase);
 
 APTR AllocMemHeader(IPTR size, ULONG flags, KRN_MapAttr prot, struct ExecBase *SysBase);
+void FreeMemHeader(APTR addr, struct ExecBase *SysBase);
 APTR AllocPuddle(struct Pool *pool, IPTR size, struct ExecBase *SysBase);
 
 #define MUNGWALL_HEADER_ID 0x1ADEBCA1
