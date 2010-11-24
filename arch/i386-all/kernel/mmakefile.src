@@ -5,7 +5,7 @@ FILES := dummy
 
 # Transition period: this is currently used only on MinGW32
 ifeq ($(ARCH),mingw32)
-FILES += cpu_init
+FILES += cpu_init createcontext
 endif
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \

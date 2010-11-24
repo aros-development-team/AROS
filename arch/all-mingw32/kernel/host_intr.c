@@ -47,7 +47,6 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     CONTEXT *ContextRecord = exptr->ContextRecord;
     DWORD ThreadId;
     int intstate;
-    REG_SAVE_VAR;
 
     /*
      * We are already in interrupt and we must not be preempted by task switcher. 
@@ -72,9 +71,6 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
        IRQ handler), so we increment in order to retain previous state. */
     Supervisor++;
 
-    /* Save important registers that must not be modified */
-    CONTEXT_SAVE_REGS(ContextRecord);
-
     /* Call trap handler */
     intstate = TrapVector(ExceptionCode, exptr->ExceptionRecord->ExceptionInformation, ContextRecord);
     if (intstate == INT_HALT)
@@ -83,9 +79,6 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
 
 	return EXCEPTION_CONTINUE_SEARCH;
     }
-
-    /* Restore important registers */
-    CONTEXT_RESTORE_REGS(ContextRecord);
 
     /* Exit supervisor */
     if (--Supervisor == 0)
@@ -123,7 +116,6 @@ DWORD WINAPI TaskSwitcher()
 {
     DWORD obj;
     CONTEXT MainCtx;
-    REG_SAVE_VAR;
     DS(DWORD res);
 
     for (;;)
@@ -154,7 +146,6 @@ DWORD WINAPI TaskSwitcher()
 	     * because changing some registers causes Windows to immediately shut down
 	     * our process. This can be a useful aid for future AROS debuggers.
     	     */
-    	    CONTEXT_SAVE_REGS(&MainCtx);
     	    DS(printf("[Task switcher] original CPU context: ****\n"));
     	    DS(PRINT_CPUCONTEXT(&MainCtx));
 
@@ -166,16 +157,13 @@ DWORD WINAPI TaskSwitcher()
 	     */
 	    Ints_Enabled = IRQVector(PendingInts, &MainCtx);
 	    /* All IRQs have been processed */
-/*	    memset(PendingInts, 0, sizeof(PendingInts)); */
-	    for (obj = 0; obj < Ints_Num; obj++)
-		PendingInts[obj] = 0;
+	    ZeroMemory(PendingInts, sizeof(PendingInts));
 
 	    /* If AROS is not going to sleep, set new CPU context */
     	    if (Sleep_Mode == SLEEP_MODE_OFF)
 	    {
     	        DS(printf("[Task switcher] new CPU context: ****\n"));
     	        DS(PRINT_CPUCONTEXT(&MainCtx));
-    	        CONTEXT_RESTORE_REGS(&MainCtx);
     	        DS(res =)SetThreadContext(MainThread, &MainCtx);
     	        DS(printf("[Task switcher] Set context result: %lu\n", res));
     	    }

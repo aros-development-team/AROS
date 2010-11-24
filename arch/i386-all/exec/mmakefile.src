@@ -1,11 +1,20 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_AFLAGS := -I$(GENINCDIR)
+FILES := newstackswap
+
+# Transition period: this is currently used only on MinGW32
+ifeq ($(ARCH),mingw32)
+FILES += preparecontext
+endif
+
+USER_AFLAGS   := -I$(GENINCDIR)
+USER_INCLUDES := -I$(SRCDIR)/rom/exec
+
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles="execstubs stackswap" \
-  files=newstackswap \
+  files=$(FILES) \
   arch=i386
 
 #MM kernel-exec-i386 : includes-asm_h-i386
