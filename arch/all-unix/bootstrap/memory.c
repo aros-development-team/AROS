@@ -2,6 +2,10 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#ifndef MAP_32BIT
+#define MAP_32BIT 0
+#endif
+
 /*
  * Allocate memory for kickstart's .code and .rodata. We allocate is as writable
  * because we will load the kickstart into it. We will enable execution later in SetRO().
@@ -14,7 +18,7 @@
  */
 void *AllocateRO(size_t len)
 {
-    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE, -1, 0);
+    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE|MAP_32BIT, -1, 0);
 
     return (ret == MAP_FAILED) ? NULL : ret;
 }
@@ -48,7 +52,7 @@ void *AllocateRW(size_t len)
  */
 void *AllocateRAM(size_t len)
 {
-    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_PRIVATE, -1, 0);
+    void *ret = mmap(NULL, len, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_PRIVATE|MAP_32BIT, -1, 0);
 
     return (ret == MAP_FAILED) ? NULL : ret;
 }
