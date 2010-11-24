@@ -8,6 +8,7 @@
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
 
+#include <aros/kernel.h>
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <exec/memory.h>
@@ -62,6 +63,9 @@ struct Block
 };
 
 APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct ExecBase *SysBase);
+
+APTR AllocMemHeader(IPTR size, ULONG flags, KRN_MapAttr prot, struct ExecBase *SysBase);
+APTR AllocPuddle(struct Pool *pool, IPTR size, struct ExecBase *SysBase);
 
 #define MUNGWALL_HEADER_ID 0x1ADEBCA1
 
