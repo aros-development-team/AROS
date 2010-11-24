@@ -54,7 +54,7 @@ void cpu_Dispatch(regs_t *regs)
     struct AROSCPUContext *ctx;
 
     for (;;) {
-        asm volatile ("move #0x2700, %sr\n");    // Disable CPU interrupts
+        asm volatile ("ori  #0x0700, %sr\n");    // Disable CPU interrupts
 
         task = core_Dispatch();
         if (task != NULL)
@@ -67,11 +67,6 @@ void cpu_Dispatch(regs_t *regs)
 	    KrnSti();
 	}
         asm volatile ("stop #0x2000\n"); // Wait for an interrupt
-	/* Ok, I don't like this, but we lose
-	 * VBLANK interrupts on UAE if we don't add some
-	 * delay after we come out of the STOP.
-	 */
-	{ volatile int i; for (i = 0; i < 1000; i++); }
     }
 
     ctx = GetIntETask(task)->iet_Context;
