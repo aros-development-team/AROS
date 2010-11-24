@@ -1,8 +1,9 @@
 #include <aros/kernel.h>
-#include <aros/libcall.h>
 #include <exec/memory.h>
+#include <proto/exec.h>
 
 #include <kernel_base.h>
+#include "memory_intern.h"
 
 /*****************************************************************************
 
@@ -40,35 +41,54 @@ AROS_LH1(void, KrnInitMemory,
 {
     AROS_LIBFUNC_INIT
 
+    struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     IPTR align = KernelBase->kb_PageSize - 1;
-    APTR addr;
-    IPTR len;
+    APTR end;
+    IPTR memsize;
+    ULONG mapsize;
+    ULONG p, free;
+
+    /* Fill in legacy MemChunk structure */
+    head->mc.mc_Next = NULL;
+    head->mc.mc_Bytes = 0;
+
+    InitSemaphore(&head->sem);
 
     /*
-     * Align start and end addresses on page boundaries.
-     * We use mh_First as start address of our usable area
-     * and mh_Free to count usable free space.
-     * We don't touch physical boundaries (mh_Lower and mh_Upper)
-     * and also take into account the fact that some space from this
-     * MemHeader could have been used by boot-time allocator and
-     * the MemHeader structure itself.
+     * Page-align boundaries. 
+     * We intentionally make it start pointing to the previous page,
+     * we'll jump to the next page later, in the loop.
      */
-    addr = (APTR)(((IPTR)mh->mh_First + align) & ~align);
-    len = mh->mh_Upper - addr + 1;
-    len &= ~align;
+    head->start = (APTR)((IPTR)head->map & ~align);
+    end = (APTR)(((IPTR)mh->mh_Upper + 1) & ~align);
 
-    /* Set new start and length of the free space */
-    mh->mh_First = addr;
-    mh->mh_Free = len;
+    do
+    {
+    	/* Skip one page. This reserves some space (one page or less) for allocations map. */
+    	head->start += KernelBase->kb_PageSize;
+    	/* Calculate resulting map size */
+	mapsize = (head->start - (APTR)head->map) / sizeof(ULONG);
+	/* Calculate number of free bytes and pages */
+	memsize = end - head->start;
+    	head->size = memsize / KernelBase->kb_PageSize;
+	/*
+	 * Repeat the operation if there's not enough memory for allocations map.
+	 * This will take one more page from the area and use it for the map.
+	 */
+    } while (mapsize < head->size);
 
-    /* Set up the initial MemChunk */
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_First->mc_Bytes = len;
+    /* Mark all pages as free */
+    p = head->size;
+    free = 1;
+    do {
+    	head->map[--p] = ++free;
+    } while (p > 0);
 
-    /* The first page from the region will be read-only (we want to be able to read the MemChunk) */
-    KrnSetProtection(addr, KernelBase->kb_PageSize, MAP_Readable);
-    /* The rest will be unaccessible at all */
-    KrnSetProtection(addr + KernelBase->kb_PageSize, len - KernelBase->kb_PageSize, 0);
+    /* Set free space counter */
+    mh->mh_Free = memsize;
+
+    /* Disable access to unallocated pages */
+    KrnSetProtection(head->start, memsize, 0);
 
     AROS_LIBFUNC_EXIT
 }
