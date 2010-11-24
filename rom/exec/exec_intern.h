@@ -39,6 +39,7 @@ struct IntExecBase
     struct List ResetHandlers;			/* Reset handlers list       */
     ULONG  IntFlags;				/* Internal flags, see below */
     APTR   KernelBase;				/* kernel.resource base      */
+    ULONG  PageSize;				/* Memory page size	     */
     struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   */
     char   AlertBuffer[2048];			/* Buffer for alert text     */
 };
