@@ -54,6 +54,7 @@ struct IntExecBase
 extern void __AROS_InitExecBase (void);
 #endif
 
+APTR allocBootMem(struct MemHeader *mh, ULONG size);
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *hif);
 BOOL Exec_PreparePlatform(struct Exec_PlatformData *pdata, struct HostInterface *hif);
 

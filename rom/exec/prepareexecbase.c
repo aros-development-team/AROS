@@ -42,7 +42,7 @@ AROS_LD3(ULONG, MakeFunctions,
          struct ExecBase *, SysBase, 15, Exec);
 
 /* Boot-time memory allocator */
-static APTR allocmem(struct MemHeader *mh, ULONG size)
+APTR allocBootMem(struct MemHeader *mh, ULONG size)
 {
     UBYTE *ret  = (UBYTE *)mh->mh_First;
     
@@ -77,7 +77,7 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 {
 	struct AROSSupportBase *AROSSupportBase;
 
-	AROSSupportBase = allocmem(mh, sizeof(struct AROSSupportBase));
+	AROSSupportBase = allocBootMem(mh, sizeof(struct AROSSupportBase));
 	
 	AROSSupportBase->kprintf = (void *)kprintf;
 	AROSSupportBase->rkprintf = (void *)rkprintf;
@@ -126,7 +126,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     
     /* Allocate memory for library base */
     SysBase = (struct ExecBase *)
-	    ((UBYTE *)allocmem(mh, negsize + sizeof(struct IntExecBase)) + negsize);
+	    ((UBYTE *)allocBootMem(mh, negsize + sizeof(struct IntExecBase)) + negsize);
 
     /* Clear the library base */
     memset(SysBase, 0, sizeof(struct IntExecBase));
