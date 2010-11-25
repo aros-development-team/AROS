@@ -73,20 +73,19 @@ AROS_UFH5(void, writeexpansion,
 	UBYTE *space;
 	ULONG align;
 	ULONG size = configDev->cd_BoardSize;
-	IPTR start, end, addr;
+	ULONG start, end, addr;
 	
+	memorydevice = (configDev->cd_Rom.er_Type & ERTF_MEMLIST) != 0;
 	if (type == ERT_ZORROII) {
 		start = 0x00200000;
 		end   = 0x009FFFFF;
 		space = IntExpBase(ExpansionBase)->eb_z2Slots;
 		align = configDev->cd_BoardSize;
-		memorydevice = configDev->cd_Rom.er_Type & ERTF_MEMLIST;
 	} else {
 		start = 0x10000000;
 		end   = 0x7FFFFFFF;
 		space = IntExpBase(ExpansionBase)->eb_z3Slots;
 		align = 0x01000000;
-		memorydevice = configDev->cd_Rom.er_Flags & ERFF_MEMSPACE;
 	}
 	if (!memorydevice && size <= E_SLOTSIZE) {
 		start = 0x00E90000;
@@ -95,7 +94,7 @@ AROS_UFH5(void, writeexpansion,
 	}
 
 	for (addr = start; addr < end; addr += align) {
-		IPTR startaddr = addr;
+		ULONG startaddr = addr;
 		UWORD offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
 		BYTE bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
 		UBYTE res = space[offset];
@@ -132,7 +131,7 @@ AROS_UFH5(void, writeexpansion,
              	);
 		
 		// do not remove this, it might have changed inside writeexpansion
-		startaddr = (IPTR)configDev->cd_BoardAddr;
+		startaddr = (ULONG)configDev->cd_BoardAddr;
 		offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
 		bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);
 		sizeleft = size;

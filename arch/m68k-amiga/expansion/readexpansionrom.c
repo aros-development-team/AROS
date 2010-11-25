@@ -75,7 +75,7 @@
 	if ((rom->er_Type & ERT_TYPEMASK) != ERT_ZORROII && (rom->er_Type & ERT_TYPEMASK) != ERT_ZORROIII)
 		return FALSE;
 	
-	if (rom->er_Flags & ERFF_EXTENDED) {
+	if ((rom->er_Type & ERT_TYPEMASK) == ERT_ZORROIII && (rom->er_Flags & ERFF_EXTENDED)) {
 		size = (16 * 1024 * 1024) << (rom->er_Type & ERT_MEMMASK);
 	} else {
 		UBYTE mem = rom->er_Type & ERT_MEMMASK;
