@@ -33,5 +33,8 @@ void resetbattclock(struct BattClockBase *Battclock);
 UBYTE getreg(volatile UBYTE *p, UBYTE regnum);
 void putreg(volatile UBYTE *p, UBYTE regnum, UBYTE v);
 UBYTE getbcd(volatile UBYTE *p, UBYTE regnum);
+void putbcd(volatile UBYTE *p, UBYTE regnum, UBYTE v);
+void stopclock(struct BattClockBase *Battclock);
+void startclock(struct BattClockBase *Battclock);
 
 #endif //BATTCLOCK_INTERN_H
