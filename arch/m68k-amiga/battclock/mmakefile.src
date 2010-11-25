@@ -1,0 +1,8 @@
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=kernel-battclock maindir=rom/battclock \
+  arch=amiga-m68k \
+  files="battclock_init readbattclock writebattclock battclock_intern"
+
+%common
