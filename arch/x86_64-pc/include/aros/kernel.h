@@ -27,6 +27,18 @@ typedef enum {
     SCHED_RR = 1
 } KRN_SchedType;
 
+/* Flags for KrnMapGlobal */
+typedef enum
+{
+	MAP_CacheInhibit 	= 0x0001,
+	MAP_WriteThrough	= 0x0002,
+	MAP_Guarded 		= 0x0004,
+
+	MAP_Readable		= 0x0100,
+	MAP_Writable		= 0x0200,
+	MAP_Executable		= 0x0400,
+} KRN_MapAttr;
+
 typedef struct tls {
     struct Task         *ThisTask;
     struct ExecBase     *SysBase;
