@@ -9,6 +9,8 @@
     Lang: english
 */
 
+#include <aros/i386/cpucontext.h>
+
 #ifdef __AROS_EXEC_LIBRARY__
 
 struct sigcontext;
