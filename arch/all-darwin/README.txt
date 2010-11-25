@@ -16,17 +16,31 @@ architecture despite it's actually x86-64. So by default configure will
 set up i386 build. There is currently no x86-64 Darwin-hosted, this is 
 in my TODO list.
  If at some point you notice that configure started selecting x86-64 
-version, you may specify target explicitly:
+version, you may specify target explicitly.
+ Supported targets are:
 
- ./configure --target=darwin-i386
+ darwin-arm 
+ darwin-i386
+ darwin-ppc
+ darwin-x86_64
 
- Native build is verified to be succesful using MacOS X v10.6 (Snow 
-Leopard), + gcc 4.2.1 (bundled with MacOS) + i386-aros-binutils v2.20.1 
-+ i386-aros-gcc v4.4.2.
+ If you're cross-compiling (your host CPU differs from target CPU, for example
+you're building PPC AROS on i386 Mac), you'll likely have to specify gcc version
+explicitly. This is because Apple provides gcc binaries only with version suffix
+(for example ppc-apple-darwin10-gcc-4.2.1 instead of just ppc-apple-darwin10-gcc).
+This can be done using --with-gcc-version=x.y argument for configure. For example:
 
- Cross-compilation should be possible provided that you get 
-i386-darwin-targetted crosstoolchain up and running. I haven't verified 
-this.
+ ./configure --target=darwin-ppc --with-gcc-version=4.2.1
+ 
+ Currently only PowerPC and i386 versions are complete. x86_64 version is a work
+in progress. ARM version makes sense only for iOS variant (using
+--enable-target-variant=ios switch). iOS port is also a work in progress and is
+described separately.
+
+ Building on Mac is verified to be succesful using MacOS X v10.6 (Snow 
+Leopard), + gcc 4.2.1 (bundled with MacOS) + aros-binutils v2.20.1 
++ aros-gcc v4.4.2. Cross-compilation on non-Mac should be possible provided that
+you get Darwin-targetted crosstoolchain up and running. I haven't tried this.
 
  2. RUNNING
 
@@ -44,4 +58,9 @@ There are also some other useful options understood by AROS itself:
              Linux-hosted version had builtin default equivalent to
              eclock=100. This may impact time measurement quality.
 
- 09.11.2010, Pavel Fedin <pavel_fedin@mail.ru>
+ If you like some particular settings (like eclock=100) you may enter this
+in AROSBootstrap.conf file after "arguments" keyword. What you specify there
+will be always appended to the command line you give to the bootstrap in the
+shell.
+
+ 25.11.2010, Pavel Fedin <pavel_fedin@mail.ru>
