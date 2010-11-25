@@ -18,6 +18,30 @@ UBYTE getbcd(volatile UBYTE *p, UBYTE regnum)
 {
     return getreg(p, regnum + 1) * 10 + getreg(p, regnum);
 }
+void putbcd(volatile UBYTE *p, UBYTE regnum, UBYTE v)
+{
+    putreg(p, regnum + 1, v / 10);
+    putreg(p, regnum, v % 10);
+}
+
+void stopclock(struct BattClockBase *Battclock)
+{
+    volatile UBYTE *p = Battclock->clockptr;
+    if (Battclock->clocktype == MSM6242B) {
+   	putreg(p, 0xf, 4 + 2);
+    } else if (Battclock->clocktype == RF5C01A) {
+    	putreg(p, 0xd, 0);
+    }
+}
+void startclock(struct BattClockBase *Battclock)
+{
+    volatile UBYTE *p = Battclock->clockptr;
+    if (Battclock->clocktype == MSM6242B) {
+   	putreg(p, 0xf, 4);
+    } else if (Battclock->clocktype == RF5C01A) {
+    	putreg(p, 0xd, 8);
+    }
+}
 
 void resetbattclock(struct BattClockBase *Battclock)
 {
