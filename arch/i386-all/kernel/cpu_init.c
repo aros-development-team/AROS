@@ -42,7 +42,7 @@ static int cpu_Init(struct KernelBase *KernelBase)
     {
         /* FPU only */
 	KernelBase->kb_ContextFlags = ECF_FPU;
-	KernelBase->kb_ContextSize += 112;
+	KernelBase->kb_ContextSize += SIZEOF_8087_FRAME;
     }
 
     D(bug("[Kernel] CPU context flags: 0x%08X\n", KernelBase->kb_ContextFlags));
