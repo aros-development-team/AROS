@@ -38,6 +38,7 @@
 #include <proto/kernel.h>
 #include <proto/timer.h>
 #include <proto/cia.h>
+#include <proto/battclock.h>
 
 #include <aros/symbolsets.h>
 
@@ -69,12 +70,21 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
 	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 	struct Interrupt *inter;
+	struct BattClockBase *BattClockBase;
 
     /* Setup the timer.device data */
 	LIBBASE->tb_eclock_rate = 709379; // FIXME: PAL/NTSC check
 	LIBBASE->tb_cia_micros = LIBBASE->tb_eclock_rate;
 	LIBBASE->tb_vblank_rate = 50;
 	LIBBASE->tb_vblank_micros = 1000000 / LIBBASE->tb_vblank_rate;
+
+	BattClockBase = OpenResource("battclock.resource");
+	if (BattClockBase) {
+		ULONG t = ReadBattClock();
+		if (t) {
+			LIBBASE->tb_CurrentTime.tv_secs = t;
+		}
+	}
 
     /* Initialise the lists */
     NEWLIST(&LIBBASE->tb_Lists[UNIT_VBLANK]);
