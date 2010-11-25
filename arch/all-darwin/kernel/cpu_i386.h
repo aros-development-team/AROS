@@ -99,7 +99,7 @@ typedef void (*SIGHANDLER_T)(int);
     cc.es     = ES(sc);		\
     cc.fs     = FS(sc);		\
     cc.gs     = GS(sc);		\
-    cc.ss     = SS(sc);		\
+    cc.ss     = SS(sc);
 
 /*
  * Restore CPU registers.
