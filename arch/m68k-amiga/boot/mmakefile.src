@@ -58,7 +58,7 @@ KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS))) \
 
 OBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
-$(BINDIR)/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
+$(DISTDIR)/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 
 # Expansion ROM (0xe00000-0xe7ffff)
 FILES   := 
@@ -80,18 +80,19 @@ KOBJS_ext := \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
 OBJS_ext := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
-$(BINDIR)/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
+$(DISTDIR)/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
 
 #MM kernel-link-amiga-m68k:
-kernel-link-amiga-m68k : $(BINDIR)/aros-amiga-m68k-rom.bin $(BINDIR)/aros-amiga-m68k-ext.bin
+kernel-link-amiga-m68k : $(DISTDIR)/aros-amiga-m68k-rom.bin $(DISTDIR)/aros-amiga-m68k-ext.bin
 
 #MM kernel-link-amiga-m68k-quick: 
-kernel-link-amiga-m68k-quick : $(BINDIR)/aros-amiga-m68k-rom.bin $(BINDIR)/aros-amiga-m68k-ext.bin
+kernel-link-amiga-m68k-quick : $(DISTDIR)/aros-amiga-m68k-rom.bin $(DISTDIR)/aros-amiga-m68k-ext.bin
 
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) -o $@ $<
 
-$(BINDIR)/aros-amiga-m68k-%.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/%.ld $(SRCDIR)/$(CURDIR)/mmakefile.src
+$(DISTDIR)/aros-amiga-m68k-%.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/%.ld $(SRCDIR)/$(CURDIR)/mmakefile.src
+	@$(MKDIR) $(DISTDIR)
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -static \
 		$(CFLAGS) \
@@ -99,7 +100,7 @@ $(BINDIR)/aros-amiga-m68k-%.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/%.ld $(SRCDIR)/
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/$*.ld \
 		-L$(LIBDIR) $(LIBS) -lgcc
 
-$(BINDIR)/aros-amiga-m68k-%.bin : $(BINDIR)/aros-amiga-m68k-%.elf $(HOSTGENDIR)/tools/romcheck
+$(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k-%.elf $(HOSTGENDIR)/tools/romcheck
 	$(Q)$(TARGET_OBJCOPY) \
 		--output-target binary \
 		--pad-to $(ROMPAD_$*) \
