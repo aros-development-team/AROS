@@ -40,6 +40,9 @@ AROS_WORSTALIGN:sizeof(struct MemChunk))
 #define MEMHEADER_TOTAL \
 ((sizeof(struct MemHeader)+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1))
 
+/* Mask for flags that describe physical properties of the memory */
+#define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA)
+
 /* Private Pool structure */
 struct Pool 
 {
@@ -66,7 +69,9 @@ APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct E
 
 APTR AllocMemHeader(IPTR size, ULONG flags, KRN_MapAttr prot, struct ExecBase *SysBase);
 void FreeMemHeader(APTR addr, struct ExecBase *SysBase);
-APTR AllocPuddle(struct Pool *pool, IPTR size, struct ExecBase *SysBase);
+APTR AllocPuddle(struct Pool *pool, IPTR size, ULONG flags, struct ExecBase *SysBase);
+
+APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct ExecBase *SysBase);
 
 #define MUNGWALL_HEADER_ID 0x1ADEBCA1
 
