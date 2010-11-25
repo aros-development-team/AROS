@@ -7,6 +7,10 @@
 
 #define D(x)
 
+#ifndef SIZEOF_8087_FRAME
+#define SIZEOF_8087_FRAME sizeof(struct FPUContext)
+#endif
+
 static int cpu_Init(struct KernelBase *KernelBase)
 {
     ULONG v1, v2, v3, v4;
@@ -26,11 +30,11 @@ static int cpu_Init(struct KernelBase *KernelBase)
 	    /* FPU + SSE */
 #ifdef USE_LEGACY_8087
 	    KernelBase->kb_ContextFlags = ECF_FPU|ECF_FPX;
-	    KernelBase->kb_ContextSize += 112;		/* 112 bytes for legacy 8087 frame */
+	    KernelBase->kb_ContextSize += SIZEOF_8087_FRAME;		  /* Legacy 8087 frame with private portion */
 #else
 	    KernelBase->kb_ContextFlags = ECF_FPX;
 #endif
-	    KernelBase->kb_ContextSize += 512 + 15;	/* Add 15 bytes for alignment */
+	    KernelBase->kb_ContextSize += sizeof(struct FPXContext) + 15; /* Add 15 bytes for alignment */
 	    break;
 	}
     }
@@ -45,5 +49,5 @@ static int cpu_Init(struct KernelBase *KernelBase)
 
     return TRUE;
 }
- 
+
 ADD2INITLIB(cpu_Init, 5);

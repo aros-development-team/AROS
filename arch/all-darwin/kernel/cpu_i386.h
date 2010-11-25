@@ -5,62 +5,9 @@
 
 #include <sys/types.h>
 
+#include <aros/i386/cpucontext.h>
+
 #ifdef __AROS_EXEC_LIBRARY__
-
-/*
- * We need these definitions here because struct AROSCPUContext below
- * is (wrongly) accessed from rom/exec, and we don't need generic AROS code
- * to depend on host OS includes.
- * In fact this is a hack. We urgently need to unify CPU context structure and
- * make it public. In this case exec will not need refer to this file any more.
- */
-
-typedef struct 
-{
-    char mmst_reg[10];
-    char mmst_rsrv[6];
-} _STRUCT_MMST_REG;
-
-typedef struct
-{
-    char xmm_reg[16];
-} _STRUCT_XMM_REG;
-
-typedef struct
-{
-    int 	     fpu_reserved[2];
-    unsigned short   fpu_fcw;
-    unsigned short   fpu_fsw;
-    uint8_t	     fpu_ftw;
-    uint8_t	     fpu_rsrv1;
-    uint16_t	     fpu_fop;
-    uint32_t	     fpu_ip;
-    uint16_t	     fpu_cs;
-    uint16_t	     fpu_rsrv2;
-    uint32_t	     fpu_dp;
-    uint16_t	     fpu_ds;
-    uint16_t	     fpu_rsrv3;
-    uint32_t	     fpu_mxcsr;
-    uint32_t	     fpu_mxcsrmask;
-    _STRUCT_MMST_REG fpu_stmm0;
-    _STRUCT_MMST_REG fpu_stmm1;
-    _STRUCT_MMST_REG fpu_stmm2;
-    _STRUCT_MMST_REG fpu_stmm3;
-    _STRUCT_MMST_REG fpu_stmm4;
-    _STRUCT_MMST_REG fpu_stmm5;
-    _STRUCT_MMST_REG fpu_stmm6;
-    _STRUCT_MMST_REG fpu_stmm7;
-    _STRUCT_XMM_REG  fpu_xmm0;
-    _STRUCT_XMM_REG  fpu_xmm1;
-    _STRUCT_XMM_REG  fpu_xmm2;
-    _STRUCT_XMM_REG  fpu_xmm3;
-    _STRUCT_XMM_REG  fpu_xmm4;
-    _STRUCT_XMM_REG  fpu_xmm5;
-    _STRUCT_XMM_REG  fpu_xmm6;
-    _STRUCT_XMM_REG  fpu_xmm7;
-    char	     fpu_rsrv4[14*16];
-    int 	     fpu_reserved1;
-} _STRUCT_X86_FLOAT_STATE32;
 
 /* regs_t is a black box here */
 struct ucontext;
@@ -95,7 +42,14 @@ typedef void (*SIGHANDLER_T)(int);
 #define PC(context)     ((context)->uc_mcontext->__ss.__eip)
 #define SP(context)     ((context)->uc_mcontext->__ss.__esp)
 
-#define FPSTATE(context) ((context)->uc_mcontext->__fs)
+#define SS(context)	((context)->uc_mcontext->__ss.__ss)
+#define CS(context)	((context)->uc_mcontext->__ss.__cs)
+#define DS(context)	((context)->uc_mcontext->__ss.__ds)
+#define ES(context)	((context)->uc_mcontext->__ss.__es)
+#define FS(context)	((context)->uc_mcontext->__ss.__fs)
+#define GS(context)	((context)->uc_mcontext->__ss.__gs)
+
+#define FPSTATE(context) ((context)->uc_mcontext->__fs.__fpu_fcw)
 
 #else
 
@@ -111,9 +65,16 @@ typedef void (*SIGHANDLER_T)(int);
 #define PC(context)     ((context)->uc_mcontext->ss.eip)
 #define SP(context)     ((context)->uc_mcontext->ss.esp)
 
-#define FPSTATE(context) ((context)->uc_mcontext->fs)
+#define SS(context)	((context)->uc_mcontext->ss.ss)
+#define CS(context)	((context)->uc_mcontext->ss.cs)
+#define DS(context)	((context)->uc_mcontext->ss.ds)
+#define ES(context)	((context)->uc_mcontext->ss.es)
+#define FS(context)	((context)->uc_mcontext->ss.fs)
+#define GS(context)	((context)->uc_mcontext->ss.gs)
 
-#endif 
+#define FPSTATE(context) ((context)->uc_mcontext->fs.fpu_fcw)
+
+#endif
 
 #define GLOBAL_SIGNAL_INIT(sighandler) \
 	static void sighandler ## _gate (int sig, int code, ucontext_t *sc) \
@@ -121,82 +82,70 @@ typedef void (*SIGHANDLER_T)(int);
 	    sighandler(sig, sc);		             \
 	}
 
-#define SAVE_CPU(cc,sc)                                              \
-    do {                                                            \
-	(cc)->regs[0] = R0(sc);                                     \
-	(cc)->regs[1] = R1(sc);                                     \
-	(cc)->regs[2] = R2(sc);                                     \
-	(cc)->regs[3] = R3(sc);                                     \
-	(cc)->regs[4] = R4(sc);                                     \
-	(cc)->regs[5] = R5(sc);                                     \
-	(cc)->regs[6] = R6(sc);                                     \
-        (cc)->regs[7] = FP(sc);                                     \
-        (cc)->regs[8] = PC(sc);                                     \
-    } while (0)
+#define SAVE_CPU(cc, sc)	\
+    cc.Flags = ECF_SEGMENTS;	\
+    cc.eax    = R0(sc);		\
+    cc.ebx    = R1(sc);		\
+    cc.ecx    = R2(sc);		\
+    cc.edx    = R3(sc);		\
+    cc.edi    = R4(sc);		\
+    cc.esi    = R5(sc);		\
+    cc.eflags = R6(sc);		\
+    cc.ebp    = FP(sc);		\
+    cc.eip    = PC(sc);		\
+    cc.esp    = SP(sc);		\
+    cc.cs     = CS(sc);		\
+    cc.ds     = DS(sc);		\
+    cc.es     = ES(sc);		\
+    cc.fs     = FS(sc);		\
+    cc.gs     = GS(sc);		\
+    cc.ss     = SS(sc);		\
 
-#define RESTORE_CPU(cc,sc)                                          \
-    do {                                                            \
-	R0(sc) = (cc)->regs[0];                                     \
-	R1(sc) = (cc)->regs[1];                                     \
-	R2(sc) = (cc)->regs[2];                                     \
-	R3(sc) = (cc)->regs[3];                                     \
-	R4(sc) = (cc)->regs[4];                                     \
-	R5(sc) = (cc)->regs[5];                                     \
-	R6(sc) = (cc)->regs[6];                                     \
-        FP(sc) = (cc)->regs[7];                                     \
-        PC(sc) = (cc)->regs[8];                                     \
-    } while (0)
+/*
+ * Restore CPU registers.
+ * Note that we do not restore segment registers because they
+ * are of own use by Darwin.
+ */
+#define RESTORE_CPU(cc, sc) \
+    R0(sc) = cc.eax;        \
+    R1(sc) = cc.ebx;        \
+    R2(sc) = cc.ecx;        \
+    R3(sc) = cc.edx;        \
+    R4(sc) = cc.edi;        \
+    R5(sc) = cc.esi;        \
+    R6(sc) = cc.eflags;     \
+    FP(sc) = cc.ebp;        \
+    PC(sc) = cc.eip;        \
+    SP(sc) = cc.esp;
 
-#ifndef NO_FPU
+/*
+ * Save all registers from UNIX signal context ss to AROS context cc.
+ * Saves SSE state only if the context has appropriate space for it.
+ * Note that Darwin does not save legacy 8087 frame.
+ */
+#define SAVEREGS(cc, sc)                                       				\
+    SAVE_CPU((cc)->regs, sc);								\
+    if ((cc)->regs.FXData)								\
+    {											\
+    	(cc)->regs.Flags |= ECF_FPX;							\
+    	CopyMemQuick(&FPSTATE(sc), (cc)->regs.FXData, sizeof(struct FPXContext));	\
+    }
 
-#       define SAVE_FPU(cc,sc)                                              \
-            do {                                                            \
-		(cc)->fpstate = FPSTATE(sc);				    \
-		(cc)->have_fpu_data = 1;				    \
-            } while (0)
+/*
+ * Restore all registers from AROS context to UNIX signal context.
+ * Check context flags to decide whether to restore SSE or not.
+ */
+#define RESTOREREGS(cc, sc)                                    				\
+    RESTORE_CPU((cc)->regs, sc);							\
+    if ((cc)->regs.Flags & ECF_FPX)							\
+	CopyMemQuick((cc)->regs.FXData, &FPSTATE(sc), sizeof(struct FPXContext));
 
-#       define RESTORE_FPU(cc,sc)                                           \
-            do {                                                            \
-			  FPSTATE(sc) = (cc)->fpstate;									\
-            } while (0)
-
-#       define HAS_FPU(sc)      1
-
-#else
-    /* NO FPU VERSION */
-
-#   define SAVE_FPU(cc,sc)                                          \
-        do {                                                        \
-        } while (0)
-
-#   define RESTORE_FPU(cc,sc)                                       \
-        do {                                                        \
-        } while (0)
-
-#   define HAS_FPU(sc)      0
-
-#endif
-
-#define SAVEREGS(cc, sc)                                            \
-    do {                                                            \
-        if (HAS_FPU(sc))                                            \
-            SAVE_FPU(cc, sc);                                       \
-        SAVE_CPU(cc, sc);                                           \
-    } while (0)
-
-#define RESTOREREGS(cc, sc)                                         \
-    do {                                                            \
-	RESTORE_CPU((cc),sc);                                       \
-        if (HAS_FPU(sc) && (cc)->have_fpu_data)                     \
-            RESTORE_FPU((cc),sc);                                   \
-	} while (0)
-
+/* Print signal context. Used in crash handler. */
 #define PRINT_SC(sc) \
-	bug ("    ESP=%08x  EBP=%08x  EIP=%08x  FPU=%s\n" \
-		"    EAX=%08x  EBX=%08x  ECX=%08x  EDX=%08x\n" \
-		"    EDI=%08x  ESI=%08x  EFLAGS=%08x\n" \
+    bug ("    ESP=%08x  EBP=%08x  EIP=%08x\n" \
+	 "    EAX=%08x  EBX=%08x  ECX=%08x  EDX=%08x\n" \
+	 "    EDI=%08x  ESI=%08x  EFLAGS=%08x\n" \
 	    , SP(sc), FP(sc), PC(sc) \
-	    , HAS_FPU(sc) ? "yes" : "no" \
 	    , R0(sc), R1(sc), R2(sc), R3(sc) \
 	    , R4(sc), R5(sc), R6(sc) \
 	)
@@ -207,40 +156,9 @@ typedef void (*SIGHANDLER_T)(int);
 
 struct AROSCPUContext
 {
-    ULONG regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
-    int	errno_backup;
-    _STRUCT_X86_FLOAT_STATE32 fpstate;
-    int eflags;
-    char have_fpu_data;
+    struct ExceptionContext regs;
+    int errno_backup;
 };
 
-#define GET_PC(ctx) (APTR)ctx->regs[8]
-#define SET_PC(ctx, pc) ctx->regs[8] = (ULONG)pc
-
-/*
- * _STRUCT_X86_FLOAT_STATE32 is defined in such a way that aligning it is problematic
- * (it has 8 reserved bytes in the beginning). In order to work around this we just will not
- * restore FPU state from a newly allocated context. This is a temporary workaround until
- * CPU context format is unified accross all systems
- */
-#define PREPARE_INITIAL_CONTEXT(cc) cc->have_fpu_data = 0;
-
-#define PREPARE_INITIAL_FRAME(ctx, sp, startpc)     \
-    do {                                            \
-        ctx->regs[7] = 0;                           \
-        ctx->regs[8] = (startpc);                   \
-    } while (0)
-
-#define PRINT_CPU_CONTEXT(ctx) \
-	bug ("    EBP=%08x  EIP=%08x\n" \
-	     "    EAX=%08x  EBX=%08x  ECX=%08x  EDX=%08x\n" \
-	     "    EDI=%08x  ESI=%08x  EFLAGS=%08x\n" \
-	    , ctx->regs[7], ctx->regs[8] \
-	    , ctx->regs[0] \
-	    , ctx->regs[1] \
-	    , ctx->regs[2] \
-	    , ctx->regs[3] \
-	    , ctx->regs[4] \
-	    , ctx->regs[5] \
-	    , ctx->regs[6] \
-	)
+#define GET_PC(ctx) (APTR)ctx->regs.eip
+#define SET_PC(ctx, pc) ctx->regs.eip = (ULONG)pc

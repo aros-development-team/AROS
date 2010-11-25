@@ -11,57 +11,6 @@
 
 #ifdef __AROS_EXEC_LIBRARY__
 
-struct _fpreg
-{
-    unsigned short significand[4];
-    unsigned short exponent;
-};
-
-struct _fpxreg
-{
-    unsigned short significand[4];
-    unsigned short exponent;
-    unsigned short padding[3];
-};
-
-struct _xmmreg
-{
-    unsigned long element[4];
-};
-
-struct _fpx_sw_bytes
-{
-    ULONG magic1;
-    ULONG extended_size;
-    UQUAD xstate_bv;
-    ULONG xstate_size;
-    ULONG padding[7];
-};
-
-struct _fpstate
-{
-    unsigned long  cw;
-    unsigned long  sw;
-    unsigned long  tag;
-    unsigned long  ipoff;
-    unsigned long  cssel;
-    unsigned long  dataoff;
-    unsigned long  datasel;
-    struct _fpreg  _st[8];
-    unsigned short status;
-    unsigned short magic;
-    unsigned long  _fxsr_env[6];
-    unsigned long  mxcsr;
-    unsigned long  reserved;
-    struct _fpxreg _fxsr_st[8];
-    struct _xmmreg _xmm[8];
-    unsigned long  padding1[44];
-    union {
-	unsigned long        padding2[12];
-	struct _fpx_sw_bytes sw_reserved;
-    };
-};
-
 struct sigcontext;
 typedef struct sigcontext regs_t;
 
@@ -176,36 +125,31 @@ typedef @sighandler@ SignalHandler;
 #define R5(sc)           ((sc)->esi)
 #define R6(sc)           ((sc)->eflags)
 
-/*
-    Save and restore the CPU GPRs in the CPU context
-*/
-#define SAVE_CPU(cc,sc)          \
-    do                           \
-    {                            \
-         (cc)->regs[0] = R0(sc); \
-         (cc)->regs[1] = R1(sc); \
-         (cc)->regs[2] = R2(sc); \
-         (cc)->regs[3] = R3(sc); \
-         (cc)->regs[4] = R4(sc); \
-         (cc)->regs[5] = R5(sc); \
-         (cc)->regs[6] = R6(sc); \
-         (cc)->regs[7] = FP(sc); \
-         (cc)->regs[8] = PC(sc); \
-    } while (0)
-         
-#define RESTORE_CPU(cc,sc)       \
-    do                           \
-    {                            \
-         R0(sc) = (cc)->regs[0]; \
-         R1(sc) = (cc)->regs[1]; \
-         R2(sc) = (cc)->regs[2]; \
-         R3(sc) = (cc)->regs[3]; \
-         R4(sc) = (cc)->regs[4]; \
-         R5(sc) = (cc)->regs[5]; \
-         R6(sc) = (cc)->regs[6]; \
-         FP(sc) = (cc)->regs[7]; \
-         PC(sc) = (cc)->regs[8]; \
-    } while (0)
+/* Save and restore the CPU GPRs in the CPU context */
+#define SAVE_CPU(cc, sc)	\
+    cc.eax    = R0(sc);		\
+    cc.ebx    = R1(sc);		\
+    cc.ecx    = R2(sc);		\
+    cc.edx    = R3(sc);		\
+    cc.edi    = R4(sc);		\
+    cc.esi    = R5(sc);		\
+    cc.eflags = R6(sc);		\
+    cc.ebp    = FP(sc);		\
+    cc.eip    = PC(sc);		\
+    cc.esp    = SP(sc);
+
+#define RESTORE_CPU(cc, sc) \
+    R0(sc) = cc.eax;        \
+    R1(sc) = cc.ebx;        \
+    R2(sc) = cc.ecx;        \
+    R3(sc) = cc.edx;        \
+    R4(sc) = cc.edi;        \
+    R5(sc) = cc.esi;        \
+    R6(sc) = cc.eflags;     \
+    FP(sc) = cc.ebp;        \
+    PC(sc) = cc.eip;        \
+    SP(sc) = cc.esp;
+
 
 /*
     It's not possible to save the FPU under linux because linux
@@ -234,116 +178,55 @@ typedef @sighandler@ SignalHandler;
     Update: We store the registers in our own structure now
 */
 
-/*  define NO_FPU */
-/*
-    This macro returns 1 if an FPU is available.
-*/
-#ifndef NO_FPU
-#   define HAS_FPU(sc)      (sc->fpstate)
-#else
-#   define HAS_FPU(sc)      0
-#endif
+/* Allocate legacy 80087 frame together with SSE frame */
+#define USE_LEGACY_8087
 
-#define SAVE_FPU(cc,sc)                         \
-        do                                      \
-	{                                       \
-    	    if (HAS_FPU(sc))                    \
-	        *(cc)->fpstate = *(sc)->fpstate; \
-	} while (0)
-
-#define RESTORE_FPU(cc,sc)                      \
-        do                                      \
-	{                                       \
-    	    if (HAS_FPU(sc))                    \
-	        *(sc)->fpstate = *(cc)->fpstate; \
-	} while (0)
+/* Allocate 112 bytes for 8087 frame. It contains host_specific portion (status and magic). */
+#define SIZEOF_8087_FRAME 112
 
 /*
-    Prepare the stack. This macro is used on the stack before a new
-    task is run for the first time. To create such a macro, you must
-    know how the system uses the stack. On Linux/i386, every stack
-    frame looks like this:
-
-						 high adresses
-		    |	       ...	     |
-		    +------------------------+
-		    |	    arguments	     |
-		    +------------------------+
-		    |	  return address     |
-		    +------------------------+
-		    |	old frame pointer    |
-		    +------------------------+
-		    |	 local variables     |
-		    +------------------------+
-		    |	 saved registers     |
-		    +------------------------+
-		    |	       ...	     |
-						low addresses
-						stack grows from high to
-						low addresses.
-
-    The first routine gets no arguments, but if you want to pass
-    some to it, then you must push them on the stack before you
-    call this macro. Note that the arguments must be pushed in
-    reverse order, ie. if you want to call a function like this:
-
-	    func (a,b,c);
-
-    then you must prepare the stack like this:
-
-	    _PUSH(sp,c);
-	    _PUSH(sp,b);
-	    _PUSH(sp,a);
-	    PREPARE_INITIAL_FRAME(sp,func);
-
-    This is because the arguments are fetched relative to the FP
-    (ie. FP[0] is the old frame pointer, FP[1] is the return
-    address, FP[2] is the first argument, FP[3] is the second
-    and so on).
-
-*/
+ * This macro saves all registers. Use this macro when you
+ * want to leave the current task's context.
+ * If will also save FPU and SSE areas (if possible) and
+ * set appropriate context flags to indicate this.
+ */
+#define SAVEREGS(cc, sc)                                       					\
+    SAVE_CPU((cc)->regs, sc);									\
+    if ((cc)->regs.FPData && sc->fpstate)							\
+    {												\
+	(cc)->regs.Flags |= ECF_FPU;								\
+	CopyMemQuick(sc->fpstate, (cc)->regs.FPData, SIZEOF_8087_FRAME);			\
+	if ((cc)->regs.FXData && (sc->fpstate.magic != 0xFFFF))					\
+    	{											\
+    	    (cc)->regs.Flags |= ECF_FPX;							\
+    	    CopyMemQuick(sc->fpstate._fxsr_env, (cc)->regs.FXData, sizeof(struct FPXContext));	\
+    	}											\
+    }
 
 /*
-    This macro is similar to PREPARE_INITIAL_FRAME() but also saves
-    all general purpose registers. Use this macro when you want to
-    leave the current tasks' context to save the registers. Note that
-    the argument "sp" of the macro is just the name of the stack
-    pointer. The macro will load it from the sigcontext "sc". You
-    must store the value of "sp" after the macro and hand it to
-    RESTOREREGS() below to restore this context.
-*/
+ * This macro does the opposite to SAVEREGS(). It restores all registers.
+ * After that, you can enter the new task's context.
+ * FPU and SSE areas will be restored only if they were present in the
+ * saved context. This should be indicated by context's flags.
+ */
+#define RESTOREREGS(cc, sc)									\
+    RESTORE_CPU((cc)->regs, sc);								\
+    if (sc->fpstate)										\
+    {												\
+    	if ((cc)->regs.Flags & ECF_FPU)								\
+    	    CopyMemQuick((cc)->regs.FPData, sc->fpstate, SIZEOF_8087_FRAME);			\
+    	if ((cc)->regs.Flags & ECF_FPX)								\
+    	    CopyMemQuick((cc)->regs.FXData, sc->fpstate._fxsr_env, sizeof(struct FPXContext));	\
+    }
 
-#define SAVEREGS(cc, sc)                 \
-    do                                   \
-    {                                    \
-	SAVE_FPU((cc),sc);               \
-	SAVE_CPU((cc),sc);               \
-    } while (0)
-
-/*
-    This macro does the opposite to SAVEREGS(). It restores all
-    general purpose registers. After that, you can enter the new
-    tasks' context. Both "sp" and "sc" must be initialized.
-    The macro will save the new SP into the sigcontext "sc".
-*/
-
-#   define RESTOREREGS(cc, sc) \
-    do                         \
-    {                          \
-	RESTORE_FPU((cc),sc);  \
-	RESTORE_CPU((cc),sc);  \
-    } while (0)
-
-
-    /* This macro prints the current signals' context */
+/* This macro prints the current signals' context */
 #define PRINT_SC(sc) \
-	bug ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx\n" \
-	    , SP(sc), FP(sc), PC(sc) \
-	    , HAS_FPU(sc) ? "yes" : "no" \
-	    , R0(sc), R1(sc), R2(sc), R3(sc) \
-	    , R4(sc), R5(sc) \
+    bug ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
+	 "    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
+	 "    R4=%08lx  R5=%08lx\n" \
+	 , SP(sc), FP(sc), PC(sc) \
+	 , R0(sc), R1(sc), R2(sc), R3(sc) \
+	 , R4(sc), R5(sc) \
 	)
 
 #endif /* __AROS_EXEC_LIBRARY__ */
@@ -353,65 +236,11 @@ typedef @sighandler@ SignalHandler;
 /* Use this structure to save/restore registers */
 struct AROSCPUContext
 {
-    ULONG                     regs[9]; /* eip (PC), ebp (FP), eax, ebx, ecx, edx, edi, esi, eflags */
-    UBYTE                     fpbuffer[sizeof(struct _fpstate) + 15]; /* Buffer for FPU state */
-    struct _fpstate *         fpstate; /* FPU state pointer inside fpbuffer */
-    int                       errno_backup;
+    struct ExceptionContext regs; /* Public portion		  */
+    int errno_backup;		  /* Host-specific stuff, private */
 };
 
 #define GET_PC(ctx) ((APTR)ctx->regs[0])
 #define SET_PC(ctx, val) ctx->regs[0] = (ULONG)val
-
-/*
-    Prepare the cpu context
-*/
-
-#ifndef NO_FPU
-
-#define cpuid(num, eax, ebx, ecx, edx) \
-    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
-
-#define PREPARE_INITIAL_CONTEXT(cc) \
-    do \
-    { \
-    UBYTE * ptr = cc->fpbuffer; \
-    UBYTE current_xmm[512+16], *curr = current_xmm; \
-    curr = (UBYTE*)(((IPTR)curr + 15) & ~15); \
-    ptr = (UBYTE*)(((IPTR)ptr+15)&~15); /* Realign to next 16 byte boundary (needed for SSE, won't hurt for FPU only) */ \
-    cc->fpstate = (struct _fpstate *)ptr; \
-    UBYTE * fxsr_frame = ptr + 112; /* See definition of struct _fpstate for 32bit systems */ \
-    /* Detect SEE capability */ \
-    ULONG v1,v2,v3,v4; \
-    cpuid(1, v1,v2,v3,v4); \
-    if (v4 & (1 << 24)) \
-    { \
-    switch ((v4 >> 25) & 3) \
-    { \
-        case 3:\
-        case 2:\
-        case 1:\
-        /* FPU + SSE */ \
-        asm volatile("fxsave (%0); fninit; fwait; fxsave (%1); fnsave (%2); fxrstor (%0);"\
-        ::"r"(curr),"r"(fxsr_frame), "r"(cc->fpstate)); \
-    }\
-    }\
-    else\
-    { \
-        /* FPU only */ \
-        asm volatile("fnsave (%0); fninit; fwait; fnsave (%1); frstor (%0);"::"r"(curr), "r"(cc->fpstate)); \
-    } \
-    }while (0)
-#else
-
-#define PREPARE_INITIAL_CONTEXT(cc, startpc)
-
-#endif
-
-#define PREPARE_INITIAL_FRAME(cc, sp, pc)  \
-        do                                 \
-	{                                  \
-	    cc->regs[7] = 0;		   \
-	    cc->regs[8] = (ULONG)pc;	   \
-	} while (0)
 
 #endif /* _SIGCORE_H */

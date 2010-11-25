@@ -1,12 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := dummy
-
-# Transition period: this is currently used only on MinGW32
-ifeq ($(ARCH),mingw32)
-FILES += cpu_init createcontext
-endif
+FILES := cpu_init createcontext
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
 	       -I$(SRCDIR)/arch/all-$(ARCH)/kernel
