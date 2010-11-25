@@ -107,6 +107,12 @@ typedef struct _CONTEXT
     regs->EFlags = ctx.eflags;					\
     regs->Esp = ctx.esp;
 
+/* Provide legacy 8087 context together with SSE one */
+#define USE_LEGACY_8087
+
+/* 8087 frame contains private portion (Cr0NpxState) */
+#define SIZEOF_8087_FRAME sizeof(FLOATING_SAVE_AREA)
+
 /*
  * Save the whole set of registers in the allocated context space.
  * Also saves FPU and SSE, if available.
@@ -175,25 +181,25 @@ typedef struct _CONTEXT
  * Realign and copy FPU portion from src to dest. It is supposed
  * that common part is already copied.
  */
-#define COPY_FPU(src, dest)					\
-{								\
-    IPTR fpdata = (IPTR)(dest) + sizeof(struct AROSCPUContext);	\
-    if ((src)->Flags & ECF_FPU)					\
-    {								\
-	(dest)->FPData = (struct FPUContext *)fpdata;		\
-	fpdata += 112;						\
-	CopyMemQuick((src)->FPData, (dest)->FPData, 112);	\
-    }								\
-    else							\
-	(dest)->FPData = NULL;					\
-    if ((src)->Flags & ECF_FPX)					\
-    {								\
-	fpdata = (fpdata + 15) & ~15;				\
-	(dest)->FXData = (struct FPXContext *)fpdata;		\
-	CopyMemQuick((src)->FXData, (dest)->FXData, 512);	\
-    }								\
-    else							\
-	(dest)->FXData = NULL;					\
+#define COPY_FPU(src, dest)								\
+{											\
+    IPTR fpdata = (IPTR)(dest) + sizeof(struct AROSCPUContext);				\
+    if ((src)->Flags & ECF_FPU)								\
+    {											\
+	(dest)->FPData = (struct FPUContext *)fpdata;					\
+	fpdata += sizeof(FLOATING_SAVE_AREA);						\
+	CopyMemQuick((src)->FPData, (dest)->FPData, sizeof(FLOATING_SAVE_AREA));	\
+    }											\
+    else										\
+	(dest)->FPData = NULL;								\
+    if ((src)->Flags & ECF_FPX)								\
+    {											\
+	fpdata = (fpdata + 15) & ~15;							\
+	(dest)->FXData = (struct FPXContext *)fpdata;					\
+	CopyMemQuick((src)->FXData, (dest)->FXData, MAXIMUM_SUPPORTED_EXTENSION);	\
+    }											\
+    else										\
+	(dest)->FXData = NULL;								\
 }
 
 #define GET_PC(ctx) (void *)ctx->regs.eip
@@ -224,6 +230,3 @@ typedef struct _CONTEXT
 
 #define PC(regs) regs->Eip
 #define R0(regs) regs->Eax
-
-/* Provide legacy 8087 context together with SSE one */
-#define USE_LEGACY_8087

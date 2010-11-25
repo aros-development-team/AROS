@@ -1,12 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := newstackswap
-
-# Transition period: this is currently used only on MinGW32
-ifeq ($(ARCH),mingw32)
-FILES += preparecontext
-endif
+FILES := newstackswap preparecontext
 
 USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := -I$(SRCDIR)/rom/exec

@@ -4,6 +4,10 @@
 #include <kernel_base.h>
 #include <kernel_memory.h>
 
+#ifndef SIZEOF_8087_FRAME
+#define SIZEOF_8087_FRAME sizeof(struct FPUContext)
+#endif
+
 AROS_LH0(void *, KrnCreateContext,
 	  struct KernelBase *, KernelBase, 18, Kernel)
 
@@ -30,7 +34,7 @@ AROS_LH0(void *, KrnCreateContext,
 	if (ctx->Flags & ECF_FPU)
 	{
 	    ctx->FPData = (struct FPUContext *)fpdata;
-	    fpdata += 112;
+	    fpdata += SIZEOF_8087_FRAME;
 	}
 
 	if (ctx->Flags & ECF_FPX)
