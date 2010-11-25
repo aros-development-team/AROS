@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: cpucontext.h 35535 2010-11-16 06:12:00Z sonic $
+    $Id$
 
     Desc: CPU context definition for x86-64 processors
     Lang: english
@@ -57,9 +57,9 @@ struct ExceptionContext
     UQUAD es;
     UQUAD fs;
     UQUAD gs;
-    UQUAD eip;
+    UQUAD rip;
     UQUAD cs;
-    UQUAD eflags;
+    UQUAD rflags;
     UQUAD rsp;
     UQUAD ss;
 
