@@ -891,6 +891,7 @@ case "$target_os" in
                 aros_kernel_ldflags="-m64"
 		aros_default_wbdepth=8
 		gcc_target_cpu="x86_64"
+		aros_kernel_ld="ld"
 		aros_target_cc="x86_64-aros-gcc"
 		aros_target_cxx="x86_64-aros-g++"
 		aros_target_ld="x86_64-aros-ld"
