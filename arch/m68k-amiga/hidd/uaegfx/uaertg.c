@@ -18,8 +18,9 @@ BOOL FindCard(struct uaegfx_staticdata *csd)
 }
 BOOL InitCard(struct uaegfx_staticdata *csd)
 {
-    return P96_LC1(BOOL, csd->uaeromvector, 29,
-    	AROS_LCA(APTR, csd->boardinfo, A0));
+    return P96_LC2(BOOL, csd->uaeromvector, 29,
+    	AROS_LCA(APTR, csd->boardinfo, A0),       // For current WinUAEs
+    	AROS_LCA(APTR, csd->boardinfo, A2));      // For older E-UAEs
 }
 BOOL SetDisplay(struct uaegfx_staticdata *csd, BOOL state)
 {
