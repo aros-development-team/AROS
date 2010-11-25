@@ -12,7 +12,6 @@
 #include <sys/param.h>
 #include <ucontext.h>
 #include <signal.h>
-#include "etask.h"
 
 typedef struct sigcontext regs_t;
 #define SIGHANDLER	bsd_sighandler
