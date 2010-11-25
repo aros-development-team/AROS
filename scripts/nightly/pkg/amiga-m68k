@@ -26,11 +26,12 @@ make    systemdisk-amiga-m68k
 cd      $BUILD_BASE/AROS/bin/amiga-m68k
 move    AROS $PACKAGE
 
+delete  $BUILD_BASE/AROS/distfiles/aros-amiga-m68k-ext.elf
+delete  $BUILD_BASE/AROS/distfiles/aros-amiga-m68k-rom.elf
+
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
-copy    $BUILD_BASE/AROS/distfiles/systemdisk-$BUILDTARGET.img $PACKAGE
-delete  $PACKAGE/aros-amiga-m68k-ext.elf
-delete  $PACKAGE/aros-amiga-m68k-rom.elf
+copy    $BUILD_BASE/AROS/distfiles/ $PACKAGE
 
 
 archive $ARCHIVE $PACKAGE
