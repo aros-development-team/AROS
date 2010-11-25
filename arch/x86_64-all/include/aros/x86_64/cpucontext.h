@@ -6,13 +6,38 @@
     Lang: english
 */
 
-/* Black box for now */
-struct FPXContext;
+typedef struct
+{
+    UBYTE data[10];
+    UBYTE pad[6];
+} MMReg;
+
+typedef struct
+{
+    UBYTE data[16];
+} XMMReg;
+
+struct FPXContext
+{
+    UWORD  fcw;
+    UWORD  fsw;
+    UWORD  ftw;
+    UWORD  fop;
+    ULONG  ip;
+    ULONG  cs;
+    ULONG  dp;
+    ULONG  ds;
+    ULONG  mxcsr;
+    ULONG  pad;
+    MMReg  mm[8];
+    XMMReg xmm[8];
+    XMMReg reserved[14];
+};
 
 struct ExceptionContext
 {
     ULONG Flags;	/* Context flags		*/
-    UQUAD Reserved;	/* Padding			*/
+    ULONG Reserved;	/* Padding			*/
     UQUAD rax;
     UQUAD rbx;
     UQUAD rcx;
