@@ -1,0 +1,17 @@
+#   $Id$
+#
+#   Makefile for AROS kernel.resource tests
+
+include $(TOP)/config/make.cfg
+
+FILES := allocator kernelattrs
+
+EXEDIR := $(AROS_TESTS)/kernel
+
+#MM test-kernel : includes includes-copy linklibs kernel
+
+%build_progs mmake=test-kernel \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga arosc m"
+
+%common
