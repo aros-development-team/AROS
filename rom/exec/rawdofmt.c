@@ -113,9 +113,20 @@ do                                        \
 } while (0)
 
 APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
-		      APTR PutChData, va_list VaListStream)
+		      APTR inPutChData, va_list VaListStream)
 {
-    UBYTE   *UPutChData = PutChData;
+#if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    /* Frequently, AmigaOS users of RawDoFmt() rely upon the AmigaOS
+     * behaviour that A3 *in this routine* is the pointer to PutChData,
+     * *and* that it can be modified in PutChProc.
+     */
+    register APTR    PutChData asm("%a3");
+    register UBYTE *UPutChData asm("%a3");	/* Alias */
+    PutChData = inPutChData;
+#else
+    APTR     PutChData = inPutChData;
+    UBYTE   *UPutChData = inPutChData;
+#endif
 
     /* As long as there is something to format left */
     while (*FormatString)
