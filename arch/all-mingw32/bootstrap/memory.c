@@ -26,8 +26,9 @@ void *AllocateRO(size_t len)
  */
 int SetRO(void *addr, size_t len)
 {
-    /* Currently this is actually done in the kernel itself */
-    return 0;
+    DWORD old;
+
+    return !VirtualProtect(addr, len, PAGE_EXECUTE_READ, &old);
 }
 
 void *AllocateRW(size_t len)
