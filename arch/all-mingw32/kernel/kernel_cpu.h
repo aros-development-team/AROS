@@ -27,13 +27,6 @@
 #define AROS_EXCEPTION_SYSCALL 0x00080001
 #define AROS_EXCEPTION_RESUME  0x00080002
 
-/* On AROS side we save also LastError code */
-struct AROSCPUContext
-{
-    struct ExceptionContext regs; /* Public portion */
-    ULONG LastError;		  /* LastError code */
-};
-
 /* Our virtual CPU interface. It's needed here for krnSysCall() definition */
 struct KernelInterface
 {

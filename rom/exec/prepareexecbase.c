@@ -41,20 +41,6 @@ AROS_LD3(ULONG, MakeFunctions,
 	 AROS_LDA(CONST_APTR, funcDispBase, A2),
          struct ExecBase *, SysBase, 15, Exec);
 
-/* Boot-time memory allocator */
-APTR allocBootMem(struct MemHeader *mh, ULONG size)
-{
-    UBYTE *ret  = (UBYTE *)mh->mh_First;
-    
-    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
-
-    mh->mh_First          = (struct MemChunk *)(ret + size);
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
-
-    return ret;
-}
-
 /* Default finaliser. */
 static void Exec_TaskFinaliser(void)
 {
@@ -77,7 +63,7 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 {
 	struct AROSSupportBase *AROSSupportBase;
 
-	AROSSupportBase = allocBootMem(mh, sizeof(struct AROSSupportBase));
+	AROSSupportBase = Allocate(mh, sizeof(struct AROSSupportBase));
 	
 	AROSSupportBase->kprintf = (void *)kprintf;
 	AROSSupportBase->rkprintf = (void *)rkprintf;
@@ -112,7 +98,8 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *data)
 {
-    ULONG   negsize = 0, i;
+    ULONG   negsize = 0;
+    ULONG totalsize, i;
     VOID  **fp      = LIBFUNCTABLE;
 
     /* TODO: at this point we should check if SysBase already exists and, if so,
@@ -124,9 +111,12 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     /* Align library base */
     negsize = AROS_ALIGN(negsize);
     
-    /* Allocate memory for library base */
-    SysBase = (struct ExecBase *)
-	    ((UBYTE *)allocBootMem(mh, negsize + sizeof(struct IntExecBase)) + negsize);
+    /*
+     * Allocate memory for library base. Round up manually because
+     * stdAlloc() does not do it.
+     */
+    totalsize = AROS_ROUNDUP2(negsize + sizeof(struct IntExecBase), MEMCHUNK_TOTAL);
+    SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, 0, NULL) + negsize);
 
     /* Clear the library base */
     memset(SysBase, 0, sizeof(struct IntExecBase));

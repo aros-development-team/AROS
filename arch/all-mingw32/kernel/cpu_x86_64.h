@@ -111,13 +111,143 @@ typedef struct _CONTEXT
     IPTR  LastExceptionFromRip;
 } CONTEXT;
 
-#endif
+struct VectorContext
+{
+    M128A VectorRegister[26];
+    IPTR  VectorControl;
+    IPTR  DebugControl;
+    IPTR  LastBranchToRip;
+    IPTR  LastBranchFromRip;
+    IPTR  LastExceptionToRip;
+    IPTR  LastExceptionFromRip;
+};
 
-#define GET_PC(ctx) (void *)ctx->Regs.Rip
-#define GET_SP(ctx) (void *)ctx->Regs.Rsp
-#define SET_PC(ctx, addr) ctx->Regs.Rip = (IPTR)addr
+/* Complete context frame, with Windows private data */
+struct AROSCPUContext
+{
+    struct ExceptionContext regs; /* Public portion		*/
+    IPTR  PHome[6];		  /* Some Windows-specific data */
+    struct VectorContext vec;
+    ULONG LastError;		  /* LastError code		*/
+};
+
+/*
+ * Common part of SAVEREGS and TRAP_SAVEREGS.
+ * Saves CPU registers from CONTEXT in struct ExceptionContext.
+ */
+#define SAVE_CPU(regs, ctx)			\
+    ctx.Flags = 0;				\
+    ctx.rax = regs->Rax;			\
+    ctx.rbx = regs->Rbx;			\
+    ctx.rcx = regs->Rcx;			\
+    ctx.rdx = regs->Rdx;			\
+    ctx.rsi = regs->Rsi;			\
+    ctx.rdi = regs->Rdi;			\
+    ctx.rbp = regs->Rbp;			\
+    ctx.rip = regs->Rip;			\
+    ctx.rflags = regs->EFlags;			\
+    ctx.rsp = regs->Rsp;			\
+    if (regs->ContextFlags & CONTEXT_SEGMENTS)	\
+    {						\
+        ctx.Flags |= ECF_SEGMENTS;		\
+	ctx.ds = regs->SegDs;			\
+	ctx.es = regs->SegEs;			\
+	ctx.fs = regs->SegFs;			\
+	ctx.gs = regs->SegGs;			\
+	ctx.cs = regs->SegCs;			\
+	ctx.ss = regs->SegSs;			\
+    }
+
+/* 
+ * Restore CPU registers.
+ * Does not restore segment registers because they are of private use
+ * by Windows. We can't modify them.
+ */
+#define RESTORE_CPU(regs, ctx)					\
+    regs->ContextFlags = CONTEXT_CONTROL|CONTEXT_INTEGER;	\
+    regs->Rax = ctx.rax;					\
+    regs->Rbx = ctx.rbx;					\
+    regs->Rcx = ctx.rcx;					\
+    regs->Rdx = ctx.rdx;					\
+    regs->Rsi = ctx.rsi;					\
+    regs->Rdi = ctx.rdi;					\
+    regs->Rbp = ctx.rbp;					\
+    regs->Rip = ctx.rip;					\
+    regs->EFlags = ctx.rflags;					\
+    regs->Rsp = ctx.rsp;
+
+/*
+ * Save the whole set of registers in the allocated context space.
+ * Also saves FPU and SSE, if available.
+ */
+#define SAVEREGS(regs, ctx)								\
+    SAVE_CPU(regs, ctx->regs);								\
+    if (regs->ContextFlags & CONTEXT_FLOATING_POINT)					\
+    {											\
+	ctx->regs.Flags |= ECF_FPX;							\
+	CopyMemQuick(&regs->FltSave, ctx->regs.FXData, sizeof(XMM_SAVE_AREA32));	\
+    }											\
+    CopyMemQuick(&regs->P1Home, ctx->PHome, 6 * sizeof(IPTR));				\
+    CopyMemQuick(regs->VectorRegister, &ctx->vec, sizeof(struct VectorContext));
+
+/*
+ * Restore complete set of registers.
+ * Restores SSE only if the corresponding flag is set in struct ExceptionContext.
+ */
+#define RESTOREREGS(regs, ctx)								\
+    RESTORE_CPU(regs, ctx->regs);							\
+    if (ctx->regs.Flags & ECF_FPX)							\
+    {											\
+	regs->ContextFlags |= CONTEXT_FLOATING_POINT;					\
+	CopyMemQuick(ctx->regs.FXData, &regs->FltSave, sizeof(XMM_SAVE_AREA32));	\
+	regs->MxCsr = regs->FltSave.MxCsr;						\
+    }											\
+    CopyMemQuick(ctx->PHome, &regs->P1Home, 6 * sizeof(IPTR));				\
+    CopyMemQuick(&ctx->vec, regs->VectorRegister, sizeof(struct VectorContext));
+
+/*
+ * Similar to SAVEREGS and RESTOREREGS, but actually copies only public CPU part.
+ * SSE frame is specified by reference (frames format in host and AROS match).
+ * This is for use within trap handling code.
+ */
+#define TRAP_SAVEREGS(src, dest)			\
+    SAVE_CPU(src, dest)					\
+    if (src->ContextFlags & CONTEXT_FLOATING_POINT)	\
+    {							\
+	dest.Flags |= ECF_FPX;				\
+	dest.FXData = &src->FltSave;			\
+    }
+
+#define TRAP_RESTOREREGS(dest, src)			\
+    RESTORE_CPU(dest, src);				\
+    if (src.Flags & ECF_FPX)				\
+    {							\
+	dest->ContextFlags |= CONTEXT_FLOATING_POINT;	\
+	dest->MxCsr = dest->FltSave.MxCsr;		\
+    }
+
+/*
+ * Realign and copy FPU portion from src to dest. It is supposed
+ * that common part is already copied.
+ */
+#define COPY_FPU(src, dest)								\
+    if ((src)->Flags & ECF_FPX)								\
+    {											\
+        IPTR fpdata = (IPTR)(dest) + sizeof(struct AROSCPUContext);			\
+	fpdata = (fpdata + 15) & ~15;							\
+	(dest)->FXData = (struct FPXContext *)fpdata;					\
+	CopyMemQuick((src)->FXData, (dest)->FXData, sizeof(struct FPXContext);		\
+    }											\
+    else										\
+	(dest)->FXData = NULL;
+
+#define GET_PC(ctx) (void *)ctx->regs.rip
+#define GET_SP(ctx) (void *)ctx->regs.rsp
+#define SET_PC(ctx, addr) ctx->regs.rip = (IPTR)addr
 
 #define EXCEPTIONS_COUNT 18
+
+#endif /* __AROS__ */
 
 #define PRINT_CPUCONTEXT(ctx) \
 	bug ("    ContextFlags: 0x%08lX\n" \
@@ -134,45 +264,7 @@ typedef struct _CONTEXT
 	    , (ctx)->Rdi, (ctx)->Rsi, (ctx)->EFlags \
       );
 
-#define PREPARE_INITIAL_CONTEXT(ctx) ctx->regs.ContextFlags = 0
-
-#define PREPARE_INITIAL_ARGS(sp, cc, args, numargs)   \
-    int argcounter = numargs;                     \
-    while (argcounter > 6)                        \
-        _PUSH(sp, args[--argcounter]);   	  \
-    switch (argcounter)                           \
-    {                                             \
-        case 6:                                   \
-            cc->regs.R9 = args[5];                \
-        case 5:                                   \
-            cc->regs.R8 = args[4];                \
-        case 4:                                   \
-            cc->regs.Rcx = args[3];               \
-        case 3:                                   \
-            cc->regs.Rdx = args[2];               \
-        case 2:                                   \
-            cc->regs.Rsi = args[1];               \
-        case 1:                                   \
-            cc->regs.Rdi = args[0];               \
-	    cc->regs.ContextFlags |= CONTEXT_INTEGER; \
-            break;                                \
-    }
-
-#define PREPARE_INITIAL_FRAME(ctx, sp, pc) ctx->Regs.Rbp = 0;			 \
-					     ctx->regs.Rip = (IPTR)pc;		 \
-					     ctx->regs.Rsp = (IPTR)sp;		 \
-					     ctx->regs.ContextFlags |= CONTEXT_CONTROL
-
-#define REG_SAVE_VAR UWORD SegCS_Save, SegSS_Save
-
 #define CONTEXT_INIT_FLAGS(ctx) (ctx)->ContextFlags = CONTEXT_ALL
-
-#define CONTEXT_SAVE_REGS(ctx)    SegCS_Save = (ctx)->SegCs; \
-    			          SegSS_Save = (ctx)->SegSs
-
-#define CONTEXT_RESTORE_REGS(ctx) (ctx)->SegCs = SegCS_Save; \
-				  (ctx)->SegSs = SegSS_Save; \
-				  (ctx)->ContextFlags &= CONTEXT_FULL
 
 #define PC(regs) regs->Rip
 #define R0(regs) regs->Rax
