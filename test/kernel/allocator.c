@@ -11,6 +11,10 @@
 
 #include <stdio.h>
 
+/* Include private kernel.resource stuff, for DumpState() */
+struct KernelBase;
+#include "../../rom/kernel/memory_intern.h"
+
 #define PAGES_NUM 14
 
 /* This alignment stuff is copy-pasted from rom/exec/memory.h */
@@ -30,6 +34,23 @@
 #define MEMHEADER_TOTAL \
     ((sizeof(struct MemHeader)+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1))
 
+/*
+ * Print status of all pages in the specified MemHeader.
+ * '#' means allocated page, '.' means free page
+ */
+void DumpState(struct MemHeader *mh)
+{
+    struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
+    ULONG p;
+
+    printf("Page map (%u total):\n", head->size);
+
+    for (p = 0; p < head->size; p++)
+        printf(head->map[p] ? "." : "#");
+
+    printf("\n");
+}
+
 int main(void)
 {
 #ifdef KrnGetSystemAttr
@@ -39,7 +60,7 @@ int main(void)
     struct MemHeader *TestArea;
     ULONG TestLength;
     struct MemChunk *mc;
-    APTR region1;
+    APTR region1, region2;
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
@@ -100,14 +121,46 @@ int main(void)
     Enqueue(&SysBase->MemList, &TestArea->mh_Node);
     Permit();
 
-    printf("Allocating region1 (two pages)...\n");
+    printf("Allocating region1 (two read-write pages)...\n");
     region1 = KrnAllocPages(2 * page, MEMF_CHIP|MEMF_FAST, MAP_Readable|MAP_Writable);
-    printf("Allocated at 0x%p\n", region1);
+    printf("region1 at 0x%p\n", region1);
+    DumpState(TestArea);
 
     printf("Freeing region1...\n");
     KrnFreePages(region1, 2 * page);
     printf("Done!\n");
-    
+    DumpState(TestArea);
+
+    printf("Allocating region1 (3 read-only pages)...\n");
+    region1 = KrnAllocPages(3 * page, MEMF_CHIP|MEMF_FAST, MAP_Readable);
+    printf("region1 at 0x%p\n", region1);
+    DumpState(TestArea);
+
+    printf("Allocating region2 (4 write-only ;-) pages)...\n");
+    region2 = KrnAllocPages(4 * page, MEMF_CHIP|MEMF_FAST, MAP_Writable);
+    printf("region2 at 0x%p\n", region2);
+    DumpState(TestArea);
+
+    printf("Freeing region1...\n");
+    KrnFreePages(region1, 3 * page);
+    printf("Done!\n");
+    DumpState(TestArea);
+
+    printf("Freeing region2...\n");
+    KrnFreePages(region2, 4 * page);
+    printf("Done!\n");
+    DumpState(TestArea);
+
+    printf("Allocating region1 (one read-write page)...\n");
+    region1 = KrnAllocPages(page, MEMF_CHIP|MEMF_FAST, MAP_Readable|MAP_Writable);
+    printf("region1 at 0x%p\n", region1);
+    DumpState(TestArea);
+ 
+    printf("Freeing region1...\n");
+    KrnFreePages(region1, page);
+    printf("Done!\n");
+    DumpState(TestArea);
+ 
 exit:
     if (TestArea->mh_Node.ln_Succ)
     {
