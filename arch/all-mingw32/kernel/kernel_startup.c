@@ -22,6 +22,7 @@
 #include "kernel_romtags.h"
 #include "kernel_tagitems.h"
 #include "kernel_mingw32.h"
+#include "memory_intern.h"
 
 /*
  * External early init function from exec.library
@@ -56,8 +57,6 @@ int __startup startup(struct TagItem *msg)
     char *errstr;
     unsigned int i;
     struct MemHeader *mh;
-    void *memory;
-    IPTR memlen;
     struct TagItem *tag;
     struct TagItem *tstate = msg;
     struct HostInterface *hif = NULL;
@@ -132,23 +131,13 @@ int __startup startup(struct TagItem *msg)
 	((void **)&KernelIFace)[i] = func;
     }
 
+    /*
+     * Prepare the first mem header and hand it to PrepareExecBase to take SysBase live
+     * We know that memory map has only one RAM element.
+     */
     mykprintf("[Kernel] preparing first mem header\n");
-    /* We know that memory map has only one RAM element */
-    memory = (void *)mmap->addr;
-    memlen = mmap->len;
-
-    /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
-    mh = memory;
-    mh->mh_Node.ln_Type  = NT_MEMORY;
-    mh->mh_Node.ln_Name = "chip memory";
-    mh->mh_Node.ln_Pri = -5;
-    mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK;
-    mh->mh_First = memory + MEMHEADER_TOTAL;
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_First->mc_Bytes = memlen - MEMHEADER_TOTAL;
-    mh->mh_Lower = memory;
-    mh->mh_Upper = memory + memlen - 1;
-    mh->mh_Free = mh->mh_First->mc_Bytes;
+    mh = (struct MemHeader *)mmap->addr;
+    krnCreateMemHeader("Normal RAM", -5, mh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
 
     D(mykprintf("[Kernel] calling PrepareExecBase(), mh_First = 0x%p, args = %s\n", mh->mh_First, args));
     /*
@@ -166,20 +155,9 @@ int __startup startup(struct TagItem *msg)
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
-     * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
+     * so that TypeOfMem() will not return 0 for addresses pointing into the kickstart.
      */
-    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
-    {
-	mh->mh_Node.ln_Type = NT_MEMORY;
-	mh->mh_Node.ln_Name = "rom memory";
-	mh->mh_Node.ln_Pri = -128;
-	mh->mh_Attributes = MEMF_KICK;
-	mh->mh_First = NULL;
-	mh->mh_Lower = klo;
-	mh->mh_Upper = khi;
-	mh->mh_Free = 0;                        /* Never allocate from this chunk! */
-	Enqueue(&SysBase->MemList, &mh->mh_Node);
-    }
+    krnCreateROMHeader(mh, "Kickstart ROM", klo, khi);
 
     /* In order for these functions to work before KernelBase and ExecBase are set up */
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf  = mykprintf;

@@ -60,7 +60,12 @@ typedef struct _CONTEXT
 	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 } CONTEXT;
 
-#endif
+/* On AROS side we save also LastError code */
+struct AROSCPUContext
+{
+    struct ExceptionContext regs; /* Public portion */
+    ULONG LastError;		  /* LastError code */
+};
 
 /*
  * Common part of SAVEREGS and TRAP_SAVEREGS.
@@ -207,6 +212,10 @@ typedef struct _CONTEXT
 #define SET_PC(ctx, addr) ctx->regs.eip = (unsigned long)addr
 
 #define EXCEPTIONS_COUNT 18
+
+#endif /* __AROS__ */
+
+/* The following macros need to be visible on both Windows and AROS side */
 
 #define PRINT_CPUCONTEXT(ctx) \
 	bug ("    ContextFlags: 0x%08lX\n" \
