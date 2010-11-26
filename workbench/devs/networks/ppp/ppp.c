@@ -267,8 +267,11 @@ void Set_phase(UBYTE ph){
 		break;
 
 	}
-
-
+	
+	// wake up gui, phase is changed. 
+	if( ppp_libbase->gui_run )
+		Signal( (struct Task*)ppp_libbase->gui_process , SIGBREAKF_CTRL_F );
+		
 }
 
 void  init_ppp(LIBBASETYPEPTR LIBBASE){
@@ -284,7 +287,6 @@ void  init_ppp(LIBBASETYPEPTR LIBBASE){
 	password = LIBBASE->password ;
 
 	Set_phase( PPP_PHASE_DEAD );
-	Set_phase( PPP_PHASE_CONFIGURATION );
 
 }
 
@@ -413,65 +415,6 @@ void inline AddByte(struct packet *p,const UBYTE b){
 	p->packetsize ++;
 }
 
-/*
-void  byte_received( UBYTE c ){
-	//  bug("Control=%d c=%d,%c,%x \n",Control,c,c,c);
-	
-	if( c == 0x7e ){   // start/end mark
-		
-		if( Control == CONTROL_READ_DATA ){
-			// bug("stop\n");
-			Control = CONTROL_SEARCH_BEGIN;
-			ProcessPacket(&recdpacket);
-			recdpacket.packetsize = 0;
-			return;
-		}else if( Control == CONTROL_SEARCH_BEGIN ){
-			//  bug("start\n");
-			recdpacket.packetsize=0;
-			Control = CONTROL_SKIP_HEADER1;
-			return;
-		}
-		bug("PPP control sync error, unexpected start/end mark!\n");
-		
-	}else if( c == 0x7d ){ // next byte is escaped
-		escape = TRUE;
-		return;
-	}	
-	
-	if( escape ){
-		 c ^= 0x20;
-		 escape = FALSE;
-	}	 
-	
-	if( Control == CONTROL_READ_DATA ){
-		AddByte(&recdpacket,c);
-		return;
-	}
-
-	else if( Control == CONTROL_SKIP_HEADER1 ){
-		
-		if( c == 0xff ){ 
-			Control = CONTROL_SKIP_HEADER2;
-			return;
-		}
-			
-		bug("PPP control sync error, byte=0x%x, should be 0xff\n",c);
-		Control = CONTROL_SEARCH_BEGIN;
-		return;
-		
-	}
-	
-	else if( Control == CONTROL_SKIP_HEADER2 ){
-		if( c == 0x03 ){ 
-			Control = CONTROL_READ_DATA;
-		}else{
-			bug("PPP control sync error, byte=0x%x, should be 0x03\n",c);
-			Control = CONTROL_SEARCH_BEGIN;
-		}
-		return;
-	}
-}
-*/
 
 void  bytes_received( UBYTE *bytes,ULONG len ){
 	UBYTE c;
@@ -540,7 +483,10 @@ void ProcessPacket(struct packet * p){
 	
 	unsigned int type;
 
-	//UnEscapePacket(&recdpacket,&finalpacket);
+	if( p->packetsize < 8 ){
+		bug("Too short PPP packet received\n");
+		return;
+	}	 
 	
 	p->packetsize-=2;               // -checksum
 

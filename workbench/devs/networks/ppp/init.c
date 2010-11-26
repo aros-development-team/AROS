@@ -46,8 +46,8 @@
 BOOL GetToken(BYTE *b,BYTE *t){
 	BYTE *tok;
 	ULONG tlen;
-	for(tok=b;(*tok==' ')&&(*tok!=0);tok++ );
-	for(tlen=0 ;(tok[tlen]!=' ')&&(tok[tlen]!= 0 )&&(tok[tlen]!='\n');tlen++); // I am sorry
+	for(tok=b;*tok==' '|*tok=='\n'|*tok=='\r';tok++ );
+	for(tlen=0 ;tok[tlen]!=' '&&tok[tlen]!=0&&tok[tlen]!='\n'&&tok[tlen]!='\r';tlen++); // I am sorry
 	tok[tlen] = 0;
 	if( tlen < 1 || tlen >= PPP_MAXARGLEN ) return FALSE;
 	strcpy(t,tok);
@@ -59,8 +59,8 @@ BOOL GetToken(BYTE *b,BYTE *t){
 BOOL GetLineEnd(BYTE *b,BYTE *t){
 	BYTE *tok;
 	ULONG tlen;
-	for(tok=b;(*tok==' ')&&(*tok!=0);tok++);
-	for(tlen=0;(tok[tlen]!=0)&&(tok[tlen]!='\n');tlen++);
+	for(tok=b;*tok==' '|*tok=='\n'|*tok=='\r';tok++ );
+	for(tlen=0;tok[tlen]!=0&&tok[tlen]!='\n'&&tok[tlen]!='\r';tlen++);
 	tok[tlen] = 0;
 	if( tlen < 1 || tlen >= PPP_MAXARGLEN ) return FALSE;
 	strcpy(t,tok);
@@ -76,19 +76,16 @@ BOOL ReadConfig(LIBBASETYPEPTR LIBBASE){
 	struct at_command  *atc;
 
 	D(bug("ReadConfig:  ENV:AROSTCP/db/ppp.config\n"));
-
+	strcpy( LIBBASE->modemmodel , "PPP");
 	strcpy( LIBBASE->username ,   "DummyName");
 	strcpy( LIBBASE->password ,   "DummyName");
 	strcpy( LIBBASE->DeviceName , "DummyName");
 	LIBBASE->SerUnitNum = 0;
 	LIBBASE->enable_dns = FALSE;
 
-	bug("atc cleaning\n");
 	while( atc = (struct at_command *)RemHead( &LIBBASE->atcl ) ){
 		FreeMem( atc , sizeof(struct at_command) );
-		bug("atc cleaning freemem\n");
 	}
-	bug("atc cleaning OK\n");
 
 	if(ConfigFile = Open("ENV:AROSTCP/db/ppp.config",MODE_OLDFILE)){
 
@@ -170,9 +167,58 @@ BOOL ReadConfig(LIBBASETYPEPTR LIBBASE){
 }
 
 
+
+BOOL TestModem(LIBBASETYPEPTR LIBBASE){
+	
+	UBYTE buf[PPP_MAXARGLEN];
+	UBYTE buf2[PPP_MAXARGLEN];
+	
+	bug("ModemTest\n",buf);
+	DoStr( LIBBASE,  "\r\r\r" );
+	
+	DrainSerial(LIBBASE);
+	DoStr( LIBBASE,  "ATZ\r" );
+	if( GetResponse(LIBBASE,buf,PPP_MAXARGLEN,5)){
+		if( strcasestr(buf,"OK") == NULL ){
+			bug("ATZ FAIL\n");
+			return FALSE;
+		}
+	}	
+	
+	// echo off 
+	DrainSerial(LIBBASE);
+	DoStr( LIBBASE,  "ATE 0\r" );
+	if( GetResponse(LIBBASE,buf,PPP_MAXARGLEN,5)){
+		if( strcasestr(buf,"OK") == NULL ){
+			bug("ATE 0 FAIL\n");
+			return FALSE;
+		}
+	}	
+	
+	// Get modem model 
+	DrainSerial(LIBBASE);
+	DoStr( LIBBASE,  "AT+GMM\r" );
+	if( GetResponse(LIBBASE,buf,PPP_MAXARGLEN,5)){
+		if( strcasestr(buf,"OK") == NULL ){
+			bug("AT+GMM FAIL\n");
+			return FALSE;
+		}
+		if( GetLineEnd(buf,buf2)){
+			 strcpy( LIBBASE->modemmodel , buf2 );
+		}
+	}	
+	
+	bug("ModemTest OK\n",buf);
+	return TRUE;
+}
+
+#define MAXBUF 256
 BOOL DialUp(LIBBASETYPEPTR LIBBASE){
 
 	struct at_command *atc=NULL;
+	UBYTE buf[MAXBUF];
+	TestModem(LIBBASE);
+	
 	ForeachNode(&LIBBASE->atcl,atc){
 		
 		if( atc->command == COM_DELAY ){
@@ -183,14 +229,28 @@ BOOL DialUp(LIBBASETYPEPTR LIBBASE){
 
 		else if( atc->command == COM_WAIT ){
 			bug("WAIT \"%s\" %d sec. RESPONSE IS:\n",atc->str , atc->arg);
+		
+			if( ! GetResponse(LIBBASE,buf,MAXBUF,atc->arg)){
+				bug("...FAIL:TIMEOUT ?:\n%s\n",buf);
+				return FALSE;
+			}else{
+				if( strcasestr(buf,atc->str) == NULL ){
+					bug("...FAIL:WRONG RESPONSE:\n%s\n",buf);
+					return FALSE;
+				}
+				bug("%s\n",buf);
+			}		
+			/*
 			if( ! WaitStr( LIBBASE, atc->str , atc->arg ) ){
 				bug("\n...FAIL:TIMEOUT!\n");
 				return FALSE;
 			}
 			bug("\n");
+			*/
 		}
 
 		else if( atc->command == COM_SEND ){
+			DrainSerial(LIBBASE);
 			bug("SEND \"%s\"\n",atc->str);
 			DoStr( LIBBASE, atc->str);
 			DoStr( LIBBASE,  "\r" );
@@ -270,8 +330,6 @@ VOID PPP_Process(VOID){
 		Delay(10);
 		SetTimer(LIBBASE,5);
 
-		ReadConfig(LIBBASE);
-
 		LIBBASE->sdu_Proc_run = TRUE;
 
 		for(;;){
@@ -280,36 +338,75 @@ VOID PPP_Process(VOID){
 					   (1L<< LIBBASE->sdu_RxPort->mp_SigBit ) |
 					   (1L<< LIBBASE->sdu_TxPort->mp_SigBit ) |
 					   (1L<< LIBBASE->TimeMsg->mp_SigBit ) |
-					   SIGBREAKF_CTRL_F  ;
+					   SIGBREAKF_CTRL_F |
+					   SIGBREAKF_CTRL_C  ;
 
 			signals = Wait(waitmask);
 
 			if(GetMsg(LIBBASE->TimeMsg)){
 
 				// bug("PPP process: Timer\n");
-				//bug(" ser %d,ppp %d,dev %d\n",LIBBASE->serial_ok,( Phase() == PPP_PHASE_NETWORK ),LIBBASE->device_up );
+				// bug(" ser %d,ppp %d,dev %d\n",LIBBASE->serial_ok,( Phase() == PPP_PHASE_NETWORK ),LIBBASE->device_up );
 
 				if( LIBBASE->device_up && ( ! LIBBASE->serial_ok ) ){
+					
+					ReadConfig(LIBBASE);
+					
 					D(bug("[PPP] ModemDemonProcess: trying OpenSerial..!\n"));
 					if( OpenSerial(LIBBASE) ){
 						D(bug("[PPP] ModemDemonProcess: Serial OK !\n"));
-						if( DialUp(LIBBASE) ){
+						open_gui(LIBBASE);
+						init_ppp( LIBBASE );
+					/*	if( DialUp(LIBBASE) ){
 							init_ppp( LIBBASE );
 							QueueSerRequest(LIBBASE , PPP_MAXBUFF );
 						}else{
                             CloseSerial(LIBBASE);
 						}
-					}
+						*/
+					}	
+						
 				}
-				else if(LIBBASE->device_up && LIBBASE->serial_ok ){
+				
+				if( LIBBASE->device_up && LIBBASE->serial_ok && Phase() == PPP_PHASE_DEAD ){			
+					if( DialUp(LIBBASE) ){
+						QueueSerRequest(LIBBASE , PPP_MAXBUFF );
+						Set_phase( PPP_PHASE_CONFIGURATION );
+					}				
+				}
+				
+				if(LIBBASE->device_up && LIBBASE->serial_ok ){
 					ppp_timer(5);
 				}
 				SetTimer(LIBBASE,5);
 			}
-
-			/* Have we been signaled to shut down? */
+			
+			/* signal from gui process? */
 			if(signals & SIGBREAKF_CTRL_F){
 				bug("PPP process: received SIGBREAKF_CTRL_F\n");
+				switch(LIBBASE->gui_message){
+					
+					case GUIM_DISCONNECT:
+					    LIBBASE->device_up = FALSE;
+						Set_phase( PPP_PHASE_DEAD );
+						if( LIBBASE->serial_ok ){
+							SendTerminateReq(); 
+							Delay(300);
+							CloseSerial(LIBBASE);
+						}
+						LIBBASE->device_up = FALSE;
+					break;
+					
+					case GUIM_CONNECT:
+						LIBBASE->device_up = TRUE;
+					break;	
+						
+				}
+			}
+			
+			/* Have we been signaled to shut down? */
+			if(signals & SIGBREAKF_CTRL_C){
+				bug("PPP process: received SIGBREAKF_CTRL_C\n");
 				break;
 			}
 
@@ -363,8 +460,8 @@ VOID PPP_Process(VOID){
 	if(signalbit)  FreeSignal(signalbit);
 
 	bug("PPP process: shut down OK\n");
-	LIBBASE->sdu_Proc_run = FALSE;
 	Forbid();
+	LIBBASE->sdu_Proc_run = FALSE;
 }
 
 
@@ -388,8 +485,9 @@ struct PPP_DevUnit *InitPPPUnit(LIBBASETYPEPTR LIBBASE,ULONG s2unit){
 			LIBBASE->sd_Unit->unit_MsgPort.mp_Node.ln_Name = "PPP";
 
 			LIBBASE->sdu_Proc_run = FALSE;
+			LIBBASE->gui_run = FALSE;
 
-			D(bug("New process:\n"));
+			D(bug("New ppp process:\n"));
 			if(LIBBASE->sdu_Proc = CreateNewProcTags(
 										NP_Entry, PPP_Process,
 										NP_Name, "PPP process",
@@ -400,11 +498,8 @@ struct PPP_DevUnit *InitPPPUnit(LIBBASETYPEPTR LIBBASE,ULONG s2unit){
 										TAG_DONE))
 
 			{
-
-				D(bug("wait..\n"));
 				while( ! LIBBASE->sdu_Proc_run ) Delay(5);
 				D(bug("...ok\n"));
-
 			}else{
 				D(bug("New process:FAILL !!!\n"));
 			}
@@ -527,10 +622,12 @@ VOID ExpungeUnit(LIBBASETYPEPTR LIBBASE){
 	D(bug("[PPP] ExpungeUnit \n"));
 
 	D(bug("[PPP] ExpungeUnit Signal\n"));
-	Signal( (struct Task*)LIBBASE->sdu_Proc , SIGBREAKF_CTRL_F );
+	Signal( (struct Task*)LIBBASE->sdu_Proc , SIGBREAKF_CTRL_C );
 	D(bug("[PPP] ExpungeUnit Wait\n"));
 	while(  LIBBASE->sdu_Proc_run ) Delay(5);
-
+	
+	close_gui(LIBBASE);
+	
 	D(bug("[PPP] ExpungeUnit FreeMem\n"));
 	LIBBASE->sd_Unit = NULL;
 	FreeMem(LIBBASE->sd_Unit, sizeof(struct Unit));
