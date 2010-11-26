@@ -1,14 +1,18 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Examine memory
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "memory.h"
 
 /*****************************************************************************
 
@@ -46,29 +50,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG ret=0;
-    struct MemHeader *mh;
+    struct MemHeader *mh = FindMem(address, SysBase);
 
-    /* Nobody should change the memory list now. */
-    Forbid();
+    /* We have either found the memory or not */
+    return mh ? mh->mh_Attributes : 0;
 
-    /* Follow the list of MemHeaders */
-    mh=(struct MemHeader *)SysBase->MemList.lh_Head;
-    while(mh->mh_Node.ln_Succ!=NULL)
-    {
-	/* Check if this MemHeader fits */
-	if(address>=mh->mh_Lower&&address<mh->mh_Upper)
-	{
-	    /* Yes. Prepare returncode */
-	    ret=mh->mh_Attributes;
-	    break;
-	}
-	/* Go to next MemHeader */
-	mh=(struct MemHeader *)mh->mh_Node.ln_Succ;
-    }
-    /* Allow Taskswitches and return */
-    Permit();
-    return ret;
     AROS_LIBFUNC_EXIT
 } /* TypeOfMem */
 

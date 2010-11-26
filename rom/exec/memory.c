@@ -3,27 +3,64 @@
 #include "exec_intern.h"
 #include "memory.h"
 
-/* This will compile only if KrnAllocPages() is present!!! */
+/* Find MemHeader to which address belongs */
+struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
+{
+    struct MemHeader *mh;
+
+    /* Nobody should change the memory list now. */
+    Forbid();
+
+    /* Follow the list of MemHeaders */
+    mh = (struct MemHeader *)SysBase->MemList.lh_Head;
+
+    while(mh->mh_Node.ln_Succ != NULL)
+    {
+	/* Check if this MemHeader fits */
+	if(address >= mh->mh_Lower && address <= mh->mh_Upper)
+	{
+	    /* Yes. Return it. */
+	    Permit();
+	    return mh;
+	}
+
+	/* Go to next MemHeader */
+	mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
+    }
+
+    Permit();
+    return NULL;
+}
+
+/* The following will compile only if KrnAllocPages() is present!!! */
 #ifdef KrnAllocPages
 
 /* Allocate a region managed by own header */
-APTR AllocMemHeader(IPTR size, ULONG flags, KRN_MapAttr prot, struct ExecBase *SysBase)
+APTR AllocMemHeader(IPTR size, ULONG flags, UWORD prot, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
 
     mh = KrnAllocPages(size, flags, prot);
     if (mh)
     {
+        struct MemHeader *orig = FindMem(mh, SysBase);
+
     	size -= MEMHEADER_TOTAL;
 
-	/* Initialize new MemHeader */
-	mh->mh_Node.ln_Name	= NULL;
+	/*
+	 * Initialize new MemHeader.
+	 * Copy some attributes from the original one.
+	 */
+	mh->mh_Node.ln_Name	= orig->mh_Node.ln_Name;
 	mh->mh_Node.ln_Type	= NT_MEMORY;
-	mh->mh_Attributes	= TypeOfMem(mh);
+	mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
+	mh->mh_Attributes	= orig->mh_Attributes;
 	mh->mh_Lower 	    	= (APTR)mh + MEMHEADER_TOTAL;
 	mh->mh_Upper 	    	= mh->mh_Lower + size - 1;
 	mh->mh_First	    	= (struct MemChunk *)mh->mh_Lower;
 	mh->mh_Free  	    	= size;
+
+	/* Create the first (and the only) MemChunk */
 	mh->mh_First->mc_Next 	= NULL;
 	mh->mh_First->mc_Bytes  = size;
     }
@@ -51,9 +88,10 @@ APTR AllocPuddle(struct Pool *pool, IPTR size, ULONG flags, struct ExecBase *Sys
 
 /*
  * Allocate memory with given physical properties from the given pool.
- * Our pools can be mixed. This means that different puddles from the pool can have
- * different physical flags. For example the same pool can contain both CHIP and FAST memory.
- * This is done in order to provide a single system default pool for all types of memory.
+ * Our pools can be mixed. This means that different puddles from the
+ * pool can have different physical flags. For example the same pool
+ * can contain puddles from both CHIP and FAST memory. This is done in
+ * order to provide a single system default pool for all types of memory.
  */
 APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct ExecBase *SysBase)
 {
@@ -118,11 +156,16 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
 	    /* Got it? */
 	    if(ret != NULL)
             {
-            	/* If this is not the first MemHeader and it has some free space, move it to the head */
+            	/*
+		 * If this is not the first MemHeader and it has some free space,
+		 * move it forward (so that the next allocation will attempt to use it first).
+		 * We use Enqueue() because we still sort MemHeaders according to their priority
+		 * (which they inherit from system MemHeaders).
+		 */
             	if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
             	{
                     Remove((struct Node *)mh);
-                    AddHead((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
+                    Enqueue((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
             	}
 
                 break;
