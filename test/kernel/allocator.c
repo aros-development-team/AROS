@@ -60,7 +60,7 @@ int main(void)
     struct MemHeader *TestArea;
     ULONG TestLength;
     struct MemChunk *mc;
-    APTR region1, region2;
+    APTR region1, region2, region3;
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
@@ -140,6 +140,15 @@ int main(void)
     region2 = KrnAllocPages(4 * page, MEMF_CHIP|MEMF_FAST, MAP_Writable);
     printf("region2 at 0x%p\n", region2);
     DumpState(TestArea);
+
+    printf("Attempting to allocate MEMF_24BITDMA page...\n");
+    region3 = KrnAllocPages(page, MEMF_CHIP|MEMF_FAST|MEMF_24BITDMA, MAP_Readable);
+    printf("Region at 0x%p\n", region3);
+    if (region3)
+    {
+	printf("WARNING!!! This should have been NULL!\n");
+	KrnFreePages(region3, page);
+    }
 
     printf("Freeing region1...\n");
     KrnFreePages(region1, 3 * page);
