@@ -15,9 +15,10 @@
 
 #include "memory.h"
 
-#include "exec_intern.h"
 #include "kernel_romtags.h"
-#include "kernel_cpu.h"
+#include "kernel_base.h"
+
+#include "exec_intern.h"
 
 #include "amiga_hwreg.h"
 #include "amiga_irq.h"
@@ -262,35 +263,6 @@ ULONG cpu_detect(void)
 #define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
 #endif
 
-static struct MemHeader *SetupMemory(CONST_STRPTR name, BYTE pri,
-				      ULONG start, ULONG size, UWORD flags)
-{
-	struct MemHeader *mh;
-	ULONG aligned_start;
-
-	/* Align the start in MEMCHUNK_TOTAL sections */
-	aligned_start = (start + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL-1);
-	size -= (aligned_start - start);
-	start = aligned_start;
-
-	mh = (APTR)start;
-	mh->mh_Node.ln_Succ    = NULL;
-	mh->mh_Node.ln_Pred    = NULL;
-	mh->mh_Node.ln_Type    = NT_MEMORY;
-	mh->mh_Node.ln_Name    = (STRPTR)name;
-	mh->mh_Node.ln_Pri     = pri;
-	mh->mh_Attributes      = flags | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA;
-	mh->mh_First           = (struct MemChunk *)(start+MEMHEADER_TOTAL);
-	mh->mh_First->mc_Next  = NULL;
-	mh->mh_First->mc_Bytes = size - MEMHEADER_TOTAL;
-
-	mh->mh_Lower           = mh->mh_First;
-	mh->mh_Upper           = (APTR)(start + size);
-	mh->mh_Free            = mh->mh_First->mc_Bytes;
-
-	return mh;
-}
-
 static LONG doInitCode(ULONG startClass, ULONG version)
 {
     InitCode(startClass, version);
@@ -376,11 +348,15 @@ void start(IPTR chip_start, ULONG chip_size,
 	Early_ScreenCode(CODE_RAM_CHECK);
 
 	if (fast_size == 0) {
-		mh = SetupMemory("Chip Mem", -10,
-				 chip_start, chip_size, MEMF_CHIP);
+		krnCreateMemHeader("Chip Mem", -10,
+				 (APTR)chip_start, chip_size,
+				 MEMF_CHIP | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
+		mh = (APTR)chip_start;
 	} else {
-		mh = SetupMemory("Fast Mem", -5,
-				 fast_start, fast_size, MEMF_FAST);
+		krnCreateMemHeader("Fast Mem", -5,
+				 (APTR)fast_start, fast_size,
+				 MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
+		mh = (APTR)fast_start;
 	}
 
 	DebugPuts("[prep SysBase]\n");
@@ -440,10 +416,11 @@ void start(IPTR chip_start, ULONG chip_size,
 	 * Chip memory now!
 	 */
 	if (fast_size != 0) {
-		mh = SetupMemory("Chip Memory", -5,
-				 chip_start, chip_size, MEMF_CHIP);
-		if (mh != NULL)
-			Enqueue(&SysBase->MemList,&mh->mh_Node);
+		krnCreateMemHeader("Chip Memory", -5,
+				 (APTR)chip_start, chip_size,
+				 MEMF_CHIP | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
+		mh = (APTR)chip_start;
+		Enqueue(&SysBase->MemList,&mh->mh_Node);
 	}
 
 	/* Initialize IRQ subsystem */
