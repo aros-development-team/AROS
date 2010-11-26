@@ -10,19 +10,12 @@
 
 #include <inttypes.h>
 
-/*
- * Private exec.library include, needed for MEMHEADER_TOTAL.
- * TODO: may be bring it out to public includes ?
- */
-#include "memory.h"
-
 #include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_romtags.h"
 #include "kernel_tagitems.h"
 #include "kernel_mingw32.h"
-#include "memory_intern.h"
 
 /*
  * External early init function from exec.library

@@ -24,6 +24,3 @@ struct BlockHeader
 
 APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase);
 void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase);
-
-void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
-struct MemHeader *krnCreateROMHeader(struct MemHeader *ram, CONST_STRPTR name, APTR start, APTR end);
