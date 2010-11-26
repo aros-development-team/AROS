@@ -44,7 +44,7 @@ static const char *kernel_functions[] = {
     "Ints_Enabled",
     "Supervisor",
     "Sleep_Mode",
-    "LastErrorPtr", 
+    "LastErrorPtr",
     NULL
 };
 
@@ -132,9 +132,6 @@ int __startup startup(struct TagItem *msg)
 	((void **)&KernelIFace)[i] = func;
     }
 
-    /* Turn kernel space read-only */
-    KernelIFace.core_protect(klo, khi - klo + 1, PAGE_EXECUTE_READ);
-
     mykprintf("[Kernel] preparing first mem header\n");
     /* We know that memory map has only one RAM element */
     memory = (void *)mmap->addr;
@@ -204,7 +201,11 @@ int Platform_Init(struct KernelBase *KernelBase)
     *KernelIFace.TrapVector = core_TrapHandler;
     *KernelIFace.IRQVector  = core_IRQHandler;
 
-    return KernelIFace.core_init(SysBase->ex_EClockFrequency);
+    KernelBase->kb_PageSize = KernelIFace.core_init(SysBase->ex_EClockFrequency);
+    D(mykprintf("[Kernel] System page size: %u\n", KernelBase->kb_PageSize));
+
+    /* core_init() returns 0 on failure */
+    return KernelBase->kb_PageSize;
 }
 
 ADD2INITLIB(Platform_Init, 10);

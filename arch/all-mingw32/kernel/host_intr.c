@@ -239,7 +239,7 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
     if (!IntObjects[IRQ_TIMER])
     {
 	D(printf("[KRN] Failed to create timer interrupt\n");)
-	return FALSE;
+	return 0;
     }
     AllocatedInts[IRQ_TIMER] = 1;
     PendingInts[IRQ_TIMER] = 0;
@@ -286,7 +286,7 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
 	if (!LastErrOffset)
 	{
 	    printf("Unsupported Windows version %lu.%lu, platform ID %lu\n", osver.dwMajorVersion, osver.dwMinorVersion, osver.dwPlatformId);
-	    return FALSE;
+	    return 0;
 	}
 #endif
 
@@ -296,6 +296,8 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
 	SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, NULL, 0, &SwitcherId);
 	if (SwitcherThread)
 	{
+	    SYSTEM_INFO info;
+
 	    D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
 #ifdef SLOW
 	    TimerPeriod = 5000;
@@ -303,14 +305,20 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
 	    TimerPeriod = 1000/TimerPeriod;
 #endif
 	    VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
-	    return SetWaitableTimer(IntObjects[IRQ_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
+
+	    if (!SetWaitableTimer(IntObjects[IRQ_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0))
+		return 0;
+
+	    /* Return system page size */
+	    GetSystemInfo(&info);   
+	    return info.dwPageSize;
 	}
 	    D(else printf("[KRN] Failed to run task switcher thread\n");)
     }
 	D(else printf("[KRN] failed to get thread handle\n");)
 
     CloseHandle(IntObjects[IRQ_TIMER]);
-    return FALSE;
+    return 0;
 }
 
 /*
