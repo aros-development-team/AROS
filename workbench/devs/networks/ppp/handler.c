@@ -187,9 +187,8 @@ VOID SendPacket( LIBBASETYPEPTR LIBBASE ,struct IOSana2Req *ios2 ){
 	if( ( Phase() == PPP_PHASE_NETWORK ) && LIBBASE->device_up ){
 
 		if( LIBBASE->CopyFromBuffer( LIBBASE->sdu_TxBuff , ios2->ios2_Data , ios2->ios2_DataLength ) ){
-
-			send_IP_packet( LIBBASE->sdu_TxBuff , ios2->ios2_DataLength );
-
+			send_IP_packet( LIBBASE->sdu_TxBuff , ios2->ios2_DataLength );		
+            LIBBASE->bytes_out += ios2->ios2_DataLength;
 		}else{
 			bug( "SendPacket CopyFromBuffer FAIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 			ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
@@ -271,16 +270,11 @@ VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE, struct IOExtSer *ioSer){
 	ULONG length;
 
 	ptr = LIBBASE->sdu_RxBuff;
-
 	length = ioSer->IOSer.io_Actual;
-/*
-	while(length--){
-		byte_received( *ptr );
-		ptr++;
-	}
-*/
 	bytes_received( ptr,length );
-   
+	
+	LIBBASE->bytes_in += length;
+	
 	QueueSerRequest( LIBBASE ,  PPP_MAXBUFF );
 }
 

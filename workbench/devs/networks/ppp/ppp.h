@@ -60,6 +60,13 @@
 #define COM_SEND 2
 #define COM_DELAY 3
 
+#define RES_OK 1
+#define RES_ERROR 2
+#define RES_TIMEOUT 3
+
+#define GUIM_CONNECT 1
+#define GUIM_DISCONNECT 2
+
 struct at_command {
 	struct Node cNode; 	
 	BYTE command,arg;     
@@ -75,12 +82,16 @@ struct PPPBase {
     BOOL serial_ok;
     BOOL device_up;
     BOOL sdu_Proc_run;
-    
+    BOOL gui_run;
+	
+	ULONG gui_message;  
+	 
     struct Unit     *sd_Unit;
     struct SignalSemaphore sd_Lock;
     
     struct Process      *sdu_Proc;
-      
+    struct Process      *gui_process;
+	   
     struct MsgPort     *TimeMsg;
     struct timerequest *TimeReq;
     
@@ -99,7 +110,9 @@ struct PPPBase {
     BYTE username[PPP_MAXARGLEN]; 
     BYTE password[PPP_MAXARGLEN];
     BOOL enable_dns;
-    
+    BYTE modemmodel[PPP_MAXARGLEN];
+	
+	
     BOOL        (*CopyFromBuffer)(APTR, APTR, ULONG);
     BOOL        (*CopyToBuffer)(APTR, APTR, ULONG);
     
@@ -107,6 +120,9 @@ struct PPPBase {
     struct MinList       sdu_Rx;                /* Pending CMD_READ's */
     struct MinList       sdu_Tx;                /* Pending CMD_WRITE's */
     
+	ULONG bytes_in;
+	ULONG bytes_out;
+	
 };
  
  

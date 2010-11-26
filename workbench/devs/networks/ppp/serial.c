@@ -81,7 +81,6 @@ BOOL SendStr(LIBBASETYPEPTR LIBBASE,const STRPTR str ,LONG timeout){
 }
 
 
-
 VOID DoStr(LIBBASETYPEPTR LIBBASE,const STRPTR str){
 
 	if( ! LIBBASE->serial_ok  ) return;
@@ -127,6 +126,51 @@ void SendBYTES(LIBBASETYPEPTR LIBBASE, BYTE *p, ULONG len){
 }
 
 
+void DrainSerial(LIBBASETYPEPTR LIBBASE){
+	
+	if( LIBBASE->sdu_SerRx ){
+		Delay(25);
+		
+		AbortIO((struct IORequest *)LIBBASE->sdu_SerRx);
+		WaitIO((struct IORequest *)LIBBASE->sdu_SerRx);
+		while(GetMsg(LIBBASE->sdu_RxPort));
+		LIBBASE->sdu_RxBuff[1]=0;
+		
+		//bug("Drain:\n");	
+		for(;;){  // Read crap out of serial device.
+			
+			LIBBASE->sdu_SerRx->IOSer.io_Command = SDCMD_QUERY;
+			DoIO((struct IORequest *)LIBBASE->sdu_SerRx);
+			
+			if( LIBBASE->sdu_SerRx->IOSer.io_Error ){
+				bug("[PPP] DrainSerial(): OOOOPS  We've lost carrier.! ");
+				CloseSerial(LIBBASE);
+				return;
+			}
+			
+		    if( LIBBASE->sdu_SerRx->IOSer.io_Actual == 0 ) break;
+		
+			LIBBASE->sdu_SerRx->IOSer.io_Command = CMD_READ;
+			LIBBASE->sdu_SerRx->IOSer.io_Data = LIBBASE->sdu_RxBuff;
+			LIBBASE->sdu_SerRx->IOSer.io_Length = 1;
+			DoIO((struct IORequest *)LIBBASE->sdu_SerRx);
+			if( LIBBASE->sdu_SerRx->IOSer.io_Error ){
+				bug("[PPP] DrainSerial(): CMD_READ error!");
+			}else{
+			//	bug("%s",LIBBASE->sdu_RxBuff);
+			}
+		}
+		//bug("Drain end\n");	
+
+	}
+	
+	if( LIBBASE->sdu_SerTx ){
+		AbortIO((struct IORequest *)LIBBASE->sdu_SerTx);
+		WaitIO((struct IORequest *)LIBBASE->sdu_SerTx);
+		while(GetMsg(LIBBASE->sdu_TxPort));
+	}
+	
+}	
 
 
 #define MAXSBUFFER 200
@@ -196,6 +240,80 @@ BOOL WaitStr(LIBBASETYPEPTR LIBBASE,const STRPTR str, LONG timeout){
 }
 
 
+BOOL GetResponse(LIBBASETYPEPTR LIBBASE,UBYTE *Buffer,ULONG maxbuffer,LONG timeout){
+
+	struct MsgPort *Tprt =LIBBASE->TimeMsg;
+	
+	ULONG sigset;
+	BOOL result = FALSE;
+	BYTE c[2];
+
+	ULONG len = 0;
+	Buffer[0]=0;
+	c[1]=0;
+	ULONG recvd;
+
+	if( ! LIBBASE->serial_ok ) return FALSE;
+	bug("GetResponse:\n");	
+	SetTimer(LIBBASE,timeout);
+	QueueSerRequest( LIBBASE , 1 );
+
+	for(;;){
+
+		sigset = (1L << Tprt->mp_SigBit) |
+				 (1L<< LIBBASE->sdu_RxPort->mp_SigBit );
+
+		recvd = Wait(sigset);
+
+		if( GetMsg( LIBBASE->sdu_RxPort ) ){
+
+			if( len <= ( maxbuffer-1 ) ){
+				Buffer[len] = LIBBASE->sdu_RxBuff[0];
+				if( Buffer[len] == '\r' )  Buffer[len] = '\n';
+				Buffer[++len] = 0;
+				bug( "%s", &Buffer[len-1] );
+				if( strcasestr(Buffer,"OK\n") != NULL |
+					strcasestr(Buffer,"CONNECT") != NULL 
+				){
+					result = TRUE;
+					break;
+				}
+				else if( strcasestr(Buffer,"NO CARRIER\n") != NULL |
+					strcasestr(Buffer,"ERROR\n") != NULL | 
+					strcasestr(Buffer,"BUSY\n") != NULL
+				){
+					result = FALSE;
+					break;
+				}
+				
+			}
+
+			QueueSerRequest( LIBBASE , 1 );
+
+		}
+
+		if( GetMsg( LIBBASE->TimeMsg ) ){
+			bug( "GetResponse TimeOut ERROR\n");
+			result = FALSE;
+			break;
+		}
+
+	}
+	SetTimer(LIBBASE,0);
+
+
+	if( LIBBASE->sdu_SerRx ){
+		AbortIO((struct IORequest *)LIBBASE->sdu_SerRx);
+		WaitIO((struct IORequest *)LIBBASE->sdu_SerRx);
+		while(GetMsg(LIBBASE->sdu_RxPort));
+	}
+bug("GetResponse end\n");	
+	return result;
+}
+
+
+
+
 
 void SerDelay(LIBBASETYPEPTR LIBBASE, LONG timeout){
 
@@ -239,7 +357,6 @@ void SerDelay(LIBBASETYPEPTR LIBBASE, LONG timeout){
 	}
 
 }
-
 
 
 
