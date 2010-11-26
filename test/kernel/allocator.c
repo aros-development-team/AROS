@@ -92,7 +92,7 @@ int main(void)
     TestArea->mh_Node.ln_Type = NT_MEMORY;
     TestArea->mh_Node.ln_Name = "Kernel allocator test area";
     TestArea->mh_Node.ln_Pri  = 127;			/* This MemHeader must be the first in the list, otherwise KrnFreePages() will find a wrong one */
-    TestArea->mh_Attributes   = MEMF_CHIP|MEMF_FAST;	/* Prevent normal AllocMem() requests from even looking at this region */
+    TestArea->mh_Attributes   = MEMF_FAST;
     TestArea->mh_Lower        = TestArea;
     TestArea->mh_Upper        = TestArea->mh_Lower + TestLength - 1;
     TestArea->mh_First        = TestArea->mh_Lower + MEMHEADER_TOTAL;
@@ -122,7 +122,7 @@ int main(void)
     Permit();
 
     printf("Allocating region1 (two read-write pages)...\n");
-    region1 = KrnAllocPages(2 * page, MEMF_CHIP|MEMF_FAST, MAP_Readable|MAP_Writable);
+    region1 = KrnAllocPages(2 * page, MEMF_FAST, MAP_Readable|MAP_Writable);
     printf("region1 at 0x%p\n", region1);
     DumpState(TestArea);
 
@@ -132,17 +132,17 @@ int main(void)
     DumpState(TestArea);
 
     printf("Allocating region1 (3 read-only pages)...\n");
-    region1 = KrnAllocPages(3 * page, MEMF_CHIP|MEMF_FAST, MAP_Readable);
+    region1 = KrnAllocPages(3 * page, MEMF_FAST, MAP_Readable);
     printf("region1 at 0x%p\n", region1);
     DumpState(TestArea);
 
     printf("Allocating region2 (4 write-only ;-) pages)...\n");
-    region2 = KrnAllocPages(4 * page, MEMF_CHIP|MEMF_FAST, MAP_Writable);
+    region2 = KrnAllocPages(4 * page, MEMF_FAST, MAP_Writable);
     printf("region2 at 0x%p\n", region2);
     DumpState(TestArea);
 
-    printf("Attempting to allocate MEMF_24BITDMA page...\n");
-    region3 = KrnAllocPages(page, MEMF_CHIP|MEMF_FAST|MEMF_24BITDMA, MAP_Readable);
+    printf("Attempting to allocate page with wrong flags...\n");
+    region3 = KrnAllocPages(page, MEMF_CHIP|MEMF_FAST, MAP_Readable);
     printf("Region at 0x%p\n", region3);
     if (region3)
     {
