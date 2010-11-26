@@ -119,6 +119,8 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
 {
     BOOL rc;
 
+    D(bug("[DOSBoot] __dosboot_Mount: handler=%08lx stack=%08x seglist=%08x\n",
+    	dn->dn_Handler, dn->dn_StackSize, dn->dn_SegList));
     if (!dn->dn_Ext.dn_AROS.dn_Device)
     {
         D(bug("[DOSBoot] __dosboot_Mount: Attempting to mount\n"));
@@ -143,16 +145,32 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
 
 static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
 {
+    BPTR lock;
     BOOL            result = FALSE;
     STRPTR          buffer;
     LONG            bufferLength;
 
     D(bug("[DOSBoot] __dosboot_IsBootable('%s')\n", deviceName));
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+
+    {
+        /* bootable if we can lock the device */
+    	buffer = AllocVec(strlen(deviceName) + 1 + 1, MEMF_ANY);
+    	if (!buffer)
+    	    return FALSE;
+    	sprintf(buffer, "%s:", deviceName);
+        if ((lock = Lock(buffer, SHARED_LOCK)))
+            result = TRUE;
+        UnLock(lock);
+        lock = 0;
+    }
+
+#else
+
 #if defined(AROS_BOOT_CHECKSIG)
 #define AROSBOOTSIG_FILE ":AROS.boot"
 
-    BPTR lock;
     LONG readsize;
     struct FileInfoBlock abfile_fib;
    
@@ -233,8 +251,12 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     result = TRUE;
 #endif
 
+#endif
+
 cleanup:
     if (buffer != NULL ) FreeMem(buffer, bufferLength);
+
+    D(bug("[DOSBoot] __dosboot_IsBootable returned %d\n", result));
 
     return result;
 }
@@ -317,10 +339,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
                 in drive or wrong disk) so we only move it to the end of
                 the list. */
             if ((!(bootNode->bn_Flags & BNF_RETRY)) && (bootNode->bn_Node.ln_Pri != -128)
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-		&& __dosboot_IsBootable(deviceName, DOSBase)
-#endif
-            )
+		&& __dosboot_IsBootable(deviceName, DOSBase))
             {
                 LIBBASE->db_BootDevice = deviceName;
                 break;

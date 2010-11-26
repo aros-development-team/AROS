@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <string.h>
 #include <stdio.h>
@@ -136,18 +136,14 @@ struct InitTable {
 
 static void FloppyBootNode(
         struct ExpansionBase *ExpansionBase,
-        CONST_STRPTR driver, int unit, ULONG type)
+        CONST_STRPTR driver, int unit, ULONG type, BOOL hddisk)
 {
     TEXT dosdevname[4] = "DF0";
     IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
     struct DeviceNode *devnode;
 
-    /* TODO: Get geometry from device 
-     * For now we assume DD 3.5" floppies
-     */
-
     dosdevname[2] += unit;
-    D(bug("strap: Adding bootnode %s:\n", dosdevname));
+    D(bug("strap: Adding bootnode %s: dostype=%08x DDHD=%d\n", dosdevname, type, hddisk ? 1 : 0));
 
     pp[0] = (IPTR)dosdevname;
     pp[1] = (IPTR)driver;
@@ -156,12 +152,12 @@ static void FloppyBootNode(
     pp[DE_SIZEBLOCK + 4] = 128;
     pp[DE_NUMHEADS + 4] = 2;
     pp[DE_SECSPERBLOCK + 4] = 1;
-    pp[DE_BLKSPERTRACK + 4] = 11;
+    pp[DE_BLKSPERTRACK + 4] = hddisk ? 22 : 11;
     pp[DE_RESERVEDBLKS + 4] = 2;
     pp[DE_LOWCYL + 4] = 0;
     pp[DE_HIGHCYL + 4] = 79;
     pp[DE_NUMBUFFERS + 4] = 10;
-    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
+    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
     pp[DE_MAXTRANSFER + 4] = 0x00200000;
     pp[DE_MASK + 4] = 0x7FFFFFFE;
     pp[DE_BOOTPRI + 4] = 5 - (unit * 10);
@@ -178,29 +174,40 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
 {
        struct MsgPort *msgport;
        struct IOExtTD *io;
+       struct DriveGeometry dg;
        CONST_STRPTR driver = "trackdisk.device";
        UWORD i;
+       WORD bootdrive = -1;
        LONG retval = -1;
        void (*init)(void) = NULL;
 
+       /* memf_chip not required but more compatible with old bootblocks */
        UBYTE *buffer = AllocMem(BOOTBLOCK_SIZE, MEMF_CHIP);
        D(bug("bootblock address %8x\n", buffer));
        if (buffer) {
-           if ((msgport = CreateMsgPort())) {
-               if ((io = (struct IOExtTD*)CreateIORequest(msgport, sizeof(struct IOExtTD)))) {
-                   for (i = 0; i < 4; i++) {
+           for (i = 0; i < 4; i++) {
+               if ((msgport = CreateMsgPort())) {
+                   if ((io = (struct IOExtTD*)CreateIORequest(msgport, sizeof(struct IOExtTD)))) {
                        if (!OpenDevice(driver, i, (struct IORequest*)io, 0)) {
+                           ULONG dostype = 0x444f5300;
+                           BOOL dg_ok = FALSE;
                            D(bug("%s:%d open\n", driver, i));
-                           io->iotd_Req.io_Length = BOOTBLOCK_SIZE;
-                           io->iotd_Req.io_Data = buffer;
-                           io->iotd_Req.io_Offset = 0;
-                           io->iotd_Req.io_Command = CMD_READ;
-                           DoIO((struct IORequest*)io);
-                           if (io->iotd_Req.io_Error == 0) {
-                               D(bug("bootblock read ok\n"));
-                               if (BootBlockChecksum(buffer)) {
+                           io->iotd_Req.io_Command = TD_GETGEOMETRY;
+                           io->iotd_Req.io_Data = &dg;
+                           io->iotd_Req.io_Length = sizeof dg;
+                           DoIO((struct IOReqest*)io);
+                           if (io->iotd_Req.io_Error == 0)
+                               dg_ok = TRUE;
+                           if (bootdrive < 0) {
+                               io->iotd_Req.io_Length = BOOTBLOCK_SIZE;
+                               io->iotd_Req.io_Data = buffer;
+                               io->iotd_Req.io_Offset = 0;
+                               io->iotd_Req.io_Command = CMD_READ;
+                               DoIO((struct IORequest*)io);
+                               if (io->iotd_Req.io_Error == 0) {
+                                   D(bug("bootblock read ok\n"));
+                                   if (BootBlockChecksum(buffer)) {
                                	       APTR bootcode = buffer + 12;
-                               	       D(bug("creating BootNode\n"));
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
                                	       D(bug("calling bootblock!\n", buffer));
                                	       asm volatile (
@@ -217,29 +224,31 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                	       		       "m" (bootcode)
                                	       		     : "%d0", "%d1", "%a0", "%a1");
                                	       D(bug("bootblock: D0=0x%08x A0=%p\n", retval, init));
-                               	       if (retval == 0) {
-                                           FloppyBootNode(ExpansionBase, driver, i, *(ULONG *)buffer);
-                               	           break;
-                                       } else
+                               	       dostype = *(ULONG *)buffer;
+                               	       if (retval == 0)
+                               	       	   bootdrive = i;
+                                       else
                                            Alert(AN_BootError);
 #endif
+                                   }
+                               } else {
+                                   D(bug("ioerror %d\n", io->iotd_Req.io_Error));
                                }
-                           } else {
-                               D(bug("ioerror %d\n", io->iotd_Req.io_Error));
                            }
                            CloseDevice((struct IORequest*)io);
+                           FloppyBootNode(ExpansionBase, driver, i, dostype, dg.dg_TotalSectors == 22 && dg_ok);
                        }
+                       DeleteIORequest((struct IORequest*)io);
                    }
-                   DeleteIORequest((struct IORequest*)io);
+                   DeleteMsgPort(msgport);
                }
-               DeleteMsgPort(msgport);
            }
-
            FreeMem(buffer, BOOTBLOCK_SIZE);
        }
 
-       if (retval == 0 && init != NULL) {
+       if (bootdrive >= 0 && init != NULL) {
            CloseLibrary((APTR)ExpansionBase);
+           D(bug("calling bootblock\n"));
            init();
        }
 }
