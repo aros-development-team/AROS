@@ -364,9 +364,6 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	PrepareExecBase(mh, NULL, NULL);
 
-	/* Scan for all other ROM Tags */
-	SysBase->ResModules = krnRomTagScanner(mh, kickrom);
-
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
         SysBase->SysStkLower    = (APTR)ss_stack_lower;
 
@@ -410,7 +407,11 @@ void start(IPTR chip_start, ULONG chip_size,
 		FAKE_IT(SysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
 	}
 
-	DebugPutHex("GayleID", ReadGayle());
+	for (i = 0; kickrom[i] != (UWORD *)~0; i+=2)
+	    krnCreateROMHeader(mh, "Kickstart ROM", kickrom[i], kickrom[i+1]);
+
+	/* Scan for all other ROM Tags */
+	SysBase->ResModules = krnRomTagScanner(mh, kickrom);
 
 	/* If we had Fast memory, don't forget to add
 	 * Chip memory now!
