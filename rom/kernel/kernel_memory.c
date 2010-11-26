@@ -75,6 +75,19 @@ APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
     ULONG pages;
     ULONG p;
 
+    /*
+     * Safety checks.
+     * If mh_First is NULL, it's ROM header. We can't allocate from it.
+     */
+    if (!head)
+	return NULL;
+    /*
+     * If either mc_Next or mc_Bytes is not zero, this MemHeader is not
+     * managed by us. We can't allocate from it.
+     */
+    if (head->mc.mc_Next || head->mc.mc_Bytes)
+	return NULL;
+
     /* Pad up size and convert it to number of pages */
     size = (size + align) & ~align;
     pages = size / KernelBase->kb_PageSize;
