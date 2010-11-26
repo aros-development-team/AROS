@@ -30,8 +30,8 @@ struct FPXContext
     ULONG  mxcsr;
     ULONG  pad;
     MMReg  mm[8];
-    XMMReg xmm[8];
-    XMMReg reserved[14];
+    XMMReg xmm[16];
+    XMMReg reserved[6];
 };
 
 struct ExceptionContext
