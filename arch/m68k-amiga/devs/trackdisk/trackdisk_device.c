@@ -65,15 +65,17 @@ static AROS_UFH3(ULONG, disk_block_interrupt,
     AROS_USERFUNC_EXIT
 }
 
-static void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu)
+static void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu, BOOL dostep)
 {
     struct IOExtTD *iotd;
 
-    if (tdu->pub.tdu_PubFlags & TDPF_NOCLICK) {
-    	td_seek(tdu, -1, 0, tdb);
-    } else {
-    	// step towards cyl 0 if > 0, it not, step to cyl 1
-    	td_seek(tdu, tdu->pub.tdu_CurrTrk >= 2 ? (tdu->pub.tdu_CurrTrk - 2) / 2 : 1, 0, tdb);
+    if (dostep) {
+    	if (tdu->pub.tdu_PubFlags & TDPF_NOCLICK) {
+    	    td_seek(tdu, -1, 0, tdb);
+    	} else {
+    	    // step towards cyl 0 if > 0, it not, step to cyl 1
+    	    td_seek(tdu, tdu->pub.tdu_CurrTrk >= 2 ? (tdu->pub.tdu_CurrTrk - 2) / 2 : 1, 0, tdb);
+    	}
     }
     if (td_getDiskChange (tdu, tdb)) {
 	struct DiskBase *DiskBase = tdb->td_DiskBase;
@@ -148,12 +150,12 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    break;
 	case TD_CHANGENUM:
 	    iotd->iotd_Req.io_Actual = tdu->pub.tdu_Counter;
-        iotd->iotd_Req.io_Error=0;
+	    iotd->iotd_Req.io_Error=0;
 	    break;
 	case TD_CHANGESTATE:
     	    td_select(tdu, tdb);
 	    if (tdu->tdu_DiskIn == TDU_NODISK)
-		TestInsert(tdb, tdu);
+		TestInsert(tdb, tdu, FALSE);
 	    if (tdu->tdu_DiskIn == TDU_DISK) {
 		/* test if disk is still in there */
 		temp = td_getDiskChange(tdu, tdb);
@@ -185,11 +187,11 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    {
 		case 0:
     	    	    td_select(tdu, tdb);
-		    td_motoroff(tdu,tdb);
+		    td_motoroff(tdu, tdb);
 		    break;
 		case 1:
     	    	    td_select(tdu, tdb);
-		    td_motoron(tdu,tdb,TRUE);
+		    td_motoron(tdu, tdb, TRUE);
 		    break;
 		default:
 		    iotd->iotd_Req.io_Error = TDERR_NotSpecified;
@@ -207,18 +209,22 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    break;
 	case TD_GETGEOMETRY:
 	    {
-		int hdmult = tdu->tdu_hddisk ? 2 : 1;
-		geo = (struct DriveGeometry *)iotd->iotd_Req.io_Data;
-		geo->dg_SectorSize = 512;
-		geo->dg_TotalSectors = 11 * hdmult;
-		geo->dg_Cylinders = 80;
-		geo->dg_CylSectors = 11 * hdmult * 2;
-		geo->dg_Heads = 2;
-		geo->dg_TrackSectors = 11 * hdmult;
-		geo->dg_BufMemType = MEMF_PUBLIC;
-		geo->dg_DeviceType = DG_DIRECT_ACCESS;
-		geo->dg_Flags = DGF_REMOVABLE;
-                iotd->iotd_Req.io_Error=0;
+	    	if (tdu->tdu_DiskIn == TDU_NODISK) {
+	    	    iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+	    	} else {
+		    int hdmult = tdu->tdu_hddisk ? 2 : 1;
+		    geo = (struct DriveGeometry *)iotd->iotd_Req.io_Data;
+		    geo->dg_SectorSize = 512;
+		    geo->dg_TotalSectors = 11 * hdmult;
+		    geo->dg_Cylinders = 80;
+		    geo->dg_CylSectors = 11 * hdmult * 2;
+		    geo->dg_Heads = 2;
+		    geo->dg_TrackSectors = 11 * hdmult;
+		    geo->dg_BufMemType = MEMF_PUBLIC;
+		    geo->dg_DeviceType = DG_DIRECT_ACCESS;
+		    geo->dg_Flags = DGF_REMOVABLE;
+                    iotd->iotd_Req.io_Error=0;
+                }
             }
 	    break;
 	case TD_GETDRIVETYPE:
@@ -403,12 +409,13 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 		    switch (tdu->tdu_DiskIn)
 		    {
 			case TDU_NODISK:
-			TestInsert(tdb, tdu);
+			TestInsert(tdb, tdu, TRUE);
 			break;
 			case TDU_DISK:
 			if (td_getDiskChange(tdu, tdb) == 0) {
 			    D(bug("[Floppy] Removal detected\n"));
 			    /* Go to cylinder 0 */
+			    td_motoroff(tdu, tdb);
 			    td_recalibrate(tdu, tdb);
 			    tdu->tdu_DiskIn = TDU_NODISK;
 			    tdu->tdu_sectors = 11;
@@ -584,6 +591,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
   	ULONG id = GetUnitID(i);
   	if (id != DRT_EMPTY)
   	    TD_InitUnit(i, TDBase);
+	D(bug("TD%d id=%08x status=%d\n", i, id, TDBase->td_Units[i] ? 1 : 0));
     }
 
     /* Create the message processor task */
@@ -602,7 +610,6 @@ static int GM_UNIQUENAME(open)
     ULONG flags
 )
 {
-    D(bug("TD%d: Open\n", unitnum));
     iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
 
     /* Is the requested unitNumber valid? */
@@ -619,7 +626,8 @@ static int GM_UNIQUENAME(open)
     	    iotd->iotd_Req.io_Error = 0;
 	}
     }
-    
+    D(bug("TD%d: Open=%d\n", unitnum, iotd->iotd_Req.io_Error));
+  
     return iotd->iotd_Req.io_Error == 0;
 
 }
