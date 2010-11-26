@@ -174,7 +174,7 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	curr = (struct Segment *)BADDR(dinf->di_ResList);
 	while (curr)
 	{
- 	    n = NewSegNode(SysBase, AROS_BSTR_ADDR(curr->seg_Name), curr->seg_UC);
+ 	    n = NewSegNode(SysBase, AROS_BSTR_ADDR(MKBADDR(&curr->seg_Name[0])), curr->seg_UC);
 
 	    if (!n)
 	    {
