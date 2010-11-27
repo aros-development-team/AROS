@@ -48,6 +48,10 @@ AROS_UFP4(ULONG, TOF_VBlank,
 
 BOOL InitROMFont(struct GfxBase *);
 
+#if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+void InitCustom(struct GfxBase *);
+#endif
+
 static int GfxInit(struct GfxBase *LIBBASE)
 {
     WORD i;
@@ -61,6 +65,10 @@ static int GfxInit(struct GfxBase *LIBBASE)
         CloseLibrary((APTR)OOPBase);
         return FALSE;
     }
+
+#if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+	InitCustom(GfxBase);
+#endif
 
     NEWLIST(&LIBBASE->BlitWaitQ);
     NEWLIST(&LIBBASE->TextFonts);
