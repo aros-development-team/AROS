@@ -43,8 +43,8 @@ void Early_ScreenCode(UWORD code)
 
 void DebugInit()
 {
-	/* Set the debug UART to 9600 */
-	reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 9600));
+	/* Set the debug UART to 115200 */
+	reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 115200));
 }
 
 int DebugPutChar(register int chr)
@@ -137,35 +137,130 @@ static void __attribute__((interrupt)) Early_TrapHandler(void)
 
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 
-void __attribute__((interrupt)) cpu_detect_trap(void);
-asm (
+/* detect CPU and FPU type, enable code cache (if supported)
+ * does not enable data caches, it is bad idea on real hardware
+ * without correct MMU tables (for example chip ram must be non-cacheable)
+ */
+
+void __attribute__((interrupt)) cpu_detect_trap_fpu(void);
+asm (".chip 68060\n"
 	"	.text\n"
-	"	.globl cpu_detect_trap\n"
-	"cpu_detect_trap:\n"
-	"	addq.l	#2,%sp@(2)\n"
-	"	move.w	%sr,%d0\n"
-	"	rte\n"
+	"	.globl cpu_detect_trap_fpu\n"
+	"cpu_detect_trap_fpu:\n"
+	"	move.l %sp,%a1\n"
+	"	lea %sp@(-60),%sp\n"
+	"	move.l %sp,%a0\n"
+	"	clr.b (%a0)\n"
+	"	fsave (%a0)\n"
+	"	move.w #0x8000,%d0\n"
+	"	move.b (%a0),%d0\n"
+	"	move.l %a1,%sp\n"
+	"	addq.l	#2,%sp@(2)\n" /* skip illegal */
+	"	rte\n" /* return to cpu_detect() */
 );
 
-/* Detect 68000 vs 68010/68020 */
-ULONG cpu_detect(void)
+void __attribute__((interrupt)) cpu_detect_trap_f(void);
+asm (
+	"	.text\n"
+	"	.globl cpu_detect_trap_f\n"
+	"cpu_detect_trap_f:\n"
+	"	move.l %a1,%sp\n"
+	"	addq.l	#2,%sp@(2)\n" /* skip illegal */
+	"	moveq #0,%d0\n"
+	"	rte\n" /* return to cpu_detect() */
+);
+
+void __attribute__((interrupt)) cpu_detect_trap_priv(void);
+asm (".chip 68060\n"
+	"	.text\n"
+	"	.globl cpu_detect_trap_priv\n"
+	"cpu_detect_trap_priv:\n"
+	"	move.w	#0x2001,%d0\n"
+ 		/* CACR is 68020+ */
+	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
+		/* 68020+ or better */
+	"       move.w	#0x8000,%d0\n"
+	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
+ 		/* enable 68040/060 code cache */
+	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
+ 		/* bit 15 still set? */
+	"	tst.w	%d0\n"
+ 		/* yes, it is 68040 or 68060 */
+	"	bmi.s	0f\n"
+ 		/* enable 68020/030 code cache and 68030 data cache */
+ 	"	move.w	#0x0101,%d0\n"
+	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
+	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
+ 		/* data cache bit still set? */
+	"	btst	#8,%d0\n"
+	"	bne.s	1f\n" /* yes, it is 68030 */
+		/* 68020 */
+	"	move.w	#0x2003,%d0\n"
+	"	illegal\n"
+		/* 68030 */
+	"	move.w	#0x0001,%d0\n"
+		/* disable data cache, bad idea without correct MMU tables */
+	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
+	"1:	move.w	#0x2007,%d0\n"
+	"	illegal\n"
+		/* 68040 */
+	"0:	move.w	#0x2008,%d0\n"
+ 		/* PCR is 68060 only */
+	"	dc.l 0x4e7a0808\n" // movec	%pcr,%d0\n"
+		/* 68060 */
+	"	move.w	#0x0001,%d0\n"
+ 		/* enable supercalar, enable FPU */
+ 	"	dc.l 0x4e7b0808\n" // movec	%d0,%pcr\n"
+	"	move.w	#0x2087,%d0\n"
+	"	illegal\n"
+);
+
+void __attribute__((interrupt)) cpu_detect_trap_illg(void);
+asm (
+	"	.text\n"
+	"	.globl cpu_detect_trap_illg\n"
+	"cpu_detect_trap_illg:\n"
+	"	addq.l	#8,%sp\n" /* remove illegal instruction stack frame */
+	"	addq.l	#2,%sp@(2)\n" /* skip move sr,d0 */
+	"	rte\n" /* return to cpu_detect() */
+);
+
+/* Detect CPU and FPU model */
+static ULONG cpu_detect(void)
 {
 	volatile APTR *trap = NULL;
-	APTR old_trap8;
-	UWORD ret;
+	APTR old_trap8, old_trap4, old_trap11;
+	UWORD cpuret, fpuret;
 
 	old_trap8 = trap[8];
-	trap[8] = cpu_detect_trap;
-	asm volatile (	
+	trap[8] = cpu_detect_trap_priv;
+	old_trap4 = trap[4];
+	trap[4] = cpu_detect_trap_illg;
+	old_trap11 = trap[11];
+	trap[11] = cpu_detect_trap_f;
+	asm volatile (
 		"move.w	%%sr,%%d0\n"
 		"move.w	%%d0,%0\n"
-		: "=m" (ret) : : "%d0" );
+		: "=m" (cpuret) : : "%d0" );
+	trap[4] = cpu_detect_trap_fpu;
+	asm volatile (
+		"illegal\n" /* supervisor mode */
+		"move.w	%%d0,%0\n"
+		: "=m" (fpuret) : : "%d0", "%a0", "%a1" );
 	trap[8] = old_trap8;
+	trap[4] = old_trap4;
+	trap[11] = old_trap11;
 
-	if (ret & 0x2000)
-		return AFF_68010;
-	else 
-		return 0;
+	cpuret &= 0xff;
+	if (fpuret) {
+		if (cpuret & (AFF_68040 | AFF_68060))
+			cpuret |= AFF_FPU40 | AFF_68881 | AFF_68882;
+		else if ((fpuret & 0x00ff) <= 0x1f)
+			cpuret |= AFF_68881;
+		else
+			cpuret |= AFF_68881 | AFF_68882;
+	}
+	return cpuret;
 }
 	
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
