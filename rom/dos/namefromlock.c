@@ -84,7 +84,7 @@ struct MyExAllData
     AROS_LIBFUNC_INIT
 
     STRPTR  	    	 s1, s2, name;
-    struct Unit     	*curlock, *oldlock=NULL;
+    struct Unit     	*curlock, *parentlock;
     struct MyExAllData   stackead;
     struct ExAllData 	*ead = &stackead.ead;
     LONG    	    	 error;
@@ -120,14 +120,16 @@ struct MyExAllData
     /* Construct the name from top to bottom */
     name = buffer + length;
     *--name = 0;
-    curlock = fh->fh_Unit;
+    parentlock = fh->fh_Unit;
 
     iofs->io_DirPos = -1;
-
     /* Loop over path */
     do
     {
     	STRPTR sep = NULL;
+
+   	curlock = parentlock;
+    	parentlock = NULL;
 
     	/* Read name of current lock (into the user supplied buffer) */
     	iofs->IOFS.io_Unit  	    	    = curlock;
@@ -135,11 +137,36 @@ struct MyExAllData
     	iofs->io_Union.io_EXAMINE.io_ead    = ead;
     	iofs->io_Union.io_EXAMINE.io_Size   = sizeof(stackead);
     	iofs->io_Union.io_EXAMINE.io_Mode   = ED_TYPE;
-    
     	DosDoIO(&iofs->IOFS);
-
     	error = iofs->io_DosError;
 
+    	/* Read the parent's lock (if there is a parent) */
+    	if(!error && ead->ed_Type != ST_ROOT)
+    	{
+    	    iofs->IOFS.io_Command   	    	= FSA_OPEN;
+    	    iofs->io_Union.io_OPEN.io_Filename	= "/";
+    	    iofs->io_Union.io_OPEN.io_FileMode	= 0;
+    	    DosDoIO(&iofs->IOFS);
+    	    parentlock = iofs->IOFS.io_Unit;
+    	    error = iofs->io_DosError;
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    	    /* Some 'classic' filesystems don't ever return ST_ROOT.
+    	     * We check to see if the lock is the same as the previous
+    	     * lock, and if so, assume we're reached the root.
+    	     */
+    	    if (!error) {
+    	        iofs->IOFS.io_Unit = curlock;
+    	        iofs->IOFS.io_Command = FSA_SAME_LOCK;
+    	        iofs->io_Union.io_SAME_LOCK.io_Lock[0] = curlock;
+    	        iofs->io_Union.io_SAME_LOCK.io_Lock[1] = parentlock;
+    	        iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
+    	        DosDoIO(&iofs->IOFS);
+    	        if (iofs->io_DosError == 0 && iofs->io_Union.io_SAME_LOCK.io_Same == LOCK_SAME)
+    	    	   ead->ed_Type = ST_ROOT;
+    	    }
+#endif
+    	}
     	/* Move name to the top of the buffer. */
     	if(!error)
     	{
@@ -161,7 +188,7 @@ struct MyExAllData
                     error = ERROR_LINE_TOO_LONG;
                 }
     	    }
-    	    else if(oldlock != NULL)
+    	    else if(curlock != fh->fh_Unit)
     	    {
                 if (name > buffer)
                 {		    
@@ -194,57 +221,25 @@ struct MyExAllData
     	    }
     	    
     	} /* if(!error) */
-    
-    	/* Read the parent's lock (if there is a parent) */
-    	if(!error && (ead->ed_Type != ST_ROOT))
+       	/* Free the old lock if it was allocated by NameFromLock(). */
+    	if(curlock != fh->fh_Unit)
     	{
-    	    iofs->IOFS.io_Command   	    	= FSA_OPEN;
-    	    iofs->io_Union.io_OPEN.io_Filename	= "/";
-    	    iofs->io_Union.io_OPEN.io_FileMode	= 0;
-
-    	    DosDoIO(&iofs->IOFS);
-    	    
-    	    curlock = iofs->IOFS.io_Unit;
-    	    error = iofs->io_DosError;
-    	}
-
-    	/* Some 'classic' filesystems don't ever return ST_ROOT.
-    	 * We check to see if the lock is the same as the previous
-    	 * lock, and if so, assume we're reached the root.
-    	 */
-    	if (!error && ead->ed_Type == ST_USERDIR &&
-    	     oldlock != BNULL && sep != NULL) {
-    	    iofs->IOFS.io_Unit = curlock;
-    	    iofs->IOFS.io_Command = FSA_SAME_LOCK;
-    	    iofs->io_Union.io_SAME_LOCK.io_Lock[0] = curlock;
-    	    iofs->io_Union.io_SAME_LOCK.io_Lock[1] = oldlock;
-    	    iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
-    	    DosDoIO(&iofs->IOFS);
-
-    	    if (iofs->io_DosError == 0 &&
-    	    	iofs->io_Union.io_SAME_LOCK.io_Same == LOCK_SAME) {
-    	    	*sep = ':';
-    	    	ead->ed_Type = ST_ROOT;
-    	    }
-    	}
-
-    
-    	/* Free the old lock if it was allocated by NameFromLock(). */
-    	if(oldlock != NULL)
-    	{
-    	    iofs->IOFS.io_Unit	    = oldlock;
+    	    iofs->IOFS.io_Unit	    = curlock;
     	    iofs->IOFS.io_Command   = FSA_CLOSE;
-    
     	    DosDoIO(&iofs->IOFS);
     	}
-    	
-    	oldlock = curlock;
-    	
+     	
     }
-    while(!error && (ead->ed_Type != ST_ROOT));
+    while(!error && ead->ed_Type != ST_ROOT);
+
+    if(parentlock)
+    {
+        iofs->IOFS.io_Unit	= parentlock;
+        iofs->IOFS.io_Command   = FSA_CLOSE;
+        DosDoIO(&iofs->IOFS);
+    }
 
     /* Move the name from the top to the bottom of the buffer. */
-
     if (!error)
     {
         UBYTE c, old_c = '\0';
@@ -263,7 +258,6 @@ struct MyExAllData
     	}
         while (c);
     }
-     
     UnLock((BPTR)MKBADDR(fh));
 
     /* All done. */
