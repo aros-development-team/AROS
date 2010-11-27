@@ -351,14 +351,143 @@ ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 
 VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
-    WORD    	    	    x, y, d;
-    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
-    UBYTE   	    	    **plane;
-    ULONG   	    	    planeoffset;
-    struct bm_data    *data = OOP_INST_DATA(cl, o);
-      	
-//bug("getimage: %dx%d %dx%d %d\n", msg->x, msg->y, msg->width, msg->height, msg->modulo);
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    struct bm_data *data = OOP_INST_DATA(cl, o);
+
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+	    	    HIDD_BM_CopyMemBox8(o,
+		    	    		data->VideoData,
+					msg->x,
+					msg->y,
+					msg->pixels,
+					0,
+					0,
+					msg->width,
+					msg->height,
+					data->bytesperline,
+					msg->modulo);
+		    break;
+		    
+		case 2:
+	    	    HIDD_BM_CopyMemBox16(o,
+		    	    		 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperline,
+					 msg->modulo);
+		    break;
+
+		case 3:
+	    	    HIDD_BM_CopyMemBox24(o,
+		    	    		 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperline,
+					 msg->modulo);
+		    break;
+		   
+		case 4:
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperline,
+					 msg->modulo);
+		    break;
+		     
+    	    } /* switch(data->bytesperpix) */
+	    break;
+
+    	case vHidd_StdPixFmt_Native32:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+		    HIDD_BM_GetMem32Image8(o,
+		    	    	    	   data->VideoData,
+					   msg->x,
+					   msg->y,
+					   msg->pixels,
+					   msg->width,
+					   msg->height,
+					   data->bytesperline,
+					   msg->modulo);
+		    break;
+		    
+		case 2:
+		    HIDD_BM_GetMem32Image16(o,
+		    	    	    	    data->VideoData,
+					    msg->x,
+					    msg->y,
+					    msg->pixels,
+					    msg->width,
+					    msg->height,
+					    data->bytesperline,
+					    msg->modulo);
+		    break;
+
+		case 3:
+		    HIDD_BM_GetMem32Image24(o,
+		    	    	    	    data->VideoData,
+					    msg->x,
+					    msg->y,
+					    msg->pixels,
+					    msg->width,
+					    msg->height,
+					    data->bytesperline,
+					    msg->modulo);
+		    break;
+
+		case 4:		    
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperline,
+					 msg->modulo);
+		    break;
+		    
+	    } /* switch(data->bytesperpix) */
+	    break;
+	    
+	default:
+	    {
+	    	APTR 	    pixels = msg->pixels;
+    	    	APTR 	    srcPixels = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
+		OOP_Object *dstpf;
+		
+		dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+		
+		HIDD_BM_ConvertPixels(o, &srcPixels, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
+		    	    	      &pixels, (HIDDT_PixelFormat *)dstpf, msg->modulo,
+				      msg->width, msg->height, NULL);    	    	
+	    }		
+	    break;
+	    
+    } /* switch(msg->pixFmt) */	    
 }
 
 /****************************************************************************************/
@@ -366,14 +495,143 @@ VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
 VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutImage *msg)
 {
-    WORD    	    	    x, y, d;
-    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
-    UBYTE   	    	    **plane;
-    ULONG   	    	    planeoffset;
-    struct bm_data    *data = OOP_INST_DATA(cl, o);
+    struct bm_data *data = OOP_INST_DATA(cl, o);
 
-//bug("putimage: %dx%d %dx%d %d\n", msg->x, msg->y, msg->width, msg->height, msg->modulo);
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+	    	    HIDD_BM_CopyMemBox8(o,
+		    	    		msg->pixels,
+					0,
+					0,
+					data->VideoData,
+					msg->x,
+					msg->y,
+					msg->width,
+					msg->height,
+					msg->modulo,
+					data->bytesperline);
+		    break;
+		    
+		case 2:
+	    	    HIDD_BM_CopyMemBox16(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperline);
+		    break;
+		   
+		case 3:
+	    	    HIDD_BM_CopyMemBox24(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperline);
+		    break;
+		
+		case 4:
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperline);
+		    break;
+		     
+    	    } /* switch(data->bytesperpix) */
+	    break;
+	
+    	case vHidd_StdPixFmt_Native32:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+		    HIDD_BM_PutMem32Image8(o,
+		    	    	    	   msg->pixels,
+					   data->VideoData,
+					   msg->x,
+					   msg->y,
+					   msg->width,
+					   msg->height,
+					   msg->modulo,
+					   data->bytesperline);
+		    break;
+		    
+		case 2:
+		    HIDD_BM_PutMem32Image16(o,
+		    	    	    	    msg->pixels,
+					    data->VideoData,
+					    msg->x,
+					    msg->y,
+					    msg->width,
+					    msg->height,
+					    msg->modulo,
+					    data->bytesperline);
+		    break;
+
+		case 3:
+		    HIDD_BM_PutMem32Image24(o,
+		    	    	    	    msg->pixels,
+					    data->VideoData,
+					    msg->x,
+					    msg->y,
+					    msg->width,
+					    msg->height,
+					    msg->modulo,
+					    data->bytesperline);
+		    break;
+
+		case 4:		    
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->VideoData,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperline);
+		    break;
+		    
+	    } /* switch(data->bytesperpix) */
+	    break;
+	    
+	default:
+	    {
+	    	APTR 	    pixels = msg->pixels;
+    	    	APTR 	    dstBuf = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
+		OOP_Object *srcpf;
+		
+		srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+		
+		HIDD_BM_ConvertPixels(o, &pixels, (HIDDT_PixelFormat *)srcpf, msg->modulo,
+		    	    	      &dstBuf, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
+				      msg->width, msg->height, NULL);    	    	
+	    }
+	    break;
+	    
+    } /* switch(msg->pixFmt) */	    
 }
 
 /****************************************************************************************/
@@ -381,14 +639,60 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_BitMap_PutImageLUT *msg)
 {
-    WORD    	    	    x, y, d;
-    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
-    UBYTE   	    	    **plane;
-    ULONG   	    	    planeoffset;
-    struct bm_data   *data = OOP_INST_DATA(cl, o);
+    struct bm_data *data = OOP_INST_DATA(cl, o);
 
-//bug("putimagelut\n");
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    switch(data->bytesperpixel)
+    {
+	case 2:
+	    HIDD_BM_CopyLUTMemBox16(o,
+		    	    	 msg->pixels,
+				 0,
+				 0,
+				 data->VideoData,
+				 msg->x,
+				 msg->y,
+				 msg->width,
+				 msg->height,
+				 msg->modulo,
+				 data->bytesperline,
+				 msg->pixlut);
+	    break;
+
+	case 3:
+	    HIDD_BM_CopyLUTMemBox24(o,
+		    	    	 msg->pixels,
+				 0,
+				 0,
+				 data->VideoData,
+				 msg->x,
+				 msg->y,
+				 msg->width,
+				 msg->height,
+				 msg->modulo,
+				 data->bytesperline,
+				 msg->pixlut);
+	    break;
+
+	case 4:
+	    HIDD_BM_CopyLUTMemBox32(o,
+		    	    	    msg->pixels,
+				    0,
+				    0,
+				    data->VideoData,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->modulo,
+				    data->bytesperline,
+				    msg->pixlut);
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+
+    } /* switch(data->bytesperpix) */	    
 }
 
 /****************************************************************************************/
