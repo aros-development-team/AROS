@@ -1545,7 +1545,14 @@ if test "$aros_kernel_includes" != "" ; then
     if test "$aros_kernel_cc_includes" = "" ; then
     	# Try to guess where the directory is.
     	aros_kernel_cc_includes=`dirname \`${aros_kernel_cc} ${aros_kernel_cflags} -print-libgcc-file-name\``/include
-    	if ! test -d $aros_kernel_cc_includes; then
+    	if test -d $aros_kernel_cc_includes; then
+            # Check if there is also an include-fixed directory and add it
+            # to kernel compiler's include path as it may contain some of
+            # the headers we need.
+            if test -d "$aros_kernel_cc_includes"-fixed; then
+                aros_kernel_cc_includes+=" -isystem $aros_kernel_cc_includes"-fixed
+            fi
+        else
             # The directory doesn't exist, we need to do some more work.
             aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
 
