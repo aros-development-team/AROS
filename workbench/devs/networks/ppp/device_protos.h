@@ -27,20 +27,19 @@ VOID Offline(LIBBASETYPEPTR LIBBASE,struct IOSana2Req *ios2);
 VOID CMD_WRITE_Ready(LIBBASETYPEPTR LIBBASE);
 VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE,struct IOExtSer *ioSer);
 VOID Incoming_IP_Packet(LIBBASETYPEPTR LIBBASE, BYTE *p , ULONG length);
-VOID QueueSerRequest(LIBBASETYPEPTR LIBBASE , LONG length);
 
-BOOL OpenSerial(LIBBASETYPEPTR LIBBASE);
-VOID CloseSerial(LIBBASETYPEPTR LIBBASE);
-VOID DoStr(LIBBASETYPEPTR LIBBASE,const STRPTR str);
-BOOL SendStr(LIBBASETYPEPTR LIBBASE,const STRPTR str ,LONG timeout);
-void DoBYTES(LIBBASETYPEPTR LIBBASE, BYTE *p,ULONG len);
-void SendBYTES(LIBBASETYPEPTR LIBBASE, BYTE *p,ULONG len);
-void SerDelay(LIBBASETYPEPTR LIBBASE, LONG timeout);
-BOOL WaitStr(LIBBASETYPEPTR LIBBASE,const STRPTR str, LONG timeout);
-void DrainSerial(LIBBASETYPEPTR LIBBASE);
-BOOL GetResponse(LIBBASETYPEPTR LIBBASE,UBYTE *Buffer,ULONG maxbuffer,LONG timeout);
-void SetTimer(LIBBASETYPEPTR LIBBASE,const ULONG t);
+struct EasySerial * OpenSerial(BYTE *name,ULONG unit);
+VOID CloseSerial(struct EasySerial *s);
+VOID QueueSerRequest(struct EasySerial *s , LONG length);
+VOID DoStr(struct EasySerial *s,const STRPTR str);
+void DoBYTES(struct EasySerial *s, BYTE *p,ULONG len);
+void SendBYTES(struct EasySerial *s, BYTE *p,ULONG len);
+void DrainSerial(struct EasySerial *s);
+BOOL GetResponse(struct EasySerial *s,UBYTE *Buffer,ULONG maxbuffer,LONG timeout);
 
+void SetTimer(struct EasyTimer* t,const ULONG s);
+void CloseTimer(struct EasyTimer* t);
+struct EasyTimer* OpenTimer();
 
 void init_ppp(LIBBASETYPEPTR LIBBASE);
 void bytes_received( UBYTE *bytes,ULONG len );

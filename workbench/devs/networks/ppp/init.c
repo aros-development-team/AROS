@@ -169,36 +169,36 @@ BOOL ReadConfig(LIBBASETYPEPTR LIBBASE){
 
 
 BOOL TestModem(LIBBASETYPEPTR LIBBASE){
-	
+
 	UBYTE buf[PPP_MAXARGLEN];
 	UBYTE buf2[PPP_MAXARGLEN];
-	
+
 	bug("ModemTest\n",buf);
-	DoStr( LIBBASE,  "\r\r\r" );
-	
-	DrainSerial(LIBBASE);
-	DoStr( LIBBASE,  "ATZ\r" );
-	if( GetResponse(LIBBASE,buf,PPP_MAXARGLEN,5)){
+	DoStr( LIBBASE->ser ,  "\r\r\r" );
+
+	DrainSerial(LIBBASE->ser);
+	DoStr( LIBBASE->ser,  "ATZ\r" );
+	if( GetResponse(LIBBASE->ser,buf,PPP_MAXARGLEN,5)){
 		if( strcasestr(buf,"OK") == NULL ){
 			bug("ATZ FAIL\n");
 			return FALSE;
 		}
-	}	
-	
-	// echo off 
-	DrainSerial(LIBBASE);
-	DoStr( LIBBASE,  "ATE 0\r" );
-	if( GetResponse(LIBBASE,buf,PPP_MAXARGLEN,5)){
+	}
+
+	// echo off
+	DrainSerial(LIBBASE->ser);
+	DoStr( LIBBASE->ser,  "ATE 0\r" );
+	if( GetResponse(LIBBASE->ser,buf,PPP_MAXARGLEN,5)){
 		if( strcasestr(buf,"OK") == NULL ){
 			bug("ATE 0 FAIL\n");
 			return FALSE;
 		}
-	}	
-	
-	// Get modem model 
-	DrainSerial(LIBBASE);
-	DoStr( LIBBASE,  "AT+GMM\r" );
-	if( GetResponse(LIBBASE,buf,PPP_MAXARGLEN,5)){
+	}
+
+	// Get modem model
+	DrainSerial(LIBBASE->ser);
+	DoStr( LIBBASE->ser,  "AT+GMM\r" );
+	if( GetResponse(LIBBASE->ser,buf,PPP_MAXARGLEN,5)){
 		if( strcasestr(buf,"OK") == NULL ){
 			bug("AT+GMM FAIL\n");
 			return FALSE;
@@ -206,8 +206,8 @@ BOOL TestModem(LIBBASETYPEPTR LIBBASE){
 		if( GetLineEnd(buf,buf2)){
 			 strcpy( LIBBASE->modemmodel , buf2 );
 		}
-	}	
-	
+	}
+
 	bug("ModemTest OK\n",buf);
 	return TRUE;
 }
@@ -218,19 +218,20 @@ BOOL DialUp(LIBBASETYPEPTR LIBBASE){
 	struct at_command *atc=NULL;
 	UBYTE buf[MAXBUF];
 	TestModem(LIBBASE);
-	
+
 	ForeachNode(&LIBBASE->atcl,atc){
-		
+
 		if( atc->command == COM_DELAY ){
 			bug("DELAY %d sec. RESPONSE IS:\n",atc->arg);
-			SerDelay( LIBBASE , atc->arg );
+			Delay(50*atc->arg);
+			DrainSerial(LIBBASE->ser);
 			bug("\n");
 		}
 
 		else if( atc->command == COM_WAIT ){
 			bug("WAIT \"%s\" %d sec. RESPONSE IS:\n",atc->str , atc->arg);
-		
-			if( ! GetResponse(LIBBASE,buf,MAXBUF,atc->arg)){
+
+			if( ! GetResponse(LIBBASE->ser,buf,MAXBUF,atc->arg)){
 				bug("...FAIL:TIMEOUT ?:\n%s\n",buf);
 				return FALSE;
 			}else{
@@ -239,21 +240,14 @@ BOOL DialUp(LIBBASETYPEPTR LIBBASE){
 					return FALSE;
 				}
 				bug("%s\n",buf);
-			}		
-			/*
-			if( ! WaitStr( LIBBASE, atc->str , atc->arg ) ){
-				bug("\n...FAIL:TIMEOUT!\n");
-				return FALSE;
 			}
-			bug("\n");
-			*/
 		}
 
 		else if( atc->command == COM_SEND ){
-			DrainSerial(LIBBASE);
+			DrainSerial(LIBBASE->ser);
 			bug("SEND \"%s\"\n",atc->str);
-			DoStr( LIBBASE, atc->str);
-			DoStr( LIBBASE,  "\r" );
+			DoStr( LIBBASE->ser, atc->str);
+			DoStr( LIBBASE->ser,  "\r" );
 		}
 	}
 
@@ -262,32 +256,14 @@ BOOL DialUp(LIBBASETYPEPTR LIBBASE){
 }
 
 
-void SetTimer(LIBBASETYPEPTR LIBBASE,const ULONG t){
-
-	if( LIBBASE->TimeReq ){
-
-		AbortIO((struct IORequest *)LIBBASE->TimeReq);
-		WaitIO((struct IORequest *)LIBBASE->TimeReq);
-		while(GetMsg(LIBBASE->TimeMsg));
-
-		if( t <= 0 ) return;
-
-		LIBBASE->TimeReq->tr_time.tv_secs = t;
-		LIBBASE->TimeReq->tr_time.tv_micro = 0;
-		((struct IORequest *)LIBBASE->TimeReq)->io_Command = TR_ADDREQUEST;
-		SendIO( (struct IORequest *)LIBBASE->TimeReq );
-
-	}
-}
-
-
 VOID PPP_Process(VOID){
 	struct Process *proc;
 	struct IOExtSer *ioser;
 	struct IOSana2Req *ios2;
+	struct EasyTimer *timer;
+
 	ULONG waitmask,signals;
 	UBYTE signalbit;
-	BOOL initf = FALSE;
 
 	LIBBASETYPEPTR LIBBASE;
 	LIBBASE = FindTask(NULL)->tc_UserData;
@@ -297,6 +273,7 @@ VOID PPP_Process(VOID){
 	proc = (struct Process *)FindTask(0L);
 
 	signalbit = AllocSignal(-1L);
+
 	if(signalbit != -1){
 
 		LIBBASE->sd_Unit->unit_MsgPort.mp_SigBit = signalbit;
@@ -305,152 +282,122 @@ VOID PPP_Process(VOID){
 
 		InitSemaphore(&LIBBASE->sdu_ListLock);
 
-		NEWLIST((struct List *)&LIBBASE->sdu_Rx);
-		NEWLIST((struct List *)&LIBBASE->sdu_Tx);
+		NEWLIST((struct List *)&LIBBASE->Rx_List);
+		NEWLIST((struct List *)&LIBBASE->Tx_List);
 		NEWLIST(&LIBBASE->atcl);
 
-		if( LIBBASE->TimeMsg = CreateMsgPort() ){
-			if( LIBBASE->TimeReq = CreateIORequest((struct MsgPort *)LIBBASE->TimeMsg, sizeof(struct timerequest))){
-				if(!OpenDevice("timer.device", UNIT_VBLANK,(struct IORequest *)LIBBASE->TimeReq, 0)){
-					initf = TRUE;
-				}
-			}
-		}
-	}
+		if(timer=OpenTimer()){
 
+			bug("PPP process: forewer loop...\n");
 
-	if( initf ){
+			SetTimer(timer,5);
 
-		bug("PPP process: forewer loop...\n");
+			LIBBASE->sdu_Proc_run = TRUE;
 
-		LIBBASE->TimeReq->tr_time.tv_secs = 10;
-		LIBBASE->TimeReq->tr_time.tv_micro = 0;
-		((struct IORequest *)LIBBASE->TimeReq)->io_Command = TR_ADDREQUEST;
-		SendIO( (struct IORequest *)LIBBASE->TimeReq );
-		Delay(10);
-		SetTimer(LIBBASE,5);
+			for(;;){
 
-		LIBBASE->sdu_Proc_run = TRUE;
+				waitmask = (1L<< signalbit ) |
+						   (1L<< LIBBASE->ser->RxPort->mp_SigBit ) |
+						   (1L<< LIBBASE->ser->TxPort->mp_SigBit ) |
+						   (1L<< timer->TimeMsg->mp_SigBit ) |
+						   SIGBREAKF_CTRL_F |
+						   SIGBREAKF_CTRL_C  ;
 
-		for(;;){
+				signals = Wait(waitmask);
 
-			waitmask = (1L<< signalbit ) |
-					   (1L<< LIBBASE->sdu_RxPort->mp_SigBit ) |
-					   (1L<< LIBBASE->sdu_TxPort->mp_SigBit ) |
-					   (1L<< LIBBASE->TimeMsg->mp_SigBit ) |
-					   SIGBREAKF_CTRL_F |
-					   SIGBREAKF_CTRL_C  ;
+				if(GetMsg(timer->TimeMsg)){
 
-			signals = Wait(waitmask);
+					 bug("PPP process: Timer\n");
+					// bug(" ser %d,ppp %d,dev %d\n",LIBBASE->serial_ok,( Phase() == PPP_PHASE_NETWORK ),LIBBASE->device_up );
 
-			if(GetMsg(LIBBASE->TimeMsg)){
+					if( LIBBASE->device_up && ( ! LIBBASE->ser ) ){
 
-				// bug("PPP process: Timer\n");
-				// bug(" ser %d,ppp %d,dev %d\n",LIBBASE->serial_ok,( Phase() == PPP_PHASE_NETWORK ),LIBBASE->device_up );
+						ReadConfig(LIBBASE);
 
-				if( LIBBASE->device_up && ( ! LIBBASE->serial_ok ) ){
-					
-					ReadConfig(LIBBASE);
-					
-					D(bug("[PPP] ModemDemonProcess: trying OpenSerial..!\n"));
-					if( OpenSerial(LIBBASE) ){
-						D(bug("[PPP] ModemDemonProcess: Serial OK !\n"));
-						open_gui(LIBBASE);
-						init_ppp( LIBBASE );
-					/*	if( DialUp(LIBBASE) ){
+						D(bug("[PPP] ModemDemonProcess: trying OpenSerial..!\n"));
+						if( LIBBASE->ser = OpenSerial(LIBBASE->DeviceName,LIBBASE->SerUnitNum) ){
+							D(bug("[PPP] ModemDemonProcess: Serial OK !\n"));
+							open_gui(LIBBASE);
 							init_ppp( LIBBASE );
-							QueueSerRequest(LIBBASE , PPP_MAXBUFF );
-						}else{
-                            CloseSerial(LIBBASE);
 						}
-						*/
-					}	
-						
-				}
-				
-				if( LIBBASE->device_up && LIBBASE->serial_ok && Phase() == PPP_PHASE_DEAD ){			
-					if( DialUp(LIBBASE) ){
-						QueueSerRequest(LIBBASE , PPP_MAXBUFF );
-						Set_phase( PPP_PHASE_CONFIGURATION );
-					}				
-				}
-				
-				if(LIBBASE->device_up && LIBBASE->serial_ok ){
-					ppp_timer(5);
-				}
-				SetTimer(LIBBASE,5);
-			}
-			
-			/* signal from gui process? */
-			if(signals & SIGBREAKF_CTRL_F){
-				bug("PPP process: received SIGBREAKF_CTRL_F\n");
-				switch(LIBBASE->gui_message){
-					
-					case GUIM_DISCONNECT:
-					    LIBBASE->device_up = FALSE;
-						Set_phase( PPP_PHASE_DEAD );
-						if( LIBBASE->serial_ok ){
-							SendTerminateReq(); 
-							Delay(300);
-							CloseSerial(LIBBASE);
-						}
-						LIBBASE->device_up = FALSE;
-					break;
-					
-					case GUIM_CONNECT:
-						LIBBASE->device_up = TRUE;
-					break;	
-						
-				}
-			}
-			
-			/* Have we been signaled to shut down? */
-			if(signals & SIGBREAKF_CTRL_C){
-				bug("PPP process: received SIGBREAKF_CTRL_C\n");
-				break;
-			}
 
-			BOOL More = TRUE;
-			while( More ){
-
-				More = FALSE;
-
-				if(ios2 = (struct IOSana2Req *)GetMsg((struct MsgPort *)LIBBASE->sd_Unit)){
-					More = TRUE;
-					PerformIO(LIBBASE,ios2);
-				}
-
-				if( LIBBASE->serial_ok ){
-					if(ioser = (struct IOExtSer *)GetMsg(LIBBASE->sdu_RxPort))    {
-						More = TRUE;
-						CMD_READ_Ready(LIBBASE,ioser);
 					}
 
-					if(ioser = (struct IOExtSer *)GetMsg(LIBBASE->sdu_TxPort)){
+					if( LIBBASE->device_up && LIBBASE->ser && Phase() == PPP_PHASE_DEAD ){
+						if( DialUp(LIBBASE) ){
+							QueueSerRequest(LIBBASE->ser, PPP_MAXBUFF );
+							Set_phase( PPP_PHASE_CONFIGURATION );
+						}
+					}
+
+					if(LIBBASE->device_up && LIBBASE->ser ){
+						ppp_timer(5);
+					}
+					SetTimer(timer,5);
+
+				}
+
+				/* signal from gui process? */
+				if(signals & SIGBREAKF_CTRL_F){
+					bug("PPP process: received SIGBREAKF_CTRL_F\n");
+					switch(LIBBASE->gui_message){
+
+						case GUIM_DISCONNECT:
+							LIBBASE->device_up = FALSE;
+							Set_phase( PPP_PHASE_DEAD );
+							if( LIBBASE->ser ){
+								SendTerminateReq();
+								Delay(300);
+								CloseSerial(LIBBASE->ser);
+								LIBBASE->ser = NULL;
+							}
+							LIBBASE->device_up = FALSE;
+						break;
+
+						case GUIM_CONNECT:
+							LIBBASE->device_up = TRUE;
+						break;
+
+					}
+				}
+
+				/* Have we been signaled to shut down? */
+				if(signals & SIGBREAKF_CTRL_C){
+					bug("PPP process: received SIGBREAKF_CTRL_C\n");
+					break;
+				}
+
+				BOOL More = TRUE;
+				while( More ){
+
+					More = FALSE;
+
+					if(ios2 = (struct IOSana2Req *)GetMsg((struct MsgPort *)LIBBASE->sd_Unit)){
 						More = TRUE;
-						CMD_WRITE_Ready(LIBBASE);
+						PerformIO(LIBBASE,ios2);
+					}
+
+					if( LIBBASE->ser ){
+						if(ioser = (struct IOExtSer *)GetMsg(LIBBASE->ser->RxPort))	{
+							More = TRUE;
+							CMD_READ_Ready(LIBBASE,ioser);
+						}
+
+						if(ioser = (struct IOExtSer *)GetMsg(LIBBASE->ser->TxPort)){
+							More = TRUE;
+							CMD_WRITE_Ready(LIBBASE);
+						}
 					}
 				}
 			}
 		}
 	}
-
 	bug("PPP process: shut everything down..\n");
 
-	CloseSerial(LIBBASE);
-
-	if( LIBBASE->TimeReq ){
-		AbortIO((struct IORequest *)LIBBASE->TimeReq);
-		WaitIO((struct IORequest *)LIBBASE->TimeReq);
-		while(GetMsg(LIBBASE->TimeMsg));
-		CloseDevice((struct IORequest *)LIBBASE->TimeReq);
-	}
-
-	if(LIBBASE->TimeReq)
-		DeleteIORequest(LIBBASE->TimeReq);
-
-	if(LIBBASE->TimeMsg)
-		DeleteMsgPort(LIBBASE->TimeMsg);
+	CloseSerial(LIBBASE->ser);
+	LIBBASE->ser = NULL;
+	
+	CloseTimer(timer);
 
 	struct at_command  *atc;
 	while( atc = (struct at_command *)RemHead( &LIBBASE->atcl ) ){
@@ -521,23 +468,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE){
 	D(bug("[PPP] Init()\n"));
 
 	InitSemaphore(&LIBBASE->sd_Lock);
-
-	LIBBASE->serial_ok  = FALSE;
+	LIBBASE->ser  = NULL;
 	LIBBASE->device_up  = TRUE;  // hmmm... why this is needed?
-
-	LIBBASE->sdu_SerTx  = NULL;
-	LIBBASE->sdu_SerRx  = NULL;
-	LIBBASE->sdu_TxPort = NULL;
-	LIBBASE->sdu_RxPort = NULL;
-	LIBBASE->sdu_TxBuff = NULL;
-	LIBBASE->sdu_RxBuff = NULL;
-
-	if( ! (LIBBASE->sdu_TxBuff = AllocMem( PPP_MAXBUFF ,MEMF_CLEAR|MEMF_PUBLIC))){
-		return FALSE;
-	}
-	if( ! (LIBBASE->sdu_RxBuff = AllocMem( PPP_MAXBUFF ,MEMF_CLEAR|MEMF_PUBLIC))){
-		return FALSE;
-	}
 
 	return TRUE;
 }
@@ -625,9 +557,9 @@ VOID ExpungeUnit(LIBBASETYPEPTR LIBBASE){
 	Signal( (struct Task*)LIBBASE->sdu_Proc , SIGBREAKF_CTRL_C );
 	D(bug("[PPP] ExpungeUnit Wait\n"));
 	while(  LIBBASE->sdu_Proc_run ) Delay(5);
-	
+
 	close_gui(LIBBASE);
-	
+
 	D(bug("[PPP] ExpungeUnit FreeMem\n"));
 	LIBBASE->sd_Unit = NULL;
 	FreeMem(LIBBASE->sd_Unit, sizeof(struct Unit));
@@ -644,7 +576,8 @@ static int GM_UNIQUENAME(Close)
 	D(bug("[PPP] Close\n"));
 	ObtainSemaphore(&LIBBASE->sd_Lock);
 
-	CloseSerial(LIBBASE);
+	CloseSerial(LIBBASE->ser);
+	LIBBASE->ser = NULL;
 
 	/* Trash the io_Device and io_Unit fields so that any attempt to use this
 	   request will die immediatly. */
@@ -699,7 +632,7 @@ AROS_LH1(void, beginio,
 		 LIBBASETYPEPTR, LIBBASE, 5, PPPDev){
 	AROS_LIBFUNC_INIT
 
-	if(  ( ! LIBBASE->sdu_RxPort ) &&  LIBBASE->sdu_TxPort ){ // PPP_process is busy because openserial wait and wait...
+	if(  ( ! LIBBASE->ser->RxPort ) &&  LIBBASE->ser->TxPort ){ // PPP_process is busy because openserial wait and wait...
 		req->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
 		req->ios2_WireError = S2WERR_UNIT_OFFLINE;
 		TermIO(LIBBASE,req);
@@ -723,11 +656,11 @@ AROS_LH1(LONG, abortio,
 	if(req->ios2_Req.io_Message.mn_Node.ln_Type != NT_REPLYMSG){
 		switch (req->ios2_Req.io_Command){
 		case CMD_READ:
-			result=AbortReq(LIBBASE,&LIBBASE->sdu_Rx,req);
+			result=AbortReq(LIBBASE,&LIBBASE->Rx_List,req);
 			break;
 
 		case CMD_WRITE:
-			result=AbortReq(LIBBASE,&LIBBASE->sdu_Tx,req);
+			result=AbortReq(LIBBASE,&LIBBASE->Tx_List,req);
 			break;
 
 		default:

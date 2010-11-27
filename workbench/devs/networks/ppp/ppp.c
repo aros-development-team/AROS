@@ -1057,7 +1057,7 @@ void send_IP_packet( BYTE *data ,ULONG len ){
 	AddChkSum(&p);
 	EscapePacket(&p);
 	AddByte( &p , 0x7e );
-	SendBYTES( ppp_libbase , p.header , p.packetsize + 4 );
+	SendBYTES( ppp_libbase->ser , p.header , p.packetsize + 4 );
 
 }
 
@@ -1110,7 +1110,7 @@ void SendPPP_Packet(struct packet * p){
 	EscapePacket(p);
 	AddByte( p , 0x7e );// end mark
 
-	DoBYTES( ppp_libbase , p->header , p->packetsize + 4 ); // 4 = header size
-	// SendBYTES( ppp_libbase , p->header , p->packetsize + 4 ); // 4 = header size
+	DoBYTES( ppp_libbase->ser , p->header , p->packetsize + 4 ); // 4 = header size
+
 }
 
