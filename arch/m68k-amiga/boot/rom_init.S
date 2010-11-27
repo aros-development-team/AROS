@@ -25,7 +25,20 @@ rom_init:
 	move.w	%d0,0x9c(%a0)	/* Clear interrupts */
 	move.w	%d0,0x96(%a0)	/* Stop DMA */
 
-	/* Do we have a Gayle? */
+	/* Check for cartidge ROM */
+	lea	0xf00000,%a0
+	move.w	%a0@(0),%d0	/* Get the ROM ID (0x1111) */
+	cmp.w	#0x1111,%d0
+	bne.s	0f		/* Must be 0x1111 */
+	move.l	%a0@(8),%d0	/* Get the ROM CheckSum */
+	cmp.l	ROM_CheckSum,%d0
+	beq.s	0f		/* If the same as ours, its a mirror of us */
+	lea	0x40000,%sp	/* Safe stack at Chip Mem 128K */
+	lea	0f,%a5
+	jmp	%a0@(2)
+0:
+
+/* Do we have a Gayle? */
 	move.l  #0f,%a7
 	jmp     Exec_ReadGayle
 0:
