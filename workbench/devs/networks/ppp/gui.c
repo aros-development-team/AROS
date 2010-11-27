@@ -1,5 +1,5 @@
 /*
- * $Id: init.c 34949 2010-10-25 18:27:45Z Sami $
+ * $Id: gui.c 34949 2010-10-25 18:27:45Z Sami $
  */
 
 #include <exec/types.h>
@@ -150,7 +150,7 @@ void ppp_gui(void)
 							set(   ConBut, MUIA_Disabled , FALSE );
 						}
 
-						else if( ! LIBBASE->serial_ok ){
+						else if( ! LIBBASE->ser ){
 							set( IN_Info , MUIA_Text_Contents, (IPTR)"OpenDevice:");
 							snprintf( buf, STRSIZE , "%s unit %d",LIBBASE->DeviceName,LIBBASE->SerUnitNum);
 							set( OUT_Info , MUIA_Text_Contents, (IPTR)buf);
@@ -158,7 +158,7 @@ void ppp_gui(void)
 							set(   ConBut, MUIA_Disabled , TRUE );
 						}
 
-						else if( LIBBASE->serial_ok &&  Phase() != PPP_PHASE_NETWORK  ){
+						else if( LIBBASE->ser &&  Phase() != PPP_PHASE_NETWORK  ){
 							set( IN_Info , MUIA_Text_Contents, (IPTR)"Connection in progress:");
 							UBYTE phase = Phase();
 

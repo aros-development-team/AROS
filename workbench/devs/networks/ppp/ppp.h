@@ -45,6 +45,7 @@
 #define SD_MAXUNITS 1
 
 #define PPP_MAXBUFF 4096
+#define SERIAL_BUFSIZE PPP_MAXBUFF
 
 // phases
 #define PPP_PHASE_DEAD 1
@@ -54,7 +55,7 @@
 #define PPP_PHASE_NETWORK 5
 #define PPP_PHASE_TERMINATE 6
 
-// config stuff      
+// config stuff
 #define PPP_MAXARGLEN 100
 #define COM_WAIT 1
 #define COM_SEND 2
@@ -68,64 +69,68 @@
 #define GUIM_DISCONNECT 2
 
 struct at_command {
-	struct Node cNode; 	
-	BYTE command,arg;     
+	struct Node cNode;
+	BYTE command,arg;
 	BYTE str[PPP_MAXARGLEN];
-};  
-    
-    
-struct PPPBase {
-    struct Device sd_Device;
-    ULONG        sd_OpenCnt;
-    UBYTE        sd_Flags;
-    
-    BOOL serial_ok;
-    BOOL device_up;
-    BOOL sdu_Proc_run;
-    BOOL gui_run;
-	
-	ULONG gui_message;  
-	 
-    struct Unit     *sd_Unit;
-    struct SignalSemaphore sd_Lock;
-    
-    struct Process      *sdu_Proc;
-    struct Process      *gui_process;
-	   
-    struct MsgPort     *TimeMsg;
-    struct timerequest *TimeReq;
-    
-    struct IOExtSer     *sdu_SerRx;     /* Serial IORequest for CMD_READ's */
-    struct IOExtSer     *sdu_SerTx;     /* Serial IORequest for CMD_WRITE's */
-    struct MsgPort      *sdu_RxPort;    /* Serial CMD_READ IORequest reply port */
-    struct MsgPort      *sdu_TxPort;    /* Serial CMD_WRITE IORequest reply port */
-    
-    UBYTE           *sdu_RxBuff;        /* Buffer for holding incoming data */
-    UBYTE           *sdu_TxBuff;        /* Buffer for hold outgoing packets */
-    
-    BYTE DeviceName[PPP_MAXARGLEN];
-    BYTE SerUnitNum;
+};
 
-    struct List  atcl; 
-    BYTE username[PPP_MAXARGLEN]; 
-    BYTE password[PPP_MAXARGLEN];
-    BOOL enable_dns;
-    BYTE modemmodel[PPP_MAXARGLEN];
-	
-	
-    BOOL        (*CopyFromBuffer)(APTR, APTR, ULONG);
-    BOOL        (*CopyToBuffer)(APTR, APTR, ULONG);
-    
-    struct SignalSemaphore   sdu_ListLock;      /* A Semaphore for access to all of our queues. */
-    struct MinList       sdu_Rx;                /* Pending CMD_READ's */
-    struct MinList       sdu_Tx;                /* Pending CMD_WRITE's */
-    
+ struct EasyTimer{
+	struct MsgPort  *TimeMsg;
+	struct timerequest *TimeReq;
+};
+
+ struct EasySerial{
+	struct IOExtSer	*SerRx;   /* Serial IORequest for CMD_READ's */
+	struct IOExtSer	*SerTx;   /* Serial IORequest for CMD_WRITE's */
+	struct MsgPort	*RxPort;  /* Serial CMD_READ IORequest reply port */
+	struct MsgPort	*TxPort;  /* Serial CMD_WRITE IORequest reply port */
+	UBYTE			*RxBuff;	/* Buffer for holding incoming data */
+	UBYTE			*TxBuff;	/* Buffer for hold outgoing packets */
+};
+
+struct PPPBase {
+	struct Device	sd_Device;
+	ULONG			sd_OpenCnt;
+	UBYTE			sd_Flags;
+
+	BOOL device_up;
+	BOOL sdu_Proc_run;
+	BOOL gui_run;
+
+	ULONG gui_message;
+
+	struct Unit  *sd_Unit;
+	struct SignalSemaphore sd_Lock;
+
+	struct Process	*sdu_Proc;
+	struct Process	*gui_process;
+
+	struct EasySerial *ser;
+
+
+	BYTE DeviceName[PPP_MAXARGLEN];
+	BYTE SerUnitNum;
+
+	struct List  atcl;
+	BYTE username[PPP_MAXARGLEN];
+	BYTE password[PPP_MAXARGLEN];
+	BOOL enable_dns;
+	BYTE modemmodel[PPP_MAXARGLEN];
+
+
+	BOOL		(*CopyFromBuffer)(APTR, APTR, ULONG);
+	BOOL		(*CopyToBuffer)(APTR, APTR, ULONG);
+
+	struct SignalSemaphore   sdu_ListLock;	/* A Semaphore for access to all of our queues. */
+	struct MinList	 Rx_List;				/* Pending CMD_READ's */
+	struct MinList	 Tx_List;				/* Pending CMD_WRITE's */
+
 	ULONG bytes_in;
 	ULONG bytes_out;
-	
+
 };
- 
- 
+
+
 
 #endif
 

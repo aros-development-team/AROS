@@ -151,14 +151,14 @@ VOID WritePacket(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 		if(ios2->ios2_DataLength <= PPP_MTU){
 			/* See if our serial CMD_WRITE command is busy.  If it's not, send
 			   the IO request to SendPacket. */
-			if(CheckIO((struct IORequest *)LIBBASE->sdu_SerTx)){
-				WaitIO((struct IORequest *)LIBBASE->sdu_SerTx);
+			if(CheckIO((struct IORequest *)LIBBASE->ser->SerTx)){
+				WaitIO((struct IORequest *)LIBBASE->ser->SerTx);
 				SendPacket(LIBBASE, ios2);
 			}else{
 				/* We'll have to queue the packet for later...*/
 				ios2->ios2_Req.io_Flags &= ~IOF_QUICK;
 				ObtainSemaphore(&LIBBASE->sdu_ListLock);
-				AddTail((struct List *)&LIBBASE->sdu_Tx,(struct Node *)ios2);
+				AddTail((struct List *)&LIBBASE->Tx_List,(struct Node *)ios2);
 				ReleaseSemaphore(&LIBBASE->sdu_ListLock);
 			}
 
@@ -184,10 +184,10 @@ VOID SendPacket( LIBBASETYPEPTR LIBBASE ,struct IOSana2Req *ios2 ){
 
 	//  D(bug("SendPacket lenght %d\n",ios2->ios2_DataLength));
 
-	if( ( Phase() == PPP_PHASE_NETWORK ) && LIBBASE->device_up ){
+	if( ( Phase() == PPP_PHASE_NETWORK ) && LIBBASE->device_up && LIBBASE->ser ){
 
-		if( LIBBASE->CopyFromBuffer( LIBBASE->sdu_TxBuff , ios2->ios2_Data , ios2->ios2_DataLength ) ){
-			send_IP_packet( LIBBASE->sdu_TxBuff , ios2->ios2_DataLength );		
+		if( LIBBASE->CopyFromBuffer( LIBBASE->ser->TxBuff , ios2->ios2_Data , ios2->ios2_DataLength ) ){
+			send_IP_packet( LIBBASE->ser->TxBuff , ios2->ios2_DataLength );		
             LIBBASE->bytes_out += ios2->ios2_DataLength;
 		}else{
 			bug( "SendPacket CopyFromBuffer FAIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
@@ -209,10 +209,10 @@ VOID ReadPacket(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 
 //   D(bug("ReadPacket type %d ",ios2->ios2_PacketType));
 
-	if( ( Phase() == PPP_PHASE_NETWORK ) && LIBBASE->device_up ){
+	if( ( Phase() == PPP_PHASE_NETWORK ) && LIBBASE->device_up && LIBBASE->ser ){
 		//   D(bug("Add to list...\n"));
 		ObtainSemaphore(&LIBBASE->sdu_ListLock);
-		AddTail((struct List *)&LIBBASE->sdu_Rx,(struct Node *)ios2);
+		AddTail((struct List *)&LIBBASE->Rx_List,(struct Node *)ios2);
 		ReleaseSemaphore(&LIBBASE->sdu_ListLock);
 	}else{
 		// D(bug("Sorry,We're offline..\n"));
@@ -231,7 +231,7 @@ VOID Online(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 
 	LIBBASE->device_up = TRUE;
 	TermIO(LIBBASE,ios2);
-	SetTimer(LIBBASE,1);
+
 }
 
 
@@ -239,15 +239,16 @@ VOID Offline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 
 	D(bug("Offline\n"));
 
-	if( LIBBASE->serial_ok ){
+	if( LIBBASE->ser ){
 		SendTerminateReq(); 
 		Delay(300);
-		CloseSerial(LIBBASE);
+		CloseSerial(LIBBASE->ser);
+		LIBBASE->ser = NULL;
 	}
 	Set_phase( PPP_PHASE_DEAD );
 	LIBBASE->device_up = FALSE;
 	TermIO(LIBBASE,ios2);
-	SetTimer(LIBBASE,1);
+
 }
 
 
@@ -257,7 +258,7 @@ VOID CMD_WRITE_Ready(LIBBASETYPEPTR LIBBASE){
 
 	/* See if we have any pending CMD_WRITE requests. */
 	ObtainSemaphore(&LIBBASE->sdu_ListLock);
-	ios2 = (struct IOSana2Req *)RemHead((struct List *)&LIBBASE->sdu_Tx);
+	ios2 = (struct IOSana2Req *)RemHead((struct List *)&LIBBASE->Tx_List);
 	ReleaseSemaphore(&LIBBASE->sdu_ListLock);
 
 	if(ios2) SendPacket( LIBBASE , ios2 );
@@ -268,14 +269,15 @@ VOID CMD_WRITE_Ready(LIBBASETYPEPTR LIBBASE){
 VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE, struct IOExtSer *ioSer){
 	UBYTE  *ptr;
 	ULONG length;
-
-	ptr = LIBBASE->sdu_RxBuff;
-	length = ioSer->IOSer.io_Actual;
-	bytes_received( ptr,length );
+    if(LIBBASE->ser){
+		ptr = LIBBASE->ser->RxBuff;
+		length = ioSer->IOSer.io_Actual;
+		bytes_received( ptr,length );
 	
-	LIBBASE->bytes_in += length;
+		LIBBASE->bytes_in += length;
 	
-	QueueSerRequest( LIBBASE ,  PPP_MAXBUFF );
+		QueueSerRequest( LIBBASE->ser ,  PPP_MAXBUFF );
+	}
 }
 
 
@@ -292,7 +294,7 @@ VOID Incoming_IP_Packet(LIBBASETYPEPTR LIBBASE, BYTE *data , ULONG length){
 	if(length){ // ignore zero-length packets.
 
 		ObtainSemaphore(&LIBBASE->sdu_ListLock);
-		ios2 = (struct IOSana2Req *)RemHead((struct List *)&LIBBASE->sdu_Rx);
+		ios2 = (struct IOSana2Req *)RemHead((struct List *)&LIBBASE->Rx_List);
 		ReleaseSemaphore(&LIBBASE->sdu_ListLock);
 
 		if(ios2){
