@@ -163,7 +163,8 @@ struct Volume *volume;
 			volume->bootblocks=devicedef->de_BootBlocks;
 		else
 			volume->bootblocks=devicedef->de_Reserved;
-		volume->blockcache=initCache(afsbase, volume, devicedef->de_NumBuffers);
+		volume->numbuffers = devicedef->de_NumBuffers;
+		volume->blockcache=initCache(afsbase, volume, volume->numbuffers);
 		if (volume->blockcache != NULL)
 		{
 			if (openBlockDevice(afsbase, &volume->ioh)!= NULL)
