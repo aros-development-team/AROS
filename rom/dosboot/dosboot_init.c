@@ -261,6 +261,15 @@ cleanup:
     return result;
 }
 
+static void AddBootAssign(CONST_STRPTR path, CONST_STRPTR assign)
+{
+    BPTR lock;
+    if (!(lock = Lock(path, SHARED_LOCK)))
+    	lock = Lock("SYS:", SHARED_LOCK);
+    if (lock)
+        AssignLock(assign, lock);
+}
+
 /** Boot Code **/
 
 AROS_UFH3(void, __dosboot_BootProcess,
@@ -418,41 +427,28 @@ AROS_UFH3(void, __dosboot_BootProcess,
             Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
         }
 
-        if ((lock = Lock("SYS:C", SHARED_LOCK)) != BNULL)
-        {
-            AssignLock("C", lock);
-        }
+        AddBootAssign("SYS:C", "C");
+        AddBootAssign("SYS:S", "S");
+        AddBootAssign("SYS:Libs", "LIBS");
+        AddBootAssign("SYS:Devs", "DEVS");
+        AddBootAssign("SYS:L", "L");
+        AddBootAssign("SYS:Fonts", "FONTS");
 
-        if ((lock = Lock("SYS:S", SHARED_LOCK)) != BNULL)
-        {
-            AssignLock("S", lock);
-        }
-
-        if ((lock = Lock("SYS:Libs", SHARED_LOCK)) != BNULL)
-        {
-            AssignLock("LIBS", lock);
-        }
-
-        if ((lock = Lock("SYS:Devs", SHARED_LOCK)) != BNULL)
-        {
-            AssignLock("DEVS", lock);
-        }
-
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
         if ((lock = Lock("DEVS:Drivers", SHARED_LOCK)) != BNULL)
         {
             AssignLock("DRIVERS", lock);
             AssignAdd("LIBS", lock);        /* Let hidds in DRIVERS: directory be found by OpenLibrary */
         }
-
-        if ((lock = Lock("SYS:L", SHARED_LOCK)) != BNULL)
-        {
-            AssignLock("L", lock);
-        }
+#endif
 
         /* Late binding ENVARC: assign, only if used */
         AssignLate("ENVARC", "SYS:Prefs/env-archive");
-        /* AmigaOS 3.x wants ENV early. */
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+        /* This shouldn't be here. This is partial workaround for WB3.x Assign Lock issue */
         AssignLate("ENV", "RAM:");
+#endif
 
         /*
             Attempt to mount filesystems marked for retry. If it fails again,
