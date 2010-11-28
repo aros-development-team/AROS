@@ -7,7 +7,7 @@ UPLOAD_STOP_TIME="N/A"
 if [ "$2" != "" ]; then
     export LANG=$2
 else
-    export LANG=en=US.ISO8859-1
+    export LANG=en_US.ISO8859-1
 fi
 
 export SP=$(dirname $0)
