@@ -1218,12 +1218,21 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 case HCITYPE_XHCI:
                 {
                     IPTR pciecap;
+                    APTR pciregbase;
 
+                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_CapabilityPCIE, (IPTR *) &pciecap);
 
                     if(pciecap) {
-                        KPRINTF(1000, ("XHCI has PCIE capabilities %p\n",pciecap));
+                        KPRINTF(1000, ("XHCI has PCIE capabilities (%p)\n",pciecap));
                     }
+
+                    KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
+                    KPRINTF(1000, ("XHCI Version (%04x)\n",READREG16_LE(pciregbase, XHCI_HCIVERSION)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS1)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS2)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS3)));
+                    KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",READREG32_LE(pciregbase, XHCI_HCCPARAMS)));
 
                     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
                     hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";

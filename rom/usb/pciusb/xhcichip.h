@@ -7,7 +7,14 @@
  *----------------------------------------------------------------------------
  */
 
+#define XHCI_CAPLENGTH  0x00
+#define XHCI_HCIVERSION 0x02 
+#define XHCI_HCSPARAMS1 0x04
+#define XHCI_HCSPARAMS2 0x08
+#define XHCI_HCSPARAMS3 0x0C
 #define XHCI_HCCPARAMS  0x10
+#define XHCI_DBOFF      0x14
+#define XHCI_RTSOFF     0x18
 
 /* XHCI_HCCPARAMS defines */
 #define XHCB_AC64       0
