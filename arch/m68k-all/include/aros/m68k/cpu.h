@@ -184,6 +184,7 @@ extern void aros_not_implemented ();
     long _re;\
     __asm__ __volatile__(\
 	"move.l %%sp,%%a0\n\t"\
+	"movem.l %%d2-%%d7/%%a2-%%a6,%%a0@-\n\t"\
 	"move.l %5,%%a0@-\n\t"\
 	"move.l %4,%%a0@-\n\t"\
 	"move.l %3,%%a0@-\n\t"\
@@ -195,6 +196,7 @@ extern void aros_not_implemented ();
 	"move.l %%sp@(4),%%d0\n\t" \
 	"jsr    (%%a1)\n\t"\
 	"lea.l  %%sp@(12),%%sp\n\t"\
+	"movem.l %%sp@+,%%d2-%%d7/%%a2-%%a6\n\t"\
 	"movl   %%d0,%0"\
 	: "=g" (_re), "=m"(*(APTR *)p)\
 	: "m" (n), "m"(_n1), "m"(_n2), "m"(_n3)\
