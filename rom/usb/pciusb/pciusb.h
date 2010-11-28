@@ -71,6 +71,9 @@ struct PCIUnit
     struct List           hu_Controllers;    /* List of controllers */
     UWORD                 hu_RootHub11Ports;
     UWORD                 hu_RootHub20Ports;
+#if defined(USB3)
+    UWORD                 hu_RootHub30Ports;
+#endif
     UWORD                 hu_RootHubPorts;
     UWORD                 hu_RootHubAddr;    /* Root Hub Address */
     UWORD                 hu_RootPortChanges; /* Merged root hub changes */
@@ -79,9 +82,15 @@ struct PCIUnit
 
     struct PCIController *hu_PortMap11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 controller */
     struct PCIController *hu_PortMap20[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 2.0 controller */
+#if defined(USB3)
+    struct PCIController *hu_PortMap30[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 3.0 controller */
+#endif
     UBYTE                 hu_PortNum11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 companion controller port */
     UBYTE                 hu_EhciOwned[MAX_ROOT_PORTS]; /* TRUE, if currently owned by EHCI */
-
+#if defined(USB3)
+    UBYTE                 hu_PortNum20[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 2.0 companion controller port */
+    UBYTE                 hu_XhciOwned[MAX_ROOT_PORTS]; /* TRUE, if currently owned by XHCI */
+#endif
     UBYTE                 hu_ProductName[80]; /* for Query device */
     struct PCIController *hu_DevControllers[128]; /* maps from Device address to controller */
     struct IOUsbHWReq    *hu_DevBusyReq[128*16*2]; /* pointer to io assigned to the Endpoint */
