@@ -97,7 +97,7 @@ do                                        \
     switch ((IPTR)PutChProc)              \
     {                                     \
     case (IPTR)RAWFMTFUNC_STRING:	  \
-	*UPutChData++ = ch;               \
+	*(PutChData++) = ch;               \
 	break;				  \
     case (IPTR)RAWFMTFUNC_SERIAL:	  \
 	RawPutChar(ch);			  \
@@ -120,12 +120,9 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
      * behaviour that A3 *in this routine* is the pointer to PutChData,
      * *and* that it can be modified in PutChProc.
      */
-    register APTR    PutChData asm("%a3");
-    register UBYTE *UPutChData asm("%a3");	/* Alias */
-    PutChData = inPutChData;
+    register volatile UBYTE  *PutChData asm("%a3");
 #else
-    APTR     PutChData = inPutChData;
-    UBYTE   *UPutChData = inPutChData;
+    UBYTE *PutChData = inPutChData;
 #endif
 
     /* As long as there is something to format left */
@@ -356,7 +353,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     PutCh('\0');
 
     /* Return the rest of the DataStream or buffer. */
-    return DataStream ? DataStream : UPutChData;
+    return DataStream ? DataStream : PutChData;
 }
 
 
