@@ -7,6 +7,9 @@
 #include "uhcichip.h"
 #include "ohcichip.h"
 #include "ehcichip.h"
+#if defined(USB3)
+#include "xhcichip.h"
+#endif
 #include "pciusb.h"
 
 struct Unit *Open_Unit(struct IOUsbHWReq *ioreq,
