@@ -166,6 +166,30 @@ LONG retval;
 				case FSA_CLOSE :
 					closef(afsbase, afshandle);
 					break;
+				case FSA_MORE_CACHE :
+				{
+					struct Volume *volume;
+					volume=((struct AfsHandle *)iofs->IOFS.io_Unit)->volume;
+					if (iofs->io_Union.io_MORE_CACHE.io_NumBuffers) {
+						volume->numbuffers += iofs->io_Union.io_MORE_CACHE.io_NumBuffers;
+						if (volume->numbuffers < 1)
+							volume->numbuffers = 1;
+						flushCache(afsbase, volume);
+						Forbid(); /* so that we at least get old number of buffers back */
+						freeCache(afsbase, volume->blockcache);
+						for (;;) {
+							volume->blockcache = initCache(afsbase, volume, volume->numbuffers);
+							if (volume->blockcache)
+								break;
+							volume->numbuffers /= 2;
+							if (volume->numbuffers < 1)
+								volume->numbuffers = 1;
+						}
+						Permit();
+					}
+					iofs->io_Union.io_MORE_CACHE.io_NumBuffers = volume->numbuffers;
+					break;
+				}
 				default:
 					if (mediumPresent(&afshandle->volume->ioh))
 					{

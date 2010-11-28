@@ -24,6 +24,7 @@ struct Volume {
 	ULONG unit;
 	struct IOHandle ioh;
 	struct BlockCache *blockcache;
+	LONG numbuffers;
 	ULONG cachecounter;           /* Keeps track of cache usage */
 	ULONG state;                 /* Read-only, read/write or validating */
 	ULONG inhibitcounter;
