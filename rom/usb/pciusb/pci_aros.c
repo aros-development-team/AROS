@@ -367,6 +367,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     BOOL allocgood = TRUE;
     ULONG usb11ports;
     ULONG usb20ports;
+#if defined(USB3)
+    ULONG usb30ports;
+#endif
     ULONG cnt;
     BOOL complexrouting = FALSE;
     ULONG portroute = 0;
@@ -1218,7 +1221,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 case HCITYPE_XHCI:
                 {
                     IPTR pciecap;
-                    APTR pciregbase;
+                    APTR pciregbase,opregbase;
 
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_CapabilityPCIE, (IPTR *) &pciecap);
@@ -1228,11 +1231,18 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     }
 
                     KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
+                    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff));
                     KPRINTF(1000, ("XHCI Version (%04x)\n",READREG16_LE(pciregbase, XHCI_HCIVERSION)));
                     KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS1)));
                     KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS2)));
                     KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS3)));
                     KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",READREG32_LE(pciregbase, XHCI_HCCPARAMS)));
+
+                    hc->hc_NumPorts = (READREG32_LE(pciregbase, XHCI_HCSPARAMS1) & XHCM_MaxPorts)>>XHCB_MaxPorts;
+                    KPRINTF(1000, ("XHCI controller has max %ld ports\n",hc->hc_NumPorts));
+
+                    opregbase = pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff);
+                    KPRINTF(1000, ("XHCI opregbase (%p)\n",opregbase));
 
                     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
                     hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
@@ -1283,6 +1293,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     // find all belonging host controllers
     usb11ports = 0;
     usb20ports = 0;
+#if defined(USB3)
+    usb30ports = 0;
+#endif
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
@@ -1290,6 +1303,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         if(hc->hc_HCIType == HCITYPE_XHCI)
         {
             xhcicnt++;
+            usb30ports = hc->hc_NumPorts;
         }
         else if(hc->hc_HCIType == HCITYPE_EHCI)
 #else
@@ -1403,7 +1417,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #if defined(USB3)
     if(xhcicnt)
     {
-        pciStrcat(prodname, "XHCI USB 3.0");
+        prodname[6] = hc->hc_NumPorts + '0';
+        prodname[7] = 0;
+        pciStrcat(prodname, " port XHCI USB 3.0");
     }
 #endif
 #if 0 // user can use pcitool to check what the chipset is and not guess it from this
