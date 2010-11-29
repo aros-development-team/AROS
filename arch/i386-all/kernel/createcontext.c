@@ -1,5 +1,6 @@
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+#include <aros/i386/cpucontext.h>
 
 #include <kernel_base.h>
 #include <kernel_memory.h>
