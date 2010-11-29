@@ -2928,6 +2928,12 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     {
                         pd->pd_Flags |= PDFF_HIGHSPEED;
                     }
+                    #if defined(USB3)
+                    else if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x300))
+                    {
+                        pd->pd_Flags |= PDFF_SUPERSPEED;
+                    }
+                    #endif
 
                     if(usdd.iManufacturer)
                     {
@@ -9176,6 +9182,9 @@ static const ULONG PsdDevicePT[] =
     PACK_WORDBIT(DA_Dummy, DA_HasAppBinding, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_APPBINDING),
     PACK_WORDBIT(DA_Dummy, DA_NeedsSplitTrans, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_NEEDSSPLIT),
     PACK_WORDBIT(DA_Dummy, DA_LowPower, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_LOWPOWER),
+#if defined (USB3)
+    PACK_WORDBIT(DA_Dummy, DA_IsSuperspeed, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_SUPERSPEED),
+#endif
     PACK_ENDTABLE
 };
 
