@@ -149,6 +149,9 @@
 #define DA_IsNewToMe         (DA_Dummy + 0x41)
 #define DA_InhibitClassBind  (DA_Dummy + 0x42)
 #define DA_OverridePowerInfo (DA_Dummy + 0x43)
+#if defined(USB3)
+#define DA_IsSuperspeed      (DA_Dummy + 0x44)
+#endif
 
 /* Tags for psdGetAttrs(PGA_CONFIG,...) */
 #define CA_Dummy             (TAG_USER + 23)
@@ -341,9 +344,9 @@
 /* Configuration stuff */
 
 #if AROS_BIG_ENDIAN
-/* while Poseidon writes a correct big endian IFF structure on both big and little endian
+/* While Poseidon writes a correct big endian IFF structure on both big and little endian
  * the contents are *not* endian agnostic. Therefore we will avoid loading prefs of
- * different endianess by defining the outmost form ID endian specific. Also notice that
+ * different endianess by defining the outmost FORM ID endian specific. Also notice that
  * compatibility of the config files with 68k and MorphOS versions is not given. */
 #define IFFFORM_PSDCFG     MAKE_ID('P','S','B','C')
 #else
