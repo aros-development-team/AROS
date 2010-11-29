@@ -77,6 +77,9 @@ int main(int argc, char *argv[])
     IPTR devpowerdrain;
     IPTR devmaxpktsize0;
     IPTR devhubthinktime;
+#if defined(USB3)
+    IPTR devissuperspeed;
+#endif
 
     struct List *cfgs;
     struct Node *pc;
@@ -171,6 +174,9 @@ int main(int argc, char *argv[])
                         DA_LangIDArray, &devlangarray,
                         DA_IsLowspeed, &devislowspeed,
                         DA_IsHighspeed, &devishighspeed,
+                        #if defined(USB3)
+                        DA_IsSuperspeed, &devissuperspeed,
+                        #endif
                         DA_IsConnected, &devisconnected,
                         DA_NeedsSplitTrans, &devneedssplit,
                         DA_HasAddress, &devhasaddress,
@@ -236,7 +242,11 @@ int main(int argc, char *argv[])
                    devmanufact, devvendorid,
                    psdNumToStr(NTS_VENDORID, (LONG) devvendorid, "unknown"),
                    devserial, devusbvers,
+                    #if defined(USB3)
+                   devislowspeed ? "lowspeed " : (devissuperspeed ? "superspeed " : (devishighspeed ? "highspeed " : "fullspeed ")),
+                    #else
                    devislowspeed ? "lowspeed " : (devishighspeed ? "highspeed " : "fullspeed "),
+                    #endif
                    devisconnected ? "connected " : "disconnected ",
                    devhasaddress ? "hasaddress " : "",
                    devhasdevdesc ? "hasdevdesc " : "",
