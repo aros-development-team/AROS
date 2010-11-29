@@ -198,10 +198,10 @@ typedef @sighandler@ SignalHandler;
     {												\
 	(cc)->regs.Flags |= ECF_FPU;								\
 	CopyMemQuick(sc->fpstate, (cc)->regs.FPData, SIZEOF_8087_FRAME);			\
-	if ((cc)->regs.FXData && (sc->fpstate.magic != 0xFFFF))					\
+	if ((cc)->regs.FXData && (sc->fpstate->magic != 0xFFFF))				\
     	{											\
     	    (cc)->regs.Flags |= ECF_FPX;							\
-    	    CopyMemQuick(sc->fpstate._fxsr_env, (cc)->regs.FXData, sizeof(struct FPXContext));	\
+    	    CopyMemQuick(sc->fpstate->_fxsr_env, (cc)->regs.FXData, sizeof(struct FPXContext));	\
     	}											\
     }
 
@@ -218,7 +218,7 @@ typedef @sighandler@ SignalHandler;
     	if ((cc)->regs.Flags & ECF_FPU)								\
     	    CopyMemQuick((cc)->regs.FPData, sc->fpstate, SIZEOF_8087_FRAME);			\
     	if ((cc)->regs.Flags & ECF_FPX)								\
-    	    CopyMemQuick((cc)->regs.FXData, sc->fpstate._fxsr_env, sizeof(struct FPXContext));	\
+    	    CopyMemQuick((cc)->regs.FXData, sc->fpstate->_fxsr_env, sizeof(struct FPXContext));	\
     }
 
 /* This macro prints the current signals' context */
