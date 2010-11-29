@@ -1,13 +1,18 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES  := 
-AFILES  := bcpl
+# Uncomment the following to enable the WIP BCPL support
+#CFILES  := runprocess runcommand createnewproc bcpl_support
+#AFILES  := bcpl
 
 #MM kernel-dos-amiga-m68k : kernel-dos-includes includes-asm_h-m68k
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
-               -I$(SRCDIR)/rom/dos
+               -I$(SRCDIR)/rom/dos \
+               -D__DOS_NOLIBBASE__ \
+               $(PARANOIA_CFLAGS)
+
+USER_AFLAGS := -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos arch=amiga-m68k \
