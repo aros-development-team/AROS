@@ -6,6 +6,13 @@
  * Note also that this test requires working exec trap handling.
  */
 
+/*
+ * We will not perform access tests because when we exit from trap handler,
+ * execution continues from the same location (re-triggering the trap again).
+ * Fixing this requires adjusting PC register in the context, which is not
+ * portable accross various CPUs and additionally will not currently work
+ * on all ports. We don't want to overcomplicate things so much.
+ */
 #define NO_ACCESS_TESTS
 
 #include <aros/kernel.h>
@@ -98,7 +105,7 @@ int main(void)
     struct MemHeader *TestArea;
     ULONG TestLength;
     struct MemChunk *mc;
-    APTR region1, region2, region3;
+    APTR region1, region2, region3, region4;
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
@@ -212,6 +219,58 @@ int main(void)
 
     printf("Freeing region1...\n");
     KrnFreePages(region1, page);
+    printf("Done!\n");
+    DumpState(TestArea);
+
+    printf("Now we'll try to fragment the memory\n");
+
+    printf("Allocating region1 (2 pages)...\n");
+    region1 = KrnAllocPages(2 * page, MEMF_FAST, MAP_Readable|MAP_Writable);
+    printf("region1 at 0x%p\n", region1);
+    DumpState(TestArea);
+
+    printf("Allocating region2 (3 pages)...\n");
+    region2 = KrnAllocPages(3 * page, MEMF_FAST, MAP_Readable|MAP_Writable);
+    printf("region2 at 0x%p\n", region2);
+    DumpState(TestArea);
+
+    printf("Allocating region 3 (1 page)...\n");
+    region3 = KrnAllocPages(page, MEMF_FAST, MAP_Readable|MAP_Writable);
+    printf("Region at 0x%p\n", region3);
+    DumpState(TestArea);
+    
+    printf("Allocating region 4 (2 pages)...\n");
+    region4 = KrnAllocPages(2 * page, MEMF_FAST, MAP_Readable|MAP_Writable);
+    printf("region4 at 0x%p\n", region1);
+    DumpState(TestArea);
+    
+    printf("Freeing region1...\n");
+    KrnFreePages(region1, 2 * page);
+    printf("Done!\n");
+    DumpState(TestArea);
+
+    printf("Freeing region3...\n");
+    KrnFreePages(region3, page);
+    printf("Done!\n");
+    DumpState(TestArea);
+
+    printf("Allocating region 3 (1 page) again...\n");
+    region3 = KrnAllocPages(page, MEMF_FAST, MAP_Readable|MAP_Writable);
+    printf("Region at 0x%p\n", region3);
+    DumpState(TestArea);
+
+    printf("Freeing region2...\n");
+    KrnFreePages(region2, 3 * page);
+    printf("Done!\n");
+    DumpState(TestArea);
+    
+    printf("Freeing region3...\n");
+    KrnFreePages(region3, page);
+    printf("Done!\n");
+    DumpState(TestArea);
+
+    printf("Freeing region4...\n");
+    KrnFreePages(region4, 2 * page);
     printf("Done!\n");
     DumpState(TestArea);
 
