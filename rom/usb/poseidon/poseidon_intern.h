@@ -149,6 +149,9 @@
 #define DA_IsNewToMe         (DA_Dummy + 0x41)
 #define DA_InhibitClassBind  (DA_Dummy + 0x42)
 #define DA_OverridePowerInfo (DA_Dummy + 0x43)
+#if defined(USB3)
+#define DA_IsSuperspeed      (DA_Dummy + 0x44)
+#endif
 
 /* Tags for psdGetAttrs(PGA_CONFIG,...) */
 #define CA_Dummy             (TAG_USER + 23)
@@ -739,6 +742,9 @@ struct PsdHardware
 #define PDFF_LOWPOWER    0x0080
 #define PDFF_DEAD        0x0100
 #define PDFF_SUSPENDED   0x0200
+#if defined(USB3)
+#define PDFF_SUPERSPEED  0x0400
+#endif
 #define PDFF_APPBINDING  0x4000
 #define PDFF_DELEXPUNGE  0x8000
 
