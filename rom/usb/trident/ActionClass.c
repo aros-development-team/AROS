@@ -595,6 +595,9 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
     IPTR devproto;
     IPTR devislowspeed;
     IPTR devishighspeed;
+    #if defined(USB3)
+    IPTR devissuperspeed;
+    #endif
     IPTR devisconnected;
     IPTR devhasaddress;
     IPTR devhasdevdesc;
@@ -648,6 +651,9 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
                     DA_ProductName, strarr++,
                     DA_IsLowspeed, &devislowspeed,
                     DA_IsHighspeed, &devishighspeed,
+                    #if defined(USB3)
+                    DA_IsSuperspeed, &devissuperspeed,
+                    #endif
                     DA_IsConnected, &devisconnected,
                     DA_HasAddress, &devhasaddress,
                     DA_HasDevDesc, &devhasdevdesc,
@@ -661,7 +667,13 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
                     DA_Protocol, &devproto,
                     DA_ConfigList, &pclist,
                     TAG_END);
+
+        #if defined(USB3)
+        *strarr++ = (devislowspeed ? "Low" : (devissuperspeed ? "Super" : (devishighspeed ? "High" : "Full")));
+        #else
         *strarr++ = (devislowspeed ? "Low" : (devishighspeed ? "High" : "Full"));
+        #endif
+
         if(devissuspended)
         {
             statestr = "Suspended";

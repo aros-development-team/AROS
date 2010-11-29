@@ -5,6 +5,8 @@
 
 //#define DEBUG 1
 
+//#define USB3 1
+
 #include <aros/debug.h>
 
 // DEBUG 0 should equal undefined DEBUG
