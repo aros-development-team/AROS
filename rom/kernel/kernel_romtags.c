@@ -19,6 +19,12 @@
 #include <kernel_debug.h>
 #include <kernel_romtags.h>
 
+/*
+ * Private exec.library include, needed for MEMCHUNK_TOTAL.
+ * TODO: may be bring it out to public includes ?
+ */
+#include "memory.h"
+
 #define PRINT_LIST
 
 static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
@@ -32,6 +38,15 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
     }
 
     return -1;
+}
+
+static inline void krnAllocBootMem(struct MemHeader *mh, ULONG size)
+{
+    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+
+    mh->mh_First          = (struct MemChunk *)((APTR)mh->mh_First + size);
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
 }
 
 /*

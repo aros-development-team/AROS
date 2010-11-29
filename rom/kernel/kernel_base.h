@@ -40,9 +40,6 @@ extern struct KernelBase *KernelBase;
 /* Utility function to clear BSS segments. Call it before storing any globals!!! */
 void __clear_bss(const struct KernelBSS *bss);
 
-/* Boot-time memory allocator. Do not use, subject to removal! */
-APTR krnAllocBootMem(struct MemHeader *mh, ULONG len);
-
 /* Memory header initialization functions */
 void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 struct MemHeader *krnCreateROMHeader(struct MemHeader *ram, CONST_STRPTR name, APTR start, APTR end);

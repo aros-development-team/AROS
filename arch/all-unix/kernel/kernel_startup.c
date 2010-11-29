@@ -12,18 +12,13 @@
 #include <sys/mman.h>
 #include <inttypes.h>
 
-/*
- * Private exec.library include, needed for MEMHEADER_TOTAL.
- * TODO: may be bring it out to public includes ?
- */
-#include "memory.h"
-
 #include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "kernel_romtags.h"
 #include "kernel_tagitems.h"
+#include "memory_intern.h"
 
 /* This macro is defined in both UNIX and AROS headers. Get rid of warnings. */
 #undef __const
@@ -71,9 +66,7 @@ int __startup startup(struct TagItem *msg)
     void *hostlib;
     char *errstr;
     unsigned int i;
-    struct MemHeader *bootmh, *mh;
-    void *memory;
-    IPTR memlen;
+    struct MemHeader *bootmh;
     struct TagItem *tag;
     const struct TagItem *tstate = msg;
     struct HostInterface *hif = NULL;
@@ -161,21 +154,10 @@ int __startup startup(struct TagItem *msg)
 
     bug("[Kernel] preparing first mem header\n");
     /* We know that memory map has only one RAM element */
-    memory = (void *)(IPTR)mmap->addr;
-    memlen = mmap->len;
+    bootmh = (struct MemHeader *)mmap->addr;
 
     /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
-    bootmh = memory;
-    bootmh->mh_Node.ln_Type  = NT_MEMORY;
-    bootmh->mh_Node.ln_Name = "chip memory";
-    bootmh->mh_Node.ln_Pri = -5;
-    bootmh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_KICK;
-    bootmh->mh_First = memory + MEMHEADER_TOTAL;
-    bootmh->mh_First->mc_Next = NULL;
-    bootmh->mh_First->mc_Bytes = memlen - MEMHEADER_TOTAL;
-    bootmh->mh_Lower = memory;
-    bootmh->mh_Upper = memory + memlen - 1;
-    bootmh->mh_Free = bootmh->mh_First->mc_Bytes;
+    krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
 
     D(bug("[Kernel] calling PrepareExecBase(), mh_First = 0x%p, args = %s\n", bootmh->mh_First, args));
     /*
@@ -195,37 +177,13 @@ int __startup startup(struct TagItem *msg)
      * ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
      */
-    mh = krnAllocBootMem(bootmh, sizeof(struct MemHeader));
-    if (mh)
-    {
-	mh->mh_Node.ln_Type = NT_MEMORY;
-	mh->mh_Node.ln_Name = "rom memory";
-	mh->mh_Node.ln_Pri = -128;
-	mh->mh_Attributes = MEMF_KICK;
-	mh->mh_First = NULL;
-	mh->mh_Lower = klo;
-	mh->mh_Upper = khi;
-	mh->mh_Free = 0;                        /* Never allocate from this chunk! */
-	Enqueue(&SysBase->MemList, &mh->mh_Node);
-    }
+    krnCreateROMHeader(bootmh, "Kickstart ROM", klo, khi);
 
     /* Stack memory header. This special memory header covers a little part of the programs
      * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
      * during initialization.
      */
-    mh = krnAllocBootMem(bootmh, sizeof(struct MemHeader));
-    if (mh)
-    {
-        mh->mh_Node.ln_Type = NT_MEMORY;
-        mh->mh_Node.ln_Name = "stack memory";
-        mh->mh_Node.ln_Pri = -128;
-        mh->mh_Attributes = 0;
-        mh->mh_First = NULL;
-        mh->mh_Lower = _stack - 3072;
-        mh->mh_Upper = _stack;
-        mh->mh_Free = 0;                        /* Never allocate from this chunk! */
-        Enqueue(&SysBase->MemList, &mh->mh_Node);
-    }
+    krnCreateROMHeader(bootmh, "Boot stack", _stack - 3072, _stack);
 
     bug("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
