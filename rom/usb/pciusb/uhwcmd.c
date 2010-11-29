@@ -511,6 +511,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
                                     usdd->bDeviceProtocol = 1; // single TT
                                 }
+                                #if defined(USB3)
+                                if(unit->hu_RootHub30Ports)
+                                {
+                                    struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
+                                    usdd->bcdUSB = AROS_WORD2LE(0x0300); // signal a superspeed root hub
+                                }
+                                #endif
                             }
                             return(0);
 

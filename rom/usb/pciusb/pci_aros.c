@@ -864,12 +864,14 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         uhwDelayMS(1, hu, hd);
                     } while(--cnt);
 
+#ifdef DEBUG
                     if(cnt == 0)
                     {
                         KPRINTF(20, ("Reset Timeout!\n"));
                     } else {
                         KPRINTF(20, ("Reset finished after %ld ticks\n", 100-cnt));
                     }
+#endif
 
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
 
@@ -1139,12 +1141,15 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         }
                     } while(--cnt);
 
+#ifdef DEBUG
                     if(cnt == 0)
                     {
                         KPRINTF(20, ("Reset Timeout!\n"));
                     } else {
                         KPRINTF(20, ("Reset finished after %ld ticks\n", 100-cnt));
                     }
+#endif
+
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
 
                     // Read HCSPARAMS register to obtain number of downstream ports
@@ -1370,15 +1375,21 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     }
     hu->hu_RootHub11Ports = usb11ports;
     hu->hu_RootHub20Ports = usb20ports;
+#if defined(USB3)
+    hu->hu_RootHub30Ports = usb30ports;
+    hu->hu_RootHubPorts = (usb11ports > usb20ports) ? ((usb11ports > usb30ports) ? usb11ports : usb30ports) : ((usb30ports > usb20ports) ? usb30ports : usb20ports);
+#else
     hu->hu_RootHubPorts = (usb11ports > usb20ports) ? usb11ports : usb20ports;
-
+#endif
     for(cnt = 0; cnt < hu->hu_RootHubPorts; cnt++)
     {
         hu->hu_EhciOwned[cnt] = hu->hu_PortMap20[cnt] ? TRUE : FALSE;
     }
-
+#if defined(USB3)
+    KPRINTF(10, ("Unit %ld: USB Board %08lx has %ld USB1.1, %ld USB2.0 and %ld USB3.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports, hu->hu_RootHub30Ports));
+#else
     KPRINTF(10, ("Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", hu->hu_UnitNo, hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports));
-
+#endif
     hu->hu_FrameCounter = 1;
     hu->hu_RootHubAddr = 0;
 
@@ -1417,8 +1428,8 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #if defined(USB3)
     if(xhcicnt)
     {
-        prodname[6] = hc->hc_NumPorts + '0';
-        prodname[7] = 0;
+        prodname[4] = hc->hc_NumPorts + '0';
+        prodname[5] = 0;
         pciStrcat(prodname, " port XHCI USB 3.0");
     }
 #endif
