@@ -9,8 +9,6 @@
 
 #include "../exec/memory.h"	/* needed for MEMHEADER_TOTAL */
 
-#define D(x)
-
 /*
  * Create MemHeader structure for the specified RAM region.
  * The header will be placed in the beginning of the region itself.
@@ -69,6 +67,80 @@ struct MemHeader *krnCreateROMHeader(struct MemHeader *ram, CONST_STRPTR name, A
     return mh;
 }
 
+/*
+ * Change state of block of 'pages' pages starting at 'first' to 'state'.
+ * Checks blocks to the left and to the right from our block and merges/splits
+ * blocks if necessary, and updates counters.
+ */
+void SetBlockState(struct BlockHeader *head, IPTR first, IPTR pages, page_t state)
+{
+    /* Check state of block next to our region */
+    IPTR p = first + pages;
+    page_t cnt = 1;
+
+    if (p > head->size)
+    	/* If we claim we want to access more pages than our BlockHeader has, this is bad */
+    	Alert(AN_BadFreeAddr);
+    else if (p < head->size)
+    {
+        /*
+         * If the block next to our region is in the same state as our
+    	 * block will have, pick up initial counter value from it. Our block
+    	 * will be merged with the next one.
+    	 */
+	if (P_STATUS(head->map[p]) == state)
+	{
+	    cnt = P_COUNT(head->map[p]);
+	    INC_COUNT(cnt);
+	}
+    }
+
+    /*
+     * Set state of our block. We set state from last to the first page, and every
+     * page adds 1 to the counter (until it hits the limit value).
+     */
+    do
+    {
+    	head->map[--p] = cnt | state;
+	INC_COUNT(cnt);
+    } while (p > first);
+
+    /*
+     * If our block starts at page 0, there's nothing to check before it.
+     * We're done.
+     */
+    if (p == 0)
+    	return;
+
+    /*
+     * Preceding block can have either the same state as our new state,
+     * or different state.
+     * In both cases its counters need updating.
+     * - If it has the same state, we keep current counter value, so blocks
+     *   get merged.
+     * - If it has different state, we restart counter from 1. This means
+     *   we are splitting the block.
+     */
+    if (P_STATUS(head->map[p-1]) != state)
+    {
+    	cnt = 1;
+    	state = P_STATUS(head->map[p-1]);
+    }
+
+    /*
+     * Update space counter for the block. We keep going until the state changes
+     * again. The block will keep its original state.
+     */
+    do
+    {
+    	if (P_STATUS(head->map[--p]) != state)
+    	    break;
+
+	head->map[p] = cnt | state;
+	INC_COUNT(cnt);
+    } while (p > 0);
+}
+
 /* Allocate 'size' bytes from MemHeader mh. Returns number of the first page */
 APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
 {
@@ -78,6 +150,8 @@ APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
     IPTR pages;
     IPTR p;
     IPTR candidate, candidate_size;
+
+    D(bug("[krnAllocate] Request for %u bytes from BlockHeader %p\n", size, head));
 
     /*
      * Safety checks.
@@ -185,15 +259,8 @@ APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
     if (candidate_size != -1)
     {
 	/* Mark the block as allocated */
-        UBYTE cnt = 1;
-
 	D(bug("[krnAllocate] Allocating %u pages starting from %u\n", pages, candidate));
-	p = candidate + pages;
-	do
-	{
-	    head->map[--p] = cnt | P_ALLOC;
-	    INC_COUNT(cnt);
-	} while (p > 0);
+	SetBlockState(head, candidate, pages, P_ALLOC);
 
 	/* Calculate starting address of the first page */
 	addr = head->start + candidate * KernelBase->kb_PageSize;
@@ -213,9 +280,7 @@ void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *Kern
     /* Calculate number of the starting page within the region */
     IPTR first = (addr - head->start) / KernelBase->kb_PageSize;
     IPTR align = KernelBase->kb_PageSize - 1;
-    UBYTE free = 0;
     IPTR pages;
-    IPTR p;
 
     /* Pad up size and convert it to number of pages */
     size = (size + align) & ~align;
@@ -223,43 +288,8 @@ void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *Kern
 
     ObtainSemaphore(&head->sem);
     
-    /* Get number of already free pages next to our region */
-    p = first + pages;
-    if (p > head->size)
-    	/* If we claim we want to free more pages than our MemHeader has, this is bad */
-    	Alert(AN_BadFreeAddr);
-    else if (p < head->size)
-    {
-        /*
-         * If we have some free pages next to our region, pick up
-    	 * free pages count from the map entry of the next page.
-    	 */
-	if (P_STATUS(head->map[p]) == P_FREE)
-	    free = P_COUNT(head->map[p]);
-    }
-
-    /*
-     * Mark pages as free. We free pages from last to the first, and every
-     * freed pages adds 1 to the count of free pages.
-     */
-    do
-    {
-    	head->map[--p] = free;
-	INC_COUNT(free);
-    } while (p > first);
-
-    /*
-     * If there are free pages preceding just freed region, we need to update their
-     * free space counter, so as free blocks get merged.
-     * Updating is not strictly necessary, but it helps to optimize searching process.
-     */
-    do {
-    	if (P_STATUS(head->map[--p]) == P_ALLOC)
-    	    break;
-
-	head->map[p] = free;
-	INC_COUNT(free);
-    } while (p > 0);
+    /* Set block state to free */
+    SetBlockState(head, first, pages, P_FREE);
 
     /* Update free memory counter */
     mh->mh_Free += size;

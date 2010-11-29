@@ -25,7 +25,7 @@
  * past the block. It is possible to reduce number of such steps by changing map
  * entries from UBYTE to UWORD or ULONG, but this will also double memory usage. So it's a
  * memory vs speed tradeoff.
- * In order to change entry size, replace five macros below.
+ * In order to change entry size, replace five macros and typedef below.
  *
  * TODOs:
  * 1. Implement reverse lookup order (for MEMF_REVERSE). Find some way to optimize
@@ -35,14 +35,9 @@
  *    managed region. This would be a nice option for managing slow memory (like A1200
  *    chip RAM).
  */
-struct BlockHeader
-{
-    struct MemChunk mc;		/* Backwards compatibility */
-    APTR start;			/* Start address	   */
-    ULONG size;			/* Total size in pages	   */
-    struct SignalSemaphore sem;	/* Access semaphore	   */
-    UBYTE map[1];		/* Allocations map	   */
-};
+ 
+/* Type of map entry */
+typedef UBYTE page_t;
 
 /* Parts of map entry */
 #define P_COUNT(x)  (x & 0x7F)
@@ -54,6 +49,16 @@ struct BlockHeader
 
 /* Use this macro to increment pages count in the block */
 #define INC_COUNT(x) if (x < 127) x++
+
+ 
+struct BlockHeader
+{
+    struct MemChunk mc;		/* Backwards compatibility */
+    APTR start;			/* Start address	   */
+    ULONG size;			/* Total size in pages	   */
+    struct SignalSemaphore sem;	/* Access semaphore	   */
+    page_t map[1];		/* Allocations map	   */
+};
 
 APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase);
 void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase);
