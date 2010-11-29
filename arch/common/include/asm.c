@@ -62,6 +62,9 @@ int main(void) {
     DEFINE(tc_ETask      , offsetof (struct Task, tc_UnionETask.tc_ETask));
     DEFINE(iet_Context   , sizeof (struct ETask) + 4);
 
+    asm volatile("\n/* struct Process */" ::);
+    DEFINE(pr_ReturnAddr , offsetof (struct Process, pr_ReturnAddr));
+
     asm volatile("\n/* struct DosBase */" ::);
     DEFINE(dl_SysBase    , offsetof (struct DosLibrary, dl_SysBase));
 
