@@ -4,9 +4,12 @@
 #include <proto/exec.h>
 
 #include <kernel_base.h>
+#include <kernel_debug.h>
 #include "memory_intern.h"
 
 #include "../exec/memory.h"	/* needed for MEMHEADER_TOTAL */
+
+#define D(x)
 
 /*
  * Create MemHeader structure for the specified RAM region.
@@ -71,9 +74,10 @@ APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     APTR addr = NULL;
-    ULONG align = KernelBase->kb_PageSize - 1;
-    ULONG pages;
-    ULONG p;
+    IPTR align = KernelBase->kb_PageSize - 1;
+    IPTR pages;
+    IPTR p;
+    IPTR candidate, candidate_size;
 
     /*
      * Safety checks.
@@ -94,23 +98,107 @@ APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
 
     ObtainSemaphore(&head->sem);
 
-    for (p = 0; p < head->size; p++)
+    /* Start looking up from page zero */
+    p = 0;
+    candidate = 0;
+    candidate_size = -1;
+
+    /*
+     * Look up best matching free block.
+     * We walk through the whole memory map in order to identify free blocks
+     * and get their sizes. We use the best-match criteria in order to avoid
+     * excessive memory fragmentation.
+     */
+    do
     {
-    	/* Found block ? */
-    	if (head->map[p] >= pages)
-    	{
-    	    ULONG i;
+        IPTR start = p;		/* Starting page of the block being examined */
+	IPTR free = 0;		/* Count of free pages in the block */
 
-    	    /* Mark pages starting from p as allocated */
-    	    for (i = 0; i < pages; i++)
-    	    	head->map[p + i] = 0;
+	while (P_STATUS(head->map[p]) == P_FREE)
+	{
+	    UBYTE cnt = P_COUNT(head->map[p]);	/* Get (partial) block length */
 
-	    /* Calculate starting address of the first page */
-	    addr = head->start + p * KernelBase->kb_PageSize;
-	    /* Update free memory counter */
-	    mh->mh_Free -= size;
+	    free += cnt;			/* Add length to total count */
+	    p += cnt;				/* Advance past the block    */
+
+	    if (p == head->size)		/* Reached end of this memory chunk ? */
+		break;
+	    if (p > head->size)			/* Went past the chunk? This must never happen! */
+		Alert(AN_MemCorrupt);
+	}
+
+	D(bug("[krnAllocate] Have %u free pages starting from %u\n", free, start));
+
+	/* Does the block fit ? */
+	if (free >= pages)
+	{
+	    /*
+	     * If the found block has smaller size than the
+	     * previous candidate, remember it as a new candidate.
+	     */
+	    if (free < candidate_size)
+	    {
+		D(bug("[krnAllocate] Old candidate %u (size %d)\n", candidate, candidate_size));
+		candidate = start;
+		candidate_size = free;
+		D(bug("[krnAllocate] New candidate %u (size %d)\n", candidate, candidate_size));
+	    }
+
+	    /* If found exact match, we can't do better, so stop searching */
+	    if (free == pages)
+	    {
+		D(bug("[krnAllocate] Exact match\n"));
+		break;
+	    }
+	}
+
+	/*
+	 * If we are at the end of memory map, we have nothing
+	 * more to look at. We either already have a candidate,
+	 * or no
+	 */
+	if (p == head->size)
+	{
+	    D(bug("[krnAllocate] Reached end of chunk\n"));
 	    break;
 	}
+
+	D(bug("[krnAllocate] Allocated block starts at %u\n", p));
+	/* Skip past the end of the allocated block */
+	while (P_STATUS(head->map[p]) == P_ALLOC)
+	{
+	    p += P_COUNT(head->map[p]);
+
+	    if (p == head->size)
+	    {
+	    	D(bug("[krnAllocate] Reached end of chunk\n"));
+		break;
+	    }
+	    if (p > head->size)
+		Alert(AN_MemCorrupt);
+	}
+	D(bug("[krnAllocate] Skipped up to page %u\n", p));
+
+    } while (p < head->size);
+
+    /* Found block ? */
+    if (candidate_size != -1)
+    {
+	/* Mark the block as allocated */
+        UBYTE cnt = 1;
+
+	D(bug("[krnAllocate] Allocating %u pages starting from %u\n", pages, candidate));
+	p = candidate + pages;
+	do
+	{
+	    head->map[--p] = cnt | P_ALLOC;
+	    INC_COUNT(cnt);
+	} while (p > 0);
+
+	/* Calculate starting address of the first page */
+	addr = head->start + candidate * KernelBase->kb_PageSize;
+	/* Update free memory counter */
+	mh->mh_Free -= size;
     }
 
     ReleaseSemaphore(&head->sem);
@@ -123,46 +211,54 @@ void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *Kern
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     /* Calculate number of the starting page within the region */
-    ULONG first = (addr - head->start) / KernelBase->kb_PageSize;
-    ULONG align = KernelBase->kb_PageSize - 1;
-    ULONG free = 0;
-    ULONG pages;
-    ULONG p;
+    IPTR first = (addr - head->start) / KernelBase->kb_PageSize;
+    IPTR align = KernelBase->kb_PageSize - 1;
+    UBYTE free = 0;
+    IPTR pages;
+    IPTR p;
 
     /* Pad up size and convert it to number of pages */
     size = (size + align) & ~align;
     pages = size / KernelBase->kb_PageSize;
 
     ObtainSemaphore(&head->sem);
-
+    
     /* Get number of already free pages next to our region */
     p = first + pages;
     if (p > head->size)
     	/* If we claim we want to free more pages than our MemHeader has, this is bad */
     	Alert(AN_BadFreeAddr);
     else if (p < head->size)
+    {
         /*
          * If we have some free pages next to our region, pick up
     	 * free pages count from the map entry of the next page.
     	 */
-        free = head->map[p];
+	if (P_STATUS(head->map[p]) == P_FREE)
+	    free = P_COUNT(head->map[p]);
+    }
 
     /*
      * Mark pages as free. We free pages from last to the first, and every
      * freed pages adds 1 to the count of free pages.
      */
     do
-    	head->map[--p] = ++free;
-    while (p > first);
+    {
+    	head->map[--p] = free;
+	INC_COUNT(free);
+    } while (p > first);
 
     /*
      * If there are free pages preceding just freed region, we need to update their
      * free space counter, so as free blocks get merged.
+     * Updating is not strictly necessary, but it helps to optimize searching process.
      */
     do {
-    	if (!head->map[--p])
+    	if (P_STATUS(head->map[--p]) == P_ALLOC)
     	    break;
-    	head->map[p] = ++free;
+
+	head->map[p] = free;
+	INC_COUNT(free);
     } while (p > 0);
 
     /* Update free memory counter */

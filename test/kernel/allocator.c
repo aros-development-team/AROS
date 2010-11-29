@@ -2,7 +2,11 @@
  * WARNING!!!
  * This test relies on some particular internal functioning of kernel memory allocator!
  * You'll have to change the code if you change something in kernel!
+ *
+ * Note also that this test requires working exec trap handling.
  */
+
+#define NO_ACCESS_TESTS
 
 #include <aros/kernel.h>
 #include <exec/execbase.h>
@@ -34,19 +38,52 @@ struct KernelBase;
 #define MEMHEADER_TOTAL \
     ((sizeof(struct MemHeader)+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1))
 
+volatile static ULONG trap;
+
+static void TrapHandler(ULONG code, void *ctx)
+{
+    trap = code;
+}
+
+static void TestRead(UBYTE *location)
+{
+#ifdef NO_ACCESS_TESTS
+    printf("Access tests disabled\n");
+#else
+
+    volatile UBYTE val;
+
+    /* Reset trap indication */
+    trap = -1;
+
+    printf("Test read from 0x%p... ", location);
+    val = *location;
+
+    /*
+     * We can't printf() from trap handler. Instead we just
+     * remember trap code and check it later here.
+     */
+    if (trap == -1)
+	printf("Success, value is 0x%02X\n", val);
+    else
+	printf("Hit trap 0x%08X\n", trap);
+
+#endif
+}
+
 /*
  * Print status of all pages in the specified MemHeader.
  * '#' means allocated page, '.' means free page
  */
-void DumpState(struct MemHeader *mh)
+static void DumpState(struct MemHeader *mh)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
-    ULONG p;
+    IPTR p;
 
     printf("Page map (%u total):\n", head->size);
 
     for (p = 0; p < head->size; p++)
-        printf(head->map[p] ? "." : "#");
+        printf(P_STATUS(head->map[p]) ? "#" : ".");
 
     printf("\n");
 }
@@ -56,6 +93,7 @@ int main(void)
 #ifdef KrnGetSystemAttr
 
     APTR KernelBase;
+    struct Task *me;
     ULONG page;
     struct MemHeader *TestArea;
     ULONG TestLength;
@@ -87,6 +125,10 @@ int main(void)
 	return 1;
     }
 
+    /* Install trap handler */
+    me = FindTask(NULL);
+    me->tc_TrapCode = TrapHandler;
+
     /* Compose a MemHeader */
     TestArea->mh_Node.ln_Succ = NULL;
     TestArea->mh_Node.ln_Type = NT_MEMORY;
@@ -112,6 +154,9 @@ int main(void)
 	       mc->mc_Next, mc->mc_Bytes);
 	goto exit;
     }
+
+    printf("Testing initial no-access protection...\n");
+    TestRead((UBYTE *)TestArea + page);
 
     /*
      * Insert the area into system list.
@@ -161,15 +206,15 @@ int main(void)
     DumpState(TestArea);
 
     printf("Allocating region1 (one read-write page)...\n");
-    region1 = KrnAllocPages(page, MEMF_CHIP|MEMF_FAST, MAP_Readable|MAP_Writable);
+    region1 = KrnAllocPages(page, MEMF_FAST, MAP_Readable|MAP_Writable);
     printf("region1 at 0x%p\n", region1);
     DumpState(TestArea);
- 
+
     printf("Freeing region1...\n");
     KrnFreePages(region1, page);
     printf("Done!\n");
     DumpState(TestArea);
- 
+
 exit:
     if (TestArea->mh_Node.ln_Succ)
     {
