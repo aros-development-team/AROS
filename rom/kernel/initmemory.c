@@ -45,8 +45,9 @@ AROS_LH1(void, KrnInitMemory,
     IPTR align = KernelBase->kb_PageSize - 1;
     APTR end;
     IPTR memsize;
-    ULONG mapsize;
-    ULONG p, free;
+    IPTR mapsize;
+    IPTR p;
+    UBYTE free;
 
     /* Fill in legacy MemChunk structure */
     head->mc.mc_Next = NULL;
@@ -81,7 +82,9 @@ AROS_LH1(void, KrnInitMemory,
     p = head->size;
     free = 1;
     do {
-    	head->map[--p] = ++free;
+    	head->map[--p] = free;
+	if (free < 127)
+	    free++;
     } while (p > 0);
 
     /* Set free space counter */
