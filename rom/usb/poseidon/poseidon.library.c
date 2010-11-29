@@ -2924,12 +2924,12 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
                     // patch to early determine highspeed roothubs
-                    if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x200))
+                    if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x200) && (pd->pd_USBVers < 0x300))
                     {
                         pd->pd_Flags |= PDFF_HIGHSPEED;
                     }
                     #if defined(USB3)
-                    else if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x300))
+                    if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x300))
                     {
                         pd->pd_Flags |= PDFF_SUPERSPEED;
                     }
