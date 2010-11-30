@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocPooled().
     Lang: english
 */
+
 #include "exec_intern.h"
 #include <aros/libcall.h>
 #include "memory.h"
@@ -46,87 +47,16 @@
 	CreatePool(), DeletePool(), AllocPooled()
 
     INTERNALS
+	In AROS memory allocated from pool remembers where it came from.
+	Because of this poolHeader is effectively ignored and is present
+	only for compatibility reasons. However, do not rely on this! For
+	other operating systems of Amiga(tm) family this is not true!
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    struct ProtectedPool *pool = (struct ProtectedPool *)poolHeader;
 
-    if (!memory || !memSize) return;
-    
-    if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
-    {
-    	ObtainSemaphore(&pool->sem);
-    }
-    
-    /* If memSize is bigger than the ThreshSize it's allocated seperately. */
-    if(memSize > pool->pool.ThreshSize)
-    {
-	struct Block *bl;
+    InternalFreePooled(memory, memSize, SysBase);
 
-	/* Get pointer to header */
-	bl = (struct Block *)((UBYTE *)memory - BLOCK_TOTAL);
-
-	/* Remove it from the list */
-	Remove((struct Node *)&bl->Node);
-
-	if (bl->Size != memSize + BLOCK_TOTAL)
-	{
-	    kprintf("\nFreePooled: free size does not match alloc size: allocsize = %d freesize = %d!!!\n\n",
-	    	       bl->Size - BLOCK_TOTAL,
-		       memSize);
-	}
-	
-	/* And Free the memory */
-	FreeMem(bl, bl->Size);
-
-    }
-    else
-    {
-	/* Look for the right MemHeader */
-	struct MemHeader *mh = (struct MemHeader *)pool->pool.PuddleList.mlh_Head;
-
-	for(;;)
-	{
-	    #if !defined(NO_CONSISTENCY_CHECKS)
-	    if (!mh)
-	    {
-		/* memory block is not in pool. */
-		Alert(AT_Recovery | AN_MemCorrupt);
-		break;
-	    }
-	    #endif
-
-	    /* The memory must be between the two borders */
-	    if(memory >= mh->mh_Lower && memory < mh->mh_Upper)
-	    {
-		/* Found the MemHeader. Free the memory. */
-		Deallocate(mh, memory, memSize);
-
-		/* Is this MemHeader completely free now? */
-		if(mh->mh_Free == pool->pool.PuddleSize)
-		{
-		    /* Yes. Remove it from the list. */
-		    Remove(&mh->mh_Node);
-
-		    /* And free it. */
-		    FreeMem(mh, pool->pool.PuddleSize + MEMHEADER_TOTAL);
-		}
-		/* All done. */
-		break;
-	    }
-	    /* Try next MemHeader */
-	    mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
-	}
-    }
-
-    if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
-    {
-    	ReleaseSemaphore(&pool->sem);
-    }
- 
     AROS_LIBFUNC_EXIT
-    
 } /* FreePooled */
-
