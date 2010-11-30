@@ -239,8 +239,8 @@ void clean_string( char *dirtystring )
 
     for (i = 0 ; i < (sizeof(unsigned int) * 6) ; i++)
     {
-        if (( (TEXT)((IPTR *)dirtystring)[i] < 32 )||( (TEXT)((IPTR *)dirtystring)[i] > 126 )) 
-            (char *)((IPTR *)dirtystring)[i] = ".";
+        if ((dirtystring[i] < 32) || (dirtystring[i] > 126)) 
+            dirtystring[i] = '.';
     }
 
 }
