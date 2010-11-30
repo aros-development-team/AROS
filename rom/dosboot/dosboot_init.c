@@ -475,8 +475,11 @@ AROS_UFH3(void, __dosboot_BootProcess,
         CloseLibrary( (struct Library *) ExpansionBase );
 
         /* Initialize HIDDs */
-	D(bug("[DOSBoot] Loading display drivers\n"));
-        __dosboot_InitHidds(DOSBase);
+	if (!(LIBBASE->BootFlags & BF_NO_DISPLAY_DRIVERS))
+	{
+	    D(bug("[DOSBoot] Loading display drivers\n"));
+            __dosboot_InitHidds(DOSBase);
+	}
 
         /* We now call the system dependant boot - should NEVER return! */
 	D(bug("[DOSBoot] Calling bootstrap code\n"));

@@ -41,6 +41,7 @@ struct DOSBootBase
 
 /* Boot flags */
 #define BF_NO_STARTUP_SEQUENCE 0x0001
+#define BF_NO_DISPLAY_DRIVERS  0x0002
 
 void InitBootConfig(struct BootConfig *bootcfg, APTR BootLoaderBase);
 BOOL __dosboot_InitHidds(struct DosLibrary *dosBase);
