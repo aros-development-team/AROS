@@ -297,6 +297,27 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
     InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
 #endif
 
+    /* Check for command line argument */
+    if (BootLoaderBase)
+    {
+        struct List *list = NULL;
+        struct Node *node = NULL;
+
+        if ((list = (struct List *)GetBootInfo(BL_Args)) != NULL)
+	{
+            ForeachNode(list,node)
+	    {
+                if (0 == strcmp(node->ln_Name, "bootmenu")) {
+                    D(bug("[BootMenu] bootmenu_Init: Forced with bootloader argument\n"));
+                    WantBootMenu = TRUE;
+                }
+
+		if (0 == strcmp(node->ln_Name, "nomonitors"))
+		    LIBBASE->BootFlags |= BF_NO_DISPLAY_DRIVERS;
+            }
+        }
+    }
+
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     {
     	volatile UBYTE *cia = (UBYTE*)0xbfe001;
@@ -311,21 +332,6 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
     if (!initHidds(LIBBASE))
 	return FALSE;
 #endif
-
-    /* Check for command line argument */
-    if (BootLoaderBase) {
-        struct List *list = NULL;
-        struct Node *node = NULL;
-
-        if ((list = (struct List *)GetBootInfo(BL_Args)) != NULL) {
-            ForeachNode(list,node) {
-                if (0 == strcmp(node->ln_Name,"bootmenu")) {
-                    D(bug("[BootMenu] bootmenu_Init: Forced with bootloader argument\n"));
-                    WantBootMenu = TRUE;
-                }
-            }
-        }
-    }
 
     /* check keyboard if needed */
     if (!WantBootMenu)
