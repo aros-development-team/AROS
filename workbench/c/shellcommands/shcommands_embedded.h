@@ -31,10 +31,9 @@ struct shcommand
 static ULONG name##_main(CONST_STRPTR , IPTR *,                \
                          struct ExecBase *SysBase,             \
                          struct DosLibrary *);                 \
-AROS_UFP3S(LONG, name##_entry,                                 \
+AROS_UFP2S(LONG, name##_entry,                                 \
     AROS_UFPA(char *,argstr,A0),                               \
-    AROS_UFPA(ULONG,argsize,D0),                               \
-    AROS_UFPA(struct ExecBase *,SysBase,A6)                    \
+    AROS_UFPA(ULONG,argsize,D0)                                \
 );                                                             \
 static const struct shcommand __##name##_##shcommand =         \
 {                                                              \
@@ -46,14 +45,13 @@ static const struct shcommand __##name##_##shcommand =         \
                                                                \
 ADD2SET(__##name##_##shcommand, SHCOMMANDS, 0);                \
 							       \
-AROS_UFH3S(LONG, name##_entry,                                 \
+AROS_UFH2S(LONG, name##_entry,                                 \
     AROS_UFHA(char *,argstr,A0),                               \
-    AROS_UFHA(ULONG,argsize,D0),                               \
-    AROS_UFHA(struct ExecBase *,SysBase,A6)                    \
+    AROS_UFHA(ULONG,argsize,D0)                                \
 )                                                              \
 {                                                              \
     AROS_USERFUNC_INIT                                         \
-							       \
+    extern struct ExecBase *SysBase;                           \
     APTR DOSBase;                                              \
                                                                \
     LONG __retcode = RETURN_FAIL;                              \
