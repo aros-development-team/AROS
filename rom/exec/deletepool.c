@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Delete a memory pool including all its memory.
     Lang: english
 */
+
+#include <aros/debug.h>
 #include "exec_intern.h"
 #include <aros/libcall.h>
 #include "memory.h"
@@ -46,35 +48,38 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Pool *pool = (struct Pool *)poolHeader;
+    D(bug("[exec] DeletePool(0x%p)\n", poolHeader));
 
     /* It is legal to DeletePool(NULL) */
-    if(pool != NULL)
+    if (poolHeader != NULL)
     {
-	struct Block 	*bl;
-	void 	    	*p;
-	ULONG 	    	size;
+	struct Pool *pool = poolHeader + MEMHEADER_TOTAL;
+	struct Node *p, *p2; /* Avoid casts */
 
-	/* Calculate the total size of a puddle including header. */
-	size = pool->PuddleSize + MEMHEADER_TOTAL;
-	
-	/* Free the list of puddles */
-	while((p = RemHead((struct List *)&pool->PuddleList)) !=NULL )
-	{
-	    FreeMem(p, size);
-    	}
-	
-	/* Free the list of single Blocks */
-	while((bl = (struct Block *)RemHead((struct List *)&pool->BlockList)) != NULL)
-	{
-	    FreeMem(bl, bl->Size);
-    	}
-	
-	FreeMem(pool, (pool->Requirements & MEMF_SEM_PROTECTED) ? sizeof(struct ProtectedPool) :
-	    	    	    	    	    	    	    	  sizeof(struct Pool));
+	D(bug("[DeletePool] Pool header 0x%p\n", pool));
+	/*
+	 * Free the list of puddles.
+	 * Remember that initial puddle containing the pool structure is also in this list.
+	 * We do not need to free it until everything else is freed.
+	 */
+	for (p = (struct Node *)pool->PuddleList.mlh_Head; p->ln_Succ; p = p2)
+    	{
+	    p2 = p->ln_Succ;
+
+	    D(bug("[DeletePool] Puddle 0x%p...", p));
+
+    	    if (p != poolHeader)
+	    {
+		D(bug(" freeing"));
+    	    	FreeMemHeader(p, SysBase);
+	    }
+	    D(bug("\n"));
+	}
+
+	/* Free the last puddle, containing the pool header */
+	D(bug("[DeletePool] Freeing initial puddle 0x%p\n", poolHeader));
+	FreeMemHeader(poolHeader, SysBase);
     }
-    
-    AROS_LIBFUNC_EXIT
-    
-} /* DeletePool */
 
+    AROS_LIBFUNC_EXIT
+} /* DeletePool */

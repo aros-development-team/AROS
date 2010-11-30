@@ -46,10 +46,8 @@ AROS_WORSTALIGN:sizeof(struct MemChunk))
 struct Pool 
 {
     struct MinList PuddleList;
-    struct MinList BlockList;
     ULONG Requirements;
     ULONG PuddleSize;
-    ULONG ThreshSize;
 };
 
 struct ProtectedPool
@@ -67,11 +65,11 @@ struct Block
 APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct ExecBase *SysBase);
 
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
-APTR AllocMemHeader(IPTR size, ULONG flags, UWORD prot, struct ExecBase *SysBase);
+APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase);
 void FreeMemHeader(APTR addr, struct ExecBase *SysBase);
-APTR AllocPuddle(struct Pool *pool, IPTR size, ULONG flags, struct ExecBase *SysBase);
 
 APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct ExecBase *SysBase);
+void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase);
 
 #define MUNGWALL_HEADER_ID 0x1ADEBCA1
 

@@ -1,13 +1,17 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a memory pool.
     Lang: english
 */
-#include "exec_intern.h"
+
+#include <aros/debug.h>
+#include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <clib/alib_protos.h>
+
+#include "exec_intern.h"
 #include "memory.h"
 
 /*****************************************************************************
@@ -42,6 +46,9 @@
 	be created
 
     NOTES
+	Since exec.library v41.12 implementation of pools has been rewritten
+	to make use of memory protection capabilities. threshSize parameter
+	is effectively ignored and is present only for backwards compatibility.
 
     EXAMPLE
 	\* Get the handle to a private memory pool *\
@@ -69,47 +76,63 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ProtectedPool *pool = NULL;
+    struct MemHeader *firstPuddle = NULL;
+    ULONG align = PrivExecBase(SysBase)->PageSize - 1;
 
-    /* puddleSize must not be smaller than threshSize */
-    if(puddleSize >= threshSize)
+    D(bug("[exec] CreatePool(0x%08X, %u, %u)\n", requirements, puddleSize, threshSize));
+    
+    /*
+     * puddleSize needs to include MEMHEADER_TOTAL and one pointer.
+     * This is because our puddles must be able to accomodate an allocation
+     * of own size. Allocations of larger size will always use enlarged puddles.
+     * Pointer is used for pointing back to the MemHeader from which the block
+     * was allocated, in AllocVec()-alike manner. This way we get rid of slow lookup
+     * in FreePooled().
+     */
+    puddleSize += MEMHEADER_TOTAL + sizeof(struct MemHeader *);
+    /* Then round puddleSize up to be a multiple of page size. */
+    puddleSize = (puddleSize + align) & ~align;
+    D(bug("[CreatePool] Aligned puddle size: %u (0x%08X)\n", puddleSize, puddleSize));
+
+    /* Allocate the first puddle. It will contain pool header. */
+    firstPuddle = AllocMemHeader(puddleSize, requirements, SysBase);
+    D(bug("[CreatePool] Initial puddle 0x%p\n", firstPuddle));
+
+    if (firstPuddle)
     {
-    	LONG poolstruct_size;
-	
-	/* Round puddleSize up to be a multiple of MEMCHUNK_TOTAL. */
-	puddleSize = (puddleSize + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL - 1);
+	ULONG poolstruct_size = (requirements & MEMF_SEM_PROTECTED) ? sizeof(struct ProtectedPool) :
+								      sizeof(struct Pool);
+	struct ProtectedPool *pool;
 
 	/*
-	    Allocate memory for the Pool structure using the same requirements
-	    as for the whole pool (to make it shareable, residentable or
-	    whatever is needed).
-	*/
-	
-	poolstruct_size = (requirements & MEMF_SEM_PROTECTED) ? sizeof(struct ProtectedPool) :
-	    	    	    	    	    	    	        sizeof(struct Pool);
-							       
-	pool=(struct ProtectedPool *)AllocMem(poolstruct_size, requirements & ~MEMF_SEM_PROTECTED);
-	if(pool != NULL)
-	{
-	    /* Clear the lists */
-	    NEWLIST((struct List *)&pool->pool.PuddleList);
-	    NEWLIST((struct List *)&pool->pool.BlockList );
+	 * Allocate pool header inside the puddle.
+	 * It is the first allocation in this puddle, so in future we can always find
+	 * header's address as poolbase + MEMHEADER_TOTAL.
+	 */
+	pool = Allocate(firstPuddle, poolstruct_size);
+	D(bug("[CreatePool] Pool header 0x%p (size %u)\n", pool, poolstruct_size));
 
-	    /* Set the rest */
-	    pool->pool.Requirements = requirements;
-	    pool->pool.PuddleSize   = puddleSize;
-	    pool->pool.ThreshSize   = threshSize;
-	    
-	    if (requirements & MEMF_SEM_PROTECTED)
-	    {
-	    	InitSemaphore(&pool->sem);
-	    }
+	/* Initialize pool header */
+	NEWLIST((struct List *)&pool->pool.PuddleList);
+	pool->pool.Requirements = requirements;
+	pool->pool.PuddleSize   = puddleSize;
+
+	if (requirements & MEMF_SEM_PROTECTED)
+	{
+	    InitSemaphore(&pool->sem);
 	}
-	
-    } /* if(puddleSize >= threshSize) */
-    
-    return pool;
-    
+
+	/*
+	 * Add the puddle to the list (yes, contained in itself).
+	 * This is the first puddle so it's safe to use AddTail() here.
+	 * Note that we use ln_Name of our MemHeader to point back to
+	 * our pool.
+	 */
+	firstPuddle->mh_Node.ln_Name = (STRPTR)pool;
+	AddTail((struct List *)&pool->pool.PuddleList, &firstPuddle->mh_Node);
+    }
+
+    return firstPuddle;
+
     AROS_LIBFUNC_EXIT
-    
 } /* CreatePool */

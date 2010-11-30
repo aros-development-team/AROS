@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory in a pool.
@@ -19,6 +19,8 @@
 #endif
 #include <aros/debug.h>
 #undef kprintf
+
+
 
 /*****************************************************************************
 
@@ -61,113 +63,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ProtectedPool *pool = (struct ProtectedPool *)poolHeader;
-    APTR    	    	 ret = NULL;
+    struct Pool *pool = poolHeader + MEMHEADER_TOTAL;
 
-    D(bug("AllocPooled $%lx memsize $%lx by \"%s\"\n", poolHeader, memSize, SysBase->ThisTask->tc_Node.ln_Name));
+    D(bug("AllocPooled 0x%P memsize %u by \"%s\"\n", poolHeader, memSize, SysBase->ThisTask->tc_Node.ln_Name));
 
-    if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
-    {
-    	ObtainSemaphore(&pool->sem);
-    }
+    /* Allocate from the specified pool with flags stored in pool header */
+    return InternalAllocPooled(poolHeader, memSize, pool->Requirements, SysBase);
 
-    /* If the memSize is bigger than the ThreshSize allocate seperately. */
-    if(memSize > pool->pool.ThreshSize)
-    {
-	struct Block *bl;
-	ULONG 	     size;
-
-	/* Get enough memory for the memory block including the header. */
-	size = memSize + BLOCK_TOTAL;
-	bl = (struct Block *)AllocMem(size, pool->pool.Requirements & ~MEMF_SEM_PROTECTED);
-
-	/* No memory left */
-	if(bl == NULL)
-	    goto done;
-
-	/* Initialize the header */
-	bl->Size = size;
-
-	/* Add the block to the BlockList */
-	AddHead((struct List *)&pool->pool.BlockList,(struct Node *)&bl->Node);
-
-	/* Set pointer to allocated memory */
-	ret = (UBYTE *)bl + BLOCK_TOTAL;
-    }
-    else
-    {
-	struct MemHeader *mh;
-
-	/* Follow the list of MemHeaders */
-	mh = (struct MemHeader *)pool->pool.PuddleList.mlh_Head;
-	for(;;)
-	{
-	    /* Are there no more MemHeaders? */
-	    if(mh->mh_Node.ln_Succ==NULL)
-	    {
-		/* Get a new one */
-		mh = (struct MemHeader *)
-		   AllocMem(pool->pool.PuddleSize + MEMHEADER_TOTAL,
-		    	    pool->pool.Requirements & ~MEMF_SEM_PROTECTED);
-
-		/* No memory left? */
-		if(mh == NULL)
-		    goto done;
-
-		/* Initialize new MemHeader */
-		mh->mh_First	    	= (struct MemChunk *)((UBYTE *)mh + MEMHEADER_TOTAL);
-		mh->mh_First->mc_Next 	= NULL;
-		mh->mh_First->mc_Bytes  = pool->pool.PuddleSize;
-		mh->mh_Lower 	    	= mh->mh_First;
-		mh->mh_Upper 	    	= (UBYTE *)mh->mh_First+pool->pool.PuddleSize;
-		mh->mh_Free  	    	= pool->pool.PuddleSize;
-
-		/* And add it to the list */
-		AddHead((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
-		/* Fall through to get the memory */
-	    }
-	    /* Try to get the memory */
-	    ret = Allocate(mh, memSize);
-
-        /* Got it? */
-        if(ret != NULL)
-        {
-            /* If this is not the first MemHeader and it has some free space, move it to the head */
-            if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
-            {
-                Remove((struct Node *)mh);
-                AddHead((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
-            }
-
-            break;
-        }
-
-	    /* No. Try next MemHeader */
-	    mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
-	}
-	/* Allocate does not clear the memory! */
-	if(pool->pool.Requirements & MEMF_CLEAR)
-	{
-	    ULONG *p= (ULONG *)ret;
-
-	    /* Round up (clearing longs is faster than just bytes) */
-	    memSize = (memSize + sizeof(ULONG) - 1) / sizeof(ULONG);
-
-	    /* NUL the memory out */
-	    while(memSize--)
-		*p++=0;
-	}
-    }
-
-done:
-    if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
-    {
-    	ReleaseSemaphore(&pool->sem);
-    }
-    
-    /* Everything fine */
-    return ret;
-    
     AROS_LIBFUNC_EXIT
     
 } /* AllocPooled */

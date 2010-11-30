@@ -1,7 +1,14 @@
+#include <aros/debug.h>
 #include <proto/kernel.h>
 
 #include "exec_intern.h"
 #include "memory.h"
+
+#define DMH(x)
+
+/* Transition period: use AllocMem()/FreeMem() as base allocator */
+#undef KrnAllocPages
+#undef KrnFreePages
 
 /* Find MemHeader to which address belongs */
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
@@ -143,15 +150,22 @@ APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct E
     return mc;
 }
 
-/* The following will compile only if KrnAllocPages() is present!!! */
-#ifdef KrnAllocPages
+/* Backwards compatibility for old ports */
+#ifndef KrnAllocPages
+#define KrnAllocPages(size, flags, prot) AllocMem(size, flags & ~MEMF_SEM_PROTECTED)
+#define KrnFreePages(addr, size)	 FreeMem(addr, size)
+#endif
 
 /* Allocate a region managed by own header */
-APTR AllocMemHeader(IPTR size, ULONG flags, UWORD prot, struct ExecBase *SysBase)
+APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
+    /* In future we are going to have MEMF_EXECUTABLE, and MAP_Executable will depend on it */
+    KRN_MapAttr prot = MAP_Readable|MAP_Writable|MAP_Executable;
 
     mh = KrnAllocPages(size, flags, prot);
+    DMH(bug("[AllocMemHeader] Allocated %u bytes at 0x%p\n", size, mh));
+
     if (mh)
     {
         struct MemHeader *orig = FindMem(mh, SysBase);
@@ -160,15 +174,15 @@ APTR AllocMemHeader(IPTR size, ULONG flags, UWORD prot, struct ExecBase *SysBase
 
 	/*
 	 * Initialize new MemHeader.
-	 * Copy some attributes from the original one.
+	 * Inherit attributes from system MemHeader from which
+	 * our chunk was allocated.
 	 */
-	mh->mh_Node.ln_Name	= orig->mh_Node.ln_Name;
 	mh->mh_Node.ln_Type	= NT_MEMORY;
 	mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
 	mh->mh_Attributes	= orig->mh_Attributes;
 	mh->mh_Lower 	    	= (APTR)mh + MEMHEADER_TOTAL;
 	mh->mh_Upper 	    	= mh->mh_Lower + size - 1;
-	mh->mh_First	    	= (struct MemChunk *)mh->mh_Lower;
+	mh->mh_First	    	= mh->mh_Lower;
 	mh->mh_Free  	    	= size;
 
 	/* Create the first (and the only) MemChunk */
@@ -181,20 +195,10 @@ APTR AllocMemHeader(IPTR size, ULONG flags, UWORD prot, struct ExecBase *SysBase
 /* Free a region allocated by AllocMemHeader() */
 void FreeMemHeader(APTR addr, struct ExecBase *SysBase)
 {
-    KrnFreePages(addr, ((struct MemHeader *)addr)->mh_Upper - addr + 1);
-}
+    ULONG size = ((struct MemHeader *)addr)->mh_Upper - addr + 1;
 
-/* Allocate puddle of a requested size with given flags and add it to the pool */
-APTR AllocPuddle(struct Pool *pool, IPTR size, ULONG flags, struct ExecBase *SysBase)
-{
-    APTR ret;
-    KRN_MapAttr prot = MAP_Readable|MAP_Writable|MAP_Executable;
-
-    ret = AllocMemHeader(size, flags, prot, SysBase);
-    if (ret)
-    	AddTail((struct List *)&pool->PuddleList, ret);
-
-    return ret;
+    DMH(bug("[FreeMemHeader] Freeing %u bytes at 0x%p\n", size, addr));
+    KrnFreePages(addr, size);
 }
 
 /*
@@ -210,103 +214,189 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
     APTR    	    	 ret = NULL;
     struct MemHeader *mh;
 
+    D(bug("[exec] InternalAllocPooled(0x%p, %u, 0x%08X), header 0x%p\n", poolHeader, memSize, flags, pool));
+
+    /*
+     * Memory blocks allocated from the pool store pointers to the MemHeader they were
+     * allocated from. This is done in order to avoid slow lookups in InternalFreePooled().
+     * This is done in AllocVec()-alike manner, the pointer is placed right before the block.
+     */
+    memSize += sizeof(struct MemHeader *);
+
     if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
     {
     	ObtainSemaphore(&pool->sem);
     }
 
-    if (memSize > pool->pool.ThreshSize)
+    /* Follow the list of MemHeaders */
+    mh = (struct MemHeader *)pool->pool.PuddleList.mlh_Head;
+    for(;;)
     {
-        /*
-         * If the memSize is bigger than the ThreshSize allocate seperately.
-         * Our allocation size is always page-aligned, so we will likely have
-         * some unused space beyond the requested region. We will make use of
-         * it for our pool, in order to to this we actually allocate another
-         * puddle, of increased size. It will also contain the MemHeader.
-         */
-	IPTR align = PrivExecBase(SysBase)->PageSize - 1;
-	/* Get enough memory for the memory block including the header. */
-        IPTR blockSize = memSize + MEMHEADER_TOTAL;
-
-        /* Align the size up to page boundary */
-        blockSize = (blockSize + align) & ~align;
-
-	mh = AllocPuddle(&pool->pool, blockSize, flags, SysBase);
-	if (mh)
-	    /* Allocate the requested memory from the new header */
-	    ret = Allocate(mh, memSize);
-    }
-    else
-    {
-	/* Follow the list of MemHeaders */
-	mh = (struct MemHeader *)pool->pool.PuddleList.mlh_Head;
-	for(;;)
+	/* Are there no more MemHeaders? */
+	if (mh->mh_Node.ln_Succ==NULL)
 	{
-	    /* Are there no more MemHeaders? */
-	    if(mh->mh_Node.ln_Succ==NULL)
+	    /*
+	     * Get a new one.
+	     * Usually we allocate puddles of default size, specified during
+	     * pool creation. However we can be asked to allocate block whose
+	     * size will be larger than default puddle size.
+	     * Previously this was handled by threshSize parameter. In our new
+	     * implementation we just allocate enlarged puddle. This is done
+	     * in order not to waste page tails beyond the allocated large block.
+	     * These tails will be used for our pool too. Their size is smaller
+	     * than page size but they still perfectly fit for small allocations
+	     * (the primary use for pools).
+	     * Since our large block is also a puddle, it will be reused for our
+	     * pool when the block is freed. It can also be reused for another
+	     * large allocation, if it fits in.
+	     * Our final puddle size still includes MEMHEADER_TOTAL in any case.
+	     */
+	    IPTR puddleSize = pool->pool.PuddleSize;
+
+	    if (memSize > puddleSize - MEMHEADER_TOTAL)
 	    {
-	    	/* Get a new one */
-	    	mh = AllocPuddle(&pool->pool, pool->pool.PuddleSize, flags, SysBase);
+		IPTR align = PrivExecBase(SysBase)->PageSize - 1;
 
-		/* No memory left? */
-		if(mh == NULL)
-		    goto done;
-
-		/* Fall through to get the memory */
+		puddleSize = memSize + MEMHEADER_TOTAL;
+		/* Align the size up to page boundary */
+		puddleSize = (puddleSize + align) & ~align;
 	    }
-	    else
+
+	    mh = AllocMemHeader(puddleSize, flags, SysBase);
+	    D(bug("[InternalAllocPooled] Allocated new puddle 0x%p, size %u\n", mh, puddleSize));
+
+	    /* No memory left? */
+	    if(mh == NULL)
+		break;
+
+	    /* Add the new puddle to our pool */
+	    mh->mh_Node.ln_Name = (STRPTR)pool;
+	    Enqueue((struct List *)&pool->pool.PuddleList, &mh->mh_Node);
+
+	    /* Fall through to get the memory */
+	}
+	else
+	{
+	    /* Ignore existing MemHeaders with memory type that differ from the requested ones */
+	    if (flags & MEMF_PHYSICAL_MASK & ~mh->mh_Attributes)
 	    {
-	    	/* Ignore existing MemHeaders with memory type that differ from the requested ones */
-	    	if (flags & MEMF_PHYSICAL_MASK & ~mh->mh_Attributes)
-	    	    continue;
+		D(bug("[InternalAllocPooled] Wrong flags for puddle 0x%p (wanted 0x%08X, have 0x%08X\n", flags, mh->mh_Attributes));
+	    	continue;
 	    }
+	}
 
-	    /* Try to get the memory */
-	    ret = Allocate(mh, memSize);
+	/* Try to get the memory */
+	ret = Allocate(mh, memSize);
+	D(bug("[InternalAllocPooled] Allocated memory at 0x%p from puddle 0x%p\n", ret, mh));
 
-	    /* Got it? */
-	    if(ret != NULL)
+	/* Got it? */
+	if (ret != NULL)
+        {
+            /*
+	     * If this is not the first MemHeader and it has some free space,
+	     * move it forward (so that the next allocation will attempt to use it first).
+	     * We use Enqueue() because we still sort MemHeaders according to their priority
+	     * (which they inherit from system MemHeaders).
+	     *
+	     * TODO: implement own Enqueue() routine with secondary sorting by mh_Free.
+	     * This will allow to implement best-match algorithm (so that puddles with
+	     * smaller free space will be picked up first). This way the smallest allocations
+	     * will reuse smallest chunks instead of fragmenting large ones.
+	     */
+            if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
             {
-            	/*
-		 * If this is not the first MemHeader and it has some free space,
-		 * move it forward (so that the next allocation will attempt to use it first).
-		 * We use Enqueue() because we still sort MemHeaders according to their priority
-		 * (which they inherit from system MemHeaders).
-		 */
-            	if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
-            	{
-                    Remove((struct Node *)mh);
-                    Enqueue((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
-            	}
-
-                break;
+		D(bug("[InternalAllocPooled] Re-sorting puddle list\n"));
+                Remove(&mh->mh_Node);
+                Enqueue((struct List *)&pool->pool.PuddleList, &mh->mh_Node);
             }
 
-	    /* No. Try next MemHeader */
-	    mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
-	}
-	/* Allocate does not clear the memory! */
-	if(flags & MEMF_CLEAR)
-	{
-	    IPTR *p= ret;
+            break;
+        }
 
-	    /* Round up (clearing IPTRs is faster than just bytes) */
-	    memSize = (memSize + sizeof(IPTR) - 1) / sizeof(IPTR);
-
-	    /* NUL the memory out */
-	    while(memSize--)
-		*p++=0;
-	}
+	/* No. Try next MemHeader */
+	mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
     }
 
-done:
     if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
     {
     	ReleaseSemaphore(&pool->sem);
     }
-    
+
+    if (ret)
+    {
+	/* Remember where we were allocated from */
+	*((struct MemHeader **)ret) = mh;
+	ret += sizeof(struct MemHeader *);
+
+	/* Allocate does not clear the memory! */
+	if (flags & MEMF_CLEAR)
+	    memset(ret, 0, memSize - sizeof(struct MemHeader *));
+    }
+
     /* Everything fine */
     return ret;
 }
 
-#endif
+/*
+ * This is a pair to InternalAllocPooled()
+ * This code separated from FreePooled() in order to provide compatibility with various
+ * memory tracking patches. If some exec code calls InternalAllocPooled() directly
+ * (AllocMem() will do it), it has to call also InternalFreePooled() directly.
+ * Our chunks remember from which pool they came, so we don't need a pointer to pool
+ * header here. This will save us from headaches in future FreeMem() implementation.
+ */
+void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
+{
+    struct MemHeader *mh;
+
+    D(bug("[exec] InternalFreePooled(0x%p, 0x%p, %u)\n", poolHeader, memory, memSize));
+
+    if (!memory || !memSize) return;
+
+    /* Get MemHeader pointer. It is stored right before our block. */
+    memory -= sizeof(struct MemHeader *);
+    memSize += sizeof(struct MemHeader *);
+    mh = *((struct MemHeader **)memory);
+
+    /* Verify that MemHeader pointer is correct */
+    if ((mh->mh_Node.ln_Type != NT_MEMORY) ||
+	(memory < mh->mh_Lower) || (memory + memSize > mh->mh_Upper + 1))
+    {
+	/* Something is wrong */
+	Alert(AT_Recovery | AN_MemCorrupt);
+    }
+    else
+    {
+	struct ProtectedPool *pool = (struct ProtectedPool *)mh->mh_Node.ln_Name;
+	IPTR size;
+
+	if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
+	{
+	    ObtainSemaphore(&pool->sem);
+	}
+
+	size = mh->mh_Upper - mh->mh_Lower + 1;
+	D(bug("[FreePooled] Allocated from puddle 0x%p, size %u\n", mh, size));
+
+	/* Free the memory. */
+	Deallocate(mh, memory, memSize);
+	D(bug("[FreePooled] Deallocated chunk, %u free bytes in the puddle\n", mh->mh_Free));
+
+	/* Is this MemHeader completely free now? */
+	if (mh->mh_Free == size)
+	{
+	    D(bug("[FreePooled] Puddle is empty, giving back to the system\n"));
+
+	    /* Yes. Remove it from the list. */
+	    Remove(&mh->mh_Node);
+	    /* And free it. */
+	    FreeMemHeader(mh, SysBase);
+	}
+	/* All done. */
+
+	if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
+	{
+    	    ReleaseSemaphore(&pool->sem);
+	}
+    }
+}
