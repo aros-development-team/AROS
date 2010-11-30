@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 1
+
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
@@ -166,9 +168,13 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     	bug("[exec] Mungwall enabled\n");
 
+    /* Backwards compatibility hack for old ports */
 #ifdef KrnGetSystemAttr
     PrivExecBase(SysBase)->PageSize = KrnGetSystemAttr(KATTR_PageSize);
+#else
+    PrivExecBase(SysBase)->PageSize = 4096;
 #endif
+    D(bug("[exec] Memory page size: %u\n", PrivExecBase(SysBase)->PageSize));
 
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,
