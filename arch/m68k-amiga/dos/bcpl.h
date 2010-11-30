@@ -9,4 +9,7 @@
 #define BCPL_GlobVec_NegSize	0x88
 #define BCPL_GlobVec_PosSize	0x21c
 
-#define BCPL_DOSBase	-0x88
+#define BCPL_SegArray	-0x88
+
+#define BCPL_DOSBase		0x180
+#define BCPL_CLIArgument	0x214

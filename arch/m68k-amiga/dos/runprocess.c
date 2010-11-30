@@ -34,17 +34,18 @@ static ULONG CallBCPL(APTR pReturn_Addr, struct StackSwapStruct* sss,
     ULONG _n3 = (ULONG)(SysBase);
 
     __asm__ __volatile__(
-	"move.l %%sp,%%a1\n\t"
-	"movem.l %%d2-%%d7/%%a2-%%a6,%%a1@-\n\t"
+	"move.l %%sp,%%a0\n\t"
+	"movem.l %%d2-%%d7/%%a2-%%a6,%%a0@-\n\t"
+	"move.l %5,%%a0@-\n\t"          /* sp+ 16 = SysBase */
+	"move.l %4,%%a0@-\n\t"          /* sp+ 12 = argsize */
+	"move.l %3,%%a0@-\n\t"          /* sp+ 8 = argptr */
+	"move.l #0f,%%a0@-\n\t"         /* sp+ 4 = return address */
+	"move.l %%a0@,%1\n\t"           /* Save return address */
+	"move.l %2,%%a0@-\n\t"          /* sp+ 0 = address to go to */
 	"move.l %6,%%a2\n\t"            /* A2 - Global Vector */
-	"move.l %%a1,%1\n\t"            /* Save address of return address */
-	"move.l #0f,%%a1@-\n\t"         /* sp+ 4 = return address */
-	"move.l %2,%%a1@-\n\t"          /* sp+ 0 = address to go to */
-	"move.l %2,%%a4\n\t"            /* A4 - Entry address */
-	"lea.l  0f,%%a3\n\t"            /* A3 - Return address */
-	"move.l %%a1,%%sp\n\t"
-	"suba.l %%a0,%%a0\n\t"          /* A0 - Cleared */
-	"lea.l  %%a1@(-1500),%%a1\n\t"  /* A1 - 'BCPL' stack */
+	"move.l %%a0,%%sp\n\t"
+	"move.l %%sp@(8),%%a0\n\t"
+	"move.l %%sp@(4),%%d0\n\t"
 	"lea.l  BCPL_jsr,%%a5\n\t"      /* A5 - BCPL jsr routine */
 	"lea.l  BCPL_rts,%%a6\n\t"      /* A6 - BCPL rts routine */
 	"rts    \n\t"
@@ -53,7 +54,7 @@ static ULONG CallBCPL(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	"movem.l %%sp@+,%%d2-%%d7/%%a2-%%a6\n\t"
 	"move.l  %%d0,%0"
 	: "=g" (ret), "=m"(*(APTR *)pReturn_Addr)
-	: "g" (entry), "g"(_n1), "g"(_n2), "g"(_n3), "g"(pr_GlobVec)
+	: "m" (entry), "m"(_n1), "m"(_n2), "m"(_n3), "m"(pr_GlobVec)
 	: "cc", "memory", "%d0", "%d1", "%a0", "%a1" );
 
     return ret;
@@ -131,6 +132,7 @@ static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	(IPTR) proc->pr_GlobVec,
     }};
 
+    is_bcpl = TRUE;
     bug("RunProcess: %s\n", argptr);
     /* Call the function with the new stack */
     ret = NewStackSwap(sss, is_bcpl ? CallBCPL : CallEntry, &args);
