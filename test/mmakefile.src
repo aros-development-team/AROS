@@ -33,7 +33,6 @@ COMMONTESTFILES := \
     ilbmtoc \
     localetest \
     matchtest \
-    messagetest \
     modeid \
     monitorclass \
     newmatch \
@@ -52,25 +51,15 @@ COMMONTESTFILES := \
     opendiskfont \
     openfromlock \
     partition \
-    rawdofmt \
     scantest \
-    semaphoretest \
     showvisregion \
     showvisshape \
     sortlayercr \
-    stackcheck \
-    stackswap \
-    signaltest \
     strtodate \
     systemtags \
     systemtagsslave \
-    tasktest \
-    tasktest2 \
-    traptest \
     ExNext \
     randtest \
-    enqueue \
-    semtorture \
     obtainpentest \
     readpixelarray \
     writepixelarray \
@@ -79,14 +68,10 @@ COMMONTESTFILES := \
     camdtree \
     mktime \
     rexxsyslibtest \
-    portsend \
-    portreceive \
-    makelib \
     weightamatch \
     printnativekeytable \
     textbug \
     testide \
-    openlib \
     simplepng \
     truecolorpens \
     consolemodes \
@@ -100,17 +85,13 @@ COMMONTESTFILES := \
     time \
     waitforchar \
     seektest \
-    avltest \
     callhooktest \
     scanvarstest \
     runcommand \
     aroscprivdata \
-    childwait \
     convertpixels \
     patchrgbconv \
-    childstatus \
     joystick \
-    supertest \
     getcpuinfo \
     printf_f \
     pubscreen
@@ -122,7 +103,7 @@ EXEDIR := $(AROS_TESTS)
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 
-#MM test : test-clib test-kernel test-zune contrib-cdvdfs-cdrom
+#MM test : test-clib test-kernel test-exec test-zune contrib-cdvdfs-cdrom
 #MM test : includes includes-copy workbench-datatypes-png-includes
 
 %build_progs mmake=test \

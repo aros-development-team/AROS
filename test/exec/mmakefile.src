@@ -1,0 +1,37 @@
+#   $Id$
+#
+#   Makefile for AROS kernel.resource tests
+
+include $(TOP)/config/make.cfg
+
+FILES :=		\
+    avltest		\
+    childstatus		\
+    childwait		\
+    dumpmem		\
+    enqueue		\
+    messagetest		\
+    openlib	 	\
+    portsend		\
+    portreceive		\
+    makelib		\
+    pool		\
+    rawdofmt		\
+    semaphoretest	\
+    semtorture		\
+    stackswap 		\
+    signaltest		\
+    supertest		\
+    tasktest		\
+    tasktest2		\
+    traptest
+
+EXEDIR := $(AROS_TESTS)/exec
+
+#MM test-exec : includes includes-copy linklibs kernel
+
+%build_progs mmake=test-exec \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga arosc m"
+
+%common
