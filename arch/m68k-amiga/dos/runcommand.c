@@ -124,7 +124,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     	if (ret < 0) {
     	    break;
     	}
-    	if (ret == 1) {
+    	if (0 && ret == 1) {
     	    ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
     	                (LONG_FUNC)(((ULONG *)me->pr_GlobVec)[1]),TRUE,DOSBase);
     	} else

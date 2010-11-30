@@ -242,13 +242,33 @@ BCPLd cowait         /*  68, void, result */
 BCPLd resumeco       /*  6c, void, @coroutine */
     BRTS
 
-BCPLd installSeg     /*  70, BOOL, @memseg_BCPL */
+BCPL installSeg     /*  70, BOOL, @memseg_BCPL */
+    movem.l	%a0-%a1,%sp@-
+    move.l	%a2,%sp@-
+    move.l	%d1,%sp@-
+    jsr		BCPL_InstallSeg
+    addq.l	#8,%sp
+    movem.l	%sp@+,%a0-%a1
     BRTS
 
-BCPLd getvec         /*  74, LONG ^, lw_length */
+BCPL getvec         /*  74, LONG ^, lw_length */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    move.l	%d1,%d0
+    lsl.l	#2,%d0
+    clr.l	%d1
+    jsr		%a6@(114 * -6) /* Exec/AllocVec() */
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd freevec        /*  78, void, @vec */
+BCPL freevec        /*  78, void, @vec */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    lsl.l	#2,%d1
+    move.l	%d1,%a1
+    jsr		%a6@(115 * -6) /* Exec/FreeVec() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd openDevice     /*  7c, BOOL, @IORequest, @name, unit, flags */
@@ -434,6 +454,7 @@ BCPLd execLib        /* 160, long , LVOffset, d0, d1, a0, a1, a2 */
     BRTS
 
 BCPLd findSegArray   /* 164, Array @,  */
+    move.l	%a2@(BCPL_SegArray),%d0
     BRTS
 
 BCPLd deleteObject   /* 168, void, @name */
@@ -452,6 +473,8 @@ BCPLd getword        /* 178, void, longaddress, wordnumber */
 
 BCPLd putword        /* 17c, void, longaddress, wordnumber */
     BRTS
+
+/*      180 - contains APTR to DOSBase */
 
 BCPLd taskwait_190   /* 190, DosPacket ^,  */
     BRTS
@@ -522,5 +545,11 @@ BCPLd settime        /* 200, void, @timeval */
 /*      214 - contains CLI command */
 
 BCPLd findCLI        /* 218, CommandLineInterpreter ^,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    jsr		%a6@(FindTask)
+    move.l	%d0,%a0
+    move.l	%a0@(pr_CLI),%d0
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 

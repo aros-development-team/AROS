@@ -37,81 +37,32 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
 BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
 {
     ULONG *segment;
-    ULONG *table;
-    ULONG slots = BCPL_GlobVec_PosSize;
     ULONG *GlobVec;
-    ULONG oldsize;
-    BOOL is_bcpl = FALSE;
-
+    int segs = 0;
+    IPTR *segArray;
     for (segment = BADDR(segList); segment != NULL; segment = BADDR(segment[0])) {
-    	if ((segment[-1] > segment[1]))
-    	    is_bcpl = TRUE;
+    	segs++;
     }
 
-    if (!is_bcpl) {
-	D(bug("BCPL_Fixup: segList @%p does not look like BCPL.\n", segment));
-	me->pr_GlobVec = NULL;
-	return 0;
-    }
+    segArray = AllocVec(sizeof(BCPL_GlobVec) + (6 * sizeof(ULONG)), 0);
+    if (segArray == NULL)
+    	return FALSE;
 
-    D(bug("BCPL_Fixup: segList @%p looks like BCPL.\n", segment));
+    segArray[0] = 4;
+    segArray[1] = (ULONG)-1;	/* 'system' segment */
+    segArray[2] = (ULONG)-2;	/* 'dosbase' segment */
+    segArray[3] = 0;
+    segArray[4] = 0;
+    segArray[5] = segList;
 
-    /* Find the maximum # of slots we need to allocate */
-    for (segment = BADDR(segList); segment != NULL; segment = BADDR(segment[0])) {
-    	if ((segment[-1] <= segment[1]))
-    	    continue;
+    GlobVec = &segArray[6];
 
-    	table = &segment[segment[1]];
-
-    	D(bug("\t%p Slots: %d\n", segment, table[0]));
-    	if (slots < table[0]) 
-    	    slots = table[0];
-    }
-
-    D(bug("\tMax Slots: %d\n", slots));
-
-    GlobVec = AllocVec(BCPL_GlobVec_NegSize+slots, 0);
-    if (GlobVec == NULL)
-    	return -1;
-
-    /* Use the current Global Vector if we have one */
-    if (me->pr_GlobVec) {
-    	oldsize = (*(ULONG *)(me->pr_GlobVec));
-    	CopyMem(me->pr_GlobVec - BCPL_GlobVec_NegSize, GlobVec, BCPL_GlobVec_NegSize + oldsize*4);
-    } else {
-    	oldsize =  BCPL_GlobVec_PosSize;
-    	CopyMem(BCPL_GlobVec, GlobVec, BCPL_GlobVec_NegSize + oldsize);
-    }
-    D(bug("\tGlobal Vector @%p (real base is %p)\n", ((APTR)GlobVec) + BCPL_GlobVec_NegSize, GlobVec));
+    CopyMem(BCPL_GlobVec, GlobVec, sizeof(BCPL_GlobVec));
     GlobVec = ((APTR)GlobVec) + BCPL_GlobVec_NegSize;
-
-    /* Zero-fill any 'new' slots */
-    while (oldsize < slots)
-    	GlobVec[oldsize++] = 0;
-
+    GlobVec[0] = BCPL_GlobVec_PosSize >> 2;
+    GlobVec[BCPL_SegArray >> 2] = MKBADDR(segArray);
     me->pr_GlobVec = GlobVec;
-
-    /* A few manual fixups.. */
-    GlobVec[0x170 >> 2] = (IPTR)OpenLibrary("intuition.library", 0);
-    GlobVec[BCPL_DOSBase >> 2] = (IPTR)DOSBase;
-
-    for (segment = BADDR(segList); segment != NULL; segment = BADDR(segment[0])) {
-    	if ((segment[-1] <= segment[1]))
-    	    continue;
-
-    	table = &segment[segment[1]];
-
-    	D(bug("\tFill in for %p:\n", segment));
-
-    	for (; table[-1] != 0; table = &table[-2]) {
-    	    D(bug("\t GlobVec[%d] = %p\n", table[-2], (APTR)&segment[1] + table[-1]));
-    	    GlobVec[table[-2]] = (ULONG)((APTR)&segment[1] + table[-1]);
-    	}
-    }
-
-    D(bug("\tBCPL Entry point: %p\n", GlobVec[1]));
-
-    return 1;
+    return TRUE;
 }
 
 void BCPL_Cleanup(struct Process *me)
@@ -121,9 +72,61 @@ void BCPL_Cleanup(struct Process *me)
     if (GlobVec == NULL)
     	return;
 
-    CloseLibrary((APTR)(GlobVec[0x170 >> 2]));
-
     GlobVec = ((APTR)GlobVec) - BCPL_GlobVec_NegSize;
     FreeVec(GlobVec);
     me->pr_GlobVec = NULL;
+}
+
+BOOL BCPL_InstallSeg(BPTR seg, ULONG *GlobVec)
+{
+    ULONG *segment;
+    ULONG *table;
+
+    if (seg == BNULL) {
+    	D(bug("BCPL_InstallSeg: Empty segment\n"));
+    	return TRUE;
+    }
+
+    if (seg == (ULONG)-1) {
+    	ULONG slots = GlobVec[0];
+    	int i;
+    	if (slots > (BCPL_GlobVec_PosSize>>2))
+    	    slots = (BCPL_GlobVec_PosSize>>2);
+    	D(bug("BCPL_InstallSeg: Inserting %d Faux system entries.\n", slots));
+
+    	for (i = 2; i < slots; i++) {
+    	    ULONG gv = BCPL_GlobVec[(BCPL_GlobVec_NegSize>>2)+i];
+    	    if (gv == 0)
+    	    	continue;
+
+    	    GlobVec[i] = gv;
+    	}
+
+    	return TRUE;
+    }
+
+    if (seg == (ULONG)-2) {
+    	D(bug("BCPL_InstallSeg: Inserting DOSBase global\n"));
+    	GlobVec[BCPL_DOSBase >> 2] = (IPTR)OpenLibrary("dos.library",0);
+    	return TRUE;
+    }
+
+    segment = BADDR(seg);
+    D(bug("BCPL_InstallSeg: SegList @%p\n", segment));
+
+    if ((segment[-1] < segment[1])) {
+    	D(bug("BCPL_InstallSeg: segList @%p does not look like BCPL.\n", segment));
+    	return FALSE;
+    }
+
+    table = &segment[segment[1]];
+
+    D(bug("\tFill in for %p:\n", segment));
+
+    for (; table[-1] != 0; table = &table[-2]) {
+    	D(bug("\t GlobVec[%d] = %p\n", table[-2], (APTR)&segment[1] + table[-1]));
+    	GlobVec[table[-2]] = (ULONG)((APTR)&segment[1] + table[-1]);
+    }
+
+    return TRUE;
 }
