@@ -1916,16 +1916,26 @@ endif
 # - srcdir is where *.png and *.info.src are searched
 #-----------------------------------------------------------------------------
 
-%define build_icons mmake=/A icons=/A dir=/A srcdir="$(SRCDIR)/$(CURDIR)"
+%define build_icons mmake=/A icons=/A dir=/A srcdir="$(SRCDIR)/$(CURDIR)" image=
 
 BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 
 #MM
 %(mmake) : $(BD_OBJS)
 
+ifeq (%(image),)
+
 %(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%.png
 	@$(ECHO) Creating $(notdir $@)...
 	@$(ILBMTOICON) $+ $@
+
+else
+
+%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%(image)
+	@$(ECHO) Creating $(notdir $@)...
+	@$(ILBMTOICON) $+ $@
+
+endif
 
 $(BD_OBJS) : | %(dir)
 GLOB_MKDIRS += %(dir)
