@@ -17,7 +17,7 @@ AROS_LH2(void, KrnFreePages,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, addr, A0),
-	AROS_LHA(uint32_t, length, D0),
+	AROS_LHA(uintptr_t, length, D0),
 
 /*  LOCATION */
 	struct KernelBase *, KernelBase, 28, Kernel)

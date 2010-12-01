@@ -152,18 +152,16 @@ APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct E
 
 /* Backwards compatibility for old ports */
 #ifndef KrnAllocPages
-#define KrnAllocPages(size, flags, prot) AllocMem(size, flags & ~MEMF_SEM_PROTECTED)
-#define KrnFreePages(addr, size)	 FreeMem(addr, size)
+#define KrnAllocPages(addr, size, flags) AllocMem(size, flags & ~MEMF_SEM_PROTECTED)
+#define KrnFreePages(addr, size)         FreeMem(addr, size)
 #endif
 
 /* Allocate a region managed by own header */
 APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
-    /* In future we are going to have MEMF_EXECUTABLE, and MAP_Executable will depend on it */
-    KRN_MapAttr prot = MAP_Readable|MAP_Writable|MAP_Executable;
 
-    mh = KrnAllocPages(size, flags, prot);
+    mh = KrnAllocPages(NULL, size, flags);
     DMH(bug("[AllocMemHeader] Allocated %u bytes at 0x%p\n", size, mh));
 
     if (mh)
