@@ -30,14 +30,11 @@ BCPL_rts:
 
 /* BCPL macros
  */
-    .macro  BRTS
-    move.l  %d0,%d1
-    jmp     (%a6)
-    .endm
-
     .section .rodata
-.LBCPL_dummy_format:
+.LBCPL_format_trace:
     .string  "BCPL %s, D1=%p D2=%p D3=%p D4=%p, GV %p\n"
+.LBCPL_format_ret:
+    .string  "\tD1=%p\n"
 
     /* For dummy functions */
     .macro  BCPLd name
@@ -55,12 +52,22 @@ BCPL_\name:
     move.l  %d2,%sp@-
     move.l  %d1,%sp@-
     move.l  #.LBCPL_func_\name,%sp@-
-    move.l  #.LBCPL_dummy_format,%sp@-
+    move.l  #.LBCPL_format_trace,%sp@-
     jsr     kprintf
     lea.l   %sp@(7*4),%sp
     movem.l %sp@+,%d1/%a0-%a1
-    clr.l   %d0
-    neg.l   %d0
+    moveq.l #-1,%d0
+    .endm
+
+    .macro  BRTSd
+    movem.l %d0/%a0-%a1,%sp@-
+    move.l  %d0,%sp@-
+    move.l  #.LBCPL_format_ret,%sp@-
+    jsr     kprintf
+    addq.l  #8,%sp
+    movem.l %sp@+,%d0/%a0-%a1
+    move.l  %d0,%d1
+    jmp     (%a6)
     .endm
 
     /* For real functions */
@@ -70,8 +77,14 @@ BCPL_\name:
 BCPL_\name:
     .endm
 
+    .macro  BRTS
+    move.l  %d0,%d1
+    jmp     (%a6)
+    .endm
+
 #ifdef DEBUG
 #define BCPL BCPLd
+#define BRTS BRTSd
 #endif
 
     /* Global vector table entries */
@@ -90,6 +103,10 @@ BCPLd Execute        /* -6c, BOOL, &command, @input, @output */
     BRTS
 
 BCPLd IsInteractive  /* -68, BOOL, @filehandle */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(36 * -6)	/* DOS/IsInteractive() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd DateStamp      /* -64, timeval *, &time */
@@ -158,6 +175,7 @@ BCPLd Open           /* -04, FileHandle ^, &name, mode */
 BCPL Exit            /*  08, void, code */
     movem.l	%d1/%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
+    sub.l	%a1,%a1
     jsr		%a6@(FindTask)
     move.l	%d0, %a3
     move.l	%a3@(pr_ReturnAddr),%a3
@@ -191,6 +209,7 @@ BCPLd makeGVarea     /*  34, void, @buff */
 BCPL findtask        /*  38, Process *, */
     movem.l	%d1/%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
+    sub.l	%a1,%a1
     jsr		%a6@(FindTask)
     movem.l	%sp@+,%d1/%a0-%a1/%a6
     BRTS
@@ -331,7 +350,7 @@ BCPLd returnPacket   /* c4, void, @DosPacket, res1, res2 */
 BCPLd openWindow     /* c8, void, leftedge, topedge, width, height, @title */
     BRTS
 
-BCPL dos_CurrentDir  /* cc, FileLock @, BOOL, @FileLock */
+BCPL setCurrentDir  /* cc, FileLock @, BOOL, @FileLock */
     movem.l	%d1/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		%a6@(21 * -6)	/* DOS/CurrentDir() */
@@ -374,10 +393,26 @@ BCPLd selectoutput   /* f8, void , @FileHandle */
 BCPLd endwrite       /* 100, void,  */
     BRTS
 
-BCPLd Input          /* 104, FileHandle @,  */
+BCPL Input          /* 104, FileHandle @,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    sub.l	%a1,%a1
+    jsr		%a6@(FindTask)
+    move.l	%d0,%a0
+    move.l	%a0@(pr_CIS),%d0
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd Output         /* 108, FileHandle @,  */
+BCPL Output         /* 108, FileHandle @,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    sub.l	%a1,%a1
+    jsr		%a6@(FindTask)
+    move.l	%d0,%a0
+    move.l	%a0@(pr_COS),%d0
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd readn          /* 10c, void,  */
@@ -419,11 +454,16 @@ BCPLd charcmp        /* 130, long , char1, char2 */
 BCPLd strcmp         /* 134, long , @String1, @String2 */
     BRTS
 
-BCPL dos_ReadArgs    /* 138, void, @template, array, rdargs */
-    movem.l	%a0-%a1/%a6,%sp@-
-    move.l	%a2@(BCPL_DOSBase),%a6
-    jsr		%a6@(133 * -6)	/* DOS/ReadArgs() */
-    movem.l	%sp@+,%a0-%a1/%a6
+BCPLd readargs        /* 138, BOOL, @template, array, array_size */
+    /* TODO: BCPL readargs and DOS/ReadArgs() don't match up
+     *       very nicely. We'll need to call a BCPL/ReadArgs
+     *       routine that works the way this expects
+     * For now, we fake success, with a 0-length result array.
+     */
+    move.l	%d2,%d0
+    lsl.l	#2,%d0
+    move.l	%a0,%a0@(%d0)	/* In BCPL, A0 is always 0 */
+    moveq.l	#1,%d0
     BRTS
 
 BCPLd rdline         /* 13c, void,  */
@@ -454,7 +494,9 @@ BCPLd execLib        /* 160, long , LVOffset, d0, d1, a0, a1, a2 */
     BRTS
 
 BCPLd findSegArray   /* 164, Array @,  */
-    move.l	%a2@(BCPL_SegArray),%d0
+    move.l	%a2,%d0
+    addi.l	#BCPL_SegArray_0,%d0
+    lsr.l	#2,%d0
     BRTS
 
 BCPLd deleteObject   /* 168, void, @name */
@@ -473,8 +515,7 @@ BCPLd getword        /* 178, void, longaddress, wordnumber */
 
 BCPLd putword        /* 17c, void, longaddress, wordnumber */
     BRTS
-
-/*      180 - contains APTR to DOSBase */
+                     /* 180, ??? */
 
 BCPLd taskwait_190   /* 190, DosPacket ^,  */
     BRTS
@@ -498,6 +539,13 @@ BCPLd extractDeviceName  /* 1ac, void, @buf, bufsize, @name , flag */
     BRTS
 
 BCPLd lock           /* 1b0, FileLock ^, @name */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    lsl.l	#2,%d1
+    addq.l	#1,%d1		/* STRPTR Name from BSTR */
+    moveq.l	#-2,%d2		/* Shared lock */
+    jsr		%a6@(14 * -6)	/* DOS/Lock() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd UnLock         /* 1b4, void, @FileLock */
@@ -547,9 +595,11 @@ BCPLd settime        /* 200, void, @timeval */
 BCPLd findCLI        /* 218, CommandLineInterpreter ^,  */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
+    sub.l	%a1,%a1
     jsr		%a6@(FindTask)
     move.l	%d0,%a0
     move.l	%a0@(pr_CLI),%d0
+    lsr.l	#2,%d0
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 

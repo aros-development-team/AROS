@@ -29,38 +29,33 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
 #undef BCPL
 
 /*
- * Patch up a segList that looks like BCPL
- *
- * We define 'looks like BCPL' as having a segment where:
- *   - *(ULONG)BADDR(segList+1) < *(ULONG)BADDR(segList-1)
+ * Set up the process's initial global vector
  */
 BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
 {
     ULONG *segment;
     ULONG *GlobVec;
     int segs = 0;
-    IPTR *segArray;
+
     for (segment = BADDR(segList); segment != NULL; segment = BADDR(segment[0])) {
     	segs++;
     }
 
-    segArray = AllocVec(sizeof(BCPL_GlobVec) + (6 * sizeof(ULONG)), 0);
-    if (segArray == NULL)
+    GlobVec = AllocVec(sizeof(BCPL_GlobVec), MEMF_ANY);
+    if (GlobVec == NULL)
     	return FALSE;
 
-    segArray[0] = 4;
-    segArray[1] = (ULONG)-1;	/* 'system' segment */
-    segArray[2] = (ULONG)-2;	/* 'dosbase' segment */
-    segArray[3] = 0;
-    segArray[4] = 0;
-    segArray[5] = segList;
-
-    GlobVec = &segArray[6];
-
     CopyMem(BCPL_GlobVec, GlobVec, sizeof(BCPL_GlobVec));
+
+    GlobVec[0] = 4;
+    GlobVec[1] = (ULONG)-1;	/* 'system' segment */
+    GlobVec[2] = (ULONG)-2;	/* 'dosbase' segment */
+    GlobVec[3] = 0;
+    GlobVec[4] = 0;
+    GlobVec[5] = segList;
+
     GlobVec = ((APTR)GlobVec) + BCPL_GlobVec_NegSize;
     GlobVec[0] = BCPL_GlobVec_PosSize >> 2;
-    GlobVec[BCPL_SegArray >> 2] = MKBADDR(segArray);
     me->pr_GlobVec = GlobVec;
     return TRUE;
 }
@@ -81,6 +76,7 @@ BOOL BCPL_InstallSeg(BPTR seg, ULONG *GlobVec)
 {
     ULONG *segment;
     ULONG *table;
+    ULONG *pr_GlobVec = ((struct Process *)FindTask(NULL))->pr_GlobVec;
 
     if (seg == BNULL) {
     	D(bug("BCPL_InstallSeg: Empty segment\n"));
@@ -94,8 +90,11 @@ BOOL BCPL_InstallSeg(BPTR seg, ULONG *GlobVec)
     	    slots = (BCPL_GlobVec_PosSize>>2);
     	D(bug("BCPL_InstallSeg: Inserting %d Faux system entries.\n", slots));
 
+	/* Copy over the negative entries from the process's global vector */
+	CopyMem(&pr_GlobVec[-(BCPL_GlobVec_NegSize>>2)], &GlobVec[-(BCPL_GlobVec_NegSize>>2)], BCPL_GlobVec_NegSize);
+
     	for (i = 2; i < slots; i++) {
-    	    ULONG gv = BCPL_GlobVec[(BCPL_GlobVec_NegSize>>2)+i];
+    	    ULONG gv = pr_GlobVec[i];
     	    if (gv == 0)
     	    	continue;
 

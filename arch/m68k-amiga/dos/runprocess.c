@@ -25,13 +25,15 @@
  * A6 - BCPL 'rts' routine
  */
 static ULONG CallBCPL(APTR pReturn_Addr, struct StackSwapStruct* sss,
-		       STRPTR argptr, ULONG argsize, LONG_FUNC entry,
-		       APTR pr_GlobVec)
+		       STRPTR argptr, ULONG argsize, LONG_FUNC entry)
 {
+    struct Process *me = (struct Process *)FindTask(NULL);
     ULONG ret;
     ULONG _n1 = (ULONG)(argptr);
     ULONG _n2 = (ULONG)(argsize);
     ULONG _n3 = (ULONG)(SysBase);
+    APTR pr_GlobVec = me->pr_GlobVec;
+    APTR tc_SPLower = me->pr_Task.tc_SPLower;
 
     __asm__ __volatile__(
 	"move.l %%sp,%%a0\n\t"
@@ -43,6 +45,7 @@ static ULONG CallBCPL(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	"move.l %%a0@,%1\n\t"           /* Save return address */
 	"move.l %2,%%a0@-\n\t"          /* sp+ 0 = address to go to */
 	"move.l %6,%%a2\n\t"            /* A2 - Global Vector */
+	"move.l %7,%%a1\n\t"            /* A1 - BCPL frame */
 	"move.l %%a0,%%sp\n\t"
 	"move.l %%sp@(8),%%a0\n\t"
 	"move.l %%sp@(4),%%d0\n\t"
@@ -54,15 +57,14 @@ static ULONG CallBCPL(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	"movem.l %%sp@+,%%d2-%%d7/%%a2-%%a6\n\t"
 	"move.l  %%d0,%0"
 	: "=g" (ret), "=m"(*(APTR *)pReturn_Addr)
-	: "m" (entry), "m"(_n1), "m"(_n2), "m"(_n3), "m"(pr_GlobVec)
+	: "m" (entry), "m"(_n1), "m"(_n2), "m"(_n3), "m"(pr_GlobVec), "m"(tc_SPLower)
 	: "cc", "memory", "%d0", "%d1", "%a0", "%a1" );
 
     return ret;
 }
 
 static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
-		       STRPTR argptr, ULONG argsize, LONG_FUNC entry,
-		       APTR pr_GlobVec)
+		       STRPTR argptr, ULONG argsize, LONG_FUNC entry)
 {
 
 #ifndef AROS_UFC3R
