@@ -3,8 +3,11 @@
 #include <exec/execbase.h>
 #include <proto/exec.h>
 
+#include <inttypes.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
+#include <kernel_tagitems.h>
 #include "memory_intern.h"
 
 #include "../exec/memory.h"	/* needed for MEMHEADER_TOTAL */
@@ -141,7 +144,7 @@ void SetBlockState(struct BlockHeader *head, IPTR first, IPTR pages, page_t stat
     } while (p > 0);
 }
 
-/* Allocate 'size' bytes from MemHeader mh. Returns number of the first page */
+/* Allocate 'size' bytes from MemHeader mh */
 APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
@@ -273,6 +276,69 @@ APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
     return addr;
 }
 
+/* Allocate 'size' bytes starting at 'addr' from MemHeader mh */
+APTR krnAllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase *KernelBase)
+{
+    struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
+    IPTR align = KernelBase->kb_PageSize - 1;
+    IPTR pages;
+    IPTR start, p;
+    void *ret = NULL;
+
+    D(bug("[krnAllocate] Request for %u bytes from BlockHeader %p\n", size, head));
+
+    /*
+     * Safety checks.
+     * If mh_First is NULL, it's ROM header. We can't allocate from it.
+     */
+    if (!head)
+	return NULL;
+    /*
+     * If either mc_Next or mc_Bytes is not zero, this MemHeader is not
+     * managed by us. We can't allocate from it.
+     */
+    if (head->mc.mc_Next || head->mc.mc_Bytes)
+	return NULL;
+
+    /* Align starting address */
+    addr = (void *)((IPTR)addr & ~align);
+
+    /* Requested address cat hit our administrative area. We can't satisfy such a request */
+    if (addr < head->start)
+	return NULL;
+
+    /* Pad up size and convert it to number of pages */
+    size = (size + align) & ~align;
+    pages = size / KernelBase->kb_PageSize;
+
+    ObtainSemaphore(&head->sem);
+
+    /* Get start page number */
+    start = (addr - head->start) / KernelBase->kb_PageSize;
+
+    /* Check if we have enough free pages starting from the first one */
+    p = start;
+    while (P_STATUS(head->map[p]) == P_FREE)
+    {
+	p += P_COUNT(head->map[p]);		/* Advance past the block    */
+	if (p >= start + pages)			/* Counted enough free pages? */
+	{
+	    /* Allocate the block and exit */
+	    ret = addr;
+	    SetBlockState(head, start, pages, P_ALLOC);
+	    break;
+	}
+
+	if (p == head->size)			/* Reached end of this memory chunk? */
+	    break;
+	if (p > head->size)			/* Went past the chunk? This must never happen! */
+	    Alert(AN_MemCorrupt);
+    }
+
+    ReleaseSemaphore(&head->sem);
+    return ret;
+}
+
 /* Free 'size' bytes starting from address 'addr' in the MemHeader mh */
 void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase)
 {
@@ -295,4 +361,127 @@ void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *Kern
     mh->mh_Free += size;
 
     ReleaseSemaphore(&head->sem);
+}
+
+#define SET_LARGEST(ptr, val)	\
+    if (ptr)			\
+    {				\
+	if (val > *ptr)		\
+	    *ptr = val;		\
+    }
+
+#define SET_SMALLEST(ptr, val)	\
+    if (ptr)			\
+    {				\
+	if (*ptr)		\
+	{			\
+	    if (val < *ptr)	\
+		*ptr = val;	\
+	}			\
+	else			\
+	    *ptr = val;		\
+    }
+
+/* Get statistics from the specified MemHeader */
+void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query)
+{
+    struct TagItem *tag;
+    IPTR *largest_alloc  = NULL;
+    IPTR *smallest_alloc = NULL;
+    IPTR *largest_free   = NULL;
+    IPTR *smallest_free  = NULL;
+    IPTR *num_alloc      = NULL;
+    IPTR *num_free       = NULL;
+    BOOL do_traverse = FALSE;
+
+    while ((tag = krnNextTagItem(&query)))
+    {
+	switch (tag->ti_Tag)
+	{
+	case KMS_Free:
+	    *((IPTR *)tag->ti_Data) += mh->mh_Free;
+	    break;
+
+	case KMS_Total:
+	    *((IPTR *)tag->ti_Data) += mh->mh_Upper - mh->mh_Lower + 1;
+	    break;
+
+	case KMS_LargestFree:
+	    largest_free = (IPTR *)tag->ti_Data;
+	    do_traverse = TRUE;
+	    break;
+
+	case KMS_SmallestFree:
+	    smallest_free = (IPTR *)tag->ti_Data;
+	    do_traverse = TRUE;
+	    break;
+
+	case KMS_LargestAlloc:
+	    largest_alloc = (IPTR *)tag->ti_Data;
+	    do_traverse = TRUE;
+	    break;
+
+	case KMS_SmallestAlloc:
+	    smallest_alloc = (IPTR *)tag->ti_Data;
+	    do_traverse = TRUE;
+	    break;
+	
+	case KMS_NumAlloc:
+	    num_alloc = (IPTR *)tag->ti_Data;
+	    do_traverse = TRUE;
+	    break;
+
+	case KMS_NumFree:
+	    num_free = (IPTR *)tag->ti_Data;
+	    do_traverse = TRUE;
+	    break;
+	}
+    }
+
+    if (do_traverse)
+    {
+	struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
+	IPTR p;
+
+	ObtainSemaphore(&head->sem);
+
+	for (p = 0; p < head->size; )
+	{
+	    /* Get total size and state of the current block */
+	    IPTR blksize = 0;
+	    page_t blkstate = P_STATUS(head->map[p]);
+	    
+	    do
+	    {
+		UBYTE cnt = P_COUNT(head->map[p]);	/* Get (partial) block length */
+
+		blksize += cnt;				/* Add length to total count */
+		p += cnt;				/* Advance past the block    */
+
+		if (p == head->size)			/* Reached end of this memory chunk ? */
+		    break;
+		if (p > head->size)			/* Went past the chunk? This must never happen! */
+		    Alert(AN_MemCorrupt);
+	    } while (P_STATUS(head->map[p]) == blkstate);
+
+	    if (blkstate == P_ALLOC)
+	    {
+		SET_LARGEST(largest_alloc, blksize);
+		SET_SMALLEST(smallest_alloc, blksize);
+
+		if (num_alloc)
+		    *num_alloc += 1;
+	    }
+	    else
+	    {
+		SET_LARGEST(largest_free, blksize);
+		SET_SMALLEST(smallest_free, blksize);
+
+		if (num_free)
+		    *num_free += 1;
+	    }
+	}
+
+	ReleaseSemaphore(&head->sem);
+    }
 }

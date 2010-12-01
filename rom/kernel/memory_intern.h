@@ -50,7 +50,6 @@ typedef UBYTE page_t;
 /* Use this macro to increment pages count in the block */
 #define INC_COUNT(x) if (x < 127) x++
 
- 
 struct BlockHeader
 {
     struct MemChunk mc;		/* Backwards compatibility */
@@ -60,5 +59,9 @@ struct BlockHeader
     page_t map[1];		/* Allocations map	   */
 };
 
+#define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA)
+
 APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase);
+APTR krnAllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase *KernelBase);
 void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase);
+void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query);
