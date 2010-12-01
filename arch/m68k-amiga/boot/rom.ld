@@ -11,7 +11,7 @@ SECTIONS
   .sysbase                    : { . = 4; SysBase = .; } >trap
   .bss                        : {  _bss = .;
                                   *(.bss)
-                                  _bss_end = .;        } >bss
+                                  _bss_end = ALIGN(16);        } >bss
 
   /* This should cause angry complaints if .data exists
    * We don't want .data, and we don't need it.
