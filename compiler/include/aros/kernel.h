@@ -119,4 +119,14 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_TimerIRQ		(TAG_USER + 0x03F00002) /* [.G] (uint8_t)  - Number of periodic timer IRQ		 */
 #define KATTR_PageSize		(TAG_USER + 0x03F00003) /* [.G] (uint32_t) - Memory page size				 */
 
+/* Tag IDs for KrnStatMemory() */
+#define KMS_Free		(TAG_USER + 0x04000000)
+#define KMS_Total		(TAG_USER + 0x04000001)
+#define KMS_LargestAlloc	(TAG_USER + 0x04000002)
+#define KMS_SmallestAlloc	(TAG_USER + 0x04000003)
+#define KMS_LargestFree		(TAG_USER + 0x04000004)
+#define KMS_SmallestFree	(TAG_USER + 0x04000005)
+#define KMS_NumAlloc		(TAG_USER + 0x04000006)
+#define KMS_NumFree		(TAG_USER + 0x04000007)
+
 #endif /* AROS_KERNEL_H */
