@@ -65,6 +65,9 @@ int main(void) {
     asm volatile("\n/* struct Process */" ::);
     DEFINE(pr_ReturnAddr , offsetof (struct Process, pr_ReturnAddr));
     DEFINE(pr_CLI        , offsetof (struct Process, pr_CLI));
+    DEFINE(pr_CIS        , offsetof (struct Process, pr_CIS));
+    DEFINE(pr_COS        , offsetof (struct Process, pr_COS));
+    DEFINE(pr_CES        , offsetof (struct Process, pr_CES));
 
     asm volatile("\n/* struct DosBase */" ::);
     DEFINE(dl_SysBase    , offsetof (struct DosLibrary, dl_SysBase));
