@@ -16,6 +16,24 @@
 #define XHCI_DBOFF      0x14
 #define XHCI_RTSOFF     0x18
 
+
+/* Extended capability IDs */
+/* Reserved ID 0 */
+#define XHCI_EXT_CAPS_LEGACY    1
+#define XHCI_EXT_CAPS_PROTOCOL  2
+#define XHCI_EXT_CAPS_XPOWERMNG 3
+#define XHCI_EXT_CAPS_IOVIRT    4
+#define XHCI_EXT_CAPS_MSGINTR   5
+#define XHCI_EXT_CAPS_LOCALMEM  6
+/* Reserved IDs 7-9 */
+#define XHCI_EXT_CAPS_USBDEBUG  10
+/* Reserved IDs 11-16 */
+#define XHCI_EXT_CAPS_XMSGINTR  17
+/* Reserved IDs 18-191 */
+/* Vendor defined IDs 192-255 */
+#define XHCI_EXT_CAPS_MAX       255
+
+
 /* XHCI_HCSPARAMS1 defines */
 #define XHCB_MaxSlots   0
 #define XHCB_MaxIntrs   8
