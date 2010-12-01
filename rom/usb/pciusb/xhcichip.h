@@ -17,23 +17,6 @@
 #define XHCI_RTSOFF     0x18
 
 
-/* Extended capability IDs */
-/* Reserved ID 0 */
-#define XHCI_EXT_CAPS_LEGACY    1
-#define XHCI_EXT_CAPS_PROTOCOL  2
-#define XHCI_EXT_CAPS_XPOWERMNG 3
-#define XHCI_EXT_CAPS_IOVIRT    4
-#define XHCI_EXT_CAPS_MSGINTR   5
-#define XHCI_EXT_CAPS_LOCALMEM  6
-/* Reserved IDs 7-9 */
-#define XHCI_EXT_CAPS_USBDEBUG  10
-/* Reserved IDs 11-16 */
-#define XHCI_EXT_CAPS_XMSGINTR  17
-/* Reserved IDs 18-191 */
-/* Vendor defined IDs 192-255 */
-#define XHCI_EXT_CAPS_MAX       255
-
-
 /* XHCI_HCSPARAMS1 defines */
 #define XHCB_MaxSlots   0
 #define XHCB_MaxIntrs   8
@@ -53,8 +36,8 @@
 #define XHCB_LHRC       5
 #define XHCB_LTC        6
 #define XHCB_NSS        7
-#define XHCS_MaxPSASize 12
-#define XHCS_xECP       16
+#define XHCB_MaxPSASize 12
+#define XHCB_xECP       16
 
 #define XHCF_AC64       (1UL<<XHCB_AC64)
 #define XHCF_BNC        (1UL<<XHCB_BNC)
@@ -64,7 +47,32 @@
 #define XHCF_LHRC       (1UL<<XHCB_LHRC)
 #define XHCF_LTC        (1UL<<XHCB_LTC)
 #define XHCF_NSS        (1UL<<XHCB_NSS)
-#define XHCM_MaxPSASize (((1UL<<4)-1)<<XHCS_MaxPSASize)
-#define XHCM_xECP       (((1UL<<16)-1)<<XHCS_xECP)
+#define XHCM_MaxPSASize (((1UL<<4)-1)<<XHCB_MaxPSASize)
+#define XHCM_xECP       (((1UL<<16)-1)<<XHCB_xECP)
+
+
+/* Extended capability IDs */
+#define XHCI_EXT_CAPB_ID        0
+#define XHCI_EXT_CAPB_NEXT      8
+#define	XHCI_EXT_CAPB_SPECIFIC  16
+
+#define XHCI_EXT_CAPM_ID        (((1UL<<8)-1)<<XHCI_EXT_CAPB_ID)
+#define XHCI_EXT_CAPM_NEXT      (((1UL<<8)-1)<<XHCI_EXT_CAPB_NEXT)
+#define	XHCI_EXT_CAPM_SPECIFIC  (((1UL<<16)-1)<<XHCI_EXT_CAPB_SPECIFIC)
+
+/* Reserved ID 0 */
+#define XHCI_EXT_CAPS_LEGACY    1
+#define XHCI_EXT_CAPS_PROTOCOL  2
+#define XHCI_EXT_CAPS_XPOWERMNG 3
+#define XHCI_EXT_CAPS_IOVIRT    4
+#define XHCI_EXT_CAPS_MSGINTR   5
+#define XHCI_EXT_CAPS_LOCALMEM  6
+/* Reserved IDs 7-9 */
+#define XHCI_EXT_CAPS_USBDEBUG  10
+/* Reserved IDs 11-16 */
+#define XHCI_EXT_CAPS_XMSGINTR  17
+/* Reserved IDs 18-191 */
+/* Vendor defined IDs 192-255 */
+#define XHCI_EXT_CAPS_MAX       255
 
 #endif /* XHCICHIP_H */
