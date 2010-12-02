@@ -1,0 +1,11 @@
+#   $Id$
+#
+#   Makefile for KEcho.
+
+include $(TOP)/config/make.cfg
+
+%build_prog mmake=workbench-tools \
+    progname=KEcho targetdir=$(AROSDIR)/Tools/Debug \
+    files=KEcho usestartup=no
+
+%common
