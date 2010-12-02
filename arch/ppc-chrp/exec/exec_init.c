@@ -22,6 +22,7 @@
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "memory.h"
 
 #undef KernelBase
 
@@ -373,6 +374,7 @@ int exec_main(struct TagItem *msg, void *entry)
     InitCode(RTF_SINGLETASK, 0);
 
     PrivExecBase(SysBase)->KernelBase = OpenResource("kernel.resource");
+    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
 
     Permit();
 
