@@ -3,14 +3,15 @@
 
 include $(TOP)/config/make.cfg
 
-STORAGEICONS := Wrapper
-DEVSICONS    := Default
+# IntelGMA is in storage because it breaks with laptops
+STORAGEICONS := IntelGMA Wrapper
+DEVSICONS    := ATI NVidia VMWare
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-devs-monitors-clean iconset-Gorilla-icons-storage-monitors-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-devs-monitors iconset-Gorilla-icons-storage-monitors
 
-#%build_icons mmake=iconset-Gorilla-icons-devs-monitors icons=$(DEVSICONS) \
-#             dir=$(AROS_DEVS)/Monitors
+%build_icons mmake=iconset-Gorilla-icons-devs-monitors icons=$(DEVSICONS) image=Wrapper.png \
+             dir=$(AROS_DEVS)/Monitors
 
-%build_icons mmake=iconset-Gorilla-icons-storage-monitors icons=$(STORAGEICONS) \
+%build_icons mmake=iconset-Gorilla-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
              dir=$(AROSDIR)/Storage/Monitors

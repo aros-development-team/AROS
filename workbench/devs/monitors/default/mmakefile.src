@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 FILES  := default
 EXEDIR := $(AROS_DEVS)/Monitors
 
-#MM- workbench-devs-monitors: devs-monitors-default
+##MM- workbench-devs-monitors: devs-monitors-default
 
 #MM devs-monitors-default : includes linklibs
 

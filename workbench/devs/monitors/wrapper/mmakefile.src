@@ -2,15 +2,36 @@
 
 include $(TOP)/config/make.cfg
 
-FILES  := wrapper
-EXEDIR := $(AROSDIR)/Storage/Monitors
+FILES      := wrapper
+DEVSDIR    := $(AROS_DEVS)/Monitors
+STORAGEDIR := $(AROSDIR)/Storage/Monitors
 
-#MM- workbench-devs-monitors: devs-monitors-wrapper
+#MM- workbench-devs-monitors: devs-monitors-wrapper devs-monitors-wrapper-copy
 
 #MM devs-monitors-wrapper : includes linklibs
 
 %build_prog mmake=devs-monitors-wrapper \
-    progname=Wrapper targetdir=$(EXEDIR) \
+    progname=Wrapper targetdir=$(STORAGEDIR) \
     files=$(FILES) uselibs="oop"
 
+#MM
+devs-monitors-wrapper-copy: $(STORAGEDIR)/IntelGMA $(DEVSDIR)/ATI \
+			    $(DEVSDIR)/NVidia $(DEVSDIR)/VMWare
+
+$(STORAGEDIR)/IntelGMA: $(STORAGEDIR)/Wrapper
+	@$(ECHO) Creating $@...
+	@$(CP) -f $< $@
+
+$(DEVSDIR)/ATI: $(STORAGEDIR)/Wrapper
+	@$(ECHO) Creating $@...
+	@$(CP) -f $< $@
+
+$(DEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper
+	@$(ECHO) Creating $@...
+	@$(CP) -f $< $@
+
+$(DEVSDIR)/VMWare: $(STORAGEDIR)/Wrapper
+	@$(ECHO) Creating $@...
+	@$(CP) -f $< $@
+	
 %common
