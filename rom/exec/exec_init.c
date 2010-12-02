@@ -33,6 +33,8 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "etask.h"
+#include "memory.h"
+
 #include LC_LIBDEFS_FILE
 
 static const UBYTE name[];
@@ -166,13 +168,20 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     	bug("[exec] Mungwall enabled\n");
 
-    /* Backwards compatibility hack for old ports */
 #ifdef KrnGetSystemAttr
     PrivExecBase(SysBase)->PageSize = KrnGetSystemAttr(KATTR_PageSize);
-#else
-    PrivExecBase(SysBase)->PageSize = 4096;
 #endif
     D(bug("[exec] Memory page size: %u\n", PrivExecBase(SysBase)->PageSize));
+
+    /*
+     * On MMU-less hardware kernel.resource will report zero page size.
+     * In this case we use MEMCHUNK_TOTAL as allocation granularity.
+     * This is because our Allocate() relies on the fact that all chunks
+     * are at least MemChunk-aligned, otherwise we end up in
+     * "Corrupt memory list" alert.
+     */
+    if (!PrivExecBase(SysBase)->PageSize)
+	PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
 
     /*
 	Create boot task.  Sigh, we actually create a Process sized Task,
