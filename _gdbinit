@@ -132,10 +132,10 @@ Print out information about the currently running task.
 end
 
 define modlist
-    if Debug_ModList
-        printf "Segment           Module\n"
-        printf "---------------------------------------------------------------------\n"
+    printf "Segment           Module\n"
 
+    if Debug_ModList
+        printf "---------------------------------------------------------------------\n"
         set $segnode = (struct segment *)Debug_ModList->mlh_Head
 
         while ($segnode->s_node.mln_Succ != 0)
@@ -143,6 +143,15 @@ define modlist
 
             set $segnode = (struct segment *)$segnode->s_node.mln_Succ
         end
+    end
+
+    printf "---------------------------------------------------------------------\n"
+    set $kicknode = Debug_KickList
+        
+    while ($kicknode != 0)
+        printf "%p %12s %2u %32s\n", $kicknode->s_lowest, $kicknode->s_name, $kicknode->s_num, $kicknode->s_module.m_name
+
+        set $kicknode = $kicknode->s_next
     end
 end
 document modlist
