@@ -71,6 +71,10 @@ int main(void) {
 
     asm volatile("\n/* struct DosBase */" ::);
     DEFINE(dl_SysBase    , offsetof (struct DosLibrary, dl_SysBase));
+    DEFINE(dl_Root       , offsetof (struct DosLibrary, dl_Root));
+
+    asm volatile("\n/* struct MsgPort */" ::);
+    DEFINE(mp_SigTask    , offsetof (struct MsgPort, mp_SigTask));
 
     asm volatile("\n/* struct StackSwapStruct */" ::);
     DEFINE(stk_Lower     , offsetof (struct StackSwapStruct, stk_Lower));
