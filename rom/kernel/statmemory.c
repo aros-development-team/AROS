@@ -13,7 +13,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH2(void *, KrnStatMemory,
+AROS_LH2(void, KrnStatMemory,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct TagItem *, query, A0),
