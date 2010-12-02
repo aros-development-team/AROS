@@ -30,6 +30,7 @@ static int PCI_Init(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[PCI] Initializing PCI system\n"));
     LIBBASE->MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
+    D(bug("[PCI] Created pool 0x%p\n", LIBBASE->MemPool));
 
     LIBBASE->psd.MemPool = LIBBASE->MemPool;
 
