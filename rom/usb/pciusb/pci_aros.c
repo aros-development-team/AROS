@@ -1225,29 +1225,47 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #if defined(USB3)
                 case HCITYPE_XHCI:
                 {
-                    IPTR pciecap;
-                    APTR pciregbase,opregbase;
+                    ULONG extcapoffset, extcap, cnt;
+                    volatile APTR pciregbase;
+
+                    /* activate Mem and Busmaster as pciFreeUnit will disable them! (along with IO, but we don't have that...) */
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem);
+                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster);
 
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
-                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_CapabilityPCIE, (IPTR *) &pciecap);
-
-                    if(pciecap) {
-                        KPRINTF(1000, ("XHCI has PCIE capabilities (%p)\n",pciecap));
-                    }
 
                     KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
-                    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff));
-                    KPRINTF(1000, ("XHCI Version (%04x)\n",READREG16_LE(pciregbase, XHCI_HCIVERSION)));
-                    KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS1)));
-                    KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS2)));
-                    KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",READREG32_LE(pciregbase, XHCI_HCSPARAMS3)));
-                    KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",READREG32_LE(pciregbase, XHCI_HCCPARAMS)));
+                    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",   READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff));
+                    KPRINTF(1000, ("XHCI Version (%04x)\n",     READREG16_LE(pciregbase, XHCI_HCIVERSION)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",  READREG32_LE(pciregbase, XHCI_HCSPARAMS1)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",  READREG32_LE(pciregbase, XHCI_HCSPARAMS2)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  READREG32_LE(pciregbase, XHCI_HCSPARAMS3)));
+                    KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   READREG32_LE(pciregbase, XHCI_HCCPARAMS)));
 
-                    hc->hc_NumPorts = (READREG32_LE(pciregbase, XHCI_HCSPARAMS1) & XHCM_MaxPorts)>>XHCB_MaxPorts;
-                    KPRINTF(1000, ("XHCI controller has max %ld ports\n",hc->hc_NumPorts));
+                    hc->hc_NumPorts = (READREG32_LE(pciregbase, XHCI_HCSPARAMS1)&XHCM_MaxPorts)>>XHCB_MaxPorts;
+                    KPRINTF(1000, ("XHCI controller has max %ld port register sets\n",hc->hc_NumPorts));
 
-                    opregbase = pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff);
-                    KPRINTF(1000, ("XHCI opregbase (%p)\n",opregbase));
+                    // Store opregbase in hc_RegBase
+                    hc->hc_RegBase = (APTR) ((ULONG) pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff));
+                    KPRINTF(1000, ("XHCI opregbase (%p)\n",hc->hc_RegBase));
+
+                    /* HCCPARAMS stores in its upper 16 bits a DWORD offset value that is calculated from address pointed by BAR0(pciregbase) to 1st xHCI Extended Capability */  
+                	extcapoffset = XHCI_xECP(READREG32_LE(pciregbase, XHCI_HCCPARAMS));
+                    KPRINTF(1000, ("XHCI extcapoffset = %lx\n", extcapoffset));
+                    if(extcapoffset) {
+                        cnt = XHCI_EXT_CAPS_MAX;
+                        extcap = pciregbase;
+                        do {
+                            extcap += extcapoffset;
+                            KPRINTF(1000, ("XHCI Found extended capability %d\n", XHCI_EXT_CAPS_ID(READMEM32_LE(extcap))));
+                            KPRINTF(1000, ("XHCI extcapoffset = %lx\n", extcapoffset));
+
+                            /* Next xHCI Extended Capability is calculated from DWORD offset that is relative to current xHCI Extended Capability (extcap) */
+                	        extcapoffset = XHCI_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
+                            cnt--;
+
+                        }while(extcapoffset & cnt);
+                    }
 
                     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
                     hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
@@ -1308,6 +1326,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         if(hc->hc_HCIType == HCITYPE_XHCI)
         {
             xhcicnt++;
+            if(usb30ports)
+            {
+                KPRINTF(200, ("WARNING: Two XHCI controllers per Board?!?\n"));
+            }
             usb30ports = hc->hc_NumPorts;
         }
         else if(hc->hc_HCIType == HCITYPE_EHCI)
@@ -1407,7 +1429,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     pciStrcat(prodname, "PCI ");
     if(ohcicnt + uhcicnt)
     {
-        if(ohcicnt + uhcicnt > 1)
+        if(ohcicnt + uhcicnt >1)
         {
             prodname[4] = ohcicnt + uhcicnt + '0';
             prodname[5] = 'x';
@@ -1416,21 +1438,25 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         pciStrcat(prodname, ohcicnt ? "OHCI" : "UHCI");
         if(ehcicnt)
         {
-            pciStrcat(prodname, "+");
-		} else {
-			pciStrcat(prodname, " USB 1.1");
-		}
-	}
+            pciStrcat(prodname, " +");
+        } else{
+            pciStrcat(prodname, " USB 1.1");
+        }
+    }
     if(ehcicnt)
     {
-        pciStrcat(prodname, "EHCI USB 2.0");
+        pciStrcat(prodname, " EHCI USB 2.0");
     }
 #if defined(USB3)
     if(xhcicnt)
     {
-        prodname[4] = hc->hc_NumPorts + '0';
-        prodname[5] = 0;
-        pciStrcat(prodname, " port XHCI USB 3.0");
+        if(xhcicnt >1)
+        {
+            prodname[4] = xhcicnt + '0';
+            prodname[5] = 'x';
+            prodname[6] = 0;
+        }
+        pciStrcat(prodname, " XHCI USB 3.0");
     }
 #endif
 #if 0 // user can use pcitool to check what the chipset is and not guess it from this
@@ -1473,6 +1499,24 @@ void pciFreeUnit(struct PCIUnit *hu)
         hc->hc_Online = FALSE;
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
+
+#if defined(USB3)
+    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
+    while(hc->hc_Node.ln_Succ)
+    {
+        switch(hc->hc_HCIType)
+        {
+            case HCITYPE_XHCI:
+            {
+                KPRINTF(1000, ("Shutting down XHCI %08lx\n", hc));
+                KPRINTF(1000, ("Shutting down XHCI done.\n"));
+                break;
+            }
+        }
+
+        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
+    }
+#endif
 
     // doing this in three steps to avoid these damn host errors
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;

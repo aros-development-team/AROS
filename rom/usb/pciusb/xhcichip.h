@@ -49,7 +49,7 @@
 #define XHCF_NSS        (1UL<<XHCB_NSS)
 #define XHCM_MaxPSASize (((1UL<<4)-1)<<XHCB_MaxPSASize)
 #define XHCM_xECP       (((1UL<<16)-1)<<XHCB_xECP)
-#define XHCI_xECP(p)    (((p)&XHCM_xECP)>>XHCB_xECP)<<2
+#define XHCI_xECP(p)    ((((p)&XHCM_xECP)>>XHCB_xECP)<<2)
 
 
 /* Extended capability IDs */
@@ -62,7 +62,7 @@
 #define	XHCM_EXT_CAPS_VALUE     (((1UL<<16)-1)<<XHCB_EXT_CAPS_VALUE)
 
 #define XHCI_EXT_CAPS_ID(p)     (((p)&XHCM_EXT_CAPS_ID)>>XHCB_EXT_CAPS_ID)
-#define XHCI_EXT_CAPS_NEXT(p)	(((p)&XHCM_EXT_CAPS_NEXT)>>XHCB_EXT_CAPS_NEXT)<<2
+#define XHCI_EXT_CAPS_NEXT(p)	((((p)&XHCM_EXT_CAPS_NEXT)>>XHCB_EXT_CAPS_NEXT)<<2)
 #define	XHCI_EXT_CAPS_VALUE(p)  (((p)&XHCM_EXT_CAPS_VALUE)>>XHCB_EXT_CAPS_VALUE)
 
 /* Reserved ID 0 */
