@@ -49,16 +49,21 @@
 #define XHCF_NSS        (1UL<<XHCB_NSS)
 #define XHCM_MaxPSASize (((1UL<<4)-1)<<XHCB_MaxPSASize)
 #define XHCM_xECP       (((1UL<<16)-1)<<XHCB_xECP)
+#define XHCI_xECP(p)    (((p)&XHCM_xECP)>>XHCB_xECP)<<2
 
 
 /* Extended capability IDs */
-#define XHCI_EXT_CAPB_ID        0
-#define XHCI_EXT_CAPB_NEXT      8
-#define	XHCI_EXT_CAPB_SPECIFIC  16
+#define XHCB_EXT_CAPS_ID        0
+#define XHCB_EXT_CAPS_NEXT      8
+#define	XHCB_EXT_CAPS_VALUE     16
 
-#define XHCI_EXT_CAPM_ID        (((1UL<<8)-1)<<XHCI_EXT_CAPB_ID)
-#define XHCI_EXT_CAPM_NEXT      (((1UL<<8)-1)<<XHCI_EXT_CAPB_NEXT)
-#define	XHCI_EXT_CAPM_SPECIFIC  (((1UL<<16)-1)<<XHCI_EXT_CAPB_SPECIFIC)
+#define XHCM_EXT_CAPS_ID        (((1UL<<8)-1)<<XHCB_EXT_CAPS_ID)
+#define XHCM_EXT_CAPS_NEXT      (((1UL<<8)-1)<<XHCB_EXT_CAPS_NEXT)
+#define	XHCM_EXT_CAPS_VALUE     (((1UL<<16)-1)<<XHCB_EXT_CAPS_VALUE)
+
+#define XHCI_EXT_CAPS_ID(p)     (((p)&XHCM_EXT_CAPS_ID)>>XHCB_EXT_CAPS_ID)
+#define XHCI_EXT_CAPS_NEXT(p)	(((p)&XHCM_EXT_CAPS_NEXT)>>XHCB_EXT_CAPS_NEXT)<<2
+#define	XHCI_EXT_CAPS_VALUE(p)  (((p)&XHCM_EXT_CAPS_VALUE)>>XHCB_EXT_CAPS_VALUE)
 
 /* Reserved ID 0 */
 #define XHCI_EXT_CAPS_LEGACY    1
@@ -74,5 +79,13 @@
 /* Reserved IDs 18-191 */
 /* Vendor defined IDs 192-255 */
 #define XHCI_EXT_CAPS_MAX       255
+
+
+/* USB Legacy Support Capability */
+#define XHCB_HC_BIOS_OWNED      16
+#define XHCB_HC_OS_OWNED        24
+
+#define XHCF_HC_BIOS_OWNED      (1UL<<XHCB_HC_BIOS_OWNED)
+#define XHCF_HC_OS_OWNED        (1UL<<XHCB_HC_OS_OWNED)
 
 #endif /* XHCICHIP_H */
