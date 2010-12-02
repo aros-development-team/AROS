@@ -156,7 +156,7 @@ void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
 			/* Regular device */
 			case 1:
 			    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-				sizeof(struct Device));
+				sizeof(struct PciDevice));
 			    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 						(struct TagItem *)&devtags);
 
@@ -172,7 +172,7 @@ void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
 			/* Cool! Multifunction device, search subfunctions then */
 			case 2:
 			    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-				sizeof(struct Device));
+				sizeof(struct PciDevice));
 			    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 						(struct TagItem *)&devtags);
 	
@@ -191,7 +191,7 @@ void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
 				if (isPCIDeviceAvailable(cl, drv, bus, dev, sub))
 				{
 				    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-					sizeof(struct Device));
+					sizeof(struct PciDevice));
 				    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 							(struct TagItem *)&devtags);
 				    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
