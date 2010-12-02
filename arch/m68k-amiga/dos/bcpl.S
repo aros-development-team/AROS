@@ -306,15 +306,31 @@ BCPLd ParentDir      /*  8c, FileLock ^, @FileLock */
     BRTS
 
 BCPLd setSignals     /*  90, void, &MsgPort, mask */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    add.l	#mp_SigTask,%d1
+    move.l	%a0@(%d1),%a1
+    move.l	%d2,%d0
+    jsr		%a6@(54 * -6)	/* Signal */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd clearSignals   /* 94, BOOL , mask */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    clr.l	%d0
+    jsr		%a6@(51 * -6)	/* SetSignal */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd DOSAlert       /* 98, void, alertnumber */
     BRTS
 
 BCPLd findRootNode   /* 9c, RootNode @,  */
+    move.l	%a2@(BCPL_DOSBase),%d0
+    add.l	#dl_Root,%d0
+    move.l	%a0@(%d0),%d0	/* %a0 is always 0 in BCPL */
+    lsr.l	#2,%d0
     BRTS
 
 BCPLd readinput      /* a0, bytelength , &buf, bytelength */
@@ -353,6 +369,7 @@ BCPLd openWindow     /* c8, void, leftedge, topedge, width, height, @title */
 BCPL setCurrentDir  /* cc, FileLock @, BOOL, @FileLock */
     movem.l	%d1/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
+    move.l	%d2,%d1
     jsr		%a6@(21 * -6)	/* DOS/CurrentDir() */
     movem.l	%sp@+,%d1/%a0-%a1/%a6
     BRTS
