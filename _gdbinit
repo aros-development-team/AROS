@@ -176,6 +176,21 @@ define findaddr
         end
     end
 
+    if $cont
+	printf "Searching in the kickstart list...\n"
+    	set $kicknode = Debug_KickList
+        
+	while ($kicknode != 0) && $cont
+
+	    if $arg0 >= $kicknode->s_lowest && $arg0 <= $kicknode->s_highest
+                printf "Address found in %s.\nIf this is an executable, its .text section starts at %p.\n", $kicknode->s_module.m_name, $kicknode->s_lowest
+
+                set $cont = 0
+            end
+            set $kicknode = $kicknode->s_next
+        end
+    end
+
     #then in the resident list
     if $cont
         printf "Searching in the resident list...\n"
@@ -301,6 +316,40 @@ define loadseg
       loop_break
     end
     set $segnode = (struct segment *)$segnode->s_node.mln_Succ
+  end
+  if $step < 2
+    set $kicknode = Debug_KickList
+        
+    while ($kicknode != 0) && $step == 1
+      if $arg0 >= $kicknode->s_lowest && $arg0 <= $kicknode->s_highest
+        printf "%s", $kicknode->s_module.m_name
+        log_to_file segname.tmp on
+        printf "%s", $kicknode->s_module.m_name
+        end_log
+        shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
+        log_to_file loadseg.tmp on
+        printf "add-symbol-file "
+        end_log
+        shell head -n1 segname.tmp >>loadseg.tmp
+        log_to_file loadseg.tmp off
+        printf " %p", $kicknode->s_lowest
+        if $kicknode->s_next != 0
+          set $kicknode = $kicknode->s_next
+          while ($kicknode != 0) && $step < 5
+            if strcmp($kicknode->s_name, ".text") == 0
+              loop_break
+            end
+            printf " -s %s %p", $kicknode->s_name, $kicknode->s_lowest
+            set $step = $step + 1
+            set $kicknode = $kicknode->s_next
+          end
+        end
+        end_log
+        source loadseg.tmp
+        loop_break
+      end
+      set $kicknode = $kicknode->s_next
+    end
   end
   if $step < 2
     printf "no matching module for this address\n"
