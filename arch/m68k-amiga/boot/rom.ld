@@ -2,7 +2,7 @@ MEMORY
 {
   trap (rwx)    : org = 0x00000000 , l = 0x1000
   bss  (rw)     : org = 0x00001000 , l = 0x2000
-  invalid (rwx) : org = 0xdead0000 , l = 0x1000
+  invalid (rwx) : org = 0xdead0000 , l = 0x0
   rom  (rx)     : org = 0x00f80000 , l = 512K
 }
 
