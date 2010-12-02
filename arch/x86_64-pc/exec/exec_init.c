@@ -30,6 +30,7 @@
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "memory.h"
 
 #define __text      __attribute__((section(".text")))
 #define __no_ret    __attribute__((noreturn))
@@ -716,6 +717,7 @@ int exec_main(struct TagItem *msg, void *entry)
         }
         InitCode(RTF_SINGLETASK, 0);
 	PrivExecBase(SysBase)->KernelBase = TLS_GET(KernelBase);
+	PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
 
         UBYTE apictotal;
         if ((apictotal = core_APICGetTotal()) > 1)

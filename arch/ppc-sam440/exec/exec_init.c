@@ -21,6 +21,7 @@
 #include "exec_util.h"
 
 #include "exec_intern.h"
+#include "memory.h"
 
 #undef KernelBase
 #include "../kernel/kernel_intern.h"
@@ -254,6 +255,7 @@ void exec_main(struct TagItem *msg, void *entry)
     InitCode(RTF_SINGLETASK, 0);
 
     PrivExecBase(SysBase)->KernelBase = getKernelBase();
+    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
 
     /* Install the interrupt servers */
     for (i=0; i<16; i++)

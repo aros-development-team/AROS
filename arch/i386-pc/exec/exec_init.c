@@ -1127,6 +1127,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     InitCode(RTF_SINGLETASK, 0);
     KernelBase = OpenResource("kernel.resource");
+    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
     InitCode(RTF_COLDSTART, 0);
 
     /*
