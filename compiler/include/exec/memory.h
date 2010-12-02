@@ -56,6 +56,7 @@ struct MemList
 #define MEMF_PUBLIC     (1L<<0)
 #define MEMF_CHIP       (1L<<1)
 #define MEMF_FAST       (1L<<2)
+#define MEMF_EXECUTABLE (1L<<4)	 /* AmigaOS v4 compatible */
 #define MEMF_LOCAL      (1L<<8)
 #define MEMF_24BITDMA   (1L<<9)
 #define MEMF_KICK       (1L<<10)
@@ -63,6 +64,7 @@ struct MemList
 #define MEMF_LARGEST    (1L<<17)
 #define MEMF_REVERSE    (1L<<18)
 #define MEMF_TOTAL      (1L<<19)
+#define MEMF_HWALIGNED  (1L<<20) /* For AllocMem() only! */
 #define MEMF_NO_EXPUNGE (1L<<31)
 
 /* New in AROS/MorphOS. Flag for CreatePool to get automatic
