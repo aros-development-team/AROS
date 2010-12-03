@@ -347,7 +347,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 	if (dl->dol_Type == DLT_DEVICE) {
 	    if (!dl->dol_Task && ((struct DeviceNode *)dl)->dn_SegList) {
 		D(bug("Accessing offline device '%b', path='%s'\n", dl->dol_Name, origname));
-		newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
+		newhandler = RunPacketHandler((struct DeviceNode *)dl, origname, DOSBase);
 		res = newhandler ? TRUE : FALSE;
 	    }
 	} else {

@@ -14,7 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 
-struct Process *RunHandler(struct DeviceNode *dn, const char *path, struct DosLibrary *DOSBase)
+struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct DosLibrary *DOSBase)
 {
 	struct FileSysStartupMsg *fssm;
 	struct DosPacket *dp;
