@@ -44,7 +44,7 @@ struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct
         /* start it up */
         process = CreateNewProcTags(
         	NP_Entry,     (IPTR) BADDR(dn->dn_SegList + 1),
-		NP_Name,      (char*)dn->dn_Name + 1, /* GB: always NUL terminated */
+		NP_Name,      (char*)BADDR(dn->dn_Name) + 1, /* GB: always NUL terminated */
 		NP_StackSize, dn->dn_StackSize,
 		NP_Priority,  dn->dn_Priority,
 		TAG_DONE);
