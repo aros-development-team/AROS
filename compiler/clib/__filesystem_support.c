@@ -12,6 +12,17 @@
 
 #include "__filesystem_support.h"
 
+CONST_STRPTR StripVolume(CONST_STRPTR name) {
+    const char *path = strchr(name, ':');
+    if (path != NULL)
+        path++;
+    else
+        path = name;
+    return path;
+}
+
+#ifndef AROS_DOS_PACKETS
+
 void InitIOFS(struct IOFileSys *iofs, ULONG type,
 	      struct DosLibrary *DOSBase)
 {
@@ -22,15 +33,6 @@ void InitIOFS(struct IOFileSys *iofs, ULONG type,
     iofs->IOFS.io_Message.mn_Length       = sizeof(struct IOFileSys);
     iofs->IOFS.io_Command                 = type;
     iofs->IOFS.io_Flags                   = 0;
-}
-
-CONST_STRPTR StripVolume(CONST_STRPTR name) {
-    const char *path = strchr(name, ':');
-    if (path != NULL)
-        path++;
-    else
-        path = name;
-    return path;
 }
 
 LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
@@ -63,3 +65,5 @@ LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
 
     return iofs->io_DosError;
 }
+
+#endif
