@@ -16,7 +16,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     cliinitrun close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
 	     deletevar deviceproc displayerror dopkt dosgetstring dosgetlocalizedstring \
-	     duplock endnotify error errorreport exall exallend examine execute exit exnext \
+	     duplock duplockfromfh endnotify error errorreport \
+	     exall exallend examine examinefh execute exit exnext \
 	     fault fgetc fgets filepart findarg findcliproc finddosentry findsegment \
 	     findvar flush format fputc fputs fread freeargs freedeviceproc \
 	     freedosentry freedosobject fwrite getargstr getconsoletask \
@@ -25,7 +26,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     internalloadseg internalunloadseg ioerr isfilesystem \
 	     isinteractive loadseg lock lockdoslist lockrecord lockrecords \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
-	     matchpatternnocase maxcli namefromlock newloadseg nextdosentry \
+	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry \
 	     open openfromlock output parentdir parentoffh parsepattern \
 	     parsepatternnocase pathpart pipe printfault putstr read readargs \
 	     readitem relabel readlink remassignlist remdosentry remsegment rename \
@@ -34,7 +35,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     setcurrentdirname setfiledate setfilesize setfilesystask \
 	     setioerr setmode setowner setprogramdir setprogramname \
 	     setprompt setprotection setvar setvbuf splitname startnotify \
-	     strtodate strtolong systemtaglist ungetc unloadseg \
+	     strtodate strtolong systemtaglist ungetc unloadseg unlock \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
 	     vprintf waitforchar waitpkt write writechars
 
