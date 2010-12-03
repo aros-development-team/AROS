@@ -53,9 +53,11 @@ AROS_LH3(void *, KrnAllocPages,
 
     struct MemHeader *mh;
     APTR res = NULL;
-    /* In future we are going to have MEMF_EXECUTABLE, and MAP_Executable will depend on it */
-    KRN_MapAttr protection = MAP_Readable|MAP_Writable|MAP_Executable;
+    KRN_MapAttr protection = MAP_Readable|MAP_Writable;
 
+    /* Adjust execute permission */
+    if (flags & MEMF_EXECUTABLE)
+	protection |= MAP_Executable;
     /* Leave only flags that describe physical properties of the memory */
     flags &= MEMF_PHYSICAL_MASK;
 
