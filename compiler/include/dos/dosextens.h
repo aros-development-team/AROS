@@ -326,6 +326,9 @@ struct FileHandle
     UBYTE * fh_Buf;
     UBYTE * fh_Pos;
     UBYTE * fh_End;
+
+#ifdef AROS_DOS_PACKETS
+
     LONG fh_Funcs;
 #define fh_Func1 fh_Funcs
     LONG fh_Func2;
@@ -334,7 +337,13 @@ struct FileHandle
 #define fh_Arg1 fh_Args
     LONG fh_Arg2;
 
-#ifndef AROS_DOS_PACKETS
+    /* kept here until things stabilize */
+    ULONG	    fh_Size;
+    ULONG	    fh_Flags;
+    struct Device * fh_Device;
+    struct Unit   * fh_Unit;
+
+#else
 
     /* The following four fields have different names and a different
        function than their AmigaOS equivalents. The original names were:
@@ -353,13 +362,9 @@ struct FileHandle
       /* A private pointer to a device specific filehandle structure. See
          <dos/filesystems.h> for more information. */
     struct Unit   * fh_Unit;
+
 #endif
-    ULONG	    fh_Size;
-    ULONG	    fh_Flags;   /* see below */
-//#ifndef AROS_DOS_PACKETS
-    struct Device * fh_Device;
-    struct Unit   * fh_Unit;
-//#endif
+
 };
 
 #define fh_Interactive fh_Port
