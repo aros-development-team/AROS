@@ -8,5 +8,16 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 %build_archspecific \
 	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=linux-android \
 	files=$(FILES) compiler=kernel
+	
+#MM kernel-bootstrap-android-setup: kernel-bootstrap-android-copy	
+
+%copy_dir_recursive mmake=kernel-bootstrap-android-copy \
+	src=$(SRCDIR)/$(CURDIR)/app dst=$(GENDIR)/$(CURDIR)/app \
+	excludefiles=default.properties.in
+
+#MM
+kernel-bootstrap-android-setup:
+	@$(ECHO) Setting up Android project...
+	@cd $(GENDIR)/$(CURDIR); $(ANDROID) update project --path app
 
 %common
