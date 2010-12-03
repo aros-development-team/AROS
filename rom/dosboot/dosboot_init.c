@@ -42,7 +42,45 @@
 #define BNF_RETRY 0x8000 /* Private flag for the BootNode */
 #define BNF_MOUNTED 0x4000 /* Private flag for the BootNode */
 
+#ifdef AROS_DOS_PACKETS
 
+struct Process *RunPacketHandler(struct DeviceNode *dn, const char *name, struct DosLibrary *DOSBase);
+
+BOOL __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
+{
+	return RunPacketHandler(deviceNode, "", DOSBase) != NULL;
+}
+
+static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
+{
+    BOOL rc;
+
+    D(bug("[DOSBoot] __dosboot_Mount: handler=%08lx stack=%08x seglist=%08x\n",
+    	dn->dn_Handler, dn->dn_StackSize, dn->dn_SegList));
+    if (!dn->dn_Task)
+    {
+        D(bug("[DOSBoot] __dosboot_Mount: Attempting to mount\n"));
+        rc = __dosboot_RunHandler(dn, DOSBase);
+    }
+    else
+    {
+        D(bug("[DOSBoot] __dosboot_Mount: Volume already mounted\n"));
+        rc = TRUE;
+    }
+
+    if (rc)
+    {
+        if (!AddDosEntry((struct DosList *) dn))
+        {
+            kprintf("Mounting node %08lx (%s) failed at AddDosEntry() -- maybe it was already added by someone else!\n", dn, dn->dn_Ext.dn_AROS.dn_DevName);
+            Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
+        }
+    }
+    return rc;
+}
+
+#else
+	
 /** Support Functions **/
 /* Attempt to start a handler for the DeviceNode */
 BOOL __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
@@ -142,6 +180,8 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
     }
     return rc;
 }
+
+#endif
 
 static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DOSBase)
 {
