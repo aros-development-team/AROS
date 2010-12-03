@@ -79,8 +79,7 @@ static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	argsize == -1 ? strlen(argptr) : argsize, /* Compute argsize automatically */
 	(IPTR) entry
     }};
-
-    bug("RunProcess: %s\n", argptr);
+    
     /* Call the function with the new stack */
     ret = NewStackSwap(sss, CallEntry, &args);
 
