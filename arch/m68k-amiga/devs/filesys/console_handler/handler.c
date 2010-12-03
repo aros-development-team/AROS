@@ -150,8 +150,33 @@ static BOOL MakeSureWinIsOpen(struct filehandle *fh)
 
 static void close_con(struct filehandle *fh)
 {
-	D(bug("exit\n"));
-	for(;;);
+	/* Clean up */
+
+	if (fh->timerreq) {
+		CloseDevice((struct IORequest *)fh->timerreq);
+		DeleteIORequest((struct IORequest *)fh->timerreq);
+	}
+	DeleteMsgPort(fh->timermp);
+
+	if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
+    		CloseDevice((struct IORequest *)fh->conreadio);
+
+	if (fh->window)
+    		CloseWindow(fh->window);
+	
+	DeleteIORequest(ioReq(fh->conreadio));
+	FreeVec(fh->conreadmp);
+
+	if (fh->screenname)
+    		FreeVec(fh->screenname);
+	if (fh->wintitle)
+    		FreeVec(fh->wintitle);
+	if (fh->pastebuffer)
+    		FreeMem(fh->pastebuffer,PASTEBUFSIZE);
+
+	CloseLibrary((struct Library*)fh->intuibase);
+ 	CloseLibrary((struct Library*)fh->dosbase);
+   	FreeVec(fh);
 }
 
 static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
@@ -164,11 +189,16 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 	
 	dn = BADDR(dp->dp_Arg3);
 	*perr = ERROR_NO_FREE_STORE;
-	fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
+	fh = AllocVec(sizeof(struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
     	if (!fh)
     		return NULL;
 
+    	fh->timermp = CreateMsgPort();
+    	fh->timerreq = (struct timerequest*)CreateIORequest(fh->timermp, sizeof(struct timerequest));
+   	OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)fh->timerreq, 0);
+
 	fh->intuibase = OpenLibrary("intuition.library", 0);
+	fh->dosbase = OpenLibrary("dos.library", 0);
 	Forbid();
     	fh->inputbase = (struct Device *)FindName(&SysBase->DeviceList, "input.device");
     	Permit();
@@ -180,12 +210,9 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 	if (i >= 0)
 		fn += i + 1;
 
- 	fh->breaktask = 0;//param->parentTask;
  	fh->contask = FindTask(0);
 
 	NEWLIST(&fh->pendingReads);
-	NEWLIST(&fh->pendingWrites);
-
 
     	/* Create msgport for console.device communication
 	   and for app <-> contask communication  */
@@ -252,7 +279,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 		fh->flags |= FHFLG_RAW;
 
 	if (!ok)
-		FreeMem(fh, sizeof (struct filehandle));
+		close_con(fh);
 
  	*perr = err;
  	FreeVec(filename);
@@ -265,7 +292,7 @@ static void startread(struct filehandle *fh)
 	fh->conreadio->io_Data    = fh->consolebuffer;
 	fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
 	SendIO((struct IORequest*)fh->conreadio);
-	D(bug("startread\n"));
+	fh->flags |= FHFLG_ASYNCCONSOLEREAD;
 }
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
@@ -282,11 +309,8 @@ LONG CONMain(void)
 	struct Message *mn;
 	struct FileHandle *dosfh;
 	LONG error;
-	struct MsgPort *timermp = NULL;
-    	struct timerequest *timerreq = NULL;
     	struct filehandle *fh;
    	struct DosPacket *waitingdp = NULL;
-   	BOOL readstarted = FALSE;
 	
 	D(bug("[CON] started\n"));
 	mp = &((struct Process*)FindTask(NULL))->pr_MsgPort;
@@ -301,14 +325,10 @@ LONG CONMain(void)
 	}
 	replypkt(dp, DOSTRUE);
 
-    	timermp = CreateMsgPort();
-    	timerreq = (struct timerequest*)CreateIORequest(timermp, sizeof(struct timerequest));
-   	OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)timerreq, 0);
- 
     	for(;;)
     	{
         	ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
-		ULONG timermask   = 1L << timermp->mp_SigBit;
+		ULONG timermask   = 1L << fh->timermp->mp_SigBit;
 		ULONG packetmask = 1L << mp->mp_SigBit;
 		ULONG sigs;
 
@@ -322,12 +342,11 @@ LONG CONMain(void)
 		}
 
 		if (sigs & conreadmask) {
-			readstarted = FALSE;
 			GetMsg(fh->conreadmp);
 			if (waitingdp) {
 				replypkt(waitingdp, DOSTRUE);
-				AbortIO(timerreq);
-				WaitIO(timerreq);
+				AbortIO(fh->timerreq);
+				WaitIO(fh->timerreq);
 				waitingdp = NULL;
 			}
 			D(bug("IO_READ %d\n", fh->conreadio->io_Actual));
@@ -357,13 +376,12 @@ LONG CONMain(void)
 				fh->flags &= ~FHFLG_NOWRITE;
 			} /* if (fh->flags & FHFLG_RAW) else ... */
 			startread(fh);
-			readstarted = TRUE;
 		}
 
 		while ((mn = GetMsg(mp))) {
 			dp = (struct DosPacket*)mn->mn_Node.ln_Name;	
 			dp->dp_Res2 = 0;
-			D(bug("[CON] packet %x:%d\n", dp, dp->dp_Type));
+			D(bug("[CON] packet %x:%d %x\n", dp, dp->dp_Type, dp->dp_Port));
 			error = 0;
 			switch (dp->dp_Type)
 			{
@@ -374,6 +392,7 @@ LONG CONMain(void)
 					dosfh->fh_Port = (struct MsgPort*)DOSTRUE;
 					dosfh->fh_Arg1 = (IPTR)fh;
 					fh->usecount++;
+				 	fh->breaktask = dp->dp_Port->mp_SigTask;
 					replypkt(dp, DOSTRUE);
 				break;
 				case ACTION_END:
@@ -386,10 +405,8 @@ LONG CONMain(void)
 					if (!MakeSureWinIsOpen(fh))
 						goto end;
 					D(bug("CON ACTION_READ %x %d\n", dp->dp_Arg2, dp->dp_Arg3));
-					if (!readstarted) {
+					if (!(fh->flags & FHFLG_ASYNCCONSOLEREAD))
 						startread(fh);
-						readstarted = TRUE;
-					}
 					con_read(fh, dp);
 				break;
 				case ACTION_WRITE:
@@ -399,7 +416,33 @@ LONG CONMain(void)
 					answer_write_request(fh, dp);
 				break;
 				case ACTION_SCREEN_MODE:
-					replypkt(dp, DOSTRUE);
+				{
+	                            LONG wantmode = dp->dp_Arg1;
+	
+	                            if (wantmode & FCM_RAW && ! (fh->flags & FHFLG_RAW))
+	                            {
+					/* Switching from CON: mode to RAW: mode */
+	
+					fh->flags |= FHFLG_RAW;
+	
+					fh->inputstart = fh->inputsize;
+					fh->inputpos   = fh->inputsize;
+	
+					HandlePendingReads(fh);
+	                            }
+	
+	                            else
+	                            {
+	                                /* otherwise just copy the flags */
+	                                fh->flags &= ~(FHFLG_RAW | FHFLG_NOECHO);
+	                                if (wantmode & FCM_RAW)
+	                                    fh->flags |= FHFLG_RAW;
+	                                if (wantmode & FCM_NOECHO)
+	                                    fh->flags |= FHFLG_NOECHO;
+	                            }
+	
+				    replypkt(dp, DOSTRUE);
+				}
 				break;
 				case ACTION_CHANGE_SIGNAL:
 				{
@@ -421,10 +464,10 @@ LONG CONMain(void)
 					LONG sec = timeout / 1000000;
 					LONG usec = timeout % 1000000;
 	
-					timerreq->tr_node.io_Command = TR_ADDREQUEST;
-					timerreq->tr_time.tv_secs = sec;
-					timerreq->tr_time.tv_micro = usec;
-					SendIO((struct IORquest*)timerreq);
+					fh->timerreq->tr_node.io_Command = TR_ADDREQUEST;
+					fh->timerreq->tr_time.tv_secs = sec;
+					fh->timerreq->tr_time.tv_micro = usec;
+					SendIO((struct IORquest*)fh->timerreq);
 					waitingdp = dp;
 				    }
 				}
@@ -433,13 +476,24 @@ LONG CONMain(void)
 					replypkt(dp, FALSE);
 				break;
 				default:
-					replypkt2(dp, FALSE, ERROR_NOT_IMPLEMENTED);
+					replypkt2(dp, FALSE, ERROR_ACTION_NOT_KNOWN);
 				break;
 			}
 		}
 	}
 end:
-	close_con(fh);
+	if (fh) {
+		if (waitingdp) {
+			AbortIO(fh->timerreq);
+			WaitIO(fh->timerreq);
+			replypkt(waitingdp, DOSFALSE);
+		}
+		if (fh->flags & FHFLG_ASYNCCONSOLEREAD) {
+    			AbortIO(ioReq(fh->conreadio));
+			WaitIO(ioReq(fh->conreadio));
+		}
+		close_con(fh);
+	}
 	replypkt(dp, DOSFALSE);
 	return 0;
 
