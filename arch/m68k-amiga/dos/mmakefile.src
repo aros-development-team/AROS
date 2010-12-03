@@ -1,9 +1,22 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Uncomment the following to enable the WIP BCPL support
-#CFILES  := runprocess runcommand createnewproc bcpl_support
-#AFILES  := bcpl
+CFILES  := helper packethelper runhandler bcpl_support internalopen \
+	unlock lock open close internalseek \
+	isinteractive isfilesystem \
+	read write getdeviceproc sendpkt \
+	examine examinefh exnext exall exallend \
+	parentoffh parentdir \
+	duplock duplockfromfh \
+	namefromlock namefromfh namefrom \
+	assignlock setprotection info \
+	adddosentry finddosentry \
+	changemode newcliproc systemtaglist \
+	addbuffers createdir deletefile rename \
+	samelock samedevice \
+	startnotify endnotify errorreport
+
+AFILES  := bcpl
 
 #MM kernel-dos-amiga-m68k : kernel-dos-includes includes-asm_h-m68k
 
