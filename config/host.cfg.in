@@ -49,7 +49,7 @@ PPMTOILBM   	:= @PPMTOILBM@
 SED		:= @SED@
 CHMOD		:= @CHMOD@
 
-# Apple XCode path (for iOS target)
-XCODE_PATH   := @aros_xcode_path@
+# Android tool pathname (for Android target)
+ANDROID		:= @android_tool@
 
 # --------------------------------------------------------------------------
