@@ -102,6 +102,54 @@
 #define XHCI_EXT_CAPS_MAX       255
 
 
+/* XHCI operational register defines */
+
+/* USB Command Register (USBCMD) */
+#define	XHCI_USBCMD     0x00
+
+#define	XHCB_CMD_RS     0
+#define	XHCB_CMD_HCRST  1
+#define	XHCB_CMD_INTE   2
+#define	XHCB_CMD_HSEE   3
+#define	XHCB_CMD_LHCRST 7
+#define	XHCB_CMD_CSS    8
+#define	XHCB_CMD_CRS    9
+#define	XHCB_CMD_EWE    10
+#define	XHCB_CMD_EU3S   11
+
+#define	XHCF_CMD_RS     (1UL<<XHCB_CMD_RS)
+#define	XHCF_CMD_HCRST  (1UL<<XHCB_CMD_HCRST)
+#define	XHCF_CMD_INTE   (1UL<<XHCB_CMD_INTE)
+#define	XHCF_CMD_HSEE   (1UL<<XHCB_CMD_HSEE)
+#define	XHCF_CMD_LHCRST (1UL<<XHCB_CMD_LHCRST)
+#define	XHCF_CMD_CSS    (1UL<<XHCB_CMD_CSS)
+#define	XHCF_CMD_CRS    (1UL<<XHCB_CMD_CRS)
+#define	XHCF_CMD_EWE    (1UL<<XHCB_CMD_EWE)
+#define	XHCF_CMD_EU3S   (1UL<<XHCB_CMD_EU3S)
+
+/* USB Status Register (USBSTS) */
+#define	XHCI_USBSTS     0x04
+#define	XHCB_STS_HCH    0
+#define	XHCB_STS_HSE	2
+#define	XHCB_STS_EINT   3
+#define	XHCB_STS_PCD    4
+#define	XHCB_STS_SSS    8
+#define	XHCB_STS_RSS    9
+#define	XHCB_STS_SRE    10
+#define	XHCB_STS_CNR    11
+#define	XHCB_STS_HCE    12
+
+#define	XHCF_STS_HCH    (1UL<<XHCB_STS_HCH)
+#define	XHCF_STS_HSE    (1UL<<XHCB_STS_HSE)
+#define	XHCF_STS_EINT   (1UL<<XHCB_STS_EINT
+#define	XHCF_STS_PCD    (1UL<<XHCB_STS_PCD)
+#define	XHCF_STS_SSS    (1UL<<XHCB_STS_SSS)
+#define	XHCF_STS_RSS    (1UL<<XHCB_STS_RSS)
+#define	XHCF_STS_SRE    (1UL<<XHCB_STS_SRE)
+#define	XHCF_STS_CNR    (1UL<<XHCB_STS_CNR)
+#define	XHCF_STS_HCE    (1UL<<XHCB_STS_HCE)
+
+
 /* USB Legacy Support Capability */
 #define XHCB_HC_BIOS_OWNED      16
 #define XHCB_HC_OS_OWNED        24
