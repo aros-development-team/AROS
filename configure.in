@@ -324,6 +324,11 @@ case "$host_os" in
     cygwin*)
 	aros_host_arch="cygwin"
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	android_build_os="windows"
+	android_tool="android.bat"
+	default_android_ndk="/cygdrive/c/android-ndk-r3"
+	default_android_sdk="/cygdrive/c/android-sdk-windows-1.6_r1"
+
 	case "$host_cpu" in
 	    *i?86*)
 		aros_host_cpu="i386"
@@ -691,21 +696,41 @@ AC_MSG_RESULT($enableval)
 target_bootloader="none"
 
 #-----------------------------------------------------------------------------
-if test "$aros_target_variant" = "ios"; then
+case "$aros_target_variant" in
+ios)
+    AC_MSG_CHECKING([XCode path])
+    AC_ARG_WITH(xcode,AC_HELP_STRING([--with-xcode=PATH],[Specify XCode path for iOS targets (default=/Developer).]),aros_xcode_path="$withval",aros_xcode_path="/Developer")
+    AC_MSG_RESULT($aros_xcode_path)
 
-AC_MSG_CHECKING([XCode path])
-AC_ARG_WITH(xcode-path,AC_HELP_STRING([--with-xcode=PATH],[Specify XCode path for iOS targets (default=/Developer).]),aros_xcode_path="$withval",aros_xcode_path="/Developer")
-AC_MSG_RESULT($aros_xcode_path)
+    AC_MSG_CHECKING([for minimum supported iOS version])
+    AC_ARG_WITH(ios-version,AC_HELP_STRING([--with-ios-version=VERSION],[Specify minimum supported iOS version (default=3.0).]),aros_ios_version="$withval",aros_ios_version="3.0")
+    AC_MSG_RESULT($aros_ios_version)
 
-AC_MSG_CHECKING([for minimum supported iOS version])
-AC_ARG_WITH(ios-version,AC_HELP_STRING([--with-ios-version=VERSION],[Specify minimum supported iOS version (default=3.0).]),aros_ios_version="$withval",aros_ios_version="3.0")
-AC_MSG_RESULT($aros_ios_version)
+    AC_MSG_CHECKING([what iOS SDK version to use])
+    AC_ARG_WITH(ios-sdk,AC_HELP_STRING([--with-ios-sdk=VERSION],[Use iOS SDK version VERSION (default=4.1).]),aros_ios_sdk="$withval",aros_ios_sdk="4.1")
+    AC_MSG_RESULT($aros_ios_sdk)
 
-AC_MSG_CHECKING([what iOS SDK version to use])
-AC_ARG_WITH(ios-sdk,AC_HELP_STRING([--with-ios-sdk=VERSION],[Use iOS SDK version VERSION (default=4.1).]),aros_ios_sdk="$withval",aros_ios_sdk="4.1")
-AC_MSG_RESULT($aros_ios_sdk)
+    ;;
 
-fi
+"android")
+    AC_MSG_CHECKING([Android SDK path])
+    AC_ARG_WITH(sdk,AC_HELP_STRING([--with-sdk=PATH],[Specify Android SDK path (default=$default_android_sdk).]),aros_android_sdk="$withval",aros_android_sdk=$default_android_sdk)
+    AC_MSG_RESULT($aros_android_sdk)
+
+    AC_MSG_CHECKING([Android NDK path])
+    AC_ARG_WITH(ndk,AC_HELP_STRING([--with-ndk=PATH],[Specify Android NDK path (default=$default_android_ndk).]),aros_android_ndk="$withval",aros_android_ndk=$default_android_ndk)
+    AC_MSG_RESULT($aros_android_ndk)
+
+    AC_MSG_CHECKING([what Android version to use])
+    AC_ARG_WITH(android-version,AC_HELP_STRING([--with-android-version=VERSION],[Use Android platform VERSION (default=1.6).]),aros_android_version="$withval",aros_android_version="1.6")
+    AC_MSG_RESULT($aros_android_version)
+
+    export PATH="$aros_android_sdk/tools:$PATH"
+    AC_PATH_PROG(android_tool, $android_tool)
+    AROS_REQUIRED(android,$android_tool)
+
+    ;;
+esac
 
 #-----------------------------------------------------------------------------
 # This is the target configuration switch.
@@ -781,6 +806,33 @@ case "$target_os" in
 		AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
 		;;
 	esac
+	case "$aros_target_variant" in
+            android)
+		case "$aros_android_version" in
+		1.5)
+		    aros_android_level=android-3
+		    ;;
+		1.6)
+		    aros_android_level=android-4
+		    ;;
+		*)
+		    aros_android_level=android-5
+		    ;;
+		esac
+
+	        aros_object_format="armelf"
+		aros_default_wbwidth=320
+                aros_default_wbheight=480
+		export PATH="$aros_android_ndk/build/prebuilt/$android_build_os/arm-eabi-$target_tool_version/bin:$PATH"
+               	aros_android_ndk="$aros_android_ndk/build/platforms/$aros_android_level/arch-arm"
+		aros_kernel_cflags="--sysroot $aros_android_ndk -mandroid"
+		aros_kernel_ldflags="--sysroot $aros_android_ndk -mandroid"
+		CFLAGS="$CFLAGS --sysroot $aros_android_ndk -mandroid"
+		aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
+		need_x11=no
+		target_tool_prefix="arm-eabi-"
+            ;;
+        esac
     ;;
 
     pc)
@@ -2075,6 +2127,10 @@ AC_SUBST(aros_ios_platform)
 AC_SUBST(aros_ios_version)
 AC_SUBST(aros_ios_sdk)
 
+# Android related
+AC_SUBST(android_tool)
+AC_SUBST(aros_android_level)
+
 # DBUS related
 AC_SUBST(ENABLE_DBUS)
 AC_SUBST(DBUS_CFLAGS)
@@ -2211,6 +2267,7 @@ AC_CONFIG_FILES(
     ${aros_scripts_dir}/genshared:compiler/library_template_c/source/lib_source/genshared.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
     tools/collect-aros/env.h
+    ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in
 )
 
 AC_OUTPUT

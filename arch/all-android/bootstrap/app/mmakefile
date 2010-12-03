@@ -1,0 +1,14 @@
+# $Id: mmakefile.src 35683 2010-11-22 06:50:53Z sonic $
+include $(TOP)/config/make.cfg
+
+PROJDIR := $(GENDIR)/$(CURDIR)/
+
+FILES := $(wildcard $(SRCDIR)/$(CURDIR)/*)
+FILES := $(filter-out %/mmakefile.src %/mmakefile %/default.properties.in,$(FILES))
+
+#MM
+kernel-bootstrap-android-setup :
+	@$(ECHO) Setting up Android project in $(PROJDIR)...
+	@$(MKDIR) $(PROJDIR)
+	@$(CP) -rf $(FILES) $(PROJDIR)
+	@cd $(PROJDIR); $(ANDROID) update project --path .

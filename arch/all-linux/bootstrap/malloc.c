@@ -1,4 +1,9 @@
-/* AROS-thread-safe versions of libc memory allocation routines */
+/*
+ * AROS-thread-safe versions of libc memory allocation routines
+ * This does not work with Android's bionic.
+ */
+
+#ifndef __ANDROID__
 
 #include <proto/exec.h>
 #include <sys/types.h>
@@ -47,3 +52,5 @@ void * calloc(size_t n, size_t size)
     
     return res;
 }
+
+#endif
