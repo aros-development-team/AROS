@@ -58,27 +58,6 @@ static VOID Nouveau_HOSTED_BUILD_Init(LIBBASETYPEPTR LIBBASE)
 
     /* Initialize acceleration objects */
     NVAccelCommonInit(carddata);
-    
-    /* Partial initialization of screenbitmap - 1024x768x24 */
-    LIBBASE->sd.screenbitmap = AllocVec(sizeof(struct HIDDNouveauBitMapData), MEMF_ANY | MEMF_CLEAR);
-    LIBBASE->sd.screenbitmap->width = 1024;
-    LIBBASE->sd.screenbitmap->height = 768;
-    LIBBASE->sd.screenbitmap->depth = 24;
-    if (LIBBASE->sd.screenbitmap->depth <= 8)
-        LIBBASE->sd.screenbitmap->bytesperpixel = 1;
-    else if (LIBBASE->sd.screenbitmap->depth <= 16)
-        LIBBASE->sd.screenbitmap->bytesperpixel = 2;
-    else
-        LIBBASE->sd.screenbitmap->bytesperpixel = 4;
-    LIBBASE->sd.screenbitmap->pitch = 1024 * 4;
-    LIBBASE->sd.screenbitmap->fbid = 0; /* Default value */
-    InitSemaphore(&LIBBASE->sd.screenbitmap->semaphore);
-
-    nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
-            LIBBASE->sd.screenbitmap->pitch * LIBBASE->sd.screenbitmap->height,
-            &LIBBASE->sd.screenbitmap->bo);
-
-    nouveau_bo_map(LIBBASE->sd.screenbitmap->bo, NOUVEAU_BO_RDWR);
 }
 #endif
 
