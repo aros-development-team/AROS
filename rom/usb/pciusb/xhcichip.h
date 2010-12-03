@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------------
  */
 
+/* XHCI capability register defines */
 #define XHCI_CAPLENGTH  0x00
 #define XHCI_HCIVERSION 0x02 
 #define XHCI_HCSPARAMS1 0x04
@@ -25,6 +26,26 @@
 #define XHCM_MaxPorts (((1UL<<8)-1)<<XHCB_MaxPorts)
 #define XHCM_MaxIntrs (((1UL<<11)-1)<<XHCB_MaxIntrs)
 #define XHCM_MaxSlots (((1UL<<8)-1)<<XHCB_MaxSlots)
+
+
+/* XHCI_HCSPARAMS2 defines */
+#define	XHCB_IST        0
+#define	XHCB_ERST_Max   4
+#define	XHCB_SPR        26
+#define	XHCB_SPB_Max    27
+
+#define	XHCM_IST        (((1UL<<4)-1)<<XHCB_IST)
+#define	XHCM_ERST_Max   ((1UL<<4)-1)<<XHCB_ERST_Max)
+#define	XHCF_SPR        (1UL<<XHCB_SPR)
+#define	XHCM_SPB_Max    (((1UL<<4)-1)<<XHCB_SPB_Max)
+
+
+/* XHCI_HCSPARAMS3 defines */
+#define	XHCB_U1DEV_LAT  0
+#define	XHCB_U2DEV_LAT  16
+
+#define	XHCM_U1DEV_LAT  (((1UL<<8)-1)<<XHCB_U1DEV_LAT)
+#define	XHCM_U2DEV_LAT  (((1UL<<8)-1)<<XHCB_U2DEV_LAT)
 
 
 /* XHCI_HCCPARAMS defines */
