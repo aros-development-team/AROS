@@ -1,0 +1,10 @@
+#   $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+include $(TOP)/config/make.cfg
+
+FILES := resident handler support completion
+
+#MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
+
+%build_module_simple mmake=kernel-fs-con \
+    modname=con modtype=handler \
+    files="$(FILES)" uselibs="rom"
