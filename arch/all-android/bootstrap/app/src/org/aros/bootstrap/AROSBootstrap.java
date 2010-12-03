@@ -13,7 +13,7 @@ import java.lang.String;
 public class AROSBootstrap extends Activity
 {
 	static final int ID_ERROR_DIALOG = 0;
-	static final int ID_GURU_DIALOG = 1;
+	static final int ID_ALERT_DIALOG = 1;
 
     /** Called when the activity is first created. */
     @Override
@@ -35,25 +35,43 @@ public class AROSBootstrap extends Activity
     	showDialog(ID_ERROR_DIALOG);
     }
 
-    public void DisplayGuru(CharSequence text)
+    public void DisplayAlert(CharSequence text)
     {
     	errStr = text;
-    	showDialog(ID_GURU_DIALOG);
+    	showDialog(ID_ALERT_DIALOG);
     	// TODO: enter run loop here
     }
     
     public Dialog onCreateDialog(int id)
     {
 		AlertDialog.Builder b = new AlertDialog.Builder(this);
+		DialogInterface.OnClickListener okEvent; 
     	
     	switch (id)
     	{
     	case ID_ERROR_DIALOG:
     		b.setTitle(R.string.error);
+    		okEvent = new DialogInterface.OnClickListener()
+        	{	
+    			@Override
+    			public void onClick(DialogInterface dialog, int which)
+    			{
+    				AROSBootstrap.this.finish();
+    			}
+    		};
     		break;
 
-    	case ID_GURU_DIALOG:
+    	case ID_ALERT_DIALOG:
     		b.setTitle(R.string.guru);
+    		okEvent = new DialogInterface.OnClickListener()
+        	{
+    			@Override
+    			public void onClick(DialogInterface dialog, int which)
+    			{
+    				// TODO: break run loop and return
+    				AROSBootstrap.this.finish();
+    			}
+    		};
     		break;
     	
     	default:
@@ -62,14 +80,7 @@ public class AROSBootstrap extends Activity
     	}
     	b.setMessage(errStr);
     	b.setCancelable(false);
-    	b.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
-    	{	
-			@Override
-			public void onClick(DialogInterface dialog, int which)
-			{
-				AROSBootstrap.this.finish();
-			}
-		});
+    	b.setPositiveButton(R.string.ok, okEvent);
 
     	return b.create();
     }
