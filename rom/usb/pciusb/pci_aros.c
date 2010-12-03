@@ -158,6 +158,9 @@ static AROS_UFH3(void, XhciResetHandler,
 {
     AROS_USERFUNC_INIT
 
+    // halt controller
+    // reset controller
+
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
@@ -1225,10 +1228,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #if defined(USB3)
                 case HCITYPE_XHCI:
                 {
-                    ULONG extcapoffset, extcap, cnt;
+                    ULONG extcapoffset, extcap, cnt, timeout, temp;
                     volatile APTR pciregbase;
 
-                    /* activate Mem and Busmaster as pciFreeUnit will disable them! (along with IO, but we don't have that...) */
+                    /* Activate Mem as pciFreeUnit will disable it! (along with IO and Busmaster) */
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem);
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster);
 
@@ -1242,23 +1245,46 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  READREG32_LE(pciregbase, XHCI_HCSPARAMS3)));
                     KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   READREG32_LE(pciregbase, XHCI_HCCPARAMS)));
 
-                    hc->hc_NumPorts = (READREG32_LE(pciregbase, XHCI_HCSPARAMS1)&XHCM_MaxPorts)>>XHCB_MaxPorts;
+                    hc->hc_NumPorts = ((READREG32_LE(pciregbase, XHCI_HCSPARAMS1)&XHCM_MaxPorts)>>XHCB_MaxPorts);
                     KPRINTF(1000, ("XHCI controller has max %ld port register sets\n",hc->hc_NumPorts));
 
                     // Store opregbase in hc_RegBase
                     hc->hc_RegBase = (APTR) ((ULONG) pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff));
                     KPRINTF(1000, ("XHCI opregbase (%p)\n",hc->hc_RegBase));
 
-                    /* HCCPARAMS stores in its upper 16 bits a DWORD offset value that is calculated from address pointed by BAR0(pciregbase) to 1st xHCI Extended Capability */  
+                    /* HCCPARAMS stores in its upper 16 bits a DWORD offset value (xECP) that is calculated from address pointed by BAR0(pciregbase) to 1st xHCI Extended Capability */  
                 	extcapoffset = XHCI_xECP(READREG32_LE(pciregbase, XHCI_HCCPARAMS));
-                    KPRINTF(1000, ("XHCI extcapoffset = %lx\n", extcapoffset));
                     if(extcapoffset) {
                         cnt = XHCI_EXT_CAPS_MAX;
                         extcap = pciregbase;
                         do {
                             extcap += extcapoffset;
-                            KPRINTF(1000, ("XHCI Found extended capability %d\n", XHCI_EXT_CAPS_ID(READMEM32_LE(extcap))));
-                            KPRINTF(1000, ("XHCI extcapoffset = %lx\n", extcapoffset));
+                            if(XHCI_EXT_CAPS_ID(READMEM32_LE(extcap)) == XHCI_EXT_CAPS_LEGACY) {
+
+                                temp = READMEM32_LE(extcap);
+                                if( (temp & XHCF_HC_BIOS_OWNED) ){
+                                    KPRINTF(1000, ("XHCI Controller owned by BIOS\n"));
+
+                                    /* Spec says "no more than a second", we give it a little more */
+                                    timeout = 2500;
+
+                                    WRITEMEM32_LE(extcap, (temp | XHCF_HC_OS_OWNED) );
+                                    do {
+                                        temp = READMEM32_LE(extcap);
+                                        if( !(temp & XHCF_HC_BIOS_OWNED) ) {
+                                            KPRINTF(10, ("BIOS gave up on XHCI. Pwned!\n"));
+                                            break;
+                                        }
+                                        uhwDelayMS(10, hu, hd);
+                                    } while(--timeout);
+
+                                    if(!timeout)
+                                    {
+                                        KPRINTF(10, ("BIOS didn't release XHCI. Forcing and praying...\n"));
+                                        WRITEMEM32_LE(extcap, (temp & ~XHCF_HC_BIOS_OWNED) );
+                                    }
+                                }
+                            }
 
                             /* Next xHCI Extended Capability is calculated from DWORD offset that is relative to current xHCI Extended Capability (extcap) */
                 	        extcapoffset = XHCI_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
