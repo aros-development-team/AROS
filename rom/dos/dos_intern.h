@@ -254,5 +254,39 @@ void vbuf_free(FileHandlePtr fh);
 APTR vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase);
 
 LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase);
+
+#ifdef AROS_DOS_PACKETS
+
+struct Process *RunPacketHandler(struct DeviceNode *dn, const char *name, struct DosLibrary *DOSBase);
+BSTR C2BSTR(CONST_STRPTR);
+char *BSTR2C(BSTR);
+BOOL CMPBSTR(BSTR, BSTR);
+BOOL CMPCBSTR(CONST_STRPTR, BSTR);
+BOOL CMPICBSTR(CONST_STRPTR, BSTR);
+WORD isdosdeviceb(BSTR);
+WORD isdosdevicec(CONST_STRPTR);
+SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5);
+SIPTR dopacket4(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4);
+SIPTR dopacket3(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3);
+SIPTR dopacket2(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2);
+SIPTR dopacket1(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1);
+SIPTR dopacket0(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action);
+void fixfib(struct FileInfoBlock*);
+
+struct PacketHelperStruct
+{
+	BSTR name;
+	struct MsgPort *port;
+	BPTR lock;
+	struct DevProc *dp;
+};
+
+BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR, struct PacketHelperStruct*);
+void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
+
+LONG InternalOpen(CONST_STRPTR name, LONG action, 
+    struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
+
+#endif
     
 #endif /* DOS_INTERN_H */

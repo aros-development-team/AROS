@@ -29,11 +29,13 @@ static int DosInit(struct DosLibrary *LIBBASE)
 {
     D(bug("DosInit\n"));
     
+#ifndef AROS_DOS_PACKETS
     __AROS_SETVECADDR(LIBBASE, 15, __AROS_GETVECADDR(LIBBASE, 6));
     __AROS_SETVECADDR(LIBBASE, 62, __AROS_GETVECADDR(LIBBASE, 16));
     __AROS_SETVECADDR(LIBBASE, 65, __AROS_GETVECADDR(LIBBASE, 17));
     __AROS_SETVECADDR(LIBBASE, 68, __AROS_GETVECADDR(LIBBASE, 67));
-    
+#endif
+
     IPTR * taskarray;
     struct DosInfo *dosinfo;
 
