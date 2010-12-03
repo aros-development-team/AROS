@@ -420,7 +420,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_Copyright, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) ="Â©2007-2009 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) ="©2007-2009 Chris Hodges";
         count++;
     }
     if((tag = FindTagItem(UHA_Version, taglist)))
