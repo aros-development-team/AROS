@@ -1,20 +1,18 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES  := helper packethelper runhandler bcpl_support internalopen \
-	unlock lock open close internalseek \
-	isinteractive isfilesystem \
-	read write getdeviceproc sendpkt \
-	examine examinefh exnext exall exallend \
-	parentoffh parentdir \
-	duplock duplockfromfh \
-	namefromlock namefromfh namefrom \
-	assignlock setprotection info \
-	adddosentry finddosentry \
-	changemode newcliproc systemtaglist \
-	addbuffers createdir deletefile rename \
-	samelock samedevice \
-	startnotify endnotify errorreport
+CFUNCS  := \
+	addbuffers adddosentry assignlock changemode close  \
+	createdir createnewproc deletefile duplock duplockfromfh \
+	endnotify errorreport exall exallend examine examinefh  \
+	exnext finddosentry getdeviceproc info isfilesystem \
+	isinteractive lock namefrom namefromfh namefromlock \
+	newcliproc open parentdir parentoffh read rename \
+	runcommand runhandler samedevice samelock sendpkt \
+	setprotection startnotify systemtaglist unlock write
+CFILES  := $(CFUNCS) \
+	bcpl_support helper internalopen internalseek \
+	packethelper runprocess
 
 AFILES  := bcpl
 

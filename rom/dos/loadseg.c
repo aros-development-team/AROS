@@ -5,7 +5,7 @@
     Desc: DOS function LoadSeg()
     Lang: english
 */
-#define DEBUG 0
+#define DEBUG 1
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>

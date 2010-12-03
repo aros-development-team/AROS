@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#define DEBUG 1
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <dos/dosasl.h>
@@ -189,10 +190,11 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           */
           hunktab[i].size = count * 4 + sizeof(ULONG) + sizeof(BPTR);
           hunktab[i].memory =(UBYTE *)
-		AROS_CALL2(void *, funcarray[1] /* AllocMem */,
+		AROS_CALL2(void *, (APTR)(funcarray[1]) /* AllocMem */,
 		  AROS_LCA(ULONG           , hunktab[i].size          , D0),
 		  AROS_LCA(ULONG           , req                      , D1),
 		  struct Library *, (struct Library *)SysBase);
+	  D(bug("Hunk %d at %p\n", i, hunktab[i].memory));
 
           if (hunktab[i].memory == NULL)
             ERROR(ERROR_NO_FREE_STORE);
@@ -426,7 +428,7 @@ end:
     for (t = 0 /* first */; t < numhunks /* last */; t++)
       if (hunktab[t].memory != NULL)
       {
-	AROS_CALL2NR(void, funcarray[2] /* FreeMem*/,
+	AROS_CALL2NR(void, (APTR)(funcarray[2]) /* FreeMem*/,
 	  AROS_LCA(void * , hunktab[t].memory-sizeof(ULONG)-sizeof(BPTR), A1),
 	  AROS_LCA(ULONG  , hunktab[t].size                             , D0),
 	  struct Library *, (struct Library *)SysBase);
@@ -445,7 +447,7 @@ static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, str
 
   while(size)
   {
-    subsize = AROS_CALL3(LONG, funcarray[0] /* Read */,
+    subsize = AROS_CALL3(LONG, (APTR)(funcarray[0]) /* Read */,
 		AROS_LCA(BPTR               , file   , D1),
 		AROS_LCA(void *             , buf    , D2),
 		AROS_LCA(LONG               , size   , D3),
