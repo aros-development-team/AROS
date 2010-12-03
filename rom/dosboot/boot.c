@@ -54,7 +54,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
                 { TAG_DONE,       0           }
             };
 
-        if (!(Flags & BF_NO_STARTUP_SEQUENCE))
+        if (0 && !(Flags & BF_NO_STARTUP_SEQUENCE))
         {
             sseq = Open("S:Startup-Sequence", FMF_READ);
             tags[5].ti_Data = (IPTR)sseq;
