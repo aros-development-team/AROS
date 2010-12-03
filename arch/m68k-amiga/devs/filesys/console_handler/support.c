@@ -1142,6 +1142,19 @@ BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
     UBYTE *buffer = (UBYTE*)dp->dp_Arg2;
     LONG length = dp->dp_Arg3;
 
+#if RMB_FREEZES_OUTPUT
+    struct Window 	*conwindow;
+    
+    conwindow = ((struct ConUnit *)fh->conwriteio.io_Unit)->cu_Window;
+    
+    while((PeekQualifier() & IEQUALIFIER_RBUTTON) &&
+    	  conwindow && (conwindow == IntuitionBase->ActiveWindow))
+    {
+    	struct DosLibrary *DOSBase = fh->dosbase;
+        Delay(2);
+    }
+#endif
+
     do_write(fh, buffer, length);
     replypkt2(dp, length, 0);
     

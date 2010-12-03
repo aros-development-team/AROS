@@ -60,8 +60,9 @@ struct filehandle
     struct Task		*breaktask;
     struct Task		*lastwritetask;
     struct MinList	pendingReads;
-    struct MinList	pendingWrites;
     struct NewWindow	nw;
+    struct MsgPort *timermp;
+    struct timerequest *timerreq;
     UBYTE		*wintitle;
     UBYTE		*screenname;
 #if BETTER_WRITE_HANDLING
@@ -90,6 +91,7 @@ struct filehandle
     STRPTR              pastebuffer;
     struct Device *inputbase;
     struct IntuitionBase *intuibase;
+    struct DosLibrary *dosbase;
 };
 
 /* filehandle flags */
@@ -112,5 +114,6 @@ struct filehandle
 
 #define InputBase fh->inputbase
 #define IntuitionBase fh->intuibase
+#define DosBase fh->dosbase
 
 #endif /* __CON_HANDLER_INTERN_H */
