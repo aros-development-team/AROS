@@ -158,8 +158,34 @@ static AROS_UFH3(void, XhciResetHandler,
 {
     AROS_USERFUNC_INIT
 
-    // halt controller
-    // reset controller
+    ULONG timeout, temp;
+
+    struct PCIUnit *hu = hc->hc_Unit;
+    struct PCIDevice *hd = hu->hu_Device;
+
+	/* Halt controller */
+	temp = READREG32_LE(hc->hc_RegBase, XHCI_USBCMD);
+	WRITEREG32_LE(hc->hc_RegBase, XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
+
+    /* Spec says "16ms" if conditions are met... */
+    timeout = 100;
+    do {
+        temp = READREG32_LE(hc->hc_RegBase, XHCI_USBSTS);
+        if( (temp & XHCF_STS_HCH) ) {
+            KPRINTF(10, ("XHCI Controller halted!\n"));
+            break;
+        }
+        uhwDelayMS(10, hu, hd);
+    } while(--timeout);
+
+    #ifdef DEBUG
+    if(!timeout)
+        KPRINTF(10, ("XHCI Halt timeout, reset may result in undefined behavior!\n"));
+    #endif
+
+	/* Reset controller */
+	temp = READREG32_LE(hc->hc_RegBase, XHCI_USBCMD);
+	WRITEREG32_LE(hc->hc_RegBase, XHCI_USBCMD, temp | XHCF_CMD_HCRST);
 
     AROS_USERFUNC_EXIT
 }
