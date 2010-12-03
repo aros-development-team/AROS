@@ -326,6 +326,15 @@ struct FileHandle
     UBYTE * fh_Buf;
     UBYTE * fh_Pos;
     UBYTE * fh_End;
+    LONG fh_Funcs;
+#define fh_Func1 fh_Funcs
+    LONG fh_Func2;
+    LONG fh_Func3;
+    LONG fh_Args;
+#define fh_Arg1 fh_Args
+    LONG fh_Arg2;
+
+#ifndef AROS_DOS_PACKETS
 
     /* The following four fields have different names and a different
        function than their AmigaOS equivalents. The original names were:
@@ -344,10 +353,19 @@ struct FileHandle
       /* A private pointer to a device specific filehandle structure. See
          <dos/filesystems.h> for more information. */
     struct Unit   * fh_Unit;
+#endif
+    ULONG	    fh_Size;
+    ULONG	    fh_Flags;   /* see below */
+//#ifndef AROS_DOS_PACKETS
+    struct Device * fh_Device;
+    struct Unit   * fh_Unit;
+//#endif
 };
 
 #define fh_Interactive fh_Port
+#ifndef AROS_DOS_PACKETS
 #define  fh_Arg1  fh_CompatibilityHack
+#endif
 
 /* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
 #define FHF_WRITE   0x80000000
@@ -431,6 +449,7 @@ struct DosList
     /* Name as a BCPL string */
     BSTR dol_Name;
 
+//#ifndef AROS_DOS_PACKETS
     /* Private extensions for the DosList struct.
      * Should not be used in user land code.
      */
@@ -439,6 +458,7 @@ struct DosList
         IPTR dol_Reserved[5];
         struct DosListAROSExt dol_AROS;
     } dol_Ext;
+//#endif
 };
 
 /* dol_Type/dl_Type/dvi_Type. Given to MakeDosEntry(). */
@@ -482,6 +502,7 @@ struct DeviceList
 
     BSTR dl_Name;
 
+//#ifndef AROS_DOS_PACKETS
     /* Private extensions
      * Should not be used in user land code.
      */
@@ -490,6 +511,7 @@ struct DeviceList
         IPTR dl_Reserved[5];
         struct DosListAROSExt dl_AROS;
     } dl_Ext;
+//#endif
 };
 
 
@@ -512,6 +534,7 @@ struct DevInfo
 
     BSTR dvi_Name;
 
+//#ifndef AROS_DOS_PACKETS
     /* Private extensions
      * Should not be used in user land code.
      */
@@ -520,6 +543,7 @@ struct DevInfo
         IPTR dvi_Reserved[5];
         struct DosListAROSExt dvi_AROS;
     } dvi_Ext;
+//#endif
 };
 
 /* Dos list scanning and locking modes as used in LockDosList() */
