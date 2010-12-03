@@ -19,10 +19,8 @@ struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct
 	struct FileSysStartupMsg *fssm;
 	struct DosPacket *dp;
 	struct MsgPort *reply_port;
-	int n;
 	struct Process *process = NULL;
 	TEXT *bpath;
-	char tmp[256];
 
 	if (dn->dn_SegList == BNULL) {
 		D(bug("[packet] name'%b' seglist=NULL?\n", dn->dn_Name));

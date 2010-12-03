@@ -62,16 +62,19 @@
     struct DevProc *dvp = NULL;
 
     /* console is never a filesystem */
-    if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0)
-        return FALSE;
+    if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0) {
+    	SetIoErr(err);
+        return code;
+    }
 
     if ((dvp = GetDeviceProc(devicename, dvp))) {
     	code = dopacket0(DOSBase, NULL, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
     	FreeDeviceProc(dvp);
+    } else {
+    	SetIoErr(err);
     }
-    
+   
     return code;
-
     
     AROS_LIBFUNC_EXIT
 } /* IsFilesystem */
