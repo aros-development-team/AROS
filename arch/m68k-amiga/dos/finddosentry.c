@@ -65,7 +65,6 @@
     /* Determine the size of the name (-1 if the last character is a ':') */
     CONST_STRPTR end = name;
     ULONG size;
-    struct DosList *prev;
 
     if (!dlist)
 	return NULL;

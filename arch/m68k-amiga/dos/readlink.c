@@ -69,7 +69,7 @@ struct ReadLinkDeviceUnit
 
     LONG status;
 
-    status = dopacket4(DOSBase, NULL, port, ACTION_READ_LINK, lock, path, buffer, size);
+    status = dopacket4(DOSBase, NULL, port, ACTION_READ_LINK, lock, (SIPTR)path, (SIPTR)buffer, size);
 
     return status;
 

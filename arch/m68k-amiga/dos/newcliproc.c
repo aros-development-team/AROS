@@ -69,9 +69,9 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 	    struct FileHandle *fhout = BADDR(Output());
 
 	    if (fhin)
-            	dopacket3(DOSBase, NULL, fhin->fh_Type, ACTION_CHANGE_SIGNAL, fhin->fh_Arg1, (IPTR)me, NULL);
+            	dopacket3(DOSBase, NULL, fhin->fh_Type, ACTION_CHANGE_SIGNAL, fhin->fh_Arg1, (IPTR)me, (SIPTR)NULL);
             if (fhout)
-            	dopacket3(DOSBase, NULL, fhout->fh_Type, ACTION_CHANGE_SIGNAL, fhout->fh_Arg1, (IPTR)me, NULL);
+            	dopacket3(DOSBase, NULL, fhout->fh_Type, ACTION_CHANGE_SIGNAL, fhout->fh_Arg1, (IPTR)me, (SIPTR)NULL);
         }
 
 	rc = RunCommand(ShellSeg, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
