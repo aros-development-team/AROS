@@ -363,7 +363,7 @@ BOOL __FindDeviceName_WB
         {
             TEXT device[MAXFILENAMELENGTH];
             
-            strlcpy(device, dol->dol_Ext.dol_AROS.dol_DevName, MAXFILENAMELENGTH);
+            strlcpy(device, AROS_DOSDEVNAME(dol), MAXFILENAMELENGTH);
             
             if (strlcat(device, ":", MAXFILENAMELENGTH) < MAXFILENAMELENGTH)
             {
