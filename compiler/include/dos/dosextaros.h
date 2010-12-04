@@ -1,6 +1,8 @@
 #ifndef DOS_DOSEXTAROS_H
 #define DOS_DOSEXTAROS_H
 
+#ifndef AROS_DOS_PACKETS
+
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
@@ -33,5 +35,13 @@ struct DosListAROSExt
 #define dn_DevName dol_DevName
 #define dn_Device dol_Device
 #define dn_Unit dol_Unit
+
+#define AROS_DOSDEVNAME(dn) (((struct DosList*)dn)->dol_Ext.dol_AROS.dol_DevName)
+
+#else
+
+#define AROS_DOSDEVNAME(dn) ((char*)BADDR(((struct DosList*)dn)->dol_Name) + 1)
+
+#endif
 
 #endif /* DOS_DOSEXTAROS_H */

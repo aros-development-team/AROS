@@ -454,7 +454,7 @@ struct DosList
     /* Name as a BCPL string */
     BSTR dol_Name;
 
-//#ifndef AROS_DOS_PACKETS
+#ifndef AROS_DOS_PACKETS
     /* Private extensions for the DosList struct.
      * Should not be used in user land code.
      */
@@ -463,7 +463,7 @@ struct DosList
         IPTR dol_Reserved[5];
         struct DosListAROSExt dol_AROS;
     } dol_Ext;
-//#endif
+#endif
 };
 
 /* dol_Type/dl_Type/dvi_Type. Given to MakeDosEntry(). */
@@ -507,7 +507,7 @@ struct DeviceList
 
     BSTR dl_Name;
 
-//#ifndef AROS_DOS_PACKETS
+#ifndef AROS_DOS_PACKETS
     /* Private extensions
      * Should not be used in user land code.
      */
@@ -516,7 +516,7 @@ struct DeviceList
         IPTR dl_Reserved[5];
         struct DosListAROSExt dl_AROS;
     } dl_Ext;
-//#endif
+#endif
 };
 
 
@@ -539,7 +539,7 @@ struct DevInfo
 
     BSTR dvi_Name;
 
-//#ifndef AROS_DOS_PACKETS
+#ifndef AROS_DOS_PACKETS
     /* Private extensions
      * Should not be used in user land code.
      */
@@ -548,7 +548,7 @@ struct DevInfo
         IPTR dvi_Reserved[5];
         struct DosListAROSExt dvi_AROS;
     } dvi_Ext;
-//#endif
+#endif
 };
 
 /* Dos list scanning and locking modes as used in LockDosList() */
