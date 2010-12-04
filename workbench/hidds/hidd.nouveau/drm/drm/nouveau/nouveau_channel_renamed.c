@@ -243,17 +243,12 @@ nouveau_channel_alloc(struct drm_device *dev, struct nouveau_channel **chan_ret,
 struct nouveau_channel *
 nouveau_channel_get_unlocked(struct nouveau_channel *ref)
 {
-#if !defined(__AROS__)
 	struct nouveau_channel *chan = NULL;
 
 	if (likely(ref && atomic_inc_not_zero(&ref->users)))
 		nouveau_channel_ref(ref, &chan);
 
 	return chan;
-#else
-IMPLEMENT("\n");
-return NULL;
-#endif
 }
 
 struct nouveau_channel *

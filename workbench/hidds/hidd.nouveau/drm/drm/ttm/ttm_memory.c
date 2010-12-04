@@ -40,7 +40,9 @@
 #define TTM_MEMORY_ALLOC_RETRIES 4
 
 struct ttm_mem_zone {
-//FIXME	struct kobject kobj;
+#if !defined(__AROS__)
+	struct kobject kobj;
+#endif
 	struct ttm_mem_global *glob;
 	const char *name;
 	uint64_t zone_mem;
@@ -364,13 +366,11 @@ int ttm_mem_global_init(struct ttm_mem_global *glob)
 {
 #if !defined(__AROS__)
 	struct sysinfo si;
-#endif
 	int ret;
 	int i;
 	struct ttm_mem_zone *zone;
 
 	spin_lock_init(&glob->lock);
-#if !defined(__AROS__)
 	glob->swap_queue = create_singlethread_workqueue("ttm_swap");
 	INIT_WORK(&glob->work, ttm_shrink_work);
 	init_waitqueue_head(&glob->queue);
@@ -402,13 +402,14 @@ int ttm_mem_global_init(struct ttm_mem_global *glob)
 		       zone->name, (unsigned long long) zone->max_mem >> 10);
 	}
 	ttm_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
-#else
-IMPLEMENT("\n");
-#endif
 	return 0;
 out_no_zone:
 	ttm_mem_global_release(glob);
 	return ret;
+#else
+IMPLEMENT("\n");
+return 0;
+#endif
 }
 EXPORT_SYMBOL(ttm_mem_global_init);
 
@@ -601,7 +602,7 @@ size_t ttm_round_pot(size_t size)
 	if ((size & (size - 1)) == 0)
 		return size;
 	else if (size > PAGE_SIZE)
-		return PAGE_ALIGN(size);
+		return (size_t)PAGE_ALIGN(size);
 	else {
 		size_t tmp_size = 4;
 

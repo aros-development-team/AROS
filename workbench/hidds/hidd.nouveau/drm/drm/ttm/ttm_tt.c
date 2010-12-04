@@ -142,10 +142,25 @@ static struct page *__ttm_tt_get_page(struct ttm_tt *ttm, int index)
 	return p;
 out_err:
 	put_page(p);
-#else
-IMPLEMENT("\n");
-#endif
 	return NULL;
+#else
+	struct page *p;
+
+	while (NULL == (p = ttm->pages[index])) {
+        p = AllocVec(sizeof(*p), MEMF_PUBLIC | MEMF_CLEAR);
+        p->allocated_buffer = NULL;
+        p->address = (APTR)((IPTR)PAGE_ALIGN(ttm->allocated_buffer) + (IPTR)(PAGE_SIZE * index));
+
+		if (!p)
+			return NULL;
+
+		if (PageHighMem(p))
+			ttm->pages[--ttm->first_himem_page] = p;
+		else
+			ttm->pages[++ttm->last_lomem_page] = p;
+	}
+	return p;
+#endif
 }
 
 struct page *ttm_tt_get_page(struct ttm_tt *ttm, int index)
@@ -301,6 +316,7 @@ EXPORT_SYMBOL(ttm_tt_set_placement_caching);
 
 static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
 {
+#if !defined(__AROS__)
 	int i;
 	unsigned count = 0;
 	struct list_head h;
@@ -316,7 +332,6 @@ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
 		cur_page = ttm->pages[i];
 		ttm->pages[i] = NULL;
 		if (cur_page) {
-#if !defined(__AROS__)
 			if (page_count(cur_page) != 1)
 				printk(KERN_ERR TTM_PFX
 				       "Erroneous page count. "
@@ -324,9 +339,6 @@ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
 			ttm_mem_global_free_page(ttm->glob->mem_glob,
 						 cur_page);
 			list_add(&cur_page->lru, &h);
-#else
-IMPLEMENT("if (page_count(cur_page) != 1)\n");
-#endif
 			count++;
 		}
 	}
@@ -334,6 +346,25 @@ IMPLEMENT("if (page_count(cur_page) != 1)\n");
 	ttm->state = tt_unpopulated;
 	ttm->first_himem_page = ttm->num_pages;
 	ttm->last_lomem_page = -1;
+#else
+	int i;
+	struct page *cur_page;
+	struct ttm_backend *be = ttm->be;
+
+	if (be)
+		be->func->clear(be);
+	(void)ttm_tt_set_caching(ttm, tt_cached);
+	for (i = 0; i < ttm->num_pages; ++i) {
+		cur_page = ttm->pages[i];
+		ttm->pages[i] = NULL;
+		if (cur_page) {
+			__free_page(cur_page);
+		}
+	}
+	ttm->state = tt_unpopulated;
+	ttm->first_himem_page = ttm->num_pages;
+	ttm->last_lomem_page = -1;
+#endif
 }
 
 void ttm_tt_destroy(struct ttm_tt *ttm)
