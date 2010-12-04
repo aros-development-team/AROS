@@ -58,7 +58,138 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[StartNotify] not implemented\n"));
+    LONG status, err;
+    struct DevProc *dvp;
+    UBYTE buf[MAXFILENAMELENGTH+1], *buf2, *p;
+    ULONG len, len2;
+    BPTR lock = BNULL;
+
+    /* set up some defaults */
+    notify->nr_MsgCount = 0;
+    notify->nr_FullName = NULL;
+
+    /* turn the filename into a device and dir lock */
+    if ((dvp = GetDeviceProc(notify->nr_Name, NULL)) == NULL)
+        return DOSFALSE;
+
+    /* remember the handler for EndNotify() */
+    notify->nr_Handler = dvp->dvp_Port;
+
+    /* if no lock is returned by GetDeviceProc() (eg if the path is for a
+     * device or volume root), then get the handler to resolve the name of the
+     * device root lock */
+    if (dvp->dvp_Lock == BNULL) {
+        UBYTE name[MAXFILENAMELENGTH+1], *src, *dst;
+        struct FileInfoBlock *fib;
+
+        src = notify->nr_Name;
+        dst = name;
+
+        while (*src != ':')
+            *dst++ = *src++;
+
+        *dst++ = ':';
+        *dst++ = '\0';
+
+        if ((fib = AllocDosObject(DOS_FIB, NULL)) == NULL) {
+            FreeDeviceProc(dvp);
+            return DOSFALSE;
+        }
+
+        if((lock = Lock(name, SHARED_LOCK)) == BNULL) {
+            FreeDosObject(DOS_FIB, fib);
+            FreeDeviceProc(dvp);
+            return DOSFALSE;
+        }
+
+        if (!Examine(lock, fib)) {
+            FreeDosObject(DOS_FIB, fib);
+            FreeDeviceProc(dvp);
+            return DOSFALSE;
+        }
+
+        /* copy it to our processing buffer */
+        src = fib->fib_FileName;
+        dst = buf;
+
+        while (*src != '\0')
+            *dst++ = *src++;
+
+        *dst++ = ':';
+        *dst++ = '\0';
+
+        FreeDosObject(DOS_FIB, fib);
+    }
+
+    /* otherwise we need to expand the name using the lock */
+    else {
+        /* get the name */
+        if (NameFromLock(dvp->dvp_Lock, buf, sizeof(buf)) == DOSFALSE) {
+            FreeDeviceProc(dvp);
+            return DOSFALSE;
+        }
+    }
+
+    len = strlen(buf);
+
+    /* if it's not some absolute base thing, then add a dir seperator for
+     * the concat operation below */
+    if (buf[len-1] != ':') {
+        buf[len] = '/';
+        len++;
+    }
+
+    /* look for the ':' following the assign name in the path provided by
+     * the caller */
+    p = notify->nr_Name;
+    while (*p && *p != ':')
+        p++;
+
+    /* if we found it, move past it */
+    if (*p)
+        p++;
+
+    /* hit the end, so the name is a relative path, and we take all of it */
+    else
+        p = notify->nr_Name;
+
+    len2 = strlen(p);
+
+    if ((buf2 = AllocVec(len + len2 + 1, MEMF_PUBLIC)) == NULL) {
+        SetIoErr(ERROR_NO_FREE_STORE);
+
+        /* cleanup */
+        if (lock != BNULL)
+            UnLock(lock);
+        FreeDeviceProc(dvp);
+
+        return DOSFALSE;
+    }
+
+    /* concatenate the two bits */
+    CopyMem(buf, buf2, len);
+    CopyMem(p, buf2 + len, len2 + 1);
+
+    /* that's our expanded name */
+    notify->nr_FullName = buf2;
+
+    /* send the request, with error reporting */
+    do {
+        status = dopacket1(DOSBase, &err, notify->nr_Handler, ACTION_ADD_NOTIFY, (IPTR)notify);
+    } while (status == 0 && ErrorReport(err, REPORT_LOCK, 0, notify->nr_Handler) == DOSFALSE);
+
+    /* cleanup */
+    if (lock != BNULL)
+        UnLock(lock);
+    FreeDeviceProc(dvp);
+
+    /* something broke, clean up */
+    if (status == 0) {
+        if (notify->nr_FullName != notify->nr_Name)
+            FreeVec(notify->nr_FullName);
+        return DOSFALSE;
+    }
+
     return DOSTRUE;
 
     AROS_LIBFUNC_EXIT
