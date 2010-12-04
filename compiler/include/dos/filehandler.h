@@ -126,6 +126,7 @@ struct DeviceNode
 
     BSTR   dn_Name;
 
+#ifndef AROS_DOS_PACKETS
     /* Private extensions
      * Should not be used in user land code.
      */
@@ -134,6 +135,7 @@ struct DeviceNode
         IPTR dn_Reserved[5];
         struct DosListAROSExt dn_AROS;
     } dn_Ext;
+#endif
 };
 
 #endif /* DOS_FILEHANDLER_H */
