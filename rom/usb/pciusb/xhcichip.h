@@ -7,6 +7,22 @@
  *----------------------------------------------------------------------------
  */
 
+/*
+    XHCI_xxx's are offsets to something
+    XHCB_xxx's are bitnumbers
+    XHCF_xxx's are flags
+    XHCM_xxx's are bitmasks
+    XHCV_xxx(p)'s return shifted values from p
+*/
+
+#define opreg_readl(opreg) READREG32_LE(hc->xhc_opregbase, opreg)
+#define opreg_writel(opreg, value) WRITEREG32_LE(hc->xhc_opregbase, opreg, value)
+
+#define capreg_readl(capreg) READREG32_LE(hc->xhc_capregbase, capreg)
+#define capreg_readw(capreg) READREG16_LE(hc->xhc_capregbase, capreg)
+#define capreg_readb(capreg) (capreg_readw(capreg | ~1) & 0xff) 
+
+
 /* XHCI capability register defines */
 #define XHCI_CAPLENGTH  0x00
 #define XHCI_HCIVERSION 0x02 
@@ -26,6 +42,10 @@
 #define XHCM_MaxPorts (((1UL<<8)-1)<<XHCB_MaxPorts)
 #define XHCM_MaxIntrs (((1UL<<11)-1)<<XHCB_MaxIntrs)
 #define XHCM_MaxSlots (((1UL<<8)-1)<<XHCB_MaxSlots)
+
+#define XHCV_MaxSlots(p)    (((p)&XHCM_MaxPorts)>>XHCB_MaxSlots)
+#define XHCV_MaxIntrs(p)    (((p)&XHCM_MaxIntrs)>>XHCB_MaxIntrs)
+#define XHCV_MaxPorts(p)    (((p)&XHCM_MaxSlots)>>XHCB_MaxPorts)
 
 
 /* XHCI_HCSPARAMS2 defines */
@@ -70,7 +90,7 @@
 #define XHCF_NSS        (1UL<<XHCB_NSS)
 #define XHCM_MaxPSASize (((1UL<<4)-1)<<XHCB_MaxPSASize)
 #define XHCM_xECP       (((1UL<<16)-1)<<XHCB_xECP)
-#define XHCI_xECP(p)    ((((p)&XHCM_xECP)>>XHCB_xECP)<<2)
+#define XHCV_xECP(p)    ((((p)&XHCM_xECP)>>XHCB_xECP)<<2)
 
 
 /* Extended capability IDs */
@@ -82,9 +102,9 @@
 #define XHCM_EXT_CAPS_NEXT      (((1UL<<8)-1)<<XHCB_EXT_CAPS_NEXT)
 #define	XHCM_EXT_CAPS_VALUE     (((1UL<<16)-1)<<XHCB_EXT_CAPS_VALUE)
 
-#define XHCI_EXT_CAPS_ID(p)     (((p)&XHCM_EXT_CAPS_ID)>>XHCB_EXT_CAPS_ID)
-#define XHCI_EXT_CAPS_NEXT(p)	((((p)&XHCM_EXT_CAPS_NEXT)>>XHCB_EXT_CAPS_NEXT)<<2)
-#define	XHCI_EXT_CAPS_VALUE(p)  (((p)&XHCM_EXT_CAPS_VALUE)>>XHCB_EXT_CAPS_VALUE)
+#define XHCV_EXT_CAPS_ID(p)     (((p)&XHCM_EXT_CAPS_ID)>>XHCB_EXT_CAPS_ID)
+#define XHCV_EXT_CAPS_NEXT(p)	((((p)&XHCM_EXT_CAPS_NEXT)>>XHCB_EXT_CAPS_NEXT)<<2)
+#define	XHCV_EXT_CAPS_VALUE(p)  (((p)&XHCM_EXT_CAPS_VALUE)>>XHCB_EXT_CAPS_VALUE)
 
 /* Reserved ID 0 */
 #define XHCI_EXT_CAPS_LEGACY    1
@@ -148,6 +168,70 @@
 #define	XHCF_STS_SRE    (1UL<<XHCB_STS_SRE)
 #define	XHCF_STS_CNR    (1UL<<XHCB_STS_CNR)
 #define	XHCF_STS_HCE    (1UL<<XHCB_STS_HCE)
+
+/* Page Size Register (PAGESIZE) */
+#define	XHCI_PAGESIZE   0x08
+
+/* Device Notification Control Register (DNCTRL) */
+#define	XHCI_DNCTRL     0x14
+
+/* Command Ring Control Register (CRCR) */
+#define XHCI_CRCR       0x18
+
+/* Device Context Base Address Array Pointer Register (DCBAAP) */
+#define XHCI_DCBAAP     0x30
+
+/* Configure Register (CONFIG) */
+#define XHCI_CONFIG     0x38
+
+/* Port Status and Control Register (PORTSC) */
+#define XHCI_PORTSC(port) (0x400 + (0x10 * (port–1)))
+
+#define	XHCB_PS_CCS     0
+#define	XHCB_PS_PED     1
+#define	XHCB_PS_OCA     3
+#define	XHCB_PS_PR      4
+#define	XHCB_PS_PLS     5
+#define	XHCB_PS_PP      9
+#define	XHCB_PS_SPEED   10
+#define	XHCB_PS_PIC     14
+#define	XHCB_PS_LWS     16
+#define	XHCB_PS_CSC     17
+#define	XHCB_PS_PEC     18
+#define	XHCB_PS_WRC     19
+#define	XHCB_PS_OCC     20
+#define	XHCB_PS_PRC     21
+#define	XHCB_PS_PLC     22
+#define	XHCB_PS_CEC     23
+#define	XHCB_PS_CAS     24
+#define	XHCB_PS_WCE     25
+#define	XHCB_PS_WDE     26
+#define	XHCB_PS_WOE     27
+#define	XHCB_PS_DR      30
+#define	XHCB_PS_WPR     31
+
+#define	XHCF_PS_CCS     (1UL<<XHCB_PS_CCS)
+#define	XHCF_PS_PED     (1UL<<XHCB_PS_PED)
+#define	XHCF_PS_OCA     (1UL<<XHCB_PS_OCA)
+#define	XHCF_PS_PR      (1UL<<XHCB_PS_PR)
+#define	XHCM_PS_PLS     (((1UL<<16)-1)<<XHCB_PS_PLS)
+#define	XHCF_PS_PP      (1UL<<XHCB_PS_PP)
+#define	XHCM_PS_SPEED   (((1UL<<16)-1)<<XHCB_PS_SPEED)
+#define	XHCM_PS_PIC     (((1UL<<16)-1)<<XHCB_PS_PIC)
+#define	XHCF_PS_LWS     (1UL<<XHCB_PS_LWS)
+#define	XHCF_PS_CSC     (1UL<<XHCB_PS_CSC)
+#define	XHCF_PS_PEC     (1UL<<XHCB_PS_PEC)
+#define	XHCF_PS_WRC     (1UL<<XHCB_PS_WRC)
+#define	XHCF_PS_OCC     (1UL<<XHCB_PS_OCC)
+#define	XHCF_PS_PRC     (1UL<<XHCB_PS_PRC)
+#define	XHCF_PS_PLC     (1UL<<XHCB_PS_PLC)
+#define	XHCF_PS_CEC     (1UL<<XHCB_PS_CEC)
+#define	XHCF_PS_CAS     (1UL<<XHCB_PS_CAS)
+#define	XHCF_PS_WCE     (1UL<<XHCB_PS_WCE)
+#define	XHCF_PS_WDE     (1UL<<XHCB_PS_WDE)
+#define	XHCF_PS_WOE     (1UL<<XHCB_PS_WOE)
+#define	XHCF_PS_DR      (1UL<<XHCB_PS_DR)
+#define	XHCF_PS_WPR     (1UL<<XHCB_PS_WPR)
 
 
 /* USB Legacy Support Capability */

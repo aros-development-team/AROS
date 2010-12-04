@@ -122,6 +122,11 @@ struct PCIController
 
     volatile APTR         hc_RegBase;
 
+    #if defined(USB3)
+    volatile APTR   xhc_capregbase;
+    volatile APTR   xhc_opregbase;
+    #endif
+
     APTR                  hc_PCIMem;
     ULONG                 hc_PCIMemSize;
     ULONG                 hc_PCIVirtualAdjust;
