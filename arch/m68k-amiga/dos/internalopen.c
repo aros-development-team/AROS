@@ -64,7 +64,6 @@ LONG InternalOpen(CONST_STRPTR name, LONG action,
     else if(!Stricmp(name, (STRPTR) "CONSOLE:") || !Stricmp(name, (STRPTR) "*"))
     {
     	BPTR h = name[0] == '*' ? ast : con;
-    	struct FileHandle *fh = BADDR(h);
     	if (me->pr_ConsoleTask) {
   	    BSTR bstrname = C2BSTR(name);
             dopacket3(DOSBase, &error, me->pr_ConsoleTask, action, MKBADDR(handle), h, bstrname);

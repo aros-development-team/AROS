@@ -346,7 +346,8 @@ end:
 
 static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
 {
-    BPTR old, nfh;
+    BPTR nfh;
+    struct MsgPort *old;
 
     old = SetConsoleTask(((struct FileHandle*)BADDR(fh))->fh_Type);
     nfh = Open("*", mode);
