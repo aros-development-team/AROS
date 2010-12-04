@@ -20,6 +20,7 @@
 #define __u16                       UWORD
 #define __u64                       UQUAD
 #define u16                         UWORD
+#define s16                         WORD
 #define u32                         ULONG
 #define u64                         UQUAD
 #define u8                          UBYTE
