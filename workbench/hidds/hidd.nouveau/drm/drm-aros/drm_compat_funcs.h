@@ -31,15 +31,19 @@
 #define lower_32_bits(n)                ((u32)(n))
 #define upper_32_bits(n)                ((u32)(((n) >> 16) >> 16))
 #define mutex_lock(x)                   ObtainSemaphore(x.semaphore)
+#define mutex_lock_nested(x, y)         mutex_lock(x)
 #define mutex_unlock(x)                 ReleaseSemaphore(x.semaphore)
+#define mutex_trylock(x)                AttemptSemaphore(x.semaphore)
 #define mutex_init(x)                   InitSemaphore(x.semaphore);
 #define likely(x)                       __builtin_expect((ULONG)(x),1)
 #define unlikely(x)                     __builtin_expect((ULONG)(x),0)
 #define mb()                            __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
+#define wmb()                           __asm __volatile("" : : : "memory");
 #define ffs(x)                          __builtin_ffs(x)
 #define fls_long(x)                     ((sizeof(x) * 8) - __builtin_clzl(x))
 #define max(a, b)                       ((a) > (b) ? (a) : (b))
 #define min(a, b)                       ((a) < (b) ? (a) : (b))
+#define clamp(a, vmin, vmax)            ((min(vmax, max(vmin, a))))
 #define ilog2(n)                        (fls_long(n) - 1)
 #define rounddown_pow_of_two(n)         (1UL << ilog2(n))
 #define is_power_of_2(x)                (x != 0 && ((x & (x - 1)) == 0))
@@ -300,7 +304,7 @@ void agp_flush_chipset(struct agp_bridge_data * bridge);
 
 /* io_mapping handling */
 #define __copy_from_user_inatomic_nocache(to, from, size)   copy_from_user(to, from, size)
-#define io_mapping_map_atomic_wc(mapping, offset)   (APTR)(mapping->address + offset)
+#define io_mapping_map_atomic_wc(mapping, offset)   (APTR)(mapping->address + (offset))
 #define io_mapping_unmap_atomic(address)
 static inline struct io_mapping * io_mapping_create_wc(resource_size_t base, unsigned long size)
 {
