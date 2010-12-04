@@ -164,15 +164,15 @@ static AROS_UFH3(void, XhciResetHandler,
     struct PCIDevice *hd = hu->hu_Device;
 
 	/* Halt controller */
-	temp = READREG32_LE(hc->hc_RegBase, XHCI_USBCMD);
-	WRITEREG32_LE(hc->hc_RegBase, XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
+	temp = opreg_readl(XHCI_USBCMD);
+	opreg_writel(XHCI_USBCMD, (temp & ~XHCF_CMD_RS));
 
     /* Spec says "16ms" if conditions are met... */
     timeout = 100;
     do {
-        temp = READREG32_LE(hc->hc_RegBase, XHCI_USBSTS);
+        temp = opreg_readl(XHCI_USBSTS);
         if( (temp & XHCF_STS_HCH) ) {
-            KPRINTF(10, ("XHCI Controller halted!\n"));
+            KPRINTF(1000, ("XHCI Controller halted!\n"));
             break;
         }
         uhwDelayMS(10, hu, hd);
@@ -180,12 +180,12 @@ static AROS_UFH3(void, XhciResetHandler,
 
     #ifdef DEBUG
     if(!timeout)
-        KPRINTF(10, ("XHCI Halt timeout, reset may result in undefined behavior!\n"));
+        KPRINTF(1000, ("XHCI Halt timeout, reset may result in undefined behavior!\n"));
     #endif
 
 	/* Reset controller */
-	temp = READREG32_LE(hc->hc_RegBase, XHCI_USBCMD);
-	WRITEREG32_LE(hc->hc_RegBase, XHCI_USBCMD, temp | XHCF_CMD_HCRST);
+	temp = opreg_readl(XHCI_USBCMD);
+	opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
 
     AROS_USERFUNC_EXIT
 }
@@ -1263,42 +1263,46 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
 
-                    KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
-                    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",   READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff));
-                    KPRINTF(1000, ("XHCI Version (%04x)\n",     READREG16_LE(pciregbase, XHCI_HCIVERSION)));
-                    KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",  READREG32_LE(pciregbase, XHCI_HCSPARAMS1)));
-                    KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",  READREG32_LE(pciregbase, XHCI_HCSPARAMS2)));
-                    KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  READREG32_LE(pciregbase, XHCI_HCSPARAMS3)));
-                    KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   READREG32_LE(pciregbase, XHCI_HCCPARAMS)));
-
                     hc->hc_NumPorts = ((READREG32_LE(pciregbase, XHCI_HCSPARAMS1)&XHCM_MaxPorts)>>XHCB_MaxPorts);
                     KPRINTF(1000, ("XHCI controller has max %ld port register sets\n",hc->hc_NumPorts));
 
-                    // Store opregbase in hc_RegBase
-                    hc->hc_RegBase = (APTR) ((ULONG) pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH)&0xff));
-                    KPRINTF(1000, ("XHCI opregbase (%p)\n",hc->hc_RegBase));
+                    // Store capregbase in xhc_capregbase
+                    hc->xhc_capregbase = pciregbase;
+                    KPRINTF(1000, ("XHCI xhc_capregbase(%p) pciregbase(%p)\n",hc->xhc_capregbase, pciregbase));
+
+                    // Store opregbase in xhc_opregbase
+                    hc->xhc_opregbase = (APTR) ((ULONG) pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH) & 0xff));
+                    KPRINTF(1000, ("XHCI opregbase (%p)\n",hc->xhc_opregbase));
+
+                    KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
+                    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",   capreg_readb(XHCI_CAPLENGTH)));
+                    KPRINTF(1000, ("XHCI Version (%04x)\n",     capreg_readl(XHCI_HCIVERSION)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS1)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS2)));
+                    KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS3)));
+                    KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   capreg_readl(XHCI_HCCPARAMS)));
 
                     /* HCCPARAMS stores in its upper 16 bits a DWORD offset value (xECP) that is calculated from address pointed by BAR0(pciregbase) to 1st xHCI Extended Capability */  
-                	extcapoffset = XHCI_xECP(READREG32_LE(pciregbase, XHCI_HCCPARAMS));
+                	extcapoffset = XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
                     if(extcapoffset) {
                         cnt = XHCI_EXT_CAPS_MAX;
                         extcap = pciregbase;
                         do {
                             extcap += extcapoffset;
-                            if(XHCI_EXT_CAPS_ID(READMEM32_LE(extcap)) == XHCI_EXT_CAPS_LEGACY) {
+                            if(XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == XHCI_EXT_CAPS_LEGACY) {
 
                                 temp = READMEM32_LE(extcap);
                                 if( (temp & XHCF_HC_BIOS_OWNED) ){
                                     KPRINTF(1000, ("XHCI Controller owned by BIOS\n"));
 
                                     /* Spec says "no more than a second", we give it a little more */
-                                    timeout = 2500;
+                                    timeout = 250;
 
                                     WRITEMEM32_LE(extcap, (temp | XHCF_HC_OS_OWNED) );
                                     do {
                                         temp = READMEM32_LE(extcap);
                                         if( !(temp & XHCF_HC_BIOS_OWNED) ) {
-                                            KPRINTF(10, ("BIOS gave up on XHCI. Pwned!\n"));
+                                            KPRINTF(1000, ("BIOS gave up on XHCI. Pwned!\n"));
                                             break;
                                         }
                                         uhwDelayMS(10, hu, hd);
@@ -1306,18 +1310,22 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                                     if(!timeout)
                                     {
-                                        KPRINTF(10, ("BIOS didn't release XHCI. Forcing and praying...\n"));
+                                        KPRINTF(1000, ("BIOS didn't release XHCI. Forcing and praying...\n"));
                                         WRITEMEM32_LE(extcap, (temp & ~XHCF_HC_BIOS_OWNED) );
                                     }
                                 }
                             }
 
                             /* Next xHCI Extended Capability is calculated from DWORD offset that is relative to current xHCI Extended Capability (extcap) */
-                	        extcapoffset = XHCI_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
+                	        extcapoffset = XHCV_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
                             cnt--;
 
                         }while(extcapoffset & cnt);
                     }
+
+	                /* Reset controller */
+	                temp = opreg_readl(XHCI_USBCMD);
+	                opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
 
                     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
                     hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
