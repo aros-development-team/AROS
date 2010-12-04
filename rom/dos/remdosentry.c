@@ -72,6 +72,8 @@
 
     UnLockDosList(LDF_ALL | LDF_WRITE);
 
+#ifndef AROS_DOS_PACKETS
+
     if (dlist->dol_Type == DLT_VOLUME && !dlist->dol_Ext.dol_AROS.dol_Device) {
       bug("WARNING: dol_Type == DLT_VOLUME, but not dol_Device was set; this handle probably won't work\n");
     }
@@ -82,6 +84,7 @@
        !strcmp(dlist->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name,
         "packet.handler"))
         FreeMem(dlist->dol_Ext.dol_AROS.dol_Unit, sizeof(struct ph_handle));
+#endif
 
     return 1;
 

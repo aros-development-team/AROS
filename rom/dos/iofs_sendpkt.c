@@ -6,6 +6,8 @@
     Lang: English
 */
 
+#ifndef AROS_DOS_PACKETS
+
 #include <aros/debug.h>
 #include "dos_intern.h"
 #include <dos/dosextens.h>
@@ -888,3 +890,5 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 
     return 0;
 }
+
+#endif

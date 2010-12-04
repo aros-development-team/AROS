@@ -48,7 +48,7 @@ struct Process *RunPacketHandler(struct DeviceNode *dn, const char *name, struct
 
 BOOL __dosboot_RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
 {
-	return RunPacketHandler(deviceNode, "", DOSBase) != NULL;
+	return RunPacketHandler(deviceNode, NULL, DOSBase) != NULL;
 }
 
 static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
@@ -72,7 +72,7 @@ static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
     {
         if (!AddDosEntry((struct DosList *) dn))
         {
-            kprintf("Mounting node %08lx (%s) failed at AddDosEntry() -- maybe it was already added by someone else!\n", dn, dn->dn_Ext.dn_AROS.dn_DevName);
+            kprintf("Mounting node %08lx (%s) failed at AddDosEntry() -- maybe it was already added by someone else!\n", dn, AROS_DOSDEVNAME(dn));
             Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
         }
     }
@@ -334,7 +334,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
 
     D(bug("[DOSBoot] __dosboot_BootProcess()\n"));
 
-#define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_Ext.dol_AROS.dol_DevName)
+#define deviceName AROS_DOSDEVNAME(bootNode->bn_DeviceNode)
 
     /**** Open all required libraries **********************************************/
     if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0)) == NULL)
@@ -431,21 +431,22 @@ AROS_UFH3(void, __dosboot_BootProcess,
     if (LIBBASE->db_BootDevice != NULL)
     {
         /* Construct the complete device name of the boot device */
-        bootNameLength = strlen( LIBBASE->db_BootDevice) + 2;
+        bootNameLength = strlen(LIBBASE->db_BootDevice) + 2;
 
         if ((bootName = AllocMem(bootNameLength, MEMF_ANY|MEMF_CLEAR)) == NULL)
         {
             Alert(AT_DeadEnd | AG_NoMemory | AO_DOSLib | AN_StartMem);
         }
 
-        strcpy(bootName,  LIBBASE->db_BootDevice);
+        strcpy(bootName, LIBBASE->db_BootDevice);
         strcat(bootName, ":");
 
         bug("[DOSBoot] __dosboot_BootProcess: Booting from device '%s'\n", bootName);
 
         /* Lock the boot device and add some default assigns */
         lock =  Lock(bootName, SHARED_LOCK);
-        if (lock) DOSBase->dl_SYSLock = DupLock(lock);
+        if (lock)
+        	DOSBase->dl_SYSLock = DupLock(lock);
 
         if ((lock != BNULL) && (DOSBase->dl_SYSLock != BNULL))
         {
