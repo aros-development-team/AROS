@@ -10,7 +10,7 @@
 #include <proto/utility.h>
 #include "dos_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************
@@ -72,12 +72,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG            success = 1;
+    LONG            success = DOSTRUE;
     struct DosList *dl;
 
-    if (dlist == NULL) return success;
+    if (dlist == NULL)
+    	return success;
 
-    D(bug("[AddDosEntry] Adding '%b' from Task '%s'\n", dlist->dol_Name,
+    D(bug("[AddDosEntry] Adding '%b' type %d from addr %x Task '%s'\n",
+        dlist->dol_Name, dlist->dol_Type, dlist,
         FindTask(NULL)->tc_Node.ln_Name));
     dl = LockDosList(LDF_ALL | LDF_READ);
 
@@ -94,7 +96,7 @@
 	    if(dl->dol_Type != DLT_VOLUME && !CMPBSTR(dl->dol_Name, dlist->dol_Name))
 	    {
 		D(bug("[AddDosEntry] Name clash for %08lx->dol_DevName: %b and %08lx->dol_DevName %b\n", dl, dl->dol_Name, dlist, dlist->dol_Name));
-		success = 0;
+		success = DOSFALSE;
 		break;
 	    }
 	}

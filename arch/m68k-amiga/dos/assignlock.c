@@ -5,7 +5,7 @@
     Desc: Create an assign.
     Lang: English
 */
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -59,15 +59,13 @@
     struct DosList    *dl, *newdl = NULL;
     struct FileLock *fl = BADDR(lock);
 
-    D(bug("[AssignLock] %x:'%s' (task=%x)\n", fl, name, fl->fl_Task));
+    D(bug("[AssignLock] %x:'%s'\n", fl, name));
     if (lock != BNULL)
     {
 	newdl = MakeDosEntry(name, DLT_DIRECTORY);
 
 	if (newdl == NULL)
-	{
 	    return DOSFALSE;
-	}
 
 	newdl->dol_Lock = lock;
 	newdl->dol_Task = fl->fl_Task;
@@ -119,7 +117,7 @@
     }
     
     UnLockDosList(LDF_ALL | LDF_WRITE);
-    
+    D(bug("[AssignLock] = %d\n", success));
     return success;
     
     AROS_LIBFUNC_EXIT

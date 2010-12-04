@@ -62,11 +62,7 @@ BOOL CMPBSTR(BSTR s1, BSTR s2)
 {
 	UBYTE *ss1 = BADDR(s1);
 	UBYTE *ss2 = BADDR(s2);
-	if (ss1[0] != ss2[0])
-		return TRUE;
-	if (!memcmp(ss1, ss2, ss1[0] + 1))
-		return FALSE;
-	return TRUE;
+	return memcmp(ss1, ss2, ss1[0] + 1);
 }
 BOOL CMPCBSTR(CONST_STRPTR s1, BSTR s2)
 {
@@ -74,10 +70,9 @@ BOOL CMPCBSTR(CONST_STRPTR s1, BSTR s2)
 	LONG len = strlen(s1);
 	if (len != ss2[0])
 		return TRUE;
-	if (!memcmp(s1, ss2 + 1, len))
-		return FALSE;
-	return TRUE;
+	return memcmp(s1, ss2 + 1, len);
 }
+
 BOOL CMPICBSTR(CONST_STRPTR s1, BSTR s2)
 {
 	UBYTE tmp[256];
@@ -85,10 +80,19 @@ BOOL CMPICBSTR(CONST_STRPTR s1, BSTR s2)
 	LONG len = strlen(s1);
 	if (len != ss2[0])
 		return TRUE;
-	strcpy(tmp, ss2 + 1);
-	if (!stricmp(s1, tmp))
-		return FALSE;
-	return TRUE;
+	memcpy(tmp, ss2 + 1, len);
+	tmp[len] = 0;
+	return stricmp(s1, tmp);
+}
+BOOL CMPNICBSTR(CONST_STRPTR s1, BSTR s2, UBYTE length)
+{
+	UBYTE tmp[256];
+	UBYTE *ss2 = BADDR(s2);
+	if (ss2[0] < length || strlen(s1) < length)
+		return TRUE;
+	memcpy(tmp, ss2 + 1, ss2[0]);
+	tmp[ss2[0]] = 0;
+	return strnicmp(s1, tmp, length);
 }
 
 void BSTR2CINLINE(char *s)

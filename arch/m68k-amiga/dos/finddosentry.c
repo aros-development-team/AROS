@@ -70,6 +70,8 @@
     if (!dlist)
 	return NULL;
 
+    D(bug("[FindDosEntry] '%s' %d\n", name, flags));
+
     while (*end++)
 	;
 
@@ -83,7 +85,6 @@
     /* Follow the list */   
     for (;;)
     {
-    	prev = dlist;
 	/* Get next entry. Return NULL if there is none. */
 	dlist = BADDR(dlist->dol_Next);
 
@@ -92,12 +93,14 @@
 	    return NULL;
 	}
 	
-	D(bug("Found list entry %b\n", dlist->dol_Name));
+	D(bug("[FindDosEntry] Found list entry %x, '%b' type %d\n", dlist, dlist->dol_Name, dlist->dol_Type));
 
 	/* Check type and name */
 	if (flags & flagarray[dlist->dol_Type + 1] &&
-	    !CMPICBSTR(name, dlist->dol_Name))
+	    !CMPNICBSTR(name, dlist->dol_Name, size)
+	    && !AROS_DOSDEVNAME(dlist)[size])
 	{
+	    D(bug("[FindDosEntry] Entry found!\n"));
 	    return dlist;
 	}
     }

@@ -20,12 +20,22 @@ struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct
 	struct DosPacket *dp;
 	struct MsgPort *reply_port;
 	struct Process *process = NULL;
-	TEXT *bpath;
+	UBYTE *bpath;
 
 	if (dn->dn_SegList == BNULL) {
 		D(bug("[packet] name'%b' seglist=NULL?\n", dn->dn_Name));
 		return NULL;
 	}
+
+	if (path) {
+		bpath = AllocVec(strlen(path) + 2, MEMF_PUBLIC);
+		strcpy (bpath + 1, path);
+	} else {
+		bpath = AllocVec(strlen(AROS_DOSDEVNAME(dn)) + 3, MEMF_PUBLIC);
+		strcpy (bpath + 1, AROS_DOSDEVNAME(dn));
+		strcat (bpath + 1, ":");
+	}
+	bpath[0] = strlen(bpath + 1);
 
 	D(bug("[packet] in open by Task '%s'\n", FindTask(NULL)->tc_Node.ln_Name));
 
@@ -33,7 +43,7 @@ struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct
 
    	D(bug("[packet] devicenode=%08lx path='%s' devicename '%b' unit %d dosname '%b' handler=%x seg=%08lx startup=%08lx\n",
             dn,
-            path,
+            bpath + 1,
             fssm->fssm_Device,
             fssm->fssm_Unit,
             dn->dn_Name,
@@ -51,10 +61,6 @@ struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct
   
         D(bug("[packet] started, process structure is 0x%08x\n", process));
         reply_port = CreateMsgPort();
-
-	bpath = AllocVec(strlen(path) + 2, MEMF_PUBLIC);
-	strcpy (bpath + 1, path);
-	bpath[0] = strlen(path);
 
         /* build the startup packet */
         dp = (struct DosPacket *) AllocDosObject(DOS_STDPKT, NULL);

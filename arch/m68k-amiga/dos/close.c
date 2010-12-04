@@ -63,6 +63,10 @@
     if(file == BNULL)
 	return ret;
 
+    /* If the filehandle has a pending write on it Flush() the buffer. */
+    if(fh->fh_Flags & FHF_WRITE)
+	ret = Flush(file);
+
     ret = dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_END, fh->fh_Arg1);
 
     /* Free the filehandle which was allocated in Open(), CreateDir()

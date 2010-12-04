@@ -9,7 +9,9 @@ CFUNCS  := \
 	isinteractive lock namefrom namefromfh namefromlock \
 	newcliproc open parentdir parentoffh read rename \
 	runcommand runhandler samedevice samelock sendpkt \
-	setprotection startnotify systemtaglist unlock write
+	setprotection startnotify systemtaglist unlock write \
+	waitforchar lockrecord unlockrecord readlink
+
 CFILES  := $(CFUNCS) \
 	bcpl_support helper internalopen internalseek \
 	packethelper runprocess
