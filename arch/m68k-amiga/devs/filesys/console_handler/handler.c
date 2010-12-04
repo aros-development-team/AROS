@@ -404,13 +404,11 @@ LONG CONMain(void)
 				case ACTION_READ:
 					if (!MakeSureWinIsOpen(fh))
 						goto end;
-					D(bug("CON ACTION_READ %x %d\n", dp->dp_Arg2, dp->dp_Arg3));
 					if (!(fh->flags & FHFLG_ASYNCCONSOLEREAD))
 						startread(fh);
 					con_read(fh, dp);
 				break;
 				case ACTION_WRITE:
-					D(bug("CON ACTION_WRITE %x %d\n", dp->dp_Arg2, dp->dp_Arg3));
 					if (!MakeSureWinIsOpen(fh))
 						goto end;
 					answer_write_request(fh, dp);

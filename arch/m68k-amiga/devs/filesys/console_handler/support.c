@@ -1155,6 +1155,13 @@ BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
     }
 #endif
 
+    if ((dp->dp_Port->mp_Flags & PF_ACTION) == PA_SIGNAL &&
+        dp->dp_Port->mp_SigTask)
+    {
+    	fh->lastwritetask = dp->dp_Port->mp_SigTask;
+    }
+
+
     do_write(fh, buffer, length);
     replypkt2(dp, length, 0);
     

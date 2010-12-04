@@ -356,9 +356,9 @@ static void ScanVol(struct completioninfo *ci)
     
     while ((dlist = NextDosEntry(dlist, LDF_VOLUMES | LDF_ASSIGNS | LDF_DEVICES)) != NULL)
     {
-	if (MatchPatternNoCase(ci->pattern, dlist->dol_Ext.dol_AROS.dol_DevName))
+	if (MatchPatternNoCase(ci->pattern, AROS_DOSDEVNAME(dlist)))
 	{
-    	    AddMatchNode(ci, dlist->dol_Ext.dol_AROS.dol_DevName, 2);
+    	    AddMatchNode(ci, AROS_DOSDEVNAME(dlist), 2);
 
 	}
     }
