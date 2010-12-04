@@ -227,7 +227,7 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
           while((dl = NextDosEntry(dl, LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS)) != NULL)
           {
           #ifdef __AROS__
-              strlcpy(tmpBuffer, dl->dol_Ext.dol_AROS.dol_DevName, sizeof tmpBuffer);
+              strlcpy(tmpBuffer, AROS_DOSDEVNAME(dl), sizeof tmpBuffer);
           #else
             // dol_Name is a BSTR, we have to convert it to a regular C string
             char *bstr = BADDR(dl->dol_Name);

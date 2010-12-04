@@ -694,7 +694,7 @@ IsDosVolume(struct DosList *dlist)
 #ifdef __AROS__
     struct InfoData id;
     BPTR            lock;
-    STRPTR          volName = AllocVec(strlen(dlist->dol_Ext.dol_AROS.dol_DevName) + 2,
+    STRPTR          volName = AllocVec(strlen(AROS_DOSDEVNAME(dlist)) + 2,
 				       MEMF_ANY);
 
     /* Create a colon ended volume name, lock it and call Info() */
@@ -704,7 +704,7 @@ IsDosVolume(struct DosList *dlist)
 	return FALSE;
     }
 
-    strcpy(volName, dlist->dol_Ext.dol_AROS.dol_DevName);
+    strcpy(volName, AROS_DOSDEVNAME(dlist));
     strcat(volName, ":");
 
     lock = Lock(volName, SHARED_LOCK);

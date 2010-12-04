@@ -331,7 +331,7 @@ BOOL ScanDosList(STRPTR *filter)
 	    TEXT    name[108];
 	    STRPTR  taskName = NULL;  /* Initialized to avoid a warning */
 
-	    __sprintf(name, "%s:", ndl->dol_Ext.dol_AROS.dol_DevName);
+	    __sprintf(name, "%s:", AROS_DOSDEVNAME(ndl));
 
 	    if ((ndl->dol_Type > DLT_VOLUME) || !(myMatchPatternNoCase(strray, name)))
 	    {
@@ -341,7 +341,7 @@ BOOL ScanDosList(STRPTR *filter)
 	    switch (ndl->dol_Type)
 	    {
 	    case DLT_VOLUME:
-		taskName =  ndl->dol_Ext.dol_AROS.dol_DevName;   // ((struct Task *)ndl->dol_Task->mp_SigTask)->tc_Node.ln_Name;
+		taskName =  AROS_DOSDEVNAME(ndl);   // ((struct Task *)ndl->dol_Task->mp_SigTask)->tc_Node.ln_Name;
 
 		D(bug("Found volume %s\n", taskName));
 		break;
@@ -351,7 +351,7 @@ BOOL ScanDosList(STRPTR *filter)
 		    struct AssignList *al = ndl->dol_misc.dol_assign.dol_List;
 		    
 		    
-		    taskName = ndl->dol_Ext.dol_AROS.dol_DevName; // ((struct Task *)((struct FileLock *)BADDR(ndl->dol_Lock))->fl_Task->mp_SigTask)->tc_Node.ln_Name;
+		    taskName = AROS_DOSDEVNAME(ndl); // ((struct Task *)((struct FileLock *)BADDR(ndl->dol_Lock))->fl_Task->mp_SigTask)->tc_Node.ln_Name;
 
 		    D(bug("Found directory %s\n", taskName));
 		    
@@ -381,9 +381,9 @@ BOOL ScanDosList(STRPTR *filter)
 	//	if(((type == DLT_DEVICE))) //  && (!ndl->dol_Task) TODO Check this!
 	//	    continue;
 
-	__sprintf(name, "%s:", ndl->dol_Ext.dol_AROS.dol_DevName);
+	__sprintf(name, "%s:", AROS_DOSDEVNAME(ndl));
 
-	D(bug("Found name %s\n", ndl->dol_Ext.dol_AROS.dol_DevName));
+	D(bug("Found name %s\n", AROS_DOSDEVNAME(ndl)));
 	
 	if((type == DLT_DEVICE) && (myMatchPatternNoCase(strray, name) == FALSE))
 	{

@@ -667,7 +667,7 @@ BOOL FRGetVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		node->node.ln_Name = PooledCloneStringLen(&name[1], name[0], NULL, 0, ld->ld_IntReq->ir_MemPool, AslBase);
 	    }
 #else
-	    char *name = dlist->dol_Ext.dol_AROS.dol_DevName;
+	    char *name = AROS_DOSDEVNAME(dlist);
 	    if (name)
 	    {
 		node->text[0] = node->node.ln_Name = PooledCloneString(name, ":", ld->ld_IntReq->ir_MemPool, AslBase);

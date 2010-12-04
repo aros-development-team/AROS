@@ -164,7 +164,7 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    
 	    entry.type = DLT_DEVICE;
 	#ifdef __AROS__
-	    strncpy(entry.name, actdl->dol_Ext.dol_AROS.dol_DevName, sizeof(entry.name));
+	    strncpy(entry.name, AROS_DOSDEVNAME(actdl), sizeof(entry.name));
 	#else
 	    #warning "FIXME: AmigaOS: get device name"
 	    strncpy(entry.name, "???", sizeof(entry.name));
@@ -190,7 +190,7 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    
 	    entry.type = DLT_VOLUME;
 	#ifdef __AROS__
-	    strncpy(entry.name, actdl->dol_Ext.dol_AROS.dol_DevName, sizeof(entry.name));
+	    strncpy(entry.name, AROS_DOSDEVNAME(actdl), sizeof(entry.name));
 	#else
 	    #warning "FIXME: AmigaOS: get device name"
 	    strncpy(entry.name, "???", sizeof(entry.name));
@@ -233,7 +233,7 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    
 	    entry.type = DLT_DIRECTORY;
 	#ifdef __AROS__
-	    strncpy(entry.name, actdl->dol_Ext.dol_AROS.dol_DevName, sizeof(entry.name));
+	    strncpy(entry.name, AROS_DOSDEVNAME(actdl), sizeof(entry.name));
 	#else
 	    #warning "FIXME: AmigaOS: get assign name"
 	    strncpy(entry.name, "???", sizeof(entry.name));
