@@ -23,7 +23,7 @@
 
 #include <aros/debug.h>
 
-#define VERSION "$VER: Input 0.3 ("ADATE") AROS Dev Team"
+#define VERSION "$VER: Input 0.4 ("ADATE") AROS Dev Team"
 
 /*********************************************************************************************/
 

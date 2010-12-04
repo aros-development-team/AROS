@@ -107,6 +107,22 @@ MSG_TIME_FORMAT
 %d,%02d s
 ; %d.%02d s
 ;
+MSG_GAD_MOUSE_BUTTON_SETTINGS
+Mausknöpfe
+; Mouse buttons
+;
+MSG_GAD_LEFT_HANDED_MOUSE
+Linkshändische Maus
+; Left-handed mouse
+;
+MSG_GAD_MOUSE_MAPPING_MENU
+Menü
+; Menu
+;
+MSG_GAD_MOUSE_MAPPING_THIRD
+Dritte
+; Third
+;
 MSG_GAD_MOUSE_DOUBLECLICK_DELAY
 Pause Doppelklick
 ; Double-Click Delay
