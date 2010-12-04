@@ -344,12 +344,12 @@ end:
     AROS_LIBFUNC_EXIT
 } /* SystemTagList */
 
-/* supposedly console filehandles will be duplicated this way.. */
 static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
 {
-    struct FileHandle *nfh = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
-    if (!nfh)
-    	return BNULL;
-    memcpy (nfh, BADDR(fh), sizeof(struct FileHandle));
-    return MKBADDR(nfh);
+    BPTR old, nfh;
+
+    old = SetConsoleTask(((struct FileHandle*)BADDR(fh))->fh_Type);
+    nfh = Open("*", mode);
+    SetConsoleTask(old);
+    return nfh;
 }

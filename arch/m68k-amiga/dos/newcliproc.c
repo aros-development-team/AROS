@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <dos/dos.h>
 #include <dos/filesystem.h>
 #include <proto/dos.h>
@@ -67,8 +68,10 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 	    struct FileHandle *fhin  = BADDR(Input());
 	    struct FileHandle *fhout = BADDR(Output());
 
-            dopacket3(DOSBase, NULL, fhin->fh_Type, ACTION_CHANGE_SIGNAL, fhin->fh_Arg1, (IPTR)me, NULL);
-            dopacket3(DOSBase, NULL, fhout->fh_Type, ACTION_CHANGE_SIGNAL, fhout->fh_Arg1, (IPTR)me, NULL);
+	    if (fhin)
+            	dopacket3(DOSBase, NULL, fhin->fh_Type, ACTION_CHANGE_SIGNAL, fhin->fh_Arg1, (IPTR)me, NULL);
+            if (fhout)
+            	dopacket3(DOSBase, NULL, fhout->fh_Type, ACTION_CHANGE_SIGNAL, fhout->fh_Arg1, (IPTR)me, NULL);
         }
 
 	rc = RunCommand(ShellSeg, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);

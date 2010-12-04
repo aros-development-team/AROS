@@ -17,7 +17,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, AssignLock,
+	AROS_LH2(LONG, AssignLock,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name, D1),

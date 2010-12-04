@@ -65,16 +65,16 @@ LONG InternalOpen(CONST_STRPTR name, LONG action,
     {
     	BPTR h = name[0] == '*' ? ast : con;
     	struct FileHandle *fh = BADDR(h);
-    	if (fh && fh->fh_Type) {
-            BSTR emptyname = C2BSTR("");
-            dopacket3(DOSBase, &error, fh->fh_Type, action, MKBADDR(handle), h, emptyname);
-            FreeVec(BADDR(emptyname));
-            handle->fh_Type = fh->fh_Type;
+    	if (me->pr_ConsoleTask) {
+  	    BSTR bstrname = C2BSTR(name);
+            dopacket3(DOSBase, &error, me->pr_ConsoleTask, action, MKBADDR(handle), h, bstrname);
+            FreeVec(BADDR(bstrname));
+            handle->fh_Type = me->pr_ConsoleTask;
 	} else {
 	    /* was NIL: */
     	    SetIoErr(0);
     	    handle->fh_Type = BNULL;
-           return DOSTRUE;
+            return DOSTRUE;
         }  
     }
     else if (isdosdevicec(name) < 0) { /* no ":" */
