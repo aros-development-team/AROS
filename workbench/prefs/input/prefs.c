@@ -250,7 +250,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                             inputprefs.ip_KeyRptSpeed.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_secs);
                             inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_micro);
                             inputprefs.ip_MouseAccel           = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
-			    inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_ClassicKeyboard);
+                            inputprefs.ip_ClassicKeyboard      = ARRAY_TO_LONG(loadprefs.ip_ClassicKeyboard);
 			    CopyMem(loadprefs.ip_KeymapName, inputprefs.ip_KeymapName, sizeof(loadprefs.ip_KeymapName));
 			    inputprefs.ip_SwitchMouseButtons   = loadprefs.ip_SwitchMouseButtons[3];
 			    
@@ -289,6 +289,7 @@ BOOL Prefs_ExportFH(BPTR fh)
     LONG_TO_ARRAY(inputprefs.ip_KeyRptSpeed.tv_secs , saveprefs.ip_KeyRptSpeed_secs);
     LONG_TO_ARRAY(inputprefs.ip_KeyRptSpeed.tv_micro, saveprefs.ip_KeyRptSpeed_micro);
     WORD_TO_ARRAY(inputprefs.ip_MouseAccel, saveprefs.ip_MouseAccel);
+    LONG_TO_ARRAY(inputprefs.ip_ClassicKeyboard, saveprefs.ip_ClassicKeyboard);
     CopyMem(inputprefs.ip_KeymapName, saveprefs.ip_KeymapName, sizeof(saveprefs.ip_KeymapName));
     saveprefs.ip_SwitchMouseButtons[0] = 0;
     saveprefs.ip_SwitchMouseButtons[1] = 0;
@@ -451,6 +452,9 @@ BOOL Prefs_Default(void)
     inputprefs.ip_KeyRptSpeed.tv_secs  = 0;
     inputprefs.ip_KeyRptSpeed.tv_micro = 40000;
     inputprefs.ip_MouseAccel           = 1;
+    inputprefs.ip_ClassicKeyboard      = 0;
+    inputprefs.ip_KeymapName[0]        = 0;
+    inputprefs.ip_SwitchMouseButtons   = FALSE;
 
     return TRUE;
 }
