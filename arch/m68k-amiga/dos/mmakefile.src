@@ -10,8 +10,7 @@ CFUNCS  := \
 	newcliproc open parentdir parentoffh read rename \
 	runcommand runhandler samedevice samelock sendpkt \
 	setprotection startnotify systemtaglist unlock write \
-	waitforchar lockrecord unlockrecord readlink \
-	startnotify endnotify
+	waitforchar lockrecord unlockrecord readlink
 
 CFILES  := $(CFUNCS) \
 	bcpl_support helper internalopen internalseek \
