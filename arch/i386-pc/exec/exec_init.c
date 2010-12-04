@@ -82,6 +82,7 @@
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "memory.h"
 #include "traps.h"
 #include "vesa.h"
 
