@@ -60,9 +60,6 @@ nouveau_ttm_global_init(struct drm_nouveau_private *dev_priv)
 {
 	struct drm_global_reference *global_ref;
 	int ret;
-#if defined(__AROS__)
-IMPLEMENT("CALLING ttm_global_init();\n");
-#endif
 
 	global_ref = &dev_priv->ttm.mem_global_ref;
 	global_ref->global_type = DRM_GLOBAL_TTM_MEM;
@@ -104,9 +101,5 @@ nouveau_ttm_global_release(struct drm_nouveau_private *dev_priv)
 	drm_global_item_unref(&dev_priv->ttm.bo_global_ref.ref);
 	drm_global_item_unref(&dev_priv->ttm.mem_global_ref);
 	dev_priv->ttm.mem_global_ref.release = NULL;
-	
-#if defined(__AROS__)
-IMPLEMENT("Calling    ttm_global_release();\n");
-#endif
 }
 

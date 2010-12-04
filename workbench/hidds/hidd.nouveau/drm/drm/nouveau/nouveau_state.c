@@ -771,10 +771,10 @@ out_bios:
 IMPLEMENT("Calling nouveau_pm_fini(dev);\n");
 #endif
 	nouveau_bios_takedown(dev);
-#if !defined(__AROS__)
+#if !defined(HOSTED_BUILD)
 out_display_early:
-	engine->display.late_takedown(dev);
 #endif
+	engine->display.late_takedown(dev);
 out:
 #if !defined(__AROS__)
 	vga_client_register(dev->pdev, NULL, NULL, NULL);

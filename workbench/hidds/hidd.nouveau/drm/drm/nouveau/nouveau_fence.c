@@ -71,7 +71,7 @@ nouveau_fence_del(struct kref *ref)
 void
 nouveau_fence_update(struct nouveau_channel *chan)
 {
-#if defined(HOSTED_BUILD)
+#if !defined(HOSTED_BUILD)
 	struct drm_device *dev = chan->dev;
 #endif
 	struct nouveau_fence *tmp, *fence;

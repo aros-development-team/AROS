@@ -575,6 +575,7 @@ nouveau_mem_vram_init(struct drm_device *dev)
 	ret = pci_set_dma_mask(dev->pdev, DMA_BIT_MASK(dma_bits));
 	if (ret)
 		return ret;
+#endif
 
 	ret = nouveau_mem_detect(dev);
 	if (ret)
@@ -594,7 +595,6 @@ nouveau_mem_vram_init(struct drm_device *dev)
 		NV_ERROR(dev, "Error initialising bo driver: %d\n", ret);
 		return ret;
 	}
-#endif
 
 	dev_priv->fb_available_size = dev_priv->vram_size;
 	dev_priv->fb_mappable_pages = dev_priv->fb_available_size;

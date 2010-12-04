@@ -45,8 +45,8 @@
 #define TTM_DEBUG(fmt, arg...)
 #define TTM_BO_HASH_ORDER 13
 
-#if !defined(__AROS__)
 static int ttm_bo_setup_vm(struct ttm_buffer_object *bo);
+#if !defined(__AROS__)
 static int ttm_bo_swapout(struct ttm_mem_shrink *shrink);
 static void ttm_bo_global_kobj_release(struct kobject *kobj);
 
@@ -1253,13 +1253,9 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
 	 * address space from the device.
 	 */
 	if (bo->type == ttm_bo_type_device) {
-#if !defined(__AROS__)
 		ret = ttm_bo_setup_vm(bo);
 		if (ret)
 			goto out_err;
-#else
-IMPLEMENT("ttm_bo_setup_vm(bo);\n");
-#endif
 	}
 
 	ret = ttm_bo_validate(bo, placement, interruptible, false, false);

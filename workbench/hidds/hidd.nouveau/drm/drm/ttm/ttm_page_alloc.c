@@ -731,13 +731,11 @@ int ttm_get_pages(struct list_head *pages, int flags,
 
 	return 0;
 }
-#endif
 
 /* Put all pages in pages list to correct pool to wait for reuse */
 void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
 		enum ttm_caching_state cstate)
 {
-#if !defined(__AROS__)
 	unsigned long irq_flags;
 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
 	struct page *p, *tmp;
@@ -773,12 +771,8 @@ void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
 	spin_unlock_irqrestore(&pool->lock, irq_flags);
 	if (page_count)
 		ttm_page_pool_free(pool, page_count);
-#else
-IMPLEMENT("\n");
-#endif
 }
 
-#if !defined(__AROS__)
 static void ttm_page_pool_init_locked(struct ttm_page_pool *pool, int flags,
 		char *name)
 {
