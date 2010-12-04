@@ -206,7 +206,9 @@
     dn->dn_Startup = MKBADDR(fssm);
     dn->dn_Type = DLT_DEVICE;
     dn->dn_Name = bs1;
+#ifndef AROS_DOS_PACKETS
     dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(bs1);
+#endif
 
     return dn;
 

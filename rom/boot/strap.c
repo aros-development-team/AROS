@@ -25,6 +25,7 @@
 #include <utility/tagitem.h>
 #include <devices/bootblock.h>
 #include <devices/timer.h>
+#include <dos/dosextens.h>
 
 #include <proto/exec.h>
 #include <proto/expansion.h>
@@ -448,7 +449,7 @@ static VOID AddPartitionVolume
                     AROS_BSTR_setstrlen(devnode->dn_Handler, i);
                     AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, 0);
                     D(bug("[Boot] AddBootNode(%s,0x%lx,'%s')\n",
-                        devnode->dn_Ext.dn_AROS.dn_DevName,
+                        AROS_DOSDEVNAME(devnode),
                         pp[4 + DE_DOSTYPE], handler));
                     return;
                 }
