@@ -55,7 +55,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    dopacket1(DOSBase, NULL, notify->nr_Handler, ACTION_REMOVE_NOTIFY, notify);
+    dopacket1(DOSBase, NULL, notify->nr_Handler, ACTION_REMOVE_NOTIFY, MKBADDR(notify));
 
     /* free fullname if it was built in StartNotify() */
     if (notify->nr_FullName != notify->nr_Name)
