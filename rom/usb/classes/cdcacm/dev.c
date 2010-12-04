@@ -75,7 +75,7 @@ AROS_LH3(DEVBASETYPEPTR, devOpen,
         ncp = (struct NepClassSerial *) base->np_ClsBase->nh_Units.lh_Head;
         while(ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Succ)
         {
-            if(ncp->ncp_UnitNo == unit)
+            if(ncp->ncp_UnitNo == unit && ncp->ncp_Task )
             {
                 if(ncp->ncp_Unit.unit_OpenCnt)
                 {
