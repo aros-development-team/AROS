@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 
 FILES	:=  support consoleclass stdconclass charmapconclass charmap snipmapconclass consoletask
-FUNCS	:=  cdinputhandler rawkeyconvert
+FUNCS	:=  cdinputhandler rawkeyconvert setconsnip getconsnip addconsniphook remconsniphook
 
 #MM- kernel-console : includes linklibs
 
