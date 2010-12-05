@@ -62,7 +62,6 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     	cli->cli_CurrentInput   = CurrentInput;
     	cli->cli_Interactive    = cli->cli_CurrentInput == cli->cli_StandardInput ? DOSTRUE : DOSFALSE;
     	cli->cli_Background     = Background;
-    	cli->cli_Module         = ShellSeg;
 
 	if (!Background)
 	{
