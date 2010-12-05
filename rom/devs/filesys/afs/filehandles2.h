@@ -10,7 +10,7 @@
 #include "cache.h"
 #include "volumes.h"
 
-struct AfsHandle *createDir(struct AFSBase *, struct AfsHandle *, CONST_STRPTR, ULONG);
+struct AfsHandle *createDir(struct AFSBase *, struct AfsHandle *, CONST_STRPTR, ULONG, LONG *error);
 ULONG	renameObject(struct AFSBase *, struct AfsHandle *, CONST_STRPTR, CONST_STRPTR);
 ULONG	deleteObject(struct AFSBase *, struct AfsHandle *, CONST_STRPTR);
 ULONG	deleteFileRemainder(struct AFSBase *, struct AfsHandle *);
@@ -19,8 +19,8 @@ ULONG	setComment(struct AFSBase *, struct AfsHandle *, CONST_STRPTR, CONST_STRPT
 ULONG	setProtect(struct AFSBase *, struct AfsHandle *, CONST_STRPTR, ULONG);
 ULONG	setDate(struct AFSBase *, struct AfsHandle *, CONST_STRPTR, struct DateStamp *);
 
-struct BlockCache *getDirBlockBuffer(struct AFSBase *, struct AfsHandle *, CONST_STRPTR, STRPTR);
-struct BlockCache *createNewEntry(struct AFSBase *, struct Volume *, ULONG, CONST_STRPTR, struct BlockCache *, ULONG);
+struct BlockCache *getDirBlockBuffer(struct AFSBase *, struct AfsHandle *, CONST_STRPTR, STRPTR, LONG *error);
+struct BlockCache *createNewEntry(struct AFSBase *, struct Volume *, ULONG, CONST_STRPTR, struct BlockCache *, ULONG, LONG *error);
 
 #endif
 

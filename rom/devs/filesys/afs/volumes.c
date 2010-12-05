@@ -142,7 +142,7 @@ struct Volume *initVolume
 		CONST_STRPTR blockdevice,
 		ULONG unit,
 		struct DosEnvec *devicedef,
-		ULONG *error
+		LONG *error
 	)
 {
 struct Volume *volume;
