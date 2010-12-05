@@ -21,7 +21,27 @@ struct Process *RunPacketHandler(struct DeviceNode *dn, const char *path, struct
 	struct MsgPort *reply_port;
 	struct Process *process = NULL;
 	UBYTE *bpath;
+	CONST_STRPTR def_handler = "nil.handler";
 
+	if (dn->dn_SegList == BNULL) {
+	    struct Segment *seg;
+	    CONST_STRPTR cp;
+
+	    /* If no handler name was supplied,
+	     * try to use the default.
+	     */
+	    if (dn->dn_Handler == BNULL)
+	    	cp = def_handler;
+	    else
+	    	cp = AROS_BSTR_ADDR(dn->dn_Handler);
+
+	    /* Try to find in the Resident Segment list */
+	    Forbid();
+	    seg = FindSegment(cp, NULL, TRUE);
+	    Permit();
+	    if (seg != NULL)
+	    	dn->dn_SegList = seg->seg_Seg;
+	}
 	if (dn->dn_SegList == BNULL) {
 		D(bug("[packet] name'%b' seglist=NULL?\n", dn->dn_Name));
 		return NULL;
