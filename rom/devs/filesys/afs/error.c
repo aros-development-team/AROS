@@ -12,6 +12,7 @@
 
 #include <proto/intuition.h>
 #include <aros/debug.h>
+#include <exec/rawfmt.h>
 
 #include <intuition/intuition.h>
 
@@ -58,7 +59,7 @@ LONG showPtrArgsText(struct AFSBase *afsbase, char *string, enum showReqType typ
 	struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,options[type]};
 	struct IntuitionBase *IntuitionBase;
 
-	IntuitionBase = OpenLibrary("intuition.library", 39);
+	IntuitionBase = (APTR)OpenLibrary("intuition.library", 39);
 	if (IntuitionBase != NULL)
 	{
 	    es.es_TextFormat=string;
@@ -74,10 +75,9 @@ LONG showPtrArgsText(struct AFSBase *afsbase, char *string, enum showReqType typ
 	}
 	else
 	{
-      /* We use kprintf for error printing when gfx.hidd is not initialized */
-#warning wrong use of vkprintf!!! Please fix!
-//		vkprintf(string, args);
-//		kprintf("\n");
+	    /* We use serial for error printing when gfx.hidd is not initialized */
+	    RawDoFmt(string, args, RAWFMTFUNC_SERIAL, NULL);
+	    RawPutChar('\n');
 	}
 	return 0;
 }
