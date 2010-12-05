@@ -83,7 +83,9 @@ UBYTE i;
 	name=(char *)rootblock->buffer+(BLK_DISKNAME_START(volume)*4);
 	volume->devicelist.dl_Next = 0;
 	volume->devicelist.dl_Type = DLT_VOLUME;
+#ifndef AROS_DOS_PACKETS
 	volume->devicelist.dl_Ext.dl_AROS.dl_Device = volume->device;
+#endif
 	volume->devicelist.dl_Lock = 0;
 	volume->devicelist.dl_VolumeDate.ds_Days =
 		AROS_BE2LONG(rootblock->buffer[BLK_ROOT_DAYS(volume)]);
@@ -140,6 +142,7 @@ UBYTE i;
 		if (dl != NULL)
 		{
 			D(bug("[afs 0x%08lX] VolumeNode found, device 0x%08lX, unit 0x%08lX\n", volume, dl->dol_Ext.dol_AROS.dol_Device, dl->dol_Ext.dol_AROS.dol_Unit));
+#ifndef AROS_DOS_PACKETS
 			if ((dl->dol_Ext.dol_AROS.dol_Device == volume->device) &&
 			    (dl->dol_Ext.dol_AROS.dol_Unit == NULL))
 			{
@@ -154,6 +157,7 @@ UBYTE i;
 			{
 				dl = NULL;
 			}
+#endif
 		}
 		UnLockDosList(LDF_WRITE | LDF_VOLUMES);
 	}
@@ -167,8 +171,10 @@ UBYTE i;
 		doslist = MakeDosEntry(string,DLT_VOLUME);
 		if (doslist == NULL)
 			return DOSFALSE;
+#ifndef AROS_DOS_PACKETS
 		doslist->dol_Ext.dol_AROS.dol_Unit = (struct Unit *)&volume->ah;
 		doslist->dol_Ext.dol_AROS.dol_Device = volume->device;
+#endif
 		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days =
 			volume->devicelist.dl_VolumeDate.ds_Days;
 		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Minute =
@@ -202,7 +208,9 @@ struct DosList *dl;
 		{
 			D(bug("[afs 0x%08lX] VolumeNode in use, keeping as offline\n", volume));
 			dl->dol_misc.dol_volume.dol_LockList = MKBADDR(volume->locklist);
+#ifndef AROS_DOS_PACKETS
 			dl->dol_Ext.dol_AROS.dol_Unit = NULL;
+#endif
 		}
 		else
 		{
@@ -592,7 +600,9 @@ AROS_UFH3(VOID, changeIntCode,
 	AROS_USERFUNC_INIT
 
 	ioh->ioflags |= IOHF_MEDIA_CHANGE;
+#ifndef AROS_DOS_PACKETS
 	Signal(ioh->afsbase->port.mp_SigTask, 1<<ioh->afsbase->port.mp_SigBit);
+#endif
 
 	AROS_USERFUNC_EXIT
 }

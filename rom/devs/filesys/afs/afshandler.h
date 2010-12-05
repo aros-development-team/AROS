@@ -12,11 +12,19 @@
 
 struct AFSBase
 {
+#ifdef AROS_DOS_PACKETS
+	struct Library ab_Lib;
+	APTR   ab_Segment;		/* Pointer to segment header */
+	struct Volume *volume;
+	struct DosLibrary *dosbase;
+	struct MsgPort *timer_mp;
+#else
 	struct Device device;
 	struct DosLibrary *dosbase;
 	struct MsgPort port;			/* MsgPort of the handler */
 	struct MsgPort rport;		/* replyport of the handler */
 	struct IOFileSys *iofs;		/* to be aborted iofs or NULL */
+#endif
 	struct List device_list;	/* list of mounted devices (struct Volume) */
 	struct timerequest *timer_request;
 	ULONG timer_flags;
