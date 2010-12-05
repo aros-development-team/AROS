@@ -14,6 +14,7 @@
 #include <utility/tagitem.h>
 #include <dos/filesystem.h>
 #include <proto/dos.h>
+#include <dos/stdio.h>
 #include "dos_intern.h"
 
 LONG AROS_SLIB_ENTRY(RunProcess,Dos)
@@ -91,6 +92,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     UBYTE *stack;
     LONG ret;
     struct StackSwapStruct sss;
+    BPTR oldinput = BNULL, newinput = BNULL;
 
     if(stacksize < AROS_STACKSIZE)
 	stacksize = AROS_STACKSIZE;
@@ -106,14 +108,35 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     oldresult=me->pr_Result2;
     /* we have to save iet_startup field because it's overwritten in 
        startup code */
-	oldstartup = (struct aros_startup *)GetIntETask(me)->iet_startup;
+    oldstartup = (struct aros_startup *)GetIntETask(me)->iet_startup;
     
     me->pr_Result2=oldresult;
 
     oldargs=me->pr_Arguments;
     me->pr_Arguments=(STRPTR)argptr;
 
-    D(bug("RunCommand: segList @%p\n", BADDR(segList)));
+    /* Need to create filehandle that points to arguments.
+     * Lets (badly) misuse buffered NIL: and hope it works..
+     * Guru Book mentions this (but related to CreateNewProc())
+     * which means something isn't 100% correct..
+     *
+     * This fixes for example C:Execute
+     */
+    {
+    	newinput = Open("NIL:", MODE_NEWFILE);
+	if (newinput) {
+	    struct FileHandle *fh = BADDR(newinput);
+	    if (!SetVBuf(newinput, NULL, BUF_FULL, argsize)) {
+	    	/* ugly hack */
+	    	memcpy(fh->fh_Buf, argptr, argsize);
+	    	fh->fh_Pos = fh->fh_Buf;
+	    	fh->fh_End = fh->fh_Buf + argsize;
+	    	oldinput = SelectInput(newinput);
+	    }
+	}
+    }
+
+    D(bug("RunCommand: segList @%p Args='%s'\n", BADDR(segList), argptr));
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     do {
     	extern BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase);
@@ -143,6 +166,11 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     GetIntETask(me)->iet_startup = oldstartup;
 
     me->pr_Result2=oldresult;
+
+    if (oldinput)
+    	SelectInput(oldinput);
+    if (newinput)
+    	Close(newinput);
 
     FreeMem(stack,stacksize);
     
