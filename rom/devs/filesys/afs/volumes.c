@@ -141,6 +141,7 @@ struct Volume *initVolume
 		struct Device *device,
 		CONST_STRPTR blockdevice,
 		ULONG unit,
+		ULONG flags,
 		struct DosEnvec *devicedef,
 		LONG *error
 	)
@@ -154,7 +155,7 @@ struct Volume *volume;
 		volume->ioh.blockdevice = (STRPTR)(&volume[1]); /* Data after the volume alloc */
 		strcpy(volume->ioh.blockdevice, blockdevice);
 		volume->ioh.unit = unit;
-		volume->ioh.flags = 0;
+		volume->ioh.flags = flags;
 		volume->SizeBlock = devicedef->de_SizeBlock
 			* devicedef->de_SectorPerBlock;
 		volume->sectorsize = devicedef->de_SizeBlock << 2;

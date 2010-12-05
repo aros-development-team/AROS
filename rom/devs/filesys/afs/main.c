@@ -117,6 +117,7 @@ LONG error;
 								iofs->IOFS.io_Device,
 								iofs->io_Union.io_OpenDevice.io_DeviceName,
 								iofs->io_Union.io_OpenDevice.io_Unit,
+								0,
 								(struct DosEnvec *)iofs->io_Union.io_OpenDevice.io_Environ,
 								&iofs->io_DosError
 							);
