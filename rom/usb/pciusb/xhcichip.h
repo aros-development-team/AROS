@@ -20,7 +20,7 @@
 
 #define capreg_readl(capreg) READREG32_LE(hc->xhc_capregbase, capreg)
 #define capreg_readw(capreg) READREG16_LE(hc->xhc_capregbase, capreg)
-#define capreg_readb(capreg) (capreg_readw(capreg | ~1) & 0xff) 
+#define capreg_readb(capreg) (*((volatile UBYTE *) (((UBYTE *) (hc->xhc_capregbase)) + ((ULONG) (capreg))))) 
 
 
 /* XHCI capability register defines */
