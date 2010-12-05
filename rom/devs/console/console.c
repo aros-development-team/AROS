@@ -176,12 +176,6 @@ static int GM_UNIQUENAME(Open)
     
     EnterFunc(bug("OpenConsole()\n"));
 
-    if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
-    {
-        D(bug("console.device/open: IORequest structure passed to OpenDevice is too small!\n"));
-        goto open_fail;
-    }
-    
     if (((LONG)unitnum) == CONU_LIBRARY) /* unitnum is ULONG while CONU_LIBRARY is -1 :-(   */
     {
     	D(bug("Opening CONU_LIBRARY unit\n"));
@@ -195,6 +189,12 @@ static int GM_UNIQUENAME(Open)
     {
 	Class *classptr = NULL; /* Keep compiler happy */
 	
+	if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
+	{
+	    D(bug("console.device/open: IORequest structure passed to OpenDevice is too small!\n"));
+	    goto open_fail;
+	}
+    
 	struct TagItem conunit_tags[] =
 	{
 	    {A_Console_Window,	0},
