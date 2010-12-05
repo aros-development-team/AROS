@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <graphics/gfxbase.h>
@@ -15,6 +16,8 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include "graphics_intern.h"
+
+static LONG dummy_init(void);
 
 /*****************************************************************************
 
@@ -81,7 +84,9 @@
       Result->xln_Library = GfxBase;
 
       /* the following pointer has to point to some unknown routine */
-      /* Result->xln_Init = ???; */
+      /* WB2.x+ native monitor drivers call it, added dummy function to prevent crash */
+      Result->xln_Init = dummy_init;
+      
 
       /* lets get more specific now !*/
       switch(node_type)
@@ -115,3 +120,9 @@
 
   AROS_LIBFUNC_EXIT
 } /* GfxNew */
+
+static LONG dummy_init(void)
+{
+    bug("xln_Init called\n");
+    return 0;
+}
