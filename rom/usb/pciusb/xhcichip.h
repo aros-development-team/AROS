@@ -39,13 +39,13 @@
 #define XHCB_MaxIntrs   8
 #define XHCB_MaxPorts   24
 
-#define XHCM_MaxPorts (((1UL<<8)-1)<<XHCB_MaxPorts)
-#define XHCM_MaxIntrs (((1UL<<11)-1)<<XHCB_MaxIntrs)
 #define XHCM_MaxSlots (((1UL<<8)-1)<<XHCB_MaxSlots)
+#define XHCM_MaxIntrs (((1UL<<11)-1)<<XHCB_MaxIntrs)
+#define XHCM_MaxPorts (((1UL<<8)-1)<<XHCB_MaxPorts)
 
-#define XHCV_MaxSlots(p)    (((p)&XHCM_MaxPorts)>>XHCB_MaxSlots)
+#define XHCV_MaxPorts(p)    (((p)&XHCM_MaxPorts)>>XHCB_MaxPorts)
 #define XHCV_MaxIntrs(p)    (((p)&XHCM_MaxIntrs)>>XHCB_MaxIntrs)
-#define XHCV_MaxPorts(p)    (((p)&XHCM_MaxSlots)>>XHCB_MaxPorts)
+#define XHCV_MaxSlots(p)    (((p)&XHCM_MaxSlots)>>XHCB_MaxSlots)
 
 
 /* XHCI_HCSPARAMS2 defines */
