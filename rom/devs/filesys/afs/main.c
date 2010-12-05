@@ -26,8 +26,6 @@
 
 #include "baseredef.h"
 
-ULONG error;
-
 static VOID startFlushTimer(struct AFSBase *afsbase)
 {
 struct timerequest *request;
@@ -56,6 +54,7 @@ void AFS_work(struct AFSBase *afsbase) {
 struct IOFileSys *iofs;
 struct AfsHandle *afshandle;
 LONG retval;
+LONG error;
 
 	afsbase->port.mp_SigBit = SIGBREAKB_CTRL_F;
 	afsbase->port.mp_Flags = PA_SIGNAL;
@@ -201,7 +200,8 @@ LONG retval;
 									afsbase,
 									afshandle,
 									iofs->io_Union.io_OPEN.io_Filename,
-									iofs->io_Union.io_OPEN.io_FileMode
+									iofs->io_Union.io_OPEN.io_FileMode,
+									&error
 								);
 							break;
 						case FSA_READ :
@@ -210,7 +210,8 @@ LONG retval;
 									afsbase,
 									afshandle,
 									iofs->io_Union.io_READ.io_Buffer,
-									iofs->io_Union.io_READ.io_Length
+									iofs->io_Union.io_READ.io_Length,
+									&error
 								);
 							break;
 						case FSA_WRITE :
@@ -219,7 +220,8 @@ LONG retval;
 									afsbase,
 									afshandle,
 									iofs->io_Union.io_WRITE.io_Buffer,
-									iofs->io_Union.io_WRITE.io_Length
+									iofs->io_Union.io_WRITE.io_Length,
+									&error
 								);
 							break;
 						case FSA_SEEK :
@@ -228,7 +230,8 @@ LONG retval;
 									afsbase,
 									afshandle,
 									iofs->io_Union.io_SEEK.io_Offset,
-									iofs->io_Union.io_SEEK.io_SeekMode
+									iofs->io_Union.io_SEEK.io_SeekMode,
+									&error
 								);
 							break;
 						case FSA_SET_FILE_SIZE :
@@ -237,7 +240,8 @@ LONG retval;
 									afsbase,
 									afshandle,
 									iofs->io_Union.io_SEEK.io_Offset,
-									iofs->io_Union.io_SEEK.io_SeekMode
+									iofs->io_Union.io_SEEK.io_SeekMode,
+									&error
 								);
 							break;
 						case FSA_FILE_MODE :
@@ -284,7 +288,8 @@ LONG retval;
 									afshandle,
 									iofs->io_Union.io_OPEN_FILE.io_Filename,
 									iofs->io_Union.io_OPEN_FILE.io_FileMode,
-									iofs->io_Union.io_OPEN_FILE.io_Protection
+									iofs->io_Union.io_OPEN_FILE.io_Protection,
+									&error
 								);
 							break;
 						case FSA_CREATE_DIR :
@@ -293,7 +298,8 @@ LONG retval;
 									afsbase,
 									afshandle,
 									iofs->io_Union.io_CREATE_DIR.io_Filename,
-									iofs->io_Union.io_CREATE_DIR.io_Protection
+									iofs->io_Union.io_CREATE_DIR.io_Protection,
+									&error
 								);
 							break;
 						case FSA_CREATE_HARDLINK :
@@ -373,7 +379,8 @@ LONG retval;
 								(
 									afsbase,
 									afshandle->volume,
-									iofs->io_Union.io_RELABEL.io_NewName
+									iofs->io_Union.io_RELABEL.io_NewName,
+									&error
 								);
 							break;
 						case FSA_DISK_INFO :

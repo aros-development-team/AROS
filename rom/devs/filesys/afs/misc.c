@@ -23,8 +23,6 @@
 #include "baseredef.h"
 #include "validator.h"
 
-extern ULONG error;
-
 /**********************************************
  Name  : writeHeader
  Descr.: update header information (time)
@@ -251,13 +249,13 @@ UWORD i;
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
 LONG relabel(struct AFSBase *afsbase, struct Volume *volume,
-	CONST_STRPTR name) {
+	CONST_STRPTR name, LONG *error) {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
 
 	if (0 == checkValid(afsbase, volume))
 	{
-		error = ERROR_DISK_WRITE_PROTECTED;
+		*error = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
 	}
 	osMediumFree(afsbase, volume, FALSE);

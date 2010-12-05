@@ -26,8 +26,6 @@
 #include "baseredef.h"
 #include "validator.h"
 
-extern ULONG error;
-
 /********************************************
  Name  : setHeaderDate
  Descr.: set actual date for an object
@@ -80,12 +78,13 @@ ULONG setDate
 {
 ULONG block;
 struct BlockCache *blockbuffer;
+LONG error;
 
 	D(bug("[afs] setData()\n"));
 	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
 
-	blockbuffer = findBlock(afsbase, ah, name, &block);
+	blockbuffer = findBlock(afsbase, ah, name, &block, &error);
 	if (blockbuffer == NULL)
 		return error;
 	return setHeaderDate(afsbase, ah->volume, blockbuffer, ds);
@@ -109,11 +108,12 @@ ULONG setProtect
 {
 ULONG block;
 struct BlockCache *blockbuffer;
+LONG error;
 
 	D(bug("[afs] setProtect(ah,%s,%ld)\n", name, mask));
 	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
-	blockbuffer = findBlock(afsbase, ah, name, &block);
+	blockbuffer = findBlock(afsbase, ah, name, &block, &error);
 	if (blockbuffer == NULL)
 		return error;
 	blockbuffer->buffer[BLK_PROTECT(ah->volume)] = OS_LONG2BE(mask);
@@ -134,13 +134,14 @@ ULONG setComment
 {
 ULONG block;
 struct BlockCache *blockbuffer;
+LONG error;
 
 	D(bug("[afs] setComment(ah,%s,%s)\n", name, comment));
 	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
 	if (strlen(comment) >= MAXCOMMENTLENGTH)
 		return ERROR_COMMENT_TOO_BIG;
-	blockbuffer = findBlock(afsbase, ah, name, &block);
+	blockbuffer = findBlock(afsbase, ah, name, &block, &error);
 	if (blockbuffer == NULL)
 		return error;
 	StrCpyToBstr
@@ -204,6 +205,7 @@ ULONG deleteObject(struct AFSBase *afsbase, struct AfsHandle *ah,
 {
 ULONG lastblock,key;
 struct BlockCache *blockbuffer, *priorbuffer;
+LONG error;
 
 	D(bug("[afs] delete(ah,%s)\n", name));
 	/*
@@ -212,10 +214,10 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	 */
 	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
-	blockbuffer = findBlock(afsbase, ah, name, &lastblock);
+	blockbuffer = findBlock(afsbase, ah, name, &lastblock, &error);
 	if (blockbuffer == NULL)
 		return error;
-	blockbuffer = findBlock(afsbase, ah, name, &lastblock);
+	blockbuffer = findBlock(afsbase, ah, name, &lastblock, &error);
 	if (findHandle(ah->volume, blockbuffer->blocknum) != NULL)
 		return ERROR_OBJECT_IN_USE;
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PROTECT(ah->volume)]) & FIBF_DELETE)
@@ -440,7 +442,8 @@ struct BlockCache *getDirBlockBuffer
 		struct AFSBase *afsbase,
 		struct AfsHandle *ah,
 		CONST_STRPTR name,
-		STRPTR entryname
+		STRPTR entryname,
+		LONG *error
 	)
 {
 ULONG block,len;
@@ -455,7 +458,7 @@ UBYTE buffer[256];
 	len = strlen(name)+name-end;
 	CopyMem(end, entryname, len);	/* skip slash or colon */
 	entryname[len] = 0;
-	return findBlock(afsbase, ah, buffer, &block);
+	return findBlock(afsbase, ah, buffer, &block, error);
 }
 
 /********************************************
@@ -477,21 +480,22 @@ ULONG renameObject
 struct BlockCache *lastlink,*oldfile,*existingfile,*dirblock;
 ULONG block,dirblocknum,lastblock;
 UBYTE newentryname[34];
+LONG error;
 
 	D(bug("[afs] rename(%ld,%s,%s)\n", dirah->header_block, oname, newname));
 	if (0 == checkValid(afsbase, dirah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
-	dirblock = getDirBlockBuffer(afsbase, dirah, newname, newentryname);
+	dirblock = getDirBlockBuffer(afsbase, dirah, newname, newentryname, &error);
 	if (dirblock == NULL)
 		return error;
 	dirblocknum = dirblock->blocknum;
 	D(bug("[afs]    dir is on block %ld\n", dirblocknum));
-	oldfile = findBlock(afsbase, dirah, oname, &lastblock);
+	oldfile = findBlock(afsbase, dirah, oname, &lastblock, &error);
 	if (oldfile == NULL)
 		return error;
 	oldfile->flags |= BCF_USED;
 	existingfile = getHeaderBlock(afsbase, dirah->volume, newentryname,
-		dirblock, &block);
+		dirblock, &block, &error);
 	if (existingfile != NULL && existingfile->blocknum != oldfile->blocknum)
 	{
 		dirblock->flags &= ~BCF_USED;
@@ -636,7 +640,8 @@ struct BlockCache *createNewEntry
 		ULONG entrytype,
 		CONST_STRPTR entryname,
 		struct BlockCache *dirblock,
-		ULONG protection
+		ULONG protection,
+		LONG *error
 	)
 {
 struct BlockCache *newblock;
@@ -645,13 +650,13 @@ ULONG i;
 
 	D(bug("[afs] createNewEntry(%ld, %s)\n", dirblock->blocknum, entryname));
 	dirblock->flags |= BCF_USED;
-	if (getHeaderBlock(afsbase, volume, entryname, dirblock, &i) != NULL)
+	if (getHeaderBlock(afsbase, volume, entryname, dirblock, &i, error) != NULL)
 	{
 		dirblock->flags &= ~BCF_USED;
-		error = ERROR_OBJECT_EXISTS;
+		*error = ERROR_OBJECT_EXISTS;
 		return NULL;
 	}
-	error = 0;
+	*error = 0;
 	if (!invalidBitmap(afsbase, volume))
 	{
 		dirblock->flags &= ~BCF_USED;
@@ -662,7 +667,7 @@ ULONG i;
 	{
 		dirblock->flags &= ~BCF_USED;
 		validBitmap(afsbase, volume);
-		error = ERROR_DISK_FULL;
+		*error = ERROR_DISK_FULL;
 		return NULL;
 	}
 	newblock = getFreeCacheBlock(afsbase, volume, i);
@@ -670,7 +675,7 @@ ULONG i;
 	{
 		dirblock->flags &= ~BCF_USED;
 		validBitmap(afsbase, volume);
-		error = ERROR_UNKNOWN;
+		*error = ERROR_UNKNOWN;
 		return NULL;
 	}
 	newblock->flags |= BCF_USED;
@@ -731,7 +736,8 @@ struct AfsHandle *createDir
 		struct AFSBase *afsbase,
 		struct AfsHandle *dirah,
 		CONST_STRPTR filename,
-		ULONG protection
+		ULONG protection,
+		LONG *error
 	)
 {
 struct AfsHandle *ah = NULL;
@@ -741,17 +747,17 @@ char dirname[34];
 	D(bug("[afs] createDir(ah,%s,%ld)\n", filename, protection));
 	if (0 == checkValid(afsbase, dirah->volume))
 	{
-		error = ERROR_DISK_WRITE_PROTECTED;
+		*error = ERROR_DISK_WRITE_PROTECTED;
 		return NULL;
 	}
-	dirblock = getDirBlockBuffer(afsbase, dirah, filename, dirname);
+	dirblock = getDirBlockBuffer(afsbase, dirah, filename, dirname, error);
 	if (dirblock != NULL)
 	{
 		D(bug("[afs]    dir is on block %ld\n", dirblock->blocknum));
 		dirblock = createNewEntry
-			(afsbase, dirah->volume, ST_USERDIR, dirname, dirblock, protection);
+			(afsbase, dirah->volume, ST_USERDIR, dirname, dirblock, protection, error);
 		if (dirblock != NULL)
-			ah = getHandle(afsbase, dirah->volume, dirblock, FMF_READ);
+			ah = getHandle(afsbase, dirah->volume, dirblock, FMF_READ, error);
 	}
 	return ah;
 }
