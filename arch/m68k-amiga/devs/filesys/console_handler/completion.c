@@ -21,7 +21,6 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
-#define __GADTOOLS_NOLIBBASE__
 #include <proto/gadtools.h>
 #include <proto/asl.h>
 #include "con_handler_intern.h"
@@ -62,15 +61,13 @@ struct completioninfo
 
 /* Delay opening of the gadtools.library to the first time InitCompletion is called */
 
-static struct Library *GadToolsBase = NULL;
-
 static struct completioninfo *InitCompletion(struct filehandle *fh)
 {
     struct completioninfo *ci = NULL;
     APTR    	    	   pool;
 
-    if (GadToolsBase == NULL)
-	GadToolsBase = OpenLibrary("gadtools.library", 39);
+    if (fh->gtbase == NULL)
+	fh->gtbase = OpenLibrary("gadtools.library", 39);
     
     if (fh->lastwritetask && GadToolsBase)
     if (fh->lastwritetask->tc_Node.ln_Type == NT_PROCESS)
@@ -108,7 +105,7 @@ static void CleanupCompletion(struct completioninfo *ci)
 
 /****************************************************************************************/
 
-static void PrepareCompletion(struct completioninfo *ci)
+static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
 {
     WORD i;
     BOOL in_quotes = FALSE;
@@ -191,7 +188,7 @@ static void InsertIntoConBuffer(struct completioninfo *ci, STRPTR s)
 
 /****************************************************************************************/
 
-static void DoFileReq(struct completioninfo *ci)
+static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
 {
     struct Library *AslBase;
     BPTR    	    lock, olddir;
@@ -246,7 +243,7 @@ static void DoFileReq(struct completioninfo *ci)
 
 /****************************************************************************************/
 
-static BOOL PreparePattern(struct completioninfo *ci)
+static BOOL PreparePattern(struct filehandle *fh, struct completioninfo *ci)
 {
     WORD parsecode;
     
@@ -266,7 +263,7 @@ static BOOL PreparePattern(struct completioninfo *ci)
 
 /****************************************************************************************/
 
-static void AddMatchNode(struct completioninfo *ci,
+static void AddMatchNode(struct filehandle *fh, struct completioninfo *ci,
     	    	    	 STRPTR name, WORD type)
 {
     struct matchnode 	*mn;
@@ -316,7 +313,7 @@ static void AddMatchNode(struct completioninfo *ci,
 
 /****************************************************************************************/
 
-static void ScanDir(struct completioninfo *ci)
+static void ScanDir(struct filehandle *fh, struct completioninfo *ci)
 {
     struct FileInfoBlock *fib;
     BPTR    	    	  lock;
@@ -333,7 +330,7 @@ static void ScanDir(struct completioninfo *ci)
 		    {
 		    	BOOL isdir = (fib->fib_DirEntryType > 0);
 
-    	    	    	AddMatchNode(ci, fib->fib_FileName, (isdir ? 1 : 0));
+    	    	    	AddMatchNode(fh, ci, fib->fib_FileName, (isdir ? 1 : 0));
 		    }
 		}
 	    }
@@ -348,7 +345,7 @@ static void ScanDir(struct completioninfo *ci)
 /****************************************************************************************/
 
 
-static void ScanVol(struct completioninfo *ci)
+static void ScanVol(struct filehandle *fh, struct completioninfo *ci)
 {
     struct DosList *dlist;
 
@@ -358,14 +355,14 @@ static void ScanVol(struct completioninfo *ci)
     {
 	if (MatchPatternNoCase(ci->pattern, AROS_DOSDEVNAME(dlist)))
 	{
-    	    AddMatchNode(ci, AROS_DOSDEVNAME(dlist), 2);
+    	    AddMatchNode(fh, ci, AROS_DOSDEVNAME(dlist), 2);
 
 	}
     }
     UnLockDosList(LDF_READ | LDF_VOLUMES | LDF_DEVICES | LDF_ASSIGNS);
 }
 
-static void DoScan(struct completioninfo *ci)
+static void DoScan(struct filehandle *fh, struct completioninfo *ci)
 {
     BPTR    	    lock, olddir;
     
@@ -373,8 +370,8 @@ static void DoScan(struct completioninfo *ci)
     {
     	olddir = CurrentDir(lock);
 	
-	if (ci->dirpart[0] == 0) ScanVol(ci);
-	ScanDir(ci);
+	if (ci->dirpart[0] == 0) ScanVol(fh, ci);
+	ScanDir(fh, ci);
 		
 	CurrentDir(olddir);
 	UnLock(lock);
@@ -726,19 +723,19 @@ void Completion(struct filehandle *fh)
 
     if ((ci = InitCompletion(fh)))
     {
-    	PrepareCompletion(ci);
+    	PrepareCompletion(fh, ci);
     	
 	if (!ci->dirpart[0] && !ci->filepart[0])
 	{
-	    DoFileReq(ci);
+	    DoFileReq(fh, ci);
 	}
 	else
 	{
-	    if (PreparePattern(ci))
+	    if (PreparePattern(fh, ci))
 	    {
 	    	BOOL doprint = FALSE;
 		
-	    	DoScan(ci);
+	    	DoScan(fh, ci);
 		
 		strncpy(ci->match, ci->dirpart, sizeof(ci->match));
 		
