@@ -69,13 +69,16 @@ OBJDIR := $(OBJDIR).kernel
 # These are the built-ins for AmigaOS 3.x and above
 FILES := \
 	 CD \
+	 Echo \
 	 EndIf \
+	 Else \
 	 Execute \
 	 FailAt \
 	 If \
 	 Resident \
 	 Shell \
 	 Setenv \
+	 Stack \
 	 Unset \
 	 Unsetenv \
 	# End of list
