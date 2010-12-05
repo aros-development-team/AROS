@@ -92,6 +92,8 @@ struct filehandle
     struct Device *inputbase;
     struct IntuitionBase *intuibase;
     struct DosLibrary *dosbase;
+    struct Library *gtbase;
+    struct Library *utilbase;
 };
 
 /* filehandle flags */
@@ -108,12 +110,16 @@ struct filehandle
 #define FHFLG_NOECHO            512  /* input echoing is disabled */
 #define FHFLG_NOWRITE           1024 /* disable do_write() completely, no output */
 
-#ifdef IntuitionBase
+#undef InputBase
 #undef IntuitionBase
-#endif
+#undef DOSBase
+#undef GadToolsBase
+#undef UtilityBase
 
 #define InputBase fh->inputbase
 #define IntuitionBase fh->intuibase
-#define DosBase fh->dosbase
+#define DOSBase fh->dosbase
+#define GadToolsBase fh->gtbase
+#define UtilityBase fh->utilbase
 
 #endif /* __CON_HANDLER_INTERN_H */

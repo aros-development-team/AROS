@@ -142,7 +142,6 @@ static LONG MakeConWindow(struct filehandle *fh)
 
 static BOOL MakeSureWinIsOpen(struct filehandle *fh)
 {
-    D(bug("[contask] Console window handle: 0x%p\n", fh->window));
     if (fh->window)
     	return TRUE;
     return MakeConWindow(fh) == 0;
@@ -199,6 +198,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 
 	fh->intuibase = OpenLibrary("intuition.library", 0);
 	fh->dosbase = OpenLibrary("dos.library", 0);
+	fh->utilbase = OpenLibrary("utility.library", 0);
 	Forbid();
     	fh->inputbase = (struct Device *)FindName(&SysBase->DeviceList, "input.device");
     	Permit();
@@ -214,8 +214,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 
 	NEWLIST(&fh->pendingReads);
 
-    	/* Create msgport for console.device communication
-	   and for app <-> contask communication  */
+    	/* Create msgport for console.device communication */
 	fh->conreadmp = AllocVec(sizeof (struct MsgPort) * 2, MEMF_PUBLIC|MEMF_CLEAR);
 	if (fh->conreadmp)
 	{
@@ -381,7 +380,8 @@ LONG CONMain(void)
 		while ((mn = GetMsg(mp))) {
 			dp = (struct DosPacket*)mn->mn_Node.ln_Name;	
 			dp->dp_Res2 = 0;
-			D(bug("[CON] packet %x:%d %x\n", dp, dp->dp_Type, dp->dp_Port));
+			D(bug("[CON] packet %x:%d %x,%x,%x\n",
+				dp, dp->dp_Type, dp->dp_Arg1, dp->dp_Arg2, dp->dp_Arg3));
 			error = 0;
 			switch (dp->dp_Type)
 			{
@@ -393,6 +393,7 @@ LONG CONMain(void)
 					dosfh->fh_Arg1 = (IPTR)fh;
 					fh->usecount++;
 				 	fh->breaktask = dp->dp_Port->mp_SigTask;
+				 	D(bug("[CON] Find fh=%x\n", dosfh));
 					replypkt(dp, DOSTRUE);
 				break;
 				case ACTION_END:
@@ -417,7 +418,7 @@ LONG CONMain(void)
 				{
 	                            LONG wantmode = dp->dp_Arg1;
 	
-	                            if (wantmode & FCM_RAW && ! (fh->flags & FHFLG_RAW))
+	                            if ((wantmode & FCM_RAW) && !(fh->flags & FHFLG_RAW))
 	                            {
 					/* Switching from CON: mode to RAW: mode */
 	

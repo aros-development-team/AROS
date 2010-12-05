@@ -1150,7 +1150,6 @@ BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
     while((PeekQualifier() & IEQUALIFIER_RBUTTON) &&
     	  conwindow && (conwindow == IntuitionBase->ActiveWindow))
     {
-    	struct DosLibrary *DOSBase = fh->dosbase;
         Delay(2);
     }
 #endif
