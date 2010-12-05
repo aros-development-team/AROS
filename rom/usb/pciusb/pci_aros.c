@@ -1263,24 +1263,26 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
 
-                    hc->hc_NumPorts = ((READREG32_LE(pciregbase, XHCI_HCSPARAMS1)&XHCM_MaxPorts)>>XHCB_MaxPorts);
-                    KPRINTF(1000, ("XHCI controller has max %ld port register sets\n",hc->hc_NumPorts));
-
                     // Store capregbase in xhc_capregbase
                     hc->xhc_capregbase = pciregbase;
-                    KPRINTF(1000, ("XHCI xhc_capregbase(%p) pciregbase(%p)\n",hc->xhc_capregbase, pciregbase));
+                    KPRINTF(1000, ("XHCI xhc_capregbase(%p)\n",hc->xhc_capregbase));
 
                     // Store opregbase in xhc_opregbase
-                    hc->xhc_opregbase = (APTR) ((ULONG) pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH) & 0xff));
+                    // hc->xhc_opregbase = (APTR) ((ULONG) pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH) & 0xff));
+                    hc->xhc_opregbase = (APTR) ((ULONG) pciregbase + capreg_readb(XHCI_CAPLENGTH));
                     KPRINTF(1000, ("XHCI opregbase (%p)\n",hc->xhc_opregbase));
 
                     KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
-                    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",   capreg_readb(XHCI_CAPLENGTH)));
-                    KPRINTF(1000, ("XHCI Version (%04x)\n",     capreg_readl(XHCI_HCIVERSION)));
+                    KPRINTF(1000, ("XHCI CAPLENGTH.b (%02x)\n",   capreg_readb(XHCI_CAPLENGTH)));
+                    KPRINTF(1000, ("XHCI CAPLENGTH.w (%04x)\n",   capreg_readw(XHCI_CAPLENGTH)));
+                    KPRINTF(1000, ("XHCI Version (%04x)\n",     capreg_readw(XHCI_HCIVERSION)));
                     KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS1)));
                     KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS2)));
                     KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS3)));
                     KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   capreg_readl(XHCI_HCCPARAMS)));
+
+                    hc->hc_NumPorts = ((capreg_readl(XHCI_HCSPARAMS1)&XHCM_MaxPorts)>>XHCB_MaxPorts);
+                    KPRINTF(1000, ("XHCI controller has max %ld port register sets\n",hc->hc_NumPorts));
 
                     /* HCCPARAMS stores in its upper 16 bits a DWORD offset value (xECP) that is calculated from address pointed by BAR0(pciregbase) to 1st xHCI Extended Capability */  
                 	extcapoffset = XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
@@ -1290,6 +1292,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         do {
                             extcap += extcapoffset;
                             if(XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == XHCI_EXT_CAPS_LEGACY) {
+                                KPRINTF(1000, ("XHCI LEGACY extended cap found\n"));
 
                                 temp = READMEM32_LE(extcap);
                                 if( (temp & XHCF_HC_BIOS_OWNED) ){
