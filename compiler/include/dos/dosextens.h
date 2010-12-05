@@ -340,8 +340,6 @@ struct FileHandle
     /* kept here until things stabilize */
     ULONG	    fh_Size;
     ULONG	    fh_Flags;
-    struct Device * fh_Device;
-    struct Unit   * fh_Unit;
 
 #else
 
