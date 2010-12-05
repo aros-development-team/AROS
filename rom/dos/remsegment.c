@@ -74,7 +74,7 @@
 		}
 		else
 		{
-		    dinf->di_ResList = MKBADDR(next->seg_Next);
+		    dinf->di_ResList = next->seg_Next;
 		}
 
 		return DOSTRUE;
