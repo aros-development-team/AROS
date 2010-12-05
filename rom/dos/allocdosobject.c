@@ -64,7 +64,10 @@
 	{
 	    struct FileHandle *fh = (struct FileHandle *)mem;
 
-#ifndef AROS_DOS_PACKETS
+#ifdef AROS_DOS_PACKETS
+	    fh->fh_Pos = -1;
+	    fh->fh_End = -1;
+#else
 	    /* We set fh->fh_Arg1 to point back to 'fh' to make packet
 	       emulation possible */
 	    fh->fh_CompatibilityHack = (SIPTR)fh;
