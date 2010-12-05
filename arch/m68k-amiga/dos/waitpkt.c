@@ -58,6 +58,15 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Process   *me = (struct Process *)FindTask(NULL);
+    return internal_WaitPkt(&me->pr_MsgPort, DOSBase);
+
+    AROS_LIBFUNC_EXIT
+} /* WaitPkt */
+
+struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
+				   struct DosLibrary *DOSBase)
+{
     struct Process *me = (struct Process *)FindTask(NULL);
     struct Message *msg = NULL;
     struct MsgPort *mp = NULL;
@@ -90,6 +99,5 @@
 
     return dp;
 
-    AROS_LIBFUNC_EXIT
-} /* WaitPkt */
+}
 
