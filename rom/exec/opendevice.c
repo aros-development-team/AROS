@@ -14,11 +14,12 @@
 #include <exec/libraries.h>
 #include <proto/exec.h>
 
-#ifndef DEBUG_SetFunction
-#   define DEBUG_SetFunction 0
+#include "exec_debug.h"
+#ifndef DEBUG_OpenDevice
+#   define DEBUG_OpenDevice 0
 #endif
 #undef DEBUG
-#if DEBUG_SetFunction
+#if DEBUG_OpenDevice
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>
