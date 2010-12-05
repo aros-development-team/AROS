@@ -50,7 +50,7 @@ struct Volume {
 
 BOOL mediumPresent(struct IOHandle *);
 struct Volume *initVolume(struct AFSBase *, struct Device *, CONST_STRPTR,
-	ULONG, struct DosEnvec *, LONG *error);
+	ULONG, ULONG flags, struct DosEnvec *, LONG *error);
 void uninitVolume(struct AFSBase *, struct Volume *);
 LONG newMedium(struct AFSBase *, struct Volume *);
 
