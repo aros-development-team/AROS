@@ -63,6 +63,8 @@
     	SetIoErr(0);
     	if (fl1->fl_Volume == fl2->fl_Volume && fl1->fl_Key == fl2->fl_Key)
     	    return LOCK_SAME;
+    	if (fl1->fl_Volume == fl2->fl_Volume)
+    	    return LOCK_SAME_VOLUME;
     }
     return LOCK_DIFFERENT;
 
