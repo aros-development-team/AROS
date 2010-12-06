@@ -102,6 +102,14 @@ static BPTR __lock(
     return res;
 }
 
+#ifdef AROS_DOS_PACKETS
+static BPTR __lock(
+    const char* name,
+    LONG        accessMode)
+{
+    return Lock(name, accessMode);
+}
+#else
 static BPTR __lock(
     const char* name,
     LONG        accessMode)
@@ -184,3 +192,4 @@ static BPTR __lock(
 
     return BNULL;
 }
+#endif /* AROS_DOS_PACKETS */
