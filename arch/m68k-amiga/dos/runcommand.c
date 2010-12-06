@@ -24,7 +24,6 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 	CONST_STRPTR		 argptr,
 	ULONG			 argsize,
 	LONG_FUNC		 entry,
-	BOOL			 is_bcpl,
 	struct DosLibrary      * DOSBase
 );
 
@@ -147,13 +146,9 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     	if (ret < 0) {
     	    break;
     	}
-    	if (0 && ret == 1) {
-    	    ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
-    	                (LONG_FUNC)(((ULONG *)me->pr_GlobVec)[1]),TRUE,DOSBase);
-    	} else
 #endif
     ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
-		(LONG_FUNC)((BPTR *)BADDR(segList)+1),FALSE,DOSBase);
+		(LONG_FUNC)((BPTR *)BADDR(segList)+1),DOSBase);
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     	BCPL_Cleanup(me);
     	me->pr_GlobVec = old_GlobVec;
