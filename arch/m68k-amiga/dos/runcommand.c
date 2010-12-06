@@ -91,7 +91,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     UBYTE *stack;
     LONG ret;
     struct StackSwapStruct sss;
-    BPTR oldinput = BNULL, newinput = BNULL;
+    BPTR oldinput = BNULL;
 
     if(stacksize < AROS_STACKSIZE)
 	stacksize = AROS_STACKSIZE;
@@ -114,24 +114,20 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     oldargs=me->pr_Arguments;
     me->pr_Arguments=(STRPTR)argptr;
 
-    /* Need to create filehandle that points to arguments.
-     * Lets (badly) misuse buffered NIL: and hope it works..
+    /* Need to inject command arguments to the beginning of input handle.
      * Guru Book mentions this (but related to CreateNewProc())
      * which means something isn't 100% correct..
      *
      * This fixes for example C:Execute
      */
-    {
-    	newinput = Open("NIL:", MODE_NEWFILE);
-	if (newinput) {
-	    struct FileHandle *fh = BADDR(newinput);
-	    if (!SetVBuf(newinput, NULL, BUF_FULL, argsize)) {
-	    	/* ugly hack */
-	    	memcpy(fh->fh_Buf, argptr, argsize);
-	    	fh->fh_Pos = fh->fh_Buf;
-	    	fh->fh_End = fh->fh_Buf + argsize;
-	    	oldinput = SelectInput(newinput);
-	    }
+    oldinput = Input();
+    if (oldinput && IsInteractive(oldinput)) {
+    	struct FileHandle *fh = BADDR(oldinput);
+	if (!SetVBuf(oldinput, NULL, BUF_FULL, argsize)) {
+	    /* ugly hack */
+	    memcpy(fh->fh_Buf, argptr, argsize);
+	    fh->fh_Pos = fh->fh_Buf;
+	    fh->fh_End = fh->fh_Buf + argsize;
 	}
     }
 
@@ -161,11 +157,6 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     GetIntETask(me)->iet_startup = oldstartup;
 
     me->pr_Result2=oldresult;
-
-    if (oldinput)
-    	SelectInput(oldinput);
-    if (newinput)
-    	Close(newinput);
 
     FreeMem(stack,stacksize);
     
