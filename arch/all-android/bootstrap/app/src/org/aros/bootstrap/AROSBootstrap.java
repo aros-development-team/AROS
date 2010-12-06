@@ -56,7 +56,7 @@ public class AROSBootstrap extends Activity
     			@Override
     			public void onClick(DialogInterface dialog, int which)
     			{
-    				AROSBootstrap.this.finish();
+    				System.exit(0);
     			}
     		};
     		break;
@@ -69,7 +69,7 @@ public class AROSBootstrap extends Activity
     			public void onClick(DialogInterface dialog, int which)
     			{
     				// TODO: break run loop and return
-    				AROSBootstrap.this.finish();
+    				System.exit(0);
     			}
     		};
     		break;
