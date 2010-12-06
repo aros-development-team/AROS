@@ -167,6 +167,7 @@ Object *DiskInfo__OM_NEW
     /* find the volumes doslist information .. */
     IPTR volunit = 0;
     filesystem = _(MSG_UNKNOWN);
+#ifndef AROS_DOS_PACKETS
     dl = LockDosList(LDF_VOLUMES|LDF_READ);
     if (dl) {
 	dn = FindDosEntry(dl, volname, LDF_VOLUMES);
@@ -233,6 +234,7 @@ Object *DiskInfo__OM_NEW
 	filesystem = AllocVec(strlen(fstype) + strlen(fshandler) + 4, MEMF_CLEAR);
 	sprintf(filesystem, "%s (%s)", fstype, fshandler);
     }
+#endif
 
     volname[strlen(volname)] = ':';
 
