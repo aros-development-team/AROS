@@ -284,6 +284,7 @@ void AFS_work(void) {
     	    	if (!mediumPresent(&volume->ioh)) {
 		    ok = DOSFALSE;
 		    res2 = ERROR_NOT_IMPLEMENTED;
+		    D(bug("[AFS] %d not implemented. Not media.\n", dp->dp_Type));
 		    break;
 		}
 
@@ -318,10 +319,10 @@ void AFS_work(void) {
 		    	    break;
 		    	if (*cp == ':') {
 		    	    fn = cp+1;
-		    	    dh = &volume->ah;
 		    	    break;
 		    	}
 		    }
+
 		    ah = openf(handler, dh, fn, mode, &res2);
 		    ok = (ah != NULL) ? DOSTRUE : DOSFALSE;
 		    if (ok)
@@ -354,10 +355,10 @@ void AFS_work(void) {
 		    	    break;
 		    	if (*cp == ':') {
 		    	    fn = cp+1;
-		    	    dh = &volume->ah;
 		    	    break;
 		    	}
 		    }
+
 		    ah = openf(handler, dh, fn, mode, &res2);
 		    if (ah == NULL) {
 		    	ok = DOSFALSE;
@@ -528,6 +529,7 @@ void AFS_work(void) {
 		default:
 		    ok = DOSFALSE;
 		    res2 = ERROR_NOT_IMPLEMENTED;
+		    D(bug("[AFS] %d not implemented\n", dp->dp_Type));
 		    break;
 		}
     	    	break;
