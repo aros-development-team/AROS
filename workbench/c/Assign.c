@@ -196,7 +196,7 @@ struct ArgList
     IPTR devices;
 };
 
-#ifdef __AROS__
+#if defined(__AROS__) && !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 AROS_UFH3(__startup static int, Start,
 	  AROS_UFHA(char *, argstr, A0),
 	  AROS_UFHA(ULONG, argsize, D0),
@@ -207,6 +207,9 @@ AROS_UFH3(__startup static int, Start,
 	AROS_USERFUNC_EXIT
 }
 #else
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+__startup
+#endif
 int Start(void)
 {
 	struct ExecBase *sBase;
