@@ -199,6 +199,7 @@ static int InitCore(struct KernelBase *KernelBase)
     struct itimerval interval;
     struct sigaction sa;
     struct SignalTranslation *s;
+    sigset_t tmp_mask;
     int ret;
 
     D(bug("[KRN] InitCore()\n"));
@@ -235,7 +236,7 @@ static int InitCore(struct KernelBase *KernelBase)
     pd->errnoPtr = KernelIFace.__error();
     AROS_HOST_BARRIER
     KernelBase->kb_PlatformData = pd;
-
+    
     /* We only want signal that we can handle at the moment */
     SIGFILLSET(&pd->sig_int_mask);
     SIGEMPTYSET(&sa.sa_mask);
@@ -292,6 +293,18 @@ static int InitCore(struct KernelBase *KernelBase)
     KernelIFace.sigprocmask(SIG_BLOCK, &pd->sig_int_mask, NULL);
     AROS_HOST_BARRIER
 
+    /*
+     * Explicitly make sure that SIGUSR1 and SIGUSR2 are enabled.
+     * This effectively kicks DalvikVM's ass on Android and takes SIGUSR1 away
+     * from its "signal catcher". On other platforms this at least should not harm.
+     * I also added SIGUSR2, just in case.
+     */
+    SIGEMPTYSET(&tmp_mask);
+    SIGADDSET(&tmp_mask, SIGUSR1);
+    SIGADDSET(&tmp_mask, SIGUSR2);
+    KernelIFace.sigprocmask(SIG_UNBLOCK, &tmp_mask, NULL);
+    AROS_HOST_BARRIER
+    
     /* Set up the "pseudo" vertical blank interrupt. */
     D(bug("[InitCore] Timer frequency is %d\n", SysBase->ex_EClockFrequency));
     interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;

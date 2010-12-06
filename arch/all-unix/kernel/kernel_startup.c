@@ -57,6 +57,7 @@ static const char *kernel_functions[] = {
     "getpagesize",
     "sigemptyset",
     "sigfillset",
+    "sigaddset",
     "sigdelset",
 #endif
     NULL
