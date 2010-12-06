@@ -996,15 +996,25 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_CompleteInt.is_Data = hc;
                     hc->hc_CompleteInt.is_Code = (void (*)(void)) &ehciCompleteInt;
 
+                    /*
+                        FIXME: We should be able to read some EHCI registers before we allocate memory
+                    */
+                    /*
+                        FIXME: Check the real size from USBCMD Frame List Size field (bits3:2)
+                        and set the value accordingly if Frame List Flag in the HCCPARAMS indicates RW for the field
+                        else use default value of EHCI_FRAMELIST_SIZE (1024)
+                    */
                     hc->hc_PCIMemSize = sizeof(ULONG) * EHCI_FRAMELIST_SIZE + EHCI_FRAMELIST_ALIGNMENT + 1;
                     hc->hc_PCIMemSize += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
                     hc->hc_PCIMemSize += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
+
                     memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
                     if(!memptr)
                     {
                         allocgood = FALSE;
                         break;
                     }
+
                     hc->hc_PCIMem = (APTR) memptr;
                     // PhysicalAddress - VirtualAdjust = VirtualAddress
                     // VirtualAddress  + VirtualAdjust = PhysicalAddress
@@ -1255,6 +1265,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 case HCITYPE_XHCI:
                 {
                     ULONG extcapoffset, extcap, cnt, timeout, temp;
+                    APTR memptr;
                     volatile APTR pciregbase;
 
                     /* Activate Mem as pciFreeUnit will disable it! (along with IO and Busmaster) */
@@ -1268,21 +1279,23 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     KPRINTF(1000, ("XHCI xhc_capregbase(%p)\n",hc->xhc_capregbase));
 
                     // Store opregbase in xhc_opregbase
-                    // hc->xhc_opregbase = (APTR) ((ULONG) pciregbase + (READREG16_LE(pciregbase, XHCI_CAPLENGTH) & 0xff));
                     hc->xhc_opregbase = (APTR) ((ULONG) pciregbase + capreg_readb(XHCI_CAPLENGTH));
-                    KPRINTF(1000, ("XHCI opregbase (%p)\n",hc->xhc_opregbase));
+                    KPRINTF(1000, ("XHCI xhc_opregbase (%p)\n",hc->xhc_opregbase));
 
                     KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
-                    KPRINTF(1000, ("XHCI CAPLENGTH.b (%02x)\n",   capreg_readb(XHCI_CAPLENGTH)));
-                    KPRINTF(1000, ("XHCI CAPLENGTH.w (%04x)\n",   capreg_readw(XHCI_CAPLENGTH)));
+                    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",   capreg_readb(XHCI_CAPLENGTH)));
                     KPRINTF(1000, ("XHCI Version (%04x)\n",     capreg_readw(XHCI_HCIVERSION)));
                     KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS1)));
                     KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS2)));
                     KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS3)));
                     KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   capreg_readl(XHCI_HCCPARAMS)));
 
-                    hc->hc_NumPorts = ((capreg_readl(XHCI_HCSPARAMS1)&XHCM_MaxPorts)>>XHCB_MaxPorts);
-                    KPRINTF(1000, ("XHCI controller has max %ld port register sets\n",hc->hc_NumPorts));
+                    hc->hc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
+
+                    KPRINTF(1000, ("MaxSlots %lx\n",XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))));
+                    KPRINTF(1000, ("MaxIntrs %lx\n",XHCV_MaxIntrs(capreg_readl(XHCI_HCSPARAMS1))));
+                    KPRINTF(1000, ("MaxPorts %lx\n",hc->hc_NumPorts));
+
 
                     /* HCCPARAMS stores in its upper 16 bits a DWORD offset value (xECP) that is calculated from address pointed by BAR0(pciregbase) to 1st xHCI Extended Capability */  
                 	extcapoffset = XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
@@ -1324,6 +1337,15 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                             cnt--;
 
                         }while(extcapoffset & cnt);
+                    }
+
+                    hc->hc_PCIMemSize = 1024;   //Arbitrary number
+
+                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
+                    if(!memptr)
+                    {
+                        allocgood = FALSE;
+                        break;
                     }
 
 	                /* Reset controller */
