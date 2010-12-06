@@ -997,7 +997,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_CompleteInt.is_Code = (void (*)(void)) &ehciCompleteInt;
 
                     /*
-                        FIXME: We should be able to read some EHCI registers before we allocate memory
+                        FIXME: We should be able to read some EHCI registers before allocating memory
                     */
                     /*
                         FIXME: Check the real size from USBCMD Frame List Size field (bits3:2)
@@ -1290,8 +1290,36 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS3)));
                     KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   capreg_readl(XHCI_HCCPARAMS)));
 
-                    hc->hc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
+                    /*
+                        Chapter 4.20
+                        System software shall allocate the Scratchpad Buffer(s) before placing the xHC in Run mode (Run/Stop(R/S) = ‘1’).
 
+                        The following operations take place to allocate Scratchpad Buffers to the xHC:
+                        1) Software examines the Max Scratchpad Buffers field in the HCSPARAMS2 register.
+                        2) Software allocates a Scratchpad Buffer Array with Max Scratchpad Buffers entries.
+                        3) Software writes the base address of the Scratchpad Buffer Array to the DCBAA (Slot 0) entry.
+                        4) For each entry in the Scratchpad Buffer Array:
+                            a. Software allocates a PAGESIZE Scratchpad Buffer.
+                            b. Software writes the base address of the allocated Scratchpad Buffer to associated entry in the Scratchpad Buffer Array.
+                    */
+                    cnt = 0;
+                    temp = opreg_readl(XHCI_PAGESIZE)&0xffff;
+                    KPRINTF(1000, ("Pagesize raw = %ld\n",temp));
+
+                    while((~temp&1) & temp){
+                        KPRINTF(1000, ("Count %ld\n",cnt));
+                        temp>>1;
+                        cnt++;
+                    }
+
+                    hc->xhc_pagesize = 1<<(cnt+12);
+
+                    hc->xhc_scratchbufs = XHCV_SPB_Max(capreg_readl(XHCI_HCSPARAMS2));
+
+                    KPRINTF(1000, ("Max Scratchpad Buffers %lx\n",hc->xhc_scratchbufs));
+                    KPRINTF(1000, ("Pagesize 2^(n+12)%lx\n",hc->xhc_pagesize));
+
+                    hc->hc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
                     KPRINTF(1000, ("MaxSlots %lx\n",XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))));
                     KPRINTF(1000, ("MaxIntrs %lx\n",XHCV_MaxIntrs(capreg_readl(XHCI_HCSPARAMS1))));
                     KPRINTF(1000, ("MaxPorts %lx\n",hc->hc_NumPorts));
@@ -1308,16 +1336,16 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                                 KPRINTF(1000, ("XHCI LEGACY extended cap found\n"));
 
                                 temp = READMEM32_LE(extcap);
-                                if( (temp & XHCF_HC_BIOS_OWNED) ){
+                                if( (temp & XHCF_EC_BIOSOWNED) ){
                                     KPRINTF(1000, ("XHCI Controller owned by BIOS\n"));
 
                                     /* Spec says "no more than a second", we give it a little more */
                                     timeout = 250;
 
-                                    WRITEMEM32_LE(extcap, (temp | XHCF_HC_OS_OWNED) );
+                                    WRITEMEM32_LE(extcap, (temp | XHCF_EC_OSOWNED) );
                                     do {
                                         temp = READMEM32_LE(extcap);
-                                        if( !(temp & XHCF_HC_BIOS_OWNED) ) {
+                                        if( !(temp & XHCF_EC_BIOSOWNED) ) {
                                             KPRINTF(1000, ("BIOS gave up on XHCI. Pwned!\n"));
                                             break;
                                         }
@@ -1327,9 +1355,13 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                                     if(!timeout)
                                     {
                                         KPRINTF(1000, ("BIOS didn't release XHCI. Forcing and praying...\n"));
-                                        WRITEMEM32_LE(extcap, (temp & ~XHCF_HC_BIOS_OWNED) );
+                                        WRITEMEM32_LE(extcap, (temp & ~XHCF_EC_BIOSOWNED) );
                                     }
                                 }
+                            }
+
+                            if(XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == XHCI_EXT_CAPS_PROTOCOL) {
+                                KPRINTF(1000, ("XHCI PROTOCOL extended cap found\n"));
                             }
 
                             /* Next xHCI Extended Capability is calculated from DWORD offset that is relative to current xHCI Extended Capability (extcap) */
@@ -1348,9 +1380,17 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         break;
                     }
 
+                    hc->hc_PCIMem = (APTR) memptr;
+                    // PhysicalAddress - VirtualAdjust = VirtualAddress
+                    // VirtualAddress  + VirtualAdjust = PhysicalAddress
+                    hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
+                    KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
+
 	                /* Reset controller */
 	                temp = opreg_readl(XHCI_USBCMD);
 	                opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
+
+                    /* FIXME: Wait until the Controller Not Ready (CNR) flag in the USBSTS is ‘0’ */
 
                     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
                     hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
@@ -1369,6 +1409,14 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     hc->hc_PCIIntHandler.h_Code = xhciIntCode;
                     hc->hc_PCIIntHandler.h_Data = hc;
                     HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+
+                    /* Program the Max Device Slots Enabled (MaxSlotsEn) field */
+                    /* FIXME: This field shall not be modified by software if the xHC is running (Run/Stop (R/S) = ‘1’) */
+                    opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | hc->hc_NumPorts) );
+
+                    /* Program the Device Context Base Address Array Pointer (DCBAAP) */
+
+                    /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
 
                     break;
                 }

@@ -58,7 +58,7 @@
 #define	XHCM_ERST_Max   ((1UL<<4)-1)<<XHCB_ERST_Max)
 #define	XHCF_SPR        (1UL<<XHCB_SPR)
 #define	XHCM_SPB_Max    (((1UL<<4)-1)<<XHCB_SPB_Max)
-
+#define	XHCV_SPB_Max(p) (((p)&XHCM_SPB_Max)>>XHCB_SPB_Max)
 
 /* XHCI_HCSPARAMS3 defines */
 #define	XHCB_U1DEV_LAT  0
@@ -106,6 +106,7 @@
 #define XHCV_EXT_CAPS_NEXT(p)	((((p)&XHCM_EXT_CAPS_NEXT)>>XHCB_EXT_CAPS_NEXT)<<2)
 #define	XHCV_EXT_CAPS_VALUE(p)  (((p)&XHCM_EXT_CAPS_VALUE)>>XHCB_EXT_CAPS_VALUE)
 
+
 /* Reserved ID 0 */
 #define XHCI_EXT_CAPS_LEGACY    1
 #define XHCI_EXT_CAPS_PROTOCOL  2
@@ -122,8 +123,40 @@
 #define XHCI_EXT_CAPS_MAX       255
 
 
-/* XHCI operational register defines */
+/* These are for XHCI_EXT_CAPS_LEGACY */
+/* USB Legacy Support Capability (USBLEGSUP) */
+#define XHCI_EC_USBLEGSUP   0x00
+#define XHCB_EC_BIOSOWNED   16
+#define XHCB_EC_OSOWNED     24
+#define XHCF_EC_BIOSOWNED  (1UL<<XHCB_EC_BIOSOWNED)
+#define XHCF_EC_OSOWNED    (1UL<<XHCB_EC_OSOWNED)
 
+/* USB Legacy Support Control/Status (USBLEGCTLSTS) */
+#define XHCI_EC_USBLEGCTLSTS    0x04
+#define XHCB_SMI_USBE           0
+#define XHCB_SMI_HSEE           4
+#define XHCB_SMI_OSOE           13
+#define XHCB_SMI_PCICE          14
+#define XHCB_SMI_BARE           15
+#define XHCB_SMI_EI             16
+#define XHCB_SMI_HSE            20
+#define XHCB_SMI_OSOC           29
+#define XHCB_SMI_PCIC           30
+#define XHCB_SMI_BAR            31
+
+#define XHCF_SMI_USBE           (1UL<<XHCB_SMI_USBE)
+#define XHCF_SMI_HSEE           (1UL<<XHCB_SMI_HSEE)
+#define XHCF_SMI_OSOE           (1UL<<XHCB_SMI_OSOE)
+#define XHCF_SMI_PCICE          (1UL<<XHCB_SMI_PCICE)
+#define XHCF_SMI_BARE           (1UL<<XHCB_SMI_BARE)
+#define XHCF_SMI_EI             (1UL<<XHCB_SMI_EI)
+#define XHCF_SMI_HSE            (1UL<<XHCB_SMI_HSE)
+#define XHCF_SMI_OSOC           (1UL<<XHCB_SMI_OSOC)
+#define XHCF_SMI_PCIC           (1UL<<XHCB_SMI_PCIC)
+#define XHCF_SMI_BAR            (1UL<<XHCB_SMI_BAR)
+
+
+/* XHCI operational register defines */
 /* USB Command Register (USBCMD) */
 #define	XHCI_USBCMD     0x00
 
@@ -183,6 +216,8 @@
 
 /* Configure Register (CONFIG) */
 #define XHCI_CONFIG     0x38
+#define	XHCB_CONFIG_MaxSlotsEn  0
+#define	XHCM_CONFIG_MaxSlotsEn  (((1UL<<8)-1)<<XHCB_CONFIG_MaxSlotsEn)
 
 /* Port Status and Control Register (PORTSC) */
 #define XHCI_PORTSC(port) (0x400 + (0x10 * (port-1)))
@@ -232,13 +267,5 @@
 #define	XHCF_PS_WOE     (1UL<<XHCB_PS_WOE)
 #define	XHCF_PS_DR      (1UL<<XHCB_PS_DR)
 #define	XHCF_PS_WPR     (1UL<<XHCB_PS_WPR)
-
-
-/* USB Legacy Support Capability */
-#define XHCB_HC_BIOS_OWNED      16
-#define XHCB_HC_OS_OWNED        24
-
-#define XHCF_HC_BIOS_OWNED      (1UL<<XHCB_HC_BIOS_OWNED)
-#define XHCF_HC_OS_OWNED        (1UL<<XHCB_HC_OS_OWNED)
 
 #endif /* XHCICHIP_H */
