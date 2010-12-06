@@ -51,10 +51,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct FileHandle *fh = BADDR(fh);
+    struct FileHandle *afh = BADDR(fh);
     LONG status;
     
-    status = dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_SCREEN_MODE, mode);
+    status = dopacket1(DOSBase, NULL, afh->fh_Type, ACTION_SCREEN_MODE, mode);
     
     return status;
 
