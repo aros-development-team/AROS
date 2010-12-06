@@ -161,7 +161,7 @@
 
 #define	XHCF_STS_HCH    (1UL<<XHCB_STS_HCH)
 #define	XHCF_STS_HSE    (1UL<<XHCB_STS_HSE)
-#define	XHCF_STS_EINT   (1UL<<XHCB_STS_EINT
+#define	XHCF_STS_EINT   (1UL<<XHCB_STS_EINT)
 #define	XHCF_STS_PCD    (1UL<<XHCB_STS_PCD)
 #define	XHCF_STS_SSS    (1UL<<XHCB_STS_SSS)
 #define	XHCF_STS_RSS    (1UL<<XHCB_STS_RSS)
@@ -185,7 +185,7 @@
 #define XHCI_CONFIG     0x38
 
 /* Port Status and Control Register (PORTSC) */
-#define XHCI_PORTSC(port) (0x400 + (0x10 * (port–1)))
+#define XHCI_PORTSC(port) (0x400 + (0x10 * (port-1)))
 
 #define	XHCB_PS_CCS     0
 #define	XHCB_PS_PED     1
