@@ -72,7 +72,7 @@
 
     status = DOSFALSE;
     if (getpacketinfo(DOSBase, name, &phs)) {
-        status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK, phs.lock, phs.name, name, (IPTR)soft);
+        status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK, phs.lock, phs.name, (SIPTR)name, (IPTR)soft);
     	freepacketinfo(DOSBase, &phs);
     }
     
