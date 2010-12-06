@@ -190,7 +190,11 @@ static const char *libcSymbols[] = {
     "__xstat",
     "__lxstat",
 #else
+#ifdef HOST_OS_android
+    "__errno",
+#else
     "__error",
+#endif
     "stat" INODE64_SUFFIX,
     "lstat" INODE64_SUFFIX,
 #endif

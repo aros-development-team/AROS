@@ -9,7 +9,7 @@ endif
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
 		 -I$(SRCDIR)/rom/exec -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
-		 -DHOST_OS_$(ARCH)
+		 -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \

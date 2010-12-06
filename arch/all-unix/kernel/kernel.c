@@ -34,7 +34,6 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/time.h>
-#include <stdlib.h>
 #include <unistd.h>
 #undef timeval
 

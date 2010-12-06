@@ -48,7 +48,11 @@ static const char *kernel_functions[] = {
 #ifdef HOST_OS_linux
     "__errno_location",
 #else
+#ifdef HOST_OS_android
+    "__errno",
+#else
     "__error",
+#endif
 #endif
     "mmap",
     "munmap",
