@@ -238,7 +238,7 @@ void VolumesToList(Object* listObject)
     while((device = NextDosEntry(device, flags - LDF_VOLUMES)) != NULL)
     {
 	TEXT name[128];
-	strcpy(name, device->dol_Name);
+	strcpy(name, AROS_BSTR_ADDR(device->dol_Name));
 	strcat(name, ":");
 		
 	/* exclude RAM, NIL, RAW, CON, ... */
@@ -266,16 +266,20 @@ void VolumesToList(Object* listObject)
 	if (addDevice)
 	{
 	    struct SFormatEntry entry;
-	    strcpy(entry.deviceName, device->dol_Name);
+	    strcpy(entry.deviceName, AROS_BSTR_ADDR(device->dol_Name));
 	    volume = adl;            
     	    
     	    do
     	    {
 		if ((volume = NextDosEntry(volume, LDF_VOLUMES)) == 0) break;
+#ifdef AROS_DOS_PACKETS
+	    } while (strcmp(AROS_BSTR_ADDR(volume->dol_Name), AROS_BSTR_ADDR(device->dol_Name)) != 0);
+#else
     	    } while((volume->dol_Ext.dol_AROS.dol_Device != device->dol_Ext.dol_AROS.dol_Device) ||
 		(volume->dol_Ext.dol_AROS.dol_Unit != device->dol_Ext.dol_AROS.dol_Unit));
+#endif
 	
-	    if (volume) strcpy(entry.volumeName, volume->dol_Name);
+	    if (volume) strcpy(entry.volumeName, AROS_BSTR_ADDR(volume->dol_Name));
 	    else strcpy(entry.volumeName, "");
 	
 	    ComputeCapacity(volume, pInfoData);
@@ -535,8 +539,12 @@ int rcGuiMain(void)
 			D(Printf("Device = 0x%08lX Unit = 0x%08lX\n", pdlDevice->dol_Ext.dol_AROS.dol_Device,
 				 pdlDevice->dol_Ext.dol_AROS.dol_Unit);)
 		    }
+#ifdef AROS_DOS_PACKETS
+		    while (strcmp(AROS_BSTR_ADDR(pdlDevice->dol_Name), AROS_BSTR_ADDR(pdlVolume->dol_Name)) != 0);
+#else
 		    while((pdlDevice->dol_Ext.dol_AROS.dol_Device != pdlVolume->dol_Ext.dol_AROS.dol_Device) ||
 			  (pdlDevice->dol_Ext.dol_AROS.dol_Unit != pdlVolume->dol_Ext.dol_AROS.dol_Unit));
+#endif
 		}
 	    }
 #else	    
@@ -570,7 +578,7 @@ int rcGuiMain(void)
 	ComputeCapacity(pdlVolume, &dinf );
 	
 	if (pdlVolume)
-	    strcpy(szVolumeName, pdlVolume->dol_Name); 
+	    strcpy(szVolumeName, AROS_BSTR_ADDR(pdlVolume->dol_Name)); 
     }
     else if ( _WBenchMsg->sm_NumArgs == 1 )
     {
