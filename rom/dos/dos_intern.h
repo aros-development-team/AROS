@@ -283,6 +283,7 @@ struct PacketHelperStruct
 };
 
 BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR, struct PacketHelperStruct*);
+BOOL getdevpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR devname, CONST_STRPTR name, struct PacketHelperStruct *phs);
 void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
 
 LONG InternalOpen(CONST_STRPTR name, LONG action, 
