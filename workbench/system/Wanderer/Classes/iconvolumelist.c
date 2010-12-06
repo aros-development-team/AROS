@@ -98,8 +98,14 @@ $Id$
 #endif
 #endif
 
+#ifdef AROS_DOS_PACKETS
+/* TODO: This needs to be corrected for DOS Packet mode */
+#define __DL_UNIT       0
+#define __DL_DEVICE     NULL
+#else
 #define __DL_UNIT       dl->dol_Ext.dol_AROS.dol_Unit
 #define __DL_DEVICE     dl->dol_Ext.dol_AROS.dol_Device
+#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -122,10 +128,12 @@ struct DOSVolumeNode
 
 static BOOL VolumeIsOffline(struct DosList *dl)
 {
+#ifndef AROS_DOS_PACKETS
     if (strcmp(dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name,
         "packet.handler"))
         return dl->dol_Ext.dol_AROS.dol_Unit == NULL;
     else
+#endif
         return dl->dol_Task == NULL;
 }
 
@@ -189,7 +197,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                             D(bug("[IconVolumeList] %s: Packet Style device\n", __PRETTY_FUNCTION__));
 			    newdvn->dvn_Port = dl->dol_Task;
 			}
-#if defined(__AROS__)
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
 			else if (dl->dol_Ext.dol_AROS.dol_Device != NULL)
 			{
                             D(bug("[IconVolumeList] %s: IOFS Style device\n", __PRETTY_FUNCTION__));
@@ -221,7 +229,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                 D(if (dl->dol_Ext.dol_AROS.dol_Device) bug("'%s' ", dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name));
                 D(bug("@ 0x%p, Unit @ 0x%p) Type: %d\n", dl->dol_Ext.dol_AROS.dol_Device, __DL_UNIT, dl->dol_Type));
 
-#if defined(__AROS__)
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
 		if (dl->dol_Ext.dol_AROS.dol_Device == NULL)
 #else
 		if (dl->dol_Task == NULL)
@@ -296,7 +304,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 			if ((dvn->dvn_Port != NULL) &&
 			    (
 			       (dvn->dvn_Port == dl->dol_Task)
-#if defined(__AROS__)
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
 			       || (dvn->dvn_Port == (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device)
 #endif
 			    ))
