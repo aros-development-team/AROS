@@ -1,10 +1,10 @@
 #   $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
 include $(TOP)/config/make.cfg
 
-FILES := resident handler support completion
+FILES := resident con_handler con_task support completion
 
-#MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
+#MM- kernel-fs-amiga : includes linklibs kernel-fs-con-linklib
 
-%build_module_simple mmake=kernel-fs-con \
-    modname=con modtype=handler \
-    files="$(FILES)" uselibs="rom"
+%build_archspecific \
+    mainmmake=kernel-fs-con maindir=rom/devs/filesys/console_handler arch=amiga-m68k \
+    files="$(FILES)" modulename=con
