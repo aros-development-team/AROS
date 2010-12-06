@@ -293,7 +293,13 @@ void AFS_work(void) {
 	    case ACTION_DISK_INFO:
 	    	ok = getDiskInfo(volume, BADDR(dp->dp_Arg1)) ? DOSFALSE : DOSTRUE;
 	    	break;
-
+	    case ACTION_SAME_LOCK:
+	    {
+		struct FileLock   *f1 = BADDR(dp->dp_Arg1);
+		struct FileLock   *f2 = BADDR(dp->dp_Arg2);
+	    	ok = sameLock((struct AfsHandle*)f1->fl_Key, (struct AfsHandle*)f2->fl_Key);
+		break;
+	    }
     	    default:
 
 		switch (dp->dp_Type) {
@@ -558,6 +564,43 @@ void AFS_work(void) {
 			fib->fib_DirEntryType = ST_ROOT;
 		    }
 		    ok = DOSTRUE;
+		    break;
+		}
+		case ACTION_PARENT:
+		case ACTION_PARENT_FH:
+		{
+		    struct FileLock   *opl = BADDR(dp->dp_Arg1);
+		    struct FileHandle *oph = BADDR(dp->dp_Arg1);
+		    struct FileLock   *fl;
+		    struct AfsHandle  *oh;
+		    struct AfsHandle  *ah;
+
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
+
+		    if (dp->dp_Type == ACTION_PARENT)
+		    	oh = (APTR)opl->fl_Key;
+		    else
+		    	oh = (APTR)oph->fh_Arg1;
+		    ah = openf(handler, oh, "/", FMF_MODE_OLDFILE, &res2);
+		    if (ah == NULL) {
+		    	ok = DOSFALSE;
+		    	break;
+		    }
+		    fl = AllocMem(sizeof(*fl), MEMF_CLEAR);
+		    if (fl != NULL) {
+		        fl->fl_Link = BNULL;
+		        fl->fl_Key = (LONG)(IPTR)ah;
+		        fl->fl_Access = ACCESS_READ;
+		        fl->fl_Task = mp;
+		        fl->fl_Volume = MKBADDR(&volume->devicelist);
+		        ok = MKBADDR(fl);
+		        res2 = 0;
+		    } else {
+		        closef(handler, ah);
+		        ok = DOSFALSE;
+		        res2 = ERROR_NO_FREE_STORE;
+		    }
 		    break;
 		}
 		default:
