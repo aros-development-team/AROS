@@ -11,7 +11,8 @@ CFUNCS  := \
 	runcommand runhandler samedevice samelock sendpkt \
 	setprotection startnotify systemtaglist unlock write \
 	waitforchar lockrecord unlockrecord readlink makelink \
-	openfromlock pipe setfilesize setmode waitpkt
+	openfromlock pipe setfilesize setmode waitpkt setfiledate \
+	setcomment
 
 CFILES  := $(CFUNCS) \
 	bcpl_support helper internalopen internalseek \
