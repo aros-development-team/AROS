@@ -9,7 +9,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 extern struct Process *r(struct DeviceNode *dn, struct DosLibrary *DOSBase);

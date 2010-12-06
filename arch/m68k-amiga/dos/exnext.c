@@ -6,7 +6,7 @@
     Lang: English
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/exec.h>
 
@@ -80,6 +80,8 @@
     if (ret) {
     	fixfib(fileInfoBlock);
     	D(bug("[ExNext] '%s'\n", fileInfoBlock->fib_FileName));
+    } else {
+    	D(bug("[ExNext] ret=%d err=%d\n", ret, IoErr()));
     }
     return ret;
 
