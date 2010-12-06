@@ -5310,7 +5310,42 @@ void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     struct PCIController *hc = (struct PCIController *) irq->h_Data;
     struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
+    ULONG intr, portn;
 
+    intr = opreg_readl(XHCI_USBSTS);
+    if(intr & XHCF_STS_EINT) {
+        /* Clear (RW1C) Event Interrupt (EINT) */
+        opreg_writel(XHCI_USBSTS, XHCF_STS_EINT);
+
+        if(hc->hc_Online) {
+            switch(intr) {
+                case XHCB_STS_HSE:
+                    KPRINTF(1000, ("Host System Error (HSE)!\n"));
+                    break;
+                case XHCB_STS_PCD:
+
+                    /* There are seven status change bits in the PORTSC register,
+                            Connect Status Change (CSC)
+                            Port Enabled/Disabled Change (PEC)
+                            Warm Port Reset Change (WRC)
+                            Over-current Change (OCC)
+                            Port Reset Change (PRC)
+                            Port Link State Change (PLC)
+                            Port Config Error Change (CEC)
+                    */
+                    for (portn = 1; portn <= hc->hc_NumPorts; portn++) {
+                        if (opreg_readl(XHCI_PORTSC(portn)) & (XHCF_PS_CSC|XHCF_PS_PEC|XHCF_PS_OCC|XHCF_PS_WRC|XHCF_PS_PRC|XHCF_PS_PLC|XHCF_PS_CEC))
+                        {
+                            KPRINTF(1000,("port %d changed\n", portn));
+                        }
+                    }
+                    break;
+                case XHCB_STS_SRE:
+                    KPRINTF(1000, ("Host Controller Error (HCE)!\n"));
+                    break;
+            }
+        }
+    }
 }
 /* \\\ */
 #endif
