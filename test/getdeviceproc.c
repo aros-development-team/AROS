@@ -7,6 +7,9 @@
 #include <stdio.h>
 
 int main(int argc, char **argv) {
+#ifdef AROS_DOS_PACKETS
+    return 0;
+#else
     struct DevProc *dvp;
     struct IOFileSys iofs;
     struct FileHandle *fh;
@@ -63,4 +66,5 @@ int main(int argc, char **argv) {
     FreeDeviceProc(dvp);
 
     return 0;
+#endif
 }

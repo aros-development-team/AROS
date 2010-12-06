@@ -49,6 +49,9 @@ int main(int argc, char **argv) {
 
     Printf("\nyou typed: %s\n", something);
 
+#ifdef AROS_DOS_PACKETS
+    /* TODO: Switch to cooked mode */
+#else
     fh = (struct FileHandle *) in;
 
     iofs.IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
@@ -63,6 +66,7 @@ int main(int argc, char **argv) {
     iofs.io_Union.io_CONSOLE_MODE.io_ConsoleMode = FCM_NOECHO;
 
     DoIO(&(iofs.IOFS));
+#endif
 
     Printf("in cooked mode with no echoing\n");
     Printf("type something: ");
