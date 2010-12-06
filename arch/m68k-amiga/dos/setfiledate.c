@@ -60,7 +60,7 @@
     D(bug("[SetFileDate] '%s' %x\n", name, date));
 
     if (getpacketinfo(DOSBase, name, &phs)) {
-    	status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_DATE, NULL, phs.lock, phs.name, date);
+    	status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_DATE, (IPTR)NULL, phs.lock, phs.name, (IPTR)date);
     	freepacketinfo(DOSBase, &phs);
     }
 
