@@ -15,11 +15,11 @@
 #define _stringify(x) #x
 #define stringify(x) _stringify(x)
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE) || defined(AROS_DOS_PACKETS)
 #    define AMIGANATIVETRICK            \
      asm("\t.text                  \n"  \
-         "\tmove.l	4.w,a6     \n"  \
-	 "\tjra		__entry(pc) \n");
+         "\tmove.l	SysBase,%a6\n"  \
+	 "\tjra		_entry(%pc) \n");
 #else
 #    define AMIGANATIVETRICK
 #endif

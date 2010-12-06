@@ -112,12 +112,22 @@ int strtoi(STRPTR string);
 
 LONG MainEntry(struct ExecBase *SysBase);
 
-AROS_UFH3(__startup static int, Start,
-AROS_UFHA(char *, argstr, A0),
-AROS_UFHA(ULONG, argsize, D0),
-AROS_UFHA(struct ExecBase *, sBase, A6))
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+AROS_UFH2(__startup static int, Start,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0))
 {
     AROS_USERFUNC_INIT
+
+    struct ExecBase *sBase = *((APTR *)4);
+#else
+AROS_UFH3(__startup static int, Start,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0),
+	  AROS_UFHA(struct ExecBase *, sBase, A6))
+{
+    AROS_USERFUNC_INIT
+#endif
     return MainEntry(sBase);
     AROS_USERFUNC_EXIT
 }
