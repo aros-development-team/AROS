@@ -233,8 +233,8 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
     }
 
-    sysBase->ThisTask = t;
-    sysBase->Elapsed = sysBase->Quantum;
+    SysBase->ThisTask = t;
+    SysBase->Elapsed = SysBase->Quantum;
 
     /* Install the interrupt servers */
     for(i=0; i < 16; i++)
