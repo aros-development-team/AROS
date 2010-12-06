@@ -12,7 +12,7 @@ CFUNCS  := \
 	setprotection startnotify systemtaglist unlock write \
 	waitforchar lockrecord unlockrecord readlink makelink \
 	openfromlock pipe setfilesize setmode waitpkt setfiledate \
-	setcomment
+	setcomment format inhibit relabel setowner
 
 CFILES  := $(CFUNCS) \
 	bcpl_support helper internalopen internalseek \
