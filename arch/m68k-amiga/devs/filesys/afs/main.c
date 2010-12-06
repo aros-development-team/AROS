@@ -167,6 +167,16 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
     }
 }
 
+static BOOL mediacheck(struct Volume *volume, LONG *ok, LONG *res2)
+{
+    if (!mediumPresent(&volume->ioh)) {
+	*ok = DOSFALSE;
+	*res2 = ERROR_NO_DISK;
+	return FALSE;
+    }
+    return TRUE;
+}
+
 /*******************************************
  Name  : AFS_work
  Descr.: main loop (get packets and answer (or not))
@@ -280,13 +290,11 @@ void AFS_work(void) {
 		    res2 = volume->numbuffers;
 		}
 		break;
+	    case ACTION_DISK_INFO:
+	    	ok = getDiskInfo(volume, BADDR(dp->dp_Arg1)) ? DOSFALSE : DOSTRUE;
+	    	break;
+
     	    default:
-    	    	if (!mediumPresent(&volume->ioh)) {
-		    ok = DOSFALSE;
-		    res2 = ERROR_NOT_IMPLEMENTED;
-		    D(bug("[AFS] %d not implemented. Not media.\n", dp->dp_Type));
-		    break;
-		}
 
 		switch (dp->dp_Type) {
 		case ACTION_FINDINPUT:
@@ -300,6 +308,9 @@ void AFS_work(void) {
 		    struct AfsHandle  *dh;
 		    struct AfsHandle  *ah;
 		    ULONG mode = 0;
+
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
 
 		    if (dl == NULL)
 		    	dh = &volume->ah;
@@ -338,6 +349,9 @@ void AFS_work(void) {
 		    struct AfsHandle  *dh;
 		    struct AfsHandle  *ah;
 		    ULONG mode = 0;
+
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
 
 		    if (dl == NULL)
 		    	dh = &volume->ah;
@@ -388,6 +402,9 @@ void AFS_work(void) {
 		    struct AfsHandle  *ah;
 		    ULONG mode = 0;
 
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
+
 		    if (ol == NULL) {
 		    	ok = DOSTRUE;
 		    	res2 = BNULL;
@@ -426,6 +443,9 @@ void AFS_work(void) {
 		    struct FileLock  *fl;
 		    struct AfsHandle *ah;
 
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
+
 		    fl = BADDR(dp->dp_Arg1);
 		    if (fl == NULL) {
 		    	ok = DOSTRUE;
@@ -437,15 +457,23 @@ void AFS_work(void) {
 		    break;
 		}
 		case ACTION_READ:
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
 		    ok = readf(handler, (struct AfsHandle *)(dp->dp_Arg1), (APTR)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
 		    break;
 		case ACTION_WRITE:
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
 		    ok = writef(handler, (struct AfsHandle *)(dp->dp_Arg1), (APTR)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
 		    break;
 		case ACTION_SEEK:
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
 		    ok = seek(handler, (struct AfsHandle *)(dp->dp_Arg1), (LONG)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
 		    break;
 		case ACTION_SET_FILE_SIZE:
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
 		    ok = setFileSize(handler, (struct AfsHandle *)(((struct FileHandle *)(dp->dp_Arg1))->fh_Arg1),(LONG)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
 		    break;
 		case ACTION_EXAMINE_OBJECT:
@@ -458,6 +486,9 @@ void AFS_work(void) {
 		    ULONG size = sizeof(buffer);
 		    ULONG mode = ED_OWNER;
 		    ULONG dirpos;
+
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
 
 		    if (fib == NULL) {
 			ok = DOSTRUE;
@@ -503,6 +534,9 @@ void AFS_work(void) {
 		    struct FileLock      *fl = BADDR(dp->dp_Arg1);
 		    struct AfsHandle     *ah;
 		    struct FileInfoBlock *fib = BADDR(dp->dp_Arg2);
+
+		    if (!mediacheck(volume, &ok, &res2))
+		    	break;
 
 		    if (fib == NULL) {
 			ok = DOSTRUE;
