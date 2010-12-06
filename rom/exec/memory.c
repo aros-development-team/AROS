@@ -68,7 +68,13 @@ APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct E
             if (((IPTR)p2|(IPTR)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1))
 	    {
 		if (SysBase)
+		{
+		    bug("[MM] Chunk allocator error\n");
+		    bug("[MM] Attempt to allocate %u bytes from MemHeader 0x%p\n", byteSize, mh);
+		    bug("[MM] Misaligned chunk at 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+
 		    Alert(AN_MemCorrupt|AT_DeadEnd);
+		}
 		return NULL;
 	    }
 #endif
@@ -100,7 +106,13 @@ APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct E
             if((UBYTE *)p2<=(UBYTE *)p1+p1->mc_Bytes)
 	    {
 		if (SysBase)
+		{
+		    bug("[MM] Chunk allocator error\n");
+		    bug("[MM] Attempt to allocate %u bytes from MemHeader 0x%p\n", byteSize, mh);
+		    bug("[MM] Overlapping chunks 0x%p (%u bytes) and 0x%p (%u bytes)\n", p1, p1->mc_Bytes, p2, p2->mc_Bytes);
+
 		    Alert(AN_MemCorrupt|AT_DeadEnd);
+		}
 		return NULL;
 	    }
 #endif
@@ -346,21 +358,33 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
 void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
+    APTR freeStart;
+    IPTR freeSize;
 
     D(bug("[exec] InternalFreePooled(0x%p, 0x%p, %u)\n", poolHeader, memory, memSize));
 
     if (!memory || !memSize) return;
 
     /* Get MemHeader pointer. It is stored right before our block. */
-    memory -= sizeof(struct MemHeader *);
-    memSize += sizeof(struct MemHeader *);
-    mh = *((struct MemHeader **)memory);
+    freeStart = memory - sizeof(struct MemHeader *);
+    freeSize = memSize + sizeof(struct MemHeader *);
+    mh = *((struct MemHeader **)freeStart);
 
     /* Verify that MemHeader pointer is correct */
     if ((mh->mh_Node.ln_Type != NT_MEMORY) ||
-	(memory < mh->mh_Lower) || (memory + memSize > mh->mh_Upper + 1))
+	(freeStart < mh->mh_Lower) || (freeStart + memSize > mh->mh_Upper + 1))
     {
-	/* Something is wrong */
+    	/*
+	 * Something is wrong.
+	 * TODO: the following should actually be printed as part of the alert.
+	 * In future there should be some kind of "alert context". CPU alerts
+	 * (like illegal access) should remember CPU context there. Memory manager
+	 * alerts (like this one) should remember some own information.
+	 */
+        bug("[MM] Pool manager error\n");
+	bug("[MM] Attempt to free %u bytes at 0x%p\n", memSize, memory);
+	bug("[MM] The chunk does not belong to a pool\n");
+
 	Alert(AT_Recovery | AN_MemCorrupt);
     }
     else
@@ -377,7 +401,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
 	D(bug("[FreePooled] Allocated from puddle 0x%p, size %u\n", mh, size));
 
 	/* Free the memory. */
-	Deallocate(mh, memory, memSize);
+	Deallocate(mh, freeStart, freeSize);
 	D(bug("[FreePooled] Deallocated chunk, %u free bytes in the puddle\n", mh->mh_Free));
 
 	/* Is this MemHeader completely free now? */
