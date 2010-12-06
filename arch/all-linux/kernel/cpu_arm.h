@@ -69,7 +69,7 @@ struct ucontext
 /* Macros to enable or disable all signals after the signal handler
    has returned and the normal execution commences. */
 #define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
-#define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
+#define SC_ENABLE(uc)  SIGEMPTYSET(&uc->uc_sigmask)
 
 /*
  * This macro saves all registers. Use this macro when you want to

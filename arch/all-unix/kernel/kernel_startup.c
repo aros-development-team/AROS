@@ -1,5 +1,3 @@
-#define DEBUG 0
-
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
@@ -37,14 +35,13 @@ struct KernelInterface KernelIFace;
 static const char *kernel_functions[] = {
     "raise",
     "sigprocmask",
-    "sigemptyset",
-    "sigfillset",
-    "sigdelset",
     "sigsuspend",
     "sigaction",
     "setitimer",
     "mprotect",
     "write",
+    "mmap",
+    "munmap",
 #ifdef HOST_OS_linux
     "__errno_location",
 #else
@@ -54,9 +51,14 @@ static const char *kernel_functions[] = {
     "__error",
 #endif
 #endif
-    "mmap",
-    "munmap",
+#ifdef HOST_OS_android
+    "__page_size",
+#else
     "getpagesize",
+    "sigemptyset",
+    "sigfillset",
+    "sigdelset",
+#endif
     NULL
 };
 
@@ -191,6 +193,7 @@ int __startup startup(struct TagItem *msg)
 
     bug("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
+    D(bug("[Kernel] calling InitCode(RTF_COLDSTART,0)\n"));
     InitCode(RTF_COLDSTART, 0);
 
     bug("[Kernel] leaving startup!\n");

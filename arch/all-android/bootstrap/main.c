@@ -8,6 +8,7 @@
 JNIEnv *jni;
 jclass cl;
 jobject obj;
+jmethodID DisplayAlert_mid;
 jmethodID DisplayError_mid;
 
 int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstring basedir)
@@ -21,6 +22,7 @@ int Java_org_aros_bootstrap_AROSBootstrap_Start(JNIEnv* env, jobject this, jstri
     jni = env;
     obj = this;
     cl = (*env)->GetObjectClass(env, this);
+    DisplayAlert_mid = (*jni)->GetMethodID(jni, cl, "DisplayAlert", "(Ljava/lang/String;)V");
     DisplayError_mid = (*jni)->GetMethodID(jni, cl, "DisplayError", "(Ljava/lang/String;)V");
 
     /* We can't pass any arguments (yet) */

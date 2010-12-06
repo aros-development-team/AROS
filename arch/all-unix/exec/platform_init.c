@@ -7,10 +7,12 @@
 #include "exec_intern.h"
 
 static const char *libc_symbols[] = {
+    "exit",
+#ifdef HAVE_SWAPCONTEXT
     "getcontext",
     "makecontext",
     "swapcontext",
-    "exit",
+#endif
     NULL
 };
 
@@ -33,12 +35,14 @@ static int Platform_Init(struct ExecBase *SysBase)
     /* We use local variable for the handle because we never expunge
        so we will never close it */
     LibCHandle = HostLib_Open(LIBC_NAME, NULL);
+    D(bug("[exec] libc handle 0x%p\n", LibCHandle));
     if (!LibCHandle)
 	return FALSE;
 
     PD(SysBase).SysIFace = (struct LibCInterface *)HostLib_GetInterface(LibCHandle, libc_symbols, &r);
     if (PD(SysBase).SysIFace)
     {
+	D(bug("[exec] Got libc interface, %u unresolved symbols\n", r));
 	if (!r)
 	    return TRUE;
 

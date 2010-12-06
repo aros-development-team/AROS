@@ -79,7 +79,7 @@ void cpu_Dispatch(regs_t *regs)
     struct Task *task;
     sigset_t sigs;
 
-    KernelIFace.SigEmptySet(&sigs);
+    SIGEMPTYSET(&sigs);
 
     while (!(task = core_Dispatch()))
     {
