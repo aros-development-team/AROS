@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <locale.h>
 #include <stdarg.h>
@@ -9,7 +10,9 @@
 #include <signal.h>
 #include <sys/stat.h>
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -226,11 +229,18 @@ int bootstrap(int argc, char ** argv)
 	c = GetConfigArg(buf, "logfile");
 	if (c)
 	{
-	    if (!freopen(c, "a", stderr))
+	    /*
+	     * Redirect stderr on filedescriptor level.
+	     * Redirecting on streams level does not work with Android's Bionic
+	     */
+	    int fd = open(c, O_WRONLY|O_CREAT|O_APPEND, 0644);
+	    
+	    if (fd == -1)
 	    {
 		DisplayError("Failed to redirect debug output to %s", c);
 		return -1;
 	    }
+	    dup2(fd, STDERR_FILENO);
 	    fprintf(stderr, "----\n");
 	}
 	
@@ -269,12 +279,14 @@ int bootstrap(int argc, char ** argv)
     D(fprintf(stderr, "[Bootstrap] Kernel size %zu\n", ro_size));
 
     ro_addr = AllocateRO(ro_size);
+    D(fprintf(stderr, "[Bootstrap] Kickstart ROM area: %p\n", ro_addr));
     if (!ro_addr) {
 	DisplayError("Failed to allocate %u bytes for the kernel!", ro_size);
 	return -1;
     }
 
     rw_addr = AllocateRW(rw_size);
+    D(fprintf(stderr, "[Bootstrap] Kickstart data area: %p\n", rw_addr));
     if (!rw_addr) {
 	DisplayError("Failed to allocate %u bytes for the kernel!", rw_size);
 	return -1;

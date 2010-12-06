@@ -2,6 +2,11 @@
 #include <sys/types.h>
 #include <signal.h>
 
+/* Android is not a true Linux ;-) */
+#ifdef HOST_OS_android
+#undef HOST_OS_linux
+#endif
+
 #ifdef HOST_OS_linux
 #define LIBC_NAME "libc.so.6"
 #endif

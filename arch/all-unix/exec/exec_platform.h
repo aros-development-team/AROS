@@ -1,7 +1,16 @@
+#ifdef HOST_OS_android
+
+/* On Android we have neither context swapping functions nor ucontext.h */
+#undef HOST_OS_linux
+#define ucontext_t void
+
+#else
+
 /* On Darwin this definition is required by ucontext.h (which is marked as deprecated) */
 #define _XOPEN_SOURCE
-
 #include <ucontext.h>
+
+#endif
 
 #ifdef HOST_OS_linux
 #define LIBC_NAME "libc.so.6"

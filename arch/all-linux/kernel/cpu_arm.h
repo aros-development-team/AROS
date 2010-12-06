@@ -27,27 +27,36 @@
 /* We don't use any hacks any more. With modern kernel and libc it's okay */
 #define SIGCORE_NEED_SA_SIGINFO 1
 
-#include <ucontext.h>
 #include <signal.h>
 
-#ifndef _SIGNAL_H
-#define _SIGNAL_H
-#endif
-#ifndef __KERNEL_STRICT_NAMES
-#define __KERNEL_STRICT_NAMES
-#endif
-#include <bits/sigcontext.h>
+#ifdef HOST_OS_android
 
-/* regs_t is the type of the signals' context */
-typedef @sighandler@ SignalHandler;
+/*
+ * Android NDK doesn't have some necessary includes.
+ * Linux kernel is Linux kernel, i hope they won't break binary compatibility,
+ * so it's okay to define this structure here.
+ */
+#include <asm/sigcontext.h>
+
+struct ucontext
+{
+    unsigned long     uc_flags;
+    struct ucontext  *uc_link;
+    stack_t           uc_stack;
+    struct sigcontext uc_mcontext;
+    sigset_t          uc_sigmask;
+    int               reserved[32 - (sizeof (sigset_t) / sizeof (int))];
+    unsigned long     uc_regspace[128] __attribute__((__aligned__(8)));
+};
+
+#else
+#include <ucontext.h>
+#endif
 
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
-#define SIGHANDLER_T	SignalHandler
+#define SIGHANDLER_T	__sighandler_t
 
-/* This blob is quite strange on ARM. The ucontext frame is not passed to any register, but rather created on stack.
-   I will use gcc builtin here, to get that value... */
-   
 #define GLOBAL_SIGNAL_INIT(sighandler) \
         static void sighandler ## _gate (int sig, siginfo_t *blub, struct ucontext *u)  \
         {                                                                               \

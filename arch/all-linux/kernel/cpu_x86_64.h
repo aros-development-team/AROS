@@ -39,12 +39,9 @@ struct ucontext;
 #endif
 #include <bits/sigcontext.h>
 
-/* regs_t is the type of the signals' context */
-typedef @sighandler@ SignalHandler;
-
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
-#define SIGHANDLER_T	SignalHandler
+#define SIGHANDLER_T	__sighandler_t
 
 /*
     This macro contains some magic necessary to make it work.

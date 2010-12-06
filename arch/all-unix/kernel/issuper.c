@@ -1,5 +1,4 @@
 #include <aros/libcall.h>
-#include <signal.h>
 
 #include "kernel_base.h"
 #include "kernel_intern.h"

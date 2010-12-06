@@ -31,8 +31,6 @@
 #define DREL(x)
 #define DSYM(x)
 
-#define kprintf printf
-
 struct ELFNode
 {
     struct ELFNode   *Next;
@@ -102,10 +100,10 @@ void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS **b
     if (!sh->size)
 	return addr;
 
-    D(kprintf("[ELF Loader] Chunk (%ld bytes, align=%ld (0x%p) @ ", sh->size, sh->addralign, (void *)sh->addralign));
+    D(fprintf(stderr, "[ELF Loader] Chunk (%ld bytes, align=%ld (%p) @ ", sh->size, sh->addralign, (void *)sh->addralign));
     addr = (char *)(((IPTR)addr + sh->addralign - 1) & ~(sh->addralign-1));
 
-    D(kprintf("%p\n", addr));
+    D(fprintf(stderr, "%p\n", addr));
     sh->addr = addr;
 
     /* copy block of memory from ELF file if it exists */
@@ -142,7 +140,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
   
   struct symbol *SysBase_sym = NULL;
   
-  DREL(kprintf("[ELF Loader] performing %d relocations, virtual address %p\n", numrel, virt));
+  DREL(fprintf(stderr, "[ELF Loader] performing %d relocations, virtual address %p\n", numrel, virt));
   
   for (i=0; i<numrel; i++, rel++)
   {
@@ -154,18 +152,18 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
 	switch (sym->shindex)
 	{
 	case SHN_UNDEF:
-	    DREL(kprintf("[ELF Loader] Undefined symbol '%s'\n", name));
+	    DREL(fprintf(stderr, "[ELF Loader] Undefined symbol '%s'\n", name));
 	    return 0;
 
 	case SHN_COMMON:
-	    DREL(kprintf("[ELF Loader] COMMON symbol '%s'\n", name));
+	    DREL(fprintf(stderr, "[ELF Loader] COMMON symbol '%s'\n", name));
 
 	    return 0;
 
 	case SHN_ABS:
 	    if (SysBase_sym == NULL) {
 	        if (strncmp(name, "SysBase", 8) == 0) {
-		    DREL(kprintf("[ELF Loader] got SysBase\n"));
+		    DREL(fprintf(stderr, "[ELF Loader] got SysBase\n"));
 			SysBase_sym = sym;
 			goto SysBase_yes;
 		} else
@@ -182,24 +180,24 @@ SysBase_no:     s = sym->value;
 
 	s += virt;
 
-        DREL(printf("[ELF Loader] Relocating symbol "));
-        DREL(if (sym->name) printf("%s", name); else printf("<unknown>"));
-        DREL(printf(" type "));
+        DREL(fprintf(stderr, "[ELF Loader] Relocating symbol "));
+        DREL(if (sym->name) fprintf(stderr, "%s", name); else fprintf(stderr, "<unknown>"));
+        DREL(fprintf(stderr, " type "));
 	switch (ELF_R_TYPE(rel->info))
 	{
 #ifdef __i386__
 	case R_386_32: /* 32bit absolute */
-            DREL(printf("R_386_32"));
+            DREL(fprintf(stderr, "R_386_32"));
 	    *p += s;
 	    break;
 
 	case R_386_PC32: /* 32bit PC relative */
-            DREL(printf("R_386_PC32"));
+            DREL(fprintf(stderr, "R_386_PC32"));
 	    *p += (s - (uintptr_t)p);
 	    break;
 
 	case R_386_NONE:
-            DREL(printf("R_386_NONE"));
+            DREL(fprintf(stderr, "R_386_NONE"));
 	    break;
 #endif
 #ifdef __x86_64__
@@ -329,10 +327,10 @@ SysBase_no:     s = sym->value;
             break;
 #endif
 	default:
-	    printf("[ELF Loader] Unrecognized relocation type %d %ld\n", i, ELF_R_TYPE(rel->info));
+	    fprintf(stderr, "[ELF Loader] Unrecognized relocation type %d %ld\n", i, ELF_R_TYPE(rel->info));
 	    return 0;
 	}
-	DREL(printf(" -> 0x%p\n", *p));
+	DREL(fprintf(stderr, " -> %p\n", *p));
   }
   return 1;
 }
@@ -379,11 +377,11 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
     size_t rwsize = 0;
     unsigned short i;
 
-    D(printf("[ELF Loader] Calculating kernel size...\n"));
+    D(fprintf(stderr, "[ELF Loader] Calculating kernel size...\n"));
 
     for (n = FirstELF; n; n = n->Next)
     {
-	D(printf("[ELF Loader] Checking file %s\n", n->Name));
+	D(fprintf(stderr, "[ELF Loader] Checking file %s\n", n->Name));
 	file = fopen(n->Name, "rb");
 	if (!file) {
 	    DisplayError("Failed to open file %s!\n", n->Name);
@@ -446,19 +444,19 @@ int GetKernelSize(size_t *ro_size, size_t *rw_size)
     return 1;
 }
 
-int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, dbg_seg_t **kernel_debug)
+int LoadKernel(volatile void *ptr_ro, volatile void *ptr_rw, struct KernelBSS *tracker, kernel_entry_fun_t *kernel_entry, dbg_seg_t **kernel_debug)
 {
     struct ELFNode *n;
     FILE *file;
     unsigned int i;
-    dbg_mod_t *mod;
-    dbg_seg_t *seg = NULL;
+    volatile dbg_mod_t *mod;
+    volatile dbg_seg_t *seg = NULL;
 
-    D(printf("[ELF Loader] Loading kernel...\n"));
+    D(fprintf(stderr, "[ELF Loader] Loading kernel...\n"));
 
     for (n = FirstELF; n; n = n->Next)
     {
-	D(printf("[ELF Loader] Loading file %s\n", n->Name));
+	D(fprintf(stderr, "[ELF Loader] Loading file %s\n", n->Name));
 
 	file = fopen(n->Name, "rb");
 	if (!file)
@@ -472,20 +470,21 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	{
 	    struct sheader *sh = n->sh;
 
+	    D(fprintf(stderr, "[ELF Loader] Section %u... ", i));
             /* Load symbol tables */
 	    if (sh[i].type == SHT_SYMTAB)
 	    {
-		D(printf("[ELF Loader] Symbol table\n"));
+		D(fprintf(stderr, "Symbol table\n"));
 		sh[i].addr = load_block(file, sh[i].offset, sh[i].size);
 	    }
 	    else if ((sh[i].flags & SHF_ALLOC) || (sh[i].type == SHT_STRTAB))
 	    {
 		/* Does the section require memory allcation? */
-		D(printf("[ELF Loader] Allocated section\n"));
+		D(fprintf(stderr, "Allocated section\n"));
 
 		if (sh[i].flags & SHF_WRITE)
 		{
-		    ptr_rw = load_hunk(file, &sh[i], ptr_rw, &tracker);
+		    ptr_rw = load_hunk(file, &sh[i], (void *)ptr_rw, &tracker);
 		    if (!ptr_rw)
 		    {
 			DisplayError("%s: Error loading hunk %u!\n", n->Name, i);
@@ -494,25 +493,26 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 		}
 		else
 		{
-		    ptr_ro = load_hunk(file, &sh[i], ptr_ro, &tracker);
+		    ptr_ro = load_hunk(file, &sh[i], (void *)ptr_ro, &tracker);
 		    if (!ptr_ro)
 		    {
 			DisplayError("%s: Error loading hunk %u!\n", n->Name, i);
 			return 0;
 		    }
 		}
-	        D(printf("[ELF Loader] Section address: 0x%p\n", sh[i].addr));
 	    }
+		D(else fprintf(stderr, "Ignored\n");)
+	    D(fprintf(stderr, "[ELF Loader] Section address: %p, size: %lu\n", sh[i].addr, sh[i].size));
 	}
 
-	D(printf("[ELF Loader] Adding module debug information...\n"));
+	D(fprintf(stderr, "[ELF Loader] Adding module debug information...\n"));
 	mod = (dbg_mod_t *)ptr_ro;
 	ptr_ro += (sizeof(dbg_mod_t) + strlen(n->NamePtr));
 
-	strcpy(mod->m_name, n->NamePtr);
+	strcpy((char *)mod->m_name, n->NamePtr);
 
 	/* For every loaded section perform relocations and add debug info */
-	D(printf("[ELF Loader] Relocating and adding section debug information...\n"));
+	D(fprintf(stderr, "[ELF Loader] Relocating and adding section debug information...\n"));
 	for (i=0; i < n->eh.shnum; i++)
 	{
 	    struct sheader *sh = n->sh;
@@ -533,11 +533,11 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 	    {
 		/* Link new segment descriptor with the previous one */
 		if (seg)
-		    seg->s_next = ptr_ro;
+		    seg->s_next = (dbg_seg_t *)ptr_ro;
 		else {
 		    /* Remember start of code and debug info for the first segment */
 		    *kernel_entry = sh[i].addr;
-		    *kernel_debug = ptr_ro;
+		    *kernel_debug = (dbg_seg_t *)ptr_ro;
 		}
 
 		seg = (dbg_seg_t *)ptr_ro;
@@ -546,11 +546,11 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 		seg->s_next    = NULL;
 		seg->s_lowest  = sh[i].addr;
 		seg->s_highest = sh[i].addr + sh[i].size - 1;
-		seg->s_module  = mod;
+		seg->s_module  = (dbg_mod_t *)mod;
 		seg->s_name    = sh[n->eh.shstrndx].addr + sh[i].name;
 		seg->s_num     = i;
 		
-		D(printf("[ELF Loader] Listed section %u (%s, 0x%p - 0x%p)\n", seg->s_num, seg->s_name, seg->s_lowest, seg->s_highest));
+		D(fprintf(stderr, "[ELF Loader] Listed section %u (%s, %p - %p)\n", seg->s_num, seg->s_name, seg->s_lowest, seg->s_highest));
 	    }
 	}
 
@@ -561,17 +561,20 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 
 	    if (sh[i].type == SHT_SYMTAB)
 	    {
-		struct symbol *st = (struct symbol *)n->sh[i].addr;
+		struct symbol *st = (struct symbol *)sh[i].addr;
 		unsigned int syms = sh[i].size / sizeof(struct symbol);
 		unsigned int j;
 
-		mod->m_symbols = ptr_ro;
+		DSYM(fprintf(stderr, "[ELF Loader] Listing symbols (total of %u) from section %u at %p\n", syms, i, st));
+
+		mod->m_symbols = (dbg_sym_t *)ptr_ro;
 		mod->m_symcnt  = syms;
 
 		for (j=0; j < syms; j++)
 		{
 		    unsigned long idx = st[j].shindex;
 
+		    DSYM(fprintf(stderr, "[ELF Loader] Symbol %u index: %lu\n", j, idx));
 		    if (idx == SHN_XINDEX)
 			continue;
 
@@ -593,7 +596,7 @@ int LoadKernel(void *ptr_ro, void *ptr_rw, struct KernelBSS *tracker, kernel_ent
 			else
 			    sym->s_highest = NULL;
 
-			DSYM(printf("[ELF Loader] Listed symbol %s (0x%p - 0x%p)\n", sym->s_name, sym->s_lowest, sym->s_highest));
+			DSYM(fprintf(stderr, "[ELF Loader] Listed symbol %s (%p - %p)\n", sym->s_name, sym->s_lowest, sym->s_highest));
 		    }
 		}
 

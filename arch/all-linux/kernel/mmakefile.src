@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel-exec-linux : kernel-kernel-linux-sigcore
-#MM- kernel-kernel-linux : kernel-kernel-linux-sigcore
+#MM- kernel-exec-linux-i386 : kernel-kernel-linux-sigcore
+#MM- kernel-kernel-linux-i386 : kernel-kernel-linux-sigcore
 
 #MM
 kernel-kernel-linux-sigcore : $(GENINCDIR)/sigcore.h

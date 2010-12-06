@@ -12,6 +12,12 @@
 #include <time.h>
 #include <utime.h>
 
+/* Android is not a true Linux ;-) */
+#ifdef HOST_OS_android
+#undef HOST_OS_linux
+#include <sys/vfs.h>
+#endif
+
 #ifdef HOST_OS_linux
 #include <sys/vfs.h>
 #define LIBC_NAME "libc.so.6"
