@@ -14,7 +14,7 @@
 #include <proto/utility.h>
 #include "dos_intern.h"
 
-#define  DEBUG 1
+#define  DEBUG 0
 #include <aros/debug.h>
 
 static LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
