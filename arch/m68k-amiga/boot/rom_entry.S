@@ -1,3 +1,7 @@
+
+Version = 46
+Revision= 10
+
 	.text
 
 	.globl software_reset
@@ -8,8 +12,16 @@ rom_start:
 software_reset:
 	jmp rom_init
 
-	.align 8 
-	.globl ROM_CheckSum
-ROM_CheckSum:
-	nop
-	nop
+    // make programs that peek rom header happy
+
+    .word 0x0000
+    .word 0xffff
+    .word Version
+    .word Revision
+    .word Version
+    .word Revision
+    .word 0xffff
+    .word 0xffff
+    .asciz "AROS ROM"
+
+    .align 4

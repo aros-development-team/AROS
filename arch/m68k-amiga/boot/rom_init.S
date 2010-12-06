@@ -25,14 +25,16 @@ rom_init:
 	move.w	%d0,0x9c(%a0)	/* Clear interrupts */
 	move.w	%d0,0x96(%a0)	/* Stop DMA */
 
-	/* Check for cartidge ROM */
+	/* Check for cartridge ROM */
 	lea	0xf00000,%a0
 	move.w	%a0@(0),%d0	/* Get the ROM ID (0x1111) */
 	cmp.w	#0x1111,%d0
 	bne.s	0f		/* Must be 0x1111 */
-	move.l	%a0@(8),%d0	/* Get the ROM CheckSum */
-	cmp.l	ROM_CheckSum,%d0
-	beq.s	0f		/* If the same as ours, its a mirror of us */
+	lea %pc@(0),%a1
+	move.l %a1,%d0
+	clr.w %d0
+	cmp.l %d0,%a0
+	beq.s 0f /* skip if we booted at 0xF00000 */
 	lea	0x40000,%sp	/* Safe stack at Chip Mem 128K */
 	lea	0f,%a5
 	jmp	%a0@(2)
