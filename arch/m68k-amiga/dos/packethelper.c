@@ -135,9 +135,34 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
     }
     return FALSE;
 }
+
+BOOL getdevpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR devname, CONST_STRPTR name, struct PacketHelperStruct *phs)
+{
+    if ((phs->dp = GetDeviceProc(devname, NULL)) == NULL)
+        return DOSFALSE;
+    /* we're only interested in real devices */
+    if (phs->dp->dvp_DevNode->dol_Type != DLT_DEVICE) {
+        FreeDeviceProc(phs->dp);
+        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+        return DOSFALSE;
+    }
+    phs->port = phs->dp->dvp_Port;
+    phs->lock = BNULL;
+    phs->name = BNULL;
+    if (!name)
+    	return TRUE;
+    phs->name = C2BSTR(name);
+    if (!phs->name) {
+        FreeDeviceProc(phs->dp);
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return DOSFALSE;
+    }
+    return TRUE;
+}
+
 void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct *phs)
 {
     if (phs->dp)
     	FreeDeviceProc(phs->dp);
-    FreeVec(phs->name);
+    FreeVec(BADDR(phs->name));
 }
