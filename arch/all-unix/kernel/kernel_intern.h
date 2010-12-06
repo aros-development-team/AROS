@@ -41,6 +41,7 @@ struct KernelInterface
     int     (*getpagesize)(void);
     int     (*SigEmptySet)(sigset_t *set);
     int     (*SigFillSet)(sigset_t *set);
+    int     (*SigAddSet)(sigset_t *set, int signum);
     int     (*SigDelSet)(sigset_t *set, int signum);
 #endif
 };
@@ -52,10 +53,12 @@ struct KernelInterface
 #ifdef HOST_OS_android
 #define SIGEMPTYSET sigemptyset
 #define SIGFILLSET  sigfillset
+#define SIGADDSET   sigaddset
 #define SIGDELSET   sigdelset
 #else
 #define SIGEMPTYSET(x) KernelIFace.SigEmptySet(x); AROS_HOST_BARRIER
 #define SIGFILLSET(x)  KernelIFace.SigFillSet(x); AROS_HOST_BARRIER
+#define SIGADDSET(x)   KernelIFace.SigAddSet(x); AROS_HOST_BARRIER
 #define SIGDELSET(x)   KernelIFace.SigDelSet(x); AROS_HOST_BARRIER
 #endif
 
