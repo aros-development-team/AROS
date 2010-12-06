@@ -41,6 +41,10 @@ BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
     	segs++;
     }
 
+    /* BCPL programs have only two segments */
+    if (segs != 2)
+    	return TRUE;
+
     GlobVec = AllocVec(sizeof(BCPL_GlobVec), MEMF_ANY);
     if (GlobVec == NULL)
     	return FALSE;

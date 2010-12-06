@@ -24,7 +24,7 @@
  * A5 - BCPL 'jsr' routine
  * A6 - BCPL 'rts' routine
  */
-static ULONG CallBCPL(APTR pReturn_Addr, struct StackSwapStruct* sss,
+static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
 		       STRPTR argptr, ULONG argsize, LONG_FUNC entry)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
@@ -48,7 +48,7 @@ static ULONG CallBCPL(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	"move.l %7,%%a1\n\t"            /* A1 - BCPL frame */
 	"move.l %%a0,%%sp\n\t"
 	"move.l %%sp@(8),%%a0\n\t"
-	"move.l %%sp@(4),%%d0\n\t"
+	"move.l %%sp@(12),%%d0\n\t"
 	"lea.l  BCPL_jsr,%%a5\n\t"      /* A5 - BCPL jsr routine */
 	"lea.l  BCPL_rts,%%a6\n\t"      /* A6 - BCPL rts routine */
 	"rts    \n\t"
@@ -63,24 +63,6 @@ static ULONG CallBCPL(APTR pReturn_Addr, struct StackSwapStruct* sss,
     return ret;
 }
 
-static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
-		       STRPTR argptr, ULONG argsize, LONG_FUNC entry)
-{
-
-#ifndef AROS_UFC3R
-#error You need to write the AROS_UFC3R macro for your CPU
-#endif
-
-    return AROS_UFC3R(ULONG, entry,
-		      AROS_UFCA(STRPTR, argptr, A0),
-		      AROS_UFCA(ULONG, argsize, D0),
-		      AROS_UFCA(struct ExecBase *, SysBase, A6),
-		      pReturn_Addr,
-		      (sss->stk_Upper - (ULONG)sss->stk_Lower) /* used by m68k-linux arch, needed?? */
-		     );
-
-}
-
 /**************************************************************************
 
     NAME */
@@ -92,7 +74,6 @@ static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	CONST_STRPTR		  argptr,
 	ULONG			  argsize,
 	LONG_FUNC		  entry,
-	BOOL			  is_bcpl,
 	struct DosLibrary 	* DOSBase)
 
 /* FUNCTION
@@ -134,10 +115,8 @@ static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	(IPTR) proc->pr_GlobVec,
     }};
 
-    is_bcpl = TRUE;
-    bug("RunProcess: %s\n", argptr);
     /* Call the function with the new stack */
-    ret = NewStackSwap(sss, is_bcpl ? CallBCPL : CallEntry, &args);
+    ret = NewStackSwap(sss, CallEntry, &args);
 
     proc->pr_ReturnAddr = oldReturnAddr;
     return ret;
