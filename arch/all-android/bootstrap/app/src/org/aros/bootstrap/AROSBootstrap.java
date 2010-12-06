@@ -8,6 +8,8 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Looper;
+
 import java.lang.String;
 
 public class AROSBootstrap extends Activity
@@ -35,11 +37,12 @@ public class AROSBootstrap extends Activity
     	showDialog(ID_ERROR_DIALOG);
     }
 
-    public void DisplayAlert(CharSequence text)
+    public void DisplayAlert(String text)
     {
     	errStr = text;
     	showDialog(ID_ALERT_DIALOG);
-    	// TODO: enter run loop here
+
+    	Looper.loop();
     }
     
     public Dialog onCreateDialog(int id)

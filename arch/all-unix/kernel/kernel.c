@@ -203,8 +203,12 @@ static int InitCore(struct KernelBase *KernelBase)
 
     D(bug("[KRN] InitCore()\n"));
 
+#ifdef HOST_OS_android
+    KernelBase->kb_PageSize = *KernelIFace.__page_size;
+#else
     KernelBase->kb_PageSize = KernelIFace.getpagesize();
     AROS_HOST_BARRIER
+#endif
     D(bug("[KRN] Memory page size is %u\n", KernelBase->kb_PageSize));
 
 #if AROS_MODULES_DEBUG
@@ -233,10 +237,8 @@ static int InitCore(struct KernelBase *KernelBase)
     KernelBase->kb_PlatformData = pd;
 
     /* We only want signal that we can handle at the moment */
-    KernelIFace.SigFillSet(&pd->sig_int_mask);
-    AROS_HOST_BARRIER
-    KernelIFace.SigEmptySet(&sa.sa_mask);
-    AROS_HOST_BARRIER
+    SIGFILLSET(&pd->sig_int_mask);
+    SIGEMPTYSET(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
 #ifdef HOST_OS_linux
     sa.sa_restorer = NULL;
@@ -251,19 +253,15 @@ static int InitCore(struct KernelBase *KernelBase)
     {
 	KernelIFace.sigaction(s->sig, &sa, NULL);
 	AROS_HOST_BARRIER
-	KernelIFace.SigDelSet(&pd->sig_int_mask, s->sig);
-	AROS_HOST_BARRIER
+	SIGDELSET(&pd->sig_int_mask, s->sig);
     }
 
     /* SIGUSRs are software interrupts, we also never block them */
-    KernelIFace.SigDelSet(&pd->sig_int_mask, SIGUSR1);
-    AROS_HOST_BARRIER
-    KernelIFace.SigDelSet(&pd->sig_int_mask, SIGUSR2);
-    AROS_HOST_BARRIER
+    SIGDELSET(&pd->sig_int_mask, SIGUSR1);
+    SIGDELSET(&pd->sig_int_mask, SIGUSR2);
     /* We want to be able to interrupt AROS using Ctrl-C in its console,
        so exclude SIGINT too. */
-    KernelIFace.SigDelSet(&pd->sig_int_mask, SIGINT);
-    AROS_HOST_BARRIER
+    SIGDELSET(&pd->sig_int_mask, SIGINT);
 
     /*
      * Any interrupt including software one must disable
@@ -300,10 +298,11 @@ static int InitCore(struct KernelBase *KernelBase)
     interval.it_interval.tv_usec =
     interval.it_value.tv_usec = 1000000 / SysBase->ex_EClockFrequency;
 
-    ret = !KernelIFace.setitimer(ITIMER_REAL, &interval, NULL);
+    ret = KernelIFace.setitimer(ITIMER_REAL, &interval, NULL);
     AROS_HOST_BARRIER
+    D(bug("[KRN] setitimer() returned %d, errno %d\n", ret, *pd->errnoPtr));
 
-    return ret;
+    return !ret;
 }
 
 ADD2INITLIB(InitCore, 10);

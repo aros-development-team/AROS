@@ -17,3 +17,11 @@ void DisplayError(char *fmt, ...)
     str = (*jni)->NewStringUTF(jni, buf);
     (*jni)->CallVoidMethod(jni, obj, DisplayError_mid, str);
 }
+
+/* This function is linked in by exec.library and used for displaying alerts */
+void DisplayAlert(char *text)
+{
+    jstring str = (*jni)->NewStringUTF(jni, buf);
+
+    (*jni)->CallVoidMethod(jni, obj, DisplayAlert_mid, str);
+}

@@ -1,8 +1,6 @@
 #ifdef HOST_OS_android
-
-/* On Android we have neither context swapping functions nor ucontext.h */
+/* Android is not a true Linux ;-) */
 #undef HOST_OS_linux
-#define ucontext_t void
 
 #else
 
@@ -28,10 +26,12 @@
 
 struct LibCInterface
 {
+    void (*exit)(int status);
+#ifdef HAVE_SWAPCONTEXT
     int  (*getcontext)(ucontext_t *ucp);
     void (*makecontext)(ucontext_t *ucp, void *func(), int argc, ...);
     int  (*swapcontext)(ucontext_t *oucp, ucontext_t *ucp);
-    void (*exit)(int status);
+#endif
 };
 
 struct Exec_PlatformData

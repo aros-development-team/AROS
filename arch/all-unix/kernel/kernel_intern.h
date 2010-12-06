@@ -27,19 +27,37 @@ struct KernelInterface
 {
     int     (*raise)(int sig);
     int     (*sigprocmask)(int how, const sigset_t *set, sigset_t *oldset);
-    int     (*SigEmptySet)(sigset_t *set);
-    int     (*SigFillSet)(sigset_t *set);
-    int     (*SigDelSet)(sigset_t *set, int signum);
     int     (*sigsuspend)(const sigset_t *mask);
     int     (*sigaction)(int signum, const struct sigaction *act, struct sigaction *oldact);
     int     (*setitimer)(int which, const struct itimerval *value, struct itimerval *ovalue);
     int     (*mprotect)(const void *addr, size_t len, int prot);
     ssize_t (*write)(int fd, const void *buf, size_t count);
-    int    *(*__error)(void);
     void *  (*mmap)(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
     int     (*munmap)(void *addr, size_t length);
+    int    *(*__error)(void);
+#ifdef HOST_OS_android
+    unsigned int *__page_size;
+#else
     int     (*getpagesize)(void);
+    int     (*SigEmptySet)(sigset_t *set);
+    int     (*SigFillSet)(sigset_t *set);
+    int     (*SigDelSet)(sigset_t *set, int signum);
+#endif
 };
+
+/*
+ * Android's Bionic doesn't have these functions.
+ * They are simply inlined in headers.
+ */
+#ifdef HOST_OS_android
+#define SIGEMPTYSET sigemptyset
+#define SIGFILLSET  sigfillset
+#define SIGDELSET   sigdelset
+#else
+#define SIGEMPTYSET(x) KernelIFace.SigEmptySet(x); AROS_HOST_BARRIER
+#define SIGFILLSET(x)  KernelIFace.SigFillSet(x); AROS_HOST_BARRIER
+#define SIGDELSET(x)   KernelIFace.SigDelSet(x); AROS_HOST_BARRIER
+#endif
 
 struct PlatformData
 {

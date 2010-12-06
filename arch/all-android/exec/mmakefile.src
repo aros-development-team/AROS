@@ -1,0 +1,14 @@
+# $Id: mmakefile.src 34602 2010-10-06 06:12:47Z sonic $
+include $(TOP)/config/make.cfg
+
+FILES := alert_init alert
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
+		 -I$(SRCDIR)/arch/all-unix/exec \
+		 -I$(SRCDIR)/rom/exec
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec \
+  arch=linux-android files=$(FILES)
+
+%common
