@@ -45,7 +45,7 @@ AFILES=rom_entry rom_init
 ROMPAD_rom := 0x1000000
 KLIBS   := exec aros dos utility oop expansion boot workbench
 KDEVS   := timer input keyboard console trackdisk gameport
-KHNDLRS := con nil afs # pipefs xpipe amberram
+KHNDLRS := con nil afs amberram # pipefs xpipe
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock kernel processor dosboot cia potgo disk
 
