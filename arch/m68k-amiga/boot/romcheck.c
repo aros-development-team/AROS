@@ -56,8 +56,9 @@ static int amiga_checksum(uint8_t *mem, int size, uint32_t chkoff, int update)
 
 int main(int argc, char **argv)
 {
-	int err, fd;
+	int err, fd, i;
 	void *rom;
+	uint8_t *p;
 	uint32_t size = 512 * 1024;
 
 	fd = open(argv[1], O_RDWR | O_CREAT, 0666);
@@ -78,8 +79,22 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	err = amiga_checksum(rom, size, 8, 0);
-	err = amiga_checksum(rom, size, 8, 1);
+	/* add interrupt vector offsets, needed by 68000 and 68010 */
+	p = (uint8_t*)rom + size - 16;
+	for (i = 0; i < 8; i++) {
+		p[i * 2 + 1] = i + 0x18;
+		p[i * 2 + 0] = 0;
+	}
+
+	/* set rom size */
+	p = (uint8_t*)rom + size - 20;
+	p[0] = size >> 24;
+	p[1] = size >> 16;
+	p[2] = size >>  8;
+	p[3] = size >>  0;
+
+	err = amiga_checksum(rom, size, size - 24, 0);
+	err = amiga_checksum(rom, size, size - 24, 1);
 
 	munmap(rom, size);
 
