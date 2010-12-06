@@ -12,7 +12,7 @@
 #include "misc.h"
 #include "volumes.h"
 
-ULONG error;
+LONG error;
 
 struct PathElement {
 	struct PathElement *next;
@@ -55,19 +55,19 @@ struct stat st;
 	stat(srcpath, &st);
 	filename = filepart(srcpath);
 	printf("Copying %s to %s ...", filename, dstpath);
-	ah = openf(NULL, &volume->ah, dstpath, FMF_READ);
+	ah = openf(NULL, &volume->ah, dstpath, FMF_READ, &error);
 	if (ah != NULL)
 	{
 		fd = open(srcpath, O_RDONLY);
 		if (fd != -1)
 		{
-			fah = openfile(NULL, ah, filename, FMF_READ | FMF_WRITE | FMF_CREATE | FMF_LOCK | FMF_CLEAR, 0);
+			fah = openfile(NULL, ah, filename, FMF_READ | FMF_WRITE | FMF_CREATE | FMF_LOCK | FMF_CLEAR, 0, &error);
 			if (fah != NULL)
 			{
 				written=0;
 				while ((len=read(fd, buffer, 2048))>0)
 				{
-					size = writef(NULL, fah, buffer, len);
+					size = writef(NULL, fah, buffer, len, &error);
 					written += size;
 					if (size<len)
 					{
@@ -109,10 +109,10 @@ struct AfsHandle *ah;
 struct AfsHandle *dah;
 
 	printf("Creating directory %s ...", dirname);
-	ah = openf(NULL, &volume->ah, "", FMF_READ);
+	ah = openf(NULL, &volume->ah, "", FMF_READ, &error);
 	if (ah != NULL)
 	{
-		dah = createDir(NULL, ah, dirname, 0);
+		dah = createDir(NULL, ah, dirname, 0, &error);
 		if (dah != NULL)
 		{
 			closef(NULL, dah);
@@ -383,7 +383,7 @@ struct Volume *volume;
 	de.de_HighCyl = cfg->size-1;
 	if (createFile(cfg) == 0)
 	{
-		volume = initVolume(afsbase, NULL, cfg->image, 0, &de, &error);
+		volume = initVolume(afsbase, NULL, cfg->image, 0, 0, &de, &error);
 		if (volume != NULL)
 		{
 			if ((error == 0) || (error == ERROR_NOT_A_DOS_DISK))
