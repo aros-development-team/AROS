@@ -53,7 +53,9 @@
     
     // FIXME: screen argument is ignored
     D(bug("StartWorkbench(0x%08x, @%p)\n", flags, ptr));
-    return TRUE;
+
+    // FIXME: Replace with a call to Wanderer Lite...
+    return FALSE;
         
     AROS_LIBFUNC_EXIT
 } /* StartWorkbench() */
