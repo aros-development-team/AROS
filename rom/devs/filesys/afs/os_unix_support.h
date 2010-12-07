@@ -122,6 +122,7 @@ struct InfoData {
 #define ID_WRITE_PROTECTED 80
 #define ID_VALIDATING 81
 #define ID_VALIDATED  82
+#define ID_NO_DISK_PRESENT  (-1L)
 #define ID_DOS_DISK         MAKE_ID('D','O','S',0)
 #define ID_FFS_DISK         MAKE_ID('D','O','S',1)
 #define ID_INTER_DOS_DISK   MAKE_ID('D','O','S',2)
