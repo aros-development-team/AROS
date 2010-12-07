@@ -79,7 +79,7 @@
 	cd = (struct ConfigDev *)
 	   ((struct IntExpansionBase *)ExpansionBase)->eb_BoardList.lh_Head;
     else
-	cd = oldConfigDev;
+	cd = oldConfigDev->cd_Node.ln_Succ;
 
     if (cd)
     {
@@ -94,6 +94,8 @@
 
             cd = (struct ConfigDev *)cd->cd_Node.ln_Succ;
         }
+        if (cd->cd_Node.ln_Succ == NULL)
+            cd = NULL;
     }
 
     ReleaseConfigBinding();
