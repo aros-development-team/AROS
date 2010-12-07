@@ -50,6 +50,7 @@ LONG error;
 	if (blockbuffer != NULL) {
 		gotdostype = TRUE;
 		volume->dostype=OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+		volume->dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	}
 
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
@@ -69,8 +70,8 @@ LONG error;
 	{
 		blockbuffer=getBlock(afsbase, volume, 1);
 		volume->dostype=OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+		volume->dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	}
-	volume->dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	if (volume->dostype != 0x444F5300)
 	{
 		D(bug("[afs] newMedium: incorrect DOS type (0x%lx)\n",
