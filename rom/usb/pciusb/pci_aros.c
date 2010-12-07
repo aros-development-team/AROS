@@ -1440,21 +1440,7 @@ void pciFreeUnit(struct PCIUnit *hu)
     }
 
 #if defined(USB3)
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
-    {
-        switch(hc->hc_HCIType)
-        {
-            case HCITYPE_XHCI:
-            {
-                KPRINTF(1000, ("Shutting down XHCI %08lx\n", hc));
-                KPRINTF(1000, ("Shutting down XHCI done.\n"));
-                break;
-            }
-        }
-
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
-    }
+    xhciFree(hc, hu);
 #endif
 
     // doing this in three steps to avoid these damn host errors
