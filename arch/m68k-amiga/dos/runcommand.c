@@ -92,6 +92,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     LONG ret;
     struct StackSwapStruct sss;
     BPTR oldinput = BNULL;
+    struct FileHandle *fhinput = NULL;
 
     if(stacksize < AROS_STACKSIZE)
 	stacksize = AROS_STACKSIZE;
@@ -122,12 +123,13 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
      */
     oldinput = Input();
     if (oldinput && IsInteractive(oldinput)) {
-    	struct FileHandle *fh = BADDR(oldinput);
-	if (!SetVBuf(oldinput, NULL, BUF_FULL, argsize)) {
+    	int size = argsize < 0 ? strlen(argptr) : argsize;
+    	fhinput = BADDR(oldinput);
+	if (size >= 0 && vbuf_alloc(fhinput, size, DOSBase)) {
 	    /* ugly hack */
-	    memcpy(fh->fh_Buf, argptr, argsize);
-	    fh->fh_Pos = fh->fh_Buf;
-	    fh->fh_End = fh->fh_Buf + argsize;
+	    memcpy(fhinput->fh_Buf, argptr, size);
+	    fhinput->fh_Pos = fhinput->fh_Buf;
+	    fhinput->fh_End = fhinput->fh_Buf + size;
 	}
     }
 
@@ -157,6 +159,9 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     GetIntETask(me)->iet_startup = oldstartup;
 
     me->pr_Result2=oldresult;
+
+    /* remove buffered argument stream */
+    vbuf_free(fhinput);
 
     FreeMem(stack,stacksize);
     
