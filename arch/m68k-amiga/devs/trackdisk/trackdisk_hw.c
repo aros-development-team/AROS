@@ -221,9 +221,14 @@ static int checkbuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
     // allocate HD sized buffer if HD disk inserted
     if ((tdu->tdu_hddisk && !tdb->td_supportHD) || !tdb->td_DMABuffer) {
         FreeMem(tdb->td_DMABuffer, DISK_BUFFERSIZE);
+        FreeMem(tdb->td_DataBuffer, 11 * 512);
         tdb->td_DMABuffer = AllocMem(DISK_BUFFERSIZE * 2, MEMF_CHIP);
-        if (!tdb->td_DMABuffer)
+        tdb->td_DataBuffer = AllocMem(22 * 512, MEMF_ANY);
+        if (!tdb->td_DMABuffer || !tdb->td_DataBuffer) {
+            FreeMem(tdb->td_DMABuffer, DISK_BUFFERSIZE * 2);
+            FreeMem(tdb->td_DataBuffer, 22 * 512);
             return 1;
+        }
         tdb->td_supportHD = TRUE;
     }
     return 0;
