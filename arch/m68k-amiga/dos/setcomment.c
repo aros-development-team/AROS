@@ -63,7 +63,7 @@
     if (getpacketinfo(DOSBase, name, &phs)) {
     	BSTR com = C2BSTR(comment);
     	if (com) {
-    	    status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_COMMENT, NULL, phs.lock, phs.name, com);
+    	    status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_COMMENT, (SIPTR)NULL, phs.lock, phs.name, com);
     	    FreeVec(BADDR(com));
     	} else {
     	    SetIoErr(ERROR_NO_FREE_STORE);
