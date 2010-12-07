@@ -69,6 +69,7 @@ struct TrackDiskBase
     struct MsgPort			td_druport;
     struct Task				*td_task;
     APTR					td_DMABuffer;		/* Buffer for DMA accesses */
+    UBYTE					td_DataBuffer;
     volatile struct Custom 	*custom;
     volatile struct CIA 	*ciaa;
     volatile struct CIA 	*ciab;

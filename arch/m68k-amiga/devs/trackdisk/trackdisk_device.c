@@ -209,22 +209,18 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    break;
 	case TD_GETGEOMETRY:
 	    {
-	    	if (tdu->tdu_DiskIn == TDU_NODISK) {
-	    	    iotd->iotd_Req.io_Error = TDERR_DiskChanged;
-	    	} else {
-		    int hdmult = tdu->tdu_hddisk ? 2 : 1;
-		    geo = (struct DriveGeometry *)iotd->iotd_Req.io_Data;
-		    geo->dg_SectorSize = 512;
-		    geo->dg_TotalSectors = 11 * hdmult;
-		    geo->dg_Cylinders = 80;
-		    geo->dg_CylSectors = 11 * hdmult * 2;
-		    geo->dg_Heads = 2;
-		    geo->dg_TrackSectors = 11 * hdmult;
-		    geo->dg_BufMemType = MEMF_PUBLIC;
-		    geo->dg_DeviceType = DG_DIRECT_ACCESS;
-		    geo->dg_Flags = DGF_REMOVABLE;
-                    iotd->iotd_Req.io_Error=0;
-                }
+		int hdmult = tdu->tdu_hddisk ? 2 : 1;
+		geo = (struct DriveGeometry *)iotd->iotd_Req.io_Data;
+		geo->dg_SectorSize = 512;
+		geo->dg_TotalSectors = 11 * hdmult;
+		geo->dg_Cylinders = 80;
+		geo->dg_CylSectors = 11 * hdmult * 2;
+		geo->dg_Heads = 2;
+		geo->dg_TrackSectors = 11 * hdmult;
+		geo->dg_BufMemType = MEMF_PUBLIC;
+		geo->dg_DeviceType = DG_DIRECT_ACCESS;
+		geo->dg_Flags = DGF_REMOVABLE;
+                iotd->iotd_Req.io_Error=0;
             }
 	    break;
 	case TD_GETDRIVETYPE:
@@ -583,7 +579,8 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR TDBase)
     /* Alloc memory for track buffering, DD buffer only, reallocated
      * later if HD disk detected to save RAM on unexpanded machines */
     TDBase->td_DMABuffer = AllocMem(DISK_BUFFERSIZE, MEMF_CHIP);
-    if (!TDBase->td_DMABuffer)
+    TDBase->td_DataBuffer = AllocMem(11 * 512, MEMF_ANY);
+    if (!TDBase->td_DMABuffer || !TDBase->td_DataBuffer)
 	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_NoMemory);
 
     for (i = 0; i < TD_NUMUNITS; i++) {
