@@ -139,7 +139,7 @@ static CONST TEXT __attribute__((aligned(4))) CONST _afs_handler[] = "\013afs.ha
 
 static void FloppyBootNode(
         struct ExpansionBase *ExpansionBase,
-        CONST_STRPTR driver, int unit, ULONG type, BOOL hddisk)
+        CONST_STRPTR driver, int unit, ULONG type, BOOL hddisk, BOOL bootable)
 {
     TEXT dosdevname[4] = "DF0";
     IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
@@ -164,7 +164,7 @@ static void FloppyBootNode(
     pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
     pp[DE_MAXTRANSFER + 4] = 0x00200000;
     pp[DE_MASK + 4] = 0x7FFFFFFE;
-    pp[DE_BOOTPRI + 4] = 5 - (unit * 10);
+    pp[DE_BOOTPRI + 4] = bootable ? 5 - (unit * 10) : -128;
     pp[DE_DOSTYPE + 4] = type;
     pp[DE_BOOTBLOCKS + 4] = 2;
     devnode = MakeDosNode(pp);
@@ -245,7 +245,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                }
                            }
                            CloseDevice((struct IORequest*)io);
-                           FloppyBootNode(ExpansionBase, driver, i, dostype, dg.dg_TotalSectors == 22 && dg_ok);
+                           FloppyBootNode(ExpansionBase, driver, i, dostype, dg.dg_TotalSectors == 22 && dg_ok, bootdrive == i);
                        }
                        DeleteIORequest((struct IORequest*)io);
                    }
