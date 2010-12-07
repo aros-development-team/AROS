@@ -56,32 +56,36 @@ AROS_UFH3(void, xhciResetHandler,
     AROS_USERFUNC_EXIT
 }
 
-IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR previous) {
+IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
 
-    IPTR extcapoffset, extcap;
+    IPTR extcapoff = (IPTR) NULL;
     ULONG cnt = XHCI_EXT_CAPS_MAX;
 
-    if(!previous) {  
-        extcapoffset = XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
-        if (!extcapoffset) {
-            return (IPTR) NULL;
-        }
-        extcap = (IPTR) hc->xhc_capregbase;
-    } else {
-        extcap = previous;
-        extcapoffset = XHCV_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
+    KPRINTF(1000,("search for ext cap with id(%ld)\n", id));
+
+    if(extcap) {
+        KPRINTF(1000, ("continue search from %p\n", extcap));
+        extcap = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32_LE(extcap));
+    } else {  
+        extcap = (IPTR) hc->xhc_capregbase + XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
+        KPRINTF(1000, ("search from the beginning %p\n", extcap));
     }
 
     do {
-        extcap += extcapoffset;
-        if(XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == id) {
-            KPRINTF(1000, ("XHCI Extended Capability found\n"));
-            return extcap;
+        extcap += extcapoff;
+        if((XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == id)) {
+            KPRINTF(1000, ("found matching ext cap %lx\n", extcap));
+            return (IPTR) extcap;
         }
-        extcapoffset = XHCV_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
+        #if DEBUG
+        if(extcap)
+            KPRINTF(1000, ("skipping ext cap with id(%ld)\n", XHCV_EXT_CAPS_ID(READMEM32_LE(extcap))));
+        #endif
+        extcapoff = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32_LE(extcap));
         cnt--;
-    }while(extcapoffset & cnt);
+    } while(cnt & extcapoff);
 
+    KPRINTF(1000, ("not found!\n"));
     return (IPTR) NULL;
 }
 
@@ -105,22 +109,22 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMemAndBusmaster);
 
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (APTR) &pciregbase);
-    KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
+//    KPRINTF(1000, ("XHCI MMIO address space (%p)\n",pciregbase));
 
     // Store capregbase in xhc_capregbase
     hc->xhc_capregbase = (APTR) pciregbase;
-    KPRINTF(1000, ("XHCI xhc_capregbase(%p)\n",hc->xhc_capregbase));
+    KPRINTF(1000, ("xhc_capregbase (%p)\n",hc->xhc_capregbase));
 
     // Store opregbase in xhc_opregbase
     hc->xhc_opregbase = (APTR) ((ULONG) pciregbase + capreg_readb(XHCI_CAPLENGTH));
-    KPRINTF(1000, ("XHCI xhc_opregbase (%p)\n",hc->xhc_opregbase));
+    KPRINTF(1000, ("xhc_opregbase (%p)\n",hc->xhc_opregbase));
 
-    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",   capreg_readb(XHCI_CAPLENGTH)));
-    KPRINTF(1000, ("XHCI Version (%04x)\n",     capreg_readw(XHCI_HCIVERSION)));
-    KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS1)));
-    KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS2)));
-    KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS3)));
-    KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   capreg_readl(XHCI_HCCPARAMS)));
+//    KPRINTF(1000, ("XHCI CAPLENGTH (%02x)\n",   capreg_readb(XHCI_CAPLENGTH)));
+//    KPRINTF(1000, ("XHCI Version (%04x)\n",     capreg_readw(XHCI_HCIVERSION)));
+//    KPRINTF(1000, ("XHCI HCSPARAMS1 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS1)));
+//    KPRINTF(1000, ("XHCI HCSPARAMS2 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS2)));
+//    KPRINTF(1000, ("XHCI HCSPARAMS3 (%08x)\n",  capreg_readl(XHCI_HCSPARAMS3)));
+//    KPRINTF(1000, ("XHCI HCCPARAMS (%08x)\n",   capreg_readl(XHCI_HCCPARAMS)));
 
     /*
         Chapter 4.20
@@ -154,11 +158,10 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     extcap = xhciExtCap(hc, XHCI_EXT_CAPS_LEGACY, 0);
     if(extcap) {
-        KPRINTF(1000, ("XHCI LEGACY extended cap found\n"));
 
         temp = READMEM32_LE(extcap);
         if( (temp & XHCF_EC_BIOSOWNED) ){
-           KPRINTF(1000, ("XHCI Controller owned by BIOS\n"));
+           KPRINTF(1000, ("controller owned by BIOS\n"));
 
            /* Spec says "no more than a second", we give it a little more */
            timeout = 250;
@@ -180,16 +183,13 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         }
     }
 
-    extcap = xhciExtCap(hc, XHCI_EXT_CAPS_PROTOCOL, 0);
-    while(extcap) {
-        KPRINTF(1000, ("XHCI PROTOCOL extended cap found\n"));
+    extcap = 0;
+    do {
         extcap = xhciExtCap(hc, XHCI_EXT_CAPS_PROTOCOL, extcap);
-        #if DEBUG
-        if (!extcap) {
-            KPRINTF(1000,("No more extended caps with id=PROTOCOL found\n"));
+        if(extcap) {
+            ;
         }
-        #endif
-    }
+    } while (extcap);
 
     hc->hc_PCIMemSize = 1024;   //Arbitrary number
     hc->hc_PCIMemSize += (hc->xhc_scratchbufs * hc->xhc_pagesize);
