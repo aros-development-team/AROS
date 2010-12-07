@@ -172,7 +172,7 @@ static int td_seek2(struct TDU *tdu, UBYTE cyl, UBYTE side, struct TrackDiskBase
     td_setside(side, tdu, tdb);
     if (tdu->pub.tdu_CurrTrk / 2 == cyl)
         return 1;
-    if (tdu->pub.tdu_CurrTrk / 2 > cyl)
+    if (tdu->pub.tdu_CurrTrk / 2 > cyl || cyl == 0xff)
         dir = 1;
     else
         dir = 0;
@@ -183,10 +183,12 @@ static int td_seek2(struct TDU *tdu, UBYTE cyl, UBYTE side, struct TrackDiskBase
     }    
     while (cyl != tdu->pub.tdu_CurrTrk / 2) {
         td_step(tdu, tdb, tdu->pub.tdu_StepDelay);
-        if (tdu->pub.tdu_CurrTrk / 2 > cyl)
+        if (tdu->pub.tdu_CurrTrk / 2 > cyl && tdu->pub.tdu_CurrTrk >= 2)
             tdu->pub.tdu_CurrTrk -= 2;
-        else
+        else if (tdu->pub.tdu_CurrTrk / 2 < cyl)
             tdu->pub.tdu_CurrTrk += 2;
+        if (cyl == 0xff)
+            break;
     }
     td_wait_start(tdb, tdu->pub.tdu_SettleDelay);
     if (!nowait)
