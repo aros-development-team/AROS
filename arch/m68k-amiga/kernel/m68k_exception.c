@@ -217,12 +217,12 @@ asm (
 	"	.text\n"
 	"	.globl M68KExceptionHelper\n"
 	"M68KExceptionHelper:\n"
-	"	move.l	%a6,%sp@(-12)\n"	// Save A6 in regs.a[6]
-	"	move.l	%sp@(0),%a6\n"		// Get Exception Id into A6
-	"	clr.l	%sp@(0)\n"		// Clear TrapCode arg
-	"	move.l	#0f,%sp@(-4)\n"		// Save default TrapCode
-	"	move.l	%a6,%sp@(-8)\n"		// Save Exception ID
 	"	lea.l	%sp@(-12),%sp\n"	// Fix stack to below regs.a[6]
+	"	move.l	%a6,%sp@(0)\n"		// Save A6 in regs.a[6]
+	"	move.l	%sp@(12),%a6\n"		// Get Exception Id into A6
+	"	clr.l	%sp@(12)\n"		// Clear TrapCode arg
+	"	move.l	#0f,%sp@(8)\n"		// Save default TrapCode
+	"	move.l	%a6,%sp@(4)\n"		// Save Exception ID to regs.a[7]
 	"	movem.l	%d0-%d7/%a0-%a5,%sp@-\n"// Push everything - SP is now 'regs_t'
 	"	move.l	%sp@(15*4),%d1\n"	// Exception Id (regs.a[7])
 	"	move.l	%usp,%a0\n"
