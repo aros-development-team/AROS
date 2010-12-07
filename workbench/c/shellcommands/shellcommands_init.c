@@ -11,6 +11,7 @@
 #include <exec/resident.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/utility.h>	/* For Stricmp */
 
 #include <aros/symbolsets.h>
 
@@ -24,6 +25,7 @@ DEFINESET(SHCOMMANDS)
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     struct shcommand *sh;
+    APTR UtilityBase;
     int pos;
 
     D(bug("[ShellCommands] Init\n"));
@@ -39,9 +41,16 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     if (pos <= 0)
     	return FALSE;
 
+    UtilityBase = OpenLibrary("utility.library", 0);
+    if (UtilityBase == NULL) {
+    	D(bug("[ShellCommands] Can't open utility.library?\n"));
+    	return FALSE;
+    }
+
     DOSBase = OpenLibrary("dos.library", 0);
     if ( DOSBase == NULL ) {
     	D(bug("[ShellCommands] What? No dos.library?\n"));
+    	CloseLibrary(UtilityBase);
     	return FALSE;
     }
 
@@ -49,6 +58,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sc_Command = AllocMem(sizeof(LIBBASE->sc_Command[0])*pos, 0);
     if (LIBBASE->sc_Command == NULL) {
     	CloseLibrary(DOSBase);
+    	CloseLibrary(UtilityBase);
     	return FALSE;
     }
 
@@ -60,7 +70,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	scs->scs_Name = sh->sh_Name;
     	__AROS_SET_FULLJMP(&scs->scs_Code, sh->sh_Command);
     	AddSegment(sh->sh_Name, MKBADDR(&scs->scs_Next), 0);
+
+    	/* Provide alias for NewShell */
+    	if (Stricmp(sh->sh_Name, "NewShell")==0) {
+    	    AddSegment("NewCLI", MKBADDR(&scs->scs_Next), 0);
+    	}
     }
+
+    CloseLibrary(UtilityBase);
 
     return TRUE;
 }
