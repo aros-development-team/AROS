@@ -217,8 +217,14 @@ asm (
 	"	.text\n"
 	"	.globl M68KExceptionHelper\n"
 	"M68KExceptionHelper:\n"
-	"	movem.l	%d0-%d7/%a0-%a6,%sp@-\n"// Push everything - SP is now 'regs_t'
-	"	move.l	%sp@(15*4),%d1\n"	// Exception Id
+	"	move.l	%a6,%sp@(-12)\n"	// Save A6 in regs.a[6]
+	"	move.l	%sp@(0),%a6\n"		// Get Exception Id into A6
+	"	clr.l	%sp@(0)\n"		// Clear TrapCode arg
+	"	move.l	#0f,%sp@(-4)\n"		// Save default TrapCode
+	"	move.l	%a6,%sp@(-8)\n"		// Save Exception ID
+	"	lea.l	%sp@(-12),%sp\n"	// Fix stack to below regs.a[6]
+	"	movem.l	%d0-%d7/%a0-%a5,%sp@-\n"// Push everything - SP is now 'regs_t'
+	"	move.l	%sp@(15*4),%d1\n"	// Exception Id (regs.a[7])
 	"	move.l	%usp,%a0\n"
 	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs as USP
 	"	move.l	%sp,%d0\n"		// regs_t
@@ -230,9 +236,16 @@ asm (
 	"	lea	%sp@(12),%sp\n"		// Drop all stack args
 	"	movem.l	%sp@+,%d0-%d7/%a0-%a5\n"	// Restore all but a6
 	"	move.l	%sp@(4),%a6\n"		//   Get USP from regs_t
-	"	move.l	%a6,%usp\n"		//   Set USP (FALLTHROUGH)
+	"	move.l	%a6,%usp\n"		//   Set USP
 	"	move.l	%sp@+,%a6\n"		//   Restore A6
 	"	addq.l	#4,%sp\n"		//   Pop off A7
+	"	tst	%sp@\n"			// New tasks have a NULL trapcode
+	"	beq.s	1f\n"
+	"       rts\n"
+	"1:\n"
+	"	addq.l	#4,%sp\n"
+	"0:\n"
+	"	addq.l	#4,%sp\n"		//   Drop TrapCode parameter
 	"	rte\n"				//   And return
 );
 
@@ -241,6 +254,7 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     ULONG alert;
     VOID (*trapHandler)(ULONG, void *);
+    extern VOID Exec_TrapHandler(ULONG trapNum, void *);
 
     /* Conveniently, the ACPU_* traps are identical to
      * id | AT_DeadEnd!
@@ -256,7 +270,17 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
     }
 
     trapHandler = FindTask(NULL)->tc_TrapCode;
-    trapHandler(alert, regs);
+    if (trapHandler == Exec_TrapHandler)
+    	trapHandler(alert, regs);
+    else {
+    	/* Call an AmigaOS trap handler, in supervisor
+    	 * mode, that *may* alter almost any of our
+    	 * registers, by abusing the stack frame
+    	 * via 'regs_t'. Whee!
+    	 */
+    	regs->trapcode = (IPTR)trapHandler;
+    	regs->traparg  = (ULONG)alert;
+    }
 }
 
 void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)

@@ -18,6 +18,8 @@ struct AROSCPUContext
 {
 	ULONG d[8];	/* Manually saved */
 	IPTR  a[8];
+	IPTR  trapcode;	/* Trap Code to call as the exception return */
+	ULONG traparg;	/* Argument to the TrapCode */
 	UWORD sr;
 	IPTR  pc;	/* Automatically created on entry */
 };
