@@ -56,16 +56,12 @@ static struct AFSBase *AFS_alloc(void)
     handler->dosbase = (struct DosLibrary *)OpenLibrary("dos.library",0);
     if (handler->dosbase != NULL) {
 
+	/* changeint task and sigbit */
+	handler->port.mp_SigTask = FindTask(0);
+	handler->port.mp_SigBit = SIGBREAKB_CTRL_F;
+
     	/* Port for device commands */
     	handler->timer_mp = CreateMsgPort();
-#if 0
-    	NEWLIST(&handler->port.mp_MsgList);
-    	handler->port.mp_Node.ln_Type = NT_MSGPORT;
-    	handler->port.mp_SigBit = SIGBREAKB_CTRL_F;
-    	handler->port.mp_SigTask = task;
-    	handler->port.mp_Flags = PA_IGNORE;
-#endif
-
 	/* Open timer */
 	handler->timer_request = (struct timerequest *)
 	    CreateIORequest(handler->timer_mp, sizeof(struct timerequest));
@@ -138,10 +134,9 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
 {
     handler->timer_flags &= ~TIMER_ACTIVE;
 
-    if (handler->timer_flags & TIMER_RESTART)
+    if (handler->timer_flags & TIMER_RESTART) {
 	startFlushTimer(handler);
-    else {
-	struct Volume *volume;
+    } else {
 	struct BlockCache *blockbuffer;
 
 	D(bug("[afs] Alarm rang.\n"));
@@ -214,6 +209,10 @@ void AFS_work(void) {
     	return;
     }
 
+    /* make non-packet functions to see our volume */
+    NEWLIST(&handler->device_list);
+    AddHead(&handler->device_list, &volume->ln);
+
     /* Say that we are going to persist */
     ((struct DeviceNode *)BADDR(dp->dp_Arg3))->dn_Task = mp;
 
@@ -222,12 +221,16 @@ void AFS_work(void) {
     while (!dead) {
     	ULONG packetmask = 1L << mp->mp_SigBit;
     	ULONG timermask = 1L << handler->timer_mp->mp_SigBit;
+    	ULONG changemask = 1L << SIGBREAKB_CTRL_F;
     	ULONG sigs;
 
-    	sigs = Wait(packetmask | timermask);
+    	sigs = Wait(packetmask | timermask | changemask);
 
     	if (sigs & timermask)
     	    onFlushTimer(handler, volume);
+    	if (sigs & changemask) {
+    	    checkDeviceFlags(handler);
+	}
 
     	if (!(sigs & packetmask))
     	    continue;

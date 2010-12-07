@@ -600,10 +600,7 @@ AROS_UFH3(VOID, changeIntCode,
 	AROS_USERFUNC_INIT
 
 	ioh->ioflags |= IOHF_MEDIA_CHANGE;
-#ifndef AROS_DOS_PACKETS
 	Signal(ioh->afsbase->port.mp_SigTask, 1<<ioh->afsbase->port.mp_SigBit);
-#endif
 
 	AROS_USERFUNC_EXIT
 }
-

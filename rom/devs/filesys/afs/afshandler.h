@@ -18,6 +18,7 @@ struct AFSBase
 	struct Volume *volume;
 	struct DosLibrary *dosbase;
 	struct MsgPort *timer_mp;
+	struct MsgPort port;	/* sigtask and sigbit for changeint */
 #else
 	struct Device device;
 	struct DosLibrary *dosbase;
