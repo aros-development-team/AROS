@@ -85,6 +85,7 @@ static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
 
 #if defined(USB3)
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu);
+void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 void xhciCompleteInt(struct PCIController *hc);
 void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 #endif

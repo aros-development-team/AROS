@@ -17,7 +17,7 @@
 
 
 static
-AROS_UFH3(void, XhciResetHandler,
+AROS_UFH3(void, xhciResetHandler,
         AROS_UFHA(struct PCIController *, hc, A1),
         AROS_UFHA(APTR, unused, A5),
         AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -46,7 +46,7 @@ AROS_UFH3(void, XhciResetHandler,
 
     #ifdef DEBUG
     if(!timeout)
-        KPRINTF(1000, ("XHCI Halt timeout, reset may result in undefined behavior!\n"));
+        KPRINTF(1000, ("XHCI Halting timed out, reset may result in undefined behavior!\n"));
     #endif
 
 	/* Reset controller */
@@ -56,12 +56,41 @@ AROS_UFH3(void, XhciResetHandler,
     AROS_USERFUNC_EXIT
 }
 
+IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR previous) {
+
+    IPTR extcapoffset, extcap;
+    ULONG cnt = XHCI_EXT_CAPS_MAX;
+
+    if(!previous) {  
+        extcapoffset = XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
+        if (!extcapoffset) {
+            return (IPTR) NULL;
+        }
+        extcap = (IPTR) hc->xhc_capregbase;
+    } else {
+        extcap = previous;
+        extcapoffset = XHCV_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
+    }
+
+    do {
+        extcap += extcapoffset;
+        if(XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == id) {
+            KPRINTF(1000, ("XHCI Extended Capability found\n"));
+            return extcap;
+        }
+        extcapoffset = XHCV_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
+        cnt--;
+    }while(extcapoffset & cnt);
+
+    return (IPTR) NULL;
+}
 
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     struct PCIDevice *hd = hu->hu_Device;
 
-    ULONG extcapoffset, extcap, cnt, timeout, temp;
+    ULONG cnt, timeout, temp;
+    IPTR extcap;
     APTR memptr;
     volatile APTR pciregbase;
 
@@ -123,50 +152,43 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     KPRINTF(1000, ("MaxIntrs %lx\n",XHCV_MaxIntrs(capreg_readl(XHCI_HCSPARAMS1))));
     KPRINTF(1000, ("MaxPorts %lx\n",hc->hc_NumPorts));
 
+    extcap = xhciExtCap(hc, XHCI_EXT_CAPS_LEGACY, 0);
+    if(extcap) {
+        KPRINTF(1000, ("XHCI LEGACY extended cap found\n"));
 
-    /* HCCPARAMS stores in its upper 16 bits a DWORD offset value (xECP) that is calculated from address pointed by BAR0(pciregbase) to 1st xHCI Extended Capability */  
-    extcapoffset = XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
-    if(extcapoffset) {
-        cnt = XHCI_EXT_CAPS_MAX;
-        extcap = (ULONG) pciregbase;
-        do {
-            extcap += extcapoffset;
-            if(XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == XHCI_EXT_CAPS_LEGACY) {
-                KPRINTF(1000, ("XHCI LEGACY extended cap found\n"));
+        temp = READMEM32_LE(extcap);
+        if( (temp & XHCF_EC_BIOSOWNED) ){
+           KPRINTF(1000, ("XHCI Controller owned by BIOS\n"));
 
-                temp = READMEM32_LE(extcap);
-                if( (temp & XHCF_EC_BIOSOWNED) ){
-                    KPRINTF(1000, ("XHCI Controller owned by BIOS\n"));
+           /* Spec says "no more than a second", we give it a little more */
+           timeout = 250;
 
-                    /* Spec says "no more than a second", we give it a little more */
-                    timeout = 250;
+           WRITEMEM32_LE(extcap, (temp | XHCF_EC_OSOWNED) );
+           do {
+               temp = READMEM32_LE(extcap);
+               if( !(temp & XHCF_EC_BIOSOWNED) ) {
+                   KPRINTF(1000, ("BIOS gave up on XHCI. Pwned!\n"));
+                   break;
+               }
+               uhwDelayMS(10, hu, hd);
+            } while(--timeout);
 
-                    WRITEMEM32_LE(extcap, (temp | XHCF_EC_OSOWNED) );
-                    do {
-                        temp = READMEM32_LE(extcap);
-                        if( !(temp & XHCF_EC_BIOSOWNED) ) {
-                            KPRINTF(1000, ("BIOS gave up on XHCI. Pwned!\n"));
-                            break;
-                        }
-                        uhwDelayMS(10, hu, hd);
-                    } while(--timeout);
-
-                    if(!timeout) {
-                        KPRINTF(1000, ("BIOS didn't release XHCI. Forcing and praying...\n"));
-                        WRITEMEM32_LE(extcap, (temp & ~XHCF_EC_BIOSOWNED) );
-                    }
-                }
+            if(!timeout) {
+                KPRINTF(1000, ("BIOS didn't release XHCI. Forcing and praying...\n"));
+                WRITEMEM32_LE(extcap, (temp & ~XHCF_EC_BIOSOWNED) );
             }
+        }
+    }
 
-            if(XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == XHCI_EXT_CAPS_PROTOCOL) {
-                KPRINTF(1000, ("XHCI PROTOCOL extended cap found\n"));
-            }
-
-            /* Next xHCI Extended Capability is calculated from DWORD offset that is relative to current xHCI Extended Capability (extcap) */
-            extcapoffset = XHCV_EXT_CAPS_NEXT(READMEM32_LE(READMEM32_LE(extcap)));
-            cnt--;
-
-        }while(extcapoffset & cnt);
+    extcap = xhciExtCap(hc, XHCI_EXT_CAPS_PROTOCOL, 0);
+    while(extcap) {
+        KPRINTF(1000, ("XHCI PROTOCOL extended cap found\n"));
+        extcap = xhciExtCap(hc, XHCI_EXT_CAPS_PROTOCOL, extcap);
+        #if DEBUG
+        if (!extcap) {
+            KPRINTF(1000,("No more extended caps with id=PROTOCOL found\n"));
+        }
+        #endif
     }
 
     hc->hc_PCIMemSize = 1024;   //Arbitrary number
@@ -196,7 +218,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     hc->hc_CompleteInt.is_Code = (void (*)(void)) &xhciCompleteInt;
 
     // install reset handler
-    hc->hc_ResetInt.is_Code = XhciResetHandler;
+    hc->hc_ResetInt.is_Code = xhciResetHandler;
     hc->hc_ResetInt.is_Data = hc;
     AddResetCallback(&hc->hc_ResetInt);
 
@@ -217,4 +239,24 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     return TRUE;
 }
+
+void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
+
+    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
+    while(hc->hc_Node.ln_Succ)
+    {
+        switch(hc->hc_HCIType)
+        {
+            case HCITYPE_XHCI:
+            {
+                KPRINTF(1000, ("Shutting down XHCI %08lx\n", hc));
+                KPRINTF(1000, ("Shutting down XHCI done.\n"));
+                break;
+            }
+        }
+
+        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
+    }
+}
+
 #endif
