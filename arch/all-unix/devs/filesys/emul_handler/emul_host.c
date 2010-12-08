@@ -1443,12 +1443,6 @@ LONG examine_all(struct emulbase *emulbase,
     return error;
 }
 
-LONG examine_all_end(struct emulbase *emulbase, struct filehandle *fh)
-{
-    /* Just rewind */
-    return DoRewindDir(emulbase, fh);
-}
-
 char *GetHomeDir(struct emulbase *emulbase, char *sp)
 {
     char *home = NULL;

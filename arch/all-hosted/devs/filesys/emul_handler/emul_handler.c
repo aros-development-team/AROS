@@ -862,7 +862,8 @@ AROS_LH1(void, beginio,
 	break;
 	  
     case FSA_EXAMINE_ALL_END:
-	error = examine_all_end(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
+        /* Just rewind */
+	error = DoRewindDir(emulbase, (struct filehandle *)iofs->IOFS.io_Unit);
 	break;
 	  
     case FSA_OPEN_FILE:

@@ -1,5 +1,5 @@
-#ifndef __EMUL_HANDLER_INTERN_H
-#define __EMUL_HANDLER_INTERN_H
+#ifndef __EMUL_HOST_H
+#define __EMUL_HOST_H
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
@@ -28,58 +28,13 @@ struct AsyncReaderControl
 
 #ifdef __AROS__
 
-#include <exec/libraries.h>
-#include <exec/types.h>
-#include <dos/dosextens.h>
-#include <hidd/hidd.h>
-
 #include "winapi.h"
-
-struct emulbase
-{
-    struct Device		  device;
-    				/* nlorentz: Cal it eb_std* because std* is reserved */
-    struct filehandle  		* eb_stdin;
-    struct filehandle 		* eb_stdout;
-    struct filehandle 		* eb_stderr;
-    APTR			  mempool;
-    void			* EmulHandle;
-    void			* KernelHandle;
-    void			* ConsoleInt;
-    struct AsyncReaderControl	* ConsoleReader;
-};
-
-struct filehandle
-{
-    char * hostname;	/* full host's pathname (includes volume root prefix 	  */
-    char * name;	/* full name including pathname				  */
-    int    type;	/* type flag, see below			       		  */
-    char * pathname;	/* if type == FHD_FILE then you'll find the pathname here */
-    char * volumename;	/* volume name						  */
-    void * fd;
-    ULONG  dirpos;
-    struct DosList *dl;
-};
-
-/* type flags */
-#define FHD_FILE      0x01
-#define FHD_DIRECTORY 0x02
-#define FHD_STDIO     0x80
 
 struct EmulInterface
 {
     struct AsyncReaderControl *(*EmulInitNative)(void);
-    LONG (*EmulStat)(char *path, WIN32_FILE_ATTRIBUTE_DATA *FIB, ULONG *attrmask);
-    ULONG (*EmulDelete)(char *filename);
     unsigned long (*EmulGetHome)(char *name, char *home);
-    ULONG (*EmulStatFS)(char *path, struct InfoData *id);
 };
-
-#define InitNative EmulIFace->EmulInitNative
-#define Stat EmulIFace->EmulStat
-#define Delete EmulIFace->EmulDelete
-#define GetHome EmulIFace->EmulGetHome
-#define StatFS EmulIFace->EmulStatFS
 
 /* The following functions are availible on not all Windows versions, so they are optional for us.
    If they are present, we will use them. If not, produce error or fail back to emulation (for example,
@@ -108,29 +63,28 @@ struct KernelInterface
     ULONG  __stdcall (*CreateSymbolicLink)(char *lpSymlinkFileName, char *lpTargetFileName, ULONG dwFlags);
     ULONG  __stdcall (*SetEvent)(void *hEvent);
     ULONG  __stdcall (*SetFileTime)(void *hFile, UQUAD *lpCreationTime, UQUAD *lpLastAccessTime, UQUAD *lpLastWriteTime);
+    ULONG  __stdcall (*GetFileAttributes)(char *lpFileName);
+    ULONG  __stdcall (*GetFileAttributesEx)(char *lpFileName, ULONG fInfoLevelId, void *lpFileInformation);
+    ULONG  __stdcall (*_DeleteFile)(char *lpFileName);
+    ULONG  __stdcall (*RemoveDirectory)(char *lpPathName);
+    ULONG  __stdcall (*GetDiskFreeSpace)(char *lpRootPathName, ULONG *lpSectorsPerCluster, ULONG *lpBytesPerSector, ULONG *lpNumberOfFreeClusters, ULONG *lpTotalNumberOfClusters);
 };
 
-#define OpenFile KernelIFace->CreateFile
-#define DoClose KernelIFace->CloseHandle
-#define DoRead KernelIFace->ReadFile
-#define DoWrite KernelIFace->WriteFile
-#define LSeek KernelIFace->SetFilePointer
-#define SetEOF KernelIFace->SetEndOfFile
-#define GetFileType KernelIFace->GetFileType
-#define GetStdFile KernelIFace->GetStdHandle
-#define DoRename KernelIFace->MoveFile
-#define GetCWD KernelIFace->GetCurrentDirectory
-#define FindFirst KernelIFace->FindFirstFile
-#define FindNext KernelIFace->FindNextFile
-#define FindEnd KernelIFace->FindClose
-#define MKDir KernelIFace->CreateDirectory
-#define Chmod KernelIFace->SetFileAttributes
-#define GetLastError KernelIFace->GetLastError
-#define Link KernelIFace->CreateHardLink
-#define SymLink KernelIFace->CreateSymbolicLink
-#define RaiseEvent KernelIFace->SetEvent
-#define SetFileTime KernelIFace->SetFileTime
+struct PlatformHandle
+{
+    char  *pathname;	/* Pathname with pattern for directory searching */
+    ULONG  dirpos;	/* Current directory search position		 */
+};
+
+struct Emul_PlatformData
+{
+    void			*EmulHandle;
+    void			*KernelHandle;
+    void			*ConsoleInt;
+    struct AsyncReaderControl	*ConsoleReader;
+    struct EmulInterface	*EmulIFace;
+    struct KernelInterface	*KernelIFace;
+};
 
 #endif
-
-#endif /* __EMUL_HANDLER_INTERN_H */
+#endif
