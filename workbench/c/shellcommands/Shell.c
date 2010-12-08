@@ -1080,6 +1080,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
     struct ExecBase *SysBase = is->sb->sb_SysBase;
     APTR DOSBase = is->sb->sb_DOSBase;
     struct CommandLineInterface *cli = is->sb->sb_Cli;
+    BOOL   isQuoted  = FALSE;
     
     appendString(&cookingCS, cs->CS_Buffer, cs->CS_Length + 1, is);
     cookingCS.CS_CurChr = cs->CS_CurChr;
@@ -1110,10 +1111,13 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
         while ( cookingCS.CS_CurChr < cookingCS.CS_Length )
         {
 
-            if ( (item == '\0') || (item == '\n') )
+            if ( (item == '\0') || (!isQuoted && item == ';') || (item == '\n') )
             {
                 break;
             }
+
+            if (item == '"')
+            	isQuoted = !isQuoted;
 
 	    if ( (item == is->bra)                                            &&
                  (cookingCS.CS_Buffer[cookingCS.CS_CurChr + 1] == is->dollar) &&
@@ -1143,16 +1147,19 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
         cookingCS.CS_CurChr = 0;
         filtered->CS_Buffer = NULL;
         filtered->CS_CurChr = filtered->CS_Length = 0;
-
+        isQuoted = FALSE;
 
         /* Environment variables handling (locals and globals) */
         while ( cookingCS.CS_CurChr < cookingCS.CS_Length )
         {
 
-            if ( (item == '\0') || (item == '\n') )
+            if ( (item == '\0') || (!isQuoted && item == ';') || (item == '\n') )
             {
                 break;
             }
+
+            if (item == '"')
+            	isQuoted = !isQuoted;
 
             if (item == '*')
             {
@@ -1189,10 +1196,13 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                     continue;
                 }
 
-                if ( (item == '\0') || (item == '\n') )
+                if ( (item == '\0') || (!isQuoted && item == ';') || (item == '\n') )
                 {
                     break;
                 }
+
+		if (item == '"')
+		    isQuoted = !isQuoted;
 
                 if (item == '{')
                 {
@@ -1206,6 +1216,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                 (
                     i = 0 ;
                     foundOpeningBrace ? ( (item != '}')  &&
+                                          (isQuoted || item != ';') &&
                                           (item != '\n')    ) : isalnum(item) ;
                 )
                 {
@@ -1265,7 +1276,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
         cookingCS.CS_CurChr = 0;
         filtered->CS_Buffer = NULL;
         filtered->CS_CurChr = filtered->CS_Length = 0;
-
+        isQuoted = FALSE;
 
         /* BackTicks handling... we allow several embedded commands
            for now, while original AmigaDOS only allows one per line */
@@ -1348,6 +1359,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
         cookingCS.CS_CurChr = 0;
         filtered->CS_Buffer = NULL;
         filtered->CS_CurChr = filtered->CS_Length = 0;
+        isQuoted = FALSE;
 
         D(bug("[Shell] BackTicks handling done... cookingCS.CS_Buffer = '%s'\n", cookingCS.CS_Buffer));
 
@@ -1374,8 +1386,11 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 	}
 
 	/* Are we done yet? */
-	if(item == '\n' || item == ';' || item == '\0')
+	if(item == '\n' || (!isQuoted && item == ';') || item == '\0')
 	    break;
+
+	if (item == '"')
+	    isQuoted = !isQuoted;
 
 	if(item == '|')
 	{
@@ -1408,7 +1423,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 		i++
 	    );
 
-	    if(cookingCS.CS_Buffer[i] == '\n' || cookingCS.CS_Buffer[i] == ';' || cookingCS.CS_Buffer[i] == '\0')
+	    if(cookingCS.CS_Buffer[i] == '\n' || (!isQuoted && cookingCS.CS_Buffer[i] == ';') || cookingCS.CS_Buffer[i] == '\0')
 	    {
 		FreeVec(cookingCS.CS_Buffer);
 		SetIoErr(ERROR_LINE_TOO_LONG); /* what kind of error must we report? */
