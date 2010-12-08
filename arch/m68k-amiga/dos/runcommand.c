@@ -120,16 +120,21 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
      * which means something isn't 100% correct..
      *
      * This fixes for example C:Execute
+     * Must be always buffered or EndCLI won't work
      */
     oldinput = Input();
-    if (oldinput && IsInteractive(oldinput)) {
-    	int size = argsize < 0 ? strlen(argptr) : argsize;
+    if (oldinput) {
     	fhinput = BADDR(oldinput);
-	if (size >= 0 && vbuf_alloc(fhinput, size, DOSBase)) {
-	    /* ugly hack */
-	    memcpy(fhinput->fh_Buf, argptr, size);
-	    fhinput->fh_Pos = fhinput->fh_Buf;
-	    fhinput->fh_End = fhinput->fh_Buf + size;
+    	if (vbuf_alloc(fhinput, 208, DOSBase) && IsInteractive(oldinput)) {
+    	    int size = argsize < 0 ? strlen(argptr) : argsize;
+    	    if (size > 0) {
+    	    	if (size > 208)
+    	    	    size = 208;
+	        /* ugly hack */
+	        memcpy(fhinput->fh_Buf, argptr, size);
+	        fhinput->fh_Pos = fhinput->fh_Buf;
+	        fhinput->fh_End = fhinput->fh_Buf + size;
+	    }
 	}
     }
 
@@ -161,7 +166,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     me->pr_Result2=oldresult;
 
     /* remove buffered argument stream */
-    vbuf_free(fhinput);
+    Flush(Input());
 
     FreeMem(stack,stacksize);
     
