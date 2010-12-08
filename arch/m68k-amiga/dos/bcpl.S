@@ -387,6 +387,13 @@ BCPLd unrdch         /* dc, void,  */
     BRTS
 
 BCPLd wrch           /* e0, void, char */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    move.l	%d1, %d2
+    jsr		%a6@(10 * -6)	/* DOS/Output() */
+    move.l	%d0, %d1
+    jsr		%a6@(52 * -6)	/* DOS/FPutC() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
 BCPLd readinput_e4   /* e4, lwlength , @buf, lwlength */
@@ -412,23 +419,15 @@ BCPLd endwrite       /* 100, void,  */
 
 BCPL Input          /* 104, FileHandle @,  */
     movem.l	%a0-%a1/%a6,%sp@-
-    move.l	SysBase,%a6
-    sub.l	%a1,%a1
-    jsr		%a6@(FindTask)
-    move.l	%d0,%a0
-    move.l	%a0@(pr_CIS),%d0
-    lsr.l	#2,%d0
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(9 * -6)	/* DOS/Input() */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL Output         /* 108, FileHandle @,  */
     movem.l	%a0-%a1/%a6,%sp@-
-    move.l	SysBase,%a6
-    sub.l	%a1,%a1
-    jsr		%a6@(FindTask)
-    move.l	%d0,%a0
-    move.l	%a0@(pr_COS),%d0
-    lsr.l	#2,%d0
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(10 * -6)	/* DOS/Output() */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
@@ -471,16 +470,15 @@ BCPLd charcmp        /* 130, long , char1, char2 */
 BCPLd strcmp         /* 134, long , @String1, @String2 */
     BRTS
 
-BCPLd readargs        /* 138, BOOL, @template, array, array_size */
-    /* TODO: BCPL readargs and DOS/ReadArgs() don't match up
-     *       very nicely. We'll need to call a BCPL/ReadArgs
-     *       routine that works the way this expects
-     * For now, we fake success, with a 0-length result array.
+BCPL rdargs         /* 138, BOOL, @template, array, array_size */
+    /* BCPL rdargs and DOS/ReadArgs() don't match up
+     *      very nicely. We'll need to call a BCPL/ReadArgs
+     *      routine that works the way this expects
      */
-    move.l	%d2,%d0
-    lsl.l	#2,%d0
-    move.l	%a0,%a0@(%d0)	/* In BCPL, A0 is always 0 */
-    moveq.l	#1,%d0
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		BCPL_ReadArgs
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd rdline         /* 13c, void,  */
@@ -556,13 +554,13 @@ BCPLd extractDeviceName  /* 1ac, void, @buf, bufsize, @name , flag */
     BRTS
 
 BCPLd lock           /* 1b0, FileLock ^, @name */
-    movem.l	%a0-%a1/%a6,%sp@-
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     lsl.l	#2,%d1
     addq.l	#1,%d1		/* STRPTR Name from BSTR */
     moveq.l	#-2,%d2		/* Shared lock */
     jsr		%a6@(14 * -6)	/* DOS/Lock() */
-    movem.l	%sp@+,%a0-%a1/%a6
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
 BCPLd UnLock         /* 1b4, void, @FileLock */
