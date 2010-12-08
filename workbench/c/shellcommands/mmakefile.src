@@ -68,21 +68,34 @@ OBJDIR := $(OBJDIR).kernel
 
 # These are the built-ins for AmigaOS 3.x and above
 FILES := \
+	 Alias \
+	 Ask \
 	 CD \
 	 Echo \
+	 Else \
 	 EndCLI \
 	 EndIf \
-	 Else \
+	 EndShell \
+	 EndSkip \
 	 Execute \
 	 FailAt \
+	 Fault \
 	 If \
+	 Lab \
 	 NewShell \
+	 Path \
+	 Prompt \
+	 Quit \
 	 Resident \
-	 Shell \
+	 Run \
+	 Set \
 	 Setenv \
+	 Shell \
+	 Skip \
 	 Stack \
 	 Unset \
 	 Unsetenv \
+	 Why \
 	# End of list
 
 %build_module mmake=kernel-c-shellcommands \
