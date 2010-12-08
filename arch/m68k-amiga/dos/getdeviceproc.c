@@ -86,6 +86,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     BOOL stdio = FALSE;
     BOOL res;
     CONST_STRPTR origname = name;
+    struct FileLock *fl;
 
     /* if they passed us the result of a previous call, then they're wanted to
      * loop over the targets of a multidirectory assign */
@@ -130,16 +131,17 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
             stdio = TRUE;
         }
 
+         /* allocate structure for return */
+        if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return NULL;
+        }
+
         if (stdio) {
             /* handle doesn't exist */
             if (cur == (BPTR) -1) {
                 SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-                return NULL;
-            }
-
-            /* got it, make a fake devproc */
-            if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
-                SetIoErr(ERROR_NO_FREE_STORE);
+                FreeMem(dp, sizeof(struct DevProc));
                 return NULL;
             }
 
@@ -160,16 +162,12 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
              * NameFromLock() to get the volume name and then find the doslist
              * entry from that as console handlers probably don't even
              * implement names. bring on packets I say */
-	    dl = NULL;
-#if 0
-            dl = LockDosList(LDF_ALL | LDF_READ);
-            while (dl != NULL
-                && ((struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device
-                != dp->dvp_Port))
-                dl = BADDR(dl->dol_Next);
 
+            dl = LockDosList(LDF_ALL | LDF_READ);
+            while (dl != NULL && dl->dol_Task != dp->dvp_Port)
+                dl = BADDR(dl->dol_Next);
             UnLockDosList(LDF_READ | LDF_ALL);
-#endif
+
             /* not found */
             if (dl == NULL) {
                 FreeMem(dp, sizeof(struct DevProc));
@@ -185,61 +183,32 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 
         /* something real, work out what it's relative to */
     	if (Strnicmp(name, "PROGDIR:", 8) == 0) {
-    	    cur = pr->pr_HomeDir;
-
-            /* move past the "volume" name, so that we end up in the "no
-             * volume name" case below */;
-            name = &name[8];
-        }
-
-        else
-            cur = pr->pr_CurrentDir;
-
-        /* if we got NULL, then it's relative to the system root lock */
-        if (cur == BNULL)
-            cur = DOSBase->dl_SYSLock;
+    	    lock = pr->pr_HomeDir;
+    	    fl = BADDR(lock);
+            dp->dvp_Port = fl->fl_Task;
+            dp->dvp_Lock = lock;
+            dp->dvp_Flags = 0;
+            dp->dvp_DevNode = BADDR(fl->fl_Volume);
+            return dp;
+    	}
 
         /* extract the volume name */
-        len = SplitName(name, ':', vol, 0, sizeof(vol)-1);
+        len = SplitName(name, ':', vol, 0, sizeof(vol) - 1);
 
-        /* move the name past it, it's now relative to the volume */
-        name += len;
-
-        /* if there wasn't one (or we found a lone ':'), then we need to
-         * extract it from the name of the current dir */
-
-        /* XXX this block sucks. NameFromLock () calls DupLock(), which calls
-         * Lock(), which would end up back here if it wasn't for the
-         * special-case in Lock(). once we have real FileLock locks, then this
-         * code will go and we can just look at cur->fl_Volume to get the
-         * doslist entry. see the morphos version for details */
+        /* if there wasn't one (or we found a lone ':') -> current dir */
         if (len <= 1) {
-            /* if we didn't find a ':' at all, then we'll need to return the
-             * lock that it's relative to, so make a note */
-            if (len == -1)
-                lock = cur;
-
-            if (NameFromLock(cur, buf, 255) != DOSTRUE)
-                return NULL;
-
-            len = SplitName(buf, ':', vol, 0, sizeof(vol)-1);
-
-            /* if there isn't one, something is horribly wrong */
-            if (len <= 1) {
-                kprintf("%s:%d: NameFromLock() returned a path without a volume. Probably a bug, report it!\n"
-                        "    GetDeviceProc() called for '%s'\n"
-                        "    NameFromLock() called on 0x%08x, returned '%s'\n",
-                        __FILE__, __LINE__, name, cur, buf);
-                SetIoErr(ERROR_INVALID_COMPONENT_NAME);
-                return NULL;
-            }
+            lock = pr->pr_CurrentDir;
+            /* if we got NULL, then it's relative to the system root lock */
+            if (lock == BNULL)
+                lock = DOSBase->dl_SYSLock;
+     	    fl = BADDR(lock);
+            dp->dvp_Port = fl->fl_Task;
+            dp->dvp_Lock = lock;
+            dp->dvp_Flags = 0;
+            dp->dvp_DevNode = BADDR(fl->fl_Volume);
+            return dp;
         }
-
-        /* allocate structure for return */
-        if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
-            SetIoErr(ERROR_NO_FREE_STORE);
-            return NULL;
-        }
+ 
         do {
             /* now find the doslist entry for the named volume */
             dl = LockDosList(LDF_ALL | LDF_READ);
@@ -255,18 +224,6 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
                 }
             }
         } while(dl == NULL);
-
-        /* relative to the current dir, then we have enough to get out of here */
-        if (lock != BNULL) {
-            dp->dvp_Port = ((struct FileLock *) BADDR(cur))->fl_Task;
-            dp->dvp_Lock = lock;
-            dp->dvp_Flags = 0;
-            dp->dvp_DevNode = dl;
-
-            UnLockDosList(LDF_ALL | LDF_READ);
-
-            return dp;
-        }
     }
 
     /* at this point, we have an allocated devproc in dp, the doslist is
