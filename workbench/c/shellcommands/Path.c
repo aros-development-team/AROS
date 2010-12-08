@@ -76,11 +76,11 @@ typedef struct
 #define PE(x) ((PathEntry *)(BADDR(x)))
 
 static PathEntryPtr FindPathEntry(CommandLineInterfacePtr cli, STRPTR pathName,
-    PathEntryPtr* predStorage);
+    PathEntryPtr* predStorage, APTR DOSBase);
 
-static PathEntryPtr InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName);
+static PathEntryPtr InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName, APTR SysBase, APTR DOSBase);
 
-static BOOL IsDirectory(BPTR lock);
+static BOOL IsDirectory(BPTR lock, APTR DOSBase);
 
 AROS_SH7(Path, 45.3,
 AROS_SHA(STRPTR *, ,PATH,/M,NULL),
@@ -139,7 +139,7 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
 
             for (idx = 0; names[idx]; ++idx)
             {
-                entry = FindPathEntry(cli, names[idx], &pred);
+                entry = FindPathEntry(cli, names[idx], &pred, DOSBase);
 
 /* free the path entry */
                 if (NULL != entry)
@@ -178,14 +178,14 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
 
             for (idx = 0; names[idx]; ++idx)
             {
-                if (NULL != FindPathEntry(cli, names[idx], NULL))
+                if (NULL != FindPathEntry(cli, names[idx], NULL, DOSBase))
                 {
 /* don't add if already in path */
                     continue;
                 }
                 else
                 {
-                    insertAfter = InsertPathEntry(insertAfter, names[idx]);
+                    insertAfter = InsertPathEntry(insertAfter, names[idx], SysBase, DOSBase);
                 }
             }
         }
@@ -231,7 +231,7 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
  */
 static PathEntryPtr
 FindPathEntry(CommandLineInterfacePtr cli, STRPTR pathName,
-    PathEntryPtr* predStorage)
+    PathEntryPtr* predStorage, APTR DOSBase)
 {
         PathEntryPtr
     entry = NULL;
@@ -285,7 +285,7 @@ FindPathEntry(CommandLineInterfacePtr cli, STRPTR pathName,
  * returns the path entry or NULL for failure.
  */
 static PathEntryPtr
-InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName)
+InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName, APTR SysBase, APTR DOSBase)
 {
         PathEntryPtr
     pathEntry = NULL;
@@ -299,7 +299,7 @@ InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName)
 
             BOOL
         isDirectory = (BNULL != lock)
-            ? IsDirectory(lock)
+            ? IsDirectory(lock, DOSBase)
             : FALSE;
         
         if (newEntry != NULL && lock != BNULL && isDirectory)
@@ -340,7 +340,7 @@ InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName)
 
 /* check if the object specified is a directory */
 static BOOL
-IsDirectory(BPTR lock)
+IsDirectory(BPTR lock, APTR DOSBase)
 {
         BOOL
     isDirectory = FALSE;
