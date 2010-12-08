@@ -6,9 +6,6 @@ struct PPP_DevUnit *InitPPPUnit(LIBBASETYPEPTR LIBBASE,ULONG s2unit);
 VOID ExpungeUnit(LIBBASETYPEPTR LIBBASE);
 BOOL ReadConfig(LIBBASETYPEPTR LIBBASE);
 
-void open_gui(LIBBASETYPEPTR LIBBASE);
-void close_gui(LIBBASETYPEPTR LIBBASE);
-
 VOID PerformIO(LIBBASETYPEPTR LIBBASE,struct IOSana2Req *ios2);
 VOID TermIO(LIBBASETYPEPTR LIBBASE,struct IOSana2Req *ios2);
 
@@ -36,6 +33,7 @@ void DoBYTES(struct EasySerial *s, BYTE *p,ULONG len);
 void SendBYTES(struct EasySerial *s, BYTE *p,ULONG len);
 void DrainSerial(struct EasySerial *s);
 BOOL GetResponse(struct EasySerial *s,UBYTE *Buffer,ULONG maxbuffer,LONG timeout);
+#define CLOSESERIAL(x) do{ CloseSerial(x);x=NULL;}while(0);
 
 void SetTimer(struct EasyTimer* t,const ULONG s);
 void CloseTimer(struct EasyTimer* t);
@@ -45,7 +43,7 @@ void init_ppp(LIBBASETYPEPTR LIBBASE);
 void bytes_received( UBYTE *bytes,ULONG len );
 void send_IP_packet( BYTE *ptr ,ULONG len );
 void SendTerminateReq();
-void RunRoute();
+
 BYTE Phase();
 void Set_phase(UBYTE ph);
 void ppp_timer(int dt);

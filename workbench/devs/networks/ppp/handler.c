@@ -146,7 +146,7 @@ VOID DeviceQuery(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 VOID WritePacket(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 	//  D(bug("WritePacket\n"));
 	/* Make sure that we are online. */
-	if( LIBBASE->device_up && ( Phase() == PPP_PHASE_NETWORK ) ){
+	if( LIBBASE->device_up &&  Phase() == PPP_PHASE_NETWORK && LIBBASE->ser ){
 		/* Make sure it's a legal length. */
 		if(ios2->ios2_DataLength <= PPP_MTU){
 			/* See if our serial CMD_WRITE command is busy.  If it's not, send
@@ -188,7 +188,7 @@ VOID SendPacket( LIBBASETYPEPTR LIBBASE ,struct IOSana2Req *ios2 ){
 
 		if( LIBBASE->CopyFromBuffer( LIBBASE->ser->TxBuff , ios2->ios2_Data , ios2->ios2_DataLength ) ){
 			send_IP_packet( LIBBASE->ser->TxBuff , ios2->ios2_DataLength );		
-            LIBBASE->bytes_out += ios2->ios2_DataLength;
+            LIBBASE->BytesOut += ios2->ios2_DataLength;
 		}else{
 			bug( "SendPacket CopyFromBuffer FAIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 			ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
@@ -226,26 +226,15 @@ VOID ReadPacket(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 
 VOID Online(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 	D(bug("Online\n"));
-
-	if( Phase() == PPP_PHASE_NETWORK ) RunRoute();
-
 	LIBBASE->device_up = TRUE;
 	TermIO(LIBBASE,ios2);
-
 }
 
 
 VOID Offline(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *ios2){
 
 	D(bug("Offline\n"));
-
-	if( LIBBASE->ser ){
-		SendTerminateReq(); 
-		Delay(300);
-		CloseSerial(LIBBASE->ser);
-		LIBBASE->ser = NULL;
-	}
-	Set_phase( PPP_PHASE_DEAD );
+	Set_phase( PPP_PHASE_TERMINATE );
 	LIBBASE->device_up = FALSE;
 	TermIO(LIBBASE,ios2);
 
@@ -273,9 +262,7 @@ VOID CMD_READ_Ready(LIBBASETYPEPTR LIBBASE, struct IOExtSer *ioSer){
 		ptr = LIBBASE->ser->RxBuff;
 		length = ioSer->IOSer.io_Actual;
 		bytes_received( ptr,length );
-	
-		LIBBASE->bytes_in += length;
-	
+		LIBBASE->BytesIn += length;
 		QueueSerRequest( LIBBASE->ser ,  PPP_MAXBUFF );
 	}
 }

@@ -1,0 +1,14 @@
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := \
+	 -Wno-parentheses 
+    
+FILES := ModemManager misc  
+EXEDIR := $(AROS_C)
+
+#MM devs-networks-drivers-ppp-mm : includes linklibs
+
+%build_prog mmake=devs-networks-drivers-ppp-mm \
+    progname=ModemManager targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc m mui"
+%common

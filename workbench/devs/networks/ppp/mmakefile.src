@@ -3,9 +3,10 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := \
 	 -Wno-parentheses 
 	
-FILES := init handler ppp serial gui
+FILES := init handler ppp serial
+
+#MM devs-networks-drivers-ppp : devs-networks-drivers-ppp-mm
 
 %build_module mmake=devs-networks-drivers-ppp \
     modname=ppp modtype=device \
-    moduledir=Devs/Networks uselibs="arosc mui"
-
+    moduledir=Devs/Networks uselibs="arosc"
