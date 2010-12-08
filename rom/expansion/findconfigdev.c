@@ -79,7 +79,7 @@
 	cd = (struct ConfigDev *)
 	   ((struct IntExpansionBase *)ExpansionBase)->eb_BoardList.lh_Head;
     else
-	cd = oldConfigDev->cd_Node.ln_Succ;
+	cd = (struct ConfigDev *)(oldConfigDev->cd_Node.ln_Succ);
 
     if (cd)
     {
