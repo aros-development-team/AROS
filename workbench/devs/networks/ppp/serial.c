@@ -110,6 +110,7 @@ struct EasyTimer* OpenTimer(){
 VOID DoStr(struct EasySerial *s,const STRPTR str){
 
 	if( ! s ) return;
+	if( ! s->Ok ) return;
 
 	s->SerTx->IOSer.io_Length = strlen((char*) str);
 	s->SerTx->IOSer.io_Data = str;
@@ -121,6 +122,7 @@ VOID DoStr(struct EasySerial *s,const STRPTR str){
 void DoBYTES(struct EasySerial *s, BYTE *p,ULONG len){
 
 	if( ! s ) return;
+	if( ! s->Ok ) return;
 
 	s->SerTx->IOSer.io_Length = len;
 	s->SerTx->IOSer.io_Data = p;
@@ -131,6 +133,7 @@ void DoBYTES(struct EasySerial *s, BYTE *p,ULONG len){
 void SendBYTES(struct EasySerial *s, BYTE *p, ULONG len){
 
 	if( ! s ) return;
+	if( ! s->Ok ) return;
 
 	s->SerTx->IOSer.io_Length = len;
 	s->SerTx->IOSer.io_Data = p;
@@ -139,197 +142,55 @@ void SendBYTES(struct EasySerial *s, BYTE *p, ULONG len){
 }
 
 
-void DrainSerial(struct EasySerial *s){
-
-	if( ! s ) return;
-
-	if( s->SerRx ){
-		Delay(25);
-
-		AbortIO((struct IORequest *)s->SerRx);
-		WaitIO((struct IORequest *)s->SerRx);
-		while(GetMsg(s->RxPort));
-		s->RxBuff[1]=0;
-
-		//bug("Drain:\n");
-		for(;;){  // Read crap out of serial device.
-
-			s->SerRx->IOSer.io_Command = SDCMD_QUERY;
-			DoIO((struct IORequest *)s->SerRx);
-
-			if( s->SerRx->IOSer.io_Error ){
-				bug("[PPP] DrainSerial(): OOOOPS  We've lost carrier.! ");
-				CloseSerial(s);
-				return;
-			}
-
-		    if( s->SerRx->IOSer.io_Actual == 0 ) break;
-
-			s->SerRx->IOSer.io_Command = CMD_READ;
-			s->SerRx->IOSer.io_Data = s->RxBuff;
-			s->SerRx->IOSer.io_Length = 1;
-			DoIO((struct IORequest *)s->SerRx);
-			if( s->SerRx->IOSer.io_Error ){
-				bug("[PPP] DrainSerial(): CMD_READ error!");
-			}else{
-			//	bug("%s",s->RxBuff);
-			}
-		}
-		//bug("Drain end\n");
-
-	}
-
-	if( s->SerTx ){
-		AbortIO((struct IORequest *)s->SerTx);
-		WaitIO((struct IORequest *)s->SerTx);
-		while(GetMsg(s->TxPort));
-	}
-
-}
-
-
-BOOL GetResponse(struct EasySerial *s,UBYTE *Buffer,ULONG maxbuffer,LONG timeout){
-
-	struct EasyTimer *t;
-
-	ULONG sigset;
-	BOOL result = FALSE;
-	BYTE c[2];
-
-	ULONG len = 0;
-	Buffer[0]=0;
-	c[1]=0;
-	ULONG recvd;
-
-	if( ! s ) return FALSE;
-	bug("GetResponse:\n");
-
-	if( t = OpenTimer() ){
-		SetTimer(t,timeout);
-		QueueSerRequest( s , 1 );
-
-		for(;;){
-
-			sigset = (1L<< s->RxPort->mp_SigBit ) |
-					 (1L<< t->TimeMsg->mp_SigBit );
-
-			recvd = Wait(sigset);
-
-			if( GetMsg( s->RxPort ) ){
-
-				if( len <= ( maxbuffer-1 ) ){
-					Buffer[len] = s->RxBuff[0];
-					if( Buffer[len] == '\r' )  Buffer[len] = '\n';
-					Buffer[++len] = 0;
-					bug( "%s", &Buffer[len-1] );
-					if( strcasestr(Buffer,"OK\n") != NULL |
-						strcasestr(Buffer,"CONNECT") != NULL
-					){
-						result = TRUE;
-						break;
-					}
-					else if( strcasestr(Buffer,"NO CARRIER\n") != NULL |
-						strcasestr(Buffer,"ERROR\n") != NULL |
-						strcasestr(Buffer,"BUSY\n") != NULL
-					){
-						result = FALSE;
-						break;
-					}
-
-				}
-
-				QueueSerRequest( s , 1 );
-
-			}
-
-			if( GetMsg( t->TimeMsg ) ){
-				bug( "GetResponse TimeOut ERROR\n");
-				result = FALSE;
-				break;
-			}
-
-		}
-		CloseTimer(t);
-	}
-
-	if( s->SerRx ){
-		AbortIO((struct IORequest *)s->SerRx);
-		WaitIO((struct IORequest *)s->SerRx);
-		while(GetMsg(s->RxPort));
-	}
-bug("GetResponse end\n");
-	return result;
-}
-
-
-
-struct EasySerial * OpenSerial(BYTE *name,ULONG unit){
-
-	struct EasySerial *s;
-
+struct EasySerial *OpenSerial(BYTE *name,ULONG unit){
+	struct EasySerial *s = NULL;
 	D(bug("OpenSerial\n"));
+	
+	do{
+		
+		if( ! (s = AllocMem( sizeof(struct EasySerial),MEMF_CLEAR|MEMF_PUBLIC))) break;
+		if( ! (s->TxBuff = AllocMem( SERIAL_BUFSIZE ,MEMF_CLEAR|MEMF_PUBLIC))) break;
+		if( ! (s->RxBuff = AllocMem( SERIAL_BUFSIZE ,MEMF_CLEAR|MEMF_PUBLIC))) break;
+		if( ! (s->TxPort = CreateMsgPort())) break;
+		if( ! (s->SerTx = CreateIORequest(s->TxPort,sizeof(struct IOExtSer)))) break;
+		
 
-    if( ! (s = AllocMem( sizeof(struct EasySerial),MEMF_CLEAR|MEMF_PUBLIC))) goto OpenSerial_fail;
-	if( ! (s->TxBuff = AllocMem( SERIAL_BUFSIZE ,MEMF_CLEAR|MEMF_PUBLIC))) goto OpenSerial_fail;
-	if( ! (s->RxBuff = AllocMem( SERIAL_BUFSIZE ,MEMF_CLEAR|MEMF_PUBLIC))) goto OpenSerial_fail;
+		D(bug("OpenDevice: \"%s\" unit %d\n",name,unit));
+		if(  OpenDevice( name , unit , (struct IORequest *)s->SerTx,0)){
+			DeleteIORequest(s->SerTx);
+			s->SerTx = NULL;
+			break;
+		}
 
-	if( ! (s->TxPort = CreateMsgPort())){
-		goto OpenSerial_fail;
-	}
-
-	if( ! (s->SerTx = CreateIORequest(s->TxPort,sizeof(struct IOExtSer)))){
-		goto OpenSerial_fail;
-	}
-
-	D(bug("OpenDevice: \"%s\" unit %d\n",name,unit));
-	if(  OpenDevice( name , unit , (struct IORequest *)s->SerTx,0)){
-		s->SerTx = NULL;
-		goto OpenSerial_fail;
-	}
-
-	// Set up our serial parameters
-	s->SerTx->IOSer.io_Command = SDCMD_SETPARAMS;
-	// s->SerTx->io_Baud = 9600;
-	// s->SerTx->io_RBufLen = 1500L;
-	//s->SerTx->io_ReadLen = 8;
-	//s->SerTx->io_WriteLen = 8;
-	//s->SerTx->io_StopBits = 1;
-	//s->SerTx->io_SerFlags = SERF_XDISABLED | SERF_RAD_BOOGIE;
-
-	D(bug("  SDCMD_SETPARAMS  --> Tx\n"));
-	if( DoIO((struct IORequest *)s->SerTx)){
-		goto OpenSerial_fail;
-	}
-
-	if( ! (s->RxPort = CreateMsgPort()) ){
-		goto OpenSerial_fail;
-	}
-
-	if( ! (s->SerRx = CreateIORequest(s->RxPort,sizeof(struct IOExtSer)))){
-		goto OpenSerial_fail;
-	}
-
-	s->SerRx->IOSer.io_Device = s->SerTx->IOSer.io_Device;
-	s->SerRx->IOSer.io_Unit   = s->SerTx->IOSer.io_Unit;
-
-	s->SerRx->IOSer.io_Command = SDCMD_QUERY;
-	D(bug("SDCMD_QUERY  ---> Rx\n"));
-	if( DoIO((struct IORequest *)s->SerRx)){
-		goto OpenSerial_fail;
-	}
-
-	D(bug("OpenSerial OK\n"));
-
-	return s;
-
-OpenSerial_fail:
+		bug("Test CMD_WRITE\n");
+		s->SerTx->IOSer.io_Length = 0;
+		s->SerTx->IOSer.io_Data = " ";
+		s->SerTx->IOSer.io_Command =  CMD_WRITE;
+		if( DoIO((struct IORequest *)s->SerTx)){
+			break;
+		}
+		
+		if( ! (s->RxPort = CreateMsgPort()) ) break;
+		if( ! (s->SerRx = CreateIORequest(s->RxPort,sizeof(struct IOExtSer)))) break;
+		
+		bug("Test SDCMD_QUERY\n");
+		s->SerRx->IOSer.io_Device = s->SerTx->IOSer.io_Device;
+		s->SerRx->IOSer.io_Unit   = s->SerTx->IOSer.io_Unit;
+		s->SerRx->IOSer.io_Command = SDCMD_QUERY;
+		if( DoIO((struct IORequest *)s->SerRx)){
+			break;
+		}
+		
+		D(bug("OpenSerial OK\n"));
+		s->Ok = TRUE;
+		return s;
+	
+	}while(0);
+	
 	D(bug("OpenSerial FAIL !!\n"));
-
 	CloseSerial(s);
-
 	return NULL;
 }
-
 
 
 VOID CloseSerial(struct EasySerial *s){
@@ -337,7 +198,9 @@ VOID CloseSerial(struct EasySerial *s){
 	if( ! s ) return ;
 
 	D(bug("CloseSerial\n"));
-
+	
+	s->Ok = FALSE;
+	
 	if( s->SerRx ){
 		AbortIO((struct IORequest *)s->SerRx);
 		WaitIO((struct IORequest *)s->SerRx);
@@ -350,26 +213,16 @@ VOID CloseSerial(struct EasySerial *s){
 		while(GetMsg(s->TxPort));
 	}
 
-	if(s->SerTx)
-		CloseDevice((struct IORequest *)s->SerTx);
+	if(s->SerTx) CloseDevice((struct IORequest *)s->SerTx);
 
-	if(s->SerTx)
-		DeleteIORequest(s->SerTx);
+	if(s->SerTx) DeleteIORequest(s->SerTx);
+	if(s->TxPort) DeleteMsgPort(s->TxPort);
 
-	if(s->TxPort)
-		DeleteMsgPort(s->TxPort);
+	if(s->SerRx) DeleteIORequest(s->SerRx);
+	if(s->RxPort) DeleteMsgPort(s->RxPort);
 
-	if(s->SerRx)
-		DeleteIORequest(s->SerRx);
-
-	if(s->RxPort)
-		DeleteMsgPort(s->RxPort);
-
-	if( s->TxBuff )
-		FreeMem( s->TxBuff , SERIAL_BUFSIZE );
-	if( s->RxBuff )
-		FreeMem( s->RxBuff , SERIAL_BUFSIZE );
-
+	if( s->TxBuff ) FreeMem( s->TxBuff , SERIAL_BUFSIZE );
+	if( s->RxBuff ) FreeMem( s->RxBuff , SERIAL_BUFSIZE );
 	FreeMem( s , sizeof(struct EasySerial) );
 
 	D(bug("CloseSerial OK!\n"));
@@ -379,14 +232,16 @@ VOID CloseSerial(struct EasySerial *s){
 VOID QueueSerRequest(struct EasySerial *s , LONG maxlength){
 
 	if( ! s ) return;
+	if( ! s->Ok ) return;
 	if( maxlength < 1 ) return;
+	
 	if( maxlength > SERIAL_BUFSIZE ) maxlength = SERIAL_BUFSIZE;
 	s->SerRx->IOSer.io_Command = SDCMD_QUERY;
 	DoIO((struct IORequest *)s->SerRx);
 
 	if( s->SerRx->IOSer.io_Error ){
-		bug("[PPP] OOOOPS  We've lost carrier.! ");
-		CloseSerial(s);
+		bug("QueueSerRequest() OOOOPS lost device!\n");
+		s->Ok = FALSE;
 		return;
 	}
 
@@ -403,7 +258,7 @@ VOID QueueSerRequest(struct EasySerial *s , LONG maxlength){
 
 	SendIO((struct IORequest *)s->SerRx);
 	if( s->SerRx->IOSer.io_Error ){
-		bug("[PPP] QueueSerRequest()  SendIO -> CMD_READ error!");
+		bug("QueueSerRequest()  SendIO -> CMD_READ error!");
 	}
 
 }

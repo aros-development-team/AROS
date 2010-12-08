@@ -46,6 +46,7 @@
 
 #define PPP_MAXBUFF 4096
 #define SERIAL_BUFSIZE PPP_MAXBUFF
+#define PPP_MAXARGLEN 100
 
 // phases
 #define PPP_PHASE_DEAD 1
@@ -55,18 +56,42 @@
 #define PPP_PHASE_NETWORK 5
 #define PPP_PHASE_TERMINATE 6
 
-// config stuff
-#define PPP_MAXARGLEN 100
-#define COM_WAIT 1
-#define COM_SEND 2
-#define COM_DELAY 3
+// PPPcontrolMsg commands
+#define PPP_CTRL_INFO_REQUEST 1
+#define PPP_CTRL_INFO 2
+#define PPP_CTRL_SETPHASE 3
+#define PPP_CTRL_OPEN_SERIAL 4
+#define PPP_CTRL_CLOSE_SERIAL 5
 
-#define RES_OK 1
-#define RES_ERROR 2
-#define RES_TIMEOUT 3
+ struct PPPcontrolMsg{
+	 
+	struct Message Msg;
+	
+	ULONG Command;      // command
+	IPTR Arg;         // command argument
+	
+	UBYTE *DeviceName;  // serial device name
+	ULONG UnitNum;     // serial device unit number
+	UBYTE *username;
+	UBYTE *password;
+	
+	// info response part: 
+	UBYTE Phase;  // ppp phase
+	BOOL Ser;	 // serial device status
+	BOOL Up;    // ppp device up/down
+	ULONG BytesIn;
+	ULONG BytesOut;
+	ULONG SpeedIn;
+	ULONG SpeedOut;
+	ULONG UpTime;
+	
+	UBYTE LocalIP[4];
+	UBYTE RemoteIP[4];
+	UBYTE PrimaryDNS[4];
+	UBYTE SecondaryDNS[4];
 
-#define GUIM_CONNECT 1
-#define GUIM_DISCONNECT 2
+	ULONG num; // message number (debug purposes)
+};
 
 struct at_command {
 	struct Node cNode;
@@ -86,6 +111,7 @@ struct at_command {
 	struct MsgPort	*TxPort;  /* Serial CMD_WRITE IORequest reply port */
 	UBYTE			*RxBuff;	/* Buffer for holding incoming data */
 	UBYTE			*TxBuff;	/* Buffer for hold outgoing packets */
+	BOOL Ok; // is device ok (= not unplugged)
 };
 
 struct PPPBase {
@@ -95,7 +121,6 @@ struct PPPBase {
 
 	BOOL device_up;
 	BOOL sdu_Proc_run;
-	BOOL gui_run;
 
 	ULONG gui_message;
 
@@ -103,20 +128,13 @@ struct PPPBase {
 	struct SignalSemaphore sd_Lock;
 
 	struct Process	*sdu_Proc;
-	struct Process	*gui_process;
 
 	struct EasySerial *ser;
 
-
 	BYTE DeviceName[PPP_MAXARGLEN];
 	BYTE SerUnitNum;
-
-	struct List  atcl;
 	BYTE username[PPP_MAXARGLEN];
 	BYTE password[PPP_MAXARGLEN];
-	BOOL enable_dns;
-	BYTE modemmodel[PPP_MAXARGLEN];
-
 
 	BOOL		(*CopyFromBuffer)(APTR, APTR, ULONG);
 	BOOL		(*CopyToBuffer)(APTR, APTR, ULONG);
@@ -125,9 +143,16 @@ struct PPPBase {
 	struct MinList	 Rx_List;				/* Pending CMD_READ's */
 	struct MinList	 Tx_List;				/* Pending CMD_WRITE's */
 
-	ULONG bytes_in;
-	ULONG bytes_out;
-
+	ULONG BytesIn;
+	ULONG BytesOut;
+	ULONG SpeedIn;
+	ULONG SpeedOut;
+	ULONG UpTime;
+	
+	UBYTE LocalIP[4];
+	UBYTE RemoteIP[4];
+	UBYTE PrimaryDNS[4];
+	UBYTE SecondaryDNS[4];
 };
 
 
