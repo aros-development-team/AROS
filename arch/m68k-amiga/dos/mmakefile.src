@@ -1,6 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+BCPL_CFILES  := bcpl_support bcpl_readargs
+BCPL_AFILES  := bcpl
+
 CFUNCS  := \
 	addbuffers adddosentry assignlock changemode close  \
 	createdir createnewproc deletefile duplock duplockfromfh \
@@ -15,10 +18,11 @@ CFUNCS  := \
 	setcomment format inhibit relabel setowner
 
 CFILES  := $(CFUNCS) \
-	bcpl_support helper internalopen internalseek \
-	packethelper runprocess
+	helper internalopen internalseek \
+	packethelper runprocess \
+	$(BCPL_CFILES)
 
-AFILES  := bcpl
+AFILES := $(BCPL_AFILES)
 
 #MM kernel-dos-amiga-m68k : kernel-dos-includes includes-asm_h-m68k
 
