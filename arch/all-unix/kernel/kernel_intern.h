@@ -56,10 +56,10 @@ struct KernelInterface
 #define SIGADDSET   sigaddset
 #define SIGDELSET   sigdelset
 #else
-#define SIGEMPTYSET(x) KernelIFace.SigEmptySet(x); AROS_HOST_BARRIER
-#define SIGFILLSET(x)  KernelIFace.SigFillSet(x); AROS_HOST_BARRIER
-#define SIGADDSET(x)   KernelIFace.SigAddSet(x); AROS_HOST_BARRIER
-#define SIGDELSET(x)   KernelIFace.SigDelSet(x); AROS_HOST_BARRIER
+#define SIGEMPTYSET(x)   KernelIFace.SigEmptySet(x); AROS_HOST_BARRIER
+#define SIGFILLSET(x)    KernelIFace.SigFillSet(x); AROS_HOST_BARRIER
+#define SIGADDSET(x,s)   KernelIFace.SigAddSet(x,s); AROS_HOST_BARRIER
+#define SIGDELSET(x,s)   KernelIFace.SigDelSet(x,s); AROS_HOST_BARRIER
 #endif
 
 struct PlatformData
