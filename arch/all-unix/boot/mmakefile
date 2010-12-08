@@ -1,5 +1,11 @@
 include $(TOP)/config/make.cfg
 
+ifeq ($(AROS_TARGET_VARIANT),)
+    BSP := $(ARCH)
+else
+    BSP := $(AROS_TARGET_VARIANT)
+endif
+
 #MM- kernel-unix: kernel-bootstrap-hosted kernel-boot-unix \
 #MM	kernel-link-base kernel-link-hosted kernel-timer
 
@@ -16,7 +22,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-link-unix-quick
 
 #MM
-kernel-link-unix-quick : $(BINDIR)/boot/aros-bsp-$(ARCH)
+kernel-link-unix-quick : $(BINDIR)/boot/aros-bsp-$(BSP)
 
 # UNIX board support package
 KLIBS   := exec expansion
@@ -54,7 +60,7 @@ $(BINDIR)/boot:
 	@$(ECHO) Making $@...
 	@mkdir -p $(BINDIR)/boot
 
-$(BINDIR)/boot/aros-bsp-$(ARCH): $(DEP_LIBS) $(KOBJS) $(BINDIR)/boot
+$(BINDIR)/boot/aros-bsp-$(BSP): $(DEP_LIBS) $(KOBJS) $(BINDIR)/boot
 	@$(ECHO) Linking $@...
 	@$(TARGET_CC) $(KOBJS) $(LIBS) -o $@ $(CONFIG_LDFLAGS) -Wl,--allow-multiple-definition $(NOSTARTUP_LDFLAGS)
 
@@ -63,4 +69,4 @@ kernel-boot-unix: $(BINDIR)/boot/AROSBootstrap.conf
 
 $(BINDIR)/boot/AROSBootstrap.conf: mkbootconf.sh $(BINDIR)/boot AROSBootstrap.conf
 	@$(ECHO) Writing $@...
-	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(SRCDIR)/$(CURDIR) $(ARCH) >$@
+	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(SRCDIR)/$(CURDIR) $(BSP) >$@

@@ -84,7 +84,6 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
 LONG examine_next(struct emulbase *emulbase,  struct filehandle *fh, struct FileInfoBlock *FIB);
 LONG examine_all(struct emulbase *emulbase, struct filehandle *fh, struct ExAllData *ead,
                   struct ExAllControl *eac, ULONG size, ULONG  type);
-LONG examine_all_end(struct emulbase *emulbase, struct filehandle *fh);
 
 char *GetHomeDir(struct emulbase *emulbase, char *user);
 ULONG GetCurrentDir(struct emulbase *emulbase, char *path, ULONG len);

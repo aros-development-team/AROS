@@ -28,7 +28,7 @@ KOBJS_MINGW32 := $(KOBJ_RES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_HIDD)
 #MM			  kernel-processor-kobj		\
 #MM			  kernel-expansion-kobj		\
 #MM			  kernel-exec-kobj		\
-#MM			  kernel-fs-emul-mingw32-kobj	\
+#MM			  kernel-fs-emul-kobj		\
 #MM			  kernel-hidd-wingdi-kobj	\
 #MM			  linklibs			\
 #MM			  kernel-link-mingw32-quick
