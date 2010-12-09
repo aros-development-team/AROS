@@ -72,15 +72,18 @@ ULONG Exec_UserAlert(ULONG alertNum, struct Task *task, struct ExecBase *SysBase
     /* Protect ourselves agains really hard crashes where SysBase->ThisTask is NULL.
        Obviously we won't go far away in such a case */
     if (!task)
-        return alertNum;    
+        return alertNum;
 
     /* Get internal task structure */
     iet = GetIntETask(task);
-    /* If we already have alert number for this task, we are in double-crash during displaying
-       intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
-       and proceed with arch-specific Alert() */
+    /*
+     * If we already have alert number for this task, we are in double-crash during displaying
+     * intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
+     * and proceed with arch-specific Alert().
+     * Since this is a double-crash, we may append AT_DeadEnd flag if our situation has become unrecoverable.
+     */
     if (iet->iet_AlertCode)
-	return iet->iet_AlertCode;
+	return iet->iet_AlertCode | (alertNum & AT_DeadEnd);
 
     /* Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
        in order to indicate crash condition */

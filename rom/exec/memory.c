@@ -385,7 +385,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
 	bug("[MM] Attempt to free %u bytes at 0x%p\n", memSize, memory);
 	bug("[MM] The chunk does not belong to a pool\n");
 
-	Alert(AT_Recovery | AN_MemCorrupt);
+	Alert(AN_BadFreeAddr);
     }
     else
     {
