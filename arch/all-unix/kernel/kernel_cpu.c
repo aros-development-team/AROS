@@ -116,8 +116,9 @@ void cpu_DispatchContext(struct Task *task, regs_t *regs)
     }
 
     /* Adjust user mode interrupts state */
-    if (SysBase->IDNestCnt < 0)
+    if (SysBase->IDNestCnt < 0) {
 	SC_ENABLE(regs);
-    else
+    } else {
 	SC_DISABLE(regs);
+    }
 }
