@@ -56,7 +56,7 @@ BCPL_\name:
     jsr     kprintf
     lea.l   %sp@(7*4),%sp
     movem.l %sp@+,%d1/%a0-%a1
-    moveq.l #-1,%d0
+    clr.l   %d0		/* DOSFALSE */
     .endm
 
     .macro  BRTSd
