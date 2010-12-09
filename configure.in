@@ -819,10 +819,19 @@ case "$target_os" in
 		    aros_android_level=android-5
 		    ;;
 		esac
-
-	        aros_object_format="armelf"
 		aros_default_wbwidth=320
                 aros_default_wbheight=480
+		dnl Android gcc and AROS gcc use different enums size, so we use AROS gcc
+		aros_target_cc="arm-aros-gcc"
+		aros_target_cxx="arm-aros-g++"
+		aros_target_ld="arm-aros-ld"
+		aros_target_as="arm-aros-as"
+		aros_target_ar="arm-aros-ar"
+		aros_target_ranlib="arm-aros-ranlib"
+		aros_target_nm="arm-aros-nm"
+		aros_target_strip="arm-aros-strip"
+		aros_target_objcopy="arm-aros-objcopy"
+		aros_target_objdump="arm-aros-objdump"
 		export PATH="$aros_android_ndk/build/prebuilt/$android_build_os/arm-eabi-$target_tool_version/bin:$PATH"
                	aros_android_ndk="$aros_android_ndk/build/platforms/$aros_android_level/arch-arm"
 		aros_kernel_cflags="--sysroot $aros_android_ndk -mandroid"
