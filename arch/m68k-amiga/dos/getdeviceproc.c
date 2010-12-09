@@ -81,7 +81,6 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     struct DosList *dl = NULL;
     char vol[32];
     LONG len;
-    char buf[256];
     BPTR cur = BNULL, lock = BNULL;
     BOOL stdio = FALSE;
     BOOL res;
