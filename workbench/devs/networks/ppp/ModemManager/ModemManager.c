@@ -118,7 +118,10 @@ static void DisconnectFunc(struct Hook *hook, Object *app, APTR *arg)
 BYTE FindModemUnit(struct Conf *c){
 	struct EasySerial *Ser=0;
 	BYTE result=-1;
-	for(int i=0;i<100;i++){
+	int i;
+
+	for (i = 0; i < 100; i++)
+	{
 		set( IN_Info , MUIA_Text_Contents, (IPTR)"Test Device..");
 		set( OUT_Info , MUIA_Text_Contents, (IPTR)c->DeviceName );
 		if( Ser = OpenSerial( c->DeviceName ,i ) ){
