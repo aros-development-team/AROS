@@ -167,24 +167,31 @@
 		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width = width;
 		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height = height;
             }
-	    screenTags[3].ti_Data = modeid;
+	    
 	    /* Remember this ModeID because OpenScreen() with SA_LikeWorkbench set to TRUE
 	       looks at this field. We MUST have something valid here. */
 	    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID = modeid;
+
+	    screenTags[0].ti_Data = width;
+            screenTags[1].ti_Data = height;
+	    screenTags[3].ti_Data = modeid;
+
+	    DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
+
+            FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_BEFORE_OPENWB, IntuitionBase);
+
+            wbscreen = OpenScreenTagList(NULL, screenTags);
         }
 	else
-	    /* If we have no disphandle here, we are in a real trouble. We have no display modes
-	       in our database and we can't open a screen at all. We're dead. */
-	    Alert(AT_DeadEnd | AN_SysScrnType);
-
-	screenTags[0].ti_Data = width;
-        screenTags[1].ti_Data = height;
-
-	DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
-
-        FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_BEFORE_OPENWB, IntuitionBase);
-
-        wbscreen = OpenScreenTagList(NULL, screenTags);
+	    /*
+	     * If we have no disphandle here, we are in a real trouble. We have no display modes
+	     * in our database and we can't open a screen at all. We're dead.
+	     * However note that in some special cases this Alert() may return. This happens
+	     * when Alert() attempts to issue an Intuition requester and hits this point
+	     * because there are no display drivers (yet). In this case this Alert() will be
+	     * silently ignored.
+	     */
+	    Alert(AN_SysScrnType);
 
         if( !wbscreen )
         {
@@ -198,7 +205,6 @@
 
         /* Make the screen public. */
         PubScreenStatus( wbscreen, 0 );
-
     }
 
     /* We have opened the Workbench Screen. Now  tell the Workbench process
