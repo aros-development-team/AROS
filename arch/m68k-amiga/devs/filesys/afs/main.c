@@ -588,6 +588,18 @@ void AFS_work(void) {
 		    ah = openf(handler, oh, "/", FMF_MODE_OLDFILE, &res2);
 		    if (ah == NULL) {
 		    	ok = DOSFALSE;
+		    	if (res2 == ERROR_OBJECT_NOT_FOUND) {
+		    	    /* need to return res2 = 0 (not 205) if oh == ST_ROOT */
+		            UBYTE buffer[sizeof(struct ExAllData) + MAXFILENAMELENGTH];
+		            struct ExAllData     *ead = (APTR)&buffer[0];
+		            ULONG size = sizeof(buffer);
+		            ULONG mode = ED_TYPE;
+		            ULONG dirpos;
+		            LONG eres2;
+		            eres2 = examine(handler, oh, ead, size, mode, &dirpos);
+		    	    if (eres2 == 0 && ead->ed_Type == ST_ROOT)
+			        res2 = 0;
+			}
 		    	break;
 		    }
 		    fl = AllocMem(sizeof(*fl), MEMF_CLEAR);
