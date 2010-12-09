@@ -1,5 +1,5 @@
 /*
- * $Id: ppp.h 35800 2010-11-27 15:54:18Z Sami $
+ * $Id$
  */
 
 #ifndef _PPP_H
