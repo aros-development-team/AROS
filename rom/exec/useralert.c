@@ -64,8 +64,9 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
  * may crash itself, and this has to be handled on a lower level. This is
  * why we do this trick with iet_AlertCode
  */
-ULONG Exec_UserAlert(ULONG alertNum, struct Task *task, struct ExecBase *SysBase)
+ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
 {
+    struct Task *task = SysBase->ThisTask;
     struct IntETask *iet;
     LONG res;
 
@@ -83,7 +84,23 @@ ULONG Exec_UserAlert(ULONG alertNum, struct Task *task, struct ExecBase *SysBase
      * Since this is a double-crash, we may append AT_DeadEnd flag if our situation has become unrecoverable.
      */
     if (iet->iet_AlertCode)
-	return iet->iet_AlertCode | (alertNum & AT_DeadEnd);
+    {
+        /*
+	 * Some more logic here. If the nested alert is AN_SysScrnType, then it's just
+	 * we are trying to open a requester on a driver-less machine. In this case
+	 * we want to be able to return initial alert to supervisor-mode routine.
+	 * Note that initial alert by itself can be recoverable. In this case we
+	 * are expected to continue running. In order to do this, we simply swallow
+	 * AN_SysScrnType alert. Returning zero here causes Alert() to immediately
+	 * return. This means that we succesfully return from EasyRequestArgs() in
+	 * AskSuspend(), which returns -1. This makes the code to propagate initial
+	 * alert to supervisor-mode routine (see below).
+	 */
+	if (alertNum == AN_SysScrnType)
+	    return 0;
+	else
+	    return iet->iet_AlertCode | (alertNum & AT_DeadEnd);
+    }
 
     /* Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
        in order to indicate crash condition */
