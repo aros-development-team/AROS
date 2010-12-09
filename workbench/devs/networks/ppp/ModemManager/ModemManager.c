@@ -1,5 +1,5 @@
 /*
- * $Id: ModemManager.c 34949 2010-10-25 18:27:45Z Sami $
+ * $Id$
  */
 
 #define DEBUG 1

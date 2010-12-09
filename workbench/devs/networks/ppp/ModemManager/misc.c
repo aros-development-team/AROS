@@ -1,6 +1,6 @@
 /*
-* $Id: misc.c 35800 2010-11-27 15:54:18Z Sami $
-*/
+ * $Id$
+ */
 
 #define DEBUG 1
 
