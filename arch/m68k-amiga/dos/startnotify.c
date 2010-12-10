@@ -175,7 +175,7 @@
 
     /* send the request, with error reporting */
     do {
-        status = dopacket1(DOSBase, &err, notify->nr_Handler, ACTION_ADD_NOTIFY, notify);
+        status = dopacket1(DOSBase, &err, notify->nr_Handler, ACTION_ADD_NOTIFY, (SIPTR)notify);
     } while (status == DOSFALSE && ErrorReport(err, REPORT_LOCK, 0, notify->nr_Handler) == DOSFALSE);
 
     /* cleanup */
