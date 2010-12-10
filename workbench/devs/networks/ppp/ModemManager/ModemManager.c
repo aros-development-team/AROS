@@ -25,7 +25,7 @@
 
 #define SimpleText(text) TextObject, MUIA_Text_Contents, (IPTR) text, End
 
-#define TIMERVALUE 10
+#define TIMERVALUE 5
 #define STRSIZE 100
 
 #define STATE_UNPLUGGED 0
@@ -34,9 +34,9 @@
 #define STATE_NETWORK 3
 #define STATE_CLOSEDEV 4
 
-Object *application, *window, *DisConBut, *ConBut;
+Object *application=0, *window, *DisConBut, *ConBut;
 Object *GENERAL_Info, *IN_Info,*OUT_Info;
-
+UBYTE *PortName = "GUI.PORT";
 
 BOOL SafePutToPort(struct PPPcontrolMsg *message, STRPTR portname)
 {
@@ -49,7 +49,7 @@ BOOL SafePutToPort(struct PPPcontrolMsg *message, STRPTR portname)
 				if( (APTR)message == (APTR)M ){
 					//	bug("SafePutToPort: message is already here !\n");
 					Permit();
-					return FALSE;		
+					return FALSE;
 				};
 			}
 			PutMsg(port,(struct Message *)message);
@@ -76,12 +76,10 @@ BOOL SendCtrlMsg(ULONG command,IPTR Arg,struct Conf *c){
 			CtrlMsg->Msg.mn_Node.ln_Type = NT_MESSAGE;
 			CtrlMsg->Msg.mn_Length = sizeof(struct PPPcontrolMsg);
 			CtrlMsg->Msg.mn_ReplyPort = CtrlPort;
-		//	 bug("ModemManager: SendCtrlMsg\n");
 			if( SafePutToPort(CtrlMsg, "ppp-control") ){
 				WaitPort(CtrlPort);
 				GetMsg(CtrlPort);
 				succes=TRUE;
-		//	 bug("ModemManager: SendCtrlMsg OK\n");
 			}
 			FreeMem(CtrlMsg,sizeof(struct PPPcontrolMsg));
 		}
@@ -115,18 +113,18 @@ static void DisconnectFunc(struct Hook *hook, Object *app, APTR *arg)
 
 }
 
-BYTE FindModemUnit(struct Conf *c){
+void FindModemUnit(struct Conf *c){
 	struct EasySerial *Ser=0;
-	BYTE result=-1;
+	int result = -1;
 	int i;
+
+	if( c->SerUnitNum >= 0 ){
+		return;
+	}
 
 	for (i = 0; i < 100; i++)
 	{
-		set( IN_Info , MUIA_Text_Contents, (IPTR)"Test Device..");
-		set( OUT_Info , MUIA_Text_Contents, (IPTR)c->DeviceName );
 		if( Ser = OpenSerial( c->DeviceName ,i ) ){
-			set( IN_Info , MUIA_Text_Contents, (IPTR)"Modem Test...");
-			//set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
 			if( TestModem( Ser , c ) ){
 				result = i;
 				DrainSerial( Ser );
@@ -137,33 +135,22 @@ BYTE FindModemUnit(struct Conf *c){
 			CLOSESERIAL( Ser );
 		} else break;
 	}
-	return result;
+	c->SerUnitNum = result;
 }
 
 static void ConnectFunc(struct Hook *hook, Object *app, APTR *arg)
 {
 	struct Conf *c = *arg;
 	struct EasySerial *Ser=0;
-	BOOL tested=FALSE;
 
 	if( c->state == STATE_PLUGGED ){
-		ReadConfig(c);
-
-		// if unitnumber < 0 Test them one by one.
-		if( c->SerUnitNum < 0 ){
-			c->SerUnitNum = FindModemUnit(c);
-			tested = TRUE;
-		}
-		
 		if( c->SerUnitNum >=0 ){
 			set( IN_Info , MUIA_Text_Contents, (IPTR)"Open Serial Device...");
 			set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
 			if( Ser = OpenSerial( c->DeviceName ,c->SerUnitNum ) ){
-				if( tested ) goto skiptest;
 				set( IN_Info , MUIA_Text_Contents, (IPTR)"Modem Test...");
 				//set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
 				if( TestModem( Ser , c ) ){
-					skiptest:
 					set( IN_Info , MUIA_Text_Contents, (IPTR)"DialUp...");
 					//set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
 					if( DialUp(Ser,c) ){
@@ -175,9 +162,9 @@ static void ConnectFunc(struct Hook *hook, Object *app, APTR *arg)
 					}
 				}
 				CLOSESERIAL(Ser);
-			}else c->state = STATE_UNPLUGGED;	
+			}else c->state = STATE_UNPLUGGED;
 		}else c->state = STATE_UNPLUGGED;
-		
+
 		if( c->state != STATE_OPENDEV ){
 			set( OUT_Info , MUIA_Text_Contents, (IPTR)"ERROR");
 		}
@@ -284,6 +271,53 @@ void ConfNetWork(struct PPPcontrolMsg *msg){
 	}
 }
 
+BOOL SendRequest(void){
+	struct PPPcontrolMsg *CtrlMsg;
+	BOOL result=FALSE;
+
+	if( CtrlMsg = AllocMem(sizeof(struct PPPcontrolMsg),MEMF_PUBLIC | MEMF_CLEAR)){
+		bug("ModemManager:send info request\n");
+		CtrlMsg->Command = PPP_CTRL_INFO_REQUEST;
+		CtrlMsg->Arg = (IPTR)PortName;
+		CtrlMsg->Msg.mn_Node.ln_Type = NT_MESSAGE;
+		CtrlMsg->Msg.mn_Length = sizeof(struct PPPcontrolMsg);
+		CtrlMsg->Msg.mn_ReplyPort = 0;
+		if( SafePutToPort(CtrlMsg, "ppp-control") ) result=TRUE;
+		FreeMem(CtrlMsg , sizeof(struct PPPcontrolMsg));
+	}
+	return result;
+}
+
+void HandleMessage(struct PPPcontrolMsg *InfoMsg,struct Conf *c){
+	if( InfoMsg->Msg.mn_Length == sizeof(struct PPPcontrolMsg)
+		&&  InfoMsg->Command == PPP_CTRL_INFO
+	 ){
+		bug("handlemsg phase=%d,ser=%d,state=%d\n",InfoMsg->Phase,InfoMsg->Ser,c->state);
+
+		// PPP initializing is ready
+		if(  c->state == STATE_OPENDEV && InfoMsg->Phase == PPP_PHASE_NETWORK ){
+			 ConfNetWork( InfoMsg );
+			 c->state = STATE_NETWORK;
+		}
+
+		// serial connection is lost (device unplugged)
+		if( c->state != STATE_UNPLUGGED && (! InfoMsg->Ser) ){
+			  c->state = STATE_PLUGGED;
+		}
+
+		// Connection is ok
+		if( InfoMsg->Phase == PPP_PHASE_NETWORK &&  InfoMsg->Ser ){
+			  c->state = STATE_NETWORK;
+		}
+		
+		// net connection is lost
+		if( c->state == STATE_NETWORK &&  InfoMsg->Phase != PPP_PHASE_NETWORK ){
+		//	SendCtrlMsg( PPP_CTRL_CLOSE_SERIAL , 0 , c );
+			c->state = STATE_PLUGGED;
+		}
+	}
+}
+
 
 int main(void)
 {
@@ -292,126 +326,153 @@ int main(void)
 	struct EasyTimer *timer=0;
 	BYTE buf[STRSIZE];
 	buf[0]=0;
-
+	ULONG sigs;
 	struct PPPcontrolMsg *CtrlMsg=0;
 	struct PPPcontrolMsg *InfoMsg=0;
 	struct MsgPort *CtrlPort=0;
-
 	struct EasySerial *Ser=0;
-
-	UBYTE *PortName = "GUI.PORT";
-
 	struct Conf *c=0;
 
+	if( ! FindPort(PortName)){
 	if( timer=OpenTimer() ){
 	if( CtrlPort = CreatePort(PortName,0) ){
 	if( CtrlMsg = AllocMem(sizeof(struct PPPcontrolMsg),MEMF_PUBLIC | MEMF_CLEAR)){
 	if( c = AllocMem(sizeof(struct Conf),MEMF_PUBLIC | MEMF_CLEAR)){
 
 		NEWLIST(&c->atcl);
-		ReadConfig(c);
-		c->state = STATE_UNPLUGGED;
 
-		DisconnectHook.h_Entry = HookEntry;
-		DisconnectHook.h_SubEntry = (HOOKFUNC) DisconnectFunc;
-		ConnectHook.h_Entry = HookEntry;
-		ConnectHook.h_SubEntry = (HOOKFUNC) ConnectFunc;
+		for(;;)
+		{
 
-		application = ApplicationObject,
-		SubWindow, window = WindowObject,
-			MUIA_Window_Title,	(IPTR) "ModemManager",
-			MUIA_Window_Activate,TRUE,
-				WindowContents, (IPTR) VGroup,
-					Child, (IPTR) VGroup,
-						Child, GENERAL_Info = SimpleText(""),
-						Child, IN_Info = SimpleText(""),
-						Child, OUT_Info = SimpleText(""),
-					End,
-					Child, (IPTR) HGroup,
-						Child, (IPTR) (   ConBut = SimpleButton("   Connect    ")),
-						Child, (IPTR) (DisConBut = SimpleButton("  Disconnect  ")),
+			ReadConfig(c);
+
+			c->state = STATE_UNPLUGGED;
+			SetTimer( timer , 0 );
+			application = NULL;
+
+			// send info request to ppp.device and wait response
+			if( SendRequest() ){
+				bug("ModemManager:wait response\n");
+				sigs = Wait( SIGBREAKF_CTRL_C |
+							(1L<< CtrlPort->mp_SigBit )
+							);
+				if (sigs & SIGBREAKF_CTRL_C) goto shutdown;
+
+				while( InfoMsg = (struct PPPcontrolMsg*)GetMsg(CtrlPort) ){
+					HandleMessage(InfoMsg,c);
+					ReplyMsg((struct Message *)InfoMsg);
+				}
+			}
+
+
+			SetTimer( timer , 5 );
+			bug("ModemManager:wait until modem plugged in\n");
+			while(c->state == STATE_UNPLUGGED)
+			{
+				 sigs = Wait( SIGBREAKF_CTRL_C |
+							(1L<< CtrlPort->mp_SigBit ) |
+							(1L<< timer->TimeMsg->mp_SigBit )
+							);
+
+				if (sigs & SIGBREAKF_CTRL_C) goto shutdown;
+
+				// handle incoming messages
+				while( InfoMsg = (struct PPPcontrolMsg*)GetMsg(CtrlPort) )
+					ReplyMsg((struct Message *)InfoMsg);
+
+				// Check if modem is plugged in.
+				if(GetMsg(timer->TimeMsg)){
+					FindModemUnit(c);
+					if( c->SerUnitNum >= 0 ){
+						if( Ser = OpenSerial( c->DeviceName ,c->SerUnitNum ) ){
+							if( TestModem( Ser , c ) ){
+								 c->state = STATE_PLUGGED;
+							}
+							CLOSESERIAL(Ser);
+						}
+					}
+					SetTimer( timer , 5 );
+				}
+			}
+
+			bug("ModemManager:Open GUI window\n");
+
+			DisconnectHook.h_Entry = HookEntry;
+			DisconnectHook.h_SubEntry = (HOOKFUNC) DisconnectFunc;
+			ConnectHook.h_Entry = HookEntry;
+			ConnectHook.h_SubEntry = (HOOKFUNC) ConnectFunc;
+
+			application = ApplicationObject,
+			SubWindow, window = WindowObject,
+				MUIA_Window_Title,	(IPTR) "ModemManager",
+				MUIA_Window_Activate,TRUE,
+					WindowContents, (IPTR) VGroup,
+						Child, (IPTR) VGroup,
+							Child, GENERAL_Info = SimpleText(""),
+							Child, IN_Info = SimpleText(""),
+							Child, OUT_Info = SimpleText(""),
+						End,
+						Child, (IPTR) HGroup,
+							Child, (IPTR) (   ConBut = SimpleButton("   Connect    ")),
+							Child, (IPTR) (DisConBut = SimpleButton("  Disconnect  ")),
+						End,
 					End,
 				End,
-			End,
-		End;
+			End;
 
-		if (application)
-		{
-			ULONG sigs = 0;
-
-			DoMethod(
-					window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-					(IPTR) application, 2, MUIM_Application_ReturnID,
-					MUIV_Application_ReturnID_Quit
-			);
-
-			DoMethod(
-				ConBut,MUIM_Notify,MUIA_Pressed,FALSE,
-				application, (IPTR) 3,
-				MUIM_CallHook, &ConnectHook,c
-			);
-
-			DoMethod(
-				DisConBut,MUIM_Notify,MUIA_Pressed,FALSE,
-				application, (IPTR) 3,
-				MUIM_CallHook, &DisconnectHook,c
-			);
-
-			set(window,MUIA_Window_Open,TRUE);
-			set(DisConBut,MUIA_Disabled,TRUE);
-			set(   ConBut,MUIA_Disabled,TRUE);
-
-			SetTimer( timer , 1 );
-
-			while(
-					DoMethod(
-						application, MUIM_Application_NewInput, (IPTR) &sigs
-					) != MUIV_Application_ReturnID_Quit
-				)
+			if (application)
 			{
-				if (sigs){
-					 sigs = Wait(	sigs |
-									SIGBREAKF_CTRL_C |
-									SIGBREAKF_CTRL_F |
-									(1L<< CtrlPort->mp_SigBit ) |
-									(1L<< timer->TimeMsg->mp_SigBit )
-									);
+				sigs = 0;
 
-					if (sigs & SIGBREAKF_CTRL_C) break;
+				DoMethod(
+						window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+						(IPTR) application, 2, MUIM_Application_ReturnID,
+						MUIV_Application_ReturnID_Quit
+				);
 
-					while( InfoMsg = (struct PPPcontrolMsg*)GetMsg(CtrlPort) ){
-						if( InfoMsg->Msg.mn_Length == sizeof(struct PPPcontrolMsg)
-							&&  InfoMsg->Command == PPP_CTRL_INFO
-							 ){
-							bug("ModemManager: received info message num %d\n",InfoMsg->num);
+				DoMethod(
+					ConBut,MUIM_Notify,MUIA_Pressed,FALSE,
+					application, (IPTR) 3,
+					MUIM_CallHook, &ConnectHook,c
+				);
+
+				DoMethod(
+					DisConBut,MUIM_Notify,MUIA_Pressed,FALSE,
+					application, (IPTR) 3,
+					MUIM_CallHook, &DisconnectHook,c
+				);
+
+				set(window,MUIA_Window_Open,TRUE);
+				set(DisConBut,MUIA_Disabled,TRUE);
+				set(   ConBut,MUIA_Disabled,TRUE);
+
+				SetTimer( timer , 1 );
+				SendRequest();
+
+				while(
+						DoMethod(
+							application, MUIM_Application_NewInput, (IPTR) &sigs
+						) != MUIV_Application_ReturnID_Quit
+					)
+				{
+					if (sigs){
+						 sigs = Wait(	sigs |
+										SIGBREAKF_CTRL_C |
+										SIGBREAKF_CTRL_F |
+										(1L<< CtrlPort->mp_SigBit ) |
+										(1L<< timer->TimeMsg->mp_SigBit )
+										);
+
+						if (sigs & SIGBREAKF_CTRL_C) goto shutdown;
+
+						while( InfoMsg = (struct PPPcontrolMsg*)GetMsg(CtrlPort) ){
+							//bug("ModemManager: received info message num %d\n",InfoMsg->num);
+
+							HandleMessage(InfoMsg,c);
 
 							UBYTE genbuf[STRSIZE];
 							snprintf( genbuf, STRSIZE , "%s" , c->modemmodel );
 							set( GENERAL_Info , MUIA_Text_Contents, genbuf);
-
-							// PPP initializing is ready
-							if(  c->state == STATE_OPENDEV && InfoMsg->Phase == PPP_PHASE_NETWORK ){
-								 ConfNetWork( InfoMsg );
-								 c->state = STATE_NETWORK;
-							}
-
-							// serial connection is lost (device unplugged)
-							if( c->state == STATE_NETWORK && (! InfoMsg->Ser) ){
-								  c->state = STATE_UNPLUGGED;
-							}
-
-							// Connection is ok
-							if( InfoMsg->Phase == PPP_PHASE_NETWORK &&  InfoMsg->Ser ){
-								  c->state = STATE_NETWORK;
-							}
-
-							// net connection is lost
-							if( c->state == STATE_NETWORK &&  InfoMsg->Phase != PPP_PHASE_NETWORK ){
-								SendCtrlMsg( PPP_CTRL_CLOSE_SERIAL , 0 , c );
-								c->state = STATE_UNPLUGGED;
-							}
-
-
 
 							if( c->state == STATE_UNPLUGGED ){
 								set( IN_Info , MUIA_Text_Contents, (IPTR)"Unplugged");
@@ -458,75 +519,57 @@ int main(void)
 								set( OUT_Info , MUIA_Text_Contents, (IPTR)buf);
 							}
 
+
+							ReplyMsg((struct Message *)InfoMsg);
+							SetTimer( timer , TIMERVALUE );
+						//bug("ModemManager: ReplyMsg OK\n");
 						}
 
-						ReplyMsg((struct Message *)InfoMsg);
-						SetTimer( timer , TIMERVALUE );
-					//bug("ModemManager: ReplyMsg OK\n");
-					}
 
+						if(GetMsg(timer->TimeMsg)){
 
-					if(GetMsg(timer->TimeMsg)){
-
-						if( c->state == STATE_UNPLUGGED ){
-							
-							if( c->SerUnitNum < 0 ){
-								c->SerUnitNum = FindModemUnit(c);
-							}
-							
-							if( c->SerUnitNum >= 0 ){			
-								if( Ser = OpenSerial( c->DeviceName ,c->SerUnitNum ) ){
-									if( TestModem( Ser , c ) ){
-										UBYTE genbuf[STRSIZE];
-										snprintf( genbuf, STRSIZE , "%s" , c->modemmodel );
-										set( GENERAL_Info , MUIA_Text_Contents, genbuf);
-										set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
-										set(DisConBut, MUIA_Disabled , TRUE );
-										set(   ConBut, MUIA_Disabled , FALSE );
-										 c->state = STATE_PLUGGED;
-									}
-									CLOSESERIAL(Ser);
-								}
-							}
-							
+							// test if modem is unplugged
 							if( c->state == STATE_PLUGGED ){
-								UBYTE genbuf[STRSIZE];
-								snprintf( genbuf, STRSIZE , "%s" , c->modemmodel );
-								set( GENERAL_Info , MUIA_Text_Contents, genbuf);
-								set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
-								set(DisConBut, MUIA_Disabled , TRUE );
-								set(   ConBut, MUIA_Disabled , FALSE );
-							}else{
-								set( GENERAL_Info , MUIA_Text_Contents, "Unplugged");
-								set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
-								set( IN_Info , MUIA_Text_Contents, (IPTR)"");
-								set(DisConBut, MUIA_Disabled , TRUE );
-								set(   ConBut, MUIA_Disabled , TRUE );
+								if( Ser = OpenSerial( c->DeviceName ,c->SerUnitNum ) ){
+									 CLOSESERIAL(Ser);
+								} else
+									c->state = STATE_UNPLUGGED;
 							}
 
-						}
+							if( c->state == STATE_PLUGGED ){
+									UBYTE genbuf[STRSIZE];
+									snprintf( genbuf, STRSIZE , "%s" , c->modemmodel );
+									set( GENERAL_Info , MUIA_Text_Contents, genbuf);
+									set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
+									set(DisConBut, MUIA_Disabled , TRUE );
+									set(   ConBut, MUIA_Disabled , FALSE );
+							}
 
-						CtrlMsg->Command = PPP_CTRL_INFO_REQUEST;
-						CtrlMsg->Arg = (IPTR)PortName;
-						CtrlMsg->Msg.mn_Node.ln_Type = NT_MESSAGE;
-						CtrlMsg->Msg.mn_Length = sizeof(struct PPPcontrolMsg);
-						CtrlMsg->Msg.mn_ReplyPort = 0;
-						if( SafePutToPort(CtrlMsg, "ppp-control") ){
-							bug("ModemManager: Send PPP_CTRL_INFO_REQUEST message\n");
+							SetTimer( timer , TIMERVALUE );
 						}
-
-						SetTimer( timer , TIMERVALUE );
 					}
+					if( c->state == STATE_UNPLUGGED ) break;
+				} //GUI loop
 
-				}
+				// MUIV_Application_ReturnID_Quit ?
+				if( c->state != STATE_UNPLUGGED ) break;
 			}
-		}
+			bug("ModemManager:Device Unplugged -> Close GUI window\n");
+			SetTimer( timer , 0 );
+			MUI_DisposeObject(application);
+			application=NULL;
+		} // main loop
 
-		MUI_DisposeObject(application);
+	}}}}}
 
-	}}}}
+	shutdown:
 
 	bug("ModemManager shutdown\n");
+
+	if(application) MUI_DisposeObject(application);
+
+	CloseTimer(timer);
+
 	struct at_command  *atc;
 	while( atc = (struct at_command *)RemHead( &c->atcl ) ){
 		FreeMem( atc , sizeof(struct at_command) );
@@ -539,8 +582,6 @@ int main(void)
 
 	if( c ) FreeMem( c , sizeof(struct Conf));
 	if( CtrlMsg ) FreeMem(CtrlMsg , sizeof(struct PPPcontrolMsg));
-
-	CloseTimer(timer);
 
   return 0;
 }
