@@ -366,11 +366,25 @@ BCPLd returnPacket   /* c4, void, @DosPacket, res1, res2 */
 BCPLd openWindow     /* c8, void, leftedge, topedge, width, height, @title */
     BRTS
 
+    /* If BOOL is DOSTRUE, set current directory
+     * Always return old current directory
+     */
 BCPL setCurrentDir  /* cc, FileLock @, BOOL, @FileLock */
     movem.l	%d1/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
+    move.l	%d1,%sp@-
     move.l	%d2,%d1
     jsr		%a6@(21 * -6)	/* DOS/CurrentDir() */
+    move.l	%sp@+,%d1
+    tst.l	%d1
+    bne		0f
+
+    /* Restore CurrentDir */
+    move.l	%d0,%sp@-
+    move.l	%d0, %d1
+    jsr		%a6@(21 * -6)	/* DOS/CurrentDir() */
+    move.l	%sp@+,%d0
+0:
     movem.l	%sp@+,%d1/%a0-%a1/%a6
     BRTS
 
@@ -462,12 +476,26 @@ BCPLd writef         /* 128, void, @format, arg1, arg2, ... */
     BRTS
 
 BCPLd toupper        /* 12c, void, char */
+    move.l	%d1,%d0
+    bclr	#5,%d0
     BRTS
 
 BCPLd charcmp        /* 130, long , char1, char2 */
+    move.l	%d2,%d0
+    sub.l	%d1,%d0
     BRTS
 
 BCPLd strcmp         /* 134, long , @String1, @String2 */
+    movem.l	%d1-%d2/%a0-%a1,%sp@-
+    lsl.l	#2,%d1
+    addq.l	#1,%d1
+    lsl.l	#2,%d2
+    addq.l	#1,%d2
+    move.l	%d2, %sp@-
+    move.l	%d1, %sp@-
+    jsr		strcmp
+    addq.l	#8,%sp
+    movem.l	%sp@+,%d1-%d2/%a0-%a1
     BRTS
 
 BCPL rdargs         /* 138, BOOL, @template, array, array_size */
