@@ -172,6 +172,21 @@ static BOOL mediacheck(struct Volume *volume, LONG *ok, LONG *res2)
     return TRUE;
 }
 
+static LONG gethandletype(struct AFSBase *handler,  struct AfsHandle  *h)
+{
+    UBYTE buffer[sizeof(struct ExAllData) + MAXFILENAMELENGTH];
+    struct ExAllData *ead = (APTR)&buffer[0];
+    ULONG size = sizeof(buffer);
+    ULONG mode = ED_TYPE;
+    ULONG dirpos;
+    LONG res2;
+    
+    res2 = examine(handler, h, ead, size, mode, &dirpos);
+    if (res2 == 0)
+    	return ead->ed_Type;
+    return 0;
+}
+
 /*******************************************
  Name  : AFS_work
  Descr.: main loop (get packets and answer (or not))
@@ -344,9 +359,19 @@ void AFS_work(void) {
 		    }
 
 		    ah = openf(handler, dh, fn, mode, &res2);
+
 		    ok = (ah != NULL) ? DOSTRUE : DOSFALSE;
-		    if (ok)
-			fh->fh_Arg1 = (LONG)(IPTR)ah;
+		    if (ok) {
+		        LONG type = gethandletype(handler, ah);
+		        if (type >= 0) {
+		    	    /* was directory */
+		    	    res2 = ERROR_OBJECT_WRONG_TYPE;
+		    	    ok = DOSFALSE;
+		    	    closef(handler, ah);
+		    	    break;
+		    	}
+		    	fh->fh_Arg1 = (LONG)(IPTR)ah;
+		    }
 		    break;
 		}
 		case ACTION_LOCATE_OBJECT:
@@ -588,18 +613,8 @@ void AFS_work(void) {
 		    ah = openf(handler, oh, "/", FMF_MODE_OLDFILE, &res2);
 		    if (ah == NULL) {
 		    	ok = DOSFALSE;
-		    	if (res2 == ERROR_OBJECT_NOT_FOUND) {
-		    	    /* need to return res2 = 0 (not 205) if oh == ST_ROOT */
-		            UBYTE buffer[sizeof(struct ExAllData) + MAXFILENAMELENGTH];
-		            struct ExAllData     *ead = (APTR)&buffer[0];
-		            ULONG size = sizeof(buffer);
-		            ULONG mode = ED_TYPE;
-		            ULONG dirpos;
-		            LONG eres2;
-		            eres2 = examine(handler, oh, ead, size, mode, &dirpos);
-		    	    if (eres2 == 0 && ead->ed_Type == ST_ROOT)
-			        res2 = 0;
-			}
+		    	if (res2 == ERROR_OBJECT_NOT_FOUND && gethandletype(handler, oh) == ST_ROOT)
+			    res2 = 0; /* need to return res2 = 0 (not 205) if oh == ST_ROOT */
 		    	break;
 		    }
 		    fl = AllocMem(sizeof(*fl), MEMF_CLEAR);
