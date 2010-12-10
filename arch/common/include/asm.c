@@ -63,6 +63,7 @@ int main(void) {
     DEFINE(iet_Context   , sizeof (struct ETask) + 4);
 
     asm volatile("\n/* struct Process */" ::);
+    DEFINE(pr_MsgPort    , offsetof (struct Process, pr_MsgPort));
     DEFINE(pr_ReturnAddr , offsetof (struct Process, pr_ReturnAddr));
     DEFINE(pr_CLI        , offsetof (struct Process, pr_CLI));
     DEFINE(pr_CIS        , offsetof (struct Process, pr_CIS));
