@@ -175,8 +175,8 @@
 
     /* send the request, with error reporting */
     do {
-        status = dopacket1(DOSBase, &err, notify->nr_Handler, ACTION_ADD_NOTIFY, MKBADDR(notify));
-    } while (status == 0 && ErrorReport(err, REPORT_LOCK, 0, notify->nr_Handler) == DOSFALSE);
+        status = dopacket1(DOSBase, &err, notify->nr_Handler, ACTION_ADD_NOTIFY, notify);
+    } while (status == DOSFALSE && ErrorReport(err, REPORT_LOCK, 0, notify->nr_Handler) == DOSFALSE);
 
     /* cleanup */
     if (lock != BNULL)
@@ -184,7 +184,7 @@
     FreeDeviceProc(dvp);
 
     /* something broke, clean up */
-    if (status == 0) {
+    if (status == DOSFALSE) {
         if (notify->nr_FullName != notify->nr_Name)
             FreeVec(notify->nr_FullName);
         return DOSFALSE;
