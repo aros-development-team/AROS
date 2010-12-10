@@ -46,6 +46,7 @@ BOOL SafePutToPort(struct PPPcontrolMsg *message, STRPTR portname)
 }
 
 #define TIMERVALUE 5
+#define MAXINFOFAIL 10
 
 VOID PPP_Process(VOID){
 
@@ -60,7 +61,8 @@ VOID PPP_Process(VOID){
 	struct PPPcontrolMsg *CtrlMsg=0;
 	struct PPPcontrolMsg *InfoMsg=0;
 	ULONG oldin=0,oldout=0;
-
+	ULONG InfoFail=0;
+	
 	UBYTE GUIPortName[PPP_MAXARGLEN];
 	BOOL UpdateInfo;
 
@@ -101,6 +103,11 @@ VOID PPP_Process(VOID){
 				}
 			}
 
+			// device is down ,close serial
+			if( Phase() == PPP_PHASE_DEAD ){
+				CLOSESERIAL(LIBBASE->ser);
+			}
+			
 			waitmask = (1L<< signalbit ) |
 					 ( LIBBASE->ser ? (1L<< LIBBASE->ser->RxPort->mp_SigBit ) : 0 ) |
 					 ( LIBBASE->ser ? (1L<< LIBBASE->ser->TxPort->mp_SigBit ) : 0 ) |
@@ -120,10 +127,12 @@ VOID PPP_Process(VOID){
 				LIBBASE->UpTime += TIMERVALUE;
 				oldin = LIBBASE->BytesIn;
 				oldout = LIBBASE->BytesOut;
-
+				
 				if( GUIPortName[0] && (
 					InfoMsg->BytesIn != LIBBASE->BytesIn ||
-					InfoMsg->BytesOut != LIBBASE->BytesOut
+					InfoMsg->BytesOut != LIBBASE->BytesOut ||
+					InfoMsg->SpeedIn != LIBBASE->SpeedIn ||
+					InfoMsg->SpeedOut != LIBBASE->SpeedOut
 				)) UpdateInfo = TRUE;
 
 				if(LIBBASE->device_up && LIBBASE->ser ){
@@ -238,9 +247,10 @@ VOID PPP_Process(VOID){
 			//	 bug("PPP: SendInfoMsg num %d -> %s\n",InfoMsg->num,GUIPortName);
 				if( SafePutToPort( InfoMsg , GUIPortName ) ){
 			//	 bug("PPP: SendInfoMsg OK\n");
+					InfoFail = 0;
 				}else{
 					 bug("PPP: SendInfoMsg FAIL\n");
-					 GUIPortName[0]=0;
+					 if( ++InfoFail > MAXINFOFAIL )GUIPortName[0]=0;
 				}
 			}
 

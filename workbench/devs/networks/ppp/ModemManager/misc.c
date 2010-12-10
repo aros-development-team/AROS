@@ -546,7 +546,6 @@ VOID CloseSerial(struct EasySerial *s){
 	if( s->RxBuff ) FreeMem( s->RxBuff , SERIAL_BUFSIZE );
 	FreeMem( s , sizeof(struct EasySerial) );
 
-	D(bug("CloseSerial OK!\n"));
 }
 
 
