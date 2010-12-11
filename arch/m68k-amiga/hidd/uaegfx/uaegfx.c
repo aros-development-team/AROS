@@ -67,10 +67,12 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct pRoot_New mymsg;
     struct TagItem mytags[2];
+    UWORD supportedformats;
 
     if (csd->initialized)
 	return NULL;
 
+    supportedformats = gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats);
     node = (struct Node*)(((ULONG*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))[0]);
     r = (struct LibResolution*)node->ln_Succ;
     rescnt = 0;
@@ -78,7 +80,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         rescnt++;
     	r = (struct LibResolution*)r->node.ln_Succ;
     }
-    D(bug("UAEGFX: resolutions: %d\n", rescnt));
+    D(bug("UAEGFX: resolutions: %d, supportmask: %x\n", rescnt, supportedformats));
 
     reslist = AllocVec(rescnt * SIZE_RESLIST * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
     restags = AllocVec((rescnt + 1) * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
@@ -106,7 +108,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     k = 0;
     for (i = 0, j = 0; i < RGBFB_MaxFormats; i++) {
    	depth = getrtgdepth(1 << i);
-    	if (!((1 << i) & RGBFB_SUPPORTMASK) || depth == 0) {
+    	if (!((1 << i) & RGBFB_SUPPORTMASK) || depth == 0 || !((1 << i) & supportedformats)) {
       	    pflist[j].ti_Tag = TAG_DONE;
      	    pflist[j].ti_Data = 0;
     	    j++;
@@ -162,13 +164,13 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
      	pflist[j].ti_Data = depth <= 8 ? vHidd_ColorModel_Palette : vHidd_ColorModel_TrueColor;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_Depth;
-     	pflist[j].ti_Data = depth;
+     	pflist[j].ti_Data = depth > 24 ? 24 : depth;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_BytesPerPixel;
      	pflist[j].ti_Data = (depth + 7) / 8;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_BitsPerPixel;
-     	pflist[j].ti_Data = depth;
+     	pflist[j].ti_Data = depth > 24 ? 24 : depth;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_StdPixFmt;
      	pflist[j].ti_Data = vHidd_StdPixFmt_Native;

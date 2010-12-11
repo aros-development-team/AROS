@@ -228,6 +228,10 @@ ULONG gl(UBYTE *p)
 {
     return ((ULONG*)p)[0];
 }
+UWORD gw(UBYTE *p)
+{
+    return ((UWORD*)p)[0];
+}
 void pl(UBYTE *p, ULONG l)
 {
     ((ULONG*)p)[0] = l;
