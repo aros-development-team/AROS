@@ -724,7 +724,9 @@ IMPLEMENT("nouveau_pm_init(dev);\n");
 	if (ret)
 		NV_ERROR(dev, "Error %d registering backlight\n", ret);
 
+#if !defined(__AROS__)
 	nouveau_fbcon_init(dev);
+#endif
 	drm_kms_helper_poll_init(dev);
 	return 0;
 
@@ -1090,7 +1092,9 @@ int nouveau_unload(struct drm_device *dev)
 	struct nouveau_engine *engine = &dev_priv->engine;
 
 	drm_kms_helper_poll_fini(dev);
+#if !defined(__AROS__)
 	nouveau_fbcon_fini(dev);
+#endif
 	engine->display.destroy(dev);
 	nouveau_card_takedown(dev);
 

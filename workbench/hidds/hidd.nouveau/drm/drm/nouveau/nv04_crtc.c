@@ -870,6 +870,7 @@ nv04_crtc_mode_set_base_atomic(struct drm_crtc *crtc,
 			       struct drm_framebuffer *fb,
 			       int x, int y, enum mode_set_atomic state)
 {
+#if !defined(__AROS__)
 	struct drm_nouveau_private *dev_priv = crtc->dev->dev_private;
 	struct drm_device *dev = dev_priv->dev;
 
@@ -877,6 +878,7 @@ nv04_crtc_mode_set_base_atomic(struct drm_crtc *crtc,
 		nouveau_fbcon_save_disable_accel(dev);
 	else
 		nouveau_fbcon_restore_accel(dev);
+#endif
 
 	return nv04_crtc_do_mode_set_base(crtc, fb, x, y, true);
 }
