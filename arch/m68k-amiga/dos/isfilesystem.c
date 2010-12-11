@@ -68,7 +68,8 @@
     }
 
     if ((dvp = GetDeviceProc(devicename, dvp))) {
-    	code = dopacket0(DOSBase, NULL, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
+    	if (dvp->dvp_Port != NULL) // NIL: isn't a filesystem
+    	    code = dopacket0(DOSBase, NULL, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
     	FreeDeviceProc(dvp);
     } else {
     	SetIoErr(err);
