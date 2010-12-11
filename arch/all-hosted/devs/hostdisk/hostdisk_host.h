@@ -4,6 +4,8 @@
 #define __stdcall __attribute__((stdcall))
 #endif
 
+#define INVALID_HANDLE_VALUE (void *)-1
+
 #define FILE_SHARE_VALID_FLAGS	0x00000007
 #define GENERIC_READ            0x80000000
 #define OPEN_EXISTING           3
@@ -26,8 +28,6 @@
 #define ERROR_DIR_NOT_EMPTY		145L
 #define ERROR_IO_PENDING		997L
 
-#define INVALID_HANDLE_VALUE (void *)(-1)
-
 typedef void *file_t;
 
 struct HostInterface
@@ -38,5 +38,7 @@ struct HostInterface
     ULONG  __stdcall (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
     ULONG  __stdcall (*WriteFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToWrite, ULONG *lpNumberOfBytesWritten, void *lpOverlapped);
     ULONG  __stdcall (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
-    ULONG  __stdcall (*GetFileAttributes(STRPTR lpFileName);
+    ULONG  __stdcall (*GetFileAttributes)(STRPTR lpFileName);
+    ULONG  __stdcall (*GetFileSize)(void *hFile, ULONG *lpFileSizeHigh);
+    ULONG  __stdcall (*GetLastError)(void);
 };

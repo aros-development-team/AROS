@@ -19,8 +19,13 @@ struct HostDiskBase
     struct SignalSemaphore 	sigsem;
     struct MsgPort 		port;
     struct MinList 		units;
+    STRPTR			DiskDevice;
+    APTR			HostLibBase;
+    APTR			KernelHandle;
     struct HostInterface       *iface;
 };
+
+#define HostLibBase hdskBase->HostLibBase
 
 struct unit
 {
@@ -36,10 +41,11 @@ struct unit
     struct MinList 		changeints;
 };
 
-file_t Host_Open(STRPTR name, struct HostInterrface *HostIf);
-void Host_Close(file_t file, struct HostInterrface *HostIf);
-LONG Host_Read(file_t file, APTR buf, ULONG size, ULONG *ioerr, struct HostInterrface *HostIf);
-LONG Host_Write(file_t file, APTR buf, ULONG size, ULONG *ioerr, struct HostInterrface *HostIf);
-BOOL Host_Seek(file_t file, ULONG pos, struct HostInterrface *HostIf);
+ULONG Host_Open(struct unit *Unit);
+void Host_Close(struct unit *Unit);
+LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr);
+LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr);
+ULONG Host_Seek(struct unit *Unit, ULONG pos);
+ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg);
 
 #endif

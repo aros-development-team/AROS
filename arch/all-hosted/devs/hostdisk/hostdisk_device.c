@@ -17,10 +17,8 @@
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
-
-#include "hostdisk_device.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -28,7 +26,7 @@
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR hdskBase)
 {
-    D(bug("fdsk_device: in libinit func\n"));
+    D(bug("hostdisk: in libinit func\n"));
 
     InitSemaphore(&hdskBase->sigsem);
     NEWLIST((struct List *)&hdskBase->units);
@@ -37,7 +35,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR hdskBase)
     hdskBase->port.mp_SigBit = SIGB_SINGLE;
     NEWLIST((struct List *)&hdskBase->port.mp_MsgList);
 
-   D(bug("fdsk_device: in libinit func. Returning %x (success) :-)\n", hdskBase));
+   D(bug("hostdisk: in libinit func. Returning %x (success) :-)\n", hdskBase));
    return TRUE;
 }
 
@@ -73,9 +71,9 @@ static int GM_UNIQUENAME(Open)
     };
     struct unit *unit;
 
-    D(bug("fdsk_device: in libopen func.\n"));
+    D(bug("hostdisk: in libopen func.\n"));
 
-    D(bug("fdsk_device: in libopen func. Looking if unit is already open\n"));
+    D(bug("hostdisk: in libopen func. Looking if unit is already open\n"));
 
     ObtainSemaphore(&hdskBase->sigsem);
 
@@ -91,18 +89,18 @@ static int GM_UNIQUENAME(Open)
 	    iotd->iotd_Req.io_Error 		      = 0;
 	    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
    	   
-	    D(bug("fdsk_device: in libopen func. Yep. Unit is already open\n"));
+	    D(bug("hostdisk: in libopen func. Yep. Unit is already open\n"));
 	    
 	    return TRUE;
 	}
 
-    D(bug("fdsk_device: in libopen func. No, it is not. So creating new unit ...\n"));
+    D(bug("hostdisk: in libopen func. No, it is not. So creating new unit ...\n"));
 
     unit = (struct unit *)AllocMem(sizeof(struct unit),
         MEMF_PUBLIC | MEMF_CLEAR);
     if(unit != NULL)
     {
-        D(bug("fdsk_device: in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n"));
+        D(bug("hostdisk: in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n"));
 
 	unit->usecount 			= 1;
 	unit->hdskBase 			= hdskBase;
@@ -114,7 +112,7 @@ static int GM_UNIQUENAME(Open)
 	unit->port.mp_SigTask 		= CreateNewProc((struct TagItem *)tags);
 	NEWLIST((struct List *)&unit->changeints);
 
-        D(bug("fdsk_device: in libopen func. CreateNewProc called. Proc = %x\n", unit->port.mp_SigTask));
+        D(bug("hostdisk: in libopen func. CreateNewProc called. Proc = %x\n", unit->port.mp_SigTask));
 	
 	if(unit->port.mp_SigTask != NULL)
 	{
@@ -124,15 +122,15 @@ static int GM_UNIQUENAME(Open)
 	    hdskBase->port.mp_SigTask = FindTask(NULL);
     	    SetSignal(0, SIGF_SINGLE);
 	    
-    	    D(bug("fdsk_device: in libopen func. Sending startup msg\n"));
+    	    D(bug("hostdisk: in libopen func. Sending startup msg\n"));
 	    PutMsg(&((struct Process *)unit->port.mp_SigTask)->pr_MsgPort, &unit->msg);
 
-    	    D(bug("fdsk_device: in libopen func. Waiting for replymsg\n"));
+    	    D(bug("hostdisk: in libopen func. Waiting for replymsg\n"));
 	    WaitPort(&hdskBase->port);
 	    (void)GetMsg(&hdskBase->port);
-    	    D(bug("fdsk_device: in libopen func. Received replymsg\n"));
+    	    D(bug("hostdisk: in libopen func. Received replymsg\n"));
 	    
-	    if(unit->file)
+	    if (unit->file != INVALID_HANDLE_VALUE)
 	    {
 		AddTail((struct List *)&hdskBase->units, &unit->msg.mn_Node);
 		iotd->iotd_Req.io_Unit = (struct Unit *)unit;
@@ -190,7 +188,7 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 AROS_LH1(void, beginio, 
  AROS_LHA(struct IOExtTD *, iotd, A1), 
-	   struct hdskBase *, hdskBase, 5, Fdsk)
+	   struct HostDiskBase *, hdskBase, 5, Hostdisk)
 {
     AROS_LIBFUNC_INIT
 
@@ -241,7 +239,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio, 
  AROS_LHA(struct IOExtTD *, iotd, A1), 
-	   struct hdskBase *, hdskBase, 6, Fdsk)
+	   struct HostDiskBase *, hdskBase, 6, Hostdisk)
 {
     AROS_LIBFUNC_INIT
     return IOERR_NOCMD;
@@ -256,20 +254,20 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
     LONG 	size, subsize;
     ULONG	ioerr;
 
-    D(bug("fdsk_device/read: offset = %d  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
+    D(bug("hostdisk/read: offset = %d  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
     
 #if 0
     if(iotd->iotd_SecLabel)
     {
-        D(bug("fdsk_device/read: iotd->iotd_SecLabel is != NULL -> returning IOERR_NOCMD\n"));
+        D(bug("hostdisk/read: iotd->iotd_SecLabel is != NULL -> returning IOERR_NOCMD\n"));
 	return IOERR_NOCMD;
     }
 #endif
 
-    ioerr = Host_Seek(unit->file, iotd->iotd_Req.io_Offset);
+    ioerr = Host_Seek(unit, iotd->iotd_Req.io_Offset);
     if (ioerr)
     {
-        D(bug("fdsk_device/read: Seek to offset %d failed\n", iotd->iotd_Req.io_Offset));
+        D(bug("hostdisk/read: Seek to offset %d failed\n", iotd->iotd_Req.io_Offset));
 	return ioerr;
     }
     
@@ -279,7 +277,7 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
     
     while(size)
     {
-	subsize = Host_Read(unit->file, buf, size, &ioerr);
+	subsize = Host_Read(unit, buf, size, &ioerr);
 	if(!subsize)
 	{
 	     iotd->iotd_Req.io_Actual -= size;
@@ -289,7 +287,7 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
 	if(subsize == -1)
 	{
 	    iotd->iotd_Req.io_Actual -= size;
-            D(bug("hostdisk.device/read: Host_Read() returned -1. Returning error number %d\n", ioer));
+            D(bug("hostdisk.device/read: Host_Read() returned -1. Returning error number %d\n", ioerr));
 	    return ioerr;
 	}
 	buf  += subsize;
@@ -298,7 +296,7 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
 
 #if DEBUG
     buf = iotd->iotd_Req.io_Data;
-    D(bug("fdsk_device/read: returning 0. First 4 buffer bytes = [%c%c%c%c]\n", buf[0], buf[1], buf[2], buf[3]));
+    D(bug("hostdisk/read: returning 0. First 4 buffer bytes = [%c%c%c%c]\n", buf[0], buf[1], buf[2], buf[3]));
 #endif
 
     return 0;
@@ -318,7 +316,7 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     if(iotd->iotd_SecLabel)
 	return IOERR_NOCMD;
 #endif
-    ioerr = Host_Seek(unit->file, iotd->iotd_Req.io_Offset, OFFSET_BEGINNING);
+    ioerr = Host_Seek(unit, iotd->iotd_Req.io_Offset);
     if (ioerr)
 	return ioerr;
 
@@ -330,7 +328,7 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     {
         ULONG ioerr;
 
-	subsize = Host_Write(unit->file, buf, size, &ioerr);
+	subsize = Host_Write(unit, buf, size, &ioerr);
 	if(subsize == -1)
 	{
 	    iotd->iotd_Req.io_Actual -= size;
@@ -361,35 +359,14 @@ static void remchangeint(struct unit *unit, struct IOExtTD *iotd) {
 
 /**************************************************************************/
 
-void getgeometry(struct unit *unit, struct DriveGeometry *dg) {
-struct FileInfoBlock fib;
-
-    Examine(unit->file, &fib);
-    dg->dg_SectorSize = 512;
-    dg->dg_Heads = 16;
-    dg->dg_TrackSectors = 63;
-    dg->dg_TotalSectors = fib.fib_Size / dg->dg_SectorSize;
-    /* in case of links or block devices with emul_handler we get the wrong size */
-    if (dg->dg_TotalSectors == 0)
-	dg->dg_TotalSectors = dg->dg_Heads*dg->dg_TrackSectors*5004;
-    dg->dg_Cylinders = dg->dg_TotalSectors / (dg->dg_Heads * dg->dg_TrackSectors);
-    dg->dg_CylSectors = dg->dg_Heads * dg->dg_TrackSectors;
-    dg->dg_BufMemType = MEMF_PUBLIC;
-    dg->dg_DeviceType = DG_DIRECT_ACCESS;
-    dg->dg_Flags = DGF_REMOVABLE;
-}
-
-/**************************************************************************/
-
 void eject(struct unit *unit, BOOL eject)
 {
     struct IOExtTD *iotd;
-    struct FileInfoBlock fib;
     ULONG err;
 
     if (eject)
     {
-        Host_Close(unit->file);
+        Host_Close(unit);
         unit->file = (BPTR)NULL;
     }
     else
@@ -434,10 +411,8 @@ AROS_UFH3(LONG, unitentry,
     LONG 		err = 0L;
     struct IOExtTD 	*iotd;
     struct unit 	*unit;
-    APTR                win;
-    struct FileInfoBlock fib;
 
-    D(bug("fdsk_device/unitentry: just started\n"));
+    D(bug("hostdisk/unitentry: just started\n"));
     
     me = (struct Process *)FindTask(NULL);
 
@@ -446,14 +421,9 @@ AROS_UFH3(LONG, unitentry,
     unit->port.mp_SigBit = AllocSignal(-1);
     unit->port.mp_Flags = PA_SIGNAL;
 
-    /* disable DOS error requesters. save the old pointer so we can put it
-     * back later */
-    win = me->pr_WindowPtr;
-    me->pr_WindowPtr = (APTR) -1;
+    RawDoFmt(unit->hdskBase->DiskDevice, &unit->unitnum, (VOID_FUNC)putchr, &ptr);
 
-    (void)RawDoFmt("FDSK:Unit%ld", &unit->unitnum, (VOID_FUNC)putchr, &ptr);
-
-    D(bug("fdsk_device/unitentry: Trying to open \"%s\" ...\n", buf));
+    D(bug("hostdisk/unitentry: Trying to open \"%s\" ...\n", buf));
 
     unit->filename = buf;
     err = Host_Open(unit);
@@ -463,20 +433,17 @@ AROS_UFH3(LONG, unitentry,
 #warning FIXME: Next line will produce a segfault -- uninitialized variable iotd
 	iotd->iotd_Req.io_Error = err;
 */
-        D(bug("fdsk_device/unitentry: open failed ioerr = %d:-( Replying startup msg.\n", IoErr()));
+        D(bug("hostdisk/unitentry: open failed :-( Replying startup msg.\n"));
 
 	ReplyMsg(&unit->msg);
 	return 0;
     }
 
-    /* enable requesters */
-    me->pr_WindowPtr = win;
-
-    D(bug("fdsk_device/unitentry: open okay :-) Replying startup msg.\n"));
+    D(bug("hostdisk/unitentry: open okay :-) Replying startup msg.\n"));
 
     ReplyMsg(&unit->msg);
 
-    D(bug("fdsk_device/unitentry: Now entering main loop\n"));
+    D(bug("hostdisk/unitentry: Now entering main loop\n"));
 
     for(;;)
     {
@@ -484,9 +451,9 @@ AROS_UFH3(LONG, unitentry,
 	{
 	    if(&iotd->iotd_Req.io_Message == &unit->msg)
 	    {
-    		D(bug("fdsk_device/unitentry: Received EXIT message.\n"));
+    		D(bug("hostdisk/unitentry: Received EXIT message.\n"));
 
-		Close(unit->file);
+		Host_Close(unit);
 		Forbid();
 		ReplyMsg(&unit->msg);
 		return 0;
@@ -495,13 +462,13 @@ AROS_UFH3(LONG, unitentry,
  	    switch(iotd->iotd_Req.io_Command)
  	    {
  		case CMD_READ:
-     		    D(bug("fdsk_device/unitentry: received CMD_READ.\n"));
+     		    D(bug("hostdisk/unitentry: received CMD_READ.\n"));
 		    err = read(unit, iotd);
  		    break;
 		    
  		case CMD_WRITE:
  		case TD_FORMAT:
-    		    D(bug("fdsk_device/unitentry: received %s\n", (iotd->iotd_Req.io_Command == CMD_WRITE) ? "CMD_WRITE" : "TD_FORMAT"));
+    		    D(bug("hostdisk/unitentry: received %s\n", (iotd->iotd_Req.io_Command == CMD_WRITE) ? "CMD_WRITE" : "TD_FORMAT"));
  		    err = write(unit, iotd);
  		    break;
 		case TD_CHANGENUM:
@@ -521,8 +488,7 @@ AROS_UFH3(LONG, unitentry,
 		    err = 0;
 		    break;
 		case TD_GETGEOMETRY:
-		    getgeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
-		    err = 0;
+		    err = Host_GetGeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
 		    break;
 		case TD_EJECT:
 		    eject(unit, iotd->iotd_Req.io_Length);
