@@ -726,8 +726,8 @@ IMPLEMENT("nouveau_pm_init(dev);\n");
 
 #if !defined(__AROS__)
 	nouveau_fbcon_init(dev);
-#endif
 	drm_kms_helper_poll_init(dev);
+#endif
 	return 0;
 
 out_fence:
@@ -1091,8 +1091,8 @@ int nouveau_unload(struct drm_device *dev)
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_engine *engine = &dev_priv->engine;
 
-	drm_kms_helper_poll_fini(dev);
 #if !defined(__AROS__)
+	drm_kms_helper_poll_fini(dev);
 	nouveau_fbcon_fini(dev);
 #endif
 	engine->display.destroy(dev);

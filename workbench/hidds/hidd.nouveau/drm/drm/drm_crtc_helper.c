@@ -106,7 +106,9 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 			connector->funcs->force(connector);
 	} else {
 		connector->status = connector->funcs->detect(connector, true);
+#if !defined(__AROS__)
 		drm_kms_helper_poll_enable(dev);
+#endif
 	}
 
 	if (connector->status == connector_status_disconnected) {
@@ -219,6 +221,7 @@ drm_encoder_disable(struct drm_encoder *encoder)
 		(*encoder_funcs->dpms)(encoder, DRM_MODE_DPMS_OFF);
 }
 
+#if !defined(__AROS__)
 /**
  * drm_helper_disable_unused_functions - disable unused objects
  * @dev: DRM device
@@ -263,6 +266,7 @@ void drm_helper_disable_unused_functions(struct drm_device *dev)
 	}
 }
 EXPORT_SYMBOL(drm_helper_disable_unused_functions);
+#endif
 
 /**
  * drm_encoder_crtc_ok - can a given crtc drive a given encoder?
@@ -655,7 +659,9 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
 				goto fail;
 			}
 		}
+#if !defined(__AROS__)
 		drm_helper_disable_unused_functions(dev);
+#endif
 	} else if (fb_changed) {
 		set->crtc->x = set->x;
 		set->crtc->y = set->y;
@@ -793,6 +799,7 @@ int drm_helper_mode_fill_fb_struct(struct drm_framebuffer *fb,
 }
 EXPORT_SYMBOL(drm_helper_mode_fill_fb_struct);
 
+#if !defined(__AROS__)
 int drm_helper_resume_force_mode(struct drm_device *dev)
 {
 	struct drm_crtc *crtc;
@@ -837,7 +844,6 @@ int drm_helper_resume_force_mode(struct drm_device *dev)
 }
 EXPORT_SYMBOL(drm_helper_resume_force_mode);
 
-#if !defined(__AROS__)
 #define DRM_OUTPUT_POLL_PERIOD (10*HZ)
 static void output_poll_execute(struct work_struct *work)
 {
@@ -894,11 +900,9 @@ void drm_kms_helper_poll_disable(struct drm_device *dev)
 	cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_disable);
-#endif
 
 void drm_kms_helper_poll_enable(struct drm_device *dev)
 {
-#if !defined(__AROS__)
 	bool poll = false;
 	struct drm_connector *connector;
 
@@ -912,38 +916,26 @@ void drm_kms_helper_poll_enable(struct drm_device *dev)
 
 	if (poll)
 		queue_delayed_work(system_nrt_wq, &dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
-#else
-IMPLEMENT("\n");
-#endif
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_enable);
 
 void drm_kms_helper_poll_init(struct drm_device *dev)
 {
-#if !defined(__AROS__)
 	INIT_DELAYED_WORK(&dev->mode_config.output_poll_work, output_poll_execute);
 	dev->mode_config.poll_enabled = true;
 
 	drm_kms_helper_poll_enable(dev);
-#else
-IMPLEMENT("\n");
-#endif
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_init);
 
 void drm_kms_helper_poll_fini(struct drm_device *dev)
 {
-#if !defined(__AROS__)
 	drm_kms_helper_poll_disable(dev);
-#else
-IMPLEMENT("\n");
-#endif
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_fini);
 
 void drm_helper_hpd_irq_event(struct drm_device *dev)
 {
-#if !defined(__AROS__)
 	if (!dev->mode_config.poll_enabled)
 		return;
 
@@ -951,8 +943,6 @@ void drm_helper_hpd_irq_event(struct drm_device *dev)
 	cancel_delayed_work(&dev->mode_config.output_poll_work);
 	if (drm_kms_helper_poll)
 		queue_delayed_work(system_nrt_wq, &dev->mode_config.output_poll_work, 0);
-#else
-IMPLEMENT("\n");
-#endif
 }
 EXPORT_SYMBOL(drm_helper_hpd_irq_event);
+#endif
