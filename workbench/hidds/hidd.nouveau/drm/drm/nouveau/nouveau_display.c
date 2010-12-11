@@ -28,7 +28,9 @@
 #include "drm_crtc_helper.h"
 #include "nouveau_drv.h"
 #include "nouveau_fb.h"
+#if !defined(__AROS__)
 #include "nouveau_fbcon.h"
+#endif
 #include "nouveau_hw.h"
 #include "nouveau_crtc.h"
 #include "nouveau_dma.h"

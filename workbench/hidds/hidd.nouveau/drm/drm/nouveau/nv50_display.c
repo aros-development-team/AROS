@@ -29,7 +29,9 @@
 #include "nouveau_encoder.h"
 #include "nouveau_connector.h"
 #include "nouveau_fb.h"
+#if !defined(__AROS__)
 #include "nouveau_fbcon.h"
+#endif
 #include "nouveau_ramht.h"
 #include "drm_crtc_helper.h"
 
