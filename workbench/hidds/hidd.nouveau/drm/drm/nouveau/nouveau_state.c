@@ -38,7 +38,9 @@
 
 #include "nouveau_drv.h"
 #include "nouveau_drm.h"
+#if !defined(__AROS__)
 #include "nouveau_fbcon.h"
+#endif
 #include "nouveau_ramht.h"
 #include "nouveau_pm.h"
 #include "nv50_display.h"

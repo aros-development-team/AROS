@@ -32,9 +32,9 @@
 #include "drmP.h"
 #include "drm_crtc.h"
 #include "drm_crtc_helper.h"
+#if !defined(__AROS__)
 #include "drm_fb_helper.h"
 
-#if !defined(__AROS__)
 static bool drm_kms_helper_poll = true;
 module_param_named(poll, drm_kms_helper_poll, bool, 0600);
 #endif

@@ -33,7 +33,9 @@
 #include "nouveau_fb.h"
 #include "nouveau_hw.h"
 #include "nvreg.h"
+#if !defined(__AROS__)
 #include "nouveau_fbcon.h"
+#endif
 
 static int
 nv04_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
