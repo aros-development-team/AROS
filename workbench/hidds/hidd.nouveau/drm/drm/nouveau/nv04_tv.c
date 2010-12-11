@@ -47,13 +47,18 @@ static struct i2c_board_info nv04_tv_encoder_info[] = {
 	},
 	{ }
 };
+#else
+static struct i2c_board_info nv04_tv_encoder_info[] = {
+    { .type = "ch7006", .addr = 0x75 },
+	{ }
+};
+#endif
 
 int nv04_tv_identify(struct drm_device *dev, int i2c_index)
 {
 	return nouveau_i2c_identify(dev, "TV encoder", nv04_tv_encoder_info,
 				    NULL, i2c_index);
 }
-
 
 #define PLLSEL_TV_CRTC1_MASK				\
 	(NV_PRAMDAC_PLL_COEFF_SELECT_TV_VSCLK1		\
@@ -180,7 +185,6 @@ static void nv04_tv_destroy(struct drm_encoder *encoder)
 static const struct drm_encoder_funcs nv04_tv_funcs = {
 	.destroy = nv04_tv_destroy,
 };
-#endif
 
 int
 nv04_tv_create(struct drm_connector *connector, struct dcb_entry *entry)
@@ -255,8 +259,8 @@ fail_free:
 	kfree(nv_encoder);
 	return ret;
 #else
-IMPLEMENT("\n");
-return 0;
+    IMPLEMENT("\n");
+    return 0;
 #endif
 }
 

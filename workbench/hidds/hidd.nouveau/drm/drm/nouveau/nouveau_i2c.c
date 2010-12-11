@@ -350,7 +350,6 @@ nouveau_i2c_identify(struct drm_device *dev, const char *what,
 				   struct i2c_board_info *),
 		     int index)
 {
-#if !defined(__AROS__)
 	struct nouveau_i2c_chan *i2c = nouveau_i2c_find(dev, index);
 	int i;
 
@@ -365,9 +364,6 @@ nouveau_i2c_identify(struct drm_device *dev, const char *what,
 	}
 
 	NV_DEBUG(dev, "No devices found.\n");
-#else
-IMPLEMENT("\n");
-#endif
 
 	return -ENODEV;
 }

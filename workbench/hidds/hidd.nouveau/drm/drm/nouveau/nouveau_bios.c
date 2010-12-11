@@ -6384,7 +6384,6 @@ fabricate_dcb_encoder_table(struct drm_device *dev, struct nvbios *bios)
 	/* Make up some sane defaults */
 	fabricate_dcb_output(dcb, OUTPUT_ANALOG, LEGACY_I2C_CRT, 1, 1);
 
-#if !defined(__AROS__)
 	if (nv04_tv_identify(dev, bios->legacy.i2c_indices.tv) >= 0)
 		fabricate_dcb_output(dcb, OUTPUT_TV, LEGACY_I2C_TV,
 				     all_heads, 0);
@@ -6393,9 +6392,6 @@ fabricate_dcb_encoder_table(struct drm_device *dev, struct nvbios *bios)
 		 bios->tmds.output1_script_ptr)
 		fabricate_dcb_output(dcb, OUTPUT_TMDS, LEGACY_I2C_PANEL,
 				     all_heads, 1);
-#else
-IMPLEMENT("Calling nv04_tv_identify\n");
-#endif
 }
 
 static int
