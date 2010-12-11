@@ -68,6 +68,8 @@
 
 #include <aros/shcommands.h>
 
+static BPTR duphandle(struct DosLibrary * DOSBase, BPTR toclone, LONG mode);
+
 AROS_SH3H(Run, 41.3,                "Start a program as a background process",
 AROS_SHAH(BOOL  , ,EXECUTE,/S,FALSE,"Allows a script to be run in background"),
 AROS_SHAH(BOOL  , ,QUIET  ,/S,FALSE,"\tDon't print the background CLI's number"),
@@ -83,25 +85,21 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 
     if (cli)
     {
-	BPTR toclone, olddir;
+	BPTR toclone;
 
 	if (IsInteractive(Input()))
 	    toclone = Input();
 	else
 	    toclone = cli->cli_StandardInput;
 
-	olddir = CurrentDir(toclone);
-	cis = Open("", FMF_READ);
-	CurrentDir(olddir);
+	cis = duphandle(DOSBase, toclone, FMF_READ);
 
 	if (IsInteractive(Output()))
 	    toclone = Output();
 	else
 	    toclone = cli->cli_StandardOutput;
 
-	olddir = CurrentDir(toclone);
-	cos = Open("", FMF_WRITE);
-	CurrentDir(olddir);
+	cos = duphandle(DOSBase, toclone, FMF_WRITE);
 
 	/* This is sort of a hack, needed because the original AmigaOS shell didn't allow
 	   Error() redirection, so all the scripts written so far assume that only Input() and
@@ -110,9 +108,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 	{
 	    toclone = Error();
 
-	    olddir = CurrentDir(toclone);
-	    ces = Open("", FMF_WRITE);
-	    CurrentDir(olddir);
+	    ces = duphandle(DOSBase, toclone, FMF_WRITE);
 	}
     }
 
@@ -210,3 +206,19 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
     AROS_SHCOMMAND_EXIT
 }
 
+static BPTR duphandle(struct DosLibrary * DOSBase, BPTR toclone, LONG mode)
+{
+    BPTR newhandle;
+#ifdef AROS_DOS_PACKETS
+    struct MsgPort *old;
+    old = SetConsoleTask(((struct FileHandle*)BADDR(toclone))->fh_Type);
+    newhandle = Open("*", mode);
+    SetConsoleTask(old);
+#else
+    BPTR old;
+    old = CurrentDir(toclone);
+    newhandle = Open("", mode);
+    CurrentDir(old);
+#endif
+    return newhandle;
+}
