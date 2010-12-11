@@ -472,10 +472,23 @@ LONG CONMain(void)
 				}
 				break;
 				case ACTION_IS_FILESYSTEM:
-					replypkt(dp, FALSE);
+					replypkt(dp, DOSFALSE);
+				break;
+				case ACTION_DISK_INFO:
+				{
+				    /* strange console handler features */
+				    struct InfoData *id = BADDR(dp->dp_Arg1);
+				    memset(id, 0, sizeof(struct InfoData));
+				    id->id_DiskType = (fh->flags & FHFLG_RAW) ?
+				        AROS_MAKE_ID('R','A','W', 0) : AROS_MAKE_ID('C','O','N', 0);
+				    id->id_VolumeNode = (BPTR)fh->window;
+				    id->id_InUse = (IPTR)fh->conreadio;
+				    replypkt(dp, DOSTRUE);
+				}	
 				break;
 				default:
-					replypkt2(dp, FALSE, ERROR_ACTION_NOT_KNOWN);
+					bug("[con] unknown action %d\n", dp->dp_Type);
+					replypkt2(dp, DOSFALSE, ERROR_ACTION_NOT_KNOWN);
 				break;
 			}
 		}
