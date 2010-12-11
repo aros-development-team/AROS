@@ -60,6 +60,7 @@ struct MemList
 #define MEMF_LOCAL      (1L<<8)
 #define MEMF_24BITDMA   (1L<<9)
 #define MEMF_KICK       (1L<<10)
+#define MEMF_31BIT      (1L<<12) /* MorphOS compatible */
 #define MEMF_CLEAR      (1L<<16)
 #define MEMF_LARGEST    (1L<<17)
 #define MEMF_REVERSE    (1L<<18)
