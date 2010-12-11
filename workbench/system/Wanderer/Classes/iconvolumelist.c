@@ -98,15 +98,6 @@ $Id$
 #endif
 #endif
 
-#ifdef AROS_DOS_PACKETS
-/* TODO: This needs to be corrected for DOS Packet mode */
-#define __DL_UNIT       0
-#define __DL_DEVICE     NULL
-#else
-#define __DL_UNIT       dl->dol_Ext.dol_AROS.dol_Unit
-#define __DL_DEVICE     dl->dol_Ext.dol_AROS.dol_Device
-#endif
-
 extern struct Library *MUIMasterBase;
 
 struct DOSVolumeList
@@ -120,9 +111,11 @@ struct DOSVolumeNode
     struct Node			dvn_Node;
     STRPTR			dvn_VolName;
     STRPTR			dvn_DevName;
-    ULONG			dvn_FLags;
+    ULONG			dvn_Flags;
+#ifndef AROS_DOS_PACKETS
     struct Device		*dvn_Device;
     struct Unit			*dvn_Unit;
+#endif
     struct MsgPort		*dvn_Port;
 };
 
@@ -175,18 +168,22 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		    if ((newdvn = (struct DOSVolumeNode*)AllocPooled(newdvl->dvl_Pool, sizeof(struct DOSVolumeNode))))
 		    {
 			newdvn->dvn_VolName     = vn_VolName;
-                        newdvn->dvn_Device      = __DL_DEVICE;
-                        newdvn->dvn_Unit        = __DL_UNIT;
+#if !defined(AROS_DOS_PACKETS)
+                        newdvn->dvn_Device      = dl->dol_Ext.dol_AROS.dol_Device;
+                        newdvn->dvn_Unit        = dl->dol_Ext.dol_AROS.dol_Unit;
+#endif
                         if (VolumeIsOffline(dl))
                         {
                             D(bug("[IconVolumeList] %s: Volume '%s' is OFFLINE\n", __PRETTY_FUNCTION__, newdvn->dvn_VolName));
-                            newdvn->dvn_FLags |= (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED);
+                            newdvn->dvn_Flags |= (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED);
                         }
 #if DEBUG
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
                         bug("[IconVolumeList] %s: Registering Volume '%s' @ %p (Device '%s' @ 0x%p, Unit @ 0x%p) Type: %d\n", __PRETTY_FUNCTION__, newdvn->dvn_VolName, dl, dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name, dl->dol_Ext.dol_AROS.dol_Device, newdvn->dvn_Unit, dl->dol_Type);
+#endif
 			if (dl->dol_misc.dol_handler.dol_Startup)
 			{
-			    struct FileSysStartupMsg *thisfs_SM = dl->dol_misc.dol_handler.dol_Startup;
+			    struct FileSysStartupMsg *thisfs_SM = BADDR(dl->dol_misc.dol_handler.dol_Startup);
 
                             bug("[IconVolumeList] %s: Startup msg @ 0x%p\n", __PRETTY_FUNCTION__, thisfs_SM);
                             bug("[IconVolumeList] %s: Startup Device @ %p, Unit %d\n", __PRETTY_FUNCTION__, thisfs_SM->fssm_Device, thisfs_SM->fssm_Unit);
@@ -226,8 +223,10 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		LONG   				len = AROS_BSTR_strlen(dl->dol_Name);
 
                 D(bug("[IconVolumeList] %s: Checking Device '%s' @ %p (Device ", __PRETTY_FUNCTION__, dosname, dl));
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
                 D(if (dl->dol_Ext.dol_AROS.dol_Device) bug("'%s' ", dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name));
                 D(bug("@ 0x%p, Unit @ 0x%p) Type: %d\n", dl->dol_Ext.dol_AROS.dol_Device, __DL_UNIT, dl->dol_Type));
+#endif
 
 #if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
 		if (dl->dol_Ext.dol_AROS.dol_Device == NULL)
@@ -253,6 +252,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 
                     if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
                     {
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
                         struct IOFileSys *_iofs = NULL;
                         if ((_iofs = AllocMem(sizeof(struct IOFileSys), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
                         {
@@ -267,8 +267,8 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 
                             _iofs->IOFS.io_Flags                    = IOF_QUICK;
 
-                            _iofs->IOFS.io_Device                   = __DL_DEVICE;
-                            _iofs->IOFS.io_Unit                     = __DL_UNIT;
+                            _iofs->IOFS.io_Device                   = dl->dol_Ext.dol_AROS.dol_Device;
+                            _iofs->IOFS.io_Unit                     = dl->dol_Ext.dol_AROS.dol_Unit;
 
                             _iofs->io_Union.io_INFO.io_Info         = nd_paramblock;
 
@@ -289,6 +289,14 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                             FreeMem(nd_paramblock, sizeof(struct InfoData));
                             nd_paramblock = NULL;
                         }
+#else
+			{
+			    if (!DoPkt(dl->dol_Task, ACTION_DISK_INFO, MKBADDR(nd_paramblock), BNULL, BNULL, BNULL, BNULL)) {
+                                FreeMem(nd_paramblock, sizeof(struct InfoData));
+                                nd_paramblock = NULL;
+                            }	
+			}
+#endif
                     }
                     else
                     {
@@ -301,17 +309,24 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 		    dvn = (struct DOSVolumeNode*)GetHead((struct List*)&newdvl->dvl_List);
 		    while ((dvn))
 		    {
-			if ((dvn->dvn_Port != NULL) &&
-			    (
-			       (dvn->dvn_Port == dl->dol_Task)
+		    	BOOL volattached, volfound;
 #if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
-			       || (dvn->dvn_Port == (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device)
+			/* is this correct? */
+			volfound = dvn->dvn_Port && dvn->dvn_Unit &&
+			        (dvn->dvn_Port == (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device ||
+			        dvn->dvn_Port == dl->dol_Task)
+			        &&
+			        (dvn->dvn_Unit == dl->dol_Ext.dol_AROS.dol_Unit ||
+			        dvn->dvn_Port == dl->dol_Task);
+			volattached = dvn->dvn_Unit == dl->dol_Ext.dol_AROS.dol_Unit || dvn->dvn_Port == dl->dol_Task;
+#else
+			volfound = volattached = dvn->dvn_Port == dl->dol_Task;
 #endif
-			    ))
+			if (volfound)
 			{
-			    if ((dvn->dvn_Unit) && !(dvn->dvn_FLags & ICONENTRY_VOL_OFFLINE))
+			    if (!(dvn->dvn_Flags & ICONENTRY_VOL_OFFLINE))
 			    {
-				if (dvn->dvn_Unit == __DL_UNIT || dvn->dvn_Port == dl->dol_Task)
+				if (volattached)
 				{
 				    if ((nd_paramblock) && (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT))
 				    {
@@ -321,7 +336,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 					int nd_namext_len = 0;
 
 					found = TRUE;
-                                        dvn->dvn_FLags &= ~(ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED);
+                                        dvn->dvn_Flags &= ~(ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED);
 
 					if (nd_paramblock->id_DiskState == ID_VALIDATING)
 					{
@@ -334,7 +349,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 					    if (nd_paramblock->id_DiskState == ID_WRITE_PROTECTED)
 					    {
                                                 D(bug("[IconVolumeList] %s: '%s' : Volume is WRITE-PROTECTED\n", __PRETTY_FUNCTION__, nd_nambuf));
-						dvn->dvn_FLags |= ICONENTRY_VOL_READONLY;
+						dvn->dvn_Flags |= ICONENTRY_VOL_READONLY;
 					    }
 					}
 
@@ -374,8 +389,10 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                                 STRPTR nd_namext;
                                 int nd_namext_len = 0;
 
-                                newdvn->dvn_Unit        = __DL_UNIT;
-                                newdvn->dvn_Device      = __DL_DEVICE;
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
+                                newdvn->dvn_Unit        = dl->dol_Ext.dol_AROS.dol_Unit;
+                                newdvn->dvn_Device      = dl->dol_Ext.dol_AROS.dol_Device;
+#endif
 
                                 switch (nd_paramblock->id_DiskType)
                                 {
@@ -407,7 +424,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                                     {
                                         sprintf(newdvn->dvn_VolName, "%s%s", nd_nambuf, nd_namext);
                                         newdvn->dvn_DevName = nd_nambuf;
-                                        newdvn->dvn_FLags |= ICONENTRY_VOL_DISABLED;
+                                        newdvn->dvn_Flags |= ICONENTRY_VOL_DISABLED;
                                         AddTail((struct List*)&newdvl->dvl_List, (struct Node*)&newdvn->dvn_Node);
                                     }
                                 }
@@ -524,7 +541,7 @@ D(bug("[IconVolumeList] %s: DOSVolumeNode  @ %p\n", __PRETTY_FUNCTION__, dvn));
 D(bug("[IconVolumeList] %s: DOSList Entry '%s'\n", __PRETTY_FUNCTION__, dvn->dvn_VolName));
                     struct DiskObject       *volDOB = NULL;
 
-                    if (dvn->dvn_FLags & ICONENTRY_VOL_OFFLINE)
+                    if (dvn->dvn_Flags & ICONENTRY_VOL_OFFLINE)
                         devname = dvn->dvn_VolName;
                     else
                         devname = dvn->dvn_DevName;
@@ -536,9 +553,9 @@ D(bug("[IconVolumeList] %s: Processing '%s'\n", __PRETTY_FUNCTION__, devname));
                         BOOL entrychanged = FALSE;
                         volDOB = this_Icon->ie_DiskObj;
 
-                        if (dvn->dvn_FLags & ICONENTRY_VOL_OFFLINE)
+                        if (dvn->dvn_Flags & ICONENTRY_VOL_OFFLINE)
                             this_Icon->ie_IconListEntry.flags |= ICONENTRY_VOL_OFFLINE;
-                        if (dvn->dvn_FLags & ICONENTRY_VOL_DISABLED)
+                        if (dvn->dvn_Flags & ICONENTRY_VOL_DISABLED)
                             this_Icon->ie_IconListEntry.flags |= ICONENTRY_VOL_DISABLED;
 
                         Remove((struct Node*)&this_Icon->ie_IconNode);
@@ -550,10 +567,10 @@ D(bug("[IconVolumeList] %s: Found existing IconEntry for '%s' @ %p\n", __PRETTY_
                             entrychanged = TRUE;
 
                         if ((this_Icon->ie_IconListEntry.udata) &&
-                            (dvn->dvn_FLags != ((struct VolumeIcon_Private *)this_Icon->ie_IconListEntry.udata)->vip_FLags))
+                            (dvn->dvn_Flags != ((struct VolumeIcon_Private *)this_Icon->ie_IconListEntry.udata)->vip_FLags))
                             entrychanged = TRUE;
 
-                        if ((dvn->dvn_FLags & ICONENTRY_VOL_DISABLED) && !(volDOB))
+                        if ((dvn->dvn_Flags & ICONENTRY_VOL_DISABLED) && !(volDOB))
                         {
                             volDOB = GetIconTags
                               (
@@ -574,7 +591,7 @@ D(bug("[IconVolumeList] %s: IconEntry changed - updating..\n", __PRETTY_FUNCTION
                     }
                     else
                     {
-                        if (dvn->dvn_FLags & ICONENTRY_VOL_DISABLED)
+                        if (dvn->dvn_Flags & ICONENTRY_VOL_DISABLED)
                         {
                             volDOB = GetIconTags
                               (
@@ -589,7 +606,7 @@ D(bug("[IconVolumeList] %s: IconEntry changed - updating..\n", __PRETTY_FUNCTION
                         {
                             struct VolumeIcon_Private *volPrivate = this_Icon->ie_IconListEntry.udata;
 
-                            volPrivate->vip_FLags = dvn->dvn_FLags;
+                            volPrivate->vip_FLags = dvn->dvn_Flags;
 
 D(bug("[IconVolumeList] %s: Created IconEntry for '%s' @ %p\n", __PRETTY_FUNCTION__, this_Icon->ie_IconListEntry.label, this_Icon));
                             if (!(this_Icon->ie_Flags & ICONENTRY_FLAG_HASICON))
