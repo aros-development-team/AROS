@@ -895,11 +895,9 @@ static struct apertures_struct *nouveau_get_apertures(struct drm_device *dev)
 
 	return aper;
 }
-#endif
 
 static int nouveau_remove_conflicting_drivers(struct drm_device *dev)
 {
-#if !defined(__AROS__)
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	bool primary = false;
 	dev_priv->apertures = nouveau_get_apertures(dev);
@@ -911,11 +909,9 @@ static int nouveau_remove_conflicting_drivers(struct drm_device *dev)
 #endif
 
 	remove_conflicting_framebuffers(dev_priv->apertures, "nouveaufb", primary);
-#else
-IMPLEMENT("\n");
-#endif
 	return 0;
 }
+#endif
 
 int nouveau_load(struct drm_device *dev, unsigned long flags)
 {
@@ -1024,9 +1020,11 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 	NV_INFO(dev, "Detected an NV%2x generation card (0x%08x)\n",
 		dev_priv->card_type, reg0);
 
+#if !defined(__AROS__)
 	ret = nouveau_remove_conflicting_drivers(dev);
 	if (ret)
 		goto err_mmio;
+#endif
 
 	/* Map PRAMIN BAR, or on older cards, the aperture withing BAR0 */
 	if (dev_priv->card_type >= NV_40) {
