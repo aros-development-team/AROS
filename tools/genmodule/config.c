@@ -1348,7 +1348,7 @@ static void readsectionfunctionlist(struct config *cfg)
 		    exitfileerror(20, "positive number expected\n");
 		
 		while (isspace(*s2)) s2++;
-		if (*s2!='\0')
+		if ((*s2 != '\0') && (*s2 != '#'))
 		    exitfileerror(20, "syntax is '.skip n'\n");
 		if (*funclistptr != NULL)
 		    funclistptr = &((*funclistptr)->next);
