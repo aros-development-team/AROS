@@ -234,7 +234,7 @@ void ShowFault(LONG code, char *s, ...);
 #define ShowError(s, ...)	\
 {				\
     IPTR args[] = {__VA_ARGS__};\
-    ShowErrorArgs(s, &args);	\
+    ShowErrorArgs(s, args);	\
 }
 
 struct DosLibrary *DOSBase;
@@ -1108,11 +1108,15 @@ char			name[256+1];
     lock = Lock(filename, SHARED_LOCK);
     if (lock)
     {
-      struct FileInfoBlock fib;
-      if (Examine(lock, &fib))
+      struct FileInfoBlock *fib = (struct FileInfoBlock*)AllocDosObject(DOS_FIB, NULL);
+      if (fib)
       {
-        nameptr = fib.fib_FileName;
-        memmove(name, nameptr, strlen(nameptr) + 1);
+        if (Examine(lock, fib))
+        {
+          nameptr = fib->fib_FileName;
+          memmove(name, nameptr, strlen(nameptr) + 1);
+        }
+        FreeDosObject(DOS_FIB, fib);
       }
       UnLock(lock);
     }
