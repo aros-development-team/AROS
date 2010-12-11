@@ -67,6 +67,7 @@ int nv04_tv_identify(struct drm_device *dev, int i2c_index)
 	(NV_PRAMDAC_PLL_COEFF_SELECT_TV_VSCLK2		\
 	 | NV_PRAMDAC_PLL_COEFF_SELECT_TV_PCLK2)
 
+#if !defined(__AROS__)
 static void nv04_tv_dpms(struct drm_encoder *encoder, int mode)
 {
 	struct drm_device *dev = encoder->dev;
@@ -185,6 +186,7 @@ static void nv04_tv_destroy(struct drm_encoder *encoder)
 static const struct drm_encoder_funcs nv04_tv_funcs = {
 	.destroy = nv04_tv_destroy,
 };
+#endif
 
 int
 nv04_tv_create(struct drm_connector *connector, struct dcb_entry *entry)
