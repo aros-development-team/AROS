@@ -35,7 +35,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <aros/debug.h>
-
+#include <string.h>
+#include <stddef.h>
+	 
 #include <oop/oop.h>
 #include <hidd/pci.h>
 
@@ -47,33 +49,10 @@
 #include "ppp.h"
 #include "misc.h"
 
-BOOL GetToken(BYTE *b,BYTE *t){
-	BYTE *tok;
-	ULONG tlen;
-	for(tok=b;*tok==' '|*tok=='\n'|*tok=='\r';tok++ );
-	for(tlen=0 ;tok[tlen]!=' '&&tok[tlen]!=0&&tok[tlen]!='\n'&&tok[tlen]!='\r';tlen++); // I am sorry
-	tok[tlen] = 0;
-	if( tlen < 1 || tlen >= PPP_MAXARGLEN ) return FALSE;
-	strcpy(t,tok);
-	for( ; b < tok+tlen+1 ; b++ )*b=' ';
-	return TRUE;
-}
-
-BOOL GetLineEnd(BYTE *b,BYTE *t){
-	BYTE *tok;
-	ULONG tlen;
-	for(tok=b;*tok==' '|*tok=='\n'|*tok=='\r';tok++ );
-	for(tlen=0;tok[tlen]!=0&&tok[tlen]!='\n'&&tok[tlen]!='\r';tlen++);
-	tok[tlen] = 0;
-	if( tlen < 1 || tlen >= PPP_MAXARGLEN ) return FALSE;
-	strcpy(t,tok);
-	while( t[strlen(t)-1] == ' ' ) t[strlen(t)-1] = 0;
-	return TRUE;
-}
-
+#define STRSIZE 1000
 
 BOOL ReadConfig(struct Conf *c){
-	UBYTE *linebuff,tok[PPP_MAXARGLEN];
+	char *linebuff,*tok;
 	BPTR ConfigFile;
 	struct at_command  *atc;
 
@@ -91,38 +70,31 @@ BOOL ReadConfig(struct Conf *c){
 	}
 
 	if(ConfigFile = Open("ENV:AROSTCP/db/ppp.config",MODE_OLDFILE)){
-
-		if(linebuff = AllocMem(256,MEMF_CLEAR|MEMF_PUBLIC)){
-
-			while(FGets(ConfigFile, linebuff, 255)){
+		if(linebuff = AllocMem(STRSIZE,MEMF_CLEAR|MEMF_PUBLIC)){
+	
+			while(FGets(ConfigFile, linebuff, STRSIZE )){
 
 				if( ( linebuff[0] == '#' ) | ( linebuff[0] == ';' ) ) /* Skip comment lines */
 					continue;
 
 				//  bug("line:%s:\n",linebuff);
-
-				if( GetToken(linebuff,tok) ){
+				
+				if( tok = strtok( linebuff," \t\n") ){
 
 					if( strcasecmp("DEVICE",tok) == 0 ){
-						if( GetToken(linebuff,tok) ) strcpy( c->DeviceName , tok );
+						if( tok = strtok( NULL , " \n" ) ) strcpy( c->DeviceName , tok );
 					}else if( strcasecmp("UNIT",tok) == 0 ){
-						if( GetToken(linebuff,tok) ) c->SerUnitNum = atoi( tok );
+						if( tok = strtok( NULL , " \n" ) ) c->SerUnitNum = atoi( tok );
 					}else if( strcasecmp("TIMEOUT",tok) == 0 ){
-						if( GetToken(linebuff,tok) ) c->CommandTimeOut = atoi( tok );	
+						if( tok = strtok( NULL , " \n" ) ) c->CommandTimeOut = atoi( tok );	
 					}else if( strcasecmp("USERNAME",tok) == 0 ){
-						if( GetToken(linebuff,tok) ) strcpy( c->username , tok );
+						if( tok = strtok( NULL , " \n" ) ) strcpy( c->username , tok );
 					}else if( strcasecmp("PASSWORD",tok) == 0 ){
-						if( GetToken(linebuff,tok) ) strcpy( c->password , tok );
-				/*	}else if( strcasecmp("ENABLE",tok) == 0 ){
-						if( GetToken(linebuff,tok) ){
-							if( strcasecmp("DNS",tok) == 0 ){
-								c->enable_dns = TRUE;
-							}
-						}*/
+						if( tok = strtok( NULL , " \n" ) ) strcpy( c->password , tok );
 					}
 
 					else if( strcasecmp("SEND",tok) == 0 ){
-						if( GetLineEnd(linebuff,tok) ){
+						if( tok = strtok( NULL , "\n" ) ){
 							if(atc = AllocMem(sizeof(struct at_command), MEMF_CLEAR | MEMF_PUBLIC )){
 								strcpy( atc->str , tok );
 								AddTail( &c->atcl , (struct Node*)atc );
@@ -133,7 +105,8 @@ BOOL ReadConfig(struct Conf *c){
 				}
 
 			}
-			FreeMem(linebuff, 256);
+
+			FreeMem( linebuff, STRSIZE );
 		}
 		Close(ConfigFile);
 
@@ -157,49 +130,51 @@ BOOL ReadConfig(struct Conf *c){
 }
 
 
-
 BOOL TestModem(struct EasySerial *s,struct Conf *c){
 
-	UBYTE buf[PPP_MAXARGLEN];
-	UBYTE buf2[PPP_MAXARGLEN];
+	UBYTE *buf,*tok;
+	BOOL result=FALSE;
+	bug("ModemTest\n");
 
-	bug("ModemTest\n",buf);
-	DoStr( s ,  "\r\r\r" );
+	if( buf = AllocMem(STRSIZE,MEMF_CLEAR|MEMF_PUBLIC)){
+		result=TRUE;
+		do{
+			
+			DoStr( s ,  "\r\r\r" );
 
-	DrainSerial(s);
-	DoStr( s,  "ATZ\r" );
-	if( GetResponse(s,buf,PPP_MAXARGLEN,5)){
-		if( strcasestr(buf,"OK") == NULL ){
-			bug("ATZ FAIL\n");
-			return FALSE;
-		}
-	} else return FALSE;
-
-	// echo off
-	DrainSerial(s);
-	DoStr( s,  "ATE 0\r" );
-	if( GetResponse(s,buf,PPP_MAXARGLEN,5)){
-		if( strcasestr(buf,"OK") == NULL ){
-			bug("ATE 0 FAIL\n");
-			return FALSE;
-		}
-	} else return FALSE;
-
-	// Get modem model
-	DrainSerial(s);
-	DoStr( s,  "AT+GMM\r" );
-	if( GetResponse(s,buf,PPP_MAXARGLEN,5)){
-		if( strcasestr(buf,"OK") == NULL ){
-			bug("AT+GMM FAIL\n");
-			return FALSE;
-		}
-		if( GetLineEnd(buf,buf2)){
-			 strcpy( c->modemmodel , buf2 );
-		}
-	} else return FALSE;
-
-	bug("ModemTest OK\n",buf);
-	return TRUE;
+			// atz 
+			DrainSerial(s);
+			DoStr( s,  "ATZ\r" );
+			if( ! GetResponse(s,buf,STRSIZE,5)){
+				bug("ATZ FAIL\n");	
+				result = FALSE; break;
+			} 		
+				
+			// echo off 
+			DrainSerial(s);
+			DoStr( s,  "ATE 0\r" );
+			if( ! GetResponse(s,buf,STRSIZE,5)){
+				bug("ATE 0 FAIL\n");	
+				result = FALSE; break;
+			}
+			
+			// Get modem model 
+			DrainSerial(s);
+			DoStr( s,  "AT+GMM\r" );
+			if( ! GetResponse(s,buf,STRSIZE,5)){
+				bug("AT+GMM FAIL\n");	
+			}
+			if( tok = strtok( buf , "\n\r" ) ){
+				strcpy( c->modemmodel , tok );		
+			}
+			
+			
+			bug("ModemTest OK\n");			
+		}while(0);
+			
+		FreeMem( buf , STRSIZE );
+	}	
+	return result;
 }
 
 
@@ -421,7 +396,6 @@ BOOL GetResponse(struct EasySerial *s,UBYTE *Buffer,ULONG maxbuffer,LONG timeout
 						strcasestr(Buffer,"CONNECT") != NULL
 					){
 						result = TRUE;
-						bug("\ngetresponseOK\n");
 						break;
 					}
 					else if( strcasestr(Buffer,"NO CARRIER\n") != NULL |
