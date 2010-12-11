@@ -45,7 +45,6 @@ struct conTaskParams
 {
     struct conbase *conbase;
     struct Task	*parentTask;
-    struct IOFileSys *iofs;
     ULONG initSignal;
 };
 
