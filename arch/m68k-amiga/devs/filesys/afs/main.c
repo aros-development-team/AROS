@@ -633,6 +633,21 @@ void AFS_work(void) {
 		    }
 		    break;
 		}
+	    	case ACTION_INFO:
+	    	{
+	    	    struct FileLock   *opl = BADDR(dp->dp_Arg1);
+	    	    struct AfsHandle  *oh;
+		    if (opl == NULL)
+			oh = &volume->ah;
+		    else
+			oh = (APTR)opl->fl_Key;
+	    	    if (gethandletype(handler, oh) == 0 || !mediacheck(volume, &ok, &res2)) {
+	    	    	res2 = ERROR_OBJECT_NOT_FOUND;
+		    	ok = DOSFALSE;
+		    }
+	    	    ok = getDiskInfo(volume, BADDR(dp->dp_Arg2)) ? DOSFALSE : DOSTRUE;
+	    	}
+	    	break;
 		default:
 		    ok = DOSFALSE;
 		    res2 = ERROR_NOT_IMPLEMENTED;
