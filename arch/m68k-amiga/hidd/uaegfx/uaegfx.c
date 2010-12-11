@@ -360,20 +360,19 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
 {
     struct uaegfx_staticdata *csd = CSD(cl);
     IPTR width, height;
-    WORD x, y;
+    WORD x, y, hiressprite;
     UWORD *p;
+    ULONG flags;
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
     Forbid();
     pb(csd->boardinfo + PSSO_BoardInfo_MouseXOffset, msg->xoffset);
     pb(csd->boardinfo + PSSO_BoardInfo_MouseYOffset, msg->yoffset);
-    pb(csd->boardinfo + PSSO_BoardInfo_MouseWidth, width);
-    pb(csd->boardinfo + PSSO_BoardInfo_MouseHeight, height);
     p = (UWORD*)gl(csd->boardinfo + PSSO_BoardInfo_MouseImage);
     if (p == NULL || width != csd->sprite_width || height != csd->sprite_height) {
     	FreeVec(gl(csd->boardinfo + PSSO_BoardInfo_MouseImage));
-    	p = AllocVec(2 + 2 + (width + 15) / 8 * height * 2, MEMF_CLEAR | MEMF_PUBLIC);
+    	p = AllocVec(4 + 4 + ((width + 15) & ~15) / 8 * height * 2, MEMF_CLEAR | MEMF_PUBLIC);
     	if (!p) {
     	    Permit();
     	    return FALSE;
@@ -382,18 +381,36 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
         csd->sprite_width = width;
         csd->sprite_height = height;
     }
-    p += 2;
+
+    flags = gl(csd->boardinfo + PSSO_BoardInfo_Flags);
+    flags &= ~(1 << BIB_HIRESSPRITE);
+    hiressprite = 1;
+    if (width > 16) {
+    	flags |= 1 << BIB_HIRESSPRITE;
+    	hiressprite = 2;
+    }
+    pl(csd->boardinfo + PSSO_BoardInfo_Flags, flags);
+
+    pb(csd->boardinfo + PSSO_BoardInfo_MouseWidth, width / hiressprite);
+    pb(csd->boardinfo + PSSO_BoardInfo_MouseHeight, height);
+
+    p += 2 * hiressprite;
     for(y = 0; y < height; y++) {
-    	UWORD pix1 = 0, pix2 = 0;
+    	UWORD pix1 = 0, pix2 = 0, xcnt = 0;
     	for(x = 0; x < width; x++) {
     	    UBYTE c = HIDD_BM_GetPixel(msg->shape, x, y);
     	    pix1 <<= 1;
     	    pix2 <<= 1;
     	    pix1 |= (c & 1) ? 1 : 0;
     	    pix2 |= (c & 2) ? 1 : 0;
+    	    xcnt++;
+    	    if (xcnt == 15) {
+    	    	xcnt = 0;
+    	    	p[x / 16] = pix1;
+    	    	p[width / 16 + x / 16] = pix2;
+    	    }
     	}
-    	*p++ = pix1;
-    	*p++ = pix2;
+    	p += (width / 16) * 2;
     }
     Permit();
     SetSpriteImage(csd);
