@@ -169,7 +169,6 @@ static void ttm_bo_release_list(struct kref *list_kref)
 
 int ttm_bo_wait_unreserved(struct ttm_buffer_object *bo, bool interruptible)
 {
-#if !defined(__AROS__)
 	if (interruptible) {
 		return wait_event_interruptible(bo->event_queue,
 					       atomic_read(&bo->reserved) == 0);
@@ -177,10 +176,6 @@ int ttm_bo_wait_unreserved(struct ttm_buffer_object *bo, bool interruptible)
 		wait_event(bo->event_queue, atomic_read(&bo->reserved) == 0);
 		return 0;
 	}
-#else
-IMPLEMENT("\n");
-#endif
-    return 0;
 }
 EXPORT_SYMBOL(ttm_bo_wait_unreserved);
 
@@ -266,11 +261,7 @@ int ttm_bo_reserve_locked(struct ttm_buffer_object *bo,
 		 */
 		if (unlikely((bo->val_seq - sequence < (1 << 31))
 			     || !bo->seq_valid))
-#if !defined(__AROS__)
 			wake_up_all(&bo->event_queue);
-#else
-IMPLEMENT("wake_up_all(&bo->event_queue);\n");
-#endif
 
 		bo->val_seq = sequence;
 		bo->seq_valid = true;
@@ -315,7 +306,7 @@ void ttm_bo_unreserve(struct ttm_buffer_object *bo)
 	spin_lock(&glob->lru_lock);
 	ttm_bo_add_to_lru(bo);
 	atomic_set(&bo->reserved, 0);
-//FIXME	wake_up_all(&bo->event_queue);
+	wake_up_all(&bo->event_queue);
 	spin_unlock(&glob->lru_lock);
 }
 EXPORT_SYMBOL(ttm_bo_unreserve);
@@ -486,10 +477,8 @@ static void ttm_bo_cleanup_memtype_use(struct ttm_buffer_object *bo)
 	 * Make processes trying to reserve really pick it up.
 	 */
 	smp_mb__after_atomic_dec();
-	wake_up_all(&bo->event_queue);
-#else
-IMPLEMENT("smp_mb__after_atomic_dec();\n");
 #endif
+	wake_up_all(&bo->event_queue);
 }
 
 static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
@@ -604,11 +593,7 @@ retry:
 
 	if (unlikely(bo->sync_obj)) {
 		atomic_set(&bo->reserved, 0);
-#if !defined(__AROS__)
 		wake_up_all(&bo->event_queue);
-#else
-IMPLEMENT("wake_up_all(&bo->event_queue);\n");
-#endif
 		spin_unlock(&glob->lru_lock);
 		goto retry;
 	}
@@ -1067,19 +1052,11 @@ EXPORT_SYMBOL(ttm_bo_mem_space);
 
 int ttm_bo_wait_cpu(struct ttm_buffer_object *bo, bool no_wait)
 {
-	int ret = 0;
-
-#if !defined(__AROS__)
 	if ((atomic_read(&bo->cpu_writers) > 0) && no_wait)
 		return -EBUSY;
 
 	return wait_event_interruptible(bo->event_queue,
 					atomic_read(&bo->cpu_writers) == 0);
-#else
-IMPLEMENT("\n");
-#endif
-
-	return ret;
 }
 EXPORT_SYMBOL(ttm_bo_wait_cpu);
 
@@ -1222,7 +1199,7 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
 	kref_init(&bo->list_kref);
 	atomic_set(&bo->cpu_writers, 0);
 	atomic_set(&bo->reserved, 1);
-//FIXME	init_waitqueue_head(&bo->event_queue);
+	init_waitqueue_head(&bo->event_queue);
 	INIT_LIST_HEAD(&bo->lru);
 	INIT_LIST_HEAD(&bo->ddestroy);
 	INIT_LIST_HEAD(&bo->swap);
@@ -1820,13 +1797,8 @@ EXPORT_SYMBOL(ttm_bo_synccpu_write_grab);
 
 void ttm_bo_synccpu_write_release(struct ttm_buffer_object *bo)
 {
-#if !defined(__AROS__)
 	if (atomic_dec_and_test(&bo->cpu_writers))
 		wake_up_all(&bo->event_queue);
-#else
-    atomic_dec_and_test(&bo->cpu_writers);
-/* FIXME: implement "wake up" of queue */
-#endif 
 }
 EXPORT_SYMBOL(ttm_bo_synccpu_write_release);
 
