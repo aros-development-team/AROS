@@ -937,6 +937,8 @@ nouveau_connector_hotplug(void *data, int plugged)
 		}
 	}
 
+#if !defined(__AROS__)
 	drm_helper_hpd_irq_event(dev);
+#endif
 }
 
