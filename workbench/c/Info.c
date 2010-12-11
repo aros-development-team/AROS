@@ -378,8 +378,11 @@ BOOL ScanDosList(STRPTR *filter)
 	UBYTE  type = ndl->dol_Type;
 	UBYTE  name[108];
 
-	//	if(((type == DLT_DEVICE))) //  && (!ndl->dol_Task) TODO Check this!
-	//	    continue;
+#ifdef AROS_DOS_PACKETS
+ 	/* do not start non-started handlers or open CON: or RAW: windows.. */
+	if(type == DLT_DEVICE && !ndl->dol_Task)
+	    continue;
+#endif
 
 	__sprintf(name, "%s:", AROS_DOSDEVNAME(ndl));
 
@@ -407,7 +410,9 @@ BOOL ScanDosList(STRPTR *filter)
 	    break;
 	}
 	
-	//	idn->Task     = (struct MsgPort *)ndl->dol_Task;
+#ifdef AROS_DOS_PACKETS
+	idn->Task     = ndl->dol_Task;
+#endif
 	idn->IsVolume = type == DLT_VOLUME;
 	
 	while((idn->Name[len] = name[len])) 
@@ -558,7 +563,7 @@ void doInfo()
     struct Window       *win;
     struct InfoDosNode  *idn;
     
-    static struct InfoData id;
+    struct InfoData *id = AllocVec(sizeof(struct InfoData), MEMF_ANY);
     
     IPTR   args[] = { (IPTR)FALSE,
 		      (IPTR)FALSE,
@@ -567,6 +572,12 @@ void doInfo()
 		      (IPTR)NULL };
         
     CONST_STRPTR unit = GetStrFromCat(UNIT, "Unit");
+
+    if(id == NULL)
+    {
+	PrintFault(ERROR_NO_FREE_STORE, NULL);
+	return;
+    }
 
     Pool = CreatePool(MEMF_ANY, 1024, 1024);
 
@@ -662,6 +673,7 @@ void doInfo()
 		    
 		    if(!idn->IsVolume && IsFileSystem(name))
 		    {
+		    	BOOL gotinfo = FALSE;
 			/* if first device to print, print title */
 			if(first || blocks)
 			{		    
@@ -676,6 +688,8 @@ void doInfo()
 			    first = FALSE;
 			}
 			
+                        VLPrintf(~0, nfmtstr, (IPTR*) &name);
+
 			D(bug("Locking \"%s\"\n", name));
 			lock = Lock(name, SHARED_LOCK);
 
@@ -685,21 +699,8 @@ void doInfo()
 			{
 			    D(bug("Got lock on %s\n", name));
 
-			    if(Info(lock, &id) == DOSTRUE)
+			    if(Info(lock, id) == DOSTRUE)
 			    {
-				ULONG  x, y;
-				
-				D(bug("Got info on %s\n", name));
-
-                                VLPrintf(~0, nfmtstr, (IPTR*) &name);
-				
-				x = ComputeKBytes(id.id_NumBlocks, id.id_BytesPerBlock);
-				y = ComputeKBytes(id.id_NumBlocksUsed, id.id_BytesPerBlock);
-				
-				PrintNum(x);
-				PrintNum(y); 
-				PrintNum(x - y);
-				
 				D(bug("Calling NameFromLock()\n"));
 
 				if(NameFromLock(lock, name, 108L))
@@ -711,6 +712,35 @@ void doInfo()
 					name[len] = '\0';
 				    }
 				}
+				
+			    	gotinfo = TRUE;
+			    }
+			    UnLock(lock);
+
+			} else if (IoErr() == ERROR_NO_DISK && idn->Task) {
+#ifdef AROS_DOS_PACKETS
+			    name = NULL;
+			    D(bug("Calling ACTION_DISK_INFO\n"));
+			    if (DoPkt(idn->Task, ACTION_DISK_INFO, MKBADDR(id), BNULL, BNULL, BNULL, BNULL)) {
+			    	gotinfo = TRUE;
+			    }
+#endif
+			}
+				
+			if (gotinfo) {	
+			    ULONG  x, y;
+				
+			    D(bug("Got info on %s\n", name));
+
+			    if (id->id_DiskType != ID_NO_DISK_PRESENT)
+			    {
+				
+				x = ComputeKBytes(id->id_NumBlocks, id->id_BytesPerBlock);
+				y = ComputeKBytes(id->id_NumBlocksUsed, id->id_BytesPerBlock);
+				
+				PrintNum(x);
+				PrintNum(y); 
+				PrintNum(x - y);
 				
 				if(x > 0xfffff)
 				{	 
@@ -728,42 +758,49 @@ void doInfo()
 				else
 				    x = 0;
 
- 				// y = ((struct DeviceList *)BADDR(id.id_VolumeNode))->dl_DiskType;
+ 				// y = ((struct DeviceList *)BADDR(id->id_VolumeNode))->dl_DiskType;
 				
 				//				if(!y)
-				    y = id.id_DiskType;
+				    y = id->id_DiskType;
 				
 				if((idn->DosType & ID_DOS_DISK) != ID_DOS_DISK)
 				    y = idn->DosType;
-				
-                                IPTR args[] = {
+
+				{
+                               	    IPTR args[] = {
                                     x,
-                                    id.id_NumSoftErrors,
-                                    ((id.id_DiskState >= ID_WRITE_PROTECTED) && (id.id_DiskState <= ID_VALIDATED)) ?
-		                    (IPTR) dstate[id.id_DiskState - ID_WRITE_PROTECTED] : (IPTR) "",
+                                    id->id_NumSoftErrors,
+                                    ((id->id_DiskState >= ID_WRITE_PROTECTED) && (id->id_DiskState <= ID_VALIDATED)) ?
+		                    (IPTR) dstate[id->id_DiskState - ID_WRITE_PROTECTED] : (IPTR) "",
                                     (IPTR) GetFSysStr(y),
                                     (IPTR) name};
-                                VLPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n", args);
-				
+                                     VLPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n", args);
+                                }
+
 				if(blocks)
 				{
                                     IPTR args[] = {
-                                        id.id_NumBlocks,
-                                        id.id_NumBlocksUsed,
-                                        id.id_NumBlocks-id.id_NumBlocksUsed,
-                                        id.id_BytesPerBlock};
+                                        id->id_NumBlocks,
+                                        id->id_NumBlocksUsed,
+                                        id->id_NumBlocks-id->id_NumBlocksUsed,
+                                        id->id_BytesPerBlock};
                                     VLPrintf(BLOCKSSTR,
                                             "\nTotal blocks: %-10ld  Blocks used: %ld\n"
                                             " Blocks free: %-10ld    Blocksize: %ld\n",
                                             args);
 				}
-			    }
-			    else
-				D(bug("Info failure\n"));
-			    
-			    UnLock(lock);
+			    } else {
+
+                                VLPrintf(~0, " No disk present\n", NULL);
+			    }			    		
+
 			}
-			
+		    	else
+		    	{
+			    D(bug("Info failure\n"));
+                            VLPrintf(~0, "\n", NULL);
+			}
+			    
 			{
 			    LONG err = IoErr();
 
@@ -874,7 +911,7 @@ void doInfo()
     
     
  end: /* free allocated memory */
-    
+    FreeVec(id);
     DeletePool(Pool);
 }
 
