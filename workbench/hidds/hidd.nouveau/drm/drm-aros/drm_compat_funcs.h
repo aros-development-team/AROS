@@ -211,6 +211,15 @@ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
     return __sync_val_compare_and_swap(&v->count, old, new);
 }
 
+static inline int atomic_inc_not_zero(atomic_t *v)
+{
+    int val = atomic_read(v);
+    if (val != 0)
+        atomic_inc(v);
+    
+    return val != 0;
+}
+
 /* Lock handling */
 static inline void spin_lock_init(spinlock_t * lock)
 {
@@ -326,6 +335,19 @@ int i2c_del_adapter(struct i2c_adapter *);
 /* jiffies (lame) handling */
 #define jiffies get_jiffies()
 unsigned long get_jiffies();
+
+/* Wait queue (lame) handling */
+#define init_waitqueue_head(x)
+#define wake_up_all(x)
+#define wait_event(wq, condition)   \
+    { IMPLEMENT("\n"); }
+
+#define wait_event_interruptible(wq, condition) \
+({                                              \
+    int __ret = 0;                              \
+    IMPLEMENT("\n");                            \
+    __ret;                                      \
+})
 
 /* other */
 #define do_div(n,base) ({ \

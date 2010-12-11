@@ -174,6 +174,12 @@ struct fb_fillrect;
 struct fb_image;
 struct fb_copyarea;
 
+/* Wait queue handling */
+struct wait_queue_head
+{
+};
+typedef struct wait_queue_head wait_queue_head_t;
+
 /* Other */
 struct work_struct;
 struct module;
