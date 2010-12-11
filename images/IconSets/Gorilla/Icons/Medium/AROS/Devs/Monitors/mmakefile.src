@@ -4,8 +4,8 @@
 include $(TOP)/config/make.cfg
 
 # IntelGMA is in storage because it breaks with laptops
-STORAGEICONS := IntelGMA Wrapper
-DEVSICONS    := ATI NVidia VMWare
+STORAGEICONS := Wrapper
+DEVSICONS    := ATI IntelGMA NVidia VMWare
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-devs-monitors-clean iconset-Gorilla-icons-storage-monitors-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-devs-monitors iconset-Gorilla-icons-storage-monitors
