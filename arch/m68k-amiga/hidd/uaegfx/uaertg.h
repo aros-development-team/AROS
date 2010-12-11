@@ -336,6 +336,7 @@ void makerenderinfo(struct uaegfx_staticdata *csd, struct RenderInfo*, struct bm
 void getrtgmodeinfo(struct uaegfx_staticdata *csd, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo);
 
 ULONG gl(UBYTE *p);
+UWORD gw(UBYTE *p);
 void pl(UBYTE *p, ULONG l);
 void pw(UBYTE *p, WORD w);
 void pb(UBYTE *p, BYTE b);
