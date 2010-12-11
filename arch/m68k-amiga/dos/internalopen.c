@@ -59,6 +59,8 @@ LONG InternalOpen(CONST_STRPTR name, LONG action,
     {
     	SetIoErr(0);
     	handle->fh_Type = BNULL;
+    	/* NIL: is considered interactive */
+    	handle->fh_Port = (struct MsgPort*)DOSTRUE;
         return DOSTRUE;
     }
     else if(!Stricmp(name, (STRPTR) "CONSOLE:") || !Stricmp(name, (STRPTR) "*"))
