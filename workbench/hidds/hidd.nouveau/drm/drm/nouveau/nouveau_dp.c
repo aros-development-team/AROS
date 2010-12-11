@@ -576,6 +576,7 @@ out:
 	return ret ? ret : (stat & NV50_AUXCH_STAT_REPLY);
 }
 
+#if !defined(__AROS__)
 static int
 nouveau_dp_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 {
@@ -627,7 +628,6 @@ nouveau_dp_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 	return num;
 }
 
-#if !defined(__AROS__)
 static u32
 nouveau_dp_i2c_func(struct i2c_adapter *adap)
 {
