@@ -217,7 +217,7 @@ struct ttm_buffer_object {
 
 	struct kref kref;
 	struct kref list_kref;
-//FIXME:	wait_queue_head_t event_queue;
+	wait_queue_head_t event_queue;
 	spinlock_t lock;
 
 	/**

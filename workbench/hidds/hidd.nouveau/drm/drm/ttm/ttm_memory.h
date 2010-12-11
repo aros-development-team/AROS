@@ -83,7 +83,7 @@ struct ttm_mem_global {
 	struct ttm_mem_shrink *shrink;
 //FIXME	struct workqueue_struct *swap_queue;
 //FIXME	struct work_struct work;
-//FIXME	wait_queue_head_t queue;
+	wait_queue_head_t queue;
 	spinlock_t lock;
 	struct ttm_mem_zone *zones[TTM_MEM_MAX_ZONES];
 	unsigned int num_zones;
