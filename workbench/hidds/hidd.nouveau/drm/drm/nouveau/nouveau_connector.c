@@ -300,11 +300,16 @@ detect_analog:
 		struct drm_encoder_helper_funcs *helper =
 						encoder->helper_private;
 
+#if !defined(HOSTED_BUILD)
 		if (helper->detect(encoder, connector) ==
 						connector_status_connected) {
 			nouveau_connector_set_encoder(connector, nv_encoder);
 			return connector_status_connected;
 		}
+#else
+        nouveau_connector_set_encoder(connector, nv_encoder);
+        return connector_status_connected;
+#endif
 
 	}
 

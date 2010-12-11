@@ -628,12 +628,10 @@ nouveau_card_init(struct drm_device *dev)
 	if (ret)
 		goto out;
 
-#if !defined(HOSTED_BUILD)
 	/* Parse BIOS tables / Run init tables if card not POSTed */
 	ret = nouveau_bios_init(dev);
 	if (ret)
 		goto out_display_early;
-#endif
 
 #if !defined(__AROS__)
 	nouveau_pm_init(dev);
@@ -771,9 +769,7 @@ out_bios:
 IMPLEMENT("Calling nouveau_pm_fini(dev);\n");
 #endif
 	nouveau_bios_takedown(dev);
-#if !defined(HOSTED_BUILD)
 out_display_early:
-#endif
 	engine->display.late_takedown(dev);
 out:
 #if !defined(__AROS__)

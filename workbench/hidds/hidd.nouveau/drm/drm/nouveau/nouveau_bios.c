@@ -6867,12 +6867,16 @@ nouveau_bios_init(struct drm_device *dev)
 	struct nvbios *bios = &dev_priv->vbios;
 	int ret;
 
+#if !defined(HOSTED_BUILD)
 	if (!NVInitVBIOS(dev))
 		return -ENODEV;
 
 	ret = nouveau_parse_vbios_struct(dev);
 	if (ret)
 		return ret;
+#else
+    bios->major_version = 6;
+#endif
 
 	ret = parse_dcb_table(dev, bios);
 	if (ret)
