@@ -203,7 +203,7 @@
                         iim.iim_ParentLock  = ParentDir(iim.iim_FileLock);
 #ifdef AROS_DOS_PACKETS
                         if (iim.iim_ParentLock == BNULL && IoErr() == 0)
-                            iim.iim_FIB.fib_DirEntryType = ST_ROOT;
+                            iim.iim_FIB->fib_DirEntryType = ST_ROOT;
 #endif
                         iim.iim_FileHandle  = Open(name, MODE_OLDFILE);
                         
