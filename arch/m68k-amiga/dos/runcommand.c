@@ -166,7 +166,8 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     me->pr_Result2=oldresult;
 
     /* remove buffered argument stream */
-    Flush(Input());
+    /* must be original stream, command might have called SelectInput() */
+    Flush(oldinput);
 
     FreeMem(stack,stacksize);
     
