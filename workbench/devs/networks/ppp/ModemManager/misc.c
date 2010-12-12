@@ -35,8 +35,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <aros/debug.h>
-#include <string.h>
-#include <stddef.h>
 	 
 #include <oop/oop.h>
 #include <hidd/pci.h>
@@ -135,9 +133,15 @@ BOOL TestModem(struct EasySerial *s,struct Conf *c){
 	UBYTE *buf,*tok;
 	BOOL result=FALSE;
 	bug("ModemTest\n");
-
+    UBYTE delim[] = ": ,\n\r";
+	
 	if( buf = AllocMem(STRSIZE,MEMF_CLEAR|MEMF_PUBLIC)){
+		
 		result=TRUE;
+		c->signal=-1;
+		c->AccessType=-1;
+		strcpy( c->modemmodel , "Unknow" );
+		
 		do{
 			
 			DoStr( s ,  "\r\r\r" );
@@ -164,12 +168,41 @@ BOOL TestModem(struct EasySerial *s,struct Conf *c){
 			if( ! GetResponse(s,buf,STRSIZE,5)){
 				bug("AT+GMM FAIL\n");	
 			}
-			if( tok = strtok( buf , "\n\r" ) ){
+			else if( tok = strtok( buf , "\n\r" ) ){
 				strcpy( c->modemmodel , tok );		
 			}
+
+			// ask signal strength 
+			DrainSerial(s);
+			DoStr( s,  "AT+CSQ\r" );
+			if( ! GetResponse(s,buf,STRSIZE,5)){
+				bug("AT+CSQ FAIL\n");	
+			}
+			else if( tok = strtok( buf , delim ) ){	
+				if( tok = strtok( NULL , delim ) ){
+					if( isdigit( tok[0] ) ) c->signal = atoi( tok );
+				}			
+			}
 			
-			
-			bug("ModemTest OK\n");			
+			//  Network Registration Status
+			DrainSerial(s);
+			DoStr( s,  "AT+COPS?\r" );
+			if( ! GetResponse(s,buf,STRSIZE,5)){
+				bug("AT+COPS? FAIL\n");	
+			}else{
+				if( tok = strtok( buf , delim ) ){
+				if( tok = strtok( NULL , delim ) ){
+				if( tok = strtok( NULL , delim ) ){
+				if( tok = strtok( NULL , delim ) ){
+				if( tok = strtok( NULL , delim ) ){
+					if( isdigit( tok[0] ) ) c->AccessType = atoi( tok );
+				}}}}}
+			}	
+		
+			bug("model=%s\n",c->modemmodel);
+			bug("AccessType=%d\n",c->AccessType);
+			bug("signal=%d\n",c->signal);
+				
 		}while(0);
 			
 		FreeMem( buf , STRSIZE );
