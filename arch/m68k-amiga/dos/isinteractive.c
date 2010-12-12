@@ -49,7 +49,7 @@
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(file);
 
-    return fh->fh_Port != 0;
+    return (fh->fh_Port != 0) ? TRUE : FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* IsInteractive */
