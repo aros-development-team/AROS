@@ -382,8 +382,10 @@ BCPL getvec         /*  74, LONG ^, lw_length */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     move.l	%d1,%d0
+    addq.l	#4,%d0         /* 4 additional words for padding */
     lsl.l	#2,%d0
     clr.l	%d1
+    bset.l	#16,%d1        /* MEMF_CLEAR */
     jsr		%a6@(114 * -6) /* Exec/AllocVec() */
     lsr.l	#2,%d0
     movem.l	%sp@+,%a0-%a1/%a6
