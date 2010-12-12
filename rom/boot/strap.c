@@ -217,6 +217,7 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
                                    D(bug("bootblock read ok\n"));
                                    if (BootBlockChecksum(buffer)) {
                                	       APTR bootcode = buffer + 12;
+                               	       ExpansionBase->Flags &= ~EBF_SILENTSTART;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
                                	       D(bug("calling bootblock!\n", buffer));
                                	       asm volatile (
@@ -580,6 +581,7 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
 
     /* Call the expansion initializations */
     ConfigChain(NULL);
+    ExpansionBase->Flags |= EBF_SILENTSTART;
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
     /* Try to get a boot-block from the trackdisk.device */
