@@ -111,6 +111,10 @@ AROS_UFH4(ULONG, BCPL_ReadArgs,
     	rd->RDA_Source.CS_Length = input->fh_End-input->fh_Buf;
     	rd->RDA_Source.CS_CurChr = input->fh_Pos-input->fh_Buf;
     }
+
+    /* BCPL readargs appers to want the vector to be zeroed */
+    memset(vec, 0, upb * sizeof(IPTR));
+
     rd = ReadArgs(template, vec, rd);
     if (rd == NULL)
     	return 0;
