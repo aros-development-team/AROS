@@ -21,12 +21,25 @@ BCPL_jsr:
     adda.l  %d0,%a1             /* Move to next BCPL FP */
     movem.l %d1-%d4,(%a1)       /* Save argument on BCPL FP */
     jmp     (%a4)
+    bra.s   BCPL_jsr_mult       /* This MUST be at BCPL_jsr+0x10 */
+    bra.s   BCPL_jsr_divmod     /* This MUST be at BCPL_jsr+0x12 */
+BCPL_jsr_mult:
+    muls    %d2,%d1
+    rts
+BCPL_jsr_divmod:
+    divs    %d2,%d1             /* Upper D1 is D1 % D2.w, lower is D1 / D2.w */
+    move.l  %d1,%d2
+    ext.w   %d1                 /* D1 = D1 / D2.w */
+    asr.l   #8,%d2              /* D2 = D1 % D2.w */
+    asr.l   #8,%d2              /* D2 = D1 % D2.w */
+    rts
 
     .globl  BCPL_rts  /* A6 */
 BCPL_rts:
     movem.l -12(%a1),%a1/%a3   /* Restore old BCPL FP and return address */
     move.l  -4(%a1),%a4        /* Get old A4 */
     jmp     (%a3)              /* Go back */
+
 
 /* BCPL macros
  */
@@ -263,6 +276,8 @@ BCPL Open           /* -04, FileHandle ^, &name, mode */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
+                     /* 4, void main */
+
 BCPL Exit            /*  08, void, code */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
@@ -293,6 +308,8 @@ BCPLd unpacklw       /*  24, ?? */
 
 BCPLd Res2           /*  28, LONG, is_set_flag, result_code */
     BRTS
+
+                     /*  30, BCPL_FrameLower */
 
 BCPLd makeGVarea     /*  34, void, @buff */
     BRTS
@@ -505,39 +522,6 @@ BCPLd Delay          /* bc, void, ? */
      * synthesized DosPacket
      */
 BCPLd sendPacket     /* c0, void, -, MsgPort, Type, -, -, Arg1,... */
-#if 1
-    movem.l	%d1-%d3/%a0-%a1/%a6,%sp@-
-
-    move.l	%a1, %d3
-    /* Get process MsgPort */
-    move.l	SysBase,%a6
-    jsr		%a6@(49 * -6)	/* Exec/FindTask() */
-    addi.l	#pr_MsgPort,%d0
-    move.l	%d0, %a0
-    move.l	%a0@,%a0
-    move.l	%d3,%a1
-
-    /* Issue the message */
-    jsr		%a6@(61 * -6)	/* Exec/PutMsg() */
-
-.LsendPacket_wait:
-    /* Wait on the MsgPort from the arguments */
-    move.l	%d3,%a1
-    move.l	%a1@(1 * 4),%a0
-    jsr		%a6@(64 * -6)	/* Exec/WaitMsg() */
-
-    /* Get the message */
-    move.l	%d3,%a1
-    move.l	%a1@(1 * 4),%a0
-    jsr		%a6@(62 * -6)	/* Exec/GetMsg() */
-
-    cmp.l	%d0,%d3
-    bne	.LsendPacket_wait
-
-    moveq.l	#-1,%d0
-
-    movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
-#else
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     clr.l	%sp@-
@@ -558,7 +542,6 @@ BCPLd sendPacket     /* c0, void, -, MsgPort, Type, -, -, Arg1,... */
     jsr		%a6@(77 * -6)	/* DOS/SetIoError */
     move.l	%sp@+,%d0
     movem.l	%sp@+,%a0-%a1/%a6
-#endif
     BRTS
 
 BCPLd returnPacket   /* c4, void, @DosPacket, res1, res2 */
@@ -894,7 +877,6 @@ BCPLd findCLI        /* 218, CommandLineInterpreter ^,  */
     jsr		%a6@(FindTask)
     move.l	%d0,%a0
     move.l	%a0@(pr_CLI),%d0
-    lsr.l	#2,%d0
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 

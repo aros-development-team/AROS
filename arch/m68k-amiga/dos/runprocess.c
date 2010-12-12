@@ -35,7 +35,7 @@ static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
     __asm__ __volatile__(
 	"move.l %%sp,%%a0\n\t"
 	"movem.l %%d2-%%d7/%%a2-%%a6,%%a0@-\n\t"
-	"move.l %3,%%d0\n\t"            /* stksize = %a0 - tc_SPLower */
+	"move.l %4,%%d0\n\t"            /* stksize = %a0 - tc_SPLower */
 	"neg.l  %%d0\n\t"
 	"lea.l  %%a0@(%%d0),%%a1\n\t"
 	"move.l %%a1,%%a0@-\n\t"        /* sp+ 8 = stksize  */
