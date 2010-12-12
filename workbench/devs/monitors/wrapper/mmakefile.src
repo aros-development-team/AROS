@@ -18,7 +18,7 @@ STORAGEDIR := $(AROSDIR)/Storage/Monitors
 devs-monitors-wrapper-copy: $(DEVSDIR) $(DEVSDIR)/IntelGMA $(DEVSDIR)/ATI \
 			    $(DEVSDIR)/NVidia $(DEVSDIR)/VMWare
 
-$(STORAGEDIR)/IntelGMA: $(STORAGEDIR)/Wrapper
+$(DEVSDIR)/IntelGMA: $(STORAGEDIR)/Wrapper
 	@$(ECHO) Creating $@...
 	@$(CP) -f $< $@
 
