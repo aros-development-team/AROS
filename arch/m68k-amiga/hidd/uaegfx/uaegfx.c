@@ -476,6 +476,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     if (!FindCard(csd)) {
     	D(bug("FindCard() returned false\n"));
     	FreeVec(csd->boardinfo);
+    	csd->boardinfo = NULL;
     	return FALSE;
     }
     D(bug("FindCard done\n"));
@@ -483,6 +484,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     if (IsListEmpty((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))) {
      	D(bug("InitCard() failed\n"));
     	FreeVec(csd->boardinfo);
+    	csd->boardinfo = NULL;
     	return FALSE;
     }
     D(bug("InitCard done\n"));
@@ -528,7 +530,8 @@ static int Expunge_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
     struct uaegfx_staticdata *csd = &LIBBASE->csd;
     D(bug("Expunge_UAEGFXClass\n"));
-    FreeVec(csd->boardinfo);
+    if (csd->boardinfo != NULL)
+    	FreeVec(csd->boardinfo);
     freeattrbases(csd);
     return TRUE;
 }
