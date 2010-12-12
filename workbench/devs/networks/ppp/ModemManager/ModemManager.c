@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <dos/dos.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
@@ -14,6 +15,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/dos.h>
+#include <proto/graphics.h>
 #include <clib/alib_protos.h>
 #include <proto/muimaster.h>
 #include <utility/hooks.h>
@@ -34,9 +36,56 @@
 #define STATE_NETWORK 3
 #define STATE_CLOSEDEV 4
 
-Object *application=0, *window, *DisConBut, *ConBut;
-Object *GENERAL_Info, *IN_Info,*OUT_Info;
+Object *application=0,*window,*DisConBut,*ConBut;
+Object *ModemName,*AccessType,*MUISignalBM;
+Object *IN_Info,*OUT_Info;
+struct EasyBitmap *SignalBM=0;
+
 UBYTE *PortName = "GUI.PORT";
+
+struct EasyBitmap{
+	struct BitMap *bm;
+	struct RastPort *rp;
+	Object *MUIbitmap;
+};
+
+struct EasyBitmap *MakeBitmap(ULONG x,ULONG y,Object *MUIwindow,Object *MUIbitmap){
+	struct EasyBitmap *ebm=NULL;
+	struct Window *tw;
+
+	if( window ){
+		if( ebm = AllocMem( sizeof(struct EasyBitmap),MEMF_CLEAR|MEMF_PUBLIC)){
+
+			tw=(struct Window *)XGET( MUIwindow , MUIA_Window_Window );
+
+			ebm->bm = AllocBitMap(x,y,
+					 GetBitMapAttr(tw->RPort->BitMap, BMA_DEPTH),
+					 BMF_CLEAR,
+					 tw->RPort->BitMap);
+
+			ebm->rp = CreateRastPort();
+			ebm->rp->BitMap = ebm->bm;
+			ebm->MUIbitmap = MUIbitmap;
+			set( MUIbitmap , MUIA_FixWidth, x );
+			set( MUIbitmap , MUIA_FixHeight, y );
+			set( MUIbitmap , MUIA_Bitmap_Width, x );
+			set( MUIbitmap , MUIA_Bitmap_Height, y );
+			set( MUIbitmap , MUIA_Bitmap_Transparent, 0 );
+			set( MUIbitmap , MUIA_Bitmap_Bitmap, ebm->bm );
+			DoMethod( MUIbitmap , MUIM_Draw);
+		}
+	}
+	return ebm;
+}
+
+void _CloseBitmap(struct EasyBitmap *ebm){
+	if(ebm){
+		FreeRastPort(ebm->rp);
+		FreeBitMap(ebm->bm);
+	}
+}
+#define CloseBitmap( ebm ) do{_CloseBitmap(ebm);ebm=NULL;}while(0)
+
 
 BOOL SafePutToPort(struct PPPcontrolMsg *message, STRPTR portname)
 {
@@ -102,6 +151,62 @@ void speedstr(BYTE *buf,BYTE *label,LONG s){
 	snprintf( buf, STRSIZE , speed == (ULONG)speed ? "%s %.0f %c/s" :"%s %.2f %c/s" , label , speed , e );
 }
 
+// draw triangular signal meter and show modem name etc..
+void UpdateModemInfo(struct EasyBitmap *ebm,struct Conf *c)
+{
+	ULONG i;
+	ULONG sig;
+	if( ebm ){
+		
+		SetRast(ebm->rp,0);
+		if( c->signal >= 0 && c->signal != 99 ){
+
+			sig = c->signal;
+			//sig = (ULONG)( log( (double)c->signal ) / log( 31.0 )*31.0 );
+			
+			SetAPen(ebm->rp,2);
+			for(i=0;i<32;i++){
+				if( sig >= i){
+					Move(ebm->rp, i , 15 );
+					Draw(ebm->rp, i , 15-i/2 );
+				}
+			}
+			SetAPen(ebm->rp,1);
+			Move(ebm->rp,0,15);
+			Draw(ebm->rp,0,14);
+			Draw(ebm->rp,29,0);
+			Draw(ebm->rp,31,0);
+			Draw(ebm->rp,31,15);
+			Draw(ebm->rp,0,15);
+		}
+		DoMethod( ebm->MUIbitmap , MUIM_Draw );
+		
+		/*
+		<AcT> Network access type
+		0 GSM
+		1 Compact GSM
+		2 UTRAN
+		3 GSM with EGPRS
+		4 UTRAN with HSDPA
+		5 UTRAN with HSUPA
+		6 UTRAN with HSDPA and HSUPA ???
+		*/
+		
+		set( AccessType , MUIA_Text_Contents,
+				c->AccessType == -1 ? "" :
+				c->AccessType == 0 ? "GSM" :
+				c->AccessType == 1 ? "GPRS" :
+				c->AccessType == 2 ? "3G" :
+				c->AccessType == 3 ? "EDGE" :
+				c->AccessType == 4 ? "3.5G" :
+				c->AccessType == 5 ? "3.75G" :
+				c->AccessType == 6 ? "3.8G" :
+									 "?G"
+		);
+		set( ModemName , MUIA_Text_Contents, c->modemmodel);	
+	}
+}
+
 static void DisconnectFunc(struct Hook *hook, Object *app, APTR *arg)
 {
 
@@ -151,6 +256,7 @@ static void ConnectFunc(struct Hook *hook, Object *app, APTR *arg)
 				set( IN_Info , MUIA_Text_Contents, (IPTR)"Modem Test...");
 				//set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
 				if( TestModem( Ser , c ) ){
+					UpdateModemInfo( SignalBM , c );
 					set( IN_Info , MUIA_Text_Contents, (IPTR)"DialUp...");
 					//set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
 					if( DialUp(Ser,c) ){
@@ -309,7 +415,7 @@ void HandleMessage(struct PPPcontrolMsg *InfoMsg,struct Conf *c){
 		if( InfoMsg->Phase == PPP_PHASE_NETWORK &&  InfoMsg->Ser ){
 			  c->state = STATE_NETWORK;
 		}
-		
+
 		// net connection is lost
 		if( c->state == STATE_NETWORK &&  InfoMsg->Phase != PPP_PHASE_NETWORK ){
 		//	SendCtrlMsg( PPP_CTRL_CLOSE_SERIAL , 0 , c );
@@ -321,7 +427,6 @@ void HandleMessage(struct PPPcontrolMsg *InfoMsg,struct Conf *c){
 
 int main(void)
 {
-
    	struct Hook DisconnectHook,ConnectHook;
 	struct EasyTimer *timer=0;
 	BYTE buf[STRSIZE];
@@ -347,6 +452,9 @@ int main(void)
 			ReadConfig(c);
 
 			c->state = STATE_UNPLUGGED;
+			c->signal = -1;
+			c->AccessType = -1;
+			
 			SetTimer( timer , 0 );
 			application = NULL;
 
@@ -408,7 +516,14 @@ int main(void)
 				MUIA_Window_Activate,TRUE,
 					WindowContents, (IPTR) VGroup,
 						Child, (IPTR) VGroup,
-							Child, GENERAL_Info = SimpleText(""),
+							Child, (IPTR) HGroup,
+								Child, ModemName = SimpleText("            "),
+								Child, MUISignalBM = BitmapObject,
+									MUIA_FixWidth, 32,
+									MUIA_FixHeight, 16,
+								End,
+								Child, AccessType = SimpleText("	"),
+							End,
 							Child, IN_Info = SimpleText(""),
 							Child, OUT_Info = SimpleText(""),
 						End,
@@ -446,9 +561,13 @@ int main(void)
 				set(DisConBut,MUIA_Disabled,TRUE);
 				set(   ConBut,MUIA_Disabled,TRUE);
 
+				SignalBM = MakeBitmap(32,16,window,MUISignalBM);
+
 				SetTimer( timer , 1 );
 				SendRequest();
-
+				
+				UpdateModemInfo( SignalBM , c );
+				
 				while(
 						DoMethod(
 							application, MUIM_Application_NewInput, (IPTR) &sigs
@@ -469,10 +588,6 @@ int main(void)
 							//bug("ModemManager: received info message num %d\n",InfoMsg->num);
 
 							HandleMessage(InfoMsg,c);
-
-							UBYTE genbuf[STRSIZE];
-							snprintf( genbuf, STRSIZE , "%s" , c->modemmodel );
-							set( GENERAL_Info , MUIA_Text_Contents, genbuf);
 
 							if( c->state == STATE_UNPLUGGED ){
 								set( IN_Info , MUIA_Text_Contents, (IPTR)"Unplugged");
@@ -532,17 +647,16 @@ int main(void)
 							if( c->state == STATE_PLUGGED ){
 								if( Ser = OpenSerial( c->DeviceName ,c->SerUnitNum ) ){
 									 CLOSESERIAL(Ser);
+									 //UpdateModemInfo( SignalBM , c );
 								} else
 									c->state = STATE_UNPLUGGED;
 							}
 
 							if( c->state == STATE_PLUGGED ){
-									UBYTE genbuf[STRSIZE];
-									snprintf( genbuf, STRSIZE , "%s" , c->modemmodel );
-									set( GENERAL_Info , MUIA_Text_Contents, genbuf);
-									set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
-									set(DisConBut, MUIA_Disabled , TRUE );
-									set(   ConBut, MUIA_Disabled , FALSE );
+								set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
+								set( IN_Info , MUIA_Text_Contents, (IPTR)"");
+								set(DisConBut, MUIA_Disabled , TRUE );
+								set(   ConBut, MUIA_Disabled , FALSE );
 							}
 
 							SetTimer( timer , TIMERVALUE );
@@ -556,7 +670,10 @@ int main(void)
 			}
 			bug("ModemManager:Device Unplugged -> Close GUI window\n");
 			SetTimer( timer , 0 );
+
 			MUI_DisposeObject(application);
+			CloseBitmap(SignalBM);
+
 			application=NULL;
 		} // main loop
 

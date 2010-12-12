@@ -26,8 +26,11 @@ struct Conf{
 	
 	BYTE username[PPP_MAXARGLEN];
 	BYTE password[PPP_MAXARGLEN];
-	BOOL enable_dns;
+	
 	BYTE modemmodel[PPP_MAXARGLEN];
+	BYTE signal;
+	BYTE AccessType;
+	
 	ULONG CommandTimeOut;
 
 	UBYTE state;
