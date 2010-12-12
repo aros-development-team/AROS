@@ -523,27 +523,28 @@ BCPLd Delay          /* bc, void, ? */
     /* Due to the way BCPL arguments work, A1 is the fully
      * synthesized DosPacket
      */
-BCPLd sendPacket     /* c0, void, -, MsgPort, Type, -, -, Arg1,... */
+BCPLd sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     movem.l	%a0-%a1/%a6,%sp@-
-    move.l	%a2@(BCPL_DOSBase),%a6
-    clr.l	%sp@-
-    move.l	%sp,%a0
-    move.l	%a1@(9 * 4),%sp@-
-    move.l	%a1@(8 * 4),%sp@-
-    move.l	%a1@(7 * 4),%sp@-
-    move.l	%a1@(6 * 4),%sp@-
-    move.l	%a1@(5 * 4),%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6	/* DOSBase */
+    move.l	%a1@(9 * 4),%sp@-	/* dp_Arg5 */
+    move.l	%a1@(8 * 4),%sp@-	/* dp_Arg4 */
+    move.l	%a1@(7 * 4),%sp@-	/* dp_Arg3 */
+    move.l	%a1@(6 * 4),%sp@-	/* dp_Arg2 */
+    move.l	%a1@(5 * 4),%sp@-	/* dp_Arg1 */
     move.l	%d3,%sp@-
     move.l	%d2,%sp@-
+    lea.l	%a1@(4 * 4),%a0		/* Pointer to dp_Res2 */
     move.l	%a0,%sp@-
     move.l	%a6,%sp@-
     jsr		dopacket5
     lea.l	%sp@(9 * 4),%sp
-    move.l	%sp@+,%d1
     move.l	%d0,%sp@-
     jsr		%a6@(77 * -6)	/* DOS/SetIoError */
     move.l	%sp@+,%d0
     movem.l	%sp@+,%a0-%a1/%a6
+    /* Patch up DOS packet with dp_Res */
+    move.l	%d0,%a1@(3 * 4)
+    moveq.l	#-1,%d0
     BRTS
 
 BCPLd returnPacket   /* c4, void, @DosPacket, res1, res2 */
