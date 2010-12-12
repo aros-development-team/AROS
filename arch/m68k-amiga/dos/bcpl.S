@@ -763,7 +763,11 @@ BCPLd putword        /* 17c, void, longaddress, wordnumber */
 BCPLd taskwait_190   /* 190, DosPacket ^,  */
     BRTS
 
-BCPLd execute        /* 194, void, ? , @in, @out */
+BCPL execute        /* 194, void, &string , @in, @out */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(37 * -6)	/* DOS/Execute() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd deviceproc     /* 198, FileLock ^, @filename */
@@ -827,7 +831,8 @@ BCPLd openfile       /* 1c0, FileHandle ^, @devinfo, @filename */
 BCPLd DupLock        /* 1c4, FileLock ^, @FileLock */
     BRTS
 
-BCPLd makesysreq     /* 1c8, void, count, pkt, proc */
+BCPLd makesysreq     /* 1c8, BOOL, count, pkt, proc */
+    moveq.l	#1,%d0
     BRTS
 
 BCPLd strcpy         /* 1cc, void, @src, @dest */
@@ -875,11 +880,9 @@ BCPLd settime        /* 200, void, @timeval */
 
 BCPLd findCLI        /* 218, CommandLineInterpreter ^,  */
     movem.l	%a0-%a1/%a6,%sp@-
-    move.l	SysBase,%a6
-    sub.l	%a1,%a1
-    jsr		%a6@(FindTask)
-    move.l	%d0,%a0
-    move.l	%a0@(pr_CLI),%d0
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(82 * -6)	/* DOS/Cli() */
+    lsr.l	#2,%d0
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
