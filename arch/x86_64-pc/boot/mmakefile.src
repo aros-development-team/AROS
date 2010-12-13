@@ -26,7 +26,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-con \
 #MM	workbench-libs-workbench \
 #MM	kernel-fs-nil \
-#MM	contrib-amberram \
+#MM	workbench-devs-amberram \
 #MM	kernel-fs-afs \
 #MM	kernel-pc-x86_64-drivers \
 #MM	kernel-contrib-necessary-pc-x86_64 \

@@ -1,11 +1,11 @@
 # $Id: mmakefile.src 24535 2006-06-12 20:26:01Z verhaegs $
 include $(TOP)/config/make.cfg
 
-#MM- contrib-cdvdfs: includes linklibs
-#MM- contrib-cdvdfs-checkcd: includes linklibs
-#MM- contrib-cdvdfs-cdrom: includes linklibs
-#MM- contrib-cdvdfs-cdcontrol: includes linklibs
-#MM- contrib-cdvdfs-packet: includes linklibs
+#MM- workbench-devs-cdvdfs: includes linklibs
+#MM- workbench-devs-cdvdfs-checkcd: includes linklibs
+#MM- workbench-devs-cdvdfs-cdrom: includes linklibs
+#MM- workbench-devs-cdvdfs-cdcontrol: includes linklibs
+#MM- workbench-devs-cdvdfs-packet: includes linklibs
 
 TESTSDIR := $(AROS_TESTS)/cdrom
 
@@ -25,25 +25,25 @@ CHECKCD_FILES := checkcd cdrom iso9660 rock joliet \
 #And these ones are for normal operation
 USER_CFLAGS := -DNDEBUG -DDEBUG=0
 
-%build_prog mmake=contrib-cdvdfs-packet \
+%build_prog mmake=workbench-devs-cdvdfs-packet \
     progname=cdrom.handler targetdir=$(AROS_DEVS) \
     objdir=$(GENDIR)/$(CURDIR)-packet files="$(HANDLER_FILES)" usestartup=no uselibs="arossupport rom"
 
-%build_prog mmake=contrib-cdvdfs-cdcontrol \
+%build_prog mmake=workbench-devs-cdvdfs-cdcontrol \
     progname=cdcontrol targetdir=$(AROS_C) \
     files=$(CDCONTROL_FILES) uselibs="amiga arosc"
 
-%build_prog mmake=contrib-cdvdfs-cdrom \
+%build_prog mmake=workbench-devs-cdvdfs-cdrom \
     progname=cdrom targetdir=$(TESTSDIR) \
     files=$(CDROM_FILES) uselibs="amiga arosc"
 
-%build_prog mmake=contrib-cdvdfs-checkcd \
+%build_prog mmake=workbench-devs-cdvdfs-checkcd \
     progname=checkcd targetdir=$(AROS_C) \
     files=$(CHECKCD_FILES) uselibs="amiga arosc"
 
 USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
 
-%build_module mmake=contrib-cdvdfs \
+%build_module mmake=workbench-devs-cdvdfs \
     modname=cdrom modtype=device modsuffix=handler \
     files="$(MODULE_FILES) $(HANDLER_FILES)" \
     uselibs="arossupport rom"

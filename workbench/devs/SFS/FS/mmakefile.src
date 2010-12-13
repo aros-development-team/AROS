@@ -19,19 +19,19 @@ FILES := adminspaces \
 
 MODULE_FILES := arosdevice arosmain
 
-#MM contrib-sfs: contrib-sfs-c
-#MM contrib-sfs-kobj: contrib-sfs-c
-#MM contrib-sfs-packet: contrib-sfs-c
+#MM workbench-devs-sfs: workbench-devs-sfs-c
+#MM workbench-devs-sfs-kobj: workbench-devs-sfs-c
+#MM workbench-devs-sfs-packet: workbench-devs-sfs-c
 
 USER_CFLAGS := -DSFS_BE
 
-%build_prog mmake=contrib-sfs-packet \
+%build_prog mmake=workbench-devs-sfs-packet \
     progname=sfs.handler targetdir=$(AROS_DEVS) \
     files="$(FILES)" usestartup=no uselibs="arossupport rom m"
 
 USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
 
-%build_module mmake=contrib-sfs \
+%build_module mmake=workbench-devs-sfs \
 	modname=sfs modtype=device modsuffix=handler \
 	files="$(MODULE_FILES) $(FILES)" \
 	uselibs="arossupport rom m"

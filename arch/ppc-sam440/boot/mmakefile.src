@@ -47,9 +47,9 @@ include $(TOP)/config/make.cfg
 #MM	workbench-libs-partition \
 #MM	workbench-libs-workbench \
 #MM	kernel-sam440-ppc-irq \
-#MM	contrib-cdvdfs \
-#MM	contrib-sfs \
-#MM	contrib-amberram \
+#MM	workbench-devs-cdvdfs \
+#MM	workbench-devs-sfs \
+#MM	workbench-devs-amberram \
 #MM	kernel-hidd-graphics \
 #MM	kernel-hidd-kbd \
 #MM	kernel-hidd-mouse \

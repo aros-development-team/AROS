@@ -49,7 +49,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-oop \
 #MM     kernel-layers \
 #MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
-#MM	contrib-amberram
+#MM	workbench-devs-amberram
 
 #MM- includes-generate : \
 #MM     kernel-exec-includes \
@@ -82,7 +82,7 @@ BASE_LIBS     := aros boot dos graphics intuition keymap layers oop utility
 # Workaround: kernel-kernel-includes is built before kernel-exec-kobj, otherwise building exec
 # fails (it needs kernel.resource includes). We still do it here because older ports use
 # own kernel.resource targets (and even different includes)
-#MM- kernel-link-base: kernel-kernel-includes kernel-objs contrib-amberram-kobj kernel-link-base-quick
+#MM- kernel-link-base: kernel-kernel-includes kernel-objs workbench-devs-amberram-kobj kernel-link-base-quick
 
 #MM
 kernel-link-base-quick: $(BINDIR)/boot/aros-base

@@ -3,6 +3,6 @@ include $(TOP)/config/make.cfg
 
 FILES := Package-Startup
 
-##MM- contrib-AHI : ahi-s-startup
+##MM- workbench-devs-AHI : ahi-s-startup
 
 %copy_files_q mmake=ahi-s-startup dst=$(CONTRIBDIR)/AHI/S

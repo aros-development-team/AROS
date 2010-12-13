@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM contrib-sfs-c-sfsdefrag-catalogs
+#MM workbench-devs-sfs-c-sfsdefrag-catalogs
 
-%build_catalogs mmake=contrib-sfs-c-sfsdefrag-catalogs \
+%build_catalogs mmake=workbench-devs-sfs-c-sfsdefrag-catalogs \
                 name=SFSDefrag subdir=System/Tools

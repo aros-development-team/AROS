@@ -103,7 +103,7 @@ EXEDIR := $(AROS_TESTS)
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 
-#MM test : test-clib test-kernel test-exec test-zune contrib-cdvdfs-cdrom
+#MM test : test-clib test-kernel test-exec test-zune workbench-devs-cdvdfs-cdrom
 #MM test : includes includes-copy workbench-datatypes-png-includes
 
 %build_progs mmake=test \

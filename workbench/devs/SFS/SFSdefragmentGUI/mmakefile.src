@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
     
 USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS
 
-%build_prog mmake=contrib-sfs-c-sfsdefragmentgui \
+%build_prog mmake=workbench-devs-sfs-c-sfsdefragmentgui \
     files=SFSdefragmentGUI progname=SFSdefragmentGUI targetdir=$(AROS_C) \
     uselibs="arossupport amiga arosc m"
 

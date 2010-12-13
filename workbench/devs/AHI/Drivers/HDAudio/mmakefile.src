@@ -5,7 +5,7 @@
 
 CONFIG_FILE := hdaudio.config
 
-#MM- contrib-AHI : copy-HDAudio-config
+#MM- workbench-devs-AHI : copy-HDAudio-config
 
 %copy_files_q mmake=copy-HDAudio-config files=$(CONFIG_FILE) dst=$(AROS_ENVARC)
 
