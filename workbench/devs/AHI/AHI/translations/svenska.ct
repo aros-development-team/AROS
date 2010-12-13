@@ -1,0 +1,352 @@
+## version $VER: ahiprefs.catalog 4.6 (4.8.2004)
+## language svenska
+## codeset 0
+;
+## chunk AUTH Translated by Martin Blom <martin@blom.org>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+\000Arkiv
+; \000Project
+;
+msgItemOpen
+O\000Öppna...
+; O\000Open...
+;
+msgItemSaveAs
+A\000Spara som...
+; A\000Save As...
+;
+msgItemAbout
+?\000Om...
+; ?\000About...
+;
+msgItemQuit
+Q\000Avsluta
+; Q\000Quit
+;
+msgMenuEdit
+\000Redigera
+; \000Edit
+;
+msgItemDefaults
+F\000Förinställda värden
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+E\000Senast sparade
+; L\000Last Saved
+;
+msgItemRestore
+Å\000Återställ
+; R\000Restore
+;
+msgMenuSettings
+\000Tillval
+; \000Settings
+;
+msgItemCreateIcons
+I\000Skapa symboler?
+; I\000Create Icons?
+;
+msgMenuHelp
+\000Hjälp
+; \000Help
+;
+msgItemHelp
+Help\000Hjälp...
+; Help\000Help...
+;
+msgItemUsersGuide
+H\000AHI Användarmanual...
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+\000Index...
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+Lägesinställningar
+; Mode settings
+;
+msgPageAdvanced
+Avancerade inställningar
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+Enhet %ld
+; Unit %ld
+;
+msgUnitMusic
+Musikenhet
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+Ljudläge\nInspelning\nUpphovsman\nCopyright\nDrivrutin\nVersion\nKommentar
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+Full duplex
+; Full duplex
+;
+msgPropRecordHalf
+Halv duplex
+; Half duplex
+;
+msgPropRecordNone
+Nix
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+Tillval
+; Options
+;
+msgOptFrequency
+_Frekvens
+; _Frequency
+;
+msgOptChannels
+_Kanaler
+; C_hannels
+;
+msgOptNoChannels
+
+; 
+;
+msgOptVolume
+Vol_ym
+; _Volume
+;
+msgOptMonitor
+Av_lyssning
+; _Monitor
+;
+msgOptGain
+F_örstärkning
+; _Gain
+;
+msgOptMuted
+Avstängd
+; Muted
+;
+msgOptInput
+_Ingång
+; _Input
+;
+msgOptNoInputs
+Inga ingångar
+; No inputs
+;
+msgOptOutput
+_Utgång
+; _Output
+;
+msgOptNoOutputs
+Inga utgångar
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+Globala tillval
+; Global options
+;
+msgGlobOptDebugLevel
+Avlusnings_nivå
+; _Debug level
+;
+msgGlobOptEcho
+_Eko
+; _Echo
+;
+msgGlobOptSurround
+Surround i "Snabba" _lägen
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+CPU-_begränsning
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+Ingen
+; None
+;
+msgDebugLow
+Låg
+; Low
+;
+msgDebugHigh
+Hög
+; High
+;
+msgDebugFull
+Full
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+Påslaget
+; Enabled
+;
+msgEchoFast
+Snabbt
+; Fast
+;
+msgEchoDisabled
+Avslaget
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+Påslaget
+; Enabled
+;
+msgSurroundDisabled
+Avslaget
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+_Spara
+; _Save
+;
+msgButtonUse
+_Använd
+; _Use
+;
+msgButtonCancel
+A_vbryt
+; _Cancel
+;
+msgButtonOK
+OK
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+AHI inställningar
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+%s%s\nCopyright ©%s
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+Kan inte öppna fönstret.
+; Unable to open window.
+;
+msgTextNoFileRequester
+Kan inte öppna filväljaren.
+; Unable to allocate file requester.
+;
+msgTextNoFind
+Kan inte hitta `%s'!
+; Unable to find `%s'!
+;
+msgTextNoOpen
+Kan inte öppna `%s', version %ld.
+; Unable to open `%s´ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+_Huvudvolym
+; _Master volume
+;
+msgMVNoClip
+Utan klippning
+; Without clipping
+;
+msgMVClip
+Med klippning
+; With clipping
+;
+msgGlobOptACTime
+Maximal antiklick-fördröjning
+; Default anti-click time
+;
+msgButtonPlay
+S_pela ett testljud
+; _Play a test sound
+;
+msgOptScalemode
+Volym_justering
+; Volume sc_aling
+;
+msgSMFixedSafe
+Fast säker skalning
+; Safe
+;
+msgSMDynSafe
+Dynamisk säker skalning
+; Safe, dynamic
+;
+msgSM0dB
+Full volym
+; Full volume
+;
+msgSM3dB
+-3 dB
+; -3 dB
+;
+msgSM6dB
+-6 dB
+; -6 dB
+;
+msgFreqFmt
+
+; %ld Hz
+;
+msgChanFmt
+
+; %ld
+;
+msgVolFmt
+
+; %+4.1f dB
+;
+msgACTimeFmt
+
+; %ld ms
+;
+msgPercentFmt
+
+; %ld%%
+;

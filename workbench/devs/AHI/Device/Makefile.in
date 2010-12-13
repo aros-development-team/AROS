@@ -1,0 +1,222 @@
+#
+#  Makefile.in for ahi.device.
+#
+
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+VPATH		= @srcdir@
+
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+PREFIX		= @prefix@
+DISTDIR		= @DISTDIR@
+DEVSDIR		= ${DISTDIR}/User/Devs
+CATDIR		= ${DISTDIR}/User/Catalogs
+CATSRCDIR	= ${DISTDIR}/Developer/Translations
+
+build_os	= @build_os@
+host		= @host@
+host_cpu	= @host_cpu@
+
+CC		= @CC@
+AS		= @AS@
+AR              = @AR@
+RANLIB          = @RANLIB@
+STRIP		= @STRIP@ @STRIPFLAGS@
+
+CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir}
+CFLAGS		= @CFLAGS@
+ASFLAGS		= @ASFLAGS@
+LDFLAGS		= @LDFLAGS@ -nostartfiles
+ARFLAGS         = @ARFLAGS@
+
+LIBS		= @LIBS@
+
+EXECUTABLE	= ahi.device
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+
+SFDC		= @SFDC@
+SFDC_TARGET	= --target=${host}
+
+FLEXCAT		= @FLEXCAT@
+
+ifeq ($(strip $(FLEXCAT)),)
+FLEXCAT		= @echo 'FlexCat not found; cannot make $@!'; false \#
+endif
+
+ENABLE_WARPUP	= @ENABLE_WARPUP@
+
+#
+# Files
+########################################
+
+LANGUAGES	= $(basename $(shell cd ${srcdir}/translations; for file in *.ct; do if [ -f $$file ]; then printf "%s" "$$file "; fi; done))
+CATALOGS	= $(addsuffix .catalog, $(LANGUAGES))
+
+OBJECTS		= header.o gateway.o gatestubs.o \
+		  device.o devcommands.o devsupp.o \
+		  localize.o modeinfo.o requester.o database.o debug.o\
+		  audioctrl.o effectinit.o sound.o misc.o dspecho.o \
+		  mixer.o 
+
+ifeq ($(ENABLE_WARPUP),yes)
+OBJECTS		+= elfloader.o warpup.o
+endif
+
+ifeq ($(host_cpu)-$(host-os),m68k-amigaos)
+OBJECTS		+= addroutines_68k.o dspechofuncs_68k.o
+endif
+
+#ifeq ($(host_cpu),powerpc)
+#OBJECTS		+= addroutines_ppc.o
+#endif
+
+GENERATED	= version.h \
+		  gatestubs.c gatestubs.h
+
+#
+# Targets
+########################################
+
+.PHONY:		all mostlyclean clean distclean maintainer-clean\
+		install revup bindist bindist-install
+
+
+all:		$(EXECUTABLE) $(srcdir)/ahi.ct $(CATALOGS)
+
+mostlyclean:
+	$(RM) $(EXECUTABLE) *.o *.a Makefile.dep
+
+clean:		mostlyclean
+	$(RM) $(CATALOGS) $(GENERATED)
+
+distclean:	clean
+	$(RM) Makefile
+
+maintainer-clean: distclean
+
+install:	all
+	$(INSTALL) -d $(PREFIX)/Devs
+	$(INSTALL_PROGRAM) $(EXECUTABLE) $(PREFIX)/Devs/$(EXECUTABLE)
+	for i in $(LANGUAGES); do \
+          $(INSTALL) -d $(PREFIX)/Locale/Catalogs/$$i; \
+	  $(INSTALL_DATA) $$i.catalog $(PREFIX)/Locale/Catalogs/$$i/ahi.catalog; \
+	done
+
+
+revup:
+	@rev=`cat $(srcdir)/version.rev` && echo `expr $$rev + 1` > $(srcdir)/version.rev
+	@date +%d.%m.%y > $(srcdir)/version.date
+	@echo -n "New revision: "
+	@cat $(srcdir)/version.rev
+
+bindist:	all
+	$(INSTALL) -d $(CATDIR) $(CATSRCDIR) $(CATSRCDIR)/ahi
+	$(INSTALL_DATA) ${srcdir}/ahi.cd $(CATSRCDIR)
+	$(INSTALL_DATA) ${srcdir}/ahi.ct $(CATSRCDIR)
+	for i in $(LANGUAGES); do \
+	  $(INSTALL) -d $(CATDIR)/$$i; \
+	  $(INSTALL_DATA) $$i.catalog $(CATDIR)/$$i/ahi.catalog; \
+	  $(INSTALL_DATA) ${srcdir}/translations/$$i.ct \
+			  $(CATSRCDIR)/ahi/$$i.ct; \
+	done
+
+	$(INSTALL) -d $(DEVSDIR)
+
+	$(INSTALL_PROGRAM) $(EXECUTABLE) $(DEVSDIR)/$(EXECUTABLE)
+	$(STRIP) $(DEVSDIR)/$(EXECUTABLE)
+
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../config.status
+	(cd .. && ./config.status)
+
+
+#
+# Rules
+########################################
+
+%.o:	%.s
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(EXECUTABLE):		$(OBJECTS) libaddroutines.a
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+
+libaddroutines.a:	addroutines_hifi.o addroutines_lofi.o \
+			addroutines_32bit.o addroutines_71.o dspechofuncs.o
+	$(AR) $(ARFLAGS) $@ $^
+	$(RANLIB) $@
+
+version.h:	version.rev version.date
+	@echo Creating $@
+	@ver=`cat $(top_srcdir)/version.ver` \
+	 rev=`cat $(srcdir)/version.rev` \
+	 date=`cat $(srcdir)/version.date` && \
+	 echo "#define VERSION $$ver" > $@ && \
+	 echo "#define REVISION $$rev" >> $@ && \
+	 echo "#define VERS \"$$ver.$$rev ($$date)\"" >> $@
+
+gatestubs.c:	$(top_srcdir)/Include/SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) --mode=gatestubs $^ --output $@ \
+	        --gateprefix=gw --libprefix=_ --libarg=last --addvectors=device
+
+gatestubs.h:	$(top_srcdir)/Include/SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) --mode=gateproto $^ --output $@ \
+	        --gateprefix=gw --libprefix=_ --libarg=last --addvectors=device
+
+$(srcdir)/localize.c:	ahi.cd C_c_AHI.sd
+	$(FLEXCAT) $(srcdir)/ahi.cd $(srcdir)/localize.c=$(srcdir)/C_c_AHI.sd 
+
+$(srcdir)/localize.h:	ahi.cd C_c_AHI.sd
+	$(FLEXCAT) $(srcdir)/ahi.cd $(srcdir)/localize.h=$(srcdir)/C_h_AHI.sd
+
+%.catalog:		translations/%.ct
+	$(FLEXCAT) \
+		   $(srcdir)/ahi.cd $< CATALOG=$@
+
+%.ct:
+	$(FLEXCAT) $(srcdir)/ahi.cd $@ NEWCTFILE=$@
+
+# Just some test code...
+
+elftest:		elftest.o elfloader.o
+	$(CC) $^ $(LIBS) -o $@
+
+
+#
+# Dependencies
+########################################
+
+SOURCES		= $(wildcard $(srcdir)/*.c)
+HEADERS		= $(wildcard $(srcdir)/*.h)
+
+#DEPENDENCIES	= $(SOURCES) $(HEADERS)
+
+.PHONY:	depend
+
+depend:
+	$(RM) Makefile.dep
+	$(MAKE) Makefile.dep
+
+Makefile.dep:	$(DEPENDENCIES) $(GENERATED)
+	@echo Making $@
+	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
+
+include Makefile.dep
+
+addroutines_ppc.o:	addroutines_ppc.s
+addroutines_68k.o:	addroutines_68k.s
+dspechofuncs_68k.o:	dspechofuncs_68k.s
+
+$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/ahi.ct:	ahi.cd

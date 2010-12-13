@@ -1,0 +1,151 @@
+;Designer Produced empty .ct File : Edit for different languages.
+;
+##Version 
+##Codeset 0
+##Language 
+;
+; Max 31 characterss!
+; Default : Please select an audio mode!
+SelectAudioID
+
+;
+; 
+; Default : File has not been prepared yet!
+FileNotPrepared
+
+;
+; 
+; Default : OK
+OKtext
+
+;
+; 
+; Default : Can't allocate audio hardware.
+NoHardware
+
+;
+; 
+; Default : Unknown error.
+UnknownErr
+
+;
+; 
+; Default : Finished!
+Finished
+
+;
+; Window: AHI Hard disk record example Text: (seconds)
+; Default : (seconds)
+Win0Texts1
+
+;
+; Window: AHI Hard disk record example Gadget: File format String
+; Default : IFF-AIFF
+Win0_formatString0
+
+;
+; Window: AHI Hard disk record example Gadget: File format String
+; Default : IFF-AIFC (Not compr.)
+Win0_formatString1
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_volslider levelforma
+; Default : %ld %%
+Win0_volsliderLevelFormat
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_gainslider levelform
+; Default : %ld %%
+Win0_gainsliderLevelFormat
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_length String Format
+; Default : %ld kB
+Win0_lengthStringFormat
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_srclist
+; Default : Source
+Win0_srclistString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_dstlist
+; Default : Loopback dest.
+Win0_dstlistString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_volslider
+; Default : Loopback volume
+Win0_volsliderString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_ambutton
+; Default : Select audio mode...
+Win0_ambuttonString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_amtext1
+; Default : 
+Win0_amtext1String
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_amtext2
+; Default : 
+Win0_amtext2String
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_gainslider
+; Default : Input gain
+Win0_gainsliderString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_duration
+; Default : Sample duration
+Win0_durationString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_length
+; Default : Sample length
+Win0_lengthString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_filename
+; Default : 
+Win0_filenameString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_fnbutton
+; Default : File name...
+Win0_fnbuttonString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_create
+; Default : Prepare sample file
+Win0_createString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_begin
+; Default : Begin recording
+Win0_beginString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_secleft
+; Default : seconds left
+Win0_secleftString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_format
+; Default : File format
+Win0_formatString
+
+;
+; Window: AHI Hard disk record example Title
+; Default : AHI Hard disk record example
+Win0Title
+
+;
+; Window: AHI Hard disk record example Screen Title
+; Default : HardDiskRecord
+Win0ScreenTitle
+
+;

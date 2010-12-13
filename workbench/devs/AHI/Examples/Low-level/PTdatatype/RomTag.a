@@ -1,0 +1,76 @@
+**
+**	AIFF DataType
+**
+**	Written by Olaf `Olsen' Barthel <olsen@sourcery.han.de>
+**		Public domain
+**
+** :ts=8
+**
+
+		include "exec/tasks.i"
+		include "exec/types.i"
+		include	"exec/nodes.i"
+		include "exec/resident.i"
+		include	"lvo/exec_lib.i"
+
+		include	"protracker.datatype_rev.i"
+
+		xref	LibInitTab
+
+		section	text,code
+
+*----------------------------------------------------------------------
+*
+*	The first executable instruction of this module; recycled as
+*	the reserved library entry function.
+*
+*----------------------------------------------------------------------
+
+		xdef	@LibNull
+
+@LibNull:
+
+		moveq	#0,d0
+		rts
+
+*----------------------------------------------------------------------
+
+InitDesc:
+		dc.w	RTC_MATCHWORD
+		dc.l	InitDesc
+		dc.l	EndCode
+		dc.b	RTF_AUTOINIT
+		dc.b	VERSION
+		dc.b	NT_LIBRARY
+		dc.b	0
+		dc.l	LibName
+		dc.l	LibID
+		dc.l	LibInitTab
+EndCode:
+
+*----------------------------------------------------------------------
+
+LibName:
+		dc.b	'protracker.datatype',0
+
+LibID:
+		VSTRING
+
+*----------------------------------------------------------------------
+
+	cnop	0,2
+
+	XDEF	SlaveProcEntry
+	XREF	SlaveEntry
+
+SlaveProcEntry:
+	move.l	4.w,a6
+	suba.l	a1,a1
+	jsr	_LVOFindTask(a6)
+	move.l	d0,a0
+	move.l	TC_Userdata(a0),a6
+	jmp	SlaveEntry
+
+*----------------------------------------------------------------------
+
+		end

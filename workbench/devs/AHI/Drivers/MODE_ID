@@ -1,0 +1,44 @@
+ID	Driver		Author			E-Mail
+
+01	Filesave	Martin Blom		<martin@blom.org>
+02	Paula		Martin Blom		<martin@blom.org>
+03	Device		Martin Blom		<martin@blom.org>
+04
+05	Siamese		Martin Blom		<martin@blom.org>
+06	Melody MPEG	Thorsten Hansen		<hansen_t@informatik.fh-hamburg.de>
+07	Concierto (PIV)	Olaf Barthel		<olsen@sourcery.han.de>
+08	Wavetools	Johan Nyblom		<nyblom@mother.ludd.luth.se>
+09	ESS Solo1/GREX	Frank Mariak		<F.Mariak@t-online.de>
+0A	Toccata		Martin Blom		<martin@blom.org>
+0B	VSS		Valenta Ferenc		<vf@elte.hu>
+0C	Prelude		Thomas Wenzel		<tom@toms-home.de>
+0D	RePulse		Stefan Sommerfeld	<zerocom@cs.tu-berlin.de>
+0E	Maestro Pro	Richard Koerber		<shred@chessy.aworld.de>
+0F	Silicon Studio	Simon N Goodwin		<simon@studio.woden.com>
+10	Delfina		Teemu Suikki		<tsuikki@petsoff.com>
+11	Sunrize		Kenneth Nilsen		<kenny@bgnett.no>
+12	FM 801/GREX	Frank Mariak		<F.Mariak@t-online.de>
+13	AXL		Markus Pöllmann		<m.poellmann@haage-partner.com>
+14	SB128/Mediator	Pawel Stypula		<pawelS@elbox.com>
+15	SBLive/Mediator	Pawel Stypula		<pawelS@elbox.com>
+16	AC97/Amithlon	Thorsten Hansen		<hansen_t@informatik.fh-hamburg.de>
+17	SB128/Amithlon	Thorsten Hansen		<hansen_t@informatik.fh-hamburg.de>
+18	"Sound"		Przemyslaw Gruchala	<sensei@box43.gnet.pl>
+19	ES1371/GREX	Frank Mariak		<F.Mariak@t-online.de>
+1A	UAE		Bernd Roesch		<berndroesch1@compuserve.de>
+1B	Sunrize		Chris Brenner		<cbrenner@inreach.com>
+1C	Umilator	Bernd Bernie Meyer	<bmeyer@csse.monash.edu.au>
+1D	C-Media		Przemyslaw Gruchala	<sensei@box43.gnet.pl>
+1E	EMU10kx		Martin Blom		<martin@blom.org>
+1F      (Experimental)	You			Tell me when you want a real ID.
+20-2f	(Amithlon)	Thorsten Hansen		<hansen_t@informatik.fh-hamburg.de>
+30	FM 801		Benjamin Vernoux	<bvernoux@wanadoo.fr>
+31	???/Mediator	Pawel Stypula		<pawelS@elbox.com>
+32	FM 801/AOS4	Davy Wentzler		<info@audio-evolution.com>
+33	AROS/hosted	Martin Blom		<martin@blom.org>
+34	SB128/AOS4	Ross Vumbaca		<rossv1@optushome.com.au>
+35	CMI8738/AOS4	Davy Wentzler		<info@audio-evolution.com>
+36	ICE1724/AOS4	Davy Wentzler		<info@audio-evolution.com>
+37	ICE1712/AOS4	Davy Wentzler		<info@audio-evolution.com>
+38	Trid. 4DWAVE-DX	Marcus Comstedt
+39	i8x0/AROS	Michal Schulz		<michal.schulz@gmx.de>

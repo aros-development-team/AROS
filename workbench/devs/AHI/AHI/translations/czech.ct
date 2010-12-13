@@ -1,0 +1,351 @@
+## version $VER: ahiprefs.catalog 4.8 (24.4.2007)
+## language czech
+## codeset 0
+;
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;    
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;    
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;    
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+\000Projekt
+; \000Project
+;
+msgItemOpen
+O\000Otevøít...
+; O\000Open...
+;
+msgItemSaveAs
+A\000Ulo¾it jako...
+; A\000Save As...
+;
+msgItemAbout
+?\000O programu...
+; ?\000About...
+;
+msgItemQuit
+Q\000Ukonèit
+; Q\000Quit
+;
+msgMenuEdit
+\000Úpravy
+; \000Edit
+;
+msgItemDefaults
+D\000Výchozí stav
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+L\000Naposledy ulo¾ené
+; L\000Last Saved
+;
+msgItemRestore
+R\000Obnovit pøedchozí
+; R\000Restore
+;
+msgMenuSettings
+\000Nastavení
+; \000Settings
+;
+msgItemCreateIcons
+I\000Vytváøet ikony?
+; I\000Create Icons?
+;
+msgMenuHelp
+\000Nápovìda
+; \000Help
+;
+msgItemHelp
+Help\000Nápovìda...
+; Help\000Help...
+;
+msgItemUsersGuide
+H\000Manuál systému AHI...
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+\000Rejstøík pojmù...
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+Nastavení re¾imu
+; Mode settings
+;
+msgPageAdvanced
+Pro pokroèilé
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+Jednotka %ld
+; Unit %ld
+;
+msgUnitMusic
+Hudební jednotka
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+ID re¾imu\nZáznam\nAutor\nCopyright\nOvladaè\nVerze\nPoznámky
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+Plný duplex
+; Full duplex
+;
+msgPropRecordHalf
+Polovièní duplex
+; Half duplex
+;
+msgPropRecordNone
+Nelze
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+Mo¾nosti
+; Options
+;
+msgOptFrequency
+_Frekvence
+; _Frequency
+;
+msgOptChannels
+Poèet _kanálù
+; C_hannels
+;
+msgOptNoChannels
+
+; 
+;
+msgOptVolume
+_Hlasitost
+; _Volume
+;
+msgOptMonitor
+Pøíposl_ech
+; _Monitor
+;
+msgOptGain
+Zesíle_ní
+; _Gain
+;
+msgOptMuted
+Potichu
+; Muted
+;
+msgOptInput
+_Vstup
+; _Input
+;
+msgOptNoInputs
+Bez vstupu
+; No inputs
+;
+msgOptOutput
+Vý_stup
+; _Output
+;
+msgOptNoOutputs
+Bez výstupu
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+Globální mo¾nosti
+; Global options
+;
+msgGlobOptDebugLevel
+Úroveò la_dìní
+; _Debug level
+;
+msgGlobOptEcho
+_Ozvìna
+; _Echo
+;
+msgGlobOptSurround
+Surround (pro '_rychlé' re¾imy)
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+_Limit vytí¾ení procesoru
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+Vypnuto
+; None
+;
+msgDebugLow
+Nízké
+; Low
+;
+msgDebugHigh
+Vysoké
+; High
+;
+msgDebugFull
+Plné
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+Zapnuto
+; Enabled
+;
+msgEchoFast
+Rychlá
+; Fast
+;
+msgEchoDisabled
+Vypnuto
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+Zapnuto
+; Enabled
+;
+msgSurroundDisabled
+Vypnuto
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+_Ulo¾it
+; _Save
+;
+msgButtonUse
+_Pou¾ít
+; _Use
+;
+msgButtonCancel
+_Zru¹it
+; _Cancel
+;
+msgButtonOK
+OK
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+Nastavení zvukového systému AHI
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+%s%s\nCopyright (C)%s\nPøeklad do èe¹tiny: Ondøej Zima
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+Nelze otevøít okno.
+; Unable to open window.
+;
+msgTextNoFileRequester
+Nelze alokovat souborový requester.
+; Unable to allocate file requester.
+;
+msgTextNoFind
+Nelze nalézt '%s'!
+; Unable to find `%s'!
+;
+msgTextNoOpen
+Nelze otevøít %s V%ld nebo vy¹¹í
+; Unable to open `%s´ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+_Globální hlasitost
+; _Master volume
+;
+msgMVNoClip
+Bez omezovaèe
+; Without clipping
+;
+msgMVClip
+S omezovaèem
+; With clipping
+;
+msgGlobOptACTime
+Rozsah potlaèení lupání
+; Default anti-click time
+;
+msgButtonPlay
+Pø_ehrát zku¹ební zvuk
+; _Play a test sound
+;
+msgOptScalemode
+Úpr_ava hlasitosti
+; Volume sc_aling
+;
+msgSMFixedSafe
+Bezpeènì
+; Safe
+;
+msgSMDynSafe
+Bezpeènì, dynamicky
+; Safe, dynamic
+;
+msgSM0dB
+Bez omezení
+; Full volume
+;
+msgSM3dB
+-3 dB
+; -3 dB
+;
+msgSM6dB
+-6 dB
+; -6 dB
+;
+msgFreqFmt
+%ld Hz
+; %ld Hz
+;
+msgChanFmt
+%ld
+; %ld
+;
+msgVolFmt
+%+4.1f dB
+; %+4.1f dB
+;
+msgACTimeFmt
+%ld ms
+; %ld ms
+;
+msgPercentFmt
+%ld %%
+; %ld%%
+;

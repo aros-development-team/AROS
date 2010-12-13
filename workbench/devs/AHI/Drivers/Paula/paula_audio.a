@@ -1,0 +1,5710 @@
+*** ScR ***
+
+* $Id$
+
+*** NOTES ***
+
+*  The sampler routines are just for fun. Since interrupts must not be disabled,
+* there are lots of clicks.
+
+;------------
+
+	include	version.i
+
+VSTRING	MACRO
+		VERS
+		dc.b	" ("
+		DATE
+		dc.b	")",13,10,0
+	ENDM
+VERSTAG	MACRO
+		dc.b	0,"$VER: "
+		VERS
+		dc.b	" ("
+		DATE
+		dc.b	")",0
+	ENDM
+
+	incdir	include:
+
+
+EXEC_MACROS_I	SET	1	; Fake a bit to avoid exec/macros.i problems
+
+pushm	MACRO
+	movem.l	\1,-(sp)
+	ENDM
+popm	MACRO
+	movem.l	(sp)+,\1
+	ENDM
+
+*************************************************************************
+		IFND	PRINTF
+PRINTF		MACRO	; level,<string>,...
+		IFGE	DEBUG_DETAIL-\1
+		XREF	kprint_macro
+PUSHCOUNT	SET	0
+
+		IFNC	'\9',''
+		move.l	\9,-(sp)
+PUSHCOUNT	SET	PUSHCOUNT+4
+		ENDC
+
+		IFNC	'\8',''
+		move.l	\8,-(sp)
+PUSHCOUNT	SET	PUSHCOUNT+4
+		ENDC
+
+		IFNC	'\7',''
+		move.l	\7,-(sp)
+PUSHCOUNT	SET	PUSHCOUNT+4
+		ENDC
+
+		IFNC	'\6',''
+		move.l	\6,-(sp)
+PUSHCOUNT	SET	PUSHCOUNT+4
+		ENDC
+
+		IFNC	'\5',''
+		move.l	\5,-(sp)
+PUSHCOUNT	SET	PUSHCOUNT+4
+		ENDC
+
+		IFNC	'\4',''
+		move.l	\4,-(sp)
+PUSHCOUNT	SET	PUSHCOUNT+4
+		ENDC
+
+		IFNC	'\3',''
+		move.l	\3,-(sp)
+PUSHCOUNT	SET	PUSHCOUNT+4
+		ENDC
+
+		movem.l a0/a1,-(sp)
+		lea.l	PSS\@(pc),A0
+		lea.l	4*2(SP),A1
+		BSR	kprint_macro
+		movem.l (sp)+,a0/a1
+		bra.s	PSE\@
+
+PSS\@		dc.b	\2
+		IFEQ	(\1&1)	;If even, add CR/LF par...
+		   dc.b 13,10
+		ENDC
+		dc.b	0
+		ds.w	0
+PSE\@
+		lea.l	PUSHCOUNT(sp),sp
+		ENDC	;IFGE	DEBUG_DETAIL-\1
+		ENDM	;PRINTF	MACRO
+		ENDC	;IFND	PRINTF
+
+
+	include	hardware/cia.i
+	include	hardware/custom.i
+	include	hardware/intbits.i
+	include	hardware/dmabits.i
+
+
+	include	devices/audio.i
+	include	devices/timer.i
+	include	dos/dos.i
+	include	dos/dostags.i
+	include	exec/exec.i
+	include	graphics/gfxbase.i
+	include intuition/intuitionbase.i
+	include intuition/screens.i
+	include	resources/misc.i
+	include	resources/card.i
+	include	utility/utility.i
+	include	utility/hooks.i
+
+	include	lvo/cardres_lib.i
+	include	lvo/dos_lib.i
+	include	lvo/exec_lib.i
+	include	lvo/graphics_lib.i
+	include	lvo/intuition_lib.i
+	include	lvo/timer_lib.i
+	include	lvo/utility_lib.i
+
+	include	devices/ahi.i
+	include	libraries/ahi_sub.i
+	include	lvo/ahi_sub_lib.i
+
+	;include	macros.i
+call MACRO
+ jsr	_LVO\1(a6)
+ ENDM
+push MACRO
+ movem.l \1,-(sp)
+ ENDM
+pop MACRO
+ movem.l (sp)+,\1
+ ENDM
+
+std	equrl	d2-d7/a2-a6
+skipl	MACRO
+	dc.w	$0C80
+	ENDM
+TRUE		EQU	1
+FALSE		EQU	0
+
+custom	EQU	$dff000
+INTENA	EQU	intena
+INTREQ	EQU	intreq
+DMACON	EQU	dmacon
+VHPOSR	EQU	vhposr
+
+AUD0LC	EQU	aud0+ac_ptr
+AUD0LEN	EQU	aud0+ac_len
+AUD0PER	EQU	aud0+ac_per
+AUD0VOL	EQU	aud0+ac_vol
+AUD0DAT	EQU	aud0+ac_dat
+
+AUD1LC	EQU	aud1+ac_ptr
+AUD1LEN	EQU	aud1+ac_len
+AUD1PER	EQU	aud1+ac_per
+AUD1VOL	EQU	aud1+ac_vol
+AUD1DAT	EQU	aud1+ac_dat
+
+AUD2LC	EQU	aud2+ac_ptr
+AUD2LEN	EQU	aud2+ac_len
+AUD2PER	EQU	aud2+ac_per
+AUD2VOL	EQU	aud2+ac_vol
+AUD2DAT	EQU	aud2+ac_dat
+
+AUD3LC	EQU	aud3+ac_ptr
+AUD3LEN	EQU	aud3+ac_len
+AUD3PER	EQU	aud3+ac_per
+AUD3VOL	EQU	aud3+ac_vol
+AUD3DAT	EQU	aud3+ac_dat
+
+
+
+BETTERTIMING	EQU	1
+
+DEBUG_DETAIL	SET	0
+
+_ciaa		EQU	$bfe001
+_ciab		EQU	$bfd000
+
+AUD0		EQU	$0A0
+AUD1		EQU	$0B0
+AUD2		EQU	$0C0
+AUD3		EQU	$0D0
+AUDLC		EQU	0
+AUDLEN		EQU	4
+AUDPER		EQU	6
+AUDVOL		EQU	8
+AUDPERVOL	EQU	6
+
+INTF_AUDIO	EQU	INTF_AUD3|INTF_AUD2|INTF_AUD1|INTF_AUD0
+
+PALFREQ		EQU	3546895
+NTSCFREQ	EQU	3579545
+MINPER		EQU	62
+
+
+DMABUFFSAMPLES	EQU	512	; 8 of these will be allocated!
+RECORDSAMPLES	EQU	1024
+
+EXTRASAMPLES	EQU	4
+EXTRABUFFSIZE	EQU	EXTRASAMPLES*8	; 4 samples of max size ( 2×32 bit: hifi stereo )
+
+* paula.audio extra tags
+AHIDB_Paula14Bit	EQU	AHIDB_UserBase+0	* Boolean
+AHIDB_PaulaTable	EQU	AHIDB_UserBase+1	* Boolean
+AHIDB_PaulaDMA		EQU	AHIDB_UserBase+2	* Boolean
+
+ * paulaBase (private)
+	STRUCTURE paulaBase,LIB_SIZE
+	UBYTE	pb_Flags
+	UBYTE	pb_Pad1
+	UWORD	pb_Pad2
+	APTR	pb_SysLib
+	ULONG	pb_SegList
+	APTR	pb_GfxLib
+	APTR	pb_UtilLib
+	APTR	pb_DosLib
+	APTR	pb_IntuiLib
+	APTR	pb_TimerLib
+	APTR	pb_MiscResource
+	APTR	pb_CardResource
+	ULONG	pb_AudioFreq			;PAL/NTSC clock constant
+	APTR	pb_Lock
+	LABEL	paulaBase_SIZEOF
+
+ * channel (private) used in DMA mode
+
+	STRUCTURE channel,0
+	UWORD	ch_IntMask			;This channels interrupt bit
+	UWORD	ch_DMAMask			;This channels DMA bit
+	UWORD	ch_Stereo			;0 = Left, 1 = Right
+	UWORD	ch_DMALength
+	UBYTE	ch_EndOfSample			;Flag
+	UBYTE	ch_NoInt			;SetFreq() must not cause interrupt
+	UWORD	ch_Pad
+	APTR	ch_RegBase			;This channels hardware register base
+
+	ULONG	ch_Cleared			;Samples already cleared
+	ULONG	ch_Cleared2			;Samples already cleared
+
+	ULONG	ch_Count			;How mant samples played? (In samples)
+
+	APTR	ch_Address			;Current sample address
+	APTR	ch_NextAddress			;Next sample address
+
+	ULONG	ch_Offset			;Where are we playing? (In samples)
+	ULONG	ch_NextOffset			;Next...
+
+	ULONG	ch_Length			;Current sample length (In samples)
+	ULONG	ch_NextLength			;Next sample length
+
+	ULONG	ch_Type				;Current sample type
+	ULONG	ch_NextType			;Next sample type
+
+	LABEL	ch_PerVol
+	UWORD	ch_Period			;Current period (0 = stopped)
+	UWORD	ch_Volume			;Current volume (scaled)
+	LABEL	ch_NextPerVol
+	UWORD	ch_NextPeriod			;Next period
+	UWORD	ch_NextVolume			;Next volume  (scaled)
+
+;	ULONG	ch_AudPerVol
+
+	UWORD	ch_VolumeNorm
+	UWORD	ch_NextVolumeNorm
+
+	UWORD	ch_Scale			;Current frequency scale (2^ch_Scale)
+	UWORD	ch_NextScale			;Next frequency scale
+
+	STRUCT	ch_SndMsg,AHISoundMessage_SIZEOF
+
+	LABEL	channel_SIZEOF
+
+ * sound (private) used in DMA mode
+
+	STRUCTURE sound,0
+	ULONG	so_Type
+	APTR	so_Address
+	ULONG	so_Length
+	LABEL	sound_SIZEOF
+
+ * paula (private) ahiac_DriverData points to this structure.
+	STRUCTURE paula,0
+	UBYTE	p_Flags
+	UBYTE	p_Parallel			;TRUE if parport allocated
+	UBYTE	p_Filter			;TRUE if filter was on when alocating
+	UBYTE	p_Pad0
+	UWORD	p_DisableCount			;AHIsub_Enable/AHIsub_Disable cnt
+	UWORD	p_IRQMask
+
+	APTR	p_PaulaBase			;Pointer to library base (DMA only)
+	APTR	p_AudioCtrl			;Backpointer to AudioCtrl struct.
+
+	UBYTE	p_SwapChannels			;TRUE if left/right should be swapped
+	UBYTE	p_ScreenIsDouble		;TRUE if screen mode allows >28kHz
+
+	UWORD	p_MixTaskPri
+	APTR	p_MixTask
+	APTR	p_ReplyTask
+
+	ULONG	p_MinBufferLength		;Minimum length of chipmem playbuffer
+	APTR	p_CalibrationTable		;Pointer to 14 bit conversion tables
+
+	APTR	p_DMAbuffer			;Chipmem play buffer
+	ULONG	p_DoubleBufferOffset		;Buffer flag
+
+	LABEL	p_AudPtrs			; Pointers to chipmem play buffer
+	APTR	p_AudPtr1A
+	APTR	p_AudPtr2A
+	APTR	p_AudPtr3A
+	APTR	p_AudPtr4A
+	APTR	p_AudPtr1B
+	APTR	p_AudPtr2B
+	APTR	p_AudPtr3B
+	APTR	p_AudPtr4B
+
+	APTR	p_audioport			;For audio.device
+	APTR	p_audioreq			;For audio.device
+	UBYTE	p_audiodev			;For audio.device
+	UBYTE	p_bpad0
+	UWORD	p_wpad1
+	APTR	p_ParBitsUser			;Parallel port locking
+	APTR	p_ParPortUser			;Parallel port locking
+	APTR	p_SerBitsUser			;Serial port locking
+	APTR	p_CardHandle			;Aura PCMCIA card hanle
+
+	STRUCT	p_PlayInt,IS_SIZE		;Player hardware interrupt
+	STRUCT	p_PlaySoftInt,IS_SIZE		;Player software interrupt (mixing only)
+	STRUCT	p_RecInt,IS_SIZE		;Recorder hardware interrupt (mixing only)
+	STRUCT	p_RecSoftInt,IS_SIZE		;Recorder software interrupt (mixing only)
+
+	UWORD	p_AudPer			;Playback period (mixing only)
+	UWORD	p_OutputVolume			;Hardware volume (mixing only)
+	UWORD	p_MonitorVolume			;Monitor volume (mixing only)
+	UWORD	p_Input				;Input select (mixing only)
+
+ IFEQ BETTERTIMING-1
+	ULONG	p_LoopLeftovers			;(mixing only)
+	ULONG	p_SampleFrameShift		;Size of sample fram is 2^x (mixing only)
+ ELSE
+	ULONG	p_LoopTimes			;(mixing only)
+ ENDC
+
+	LABEL	p_PlayerHookRegs		;PlayerHook
+	APTR	p_PlayerHook
+	ULONG	p_Reserved
+	FPTR	p_PlayerEntry			;p_PlayerHook->h_Entry
+
+	LABEL	p_MixHookRegs			;MixingHook (mixing only)
+	APTR	p_MixHook
+	APTR	p_Mixbuffer
+	FPTR	p_MixEntry			;p_MixHook->h_Entry
+
+	LABEL	p_RecIntDataAura		;Record data structure for Aura sampl.
+	APTR	p_AuraAddress			;DO NOT CHANGE ORDER!
+	LABEL	p_RecIntData			;Record data structure
+	APTR	p_RecFillPtr
+	UWORD	p_RecFillCount
+	UWORD	p_Pad2
+	APTR	p_RecBuffer1
+	APTR	p_RecBuffer2
+	APTR	p_RecSoftIntPtr
+
+	LABEL	p_RecordMessage			;Message used with SamplerFunc()
+	ULONG	p_rmType
+	APTR	p_rmBuffer
+	ULONG	p_rmLength
+
+	ULONG	p_EClock			;System E clock freq. (DMA only)
+	ULONG	p_EPeriod			;PlayerFunc() E clk period (DMA only)
+	STRUCT	p_EAlarm,EV_SIZE		;E Clock to wait for (DMA only)
+	STRUCT	p_TimerPort,MP_SIZE		;(DMA only)
+	STRUCT	p_TimerInt,IS_SIZE		;(DMA only)
+	APTR	p_TimerReq			;Used to drive PlayerFunc() (DMA only)
+	UBYTE	p_TimerDev			;(DMA only)
+	UBYTE	p_TimerPad
+	UWORD	p_TimerCommFlag			;Used to end timer (DMA only)
+
+	ULONG	p_MasterVolume			;Effect parameter (DMA only)
+	APTR	p_ChannelInfo			;Effect structure (DMA only)
+
+	APTR	p_Sounds
+	STRUCT	p_Channels,channel_SIZEOF*4	;DMA playback channel info
+
+	STRUCT	p_CalibrationArray,256		;14 bit calibration prefs
+
+	LABEL	paula_SIZEOF
+
+* p_Flags
+	BITDEF	P,14BIT,0
+	BITDEF	P,HIFI,1
+PB_STEREO	EQU	AHIACB_STEREO		;=2
+PF_STEREO	EQU	AHIACF_STEREO
+	BITDEF	P,DMA,3
+
+Start:
+	moveq	#-1,d0
+	rts
+
+RomTag:
+	DC.W	RTC_MATCHWORD
+	DC.L	RomTag
+	DC.L	EndCode
+	DC.B	RTF_AUTOINIT
+	DC.B	VERSION				;version
+	DC.B	NT_LIBRARY
+	DC.B	0				;pri
+	DC.L	LibName
+	DC.L	IDString
+	DC.L	InitTable
+
+LibName:	dc.b	"paula.audio",0
+IDString:	VSTRING
+gfxName:	GRAPHICSNAME
+utilName:	UTILITYNAME
+dosName:	DOSNAME
+intuiName:	dc.b	"intuition.library",0
+timerName:	dc.b	"timer.device",0
+miscName:	MISCNAME
+cardName:	dc.b	"card.resource",0
+mosName:	dc.b	"MorphOS",0
+filterVar:	dc.b	"AHIpaulaFilterFreq",0
+screenVar:	dc.b	"AHIpaulaSampleLimit",0
+bufferVar:	dc.b	"AHIpaulaBufferLength",0
+swapVar:	dc.b	"AHIpaulaSwapChannels",0
+fakefreqVar:	dc.b	"AHIpaulaFakeMixFreq",0
+taskVar:	dc.b	"AHIpaulaMixTaskPri",0
+	cnop	0,2
+
+InitTable:
+	DC.L	paulaBase_SIZEOF
+	DC.L	funcTable
+	DC.L	dataTable
+	DC.L	initRoutine
+
+funcTable:
+	dc.l	Open
+	dc.l	Close
+	dc.l	Expunge
+	dc.l	Null
+*
+	dc.l	AHIsub_AllocAudio
+	dc.l	AHIsub_FreeAudio
+	dc.l	AHIsub_Disable
+	dc.l	AHIsub_Enable
+	dc.l	AHIsub_Start
+	dc.l	AHIsub_Update
+	dc.l	AHIsub_Stop
+	dc.l	AHIsub_SetVol
+	dc.l	AHIsub_SetFreq
+	dc.l	AHIsub_SetSound
+	dc.l	AHIsub_SetEffect
+	dc.l	AHIsub_LoadSound
+	dc.l	AHIsub_UnloadSound
+	dc.l	AHIsub_GetAttr
+	dc.l	AHIsub_HardwareControl
+	dc.l	-1
+
+dataTable:
+	INITBYTE	LN_TYPE,NT_LIBRARY
+	INITLONG	LN_NAME,LibName
+	INITBYTE	LIB_FLAGS,LIBF_SUMUSED|LIBF_CHANGED
+	INITWORD	LIB_VERSION,VERSION
+	INITWORD	LIB_REVISION,REVISION
+	INITLONG	LIB_IDSTRING,IDString
+	DC.L		0
+
+initRoutine:
+	movem.l	d1/a0/a1/a5/a6,-(sp)
+
+	move.l	d0,a5
+	move.l	a6,pb_SysLib(a5)
+	move.l	a0,pb_SegList(a5)
+
+	lea	gfxName(pc),a1
+	moveq	#37,d0
+	call	OpenLibrary
+	move.l	d0,pb_GfxLib(a5)
+	bne.b	.gfxOK
+	ALERT	AG_OpenLib|AO_GraphicsLib
+	bra	.gfxFail
+.gfxOK
+	lea	utilName(pc),a1
+	moveq	#37,d0
+	call	OpenLibrary
+	move.l	d0,pb_UtilLib(a5)
+	bne.b	.utilOK
+	ALERT	AG_OpenLib|AO_UtilityLib
+	bra	.utilFail
+.utilOK
+	lea	dosName(pc),a1
+	moveq	#37,d0
+	call	OpenLibrary
+	move.l	d0,pb_DosLib(a5)
+	bne.b	.dosOK
+	ALERT	AG_OpenLib|AO_DOSLib
+	bra	.dosFail
+.dosOK
+	lea	intuiName(pc),a1
+	moveq	#37,d0
+	call	OpenLibrary
+	move.l	d0,pb_IntuiLib(a5)
+	bne.b	.intuiOK
+	ALERT	AG_OpenLib|AO_Intuition
+	bra	.intuiFail
+.intuiOK
+	lea	miscName(pc),a1
+	call	OpenResource
+	move.l	d0,pb_MiscResource(a5)
+	bne.b	.miscOK
+	ALERT	AG_OpenRes|AO_MiscRsrc
+	bra	.miscFail
+.miscOK
+	lea	cardName(pc),a1
+	call	OpenResource
+	move.l	d0,pb_CardResource(a5)		;Don't fail on error
+
+	move.l	#PALFREQ,d1			;PAL
+	move.l	pb_GfxLib(a5),a0
+	move.w	gb_DisplayFlags(a0),d0
+	btst	#REALLY_PALn,d0
+	bne.b	.1
+	move.l	#NTSCFREQ,d1			;NTSC
+.1
+	move.l	d1,pb_AudioFreq(a5)
+
+	move.l	a5,d0
+.exit
+	movem.l	(sp)+,d1/a0/a1/a5/a6
+	rts
+
+.miscFail
+	move.l	pb_IntuiLib(a5),a1
+	call	CloseLibrary
+.intuiFail
+	move.l	pb_DosLib(a5),a1
+	call	CloseLibrary
+.dosFail
+	move.l	pb_UtilLib(a5),a1
+	call	CloseLibrary
+.utilFail
+	move.l	pb_GfxLib(a5),a1
+	call	CloseLibrary
+.gfxFail
+	moveq	#0,d0
+	move.l	a5,a1
+	move.w	LIB_NEGSIZE(a5),d0
+	sub.l	d0,a1
+	add.w	LIB_POSSIZE(a5),d0
+	call	FreeMem
+
+	moveq	#0,d0
+	bra.b	.exit
+
+Open:
+	addq.w	#1,LIB_OPENCNT(a6)
+	bclr.b	#LIBB_DELEXP,pb_Flags(a6)
+	move.l	a6,d0
+	rts
+
+Close:
+	moveq	#0,d0
+	subq.w	#1,LIB_OPENCNT(a6)
+	bne.b	.exit
+	btst.b	#LIBB_DELEXP,pb_Flags(a6)
+	beq.b	.exit
+	bsr	Expunge
+.exit
+	rts
+
+Expunge:
+	movem.l	d1/d2/a0/a1/a5/a6,-(sp)
+	move.l	a6,a5
+	move.l	pb_SysLib(a5),a6
+	tst.w	LIB_OPENCNT(a5)
+	beq.b	.notopen
+	bset.b	#LIBB_DELEXP,pb_Flags(a5)
+	moveq	#0,d0
+	bra.b	.Expunge_end
+.notopen
+	move.l	pb_IntuiLib(a5),a1
+	call	CloseLibrary
+
+	move.l	pb_DosLib(a5),a1
+	call	CloseLibrary
+
+	move.l	pb_UtilLib(a5),a1
+	call	CloseLibrary
+
+	move.l	pb_GfxLib(a5),a1
+	call	CloseLibrary
+
+	move.l	a5,a1
+	call	Remove
+
+	move.l	pb_SegList(a5),d2
+
+	moveq	#0,d0
+	move.l	a5,a1
+	move.w	LIB_NEGSIZE(a5),d0
+	sub.l	d0,a1
+	add.w	LIB_POSSIZE(a5),d0
+	call	FreeMem
+
+	move.l	d2,d0
+.Expunge_end
+	movem.l	(sp)+,d1/d2/a0/a1/a5/a6
+	rts
+
+Null:
+	moveq	#0,d0
+	rts
+
+* BeginIO(ioRequest)(a1) (From amiga.lib)
+BeginIO:
+	;move.l	a1,a0		;probably not necessary
+	push	a6
+	move.l	IO_DEVICE(a1),a6
+	jsr	-30(a6)
+	pop	a6
+	rts
+
+;in:
+* d0	Default value
+* a0	Environment variable to get
+* a5	paulaBase
+GetVarInt:
+	pushm	std
+
+	move.l	d0,d5				;Default
+
+	move.l	pb_DosLib(a5),a6
+	subq.l	#8,sp				;local label
+	move.w	#("0"<<8)|0,(sp)		;Initialize as "0"
+
+	move.l	a0,d1
+	move.l	sp,d2
+	moveq	#8,d3
+	moveq	#0,d4
+	call	GetVar
+
+	addq.l	#1,d0				;cmp.l	#-1,d0
+	beq	.gotvar
+	move.l	sp,d1
+	clr.l	-(sp)
+	move.l	sp,d2
+	call	StrToLong
+	move.l	(sp)+,d5
+.gotvar
+	addq.l	#8,sp
+
+; d5 is now the integer value
+	move.l	d5,d0
+	popm	std
+	rts
+
+****** [driver].audio/--background-- ****************************************
+*
+*   OVERVIEW
+*
+*       GENERAL PROGRAMMING GUIDLINES
+*
+*       The driver must be able to be OpenLibrary()'ed even if the
+*       hardware is not present. If a library the driver uses fails
+*       to open, it is ok to fail at the library init routine, but please
+*       avoid it if possible.
+*
+*       Please note that this document could be much better, but since not
+*       many will ever need to read it, it will probably stay this way.
+*       Don't hesitate to contact Martin Blom when you're writing a driver!
+*
+*       DRIVER VERSIONS
+*
+*       The lowest supported driver version is 2. If you use any feature
+*       introduced in later versions of AHI, you should set the driver
+*       version to the same version as the features were introduced with.
+*       Example: You use PreTimer() and PostTimer(), and since these
+*       calls were added in V4 of ahi.device, your driver's version should
+*       be 4, too.
+*
+*       Note that AHI version 4 will not open V6 drivers, for obvious
+*       reasons.
+*
+*       AUDIO ID NUMBERS
+*
+*       Just some notes about selecting ID numbers for different modes:
+*       It is up to the driver programmer to chose which modes should be
+*       available to the user. Take care when selecting.
+*
+*       The upper word is the hardware ID, and can only be allocated by
+*       Martin Blom <lcs@lysator.liu.se>. The lower word is free, but in
+*       order to allow enhancements, please only use bit 0 to 4 for modes!
+*       If your driver supports multiple sound cards, use bit 12-15 to
+*       select card (first one is 0). If your sound card has multiple
+*       AD/DA converters, you can use bit 8-11 to select them (the first
+*       should be 0).
+*
+*       Set the remaining bits to zero.
+*
+*       Use AHI:Developer/Support/ScanAudioModes to have a look at the modes
+*       currently available. Use AHI:Developer/Support/sift to make sure your
+*       mode descriptor file is a legal IFF file.
+*
+*       I do reserve the right to change the rules if I find them incorrect!
+*
+*****************************************************************************
+*
+*
+
+
+****** [driver].audio/AHIsub_AllocAudio *************************************
+*
+*   NAME
+*       AHIsub_AllocAudio -- Allocates and initializes the audio hardware.
+*
+*   SYNOPSIS
+*       result = AHIsub_AllocAudio( tags, audioctrl);
+*       D0                          A1    A2
+*
+*       ULONG AHIsub_AllocAudio( struct TagItem *, struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       Allocate and initialize the audio hardware. Decide if and how you
+*       wish to use the mixing routines provided by 'ahi.device', by looking
+*       in the AHIAudioCtrlDrv structure and parsing the tag list for tags
+*       you support.
+*
+*       1) Use mixing routines with timing:
+*           You will need to be able to play any number of samples from
+*           about 80 up to 65535 with low overhead.
+*           · Update AudioCtrl->ahiac_MixFreq to nearest value that your
+*             hardware supports.
+*           · Return AHISF_MIXING|AHISF_TIMING.
+*
+*       2) Use mixing routines without timing:
+*           If the hardware can't play samples with any length, use this
+*           alternative and provide timing yourself. The buffer must
+*           take less than about 20 ms to play, preferable less than 10!
+*           · Update AudioCtrl->ahiac_MixFreq to nearest value that your
+*             hardware supports.
+*           · Store the number of samples to mix each pass in
+*             AudioCtrl->ahiac_BuffSamples.
+*           · Return AHISF_MIXING
+*           Alternatively, you can use the first method and call the
+*           mixing hook several times in a row to fill up a buffer.
+*           In that case, AHIsub_GetAttr(AHIDB_MaxPlaySamples) should
+*           return the size of the buffer plus AudioCtrl->ahiac_MaxBuffSamples.
+*           If the buffer is so large that it takes more than (approx.) 10 ms to
+*           play it for high sample frequencies, AHIsub_GetAttr(AHIDB_Realtime)
+*           should return FALSE.
+*
+*       3) Don't use mixing routines:
+*           If your hardware can handle everything without using the CPU to
+*           mix the channels, you tell 'ahi.device' this by not setting
+*           either the AHISB_MIXING or the AHISB_TIMING bit.
+*
+*       If you can handle stereo output from the mixing routines, also set
+*       bit AHISB_KNOWSTEREO.
+*
+*       If you can handle hifi (32 bit) output from the mixing routines,
+*       set bit AHISB_KNOWHIFI.
+*
+*       If this driver can be used to record samples, set bit AHISB_CANRECORD,
+*       too (regardless if you use the mixing routines in AHI or not).
+*
+*       If the sound card has hardware to do DSP effects, you can set the
+*       AHISB_CANPOSTPROCESS bit. The output from the mixing routines will 
+*       then be two separate buffers, one wet and one dry. You should then
+*       apply the Fx on the wet buffer, and post-mix the two buffers before
+*       you send the samples to the DAC. (V4)
+*
+*   INPUTS
+*       tags - pointer to a taglist.
+*       audioctrl - pointer to an AHIAudioCtrlDrv structure.
+*
+*   TAGS
+*       The tags are from the audio database (AHIDB_#? in <devices/ahi.h>),
+*       NOT the tag list the user called ahi.device/AHI_AllocAudio() with.
+*
+*   RESULT
+*       Flags, defined in <libraries/ahi_sub.h>.
+*
+*   EXAMPLE
+*
+*   NOTES
+*       You don't have to clean up on failure, AHIsub_FreeAudio() will
+*       always be called.
+*
+*   BUGS
+*
+*   SEE ALSO
+*       AHIsub_FreeAudio(), AHIsub_Start()
+*
+*****************************************************************************
+*
+*
+
+AHIsub_AllocAudio:
+	PRINTF	2,"[0;0H[J"
+	PRINTF	2,"AHIsub_AllocAudio()"
+
+	pushm	std
+	move.l	a6,a5
+
+	move.l	a1,d3
+
+
+* Allocate the 'paula' structure (our variables)
+	move.l	pb_SysLib(a5),a6
+	move.l	#paula_SIZEOF,d0
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,ahiac_DriverData(a2)
+	beq	.error_nopaula
+	move.l	d0,a3
+
+* Initialize some fields...
+	st	p_TimerDev(a3)
+	st	p_audiodev(a3)
+	move.l	#-1,p_ParBitsUser(a3)
+	move.l	#-1,p_ParPortUser(a3)
+	move.l	#-1,p_SerBitsUser(a3)
+	move.l	a5,p_PaulaBase(a3)
+	move.l	a2,p_AudioCtrl(a3)
+	lea	p_RecSoftInt(a3),a0
+	move.l	a0,p_RecSoftIntPtr(a3)
+	move.l	#AHIST_S16S,p_rmType(a3)
+	move.l	#RECORDSAMPLES,p_rmLength(a3)
+	move.w	#64,p_OutputVolume(a3)
+	move.l	#$10000,p_MasterVolume(a3)
+
+* Translate tags to flags
+	move.l	pb_UtilLib(a5),a6
+
+	move.l	ahiac_Flags(a2),d2
+	and.b	#PF_STEREO,d2			;same as AHIACF_STEREO
+
+	move.l	#AHIDB_Paula14Bit,d0
+	moveq	#FALSE,d1
+	move.l	d3,a0				;tag list
+	call	GetTagData
+	tst.l	d0
+	beq.b	.no14bit
+	or.b	#PF_14BIT,d2
+.no14bit
+	move.l	#AHIDB_HiFi,d0
+	moveq	#FALSE,d1
+	move.l	d3,a0				;tag list
+	call	GetTagData
+	tst.l	d0
+	beq.b	.noHiFi
+	or.b	#PF_HIFI,d2
+.noHiFi
+	move.l	#AHIDB_PaulaDMA,d0
+	moveq	#FALSE,d1
+	move.l	d3,a0				;tag list
+	call	GetTagData
+	tst.l	d0
+	beq.b	.noDMA
+	or.b	#PF_DMA,d2
+.noDMA
+
+	move.b	p_Flags(a3),d1
+	and.b	#~(PF_STEREO|PF_14BIT|PF_HIFI|PF_DMA),d1
+	or.b	d2,d1
+	move.b	d1,p_Flags(a3)
+
+	bsr	checkvideo
+	move.b	d0,p_ScreenIsDouble(a3)
+
+* Check if a table should be used (14 bit calibration)
+	move.l	#AHIDB_PaulaTable,d0
+	moveq	#0,d1
+	move.l	d3,a0				;tag list
+	call	GetTagData
+	tst.l	d0
+	beq	.notable
+
+* Load 'ENV:CyberSound/SoundDrivers/14Bit_Calibration', allocate
+* and initialize the table.
+* FIXIT: The calibration file should move to a special chunk in
+* 'DEVS:AudioModes/PAULA'.
+	move.l	pb_DosLib(a5),a6
+	lea	.calibname(pc),a0
+	move.l	a0,d1
+	move.l	#MODE_OLDFILE,d2
+	call	Open
+	move.l	d0,d4
+	beq	.nocalib
+	move.l	d0,d1
+	lea	p_CalibrationArray(a3),a0
+	move.l	a0,d2
+	move.l	#256,d3
+	call	Read
+	cmp.l	d0,d3
+	beq	.tableloaded
+.nocalib
+; Fill defaults
+	lea	p_CalibrationArray(a3),a0
+	move.w	#254-1,d0
+.initcalib
+	move.b	#$55,(a0)+
+	dbf	d0,.initcalib
+	move.b	#$7f,(a0)+
+.tableloaded
+	move.l	d4,d1
+	beq.b	.nofile
+	call	Close
+.nofile
+	move.l	pb_SysLib(a5),a6
+	move.l	#65536*2,d0
+	move.l	#MEMF_PUBLIC,d1
+	call	AllocVec
+	move.l	d0,p_CalibrationTable(a3)
+	beq.b	.notable
+	move.l	d0,a0			;table
+	lea	p_CalibrationArray(a3),a1
+	bsr.w	_CreateTable
+.notable
+
+* Get the minimum chip buffer size
+	moveq	#0,d0				;Default
+	lea	bufferVar(pc),a0
+	bsr	GetVarInt
+	move.l	d0,p_MinBufferLength(a3)
+
+* Check if we should swap left & right channels
+	moveq	#0,d0				;Default
+	lea	swapVar(pc),a0
+	bsr	GetVarInt
+	move.b	d0,p_SwapChannels(a3)
+
+* Check if we should use a task instead of a software interrupt
+	move.l	#128,d0				;Default (softint)
+	lea	taskVar(pc),a0
+	bsr	GetVarInt
+	move.w	d0,p_MixTaskPri(a3)
+
+* Check if MorphOS
+	move.l	pb_SysLib(a5),a6
+	lea	mosName(pc),a1
+	call	FindResident
+	tst.l	d0
+	beq	.allocdev
+
+* If MorphOS, check internal lock
+	call	Forbid
+	move.l	pb_Lock(a5),d0
+	bne	.locked
+	move.l	a3,pb_Lock(a5)
+.locked
+	call	Permit
+	tst.l	d0
+	bne	.error_hwinuse
+	bra	.allocated
+
+* allocate audio.device
+.allocdev
+	move.l	pb_SysLib(a5),a6
+	call	CreateMsgPort
+	move.l	d0,p_audioport(a3)
+	beq	.error_noport
+	moveq	#ioa_SIZEOF,d0
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_audioreq(a3)
+	beq	.error_noreqmem
+	move.l	d0,a0
+	move.l	p_audioport(a3),MN_REPLYPORT(a0)
+	clr.w	ioa_AllocKey(a0)
+	move.b	#127,LN_PRI(a0)			;steal it!
+	lea	.audiochannelarray(pc),a1
+	move.l	a1,ioa_Data(a0)
+	move.l	#1,ioa_Length(a0)
+	lea	.audioname(pc),a0
+	moveq	#0,d0
+	move.l	p_audioreq(a3),a1
+	moveq	#0,d1
+	call	OpenDevice
+	move.b	d0,p_audiodev(a3)
+	bne	.error_noaudiodev		;somebody already owns the hardware (could be us!)
+	move.l	p_audioreq(a3),a1
+	move.w	#CMD_RESET,IO_COMMAND(a1)
+	bsr.w	BeginIO				;clear attach, stop sound.
+	move.l	p_audioport(a3),a0
+	call	WaitPort
+	move.l	p_audioport(a3),a0
+	call	GetMsg
+
+	move.l	pb_DosLib(a5),a6
+	moveq	#1,d1
+	call	Delay
+
+.allocated
+
+* Set dummy interrupt handler
+	move.l	pb_SysLib(a5),a6
+	move.l	#Interrupt_Dummy,IS_CODE+p_PlayInt(a3)
+
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD0,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD1,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD2,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD3,d0
+	call	SetIntVector
+
+* test if mode supports recording
+	move.b	p_Flags(a3),d0
+	and.b	#PF_14BIT|PF_DMA,d0
+	bne	.dontgetsampler			;no record if 14 bit and DMA modes
+
+* try to allocate parallel port
+	clr.b	p_Parallel(a3)
+	move.l	pb_MiscResource(a5),a6
+	moveq	#MR_PARALLELBITS,d0
+	lea	IDString(pc),a1
+	jsr	MR_ALLOCMISCRESOURCE(a6)
+	move.l	d0,p_ParBitsUser(a3)
+	bne	.no_parrallel
+	moveq	#MR_PARALLELPORT,d0
+	lea	IDString(pc),a1
+	jsr	MR_ALLOCMISCRESOURCE(a6)
+	move.l	d0,p_ParPortUser(a3)
+	bne	.no_parrallel
+
+	move.b	#TRUE,p_Parallel(a3)
+	move.b	#0,_ciaa+ciaddrb			;make PB0-PB7 inputs
+.no_parrallel
+
+* allocate Aura sampler
+	clr.l	p_AuraAddress(a3)
+	move.l	pb_CardResource(a5),d0
+	beq	.no_aura
+	move.l	d0,a6
+	call	GetCardMap
+	tst.l	d0
+	beq	.no_aura
+	move.l	d0,a0
+	move.l	cmm_IOMemory(a0),d2
+	beq	.no_aura
+
+	move.l	pb_SysLib(a5),a6
+	moveq	#CardHandle_SIZEOF,d0
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_CardHandle(a3)
+	beq	.no_aura
+
+	move.l	pb_CardResource(a5),a6
+	move.l	d0,a1
+	move.l	#IDString,LN_NAME(a1)
+	move.b	#CARDF_RESETREMOVE|CARDF_IFAVAILABLE,cah_CardFlags(a1)
+	call	OwnCard
+	tst.l	d0
+	bne	.no_aura
+
+	move.l	p_CardHandle(a3),a1
+	call	BeginCardAccess
+
+	move.l	d2,p_AuraAddress(a3)
+.no_aura
+.dontgetsampler
+
+
+
+* initialize interrupts (Only dummy function pointers at this time)
+
+ * p_PlayInt (the main playback interrupt)
+	move.b	#NT_INTERRUPT,LN_TYPE+p_PlayInt(a3)
+	move.l	#LibName,LN_NAME+p_PlayInt(a3)
+	move.l	#Interrupt_Dummy,IS_CODE+p_PlayInt(a3)
+	move.l	a3,IS_DATA+p_PlayInt(a3)
+
+ * p_PlaySoftInt (caused by p_PlayInt, here are the mixing and conversion done)
+	move.b	#NT_INTERRUPT,LN_TYPE+p_PlaySoftInt(a3)
+	move.l	#LibName,LN_NAME+p_PlaySoftInt(a3)
+	move.l	#SoftInt_Dummy,IS_CODE+p_PlaySoftInt(a3)
+	move.l	a3,IS_DATA+p_PlaySoftInt(a3)
+
+ * p_RecInt (the interrupt used for recording)
+	move.b	#NT_INTERRUPT,LN_TYPE+p_RecInt(a3)
+	move.l	#LibName,LN_NAME+p_RecInt(a3)
+	move.l	#Interrupt_Dummy,IS_CODE+p_RecInt(a3)
+	clr.l	IS_DATA+p_RecInt(a3)
+
+ * p_RecSoftInt (caused by p_RecInt when the record buffer has been filled)
+	move.b	#32,LN_PRI+p_RecSoftInt(a3)
+	move.b	#NT_INTERRUPT,LN_TYPE+p_RecSoftInt(a3)
+	move.l	#LibName,LN_NAME+p_RecSoftInt(a3)
+	move.l	#RecordSoftInt,IS_CODE+p_RecSoftInt(a3)
+	move.l	a3,IS_DATA+p_RecSoftInt(a3)
+
+* Make sure no interrupts occur until AHIsub_Start() is called
+	move.w	#INTF_AUDIO,custom+INTENA
+	move.w	#INTF_SETCLR,p_IRQMask(a3)
+
+* Update ahiac_MixFreq to what the mixing/sampling frequency really is
+	moveq	#0,d0				;Default
+	lea	fakefreqVar(pc),a0
+	bsr	GetVarInt
+	tst.l	d0
+	bne	.skipfrequpdate
+	move.l	ahiac_MixFreq(a2),d0
+	bsr	calcperiod
+	move.l	d0,ahiac_MixFreq(a2)		;store actual freq
+.skipfrequpdate
+
+* Save the filter state
+	btst	#1,$bfe001
+	seq	p_Filter(a3)
+
+* Check the AHIpaulaFilterFreq variable.
+* If the mixing frequency is higher than this one, set disable the filter,
+* else enable it.
+	moveq	#0,d0				;Default freq
+	lea	filterVar(pc),a0
+	bsr	GetVarInt
+	cmp.l	ahiac_MixFreq(a2),d0
+	bls	.no_filter
+	bclr	#1,$bfe001			;turn audio filter on
+	bra	.filter_set
+.no_filter
+	bset	#1,$bfe001			;turn audio filter off
+.filter_set
+
+	btst.b	#PB_DMA,p_Flags(a3)
+	beq	.mixing
+
+	cmp.w	#4,ahiac_Channels(a2)
+	bhi	.error_channels
+
+	move.l	pb_AudioFreq(a5),ahiac_MixFreq(a2)	;store actual freq
+
+	move.l	#AHIST_NOTYPE,p_Channels+channel_SIZEOF*0+ch_Type(a3)
+	move.l	#AHIST_NOTYPE,p_Channels+channel_SIZEOF*1+ch_Type(a3)
+	move.l	#AHIST_NOTYPE,p_Channels+channel_SIZEOF*2+ch_Type(a3)
+	move.l	#AHIST_NOTYPE,p_Channels+channel_SIZEOF*3+ch_Type(a3)
+	move.l	#AHIST_NOTYPE,p_Channels+channel_SIZEOF*0+ch_NextType(a3)
+	move.l	#AHIST_NOTYPE,p_Channels+channel_SIZEOF*1+ch_NextType(a3)
+	move.l	#AHIST_NOTYPE,p_Channels+channel_SIZEOF*2+ch_NextType(a3)
+	move.l	#AHIST_NOTYPE,p_Channels+channel_SIZEOF*3+ch_NextType(a3)
+	move.w	#0,p_Channels+channel_SIZEOF*0+ch_SndMsg+ahism_Channel(a3)
+	move.w	#1,p_Channels+channel_SIZEOF*1+ch_SndMsg+ahism_Channel(a3)
+	move.w	#2,p_Channels+channel_SIZEOF*2+ch_SndMsg+ahism_Channel(a3)
+	move.w	#3,p_Channels+channel_SIZEOF*3+ch_SndMsg+ahism_Channel(a3)
+
+	move.l	pb_SysLib(a5),a6
+	move.w	ahiac_Sounds(a2),d0
+	mulu.w	#sound_SIZEOF,d0
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_Sounds(a3)
+	beq	.error_nosoundmem
+
+	move.l	d0,a0
+	move.w	ahiac_Sounds(a2),d0
+	subq.w	#1,d0
+.fillsounds
+	move.l	#AHIST_NOTYPE,so_Type(a0)
+	add.w	#sound_SIZEOF,a0
+	dbf	d0,.fillsounds
+
+	tst.b	p_SwapChannels(a3)
+	bne	.swapchannels
+	move.l	#custom+AUD1,p_Channels+channel_SIZEOF*0+ch_RegBase(a3)
+	move.l	#custom+AUD0,p_Channels+channel_SIZEOF*1+ch_RegBase(a3)
+	move.l	#custom+AUD2,p_Channels+channel_SIZEOF*2+ch_RegBase(a3)
+	move.l	#custom+AUD3,p_Channels+channel_SIZEOF*3+ch_RegBase(a3)
+	move.w	#DMAF_AUD1,p_Channels+channel_SIZEOF*0+ch_DMAMask(a3)
+	move.w	#DMAF_AUD0,p_Channels+channel_SIZEOF*1+ch_DMAMask(a3)
+	move.w	#DMAF_AUD2,p_Channels+channel_SIZEOF*2+ch_DMAMask(a3)
+	move.w	#DMAF_AUD3,p_Channels+channel_SIZEOF*3+ch_DMAMask(a3)
+	move.w	#INTF_AUD1,p_Channels+channel_SIZEOF*0+ch_IntMask(a3)
+	move.w	#INTF_AUD0,p_Channels+channel_SIZEOF*1+ch_IntMask(a3)
+	move.w	#INTF_AUD2,p_Channels+channel_SIZEOF*2+ch_IntMask(a3)
+	move.w	#INTF_AUD3,p_Channels+channel_SIZEOF*3+ch_IntMask(a3)
+	move.w	#0,p_Channels+channel_SIZEOF*0+ch_Stereo(a3)
+	move.w	#1,p_Channels+channel_SIZEOF*1+ch_Stereo(a3)
+	move.w	#1,p_Channels+channel_SIZEOF*2+ch_Stereo(a3)
+	move.w	#0,p_Channels+channel_SIZEOF*3+ch_Stereo(a3)
+	bra	.storedbase
+.swapchannels
+	move.l	#custom+AUD0,p_Channels+channel_SIZEOF*0+ch_RegBase(a3)
+	move.l	#custom+AUD1,p_Channels+channel_SIZEOF*1+ch_RegBase(a3)
+	move.l	#custom+AUD3,p_Channels+channel_SIZEOF*2+ch_RegBase(a3)
+	move.l	#custom+AUD2,p_Channels+channel_SIZEOF*3+ch_RegBase(a3)
+	move.w	#DMAF_AUD0,p_Channels+channel_SIZEOF*0+ch_DMAMask(a3)
+	move.w	#DMAF_AUD1,p_Channels+channel_SIZEOF*1+ch_DMAMask(a3)
+	move.w	#DMAF_AUD3,p_Channels+channel_SIZEOF*2+ch_DMAMask(a3)
+	move.w	#DMAF_AUD2,p_Channels+channel_SIZEOF*3+ch_DMAMask(a3)
+	move.w	#INTF_AUD0,p_Channels+channel_SIZEOF*0+ch_IntMask(a3)
+	move.w	#INTF_AUD1,p_Channels+channel_SIZEOF*1+ch_IntMask(a3)
+	move.w	#INTF_AUD3,p_Channels+channel_SIZEOF*2+ch_IntMask(a3)
+	move.w	#INTF_AUD2,p_Channels+channel_SIZEOF*3+ch_IntMask(a3)
+	move.w	#1,p_Channels+channel_SIZEOF*0+ch_Stereo(a3)
+	move.w	#0,p_Channels+channel_SIZEOF*1+ch_Stereo(a3)
+	move.w	#0,p_Channels+channel_SIZEOF*2+ch_Stereo(a3)
+	move.w	#1,p_Channels+channel_SIZEOF*3+ch_Stereo(a3)
+.storedbase
+
+
+	moveq	#0,d0
+	bra	.exit
+
+.mixing
+	moveq	#AHISF_KNOWSTEREO|AHISF_KNOWHIFI|AHISF_CANRECORD|AHISF_MIXING|AHISF_TIMING,d0
+
+.exit
+	popm	std
+	rts
+
+.error_hwinuse
+.error_noaudiodev
+.error_noreqmem
+.error_noport
+.error_nopaula
+.error_channels
+.error_nosoundmem
+	moveq	#AHISF_ERROR,d0
+	bra.b	.exit
+
+.audiochannelarray
+	dc.b	1+2+4+8
+.audioname
+	AUDIONAME
+.calibname
+	dc.b	"ENV:CyberSound/SoundDrivers/14Bit_Calibration",0
+	even
+.cardhandle:
+	dc.l	0,0		;ln_Succ, ln_Pred
+	dc.b	0		;ln_Type
+	dc.b	0		;ln_Pri
+	dc.l	IDString	;ln_Name
+	dc.l	0,0,0		;cah_CardRemoved, cah_CardInserted, cah_CardStatus
+	dc.b	(CARDF_RESETREMOVE|CARDF_IFAVAILABLE)
+	even
+
+;in:
+* d0	MixFreq
+* a5	paulaBase
+;out:
+* d0	New MixFreq
+* d1.w	Period
+;description:
+*	Calculate and return the best period and the actual frequency.
+calcperiod:
+	PRINTF	2,"calcperiod()"
+	pushm	std
+	move.l	d0,d1
+	move.l	pb_AudioFreq(a5),d2
+	move.l	d2,d0
+	move.l	d1,d3
+	move.l	pb_UtilLib(a5),a1
+	jsr	_LVOUDivMod32(a1)
+	lsl.l	#1,d1
+	cmp.l	d3,d1
+	bmi.b	.3
+	addq.l	#1,d0
+.3
+	move.w	d0,d4
+* d4 is now period. Check if is it a valid one, depending on current display mode
+	bsr	checkvideo
+	moveq	#MINPER,d1
+	tst.l	d0
+	bne	.5
+	moveq	#MINPER*2,d1
+.5
+	cmp.w	d1,d4
+	bhs.b	.6
+	move.w	d1,d4
+.6
+	moveq	#0,d1
+	move.w	d4,d1
+	move.l	d2,d0
+	move.l	d1,d3
+	move.l	pb_UtilLib(a5),a1
+	jsr	_LVOUDivMod32(a1)
+	lsl.l	#1,d1
+	cmp.l	d3,d1
+	bmi.b	.4
+	addq.l	#1,d0
+.4
+	move.w	d4,d1
+	popm	std
+	rts
+
+;in:
+* a5	paulaBase
+;out:
+* d0	TRUE if current mode is double
+;description:
+*	Checks if the current screen mode is doublescan.
+*	This routine is a bit ugly, but it does get the job
+*	done, even if a graphic card is used.
+checkvideo:
+	PRINTF	2,"checkvideo"
+
+	pushm	std
+
+* Check the AHIpaulaSampleLimit variable.
+* If 1, allow > 28 kHz frequencies, if 0, don't. If not present,
+* check the screen mode.
+
+	moveq	#-1,d0
+	lea	screenVar(pc),a0
+	bsr	GetVarInt
+	addq.l	#1,d0			; cmp.l	#-1,d0
+	beq	.testfreq
+
+	subq.l	#1,d0			; cmp.l	#0,d0
+	beq	.no31k
+	subq.l	#1,d0			; cmp.l	#1,d0
+	beq	.is31k
+
+.testfreq
+
+; Chip revision test
+
+	move.l	pb_GfxLib(a5),a0
+	move.b	gb_ChipRevBits0(a0),d0
+	and.b	#GFXF_HR_DENISE|GFXF_AA_LISA,d0
+	beq	.no31k				; OCS: No 31 kHz modes
+
+; Native screen test
+
+	moveq	#0,d0
+	move.l	pb_IntuiLib(a5),a6
+	call	LockIBase
+	move.l	d0,d2
+	move.l	ib_FirstScreen(a6),a0
+	lea	sc_ViewPort(a0),a0
+	move.l	pb_GfxLib(a5),a6
+	call	GetVPModeID
+	move.l	d2,a0
+	move.l	d0,d2
+	move.l	pb_IntuiLib(a5),a6
+	call	UnlockIBase
+
+	; "Check" if native screen
+	move.l	d2,d0
+	and.l	#$40000000,d0
+	bne	.gfxcard
+
+	; It is!
+	sub.w	#mtr_SIZEOF,sp			;local storage
+	suba.l	a0,a0
+	move.l	sp,a1
+	move.l	#mtr_SIZEOF,d0
+	move.l	#DTAG_MNTR,d1
+	move.l	pb_GfxLib(a5),a6
+	call	GetDisplayInfoData
+
+	moveq	#1,d1
+	add.w	mtr_TotalRows(sp),d1
+	sub.w	mtr_MinRow(sp),d1
+	move.w	mtr_TotalColorClocks(sp),d2
+	mulu.w	mtr_TotalRows(sp),d2
+
+	add.w	#mtr_SIZEOF,sp			;restore stack
+	tst.l	d0
+	beq	.no31k
+	; Calculate TotalColorClocks*TotalRows/(2*(TotalRows-MinRow+1)
+	add.l	d1,d1
+	beq	.no31k
+	divu	d1,d2
+	cmp.w	#64,d2				; 64 is an round nice number, no?
+	bls	.is31k
+	bra	.no31k
+
+.gfxcard
+
+; Picasso '96 test
+
+	move.l	pb_SysLib(a5),a6
+	lea	.picasso96(pc),a1
+	call	Forbid				; Not required, it's just to...
+	call	FindTask
+	call	Permit				; ...make PatchWork happy.
+	tst.l	d0
+	beq	.cgfx				; Not P96, assume CyberGraphX
+
+	move.l	pb_DosLib(a5),a6
+	clr.l	-(sp)				;Initialize local data
+	lea	.p96amigavideo(pc),a0
+	move.l	a0,d1
+	move.l	sp,d2
+	moveq	#4,d3
+	moveq	#0,d4
+	call	GetVar
+	move.l	(sp)+,d1
+	swap.w	d1
+	cmp.w	#"31",d1
+	beq	.is31k
+	bra	.no31k
+
+.cgfx
+
+; CybergraphX test
+
+	move.l	pb_GfxLib(a5),a0
+	cmp.w	#39,LIB_VERSION(a0)
+	beq	.known
+	cmp.w	#40,LIB_VERSION(a0)
+	beq	.known
+	bra	.no31k
+.known
+	move.l	gb_copinit(a0),a0
+	cmp.w	#$01FC,copinit_fm0(a0)		;Security check (test if really FMODE)
+	bne	.is31k				;Probably an ECS machine.
+						;Assume the user is clever enough
+						;to use "AddAudioModes DBLSCAN"....
+	move.w	copinit_fm0+2(a0),d0
+	and.w	#$c000,d0			;Mask sprite and bitplane double bit
+	beq	.no31k
+.is31k
+	moveq	#TRUE,d0
+	bra	.exit
+.no31k
+	moveq	#FALSE,d0
+.exit
+	popm	std
+	rts
+.picasso96
+	dc.b	"Picasso96",0
+.p96amigavideo
+	dc.b	"Picasso96/AmigaVideo",0
+	even
+
+;in:
+* d0	Frequency
+;out:
+* d0	Closest frequency
+* d1	Index
+findfreq:
+	lea	freqlist(pc),a0
+	cmp.l	(a0),d0
+	bls.b	.2
+.findfreq
+	cmp.l	(a0)+,d0
+	bhi.b	.findfreq
+	move.l	-4(a0),d1
+	sub.l	d0,d1
+	sub.l	-8(a0),d0
+	cmp.l	d1,d0
+	bhs.b	.1
+	subq.l	#4,a0
+.1
+	subq.l	#4,a0
+.2
+	move.l	(a0),d0
+	move.l	a0,d1
+	sub.l	#freqlist,d1
+	lsr.l	#2,d1
+	rts
+
+freqlist:
+	dc.l	4410					; CD/10
+	dc.l	4800					; DAT/10
+	dc.l	5513					; CD/8
+	dc.l	6000					; DAT/8
+	dc.l	7350					; CD/6
+	dc.l	8000					; µ- and A-Law, DAT/6
+	dc.l	9600					; DAT/5
+	dc.l	11025					; CD/4
+	dc.l	12000					; DAT/4
+	dc.l	14700					; CD/3
+	dc.l	16000					; DAT/3
+	dc.l	17640					; CD/2.5
+	dc.l	18900
+	dc.l	19200					; DAT/2.5
+	dc.l	22050					; CD/2
+	dc.l	24000					; DAT/2
+	dc.l	27429
+FREQUENCIES_OCS		EQU	(*-freqlist)>>2
+	dc.l	29400					; CD/1.5
+	dc.l	32000					; DAT/1.5
+	dc.l	33075
+	dc.l	37800
+	dc.l	44100					; CD
+	dc.l	48000					; DAT
+FREQUENCIES		EQU	(*-freqlist)>>2
+	dc.l	-1
+
+* _CreateTable directly stolen from Christian Buchner's CyberSound
+* audio sub system (with permission).
+
+* _CreateTable **************************************************************
+
+		; Parameters
+
+		; a0 = Table address
+		; (MUST have enough space for 65536 UWORDS)
+		; a1 = Additive Array
+		; 256 UBYTEs
+		;
+		; the table is organized as follows:
+		; 32768 UWORDS positive range, ascending order
+		; 32768 UWORDS negative range, ascending order
+		; access: (a0,d0.l*2)
+		; where d0.w is signed word sample data
+		; and the upper word of d0.l is *cleared!*
+
+
+_CreateTable	movem.l	a2/d2-d6,-(sp)
+
+		lea	128(a1),a2
+
+		move.l	a2,a1			; count the number of steps
+		moveq	#128-1,d0		; in the positive range
+		moveq	#0,d5
+.countpositive	move.b	(a1)+,d1
+		ext.w	d1
+		ext.l	d1
+		add.l	d1,d5
+		dbra	d0,.countpositive	; d5=number of steps
+		move.l	#32768,d6		; reset stretch counter
+
+		move.l	a2,a1			; middle value in calibdata
+		move.w	#32768-1,d0		; number of positive values -1
+		moveq	#0,d1			; HI value
+		moveq	#0,d2			; LO value
+		moveq	#0,d3			; counter
+.fetchnext2	move.b	(a1)+,d4		; add calibtable to counter
+		ext.w	d4
+		add.w	d4,d3
+.outerloop2	tst.w	d3
+		bgt.s	.positive2
+.negative2	addq.w	#1,d1			; increment HI value
+		sub.w	d4,d2			; reset LO value
+		bra.s	.fetchnext2
+.positive2	move.b	d1,(a0)+		; store HI and LO value
+		move.b	d2,(a0)+
+		sub.l	d5,d6			; stretch the table
+		bpl.s	.repeat2		; to 32768 entries
+		add.l	#32768,d6
+		addq.w	#1,d2			; increment LO value
+		subq.w	#1,d3			; decrement counter
+.repeat2	dbra	d0,.outerloop2
+
+		move.l	a2,a1			; count the number of steps
+		moveq	#128-1,d0		; in the negative range
+		moveq	#0,d5
+.countnegative	move.b	-(a1),d1
+		ext.w	d1
+		ext.l	d1
+		add.l	d1,d5
+		dbra	d0,.countnegative	; d5=number of steps
+		move.l	#32768,d6		; reset stretch counter
+
+		add.l	#2*32768,a0		; place at the end of the table
+		move.l	a2,a1			; middle value in calibdata
+		move.w	#32768-1,d0		; number of negative values -1
+		moveq	#-1,d1			; HI value
+		moveq	#-1,d2			; LO value
+		moveq	#0,d3			; counter
+.fetchnext1	move.b	-(a1),d4		; add calibtable to counter
+		ext.w	d4
+		add.w	d4,d3
+		add.w	d4,d2			; maximize LO value
+.outerloop1	tst.w	d3
+		bgt.s	.positive1
+.negative1	subq.w	#1,d1
+		bra.s	.fetchnext1
+.positive1	move.b	d2,-(a0)		; store LO and HI value
+		move.b	d1,-(a0)
+		sub.l	d5,d6			; stretch the table
+		bpl.s	.repeat1		; to 32768 entries
+		add.l	#32768,d6
+		subq.w	#1,d2			; decrement lo value
+		subq.w	#1,d3			; decrement counter
+.repeat1	dbra	d0,.outerloop1
+
+		movem.l	(sp)+,a2/d2-d6
+		rts
+
+
+****** [driver].audio/AHIsub_FreeAudio **************************************
+*
+*   NAME
+*       AHIsub_FreeAudio -- Deallocates the audio hardware.
+*
+*   SYNOPSIS
+*       AHIsub_FreeAudio( audioctrl );
+*                         A2
+*
+*       void AHIsub_FreeAudio( struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       Deallocate the audio hardware and other resources allocated in
+*       AHIsub_AllocAudio(). AHIsub_Stop() will always be called by
+*       'ahi.device' before this call is made.
+*
+*   INPUTS
+*       audioctrl - pointer to an AHIAudioCtrlDrv structure.
+*
+*   NOTES
+*       It must be safe to call this routine even if AHIsub_AllocAudio()
+*       was never called, failed or called more than once.
+*
+*   SEE ALSO
+*       AHIsub_AllocAudio()
+*
+*****************************************************************************
+*
+*
+
+AHIsub_FreeAudio:
+	PRINTF	2,"AHIsub_FreeAudio()"
+	pushm	std
+
+	move.l	a6,a5
+	move.l	pb_SysLib(a5),a6
+
+	move.l	ahiac_DriverData(a2),d0
+	beq	.nopaula
+	move.l	d0,a3
+
+	move.l	p_Sounds(a3),d0
+	beq.b	.nosounds
+	move.l	d0,a1
+	call	FreeVec
+.nosounds
+
+	move.l	p_CalibrationTable(a3),d0
+	beq.b	.notable
+	move.l	d0,a1
+	call	FreeVec
+.notable
+
+	tst.b	p_Filter(a3)
+	beq	.no_filter
+	bclr	#1,$bfe001			;turn audio filter on
+	bra	.filter_set
+.no_filter
+	bset	#1,$bfe001			;turn audio filter off
+.filter_set
+
+
+	tst.b	p_audiodev(a3)
+	bne.b	.noaudiodev
+	st	p_audiodev(a3)
+	move.l	p_audioreq(a3),a1
+	move.w	#CMD_RESET,IO_COMMAND(a1)	;Restore audio interrupts
+	bsr.w	BeginIO
+	move.l	p_audioport(a3),a0
+	call	WaitPort
+	move.l	p_audioport(a3),a0
+	call	GetMsg
+	move.l	p_audioreq(a3),a1
+	call	CloseDevice
+.noaudiodev
+	move.l	p_audioreq(a3),d0
+	beq.b	.noaudioreq
+	move.l	d0,a1
+	call	FreeVec
+.noaudioreq
+	move.l	p_audioport(a3),d0
+	beq.b	.noaudioport
+	move.l	d0,a0
+	call	DeleteMsgPort
+.noaudioport
+
+	call	Forbid
+	cmp.l	pb_Lock(a5),a3
+	bne	.unlocked
+	clr.l	pb_Lock(a5)
+.unlocked
+	call	Permit
+
+	tst.l	p_AuraAddress(a3)
+	beq	.noaura
+	move.l	pb_CardResource(a5),d0
+	beq	.noaura
+	move.l	d0,a6
+	move.l	p_CardHandle(a3),d0
+	beq	.noaura
+	move.l	d0,a1
+	call	EndCardAccess
+	move.l	p_CardHandle(a3),a1
+	moveq	#CARDF_REMOVEHANDLE,d0
+	call	ReleaseCard
+.noaura
+	move.l	pb_SysLib(a5),a6
+	move.l	p_CardHandle(a3),d0
+	beq	.nocardhandle
+	move.l	d0,a1
+	call	FreeVec
+.nocardhandle
+	move.l	pb_MiscResource(a5),a6
+	tst.l	p_ParPortUser(a3)
+	bne.b	.noparport
+	moveq	#MR_PARALLELPORT,d0
+	jsr	MR_FREEMISCRESOURCE(a6)
+.noparport
+	tst.l	p_ParBitsUser(a3)
+	bne.b	.noparbits
+	moveq	#MR_PARALLELBITS,d0
+	jsr	MR_FREEMISCRESOURCE(a6)
+.noparbits
+	tst.l	p_SerBitsUser(a3)
+	bne.b	.noserbits
+	moveq	#MR_SERIALBITS,d0
+	jsr	MR_FREEMISCRESOURCE(a6)
+.noserbits
+	move.l	pb_SysLib(a5),a6
+	move.l	a3,a1
+	clr.l	ahiac_DriverData(a2)
+	call	FreeVec
+.nopaula
+	;moveq	#0,d0			; void function, no returncode needed
+	popm	std
+	rts
+
+
+****** [driver].audio/AHIsub_Disable ****************************************
+*
+*   NAME
+*       AHIsub_Disable -- Temporary turn off audio interrupt/task
+*
+*   SYNOPSIS
+*       AHIsub_Disable( audioctrl );
+*                       A2
+*
+*       void AHIsub_Disable( struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       If you are lazy, then call exec.library/Disable().
+*       If you are smart, only disable your own interrupt or task.
+*
+*   INPUTS
+*       audioctrl - pointer to an AHIAudioCtrlDrv structure.
+*
+*   NOTES
+*       This call should be guaranteed to preserve all registers.
+*       V6 drivers do NOT have to preserve all registers.
+*       This call nests.
+*
+*   SEE ALSO
+*       AHIsub_Enable(), exec.library/Disable()
+*
+*****************************************************************************
+*
+*
+*
+
+AHIsub_Disable:
+	PRINTF	6,"AHIsub_Disable()"
+	pushm	a3/a6
+	move.l	ahiac_DriverData(a2),a3
+	move.l	p_PaulaBase(a3),a6
+	move.l	pb_SysLib(a6),a6
+	call	Disable
+	move.w	#INTF_AUDIO,custom+INTENA  ; Turn off ALL audio interrupts
+	addq.w	#1,p_DisableCount(a3)
+;	PRINTF	0,"Disable: Wrote $%04lx to intena",#INTF_AUDIO
+;	PRINTF	0,"Count: %d",p_DisableCount(a3)
+	call	Enable
+	popm	a3/a6
+	rts
+
+
+****** [driver].audio/AHIsub_Enable *****************************************
+*
+*   NAME
+*       AHIsub_Enable -- Turn on audio interrupt/task
+*
+*   SYNOPSIS
+*       AHIsub_Enable( audioctrl );
+*                      A2
+*
+*       void AHIsub_Enable( struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       If you are lazy, then call exec.library/Enable().
+*       If you are smart, only enable your own interrupt or task.
+*
+*   INPUTS
+*       audioctrl - pointer to an AHIAudioCtrlDrv structure.
+*
+*   NOTES
+*       This call should be guaranteed to preserve all registers.
+*       V6 drivers do NOT have to preserve all registers.
+*       This call nests.
+*
+*   SEE ALSO
+*       AHIsub_Disable(), exec.library/Enable()
+*
+*****************************************************************************
+*
+*
+*
+
+AHIsub_Enable:
+	PRINTF	6,"AHIsub_Enable()"
+	pushm	a3/a6
+	move.l	ahiac_DriverData(a2),a3
+	move.l	p_PaulaBase(a3),a6
+	move.l	pb_SysLib(a6),a6
+	call	Disable
+	subq.w	#1,p_DisableCount(a3)
+	bne	.exit
+	move.w	p_IRQMask(a3),custom+INTENA
+;	PRINTF	0,"Enable: Wrote $%04x to intena",p_IRQMask(a3)
+.exit
+;	PRINTF	0,"Count: %d",p_DisableCount(a3)
+	call	Enable
+	popm	a3/a6
+	rts
+
+
+****** [driver].audio/AHIsub_Start ******************************************
+*
+*   NAME
+*       AHIsub_Start -- Starts playback or recording
+*
+*   SYNOPSIS
+*       error = AHIsub_Start( flags, audioctrl );
+*       D0                    D0     A2
+*
+*       ULONG AHIsub_Start(ULONG, struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       What to do depends what you returned in AHIsub_AllocAudio().
+*
+*     * First, assume bit AHISB_PLAY in flags is set. This means that you
+*       should begin playback.
+*
+*     - AHIsub_AllocAudio() returned AHISF_MIXING|AHISF_TIMING:
+*
+*       A) Allocate a mixing buffer of ahiac_BuffSize bytes. The buffer must
+*          be long aligned!
+*       B) Create/start an interrupt or task that will do 1-6 over and over
+*          again until AHIsub_Stop() is called. Note that it is not a good
+*          idea to do the actual mixing and conversion in a real hardware
+*          interrupt. Signal a task or create a Software Interrupt to do
+*          the number crunching.
+*
+*       1) Call the user Hook ahiac_PlayerFunc with the following parameters:
+*                  A0 - (struct Hook *)
+*                  A2 - (struct AHIAudioCtrlDrv *)
+*                  A1 - Set to NULL.
+*
+*       2) [Call the ahiac_PreTimer function. If it returns TRUE (Z will be
+*          cleared so you don't have to test d0), skip step 3 and 4. This
+*          is used to avoid overloading the CPU. This step is optional.
+*          A2 is assumed to point to struct AHIAudioCtrlDrv. All registers
+*          except d0 are preserved. (V4)
+*
+*          Starting with V6, you can also call the pre-timer Hook
+*          (ahiac_PreTimerFunc) with the following parameters:
+*                  A0 - (struct Hook *)           - The Hook itself
+*                  A2 - (struct AHIAudioCtrlDrv *)
+*                  A1 - Set to NULL.
+*          The Hook is not guaranteed to preserve all registers and
+*          you must check the return value and not rely on the Z flag. (V6)
+*
+*          This step, 2, is optional.]
+*
+*       3) Call the mixing Hook (ahiac_MixerFunc) with the following
+*          parameters:
+*                  A0 - (struct Hook *)           - The Hook itself
+*                  A2 - (struct AHIAudioCtrlDrv *)
+*                  A1 - (WORD *[])                - The mixing buffer.
+*          Note that ahiac_MixerFunc preserves ALL registers.
+*          The user Hook ahiac_SoundFunc will be called by the mixing
+*          routine when a sample have been processed, so you don't have to
+*          worry about that.
+*          How the buffer will be filled is indicated by ahiac_Flags.
+*          It is always filled with signed 16-bit (32 bit if AHIACB_HIFI in
+*          in ahiac_Flags is set) words, even if playback is 8 bit. If
+*          AHIDBB_STEREO is set (in ahiac_Flags), data for left and right
+*          channel are interleaved:
+*           1st sample left channel,
+*           1st sample right channel,
+*           2nd sample left channel,
+*           ...,
+*           ahiac_BuffSamples:th sample left channel,
+*           ahiac_BuffSamples:th sample right channel.
+*          If AHIDBB_STEREO is cleared, the mono data is stored:
+*           1st sample,
+*           2nd sample,
+*           ...,
+*           ahiac_BuffSamples:th sample.
+*          Note that neither AHIACB_STEREO nor AHIACB_HIFI will be set if
+*          you didn't report that you understand these flags when
+*          AHI_AllocAudio() was called.
+*
+*          For AHI V2, the type of buffer is also available in ahiac_BuffType.
+*          It is suggested that you use this value instead. ahiac_BuffType
+*          can be one of AHIST_M16S, AHIST_S16S, AHIST_M32S and AHIST_S32S.
+*
+*       4) Convert the buffer if needed and feed it to the audio hardware.
+*          Note that you may have to clear CPU caches if you are using DMA
+*          to play the buffer, and the buffer is not allocated in non-
+*          cachable RAM (which is not a good idea anyway, for performace
+*          reasons).
+*
+*       5) [Call the ahiac_PostTimer function. A2 is assumed to point to
+*          struct AHIAudioCtrlDrv. All registers are preserved. (V4)
+*
+*          Starting with V6, you can also call the post-timer Hook
+*          (ahiac_PostTimerFunc) with the following parameters:
+*                  A0 - (struct Hook *)           - The Hook itself
+*                  A2 - (struct AHIAudioCtrlDrv *)
+*                  A1 - Set to NULL.
+*          The Hook is not guaranteed to preserve all registers. (V6)
+*
+*          This step, 5, is optional.]
+*
+*       6) Wait until the whole buffer has been played, then repeat.
+*
+*       Use double buffering if possible!
+*
+*       You may DECREASE ahiac_BuffSamples slightly, for example to force an
+*       even number of samples to be mixed. By doing this you will make
+*       ahiac_PlayerFunc to be called at wrong frequency so be careful!
+*       Even if ahiac_BuffSamples is defined ULONG, it will never be greater
+*       than 65535.
+*
+*       ahiac_BuffSize is the largest size of the mixing buffer that will be
+*       needed until AHIsub_Stop() is called.
+*
+*       ahiac_MaxBuffSamples is the maximum number of samples that will be
+*       mixed (until AHIsub_Stop() is called). You can use this value if you
+*       need to allocate DMA buffers.
+*
+*       ahiac_MinBuffSamples is the minimum number of samples that will be
+*       mixed. Most drivers will ignore it.
+*
+*       If AHIsub_AllocAudio() returned with the AHISB_CANPOSTPROCESS bit set,
+*       ahiac_BuffSize is large enough to hold two buffers. The mixing buffer
+*       will be filled with the wet buffer first, immediately followed by the
+*       dry buffer. I.e., ahiac_BuffSamples sample frames wet data, then
+*       ahiac_BuffSamples sample frames dry data. The DSP fx should only be
+*       applied to the wet buffer, and the two buffers should then be added
+*       together. (V4)
+*
+*     - If AHIsub_AllocAudio() returned AHISF_MIXING, do as described above,
+*       except calling ahiac_PlayerFunc. ahiac_PlayerFunc should be called
+*       ahiac_PlayerFreq times per second, clocked by timers on your sound
+*       card or by using 'timer.device' or 'realtime.library'. No other Amiga
+*       resources may be used for timing (like direct CIA timers).
+*       ahiac_MinBuffSamples and ahiac_MaxBuffSamples are undefined if
+*       AHIsub_AllocAudio() returned AHISF_MIXING (AHISB_TIMING bit not set).
+*
+*     - If AHIsub_AllocAudio() returned with neither the AHISB_MIXING nor
+*       the AHISB_TIMING bit set, then just start playback. Don't forget to
+*       call ahiac_PlayerFunc ahiac_PlayerFreq times per second. Only your
+*       own timing hardware, 'timer.device'  or 'realtime.library' may be
+*       used. Note that ahiac_MixerFunc, ahiac_BuffSamples,
+*       ahiac_MinBuffSamples, ahiac_MaxBuffSamples and ahiac_BuffSize are
+*       undefined. ahiac_MixFreq is the frequency the user wants to use for
+*       recording, if you support that.
+*
+*     * Second, assume bit AHISB_RECORD in flags is set. This means that you
+*       should start to sample. Create a interrupt or task that does the
+*       following:
+*
+*       Allocate a buffer (you chose size, but try to keep it reasonable
+*       small to avoid delays - it is suggested that RecordFunc is called
+*       at least 4 times/second for the lowers sampling rate, and more often
+*       for higher rates), and fill it with the sampled data. The buffer must
+*       be long aligned, and it's size must be evenly divisible by four.
+*       The format should always be AHIST_S16S (even with 8 bit mono samplers),
+*       which means:
+*           1st sample left channel,
+*           1st sample right channel (same as prev. if mono),
+*           2nd sample left channel,
+*           ... etc.
+*       Each sample is a signed word (WORD). The sample rate should be equal
+*       to the mixing rate.
+*
+*       Call the ahiac_SamplerFunc Hook with the following parameters:
+*           A0 - (struct Hook *)           - The Hook itself
+*           A2 - (struct AHIAudioCtrlDrv *)
+*           A1 - (struct AHIRecordMessage *)
+*       The message should be filled as follows:
+*           ahirm_Type - Set to AHIST_S16S.
+*           ahirm_Buffer - A pointer to the filled buffer.
+*           ahirm_Samples - How many sample frames stored.
+*       You must not destroy the buffer until next time the Hook is called.
+*
+*       Repeat until AHIsub_Stop() is called.
+*
+*     * Note that both bits may be set when this function is called.
+*
+*   INPUTS
+*       flags - See <libraries/ahi_sub.h>.
+*       audioctrl - pointer to an AHIAudioCtrlDrv structure.
+*
+*   RESULT
+*       Returns AHIE_OK if successful, else an error code as defined
+*       in <devices/ahi.h>. AHIsub_Stop() will always be called, even
+*       if this call failed.
+*
+*   NOTES
+*       The driver must be able to handle multiple calls to this routine
+*       without preceding calls to AHIsub_Stop().
+*
+*   SEE ALSO
+*       AHIsub_Update(), AHIsub_Stop()
+*
+*****************************************************************************
+*
+*
+*
+
+AHIsub_Start:
+	PRINTF	2,"AHIsub_Start()"
+
+	pushm	std
+
+	move.l	d0,d7
+	lea	custom,a4
+	move.l	ahiac_DriverData(a2),a3
+
+	btst	#AHISB_PLAY,d7
+	beq	.dont_play
+
+**
+*** AHISB_PLAY
+**
+	moveq	#AHISF_PLAY,d0
+	call	AHIsub_Stop			;Stop current playback if any.
+	call	AHIsub_Update			;fill variables
+
+	move.l	a6,a5
+	move.l	pb_SysLib(a5),a6
+
+	btst	#PB_DMA,p_Flags(a3)
+	beq	.no_dma
+	bsr	DMA_Start
+	bra	.exit
+.no_dma
+
+	move.l	ahiac_BuffSize(a2),d0
+	add.l	#EXTRABUFFSIZE,d0		;Add space for 4 sample frames
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_Mixbuffer(a3)
+	beq	.error_nomem
+
+	move.l	ahiac_MixFreq(a2),d0
+	bsr.w	calcperiod
+	move.w	d1,p_AudPer(a3)
+
+* The init*bit?  routines allocates p_DMAbuffer, sets up
+* p_AudPtr, sets the volume, stores the correct interrupt routines in
+* p_PlayInt's and p_PlaySoftInt's IS_CODE.
+
+	pea	.1(pc)
+	move.b	p_Flags(a3),d0
+	and.b	#PF_STEREO|PF_14BIT,d0
+	beq.w	init8bitM
+	cmp.b	#PF_STEREO,d0
+	beq.w	init8bitS
+	cmp.b	#PF_14BIT,d0
+	beq.w	init14bitM
+	bra.w	init14bitS
+.1
+	tst.l	d0
+	bne	.exit
+
+* Create mixer task
+
+	moveq	#0,d0
+	move.w	p_MixTaskPri(a3),d0
+	cmp.w	#128,d0
+	beq	.nomixtask
+
+	move.l	sp,d2				;Save sp
+	move.l	#TAG_DONE,-(sp)
+	pea	MixTask(pc)
+	move.l	#NP_Entry,-(sp)
+	pea	IDString(pc)
+	move.l	#NP_Name,-(sp)
+	move.l	d0,-(sp)
+	move.l	#NP_Priority,-(sp)
+	move.l	pb_SysLib(a5),a6
+	call	Forbid
+	move.l	sp,d1
+	move.l	pb_DosLib(a5),a6
+	call	CreateNewProc
+	move.l	d2,sp				;Restore sp
+	move.l	d0,p_MixTask(a3)
+	beq	.permit
+	move.l	d0,a0
+	move.l	a3,TC_Userdata(a0)		;Send struct as argument
+.permit
+	move.l	pb_SysLib(a5),a6
+	call	Permit
+	
+	; If it worked, it worked. If not, softints will still be used.
+
+.nomixtask
+
+* Install play interrupt
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD0,d0
+	call	SetIntVector
+
+	or.w	#INTF_SETCLR|INTF_AUD0,p_IRQMask(a3)
+	
+	call	Disable
+	tst.w	p_DisableCount(a3)
+	bne	.dont_enable
+	move.w	#INTF_SETCLR|INTF_AUD0,INTENA(a4)	;enable
+.dont_enable
+	move.w	#INTF_SETCLR|INTF_AUD0,INTREQ(a4)	;start
+	call	Enable
+
+	move.l	a5,a6
+
+
+.dont_play
+	btst	#AHISB_RECORD,d7
+	beq	.dont_record
+**
+*** AHISB_RECORD
+**
+	moveq	#0,d0
+	move.b	p_Flags(a3),d0			;Sanity check...
+	and.b	#PF_14BIT|PF_DMA,d0
+	bne	.error_unknown
+
+	moveq	#AHISF_RECORD,d0
+	call	AHIsub_Stop			;Stop current recording if any.
+
+	move.l	a6,a5
+	move.l	pb_SysLib(a5),a6
+
+	move.l	#RECORDSAMPLES*4,d0
+	move.l	#MEMF_PUBLIC,d1
+	call	AllocVec
+	move.l	d0,p_RecBuffer1(a3)
+	beq	.error_nomem
+
+	move.l	d0,p_RecFillPtr(a3)
+	move.w	#RECORDSAMPLES,p_RecFillCount(a3)
+
+	move.l	#RECORDSAMPLES*4,d0
+	move.l	#MEMF_PUBLIC,d1
+	call	AllocVec
+	move.l	d0,p_RecBuffer2(a3)
+	beq	.error_nomem
+
+	move.l	ahiac_MixFreq(a2),d0
+	bsr.w	calcperiod
+	lsr.w	#1,d1				;Period/2 => Frequency·2
+	move.w	d1,AUD2PER(a4)
+	move.w	d1,AUD3PER(a4)
+	move.w	p_MonitorVolume(a3),d0
+	move.w	d0,AUD2VOL(a4)
+	move.w	d0,AUD3VOL(a4)
+
+* Install record interrupt
+	move.w	p_Input(a3),d0
+	beq	.parsampler
+	cmp.w	#1,d0
+	beq	.aurasampler
+	cmp.w	#2,d0
+	beq	.clarity
+	bra	.error_unknown
+
+.parsampler
+	tst.b	p_Parallel(a3)			;Parrallel port allocated?
+	beq	.error_unknown
+	lea	p_RecIntData(a3),a1
+	move.l	a1,IS_DATA+p_RecInt(a3)
+	move.l	#RecordInterrupt,IS_CODE+p_RecInt(a3)
+
+	move.b	#$ff,_ciab+ciaddrb		; Set parallel port to output
+
+	bra	.setrecint
+
+.clarity
+	tst.b	p_Parallel(a3)			;Parrallel port allocated?
+	beq	.error_unknown
+
+	move.l	pb_MiscResource(a5),a6
+	move.l	#MR_SERIALBITS,d0	; allocate serial port control lines
+	lea	IDString(pc),a1
+	jsr	MR_ALLOCMISCRESOURCE(a6)
+	move.l	d0,p_SerBitsUser(a3)
+	bne	.error_unknown
+
+	lea	p_RecIntData(a3),a1
+	move.l	a1,IS_DATA+p_RecInt(a3)
+	move.l	#RecordInterruptClarity,IS_CODE+p_RecInt(a3)
+
+	; Set DTR, PRTBUSY and PRTRPOUT to outputs
+	or.b	#CIAF_COMDTR!CIAF_PRTRBUSY!CIAF_PRTRPOUT,_ciab+ciaddra
+	move.b	#$ff,_ciab+ciaddrb		; Set parallel port to output
+	; Reset Clarity
+	move.b	#CIAF_PRTRBUSY!CIAF_PRTRPOUT,_ciab+ciapra
+	move.b	#CIAF_PRTRPOUT,_ciab+ciapra
+	move.b	#CIAF_PRTRBUSY!CIAF_PRTRPOUT,_ciab+ciapra
+	; Clarity is now in stereo record mode
+
+	bra	.setrecint
+
+.aurasampler
+	tst.l	p_AuraAddress(a3)		;Aura sampler allocated?
+	beq	.error_unknown
+	lea	p_RecIntDataAura(a3),a1
+	move.l	a1,IS_DATA+p_RecInt(a3)
+	move.l	#RecordInterruptAura,IS_CODE+p_RecInt(a3)
+	bra	.setrecint
+
+.setrecint
+	move.l	pb_SysLib(a5),a6
+	lea	p_RecInt(a3),a1
+	moveq	#INTB_AUD3,d0
+	call	SetIntVector
+
+	move.w	#DMAF_AUD2|DMAF_AUD3,DMACON(a4)		;disable DMA
+	or.w	#INTF_SETCLR|INTF_AUD3,p_IRQMask(a3)
+	move.w	#INTF_SETCLR|INTF_AUD3,INTENA(a4)	;enable
+	move.w	#INTF_SETCLR|INTF_AUD3,INTREQ(a4)	;start
+
+.dont_record
+.return
+	moveq	#AHIE_OK,d0
+.exit
+	popm	std
+	rts
+.error_nomem
+	moveq	#AHIE_NOMEM,d0
+	bra.b	.exit
+.error_unknown
+	moveq	#AHIE_UNKNOWN,d0
+	bra.b	.exit
+
+
+;in:
+* a2	AudioCtrl
+* a3	paula
+* a4	custom
+* a5	paulaBase
+* a6	ExecBase
+init8bitM:
+	PRINTF	2,"init8bitM()"
+	move.l	#AudioInterrupt2,IS_CODE+p_PlayInt(a3)
+	move.l	#SoftInt_8bitM,IS_CODE+p_PlaySoftInt(a3)
+ IFEQ BETTERTIMING-1
+	move.l	#1,p_SampleFrameShift(a3)	;log2( sizeof( AHIST_M16S ) )
+ ENDC
+	move.b	p_Flags(a3),d0
+	btst	#PB_HIFI,d0
+	beq	.nohifi
+	move.l	#SoftInt_8bitMH,IS_CODE+p_PlaySoftInt(a3)
+ IFEQ BETTERTIMING-1
+	move.l	#2,p_SampleFrameShift(a3)	;log2( sizeof( AHIST_M32S ) )
+ ENDC
+.nohifi
+
+	move.l	p_MinBufferLength(a3),d0
+	add.l	ahiac_MaxBuffSamples(a2),d0	;Max. # of 8 bit samples
+	addq.l	#EXTRASAMPLES,d0
+	addq.l	#3,d0
+	and.b	#~3,d0				;make it a multiple of 4
+	move.l	d0,d2				;d2 = channel size
+
+	lsl.l	#1,d0				;Double buffer
+	move.l	#MEMF_CHIP|MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_DMAbuffer(a3)
+	beq	.nomem
+
+	move.l	d0,p_AudPtr1A(a3)
+	move.l	d0,p_AudPtr2A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr1B(a3)
+	move.l	d0,p_AudPtr2B(a3)
+
+;	move.w	#64,AUD0VOL(a4)
+;	move.w	#64,AUD1VOL(a4)
+
+	moveq	#0,d0
+	rts
+.nomem
+	moveq	#AHIE_NOMEM,d0
+	rts
+
+;in:
+* a2	AudioCtrl
+* a3	paula
+* a5	paulaBase
+* a6	ExecBase
+init8bitS:
+	PRINTF	2,"init8bitS()"
+	move.l	#AudioInterrupt2,IS_CODE+p_PlayInt(a3)
+	move.l	#SoftInt_8bitS,IS_CODE+p_PlaySoftInt(a3)
+ IFEQ BETTERTIMING-1
+	move.l	#2,p_SampleFrameShift(a3)	;log2( sizeof( AHIST_S16S ) )
+ ENDC
+	move.b	p_Flags(a3),d0
+	btst	#PB_HIFI,d0
+	beq	.nohifi
+	move.l	#SoftInt_8bitSH,IS_CODE+p_PlaySoftInt(a3)
+ IFEQ BETTERTIMING-1
+	move.l	#3,p_SampleFrameShift(a3)	;log2( sizeof( AHIST_S32S ) )
+ ENDC
+.nohifi
+
+	move.l	p_MinBufferLength(a3),d0
+	add.l	ahiac_MaxBuffSamples(a2),d0	;Max. # of 8 bit samples
+	addq.l	#EXTRASAMPLES,d0
+	addq.l	#3,d0
+	and.b	#~3,d0				;make it a multiple of 4
+	move.l	d0,d2				;d2 = channel size
+
+	lsl.l	#2,d0				;Double buffer + Stereo
+	move.l	#MEMF_CHIP|MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_DMAbuffer(a3)
+	beq	.nomem
+
+	move.l	d0,p_AudPtr1A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr2A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr1B(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr2B(a3)
+
+;	move.w	#64,AUD0VOL(a4)
+;	move.w	#64,AUD1VOL(a4)
+
+	moveq	#0,d0
+	rts
+.nomem
+	moveq	#AHIE_NOMEM,d0
+	rts
+
+;in:
+* a2	AudioCtrl
+* a3	paula
+* a5	paulaBase
+* a6	ExecBase
+init14bitM:
+	PRINTF	2,"init14bitM()"
+	move.l	#AudioInterrupt4,IS_CODE+p_PlayInt(a3)
+	lea	SoftInt_14bitM(pc),a0
+ IFEQ BETTERTIMING-1
+	move.l	#1,p_SampleFrameShift(a3)	;log2( sizeof( AHIST_M16S ) )
+ ENDC
+	move.b	p_Flags(a3),d0
+	btst	#PB_HIFI,d0
+	beq	.nohifi1
+	lea	SoftInt_14bitMH(pc),a0
+ IFEQ BETTERTIMING-1
+	move.l	#2,p_SampleFrameShift(a3)	;log2( sizeof( AHIST_M32S ) )
+ ENDC
+.nohifi1
+	tst.l	p_CalibrationTable(a3)
+	beq.b	.nocalib
+	lea	SoftInt_14CbitM(pc),a0
+	move.b	p_Flags(a3),d0
+	btst	#PB_HIFI,d0
+	beq	.nohifi2
+	lea	SoftInt_14CbitMH(pc),a0
+.nohifi2
+.nocalib
+	move.l	a0,IS_CODE+p_PlaySoftInt(a3)
+
+	move.l	p_MinBufferLength(a3),d0
+	add.l	ahiac_MaxBuffSamples(a2),d0	;Max. # of 16 bit samples
+	addq.l	#EXTRASAMPLES,d0
+	addq.l	#3,d0
+	and.b	#~3,d0				;make it a multiple of 4
+	move.l	d0,d2				;d2 = channel size
+
+	lsl.l	#2,d0				;Double buffer + 2×8 bit
+	move.l	#MEMF_CHIP|MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_DMAbuffer(a3)
+	beq	.nomem
+
+	move.l	d0,p_AudPtr1A(a3)
+	move.l	d0,p_AudPtr2A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr4A(a3)
+	move.l	d0,p_AudPtr3A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr1B(a3)
+	move.l	d0,p_AudPtr2B(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr4B(a3)
+	move.l	d0,p_AudPtr3B(a3)
+
+;	move.w	#64,AUD0VOL(a4)
+;	move.w	#64,AUD1VOL(a4)
+;	move.w	#1,AUD2VOL(a4)
+;	move.w	#1,AUD3VOL(a4)
+
+	moveq	#0,d0
+	rts
+.nomem
+	moveq	#AHIE_NOMEM,d0
+	rts
+
+;in:
+* a2	AudioCtrl
+* a3	paula
+* a5	paulaBase
+* a6	ExecBase
+init14bitS:
+	PRINTF	2,"init14bitS()"
+	move.l	#AudioInterrupt4,IS_CODE+p_PlayInt(a3)
+	lea	SoftInt_14bitS(pc),a0
+ IFEQ BETTERTIMING-1
+	move.l	#2,p_SampleFrameShift(a3)	;log2( sizeof( AHIST_S16S ) )
+ ENDC
+	move.b	p_Flags(a3),d0
+	btst	#PB_HIFI,d0
+	beq	.nohifi1
+	lea	SoftInt_14bitSH(pc),a0
+ IFEQ BETTERTIMING-1
+	move.l	#3,p_SampleFrameShift(a3)	;log2( sizeof( AHIST_S32S ) )
+ ENDC
+.nohifi1
+	tst.l	p_CalibrationTable(a3)
+	beq.b	.nocalib
+	lea	SoftInt_14CbitS(pc),a0
+	move.b	p_Flags(a3),d0
+	btst	#PB_HIFI,d0
+	beq	.nohifi2
+	lea	SoftInt_14CbitSH(pc),a0
+.nohifi2
+.nocalib
+	move.l	a0,IS_CODE+p_PlaySoftInt(a3)
+
+	move.l	p_MinBufferLength(a3),d0
+	add.l	ahiac_MaxBuffSamples(a2),d0	;Max. # of 16 bit samples
+	addq.l	#EXTRASAMPLES,d0
+	addq.l	#3,d0
+	and.b	#~3,d0				;make it a multiple of 4
+	move.l	d0,d2				;d2 = channel size
+
+	lsl.l	#3,d0				;Double buffer + 2×8 bit + Stereo
+	move.l	#MEMF_CHIP|MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_DMAbuffer(a3)
+	beq	.nomem
+
+	move.l	d0,p_AudPtr1A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr2A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr3A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr4A(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr1B(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr2B(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr3B(a3)
+	add.l	d2,d0
+	move.l	d0,p_AudPtr4B(a3)
+
+;	move.w	#64,AUD0VOL(a4)
+;	move.w	#64,AUD1VOL(a4)
+;	move.w	#1,AUD2VOL(a4)
+;	move.w	#1,AUD3VOL(a4)
+
+	moveq	#0,d0
+	rts
+.nomem
+	moveq	#AHIE_NOMEM,d0
+	rts
+
+
+****** [driver].audio/AHIsub_Update *****************************************
+*
+*   NAME
+*       AHIsub_Update -- Update some variables
+*
+*   SYNOPSIS
+*       AHIsub_Update( flags, audioctrl );
+*                      D0     A2
+*
+*       void AHIsub_Update(ULONG, struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       All you have to do is to reread some variables:
+*
+*     * Mixing & timing: ahiac_PlayerFunc, ahiac_MixerFunc, ahiac_SamplerFunc,
+*       ahiac_BuffSamples (and perhaps ahiac_PlayerFreq if you use it).
+*
+*     * Mixing only: ahiac_PlayerFunc, ahiac_MixerFunc, ahiac_SamplerFunc and
+*           ahiac_PlayerFreq.
+*
+*     * Nothing: ahiac_PlayerFunc, ahiac_SamplerFunc and ahiac_PlayerFreq.
+*
+*   INPUTS
+*       flags - Currently no flags defined.
+*       audioctrl - pointer to an AHIAudioCtrlDrv structure.
+*
+*   RESULT
+*
+*   NOTES
+*       This call must be safe from interrupts.
+*
+*   SEE ALSO
+*       AHIsub_Start()
+*
+*****************************************************************************
+*
+*
+*
+
+AHIsub_Update:
+	PRINTF	2,"AHIsub_Update()"
+	pushm	std
+
+	call	AHIsub_Disable		;make sure we don't get an interrupt
+					;while updating our local variables
+	move.l	ahiac_DriverData(a2),a3
+
+	move.l	ahiac_PlayerFunc(a2),a0
+	move.l	a0,p_PlayerHook(a3)
+	move.l	h_Entry(a0),p_PlayerEntry(a3)
+
+	btst	#PB_DMA,p_Flags(a3)
+	beq	.no_dma
+	bsr	DMA_Update
+	bra	.exit
+
+.no_dma
+ IFEQ BETTERTIMING-0
+	move.l	ahiac_BuffSamples(a2),d1
+	and.b	#~3,d1			;make it a multiple of 4
+	move.l	d1,ahiac_BuffSamples(a2)
+	move.l	d1,d0
+	lsr.l	#2,d0
+	subq.l	#1,d0
+	move.l	d0,p_LoopTimes(a3)	;See softints. (Unrolled)
+ ENDC
+
+	PRINTF	4, "ahiac_BuffSamples is %ld", ahiac_BuffSamples(a2)
+
+	move.l	ahiac_MixerFunc(a2),a0
+	move.l	a0,p_MixHook(a3)
+	move.l	h_Entry(a0),p_MixEntry(a3)
+
+.exit
+	call	AHIsub_Enable
+	;moveq	#0,d0			; void function, no returncode needed
+	popm	std
+	rts
+
+
+****** [driver].audio/AHIsub_Stop *******************************************
+*
+*   NAME
+*       AHIsub_Stop -- Stops playback.
+*
+*   SYNOPSIS
+*       AHIsub_Stop( flags, audioctrl );
+*                    D0     A2
+*
+*       void AHIsub_Stop( ULONG, struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       Stop playback and/or recording, remove all resources allocated by
+*       AHIsub_Start().
+*
+*   INPUTS
+*       flags - See <libraries/ahi_sub.h>.
+*       audioctrl - pointer to an AHIAudioCtrlDrv structure.
+*
+*   NOTES
+*       It must be safe to call this routine even if AHIsub_Start() was never
+*       called, failed or called more than once.
+*
+*   SEE ALSO
+*       AHIsub_Start()
+*
+*****************************************************************************
+*
+*
+
+AHIsub_Stop:
+	PRINTF	2,"AHIsub_Stop()"
+	pushm	std
+
+	lea	custom,a4
+	move.l	a6,a5
+	move.l	pb_SysLib(a5),a6
+	move.l	ahiac_DriverData(a2),a3
+
+	push	d0
+	btst	#AHISB_PLAY,d0
+	beq	.dontplay
+
+**
+*** AHISB_PLAY
+**
+
+	btst	#PB_DMA,p_Flags(a3)
+	beq	.no_dma
+	bsr	DMA_Stop
+	bra	.playchecked
+.no_dma
+
+	move.w	#DMAF_AUDIO,DMACON(a4)		;disable audio DMA
+
+	and.w	#~INTF_AUD0,p_IRQMask(a3)
+	move.w	#INTF_AUD0,INTENA(a4)
+	move.w	#INTF_AUD0,INTREQ(a4)		;Clear any waiting interrupts
+	move.l	#Interrupt_Dummy,IS_CODE+p_PlayInt(a3)
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD0,d0
+	call	SetIntVector
+
+	moveq	#0,d0
+	move.w	d0,AUD0VOL(a4)
+	move.w	d0,AUD1VOL(a4)
+	move.w	d0,AUD2VOL(a4)
+	move.w	d0,AUD3VOL(a4)
+
+* Remove mixer task
+	tst.l	p_MixTask(a3)
+	beq	.nomixtask
+	suba.l	a1,a1
+	call	FindTask
+	move.l	d0,p_ReplyTask(a3)
+	moveq	#0,d0
+	move.l	#SIGF_SINGLE,d1			;Clear SINGLE signal
+	call	SetSignal
+	move.l	p_MixTask(a3),a1
+	move.l	#SIGBREAKF_CTRL_C,d0		;Kill child
+	call	Signal
+	move.l	#SIGF_SINGLE,d0
+	call	Wait				;Wait until child is dead
+.nomixtask
+
+	move.l	p_DMAbuffer(a3),d0
+	beq.b	.nodmamem
+	move.l	d0,a1
+	clr.l	p_DMAbuffer(a3)
+	call	FreeVec
+.nodmamem
+	move.l	p_Mixbuffer(a3),d0
+	beq.b	.nomixmem
+	move.l	d0,a1
+	clr.l	p_Mixbuffer(a3)
+	call	FreeVec
+.nomixmem
+.playchecked
+
+.dontplay
+	pop	d0
+	btst	#AHISB_RECORD,d0
+	beq	.dontrecord
+
+**
+*** AHISB_RECORD
+**
+	btst	#PB_14BIT,p_Flags(a3)		;Sanity check...
+	bne	.dontrecord
+
+	and.w	#~INTF_AUD3,p_IRQMask(a3)
+	move.w	#INTF_AUD3,INTENA(a4)
+	move.w	#INTF_AUD3,INTREQ(a4)		;Clear any waiting interrupts
+
+	move.l	#Interrupt_Dummy,IS_CODE+p_RecInt(a3)
+	lea	p_RecInt(a3),a1
+	moveq	#INTB_AUD3,d0
+	call	SetIntVector
+
+	move.w	#0,AUD2VOL(a4)
+	move.w	#0,AUD3VOL(a4)
+
+	move.l	p_RecBuffer1(a3),d0
+	beq.b	.norecmem1
+	move.l	d0,a1
+	clr.l	p_RecBuffer1(a3)
+	call	FreeVec
+.norecmem1
+	move.l	p_RecBuffer2(a3),d0
+	beq.b	.norecmem2
+	move.l	d0,a1
+	clr.l	p_RecBuffer2(a3)
+	call	FreeVec
+.norecmem2
+.dontrecord
+.exit
+	;moveq	#0,d0			; void function, no returncode needed
+	popm	std
+	rts
+
+
+****** [driver].audio/AHIsub_GetAttr ****************************************
+*
+*   NAME
+*       AHIsub_GetAttr -- Returns information about audio modes or driver
+*
+*   SYNOPSIS
+*       AHIsub_GetAttr( attribute, argument, default, taglist, audioctrl );
+*       D0              D0         D1        D2       A1       A2
+*
+*       LONG AHIsub_GetAttr( ULONG, LONG, LONG, struct TagItem *,
+*                            struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       Return the attribute based on a tag list and an AHIAudioCtrlDrv
+*       structure, which are the same that will be passed to
+*       AHIsub_AllocAudio() by 'ahi.device'. If the attribute is
+*       unknown to you, return the default.
+*
+*   INPUTS
+*       attribute - Is really a Tag and can be one of the following:
+*
+*           AHIDB_Bits - Return how many output bits the tag list will
+*               result in.
+*
+*           AHIDB_MaxChannels - Return the maximum number of channels.
+*
+*           AHIDB_Frequencies - Return how many mixing/sampling frequencies
+*               you support
+*
+*           AHIDB_Frequency - Return the argument:th frequency
+*               Example: You support 3 frequencies; 32, 44.1 and 48 kHz.
+*                   If argument is 1, return 44100.
+*
+*           AHIDB_Index - Return the index which gives the frequency closest
+*               to argument.
+*               Example: You support 3 frequencies; 32, 44.1 and 48 kHz.
+*                   If argument is 40000, return 1 (=> 44100).
+*
+*           AHIDB_Author - Return pointer to name of driver author:
+*               "Martin 'Leviticus' Blom"
+*
+*           AHIDB_Copyright - Return pointer to copyright notice, including
+*               the '©' character: "© 1996 Martin Blom" or "Public Domain"
+*
+*           AHIDB_Version - Return pointer version string, normal Amiga
+*               format: "paula 1.5 (18.2.96)\r\n"
+*
+*           AHIDB_Annotation - Return pointer to an annotation string, which
+*               can be several lines.
+*
+*           AHIDB_Record - Are you a sampler, too? Return TRUE or FALSE.
+*
+*           AHIDB_FullDuplex - Return TRUE or FALSE.
+*
+*           AHIDB_Realtime - Return TRUE or FALSE.
+*
+*           AHIDB_MaxPlaySamples - Normally, return the default. See
+*               AHIsub_AllocAudio(), section 2.
+*
+*           AHIDB_MaxRecordSamples - Return the size of the buffer you fill
+*               when recording.
+*
+*           The following are associated with AHIsub_HardwareControl() and are
+*           new for V2.
+*
+*           AHIDB_MinMonitorVolume
+*           AHIDB_MaxMonitorVolume - Return the lower/upper limit for
+*               AHIC_MonitorVolume. If unsupported but always 1.0, return
+*               1.0 for both.
+*
+*           AHIDB_MinInputGain
+*           AHIDB_MaxInputGain - Return the lower/upper limit for
+*               AHIC_InputGain. If unsupported but always 1.0, return 1.0 for
+*               both.
+*
+*           AHIDB_MinOutputVolume
+*           AHIDB_MaxOutputVolume - Return the lower/upper limit for
+*               AHIC_OutputVolume.
+*
+*           AHIDB_Inputs - Return how many inputs you have.
+*           AHIDB_Input - Return a short string describing the argument:th
+*               input. Number 0 should be the default one. Example strings
+*               can be "Line 1", "Mic", "Optical" or whatever.
+*
+*           AHIDB_Outputs - Return how many outputs you have.
+*           AHIDB_Output - Return a short string describing the argument:th
+*               output. Number 0 should be the default one. Example strings
+*               can be "Line 1", "Headphone", "Optical" or whatever.
+*
+*       argument - extra info for some attributes.
+*       default - What you should return for unknown attributes.
+*       taglist - Pointer to a tag list that eventually will be fed to
+*           AHIsub_AllocAudio(), or NULL.
+*       audioctrl - Pointer to an AHIAudioCtrlDrv structure that eventually
+*           will be fed to AHIsub_AllocAudio(), or NULL.
+*
+*   NOTES
+*
+*   SEE ALSO
+*       AHIsub_AllocAudio(), AHIsub_HardwareControl(),
+*       ahi.device/AHI_GetAudioAttrsA()
+*
+*****************************************************************************
+*
+*
+
+AHIsub_GetAttr:
+	PRINTF	2,"AHIsub_GetAttr()"
+	pushm	std
+	move.l	a1,a3
+	move.l	a6,a5
+	move.l	pb_UtilLib(a5),a6
+
+
+	moveq	#FALSE,d3		; 14 bit flag
+	moveq	#FALSE,d4		; DMA flag
+
+	pushm	d0-d1
+
+	move.l	a3,a0
+	move.l	a3,d0
+	beq	.notaglist
+
+	move.l	#AHIDB_Paula14Bit,d0
+	move.l	d3,d1
+	call	GetTagData
+	move.l	d0,d3
+
+	move.l	a3,a0
+	move.l	#AHIDB_PaulaDMA,d0
+	move.l	d4,d1
+	call	GetTagData
+	move.l	d0,d4
+
+.notaglist
+
+	popm	d0-d1
+
+	and.l	#~(AHI_TagBaseR),d0
+	cmp.l	#AHIDB_Data & ~(AHI_TagBaseR),d0
+	bhi	.default
+	sub.w	#100,d0
+	lsl.w	#1,d0
+	move.w	.jt(pc,d0.w),d0
+	beq	.default
+	jsr	.jt(pc,d0.w)
+
+.exit
+	popm	std
+	rts
+
+.default
+	move.l	d2,d0
+	bra	.exit
+
+.jt
+	dc.w	0				; AHIDB_AudioID
+	dc.w	0				; AHIDB_Driver
+	dc.w	0				; AHIDB_Flags
+	dc.w	ga_Volume-.jt			; AHIDB_Volume
+	dc.w	ga_Panning-.jt			; AHIDB_Panning
+	dc.w	ga_Stereo-.jt			; AHIDB_Stereo
+	dc.w	ga_HiFi-.jt			; AHIDB_HiFi
+	dc.w	ga_PingPong-.jt			; AHIDB_PingPong
+	dc.w	0				; AHIDB_MultTable
+	dc.w	0				; AHIDB_Name
+	dc.w	ga_Bits-.jt			; AHIDB_Bits
+	dc.w	ga_MaxChannels-.jt		; AHIDB_MaxChannels
+	dc.w	0				; AHIDB_MinMixFreq
+	dc.w	0				; AHIDB_MaxMixFreq
+	dc.w	ga_Record-.jt			; AHIDB_Record
+	dc.w	ga_Frequencies-.jt		; AHIDB_Frequencies
+	dc.w	0				; AHIDB_FrequencyArg
+	dc.w	ga_Frequency-.jt		; AHIDB_Frequency
+	dc.w	ga_Author-.jt			; AHIDB_Author
+	dc.w	ga_Copyright-.jt		; AHIDB_Copyright
+	dc.w	ga_Version-.jt			; AHIDB_Version
+	dc.w	ga_Annotation-.jt		; AHIDB_Annotation
+	dc.w	0				; AHIDB_BufferLen
+	dc.w	0				; AHIDB_IndexArg
+	dc.w	ga_Index-.jt			; AHIDB_Index
+	dc.w	ga_Realtime-.jt			; AHIDB_Realtime
+	dc.w	0				; AHIDB_MaxPlaySamples
+	dc.w	ga_MaxRecordSamples-.jt		; AHIDB_MaxRecordSample
+	dc.w	0				; 
+	dc.w	ga_FullDuplex-.jt		; AHIDB_FullDuplex
+	dc.w	ga_MinMonitorVolume-.jt		; AHIDB_MinMonitorVolum
+	dc.w	ga_MaxMonitorVolume-.jt		; AHIDB_MaxMonitorVolum
+	dc.w	ga_MinInputGain-.jt		; AHIDB_MinInputGain
+	dc.w	ga_MaxInputGain-.jt		; AHIDB_MaxInputGain
+	dc.w	ga_MinOutputVolume-.jt		; AHIDB_MinOutputVolume
+	dc.w	ga_MaxOutputVolume-.jt		; AHIDB_MaxOutputVolume
+	dc.w	ga_Inputs-.jt			; AHIDB_Inputs
+	dc.w	0				; AHIDB_InputArg
+	dc.w	ga_Input-.jt			; AHIDB_Input
+	dc.w	ga_Outputs-.jt			; AHIDB_Outputs
+	dc.w	0				; AHIDB_OutputArg
+	dc.w	ga_Output-.jt			; AHIDB_Output
+	dc.w	0				; AHIDB_Data
+
+
+*** The tags AHIDB_Volume, AHIDB_Panning, AHIDB_Stereo and AHIDB_HiFi are
+*** parameters to the mixing routine when mixing, but attributes in DMA mode.
+
+ga_Volume:
+	move.l	d2,d0
+	tst.l	d4
+	beq	.exit
+	moveq	#TRUE,d0
+.exit
+	rts
+
+ga_Panning:
+	move.l	d2,d0
+	tst.l	d4
+	beq	.exit
+	moveq	#FALSE,d0
+.exit
+	rts
+
+ga_Stereo:
+	move.l	d2,d0
+	tst.l	d4
+	beq	.exit
+	moveq	#TRUE,d0
+.exit
+	rts
+
+ga_HiFi:
+	move.l	d2,d0
+	tst.l	d4
+	beq	.exit
+	moveq	#TRUE,d0
+.exit
+	rts
+
+ga_PingPong:
+	move.l	d2,d0
+	tst.l	d4
+	beq	.exit
+	moveq	#TRUE,d0
+.exit
+	rts
+
+ga_Bits:
+	moveq	#14,d0
+	tst.l	d3
+	bne	.exit
+	moveq	#8,d0
+.exit
+	rts
+
+ga_MaxChannels:
+	moveq	#4,d0
+	tst.l	d4
+	bne	.exit
+	move.l	d2,d0
+.exit
+	rts
+
+ga_Record:
+	moveq	#FALSE,d0
+	tst.l	d3
+	bne	.exit
+	tst.l	d4
+	bne	.exit
+	moveq	#TRUE,d0
+.exit
+	rts
+
+ga_Frequencies:
+	moveq	#1,d0
+	tst.l	d4
+	bne	.exit
+	bsr	checkvideo
+	tst.l	d0
+	beq	.1
+	moveq	#FREQUENCIES,d0
+.exit
+	rts
+.1
+	moveq	#FREQUENCIES_OCS,d0
+	rts
+
+ga_Frequency:
+	tst.l	d4
+	beq	.nodma
+	move.l	#PALFREQ,d2			;PAL
+	move.l	pb_GfxLib(a5),a0
+	move.w	gb_DisplayFlags(a0),d0
+	btst	#REALLY_PALn,d0
+	bne.b	.1
+	move.l	#NTSCFREQ,d2			;NTSC
+.1
+	move.l	d2,d0
+	rts
+.nodma
+	lsl.w	#2,d1
+	lea	freqlist(pc),a0
+	move.l	(a0,d1.w),d2
+
+;	moveq	#0,d0				;Default
+;	lea	fakefreqVar(pc),a0
+;	bsr	GetVarInt
+;	tst.l	d0
+;	bne	.skipfrequpdate
+;	move.l	d2,d0
+;	bsr	calcperiod
+;	rts
+;.skipfrequpdate
+	move.l	d2,d0
+	rts
+
+ga_Author:
+	lea	.author(pc),a0
+	move.l	a0,d0
+	rts
+.author		dc.b	"Martin 'Leviticus' Blom",0
+	even
+
+ga_Copyright:
+	lea	.copyright(pc),a0
+	move.l	a0,d0
+	rts
+.copyright	dc.b	"Public Domain",0
+	even
+
+ga_Version:
+	lea	IDString(pc),a0
+	move.l	a0,d0
+	rts
+
+ga_Annotation:
+	lea	.anno(pc),a0
+	move.l	a0,d0
+	rts
+.anno		dc.b	"14 bit routines by Christian Buchner.",0
+	even
+
+ga_Index:
+	move.l	d1,d0
+	bsr	findfreq
+	move.l	d1,d0
+	rts
+
+
+ga_Realtime:
+	moveq	#TRUE,d0
+	rts
+
+ga_MaxRecordSamples:
+	move.l	#RECORDSAMPLES,d0
+	rts
+
+ga_FullDuplex:
+	moveq	#FALSE,d0
+	tst.l	d3
+	bne	.exit
+	tst.l	d4
+	bne	.exit
+	moveq	#TRUE,d0
+.exit
+	rts
+
+
+ga_MinMonitorVolume:
+	moveq	#0,d0
+	rts
+
+ga_MaxMonitorVolume:
+	moveq	#0,d0
+	tst.l	d3
+	bne	.exit
+	tst.l	d4
+	bne	.exit
+	move.l	#$10000,d0
+.exit
+	rts
+
+ga_MinInputGain:
+	move.l	#$10000,d0
+	rts
+
+ga_MaxInputGain:
+	move.l	#$10000,d0
+	rts
+
+ga_MinOutputVolume:
+	move.l	#$10000,d0
+	tst.l	d3
+	bne	.exit
+	tst.l	d4
+	bne	.exit
+	moveq	#0,d0
+.exit
+	rts
+
+ga_MaxOutputVolume:
+	move.l	#$10000,d0
+	rts
+
+
+ga_Inputs:
+	moveq	#0,d0
+	tst.l	d3
+	bne	.exit
+	tst.l	d4
+	bne	.exit
+	moveq	#3,d0
+.exit
+	rts
+
+ga_Input:
+	lsl.l	#2,d1
+	move.l	.inputs(pc,d1.w),d0
+	rts
+.inputs		dc.l	.input0
+		dc.l	.input1
+		dc.l	.input2
+
+.input0		dc.b	"Parallel port sampler",0
+.input1		dc.b	"Aura sampler",0
+.input2		dc.b	"Clarity sampler",0
+	even
+
+ga_Outputs:
+	moveq	#1,d0
+	rts
+
+ga_Output:
+	lea	.output(pc),a0
+	move.l	a0,d0
+	rts
+.output		dc.b	"Line",0
+	even
+
+
+****** [driver].audio/AHIsub_HardwareControl ********************************
+*
+*   NAME
+*       AHIsub_HardwareControl -- Modify sound card settings
+*
+*   SYNOPSIS
+*       AHIsub_HardwareControl( attribute,  argument, audioctrl );
+*       D0                      D0          D1        A2
+*
+*       LONG AHIsub_HardwareControl( ULONG, LONG, struct AHIAudioCtrlDrv * );
+*
+*   IMPLEMENTATION
+*       Set or return the state of a particular hardware component. AHI uses
+*       AHIsub_GetAttr() to supply the user with limits and what tags are
+*       available.
+*
+*   INPUTS
+*       attribute - Is really a Tag and can be one of the following:
+*
+*           AHIC_MonitorVolume - Set the input monitor volume to argument.
+*           AHIC_MonitorVolume_Query - Return the current input monitor
+*               volume (argument is ignored).
+*
+*           AHIC_InputGain - Set the input gain to argument. (V2)
+*           AHIC_InputGain_Query (V2)
+*
+*           AHIC_OutputVolume - Set the output volume to argument. (V2)
+*           AHIC_OutputVolume_Query (V2)
+*
+*           AHIC_Input - Use the argument:th input source (default is 0). (V2)
+*           AHIC_Input_Query (V2)
+*
+*           AHIC_Output - Use the argument:th output destination (default
+*               is 0). (V2)
+*           AHIC_Output_Query (V2)
+*
+*       argument - What value attribute should be set to.
+*       audioctrl - Pointer to an AHIAudioCtrlDrv structure.
+*
+*   RESULT
+*       Return the state of selected attribute. If you were asked to set
+*       something, return TRUE. If attribute is unknown to you or unsupported,
+*       return FALSE.
+*
+*   NOTES
+*       This call must be safe from interrupts.
+*
+*   SEE ALSO
+*       ahi.device/AHI_ControlAudioA(), AHIsub_GetAttr()
+*
+*****************************************************************************
+*
+*
+
+AHIsub_HardwareControl:
+	PRINTF	2,"AHIsub_HardwareControl()"
+	cmp.l	#AHIC_MonitorVolume,d0
+	bne.b	.dontsetmonvol
+	move.l	ahiac_DriverData(a2),a1
+	lsr.l	#8,d1
+	lsr.l	#2,d1
+	move.w	d1,p_MonitorVolume(a1)
+	bra.b	.exit
+.dontsetmonvol
+	cmp.l	#AHIC_MonitorVolume_Query,d0
+	bne.b	.dontgetmonvol
+	move.l	ahiac_DriverData(a2),a1
+	moveq	#0,d0
+	move.w	p_MonitorVolume(a1),d0
+	lsl.l	#8,d0
+	lsl.l	#2,d0
+	bra.b	.quit
+.dontgetmonvol
+	cmp.l	#AHIC_OutputVolume,d0
+	bne.b	.dontsetoutvol
+	move.l	ahiac_DriverData(a2),a1
+	lsr.l	#8,d1
+	lsr.l	#2,d1
+	move.w	d1,p_OutputVolume(a1)
+	bra.b	.exit
+.dontsetoutvol
+	cmp.l	#AHIC_OutputVolume_Query,d0
+	bne.b	.dontgetoutvol
+	move.l	ahiac_DriverData(a2),a1
+	moveq	#0,d0
+	move.w	p_OutputVolume(a1),d0
+	lsl.l	#8,d0
+	lsl.l	#2,d0
+	bra.b	.quit
+.dontgetoutvol
+	cmp.l	#AHIC_Input,d0
+	bne.b	.dontsetinput
+	move.l	ahiac_DriverData(a2),a1
+	move.w	d1,p_Input(a1)
+	bra.b	.exit
+.dontsetinput
+	cmp.l	#AHIC_Input_Query,d0
+	bne.b	.dontgetinput
+	move.l	ahiac_DriverData(a2),a1
+	moveq	#0,d0
+	move.w	p_Input(a1),d0
+	bra.b	.quit
+.dontgetinput
+	moveq	#FALSE,d0
+.quit
+	rts
+.exit
+	moveq	#TRUE,d0
+	rts
+
+
+
+
+
+
+
+*******************************************************************************
+***** Interrupt routines ******************************************************
+*******************************************************************************
+
+MixTask:
+	move.l	4.w,a6
+	suba.l	a1,a1
+	call	FindTask
+	move.l	d0,a0
+	move.l	TC_Userdata(a0),a3
+	move.l	p_PaulaBase(a3),a5
+
+.loop
+	move.l	#SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D,d0
+	call	Wait
+
+	btst	#SIGBREAKB_CTRL_C,d0
+	bne	.quit
+
+	btst	#SIGBREAKB_CTRL_D,d0
+	beq	.loop
+
+	pushm	a3/a5-a6
+	move.l	p_PlaySoftInt+IS_CODE(a3),a5
+	move.l	p_PlaySoftInt+IS_DATA(a3),a1
+	jsr	(a5)
+	popm	a3/a5-a6
+
+	bra	.loop
+
+.quit
+	call	Forbid
+	move.l	p_ReplyTask(a3),d0
+	move.l	d0,a1
+	beq	.exit
+	move.l	#SIGF_SINGLE,d0
+	call	Signal
+
+.exit
+
+; Multitasking will resume when we're dead
+
+	rts
+
+Interrupt_Dummy:
+	move.w	#INTF_AUDIO,INTREQ(a0)
+SoftInt_Dummy:
+	rts
+
+;in:
+* d0	scratch
+* d1	INTENAR & INTREQR
+* a0	custom
+* a1	&(paula->p_RecIntData)
+* a5	&RecordInterrupt
+* a6	ExecBase
+RecordInterrupt:
+
+* This function will be executed up to 28000 times per second - that's once per
+* rasterline! It has to be as fast as possible.
+
+	move.w	#INTF_AUD2|INTF_AUD3,INTREQ(a0)	;Clear the interrupt flags
+	moveq	#0,d0
+	move.b	_ciaa+ciaprb,d0			;read parallel port
+ IFGE	__CPU-68020
+	move.l	convtable(pc,d0.w*4),d0		;1 unsigned byte -> 2 signed words
+ ELSE
+	add.w	d0,d0
+	add.w	d0,d0
+	move.l	convtable(pc,d0.w),d0
+ ENDC
+	move.w	d0,AUD2DAT(a0)			;left
+	move.w	d0,AUD3DAT(a0)			;right
+
+	move.l	(a1),a5				;p_RecFillPtr
+	move.l	d0,(a5)+			;store sample in buffer
+	move.l	a5,(a1)+			;update pointer
+	subq.w	#1,(a1)				;p_ReqFillCount
+	beq	ri_Filled			;branch if buffer filled
+	rts
+
+convtable
+CNT	SET	0
+	REPT	256
+	dc.b	CNT-128,CNT-128,CNT-128,CNT-128
+CNT	SET	CNT+1
+	ENDR
+
+;in:
+* d0	scratch
+* d1	INTENAR & INTREQR
+* a0	custom
+* a1	&(paula->p_RecIntData)
+* a5	&RecordInterrupt
+* a6	ExecBase
+RecordInterruptClarity:
+
+* This function will be executed up to 28000 times per second - that's once per
+* rasterline! It has to be as fast as possible.
+
+	move.w	#INTF_AUD2|INTF_AUD3,INTREQ(a0)	;Clear the interrupt flags
+
+	lea	_ciab+ciatahi,a5
+
+	move.b	_ciaa+ciaprb,d0			;left lsb
+	ror.l	#8,d0				;d0: L0xxxxxx
+	tst.b	(a5)				;3x700 kHz wait states
+	tst.b	(a5)
+	tst.b	(a5)
+
+	move.b	_ciaa+ciaprb,d0			;left msb
+	ror.l	#8,d0				;d0: L1L0xxxx
+	tst.b	(a5)				;3x700 kHz wait states
+	tst.b	(a5)
+	tst.b	(a5)
+
+	move.b	_ciaa+ciaprb,d0			;right lsb
+	lsl.w	#8,d0				;d0: L1L0R0xx
+	tst.b	(a5)				;3x700 kHz wait states
+	tst.b	(a5)
+	tst.b	(a5)
+
+	move.b	_ciaa+ciaprb,d0			;right msb
+	ror.w	#8,d0				;d0: L1L0R1R0
+
+	move.l	(a1),a5				;p_RecFillPtr
+	move.l	d0,(a5)+			;store sample in buffer
+	move.l	a5,(a1)+			;update pointer
+
+	move.w	d0,d1
+	lsr.w	#8,d0
+	move.b	d0,d1
+
+	move.w	d1,AUD2DAT(a0)			;right
+	move.w	d1,AUD3DAT(a0)			;left
+
+	subq.w	#1,(a1)				;p_ReqFillCount
+	beq	ri_Filled			;branch if buffer filled
+	rts
+
+;in:
+* d0	scratch
+* d1	INTENAR & INTREQR
+* a0	custom
+* a1	&(paula->p_RecIntDataAura)
+* a5	&RecordInterrupt
+* a6	ExecBase
+RecordInterruptAura:
+
+* This function will be executed up to 28000 times per second - that's once per
+* rasterline! It has to be as fast as possible.
+
+	move.w	#INTF_AUD2|INTF_AUD3,INTREQ(a0)	;Clear the interrupt flags
+	move.l	(a1)+,a5
+	move.l	(a5),d0				;read aura sampler
+	eor.l	#$80008000,d0
+	move.l	(a1),a5				;p_RecFillPtr
+	move.l	d0,(a5)+			;store sample in buffer
+	move.l	a5,(a1)+			;update pointer
+
+	move.w	d0,d1
+	lsr.w	#8,d0
+	move.b	d0,d1
+
+	move.w	d1,AUD2DAT(a0)			;left
+	move.w	d1,AUD3DAT(a0)			;right
+
+	subq.w	#1,(a1)				;p_ReqFillCount
+	beq	ri_Filled			;branch if buffer filled
+	rts
+
+*******************************************************************************
+
+ri_Filled:
+
+* This part is only executed every RECORDSAMPLES:th time... No need to hurry.
+
+	move.l	8(a1),d0			;p_RecBuffer2->
+	move.l	4(a1),8(a1)			;p_RecBuffer1->p_RecBuffer2
+	move.l	d0,4(a1)			;            ->p_RecBuffer1
+	move.l	d0,-4(a1)			;p_RecFillPtr
+	move.w	#RECORDSAMPLES,(a1)		;p_ReqFillCount
+	move.l	12(a1),a1			;p_RecSoftIntPtr
+	jmp	_LVOCause(a6)
+
+
+;in:
+* d0	scratch
+* d1	scratch
+* a0	scratch
+* a1	struct paula *
+* a5	scratch
+RecordSoftInt:
+
+* This function is not executed many times per second and is therefore not
+* fully optimized... ;)
+	push	a2
+	move.w	p_MonitorVolume(a1),d0
+	move.w	d0,custom+AUD2VOL
+	move.w	d0,custom+AUD3VOL
+	move.l	p_RecBuffer2(a1),p_rmBuffer(a1)
+	move.l	p_AudioCtrl(a1),a2
+	lea	p_RecordMessage(a1),a1
+	move.l	ahiac_SamplerFunc(a2),a0
+	move.l	h_Entry(a0),a5
+	jsr	(a5)
+	pop	a2
+	rts
+
+*******************************************************************************
+*******************************************************************************
+
+;in:
+* d0	scratch
+* d1	INTENAR & INTREQR
+* a0	custom
+* a1	struct paula *
+* a5	&AudioInterrupt
+* a6	ExecBase
+
+AudioInterrupt2:				;Two hardware channels used
+;	move.l	p_AudLenPer(a1),d0
+;	move.l	d0,AUD0LEN(a0)
+;	move.l	d0,AUD1LEN(a0)
+	move.w	p_AudPer(a1),d0
+	move.w	d0,AUD0PER(a0)
+	move.w	d0,AUD1PER(a0)
+	move.w	p_OutputVolume(a1),AUD0VOL(a0)
+	move.w	p_OutputVolume(a1),AUD1VOL(a0)
+
+	move.l	p_DoubleBufferOffset(a1),d0
+	eor.w	#4*4,d0
+	move.l	d0,p_DoubleBufferOffset(a1)
+
+	lea	p_AudPtrs(a1,d0.l),a5
+	tst.b	p_SwapChannels(a1)
+	bne	.swap
+	move.l	(a5)+,AUD0LC(a0)
+	move.l	(a5)+,AUD1LC(a0)
+	bra	.1
+.swap
+	move.l	(a5)+,AUD1LC(a0)
+	move.l	(a5)+,AUD0LC(a0)
+.1
+	move.w	#INTF_AUD0,INTREQ(a0)		;Clear the interrupt 
+	move.l	p_MixTask(a1),d0
+	bne	.signal
+	lea	p_PlaySoftInt(a1),a1
+	jmp	_LVOCause(a6)			;start PlaySoftInt
+.signal
+	move.l	d0,a1
+	move.l	#SIGBREAKF_CTRL_D,d0
+	jmp	_LVOSignal(a6)
+
+
+AudioInterrupt4:				;Four hardware channels used
+;	move.l	p_AudLenPer(a1),d0
+;	move.l	d0,AUD0LEN(a0)
+;	move.l	d0,AUD1LEN(a0)
+;	move.l	d0,AUD2LEN(a0)
+;	move.l	d0,AUD3LEN(a0)
+	move.w	p_AudPer(a1),d0
+	move.w	d0,AUD0PER(a0)
+	move.w	d0,AUD1PER(a0)
+	move.w	d0,AUD2PER(a0)
+	move.w	d0,AUD3PER(a0)
+	move.w	#64,AUD0VOL(a0)
+	move.w	#64,AUD1VOL(a0)
+	move.w	#1,AUD2VOL(a0)
+	move.w	#1,AUD3VOL(a0)
+
+	move.l	p_DoubleBufferOffset(a1),d0
+	eor.w	#4*4,d0
+	move.l	d0,p_DoubleBufferOffset(a1)
+
+	lea	p_AudPtrs(a1,d0.l),a5
+	tst.b	p_SwapChannels(a1)
+	bne	.swap
+	move.l	(a5)+,AUD0LC(a0)
+	move.l	(a5)+,AUD1LC(a0)
+	move.l	(a5)+,AUD2LC(a0)
+	move.l	(a5)+,AUD3LC(a0)
+	bra	.1
+.swap
+	move.l	(a5)+,AUD1LC(a0)
+	move.l	(a5)+,AUD0LC(a0)
+	move.l	(a5)+,AUD3LC(a0)
+	move.l	(a5)+,AUD2LC(a0)
+.1
+	move.w	#INTF_AUD0,INTREQ(a0)		;Clear the interrupt 
+	move.l	p_MixTask(a1),d0
+	bne	.signal
+	lea	p_PlaySoftInt(a1),a1
+	jmp	_LVOCause(a6)			;start PlaySoftInt
+.signal
+	move.l	d0,a1
+	move.l	#SIGBREAKF_CTRL_D,d0
+	jmp	_LVOSignal(a6)
+
+
+
+*******************************************************************************
+
+;in:
+* d0	scratch
+* d1	scratch
+* a0	scratch
+* a1	struct paula *
+* a5	scratch
+
+CONVERT_PRE	MACRO
+	pushm	std
+	move.l	a1,a6
+	move.l	p_AudioCtrl(a6),a2
+	move.l	ahiac_PreTimer(a2),a0
+	PRINTF	8,"Calling PreTimer: %08lx", a2
+	jsr	(a0)
+	move.l	d0,d7
+
+	move.l	p_DoubleBufferOffset(a6),d0
+	lea	p_AudPtrs(a6,d0.l),a0
+	movem.l	(a0)+,d2/d3/d4/d5		;get all 4 buffer pointers
+
+ IFEQ BETTERTIMING-1
+	PRINTF	3,"Leftovers: %ld", p_LoopLeftovers(a6)
+ ENDC
+
+	moveq	#0,d6
+.repeat
+	movem.l	p_PlayerHookRegs(a6),a0/a1/a3
+	PRINTF	8,"Calling PlayerHook: %08lx, %08lx, %08lx", a0, a2, a1
+	jsr	(a3)				;call Player Hook
+	tst.l	d7
+	beq	.no_skip
+	add.l	ahiac_BuffSamples(a2),d6	;Faked # of mixed samples
+	bra	.skip
+.no_skip
+
+	movem.l	p_MixHookRegs(a6),a0/a1/a3
+ IFEQ BETTERTIMING-1
+	move.l	p_LoopLeftovers(a6),d0
+	move.l	p_SampleFrameShift(a6),d1
+	lsl.l	d1,d0
+	PRINTF	3," adding %ld", d0
+	add.l	d0,a1				;don't overwrite the leftovers
+						;(the mixbuffer is large enough,
+						;search for EXTRABUFFSIZE!)
+ ENDC
+	PRINTF	8,"Calling MixerHook: %08lx, %08lx, %08lx", a0, a2, a1
+	jsr	(a3)				;call Mixer Hook
+
+ IFEQ BETTERTIMING-1
+	move.l	ahiac_BuffSamples(a2),d0
+	add.l	p_LoopLeftovers(a6),d0
+	move.l	d0,d1
+	and.l	#~3,d0
+	sub.l	d0,d1
+	move.l	d1,p_LoopLeftovers(a6)
+	add.l	d0,d6				;Count actual number of played samples
+	PRINTF	4," Playing %ld, %ld missing", d0, d1
+	lsr.l	#2,d0
+	subq.l	#1,d0
+	move.l	p_Mixbuffer(a6),a1		;a1 was modified above, remember?
+ ELSE
+	move.l	p_LoopTimes(a6),d0
+ ENDC
+	ENDM
+
+;
+; Conversion code here!
+;
+; d0	counter
+; d1	scratch
+; d2-d5	buffer pointers
+; d6	(sample counter/4)
+; d7	(pretimer flag)
+; a0	scratch
+; a1	source buffer (must be updated)
+; a2	AudioCtrl
+; a3-a5	scratch
+; a6	struct paula *
+;
+; Conversion code here!
+;
+
+CONVERT_POST	MACRO
+
+ IFEQ BETTERTIMING-1
+	; Transfer the leftovers to the beginning of the mixbuffer
+	; It's easy: just transfer p_LoopLeftovers samples from (a1) to
+	; (p_Mixbuffer).
+
+	move.l	p_Mixbuffer(a6),a0
+	move.l	p_LoopLeftovers(a6),d0
+	PRINTF	3,"Tranfering %ld samples",d0
+	move.l	p_SampleFrameShift(a6),d1
+	lsl.l	d1,d0
+	PRINTF	3,", that is %ld bytes",d0
+	addq.l	#3,d0
+	lsr.l	#2,d0
+	beq	.no_transfer
+	PRINTF	4," or %ld iterations.",d0
+	subq.l	#1,d0
+.transfer
+	move.l	(a1)+,(a0)+
+	dbf	d0,.transfer
+.no_transfer
+ ENDC
+
+.skip
+ IFEQ BETTERTIMING-0
+	add.l	ahiac_BuffSamples(a2),d6
+ ENDC
+	cmp.l	p_MinBufferLength(a6),d6
+	blo	.repeat
+	move.l	ahiac_PostTimer(a2),a0
+	PRINTF	8,"Calling PostTimer: %08lx", a2
+	jsr	(a0)
+	move.l	d6,d0
+	PRINTF	4,"I have played %ld samples", d0
+	lea	custom,a0
+	popm	std
+	ENDM
+
+; Exit code here
+; d0	Samples in buffer
+; a0	custom
+
+*******************************************************************************
+
+SoftInt_8bitM:
+
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+.loop
+	move.b	(a1),d1
+	lsl.l	#8,d1
+	move.b	2(a1),d1
+	lsl.l	#8,d1
+	move.b	4(a1),d1
+	lsl.l	#8,d1
+	move.b	6(a1),d1
+	move.l	d1,(a0)+
+	addq.w	#8,a1
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1,DMACON(a0)
+	rts
+
+*******************************************************************************
+
+SoftInt_8bitMH:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+.loop
+	move.b	(a1),d1
+	lsl.l	#8,d1
+	move.b	4(a1),d1
+	lsl.l	#8,d1
+	move.b	8(a1),d1
+	lsl.l	#8,d1
+	move.b	12(a1),d1
+	move.l	d1,(a0)+
+	add.w	#16,a1
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1,DMACON(a0)
+	rts
+
+*******************************************************************************
+
+SoftInt_8bitS:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d3,a3				;get buffer ptr
+.loop
+
+; Left
+	move.b	(a1),d1
+	lsl.l	#8,d1
+	move.b	4(a1),d1
+	lsl.l	#8,d1
+	move.b	8(a1),d1
+	lsl.l	#8,d1
+	move.b	12(a1),d1
+	move.l	d1,(a3)+
+
+; Right
+	move.b	2(a1),d1
+	lsl.l	#8,d1
+	move.b	6(a1),d1
+	lsl.l	#8,d1
+	move.b	10(a1),d1
+	lsl.l	#8,d1
+	move.b	14(a1),d1
+	move.l	d1,(a0)+
+
+	add.w	#16,a1
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+	move.l	a3,d3				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1,DMACON(a0)
+	rts
+
+*******************************************************************************
+
+SoftInt_8bitSH:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d3,a3				;get buffer ptr
+.loop
+
+; Left
+	move.b	(a1),d1
+	lsl.l	#8,d1
+	move.b	8(a1),d1
+	lsl.l	#8,d1
+	move.b	16(a1),d1
+	lsl.l	#8,d1
+	move.b	24(a1),d1
+	move.l	d1,(a3)+
+
+; Right
+	move.b	4(a1),d1
+	lsl.l	#8,d1
+	move.b	12(a1),d1
+	lsl.l	#8,d1
+	move.b	20(a1),d1
+	lsl.l	#8,d1
+	move.b	28(a1),d1
+	move.l	d1,(a0)+
+
+	add.w	#32,a1
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+	move.l	a3,d3				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1,DMACON(a0)
+	rts
+
+*******************************************************************************
+
+SoftInt_14bitM:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d5,a5				;get buffer ptr
+.loop
+
+; High
+	move.b	(a1),d1
+	lsl.l	#8,d1
+	move.b	2(a1),d1
+	lsl.l	#8,d1
+	move.b	4(a1),d1
+	lsl.l	#8,d1
+	move.b	6(a1),d1
+	move.l	d1,(a0)+
+
+; Low
+	move.b	1(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	3(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	5(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	7(a1),d1
+	lsr.b	#2,d1
+	move.l	d1,(a5)+
+
+	addq.w	#8,a1
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+	move.l	a5,d5				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	d0,AUD2LEN(a0)
+	move.w	d0,AUD3LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3,DMACON(a0)
+	rts
+
+*******************************************************************************
+
+
+SoftInt_14bitMH:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d5,a5				;get buffer ptr
+.loop
+
+; High
+	move.b	(a1),d1
+	lsl.l	#8,d1
+	move.b	4(a1),d1
+	lsl.l	#8,d1
+	move.b	8(a1),d1
+	lsl.l	#8,d1
+	move.b	12(a1),d1
+	move.l	d1,(a0)+
+
+; Low
+	move.b	1(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	5(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	9(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	13(a1),d1
+	lsr.b	#2,d1
+	move.l	d1,(a5)+
+
+	add.w	#16,a1
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+	move.l	a5,d5				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	d0,AUD2LEN(a0)
+	move.w	d0,AUD3LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3,DMACON(a0)
+	rts
+
+*******************************************************************************
+
+SoftInt_14CbitM:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d5,a5				;get buffer ptr
+	move.l	p_CalibrationTable(a6),a3
+	moveq	#0,d3
+.loop
+
+ IFGE	__CPU-68020
+	move.w	(a1)+,d3
+	move.w	(a3,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	(a1)+,d3
+ 	add.w	d3,d3
+ 	move.w	(a3,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxxxAAxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;xxaaxxxx
+ IFGE	__CPU-68020
+	move.w	(a1)+,d3
+	move.w	(a3,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	(a1)+,d3
+ 	add.w	d3,d3
+ 	move.w	(a3,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxAABBxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;aabbxxxx
+ IFGE	__CPU-68020
+	move.w	(a1)+,d3
+	move.w	(a3,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	(a1)+,d3
+ 	add.w	d3,d3
+ 	move.w	(a3,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;AABBCCxx
+	move.w	d3,d2				;aabbccxx
+
+ IFGE	__CPU-68020
+	move.w	(a1)+,d3
+	move.w	(a3,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	(a1)+,d3
+ 	add.w	d3,d3
+ 	move.w	(a3,d3.l),d3
+ ENDC
+	move.b	d3,d1				;AABBCCDD
+	lsr.w	#8,d3
+	move.b	d3,d2				;aabbccdd
+
+	move.l	d1,(a5)+
+	move.l	d2,(a0)+
+
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+	move.l	a5,d5				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	d0,AUD2LEN(a0)
+	move.w	d0,AUD3LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3,DMACON(a0)
+	rts
+
+*******************************************************************************
+
+SoftInt_14CbitMH:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d5,a5				;get buffer ptr
+	move.l	p_CalibrationTable(a6),a3
+	moveq	#0,d3
+.loop
+
+ IFGE	__CPU-68020
+	move.w	(a1),d3
+	move.w	(a3,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a3,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxxxAAxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;xxaaxxxx
+ IFGE	__CPU-68020
+	move.w	4(a1),d3
+	move.w	(a3,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	4(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a3,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxAABBxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;aabbxxxx
+ IFGE	__CPU-68020
+	move.w	8(a1),d3
+	move.w	(a3,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	8(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a3,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;AABBCCxx
+	move.w	d3,d2				;aabbccxx
+
+ IFGE	__CPU-68020
+	move.w	12(a1),d3
+	move.w	(a3,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	12(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a3,d3.l),d3
+ ENDC
+	move.b	d3,d1				;AABBCCDD
+	lsr.w	#8,d3
+	move.b	d3,d2				;aabbccdd
+
+	move.l	d1,(a5)+
+	add.w	#16,a1
+	move.l	d2,(a0)+
+
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+	move.l	a5,d5				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	d0,AUD2LEN(a0)
+	move.w	d0,AUD3LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3,DMACON(a0)
+	rts
+
+
+*******************************************************************************
+
+SoftInt_14bitS:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d3,a3				;get buffer ptr
+	move.l	d4,a4				;get buffer ptr
+	move.l	d5,a5				;get buffer ptr
+.loop
+
+; Left High
+	move.b	(a1),d1
+	lsl.l	#8,d1
+	move.b	4(a1),d1
+	lsl.l	#8,d1
+	move.b	8(a1),d1
+	lsl.l	#8,d1
+	move.b	12(a1),d1
+	move.l	d1,(a3)+
+
+; Left Low
+	move.b	1(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	5(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	9(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	13(a1),d1
+	lsr.b	#2,d1
+	move.l	d1,(a4)+
+
+; Right High
+	move.b	2(a1),d1
+	lsl.l	#8,d1
+	move.b	6(a1),d1
+	lsl.l	#8,d1
+	move.b	10(a1),d1
+	lsl.l	#8,d1
+	move.b	14(a1),d1
+	move.l	d1,(a0)+
+
+; Right Low
+	move.b	3(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	7(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	11(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	15(a1),d1
+	lsr.b	#2,d1
+	move.l	d1,(a5)+
+
+	add.w	#16,a1
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+	move.l	a3,d3				;save buffer ptr
+	move.l	a4,d4				;save buffer ptr
+	move.l	a5,d5				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	d0,AUD2LEN(a0)
+	move.w	d0,AUD3LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3,DMACON(a0)
+	rts
+
+*******************************************************************************
+
+SoftInt_14bitSH:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d3,a3				;get buffer ptr
+	move.l	d4,a4				;get buffer ptr
+	move.l	d5,a5				;get buffer ptr
+.loop
+
+; Left High
+	move.b	(a1),d1
+	lsl.l	#8,d1
+	move.b	8(a1),d1
+	lsl.l	#8,d1
+	move.b	16(a1),d1
+	lsl.l	#8,d1
+	move.b	24(a1),d1
+	move.l	d1,(a3)+
+
+; Left Low
+	move.b	1(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	9(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	17(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	25(a1),d1
+	lsr.b	#2,d1
+	move.l	d1,(a4)+
+
+; Right High
+	move.b	4(a1),d1
+	lsl.l	#8,d1
+	move.b	12(a1),d1
+	lsl.l	#8,d1
+	move.b	20(a1),d1
+	lsl.l	#8,d1
+	move.b	28(a1),d1
+	move.l	d1,(a0)+
+
+; Right Low
+	move.b	5(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	13(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	21(a1),d1
+	lsr.b	#2,d1
+	lsl.l	#8,d1
+	move.b	29(a1),d1
+	lsr.b	#2,d1
+	move.l	d1,(a5)+
+
+	add.w	#32,a1
+	dbf	d0,.loop
+	move.l	a0,d2				;save buffer ptr
+	move.l	a3,d3				;save buffer ptr
+	move.l	a4,d4				;save buffer ptr
+	move.l	a5,d5				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	d0,AUD2LEN(a0)
+	move.w	d0,AUD3LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3,DMACON(a0)
+	rts
+
+
+*******************************************************************************
+
+SoftInt_14CbitS:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d3,a3				;get buffer ptr
+	move.l	d4,a4				;get buffer ptr
+	move.l	d5,a5				;get buffer ptr
+	push	a6
+	move.l	p_CalibrationTable(a6),a6
+	moveq	#0,d3
+.loop
+
+; Left
+ IFGE	__CPU-68020
+	move.w	(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxxxAAxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;xxaaxxxx
+ IFGE	__CPU-68020
+	move.w	4(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	4(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxAABBxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;aabbxxxx
+ IFGE	__CPU-68020
+	move.w	8(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	8(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;AABBCCxx
+	move.w	d3,d2				;aabbccxx
+
+ IFGE	__CPU-68020
+	move.w	12(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	12(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1				;AABBCCDD
+	lsr.w	#8,d3
+	move.b	d3,d2				;aabbccdd
+
+	move.l	d1,(a4)+
+	move.l	d2,(a3)+
+
+; Right
+ IFGE	__CPU-68020
+	move.w	2(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	2(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxxxAAxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;xxaaxxxx
+ IFGE	__CPU-68020
+	move.w	6(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	6(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxAABBxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;aabbxxxx
+ IFGE	__CPU-68020
+	move.w	10(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	10(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;AABBCCxx
+	move.w	d3,d2				;aabbccxx
+
+ IFGE	__CPU-68020
+	move.w	14(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	14(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1				;AABBCCDD
+	lsr.w	#8,d3
+	move.b	d3,d2				;aabbccdd
+
+	move.l	d1,(a5)+
+	add.w	#16,a1
+	move.l	d2,(a0)+
+
+	dbf	d0,.loop
+	pop	a6
+	move.l	a0,d2				;save buffer ptr
+	move.l	a3,d3				;save buffer ptr
+	move.l	a4,d4				;save buffer ptr
+	move.l	a5,d5				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	d0,AUD2LEN(a0)
+	move.w	d0,AUD3LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3,DMACON(a0)
+	rts
+
+
+*******************************************************************************
+
+SoftInt_14CbitSH:
+	CONVERT_PRE
+
+	move.l	d2,a0				;get buffer ptr
+	move.l	d3,a3				;get buffer ptr
+	move.l	d4,a4				;get buffer ptr
+	move.l	d5,a5				;get buffer ptr
+	push	a6
+	move.l	p_CalibrationTable(a6),a6
+	moveq	#0,d3
+.loop
+
+; Left
+ IFGE	__CPU-68020
+	move.w	(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxxxAAxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;xxaaxxxx
+ IFGE	__CPU-68020
+	move.w	8(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	8(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxAABBxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;aabbxxxx
+ IFGE	__CPU-68020
+	move.w	16(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	16(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;AABBCCxx
+	move.w	d3,d2				;aabbccxx
+
+ IFGE	__CPU-68020
+	move.w	24(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	24(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1				;AABBCCDD
+	lsr.w	#8,d3
+	move.b	d3,d2				;aabbccdd
+
+	move.l	d1,(a4)+
+	move.l	d2,(a3)+
+
+; Right
+ IFGE	__CPU-68020
+	move.w	4(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	4(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxxxAAxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;xxaaxxxx
+ IFGE	__CPU-68020
+	move.w	12(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	12(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;xxAABBxx
+	move.w	d3,d2
+	lsl.l	#8,d2				;aabbxxxx
+ IFGE	__CPU-68020
+	move.w	20(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	20(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1
+	lsl.l	#8,d1				;AABBCCxx
+	move.w	d3,d2				;aabbccxx
+
+ IFGE	__CPU-68020
+	move.w	28(a1),d3
+	move.w	(a6,d3.l*2),d3
+ ELSE
+	moveq	#0,d3
+	move.w	28(a1),d3
+ 	add.w	d3,d3
+ 	move.w	(a6,d3.l),d3
+ ENDC
+	move.b	d3,d1				;AABBCCDD
+	lsr.w	#8,d3
+	move.b	d3,d2				;aabbccdd
+
+	move.l	d1,(a5)+
+	add.w	#32,a1
+	move.l	d2,(a0)+
+
+	dbf	d0,.loop
+	pop	a6
+	move.l	a0,d2				;save buffer ptr
+	move.l	a3,d3				;save buffer ptr
+	move.l	a4,d4				;save buffer ptr
+	move.l	a5,d5				;save buffer ptr
+
+	CONVERT_POST
+
+	lsr.l	#1,d0
+	move.w	d0,AUD0LEN(a0)
+	move.w	d0,AUD1LEN(a0)
+	move.w	d0,AUD2LEN(a0)
+	move.w	d0,AUD3LEN(a0)
+	move.w	#DMAF_SETCLR|DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3,DMACON(a0)
+	rts
+
+
+
+
+
+
+
+*******************************************************************************
+***** DMA playback routines ***************************************************
+*******************************************************************************
+
+;in:
+* a2	AudioCtrl
+* a3	paula
+* a4	custom
+* a5	paulaBase
+* a6	ExecBase
+; out:
+* d0	AHIsub_Start return code
+
+DMA_Start:
+	PRINTF	2,"DMA_Start()"
+
+* Allocate DMA buffers
+	move.l	#DMABUFFSAMPLES*8,d0			; 4 channels, double buffers
+	move.l	#MEMF_CHIP|MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,p_DMAbuffer(a3)
+	beq	.nomem
+
+	move.l	#DMABUFFSAMPLES,d1
+	move.l	d0,p_AudPtr1A(a3)
+	add.l	d1,d0
+	move.l	d0,p_AudPtr1B(a3)
+	add.l	d1,d0
+	move.l	d0,p_AudPtr2A(a3)
+	add.l	d1,d0
+	move.l	d0,p_AudPtr2B(a3)
+	add.l	d1,d0
+	move.l	d0,p_AudPtr3A(a3)
+	add.l	d1,d0
+	move.l	d0,p_AudPtr3B(a3)
+	add.l	d1,d0
+	move.l	d0,p_AudPtr4A(a3)
+	add.l	d1,d0
+	move.l	d0,p_AudPtr4B(a3)
+
+* Set up audio hardware interrupts
+	move.l	#AudioInterruptDMA,IS_CODE+p_PlayInt(a3)
+	move.l	a3,IS_DATA+p_PlayInt(a3)
+
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD0,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD1,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD2,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD3,d0
+	call	SetIntVector
+
+* Use timer.device to clock the PlayerFunc() using a software interrupt/msg port
+
+	lea	p_TimerPort+MP_MSGLIST(a3),a0
+	NEWLIST	a0
+
+	lea	p_TimerPort(a3),a0
+	move.b	#NT_MSGPORT,LN_TYPE(a0)
+	move.b	#PA_SOFTINT,MP_FLAGS(a0)
+	lea	p_TimerInt(a3),a1
+	move.l	a1,MP_SIGTASK(a0)
+	
+	move.b	#32,p_TimerInt+LN_PRI(a3)	; Highest priority to keep it steady
+	lea	PlayerFunc(pc),a0
+	move.l	a0,p_TimerInt+IS_CODE(a3)
+	move.l	a3,p_TimerInt+IS_DATA(a3)
+
+	lea	p_TimerPort(a3),a0
+	moveq	#IOTV_SIZE,d0
+	call	CreateIORequest
+	move.l	d0,p_TimerReq(a3)
+	beq	.notimer
+
+	lea	timerName(pc),a0
+	moveq	#UNIT_ECLOCK,d0
+	move.l	p_TimerReq(a3),a1
+	moveq	#0,d1
+	call	OpenDevice
+	move.b	d0,p_TimerDev(a3)
+	bne	.notimer
+
+	move.l	p_TimerReq(a3),a0
+	move.l	IO_DEVICE(a0),pb_TimerLib(a5)
+
+	push	a6
+	move.l	a5,a6
+	bsr	DMA_Update				;Calc p_EClock/p_EPeriod
+	pop	a6					;and p_EAlarm
+
+	; Add p_EPeriod to the alarm time
+	move.l	p_EAlarm+EV_LO(a3),d0
+	move.l	p_EAlarm+EV_HI(a3),d1
+	move.l	p_EPeriod(a3),d2
+	moveq	#0,d3
+	add.l	d0,d2
+	addx.l	d1,d3
+	move.l	d2,p_EAlarm+EV_LO(a3)
+	move.l	d3,p_EAlarm+EV_HI(a3)
+
+	clr.w	p_TimerCommFlag(a3)
+
+	move.l	p_TimerReq(a3),a1
+	move.w	#TR_ADDREQUEST,IO_COMMAND(a1)
+	move.l	p_EPeriod(a3),IOTV_TIME+EV_LO(a1)
+	clr.l	IOTV_TIME+EV_HI(a1)
+	bsr	BeginIO
+
+	call	Disable
+	or.w	#INTF_SETCLR|INTF_AUDIO,p_IRQMask(a3)
+	tst.w	p_DisableCount(a3)
+	bne	.dont_enable
+	move.w	#INTF_SETCLR|INTF_AUDIO,INTENA(a4)	;enable all
+.dont_enable
+	move.w	#INTF_SETCLR|INTF_AUDIO,INTREQ(a4)	;start all
+	call	Enable
+
+	moveq	#AHIE_OK,d0
+.exit
+	rts
+
+.notimer
+	moveq	#AHIE_UNKNOWN,d0
+	bra	.exit
+
+.nomem
+	moveq	#AHIE_NOMEM,d0
+	bra	.exit
+
+
+;in:
+* a2	AudioCtrl
+* a3	paula
+* a6	paulaBase
+
+DMA_Update:
+	PRINTF	2,"DMA_Update()"
+	move.l	pb_TimerLib(a6),d0
+	beq	.error
+	push	a6
+	move.l	d0,a6
+	lea	p_EAlarm(a3),a0
+	call	ReadEClock
+	move.l	d0,p_EClock(a3)
+	pop	a6
+
+	lsl.l	#8,d0
+	move.l	ahiac_PlayerFreq(a2),d1
+	lsr.l	#8,d1
+	beq	.error
+
+ IFGE	__CPU-68020
+	divu.l	d1,d0
+ ELSE
+	move.l	pb_UtilLib(a6),a0
+	jsr	_LVOUDivMod32(a0)
+ ENDIF
+	move.l	d0,p_EPeriod(a3)
+.exit
+	rts
+
+.error
+	move.l	#709379/50,p_EPeriod(a3)	;Approx 50 Hz
+	bra	.exit
+	
+
+;in:
+* a2	AudioCtrl
+* a3	paula
+* a4	custom
+* a5	paulaBase
+* a6	ExecBase
+
+DMA_Stop:
+	PRINTF	2,"DMA_Stop()"
+
+	and.w	#INTF_AUDIO,p_IRQMask(a3)
+	move.w	#INTF_AUDIO,INTENA(a4)
+	move.w	#DMAF_AUDIO,DMACON(a4)		;Disable DMA
+	move.w	#INTF_AUDIO,INTREQ(a4)		;Clear any waiting interrupts
+
+	tst.b	p_TimerDev(a3)
+	bne	.notimer
+	st	p_TimerDev(a3)
+
+* Ask timer softint to stop
+
+	addq.w	#1,p_TimerCommFlag(a3)
+.waittimer
+	tst.w	p_TimerCommFlag(a3)
+	beq	.closetimer
+	move.l	pb_DosLib(a5),a6
+	moveq	#1,d1
+	call	Delay
+	bra	.waittimer
+.closetimer
+
+	clr.l	pb_TimerLib(a5)
+
+	move.l	pb_SysLib(a5),a6
+	move.l	p_TimerReq(a3),a1
+	call	CloseDevice
+.notimer
+	move.l	p_TimerReq(a3),a0
+	clr.l	p_TimerReq(a3)
+	call	DeleteIORequest
+
+	move.l	#Interrupt_Dummy,IS_CODE+p_PlayInt(a3)
+
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD0,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD1,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD2,d0
+	call	SetIntVector
+	lea	p_PlayInt(a3),a1
+	moveq	#INTB_AUD3,d0
+	call	SetIntVector
+
+	move.l	p_DMAbuffer(a3),a1
+	clr.l	p_DMAbuffer(a3)
+	call	FreeVec
+
+	rts
+
+
+****** [driver].audio/AHIsub_#? *********************************************
+*
+*   NAME
+*       AHIsub_SetEffect -- Set effect.
+*       AHIsub_SetFreq -- Set frequency.
+*       AHIsub_SetSound -- Set sound.
+*       AHIsub_SetVol -- Set volume and stereo panning.
+*       AHIsub_LoadSound -- Prepare a sound for playback.
+*       AHIsub_UnloadSound -- Discard a sound.
+*
+*   SYNOPSIS
+*       See functions in 'ahi.device'.
+*
+*   IMPLEMENTATION
+*       If AHIsub_AllocAudio() did not return with bit AHISB_MIXING set,
+*       all user calls to these function will be routed to the driver.
+*
+*       If AHIsub_AllocAudio() did return with bit AHISB_MIXING set, the
+*       calls will first be routed to the driver, and only handled by
+*       'ahi.device' if the driver returned AHIS_UNKNOWN. This way it is
+*       possible to add effects that the sound card handles on its own, like
+*       filter and echo effects.
+*
+*       For what each function does, see the autodocs for 'ahi.device'.
+*
+*   INPUTS
+*       See functions in 'ahi.device'.
+*
+*   NOTES
+*       See functions in 'ahi.device'.
+*
+*   SEE ALSO
+*       ahi.device/AHI_SetEffect(), ahi.device/AHI_SetFreq(),
+*       ahi.device/AHI_SetSound(), ahi.device/AHI_SetVol(),
+*       ahi.device/AHI_LoadSound(), ahi.device/AHI_UnloadSound()
+*       
+*
+*****************************************************************************
+*
+*
+
+
+*****************************************************************************
+* Panning is ignored, and negative volume is not supported.
+
+AHIsub_SetVol:
+	push	a3
+	move.l	ahiac_DriverData(a2),a3
+	btst.b	#PB_DMA,p_Flags(a3)
+	beq	AHIsub_NoDMA
+
+	mulu.w	#channel_SIZEOF,d0
+	lea	p_Channels(a3),a0
+	add.l	d0,a0
+	asr.l	#8,d1
+	asr.w	#2,d1
+	bpl	.plus
+	neg.w	d1
+.plus
+	call	AHIsub_Disable
+
+* Store volume and scale according to the master volume
+	move.w	d1,ch_NextVolumeNorm(a0)
+	move.l	p_MasterVolume(a3),d0
+	cmp.l	#$10000,d0
+	blo	.scale1
+	move.w	d1,d0
+	bra	.store1
+.scale1
+	mulu.w	d1,d0
+	swap.w	d0
+.store1
+	move.w	d0,ch_NextVolume(a0)
+
+	btst	#AHISB_IMM,d3
+	beq	.noimm
+	move.w	d1,ch_VolumeNorm(a0)
+	move.l	p_MasterVolume(a3),d0
+	cmp.l	#$10000,d0
+	blo	.scale2
+	move.w	d1,d0
+	bra	.store2
+.scale2
+	mulu.w	d1,d0
+	swap.w	d0
+.store2
+	move.w	d0,ch_Volume(a0)
+;	move.l	ch_PerVol(a0),ch_AudPerVol(a0)
+	move.l	ch_RegBase(a0),a1
+	move.w	d0,AUDVOL(a1)
+.noimm
+
+	call	AHIsub_Enable
+
+	moveq	#0,d0				; Return NULL!
+
+	pop	a3
+	rts
+
+*****************************************************************************
+* If the frequency is higher than the audio DMA can handle, the samples will
+* be decimated before they are played. The frequency will only take effect
+* immediately if the decimate factor didn't change, or the new frequency
+* was zero. Otherwise, the frequency will change when the current DMA
+* block is finished.
+
+AHIsub_SetFreq:
+	push	a3
+	move.l	ahiac_DriverData(a2),a3
+	btst.b	#PB_DMA,p_Flags(a3)
+	beq	AHIsub_NoDMA
+
+	PRINTF	2,"AHIsub_SetFreq()"
+	push	d3
+	mulu.w	#channel_SIZEOF,d0
+	lea	p_Channels(a3),a0
+	add.l	d0,a0
+
+	cmp.l	#AHI_MIXFREQ,d1
+	bne	.normal_freq
+	move.l	ahiac_MixFreq(a2),d1
+.normal_freq
+
+	move.l	#28800,d0
+	tst.b	p_ScreenIsDouble(a3)
+	beq	.1
+	move.l	#48000,d0
+.1
+	moveq	#0,d3			; Decimate/scale (log)
+.loop
+	cmp.l	d0,d1
+	bls	.scaled
+	addq.l	#1,d3
+	lsr.l	#1,d1
+	bra	.loop
+.scaled
+
+	tst.l	d1
+	bne	.notnull
+	moveq	#0,d0			;VVVeeerrryyyy ssslllooowww!!!
+	moveq	#0,d3
+	bra	.gotperiod
+.notnull
+
+	move.l	pb_AudioFreq(a6),d0
+
+ IFGE	__CPU-68020
+	divu.l	d1,d0
+ ELSE
+	move.l	pb_UtilLib(a6),a1
+	jsr	_LVOUDivMod32(a1)
+ ENDIF
+
+.gotperiod
+
+	call	AHIsub_Disable
+
+	move.w	d0,ch_NextPeriod(a0)
+	move.w	d3,ch_NextScale(a0)
+
+	btst	#AHISB_IMM,d2
+	beq	.noimm
+
+; We must not change the frequency if the scale has changed! (Unless it's 0)
+	tst.w	d3
+	beq	.change
+	cmp.w	ch_Scale(a0),d3
+	bne	.nochange
+.change
+;	move.l	ch_PerVol(a0),ch_AudPerVol(a0)
+	move.l	ch_RegBase(a0),a1
+	move.w	d0,AUDPER(a1)
+.nochange
+
+	; Force an interrupt if the channel was paused
+	tst.w	ch_Period(a0)
+	bne	.notzero
+	tst.b	ch_NoInt(a0)
+	bne	.noint
+	lea	custom,a1
+	move.w	ch_IntMask(a0),d1
+	or.w	#INTF_SETCLR,d1
+	move.w	d1,INTREQ(a1)
+.noint
+.notzero
+
+	move.w	d0,ch_Period(a0)
+	move.w	d3,ch_Scale(a0)
+
+.noimm
+
+	call	AHIsub_Enable
+
+	moveq	#0,d0				; Return NULL!
+	pop	d3
+
+	pop	a3
+	rts
+
+*****************************************************************************
+
+AHIsub_SetSound:
+	push	a3
+	move.l	ahiac_DriverData(a2),a3
+	btst.b	#PB_DMA,p_Flags(a3)
+	beq	AHIsub_NoDMA
+
+	PRINTF	2,"AHIsub_SetSound()"
+	pushm	d2-d5
+
+	mulu.w	#channel_SIZEOF,d0
+	lea	p_Channels(a3),a0
+	add.l	d0,a0
+
+	cmp.w	#AHI_NOSOUND,d1
+	bne	.sound_ok
+	moveq	#0,d2
+	moveq	#0,d3
+	moveq	#AHIST_NOTYPE,d5
+	bra	.update_channel
+.sound_ok
+
+	mulu.w	#sound_SIZEOF,d1
+	move.l	p_Sounds(a3),a1
+	add.l	d1,a1
+
+	tst.l	d3
+	bne	.length_ok
+	move.l	so_Length(a1),d3
+.length_ok
+	move.l	so_Type(a1),d5
+
+.update_channel
+
+	tst.l	d3
+	bpl	.positive_length
+	neg.l	d3				; Make positive
+	or.l	#AHIST_BW,d5			; Mark type as backward-playing
+.positive_length
+
+;	PRINTF	0,"New sample! %08lx, %ld, %08lx", d2,d3,d5
+
+	call	AHIsub_Disable
+
+	move.l	so_Address(a1),ch_NextAddress(a0)
+	move.l	d2,ch_NextOffset(a0)
+	move.l	d3,ch_NextLength(a0)
+	move.l	d5,ch_NextType(a0)
+
+
+	btst	#AHISB_IMM,d4
+	beq	.noimm
+
+	move.l	so_Address(a1),ch_Address(a0)
+	move.l	d2,ch_Offset(a0)
+	move.l	d3,ch_Length(a0)
+	move.l	d5,ch_Type(a0)
+	clr.l	ch_Count(a0)
+	st.b	ch_EndOfSample(a0)		; Call SoundFunc()
+
+	lea	custom,a1
+
+; Clear pending interrupt (if there was one)
+	st.b	ch_NoInt(a0)
+	move.w	ch_IntMask(a0),INTREQ(a1)
+
+; Stop this channel
+	move.w	ch_DMAMask(a0),DMACON(a1)
+
+	; Wait for Agnus/Alice to understand
+	push	a6
+	move.l	pb_SysLib(a6),a6
+	call	Disable
+
+	move.b	VHPOSR(a1),d0
+.vert
+	cmp.b	VHPOSR(a1),d0
+	beq	.vert
+.hori
+	cmp.b	#20,VHPOSR+1(a1)
+	blt	.hori
+
+	call	Enable
+	pop	a6
+
+; When the period reaches 0, Paula will invoke our interrupt routine!
+
+; Now just make sure that we receive no more than 1 interrupt.
+	move.l	ch_RegBase(a0),a1
+	move.w	#1,AUDPER(a1)
+.noimm
+
+	call	AHIsub_Enable
+
+	moveq	#0,d0				; Return NULL!
+	popm	d2-d5
+
+	pop	a3
+	rts
+
+*****************************************************************************
+
+AHIsub_SetEffect:
+	push	a3
+	move.l	ahiac_DriverData(a2),a3
+	btst.b	#PB_DMA,p_Flags(a3)
+	beq	AHIsub_NoDMA
+
+	PRINTF	2,"AHIsub_SetEffect()"
+	move.l	ahie_Effect(a0),d0
+	cmp.l	#AHIET_MASTERVOLUME,d0
+	beq	.mastervolume
+	cmp.l	#AHIET_CANCEL|AHIET_MASTERVOLUME,d0
+	beq	.mastervolume_off
+	cmp.l	#AHIET_CHANNELINFO,d0
+	beq	.channelinfo
+	cmp.l	#AHIET_CANCEL|AHIET_CHANNELINFO,d0
+	beq	.channelinfo_off
+
+	moveq	#AHIE_UNKNOWN,d0		; Return error code!
+.exit
+	pop	a3
+	rts
+
+.mastervolume
+	move.l	ahiemv_Volume(a0),d0
+.mastervolume_update
+	move.l	d0,p_MasterVolume(a3)
+
+	lea	p_Channels(a3),a0
+	moveq	#3,d1
+.mastervolume_loop
+	move.l	p_MasterVolume(a3),d0
+	cmp.l	#$10000,d0
+	blo	.mastervolume_scale1
+	move.w	ch_NextVolumeNorm(a0),d0
+	bra	.mastervolume_store1
+.mastervolume_scale1
+	mulu.w	ch_NextVolumeNorm(a0),d0
+	swap.w	d0
+.mastervolume_store1
+	move.w	d0,ch_NextVolume(a0)
+	move.l	p_MasterVolume(a3),d0
+	cmp.l	#$10000,d0
+	blo	.mastervolume_scale2
+	move.w	ch_VolumeNorm(a0),d0
+	bra	.mastervolume_store2
+.mastervolume_scale2
+	mulu.w	ch_VolumeNorm(a0),d0
+	swap.w	d0
+.mastervolume_store2
+	move.w	d0,ch_Volume(a0)
+;	move.l	ch_PerVol(a0),ch_AudPerVol(a0)
+	move.l	ch_RegBase(a0),a1
+	move.w	d0,AUDVOL(a1)
+
+	add.w	#channel_SIZEOF,a0
+	dbf	d1,.mastervolume_loop
+
+	moveq	#AHIE_OK,d0
+	bra	.exit
+
+.mastervolume_off
+	move.l	#$10000,d0
+	bra	.mastervolume_update
+
+
+.channelinfo
+	move.l	a0,p_ChannelInfo(a3)
+	moveq	#AHIE_OK,d0
+	bra	.exit
+
+.channelinfo_off
+	clr.l	p_ChannelInfo(a3)
+	moveq	#AHIE_OK,d0
+	bra	.exit
+
+
+*****************************************************************************
+
+AHIsub_LoadSound:
+	push	a3
+	move.l	ahiac_DriverData(a2),a3
+	btst.b	#PB_DMA,p_Flags(a3)
+	beq	AHIsub_NoDMA
+
+	PRINTF	2,"AHIsub_LoadSound()"
+	cmp.l	#AHIST_SAMPLE,d1
+	beq	.soundok
+	cmp.l	#AHIST_DYNAMICSAMPLE,d1
+	bne	.unknownsound
+.soundok
+	mulu.w	#sound_SIZEOF,d0
+	move.l	p_Sounds(a3),a1
+	add.l	d0,a1
+
+	move.l	ahisi_Type(a0),d0
+	cmp.l	#AHIST_M8S,d0
+	beq	.sampleok
+	cmp.l	#AHIST_M16S,d0
+	beq	.sampleok
+	cmp.l	#AHIST_S8S,d0
+	beq	.sampleok
+	cmp.l	#AHIST_S16S,d0
+	bne	.unknownsample
+.sampleok
+	move.l	d0,so_Type(a1)
+	move.l	ahisi_Address(a0),so_Address(a1)
+	move.l	ahisi_Length(a0),so_Length(a1)
+
+	moveq	#AHIE_OK,d0
+.exit
+
+	pop	a3
+	rts
+
+.unknownsound
+	moveq	#AHIE_BADSOUNDTYPE,d0
+	bra	.exit
+.unknownsample
+	moveq	#AHIE_BADSAMPLETYPE,d0
+	bra	.exit
+
+*****************************************************************************
+
+AHIsub_UnloadSound:
+	push	a3
+	move.l	ahiac_DriverData(a2),a3
+	btst.b	#PB_DMA,p_Flags(a3)
+	beq	AHIsub_NoDMA
+
+	PRINTF	2,"AHIsub_UnloadSound()"
+	mulu.w	#sound_SIZEOF,d0
+	move.l	p_Sounds(a3),a1
+	add.l	d0,a1
+	move.l	#AHIST_NOTYPE,so_Type(a1)
+	clr.l	so_Address(a1)
+	clr.l	so_Length(a1)
+
+	moveq	#0,d0				; Return NULL!
+
+	pop	a3
+	rts
+
+*****************************************************************************
+
+AHIsub_NoDMA:
+	moveq	#AHIS_UNKNOWN,d0		; Return AHIS_UNKNOWN!
+	pop	a3
+	rts
+
+*****************************************************************************
+
+;in:
+* a1	struct paula *
+
+PlayerFunc:
+	pushm	std
+
+	move.l	a1,a3
+	move.l	p_AudioCtrl(a3),a2
+
+	move.l	p_PaulaBase(a3),a6
+	move.l	pb_SysLib(a6),a6
+	lea	p_TimerPort(a3),a0
+	call	GetMsg				; Remove message
+
+	tst.w	p_TimerCommFlag(a3)
+	beq	.normal
+
+	clr.w	p_TimerCommFlag(a3)
+	bra	.exit
+
+.normal
+	; Add p_EPeriod to the alarm time
+	move.l	p_EAlarm+EV_LO(a3),d0
+	move.l	p_EAlarm+EV_HI(a3),d1
+	move.l	p_EPeriod(a3),d2
+	moveq	#0,d3
+	add.l	d0,d2
+	addx.l	d1,d3
+	move.l	d2,p_EAlarm+EV_LO(a3)
+	move.l	d3,p_EAlarm+EV_HI(a3)
+
+	; Get current time
+	push	a6
+	move.l	p_PaulaBase(a3),a0
+	move.l	pb_TimerLib(a0),a6
+	subq.l	#8,sp
+	move.l	sp,a0
+	call	ReadEClock
+	move.l	EV_LO(sp),d0			; Current time
+	move.l	EV_HI(sp),d1
+	sub.l	d0,d2				; Calculate difference (Alarm - Current)
+	subx.l	d1,d3
+	addq.l	#8,sp
+	pop	a6
+
+	tst.l	d3
+	bpl	.positive
+	moveq	#1,d2
+	moveq	#0,d3				; Rather small delay...
+.positive
+
+;	PRINTF	0,"Delay: %08ld%08ld",d3,d2
+	move.l	p_TimerReq(a3),a1
+	move.w	#TR_ADDREQUEST,IO_COMMAND(a1)
+	move.l	d2,IOTV_TIME+EV_LO(a1)
+	move.l	d3,IOTV_TIME+EV_HI(a1)
+	bsr	BeginIO
+
+	move.l	p_PaulaBase(a3),a6
+	call	AHIsub_Disable
+
+	; Handle the ChannelInfo effect
+
+	move.l	p_ChannelInfo(a3),d0
+	beq	.nochannelinfo
+	move.l	d0,a0
+	lea	ahieci_Offset(a0),a1
+	move.w	ahieci_Channels(a0),d0
+	subq.w	#1,d0
+	bmi	.nochannelinfo
+	lea	p_Channels(a3),a4
+.loop
+	move.l	ch_Offset(a4),(a1)+
+	add.w	#channel_SIZEOF,a4
+	dbf	d0,.loop
+
+	move.l	p_ChannelInfo(a3),a1
+	move.l	ahieci_Func(a1),d0
+	beq	.nochannelinfo
+	move.l	d0,a0
+	move.l	h_Entry(a0),a4
+	jsr	(a4)
+
+;	lea	p_Channels(a3),a4
+;	PRINTF	0,"CI: %ld, %ld, %ld, %ld",ch_Offset(a4),ch_Offset+channel_SIZEOF(a4),ch_Offset+channel_SIZEOF*2(a4),ch_Offset+channel_SIZEOF*3(a4)
+.nochannelinfo
+
+	; Call the PlayerFunc()
+
+	move.l	ahiac_PlayerFunc(a2),d0
+	move.l	d0,a0
+	beq	.noplayerfunc
+	sub.l	a1,a1				; IMPORTANT!
+	move.l	h_Entry(a0),a4
+	PRINTF	8,"Calling PlayerFunc(%08lx,%08lx,%08lx)",a0,a2,a1
+	jsr	(a4)
+.noplayerfunc
+
+	call	AHIsub_Enable
+
+.exit
+	moveq	#0,d0
+	popm	std
+	rts
+
+*****************************************************************************
+
+;in:
+* d0	scratch
+* d1.w	INTENAR & INTREQR
+* a0	custom
+* a1	struct paula *
+* a5	&AudioInterruptDMA
+* a6	ExecBase
+
+AudioInterruptDMA:
+	pushm	std
+
+	PRINTF	3,"."
+	PRINTF	6,"AudioInterruptDMA"
+
+	move.l	p_AudioCtrl(a1),a4
+	lea	p_Channels(a1),a5
+	lea	p_AudPtr1A(a1),a6
+	move.w	d1,d7
+
+	move.w	ch_IntMask(a5),d0
+	and.w	d7,d0
+	beq	.not0
+
+	move.l	ch_RegBase(a5),a0
+	move.l	ch_PerVol(a5),AUDPERVOL(a0)
+;	move.l	ch_AudPerVol(a5),AUDPERVOL(a0)
+;	move.l	ch_PerVol(a5),ch_AudPerVol(a5)
+
+	bsr	DMA_HandleInt
+
+	move.w	ch_IntMask(a5),custom+INTREQ		; Clear the interrupt
+	move.l	ch_RegBase(a5),a0
+	move.l	(a6),AUDLC(a0)
+	move.w	ch_DMALength(a5),AUDLEN(a0)
+
+	clr.b	ch_NoInt(a5)
+.not0
+
+	add.w	#channel_SIZEOF,a5
+	addq.l	#8,a6
+
+	move.w	ch_IntMask(a5),d0
+	and.w	d7,d0
+	beq	.not1
+
+	move.l	ch_RegBase(a5),a0
+	move.l	ch_PerVol(a5),AUDPERVOL(a0)
+;	move.l	ch_AudPerVol(a5),AUDPERVOL(a0)
+;	move.l	ch_PerVol(a5),ch_AudPerVol(a5)
+
+	bsr	DMA_HandleInt
+
+	move.w	ch_IntMask(a5),custom+INTREQ		; Clear the interrupt
+	move.l	ch_RegBase(a5),a0
+	move.l	(a6),AUDLC(a0)
+	move.w	ch_DMALength(a5),AUDLEN(a0)
+
+	clr.b	ch_NoInt(a5)
+.not1
+
+	add.w	#channel_SIZEOF,a5
+	addq.l	#8,a6
+
+	move.w	ch_IntMask(a5),d0
+	and.w	d7,d0
+	beq	.not2
+
+	move.l	ch_RegBase(a5),a0
+	move.l	ch_PerVol(a5),AUDPERVOL(a0)
+;	move.l	ch_AudPerVol(a5),AUDPERVOL(a0)
+;	move.l	ch_PerVol(a5),ch_AudPerVol(a5)
+
+	bsr	DMA_HandleInt
+
+	move.w	ch_IntMask(a5),custom+INTREQ		; Clear the interrupt
+	move.l	ch_RegBase(a5),a0
+	move.l	(a6),AUDLC(a0)
+	move.w	ch_DMALength(a5),AUDLEN(a0)
+
+	clr.b	ch_NoInt(a5)
+.not2
+
+	add.w	#channel_SIZEOF,a5
+	addq.l	#8,a6
+
+	move.w	ch_IntMask(a5),d0
+	and.w	d7,d0
+	beq	.not3
+
+	move.l	ch_RegBase(a5),a0
+	move.l	ch_PerVol(a5),AUDPERVOL(a0)
+;	move.l	ch_AudPerVol(a5),AUDPERVOL(a0)
+;	move.l	ch_PerVol(a5),ch_AudPerVol(a5)
+
+	bsr	DMA_HandleInt
+
+	move.w	ch_IntMask(a5),custom+INTREQ		; Clear the interrupt
+	move.l	ch_RegBase(a5),a0
+	move.l	(a6),AUDLC(a0)
+	move.w	ch_DMALength(a5),AUDLEN(a0)
+
+	clr.b	ch_NoInt(a5)
+.not3
+
+.exit
+	lea	custom,a0
+	move.w	#DMAF_SETCLR|DMAF_AUDIO,DMACON(a0)	; Enable DMA
+;	move.w	#INTF_AUDIO,INTREQ(a0)			; Clear the interrupts
+
+	popm	std
+	rts
+* d0-d6 scratch
+* a0-a3 scratch
+* a4	AHIAudioCtrlDrv
+* a5	struct channel *
+* a6	BYTE **buffer[2]
+DMA_HandleInt:
+
+* Check if the next set of parameters should be fetced
+
+	cmp.l	#AHIST_NOTYPE,ch_Type(a5)
+	beq	.check_eos
+	tst.b	ch_EndOfSample(a5)			; Already set?
+	bne	.check_eos
+	move.l	ch_Count(a5),d0
+	beq	.check_eos
+	move.l	ch_Length(a5),d1
+	and.l	#~1,d1					; Force even
+	cmp.l	d1,d0
+	blo	.check_eos
+
+.load_next
+	move.l	ch_NextAddress(a5),ch_Address(a5)
+	move.l	ch_NextLength(a5),ch_Length(a5)
+	move.l	ch_NextType(a5),ch_Type(a5)
+	move.l	ch_NextPerVol(a5),ch_PerVol(a5)
+	move.w	ch_NextScale(a5),ch_Scale(a5)
+	move.l	ch_NextOffset(a5),ch_Offset(a5)
+	clr.l	ch_Count(a5)
+
+	PRINTF	4,"New sound! %08lx, Length: %ld, Type: %08lx, PerVol: %08lx",ch_Address(a5),ch_Length(a5),ch_Type(a5),ch_PerVol(a5)
+
+	; Signal that SoundFunc() should be called
+	st.b	ch_EndOfSample(a5)
+
+
+* Check if SoundFunc() should be called
+.check_eos
+	tst.b	ch_EndOfSample(a5)
+	beq	.not_eos
+	clr.b	ch_EndOfSample(a5)			; Clear signal
+
+	; Call the SoundFunc()
+	move.l	ahiac_SoundFunc(a4),d0
+	move.l	d0,a0
+	beq	.nosoundfunc
+	lea	ch_SndMsg(a5),a1
+	move.l	a4,a2
+	move.l	h_Entry(a0),a3
+	moveq	#0,d0
+	move.w	ahism_Channel(a1),d0
+	PRINTF	4,"Calling SoundFunc(%08lx,%08lx,%ld)",a0,a2,d0
+	jsr	(a3)
+.nosoundfunc
+.not_eos
+
+* Swap chipmem buffers
+	move.l	4(a6),a1
+	move.l	(a6),4(a6)
+	move.l	a1,(a6)
+* Swap cleared indicators
+	move.l	ch_Cleared2(a5),d0
+	move.l	ch_Cleared(a5),ch_Cleared2(a5)
+	move.l	d0,ch_Cleared(a5)
+
+	move.l	ch_Address(a5),a2
+	moveq	#0,d2
+	move.w	ch_Scale(a5),d2
+
+	move.l	ch_Length(a5),d0
+	move.l	ch_Count(a5),d1
+
+* Calculate the number of samples to transfer (this is source samples, which is
+* a multiple of the destination samples if ch_Scale != 0.
+
+	sub.l	d1,d0
+	ble	.endofsample			; <= 0 ?
+	tst.w	ch_Period(a5)
+	bne	.normallength
+.endofsample
+* We have either already reached the end of the sample, or it's paused.
+* Set the length to DMABUFFSAMPLES and scale to 0. (I.e., clear the whole
+* chipmem buffer.) Do NOT increase ch_Offset/ch_Count!
+	move.l	#DMABUFFSAMPLES,d0
+	moveq	#0,d2
+	bra	.set_dmalength
+.normallength
+
+	; samples = max(samples, DMABUFFSAMPLES*(2^scale))
+	move.l	#DMABUFFSAMPLES,d3
+	lsl.l	d2,d3
+	cmp.l	d3,d0
+	blo	.1
+	move.l	d3,d0
+.1
+	add.l	d0,ch_Count(a5)
+
+* Get current ch_Offset
+	move.l	ch_Offset(a5),d1
+
+* Update the ch_Offset
+	move.l	ch_Type(a5),d3
+	and.l	#AHIST_BW,d3
+	beq	.2
+	sub.l	d0,ch_Offset(a5)
+	skipl
+.2
+	add.l	d0,ch_Offset(a5)
+
+.set_dmalength
+	lsr.l	d2,d0				; Calc. destination samples
+	move.l	d0,d3
+	lsr.l	#1,d3				; # of words, round to lower
+	move.w	d3,ch_DMALength(a5)
+
+	move.l	d2,d3				;Convert ²log scale...
+	moveq	#0,d2
+	bset	d3,d2				;...to linear
+
+	move.l	ch_Type(a5),d3
+
+* If the period is 0, this sample is paused => clear the buffer
+* If type == AHIST_NOTYPE, clear the buffer
+	tst.w	ch_Period(a5)
+	beq	.clearsample
+	cmp.l	#AHIST_NOTYPE,d3
+	bne	.istype
+
+.clearsample
+
+* Alright, we should play silence. But before the dma buffer is filled with
+* zeroes, check if we already have cleared it. In that case, there is no need
+* to do that again (chipmem accesses are expensive!).
+	cmp.l	ch_Cleared(a5),d0
+	bls	.filled				; Skip it!
+	move.l	d0,ch_Cleared(a5)
+	lea	ClearSample(pc),a3
+	bra	.fill
+.istype
+
+* It was a normal sample. Figure out which transfer routine to use etc.
+	clr.l	ch_Cleared(a5)			; Mark buffer as un-cleared
+	move.l	d3,d4
+	and.l	#AHIST_BW,d4
+	beq	.forwardsample
+	neg.l	d2
+.forwardsample
+	and.l	#~AHIST_BW,d3			; Mask fwd/bwd bit
+	cmp.l	#AHIST_S16S,d3
+	bhi	.error				; Sanity check!
+	lsl.l	#2,d3
+	move.l	jmpt(pc,d3.l),a3
+.fill
+	jsr	(a3)
+.filled
+.exit
+	rts
+
+* This should never happen...
+.error
+	PRINTF	2,"Illegal type! %08lx",d3
+	rts
+
+jmpt:
+	dc.l	CopySampleM8S
+	dc.l	CopySampleM16S
+	dc.l	CopySampleS8S
+	dc.l	CopySampleS16S
+
+;in:
+* d0	Samples to copy
+* d1	Source offset
+* d2	Decimate/Scale (not log, but linear, can be negative)
+* a1	Destination
+* a2	Source
+* a5	Channel
+
+ClearSample:
+	PRINTF	6,"ClearSample %08lx, %ld, %ld",a1,d0,d1
+	addq.l	#3,d0
+	lsr.l	#2,d0				;Unrolled
+	subq.l	#1,d0
+	bmi	.exit
+.loop
+	clr.l	(a1)+
+	dbf	d0,.loop
+.exit
+	rts
+
+
+CopySampleM8S:
+	PRINTF	6,"CopySampleM8S %08lx, %ld, %ld",a1,d0,d1
+	addq.l	#3,d0
+	lsr.l	#2,d0				;Unrolled
+	subq.l	#1,d0
+	bmi	CopySampleExit
+	add.l	d1,a2
+	cmp.w	#0,a2
+	bne	CopySample
+	bra	CopySampleError
+
+CopySampleM16S:
+	PRINTF	6,"CopySampleM16S %08lx, %ld, %ld",a1,d0,d1
+	lsl.l	#1,d1				; 16 bits/sample
+	lsl.l	#1,d2				; 16 bits/sample
+	addq.l	#3,d0
+	lsr.l	#2,d0				;Unrolled
+	subq.l	#1,d0
+	bmi	CopySampleExit
+	add.l	d1,a2
+	cmp.w	#0,a2
+	bne	CopySample
+	bra	CopySampleError
+
+CopySampleS8S:
+	PRINTF	6,"CopySampleS8S %08lx, %ld, %ld",a1,d0,d1
+	lsl.l	#1,d1				; 16 bits/sample frame
+	lsl.l	#1,d2				; 16 bits/sample frame
+	addq.l	#3,d0
+	lsr.l	#2,d0				;Unrolled
+	subq.l	#1,d0
+	bmi	CopySampleExit
+	add.l	d1,a2
+	cmp.w	#0,a2
+	beq	CopySampleError
+	add.w	ch_Stereo(a5),a2
+	bra	CopySample
+
+CopySampleS16S:
+	PRINTF	6,"CopySampleS16S %08lx, %ld, %ld",a1,d0,d1
+	lsl.l	#2,d1				; 32 bits/sample frame
+	lsl.l	#2,d2				; 32 bits/sample frame
+	addq.l	#3,d0
+	lsr.l	#2,d0				;Unrolled
+	subq.l	#1,d0
+	bmi	CopySampleExit
+	add.l	d1,a2
+	cmp.w	#0,a2
+	beq	CopySampleError
+	add.w	ch_Stereo(a5),a2
+	add.w	ch_Stereo(a5),a2
+	bra	CopySample
+
+CopySampleExit:
+	rts
+
+CopySampleError
+	PRINTF	2,"CopySampleError"
+	bra	CopySampleExit
+
+* Collect 4 samples and write a full longword to the chipmem buffer
+CopySample:
+.loop
+	move.b	(a2),d3
+	add.l	d2,a2
+	lsl.l	#8,d3
+	move.b	(a2),d3
+	add.l	d2,a2
+	lsl.l	#8,d3
+	move.b	(a2),d3
+	add.l	d2,a2
+	lsl.l	#8,d3
+	move.b	(a2),d3
+	add.l	d2,a2
+	move.l	d3,(a1)+
+	dbf	d0,.loop
+	rts
+EndCode:

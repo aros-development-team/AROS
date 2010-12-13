@@ -1,0 +1,169 @@
+#
+#  Makefile.common.in: Can be included by drivers to simplify
+#  driver development.
+#
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+top_srcdir	= @top_srcdir@
+common_srcdir	= ${top_srcdir}/Drivers/Common
+PREFIX		= @prefix@
+DISTDIR		= @DISTDIR@
+DRIVERDIR	= ${DISTDIR}/User/Devs/AHI
+MODEFILEDIR	= ${DISTDIR}/User/Devs/AudioModes
+
+VPATH		+= ${common_srcdir}
+
+host		= @host@
+
+CC		= @CC@
+AS		= @AS@
+AR              = @AR@
+RANLIB          = @RANLIB@
+STRIP		= @STRIP@ @STRIPFLAGS@
+OBJCOPY		= @OBJCOPY@
+
+CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${common_srcdir} -I${srcdir} \
+		  -DDRIVER="\"${DRIVER}\""
+CFLAGS		= @CFLAGS@
+ASFLAGS		= @ASFLAGS@
+LDFLAGS		= @LDFLAGS@ -nostartfiles
+ARFLAGS         = @ARFLAGS@
+
+SFDC		= @SFDC@
+
+# Do not link drivers wit any library by default
+LIBS		= 
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+
+#
+# Files
+########################################
+
+DRIVER_OBJECTS	= library.o gatestubs.o $(OBJECTS)
+
+
+#
+# Targets
+########################################
+
+.PHONY:		all mostlyclean clean distclean maintainer-clean\
+		install revup bindist bindist-install
+
+
+all:		$(DRIVER) $(MODEFILE)
+
+mostlyclean:
+	$(RM) $(DRIVER) $(MODEFILE) *.o *.a Makefile.dep
+
+clean:		mostlyclean
+	$(RM) version.h gatestubs.c gatestubs.h
+
+distclean:	clean
+	$(RM) Makefile
+
+maintainer-clean: distclean
+
+install:	all
+	$(INSTALL) -d $(PREFIX)/Devs/AHI $(PREFIX)/Devs/AudioModes
+	$(INSTALL_PROGRAM) $(DRIVER) $(PREFIX)/Devs/AHI/
+	$(INSTALL_DATA) $(MODEFILE) $(PREFIX)/Devs/AudioModes/
+
+revup:
+	@rev=`cat $(srcdir)/version.rev` && echo `expr $$rev + 1` > $(srcdir)/version.rev
+	@date +%d.%m.%y > $(srcdir)/version.date
+	@echo -n "New revision: "
+	@cat $(srcdir)/version.rev
+
+bindist:	all
+	$(INSTALL) -d $(DRIVERDIR) $(MODEFILEDIR)
+
+	$(INSTALL_PROGRAM) $(DRIVER) $(DRIVERDIR)/$(DRIVER)
+	$(STRIP) $(DRIVERDIR)/$(DRIVER)
+	$(INSTALL_DATA) $(MODEFILE) $(MODEFILEDIR)/
+
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in Makefile.common.in ../../config.status
+	(cd ../.. && ./config.status)
+
+
+#
+# Rules
+########################################
+
+%.o:	%.s
+	$(AS) $(ASFLAGS) $^ -o $@
+
+$(DRIVER):		$(DRIVER_OBJECTS)
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+
+$(MODEFILE):	$(MODEFILE).o
+	$(OBJCOPY) --output-target=binary $< $@
+
+$(MODEFILE).o:	MODEFILE.s $(MODEFILE).s
+	$(AS) $(ASFLAGS) $^ -o $@
+
+gatestubs.c:	$(top_srcdir)/Include/SFD/ahi_sub_lib.sfd
+	$(SFDC) --mode=gatestubs --gateprefix=gw --libprefix=_ --libarg=last \
+	        --addvectors=library --target=$(host) $^ -o $@
+
+gatestubs.h:	$(top_srcdir)/Include/SFD/ahi_sub_lib.sfd
+	$(SFDC) --mode=gateproto --gateprefix=gw --libprefix=_ --libarg=last \
+	        --addvectors=library --target=$(host) $^ -o $@
+
+gatestubs.o:	gatestubs.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -D__CLIB_TYPES__ -c $^ $(OUTPUT_OPTION)
+
+camdstubs.c:	camd_drv.sfd
+	$(SFDC) --mode=gatestubs --gateprefix=gw --libprefix=_ --libarg=last \
+	        --target=$(host) $^ -o $@
+
+camdstubs.h:	camd_drv.sfd
+	$(SFDC) --mode=gateproto --gateprefix=gw --libprefix=_ --libarg=last \
+	        --target=$(host) $^ -o $@
+
+camdstubs.o:	camdstubs.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -D__CLIB_TYPES__ -c $^ $(OUTPUT_OPTION)
+
+version.h:	version.rev version.date
+	@echo Creating $@
+	@ver=`cat $(srcdir)/version.ver` \
+	 rev=`cat $(srcdir)/version.rev` \
+	 date=`cat $(srcdir)/version.date` && \
+	 echo "#define VERSION $$ver" > $@ && \
+	 echo "#define REVISION $$rev" >> $@ && \
+	 echo "#define VERS \"$$ver.$$rev ($$date)\"" >> $@
+
+
+#
+# Dependencies
+########################################
+
+SOURCES		= $(wildcard $(common_srcdir)/*.c) $(wildcard $(srcdir)/*.c) 
+HEADERS		= $(wildcard $(common_srcdir)/*.h) $(wildcard $(srcdir)/*.h)
+
+#DEPENDENCIES	= $(SOURCES) $(HEADERS)
+
+.PHONY:	depend
+
+depend:
+	$(RM) Makefile.dep
+	$(MAKE) Makefile.dep
+
+Makefile.dep:	$(DEPENDENCIES) version.h \
+		gatestubs.c gatestubs.h
+	@echo Making $@
+	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
+
+include Makefile.dep

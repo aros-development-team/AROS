@@ -1,0 +1,42 @@
+24 Dec 1996
+  Fixade så att sources kompilerar med snma
+  - bytte * kommentarer mot ;
+  - stuvade om i include filerna, anänder funcdef istf lvo/
+
+24 Dec 1996
+  Bytte tillbaka till include:macros.i pushm/popm
+  tror att include/exec/macros.i pushm/popm sabbade
+  koden
+
+24 Dec 1996
+  FUNCDEF fungerar inte, start offset buggar.
+  bytte alla library LVO includes till include:lib/xxx.i
+
+24 Dec 1996
+  Satte in PC relativa adresser i .kicker (båda)
+  Ändrade tillbaka REVISION till 0
+  Ändrade i .kicker, lea XXX,a2 ändrade jag till
+  opcode(lea,a2),adress (3 words!)
+  opcode(jmp),adress (3 words)
+
+24 Dec 1996
+ Fungerande version!
+
+06 Jan 1997
+  Adderade input gain i AHISub_HardwareControl
+  och i record loopen skrivs gain till devicen
+  en ny funktion lineargain2decibel översätter linear gain till decibel
+  (.gainlist är stulen från .volumelist med hälften av värdena borttagna)
+
+  GetAttr()
+  Max/MinInputGain
+
+  Adderade VERSTAG sist efter dadname
+
+  Gain fungerar.
+
+15 Feb 1997
+  Fixade input gain till minimum $10000, maximum $000d55d0
+
+3 Jul 97 (Martin Blom
+  Made it compile with phxass

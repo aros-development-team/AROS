@@ -1,0 +1,141 @@
+## version $VER: ahi.catalog 4.2 (26.5.26)
+## language português
+## codeset 0
+;
+## chunk AUTH Translated by Frederico Borges <famb@mail.telepac.pt> & Rúben Alvim <mindwalker@mail.telepac.pt>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; Input and Output connector name
+;
+msgDefault
+Habitual
+; Default
+;
+; The requesters menu
+msgMenuControl
+;\000\000Controlo
+; \000\000Control
+;
+msgMenuLastMode
+;U\000Último Modo
+; L\000Last Mode
+;
+msgMenuNextMode
+S\000Modo seguinte
+; N\000Next Mode
+;
+msgMenuPropertyList
+?\000Lista de propriedades...
+; ?\000Property List...
+;
+msgMenuRestore
+R\000Restaurar
+; R\000Restore
+;
+msgMenuOK
+O\000OK
+; O\000OK
+;
+msgMenuCancel
+C\000Cancelar
+; C\000Cancel
+;
+; Mode name in requester whose driver cannot be opened
+;
+msgUnknown
+DESCONHECIDO:Audio ID 0x%08lx
+; UNKNOWN:Audio ID 0x%08lx
+;
+; The requester gadgets
+;
+msgReqOK
+OK
+; OK
+;
+msgReqCancel
+Cancelar
+; Cancel
+;
+msgReqFrequency
+Frequência
+; Frequency
+;
+; Name of default mode in requester
+;
+msgDefaultMode
+Modo audio habitual
+; Default audio mode
+;
+; The requester's info-winodow
+;
+msgReqInfoTitle
+Propriedades do Modo
+; Mode Properties
+;
+msgReqInfoAudioID
+ID do Modo audio
+; Audio mode ID: 0x%08lx
+;
+msgReqInfoResolution
+Resolução: %ld bit %s
+; Resolution: %ld bit %s
+;
+msgReqInfoMono
+mono
+; mono
+;
+msgReqInfoStereo
+Estéreo
+; stereo
+;
+msgReqInfoStereoPan
+stereo com separação de canais (pan)
+; stereo with panning
+;
+msgReqInfoChannels
+Canais: %ld
+; Channels: %ld
+;
+msgReqInfoMixrate
+Frequencia de mistura: %ld-%ld Hz
+; Mixing rates: %ld-%ld Hz
+;
+msgReqInfoHiFi
+Mistura HiFi
+; HiFi mixing
+;
+msgReqInfoRecordHalf
+Gravar em 'half duplex'
+; Record in half duplex
+;
+msgReqInfoRecordFull
+Gravar em 'full duplex'
+; Record in full duplex
+;
+msgReqInfoMultiChannel
+
+; 7.1 multichannel
+;
+msgFreqFmt
+
+; %lu Hz
+;

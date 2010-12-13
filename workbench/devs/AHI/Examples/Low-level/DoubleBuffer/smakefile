@@ -1,0 +1,23 @@
+
+TARGET = DoubleBuffer
+OBJS= $(TARGET).o
+
+$(TARGET): $(OBJS)
+   sc link to $(TARGET) with <<
+$(OBJS)
+<
+
+$(TARGET).o: $(TARGET).c
+
+dist:	
+	smake allclean
+	smake $(TARGET)
+	slink from $(TARGET) ND TO $(TARGET)
+	smake clean
+
+clean:
+	--delete \#?.(map|o|lnk|info) QUIET
+
+allclean:
+	smake clean
+	--delete $(TARGET)

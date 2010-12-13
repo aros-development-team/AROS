@@ -1,0 +1,32 @@
+(set @default-dest "Sys:")
+
+	(set #t_copylib "Installing in ")
+
+	(set #t_welcome		(cat
+		" This script will install the Protracker datatype"
+		" in your Sys:Classes/DataTypes drawer, and the"
+		" descriptor in Sys:Devs/DataTypes."
+	))
+
+(message #t_welcome)
+
+(set #destbin	"Sys:Classes/DataTypes")
+(set #destdesc	"Sys:Devs/DataTypes")
+
+(copylib
+	(prompt (cat #t_copylib #destbin))
+	(help @copylib-help)
+	(source "Classes/DataTypes/protracker.datatype")
+	(dest #destbin)
+	(confirm)
+)
+
+(copylib
+	(prompt (cat #t_copylib #destdesc))
+	(help @copylib-help)
+	(source "Devs/DataTypes/Protracker")
+	(infos)
+	(noposition)
+	(dest #destdesc)
+	(confirm)
+)

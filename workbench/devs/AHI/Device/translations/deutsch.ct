@@ -1,0 +1,141 @@
+## version $VER: ahi.catalog 4.2 (27.4.97)
+## language deutsch
+## codeset 0
+;
+## chunk AUTH Translated by Martin Sprenger <smart-e@chillout.org>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; Input and Output connector name
+;
+msgDefault
+Voreinstellung
+; Default
+;
+; The requesters menu
+msgMenuControl
+\000\000Steuerung
+; \000\000Control
+;
+msgMenuLastMode
+V\000Vorheriger Modus
+; L\000Last Mode
+;
+msgMenuNextMode
+N\000Nächster Modus
+; N\000Next Mode
+;
+msgMenuPropertyList
+?\000Eigenschaften...
+; ?\000Property List...
+;
+msgMenuRestore
+Z\000Zurück
+; R\000Restore
+;
+msgMenuOK
+O\000OK
+; O\000OK
+;
+msgMenuCancel
+A\000Abbrechen
+; C\000Cancel
+;
+; Mode name in requester whose driver cannot be opened
+;
+msgUnknown
+Unbekannte Audio ID 0x%08lx
+; UNKNOWN:Audio ID 0x%08lx
+;
+; The requester gadgets
+;
+msgReqOK
+OK
+; OK
+;
+msgReqCancel
+Abbrechen
+; Cancel
+;
+msgReqFrequency
+Frequenz
+; Frequency
+;
+; Name of default mode in requester
+;
+msgDefaultMode
+Voreingestellter Audio Modus
+; Default audio mode
+;
+; The requester's info-winodow
+;
+msgReqInfoTitle
+Modus Eigenschaften
+; Mode Properties
+;
+msgReqInfoAudioID
+Audio Modus ID: 0x%08lx
+; Audio mode ID: 0x%08lx
+;
+msgReqInfoResolution
+Auflösung: %ld bit %s
+; Resolution: %ld bit %s
+;
+msgReqInfoMono
+mono
+; mono
+;
+msgReqInfoStereo
+stereo
+; stereo
+;
+msgReqInfoStereoPan
+stereo mit panning
+; stereo with panning
+;
+msgReqInfoChannels
+Kanäle: %ld
+; Channels: %ld
+;
+msgReqInfoMixrate
+Mischfrequenz: %ld-%ld Hz
+; Mixing rates: %ld-%ld Hz
+;
+msgReqInfoHiFi
+HiFi Mischung
+; HiFi mixing
+;
+msgReqInfoRecordHalf
+Halb Duplex Aufnahme
+; Record in half duplex
+;
+msgReqInfoRecordFull
+Voll Duplex Aufnahme
+; Record in full duplex
+;
+msgReqInfoMultiChannel
+
+; 7.1 multichannel
+;
+msgFreqFmt
+
+; %lu Hz
+;

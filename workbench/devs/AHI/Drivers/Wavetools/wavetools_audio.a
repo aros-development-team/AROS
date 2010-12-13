@@ -1,0 +1,1412 @@
+; Modified to compile with snma
+; compile: snma wavetools_audio.s OBJ AHI/wavetools.audio
+; (have snma create executables)
+
+;*** ScR ***
+
+;*** NOTES ***
+
+
+DMA_LENGTH	EQU	2021
+
+;------------
+;	incdir	include:
+
+        include exec/types.i
+ 	include macros.i       ; general macros
+
+	include	exec/exec.i
+	include	dos/dos.i
+	include	dos/dostags.i
+	include	utility/utility.i
+	include	utility/hooks.i
+
+; Library Vector Offsets
+	include	lvo/exec_lib.i
+	include	lvo/dos_lib.i
+	include	lvo/utility_lib.i
+
+	include	devices/ahi.i
+	include	libraries/ahi_sub.i
+	include	devices/dad_audio.i
+	include lvo/ahi_sub_lib.i
+
+; * wtBase (private)
+	STRUCTURE wtBase,LIB_SIZE
+	UBYTE	wtb_Flags
+	UBYTE	wtb_Pad1
+	UWORD	wtb_Pad2
+	APTR	wtb_SysLib
+	ULONG	wtb_SegList
+	APTR	wtb_DosLib
+	APTR	wtb_UtilLib
+	LABEL	wtBase_SIZEOF
+
+; * wavetools (private) ahiac_DriverData points to this structure.
+	STRUCTURE wavetools,0
+	UBYTE	wt_Flags
+	UBYTE	wt_Pad1
+	BYTE	wt_MasterSignal
+	BYTE	wt_RecMasterSignal
+	BYTE	wt_SlaveSignal
+	BYTE	wt_RecSlaveSignal
+	UWORD	wt_Pad2
+	APTR	wt_MasterTask
+	APTR	wt_RecMasterTask
+	APTR	wt_SlaveTask
+	APTR	wt_RecSlaveTask
+	APTR	wt_dadport
+	APTR	wt_recdadport
+	APTR	wt_dadioreq
+	APTR	wt_recdadioreq
+	ULONG	wt_daddev
+	ULONG	wt_recdaddev
+	APTR	wt_RecBuffer
+	APTR	wt_RecordMsg
+	APTR	wt_DMAbuffer1
+	APTR	wt_DMAbuffer2
+	LONG	wt_InputVolume		; through put volume?
+	LONG	wt_OutputVolume		; replay volume
+	LONG	wt_InputGain
+
+	ULONG	wt_DBflag
+
+	APTR	wt_SoftInt
+
+	LABEL	wt_SoftIntData
+	APTR	wt_PlayerHook
+	ULONG	wt_Reserved
+	APTR	wt_AudioCtrlP
+	FPTR	wt_PlayerEntry		;wt_PlayerHook->h_Entry
+
+	ULONG	wt_LoopTimes
+	APTR	wt_MixHook
+	APTR	wt_Mixbuffer
+	APTR	wt_AudioCtrlM
+	FPTR	wt_MixEntry		;wt_MixHook->h_Entry
+
+	APTR	wt_DMAbuffer		;current buffer
+	APTR	wt_DMAlength		;length
+
+	LABEL	wavetools_SIZEOF
+
+Start:
+	moveq	#-1,d0
+	rts
+
+VERSION		EQU	2
+REVISION	EQU	1
+DATE	MACRO
+		dc.b	"15.02.97"
+	ENDM
+VERS	MACRO
+		dc.b	"wavetools 2.11"
+	ENDM
+VSTRING	MACRO
+		VERS
+		dc.b	" ("
+		DATE
+		dc.b	")",13,10,0
+	ENDM
+VERSTAG	MACRO
+		dc.b	0,"$VER: "
+		VERS
+		dc.b	" ("
+		DATE
+		dc.b	")",0
+	ENDM
+
+RomTag:
+	DC.W	RTC_MATCHWORD
+	DC.L	RomTag
+	DC.L	EndCode
+	DC.B	RTF_AUTOINIT
+	DC.B	VERSION		;version
+	DC.B	NT_LIBRARY
+	DC.B	0		;pri
+	DC.L	LibName
+	DC.L	IDString
+	DC.L	InitTable
+
+LibName:	dc.b	"wavetools.audio",0
+IDString:	VSTRING
+dosName:	DOSNAME
+utilName:	UTILITYNAME
+
+	cnop	0,2
+
+InitTable:
+	DC.L	wtBase_SIZEOF
+	DC.L	funcTable
+	DC.L	dataTable
+	DC.L	initRoutine
+
+funcTable:
+	dc.l	Open
+	dc.l	Close
+	dc.l	Expunge
+	dc.l	Null
+;*
+	dc.l	AHIsub_AllocAudio
+	dc.l	AHIsub_FreeAudio
+	dc.l	AHIsub_Disable
+	dc.l	AHIsub_Enable
+	dc.l	AHIsub_Start
+	dc.l	AHIsub_Update
+	dc.l	AHIsub_Stop
+	dc.l	AHIsub_SetVol
+	dc.l	AHIsub_SetFreq
+	dc.l	AHIsub_SetSound
+	dc.l	AHIsub_SetEffect
+	dc.l	AHIsub_LoadSound
+	dc.l	AHIsub_UnloadSound
+	dc.l	AHIsub_GetAttr
+	dc.l	AHIsub_HardwareControl
+	dc.l	-1
+
+dataTable:
+	INITBYTE	LN_TYPE,NT_LIBRARY
+	INITLONG	LN_NAME,LibName
+	INITBYTE	LIB_FLAGS,LIBF_SUMUSED!LIBF_CHANGED
+	INITWORD	LIB_VERSION,VERSION
+	INITWORD	LIB_REVISION,REVISION
+	INITLONG	LIB_IDSTRING,IDString
+	DC.L		0
+
+initRoutine:
+	;movem.l	d1/a0/a1/a5/a6,-(sp)
+	mpush	d1/a0/a1/a5/a6
+	move.l	d0,a5
+	move.l	a6,wtb_SysLib(a5)
+	move.l	a0,wtb_SegList(a5)
+	lea	dosName(pc),a1
+	moveq	#37,d0
+	call	OpenLibrary
+	move.l	d0,wtb_DosLib(a5)
+	bne.b	.dosOK
+	ALERT	AG_OpenLib!AO_DOSLib
+	moveq	#0,d0
+	bra.b	.exit
+.dosOK
+	lea	utilName(pc),a1
+	moveq	#37,d0
+	call	OpenLibrary
+	move.l	d0,wtb_UtilLib(a5)
+	bne.b	.utilOK
+	ALERT	AG_OpenLib!AO_UtilityLib
+	moveq	#0,d0
+	bra.b	.exit
+.utilOK
+	move.l	a5,d0
+.exit
+	;movem.l	(sp)+,d1/a0/a1/a5/a6
+	mpop	d1/a0/a1/a5/a6
+	rts
+
+Open:
+	addq.w	#1,LIB_OPENCNT(a6)
+	bclr.b	#LIBB_DELEXP,wtb_Flags(a6)
+	move.l	a6,d0
+	rts
+
+Close:
+	moveq	#0,d0
+	subq.w	#1,LIB_OPENCNT(a6)
+	bne.b	.exit
+	btst.b	#LIBB_DELEXP,wtb_Flags(a6)
+	beq.b	.exit
+	bsr.b	Expunge
+.exit
+	rts
+
+Expunge:
+	;movem.l	d1/d2/a0/a1/a5/a6,-(sp)
+	mpush	d1/d2/a0/a1/a5/a6
+	move.l	a6,a5
+	move.l	wtb_SysLib(a5),a6
+	tst.w	LIB_OPENCNT(a5)
+	beq.b	.notopen
+	bset.b	#LIBB_DELEXP,wtb_Flags(a5)
+	moveq	#0,d0
+	bra.b	.Expunge_end
+.notopen
+	move.l	wtb_DosLib(a5),a1
+	call	CloseLibrary
+	move.l	wtb_UtilLib(a5),a1
+	call	CloseLibrary
+
+	move.l	wtb_SegList(a5),d2
+	move.l	a5,a1
+	call	Remove
+
+	moveq	#0,d0
+	move.l	a5,a1
+	move.w	LIB_NEGSIZE(a5),d0
+	sub.l	d0,a1
+	add.w	LIB_POSSIZE(a5),d0
+	call	FreeMem
+	move.l	d2,d0
+.Expunge_end
+	;movem.l	(sp)+,d1/d2/a0/a1/a5/a6
+	;mpop
+	mpop	d1/d2/a0/a1/a5/a6
+	rts
+
+Null:
+	moveq	#0,d0
+	rts
+
+;*       result = AHIsub_AllocAudio( tagList, AudioCtrl );
+;*       D0                          A1       A2
+
+AHIsub_AllocAudio:
+	mpush	d2-d7/a2-a6
+	move.l	a6,a5
+	move.l	wtb_SysLib(a5),a6
+
+	move.l	#wavetools_SIZEOF,d0
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,ahiac_DriverData(a2)
+	beq.w	.error_nowavetools
+	move.l	d0,a3
+
+;* try allocate dad_audio.device
+	moveq	#0,d2
+	moveq	#0,d3
+	moveq	#-1,d4
+	call	CreateMsgPort
+	move.l	d0,d2
+	beq.b	.err2
+	move.l	d0,a0
+	moveq	#IOSTD_SIZE,d0
+	call	CreateIORequest
+	move.l	d0,d3
+	beq.b	.err1
+	lea	dadname(pc),a0
+	moveq	#0,d0
+	move.l	d3,a1
+	moveq	#0,d1
+	call	OpenDevice
+	move.l	d0,d4
+	move.l	d3,a1
+	call	CloseDevice
+	move.l	d3,a0
+	call	DeleteIORequest
+.err1
+	move.l	d2,a0
+	call	DeleteMsgPort
+.err2
+	tst.l	d4
+	bne.w	.error_nodevice
+
+	move.l	#-1,wt_daddev(a3)
+	move.b	#-1,wt_MasterSignal(a3)
+	move.b	#-1,wt_SlaveSignal(a3)
+	move.l	a2,wt_AudioCtrlP(a3)		;player Hook
+	move.l	a2,wt_AudioCtrlM(a3)		;mixer Hook
+
+;* find closest frequency
+	move.l	ahiac_MixFreq(a2),d0
+	bsr	findfreq
+	move.l	d0,ahiac_MixFreq(a2)		;store actual freq
+
+	moveq	#IS_SIZE,d0
+	move.l	#MEMF_PUBLIC!MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,wt_SoftInt(a3)
+	beq.b	.error_nointmem
+
+	move.l	d0,a0
+	move.b	#NT_INTERRUPT,LN_TYPE(a0)
+	lea	LibName(pc),a1
+	move.l	a1,LN_NAME(a0)
+	lea	SoftInt_Dummy(pc),a1
+	move.l	a1,IS_CODE(a0)
+	lea	wt_SoftIntData(a3),a1
+	move.l	a1,IS_DATA(a0)
+
+;* Set default output volume
+	move.l	#$10000,wt_OutputVolume(a3)
+
+	moveq	#AHISF_CANRECORD|AHISF_KNOWSTEREO|AHISF_MIXING|AHISF_TIMING,d0
+.exit
+	;mpop
+	mpop	d2-d7/a2-a6
+	rts
+.error_nointmem
+.error_nodevice
+.error_nowavetools
+	moveq	#AHISF_ERROR,d0
+	bra.b	.exit
+
+;in:
+;* d0	Frequency
+;out:
+;* d0	New frequency
+findfreq:
+	lea	freqlist(pc),a0
+	cmp.l	(a0),d0
+	bhi.b	.findfreq
+	move.l	(a0),d0
+	bra.b	.2
+.findfreq
+	cmp.l	(a0)+,d0
+	bhi.b	.findfreq
+	move.l	-4(a0),d1
+	sub.l	d0,d1
+	sub.l	-8(a0),d0
+	cmp.l	d1,d0
+	bhs.b	.1
+	move.l	-8(a0),d0
+	bra.b	.2
+.1
+	move.l	-4(a0),d0
+.2
+	rts
+
+freqlist:
+	dc.l	DADFREQ_17640
+	dc.l	DADFREQ_19200
+	dc.l	DADFREQ_22050
+	dc.l	DADFREQ_24000
+	dc.l	DADFREQ_29400
+	dc.l	DADFREQ_32000
+	dc.l	DADFREQ_44100
+	dc.l	DADFREQ_48000
+	dc.l	-1
+
+;*       AHIsub_FreeAudio( AudioCtrl );
+;*                         A2
+
+AHIsub_FreeAudio:
+	mpush	d2-d7/a2-a6
+
+	move.l	a6,a5
+	move.l	wtb_SysLib(a5),a6
+
+	move.l	ahiac_DriverData(a2),d0
+	beq.b	.nodriverdata
+	move.l	d0,a3
+
+	move.l	wt_SoftInt(a3),a1
+	clr.l	wt_SoftInt(a3)
+	call	FreeVec
+
+	move.l	ahiac_DriverData(a2),a1
+	clr.l	ahiac_DriverData(a2)
+	call	FreeVec
+.nodriverdata
+	moveq	#0,d0
+	mpop	d2-d7/a2-a6
+	;mpop
+	rts
+
+
+;*       AHIsub_Disable( AudioCtrl );
+;*                       A2
+
+AHIsub_Disable:
+	mpush	a5/a6
+	move.l	a6,a5
+	move.l	wtb_SysLib(a5),a6
+	call	Forbid				; Lame, but it works.
+	mpop	a5/a6
+	rts
+
+;*       AHIsub_Enable( AudioCtrl );
+;*                      A2
+
+AHIsub_Enable:
+	mpush	a5/a6
+	move.l	a6,a5
+	move.l	wtb_SysLib(a5),a6
+	call	Permit				; Lame, but it works.
+	mpop	a5/a6
+	rts
+
+;*       error = AHIsub_Start( Flags, AudioCtrl );
+;*       D0                    D0     A2
+
+AHIsub_Start:
+	mpush	d2-d7/a2-a6
+
+	move.l	a6,a5
+	move.l	wtb_SysLib(a5),a6
+	move.l	ahiac_DriverData(a2),a3
+
+	move.l	d0,d7
+	btst	#AHISB_PLAY,d7
+	beq.b	.noplay
+
+	exg.l	a5,a6
+	moveq	#AHISF_PLAY,d0
+	call	AHIsub_Stop
+	call	AHIsub_Update			;fill variables
+	exg.l	a5,a6
+
+	move.l	ahiac_BuffSize(a2),d0
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,wt_Mixbuffer(a3)
+	beq.b	.error_nomixmem
+
+	move.l	ahiac_MaxBuffSamples(a2),d0
+	lsl.l	#2,d0				;16bit+Stereo
+	move.l	d0,d2
+	move.l	#MEMF_24BITDMA!MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,wt_DMAbuffer1(a3)
+	beq.b	.error_nodmamem
+
+	move.l	d2,d0
+	move.l	#MEMF_24BITDMA!MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,wt_DMAbuffer2(a3)
+	beq.b	.error_nodmamem
+
+	bsr.b	PlayStart
+	tst.l	d0
+	bne.b	.error
+
+.noplay
+	btst	#AHISB_RECORD,d7
+	beq.b	.norecord
+	moveq	#AHISF_PLAY,d0
+
+	exg.l	a5,a6
+	moveq	#AHISF_PLAY|AHISF_RECORD,d0
+	call	AHIsub_Stop
+	exg.l	a5,a6
+
+	bsr.w	RecStart
+	tst.l	d0
+	bne.b	.error
+
+.norecord
+	moveq	#AHIE_OK,d0
+.exit
+	mpop	d2-d7/a2-a6
+	;mpop
+	rts
+.error_nodmamem
+.error_nomixmem
+	moveq	#AHIE_NOMEM,d0
+.error
+	bra.b	.exit
+
+PlayStart:
+;* create audio playback process
+	moveq	#-1,d0
+	call	AllocSignal
+	move.b	d0,wt_MasterSignal(a3)
+	cmp.b	#-1,d0
+	beq.w	.error_nosignal
+	suba.l	a1,a1
+	call	FindTask
+	move.l	d0,wt_MasterTask(a3)
+
+;* This is just a trick to make it possible to send the slave an argument.
+	moveq	#.size,d0
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	tst.l	d0
+	beq.b	.error_noaudioproc
+	move.l	d0,a1
+
+	lea	.kicker(pc),a0
+	moveq	#.size-1,d1
+.copykicker
+	move.b	(a0)+,(a1)+
+	dbf	d1,.copykicker
+
+	move.l	d0,a1
+	move.l	a2,.audioctrl(a1)
+	lea	.codestart(a1),a0
+	move.l	a0,.entry(a1)
+
+	move.l	wt_SoftInt(a3),a0
+	move.l	ahiac_Flags(a2),d0
+	and.l	#AHIACF_STEREO,d0
+	beq.b	.mono
+	move.l	#SoftInt_Stereo,IS_CODE(a0)
+	bra.b	.1
+.mono
+	move.l	#SoftInt_Mono,IS_CODE(a0)
+.1
+
+	mpush	a1
+	call	CacheClearU
+	mpop	a1
+
+	move.l	wtb_DosLib(a5),a6
+	move.l	a1,d1
+	call	CreateNewProc
+	move.l	d0,wt_SlaveTask(a3)
+	beq.b	.error_noaudioproc
+
+; Wait for slave to allocate and store a signal (or die if error).
+	move.l	wtb_SysLib(a5),a6
+	moveq	#0,d0
+	move.b	wt_MasterSignal(a3),d1
+	bset	d1,d0
+	call	Wait
+	moveq	#AHIE_OK,d0
+	rts
+.error_noaudioproc
+.error_nolocalvar
+.error_nosignal
+	moveq	#AHIE_NOMEM,d0
+	rts
+
+.kicker:
+	dc.l	NP_Entry
+.entry		EQU	*-.kicker
+	dc.l	Dummy
+	dc.l	NP_Priority,127
+	dc.l	NP_Name,LibName
+	dc.l	TAG_DONE
+
+.codestart	EQU	*-.kicker
+	lea	.kicker(pc),a1			;a1 points to allocated kicker
+.audioctrl	EQU	*+2-.kicker
+	;lea	Dummy,a2			;a2 points to current AudioCtrl structure
+	dc.w	$45F9	  		; ADDED: opcode(LEA xxx,a2)
+	dc.l	Dummy
+	;jmp	audioproc_play    ; ADDED: (PC) on lea Dummy... and jmp audio...
+	dc.w	$4EF9             ; ADDED: opcode(jmp)
+	dc.l	audioproc_play	  ; absolute
+.size		EQU	*-.kicker
+
+RecStart:
+;* create audio record process
+	moveq	#-1,d0
+	call	AllocSignal
+	move.b	d0,wt_RecMasterSignal(a3)
+	cmp.b	#-1,d0
+	beq.b	.error_nosignal
+	suba.l	a1,a1
+	call	FindTask
+	move.l	d0,wt_RecMasterTask(a3)
+
+;* This is just a trick to make it possible to send the slave an argument.
+	moveq	#.size,d0
+	move.l	#MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	tst.l	d0
+	beq.b	.error_noaudioproc
+	move.l	d0,a1
+
+	lea	.kicker(pc),a0
+	moveq	#.size-1,d1
+.copykicker
+	move.b	(a0)+,(a1)+
+	dbf	d1,.copykicker
+
+	move.l	d0,a1
+	move.l	a2,.audioctrl(a1)
+	lea	.codestart(a1),a0
+	move.l	a0,.entry(a1)
+
+	mpush	a1
+	call	CacheClearU
+	mpop	a1
+
+	move.l	wtb_DosLib(a5),a6
+	move.l	a1,d1
+	call	CreateNewProc
+	move.l	d0,wt_RecSlaveTask(a3)
+	beq.b	.error_noaudioproc
+
+; Wait for slave to allocate and store a signal (or die if error).
+	move.l	wtb_SysLib(a5),a6
+	moveq	#0,d0
+	move.b	wt_RecMasterSignal(a3),d1
+	bset	d1,d0
+	call	Wait
+	moveq	#AHIE_OK,d0
+	rts
+.error_noaudioproc
+.error_nolocalvar
+.error_nosignal
+	moveq	#AHIE_NOMEM,d0
+	rts
+
+;*** 'kicker'
+.kicker:
+	dc.l	NP_Entry
+.entry		EQU	*-.kicker
+	dc.l	Dummy
+	dc.l	NP_Priority,127
+	dc.l	NP_Name,LibName
+	dc.l	TAG_DONE
+
+.codestart	EQU	*-.kicker
+	lea	.kicker(pc),a1			;a1 points to allocated kicker
+.audioctrl	EQU	*+2-.kicker
+	;lea	Dummy(PC),a2			;a2 points to current AudioCtrl structure
+	dc.w	$45F9	  		; ADDED: opcode(LEA xx,a2)
+	dc.l	Dummy			;
+	dc.w	$4EF9             	; ADDED: opcode(jmp)
+	dc.l	audioproc_record	; absolute
+	;jmp	audioproc_record
+.size		EQU	*-.kicker
+
+
+Dummy:
+	rts
+
+;*       AHIsub_Update( flags, audioctrl );
+;*                      D0     A2
+
+AHIsub_Update:
+	mpush	d2-d7/a2-a6
+
+	call	AHIsub_Disable		;make sure we don't get an interrupt
+					;while updating our local variables
+	move.l	ahiac_DriverData(a2),a3
+
+	move.l	ahiac_PlayerFunc(a2),a0
+	move.l	a0,wt_PlayerHook(a3)
+	move.l	h_Entry(a0),wt_PlayerEntry(a3)
+
+	move.l	ahiac_BuffSamples(a2),d0
+	move.l	d0,wt_LoopTimes(a3)		;See audioproc.
+	lsl.l	#2,d0
+	move.l	d0,wt_DMAlength(a3)
+
+	move.l	ahiac_MixerFunc(a2),a0
+	move.l	a0,wt_MixHook(a3)
+	move.l	h_Entry(a0),wt_MixEntry(a3)
+
+	call	AHIsub_Enable
+	moveq	#0,d0
+	mpop	d2-d7/a2-a6
+	;mpop
+	rts
+
+
+;*       AHIsub_Stop(Flags, AudioCtrl );
+;*                   D0     A2
+
+AHIsub_Stop:
+	mpush	d2-d7/a2-a6
+
+	move.l	a6,a5
+	move.l	wtb_SysLib(a5),a6
+	move.l	ahiac_DriverData(a2),a3
+
+	move.l	d0,d7					;save flags
+	btst	#AHISB_PLAY,d7
+	beq.b	.noplaystop
+
+; Signal slave to quit
+	move.l	wt_SlaveTask(a3),d0
+	beq.b	.noslave
+	move.l	d0,a1
+	moveq	#0,d0
+	move.b	wt_SlaveSignal(a3),d1
+	bset	d1,d0
+	call	Signal
+; Wait for slave to die
+	moveq	#0,d0
+	move.b	wt_MasterSignal(a3),d1
+	bset	d1,d0
+	call	Wait
+.noslave
+	moveq	#0,d0
+	move.b	wt_MasterSignal(a3),d0			;-1 is ok
+	move.b	#-1,wt_MasterSignal(a3)
+	call	FreeSignal
+
+	move.l	wt_DMAbuffer1(a3),d0
+	beq.b	.nodmamem1
+	move.l	d0,a1
+	call	FreeVec
+	clr.l	wt_DMAbuffer1(a3)
+.nodmamem1
+	move.l	wt_DMAbuffer2(a3),d0
+	beq.b	.nodmamem2
+	move.l	d0,a1
+	call	FreeVec
+	clr.l	wt_DMAbuffer2(a3)
+.nodmamem2
+	move.l	wt_Mixbuffer(a3),d0
+	beq.b	.nomixmem
+	move.l	d0,a1
+	call	FreeVec
+	clr.l	wt_Mixbuffer(a3)
+.nomixmem
+
+.noplaystop
+	btst	#AHISB_RECORD,d7
+	beq.b	.norecstop
+
+; Signal record slave to quit
+	move.l	wt_RecSlaveTask(a3),d0
+	beq.b	.norecslave
+	move.l	d0,a1
+	moveq	#0,d0
+	move.b	wt_RecSlaveSignal(a3),d1
+	bset	d1,d0
+	call	Signal
+; Wait for record slave to die
+	moveq	#0,d0
+	move.b	wt_RecMasterSignal(a3),d1
+	bset	d1,d0
+	call	Wait
+.norecslave
+	moveq	#0,d0
+	move.b	wt_RecMasterSignal(a3),d0		;-1 is ok
+	move.b	#-1,wt_RecMasterSignal(a3)
+	call	FreeSignal
+.norecstop
+	moveq	#0,d0
+	mpop	d2-d7/a2-a6
+        ;mpop
+	rts
+
+AHIsub_SetVol:
+AHIsub_SetFreq:
+AHIsub_SetSound:
+AHIsub_SetEffect:
+AHIsub_LoadSound:
+AHIsub_UnloadSound:
+	moveq	#AHIS_UNKNOWN,d0
+	rts
+
+;in:
+;* d1   wt_OutputVolume
+;* a2	audioctrl
+;out:
+;* d0	Wavetools outout damp value
+volume2damp:
+;* translate linear to wavetools output damp value
+
+	moveq	#DADCONST_MAXDAMP,d0				;DADCONST_MAXDAMP
+	lea	.volumelist(pc),a0
+.loop
+	cmp.l	(a0)+,d1
+	bls.b	.exit
+	subq.l	#1,d0
+	bpl.b	.loop
+.exit
+	and.l	#DADCONST_MAXDAMP,d0				;just security
+	rts
+
+; 32 values
+.volumelist
+	dc.l	1,2,3,4,6,8,12,16,23,33,46,66,93,131,185,261,369,521,735,1039
+	dc.l	1467,2072,2927,4135,5841,8250,11654,16462,23253,32846,46396
+	dc.l	65536
+
+
+
+;lineargain2decibel:
+; translate linear gain to wavetools gain
+; in:
+;   d1	wt_InputGain
+; out:
+;   d0	Wavetools input Gain Value
+;
+;	moveq	#0,d0			; no gain
+;	lea	.gainlist(pc),a0
+;.loop
+;	cmp.l	(a0)+,d1
+;	bls.b	.exit			; use the larger value
+;	add.l	#1,d0			; increase gain
+;	bpl.b	.loop
+;.exit
+;	and.l	#DADCONST_MAXGAIN,d0	;just security
+;	rts
+; Just made the database half size
+; 16 values
+.gainlist
+	dc.l	1,3,8,16,33,66,131,261,521,1039
+	dc.l	2072,4135,8250,16462,32846
+	dc.l	65536
+
+
+lineargain2decibel:
+; 15 Feb 1997 bugfix
+; translate linear gain to wavetools gain
+; in:
+;   d1	wt_InputGain
+; out:
+;   d0	Wavetools input Gain Value
+; method:
+;   search list for a value larger than the suggested value
+;   start search with lowest possible value ($10000)
+
+	moveq	#0,d0			; start with no gain
+	lea	.posboundaries(pc),a0	;
+.loop
+	cmp.l	(a0)+,d1
+	ble.b	.exit			; use the larger/equal value
+	add.l	#1,d0			; increase gain
+	cmp.l	#15,d0			; max value is 15
+	bls.b	.loop			; jump if less than 15
+.exit
+	and.l	#DADCONST_MAXGAIN,d0	;just security
+	rts
+
+;From toccata drivern 15 Feb 1997, 16 values
+.posboundaries
+	dc.l  65536,77889,92572,110022,130761,155410,184705,219522,260903
+	dc.l  310084,368536,438005,520570,618699,735326,873936
+
+
+
+;*       AHIsub_GetAttr( attribute, argument, default, taglist, audioctrl );
+;*       D0              D0         D1        D2       A1       a2
+
+AHIsub_GetAttr:
+	cmp.l	#AHIDB_Bits,d0
+	bne.b	.not_bits
+	moveq	#16,d0
+	bra.w	.exit
+.not_bits
+	cmp.l	#AHIDB_Frequencies,d0
+	bne.b	.not_freqs
+	moveq	#8,d0
+	bra.w	.exit
+.not_freqs
+	cmp.l	#AHIDB_Frequency,d0
+	bne.b	.not_freq
+	add.l	d1,d1
+	add.l	d1,d1
+	lea	freqlist(pc),a0
+	move.l	(a0,d1.l),d0
+	bra.w	.exit
+.not_freq
+	cmp.l	#AHIDB_Index,d0
+	bne.b	.not_index
+	move.l	d1,d0
+	bsr.w	findfreq
+	move.l	d0,d1
+	moveq	#0,d0
+	lea	freqlist(pc),a0
+.index_loop
+	cmp.l	(a0)+,d1
+	beq.w	.exit
+	addq.l	#1,d0
+	bra.b	.index_loop
+.not_index
+	cmp.l	#AHIDB_Author,d0
+	bne.b	.not_author
+	lea	.author(pc),a0
+	move.l	a0,d0
+	bra.w	.exit
+.not_author
+	cmp.l	#AHIDB_Copyright,d0
+	bne.b	.not_copyright
+	lea	.copyright(pc),a0
+	move.l	a0,d0
+	bra.w	.exit
+.not_copyright
+	cmp.l	#AHIDB_Version,d0
+	bne.b	.not_version
+	lea	IDString(pc),a0
+	move.l	a0,d0
+	bra.w	.exit
+.not_version
+	cmp.l	#AHIDB_MaxRecordSamples,d0
+	bne.b	.not_maxrecsamples
+	move.l	#DMA_LENGTH,d0
+	bra.w	.exit
+.not_maxrecsamples
+	cmp.l	#AHIDB_Realtime,d0
+	bne.b	.not_realtime
+	moveq	#TRUE,d0
+	bra.w	.exit
+.not_realtime
+	cmp.l	#AHIDB_Record,d0
+	bne.b	.not_record
+	moveq	#TRUE,d0
+	bra.w	.exit
+.not_record
+	cmp.l	#AHIDB_FullDuplex,d0
+	bne.b	.not_fullduplex
+	moveq	#FALSE,d0
+	bra.w	.exit
+.not_fullduplex
+	cmp.l	#AHIDB_Inputs,d0
+	bne.b	.not_inputs
+	moveq	#1,d0
+	bra.w	.exit
+.not_inputs
+	cmp.l	#AHIDB_Input,d0
+	bne.b	.not_input
+	lea	.line(pc),a0			;only one source
+	move.l	a0,d0
+	bra.w	.exit
+.not_input
+	cmp.l	#AHIDB_Outputs,d0
+	bne.b	.not_outputs
+	moveq	#1,d0
+	bra.w	.exit
+.not_outputs
+	cmp.l	#AHIDB_Output,d0
+	bne.b	.not_output
+	lea	.line(pc),a0			;only one destination
+	move.l	a0,d0
+	bra.w	.exit
+.not_output
+	cmp.l	#AHIDB_MinMonitorVolume,d0
+	bne.b	.not_minmonvol
+	moveq	#0,d0
+	bra.w	.exit
+.not_minmonvol
+	cmp.l	#AHIDB_MaxMonitorVolume,d0
+	bne.b	.not_maxmonvol
+	move.l	#$10000,d0
+	bra.b	.exit
+.not_maxmonvol
+	cmp.l	#AHIDB_MinOutputVolume,d0
+	bne.b	.not_minoutvol
+	moveq	#0,d0
+	bra.b	.exit
+.not_minoutvol
+	cmp.l	#AHIDB_MaxOutputVolume,d0
+	bne.b	.not_maxoutvol
+	move.l	#$10000,d0
+	bra.b	.exit
+.not_maxoutvol
+	cmp.l	#AHIDB_MaxInputGain,d0		;NEW 06 Jan 1997
+	bne.b	.not_maxgain                    ;BUGFIX 15 Feb 1997
+	move.l	#$000d55d0,d0           	; 13.335<<16 == +22.5 dB
+	bra.b	.exit
+.not_maxgain
+	cmp.l	#AHIDB_MinInputGain,d0		;NEW 06 Jan 1997
+	bne.b	.not_mingain
+	move.l	#$10000,d0			;NEW 15 Feb 1997
+	bra.b	.exit
+.not_mingain
+
+;* Unknown attribute, return default.
+	move.l	d2,d0
+.exit
+	rts
+.author
+	dc.b	"Martin 'Leviticus' Blom",0
+.copyright
+	dc.b	"Public Domain",0
+.line
+	dc.b	"Line",0
+	even
+
+
+;*       AHIsub_HardwareControl( attribute,  argument, audioctrl );
+;*       D0                      D0          D1        A2
+
+AHIsub_HardwareControl:
+	cmp.l	#AHIC_MonitorVolume,d0
+	bne.b	.dontsetmonvol
+	move.l	ahiac_DriverData(a2),a1
+	move.l	d1,wt_InputVolume(a1)
+	bra.b	.exit
+.dontsetmonvol
+	cmp.l	#AHIC_MonitorVolume_Query,d0
+	bne.b	.dontgetmonvol
+	move.l	ahiac_DriverData(a2),a1
+	move.l	wt_InputVolume(a1),d0
+	bra.b	.quit
+.dontgetmonvol
+	cmp.l	#AHIC_OutputVolume,d0
+	bne.b	.dontsetvol
+	move.l	ahiac_DriverData(a2),a1
+	move.l	d1,wt_OutputVolume(a1)
+	bra.b	.exit
+.dontsetvol
+	cmp.l	#AHIC_OutputVolume_Query,d0
+	bne.b	.dontgetvol
+	move.l	ahiac_DriverData(a2),a1
+	move.l	wt_OutputVolume(a1),d0
+	bra.b	.quit
+.dontgetvol
+	cmp.l	#AHIC_InputGain,d0
+	bne.b	.dontsetgain
+	move.l	ahiac_DriverData(a2),a1
+	move.l	d1,wt_InputGain(a1)
+	bra.b	.exit
+.dontsetgain					;NEW
+	cmp.l	#AHIC_InputGain_Query,d0
+	bne.b	.dontgetgain
+	move.l	ahiac_DriverData(a2),a1
+	move.l	wt_InputGain(a1),d0
+	bra.b	.quit
+.dontgetgain
+	moveq	#FALSE,d0
+.quit
+	rts
+.exit
+	moveq	#TRUE,d0
+	rts
+;*****************************************************************************
+
+;in:
+;* a1	ptr to 'kicker'
+;* a2	AudioCtrl
+audioproc_play:
+	move.l	ahiac_DriverData(a2),a5
+	move.l	4.w,a6
+	call	FreeVec
+
+	moveq	#-1,d0
+	call	AllocSignal
+	move.b	d0,wt_SlaveSignal(a5)
+	cmp.b	#-1,d0
+	beq.w	.error_nosignal
+
+;* allocate dad_audio.device
+	call	CreateMsgPort
+	move.l	d0,wt_dadport(a5)
+	beq.w	.error_noport
+	move.l	d0,a0
+	moveq	#IOSTD_SIZE,d0
+
+	call	CreateIORequest
+	move.l	d0,wt_dadioreq(a5)
+	beq.w	.error_noioreq
+
+	lea	dadname(pc),a0
+	moveq	#0,d0
+	move.l	wt_dadioreq(a5),a1
+	moveq	#0,d1
+	call	OpenDevice
+	move.l	d0,wt_daddev(a5)
+	bne.w	.error_nodaddev
+
+;* initialize the board
+	move.l	wt_dadioreq(a5),a1
+	move.l	#DADF_SETFLAG|DADF_INIT,IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_INIT2,IO_COMMAND(a1)
+	call	DoIO
+
+	move.l	wt_dadioreq(a5),a1
+	move.l	ahiac_MixFreq(a2),IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_REPLAYFREQ,IO_COMMAND(a1)
+	call	DoIO
+
+	move.l	wt_MasterTask(a5),a1
+	moveq	#0,d0
+	move.b	wt_MasterSignal(a5),d1
+	bset	d1,d0
+	call	Signal			;Tell master we're alive and kicking!
+
+.again
+;*** Set Volume
+	move.l	wt_OutputVolume(a5),d1		;default is $10000 (see alloc function)
+	bsr.w	volume2damp
+	move.l	wt_dadioreq(a5),a1
+	move.l	d0,IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_OUTPUTDAMP,IO_COMMAND(a1)
+	call	DoIO
+
+	not.l	wt_DBflag(a5)
+	beq.b	.1
+	move.l	wt_DMAbuffer1(a5),wt_DMAbuffer(a5)
+	bra.b	.2
+.1
+	move.l	wt_DMAbuffer2(a5),wt_DMAbuffer(a5)
+.2
+
+	move.l	wt_SoftInt(a5),a1
+	call	Cause
+
+	move.l	wt_dadioreq(a5),a1
+	call	WaitIO
+
+	moveq	#0,d0
+	moveq	#0,d1
+	call	SetSignal
+	move.b	wt_SlaveSignal(a5),d1
+	btst	d1,d0
+	bne.b	.quit
+
+	move.l	wt_dadioreq(a5),a1
+	move.l	wt_DMAbuffer(a5),IO_DATA(a1)
+	move.l	wt_DMAlength(a5),IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#CMD_WRITE,IO_COMMAND(a1)
+	call	DoIO                      ; changed SendIO to DoIO
+	bra.b	.again
+.quit
+.error_noport
+.error_noioreq
+.error_nodaddev
+.error_nosignal
+	clr.l	wt_SlaveTask(a5)
+	moveq	#0,d0
+	move.b	wt_SlaveSignal(a5),d0			;-1 is ok
+	move.b	#-1,wt_SlaveSignal(a5)
+	call	FreeSignal
+
+	tst.l	wt_daddev(a5)
+	bne.b	.nodaddev
+
+	move.l	wt_dadioreq(a5),a1
+	move.l	#DADCONST_MAXDAMP,IO_DATA(a1)		;zero volume
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_OUTPUTDAMP,IO_COMMAND(a1)
+	call	DoIO
+
+	move.l	wt_dadioreq(a5),a1
+	move.l	#-1,wt_daddev(a5)
+	call	CloseDevice
+.nodaddev
+	move.l	wt_dadioreq(a5),a0
+	clr.l	wt_dadioreq(a5)
+	call	DeleteIORequest
+.noaudioreq
+	move.l	wt_dadport(a5),a0
+	clr.l	wt_dadport(a5)
+	call	DeleteMsgPort
+.noaudioport
+	move.l	wt_MasterTask(a5),a1
+	moveq	#0,d0
+	move.b	wt_MasterSignal(a5),d1
+	bset	d1,d0
+	call	Signal
+	rts
+
+
+SoftInt_Dummy:
+	rts
+
+* d0	scratch
+* d1	scratch
+* a0	scratch
+* a1	wt_SoftIntData
+* a5	scratch
+SoftInt_Mono:
+	mpush	a2/a3
+	move.l	a1,a5
+	movem.l	(a5)+,a0/a1/a2/a3
+	jsr	(a3)				;call Player Hook
+	movem.l	(a5),d0/a0/a1/a2/a3/a5
+	jsr	(a3)				;call Mixer Hook
+
+;* transfer buffer (unrolled)
+	lsr.w	#1,d0
+	bcs.b	.3
+	subq.w	#1,d0
+.loop
+	move.w	(a1),(a5)+
+	move.w	(a1)+,(a5)+
+.3
+	move.w	(a1),(a5)+
+	move.w	(a1)+,(a5)+
+	dbf	d0,.loop
+	mpop	a2/a3
+	rts
+
+;* d0	scratch
+;* d1	scratch
+;* a0	scratch
+;* a1	wt_SoftIntData
+;* a5	scratch
+SoftInt_Stereo:
+	mpush	a2/a3
+	move.l	a1,a5
+	movem.l	(a5)+,a0/a1/a2/a3
+	jsr	(a3)				;call Player Hook
+	movem.l	(a5),d0/a0/a1/a2/a3/a5
+	jsr	(a3)				;call Mixer Hook
+
+;* transfer buffer (unrolled)
+	lsr.w	#1,d0
+	bcs.b	.3
+	subq.w	#1,d0
+.loop
+	move.l	(a1)+,(a5)+
+.3
+	move.l	(a1)+,(a5)+
+	dbf	d0,.loop
+	mpop	a2/a3
+	rts
+
+;in:
+;* a1	ptr to 'kicker'
+;* a2	AudioCtrl
+audioproc_record:
+	move.l	ahiac_DriverData(a2),a5
+	move.l	4.w,a6
+	call	FreeVec
+
+	moveq	#-1,d0
+	call	AllocSignal
+	move.b	d0,wt_RecSlaveSignal(a5)
+	cmp.b	#-1,d0
+	beq.w	.error
+
+	moveq	#AHIRecordMessage_SIZEOF,d0
+	move.l	#MEMF_24BITDMA|MEMF_PUBLIC|MEMF_CLEAR,d1
+	call	AllocVec
+	move.l	d0,wt_RecordMsg(a5)
+	beq.w	.error
+
+;* allocate dad_audio.device
+	call	CreateMsgPort
+	move.l	d0,wt_recdadport(a5)
+	beq.w	.error
+	move.l	d0,a0
+	moveq	#IOSTD_SIZE,d0
+
+	call	CreateIORequest
+	move.l	d0,wt_recdadioreq(a5)
+	beq.w	.error
+
+	lea	dadname(pc),a0
+	moveq	#0,d0
+	move.l	wt_recdadioreq(a5),a1
+	moveq	#0,d1
+	call	OpenDevice
+	move.l	d0,wt_recdaddev(a5)
+	bne.w	.error
+
+;* initialize the board
+	move.l	wt_recdadioreq(a5),a1
+	move.l	#DADF_SETFLAG|DADF_INIT,IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_INIT2,IO_COMMAND(a1)
+	call	DoIO
+
+	move.l	wt_recdadioreq(a5),a1
+	move.l	ahiac_MixFreq(a2),IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_SAMPLEFREQ,IO_COMMAND(a1)
+	call	DoIO
+
+	move.l	wt_recdadioreq(a5),a1
+	move.l	ahiac_MixFreq(a2),IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_REPLAYFREQ,IO_COMMAND(a1)
+	call	DoIO
+
+;input gain
+	move.l	wt_recdadioreq(a5),a1
+	move.l	wt_InputGain(a5),d1
+	bsr	lineargain2decibel			;translate gain value
+	move.l	d0,IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_INPUTGAIN,IO_COMMAND(a1)
+	call	DoIO
+
+	move.l	wt_recdadioreq(a5),a1
+	clr.l	IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	move.l	#DAD_BUFFER_SETUP,IO_OFFSET(a1)
+	move.w	#DADCMD_BUFFER,IO_COMMAND(a1)
+	call	DoIO
+; Hardcoded value used, since ahi.device must know the size
+;of the record buffer.
+
+	move.l	#DMA_LENGTH*4,d7
+	move.l	d7,d0
+	move.l	#MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC,d1
+	call	AllocVec
+	move.l	d0,wt_RecBuffer(a5)
+	beq.w	.error
+
+	move.l	wt_RecMasterTask(a5),a1
+	moveq	#0,d0
+	move.b	wt_RecMasterSignal(a5),d1
+	bset	d1,d0
+	call	Signal			;Tell Master we're alive and kicking!
+
+.again
+;*** Set Volume
+	move.l	wt_InputVolume(a5),d1
+	bsr.w	volume2damp
+	move.l	wt_recdadioreq(a5),a1
+	move.l	d0,IO_DATA(a1)
+	clr.l	IO_LENGTH(a1)
+	clr.l	IO_OFFSET(a1)
+	move.w	#DADCMD_OUTPUTDAMP,IO_COMMAND(a1)
+	call	DoIO
+
+;*** Read
+	move.l	wt_recdadioreq(a5),a1
+	move.l	wt_RecBuffer(a5),IO_DATA(a1)
+	move.l	d7,IO_LENGTH(a1)
+	move.l	#-1,IO_OFFSET(a1)
+	move.w	#CMD_READ,IO_COMMAND(a1)
+	call	DoIO			;copy internal buffer to RecBuffer
+
+	move.l	wt_recdadioreq(a5),a1
+	clr.l	IO_DATA(a1)
+	move.l	IO_ACTUAL(a1),IO_LENGTH(a1)
+	move.l	#DAD_BUFFER_SWITCH,IO_OFFSET(a1)
+	move.w	#DADCMD_BUFFER,IO_COMMAND(a1)
+	call	DoIO			;swap internal buffers
+
+;*** Call Hook
+	move.l	ahiac_SamplerFunc(a2),a0
+	move.l	h_Entry(a0),a3
+	move.l	wt_RecordMsg(a5),a1
+	move.l	wt_RecBuffer(a5),ahirm_Buffer(a1)
+	move.l	d7,d0
+	lsr.l	#2,d0
+	move.l	d0,ahirm_Length(a1)
+	move.l	#AHIST_S16S,ahirm_Type(a1)
+	jsr	(a3)
+
+;*** Exit?
+	moveq	#0,d0
+	moveq	#0,d1
+	call	SetSignal
+	move.b	wt_RecSlaveSignal(a5),d1
+	btst	d1,d0
+	beq.w	.again
+.error
+	move.l	wt_RecBuffer(a5),d0
+	beq.b	.nobuffer
+	move.l	d0,a1
+	clr.l	wt_RecBuffer(a5)
+	call	FreeVec
+.nobuffer
+	clr.l	wt_RecSlaveTask(a5)
+	moveq	#0,d0
+	move.b	wt_RecSlaveSignal(a5),d0		;-1 is ok
+	move.b	#-1,wt_RecSlaveSignal(a5)
+	call	FreeSignal
+
+	tst.l	wt_recdaddev(a5)
+	bne.b	.nodaddev
+
+	move.l	wt_recdadioreq(a5),a1
+	move.l	#-1,wt_recdaddev(a5)
+	call	CloseDevice
+.nodaddev
+	move.l	wt_recdadioreq(a5),a0
+	clr.l	wt_recdadioreq(a5)
+	call	DeleteIORequest
+.noaudioreq
+	move.l	wt_recdadport(a5),a0
+	clr.l	wt_recdadport(a5)
+	call	DeleteMsgPort
+.noaudioport
+	move.l	wt_RecMasterTask(a5),a1
+	moveq	#0,d0
+	move.b	wt_RecMasterSignal(a5),d1
+	bset	d1,d0
+	call	Signal
+	rts
+dadname:
+	DAD_DEVICENAME
+versiontag:
+	VERSTAG
+	even
+EndCode:

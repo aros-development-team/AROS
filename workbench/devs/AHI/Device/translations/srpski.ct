@@ -1,0 +1,141 @@
+## version $VER: ahiprefs.catalog 4.2 (24.5.97)
+## language srpski
+## codeset 0
+;
+## chunk AUTH Translated by Ljubomir Jankoviá <lurch@afrodita.rcub.bg.ac.yu>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; Input and Output connector name
+;
+msgDefault
+Osnovno
+; Default
+;
+; The requesters menu
+msgMenuControl
+\000\000Kontrola
+; \000\000Control
+;
+msgMenuLastMode
+P\000Prethodni mod
+; L\000Last Mode
+;
+msgMenuNextMode
+S\000Slede†i mod
+; N\000Next Mode
+;
+msgMenuPropertyList
+?\000Lista osobina
+; ?\000Property List...
+;
+msgMenuRestore
+V\000Vrati
+; R\000Restore
+;
+msgMenuOK
+O\000Ok
+; O\000OK
+;
+msgMenuCancel
+C\000Poniçti
+; C\000Cancel
+;
+; Mode name in requester whose driver cannot be opened
+;
+msgUnknown
+NEPOZNAT: Audio ID 0x%08lx
+; UNKNOWN:Audio ID 0x%08lx
+;
+; The requester gadgets
+;
+msgReqOK
+Ok
+; OK
+;
+msgReqCancel
+Poniçti
+; Cancel
+;
+msgReqFrequency
+Frekvencija
+; Frequency
+;
+; Name of default mode in requester
+;
+msgDefaultMode
+Osnovni audio mod
+; Default audio mode
+;
+; The requester's info-winodow
+;
+msgReqInfoTitle
+Osobine moda
+; Mode Properties
+;
+msgReqInfoAudioID
+ID audio moda: 0x%08lx
+; Audio mode ID: 0x%08lx
+;
+msgReqInfoResolution
+Rezolucija: %ld bita %s
+; Resolution: %ld bit %s
+;
+msgReqInfoMono
+mono
+; mono
+;
+msgReqInfoStereo
+stereo
+; stereo
+;
+msgReqInfoStereoPan
+stereo sa peningom
+; stereo with panning
+;
+msgReqInfoChannels
+Kanali: %ld
+; Channels: %ld
+;
+msgReqInfoMixrate
+Brzina miksovanja: %ld-%ld Hz
+; Mixing rates: %ld-%ld Hz
+;
+msgReqInfoHiFi
+HiFi miksovanje
+; HiFi mixing
+;
+msgReqInfoRecordHalf
+Snimanje u poludupleksu
+; Record in half duplex
+;
+msgReqInfoRecordFull
+Snimanje u punom dupleksu
+; Record in full duplex
+;
+msgReqInfoMultiChannel
+
+; 7.1 multichannel
+;
+msgFreqFmt
+
+; %lu Hz
+;

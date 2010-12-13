@@ -1,0 +1,4 @@
+; AHI Setup
+Assign DEVS: Sys:Extras/AHI/Devs ADD
+Path SYS:Extras/AHI/C ADD
+Path SYS:Extras/AHI/Prefs ADD

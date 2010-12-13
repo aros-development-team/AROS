@@ -1,0 +1,50 @@
+
+This is a small tool to create new mode files from an existing
+one. For audio drivers that can handle multiple boards, each board
+requires a mode file that defines the audio modes.
+
+
+*** NOTE! *** Not all audio drivers support multiple boards! *** NOTE! ***
+
+
+Usage: CloneAudioModes <Template mode file> <New mode file> [<Board number>]
+
+If <Board number> is not specified, the board ID will just be increased
+by one in the new mode file.
+
+Example: The mode file "DEVS:AudioModes/EMU10KX" defines the following
+modes for the SoundBlaster Live! sound card:
+
+ 0x001E0001 "EMU10kx:HiFi 16 bit mono"
+ 0x001E0002 "EMU10kx:HiFi 16 bit stereo++"
+ 0x001E0003 "EMU10kx:16 bit mono"
+ 0x001E0004 "EMU10kx:16 bit stereo++"
+
+To use a second SB Live! card, you must create a new mode file
+"DEVS:AudioModes", preferably called "EMU10KX-2":
+
+1> CloneAudioModes DEVS:AudioModes/EMU10KX DEVS:AudioModes/EMU10KX-2
+
+This will create the following modes:
+
+ 0x001E1001 "EMU10kx-2:HiFi 16 bit mono"
+ 0x001E1002 "EMU10kx-2:HiFi 16 bit stereo++"
+ 0x001E1003 "EMU10kx-2:16 bit mono"
+ 0x001E1004 "EMU10kx-2:16 bit stereo++"
+
+To create mode files for a third card, use either one of the following
+commands:
+
+1> CloneAudioModes DEVS:AudioModes/EMU10KX-2 DEVS:AudioModes/EMU10KX-3
+
+or
+
+1> CloneAudioModes DEVS:AudioModes/EMU10KX DEVS:AudioModes/EMU10KX-3 3
+
+When using more than one sound card, one might find it a bit annoying
+that the second sound card shows up before the first (because of the
+ASCII sort order) CloneAudioModes can be used to rename the modes in
+the original mode file to end in "-1":
+
+1> CloneAudioModes DEVS:AudioModes/EMU10KX DEVS:AudioModes/EMU10KX-1 1
+1> Delete DEVS:AudioModes/EMU10KX

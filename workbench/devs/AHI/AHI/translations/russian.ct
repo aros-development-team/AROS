@@ -1,0 +1,360 @@
+## version $VER: AHIprefs.catalog 4.5.7 (14.01.2005) (Amiga-1251)
+## language russian
+## codeset 2104
+;
+## chunk AUTH Translated by Michael_Malyshev@mail.ru
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+\0Проект
+; \000Project
+;
+msgItemOpen
+O\0Открыть...
+; O\000Open...
+;
+msgItemSaveAs
+A\0Сохранить как...
+; A\000Save As...
+;
+msgItemAbout
+?\0О программе...
+; ?\000About...
+;
+msgItemQuit
+Q\0Выход
+; Q\000Quit
+;
+msgMenuEdit
+\0Редактор
+; \000Edit
+;
+msgItemDefaults
+D\0По умолчанию
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+L\0Последняя запись
+; L\000Last Saved
+;
+msgItemRestore
+R\0Восстановить
+; R\000Restore
+;
+msgMenuSettings
+\0Настройки
+; \000Settings
+;
+msgItemCreateIcons
+I\0Создавать иконки?
+; I\000Create Icons?
+;
+msgMenuHelp
+\0Помощь
+; \000Help
+;
+msgItemHelp
+Help\0Помощь...
+; Help\000Help...
+;
+msgItemUsersGuide
+H\0Руководство по AHI...
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+\0Индекс...
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+Настройки режима
+; Mode settings
+;
+msgPageAdvanced
+Расширенныe настройки
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+Устройство %ld
+; Unit %ld
+;
+msgUnitMusic
+Музыкальное устройство
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+Режим ID\n\
+Запись\n\
+Автор\n\
+Авторство\n\
+Драйвер\n\
+Версия\n\
+Примечание
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+Полный дуплекс
+; Full duplex
+;
+msgPropRecordHalf
+Полудуплекс
+; Half duplex
+;
+msgPropRecordNone
+Нет
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+Настройки
+; Options
+;
+msgOptFrequency
+_Частота
+; _Frequency
+;
+msgOptChannels
+_Каналы
+; C_hannels
+;
+msgOptNoChannels
+
+; 
+;
+msgOptVolume
+_Громкость
+; _Volume
+;
+msgOptMonitor
+_Монитор
+; _Monitor
+;
+msgOptGain
+_Усиление
+; _Gain
+;
+msgOptMuted
+Немой
+; Muted
+;
+msgOptInput
+_Ввод
+; _Input
+;
+msgOptNoInputs
+Не вводить
+; No inputs
+;
+msgOptOutput
+В_ывод
+; _Output
+;
+msgOptNoOutputs
+Не выводить
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+Основные установки
+; Global options
+;
+msgGlobOptDebugLevel
+У_ровень отладки
+; _Debug level
+;
+msgGlobOptEcho
+_Эхо
+; _Echo
+;
+msgGlobOptSurround
+Э_ффект присутствия в режимах "Fast"
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+Ограничение _загрузки ЦП
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+Нет
+; None
+;
+msgDebugLow
+Низкий
+; Low
+;
+msgDebugHigh
+Высокий
+; High
+;
+msgDebugFull
+Полный
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+Включено
+; Enabled
+;
+msgEchoFast
+Быстрое
+; Fast
+;
+msgEchoDisabled
+Выключено
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+Включено
+; Enabled
+;
+msgSurroundDisabled
+Выключено
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+_Сохранить
+; _Save
+;
+msgButtonUse
+Пр_инять
+; _Use
+;
+msgButtonCancel
+_Отменить
+; _Cancel
+;
+msgButtonOK
+Принять
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+Настройки AHI
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+%s%s\n\
+Авторство (c) %s\n\
+Русский перевод: Михаил Малышев
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+Невозможно открыть окно.
+; Unable to open window.
+;
+msgTextNoFileRequester
+Недоступен запросник файлов.
+; Unable to allocate file requester.
+;
+msgTextNoFind
+Невозможно найти "%s"!
+; Unable to find `%s'!
+;
+msgTextNoOpen
+Невозможно открыть "%s" версии %ld.
+; Unable to open `%sґ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+_Громкость
+; _Master volume
+;
+msgMVNoClip
+Без среза
+; Without clipping
+;
+msgMVClip
+Со срезом
+; With clipping
+;
+msgGlobOptACTime
+Защитное время блокировки щелчков
+; Default anti-click time
+;
+msgButtonPlay
+Проиграть _тестовый звук
+; _Play a test sound
+;
+msgOptScalemode
+У_ровень
+; Volume sc_aling
+;
+msgSMFixedSafe
+Безопасный
+; Safe
+;
+msgSMDynSafe
+Безопасный, динамический
+; Safe, dynamic
+;
+msgSM0dB
+Полная громкость
+; Full volume
+;
+msgSM3dB
+-3 дБ
+; -3 dB
+;
+msgSM6dB
+-6 дБ
+; -6 dB
+;
+msgFreqFmt
+%ld Гц
+; %ld Hz
+;
+msgChanFmt
+%ld
+; %ld
+;
+msgVolFmt
+%+4.1f дБ
+; %+4.1f dB
+;
+msgACTimeFmt
+%ld мс
+; %ld ms
+;
+msgPercentFmt
+%ld%%
+; %ld%%
+;

@@ -1,0 +1,361 @@
+## version $VER: ahiprefs.catalog 4.8 (14.4.2010) C Marcin Or³owski <carlos@wfmh.man.szczecin.pl> mod. Tomasz Paul<forest@aros.org>
+## language polski
+## codeset 0
+;
+## chunk AUTH Translated by Marcin Or³owski <carlos@inet.com.pl>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+\000Projekt
+; \000Project
+;
+msgItemOpen
+O\000Otwórz...
+; O\000Open...
+;
+msgItemSaveAs
+A\000Zapisz jako...
+; A\000Save As...
+;
+msgItemAbout
+?\0O programie...
+; ?\000About...
+;
+msgItemQuit
+Q\0Skoñcz
+; Q\000Quit
+;
+msgMenuEdit
+\0Edycja
+; \000Edit
+;
+msgItemDefaults
+D\0Ustawienia standardowe
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+L\0Ustawienia ostatnio zapisane
+; L\000Last Saved
+;
+msgItemRestore
+R\0Anuluj zmiany ustawieñ
+; R\000Restore
+;
+msgMenuSettings
+\0Ustawienia
+; \000Settings
+;
+msgItemCreateIcons
+I\0Zapisuj ikonki
+; I\000Create Icons?
+;
+msgMenuHelp
+\0Pomoc
+; \000Help
+;
+msgItemHelp
+Help\0Pomoc...
+; Help\000Help...
+;
+msgItemUsersGuide
+H\0Przewodnik u¿ytkownika...
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+\0Indeks...
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+Ustawienia trybów
+; Mode settings
+;
+msgPageAdvanced
+Ustawienia zaawansowane
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+Jedn. %ld
+; Unit %ld
+;
+msgUnitMusic
+Jedn. muzyczna
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+Tryb\n\
+Zapisywanie\n\
+Autor\n\
+Prawa autorskie\n\
+Sterownik\n\
+Wersja\n\
+Opis
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+Pe³en dupleks
+; Full duplex
+;
+msgPropRecordHalf
+Pó³ dupleks
+; Half duplex
+;
+msgPropRecordNone
+Brak
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+Opcje
+; Options
+;
+msgOptFrequency
+Czês_totliwo¶æ
+; _Frequency
+;
+msgOptChannels
+_Kana³y
+; C_hannels
+;
+msgOptNoChannels
+
+; 
+;
+msgOptVolume
+_G³o¶no¶æ
+; _Volume
+;
+msgOptMonitor
+_Monitor
+; _Monitor
+;
+msgOptGain
+_Podbicie
+; _Gain
+;
+msgOptMuted
+Wyciszony
+; Muted
+;
+msgOptInput
+_Wej¶cie
+; _Input
+;
+msgOptNoInputs
+Brak wej¶æ
+; No inputs
+;
+msgOptOutput
+W_yj¶cie
+; _Output
+;
+msgOptNoOutputs
+Brak wyj¶æ
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+Ustawienia globalne
+; Global options
+;
+msgGlobOptDebugLevel
+_Debug
+; _Debug level
+;
+msgGlobOptEcho
+_Echo
+; _Echo
+;
+msgGlobOptSurround
+Surround w trybach "_Fast"
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+_Limit zajêto¶ci procesora
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+Wy³±czony
+; None
+;
+msgDebugLow
+Niski
+; Low
+;
+msgDebugHigh
+Wysoki
+; High
+;
+msgDebugFull
+Pe³en
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+W³±czone
+; Enabled
+;
+msgEchoFast
+Szybkie
+; Fast
+;
+msgEchoDisabled
+Wy³±czone
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+W³±czony
+; Enabled
+;
+msgSurroundDisabled
+Wy³±czony
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+Zapi_sz
+; _Save
+;
+msgButtonUse
+_U¿yj
+; _Use
+;
+msgButtonCancel
+Ponie_chaj
+; _Cancel
+;
+msgButtonOK
+Ok
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+Preferencje AHI
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+%s%s\nCopyright (C) %s\n\
+Polska wersja jêzykowa\n\
+Marcin Or³owski\n\
+<carlos@inet.com.pl>
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+Nie mogê otworzyæ okna.
+; Unable to open window.
+;
+msgTextNoFileRequester
+Nie mogê zaalokowaæ requestera wyboru plików.
+; Unable to allocate file requester.
+;
+msgTextNoFind
+Nie mogê znale¼æ \"%s\"!
+; Unable to find `%s'!
+;
+msgTextNoOpen
+Nie mogê otworzyæ \"%s\" w wersji %ld.
+; Unable to open `%s´ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+G³o¶no¶æ g³ó_wna
+; _Master volume
+;
+msgMVNoClip
+Bez obcinania
+; Without clipping
+;
+msgMVClip
+Z obcinaniem
+; With clipping
+;
+msgGlobOptACTime
+Domy¶lny czas anti-click
+; Default anti-click time
+;
+msgButtonPlay
+Graj d¼wiêk testowy
+; _Play a test sound
+;
+msgOptScalemode
+Regulacja g³o¶no¶ci
+; Volume sc_aling
+;
+msgSMFixedSafe
+Bezpieczne
+; Safe
+;
+msgSMDynSafe
+Bezpieczne, dynamiczne
+; Safe, dynamic
+;
+msgSM0dB
+Pe³na g³o¶no¶æ
+; Full volume
+;
+msgSM3dB
+-3 dB
+; -3 dB
+;
+msgSM6dB
+-6 dB
+; -6 dB
+;
+msgFreqFmt
+%ld Hz
+; %ld Hz
+;
+msgChanFmt
+%ld
+; %ld
+;
+msgVolFmt
+%+4.1f dB
+; %+4.1f dB
+;
+msgACTimeFmt
+%ld ms
+; %ld ms
+;
+msgPercentFmt
+%ld %%
+; %ld%%
+;

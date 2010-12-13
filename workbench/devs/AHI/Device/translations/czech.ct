@@ -1,0 +1,140 @@
+## version $VER: ahi.catalog 4.8 (24.4.2007)
+## language czech
+## codeset 0
+;
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; Input and Output connector name
+;
+msgDefault
+Výchozí
+; Default
+;
+; The requesters menu
+msgMenuControl
+\000\000Projekt
+; \000\000Control
+;
+msgMenuLastMode
+L\000Pøedchozí re¾im
+; L\000Last Mode
+;
+msgMenuNextMode
+N\000Následující re¾im
+; N\000Next Mode
+;
+msgMenuPropertyList
+?\000Seznam vlastností...
+; ?\000Property List...
+;
+msgMenuRestore
+R\000Obnovit pøedchozí
+; R\000Restore
+;
+msgMenuOK
+O\000OK
+; O\000OK
+;
+msgMenuCancel
+C\000Zru¹it
+; C\000Cancel
+;
+; Mode name in requester whose driver cannot be opened
+;
+msgUnknown
+NEZNÁMÝ:Audio ID 0x%08lx
+; UNKNOWN:Audio ID 0x%08lx
+;
+; The requester gadgets
+;
+msgReqOK
+OK
+; OK
+;
+msgReqCancel
+Zru¹it
+; Cancel
+;
+msgReqFrequency
+Frekvence
+; Frequency
+;
+; Name of default mode in requester
+;
+msgDefaultMode
+Výchozí re¾im
+; Default audio mode
+;
+; The requester's info-winodow
+;
+msgReqInfoTitle
+Vlastnosti re¾imu
+; Mode Properties
+;
+msgReqInfoAudioID
+Èíslo re¾imu: 0x%08lx
+; Audio mode ID: 0x%08lx
+;
+msgReqInfoResolution
+Rozli¹ení: %ld bitù %s
+; Resolution: %ld bit %s
+;
+msgReqInfoMono
+mono
+; mono
+;
+msgReqInfoStereo
+stereo
+; stereo
+;
+msgReqInfoStereoPan
+roz¹íøené stereo
+; stereo with panning
+;
+msgReqInfoChannels
+Poèet kanálù: %ld
+; Channels: %ld
+;
+msgReqInfoMixrate
+Mixovací frekvence: %ld-%ld Hz
+; Mixing rates: %ld-%ld Hz
+;
+msgReqInfoHiFi
+HiFi mixování
+; HiFi mixing
+;
+msgReqInfoRecordHalf
+Poloduplexní záznam
+; Record in half duplex
+;
+msgReqInfoRecordFull
+Plnì duplexní záznam
+; Record in full duplex
+;
+msgReqInfoMultiChannel
+Vícekanálový re¾im (7.1)
+; 7.1 multichannel
+;
+msgFreqFmt
+%lu Hz
+; %lu Hz
+;

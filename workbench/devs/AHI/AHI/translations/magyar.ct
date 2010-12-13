@@ -1,0 +1,352 @@
+## version $VER: ahiprefs.ct 4.6 (4.8.2004)
+## language magyar
+## codeset 0
+;
+## chunk AUTH Dósa Márton (dm_@freemail.hu)
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+\000Projekt
+; \000Project
+;
+msgItemOpen
+O\000Megnyitás...
+; O\000Open...
+;
+msgItemSaveAs
+A\000Mentés mint...
+; A\000Save As...
+;
+msgItemAbout
+?\000Névjegy...
+; ?\000About...
+;
+msgItemQuit
+Q\000Kilépés
+; Q\000Quit
+;
+msgMenuEdit
+\000Szerkesztés
+; \000Edit
+;
+msgItemDefaults
+D\000Alapértelmezettek visszaállítása
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+L\000Utoljára mentett
+; L\000Last Saved
+;
+msgItemRestore
+R\000Visszaállítás
+; R\000Restore
+;
+msgMenuSettings
+\000Beállítások
+; \000Settings
+;
+msgItemCreateIcons
+I\000Ikonok létrehozása?
+; I\000Create Icons?
+;
+msgMenuHelp
+\000Segítség
+; \000Help
+;
+msgItemHelp
+Help\000Segítség...
+; Help\000Help...
+;
+msgItemUsersGuide
+H\000AHI felhasználói segédlet...
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+\000Elgondolás index...
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+Módbeállítások
+; Mode settings
+;
+msgPageAdvanced
+Haladó beállítások
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+%ld. egység
+; Unit %ld
+;
+msgUnitMusic
+Zene egység
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+Mód ID\nFelvétel\nSzerzõ\nCopyright\nMeghajtóprogram\nVerzió\nAnnotation
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+Duplex
+; Full duplex
+;
+msgPropRecordHalf
+Fél duplex
+; Half duplex
+;
+msgPropRecordNone
+Nem
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+Opciók
+; Options
+;
+msgOptFrequency
+_Frekvencia
+; _Frequency
+;
+msgOptChannels
+Csatornák
+; C_hannels
+;
+msgOptNoChannels
+
+; 
+;
+msgOptVolume
+Hangerõ
+; _Volume
+;
+msgOptMonitor
+_Monitor
+; _Monitor
+;
+msgOptGain
+_Gain
+; _Gain
+;
+msgOptMuted
+Némítva
+; Muted
+;
+msgOptInput
+Bemenet
+; _Input
+;
+msgOptNoInputs
+Nincsenek bemenetek
+; No inputs
+;
+msgOptOutput
+Kimenet
+; _Output
+;
+msgOptNoOutputs
+Nincsenek kimenetek
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+Globális opciók
+; Global options
+;
+msgGlobOptDebugLevel
+Hibakeresés szintje
+; _Debug level
+;
+msgGlobOptEcho
+Visszhang
+; _Echo
+;
+msgGlobOptSurround
+Térhatás a "Gyors" módokban
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+CPU használati határ
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+Nincs
+; None
+;
+msgDebugLow
+Alacsony
+; Low
+;
+msgDebugHigh
+Magas
+; High
+;
+msgDebugFull
+Teljes
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+Bekapcsolva
+; Enabled
+;
+msgEchoFast
+Gyors
+; Fast
+;
+msgEchoDisabled
+Kikapcsolva
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+Bekapcsolva
+; Enabled
+;
+msgSurroundDisabled
+Kikapcsolva
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+Ment_sd
+; _Save
+;
+msgButtonUse
+Használd
+; _Use
+;
+msgButtonCancel
+Mégse
+; _Cancel
+;
+msgButtonOK
+Oké
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+AHI beállítások
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+%s%s\nCopyright ©%s
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+Nem tudok ablakot nyitni.
+; Unable to open window.
+;
+msgTextNoFileRequester
+Nem tudok fájlkérdezõt lefoglalni.
+; Unable to allocate file requester.
+;
+msgTextNoFind
+Nem találom: '%s'!
+; Unable to find `%s'!
+;
+msgTextNoOpen
+Nem tudom megnyitni: '%s' %ld verzió.
+; Unable to open `%s´ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+_Mester hangerõ
+; _Master volume
+;
+msgMVNoClip
+Vágás nélkül
+; Without clipping
+;
+msgMVClip
+Vágással
+; With clipping
+;
+msgGlobOptACTime
+Alap anti-klikk idõ
+; Default anti-click time
+;
+msgButtonPlay
+Teszthang lejátszása
+; _Play a test sound
+;
+msgOptScalemode
+
+; Volume sc_aling
+;
+msgSMFixedSafe
+
+; Safe
+;
+msgSMDynSafe
+
+; Safe, dynamic
+;
+msgSM0dB
+
+; Full volume
+;
+msgSM3dB
+
+; -3 dB
+;
+msgSM6dB
+
+; -6 dB
+;
+msgFreqFmt
+
+; %ld Hz
+;
+msgChanFmt
+
+; %ld
+;
+msgVolFmt
+
+; %+4.1f dB
+;
+msgACTimeFmt
+
+; %ld ms
+;
+msgPercentFmt
+
+; %ld%%
+;
