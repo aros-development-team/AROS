@@ -40,7 +40,8 @@ static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	"lea.l  %%a0@(%%d0),%%a1\n\t"
 	"move.l %%a1,%%a0@-\n\t"        /* sp+ 8 = stksize  */
 	"move.l #0f,%%a0@-\n\t"         /* sp+ 4 = return address */
-	"move.l %%a0@,%1\n\t"           /* Save return address */
+	"lea.l  %%a0@,%%a2\n\t"         /* Save address of return address */
+	"move.l %%a2,%1\n\t"
 	"move.l %2,%%a0@-\n\t"          /* sp+ 0 = address to go to */
 	"move.l %%a0,%%d1\n\t"
 	"move.l %3,%%a2\n\t"            /* A2 - Global Vector */
@@ -58,7 +59,7 @@ static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	: "=g" (ret), "=m"(*(APTR *)pReturn_Addr)
 	: "m" (entry), "m"(pr_GlobVec), "m"(tc_SPLower),
 	  "m" (argptr), "m" (argsize)
-	: "cc", "memory", "%d0", "%d1", "%a0", "%a1" );
+	: "cc", "memory", "%d0", "%d1", "%a0", "%a1", "%a2", "%a3" );
 
     return ret;
 }
