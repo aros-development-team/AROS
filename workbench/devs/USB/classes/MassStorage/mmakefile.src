@@ -1,0 +1,15 @@
+# $Id: mmakefile.src 25707 2007-04-10 22:27:02Z schulz $
+
+include $(TOP)/config/make.cfg
+
+FILES := storage_init storageclass storage_task storage_device storage_volumes
+STUBS := storage_stubs
+
+%build_module mmake=hidd-usb-classes-storage	\
+	modname=storage modtype=hidd		\
+	files="$(FILES)" moduledir=Classes/USB	\
+	uselibs="oop rom amiga hiddstubs"
+
+%make_hidd_stubs hidd=storage
+
+%common

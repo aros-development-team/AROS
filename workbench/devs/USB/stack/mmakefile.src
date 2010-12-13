@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := usb_init usbclass usbdeviceclass usbhubclass usbprocess misc
+
+%build_module mmake=hidd-usb-stack 	\
+	modname=usb modtype=hidd		\
+	files="$(FILES)"				\
+	uselibs="oop rom amiga hiddstubs"
+
+%common

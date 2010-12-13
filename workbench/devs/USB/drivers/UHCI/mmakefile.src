@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := uhci_init uhciclass hardware
+
+%build_module mmake=hidd-usb-drivers-uhci 	\
+	modname=uhci modtype=hidd		\
+	files="$(FILES)"				\
+	uselibs="oop rom hiddstubs"
+
+%common

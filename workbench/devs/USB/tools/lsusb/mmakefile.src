@@ -1,0 +1,11 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := main
+
+%build_prog mmake=hidd-usb-tools-lsusb \
+    progname=lsusb targetdir=$(AROS_C) \
+    files=$(FILES) uselibs="oop hiddstubs"
+
+%common
