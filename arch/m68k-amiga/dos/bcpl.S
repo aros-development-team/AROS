@@ -105,8 +105,9 @@ BCPLd sysRequest     /* -84, void, @line1, @line2, @line3 */
     BRTS
 
 BCPL toCStr          /* -80, char *, @string */
-    lsl.l   #2,%d1
-    addq.l  #1,%d1
+    move.l  %d1,%d0
+    lsl.l   #2,%d0
+    addq.l  #1,%d0
     BRTS
 
 BCPL toBSTR         /* -7c, void, &src, @dest */
@@ -165,7 +166,16 @@ BCPL SetComment     /* -5c, BOOL, &name, &comment */
 BCPLd QueuePacket    /* -54, void */
     BRTS
 
-BCPLd clearmem       /* -50, void, @buff, lw_length */
+BCPL clearmem       /* -50, void, @buff, lw_length */
+    move.l	%d2,%sp@-
+    tst.l	%d2
+    ble		1f
+    lsl.l	#2,%d1
+0:
+    clr.l	%a0@(%d1)
+    addq.l	#4,%d1
+    dbf		%d2,0b
+1:
     BRTS
 
 BCPL LoadSeg        /* -4c, SegList ^, &name */
@@ -266,7 +276,33 @@ BCPL Read           /* -0c, LONG, Read, @FileHandle, &buf, len */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd strncpy        /* -08, void, @src, @dest, n */
+BCPL strncpy        /* -08, void, @src, @dest, n */
+    movem.l	%d2-%d5,%sp@-
+    lsl.l	#2,%d1
+    lsl.l	#2,%d2
+    clr.l	%d4
+    clr.l	%d5
+    move.b	%a0@(%d1),%d4
+    move.b	%a0@(%d2),%d5
+    cmp.l	%d5,%d3		/* Dest already bigger than N? Exit. */
+    ble		2f
+    add.l	%d5,%d4		/* D4 is strlen(src) + strlen(dest) */
+    cmp.l	%d4,%d3		/* Total > N? */
+    bge		0f
+    move.l	%d3,%d4		/* Force N as the max length */
+0:
+    sub.l	%d5,%d4		/* D4 -= strlen(dest) */
+    ble		2f
+    add.l	%d2,%d5		/* Set D5 as the end of dest */
+1:
+    move.b	%a0@(%d1),%a0@(%d5)
+    addq.l	#1,%d1
+    addq.l	#1,%d5
+    dbf		%d4,1b
+    sub.l	%d2,%d5
+    move.b	%d5,%a0@(-1,%d2)	/* Fix up dest len */
+2:
+    movem.l	%sp@+,%d2-%d5
     BRTS
 
 BCPL Open           /* -04, FileHandle ^, &name, mode */
@@ -288,13 +324,19 @@ BCPL Exit            /*  08, void, code */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd multiply       /*  0c, D1 = D1 * D2 */
+BCPL multiply       /*  0c, D1 = D1 * D2 */
+    muls	%d2, %d1
     BRTS
 
-BCPLd divide         /*  10, D1 = D1 / D2 */
+BCPL divide         /*  10, D1 = D1 / D2 */
+    divs	%d2, %d1
+    ext.w	%d1
     BRTS
 
-BCPLd mod            /*  14, D1 = D1 % D2 */
+BCPL mod            /*  14, D1 = D1 % D2 */
+    divs	%d2, %d1
+    asr.l	#8, %d1
+    asr.l	#8, %d1
     BRTS
 
 BCPLd setIO          /*  18, void, @IOStdReq, command, &data, len, offset */
@@ -400,7 +442,7 @@ BCPL freevec        /*  78, void, @vec */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd openDevice     /*  7c, BOOL, @IORequest, @name, unit, flags */
+BCPL openDevice     /*  7c, BOOL, @IORequest, @name, unit, flags */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     lsl.l	#2,%d1
@@ -414,7 +456,7 @@ BCPLd openDevice     /*  7c, BOOL, @IORequest, @name, unit, flags */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd closeDevice    /*  80, void, @IORequest */
+BCPL closeDevice    /*  80, void, @IORequest */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     lsl.l	#2,%d1
@@ -447,7 +489,7 @@ BCPL ParentDir      /*  8c, FileLock ^, @FileLock */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd setSignals     /*  90, void, &MsgPort, mask */
+BCPL setSignals     /*  90, void, &MsgPort, mask */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     add.l	#mp_SigTask,%d1
@@ -457,7 +499,7 @@ BCPLd setSignals     /*  90, void, &MsgPort, mask */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd clearSignals   /* 94, BOOL , mask */
+BCPL clearSignals   /* 94, BOOL , mask */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     clr.l	%d0
@@ -465,7 +507,7 @@ BCPLd clearSignals   /* 94, BOOL , mask */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd DOSAlert       /* 98, void, alertnumber */
+BCPL DOSAlert       /* 98, void, alertnumber */
     movem.l	%d7/%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     move.l	%d1,%d7
@@ -473,7 +515,7 @@ BCPLd DOSAlert       /* 98, void, alertnumber */
     movem.l	%sp@+,%d7/%a0-%a1/%a6
     BRTS
 
-BCPLd findRootNode   /* 9c, RootNode @,  */
+BCPL findRootNode   /* 9c, RootNode @,  */
     move.l	%a2@(BCPL_DOSBase),%d0
     add.l	#dl_Root,%d0
     move.l	%a0@(%d0),%d0	/* %a0 is always 0 in BCPL */
@@ -517,13 +559,15 @@ BCPLd unpackstring   /* b4, void, @String, @Array */
 BCPLd holdTask       /* b8, void, @memseg */
     BRTS
 
-BCPLd Delay          /* bc, void, ? */
+BCPL Delay          /* bc, void, ?? */
+    /* TODO: Actually delay. For now, just say we did. */
+    moveq.l	#-1,%d0
     BRTS
 
     /* Due to the way BCPL arguments work, A1 is the fully
      * synthesized DosPacket
      */
-BCPLd sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
+BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6	/* DOSBase */
     move.l	%a1@(9 * 4),%sp@-	/* dp_Arg5 */
@@ -578,16 +622,43 @@ BCPL setCurrentDir  /* cc, FileLock @, BOOL, @FileLock */
 BCPLd systemRequest  /* d0, void, @line1, @line2, @line3 */
     BRTS
 
-BCPLd writet         /* d4, void, n */
+BCPL writet         /* d4, void, @string, n */
+    move.l	%d2,%sp@-
+    move.l	#(3*4 + 2*4),%d0
+    lea.l	BCPL_writes, %a4
+    jsr		(%a5)
+    move.l	%d1,%sp@-	/* Save string length */
+
+    move.l	%d2,%d1
+    ble		1f
+0:
+    move.l	#(3*4 + 2*4),%d0
+    moveq.l	#' ',%d1
+    lea.l	BCPL_wrch, %a4
+    jsr		(%a5)
+    dbf		%d2,0b
+1:
+    move.l	%sp@+,%d0	/* Get string length */
+    move.l	%sp@+,%d2
+    cmp.l	%d2,%d0		/* D0 > D2? */
+    ble		2f
+    move.l	%d2,%d0		/* Return field length */
+2:
     BRTS
 
-BCPLd rdch           /* d8, char ,  */
+BCPL rdch           /* d8, char ,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(9 * -6)	/* DOS/Input() */
+    move.l	%d0, %d1
+    jsr		%a6@(51 * -6)	/* DOS/FGetC() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd unrdch         /* dc, void,  */
     BRTS
 
-BCPLd wrch           /* e0, void, char */
+BCPL wrch           /* e0, void, char */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     move.l	%d1, %d2
@@ -600,13 +671,33 @@ BCPLd wrch           /* e0, void, char */
 BCPLd readinput_e4   /* e4, lwlength , @buf, lwlength */
     BRTS
 
-BCPLd writeoutput_e8 /* e8, void, @buf, lwlength */
+BCPL writeoutput_e8 /* e8, void, @buf, lwlength */
+    movem.l	%d2-%d4/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    move.l	%d2, %d4	/* Num blocks */
+    moveq.l	#4, %d3		/* Block len (sizeof(ULONG)) */
+    move.l	%d1, %d2	/* Buffer */
+    lsl.l	#2, %d2
+    jsr		%a6@(10 * -6)	/* DOS/Output() */
+    move.l	%d0, %d1	/* Outfile */
+    jsr		%a6@(55 * -6)	/* DOS/FWrite() */
+    movem.l	%sp@+,%d2-%d4/%a0-%a1/%a6
     BRTS
 
-BCPLd findinput      /* ec, FileHandle ^, &name */
+BCPL findinput      /* ec, FileHandle ^, &name */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    move.l	#1005 /* MODE_OLDFILE */,%d2
+    jsr		%a6@(5 * -6)	/* DOS/Open() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
-BCPLd findoutput     /* f0, FileHandle ^, &name */
+BCPL findoutput     /* f0, FileHandle ^, &name */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    move.l	#1005 /* MODE_NEWFILE */,%d2
+    jsr		%a6@(5 * -6)	/* DOS/Open() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
 BCPL SelectInput    /* f4, void , @FileHandle */
@@ -643,14 +734,16 @@ BCPL Output         /* 108, FileHandle @,  */
 BCPLd readn          /* 10c, void,  */
     BRTS
 
-BCPLd newline        /* 110, void,  */
+BCPL newline        /* 110, void,  */
+    moveq.l	#'\n',%d1
+    jmp		BCPL_wrch
+
+BCPL writei         /* 114, void, number, width */
     BRTS
 
-BCPLd writei         /* 114, void, number, width */
-    BRTS
-
-BCPLd writen         /* 118, void, number */
-    BRTS
+BCPL writen         /* 118, void, number */
+    clr.l	%d2
+    jmp		BCPL_writei
 
 BCPLd writehex       /* 11c, void, number, width */
     BRTS
@@ -659,17 +752,28 @@ BCPLd writeoct       /* 120, void, number, width */
     BRTS
 
 BCPL writes         /* 124, void, @string */
-    movem.l	%a0-%a1/%a6,%sp@-
-    move.l	%a2@(BCPL_DOSBase),%a6
-    lsl.l	#2,%d1		/* BCPL to C string */
-    addq.l	#1,%d1
-    jsr		%a6@(158 * -6)	/* DOS/PutStr() */
-    movem.l	%sp@+,%a0-%a1/%a6
+    movem.l	%d2-%d3,%sp@-
+    lsl.l	#2, %d1
+    clr.l	%d2
+    move.b	%a0@(%d1),%d2
+    move.l	%d2,%sp@-	/* Save string length */
+    move.l	%d1,%d3
+0:
+    addq.l	#1,%d3
+    move.l	#(3*4 + 1*4),%d0
+    clr.l	%d1
+    move.b	%a0@(%d3),%d1
+    lea.l	BCPL_wrch, %a4
+    jsr		(%a5)
+    dbf		%d2,0b
+    move.l	%sp@+,%d0	/* Return string length */
+    movem.l	%sp@+,%d2-%d3
     BRTS
 
-BCPLd writef         /* 128, void, @format, arg1, arg2, ... */
-    jmp BCPL_writes	/* TODO: Call Exec/RawDoFmt */
-    BRTS
+BCPL writef         /* 128, void, @format, arg1, arg2, ... */
+    /* TODO: Actually do this right. For now,
+     * just print the format string */
+    jmp		BCPL_writes
 
 BCPL toupper        /* 12c, void, char */
     move.l	%d1,%d0
@@ -714,7 +818,7 @@ BCPLd subString      /* 140, void, @string, @substring */
 BCPLd load           /* 144, SegList ^, @filename */
     BRTS
 
-BCPLd UnLoadSeg      /* 148, void, @seg */
+BCPL UnLoadSeg      /* 148, void, @seg */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		%a6@(26 * -6)	/* DOS/UnLoadSeg */
@@ -736,7 +840,7 @@ BCPLd WaitForChar    /* 15c, BOOL , @FileHandle, time */
 BCPLd execLib        /* 160, long , LVOffset, d0, d1, a0, a1, a2 */
     BRTS
 
-BCPLd findSegArray   /* 164, Array @,  */
+BCPL findSegArray   /* 164, Array @,  */
     move.l	%a2,%d0
     addi.l	#BCPL_SegArray_0,%d0
     lsr.l	#2,%d0
@@ -770,7 +874,13 @@ BCPL execute        /* 194, void, &string , @in, @out */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd deviceproc     /* 198, FileLock ^, @filename */
+BCPL deviceproc     /* 198, FileLock ^, @filename */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    lsl.l	#2,%d1
+    addq.l	#1,%d1
+    jsr		%a6@(29 * -6)	/* DOS/DeviceProc() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd libcall        /* 19c, void, libbase, LVOffset, d0, d1, a0, a1 */
@@ -782,7 +892,7 @@ BCPLd findConsoleHandler /* 1a4, MsgPort ^,  */
 BCPLd findFileHandler    /* 1a8, MsgPort ^,  */
     BRTS
 
-BCPLd extractDeviceName  /* 1ac, void, @buf, bufsize, @name , flag */
+BCPL extractDeviceName  /* 1ac, void, @buf, bufsize, @name , flag */
     movem.l	%d1-%d4/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     lsl.l	#2,%d1
@@ -806,7 +916,7 @@ BCPLd extractDeviceName  /* 1ac, void, @buf, bufsize, @name , flag */
     movem.l	%sp@+,%d1-%d4/%a0-%a1/%a6
     BRTS
 
-BCPLd lock           /* 1b0, FileLock ^, @name */
+BCPL lock           /* 1b0, FileLock ^, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     lsl.l	#2,%d1
@@ -816,35 +926,61 @@ BCPLd lock           /* 1b0, FileLock ^, @name */
     movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
-BCPLd UnLock         /* 1b4, void, @FileLock */
+BCPL UnLock         /* 1b4, void, @FileLock */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(15 * -6)	/* DOS/UnLock() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd getlong        /* 1b8, void, longoffset, @struct */
+BCPL getlong        /* 1b8, void, longoffset, @struct */
+    add.l	%d2,%d1
+    lsl.l	#2,%d1
+    move.l	%a0@(%d1),%d0
     BRTS
 
-BCPLd putlong        /* 1bc, void, longoffset, @struct, data */
+BCPL putlong        /* 1bc, void, longoffset, @struct, data */
+    add.l	%d2,%d1
+    lsl.l	#2,%d1
+    move.l	%a0@(%d1),%d0
+    move.l	%d3,%a0@(%d1)
     BRTS
 
 BCPLd openfile       /* 1c0, FileHandle ^, @devinfo, @filename */
     BRTS
 
-BCPLd DupLock        /* 1c4, FileLock ^, @FileLock */
+BCPL DupLock        /* 1c4, FileLock ^, @FileLock */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(16 * -6)	/* DOS/DupLock() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd makesysreq     /* 1c8, BOOL, count, pkt, proc */
-    moveq.l	#1,%d0
     BRTS
 
-BCPLd strcpy         /* 1cc, void, @src, @dest */
+BCPL strcpy         /* 1cc, void, @src, @dest */
+    move.l	%d3,%sp@-
+    move.l	#255,%d3
+    move.l	#(3*4 + 2*4),%d0
+    lea.l	BCPL_strncpy, %a4
+    jsr		(%a5)
+    move.l	%sp@+,%d3
     BRTS
 
 BCPLd runLoadedCode  /* 1e4, void, @codeseg, stackbytes, @cmdline, cmdlinelength */
     BRTS
 
-BCPLd lock_1ec       /* 1ec, FileLock ^, @name */
+    /* Lock via C string */
+BCPL lock_1ec       /* 1ec, FileLock ^, &name */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    moveq.l	#-2,%d2		/* Shared lock */
+    jsr		%a6@(14 * -6)	/* DOS/Lock() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
-BCPLd findDevInfo    /* 1f0, DevInfo ^, @name */
+BCPL findDevInfo    /* 1f0, DevInfo ^, @name */
     movem.l	%d1-%d3/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     lsl.l	#2,%d1
@@ -864,7 +1000,11 @@ BCPLd findDevInfo    /* 1f0, DevInfo ^, @name */
     movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
     BRTS
 
-BCPLd createDir      /* 1f4, void, @name */
+BCPL createDir      /* 1f4, FileLock^, &name */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(20 * -6)	/* DOS/CreateDir() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd compareTime    /* 1f8, SIGN , @timeval, @timeval */
