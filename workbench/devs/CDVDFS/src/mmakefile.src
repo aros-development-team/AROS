@@ -1,0 +1,49 @@
+# $Id: mmakefile.src 24535 2006-06-12 20:26:01Z verhaegs $
+include $(TOP)/config/make.cfg
+
+#MM- contrib-cdvdfs: includes linklibs
+#MM- contrib-cdvdfs-checkcd: includes linklibs
+#MM- contrib-cdvdfs-cdrom: includes linklibs
+#MM- contrib-cdvdfs-cdcontrol: includes linklibs
+#MM- contrib-cdvdfs-packet: includes linklibs
+
+TESTSDIR := $(AROS_TESTS)/cdrom
+
+MODULE_FILES := arosdevice arosmain
+HANDLER_FILES := device cdrom devsupp generic \
+	hfs iso9660 intui path rock volumes \
+	joliet prefs charset
+CDCONTROL_FILES := cdcontrol
+CDROM_FILES := main cdrom iso9660 rock joliet \
+	hfs generic path charset
+CHECKCD_FILES := checkcd cdrom iso9660 rock joliet \
+	hfs generic path charset
+
+#Turn these flags on to enable debugging
+#USER_CFLAGS := -DDEBUG=1
+
+#And these ones are for normal operation
+USER_CFLAGS := -DNDEBUG -DDEBUG=0
+
+%build_prog mmake=contrib-cdvdfs-packet \
+    progname=cdrom.handler targetdir=$(AROS_DEVS) \
+    objdir=$(GENDIR)/$(CURDIR)-packet files="$(HANDLER_FILES)" usestartup=no uselibs="arossupport rom"
+
+%build_prog mmake=contrib-cdvdfs-cdcontrol \
+    progname=cdcontrol targetdir=$(AROS_C) \
+    files=$(CDCONTROL_FILES) uselibs="amiga arosc"
+
+%build_prog mmake=contrib-cdvdfs-cdrom \
+    progname=cdrom targetdir=$(TESTSDIR) \
+    files=$(CDROM_FILES) uselibs="amiga arosc"
+
+%build_prog mmake=contrib-cdvdfs-checkcd \
+    progname=checkcd targetdir=$(AROS_C) \
+    files=$(CHECKCD_FILES) uselibs="amiga arosc"
+
+USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
+
+%build_module mmake=contrib-cdvdfs \
+    modname=cdrom modtype=device modsuffix=handler \
+    files="$(MODULE_FILES) $(HANDLER_FILES)" \
+    uselibs="arossupport rom"

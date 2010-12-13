@@ -1,0 +1,50 @@
+# Makefile for SAS/C 6.51
+#
+#
+
+# Add the switch DEFINE=NDEBUG to CFLAGS in order to disable the
+# debug window.
+
+.c.o:
+	SC $(CFLAGS) $(CPU) $(DEBUGOPT) $(DEBUG) $(OPTIMIZE) $*.c
+
+CFLAGS		= MCCONS STREQ STRMERGE NOSTKCHK UTILLIB PARM=R
+LFLAGS		= SC SD NOICONS NODEBUG
+DEBUG		= DEFINE=NDEBUG
+DEBUGOPT	= DEBUG=L
+
+OPTIMIZE	= OPTIMIZE OPTINLOCAL OPTTIME
+CPU		= CPU=ANY
+
+LIBS		= LIB:sc.lib LIB:amiga.lib LIB:debug.lib
+OBJ1		= device.o volumes.o generic.o intui.o cdrom.o iso9660.o rock.o \
+		  devsupp.o hfs.o path.o
+OBJ2		= cdrom.o generic.o iso9660.o rock.o main.o hfs.o path.o
+OBJ3		= cdcontrol.o
+OBJ4		= checkcd.o cdrom.o iso9660.o rock.o generic.o hfs.o path.o
+
+all:		cdrom-handler cdrom cdcontrol checkcd
+
+cdrom-handler:	$(OBJ1)
+		SLINK $(OBJ1) TO $@ LIB $(LIBS) $(LFLAGS)
+		@Protect $@ -e
+
+cdrom:		$(OBJ2)
+		SC LINK TO $@ $(OBJ2) LIB $(LIBS) $(DEBUGOPT) NOICONS
+
+cdcontrol:	$(OBJ3)
+		SLINK LIB:c.o $(OBJ3) TO $@ LIB $(LIBS) $(LFLAGS) NOICONS
+
+checkcd:	$(OBJ4)
+		SC LINK TO $@ $(OBJ4) $(DEBUGOPT) NOICONS
+
+clean:
+		rm -f *.o *.lnk *.dbg cdrom-handler cdrom cdcontrol checkcd
+
+dist:
+		rm -f *.o *.lnk *.dbg
+		rm -f /l/cdrom-handler /c/cdrom /c/checkcd /c/cdcontrol
+		rename cdrom-handler /l/cdrom-handler
+		rename cdrom /c/cdrom
+		rename checkcd /c/checkcd
+		rename cdcontrol /c/cdcontrol
