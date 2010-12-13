@@ -1,0 +1,7 @@
+# $Id: mmakefile.src 25503 2007-03-21 09:59:46Z schulz $
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(call WILDCARD, *.h)
+%copy_includes path=usb
+
+%common

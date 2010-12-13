@@ -1,0 +1,14 @@
+#$Id$
+include $(TOP)/config/make.cfg
+
+MODNAME :=  usb
+MODTYPE :=  hidd
+
+USER_CFLAGS :=  -DAROS_USE_OOP -I$(SRCDIR)/$(CURDIR)
+
+FILES       :=
+STUBS       := $(MODNAME)_stubs
+
+%make_hidd_stubs hidd=usb
+
+%common

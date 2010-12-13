@@ -1,0 +1,15 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := hid_init hidclass hid mouseclass kbdclass
+STUBS := hid_stubs
+
+%build_module mmake=hidd-usb-classes-hid	\
+	modname=hid modtype=hidd		\
+	files="$(FILES)" moduledir=Classes/USB	\
+	uselibs="oop rom amiga hiddstubs"
+
+%make_hidd_stubs hidd=hid
+
+%common
