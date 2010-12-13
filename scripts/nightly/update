@@ -11,10 +11,6 @@ printi  "Updating contrib sources..."
 cd      $SOURCE_CONTRIB
 execute svn update
 
-printi  "Updating necessary module sources..."
-cd      $SOURCE_NECESSARY/necessary
-execute svn update
-
 #OLD
 #cd      $SOURCE_AROS
 #execute svn checkout necessary
