@@ -1,0 +1,19 @@
+;
+MSG_DESCRIPTION (//)
+SFS Defragmenter
+;
+MSG_BITMAP (//)
+Device bitmap
+;
+MSG_SELECTION (//)
+Device selection
+;
+MSG_REFRESH (//)
+Refresh bitmap
+;
+MSG_START (//)
+Start!
+;
+MSG_CANCEL (//)
+Cancel
+;

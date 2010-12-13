@@ -1,0 +1,29 @@
+## version $VER: sfsdefrag.catalog 1.0 (29.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_DESCRIPTION
+Defragmentace SFS
+; SFS Defragmenter
+;
+MSG_BITMAP
+Device bitmap??
+; Device bitmap
+;
+MSG_SELECTION
+Výbìr zaøízení
+; Device selection
+;
+MSG_REFRESH
+Refresh bitmap??
+; Refresh bitmap
+;
+MSG_START
+Spustit
+; Start!
+;
+MSG_CANCEL
+Pøeru¹it
+; Cancel
+;
