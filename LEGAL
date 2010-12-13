@@ -14,7 +14,7 @@ GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
 + Classes/Zune/PrefsWindow.mcc [workbench/classes/zune/prefswindow]
 + Classes/Zune/PrefsEditor.mcc [workbench/classes/zune/prefseditor]
 + Classes/Zune/SystemPrefsWindow.mcc [workbench/classes/zune/systemprefswindow]
-+ AmberRAM (linked in some AROS kernels) [contrib/necessary/AmberRAM]
++ AmberRAM (linked in some AROS kernels) [workbench/devs/AmberRAM]
 
 The following components are distributed under the terms of version 3.0 of the
 GNU Lesser General Public License. Please read the relevant "LEGAL" files that 
@@ -34,8 +34,8 @@ GNU General Public License, as specified in the file "LICENSE.GPL":
 + [tools/MetaMake]
 + [tools/mkfsaffs]
 + [tools/adflib]
-+ [contrib/necessary/AHI] (as it is needed to compile AROS)
-+ [contrib/necessary/SFS] (linked in some AROS kernels)
++ [workbench/devs/AHI] (as it is needed to compile AROS)
++ [workbench/devs/SFS] (linked in some AROS kernels)
     
 The following components are distributed under the terms various different
 open source licenses, most of them similar to the BSD license. Please read the
