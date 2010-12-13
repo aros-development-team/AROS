@@ -38,7 +38,9 @@
 
 Object *application=0,*window,*DisConBut,*ConBut;
 Object *ModemName,*AccessType,*MUISignalBM;
+Object *INGraphMUIbm,*OUTGraphMUIbm;
 Object *IN_Info,*OUT_Info;
+
 struct EasyBitmap *SignalBM=0;
 
 UBYTE *PortName = "GUI.PORT";
@@ -51,9 +53,9 @@ struct EasyBitmap{
 
 struct EasyBitmap *MakeBitmap(ULONG x,ULONG y,Object *MUIwindow,Object *MUIbitmap){
 	struct EasyBitmap *ebm=NULL;
-	struct Window *tw;
+	struct Window *tw=NULL;
 
-	if( window ){
+	if( MUIwindow && MUIbitmap ){
 		if( ebm = AllocMem( sizeof(struct EasyBitmap),MEMF_CLEAR|MEMF_PUBLIC)){
 
 			tw=(struct Window *)XGET( MUIwindow , MUIA_Window_Window );
@@ -62,7 +64,6 @@ struct EasyBitmap *MakeBitmap(ULONG x,ULONG y,Object *MUIwindow,Object *MUIbitma
 					 GetBitMapAttr(tw->RPort->BitMap, BMA_DEPTH),
 					 BMF_CLEAR,
 					 tw->RPort->BitMap);
-
 			ebm->rp = CreateRastPort();
 			ebm->rp->BitMap = ebm->bm;
 			ebm->MUIbitmap = MUIbitmap;
@@ -82,10 +83,83 @@ void _CloseBitmap(struct EasyBitmap *ebm){
 	if(ebm){
 		FreeRastPort(ebm->rp);
 		FreeBitMap(ebm->bm);
+		FreeMem(ebm,sizeof(struct EasyBitmap));
 	}
 }
 #define CloseBitmap( ebm ) do{_CloseBitmap(ebm);ebm=NULL;}while(0)
 
+
+struct EasyGraph{
+	struct EasyBitmap *ebm;
+	ULONG Xsize,Ysize;
+	FLOAT Max;
+	FLOAT *value;
+};
+
+void _CloseGraph(struct EasyGraph *egr){
+	if(egr){
+		CloseBitmap( egr->ebm );
+		if( egr->value ) FreeMem( egr->value , sizeof(FLOAT) * egr->Xsize );
+		FreeMem(egr,sizeof(struct EasyGraph));
+	}
+}
+#define CloseGraph( x ) do{_CloseGraph(x);x=NULL;}while(0)
+
+struct EasyGraph *MakeGraph(ULONG x,ULONG y,Object *MUIwindow,Object *MUIbitmap){
+	struct EasyGraph *egr=NULL;
+	if( MUIwindow && MUIbitmap ){
+		if( egr = AllocMem( sizeof(struct EasyGraph),MEMF_CLEAR|MEMF_PUBLIC)){
+			egr->Xsize = x;
+			egr->Ysize = y;
+			egr->Max = 0.0;
+			if( egr->value = AllocMem( sizeof(FLOAT) * x ,MEMF_CLEAR|MEMF_PUBLIC)){
+				if( egr->ebm = MakeBitmap(x,y,MUIwindow,MUIbitmap) ){
+					SetRast(egr->ebm->rp,0);
+					DoMethod( egr->ebm->MUIbitmap , MUIM_Draw );
+				}else CloseGraph(egr);
+			}
+		}
+	}
+	return egr;
+}
+
+void UpdateGraph(struct EasyGraph *egr,FLOAT value){
+	LONG i;
+	LONG h;
+	if(egr){
+		
+		for( i= egr->Xsize-1 ; i > 0 ; i-- ){
+			egr->value[i] = egr->value[i-1];
+		}
+		
+		egr->value[0] = value;
+		if( value > egr->Max ) egr->Max = value;
+		
+		if( egr->ebm ){
+			
+			SetRast(egr->ebm->rp,0);
+			SetAPen(egr->ebm->rp,1);
+			Move(egr->ebm->rp , 0 , egr->Ysize-1 );
+			Draw(egr->ebm->rp , egr->Xsize-1 , egr->Ysize-1 );
+			SetAPen(egr->ebm->rp,2);
+
+			if( egr->Max != 0.0 ){
+				for( i=0 ; i < egr->Xsize ; i++ ){
+					h = (LONG)( egr->value[i] / egr->Max * (FLOAT)( egr->Ysize - 2 ) );
+					if(i==0) Move(egr->ebm->rp , i , (egr->Ysize-2) - h );
+						else Draw(egr->ebm->rp , i , (egr->Ysize-2) - h );
+				}
+			}else{
+				Move(egr->ebm->rp , 0 , egr->Ysize-2 );
+				Draw(egr->ebm->rp , egr->Xsize-1 , egr->Ysize-2 );
+			}
+			
+			DoMethod( egr->ebm->MUIbitmap , MUIM_Draw );
+	 
+		}
+	}	
+}
+	
 
 BOOL SafePutToPort(struct PPPcontrolMsg *message, STRPTR portname)
 {
@@ -136,6 +210,24 @@ BOOL SendCtrlMsg(ULONG command,IPTR Arg,struct Conf *c){
 	}
 	return succes;
 }
+
+BOOL SendRequest(void){
+	struct PPPcontrolMsg *CtrlMsg;
+	BOOL result=FALSE;
+
+	if( CtrlMsg = AllocMem(sizeof(struct PPPcontrolMsg),MEMF_PUBLIC | MEMF_CLEAR)){
+		bug("ModemManager:send info request\n");
+		CtrlMsg->Command = PPP_CTRL_INFO_REQUEST;
+		CtrlMsg->Arg = (IPTR)PortName;
+		CtrlMsg->Msg.mn_Node.ln_Type = NT_MESSAGE;
+		CtrlMsg->Msg.mn_Length = sizeof(struct PPPcontrolMsg);
+		CtrlMsg->Msg.mn_ReplyPort = 0;
+		if( SafePutToPort(CtrlMsg, "ppp-control") ) result=TRUE;
+		FreeMem(CtrlMsg , sizeof(struct PPPcontrolMsg));
+	}
+	return result;
+}
+
 
 void speedstr(BYTE *buf,BYTE *label,LONG s){
 	float speed= (float)s;
@@ -243,12 +335,70 @@ void FindModemUnit(struct Conf *c){
 	c->SerUnitNum = result;
 }
 
+
+BOOL StartStack()
+{
+	ULONG trycount = 0;
+	TEXT arostcppath[256];
+
+	struct TagItem tags[] =
+	{
+		{ SYS_Input,  (IPTR)NULL },
+		{ SYS_Output, (IPTR)NULL },
+		{ SYS_Error,  (IPTR)NULL },
+		{ SYS_Asynch, (IPTR)TRUE },
+		{ TAG_DONE,   0          }
+	};
+
+	arostcppath[0] = 0;
+	GetVar( "SYS/Packages/AROSTCP" , arostcppath , 256 , LV_VAR);
+	AddPart(arostcppath, "C", 256);
+	AddPart(arostcppath, "AROSTCP", 256);
+
+	bug("Start AROSTCP: %s\n",arostcppath);
+	SystemTagList(arostcppath, tags);
+
+	/* Check if startup successful */
+	trycount = 0;
+	while (!FindTask("bsdsocket.library"))
+	{
+		if (trycount > 9) return FALSE;
+		Delay(50);
+		trycount++;
+	}
+	return TRUE;
+}
+
+
+
 static void ConnectFunc(struct Hook *hook, Object *app, APTR *arg)
 {
 	struct Conf *c = *arg;
 	struct EasySerial *Ser=0;
 
 	if( c->state == STATE_PLUGGED ){
+		
+		// check if arostcp is running
+		if( FindTask("bsdsocket.library") == NULL ){
+			set( IN_Info , MUIA_Text_Contents, (IPTR)"AROSTCP is not running!");
+			if( StartStack() ){	
+				set( OUT_Info , MUIA_Text_Contents, (IPTR)"Starting AROSTCP OK");
+			}else{		
+				set( OUT_Info , MUIA_Text_Contents, (IPTR)"Starting AROSTCP FAIL!");
+				return;		
+			}
+		}
+		
+		// check ppp.device
+		if( FindPort("ppp-control") ){
+			// send info request to ppp.device
+			SendRequest();
+		}else{
+			set( OUT_Info, MUIA_Text_Contents, (IPTR)"Can't find ppp.device!");
+			set( IN_Info , MUIA_Text_Contents, (IPTR)"Not configured?");
+			return;
+		}	
+
 		if( c->SerUnitNum >=0 ){
 			set( IN_Info , MUIA_Text_Contents, (IPTR)"Open Serial Device...");
 			set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
@@ -377,23 +527,6 @@ void ConfNetWork(struct PPPcontrolMsg *msg){
 	}
 }
 
-BOOL SendRequest(void){
-	struct PPPcontrolMsg *CtrlMsg;
-	BOOL result=FALSE;
-
-	if( CtrlMsg = AllocMem(sizeof(struct PPPcontrolMsg),MEMF_PUBLIC | MEMF_CLEAR)){
-		bug("ModemManager:send info request\n");
-		CtrlMsg->Command = PPP_CTRL_INFO_REQUEST;
-		CtrlMsg->Arg = (IPTR)PortName;
-		CtrlMsg->Msg.mn_Node.ln_Type = NT_MESSAGE;
-		CtrlMsg->Msg.mn_Length = sizeof(struct PPPcontrolMsg);
-		CtrlMsg->Msg.mn_ReplyPort = 0;
-		if( SafePutToPort(CtrlMsg, "ppp-control") ) result=TRUE;
-		FreeMem(CtrlMsg , sizeof(struct PPPcontrolMsg));
-	}
-	return result;
-}
-
 void HandleMessage(struct PPPcontrolMsg *InfoMsg,struct Conf *c){
 	if( InfoMsg->Msg.mn_Length == sizeof(struct PPPcontrolMsg)
 		&&  InfoMsg->Command == PPP_CTRL_INFO
@@ -438,6 +571,10 @@ int main(void)
 	struct EasySerial *Ser=0;
 	struct Conf *c=0;
 
+	struct EasyGraph *INegr=0;
+	struct EasyGraph *OUTegr=0;
+	ULONG SpeedIn=0,SpeedOUT=0;
+	
 	if( ! FindPort(PortName)){
 	if( timer=OpenTimer() ){
 	if( CtrlPort = CreatePort(PortName,0) ){
@@ -454,6 +591,8 @@ int main(void)
 			c->state = STATE_UNPLUGGED;
 			c->signal = -1;
 			c->AccessType = -1;
+			SpeedIn =0;
+			SpeedOUT = 0;
 			
 			SetTimer( timer , 0 );
 			application = NULL;
@@ -473,7 +612,7 @@ int main(void)
 			}
 
 
-			SetTimer( timer , 5 );
+			SetTimer( timer , 1 );
 			bug("ModemManager:wait until modem plugged in\n");
 			while(c->state == STATE_UNPLUGGED)
 			{
@@ -515,17 +654,32 @@ int main(void)
 				MUIA_Window_Title,	(IPTR) "ModemManager",
 				MUIA_Window_Activate,TRUE,
 					WindowContents, (IPTR) VGroup,
+						
 						Child, (IPTR) VGroup,
+						GroupFrame,
 							Child, (IPTR) HGroup,
-								Child, ModemName = SimpleText("            "),
+								Child, ModemName = SimpleText("1234567890123"),
 								Child, MUISignalBM = BitmapObject,
 									MUIA_FixWidth, 32,
 									MUIA_FixHeight, 16,
 								End,
-								Child, AccessType = SimpleText("	"),
+								Child, AccessType = SimpleText("12345"),
 							End,
-							Child, IN_Info = SimpleText(""),
-							Child, OUT_Info = SimpleText(""),
+							Child, (IPTR) HGroup,
+								Child, IN_Info = SimpleText("12345678901"),
+								Child, INGraphMUIbm = BitmapObject,
+									MUIA_FixWidth, 80,
+									MUIA_FixHeight, 16,
+								End,
+							End,
+							Child, (IPTR) HGroup,
+								Child, OUT_Info = SimpleText("12345678901"),
+								Child, OUTGraphMUIbm = BitmapObject,
+									MUIA_FixWidth, 80,
+									MUIA_FixHeight, 16,
+								End,
+							End,
+							
 						End,
 						Child, (IPTR) HGroup,
 							Child, (IPTR) (   ConBut = SimpleButton("   Connect    ")),
@@ -557,12 +711,20 @@ int main(void)
 					MUIM_CallHook, &DisconnectHook,c
 				);
 
+
 				set(window,MUIA_Window_Open,TRUE);
 				set(DisConBut,MUIA_Disabled,TRUE);
 				set(   ConBut,MUIA_Disabled,TRUE);
-
+				
+				set( IN_Info , MUIA_Text_Contents, (IPTR)"");
+				set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
+				
 				SignalBM = MakeBitmap(32,16,window,MUISignalBM);
-
+				INegr = MakeGraph(80,16,window,INGraphMUIbm);				
+				OUTegr = MakeGraph(80,16,window,OUTGraphMUIbm);
+				set( INGraphMUIbm , MUIA_ShowMe , FALSE );
+				set( OUTGraphMUIbm , MUIA_ShowMe , FALSE );
+		
 				SetTimer( timer , 1 );
 				SendRequest();
 				
@@ -596,7 +758,9 @@ int main(void)
 								set(   ConBut, MUIA_Disabled , TRUE );
 							}
 							else if( c->state == STATE_PLUGGED ){
-								set( IN_Info , MUIA_Text_Contents, (IPTR)"Disconnected");
+								set( INGraphMUIbm , MUIA_ShowMe , FALSE );
+								set( OUTGraphMUIbm , MUIA_ShowMe , FALSE );
+								set( IN_Info , MUIA_Text_Contents, (IPTR)"");
 								set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
 								set(DisConBut, MUIA_Disabled , TRUE );
 								set(   ConBut, MUIA_Disabled , FALSE );
@@ -625,24 +789,37 @@ int main(void)
 								//set(window,MUIA_Window_Title,(IPTR)c->modemmodel);
 							}
 							else if( c->state == STATE_NETWORK ){
-
+								SpeedIn = InfoMsg->SpeedIn;
+								SpeedOUT = InfoMsg->SpeedOut;
+								
+								speedstr(buf," In",SpeedIn);
+								set( IN_Info , MUIA_Text_Contents, (IPTR)buf);
+								speedstr(buf,"Out",SpeedOUT);
+								set( OUT_Info , MUIA_Text_Contents, (IPTR)buf);
+								
 								set(DisConBut, MUIA_Disabled , FALSE );
 								set(   ConBut, MUIA_Disabled , TRUE );
-								speedstr(buf," In",InfoMsg->SpeedIn);
-								set( IN_Info , MUIA_Text_Contents, (IPTR)buf);
-								speedstr(buf,"Out",InfoMsg->SpeedOut);
-								set( OUT_Info , MUIA_Text_Contents, (IPTR)buf);
+								
+								set( INGraphMUIbm , MUIA_ShowMe , TRUE );
+								set( OUTGraphMUIbm , MUIA_ShowMe , TRUE );
 							}
 
-
 							ReplyMsg((struct Message *)InfoMsg);
-							SetTimer( timer , TIMERVALUE );
 						//bug("ModemManager: ReplyMsg OK\n");
 						}
 
 
 						if(GetMsg(timer->TimeMsg)){
-
+							
+							if( c->state == STATE_NETWORK ){
+								speedstr(buf," In",SpeedIn);
+								set( IN_Info , MUIA_Text_Contents, (IPTR)buf);
+								speedstr(buf,"Out",SpeedOUT);
+								set( OUT_Info , MUIA_Text_Contents, (IPTR)buf);	
+								UpdateGraph(INegr,(FLOAT)SpeedIn);
+								UpdateGraph(OUTegr,(FLOAT)SpeedOUT); 	
+							}
+							
 							// test if modem is unplugged
 							if( c->state == STATE_PLUGGED ){
 								if( Ser = OpenSerial( c->DeviceName ,c->SerUnitNum ) ){
@@ -673,7 +850,9 @@ int main(void)
 
 			MUI_DisposeObject(application);
 			CloseBitmap(SignalBM);
-
+			CloseGraph(INegr);
+			CloseGraph(OUTegr);
+			
 			application=NULL;
 		} // main loop
 
