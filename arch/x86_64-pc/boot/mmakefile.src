@@ -29,12 +29,12 @@ include $(TOP)/config/make.cfg
 #MM	workbench-devs-amberram \
 #MM	kernel-fs-afs \
 #MM	kernel-pc-x86_64-drivers \
-#MM	kernel-contrib-necessary-pc-x86_64 \
+#MM	kernel-workbench-devs-pc-x86_64 \
 #MM	kernel-dosboot \
 #MM	kernel-boot \
 #MM	kernel-processor
 
-#MM- kernel-contrib-necessary-pc-x86_64 : contrib-necessary-pc-x86_64
+#MM- workbench-devs-pc-x86_64 : workbench-devs-pc-x86_64
 
 PKG_LIBS := aros boot dos graphics intuition keymap layers partition workbench
 PKG_RSRC := battclock bootloader dosboot misc processor

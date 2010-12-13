@@ -32,11 +32,11 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM     kernel-fs-afs-kobj \
 ##MM     kernel-cpu-pc-i386-kobj \
 #MM	kernel-pc-i386-drivers \
-#MM     kernel-contrib-necessary-pc-i386 \
+#MM     kernel-workbench-devs-pc-i386 \
 #MM     kernel-usb-pc-i386 \
 #MM     kernel-processor-kobj
 
-#MM- kernel-contrib-necessary-pc-i386 : contrib-necessary-pc-i386
+#MM- kernel-workbench-devs-pc-i386 : workbench-devs-pc-i386
 
 #MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
