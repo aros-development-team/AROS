@@ -2,26 +2,47 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-devs-complete : workbench-devs
-#MM- workbench-devs : \
+
+#MM- workbench-devs : includes linklibs workbench-devs-common \
+#MM    workbench-devs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- workbench-devs-quick : workbench-devs-common-quick \
+#MM    workbench-devs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM- workbench-devs-common : \
 #MM    workbench-devs-fdsk \
 #MM    workbench-devs-ramdrive \
 #MM    workbench-devs-monitors \
 #MM    workbench-devs-mountlist \
-#MM    workbench-devs-networks-drivers
+#MM    workbench-devs-networks-drivers \
+#MM    workbench-devs-AHI
+
 #MM- workbench-devs-quick : \
 #MM    workbench-devs-fdsk-quick \
 #MM    workbench-devs-ramdrive-quick \
 #MM    workbench-devs-monitors \
 #MM    workbench-devs-mountlist \
-#MM    workbench-devs-networks-drivers
+#MM    workbench-devs-networks-drivers \
+#MM    workbench-devs-AHI-quick
 
 #MM- workbench-fs-complete : workbench-fs
+
 #MM- workbench-fs : \
 #MM    workbench-fs-pipefs \
 #MM    workbench-fs-xpipe
 #MM- workbench-fs-quick : \
 #MM    workbench-fs-pipefs-quick \
 #MM    workbench-fs-xpipe-quick
+
+#MM- workbench-devs-pc-i386 : \
+#MM	   workbench-devs-sfs-kobj \
+#MM	   workbench-devs-amberram-kobj \
+#MM    workbench-devs-cdvdfs-kobj
+
+#MM- workbench-devs-pc-x86_64 : \
+#MM	   workbench-devs-sfs \
+#MM	   workbench-devs-cdvdfs \
+#MM    hidd-usb
 
 # DISABLED: rootfs.handler
 

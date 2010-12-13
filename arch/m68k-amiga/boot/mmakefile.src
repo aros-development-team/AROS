@@ -27,7 +27,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-fs-afs-kobj \
 #MM     kernel-kernel-kobj \
 #MM     kernel-cia-kobj \
-#MM     contrib-amberram-kobj
+#MM     workbench-devs-amberram-kobj
 
 #MM- kernel-contrib-necessary-amiga-m68k : contrib-necessary-amiga-m68k
 

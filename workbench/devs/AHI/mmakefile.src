@@ -3,13 +3,14 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- AHI-quick : contrib-AHI-quick
-#MM- AHI       : contrib-AHI
+#MM- AHI-quick : workbench-devs-AHI-quick
 
-#MM- contrib-AHI : $(OSS_LIBRARY_TARGET)
+#MM- AHI       : workbench-devs-AHI
+
+#MM- workbench-devs-AHI : $(OSS_LIBRARY_TARGET)
 
 EXEDIR := $(AROSDIR)
 
 
-%build_with_configure mmake=contrib-AHI prefix=$(EXEDIR) \
+%build_with_configure mmake=workbench-devs-AHI prefix=$(EXEDIR) \
     extraoptions="--with-os-includedir=$(AROS_INCLUDES)"

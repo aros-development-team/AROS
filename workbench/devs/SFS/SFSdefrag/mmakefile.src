@@ -8,11 +8,11 @@ EXEDIR = $(AROSDIR)/Tools
 
 USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS
 
-#MM contrib-sfs-c-sfsdefrag : includes symlinks \
-#MM contrib-sfs-c-sfsdefrag-catalogs \
-#MM contrib-sfs-c-sfsdefrag-icons
+#MM workbench-devs-sfs-c-sfsdefrag : includes symlinks \
+#MM workbench-devs-sfs-c-sfsdefrag-catalogs \
+#MM workbench-devs-sfs-c-sfsdefrag-icons
 
-%build_prog mmake=contrib-sfs-c-sfsdefrag \
+%build_prog mmake=workbench-devs-sfs-c-sfsdefrag \
     progname=SFSdefrag targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="mui amiga arosc m"
 

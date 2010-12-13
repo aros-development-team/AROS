@@ -77,7 +77,7 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/dos
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
-#MM workbench-c : includes linklibs workbench-c-pure workbench-c-requeststring contrib-cdvdfs-checkcd workbench-libs-uuid
+#MM workbench-c : includes linklibs workbench-c-pure workbench-c-requeststring workbench-devs-cdvdfs-checkcd workbench-libs-uuid
 #MM workbench-c-quick : workbench-c-pure-quick workbench-c-requeststring-quick
 
 %build_progs mmake=workbench-c \

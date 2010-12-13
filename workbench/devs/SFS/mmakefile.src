@@ -3,10 +3,10 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- contrib-sfs-c: contrib-sfs-c-setcache 		\
-#MM					contrib-sfs-c-sfsquery		\
-#MM					contrib-sfs-c-sfsformat		\
-#MM					contrib-sfs-c-sfsdefrag		\
-#MM					contrib-sfs-c-sfsdefragmentgui
+#MM- workbench-devs-sfs-c: workbench-devs-sfs-c-setcache 	\
+#MM					workbench-devs-sfs-c-sfsquery			\
+#MM					workbench-devs-sfs-c-sfsformat			\
+#MM					workbench-devs-sfs-c-sfsdefrag			\
+#MM					workbench-devs-sfs-c-sfsdefragmentgui
 
 %common

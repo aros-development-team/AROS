@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 ICONS := \
     SFSDefrag
 
-#MM contrib-sfs-c-sfsdefrag-icons
+#MM workbench-devs-sfs-c-sfsdefrag-icons
 
-%build_icons mmake=contrib-sfs-c-sfsdefrag-icons icons=$(ICONS) \
+%build_icons mmake=workbench-devs-sfs-c-sfsdefrag-icons icons=$(ICONS) \
              dir=$(AROS_TOOLS)
