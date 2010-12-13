@@ -45,8 +45,8 @@ include $(TOP)/config/make.cfg
 #MM	hidd-usb \
 #MM	kernel-fs-nil \
 #MM	workbench-libs-partition \
-#MM	contrib-cdvdfs \
-#MM contrib-sfs \
+#MM	workbench-devs-cdvdfs \
+#MM workbench-devs-sfs \
 #MM workbench-devs-amberram \
 #MM	kernel-hidd-graphics \
 #MM	kernel-hidd-kbd \

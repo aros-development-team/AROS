@@ -1,8 +1,8 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-hosted:  $(SDL_HIDD_TARGET)     \
-#MM			contrib-cdvdfs-packet  \
-#MM			contrib-sfs-packet
+#MM			workbench-devs-cdvdfs-packet  \
+#MM			workbench-devs-sfs-packet
 
 #MM- kernel-link-hosted: kernel-bootloader-kobj kernel-dosboot-kobj kernel-link-hosted-quick
 
