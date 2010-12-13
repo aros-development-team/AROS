@@ -49,25 +49,27 @@
 
 #define STRSIZE 1000
 
+#define PREFSFILE "ENV:ModemManager.prefs"
+
 BOOL ReadConfig(struct Conf *c){
 	char *linebuff,*tok;
 	BPTR ConfigFile;
 	struct at_command  *atc;
 
-	D(bug("ReadConfig:  ENV:AROSTCP/db/ppp.config\n"));
+	D(bug("ReadConfig:%s\n",PREFSFILE));
 	strcpy( c->modemmodel , "Unknow");
 	strcpy( c->username ,   "DummyName");
 	strcpy( c->password ,   "DummyName");
 	strcpy( c->DeviceName , "usbmodem.device");
 
 	c->SerUnitNum = -1;  // default: test all units
-	c->CommandTimeOut = 5;
+	c->CommandTimeOut = 10; // default timeout 10 sec.
 	
 	while( atc = (struct at_command *)RemHead( &c->atcl ) ){
 		FreeMem( atc , sizeof(struct at_command) );
 	}
 
-	if(ConfigFile = Open("ENV:AROSTCP/db/ppp.config",MODE_OLDFILE)){
+	if(ConfigFile = Open( PREFSFILE ,MODE_OLDFILE)){
 		if(linebuff = AllocMem(STRSIZE,MEMF_CLEAR|MEMF_PUBLIC)){
 	
 			while(FGets(ConfigFile, linebuff, STRSIZE )){
@@ -121,7 +123,7 @@ BOOL ReadConfig(struct Conf *c){
 		}
 		
 	}else{
-		bug("ppp.config missing !!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+		bug("Config file missing !!!!\n");
 		return FALSE;
 	}
 	return TRUE;
