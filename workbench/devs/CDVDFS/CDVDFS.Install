@@ -1,0 +1,717 @@
+;$VER: CDVDFS Install 1.2 (06.05.07)
+;(C) 1994 Thomas Kessler
+;(C) 2005-2007 Pavel Fedin
+
+(set #amicdrom-version "1.4")
+(set #amicdrom-date "(16-Jun-08)")
+(set #install-version "1.2")
+
+(set old-level @user-level)
+(set @default-dest "SYS:")
+
+(set #wbversion (getversion))
+(set #wbversion (/ #wbversion 65536) )
+(set #morphos (exists "SYS:MorphOS"))
+(set #mountvernum (getversion "C:Mount"))
+(set #mountversion (/ #mountvernum 65536))
+(set #na "N/A")
+
+(set ldir "SYS:L")
+(set ldir2 "SYS:L/")
+(set cdir "SYS:C")
+(set cdir2 "SYS:C/")
+(set charsetsdir "SYS:Libs/Charsets/")
+(set docdir "Locale:Help")
+
+(complete 0)
+
+(set #space " ")
+(if (<= #mountversion 37) (set #space "+"))
+
+(if (NOT (exists "C/GetNames")) (abort "Can't find file: 'C/GetNames'"))
+
+(run
+	(prompt "")
+	(help #na)
+	"C/GetNames DEVICES ENV NOROM SCSI EXCLUDE QUIET" ; © 1994 Thomas Kessler
+)
+
+(set dev0 "enter device by hand")
+(if (exists ("ENV:Name.1")) (set dev1 (getenv "Name.1")))
+(if (exists ("ENV:Name.2")) (set dev2 (getenv "Name.2")))
+(if (exists ("ENV:Name.3")) (set dev3 (getenv "Name.3")))
+(if (exists ("ENV:Name.4")) (set dev4 (getenv "Name.4")))
+(if (exists ("ENV:Name.5")) (set dev5 (getenv "Name.5")))
+(if (exists ("ENV:Name.6")) (set dev6 (getenv "Name.6")))
+(if (exists ("ENV:Name.7")) (set dev7 (getenv "Name.7")))
+(if (exists ("ENV:Name.8")) (set dev8 (getenv "Name.8")))
+(if (exists ("ENV:Name.9")) (set dev9 (getenv "Name.9")))
+(if (exists ("ENV:Name.10")) (set dev10 (getenv "Name.10")))
+(if (exists ("ENV:Name.11")) (set dev11 (getenv "Name.11")))
+(if (exists ("ENV:Name.12")) (set dev12 (getenv "Name.12")))
+(if (exists ("ENV:Name.13")) (set dev13 (getenv "Name.13")))
+(if (exists ("ENV:Name.14")) (set dev14 (getenv "Name.14")))
+(if (exists ("ENV:Name.15")) (set dev15 (getenv "Name.15")))
+(if (exists ("ENV:Name.16")) (set dev16 (getenv "Name.16")))
+(if (exists ("ENV:Name.17")) (set dev17 (getenv "Name.17")))
+(if (exists ("ENV:Name.18")) (set dev18 (getenv "Name.18")))
+(if (exists ("ENV:Name.19")) (set dev19 (getenv "Name.19")))
+(if (exists ("ENV:Name.20")) (set dev20 (getenv "Name.20")))
+(if (exists ("ENV:Name.21")) (set dev21 (getenv "Name.21")))
+
+(run
+	(prompt "")
+	(help #na)
+	"C:Delete >NIL: ENV:Name.#? FORCE"
+)
+;(delete (prompt "") (help #na) "ENV:Name.x" (optional force))
+
+(complete 1)
+
+(user 2)
+(message	"\n\nCDVDFS "#amicdrom-version"\n\n"
+	"a CDROM filesystem for Amiga family of operating systems\n\n"
+	"Version "#amicdrom-version" "#amicdrom-date" © 2007 Pavel Fedin\n"
+	"Based on AmiCDROM 1.15 © 1993,1994 Frank Munkert\nAll rights reserved.\n"
+	"Install-Script "#install-version" © 1994 Thomas Kessler, 2005-2007 Pavel Fedin\nAll rights reserved.")
+
+(user old-level)
+(complete 5)
+
+
+(if dev1
+	(
+		(user 2)
+		(set ask-device
+			(askchoice
+				(if dev18
+					(prompt "Choose your SCSI/AT device:")
+					(prompt "\nChoose your SCSI/AT device:\n")
+				)
+				(help "\n"
+					"The first field (DEVICE) contains the name of your "
+					"SCSI/AT device."
+				)
+					(if dev1 (choices dev0 dev1))
+					(if dev2 (choices dev0 dev1 dev2))
+					(if dev3 (choices dev0 dev1 dev2 dev3))
+					(if dev4 (choices dev0 dev1 dev2 dev3 dev4))
+					(if dev5 (choices dev0 dev1 dev2 dev3 dev4 dev5))
+					(if dev6 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6))
+					(if dev7 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7))
+					(if dev8 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8))
+					(if dev9 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9))
+					(if dev10 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10))
+					(if dev11 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11))
+					(if dev12 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12))
+					(if dev13 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13))
+					(if dev14 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14))
+					(if dev15 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14 dev15))
+					(if dev16 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14 dev15 dev16))
+					(if dev17 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14 dev15 dev16 dev17))
+					(if dev18 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14 dev15 dev16 dev17 dev18))
+					(if dev19 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14 dev15 dev16 dev17 dev18 dev19))
+					(if dev20 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14 dev15 dev16 dev17 dev18 dev19 dev20))
+					(if dev21 (choices dev0 dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14 dev15 dev16 dev17 dev18 dev19 dev20 dev21))
+				(default 0)
+			)
+		)
+		(user old-level)
+	)
+)
+
+(if #morphos
+	(set default-device "ide.device")
+	(set default-device "scsi.device")
+)
+
+(if ask-device
+	(
+		(if (= 1 ask-device) (set device dev1))
+		(if (= 2 ask-device) (set device dev2))
+		(if (= 3 ask-device) (set device dev3))
+		(if (= 4 ask-device) (set device dev4))
+		(if (= 5 ask-device) (set device dev5))
+		(if (= 6 ask-device) (set device dev6))
+		(if (= 7 ask-device) (set device dev7))
+		(if (= 8 ask-device) (set device dev8))
+		(if (= 9 ask-device) (set device dev9))
+		(if (= 10 ask-device) (set device dev10))
+		(if (= 11 ask-device) (set device dev11))
+		(if (= 12 ask-device) (set device dev12))
+		(if (= 13 ask-device) (set device dev13))
+		(if (= 14 ask-device) (set device dev14))
+		(if (= 15 ask-device) (set device dev15))
+		(if (= 16 ask-device) (set device dev16))
+		(if (= 17 ask-device) (set device dev17))
+		(if (= 18 ask-device) (set device dev18))
+		(if (= 19 ask-device) (set device dev19))
+		(if (= 20 ask-device) (set device dev20))
+		(if (= 21 ask-device) (set device dev21))
+	)
+	(
+		(user 2)
+		(set device
+			(askstring
+				(prompt "\nEnter the name of your SCSI/AT device:\n")
+				(help "\n"
+					"The first field (DEVICE) contains the name of "
+					"your SCSI/AT device."
+				)
+				(default default-device)
+			)
+		)
+		(user old-level)
+	)
+)
+(complete 10)
+
+(user 2)
+(set unit
+	(askchoice
+		(prompt "\n\nChoose the unit (ID) of your CDROM drive:\n\n")
+		(help "\n"
+			"The second field (UNIT) contains the target ID (aka \"SCSI-ID\") "
+			"of your CDROM drive. If your CDROM drive supports multiple logical units, "
+			"such as the Pioneer DRM-604X six disk changer drive, then the 10s digit "
+			"of the number in this field should be the LUN of the desired disk."
+		)
+		(choices "unit 0" "unit 1" "unit 2" "unit 3" "unit 4" "unit 5" "unit 6" "unit 7")
+		(default 0)
+	)
+)
+(user old-level)
+(complete 15)
+
+(user 2)
+
+(if #morphos
+	(set default-mem 3)
+	(set default-mem 0)
+)
+(set memtype
+	(askchoice
+		(prompt "\nMemory options:\n")
+		(help "\n"
+			"Some SCSI devices can only read from or write to chip memory. "
+			"(The A3000 scsi.device is able to use fast memory.)\n\n"
+			"\"24 bit DMA memory\" means that only "
+			"memory addresses below 0x01000000 are considered for "
+			"buffering.\n\n"
+			"IDE controllers are usually able to use any memory."
+		)
+		(choices
+			"use CHIP memory for SCSI buffers"
+			"use FAST memory for SCSI buffers"
+			"use 24 bit DMA memory for SCSI buffers"
+			"use ANY memory available")
+		(default default-mem)
+	)
+)
+(user old-level)
+(complete 20)
+
+(if memtype
+	(
+		(if (= 0 memtype) (set memtype "2"))
+		(if (= 1 memtype) (set memtype "4"))
+		(if (= 2 memtype) (set memtype "32"))
+		(if (= 3 memtype) (set memtype "0"))
+		
+	)
+)
+
+(user 2)
+(set other-options
+	(askoptions
+		(prompt "\nOther options:\n")
+		(help "\n"
+			"ROCKRIDGE=R: Use Rock Ridge file names, if possible.\n\n"
+			"JOLIET=J: Use Joliet file names, if possible.\n\n"
+			"SHOWVERSION=SV: Show version numbers.\n\n"
+			"RETRY: Do not report an error if the CDROM drive is switched off while "
+			"mounting the filesystem. The \"C:Mount\" program will hang until "
+			"the CDROM drive is switched on."
+		)
+		(choices
+			"use Rock Ridge file names, if possible"
+			"use Joliet file names, if possible"
+			"use trackdisk-device instead of SCSI-direct"
+			"show version numbers"
+			"don't report an error if CDROM is switched off"
+		)
+		(default 3)
+	)
+)
+(user old-level)
+(complete 25)
+
+(set startstr "")
+(if (IN other-options 0) (set startstr (cat startstr #space "ROCKRIDGE")))
+(if (IN other-options 1) (set startstr (cat startstr #space "JOLIET")))
+(if (IN other-options 2) (set startstr (cat startstr #space "SHOWVERSION")))
+(if (IN other-options 3) (set startstr (cat startstr #space "RETRY")))
+
+(user 2)
+(set case-options
+	(askchoice
+		(prompt "\nMap filenames to lower case:\n")
+		(help "\n"
+			"LOWERCASE=L: Map ISO-9660 names to lower case.\n\n"
+			"MAYBELOWERCASE=ML: Do not convert the filenames if the CDROM is a "
+			"CDTV or CD32 disk, or a disk created by Mkisofs. "
+			"Otherwise, map the filenames to lower case.\n\n"
+			"(LOWERCASE and MAYBELOWERCASE are mutually exclusive.)"
+		)
+		(choices
+			"map to lower (except CDTV, CD32, Mkisoft)"
+			"map to lower case (always)"
+			"don't map filenames")
+		(default 0)
+	)
+)
+(user old-level)
+(complete 30)
+
+(if (= 0 case-options) (set startstr (cat startstr #space "MAYBELOWERCASE")))
+(if (= 1 case-options) (set startstr (cat startstr #space "LOWERCASE")))
+;(if (= 2 case-options) (...))
+
+(user 2)
+(set std-buf
+	(asknumber
+		(prompt
+			"\n\nEnter the number of 2048 byte buffers for\n"
+			"general access to the CDROM drive:\n")
+		(help "\n"
+			"Number of 2048 byte buffers for general access to the "
+			"CDROM drive. Default = 5 buffers"
+		)
+		(default 5)
+	)
+)
+(user old-level)
+(complete 35)
+
+(user 2)
+(set file-buf
+	(asknumber
+		(prompt
+			"\n\nEnter the number of 2048 byte buffers for\n"
+			"file access with the AmigaDOS Read() call:\n")
+		(help "\n"
+			"FILEBUFFERS=FB: Number of 2048 byte buffers for file access with the "
+			"AmigaDOS Read() call. Default = 5 buffers"
+		)
+		(default 5)
+	)
+)
+(user old-level)
+(complete 40)
+
+(if (<> 5 file-buf) (set startstr (cat startstr #space "FILEBUFFERS=" file-buf)))
+
+(user 2)
+(set diskchg
+	(asknumber
+		(prompt
+			"\nEnter the time between two successive diskchange checks in seconds.\n\n"
+			"If the value of this option is 0, then no diskchange "
+			"checks will be performed; in this case, you have to use "
+			"the C:DiskChange command in order to inform AmiCDROM that "
+			"a disk has been changed.\n")
+		(help "\n"
+			"SCANINTERVAL=SI: Time between two successive diskchange checks. "
+			"Default = 3 seconds.\n"
+			"If the value of this option is 0, then no diskchange "
+			"checks will be performed; in this case, you have to use "
+			"the C:DiskChange command in order to inform AmiCDROM that "
+			"a disk has been changed.\n"
+		)
+		(default 3)
+	)
+)
+(user old-level)
+(complete 45)
+
+(if (<> 3 diskchg) (set startstr (cat startstr #space "SCANINTERVAL=" diskchg)))
+
+(user 2)
+(set cdda-file
+	(askfile
+		(prompt
+			"Select the command which should be executed, when you "
+			"double-click a CD-DA (AudioCD) icon or click Proceed.")
+		(help "\n"
+			"PLAYCDDA=PC: Name of the command to be executed if the user double-"
+			"clicks at the \"CD-DA\" icon. If you want to execute "
+			"a command with parameters, you have to create "
+			"a script file containing the command plus parameters. "
+			"The name of the script file has to be passed as an "
+			"argument to the PC option. Don't forget to set the "
+			"\"S\" protection bit of the script file."
+		)
+		(default "")
+	)
+)
+(user old-level)
+(complete 50)
+
+(if (NOT (= "" cdda-file)) (set startstr (cat startstr #space "PLAYCDDA=" cdda-file)))
+
+(user 2)
+(set icon-pos
+	(askchoice
+		(prompt "\n\nSelect CD-DA (AudioCD) icon position:\n")
+		(help "\nDefault: WB selects position.")
+		(choices
+			"Workbench selects position"
+			"enter own position")
+		(default 0)
+	)
+)
+(user old-level)
+(complete 55)
+
+(if icon-pos
+	(
+		(user 2)
+		(set x-pos
+			(asknumber
+				(prompt "\n\nEnter the x-position for the CD-DA (AudioCD) icon:\n")
+				(help "\nX position of CD-DA icon. (Default: WB selects position.)")
+			)
+		)
+		(set y-pos
+			(asknumber
+				(prompt "\n\nEnter the y-position for the CD-DA (AudioCD) icon:\n")
+				(help "\nY position of CD-DA icon. (Default: WB selects position.)")
+			)
+		)
+		(user old-level)
+
+		(if x-pos (set startstr (cat startstr #space "XPOS=" x-pos)))
+		(if y-pos (set startstr (cat startstr #space "YPOS=" y-pos)))
+	)
+)
+(complete 60)
+
+;Mac
+
+(user 2)
+(set ask-mac
+	(askbool
+		(prompt
+			"\n\n\nDo you want to configure also the options\n"
+			"which are for Mac-CDs only?\n")
+		(help "\n"
+			"The following options are only interesting for you, "
+			"if you have some Mac-CDs or if you plan to get some "
+			"in future."
+		)
+		(default 0)
+	)
+)
+(user old-level)
+(complete 65)
+
+(if ask-mac
+	(
+		(user 2)
+		(set other-options
+			(askoptions
+				(prompt "\nMac options:\n")
+				(help "\n"
+					"MACTOISO=MI: Convert Mac characters into ISO-Latin-1 (Amiga) characters. "
+					"(The conversion applies only to the filenames, not to "
+					"the contents of the files.) Additionally, the character "
+					"':' will be converted into a '.', and '/' will be "
+					"converted into '-'; this is necessary because AmigaDOS cannot "
+					"handle filenames containing those characters.\n\n"
+					"CONVERTSPACES=CS: Convert spaces in MacHFS filenames into underscores ('_').\n\n"
+					"HFSFIRST=HF: If a new disk is mounted, AmiCDROM normally tests first "
+					"if the new disk is a ISO-9660 disk. If the option \"HF\" "
+					"is given, then the disk is first examined for a HFS "
+					"partition.\n"
+					"This option is useful if you have a \"multi-platform\" "
+					"disk with both a ISO-9660 and a HFS partition. Without "
+					"the option you get the ISO partition; with the option "
+					"you get the HFS partition."
+				)
+				(choices
+					"convert Mac characters into Amiga characters"
+					"convert space in MacHFS filenames to underscore"
+					"examine CD first for a HFS partition"
+				)
+				(default 0)
+			)
+		)
+		(user old-level)
+		(complete 67)
+
+		(if (IN other-options 0) (set startstr (cat startstr #space "MACTOISO")))
+		(if (IN other-options 1) (set startstr (cat startstr #space "CONVERTSPACES")))
+		(if (IN other-options 2) (set startstr (cat startstr #space "HFSFIRST")))
+
+		(user 2)
+		(set data-fork
+			(askstring
+				(prompt
+					"\nEnter the extension for the data fork\n"
+					"of a file on MacHFS disks:\n\n"
+					"(leave it empty, if you are not sure!)\n")
+				(help "\n"
+					"DATAEXT=DE: Extension for the data fork of a file on MacHFS disks.\n\n"
+					"RESOURCEEXT=RE: Extension for the resource fork of a file on MacHFS disks.\n\n"
+					"(If neither DE nor RE are given, DE is set to the empty "
+					"string and RE is set to \".rsrc\".)"
+				)
+			)
+		)
+		(complete 68)
+		(set res-fork
+			(askstring
+				(prompt
+					"\nEnter the extension for the resource fork\n"
+					"of a file on MacHFS disks:\n\n"
+					"(leave it empty, if you are not sure!)\n")
+				(help "\n"
+					"DATAEXT=DE: Extension for the data fork of a file on MacHFS disks.\n\n"
+					"RESOURCEEXT=RE: Extension for the resource fork of a file on MacHFS disks.\n\n"
+					"(If neither DE nor RE are given, DE is set to the empty "
+					"string and RE is set to \".rsrc\".)"
+				)
+			)
+		)
+		(user old-level)
+
+		(if res-fork (set startstr (cat startstr #space "RESOURCEEXT=" res-fork)))
+		(if data-fork (set startstr (cat startstr #space "DATAEXT=" data-fork)))
+	)
+)
+(complete 70)
+
+(user 2)
+(set copy-charsets
+	(askbool
+		(prompt
+			"\n\n\nDo you want to install supplied\n"
+			"character set tables?\n")
+		(help "\n"
+			"You may choose not to install them, if you already "
+			"have them, for example if you have codesets.library "
+			"installed."
+		)
+		(default 0)
+	)
+)
+(user old-level)
+
+(if copy-charsets
+	(copyfiles
+		(prompt "\nInstalling character set tables")
+		(help #na)
+		(source "Charsets")
+		(dest   charsetsdir)
+		(all)
+	)
+)
+
+(user 2)
+(set charset-file
+	(askfile
+		(prompt
+			"Select the character set translation table you wish "
+			"to use for Joliet disks or click Proceed for default "
+			"built-in Latin-1 table.\n\n"
+			"These tables are usually placed in LIBS:Charsets.")
+		(help "\n"
+			"UNICODETABLE=UT: Name of the external table used to "
+			"translate characters on Joliet disks. "
+			"The name of the table file has to be passed in an "
+			"absolute form."
+		)
+		(default charsetsdir)
+	)
+)
+(user old-level)
+(complete 73)
+
+(if (NOT (= charsetsdir charset-file)) (set startstr (cat startstr #space "UNICODETABLE=" charset-file)))
+
+(set startstr (substr startstr 1 (strlen startstr)))
+(set startstr (cat "\"" startstr "\"")) ; startup fertig
+
+(user 2)
+(set dosdevice
+	(askstring
+		(prompt "\n\n"
+			"Enter the AmigaDOS device-name you want to use for your CDROM drive:\n\n"
+		)
+		(help #na)
+		(default "CD0:")
+	)
+)
+(user old-level)
+
+(complete 75)
+
+; copy 'device' to 'dev-name' and kill ':'
+(set dev-name (substr dosdevice 0 (- (strlen dosdevice) 1)))
+
+(user 2)
+(set auto-mount
+	(askbool
+		(prompt "Do you want to auto-mount "device" during every system-start?\n"
+                        "\n"
+			"KillDevice tool (for MorphOS) will not be inserted into\n"
+			"Startup-Sequence automatically, you will need to do it manually"
+		)
+		(help "\n"
+			"Workbench 2.0:\n\n"
+			"Auto-Mount: The entry \"Mount >NIL: "device"\" will be added "
+			"in your user-startup\n\n"
+			"No: Nothing will be added anywhere. If you want to access your "
+			"CDs, you will have to type \"Mount "device"\" in your shell first.\n\n"
+			"Workbench 2.1+ or MorphOS:\n\n"
+			"Auto-Mount: The file "dev-name" will be placed in your "
+			"directory \"SYS:Devs/DOSDrivers\"\n\n"
+			"No: The file "dev-name" will be placed in your "
+			"directory \"SYS:Storage/DOSDrivers\"\n"
+		)
+		(choices "Auto-Mount" "No")
+	)
+)
+(user old-level)
+(complete 80)
+
+(if (<= #wbversion 37)
+	(
+		(protect "DEVS:MountList" "+wd")
+		(textfile
+			(prompt "\nCreating Workbench 2.0 Mountlist-Entry")
+			(help #na)
+			(dest	"DEVS:MountList")
+			(if (exists "DEVS:MountList") (include "DEVS:MountList"))
+			(append "\n/* CDVDFS filesystem V"#amicdrom-version" */\n\n"
+				dosdevice"     Handler       = "ldir2"cdrom-handler\n"
+				"        Stacksize      = 10000\n"
+				"        Priority       = 5\n"
+				"        GlobVec        = -1\n"
+				"        Mount          = 1\n"
+				"        Device         = "device"\n"
+				"        Unit           = "unit"\n"
+				"	 LowCyl         = 0\n"
+				"	 HighCyl        = 0\n"
+				"	 Surfaces       = 1\n"
+				"	 BlocksPerTrack = 1\n"
+				"        Buffers        = "std-buf"\n"
+				"        BufMemType     = "memtype"\n"
+				"        DosType        = 0x43444653\n"
+				"        Control        = "startstr"\n"
+				"#\n")
+		)
+		(if auto-mount
+			(
+				(user 1) ; nicht auf EXPERT!!
+				(startup
+					"AmiCDROM"
+					(prompt "\nEditing your startup")
+					(help #na)
+					(command (cat "Mount >NIL: " dosdevice))
+				)
+				(user old-level)
+			)
+		)
+	)
+	(
+		(if auto-mount
+			(set dev-dir "SYS:Devs/DOSDrivers")
+			(set dev-dir "SYS:Storage/DOSDrivers")
+		)
+
+		(protect (tackon dev-dir dev-name) "+wd")
+		(textfile
+			(prompt "\nCreating Workbench 2.1+ mount-entry")
+			(help #na)
+			(dest (tackon dev-dir dev-name))
+			(append "/* CDVDFS filesystem V"#amicdrom-version" */\n\n"
+				" Handler        = "ldir2"cdrom-handler\n"
+				" Stacksize      = 10000\n"
+				" Priority       = 5\n"
+				" GlobVec        = -1\n"
+				" Mount          = 1\n"
+				" ForceLoad      = 1\n"
+				" Device         = "device"\n"
+				" Unit           = "unit"\n"
+				" LowCyl         = 0\n"
+				" HighCyl        = 0\n"
+				" Surfaces       = 1\n"
+				" BlocksPerTrack = 1\n"
+				" Buffers        = "std-buf"\n"
+				" BufMemType     = "memtype"\n"
+				" DosType        = 0x43444653\n"
+				" Control        = "startstr"\n"
+			)
+		)
+
+		(protect (cat (tackon dev-dir dev-name) ".info") "+wd")
+		(copyfiles
+			(prompt "\nCreating Workbench 2.1+ mount-entry icon")
+			(help #na)
+			(source "CD0.info")		; ***TODO***
+			(dest	dev-dir)
+			(newname (cat dev-name ".info"))
+		)
+
+		(tooltype
+			(dest (tackon dev-dir dev-name))
+			(noposition)
+		)
+	)
+)
+
+(complete 90)
+
+(copyfiles
+	(prompt "\nInstalling "ldir2"cdrom-handler")
+	(help #na)
+	(source "l/cdrom-handler")		; ***TODO***
+	(dest	ldir)
+)
+(copyfiles
+	(prompt "\nInstalling "cdir2"cdcontrol")
+	(help #na)
+	(source "c/cdcontrol")
+	(dest	cdir)
+)
+(copyfiles
+	(prompt "\nInstalling "cdir2"checkcd")
+	(help #na)
+	(source "c/checkcd")
+	(dest	cdir)
+)
+(copyfiles
+	(prompt "\nInstalling "cdir2"cdrom")
+	(help #na)
+	(source "c/cdrom")
+	(dest	cdir)
+)
+(if #morphos
+	(copyfiles
+		(prompt "\nInstalling "cdir2"KillDevice")
+	        (help #na)
+        	(source "C/KillDevice")
+	        (dest	cdir)
+        )
+)
+(copyfiles
+	(prompt "\nInstalling documentation")
+	(help #na)
+	(source "CDVDFS.guide")
+	(dest   docdir)
+	(infos)
+)
+
+(complete 100)
+

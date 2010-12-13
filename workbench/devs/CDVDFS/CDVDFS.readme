@@ -1,0 +1,50 @@
+Short: CD/DVD disk filesystem (ISO-9660+RockRidge+Joliet+HFS)
+Type: disk/cdrom
+Uploader: sonic_amiga@rambler.ru
+Author: sonic_amiga@rambler.ru
+Architecture: ppc-morphos
+Version: 1.4
+
+* IMPORTANT NOTICE FOR USERS OF AMICDROM:
+*
+* The format of the Mountlist has been changed.
+* Please consult CDVDFS.guide for further information.
+
+
+CDVDFS
+======
+
+CDVDFS is a CD/DVD disk filing system for the Amiga family of
+operating systems. It supports the ISO-9660 standard, the Rock
+Ridge Interchange Protocol, Microsoft Joliet and the Macintosh HFS
+format.
+
+The CD/DVD drive is mounted as a DOS device (e.g. CD0:). You can
+access files and directories on a CD/DVD disk by the usual syntax,
+e.g. "type cd0:foo/readme.txt".
+
+The file 'CDVDFS.guide' contains information about installing and
+using the CDVDFS handler.
+
+This particular archive contains MorphOS binaries. Included source
+code can also be compiled on AmigaOS and AROS
+
+This product is based on AROS adaptation of AmiCDROM v1.15 by Frank
+Munkert <ln_fmu@pki-nbg.philips.de>, who stopped his work long ago.
+Thanks to Frank for making the source code availible.
+
+Please send suggestions and bug reports to:
+
+    sonic_amiga@rambler.ru
+
+LEGAL NOTICE
+============
+
+CDVDFS is a forked project based on AmiCDROM v1.15 by Frank Munkert
+(ln_fmu@pki-nbg.philips.de).
+
+This software may be freely distributed and redistributed for
+non-commercial purposes, provided this notice is included.
+
+There are no objections to anyone using or enhancing this code.
+ 
