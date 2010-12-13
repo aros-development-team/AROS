@@ -1,0 +1,22 @@
+## version $VER: sfsdefrag.catalog 1.0 (01.02.2006)
+## language français
+## codeset 0
+;
+MSG_DESCRIPTION
+Défragmentation SFS
+;
+MSG_BITMAP
+Carte du périphérique
+;
+MSG_SELECTION
+Sélection du périphérique
+;
+MSG_REFRESH
+Rafraîchissement
+;
+MSG_START
+Commencer !
+;
+MSG_CANCEL
+Annuler
+;

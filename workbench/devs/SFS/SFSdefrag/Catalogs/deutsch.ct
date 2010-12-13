@@ -1,0 +1,29 @@
+## version $VER: sfsdefrag.catalog 1.0 ($TODAY)
+## language deutsch
+## codeset 0
+;
+;
+MSG_DESCRIPTION
+SFS Defragmentierer
+; SFS Defragmenter
+;
+MSG_BITMAP
+Geräte-Bitmap
+; Device bitmap
+;
+MSG_SELECTION
+Geräteauswahl
+; Device selection
+;
+MSG_REFRESH
+Bitmap auffrischen
+; Refresh bitmap
+;
+MSG_START
+Start!
+; Start!
+;
+MSG_CANCEL
+Abbruch
+; Cancel
+;

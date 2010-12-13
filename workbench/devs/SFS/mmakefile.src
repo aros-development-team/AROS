@@ -1,0 +1,12 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- contrib-sfs-c: contrib-sfs-c-setcache 		\
+#MM					contrib-sfs-c-sfsquery		\
+#MM					contrib-sfs-c-sfsformat		\
+#MM					contrib-sfs-c-sfsdefrag		\
+#MM					contrib-sfs-c-sfsdefragmentgui
+
+%common

@@ -1,0 +1,112 @@
+SFScheck
+--------
+
+This tool checks an SFS disk's structure and looks for
+anything which is out of the ordinary.  It makes no
+modifications, it only reads the disk.  Any errors it finds
+will be printed.
+
+You can use this tool to give me more information when
+reporting bugs, but also to convince yourself that the SFS
+disk is still in working order.
+
+If SFScheck reports any errors, then be very careful with
+the disk!  The best thing to do would be to copy all
+important files and reformat.  Try to remember what you did
+the last time you ran SFScheck -- you might be able to
+discover what caused the error.
+
+Continuing to use an SFS disk with errors will eventually
+result in fatal errors which means you lose all data on that
+disk.
+
+Don't run SFScheck when you're writing something to the
+disk.  SFScheck will get confused (because the structure
+changes right under its feet) and reports errors which
+aren't really there.  This isn't dangerous as SFScheck only
+reads the disk (it can't repair a disk), but you should be
+aware of this when using SFScheck.  Rerunning it should give
+correct results.
+
+
+How do I use it?
+----------------
+
+I've put SFScheck in my user-startup, and I let it print all
+the output to a Shell, so I can see that the disks are still
+okay each time I reboot.  SFScheck will generate errorcode
+20 (FAIL) when anything is found wrong, so you can redirect
+the output to a logfile as well.
+
+For example try this:
+
+  failat 20
+  date >>sys:logfile
+  sfscheck dh3: >>sys:logfile
+
+
+Usage
+-----
+
+Use SFScheck from a CLI.  It's commandline syntax is:
+
+  DEVICE=DRIVE/A,LOCK/S,LINES/N,READAHEADSIZE/N
+
+DEVICE=DRIVE/A:  This is a required parameter.  It is the
+disk you want to check with SFScheck.
+
+LOCK:  If you specify this parameter, then SFScheck will
+lock the disk for the duration of the scan.  This makes sure
+that no programs modify the disk during the check, which
+avoids the 'fake' errors SFScheck can generate if the disk
+was modified during the check.
+
+LINES:  The nubmer of lines SFScheck uses for its cache
+during the check.  Setting this high enough can reduce the
+SFScheck scanning time drastically.  Try LINES=500 on the
+command-line to see the speed improvement -- use higher
+values if needed.
+
+READAHEADSIZE:  Another parameter to control the cache
+SFScheck uses.  It works similair to the parameter in
+SetCache.
+
+
+So you can use SFScheck like this:
+
+  SFScheck dh0:
+
+If you want to redirect its output to a temporary file try
+this:
+
+  SFScheck dh0: >RAM:output.txt
+
+or this if you want the output appended each time:
+
+  SFScheck dh0: >>RAM:output.txt
+
+
+Don't use your SFS disk while SFScheck is checking it,
+unless you specify the LOCK parameter.  SFScheck will be
+confused (by default it doesn't lock the disk during the
+checking period).
+
+Also note that this version of SFScheck is an early version
+of a program which isn't complete yet.  This means that it
+probably contains bugs and may crash your system.  Please
+make sure you've saved all your work before using SFScheck.
+SFScheck won't make any modifications to your disks -- it
+only reads data from them and reports any problems.
+
+
+Requirements
+------------
+
+SFScheck can only be used on SFS disks.  Using it on a FFS
+disk or other type of disk is harmless and SFScheck will
+simply report that the disk isn't in the correct format.
+
+SFScheck requires quite a lot of memory to operate (but it
+helps to make the check quite fast).  It takes 10-20 seconds
+to check a disk with 20.000 files on it on my system.  About
+2 MB of free memory is required.

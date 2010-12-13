@@ -1,0 +1,12 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+ICONS := \
+    SFSDefrag
+
+#MM contrib-sfs-c-sfsdefrag-icons
+
+%build_icons mmake=contrib-sfs-c-sfsdefrag-icons icons=$(ICONS) \
+             dir=$(AROS_TOOLS)

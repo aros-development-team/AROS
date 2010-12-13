@@ -1,0 +1,12 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+    
+USER_CFLAGS     := -I$(TOP)/rom/dos
+
+%build_prog mmake=contrib-sfs-c-setcache \
+    files=SetCache progname=SetCache targetdir=$(AROS_C) \
+    uselibs="arossupport amiga arosc m"
+
+%common

@@ -1,0 +1,12 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+    
+USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS
+
+%build_prog mmake=contrib-sfs-c-sfsdefragmentgui \
+    files=SFSdefragmentGUI progname=SFSdefragmentGUI targetdir=$(AROS_C) \
+    uselibs="arossupport amiga arosc m"
+
+%common

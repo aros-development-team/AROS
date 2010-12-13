@@ -1,0 +1,37 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := adminspaces \
+	 bitmap \
+	 btreenodes \
+	 cachebuffers \
+	 debug \
+	 nodes \
+	 support \
+	 transactions \
+	 asmsupport \
+	 objects \
+	 locks \
+	 deviceio \
+	 cachedio \
+	 filesystemmain
+
+MODULE_FILES := arosdevice arosmain
+
+#MM contrib-sfs: contrib-sfs-c
+#MM contrib-sfs-kobj: contrib-sfs-c
+#MM contrib-sfs-packet: contrib-sfs-c
+
+USER_CFLAGS := -DSFS_BE
+
+%build_prog mmake=contrib-sfs-packet \
+    progname=sfs.handler targetdir=$(AROS_DEVS) \
+    files="$(FILES)" usestartup=no uselibs="arossupport rom m"
+
+USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
+
+%build_module mmake=contrib-sfs \
+	modname=sfs modtype=device modsuffix=handler \
+	files="$(MODULE_FILES) $(FILES)" \
+	uselibs="arossupport rom m"

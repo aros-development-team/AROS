@@ -1,0 +1,70 @@
+SFSformat can be used to quick format an SFS partition.  The
+normal format command has special options for FastFilesystem
+(FFS, DIRCACHE and so on) -- SFSformat has special options
+for Smart Filesystem.
+
+SFSformat currently only has one option, which can be used
+to format a SFS disk with case sensitive file and directory
+names (ala UNIX).
+
+It's command line syntax is:
+
+ DEVICE=DRIVE/A/K,NAME/K/A,CASESENSITIVE/S,NORECYCLED/S,
+ SHOWRECYCLED/S
+
+
+DEVICE or DRIVE
+
+The SFS drive you wish to quick format.  SFSformat can only
+be used to quick format an SFS drive.  Other filesystems
+will be unaffected.
+
+
+NAME
+
+The name of the newly formatted partition.  
+
+
+CASESENSITIVE
+
+Specify this on the command line to get case sensitive file
+and directory names.  If you specify this option, then SFS
+will treat the files 'foo', 'Foo' and 'FOO' as three
+distinct files.  Without this option they would be treated
+as one and the same file (FFS behaviour).
+
+
+NORECYCLED
+
+When specified the disk will be formatted without creating a
+Recycled directory.  You can't create this directory later
+on (atleast not for now), so choose carefully.
+
+
+SHOWRECYCLED
+
+By default the Recycled directory is hidden and won't show
+up in directory listings.  You can override this behaviour
+with this switch.
+
+
+
+When starting SFSformat it will ask you to confirm the
+format.  Press Return to format, or Ctrl + C to abort.
+
+
+Examples
+--------
+
+SFSformat drive SFS: name Empty casesensitive
+
+-> Quick formats drive SFS: and gives it the name 'Empty'.
+   File and directory names on this drive will be case
+   sensitive.
+
+
+SFSformat drive HD0: name MyDrive
+
+-> Quick formats drive HD0: and gives it the name 'MyDrive'.
+   File and directory names on this drive will be treated
+   case insensitively (like under FFS).
