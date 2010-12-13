@@ -1,0 +1,118 @@
+#
+#  Makefile.in for 7.1 test
+#
+
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+PREFIX		= @prefix@
+DISTDIR		= @DISTDIR@
+CDIR		= ${DISTDIR}/User/C
+
+CC		= @CC@
+STRIP		= @STRIP@ @STRIPFLAGS@
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+
+CPPFLAGS	= @CPPFLAGS@
+CFLAGS		= @CFLAGS@
+LDFLAGS		= @LDFLAGS@
+LIBS		= @LIBS@
+
+VPATH		= @srcdir@
+
+
+#
+# Files
+########################################
+
+OBJECTS		= Test-7.1.o
+EXECUTABLE	= Test-7.1
+
+
+#
+# Targets
+########################################
+
+.PHONY:		all clean distclean maintainer-clean install revup bindist
+
+all:		$(EXECUTABLE)
+
+clean:
+	$(RM) $(EXECUTABLE) version.h *.o Makefile.dep
+
+distclean:	clean
+	$(RM) Makefile
+
+maintainer-clean: distclean
+
+install:	all
+	$(INSTALL_PROGRAM) $(EXECUTABLE) $(PREFIX)/C/$(EXECUTABLE)
+
+revup:
+	@rev=`cat $(srcdir)/version.rev` && echo `expr $$rev + 1` > $(srcdir)/version.rev
+	@date +%d.%m.%y > $(srcdir)/version.date
+	@echo -n "New revision: "
+	@cat $(srcdir)/version.rev
+
+bindist:	all
+	$(INSTALL) -d $(CDIR)
+	$(INSTALL_PROGRAM) $(EXECUTABLE) $(CDIR)/$(EXECUTABLE)
+	$(STRIP) $(CDIR)/$(EXECUTABLE)
+
+
+
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../../../config.status
+	(cd ../../.. && ./config.status)
+
+
+
+#
+# Rules
+########################################
+
+$(EXECUTABLE):	$(OBJECTS)
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+
+
+version.h:	version.rev version.date
+	@echo Creating $@
+	@ver=`cat $(top_srcdir)/version.ver` \
+	 rev=`cat $(srcdir)/version.rev` \
+	 date=`cat $(srcdir)/version.date` && \
+	 echo "#define VERSION $$ver" > $@ && \
+	 echo "#define REVISION $$rev" >> $@ && \
+	 echo "#define VERS \"$$ver.$$rev ($$date)\"" >> $@
+
+#
+# Dependencies
+########################################
+
+SOURCES		= $(wildcard $(srcdir)/*.c)
+HEADERS		= $(wildcard $(srcdir)/*.h)
+
+#DEPENDENCIES	= $(SOURCES) $(HEADERS)
+
+.PHONY:	depend
+
+depend:
+	$(RM) Makefile.dep
+	$(MAKE) Makefile.dep
+
+Makefile.dep:	$(DEPENDENCIES) version.h
+	@echo Making $@
+	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
+
+include Makefile.dep

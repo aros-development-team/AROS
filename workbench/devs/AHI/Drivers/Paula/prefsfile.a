@@ -1,0 +1,456 @@
+*** ScR ***
+
+	incdir	include:
+	include	devices/ahi.i
+	include	libraries/ahi_sub.i
+
+TRUE		EQU	1
+FALSE		EQU	0
+
+AHIDB_Paula14Bit	EQU	AHIDB_UserBase+0	;Private tag
+AHIDB_PaulaTable	EQU	AHIDB_UserBase+1	;Private tag
+AHIDB_PaulaDMA		EQU	AHIDB_UserBase+2	;Private tag
+
+BEG:
+
+*** FORM AHIM
+	dc.l	ID_FORM
+	dc.l	E-S
+S:
+	dc.l	ID_AHIM
+
+
+*** AUDN
+DrvName:
+	dc.l	ID_AUDN
+	dc.l	.e-.s
+.s
+	dc.b	"paula",0
+.e
+	CNOP	0,2
+
+
+*** AUDM
+ModeA:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020001
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:14 bit stereo++ calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeB:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020002
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:Fast 14 bit stereo++ calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeC:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020003
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:14 bit stereo calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeD:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020004
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:Fast 14 bit stereo calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeE:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020005
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		FALSE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:14 bit mono calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeF:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020006
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		FALSE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:Fast 14 bit mono calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeG:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020007
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:8 bit stereo++",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeH:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020008
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:Fast 8 bit stereo++",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeI:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020009
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:8 bit stereo",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeJ:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$0002000A
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:Fast 8 bit stereo",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeK:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$0002000B
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		FALSE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:8 bit mono",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeL:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$0002000C
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		FALSE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:Fast 8 bit mono",0
+.e
+	CNOP	0,2
+
+
+*** AUDM
+ModeM:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$0002000D
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		TRUE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:HiFi 14 bit stereo++ calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeN:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$0002000E
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		TRUE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:HiFi 14 bit stereo calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeO:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$0002000F
+
+	dc.l	AHIDB_Paula14Bit,	TRUE
+	dc.l	AHIDB_PaulaTable,	TRUE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		FALSE
+	dc.l	AHIDB_HiFi,		TRUE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:HiFi 14 bit mono calibrated",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeP:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020010
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		TRUE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:HiFi 8 bit stereo++",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeQ:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020011
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		TRUE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:HiFi 8 bit stereo",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeR:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020012
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		FALSE
+	dc.l	AHIDB_HiFi,		TRUE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:HiFi 8 bit mono",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeS:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00020018
+
+	dc.l	AHIDB_Paula14Bit,	FALSE
+	dc.l	AHIDB_PaulaTable,	FALSE
+	dc.l	AHIDB_PaulaDMA,		TRUE
+
+	; Workaround for bug in AHI v4. These tags should not be required!
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		TRUE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"Paula:DMA 8 bit stereo",0
+.e
+	CNOP	0,2
+
+E:
+	CNOP	0,2
+END:

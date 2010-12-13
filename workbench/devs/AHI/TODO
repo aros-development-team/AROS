@@ -1,0 +1,213 @@
+
+Added		Fixed		What?
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+970314		970326		Fast Echo
+970314				AHIST_INPUT
+970314				Echo example
+970314		030119		32 bit samples for CMD_WRITE
+970314		970315		Dynamic loading/unloading of samples for CMD_WRITE
+970320		970321		Finish new prefs program
+970320		970321		Update user's guide for new prefs program
+970321		970407		Localize the prefs program
+970321		030119		Dynamic (prioritized?) volume boost in device mode
+970322		970326		Rewrite the echo stuff, init code i C
+970323				Dev-API should be able to play from VMEM
+970328		970404		Convert "Programming guidelines" to texinfo
+970418		970602		MasterVolume with clipping
+970418				Better info about outvol, monvol, gain etc
+970504				Big buffer mixing
+970504		970602		32 bit output for all drivers
+970625		970628		Better BestAudioID() examples
+970703		970707		Improve the Paula driver
+970802				"Hidden" flag in audio modes
+970802				Move env. variables to the audio mode files
+970802				Localize the audio modes
+970802				Make prefs program able to modify the audio modes
+970802		970820		Fix the GetAttr() routine in the Paula driver
+970820				Hooks should be allowed to be NULL for no-op.
+971007				Tell if a mode is hardware accelerated or not.
+971007				Tell if a mode can handle stereo samples.
+971119				GetAttr should ask driver about AHIDB_Stereo etc!
+980112				Speedup GetAudioAttrsA by using audioctrl better.
+980224				AUDIO: crashes if UNIT is 4.
+980511				AUDIO: and ahi.device should report how much is played.
+980805				AHIC_Monitor, "Monitor always" in prefs.
+990908				Global volume control for device modes.
+991111				Open the filesave requester on the user's screen.
+001213				If AHISF_TIMING is not used, ahiac_BuffSize is not set.
+010422				Zero-sized CMD_WRITE sometimes locks AHI.
+010815				toccata.library emulation uses hardcoded "fast" modes.
+
+
+V5 Proposal, improvements and new lowlevel soundcard access
+===========================================================
+
+Improvements
+************
+
+Be able to ask the device which units are available.
+Use the device interface on Direct modes too.
+All AHIDB_#?Arg tags should also have a AHIDB_#?Array, that holds all values.
+A new function AHI_FreeArray() should be used to free the list.
+
+AHIR_DoChannels
+
+AHIA_AntiClick (ULONG) -- Specifies how many (output) samples AHI will spend
+interpolating when starting a new sound. (Implementera som en rutin som tar
+Addrutinen som argement, kör den på en egen buffer och mixar in den i ut-strömmen.
+Skitenkelt.)
+
+New AHI_AllocAudio tags
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+AHIA_ErrorFunc:  A Hook that gets called when an error occurs (CPU limit
+reached, input or output clipping etc).
+
+
+New/improved AHI_ControlAudio tags
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+AHIC_MonitorVolumeLeft (ULONG)           (Set to dB level specified by index)
+AHIC_MonitorVolumeRight (ULONG)
+AHIC_MonitorVolumeLeft_Query (ULONG *)   (Get index)
+AHIC_MonitorVolumeRight_Query (ULONG *)
+AHIC_OutputVolumeLeft (ULONG)
+AHIC_OutputVolumeRight (ULONG)
+AHIC_OutputVolumeLeft_Query (ULONG *)
+AHIC_OutputVolumeRight_Query (ULONG *)
+AHIC_InputGainLeft (ULONG)
+AHIC_InputGainRight (ULONG)
+AHIC_InputGainLeft_Query (ULONG *)
+AHIC_InputGainRight_Query (ULONG *)
+
+AHI will translate the old tags (AHIC_MonitorVolume,
+AHIC_MonitorVolume_Query etc) so the driver will only need to know about
+the new ones.
+
+AHIC_InputClipped (BOOL)
+AHIC_OutputClipped (BOOL)
+AHIC_UsedCPU (Fixed)
+
+New/improved database tags
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+AHIDB_MonitorVolumesLeft/AHIDB_MonitorVolumeLeftArg/AHIDB_MonitorVolumeLeft
+AHIDB_MonitorVolumesRight/AHIDB_MonitorVolumeRightArg/AHIDB_MonitorVolumeRight
+AHIDB_OutputVolumesLeft/AHIDB_OutputVolumeLeftArg/AHIDB_OutputVolumeLeft
+AHIDB_OutputVolumesRight/AHIDB_OutputVolumeRightArg/AHIDB_OutputVolumeRight
+AHIDB_InputGainsLeft/AHIDB_InputGainLeftArg/AHIDB_InputGainLeft
+AHIDB_InputGainsRight/AHIDB_InputGainRightArg/AHIDB_InputGainRight
+
+AHI will translate the old tags.  If the left and right channel cannot be
+controlled separately, AHIDB_MonitorVolumesRight, AHIDB_OutputVolumesRight
+or AHIDB_InputGainsRight will return 0. The values are in dB, stored as Fixed.
+Mute is coded as LONG_MIN (AHI_MUTED).
+
+AHIDB_Hidden (BOOL):  Prevent mode from showing up in the requester.
+AHIDB_Accelerated (ULONG):  Level of hardware acceleration (None, effects,
+mixing etc)
+AHIDB_Surround (BOOL)
+AHIDB_SampleFormats/AHIDB_SampleFormatArg/AHIDB_SampleFormat:  Sample
+formats supported by the mixing routines.  See "Total Control" below.
+
+AHIDB_Frequency can now return AHI_EXTERNAL_FREQ (defined 0), to indicate that
+the mixing frequency depends on an external source.
+
+Add AHIDB_Available
+
+
+New AHI_AudioRequest tags
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+AHIR_DoHidden: Show hidden modes, too.
+
+
+New Effect interface
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+To be defined.
+
+
+Multiple sound card support
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+To be defined.  Basically, a new driver call, or perhaps a AHIsub_GetAttr
+tag that returns the number of sound cards installed, as well as the number
+of independent DA/AD converters on each card.  ahi.device will then build
+the audio modes from a template in DEVS:AUDIOMODES.
+
+
+Preferences program
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+Allow the preferences program to set the default requester size and coordinates.
+Dynamic volume boost. Dynamic mixing frequency.
+
+
+
+Patchbay system
+***************
+
+Each time an application allocates an AudioCtrl structure, a straigt
+connection from the application to the sound hardware is opened.  This is a
+one-way connection (the recording stream cannot be modified).  With the new
+effect API, the user can add modules on this connection (predefined like
+echo, master volume, outputvolume etc, and custom modules as well).  All
+these connections from application to sound card are public.  This lets
+other applications hook into each others streams as well.
+
+Each module would need at least three functions:  Begin(), End() and
+Process().  Begin() would let the module know the minimum and maximum
+packet length (remember, the packet length is variable) and the data
+format.  Process() would get a pointer to a packet, which it may modify.
+
+The patchbay system only works when the mixing routines are used, not in
+"Absolute Power" mode. (NO!)
+
+There are lots of problems. How should wet/dry channels be handled? How
+should future enhancements, like separate effects one each virtual channel
+be handled? How can hardware acceleration be taken advantage of? PPC code?
+How should the public AudioCtrl structures been shown, in the audio mode
+requester given a temporary mode ID? What if the application saves this mode
+in its preferences file?
+
+Total Control
+*************
+
+A new Audio mode for each card driver, with bit 0-4 set to 0.  This mode is
+the "Absolute Power" mode, where all mixing routines are disabled and you
+can write data to the FIFO yourself.
+
+Add a new database tag, AHIDB_Direct (BOOL), that identifies such audio modes.
+
+Add a new requester tag, AHIR_DoDirectModes, that also shows the raw modes.
+They will be named "Paula", "Prelude.1", "Prelude.2", "Delfina", etc.
+I.e., just the card's name.  In order to only show the raw modes, a filter
+taglist containing "AHIR_Direct, TRUE" must be used.
+
+Add new AHI_ControlAudio tags:  AHIC_MixFreq (to change the mixing
+frequency), AHIC_SampleFormat and AHIC_SampleFormat_Query (to set and get
+the current data format), AHIC_DirectLength and AHIC_DirectLength_Query (to set
+and get the block length to be used), AHIC_DirectWrite (pass a buffer of size
+AHIC_DirectLength to be transferred to the card) and AHIC_DirectRead (read
+AHIC_DirectLength samples to a buffer).
+
+Should I have separate read and write fifo depth? YES!
+
+Add database tags:  AHIDB_SampleFormats/AHIDB_SampleFormatArg/
+AHIDB_SampleFormat (find out the supported hardware sample formats)
+AHIDB_DirectLengths/AHIDB_DirectLengthArg/AHIDB_DirectLength (to find out the
+available FIFO depths).
+
+Add new sample formats:  AHIST_ULAW, AHIST_ALAW, AHIST_ADPCM, AHIST_MP1L3 etc...
+
+In these modes, the MixFunc() will be replaced by a routine that transfers
+the memory block set by the last AHIC_DirectWrite to the driver-allocated
+mixing buffer.  This allows the driver to reuse the current transfer
+routines (esp.  useful in the paula driver), which allows minimal changes
+the the current drivers.  However, there is nothing preventing you from
+skipping the call to MixFunc() and read directly from the AHIC_DirectWrite
+block.
+
+The PlayerFunc() should be called before you fill the fifo.  The user is
+responsible for setting a new AHIC_DirectWrite block from this hook.
+
+*************
+
+User-defined audio modes, just like "Default Music Unit", id #0
+User-defined pseudo drivers that handles mixing from several programs/device
+units.
+

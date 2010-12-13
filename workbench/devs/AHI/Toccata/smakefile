@@ -1,0 +1,49 @@
+
+DEST	= toccata.library
+OBJECTS	= libinit.o toccata.o slaveproc.o stubs.o 
+RCSFILES= libinit.c slaveproc.c smakefile stubs.a toccata.c toccata.h
+
+VERSION = 12
+REVISION= 1000
+VSTRING = toccata.library 12.1000 (9.9.97) ©1997 Martin Blom & Teemu Suikki. Emulation library using AHI.
+
+CFLAGS	= CPU=68060 SAVEDS\
+PARAMS=REGISTER LIBCODE NOSTACKCHECK DEBUG=FULL STRINGMERGE\
+DATA=NEAR NOVERSION UTILITYLIB OPTIMIZE OPTTIME OPTSCHED
+
+AFLAGS  = SYMDEBUG LINEDEBUG QUIET NOEXE OPT NRQBPSMD INCPATH=Include:
+
+LFLAGS	= \
+LIBFD FD:toccata_lib.fd NOICONS SMALLDATA SMALLCODE \
+LIBVERSION $(VERSION) LIBREVISION $(REVISION) LIBID "$(VSTRING)"
+
+all:		$(DEST)
+
+$(DEST):	$(OBJECTS)
+	slink $(LFLAGS) TO $@ FROM lib:libent.o $(OBJECTS) \
+		LIB LIB:sc.lib LIB:amiga.lib
+	slink toccata.library to $(DEST) nodebug
+	--flushmem
+
+.c.o:
+	sc $(CFLAGS) $*.c
+
+.a.o:
+	phxass $(AFLAGS) $*.a
+
+libinit.o:	libinit.c
+	sc $(CFLAGS) DEF ONE_GLOBAL_SECTION $<
+
+toccata.o:	toccata.c toccata.h version.h
+slaveproc.o:	slaveproc.c toccata.h
+stubs.o:	stubs.a
+version.h:	toccata.c toccata.h
+	echo >$@ "const static char VersTag[] = *"$$VER: $(VSTRING)*"" NOLINE
+	echo >>$@ ";"
+
+ci:
+	ci -l $(RCSFILES)
+
+clean:
+	--delete \#?.o \#?.tmp \#?.info version.h $(DEST) QUIET
+

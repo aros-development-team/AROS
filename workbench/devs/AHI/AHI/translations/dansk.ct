@@ -1,0 +1,352 @@
+## version $VER: ahiprefs.catalog 4.6 (4.8.2004)
+## language dansk
+## codeset 0
+;
+## chunk AUTH Translated by Thomas Petersen/ATO <thomaslp@post1.tele.dk>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+\000Projekt
+; \000Project
+;
+msgItemOpen
+Å\000Åbne...
+; O\000Open...
+;
+msgItemSaveAs
+G\000Gemme som...
+; A\000Save As...
+;
+msgItemAbout
+?\000Om...
+; ?\000About...
+;
+msgItemQuit
+A\000Afslutte
+; Q\000Quit
+;
+msgMenuEdit
+\000Rette
+; \000Edit
+;
+msgItemDefaults
+I\000Indstil til standard
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+S\000Sidst gemte
+; L\000Last Saved
+;
+msgItemRestore
+E\000Genetablere
+; R\000Restore
+;
+msgMenuSettings
+\000Indstillinger
+; \000Settings
+;
+msgItemCreateIcons
+L\000Lave ikoner?
+; I\000Create Icons?
+;
+msgMenuHelp
+\000Hjælp
+; \000Help
+;
+msgItemHelp
+HELP\000Hjælp...
+; Help\000Help...
+;
+msgItemUsersGuide
+H\000AHI-brugerguide...
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+\000Indeks...
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+Modus indstillinger
+; Mode settings
+;
+msgPageAdvanced
+Avancerede indstillinger
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+Enhed %ld
+; Unit %ld
+;
+msgUnitMusic
+Musik enhed
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+Modus-ID\nOptager\nProgrammør\nCopyright\nDrivprogram\nVersion\nAnnotation
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+Fuld duplex
+; Full duplex
+;
+msgPropRecordHalf
+Halv duplex
+; Half duplex
+;
+msgPropRecordNone
+Nix
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+Muligheder
+; Options
+;
+msgOptFrequency
+_Frekvens
+; _Frequency
+;
+msgOptChannels
+_Kanaler
+; C_hannels
+;
+msgOptNoChannels
+(Deaktiveret)
+; 
+;
+msgOptVolume
+_Styrke
+; _Volume
+;
+msgOptMonitor
+_Monitor
+; _Monitor
+;
+msgOptGain
+_Tjent
+; _Gain
+;
+msgOptMuted
+Nedsat
+; Muted
+;
+msgOptInput
+_Inddata
+; _Input
+;
+msgOptNoInputs
+Ingen inddata
+; No inputs
+;
+msgOptOutput
+_Uddata
+; _Output
+;
+msgOptNoOutputs
+Ingen uddata
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+Globale muligheder
+; Global options
+;
+msgGlobOptDebugLevel
+_Aflusningsniveau
+; _Debug level
+;
+msgGlobOptEcho
+_Ekko
+; _Echo
+;
+msgGlobOptSurround
+Surround i "_Hurtig"-modus
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+_CPU-begrænsning
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+Ingen
+; None
+;
+msgDebugLow
+Lav
+; Low
+;
+msgDebugHigh
+Høj
+; High
+;
+msgDebugFull
+Fuld
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+Aktiveret
+; Enabled
+;
+msgEchoFast
+Hurtig
+; Fast
+;
+msgEchoDisabled
+Deaktiveret
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+Aktiveret
+; Enabled
+;
+msgSurroundDisabled
+Deaktiveret
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+_Gemme
+; _Save
+;
+msgButtonUse
+_Bruge
+; _Use
+;
+msgButtonCancel
+_Afbryde
+; _Cancel
+;
+msgButtonOK
+OK
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+AHI-indstillinger
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+%s%s\nCopyright ©%s
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+Ikke i stand til at åbne vindue.
+; Unable to open window.
+;
+msgTextNoFileRequester
+Ikke i stand til at allokere filvælger
+; Unable to allocate file requester.
+;
+msgTextNoFind
+Kan ikke finde '%s'!
+; Unable to find `%s'!
+;
+msgTextNoOpen
+Kan ikke åbne '%s' version %ld.
+; Unable to open `%s´ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+_Hoved lydstyrke
+; _Master volume
+;
+msgMVNoClip
+Uden klipning
+; Without clipping
+;
+msgMVClip
+Med klipning
+; With clipping
+;
+msgGlobOptACTime
+
+; Default anti-click time
+;
+msgButtonPlay
+
+; _Play a test sound
+;
+msgOptScalemode
+
+; Volume sc_aling
+;
+msgSMFixedSafe
+
+; Safe
+;
+msgSMDynSafe
+
+; Safe, dynamic
+;
+msgSM0dB
+
+; Full volume
+;
+msgSM3dB
+
+; -3 dB
+;
+msgSM6dB
+
+; -6 dB
+;
+msgFreqFmt
+
+; %ld Hz
+;
+msgChanFmt
+
+; %ld
+;
+msgVolFmt
+
+; %+4.1f dB
+;
+msgACTimeFmt
+
+; %ld ms
+;
+msgPercentFmt
+
+; %ld%%
+;

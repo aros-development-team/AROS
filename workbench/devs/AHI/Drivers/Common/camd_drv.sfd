@@ -1,0 +1,18 @@
+==bias 0
+==libname camd_drv.camd
+
+==include <exec/types.h>
+==include <midi/camddevices.h>
+
+==public
+
+BOOL Init(APTR SysBase) (a6)
+VOID Expunge() ()
+struct MidiPortData* OpenPort(struct MidiDeviceData * data,
+                              LONG portnum,
+                              APTR transmitfunc,
+                              APTR recievefunc,
+                              APTR userdata) (a3,d0,a0,a1,a2)
+VOID ClosePort(struct MidiDeviceData * data, LONG portnum) (a3,d0)
+VOID ActivateXmit(APTR userdata, LONG portnum)(a2,d0)
+==end

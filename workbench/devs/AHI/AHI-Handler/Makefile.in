@@ -1,0 +1,125 @@
+#
+#  Makefile.in for the AHI-Handler DOS device.
+#
+
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+PREFIX		= @prefix@
+DISTDIR		= @DISTDIR@
+DOSDRVDIR	= ${DISTDIR}/User/Devs/DOSDrivers
+LDIR		= ${DISTDIR}/User/L
+
+build_os	= @build_os@
+
+CC		= @CC@
+STRIP		= @STRIP@ @STRIPFLAGS@
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+
+CPPFLAGS	= @CPPFLAGS@
+CFLAGS		= @CFLAGS@ @CFLAG_RESIDENT@
+LDFLAGS		= @LDFLAGS@ @LDFLAG_RESIDENT@
+LIBS		= @LIBS@
+
+VPATH		= @srcdir@
+
+
+#
+# Files
+########################################
+
+OBJECTS		= main.o
+EXECUTABLE	= AHI-Handler
+
+
+#
+# Targets
+########################################
+
+.PHONY:		all clean distclean maintainer-clean install revup bindist
+
+all:		$(EXECUTABLE)
+
+clean:
+	$(RM) $(EXECUTABLE) version.h *.o Makefile.dep
+
+distclean:	clean
+	$(RM) Makefile
+
+maintainer-clean: distclean
+
+install:	all
+	$(INSTALL_PROGRAM) $(EXECUTABLE) $(PREFIX)/L/$(EXECUTABLE)
+
+revup:
+	@rev=`cat $(srcdir)/version.rev` && echo `expr $$rev + 1` > $(srcdir)/version.rev
+	@date +%d.%m.%y > $(srcdir)/version.date
+	@echo -n "New revision: "
+	@cat $(srcdir)/version.rev
+
+bindist:	all
+	$(INSTALL) -d $(LDIR) $(DOSDRVDIR)
+	$(INSTALL_PROGRAM) $(EXECUTABLE) $(LDIR)/$(EXECUTABLE)
+	$(STRIP) $(LDIR)/$(EXECUTABLE)
+	$(INSTALL_DATA) ${srcdir}/AUDIO $(DOSDRVDIR)
+	$(INSTALL_DATA) ${srcdir}/AUDIO.info $(DOSDRVDIR)
+	$(INSTALL_DATA) ${srcdir}/AUDIO.MWB.info $(DOSDRVDIR)
+
+
+
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../config.status
+	(cd .. && ./config.status)
+
+
+
+#
+# Rules
+########################################
+
+$(EXECUTABLE):	$(OBJECTS)
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+
+
+version.h:	version.rev version.date
+	@echo Creating $@
+	@ver=`cat $(top_srcdir)/version.ver` \
+	 rev=`cat $(srcdir)/version.rev` \
+	 date=`cat $(srcdir)/version.date` && \
+	 echo "#define VERSION $$ver" > $@ && \
+	 echo "#define REVISION $$rev" >> $@ && \
+	 echo "#define VERS \"$$ver.$$rev ($$date)\"" >> $@
+
+#
+# Dependencies
+########################################
+
+SOURCES		= $(wildcard $(srcdir)/*.c)
+HEADERS		= $(wildcard $(srcdir)/*.h)
+
+#DEPENDENCIES	= $(SOURCES) $(HEADERS)
+
+.PHONY:	depend
+
+depend:
+	$(RM) Makefile.dep
+	$(MAKE) Makefile.dep
+
+Makefile.dep:	$(DEPENDENCIES) version.h
+	@echo Making $@
+	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
+
+include Makefile.dep

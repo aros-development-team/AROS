@@ -1,0 +1,187 @@
+#
+#  Makefile.in for the user and developer documentation
+#
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+VPATH		= @srcdir@
+
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+prefix		= @prefix@
+includedir	= @includedir@
+
+DISTDIR		= @DISTDIR@
+
+DEVDIR		= ${DISTDIR}/Developer
+
+DEVINCDIR	= ${DEVDIR}/Include
+
+host		= @host@
+host_cpu	= @host_cpu@
+
+INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+
+SFDC		= @SFDC@
+SFDC_TARGET	= --target=${host}
+
+
+#
+# Files
+########################################
+
+CTARGETS	= C-clib-ahi_protos.h C-clib-ahi_sub_protos.h \
+		  C-proto-ahi.h C-proto-ahi_sub.h
+
+ASMTARGETS	= Asm-lvo-ahi_lib.i Asm-lvo-ahi_sub_lib.i
+
+FDTARGETS	= FD-ahi_lib.fd FD-ahi_sub_lib.fd
+
+GCCTARGETS	= C-inline-ahi.h C-inline-ahi_sub.h
+
+AROSTARGETS	= C-defines-ahi.h C-defines-ahi_sub.h
+
+OS4TARGETS	= C-interfaces-ahi.h C-interfaces-ahi_sub.h
+
+PRAGMATARGETS	= C-pragmas-ahi_pragmas.h C-pragmas-ahi_sub_pragmas.h
+
+
+ASMFILES	= Asm/devices/ahi.i Asm/libraries/ahi_sub.i
+
+CFILES		= C/libraries/ahi_sub.h C/devices/ahi.h
+
+SFDFILES	= SFD/ahi_lib.sfd  SFD/ahi_sub_lib.sfd
+
+
+TARGETS		= $(CTARGETS) $(FDTARGETS) $(GCCTARGETS) $(AROSTARGETS) 
+#		  $(OS4TARGETS)
+FILES		= $(CFILES) $(SFDFILES)
+
+ifeq ($(host_cpu),m68k)
+TARGETS		+= $(ASMTARGETS) $(PRAGMATARGETS)
+FILES		+= $(ASMFILES)
+endif
+
+#
+# Targets
+########################################
+
+.PHONY:		all clean distclean maintainer-clean bindist gcc-include
+
+all:		$(TARGETS)
+
+clean:
+	$(RM) -r $(TARGETS) gcc-include-*.stamp gcc
+
+distclean:	clean
+	$(RM) Makefile
+
+maintainer-clean: distclean
+
+install: INCDIR := $(includedir)
+install: gcc-include-inst.stamp
+
+bindist:	$(TARGETS)
+	for file in $(TARGETS); do \
+	 $(INSTALL) -d $(DEVINCDIR)/`echo $$file | sed -e 's,\(.*\)-.*.,\1,' | sed -e 's,-,/,g'`; \
+	 $(INSTALL_DATA) $$file $(DEVINCDIR)/`echo $$file | sed -e 's,-,/,g'`; \
+	done
+
+	for dir in $(dir $(FILES)); do \
+	 $(INSTALL) -d $(DEVINCDIR)/$$dir; \
+	done
+
+	for file in $(FILES); do \
+	 $(INSTALL_DATA) $(srcdir)/$$file $(DEVINCDIR)/$$file; \
+	done
+
+gcc-include: INCDIR := gcc
+gcc-include: gcc-include-comp.stamp
+
+gcc-include%.stamp:	SFD/ahi_lib.sfd SFD/ahi_sub_lib.sfd \
+			$(CTARGETS) $(GCCTARGETS) $(AROSTARGETS) 
+#			$(OS4TARGETS)
+	$(INSTALL) -d $(INCDIR)/clib $(INCDIR)/devices $(INCDIR)/libraries \
+		      $(INCDIR)/defines $(INCDIR)/interfaces $(INCDIR)/inline $(INCDIR)/proto
+
+	for file in `cd $(srcdir)/C && find . -type f -not -path "*.svn/*"`; do \
+	 $(INSTALL_DATA) $(srcdir)/C/$$file $(INCDIR)/$$file; \
+	done
+
+	$(INSTALL_DATA) C-clib-ahi_protos.h	$(INCDIR)/clib/ahi_protos.h
+	$(INSTALL_DATA) C-clib-ahi_sub_protos.h	$(INCDIR)/clib/ahi_sub_protos.h
+	$(INSTALL_DATA) C-inline-ahi.h		$(INCDIR)/inline/ahi.h
+	$(INSTALL_DATA) C-inline-ahi_sub.h	$(INCDIR)/inline/ahi_sub.h
+	$(INSTALL_DATA) C-defines-ahi.h		$(INCDIR)/defines/ahi.h
+	$(INSTALL_DATA) C-defines-ahi_sub.h	$(INCDIR)/defines/ahi_sub.h
+#	$(INSTALL_DATA) C-interfaces-ahi.h	$(INCDIR)/interfaces/ahi.h
+#	$(INSTALL_DATA) C-interfaces-ahi_sub.h	$(INCDIR)/interfaces/ahi_sub.h
+	$(INSTALL_DATA) C-proto-ahi.h		$(INCDIR)/proto/ahi.h
+	$(INSTALL_DATA) C-proto-ahi_sub.h	$(INCDIR)/proto/ahi_sub.h
+	touch $@
+
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../config.status
+	(cd .. && ./config.status)
+
+
+#
+# Rules
+########################################
+
+Asm-lvo-ahi_lib.i:	SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=lvo
+
+Asm-lvo-ahi_sub_lib.i:	SFD/ahi_sub_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=lvo
+
+C-clib-ahi_protos.h:	SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=clib
+
+C-clib-ahi_sub_protos.h:	SFD/ahi_sub_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=clib
+
+C-inline-ahi.h:		SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=macros
+
+C-inline-ahi_sub.h:	SFD/ahi_sub_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=macros
+
+C-defines-ahi.h:	SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=macros
+
+C-defines-ahi_sub.h:	SFD/ahi_sub_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=macros
+
+C-interfaces-ahi.h:	SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=interface
+
+C-interfaces-ahi_sub.h:	SFD/ahi_sub_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=interface
+
+C-pragmas-ahi_pragmas.h:	SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=pragmas
+
+C-pragmas-ahi_sub_pragmas.h:	SFD/ahi_sub_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=pragmas
+
+C-proto-ahi.h:		SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=proto
+
+C-proto-ahi_sub.h:	SFD/ahi_sub_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=proto
+
+FD-ahi_lib.fd:	SFD/ahi_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=fd
+
+FD-ahi_sub_lib.fd:	SFD/ahi_sub_lib.sfd
+	$(SFDC) $(SFDC_TARGET) $^ --output=$@ --mode=fd

@@ -1,0 +1,352 @@
+## version $VER: <name>.ct 4.<rev> (12.01.05)
+## language nolanguage
+## codeset 0
+;
+## chunk AUTH Translated by Your Name <you@tellus.universe>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+
+; \000Project
+;
+msgItemOpen
+
+; O\000Open...
+;
+msgItemSaveAs
+
+; A\000Save As...
+;
+msgItemAbout
+
+; ?\000About...
+;
+msgItemQuit
+
+; Q\000Quit
+;
+msgMenuEdit
+
+; \000Edit
+;
+msgItemDefaults
+
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+
+; L\000Last Saved
+;
+msgItemRestore
+
+; R\000Restore
+;
+msgMenuSettings
+
+; \000Settings
+;
+msgItemCreateIcons
+
+; I\000Create Icons?
+;
+msgMenuHelp
+
+; \000Help
+;
+msgItemHelp
+
+; Help\000Help...
+;
+msgItemUsersGuide
+
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+
+; Mode settings
+;
+msgPageAdvanced
+
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+
+; Unit %ld
+;
+msgUnitMusic
+
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+
+; Full duplex
+;
+msgPropRecordHalf
+
+; Half duplex
+;
+msgPropRecordNone
+
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+
+; Options
+;
+msgOptFrequency
+
+; _Frequency
+;
+msgOptChannels
+
+; C_hannels
+;
+msgOptNoChannels
+
+; 
+;
+msgOptVolume
+
+; _Volume
+;
+msgOptMonitor
+
+; _Monitor
+;
+msgOptGain
+
+; _Gain
+;
+msgOptMuted
+
+; Muted
+;
+msgOptInput
+
+; _Input
+;
+msgOptNoInputs
+
+; No inputs
+;
+msgOptOutput
+
+; _Output
+;
+msgOptNoOutputs
+
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+
+; Global options
+;
+msgGlobOptDebugLevel
+
+; _Debug level
+;
+msgGlobOptEcho
+
+; _Echo
+;
+msgGlobOptSurround
+
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+
+; None
+;
+msgDebugLow
+
+; Low
+;
+msgDebugHigh
+
+; High
+;
+msgDebugFull
+
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+
+; Enabled
+;
+msgEchoFast
+
+; Fast
+;
+msgEchoDisabled
+
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+
+; Enabled
+;
+msgSurroundDisabled
+
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+
+; _Save
+;
+msgButtonUse
+
+; _Use
+;
+msgButtonCancel
+
+; _Cancel
+;
+msgButtonOK
+
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+
+; Unable to open window.
+;
+msgTextNoFileRequester
+
+; Unable to allocate file requester.
+;
+msgTextNoFind
+
+; Unable to find `%s'!
+;
+msgTextNoOpen
+
+; Unable to open `%s´ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+
+; _Master volume
+;
+msgMVNoClip
+
+; Without clipping
+;
+msgMVClip
+
+; With clipping
+;
+msgGlobOptACTime
+
+; Default anti-click time
+;
+msgButtonPlay
+
+; _Play a test sound
+;
+msgOptScalemode
+
+; Volume sc_aling
+;
+msgSMFixedSafe
+
+; Safe
+;
+msgSMDynSafe
+
+; Safe, dynamic
+;
+msgSM0dB
+
+; Full volume
+;
+msgSM3dB
+
+; -3 dB
+;
+msgSM6dB
+
+; -6 dB
+;
+msgFreqFmt
+
+; %ld Hz
+;
+msgChanFmt
+
+; %ld
+;
+msgVolFmt
+
+; %+4.1f dB
+;
+msgACTimeFmt
+
+; %ld ms
+;
+msgPercentFmt
+
+; %ld%%
+;

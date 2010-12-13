@@ -1,0 +1,8 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := AHI
+
+##MM- contrib-AHI : ahi-package-startup
+
+%copy_files_q mmake=ahi-package-startup dst=$(AROS_ENVARC)/SYS/Packages

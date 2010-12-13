@@ -1,0 +1,9 @@
+/* $VER: AUDIO 1.0 (29.1.97)
+ *
+ * AHI-Handler mount entry
+ */
+
+Handler         = L:AHI-Handler
+Stacksize       = 4096
+Priority        = 5
+GlobVec         = -1

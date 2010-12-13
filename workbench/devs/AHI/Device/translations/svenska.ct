@@ -1,0 +1,141 @@
+## version $VER: ahi.catalog 4.2 (7.4.97)
+## language svenska
+## codeset 0
+;
+## chunk AUTH Translated by Martin Blom <lcs@lysator.liu.se>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; Input and Output connector name
+;
+msgDefault
+Standard
+; Default
+;
+; The requesters menu
+msgMenuControl
+\000\000Kontroll
+; \000\000Control
+;
+msgMenuLastMode
+S\000Senaste ljudinställning
+; L\000Last Mode
+;
+msgMenuNextMode
+N\000Nästa ljudinställning
+; N\000Next Mode
+;
+msgMenuPropertyList
+?\000Egenskaper
+; ?\000Property List...
+;
+msgMenuRestore
+Å\000Återställ
+; R\000Restore
+;
+msgMenuOK
+O\000OK
+; O\000OK
+;
+msgMenuCancel
+A\000Avbryt
+; C\000Cancel
+;
+; Mode name in requester whose driver cannot be opened
+;
+msgUnknown
+OKÄND:Ljudläge 0x%08lx
+; UNKNOWN:Audio ID 0x%08lx
+;
+; The requester gadgets
+;
+msgReqOK
+OK
+; OK
+;
+msgReqCancel
+Avbryt
+; Cancel
+;
+msgReqFrequency
+Frekvens
+; Frequency
+;
+; Name of default mode in requester
+;
+msgDefaultMode
+Förvalt ljudläge
+; Default audio mode
+;
+; The requester's info-winodow
+;
+msgReqInfoTitle
+Ljudlägets egenskaper
+; Mode Properties
+;
+msgReqInfoAudioID
+Ljudläges-id: 0x%08lx
+; Audio mode ID: 0x%08lx
+;
+msgReqInfoResolution
+Upplösning: %ld bitar i %s
+; Resolution: %ld bit %s
+;
+msgReqInfoMono
+mono
+; mono
+;
+msgReqInfoStereo
+stereo
+; stereo
+;
+msgReqInfoStereoPan
+stereo med balanskontroll
+; stereo with panning
+;
+msgReqInfoChannels
+Kanaler: %ld
+; Channels: %ld
+;
+msgReqInfoMixrate
+Mixfrekvenser: %ld-%ld Hz
+; Mixing rates: %ld-%ld Hz
+;
+msgReqInfoHiFi
+HiFi-mixning
+; HiFi mixing
+;
+msgReqInfoRecordHalf
+Inspelning i halv duplex
+; Record in half duplex
+;
+msgReqInfoRecordFull
+Inspelning i full duplex
+; Record in full duplex
+;
+msgReqInfoMultiChannel
+
+; 7.1 multichannel
+;
+msgFreqFmt
+
+; %lu Hz
+;

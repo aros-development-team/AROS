@@ -1,0 +1,173 @@
+#
+#  Makefile.in for the AHI preferences program
+#
+
+FLEXCAT		= @FLEXCAT@
+
+ifeq ($(strip $(FLEXCAT)),)
+FLEXCAT		= @echo 'FlexCat not found; cannot make $@!'; false \#
+endif
+
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+PREFIX		= @prefix@
+DISTDIR		= @DISTDIR@
+PREFSDIR	= ${DISTDIR}/User/Prefs
+CATDIR		= ${DISTDIR}/User/Catalogs
+CATSRCDIR	= ${DISTDIR}/Developer/Translations
+
+build_os	= @build_os@
+
+CC		= @CC@
+STRIP		= @STRIP@ @STRIPFLAGS@
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+
+CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir}
+CFLAGS		= @CFLAGS@
+LDFLAGS		= @LDFLAGS@
+LIBS		= @LIBS@
+
+VPATH		= @srcdir@
+
+
+#
+# Files
+########################################
+
+OBJECTS		= ahi.o support.o ahiprefs_Cat.o
+OBJECTS_BGUI	= gui_bgui.o
+OBJECTS_CA	= gui_ca.o
+OBJECTS_MUI	= gui_mui.o
+
+EXECUTABLES	= AHI_MUI # AHI_BGUI AHI_CA
+
+LANGUAGES	= $(basename $(shell cd ${srcdir}/translations; for file in *.ct; do if [ -f $$file ]; then printf "%s" "$$file "; fi; done))
+CATALOGS	= $(addsuffix .catalog, $(LANGUAGES))
+
+
+#
+# Targets
+########################################
+
+.PHONY:		all clean distclean maintainer-clean bindist revup
+
+all:		$(EXECUTABLES) ahiprefs.ct $(CATALOGS)
+
+clean:
+	$(RM) $(EXECUTABLES) $(LANGTARGETS) version.h \
+	      *.catalog *.o Makefile.dep
+
+distclean:	clean
+	$(RM) Makefile
+
+maintainer-clean: distclean
+
+install:	all
+	$(INSTALL) -d $(PREFIX)/Prefs
+	$(INSTALL_PROGRAM) AHI_MUI $(PREFIX)/Prefs/AHI
+#	$(INSTALL_DATA) ${srcdir}/AHI.info $(PREFIX)/Prefs/AHI.info
+	for i in $(LANGUAGES); do \
+	  $(INSTALL) -d $(PREFIX)/Locale/Catalogs/$$i; \
+	  $(INSTALL_DATA) $$i.catalog $(PREFIX)/Locale/Catalogs/$$i/ahiprefs.catalog; \
+	done
+
+bindist:	all
+	$(INSTALL) -d $(PREFSDIR) $(CATDIR) $(CATSRCDIR) $(CATSRCDIR)/ahiprefs
+	$(INSTALL_PROGRAM) AHI_MUI $(PREFSDIR)/AHI
+	$(STRIP) $(PREFSDIR)/AHI
+#	for i in $(EXECUTABLES); do \
+#	  $(INSTALL_PROGRAM) $$i $(PREFSDIR)/$$i; \
+#	  $(STRIP) $(PREFSDIR)/$$i; \
+#	done
+	$(INSTALL_DATA) ${srcdir}/AHI.info $(PREFSDIR)
+	$(INSTALL_DATA) ${srcdir}/AHI.MWB.info $(PREFSDIR)
+
+	$(INSTALL_DATA) ${srcdir}/ahiprefs.cd $(CATSRCDIR)
+	$(INSTALL_DATA) ${srcdir}/ahiprefs.ct $(CATSRCDIR)
+	for i in $(LANGUAGES); do \
+	  $(INSTALL) -d $(CATDIR)/$$i; \
+	  $(INSTALL_DATA) $$i.catalog $(CATDIR)/$$i/ahiprefs.catalog; \
+	  $(INSTALL_DATA) ${srcdir}/translations/$$i.ct \
+			  $(CATSRCDIR)/ahiprefs/$$i.ct; \
+	done
+
+version.h:	version.rev version.date
+	@echo Creating $@
+	@ver=`cat $(top_srcdir)/version.ver` \
+	 rev=`cat $(srcdir)/version.rev` \
+	 date=`cat $(srcdir)/version.date` && \
+	 echo "#define VERS \"$$ver.$$rev ($$date)\"" > $@
+
+revup:
+	@rev=`cat $(srcdir)/version.rev` && echo `expr $$rev + 1` > $(srcdir)/version.rev
+	@date +%d.%m.%y > $(srcdir)/version.date
+	@echo -n "New revision: "
+	@cat $(srcdir)/version.rev
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../config.status
+	(cd .. && ./config.status)
+
+
+#
+# Rules
+########################################
+
+AHI_BGUI:	$(OBJECTS) $(OBJECTS_BGUI)
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+
+AHI_CA:		$(OBJECTS) $(OBJECTS_CA)
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+
+AHI_MUI:	$(OBJECTS) $(OBJECTS_MUI)
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+
+
+$(srcdir)/ahiprefs_Cat.c:	$(srcdir)/ahiprefs.cd $(srcdir)/C_c_noauto.sd $(srcdir)/ahiprefs_Cat.h
+	$(FLEXCAT) $(srcdir)/ahiprefs.cd $(srcdir)/ahiprefs_Cat.c=$(srcdir)/C_c_noauto.sd
+
+$(srcdir)/ahiprefs_Cat.h:	$(srcdir)/ahiprefs.cd $(srcdir)/C_h_noauto.sd
+	$(FLEXCAT) $(srcdir)/ahiprefs.cd $(srcdir)/ahiprefs_Cat.h=$(srcdir)/C_h_noauto.sd
+
+%.catalog:	translations/%.ct
+	$(FLEXCAT) \
+		   $(srcdir)/ahiprefs.cd $< CATALOG=$@ 
+
+%.ct:
+	$(FLEXCAT) $(srcdir)/ahiprefs.cd $@ NEWCTFILE=$@
+
+#
+# Dependencies
+########################################
+
+SOURCES		= $(wildcard $(srcdir)/*.c)
+HEADERS		= $(wildcard $(srcdir)/*.h)
+
+#DEPENDENCIES	= $(SOURCES) $(HEADERS)
+
+.PHONY:	depend
+
+depend:
+	$(RM) Makefile.dep
+	$(MAKE) Makefile.dep
+
+Makefile.dep:	$(DEPENDENCIES) version.h
+	@echo Making $@
+	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
+
+include Makefile.dep
+
+$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/ahiprefs.ct:	ahiprefs.cd

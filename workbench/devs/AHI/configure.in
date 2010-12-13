@@ -1,0 +1,217 @@
+dnl $Id$
+
+
+dnl Process this file with autoconf to produce a configure script.
+
+AC_REVISION( $Revision$ )
+dnl
+AC_INIT(TODO)
+
+
+dnl General
+
+AC_CANONICAL_SYSTEM
+AC_PROG_MAKE_SET
+AC_CONFIG_HEADER( config.h )
+
+AC_MSG_CHECKING(CPU to build for)
+AC_ARG_WITH(cpu,
+[  --with-cpu              The CPU to optimize for],
+CPU=${withval}, unset CPU)
+AC_MSG_RESULT(${CPU})
+
+AC_MSG_CHECKING(OS include directory)
+AC_ARG_WITH(os-includedir,
+[  --with-os-includedir    Path to AmigaOS include directory],
+os_includedir="-I${withval}",
+os_includedir="")
+AC_MSG_RESULT(${os_includedir} )
+
+AC_MSG_CHECKING(if WarpUp support code should be enabled)
+AC_ARG_ENABLE(warpup,
+[  --enable-warpup         Enable WarpUp support],
+AC_DEFINE(ENABLE_WARPUP))
+ENABLE_WARPUP=${enable_warpup}
+AC_SUBST(ENABLE_WARPUP)
+AC_MSG_RESULT(${enable_warpup})
+
+case $host in
+ i?86be-pc-amithlon)
+  : ${CPU="i686"}
+  cflags="-noixemul"
+  optflags="-mcpu=${CPU} -O2"
+  linkerflags="-noixemul -mcpu=${CPU} -r"
+  asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
+  resident=""                                      dnl *** Not supported (yet?)
+  stripflag=""
+ ;;
+ m68k-unknown-amigaos)
+  : ${CPU="68020-60"}
+  cflags="-noixemul"
+  optflags="-m${CPU} -O2 -fomit-frame-pointer -ffast-math -msoft-float"
+  linkerflags="-noixemul -m${CPU}"
+  asCPU=`echo ${CPU} | sed 's/-.*//'`
+  asflags="-m${asCPU} --register-prefix-optional --bitwise-or --defsym CPU=${asCPU}"
+  resident="-resident"
+  stripflag=""
+ ;;
+ powerpc-unknown-amigaos)
+  : ${CPU="603"}
+  AC_DEFINE([__USE_INLINE__], 1, [Use inlines])
+  AC_DEFINE([__USE_BASETYPE__], 1, [Use traditional library base type])
+  cflags=""
+  optflags="-mcpu=${CPU} -O2"
+  linkerflags="-mcpu=${CPU}"
+  asflags="-m${CPU} -mregnames --defsym CPU=${CPU}"
+  resident=""                                      dnl *** Not supported (yet?)
+  stripflag=""
+ ;;
+ powerpc-unknown-morphos)
+  : ${CPU="603"}
+  AC_DEFINE([USE_INLINE_STDARG], 1, [Use inlines for stdarg functions])
+  cflags="-noixemul"
+  optflags="-mcpu=${CPU} -O2"
+  linkerflags="-noixemul -mcpu=${CPU}"
+  asflags="-m${CPU} -mregnames --defsym CPU=${CPU}"
+  resident="-mresident32"
+  stripflag=""
+ ;;
+ i?86-*-aros)
+ : ${CPU="i386"}
+  cflags=""
+  optflags="-mcpu=${CPU} -O2 -fomit-frame-pointer"
+  linkerflags=""
+  asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
+  resident=""                                      dnl *** Not supported (yet?)
+  stripflag="--strip-unneeded"
+ ;;
+ x86_64-*-aros)
+ : ${CPU="x86_64"}
+  cflags=""
+  optflags="-mcpu=k8 -O2 -fomit-frame-pointer"
+  linkerflags=""
+  asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1 --defsym x86_64=1"
+  resident=""
+  stripflag="--strip-unneeded"
+ ;;
+ *)
+  AC_MSG_WARN(Unknown architecture!)
+ ;;
+esac
+
+top_builddir=$(pwd)
+
+: ${CFLAGS="-g -W -Wall -Wstrict-prototypes -Wno-unused ${cflags} ${optflags}"}
+: ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir}"}
+: ${LDFLAGS="${linkerflags}"}
+: ${ASFLAGS="${asflags}"}
+: ${ARFLAGS="-ru"}
+: ${STRIPFLAGS="${stripflag}"}
+
+: ${CFLAG_RESIDENT="${resident}"}
+: ${LDFLAG_RESIDENT="${resident}"}
+
+: ${DISTDIR="/tmp/${host_alias}-ahi"}
+
+AC_PREFIX_DEFAULT( / )
+
+AC_SUBST(ASFLAGS)
+AC_SUBST(ARFLAGS)
+AC_SUBST(STRIPFLAGS)
+AC_SUBST(CFLAG_RESIDENT)
+AC_SUBST(LDFLAG_RESIDENT)
+AC_SUBST(DISTDIR)
+
+dnl Checks for programs.
+
+AC_CHECK_TOOL( CC, gcc, : ) 
+AC_CHECK_TOOL( AS, as, : ) 
+AC_CHECK_TOOL( AR, ar, : )
+AC_CHECK_TOOL( RANLIB, ranlib, : )
+AC_CHECK_TOOL( STRIP, strip, : )
+AC_CHECK_TOOL( OBJCOPY, objcopy, : ) 
+
+AC_PROG_INSTALL
+#AC_PROG_CC
+AC_PROG_RANLIB
+AC_CHECK_PROG( RM, rm, rm )
+AC_CHECK_PROGS( ROBODOC, RoboDoc robodoc )
+AC_CHECK_PROGS( FLEXCAT, FlexCat flexcat )
+AC_CHECK_PROGS( SFDC, SFDC sfdc )
+AC_CHECK_PROGS( LHA, lha )
+
+if test -z "$SFDC"; then
+ AC_MSG_ERROR( sfdc missing. )
+fi
+
+if test -z "$LHA"; then
+ AC_MSG_WARN( lha missing. )
+else
+ if test -n "`$LHA 2>&1 | grep 'o.*compression method'`"; then
+  LHA="$LHA -ao5"
+ else
+  LHA="$LHA -a -r"
+ fi
+fi
+
+if test -z "$ROBODOC"; then
+ AC_MSG_WARN( robodoc missing. )
+fi
+
+dnl Checks for libraries.
+
+AC_SEARCH_LIBS([NewList],      [amiga],, [AC_MSG_WARN(libamiga is missing.)])
+AC_SEARCH_LIBS([floor],        [m],,	 [AC_MSG_ERROR(libm is missing.)])
+AC_SEARCH_LIBS([IntuitionBase],[auto],,  [AC_MSG_WARN(Who cares?)])
+AC_SEARCH_LIBS([LayoutBase],   [raauto],,[AC_MSG_WARN(Who cares?)])
+AC_SEARCH_LIBS([MUI_NewObject],[mui],,   [AC_MSG_WARN(Who cares?)])
+
+case $host in
+ i?86be-pc-amithlon)
+  : ${CPU="i686"}
+  LIBS="-lm $LIBS" dnl *** AC_CHECK_LIBS doesn't work with -r ...?
+ ;;
+esac
+
+dnl Checks for header files.
+
+AC_CHECK_HEADERS( proto/oss.h, HAVE_OSS=1, AC_MSG_WARN( "proto/oss.h is missing." ))
+AC_CHECK_HEADERS( asm/io.h, HAVE_ASMIO=1, AC_MSG_WARN( "asm/io.h is missing." ))
+AC_CHECK_HEADERS( libraries/openpci.h, HAVE_OPENPCI=1, AC_MSG_WARN( "libraries/openpci.h is missing." ))
+
+AC_SUBST(HAVE_OSS)
+AC_SUBST(HAVE_ASMIO)
+AC_SUBST(HAVE_OPENPCI)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+
+AC_C_CONST
+AC_C_INLINE
+AC_C_BIGENDIAN
+
+dnl Checks for library functions.
+
+
+AC_OUTPUT(Makefile
+          AHI/Makefile
+          AHI-Handler/Makefile
+          AddAudioModes/Makefile
+          Device/Makefile
+          Docs/Makefile
+          Drivers/Makefile
+          Drivers/ac97/Makefile
+          Drivers/HDAudio/Makefile
+          Drivers/AROS/Makefile
+          Drivers/Common/Makefile.common
+          Drivers/Device/Makefile
+          Drivers/EMU10kx/Makefile
+          Drivers/Filesave/Makefile
+          Drivers/Void/Makefile
+	  Examples/Makefile
+	  Examples/Device/PlayTest/Makefile
+	  Examples/Extras/CloneAudioModes/Makefile
+	  Examples/Low-level/PlaySineEverywhere/Makefile
+	  Examples/Low-level/Test-7.1/Makefile
+	  Examples/Low-level/ScanAudioModes/Makefile
+          Include/Makefile,
+          echo timestamp > stamp-h)

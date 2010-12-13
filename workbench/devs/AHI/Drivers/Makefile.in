@@ -1,0 +1,91 @@
+#
+#  Makefile.in for the drivers
+#
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+DISTDIR		= @DISTDIR@
+
+DEVDIR		= ${DISTDIR}/Developer
+DRIVERDIR	= ${DEVDIR}/Drivers
+
+host		= @host@
+
+INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+
+VPATH		= @srcdir@
+
+HAVE_OPENPCI	= @HAVE_OPENPCI@
+HAVE_OSS	= @HAVE_OSS@
+HAVE_ASMIO      = @HAVE_ASMIO@
+
+#
+# Targets
+########################################
+
+.PHONY:		all clean distclean maintainer-clean bindist
+
+SUBDIRS		= Device Filesave Void
+
+
+ifneq ($(strip $(HAVE_ASMIO)),)
+SUBDIRS		+= ac97
+SUBDIRS		+= HDAudio 
+SUBDIRS		+= EMU10kx
+endif
+
+ifneq ($(strip $(HAVE_OSS)),)
+SUBDIRS		+= AROS
+endif
+
+ifneq ($(strip $(HAVE_OPENPCI)),)
+SUBDIRS		+= EMU10kx
+endif
+
+ifeq ($(strip $(host)),powerpc-unknown-amigaos)
+SUBDIRS		+= EMU10kx
+endif
+
+all:
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+
+install:
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+
+clean:
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+
+distclean:	clean
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+	$(RM) Makefile
+
+maintainer-clean: distclean
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@); done
+
+bindist:
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $(MFLAGS) $@) || exit; done
+	$(INSTALL) -d $(DRIVERDIR) 
+	for d in $(SUBDIRS) Paula Toccata Void Wavetools; do \
+	  cd $(srcdir) && find $${d} -type f -and -not -path '*CVS*' \
+	    -exec $(INSTALL_DATA) -D {} $(DRIVERDIR)/{} \; ; \
+	done
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../config.status
+	(cd .. && ./config.status)
+
+
+#
+# Rules
+########################################
+

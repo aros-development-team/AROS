@@ -1,0 +1,51 @@
+
+DEST    = AHI:User/Devs/ahi/paula.audio
+DEST000 = AHI:User/Devs/ahi/paula.audio.000
+PDEST   = AHI:User/Devs/AudioModes/PAULA
+
+AFLAGS	= I INCLUDE: DS DL QUIET NOEXE OPT NRQBPSMD
+LFLAGS	= NOALVS NOICONS SMALLDATA SMALLCODE DEFINE @__chkabort=@__dummy \
+          LIB LIB:sc.lib LIB:debug.lib LIB:amiga.lib STRIPDEBUG
+
+all: $(DEST) $(DEST000) $(PDEST)
+
+
+$(DEST): paula_audio.o debug.o
+	slink $(LFLAGS) TO $@ FROM paula_audio.o debug.o
+	--flushlib paula.audio
+
+$(DEST000): paula_audio.000.o debug.o
+	slink $(LFLAGS) TO $@ FROM paula_audio.000.o debug.o
+	--flushlib paula.audio
+
+$(PDEST): prefsfile.a smakefile
+	basm -ua+ -o$(PDEST) prefsfile.a
+	AHI:User/C/AddAudioModes $(PDEST)
+
+version.i: paula_audio.a version.rexx smakefile
+	grep $$Id: paula_audio.a | rx version.rexx > version.i
+
+paula_audio.o: paula_audio.a version.i smakefile
+	PhxAss $(AFLAGS) TO $@ MACHINE 68020 paula_audio.a
+
+paula_audio.000.o: paula_audio.a version.i smakefile
+	PhxAss $(AFLAGS) TO $@ MACHINE 68000 paula_audio.a
+
+debug.o: debug.a
+	PhxAss $(AFLAGS) TO $@ debug.a
+
+
+dist:
+	smake allclean
+	smake all
+	smake clean
+
+clean:
+	--delete \#?.o \#?.tmp >NIL:
+
+allclean:
+	smake clean
+	--delete version.i $(DEST) $(DEST000) $(PDEST) 
+
+ci:
+	ci -l paula_audio.a debug.a prefsfile.a smakefile

@@ -1,0 +1,150 @@
+## version $VER: harddiskrecord.catalog 1.1 (2.2.2005)
+## language italiano
+## codeset 0
+## chunk AUTH Translated by Paolo Besser <paolone@besser.it>
+;
+; Max 31 characterss!
+; Default : Please select an audio mode!
+SelectAudioID
+Scegliere una modalità audio
+;
+; 
+; Default : File has not been prepared yet!
+FileNotPrepared
+File non ancora pronto!
+;
+; 
+; Default : OK
+OKtext
+OK
+;
+; 
+; Default : Can't allocate audio hardware.
+NoHardware
+Impossibile trovare l'hardware
+;
+; 
+; Default : Unknown error.
+UnknownErr
+Errore sconosciuto.
+;
+; 
+; Default : Finished!
+Finished
+Finito.
+;
+; Window: AHI Hard disk record example Text: (seconds)
+; Default : (seconds)
+Win0Texts1
+(secondi)
+;
+; Window: AHI Hard disk record example Gadget: File format String
+; Default : IFF-AIFF
+Win0_formatString0
+IFF-AIFF
+;
+; Window: AHI Hard disk record example Gadget: File format String
+; Default : IFF-AIFC (Not compr.)
+Win0_formatString1
+IFF-AIFC (non compresso)
+;
+; Window: AHI Hard disk record example Gadget: Win0_volslider levelforma
+; Default : %ld %%
+Win0_volsliderLevelFormat
+%ld %%
+;
+; Window: AHI Hard disk record example Gadget: Win0_gainslider levelform
+; Default : %ld %%
+Win0_gainsliderLevelFormat
+%ld %%
+;
+; Window: AHI Hard disk record example Gadget: Win0_length String Format
+; Default : %ld kB
+Win0_lengthStringFormat
+%ld kB
+;
+; Window: AHI Hard disk record example Gadget: Win0_srclist
+; Default : Source
+Win0_srclistString
+Sorgente
+;
+; Window: AHI Hard disk record example Gadget: Win0_dstlist
+; Default : Loopback dest.
+Win0_dstlistString
+Dest. loopback
+;
+; Window: AHI Hard disk record example Gadget: Win0_volslider
+; Default : Loopback volume
+Win0_volsliderString
+Volume loopback
+;
+; Window: AHI Hard disk record example Gadget: Win0_ambutton
+; Default : Select audio mode...
+Win0_ambuttonString
+Scegliere modalità audio...
+;
+; Window: AHI Hard disk record example Gadget: Win0_amtext1
+; Default : 
+Win0_amtext1String
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_amtext2
+; Default : 
+Win0_amtext2String
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_gainslider
+; Default : Input gain
+Win0_gainsliderString
+Guadagno d'ingresso
+;
+; Window: AHI Hard disk record example Gadget: Win0_duration
+; Default : Sample duration
+Win0_durationString
+Durata campionamento
+;
+; Window: AHI Hard disk record example Gadget: Win0_length
+; Default : Sample length
+Win0_lengthString
+Lunghezza campionamento
+;
+; Window: AHI Hard disk record example Gadget: Win0_filename
+; Default : 
+Win0_filenameString
+
+;
+; Window: AHI Hard disk record example Gadget: Win0_fnbutton
+; Default : File name...
+Win0_fnbuttonString
+Nome file...
+;
+; Window: AHI Hard disk record example Gadget: Win0_create
+; Default : Prepare sample file
+Win0_createString
+Prapara campione
+;
+; Window: AHI Hard disk record example Gadget: Win0_begin
+; Default : Begin recording
+Win0_beginString
+Inizia registrazione
+;
+; Window: AHI Hard disk record example Gadget: Win0_secleft
+; Default : seconds left
+Win0_secleftString
+secondi rimanenti
+;
+; Window: AHI Hard disk record example Gadget: Win0_format
+; Default : File format
+Win0_formatString
+Formato file
+;
+; Window: AHI Hard disk record example Title
+; Default : AHI Hard disk record example
+Win0Title
+Esempio AHI hard disk recording
+;
+; Window: AHI Hard disk record example Screen Title
+; Default : HardDiskRecord
+Win0ScreenTitle
+HardDiskRecord
+;

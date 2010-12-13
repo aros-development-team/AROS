@@ -1,0 +1,35 @@
+Short:    Protracker datatype 1.14 (AHI)
+Type:     util/dtype
+Author:   Martin Blom <lcs@lysator.liu.se>
+Uploader: Martin Blom <lcs@lysator.liu.se>
+Requires: AmigaOS 3, AHI v2
+
+Protracker datatype, using AHI version 2 or later.
+
+Oh, by the way...  This is a hack.  It seem to work, but I have no official
+documentation for datatypes at all so there may be errors.  In fact, it
+probably is.  Let me know of any problems.
+
+If anybody thinks that this was a cool idea, and wish to make a proper
+music superclass, have a look at XModule on Aminet first.  I think that
+could be a good start.
+
+To install, do this:
+
+copy Classes/Datatypes/protracker.datatype TO SYS:Classes/Datatypes
+copy Devs/DataTypes/Protracker#? TO Devs:DataTypes
+AddDataTypes Devs:DataTypes/Protracker
+
+You can also edit the file ENV/DataTypes/Protracker and copy it to
+ENV:DataTypes/Protracker
+
+The first number is the desired audio mode, in *decimal*, and the second is
+the mixing frequency.  If any number is 0, or the file does not exists, the
+defaults will be used (that's the "Music unit" settings in the AHI
+preferences program).
+
+History
+
+1.12    Fixed a problem with the filesave driver (would lock up Intuition).
+1.13    I forgot to handle the GM_GOINACTIVE method. Fixed.
+1.14	Undid the last change. What a screw-up!

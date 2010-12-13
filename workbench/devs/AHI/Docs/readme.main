@@ -1,0 +1,131 @@
+
+--------------------------------------------------------------------------------
+
+TITLE
+
+     AHI Audio system
+
+VERSION
+
+     Release AHIVERSION
+
+AUTHOR
+
+     Martin Blom <martin@blom.org>
+
+DESCRIPTION
+
+     Retargetable Audio for AmigaOS
+     ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+
+     (When refering to this software, the correct term is
+     'AHI audio system' or just 'AHI', never 'Audio Hardware
+     Interface'! 'AHI' is pronounced 'atchii', as in 'God bless!'.)
+
+     AHI now supports the PowerPC processor. Thanks to the users who
+     donated money and Syscom & Mematex AB who sponsored the hardware,
+     I was finally able you buy a Cyberstorm PPC card. The current
+     version is for MorphOS only, but a WarpUp version will hopefully
+     follow later.
+
+     Version AHIVERSION supports 68020, 68030, 68040 and 68060 from
+     the m68k family and 603 and 604 from the PowerPC family.
+
+     Staring with version 6, the 68000 processor is no longer supported.
+     68000 owners should use version 4 instead.
+
+     Quick overview
+     ¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+
+     * Driver based
+
+     Each supported sound card is controlled by a library-based audio
+     driver. For a 'dumb' sound card, a new driver should be written in
+     a few hours. For a 'smart' sound card, it is possible to utilize an
+     on-board DSP, for example, to maximize performance and sound quality.
+     For sound cards with own DSP but little or no memory, it is possible
+     to use the main CPU to mix channels and do the post-processing
+     with the DSP. Available today are drivers for
+
+     · Aura (sampler only)
+     · Clarity (sampler only)
+     · Concierto (Picasso IV sound module)
+     · Delfina DSP and Delfina Lite
+     · DraCo Motion
+     · Maestro Pro
+     · Melody Z2 and 1200
+     · Paula (8/14/14c bit)
+     · Prelude and Prelude 1200
+     · Toccata
+     · Wavetools
+     · 8SVX (mono) and AIFF/AIFC (mono & stereo) sample render
+     · ...and more.
+
+     * Fast, powerful mixing routines (yeah, right... haha)
+
+     The device's mixing routines mix 8- or 16-bit signed samples, both
+     mono and stereo, located in Fast-RAM and outputs 32-bit mono or stereo
+     (with stereo panning if desired) data, using any number of channels
+     (as long as 'any' means less than 128...).  Tables are no longer
+     used, which might affect performace slightly. Instead, version 6
+     forcuses slightly more on the quality of the sound.
+     
+     * Support for non-realtime mixing
+
+     By providing a timing feature, it is possible to create high-
+     quality output even if the processing power is lacking, by saving
+     the output to disk, for example as an IFF AIFF or 8SXV file.
+     There are so-called HiFi mixing routines that can be used, which
+     use linear interpolation and gives 32 bit output.
+
+     * Audio database
+
+     Uses ID codes, much like Screenmode IDs, to select the many
+     parameters that can be set. The functions to access the audio
+     database are not too different from those in 'graphics.library'.
+     The device also features a requester to get an ID code from the
+     user.
+
+     * Both high- and low-level protocol
+
+     By acting both like a device and a library, AHI gives the programmer
+     a choice between full control and simplicity. The device API allows
+     several programs to use the audio hardware at the same time, and
+     the AUDIO: dos-device driver makes playing and recording sound very
+     simple for both the programmer and user.
+
+     * Future Compatible
+
+     When AmigaOS gets device-independent audio worth it's name, it should
+     not be too difficult to write a driver for AHI, allowing applications
+     using 'ahi.device' to automatically use the new OS interface. At
+     least I hope it wont.
+
+     Funny how things turned out, isn't it? Sigh.
+
+SPECIAL REQUIREMENTS
+
+     AmigaOS release 2.
+     MC68020 processor or better.
+
+AVAILABILITY
+
+     Aminet, for example:
+     ftp://ftp.germany.aminet.org/pub/aminet/dev/misc/ahi6dev.lha
+     ftp://ftp.germany.aminet.org/pub/aminet/dev/misc/ahi6src.lha
+     ftp://ftp.germany.aminet.org/pub/aminet/mus/misc/ahi6usr.lha
+
+     WWW:
+     http://www.lysator.liu.se/~lcs/ahi.html
+
+PRICE
+
+     Free. As in speech. And beer too! However, should you want to
+     make a donation, my PayPal account is martin@blom.org.
+
+DISTRIBUTABILITY
+
+     Copyright ©1994-2005 Martin Blom.
+
+     AHI version 6 is (L)GPL:ed. See COPYING and COPYING.LIB inside the
+     archive for more information.

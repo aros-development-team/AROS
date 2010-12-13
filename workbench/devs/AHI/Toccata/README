@@ -1,0 +1,9 @@
+This is a toccata.library emulation, never finished, that I wrote in 1997.
+Teemu Suikki lated improved it and used it in the Delfina distribution.
+
+The original idea was to install a commodity when the library was loaded,
+so the user could select what AHI modes (s)he wanted to use.  In this
+version, the modes are hardcoded into the library (which is why the Delfina
+version does no work with AHI 5; it uses the now removed "Fast" modes).
+
+It currently compiles and assembles with SAS/C and PhxAss.

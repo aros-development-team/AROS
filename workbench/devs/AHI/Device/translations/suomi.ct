@@ -1,0 +1,142 @@
+## version $VER: ahi.catalog 4.2 (29.5.97)
+## language suomi
+## codeset 0
+;
+## chunk AUTH Translated by Pauli Porkka <pporkka@iki.fi>, \
+Proofread by Petteri Kallio <k140734@cs.tut.fi>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; Input and Output connector name
+;
+msgDefault
+Oletus
+; Default
+;
+; The requesters menu
+msgMenuControl
+\000\000Kontrolli
+; \000\000Control
+;
+msgMenuLastMode
+L\000Viimeinen tila
+; L\000Last Mode
+;
+msgMenuNextMode
+S\000Seuraava tila
+; N\000Next Mode
+;
+msgMenuPropertyList
+?\000Ominaisuuslista...
+; ?\000Property List...
+;
+msgMenuRestore
+A\000Palauta
+; R\000Restore
+;
+msgMenuOK
+H\000Hyväksy
+; O\000OK
+;
+msgMenuCancel
+P\000Peru
+; C\000Cancel
+;
+; Mode name in requester whose driver cannot be opened
+;
+msgUnknown
+Tuntematon äänitila: 0x%8lx
+; UNKNOWN:Audio ID 0x%08lx
+;
+; The requester gadgets
+;
+msgReqOK
+Hyväksy
+; OK
+;
+msgReqCancel
+Peru
+; Cancel
+;
+msgReqFrequency
+Taajuus
+; Frequency
+;
+; Name of default mode in requester
+;
+msgDefaultMode
+Oletusäänitila
+; Default audio mode
+;
+; The requester's info-winodow
+;
+msgReqInfoTitle
+Tilan ominaisuudet
+; Mode Properties
+;
+msgReqInfoAudioID
+Äänitilan ID: 0x%08lx
+; Audio mode ID: 0x%08lx
+;
+msgReqInfoResolution
+Tarkkuus: %ld bit %s
+; Resolution: %ld bit %s
+;
+msgReqInfoMono
+Mono
+; mono
+;
+msgReqInfoStereo
+Stereo
+; stereo
+;
+msgReqInfoStereoPan
+Panoroitu stereo
+; stereo with panning
+;
+msgReqInfoChannels
+Kanavat: %ld
+; Channels: %ld
+;
+msgReqInfoMixrate
+Miksaustaajuudet: %ld-%ld Hz
+; Mixing rates: %ld-%ld Hz
+;
+msgReqInfoHiFi
+HiFi-miksaus
+; HiFi mixing
+;
+msgReqInfoRecordHalf
+Äänitä vuorosuuntaisesti
+; Record in half duplex
+;
+msgReqInfoRecordFull
+Äänitä kaksisuuntaisesti
+; Record in full duplex
+;
+msgReqInfoMultiChannel
+
+; 7.1 multichannel
+;
+msgFreqFmt
+
+; %lu Hz
+;

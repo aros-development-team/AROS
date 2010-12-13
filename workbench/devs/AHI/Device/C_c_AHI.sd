@@ -1,0 +1,83 @@
+##stringtype C
+##shortstrings
+
+/****************************************************************
+   This file was created automatically by `%fv'
+   from "%f0".
+
+   Do NOT edit by hand!
+****************************************************************/
+
+#include "ahi_def.h"
+
+#include <libraries/locale.h>
+#include <proto/locale.h>
+
+struct FC_Type
+{   LONG   ID;
+    STRPTR Str;
+};
+
+const struct FC_Type _%i = { %d, %s };
+
+static struct Catalog *%b_Catalog = NULL;
+
+static const struct TagItem %b_tags[] = {
+  { OC_BuiltInLanguage, (IPTR)%l },
+  { OC_Version,         %v },
+  { TAG_DONE,           0  }
+};
+
+void Open%bCatalog(struct Locale *loc, STRPTR language)
+{
+  if(LocaleBase != NULL  &&  %b_Catalog == NULL)
+  {
+    %b_Catalog = OpenCatalog(loc, (STRPTR) "%b.catalog",
+        language ? OC_Language : TAG_IGNORE, (ULONG)language,
+        TAG_MORE, %b_tags);
+  }
+}
+
+struct Catalog *ExtOpenCatalog(struct Locale *loc, STRPTR language)
+{
+  if(LocaleBase != NULL)
+  {
+    return OpenCatalog(loc, (STRPTR) "%b.catalog",
+        language ? OC_Language : TAG_IGNORE, (ULONG)language,
+        TAG_MORE, %b_tags);
+  }
+  return NULL;
+}
+
+void Close%bCatalog(void)
+{
+  if (LocaleBase != NULL)
+  {
+    CloseCatalog(%b_Catalog);
+  }
+  %b_Catalog = NULL;
+}
+
+void ExtCloseCatalog(struct Catalog *catalog)
+{
+  if (LocaleBase != NULL)
+  {
+    CloseCatalog(catalog);
+  }
+}
+
+STRPTR Get%bString(APTR fcstr)
+{
+  STRPTR defaultstr = ((struct FC_Type *)fcstr)->Str;
+  if (%b_Catalog)
+    return (STRPTR) GetCatalogStr(%b_Catalog, ((struct FC_Type *)fcstr)->ID, defaultstr);
+  return defaultstr;
+}
+
+STRPTR GetString(APTR fcstr, struct Catalog *catalog)
+{
+  STRPTR defaultstr = ((struct FC_Type *)fcstr)->Str;
+  if (catalog)
+    return (STRPTR) GetCatalogStr(catalog, ((struct FC_Type *)fcstr)->ID, defaultstr);
+  return defaultstr;
+}

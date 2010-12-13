@@ -1,0 +1,353 @@
+## version $VER: ahiprefs.catalog 4.6 (4.8.2004)
+## language suomi
+## codeset 0
+;
+## chunk AUTH Translated by Pauli Porkka <pporkka@iki.fi>, \
+Proofread by Petteri Kallio <k140734@cs.tut.fi>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+\000Projekti
+; \000Project
+;
+msgItemOpen
+O\000Avaa...
+; O\000Open...
+;
+msgItemSaveAs
+T\000Tallenna nimellä...
+; A\000Save As...
+;
+msgItemAbout
+?\000Tietoja...
+; ?\000About...
+;
+msgItemQuit
+Q\000Lopeta
+; Q\000Quit
+;
+msgMenuEdit
+\000Muokkaus
+; \000Edit
+;
+msgItemDefaults
+D\000Oletusasetukset
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+L\000Viimeksi tallennettu
+; L\000Last Saved
+;
+msgItemRestore
+P\000Palauta
+; R\000Restore
+;
+msgMenuSettings
+\000Asetukset
+; \000Settings
+;
+msgItemCreateIcons
+I\000Luo ikonit?
+; I\000Create Icons?
+;
+msgMenuHelp
+\000Opastus
+; \000Help
+;
+msgItemHelp
+Help\000Opastus...
+; Help\000Help...
+;
+msgItemUsersGuide
+K\000AHI Käyttäjän opasteet...
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+\000Opasteen sisältö...
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+Tila-asetukset
+; Mode settings
+;
+msgPageAdvanced
+Edistyneet asetukset
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+Yksikkö %ld
+; Unit %ld
+;
+msgUnitMusic
+Musiikkiyksikkö
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+Tilan ID\nÄänitys\nTekijä\nCopyright\nAjuri\nVersio\nAnnotation
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+Kaksisuuntainen
+; Full duplex
+;
+msgPropRecordHalf
+Vuorosuuntainen
+; Half duplex
+;
+msgPropRecordNone
+Ei ole
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+Valinnat
+; Options
+;
+msgOptFrequency
+Taa_juus
+; _Frequency
+;
+msgOptChannels
+Kana_vat
+; C_hannels
+;
+msgOptNoChannels
+(ei kanavia)
+; 
+;
+msgOptVolume
+_Äänenvoimakkuus
+; _Volume
+;
+msgOptMonitor
+S_euranta
+; _Monitor
+;
+msgOptGain
+V_ahvistus
+; _Gain
+;
+msgOptMuted
+Mykistetty
+; Muted
+;
+msgOptInput
+_Sisääntulo
+; _Input
+;
+msgOptNoInputs
+Ei sisääntuloja
+; No inputs
+;
+msgOptOutput
+_Ulostulo
+; _Output
+;
+msgOptNoOutputs
+Ei ulostuloja
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+Yleiset valinnat
+; Global options
+;
+msgGlobOptDebugLevel
+_Debug-taso
+; _Debug level
+;
+msgGlobOptEcho
+Ka_iku
+; _Echo
+;
+msgGlobOptSurround
+Surround "_Nopea"-tilassa
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+CPU:n käyttö_raja
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+Ei mitään
+; None
+;
+msgDebugLow
+Matala
+; Low
+;
+msgDebugHigh
+Korkea
+; High
+;
+msgDebugFull
+Täysi
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+Päällä
+; Enabled
+;
+msgEchoFast
+Nopea
+; Fast
+;
+msgEchoDisabled
+Pois päältä
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+Päällä
+; Enabled
+;
+msgSurroundDisabled
+Pois päältä
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+_Tallenna
+; _Save
+;
+msgButtonUse
+_Käytä
+; _Use
+;
+msgButtonCancel
+_Peru
+; _Cancel
+;
+msgButtonOK
+Hyväksy
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+AHI-asetukset
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+%s%s\nCopyright ©%s.\nSuomennoksen tekijä Pauli Porkka.
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+Ikkunan avaaminen epäonnistui.
+; Unable to open window.
+;
+msgTextNoFileRequester
+Tiedostovalitsimen varaaminen epäonnistui.
+; Unable to allocate file requester.
+;
+msgTextNoFind
+'%s' ei löydy!
+; Unable to find `%s'!
+;
+msgTextNoOpen
+'%s' version %ld avaaminen epäonnistui.
+; Unable to open `%s´ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+_Master-volume
+; _Master volume
+;
+msgMVNoClip
+Ilman tasonleikkausta
+; Without clipping
+;
+msgMVClip
+Tasonleikkauksen kanssa
+; With clipping
+;
+msgGlobOptACTime
+
+; Default anti-click time
+;
+msgButtonPlay
+
+; _Play a test sound
+;
+msgOptScalemode
+
+; Volume sc_aling
+;
+msgSMFixedSafe
+
+; Safe
+;
+msgSMDynSafe
+
+; Safe, dynamic
+;
+msgSM0dB
+
+; Full volume
+;
+msgSM3dB
+
+; -3 dB
+;
+msgSM6dB
+
+; -6 dB
+;
+msgFreqFmt
+
+; %ld Hz
+;
+msgChanFmt
+
+; %ld
+;
+msgVolFmt
+
+; %+4.1f dB
+;
+msgACTimeFmt
+
+; %ld ms
+;
+msgPercentFmt
+
+; %ld%%
+;

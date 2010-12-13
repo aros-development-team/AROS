@@ -1,0 +1,10 @@
+
+all:
+	PhxAss OPT NRQBPSMD SET "TEST=0" PT-AHIPlay.s
+
+dist:
+	smake clean
+	smake all
+
+clean:
+	--delete PT-AHIPlay

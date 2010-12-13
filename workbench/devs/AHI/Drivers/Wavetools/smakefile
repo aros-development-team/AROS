@@ -1,0 +1,26 @@
+
+DEST    = AHI:User/Devs/ahi/wavetools.audio
+PDEST   = AHI:User/Devs/AudioModes/WAVETOOLS
+
+AFLAGS	= I INCLUDE: QUIET OPT NRQBPSMD
+
+all: $(DEST) $(PDEST)
+
+$(DEST): wavetools_audio.a smakefile
+	phxass $(AFLAGS) TO $(DEST) wavetools_audio.a
+
+$(PDEST): prefsfile.a smakefile
+	basm -ua+ -o$(PDEST) prefsfile.a
+	AHI:User/C/AddAudioModes $(PDEST)
+
+dist:
+	smake allclean
+	smake all
+	smake clean
+
+clean:
+	--delete \#?.o \#?.tmp >NIL:
+
+allclean:
+	smake clean
+	--delete $(DEST) $(DEST000) $(PDEST)

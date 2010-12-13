@@ -1,0 +1,16 @@
+#
+#  Makefile.in for the AROS sound driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= aros.audio
+MODEFILE	= AROS
+
+OBJECTS		= aros-init.o aros-main.o aros-playslave.o aros-accel.o 
+
+include ../Common/Makefile.common
+
+LIBS		+= -lossshared

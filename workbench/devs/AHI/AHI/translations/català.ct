@@ -1,0 +1,360 @@
+## version $VER: ahiprefs.catalog 4.6 (4.8.2004)
+## language català
+## codeset 0
+;
+## chunk AUTH Translated by Forkens <subi@telefonica.net>
+;#language english
+;#version 4
+;
+;    AHI - Hardware independent audio subsystem
+;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
+;     
+;    This library is free software; you can redistribute it and/or
+;    modify it under the terms of the GNU Library General Public
+;    License as published by the Free Software Foundation; either
+;    version 2 of the License, or (at your option) any later version.
+;     
+;    This library is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;    Library General Public License for more details.
+;     
+;    You should have received a copy of the GNU Library General Public
+;    License along with this library; if not, write to the
+;    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+;    MA 02139, USA.
+;
+; *** Menus ***
+;
+msgMenuProject
+\0 Projecte
+; \000Project
+;
+msgItemOpen
+O\000Obrir...
+; O\000Open...
+;
+msgItemSaveAs
+A\000Desar com...
+; A\000Save As...
+;
+msgItemAbout
+?\000Sobre...
+; ?\000About...
+;
+msgItemQuit
+Q\000Sortir
+; Q\000Quit
+;
+msgMenuEdit
+\000Editar
+; \000Edit
+;
+msgItemDefaults
+D\000Reset per defecte
+; D\000Reset To Defaults
+;
+msgItemLastSaved
+L\000Últim desat
+; L\000Last Saved
+;
+msgItemRestore
+R\000Restaurar
+; R\000Restore
+;
+msgMenuSettings
+\000Paràmetres
+; \000Settings
+;
+msgItemCreateIcons
+I\000Crear icona?
+; I\000Create Icons?
+;
+msgMenuHelp
+\000Ajuda
+; \000Help
+;
+msgItemHelp
+Ajuda\000Ajuda...
+; Help\000Help...
+;
+msgItemUsersGuide
+H\000AHI Guia del usuari...
+; H\000AHI User's guide...
+;
+msgItemConceptIndex
+\000Index...
+; \000Concept Index...
+;
+; *** The pages ***
+;
+msgPageMode
+Paràmetres
+; Mode settings
+;
+msgPageAdvanced
+Paràmetres avançats
+; Advanced settings
+;
+; *** The units ***
+;
+msgUnitDevice
+Unitat %ld
+; Unit %ld
+;
+msgUnitMusic
+Unitat musical
+; Music unit
+;
+; *** Properties box ***
+;
+msgProperties
+Mode ID\n\
+Grabació\n\
+Autor\n\
+Copyright\n\
+Controlador\n\
+Versió\n\
+Annotation
+; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
+;
+msgPropRecordFull
+Duplex complet
+; Full duplex
+;
+msgPropRecordHalf
+1/2 duplex
+; Half duplex
+;
+msgPropRecordNone
+Sense
+; Nope
+;
+; *** Options ***
+;
+msgOptions
+Opcions
+; Options
+;
+msgOptFrequency
+_Freqüència
+; _Frequency
+;
+msgOptChannels
+C_anals
+; C_hannels
+;
+msgOptNoChannels
+
+; 
+;
+msgOptVolume
+_Volum
+; _Volume
+;
+msgOptMonitor
+
+; _Monitor
+;
+msgOptGain
+_Guany
+; _Gain
+;
+msgOptMuted
+_Silenciat
+; Muted
+;
+msgOptInput
+_Entrada
+; _Input
+;
+msgOptNoInputs
+Sense entrada
+; No inputs
+;
+msgOptOutput
+_Sortida
+; _Output
+;
+msgOptNoOutputs
+Sense sortida
+; No outputs
+;
+;
+; *** Global Options ***
+;
+msgGlobalOptions
+Opcions globals
+; Global options
+;
+msgGlobOptDebugLevel
+_Nivell de depuració
+; _Debug level
+;
+msgGlobOptEcho
+_Eco
+; _Echo
+;
+msgGlobOptSurround
+Surround en mode "_Fast"
+; Surround in "_Fast" modes
+;
+msgGlobOptCPULimit
+_Límit d'us de CPU
+; CPU usage _limit
+;
+; *** Debug levels ***
+;
+msgDebugNone
+Cap
+; None
+;
+msgDebugLow
+Baix
+; Low
+;
+msgDebugHigh
+Alt
+; High
+;
+msgDebugFull
+Ple
+; Full
+;
+; *** Echo ***
+;
+msgEchoEnabled
+Activar
+; Enabled
+;
+msgEchoFast
+Ràpid
+; Fast
+;
+msgEchoDisabled
+Desactivat
+; Disabled
+;
+; *** Surround ***
+;
+msgSurroundEnabled
+Activar
+; Enabled
+;
+msgSurroundDisabled
+Desactivar
+; Disabled
+;
+; *** Buttons ***
+;
+msgButtonSave
+_Desar
+; _Save
+;
+msgButtonUse
+_Usar
+; _Use
+;
+msgButtonCancel
+_Cancel.lar
+; _Cancel
+;
+msgButtonOK
+D'Acord
+; OK
+;
+; *** Texts ***
+;
+msgTextProgramName
+Preferències AHI
+; AHI preferences
+;
+;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+msgTextCopyright
+%s%s\n\
+Copyright w©%s\n\
+Traducció al català per Forkens
+; %s%s\nCopyright ©%s
+;
+msgTextNoWindow
+No es pot obrir la finestra
+; Unable to open window.
+;
+msgTextNoFileRequester
+No es pot asignar l'arxiu sol.licitat
+; Unable to allocate file requester.
+;
+msgTextNoFind
+No es pot trobar '%s'!
+; Unable to find `%s'!
+;
+msgTextNoOpen
+No es pot obrir '%s' versió %ld.
+; Unable to open `%s´ version %ld.
+;
+; *** Additions
+;
+msgGlobOptMasterVol
+_Volum Master
+; _Master volume
+;
+msgMVNoClip
+Amb retalls
+; Without clipping
+;
+msgMVClip
+Sense retalls
+; With clipping
+;
+msgGlobOptACTime
+Temps anti-click 
+; Default anti-click time
+;
+msgButtonPlay
+_Prova de so
+; _Play a test sound
+;
+msgOptScalemode
+
+; Volume sc_aling
+;
+msgSMFixedSafe
+
+; Safe
+;
+msgSMDynSafe
+
+; Safe, dynamic
+;
+msgSM0dB
+
+; Full volume
+;
+msgSM3dB
+
+; -3 dB
+;
+msgSM6dB
+
+; -6 dB
+;
+msgFreqFmt
+
+; %ld Hz
+;
+msgChanFmt
+
+; %ld
+;
+msgVolFmt
+
+; %+4.1f dB
+;
+msgACTimeFmt
+
+; %ld ms
+;
+msgPercentFmt
+
+; %ld%%
+;
