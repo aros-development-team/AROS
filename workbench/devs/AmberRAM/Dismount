@@ -1,0 +1,4 @@
+.key device
+FailAt 21
+UnMount "<device>" FREENODE
+Echo "" NOLINE
