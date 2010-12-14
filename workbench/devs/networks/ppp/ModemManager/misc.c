@@ -50,83 +50,134 @@
 #define STRSIZE 1000
 
 #define PREFSFILE "ENV:ModemManager.prefs"
+#define INTERFACEFILE "ENV:AROSTCP/db/interfaces"
+
+BOOL StartStack()
+{
+	ULONG trycount = 0;
+	TEXT arostcppath[256];
+
+	struct TagItem tags[] =
+	{
+		{ SYS_Input,  (IPTR)NULL },
+		{ SYS_Output, (IPTR)NULL },
+		{ SYS_Error,  (IPTR)NULL },
+		{ SYS_Asynch, (IPTR)TRUE },
+		{ TAG_DONE,   0          }
+	};
+
+	arostcppath[0] = 0;
+	GetVar( "SYS/Packages/AROSTCP" , arostcppath , 256 , LV_VAR);
+	AddPart(arostcppath, "C", 256);
+	AddPart(arostcppath, "AROSTCP", 256);
+
+	bug("Start AROSTCP: %s\n",arostcppath);
+	SystemTagList(arostcppath, tags);
+
+	/* Check if startup successful */
+	trycount = 0;
+	while (!FindTask("bsdsocket.library"))
+	{
+		if (trycount > 9) return FALSE;
+		Delay(50);
+		trycount++;
+	}
+	return TRUE;
+}
+
 
 BOOL ReadConfig(struct Conf *c){
-	char *linebuff,*tok;
+	TEXT linebuff[1024],*tok;
 	BPTR ConfigFile;
 	struct at_command  *atc;
-
-	D(bug("ReadConfig:%s\n",PREFSFILE));
+	BOOL result = TRUE;
+	
 	strcpy( c->modemmodel , "Unknow");
 	strcpy( c->username ,   "DummyName");
 	strcpy( c->password ,   "DummyName");
 	strcpy( c->DeviceName , "usbmodem.device");
+	c->InterfaceName[0] = 0;
 
 	c->SerUnitNum = -1;  // default: test all units
 	c->CommandTimeOut = 10; // default timeout 10 sec.
-	
+
 	while( atc = (struct at_command *)RemHead( &c->atcl ) ){
 		FreeMem( atc , sizeof(struct at_command) );
 	}
 
+	bug("Read config file:%s\n",PREFSFILE);
 	if(ConfigFile = Open( PREFSFILE ,MODE_OLDFILE)){
-		if(linebuff = AllocMem(STRSIZE,MEMF_CLEAR|MEMF_PUBLIC)){
-	
-			while(FGets(ConfigFile, linebuff, STRSIZE )){
+		while(FGets(ConfigFile, linebuff, STRSIZE )){
+			if( ( linebuff[0] == '#' ) | ( linebuff[0] == ';' ) ) /* Skip comment lines */
+				continue;
 
-				if( ( linebuff[0] == '#' ) | ( linebuff[0] == ';' ) ) /* Skip comment lines */
-					continue;
+			//  bug("line:%s:\n",linebuff);
+			
+			if( tok = strtok( &linebuff[0]," \t\n") ){
 
-				//  bug("line:%s:\n",linebuff);
-				
-				if( tok = strtok( linebuff," \t\n") ){
-
-					if( strcasecmp("DEVICE",tok) == 0 ){
-						if( tok = strtok( NULL , " \n" ) ) strcpy( c->DeviceName , tok );
-					}else if( strcasecmp("UNIT",tok) == 0 ){
-						if( tok = strtok( NULL , " \n" ) ) c->SerUnitNum = atoi( tok );
-					}else if( strcasecmp("TIMEOUT",tok) == 0 ){
-						if( tok = strtok( NULL , " \n" ) ) c->CommandTimeOut = atoi( tok );	
-					}else if( strcasecmp("USERNAME",tok) == 0 ){
-						if( tok = strtok( NULL , " \n" ) ) strcpy( c->username , tok );
-					}else if( strcasecmp("PASSWORD",tok) == 0 ){
-						if( tok = strtok( NULL , " \n" ) ) strcpy( c->password , tok );
-					}
-
-					else if( strcasecmp("SEND",tok) == 0 ){
-						if( tok = strtok( NULL , "\n" ) ){
-							if(atc = AllocMem(sizeof(struct at_command), MEMF_CLEAR | MEMF_PUBLIC )){
-								strcpy( atc->str , tok );
-								AddTail( &c->atcl , (struct Node*)atc );
-							}
-						}
-					}
-
+				if( strcasecmp("DEVICE",tok) == 0 ){
+					if( tok = strtok( NULL , " \n" ) ) strcpy( c->DeviceName , tok );
+				}else if( strcasecmp("UNIT",tok) == 0 ){
+					if( tok = strtok( NULL , " \n" ) ) c->SerUnitNum = atoi( tok );
+				}else if( strcasecmp("TIMEOUT",tok) == 0 ){
+					if( tok = strtok( NULL , " \n" ) ) c->CommandTimeOut = atoi( tok );	
+				}else if( strcasecmp("USERNAME",tok) == 0 ){
+					if( tok = strtok( NULL , " \n" ) ) strcpy( c->username , tok );
+				}else if( strcasecmp("PASSWORD",tok) == 0 ){
+					if( tok = strtok( NULL , " \n" ) ) strcpy( c->password , tok );
 				}
 
+				else if( strcasecmp("SEND",tok) == 0 ){
+					if( tok = strtok( NULL , "\n" ) ){
+						if(atc = AllocMem(sizeof(struct at_command), MEMF_CLEAR | MEMF_PUBLIC )){
+							strcpy( atc->str , tok );
+							AddTail( &c->atcl , (struct Node*)atc );
+						}
+					}
+				}
 			}
-
-			FreeMem( linebuff, STRSIZE );
 		}
-		Close(ConfigFile);
-
-		bug("Config:\n");
-		bug("    Device   %s\n",c->DeviceName);
-		bug("    Unit     %d\n",c->SerUnitNum);
-		bug("    username %s\n",c->username);
-		bug("    password %s\n",c->password);
-		bug("    TimeOut  %d\n",c->CommandTimeOut);
-		
-		ULONG i=0;
-		ForeachNode(&c->atcl,atc){
-			bug("    Init%d \"%s\"\n",++i,atc->str);
-		}
-		
+		Close(ConfigFile);		
 	}else{
-		bug("Config file missing !!!!\n");
-		return FALSE;
+		bug("ModemManager:Config file missing !!!!\n");
+		result = FALSE;
 	}
-	return TRUE;
+		
+	bug("Read config file:%s\n",INTERFACEFILE);
+	if(ConfigFile = Open( INTERFACEFILE ,MODE_OLDFILE)){
+		while(FGets(ConfigFile, linebuff, STRSIZE )){
+			if( ( linebuff[0] == '#' ) | ( linebuff[0] == ';' ) ) /* Skip comment lines */
+				continue;
+			if( strcasestr( linebuff , "ppp.device" ) != NULL ){
+				if( tok = strtok( linebuff , " " ) ){ strcpy( c->InterfaceName , tok );
+					break;
+				}
+			}
+		}
+		Close(ConfigFile);		
+	}else{
+		bug("ModemManager:Config file missing !!!!\n");
+		result = FALSE;
+	}
+
+	if( c->InterfaceName[0] == 0 ){
+		bug("ModemManager:No PPP interface defined !!!!\n");
+		result = FALSE;
+	}
+	
+	bug("Config:\n");
+	bug("    Interface %s\n",c->InterfaceName);
+	bug("    Device    %s\n",c->DeviceName);
+	bug("    Unit      %d\n",c->SerUnitNum);
+	bug("    username  %s\n",c->username);
+	bug("    password  %s\n",c->password);
+	bug("    TimeOut   %d\n",c->CommandTimeOut);
+	ULONG i=0;
+	ForeachNode(&c->atcl,atc){
+		bug("    Init%d \"%s\"\n",++i,atc->str);
+	}
+	
+	return result;
 }
 
 
