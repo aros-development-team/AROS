@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM kernel-exec-darwin-ios: kernel-kernel-includes kernel-exec-ios-native
 
-FILES := alert_init alert
+FILES := alert_init systemalert
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
 		 -I$(SRCDIR)/arch/all-unix/exec \
