@@ -1,17 +1,7 @@
 # $Id: mmakefile.src 34602 2010-10-06 06:12:47Z sonic $
 include $(TOP)/config/make.cfg
 
-#MM kernel-exec-darwin-ios: kernel-kernel-includes kernel-exec-ios-native
-
-FILES := alert_init systemalert
-
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
-		 -I$(SRCDIR)/arch/all-unix/exec \
-		 -I$(SRCDIR)/rom/exec
-
-%build_archspecific \
-  mainmmake=kernel-exec maindir=rom/exec \
-  arch=darwin-ios files=$(FILES)
+#MM- kernel-exec-darwin-ios: kernel-exec-ios-native
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_OBJDIR := $(GENDIR)/arch/all-ios/exec
