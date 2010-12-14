@@ -19,6 +19,7 @@
 
 struct Conf{
 	
+	BYTE InterfaceName[PPP_MAXARGLEN];
 	BYTE DeviceName[PPP_MAXARGLEN];
 	BYTE SerUnitNum;
 
@@ -55,3 +56,6 @@ struct EasyTimer* OpenTimer();
 BOOL ReadConfig(struct Conf *c);
 BOOL DialUp(struct EasySerial *s,struct Conf *c);
 BOOL TestModem(struct EasySerial *s,struct Conf *c);
+
+BOOL StartStack();
+
