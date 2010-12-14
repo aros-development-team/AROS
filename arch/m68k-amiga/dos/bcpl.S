@@ -315,14 +315,15 @@ BCPL Open           /* -04, FileHandle ^, &name, mode */
                      /* 4, void main */
 
 BCPL Exit            /*  08, void, code */
-    movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     sub.l	%a1,%a1
+    move.l	%d1,%d2
     jsr		%a6@(FindTask)
-    move.l	%d0, %a3
-    move.l	%a3@(pr_ReturnAddr),%a3
-    movem.l	%sp@+,%a0-%a1/%a6
-    BRTS
+    move.l	%d0,%a0
+    move.l	%a0@(pr_ReturnAddr),%a0
+    lea.l	%a0@(-4),%sp
+    move.l	%d2,%d0
+    rts
 
 BCPL multiply       /*  0c, D1 = D1 * D2 */
     muls	%d2, %d1

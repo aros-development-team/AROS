@@ -39,9 +39,9 @@ static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
 	"neg.l  %%d0\n\t"
 	"lea.l  %%a0@(%%d0),%%a1\n\t"
 	"move.l %%a1,%%a0@-\n\t"        /* sp+ 8 = stksize  */
-	"move.l #0f,%%a0@-\n\t"         /* sp+ 4 = return address */
 	"lea.l  %%a0@,%%a2\n\t"         /* Save address of return address */
 	"move.l %%a2,%1\n\t"
+	"move.l #0f,%%a0@-\n\t"         /* sp+ 4 = return address */
 	"move.l %2,%%a0@-\n\t"          /* sp+ 0 = address to go to */
 	"move.l %%a0,%%d1\n\t"
 	"move.l %3,%%a2\n\t"            /* A2 - Global Vector */
