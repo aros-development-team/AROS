@@ -4,13 +4,23 @@
 
 #include "exec_intern.h"
 
+#ifdef HOST_OS_android
+#define LIB_NAME "libAROSBootstrap.so"
+#endif
+#ifdef HOST_OS_ios
+#define LIB_NAME "alert.dylib"
+#endif
+#ifndef LIB_NAME
+#error Unsupported operating system
+#endif
+
 static int Alert_Init(struct ExecBase *SysBase)
 {
     APTR ExecHandle;
 
     /* We use local variable for the handle because we never expunge
        so we will never close it */
-    ExecHandle = HostLib_Open("libAROSBootstrap.so", NULL);
+    ExecHandle = HostLib_Open(LIB_NAME, NULL);
     D(bug("[Alert_Init] Bootstrap handle: 0x%p\n", ExecHandle));
     if (!ExecHandle)
 	return FALSE;
