@@ -10,6 +10,10 @@
 
 #include "bcpl.h"
 
+#define BCPL(id,name)	.equ GV_##name, id
+#include "bcpl.inc"
+#undef BCPL
+
     /* BCPL equivalents of JSR and RTS */
 
     .text
@@ -24,14 +28,26 @@ BCPL_jsr:
     bra.s   BCPL_jsr_mult       /* This MUST be at BCPL_jsr+0x10 */
     bra.s   BCPL_jsr_divmod     /* This MUST be at BCPL_jsr+0x12 */
 BCPL_jsr_mult:
-    muls    %d2,%d1
+    /* Call out to GCC's __mulsi3 */
+    movem.l  %a0-%a1,%sp@-
+    move.l  %d2, %sp@-
+    move.l  %d1, %sp@-
+    jsr     __mulsi3
+    addq.l  #8,%sp
+    move.l  %d0, %d1
+    movem.l  %sp@+,%a0-%a1
     rts
 BCPL_jsr_divmod:
-    divs    %d2,%d1             /* Upper D1 is D1 % D2.w, lower is D1 / D2.w */
-    move.l  %d1,%d2
-    ext.w   %d1                 /* D1 = D1 / D2.w */
-    asr.l   #8,%d2              /* D2 = D1 % D2.w */
-    asr.l   #8,%d2              /* D2 = D1 % D2.w */
+    /* Call out to GCC's __divsi3 and __modsi3 */
+    movem.l  %a0-%a1,%sp@-
+    move.l  %d2, %sp@-
+    move.l  %d1, %sp@-
+    jsr     __modsi3
+    move.l  %d0, %d2
+    jsr     __divsi3
+    move.l  %d0, %d1
+    addq.l  #8, %sp
+    movem.l  %sp@+,%a0-%a1
     rts
 
     .globl  BCPL_rts  /* A6 */
@@ -168,14 +184,15 @@ BCPLd QueuePacket    /* -54, void */
 
 BCPL clearmem       /* -50, void, @buff, lw_length */
     move.l	%d2,%sp@-
-    tst.l	%d2
-    ble		1f
     lsl.l	#2,%d1
-0:
+    bra		.Lclearmem_cond
+
+.Lclearmem_loop:
     clr.l	%a0@(%d1)
     addq.l	#4,%d1
-    dbf		%d2,0b
-1:
+.Lclearmem_cond:
+    dbf		%d2,.Lclearmem_loop
+
     BRTS
 
 BCPL LoadSeg        /* -4c, SegList ^, &name */
@@ -292,13 +309,16 @@ BCPL strncpy        /* -08, void, @src, @dest, n */
     move.l	%d3,%d4		/* Force N as the max length */
 0:
     sub.l	%d5,%d4		/* D4 -= strlen(dest) */
-    ble		2f
     add.l	%d2,%d5		/* Set D5 as the end of dest */
-1:
+    bra		.Lstrncpy_loop_cond
+
+.Lstrncpy_loop:
     move.b	%a0@(%d1),%a0@(%d5)
     addq.l	#1,%d1
     addq.l	#1,%d5
-    dbf		%d4,1b
+.Lstrncpy_loop_cond:
+    dbf		%d4,.Lstrncpy_loop
+
     sub.l	%d2,%d5
     move.b	%d5,%a0@(-1,%d2)	/* Fix up dest len */
 2:
@@ -326,18 +346,18 @@ BCPL Exit            /*  08, void, code */
     rts
 
 BCPL multiply       /*  0c, D1 = D1 * D2 */
-    muls	%d2, %d1
+    jsr	%a5@(0x10)
     BRTS
 
 BCPL divide         /*  10, D1 = D1 / D2 */
-    divs	%d2, %d1
-    ext.w	%d1
+    jsr	%a5@(0x12)
+    move.l	%a1@(4),%d2
     BRTS
 
 BCPL mod            /*  14, D1 = D1 % D2 */
-    divs	%d2, %d1
-    asr.l	#8, %d1
-    asr.l	#8, %d1
+    jsr	%a5@(0x12)
+    move.l	%d2,%d1
+    move.l	%a1@(4),%d2
     BRTS
 
 BCPLd setIO          /*  18, void, @IOStdReq, command, &data, len, offset */
@@ -624,27 +644,42 @@ BCPLd systemRequest  /* d0, void, @line1, @line2, @line3 */
     BRTS
 
 BCPL writet         /* d4, void, @string, n */
-    move.l	%d2,%sp@-
-    move.l	#(3*4 + 2*4),%d0
-    lea.l	BCPL_writes, %a4
-    jsr		(%a5)
-    move.l	%d1,%sp@-	/* Save string length */
+    movem.l	%d2-%d4,%sp@-
+    move.l	%d1, %d3
+    lsl.l	#2, %d3		/* D3 = BADDR(string) */
+    clr.l	%d4
+    move.b	%a0@(%d3),%d4	/* D4 = string[0] (strlen) */
+    tst.l	%d4
+    beq		.LBCPL_writet_pad
 
-    move.l	%d2,%d1
-    ble		1f
-0:
+    bra		.LBCPL_writet_loop_cond
+
+.LBCPL_writet_loop:
+    addq.l	#1,%d3		/* D3 = pointer to next char */
+    subq.l	#1,%d2		/* D2 = reduce pad amount by 1 */
+    move.l	#(3*4 + 1*4),%d0
+    clr.l	%d1
+    move.b	%a0@(%d3),%d1	/* D1 = next char */
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+.LBCPL_writet_loop_cond:
+    dbf		%d4,.LBCPL_writet_loop
+
+.LBCPL_writet_pad:
+    tst.l	%d2
+    ble		.LBCPL_writet_exit
+    bra		.LBCPL_writet_pad_cond
+
+.LBCPL_writet_pad_loop:
     move.l	#(3*4 + 2*4),%d0
     moveq.l	#' ',%d1
-    lea.l	BCPL_wrch, %a4
+    move.l	%a2@(GV_wrch), %a4
     jsr		(%a5)
-    dbf		%d2,0b
-1:
-    move.l	%sp@+,%d0	/* Get string length */
-    move.l	%sp@+,%d2
-    cmp.l	%d2,%d0		/* D0 > D2? */
-    ble		2f
-    move.l	%d2,%d0		/* Return field length */
-2:
+.LBCPL_writet_pad_cond:
+    dbf		%d2,.LBCPL_writet_pad_loop
+
+.LBCPL_writet_exit:
+    movem.l	%sp@+,%d2-%d4
     BRTS
 
 BCPL rdch           /* d8, char ,  */
@@ -739,42 +774,141 @@ BCPL newline        /* 110, void,  */
     moveq.l	#'\n',%d1
     jmp		BCPL_wrch
 
+BCPL_write_base:	/* number, width, base, canneg */
+    movem.l	%d2-%d7,%sp@-
+
+    move.l	%d3,%d6		/* D6 = base */
+    move.l	%d2,%d5		/* D5 = width */
+    move.l	%d1,%d3		/* D3 = Number */
+
+    tst.l	%d4
+    beq		.Lwrite_base_pos
+
+    tst.l	%d3		/* Number < 0? */
+    bge		.Lwrite_base_pos
+
+    /* Negative sign */
+    subq.l	#1,%d5
+    move.l	#'-',%d1
+    move.l	#(3*4 + 4*4), %d0
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+    neg.l	%d3
+
+.Lwrite_base_pos:
+    clr.l	%d4		/* D4 = Digit */
+    clr.l	%d7		/* D7 = Num pushed chars */
+
+.Lwrite_base_loop:
+    move.l	%d3,%d1
+    move.l	%d6,%d2
+    jsr		%a5@(0x12)	/* divmod: D1 = D3/base, D2 = D3 % base */
+    move.l	%d1, %d3
+
+    /* Push char */
+    move.l	%d2, %d1
+    cmp.b	#10, %d1
+    blt		0f
+    add.b	#(('A'-10)-'0'),%d1
+0:
+    add.b	#'0',%d1	/* D1 = '0' .. '9' */
+    move.b	%d1, %a1@(3*4 + 4*4, %d7)
+    addq.l	#1, %d7
+
+    subq.l	#1, %d5
+    tst.l	%d3
+    bgt		.Lwrite_base_loop
+
+    /* Write chars */
+.Lwrite_base_emit:
+    sub.l	#1, %d7
+    blt		0f
+    clr.l	%d1
+    move.b	%a1@(3*4 + 4*4, %d7),%d1
+    move.l	#(3*4 + 4*4 + 8*4), %d0
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+    jmp		.Lwrite_base_emit
+0:
+
+    /* Any extra field bits? */
+    bra		.LBCPL_write_base_pad_cond
+
+.LBCPL_write_base_pad:
+    move.l	#' ',%d1
+    move.l	#(3*4 + 4*4), %d0
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+.LBCPL_write_base_pad_cond:
+    subq.l	#1,%d5
+    tst.l	%d5
+    bge		.LBCPL_write_base_pad
+
+    movem.l	%sp@+,%d2-%d7
+    BRTS
+
 BCPL writei         /* 114, void, number, width */
+    movem.l	%d3-%d4,%sp@-
+
+    move.l	#(3*4 + 2*4), %d0
+    move.l	#10,%d3
+    move.l	#-1,%d4
+    lea.l	BCPL_write_base, %a4
+    jsr		(%a5)
+
+    movem.l	%sp@+,%d3-%d4
     BRTS
 
 BCPL writen         /* 118, void, number */
+    movem.l	%d2-%d4,%sp@-
+
+    move.l	#(3*4 + 1*4), %d0
     clr.l	%d2
-    jmp		BCPL_writei
+    move.l	#10,%d3
+    move.l	#-1,%d4
+    lea.l	BCPL_write_base, %a4
+    jsr		(%a5)
+
+    movem.l	%sp@+,%d2-%d4
+    BRTS
 
 BCPLd writehex       /* 11c, void, number, width */
+    movem.l	%d3-%d4,%sp@-
+
+    move.l	#(3*4 + 2*4), %d0
+    move.l	#16,%d3
+    clr.l	%d4
+    lea.l	BCPL_write_base, %a4
+    jsr		(%a5)
+
+    movem.l	%sp@+,%d3-%d4
     BRTS
 
 BCPLd writeoct       /* 120, void, number, width */
+    movem.l	%d3-%d4,%sp@-
+
+    move.l	#(3*4 + 2*4), %d0
+    move.l	#8,%d3
+    clr.l	%d4
+    lea.l	BCPL_write_base, %a4
+    jsr		(%a5)
+
+    movem.l	%sp@+,%d3-%d4
     BRTS
 
 BCPL writes         /* 124, void, @string */
-    movem.l	%d2-%d3,%sp@-
-    lsl.l	#2, %d1
+    move.l	%d2,%sp@-
     clr.l	%d2
-    move.b	%a0@(%d1),%d2
-    move.l	%d2,%sp@-	/* Save string length */
-    move.l	%d1,%d3
-0:
-    addq.l	#1,%d3
     move.l	#(3*4 + 1*4),%d0
-    clr.l	%d1
-    move.b	%a0@(%d3),%d1
-    lea.l	BCPL_wrch, %a4
+    move.l	%a2@(GV_writet), %a4
     jsr		(%a5)
-    dbf		%d2,0b
-    move.l	%sp@+,%d0	/* Return string length */
-    movem.l	%sp@+,%d2-%d3
+    move.l	%sp@+,%d2
     BRTS
 
-BCPL writef         /* 128, void, @format, arg1, arg2, ... */
-    /* TODO: Actually do this right. For now,
-     * just print the format string */
-    jmp		BCPL_writes
+#if 0 /* This is defined in bcpl_writef.S */
+BCPLd writef         /* 128, void, @format, arg1, arg2, ... */
+    BRTS
+#endif
 
 BCPL toupper        /* 12c, void, char */
     move.l	%d1,%d0
@@ -911,8 +1045,12 @@ BCPL extractDeviceName  /* 1ac, void, @buf, bufsize, @name , flag */
     addq.l	#8,%sp
     move.l	%sp@+,%a0	/* Get buffer back */
     addq.l	#8,%sp
+
+    tst.l	%d0		/* Do < 0 ? */
+    bge		0f
+    move.b	%d2,%d0		/* Use old size */
+0:
     move.b	%d0,%a0@(-1)	/* Set BCPL size byte */
-    clr.b	%a0@(%d0)	/* Make C string end */
     moveq.l	#-1,%d0
     movem.l	%sp@+,%d1-%d4/%a0-%a1/%a6
     BRTS
@@ -964,7 +1102,7 @@ BCPL strcpy         /* 1cc, void, @src, @dest */
     move.l	%d3,%sp@-
     move.l	#255,%d3
     move.l	#(3*4 + 2*4),%d0
-    lea.l	BCPL_strncpy, %a4
+    move.l	%a2@(GV_strncpy), %a4
     jsr		(%a5)
     move.l	%sp@+,%d3
     BRTS

@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 BCPL_CFILES  := bcpl_support bcpl_readargs
-BCPL_AFILES  := bcpl
+BCPL_AFILES  := bcpl bcpl_writef
 
 CFUNCS  := \
 	addbuffers adddosentry assignlock changemode close  \
