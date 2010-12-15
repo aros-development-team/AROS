@@ -31,6 +31,9 @@
 static void nv50_gpio_isr(struct drm_device *dev);
 #if !defined(__AROS__)
 static void nv50_gpio_isr_bh(struct work_struct *work);
+#else
+struct nv50_gpio_handler;
+static void nv50_gpio_isr_bh(struct nv50_gpio_handler *gpioh);
 #endif
 
 struct nv50_gpio_priv {
@@ -122,8 +125,6 @@ nv50_gpio_irq_register(struct drm_device *dev, enum dcb_gpio_tag tag,
 
 #if !defined(__AROS__)
 	INIT_WORK(&gpioh->work, nv50_gpio_isr_bh);
-#else
-IMPLEMENT("Calling INIT_WORK(&gpioh->work, nv50_gpio_isr_bh);\n");
 #endif
 	gpioh->dev  = dev;
 	gpioh->gpio = gpio;
@@ -254,6 +255,11 @@ nv50_gpio_isr_bh(struct work_struct *work)
 {
 	struct nv50_gpio_handler *gpioh =
 		container_of(work, struct nv50_gpio_handler, work);
+#else
+static void
+nv50_gpio_isr_bh(struct nv50_gpio_handler *gpioh)
+{
+#endif
 	struct drm_nouveau_private *dev_priv = gpioh->dev->dev_private;
 	struct nouveau_gpio_engine *pgpio = &dev_priv->engine.gpio;
 	struct nv50_gpio_priv *priv = pgpio->priv;
@@ -270,7 +276,6 @@ nv50_gpio_isr_bh(struct work_struct *work)
 	gpioh->inhibit = false;
 	spin_unlock_irqrestore(&priv->lock, flags);
 }
-#endif
 
 static void
 nv50_gpio_isr(struct drm_device *dev)
@@ -306,7 +311,8 @@ nv50_gpio_isr(struct drm_device *dev)
 #if !defined(__AROS__)
 		queue_work(dev_priv->wq, &gpioh->work);
 #else
-IMPLEMENT("Calling queue_work(dev_priv->wq, &gpioh->work);\n");
+        /* Kind of hackish call but it does its job. */
+        nv50_gpio_isr_bh(gpioh);
 #endif
 	}
 	spin_unlock(&priv->lock);

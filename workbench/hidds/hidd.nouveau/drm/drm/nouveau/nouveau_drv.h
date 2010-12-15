@@ -635,8 +635,9 @@ struct drm_nouveau_private {
 	/* interrupt handling */
 	void (*irq_handler[32])(struct drm_device *);
 	bool msi_enabled;
-	struct workqueue_struct *wq;
 #if !defined(__AROS__)
+    /* Not needed - all queued stuff is called directly */
+	struct workqueue_struct *wq;
     /* Not needed - direct call to nv50_display_irq_handler_bh is made in irq handler */
 	struct work_struct irq_work;
 #endif
