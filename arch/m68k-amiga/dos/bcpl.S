@@ -720,16 +720,24 @@ BCPL writeoutput_e8 /* e8, void, @buf, lwlength */
     movem.l	%sp@+,%d2-%d4/%a0-%a1/%a6
     BRTS
 
-BCPL findinput      /* ec, FileHandle ^, &name */
+BCPL findinput      /* ec, FileHandle ^, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
+
+    moveq.l	#1, %d0
+    jsr		bstr_to_cstr
+
     move.l	%a2@(BCPL_DOSBase),%a6
     move.l	#1005 /* MODE_OLDFILE */,%d2
     jsr		%a6@(5 * -6)	/* DOS/Open() */
     movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
-BCPL findoutput     /* f0, FileHandle ^, &name */
+BCPL findoutput     /* f0, FileHandle ^, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
+  
+    moveq.l	#1, %d0
+    jsr		bstr_to_cstr
+
     move.l	%a2@(BCPL_DOSBase),%a6
     move.l	#1005 /* MODE_NEWFILE */,%d2
     jsr		%a6@(5 * -6)	/* DOS/Open() */
@@ -1012,8 +1020,10 @@ BCPL execute        /* 194, void, &string , @in, @out */
 BCPL deviceproc     /* 198, FileLock ^, @filename */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
-    lsl.l	#2,%d1
-    addq.l	#1,%d1
+
+    moveq.l	#1, %d0
+    jsr		bstr_to_cstr
+
     jsr		%a6@(29 * -6)	/* DOS/DeviceProc() */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
@@ -1030,12 +1040,18 @@ BCPLd findFileHandler    /* 1a8, MsgPort ^,  */
 BCPL extractDeviceName  /* 1ac, void, @buf, bufsize, @name , flag */
     movem.l	%d1-%d4/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
-    lsl.l	#2,%d1
-    addq.l	#1,%d1
     lsl.l	#2,%d2
     subq.l	#1,%d2
-    lsl.l	#2,%d3
-    addq.l	#1,%d3
+
+    move.l	%d3, %d1
+    moveq.l	#4, %d0
+    jsr		bstr_to_cstr
+    move.l	%d1, %d3
+
+    move.l	%a1@(0), %d1	/* Recover D1 from A1[0] */
+    lsl.l	#2,%d1
+    addq.l	#1,%d1
+
     move.l	%d2,%sp@-
     clr.l	%sp@-
     move.l	%d1,%sp@-
@@ -1058,8 +1074,10 @@ BCPL extractDeviceName  /* 1ac, void, @buf, bufsize, @name , flag */
 BCPL lock           /* 1b0, FileLock ^, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
-    lsl.l	#2,%d1
-    addq.l	#1,%d1		/* STRPTR Name from BSTR */
+
+    moveq.l	#1, %d0
+    jsr		bstr_to_cstr
+
     moveq.l	#-2,%d2		/* Shared lock */
     jsr		%a6@(14 * -6)	/* DOS/Lock() */
     movem.l	%sp@+,%d2/%a0-%a1/%a6
@@ -1122,8 +1140,10 @@ BCPL lock_1ec       /* 1ec, FileLock ^, &name */
 BCPL findDevInfo    /* 1f0, DevInfo ^, @name */
     movem.l	%d1-%d3/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
-    lsl.l	#2,%d1
-    addq.l	#1,%d1
+
+    moveq.l	#1, %d0
+    jsr		bstr_to_cstr
+
     move.l	%d1,%sp@-
     move.l	#0x1d,%d1	/* LDF_ALL | LDF_READ */
     jsr		%a6@(109 * -6)	/* DOS/LockDosList */
@@ -1139,9 +1159,13 @@ BCPL findDevInfo    /* 1f0, DevInfo ^, @name */
     movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
     BRTS
 
-BCPL createDir      /* 1f4, FileLock^, &name */
+BCPL createDir      /* 1f4, FileLock^, @name */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
+
+    moveq.l	#1, %d0
+    jsr		bstr_to_cstr
+
     jsr		%a6@(20 * -6)	/* DOS/CreateDir() */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
@@ -1164,4 +1188,36 @@ BCPLd findCLI        /* 218, CommandLineInterpreter ^,  */
     lsr.l	#2,%d0
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
+
+
+/* Helper routines */
+    /* Convert BCPL string to Cstring inline in the A1 vector
+     * In:
+     *   D0: Index into A1, in words, to hold dest
+     *   D1: BSTR to convert
+     *   A1: ULONG vector
+     * Out:
+     *   D0: Clobbered
+     *   D1: Memory address of Cstring
+     *   A1: Unchanged
+     */
+bstr_to_cstr:
+    movem.l	%d0/%a0-%a1,%sp@-
+    sub.l	%a0,%a0
+    lsl.l	#2,%d1
+    addq.l	#1,%d1
+    clr.l	%sp@-
+    move.b	%a0@(-1,%d1),%sp@(3)	/* Arg3 = strlen */
+    move.l	%d1,%sp@-		/* Arg2 = src */
+    lsl.l	#2,%d0
+    pea.l	%a1@(%d0)		/* Arg1 = dest */
+    jsr		memcpy
+    move.l	%sp@+,%a0		/* A0 = dest */
+    addq.l	#4,%sp			/* Drop src */
+    move.l	%sp@+,%d1		/* D1 = strlen */
+    move.b	#0,%a0@(%d1)		/* Terminate string with an ASCIIZ */
+    move.l	%a0,%d1			/* D1 = dest */
+    movem.l	%sp@+,%d0/%a0-%a1
+    rts
+
 
