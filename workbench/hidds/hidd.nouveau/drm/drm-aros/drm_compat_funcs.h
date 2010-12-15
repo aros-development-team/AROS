@@ -236,26 +236,26 @@ static inline void spin_unlock(spinlock_t * lock)
     /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
     ReleaseSemaphore(&lock->semaphore);
 }
-static inline void spin_lock_irqsave(spinlock_t * lock, unsigned long flags)
-{
-    (void)flags;
-    
-    Disable();
-    
-    /* while(atomic_cmpxchg(&lock->lock, 0, 1) != 0);  Does not work - causes deadlock */
-    ObtainSemaphore(&lock->semaphore);
-}
-static inline void spin_unlock_irqrestore(spinlock_t * lock, unsigned long flags)
-{
-    /* atomic_set(&lock->lock, 0);  Does not work - causes deadlock */
-    ReleaseSemaphore(&lock->semaphore);
 
-    Enable();
-    
-    (void)flags;
-}
+#define spin_lock_irqsave(lock, flags)      \
+do                      \
+{                       \
+    (void)flags;        \
+    Disable();          \
+    spin_lock(lock);    \
+}while(0)
+
+#define spin_unlock_irqrestore(lock, flags)      \
+do                      \
+{                       \
+    spin_unlock(lock);  \
+    Enable();           \
+    (void)flags;        \
+}while(0)
+
 #define spin_lock_irq(x)                spin_lock_irqsave(x, 0)
 #define spin_unlock_irq(x)              spin_unlock_irqrestore(x, 0)
+
 /* TODO: This may work incorreclty if write_lock and read_lock are used for the same lock
    read_lock allows concurent readers as lock as there is no writer */
 static inline void rwlock_init(rwlock_t * lock)
