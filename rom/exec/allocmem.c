@@ -159,8 +159,8 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
             }
             else
             {
-                res = stdAlloc(mh, byteSize, requirements, SysBase);
-            }                
+                res = AllocateExt(mh, byteSize, requirements);
+            }
 	    if (res)
 	        break;
         }
