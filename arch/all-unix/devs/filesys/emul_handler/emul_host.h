@@ -102,7 +102,7 @@ struct LibCInterface
 
 struct PlatformHandle
 {
-    /* Nothing to add here */
+    ULONG dirpos; /* Directory search position for Android */
 };
 
 struct Emul_PlatformData
@@ -114,3 +114,8 @@ struct Emul_PlatformData
     struct SignalSemaphore  sem;	/* Semaphore to single-thread libc calls */
     struct MinList	    readList;	/* Asynchronous read queue		 */
 };
+
+struct emulbase;
+struct filehandle;
+
+struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *dirpos);
