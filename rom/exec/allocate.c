@@ -80,24 +80,9 @@ AROS_LH2(APTR, Allocate,
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    APTR res;
 
-    D(bug("[exec] Allocate(0x%p, %u)\n", freeList, byteSize));
-    ASSERT_VALID_PTR(freeList);
-
-    /* Zero bytes requested? May return everything ;-). */
-    if(!byteSize)
-	return NULL;
-
-    /* First round byteSize to a multiple of MEMCHUNK_TOTAL. */
-    byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
-
-    /* Is there enough free memory in the list? */
-    if(freeList->mh_Free<byteSize)
-	return NULL;
-
-    res = stdAlloc(freeList, byteSize, 0, SysBase);
+    /* Allocate() is the same as AllocateExt() with zero flags */
+    APTR res = AllocateExt(freeList, byteSize, 0);
 
     if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
 	MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);
