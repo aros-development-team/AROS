@@ -154,7 +154,7 @@ CXX_SOURCES := \
 CXX_OBJECTS := $(addprefix $(OBJDIR)/cpp/, $(addsuffix .o, $(notdir $(CXX_SOURCES))))
 
 # Remove C-only flags
-CXX_FLAGS := $(CFLAGS) $(USER_CFLAGS) -fno-rtti -fno-exceptions
+CXX_FLAGS := $(CFLAGS) $(USER_CFLAGS) -fno-rtti -fno-exceptions -isystem $(AROS_DEVELOPMENT)/include
 CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CXX_FLAGS)))
 
 # Define the use of cross compiler
