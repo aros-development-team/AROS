@@ -85,14 +85,22 @@ AROS_UFH4(ULONG, BCPL_ReadArgs,
 {
     AROS_USERFUNC_INIT
 
-    CONST_STRPTR template = AROS_BSTR_ADDR(btemplate);
+    STRPTR template;
     IPTR *vec = BADDR(bvec);
-    struct FileHandle *input = BADDR(Input());
     struct RDArgs *rd;
     BSTR bstr;
     CONST_STRPTR cp;
     int arg, args, seen_key, seen_enough, svec;
 #define RA_FLAG(x)	((x)&0x1f)
+
+    template = AllocVec(AROS_BSTR_strlen(btemplate)+1,MEMF_ANY);
+    if (template == NULL) {
+    	SetIoErr(ERROR_NO_FREE_STORE);
+    	return 0;
+    }
+
+    memcpy(template, AROS_BSTR_ADDR(btemplate), AROS_BSTR_strlen(btemplate));
+    template[AROS_BSTR_strlen(btemplate)]=0;
 
     D(bug("-- Template \"%s\"\n", template));
 
@@ -102,35 +110,29 @@ AROS_UFH4(ULONG, BCPL_ReadArgs,
     	    args++;
     }
 
-    rd = AllocDosObject(DOS_RDARGS, NULL);
-    if (rd == NULL)
-    	return 0;
-
-    if (input != NULL) {
-    	rd->RDA_Source.CS_Buffer = input->fh_Buf;
-    	rd->RDA_Source.CS_Length = input->fh_End-input->fh_Buf;
-    	rd->RDA_Source.CS_CurChr = input->fh_Pos-input->fh_Buf;
-    }
-
     /* BCPL readargs appers to want the vector to be zeroed */
     memset(vec, 0, upb * sizeof(IPTR));
 
-    rd = ReadArgs(template, vec, rd);
-    if (rd == NULL)
+    rd = ReadArgs(template, vec, NULL);
+    if (rd == NULL) {
+    	FreeVec(template);
     	return 0;
+    }
 
     svec = args;
     seen_enough = 0;
-    for (arg = 0, seen_key = 0, cp = template; *cp; cp++) {
+    for (arg = 0, seen_key = 0, cp = template; ; cp++) {
     	int len, left;
 
-    	if (*cp == ',') {
+    	if (*cp == ',' || (cp - template) >= AROS_BSTR_strlen(btemplate)) {
     	    if (!seen_enough && vec[arg] != 0) {
 		/* Ok, it's probably a string. Convert it to BCPL */
 		len = strlen((STRPTR)vec[arg]);
 		left = (upb - svec)*sizeof(IPTR);
 		if (AROS_BSTR_MEMSIZE4LEN(len) > left) {
+		    SetIoErr(ERROR_NO_FREE_STORE);
 		    FreeArgs(rd);
+		    FreeVec(template);
 		    return 0;
 		}
 
@@ -141,6 +143,8 @@ AROS_UFH4(ULONG, BCPL_ReadArgs,
 		vec[arg] = bstr;
 		svec += AROS_ALIGN(AROS_BSTR_MEMSIZE4LEN(len))/sizeof(IPTR);
 	    }
+	    if (*cp != ',')
+	    	break;
     	    arg++;
     	    seen_key = 0;
     	    continue;
@@ -172,8 +176,8 @@ AROS_UFH4(ULONG, BCPL_ReadArgs,
     	}
     }
 
+    FreeVec(template);
     FreeArgs(rd);
-    FreeDosObject(DOS_RDARGS, rd);
 
     SetIoErr(0);
     return svec;
