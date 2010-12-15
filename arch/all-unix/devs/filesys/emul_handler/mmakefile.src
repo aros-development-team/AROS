@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(GENINCDIR)
+FILES := emul_host emul_dir
 
 USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
 	       -I$(SRCDIR)/$(CURDIR) \
@@ -10,6 +10,6 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
 
 %build_archspecific mainmmake=kernel-fs-emul \
   maindir=arch/all-hosted/devs/filesys/emul_handler \
-  arch=unix files=emul_host
+  arch=unix files=$(FILES)
 
 %common

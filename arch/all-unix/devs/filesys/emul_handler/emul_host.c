@@ -1132,6 +1132,9 @@ LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh)
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
+    /* Directory search position has been reset */
+    fh->ph.dirpos = 0;
+
     /* rewinddir() never fails */
     return 0;
 }
@@ -1269,8 +1272,6 @@ LONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, char *Entry
 
 /*********************************************************************************************/
 
-#define is_special_dir(x) (x[0] == '.' && (!x[1] || (x[1] == '.' && !x[2])))
-
 LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
                   struct FileInfoBlock *FIB)
 {
@@ -1278,7 +1279,6 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     struct stat st;
     struct dirent *dir;
     char *src, *dest;
-    off_t pos;
     LONG err;
 
     /* This operation does not make any sense on a file */
@@ -1292,22 +1292,8 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
     emulbase->pdata.SysIFace->seekdir(fh->fd, FIB->fib_DiskKey);
     AROS_HOST_BARRIER
 
-    /* hm, let's read the data now! 
-       but skip '.' and '..' (they're not available on Amigas and
-       Amiga progs wouldn't know how to treat '.' and '..', i.e. they
-       might want to scan recursively the directory and end up scanning    ObtainSemaphore(&emulbase->pdata.sem);
-       ./././ etc. */
-    do
-    {
-	dir = emulbase->pdata.SysIFace->readdir(fh->fd);
-	AROS_HOST_BARRIER
-	if (NULL == dir)
-	    break;
-
-    } while (is_special_dir(dir->d_name));
-
-    pos = emulbase->pdata.SysIFace->telldir(fh->fd);
-    AROS_HOST_BARRIER
+    /* hm, let's read the data now! */
+    dir = ReadDir(emulbase, fh, &FIB->fib_DiskKey);
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
@@ -1320,7 +1306,6 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
         return err;
     }
 
-    FIB->fib_DiskKey    = pos;
     FIB->fib_OwnerUID	= st.st_uid;
     FIB->fib_OwnerGID	= st.st_gid;
     FIB->fib_Comment[0]	= '\0'; /* no comments available yet! */
@@ -1385,8 +1370,7 @@ LONG examine_all(struct emulbase *emulbase,
 	AROS_HOST_BARRIER
 
         *emulbase->pdata.errnoPtr = 0;
-	dir = emulbase->pdata.SysIFace->readdir(fh->fd);
-	AROS_HOST_BARRIER
+	dir = ReadDir(emulbase, fh, &eac->eac_LastKey);
 
 	if (!dir)
 	    error = err_u2a(emulbase);
@@ -1397,11 +1381,6 @@ LONG examine_all(struct emulbase *emulbase,
 	    break;
 
 	DEXAM(bug("[emul] Found entry %s\n", dir->d_name));
-
-	if (is_special_dir(dir->d_name)) {
-	    DEXAM(bug("[emul] Special entry, skipping\n"));
-	    continue;
-	}
 
 	if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, dir->d_name)) {
 	    DEXAM(bug("[emul] Entry does not match, skipping\n"));
