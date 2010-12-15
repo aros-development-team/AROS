@@ -97,7 +97,7 @@ void __dosboot_Boot(APTR BootLoaderBase, struct DosLibrary *DOSBase, ULONG Flags
             tags[5].ti_Tag = TAG_IGNORE;
         }
 
-        rc = SystemTagList("", tags);
+        rc = SystemTagList("\n", tags);
         if (rc != -1)
         {
             cis  = BNULL;
