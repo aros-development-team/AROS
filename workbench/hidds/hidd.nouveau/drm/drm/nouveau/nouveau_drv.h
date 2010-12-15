@@ -636,7 +636,10 @@ struct drm_nouveau_private {
 	void (*irq_handler[32])(struct drm_device *);
 	bool msi_enabled;
 	struct workqueue_struct *wq;
-//FIXME	struct work_struct irq_work;
+#if !defined(__AROS__)
+    /* Not needed - direct call to nv50_display_irq_handler_bh is made in irq handler */
+	struct work_struct irq_work;
+#endif
 
 	struct list_head vbl_waiting;
 
