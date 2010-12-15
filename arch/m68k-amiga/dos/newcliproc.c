@@ -27,6 +27,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     struct CliStartupMessage *csm;
     LONG rc = RETURN_FAIL;
     struct DosLibrary *DOSBase;
+    STRPTR alloced_argstr = NULL;
 
     BPTR ShellSeg, CurrentInput;
     BOOL Background, Asynch;
@@ -74,8 +75,26 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
             	dopacket3(DOSBase, NULL, fhout->fh_Type, ACTION_CHANGE_SIGNAL, fhout->fh_Arg1, (IPTR)me, (SIPTR)NULL);
         }
 
+        /* If argstr is missing a newline terminator, add it.
+         */
+        if (argsize == 0 && argstr[argsize-1] != '\n') {
+            alloced_argstr = AllocVec(argsize+2, MEMF_ANY);
+            if (alloced_argstr == NULL) {
+            	rc = DOSFALSE;
+            	goto exit;
+            }
+            memcpy(alloced_argstr, argstr, argsize);
+            alloced_argstr[argsize++]='\n';
+            alloced_argstr[argsize]  = 0;
+            argstr = alloced_argstr;
+        }
+
 	rc = RunCommand(ShellSeg, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
 
+	if (alloced_argstr != NULL)
+	    FreeVec(alloced_argstr);
+
+exit:
         CloseLibrary((struct Library *)DOSBase);
     }
 
