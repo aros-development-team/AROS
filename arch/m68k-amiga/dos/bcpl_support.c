@@ -33,17 +33,24 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
  */
 BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
 {
-    ULONG *segment;
     ULONG *GlobVec;
+
+    /* Most BCPL programs have only two segments.
+     * C:Ed on KS 1.3, however, decided to do its own
+     * thing. It's a horrible mis-mash of BCPL and C,
+     * so we now always treat everybody as BCPL.
+     */
+#if 0
+    ULONG *segment;
     int segs = 0;
 
     for (segment = BADDR(segList); segment != NULL; segment = BADDR(segment[0])) {
     	segs++;
     }
 
-    /* BCPL programs have only two segments */
     if (segs != 2)
     	return TRUE;
+#endif
 
     GlobVec = AllocVec(sizeof(BCPL_GlobVec), MEMF_ANY);
     if (GlobVec == NULL)
@@ -114,21 +121,25 @@ BOOL BCPL_InstallSeg(BPTR seg, ULONG *GlobVec)
     	return TRUE;
     }
 
-    segment = BADDR(seg);
-    D(bug("BCPL_InstallSeg: SegList @%p\n", segment));
+    while (seg != BNULL) {
+	segment = BADDR(seg);
+	D(bug("BCPL_InstallSeg: SegList @%p\n", segment));
 
-    if ((segment[-1] < segment[1])) {
-    	D(bug("BCPL_InstallSeg: segList @%p does not look like BCPL.\n", segment));
-    	return FALSE;
-    }
+	if ((segment[-1] < segment[1])) {
+	    D(bug("BCPL_InstallSeg: segList @%p does not look like BCPL.\n", segment));
+	    return TRUE;
+	}
 
-    table = &segment[segment[1]];
+	table = &segment[segment[1]];
 
-    D(bug("\tFill in for %p:\n", segment));
+	D(bug("\tFill in for %p:\n", segment));
 
-    for (; table[-1] != 0; table = &table[-2]) {
-    	D(bug("\t GlobVec[%d] = %p\n", table[-2], (APTR)&segment[1] + table[-1]));
-    	GlobVec[table[-2]] = (ULONG)((APTR)&segment[1] + table[-1]);
+	for (; table[-1] != 0; table = &table[-2]) {
+	    D(bug("\t GlobVec[%d] = %p\n", table[-2], (APTR)&segment[1] + table[-1]));
+	    GlobVec[table[-2]] = (ULONG)((APTR)&segment[1] + table[-1]);
+	}
+
+	seg = segment[0];
     }
 
     return TRUE;
