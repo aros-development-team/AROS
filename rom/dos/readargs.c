@@ -117,6 +117,9 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     ULONG arg, numargs, nextarg;
     LONG it, item, chars;
     struct CSource lcs, *cs;
+#ifdef AROS_DOS_PACKETS
+    TEXT argbuff[256];	/* Maximum BCPL string length + ASCIIZ */
+#endif
 
     ASSERT_VALID_PTR(template);
     ASSERT_VALID_PTR(array);
@@ -176,7 +179,12 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     }
     else
     {
+#ifdef AROS_DOS_PACKETS
+        lcs.CS_Buffer = &argbuff[0];
+        FGets(Input(), lcs.CS_Buffer, sizeof(argbuff));
+#else
         lcs.CS_Buffer = (me->pr_Arguments ? me->pr_Arguments : (UBYTE *) "");
+#endif
 
         cs1 = lcs.CS_Buffer;
 
