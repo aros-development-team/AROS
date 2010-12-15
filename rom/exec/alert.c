@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <exec/rawfmt.h>
@@ -65,6 +66,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[exec] Alert 0x%08X\n", alertNum));
+    
     /*
      * If we are running in user mode we should first try to report a problem
      * using Intuition display.

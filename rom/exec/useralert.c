@@ -83,30 +83,37 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
      * and proceed with arch-specific Alert().
      * Since this is a double-crash, we may append AT_DeadEnd flag if our situation has become unrecoverable.
      */
+    D(bug("[UserAlert] Task alert state: 0x%08X\n", iet->iet_AlertCode));
     if (iet->iet_AlertCode)
     {
         /*
-	 * Some more logic here. If the nested alert is AN_SysScrnType, then it's just
-	 * we are trying to open a requester on a driver-less machine. In this case
-	 * we want to be able to return initial alert to supervisor-mode routine.
-	 * Note that initial alert by itself can be recoverable. In this case we
-	 * are expected to continue running. In order to do this, we simply swallow
-	 * AN_SysScrnType alert. Returning zero here causes Alert() to immediately
-	 * return. This means that we succesfully return from EasyRequestArgs() in
-	 * AskSuspend(), which returns -1. This makes the code to propagate initial
-	 * alert to supervisor-mode routine (see below).
+	 * Some more logic here. Nested AN_SysScrnType should not make original alert deadend.
+	 * It just means we were unable to display it using Intuition requested because there
+	 * are no display drivers at all.
 	 */
 	if (alertNum == AN_SysScrnType)
-	    return 0;
+	    return iet->iet_AlertCode;
 	else
 	    return iet->iet_AlertCode | (alertNum & AT_DeadEnd);
     }
-
-    /* Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
-       in order to indicate crash condition */
+    
+    /*
+     * Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
+     * in order to indicate crash condition
+     */
     iet->iet_AlertCode = alertNum;
+    /*
+     * AN_SysScrnType is somewhat special. We remember it in the ETask (just in case),
+     * but propagate it to supervisor mode immetiately. We do it because this error
+     * means we don't have any display modes, so we won't be able to bring up the requester.
+     */
+    if (alertNum == AN_SysScrnType)
+        return alertNum;
+
     /* Issue a requester */
     res = AskSuspend(task, alertNum, SysBase);
+    D(bug("[UserAlert] Requester result: %d\n", res));
+
     /* If AskSuspend() failed, fail back to safe-mode alert */
     if (res == -1)
 	return alertNum;
