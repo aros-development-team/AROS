@@ -123,7 +123,7 @@ AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"))
 	    { TAG_DONE,        0          }
         };
 
-        rc = SystemTagList("", tags);
+        rc = SystemTagList("\n", tags);
 	if (rc != -1)
 	{
 	    win  = BNULL;
