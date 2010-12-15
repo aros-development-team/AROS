@@ -1595,8 +1595,9 @@ nv_match_device(struct drm_device *dev, unsigned device,
 		dev->pdev->subsystem_vendor == sub_vendor &&
 		dev->pdev->subsystem_device == sub_device;
 #else
-IMPLEMENT("\n");
-return FALSE;
+    return dev->driver->ProductID == device &&
+        dev->driver->SubSystemVendorID == sub_vendor &&
+        dev->driver->SubSystemProductID == sub_device;
 #endif
 }
 
