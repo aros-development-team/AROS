@@ -334,8 +334,6 @@ int nv50_display_create(struct drm_device *dev)
 
 #if !defined(__AROS__)
 	INIT_WORK(&dev_priv->irq_work, nv50_display_irq_handler_bh);
-#else
-IMPLEMENT("Calling INIT_WORK(&dev_priv->irq_work, nv50_display_irq_handler_bh);\n");
 #endif
 	nouveau_irq_register(dev, 26, nv50_display_isr);
 
