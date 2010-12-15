@@ -43,9 +43,9 @@
 #include "ttm/ttm_module.h"
 #include "ttm/ttm_bo_driver.h"
 #include "ttm/ttm_placement.h"
+#if !defined(__AROS__)
 #include "ttm/ttm_page_alloc.h"
 
-#if !defined(__AROS__)
 static int ttm_tt_swapin(struct ttm_tt *ttm);
 #endif
 

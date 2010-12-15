@@ -1424,6 +1424,25 @@ static void ttm_bo_global_kobj_release(struct kobject *kobj)
 }
 #endif
 
+#if defined(__AROS__)
+size_t ttm_round_pot(size_t size)
+{
+	if ((size & (size - 1)) == 0)
+		return size;
+	else if (size > PAGE_SIZE)
+		return (size_t)PAGE_ALIGN(size);
+	else {
+		size_t tmp_size = 4;
+
+		while (tmp_size < size)
+			tmp_size <<= 1;
+
+		return tmp_size;
+	}
+	return 0;
+}
+#endif
+
 void ttm_bo_global_release(struct drm_global_reference *ref)
 {
 //FIXME	struct ttm_bo_global *glob = ref->object;

@@ -50,7 +50,9 @@ struct drm_connector;
 #include "ttm/ttm_bo_api.h"
 #include "ttm/ttm_bo_driver.h"
 #include "ttm/ttm_placement.h"
+#if !defined(__AROS__)
 #include "ttm/ttm_memory.h"
+#endif
 #include "ttm/ttm_module.h"
 
 struct nouveau_fpriv {
