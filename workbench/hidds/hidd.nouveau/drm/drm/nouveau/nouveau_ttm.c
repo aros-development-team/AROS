@@ -46,14 +46,26 @@ nouveau_ttm_mmap(struct file *filp, struct vm_area_struct *vma)
 static int
 nouveau_ttm_mem_global_init(struct drm_global_reference *ref)
 {
+#if !defined(__AROS__)
 	return ttm_mem_global_init(ref->object);
+#else
+    return 0;
+#endif
 }
 
 static void
 nouveau_ttm_mem_global_release(struct drm_global_reference *ref)
 {
+#if !defined(__AROS__)
 	ttm_mem_global_release(ref->object);
+#endif
 }
+
+#if defined(__AROS__)
+struct ttm_mem_global
+{
+};
+#endif
 
 int
 nouveau_ttm_global_init(struct drm_nouveau_private *dev_priv)

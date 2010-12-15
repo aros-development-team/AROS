@@ -31,7 +31,9 @@
 #define _TTM_BO_DRIVER_H_
 
 #include "ttm/ttm_bo_api.h"
+#if !defined(__AROS__)
 #include "ttm/ttm_memory.h"
+#endif
 #include "ttm/ttm_module.h"
 #include "drm_mm.h"
 #include "drm_global.h"
