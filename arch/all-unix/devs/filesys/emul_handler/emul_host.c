@@ -158,8 +158,6 @@ static const char *libcSymbols[] = {
     "opendir",
     "readdir" INODE64_SUFFIX,
     "rewinddir",
-    "seekdir",
-    "telldir",
     "read",
     "write",
     "lseek",
@@ -179,12 +177,16 @@ static const char *libcSymbols[] = {
     "mktime",
     "getcwd",
     "getenv",
-    "getpwent",
-    "endpwent",
     "fcntl",
     "select",
     "kill",
     "getpid",
+#ifndef HOST_OS_android
+    "seekdir",
+    "telldir",
+    "getpwent",
+    "endpwent",
+#endif
 #ifdef HOST_OS_linux
     "__errno_location",
     "__xstat",
@@ -1287,10 +1289,16 @@ LONG examine_next(struct emulbase *emulbase, struct filehandle *fh,
 
     ObtainSemaphore(&emulbase->pdata.sem);
 
-    /* first of all we have to go to the position where Examine() or
-       ExNext() stopped the previous time so we can read the next entry! */
+    /*
+     * First of all we have to go to the position where Examine() or
+     * ExNext() stopped the previous time so we can read the next entry!
+     * On Android this is handled by ReadDir() artificially tracking
+     * current search position in the filehandle.
+     */
+#ifndef HOST_OS_android
     emulbase->pdata.SysIFace->seekdir(fh->fd, FIB->fib_DiskKey);
     AROS_HOST_BARRIER
+#endif
 
     /* hm, let's read the data now! */
     dir = ReadDir(emulbase, fh, &FIB->fib_DiskKey);
@@ -1352,9 +1360,11 @@ LONG examine_all(struct emulbase *emulbase,
 {
     struct ExAllData *last=NULL;
     STRPTR end=(STRPTR)ead+size;
-    off_t oldpos;
     struct dirent *dir;
     LONG error;
+#ifndef HOST_OS_android
+    off_t oldpos;
+#endif
 
     eac->eac_Entries = 0;
     if(fh->type!=FHD_DIRECTORY)
@@ -1366,8 +1376,10 @@ LONG examine_all(struct emulbase *emulbase,
     {
 	ObtainSemaphore(&emulbase->pdata.sem);
 
+#ifndef HOST_OS_android
 	oldpos = emulbase->pdata.SysIFace->telldir(fh->fd);
 	AROS_HOST_BARRIER
+#endif
 
         *emulbase->pdata.errnoPtr = 0;
 	dir = ReadDir(emulbase, fh, &eac->eac_LastKey);
@@ -1403,13 +1415,16 @@ LONG examine_all(struct emulbase *emulbase,
 
     if ((error==ERROR_BUFFER_OVERFLOW) && last)
     {
+#ifdef HOST_OS_android
+	eac->eac_LastKey--;
+#else
 	ObtainSemaphore(&emulbase->pdata.sem);
 
 	emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
 	AROS_HOST_BARRIER
 
 	ReleaseSemaphore(&emulbase->pdata.sem);
-
+#endif
 	/* Examination will continue from the current position */
 	return 0;
     }
@@ -1427,7 +1442,9 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
     char *home = NULL;
     char *newunixpath = NULL;
     char *sp_end;
+#ifndef HOST_OS_android
     BOOL do_endpwent = FALSE;
+#endif
 
     ObtainSemaphore(&emulbase->pdata.sem);
 
@@ -1438,6 +1455,7 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
 	home = emulbase->pdata.SysIFace->getenv("HOME");
 	AROS_HOST_BARRIER
     }
+#ifndef HOST_OS_android
     else
     {
     	struct passwd *pwd;
@@ -1465,6 +1483,7 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
 	}
 	do_endpwent = TRUE;
     }
+#endif
 
     if (home)
     {
@@ -1484,11 +1503,13 @@ char *GetHomeDir(struct emulbase *emulbase, char *sp)
 	}
     }
 
+#ifndef HOST_OS_android
     if (do_endpwent)
     {
 	emulbase->pdata.SysIFace->endpwent();
 	AROS_HOST_BARRIER
     }
+#endif
 
     ReleaseSemaphore(&emulbase->pdata.sem);
 
