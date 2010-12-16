@@ -18,7 +18,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, SetComment,
+	AROS_LH2(LONG, SetComment,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name,    D1),

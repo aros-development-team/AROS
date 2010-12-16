@@ -17,7 +17,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, Examine,
+	AROS_LH2(LONG, Examine,
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR,                   lock, D1),
@@ -61,6 +61,9 @@
 
     struct FileLock *fl = BADDR(lock);
     LONG ret;
+
+    ASSERT_VALID_PTR_OR_NULL(lock);
+    ASSERT_VALID_FILELOCK(lock);
 
     D(bug("[Examine] lock=%x fib=%x\n", fl, fib));
     ret = dopacket2(DOSBase, NULL, fl->fl_Task, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib));
