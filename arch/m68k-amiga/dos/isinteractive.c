@@ -14,7 +14,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, IsInteractive,
+	AROS_LH1(LONG, IsInteractive,
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR, file, D1),
@@ -49,7 +49,7 @@
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(file);
 
-    return (fh->fh_Port != 0) ? TRUE : FALSE;
+    return (LONG)fh->fh_Port; /* 100% identical to official ROM behavior */
 
     AROS_LIBFUNC_EXIT
 } /* IsInteractive */

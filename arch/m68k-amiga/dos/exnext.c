@@ -17,7 +17,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, ExNext,
+	AROS_LH2(LONG, ExNext,
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR                  , lock, D1),
@@ -74,6 +74,9 @@
     /* Get pointer to filehandle */
     struct FileLock *fl = BADDR(lock);
     LONG ret;
+
+    ASSERT_VALID_PTR_OR_NULL(lock);
+    ASSERT_VALID_FILELOCK(lock);
 
     D(bug("[ExNext] lock=%x fib=%x\n", fl, fileInfoBlock));
     ret = dopacket2(DOSBase, NULL,  fl->fl_Task, ACTION_EXAMINE_NEXT, lock, MKBADDR(fileInfoBlock));
