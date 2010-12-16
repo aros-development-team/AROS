@@ -16,7 +16,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, SetComment,
+	AROS_LH2(LONG, SetComment,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name,    D1),
@@ -61,7 +61,7 @@
 
     iofs.io_Union.io_SET_COMMENT.io_Comment = comment;
 
-    return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
+    return DoIOFS(&iofs, NULL, name, DOSBase) == 0 ? DOSTRUE : DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* SetComment */

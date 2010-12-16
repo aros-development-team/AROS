@@ -16,7 +16,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, Examine,
+	AROS_LH2(LONG, Examine,
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR,                   lock, D1),

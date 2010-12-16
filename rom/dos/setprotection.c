@@ -16,7 +16,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, SetProtection,
+	AROS_LH2(LONG, SetProtection,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name,    D1),
@@ -57,7 +57,7 @@
 
     iofs.io_Union.io_SET_PROTECT.io_Protection = protect;
 
-    return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
+    return DoIOFS(&iofs, NULL, name, DOSBase) == 0 ? DOSTRUE : DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* SetProtection */
