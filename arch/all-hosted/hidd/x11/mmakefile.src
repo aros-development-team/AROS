@@ -14,6 +14,7 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -isystem $(GENINCDIR) $(HOST_X11_CFLAGS) $(KERN
 
 # TODO: What if the system is pure Darwin running a regular PC?
 ifeq ($(ARCH),darwin)
+USER_CFLAGS += -D_FORTIFY_SOURCE=0
 X11KEYMAPTABLE_SRC_FILE := mac-x11-keycode2rawkey.table
 else
 X11KEYMAPTABLE_SRC_FILE := def-x11-keycode2rawkey.table
