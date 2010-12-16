@@ -51,14 +51,15 @@
 #define R_PPC_REL16_LO  250
 #define R_PPC_REL16_HA  252
 
-#define R_ARM_NONE      0
-#define R_ARM_PC24      1
-#define R_ARM_ABS32     2
-#define R_ARM_CALL	28
-#define R_ARM_JUMP24	29
-#define R_ARM_PREL31	42
-#define R_ARM_MOVW_ABS_NC	43
-#define R_ARM_MOVT_ABS	44
+#define R_ARM_NONE        0
+#define R_ARM_PC24        1
+#define R_ARM_ABS32       2
+#define R_ARM_CALL	  28
+#define R_ARM_JUMP24	  29
+#define R_ARM_V4BX	  40
+#define R_ARM_PREL31	  42
+#define R_ARM_MOVW_ABS_NC 43
+#define R_ARM_MOVT_ABS	  44
 
 #define STT_OBJECT      1
 #define STT_FUNC        2
