@@ -43,8 +43,6 @@ struct LibCInterface
     DIR           *(*opendir)(char *dirname);
     struct dirent *(*readdir)(DIR *dirp);
     void	   (*rewinddir)(DIR *dirp);
-    void	   (*seekdir)(DIR *dirp, long loc);
-    long	   (*telldir)(DIR *dirp);
     ssize_t        (*read)(int fildes, void *buf, size_t nbyte);
     ssize_t	   (*write)(int fildes, const void *buf, size_t nbyte);
 #ifdef HOST_LONG_ALIGNED
@@ -69,12 +67,16 @@ struct LibCInterface
     time_t	   (*mktime)(struct tm *timeptr);
     char	  *(*getcwd)(char *buf, size_t size);
     char	  *(*getenv)(const char *name);
-    struct passwd *(*getpwent)(void);
-    void	   (*endpwent)(void);
     int		   (*fcntl)(int fd, int cmd, ...);
     int		   (*select)(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
     int		   (*kill)(pid_t pid, int sig);
     int		   (*getpid)(void);
+#ifndef HOST_OS_android
+    void	   (*seekdir)(DIR *dirp, long loc);
+    long	   (*telldir)(DIR *dirp);
+    struct passwd *(*getpwent)(void);
+    void	   (*endpwent)(void);
+#endif
     int		  *(*__error)(void);
 #ifdef HOST_OS_linux
     int		   (*__xstat)(int ver, char *path, struct stat *buf);
