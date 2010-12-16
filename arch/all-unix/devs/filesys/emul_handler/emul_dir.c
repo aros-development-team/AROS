@@ -1,3 +1,4 @@
+#include <sys/time.h>
 #include <sys/types.h>
 
 /* This prevents redefinition of struct timeval */
