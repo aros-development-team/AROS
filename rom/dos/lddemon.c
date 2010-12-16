@@ -201,6 +201,13 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     struct ExecBase *SysBase = DOSBase->dl_SysBase;
     BPTR seg = seglist;
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    /* we may not have any extension fields */ 
+    int sizeofresident = offsetof(struct Resident, rt_Init) + sizeof(APTR);
+#else
+    int sizeofresident = sizeof(struct Resident)
+#endif
+
     while(seg)
     {
 	STRPTR addr= (STRPTR)((IPTR)BADDR(seg)-sizeof(ULONG));
@@ -209,7 +216,7 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 	for(
 	    addr += sizeof(BPTR) + sizeof(ULONG),
 		size -= sizeof(BPTR) + sizeof(ULONG);
-	    size >= sizeof(struct Resident) ;
+	    size >= sizeofresident;
 	    size -= 2, addr += 2
 //	    size -= AROS_PTRALIGN, addr += AROS_PTRALIGN
 	)
