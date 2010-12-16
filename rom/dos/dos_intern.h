@@ -289,6 +289,17 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
 LONG InternalOpen(CONST_STRPTR name, LONG action, 
     struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
 
+#define ASSERT_VALID_FILELOCK(lock) do { \
+    	struct FileLock *fl = BADDR(lock); \
+    	if (fl && fl->fl_Access != SHARED_LOCK && fl->fl_Access != EXCLUSIVE_LOCK) { \
+    	    bug("Current() called with a bogus FileLock! B=%x FL=%x %s/%s/%s\n", lock, fl, __FILE__,__FUNCTION__,__LINE__); \
+    	} \
+    } while (0);
+
+#else
+
+#define ASSERT_VALID_FILELOCK(lock)
+
 #endif
     
 #endif /* DOS_INTERN_H */
