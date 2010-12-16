@@ -14,7 +14,7 @@
 #include <proto/dos.h>
 #include <exec/types.h>
 
-	AROS_LH2(BOOL, WaitForChar,
+	AROS_LH2(LONG, WaitForChar,
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR, file, D1),
