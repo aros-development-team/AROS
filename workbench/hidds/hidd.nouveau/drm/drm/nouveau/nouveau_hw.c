@@ -1017,14 +1017,10 @@ nv_load_state_ext(struct drm_device *dev, int head,
 
 	NVWriteCRTC(dev, head, NV_PCRTC_START, regp->fb_start);
 
-#if !defined(__AROS__)
 	/* Enable vblank interrupts. */
 	NVWriteCRTC(dev, head, NV_PCRTC_INTR_EN_0,
 		    (dev->vblank_enabled[head] ? 1 : 0));
 	NVWriteCRTC(dev, head, NV_PCRTC_INTR_0, NV_PCRTC_INTR_0_VBLANK);
-#else
-IMPLEMENT("/* Enable vblank interrupts. */\n");
-#endif
 }
 
 static void
