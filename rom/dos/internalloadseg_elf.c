@@ -329,6 +329,16 @@ static int relocate
 	IPTR s;
         ULONG shindex;
 
+#ifdef __arm__
+	/*
+	 * R_ARM_V4BX are actually special marks for the linker.
+	 * They even never have a target (shindex == SHN_UNDEF),
+	 * so we simply ignore them before doing any checks.
+	 */
+	if (ELF_R_TYPE(rel->info) == R_ARM_V4BX)
+	    continue;
+#endif
+	
         if (sym->shindex != SHN_XINDEX)
             shindex = sym->shindex;
 
@@ -340,6 +350,8 @@ static int relocate
             }
             shindex = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel->info)];
         }
+
+	DB2(bug("[ELF Loader] Processing symbol %s\n", sh[SHINDEX(shsymtab->link)].addr + sym->name));
 
         switch (shindex)
         {

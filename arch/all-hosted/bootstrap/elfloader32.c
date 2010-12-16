@@ -149,6 +149,16 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, ui
 	uintptr_t s;
 	const char *name = sh[shsymtab->link].addr + sym->name;
 
+#ifdef __arm__
+	/*
+	 * R_ARM_V4BX are actually special marks for the linker.
+	 * They even never have a target (shindex == SHN_UNDEF),
+	 * so we simply ignore them before doing any checks.
+	 */
+	if (ELF_R_TYPE(rel->info) == R_ARM_V4BX)
+	    continue;
+#endif
+
 	switch (sym->shindex)
 	{
 	case SHN_UNDEF:
