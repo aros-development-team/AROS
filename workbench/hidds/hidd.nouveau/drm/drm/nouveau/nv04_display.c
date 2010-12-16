@@ -270,20 +270,12 @@ static void
 nv04_vblank_crtc0_isr(struct drm_device *dev)
 {
 	nv_wr32(dev, NV_CRTC0_INTSTAT, NV_CRTC_INTR_VBLANK);
-#if !defined(__AROS__)
 	drm_handle_vblank(dev, 0);
-#else
-IMPLEMENT("Calling drm_handle_vblank\n");
-#endif
 }
 
 static void
 nv04_vblank_crtc1_isr(struct drm_device *dev)
 {
 	nv_wr32(dev, NV_CRTC1_INTSTAT, NV_CRTC_INTR_VBLANK);
-#if !defined(__AROS__)
 	drm_handle_vblank(dev, 1);
-#else
-IMPLEMENT("Calling drm_handle_vblank\n");
-#endif
 }

@@ -454,11 +454,7 @@ nv50_crtc_prepare(struct drm_crtc *crtc)
 
 	NV_DEBUG_KMS(dev, "index %d\n", nv_crtc->index);
 
-#if !defined(__AROS__)
 	drm_vblank_pre_modeset(dev, nv_crtc->index);
-#else
-IMPLEMENT("Calling drm_vblank_pre_modeset\n");
-#endif
 	nv50_crtc_blank(nv_crtc, true);
 }
 
@@ -474,11 +470,7 @@ nv50_crtc_commit(struct drm_crtc *crtc)
 	NV_DEBUG_KMS(dev, "index %d\n", nv_crtc->index);
 
 	nv50_crtc_blank(nv_crtc, false);
-#if !defined(__AROS__)
 	drm_vblank_post_modeset(dev, nv_crtc->index);
-#else
-IMPLEMENT("Calling drm_vblank_post_modeset\n");
-#endif
 
 	ret = RING_SPACE(evo, 2);
 	if (ret) {

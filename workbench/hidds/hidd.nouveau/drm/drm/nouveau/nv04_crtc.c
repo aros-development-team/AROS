@@ -674,11 +674,7 @@ static void nv_crtc_prepare(struct drm_crtc *crtc)
 	if (nv_two_heads(dev))
 		NVSetOwner(dev, nv_crtc->index);
 
-#if !defined(__AROS__)
 	drm_vblank_pre_modeset(dev, nv_crtc->index);
-#else
-IMPLEMENT("Calling drm_vblank_pre_modeset\n");
-#endif
 	funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
 
 	NVBlankScreen(dev, nv_crtc->index, true);
@@ -711,11 +707,7 @@ static void nv_crtc_commit(struct drm_crtc *crtc)
 #endif
 
 	funcs->dpms(crtc, DRM_MODE_DPMS_ON);
-#if !defined(__AROS__)
 	drm_vblank_post_modeset(dev, nv_crtc->index);
-#else
-IMPLEMENT("Calling drm_vblank_post_modeset\n");
-#endif
 }
 
 static void nv_crtc_destroy(struct drm_crtc *crtc)
