@@ -268,7 +268,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     fprintf(ConfFile, "%s", (GetWirelessAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
-    CombinePath2P(filename, filenamelen, destdir, "MobileBroadbandAutoRun");
+    CombinePath2P(filename, filenamelen, destdir, "MobileAutorun");
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
     fprintf(ConfFile, "%s", (GetMobile_Autostart()) ? "True" : "False");
@@ -903,7 +903,7 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    CombinePath2P(filename, filenamelen, directory, "MobileBroadbandAutorun");
+    CombinePath2P(filename, filenamelen, directory, "MobileAutorun");
     OpenTokenFile(&tok, filename);
     while (!tok.fend)
     {
