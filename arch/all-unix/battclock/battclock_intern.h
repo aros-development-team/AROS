@@ -9,6 +9,8 @@
 #ifndef BATTCLOCK_INTERN_H
 #define BATTCLOCK_INTERN_H
 
+#include <time.h>
+
 #include <exec/libraries.h>
 
 struct BattclockInterface

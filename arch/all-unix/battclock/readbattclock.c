@@ -10,8 +10,6 @@
 #include <proto/utility.h>
 #include <utility/date.h>
 
-#include <time.h>
-
 #include "battclock_intern.h"
 
 AROS_LH0(ULONG, ReadBattClock, struct BattClockBase *, BattClockBase, 2, Battclock)
