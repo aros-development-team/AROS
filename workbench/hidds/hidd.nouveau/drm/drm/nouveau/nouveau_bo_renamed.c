@@ -244,7 +244,7 @@ nouveau_bo_pin(struct nouveau_bo *nvbo, uint32_t memtype)
 
 	nouveau_bo_placement_set(nvbo, memtype, 0);
 
-	ret = ttm_bo_validate(bo, &nvbo->placement, false, false, false);
+	ret = nouveau_bo_validate(nvbo, false, false, false);
 	if (ret == 0) {
 		switch (bo->mem.mem_type) {
 		case TTM_PL_VRAM:
@@ -280,7 +280,7 @@ nouveau_bo_unpin(struct nouveau_bo *nvbo)
 
 	nouveau_bo_placement_set(nvbo, bo->mem.placement, 0);
 
-	ret = ttm_bo_validate(bo, &nvbo->placement, false, false, false);
+	ret = nouveau_bo_validate(nvbo, false, false, false);
 	if (ret == 0) {
 		switch (bo->mem.mem_type) {
 		case TTM_PL_VRAM:
@@ -317,6 +317,20 @@ nouveau_bo_unmap(struct nouveau_bo *nvbo)
 {
 	if (nvbo)
 		ttm_bo_kunmap(&nvbo->kmap);
+}
+
+int
+nouveau_bo_validate(struct nouveau_bo *nvbo, bool interruptible,
+		    bool no_wait_reserve, bool no_wait_gpu)
+{
+	int ret;
+
+	ret = ttm_bo_validate(&nvbo->bo, &nvbo->placement, interruptible,
+			      no_wait_reserve, no_wait_gpu);
+	if (ret)
+		return ret;
+
+	return 0;
 }
 
 u16
@@ -939,7 +953,7 @@ nouveau_ttm_fault_reserve_notify(struct ttm_buffer_object *bo)
 	nvbo->placement.fpfn = 0;
 	nvbo->placement.lpfn = dev_priv->fb_mappable_pages;
 	nouveau_bo_placement_set(nvbo, TTM_PL_VRAM, 0);
-	return ttm_bo_validate(bo, &nvbo->placement, false, true, false);
+	return nouveau_bo_validate(nvbo, false, true, false);
 }
 
 void

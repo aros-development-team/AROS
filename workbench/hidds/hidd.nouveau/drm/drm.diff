@@ -1,0 +1,3685 @@
+diff -ur -x .svn drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
+--- drm-orig/drm_agpsupport.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_agpsupport.c	2010-12-17 21:30:48.000000000 +0100
+@@ -32,12 +32,16 @@
+  */
+ 
+ #include "drmP.h"
++#if !defined(__AROS__)
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#endif
+ 
+ #if __OS_HAS_AGP
+ 
++#if !defined(__AROS__)
+ #include <asm/agp.h>
++#endif
+ 
+ /**
+  * Get AGP information.
+@@ -59,15 +63,15 @@
+ 		return -EINVAL;
+ 
+ 	kern = &dev->agp->agp_info;
+-	info->agp_version_major = kern->version.major;
+-	info->agp_version_minor = kern->version.minor;
++//FIXME	info->agp_version_major = kern->version.major;
++//FIXME	info->agp_version_minor = kern->version.minor;
+ 	info->mode = kern->mode;
+ 	info->aperture_base = kern->aper_base;
+ 	info->aperture_size = kern->aper_size * 1024 * 1024;
+-	info->memory_allowed = kern->max_memory << PAGE_SHIFT;
+-	info->memory_used = kern->current_memory << PAGE_SHIFT;
+-	info->id_vendor = kern->device->vendor;
+-	info->id_device = kern->device->device;
++//FIXME	info->memory_allowed = kern->max_memory << PAGE_SHIFT;
++//FIXME	info->memory_used = kern->current_memory << PAGE_SHIFT;
++//FIXME	info->id_vendor = kern->device->vendor;
++//FIXME	info->id_device = kern->device->device;
+ 
+ 	return 0;
+ }
+@@ -110,6 +114,7 @@
+ 
+ EXPORT_SYMBOL(drm_agp_acquire);
+ 
++#if !defined(__AROS__)
+ /**
+  * Acquire the AGP device (ioctl).
+  *
+@@ -127,6 +132,7 @@
+ {
+ 	return drm_agp_acquire((struct drm_device *) file_priv->minor->dev);
+ }
++#endif
+ 
+ /**
+  * Release the AGP device.
+@@ -183,6 +189,7 @@
+ 	return drm_agp_enable(dev, *mode);
+ }
+ 
++#if !defined(__AROS__)
+ /**
+  * Allocate AGP memory.
+  *
+@@ -384,6 +391,7 @@
+ 
+ 	return drm_agp_free(dev, request);
+ }
++#endif
+ 
+ /**
+  * Initialize the AGP resources.
+@@ -472,4 +480,5 @@
+ }
+ EXPORT_SYMBOL(drm_agp_chipset_flush);
+ 
++
+ #endif /* __OS_HAS_AGP */
+diff -ur -x .svn drm-orig/drm_cache.c drm/drm_cache.c
+--- drm-orig/drm_cache.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_cache.c	2010-12-17 21:30:48.000000000 +0100
+@@ -91,6 +91,12 @@
+ 				   (unsigned long)page_virtual + PAGE_SIZE);
+ 		kunmap_atomic(page_virtual, KM_USER0);
+ 	}
++#elif defined(__AROS__)
++    /* TODO: Detect if cpu has clflush. Use it if present */
++#if !defined(HOSTED_BUILD)
++    VOID HACK_Wbinvd(); /* Implemented in assembler */
++    Supervisor(HACK_Wbinvd);
++#endif
+ #else
+ 	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
+ 	WARN_ON_ONCE(1);
+diff -ur -x .svn drm-orig/drm_crtc.c drm/drm_crtc.c
+--- drm-orig/drm_crtc.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_crtc.c	2010-12-17 21:30:48.000000000 +0100
+@@ -29,8 +29,10 @@
+  *      Dave Airlie <airlied@linux.ie>
+  *      Jesse Barnes <jesse.barnes@intel.com>
+  */
++#if !defined(__AROS__)
+ #include <linux/list.h>
+ #include <linux/slab.h>
++#endif
+ #include "drm.h"
+ #include "drmP.h"
+ #include "drm_crtc.h"
+@@ -814,6 +816,7 @@
+ }
+ EXPORT_SYMBOL(drm_mode_create_dithering_property);
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_mode_create_dirty_property - create dirty property
+  * @dev: DRM device
+@@ -843,6 +846,7 @@
+ 	return 0;
+ }
+ EXPORT_SYMBOL(drm_mode_create_dirty_info_property);
++#endif
+ 
+ /**
+  * drm_mode_config_init - initialize DRM mode_configuration structure
+@@ -878,6 +882,7 @@
+ }
+ EXPORT_SYMBOL(drm_mode_config_init);
+ 
++#if !defined(__AROS__)
+ int drm_mode_group_init(struct drm_device *dev, struct drm_mode_group *group)
+ {
+ 	uint32_t total_objects = 0;
+@@ -923,6 +928,7 @@
+ 
+ 	return 0;
+ }
++#endif
+ 
+ /**
+  * drm_mode_config_cleanup - free up DRM mode_config info
+@@ -1082,8 +1088,12 @@
+ 	list_for_each(lh, &file_priv->fbs)
+ 		fb_count++;
+ 
++#if !defined(__AROS__)
+ 	mode_group = &file_priv->master->minor->mode_group;
+ 	if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
++#else
++    if (1) {
++#endif
+ 
+ 		list_for_each(lh, &dev->mode_config.crtc_list)
+ 			crtc_count++;
+@@ -1124,7 +1134,11 @@
+ 	if (card_res->count_crtcs >= crtc_count) {
+ 		copied = 0;
+ 		crtc_id = (uint32_t __user *)(unsigned long)card_res->crtc_id_ptr;
++#if !defined(__AROS__)
+ 		if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
++#else
++        if (1) {
++#endif
+ 			list_for_each_entry(crtc, &dev->mode_config.crtc_list,
+ 					    head) {
+ 				DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
+@@ -1151,7 +1165,11 @@
+ 	if (card_res->count_encoders >= encoder_count) {
+ 		copied = 0;
+ 		encoder_id = (uint32_t __user *)(unsigned long)card_res->encoder_id_ptr;
++#if !defined(__AROS__)
+ 		if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
++#else
++        if (1) {
++#endif
+ 			list_for_each_entry(encoder,
+ 					    &dev->mode_config.encoder_list,
+ 					    head) {
+@@ -1182,7 +1200,11 @@
+ 	if (card_res->count_connectors >= connector_count) {
+ 		copied = 0;
+ 		connector_id = (uint32_t __user *)(unsigned long)card_res->connector_id_ptr;
++#if !defined(__AROS__)
+ 		if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
++#else
++        if (1) {
++#endif
+ 			list_for_each_entry(connector,
+ 					    &dev->mode_config.connector_list,
+ 					    head) {
+@@ -1755,6 +1777,7 @@
+ 	return ret;
+ }
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_mode_getfb - get FB info
+  * @inode: inode from the ioctl
+@@ -2057,6 +2080,7 @@
+ 	mutex_unlock(&dev->mode_config.mutex);
+ 	return ret;
+ }
++#endif
+ 
+ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
+ 					 const char *name, int num_values)
+@@ -2175,6 +2199,7 @@
+ }
+ EXPORT_SYMBOL(drm_connector_property_set_value);
+ 
++#if !defined(__AROS__)
+ int drm_connector_property_get_value(struct drm_connector *connector,
+ 				  struct drm_property *property, uint64_t *val)
+ {
+@@ -2292,6 +2317,7 @@
+ 	mutex_unlock(&dev->mode_config.mutex);
+ 	return ret;
+ }
++#endif
+ 
+ static struct drm_property_blob *drm_property_create_blob(struct drm_device *dev, int length,
+ 							  void *data)
+@@ -2324,6 +2350,7 @@
+ 	kfree(blob);
+ }
+ 
++#if !defined(__AROS__)
+ int drm_mode_getblob_ioctl(struct drm_device *dev,
+ 			   void *data, struct drm_file *file_priv)
+ {
+@@ -2354,6 +2381,7 @@
+ 	mutex_unlock(&dev->mode_config.mutex);
+ 	return ret;
+ }
++#endif
+ 
+ int drm_mode_connector_update_edid_property(struct drm_connector *connector,
+ 					    struct edid *edid)
+@@ -2383,6 +2411,7 @@
+ }
+ EXPORT_SYMBOL(drm_mode_connector_update_edid_property);
+ 
++#if !defined(__AROS__)
+ int drm_mode_connector_property_set_ioctl(struct drm_device *dev,
+ 				       void *data, struct drm_file *file_priv)
+ {
+@@ -2453,6 +2482,7 @@
+ 	mutex_unlock(&dev->mode_config.mutex);
+ 	return ret;
+ }
++#endif
+ 
+ int drm_mode_connector_attach_encoder(struct drm_connector *connector,
+ 				      struct drm_encoder *encoder)
+@@ -2469,6 +2499,7 @@
+ }
+ EXPORT_SYMBOL(drm_mode_connector_attach_encoder);
+ 
++#if !defined(__AROS__)
+ void drm_mode_connector_detach_encoder(struct drm_connector *connector,
+ 				    struct drm_encoder *encoder)
+ {
+@@ -2483,6 +2514,7 @@
+ 	}
+ }
+ EXPORT_SYMBOL(drm_mode_connector_detach_encoder);
++#endif
+ 
+ bool drm_mode_crtc_set_gamma_size(struct drm_crtc *crtc,
+ 				  int gamma_size)
+@@ -2499,6 +2531,7 @@
+ }
+ EXPORT_SYMBOL(drm_mode_crtc_set_gamma_size);
+ 
++#if !defined(__AROS__)
+ int drm_mode_gamma_set_ioctl(struct drm_device *dev,
+ 			     void *data, struct drm_file *file_priv)
+ {
+@@ -2674,3 +2707,5 @@
+ 	mutex_unlock(&dev->mode_config.mutex);
+ 	return ret;
+ }
++#endif
++
+diff -ur -x .svn drm-orig/drm_crtc.h drm/drm_crtc.h
+--- drm-orig/drm_crtc.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_crtc.h	2010-12-17 21:30:48.000000000 +0100
+@@ -25,12 +25,16 @@
+ #ifndef __DRM_CRTC_H__
+ #define __DRM_CRTC_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/i2c.h>
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+ #include <linux/idr.h>
+ 
+ #include <linux/fb.h>
++#else
++#include "drm_linux_list.h"
++#endif
+ 
+ struct drm_device;
+ struct drm_mode_set;
+@@ -463,7 +467,7 @@
+  */
+ struct drm_connector {
+ 	struct drm_device *dev;
+-	struct device kdev;
++//FIXME	struct device kdev;
+ 	struct device_attribute *attr;
+ 	struct list_head head;
+ 
+@@ -570,7 +574,9 @@
+ 
+ 	/* output poll support */
+ 	bool poll_enabled;
++#if !defined(__AROS__)
+ 	struct delayed_work output_poll_work;
++#endif
+ 
+ 	/* pointers to standard properties */
+ 	struct list_head property_blob_list;
+diff -ur -x .svn drm-orig/drm_crtc_helper.c drm/drm_crtc_helper.c
+--- drm-orig/drm_crtc_helper.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_crtc_helper.c	2010-12-17 21:30:48.000000000 +0100
+@@ -32,10 +32,12 @@
+ #include "drmP.h"
+ #include "drm_crtc.h"
+ #include "drm_crtc_helper.h"
++#if !defined(__AROS__)
+ #include "drm_fb_helper.h"
+ 
+ static bool drm_kms_helper_poll = true;
+ module_param_named(poll, drm_kms_helper_poll, bool, 0600);
++#endif
+ 
+ static void drm_mode_validate_flag(struct drm_connector *connector,
+ 				   int flags)
+@@ -104,7 +106,9 @@
+ 			connector->funcs->force(connector);
+ 	} else {
+ 		connector->status = connector->funcs->detect(connector, true);
++#if !defined(__AROS__)
+ 		drm_kms_helper_poll_enable(dev);
++#endif
+ 	}
+ 
+ 	if (connector->status == connector_status_disconnected) {
+@@ -217,6 +221,7 @@
+ 		(*encoder_funcs->dpms)(encoder, DRM_MODE_DPMS_OFF);
+ }
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_helper_disable_unused_functions - disable unused objects
+  * @dev: DRM device
+@@ -261,6 +266,7 @@
+ 	}
+ }
+ EXPORT_SYMBOL(drm_helper_disable_unused_functions);
++#endif
+ 
+ /**
+  * drm_encoder_crtc_ok - can a given crtc drive a given encoder?
+@@ -653,7 +659,9 @@
+ 				goto fail;
+ 			}
+ 		}
++#if !defined(__AROS__)
+ 		drm_helper_disable_unused_functions(dev);
++#endif
+ 	} else if (fb_changed) {
+ 		set->crtc->x = set->x;
+ 		set->crtc->y = set->y;
+@@ -791,6 +799,7 @@
+ }
+ EXPORT_SYMBOL(drm_helper_mode_fill_fb_struct);
+ 
++#if !defined(__AROS__)
+ int drm_helper_resume_force_mode(struct drm_device *dev)
+ {
+ 	struct drm_crtc *crtc;
+@@ -936,3 +945,4 @@
+ 		queue_delayed_work(system_nrt_wq, &dev->mode_config.output_poll_work, 0);
+ }
+ EXPORT_SYMBOL(drm_helper_hpd_irq_event);
++#endif
+diff -ur -x .svn drm-orig/drm_crtc_helper.h drm/drm_crtc_helper.h
+--- drm-orig/drm_crtc_helper.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_crtc_helper.h	2010-12-17 21:30:48.000000000 +0100
+@@ -33,11 +33,15 @@
+ #ifndef __DRM_CRTC_HELPER_H__
+ #define __DRM_CRTC_HELPER_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+ #include <linux/idr.h>
+ 
+ #include <linux/fb.h>
++#else
++#include "drm_compat_funcs.h"
++#endif
+ 
+ enum mode_set_atomic {
+ 	LEAVE_ATOMIC_MODE_SET,
+diff -ur -x .svn drm-orig/drm_dp_helper.h drm/drm_dp_helper.h
+--- drm-orig/drm_dp_helper.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_dp_helper.h	2010-12-17 21:30:48.000000000 +0100
+@@ -23,8 +23,12 @@
+ #ifndef _DRM_DP_HELPER_H_
+ #define _DRM_DP_HELPER_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
+ #include <linux/i2c.h>
++#else
++#include "drm_compat_types.h"
++#endif
+ 
+ /* From the VESA DisplayPort spec */
+ 
+diff -ur -x .svn drm-orig/drm_edid.c drm/drm_edid.c
+--- drm-orig/drm_edid.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_edid.c	2010-12-17 21:30:48.000000000 +0100
+@@ -27,9 +27,11 @@
+  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  * DEALINGS IN THE SOFTWARE.
+  */
++#if !defined(__AROS__)
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
++#endif
+ #include "drmP.h"
+ #include "drm_edid.h"
+ #include "drm_edid_modes.h"
+@@ -185,7 +187,9 @@
+ bad:
+ 	if (raw_edid) {
+ 		DRM_ERROR("Raw EDID:\n");
++#if !defined(__AROS__)
+ 		print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE, raw_edid, EDID_LENGTH);
++#endif
+ 		printk("\n");
+ 	}
+ 	return 0;
+@@ -255,6 +259,9 @@
+ {
+ 	int i, j = 0, valid_extensions = 0;
+ 	u8 *block, *new;
++#if defined(__AROS__)
++    int allocsize = EDID_LENGTH;
++#endif
+ 
+ 	if ((block = kmalloc(EDID_LENGTH, GFP_KERNEL)) == NULL)
+ 		return NULL;
+@@ -273,7 +280,14 @@
+ 	if (block[0x7e] == 0)
+ 		return block;
+ 
++#if !defined(__AROS__)
+ 	new = krealloc(block, (block[0x7e] + 1) * EDID_LENGTH, GFP_KERNEL);
++#else
++    new = kzalloc((block[0x7e] + 1) * EDID_LENGTH, GFP_KERNEL);
++    memcpy(new, block, allocsize);
++    allocsize = (block[0x7e] + 1) * EDID_LENGTH;
++    kfree(block);
++#endif
+ 	if (!new)
+ 		goto out;
+ 	block = new;
+@@ -298,7 +312,14 @@
+ 	if (valid_extensions != block[0x7e]) {
+ 		block[EDID_LENGTH-1] += block[0x7e] - valid_extensions;
+ 		block[0x7e] = valid_extensions;
++#if !defined(__AROS__)
+ 		new = krealloc(block, (valid_extensions + 1) * EDID_LENGTH, GFP_KERNEL);
++#else
++        new = kzalloc((valid_extensions + 1) * EDID_LENGTH, GFP_KERNEL);
++        memcpy(new, block, allocsize);
++        allocsize = (valid_extensions + 1) * EDID_LENGTH;
++        kfree(block);
++#endif
+ 		if (!new)
+ 			goto out;
+ 		block = new;
+@@ -1280,6 +1301,7 @@
+ 	return closure.modes;
+ }
+ 
++#if !defined(__AROS__)
+ #define HDMI_IDENTIFIER 0x000C03
+ #define AUDIO_BLOCK	0x01
+ #define VENDOR_BLOCK    0x03
+@@ -1401,6 +1423,7 @@
+ 	return has_audio;
+ }
+ EXPORT_SYMBOL(drm_detect_monitor_audio);
++#endif
+ 
+ /**
+  * drm_add_edid_modes - add modes from EDID data, if available
+@@ -1504,3 +1527,4 @@
+ 	return num_modes;
+ }
+ EXPORT_SYMBOL(drm_add_modes_noedid);
++
+diff -ur -x .svn drm-orig/drm_edid.h drm/drm_edid.h
+--- drm-orig/drm_edid.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_edid.h	2010-12-17 21:30:48.000000000 +0100
+@@ -23,7 +23,11 @@
+ #ifndef __DRM_EDID_H__
+ #define __DRM_EDID_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
++#else
++#include "drm_compat_types.h"
++#endif
+ 
+ #define EDID_LENGTH 128
+ #define DDC_ADDR 0x50
+diff -ur -x .svn drm-orig/drm_edid_modes.h drm/drm_edid_modes.h
+--- drm-orig/drm_edid_modes.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_edid_modes.h	2010-12-17 21:30:48.000000000 +0100
+@@ -23,7 +23,9 @@
+  * DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/kernel.h>
++#endif
+ #include "drmP.h"
+ #include "drm_edid.h"
+ 
+diff -ur -x .svn drm-orig/drm_encoder_slave.h drm/drm_encoder_slave.h
+--- drm-orig/drm_encoder_slave.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_encoder_slave.h	2010-12-17 21:30:48.000000000 +0100
+@@ -145,7 +145,9 @@
+ static inline int drm_i2c_encoder_register(struct module *owner,
+ 					   struct drm_i2c_encoder_driver *driver)
+ {
+-	return i2c_register_driver(owner, &driver->i2c_driver);
++//FIXME	return i2c_register_driver(owner, &driver->i2c_driver);
++IMPLEMENT("\n");
++return 0;
+ }
+ 
+ /**
+@@ -154,7 +156,8 @@
+  */
+ static inline void drm_i2c_encoder_unregister(struct drm_i2c_encoder_driver *driver)
+ {
+-	i2c_del_driver(&driver->i2c_driver);
++//FIXME	i2c_del_driver(&driver->i2c_driver);
++IMPLEMENT("\n");
+ }
+ 
+ void drm_i2c_encoder_destroy(struct drm_encoder *encoder);
+diff -ur -x .svn drm-orig/drm_gem.c drm/drm_gem.c
+--- drm-orig/drm_gem.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_gem.c	2010-12-17 21:30:48.000000000 +0100
+@@ -25,6 +25,7 @@
+  *
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/types.h>
+ #include <linux/slab.h>
+ #include <linux/mm.h>
+@@ -34,6 +35,7 @@
+ #include <linux/module.h>
+ #include <linux/mman.h>
+ #include <linux/pagemap.h>
++#endif
+ #include "drmP.h"
+ 
+ /** @file drm_gem.c
+@@ -88,11 +90,14 @@
+ int
+ drm_gem_init(struct drm_device *dev)
+ {
++#if !defined(__AROS__)
+ 	struct drm_gem_mm *mm;
++#endif
+ 
+ 	spin_lock_init(&dev->object_name_lock);
+ 	idr_init(&dev->object_name_idr);
+ 
++#if !defined(__AROS__)
+ 	mm = kzalloc(sizeof(struct drm_gem_mm), GFP_KERNEL);
+ 	if (!mm) {
+ 		DRM_ERROR("out of memory\n");
+@@ -112,10 +117,12 @@
+ 		kfree(mm);
+ 		return -ENOMEM;
+ 	}
++#endif
+ 
+ 	return 0;
+ }
+ 
++#if !defined(__AROS__)
+ void
+ drm_gem_destroy(struct drm_device *dev)
+ {
+@@ -126,6 +133,7 @@
+ 	kfree(mm);
+ 	dev->mm_private = NULL;
+ }
++#endif
+ 
+ /**
+  * Initialize an already allocate GEM object of the specified size with
+@@ -137,9 +145,14 @@
+ 	BUG_ON((size & (PAGE_SIZE - 1)) != 0);
+ 
+ 	obj->dev = dev;
++#if !defined(__AROS__)
+ 	obj->filp = shmem_file_setup("drm mm object", size, VM_NORESERVE);
+ 	if (IS_ERR(obj->filp))
+ 		return -ENOMEM;
++#else
++    /* No swapping under AROS. Set to NULL to detect any problems */
++    obj->filp = NULL;
++#endif
+ 
+ 	kref_init(&obj->refcount);
+ 	atomic_set(&obj->handle_count, 0);
+@@ -170,8 +183,10 @@
+ 	}
+ 	return obj;
+ fput:
++#if !defined(__AROS__)
+ 	/* Object_init mangles the global counters - readjust them. */
+ 	fput(obj->filp);
++#endif
+ free:
+ 	kfree(obj);
+ 	return NULL;
+@@ -382,6 +397,7 @@
+ 	return 0;
+ }
+ 
++#if !defined(__AROS__)
+ /**
+  * Called at device open time, sets up the structure for handling refcounting
+  * of mm objects.
+@@ -421,11 +437,14 @@
+ 	idr_remove_all(&file_private->object_idr);
+ 	idr_destroy(&file_private->object_idr);
+ }
++#endif
+ 
+ void
+ drm_gem_object_release(struct drm_gem_object *obj)
+ {
++#if !defined(__AROS__)
+ 	fput(obj->filp);
++#endif
+ }
+ EXPORT_SYMBOL(drm_gem_object_release);
+ 
+@@ -441,7 +460,7 @@
+ 	struct drm_gem_object *obj = (struct drm_gem_object *) kref;
+ 	struct drm_device *dev = obj->dev;
+ 
+-	BUG_ON(!mutex_is_locked(&dev->struct_mutex));
++//FIXME	BUG_ON(!mutex_is_locked(&dev->struct_mutex));
+ 
+ 	if (dev->driver->gem_free_object != NULL)
+ 		dev->driver->gem_free_object(obj);
+@@ -483,6 +502,7 @@
+ }
+ EXPORT_SYMBOL(drm_gem_object_handle_free);
+ 
++#if !defined(__AROS__)
+ void drm_gem_vm_open(struct vm_area_struct *vma)
+ {
+ 	struct drm_gem_object *obj = vma->vm_private_data;
+@@ -579,3 +599,4 @@
+ 	return ret;
+ }
+ EXPORT_SYMBOL(drm_gem_mmap);
++#endif
+diff -ur -x .svn drm-orig/drm_global.c drm/drm_global.c
+--- drm-orig/drm_global.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_global.c	2010-12-17 21:30:48.000000000 +0100
+@@ -28,9 +28,13 @@
+  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
++#else
++#include "drm_compat_funcs.h"
++#endif
+ #include "drm_global.h"
+ 
+ struct drm_global_item {
+diff -ur -x .svn drm-orig/drm.h drm/drm.h
+--- drm-orig/drm.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm.h	2010-12-17 21:30:48.000000000 +0100
+@@ -37,11 +37,15 @@
+ #define _DRM_H_
+ 
+ #if defined(__linux__)
+-
+ #include <linux/types.h>
+ #include <asm/ioctl.h>
+ typedef unsigned int drm_handle_t;
+ 
++#elif defined(__AROS__)
++#include <sys/ioctl.h>
++#include "drm_compat_types.h"
++typedef unsigned int drm_handle_t;
++
+ #else /* One of the BSDs */
+ 
+ #include <sys/ioccom.h>
+diff -ur -x .svn drm-orig/drm_hashtab.h drm/drm_hashtab.h
+--- drm-orig/drm_hashtab.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_hashtab.h	2010-12-17 21:30:48.000000000 +0100
+@@ -35,12 +35,16 @@
+ #ifndef DRM_HASHTAB_H
+ #define DRM_HASHTAB_H
+ 
++#if !defined(__AROS__)
+ #include <linux/list.h>
++#else
++#include "drm_compat_types.h"
++#endif
+ 
+ #define drm_hash_entry(_ptr, _type, _member) container_of(_ptr, _type, _member)
+ 
+ struct drm_hash_item {
+-	struct hlist_node head;
++//FIXME:	struct hlist_node head;
+ 	unsigned long key;
+ };
+ 
+@@ -48,7 +52,7 @@
+ 	unsigned int size;
+ 	unsigned int order;
+ 	unsigned int fill;
+-	struct hlist_head *table;
++//FIXME:	struct hlist_head *table;
+ 	int use_vmalloc;
+ };
+ 
+diff -ur -x .svn drm-orig/drm_irq.c drm/drm_irq.c
+--- drm-orig/drm_irq.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_irq.c	2010-12-17 21:30:48.000000000 +0100
+@@ -34,12 +34,21 @@
+  */
+ 
+ #include "drmP.h"
++#if !defined(__AROS__)
+ #include "drm_trace.h"
+ 
+ #include <linux/interrupt.h>	/* For task queue support */
+ #include <linux/slab.h>
+ 
+ #include <linux/vgaarb.h>
++#else
++#include "drm_aros.h"
++
++#include <proto/oop.h>
++#include <hidd/pci.h>
++#endif
++
++#if !defined(__AROS__)
+ /**
+  * Get interrupt from bus id.
+  *
+@@ -76,6 +85,7 @@
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static void vblank_disable_fn(unsigned long arg)
+ {
+@@ -106,16 +116,22 @@
+ 	if (dev->num_crtcs == 0)
+ 		return;
+ 
++#if !defined(__AROS__)
+ 	del_timer(&dev->vblank_disable_timer);
++#endif
+ 
+ 	vblank_disable_fn((unsigned long)dev);
+ 
++#if !defined(__AROS__)
+ 	kfree(dev->vbl_queue);
++#endif
+ 	kfree(dev->_vblank_count);
+ 	kfree(dev->vblank_refcount);
+ 	kfree(dev->vblank_enabled);
+ 	kfree(dev->last_vblank);
++#if !defined(__AROS__)
+ 	kfree(dev->last_vblank_wait);
++#endif
+ 	kfree(dev->vblank_inmodeset);
+ 
+ 	dev->num_crtcs = 0;
+@@ -126,15 +142,19 @@
+ {
+ 	int i, ret = -ENOMEM;
+ 
++#if !defined(__AROS__)
+ 	setup_timer(&dev->vblank_disable_timer, vblank_disable_fn,
+ 		    (unsigned long)dev);
++#endif
+ 	spin_lock_init(&dev->vbl_lock);
+ 	dev->num_crtcs = num_crtcs;
+ 
++#if !defined(__AROS__)
+ 	dev->vbl_queue = kmalloc(sizeof(wait_queue_head_t) * num_crtcs,
+ 				 GFP_KERNEL);
+ 	if (!dev->vbl_queue)
+ 		goto err;
++#endif
+ 
+ 	dev->_vblank_count = kmalloc(sizeof(atomic_t) * num_crtcs, GFP_KERNEL);
+ 	if (!dev->_vblank_count)
+@@ -153,9 +173,11 @@
+ 	if (!dev->last_vblank)
+ 		goto err;
+ 
++#if !defined(__AROS__)
+ 	dev->last_vblank_wait = kcalloc(num_crtcs, sizeof(u32), GFP_KERNEL);
+ 	if (!dev->last_vblank_wait)
+ 		goto err;
++#endif
+ 
+ 	dev->vblank_inmodeset = kcalloc(num_crtcs, sizeof(int), GFP_KERNEL);
+ 	if (!dev->vblank_inmodeset)
+@@ -163,7 +185,9 @@
+ 
+ 	/* Zero per-crtc vblank stuff */
+ 	for (i = 0; i < num_crtcs; i++) {
++#if !defined(__AROS__)
+ 		init_waitqueue_head(&dev->vbl_queue[i]);
++#endif
+ 		atomic_set(&dev->_vblank_count[i], 0);
+ 		atomic_set(&dev->vblank_refcount[i], 0);
+ 	}
+@@ -177,6 +201,7 @@
+ }
+ EXPORT_SYMBOL(drm_vblank_init);
+ 
++#if !defined(__AROS__)
+ static void drm_irq_vgaarb_nokms(void *cookie, bool state)
+ {
+ 	struct drm_device *dev = cookie;
+@@ -196,6 +221,7 @@
+ 		dev->driver->irq_postinstall(dev);
+ 	}
+ }
++#endif
+ 
+ /**
+  * Install IRQ handler.
+@@ -206,6 +232,7 @@
+  * \c drm_driver_irq_preinstall() and \c drm_driver_irq_postinstall() functions
+  * before and after the installation.
+  */
++#if !defined(__AROS__)
+ int drm_irq_install(struct drm_device *dev)
+ {
+ 	int ret = 0;
+@@ -271,6 +298,89 @@
+ 	return ret;
+ }
+ EXPORT_SYMBOL(drm_irq_install);
++#else
++#if !defined(HOSTED_BUILD)
++static void interrupt_handler(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
++{
++    struct drm_device *dev = (struct drm_device*)irq->h_Data;
++    
++    /* FIXME: What if INT is shared between devices? */
++    if (dev->driver->irq_handler)
++        dev->driver->irq_handler(dev);
++}
++#endif
++
++int drm_irq_install(struct drm_device *dev)
++{
++#if defined(HOSTED_BUILD)
++    return 0;
++#else    
++    struct OOP_Object *o = NULL;
++    IPTR INTLine = 0;
++    int retval = -EINVAL;
++    
++    ObtainSemaphore(&dev->struct_mutex.semaphore);
++    if (dev->irq_enabled) {
++        return -EBUSY;
++    }
++    dev->irq_enabled = 1;
++    ReleaseSemaphore(&dev->struct_mutex.semaphore);
++    
++    if (dev->driver->irq_preinstall)
++        dev->driver->irq_preinstall(dev);
++
++    dev->IntHandler = (HIDDT_IRQ_Handler *)AllocVec(sizeof(HIDDT_IRQ_Handler), MEMF_PUBLIC | MEMF_CLEAR);
++    
++    if (dev->IntHandler)
++    {
++        dev->IntHandler->h_Node.ln_Pri = 10;
++        dev->IntHandler->h_Node.ln_Name = "Gallium3D INT Handler";
++        dev->IntHandler->h_Code = interrupt_handler;
++        dev->IntHandler->h_Data = dev;
++
++        OOP_GetAttr(dev->pdev, aHidd_PCIDevice_INTLine, &INTLine);
++        DRM_DEBUG("INTLine: %d\n", INTLine);
++        
++        o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
++        
++        if (o)
++        {
++            struct pHidd_IRQ_AddHandler __msg__ = {
++                mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
++                handlerinfo:    dev->IntHandler,
++                id:             INTLine,
++            }, *msg = &__msg__;
++
++            if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
++                retval = 0;
++
++            OOP_DisposeObject((OOP_Object *)o);
++        }
++    }
++
++    if (retval != 0)
++    {
++        ObtainSemaphore(&dev->struct_mutex.semaphore);
++        dev->irq_enabled = 0;
++        ReleaseSemaphore(&dev->struct_mutex.semaphore);
++        return retval;
++    }
++    
++    if (dev->driver->irq_postinstall)
++    {
++        retval = dev->driver->irq_postinstall(dev);
++        if (retval < 0)
++        {
++            ObtainSemaphore(&dev->struct_mutex.semaphore);
++            dev->irq_enabled = 0;
++            ReleaseSemaphore(&dev->struct_mutex.semaphore);            
++        }
++    }
++    
++    return retval;
++#endif    
++}
++#endif
+ 
+ /**
+  * Uninstall the IRQ handler.
+@@ -279,6 +389,7 @@
+  *
+  * Calls the driver's \c drm_driver_irq_uninstall() function, and stops the irq.
+  */
++#if !defined(__AROS__)
+ int drm_irq_uninstall(struct drm_device * dev)
+ {
+ 	unsigned long irqflags;
+@@ -318,7 +429,52 @@
+ 	return 0;
+ }
+ EXPORT_SYMBOL(drm_irq_uninstall);
++#else
++int drm_irq_uninstall(struct drm_device *dev)
++{
++#if defined(HOSTED_BUILD)
++    return 0;
++#else      
++    int irq_enabled;
++    struct OOP_Object *o = NULL;
++    int retval = -EINVAL;
++
++    ObtainSemaphore(&dev->struct_mutex.semaphore);
++    irq_enabled = dev->irq_enabled;
++    dev->irq_enabled = 0;
++    ReleaseSemaphore(&dev->struct_mutex.semaphore);
++
++    if (!irq_enabled)
++        return retval;
++
++    if (dev->driver->irq_uninstall)
++        dev->driver->irq_uninstall(dev);
++
++    o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
++    
++    if (o)
++    {
++        struct pHidd_IRQ_RemHandler __msg__ = {
++            mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler),
++            handlerinfo:    dev->IntHandler,
++        }, *msg = &__msg__;
++
++        if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
++        {
++            FreeVec(dev->IntHandler);
++            dev->IntHandler = NULL;
++            retval = 0;
++        }
++
++        OOP_DisposeObject((OOP_Object *)o);
++    }
++
++    return retval;
++#endif
++}
++#endif
+ 
++#if !defined(__AROS__)
+ /**
+  * IRQ control ioctl.
+  *
+@@ -358,6 +514,7 @@
+ 		return -EINVAL;
+ 	}
+ }
++#endif
+ 
+ /**
+  * drm_vblank_count - retrieve "cooked" vblank counter value
+@@ -471,10 +628,15 @@
+ 
+ 	/* Last user schedules interrupt disable */
+ 	if (atomic_dec_and_test(&dev->vblank_refcount[crtc]))
++#if !defined(__AROS__)
+ 		mod_timer(&dev->vblank_disable_timer, jiffies + 5*DRM_HZ);
++#else
++        vblank_disable_fn((unsigned long)dev);
++#endif
+ }
+ EXPORT_SYMBOL(drm_vblank_put);
+ 
++#if !defined(__AROS__)
+ void drm_vblank_off(struct drm_device *dev, int crtc)
+ {
+ 	unsigned long irqflags;
+@@ -487,6 +649,7 @@
+ 	spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
+ }
+ EXPORT_SYMBOL(drm_vblank_off);
++#endif
+ 
+ /**
+  * drm_vblank_pre_modeset - account for vblanks across mode sets
+@@ -534,6 +697,7 @@
+ }
+ EXPORT_SYMBOL(drm_vblank_post_modeset);
+ 
++#if !defined(__AROS__)
+ /**
+  * drm_modeset_ctl - handle vblank event counter changes across mode switch
+  * @DRM_IOCTL_ARGS: standard ioctl arguments
+@@ -769,6 +933,7 @@
+ 
+ 	trace_drm_vblank_event(crtc, seq);
+ }
++#endif
+ 
+ /**
+  * drm_handle_vblank - handle a vblank event
+@@ -784,7 +949,9 @@
+ 		return;
+ 
+ 	atomic_inc(&dev->_vblank_count[crtc]);
++#if !defined(__AROS__)
+ 	DRM_WAKEUP(&dev->vbl_queue[crtc]);
+ 	drm_handle_vblank_events(dev, crtc);
++#endif
+ }
+ EXPORT_SYMBOL(drm_handle_vblank);
+diff -ur -x .svn drm-orig/drm_memory.c drm/drm_memory.c
+--- drm-orig/drm_memory.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_memory.c	2010-12-17 21:30:48.000000000 +0100
+@@ -33,7 +33,9 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/highmem.h>
++#endif
+ #include "drmP.h"
+ 
+ /**
+@@ -56,6 +58,7 @@
+ }
+ 
+ #if __OS_HAS_AGP
++#if !defined(__AROS__)
+ static void *agp_remap(unsigned long offset, unsigned long size,
+ 		       struct drm_device * dev)
+ {
+@@ -98,6 +101,7 @@
+ 
+ 	return addr;
+ }
++#endif
+ 
+ /** Wrapper around agp_free_memory() */
+ void drm_free_agp(DRM_AGP_MEM * handle, int pages)
+@@ -106,11 +110,13 @@
+ }
+ EXPORT_SYMBOL(drm_free_agp);
+ 
++#if !defined(__AROS__)
+ /** Wrapper around agp_bind_memory() */
+ int drm_bind_agp(DRM_AGP_MEM * handle, unsigned int start)
+ {
+ 	return agp_bind_memory(handle, start);
+ }
++#endif
+ 
+ /** Wrapper around agp_unbind_memory() */
+ int drm_unbind_agp(DRM_AGP_MEM * handle)
+@@ -119,6 +125,13 @@
+ }
+ EXPORT_SYMBOL(drm_unbind_agp);
+ 
++static inline void *agp_remap(unsigned long offset, unsigned long size,
++			      struct drm_device * dev)
++{
++    IMPLEMENT("\n");
++	return NULL;
++}
++
+ #else  /*  __OS_HAS_AGP  */
+ static inline void *agp_remap(unsigned long offset, unsigned long size,
+ 			      struct drm_device * dev)
+diff -ur -x .svn drm-orig/drm_mm.c drm/drm_mm.c
+--- drm-orig/drm_mm.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_mm.c	2010-12-17 21:30:48.000000000 +0100
+@@ -43,8 +43,12 @@
+ 
+ #include "drmP.h"
+ #include "drm_mm.h"
++#if !defined(__AROS__)
+ #include <linux/slab.h>
+ #include <linux/seq_file.h>
++#else
++#include "drm_compat_funcs.h"
++#endif
+ 
+ #define MM_UNUSED_TARGET 4
+ 
+diff -ur -x .svn drm-orig/drm_mm.h drm/drm_mm.h
+--- drm-orig/drm_mm.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_mm.h	2010-12-17 21:30:48.000000000 +0100
+@@ -36,10 +36,15 @@
+ /*
+  * Generic range manager structs
+  */
++#if !defined(__AROS__)
+ #include <linux/list.h>
+ #ifdef CONFIG_DEBUG_FS
+ #include <linux/seq_file.h>
+ #endif
++#else
++#include "drm_compat_types.h"
++#include "drm_linux_list.h"
++#endif
+ 
+ struct drm_mm_node {
+ 	struct list_head free_stack;
+diff -ur -x .svn drm-orig/drm_modes.c drm/drm_modes.c
+--- drm-orig/drm_modes.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/drm_modes.c	2010-12-17 21:30:48.000000000 +0100
+@@ -30,8 +30,10 @@
+  * authorization from the copyright holder(s) and author(s).
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/list.h>
+ #include <linux/list_sort.h>
++#endif
+ #include "drmP.h"
+ #include "drm.h"
+ #include "drm_crtc.h"
+@@ -907,6 +909,7 @@
+ 	struct drm_display_mode *b = list_entry(lh_b, struct drm_display_mode, head);
+ 	int diff;
+ 
++#if !defined(__AROS__)
+ 	diff = ((b->type & DRM_MODE_TYPE_PREFERRED) != 0) -
+ 		((a->type & DRM_MODE_TYPE_PREFERRED) != 0);
+ 	if (diff)
+@@ -914,6 +917,16 @@
+ 	diff = b->hdisplay * b->vdisplay - a->hdisplay * a->vdisplay;
+ 	if (diff)
+ 		return diff;
++#else
++	diff = b->hdisplay - a->hdisplay;
++	if (diff)
++		return diff;
++
++	diff = b->vdisplay - a->vdisplay;
++	if (diff)
++		return diff;
++#endif
++
+ 	diff = b->clock - a->clock;
+ 	return diff;
+ }
+diff -ur -x .svn drm-orig/nouveau/nouveau_bios.c drm/nouveau/nouveau_bios.c
+--- drm-orig/nouveau/nouveau_bios.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_bios.c	2010-12-17 21:30:48.000000000 +0100
+@@ -28,7 +28,9 @@
+ #include "nouveau_hw.h"
+ #include "nouveau_encoder.h"
+ 
++#if !defined(__AROS__)
+ #include <linux/io-mapping.h>
++#endif
+ 
+ /* these defines are made up */
+ #define NV_CIO_CRE_44_HEADA 0x0
+@@ -159,6 +161,7 @@
+ 
+ static void load_vbios_pci(struct drm_device *dev, uint8_t *data)
+ {
++#if !defined(__AROS__)
+ 	void __iomem *rom = NULL;
+ 	size_t rom_len;
+ 	int ret;
+@@ -175,10 +178,14 @@
+ 
+ out:
+ 	pci_disable_rom(dev->pdev);
++#else
++IMPLEMENT("\n");
++#endif
+ }
+ 
+ static void load_vbios_acpi(struct drm_device *dev, uint8_t *data)
+ {
++#if !defined(__AROS__)
+ 	int i;
+ 	int ret;
+ 	int size = 64 * 1024;
+@@ -194,6 +201,9 @@
+ 			break;
+ 	}
+ 	return;
++#else
++IMPLEMENT("\n");
++#endif
+ }
+ 
+ struct methods {
+@@ -1449,17 +1459,24 @@
+ 	 * "mask n" and OR it with "data n" before writing it back to the device
+ 	 */
+ 
++#if !defined(__AROS__)
+ 	struct drm_device *dev = bios->dev;
+ 	uint8_t i2c_index = bios->data[offset + 1];
+ 	uint8_t i2c_address = bios->data[offset + 2] >> 1;
++#endif
+ 	uint8_t count = bios->data[offset + 3];
++#if !defined(__AROS__)
+ 	struct nouveau_i2c_chan *chan;
++#endif
+ 	int len = 4 + count * 3;
++#if !defined(__AROS__)
+ 	int ret, i;
++#endif
+ 
+ 	if (!iexec->execute)
+ 		return len;
+ 
++#if !defined(__AROS__)
+ 	BIOSLOG(bios, "0x%04X: DCBI2CIndex: 0x%02X, I2CAddress: 0x%02X, "
+ 		      "Count: 0x%02X\n",
+ 		offset, i2c_index, i2c_address, count);
+@@ -1503,6 +1520,10 @@
+ 	}
+ 
+ 	return len;
++#else
++IMPLEMENT("\n");
++return 0;
++#endif
+ }
+ 
+ static int
+@@ -1524,17 +1545,24 @@
+ 	 * "DCB I2C table entry index", set the register to "data n"
+ 	 */
+ 
++#if !defined(__AROS__)
+ 	struct drm_device *dev = bios->dev;
+ 	uint8_t i2c_index = bios->data[offset + 1];
+ 	uint8_t i2c_address = bios->data[offset + 2] >> 1;
++#endif
+ 	uint8_t count = bios->data[offset + 3];
++#if !defined(__AROS__)
+ 	struct nouveau_i2c_chan *chan;
++#endif
+ 	int len = 4 + count * 2;
++#if !defined(__AROS__)
+ 	int ret, i;
++#endif
+ 
+ 	if (!iexec->execute)
+ 		return len;
+ 
++#if !defined(__AROS__)
+ 	BIOSLOG(bios, "0x%04X: DCBI2CIndex: 0x%02X, I2CAddress: 0x%02X, "
+ 		      "Count: 0x%02X\n",
+ 		offset, i2c_index, i2c_address, count);
+@@ -1567,6 +1595,10 @@
+ 	}
+ 
+ 	return len;
++#else
++IMPLEMENT("\n");
++return 0;
++#endif
+ }
+ 
+ static int
+@@ -2013,6 +2045,7 @@
+ static int
+ init_i2c_if(struct nvbios *bios, uint16_t offset, struct init_exec *iexec)
+ {
++#if !defined(__AROS__)
+ 	/*
+ 	 * INIT_I2C_IF   opcode: 0x5E ('^')
+ 	 *
+@@ -2064,6 +2097,9 @@
+ 		offset, reg, val.byte, mask, data);
+ 
+ 	iexec->execute = ((val.byte & mask) == data);
++#else
++IMPLEMENT("\n");
++#endif
+ 
+ 	return 6;
+ }
+@@ -4346,6 +4382,7 @@
+ 		break;
+ 	}
+ 
++
+ 	/* Dell Latitude D620 reports a too-high value for the dual-link
+ 	 * transition freq, causing us to program the panel incorrectly.
+ 	 *
+@@ -6442,8 +6479,9 @@
+ 		return 0;
+ 	}
+ 
+-	if (!i2ctabptr)
++	if (!i2ctabptr) {
+ 		NV_WARN(dev, "No pointer to DCB I2C port table\n");
++	}
+ 	else {
+ 		dcb->i2c_table = &bios->data[i2ctabptr];
+ 		if (dcb->version >= 0x30)
+@@ -6825,12 +6863,16 @@
+ 	struct nvbios *bios = &dev_priv->vbios;
+ 	int ret;
+ 
++#if !defined(HOSTED_BUILD)
+ 	if (!NVInitVBIOS(dev))
+ 		return -ENODEV;
+ 
+ 	ret = nouveau_parse_vbios_struct(dev);
+ 	if (ret)
+ 		return ret;
++#else
++    bios->major_version = 6;
++#endif
+ 
+ 	ret = parse_dcb_table(dev, bios);
+ 	if (ret)
+diff -ur -x .svn drm-orig/nouveau/nouveau_bo_renamed.c drm/nouveau/nouveau_bo_renamed.c
+--- drm-orig/nouveau/nouveau_bo_renamed.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_bo_renamed.c	2010-12-17 21:30:48.000000000 +0100
+@@ -33,8 +33,10 @@
+ #include "nouveau_drv.h"
+ #include "nouveau_dma.h"
+ 
++#if !defined(__AROS__)
+ #include <linux/log2.h>
+ #include <linux/slab.h>
++#endif
+ 
+ static void
+ nouveau_bo_del_ttm(struct ttm_buffer_object *bo)
+diff -ur -x .svn drm-orig/nouveau/nouveau_calc.c drm/nouveau/nouveau_calc.c
+--- drm-orig/nouveau/nouveau_calc.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_calc.c	2010-12-17 21:30:48.000000000 +0100
+@@ -211,7 +211,7 @@
+ 	    (dev->pci_device & 0xffff) == 0x01f0 /*CHIPSET_NFORCE2*/) {
+ 		uint32_t type;
+ 
+-		pci_read_config_dword(pci_get_bus_and_slot(0, 1), 0x7c, &type);
++		pci_read_config_dword(pci_get_bus_and_slot(0, PCI_DEVFN(0, 1)), 0x7c, &type);
+ 
+ 		sim_data.memory_type = (type >> 12) & 1;
+ 		sim_data.memory_width = 64;
+diff -ur -x .svn drm-orig/nouveau/nouveau_connector.c drm/nouveau/nouveau_connector.c
+--- drm-orig/nouveau/nouveau_connector.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_connector.c	2010-12-17 21:30:48.000000000 +0100
+@@ -24,7 +24,9 @@
+  *
+  */
+ 
++#if !defined(__AROS__)
+ #include <acpi/button.h>
++#endif
+ 
+ #include "drmP.h"
+ #include "drm_edid.h"
+@@ -117,7 +119,9 @@
+ 	}
+ 
+ 	kfree(nv_connector->edid);
++#if !defined(__AROS__)
+ 	drm_sysfs_connector_remove(connector);
++#endif
+ 	drm_connector_cleanup(connector);
+ 	kfree(connector);
+ }
+@@ -296,11 +300,16 @@
+ 		struct drm_encoder_helper_funcs *helper =
+ 						encoder->helper_private;
+ 
++#if !defined(HOSTED_BUILD)
+ 		if (helper->detect(encoder, connector) ==
+ 						connector_status_connected) {
+ 			nouveau_connector_set_encoder(connector, nv_encoder);
+ 			return connector_status_connected;
+ 		}
++#else
++        nouveau_connector_set_encoder(connector, nv_encoder);
++        return connector_status_connected;
++#endif
+ 
+ 	}
+ 
+@@ -892,7 +901,9 @@
+ 				    nouveau_connector_hotplug, connector);
+ 	}
+ 
++#if !defined(__AROS__)
+ 	drm_sysfs_connector_add(connector);
++#endif
+ 	dcb->drm = connector;
+ 	return dcb->drm;
+ 
+@@ -926,5 +937,8 @@
+ 		}
+ 	}
+ 
++#if !defined(__AROS__)
+ 	drm_helper_hpd_irq_event(dev);
++#endif
+ }
++
+diff -ur -x .svn drm-orig/nouveau/nouveau_display.c drm/nouveau/nouveau_display.c
+--- drm-orig/nouveau/nouveau_display.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_display.c	2010-12-17 21:30:48.000000000 +0100
+@@ -28,7 +28,9 @@
+ #include "drm_crtc_helper.h"
+ #include "nouveau_drv.h"
+ #include "nouveau_fb.h"
++#if !defined(__AROS__)
+ #include "nouveau_fbcon.h"
++#endif
+ #include "nouveau_hw.h"
+ #include "nouveau_crtc.h"
+ #include "nouveau_dma.h"
+@@ -102,6 +104,14 @@
+ 	return &nouveau_fb->base;
+ }
+ 
++#if defined(__AROS__)
++void
++nouveau_fbcon_output_poll_changed(struct drm_device *dev)
++{
++    IMPLEMENT("\n");
++}
++#endif
++
+ const struct drm_mode_config_funcs nouveau_mode_config_funcs = {
+ 	.fb_create = nouveau_user_framebuffer_create,
+ 	.output_poll_changed = nouveau_fbcon_output_poll_changed,
+@@ -134,6 +144,7 @@
+ 		NVWriteCRTC(dev, crtc, NV_PCRTC_INTR_EN_0, 0);
+ }
+ 
++#if !defined(__AROS__)
+ static int
+ nouveau_page_flip_reserve(struct nouveau_bo *old_bo,
+ 			  struct nouveau_bo *new_bo)
+@@ -216,11 +227,13 @@
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
+ 	return ret;
+ }
++#endif
+ 
+ int
+ nouveau_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
+ 		       struct drm_pending_vblank_event *event)
+ {
++#if !defined(__AROS__)
+ 	struct drm_device *dev = crtc->dev;
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+ 	struct nouveau_bo *old_bo = nouveau_framebuffer(crtc->fb)->nvbo;
+@@ -272,12 +285,17 @@
+ fail_free:
+ 	kfree(s);
+ 	return ret;
++#else
++IMPLEMENT("\n");
++return 0;
++#endif
+ }
+ 
+ int
+ nouveau_finish_page_flip(struct nouveau_channel *chan,
+ 			 struct nouveau_page_flip_state *ps)
+ {
++#if !defined(__AROS__)
+ 	struct drm_device *dev = chan->dev;
+ 	struct nouveau_page_flip_state *s;
+ 	unsigned long flags;
+@@ -310,4 +328,8 @@
+ 
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
+ 	return 0;
++#else
++IMPLEMENT("\n");
++return 0;
++#endif
+ }
+diff -ur -x .svn drm-orig/nouveau/nouveau_dp.c drm/nouveau/nouveau_dp.c
+--- drm-orig/nouveau/nouveau_dp.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_dp.c	2010-12-17 21:30:48.000000000 +0100
+@@ -576,6 +576,7 @@
+ 	return ret ? ret : (stat & NV50_AUXCH_STAT_REPLY);
+ }
+ 
++#if !defined(__AROS__)
+ static int
+ nouveau_dp_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+ {
+@@ -637,3 +638,4 @@
+ 	.master_xfer = nouveau_dp_i2c_xfer,
+ 	.functionality = nouveau_dp_i2c_func
+ };
++#endif
+diff -ur -x .svn drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
+--- drm-orig/nouveau/nouveau_drv.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_drv.h	2010-12-17 21:30:48.000000000 +0100
+@@ -39,10 +39,20 @@
+ #define NOUVEAU_FAMILY   0x0000FFFF
+ #define NOUVEAU_FLAGS    0xFFFF0000
+ 
++#if defined(__AROS__)
++struct drm_encoder;
++struct drm_minor;
++struct drm_connector;
++#include "drm_compat_types.h"
++#include "drm_compat_funcs.h"
++#endif
++
+ #include "ttm/ttm_bo_api.h"
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_placement.h"
++#if !defined(__AROS__)
+ #include "ttm/ttm_memory.h"
++#endif
+ #include "ttm/ttm_module.h"
+ 
+ struct nouveau_fpriv {
+@@ -125,7 +135,7 @@
+ 	bool is_iomem;
+ 	void __iomem *ioptr = (void __force __iomem *)ttm_kmap_obj_virtual(
+ 						&nvbo->kmap, &is_iomem);
+-	WARN_ON_ONCE(ioptr && !is_iomem);
++//FIXME:	WARN_ON_ONCE(ioptr && !is_iomem);
+ 	return ioptr;
+ }
+ 
+@@ -274,11 +284,11 @@
+ 		struct list_head flip;
+ 	} nvsw;
+ 
+-	struct {
++/*FIXME:COMMENT	struct {
+ 		bool active;
+ 		char name[32];
+ 		struct drm_info_list info;
+-	} debugfs;
++	} debugfs;*/
+ };
+ 
+ struct nouveau_instmem_engine {
+@@ -408,7 +418,7 @@
+ 
+ #define NOUVEAU_PM_MAX_LEVEL 8
+ struct nouveau_pm_level {
+-	struct device_attribute dev_attr;
++//FIXME	struct device_attribute dev_attr;
+ 	char name[32];
+ 	int id;
+ 
+@@ -466,7 +476,7 @@
+ 	struct nouveau_pm_level *cur;
+ 
+ 	struct device *hwmon;
+-	struct notifier_block acpi_nb;
++//FIXME	struct notifier_block acpi_nb;
+ 
+ 	int (*clock_get)(struct drm_device *, u32 id);
+ 	void *(*clock_pre)(struct drm_device *, struct nouveau_pm_level *,
+@@ -625,8 +635,12 @@
+ 	/* interrupt handling */
+ 	void (*irq_handler[32])(struct drm_device *);
+ 	bool msi_enabled;
++#if !defined(__AROS__)
++    /* Not needed - all queued stuff is called directly */
+ 	struct workqueue_struct *wq;
++    /* Not needed - direct call to nv50_display_irq_handler_bh is made in irq handler */
+ 	struct work_struct irq_work;
++#endif
+ 
+ 	struct list_head vbl_waiting;
+ 
+@@ -782,8 +796,10 @@
+ extern int nouveau_perflvl_wr;
+ extern int nouveau_msi;
+ 
++#if !defined(__AROS__)
+ extern int nouveau_pci_suspend(struct pci_dev *pdev, pm_message_t pm_state);
+ extern int nouveau_pci_resume(struct pci_dev *pdev);
++#endif
+ 
+ /* nouveau_state.c */
+ extern void nouveau_preclose(struct drm_device *dev, struct drm_file *);
+@@ -964,7 +980,7 @@
+ #else
+ static inline void nouveau_register_dsm_handler(void) {}
+ static inline void nouveau_unregister_dsm_handler(void) {}
+-static inline bool nouveau_acpi_rom_supported(struct pci_dev *pdev) { return false; }
++//FIXME static inline bool nouveau_acpi_rom_supported(struct pci_dev *pdev) { return false; }
+ static inline int nouveau_acpi_get_bios_chunk(uint8_t *bios, int offset, int len) { return -EINVAL; }
+ static inline int nouveau_acpi_edid(struct drm_device *dev, struct drm_connector *connector) { return -EINVAL; }
+ #endif
+@@ -1012,7 +1028,7 @@
+ /* nouveau_ttm.c */
+ int nouveau_ttm_global_init(struct drm_nouveau_private *);
+ void nouveau_ttm_global_release(struct drm_nouveau_private *);
+-int nouveau_ttm_mmap(struct file *, struct vm_area_struct *);
++//FIXME:TTM int nouveau_ttm_mmap(struct file *, struct vm_area_struct *);
+ 
+ /* nouveau_dp.c */
+ int nouveau_dp_auxch(struct nouveau_i2c_chan *auxch, int cmd, int addr,
+@@ -1379,6 +1395,10 @@
+ int nv50_calc_pll2(struct drm_device *, struct pll_lims *,
+ 		   int clk, int *N, int *fN, int *M, int *P);
+ 
++/* nv50_gpio.c */
++int nv50_gpio_get(struct drm_device *dev, enum dcb_gpio_tag tag);
++int nv50_gpio_set(struct drm_device *dev, enum dcb_gpio_tag tag, int state);
++
+ #ifndef ioread32_native
+ #ifdef __BIG_ENDIAN
+ #define ioread16_native ioread16be
+@@ -1463,6 +1483,8 @@
+  * Logging
+  * Argument d is (struct drm_device *).
+  */
++#if !defined(__AROS__)
++
+ #define NV_PRINTK(level, d, fmt, arg...) \
+ 	printk(level "[" DRM_NAME "] " DRIVER_NAME " %s: " fmt, \
+ 					pci_name(d->pdev), ##arg)
+@@ -1489,6 +1511,31 @@
+ 		NV_PRINTK(KERN_DEBUG, d, fmt, ##arg);                          \
+ } while (0)
+ #endif
++
++#else
++
++#define NV_PRINTK(level, d, fmt, arg...) \
++    { (void)d; bug("[" DRM_NAME "] " DRIVER_NAME " " fmt, ##arg); }
++#ifndef NV_DEBUG_NOTRACE
++#define NV_DEBUG(d, fmt, arg...) do {                                          \
++        D(NV_PRINTK(KERN_DEBUG, d, "%s:%d - " fmt, __func__,             \
++              __LINE__, ##arg));                                    \
++} while (0)
++#define NV_DEBUG_KMS(d, fmt, arg...) do {                                          \
++        D(NV_PRINTK(KERN_DEBUG, d, "%s:%d - " fmt, __func__,             \
++              __LINE__, ##arg));                                    \
++} while (0)
++#else
++#define NV_DEBUG(d, fmt, arg...) do {                                          \
++        D(NV_PRINTK(KERN_DEBUG, d, fmt, ##arg));                          \
++} while (0)
++#define NV_DEBUG_KMS(d, fmt, arg...) do {                                          \
++        D(NV_PRINTK(KERN_DEBUG, d, fmt, ##arg));                          \
++} while (0)
++#endif
++
++#endif
++
+ #define NV_ERROR(d, fmt, arg...) NV_PRINTK(KERN_ERR, d, fmt, ##arg)
+ #define NV_INFO(d, fmt, arg...) NV_PRINTK(KERN_INFO, d, fmt, ##arg)
+ #define NV_TRACEWARN(d, fmt, arg...) NV_PRINTK(KERN_NOTICE, d, fmt, ##arg)
+@@ -1548,9 +1595,15 @@
+ nv_match_device(struct drm_device *dev, unsigned device,
+ 		unsigned sub_vendor, unsigned sub_device)
+ {
++#if !defined(__AROS__)
+ 	return dev->pdev->device == device &&
+ 		dev->pdev->subsystem_vendor == sub_vendor &&
+ 		dev->pdev->subsystem_device == sub_device;
++#else
++    return dev->driver->ProductID == device &&
++        dev->driver->SubSystemVendorID == sub_vendor &&
++        dev->driver->SubSystemProductID == sub_device;
++#endif
+ }
+ 
+ /* memory type/access flags, do not match hardware values */
+diff -ur -x .svn drm-orig/nouveau/nouveau_fence.c drm/nouveau/nouveau_fence.c
+--- drm-orig/nouveau/nouveau_fence.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_fence.c	2010-12-17 21:39:59.000000000 +0100
+@@ -71,7 +71,9 @@
+ void
+ nouveau_fence_update(struct nouveau_channel *chan)
+ {
++#if !defined(HOSTED_BUILD)
+ 	struct drm_device *dev = chan->dev;
++#endif
+ 	struct nouveau_fence *tmp, *fence;
+ 	uint32_t sequence;
+ 
+@@ -79,10 +81,15 @@
+ 
+ 	/* Fetch the last sequence if the channel is still up and running */
+ 	if (likely(!list_empty(&chan->fence.pending))) {
++#if defined(HOSTED_BUILD)
++        /* For purpose of simulation, assume all fences are signalled */
++        sequence = chan->fence.sequence;
++#else
+ 		if (USE_REFCNT(dev))
+ 			sequence = nvchan_rd32(chan, 0x48);
+ 		else
+ 			sequence = atomic_read(&chan->fence.last_sequence_irq);
++#endif
+ 
+ 		if (chan->fence.sequence_ack == sequence)
+ 			goto out;
+@@ -220,6 +227,7 @@
+ int
+ __nouveau_fence_wait(void *sync_obj, void *sync_arg, bool lazy, bool intr)
+ {
++#if !defined(__AROS__)
+ 	unsigned long timeout = jiffies + (3 * DRM_HZ);
+ 	unsigned long sleep_time = jiffies + 1;
+ 	int ret = 0;
+@@ -247,6 +255,25 @@
+ 	__set_current_state(TASK_RUNNING);
+ 
+ 	return ret;
++#else
++    int ret = 0;
++    LONG counter = 0;
++    while (1) 
++    {
++        if (__nouveau_fence_signalled(sync_obj, sync_arg))
++            break;
++
++        counter++;
++        if (counter > 100000)
++        {
++            NV_INFO(nouveau_fence(sync_obj)->channel->dev, "Waited too long!\n");
++            ret = -EBUSY;
++            break;
++        }
++            
++    }
++    return ret;
++#endif
+ }
+ 
+ static struct nouveau_semaphore *
+diff -ur -x .svn drm-orig/nouveau/nouveau_hw.c drm/nouveau/nouveau_hw.c
+--- drm-orig/nouveau/nouveau_hw.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_hw.c	2010-12-17 21:30:48.000000000 +0100
+@@ -487,7 +487,7 @@
+ 	    (dev->pci_device & 0x0ff0) == CHIPSET_NFORCE) {
+ 		uint32_t mpllP;
+ 
+-		pci_read_config_dword(pci_get_bus_and_slot(0, 3), 0x6c, &mpllP);
++		pci_read_config_dword(pci_get_bus_and_slot(0, PCI_DEVFN(0, 3)), 0x6c, &mpllP);
+ 		if (!mpllP)
+ 			mpllP = 4;
+ 
+@@ -497,7 +497,7 @@
+ 	    (dev->pci_device & 0xff0) == CHIPSET_NFORCE2) {
+ 		uint32_t clock;
+ 
+-		pci_read_config_dword(pci_get_bus_and_slot(0, 5), 0x4c, &clock);
++		pci_read_config_dword(pci_get_bus_and_slot(0, PCI_DEVFN(0, 5)), 0x4c, &clock);
+ 		return clock;
+ 	}
+ 
+diff -ur -x .svn drm-orig/nouveau/nouveau_i2c.c drm/nouveau/nouveau_i2c.c
+--- drm-orig/nouveau/nouveau_i2c.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_i2c.c	2010-12-17 21:30:48.000000000 +0100
+@@ -27,6 +27,22 @@
+ #include "nouveau_i2c.h"
+ #include "nouveau_hw.h"
+ 
++#if defined(__AROS__)
++#include <proto/oop.h>
++#include <oop/oop.h>
++
++/* FIXME: Duplicate defines here. Don't include nouveau_intern.h */
++/* Ugly hack actually */
++#define CLID_Hidd_I2C_Nouveau       "hidd.i2c.nouveau"
++#define IID_Hidd_I2C_Nouveau        "hidd.i2c.nouveau"
++
++#define HiddI2CNouveauAttrBase      __IHidd_I2C_Nouveau
++#define aoHidd_I2C_Nouveau_Chan     0
++#define aHidd_I2C_Nouveau_Chan      (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Chan)
++
++OOP_AttrBase HiddI2CNouveauAttrBase = 0;
++#endif
++
+ static void
+ nv04_i2c_setscl(void *data, int state)
+ {
+@@ -208,22 +224,52 @@
+ 		return -EINVAL;
+ 	}
+ 
++#if !defined(__AROS__)
+ 	snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),
+ 		 "nouveau-%s-%d", pci_name(dev->pdev), index);
+ 	i2c->adapter.owner = THIS_MODULE;
+ 	i2c->adapter.dev.parent = &dev->pdev->dev;
++#endif
+ 	i2c->dev = dev;
++#if !defined(__AROS__)
+ 	i2c_set_adapdata(&i2c->adapter, i2c);
++#endif
+ 
+ 	if (entry->port_type < 6) {
++#if !defined(__AROS__)
+ 		i2c->adapter.algo_data = &i2c->bit;
+ 		i2c->bit.udelay = 40;
+ 		i2c->bit.timeout = usecs_to_jiffies(5000);
+ 		i2c->bit.data = i2c;
+ 		ret = i2c_bit_add_bus(&i2c->adapter);
++#else
++        ret = 0;
++
++	    if (HiddI2CNouveauAttrBase == 0)
++	        HiddI2CNouveauAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C_Nouveau);
++
++        struct TagItem i2c_attrs[] = 
++        {
++            { aHidd_I2C_Nouveau_Chan,   (IPTR)i2c },
++            { TAG_DONE, 0UL }
++        };
++        
++        i2c->adapter.i2cdriver = (IPTR)OOP_NewObject(NULL, CLID_Hidd_I2C_Nouveau, i2c_attrs);
++        if (i2c->adapter.i2cdriver == (IPTR)0)
++        {
++            NV_ERROR(dev, "Failed to create CLID_Hidd_I2C_Nouveau object\n");
++            kfree(i2c);
++            return -EINVAL;
++        }
++#endif
+ 	} else {
++#if !defined(__AROS__)
+ 		i2c->adapter.algo = &nouveau_dp_i2c_algo;
+ 		ret = i2c_add_adapter(&i2c->adapter);
++#else
++        ret = -EINVAL;
++IMPLEMENT("Handling for (entry->port_type >= 6)\n");
++#endif
+ 	}
+ 
+ 	if (ret) {
+diff -ur -x .svn drm-orig/nouveau/nouveau_i2c.h drm/nouveau/nouveau_i2c.h
+--- drm-orig/nouveau/nouveau_i2c.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_i2c.h	2010-12-17 21:30:48.000000000 +0100
+@@ -23,8 +23,10 @@
+ #ifndef __NOUVEAU_I2C_H__
+ #define __NOUVEAU_I2C_H__
+ 
++#if !defined(__AROS__)
+ #include <linux/i2c.h>
+ #include <linux/i2c-algo-bit.h>
++#endif
+ #include "drm_dp_helper.h"
+ 
+ struct dcb_i2c_entry;
+diff -ur -x .svn drm-orig/nouveau/nouveau_irq.c drm/nouveau/nouveau_irq.c
+--- drm-orig/nouveau/nouveau_irq.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_irq.c	2010-12-17 21:30:48.000000000 +0100
+@@ -104,14 +104,20 @@
+ nouveau_irq_init(struct drm_device *dev)
+ {
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
++#if !defined(__AROS__)
+ 	int ret;
++#endif
+ 
+ 	if (nouveau_msi != 0 && dev_priv->card_type >= NV_50) {
++#if !defined(__AROS__)
+ 		ret = pci_enable_msi(dev->pdev);
+ 		if (ret == 0) {
+ 			NV_INFO(dev, "enabled MSI\n");
+ 			dev_priv->msi_enabled = true;
+ 		}
++#else
++IMPLEMENT("Enabling MSI\n");
++#endif
+ 	}
+ 
+ 	return drm_irq_install(dev);
+@@ -124,7 +130,11 @@
+ 
+ 	drm_irq_uninstall(dev);
+ 	if (dev_priv->msi_enabled)
++#if !defined(__AROS__)
+ 		pci_disable_msi(dev->pdev);
++#else
++IMPLEMENT("Disabling MSI\n");
++#endif
+ }
+ 
+ void
+diff -ur -x .svn drm-orig/nouveau/nouveau_mem.c drm/nouveau/nouveau_mem.c
+--- drm-orig/nouveau/nouveau_mem.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_mem.c	2010-12-17 21:30:48.000000000 +0100
+@@ -37,6 +37,10 @@
+ #include "nouveau_drv.h"
+ #include "nouveau_pm.h"
+ 
++#if defined(__AROS__)
++#define PCI_AGP_COMMAND_FW  0x0010
++#endif
++
+ /*
+  * NV10-NV40 tiling helpers
+  */
+@@ -392,7 +396,7 @@
+ nouveau_mem_detect(struct drm_device *dev)
+ {
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+-
++#if !defined(HOSTED_BUILD)
+ 	if (dev_priv->card_type == NV_04) {
+ 		dev_priv->vram_size = nouveau_mem_detect_nv04(dev);
+ 	} else
+@@ -424,6 +428,9 @@
+ 		dev_priv->vram_size  = nv_rd32(dev, 0x10f20c) << 20;
+ 		dev_priv->vram_size *= nv_rd32(dev, 0x121c74);
+ 	}
++#else
++    dev_priv->vram_size = 128 << 20;
++#endif
+ 
+ 	NV_INFO(dev, "Detected %dMiB VRAM\n", (int)(dev_priv->vram_size >> 20));
+ 	if (dev_priv->vram_sys_base) {
+@@ -558,6 +565,7 @@
+ 	struct ttm_bo_device *bdev = &dev_priv->ttm.bdev;
+ 	int ret, dma_bits;
+ 
++#if !defined(__AROS__)
+ 	if (dev_priv->card_type >= NV_50 &&
+ 	    pci_dma_supported(dev->pdev, DMA_BIT_MASK(40)))
+ 		dma_bits = 40;
+@@ -567,6 +575,7 @@
+ 	ret = pci_set_dma_mask(dev->pdev, DMA_BIT_MASK(dma_bits));
+ 	if (ret)
+ 		return ret;
++#endif
+ 
+ 	ret = nouveau_mem_detect(dev);
+ 	if (ret)
+diff -ur -x .svn drm-orig/nouveau/nouveau_sgdma.c drm/nouveau/nouveau_sgdma.c
+--- drm-orig/nouveau/nouveau_sgdma.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_sgdma.c	2010-12-17 21:30:48.000000000 +0100
+@@ -1,7 +1,9 @@
+ #include "drmP.h"
+ #include "nouveau_drv.h"
++#if !defined(__AROS__)
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
++#endif
+ 
+ #define NV_CTXDMA_PAGE_SHIFT 12
+ #define NV_CTXDMA_PAGE_SIZE  (1 << NV_CTXDMA_PAGE_SHIFT)
+diff -ur -x .svn drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
+--- drm-orig/nouveau/nouveau_state.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_state.c	2010-12-17 21:30:48.000000000 +0100
+@@ -23,18 +23,24 @@
+  * DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/swab.h>
+ #include <linux/slab.h>
++#endif
+ #include "drmP.h"
+ #include "drm.h"
+ #include "drm_sarea.h"
+ #include "drm_crtc_helper.h"
++#if !defined(__AROS__)
+ #include <linux/vgaarb.h>
+ #include <linux/vga_switcheroo.h>
++#endif
+ 
+ #include "nouveau_drv.h"
+ #include "nouveau_drm.h"
++#if !defined(__AROS__)
+ #include "nouveau_fbcon.h"
++#endif
+ #include "nouveau_ramht.h"
+ #include "nouveau_pm.h"
+ #include "nv50_display.h"
+@@ -504,6 +510,7 @@
+ 	return 0;
+ }
+ 
++#if !defined(__AROS__)
+ static unsigned int
+ nouveau_vga_set_decode(void *priv, bool state)
+ {
+@@ -521,6 +528,7 @@
+ 	else
+ 		return VGA_RSRC_NORMAL_IO | VGA_RSRC_NORMAL_MEM;
+ }
++#endif
+ 
+ static int
+ nouveau_card_init_channel(struct drm_device *dev)
+@@ -566,6 +574,7 @@
+ 	return ret;
+ }
+ 
++#if !defined(__AROS__)
+ static void nouveau_switcheroo_set_state(struct pci_dev *pdev,
+ 					 enum vga_switcheroo_state state)
+ {
+@@ -592,6 +601,7 @@
+ 	spin_unlock(&dev->count_lock);
+ 	return can_switch;
+ }
++#endif
+ 
+ int
+ nouveau_card_init(struct drm_device *dev)
+@@ -600,9 +610,11 @@
+ 	struct nouveau_engine *engine;
+ 	int ret;
+ 
++#if !defined(__AROS__)
+ 	vga_client_register(dev->pdev, dev, NULL, nouveau_vga_set_decode);
+ 	vga_switcheroo_register_client(dev->pdev, nouveau_switcheroo_set_state,
+ 				       nouveau_switcheroo_can_switch);
++#endif
+ 
+ 	/* Initialise internal driver API hooks */
+ 	ret = nouveau_init_engine_ptrs(dev);
+@@ -623,7 +635,11 @@
+ 	if (ret)
+ 		goto out_display_early;
+ 
++#if !defined(__AROS__)
+ 	nouveau_pm_init(dev);
++#else
++IMPLEMENT("nouveau_pm_init(dev);\n");
++#endif
+ 
+ 	ret = nouveau_mem_vram_init(dev);
+ 	if (ret)
+@@ -708,8 +724,10 @@
+ 	if (ret)
+ 		NV_ERROR(dev, "Error %d registering backlight\n", ret);
+ 
++#if !defined(__AROS__)
+ 	nouveau_fbcon_init(dev);
+ 	drm_kms_helper_poll_init(dev);
++#endif
+ 	return 0;
+ 
+ out_fence:
+@@ -745,12 +763,18 @@
+ out_vram:
+ 	nouveau_mem_vram_fini(dev);
+ out_bios:
++#if !defined(__AROS__)
+ 	nouveau_pm_fini(dev);
++#else
++IMPLEMENT("Calling nouveau_pm_fini(dev);\n");
++#endif
+ 	nouveau_bios_takedown(dev);
+ out_display_early:
+ 	engine->display.late_takedown(dev);
+ out:
++#if !defined(__AROS__)
+ 	vga_client_register(dev->pdev, NULL, NULL, NULL);
++#endif
+ 	return ret;
+ }
+ 
+@@ -790,10 +814,16 @@
+ 	nouveau_irq_fini(dev);
+ 	drm_vblank_cleanup(dev);
+ 
++#if !defined(__AROS__)
+ 	nouveau_pm_fini(dev);
++#else
++IMPLEMENT("nouveau_pm_fini(dev);\n");
++#endif
+ 	nouveau_bios_takedown(dev);
+ 
++#if !defined(__AROS__)
+ 	vga_client_register(dev->pdev, NULL, NULL, NULL);
++#endif
+ }
+ 
+ /* here a client dies, release the stuff that was allocated for its
+@@ -833,6 +863,7 @@
+ #endif
+ }
+ 
++#if !defined(__AROS__)
+ static struct apertures_struct *nouveau_get_apertures(struct drm_device *dev)
+ {
+ 	struct pci_dev *pdev = dev->pdev;
+@@ -870,10 +901,11 @@
+ #ifdef CONFIG_X86
+ 	primary = dev->pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
+ #endif
+-	
++
+ 	remove_conflicting_framebuffers(dev_priv->apertures, "nouveaufb", primary);
+ 	return 0;
+ }
++#endif
+ 
+ int nouveau_load(struct drm_device *dev, unsigned long flags)
+ {
+@@ -892,14 +924,21 @@
+ 
+ 	dev_priv->flags = flags & NOUVEAU_FLAGS;
+ 
++#if !defined(__AROS__)
+ 	NV_DEBUG(dev, "vendor: 0x%X device: 0x%X class: 0x%X\n",
+ 		 dev->pci_vendor, dev->pci_device, dev->pdev->class);
++#else
++	NV_DEBUG(dev, "vendor: 0x%X device: 0x%X\n",
++		 dev->pci_vendor, dev->pci_device);
++#endif
+ 
++#if !defined(__AROS__)
+ 	dev_priv->wq = create_workqueue("nouveau");
+ 	if (!dev_priv->wq) {
+ 		ret = -EINVAL;
+ 		goto err_priv;
+ 	}
++#endif
+ 
+ 	/* resource 0 is mmio regs */
+ 	/* resource 1 is linear FB */
+@@ -942,6 +981,10 @@
+ 	} else
+ 		dev_priv->chipset = 0xff;
+ 
++#if defined(HOSTED_BUILD)
++    dev_priv->chipset = HOSTED_BUILD_CHIPSET;
++#endif
++ 
+ 	switch (dev_priv->chipset & 0xf0) {
+ 	case 0x00:
+ 	case 0x10:
+@@ -967,13 +1010,15 @@
+ 		ret = -EINVAL;
+ 		goto err_mmio;
+ 	}
+-
++  
+ 	NV_INFO(dev, "Detected an NV%2x generation card (0x%08x)\n",
+ 		dev_priv->card_type, reg0);
+ 
++#if !defined(__AROS__)
+ 	ret = nouveau_remove_conflicting_drivers(dev);
+ 	if (ret)
+ 		goto err_mmio;
++#endif
+ 
+ 	/* Map PRAMIN BAR, or on older cards, the aperture withing BAR0 */
+ 	if (dev_priv->card_type >= NV_40) {
+@@ -1021,8 +1066,10 @@
+ err_mmio:
+ 	iounmap(dev_priv->mmio);
+ err_wq:
++#if !defined(__AROS__)
+ 	destroy_workqueue(dev_priv->wq);
+ err_priv:
++#endif
+ 	kfree(dev_priv);
+ 	dev->dev_private = NULL;
+ err_out:
+@@ -1038,16 +1085,21 @@
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+ 	struct nouveau_engine *engine = &dev_priv->engine;
+ 
++#if !defined(__AROS__)
+ 	drm_kms_helper_poll_fini(dev);
+ 	nouveau_fbcon_fini(dev);
++#endif
+ 	engine->display.destroy(dev);
+ 	nouveau_card_takedown(dev);
+ 
+-	iounmap(dev_priv->mmio);
+-	iounmap(dev_priv->ramin);
+-
+-	kfree(dev_priv);
+-	dev->dev_private = NULL;
++    if (dev_priv)
++    {
++	    iounmap(dev_priv->mmio);
++	    iounmap(dev_priv->ramin);
++        
++	    kfree(dev_priv);
++	    dev->dev_private = NULL;
++	}
+ 	return 0;
+ }
+ 
+@@ -1130,6 +1182,7 @@
+ nouveau_wait_eq(struct drm_device *dev, uint64_t timeout,
+ 		uint32_t reg, uint32_t mask, uint32_t val)
+ {
++#if !defined(HOSTED_BUILD)
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+ 	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
+ 	uint64_t start = ptimer->read(dev);
+@@ -1157,6 +1210,9 @@
+ 	} while (ptimer->read(dev) - start < timeout);
+ 
+ 	return false;
++#else
++    return true;
++#endif
+ }
+ 
+ /* Waits for PGRAPH to go completely idle */
+@@ -1176,4 +1232,3 @@
+ 
+ 	return true;
+ }
+-
+diff -ur -x .svn drm-orig/nouveau/nouveau_temp.c drm/nouveau/nouveau_temp.c
+--- drm-orig/nouveau/nouveau_temp.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_temp.c	2010-12-17 21:30:48.000000000 +0100
+@@ -235,6 +235,7 @@
+ 		temps->fan_boost = 40;
+ }
+ 
++#if !defined(__AROS__)
+ static bool
+ probe_monitoring_device(struct nouveau_i2c_chan *i2c,
+ 			struct i2c_board_info *info)
+@@ -276,6 +277,7 @@
+ 	nouveau_i2c_identify(dev, "monitoring device", info,
+ 			     probe_monitoring_device, idx);
+ }
++#endif
+ 
+ void
+ nouveau_temp_init(struct drm_device *dev)
+@@ -299,7 +301,11 @@
+ 		nouveau_temp_vbios_parse(dev, temp);
+ 	}
+ 
++#if !defined(__AROS__)
+ 	nouveau_temp_probe_i2c(dev);
++#else
++IMPLEMENT("Calling nouveau_temp_probe_i2c(dev);\n");
++#endif
+ }
+ 
+ void
+diff -ur -x .svn drm-orig/nouveau/nouveau_ttm.c drm/nouveau/nouveau_ttm.c
+--- drm-orig/nouveau/nouveau_ttm.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_ttm.c	2010-12-17 21:30:48.000000000 +0100
+@@ -28,6 +28,7 @@
+ 
+ #include "nouveau_drv.h"
+ 
++#if !defined(__AROS__)
+ int
+ nouveau_ttm_mmap(struct file *filp, struct vm_area_struct *vma)
+ {
+@@ -40,19 +41,32 @@
+ 
+ 	return ttm_bo_mmap(filp, vma, &dev_priv->ttm.bdev);
+ }
++#endif
+ 
+ static int
+ nouveau_ttm_mem_global_init(struct drm_global_reference *ref)
+ {
++#if !defined(__AROS__)
+ 	return ttm_mem_global_init(ref->object);
++#else
++    return 0;
++#endif
+ }
+ 
+ static void
+ nouveau_ttm_mem_global_release(struct drm_global_reference *ref)
+ {
++#if !defined(__AROS__)
+ 	ttm_mem_global_release(ref->object);
++#endif
+ }
+ 
++#if defined(__AROS__)
++struct ttm_mem_global
++{
++};
++#endif
++
+ int
+ nouveau_ttm_global_init(struct drm_nouveau_private *dev_priv)
+ {
+diff -ur -x .svn drm-orig/nouveau/nouveau_util.c drm/nouveau/nouveau_util.c
+--- drm-orig/nouveau/nouveau_util.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_util.c	2010-12-17 21:30:48.000000000 +0100
+@@ -25,11 +25,17 @@
+  *
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/ratelimit.h>
++#else
++#include "drm_compat_funcs.h"
++#endif
+ 
+ #include "nouveau_util.h"
+ 
++#if !defined(__AROS__)
+ static DEFINE_RATELIMIT_STATE(nouveau_ratelimit_state, 3 * HZ, 20);
++#endif
+ 
+ void
+ nouveau_bitfield_print(const struct nouveau_bitfield *bf, u32 value)
+@@ -65,5 +71,10 @@
+ int
+ nouveau_ratelimit(void)
+ {
++#if !defined(__AROS__)
+ 	return __ratelimit(&nouveau_ratelimit_state);
++#else
++IMPLEMENT("\n");
++return 0;
++#endif
+ }
+diff -ur -x .svn drm-orig/nouveau/nouveau_volt.c drm/nouveau/nouveau_volt.c
+--- drm-orig/nouveau/nouveau_volt.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nouveau_volt.c	2010-12-17 21:30:48.000000000 +0100
+@@ -101,6 +101,7 @@
+ 	return -ENOENT;
+ }
+ 
++#if !defined(__AROS__)
+ void
+ nouveau_volt_init(struct drm_device *dev)
+ {
+@@ -201,6 +202,7 @@
+ 	voltage->nr_level  = entries;
+ 	voltage->supported = true;
+ }
++#endif
+ 
+ void
+ nouveau_volt_fini(struct drm_device *dev)
+diff -ur -x .svn drm-orig/nouveau/nv04_crtc.c drm/nouveau/nv04_crtc.c
+--- drm-orig/nouveau/nv04_crtc.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nv04_crtc.c	2010-12-17 21:30:48.000000000 +0100
+@@ -33,7 +33,9 @@
+ #include "nouveau_fb.h"
+ #include "nouveau_hw.h"
+ #include "nvreg.h"
++#if !defined(__AROS__)
+ #include "nouveau_fbcon.h"
++#endif
+ 
+ static int
+ nv04_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
+@@ -862,6 +864,7 @@
+ 			       struct drm_framebuffer *fb,
+ 			       int x, int y, enum mode_set_atomic state)
+ {
++#if !defined(__AROS__)
+ 	struct drm_nouveau_private *dev_priv = crtc->dev->dev_private;
+ 	struct drm_device *dev = dev_priv->dev;
+ 
+@@ -869,6 +872,7 @@
+ 		nouveau_fbcon_save_disable_accel(dev);
+ 	else
+ 		nouveau_fbcon_restore_accel(dev);
++#endif
+ 
+ 	return nv04_crtc_do_mode_set_base(crtc, fb, x, y, true);
+ }
+diff -ur -x .svn drm-orig/nouveau/nv04_dfp.c drm/nouveau/nv04_dfp.c
+--- drm-orig/nouveau/nv04_dfp.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nv04_dfp.c	2010-12-17 21:30:48.000000000 +0100
+@@ -34,7 +34,9 @@
+ #include "nouveau_hw.h"
+ #include "nvreg.h"
+ 
++#if !defined(__AROS__)
+ #include "i2c/sil164.h"
++#endif
+ 
+ #define FP_TG_CONTROL_ON  (NV_PRAMDAC_FP_TG_CONTROL_DISPEN_POS |	\
+ 			   NV_PRAMDAC_FP_TG_CONTROL_HSYNC_POS |		\
+@@ -619,6 +621,7 @@
+ 
+ static void nv04_tmds_slave_init(struct drm_encoder *encoder)
+ {
++#if !defined(__AROS__)
+ 	struct drm_device *dev = encoder->dev;
+ 	struct dcb_entry *dcb = nouveau_encoder(encoder)->dcb;
+ 	struct nouveau_i2c_chan *i2c = nouveau_i2c_find(dev, 2);
+@@ -644,6 +647,9 @@
+ 
+ 	drm_i2c_encoder_init(dev, to_encoder_slave(encoder),
+ 			     &i2c->adapter, &info[type]);
++#else
++IMPLEMENT("\n");
++#endif
+ }
+ 
+ static const struct drm_encoder_helper_funcs nv04_lvds_helper_funcs = {
+diff -ur -x .svn drm-orig/nouveau/nv04_tv.c drm/nouveau/nv04_tv.c
+--- drm-orig/nouveau/nv04_tv.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nv04_tv.c	2010-12-17 21:30:48.000000000 +0100
+@@ -32,6 +32,7 @@
+ #include "nouveau_hw.h"
+ #include "drm_crtc_helper.h"
+ 
++#if !defined(__AROS__)
+ #include "i2c/ch7006.h"
+ 
+ static struct i2c_board_info nv04_tv_encoder_info[] = {
+@@ -46,6 +47,12 @@
+ 	},
+ 	{ }
+ };
++#else
++static struct i2c_board_info nv04_tv_encoder_info[] = {
++    { .type = "ch7006", .addr = 0x75 },
++	{ }
++};
++#endif
+ 
+ int nv04_tv_identify(struct drm_device *dev, int i2c_index)
+ {
+@@ -53,7 +60,6 @@
+ 				    NULL, i2c_index);
+ }
+ 
+-
+ #define PLLSEL_TV_CRTC1_MASK				\
+ 	(NV_PRAMDAC_PLL_COEFF_SELECT_TV_VSCLK1		\
+ 	 | NV_PRAMDAC_PLL_COEFF_SELECT_TV_PCLK1)
+@@ -61,6 +67,7 @@
+ 	(NV_PRAMDAC_PLL_COEFF_SELECT_TV_VSCLK2		\
+ 	 | NV_PRAMDAC_PLL_COEFF_SELECT_TV_PCLK2)
+ 
++#if !defined(__AROS__)
+ static void nv04_tv_dpms(struct drm_encoder *encoder, int mode)
+ {
+ 	struct drm_device *dev = encoder->dev;
+@@ -179,10 +186,12 @@
+ static const struct drm_encoder_funcs nv04_tv_funcs = {
+ 	.destroy = nv04_tv_destroy,
+ };
++#endif
+ 
+ int
+ nv04_tv_create(struct drm_connector *connector, struct dcb_entry *entry)
+ {
++#if !defined(__AROS__)
+ 	struct nouveau_encoder *nv_encoder;
+ 	struct drm_encoder *encoder;
+ 	struct drm_device *dev = connector->dev;
+@@ -251,4 +260,9 @@
+ fail_free:
+ 	kfree(nv_encoder);
+ 	return ret;
++#else
++    IMPLEMENT("\n");
++    return 0;
++#endif
+ }
++
+diff -ur -x .svn drm-orig/nouveau/nv50_display.c drm/nouveau/nv50_display.c
+--- drm-orig/nouveau/nv50_display.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nv50_display.c	2010-12-17 21:30:48.000000000 +0100
+@@ -29,7 +29,9 @@
+ #include "nouveau_encoder.h"
+ #include "nouveau_connector.h"
+ #include "nouveau_fb.h"
++#if !defined(__AROS__)
+ #include "nouveau_fbcon.h"
++#endif
+ #include "nouveau_ramht.h"
+ #include "drm_crtc_helper.h"
+ 
+@@ -330,7 +332,9 @@
+ 		}
+ 	}
+ 
++#if !defined(__AROS__)
+ 	INIT_WORK(&dev_priv->irq_work, nv50_display_irq_handler_bh);
++#endif
+ 	nouveau_irq_register(dev, 26, nv50_display_isr);
+ 
+ 	ret = nv50_display_init(dev);
+@@ -754,12 +758,18 @@
+ 	nv_wr32(dev, 0x619494, nv_rd32(dev, 0x619494) | 8);
+ }
+ 
++#if !defined(__AROS__)
+ void
+ nv50_display_irq_handler_bh(struct work_struct *work)
+ {
+ 	struct drm_nouveau_private *dev_priv =
+ 		container_of(work, struct drm_nouveau_private, irq_work);
+ 	struct drm_device *dev = dev_priv->dev;
++#else
++void
++nv50_display_irq_handler_bh(struct drm_device * dev)
++{
++#endif
+ 
+ 	for (;;) {
+ 		uint32_t intr0 = nv_rd32(dev, NV50_PDISPLAY_INTR_0);
+@@ -835,8 +845,13 @@
+ 				  NV50_PDISPLAY_INTR_1_CLK_UNK40));
+ 		if (clock) {
+ 			nv_wr32(dev, NV03_PMC_INTR_EN_0, 0);
++#if !defined(__AROS__)
+ 			if (!work_pending(&dev_priv->irq_work))
+ 				queue_work(dev_priv->wq, &dev_priv->irq_work);
++#else
++            /* Kind of hackish call but it does its job. */
++            nv50_display_irq_handler_bh(dev);
++#endif
+ 			delayed |= clock;
+ 			intr1 &= ~clock;
+ 		}
+diff -ur -x .svn drm-orig/nouveau/nv50_display.h drm/nouveau/nv50_display.h
+--- drm-orig/nouveau/nv50_display.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nv50_display.h	2010-12-17 21:30:48.000000000 +0100
+@@ -35,7 +35,11 @@
+ #include "nouveau_crtc.h"
+ #include "nv50_evo.h"
+ 
++#if !defined(__AROS__)
+ void nv50_display_irq_handler_bh(struct work_struct *work);
++#else
++void nv50_display_irq_handler_bh(struct drm_device *dev);
++#endif
+ int nv50_display_early_init(struct drm_device *dev);
+ void nv50_display_late_takedown(struct drm_device *dev);
+ int nv50_display_create(struct drm_device *dev);
+diff -ur -x .svn drm-orig/nouveau/nv50_fb.c drm/nouveau/nv50_fb.c
+--- drm-orig/nouveau/nv50_fb.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nv50_fb.c	2010-12-17 21:30:48.000000000 +0100
+@@ -18,7 +18,11 @@
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
++#if !defined(__AROS__)
+ 	priv->r100c08_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
++#else
++	priv->r100c08_page = create_page_helper();
++#endif
+ 	if (!priv->r100c08_page) {
+ 		kfree(priv);
+ 		return -ENOMEM;
+diff -ur -x .svn drm-orig/nouveau/nv50_gpio.c drm/nouveau/nv50_gpio.c
+--- drm-orig/nouveau/nv50_gpio.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/nouveau/nv50_gpio.c	2010-12-17 21:30:48.000000000 +0100
+@@ -29,7 +29,12 @@
+ #include "nv50_display.h"
+ 
+ static void nv50_gpio_isr(struct drm_device *dev);
++#if !defined(__AROS__)
+ static void nv50_gpio_isr_bh(struct work_struct *work);
++#else
++struct nv50_gpio_handler;
++static void nv50_gpio_isr_bh(struct nv50_gpio_handler *gpioh);
++#endif
+ 
+ struct nv50_gpio_priv {
+ 	struct list_head handlers;
+@@ -39,7 +44,9 @@
+ struct nv50_gpio_handler {
+ 	struct drm_device *dev;
+ 	struct list_head head;
++#if !defined(__AROS__)
+ 	struct work_struct work;
++#endif
+ 	bool inhibit;
+ 
+ 	struct dcb_gpio_entry *gpio;
+@@ -116,7 +123,9 @@
+ 	if (!gpioh)
+ 		return -ENOMEM;
+ 
++#if !defined(__AROS__)
+ 	INIT_WORK(&gpioh->work, nv50_gpio_isr_bh);
++#endif
+ 	gpioh->dev  = dev;
+ 	gpioh->gpio = gpio;
+ 	gpioh->handler = handler;
+@@ -240,11 +249,17 @@
+ 	nv50_gpio_destroy(dev);
+ }
+ 
++#if !defined(__AROS__)
+ static void
+ nv50_gpio_isr_bh(struct work_struct *work)
+ {
+ 	struct nv50_gpio_handler *gpioh =
+ 		container_of(work, struct nv50_gpio_handler, work);
++#else
++static void
++nv50_gpio_isr_bh(struct nv50_gpio_handler *gpioh)
++{
++#endif
+ 	struct drm_nouveau_private *dev_priv = gpioh->dev->dev_private;
+ 	struct nouveau_gpio_engine *pgpio = &dev_priv->engine.gpio;
+ 	struct nv50_gpio_priv *priv = pgpio->priv;
+@@ -293,7 +308,12 @@
+ 			continue;
+ 		gpioh->inhibit = true;
+ 
++#if !defined(__AROS__)
+ 		queue_work(dev_priv->wq, &gpioh->work);
++#else
++        /* Kind of hackish call but it does its job. */
++        nv50_gpio_isr_bh(gpioh);
++#endif
+ 	}
+ 	spin_unlock(&priv->lock);
+ }
+diff -ur -x .svn drm-orig/ttm/ttm_agp_backend.c drm/ttm/ttm_agp_backend.c
+--- drm-orig/ttm/ttm_agp_backend.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/ttm/ttm_agp_backend.c	2010-12-17 21:30:48.000000000 +0100
+@@ -33,11 +33,15 @@
+ #include "ttm/ttm_bo_driver.h"
+ #ifdef TTM_HAS_AGP
+ #include "ttm/ttm_placement.h"
++#if !defined(__AROS__)
+ #include <linux/agp_backend.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/io.h>
+ #include <asm/agp.h>
++#else
++#include "drm_compat_funcs.h"
++#endif
+ 
+ struct ttm_agp_backend {
+ 	struct ttm_backend backend;
+@@ -67,6 +71,7 @@
+ 		mem->pages[mem->page_count++] = page;
+ 	}
+ 	agp_be->mem = mem;
++
+ 	return 0;
+ }
+ 
+diff -ur -x .svn drm-orig/ttm/ttm_bo_api.h drm/ttm/ttm_bo_api.h
+--- drm-orig/ttm/ttm_bo_api.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/ttm/ttm_bo_api.h	2010-12-17 21:30:48.000000000 +0100
+@@ -32,6 +32,7 @@
+ #define _TTM_BO_API_H_
+ 
+ #include "drm_hashtab.h"
++#if !defined(__AROS__)
+ #include <linux/kref.h>
+ #include <linux/list.h>
+ #include <linux/wait.h>
+@@ -39,6 +40,10 @@
+ #include <linux/mm.h>
+ #include <linux/rbtree.h>
+ #include <linux/bitmap.h>
++#else
++#include "drm_linux_list.h"
++#include "drm_compat_funcs.h"
++#endif
+ 
+ struct ttm_bo_device;
+ 
+@@ -262,7 +267,9 @@
+ 	 * Members protected by the bdev::vm_lock
+ 	 */
+ 
++#if !defined(__AROS__)
+ 	struct rb_node vm_rb;
++#endif
+ 	struct drm_mm_node *vm_node;
+ 
+ 
+@@ -625,6 +632,7 @@
+ #if 0
+ #endif
+ 
++#if !defined(__AROS__)
+ /**
+  * ttm_fbdev_mmap - mmap fbdev memory backed by a ttm buffer object.
+  *
+@@ -677,6 +685,7 @@
+ extern ssize_t ttm_bo_io(struct ttm_bo_device *bdev, struct file *filp,
+ 			 const char __user *wbuf, char __user *rbuf,
+ 			 size_t count, loff_t *f_pos, bool write);
++#endif
+ 
+ extern void ttm_bo_swapout_all(struct ttm_bo_device *bdev);
+ 
+diff -ur -x .svn drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
+--- drm-orig/ttm/ttm_bo.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/ttm/ttm_bo.c	2010-12-17 21:30:48.000000000 +0100
+@@ -31,6 +31,7 @@
+ #include "ttm/ttm_module.h"
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_placement.h"
++#if !defined(__AROS__)
+ #include <linux/jiffies.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+@@ -38,12 +39,14 @@
+ #include <linux/file.h>
+ #include <linux/module.h>
+ #include <asm/atomic.h>
++#endif
+ 
+ #define TTM_ASSERT_LOCKED(param)
+ #define TTM_DEBUG(fmt, arg...)
+ #define TTM_BO_HASH_ORDER 13
+ 
+ static int ttm_bo_setup_vm(struct ttm_buffer_object *bo);
++#if !defined(__AROS__)
+ static int ttm_bo_swapout(struct ttm_mem_shrink *shrink);
+ static void ttm_bo_global_kobj_release(struct kobject *kobj);
+ 
+@@ -51,6 +54,7 @@
+ 	.name = "bo_count",
+ 	.mode = S_IRUGO
+ };
++#endif
+ 
+ static inline int ttm_mem_type_from_flags(uint32_t flags, uint32_t *mem_type)
+ {
+@@ -100,6 +104,7 @@
+ 	}
+ }
+ 
++#if !defined(__AROS__)
+ static ssize_t ttm_bo_global_show(struct kobject *kobj,
+ 				  struct attribute *attr,
+ 				  char *buffer)
+@@ -125,6 +130,7 @@
+ 	.sysfs_ops = &ttm_bo_global_ops,
+ 	.default_attrs = ttm_bo_global_attrs
+ };
++#endif
+ 
+ 
+ static inline uint32_t ttm_bo_type_flags(unsigned type)
+@@ -136,7 +142,9 @@
+ {
+ 	struct ttm_buffer_object *bo =
+ 	    container_of(list_kref, struct ttm_buffer_object, list_kref);
++#if !defined(__AROS__)
+ 	struct ttm_bo_device *bdev = bo->bdev;
++#endif
+ 
+ 	BUG_ON(atomic_read(&bo->list_kref.refcount));
+ 	BUG_ON(atomic_read(&bo->kref.refcount));
+@@ -152,7 +160,9 @@
+ 	if (bo->destroy)
+ 		bo->destroy(bo);
+ 	else {
++#if !defined(__AROS__)
+ 		ttm_mem_global_free(bdev->glob->mem_glob, bo->acc_size);
++#endif
+ 		kfree(bo);
+ 	}
+ }
+@@ -191,6 +201,7 @@
+ 	}
+ }
+ 
++
+ /**
+  * Call with the lru_lock held.
+  */
+@@ -335,8 +346,12 @@
+ 			break;
+ 		}
+ 
++#if !defined(__AROS__)
+ 		ret = ttm_tt_set_user(bo->ttm, current,
+ 				      bo->buffer_start, bo->num_pages);
++#else
++IMPLEMENT("Calling ttm_tt_set_user\n");
++#endif
+ 		if (unlikely(ret != 0))
+ 			ttm_tt_destroy(bo->ttm);
+ 		break;
+@@ -457,10 +472,12 @@
+ 
+ 	atomic_set(&bo->reserved, 0);
+ 
++#if !defined(__AROS__)
+ 	/*
+ 	 * Make processes trying to reserve really pick it up.
+ 	 */
+ 	smp_mb__after_atomic_dec();
++#endif
+ 	wake_up_all(&bo->event_queue);
+ }
+ 
+@@ -518,8 +535,16 @@
+ 		driver->sync_obj_flush(sync_obj, sync_obj_arg);
+ 		driver->sync_obj_unref(&sync_obj);
+ 	}
++/* AROS NOTE: this call is supposed to start a work process which in some
++   time will try clean up refs again (ttm_bo_delayed_delete). This is needed
++   if ttm_bo_wait "fails" - meaning the fence is not signalled in time
++   Since currently ttm_bo_wait always waits until fence is signalled
++   this is not needed. If ttm_bo_wait is change not to skip no_wait parameter
++   then this call is needed, else the buffer objects might not be freed */
++#if !defined(__AROS__)
+ 	schedule_delayed_work(&bdev->wq,
+ 			      ((HZ / 100) < 1) ? 1 : HZ / 100);
++#endif
+ }
+ 
+ /**
+@@ -636,6 +661,7 @@
+ 	return ret;
+ }
+ 
++#if !defined(__AROS__)
+ static void ttm_bo_delayed_workqueue(struct work_struct *work)
+ {
+ 	struct ttm_bo_device *bdev =
+@@ -646,6 +672,7 @@
+ 				      ((HZ / 100) < 1) ? 1 : HZ / 100);
+ 	}
+ }
++#endif
+ 
+ static void ttm_bo_release(struct kref *kref)
+ {
+@@ -654,7 +681,9 @@
+ 	struct ttm_bo_device *bdev = bo->bdev;
+ 
+ 	if (likely(bo->vm_node != NULL)) {
++#if !defined(__AROS__)        
+ 		rb_erase(&bo->vm_rb, &bdev->addr_space_rb);
++#endif
+ 		drm_mm_put_block(bo->vm_node);
+ 		bo->vm_node = NULL;
+ 	}
+@@ -676,6 +705,7 @@
+ }
+ EXPORT_SYMBOL(ttm_bo_unref);
+ 
++#if !defined(__AROS__)
+ int ttm_bo_lock_delayed_workqueue(struct ttm_bo_device *bdev)
+ {
+ 	return cancel_delayed_work_sync(&bdev->wq);
+@@ -689,6 +719,7 @@
+ 				      ((HZ / 100) < 1) ? 1 : HZ / 100);
+ }
+ EXPORT_SYMBOL(ttm_bo_unlock_delayed_workqueue);
++#endif
+ 
+ static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
+ 			bool no_wait_reserve, bool no_wait_gpu)
+@@ -1219,6 +1250,7 @@
+ }
+ EXPORT_SYMBOL(ttm_bo_init);
+ 
++#if !defined(__AROS__)
+ static inline size_t ttm_bo_size(struct ttm_bo_global *glob,
+ 				 unsigned long num_pages)
+ {
+@@ -1263,6 +1295,7 @@
+ 
+ 	return ret;
+ }
++#endif
+ 
+ static int ttm_bo_force_list_clean(struct ttm_bo_device *bdev,
+ 					unsigned mem_type, bool allow_errors)
+@@ -1324,6 +1357,7 @@
+ }
+ EXPORT_SYMBOL(ttm_bo_clean_mm);
+ 
++#if !defined(__AROS__)
+ int ttm_bo_evict_mm(struct ttm_bo_device *bdev, unsigned mem_type)
+ {
+ 	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
+@@ -1345,6 +1379,7 @@
+ 	return ttm_bo_force_list_clean(bdev, mem_type, true);
+ }
+ EXPORT_SYMBOL(ttm_bo_evict_mm);
++#endif
+ 
+ int ttm_bo_init_mm(struct ttm_bo_device *bdev, unsigned type,
+ 			unsigned long p_size)
+@@ -1377,6 +1412,7 @@
+ }
+ EXPORT_SYMBOL(ttm_bo_init_mm);
+ 
++#if !defined(__AROS__)
+ static void ttm_bo_global_kobj_release(struct kobject *kobj)
+ {
+ 	struct ttm_bo_global *glob =
+@@ -1386,27 +1422,53 @@
+ 	__free_page(glob->dummy_read_page);
+ 	kfree(glob);
+ }
++#endif
++
++#if defined(__AROS__)
++size_t ttm_round_pot(size_t size)
++{
++	if ((size & (size - 1)) == 0)
++		return size;
++	else if (size > PAGE_SIZE)
++		return (size_t)PAGE_ALIGN(size);
++	else {
++		size_t tmp_size = 4;
++
++		while (tmp_size < size)
++			tmp_size <<= 1;
++
++		return tmp_size;
++	}
++	return 0;
++}
++#endif
+ 
+ void ttm_bo_global_release(struct drm_global_reference *ref)
+ {
+-	struct ttm_bo_global *glob = ref->object;
++//FIXME	struct ttm_bo_global *glob = ref->object;
+ 
+-	kobject_del(&glob->kobj);
+-	kobject_put(&glob->kobj);
++//FIXME	kobject_del(&glob->kobj);
++//FIXME	kobject_put(&glob->kobj);
+ }
+ EXPORT_SYMBOL(ttm_bo_global_release);
+ 
+ int ttm_bo_global_init(struct drm_global_reference *ref)
+ {
++#if !defined(__AROS__)
+ 	struct ttm_bo_global_ref *bo_ref =
+ 		container_of(ref, struct ttm_bo_global_ref, ref);
++#endif
+ 	struct ttm_bo_global *glob = ref->object;
+-	int ret;
++	int ret = 0;
+ 
+ 	mutex_init(&glob->device_list_mutex);
+ 	spin_lock_init(&glob->lru_lock);
++#if !defined(__AROS__)
+ 	glob->mem_glob = bo_ref->mem_glob;
+ 	glob->dummy_read_page = alloc_page(__GFP_ZERO | GFP_DMA32);
++#else
++    glob->dummy_read_page = create_page_helper();
++#endif
+ 
+ 	if (unlikely(glob->dummy_read_page == NULL)) {
+ 		ret = -ENOMEM;
+@@ -1416,6 +1478,7 @@
+ 	INIT_LIST_HEAD(&glob->swap_lru);
+ 	INIT_LIST_HEAD(&glob->device_list);
+ 
++#if !defined(__AROS__)
+ 	ttm_mem_init_shrink(&glob->shrink, ttm_bo_swapout);
+ 	ret = ttm_mem_register_shrink(glob->mem_glob, &glob->shrink);
+ 	if (unlikely(ret != 0)) {
+@@ -1423,6 +1486,7 @@
+ 		       "Could not register buffer object swapout.\n");
+ 		goto out_no_shrink;
+ 	}
++#endif
+ 
+ 	glob->ttm_bo_extra_size =
+ 		ttm_round_pot(sizeof(struct ttm_tt)) +
+@@ -1433,13 +1497,16 @@
+ 
+ 	atomic_set(&glob->bo_count, 0);
+ 
+-	ret = kobject_init_and_add(
+-		&glob->kobj, &ttm_bo_glob_kobj_type, ttm_get_kobj(), "buffer_objects");
+-	if (unlikely(ret != 0))
+-		kobject_put(&glob->kobj);
++//FIXME	ret = kobject_init_and_add(
++//FIXME		&glob->kobj, &ttm_bo_glob_kobj_type, ttm_get_kobj(), "buffer_objects");
++//FIXME	if (unlikely(ret != 0))
++//FIXME		kobject_put(&glob->kobj);
++
+ 	return ret;
++#if !defined(__AROS__)
+ out_no_shrink:
+ 	__free_page(glob->dummy_read_page);
++#endif
+ out_no_drp:
+ 	kfree(glob);
+ 	return ret;
+@@ -1472,8 +1539,11 @@
+ 	list_del(&bdev->device_list);
+ 	mutex_unlock(&glob->device_list_mutex);
+ 
++#if !defined(__AROS__)
++    /* Not needed as long as ttm_bo_wait is forced to always wait for fence signalling */
+ 	if (!cancel_delayed_work(&bdev->wq))
+ 		flush_scheduled_work();
++#endif
+ 
+ 	while (ttm_bo_delayed_delete(bdev, true))
+ 		;
+@@ -1516,12 +1586,17 @@
+ 	if (unlikely(ret != 0))
+ 		goto out_no_sys;
+ 
++#if !defined(__AROS__)
+ 	bdev->addr_space_rb = RB_ROOT;
++#endif
+ 	ret = drm_mm_init(&bdev->addr_space_mm, file_page_offset, 0x10000000);
+ 	if (unlikely(ret != 0))
+ 		goto out_no_addr_mm;
+ 
++#if !defined(__AROS__)
++    /* Not needed as long as ttm_bo_wait is forced to always wait for fence signalling */
+ 	INIT_DELAYED_WORK(&bdev->wq, ttm_bo_delayed_workqueue);
++#endif
+ 	bdev->nice_mode = true;
+ 	INIT_LIST_HEAD(&bdev->ddestroy);
+ 	bdev->dev_mapping = NULL;
+@@ -1564,16 +1639,21 @@
+ void ttm_bo_unmap_virtual(struct ttm_buffer_object *bo)
+ {
+ 	struct ttm_bo_device *bdev = bo->bdev;
++#if !defined(__AROS__)
+ 	loff_t offset = (loff_t) bo->addr_space_offset;
+ 	loff_t holelen = ((loff_t) bo->mem.num_pages) << PAGE_SHIFT;
+ 
+ 	if (!bdev->dev_mapping)
+ 		return;
+ 	unmap_mapping_range(bdev->dev_mapping, offset, holelen, 1);
++#else
++    /* This is no-op under AROS */
++#endif
+ 	ttm_mem_io_free(bdev, &bo->mem);
+ }
+ EXPORT_SYMBOL(ttm_bo_unmap_virtual);
+ 
++#if !defined(__AROS__)
+ static void ttm_bo_vm_insert_rb(struct ttm_buffer_object *bo)
+ {
+ 	struct ttm_bo_device *bdev = bo->bdev;
+@@ -1598,6 +1678,7 @@
+ 	rb_link_node(&bo->vm_rb, parent, cur);
+ 	rb_insert_color(&bo->vm_rb, &bdev->addr_space_rb);
+ }
++#endif
+ 
+ /**
+  * ttm_bo_setup_vm:
+@@ -1637,7 +1718,9 @@
+ 		goto retry_pre_get;
+ 	}
+ 
++#if !defined(__AROS__)
+ 	ttm_bo_vm_insert_rb(bo);
++#endif
+ 	write_unlock(&bdev->vm_lock);
+ 	bo->addr_space_offset = ((uint64_t) bo->vm_node->start) << PAGE_SHIFT;
+ 
+@@ -1657,9 +1740,13 @@
+ 
+ 	if (likely(bo->sync_obj == NULL))
+ 		return 0;
++#if defined(__AROS__)
++    /* Be sure always to wait until fence is signalled. A case when
++       fence is not signalled in time seems to happen to often. */
++    no_wait = false;
++#endif		
+ 
+ 	while (bo->sync_obj) {
+-
+ 		if (driver->sync_obj_signaled(bo->sync_obj, bo->sync_obj_arg)) {
+ 			void *tmp_obj = bo->sync_obj;
+ 			bo->sync_obj = NULL;
+@@ -1714,7 +1801,9 @@
+ 
+ 	ret = ttm_bo_reserve(bo, true, no_wait, false, 0);
+ 	if (unlikely(ret != 0))
++	{
+ 		return ret;
++	}
+ 	spin_lock(&bo->lock);
+ 	ret = ttm_bo_wait(bo, false, true, no_wait);
+ 	spin_unlock(&bo->lock);
+@@ -1732,6 +1821,7 @@
+ }
+ EXPORT_SYMBOL(ttm_bo_synccpu_write_release);
+ 
++#if !defined(__AROS__)
+ /**
+  * A buffer object shrink method that tries to swap out the first
+  * buffer object on the bo_global::swap_lru list.
+@@ -1842,3 +1932,4 @@
+ 		;
+ }
+ EXPORT_SYMBOL(ttm_bo_swapout_all);
++#endif
+diff -ur -x .svn drm-orig/ttm/ttm_bo_driver.h drm/ttm/ttm_bo_driver.h
+--- drm-orig/ttm/ttm_bo_driver.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/ttm/ttm_bo_driver.h	2010-12-17 21:30:48.000000000 +0100
+@@ -31,13 +31,19 @@
+ #define _TTM_BO_DRIVER_H_
+ 
+ #include "ttm/ttm_bo_api.h"
++#if !defined(__AROS__)
+ #include "ttm/ttm_memory.h"
++#endif
+ #include "ttm/ttm_module.h"
+ #include "drm_mm.h"
+ #include "drm_global.h"
++#if !defined(__AROS__)
+ #include "linux/workqueue.h"
+ #include "linux/fs.h"
+ #include "linux/spinlock.h"
++#else
++#include "drm_compat_types.h"
++#endif
+ 
+ struct ttm_backend;
+ 
+@@ -119,8 +125,10 @@
+ #define TTM_PAGE_FLAG_USER            (1 << 1)
+ #define TTM_PAGE_FLAG_USER_DIRTY      (1 << 2)
+ #define TTM_PAGE_FLAG_WRITE           (1 << 3)
++#if !defined(__AROS__)
+ #define TTM_PAGE_FLAG_SWAPPED         (1 << 4)
+ #define TTM_PAGE_FLAG_PERSISTANT_SWAP (1 << 5)
++#endif
+ #define TTM_PAGE_FLAG_ZERO_ALLOC      (1 << 6)
+ #define TTM_PAGE_FLAG_DMA32           (1 << 7)
+ 
+@@ -161,12 +169,17 @@
+ 	long first_himem_page;
+ 	long last_lomem_page;
+ 	uint32_t page_flags;
++#if defined(__AROS__)
++    APTR allocated_buffer;
++#endif
+ 	unsigned long num_pages;
+ 	struct ttm_bo_global *glob;
+ 	struct ttm_backend *be;
+ 	struct task_struct *tsk;
+ 	unsigned long start;
++#if !defined(__AROS__)
+ 	struct file *swap_storage;
++#endif
+ 	enum ttm_caching_state caching_state;
+ 	enum {
+ 		tt_bound,
+@@ -474,10 +487,14 @@
+ 	 * Constant after init.
+ 	 */
+ 
+-	struct kobject kobj;
++//FIXME	struct kobject kobj;
++#if !defined(__AROS__)
+ 	struct ttm_mem_global *mem_glob;
+ 	struct page *dummy_read_page;
+ 	struct ttm_mem_shrink shrink;
++#else
++    struct page *dummy_read_page;
++#endif
+ 	size_t ttm_bo_extra_size;
+ 	size_t ttm_bo_size;
+ 	struct mutex device_list_mutex;
+@@ -534,7 +551,9 @@
+ 	/*
+ 	 * Protected by the vm lock.
+ 	 */
++#if !defined(__AROS__)
+ 	struct rb_root addr_space_rb;
++#endif
+ 	struct drm_mm addr_space_mm;
+ 
+ 	/*
+@@ -553,7 +572,10 @@
+ 	 * Internal protection.
+ 	 */
+ 
++#if !defined(__AROS__)
++    /* Not needed as long as ttm_bo_wait is forced to always wait for fence signalling */
+ 	struct delayed_work wq;
++#endif
+ 
+ 	bool need_dma32;
+ };
+@@ -970,6 +992,7 @@
+ 				     bool evict, bool no_wait_reserve,
+ 				     bool no_wait_gpu,
+ 				     struct ttm_mem_reg *new_mem);
++#if !defined(__AROS__)
+ /**
+  * ttm_io_prot
+  *
+@@ -980,12 +1003,15 @@
+  * setting up a PTE with the caching model indicated by @c_state.
+  */
+ extern pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp);
++#endif
+ 
+ extern const struct ttm_mem_type_manager_func ttm_bo_manager_func;
+ 
+-#if (defined(CONFIG_AGP) || (defined(CONFIG_AGP_MODULE) && defined(MODULE)))
++#if (defined(CONFIG_AGP) || (defined(CONFIG_AGP_MODULE) && defined(MODULE)) || defined(__AROS__))
+ #define TTM_HAS_AGP
++#if !defined(__AROS__)
+ #include <linux/agp_backend.h>
++#endif
+ 
+ /**
+  * ttm_agp_backend_init
+diff -ur -x .svn drm-orig/ttm/ttm_bo_manager.c drm/ttm/ttm_bo_manager.c
+--- drm-orig/ttm/ttm_bo_manager.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/ttm/ttm_bo_manager.c	2010-12-17 21:30:48.000000000 +0100
+@@ -32,9 +32,11 @@
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_placement.h"
+ #include "drm_mm.h"
++#if !defined(__AROS__)
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/module.h>
++#endif
+ 
+ /**
+  * Currently we use a spinlock for the lock, but a mutex *may* be
+diff -ur -x .svn drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
+--- drm-orig/ttm/ttm_bo_util.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/ttm/ttm_bo_util.c	2010-12-17 21:30:48.000000000 +0100
+@@ -30,12 +30,14 @@
+ 
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_placement.h"
++#if !defined(__AROS__)
+ #include <linux/io.h>
+ #include <linux/highmem.h>
+ #include <linux/wait.h>
+ #include <linux/slab.h>
+ #include <linux/vmalloc.h>
+ #include <linux/module.h>
++#endif
+ 
+ void ttm_bo_free_old_node(struct ttm_buffer_object *bo)
+ {
+@@ -162,6 +164,7 @@
+ 
+ 	src = (void *)((unsigned long)src + (page << PAGE_SHIFT));
+ 
++#if !defined(__AROS__)
+ #ifdef CONFIG_X86
+ 	dst = kmap_atomic_prot(d, prot);
+ #else
+@@ -170,11 +173,15 @@
+ 	else
+ 		dst = kmap(d);
+ #endif
++#else
++    dst = kmap(d);
++#endif
+ 	if (!dst)
+ 		return -ENOMEM;
+ 
+ 	memcpy_fromio(dst, src, PAGE_SIZE);
+ 
++#if !defined(__AROS__)
+ #ifdef CONFIG_X86
+ 	kunmap_atomic(dst);
+ #else
+@@ -183,6 +190,9 @@
+ 	else
+ 		kunmap(d);
+ #endif
++#else
++    kunmap(d);
++#endif
+ 
+ 	return 0;
+ }
+@@ -198,6 +208,7 @@
+ 		return -ENOMEM;
+ 
+ 	dst = (void *)((unsigned long)dst + (page << PAGE_SHIFT));
++#if !defined(__AROS__)
+ #ifdef CONFIG_X86
+ 	src = kmap_atomic_prot(s, prot);
+ #else
+@@ -206,11 +217,15 @@
+ 	else
+ 		src = kmap(s);
+ #endif
++#else
++    src = kmap(s);
++#endif
+ 	if (!src)
+ 		return -ENOMEM;
+ 
+ 	memcpy_toio(dst, src, PAGE_SIZE);
+ 
++#if !defined(__AROS__)
+ #ifdef CONFIG_X86
+ 	kunmap_atomic(src);
+ #else
+@@ -219,6 +234,9 @@
+ 	else
+ 		kunmap(s);
+ #endif
++#else
++    kunmap(s);
++#endif
+ 
+ 	return 0;
+ }
+@@ -264,13 +282,21 @@
+ 	for (i = 0; i < new_mem->num_pages; ++i) {
+ 		page = i * dir + add;
+ 		if (old_iomap == NULL) {
++#if !defined(__AROS__)
+ 			pgprot_t prot = ttm_io_prot(old_mem->placement,
+ 						    PAGE_KERNEL);
++#else
++            pgprot_t prot = 0;
++#endif
+ 			ret = ttm_copy_ttm_io_page(ttm, new_iomap, page,
+ 						   prot);
+ 		} else if (new_iomap == NULL) {
++#if !defined(__AROS__)
+ 			pgprot_t prot = ttm_io_prot(new_mem->placement,
+ 						    PAGE_KERNEL);
++#else
++            pgprot_t prot = 0;
++#endif
+ 			ret = ttm_copy_io_ttm_page(ttm, old_iomap, page,
+ 						   prot);
+ 		} else
+@@ -354,6 +380,7 @@
+ 	return 0;
+ }
+ 
++#if !defined(__AROS__)
+ pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp)
+ {
+ #if defined(__i386__) || defined(__x86_64__)
+@@ -382,6 +409,7 @@
+ 	return tmp;
+ }
+ EXPORT_SYMBOL(ttm_io_prot);
++#endif
+ 
+ static int ttm_bo_ioremap(struct ttm_buffer_object *bo,
+ 			  unsigned long offset,
+@@ -410,7 +438,10 @@
+ 			   unsigned long num_pages,
+ 			   struct ttm_bo_kmap_obj *map)
+ {
+-	struct ttm_mem_reg *mem = &bo->mem; pgprot_t prot;
++	struct ttm_mem_reg *mem = &bo->mem; 
++#if !defined(__AROS__)    
++    pgprot_t prot;
++#endif
+ 	struct ttm_tt *ttm = bo->ttm;
+ 	struct page *d;
+ 	int i;
+@@ -439,9 +470,11 @@
+ 		 * We need to use vmap to get the desired page protection
+ 		 * or to make the buffer object look contiguous.
+ 		 */
++#if !defined(__AROS__)        
+ 		prot = (mem->placement & TTM_PL_FLAG_CACHED) ?
+ 			PAGE_KERNEL :
+ 			ttm_io_prot(mem->placement, PAGE_KERNEL);
++#endif
+ 		map->bo_kmap_type = ttm_bo_map_vmap;
+ 		map->virtual = vmap(ttm->pages + start_page, num_pages,
+ 				    0, prot);
+diff -ur -x .svn drm-orig/ttm/ttm_module.h drm/ttm/ttm_module.h
+--- drm-orig/ttm/ttm_module.h	2010-12-08 03:04:06.000000000 +0100
++++ drm/ttm/ttm_module.h	2010-12-17 21:30:48.000000000 +0100
+@@ -31,8 +31,12 @@
+ #ifndef _TTM_MODULE_H_
+ #define _TTM_MODULE_H_
+ 
++#if !defined(__AROS__)
+ #include <linux/kernel.h>
+ struct kobject;
++#else
++#include "drm_compat_types.h"
++#endif
+ 
+ #define TTM_PFX "[TTM] "
+ extern struct kobject *ttm_get_kobj(void);
+diff -ur -x .svn drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
+--- drm-orig/ttm/ttm_tt.c	2010-12-08 03:04:06.000000000 +0100
++++ drm/ttm/ttm_tt.c	2010-12-17 21:30:48.000000000 +0100
+@@ -28,20 +28,26 @@
+  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/sched.h>
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
+ #include <linux/file.h>
+ #include <linux/swap.h>
+ #include <linux/slab.h>
++#else
++#include "drm_compat_types.h"
++#endif
+ #include "drm_cache.h"
+ #include "drm_mem_util.h"
+ #include "ttm/ttm_module.h"
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_placement.h"
++#if !defined(__AROS__)
+ #include "ttm/ttm_page_alloc.h"
+ 
+ static int ttm_tt_swapin(struct ttm_tt *ttm);
++#endif
+ 
+ /**
+  * Allocates storage for pointers to the pages that back the ttm.
+@@ -49,12 +55,19 @@
+ static void ttm_tt_alloc_page_directory(struct ttm_tt *ttm)
+ {
+ 	ttm->pages = drm_calloc_large(ttm->num_pages, sizeof(*ttm->pages));
++#if defined(__AROS__)
++    ttm->allocated_buffer = AllocVec((ttm->num_pages * PAGE_SIZE) + PAGE_SIZE - 1, MEMF_PUBLIC | MEMF_CLEAR);
++#endif
+ }
+ 
+ static void ttm_tt_free_page_directory(struct ttm_tt *ttm)
+ {
+ 	drm_free_large(ttm->pages);
+ 	ttm->pages = NULL;
++#if defined(__AROS__)
++    FreeVec(ttm->allocated_buffer);
++    ttm->allocated_buffer = NULL;
++#endif
+ }
+ 
+ static void ttm_tt_free_user_pages(struct ttm_tt *ttm)
+@@ -82,11 +95,15 @@
+ 			continue;
+ 		}
+ 
++#if !defined(__AROS__)
+ 		if (write && dirty && !PageReserved(page))
+ 			set_page_dirty_lock(page);
++#endif
+ 
+ 		ttm->pages[i] = NULL;
++#if !defined(__AROS__)
+ 		ttm_mem_global_free(ttm->glob->mem_glob, PAGE_SIZE);
++#endif
+ 		put_page(page);
+ 	}
+ 	ttm->state = tt_unpopulated;
+@@ -96,6 +113,7 @@
+ 
+ static struct page *__ttm_tt_get_page(struct ttm_tt *ttm, int index)
+ {
++#if !defined(__AROS__)
+ 	struct page *p;
+ 	struct list_head h;
+ 	struct ttm_mem_global *mem_glob = ttm->glob->mem_glob;
+@@ -125,10 +143,29 @@
+ out_err:
+ 	put_page(p);
+ 	return NULL;
++#else
++	struct page *p;
++
++	while (NULL == (p = ttm->pages[index])) {
++        p = AllocVec(sizeof(*p), MEMF_PUBLIC | MEMF_CLEAR);
++        p->allocated_buffer = NULL;
++        p->address = (APTR)((IPTR)PAGE_ALIGN(ttm->allocated_buffer) + (IPTR)(PAGE_SIZE * index));
++
++		if (!p)
++			return NULL;
++
++		if (PageHighMem(p))
++			ttm->pages[--ttm->first_himem_page] = p;
++		else
++			ttm->pages[++ttm->last_lomem_page] = p;
++	}
++	return p;
++#endif
+ }
+ 
+ struct page *ttm_tt_get_page(struct ttm_tt *ttm, int index)
+ {
++#if !defined(__AROS__)
+ 	int ret;
+ 
+ 	if (unlikely(ttm->page_flags & TTM_PAGE_FLAG_SWAPPED)) {
+@@ -136,6 +173,7 @@
+ 		if (unlikely(ret != 0))
+ 			return NULL;
+ 	}
++#endif
+ 	return __ttm_tt_get_page(ttm, index);
+ }
+ 
+@@ -144,16 +182,20 @@
+ 	struct page *page;
+ 	unsigned long i;
+ 	struct ttm_backend *be;
++#if !defined(__AROS__)
+ 	int ret;
++#endif
+ 
+ 	if (ttm->state != tt_unpopulated)
+ 		return 0;
+ 
++#if !defined(__AROS__)
+ 	if (unlikely(ttm->page_flags & TTM_PAGE_FLAG_SWAPPED)) {
+ 		ret = ttm_tt_swapin(ttm);
+ 		if (unlikely(ret != 0))
+ 			return ret;
+ 	}
++#endif
+ 
+ 	be = ttm->be;
+ 
+@@ -210,6 +252,7 @@
+  * for range of pages in a ttm.
+  */
+ 
++
+ static int ttm_tt_set_caching(struct ttm_tt *ttm,
+ 			      enum ttm_caching_state c_state)
+ {
+@@ -273,6 +316,7 @@
+ 
+ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
+ {
++#if !defined(__AROS__)
+ 	int i;
+ 	unsigned count = 0;
+ 	struct list_head h;
+@@ -302,6 +346,25 @@
+ 	ttm->state = tt_unpopulated;
+ 	ttm->first_himem_page = ttm->num_pages;
+ 	ttm->last_lomem_page = -1;
++#else
++	int i;
++	struct page *cur_page;
++	struct ttm_backend *be = ttm->be;
++
++	if (be)
++		be->func->clear(be);
++	(void)ttm_tt_set_caching(ttm, tt_cached);
++	for (i = 0; i < ttm->num_pages; ++i) {
++		cur_page = ttm->pages[i];
++		ttm->pages[i] = NULL;
++		if (cur_page) {
++			__free_page(cur_page);
++		}
++	}
++	ttm->state = tt_unpopulated;
++	ttm->first_himem_page = ttm->num_pages;
++	ttm->last_lomem_page = -1;
++#endif
+ }
+ 
+ void ttm_tt_destroy(struct ttm_tt *ttm)
+@@ -326,13 +389,16 @@
+ 		ttm_tt_free_page_directory(ttm);
+ 	}
+ 
++#if !defined(__AROS__)
+ 	if (!(ttm->page_flags & TTM_PAGE_FLAG_PERSISTANT_SWAP) &&
+ 	    ttm->swap_storage)
+ 		fput(ttm->swap_storage);
++#endif
+ 
+ 	kfree(ttm);
+ }
+ 
++#if !defined(__AROS__)
+ int ttm_tt_set_user(struct ttm_tt *ttm,
+ 		    struct task_struct *tsk,
+ 		    unsigned long start, unsigned long num_pages)
+@@ -371,6 +437,7 @@
+ 
+ 	return 0;
+ }
++#endif
+ 
+ struct ttm_tt *ttm_tt_create(struct ttm_bo_device *bdev, unsigned long size,
+ 			     uint32_t page_flags, struct page *dummy_read_page)
+@@ -387,6 +454,7 @@
+ 
+ 	ttm->glob = bdev->glob;
+ 	ttm->num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
++
+ 	ttm->first_himem_page = ttm->num_pages;
+ 	ttm->last_lomem_page = -1;
+ 	ttm->caching_state = tt_cached;
+@@ -400,6 +468,7 @@
+ 		printk(KERN_ERR TTM_PFX "Failed allocating page table\n");
+ 		return NULL;
+ 	}
++    
+ 	ttm->be = bo_driver->create_ttm_backend_entry(bdev);
+ 	if (!ttm->be) {
+ 		ttm_tt_destroy(ttm);
+@@ -451,6 +520,7 @@
+ }
+ EXPORT_SYMBOL(ttm_tt_bind);
+ 
++#if !defined(__AROS__)
+ static int ttm_tt_swapin(struct ttm_tt *ttm)
+ {
+ 	struct address_space *swap_space;
+@@ -581,3 +651,4 @@
+ 
+ 	return ret;
+ }
++#endif

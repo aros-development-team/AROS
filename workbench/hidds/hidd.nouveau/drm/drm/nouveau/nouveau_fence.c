@@ -79,19 +79,22 @@ nouveau_fence_update(struct nouveau_channel *chan)
 
 	spin_lock(&chan->fence.lock);
 
+	/* Fetch the last sequence if the channel is still up and running */
+	if (likely(!list_empty(&chan->fence.pending))) {
 #if defined(HOSTED_BUILD)
-    /* For purpose of simulation, assume all fences are signalled */
-    sequence = chan->fence.sequence;
+        /* For purpose of simulation, assume all fences are signalled */
+        sequence = chan->fence.sequence;
 #else
-	if (USE_REFCNT(dev))
-		sequence = nvchan_rd32(chan, 0x48);
-	else
-		sequence = atomic_read(&chan->fence.last_sequence_irq);
+		if (USE_REFCNT(dev))
+			sequence = nvchan_rd32(chan, 0x48);
+		else
+			sequence = atomic_read(&chan->fence.last_sequence_irq);
 #endif
 
-	if (chan->fence.sequence_ack == sequence)
-		goto out;
-	chan->fence.sequence_ack = sequence;
+		if (chan->fence.sequence_ack == sequence)
+			goto out;
+		chan->fence.sequence_ack = sequence;
+	}
 
 	list_for_each_entry_safe(fence, tmp, &chan->fence.pending, entry) {
 		sequence = fence->sequence;
@@ -465,12 +468,7 @@ nouveau_fence_channel_init(struct nouveau_channel *chan)
 	int ret;
 
 	/* Create an NV_SW object for various sync purposes */
-	ret = nouveau_gpuobj_gr_new(chan, NV_SW, &obj);
-	if (ret)
-		return ret;
-
-	ret = nouveau_ramht_insert(chan, NvSw, obj);
-	nouveau_gpuobj_ref(NULL, &obj);
+	ret = nouveau_gpuobj_gr_new(chan, NvSw, NV_SW);
 	if (ret)
 		return ret;
 
@@ -482,12 +480,11 @@ nouveau_fence_channel_init(struct nouveau_channel *chan)
 
 	/* Create a DMA object for the shared cross-channel sync area. */
 	if (USE_SEMA(dev)) {
-		struct drm_mm_node *mem = dev_priv->fence.bo->bo.mem.mm_node;
+		struct ttm_mem_reg *mem = &dev_priv->fence.bo->bo.mem;
 
 		ret = nouveau_gpuobj_dma_new(chan, NV_CLASS_DMA_IN_MEMORY,
 					     mem->start << PAGE_SHIFT,
-					     mem->size << PAGE_SHIFT,
-					     NV_MEM_ACCESS_RW,
+					     mem->size, NV_MEM_ACCESS_RW,
 					     NV_MEM_TARGET_VRAM, &obj);
 		if (ret)
 			return ret;

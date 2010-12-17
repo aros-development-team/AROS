@@ -811,8 +811,10 @@ extern int  nouveau_ioctl_getparam(struct drm_device *, void *data,
 				   struct drm_file *);
 extern int  nouveau_ioctl_setparam(struct drm_device *, void *data,
 				   struct drm_file *);
-extern bool nouveau_wait_until(struct drm_device *, uint64_t timeout,
-			       uint32_t reg, uint32_t mask, uint32_t val);
+extern bool nouveau_wait_eq(struct drm_device *, uint64_t timeout,
+			    uint32_t reg, uint32_t mask, uint32_t val);
+extern bool nouveau_wait_ne(struct drm_device *, uint64_t timeout,
+			    uint32_t reg, uint32_t mask, uint32_t val);
 extern bool nouveau_wait_for_idle(struct drm_device *);
 extern int  nouveau_card_init(struct drm_device *);
 
@@ -903,8 +905,7 @@ extern int nouveau_gpuobj_new_fake(struct drm_device *, u32 pinst, u64 vinst,
 extern int nouveau_gpuobj_dma_new(struct nouveau_channel *, int class,
 				  uint64_t offset, uint64_t size, int access,
 				  int target, struct nouveau_gpuobj **);
-extern int nouveau_gpuobj_gr_new(struct nouveau_channel *, int class,
-				 struct nouveau_gpuobj **);
+extern int nouveau_gpuobj_gr_new(struct nouveau_channel *, u32 handle, int class);
 extern int nv50_gpuobj_dma_new(struct nouveau_channel *, int class, u64 base,
 			       u64 size, int target, int access, u32 type,
 			       u32 comp, struct nouveau_gpuobj **pobj);
@@ -930,8 +931,8 @@ extern void        nouveau_irq_uninstall(struct drm_device *);
 /* nouveau_sgdma.c */
 extern int nouveau_sgdma_init(struct drm_device *);
 extern void nouveau_sgdma_takedown(struct drm_device *);
-extern int nouveau_sgdma_get_page(struct drm_device *, uint32_t offset,
-				  uint32_t *page);
+extern uint32_t nouveau_sgdma_get_physical(struct drm_device *,
+					   uint32_t offset);
 extern struct ttm_backend *nouveau_sgdma_init_ttm(struct drm_device *);
 
 /* nouveau_debugfs.c */
@@ -1300,6 +1301,8 @@ extern void nouveau_bo_wr16(struct nouveau_bo *nvbo, unsigned index, u16 val);
 extern u32 nouveau_bo_rd32(struct nouveau_bo *nvbo, unsigned index);
 extern void nouveau_bo_wr32(struct nouveau_bo *nvbo, unsigned index, u32 val);
 extern void nouveau_bo_fence(struct nouveau_bo *, struct nouveau_fence *);
+extern int nouveau_bo_validate(struct nouveau_bo *, bool interruptible,
+			       bool no_wait_reserve, bool no_wait_gpu);
 
 /* nouveau_fence.c */
 struct nouveau_fence;
@@ -1455,7 +1458,9 @@ static inline void nv_wr08(struct drm_device *dev, unsigned reg, u8 val)
 }
 
 #define nv_wait(dev, reg, mask, val) \
-	nouveau_wait_until(dev, 2000000000ULL, (reg), (mask), (val))
+	nouveau_wait_eq(dev, 2000000000ULL, (reg), (mask), (val))
+#define nv_wait_ne(dev, reg, mask, val) \
+	nouveau_wait_ne(dev, 2000000000ULL, (reg), (mask), (val))
 
 /* PRAMIN access */
 static inline u32 nv_ri32(struct drm_device *dev, unsigned offset)
