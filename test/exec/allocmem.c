@@ -9,7 +9,7 @@
  * Console's history consumes memory, so this may look like a
  * memory leak.
  */
-#define output bug
+#define output printf
 
 int main(int argc, char **argv)
 {
@@ -39,13 +39,13 @@ int main(int argc, char **argv)
     FreeMem(block0, 256 * 1024);
     output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
 
-    start = block0 + 1024;
+    start = block0 + 1027;	/* Add some none-round displacement to make the life harder */
     output("Now trying AllocAbs() 4 KB at 0x%p\n", start);
     block1 = AllocAbs(4096, start);
     output("Allocated at 0x%p, available memory: %u bytes\n", block1, AvailMem(MEMF_ANY));
 
     if (trash)
-    	*(ULONG *)(block1 + 4096) = 0x01020304;
+    	*(ULONG *)(start + 4096) = 0x01020304;
 
     output("Freeing the block...\n");
     FreeMem(block1, 4096 + start - block1);
