@@ -1,8 +1,18 @@
+#ifndef HOST_OS_ios
+/* 
+ * Use 32-bit inode_t on Darwin. Otherwise we are expected to use "stat$INODE64"
+ * instead of "stat" function which is available only on MacOS 10.6.
+ */
+#define _DARWIN_NO_64_BIT_INODE
+#endif
+
 #include <sys/time.h>
 #include <sys/types.h>
 
 /* This prevents redefinition of struct timeval */
 #define _AROS_TIMEVAL_H_
+
+#include <aros/debug.h>
 
 #include "emul_intern.h"
 
@@ -26,6 +36,14 @@ struct dirent *ReadDir(struct emulbase *emulbase, struct filehandle *fh, IPTR *d
 	    break;
 
     } while (is_special_dir(dir->d_name));
+
+#if DEBUG
+    bug("[ReadDir] Filehandle %s, ", fh->hostname);
+    if (dir)
+    	bug("returning entry: %s\n", dir->d_name);
+    else
+    	bug("end of search\n");
+#endif
 
     *dirpos = emulbase->pdata.SysIFace->telldir(fh->fd);
     AROS_HOST_BARRIER
