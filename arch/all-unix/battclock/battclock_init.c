@@ -8,6 +8,18 @@
 
 #include "battclock_intern.h"
 
+#ifdef HOST_OS_linux
+#define LIBC_NAME "libc.so.6"
+#endif
+
+#ifdef HOST_OS_darwin
+#define LIBC_NAME "libSystem.dylib"
+#endif
+
+#ifndef LIBC_NAME
+#define LIBC_NAME "libc.so"
+#endif
+
 static const char *Symbols[] = {
     "time",
     "localtime",
@@ -25,7 +37,7 @@ static int BattClock_Init(struct BattClockBase *BattClockBase)
 
     if (HostLibBase)
     {
-        BattClockBase->Lib = HostLib_Open("libc.so.6", NULL);
+        BattClockBase->Lib = HostLib_Open(LIBC_NAME, NULL);
         if (BattClockBase->Lib)
 	{
     	    BattClockBase->SysIFace = (struct BattclockInterface *)HostLib_GetInterface(BattClockBase->Lib, Symbols, &r);
