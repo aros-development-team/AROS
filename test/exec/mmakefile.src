@@ -5,6 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES :=		\
+    allocmem		\
     avltest		\
     childstatus		\
     childwait		\
