@@ -9,6 +9,11 @@ Protect S/stopnet s add quiet
 if ${AROSTCP/AutoRun} eq "True"
   C:Execute S/startnet
 EndIf
+
 if ${AROSTCP/WirelessAutoRun} eq "True"
   Run <NIL: >NIL: C:WirelessManager atheros5000.device
+EndIf
+
+if ${AROSTCP/MobileAutorun} eq "True"
+  Run <NIL: >NIL: C:ModemManager
 EndIf
