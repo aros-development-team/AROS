@@ -264,8 +264,10 @@ VOID PPP_Process(VOID){
 	CloseTimer(timer);
 
 	if(CtrlPort){
-		while( CtrlMsg = (struct PPPcontrolMsg*)GetMsg(CtrlPort) ) ReplyMsg((struct Message *)CtrlMsg);
-		DeletePort(CtrlPort);
+		Forbid();
+			while( CtrlMsg = (struct PPPcontrolMsg*)GetMsg(CtrlPort) ) ReplyMsg((struct Message *)CtrlMsg);
+			DeletePort(CtrlPort);
+		Permit();
 	}
 
    	if( InfoMsg ) FreeMem(InfoMsg,sizeof(struct PPPcontrolMsg));

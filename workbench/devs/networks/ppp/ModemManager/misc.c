@@ -49,7 +49,7 @@
 
 #define STRSIZE 1000
 
-#define PREFSFILE "ENV:ModemManager.prefs"
+#define PREFSFILE "ENV:MobileBroadband.prefs"
 #define INTERFACEFILE "ENV:AROSTCP/db/interfaces"
 
 BOOL StartStack()
