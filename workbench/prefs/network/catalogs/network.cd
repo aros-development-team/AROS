@@ -40,6 +40,12 @@ Host Name
 MSG_DOMAIN_NAME (//)
 Domain Name
 ;
+MSG_SERIAL_DEVICE (//)
+Serial Device
+;
+MSG_UNIT_NUMBER (//)
+Unit
+;
 MSG_IP_MODE_MANUAL (//)
 Manual
 ;
@@ -88,11 +94,17 @@ Computer Name
 MSG_TAB_WIRELESS (//)
 Wireless
 ;
+MSG_TAB_MOBILE (//)
+Mobile Broadband
+;
 MSG_AUTOSTART_STACK (//)
 Start networking during system boot
 ;
 MSG_AUTOSTART_WIRELESS (//)
 Enable wireless networking
+;
+MSG_AUTOSTART_MOBILE (//)
+Start ModemManager during system boot
 ;
 MSG_ERR_UNKNOWN_ERROR (//)
 Unknown error
@@ -102,6 +114,9 @@ Failed to restart network stack
 ;
 MSG_ERR_NOT_RESTARTED_WIRELESS (//)
 Failed to restart wireless networking
+;
+MSG_ERR_NOT_RESTARTED_MOBILE (//)
+Failed to restart ModemManager
 ;
 MSG_BUTTON_OK (//)
 Ok
