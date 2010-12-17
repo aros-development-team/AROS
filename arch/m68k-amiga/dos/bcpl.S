@@ -370,6 +370,16 @@ BCPLd unpacklw       /*  24, ?? */
     BRTS
 
 BCPLd Res2           /*  28, LONG, is_set_flag, result_code */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    tst.l	%d1
+    beq         .LRes2_get
+.LRes2_set:
+    move.l	%d2,%d1
+    jsr		%a6@(77 * -6) /* DOS/SetIoErr */
+.LRes2_get:
+    jsr		%a6@(22 * -6) /* DOS/IoErr */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
                      /*  30, BCPL_FrameLower */
@@ -487,7 +497,7 @@ BCPL closeDevice    /*  80, void, @IORequest */
     BRTS
 
 BCPL createproc     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @name */
-    movem.l	%d1-%d4/%a0-%a1/%a6,%sp@-
+    movem.l	%d2-%d4/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     lsl.l	#2,%d4
     addq.l	#1,%d4
@@ -497,7 +507,7 @@ BCPL createproc     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @name 
     move.l	%d1,%d3
     move.l	%d0,%d1
     jsr		%a6@(23 * -6)	/* DOS/CreateProc() */
-    movem.l	%sp@+,%d1-%d4/%a0-%a1/%a6
+    movem.l	%sp@+,%d2-%d4/%a0-%a1/%a6
     BRTS
 
 BCPL remProcess     /*  88, void */
