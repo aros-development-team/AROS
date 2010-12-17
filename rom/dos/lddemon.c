@@ -205,7 +205,7 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     /* we may not have any extension fields */ 
     int sizeofresident = offsetof(struct Resident, rt_Init) + sizeof(APTR);
 #else
-    int sizeofresident = sizeof(struct Resident)
+    int sizeofresident = sizeof(struct Resident);
 #endif
 
     while(seg)
