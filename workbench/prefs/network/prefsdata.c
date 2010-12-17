@@ -111,6 +111,21 @@ void SetDefaultWirelessPrefsValues()
     SetWirelessAutostart(FALSE);
 }
 
+void SetDefaultMobilePrefsValues()
+{
+    LONG i;
+    for (i = 0; i < MAXATCOMMANDS; i++)
+    {
+        prefs.mobile.atcommand[i][0] = 0;
+    }
+    SetMobile_atcommand(0,"AT+CGDCONT=1,\"IP\",\"insert.your.apn.here\"");
+    SetMobile_atcommand(1,"ATDT*99***1#");
+    SetMobile_timeout( 10 );
+    SetMobile_Autostart(FALSE);
+    SetMobile_devicename( "usbmodem.device" );
+    SetMobile_unit( 0 );
+}
+
 void InitInterface(struct Interface *iface)
 {
     SetName(iface, DEFAULTNAME);
@@ -253,6 +268,12 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     fprintf(ConfFile, "%s", (GetWirelessAutostart()) ? "True" : "False");
     fclose(ConfFile);
 
+    CombinePath2P(filename, filenamelen, destdir, "MobileBroadbandAutoRun");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetMobile_Autostart()) ? "True" : "False");
+    fclose(ConfFile);
+
     /* Write configuration files */
     CombinePath2P(filename, filenamelen, destdbdir, "general.config");
     ConfFile = fopen(filename, "w");
@@ -374,6 +395,34 @@ BOOL WriteWirelessPrefs(CONST_STRPTR destdir)
 
     return TRUE;
 }
+
+
+BOOL WriteMobilePrefs(CONST_STRPTR destdir)
+{
+    FILE *ConfFile;
+    LONG i;
+    ULONG filenamelen = strlen(destdir) + 4 + 30;
+    TEXT filename[filenamelen];
+
+    CombinePath2P(filename, filenamelen, destdir, "MobileBroadband.prefs");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+
+    fprintf(ConfFile, "DEVICE %s\n" ,GetMobile_devicename() );
+    fprintf(ConfFile, "UNIT %d\n" ,GetMobile_unit() );
+
+    for (i = 0; i < MAXATCOMMANDS; i++)
+    {
+        if( strlen( GetMobile_atcommand(i) ) > 0 ){
+            fprintf(ConfFile, "SEND %s\n" ,GetMobile_atcommand(i) );
+        }
+    }
+
+    fclose(ConfFile);
+
+    return TRUE;
+}
+
 
 #define BUFSIZE 2048
 BOOL CopyFile(CONST_STRPTR srcfile, CONST_STRPTR dstfile)
@@ -542,6 +591,61 @@ BOOL StartWireless()
     return TRUE;
 }
 
+BOOL StopMobile()
+{
+    ULONG trycount = 0;
+
+    /* Shutdown */
+    {
+        struct Task *task = FindTask("C:ModemManager");
+        if (task != NULL)
+            Signal(task, SIGBREAKF_CTRL_C);
+    }
+
+    /* Check if shutdown successful */
+    trycount = 0;
+    while(FindTask("C:ModemManager") != NULL)
+    {
+        if (trycount > 4) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
+BOOL StartMobile()
+{
+    ULONG trycount = 0;
+
+    /* Startup */
+    {
+        struct TagItem tags[] =
+        {
+            { SYS_Input,        (IPTR)NULL          },
+            { SYS_Output,       (IPTR)NULL          },
+            { SYS_Error,        (IPTR)NULL          },
+            { SYS_Asynch,       (IPTR)TRUE          },
+            { TAG_DONE,         0                   }
+        };
+
+        SystemTagList("C:ModemManager", tags);
+    }
+
+    /* Check if startup successful */
+    trycount = 0;
+    while(FindTask("C:ModemManager") == NULL)
+    {
+        if (trycount > 9) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
 /* This is not a general use function! It assumes destinations directory exists */
 BOOL AddFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
 {
@@ -594,6 +698,7 @@ enum ErrorCode SaveNetworkPrefs()
     if (!CopyDefaultConfiguration(PREFS_PATH_ENVARC)) return NOT_COPIED_FILES_ENVARC;
     if (!WriteNetworkPrefs(PREFS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
     if (!WriteWirelessPrefs(WIRELESS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
+    if (!WriteMobilePrefs(MOBILEBB_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
     return UseNetworkPrefs();
 }
 
@@ -602,10 +707,14 @@ enum ErrorCode UseNetworkPrefs()
     if (!CopyDefaultConfiguration(PREFS_PATH_ENV)) return NOT_COPIED_FILES_ENV;
     if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
     if (!WriteWirelessPrefs(WIRELESS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if (!WriteMobilePrefs(MOBILEBB_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
     if(StopWireless())
         if (GetWirelessAutostart())
             if (!StartWireless()) return NOT_RESTARTED_WIRELESS;
     if (!RestartStack()) return NOT_RESTARTED_STACK;
+    if(StopMobile())
+        if (GetMobile_Autostart())
+            if (!StartMobile()) return NOT_RESTARTED_MOBILE;
     return ALL_OK;
 }
 
@@ -793,6 +902,28 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
         }
     }
     CloseTokenFile(&tok);
+
+    CombinePath2P(filename, filenamelen, directory, "MobileBroadbandAutorun");
+    OpenTokenFile(&tok, filename);
+    while (!tok.fend)
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token)
+        {
+            if (strncmp(tok.token, "True", 4) == 0)
+            {
+                SetMobile_Autostart(TRUE);
+                break;
+            }
+            else
+            {
+                SetMobile_Autostart(FALSE);
+                break;
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+
 }
 
 void ReadWirelessPrefs(CONST_STRPTR directory)
@@ -867,13 +998,65 @@ void ReadWirelessPrefs(CONST_STRPTR directory)
     CloseTokenFile(&tok);
 }
 
+
+void ReadMobilePrefs(CONST_STRPTR directory)
+{
+    ULONG filenamelen = strlen(directory) + 4 + 30;
+    TEXT filename[filenamelen];
+    struct Tokenizer tok;
+    LONG command=0;
+
+    CombinePath2P(filename, filenamelen, directory, "MobileBroadband.prefs");
+    OpenTokenFile(&tok, filename);
+    while (!tok.fend)
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token)
+        {
+            if ( tok.newline && tok.token[0] == '#' ) continue;
+
+            if (tok.newline)
+            {
+                if (strcasecmp( tok.token, "SEND" ) == 0)
+                {
+                    GetNextToken(&tok, "\n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_atcommand( command++ , tok.token );
+                    }
+                }
+                else if (strcasecmp( tok.token, "DEVICE" ) == 0)
+                {
+                    GetNextToken(&tok, " \n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_devicename( tok.token );
+                    }
+                }
+                else if (strcasecmp( tok.token, "UNIT" ) == 0)
+                {
+                    GetNextToken(&tok, " \n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_unit( atoi( tok.token ) );
+                    }
+                }           
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+}
+
+
 void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
 {
     SetDefaultNetworkPrefsValues();
     SetDefaultWirelessPrefsValues();
+    SetDefaultMobilePrefsValues();
 
     ReadNetworkPrefs(directory);
     ReadWirelessPrefs(WIRELESS_PATH_ENV);
+    ReadMobilePrefs(MOBILEBB_PATH_ENV);
 
     if (save)
     {
@@ -1159,11 +1342,48 @@ BOOL GetWirelessAutostart(void)
     return prefs.wirelessAutostart;
 }
 
+BOOL GetMobile_Autostart(void)
+{
+    return prefs.mobile.autostart;
+}
+
+STRPTR GetMobile_atcommand(ULONG i)
+{
+    if( i < MAXATCOMMANDS )
+        return prefs.mobile.atcommand[i];
+    else return "";
+}
+
+LONG GetMobile_atcommandcount(void)
+{
+    ULONG count=0;
+    ULONG i;
+    for (i=0;i<MAXATCOMMANDS;i++)
+    {
+        if( prefs.mobile.atcommand[i][0] != 0 ) count++;
+    }
+    return count;
+}
+
+STRPTR GetMobile_devicename(void)
+{
+    return prefs.mobile.devicename;
+}
+
+LONG GetMobile_unit(void)
+{
+    return prefs.mobile.unit;
+}
+
+LONG GetMobile_timeout(void)
+{
+    return prefs.mobile.timeout;
+}
 
 /* Setters */
 
-void SetNetwork 
-(                                
+void SetNetwork
+(
     struct Network *net, STRPTR name, UWORD encType, STRPTR key,
     BOOL keyIsHex, BOOL hidden, BOOL adHoc
 )
@@ -1210,4 +1430,35 @@ void SetWirelessAutostart(BOOL w)
 {
     prefs.wirelessAutostart = w;
 }
+
+void SetMobile_Autostart(BOOL w)
+{
+    prefs.mobile.autostart =w;
+}
+
+void SetMobile_atcommand(ULONG i,STRPTR w)
+{
+    if( strlen(w) < NAMEBUFLEN && i >= 0 && i < MAXATCOMMANDS ){
+        strcpy(prefs.mobile.atcommand[i], w);
+    }
+}
+
+void SetMobile_devicename(STRPTR w)
+{
+    if( strlen(w) < NAMEBUFLEN ) strcpy( prefs.mobile.devicename , w );
+}
+
+void SetMobile_unit(LONG w)
+{
+    prefs.mobile.unit = w;
+}
+
+void SetMobile_timeout(LONG w)
+{
+    prefs.mobile.timeout = w;
+}
+
+
+
+
 

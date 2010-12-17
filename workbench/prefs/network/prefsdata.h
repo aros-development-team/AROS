@@ -16,6 +16,7 @@
 #define NAMECHARS "0123456789abcdefghijklmnopqrstuvwxyz-"
 
 #define MAXINTERFACES 15
+#define MAXATCOMMANDS 5
 
 #define DEFAULTNAME "eth0"
 #define DEFAULTIP "192.168.0.188"
@@ -31,6 +32,9 @@
 #define WIRELESS_PATH_ENV              "ENV:"
 #define WIRELESS_PATH_ENVARC           "ENVARC:"
 
+#define MOBILEBB_PATH_ENV              "ENV:"
+#define MOBILEBB_PATH_ENVARC           "ENVARC:"
+
 #define SSIDBUFLEN (32 + 1)
 #define KEYBUFLEN (64 + 1)
 
@@ -43,7 +47,8 @@ enum ErrorCode
     NOT_COPIED_FILES_ENV,
     NOT_COPIED_FILES_ENVARC,
     NOT_RESTARTED_STACK,
-    NOT_RESTARTED_WIRELESS
+    NOT_RESTARTED_WIRELESS,
+    NOT_RESTARTED_MOBILE
 };
 
 struct Interface
@@ -67,6 +72,15 @@ struct Network
     BOOL keyIsHex;
 };
 
+struct MobileBroadBand
+{
+    TEXT devicename[NAMEBUFLEN];
+    LONG unit;
+    TEXT atcommand[MAXATCOMMANDS][NAMEBUFLEN];
+    LONG timeout;
+    BOOL autostart;
+};
+
 struct TCPPrefs
 {
     struct Interface interface[MAXINTERFACES];
@@ -79,6 +93,7 @@ struct TCPPrefs
     BOOL autostart;
     struct Network networks[MAXNETWORKS];
     LONG networkCount;
+    struct MobileBroadBand mobile; 
     BOOL wirelessAutostart;
 };
 
@@ -137,6 +152,13 @@ BOOL GetAdHoc(struct Network *net);
 LONG GetNetworkCount(void);
 BOOL GetWirelessAutostart(void);
 
+BOOL GetMobile_Autostart(void);
+STRPTR GetMobile_atcommand(ULONG i);
+STRPTR GetMobile_devicename(void);
+LONG GetMobile_unit(void);
+LONG GetMobile_timeout(void);
+LONG GetMobile_atcommandcount(void);
+
 void SetNetwork
 (
     struct Network *net, STRPTR name, UWORD encType, STRPTR key,
@@ -150,3 +172,10 @@ void SetAdHoc(struct Network *net, BOOL w);
 
 void SetNetworkCount(LONG w);
 void SetWirelessAutostart(BOOL w);
+
+void SetMobile_Autostart(BOOL w);
+void SetMobile_atcommand(ULONG i,STRPTR w);
+void SetMobile_devicename(STRPTR w);
+void SetMobile_unit(LONG w);
+void SetMobile_timeout(LONG w);
+
