@@ -9,7 +9,9 @@
 #include "battclock_intern.h"
 
 #ifdef HOST_OS_linux
+#ifndef HOST_OS_android
 #define LIBC_NAME "libc.so.6"
+#endif
 #endif
 
 #ifdef HOST_OS_darwin
