@@ -35,9 +35,11 @@
 
     RESULT
 
-    success  --  a boolean telling whether the operation was successful
-                 or not. A failure occurs also if there is no "next" entry in
-		 the directory. Then IoErr() equals ERROR_NO_MORE_ENTRIES.
+    != 0    if operation was successful
+    == 0    if operation was not successful
+
+            A failure occurs also if there is no "next" entry in
+            the directory. Then IoErr() equals ERROR_NO_MORE_ENTRIES.
 
     NOTES
 
@@ -52,8 +54,8 @@
         AllocDosObject()) to Examine().
     2.  Pass the same parameters to ExNext().
     3.  Do something with the FileInfoBlock returned.
-    4.  Call ExNext() repeatedly until it returns FALSE and use the
-        information you are provided. When ExNext returns FALSE, check IoErr()
+    4.  Call ExNext() repeatedly until it returns 0 and use the
+        information you are provided. When ExNext returns 0, check IoErr()
 	to make sure that there was no real failure (ERROR_NO_MORE_ENTRIES).
 
     BUGS
@@ -89,9 +91,9 @@
     SetIoErr(iofs.io_DosError);
 
     if(iofs.io_DosError != 0)
-	return DOSFALSE;
+        return DOSFALSE;
     else
-	return DOSTRUE;
+        return DOSTRUE;
 
     AROS_LIBFUNC_EXIT
 } /* ExNext */

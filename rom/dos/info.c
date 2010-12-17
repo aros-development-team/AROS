@@ -37,7 +37,10 @@
 
     RESULT
 
-    Boolean indicating success or failure. If TRUE (success) the
+    != 0    if operation was successful
+    == 0    if operation was not successful
+
+    Boolean indicating success or failure. If success (!= 0) the
     'parameterBlock' is filled with information on the volume.
 
     NOTES
@@ -73,7 +76,7 @@
 
     if (iofs.io_DosError != 0)
     {
-	return DOSFALSE;
+        return DOSFALSE;
     }
 
     return DOSTRUE;
