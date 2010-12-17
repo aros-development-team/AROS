@@ -1098,15 +1098,15 @@ BCPL UnLock         /* 1b4, void, @FileLock */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPL getlong        /* 1b8, void, longoffset, @struct */
-    add.l	%d2,%d1
+BCPL getlong        /* 1b8, void, longoffset, &struct */
     lsl.l	#2,%d1
+    add.l	%d2,%d1
     move.l	%a0@(%d1),%d0
     BRTS
 
-BCPL putlong        /* 1bc, void, longoffset, @struct, data */
-    add.l	%d2,%d1
+BCPL putlong        /* 1bc, void, longoffset, &struct, data */
     lsl.l	#2,%d1
+    add.l	%d2,%d1
     move.l	%a0@(%d1),%d0
     move.l	%d3,%a0@(%d1)
     BRTS
