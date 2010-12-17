@@ -554,21 +554,36 @@ BCPL readinput      /* a0, bytelength , &buf, bytelength */
     movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
     BRTS
 
+    /* Wait on the process's pr_MsgPort for a packet.
+     */
 BCPLd taskwait       /* a4, DosPacket @,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(42 * -6)	/* Dos/WaitPkt() */
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
+    /* When passed in, DosPacket's dp_Link points to
+     * an allocated, but empty, memory location. 
+     * Sent to the port of the current directory's handler.
+     */
 BCPLd putPkt         /* a8, void, @DosPacket */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		Dos_BCPL_putpkt
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL writeoutput    /* ac, void, &buf, bytelength */
-    movem.l	%d1-%d3/%a0-%a1/%a6,%sp@-
+    movem.l	%d2-%d3/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     move.l	%d2,%d3
     move.l	%d1,%d2
     jsr		%a6@(10 * -6)	/* DOS/Output() */
     move.l	%d0,%d1
     jsr		%a6@(8 * -6)	/* DOS/Write() */
-    movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
+    movem.l	%sp@+,%d2-%d3/%a0-%a1/%a6
     BRTS
 
 BCPLd packstring     /* b0, void, @Array, @String */
@@ -586,30 +601,23 @@ BCPL Delay          /* bc, void, ?? */
     BRTS
 
     /* Due to the way BCPL arguments work, A1 is the fully
-     * synthesized DosPacket
+     * synthesized DosPacket. We just need to allocate
+     * some space after our arguments for a struct Message,
+     * and set A1(0) (dp_Link) to the Message, and then use
+     * BCPL putPkt and BCPL taskwait.
      */
 BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
-    movem.l	%a0-%a1/%a6,%sp@-
-    move.l	%a2@(BCPL_DOSBase),%a6	/* DOSBase */
-    move.l	%a1@(9 * 4),%sp@-	/* dp_Arg5 */
-    move.l	%a1@(8 * 4),%sp@-	/* dp_Arg4 */
-    move.l	%a1@(7 * 4),%sp@-	/* dp_Arg3 */
-    move.l	%a1@(6 * 4),%sp@-	/* dp_Arg2 */
-    move.l	%a1@(5 * 4),%sp@-	/* dp_Arg1 */
-    move.l	%d3,%sp@-
-    move.l	%d2,%sp@-
-    lea.l	%a1@(4 * 4),%a0		/* Pointer to dp_Res2 */
-    move.l	%a0,%sp@-
-    move.l	%a6,%sp@-
-    jsr		dopacket5
-    lea.l	%sp@(9 * 4),%sp
-    move.l	%d0,%sp@-
-    jsr		%a6@(77 * -6)	/* DOS/SetIoError */
-    move.l	%sp@+,%d0
-    movem.l	%sp@+,%a0-%a1/%a6
-    /* Patch up DOS packet with dp_Res */
-    move.l	%d0,%a1@(3 * 4)
-    moveq.l	#-1,%d0
+    lea.l	%a1@(10*4), %a0
+    move.l      %a0, %a1@(0)	/* Set Message link */
+    sub.l	%a0,%a0
+    move.l	%a2@(GV_putPkt),%a4
+    move.l	#(3*4 + 10 * 4 + 10 * 4), %d0
+    move.l	%a1, %d1
+    lsr.l	#2, %d1
+    jsr		(%a5)
+    move.l	%a2@(GV_taskwait),%a4
+    move.l      #(3*4 + 10 * 4 + 10 * 4), %d0
+    jsr		(%a5)
     BRTS
 
 BCPLd returnPacket   /* c4, void, @DosPacket, res1, res2 */
@@ -1008,7 +1016,7 @@ BCPLd putword        /* 17c, void, longaddress, wordnumber */
                      /* 180, ??? */
 
 BCPLd taskwait_190   /* 190, DosPacket ^,  */
-    BRTS
+    jmp	BCPL_taskwait
 
 BCPL execute        /* 194, void, &string , @in, @out */
     movem.l	%a0-%a1/%a6,%sp@-
