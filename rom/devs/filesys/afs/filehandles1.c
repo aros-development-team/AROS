@@ -1196,7 +1196,7 @@ struct AfsHandle *ah2;
 	{
 		seek(afsbase, ah, newsize, OFFSET_BEGINNING, error);
 		deleteFileRemainder(afsbase, ah);
-		if (pos < newsize);
+		if (pos < newsize)
 			pos = newsize;
 	}
 	*error = 0;
