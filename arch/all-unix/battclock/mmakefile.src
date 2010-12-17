@@ -1,7 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS := -isystem $(GENINCDIR) $(KERNEL_INCLUDES) -DHOST_OS_$(ARCH)
+USER_CFLAGS := -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
+	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
 %build_archspecific \
   mainmmake=kernel-battclock maindir=rom/battclock \
