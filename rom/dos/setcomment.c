@@ -36,8 +36,8 @@
 	comment - new comment for the file.
 
     RESULT
-	Boolean success indicator. IoErr() gives additional information upon
-	failure.
+	!= 0 if all went well, 0 else. IoErr() gives additional
+	information in that case.
 
     NOTES
 

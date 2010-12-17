@@ -63,9 +63,9 @@
 
     /* Return */
     if(iofs.io_DosError != 0)
-	return 0;
+        return 0;
     else
-	return iofs.io_Union.io_IS_INTERACTIVE.io_IsInteractive;
+        return iofs.io_Union.io_IS_INTERACTIVE.io_IsInteractive;
 
     AROS_LIBFUNC_EXIT
 } /* IsInteractive */

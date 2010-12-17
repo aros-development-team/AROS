@@ -37,7 +37,8 @@
 
     RESULT
 
-    A boolean telling whether the operation was successful or not.
+    != 0    if operation was successful
+    == 0    if operation was not successful
 
     NOTES
 
@@ -120,7 +121,7 @@
     SetIoErr(iofs.io_DosError);
 
     if(iofs.io_DosError)
-	return DOSFALSE;
+        return DOSFALSE;
     else
     {
         /* in fib_DiskKey the result from telldir is being stored which
