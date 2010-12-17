@@ -20,11 +20,12 @@
 
     NAME */
 
-AROS_LH3(APTR, AllocateExt,
+AROS_LH4(APTR, AllocateExt,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct MemHeader *, freeList, A0),
-	AROS_LHA(ULONG,              byteSize, D0),
+	AROS_LHA(APTR,		     location, A1),
+	AROS_LHA(IPTR,               byteSize, D0),
 	AROS_LHA(ULONG,		     requirements, D1),
 
 /*  LOCATION */
@@ -36,6 +37,7 @@ AROS_LH3(APTR, AllocateExt,
 
     INPUTS
 	freeList     - Pointer to the MemHeader structure which holds the memory
+	location     - Optional starting address of the allocation
 	byteSize     - Number of bytes you want to get
 	requirements - Subset of AllocMem() flags telling how to allocate
 
@@ -44,11 +46,15 @@ AROS_LH3(APTR, AllocateExt,
 	couldn't be allocated
 
     NOTES
-	This function is AROS-specific and private.
+	This function is AROS-specific and private. It is subject to change,
+	do not use it in applications!
 
     EXAMPLE
 
     BUGS
+    	This function will not work correctly with location < MEMCHUNK_TOTAL.
+    	I hope this really does not matter because this is a special use
+    	area anyway.
 
     SEE ALSO
 	Allocate(), Deallocate()
@@ -65,33 +71,43 @@ AROS_LH3(APTR, AllocateExt,
 {
     AROS_LIBFUNC_INIT
  
-    struct MemChunk *mc=NULL, *p1, *p2;
+    struct MemChunk *mc = NULL;
+    struct MemChunk *p1, *p2;
 
-    D(bug("[exec] AllocateExt(0x%p, %u, 0x%08X)\n", freeList, byteSize, requirements));
+    D(bug("[exec] AllocateExt(0x%p, 0x%p, %u, 0x%08X)\n", freeList, location, byteSize, requirements));
     ASSERT_VALID_PTR(freeList);
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
 	return NULL;
 
-    /* First round byteSize to a multiple of MEMCHUNK_TOTAL. */
-    byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
+    /* Align the location if needed */
+    if (location)
+    {
+        byteSize += (IPTR)location & (MEMCHUNK_TOTAL - 1);
+        location = (APTR)((IPTR)location & ~(MEMCHUNK_TOTAL-1));
+    }
+
+    /* Round byteSize up to a multiple of MEMCHUNK_TOTAL. */
+    byteSize = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
 
     /* Is there enough free memory in the list? */
-    if(freeList->mh_Free<byteSize)
+    if (freeList->mh_Free<byteSize)
 	return NULL;
 
     /*
-        The free memory list is only single linked, i.e. to remove
-        elements from the list I need node's predessor. For the
-        first element I can use freeList->mh_First instead of a real predessor.
-    */
+     * The free memory list is only single linked, i.e. to remove
+     * elements from the list I need node's predessor. For the
+     * first element I can use freeList->mh_First instead of a real predessor.
+     */
     p1 = (struct MemChunk *)&freeList->mh_First;
     p2 = p1->mc_Next;
 
     /* Is there anything in the list? */
     if (p2 != NULL)
     {
+    	APTR endlocation = location + byteSize;
+
         /* Then follow it */
         for (;;)
         {
@@ -110,32 +126,71 @@ AROS_LH3(APTR, AllocateExt,
 		return NULL;
 	    }
 #endif
-            
-            /* Check if the current block is large enough */
-            if(p2->mc_Bytes>=byteSize)
+            /* p1 is the previous MemChunk, p2 is the current one */
+            if (location)
             {
-                /* It is. */
-                mc=p1;
-                /* Use this one if MEMF_REVERSE is not set.*/
-                if(!(requirements&MEMF_REVERSE))
-                    break;
+            	/* Starting address is given. Check if the requested region fits into this chunk. */
+                if ((location >= (APTR)p2) && (endlocation <= (APTR)p2 + p2->mc_Bytes))
+                {
+                    /*
+                     * If yes, just allocate from this chunk and exit.
+                     * Anyone only one chunk can fit.
+                     */
+                    struct MemChunk *p3 = location;
+                    struct MemChunk *p4 = endlocation;
+
+                    /* Check if there's memory left at the end. */
+                    if ((APTR)p2 + p2->mc_Bytes != endlocation)
+                    {
+                    	/* Yes. Add it to the list */
+                    	p4->mc_Next  = p2->mc_Next;
+                    	p4->mc_Bytes = (APTR)p2 - endlocation + p2->mc_Bytes;
+                    	p2->mc_Next  = p4;
+                    }
+
+	            /* Check if there's memory left at the start. */
+                    if (p2 != p3)
+                    	/* Yes. Adjust the size */
+                    	p2->mc_Bytes = location - (APTR)p2;
+                    else
+                    	/* No. Skip the old chunk */
+                    	p1->mc_Next = p2->mc_Next;
+
+                    /* Adjust free memory count and return */
+                    freeList->mh_Free -= byteSize;
+                    return location;
+                }
+            }
+            else
+            {
+            	/* Any chunk will do. Just check if the current one is large enough. */
+            	if (p2->mc_Bytes >= byteSize)
+            	{
+                    /* It is. */
+                    mc = p1;
+
+                    /* If MEMF_REVERSE is not set, use the first found chunk */
+                    if (!(requirements & MEMF_REVERSE))
+                    	break;
+                }
                 /* Else continue - there may be more to come. */
             }
 
             /* Go to next block */
-            p1=p2;
-            p2=p1->mc_Next;
+            p1 = p2;
+            p2 = p1->mc_Next;
 
             /* Check if this was the end */
-            if(p2==NULL)
+            if (p2 == NULL)
                 break;
+
 #if !defined(NO_CONSISTENCY_CHECKS)
             /*
                 Consistency check:
                 If the end of the last block+1 is bigger or equal to
                 the start of the current block something must be wrong.
             */
-            if((UBYTE *)p2<=(UBYTE *)p1+p1->mc_Bytes)
+            if ((UBYTE *)p2 <= (UBYTE *)p1 + p1->mc_Bytes)
 	    {
 		if (SysBase)
 		{

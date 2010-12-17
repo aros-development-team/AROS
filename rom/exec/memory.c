@@ -1,3 +1,6 @@
+/* Needed for mungwall macros to work */
+#define MDEBUG 1
+
 #include <aros/debug.h>
 #include <proto/kernel.h>
 
@@ -9,6 +12,64 @@
 /* Transition period: use AllocMem()/FreeMem() as base allocator */
 #undef KrnAllocPages
 #undef KrnFreePages
+
+/*
+ * Build a wall around the allocated chunk if requested.
+ * Returns updated pointer to the beginning of the chunk
+ * (actually a pointer to a usable area)
+ */
+APTR MungWall_Build(APTR res, IPTR origSize, ULONG requirements, struct ExecBase *SysBase)
+{
+    if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res)
+    {
+    	struct MungwallHeader *header;
+	struct List 	      *allocmemlist;
+
+        /* Save orig byteSize before wall (there is one room of MUNGWALLHEADER_SIZE
+	   bytes before wall for such stuff (see above).
+	*/
+
+	header = (struct MungwallHeader *)res;
+
+	header->mwh_magicid = MUNGWALL_HEADER_ID;
+	header->mwh_allocsize = origSize;
+
+	/* Skip to the start of the pre-wall */
+        res += MUNGWALLHEADER_SIZE;
+
+	/* Initialize pre-wall */
+	BUILD_WALL(res, 0xDB, MUNGWALL_SIZE);
+
+	/* move over the block between the walls */
+	res += MUNGWALL_SIZE;
+
+	/* Fill the block with weird stuff to exploit bugs in applications */
+	if (!(requirements & MEMF_CLEAR))
+	    MUNGE_BLOCK(res, MEMFILL_ALLOC, origSize);
+
+	/* Initialize post-wall */
+	BUILD_WALL(res + origSize, 0xDB, MUNGWALL_SIZE + AROS_ROUNDUP2(origSize, MEMCHUNK_TOTAL) - origSize);
+
+	/*
+	 * Check whether list exists. AllocMem() might have been
+	 * called before PrepareAROSSupportBase(), which is responsible for
+	 * initialization of AllocMemList
+	 */
+	if (SysBase->DebugAROSBase)
+	{	
+    	    allocmemlist = (struct List *)&((struct AROSSupportBase *)SysBase->DebugAROSBase)->AllocMemList;
+	    Forbid();
+    	    AddHead(allocmemlist, (struct Node *)&header->mwh_node);
+	    Permit();
+	}
+	else
+	{
+	    header->mwh_node.mln_Pred = (struct MinNode *)0x44332211;
+	    header->mwh_node.mln_Succ = (struct MinNode *)0xCCBBAA99;
+	}
+    }
+    return res;
+}
 
 /* Find MemHeader to which address belongs */
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)

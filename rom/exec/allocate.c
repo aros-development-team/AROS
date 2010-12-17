@@ -82,7 +82,7 @@ AROS_LH2(APTR, Allocate,
     AROS_LIBFUNC_INIT
 
     /* Allocate() is the same as AllocateExt() with zero flags */
-    APTR res = AllocateExt(freeList, byteSize, 0);
+    APTR res = AllocateExt(freeList, NULL, byteSize, 0);
 
     if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
 	MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);
