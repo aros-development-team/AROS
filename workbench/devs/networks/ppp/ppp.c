@@ -924,8 +924,6 @@ void SendTerminateReq(){
 	AddChkSum(&p);
 	SendPPP_Packet(&p);
 
-	Set_phase( PPP_PHASE_DEAD );
-
 }
 
 
