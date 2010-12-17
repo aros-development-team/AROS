@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-BCPL_CFILES  := bcpl_support bcpl_readargs
+BCPL_CFILES  := bcpl_support bcpl_readargs bcpl_putpkt
 BCPL_AFILES  := bcpl bcpl_writef
 
 CFUNCS  := \
