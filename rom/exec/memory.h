@@ -62,7 +62,7 @@ struct Block
     ULONG Size;
 };
 
-APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements, struct ExecBase *SysBase);
+APTR MungWall_Build(APTR res, IPTR origSize, ULONG requirements, struct ExecBase *SysBase);
 
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
 APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase);

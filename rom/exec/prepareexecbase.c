@@ -35,9 +35,10 @@ extern void *LIBFUNCTABLE[];
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 
 extern void Exec_TrapHandler(ULONG trapNum);
-AROS_LD3(APTR, AllocateExt,
+AROS_LD4(APTR, AllocateExt,
 	 AROS_LDA(struct MemHeader *, mh, A0),
-	 AROS_LDA(ULONG, totalsize, D0),
+	 AROS_LDA(APTR, location, A1),
+	 AROS_LDA(IPTR, totalsize, D0),
 	 AROS_LDA(ULONG, 0, D1),
 	 struct ExecBase *, SysBase, 169, Exec);
 AROS_LD3(ULONG, MakeFunctions,
@@ -118,9 +119,10 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     
     /* Allocate memory for library base. Call AllocateExt() statically in order to do it. */
     totalsize = negsize + sizeof(struct IntExecBase);
-    SysBase = (struct ExecBase *)((UBYTE *)AROS_CALL3(APTR, AROS_SLIB_ENTRY(AllocateExt, Exec),
+    SysBase = (struct ExecBase *)((UBYTE *)AROS_CALL4(APTR, AROS_SLIB_ENTRY(AllocateExt, Exec),
 						     AROS_UFCA(struct MemHeader *, mh, A0),
-						     AROS_UFCA(ULONG, totalsize, D0),
+						     AROS_UFCA(APTR, NULL, A1),
+						     AROS_UFCA(IPTR, totalsize, D0),
 						     AROS_UFCA(ULONG, 0, D1),
 						     struct ExecBase *, NULL) + negsize);
 
