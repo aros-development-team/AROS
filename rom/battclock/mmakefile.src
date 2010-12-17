@@ -5,7 +5,12 @@ include $(TOP)/config/make.cfg
 # directory (currently used by Windows-hosted port and m68k-amiga)
 # Note that overrideable files must be included using #include <name>, not #include "name"
 # for this to work
-USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/battclock -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/battclock -I$(SRCDIR)/rom/battclock
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/battclock \
+		 -I$(SRCDIR)/arch/all-$(ARCH)/battclock
+ifneq ($(FAMILY),)
+    USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/battclock
+endif
+USER_INCLUDES += -I$(SRCDIR)/rom/battclock
 
 #MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
 #MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)
