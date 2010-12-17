@@ -326,7 +326,7 @@ case "$host_os" in
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	android_build_os="windows"
 	android_tool="android.bat"
-	default_android_ndk="/cygdrive/c/android-ndk-r3"
+	default_android_ndk="/cygdrive/c/android-ndk-r5"
 	default_android_sdk="/cygdrive/c/android-sdk-windows-1.6_r1"
 
 	case "$host_cpu" in
@@ -343,6 +343,11 @@ case "$host_os" in
     mingw32*)
         aros_host_arch="mingw32"
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	android_build_os="windows"
+	android_tool="android.bat"
+	default_android_ndk="/c/android-ndk-r5"
+	default_android_sdk="/c/android-sdk-windows-1.6_r1"
+
 	case "$host_cpu" in
 	    *i?86*)
 		aros_host_cpu="i386"
@@ -722,7 +727,7 @@ ios)
     AC_MSG_RESULT($aros_android_ndk)
 
     AC_MSG_CHECKING([what Android version to use])
-    AC_ARG_WITH(android-version,AC_HELP_STRING([--with-android-version=VERSION],[Use Android platform VERSION (default=1.6).]),aros_android_version="$withval",aros_android_version="1.6")
+    AC_ARG_WITH(android-version,AC_HELP_STRING([--with-android-version=VERSION],[Use Android platform VERSION (default=2.2.1).]),aros_android_version="$withval",aros_android_version="2.2.1")
     AC_MSG_RESULT($aros_android_version)
 
     export PATH="$aros_android_sdk/tools:$PATH"
@@ -809,14 +814,11 @@ case "$target_os" in
 	case "$aros_target_variant" in
             android)
 		case "$aros_android_version" in
-		1.5)
-		    aros_android_level=android-3
-		    ;;
-		1.6)
-		    aros_android_level=android-4
+		2.2)
+		    aros_android_level=android-8
 		    ;;
 		*)
-		    aros_android_level=android-5
+		    aros_android_level=android-9
 		    ;;
 		esac
 		aros_default_wbwidth=320
@@ -832,14 +834,14 @@ case "$target_os" in
 		aros_target_strip="arm-aros-strip"
 		aros_target_objcopy="arm-aros-objcopy"
 		aros_target_objdump="arm-aros-objdump"
-		export PATH="$aros_android_ndk/build/prebuilt/$android_build_os/arm-eabi-$target_tool_version/bin:$PATH"
-               	aros_android_ndk="$aros_android_ndk/build/platforms/$aros_android_level/arch-arm"
+		export PATH="$aros_android_ndk/toolchains/arm-linux-androideabi-$target_tool_version/prebuilt/$android_build_os/bin:$PATH"
+               	aros_android_ndk="$aros_android_ndk/platforms/$aros_android_level/arch-arm"
 		aros_kernel_cflags="--sysroot $aros_android_ndk -mandroid"
 		aros_kernel_ldflags="--sysroot $aros_android_ndk -mandroid"
 		CFLAGS="$CFLAGS --sysroot $aros_android_ndk -mandroid"
 		aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
 		need_x11=no
-		target_tool_prefix="arm-eabi-"
+		target_tool_prefix="arm-linux-androideabi-"
             ;;
         esac
     ;;
