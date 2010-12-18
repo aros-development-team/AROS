@@ -102,3 +102,4 @@ static int PCILx_Expunge(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(PCILx_Init, 0)
 ADD2EXPUNGELIB(PCILx_Expunge, 0)
+ADD2LIBS((STRPTR)"pci.hidd", 0, static struct Library *, __pcibase);
