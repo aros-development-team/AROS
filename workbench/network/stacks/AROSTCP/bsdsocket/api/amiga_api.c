@@ -20,8 +20,6 @@
  *
  */
 
-#include <version.h>
-
 /*
  * NOTE: Exec has turned off task switching while in Open, Close, Expunge and
  *	 Reserved functions (via Forbid()/Permit()) so we should not take
@@ -29,6 +27,7 @@
  */
 
 #include <conf.h>
+#include <version.h>
 
 #include <aros/libcall.h>
 
