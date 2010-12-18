@@ -67,8 +67,10 @@ struct NetPEditor_DATA
             *netped_MBBInitString[MAXATCOMMANDS],
             *netped_MBBAutostart,
             *netped_MBBDeviceString,
-            *netped_MBBUnit;
-            
+            *netped_MBBUnit,
+            *netped_MBBUsername,
+            *netped_MBBPassword;
+
     // Interface window
     Object  *netped_ifWindow,
             *netped_upState,
@@ -282,22 +284,26 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
 
     GET(data->netped_wirelessAutostart, MUIA_Selected, &lng);
     SetWirelessAutostart(lng);
-    
+
     for(i = 0 ; i < MAXATCOMMANDS; i++) SetMobile_atcommand(i,"");
-    
-    a = 0;  
+
+    a = 0;
     for(i = 0 ; i < MAXATCOMMANDS; i++)
     {
         GET(data->netped_MBBInitString[i], MUIA_String_Contents, &str);
         if( strlen(str) > 0 ) SetMobile_atcommand( a++ , str );
-    }               
+    }
     GET(data->netped_MBBAutostart, MUIA_Selected, &lng);
     SetMobile_Autostart(lng);
     GET(data->netped_MBBDeviceString, MUIA_String_Contents, &str);
-    SetMobile_devicename(str);    
+    SetMobile_devicename(str);
     GET(data->netped_MBBUnit, MUIA_Numeric_Value , &lng);
     SetMobile_unit(lng);
-    
+    GET(data->netped_MBBUsername, MUIA_String_Contents, &str);
+    SetMobile_username(str);
+    GET(data->netped_MBBPassword, MUIA_String_Contents, &str);
+    SetMobile_password(str);
+
     return TRUE;
 }
 
@@ -377,17 +383,19 @@ BOOL NetworkPrefs2Gadgets
 
     for(i = 0 ; i < MAXATCOMMANDS; i++)
         NNSET((data->netped_MBBInitString[i]), MUIA_String_Contents, "");
-            
+
     entries = GetMobile_atcommandcount();
     for(i = 0 ; i < entries; i++)
     {
-        NNSET((data->netped_MBBInitString[i+MAXATCOMMANDS-entries]), MUIA_String_Contents, GetMobile_atcommand(i));   
+        NNSET((data->netped_MBBInitString[i+MAXATCOMMANDS-entries]), MUIA_String_Contents, GetMobile_atcommand(i));
     }
-    
+
     NNSET((data->netped_MBBDeviceString), MUIA_String_Contents, GetMobile_devicename());
     NNSET((data->netped_MBBUnit), MUIA_Numeric_Value, GetMobile_unit());
     NNSET(data->netped_MBBAutostart, MUIA_Selected, (IPTR)GetMobile_Autostart());
-    
+    NNSET((data->netped_MBBUsername), MUIA_String_Contents, GetMobile_username());
+    NNSET((data->netped_MBBPassword), MUIA_String_Contents, GetMobile_password());
+
     return TRUE;
 }
 
@@ -448,8 +456,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *networkList, *netAddButton, *netEditButton, *netRemoveButton,
             *wirelessAutostart,
             *MBBInitString[MAXATCOMMANDS],
-            *MBBAutostart,*MBBDeviceString,*MBBUnit;
-            
+            *MBBAutostart,*MBBDeviceString,*MBBUnit,*MBBUsername,*MBBPassword;
+
     // inferface window
     Object  *deviceString, *IPString, *maskString,
             *ifDHCPState, *unitString, *nameString, *upState,
@@ -557,7 +565,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     StringFrame,
                     MUIA_String_Accept, (IPTR)NAMECHARS,
                     MUIA_CycleChain, 1,
-                End),               
+                End),
             End,
 
             Child, VGroup,
@@ -591,7 +599,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             End,
 
             Child, (IPTR)VGroup,
-            
+
                 Child, (IPTR)ColGroup(2),
                 GroupFrame,
                     Child, (IPTR)HGroup,
@@ -600,16 +608,32 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             StringFrame,
                             MUIA_CycleChain, 1,
                         End),
-                        
+
                         Child, (IPTR)Label2(_(MSG_UNIT_NUMBER)),
                         Child, (IPTR)(MBBUnit = (Object *)NumericbuttonObject,
                             MUIA_Numeric_Min, 0,
                             MUIA_Numeric_Max, 100,
                         End),
-                        
+
                     End,
                 End,
-                
+
+                Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                    Child, (IPTR)HGroup,
+                        Child, (IPTR)Label2(_(MSG_USERNAME)),
+                        Child, (IPTR)(MBBUsername = (Object *)StringObject,
+                            StringFrame,
+                            MUIA_CycleChain, 1,
+                        End),
+                        Child, (IPTR)Label2(_(MSG_PASSWORD)),
+                        Child, (IPTR)(MBBPassword = (Object *)StringObject,
+                            StringFrame,
+                            MUIA_CycleChain, 1,
+                        End),
+                    End,
+                End,
+
                 Child, (IPTR)ColGroup(2),
                     GroupFrame,
                     Child, (IPTR)Label2("Init1"),
@@ -629,30 +653,30 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         StringFrame,
                         MUIA_CycleChain, 1,
                     End),
-                    
+
                     Child, (IPTR)Label2("Init4"),
                     Child, (IPTR)(MBBInitString[3] = (Object *)StringObject,
                         StringFrame,
                         MUIA_CycleChain, 1,
                     End),
-                    
+
                     Child, (IPTR)Label2("Init5"),
                     Child, (IPTR)(MBBInitString[4] = (Object *)StringObject,
                         StringFrame,
                         MUIA_CycleChain, 1,
                     End),
                 End,
-                                                                                            
-                Child, (IPTR)ColGroup(2),       
+
+                Child, (IPTR)ColGroup(2),
                     Child, (IPTR)(MBBAutostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
                     Child, (IPTR)HGroup,
                         Child, (IPTR)Label2(_(MSG_AUTOSTART_MOBILE)),
                         Child, (IPTR)HVSpace,
-                    End,        
+                    End,
                 End,
-                    
+
             End,
-            
+
         End, // register
 
         TAG_DONE
@@ -807,7 +831,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_netAddButton = netAddButton;
         data->netped_netEditButton = netEditButton;
         data->netped_netRemoveButton = netRemoveButton;
-        
+
         data->netped_MBBInitString[0] = MBBInitString[0];
         data->netped_MBBInitString[1] = MBBInitString[1];
         data->netped_MBBInitString[2] = MBBInitString[2];
@@ -816,7 +840,9 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_MBBAutostart = MBBAutostart;
         data->netped_MBBDeviceString = MBBDeviceString;
         data->netped_MBBUnit = MBBUnit;
-                        
+        data->netped_MBBUsername = MBBUsername;
+        data->netped_MBBPassword = MBBPassword;
+
         // interface window
         data->netped_ifWindow = ifWindow;
         data->netped_upState = upState;
@@ -956,13 +982,22 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             MBBDeviceString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
-        
+
         DoMethod
         (
             MBBUnit, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
-                         
+         DoMethod
+        (
+            MBBUsername, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+         DoMethod
+        (
+            MBBPassword, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
         LONG i;
         for(i=0;i<MAXATCOMMANDS;i++)
             DoMethod
@@ -970,7 +1005,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 MBBInitString[i], MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
                 (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
             );
-            
+
         // interface window
         DoMethod
         (

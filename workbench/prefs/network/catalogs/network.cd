@@ -157,3 +157,9 @@ Interface
 MSG_NETWINDOW_TITLE (//)
 Wireless Network
 ;
+MSG_USERNAME (//)
+Username
+;
+MSG_PASSWORD (//)
+Password
+;

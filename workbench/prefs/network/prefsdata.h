@@ -77,6 +77,8 @@ struct MobileBroadBand
     TEXT devicename[NAMEBUFLEN];
     LONG unit;
     TEXT atcommand[MAXATCOMMANDS][NAMEBUFLEN];
+    TEXT username[NAMEBUFLEN];
+    TEXT password[NAMEBUFLEN];
     LONG timeout;
     BOOL autostart;
 };
@@ -93,7 +95,7 @@ struct TCPPrefs
     BOOL autostart;
     struct Network networks[MAXNETWORKS];
     LONG networkCount;
-    struct MobileBroadBand mobile; 
+    struct MobileBroadBand mobile;
     BOOL wirelessAutostart;
 };
 
@@ -155,6 +157,8 @@ BOOL GetWirelessAutostart(void);
 BOOL GetMobile_Autostart(void);
 STRPTR GetMobile_atcommand(ULONG i);
 STRPTR GetMobile_devicename(void);
+STRPTR GetMobile_username(void);
+STRPTR GetMobile_password(void);
 LONG GetMobile_unit(void);
 LONG GetMobile_timeout(void);
 LONG GetMobile_atcommandcount(void);
@@ -176,6 +180,8 @@ void SetWirelessAutostart(BOOL w);
 void SetMobile_Autostart(BOOL w);
 void SetMobile_atcommand(ULONG i,STRPTR w);
 void SetMobile_devicename(STRPTR w);
+void SetMobile_username(STRPTR w);
+void SetMobile_password(STRPTR w);
 void SetMobile_unit(LONG w);
 void SetMobile_timeout(LONG w);
 
