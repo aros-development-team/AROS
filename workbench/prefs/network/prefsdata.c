@@ -124,6 +124,8 @@ void SetDefaultMobilePrefsValues()
     SetMobile_Autostart(FALSE);
     SetMobile_devicename( "usbmodem.device" );
     SetMobile_unit( 0 );
+    SetMobile_username("");
+    SetMobile_password("");
 }
 
 void InitInterface(struct Interface *iface)
@@ -408,8 +410,10 @@ BOOL WriteMobilePrefs(CONST_STRPTR destdir)
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
 
-    fprintf(ConfFile, "DEVICE %s\n" ,GetMobile_devicename() );
+    if( strlen(GetMobile_devicename()) > 0 ) fprintf(ConfFile, "DEVICE %s\n" ,GetMobile_devicename() );
     fprintf(ConfFile, "UNIT %d\n" ,GetMobile_unit() );
+    if( strlen(GetMobile_username()) > 0 ) fprintf(ConfFile, "USERNAME %s\n" ,GetMobile_username() );
+    if( strlen(GetMobile_password()) > 0 ) fprintf(ConfFile, "PASSWORD %s\n" ,GetMobile_password() );
 
     for (i = 0; i < MAXATCOMMANDS; i++)
     {
@@ -1033,6 +1037,22 @@ void ReadMobilePrefs(CONST_STRPTR directory)
                         SetMobile_devicename( tok.token );
                     }
                 }
+                else if (strcasecmp( tok.token, "USERNAME" ) == 0)
+                {
+                    GetNextToken(&tok, " \n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_username( tok.token );
+                    }
+                }
+                else if (strcasecmp( tok.token, "PASSWORD" ) == 0)
+                {
+                    GetNextToken(&tok, " \n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_password( tok.token );
+                    }
+                }
                 else if (strcasecmp( tok.token, "UNIT" ) == 0)
                 {
                     GetNextToken(&tok, " \n");
@@ -1040,7 +1060,7 @@ void ReadMobilePrefs(CONST_STRPTR directory)
                     {
                         SetMobile_unit( atoi( tok.token ) );
                     }
-                }           
+                }
             }
         }
     }
@@ -1370,6 +1390,16 @@ STRPTR GetMobile_devicename(void)
     return prefs.mobile.devicename;
 }
 
+STRPTR GetMobile_username(void)
+{
+    return prefs.mobile.username;
+}
+
+STRPTR GetMobile_password(void)
+{
+    return prefs.mobile.password;
+}
+
 LONG GetMobile_unit(void)
 {
     return prefs.mobile.unit;
@@ -1446,6 +1476,16 @@ void SetMobile_atcommand(ULONG i,STRPTR w)
 void SetMobile_devicename(STRPTR w)
 {
     if( strlen(w) < NAMEBUFLEN ) strcpy( prefs.mobile.devicename , w );
+}
+
+void SetMobile_username(STRPTR w)
+{
+    if( strlen(w) < NAMEBUFLEN ) strcpy( prefs.mobile.username , w );
+}
+
+void SetMobile_password(STRPTR w)
+{
+    if( strlen(w) < NAMEBUFLEN ) strcpy( prefs.mobile.password , w );
 }
 
 void SetMobile_unit(LONG w)
