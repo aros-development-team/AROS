@@ -290,11 +290,8 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
                 }
 		CloseDevice((struct IORequest *)&LIBBASE->sd.tr);
             }
-
             OOP_ReleaseAttrBases(attrbases);
         }
-
-        DeletePool(LIBBASE->sd.memPool);
     }
 
     return FALSE;
