@@ -180,7 +180,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     bug("Resident modules (addr: pri version name):\n");
     for (i = 0; i < num; i++)
     {
-        bug("+ %p: %3d %3d \"%s\"\n",
+        bug("+ %p: %4d %3d \"%s\"\n",
             RomTag[i],
             RomTag[i]->rt_Pri,
             RomTag[i]->rt_Version,
