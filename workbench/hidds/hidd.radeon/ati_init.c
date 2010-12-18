@@ -157,8 +157,6 @@ AROS_UFH3(void, Enumerator,
 
             if (sup->Init(sd))
             {
-                struct CardState *state = AllocPooled(sd->memPool, sizeof(struct CardState));
-
                 sd->poweron_state = AllocPooled(sd->memPool, sizeof(struct CardState));
                 SaveState(sd, sd->poweron_state);
 
@@ -289,8 +287,8 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
                 	return TRUE;
 
 		    D(bug("[ATI] No supported cards found\n"));
-		    CloseDevice((struct IORequest *)&LIBBASE->sd.tr);
                 }
+		CloseDevice((struct IORequest *)&LIBBASE->sd.tr);
             }
 
             OOP_ReleaseAttrBases(attrbases);

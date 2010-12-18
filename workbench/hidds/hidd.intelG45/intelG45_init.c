@@ -527,13 +527,18 @@ static int G45_Init(struct intelg45base *intelg45base)
 						sd->mid_PutMemPattern32 = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
 						sd->mid_CopyLUTMemBox16 = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox16);
 						sd->mid_CopyLUTMemBox32 = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
-						sd->mid_GetImage		= OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_GetImage);
-					}
+						sd->mid_GetImage	= OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_GetImage);
 
-					return TRUE;
+						return TRUE;
+					}
+					D(bug("[GMA] No supported cards found\n"));
+					OOP_DisposeObject(sd->PCIObject);
 				}
+				CloseDevice((struct IORequest *)&sd->tr);
 			}
+			OOP_ReleaseAttrBases(attrbases);
 		}
+		DeletePool(sd->MemPool);
 	}
 
 	return FALSE;
