@@ -20,10 +20,10 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "català"   /* String version of above */
+#define LANGSTR     "català"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
 #define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: català.language 41.0 (08.01.1998)"
+#define LANGTAG     "\0$VER: "LANGSTR".language 41.0 (08.01.1998)"
 
 STRPTR AROS_SLIB_ENTRY(getlangstring,language)();
 
