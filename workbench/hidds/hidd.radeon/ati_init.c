@@ -285,7 +285,11 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
 
                     HIDD_PCI_EnumDevices(LIBBASE->sd.PCIObject, &FindHook, Requirements);
 
-                    return TRUE;
+		    if (sd->PCIDevice)
+                	return TRUE;
+
+		    D(bug("[ATI] No supported cards found\n"));
+		    CloseDevice((struct IORequest *)&LIBBASE->sd.tr);
                 }
             }
 
@@ -328,9 +332,11 @@ static int ATI_Expunge(LIBBASETYPEPTR LIBBASE)
         sd->PCIDevice = NULL;
     }
 
-    OOP_DisposeObject(sd->PCIObject);
+    if (sd->PCIObject)
+	OOP_DisposeObject(sd->PCIObject);
     OOP_ReleaseAttrBases(attrbases);
-    DeletePool(sd->memPool);
+    if (sd->memPool)
+	DeletePool(sd->memPool);
 
     return TRUE;
 }
