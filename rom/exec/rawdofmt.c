@@ -224,8 +224,11 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
   		    buf = fetch_arg(UBYTE *);
 
                     if (!buf)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+                        buf = "";
+#else
                         buf = "(null)";
-
+#endif
 		    width = strlen(buf);
 
 		    break;
