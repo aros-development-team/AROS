@@ -481,6 +481,10 @@ static void ttm_bo_cleanup_memtype_use(struct ttm_buffer_object *bo)
 	wake_up_all(&bo->event_queue);
 }
 
+#if defined(__AROS__)
+static int ttm_bo_delayed_delete(struct ttm_bo_device *bdev, bool remove_all);
+#endif
+
 static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
 {
 	struct ttm_bo_device *bdev = bo->bdev;
@@ -535,15 +539,17 @@ queue:
 		driver->sync_obj_flush(sync_obj, sync_obj_arg);
 		driver->sync_obj_unref(&sync_obj);
 	}
-/* AROS NOTE: this call is supposed to start a work process which in some
+/* NOTE: this call is supposed to start a work process which in some
    time will try clean up refs again (ttm_bo_delayed_delete). This is needed
    if ttm_bo_wait "fails" - meaning the fence is not signalled in time
-   Since currently ttm_bo_wait always waits until fence is signalled
-   this is not needed. If ttm_bo_wait is change not to skip no_wait parameter
-   then this call is needed, else the buffer objects might not be freed */
+   In AROS version, the function is called immediatelly. This is not compatible,
+   but seems to do the job. The other option is to force ttm_bo_wait to always 
+   wait until fence is signalled. */
 #if !defined(__AROS__)
 	schedule_delayed_work(&bdev->wq,
 			      ((HZ / 100) < 1) ? 1 : HZ / 100);
+#else
+    ttm_bo_delayed_delete(bdev, false);
 #endif
 }
 
@@ -1540,7 +1546,6 @@ int ttm_bo_device_release(struct ttm_bo_device *bdev)
 	mutex_unlock(&glob->device_list_mutex);
 
 #if !defined(__AROS__)
-    /* Not needed as long as ttm_bo_wait is forced to always wait for fence signalling */
 	if (!cancel_delayed_work(&bdev->wq))
 		flush_scheduled_work();
 #endif
@@ -1594,7 +1599,6 @@ int ttm_bo_device_init(struct ttm_bo_device *bdev,
 		goto out_no_addr_mm;
 
 #if !defined(__AROS__)
-    /* Not needed as long as ttm_bo_wait is forced to always wait for fence signalling */
 	INIT_DELAYED_WORK(&bdev->wq, ttm_bo_delayed_workqueue);
 #endif
 	bdev->nice_mode = true;
@@ -1741,8 +1745,8 @@ int ttm_bo_wait(struct ttm_buffer_object *bo,
 	if (likely(bo->sync_obj == NULL))
 		return 0;
 #if defined(__AROS__)
-    /* Be sure always to wait until fence is signalled. A case when
-       fence is not signalled in time seems to happen to often. */
+    /* Be sure always to wait until fence is signalled. See note in
+       ttm_bo_cleanup_refs_or_queue */
     no_wait = false;
 #endif		
 

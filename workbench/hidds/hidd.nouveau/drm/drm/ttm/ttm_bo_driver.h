@@ -573,7 +573,6 @@ struct ttm_bo_device {
 	 */
 
 #if !defined(__AROS__)
-    /* Not needed as long as ttm_bo_wait is forced to always wait for fence signalling */
 	struct delayed_work wq;
 #endif
 
