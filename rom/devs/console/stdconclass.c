@@ -96,6 +96,10 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
     switch (msg->Command)
     {
+    case C_NIL:
+    	/* do nothing */
+    	break;
+
     case C_ASCII:
 
 	D(bug("Writing char %c at (%d, %d)\n",
