@@ -174,6 +174,8 @@ UBYTE i;
 #ifndef AROS_DOS_PACKETS
 		doslist->dol_Ext.dol_AROS.dol_Unit = (struct Unit *)&volume->ah;
 		doslist->dol_Ext.dol_AROS.dol_Device = volume->device;
+#else
+		doslist->dol_Task = &((struct Process *)FindTask(NULL))->pr_MsgPort;
 #endif
 		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days =
 			volume->devicelist.dl_VolumeDate.ds_Days;
