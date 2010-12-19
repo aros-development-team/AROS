@@ -32,6 +32,7 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams
 #define ESC 0x1B
 #define CSI 0x9B
 
+#define NIL		0x00
 #define BELL	 	0x07
 #define BACKSPACE 	0x08
 #define HTAB		0x09
@@ -218,6 +219,7 @@ static BOOL check_special(STRPTR string, LONG toparse)
     return
     (
         (*string == CSI) || (toparse >= 2 && (string[0] == ESC) && (string[1] == '[')) ||  /* CSI */
+    	(*string == NIL)             ||
     	(*string == BELL)            ||
     	(*string == BACKSPACE)       ||
     	(*string == HTAB)            ||
@@ -316,6 +318,11 @@ static BOOL string2command( BYTE 	*cmd_ptr
     	/* Look for standalone codes */
     	switch (*write_str)
     	{
+    	case NIL:
+    	    *cmd_ptr = C_NIL;
+    	    found = TRUE;
+    	    break;
+    		
     	case BELL:
     	    *cmd_ptr = C_BELL;
     	    found = TRUE;

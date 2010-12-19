@@ -97,8 +97,9 @@ struct ConsoleBase;
 /* Console write commands */
 enum 
 {
-    C_ASCII = 0,
+	C_NIL = 0,
 
+    C_ASCII,
     C_ESC,
     C_BELL,
     C_BACKSPACE,
