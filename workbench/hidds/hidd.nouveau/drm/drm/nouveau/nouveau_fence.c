@@ -262,9 +262,10 @@ __nouveau_fence_wait(void *sync_obj, void *sync_arg, bool lazy, bool intr)
     {
         if (__nouveau_fence_signalled(sync_obj, sync_arg))
             break;
-
+        
+        udelay(100);
         counter++;
-        if (counter > 100000)
+        if (counter > 10000)
         {
             NV_INFO(nouveau_fence(sync_obj)->channel->dev, "Waited too long!\n");
             ret = -EBUSY;
