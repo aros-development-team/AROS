@@ -187,6 +187,21 @@ static LONG gethandletype(struct AFSBase *handler,  struct AfsHandle  *h)
     return 0;
 }
 
+static CONST_STRPTR skipdevname(CONST_STRPTR fn)
+{
+    CONST_STRPTR cp;
+    /* Skip past device names */
+    for (cp = fn; *cp; cp++) {
+    	if (*cp == '/')
+    	    break;
+    	if (*cp == ':') {
+  	    fn = cp+1;
+    	    break;
+    	}
+    }
+    return fn;
+}
+
 /*******************************************
  Name  : AFS_work
  Descr.: main loop (get packets and answer (or not))
@@ -328,7 +343,6 @@ void AFS_work(void) {
 		    struct FileHandle *fh = BADDR(dp->dp_Arg1);
 		    struct FileLock   *dl = BADDR(dp->dp_Arg2);
 		    CONST_STRPTR       fn = AROS_BSTR_ADDR(dp->dp_Arg3);
-		    CONST_STRPTR       cp;
 		    struct AfsHandle  *dh;
 		    struct AfsHandle  *ah;
 		    ULONG mode = 0;
@@ -348,27 +362,24 @@ void AFS_work(void) {
 		    if (dp->dp_Type == ACTION_FINDUPDATE)
 			mode = FMF_MODE_READWRITE;
 
-		    /* Skip past device names */
-		    for (cp = fn; *cp; cp++) {
-		    	if (*cp == '/')
-		    	    break;
-		    	if (*cp == ':') {
-		    	    fn = cp+1;
-		    	    break;
-		    	}
+		    fn = skipdevname(fn);
+
+		    if (dp->dp_Type == ACTION_FINDOUTPUT) {
+		        ah = openfile(handler, dh, fn, mode, 0, &res2);	
+		    } else {
+		        ah = openf(handler, dh, fn, mode, &res2);
 		    }
-
-		    ah = openf(handler, dh, fn, mode, &res2);
-
 		    ok = (ah != NULL) ? DOSTRUE : DOSFALSE;
 		    if (ok) {
-		        LONG type = gethandletype(handler, ah);
-		        if (type >= 0) {
-		    	    /* was directory */
-		    	    res2 = ERROR_OBJECT_WRONG_TYPE;
-		    	    ok = DOSFALSE;
-		    	    closef(handler, ah);
-		    	    break;
+		    	if (dp->dp_Type != ACTION_FINDOUTPUT) {
+		            LONG type = gethandletype(handler, ah);
+		            if (type >= 0) {
+		    	        /* was directory */
+		    	        res2 = ERROR_OBJECT_WRONG_TYPE;
+		    	        ok = DOSFALSE;
+		    	        closef(handler, ah);
+		    	        break;
+		    	    }
 		    	}
 		    	fh->fh_Arg1 = (LONG)(IPTR)ah;
 		    }
@@ -379,7 +390,6 @@ void AFS_work(void) {
 		    struct FileLock   *dl = BADDR(dp->dp_Arg1);
 		    struct FileLock   *fl;
 		    CONST_STRPTR       fn = AROS_BSTR_ADDR(dp->dp_Arg2);
-		    CONST_STRPTR       cp;
 		    struct AfsHandle  *dh;
 		    struct AfsHandle  *ah;
 		    ULONG mode = 0;
@@ -397,15 +407,7 @@ void AFS_work(void) {
 		    else if (dp->dp_Arg3 == ACCESS_WRITE)
 		    	mode |= FMF_MODE_NEWFILE;
 
-		    /* Skip past device names */
-		    for (cp = fn; *cp; cp++) {
-		    	if (*cp == '/')
-		    	    break;
-		    	if (*cp == ':') {
-		    	    fn = cp+1;
-		    	    break;
-		    	}
-		    }
+		    fn = skipdevname(fn);
 
 		    ah = openf(handler, dh, fn, mode, &res2);
 		    if (ah == NULL) {
@@ -645,9 +647,124 @@ void AFS_work(void) {
 	    	    	res2 = ERROR_OBJECT_NOT_FOUND;
 		    	ok = DOSFALSE;
 		    }
-	    	    ok = getDiskInfo(volume, BADDR(dp->dp_Arg2)) ? DOSFALSE : DOSTRUE;
+	    	    res2 = getDiskInfo(volume, BADDR(dp->dp_Arg2));
+	    	    ok = res2 ? DOSFALSE : DOSTRUE;
+	    	    break;
 	    	}
 	    	break;
+	    	case ACTION_RENAME_OBJECT:
+	    	{
+	    	    struct FileLock   *opl = BADDR(dp->dp_Arg1);
+	    	    struct FileLock   *npl = BADDR(dp->dp_Arg3);
+	    	    CONST_STRPTR       on = AROS_BSTR_ADDR(dp->dp_Arg2);
+	    	    CONST_STRPTR       nn = AROS_BSTR_ADDR(dp->dp_Arg4);
+	    	    struct AfsHandle  *oh;
+
+		    if (opl == NULL)
+			oh = &volume->ah;
+		    else
+			oh = (APTR)opl->fl_Key;
+		    on = skipdevname(on);
+		    nn = skipdevname(nn);
+	    	    res2 = renameObject(handler, oh, on, nn);
+	    	    ok = res2 ? DOSFALSE : DOSTRUE;
+	    	    break;
+	    	}
+	    	case ACTION_RENAME_DISK:
+	    	{
+	    	    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg1);
+		    relabel(handler, volume, n, &res2);
+		    ok = res2 ? DOSFALSE : DOSTRUE;
+	    	    break;
+		}
+	    	case ACTION_CREATE_DIR:
+	    	{
+	    	    struct FileLock   *fl = BADDR(dp->dp_Arg1), *flnew;
+	    	    struct AfsHandle  *h, *ah;
+	    	    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg2);
+		    if (fl == NULL)
+			h = &volume->ah;
+		    else
+			h = (APTR)fl->fl_Key;
+		    n = skipdevname(n);
+		    flnew = AllocMem(sizeof(*flnew), MEMF_CLEAR);
+		    if (flnew != NULL) {
+		    	ah = createDir(handler, h, n, 0, &res2);
+		    	ok = res2 ? DOSFALSE : DOSTRUE;
+		    	if (ok) {
+		            flnew->fl_Link = BNULL;
+		            flnew->fl_Key = (LONG)(IPTR)ah;
+		            flnew->fl_Access = ACCESS_READ;
+		            flnew->fl_Task = mp;
+		            flnew->fl_Volume = MKBADDR(&volume->devicelist);
+		            ok = MKBADDR(flnew);
+		            res2 = 0;
+		        }
+		    } else {
+		        ok = DOSFALSE;
+		        res2 = ERROR_NO_FREE_STORE;
+		    }
+	    	    break;
+		}
+	    	case ACTION_DELETE_OBJECT:
+	    	{
+	    	    struct FileLock   *fl = BADDR(dp->dp_Arg1);
+	    	    struct AfsHandle  *h;
+	    	    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg2);
+		    if (fl == NULL)
+			h = &volume->ah;
+		    else
+			h = (APTR)fl->fl_Key;
+		    n = skipdevname(n);
+		    res2 = deleteObject(handler, h, n);
+		    ok = res2 ? DOSFALSE : DOSTRUE;
+	    	    break;
+		}
+	    	case ACTION_SET_COMMENT:
+	    	{
+	    	    struct FileLock   *fl = BADDR(dp->dp_Arg2);
+	    	    struct AfsHandle  *h;
+	    	    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg3);
+	    	    CONST_STRPTR       c = AROS_BSTR_ADDR(dp->dp_Arg4);
+		    if (fl == NULL)
+			h = &volume->ah;
+		    else
+			h = (APTR)fl->fl_Key;
+		    n = skipdevname(n);
+		    res2 = setComment(handler, h, n, c);
+		    ok = res2 ? DOSFALSE : DOSTRUE;
+	    	    break;
+		}
+	    	case ACTION_SET_PROTECT:
+	    	{
+	    	    struct FileLock   *fl = BADDR(dp->dp_Arg2);
+	    	    struct AfsHandle  *h;
+	    	    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg3);
+	    	    ULONG              p = dp->dp_Arg4;
+		    if (fl == NULL)
+			h = &volume->ah;
+		    else
+			h = (APTR)fl->fl_Key;
+		    n = skipdevname(n);
+		    res2 = setProtect(handler, h, n, p);
+		    ok = res2 ? DOSFALSE : DOSTRUE;
+	    	    break;
+		}
+	    	case ACTION_SET_DATE:
+	    	{
+	    	    struct FileLock   *fl = BADDR(dp->dp_Arg2);
+	    	    struct AfsHandle  *h;
+	    	    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg3);
+	    	    struct DateStamp *ds = (struct DateStamp*)dp->dp_Arg4;
+		    if (fl == NULL)
+			h = &volume->ah;
+		    else
+			h = (APTR)fl->fl_Key;
+		    n = skipdevname(n);
+		    res2 = setDate(handler, h, n, ds);
+		    ok = res2 ? DOSFALSE : DOSTRUE;
+	    	    break;
+		}
 		default:
 		    ok = DOSFALSE;
 		    res2 = ERROR_NOT_IMPLEMENTED;
