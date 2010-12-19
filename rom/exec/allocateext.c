@@ -74,9 +74,12 @@ AROS_LH4(APTR, AllocateExt,
     struct MemChunk *mc = NULL;
     struct MemChunk *p1, *p2;
 
-    D(bug("[exec] AllocateExt(0x%p, 0x%p, %u, 0x%08X)\n", freeList, location, byteSize, requirements));
-    ASSERT_VALID_PTR(freeList);
-
+    if (SysBase && SysBase->DebugAROSBase)
+    {
+        D(bug("[exec] AllocateExt(0x%p, 0x%p, %u, 0x%08X)\n", freeList, location, byteSize, requirements));
+        ASSERT_VALID_PTR(freeList);
+    }
+    
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
 	return NULL;
@@ -115,7 +118,7 @@ AROS_LH4(APTR, AllocateExt,
             /* Consistency check: Check alignment restrictions */
             if (((IPTR)p2|(IPTR)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1))
 	    {
-		if (SysBase)
+		if (SysBase && SysBase->DebugAROSBase)
 		{
 		    bug("[MM] Chunk allocator error\n");
 		    bug("[MM] Attempt to allocate %u bytes from MemHeader 0x%p\n", byteSize, freeList);
@@ -192,7 +195,7 @@ AROS_LH4(APTR, AllocateExt,
             */
             if ((UBYTE *)p2 <= (UBYTE *)p1 + p1->mc_Bytes)
 	    {
-		if (SysBase)
+		if (SysBase && SysBase->DebugAROSBase)
 		{
 		    bug("[MM] Chunk allocator error\n");
 		    bug("[MM] Attempt to allocate %u bytes from MemHeader 0x%p\n", byteSize, freeList);

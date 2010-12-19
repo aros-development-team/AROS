@@ -69,7 +69,7 @@ static const char *kernel_functions[] = {
 int __startup startup(struct TagItem *msg)
 {
     void* _stack = AROS_GET_SP;
-    struct ExecBase *SysBase;
+    struct ExecBase *SysBase = NULL;
     void *hostlib;
     char *errstr;
     unsigned int i;
@@ -166,7 +166,7 @@ int __startup startup(struct TagItem *msg)
     /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
     krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
 
-    D(bug("[Kernel] calling PrepareExecBase(), mh_First = 0x%p, args = %s\n", bootmh->mh_First, args));
+    D(bug("[Kernel] calling PrepareExecBase(), mh_First = %p, args = %s\n", bootmh->mh_First, args));
     /*
      * FIXME: This routine is part of exec.library, however it doesn't have an LVO
      * (it can't have one because exec.library is not initialized yet) and is called
@@ -174,7 +174,7 @@ int __startup startup(struct TagItem *msg)
      * to be moved to kernel.resource
      */
     SysBase = PrepareExecBase(bootmh, args, HostIFace);
-    D(bug("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, bootmh->mh_First);)
+    D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First);)
 
     ranges[0] = klo;
     ranges[1] = khi;
