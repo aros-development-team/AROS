@@ -333,6 +333,7 @@ void AFS_work(void) {
 	    	ok = sameLock((struct AfsHandle*)f1->fl_Key, (struct AfsHandle*)f2->fl_Key);
 		break;
 	    }
+	    
     	    default:
 
 		switch (dp->dp_Type) {
@@ -431,29 +432,23 @@ void AFS_work(void) {
 		    break;
 		}
 		case ACTION_COPY_DIR:	/* Aka DupLock() */
+		case ACTION_COPY_DIR_FH:
 		{
 		    struct FileLock   *ol = BADDR(dp->dp_Arg1);
 		    struct FileLock   *fl;
 		    struct AfsHandle  *oh;
 		    struct AfsHandle  *ah;
-		    ULONG mode = 0;
 
 		    if (!mediacheck(volume, &ok, &res2))
 		    	break;
 
-		    if (ol == NULL) {
-		    	ok = DOSTRUE;
-		    	res2 = BNULL;
-		    	break;
+		    if (dp->dp_Type == ACTION_COPY_DIR) {
+		    	oh = ol ? (APTR)ol->fl_Key : &volume->ah;
+		    } else {
+		    	oh = (APTR)dp->dp_Arg1;
 		    }
 
-		    if (ol->fl_Access == ACCESS_READ)
-		    	mode |= FMF_MODE_OLDFILE;
-		    else if (ol->fl_Access == ACCESS_WRITE)
-		    	mode |= FMF_MODE_NEWFILE;
-
-		    oh = (APTR)ol->fl_Key;
-		    ah = openf(handler, oh, "", mode, &res2);
+		    ah = openf(handler, oh, "", FMF_MODE_OLDFILE, &res2);
 		    if (ah == NULL) {
 		    	ok = DOSFALSE;
 		    	break;
@@ -462,7 +457,7 @@ void AFS_work(void) {
 		    if (fl != NULL) {
 		        fl->fl_Link = BNULL;
 		        fl->fl_Key = (LONG)(IPTR)ah;
-		        fl->fl_Access = ol->fl_Access;
+		        fl->fl_Access = ACCESS_READ;
 		        fl->fl_Task = mp;
 		        fl->fl_Volume = MKBADDR(&volume->devicelist);
 		        ok = MKBADDR(fl);
@@ -489,6 +484,7 @@ void AFS_work(void) {
 		    }
 		    ah = (APTR)(fl->fl_Key);
 		    closef(handler, ah);
+		    FreeMem(fl, sizeof(*fl));
 		    ok = DOSTRUE;
 		    break;
 		}
@@ -512,7 +508,16 @@ void AFS_work(void) {
 		    	break;
 		    ok = setFileSize(handler, (struct AfsHandle *)(((struct FileHandle *)(dp->dp_Arg1))->fh_Arg1),(LONG)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
 		    break;
+		case ACTION_FH_FROM_LOCK:
+		{
+		    struct FileHandle    *fh = BADDR(dp->dp_Arg1);
+		    struct FileLock      *fl = BADDR(dp->dp_Arg2);
+		    fh->fh_Arg1 = (LONG)(IPTR)fl->fl_Key;
+		    FreeMem(fl, sizeof(*fl));
+		    break;
+		}
 		case ACTION_EXAMINE_OBJECT:
+		case ACTION_EXAMINE_FH:
 		{
 		    struct FileLock      *fl = BADDR(dp->dp_Arg1);
 		    struct AfsHandle     *ah;
@@ -526,15 +531,15 @@ void AFS_work(void) {
 		    if (!mediacheck(volume, &ok, &res2))
 		    	break;
 
+		    if (dp->dp_Type == ACTION_EXAMINE_OBJECT)
+		    	ah = fl ? (APTR)fl->fl_Key : &volume->ah;
+		    else
+		    	ah = (APTR)dp->dp_Arg1;
+
 		    if (fib == NULL) {
 			ok = DOSTRUE;
 			break;
 		    }
-
-		    if (fl == NULL)
-			ah = &volume->ah;
-		    else
-			ah = (APTR)fl->fl_Key;
 
 		    res2 = examine(handler, ah, ead, size, mode, &dirpos);
 		    if (res2 != 0) {
@@ -600,7 +605,6 @@ void AFS_work(void) {
 		case ACTION_PARENT_FH:
 		{
 		    struct FileLock   *opl = BADDR(dp->dp_Arg1);
-		    struct FileHandle *oph = BADDR(dp->dp_Arg1);
 		    struct FileLock   *fl;
 		    struct AfsHandle  *oh;
 		    struct AfsHandle  *ah;
@@ -611,7 +615,7 @@ void AFS_work(void) {
 		    if (dp->dp_Type == ACTION_PARENT)
 		    	oh = (APTR)opl->fl_Key;
 		    else
-		    	oh = (APTR)oph->fh_Arg1;
+		    	oh = (APTR)dp->dp_Arg1;
 		    ah = openf(handler, oh, "/", FMF_MODE_OLDFILE, &res2);
 		    if (ah == NULL) {
 		    	ok = DOSFALSE;
@@ -698,7 +702,6 @@ void AFS_work(void) {
 		            flnew->fl_Task = mp;
 		            flnew->fl_Volume = MKBADDR(&volume->devicelist);
 		            ok = MKBADDR(flnew);
-		            res2 = 0;
 		        }
 		    } else {
 		        ok = DOSFALSE;
@@ -762,6 +765,17 @@ void AFS_work(void) {
 			h = (APTR)fl->fl_Key;
 		    n = skipdevname(n);
 		    res2 = setDate(handler, h, n, ds);
+		    ok = res2 ? DOSFALSE : DOSTRUE;
+	    	    break;
+		}
+		case ACTION_INHIBIT:
+		    res2 = inhibit(handler, volume, dp->dp_Arg1);
+		    ok = res2 ? DOSFALSE : DOSTRUE;
+		    break;
+		case ACTION_FORMAT:
+		{
+	    	    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg1);
+	    	    res2 = format(handler, volume, n, dp->dp_Arg2);
 		    ok = res2 ? DOSFALSE : DOSTRUE;
 	    	    break;
 		}
