@@ -7120,6 +7120,10 @@ fi
     as_fn_error "android is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
+        if test $host_os = "mingw32"; then
+	android_tool="cmd //c $android_tool"
+    fi
+
     ;;
 esac
 

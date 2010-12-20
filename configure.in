@@ -732,6 +732,11 @@ ios)
     AC_PATH_PROG(android_tool, $android_tool)
     AROS_REQUIRED(android,$android_tool)
 
+    dnl MSYS bash can't run .bat files directly, then need to be started via cmd.exe
+    if test $host_os = "mingw32"; then
+	android_tool="cmd //c $android_tool"
+    fi
+
     ;;
 esac
 
