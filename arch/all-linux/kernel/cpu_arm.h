@@ -72,6 +72,13 @@ struct ucontext
 #define SC_ENABLE(uc)  SIGEMPTYSET(&uc->uc_sigmask)
 
 /*
+ * Linux kernel does not provide any standarized view of VFP context on signal frame. The ARM linux-hosted
+ * port assumes, that the VFP frame is stored in uc_regspace[] area. This is the case on nearly all linux kernel
+ * compiled with VFP/NEON support. If this is not the case, or of linux misses the VFP frame in sigcontext, AROS
+ * will probably fail.
+ */
+
+/*
  * This macro saves all registers. Use this macro when you want to
  * leave the current tasks' context. Note that fpuContext area can
  * be absent, this happens at least in trap handler.
