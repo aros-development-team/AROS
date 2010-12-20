@@ -11,10 +11,10 @@ FILES := funcs
 #MM- test-playoss : workbench-libs-oss-unix-module
 
 #MM workbench-libs-oss-unix-module-includes : \
+#MM     includes-copy \
 #MM     kernel-kernel-includes \
 #MM     kernel-exec-includes \
-#MM     kernel-oop-includes \
-#MM     includes-copy
+#MM     kernel-oop-includes
 
 #MM workbench-libs-oss-unix-module : \
 #MM     hidd-unixio-stubs \
