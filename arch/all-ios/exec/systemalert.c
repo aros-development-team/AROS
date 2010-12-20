@@ -2,7 +2,7 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Display an alert, Android-hosted version
+    Desc: Display an alert, iOS-hosted version
     Lang: english
 */
 
@@ -25,10 +25,7 @@ void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
     *buf++ = '\n';
     FormatAlert(buf, alertNum, SysBase->ThisTask, SysBase);
 
-    /*
-     * Display an alert via Java interface. This takes a long time and we don't want
-     * task switcher to mess with us, so Disable() before.
-     */
+    /* Display an alert via our UIKit helper */
     PD(SysBase).DisplayAlert(PrivExecBase(SysBase)->AlertBuffer);
     AROS_HOST_BARRIER
 }
