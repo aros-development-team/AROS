@@ -99,26 +99,45 @@
     {
 #if !defined(NO_CONSISTENCY_CHECKS)
 	/*
-	    Do some constistency checks:
-	    1. All MemChunks must be aligned to MEMCHUNK_TOTAL.
-	    2. The end (+1) of the current MemChunk
-	       must be lower than the start of the next one.
-	*/
-	if(  ((IPTR)p2|p2->mc_Bytes)&(MEMCHUNK_TOTAL-1)
-	    ||(  (UBYTE *)p2+p2->mc_Bytes>=(UBYTE *)p2->mc_Next
-		&&p2->mc_Next!=NULL))
+	 * Do some constistency checks:
+	 * 1. All MemChunks must be aligned to MEMCHUNK_TOTAL.
+	 */
+        if (((IPTR)p2|(IPTR)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1))
+	{
+	    bug("[MM] Chunk allocator error\n");
+	    bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+	    bug("[MM] Misaligned chunk at 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+
 	    Alert(AN_MemCorrupt|AT_DeadEnd);
+	}
+
+	/* 
+	 * 2. The end (+1) of the current MemChunk
+	 *    must be lower than the start of the next one.
+	 */
+	if (p2->mc_Next && ((UBYTE *)p2 + p2->mc_Bytes >= (UBYTE *)p2->mc_Next))
+	{
+	    bug("[MM] Chunk allocator error\n");
+	    bug("[MM] Attempt to free %lu bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+	    bug("[MM] Overlapping chunks 0x%p (%u bytes) and 0x%p (%u bytes)\n", p2, p2->mc_Bytes, p2->mc_Next, p2->mc_Next->mc_Bytes);
+
+	    Alert(AN_MemCorrupt|AT_DeadEnd);
+	}
 #endif
 	/* Found a block with a higher address? */
-	if(p2>=p3)
+	if (p2 >= p3)
 	{
 #if !defined(NO_CONSISTENCY_CHECKS)
 	    /*
 		If the memory to be freed overlaps with the current
 		block something must be wrong.
 	    */
-	    if(p4>(UBYTE *)p2)
+	    if (p4>(UBYTE *)p2)
 	    {
+		bug("[MM] Chunk allocator error\n");
+		bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+		bug("[MM] Block overlaps with chunk 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+
 		Alert(AN_FreeTwice);
 		return;
 	    }
@@ -138,8 +157,12 @@
     {
 #if !defined(NO_CONSISTENCY_CHECKS)
 	/* Check if they overlap. */
-	if((UBYTE *)p1+p1->mc_Bytes>(UBYTE *)p3)
+	if ((UBYTE *)p1+p1->mc_Bytes>(UBYTE *)p3)
 	{
+	    bug("[MM] Chunk allocator error\n");
+	    bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+	    bug("[MM] Block overlaps with chunk 0x%p (%u bytes)\n", p1, p1->mc_Bytes);
+
 	    Alert(AN_FreeTwice);
 	    return;
 	}

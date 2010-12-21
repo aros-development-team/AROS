@@ -35,18 +35,12 @@ extern void *LIBFUNCTABLE[];
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 
 extern void Exec_TrapHandler(ULONG trapNum);
-AROS_LD4(APTR, AllocateExt,
-	 AROS_LDA(struct MemHeader *, mh, A0),
-	 AROS_LDA(APTR, location, A1),
-	 AROS_LDA(IPTR, totalsize, D0),
-	 AROS_LDA(ULONG, 0, D1),
-	 struct ExecBase *, SysBase, 169, Exec);
 AROS_LD3(ULONG, MakeFunctions,
 	 AROS_LDA(APTR, target, A0),
 	 AROS_LDA(CONST_APTR, functionArray, A1),
 	 AROS_LDA(CONST_APTR, funcDispBase, A2),
          struct ExecBase *, SysBase, 15, Exec);
-	 
+
 /* Default finaliser. */
 static void Exec_TaskFinaliser(void)
 {
@@ -88,7 +82,7 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
  *  and not add anything yet (except for the MemHeader).
  *  WARNING: this routine intentionally sets up global SysBase.
  *  This is done because:
- *  1. PrepareAROSSupportBase() calls Allocate() which relies on functional SysBase
+ *  1. PrepareAROSSupportBase() calls AllocMem() which relies on functional SysBase
  *  2. After PrepareAROSSupportBase() it is possible to call debug output functions
  *     (kprintf() etc). Yes, KernelBase is not set up yet, but remember that kernel.resource
  *     may have patched functions in AROSSupportBase so that KernelBase is not needed there.
@@ -117,14 +111,12 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     /* Align library base */
     negsize = AROS_ALIGN(negsize);
     
-    /* Allocate memory for library base. Call AllocateExt() statically in order to do it. */
-    totalsize = negsize + sizeof(struct IntExecBase);
-    SysBase = (struct ExecBase *)((UBYTE *)AROS_CALL4(APTR, AROS_SLIB_ENTRY(AllocateExt, Exec),
-						     AROS_UFCA(struct MemHeader *, mh, A0),
-						     AROS_UFCA(APTR, NULL, A1),
-						     AROS_UFCA(IPTR, totalsize, D0),
-						     AROS_UFCA(ULONG, 0, D1),
-						     struct ExecBase *, NULL) + negsize);
+    /*
+     * Allocate memory for library base. Round up manually because
+     * stdAlloc() does not do it.
+     */
+    totalsize = AROS_ROUNDUP2(negsize + sizeof(struct IntExecBase), MEMCHUNK_TOTAL);
+    SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, 0, NULL) + negsize);
 
     /* Clear the library base */
     memset(SysBase, 0, sizeof(struct IntExecBase));

@@ -65,6 +65,8 @@ struct Block
 APTR MungWall_Build(APTR res, IPTR origSize, ULONG requirements, struct ExecBase *SysBase);
 
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
+APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct ExecBase *SysBase);
+
 APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase);
 void FreeMemHeader(APTR addr, struct ExecBase *SysBase);
 
