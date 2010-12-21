@@ -6,9 +6,7 @@
 #if !defined(DRM_AROS_CONFIG_H)
 #define DRM_AROS_CONFIG_H
 
-/* HACK */
-
-/* Enable hacks for running under hosted AROS */
+/* Enable changes for running under hosted AROS */
 /* Procedure: C:LoadResource DEVS:Drivers/nouveau.hidd */
 //#define HOSTED_BUILD
 
@@ -25,18 +23,22 @@
 #define HOSTED_BUILD_BUS                HOSTED_BUILD_BUS_PCI
 
 /* nVidia defines */
+/* CAN BE AGP OR PCI */
 //#define HOSTED_BUILD_CHIPSET    5       /* NV05 chip Riva TNT 2 */
 //#define HOSTED_BUILD_CHIPSET    16      /* NV10 chip GeForce 256 */
 //#define HOSTED_BUILD_CHIPSET    21      /* NV15 chip GeForce 2 GTS */
 //#define HOSTED_BUILD_CHIPSET    32      /* NV20 chip GeForce 3 Ti 200 */
 //#define HOSTED_BUILD_CHIPSET    37      /* NV25 chip GeForce Ti 4200 */
 //#define HOSTED_BUILD_CHIPSET    52      /* NV34 chip GeForce FX 5200 */
-//#define HOSTED_BUILD_CHIPSET    67      /* NV43 chip GeForce 6200 */
-#define HOSTED_BUILD_CHIPSET    132     /* G84 chip GeForce 8600 GT */ /* MUST BE PCI */
-//#define HOSTED_BUILD_CHIPSET    134     /* G86 chip GeForce 8400 GS */ /* MUST BE PCI */
+#define HOSTED_BUILD_CHIPSET    67      /* NV43 chip GeForce 6200 */
+/* MUST BE PCI */
+//#define HOSTED_BUILD_CHIPSET    132     /* G84 chip GeForce 8600 GT */ 
+//#define HOSTED_BUILD_CHIPSET    134     /* G86 chip GeForce 8400 GS */
+//#define HOSTED_BUILD_CHIPSET    163     /* GT215 chip GeForce GT 240 */
+//#define HOSTED_BUILD_CHIPSET    175     /* MCP89 chip GeForce 320M */
+//#define HOSTED_BUILD_CHIPSET    192     /* GT100 chip GeForce 470 GTX */
 
 #endif
-/* HACK ENDS */
 
 /* Config */
 #define CONFIG_AGP
