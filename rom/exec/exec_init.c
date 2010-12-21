@@ -6,8 +6,6 @@
     Lang: english
 */
 
-#define DEBUG 1
-
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
