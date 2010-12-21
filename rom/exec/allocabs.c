@@ -59,6 +59,7 @@
     AROS_LIBFUNC_INIT
 
     struct MemHeader *mh;
+    APTR origLocation;
     IPTR origSize = byteSize;
     APTR ret = NULL;
     
@@ -66,13 +67,20 @@
     if(!byteSize)
 	return NULL;
 
-    /* Make room for mungwall if needed */
+    /*
+     * Make room for mungwall if needed.
+     * Length of mungwall is always a multiply of MEMCHUNK_TOTAL,
+     * so it's safe to make alignment after this correction.
+     */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
     	location -= MUNGWALL_SIZE + MUNGWALLHEADER_SIZE;
         byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
     }
 
+    /* Remember this location in order to calculate length increment later */
+    origLocation = location;
+    
     /* Protect the memory list from access by other tasks. */
     Forbid();
 
@@ -194,7 +202,7 @@
 
     Permit();
 
-    return MungWall_Build(ret, origSize + location - ret, 0, SysBase);
+    return MungWall_Build(ret, origSize + origLocation - ret, 0, SysBase);
     
     AROS_LIBFUNC_EXIT
 } /* AllocAbs */
