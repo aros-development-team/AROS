@@ -73,9 +73,6 @@ AROS_LH1(intptr_t, KrnGetSystemAttr,
     case KATTR_TimerIRQ:
 	return IRQ_TIMER;
 
-    case KATTR_PageSize:
-    	return KernelBase->kb_PageSize;
-
     default:
 	return -1;
     }

@@ -609,6 +609,7 @@ aros_android_level
 aros_ios_sdk
 aros_ios_version
 aros_ios_platform
+aros_enable_mmu
 aros_nesting_supervisor
 aros_palm_debug_hack
 aros_serial_debug
@@ -843,6 +844,7 @@ with_resolution
 with_serial_debug
 enable_palm_debug_hack
 enable_nesting_supervisor
+enable_mmu
 enable_x11_hidd
 with_x
 enable_x11_shm
@@ -1505,6 +1507,7 @@ Optional Features:
   --enable-nesting-supervisor
                           Enable nesting supervisor support in unix
                           (default=no)
+  --disable-mmu           Disable MMU support (default=enabled)
   --enable-x11-hidd       build X11 hidd for hosted (default=auto)
   --enable-x11-shm        use X11 shared memory (default=auto)
   --enable-x11-vidmode    use X11 vidmode extension (default=auto)
@@ -9990,6 +9993,28 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $nesting_supervisor" >&5
 $as_echo "$nesting_supervisor" >&6; }
 
+if test "$aros_enable_mmu" = "" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if MMU support is enabled" >&5
+$as_echo_n "checking if MMU support is enabled... " >&6; }
+        # Check whether --enable-mmu was given.
+if test "${enable_mmu+set}" = set; then :
+  enableval=$enable_mmu; aros_enable_mmu=$enableval
+else
+  aros_enable_mmu="yes"
+fi
+
+    if test "$aros_enable_mmu" = "" ; then
+	aros_enable_mmu="yes"
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_enable_mmu" >&5
+$as_echo "$aros_enable_mmu" >&6; }
+fi
+if test "$aros_enable_mmu" = "no" ; then
+    aros_enable_mmu="0"
+else
+    aros_enable_mmu="1"
+fi
+
 
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
 
@@ -10883,6 +10908,9 @@ $as_echo "$dbus" >&6; }
 
 
 # Unix/Hosted version related
+
+
+# MMU related
 
 
 # Apple iOS related

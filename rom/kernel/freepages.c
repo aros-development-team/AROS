@@ -1,3 +1,4 @@
+#include <aros/config.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
@@ -29,6 +30,7 @@ AROS_LH2(void, KrnFreePages,
     RESULT
 
     NOTES
+    	This function works only on systems with MMU support.
 
     EXAMPLE
 
@@ -42,6 +44,7 @@ AROS_LH2(void, KrnFreePages,
 {
     AROS_LIBFUNC_INIT
 
+#if USE_MMU
     struct MemHeader *mh;
 
     ForeachNode(&SysBase->MemList, mh)
@@ -64,6 +67,7 @@ AROS_LH2(void, KrnFreePages,
 
 	D(bug("[KrnFreePages] No match!\n"));
     }
+#endif
 
     AROS_LIBFUNC_EXIT
 }

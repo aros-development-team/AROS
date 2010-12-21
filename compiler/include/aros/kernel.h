@@ -117,7 +117,6 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_Architecture	(TAG_USER + 0x03F00000) /* [.G] (char *)   - Name of architecture, like "i386-pc"	 */
 #define KATTR_VBlankEnable	(TAG_USER + 0x03F00001) /* [SG] (BOOL)     - Enable or disable exec VBlank emulation	 */
 #define KATTR_TimerIRQ		(TAG_USER + 0x03F00002) /* [.G] (uint8_t)  - Number of periodic timer IRQ		 */
-#define KATTR_PageSize		(TAG_USER + 0x03F00003) /* [.G] (uint32_t) - Memory page size				 */
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)
@@ -128,5 +127,6 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KMS_SmallestFree	(TAG_USER + 0x04000005)
 #define KMS_NumAlloc		(TAG_USER + 0x04000006)
 #define KMS_NumFree		(TAG_USER + 0x04000007)
+#define KMS_PageSize		(TAG_USER + 0x04000008)
 
 #endif /* AROS_KERNEL_H */

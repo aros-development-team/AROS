@@ -1,11 +1,12 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id:  $
+    $Id$
 
-    Desc: Kernel memory allocator, MMU version.
+    Desc: Page-based memory allocator.
     Lang: english
 */
 
+#include <aros/config.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
@@ -19,12 +20,15 @@
 
 #define D(x)
 
+/* The whole this code makes sense only with MMU support */
+#if USE_MMU
+
 /*
  * Change state of block of 'pages' pages starting at 'first' to 'state'.
  * Checks blocks to the left and to the right from our block and merges/splits
  * blocks if necessary, and updates counters.
  */
-void SetBlockState(struct BlockHeader *head, IPTR first, IPTR pages, page_t state)
+static void SetBlockState(struct BlockHeader *head, IPTR first, IPTR pages, page_t state)
 {
     /* Check state of block next to our region */
     IPTR p = first + pages;
@@ -94,7 +98,7 @@ void SetBlockState(struct BlockHeader *head, IPTR first, IPTR pages, page_t stat
 }
 
 /* Allocate 'size' bytes from MemHeader mh */
-APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
+APTR krnAllocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase *KernelBase)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     APTR addr = NULL;
@@ -158,23 +162,41 @@ APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase)
 	/* Does the block fit ? */
 	if (free >= pages)
 	{
-	    /*
-	     * If the found block has smaller size than the
-	     * previous candidate, remember it as a new candidate.
-	     */
-	    if (free < candidate_size)
+	    if (flags & MEMF_REVERSE)
 	    {
-		D(bug("[krnAllocate] Old candidate %u (size %d)\n", candidate, candidate_size));
-		candidate = start;
-		candidate_size = free;
-		D(bug("[krnAllocate] New candidate %u (size %d)\n", candidate, candidate_size));
+		/*
+		 * If MEMF_REVERSE is set, we remember new candidate if its size is less
+		 * or equal to current one. This is effectively the same as best-match
+		 * lookup starting from the end of the region.
+		 */
+		if (free <= candidate_size)
+		{
+		    D(bug("[krnAllocate] Old candidate %u (size %d)\n", candidate, candidate_size));
+		    candidate = start;
+		    candidate_size = free;
+		    D(bug("[krnAllocate] New candidate %u (size %d)\n", candidate, candidate_size));
+		}
 	    }
-
-	    /* If found exact match, we can't do better, so stop searching */
-	    if (free == pages)
+	    else
 	    {
-		D(bug("[krnAllocate] Exact match\n"));
-		break;
+		/*
+		 * If the found block has smaller size than the
+		 * previous candidate, remember it as a new candidate.
+		 */
+		if (free < candidate_size)
+		{
+		    D(bug("[krnAllocate] Old candidate %u (size %d)\n", candidate, candidate_size));
+		    candidate = start;
+		    candidate_size = free;
+		    D(bug("[krnAllocate] New candidate %u (size %d)\n", candidate, candidate_size));
+		}
+
+		/* If found exact match, we can't do better, so stop searching */
+		if (free == pages)
+		{
+		    D(bug("[krnAllocate] Exact match\n"));
+		    break;
+		}
 	    }
 	}
 
@@ -434,3 +456,5 @@ void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query)
 	ReleaseSemaphore(&head->sem);
     }
 }
+
+#endif

@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 1
+
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
@@ -168,7 +170,8 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     	bug("[exec] Mungwall enabled\n");
 
-    PrivExecBase(SysBase)->PageSize = KrnGetSystemAttr(KATTR_PageSize);
+    /* If there's no MMU support, PageSize will stay zero */
+    KrnStatMemory(0, KMS_PageSize, &PrivExecBase(SysBase)->PageSize, TAG_DONE);
     D(bug("[exec] Memory page size: %u\n", PrivExecBase(SysBase)->PageSize));
 
     /*
