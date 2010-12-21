@@ -31,6 +31,8 @@
 #define USE_XSHM	    	    	@DO_XSHM_SUPPORT@
 #define USE_VIDMODE			@DO_VIDMODE_SUPPORT@
 
+#define USE_MMU				@aros_enable_mmu@
+
 #define ENABLE_DBUS			@ENABLE_DBUS@
 #define ENABLE_X11			@ENABLE_X11@
 

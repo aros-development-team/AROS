@@ -61,7 +61,7 @@ struct BlockHeader
 
 #define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA)
 
-APTR krnAllocate(struct MemHeader *mh, IPTR size, struct KernelBase *KernelBase);
+APTR krnAllocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase *KernelBase);
 APTR krnAllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase *KernelBase);
 void krnFree(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase);
 void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query);

@@ -1,3 +1,4 @@
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
 
@@ -38,6 +39,9 @@ AROS_LH3(void *, KrnAllocPages,
 	to system's memory page size. The same applies to starting address
 	(if specified), it will be rounded down to page boundary.
 
+	This function works only on systems with MMU support. Without MMU
+	it will always return NULL.
+
     EXAMPLE
 
     BUGS
@@ -51,15 +55,23 @@ AROS_LH3(void *, KrnAllocPages,
 {
     AROS_LIBFUNC_INIT
 
-    struct MemHeader *mh;
     APTR res = NULL;
-    KRN_MapAttr protection = MAP_Readable|MAP_Writable;
+#if USE_MMU
+    struct MemHeader *mh;
+    ULONG physFlags;
+    KRN_MapAttr protection;
 
-    /* Adjust execute permission */
+    /* We can't work if MMU is not up */
+    if (!KernelBase->kb_PageSize)
+	return NULL;
+
+    /* Get permissions */
+    protection = MAP_Readable|MAP_Writable;
     if (flags & MEMF_EXECUTABLE)
 	protection |= MAP_Executable;
+
     /* Leave only flags that describe physical properties of the memory */
-    flags &= MEMF_PHYSICAL_MASK;
+    physFlags = flags & MEMF_PHYSICAL_MASK;
 
     /*
      * Loop over MemHeader structures.
@@ -71,9 +83,9 @@ AROS_LH3(void *, KrnAllocPages,
 	/*
 	 * Check for the right requirements and enough free memory.
 	 * The requirements are OK if there's no bit in the
-	 * 'flags' that isn't set in the 'mh->mh_Attributes'.
+	 * 'physFlags' that isn't set in the 'mh->mh_Attributes'.
 	 */
-	if ((flags & ~mh->mh_Attributes) || mh->mh_Free < length)
+	if ((physFlags & ~mh->mh_Attributes) || mh->mh_Free < length)
 	   continue;
 
 	if (addr)
@@ -95,7 +107,7 @@ AROS_LH3(void *, KrnAllocPages,
 	     * Otherwise try to allocate pages from every MemHeader.
 	     * Note that we still may fail if the memory is fragmented too much.
 	     */
-	    res = krnAllocate(mh, length, KernelBase);
+	    res = krnAllocate(mh, length, flags, KernelBase);
 	    if (res)
 		break;
 	}
@@ -107,6 +119,7 @@ AROS_LH3(void *, KrnAllocPages,
      */
     if (res)
     	KrnSetProtection(res, length, protection);
+#endif
 
     return res;
 

@@ -1827,6 +1827,24 @@ if test "$nesting_supervisor" = "yes" ; then
 fi
 AC_MSG_RESULT($nesting_supervisor)
 
+dnl See if the user wants to disable MMU support
+dnl This can be overriden on per-target basis,
+dnl set $aros_enable_mmu to "yes" or "no" to do this
+if test "$aros_enable_mmu" = "" ; then
+    AC_MSG_CHECKING([if MMU support is enabled])
+    dnl Enabled by default
+    AC_ARG_ENABLE(mmu,AC_HELP_STRING([--disable-mmu],[Disable MMU support (default=enabled)]),aros_enable_mmu=$enableval,aros_enable_mmu="yes")
+    if test "$aros_enable_mmu" = "" ; then
+	aros_enable_mmu="yes"
+    fi
+    AC_MSG_RESULT($aros_enable_mmu)
+fi
+if test "$aros_enable_mmu" = "no" ; then
+    aros_enable_mmu="0"
+else
+    aros_enable_mmu="1"
+fi
+    
 
 dnl things specifically required for hosted flavours
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
@@ -2141,6 +2159,9 @@ AC_SUBST(aros_palm_debug_hack)
 
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)
+
+# MMU related
+AC_SUBST(aros_enable_mmu)
 
 # Apple iOS related
 AC_SUBST(aros_ios_platform)
