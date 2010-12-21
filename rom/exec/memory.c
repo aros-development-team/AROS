@@ -100,6 +100,118 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
     return NULL;
 }
 
+/*
+ * Allocate block from the given MemHeader.
+ * From the requirements it takes only MEMF_REVERSE flag in order to
+ * know allocation direction.
+ * This routine can be called with SysBase = NULL.
+ */
+APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct ExecBase *SysBase)
+{
+    struct MemChunk *mc=NULL, *p1, *p2;
+    
+    /*
+     * The free memory list is only single linked, i.e. to remove
+     * elements from the list I need node's predessor. For the
+     * first element I can use mh->mh_First instead of a real predessor.
+     */
+    p1 = (struct MemChunk *)&mh->mh_First;
+    p2 = p1->mc_Next;
+
+    /* Follow the memory list */
+    while (p2 != NULL)
+    {
+        /* p1 is the previous MemChunk, p2 is the current one */
+#if !defined(NO_CONSISTENCY_CHECKS)
+	/*
+	 * Memory list consistency checks.
+	 * 1. Check alignment restrictions
+	 */
+        if (((IPTR)p2|(IPTR)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1))
+	{
+	    if (SysBase && SysBase->DebugAROSBase)
+	    {
+		bug("[MM] Chunk allocator error\n");
+		bug("[MM] Attempt to allocate %lu bytes from MemHeader 0x%p\n", byteSize, mh);
+		bug("[MM] Misaligned chunk at 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+
+		Alert(AN_MemCorrupt|AT_DeadEnd);
+	    }
+	    return NULL;
+	}
+
+	/* 2. Check against overlapping blocks */
+	if (p2->mc_Next && ((UBYTE *)p2 + p2->mc_Bytes >= (UBYTE *)p2->mc_Next))
+	{
+	    if (SysBase && SysBase->DebugAROSBase)
+	    {
+		bug("[MM] Chunk allocator error\n");
+		bug("[MM] Attempt to allocate %lu bytes from MemHeader 0x%p\n", byteSize, mh);
+		bug("[MM] Overlapping chunks 0x%p (%u bytes) and 0x%p (%u bytes)\n", p2, p2->mc_Bytes, p2->mc_Next, p2->mc_Next->mc_Bytes);
+
+		Alert(AN_MemCorrupt|AT_DeadEnd);
+	    }
+	    return NULL;
+	}
+#endif
+
+        /* Check if the current block is large enough */
+        if (p2->mc_Bytes>=byteSize)
+        {
+            /* It is. */
+            mc = p1;
+
+            /* Use this one if MEMF_REVERSE is not set.*/
+            if (!(requirements & MEMF_REVERSE))
+                break;
+            /* Else continue - there may be more to come. */
+        }
+
+        /* Go to next block */
+        p1 = p2;
+        p2 = p1->mc_Next;
+    }
+
+    /* Something found? */
+    if (mc != NULL)
+    {
+        /* Remember: if MEMF_REVERSE is set p1 and p2 are now invalid. */
+        p1 = mc;
+        p2 = p1->mc_Next;
+
+        /* Remove the block from the list and return it. */
+        if (p2->mc_Bytes == byteSize)
+        {
+            /* Fits exactly. Just relink the list. */
+            p1->mc_Next = p2->mc_Next;
+            mc          = p2;
+        }
+        else
+        {
+            if (requirements & MEMF_REVERSE)
+            {
+                /* Return the last bytes. */
+                p1->mc_Next=p2;
+                mc = (struct MemChunk *)((UBYTE *)p2+p2->mc_Bytes-byteSize);
+            }
+            else
+            {
+                /* Return the first bytes. */
+                p1->mc_Next=(struct MemChunk *)((UBYTE *)p2+byteSize);
+                mc=p2;
+            }
+
+            p1           = p1->mc_Next;
+            p1->mc_Next  = p2->mc_Next;
+            p1->mc_Bytes = p2->mc_Bytes-byteSize;
+        }
+
+        mh->mh_Free -= byteSize;
+    }
+    
+    return mc;
+}
+
 /* Backwards compatibility for old ports */
 #ifndef KrnAllocPages
 #define KrnAllocPages(addr, size, flags) AllocMem(size, flags & ~MEMF_SEM_PROTECTED)
