@@ -348,23 +348,16 @@ struct EasyTimer* OpenTimer(){
 	return NULL;
 }
 
-
 VOID DoStr(struct EasySerial *s,const STRPTR str){
-
-	if( ! s ) return;
-	if( ! s->Ok ) return;
-
-	s->SerTx->IOSer.io_Length = strlen((char*) str);
-	s->SerTx->IOSer.io_Data = str;
-	s->SerTx->IOSer.io_Command =  CMD_WRITE;
-	DoIO((struct IORequest*)s->SerTx);
-
+	DoBYTES(s,str,strlen((char*) str));
 }
 
 void DoBYTES(struct EasySerial *s, BYTE *p,ULONG len){
 
 	if( ! s ) return;
 	if( ! s->Ok ) return;
+
+	WaitIO((struct IORequest*)s->SerTx);
 
 	s->SerTx->IOSer.io_Length = len;
 	s->SerTx->IOSer.io_Data = p;
@@ -377,12 +370,13 @@ void SendBYTES(struct EasySerial *s, BYTE *p, ULONG len){
 	if( ! s ) return;
 	if( ! s->Ok ) return;
 
+	WaitIO((struct IORequest*)s->SerTx);
+
 	s->SerTx->IOSer.io_Length = len;
 	s->SerTx->IOSer.io_Data = p;
 	s->SerTx->IOSer.io_Command =  CMD_WRITE;
 	SendIO((struct IORequest*)s->SerTx);
 }
-
 
 void DrainSerial(struct EasySerial *s){
 
