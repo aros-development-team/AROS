@@ -97,7 +97,7 @@ static void DumpState(struct MemHeader *mh)
 
 int main(void)
 {
-#ifdef KrnGetSystemAttr
+#if defined(KrnGetSystemAttr) && defined(KATTR_PageSize)
 
     APTR KernelBase;
     struct Task *me;
