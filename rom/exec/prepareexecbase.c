@@ -82,7 +82,7 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
  *  and not add anything yet (except for the MemHeader).
  *  WARNING: this routine intentionally sets up global SysBase.
  *  This is done because:
- *  1. PrepareAROSSupportBase() calls AllocMem() which relies on functional SysBase
+ *  1. PrepareAROSSupportBase() calls Allocate() which relies on functional SysBase
  *  2. After PrepareAROSSupportBase() it is possible to call debug output functions
  *     (kprintf() etc). Yes, KernelBase is not set up yet, but remember that kernel.resource
  *     may have patched functions in AROSSupportBase so that KernelBase is not needed there.
@@ -113,10 +113,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     
     /* Allocate memory for library base */
     totalsize = negsize + sizeof(struct IntExecBase);
-    SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, 0, NULL) + negsize);
-
-    /* Clear the library base */
-    memset(SysBase, 0, sizeof(struct IntExecBase));
+    SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL) + negsize);
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data. This is needed for CacheClearU() and CacheClearE() on MinGW32 */

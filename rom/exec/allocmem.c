@@ -20,8 +20,6 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 
-#include <string.h>
-
 #include "exec_debug.h"
 
 #ifndef DEBUG_AllocMem
@@ -131,9 +129,6 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 	res = nommu_AllocMem(byteSize, requirements, SysBase);
 
     } while (res == NULL && checkMemHandlers(&cmhs) == MEM_TRY_AGAIN);
-
-    if(res && (requirements & MEMF_CLEAR))
-        memset(res, 0, byteSize);        
 
 #if ENABLE_RT
     RT_Add (RTT_MEMORY, res, origSize);

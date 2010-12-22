@@ -9,6 +9,7 @@
 /* Needed for mungwall macros to work */
 #define MDEBUG 1
 
+#include <aros/config.h>
 #include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
@@ -58,13 +59,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct MemHeader *mh;
     IPTR origSize = byteSize;
     APTR ret = NULL;
-    
+
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
 	return NULL;
+
+#if AROS_MUNGWALL_DEBUG
+    /* Backwards compatibility hack for ports whose exec init code
+       does not set this flag. If should be set BEFORE THE FIRST ALLOCMEM,
+       otherwise FreeMem() will crash on block allocated without walls */
+    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
+#endif
 
     /* Make room for mungwall if needed */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)

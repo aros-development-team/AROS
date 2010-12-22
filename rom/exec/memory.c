@@ -103,10 +103,7 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 }
 
 /*
- * Allocate block from the given MemHeader.
- * From the requirements it takes only MEMF_REVERSE flag in order to
- * know allocation direction.
- * Length should already be aligned.
+ * Allocate block from the given MemHeader in a specific way.
  * This routine can be called with SysBase = NULL.
  */
 APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct ExecBase *SysBase)
@@ -213,8 +210,12 @@ APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct Ex
         }
 
         mh->mh_Free -= byteSize;
+
+	/* Clear the block if requested */
+	if (requirements & MEMF_CLEAR)
+	    memset(mc, 0, byteSize);
     }
-    
+
     return mc;
 }
 
@@ -531,10 +532,6 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
 	/* Remember where we were allocated from */
 	*((struct MemHeader **)ret) = mh;
 	ret += sizeof(struct MemHeader *);
-
-	/* Allocate does not clear the memory! */
-	if (flags & MEMF_CLEAR)
-	    memset(ret, 0, memSize - sizeof(struct MemHeader *));
     }
 
     /* Everything fine */
