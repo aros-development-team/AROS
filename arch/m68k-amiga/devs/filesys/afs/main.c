@@ -659,7 +659,7 @@ void AFS_work(void) {
 	    	case ACTION_RENAME_OBJECT:
 	    	{
 	    	    struct FileLock   *opl = BADDR(dp->dp_Arg1);
-	    	    struct FileLock   *npl = BADDR(dp->dp_Arg3);
+	    	    //unused//struct FileLock   *npl = BADDR(dp->dp_Arg3);
 	    	    CONST_STRPTR       on = AROS_BSTR_ADDR(dp->dp_Arg2);
 	    	    CONST_STRPTR       nn = AROS_BSTR_ADDR(dp->dp_Arg4);
 	    	    struct AfsHandle  *oh;
