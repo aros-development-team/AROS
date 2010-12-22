@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code for CONU_CHARMAP console units.
@@ -12,13 +12,17 @@
 
 struct charmap_line * charmap_dispose_line(struct charmap_line * line)
 {
-  struct charmap_line * next = line->next;
-  if (line->size) {
-	if (line->text) FreeMem(line->text,line->size);
-	if (line->fgpen) FreeMem(line->fgpen, line->size);
-	if (line->bgpen) FreeMem(line->bgpen, line->size);
+  struct charmap_line * next = NULL;
+  if (line)
+  {
+    next = line->next;
+    if (line->size) {
+      if (line->text) FreeMem(line->text,line->size);
+      if (line->fgpen) FreeMem(line->fgpen, line->size);
+      if (line->bgpen) FreeMem(line->bgpen, line->size);
+    }
+    FreeMem(line,sizeof(struct charmap_line));
   }
-  FreeMem(line,sizeof(struct charmap_line));
   return next;
 }
 
