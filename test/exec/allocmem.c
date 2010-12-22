@@ -11,14 +11,25 @@
  */
 #define output printf
 
+static BOOL trash = FALSE;
+
+static void AccessTest(ULONG *ptr)
+{
+    if (!trash)
+	return;
+
+    ptr[-1] = 0x40302010;	/* This should NOT cause mungwall warning */
+    ptr[0]  = 0x01020304;	/* This SHOULD produce mungwall warning   */
+}
+
 int main(int argc, char **argv)
 {
     APTR block0, start, block1;
-    BOOL trash = FALSE;
 
     /*
      * Do some memory trashing if started with "trash" argument.
-     * It's not adviced to do this without mungwall enabled
+     * It's not adviced to do this without mungwall enabled.
+     * The actual purpose of this is to test mungwall functionality.
      */
     if ((argc > 1) && (!strcmp(argv[1], "trash")))
     	trash = TRUE;
@@ -32,9 +43,8 @@ int main(int argc, char **argv)
     block0 = AllocMem(256 * 1024, MEMF_ANY);
     output("Allocated at 0x%p, available memory: %u bytes\n", block0, AvailMem(MEMF_ANY));
     
-    if (trash)
-    	*(ULONG *)(block0 + 256 * 1024) = 0x01020304;
-
+    AccessTest(block0 + 256 * 1024);
+ 
     output("Freeing the block...\n");
     FreeMem(block0, 256 * 1024);
     output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
@@ -44,12 +54,24 @@ int main(int argc, char **argv)
     block1 = AllocAbs(4096, start);
     output("Allocated at 0x%p, available memory: %u bytes\n", block1, AvailMem(MEMF_ANY));
 
-    if (trash)
-    	*(ULONG *)(start + 4096) = 0x01020304;
+    AccessTest(start + 4096);
 
     output("Freeing the block...\n");
     FreeMem(block1, 4096 + start - block1);
     output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+
+    output("Now repeat this AllocAbs(), but free using our requested start address...\n");
+    block1 = AllocAbs(4096, start);
+    output("Allocated at 0x%p, available memory: %u bytes\n", block1, AvailMem(MEMF_ANY));
+
+    if (block1)
+    {
+	AccessTest(start + 4096);
+
+	output("Freeing the block...\n");
+	FreeMem(start, 4096);
+	output("Done, available memory: %u bytes\n", AvailMem(MEMF_ANY));
+    }
     
     Permit();
     return 0;
