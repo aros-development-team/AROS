@@ -628,6 +628,12 @@ BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     move.l	%a2@(GV_taskwait),%a4
     move.l      #(3*4 + 10 * 4 + 10 * 4), %d0
     jsr		(%a5)
+    move.l	%a1@(4*4),%d1	/* dp_Res2 */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(77 * -6) /* DOS/SetIoErr */
+    movem.l	%sp@+,%a0-%a1/%a6
+    move.l	%a1@(3*4),%d0	/* dp_Res */
     BRTS
 
 BCPLd returnPacket   /* c4, void, @DosPacket, res1, res2 */
@@ -1049,6 +1055,10 @@ BCPL deviceproc     /* 198, FileLock ^, @filename */
 BCPLd libcall        /* 19c, void, libbase, LVOffset, d0, d1, a0, a1 */
     BRTS
 
+BCPLd writeErr		/* 1a0, ??, ?? */
+    moveq.l	#-1,%d0
+    BRTS
+
 BCPLd findConsoleHandler /* 1a4, MsgPort ^,  */
     BRTS
 
@@ -1132,6 +1142,7 @@ BCPL DupLock        /* 1c4, FileLock ^, @FileLock */
     BRTS
 
 BCPLd makesysreq     /* 1c8, BOOL, count, pkt, proc */
+    moveq.l	#-1,%d0
     BRTS
 
 BCPL strcpy         /* 1cc, void, @src, @dest */
