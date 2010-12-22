@@ -72,8 +72,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct MemHeader *mh;
-    ULONG origsize = byteSize;
+    IPTR origsize;
 
     D(bug("Call FreeMem (%08lx, %ld)\n", memoryBlock, byteSize));
 
@@ -93,13 +92,17 @@
     /* Align the block as well (needed because of AllocAbs) */
     memoryBlock=(APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock,MEMCHUNK_TOTAL);
 
+    /*
+     * Remember original size after aligning base address.
+     * This is what was remembered in AllocAbs().
+     */
+    origsize = byteSize;
+    
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) {
 	/* Add the size of mung walls and mungwall header */
 	memoryBlock -= MUNGWALL_SIZE + MUNGWALLHEADER_SIZE;
 	byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
     }
-
-    byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
 
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
@@ -114,7 +117,7 @@
 		    "allocsize = %u  freesize = %u   Task: 0x%x, Name: %s\n", \
 		    __FUNCTION__,
 		    memoryBlock + MUNGWALL_SIZE + MUNGWALLHEADER_SIZE,
-		    *(ULONG *)memoryBlock,
+		    header->mwh_allocsize,
 		    origsize,
 		    __t,
 		    __t->tc_Node.ln_Name);\
@@ -127,7 +130,7 @@
 		    "allocsize = %u  freesize = %u   Task: 0x%x, Name: %s\n", \
 		    __FUNCTION__,
 		    memoryBlock + MUNGWALL_SIZE + MUNGWALLHEADER_SIZE,
-		    *(ULONG *)memoryBlock,
+		    header->mwh_allocsize,
 		    origsize,
 		    __t,
 		    __t->tc_Node.ln_Name);\
@@ -164,49 +167,10 @@
 	
     }
 
-    /* Protect the memory list from access by other tasks. */
-    Forbid();
-
-    ForeachNode(&SysBase->MemList, mh)
-    {
-	/* Test if the memory belongs to this MemHeader. */
-	if (mh->mh_Lower > memoryBlock || mh->mh_Upper <= memoryBlock)
-	    continue;
-	    
-	if (mh->mh_Attributes & MEMF_MANAGED)
-	{
-	    struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
-	    
-	    if (mhe->mhe_Free)
-	        mhe->mhe_Free(mhe, memoryBlock, byteSize);
-	   
-  	    Permit();
-	        ReturnVoid ("FreeMem");
-        }
-
-	    
-	#if !defined(NO_CONSISTENCY_CHECKS)
-	/* Test if it really fits into this MemHeader. */
-	if ((memoryBlock + byteSize) > mh->mh_Upper)
-	    /* Something is completely wrong. */
-	    Alert(AN_MemCorrupt|AT_DeadEnd);
-	#endif
-
-	Deallocate(mh, memoryBlock, byteSize);
-
-	Permit();
-	ReturnVoid ("FreeMem");
-    }
-
-#if !defined(NO_CONSISTENCY_CHECKS)
-    /* Some memory that didn't fit into any MemHeader? */
-    Alert(AN_MemCorrupt|AT_DeadEnd);
-#else
-    Permit();
-#endif
+    nommu_FreeMem(memoryBlock, byteSize, SysBase);
 
     ReturnVoid ("FreeMem");
-    
+
     AROS_LIBFUNC_EXIT
 } /* FreeMem */
 

@@ -17,6 +17,8 @@
  * Build a wall around the allocated chunk if requested.
  * Returns updated pointer to the beginning of the chunk
  * (actually a pointer to a usable area)
+ * 'res' is a pointer to the beginning of a raw memory block (inside which walls will be constructed)
+ * 'origSize' is ORIGINAL allocation size (before adding mungwall size)
  */
 APTR MungWall_Build(APTR res, IPTR origSize, ULONG requirements, struct ExecBase *SysBase)
 {
@@ -104,12 +106,16 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
  * Allocate block from the given MemHeader.
  * From the requirements it takes only MEMF_REVERSE flag in order to
  * know allocation direction.
+ * Length should already be aligned.
  * This routine can be called with SysBase = NULL.
  */
 APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct ExecBase *SysBase)
 {
     struct MemChunk *mc=NULL, *p1, *p2;
-    
+
+    /* First round byteSize to a multiple of MEMCHUNK_TOTAL */
+    byteSize = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
+
     /*
      * The free memory list is only single linked, i.e. to remove
      * elements from the list I need node's predessor. For the
@@ -135,7 +141,7 @@ APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct Ex
 		bug("[MM] Attempt to allocate %lu bytes from MemHeader 0x%p\n", byteSize, mh);
 		bug("[MM] Misaligned chunk at 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
 
-		Alert(AN_MemCorrupt|AT_DeadEnd);
+		Alert(AN_MemoryInsane|AT_DeadEnd);
 	    }
 	    return NULL;
 	}
@@ -149,7 +155,7 @@ APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct Ex
 		bug("[MM] Attempt to allocate %lu bytes from MemHeader 0x%p\n", byteSize, mh);
 		bug("[MM] Overlapping chunks 0x%p (%u bytes) and 0x%p (%u bytes)\n", p2, p2->mc_Bytes, p2->mc_Next, p2->mc_Next->mc_Bytes);
 
-		Alert(AN_MemCorrupt|AT_DeadEnd);
+		Alert(AN_MemoryInsane|AT_DeadEnd);
 	    }
 	    return NULL;
 	}
@@ -210,6 +216,144 @@ APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct Ex
     }
     
     return mc;
+}
+
+/* Free 'byteSize' bytes starting at 'memoryBlock' belonging to MemHeader 'freeList' */
+void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
+{
+    struct MemChunk *p1, *p2, *p3;
+    UBYTE *p4;
+
+    /* Align size to the requirements */
+    byteSize+=(IPTR)memoryBlock&(MEMCHUNK_TOTAL-1);
+    byteSize=(byteSize+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
+
+    /* Align the block as well */
+    memoryBlock=(APTR)((IPTR)memoryBlock&~(MEMCHUNK_TOTAL-1));
+
+    /*
+	The free memory list is only single linked, i.e. to insert
+	elements into the list I need the node as well as it's
+	predessor. For the first element I can use freeList->mh_First
+	instead of a real predessor.
+    */
+    p1=(struct MemChunk *)&freeList->mh_First;
+    p2=freeList->mh_First;
+
+    /* Start and end(+1) of the block */
+    p3=(struct MemChunk *)memoryBlock;
+    p4=(UBYTE *)p3+byteSize;
+
+    /* No chunk in list? Just insert the current one and return. */
+    if(p2==NULL)
+    {
+	p3->mc_Bytes=byteSize;
+	p3->mc_Next=NULL;
+	p1->mc_Next=p3;
+	freeList->mh_Free+=byteSize;
+	return;
+    }
+
+    /* Follow the list to find a place where to insert our memory. */
+    do
+    {
+#if !defined(NO_CONSISTENCY_CHECKS)
+	/*
+	 * Do some constistency checks:
+	 * 1. All MemChunks must be aligned to MEMCHUNK_TOTAL.
+	 */
+        if (((IPTR)p2|(IPTR)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1))
+	{
+	    bug("[MM] Chunk allocator error\n");
+	    bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+	    bug("[MM] Misaligned chunk at 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+
+	    Alert(AN_MemCorrupt|AT_DeadEnd);
+	}
+
+	/* 
+	 * 2. The end (+1) of the current MemChunk
+	 *    must be lower than the start of the next one.
+	 */
+	if (p2->mc_Next && ((UBYTE *)p2 + p2->mc_Bytes >= (UBYTE *)p2->mc_Next))
+	{
+	    bug("[MM] Chunk allocator error\n");
+	    bug("[MM] Attempt to free %lu bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+	    bug("[MM] Overlapping chunks 0x%p (%u bytes) and 0x%p (%u bytes)\n", p2, p2->mc_Bytes, p2->mc_Next, p2->mc_Next->mc_Bytes);
+
+	    Alert(AN_MemCorrupt|AT_DeadEnd);
+	}
+#endif
+	/* Found a block with a higher address? */
+	if (p2 >= p3)
+	{
+#if !defined(NO_CONSISTENCY_CHECKS)
+	    /*
+		If the memory to be freed overlaps with the current
+		block something must be wrong.
+	    */
+	    if (p4>(UBYTE *)p2)
+	    {
+		bug("[MM] Chunk allocator error\n");
+		bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+		bug("[MM] Block overlaps with chunk 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+
+		Alert(AN_FreeTwice);
+		return;
+	    }
+#endif
+	    /* End the loop with p2 non-zero */
+	    break;
+	}
+	/* goto next block */
+	p1=p2;
+	p2=p2->mc_Next;
+
+    /* If the loop ends with p2 zero add it at the end. */
+    }while(p2!=NULL);
+
+    /* If there was a previous block merge with it. */
+    if(p1!=(struct MemChunk *)&freeList->mh_First)
+    {
+#if !defined(NO_CONSISTENCY_CHECKS)
+	/* Check if they overlap. */
+	if ((UBYTE *)p1+p1->mc_Bytes>(UBYTE *)p3)
+	{
+	    bug("[MM] Chunk allocator error\n");
+	    bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+	    bug("[MM] Block overlaps with chunk 0x%p (%u bytes)\n", p1, p1->mc_Bytes);
+
+	    Alert(AN_FreeTwice);
+	    return;
+	}
+#endif
+	/* Merge if possible */
+	if((UBYTE *)p1+p1->mc_Bytes==(UBYTE *)p3)
+	    p3=p1;
+	else
+	    /* Not possible to merge */
+	    p1->mc_Next=p3;
+    }else
+	/*
+	    There was no previous block. Just insert the memory at
+	    the start of the list.
+	*/
+	p1->mc_Next=p3;
+
+    /* Try to merge with next block (if there is one ;-) ). */
+    if(p4==(UBYTE *)p2&&p2!=NULL)
+    {
+	/*
+	   Overlap checking already done. Doing it here after
+	   the list potentially changed would be a bad idea.
+	*/
+	p4+=p2->mc_Bytes;
+	p2=p2->mc_Next;
+    }
+    /* relink the list and return. */
+    p3->mc_Next=p2;
+    p3->mc_Bytes=p4-(UBYTE *)p3;
+    freeList->mh_Free+=byteSize;
 }
 
 /* Backwards compatibility for old ports */
@@ -346,7 +490,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
 	}
 
 	/* Try to get the memory */
-	ret = Allocate(mh, memSize);
+	ret = stdAlloc(mh, memSize, flags, SysBase);
 	D(bug("[InternalAllocPooled] Allocated memory at 0x%p from puddle 0x%p\n", ret, mh));
 
 	/* Got it? */
@@ -451,7 +595,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
 	D(bug("[FreePooled] Allocated from puddle 0x%p, size %u\n", mh, size));
 
 	/* Free the memory. */
-	Deallocate(mh, freeStart, freeSize);
+	stdDealloc(mh, freeStart, freeSize, SysBase);
 	D(bug("[FreePooled] Deallocated chunk, %u free bytes in the puddle\n", mh->mh_Free));
 
 	/* Is this MemHeader completely free now? */

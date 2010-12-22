@@ -111,11 +111,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     /* Align library base */
     negsize = AROS_ALIGN(negsize);
     
-    /*
-     * Allocate memory for library base. Round up manually because
-     * stdAlloc() does not do it.
-     */
-    totalsize = AROS_ROUNDUP2(negsize + sizeof(struct IntExecBase), MEMCHUNK_TOTAL);
+    /* Allocate memory for library base */
+    totalsize = negsize + sizeof(struct IntExecBase);
     SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, 0, NULL) + negsize);
 
     /* Clear the library base */
