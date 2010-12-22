@@ -113,9 +113,9 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 		break;
 	    }
 	case CMD_CLEAR:
+	    td_flush(tdu, tdb);
+	    td_clear(tdb);
 	    tdu->tdu_flags = 0;
-	    tdb->td_buffer_unit = -1;
-	    tdb->td_buffer_track = -1;
 	    iotd->iotd_Req.io_Error = 0;
 	    break;
 	case ETD_READ:
@@ -132,7 +132,7 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 		break;
 	    }
 	case CMD_UPDATE:
-	    iotd->iotd_Req.io_Error = td_update(tdu, tdb);
+	    iotd->iotd_Req.io_Error = td_flush(tdu, tdb);
 	    break;
 	case ETD_WRITE:
 	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
@@ -187,6 +187,7 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    {
 		case 0:
     	    	    td_select(tdu, tdb);
+  	    	    td_flush(tdu, tdb);
 		    td_motoroff(tdu, tdb);
 		    break;
 		case 1:
@@ -417,11 +418,15 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 			    tdu->tdu_sectors = 11;
 			    tdu->tdu_hddisk = 0;
 			    tdu->pub.tdu_Counter++;
+			    if (tdu->tdu_UnitNum == tdb->td_buffer_unit)
+			    	td_clear(tdb);
 			    Forbid();
 			    ForeachNode(&tdu->tdu_Listeners,iotd) {
 				Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
 			    }
 			    Permit();
+			} else {
+			    td_flush(tdu, tdb);
 			}
 			break;
 		    }

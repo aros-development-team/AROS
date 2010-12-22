@@ -80,6 +80,7 @@ struct TrackDiskBase
     BOOL					td_supportHD;
     WORD					td_buffer_track;
     BYTE					td_buffer_unit;		/* buffer contains this unit's track */
+    BOOL					td_dirty;
 };
 
 #endif /* TRACKDISK_DEVICE_H */
