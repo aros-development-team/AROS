@@ -97,7 +97,7 @@ static void DumpState(struct MemHeader *mh)
 
 int main(void)
 {
-#if defined(KrnGetSystemAttr) && defined(KATTR_PageSize)
+#if defined(KrnStatMemory)
 
     APTR KernelBase;
     struct Task *me;
@@ -114,14 +114,13 @@ int main(void)
 	return 1;
     }
 
-    page = KrnGetSystemAttr(KATTR_PageSize);
-    printf("System page size: %u (0x%08X)\n", page, page);
-    if (!page)
+    if (!KrnStatMemory(0, KMS_PageSize, &page, TAG_DONE))
     {
-	printf("This system does not have page size specified!\n"
+	printf("MMU support is not implemented for this system!\n"
 	       "kernel.resource memory allocator will not work!\n");
 	return 1;
     }
+    printf("System page size: %u (0x%08X)\n", page, page);
 
     TestLength = PAGES_NUM * page;
     TestArea = AllocMem(TestLength, MEMF_ANY);
