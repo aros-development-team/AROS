@@ -1,10 +1,10 @@
-## version $VER: diskinfo.catalog 1.0 (28.02.2008)
+## version $VER: diskinfo.catalog 1.4 (22.12.2010)
 ## language deutsch
 ## codeset 0
 ;
 ;
 MSG_TITLE
-; Disk Info
+Disk Information
 ; Disk Info
 ;
 MSG_ERROR_HEADER
@@ -44,7 +44,7 @@ Olivier Adam
 ; Olivier Adam
 ;
 MSG_COPYRIGHT
-©2006-2009 AROS Dev Team
+Copyright (C) AROS Dev Team
 ; ©2006-2009 AROS Dev Team
 ;
 MSG_USED
