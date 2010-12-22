@@ -403,7 +403,7 @@ static void td_encodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
 	UBYTE *databuf = tdb->td_DataBuffer;
 	UWORD *mfmbuf = (UWORD*)tdb->td_DMABuffer;
 	UWORD bufsize = DISK_BUFFERSIZE * (tdu->tdu_hddisk ? 2 : 1);
-	UWORD *mfmbufend = (UWORD*)tdb->td_DMABuffer + (bufsize / 2);
+//	UWORD *mfmbufend = (UWORD*)tdb->td_DMABuffer + (bufsize / 2);
 	UWORD gapsize = bufsize - tdu->tdu_sectors * 2 * 544;
 
 	for (i = 0; i < gapsize / 2 - 2; i++)
