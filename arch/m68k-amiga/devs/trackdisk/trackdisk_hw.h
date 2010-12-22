@@ -22,12 +22,12 @@ int td_recalibrate(struct TDU*, struct TrackDiskBase *);
 int td_seek(struct TDU*, int, int, struct TrackDiskBase *);
 int td_read(struct IOExtTD *, struct TDU*, struct TrackDiskBase *);
 int td_write(struct IOExtTD *, struct TDU*, struct TrackDiskBase *);
-int td_update(struct TDU *, struct TrackDiskBase *);
 int td_format(struct IOExtTD *, struct TDU*, struct TrackDiskBase *);
 UBYTE td_getDiskChange(struct TDU*, struct TrackDiskBase*);
 void td_select(struct TDU *tdu, struct TrackDiskBase *tdb);
 void td_deselect(struct TDU *tdu, struct TrackDiskBase *tdb);
-
+int td_flush(struct TDU *tdu, struct TrackDiskBase *tdb);
+void td_clear(struct TrackDiskBase *tdb);
 
 #endif /* TRACKDISK_HW_H */
 
