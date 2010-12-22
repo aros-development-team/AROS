@@ -90,9 +90,6 @@ AROS_LH2(APTR, Allocate,
     if(!byteSize)
 	return NULL;
 
-    /* First round byteSize to a multiple of MEMCHUNK_TOTAL. */
-    byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
-
     /* Is there enough free memory in the list? */
     if(freeList->mh_Free<byteSize)
 	return NULL;

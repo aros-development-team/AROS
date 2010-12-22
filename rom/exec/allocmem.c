@@ -121,52 +121,16 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
         byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
 
-    /* First round byteSize to a multiple of MEMCHUNK_TOTAL */
-    byteSize = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
-
     cmhs.cmhs_CurNode                = (struct Node *)SysBase->ex_MemHandlers.mlh_Head;
     cmhs.cmhs_Data.memh_RequestSize  = byteSize;
     cmhs.cmhs_Data.memh_RequestFlags = requirements;
     cmhs.cmhs_Data.memh_Flags        = 0;
     
-    /* Protect memory list against other tasks */
-    Forbid();
-
     do
     {
-	struct MemHeader *mh;
+	res = nommu_AllocMem(byteSize, requirements, SysBase);
 
-	/* Loop over MemHeader structures */
-        ForeachNode(&SysBase->MemList, mh)
-        {
-	    /*
-		Check for the right requirements and enough free memory.
-		The requirements are OK if there's no bit in the
-		'attributes' that isn't set in the 'mh->mh_Attributes'.
-		MEMF_CLEAR, MEMF_REVERSE and MEMF_NO_EXPUNGE are treated
-		as if they were always set in the memheader.
-	    */
-	    if((requirements & ~(MEMF_CLEAR|MEMF_REVERSE|
-		  	         MEMF_NO_EXPUNGE|mh->mh_Attributes))
-	       || mh->mh_Free < byteSize)
-	       continue;
-	       
-            if (mh->mh_Attributes & MEMF_MANAGED)
-            {
-  	        struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
-                if (mhe->mhe_Alloc)
-                    res = mhe->mhe_Alloc(mhe, byteSize, &requirements);
-            }
-            else
-            {
-                res = stdAlloc(mh, byteSize, requirements, SysBase);
-            }
-	    if (res)
-	        break;
-        }
     } while (res == NULL && checkMemHandlers(&cmhs) == MEM_TRY_AGAIN);
-
-    Permit();
 
     if(res && (requirements & MEMF_CLEAR))
         memset(res, 0, byteSize);        
