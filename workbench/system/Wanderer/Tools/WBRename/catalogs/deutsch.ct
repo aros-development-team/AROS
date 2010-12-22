@@ -1,4 +1,4 @@
-## version $VER: deutsch.catalog 0.1 (30.03.2006)
+## version $VER: deutsch.catalog 1.3 (22.12.2010)
 ## language deutsch
 ## codeset 0
 ;
@@ -12,7 +12,7 @@ Benennt Dateien und Schubladen um
 ; Renames files and drawers
 ;
 MSG_COPYRIGHT
-©2006, AROS Dev Team
+Copyright (C) AROS Dev Team
 ; ©2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
@@ -45,7 +45,7 @@ MSG_ALREADY_EXIST
 ;
 MSG_FAILED
 Beim Umbenennen von '%s' trat der Fehler\n%s auf!
-; Rename of '%s' failed with error '%ld'!
+; Rename of '%s' failed with error:\n'%s'!
 ;
 MSG_ILLEGAL_CHARS
 '%s' enthält unerlaubte Zeichen!
@@ -67,3 +67,6 @@ MSG_FAILED_CREATE_APP
 Kann Application-Objekt nicht erzeugen!
 ; Failed to create Application!
 ;
+MSG_OUTOFMEMORY
+Kein RAM Speicher verfügbar!
+; Can't allocate RAM!
