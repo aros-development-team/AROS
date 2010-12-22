@@ -1,4 +1,4 @@
-## version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+## version $VER: Editor.catalog 1.5 (22.12.2010)
 ## language deutsch
 ## codeset 0
 ;
@@ -350,11 +350,7 @@ Information
 ; Information
 ;
 MSG_FORMATINFO
-%s\n\
-Programm von T.Pierron und C.Guillaume © 2000\n\
-\n\
-Datei: %s\n\
-Länge: %ld %s, %ld %s.\n
+%s\nProgramm von T.Pierron und C.Guillaume © 2000\n\nDatei: %s\nLänge: %ld %s, %ld %s.\n
 ; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
