@@ -1,4 +1,4 @@
-## version $VER: deutsch.catalog 0.2 (30.03.2006)
+## version $VER: wbnewdrawer.catalog 1.2 (22.12.2010)
 ## language deutsch
 ## codeset 0
 ;
@@ -80,5 +80,5 @@ Kann Application-Objekt nicht erzeugen!
 ; Failed to create Application!
 ;
 MSG_WRONG_ICON_TYPE
-Die vorhandene Piktrogramm-Datei '%s'.info\nist nicht vom Typ Schublade!
+Die vorhandene Piktogramm-Datei '%s'.info\nist nicht vom Typ Schublade!
 ; The existing icon file '%s'.info isn't of type Drawer!
