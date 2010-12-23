@@ -182,19 +182,14 @@ struct EasySerial *OpenSerial(BYTE *name,ULONG unit){
 		return s;
 	
 	}while(0);
-	
-	D(bug("OpenSerial FAIL !!\n"));
-	CloseSerial(s);
+	// FAIL:
+	_CloseSerial(s);
 	return NULL;
 }
 
-
-VOID CloseSerial(struct EasySerial *s){
+VOID _CloseSerial(struct EasySerial *s){
 
 	if( ! s ) return ;
-
-	D(bug("CloseSerial\n"));
-	
 	s->Ok = FALSE;
 	
 	if( s->SerRx ){
@@ -220,10 +215,7 @@ VOID CloseSerial(struct EasySerial *s){
 	if( s->TxBuff ) FreeMem( s->TxBuff , SERIAL_BUFSIZE );
 	if( s->RxBuff ) FreeMem( s->RxBuff , SERIAL_BUFSIZE );
 	FreeMem( s , sizeof(struct EasySerial) );
-
-	D(bug("CloseSerial OK!\n"));
 }
-
 
 VOID QueueSerRequest(struct EasySerial *s , LONG maxlength){
 

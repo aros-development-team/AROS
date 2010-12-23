@@ -518,8 +518,7 @@ bug("GetResponse end\n");
 
 struct EasySerial *OpenSerial(BYTE *name,ULONG unit){
 	struct EasySerial *s = NULL;
-	D(bug("OpenSerial\n"));
-	
+
 	do{
 		
 		if( ! (s = AllocMem( sizeof(struct EasySerial),MEMF_CLEAR|MEMF_PUBLIC))) break;
@@ -527,15 +526,15 @@ struct EasySerial *OpenSerial(BYTE *name,ULONG unit){
 		if( ! (s->RxBuff = AllocMem( SERIAL_BUFSIZE ,MEMF_CLEAR|MEMF_PUBLIC))) break;
 		if( ! (s->TxPort = CreateMsgPort())) break;
 		if( ! (s->SerTx = CreateIORequest(s->TxPort,sizeof(struct IOExtSer)))) break;
-		
 
-		D(bug("OpenDevice: \"%s\" unit %d\n",name,unit));
 		if(  OpenDevice( name , unit , (struct IORequest *)s->SerTx,0)){
 			DeleteIORequest(s->SerTx);
 			s->SerTx = NULL;
 			break;
 		}
-
+		
+		bug("OpenSerial:OpenDevice: \"%s\" unit %d\n",name,unit);
+		
 		bug("Test CMD_WRITE\n");
 		s->SerTx->IOSer.io_Length = 0;
 		s->SerTx->IOSer.io_Data = " ";
@@ -561,21 +560,17 @@ struct EasySerial *OpenSerial(BYTE *name,ULONG unit){
 	
 	}while(0);
 	
-	D(bug("OpenSerial FAIL !!\n"));
-	CloseSerial(s);
+	// FAIL:
+	_CloseSerial(s);
 	return NULL;
 }
 
 
-
-VOID CloseSerial(struct EasySerial *s){
+VOID _CloseSerial(struct EasySerial *s){
 
 	if( ! s ) return ;
-
-	D(bug("CloseSerial\n"));
-	
 	s->Ok = FALSE;
-	
+
 	if( s->SerRx ){
 		AbortIO((struct IORequest *)s->SerRx);
 		WaitIO((struct IORequest *)s->SerRx);
@@ -636,9 +631,6 @@ VOID QueueSerRequest(struct EasySerial *s , LONG maxlength){
 	}
 
 }
-
-
-
 
 
 

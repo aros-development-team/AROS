@@ -42,7 +42,10 @@ Object *IN_Info,*OUT_Info;
 
 struct EasyBitmap *SignalBM=0;
 
-UBYTE *PortName = "GUI.PORT";
+UBYTE *PortName = "ModemManager";
+
+ULONG exPhase,exstate;
+BOOL exSer;
 
 struct EasyBitmap{
 	struct BitMap *bm;
@@ -321,11 +324,11 @@ void FindModemUnit(struct Conf *c){
 			if( TestModem( Ser , c ) ){
 				result = i;
 				DrainSerial( Ser );
-				CLOSESERIAL( Ser );
+				CloseSerial( Ser );
 				break;
 			}
 			DrainSerial( Ser );
-			CLOSESERIAL( Ser );
+			CloseSerial( Ser );
 		} else break;
 	}
 	c->SerUnitNum = result;
@@ -377,14 +380,14 @@ static void ConnectFunc(struct Hook *hook, Object *app, APTR *arg)
 					set( IN_Info , MUIA_Text_Contents, (IPTR)"DialUp...");
 					//set( OUT_Info , MUIA_Text_Contents, (IPTR)"");
 					if( DialUp(Ser,c) ){
-						CLOSESERIAL(Ser);
+						CloseSerial(Ser);
 						if( SendCtrlMsg( PPP_CTRL_OPEN_SERIAL , 0 , c )){
 							c->state = STATE_OPENDEV;
 							set( OUT_Info , MUIA_Text_Contents, (IPTR)"OK,Starting PPP...");
 						}
 					}
 				}
-				CLOSESERIAL(Ser);
+				CloseSerial(Ser);
 			}else c->state = STATE_UNPLUGGED;
 		}else c->state = STATE_UNPLUGGED;
 
@@ -502,8 +505,10 @@ void HandleMessage(struct PPPcontrolMsg *InfoMsg,struct Conf *c){
 	if( InfoMsg->Msg.mn_Length == sizeof(struct PPPcontrolMsg)
 		&&  InfoMsg->Command == PPP_CTRL_INFO
 	 ){
-		bug("handlemsg phase=%d,ser=%d,state=%d\n",InfoMsg->Phase,InfoMsg->Ser,c->state);
-
+		if( exPhase != InfoMsg->Phase || exSer != InfoMsg->Ser || exstate !=  c->state ){
+			exPhase = InfoMsg->Phase; exSer = InfoMsg->Ser; exstate =  c->state; 
+			bug("ModemManager:handlemsg phase=%d,ser=%d,state=%d\n",exPhase,exSer,exstate);
+		}
 		// TERMINATE phase in progress ,dont do nothing
 		if(  InfoMsg->Phase == PPP_PHASE_TERMINATE ){
 			return;
@@ -592,7 +597,7 @@ int main(void)
 			}
 
 			SetTimer( timer , 1 );
-			bug("ModemManager:wait until modem plugged in\n");
+			bug("ModemManager:wait until %s unit %d open.\n",c->DeviceName ,c->SerUnitNum);
 			while(c->state == STATE_UNPLUGGED)
 			{
 				 sigs = Wait( SIGBREAKF_CTRL_C |
@@ -612,7 +617,7 @@ int main(void)
 							if( TestModem( Ser , c ) ){
 								 c->state = STATE_PLUGGED;
 							}
-							CLOSESERIAL(Ser);
+							CloseSerial(Ser);
 						}
 					}
 					SetTimer( timer , 5 );
@@ -808,7 +813,7 @@ int main(void)
 							// test if modem is unplugged
 							if( c->state == STATE_PLUGGED ){
 								if( Ser = OpenSerial( c->DeviceName ,c->SerUnitNum ) ){
-									 CLOSESERIAL(Ser);
+									 CloseSerial(Ser);
 									 //UpdateModemInfo( SignalBM , c );
 								} else
 									c->state = STATE_UNPLUGGED;
