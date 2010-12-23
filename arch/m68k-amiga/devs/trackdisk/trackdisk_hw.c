@@ -737,6 +737,7 @@ static int td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBas
         td_select(tdu, tdb);
         td_wait(tdb, 2);
         td_seek(tdu, track >> 1, track & 1, tdb);
+	CopyMemQuick(data, tdb->td_DataBuffer, tdu->tdu_sectors * 512);
 	tdb->td_sectorbits = (1 << tdu->tdu_sectors) - 1;
 	tdb->td_buffer_unit = tdu->tdu_UnitNum;
 	tdb->td_buffer_track = track;
