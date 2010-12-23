@@ -290,8 +290,7 @@ void AFS_work(void) {
     	    	break;
 	    case ACTION_INHIBIT:
 	    	res2 = inhibit(handler, volume, dp->dp_Arg1);
-	    	if (res2 != 0)
-	    	    ok = DOSFALSE;
+	    	ok = res2 ? DOSFALSE : DOSTRUE;
 	    	break;
 	    case ACTION_END:
 	    	closef(handler, (struct AfsHandle *)dp->dp_Arg1);
