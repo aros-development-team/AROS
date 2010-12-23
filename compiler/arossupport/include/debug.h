@@ -225,8 +225,6 @@
    
 #define MUNGWALL_SIZE (32 * 1)
 
-#define MUNGWALLHEADER_SIZE 32
-
 #if AROS_SIZEOFULONG == 4
 #    define MEMFILL_FREE	0xDEADBEEFL
 #    define MEMFILL_ALLOC	0xC0DEDBADL
@@ -240,6 +238,9 @@
 #endif
 
 #undef MUNGE_BLOCK
+#undef BUILD_WALL
+#undef CHECK_WALL
+#undef MungWallCheck
 
 #if MDEBUG
 /* Fill the memory block pointed by <ptr> of size <size> with <fill>
@@ -279,6 +280,7 @@
 #else
 
 #    define MUNGE_BLOCK(ptr, size, fill)
+#    define BUILD_WALL(ptr, fill, size)
 #    define CHECK_WALL(ptr, fill, size)
 #    define MungWallCheck()
 

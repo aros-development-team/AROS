@@ -68,7 +68,6 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 	AROSSupportBase->kprintf = (void *)kprintf;
 	AROSSupportBase->rkprintf = (void *)rkprintf;
 	AROSSupportBase->vkprintf = (void *)vkprintf;
-    	NEWLIST(&AROSSupportBase->AllocMemList);
 
 	/* FIXME: Add code to read in the debug options */
 	AROSSupportBase->StdOut = NULL;
@@ -116,7 +115,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL) + negsize);
 
 #ifdef HAVE_PREPAREPLATFORM
-    /* Setup platform-specific data. This is needed for CacheClearU() and CacheClearE() on MinGW32 */
+    /* Setup platform-specific data */
     if (!Exec_PreparePlatform(&PD(SysBase), data))
 	return NULL;
 #endif
@@ -176,7 +175,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 	SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
     }
 
-    NEWLIST(&((struct IntExecBase *)SysBase)->ResetHandlers);
+    NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
+    NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
 
     SysBase->SoftVer        = VERSION_NUMBER;
 

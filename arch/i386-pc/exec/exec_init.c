@@ -740,7 +740,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     ExecBase->Quantum = 4;
     ExecBase->VBlankFrequency = 50;
     ExecBase->PowerSupplyFrequency = 1;
-    NEWLIST(&((struct IntExecBase *)ExecBase)->ResetHandlers);
+
+    NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
+    NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
     
     rkprintf("OK\nBuilding JumpTable...");
 
@@ -749,6 +751,10 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         Exec_MakeFunctions(ExecBase, LIBFUNCTABLE, NULL, ExecBase);
 
     rkprintf("OK\n");
+
+    /* Enable mungwall before the first allocation call */
+    if (strstr(arosmb->cmdline, "mungwall"))
+	PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
 
     /* Add FAST memory at 0x01000000 to free memory lists */
     if (extmem)
@@ -1627,10 +1633,6 @@ struct Library * PrepareAROSSupportBase(void)
     AROSSupportBase->kprintf = (void *)kprintf;
     AROSSupportBase->rkprintf = (void *)rkprintf;
     AROSSupportBase->vkprintf = (void *)vkprintf;
-    
-    NEWLIST(&AROSSupportBase->AllocMemList);
-    
-#warning "FIXME Add code to read in the debug options"
 
     return (struct Library *)AROSSupportBase;
 }

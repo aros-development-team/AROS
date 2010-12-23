@@ -62,8 +62,6 @@ struct Block
     ULONG Size;
 };
 
-APTR MungWall_Build(APTR res, IPTR origSize, ULONG requirements, struct ExecBase *SysBase);
-
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
 APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct ExecBase *SysBase);
 void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase);
@@ -78,31 +76,6 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase);
 APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase);
 void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase);
 IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase);
-
-#define MUNGWALL_HEADER_ID 0x1ADEBCA1
-
-/* This struct must not be bigger than MUNGWALLHEADER_SIZE!! */
-
-struct MungwallHeader
-{   
-    union
-    {
-    	struct
-	{
-    	    struct  MinNode 	node;
-    	    ULONG   	    	magicid;
-    	    ULONG   	    	allocsize;
-	} s;
-	struct
-	{
-	    UBYTE   	    	blub[MUNGWALLHEADER_SIZE];
-	} b;
-    } u;    
-};
-
-#define mwh_node    	u.s.node
-#define mwh_magicid 	u.s.magicid
-#define mwh_allocsize 	u.s.allocsize
 
 #define BLOCK_TOTAL \
 ((sizeof(struct Block)+AROS_WORSTALIGN-1)&~(AROS_WORSTALIGN-1))

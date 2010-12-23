@@ -7,6 +7,7 @@
 #include <dos/bptr.h>
 #include <dos/dosextens.h>
 
+#include <aros/config.h>
 #include <aros/arossupportbase.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
@@ -365,8 +366,18 @@ int exec_main(struct TagItem *msg, void *entry)
         SysBase->Quantum = 4;
         SysBase->VBlankFrequency = 50;
         SysBase->PowerSupplyFrequency = 1;
-	NEWLIST(&((struct IntExecBase *)SysBase)->ResetHandlers);
 
+	NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
+	NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
+
+#if AROS_MUNGWALL_DEBUG
+	/*
+	 * TODO: implement command line parsing instead of this awkward hack
+	 * Or, even better, merge this init code with arch-independent one
+	 */
+	PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
+#endif
+	
         /* Build the jumptable */
         SysBase->LibNode.lib_NegSize =
             Exec_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
@@ -942,14 +953,7 @@ struct Library * PrepareAROSSupportBase(void)
     AROSSupportBase->rkprintf = (void *)rkprintf;
     AROSSupportBase->vkprintf = (void *)vkprintf;
 
-    NEWLIST(&AROSSupportBase->AllocMemList);
     }
-    else
-    {
-#warning "FIXME What should we do if we fail to allocate AROSSupportBase!?!?"
-    }
-
-#warning "FIXME Add code to read in the debug options"
 
     return (struct Library *)AROSSupportBase;
 }

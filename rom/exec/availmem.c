@@ -6,9 +6,6 @@
     Lang: english
 */
 
-#define MDEBUG 1
-
-#include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -19,6 +16,7 @@
 
 #include "exec_intern.h"
 #include "memory.h"
+#include "mungwall.h"
 
 /*****************************************************************************
 
@@ -71,39 +69,8 @@
 
     ret = nommu_AvailMem(attributes, SysBase);
 
-    if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) &&
-        (attributes & MEMF_CLEAR))
-    {
-    	struct List 	    	*allocmemlist;
-   	struct MungwallHeader 	*allocnode;
-	ULONG	    	    	 alloccount = 0;
-	ULONG	    	    	 allocsize = 0;
-	
-	allocmemlist = (struct List *)&((struct AROSSupportBase *)SysBase->DebugAROSBase)->AllocMemList;
-    
-    	kprintf("\n=== MUNGWALL MEMORY CHECK ============\n");
-	
-	Forbid();
-	
-	ForeachNode(allocmemlist, allocnode)
-	{
-	    if (allocnode->mwh_magicid != MUNGWALL_HEADER_ID)
-	    {
-		kprintf(" #%05x BAD MUNGWALL_HEADER_ID\n", alloccount);
-	    }
-	    
-	    CHECK_WALL((UBYTE *)allocnode + MUNGWALLHEADER_SIZE, 0xDB, MUNGWALL_SIZE);
-	    CHECK_WALL((UBYTE *)allocnode + MUNGWALLHEADER_SIZE + MUNGWALL_SIZE + allocnode->mwh_allocsize, 0xDB,
-		MUNGWALL_SIZE + AROS_ROUNDUP2(allocnode->mwh_allocsize, MEMCHUNK_TOTAL) - allocnode->mwh_allocsize);
-	    	    
-	    allocsize += allocnode->mwh_allocsize;
-	    alloccount++;
-	}
-
-	Permit();
-
-	kprintf("\n Num allocations: %d   Memory allocated %d\n", alloccount, allocsize);
-    }
+    if (attributes & MEMF_CLEAR)
+	MungWall_Scan(NULL, SysBase);
 
     return ret;
     AROS_LIBFUNC_EXIT

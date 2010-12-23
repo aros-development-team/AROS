@@ -6,12 +6,13 @@
     Lang: english
 */
 
-#include <aros/debug.h>
-#include "exec_intern.h"
 #include <aros/libcall.h>
-#include "memory.h"
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "memory.h"
+#include "mungwall.h"
 
 /*****************************************************************************
 
@@ -57,6 +58,14 @@
 	struct Node *p, *p2; /* Avoid casts */
 
 	D(bug("[DeletePool] Pool header 0x%p\n", pool));
+
+	/*
+	 * We are going to deallocate the whole pool.
+	 * Scan mungwall's allocations list and remove all chunks
+	 * belonging to the pool.
+	 */
+	MungWall_Scan(pool, SysBase);
+
 	/*
 	 * Free the list of puddles.
 	 * Remember that initial puddle containing the pool structure is also in this list.

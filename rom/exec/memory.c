@@ -1,77 +1,11 @@
-/* Needed for mungwall macros to work */
-#define MDEBUG 1
-
 #include <aros/debug.h>
 #include <proto/kernel.h>
 
 #include "exec_intern.h"
 #include "memory.h"
+#include "mungwall.h"
 
 #define DMH(x)
-
-/* Transition period: use AllocMem()/FreeMem() as base allocator */
-#undef KrnAllocPages
-#undef KrnFreePages
-
-/*
- * Build a wall around the allocated chunk if requested.
- * Returns updated pointer to the beginning of the chunk
- * (actually a pointer to a usable area)
- * 'res' is a pointer to the beginning of a raw memory block (inside which walls will be constructed)
- * 'origSize' is ORIGINAL allocation size (before adding mungwall size)
- */
-APTR MungWall_Build(APTR res, IPTR origSize, ULONG requirements, struct ExecBase *SysBase)
-{
-    if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res)
-    {
-    	struct MungwallHeader *header;
-	struct List 	      *allocmemlist;
-
-        /* Save orig byteSize before wall (there is one room of MUNGWALLHEADER_SIZE
-	   bytes before wall for such stuff (see above).
-	*/
-
-	header = (struct MungwallHeader *)res;
-
-	header->mwh_magicid = MUNGWALL_HEADER_ID;
-	header->mwh_allocsize = origSize;
-
-	/* Skip to the start of the pre-wall */
-        res += MUNGWALLHEADER_SIZE;
-
-	/* Initialize pre-wall */
-	BUILD_WALL(res, 0xDB, MUNGWALL_SIZE);
-
-	/* move over the block between the walls */
-	res += MUNGWALL_SIZE;
-
-	/* Fill the block with weird stuff to exploit bugs in applications */
-	if (!(requirements & MEMF_CLEAR))
-	    MUNGE_BLOCK(res, MEMFILL_ALLOC, origSize);
-
-	/* Initialize post-wall */
-	BUILD_WALL(res + origSize, 0xDB, MUNGWALL_SIZE + AROS_ROUNDUP2(origSize, MEMCHUNK_TOTAL) - origSize);
-
-	/*
-	 * Check whether list exists. AllocMem() might have been
-	 * called before PrepareAROSSupportBase(), which is responsible for
-	 * initialization of AllocMemList
-	 */
-	if (SysBase->DebugAROSBase)
-	{	
-    	    allocmemlist = (struct List *)&((struct AROSSupportBase *)SysBase->DebugAROSBase)->AllocMemList;
-	    Forbid();
-    	    AddHead(allocmemlist, (struct Node *)&header->mwh_node);
-	    Permit();
-	}
-	else
-	{
-	    header->mwh_node.mln_Pred = (struct MinNode *)0x44332211;
-	    header->mwh_node.mln_Succ = (struct MinNode *)0xCCBBAA99;
-	}
-    }
-    return res;
-}
 
 /* Find MemHeader to which address belongs */
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
@@ -357,18 +291,19 @@ void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, str
     freeList->mh_Free+=byteSize;
 }
 
-/* Backwards compatibility for old ports */
-#ifndef KrnAllocPages
-#define KrnAllocPages(addr, size, flags) AllocMem(size, flags & ~MEMF_SEM_PROTECTED)
-#define KrnFreePages(addr, size)         FreeMem(addr, size)
-#endif
+/* 
+ * TODO:
+ * During transition period two routines below use nommu allocator.
+ * When transition is complete they should use them only if MMU
+ * is inactive. Otherwise they should use KrnAllocPages()/KrnFreePages().
+ */
 
 /* Allocate a region managed by own header */
 APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
 
-    mh = KrnAllocPages(NULL, size, flags);
+    mh = nommu_AllocMem(size, flags, SysBase);
     DMH(bug("[AllocMemHeader] Allocated %u bytes at 0x%p\n", size, mh));
 
     if (mh)
@@ -403,7 +338,7 @@ void FreeMemHeader(APTR addr, struct ExecBase *SysBase)
     ULONG size = ((struct MemHeader *)addr)->mh_Upper - addr + 1;
 
     DMH(bug("[FreeMemHeader] Freeing %u bytes at 0x%p\n", size, addr));
-    KrnFreePages(addr, size);
+    nommu_FreeMem(addr, size, SysBase);
 }
 
 /*
@@ -416,7 +351,8 @@ void FreeMemHeader(APTR addr, struct ExecBase *SysBase)
 APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct ExecBase *SysBase)
 {
     struct ProtectedPool *pool = poolHeader + MEMHEADER_TOTAL;
-    APTR    	    	 ret = NULL;
+    APTR ret = NULL;
+    IPTR origSize;
     struct MemHeader *mh;
 
     D(bug("[exec] InternalAllocPooled(0x%p, %u, 0x%08X), header 0x%p\n", poolHeader, memSize, flags, pool));
@@ -427,6 +363,11 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
      * This is done in AllocVec()-alike manner, the pointer is placed right before the block.
      */
     memSize += sizeof(struct MemHeader *);
+    origSize = memSize;
+
+    /* If mungwall is enabled, count also size of walls */
+    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
+        memSize += MUNGWALL_TOTAL_SIZE;
 
     if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
     {
@@ -437,6 +378,8 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
     mh = (struct MemHeader *)pool->pool.PuddleList.mlh_Head;
     for(;;)
     {
+	ULONG physFlags = flags & MEMF_PHYSICAL_MASK;
+
 	/* Are there no more MemHeaders? */
 	if (mh->mh_Node.ln_Succ==NULL)
 	{
@@ -483,7 +426,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
 	else
 	{
 	    /* Ignore existing MemHeaders with memory type that differ from the requested ones */
-	    if (flags & MEMF_PHYSICAL_MASK & ~mh->mh_Attributes)
+	    if (physFlags & ~mh->mh_Attributes)
 	    {
 		D(bug("[InternalAllocPooled] Wrong flags for puddle 0x%p (wanted 0x%08X, have 0x%08X\n", flags, mh->mh_Attributes));
 	    	continue;
@@ -529,6 +472,9 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Exec
 
     if (ret)
     {
+	/* Build munge walls if requested */
+	ret = MungWall_Build(ret, pool, origSize, flags, SysBase);
+
 	/* Remember where we were allocated from */
 	*((struct MemHeader **)ret) = mh;
 	ret += sizeof(struct MemHeader *);
@@ -552,7 +498,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
     APTR freeStart;
     IPTR freeSize;
 
-    D(bug("[exec] InternalFreePooled(0x%p, 0x%p, %u)\n", poolHeader, memory, memSize));
+    D(bug("[exec] InternalFreePooled(0x%p, %u)\n", memory, memSize));
 
     if (!memory || !memSize) return;
 
@@ -561,9 +507,14 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
     freeSize = memSize + sizeof(struct MemHeader *);
     mh = *((struct MemHeader **)freeStart);
 
+    /* Check walls first */
+    freeStart = MungWall_Check(freeStart, freeSize, SysBase);
+    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
+	freeSize += MUNGWALL_TOTAL_SIZE;
+
     /* Verify that MemHeader pointer is correct */
     if ((mh->mh_Node.ln_Type != NT_MEMORY) ||
-	(freeStart < mh->mh_Lower) || (freeStart + memSize > mh->mh_Upper + 1))
+	(freeStart < mh->mh_Lower) || (freeStart + freeSize > mh->mh_Upper + 1))
     {
     	/*
 	 * Something is wrong.
@@ -582,7 +533,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
     {
 	struct ProtectedPool *pool = (struct ProtectedPool *)mh->mh_Node.ln_Name;
 	IPTR size;
-
+	
 	if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
 	{
 	    ObtainSemaphore(&pool->sem);

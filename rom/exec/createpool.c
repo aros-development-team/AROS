@@ -6,13 +6,13 @@
     Lang: english
 */
 
-#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <clib/alib_protos.h>
 
 #include "exec_intern.h"
 #include "memory.h"
+#include "mungwall.h"
 
 /*****************************************************************************
 
@@ -90,6 +90,11 @@
      * in FreePooled().
      */
     puddleSize += MEMHEADER_TOTAL + sizeof(struct MemHeader *);
+
+    /* If mungwall is enabled, count also size of walls, at least for one allocation */
+    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
+        puddleSize += MUNGWALL_TOTAL_SIZE;
+
     /* Then round puddleSize up to be a multiple of page size. */
     puddleSize = (puddleSize + align) & ~align;
     D(bug("[CreatePool] Aligned puddle size: %u (0x%08X)\n", puddleSize, puddleSize));
