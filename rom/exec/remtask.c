@@ -95,11 +95,32 @@
     et = GetETask(task);
     if(et != NULL)
     {
+#ifdef KrnDeleteContext
+	/*
+	 * x86-64-pc still doesn't have KrnDeleteContext(). It keeps
+	 * track of CPU context area in tc_MemEntry list.
+	 */
         KrnDeleteContext(((struct IntETask *)et)->iet_Context);
+#endif
 	CleanupETask(task, et);
     }
 
-    /* Free all memory in the tc_MemEntry list. */
+    /*
+     * The task has been removed.
+     * We intentionally set this before FreeEntry() in order to give a warning
+     * to mungwall which will not fill freed memory with pattern if it's our
+     * current task. See TODO below.
+     */
+    task->tc_State = TS_REMOVED;
+
+    /*
+     * Free all memory in the tc_MemEntry list.
+     * TODO: it's a common practice to put struct Task and stack into this list.
+     * For example this is done by libamiga's CreateTask() and even by dos.library.
+     * We need some smarter way to deallocate these. Current way relies on the fact
+     * that the memory still can be physically accessed after being freed. This
+     * is not going to be true after deploying memory protection.
+     */
     while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
         /* Free one MemList node */
         FreeEntry(mb);
@@ -110,8 +131,6 @@
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
-        /* Can't do that - let the dispatcher do it. */
-        task->tc_State=TS_REMOVED;
 
         /*
             Since I don't know how many levels of Forbid()
