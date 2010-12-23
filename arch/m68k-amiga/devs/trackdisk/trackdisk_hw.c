@@ -252,7 +252,7 @@ static ULONG td_readwritetrack(UBYTE track, UBYTE write, struct TDU *tdu, struct
     tdb->custom->dskpt = tdb->td_DMABuffer;
     tdb->custom->dsklen = dsklen;
     tdb->custom->dsklen = dsklen; // dma started
-    D(bug("td diskdma started, track=%d write=%d len=%d\n", track, write, dsklen));
+    D(bug("td diskdma started, track=%d write=%d len=%d\n", track, write, dsklen & 0x3fff));
 
     td_wait_start(tdb, (tdu->tdu_hddisk ? 2 : 1) * 1000);
     sigs = Wait((1L << tdb->td_TimerMP2->mp_SigBit) | (1L << tdb->td_IntBit));
@@ -684,6 +684,7 @@ int td_flush(struct TDU *tdu, struct TrackDiskBase *tdb)
 		return 0;
 
 	err = 0;
+	td_select(tdu, tdb);
 	D(bug("td_flush, writing unit %d track %d wmask=%08x\n",
 		tdb->td_buffer_unit, tdb->td_buffer_track, tdb->td_sectorbits));
 
@@ -730,13 +731,18 @@ static int td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBas
     offset = iotd->iotd_Req.io_Offset;
     len = iotd->iotd_Req.io_Length;
     data = iotd->iotd_Req.io_Data;
+    D(bug("TD_FORMAT: DATA=%x OFFSET=%x (TRK=%d) LEN=%d\n", data, offset, offset / (512 * tdu->tdu_sectors), len));
     while (len >= tdu->tdu_sectors * 512) {
         int track = offset / (512 * tdu->tdu_sectors);
+        td_select(tdu, tdb);
         td_wait(tdb, 2);
         td_seek(tdu, track >> 1, track & 1, tdb);
 	tdb->td_sectorbits = (1 << tdu->tdu_sectors) - 1;
+	tdb->td_buffer_unit = tdu->tdu_UnitNum;
+	tdb->td_buffer_track = track;
 	td_encodebuffer(tdu, tdb);
-        err = td_readwritetrack(track, 1, tdu, tdb);
+        err = td_readwritetrack(tdb->td_buffer_track, 1, tdu, tdb);
+        td_clear(tdb);
         if (err)
             return err;
         data += tdu->tdu_sectors * 512;
