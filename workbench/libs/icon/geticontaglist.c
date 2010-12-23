@@ -142,7 +142,7 @@
             SET_ISDEFAULTICON(TRUE);
 	}
 
-	if (icon == NULL && defaultType != -1)
+	if (icon == NULL && defaultType != -1 && defaultName == NULL)
 	{
             CONST_STRPTR defaultIconName = GetDefaultIconName(defaultType);
             
