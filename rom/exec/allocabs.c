@@ -6,10 +6,6 @@
     Lang: english
 */
 
-/* Needed for mungwall macros to work */
-#define MDEBUG 1
-
-#include <aros/config.h>
 #include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
@@ -19,6 +15,7 @@
 
 #include "exec_intern.h"
 #include "memory.h"
+#include "mungwall.h"
 
 /*****************************************************************************
 
@@ -66,18 +63,11 @@
     if(!byteSize)
 	return NULL;
 
-#if AROS_MUNGWALL_DEBUG
-    /* Backwards compatibility hack for ports whose exec init code
-       does not set this flag. If should be set BEFORE THE FIRST ALLOCMEM,
-       otherwise FreeMem() will crash on block allocated without walls */
-    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
-#endif
-
     /* Make room for mungwall if needed */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
-    	location -= MUNGWALL_SIZE + MUNGWALLHEADER_SIZE;
-        byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
+    	location -= MUNGWALL_BLOCK_SHIFT;
+        byteSize += MUNGWALL_TOTAL_SIZE;
     }
 
     ret = nommu_AllocAbs(location, byteSize, SysBase);
@@ -89,7 +79,7 @@
      * differ from 'location', and allocation length was in fact increased
      * by this difference.
      */
-    return MungWall_Build(ret, origSize + location - ret, 0, SysBase);
+    return MungWall_Build(ret, NULL, origSize + location - ret, 0, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* AllocAbs */

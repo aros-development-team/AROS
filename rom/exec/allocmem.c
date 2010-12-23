@@ -11,7 +11,6 @@
 #include <aros/asmcall.h>
 #include <aros/rt.h>
 #include <aros/macros.h>
-#include <aros/config.h>
 #include <aros/arossupportbase.h>
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
@@ -29,11 +28,10 @@
 #if DEBUG_AllocMem
 #   define DEBUG 1
 #endif
-#define MDEBUG 1
-#   include <aros/debug.h>
 
 #include "exec_intern.h"
 #include "memory.h"
+#include "mungwall.h"
 
 struct checkMemHandlersState
 {
@@ -98,13 +96,6 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     if(!byteSize)
 	return NULL;
 
-#if AROS_MUNGWALL_DEBUG
-    /* Backwards compatibility hack for ports whose exec init code
-       does not set this flag. If should be set BEFORE THE FIRST ALLOCMEM,
-       otherwise FreeMem() will crash on block allocated without walls */
-    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
-#endif
-
     /* Make room for safety walls around allocated block and an some more extra space
        for other interesting things, actually --> the size.
 
@@ -112,12 +103,12 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 
        [MEMCHUNK_FOR_EXTRA_STUFF][BEFORE-MUNGWALL][<alloced-memory-for-user>][AFTER_MUNGWALL]
 
-       The first ULONG in MEMCHUNK_FOR_EXTRA_STUFF is used to save the original alloc
+       MEMCHUNK_FOR_EXTRA_STUFF is used (amongst other things) to save the original alloc
        size (byteSize) param. So it is possible in FreeMem to check, if freemem size
        matches allocmem size or not.
     */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
-        byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
+        byteSize += MUNGWALL_TOTAL_SIZE;
 
     cmhs.cmhs_CurNode                = (struct Node *)SysBase->ex_MemHandlers.mlh_Head;
     cmhs.cmhs_Data.memh_RequestSize  = byteSize;
@@ -127,14 +118,13 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     do
     {
 	res = nommu_AllocMem(byteSize, requirements, SysBase);
-
     } while (res == NULL && checkMemHandlers(&cmhs) == MEM_TRY_AGAIN);
 
 #if ENABLE_RT
     RT_Add (RTT_MEMORY, res, origSize);
 #endif  
 
-    res = MungWall_Build(res, origSize, origRequirements, SysBase);
+    res = MungWall_Build(res, NULL, origSize, origRequirements, SysBase);
 
     /* Set DOS error if called from a process */
     if (res == NULL)

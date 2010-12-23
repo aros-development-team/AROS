@@ -1,6 +1,7 @@
 #define DEBUG 1
 
 #include <asm/mpc5200b.h>
+#include <aros/config.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/arossupportbase.h>
@@ -203,8 +204,18 @@ int exec_main(struct TagItem *msg, void *entry)
     SysBase->Elapsed = 4;
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
-    NEWLIST(&((struct IntExecBase *)SysBase)->ResetHandlers);
 
+    NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
+    NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
+
+#if AROS_MUNGWALL_DEBUG
+    /*
+     * TODO: implement command line parsing instead of this awkward hack
+     * Or, even better, merge this init code with arch-independent one
+     */
+    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
+#endif
+    
     /* Build the jumptable */
     SysBase->LibNode.lib_NegSize =
         Exec_MakeFunctions(SysBase, Exec_FuncTable, NULL, SysBase);
@@ -598,10 +609,6 @@ struct Library * PrepareAROSSupportBase(struct ExecBase *SysBase)
     AROSSupportBase->kprintf = (void *)__kprintf;
     AROSSupportBase->rkprintf = (void *)__rkprintf;
     AROSSupportBase->vkprintf = (void *)__vkprintf;
-
-    NEWLIST(&AROSSupportBase->AllocMemList);
-
-#warning "FIXME Add code to read in the debug options"
 
     return (struct Library *)AROSSupportBase;
 }

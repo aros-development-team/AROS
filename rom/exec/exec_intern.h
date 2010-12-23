@@ -37,9 +37,10 @@ struct IntExecBase
 {
     struct ExecBase pub;
     struct List ResetHandlers;			/* Reset handlers list       */
-    ULONG  IntFlags;				/* Internal flags, see below */
+    struct MinList AllocMemList;		/* Mungwall allocations list */
     APTR   KernelBase;				/* kernel.resource base      */
     ULONG  PageSize;				/* Memory page size	     */
+    ULONG  IntFlags;				/* Internal flags, see below */
     struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   */
     char   AlertBuffer[2048];			/* Buffer for alert text     */
 };
