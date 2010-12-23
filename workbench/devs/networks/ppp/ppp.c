@@ -23,6 +23,9 @@
 #define TERMINATE_REQUEST 5
 #define TERMINATE_ACK 6
 #define PROTOCOL_REJECT 8
+#define ECHO_REQUEST 9
+#define ECHO_REPLY 10
+#define DISCARD_REQUEST 11
 
 struct packet {
 	ULONG packetsize;
@@ -31,9 +34,6 @@ struct packet {
 };
 
 void init_ppp(LIBBASETYPEPTR LIBBASE);
-
-void ConfNetWork();
-
 void Set_phase(UBYTE ph);
 
 void ProcessPacket(struct packet * p);
@@ -47,6 +47,7 @@ void LCP_packet(struct packet *);
 void SendConfReq();
 void SendEchoReply(struct packet *);
 void SendTerminateReq();
+void SendEchoRequest();
 
 void IPCP_Packet(struct packet * );
 void Send_IPCP_req();
@@ -256,6 +257,8 @@ void Set_phase(UBYTE ph){
 		memcpy( ppp_libbase->PrimaryDNS , PrimaryDNS , 4 );
 		memcpy( ppp_libbase->SecondaryDNS , SecondaryDNS , 4 );
 
+		SendEchoRequest();
+
 		break;
 
 	case PPP_PHASE_TERMINATE :
@@ -382,7 +385,7 @@ void ProcessPacket(struct packet * p){
 		return;
 	}
 
-	p->packetsize-=2;			   // -checksum
+	p->packetsize-=2;	// -checksum
 
 	// bug("ProcessPacket size=%d\n",p->packetsize);
 	// printpacket(p);
@@ -777,7 +780,6 @@ void LCP_packet(struct packet *p){
 	case ACK:
 		bug("LCP Ack Received !\n");
 		my_conf_ok = TRUE;
-
 		break;
 
 	case NAK:
@@ -788,8 +790,13 @@ void LCP_packet(struct packet *p){
 		bug("LCP Reject Received HELP !\n");
 		break;
 
-	case 9: // LCP echo
+	case ECHO_REQUEST:
+		bug("LCP ECHO_REQUEST Received\n");
 		SendEchoReply(p);
+		break;
+
+	case ECHO_REPLY:
+		bug("LCP ECHO_REPLY Received\n");
 		break;
 
 	case PROTOCOL_REJECT:
@@ -806,7 +813,7 @@ void LCP_packet(struct packet *p){
 		Set_phase( PPP_PHASE_DEAD );
 		break;
 
-	case 11:
+	case DISCARD_REQUEST:
 		bug("LCP Discard-Request Received ????\n");
 		break;
 
@@ -827,14 +834,29 @@ void LCP_packet(struct packet *p){
 
 }
 
+void SendEchoRequest(){
+	struct packet p;
+	bug("\nsend ECHO_REQUEST\n");
+	p.packetsize=0;
+	AddByte( &p , 0xc0 );//LPC
+	AddByte( &p , 0x21 );
+	AddByte( &p , ECHO_REQUEST ); 
+	AddByte( &p , ++number ); // number
+	AddByte( &p , 0x00 ); // size
+	AddByte( &p , 0x00 ); 
+	p.data[5] = p.packetsize - 2; // size
+	printpacket(&p);
+	AddChkSum(&p);
+	SendPPP_Packet(&p);
+}
+
 void SendEchoReply(struct packet *p){
 	bug("\nLCP Send Echo Reply \n");
-	p->data[2]=10;
+	p->data[2] = ECHO_REPLY;
 	printpacket(p);
 	AddChkSum(p);
 	SendPPP_Packet(p);
 }
-
 
 void SendConfReq(){
 

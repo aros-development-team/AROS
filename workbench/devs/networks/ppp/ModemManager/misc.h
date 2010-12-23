@@ -18,36 +18,35 @@
 };
 
 struct Conf{
-	
+
 	BYTE InterfaceName[PPP_MAXARGLEN];
 	BYTE DeviceName[PPP_MAXARGLEN];
 	BYTE SerUnitNum;
 
 	struct List  atcl;
-	
+
 	BYTE username[PPP_MAXARGLEN];
 	BYTE password[PPP_MAXARGLEN];
-	
+
 	BYTE modemmodel[PPP_MAXARGLEN];
 	BYTE signal;
 	BYTE AccessType;
-	
+
 	ULONG CommandTimeOut;
 
 	UBYTE state;
-	
+
 };
 
-
 struct EasySerial * OpenSerial(BYTE *name,ULONG unit);
-VOID CloseSerial(struct EasySerial *s);
+VOID _CloseSerial(struct EasySerial *s);
 VOID QueueSerRequest(struct EasySerial *s , LONG length);
 VOID DoStr(struct EasySerial *s,const STRPTR str);
 void DoBYTES(struct EasySerial *s, BYTE *p,ULONG len);
 void SendBYTES(struct EasySerial *s, BYTE *p,ULONG len);
 void DrainSerial(struct EasySerial *s);
 BOOL GetResponse(struct EasySerial *s,UBYTE *Buffer,ULONG maxbuffer,LONG timeout);
-#define CLOSESERIAL(x) do{ CloseSerial(x);x=NULL;}while(0);
+#define CloseSerial(x) do{ bug("CloseSerial\n");_CloseSerial(x);x=NULL;}while(0);
 
 void SetTimer(struct EasyTimer* t,const ULONG s);
 void CloseTimer(struct EasyTimer* t);

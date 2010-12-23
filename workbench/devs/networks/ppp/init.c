@@ -99,13 +99,13 @@ VOID PPP_Process(VOID){
 			// if Serial device is not ok,close it.
 			if(LIBBASE->ser ){
 				if( ! LIBBASE->ser->Ok){
-					CLOSESERIAL(LIBBASE->ser);
+					CloseSerial(LIBBASE->ser);
 				}
 			}
 
 			// device is down ,close serial
 			if( Phase() == PPP_PHASE_DEAD ){
-				CLOSESERIAL(LIBBASE->ser);
+				CloseSerial(LIBBASE->ser);
 			}
 			
 			waitmask = (1L<< signalbit ) |
@@ -182,7 +182,7 @@ VOID PPP_Process(VOID){
 							strlcpy( LIBBASE->username , CtrlMsg->username , PPP_MAXARGLEN );
 							strlcpy( LIBBASE->password , CtrlMsg->password , PPP_MAXARGLEN );
 							LIBBASE->SerUnitNum = CtrlMsg->UnitNum;								
-							if( LIBBASE->ser ) CLOSESERIAL( LIBBASE->ser );
+							if( LIBBASE->ser ) CloseSerial( LIBBASE->ser );
 							if( LIBBASE->ser = OpenSerial( LIBBASE->DeviceName , LIBBASE->SerUnitNum ) ){
 								init_ppp( LIBBASE );
 								Set_phase( PPP_PHASE_CONFIGURATION );
@@ -194,7 +194,7 @@ VOID PPP_Process(VOID){
 						break;
 
 						case PPP_CTRL_CLOSE_SERIAL:
-							CLOSESERIAL( LIBBASE->ser );
+							CloseSerial( LIBBASE->ser );
 							Set_phase( PPP_PHASE_DEAD );
 						break;
 
@@ -224,7 +224,7 @@ VOID PPP_Process(VOID){
 			)) UpdateInfo = TRUE;
 
 			if( GUIPortName[0] && UpdateInfo ){
-				bug("PPP:  INFO reply\n");
+				//bug("PPP:  INFO reply\n");
 				InfoMsg->Ser = LIBBASE->ser ? TRUE:FALSE;
 				InfoMsg->Up =  LIBBASE->device_up;
 				InfoMsg->Phase = Phase();
@@ -246,7 +246,6 @@ VOID PPP_Process(VOID){
 				InfoMsg->Msg.mn_ReplyPort = 0;
 			//	 bug("PPP: SendInfoMsg num %d -> %s\n",InfoMsg->num,GUIPortName);
 				if( SafePutToPort( InfoMsg , GUIPortName ) ){
-			//	 bug("PPP: SendInfoMsg OK\n");
 					InfoFail = 0;
 				}else{
 					 bug("PPP: SendInfoMsg FAIL\n");
@@ -260,7 +259,7 @@ VOID PPP_Process(VOID){
 
 	bug("PPP process: shut everything down..\n");
 
-	CLOSESERIAL(LIBBASE->ser);
+	CloseSerial(LIBBASE->ser);
 	CloseTimer(timer);
 
 	if(CtrlPort){
@@ -440,7 +439,7 @@ static int GM_UNIQUENAME(Close)
 	D(bug("[PPP] Close\n"));
 	ObtainSemaphore(&LIBBASE->sd_Lock);
 
-	CLOSESERIAL(LIBBASE->ser);
+	CloseSerial(LIBBASE->ser);
 
 	req->ios2_Req.io_Device = (struct Device *) -1;
 	req->ios2_Req.io_Unit = (struct Unit *) -1;
