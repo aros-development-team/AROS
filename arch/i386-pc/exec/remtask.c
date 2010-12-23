@@ -88,6 +88,9 @@ extern void Exec_Dispatch();
     	Remove(&task->tc_Node);    	
     }
 
+    /* The task has been removed */
+    task->tc_State = TS_REMOVED;
+
     /* Free all memory in the tc_MemEntry list. */
     while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
 	/* Free one MemList node */
@@ -106,9 +109,6 @@ extern void Exec_Dispatch();
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
-	/* Can't do that - let the dispatcher do it. */
-	task->tc_State=TS_REMOVED;
-
 	/*
 	    Since I don't know how many levels of Forbid()
 	    are already pending I set a default value.

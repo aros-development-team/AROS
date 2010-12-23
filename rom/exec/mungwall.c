@@ -125,16 +125,17 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
 	 * DOH! There's some _BAD_ code around that assumes memory can still be
 	 * accessed after freeing by just preventing task switching. In AROS,
 	 * RemTask(NULL) suffers of this problem because DOS processes are
-	 * created with their TCB placed in the tc_MemEntry list. The workaround
-	 * is to avoid munging when FreeMem() is called with task switching disabled.
+	 * created with their TCB placed in the tc_MemEntry list.
+	 * The workaround is to avoid munging when current task is in TS_REMOVED
+	 * state (RemTask() sets it). However RemTask() still needs reengineering
+	 * before memory protection can be used. With MP deallocating memory can
+	 * cause immediate blocking of access to it, so RemTask() needs to move
+	 * the stack to some safe place and make sure that task structure is not
+	 * accessed after freeing it.
 	 */
-	/* DOH! it doesn't work even this way. What's wrong???
-	 * It's stack which is also in tc_MemEntry - Pavel Fedin.
-	 * 
-	 * if ((SysBase->TDNestCnt < 0) && (SysBase->IDNestCnt < 0))
-	 *	MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, byteSize);
-	 */
-	 
+	if (SysBase->ThisTask->tc_State != TS_REMOVED)
+		MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, byteSize);
+
 	/* Return real start of the block to deallocate */
 	memoryBlock = header;
     }
