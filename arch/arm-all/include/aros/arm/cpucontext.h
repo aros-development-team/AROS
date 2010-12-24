@@ -1,3 +1,6 @@
+#ifndef AROS_ARM_CPUCONTEXT_H
+#define AROS_ARM_CPUCONTEXT_H
+
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
@@ -37,3 +40,5 @@ struct VFPContext
     ULONG fpr[64];
     ULONG fpscr;
 };
+
+#endif

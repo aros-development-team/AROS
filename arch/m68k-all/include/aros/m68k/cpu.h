@@ -5,7 +5,7 @@
 
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: cpu.h 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     NOTE: This file must compile *without* any other header !
 

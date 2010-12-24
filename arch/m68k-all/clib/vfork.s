@@ -4,7 +4,7 @@
  *  Created on: Aug 23, 2010
  *      Author: misc
  *
- * $Id: vfork.s 31678 2009-08-05 21:31:08Z schulz $
+ * $Id$
  */
 
 #include "aros/m68k/asm.h"

@@ -1,3 +1,6 @@
+#ifndef AROS_X86_64_CPUCONTEXT_H
+#define AROS_X86_64_CPUCONTEXT_H
+
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
@@ -71,3 +74,5 @@ enum enECFlags
     ECF_SEGMENTS = 1<<0, /* Segment registers are present */
     ECF_FPX      = 1<<1, /* SSE context is present	  */
 };
+
+#endif
