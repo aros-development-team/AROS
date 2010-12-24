@@ -151,7 +151,7 @@ VOID PPP_Process(VOID){
 			}
 
 			// SANA2
-			if(ios2 = (struct IOSana2Req *)GetMsg((struct MsgPort *)LIBBASE->sd_Unit)){
+			while(ios2 = (struct IOSana2Req *)GetMsg((struct MsgPort *)LIBBASE->sd_Unit)){
 				PerformIO(LIBBASE,ios2);
 			}
 
