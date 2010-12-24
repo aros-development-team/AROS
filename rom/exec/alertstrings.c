@@ -523,10 +523,9 @@ STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecB
 		}
 	    }
 #endif
-	    /* After NewRawDoFmt() buf points to the character AFTER null terminator */
-	    buf--;
 	}
     }
 
+    /* Here buf points to the character AFTER null terminator */
     return buf - 1;
 }
