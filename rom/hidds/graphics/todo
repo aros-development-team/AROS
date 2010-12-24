@@ -47,6 +47,7 @@ increase the number of methods in the API.
 unix signal handler servers in the UnixIO hidd.
 This way several "modules" can use the same
 unix signal, and get some code executed when the signal arrives.
+DONE (see kernel.resource IRQ functions)
 
 - review the ModeID API for future-proofness. There may be more
 than sync and pixfmt to return for a modeid in the future.
