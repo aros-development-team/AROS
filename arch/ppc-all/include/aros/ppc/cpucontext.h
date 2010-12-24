@@ -1,3 +1,6 @@
+#ifndef AROS_PPC_CPUCONTEXT_H
+#define AROS_PPC_CPUCONTEXT_H
+
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
@@ -38,3 +41,5 @@ enum enECFlags
     ECF_VECTOR    = 1<<3, /* AltiVec registers are present */
     ECF_VRSAVE    = 1<<4  /* VRSAVE is present		   */
 };
+
+#endif
