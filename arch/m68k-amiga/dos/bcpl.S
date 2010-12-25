@@ -782,6 +782,9 @@ BCPL SelectOutput   /* f8, void , @FileHandle */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
+BCPLd endread        /* fc, void,  */
+    BRTS
+
 BCPLd endwrite       /* 100, void,  */
     BRTS
 
