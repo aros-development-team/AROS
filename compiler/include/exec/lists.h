@@ -2,7 +2,7 @@
 #define EXEC_LISTS_H
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
         
     Structures and macros for exec lists.
 */
@@ -43,6 +43,9 @@ struct MinList
 **************************************/
 #define IsListEmpty(l) \
 	( (((struct List *)l)->lh_TailPred) == (struct Node *)(l) )
+
+#define IsMinListEmpty(l) \
+	( (((struct MinList *)l)->mlh_TailPred) == (struct MinList *)(l) )
 
 #define IsMsgPortEmpty(mp) \
       ( (((struct MsgPort *)(mp))->mp_MsgList.lh_TailPred) \
