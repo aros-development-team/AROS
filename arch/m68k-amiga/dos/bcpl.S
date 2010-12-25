@@ -1149,12 +1149,16 @@ BCPLd makesysreq     /* 1c8, BOOL, count, pkt, proc */
     BRTS
 
 BCPL strcpy         /* 1cc, void, @src, @dest */
-    move.l	%d3,%sp@-
-    move.l	#255,%d3
-    move.l	#(3*4 + 2*4),%d0
-    move.l	%a2@(GV_strncpy), %a4
-    jsr		(%a5)
-    move.l	%sp@+,%d3
+    move.l	%d2,%sp@-
+    lsl.l	#2,%d1
+    lsl.l	#2,%d2
+    moveq	#0,%d0
+    move.b	%a0@(%d1),%d0
+0:  move.b	%a0@(%d1),%a0@(%d2)
+    addq.l	#1,%d1
+    addq.l	#1,%d2
+    dbf		%d0,0b
+    move.l	%sp@+,%d2
     BRTS
 
 BCPLd runLoadedCode  /* 1e4, void, @codeseg, stackbytes, @cmdline, cmdlinelength */
