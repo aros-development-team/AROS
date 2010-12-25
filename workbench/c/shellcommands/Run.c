@@ -119,11 +119,29 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,"The program (resp. script) to run (argument
 
     if ( (SHArg(EXECUTE)) && (SHArg(COMMAND)) )
     {
+	BYTE tmpdir[4];
+	BPTR tmplock;
+	struct Window *win;
+	struct Process *proc = (struct Process*)FindTask(0);
+
+	DateStamp(&ds);
+	
+	win = proc->pr_WindowPtr;
+	proc->pr_WindowPtr = (struct Window *)-1;
+	tmplock = Lock("T:", SHARED_LOCK);
+	proc->pr_WindowPtr = win;
+	if (tmplock) {
+	    strcpy(tmpdir, "T:");
+	    UnLock(tmplock);
+	} else {
+	    strcpy(tmpdir, ":T/");
+	}
+
         DateStamp(&ds);
         do
         {
             count++;
-            __sprintf(tmpname, "T:Tmp%lu%lu%lu%lu%d",
+            __sprintf(tmpname, "%sTmp%lu%lu%lu%lu%d", tmpdir,
                       ((struct Process *)FindTask(NULL))->pr_TaskNum,
                       ds.ds_Days, ds.ds_Minute, ds.ds_Tick, count);
             tmpfile = Open(tmpname, MODE_NEWFILE);
