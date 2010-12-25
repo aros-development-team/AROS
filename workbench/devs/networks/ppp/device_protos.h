@@ -33,7 +33,7 @@ void DoBYTES(struct EasySerial *s, BYTE *p,ULONG len);
 void SendBYTES(struct EasySerial *s, BYTE *p,ULONG len);
 void DrainSerial(struct EasySerial *s);
 BOOL GetResponse(struct EasySerial *s,UBYTE *Buffer,ULONG maxbuffer,LONG timeout);
-#define CloseSerial(x) do{ bug("CloseSerial\n");_CloseSerial(x);x=NULL;}while(0);
+#define CloseSerial(x) if(x){ bug("CloseSerial\n");_CloseSerial(x);x=NULL;}
 
 void SetTimer(struct EasyTimer* t,const ULONG s);
 void CloseTimer(struct EasyTimer* t);
