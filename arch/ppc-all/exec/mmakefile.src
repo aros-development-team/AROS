@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/exec
 USER_AFLAGS := -I$(GENINCDIR)
+USER_CFLAGS := -DHOST_OS_$(ARCH)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
