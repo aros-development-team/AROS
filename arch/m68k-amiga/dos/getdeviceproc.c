@@ -198,7 +198,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         if (len <= 1) {
             lock = pr->pr_CurrentDir;
             /* if we got NULL, then it's relative to the system root lock */
-            if (lock == BNULL)
+            if (lock == BNULL || name[0] == ':')
                 lock = DOSBase->dl_SYSLock;
      	    fl = BADDR(lock);
             dp->dvp_Port = fl->fl_Task;
