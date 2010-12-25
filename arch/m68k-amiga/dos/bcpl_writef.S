@@ -193,7 +193,8 @@ BCPL_writef:
 	jmp	.Lformat_loop_next
 
 .Lformat_loop_next:
-	dbf	%d5, .Lformat_loop
+	subq.l #1,%d5
+	bne .Lformat_loop
 
 .Lformat_exit:
 	movem.l	%sp@+,%d2-%d7
