@@ -139,18 +139,18 @@ struct CLIInfo
 
 struct DosInfo
 {
-    BPTR di_McName;   /* Used as resident segment list */
+    BPTR di_McName;   /* Used as resident segment list (says official documentation but it is wrong) */
     BPTR di_DevInfo;  /* Devices list                  */
     BPTR di_Devices;  /* Reserved	               */
     BPTR di_Handlers; /* Reserved	               */
-    APTR di_NetHand;  /* Reserved	               */
+    BPTR di_NetHand;  /* Reserved (actually resident segment list) */
 
     /* The following semaphores are PRIVATE. */
     struct SignalSemaphore di_DevLock;
     struct SignalSemaphore di_EntryLock;
     struct SignalSemaphore di_DeleteLock;
 };
-#define di_ResList di_McName
+#define di_ResList di_NetHand
 
 /**********************************************************************
  ***************************** Processes ******************************
