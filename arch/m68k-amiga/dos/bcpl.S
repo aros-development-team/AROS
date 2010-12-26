@@ -1004,7 +1004,15 @@ sicmp1:
     bclr	#5,%d0
     sub.w	%d1,%d0
     beq.s	sicmp1
+	bra.s	sicmp0
 sicmp2:
+	cmp.b	%d2,%d3
+	beq.s	sicmp0
+	moveq	#-1,%d0
+	tst.b	%d2
+	beq.s	sicmp0
+	moveq	#1,%d0
+sicmp0:
     ext.l	%d0
 	movem.l	%sp@+,%d1-%d3/%a0-%a1
     BRTS
@@ -1043,7 +1051,64 @@ BCPL rdline         /* 13c, void, @buf, maxlongs  */
     movem.l	%sp@+,%d2-%d3/%a0-%a2/%a6
     BRTS
 
-BCPLd subString      /* 140, void, @string, @substring */
+BCPL subString      /* 140, void, @string, @substring */
+
+    movem.l	%d2-%d3/%a0-%a6,%sp@-
+    move.l	SysBase,%a6
+    move.l	%a2@(BCPL_DOSBase),%a5
+
+    clr.l	0x100
+    moveq	#0,%d3
+
+    lsl.l	#2,%d1
+    move.l	%d1,%a2
+    lsl.l	#2,%d2
+    move.l	%d2,%a3
+
+	moveq	#0,%d0
+	move.b	(%a2),%d0
+	moveq	#0,%d1
+	move.b	(%a3),%d1
+	add.l	%d1,%d0
+	addq.l	#2,%d0
+	moveq	#1,%d1
+	jsr		%a6@(114 * -6)	/* AllocVec */
+	move.l	%d0,%a4
+	tst.l	%d0
+	beq.s	findarg_end
+	move.l	%a4,%a0
+
+	move.l	%a0,%d1
+	move.b	%a2@+,%d0
+findarg_copy12:
+	beq.s	findarg_copy11
+	move.b	%a2@+,%a0@+
+	subq.b	#1,%d0
+	bra.s	findarg_copy12
+findarg_copy11:
+	clr.b	%a0@+
+
+	move.l	%a0,%d2
+    move.b	%a3@+,%d0
+findarg_copy22:
+ 	beq.s	findarg_copy21
+	move.b	%a3@+,%a0@+
+	subq.b	#1,%d0
+	bra.s	findarg_copy22
+findarg_copy21:
+    clr.b	%a0@+
+
+	exg		%a5,%a6
+    jsr		%a6@(134 * -6)	/* DOS/FindArg() */
+    exg		%a5,%a6
+	move.l	%d0,%d3
+
+findarg_end:
+	move.l	%a4,%a1
+	jsr		%a6@(115 * -6)	/* FreeVec */
+
+	move.l	%d3,%d0
+    movem.l	%sp@+,%d2-%d3/%a0-%a6
     BRTS
 
 	/* C:Resident uses this */
