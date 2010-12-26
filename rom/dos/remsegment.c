@@ -76,7 +76,8 @@
 		{
 		    dinf->di_ResList = next->seg_Next;
 		}
-
+		UnLoadSeg(seg->seg_Seg);
+		FreeVec(seg);
 		return DOSTRUE;
 	    }
 
