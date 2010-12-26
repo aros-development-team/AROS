@@ -360,7 +360,15 @@ BCPL mod            /*  14, D1 = D1 % D2 */
     move.l	%a1@(4),%d2
     BRTS
 
-BCPLd setIO          /*  18, void, @IOStdReq, command, &data, len, offset */
+BCPL setIO          /*  18, void, @IOStdReq, command, &data, len, offset */
+    lsl.l	#2,%d1
+    move.w	%d2,%a0@(28,%d1)
+    move.l	%d3,%d0
+    lsl.l	#2,%d0
+    move.l	%d0,%a0@(40,%d1)
+    move.l	%d4,%a0@(36,%d1)
+    /* only first 4 params are in registers */
+    move.l	%a1@(4*4),%a0@(44,%d1)
     BRTS
 
 BCPLd packlw         /*  20, ?? */
@@ -425,7 +433,16 @@ BCPL allocMem       /*  4c, BPTR, lwlength, reqs */
 BCPLd longjump       /*  50, LONG, label */
     BRTS
 
-BCPLd doIO           /*  54, LONG, @IORequest */
+BCPL doIO           /*  54, LONG, @IORequest */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    lsl.l	#2,%d1
+    move.l	%d1,%a1
+    jsr		%a6@(76 * -6)	/* Exec/DoIO() */
+    ext.w	%d0
+    ext.l	%d0
+    clr.l	0x100
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPLd sendIO         /*  58, void, @IORequest */
@@ -485,17 +502,30 @@ BCPL freevec        /*  78, void, @vec */
     BRTS
 
 BCPL openDevice     /*  7c, BOOL, @IORequest, @name, unit, flags */
-    movem.l	%a0-%a1/%a6,%sp@-
+    movem.l	%d5/%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     lsl.l	#2,%d1
+    move.l	%d1,%d5
+
+    sub.l	%a1,%a1
+    jsr		%a6@(FindTask)
+    
     lsl.l	#2,%d2
     addq.l	#1,%d2
     move.l	%d2,%a0
-    move.l	%d1,%a1
+    move.l	%d5,%a1
+    add.l	#92,%d0
+    move.l	%d0,%a1@(14)	/* replyport = &Process->pr_MsgPort */
     move.l	%d4,%d1
     move.l	%d3,%d0
     jsr		%a6@(74 * -6)	/* Exec/OpenDevice() */
-    movem.l	%sp@+,%a0-%a1/%a6
+    moveq	#-1,%d1
+    tst.b	%d0
+    beq.s	od_ok
+    moveq	#0,%d1
+od_ok:
+	move.l	%d1,%d0
+    movem.l	%sp@+,%d5/%a0-%a1/%a6
     BRTS
 
 BCPL closeDevice    /*  80, void, @IORequest */
@@ -616,9 +646,11 @@ BCPLd unpackstring   /* b4, void, @String, @Array */
 BCPLd holdTask       /* b8, void, @memseg */
     BRTS
 
-BCPL Delay          /* bc, void, ?? */
-    /* TODO: Actually delay. For now, just say we did. */
-    moveq.l	#-1,%d0
+BCPL Delay          /* bc, void, ticks */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(33 * -6)	/* DOS/Delay() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
     /* Due to the way BCPL arguments work, A1 is the fully
@@ -1057,7 +1089,6 @@ BCPL subString      /* 140, void, @string, @substring */
     move.l	SysBase,%a6
     move.l	%a2@(BCPL_DOSBase),%a5
 
-    clr.l	0x100
     moveq	#0,%d3
 
     lsl.l	#2,%d1
