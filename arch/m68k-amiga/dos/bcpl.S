@@ -981,21 +981,21 @@ BCPL charcmp        /* 130, long , char1, char2 */
     BRTS
 
 BCPL strcmp         /* 134, long , @String1, @String2 */
-    movem.l	%d1-%d2/%a0-%a1,%sp@-
+    movem.l	%d1-%d3/%a0-%a1,%sp@-
     lsl.l	#2,%d1
     move.l	%d1,%a0
     lsl.l	#2,%d2
     move.l	%d2,%a1
-    move.b	%a0@+,%d1
-    move.b	%a1@+,%d2
+    move.b	%a0@+,%d2
+    move.b	%a1@+,%d3
     moveq	#0,%d0
 sicmp1:
-    tst.b	%d1
-    beq.b	sicmp2
     tst.b	%d2
     beq.b	sicmp2
-    subq.b	#1,%d1
+    tst.b	%d3
+    beq.b	sicmp2
     subq.b	#1,%d2
+    subq.b	#1,%d3
     moveq	#0,%d1
     move.b	%a0@+,%d1
     bclr	#5,%d1
@@ -1006,7 +1006,7 @@ sicmp1:
     beq.s	sicmp1
 sicmp2:
     ext.l	%d0
-	movem.l	%sp@+,%d1-%d2/%a0-%a1
+	movem.l	%sp@+,%d1-%d3/%a0-%a1
     BRTS
 
 BCPL rdargs         /* 138, BOOL, @template, array, array_size */
