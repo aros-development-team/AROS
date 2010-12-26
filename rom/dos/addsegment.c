@@ -65,9 +65,9 @@
 
     struct Segment *sptr;
     struct DosInfo *dinf;
-    int namelen = strlen(name)+1;
+    int namelen = strlen(name) + 1;
 
-    sptr = AllocVec(sizeof(struct Segment) + namelen - 4,
+    sptr = AllocVec(sizeof(struct Segment) + namelen - 4 + 1,
 		    MEMF_CLEAR | MEMF_PUBLIC);
 
     if( sptr != NULL )
@@ -81,7 +81,7 @@
 	CopyMem(name, sptr->seg_Name, namelen);
 #else
 	CopyMem(name, &sptr->seg_Name[1], namelen);
-	sptr->seg_Name[0] = namelen;
+	sptr->seg_Name[0] = namelen - 1;
 #endif
 
 	/* Sigh, we just add the segment to the start of the list */
