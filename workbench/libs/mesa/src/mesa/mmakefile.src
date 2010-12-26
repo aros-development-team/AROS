@@ -132,7 +132,8 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../gallium/include \
             -I$(AROS_DEVELOPMENT)/include/gallium \
 
-USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math $(FFIXED) -DMAPI_GLAPI_CURRENT
+USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math $(FFIXED) -DMAPI_GLAPI_CURRENT \
+                -DFEATURE_GL=1
 
 LIB_MESA_SOURCES = \
             $(MESA_GALLIUM_SOURCES:.c=) \
