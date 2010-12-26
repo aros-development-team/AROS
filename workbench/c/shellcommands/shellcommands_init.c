@@ -69,11 +69,11 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	scs->scs_Next = 0;	// from killing us after CLI[1] exits
     	scs->scs_Name = sh->sh_Name;
     	__AROS_SET_FULLJMP(&scs->scs_Code, sh->sh_Command);
-    	AddSegment(sh->sh_Name, MKBADDR(&scs->scs_Next), 0);
+    	AddSegment(sh->sh_Name, MKBADDR(&scs->scs_Next), CMD_INTERNAL);
 
     	/* Provide alias for NewShell */
     	if (Stricmp(sh->sh_Name, "NewShell")==0) {
-    	    AddSegment("NewCLI", MKBADDR(&scs->scs_Next), 0);
+    	    AddSegment("NewCLI", MKBADDR(&scs->scs_Next), CMD_INTERNAL);
     	}
     }
 
