@@ -48,7 +48,7 @@
 	/* It's important to free dol_Name here due to BSTR compatibility.
 	   See MakeDosEntry() */
 	FreeVec(BADDR(dlist->dol_Name));
-	FreeMem(dlist, sizeof(struct DosList));
+	FreeVec(dlist);
     }
 
     AROS_LIBFUNC_EXIT
