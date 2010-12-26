@@ -61,7 +61,7 @@
     STRPTR s2;
     struct DosList *dl;
 
-    dl = (struct DosList *)AllocMem(sizeof(struct DosList),
+    dl = (struct DosList *)AllocVec(sizeof(struct DosList),
 				    MEMF_PUBLIC | MEMF_CLEAR);
 
     if (dl != NULL)
@@ -94,7 +94,7 @@
 	    SetIoErr(ERROR_NO_FREE_STORE);
 	}
 	
-	FreeMem(dl, sizeof(struct DosList));
+	FreeVec(dl);
     }
     else
     {
