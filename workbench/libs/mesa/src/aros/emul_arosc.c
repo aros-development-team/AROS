@@ -141,6 +141,13 @@ char *getenv (const char *name)
         return buff;
 }
 
+struct timezone;
+int gettimeofday (struct timeval * tv,struct timezone * tz)
+{
+    IMPLEMENT();
+    return 0;
+}
+
 void abort (void)
 {
     IMPLEMENT();
