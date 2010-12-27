@@ -200,7 +200,7 @@ endif
 #MM- workbench-libs-mesa-module-quick : workbench-libs-mesa-module-cpp-quick
 
 %build_module mmake=workbench-libs-mesa-module \
-    modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="aros/arosmesa_getprocaddress" \
+    modname=mesa modtype=library linklibname=GL conffile=aros/arosmesa.conf linklibfiles="aros/arosmesa_getprocaddress" \
     files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES)" \
     uselibs="galliumauxiliary rom gallium arosm amiga"
 
