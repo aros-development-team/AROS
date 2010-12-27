@@ -500,7 +500,13 @@ util_next_power_of_two(unsigned x)
 static INLINE unsigned
 util_bitcount(unsigned n)
 {
-#if defined(PIPE_CC_GCC)
+#if defined(PIPE_OS_AROS)
+   unsigned int bits;
+   for (bits = 0; n > 0; n = n >> 1) {
+      bits += (n & 1);
+   }
+   return bits;
+#elif defined(PIPE_CC_GCC)
    return __builtin_popcount(n);
 #else
    /* K&R classic bitcount.
