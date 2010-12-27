@@ -8,6 +8,11 @@
 
 #include "eglcompiler.h"
 
+#if defined(_EGL_OS_AROS)
+#include "egl/eglapim.h"
+#include "egl/egl_mangle.h"
+#endif
+
 typedef struct _egl_api _EGLAPI;
 
 typedef struct _egl_array _EGLArray;

@@ -1,14 +1,19 @@
 1. Function prototypes
 
-The prototypes in aros_libapi.c and respective entries in
+The prototypes in arosmesa_library_api.c and respective entries in
 arosmesa.conf/mangle_undef.h are generated AUTOMATIC from gl.h/glext.h
-found in release 7.8.1 of MESA.
+found in release of MESA.
 
 The codes of the autogeneration tool (C#) are attached.
 
 When updating to newer version please do the following:
 
-a. generate new aros_libapi.c/arosmesa.conf/mangle_undef.files
+a. generate new files:
+    - arosmesa_library_api.c
+    - arosmesa.conf
+    - mangle_undef.h
+    - egl_mangle.h
+    - eglapim.h
 b. replace the existing files with generated files copying the headers from
    existing files. Be sure to update the version of mesa.library.
 
