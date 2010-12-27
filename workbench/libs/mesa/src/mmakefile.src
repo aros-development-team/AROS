@@ -160,6 +160,7 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/gallium/include \
             -I$(SRCDIR)/$(CURDIR)/egl/main \
             -I$(SRCDIR)/$(CURDIR)/gallium/state_trackers/egl \
+            -I$(SRCDIR)/$(CURDIR)/aros \
 
 USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math $(FFIXED) -DMAPI_GLAPI_CURRENT \
                 -DFEATURE_GL=1 \
