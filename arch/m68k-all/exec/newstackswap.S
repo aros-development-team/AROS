@@ -56,18 +56,14 @@
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(NewStackSwap,Exec)
 AROS_SLIB_ENTRY(NewStackSwap,Exec):
-
     /* Stackswap will clobber %d0, %d1, %a0, and %a1,
-     * C-function may clobber all registers!
+     * so we need to save %a0/%a1 in %a3/%a4
      */
-
-    movem.l     %d2-%d7/%a2-%a5,%sp@-
+    movem.l     %a3/%a4,%sp@-
     move.l      %a0,%a3
     move.l      %a1,%a4
 
     jsr         %a6@(StackSwap)
-
-    movem.l     %a3/%a6,%sp@-
 
     move.l      %a2@(7*4),%sp@- // Put the C arguments on the stack
     move.l      %a2@(6*4),%sp@-
@@ -82,8 +78,12 @@ AROS_SLIB_ENTRY(NewStackSwap,Exec):
 
     lea.l       %sp@(8*4),%sp   // Remove the C arguments
 
-    movem.l     %sp@+,%a0/%a6
+    move.l      %d0,%a4         // save C function returncode
+    move.l      %a3,%a0
     jsr         %a6@(StackSwap)
+    move.l      %a4,%d0
 
-    movem.l     %sp@+,%d2-%d7/%a2-%a5
+    /* Now we can restore %a3/%a4
+     */
+    movem.l     %sp@+,%a3/%a4
     rts
