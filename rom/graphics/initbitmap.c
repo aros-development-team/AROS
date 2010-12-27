@@ -19,9 +19,9 @@
 /*  SYNOPSIS */
 
 	AROS_LHA(struct BitMap *, bm,     A0),
-	AROS_LHA(BYTE           , depth,  A1),
-	AROS_LHA(UWORD          , width,  D0),
-	AROS_LHA(UWORD          , height, D1),
+	AROS_LHA(BYTE           , depth,  D0),
+	AROS_LHA(UWORD          , width,  D1),
+	AROS_LHA(UWORD          , height, D2),
 
 /*  LOCATION */
 
