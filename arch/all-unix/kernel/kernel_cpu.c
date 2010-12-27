@@ -101,7 +101,6 @@ void cpu_DispatchContext(struct Task *task, regs_t *regs)
 
     RESTOREREGS(ctx, regs);
     *KernelBase->kb_PlatformData->errnoPtr = ctx->errno_backup;
-    SP(regs) = (IPTR)task->tc_SPReg;
 
     D(PRINT_SC(regs));
 
