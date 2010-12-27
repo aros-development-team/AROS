@@ -1,0 +1,9 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+
+include $(TOP)/config/make.cfg
+
+ICONS := ExecuteStartup
+
+%build_icons mmake=workbench-system-wanderer-tools-executestartup-icons \
+             icons=$(ICONS) dir=$(AROS_WANDERER)/Tools
