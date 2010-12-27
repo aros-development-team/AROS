@@ -32,7 +32,7 @@ SHARED_LIB_SOURCES = \
             mesa/aros/arosmesagetcurrentcontext \
             mesa/aros/arosmesa_funcs \
             mesa/aros/arosmesa_init \
-            aros/aros_libapi \
+            aros/arosmesa_library_api \
             aros/emul_arosc \
 
 GLSL_LIBGLCPP_SOURCES = \
