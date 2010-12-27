@@ -158,18 +158,21 @@ IPTR Numeric__OM_SET(struct IClass *cl, Object * obj, struct opSet *msg)
     }
 
     /* If the max, min or format values changed, then the minimum and maximum sizes
-       of the string output by MUIM_Numeric_Strigify maye have changed, so
+       of the string output by MUIM_Numeric_Stringify may have changed, so
        give the subclass a chance to recalculate them and relayout the group
        accordingly. Basically, the subclass will have to react on changes to
        these values as well (by setting a notification on them, or by overriding
-       OM_SET) and then recalculate the minimum and maximum sizes for the object.  */      
+       OM_SET) and then recalculate the minimum and maximum sizes for the object. */
     if (data->format != oldfmt || data->min != oldmin || data->max != oldmax)
     {
         values_changed = TRUE;
-        DoMethod(_parent(obj), MUIM_Group_InitChange);
-        DoMethod(_parent(obj), MUIM_Group_ExitChange);
+        Object* parent = _parent(obj);
+        if (parent)
+        {
+            DoMethod(parent, MUIM_Group_InitChange);
+            DoMethod(parent, MUIM_Group_ExitChange);
+        }
     }
-	
 
     ret = DoSuperMethodA(cl, obj, (Msg)msg);
 
