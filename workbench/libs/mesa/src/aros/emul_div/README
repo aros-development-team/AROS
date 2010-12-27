@@ -1,0 +1,4 @@
+The files in this directory are only used in i386. By default this functionality
+is profided by libgcc. However, on VPS (i386 build machine), there seems to
+be a problem with taking these functions from libgcc present there. To workaround
+this problem, the functions are provided as separate code to compile.
