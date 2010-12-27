@@ -122,6 +122,13 @@ os_time_sleep(int64_t usecs)
    Sleep((usecs + 999) / 1000);
 }
 
+#elif defined(PIPE_OS_AROS)
+void
+os_time_sleep(int64_t usecs)
+{
+// TODO FIXME IMPLEMENT
+}
+
 #endif
 
 
