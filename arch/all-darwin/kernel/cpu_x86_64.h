@@ -190,6 +190,3 @@ struct AROSCPUContext
     struct ExceptionContext regs;
     int errno_backup;
 };
-
-#define GET_PC(ctx) (APTR)ctx->regs.rip
-#define SET_PC(ctx, pc) ctx->regs.rip = (UQUAD)pc

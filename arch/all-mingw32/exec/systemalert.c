@@ -18,7 +18,12 @@ void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
 
     buf = Alert_AddString(PrivExecBase(SysBase)->AlertBuffer, Alert_GetTitle(alertNum));
     *buf++ = '\n';
-    FormatAlert(buf, alertNum, SysBase->ThisTask, SysBase);
+    buf = FormatAlert(buf, alertNum, SysBase->ThisTask, SysBase);
+    /*
+     * We have no chance to ask the user about anything,
+     * so just fire the complete data.
+     */
+    FormatAlertExtra(buf, SysBase->ThisTask, SysBase);
 
     D(bug("[Alert] Message:\n%s\n", PrivExecBase(SysBase)->AlertBuffer));
     PD(SysBase).MessageBox(NULL, PrivExecBase(SysBase)->AlertBuffer,

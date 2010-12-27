@@ -162,17 +162,17 @@ struct AROSCPUContext
  * FPU and SSE are specified by references (frames format in host and AROS match).
  * This is for use within trap handling code.
  */
-#define TRAP_SAVEREGS(src, dest)			\
-    SAVE_CPU(src, dest)					\
-    if (src->ContextFlags & CONTEXT_FLOATING_POINT)	\
-    {							\
-	dest.Flags |= ECF_FPU;				\
-	dest.FPData = &src->FloatSave;			\
-    }							\
-    if (src->ContextFlags & CONTEXT_EXTENDED_REGISTERS)	\
-    {							\
-	dest.Flags |= ECF_FPX;				\
-	dest.FXData = src->ExtendedRegisters;		\
+#define TRAP_SAVEREGS(src, dest)					\
+    SAVE_CPU(src, dest)							\
+    if (src->ContextFlags & CONTEXT_FLOATING_POINT)			\
+    {									\
+	dest.Flags |= ECF_FPU;						\
+	dest.FPData = (struct FPUContext *)&src->FloatSave;		\
+    }									\
+    if (src->ContextFlags & CONTEXT_EXTENDED_REGISTERS)			\
+    {									\
+	dest.Flags |= ECF_FPX;						\
+	dest.FXData = (struct FPXContext *)src->ExtendedRegisters;	\
     }
 
 #define TRAP_RESTOREREGS(dest, src)				\
@@ -207,9 +207,7 @@ struct AROSCPUContext
 	(dest)->FXData = NULL;								\
 }
 
-#define GET_PC(ctx) (void *)ctx->regs.eip
 #define GET_SP(ctx) (void *)ctx->regs.esp
-#define SET_PC(ctx, addr) ctx->regs.eip = (unsigned long)addr
 
 #define EXCEPTIONS_COUNT 18
 

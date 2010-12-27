@@ -129,7 +129,7 @@ void cpu_Dispatch(CONTEXT *regs)
     /* Handle exception if requested */
     if (task->tc_Flags & TF_EXCEPT)
     {
-        DEXCEPT(bug("[KRN] Exception requested for task 0x%p, return PC = 0x%p\n", task, GET_PC(ctx)));
+        DEXCEPT(bug("[KRN] Exception requested for task 0x%p, return PC = 0x%p\n", task, PC(regs)));
 
 	/* Disable interrupts, otherwise we may lose saved context */
 	SysBase->IDNestCnt = 0;

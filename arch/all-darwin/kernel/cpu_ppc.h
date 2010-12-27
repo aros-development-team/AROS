@@ -172,6 +172,3 @@ struct AROSCPUContext
     struct ExceptionContext regs;
     int	errno_backup;
 };
-
-#define GET_PC(ctx) ((APTR)ctx->regs.ip)
-#define SET_PC(ctx, val) ctx->regs.ip = (ULONG)val

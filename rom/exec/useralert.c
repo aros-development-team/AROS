@@ -13,6 +13,10 @@
 
 static char *startstring = "Program failed\n";
 static char *endstring   = "\nWait for disk activity to finish.";
+static char *deadend_buttons     = "More...|Suspend|Reboot";
+static char *recoverable_buttons = "More...|Continue";
+
+#define MORE_SKIP 8
 
 static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)
 {
@@ -25,7 +29,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
         if (buffer)
         {
-	    char *buf;
+	    char *buf, *end;
 	    struct EasyStruct es = {
         	sizeof (struct EasyStruct),
             	0,
@@ -36,18 +40,28 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
 	    buf = Alert_AddString(buffer, startstring);
 	    buf = FormatAlert(buf, alertNum, task, SysBase);
+	    end = buf;
 	    buf = Alert_AddString(buf, endstring);
 	    *buf = 0;
 
 	    es.es_Title = Alert_GetTitle(alertNum);
-	    if (alertNum & AT_DeadEnd)
-        	es.es_GadgetFormat = "Suspend|Reboot";
-            else
-            	es.es_GadgetFormat = "Continue";
+
+	    /* Determine set of buttons */
+	    es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? deadend_buttons : recoverable_buttons;
 
 	    D(bug("[UserAlert] Body text:\n%s\n", buffer));
 	    choice = EasyRequestArgs(NULL, &es, NULL, NULL);
-	    
+
+	    if (choice == 1)
+	    {
+		/* 'More' has been pressed. Append full alert data */
+		FormatAlertExtra(end, task, SysBase);
+
+		/* Re-post the alert, without 'More...' this time */
+		es.es_GadgetFormat += MORE_SKIP;
+		choice = EasyRequestArgs(NULL, &es, NULL, NULL);
+	    }
+
 	    FreeMem(buffer, ALERT_BUFFER_SIZE);
 	}
 
@@ -135,5 +149,7 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
 
     /* Otherwise remove crash indicator and return happily */
     iet->iet_AlertCode = 0;
+    iet->iet_AlertLocation = NULL;
+
     return 0;
 }

@@ -257,9 +257,7 @@ struct AROSCPUContext
     else										\
 	(dest)->FXData = NULL;
 
-#define GET_PC(ctx) (void *)ctx->regs.rip
 #define GET_SP(ctx) (void *)ctx->regs.rsp
-#define SET_PC(ctx, addr) ctx->regs.rip = (IPTR)addr
 
 #define EXCEPTIONS_COUNT 18
 

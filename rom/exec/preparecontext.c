@@ -10,14 +10,6 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
-#include <proto/kernel.h>
-
-#include "etask.h"
-#include "exec_intern.h"
-#include "exec_util.h"
-#include "kernel_cpu.h"
-
-#define _PUSH(sp, val) *--sp = (IPTR)val
 
 /*****i***********************************************************************
 
@@ -51,6 +43,10 @@
 	TRUE on success. FALSE on failure.
 
     NOTES
+	This function is private and is not meant to be used
+	by any software. On other operating systems of Amiga(tm) family
+	it does not exist.
+
 	This function is very CPU dependant. In fact it can differ
 	over different models of the same processor family.
 
@@ -67,96 +63,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    IPTR args[8] = {0};
-    WORD numargs = 0;
-    IPTR *sp = task->tc_SPReg;
-    struct AROSCPUContext *ctx;
-
-    if (!(task->tc_Flags & TF_ETASK) )
-	return FALSE;
-  
-    ctx = KrnCreateContext();
-    GetIntETask (task)->iet_Context = ctx;
-    if (!ctx)
-	return FALSE;
-
-    while(tagList)
-    {
-    	switch(tagList->ti_Tag)
-	{
-	    case TAG_MORE:
-	    	tagList = (struct TagItem *)tagList->ti_Data;
-		continue;
-		
-	    case TAG_SKIP:
-	    	tagList += tagList->ti_Data;
-		break;
-		
-	    case TAG_DONE:
-	    	tagList = NULL;
-    	    	break;
-		
-	    #define HANDLEARG(x) \
-	    case TASKTAG_ARG ## x: \
-	    	args[x - 1] = (IPTR)tagList->ti_Data; \
-		if (x > numargs) numargs = x; \
-		break;
-		
-	    HANDLEARG(1)
-	    HANDLEARG(2)
-	    HANDLEARG(3)
-	    HANDLEARG(4)
-	    HANDLEARG(5)
-	    HANDLEARG(6)
-	    HANDLEARG(7)
-	    HANDLEARG(8)
-	    	
-	    #undef HANDLEARG
-	}
-	
-	if (tagList) tagList++;
-    }
-    
     /*
-	There is not much to do here, or at least that is how it
-	appears. Most of the work is done in the kernel_cpu.h macros.
-    */
-
-    if (numargs)
-    {
-    	#ifdef PREPARE_INITIAL_ARGS
-	
-	PREPARE_INITIAL_ARGS(sp, ctx, args, numargs);
-	
-	#else
-	
-	/* Assume C function gets all param on stack */
-	
-	while(numargs--)
-	{
-	    _PUSH(sp, args[numargs]);
-	}
-	
-	#endif
-    }
-
-    #ifdef PREPARE_RETURN_ADDRESS
-    
-    PREPARE_RETURN_ADDRESS(ctx, fallBack);
-    
-    #else
-    
-    /* First we push the return address */
-    _PUSH(sp, fallBack);
-    
-    #endif
-    
-    /* Then set up the frame to be used by Dispatch() */
-    PREPARE_INITIAL_FRAME(ctx, sp, entryPoint);
-
-    /* We return the new stack pointer back to the caller. */
-    task->tc_SPReg = sp;
-    return TRUE;
+     * The actual implementation of this function is CPU-specific.
+     * Please see files in arch/<cpu>-all/exec/ for working examples.
+     */
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* PrepareContext() */

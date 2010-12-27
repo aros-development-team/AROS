@@ -48,6 +48,7 @@
 
 #ifndef __TINYC__
 register unsigned char * AROS_GET_SP __asm__("%esp");
+register unsigned char * AROS_GET_FP __asm__("%ebp");
 #endif
 
 /* ??? */

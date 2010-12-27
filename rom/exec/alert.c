@@ -16,6 +16,7 @@
 
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "etask.h"
 
 /* x86/64 kernel.resource doesn't have KrnIsSuper() */
 #ifndef KrnIsSuper
@@ -57,17 +58,33 @@
     SEE ALSO
 
     INTERNALS
-        This is actually a poor-man implementation which prints alert information
-	to the debug output. Only this thing works everywhere and only this thing
-	can be called from within interrupts and traps. It's done so just because
-	it's better than nothing. Well, some day things will change...
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *task = SysBase->ThisTask;
+    struct IntETask *iet = NULL;
+
     D(bug("[exec] Alert 0x%08X\n", alertNum));
-    
+
+    if (task)
+    {
+	iet = GetIntETask(task);
+
+	/* Do we already have location set? */
+	if (!iet->iet_AlertLocation)
+	{
+	    /* If no, the location is where we were called from */
+	    APTR fp = AROS_GET_FP;
+
+	    D(bug("[Alert] Frame pointer 0x%p\n", fp));
+
+	    iet->iet_AlertStack = UnwindFrame(fp, &iet->iet_AlertLocation);
+	    D(bug("[Alert] Previous frame 0x%p, caller 0x%p\n", iet->iet_AlertStack, iet->iet_AlertLocation));
+	}
+    }
+
     /*
      * If we are running in user mode we should first try to report a problem
      * using Intuition display.
@@ -94,5 +111,16 @@
 	ColdReboot();
 	ShutdownA(SD_ACTION_COLDREBOOT);
     }
+
+    /*
+     * We displayed an alert in supervisor mode, but this still was a recoverable alert.
+     * Clear alert status by clearing AlertCode and AlertLocation.
+     */
+    if (iet)
+    {
+	iet->iet_AlertCode = 0;
+	iet->iet_AlertLocation = NULL;
+    }
+
     AROS_LIBFUNC_EXIT
 }

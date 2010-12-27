@@ -233,7 +233,4 @@ struct AROSCPUContext
     int errno_backup;		  /* Host-specific stuff, private */
 };
 
-#define GET_PC(ctx) (APTR)ctx->regs.eip
-#define SET_PC(ctx, pc) ctx->regs.eip = (ULONG)pc
-
 #endif /* _SIGCORE_H */

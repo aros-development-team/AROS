@@ -2,7 +2,7 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PrepareContext() - Prepare a task context for dispatch, i386 version
+    Desc: PrepareContext() - Prepare a task context for dispatch, m68k version
     Lang: english
 */
 
@@ -10,8 +10,8 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
+#include <aros/m68k/cpucontext.h>
 #include <proto/kernel.h>
-#include <aros/i386/cpucontext.h>
 
 #include "etask.h"
 #include "exec_intern.h"
@@ -57,12 +57,12 @@ AROS_LH4(BOOL, PrepareContext,
 	    	tagList = NULL;
     	    	break;
 		
-#define HANDLEARG(x) \
-	    case TASKTAG_ARG ## x: \
-	    	args[x - 1] = (IPTR)tagList->ti_Data; \
-		if (x > numargs) numargs = x; \
+#define HANDLEARG(x)					\
+	    case TASKTAG_ARG ## x:			\
+	    	args[x - 1] = (IPTR)tagList->ti_Data;	\
+		if (x > numargs) numargs = x;		\
 		break;
-		
+
 	    HANDLEARG(1)
 	    HANDLEARG(2)
 	    HANDLEARG(3)
@@ -71,8 +71,6 @@ AROS_LH4(BOOL, PrepareContext,
 	    HANDLEARG(6)
 	    HANDLEARG(7)
 	    HANDLEARG(8)
-	    	
-	    #undef HANDLEARG
 	}
 	
 	if (tagList) tagList++;
@@ -85,20 +83,20 @@ AROS_LH4(BOOL, PrepareContext,
 
     if (numargs)
     {
-	/* On i386 C function gets all param on stack */
+	/* On m68k C function gets all param on stack */
 	while(numargs--)
 	{
 	    _PUSH(sp, args[numargs]);
 	}
     }
-
+    
     /* First we push the return address */
     _PUSH(sp, fallBack);
-
+    
     /* Then set up the frame to be used by Dispatch() */
-    ctx->ebp = 0;
-    ctx->eip = (IPTR)entryPoint;
-    ctx->esp = (IPTR)sp;
+    ctx->pc   = (IPTR)entryPoint;
+    ctx->a[7] = (IPTR)sp;
+    ctx->sr   = 0x0000;
 
     /* We return the new stack pointer back to the caller. */
     task->tc_SPReg = sp;
