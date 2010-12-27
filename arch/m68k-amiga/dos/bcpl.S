@@ -100,13 +100,13 @@ BCPL_\name:
     .endm
 
     /* For real functions */
-    .macro  BCPL name
+    .macro  BCPLnd name
     .balign 4
     .globl  BCPL_\name
 BCPL_\name:
     .endm
 
-    .macro  BRTS
+    .macro  BRTSnd
     move.l  %d0,%d1
     jmp     (%a6)
     .endm
@@ -114,6 +114,9 @@ BCPL_\name:
 #ifdef DEBUG
 #define BCPL BCPLd
 #define BRTS BRTSd
+#else
+#define BCPL BCPLnd
+#define BRTS BRTSnd
 #endif
 
     /* Global vector table entries */
@@ -441,7 +444,6 @@ BCPL doIO           /*  54, LONG, @IORequest */
     jsr		%a6@(76 * -6)	/* Exec/DoIO() */
     ext.w	%d0
     ext.l	%d0
-    clr.l	0x100
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
@@ -689,22 +691,26 @@ BCPLd openWindow     /* c8, void, leftedge, topedge, width, height, @title */
      * Always return old current directory
      */
 BCPL setCurrentDir  /* cc, FileLock @, BOOL, @FileLock */
-    movem.l	%a0-%a1/%a6,%sp@-
+    movem.l	%d3-%d4/%a0-%a1/%a6,%sp@-
+
+	move.l	%d1,%d3
+
+    move.l	SysBase,%a6
+    sub.l	%a1,%a1
+    jsr		%a6@(FindTask)
+    move.l	%d0,%a0
+    /* sanity check in CurrentDir() complained so I did this */
+    move.l	%a0@(152),%d4	/* pr_CurrentDir */
+
+    tst.l	%d3
+    beq.s	0f
+
     move.l	%a2@(BCPL_DOSBase),%a6
-    move.l	%d1,%sp@-
     move.l	%d2,%d1
     jsr		%a6@(21 * -6)	/* DOS/CurrentDir() */
-    move.l	%sp@+,%d1
-    tst.l	%d1
-    bne		0f
-
-    /* Restore CurrentDir */
-    move.l	%d0,%sp@-
-    move.l	%d0, %d1
-    jsr		%a6@(21 * -6)	/* DOS/CurrentDir() */
-    move.l	%sp@+,%d0
 0:
-    movem.l	%sp@+,%a0-%a1/%a6
+	move.l	%d4,%d0
+    movem.l	%sp@+,%d3-%d4/%a0-%a1/%a6
     BRTS
 
 BCPLd systemRequest  /* d0, void, @line1, @line2, @line3 */
@@ -749,19 +755,26 @@ BCPL writet         /* d4, void, @string, n */
     movem.l	%sp@+,%d2-%d4
     BRTS
 
-BCPL rdch           /* d8, char ,  */
+BCPLnd rdch           /* d8, char ,  */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		%a6@(9 * -6)	/* DOS/Input() */
     move.l	%d0, %d1
     jsr		%a6@(51 * -6)	/* DOS/FGetC() */
     movem.l	%sp@+,%a0-%a1/%a6
+    BRTSnd
+
+BCPL unrdch         /* dc, void,  */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(9 * -6)	/* DOS/Input() */
+    move.l	%d0, %d1
+    moveq	#-1,%d2
+    jsr		%a6@(53 * -6)	/* DOS/UnGetC() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
-BCPLd unrdch         /* dc, void,  */
-    BRTS
-
-BCPL wrch           /* e0, void, char */
+BCPLnd wrch           /* e0, void, char */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     move.l	%d1, %d2
@@ -769,7 +782,7 @@ BCPL wrch           /* e0, void, char */
     move.l	%d0, %d1
     jsr		%a6@(52 * -6)	/* DOS/FPutC() */
     movem.l	%sp@+,%d2/%a0-%a1/%a6
-    BRTS
+    BRTSnd
 
 BCPLd readinput_e4   /* e4, lwlength , @buf, lwlength */
     BRTS
@@ -860,7 +873,7 @@ BCPL Output         /* 108, FileHandle @,  */
 BCPLd readn          /* 10c, void,  */
     BRTS
 
-BCPL newline        /* 110, void,  */
+BCPLnd newline        /* 110, void,  */
     moveq.l	#'\n',%d1
     jmp		BCPL_wrch
 
@@ -870,6 +883,7 @@ BCPL_write_base:	/* number, width, base, canneg */
     move.l	%d3,%d6		/* D6 = base */
     move.l	%d2,%d5		/* D5 = width */
     move.l	%d1,%d3		/* D3 = Number */
+    moveq	#0,%d7
 
     tst.l	%d4
     beq		.Lwrite_base_pos
@@ -877,17 +891,13 @@ BCPL_write_base:	/* number, width, base, canneg */
     tst.l	%d3		/* Number < 0? */
     bge		.Lwrite_base_pos
 
-    /* Negative sign */
-    subq.l	#1,%d5
-    move.l	#'-',%d1
-    move.l	#(3*4 + 4*4), %d0
-    move.l	%a2@(GV_wrch), %a4
-    jsr		(%a5)
+    bset	#31,%d7	/* D7 bit 31 = negative sign needed */
     neg.l	%d3
+    subq.l	#1,%d5
 
 .Lwrite_base_pos:
     clr.l	%d4		/* D4 = Digit */
-    clr.l	%d7		/* D7 = Num pushed chars */
+    clr.w	%d7		/* D7 = Num pushed chars */
 
 .Lwrite_base_loop:
     move.l	%d3,%d1
@@ -902,37 +912,42 @@ BCPL_write_base:	/* number, width, base, canneg */
     add.b	#(('A'-10)-'0'),%d1
 0:
     add.b	#'0',%d1	/* D1 = '0' .. '9' */
-    move.b	%d1, %a1@(3*4 + 4*4, %d7)
-    addq.l	#1, %d7
-
+    move.b	%d1, %a1@(3*4 + 4*4, %d7.w)
+    addq.w	#1, %d7
     subq.l	#1, %d5
     tst.l	%d3
-    bgt		.Lwrite_base_loop
+    bgt.s	.Lwrite_base_loop
+
+    /* Any extra field bits? */
+    bra		.LBCPL_write_base_pad_cond
+.LBCPL_write_base_pad:
+    moveq	#' ',%d1
+    move.l	#(3*4 + 4*4 + 8*4), %d0
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+.LBCPL_write_base_pad_cond:
+    subq.l	#1,%d5
+    bpl.s	.LBCPL_write_base_pad
+
+	btst	#31,%d7
+	beq.s	.Lwrite_base_emit
+    /* Negative sign */
+    move.l	#'-',%d1
+    move.l	#(3*4 + 4*4 + 8*4), %d0
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
 
     /* Write chars */
 .Lwrite_base_emit:
-    sub.l	#1, %d7
-    blt		0f
+    subq.w	#1, %d7
+    bmi.s	0f
     clr.l	%d1
-    move.b	%a1@(3*4 + 4*4, %d7),%d1
+    move.b	%a1@(3*4 + 4*4, %d7.w),%d1
     move.l	#(3*4 + 4*4 + 8*4), %d0
     move.l	%a2@(GV_wrch), %a4
     jsr		(%a5)
     jmp		.Lwrite_base_emit
 0:
-
-    /* Any extra field bits? */
-    bra		.LBCPL_write_base_pad_cond
-
-.LBCPL_write_base_pad:
-    move.l	#' ',%d1
-    move.l	#(3*4 + 4*4), %d0
-    move.l	%a2@(GV_wrch), %a4
-    jsr		(%a5)
-.LBCPL_write_base_pad_cond:
-    subq.l	#1,%d5
-    tst.l	%d5
-    bge		.LBCPL_write_base_pad
 
     movem.l	%sp@+,%d2-%d7
     BRTS
@@ -1014,6 +1029,12 @@ BCPL charcmp        /* 130, long , char1, char2 */
 
 BCPL strcmp         /* 134, long , @String1, @String2 */
     movem.l	%d1-%d3/%a0-%a1,%sp@-
+
+    ;move.l	%d1,%d0
+	;bsr		bstr_debug
+	;move.l	%d2,%d0
+	;bsr		bstr_debug
+
     lsl.l	#2,%d1
     move.l	%d1,%a0
     lsl.l	#2,%d2
@@ -1028,12 +1049,12 @@ sicmp1:
     beq.b	sicmp2
     subq.b	#1,%d2
     subq.b	#1,%d3
-    moveq	#0,%d1
-    move.b	%a0@+,%d1
-    bclr	#5,%d1
     moveq	#0,%d0
-    move.b	%a1@+,%d0
+    move.b	%a0@+,%d0
     bclr	#5,%d0
+    moveq	#0,%d1
+    move.b	%a1@+,%d1
+    bclr	#5,%d1
     sub.w	%d1,%d0
     beq.s	sicmp1
 	bra.s	sicmp0
@@ -1443,4 +1464,14 @@ bstr_to_cstr:
     movem.l	%sp@+,%d0/%a0-%a1
     rts
 
+.bstr_format:
+    .string  "'%b'\n"
 
+bstr_debug:
+	move.l	%d1,%sp@-
+    move.l  %d0,%sp@-
+    move.l  #.bstr_format,%sp@-
+    jsr     kprintf
+    addq.l	#8,%sp
+    move.l	%sp@+,%d1
+    rts

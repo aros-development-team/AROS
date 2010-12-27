@@ -48,8 +48,17 @@ BCPL_writef:
 
 #if 0
 	/* Dump format */
+	moveq	#'\'',%d1
+	move.l	#(3*4 + MAXARGS*4),%d0
+	move.l	%a2@(GV_wrch),%a4
+	jsr	(%a5)
+	move.l	%d6,%d1
 	move.l	#(3*4 + MAXARGS*4),%d0
 	move.l	%a2@(GV_writes),%a4
+	jsr	(%a5)
+	moveq	#'\'',%d1
+	move.l	#(3*4 + MAXARGS*4),%d0
+	move.l	%a2@(GV_wrch),%a4
 	jsr	(%a5)
 	move.l	#(3*4 + MAXARGS*4),%d0
 	move.l	%a2@(GV_newline),%a4
@@ -60,8 +69,11 @@ BCPL_writef:
 	clr.l	%d5		/* D5 = Format Length */
 	move.b	%a0@(%d6), %d5
 
+#if 0
+    /* whats this? single number zero output = "done already" */
 	tst	%d2		/* Done already? */
 	beq	.Lformat_exit
+#endif
 
 	clr.l	%d4		/* D4 = Arg Index */
 .Lformat_loop:
