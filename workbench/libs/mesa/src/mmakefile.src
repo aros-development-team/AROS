@@ -105,6 +105,33 @@ GLSL_CXX_SOURCES = \
             opt_redundant_jumps.cpp \
             s_expression.cpp \
 
+EGL_SOURCES = \
+            egl/main/eglapi \
+            egl/main/eglarray \
+            egl/main/eglconfig \
+            egl/main/eglcontext \
+            egl/main/eglcurrent \
+            egl/main/egldisplay \
+            egl/main/egldriver \
+            egl/main/eglglobals \
+            egl/main/eglimage \
+            egl/main/egllog \
+            egl/main/eglmisc \
+            egl/main/eglmode \
+            egl/main/eglscreen \
+            egl/main/eglstring \
+            egl/main/eglsurface \
+            egl/main/eglsync \
+            gallium/targets/egl/egl \
+            gallium/targets/egl/st_GL \
+            gallium/state_trackers/egl/common/egl_g3d \
+            gallium/state_trackers/egl/common/egl_g3d_api \
+            gallium/state_trackers/egl/common/egl_g3d_image \
+            gallium/state_trackers/egl/common/egl_g3d_st \
+            gallium/state_trackers/egl/common/egl_g3d_sync \
+            gallium/state_trackers/egl/common/native_helper \
+            gallium/state_trackers/egl/aros/native_aros \
+
 ifeq ($(AROS_TARGET_CPU), i386)
   FFIXED = -ffixed-ebx
 endif
@@ -122,6 +149,7 @@ ifeq ($(AROS_TARGET_CPU), arm)
 endif
 
 USER_INCLUDES := \
+            -I$(AROS_DEVELOPMENT)/include/gallium \
             -I$(SRCDIR)/$(CURDIR)/../include \
             -I$(SRCDIR)/$(CURDIR)/../include/GL \
             -I$(SRCDIR)/$(CURDIR)/mesa \
@@ -130,10 +158,13 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/glsl \
             -I$(SRCDIR)/$(CURDIR)/talloc \
             -I$(SRCDIR)/$(CURDIR)/gallium/include \
-            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(SRCDIR)/$(CURDIR)/egl/main \
+            -I$(SRCDIR)/$(CURDIR)/gallium/state_trackers/egl \
 
 USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math $(FFIXED) -DMAPI_GLAPI_CURRENT \
-                -DFEATURE_GL=1
+                -DFEATURE_GL=1 \
+                -D_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_DRM \
+                -D_EGL_OS_AROS=1 \
 
 LIB_MESA_SOURCES = \
             $(addprefix mesa/, $(MESA_GALLIUM_SOURCES:.c=)) \
@@ -141,8 +172,7 @@ LIB_MESA_SOURCES = \
             $(addprefix mapi/mapi/, $(MAPI_GLAPI_SOURCES:.c=)) \
             talloc/talloc \
             $(addprefix glsl/, $(GLSL_GLCPP_SOURCES:.c=)) \
-
-
+            $(EGL_SOURCES) \
 
 
 # Compilation of C++ GLSL compiler
