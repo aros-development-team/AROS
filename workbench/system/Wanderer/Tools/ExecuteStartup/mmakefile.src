@@ -1,4 +1,4 @@
-# Copyright © 2006, The AROS Development Team. All rights reserved.
+# Copyright © 2006-2010, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -6,8 +6,11 @@ include $(TOP)/config/make.cfg
 FILES       := main 
 EXEDIR      := $(AROS_WANDERER)/Tools
 
-#MM- workbench-system-wanderer-tools : workbench-system-wanderer-tools-executestartup 
-#MM  workbench-system-wanderer-tools-executestartup :
+#MM- workbench-system-wanderer-tools : \
+#MM  workbench-system-wanderer-tools-executestartup \
+#MM  workbench-system-wanderer-tools-executestartup-icons
+
+#MM  workbench-system-wanderer-tools-executestartup : includes linklibs
 
 %build_prog mmake=workbench-system-wanderer-tools-executestartup \
     progname=ExecuteStartup targetdir=$(EXEDIR) \
