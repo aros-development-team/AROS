@@ -33,7 +33,7 @@ SHARED_LIB_SOURCES = \
             mesa/aros/arosmesa_funcs \
             mesa/aros/arosmesa_init \
             aros/aros_libapi \
-            aros/arosc_emul \
+            aros/emul_arosc \
 
 GLSL_LIBGLCPP_SOURCES = \
             glcpp/glcpp-lex.c \
@@ -150,7 +150,7 @@ LIB_MESA_SOURCES = \
 CXX_SOURCES := \
     $(addprefix mesa/, $(SHADER_CXX_SOURCES:.cpp=)) \
     $(addprefix glsl/, $(GLSL_CXX_SOURCES:.cpp=)) \
-    aros/cpp_emul \
+    aros/emul_cpp \
 
 CXX_OBJECTS := $(addprefix $(OBJDIR)/cpp/, $(addsuffix .o, $(notdir $(CXX_SOURCES))))
 
