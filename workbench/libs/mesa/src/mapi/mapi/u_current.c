@@ -112,7 +112,7 @@ const void *u_current_user;
 #else
 
 #if defined(__AROS__)
-#include "arosmesa_intern.h"
+#include "aros/arosmesa_intern.h"
 void **GETMESABASECTX(void)
 {
     return &(REGMesaBase->mglb_CurrentContext);
