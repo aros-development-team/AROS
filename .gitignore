@@ -1755,6 +1755,9 @@
 /workbench/devs/makefile
 /workbench/devs/makefile.bak
 
+# /workbench/devs/AHI
+/workbench/devs/AHI/.files-touched
+
 # /workbench/devs/audio/
 /workbench/devs/audio/mmakefile
 
