@@ -1,0 +1,10 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := egl.h eglext.h eglplatform.h
+
+#MM- includes-copy
+%copy_includes path=EGL includes=$(INCLUDE_FILES)
+
+%common
+
