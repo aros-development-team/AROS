@@ -7,12 +7,11 @@
 */
 
 #include <aros/debug.h>
+#include <exec/interrupts.h>
 #include <proto/exec.h>
 
 #include <ctype.h>
 #include <string.h>
-
-#include <kernel_cpu.h>
 
 #include "etask.h"
 #include "exec_intern.h"
@@ -191,13 +190,18 @@ static char *NextWord(char *s)
 	     * When the task is running its context is not valid. It would be much better
 	     * to be able to examine contexts of other tasks.
 	     * I left this here for demonstration purposes.
+	     *
+	     * 24.12.2010: reference to kernel.resource's private includes is removed,
+	     * so PRINT_CPU_CONTEXT is not defined at all. Exec needs some CPU-specific
+	     * .c file where all CPU-dependent functionality needs to be gathered. This
+	     * is going to include full CPU context dump, stack trace, etc.
 	     */
 #ifdef PRINT_CPU_CONTEXT
-	    struct AROSCPUContext *r = GetIntETask(SysBase->ThisTask)->iet_Context;
+	    struct ExceptionContext *r = GetIntETask(SysBase->ThisTask)->iet_Context;
 
 	    PRINT_CPU_CONTEXT(r);
 #else
-	    kprintf("Not implemented on this platform. Define PRINT_CPU_CONTEXT macro in kernel_cpu.h.\n");
+	    kprintf("Not implemented on this platform.\n");
 #endif
 	}
 	/* Enable command */

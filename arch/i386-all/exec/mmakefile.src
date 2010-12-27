@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := newstackswap preparecontext
+FILES := alert_cpu newstackswap preparecontext
 
 USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := -I$(SRCDIR)/rom/exec

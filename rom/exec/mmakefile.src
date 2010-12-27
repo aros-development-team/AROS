@@ -35,7 +35,8 @@ ALL_FUNCTIONS	:= \
 
 INIT_FILE   := exec_init
 SYS_FILES   := prepareexecbase
-FILES	    := systemalert memory memory_nommu mungwall traphandler exec_util
+FILES	    := alertextra alert_cpu systemalert \
+	       memory memory_nommu mungwall traphandler exec_util
 
 # I need the private includes (for struct AROSCPUContext) and they
 # have to be first in the list
@@ -46,9 +47,7 @@ ifneq ($(FAMILY),)
 USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/exec \
 	       -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
-USER_CFLAGS += -I$(SRCDIR)/$(CURDIR) \
-               -I$(SRCDIR)/rom/kernel \
-	       -I$(GENINCDIR) -D__AROS_EXEC_LIBRARY__
+USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
 
 # As a hack the SYS_FILES are added as the initfile.
 %build_module mmake=kernel-exec \

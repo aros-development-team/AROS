@@ -140,7 +140,4 @@ struct AROSCPUContext
     int			    errno_backup;
 };
 
-#define GET_PC(ctx) ((APTR)ctx->regs.ip)
-#define SET_PC(ctx, val) ctx->regs.ip = (ULONG)val
-
 #endif /* _SIGCORE_H */

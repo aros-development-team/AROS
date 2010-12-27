@@ -24,7 +24,8 @@ void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
 
     buf = Alert_AddString(PrivExecBase(SysBase)->AlertBuffer, Alert_GetTitle(alertNum));
     *buf++ = '\n';
-    FormatAlert(buf, alertNum, SysBase->ThisTask, SysBase);
+    buf = FormatAlert(buf, alertNum, SysBase->ThisTask, SysBase);
+    FormatAlertExtra(buf, SysBase->ThisTask, SysBase);
 
     /*
      * Explicitly disable task switching.

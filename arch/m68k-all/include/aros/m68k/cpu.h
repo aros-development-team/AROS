@@ -40,6 +40,7 @@
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
 register unsigned char * AROS_GET_SP asm("%sp");
+register unsigned char * AROS_GET_SP asm("%a6");
 
 /* ??? */
 #define SP_OFFSET 0

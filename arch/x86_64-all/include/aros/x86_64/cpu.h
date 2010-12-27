@@ -59,6 +59,7 @@
 
 #ifndef __TINYC__
 register unsigned char * AROS_GET_SP __asm__("%rsp");
+register unsigned char * AROS_GET_FP __asm__("%rbp");
 #endif
 
 /*do we need a function attribute to get parameters on the stack? */

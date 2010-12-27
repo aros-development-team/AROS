@@ -140,9 +140,4 @@ struct AROSCPUContext
 #define ARM_FPU_TYPE FPU_NONE
 #define ARM_FPU_SIZE (128*sizeof(ULONG))
 
-/* Macros to access the program counter */
-
-#define GET_PC(ctx) ((APTR)ctx->regs.pc)
-#define SET_PC(ctx, val) ctx->regs.pc = (IPTR)val
-
 #endif /* _SIGCORE_H */

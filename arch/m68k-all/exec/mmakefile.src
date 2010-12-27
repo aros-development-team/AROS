@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=offsets getcc \
+FILES=offsets getcc preparecontext \
       cachecleare cacheclearu cachecontrol cachepostdma cachepredma
 
 AFILES=newstackswap stackswap \

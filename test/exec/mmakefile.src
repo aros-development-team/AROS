@@ -5,6 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES :=		\
+    alert		\
     allocmem		\
     avltest		\
     childstatus		\

@@ -26,9 +26,6 @@ struct AROSCPUContext
 
 typedef struct AROSCPUContext regs_t;
 
-#define GET_PC(cc)	((APTR)(cc)->pc)
-#define SET_PC(cc, val)	((cc)->pc = (IPTR)(val))
-
 /*
  * Only Exec/PrepareContext needs this.
  */

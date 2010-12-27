@@ -2,7 +2,7 @@
 #define EXEC_INTERRUPTS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Interrupt structures
@@ -14,6 +14,23 @@
 #endif
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
+#endif
+
+/* CPU-dependent struct ExceptionContext */
+#if defined __i386__
+#include <aros/i386/cpucontext.h>
+#elif defined __x86_64__
+#include <aros/x86_64/cpucontext.h>
+#elif defined __mc68000__
+#include <aros/m68k/cpucontext.h>
+#elif defined __powerpc__
+#include <aros/ppc/cpucontext.h>
+#elif defined __ppc__
+#include <aros/ppc/cpucontext.h>
+#elif defined __arm__
+#include <aros/arm/cpucontext.h>
+#else
+#error unsupported CPU type
 #endif
 
 struct Interrupt

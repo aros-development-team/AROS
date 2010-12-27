@@ -178,6 +178,3 @@ struct AROSCPUContext
     int ownedfp;
     int	errno_backup;
 };
-
-#define GET_PC(ctx) (APTR)ctx->regs.eip
-#define SET_PC(ctx, pc) ctx->regs.eip = (ULONG)pc

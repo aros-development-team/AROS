@@ -131,6 +131,3 @@ struct AROSCPUContext
 /* Darwin supports only VFP */
 #define ARM_FPU_TYPE FPU_VFP
 #define ARM_FPU_SIZE sizeof(struct VFPContext)
-
-#define GET_PC(ctx) (APTR)ctx->regs.pc
-#define SET_PC(ctx, val) ctx->regs.pc = (ULONG)val

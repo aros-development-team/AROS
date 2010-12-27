@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: stackswap.S 35308 2010-11-09 20:25:42Z schulz $
+    $Id$
 */
 
 	#include <aros/arm/asm.h>

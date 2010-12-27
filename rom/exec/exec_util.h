@@ -43,6 +43,10 @@ STRPTR Alert_GetTaskName(struct Task *task);
 STRPTR Alert_GetString(ULONG alertnum, STRPTR buf);
 STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, struct ExecBase *SysBase);
 
+void FormatAlertExtra(char *buffer, struct Task *task, struct ExecBase *SysBase);
+char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase);
+APTR UnwindFrame(APTR fp, APTR *caller);
+
 VOID Exec_CrashHandler(void);
 ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase);
 void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase);
