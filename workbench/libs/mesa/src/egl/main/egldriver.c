@@ -42,6 +42,7 @@ static _EGL_DECLARE_MUTEX(_eglModuleMutex);
 static _EGLArray *_eglModules;
 
 
+#if !defined(_EGL_OS_AROS)
 /**
  * Wrappers for dlopen/dlclose()
  */
@@ -93,30 +94,8 @@ library_suffix(void)
 {
    return ".so";
 }
-#elif defined(_EGL_OS_AROS)
-
-/* TODO: this whole stuff is not needed, since egl_gallium driver will be compiled
- in - remove the dynamic loading ability*/
-typedef APTR lib_handle;
-
-static APTR
-open_library(const char *filename)
-{
-   return NULL;
-}
-
-static void
-close_library(void *lib)
-{
-    /* TODO: implement */
-}
 
 
-static const char *
-library_suffix(void)
-{
-   return ".library";
-}
 #endif
 
 
@@ -226,6 +205,7 @@ _eglUnloadModule(_EGLModule *mod)
    mod->Driver = NULL;
    mod->Handle = NULL;
 }
+#endif /* !defined(_EGL_OS_AROS) */
 
 
 /**
@@ -268,6 +248,7 @@ _eglAddModule(const char *path)
 }
 
 
+#if !defined(_EGL_OS_AROS)
 /**
  * Free a module.
  */
@@ -505,10 +486,6 @@ _eglAddDefaultDrivers(void)
       "egl_dri2",
       "egl_glx"
    };
-#elif defined(_EGL_OS_AROS)
-   const char *DefaultDriverNames[] = {
-      "egl_gallium"
-   };
 #endif
 
    for (i = 0; i < ARRAY_SIZE(DefaultDriverNames); i++) {
@@ -516,6 +493,7 @@ _eglAddDefaultDrivers(void)
       _eglPreloadForEach(search_path, _eglLoaderFile, name);
    }
 }
+#endif /* !defined(_EGL_OS_AROS) */
 
 
 /**
@@ -529,12 +507,20 @@ _eglAddDrivers(void)
       return EGL_TRUE;
 
    /* the order here decides the priorities of the drivers */
+#if !defined(_EGL_OS_AROS)
    _eglAddUserDriver();
    _eglAddDefaultDrivers();
    _eglPreloadForEach(_eglGetSearchPath(), _eglLoaderPattern, (void *) "egl_");
+#else
+   /* On AROS there is only one, compiled in driver - Gallium3D */
+   _EGLModule * module = _eglAddModule("EGLGALLIUMCOMPILEDIN");
+   if (module->Driver == NULL)
+      module->Driver = _eglMain(NULL); /* Explicit call to Gallium3D driver's init function */
+#endif
 
    return (_eglModules != NULL);
 }
+
 
 /**
  * Match a display to a driver.  The display is initialized unless use_probe is
@@ -551,7 +537,6 @@ _eglMatchDriver(_EGLDisplay *dpy, EGLBoolean use_probe)
    EGLint best_score = 0;
    EGLint major, minor, i;
 
-#if !defined(_EGL_OS_AROS)
    _eglLockMutex(&_eglModuleMutex);
 
    if (!_eglAddDrivers()) {
@@ -584,6 +569,7 @@ _eglMatchDriver(_EGLDisplay *dpy, EGLBoolean use_probe)
          break;
    }
 
+#if !defined(_EGL_OS_AROS)
    /* load more modules */
    if (!best_drv) {
       EGLint first_unloaded = i;
@@ -624,14 +610,9 @@ _eglMatchDriver(_EGLDisplay *dpy, EGLBoolean use_probe)
          }
       }
    }
+#endif
 
    _eglUnlockMutex(&_eglModuleMutex);
-#else
-    /* FIXME AROS - hardcoded initilization of egl_gallium driver*/
-    best_drv = _eglMain(NULL);
-    best_drv->API.Initialize(best_drv, dpy, &major, &minor);
-    best_score = 100;
-#endif
 
    if (best_drv) {
       _eglLog(_EGL_DEBUG, "the best driver is %s (score %d)",
@@ -646,6 +627,7 @@ _eglMatchDriver(_EGLDisplay *dpy, EGLBoolean use_probe)
 
    return best_drv;
 }
+
 
 __eglMustCastToProperFunctionPointerType
 _eglGetDriverProc(const char *procname)
@@ -673,6 +655,7 @@ _eglGetDriverProc(const char *procname)
 
    return proc;
 }
+
 
 /**
  * Unload all drivers.
@@ -764,6 +747,7 @@ _eglInitDriverFallbacks(_EGLDriver *drv)
 }
 
 
+#if !defined(_EGL_OS_AROS)
 /**
  * Invoke a callback function on each EGL search path.
  *
@@ -777,3 +761,4 @@ _eglSearchPathForEach(EGLBoolean (*callback)(const char *, size_t, void *),
    const char *search_path = _eglGetSearchPath();
    _eglPreloadForEach(search_path, callback, callback_data);
 }
+#endif
