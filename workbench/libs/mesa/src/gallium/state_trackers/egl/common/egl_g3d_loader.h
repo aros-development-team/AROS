@@ -41,8 +41,10 @@ struct egl_g3d_loader {
    struct st_api *(*get_st_api)(enum st_api_type api);
    struct st_api *(*guess_gl_api)(enum st_profile_type profile);
 
+#if !defined(PIPE_OS_AROS)
    struct pipe_screen *(*create_drm_screen)(const char *name, int fd);
    struct pipe_screen *(*create_sw_screen)(struct sw_winsys *ws);
+#endif
 };
 
 _EGLDriver *

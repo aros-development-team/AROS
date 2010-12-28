@@ -68,6 +68,7 @@ loader_strdup(const char *s)
    return t;
 }
 
+#if !defined(PIPE_OS_AROS)
 static EGLBoolean
 dlopen_st_module_cb(const char *dir, size_t len, void *callback_data)
 {
@@ -93,12 +94,15 @@ dlopen_st_module_cb(const char *dir, size_t len, void *callback_data)
 
    return !(stmod->lib);
 }
+#endif
 
 static boolean
 load_st_module(struct st_module *stmod,
                        const char *name, const char *procname)
 {
+#if !defined(PIPE_OS_AROS)
    struct st_api *(*create_api)(void);
+#endif
 
    _eglLog(_EGL_DEBUG, "searching for st module %s", name);
 
@@ -121,11 +125,9 @@ load_st_module(struct st_module *stmod,
       }
    }
 #else
-    /* FIXME */
-//    if (name[4] == 'V')
-//        stmod->stapi = st_api_create_OpenVG();
-//    else    
-        stmod->stapi = st_api_create_OpenGL();
+   /* Select API based on requested name. Only GL for now */
+   stmod->stapi = st_api_create_OpenGL();
+   stmod->lib = NULL;
 #endif
 
    if (!stmod->stapi) {
@@ -136,6 +138,7 @@ load_st_module(struct st_module *stmod,
    return (stmod->stapi != NULL);
 }
 
+#if !defined(PIPE_OS_AROS)
 static EGLBoolean
 dlopen_pipe_module_cb(const char *dir, size_t len, void *callback_data)
 {
@@ -194,6 +197,7 @@ load_pipe_module(struct pipe_module *pmod, const char *name)
 
    return (pmod->drmdd != NULL);
 }
+#endif
 
 static struct st_api *
 get_st_api_full(enum st_api_type api, enum st_profile_type profile)
@@ -241,9 +245,11 @@ get_st_api_full(enum st_api_type api, enum st_profile_type profile)
    }
 
    if (!stmod->stapi) {
+#if !defined(PIPE_OS_AROS)
       EGLint level = (egl_g3d_loader.profile_masks[api]) ?
          _EGL_WARNING : _EGL_DEBUG;
       _eglLog(level, "unable to load " ST_PREFIX "%s" UTIL_DL_EXT, names[0]);
+#endif
    }
 
    stmod->initialized = TRUE;
@@ -279,6 +285,7 @@ guess_gl_api(enum st_profile_type profile)
    return get_st_api_full(ST_API_OPENGL, profile);
 }
 
+#if !defined(PIPE_OS_AROS)
 static struct pipe_module *
 get_pipe_module(const char *name)
 {
@@ -321,6 +328,7 @@ create_sw_screen(struct sw_winsys *ws)
    return (pmod && pmod->swrast_create_screen) ?
       pmod->swrast_create_screen(ws) : NULL;
 }
+#endif
 
 static const struct egl_g3d_loader *
 loader_init(void)
@@ -341,8 +349,10 @@ loader_init(void)
 
    egl_g3d_loader.get_st_api = get_st_api;
    egl_g3d_loader.guess_gl_api = guess_gl_api;
+#if !defined(PIPE_OS_AROS)
    egl_g3d_loader.create_drm_screen = create_drm_screen;
    egl_g3d_loader.create_sw_screen = create_sw_screen;
+#endif
 
    return &egl_g3d_loader;
 }

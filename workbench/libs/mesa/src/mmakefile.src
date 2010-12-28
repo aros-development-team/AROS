@@ -167,7 +167,6 @@ USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math $(FFIXED) -DMAPI_GLAPI_CURRENT \
                 -D_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_AROS \
                 -D_EGL_OS_AROS=1 \
                 -DHAVE_AROS_BACKEND \
-                -DST_PREFIX=\"st_\" -DPIPE_PREFIX=\"pipe_\" \
 
 LIB_MESA_SOURCES = \
             $(addprefix mesa/, $(MESA_GALLIUM_SOURCES:.c=)) \
