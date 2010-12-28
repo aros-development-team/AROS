@@ -232,4 +232,7 @@ native_get_drm_platform(void);
 const struct native_platform *
 native_get_fbdev_platform(void);
 
+const struct native_platform *
+native_get_aros_platform(void);
+
 #endif /* _NATIVE_H_ */
