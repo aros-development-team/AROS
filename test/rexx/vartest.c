@@ -55,13 +55,15 @@ int main(void)
     }
 
     puts("Message is from the rexx interpreter");
-    if (!GetRexxVar(msg, "A", &value))
+    if (GetRexxVar(msg, "A", &value) != RC_OK)
     {
-	puts("Error during retreival of value");
-	return 20;
+	puts("Error during retreival of value !!");
     }
-    printf("Length string: %d\n", strlen(value));
-    printf("Value of A: %s\n", value);
+    else
+    {
+	printf("Length string: %d\n", strlen(value));
+	printf("Value of A: %s\n", value);
+    }
     
     SetRexxVar(msg, "A", "2", 1);
     msg->rm_Result1 = RC_OK;
