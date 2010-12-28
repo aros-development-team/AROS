@@ -408,6 +408,7 @@ egl_g3d_invalid_surface(struct native_display *ndpy,
       gctx->stctxi->notify_invalid_framebuffer(gctx->stctxi, gsurf->stfbi);
 }
 
+#if !defined(PIPE_OS_AROS)
 static struct pipe_screen *
 egl_g3d_new_drm_screen(struct native_display *ndpy, const char *name, int fd)
 {
@@ -429,6 +430,11 @@ static struct native_event_handler egl_g3d_native_event_handler = {
    egl_g3d_new_drm_screen,
    egl_g3d_new_sw_screen
 };
+#else
+static struct native_event_handler egl_g3d_native_event_handler = {
+   egl_g3d_invalid_surface
+};
+#endif
 
 static void
 egl_g3d_free_config(void *conf)
