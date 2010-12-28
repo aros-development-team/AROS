@@ -31,10 +31,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(_EGL_OS_AROS)
-#include <exec/types.h>
-#endif
-
 
 typedef struct _egl_module {
    char *Path;
@@ -44,6 +40,7 @@ typedef struct _egl_module {
 
 static _EGL_DECLARE_MUTEX(_eglModuleMutex);
 static _EGLArray *_eglModules;
+
 
 /**
  * Wrappers for dlopen/dlclose()
