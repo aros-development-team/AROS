@@ -1,7 +1,6 @@
 #ifndef EGLDRIVER_INCLUDED
 #define EGLDRIVER_INCLUDED
 
-#include <sys/types.h>
 
 #include "egltypedefs.h"
 #include "eglapi.h"
