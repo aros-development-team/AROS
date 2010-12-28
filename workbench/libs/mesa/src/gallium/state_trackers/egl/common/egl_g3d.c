@@ -77,8 +77,8 @@ egl_g3d_get_platform(_EGLDriver *drv, _EGLPlatformType plat)
          break;
       case _EGL_PLATFORM_AROS:
          plat_name = "AROS";
-#ifdef HAVE_DRM_BACKEND
-         nplat = native_get_drm_platform();
+#ifdef HAVE_AROS_BACKEND
+         nplat = native_get_aros_platform();
 #endif
          break;
       default:

@@ -394,15 +394,15 @@ native_create_display(void * dpy, struct native_event_handler * event_handler,
     return &adpy->base;
 }
 
-static const struct native_platform drm_platform = 
+static const struct native_platform aros_platform = 
 {
    "AROS Intuition/Graphics",
    native_create_display
 };
 
 const struct native_platform *
-native_get_drm_platform(void)
+native_get_aros_platform(void)
 {
-   return &drm_platform;
+   return &aros_platform;
 }
 
