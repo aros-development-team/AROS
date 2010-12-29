@@ -628,6 +628,8 @@ struct IntDrawInfo
     Object  	    	    *dri_ScrDecorObj;    
 };
 
+#define DRI_VERSION_AROS (DRI_VERSION + 1)
+
 #define LOCK_WINDECOR(IntuitionBase)   	 ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->WinDecorSem);
 #define LOCKSHARED_WINDECOR(IntuitionBase) ObtainSemaphoreShared(&((struct IntIntuitionBase *)(IntuitionBase))->WinDecorSem);
 #define UNLOCK_WINDECOR(IntuitionBase) 	 ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->WinDecorSem);
