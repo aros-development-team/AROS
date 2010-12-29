@@ -131,6 +131,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 	ciaa->ciatblo = (UBYTE)(ECLOCK_BASE >> 8);
 	ciaa->ciacra |= 0x10;
 	ciaa->ciacra |= 0x01;
+	LIBBASE->tb_eclock_last = ECLOCK_BASE;
 	Enable(); 
 
 	D(bug("timer.device init\n"));

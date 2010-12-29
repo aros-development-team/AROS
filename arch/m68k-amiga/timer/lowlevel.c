@@ -115,7 +115,7 @@ void GetEClock(struct TimerBase *TimerBase, struct EClockVal *ev)
 	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 	UBYTE lo, hi;
 	ULONG evlo, evhi, old;
-	UWORD diff;
+	UWORD diff, val;
 	
 	Disable();
 	for (;;) {
@@ -125,25 +125,30 @@ void GetEClock(struct TimerBase *TimerBase, struct EClockVal *ev)
 			break;
 		// lo wraparound, try again
 	}
+	val = (hi << 8) | lo;
 	old = evlo = TimerBase->tb_eclock.ev_lo;
 	evhi = TimerBase->tb_eclock.ev_hi;
 	// pending interrupt?
-	diff = 0;
-	if (SetICR(TimerBase->ciares, 0) & 0x01)
+	if (SetICR(TimerBase->ciares, 0) & 0x01) {
+		TimerBase->tb_eclock_last = ECLOCK_BASE;
 		diff = ECLOCK_BASE;
-	Enable();
-	diff += ECLOCK_BASE - ((hi << 8) | lo);
+	} else {
+		diff = 0;
+	}
+	diff += TimerBase->tb_eclock_last - val;
 	evlo += diff;
 	if (old > evlo)
 		evhi++;
 	ev->ev_lo = evlo;
 	ev->ev_hi = evhi;
+	TimerBase->tb_eclock_last = val;
 
 	TimerBase->tb_eclock_to_usec += diff;
 	if (TimerBase->tb_eclock_to_usec >= TimerBase->tb_eclock_rate) {
 		TimerBase->tb_eclock_to_usec -= TimerBase->tb_eclock_rate;
 		TimerBase->tb_CurrentTime.tv_secs++;
 	}
+	Enable();
 }
 
 AROS_UFH4(APTR, cia_ciainta,
@@ -155,6 +160,7 @@ AROS_UFH4(APTR, cia_ciainta,
     AROS_USERFUNC_INIT
 
 	// e-clock counter, counts full ECLOCK_BASE cycles
+	TimerBase->tb_eclock_last = ECLOCK_BASE;
 	ULONG old = TimerBase->tb_eclock.ev_lo;
 	TimerBase->tb_eclock.ev_lo += ECLOCK_BASE;
 	if (old > TimerBase->tb_eclock.ev_lo)
