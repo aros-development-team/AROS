@@ -157,7 +157,7 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	if (!stricmp(name, "resident")) {
 	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
 	    UnLoadSeg(seglist);
-	    return RETURN_FAIL;
+	    return 1; /* yes, return code = 1 in this special case */
 	}
 
 	if (!AddSegment(name, seglist, SHArg(SYSTEM)?CMD_SYSTEM:0))
