@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
+#include <proto/utility.h>
 
 #include "dos_intern.h"
 
@@ -374,7 +375,9 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
         /* In case of a '/' use the next character as option. */
         if (*cs1++ == '/')
         {
-            *s2 |= argflags[*cs1 - 'A'];
+            UBYTE argc = ToUpper(*cs1);
+            if (argc >= 'A' && argc <= 'Z')
+            	*s2 |= argflags[argc - 'A'];
         }
     }
 
