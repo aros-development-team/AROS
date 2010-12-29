@@ -58,7 +58,6 @@
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
 register unsigned char* AROS_GET_SP __asm__("%sp");
-register unsigned char* AROS_GET_FP __asm__("%r1");
 
 /*
      An offset value sometimes added to

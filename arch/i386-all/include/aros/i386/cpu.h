@@ -48,7 +48,6 @@
 
 #ifndef __TINYC__
 #define AROS_GET_SP ({register unsigned char *sp asm("%esp"); sp;})
-#define AROS_GET_FP (__builtin_frame_address(1))
 #endif
 
 /* ??? */
