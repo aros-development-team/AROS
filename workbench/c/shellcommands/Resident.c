@@ -152,6 +152,14 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	/* Fall through */
 	}
 
+	/* WB1.x backwards compatibility hack, do not allow
+	 * override of built-in resident command */
+	if (!stricmp(name, "resident")) {
+	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	    UnLoadSeg(seglist);
+	    return RETURN_FAIL;
+	}
+
 	if (!AddSegment(name, seglist, SHArg(SYSTEM)?CMD_SYSTEM:0))
 	{
 	    UnLoadSeg(seglist);
