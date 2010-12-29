@@ -1203,7 +1203,56 @@ BCPL addDevice      /* 154, void, @name */
     movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
-BCPLd datestamp      /* 158, void, @time */
+BCPL datestamp      /* 158, @TimeStamp, @TimeStamp */
+    movem.l	%d2/%a0-%a4/%a6,%sp@-
+    subq.l	#8,%sp
+
+    /* I hate time conversions */
+
+    lsl.l	#2,%d1
+    move.l	%d1,%a3
+    move.l	%a2@(BCPL_DOSBase),%a1
+    move.l	%a1@(58),%a1	/* dl_TimeReq */
+    move.l	%a1@(20),%a6	/* io_Device */
+    move.l	%sp,%a4
+    move.l	%a4,%a0
+    jsr		%a6@(-0x042)	/* GetSysTime */
+
+    move.l	%a2@(BCPL_DOSBase),%a1
+    move.l	%a1@(62),%a6	/* dl_UtilityBase */
+
+	move.l	%a4@,%d0		/* total seconds */
+    moveq	#60,%d1
+    jsr		%a6@(-0x09C)	/* UDivMod32 */
+    /* minutes in D0, seconds (0-59) in D1 */
+    move.l	%d0,%d2
+    
+    mulu	#50,%d1			/* secs * ticks */
+    move.l	%d1,%a3@(8)		/* ds_Tick */
+    
+    move.l	%a4@(4),%d0		/* millis */
+    divu	#1000000/50,%d0
+    and.l	#0x0000ffff,%d0
+    add.l	%d0,%a3@(8)		/* add ticks (0-49) */
+    
+    /* total minutes -> minutes and days */
+    move.l	%d2,%d0
+    move.l	#60*24,%d1
+    jsr		%a6@(-0x09C)	/* UDivMod32 */
+    move.l	%d0,%a3@		/* ds_Days */
+    move.l	%d1,%a3@(4)		/* ds_Minute */
+    
+    move.l	%a2@(BCPL_DOSBase),%a1
+    move.l	%a1@(dl_Root),%a1
+    
+    /* update rn_Time */
+    move.l	%a3@,%a1@(8+0)
+    move.l	%a3@(4),%a1@(8+4)
+    move.l	%a3@(8),%a1@(8+8)
+    
+    addq.l	#8,%sp
+    move.l	%a3,%d0
+    movem.l	%sp@+,%d2/%a0-%a4/%a6
     BRTS
 
 BCPLd WaitForChar    /* 15c, BOOL , @FileHandle, time */
