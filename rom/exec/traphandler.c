@@ -38,7 +38,7 @@
 #endif
 #ifdef __arm__
 #define PC pc
-#define FP r[11]
+#define FP lr
 #endif
 
 #ifndef PC
