@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES  := initcustom
+CFILES  := initcustom vbeampos
 AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom waitblit
 
 #MM kernel-graphics-amiga-m68k : kernel-graphics-includes includes-asm_h-m68k
