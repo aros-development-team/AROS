@@ -47,8 +47,8 @@
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
 #ifndef __TINYC__
-register unsigned char * AROS_GET_SP __asm__("%esp");
-register unsigned char * AROS_GET_FP __asm__("%ebp");
+#define AROS_GET_SP ({register unsigned char *sp asm("%esp"); sp;})
+#define AROS_GET_FP (__builtin_frame_address(1))
 #endif
 
 /* ??? */
