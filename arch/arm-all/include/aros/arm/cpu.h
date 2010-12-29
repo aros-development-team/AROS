@@ -50,7 +50,6 @@
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
 register unsigned char* AROS_GET_SP __asm__("%sp");
-register unsigned char* AROS_GET_FP __asm__("%r11");
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the

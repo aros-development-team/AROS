@@ -76,11 +76,17 @@
 	if (!iet->iet_AlertLocation)
 	{
 	    /* If no, the location is where we were called from */
-	    APTR fp = AROS_GET_FP;
-
-	    D(bug("[Alert] Frame pointer 0x%p\n", fp));
-
-	    iet->iet_AlertStack = UnwindFrame(fp, &iet->iet_AlertLocation);
+	    iet->iet_AlertLocation = __builtin_return_address(0);
+	    /*
+	     * And backtrace starts at caller's frame.
+	     * On ARM we don't have frame pointer so we can't do backtrace.
+	     * __builtin_frame_address(1) will return garbage, so don't do this.
+	     */
+#ifdef __arm__
+	    iet->iet_AlertStack = NULL;
+#else
+	    iet->iet_AlertStack = __builtin_frame_address(1);
+#endif
 	    D(bug("[Alert] Previous frame 0x%p, caller 0x%p\n", iet->iet_AlertStack, iet->iet_AlertLocation));
 	}
     }

@@ -2,8 +2,7 @@
     Copyright © 2010, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: CPU context parsing routines. Dummy nonfunctional template.
-          See code in arch/i386/all/exec/alert_cpu.c for working example.
+    Desc: ARM CPU context parsing routines.
     Lang: english
 */
 
@@ -28,9 +27,14 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
     return buf - 1;
 }
 
-/* Unwind a single stack frame */
+/*
+ * On ARM we don't have frame pointer and can't do a full backtrace.
+ * However in case of CPU trap we can trace down one call. This is done
+ * by remembering value of lr register in iet_AlertStack. This routine
+ * will then unwind this pseudo-frame.
+ */
 APTR UnwindFrame(APTR fp, APTR *caller)
 {
-    /* TODO */
+    *caller = fp;
     return NULL;
 }
