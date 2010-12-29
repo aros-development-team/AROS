@@ -32,7 +32,7 @@ char *const inputname = "input.device";
 
     NAME */
 
-	AROS_LH4(BYTE, OpenDevice,
+	AROS_LH4(LONG, OpenDevice,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR,       devName,    A0),
@@ -65,6 +65,9 @@ char *const inputname = "input.device";
 	in the io_Error field.
 
     NOTES
+	Return type is internally extended to LONG in all existing official ROMs
+	(EXT.W D0 + EXT.L D0) DoIO() and WaitIO() do the same.
+	Many programs assume LONG return code, even some WB utilities.
 
     EXAMPLE
 
