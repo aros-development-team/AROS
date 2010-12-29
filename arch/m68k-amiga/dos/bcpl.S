@@ -577,19 +577,20 @@ BCPL setSignals     /*  90, void, &MsgPort, mask */
     BRTS
 
 BCPL clearSignals   /* 94, BOOL , mask */
-    movem.l	%a0-%a1/%a6,%sp@-
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     clr.l	%d0
     lsl.l	#8,%d1
     lsl.l	#4,%d1
     and.l	#0xf000,%d1
+    move.l	%d1,%d2
     jsr		%a6@(51 * -6)	/* SetSignal */
     moveq	#0,%d1
-    and.l	#0xf000,%d0
+    and.l	%d2,%d0
     beq.s	0f
     moveq	#-1,%d1
 0:	move.l	%d1,%d0
-    movem.l	%sp@+,%a0-%a1/%a6
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
 BCPL DOSAlert       /* 98, void, alertnumber */
