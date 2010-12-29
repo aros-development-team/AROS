@@ -57,9 +57,9 @@
 	.globl	AROS_SLIB_ENTRY(LockLayerRom,Graphics)
 
 AROS_SLIB_ENTRY(LockLayerRom,Graphics):
-    move.l  %a6,%sp@-
+    movem.l %d0-%d1/%a0-%a1/%a6,%sp@-
     move.l  SysBase,%a6
     lea.l   %a5@(ly_Lock),%a0
     jsr     %a6@(ObtainSemaphore)
-    move.l  %sp@+,%a6
+    movem.l %sp@+,%d0-%d1/%a0-%a1/%a6
     rts
