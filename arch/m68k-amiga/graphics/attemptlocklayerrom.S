@@ -54,9 +54,9 @@
 	.globl	AROS_SLIB_ENTRY(AttemptLockLayerRom,Graphics)
 
 AROS_SLIB_ENTRY(AttemptLockLayerRom,Graphics):
-    move.l  %a6,%sp@-
+    movem.l %d1/%a0-%a1/%a6,%sp@-
     move.l  SysBase,%a6
     lea.l   %a5@(ly_Lock),%a0
     jsr     %a6@(AttemptSemaphore)
-    move.l  %sp@+,%a6
+    movem.l %sp@+,%d1/%a0-%a1/%a6
     rts

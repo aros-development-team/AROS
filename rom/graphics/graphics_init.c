@@ -49,40 +49,6 @@ AROS_UFP4(ULONG, TOF_VBlank,
 BOOL InitROMFont(struct GfxBase *);
 
 #if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-#define PRESERVE_ALL(lib, libname, funcname, funcid) \
-	do { \
-		UWORD *asmcall; \
-		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
-		asmcall = AllocMem(8 * sizeof(UWORD), MEMF_PUBLIC); \
-		/* NOTE: 'asmcall' will intentionally never be freed */ \
-		asmcall[0] = 0x48e7; \
-		asmcall[1] = 0xc0c0; \
-		asmcall[2] = 0x4eb9; \
-		asmcall[3] = (func >> 16) & 0xffff; \
-		asmcall[4] = (func >>  0) & 0xffff; \
-		asmcall[5] = 0x4cdf; \
-		asmcall[6] = 0x0303; \
-		asmcall[7] = 0x4e75; \
-		/* Insert into the library's jumptable */ \
-		__AROS_SETVECADDR(lib, funcid, asmcall); \
-	} while (0)
-#define PRESERVE_ALL_EXCEPT_D0(lib, libname, funcname, funcid) \
-	do { \
-		UWORD *asmcall; \
-		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
-		asmcall = AllocMem(8 * sizeof(UWORD), MEMF_PUBLIC); \
-		/* NOTE: 'asmcall' will intentionally never be freed */ \
-		asmcall[0] = 0x48e7; \
-		asmcall[1] = 0x40c0; \
-		asmcall[2] = 0x4eb9; \
-		asmcall[3] = (func >> 16) & 0xffff; \
-		asmcall[4] = (func >>  0) & 0xffff; \
-		asmcall[5] = 0x4cdf; \
-		asmcall[6] = 0x0302; \
-		asmcall[7] = 0x4e75; \
-		/* Insert into the library's jumptable */ \
-		__AROS_SETVECADDR(lib, funcid, asmcall); \
-	} while (0)
 void InitCustom(struct GfxBase *);
 #endif
 
@@ -101,8 +67,6 @@ static int GfxInit(struct GfxBase *LIBBASE)
     }
 
 #if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    PRESERVE_ALL(GfxBase, GfxBase, LockLayerRom, 72);
-    PRESERVE_ALL_EXCEPT_D0(GfxBase, GfxBase, AttemptLockLayerRom, 109);
     InitCustom(GfxBase);
 #endif
 
