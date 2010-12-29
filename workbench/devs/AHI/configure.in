@@ -79,7 +79,7 @@ case $host in
  i?86-*-aros)
  : ${CPU="i386"}
   cflags=""
-  optflags="-mcpu=${CPU} -O2 -fomit-frame-pointer"
+  optflags="-mcpu=${CPU} -O2"
   linkerflags=""
   asflags="--defsym CPU=${CPU} --defsym LITTLE_ENDIAN=1"
   resident=""                                      dnl *** Not supported (yet?)
