@@ -38,7 +38,7 @@ AROS_LD2(struct Library *, OpenLibrary,
     AROS_LDA(STRPTR, libname, A1),
     AROS_LDA(ULONG, version, D0),
     struct ExecBase *, SysBase, 0, Dos);
-AROS_LD4(BYTE, OpenDevice,
+AROS_LD4(LONG, OpenDevice,
     AROS_LDA(STRPTR, devname, A0),
     AROS_LDA(IPTR, unitNumber, D0),
     AROS_LDA(struct IORequest *, iORequest, A1),
@@ -254,7 +254,7 @@ AROS_CALL2(struct Library *, __OpenLibrary,                       \
     struct ExecBase *, SysBase)
 
 #define ExecOpenDevice(devname, unitNumber, iORequest, flags)     \
-AROS_CALL4(BYTE, __OpenDevice,                                    \
+AROS_CALL4(LONG, __OpenDevice,                                    \
     AROS_LCA(STRPTR, devname, A0),                                \
     AROS_LCA(IPTR, unitNumber, D0),                              \
     AROS_LCA(struct IORequest *, iORequest, A1),                  \
@@ -519,7 +519,7 @@ AROS_LH2(struct Library *, OpenLibrary,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH4(BYTE, OpenDevice,
+AROS_LH4(LONG, OpenDevice,
     AROS_LHA(STRPTR, devname, A0),
     AROS_LHA(IPTR, unitNumber, D0),
     AROS_LHA(struct IORequest *, iORequest, A1),

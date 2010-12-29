@@ -14,7 +14,7 @@
 
     NAME */
 
-	AROS_LH1(BYTE, WaitIO,
+	AROS_LH1(LONG, WaitIO,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct IORequest *, iORequest, A1),
@@ -34,6 +34,7 @@
 	Error state of I/O request.
 
     NOTES
+	OpenDevice() notes explain LONG return type.
 
     EXAMPLE
 
