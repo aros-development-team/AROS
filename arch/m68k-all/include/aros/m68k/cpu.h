@@ -39,8 +39,8 @@
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
-register unsigned char * AROS_GET_SP asm("%sp");
-register unsigned char * AROS_GET_FP asm("%a6");
+#define AROS_GET_SP ({register unsigned char * sp asm("%sp");sp})
+#define AROS_GET_FP (__builtin_frame_address(1))
 
 /* ??? */
 #define SP_OFFSET 0
