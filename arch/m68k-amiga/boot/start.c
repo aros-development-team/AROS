@@ -487,10 +487,11 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Functions that need sign extension */
 	EXT_BYTE(SysBase, Exec, SetTaskPri, 50);
 	EXT_BYTE(SysBase, Exec, AllocSignal, 55);
+#if 0
 	EXT_BYTE(SysBase, Exec, OpenDevice, 74);
 	EXT_BYTE(SysBase, Exec, DoIO, 76);
 	EXT_BYTE(SysBase, Exec, WaitIO, 79);
-
+#endif
 	EXT_WORD(SysBase, Exec, GetCC, 88);
 
 	/* Inject code for GetCC, depending on CPU model */
