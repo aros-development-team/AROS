@@ -287,6 +287,8 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 
 static void startread(struct filehandle *fh)
 {
+	if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
+		return;
 	fh->conreadio->io_Command = CMD_READ;
 	fh->conreadio->io_Data    = fh->consolebuffer;
 	fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
@@ -319,9 +321,10 @@ LONG CONMain(void)
 
 	fh = open_con(dp, &error);
 	if (!fh) {
-		D(bug("CON: init failed\n"));
+		D(bug("[CON] init failed\n"));
 		goto end;
 	}
+	D(bug("[CON] %x open\n", fh));
 	replypkt(dp, DOSTRUE);
 
     	for(;;)
@@ -342,6 +345,7 @@ LONG CONMain(void)
 
 		if (sigs & conreadmask) {
 			GetMsg(fh->conreadmp);
+			fh->flags &= ~FHFLG_ASYNCCONSOLEREAD;
 			if (waitingdp) {
 				replypkt(waitingdp, DOSTRUE);
 				AbortIO(fh->timerreq);
@@ -380,8 +384,8 @@ LONG CONMain(void)
 		while ((mn = GetMsg(mp))) {
 			dp = (struct DosPacket*)mn->mn_Node.ln_Name;	
 			dp->dp_Res2 = 0;
-			D(bug("[CON] packet %x:%d %x,%x,%x\n",
-				dp, dp->dp_Type, dp->dp_Arg1, dp->dp_Arg2, dp->dp_Arg3));
+			D(bug("[CON %x] packet %x:%d %x,%x,%x\n",
+				fh, dp, dp->dp_Type, dp->dp_Arg1, dp->dp_Arg2, dp->dp_Arg3));
 			error = 0;
 			switch (dp->dp_Type)
 			{
@@ -393,11 +397,12 @@ LONG CONMain(void)
 					dosfh->fh_Arg1 = (IPTR)fh;
 					fh->usecount++;
 				 	fh->breaktask = dp->dp_Port->mp_SigTask;
-				 	D(bug("[CON] Find fh=%x\n", dosfh));
+				 	D(bug("[CON] Find fh=%x. Usecount=%d\n", dosfh, fh->usecount));
 					replypkt(dp, DOSTRUE);
 				break;
 				case ACTION_END:
 					fh->usecount--;
+					D(bug("[CON] usecount=%d\n", fh->usecount));
 					if (fh->usecount <= 0)
 						goto end;
 					replypkt(dp, DOSTRUE);
@@ -405,13 +410,13 @@ LONG CONMain(void)
 				case ACTION_READ:
 					if (!MakeSureWinIsOpen(fh))
 						goto end;
-					if (!(fh->flags & FHFLG_ASYNCCONSOLEREAD))
-						startread(fh);
+					startread(fh);
 					con_read(fh, dp);
 				break;
 				case ACTION_WRITE:
 					if (!MakeSureWinIsOpen(fh))
 						goto end;
+					startread(fh);
 					answer_write_request(fh, dp);
 				break;
 				case ACTION_SCREEN_MODE:
@@ -486,20 +491,32 @@ LONG CONMain(void)
 				    replypkt(dp, DOSTRUE);
 				}	
 				break;
+				case ACTION_SEEK:
+					replypkt(dp, DOSTRUE);
+				break;
 				default:
-					bug("[con] unknown action %d\n", dp->dp_Type);
+					bug("[CON] unknown action %d\n", dp->dp_Type);
 					replypkt2(dp, DOSFALSE, ERROR_ACTION_NOT_KNOWN);
 				break;
 			}
 		}
 	}
 end:
+	D(bug("[CON] %x closing\n", fh));
 	if (fh) {
+    		struct Message *msg, *next_msg;
 		if (waitingdp) {
 			AbortIO(fh->timerreq);
 			WaitIO(fh->timerreq);
 			replypkt(waitingdp, DOSFALSE);
 		}
+		ForeachNodeSafe(&fh->pendingReads, msg, next_msg)
+		{
+    			struct DosPacket *dpr;
+            		Remove((struct Node *)msg);
+            		dpr = (struct DosPacket*)msg->mn_Node.ln_Name;
+            		replypkt(dpr, DOSFALSE);
+            	}
 		if (fh->flags & FHFLG_ASYNCCONSOLEREAD) {
     			AbortIO(ioReq(fh->conreadio));
 			WaitIO(ioReq(fh->conreadio));
@@ -507,6 +524,7 @@ end:
 		close_con(fh);
 	}
 	replypkt(dp, DOSFALSE);
+	D(bug("[CON] %x closed\n", fh));
 	return 0;
 
 }
