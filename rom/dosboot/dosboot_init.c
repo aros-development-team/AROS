@@ -486,11 +486,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
         /* Late binding ENVARC: assign, only if used */
         AssignLate("ENVARC", "SYS:Prefs/env-archive");
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-        /* This shouldn't be here. This is partial workaround for WB3.x Assign Lock issue */
-        AssignLate("ENV", "RAM:");
-#endif
-
         /*
             Attempt to mount filesystems marked for retry. If it fails again,
             remove the BootNode from the list.
