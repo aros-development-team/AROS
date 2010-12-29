@@ -569,6 +569,9 @@ BCPL setSignals     /*  90, void, &MsgPort, mask */
     add.l	#mp_SigTask,%d1
     move.l	%a0@(%d1),%a1
     move.l	%d2,%d0
+    lsl.l	#8,%d0
+    lsl.l	#4,%d0			/* shift to C-F signals */
+    and.l	#0xf000,%d0		/* mask only C-F signals */
     jsr		%a6@(54 * -6)	/* Signal */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
@@ -577,7 +580,15 @@ BCPL clearSignals   /* 94, BOOL , mask */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     clr.l	%d0
+    lsl.l	#8,%d1
+    lsl.l	#4,%d1
+    and.l	#0xf000,%d1
     jsr		%a6@(51 * -6)	/* SetSignal */
+    moveq	#0,%d1
+    and.l	#0xf000,%d0
+    beq.s	0f
+    moveq	#-1,%d1
+0:	move.l	%d1,%d0
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
