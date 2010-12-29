@@ -196,9 +196,9 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
     } /* while ((tag = NextTagItem(&taglist))) */
 
-    D(bug("dri: %p, unsupported: %d\n", data->dri, unsupported));
+    D(bug("dri: %p, unsupported: %d version: %d\n", data->dri, unsupported, data->dri->dri_Version));
 
-    if ((!data->dri) || (unsupported))
+    if ((!data->dri) || (unsupported) || (data->dri->dri_Version != DRI_VERSION_AROS))
         return FALSE;
 
     {

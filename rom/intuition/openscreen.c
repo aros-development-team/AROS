@@ -943,7 +943,11 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 	       defaults to acceptable value. We should just get its default value here.
 	       The same attribute would be set by VideoControl() and MakeVPort() in order
 	       to actually apply the value. */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+	    spritebase = 16;
+#else
 	    spritebase = (ns.Depth < 5) ? (1 << ns.Depth) - 8 : 16;
+#endif
 	    DEBUG_OPENSCREEN(bug("OpenScreen: spritebase is %u\n", spritebase));
 	    tags[4].ti_Data = ((spritebase & 0x0F) << 8 ) | (spritebase >> 4);
 
@@ -1127,7 +1131,10 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         }
         D(bug("layers intited screen\n"));
 
-        screen->DInfo.dri.dri_Version = DRI_VERSION;
+	/* Use higher than DRI_VERSION to detect manually created
+	 * DrawInfo structures (for example WB3.1:Prefs/Palette)
+	 */
+        screen->DInfo.dri.dri_Version = DRI_VERSION_AROS;
         screen->DInfo.dri.dri_NumPens = NUMDRIPENS;
         screen->DInfo.dri.dri_Pens = screen->Pens;
         /* dri_Depth is 8 on hi/true color screens like in AmigaOS with picasso96/cybergraphx */
