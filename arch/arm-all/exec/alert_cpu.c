@@ -22,7 +22,12 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
 {
     char *buf;
 
-    buf = RawDoFmt(gpr_fmt, ctx->r, RAWFMTFUNC_STRING, buffer);
+    buf = NewRawDoFmt(gpr_fmt, RAWFMTFUNC_STRING, buffer,
+		      ctx->r[0], ctx->r[1], ctx->r[2] , ctx->r[3] , 
+		      ctx->r[4], ctx->r[5], ctx->r[6] , ctx->r[7] , 
+		      ctx->r[8], ctx->r[9], ctx->r[10], ctx->r[11], 
+		      ctx->ip  , ctx->sp  , ctx->lr   , ctx->pc   ,
+		      ctx->cpsr);
 
     return buf - 1;
 }
