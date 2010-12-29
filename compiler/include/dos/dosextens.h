@@ -63,11 +63,12 @@ struct DosLibrary
 
     /* The following fields are PRIVATE! */
     struct ErrorString	 * dl_Errors;
-    struct Device	 * dl_TimerBase;
+    struct timerequest *dl_TimeReq;
     struct Library	 * dl_UtilityBase;
     struct Library	 * dl_IntuitionBase;
 
     /* These are AROS specific extensions. They are all PRIVATE! */
+    struct Device	 * dl_TimerBase;
     struct timerequest	   dl_TimerIO;
 
     struct DosList	 * dl_DevInfo;

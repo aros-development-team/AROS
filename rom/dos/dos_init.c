@@ -101,6 +101,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
 		      &LIBBASE->dl_TimerIO.tr_node, 0) == 0)
 	{
 	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
+	    LIBBASE->dl_TimeReq = &LIBBASE->dl_TimerIO;
 
 	    LIBBASE->dl_lib.lib_Node.ln_Name = "dos.library";
 	    LIBBASE->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
