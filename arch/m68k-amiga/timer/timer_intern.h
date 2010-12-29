@@ -50,6 +50,7 @@ struct TimerBase
 	struct EClockVal tb_eclock;
 	ULONG tb_eclock_rate;
 	ULONG tb_eclock_to_usec;
+	UWORD tb_eclock_last;
 
 	struct timeval tb_vb_count;
 	UWORD tb_vblank_rate;
