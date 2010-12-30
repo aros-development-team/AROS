@@ -9,9 +9,23 @@
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
+#include <dos/stdio.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
 #include "dos_intern.h"
+
+AROS_UFH4(LONG, ReadFunc,
+	AROS_UFHA(BPTR, file,   D1),
+	AROS_UFHA(APTR, buffer, D2),
+	AROS_UFHA(LONG, length, D3),
+	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    return FRead(file, buffer, 1, length);
+
+    AROS_USERFUNC_EXIT
+}
 
 /*****************************************************************************
 
@@ -57,7 +71,7 @@
     void (* FunctionArray[3])();
     BPTR file, segs=0;
 
-    FunctionArray[0] = __AROS_GETVECADDR(DOSBase,7);  /* Read() */
+    FunctionArray[0] = (void(*))ReadFunc; //__AROS_GETVECADDR(DOSBase,7);  /* Read() */
     FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
     FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
 
@@ -69,6 +83,7 @@
     {
 	D(bug("[LoadSeg] Loading '%s'...\n", name));
 
+	SetVBuf(file, NULL, BUF_FULL, 4096);
 	segs = InternalLoadSeg(file, BNULL, (void *)FunctionArray, NULL);
 
 	if (segs)
