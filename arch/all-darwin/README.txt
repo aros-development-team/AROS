@@ -4,9 +4,11 @@
 
  In order to compile it natively under MacOS X you need:
 
-a) MacPorts. From it you need to install iconv, gmp, mpfr and netpbm.
+a) Xcode, for MacOS developer tools like gcc, get it on
+   http://developer.apple.com.
+b) MacPorts. From it you need to install iconv, gmp, mpfr and netpbm.
    Three former packages are needed by cross-gcc.
-b) AROS-targetted crosscompiler. x86-64 version (running MacOS X Snow
+c) AROS-targetted crosscompiler. x86-64 version (running on MacOS X Snow
    Leopard) can be found on AROS Archives:
  http://archives.aros-exec.org/index.php?function=browse&cat=development/cross
 
@@ -38,7 +40,7 @@ in progress. ARM version makes sense only for iOS variant (using
 described separately.
 
  Building on Mac is verified to be succesful using MacOS X v10.6 (Snow 
-Leopard), + gcc 4.2.1 (bundled with MacOS) + aros-binutils v2.20.1 
+Leopard), + gcc 4.2.1 (bundled with Xcode) + aros-binutils v2.20.1
 + aros-gcc v4.4.2. Cross-compilation on non-Mac should be possible provided that
 you get Darwin-targetted crosstoolchain up and running. I haven't tried this.
 
