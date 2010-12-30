@@ -2,4 +2,26 @@ MSG_WINTITLE (//)
 Pointer Preferences
 ;
 MSG_OK (//)
-Ok
+OK
+;
+MSG_HOTSPOT (//)
+ Hotspot
+;
+MSG_ALPHA (//)
+Alpha
+;
+MSG_FILENAME (//)
+Filename
+;
+MSG_TYPE (//)
+Type
+;
+MSG_TYPE_NORMAL (//)
+Normal
+;
+MSG_TYPE_BUSY (//)
+Busy
+;
+MSG_SETVIEW (//)
+Set / View
+;

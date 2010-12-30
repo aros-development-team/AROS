@@ -21,7 +21,7 @@
 #include "pteditor.h"
 #include "prefs.h"
 
-static CONST_STRPTR type_entries[] = {"Normal", "Busy", NULL};
+static CONST_STRPTR type_entries[] = {"Normal", "Busy", NULL}; /* TODO: Change for Locale - may not be static */
 
 /*** Instance Data **********************************************************/
 struct PTEditor_DATA
@@ -122,12 +122,12 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             End),
             Child, ColGroup(2),
                 GroupFrame,
-                Child, (IPTR)Label2("Which"),
+                Child, (IPTR)Label2(__(MSG_TYPE)),
                 Child, (IPTR)(typeCycle = (Object *)CycleObject,
                     MUIA_Cycle_Entries, type_entries,
                     MUIA_CycleChain, 1,
                 End),
-                Child, (IPTR)Label2("Filename"),
+                Child, (IPTR)Label2(__(MSG_FILENAME)),
                 Child, (IPTR)PopaslObject,
                     MUIA_Popasl_Type, ASL_FileRequest,
                     MUIA_Popstring_String, (IPTR)(fileString = (Object *)StringObject,
@@ -137,17 +137,17 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     End),
                     MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopUp),
                 End,
-                Child, (IPTR)Label2("Alpha"),
+                Child, (IPTR)Label2(__(MSG_ALPHA)),
                 Child, (IPTR)(alphaSlider = (Object *)SliderObject,
                     MUIA_Numeric_Min, 20,
                     MUIA_Numeric_Max, 255,
                     MUIA_CycleChain, 1,
                 End),
-                Child, (IPTR)Label2("Hotspot"),
+                Child, (IPTR)Label2(__(MSG_HOTSPOT)),
                 Child, (IPTR)(hotspotButton = MUI_NewObject(MUIC_Text,
                     ButtonFrame,
                     MUIA_Font, MUIV_Font_Button,
-                    MUIA_Text_Contents, "Set / View",
+                    MUIA_Text_Contents, __(MSG_SETVIEW),
                     MUIA_Text_PreParse, "\33c",
                     MUIA_InputMode    , MUIV_InputMode_Toggle,
                     MUIA_Background   , MUII_ButtonBack,
