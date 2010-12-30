@@ -34,6 +34,7 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
 BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
 {
     ULONG *GlobVec;
+    ULONG *segment;
 
     /* Most BCPL programs have only two segments.
      * C:Ed on KS 1.3, however, decided to do its own
@@ -41,7 +42,6 @@ BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
      * so we now always treat everybody as BCPL.
      */
 #if 0
-    ULONG *segment;
     int segs = 0;
 
     for (segment = BADDR(segList); segment != NULL; segment = BADDR(segment[0])) {
@@ -51,6 +51,8 @@ BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
     if (segs != 2)
     	return TRUE;
 #endif
+
+    segment = BADDR(segList);
 
     GlobVec = AllocVec(sizeof(BCPL_GlobVec), MEMF_ANY);
     if (GlobVec == NULL)
@@ -65,9 +67,24 @@ BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
     GlobVec[4] = 0;
     GlobVec[5] = segList;
 
+    /* this and dl_A2/dl_A5/dl_A6 probably should be initialized somewhere else.. */
+    ((struct DosLibrary*)DOSBase)->dl_GV = (APTR)BCPL_GlobVec;
+
     GlobVec = ((APTR)GlobVec) + BCPL_GlobVec_NegSize;
     GlobVec[0] = BCPL_GlobVec_PosSize >> 2;
     me->pr_GlobVec = GlobVec;
+
+   if (segment[2] == 0x0000abcd) {
+   	/* overlayed executable, fun..
+   	 * 2 = id
+   	 * 3 = filehandle (BPTR)
+   	 * 4 = overlay table (APTR)
+   	 * 5 = hunk table (BPTR)
+   	 * 6 = global vector (APTR)
+   	 */
+   	 segment[6] = (ULONG)BCPL_GlobVec;
+    }
+
     return TRUE;
 }
 
