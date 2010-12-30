@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-prefs-pointer-catalogs \
-                name=Serial subdir=System/Prefs
+                name=pointer subdir=System/Prefs

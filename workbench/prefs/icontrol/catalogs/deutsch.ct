@@ -44,7 +44,7 @@ Fenster
 ; Windows
 ;
 MSG_OFFSCREEN_MOVE
-Außer-Bildschirm-Verschiebung:
+Verschieben über den Bildschirmrand ermöglichen:
 ; Offscreen move:
 ;
 MSG_SCREENS
