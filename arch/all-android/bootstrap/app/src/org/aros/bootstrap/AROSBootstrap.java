@@ -111,9 +111,17 @@ public class AROSBootstrap extends Activity
 	        DisplayError("Bootstrap exited with rc" + rc);
 		}
 	}
-	
-    public native int Start(String dir);
-	
+
+	// This is for far future. Android already supports TV out,
+	// just it always displays the same picture as device's screen.
+	// But what if things change one day?
+	public DisplayView GetDisplay()
+	{
+		return rootView;
+	}
+
+    private native int Start(String dir);
+
     private CharSequence errStr;
     private DisplayView rootView;
 }
@@ -124,20 +132,20 @@ class DisplayView extends ViewGroup
 	{
 		super(context);
 
-		width  = 0;
-		height = 0;
+		Width  = 0;
+		Height = 0;
 		booter = callback; 
 	}
 
-	@Override 
+	@Override
 	public void onLayout(boolean c, int left, int top, int right, int bottom)
 	{
 		if (!c)
 			return;
 		
-		width = right - left;
-		height = bottom - top;
-		Log.d("AROS", "Screen size set: " + width + "x" + height);
+		Width = right - left;
+		Height = bottom - top;
+		Log.d("AROS", "Screen size set: " + Width + "x" + Height);
 
 		// Just in case - run bootstrap only once after we are created
 		if (booter == null)
@@ -152,6 +160,9 @@ class DisplayView extends ViewGroup
 		booter = null;
 	}
 
-	public int width, height;
+	// Display size - for AROS driver
+	public int Width;
+	public int Height;
+
     private AROSBootstrap.Booter booter;
 }

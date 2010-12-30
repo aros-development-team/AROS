@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 36110 2010-12-15 20:01:27Z sonic $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 FILES := emul_dir
