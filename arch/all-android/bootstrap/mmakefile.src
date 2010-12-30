@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 35683 2010-11-22 06:50:53Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES         := main filesystem ui
