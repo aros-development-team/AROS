@@ -495,10 +495,14 @@ ifeq (%(targetdir),)
 %(basename).o : AFLAGS := %(aflags)
 %(basename).o : %(basename).s
 	%assemble_q
+%(basename).o : %(basename).S
+	%assemble_q
 
 else
 %(targetdir)/$(notdir %(basename)).o : AFLAGS := %(aflags)
 %(targetdir)/$(notdir %(basename)).o : %(basename).s
+	%assemble_q
+%(targetdir)/$(notdir %(basename)).o : %(basename).S
 	%assemble_q
 
 endif
