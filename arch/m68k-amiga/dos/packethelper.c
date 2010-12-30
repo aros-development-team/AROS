@@ -10,6 +10,7 @@
 #endif
 #define  DEBUG 0
 #include <aros/debug.h>
+#include <proto/exec.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -17,7 +18,28 @@
     NAME */
 #include <proto/dos.h>
 
-SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5)
+/* All KS versions accept most dos packet dos calls without dosbase in A6
+ * So we don't call dos here either for compatibility purposes
+ */
+
+static struct DosPacket *allocdospacket(void)
+{
+    struct StandardPacket *sp = AllocVec(sizeof(struct StandardPacket), MEMF_CLEAR);
+
+    if (sp == NULL)
+	return NULL;
+
+    sp->sp_Pkt.dp_Link = &(sp->sp_Msg);
+    sp->sp_Msg.mn_Node.ln_Name = (char *) &(sp->sp_Pkt);
+
+    return (APTR) &(sp->sp_Pkt);
+}
+static void freedospacket(struct DosPacket *dp)
+{
+	FreeVec((APTR)(((APTR)dp)-(APTR)(&((struct StandardPacket *)0)->sp_Pkt))); 
+}
+
+static SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5)
 {
     /*
      * First I create a regular dos packet and then let 
@@ -35,7 +57,7 @@ SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, L
     	return TRUE;
     }
 
-    dp = (struct DosPacket *)AllocDosObject(DOS_STDPKT, NULL);    
+    dp = allocdospacket();
     if (NULL == dp)
     	return FALSE;
     
@@ -46,7 +68,7 @@ SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, L
 	replyPort = CreateMsgPort();
 
 	if (NULL == replyPort) {
-	    FreeDosObject(DOS_STDPKT, dp);
+	    freedospacket(dp);
 	    return FALSE;
 	}
 
@@ -64,7 +86,10 @@ SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, L
     dp->dp_Res1 = 0;
     dp->dp_Res2 = 0;
     
-    SendPkt(dp, port, replyPort);
+    /* SendPkt */
+    dp->dp_Port = replyPort;
+    dp->dp_Link->mn_ReplyPort = replyPort;
+    PutMsg(port, dp->dp_Link);
 
     while (GetMsg(replyPort) == NULL) {
         Wait(1 << replyPort->mp_SigBit);
@@ -81,29 +106,33 @@ SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, L
     }
     D(bug("res1=%x res2=%x\n", dp->dp_Res1, dp->dp_Res2));
     
-    FreeDosObject(DOS_STDPKT, dp);
+    freedospacket(dp);
     return res;
 
 }
+SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5)
+{
+    return dopacket(res2, port, action, arg1, arg2, arg3, arg4, arg5);
+}
 SIPTR dopacket4(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4)
 {
-    return dopacket5(DOSBase, res2, port, action, arg1, arg2, arg3, arg4, 0);
+    return dopacket(res2, port, action, arg1, arg2, arg3, arg4, 0);
 }
 SIPTR dopacket3(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3)
 {
-    return dopacket5(DOSBase, res2, port, action, arg1, arg2, arg3, 0, 0);
+    return dopacket(res2, port, action, arg1, arg2, arg3, 0, 0);
 }
 SIPTR dopacket2(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2)
 {
-    return dopacket5(DOSBase, res2, port, action, arg1, arg2, 0, 0, 0);
+    return dopacket(res2, port, action, arg1, arg2, 0, 0, 0);
 }
 SIPTR dopacket1(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1)
 {
-    return dopacket5(DOSBase, res2, port, action, arg1, 0, 0, 0, 0);
+    return dopacket(res2, port, action, arg1, 0, 0, 0, 0);
 }
 SIPTR dopacket0(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action)
 {
-    return dopacket5(DOSBase, res2, port, action, 0, 0, 0, 0, 0);
+    return dopacket(res2, port, action, 0, 0, 0, 0, 0);
 }
 
 BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketHelperStruct *phs)
