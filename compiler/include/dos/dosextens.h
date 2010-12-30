@@ -54,11 +54,11 @@ struct DosLibrary
     struct RootNode * dl_Root;
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    /* The following fields are not used by AROS and are just there to
-       guarantee binary compatibility. DO NOT USE THESE FIELDS IN ANY WAY.
-       Original names were: dl_GV, dl_A2, dl_A5 and dl_A6 */
-    APTR              NoAROS2;
-    LONG              NoAROS3[3];
+    /* private BCPL fields. Do not use. */
+    APTR    dl_GV;
+    LONG    dl_A2;
+    LONG    dl_A5;
+    LONG    dl_A6;
 #endif
 
     /* The following fields are PRIVATE! */
