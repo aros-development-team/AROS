@@ -311,6 +311,7 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
 	} else {
+#if 0	/* can't do this, in old times if was popular to reallocate new stacks manually.. */
 		struct Task *t = SysBase->ThisTask;
 		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
 			D(bug("[%s]: iStack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
@@ -318,6 +319,7 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
+#endif
 	}
     }
 #endif
@@ -335,6 +337,7 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
 	} else {
+#if 0
 		struct Task *t = SysBase->ThisTask;
 		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
 			D(bug("[%s]: Stack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
@@ -342,6 +345,7 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
+#endif
 	}
     }
 #endif
