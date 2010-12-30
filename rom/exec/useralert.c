@@ -147,9 +147,8 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
         Wait(0);
     }
 
-    /* Otherwise remove crash indicator and return happily */
-    iet->iet_AlertCode = 0;
-    iet->iet_AlertLocation = NULL;
+    /* Otherwise clear crash status and return happily */
+    ResetETask(iet);
 
     return 0;
 }

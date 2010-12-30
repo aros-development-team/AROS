@@ -110,22 +110,21 @@
     Exec_SystemAlert(alertNum, SysBase);
     Enable();
 
+    /*
+     * We succesfully displayed an alert in supervisor mode.
+     * Clear alert status by clearing respective fields in ETask.
+     */
+    if (iet)
+    {
+	ResetETask(iet);
+    }
+
     if (alertNum & AT_DeadEnd)
     {
 	/* Um, we have to do something here in order to prevent the
 	   computer from continuing... */
 	ColdReboot();
 	ShutdownA(SD_ACTION_COLDREBOOT);
-    }
-
-    /*
-     * We displayed an alert in supervisor mode, but this still was a recoverable alert.
-     * Clear alert status by clearing AlertCode and AlertLocation.
-     */
-    if (iet)
-    {
-	iet->iet_AlertCode = 0;
-	iet->iet_AlertLocation = NULL;
     }
 
     AROS_LIBFUNC_EXIT
