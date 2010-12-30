@@ -100,6 +100,10 @@ struct Task *core_Dispatch(void)
 
     D(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
+    /* Original m68k programs can change stack manually without updating SPLower or SPUpper.
+     * For example WB3.1 C:SetPatch adds exec/OpenDevice() patch that swaps stacks manually.
+     * Result is that _all_ programs that call OpenDevice() crash if stack is checked. */
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     /* Check the stack of the task we are about to launch */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
@@ -107,7 +111,7 @@ struct Task *core_Dispatch(void)
 	bug("[KRN] Lower %p, upper %p, SP %p\n", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
 	Alert(AT_DeadEnd|AN_StackProbe);
     }
-
+#endif
     if (task->tc_Flags & TF_LAUNCH)
 	AROS_UFC1(void, task->tc_Launch, AROS_UFCA(struct ExecBase *, SysBase, A6));
 
