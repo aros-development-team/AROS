@@ -48,4 +48,22 @@ struct IntETask
 				(task))->tc_UnionETask.tc_ETask))
 #define IntETask(etask)	    ((struct IntETask *)(etask))
 
+/*
+ * This macro resets crash status of the task:
+ * - iet_AlertCode serves as an actual indicator of crash status.
+ *   If we enter Alert() with iet_AlertCode already set, this is
+ *   considered a nested alert and is directed to supervisor-mode routine.
+ * - iet_AlertType specifies type of alert context (if any). We make sure
+ *   it is clear so as next time Alert() will not display old information.
+ * - iet_AlertLocation can also be set only once. It is either set explicitly
+ *   before calling Alert(), or it is set by Alert() routine itself. So we clear
+ *   it in order for Alert() to be able to remember it if task ever alerts again.
+ * - iet_AlertStack is always used in pair with iet_AlertLocation, so there's no
+ *   need to clear it.
+ */
+#define ResetETask(etask)		\
+    (etask)->iet_AlertCode = 0;		\
+    (etask)->iet_AlertType = AT_NONE;	\
+    (etask)->iet_AlertLocation = NULL;
+
 #endif /* _ETASK_H */
