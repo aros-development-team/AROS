@@ -80,6 +80,9 @@ static AROS_UFH4(ULONG, keyboard_interrupt,
 
 	keycode = ~((keycode >> 1) | (keycode << 7));
 	kbddata->kbd_callback(kbddata->callbackdata, keycode);
+	/* "release" UAE mouse wheel up/down key codes */
+	if (keycode == 0x7a || keycode == 0x7b)
+		kbddata->kbd_callback(kbddata->callbackdata, 0x80 | keycode);
 
 	// timer still not finished? busy wait
 	while (ciaa->ciacra & 1) {
