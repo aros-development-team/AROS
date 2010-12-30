@@ -62,12 +62,12 @@
 /* TODO:
 
   *  Alias [] support
-  *  Break support (and +(0L) before execution) -- CreateNewProc()?
+  *  Break support = done. (and +(0L) before execution) -- CreateNewProc()?
 
  */
 
 #define  DEBUG  0
-#define  DEBUG1 1
+#define  DEBUG1 0
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -428,7 +428,7 @@ static void printPrompt(struct InterpreterState *is);
  *
  * Output:   --
  */
-BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs);
+BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs, struct InterpreterState *is);
 
 
 /* Function: copyEmbedResult
@@ -597,7 +597,7 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
         error = interact(&is);
     }
 
-    D(bug("Exiting shell\n"));
+    D(bug("Exiting shell, error=%d\n", error));
 
     return error;
 
@@ -655,9 +655,14 @@ LONG interact(struct InterpreterState *is)
 
 	    moreLeft = readLine(&cl, cli->cli_CurrentInput, is);
 	    error = checkLine(&rd, &cl, is);
-
 	    Redirection_release(&rd, is);
 	    FreeVec(cl.line);
+	    D(bug("error=%d moreleft=%d interactive=%d background=%d\n", error, moreLeft, cli->cli_Interactive, cli->cli_Background));
+	    if (error && !cli->cli_Interactive) {
+	    	if (IoErr() == ERROR_BREAK)
+		    PrintFault(ERROR_BREAK, "Shell");
+	    	moreLeft = FALSE;
+	    }
 	}
 
 	if (!moreLeft)
@@ -1289,7 +1294,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
                 advance(1);
 
-                if(extractEmbeddedCommand(&embedCl, &cookingCS))
+                if(extractEmbeddedCommand(&embedCl, &cookingCS, is))
                 {
                     /* The Amiga shell has severe problems when using
                         redirections in embedded commands so here, the
@@ -1335,7 +1340,7 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
                     /* Now, go on with the original argument string */
                     continue;
 
-                } //if(extractEmbeddedCommand(&embedCl, cs))
+                } //if(extractEmbeddedCommand(&embedCl, cs, is))
 
                 /* If this was just "`command", extractEmbeddedCommand will have
                    made sure that the '`' is included in the command name */
@@ -1845,8 +1850,11 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
 /***********************************************/
 
-BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs)
+BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs, struct InterpreterState *is)
 {
+#if DEBUG
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+#endif
     LONG  position  = fromCs->CS_CurChr;
     BOOL  foundPrim = FALSE;
 
@@ -1918,6 +1926,9 @@ BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd, stru
 BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 		struct Redirection *rd, struct InterpreterState *is)
 {
+#if DEBUG
+    struct ExecBase *SysBase = is->sb->sb_SysBase;
+#endif
     LONG  result;
     APTR DOSBase = is->sb->sb_DOSBase;
 
@@ -2338,10 +2349,20 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 
 	me->tc_Node.ln_Name = oldtaskname;
 
-	D(bug("Returned from command %s\n", command));
+	D(bug("Returned from command %s rc=%d\n", command, cli->cli_ReturnCode));
 	unloadCommand(module, &ss, is);
 
+	if (SetSignal(0, 0) & SIGBREAKF_CTRL_D) {
+	    SetIoErr(ERROR_BREAK);
+	    D(bug("CTRL_D detected\n"));
+	    error = RETURN_FAIL;
+	}
+
 	cli->cli_Result2 = IoErr();
+	if (cli->cli_ReturnCode > 0 && cli->cli_ReturnCode >= cli->cli_FailLevel) {
+	    D(bug("Err %d >= FailLevel %d\n", cli->cli_ReturnCode, cli->cli_FailLevel));
+	    error = RETURN_FAIL;
+	}
     }
     else
     {
@@ -2384,7 +2405,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
         }
     }
 
-    D(bug("Done with the command...\n"));
+    D(bug("Done with the command... error=%d\n", error));
 
     return error;
 }
