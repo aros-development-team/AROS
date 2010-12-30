@@ -222,7 +222,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
           count = AROS_BE2LONG(count);
 
-        D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
+          D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
           segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, count*4));
 
         switch(hunktype & 0xFF000000)
@@ -357,24 +357,36 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       break;
 
       case HUNK_END:
+      {
         D(bug("HUNK_END\n"));
         ++curhunk;
+        if (curhunk == 1 && first == 0 && last == 1 && hunktab[0].size >= 32 / 4) {
+          ULONG *h = (ULONG*)(hunktab[0].memory - sizeof(BPTR));
+          if (h[2] == 0x0000abcd) {
+            /* overlay executable */
+            h[3] = (ULONG)fh;
+            h[5] = (ULONG)hunktab;
+            D(bug("overlay segment loaded!\n"));
+            return (BPTR)(-(LONG)MKBADDR(h));
+          }
+        }
+      }
       break;
 
       case HUNK_RELOC16:
-        D(bug("HUNK_RELOC16 not implemented\n"));
+        bug("HUNK_RELOC16 not implemented\n");
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_RELOC8:
-        D(bug("HUNK_RELOC8 not implemented\n"));
+        bug("HUNK_RELOC8 not implemented\n");
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_NAME:
-        D(bug("HUNK_NAME not implemented\n"));
+        bug("HUNK_NAME not implemented\n");
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_EXT:
-        D(bug("HUNK_EXT not implemented\n"));
+        bug("HUNK_EXT not implemented\n");
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_DEBUG:
@@ -389,15 +401,15 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         break;
 
       case HUNK_OVERLAY:
-        D(bug("HUNK_OVERLAY not implemented\n"));
+        bug("HUNK_OVERLAY not implemented\n");
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_BREAK:
-        D(bug("HUNK_BREAK not implemented\n"));
+        bug("HUNK_BREAK not implemented\n");
         ERROR(ERROR_BAD_HUNK);
 
       default:
-        D(bug("Hunk type 0x%06lx not implemented\n", hunktype & 0xFFFFFF));
+        bug("Hunk type 0x%06lx not implemented\n", hunktype & 0xFFFFFF);
         ERROR(ERROR_BAD_HUNK);
     } /* switch */
   } /* while */

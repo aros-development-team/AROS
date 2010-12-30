@@ -61,6 +61,18 @@
 	    KrnUnregisterModule(seglist);
 #endif
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+	{
+    		/* free overlay segment */
+    		ULONG *seg = BADDR(seglist);
+    		if (seg[2] == 0x0000abcd && seg[6] == DOSBase->dl_GV) {
+    	    		Close((BPTR)seg[3]); /* file handle */
+    	    		FreeVec(seg[4]); /* overlay table, APTR */
+    	    		FreeVec(BADDR(seg[5])); /* hunk table, BPTR */
+    		}
+    	}
+#endif
+
 	while (seglist)
 	{
 	    next = *(BPTR *)BADDR(seglist);
