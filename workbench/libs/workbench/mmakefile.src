@@ -22,6 +22,7 @@ FUNCS := \
     startworkbench \
     unregisterworkbench \
     updateworkbenchobjecta \
+    wbconfig \
     wbinfo \
     workbenchcontrola \
     uae_integration \
