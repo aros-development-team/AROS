@@ -10,6 +10,9 @@
 #include <gallium/pipe/p_screen.h>
 #include "softpipe/sp_texture.h"
 #include "softpipe/sp_public.h"
+#include "softpipe/sp_screen.h"
+#include "util/u_format.h"
+#include "util/u_math.h"
 #include "state_tracker/sw_winsys.h"
 
 #include "softpipe_intern.h"
@@ -35,8 +38,61 @@ struct HiddSoftpipeWinSys
     struct sw_winsys    swws;
 };
 
+/*  Displaytarget support code */
+struct HiddSoftpipeDisplaytarget
+{
+    APTR data;
+};
+
+struct HiddSoftpipeDisplaytarget * HiddSoftpipeDisplaytarget(struct sw_displaytarget * dt)
+{
+    return (struct HiddSoftpipeDisplaytarget *)dt;
+}
+
+static struct sw_displaytarget *
+HiddSoftpipeCreateDisplaytarget(struct sw_winsys *winsys, unsigned tex_usage,
+    enum pipe_format format, unsigned width, unsigned height,
+    unsigned alignment, unsigned *stride)
+{
+    struct HiddSoftpipeDisplaytarget * spdt = 
+        AllocVec(sizeof(struct HiddSoftpipeDisplaytarget), MEMF_PUBLIC | MEMF_CLEAR);
+    
+    *stride = align(util_format_get_stride(format, width), alignment);
+    spdt->data = AllocVec(*stride * height, MEMF_PUBLIC | MEMF_CLEAR);
+    
+    return (struct sw_displaytarget *)spdt;
+}
+
+static void
+HiddSoftpipeDestroyDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt)
+{
+    struct HiddSoftpipeDisplaytarget * spdt = HiddSoftpipeDisplaytarget(dt);
+    
+    if (spdt)
+    {
+        FreeVec(spdt->data);
+        FreeVec(spdt);
+    }
+}
+
+static void *
+HiddSoftpipeMapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt,
+    unsigned flags)
+{
+    struct HiddSoftpipeDisplaytarget * spdt = HiddSoftpipeDisplaytarget(dt);
+    return spdt->data;
+}
+
+static void
+HiddSoftpipeUnMapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt)
+{
+    /* No op */
+}
+
+/*  Displaytarget support code ends */
+
 static struct HiddSoftpipeWinSys *
-HiddSoftpipeCreateSoftpipeWinSys( void )
+HiddSoftpipeCreateSoftpipeWinSys(void)
 {
     struct HiddSoftpipeWinSys * ws = NULL;
 
@@ -64,13 +120,13 @@ HiddSoftpipeCreateSoftpipeWinSys( void )
     /* Fill in with functions is displaytarget is ever used*/
     ws->swws.destroy                            = NULL;
     ws->swws.is_displaytarget_format_supported  = NULL;
-    ws->swws.displaytarget_create               = NULL;
+    ws->swws.displaytarget_create               = HiddSoftpipeCreateDisplaytarget;
     ws->swws.displaytarget_from_handle          = NULL;
     ws->swws.displaytarget_get_handle           = NULL;
-    ws->swws.displaytarget_map                  = NULL;
-    ws->swws.displaytarget_unmap                = NULL;
+    ws->swws.displaytarget_map                  = HiddSoftpipeMapDisplaytarget;
+    ws->swws.displaytarget_unmap                = HiddSoftpipeUnMapDisplaytarget;
     ws->swws.displaytarget_display              = NULL;
-    ws->swws.displaytarget_destroy              = NULL;
+    ws->swws.displaytarget_destroy              = HiddSoftpipeDestroyDisplaytarget;
     
     return ws;
 }
@@ -132,20 +188,31 @@ fail:
 VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplaySurface)
 {
     struct pipe_surface * surf = (struct pipe_surface *)msg->surface;
-    struct softpipe_resource *spr = softpipe_resource(surf->texture);
+    struct softpipe_resource * spr = softpipe_resource(surf->texture);
+    struct sw_winsys * swws = softpipe_screen(spr->base.screen)->winsys;
     struct RastPort * rp = CloneRastPort(msg->rastport);
+    APTR * data = spr->data;
 
-    WritePixelArray(
-        spr->data, 
-        msg->left,
-        msg->top,
-        spr->stride[surf->level],
-        rp, 
-        msg->relx, 
-        msg->rely, 
-        msg->width, 
-        msg->height, 
-        AROS_PIXFMT);
+    if ((data == NULL) && (spr->dt != NULL))
+        data = swws->displaytarget_map(swws, spr->dt, 0);
+
+    if (data)
+    {
+        WritePixelArray(
+            data, 
+            msg->left,
+            msg->top,
+            spr->stride[surf->level],
+            rp, 
+            msg->relx, 
+            msg->rely, 
+            msg->width, 
+            msg->height, 
+            AROS_PIXFMT);
+    }
+
+    if ((spr->data == NULL) && (data != NULL))
+        swws->displaytarget_unmap(swws, spr->dt);
 
     FreeRastPort(rp);
 }
