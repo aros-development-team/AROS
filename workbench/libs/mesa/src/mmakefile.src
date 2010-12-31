@@ -34,6 +34,7 @@ SHARED_LIB_SOURCES = \
             mesa/aros/arosmesa_init \
             aros/arosmesa_library_api \
             aros/emul_arosc \
+            aros/tls \
 
 GLSL_LIBGLCPP_SOURCES = \
             glcpp/glcpp-lex.c \
