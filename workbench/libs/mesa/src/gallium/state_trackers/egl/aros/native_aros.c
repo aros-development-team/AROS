@@ -214,14 +214,13 @@ aros_display_create_surface(struct native_display *ndpy,
     asurf->color_format = aconf->base.color_format;
     asurf->window = window;
 
-/* NOTE: don't pass PIPE_BIND_DISPLAY_TARGET or PIPE_BIND_SCANOUT since
-   they trigger the sw_winsys usage. On AROS sw_winsys is currently not needed
-   as gallium.library takes care of blitting */
-
     asurf->rsurf = resource_surface_create(adpy->base.screen,
                         asurf->color_format,
                         PIPE_BIND_RENDER_TARGET |
-                        PIPE_BIND_SAMPLER_VIEW);
+                        PIPE_BIND_SAMPLER_VIEW |
+                        PIPE_BIND_DISPLAY_TARGET |
+                        PIPE_BIND_SCANOUT);
+
     if (!asurf->rsurf) 
     {
         FREE(asurf);
