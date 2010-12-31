@@ -2292,7 +2292,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd,
 	D(bug("Command loaded: len=%d, args=%s\n", len, cmd));
 
 	SetIoErr(0);        	    	 /* Clear error before we execute this command */
-	SetSignal(0, SIGBREAKF_CTRL_C);
+	SetSignal(0, SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
 
 	cli->cli_Module = seglist;
 
