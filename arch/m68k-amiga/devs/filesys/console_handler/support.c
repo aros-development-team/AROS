@@ -1015,9 +1015,6 @@ void process_input(struct filehandle *fh)
 	  fh->flags |= FHFLG_EOF;
 	  if (fh->flags & FHFLG_AUTO && fh->window)
 	    {
-	      if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
-		CloseDevice((struct IORequest *)fh->conreadio);
-	      fh->flags &= ~FHFLG_CONSOLEDEVICEOPEN;
 	      CloseWindow(fh->window);
 	      fh->window = NULL;
 	    }
