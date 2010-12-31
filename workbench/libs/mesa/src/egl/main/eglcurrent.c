@@ -95,82 +95,32 @@ static INLINE EGLBoolean _eglInitTSD(void (*dtor)(_EGLThreadInfo *))
 }
 
 #elif defined(_EGL_OS_AROS)
-#include <exec/lists.h>
-#include <proto/exec.h>
 
-struct TaskLocal
-{
-    struct Node     tl_Node;
-    struct Task *   tl_Task;
-    APTR            tl_Data;
-};
+#include "aros/tls.h"
 
-struct List eglcontexttllist;
-struct SignalSemaphore sem;
-
-static void (*_egl_FreeTSD)(_EGLThreadInfo *);
+static struct TaskLocalStorage * tls = NULL;
 
 static INLINE void _eglSetTSD(const _EGLThreadInfo *t)
 {
-    struct TaskLocal * tl;
-    struct Task * me = FindTask(NULL);
-    struct TaskLocal * selected = NULL;
-    
-    ObtainSemaphore(&sem);
-    ForeachNode(&eglcontexttllist, tl)
-    {
-        if (tl->tl_Task == me)
-        {
-            selected = tl;
-            break;
-        }
-    }
-    
-    if (!selected)
-    {
-        /* Create, set values, add */
-        selected = AllocVec(sizeof(struct TaskLocal), MEMF_PUBLIC | MEMF_CLEAR);
-        selected->tl_Task = me;
-        ADDHEAD(&eglcontexttllist, selected);
-    }
-    
-    selected->tl_Data = (APTR)t;
-    
-    ReleaseSemaphore(&sem);
-    
-    /* TODO: When to delete an existing object? When NULL is passed as t? */
+    InsertIntoTLS(tls, (APTR)t);
 }
 
 static INLINE _EGLThreadInfo *_eglGetTSD(void)
 {
-    struct TaskLocal * tl;
-    struct Task * me = FindTask(NULL);
-    APTR data = NULL;
-    
-    ObtainSemaphore(&sem);
-    ForeachNode(&eglcontexttllist, tl)
-    {
-        if (tl->tl_Task == me)
-        {
-            data = tl->tl_Data;
-            break;
-            /* TODO: be smart? if list long, move the found not to beginning? */
-        }
-    }
-    ReleaseSemaphore(&sem);
-    
-    return (_EGLThreadInfo *)data;
+    return (_EGLThreadInfo *)GetFromTLS(tls);
 }
 
 static INLINE EGLBoolean _eglInitTSD(void (*dtor)(_EGLThreadInfo *))
 {
-   if (!_egl_FreeTSD && dtor) {
-      _egl_FreeTSD = dtor;
-      InitSemaphore(&sem);
-      NEWLIST(&eglcontexttllist);
-/* TODO: implement  _eglAddAtExitCall(_eglFiniTSD); */
-   }
-   return EGL_TRUE;
+    /* FIXME: What to do with dtor? */
+    /* FIXME: atexit -> clear from TLS */
+    if (!tls)
+        tls = CreateTLS();
+
+    if (tls)
+        return EGL_TRUE;
+    else
+        return EGL_FALSE;
 }
 
 #else /* PTHREADS */
