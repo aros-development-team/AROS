@@ -229,6 +229,52 @@ typedef DWORD pipe_condvar;
 
 #endif /* pre-Vista win32 */
 
+#elif defined(PIPE_OS_AROS)
+
+#include <proto/exec.h>
+
+#include "os/os_time.h"
+
+typedef struct SignalSemaphore pipe_mutex;
+
+#define pipe_mutex_init(mutex) \
+   InitSemaphore(&mutex) 
+
+#define pipe_mutex_destroy(mutex) \
+   (void) mutex
+
+#define pipe_mutex_lock(mutex) \
+   ObtainSemaphore(&mutex)
+
+#define pipe_mutex_unlock(mutex) \
+   ReleaseSemaphore(&mutex)
+
+typedef int64_t pipe_condvar;
+
+#define pipe_static_condvar(condvar) \
+   static pipe_condvar condvar = 1000
+
+#define pipe_condvar_init(condvar) \
+   (void) (condvar = 1000)
+
+#define pipe_condvar_destroy(condvar) \
+   (void) condvar
+
+/* Poor man's pthread_cond_wait():
+   Just release the mutex and sleep for one millisecond.
+   The caller's while() loop does all the work. */
+#define pipe_condvar_wait(condvar, mutex) \
+   do { pipe_mutex_unlock(mutex); \
+        os_time_sleep(condvar); \
+        pipe_mutex_lock(mutex); \
+   } while (0)
+
+#define pipe_condvar_signal(condvar) \
+   (void) condvar
+
+#define pipe_condvar_broadcast(condvar) \
+   (void) condvar
+
 #else
 
 #include "os/os_time.h"
