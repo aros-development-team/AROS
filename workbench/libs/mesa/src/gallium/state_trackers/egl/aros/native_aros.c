@@ -360,7 +360,7 @@ aros_display_destroy(struct native_display *ndpy)
         FREE(arosdpy->config);
 
     if (arosdpy->base.screen)
-        arosdpy->base.screen->destroy(arosdpy->base.screen);
+        DestroyPipeScreen(arosdpy->base.screen);
 
     FREE(arosdpy);
 }
