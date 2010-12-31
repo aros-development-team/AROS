@@ -82,11 +82,15 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     EnterFunc(bug("AGFX::New()\n"));
 
+    HostLib_Lock();
+
     /* Get Java display object */
     display = JNI_CallObjectMethod(XSD(cl)->jobj, XSD(cl)->GetDisplay_mID);
     /* Get display size */
     sync_tags[0].ti_Data = JNI_GetIntField(display, XSD(cl)->Width_aID);
     sync_tags[1].ti_Data = JNI_GetIntField(display, XSD(cl)->Height_aID);
+
+    HostLib_Unlock();
 
     D(bug("[AGFX] Display size: %ux%u\n", sync_tags[0].ti_Data, sync_tags[1].ti_Data));
 
@@ -200,6 +204,9 @@ static const STRPTR interfaces[] = {
     NULL
 };
 
+#undef XSD
+#define XSD(cl) (&agfxBase->xsd)
+
 static int agfx_init(struct AGFXBase *agfxBase)
 {
     struct HostInterface *tmpif;
@@ -221,7 +228,7 @@ static int agfx_init(struct AGFXBase *agfxBase)
 
     /*
      * Our interface contains pointers to variables, buf we need values.
-     * So we cache them, then just drop the interface.
+     * So we cache them and then just drop the interface.
      */
     if (!r)
     {
@@ -236,22 +243,27 @@ static int agfx_init(struct AGFXBase *agfxBase)
     agfxBase->xsd.AttrBases = AllocAttrBases(interfaces);
     if (!agfxBase->xsd.AttrBases)
 	return FALSE;
-
+	
     D(bug("[AGFX] Obtaining Java IDs...\n"));
+
+    HostLib_Lock();
+
+    /* Find DisplayView class */
+    DisplayClass = JNI_FindClass("org/aros/bootstrap/DisplayView");
+    D(bug("[AGFX] DisplayView class 0x%p\n", DisplayClass));
+    if (!DisplayClass)
+	return FALSE;
+
     /*
-     * Find DisplayView class.
+     * Cache method and property IDs.
      * We don't check for errors here because these functions throw exceptions
      * (read: abort) when they fail. Thanks Sun! :(
      */
-    DisplayClass = JNI_FindClass("/org/aros/bootstrap/DisplayView");
-    D(bug("[AGFX] DisplayView class 0x%p\n", DisplayClass));
-
-    /* Cache method and property IDs */
     agfxBase->xsd.GetDisplay_mID = JNI_GetMethodID(MainClass, "GetDisplay", "()Lorg/aros/bootstrap/DisplayView;");
-    D(bug("[AGFX] GetDisplay method ID: 0x%p\n", agfxBase->xsd.GetDisplay_mID));
     agfxBase->xsd.Width_aID      = JNI_GetFieldID(DisplayClass, "Width", "I");
-    D(bug("[AGFX] Width attribute ID: 0x%p\n", agfxBase->xsd.Width_aID));
     agfxBase->xsd.Height_aID     = JNI_GetFieldID(DisplayClass, "Height", "I");
+
+    HostLib_Unlock();
 
     D(bug("[AGFX] Init OK\n"));
     return TRUE;

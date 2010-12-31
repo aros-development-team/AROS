@@ -11,6 +11,7 @@
  * Without them we would not be able to estabilish any interaction with it.
  */
 static struct HostInterface _HostIFace = {
+    "Windows",
     HOSTINTERFACE_VERSION,
     Host_HostLib_Open,
     Host_HostLib_Close,

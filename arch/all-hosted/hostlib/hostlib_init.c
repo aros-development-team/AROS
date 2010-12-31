@@ -58,6 +58,10 @@ static int HostLib_Init(struct HostLibBase *HostLibBase)
 	{
 	    HostLibBase->HostIFace = (struct HostInterface *)tag->ti_Data;
     	    D(bug("[hostlib] HostIFace = 0x%08lX\n", HostLibBase->HostIFace));
+
+#ifndef USE_FORBID_LOCK
+	    InitSemaphore(&HostLibBase->HostSem);
+#endif
 	    return TRUE;
 	}
     }
