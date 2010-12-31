@@ -9,10 +9,11 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include <sys/types.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
 
 /* 
     The purpose of this file is to provide implementation for C functions which 
@@ -143,6 +144,12 @@ char *getenv (const char *name)
 
 struct timezone;
 int gettimeofday (struct timeval * tv,struct timezone * tz)
+{
+    IMPLEMENT();
+    return 0;
+}
+
+int usleep (useconds_t usec)
 {
     IMPLEMENT();
     return 0;
