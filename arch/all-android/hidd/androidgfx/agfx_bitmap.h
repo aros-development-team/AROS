@@ -12,11 +12,12 @@
 
 struct bitmap_data
 {
-    LONG  bm_left;
-    LONG  bm_top;
-    ULONG win_width;
-    ULONG win_height;
-    ULONG bm_width;
-    ULONG bm_height;
-    ULONG *data;
+    LONG     bm_left;
+    LONG     bm_top;
+    ULONG    win_width;
+    ULONG    win_height;
+    ULONG    bm_width;
+    ULONG    bm_height;
+    jobject  buffer;
+    ULONG   *pixels;
 };

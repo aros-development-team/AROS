@@ -57,3 +57,5 @@ struct AGFXBase
 #define JNI_FindClass(name)			(*XSD(cl)->jni)->FindClass(XSD(cl)->jni, name)
 #define JNI_GetMethodID(cl, name, sig)		(*XSD(cl)->jni)->GetMethodID(XSD(cl)->jni, cl, name, sig)
 #define JNI_GetFieldID(cl, name, sig)		(*XSD(cl)->jni)->GetFieldID(XSD(cl)->jni, cl, name, sig)
+#define JNI_NewDirectByteBuffer(addr, size)	(*XSD(cl)->jni)->NewDirectByteBuffer(XSD(cl)->jni, addr, size)
+#define JNI_DeleteLocalRef(obj)			(*XSD(cl)->jni)->DeleteLocalRef(XSD(cl)->jni, obj)
