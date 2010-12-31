@@ -11,7 +11,7 @@ AROS_LH1(void, HostLib_FreeErrorStr,
     AROS_LIBFUNC_INIT
 
     Forbid();
-    HostLibBase->HostIFace->HostLib_FreeErrorStr(error);
+    HostLibBase->HostIFace->hostlib_FreeErrorStr(error);
     Permit();
 
     AROS_LIBFUNC_EXIT

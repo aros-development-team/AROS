@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/hostlib
 
-FUNCS := open close getpointer freeerrorstr
+FUNCS := freeerrorstr lock unlock
 
 %build_archspecific mainmmake=kernel-hostlib maindir=arch/all-hosted/hostlib \
     arch=mingw32 files=$(FUNCS)

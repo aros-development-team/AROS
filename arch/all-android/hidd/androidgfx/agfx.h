@@ -4,6 +4,8 @@
 
 struct agfx_staticdata
 {
+    APTR HostLibBase;
+
     OOP_AttrBase *AttrBases;
 
     OOP_Class  *gfxclass;
@@ -26,12 +28,10 @@ struct AGFXBase
 {
     struct Library library;
     struct agfx_staticdata xsd;
-    APTR HostLibBase;
     APTR HostLibHandle;
 };
 
 #define XSD(cl) (&((struct AGFXBase *)cl->UserData)->xsd)
-#define HostLibBase agfxBase->HostLibBase
 
 #undef HiddBitMapAttrBase
 #undef HiddSyncAttrBase
@@ -44,12 +44,13 @@ struct AGFXBase
 #define HiddGfxAttrBase	   XSD(cl)->AttrBases[3]
 #define HiddAttrBase	   XSD(cl)->AttrBases[4]
 
+#define HostLibBase XSD(cl)->HostLibBase
+
 #define JNI_GetIntField(obj, id)		(*XSD(cl)->jni)->GetIntField(XSD(cl)->jni, obj, id)
 #define JNI_CallObjectMethod(obj, id...)	(*XSD(cl)->jni)->CallObjectMethod(XSD(cl)->jni, obj, id)
-
-#define JNI_FindClass(name)		(*agfxBase->xsd.jni)->FindClass(agfxBase->xsd.jni, name)
-#define JNI_GetMethodID(cl, name, sig)	(*agfxBase->xsd.jni)->GetMethodID(agfxBase->xsd.jni, cl, name, sig)
-#define JNI_GetFieldID(cl, name, sig)	(*agfxBase->xsd.jni)->GetFieldID(agfxBase->xsd.jni, cl, name, sig)
+#define JNI_FindClass(name)			(*XSD(cl)->jni)->FindClass(XSD(cl)->jni, name)
+#define JNI_GetMethodID(cl, name, sig)		(*XSD(cl)->jni)->GetMethodID(XSD(cl)->jni, cl, name, sig)
+#define JNI_GetFieldID(cl, name, sig)		(*XSD(cl)->jni)->GetFieldID(XSD(cl)->jni, cl, name, sig)
 
 /* Private instance data for Gfx hidd class */
 struct gfx_data

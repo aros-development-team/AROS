@@ -51,7 +51,7 @@ int __startup startup(struct TagItem *msg)
     unsigned int i;
     struct MemHeader *mh;
     struct TagItem *tag;
-    struct TagItem *tstate = msg;
+    const struct TagItem *tstate = msg;
     struct HostInterface *hif = NULL;
     void *klo = NULL;
     void *khi = NULL;
@@ -59,7 +59,8 @@ int __startup startup(struct TagItem *msg)
     char *args = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
-    while ((tag = krnNextTagItem(&tstate))) {
+    while ((tag = krnNextTagItem(&tstate)))
+    {
 	switch (tag->ti_Tag) {
 	case KRN_KernelLowest:
 	    klo = (UWORD *)tag->ti_Data;
@@ -87,12 +88,23 @@ int __startup startup(struct TagItem *msg)
 	}
     }
 
+    /* If there's no HostIFace, we can't even say anything */
+    if (!hif)
+	return -1;
+
     /* Set globals only AFTER __clear_bss() */
     BootMsg = msg;
     HostIFace = hif;
 
-    if ((!klo) || (!khi) || (!mmap) || (!HostIFace)) {
+    if ((!klo) || (!khi) || (!mmap)) {
 	mykprintf("[Kernel] Not enough parameters from bootstrap!\n");
+	return -1;
+    }
+
+    if (strcmp(HostIFace->System, "Windows"))
+    {
+	bug("[Kernel] This kernel is built for Windows architecture\n");
+	bug("[Kernel] Your bootstrap is running on %s which is incompatible\n", HostIFace->System);
 	return -1;
     }
 
@@ -102,22 +114,22 @@ int __startup startup(struct TagItem *msg)
 		  HostIFace->Version, HOSTINTERFACE_VERSION);
 	return -1;
    }
-    
-    hostlib = HostIFace->HostLib_Open("Libs\\Host\\kernel.dll", &errstr);
+
+    hostlib = HostIFace->hostlib_Open("Libs\\Host\\kernel.dll", &errstr);
     if (!hostlib) {
 	mykprintf("[Kernel] Failed to load host-side module: %s\n", errstr);
-	HostIFace->HostLib_FreeErrorStr(errstr);
+	HostIFace->hostlib_FreeErrorStr(errstr);
 	return -1;
     }
 
     for (i = 0; kernel_functions[i]; i++)
     {
-	void *func = HostIFace->HostLib_GetPointer(hostlib, kernel_functions[i], &errstr);
+	void *func = HostIFace->hostlib_GetPointer(hostlib, kernel_functions[i], &errstr);
 
         if (!func)
 	{
 	    mykprintf("[Kernel] Failed to find symbol %s in host-side module: %s\n", kernel_functions[i], errstr);
-	    HostIFace->HostLib_FreeErrorStr(errstr);
+	    HostIFace->hostlib_FreeErrorStr(errstr);
 
 	    return -1;
 	}
@@ -162,7 +174,7 @@ int __startup startup(struct TagItem *msg)
     InitCode(RTF_COLDSTART, 0);
 
     mykprintf("[Kernel] leaving startup!\n");
-    HostIFace->HostLib_Close(hostlib, NULL);
+    HostIFace->hostlib_Close(hostlib, NULL);
     return 1;
 }
 

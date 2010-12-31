@@ -17,27 +17,27 @@ BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct HostInterface *Ho
     void *KernelLib, *UserLib;
     APTR  __stdcall (*GetCurrentProcess)(void);
 
-    KernelLib = HostIFace->HostLib_Open("kernel32.dll", NULL);
+    KernelLib = HostIFace->hostlib_Open("kernel32.dll", NULL);
     if (!KernelLib)
 	return FALSE;
 
-    UserLib = HostIFace->HostLib_Open("user32.dll", NULL);
+    UserLib = HostIFace->hostlib_Open("user32.dll", NULL);
     if (!UserLib)
 	return FALSE;
 
-    pd->ExitProcess = HostIFace->HostLib_GetPointer(KernelLib, "ExitProcess", NULL);
+    pd->ExitProcess = HostIFace->hostlib_GetPointer(KernelLib, "ExitProcess", NULL);
     if (!pd->ExitProcess)
 	return FALSE;
 
-    pd->FlushInstructionCache = HostIFace->HostLib_GetPointer(KernelLib, "FlushInstructionCache", NULL);
+    pd->FlushInstructionCache = HostIFace->hostlib_GetPointer(KernelLib, "FlushInstructionCache", NULL);
     if (!pd->FlushInstructionCache)
 	return FALSE;
 
-    pd->MessageBox = HostIFace->HostLib_GetPointer(UserLib, "MessageBoxA", NULL);
+    pd->MessageBox = HostIFace->hostlib_GetPointer(UserLib, "MessageBoxA", NULL);
     if (!pd->MessageBox)
 	return FALSE;
 
-    GetCurrentProcess = HostIFace->HostLib_GetPointer(KernelLib, "GetCurrentProcess", NULL);
+    GetCurrentProcess = HostIFace->hostlib_GetPointer(KernelLib, "GetCurrentProcess", NULL);
     if (!GetCurrentProcess)
 	return FALSE;
 
