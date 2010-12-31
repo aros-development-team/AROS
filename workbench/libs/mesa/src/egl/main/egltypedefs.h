@@ -9,7 +9,7 @@
 #include "eglcompiler.h"
 
 #if defined(_EGL_OS_AROS)
-#include <sys/types.h>
+#include <stddef.h> /* for size_t */
 #include "egl/eglapim.h"
 #include "egl/egl_mangle.h"
 #endif
