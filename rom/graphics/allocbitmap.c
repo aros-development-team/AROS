@@ -264,13 +264,14 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 
 	/* Set friend bitmap */
 	SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
-	if (friend_bitmap && IS_HIDD_BM(friend_bitmap)) {
+	if (friend_bitmap && IS_HIDD_BM(friend_bitmap))
+	{
 	    D(bug("[AllocBitMap] Setting friend bitmap: 0x%p\n", friend_bitmap));
 	    SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend_bitmap));
 
 	    /* If we have no ModeID specified, obtain it from friend */
 	    if (hiddmode == vHidd_ModeID_Invalid)
-	        OOP_GetAttr(HIDD_BM_OBJ(friend_bitmap), aHidd_BitMap_ModeID, &hiddmode);
+		hiddmode = HIDD_BM_HIDDMODE(friend_bitmap);
 
 	    /* Obtain also GFX driver from friend bitmap */
 	    drv = HIDD_BM_DRVDATA(friend_bitmap);
@@ -302,16 +303,25 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 	/* If we have a friend bitmap, pixelformat will be
 	   picked up from it */
 
-	if (stdpf != vHidd_StdPixFmt_Unknown) {
+	if (stdpf != vHidd_StdPixFmt_Unknown)
+	{
 	    D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
 	    SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
-	} else if (hiddmode != vHidd_ModeID_Invalid) {
+	    hiddmode = vHidd_ModeID_Invalid;
+	}
+	else if (hiddmode != vHidd_ModeID_Invalid)
+	{
 	    D(bug("[AllocBitMap] Setting ModeID to 0x%08lX\n", hiddmode));
 	    SET_BM_TAG(bm_tags, 3, ModeID, hiddmode);
-	} else {
-	    /* SET_TAG() is TWO operators, so we absolutely need parenthesis here.
-	       Remember this! */
+	}
+	else
+	{
+	    /*
+	     * SET_TAG() is TWO operators, so we absolutely need parenthesis here.
+	     * Remember this!
+	     */
 	    SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
+	    hiddmode = vHidd_ModeID_Invalid;
 	}
 
 	/* Set Displayable attribute */
@@ -415,7 +425,7 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt[] =
 		    }
 		    else
 		    {
-    			/* Allcoate a pixtab */
+    			/* Allocate a pixtab */
     			HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
 
     			if (HIDD_BM_PIXTAB(nbm))
