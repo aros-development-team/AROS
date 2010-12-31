@@ -779,8 +779,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                                              (struct BitMap *)bmtags);
 #endif
             screen->AllocatedBitmap = screen->Screen.RastPort.BitMap;
-
-            memcpy(&screen->Screen.BitMap,screen->Screen.RastPort.BitMap,sizeof(struct BitMap));
         }
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: BitMap 0x%lx\n",
@@ -812,12 +810,15 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     }
     else
     {
-        /* Store pointer to bitmap, so we can get hold of it
-           from withing LoadRGBxx() functions
-        */
         D(bug("got allocated stuff\n"));
+	
+	/*
+	 * Store pointer to bitmap, so we can get hold of it
+         * from withing LoadRGBxx() functions
+         */
         screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
-
+	/* Initialize legacy embedded BitMap structure */
+	CopyMem(screen->Screen.RastPort.BitMap, &screen->Screen.BitMap, sizeof(struct BitMap));
     }
 
     if (ok)
