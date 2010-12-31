@@ -22,6 +22,7 @@
 #include <proto/utility.h>
 
 #include "agfx.h"
+#include "agfx_graphics.h"
 
 OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -100,11 +101,10 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     {
 	struct gfx_data *data = OOP_INST_DATA(cl, o);
 
+	D(bug("AGFX::New(): Got object from super\n"));
+
 	data->width  = sync_tags[0].ti_Data;
 	data->height = sync_tags[1].ti_Data;
-
-	D(bug("AGFXGfx::New(): Got object from super\n"));
-	/* TODO */
     }
     ReturnPtr("AGFXGfx::New", OOP_Object *, o);
 }
@@ -112,9 +112,36 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 /****************************************************************************************/
 
 OOP_Object *AGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
-{  
-    /* TODO */
-    return NULL;
+{
+    HIDDT_ModeID modeid;
+    struct pHidd_Gfx_NewBitMap p;
+    OOP_Object *newbm;
+    struct gfx_data *data = OOP_INST_DATA(cl, o);;
+    struct TagItem tags[] =
+    {
+	{TAG_IGNORE, 0			},
+	{TAG_MORE  , (IPTR)msg->attrList}
+    };
+
+    EnterFunc(bug("AGFX::NewBitMap()\n"));
+
+    /*
+     * Having a valid ModeID means that we are asked to create
+     * either displayable bitmap or a friend of a displayable bitmap.
+     * Create our bitmap only if we have a valid ModeID
+     */
+    modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    if (modeid != vHidd_ModeID_Invalid)
+    {
+        tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
+	tags[0].ti_Data = (IPTR)XSD(cl)->bmclass;
+    }
+
+    p.mID = msg->mID;
+    p.attrList = tags;
+    newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
+
+    ReturnPtr("AGFX::NewBitMap", OOP_Object *, newbm);
 }
 
 /****************************************************************************************/

@@ -5,11 +5,13 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 
 import java.lang.String;
@@ -126,6 +128,7 @@ public class AROSBootstrap extends Activity
     private DisplayView rootView;
 }
 
+// This is our display class
 class DisplayView extends ViewGroup
 {
 	public DisplayView(Context context, AROSBootstrap.Booter callback)
@@ -134,15 +137,23 @@ class DisplayView extends ViewGroup
 
 		Width  = 0;
 		Height = 0;
-		booter = callback; 
+		booter = callback;
+	}
+
+	public BitmapView NewBitMap(int width, int height)
+	{
+		BitmapView bm = new BitmapView(null, width, height);
+
+		addView(bm);
+		return bm;
 	}
 
 	@Override
-	public void onLayout(boolean c, int left, int top, int right, int bottom)
+	protected void onLayout(boolean c, int left, int top, int right, int bottom)
 	{
 		if (!c)
 			return;
-		
+
 		Width = right - left;
 		Height = bottom - top;
 		Log.d("AROS", "Screen size set: " + Width + "x" + Height);
@@ -165,4 +176,26 @@ class DisplayView extends ViewGroup
 	public int Height;
 
     private AROSBootstrap.Booter booter;
+}
+
+// This is our bitmap class
+class BitmapView extends View
+{
+	public BitmapView(Context context, int w, int h)
+	{
+		super(context);
+
+		width  = w;
+		height = h;
+		Data   = new int[w * h];
+	}
+
+	@Override
+	protected void onDraw(Canvas c)
+	{	
+		c.drawBitmap(Data, 0, width, 0, 0, width, height, false, null);
+	}
+
+	public int[] Data;
+	private int width, height;
 }

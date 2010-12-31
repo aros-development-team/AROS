@@ -1,6 +1,12 @@
-#include <jni.h>
+/*
+    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    $Id$
 
-#define CLID_Hidd_AGfx "hidd.graphics.android"
+    Desc: Common data structures of androidgfx.hidd
+    Lang: English.
+*/
+
+#include <jni.h>
 
 struct agfx_staticdata
 {
@@ -51,17 +57,3 @@ struct AGFXBase
 #define JNI_FindClass(name)			(*XSD(cl)->jni)->FindClass(XSD(cl)->jni, name)
 #define JNI_GetMethodID(cl, name, sig)		(*XSD(cl)->jni)->GetMethodID(XSD(cl)->jni, cl, name, sig)
 #define JNI_GetFieldID(cl, name, sig)		(*XSD(cl)->jni)->GetFieldID(XSD(cl)->jni, cl, name, sig)
-
-/* Private instance data for Gfx hidd class */
-struct gfx_data
-{
-    ULONG width;	/* Display view size */
-    ULONG height;
-};
-
-struct HostInterface
-{
-    JNIEnv  **jni;
-    jclass   *cl;
-    jobject  *obj;
-};
