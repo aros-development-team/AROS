@@ -166,7 +166,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, dheight);
 		    D(bug("%dx%dx%d BF=%08x\n", dwidth, dheight, depth, data->rgbformat));
 
-		    if (csd->hardwaresprite) {
+		    if (csd->hardwaresprite && depth <= 8) {
 		    	UWORD i;
     			UBYTE *clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
 		    	for (i = csd->spritecolors; i < csd->spritecolors + 4; i++)

@@ -361,13 +361,22 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
+    OOP_Object *cm = NULL;
     IPTR width, height;
-    WORD x, y, hiressprite;
+    WORD x, y, hiressprite, i;
     UWORD *p;
     ULONG flags;
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, &cm);
+    if (cm) {
+	for (i = 0; i < 4; i++) {
+	    HIDDT_Color c;
+	    HIDD_CM_GetColor(cm, i, &c);
+	    SetSpriteColor(csd, i, c.red, c.green, c.blue);
+	}
+    }
     Forbid();
     pb(csd->boardinfo + PSSO_BoardInfo_MouseXOffset, msg->xoffset);
     pb(csd->boardinfo + PSSO_BoardInfo_MouseYOffset, msg->yoffset);
