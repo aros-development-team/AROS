@@ -21,8 +21,6 @@
 #include "pteditor.h"
 #include "prefs.h"
 
-static CONST_STRPTR type_entries[] = {"Normal", "Busy", NULL}; /* TODO: Change for Locale - may not be static */
-
 /*** Instance Data **********************************************************/
 struct PTEditor_DATA
 {
@@ -107,6 +105,11 @@ AROS_UFHA(APTR, msg, A1))
 /*** Methods ****************************************************************/
 Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+    static CONST_STRPTR type_entries[3];
+    type_entries[0] = (CONST_STRPTR) __(MSG_TYPE_NORMAL);
+    type_entries[1] = (CONST_STRPTR) __(MSG_TYPE_BUSY);
+    type_entries[2] = NULL;
+
     Object *previewImage, *typeCycle, *fileString, *alphaSlider, *hotspotButton;
 
     self = (Object *) DoSuperNewTags
