@@ -3,7 +3,7 @@
 ## language deutsch
 ;
 MSG_WINTITLE
-Mauszeiger Einstellungen
+Mauszeiger-Voreinsteller (Pointer)
 ; Pointer Preferences
 ;
 MSG_OK
@@ -15,7 +15,7 @@ Aktiver Punkt
 ; Hotspot
 ;
 MSG_ALPHA
-Alphawert
+Transparenz
 ; Alpha
 ;
 MSG_FILENAME
@@ -31,7 +31,7 @@ Normal
 ; Normal
 ;
 MSG_TYPE_BUSY
-beschäftigt
+Beschäftigt
 ; Busy
 ;
 MSG_SETVIEW
