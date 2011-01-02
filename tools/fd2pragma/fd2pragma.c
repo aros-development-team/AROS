@@ -1,6 +1,6 @@
 /* $Id: fd2pragma.c,v 1.24 2010/09/18 12:46:05 phxhf Exp $ */
 static const char version[] =
-"$VER: fd2pragma 2.193 (18.09.2010) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.194 (02.01.2011) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -318,6 +318,7 @@ static const char version[] =
  2.192 06.01.10 : (phx) Do vbcc MorphOS OS-calls with BCTRL instead of BLRL
         to avoid messing up the LR-stack of more recent PowerPCs (G4+).
  2.193 18.09.10 : (phx) GLContext type (tinygl).
+ 2.194 02.01.11 : (mazze) fix for building it on CYGWIN.
 */
 
 /* A short note, how fd2pragma works.
@@ -1806,7 +1807,7 @@ static const strptr Keywords[] =
   0
 };
 
-#ifndef __SASC
+#if !defined __SASC && !defined __AROS__ && !defined _WIN32 && !defined __CYGWIN__
 static int stricmp(const char *a, const char *b)
 {
   while(*a && tolower(*a) == tolower(*b))
