@@ -1196,6 +1196,10 @@ void con_read(struct filehandle *fh, struct DosPacket *dp)
 	    replypkt2(dp, 0, 0);
 	    fh->flags &= ~FHFLG_EOF;
 	}
+    	else if (fh->flags & FHFLG_RAW)
+    	{
+    	    replypkt2(dp, 0, 0);
+    	}
 	else
 	{
 	    AddTail((struct List *)&fh->pendingReads, (struct Node *)dp->dp_Link);
