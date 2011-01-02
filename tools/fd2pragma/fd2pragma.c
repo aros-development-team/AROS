@@ -9971,7 +9971,7 @@ static uint32 CreateSFD(uint32 callmode)
     t = time(&t);
     tim = localtime(&t);
  
-    DoOutput("==id $Id$\n", filename,
+    DoOutput("==id $Id: fd2pragma.c 35846 2010-12-01 14:46:00Z sonic $\n", filename,
     tim->tm_year+1900, tim->tm_mon+1, tim->tm_mday, tim->tm_hour, tim->tm_min,
     tim->tm_sec);
   }
