@@ -46,6 +46,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   UBYTE name_buf[255];
   register int i;
   BPTR last_p = 0;
+  UBYTE *overlaytable = NULL;
 #if DEBUG
   static STRPTR segtypes[] = { "CODE", "DATA", "BSS", };
 #endif
@@ -360,16 +361,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       {
         D(bug("HUNK_END\n"));
         ++curhunk;
-        if (curhunk == 1 && first == 0 && last == 1 && hunktab[0].size >= 32 / 4) {
-          ULONG *h = (ULONG*)(hunktab[0].memory - sizeof(BPTR));
-          if (h[2] == 0x0000abcd) {
-            /* overlay executable */
-            h[3] = (ULONG)fh;
-            h[5] = (ULONG)hunktab;
-            D(bug("overlay segment loaded!\n"));
-            return (BPTR)(-(LONG)MKBADDR(h));
-          }
-        }
       }
       break;
 
@@ -401,8 +392,24 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         break;
 
       case HUNK_OVERLAY:
-        bug("HUNK_OVERLAY not implemented\n");
-        ERROR(ERROR_BAD_HUNK);
+      {
+        if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
+          goto end;
+        count = AROS_BE2LONG(count);
+        count = count * 4 + sizeof(ULONG) + sizeof(ULONG);
+        overlaytable =(UBYTE *)
+		  AROS_CALL2(void *, funcarray[1] /* AllocMem */,
+		  AROS_LCA(ULONG           , count          , D0),
+		  AROS_LCA(ULONG           , req                      , D1),
+		  struct Library *, (struct Library *)SysBase);
+        if (overlaytable == NULL)
+          ERROR(ERROR_NO_FREE_STORE);
+        *((ULONG*)(overlaytable)) = count;
+        overlaytable += sizeof(ULONG);
+        if (read_block(fh, overlaytable, count, funcarray, DOSBase))
+            goto end;
+        goto done;
+      }
 
       case HUNK_BREAK:
         bug("HUNK_BREAK not implemented\n");
@@ -413,7 +420,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         ERROR(ERROR_BAD_HUNK);
     } /* switch */
   } /* while */
-
+done:
   if (hunktab)
   {
     /* Clear caches */
@@ -424,6 +431,24 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         CacheClearE(hunktab[t].memory, hunktab[t].size,
                     CACRF_ClearI|CACRF_ClearD);
       }
+    }
+
+    if (last > first && hunktab[first].size >= 32 / 4) {
+      /* NOTE: HUNK_OVERLAY is not required for overlay mode. */
+      ULONG *h = (ULONG*)(hunktab[first].memory - sizeof(BPTR));
+      if (h[2] == 0x0000abcd) {
+        /* overlay executable */
+        h[3] = (ULONG)fh;
+        h[4] = (ULONG)overlaytable;
+        h[5] = (ULONG)hunktab;
+        D(bug("overlay loaded!\n"));
+        return (BPTR)(-(LONG)MKBADDR(h));
+      }
+    }
+
+    if (overlaytable) {
+      FreeVec(overlaytable);
+      ERROR(ERROR_BAD_HUNK);
     }
 
     last_p = MKBADDR(hunktab[0].memory - sizeof(BPTR));
