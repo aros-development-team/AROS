@@ -31,41 +31,44 @@ const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
 /*
  * Set up the process's initial global vector
  */
-BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
+ 
+ #define FAKESEG_SIZE (4)
+ 
+APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
 {
     ULONG *GlobVec;
     ULONG *segment;
 
-    /* Most BCPL programs have only two segments.
-     * C:Ed on KS 1.3, however, decided to do its own
-     * thing. It's a horrible mis-mash of BCPL and C,
-     * so we now always treat everybody as BCPL.
-     */
-#if 0
-    int segs = 0;
-
-    for (segment = BADDR(segList); segment != NULL; segment = BADDR(segment[0])) {
-    	segs++;
-    }
-
-    if (segs != 2)
-    	return TRUE;
-#endif
-
-    segment = BADDR(segList);
-
     GlobVec = AllocVec(sizeof(BCPL_GlobVec), MEMF_ANY);
     if (GlobVec == NULL)
-    	return FALSE;
+    	return NULL;
+
+    /* create fake seglist if only entrypoint was given */
+    if (entry && !segList) {
+	ULONG *fakeseg = AllocVec(FAKESEG_SIZE * sizeof(ULONG), MEMF_ANY);
+    	fakeseg[0] = 3;
+    	fakeseg[1] = 0;
+    	fakeseg[2] = 0x4e714ef9; /* NOP (long alignment) + JMP.L */
+    	fakeseg[3] = (ULONG)entry;
+    	segList = MKBADDR(fakeseg) + 1;
+    	CacheClearU();
+    	D(bug("fakeseglist @%p\n", fakeseg));
+    	entry = NULL;
+    }
+    if (!entry)
+    	entry = (APTR)((BPTR*)BADDR(segList) + 1);
+    	
 
     CopyMem(BCPL_GlobVec, GlobVec, sizeof(BCPL_GlobVec));
 
     GlobVec[0] = 4;
     GlobVec[1] = (ULONG)-1;	/* 'system' segment */
     GlobVec[2] = (ULONG)-2;	/* 'dosbase' segment */
-    GlobVec[3] = 0;
+    GlobVec[3] = segList;
     GlobVec[4] = 0;
     GlobVec[5] = segList;
+
+    me->pr_SegList = MKBADDR(GlobVec);
 
     /* this and dl_A2/dl_A5/dl_A6 probably should be initialized somewhere else.. */
     ((struct DosLibrary*)DOSBase)->dl_GV = (APTR)BCPL_GlobVec;
@@ -74,7 +77,8 @@ BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
     GlobVec[0] = BCPL_GlobVec_PosSize >> 2;
     me->pr_GlobVec = GlobVec;
 
-   if (segment[2] == 0x0000abcd) {
+    segment = BADDR(segList);
+    if (segment[2] == 0x0000abcd) {
    	/* overlayed executable, fun..
    	 * 2 = id
    	 * 3 = filehandle (BPTR)
@@ -85,7 +89,7 @@ BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase)
    	 segment[6] = (ULONG)BCPL_GlobVec;
     }
 
-    return TRUE;
+    return entry;
 }
 
 void BCPL_Cleanup(struct Process *me)
@@ -97,6 +101,7 @@ void BCPL_Cleanup(struct Process *me)
 
     GlobVec = ((APTR)GlobVec) - BCPL_GlobVec_NegSize;
     FreeVec(GlobVec);
+    me->pr_SegList = NULL;
     me->pr_GlobVec = NULL;
 }
 

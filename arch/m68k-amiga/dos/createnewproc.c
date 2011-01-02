@@ -37,6 +37,11 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase);
+extern void BCPL_Cleanup(struct Process *me);
+#endif
+
 /* Temporary macro */
 #define P(x)	x
 /*****************************************************************************
@@ -82,9 +87,10 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     ULONG           	    	 namesize = 0, argsize = 0;
     struct MemList  	    	*memlist = NULL;
     struct CommandLineInterface *cli = NULL;
-    struct Process  	    	*me = (struct Process *)FindTask(NULL);
+    struct Process  	    	*me = (struct Process *)FindTask(NULL), *pr = NULL;
     STRPTR          	    	 s;
     ULONG                        old_sig = 0;
+    APTR                         entrypoint;
 
     /* TODO: NP_CommandName, NP_ConsoleTask, NP_NotifyOnDeath */
 
@@ -374,7 +380,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     NEWLIST(&process->pr_MsgPort.mp_MsgList);
 
-    process->pr_SegList = (BPTR)defaults[0].ti_Data;
     process->pr_StackSize = defaults[9].ti_Data;
     process->pr_GlobVec = NULL;	                   /* Unused BCPL crap */
     process->pr_StackBase = MKBADDR(process->pr_Task.tc_SPUpper);
@@ -430,20 +435,26 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     if (argsize) argsize--;
    
-    D(bug("CreateNewProc: segList @%p\n", BADDR(defaults[0].ti_Data)));
-    if
-    (
-	   	
-        AddProcess
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    entrypoint = BCPL_Setup(process, defaults[0].ti_Data, (APTR)defaults[1].ti_Data, DOSBase);
+    if (!entrypoint)
+    	goto enomem;
+#else
+     /* this points to segarray, not seglist, check BCPL_Setup() and Guru Book */
+    process->pr_SegList = (BPTR)defaults[0].ti_Data;
+    entrypoint = defaults[1].ti_Data ? (APTR)defaults[1].ti_Data : (APTR)((BPTR*)BADDR(defaults[0].ti_Data) + 1),
+#endif
+
+    D(bug("CreateNewProc: proc=@%p entry @%p cd=%x\n", process, entrypoint, process->pr_CurrentDir));
+    { volatile ULONG *c = 0x110; *c = entrypoint; }
+
+    pr = AddProcess
         (
-            process, argptr, argsize,
-	    defaults[1].ti_Data ?
-	    (APTR)defaults[1].ti_Data:
-	    (APTR)((BPTR *)BADDR(defaults[0].ti_Data) + 1),
+            process, argptr, argsize, entrypoint, 
 	    KillCurrentProcess, DOSBase
-        )
-    )
-    {
+        );
+
+    if (pr) {
 	/* NP_Synchronous */
 	if (defaults[19].ti_Data)
 	{
@@ -451,12 +462,16 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	    internal_ChildWait(FindTask(NULL), DOSBase);
 	    P(kprintf("Returned from ChildWait()\n"));
 	}
-
 	goto end;
     }
 
     /* Fall through */
 enomem:
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    BCPL_Cleanup(process);
+#endif 
+
     if (__is_process(me))
     {
 	SetIoErr(ERROR_NO_FREE_STORE);
@@ -691,10 +706,21 @@ static void KillCurrentProcess(void)
 
     P(kprintf("Unloading segment\n"));
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    if (me->pr_Flags & PRF_FREESEGLIST)
+    {
+    	ULONG *segarray = BADDR(me->pr_SegList);
+    	if (segarray[3])
+	    UnLoadSeg(segarray[3]);
+	segarray[3] = 0;
+    }
+    BCPL_Cleanup(me);
+#else
     if (me->pr_Flags & PRF_FREESEGLIST)
     {
 	UnLoadSeg(me->pr_SegList);
     }
+#endif
 
     P(kprintf("Unlocking current dir\n"));
 

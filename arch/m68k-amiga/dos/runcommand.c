@@ -138,25 +138,11 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 	}
     }
 
-    D(bug("RunCommand: segList @%p Args='%s'\n", BADDR(segList), argptr));
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    do {
-    	extern BOOL BCPL_Setup(struct Process *me, BPTR segList, APTR DOSBase);
-    	extern void BCPL_Cleanup(struct Process *me);
-    	APTR old_GlobVec;
-    	old_GlobVec = me->pr_GlobVec;
-    	ret = BCPL_Setup(me, segList, DOSBase);
-    	if (ret < 0) {
-    	    break;
-    	}
-#endif
+    D(bug("RunCommand: segList @%p I=%x O=%x Args='%s'\n", BADDR(segList), BADDR(Input()), BADDR(Output()), argptr));
+
     ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
 		(LONG_FUNC)((BPTR *)BADDR(segList)+1),DOSBase);
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    	BCPL_Cleanup(me);
-    	me->pr_GlobVec = old_GlobVec;
-    } while (0);
-#endif
+
     me->pr_Arguments=oldargs;
 
     oldresult=me->pr_Result2;
