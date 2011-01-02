@@ -423,20 +423,16 @@ LONG CONMain(void)
 				break;
 				case ACTION_SCREEN_MODE:
 				{
-	                            LONG wantmode = dp->dp_Arg1;
-	
+	                            LONG wantmode = dp->dp_Arg1 ? FCM_RAW : 0;
+				    D(bug("ACTION_SCREEN_MODE %s\n", wantmode ? "RAW" : "CON"));
 	                            if ((wantmode & FCM_RAW) && !(fh->flags & FHFLG_RAW))
 	                            {
 					/* Switching from CON: mode to RAW: mode */
-	
 					fh->flags |= FHFLG_RAW;
-	
 					fh->inputstart = fh->inputsize;
 					fh->inputpos   = fh->inputsize;
-	
 					HandlePendingReads(fh);
 	                            }
-	
 	                            else
 	                            {
 	                                /* otherwise just copy the flags */
@@ -446,7 +442,6 @@ LONG CONMain(void)
 	                                if (wantmode & FCM_NOECHO)
 	                                    fh->flags |= FHFLG_NOECHO;
 	                            }
-	
 				    replypkt(dp, DOSTRUE);
 				}
 				break;
@@ -460,6 +455,8 @@ LONG CONMain(void)
 				break;
 				case ACTION_WAIT_CHAR:
 				{
+				    if (!MakeSureWinIsOpen(fh))
+					goto end;
 				    if (fh->inputsize > 0)
 				    {
 				    	replypkt(dp, DOSTRUE);
@@ -476,6 +473,7 @@ LONG CONMain(void)
 					SendIO((struct IORquest*)fh->timerreq);
 					waitingdp = dp;
 				    }
+ 				    startread(fh);
 				}
 				break;
 				case ACTION_IS_FILESYSTEM:
