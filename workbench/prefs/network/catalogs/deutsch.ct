@@ -3,11 +3,11 @@
 ## codeset 0
 ;
 MSG_NAME
-Netzwerkvoreinstellungen
+Netzwerk-Voreinsteller (Network)
 ; Network Preferences
 ;
 MSG_DESCRIPTION
-Netzwerkvoreinstellungen
+Netzwerk-Voreinsteller (Network)
 ; Network preferences
 ;
 MSG_IFNAME
@@ -193,4 +193,28 @@ Schnittstelle
 MSG_NETWINDOW_TITLE
 Drahtloses Netzwerk
 ; Wireless Network
+;
+MSG_TAB_MOBILE
+Mobiles Breitband-Netzwerk
+; Mobile Broadband
+;
+MSG_SERIAL_DEVICE
+Serielles Gerät
+; Serial Device
+;
+MSG_UNIT_NUMBER
+Einheit
+; Unit
+;
+MSG_USERNAME
+Benutzername
+; Username
+;
+MSG_PASSWORD
+Passwort
+; Password
+;
+MSG_AUTOSTART_MOBILE
+Modem-Manager beim Systemstart aktivieren
+; Start networking during system boot
 ;

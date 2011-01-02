@@ -4,11 +4,11 @@
 ;
 ;
 MSG_NAME
-Wanderer Einstellungen
+Wanderer-Voreinsteller
 ; Wanderer Prefs
 ;
 MSG_DESCRIPTION
-Wanderer Einstellungen
+Wanderer-Voreinsteller
 ; Wanderer preferences
 ;
 MSG_BACKGROUNDS
@@ -76,15 +76,15 @@ Anzeige der Icons
 ; Icons look and feel
 ;
 MSG_ICONLISTMODE
-Icon listmode
+Icon Anzeige-Art
 ; Icon listmode
 ;
 MSG_ICONLISTMODE_PLAIN
-List icons plainly
+Icons ungeordnet anzeigen
 ; List icons plainly
 ;
 MSG_ICONLISTMODE_GRID
-List icons by grid
+Icons am Raster ausrichten
 ; List icons by grid
 ;
 MSG_ICONTEXTMODE
@@ -154,7 +154,7 @@ Icon Text Zeichensatz ...
 ; Icon Label Font...
 ;
 MSG_ICONINFOFONT
-Icon Info Zeichensatz...
+Icon Info Zeichensatz ...
 ; Icon Info Font...
 ;
 MSG_HORIZSPACINGICON
@@ -246,7 +246,7 @@ Netzwerk Browser auf Workbench anzeigen
 ; Network Browser on Workbench
 ;
 MSG_VIEWSETTINGS
-View Settings
+Anzeige Einstellungen
 ; View Settings
 ;
 MSG_WANDERERSCREENTITLE
