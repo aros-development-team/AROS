@@ -4,7 +4,7 @@
 ;
 ;
 MSG_NAME
-Voreinstellungen Bildschirmauflösung
+Bildschirmauflösung-Voreinsteller (ScreenMode)
 ; ScreenMode Preferences
 ; 
 MSG_WIDTH
@@ -38,4 +38,24 @@ Moduskennung
 MSG_DESCRIPTION
 Beschreibung
 ; Description
+;
+MSG_MODE_ATTRIBUTES
+Eigenschaften
+; Mode Attributes
+;
+MSG_VISIBLE_SIZE
+Sichtbare Größe:
+; Visible Size:
+;
+MSG_MINIMUM_SIZE
+Kleinste Größe:
+; Minimum Size:
+;
+MSG_MAXIMUM_SIZE
+Maximale Größe:
+; Maximum Size:
+;
+MSG_MAXIMUM_COLORS
+Höchste Farbanzahl:
+; Maximum Colors:
 ;
