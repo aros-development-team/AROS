@@ -500,3 +500,19 @@ static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, str
   }
   return 0;
 }
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+AROS_UFH4(BPTR, LoadSeg_Overlay,
+    AROS_UFHA(UBYTE*, name, D1),
+    AROS_UFHA(BPTR, hunktable, D2),
+    AROS_UFHA(BPTR, fh, D3),
+    AROS_UFHA(struct DosLibrary *, DosBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    bug("LoadSeg_Overlay. table=%x fh=%x\n", hunktable, fh);
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+#endif

@@ -25,6 +25,33 @@
 #include LC_LIBDEFS_FILE
 #include "dos_intern.h"
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+/* LoadSeg() needs D1-D3 parameters for overlay hunk support */
+AROS_UFP4(BPTR, LoadSeg_Overlay,
+    AROS_UFPA(UBYTE*, name, D1),
+    AROS_UFPA(BPTR, hunktable, D2),
+    AROS_UFPA(BPTR, fh, D3),
+    AROS_UFPA(struct DosLibrary *, DosBase, A6));
+static void PatchLoadSeg(struct DosLibrary *dosbase)
+{
+    UWORD *asmcall;
+    IPTR func = (IPTR)__AROS_GETJUMPVEC(dosbase, 25)->vec;
+    asmcall = AllocMem(10 * sizeof(UWORD), MEMF_PUBLIC); \
+    asmcall[0] = 0x4a81; // TST.L D1
+    asmcall[1] = 0x660a; // BNE.B 5 (D1 not NULL = normal LoadSeg)
+    asmcall[2] = 0x4eb9; // JSR LoadSeg_Overlay
+    asmcall[3] = (UWORD)((ULONG)LoadSeg_Overlay >> 16);
+    asmcall[4] = (UWORD)((ULONG)LoadSeg_Overlay >>  0);
+    asmcall[5] = 0x2200; // MOVE.L D0,D1 (original overlay supervisor compatibility)
+    asmcall[6] = 0x4e75; // RTS
+    asmcall[7] = 0x4ef9; // JMP LoadSeg_Original
+    asmcall[8] = (UWORD)(func >> 16);
+    asmcall[9] = (UWORD)(func >>  0);
+    __AROS_SETVECADDR(dosbase, 25, asmcall);
+    CacheClearU();
+}
+#endif
+
 static int DosInit(struct DosLibrary *LIBBASE)
 {
     D(bug("DosInit\n"));
@@ -61,6 +88,9 @@ static int DosInit(struct DosLibrary *LIBBASE)
     LIBBASE->dl_SysBase = SysBase;
     LIBBASE->dl_IntuitionBase = NULL;
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+    PatchLoadSeg(LIBBASE);
+#endif
     {
 	/*  iaint:
 	    I know this is bad, but I also know that the timer.device
