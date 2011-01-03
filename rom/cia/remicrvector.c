@@ -15,7 +15,7 @@
 AROS_LH2(void, RemICRVector,
 	 AROS_LHA(LONG, iCRBit, D0),
 	 AROS_LHA(struct Interrupt *, interrupt, A1),
-	 struct Library *, resource, 6, Cia)
+	 struct Library *, resource, 7, Cia)
 {
     AROS_LIBFUNC_INIT
 
