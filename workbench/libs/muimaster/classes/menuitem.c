@@ -422,6 +422,29 @@ IPTR Menuitem__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_Family_Insert, MUIM_Family_Remove
+**************************************************************************/
+IPTR Menuitem__MUIM_Update(struct IClass *cl, Object *obj, Msg msg)
+{
+    // struct MUI_MenuitemData *data = INST_DATA(cl, obj);
+
+    IPTR retval = DoSuperMethodA(cl, obj, msg);
+
+    if
+	(
+	    muiNotifyData(obj) &&
+	    muiNotifyData(obj)->mnd_GlobalInfo &&
+	    muiNotifyData(obj)->mnd_GlobalInfo->mgi_ApplicationObject
+	)
+    {
+	DoMethod(_app(obj), MUIM_Application_UpdateMenus);
+    }
+
+    return retval;
+}
+
+
 BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -432,6 +455,8 @@ BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
 	case OM_GET:                return Menuitem__OM_GET(cl, obj, (struct opGet *) msg);
 	case MUIM_ConnectParent:    return Menuitem__MUIM_ConnectParent(cl, obj, (APTR)msg);
 	case MUIM_DisconnectParent: return Menuitem__MUIM_DisconnectParent(cl, obj, (APTR)msg);
+	case MUIM_Family_Insert:    return Menuitem__MUIM_Update(cl, obj, (APTR)msg);
+	case MUIM_Family_Remove:    return Menuitem__MUIM_Update(cl, obj, (APTR)msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }
