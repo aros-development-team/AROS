@@ -30,10 +30,10 @@ AROS_UFH4(APTR, Cia_Handler,
                 struct Interrupt *ciaint = CiaBase->Vectors[i];
                 if (ciaint) {
                     AROS_UFC4(void, ciaint->is_Code,
-                              AROS_UFHA(ULONG, dummy, A0),
+                              AROS_UFCA(ULONG, dummy, A0),
                               AROS_UFCA(APTR, ciaint->is_Data, A1),
                               AROS_UFCA(APTR, ciaint->is_Code, A5),
-                              AROS_UFHA(struct ExecBase *, mySysBase, A6)
+                              AROS_UFCA(struct ExecBase *, mySysBase, A6)
                               );
                 }
             }

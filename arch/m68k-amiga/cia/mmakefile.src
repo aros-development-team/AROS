@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES          := addicrvector ableicr seticr \
+CFILES          := addicrvector remicrvector ableicr seticr \
 		   cia_init cia_interrupt
 
 USER_CFLAGS     := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/cia \
