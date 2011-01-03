@@ -175,6 +175,7 @@ AROS_UFH4(ULONG, TOF_VBlank,
     struct Node *tNode;
     struct GfxBase * GfxBase = (struct GfxBase *)data;
 
+    GfxBase->VBCounter++;
     if(!IsListEmpty(&GfxBase->TOF_WaitQ))
     {
 	ForeachNode(&GfxBase->TOF_WaitQ, tNode)
