@@ -2,7 +2,7 @@
     Copyright © 2010, The AROS Development Team. All rights reserved.
     $Id:$
 
-    Desc: AddICRVector() function.
+    Desc: RemICRVector() function.
     Lang: english
 */
 
@@ -12,26 +12,21 @@
 
 #include "cia_intern.h"
 
-AROS_LH2(struct Interrupt *, AddICRVector,
+AROS_LH2(void, RemICRVector,
 	 AROS_LHA(LONG, iCRBit, D0),
 	 AROS_LHA(struct Interrupt *, interrupt, A1),
-	 struct Library *, resource, 6, Cia)
+	 struct Library *, resource, 7, Cia)
 {
     AROS_LIBFUNC_INIT
 
     struct CIABase *CiaBase = (struct CIABase *)resource;
-    struct Interrupt *old;
 
     /* 68k lowlevel library calls have garbage in upper word */
     iCRBit = (WORD)iCRBit;
+    AbleICR(resource, 1 << iCRBit);
     Disable();
-    old = CiaBase->Vectors[iCRBit];
-    if (!old) {
-        CiaBase->Vectors[iCRBit] = interrupt;
-        AbleICR(resource, 0x80 | (1 << iCRBit));
-    }
+    if (CiaBase->Vectors[iCRBit] == interrupt)
+        CiaBase->Vectors[iCRBit] = NULL;
     Enable();
-    return old;
-
     AROS_LIBFUNC_EXIT
 }
