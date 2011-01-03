@@ -318,7 +318,8 @@ static const char version[] =
  2.192 06.01.10 : (phx) Do vbcc MorphOS OS-calls with BCTRL instead of BLRL
         to avoid messing up the LR-stack of more recent PowerPCs (G4+).
  2.193 18.09.10 : (phx) GLContext type (tinygl).
- 2.194 02.01.11 : (mazze) fix for building it on CYGWIN.
+ 2.194 03.01.11 : (mazze) Fix for building it on CYGWIN.
+                          Added AROS support in the proto file.
 */
 
 /* A short note, how fd2pragma works.
@@ -10529,7 +10530,11 @@ static uint32 CreateProtoFile(uint32 Type)
       DoOutput("\n#ifdef " TEXT_GNUC "\n");
       if(Type == 10)
         DoOutput("#ifndef __cplusplus\n");
+      DoOutput("#ifdef __AROS__\n");
+      DoOutput("#include <defines/%s.h>\n", ShortBaseName);
+      DoOutput("#else\n");
       DoOutput("#include <inline/%s.h>\n", ShortBaseName);
+      DoOutput("#endif\n");
       if(Type == 10)
         DoOutput("#endif\n");
       if(Type != 7)
