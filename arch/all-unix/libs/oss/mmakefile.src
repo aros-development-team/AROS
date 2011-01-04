@@ -12,7 +12,6 @@ FILES := funcs
 
 #MM workbench-libs-oss-unix-module-includes : \
 #MM     includes-copy \
-#MM     kernel-kernel-includes \
 #MM     kernel-exec-includes \
 #MM     kernel-oop-includes
 
@@ -28,9 +27,9 @@ FILES := funcs
 %build_prog mmake=test-playoss \
     progname=playossunix targetdir=$(AROS_TESTS) uselibs="ossshared"
 
-USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
-    uselibs="amiga rom m"
+    uselibs="amiga rom m oop hiddstubs"
