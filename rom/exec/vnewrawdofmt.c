@@ -61,17 +61,32 @@
 
 	DataStream   - C-style data stream (va_list variable)
 
-	PutChProc    - Callback function. In caseCalled for each character, including
-		       the NULL terminator. The fuction is called as follow:
+	PutChProc    - Callback function. Called for each character, including
+		       the NULL terminator. The function should be declared as
+		       follows:
 
-                       AROS_UFC2(void, PutChProc,
-                                 AROS_UFCA(UBYTE, char,      D0),
-                                 AROS_UFCA(APTR , PutChData, A3));
+		       APTR PutChProc(APTR PutChData, UBYTE char);
+
+		       The function should return new value for PutChData variable.
+
+		       Additionally, PutChProc can be set to one of the following
+		       magic values:
+
+			 RAWFMTFUNC_STRING - Write output to string buffer pointed
+					     to by PutChData which is incremented
+					     every character.
+			 RAWFMTFUNC_SERIAL - Write output to debug output. PutChData
+					     is ignored and not touched.
+			 RAWFMTFUNC_COUNT  - Count number of characters in the result.
+					     PutChData is a pointer to ULONG which
+					     is incremented every character. Initial
+					     value of the cointer is kept as it is.
+
 
 	PutChData    - Data propagated to each call of the callback hook.
 
     RESULT
-	Pointer to the rest of the DataStream.
+	Final PutChData value.
 
     NOTES
 	The field size defaults to words which may be different from the
