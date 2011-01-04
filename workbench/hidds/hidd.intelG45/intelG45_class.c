@@ -212,6 +212,11 @@ void createSync(OOP_Class *cl, int x, int y, int refresh, struct TagItem **tagsp
 	PUSH_TAG(poolptr, aHidd_Sync_VSyncEnd, sync.vend);
 	PUSH_TAG(poolptr, aHidd_Sync_VTotal, sync.vtotal);
 
+	PUSH_TAG(poolptr, aHidd_Sync_VMin, sync.height);
+	PUSH_TAG(poolptr, aHidd_Sync_VMax, 4096);
+	PUSH_TAG(poolptr, aHidd_Sync_HMin, sync.width);
+	PUSH_TAG(poolptr, aHidd_Sync_HMax,  4096);
+		
 	PUSH_TAG(poolptr, aHidd_Sync_Flags, vHidd_Sync_VSyncPlus);
 	PUSH_TAG(poolptr, TAG_DONE, 0);
 }
@@ -476,31 +481,64 @@ OOP_Object *METHOD(INTELG45, Root, New)
 //	tags->ti_Data = (IPTR)pftags_15bpp;
 //	tags++;
 
-	i2c = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
-
-	if (i2c)
+	if( sd->pipe == PIPE_B )
 	{
-		if (HIDD_I2C_ProbeAddress(i2c, 0xa0))
+		char *description = AllocVecPooled(sd->MemPool, 30);
+		snprintf(description, 29, "GMA_LVDS:%dx%d", sd->lvds_fixed.hdisp,sd->lvds_fixed.vdisp);
+
+		// only mode: native lcd
+		struct TagItem sync_native[]={
+		{ aHidd_Sync_PixelClock,sd->lvds_fixed.pixelclock*1000000 },
+		{ aHidd_Sync_HDisp,     sd->lvds_fixed.hdisp },
+		{ aHidd_Sync_HSyncStart,sd->lvds_fixed.hstart },
+		{ aHidd_Sync_HSyncEnd,  sd->lvds_fixed.hend },
+		{ aHidd_Sync_HTotal,    sd->lvds_fixed.htotal },
+		{ aHidd_Sync_VDisp,     sd->lvds_fixed.vdisp },
+		{ aHidd_Sync_VSyncStart,sd->lvds_fixed.vstart },
+		{ aHidd_Sync_VSyncEnd,  sd->lvds_fixed.vend },
+		{ aHidd_Sync_VTotal,    sd->lvds_fixed.vtotal },
+		{ aHidd_Sync_VMin,     sd->lvds_fixed.vdisp},
+		{ aHidd_Sync_VMax,     4096},
+		{ aHidd_Sync_HMin,     sd->lvds_fixed.hdisp},
+		{ aHidd_Sync_HMax,     4096},
+		{ aHidd_Sync_Description, (IPTR)description },
+		{ TAG_DONE, 0UL }};
+
+		tags->ti_Tag =  aHidd_Gfx_SyncTags;
+		tags->ti_Data = (IPTR)sync_native;
+		tags++;
+
+	}
+	else
+	{
+
+		i2c = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
+
+		if (i2c)
 		{
-			struct TagItem attrs[] = {
-					{ aHidd_I2CDevice_Driver,   (IPTR)i2c       },
-					{ aHidd_I2CDevice_Address,  0xa0            },
-					{ aHidd_I2CDevice_Name,     (IPTR)"Display" },
-					{ TAG_DONE, 0UL }
-			};
-
-			D(bug("[GMA] I2C device found\n"));
-
-			OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
-
-			if (obj)
+			if (HIDD_I2C_ProbeAddress(i2c, 0xa0))
 			{
-				G45_parse_ddc(cl, &tags, poolptr, obj);
+				struct TagItem attrs[] = {
+						{ aHidd_I2CDevice_Driver,   (IPTR)i2c       },
+						{ aHidd_I2CDevice_Address,  0xa0            },
+						{ aHidd_I2CDevice_Name,     (IPTR)"Display" },
+						{ TAG_DONE, 0UL }
+				};
 
-				OOP_DisposeObject(obj);
+				D(bug("[GMA] I2C device found\n"));
+
+				OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
+
+				if (obj)
+				{
+					G45_parse_ddc(cl, &tags, poolptr, obj);
+
+					OOP_DisposeObject(obj);
+				}
 			}
+			OOP_DisposeObject(i2c);
 		}
-		OOP_DisposeObject(i2c);
+
 	}
 
 	tags->ti_Tag = TAG_DONE;
@@ -631,9 +669,9 @@ OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
                 bm->usecount++;
 
                 LOCK_HW
-                G45_LoadState(sd, bm->state);
 
-                sd->VisibleBitmap = bm;
+				sd->VisibleBitmap = bm;
+                G45_LoadState(sd, bm->state);
 
                 UNLOCK_HW
             }
@@ -759,13 +797,15 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
     sd->CursorVisible = msg->visible;
     if (msg->visible)
     {
-    	writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_ARGB, sd->Card.MMIO + G45_CURACNTR);
-    	writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
+		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_ARGB ,
+				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
+		writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
     }
     else
     {
-    	writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_OFF, sd->Card.MMIO + G45_CURACNTR);
-    	writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
+		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_OFF ,
+				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
+		writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
     }
 }
 
@@ -787,9 +827,10 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorPos)
     }
     else
     	y = my;
-
-    writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT), sd->Card.MMIO + G45_CURAPOS);
-    writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
+		
+	writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT),
+			sd->Card.MMIO + (sd->pipe == PIPE_A ?G45_CURAPOS:G45_CURBPOS));
+	writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
 }
 
 BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
@@ -797,8 +838,9 @@ BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
     if (msg->shape == NULL)
     {
         sd->CursorVisible = 0;
-        writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_OFF, sd->Card.MMIO + G45_CURACNTR);
-        writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
+		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_OFF ,
+				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
+		writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
     }
     else
     {
@@ -816,9 +858,9 @@ BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
            curimg[x] = 0;
 
         HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
-
-        writel(G45_CURCNTR_PIPE_A | G45_CURCNTR_TYPE_ARGB, sd->Card.MMIO + G45_CURACNTR);
-        writel(sd->CursorBase, sd->Card.MMIO + G45_CURABASE);
+		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_ARGB ,
+				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
+		writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
     }
 
     return TRUE;

@@ -125,6 +125,8 @@ OOP_Object *METHOD(GMABM, Root, New)
         bm->state = NULL;
         bm->bitmap = o;
         bm->usecount = 0;
+        bm->xoffset = 0;
+        bm->yoffset = 0;
 
         if (bm->framebuffer != -1)
         {
@@ -293,8 +295,8 @@ VOID METHOD(GMABM, Root, Get)
 {
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     ULONG idx;
-
-    if (IS_GMABM_ATTR(msg->attrID, idx))
+	
+	if (IS_GMABM_ATTR(msg->attrID, idx))
     {
         switch (idx)
         {
@@ -303,17 +305,75 @@ VOID METHOD(GMABM, Root, Get)
                     *msg->storage = bm->framebuffer + (IPTR)sd->Card.Framebuffer;
                 else
                     *msg->storage = bm->framebuffer;
-                break;
-
+            break;
             default:
                 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     }
-    else
-    {
+	else
+	{
+		if (IS_BM_ATTR(msg->attrID, idx))
+		{
+			switch (idx)
+			{
+				case aoHidd_BitMap_LeftEdge:
+					*msg->storage = bm->xoffset;
+				return;
+				case aoHidd_BitMap_TopEdge:
+					*msg->storage = bm->yoffset;
+				return;
+			}
+		}
+		
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 }
+
+VOID METHOD(GMABM, Root, Set)
+{
+    GMABitMap_t *bm = OOP_INST_DATA(cl, o);
+    ULONG idx;
+    struct TagItem  *tag, *tstate;
+    LONG newxoffset = bm->xoffset;
+    LONG newyoffset = bm->yoffset;
+
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        if (IS_BM_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+            case aoHidd_BitMap_LeftEdge:
+                newxoffset = tag->ti_Data;
+                break;
+            case aoHidd_BitMap_TopEdge:
+                newyoffset = tag->ti_Data;
+                break;
+            }
+        }
+    }
+
+	if(newxoffset > 0) newxoffset = 0;
+	if(newxoffset < - bm->width ) newxoffset = - bm->width;
+	if(newyoffset > 0) newyoffset = 0;
+	if(newyoffset < - bm->height ) newyoffset = - bm->height;
+
+    if ((newxoffset != bm->xoffset) || (newyoffset != bm->yoffset))
+    {
+        bm->xoffset = newxoffset;
+        bm->yoffset = newyoffset;
+		LONG offset = sd->VisibleBitmap->yoffset * sd->VisibleBitmap->pitch +
+					  sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp; 
+		//writel( bm->state->dspstride , sd->Card.MMIO + G45_DSPBSTRIDE );
+		writel( bm->state->dsplinoff - offset , sd->Card.MMIO + ( sd->pipe == PIPE_A ? G45_DSPALINOFF:G45_DSPBLINOFF ));
+		readl( sd->Card.MMIO + G45_DSPBLINOFF );
+    }
+
+	 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+
 
 static inline void setup_engine(OOP_Class *cl, OOP_Object *o, GMABitMap_t *bm)
 {

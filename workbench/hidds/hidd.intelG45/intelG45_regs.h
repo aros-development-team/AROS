@@ -68,7 +68,11 @@
 
 #define G45_GMBUS			0x5100
 
+#define G45_PIPEASRC				0x6001c
+#define G45_PIPEBSRC				0x6101c	
 #define G45_PIPEACONF		0x70008
+#define G45_PIPEBCONF       0x71008
+
 #define G45_PIPECONF_ENABLE		0x80000000
 #define G45_PIPECONF_ENABLED		0x40000000
 #define G45_PIPECONF_DELAY_00		0
@@ -104,6 +108,10 @@
 #define G45_DSPACNTR				0x70180
 #define G45_DSPBCNTR				0x71180
 
+#define G45_DSPASIZE		0x70190
+#define G45_DSPBSIZE		0x71190
+
+#define G45_DSPCNTR_SEL_PIPE_B		(1<<24)
 #define G45_DSPCNTR_PLANE_ENABLE	0x80000000
 #define G45_DSPCNTR_GAMMA_ENABLE	0x40000000
 #define G45_DSPCNTR_PIXEL_MASK		(0xf << 26)
@@ -116,6 +124,10 @@
 #define G45_DSPASTRIDE				0x70188
 #define G45_DSPASURF				0x7019c
 
+#define G45_DSPBLINOFF				0x71184
+#define G45_DSPBSTRIDE				0x71188
+#define G45_DSPBSURF 				0x7119C
+
 #define G45_HTOTAL_A				0x60000
 #define G45_HBLANK_A				0x60004
 #define G45_HSYNC_A				0x60008
@@ -123,8 +135,16 @@
 #define G45_VBLANK_A				0x60010
 #define G45_VSYNC_A				0x60014
 
-#define G45_PIPEASRC				0x6001c
+#define G45_HTOTAL_B	0x61000
+#define G45_HBLANK_B	0x61004
+#define G45_HSYNC_B 	0x61008
+#define G45_VTOTAL_B	0x6100c
+#define G45_VBLANK_B	0x61010
+#define G45_VSYNC_B 	0x61014
 
+
+#define G45_PIPEASRC				0x6001c
+#define PIPEBCONF 0x71008
 #define G45_ADPA					0x61100
 #define G45_ADPA_MASK				0x3fff43e7
 #define G45_ADPA_ENABLE			0x80000000
@@ -138,7 +158,12 @@
 #define G45_ADPA_VSYNC_PLUS		0x00000010
 #define G45_ADPA_HSYNC_PLUS		0x00000008
 
+#define G45_LVDS					0x61180
+#define G45_LVDS_PORT_EN			(1 << 31)
+#define G45_LVDS_PIPEB_SELECT		(1 << 30) /* Selects pipe B for LVDS data.  Must be set on pre-965. */
+
 #define G45_CURACNTR				0x70080
+#define G45_CURBCNTR				0x700C0
 #define G45_CURCNTR_PIPE_A			0x00000000
 #define G45_CURCNTR_PIPE_B			0x10000000
 #define G45_CURCNTR_PIPE_C			0x20000000
@@ -151,11 +176,17 @@
 #define G45_CURCNTR_TYPE_OFF		0x00000000
 #define G45_CURCNTR_TYPE_ARGB		0x00000027		/* The only one used by AROS. 64x64 ARGB */
 
-#define G45_CURABASE				0x70084			/* Base address of cursor (4K aligned) and trigger for update operations */
+#define G45_CURABASE				0x70084		/* Base address of cursor (4K aligned) and trigger for update operations */
+#define G45_CURBBASE				0x700C4	
 #define G45_CURAPOS				0x70088			/* Cursor position */
+#define G45_CURBPOS				0x700C8
+
 #define G45_CURPOS_XSHIFT			0
 #define G45_CURPOS_YSHIFT			16
 #define G45_CURPOS_SIGN			0x8000
+
+#define PIPE_A 0
+#define PIPE_B 1
 
 #define readl(addr) ( *(volatile uint32_t *) (addr) )
 #define readw(addr) ( *(volatile uint16_t *) (addr) )

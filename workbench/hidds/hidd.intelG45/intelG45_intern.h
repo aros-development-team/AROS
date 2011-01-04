@@ -38,6 +38,23 @@ extern OOP_AttrBase HiddI2CAttrBase;
 extern OOP_AttrBase HiddI2CDeviceAttrBase;
 extern OOP_AttrBase __IHidd_PlanarBM;
 
+struct Sync{
+	uint16_t width;
+	uint16_t height;
+	uint8_t depth;
+	uint32_t pixelclock;
+	intptr_t framebuffer;
+	uint16_t hdisp;
+	uint16_t vdisp;
+	uint16_t hstart;
+	uint16_t hend;
+	uint16_t htotal;
+	uint16_t vstart;
+	uint16_t vend;
+	uint16_t vtotal;
+	uint32_t flags;
+};
+
 typedef struct {
 	uint32_t	fp;				// G45_FPA0
 	uint32_t	dpll;			// G45_DPLL_A
@@ -71,6 +88,7 @@ typedef struct {
     uint8_t		onbm;       // is onbitmap?
     uint8_t		fbgfx;      // is framebuffer in gfx memory
     uint64_t	usecount;   // counts BitMap accesses
+	LONG xoffset,yoffset;   // virtual screen offset
     GMAState_t *state;
 } GMABitMap_t;
 
@@ -166,7 +184,10 @@ struct g45staticdata {
     OOP_MethodID    mid_PutMemPattern32;
     OOP_MethodID    mid_CopyLUTMemBox16;
     OOP_MethodID    mid_CopyLUTMemBox32;
-
+	
+	ULONG pipe;
+	struct Sync lvds_fixed;
+	
 };
 
 struct intelg45base {
@@ -225,5 +246,9 @@ IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height, ULONG 
 VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp);
 BOOL delay_ms(struct g45staticdata *sd, uint32_t msec);
 BOOL delay_us(struct g45staticdata *sd, uint32_t usec);
+
+BOOL adpa_Enabled(struct g45staticdata *sd);
+BOOL lvds_Enabled(struct g45staticdata *sd);
+void GetSync(struct g45staticdata *sd,struct Sync *sync,ULONG pipe);
 
 #endif /* INTELG45_INTERN_H_ */
