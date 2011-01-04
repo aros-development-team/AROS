@@ -22,6 +22,8 @@ MKARGS		:= @aros_host_mkargs@
 HOST_IQUOTE     := @host_cflags_iquote@
 HOST_IQUOTE_END := @host_cflags_iquote_end@
 
+HOST_GNU89_INLINE := @gnu89_inline@
+
 HOST_AR		:= @aros_host_ar@
 HOST_RANLIB	:= @aros_host_ranlib@
 HOST_STRIP	:= @aros_host_strip@

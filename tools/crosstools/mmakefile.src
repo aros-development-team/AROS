@@ -22,7 +22,7 @@ GNU_REPOSITORY := gnu://
 	prefix="$(TOOLDIR)" \
 	extraoptions="--target=$(AROS_TARGET_CPU)-aros --bindir=$(TOOLDIR) --disable-werror"
 
-HOST_CFLAGS := $(HOST_CFLAGS) -fgnu89-inline
+HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
 %fetch_and_build mmake=tools-crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)" \
