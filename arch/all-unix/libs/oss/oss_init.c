@@ -23,7 +23,21 @@ int audio_fd;
 
 static int InitData(LIBBASETYPEPTR LIBBASE)
 {
-    unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
+    struct TagItem tags[] = {
+	{0       , (IPTR)"oss.library"    },
+	{0       , (IPTR)AROS_ARCHITECTURE},
+	{TAG_DONE, 0                      }
+    };
+
+    LIBBASE->UnixIOAttrBase = OOP_ObtainAttrBase(IID_Hidd_UnixIO);
+    if (!LIBBASE->UnixIOAttrBase)
+	return FALSE;
+
+    /* Initialise tag IDs only after getting UnixIOAttrBase */
+    tags[0].ti_Tag = aHidd_UnixIO_Opener;
+    tags[1].ti_Tag = aHidd_UnixIO_Architecture;
+
+    unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, tags);
     if (!unixio) return FALSE;
     
     return TRUE;
@@ -38,11 +52,11 @@ static int OpenLib(LIBBASETYPEPTR LIBBASE)
 
 static int CleanUp(LIBBASETYPEPTR LIBBASE)
 {
-    if (unixio)
-    {
-	OOP_DisposeObject(unixio);
-	unixio = NULL;
-    }
+    if (LIBBASE->UnixIOAttrBase)
+	OOP_ReleaseAttrBase(IID_Hidd_UnixIO);
+
+    /* UnixIO is a singletone, there's no need to dispose it */
+
     return TRUE;
 }
 
