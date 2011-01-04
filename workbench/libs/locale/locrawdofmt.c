@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locale_RawDoFmt - locale.library's private replacement
@@ -138,6 +138,41 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     	    AROS_UFCA(char, fill, D0),
 	    AROS_UFCA(APTR, pdata, A3),
 	    AROS_UFCA(struct ExecBase *, SysBase, A6));
+    }
+    hook->h_Data = pdata;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct Locale *, locale, A2),
+    AROS_UFHA(char, fill, A1))
+{
+    AROS_USERFUNC_INIT
+
+    APTR (*proc)(APTR, UBYTE) = (APTR)hook->h_SubEntry;
+    char *pdata = hook->h_Data;
+
+    switch ((IPTR)hook->h_SubEntry)
+    {
+    case (IPTR)RAWFMTFUNC_STRING:
+	/* Standard Array Function */
+	*pdata++ = fill;
+	break;
+
+    case (IPTR)RAWFMTFUNC_SERIAL:
+	/* Standard Serial Function */
+	RawPutChar(fill);
+	break;
+
+    case (IPTR)RAWFMTFUNC_COUNT:
+        /* Standard Count Function */
+	(*((ULONG *)pdata))++;
+	break;
+
+    default:
+	pdata = proc(pdata, fill);
     }
     hook->h_Data = pdata;
 
@@ -304,7 +339,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     struct Hook       hook;
     APTR    	      retval;
 
-    hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
+    hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc_SysV);
     hook.h_SubEntry = (HOOKFUNC)PutChProc;
     hook.h_Data     = PutChData;
 

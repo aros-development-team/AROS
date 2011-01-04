@@ -106,9 +106,17 @@ do                                        \
 	(*((ULONG *)PutChData))++;	  \
 	break;				  \
     default:				  \
-        AROS_UFC2(void, PutChProc,        \
-        AROS_UFCA(UBYTE, (ch), D0),       \
-        AROS_UFCA(APTR , PutChData, A3)); \
+	if (DataStream)					\
+	{						\
+            AROS_UFC2(void, PutChProc,        		\
+	    AROS_UFCA(UBYTE, (ch), D0),       		\
+	    AROS_UFCA(APTR , PutChData, A3)); 		\
+	}						\
+	else						\
+	{						\
+	    APTR (*proc)(APTR, UBYTE) = PutChProc;	\
+	    PutChData = proc(PutChData, ch);		\
+	}						\
     }                                     \
 } while (0)
 
@@ -410,8 +418,20 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
                                  AROS_UFCA(UBYTE, char,      D0),
                                  AROS_UFCA(APTR , PutChData, A3));
 		    
-		       The argument may be NULL. This makes RawDoFmt() use an internal
-		       function. If you want to be compatible with AmigaOS you
+		       Additionally, PutChProc can be set to one of the following
+		       magic values:
+
+			 RAWFMTFUNC_STRING - Write output to string buffer pointed
+					     to by PutChData which is incremented
+					     every character.
+			 RAWFMTFUNC_SERIAL - Write output to debug output. PutChData
+					     is ignored and not touched.
+			 RAWFMTFUNC_COUNT  - Count number of characters in the result.
+					     PutChData is a pointer to ULONG which
+					     is incremented every character. Initial
+					     value of the cointer is kept as it is.
+
+		       If you want to be compatible with AmigaOS you
 		       should check that exec.library has at least version 45.
 
 	PutChData    - Data propagated to each call of the callback hook.
