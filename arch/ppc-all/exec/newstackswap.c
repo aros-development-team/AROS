@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2009, The AROS Development Team. All rights reserved.
-    $Id: newstackswap.c 30792 2009-03-07 22:40:04Z sonic $
+    $Id$
 
     Desc: NewStackSwap() - Call a function with swapped stack.
     Lang: english
