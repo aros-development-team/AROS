@@ -492,7 +492,8 @@ LONG CONMain(void)
 				}	
 				break;
 				case ACTION_SEEK:
-					replypkt(dp, DOSTRUE);
+					/* Yes, DOSTRUE. Check Guru Book for details. */
+					replypkt2(dp, DOSTRUE, ERROR_ACTION_NOT_KNOWN);
 				break;
 				default:
 					bug("[CON] unknown action %d\n", dp->dp_Type);
