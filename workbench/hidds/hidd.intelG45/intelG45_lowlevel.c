@@ -184,7 +184,7 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 			state->dpll |= G45_DPLL_DAC_SERIAL_P2_DIV_5;
 		state->dpll |= (1 << (clock.P1 - 1)) << G45_DPLL_P1_SHIFT;
 
-		state->dspcntr = readl(sd->Card.MMIO + G45_DSPACNTR) & 0x000f0000;
+		state->dspcntr = readl(sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_DSPACNTR:G45_DSPBCNTR)) & 0x000f0000;
 
 		if (depth <= 8)
 		{
@@ -210,6 +210,7 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 		state->pipeconf = G45_PIPECONF_ENABLE;
 		state->dpll |= G45_DPLL_VCO_ENABLE;
 		state->dspcntr |= G45_DSPCNTR_PLANE_ENABLE;
+		if(sd->pipe == PIPE_B ) state->dspcntr |= G45_DSPCNTR_SEL_PIPE_B;
 
 		state->htotal = (hdisp - 1) | ((htotal - 1) << 16);
 		state->hblank = (hdisp - 1) | ((htotal - 1) << 16);
@@ -242,157 +243,193 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 
 	LOCK_HW
 	DO_FLUSH();
-
-	uint32_t tmp;
-
-	writel(readl(sd->Card.MMIO + 0x61140) & ~(1 << 29), sd->Card.MMIO + 0x61140);
-	writel(readl(sd->Card.MMIO + 0x61160) & ~(1 << 29), sd->Card.MMIO + 0x61160);
-
-	writel(readl(sd->Card.MMIO + 0x61140) & ~(1 << 31), sd->Card.MMIO + 0x61140);
-	writel(readl(sd->Card.MMIO + 0x61160) & ~(1 << 31), sd->Card.MMIO + 0x61160);
-
-//	/* Stop cursor */
-//	writel(0, sd->Card.MMIO + 0x70080);
-//	delay_ms(sd, 20);
-
-	/* Disable pipe */
-	writel(readl(sd->Card.MMIO + G45_PIPEACONF) & ~G45_PIPECONF_ENABLE, sd->Card.MMIO + G45_PIPEACONF);
-
-	for (i=0; i < 100; i++)
+	
+	if( sd->pipe == PIPE_B )
 	{
-		if ((readl(sd->Card.MMIO + G45_PIPEACONF) & G45_PIPECONF_ENABLED) == 0)
-			break;
+		
+		bug("[GMA]load lvds\n");
 
-		/* Disable pipe again and again*/
+		writel(readl(sd->Card.MMIO + G45_VGACNTRL) | G45_VGACNTRL_VGA_DISABLE, sd->Card.MMIO + G45_VGACNTRL);
+		
+		writel(((sd->lvds_fixed.hdisp - 1) << 16) | (sd->lvds_fixed.vdisp - 1), sd->Card.MMIO + G45_PIPEBSRC);
+		writel(((sd->lvds_fixed.vdisp - 1) << 16) | (sd->lvds_fixed.hdisp - 1), sd->Card.MMIO + G45_DSPBSIZE);
+		
+		writel(	state->pipeconf , sd->Card.MMIO + G45_PIPEBCONF);
+		readl(sd->Card.MMIO + G45_PIPEBCONF);
+		delay_ms(sd, 20);
+
+		writel( state->dspcntr , sd->Card.MMIO + G45_DSPBCNTR );
+		delay_ms(sd, 20);
+
+		LONG offset = sd->VisibleBitmap->yoffset * sd->VisibleBitmap->pitch +
+		              sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp;
+		writel( state->dspstride , sd->Card.MMIO + G45_DSPBSTRIDE );
+		writel( state->dsplinoff - offset , sd->Card.MMIO + G45_DSPBLINOFF );
+		readl( sd->Card.MMIO + G45_DSPBLINOFF );
+
+		delay_ms(sd, 20);
+	 
+		ULONG i;
+		for (i = 0; i < 256; i++) {
+			writel( (i << 16) |(i << 8) | i , sd->Card.MMIO + 0x0a800 + 4 * i);//PALETTE_B
+		}
+
+	}else{
+		
+		uint32_t tmp;
+
+		writel(readl(sd->Card.MMIO + 0x61140) & ~(1 << 29), sd->Card.MMIO + 0x61140);
+		writel(readl(sd->Card.MMIO + 0x61160) & ~(1 << 29), sd->Card.MMIO + 0x61160);
+
+		writel(readl(sd->Card.MMIO + 0x61140) & ~(1 << 31), sd->Card.MMIO + 0x61140);
+		writel(readl(sd->Card.MMIO + 0x61160) & ~(1 << 31), sd->Card.MMIO + 0x61160);
+
+	//	/* Stop cursor */
+	//	writel(0, sd->Card.MMIO + 0x70080);
+	//	delay_ms(sd, 20);
+
+		/* Disable pipe */
 		writel(readl(sd->Card.MMIO + G45_PIPEACONF) & ~G45_PIPECONF_ENABLE, sd->Card.MMIO + G45_PIPEACONF);
-		delay_ms(sd, 10);
-	}
 
-	/* Disable DAC */
-	writel(readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_ENABLE, sd->Card.MMIO + G45_ADPA);
+		for (i=0; i < 100; i++)
+		{
+			if ((readl(sd->Card.MMIO + G45_PIPEACONF) & G45_PIPECONF_ENABLED) == 0)
+				break;
 
-	/* Disable planes */
-	writel(readl(sd->Card.MMIO + G45_DSPACNTR) & ~G45_DSPCNTR_PLANE_ENABLE, sd->Card.MMIO + G45_DSPACNTR);
-	writel(readl(sd->Card.MMIO + G45_DSPBCNTR) & ~G45_DSPCNTR_PLANE_ENABLE, sd->Card.MMIO + G45_DSPBCNTR);
+			/* Disable pipe again and again*/
+			writel(readl(sd->Card.MMIO + G45_PIPEACONF) & ~G45_PIPECONF_ENABLE, sd->Card.MMIO + G45_PIPEACONF);
+			delay_ms(sd, 10);
+		}
 
-	/* "VBLANK" delay */
-	delay_ms(sd, 20);
+		/* Disable DAC */
+		writel(readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_ENABLE, sd->Card.MMIO + G45_ADPA);
 
-	/* Stop sync */
-	writel((readl(sd->Card.MMIO + G45_ADPA) & G45_ADPA_MASK) | G45_ADPA_DPMS_OFF, sd->Card.MMIO + G45_ADPA);
+		/* Disable planes */
+		writel(readl(sd->Card.MMIO + G45_DSPACNTR) & ~G45_DSPCNTR_PLANE_ENABLE, sd->Card.MMIO + G45_DSPACNTR);
+		writel(readl(sd->Card.MMIO + G45_DSPBCNTR) & ~G45_DSPCNTR_PLANE_ENABLE, sd->Card.MMIO + G45_DSPBCNTR);
 
-	/* Disable VGA */
-	writel(readl(sd->Card.MMIO + G45_VGACNTRL) | G45_VGACNTRL_VGA_DISABLE, sd->Card.MMIO + G45_VGACNTRL);
+		/* "VBLANK" delay */
+		delay_ms(sd, 20);
 
-	/* Clear PIPE status */
-	D(bug("[GMA] Old PIPEA Status = %08x\n", readl(sd->Card.MMIO + 0x70024)));
-	writel(0xffff, sd->Card.MMIO + 0x70024);
+		/* Stop sync */
+		writel((readl(sd->Card.MMIO + G45_ADPA) & G45_ADPA_MASK) | G45_ADPA_DPMS_OFF, sd->Card.MMIO + G45_ADPA);
 
-	/* Use all 96 fifo entries for PIPE A */
-	writel(95 | (95 << 7), sd->Card.MMIO + 0x70030);
+		/* Disable VGA */
+		writel(readl(sd->Card.MMIO + G45_VGACNTRL) | G45_VGACNTRL_VGA_DISABLE, sd->Card.MMIO + G45_VGACNTRL);
 
-	/* unprotect some fields */
-	writel(0xabcd0000, sd->Card.MMIO + 0x61204);
+		/* Clear PIPE status */
+		D(bug("[GMA] Old PIPEA Status = %08x\n", readl(sd->Card.MMIO + 0x70024)));
+		writel(0xffff, sd->Card.MMIO + 0x70024);
 
-//	tmp = readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//	D(bug("[GMA] dpll before=%08x\n", tmp));
-//	tmp &= ~G45_DPLL_VCO_ENABLE;
-//	D(bug("[GMA] writing dpll=%08x\n", tmp));
-//	writel(tmp, sd->Card.MMIO + G45_DPLLA_CTRL);
-//	D(bug("[GMA] dpll after=%08x\n", readl(sd->Card.MMIO + G45_DPLLA_CTRL)));
+		/* Use all 96 fifo entries for PIPE A */
+		writel(95 | (95 << 7), sd->Card.MMIO + 0x70030);
 
-	delay_us(sd, 150);
+		/* unprotect some fields */
+		writel(0xabcd0000, sd->Card.MMIO + 0x61204);
 
-//	writel(state->dspsurf, sd->Card.MMIO + G45_DSPASURF);
+	//	tmp = readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+	//	D(bug("[GMA] dpll before=%08x\n", tmp));
+	//	tmp &= ~G45_DPLL_VCO_ENABLE;
+	//	D(bug("[GMA] writing dpll=%08x\n", tmp));
+	//	writel(tmp, sd->Card.MMIO + G45_DPLLA_CTRL);
+	//	D(bug("[GMA] dpll after=%08x\n", readl(sd->Card.MMIO + G45_DPLLA_CTRL)));
 
-	tmp = readl(sd->Card.MMIO + G45_PIPEACONF);
-	writel(tmp & ~(3 << 18), sd->Card.MMIO + G45_PIPEACONF);
-	writel(readl(sd->Card.MMIO + G45_DSPACNTR) | 0x80000000, sd->Card.MMIO + G45_DSPACNTR);
-	writel(0, sd->Card.MMIO + G45_DSPASURF);
-	writel(readl(sd->Card.MMIO + G45_DSPACNTR) & 0x7fffffff, sd->Card.MMIO + G45_DSPACNTR);
-	writel(0, sd->Card.MMIO + G45_DSPASURF);
-	writel(tmp, sd->Card.MMIO + G45_PIPEACONF);
+		delay_us(sd, 150);
 
-	if (state->dpll & G45_DPLL_VCO_ENABLE)
-	{
+	//	writel(state->dspsurf, sd->Card.MMIO + G45_DSPASURF);
+
+		tmp = readl(sd->Card.MMIO + G45_PIPEACONF);
+		writel(tmp & ~(3 << 18), sd->Card.MMIO + G45_PIPEACONF);
+		writel(readl(sd->Card.MMIO + G45_DSPACNTR) | 0x80000000, sd->Card.MMIO + G45_DSPACNTR);
+		writel(0, sd->Card.MMIO + G45_DSPASURF);
+		writel(readl(sd->Card.MMIO + G45_DSPACNTR) & 0x7fffffff, sd->Card.MMIO + G45_DSPACNTR);
+		writel(0, sd->Card.MMIO + G45_DSPASURF);
+		writel(tmp, sd->Card.MMIO + G45_PIPEACONF);
+
+		if (state->dpll & G45_DPLL_VCO_ENABLE)
+		{
+			writel(state->fp, sd->Card.MMIO + G45_FPA0);
+			writel(state->fp, sd->Card.MMIO + G45_FPA1);
+			writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
+			(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+			delay_ms(sd, 1);
+			writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
+			(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+			delay_ms(sd, 1);
+	//		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
+	//		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+	//		delay_ms(sd, 1);
+	//		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
+	//		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+	//		delay_ms(sd, 1);
+	//		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
+	//		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+	//		delay_ms(sd, 1);
+	//		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
+	//		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+	//		delay_ms(sd, 1);
+		}
+
 		writel(state->fp, sd->Card.MMIO + G45_FPA0);
 		writel(state->fp, sd->Card.MMIO + G45_FPA1);
-		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
-		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-		delay_ms(sd, 1);
-		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
-		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-		delay_ms(sd, 1);
-//		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
-//		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//		delay_ms(sd, 1);
-//		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
-//		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//		delay_ms(sd, 1);
-//		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
-//		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//		delay_ms(sd, 1);
-//		writel(state->dpll & ~G45_DPLL_VCO_ENABLE, sd->Card.MMIO + G45_DPLLA_CTRL);
-//		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-//		delay_ms(sd, 1);
-	}
-
-	writel(state->fp, sd->Card.MMIO + G45_FPA0);
-	writel(state->fp, sd->Card.MMIO + G45_FPA1);
-	writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
-	(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
-	delay_us(sd, 150);
-	writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
-	D(bug("[GMA] writing dpll=%08x, got %08x\n", state->dpll, readl(sd->Card.MMIO + G45_DPLLA_CTRL)));
-	delay_us(sd, 150);
-
-	/* protect on again */
-	writel(0x00000000, sd->Card.MMIO + 0x61204);
-
-	/* Enable DAC*/
-	writel((readl(sd->Card.MMIO + G45_ADPA) & G45_ADPA_MASK) | G45_ADPA_DPMS_OFF | G45_ADPA_ENABLE, sd->Card.MMIO + G45_ADPA);
-
-	writel(state->htotal, sd->Card.MMIO + G45_HTOTAL_A);
-	writel(state->hblank, sd->Card.MMIO + G45_HBLANK_A);
-	writel(state->hsync, sd->Card.MMIO + G45_HSYNC_A);
-	writel(state->vtotal, sd->Card.MMIO + G45_VTOTAL_A);
-	writel(state->vblank, sd->Card.MMIO + G45_VBLANK_A);
-	writel(state->vsync, sd->Card.MMIO + G45_VSYNC_A);
-
-	writel(state->pipesrc, sd->Card.MMIO + G45_PIPEASRC);
-	writel(state->pipesrc, sd->Card.MMIO + 0x70190);
-	writel(state->pipeconf, sd->Card.MMIO + G45_PIPEACONF);
-	(void)readl(sd->Card.MMIO + G45_PIPEACONF);
-
-	writel(state->dspsurf, sd->Card.MMIO + G45_DSPASURF);
-	writel(state->dspstride, sd->Card.MMIO + G45_DSPASTRIDE);
-	writel(state->dsplinoff, sd->Card.MMIO + G45_DSPALINOFF);
-
-	/* Enable DAC */
-	writel((readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_DPMS_MASK) | G45_ADPA_DPMS_ON, sd->Card.MMIO + G45_ADPA);
-
-	/* Adjust Sync pulse polarity */
-	writel((readl(sd->Card.MMIO + G45_ADPA) & ~(G45_ADPA_VSYNC_PLUS | G45_ADPA_HSYNC_PLUS)) | state->adpa, sd->Card.MMIO + G45_ADPA);
-
-	D(bug("[GMA] Loaded state. dpll=%08x %08x %08x %08x %08x %08x %08x\n", state->dpll,
-			readl(sd->Card.MMIO + G45_HTOTAL_A),
-			readl(sd->Card.MMIO + G45_HBLANK_A),
-			readl(sd->Card.MMIO + G45_HSYNC_A),
-			readl(sd->Card.MMIO + G45_VTOTAL_A),
-			readl(sd->Card.MMIO + G45_VBLANK_A),
-			readl(sd->Card.MMIO + G45_VSYNC_A)));
-
-	if (state->dpll != readl(sd->Card.MMIO + G45_DPLLA_CTRL))
-	{
-		D(bug("[GMA] DPLL mismatch!\n"));
 		writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
 		(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+		delay_us(sd, 150);
+		writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
+		D(bug("[GMA] writing dpll=%08x, got %08x\n", state->dpll, readl(sd->Card.MMIO + G45_DPLLA_CTRL)));
+		delay_us(sd, 150);
+
+		/* protect on again */
+		writel(0x00000000, sd->Card.MMIO + 0x61204);
+
+		/* Enable DAC*/
+		writel((readl(sd->Card.MMIO + G45_ADPA) & G45_ADPA_MASK) | G45_ADPA_DPMS_OFF | G45_ADPA_ENABLE, sd->Card.MMIO + G45_ADPA);
+
+		writel(state->htotal, sd->Card.MMIO + G45_HTOTAL_A);
+		writel(state->hblank, sd->Card.MMIO + G45_HBLANK_A);
+		writel(state->hsync, sd->Card.MMIO + G45_HSYNC_A);
+		writel(state->vtotal, sd->Card.MMIO + G45_VTOTAL_A);
+		writel(state->vblank, sd->Card.MMIO + G45_VBLANK_A);
+		writel(state->vsync, sd->Card.MMIO + G45_VSYNC_A);
+
+		writel(state->pipesrc, sd->Card.MMIO + G45_PIPEASRC);
+		writel(state->pipesrc, sd->Card.MMIO + 0x70190);
+		writel(state->pipeconf, sd->Card.MMIO + G45_PIPEACONF);
+		(void)readl(sd->Card.MMIO + G45_PIPEACONF);
+
+		LONG offset = sd->VisibleBitmap->yoffset * sd->VisibleBitmap->pitch +
+					  sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp;
+
+		writel(state->dspsurf, sd->Card.MMIO + G45_DSPASURF);
+		writel(state->dspstride, sd->Card.MMIO + G45_DSPASTRIDE);
+		writel(state->dsplinoff - offset , sd->Card.MMIO + G45_DSPALINOFF);
+
+		/* Enable DAC */
+		writel((readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_DPMS_MASK) | G45_ADPA_DPMS_ON, sd->Card.MMIO + G45_ADPA);
+
+		/* Adjust Sync pulse polarity */
+		writel((readl(sd->Card.MMIO + G45_ADPA) & ~(G45_ADPA_VSYNC_PLUS | G45_ADPA_HSYNC_PLUS)) | state->adpa, sd->Card.MMIO + G45_ADPA);
+
+		D(bug("[GMA] Loaded state. dpll=%08x %08x %08x %08x %08x %08x %08x\n", state->dpll,
+				readl(sd->Card.MMIO + G45_HTOTAL_A),
+				readl(sd->Card.MMIO + G45_HBLANK_A),
+				readl(sd->Card.MMIO + G45_HSYNC_A),
+				readl(sd->Card.MMIO + G45_VTOTAL_A),
+				readl(sd->Card.MMIO + G45_VBLANK_A),
+				readl(sd->Card.MMIO + G45_VSYNC_A)));
+
+		if (state->dpll != readl(sd->Card.MMIO + G45_DPLLA_CTRL))
+		{
+			D(bug("[GMA] DPLL mismatch!\n"));
+			writel(state->dpll, sd->Card.MMIO + G45_DPLLA_CTRL);
+			(void)readl(sd->Card.MMIO + G45_DPLLA_CTRL);
+		}
+
+		delay_ms(sd, 20);
+
+		writel(state->dspcntr, sd->Card.MMIO + G45_DSPACNTR);
 	}
-
-	delay_ms(sd, 20);
-
-	writel(state->dspcntr, sd->Card.MMIO + G45_DSPACNTR);
-
+	
 	UNLOCK_HW
 }
 
@@ -445,4 +482,64 @@ VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG heigh
     Permit();
 
     UNLOCK_HW
+}
+
+BOOL adpa_Enabled(struct g45staticdata *sd)
+{
+	return ( readl( sd->Card.MMIO + G45_ADPA ) & G45_ADPA_ENABLE) ? TRUE : FALSE;
+}
+
+BOOL lvds_Enabled(struct g45staticdata *sd)
+{
+	return ( readl( sd->Card.MMIO + G45_LVDS ) & G45_LVDS_PORT_EN) ? TRUE : FALSE;
+}
+
+void GetSync(struct g45staticdata *sd,struct Sync *sync,ULONG pipe)
+{
+    ULONG htot =  readl(sd->Card.MMIO + (pipe == PIPE_A ? G45_HTOTAL_A : G45_HTOTAL_B));
+    ULONG hsync = readl(sd->Card.MMIO + (pipe == PIPE_A ? G45_HSYNC_A : G45_HSYNC_B));
+    ULONG vtot =  readl(sd->Card.MMIO + (pipe == PIPE_A ? G45_VTOTAL_A : G45_VTOTAL_B));
+    ULONG vsync = readl(sd->Card.MMIO + (pipe == PIPE_A ? G45_VSYNC_A : G45_VSYNC_B));
+
+    sync->pixelclock = 48; // dummy value
+	sync->flags =0;
+	
+    sync->hdisp = (htot & 0xffff) + 1;
+    sync->htotal = ((htot & 0xffff0000) >> 16) + 1;
+    sync->hstart = (hsync & 0xffff) + 1;
+    sync->hend = ((hsync & 0xffff0000) >> 16) + 1;
+    sync->vdisp = (vtot & 0xffff) + 1;
+    sync->vtotal = ((vtot & 0xffff0000) >> 16) + 1;
+    sync->vstart = (vsync & 0xffff) + 1;
+    sync->vend = ((vsync & 0xffff0000) >> 16) + 1;
+
+	sync->width = sync->hdisp;
+	sync->height = sync->vdisp;
+	
+    ULONG dsp_cntr = readl(sd->Card.MMIO + (sd->pipe == 0 ? G45_DSPACNTR : G45_DSPBCNTR));
+	
+    switch (dsp_cntr & G45_DSPCNTR_PIXEL_MASK) {
+        case G45_DSPCNTR_8BPP:
+            sync->depth = 8;
+            break;
+        case G45_DSPCNTR_16BPP:
+            sync->depth = 16;
+        break;
+        case G45_DSPCNTR_32BPP:
+            sync->depth = 32;
+            break;
+        default:
+            bug("[GMA] GetSync: Unknown pixel format.\n");
+    }
+	bug("[GMA] GetSync: %d %d %d %d\n",
+		sync->hdisp,
+		sync->hstart,
+		sync->hend,
+		sync->htotal);
+
+	bug("               %d %d %d %d\n",
+		sync->vdisp,
+		sync->vstart,
+		sync->vend,
+		sync->vtotal);
 }

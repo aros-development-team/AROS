@@ -387,6 +387,18 @@ AROS_UFH3(void, Enumerator,
     	sd->DDCPort = G45_GPIOA;
     	//probe_monitor(intelg45base);
 
+		// Internal lcd or vga connector ?
+		if( lvds_Enabled(sd) && ! adpa_Enabled(sd))
+		{
+			bug("[GMA] lvds Enabled\n");
+			sd->pipe = PIPE_B;
+			GetSync(sd,&sd->lvds_fixed,PIPE_B);	
+		}
+		else
+		{
+			sd->pipe = PIPE_A;
+		}
+
     	/*
     	 * Boot logo.
     	 *
