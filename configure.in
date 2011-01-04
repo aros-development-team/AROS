@@ -537,6 +537,20 @@ CFLAGS="$save_cflags"
 
 #-----------------------------------------------------------------------------
 
+# Check if host compiler supports -fgnu89-inline, can be needed for crosstools.
+
+AC_MSG_CHECKING([whether ${CC} accepts -fgnu89-inline])
+save_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -fgnu89-inline"
+AC_TRY_COMPILE(,, use_gnu89_inline="yes", use_gnu89_inline="no")
+AC_MSG_RESULT($use_gnu89_inline)
+if test "x-$use_gnu89_inline" = "x-yes" ; then
+    gnu89_inline="-fgnu89_inline"
+fi
+CFLAGS="$save_cflags"
+
+#-----------------------------------------------------------------------------
+
 AC_MSG_CHECKING([for type of build])
 AC_ARG_ENABLE(build_type,AC_HELP_STRING([--enable-build-type=TYPE],[Select the build type. Available types are: personal, nightly, snapshot, milestone, release. Do NOT use this option unless you know what you are doing! (default=personal)]),build_type=$enableval,build_type="personal")
 
@@ -2069,6 +2083,7 @@ AC_SUBST(aros_host_ranlib)
 AC_SUBST(aros_host_ld)
 AC_SUBST(aros_host_make)
 AC_SUBST(aros_host_cflags)
+AC_SUBST(gnu89_inline)
 AC_SUBST(aros_host_ldflags)
 AC_SUBST(aros_host_debug)
 AC_SUBST(aros_host_mkdep)
