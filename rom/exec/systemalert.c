@@ -110,10 +110,21 @@ void Exec_SystemAlert(ULONG alertNum, struct ExecBase *SysBase)
     buf = PrintCentered(PrivExecBase(SysBase)->AlertBuffer, SysBase);
     buf = PrintCentered(buf + 1, SysBase);
 
+    /* Empty line */
+    PrintCentered("", SysBase);
+
     /* The rest is left-justified */
     while (*buf)
     	buf = PrintLeftJustified(buf + 1, SysBase);
 
+    PrintFrame(SysBase);
+
+    FormatAlertExtra(PrivExecBase(SysBase)->AlertBuffer, SysBase->ThisTask, SysBase);
+    buf = &PrivExecBase(SysBase)->AlertBuffer[1];
+    while (*buf)
+	RawPutChar(*buf++);
+
+    RawPutChar('\n');
     PrintFrame(SysBase);
     RawPutChar('\n');
 }
