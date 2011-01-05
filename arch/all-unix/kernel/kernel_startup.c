@@ -140,7 +140,7 @@ int __startup startup(struct TagItem *msg)
 	return -1;
     }
 
-    hostlib = HostIFace->HostLib_Open(LIBC_NAME, &errstr);
+    hostlib = HostIFace->hostlib_Open(LIBC_NAME, &errstr);
     AROS_HOST_BARRIER
     if (!hostlib) {
 	bug("[Kernel] Failed to load %s: %s\n", LIBC_NAME, errstr);
@@ -149,7 +149,7 @@ int __startup startup(struct TagItem *msg)
 
     for (i = 0; kernel_functions[i]; i++)
     {
-	void *func = HostIFace->HostLib_GetPointer(hostlib, kernel_functions[i], &errstr);
+	void *func = HostIFace->hostlib_GetPointer(hostlib, kernel_functions[i], &errstr);
 
 	AROS_HOST_BARRIER
         if (!func) {
@@ -198,7 +198,7 @@ int __startup startup(struct TagItem *msg)
     InitCode(RTF_COLDSTART, 0);
 
     bug("[Kernel] leaving startup!\n");
-    HostIFace->HostLib_Close(hostlib, NULL);
+    HostIFace->hostlib_Close(hostlib, NULL);
     AROS_HOST_BARRIER
 
     return 1;
