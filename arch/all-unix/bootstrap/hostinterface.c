@@ -39,6 +39,17 @@ static int VKPrintf(const char *format, va_list ap)
     return ret;
 }
 
+static int KPutC(int chr)
+{
+    int ret;
+    
+    ret = fputc(chr, stderr);
+    if (chr == '\n')
+        fflush(stderr);
+    
+    return ret;
+}
+
 /*
  * Some helpful functions that link us to the underlying host OS.
  * Without them we would not be able to estabilish any interaction with it.
@@ -52,10 +63,11 @@ static struct HostInterface _HostIFace = {
     VKPrintf,
     Host_Shutdown,
 #if AROS_MODULES_DEBUG
-    &Debug_ModList
+    &Debug_ModList,
 #else
-    NULL
+    NULL,
 #endif
+    KPutC
 };
 
 void *HostIFace = &_HostIFace;
