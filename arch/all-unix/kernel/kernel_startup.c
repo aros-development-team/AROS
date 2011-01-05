@@ -77,8 +77,8 @@ int __startup startup(struct TagItem *msg)
     struct TagItem *tag;
     const struct TagItem *tstate = msg;
     struct HostInterface *hif = NULL;
-    void *klo = NULL;
-    void *khi = NULL;
+    UWORD *klo = NULL;
+    UWORD *khi = NULL;
     struct mb_mmap *mmap = NULL;
     char *args = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
@@ -174,7 +174,7 @@ int __startup startup(struct TagItem *msg)
      * to be moved to kernel.resource
      */
     SysBase = PrepareExecBase(bootmh, args, HostIFace);
-    D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First);)
+    D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
 
     ranges[0] = klo;
     ranges[1] = khi;
