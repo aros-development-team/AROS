@@ -35,12 +35,6 @@
 #include <proto/gallium.h>
 #include <aros/debug.h>
 
-enum aros_surface_type 
-{
-   AROS_SURFACE_TYPE_WINDOW,
-   AROS_SURFACE_TYPE_BITMAP,
-};
-
 struct aros_config;
 
 struct aros_display 
@@ -59,7 +53,6 @@ struct aros_surface
 {
    struct native_surface base;
    struct Window * window;
-   enum aros_surface_type type;
    enum pipe_format color_format;
    struct aros_display *adpy;
 
@@ -174,30 +167,17 @@ aros_surface_validate(struct native_surface *nsurf, uint attachment_mask,
 static void
 aros_surface_wait(struct native_surface *nsurf)
 {
-//   struct ximage_surface *xsurf = ximage_surface(nsurf);
-//   XSync(xsurf->xdpy->dpy, FALSE);
-   /* TODO XGetImage and update the front texture */
 }
 
 static boolean
 aros_surface_flush_frontbuffer(struct native_surface *nsurf)
 {
-//   struct ximage_surface *xsurf = ximage_surface(nsurf);
-//   boolean ret;
-
-//   ret = resource_surface_present(xsurf->rsurf,
-//         NATIVE_ATTACHMENT_FRONT_LEFT, (void *) &xsurf->xdraw);
-   /* force buffers to be updated in next validation call */
-//   ximage_surface_invalidate(&xsurf->base);
-
-//   return ret;
-bug("aros_surface_flush_frontbuffer\n");
+    bug("[EGL] Implement flush_frontbuffer\n");
     return true;
 }
 
 static struct aros_surface *
 aros_display_create_surface(struct native_display *ndpy,
-                              enum aros_surface_type type,
                               struct Window * window,
                               const struct native_config *nconf)
 {
@@ -210,7 +190,6 @@ aros_display_create_surface(struct native_display *ndpy,
         return NULL;
 
     asurf->adpy= adpy;
-    asurf->type = type;
     asurf->color_format = aconf->base.color_format;
     asurf->window = window;
 
@@ -246,28 +225,9 @@ aros_display_create_window_surface(struct native_display *ndpy,
 {
     struct aros_surface *asurf;
 
-    asurf = aros_display_create_surface(ndpy, AROS_SURFACE_TYPE_WINDOW, win, nconf);
+    asurf = aros_display_create_surface(ndpy, win, nconf);
     return (asurf) ? &asurf->base : NULL;
 }
-
-static struct native_surface *
-aros_display_create_pixmap_surface(struct native_display *ndpy,
-                                     EGLNativePixmapType pix,
-                                     const struct native_config *nconf)
-{
-/*   struct aros_surface *asurf;
-
-   asurf = aros_display_create_surface(ndpy, AROS_SURFACE_TYPE_BITMAP,
-         (struc) pix, nconf);
-   return (asurf) ? &asurf->base : NULL;*/
-   return NULL;
-}
-
-
-
-
-
-
 
 static boolean
 aros_display_is_format_supported(struct native_display *ndpy,
@@ -317,11 +277,11 @@ aros_display_get_configs(struct native_display *ndpy, int *num_configs)
 
         nconf->color_format = format;
 
-        /* FIXME: hardcoded, the driver should be able to handle window and pixmap */
         /* scanout makes no sense because of how AROS works full screen (new window on new screen) */
         nconf->scanout_bit = FALSE;
-        nconf->window_bit = TRUE;
         nconf->pixmap_bit = FALSE;
+
+        nconf->window_bit = TRUE;
     }
 
     configs = MALLOC(sizeof(*configs));
@@ -388,7 +348,7 @@ native_create_display(void * dpy, struct native_event_handler * event_handler,
     adpy->base.get_param = aros_display_get_param;
     adpy->base.get_configs = aros_display_get_configs;
     adpy->base.create_window_surface = aros_display_create_window_surface;
-    adpy->base.create_pixmap_surface = aros_display_create_pixmap_surface;
+    adpy->base.create_pixmap_surface = NULL;
 
     return &adpy->base;
 }
