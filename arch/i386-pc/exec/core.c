@@ -206,7 +206,7 @@ void enable_irq(unsigned int irq)
 	case 1:
 	    irq_desc[irq].id_status &= ~IRQ_DISABLED;
 	    irq_desc[irq].id_handler->ic_enable(irq);
-	    /* fall throught */
+	    /* fall through */
 	default:
 		irq_desc[irq].id_depth--;
     }

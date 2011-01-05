@@ -164,7 +164,7 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 /*******************************************************************************
     Global Interrupt Handler
     
-    This pice of code translates real irq number to AROS specific irq id. This
+    This piece of code translates real irq number to AROS specific irq id. This
     allows us to map system-dependent irqs (audio, ethernet and so on) into well
     defined ids.
 *******************************************************************************/
