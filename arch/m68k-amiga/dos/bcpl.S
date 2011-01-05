@@ -1286,10 +1286,34 @@ BCPL findSegArray   /* 164, Array @,  */
     lsr.l	#2,%d0
     BRTS
 
-BCPLd deleteObject   /* 168, void, @name */
+BCPL deleteObject   /* 168, void, @name */
+    movem.l	%a0-%a1/%a6,%sp@-
+    moveq	#1,%d0
+    bsr		bstr_to_cstr
+    move.l	%a2@(BCPL_DOSBase),%a6
+    jsr		%a6@(12 * -6)	/* DOS/DeleteFile() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd rename         /* 16c, void, @oldname, @newname */
+BCPL rename         /* 16c, void, @oldname, @newname */
+    movem.l	%d2/%a0-%a2/%a6,%sp@-
+    move.l	%a2@(BCPL_DOSBase),%a6
+    moveq	#1,%d0
+    bsr		bstr_to_cstr
+    lea		%sp@(-256),%sp
+    move.l	%sp,%a2
+    move.l	%a2,%a1
+    move.l	%d1,%a0
+0:  move.b	%a0@+,%a1@+
+    bne.s	0b
+    move.l	%d2,%d1
+    moveq	#1,%d0
+    bsr		bstr_to_cstr
+    move.l	%d1,%d2
+    move.l	%a2,%d1
+    jsr		%a6@(13 * -6)	/* DOS/Rename() */
+    lea		%sp@(256),%sp
+    movem.l	%sp@+,%d2/%a0-%a2/%a6
     BRTS
 
 /*      170 - contains APTR to IntuitionBase */
