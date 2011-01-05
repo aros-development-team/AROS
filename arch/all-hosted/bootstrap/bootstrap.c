@@ -54,13 +54,6 @@ extern void *HostIFace;
  */
 extern void __clear_cache(char *begin, char *end);
 
-/* MacOS X PowerPC doesn't have __clear_cache() */
-#ifdef __APPLE__
-#ifdef __ppc__
-#define __clear_cache(begin, end)
-#endif
-#endif
-
 char bootstrapdir[PATH_MAX];
 char buf[512];
 
