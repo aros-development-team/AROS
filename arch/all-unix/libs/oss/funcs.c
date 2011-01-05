@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,6 +8,9 @@
 
 #include <unistd.h>
 #include <errno.h>
+/* avoid conflicts between our __unused define and the ones that might come in
+   via fcntl.h */
+#undef __unused
 #include <fcntl.h>
 
 #include <sys/ioctl.h>
