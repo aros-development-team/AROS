@@ -11,6 +11,8 @@
 
 #include <aros/asmcall.h>
 #include <exec/types.h>
+#include <utility/tagitem.h>
+
 #include <stdarg.h>
 
 #include "exec_intern.h"
@@ -30,6 +32,7 @@ struct IntETask;
 */
 APTR Exec_AllocTaskMem (struct Task * task, ULONG size, ULONG flags, struct ExecBase *SysBase);
 void Exec_FreeTaskMem (struct Task * task, APTR mem, struct ExecBase *SysBase);
+struct TagItem *Exec_NextTagItem(struct TagItem **tagListPtr);
 
 void Exec_InitETask(struct Task *task, struct ETask *etask, struct ExecBase *SysBase);
 void Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase);

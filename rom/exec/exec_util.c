@@ -401,3 +401,37 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     
     Permit();
 }
+
+/* We don't want to depend on utility.library so we use own NextTagItem() */
+struct TagItem *Exec_NextTagItem(struct TagItem **tagListPtr)
+{
+    if (!(*tagListPtr))
+	return NULL;
+
+    while(1)
+    {
+        switch((*tagListPtr)->ti_Tag)
+        {
+            case TAG_MORE:
+                if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
+                    return NULL;
+                continue;
+            case TAG_IGNORE:
+                break;
+
+            case TAG_END:
+                (*tagListPtr) = 0;
+                return NULL;
+
+            case TAG_SKIP:
+                (*tagListPtr) += (*tagListPtr)->ti_Data + 1;
+                continue;
+
+            default:
+                return (struct TagItem *)(*tagListPtr)++;
+
+        }
+
+        (*tagListPtr)++;
+    }
+}
