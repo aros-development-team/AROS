@@ -2,7 +2,7 @@
  * intelG45_intern.h
  *
  *  Created on: Apr 14, 2010
- *      Author: misc
+ *      $Id$
  */
 
 #ifndef INTELG45_INTERN_H_

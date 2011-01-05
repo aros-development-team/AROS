@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: compositingclass.c 35640 2010-11-19 21:47:17Z deadwood $
+    $Id$
 */
 
 /* 

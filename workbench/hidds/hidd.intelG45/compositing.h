@@ -2,7 +2,7 @@
 #define HIDD_COMPOSITING_H
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: compositing.h 35441 2010-11-13 22:17:39Z deadwood $
+    $Id$
 */
 
 #ifndef EXEC_TYPES_H
