@@ -13,6 +13,7 @@
 #include <proto/kernel.h>
 
 #include "dos_intern.h"
+#include "internalloadseg.h"
 
 /*****************************************************************************
 
@@ -63,25 +64,20 @@
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 	{
-    		/* free overlay segment */
-    		ULONG *seg = BADDR(seglist);
-    		if (seg[2] == 0x0000abcd && seg[6] == DOSBase->dl_GV) {
-    	    		Close((BPTR)seg[3]); /* file handle */
-    	    		FreeVec(seg[4]); /* overlay table, APTR */
-    	    		FreeVec(BADDR(seg[5])); /* hunk table, BPTR */
-    		}
+    	    /* free overlay structures */
+    	    ULONG *seg = BADDR(seglist);
+    	    if (seg[2] == 0x0000abcd && seg[6] == (ULONG)DOSBase->dl_GV) {
+    	    	Close((BPTR)seg[3]); /* file handle */
+    	    	loadseg_free((SIPTR*)freefunc, (void*)seg[4]); /* overlay table, APTR */
+    	    	loadseg_free((SIPTR*)freefunc, BADDR(seg[5])); /* hunk table, BPTR */
+    	    }
     	}
 #endif
 
 	while (seglist)
 	{
 	    next = *(BPTR *)BADDR(seglist);
-
-	    AROS_CALL2NR(void, freefunc,
-			 AROS_LCA(APTR ,  (BPTR *)((IPTR)BADDR(seglist) - sizeof(ULONG)), A1),
-			 AROS_LCA(ULONG, *(LONG *)((IPTR)BADDR(seglist) - sizeof(ULONG)), D0),
-			 struct Library *, (struct Library *)SysBase);
-
+	    loadseg_free((SIPTR*)freefunc, BADDR(seglist));
 	    seglist = next;
 	}
 

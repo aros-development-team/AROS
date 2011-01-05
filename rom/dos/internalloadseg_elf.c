@@ -150,6 +150,7 @@ static void * load_block
 }
 
 static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
+    Seek(file, OFFSET_BEGINNING, 0);
     if (!read_block(file, 0, eh, offsetof(struct elfheader, int_shnum), funcarray, DOSBase))
         return 0;
 

@@ -31,4 +31,8 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
                           SIPTR * stack,
                           struct DosLibrary * DOSBase);
 
+void *loadseg_alloc(SIPTR *allocfunc, ULONG size, ULONG req);
+void loadseg_free(SIPTR *freefunc, void *buf);
+LONG loadseg_read(SIPTR *readfunc, BPTR fh, void *buf, LONG size, struct DosLibrary *DOSBase);
+
 #endif
