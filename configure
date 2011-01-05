@@ -8166,7 +8166,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { echo "$as_me:$LINENO: result: $use_gnu89_inline" >&5
 echo "${ECHO_T}$use_gnu89_inline" >&6; }
 if test "x-$use_gnu89_inline" = "x-yes" ; then
-    gnu89_inline="-fgnu89_inline"
+    gnu89_inline="-fgnu89-inline"
 fi
 CFLAGS="$save_cflags"
 

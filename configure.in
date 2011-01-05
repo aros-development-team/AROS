@@ -545,7 +545,7 @@ CFLAGS="$CFLAGS -fgnu89-inline"
 AC_TRY_COMPILE(,, use_gnu89_inline="yes", use_gnu89_inline="no")
 AC_MSG_RESULT($use_gnu89_inline)
 if test "x-$use_gnu89_inline" = "x-yes" ; then
-    gnu89_inline="-fgnu89_inline"
+    gnu89_inline="-fgnu89-inline"
 fi
 CFLAGS="$save_cflags"
 
