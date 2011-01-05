@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include LC_LIBDEFS_FILE
+
 #define CLID_Hidd_Gfx_IntelG45		"IntelGMA"
 #define IID_Hidd_Gfx_IntelG45		"IIntelGMA"
 #define IID_Hidd_IntelG45BitMap		"IIntelBitMap"
@@ -88,8 +90,18 @@ typedef struct {
     uint8_t		onbm;       // is onbitmap?
     uint8_t		fbgfx;      // is framebuffer in gfx memory
     uint64_t	usecount;   // counts BitMap accesses
-	LONG xoffset,yoffset;   // virtual screen offset
+
     GMAState_t *state;
+
+    BOOL    displayable;    /* Can bitmap be displayed on screen */
+
+    /* Information connected with display */
+    OOP_Object  *compositing;   /* Compositing object used by bitmap */
+    LONG        xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
+    LONG        yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
+    ULONG       fbid;           /* Contains ID under which bitmap 
+                                              is registered as framebuffer or 
+                                              0 otherwise */
 } GMABitMap_t;
 
 typedef struct {
@@ -141,6 +153,8 @@ struct g45staticdata {
 	OOP_Class *				IntelG45Class;
 	OOP_Class *				IntelI2C;
 	OOP_Class *				BMClass;
+    OOP_Class *				compositingclass;
+	OOP_Object          *compositing;
 
 	OOP_Object *			PCIObject;
 	OOP_Object *			PCIDevice;
@@ -165,6 +179,8 @@ struct g45staticdata {
 	OOP_AttrBase			i2cAttrBase;
 	OOP_AttrBase			i2cDeviceAttrBase;
 	OOP_AttrBase			planarAttrBase;
+	OOP_AttrBase			compositingAttrBase;
+	OOP_AttrBase			gcAttrBase;
 
     OOP_MethodID    mid_ReadLong;
     OOP_MethodID    mid_CopyMemBox8;
@@ -184,10 +200,14 @@ struct g45staticdata {
     OOP_MethodID    mid_PutMemPattern32;
     OOP_MethodID    mid_CopyLUTMemBox16;
     OOP_MethodID    mid_CopyLUTMemBox32;
-	
+
+    OOP_MethodID    mid_BitMapPositionChanged;
+    OOP_MethodID    mid_BitMapRectChanged;
+    OOP_MethodID    mid_ValidateBitMapPositionChange;
+
 	ULONG pipe;
 	struct Sync lvds_fixed;
-	
+
 };
 
 struct intelg45base {
@@ -197,11 +217,12 @@ struct intelg45base {
 
 enum {
     aoHidd_GMABitMap_Drawable,
-
+    aoHidd_BitMap_IntelG45_CompositingHidd,
     num_Hidd_GMABitMap_Attrs
 };
 
 #define aHidd_GMABitMap_Drawable (HiddGMABitMapAttrBase + aoHidd_GMABitMap_Drawable)
+#define aHidd_BitMap_IntelG45_CompositingHidd    (HiddGMABitMapAttrBase + aoHidd_BitMap_IntelG45_CompositingHidd)
 
 #define IS_BM_ATTR(attr, idx) (((idx)=(attr)-HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_GMABM_ATTR(attr, idx) (((idx)=(attr)-HiddGMABitMapAttrBase) < num_Hidd_GMABitMap_Attrs)
@@ -250,5 +271,7 @@ BOOL delay_us(struct g45staticdata *sd, uint32_t usec);
 BOOL adpa_Enabled(struct g45staticdata *sd);
 BOOL lvds_Enabled(struct g45staticdata *sd);
 void GetSync(struct g45staticdata *sd,struct Sync *sync,ULONG pipe);
+
+BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm);
 
 #endif /* INTELG45_INTERN_H_ */

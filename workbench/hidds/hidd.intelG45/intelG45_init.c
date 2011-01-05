@@ -5,7 +5,7 @@
  *      Author: misc
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 
@@ -31,6 +31,8 @@
 
 #include "intelG45_logo.h"
 
+#include "compositing.h"
+
 static volatile uint32_t min(uint32_t a, uint32_t b)
 {
 	if (a < b)
@@ -55,6 +57,9 @@ static volatile uint32_t min(uint32_t a, uint32_t b)
 #define HiddI2CAttrBase         (intelg45base->g45_sd.i2cAttrBase)
 #define HiddI2CDeviceAttrBase   (intelg45base->g45_sd.i2cDeviceAttrBase)
 #define __IHidd_PlanarBM        (intelg45base->g45_sd.planarAttrBase)
+#define HiddGCAttrBase          (intelg45base->g45_sd.gcAttrBase)
+#define HiddCompositingAttrBase (intelg45base->g45_sd.compositingAttrBase)
+
 
 static const char __attribute__((used)) __greet[] = "!!! This driver is sponsored by iMica !!!\n";
 
@@ -469,7 +474,9 @@ static int G45_Init(struct intelg45base *intelg45base)
 	        { (STRPTR)IID_Hidd_I2C,         &HiddI2CAttrBase },
 	        { (STRPTR)IID_Hidd_I2CDevice,   &HiddI2CDeviceAttrBase },
 	        { (STRPTR)IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
-	        { NULL, NULL }
+	        { (STRPTR)IID_Hidd_GC,          &HiddGCAttrBase },
+			{ (STRPTR)IID_Hidd_Compositing, &HiddCompositingAttrBase },
+			{ NULL, NULL }
 	    };
 
 	D(bug("[GMA] Init\n"));
@@ -541,6 +548,12 @@ static int G45_Init(struct intelg45base *intelg45base)
 						sd->mid_CopyLUTMemBox32 = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
 						sd->mid_GetImage	= OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_GetImage);
 
+						sd->mid_BitMapPositionChanged   =
+							OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapPositionChanged);
+						sd->mid_BitMapRectChanged       = 
+							OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapRectChanged);
+						sd->mid_ValidateBitMapPositionChange =
+							OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_ValidateBitMapPositionChange);
 						return TRUE;
 					}
 					D(bug("[GMA] No supported cards found\n"));
