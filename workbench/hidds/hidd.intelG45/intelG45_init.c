@@ -42,12 +42,17 @@ static volatile uint32_t min(uint32_t a, uint32_t b)
 }
 
 #undef HiddPCIDeviceAttrBase
-#undef HiddGfxAttrBase
-#undef HiddPixFmtAttrBase
-#undef HiddSyncAttrBase
+#undef HiddGMABitMapAttrBase
 #undef HiddBitMapAttrBase
+#undef HiddPixFmtAttrBase
+#undef HiddGfxAttrBase
+#undef HiddSyncAttrBase
 #undef HiddI2CAttrBase
 #undef HiddI2CDeviceAttrBase
+#undef __IHidd_PlanarBM
+#undef HiddGCAttrBase
+#undef HiddCompositingAttrBase
+
 #define HiddPCIDeviceAttrBase   (intelg45base->g45_sd.pciAttrBase)
 #define HiddGMABitMapAttrBase   (intelg45base->g45_sd.gmaBitMapAttrBase)
 #define HiddBitMapAttrBase      (intelg45base->g45_sd.bitMapAttrBase)
@@ -411,20 +416,46 @@ AROS_UFH3(void, Enumerator,
     	 */
 
     	sd->initialState = AllocVecPooled(sd->MemPool, sizeof(GMAState_t));
-    	sd->initialBitMap = AllocBitmapArea(sd, 640, 480, 4, TRUE);
-
-    	G45_InitMode(sd, sd->initialState, 640, 480, 32, 25200, sd->initialBitMap,
-    	                        640, 480,
-    	                        656, 752, 800,
-    	                        490, 492, 525, 0);
+		if( sd->pipe == PIPE_A )
+		{
+			// VGA connector
+			sd->initialBitMap = AllocBitmapArea(sd, 640, 480, 4, TRUE);
+			G45_InitMode(sd, sd->initialState, 640, 480, 32, 25200, sd->initialBitMap,
+									640, 480,
+									656, 752, 800,
+									490, 492, 525, 0);
+		}
+		else
+		{
+			// native LCD screen mode
+			sd->initialBitMap = AllocBitmapArea(sd, sd->lvds_fixed.width, sd->lvds_fixed.height, 4, TRUE);
+			// clean bitmap
+			memset(sd->initialBitMap + sd->Card.Framebuffer , 0 ,sd->lvds_fixed.width*sd->lvds_fixed.height*4 );
+			G45_InitMode(sd, sd->initialState,
+				sd->lvds_fixed.width,
+				sd->lvds_fixed.height,
+				32,
+				sd->lvds_fixed.pixelclock*1000,
+				sd->initialBitMap,
+				sd->lvds_fixed.hdisp,
+				sd->lvds_fixed.vdisp, 
+				sd->lvds_fixed.hstart,
+				sd->lvds_fixed.hend,
+				sd->lvds_fixed.htotal,
+				sd->lvds_fixed.vstart,
+				sd->lvds_fixed.vend,
+				sd->lvds_fixed.vtotal,
+				sd->lvds_fixed.flags );
+		}
 
     	uint32_t *pixel = (uint32_t *)(sd->initialBitMap + sd->Card.Framebuffer);
     	uint8_t *stream = header_data;
 		int count=logo_width * logo_height;
 		uint8_t split = *stream++;
-
+		ULONG x=0;
 		do {
 				uint8_t cnt = *stream++;
+				
 				if (cnt >= split)
 				{
 					cnt -= split-1;
@@ -434,6 +465,7 @@ AROS_UFH3(void, Enumerator,
 						uint8_t color = *stream++;
 						count--;
 						*pixel++ = 0xff000000 | (header_data_cmap[color][0] << 16) | (header_data_cmap[color][1] << 8) | (header_data_cmap[color][2]);
+						x++;
 					}
 				}
 				else
@@ -445,12 +477,25 @@ AROS_UFH3(void, Enumerator,
 					{
 						count--;
 						*pixel++ = 0xff000000 | (header_data_cmap[color][0] << 16) | (header_data_cmap[color][1] << 8) | (header_data_cmap[color][2]);
+						x++;
+						if( sd->pipe == PIPE_B && x >= logo_width )
+						{
+							pixel += sd->lvds_fixed.width - x;
+							x = 0;
+						}
 					}
 				}
 
 		} while (count > 0);
 
 		G45_LoadState(sd, sd->initialState);
+
+		// Z   |\      _,,,---,,_
+		//  z  /,`.-'`'    -.  ;-;;,_
+		//    |,4-  ) )-,_..;\ (  `'-'
+		//   '---''(_/--'  `-'\_)
+		// In VGA ,Kitty run away too fast. 
+		if(sd->pipe == PIPE_A ) delay_ms(sd,1500);
 
 		bug("[GMA] %s", __greet);
     }

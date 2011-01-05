@@ -43,7 +43,8 @@ struct HIDDCompositingData
 
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
-
+  
+#undef BASE
 #define BASE(lib)                   ((LIBBASETYPEPTR)(lib))
 
 //#define SD(cl)                      (&BASE(cl->UserData)->sd)
