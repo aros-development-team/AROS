@@ -16,6 +16,8 @@
 #include <hidd/graphics.h>
 #include <hidd/i2c.h>
 
+#include <graphics/displayinfo.h>
+
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -23,20 +25,24 @@
 #include <stdio.h>
 #include <stdint.h>
 
-
-
 #include LC_LIBDEFS_FILE
 
 #include "intelG45_intern.h"
 #include "intelG45_regs.h"
+#include "compositing.h"
 
 #define sd ((struct g45staticdata*)SD(cl))
 
 #undef HiddPCIDeviceAttrBase
-#undef HiddGfxAttrBase
-#undef HiddPixFmtAttrBase
-#undef HiddSyncAttrBase
+#undef HiddGMABitMapAttrBase
 #undef HiddBitMapAttrBase
+#undef HiddPixFmtAttrBase
+#undef HiddGfxAttrBase
+#undef HiddSyncAttrBase
+#undef HiddI2CAttrBase
+#undef HiddI2CDeviceAttrBase
+#undef HiddCompositingAttrBase
+
 #define HiddPCIDeviceAttrBase   (sd->pciAttrBase)
 #define HiddGMABitMapAttrBase   (sd->gmaBitMapAttrBase)
 #define HiddBitMapAttrBase  (sd->bitMapAttrBase)
@@ -45,6 +51,7 @@
 #define HiddSyncAttrBase    (sd->syncAttrBase)
 #define HiddI2CAttrBase         (sd->i2cAttrBase)
 #define HiddI2CDeviceAttrBase   (sd->i2cDeviceAttrBase)
+#define HiddCompositingAttrBase (sd->compositingAttrBase)
 
 #define DEBUG_POINTER 1
 
@@ -560,6 +567,16 @@ OOP_Object *METHOD(INTELG45, Root, New)
     if (o)
     {
         sd->GMAObject = o;
+		/* Create compositing object */
+		{
+			struct TagItem comptags [] =
+			{
+				{ aHidd_Compositing_GfxHidd, (IPTR)o },
+				{ TAG_DONE, TAG_DONE }
+			};
+			sd->compositing = OOP_NewObject(sd->compositingclass, NULL, comptags);
+			/* TODO: Check if object was created, how to handle ? */
+		}
     }
 
     FreeVecPooled(sd->MemPool, modetags);
@@ -653,144 +670,51 @@ void METHOD(INTELG45, Root, Set)
 }
 
 
-OOP_Object *METHOD(INTELG45, Hidd_Gfx, Show)
+OOP_Object * METHOD(INTELG45, Hidd_Gfx, NewBitMap)
 {
-    if (msg->bitMap)
-    {
-    	GMABitMap_t *bm = OOP_INST_DATA(OOP_OCLASS(msg->bitMap), msg->bitMap);
-
-    	D(bug("[GMA] Show(%p)\n", msg->bitMap));
-
-        if (bm->state && sd->VisibleBitmap != bm)
-        {
-            /* Suppose bm has properly allocated state structure */
-            if (bm->fbgfx)
-            {
-                bm->usecount++;
-
-                LOCK_HW
-
-				sd->VisibleBitmap = bm;
-                G45_LoadState(sd, bm->state);
-
-                UNLOCK_HW
-            }
-        }
-    }
-    else
-    {
-    	/* Blank screen */
-    }
-
-    /* Specification for NoFrameBuffer drivers says to return the received 
-       bitmap and not to call the base Show method */
-    return msg->bitMap;
-}
-
-OOP_Object *METHOD(INTELG45, Hidd_Gfx, NewBitMap)
-{
-    BOOL displayable, framebuffer;
-    OOP_Class *classptr = NULL;
-    struct TagItem mytags[2];
     struct pHidd_Gfx_NewBitMap mymsg;
+    HIDDT_ModeID modeid;
+    HIDDT_StdPixFmt stdpf;
 
-    /* Displayable bitmap ? */
-    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-
-    if (displayable)
+    struct TagItem mytags [] =
     {
-        classptr = sd->BMClass;   //offbmclass;
-    }
-    else
+        { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+        { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
+        { aHidd_BitMap_IntelG45_CompositingHidd, (IPTR)sd->compositing },
+        { TAG_MORE, (IPTR)msg->attrList }
+    };
+
+    /* Check if user provided valid ModeID */
+    /* Check for framebuffer - not needed as IntelG45 is a NoFramebuffer driver */
+    /* Check for displayable - not needed - displayable has ModeID and we don't
+       distinguish between on-screen and off-screen bitmaps */
+    modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    if (vHidd_ModeID_Invalid != modeid) 
     {
-        HIDDT_ModeID modeid;
-        /*
-            For the non-displayable case we can either supply a class ourselves
-            if we can optimize a certain type of non-displayable bitmaps. Or we
-            can let the superclass create on for us.
+        /* User supplied a valid modeid. We can use our bitmap class */
+        mytags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
+        mytags[0].ti_Data	= (IPTR)SD(cl)->BMClass;
+    } 
 
-            The attributes that might come from the user deciding the bitmap
-            pixel format are:
-            - aHidd_BitMap_ModeID:  a modeid. create a nondisplayable
-                bitmap with the size  and pixelformat of a gfxmode.
-            - aHidd_BitMap_StdPixFmt: a standard pixelformat as described in
-                hidd/graphics.h
-            - aHidd_BitMap_Friend: if this is supplied and none of the two above
-                are supplied, then the pixel format of the created bitmap
-                will be the same as the one of the friend bitmap.
-
-            These tags are listed in prioritized order, so if
-            the user supplied a ModeID tag, then you should not care about StdPixFmt
-            or Friend. If there is no ModeID, but a StdPixFmt tag supplied,
-            then you should not care about Friend because you have to
-            create the correct pixelformat. And as said above, if only Friend
-            is supplied, you can create a bitmap with same pixelformat as Frien
-        */
-
-        modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-
-        if (vHidd_ModeID_Invalid != modeid)
-        {
-            /* User supplied a valid modeid. We can use our offscreen class */
-            classptr = sd->BMClass;
-        }
-        else
-        {
-            /*
-               We may create an offscreen bitmap if the user supplied a friend
-               bitmap. But we need to check that he did not supplied a StdPixFmt
-            */
-            HIDDT_StdPixFmt stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-
-//            if (vHidd_StdPixFmt_Plane == stdpf)
-//            {
-//                classptr = sd->PlanarBMClass;
-//            }
-//            else
-            if (vHidd_StdPixFmt_Unknown == stdpf)
-            {
-                /* No std pixfmt supplied */
-                OOP_Object *friend;
-
-                /* Did the user supply a friend bitmap ? */
-                friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
-                if (NULL != friend)
-                {
-                    OOP_Class *friend_class = NULL;
-                    /* User supplied friend bitmap. Is the friend bitmap a Ati Gfx hidd bitmap ? */
-                    OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (APTR)&friend_class);
-                    if (friend_class == sd->BMClass)
-                    {
-                        /* Friend was ATI hidd bitmap. Now we can supply our own class */
-                        classptr = sd->BMClass;
-                    }
-                }
-            }
-        }
-    }
-
-    D(bug("[GMA] classptr = %p\n", classptr));
-
-    /* Do we supply our own class ? */
-    if (NULL != classptr)
+    /* Check if bitmap is a planar bitmap */
+    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+    if (vHidd_StdPixFmt_Plane == stdpf)
     {
-        /* Yes. We must let the superclass not that we do this. This is
-           done through adding a tag in the frot of the taglist */
-        mytags[0].ti_Tag    = aHidd_BitMap_ClassPtr;
-        mytags[0].ti_Data   = (IPTR)classptr;
-        mytags[1].ti_Tag    = TAG_MORE;
-        mytags[1].ti_Data   = (IPTR)msg->attrList;
-
-        /* Like in Gfx::New() we init a new message struct */
-        mymsg.mID       = msg->mID;
-        mymsg.attrList  = mytags;
-
-        /* Pass the new message to the superclass */
-        msg = &mymsg;
+        mytags[1].ti_Tag    = aHidd_BitMap_Align;
+        mytags[1].ti_Data   = 32;
     }
+    
+    /* We init a new message struct */
+    mymsg.mID	= msg->mID;
+    mymsg.attrList	= mytags;
 
-    return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    /* Pass the new message to the superclass */
+    msg = &mymsg;
+
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
+
+
 
 void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
 {
@@ -966,4 +890,104 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     }
+}
+
+ULONG METHOD(INTELG45, Hidd_Gfx, ShowViewPorts)
+{
+    struct pHidd_Compositing_BitMapStackChanged bscmsg =
+    {
+        mID : OOP_GetMethodID(IID_Hidd_Compositing, moHidd_Compositing_BitMapStackChanged),
+        data : msg->Data
+    };
+    D(bug("[IntelG45] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
+    OOP_DoMethod(sd->compositing, (OOP_Msg)&bscmsg);
+    return TRUE; /* Indicate driver supports this method */
+}
+
+BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
+{
+    OOP_Class * cl = OOP_OCLASS(bm);
+    GMABitMap_t * bmdata = OOP_INST_DATA(cl, bm);
+    OOP_Object * gfx = NULL;
+    HIDDT_ModeID modeid;
+    OOP_Object * sync;
+    OOP_Object * pf;
+    IPTR pixel, e;
+    IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
+
+    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
+    gfx = (OOP_Object *)e;
+
+    D(bug("[IntelG45] HIDD_INTELG45_SwitchToVideoMode\n"));
+    
+    /* We should be able to get modeID from the bitmap */
+    OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
+
+    if (modeid == vHidd_ModeID_Invalid)
+    {
+        D(bug("[IntelG45] Invalid ModeID\n"));
+        return FALSE;
+    }
+
+    /* Get Sync and PixelFormat properties */
+    struct pHidd_Gfx_GetMode __getmodemsg = 
+    {
+        modeID:	modeid,
+        syncPtr:	&sync,
+        pixFmtPtr:	&pf,
+    }, *getmodemsg = &__getmodemsg;
+
+    getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
+    OOP_DoMethod(gfx, (OOP_Msg)getmodemsg);
+
+    OOP_GetAttr(sync, aHidd_Sync_PixelClock,    &pixel);
+    OOP_GetAttr(sync, aHidd_Sync_HDisp,         &hdisp);
+    OOP_GetAttr(sync, aHidd_Sync_VDisp,         &vdisp);
+    OOP_GetAttr(sync, aHidd_Sync_HSyncStart,    &hstart);
+    OOP_GetAttr(sync, aHidd_Sync_VSyncStart,    &vstart);
+    OOP_GetAttr(sync, aHidd_Sync_HSyncEnd,      &hend);
+    OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,      &vend);
+    OOP_GetAttr(sync, aHidd_Sync_HTotal,        &htotal);
+    OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);    
+
+    D(bug("[IntelG45] Sync: %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+    pixel, hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal));
+
+	if (bmdata->state && sd->VisibleBitmap != bmdata)
+	{
+		/* Suppose bm has properly allocated state structure */
+		if (bmdata->fbgfx)
+		{
+			bmdata->usecount++;
+
+			LOCK_HW
+
+			sd->VisibleBitmap = bmdata;
+			G45_LoadState(sd, bmdata->state);
+
+			UNLOCK_HW
+			return TRUE;
+		}
+	}
+
+    //HIDDIntelG45ShowCursor(gfx, TRUE);
+ return FALSE;     
+   
+}
+
+static struct HIDD_ModeProperties modeprops = 
+{
+    DIPF_IS_SPRITES,
+    1,
+    COMPF_ABOVE
+};
+
+ULONG METHOD(INTELG45, Hidd_Gfx, ModeProperties)
+{
+    ULONG len = msg->propsLen;
+    if (len > sizeof(modeprops))
+        len = sizeof(modeprops);
+    CopyMem(&modeprops, msg->props, len);
+
+    return len;
 }

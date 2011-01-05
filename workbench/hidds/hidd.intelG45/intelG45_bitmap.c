@@ -27,6 +27,7 @@
 
 #include "intelG45_intern.h"
 #include "intelG45_regs.h"
+#include "compositing.h"
 
 struct __ROP ROP_table[] = {
     { ROP3_ZERO, ROP3_ZERO }, /* GXclear        */
@@ -127,35 +128,17 @@ OOP_Object *METHOD(GMABM, Root, New)
         bm->usecount = 0;
         bm->xoffset = 0;
         bm->yoffset = 0;
+        bm->fbid = 0; /* Default value */
 
         if (bm->framebuffer != -1)
         {
             ULONG pitch64 = ((bm->pitch)) >> 6;
-
-//            switch(depth)
-//            {
-//                case 15:
-//                    bm->datatype = 3;
-//                    break;
-//
-//                case 16:
-//                    bm->datatype = 4;
-//                    break;
-//
-//                case 32:
-//                    bm->datatype = 6;
-//                    break;
-//            }
-
-//            bm->dp_gui_master_cntl =
-//                        ((bm->datatype << RADEON_GMC_DST_DATATYPE_SHIFT)
-//                        |RADEON_GMC_CLR_CMP_CNTL_DIS
-//                        |RADEON_GMC_DST_PITCH_OFFSET_CNTL);
-//
-//            bm->pitch_offset = ((bm->framebuffer >> 10) | (bm->pitch << 16));
-//
-//            D(bug("[GMABitMap] PITCH_OFFSET=%08x\n", bm->pitch_offset));
         }
+
+		if (displayable) bm->displayable = TRUE; else bm->displayable = FALSE;
+		//bm->compositing = sd->compositing;
+        bm->compositing = (OOP_Object *)GetTagData(aHidd_BitMap_IntelG45_CompositingHidd, 0, msg->attrList);
+        /* FIXME: check if compositing hidd was passed */
 
         if (displayable)
         {
@@ -209,7 +192,7 @@ OOP_Object *METHOD(GMABM, Root, New)
                                     hstart, hend, htotal,
                                     vstart, vend, vtotal, flags);
 
-                        D(bug("[GMA] Bitmap::new = %p\n", o));
+                        D(bug("[GMA] displayable Bitmap::new = %p\n", o));
 
                         return o;
                     }
@@ -236,6 +219,7 @@ OOP_Object *METHOD(GMABM, Root, New)
 
             if ((bm->framebuffer != 0xffffffff) && (bm->framebuffer != 0))
             {
+				D(bug("[GMA] not displayable Bitmap::new = %p\n", o));
                 return o;
             }
         }
@@ -331,6 +315,63 @@ VOID METHOD(GMABM, Root, Get)
 
 VOID METHOD(GMABM, Root, Set)
 {
+
+	struct TagItem  *tag, *tstate;
+    GMABitMap_t * bmdata = OOP_INST_DATA(cl, o);
+    ULONG idx;
+    LONG newxoffset = bmdata->xoffset;
+    LONG newyoffset = bmdata->yoffset;
+    tstate = msg->attrList;
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+            case aoHidd_BitMap_LeftEdge:
+                newxoffset = tag->ti_Data;
+                break;
+            case aoHidd_BitMap_TopEdge:
+                newyoffset = tag->ti_Data;
+                break;
+            }
+        }
+    }
+
+    if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
+    {
+        /* If there was a change requested, validate it */
+        struct pHidd_Compositing_ValidateBitMapPositionChange vbpcmsg =
+        {
+            mID : SD(cl)->mid_ValidateBitMapPositionChange,
+            bm : o,
+            newxoffset : &newxoffset,
+            newyoffset : &newyoffset
+        };
+        
+        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&vbpcmsg);
+        
+        if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
+        {
+            /* If change passed validation, execute it */
+            struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
+            {
+                mID : SD(cl)->mid_BitMapPositionChanged,
+                bm : o
+            };
+
+            bmdata->xoffset = newxoffset;
+            bmdata->yoffset = newyoffset;
+        
+            OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
+        }
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+	
+	
+	/*
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     ULONG idx;
     struct TagItem  *tag, *tstate;
@@ -369,7 +410,7 @@ VOID METHOD(GMABM, Root, Set)
 		writel( bm->state->dsplinoff - offset , sd->Card.MMIO + ( sd->pipe == PIPE_A ? G45_DSPALINOFF:G45_DSPBLINOFF ));
 		readl( sd->Card.MMIO + G45_DSPBLINOFF );
     }
-
+*/
 	 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -2209,3 +2250,24 @@ VOID METHOD(GMABM, Hidd_BitMap, PutPattern)
 
     UNLOCK_BITMAP
 }
+
+VOID METHOD(GMABM, Hidd_BitMap, UpdateRect)
+{
+    GMABitMap_t * bmdata = OOP_INST_DATA(cl, o);
+    D(bug("[GMA]BitMap::UpdateRect %d,%d-%d,%d\n",msg->x,msg->y,msg->width,msg->height));
+    if (bmdata->displayable)
+    {
+        struct pHidd_Compositing_BitMapRectChanged brcmsg =
+        {
+            mID : SD(cl)->mid_BitMapRectChanged,
+            bm : o,
+            x : msg->x,
+            y : msg->y,
+            width : msg->width,
+            height : msg->height
+        };
+        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&brcmsg);    
+    }
+}
+
+
