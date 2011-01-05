@@ -2,7 +2,7 @@
  * intelG45_bitmap.c
  *
  *  Created on: May 1, 2010
- *      Author: misc
+ *  $Id$
  */
 
 #define DEBUG 0

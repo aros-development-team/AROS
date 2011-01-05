@@ -2,7 +2,7 @@
  * intelG45_memory.c
  *
  *  Created on: May 13, 2010
- *      Author: misc
+ *      $Id$
  */
 
 #include <exec/memory.h>

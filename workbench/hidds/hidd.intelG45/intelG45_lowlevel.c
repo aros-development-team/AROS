@@ -2,7 +2,7 @@
  * intelG45_lowlevel.c
  *
  *  Created on: May 2, 2010
- *      Author: misc
+ *      $Id$
  */
 
 #define DEBUG 0

@@ -2,7 +2,7 @@
 #define _COMPOSITING_INTERN_H
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: compositing_intern.h 35441 2010-11-13 22:17:39Z deadwood $
+    $Id$
 */
 
 #include "compositing.h"

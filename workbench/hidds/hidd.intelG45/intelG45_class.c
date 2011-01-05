@@ -2,7 +2,7 @@
  * intelG45_class.c
  *
  *  Created on: Apr 15, 2010
- *      Author: misc
+ *     $Id$
  */
 
 #define DEBUG 0

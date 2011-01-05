@@ -2,7 +2,7 @@
  * intelG45_i2c.c
  *
  *  Created on: Apr 25, 2010
- *      Author: misc
+ *      $Id$
  */
 
 #include "intelG45_intern.h"
