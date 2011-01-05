@@ -1202,7 +1202,7 @@ VOID flushFS(CONST_STRPTR path)
 
     /* Try to flush 10 times. 5 seconds total */
     
-    /* Failsfase in case first Inhibit fails in some way (was needed
+    /* Failsafe in case first Inhibit fails in some way (was needed
      * for SFS because non flushed data was failing Inhibit) */
      
     for (i = 0; i < 10; i++)
