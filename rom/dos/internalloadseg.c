@@ -73,6 +73,7 @@
 
     typedef struct _segfunc_t
     {
+    	ULONG id;
         BPTR (*func)(BPTR, BPTR, SIPTR *, SIPTR *, struct DosLibrary *);
         D(CONST_STRPTR format;)
     } segfunc_t;
@@ -81,31 +82,72 @@
     
     static const segfunc_t funcs[] = 
     {
-        SEGFUNC(ELF),
-        SEGFUNC(AOS),
+        { 0x7f454c46, SEGFUNC(ELF) },
+        { 0x000003f3, SEGFUNC(AOS) }
     };
   
     BPTR segs = 0;
 
     if (fh)
     {
-        int i = 0;
-	const int num_funcs = sizeof(funcs)/sizeof(funcs[0]);
+        UBYTE i;
+	const UBYTE num_funcs = sizeof(funcs) / sizeof(funcs[0]);
+    	ULONG id;
+	LONG len;
 
-	do
-	{
-	    SetIoErr(0);
-	   
-	    segs = (*funcs[i].func)(fh, MKBADDR(NULL), (SIPTR *)functionarray,
-				    NULL, DOSBase);
-            
-	    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
-	          segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
- 	     
-	} while	(!segs && (IoErr() == ERROR_NOT_EXECUTABLE) && (++i < num_funcs));
+	SetIoErr(0);
+    	len = loadseg_read((SIPTR*)((SIPTR*)functionarray)[0], fh, &id, sizeof id, DOSBase);
+	if (len == sizeof id) {
+	    id = AROS_BE2LONG(id);
+	    for (i = 0; i < num_funcs; i++) {
+		if (funcs[i].id == id) {
+		    segs = (*funcs[i].func)(fh, BNULL, (SIPTR *)functionarray,
+			NULL, DOSBase);
+		    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
+			segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
+		    return segs;
+ 		}
+ 	    }
+ 	}
     }
 
-    return segs;
+    SetIoErr(ERROR_NOT_EXECUTABLE);
+    return BNULL;
   
     AROS_LIBFUNC_EXIT
 } /* InternalLoadSeg */
+
+void *loadseg_alloc(SIPTR *allocfunc, ULONG size, ULONG req)
+{
+    UBYTE *p = AROS_CALL2(void *, allocfunc,
+        AROS_LCA(ULONG, size  , D0),
+        AROS_LCA(ULONG, req   , D1),
+        struct Library *, (struct Library *)SysBase);
+    if (!p)
+    	return NULL;
+    D(bug("allocmem %p %d\n", p, size));
+    *((ULONG*)p) = (ULONG)size;
+    return p + sizeof(ULONG);       
+}
+void loadseg_free(SIPTR *freefunc, void *buf)
+{
+    UBYTE *p = (UBYTE*)buf;
+    ULONG size;
+    if (!buf)
+    	return;
+    p -= sizeof(ULONG);
+    size = ((ULONG*)p)[0];
+    D(bug("freemem %p %d\n", p, size));
+    AROS_CALL2NR(void, freefunc,
+	  AROS_LCA(void * ,    p, A1),
+	  AROS_LCA(ULONG  , size, D0),
+	  struct Library *, (struct Library *)SysBase);
+}
+LONG loadseg_read(SIPTR *readfunc, BPTR fh, void *buf, LONG size, struct DosLibrary *DOSBase)
+{
+    return AROS_CALL3(LONG, readfunc,
+	AROS_LCA(BPTR   , fh        , D1),
+	AROS_LCA(void * , buf       , D2),
+	AROS_LCA(LONG   , size      , D3),
+	struct DosLibrary *, DOSBase);
+}
