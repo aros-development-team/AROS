@@ -41,8 +41,13 @@ struct Screen
     WORD Width;
     WORD Height;
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    WORD MouseY;
+    WORD MouseX;
+#else
     WORD MouseX;
     WORD MouseY;
+#endif
 
     UWORD   Flags;
     UBYTE * Title;
