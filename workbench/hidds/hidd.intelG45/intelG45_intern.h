@@ -227,7 +227,7 @@ enum {
 #define IS_BM_ATTR(attr, idx) (((idx)=(attr)-HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_GMABM_ATTR(attr, idx) (((idx)=(attr)-HiddGMABitMapAttrBase) < num_Hidd_GMABitMap_Attrs)
 
-
+#undef BASE
 #define BASE(lib) ((struct intelg45base*)(lib))
 
 #define SD(cl) (&BASE(cl->UserData)->g45_sd)
