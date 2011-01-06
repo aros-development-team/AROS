@@ -184,7 +184,7 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 			state->dpll |= G45_DPLL_DAC_SERIAL_P2_DIV_5;
 		state->dpll |= (1 << (clock.P1 - 1)) << G45_DPLL_P1_SHIFT;
 
-		state->dspcntr = readl(sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_DSPACNTR:G45_DSPBCNTR)) & 0x000f0000;
+		state->dspcntr = readl(sd->Card.MMIO + G45_DSPACNTR ) & 0x000f0000;
 
 		if (depth <= 8)
 		{
@@ -210,7 +210,6 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 		state->pipeconf = G45_PIPECONF_ENABLE;
 		state->dpll |= G45_DPLL_VCO_ENABLE;
 		state->dspcntr |= G45_DSPCNTR_PLANE_ENABLE;
-		if(sd->pipe == PIPE_B ) state->dspcntr |= G45_DSPCNTR_SEL_PIPE_B;
 
 		state->htotal = (hdisp - 1) | ((htotal - 1) << 16);
 		state->hblank = (hdisp - 1) | ((htotal - 1) << 16);
@@ -239,6 +238,8 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 {
 	int i;
+	uint32_t tmp;
+
 	D(bug("[GMA] LoadState\n"));
 
 	LOCK_HW
@@ -246,29 +247,43 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 	
 	if( sd->pipe == PIPE_B )
 	{
-		
+
 		bug("[GMA]load lvds\n");
 
+		// screen size/timing does not really change , most is already done by BIOS
+
+		// disable vga
 		writel(readl(sd->Card.MMIO + G45_VGACNTRL) | G45_VGACNTRL_VGA_DISABLE, sd->Card.MMIO + G45_VGACNTRL);
-		
+
+		// hdisp & vdisp
 		writel(((sd->lvds_fixed.hdisp - 1) << 16) | (sd->lvds_fixed.vdisp - 1), sd->Card.MMIO + G45_PIPEBSRC);
 		writel(((sd->lvds_fixed.vdisp - 1) << 16) | (sd->lvds_fixed.hdisp - 1), sd->Card.MMIO + G45_DSPBSIZE);
-		
-		writel(	state->pipeconf , sd->Card.MMIO + G45_PIPEBCONF);
+
+		// enable pipe  B, pipe A didn't work with LVDS
+		writel( readl( sd->Card.MMIO + G45_PIPEBCONF ) | G45_PIPECONF_ENABLE , sd->Card.MMIO + G45_PIPEBCONF);
 		readl(sd->Card.MMIO + G45_PIPEBCONF);
 		delay_ms(sd, 20);
 
-		writel( state->dspcntr , sd->Card.MMIO + G45_DSPBCNTR );
+		// pixel format & enable plane & use pipe B
+		tmp = readl( sd->Card.MMIO + G45_DSPBCNTR );
+		tmp = ( tmp & ~G45_DSPCNTR_PIXEL_MASK ) | ( state->dspcntr & G45_DSPCNTR_PIXEL_MASK );
+		tmp |= G45_DSPCNTR_PLANE_ENABLE;
+		tmp |= G45_DSPCNTR_SEL_PIPE_B;
+		writel( tmp , sd->Card.MMIO + G45_DSPBCNTR );
 		delay_ms(sd, 20);
 
+		// bitmap width in bytes
+		writel( state->dspstride , sd->Card.MMIO + G45_DSPBSTRIDE );
+
+		// framebuffer address + possible xy offset
 		LONG offset = sd->VisibleBitmap->yoffset * sd->VisibleBitmap->pitch +
 		              sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp;
-		writel( state->dspstride , sd->Card.MMIO + G45_DSPBSTRIDE );
 		writel( state->dsplinoff - offset , sd->Card.MMIO + G45_DSPBLINOFF );
 		readl( sd->Card.MMIO + G45_DSPBLINOFF );
 
 		delay_ms(sd, 20);
-	 
+
+		// without this pointer color is corrupted
 		ULONG i;
 		for (i = 0; i < 256; i++) {
 			writel( (i << 16) |(i << 8) | i , sd->Card.MMIO + 0x0a800 + 4 * i);//PALETTE_B
