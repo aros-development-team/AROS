@@ -34,19 +34,15 @@
 #include <gallium/gallium.h>
 #include <proto/gallium.h>
 #include <aros/debug.h>
-
-struct aros_config;
+#include <proto/cybergraphics.h>
+#include <cybergraphx/cybergraphics.h>
 
 struct aros_display 
 {
     struct native_display base;
     struct native_event_handler *event_handler;
-    struct aros_config *config;
-};
-
-struct aros_config 
-{
-    struct native_config base;
+    struct native_config *configs;
+    int configs_count;
 };
 
 struct aros_surface 
@@ -176,13 +172,27 @@ aros_surface_flush_frontbuffer(struct native_surface *nsurf)
     return true;
 }
 
+static enum pipe_format
+aros_display_get_format_from_window(struct Window * window)
+{
+    ULONG bpp = 0;
+
+    bpp = GetCyberMapAttr(window->WScreen->RastPort.BitMap, CYBRMATTR_BPPIX);
+
+    if (bpp == 4)
+        return PIPE_FORMAT_B8G8R8A8_UNORM;
+    else if (bpp == 2)
+        return PIPE_FORMAT_B5G6R5_UNORM;
+    else
+        return PIPE_FORMAT_NONE;
+}
+
 static struct aros_surface *
 aros_display_create_surface(struct native_display *ndpy,
                               struct Window * window,
                               const struct native_config *nconf)
 {
     struct aros_display *adpy= aros_display(ndpy);
-    struct aros_config *aconf = aros_config(nconf);
     struct aros_surface *asurf;
 
     asurf = CALLOC_STRUCT(aros_surface);
@@ -190,7 +200,7 @@ aros_display_create_surface(struct native_display *ndpy,
         return NULL;
 
     asurf->adpy= adpy;
-    asurf->color_format = aconf->base.color_format;
+    asurf->color_format = aros_display_get_format_from_window(window);
     asurf->window = window;
 
     asurf->rsurf = resource_surface_create(adpy->base.screen,
@@ -246,50 +256,52 @@ aros_display_get_configs(struct native_display *ndpy, int *num_configs)
     const struct native_config **configs;
 
     /* first time */
-    if (!arosdpy->config) 
+    if (!arosdpy->configs) 
     {
-        struct native_config *nconf;
-        enum pipe_format format;
+        enum pipe_format formats[2] = {PIPE_FORMAT_NONE, PIPE_FORMAT_NONE};
+        int i = 0;
 
-        arosdpy->config = CALLOC(1, sizeof(*arosdpy->config));
-        if (!arosdpy->config)
+        arosdpy->configs_count = 0;
+
+        /* Check two configs - 24 and 16 bit */
+        if (aros_display_is_format_supported(&arosdpy->base, PIPE_FORMAT_B8G8R8A8_UNORM, true))
+            formats[arosdpy->configs_count++] = PIPE_FORMAT_B8G8R8A8_UNORM;
+        if (aros_display_is_format_supported(&arosdpy->base, PIPE_FORMAT_B5G6R5_UNORM, true))
+            formats[arosdpy->configs_count++] = PIPE_FORMAT_B5G6R5_UNORM;
+
+        if (arosdpy->configs_count == 0)
             return NULL;
 
-        nconf = &arosdpy->config->base;
-
-        nconf->buffer_mask =
-            (1 << NATIVE_ATTACHMENT_FRONT_LEFT) |
-            (1 << NATIVE_ATTACHMENT_BACK_LEFT);
-
-        format = PIPE_FORMAT_B8G8R8A8_UNORM;
-        if (!aros_display_is_format_supported(&arosdpy->base, format, TRUE)) 
-        {
-            format = PIPE_FORMAT_A8R8G8B8_UNORM;
-            if (!aros_display_is_format_supported(&arosdpy->base, format, TRUE))
-                format = PIPE_FORMAT_NONE;
-        }
-        if (format == PIPE_FORMAT_NONE) 
-        {
-            FREE(arosdpy->config);
-            arosdpy->config = NULL;
+        arosdpy->configs = CALLOC(arosdpy->configs_count, sizeof(struct native_config));
+        if (!arosdpy->configs)
             return NULL;
+        
+        for (i = 0; i < arosdpy->configs_count; i++)
+        {
+            struct native_config * nconf = &arosdpy->configs[i];
+            
+            nconf->buffer_mask = 
+                (1 << NATIVE_ATTACHMENT_FRONT_LEFT) |
+                (1 << NATIVE_ATTACHMENT_BACK_LEFT);
+
+            nconf->color_format = formats[i];
+            /* scanout makes no sense because of how AROS works full screen (new window on new screen) */
+            nconf->scanout_bit = FALSE;
+            nconf->pixmap_bit = FALSE;
+
+            nconf->window_bit = TRUE;
         }
 
-        nconf->color_format = format;
-
-        /* scanout makes no sense because of how AROS works full screen (new window on new screen) */
-        nconf->scanout_bit = FALSE;
-        nconf->pixmap_bit = FALSE;
-
-        nconf->window_bit = TRUE;
     }
 
-    configs = MALLOC(sizeof(*configs));
+    configs = MALLOC(arosdpy->configs_count * sizeof(*configs));
     if (configs) 
     {
-        configs[0] = &arosdpy->config->base;
+        int i = 0;
+        for (i = 0; i < arosdpy->configs_count; i++)
+            configs[i] = &arosdpy->configs[i];
         if (num_configs)
-            *num_configs = 1;
+            *num_configs = arosdpy->configs_count;
     }
 
     return configs;
@@ -316,8 +328,8 @@ aros_display_destroy(struct native_display *ndpy)
 {
     struct aros_display *arosdpy = aros_display(ndpy);
 
-    if (arosdpy->config)
-        FREE(arosdpy->config);
+    if (arosdpy->configs)
+        FREE(arosdpy->configs);
 
     if (arosdpy->base.screen)
         DestroyPipeScreen(arosdpy->base.screen);
