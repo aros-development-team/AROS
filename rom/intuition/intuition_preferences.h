@@ -8,7 +8,7 @@
 
 CONST struct Preferences IntuitionDefaultPreferences =
 {
-    0,      // FontHeight
+    8,      // FontHeight
     0,      // PrinterPort
     0,      // BaudRate
 
