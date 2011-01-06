@@ -34,7 +34,7 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
     AROS_UFPA(struct DosLibrary *, DosBase, A6));
 static void PatchDOS(struct DosLibrary *dosbase)
 {
-    UWORD highfunc = 37, lowfunc = 5, skipfuncs = 1;
+    UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
     UWORD i;
     UWORD *asmcall;
     IPTR func;
@@ -43,7 +43,7 @@ static void PatchDOS(struct DosLibrary *dosbase)
      * For example most overlayed programs require this */
     asmcall = AllocMem(5 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 12 * sizeof(UWORD), MEMF_PUBLIC);
     for (i = lowfunc; i <= highfunc; i++) {
-    	if (i == 25)
+    	if (i == 24 || i == 25)
     	    continue;
     	func = (IPTR)__AROS_GETJUMPVEC(dosbase, i)->vec;
     	asmcall[0] = 0x4eb9; // JSR
@@ -70,6 +70,10 @@ static void PatchDOS(struct DosLibrary *dosbase)
     asmcall[10] = 0x2200; // MOVE.L D0,D1
     asmcall[11] = 0x4e75; // RTS
     __AROS_SETVECADDR(dosbase, 25, asmcall);
+
+    /* Exit -> BCPL_Exit */
+    void BCPL_Exit(void);
+    __AROS_SETVECADDR(dosbase, 24, BCPL_Exit);
 
     CacheClearU();
 }
