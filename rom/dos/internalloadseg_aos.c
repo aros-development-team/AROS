@@ -25,7 +25,7 @@ static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, str
 
 #include <proto/dos.h>
 
-
+#define GETHUNKPTR(x) ((UBYTE*)(BADDR(hunktab[x]) + sizeof(BPTR)))
 
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
@@ -244,7 +244,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug(" memory\n"));
         if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
 	{
-          if (read_block(fh, BADDR(hunktab[curhunk] + 1), count*4, funcarray, DOSBase))
+          if (read_block(fh, GETHUNKPTR(curhunk), count*4, funcarray, DOSBase))
             goto end;
 
     	}
@@ -278,9 +278,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             offset = AROS_BE2LONG(offset);
 
             //D(bug("\t\t0x%06lx\n", offset));
-            addr = (ULONG *)(BADDR(hunktab[curhunk] + 1) + offset);
+            addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
 
-            *addr = AROS_BE2LONG(*addr) + (ULONG)(BADDR(hunktab[count] + 1));
+            *addr = AROS_BE2LONG(*addr) + (ULONG)GETHUNKPTR(count);
 
             --i;
           }
@@ -330,9 +330,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
                  we get the word we need.  */
               //(ULONG)offset >>= ((sizeof(offset)-2)*8);
               //D(bug("\t\t0x%06lx\n", offset));
-              addr = (ULONG *)(BADDR(hunktab[curhunk] + 1) + offset);
+              addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
 
-              *addr = AROS_BE2LONG(*addr) + (ULONG)(BADDR(hunktab[count] + 1));
+              *addr = AROS_BE2LONG(*addr) + (ULONG)GETHUNKPTR(count);
 
               --i;
             } /* while (i > 0)*/
