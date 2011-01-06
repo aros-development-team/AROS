@@ -78,12 +78,12 @@
         D(CONST_STRPTR format;)
     } segfunc_t;
 
-    #define SEGFUNC(format) { InternalLoadSeg_##format D(, (STRPTR)#format)}
+    #define SEGFUNC(id, format) {id, InternalLoadSeg_##format D(, (STRPTR)#format)}
     
     static const segfunc_t funcs[] = 
     {
-        { 0x7f454c46, SEGFUNC(ELF) },
-        { 0x000003f3, SEGFUNC(AOS) }
+        SEGFUNC(0x7f454c46, ELF),
+        SEGFUNC(0x000003f3, AOS)
     };
   
     BPTR segs = 0;
@@ -96,8 +96,8 @@
 	LONG len;
 
 	SetIoErr(0);
-    	len = loadseg_read((SIPTR*)((SIPTR*)functionarray)[0], fh, &id, sizeof id, DOSBase);
-	if (len == sizeof id) {
+    	len = loadseg_read((SIPTR*)((SIPTR*)functionarray)[0], fh, &id, sizeof(id), DOSBase);
+	if (len == sizeof(id)) {
 	    id = AROS_BE2LONG(id);
 	    for (i = 0; i < num_funcs; i++) {
 		if (funcs[i].id == id) {
