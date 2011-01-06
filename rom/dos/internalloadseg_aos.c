@@ -420,7 +420,6 @@ done:
       hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
       if (hunksize)
       {
-        bug("%p %d\n", BADDR(hunktab[t]), hunksize);
         CacheClearE(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
       }
     }
@@ -460,7 +459,7 @@ end:
       loadseg_free((SIPTR*)funcarray[2], BADDR(hunktab[t]));
     loadseg_free((SIPTR*)funcarray[2], hunktab);
   }
-  return firsthunk;
+  return last_p;
 } /* InternalLoadSeg */
 
 
