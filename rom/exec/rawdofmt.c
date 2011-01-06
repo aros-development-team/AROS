@@ -106,7 +106,7 @@ do                                        \
 	(*((ULONG *)PutChData))++;	  \
 	break;				  \
     default:				  \
-	if (DataStream)					\
+	if (DataStream || m68kcompat)			\
 	{						\
             AROS_UFC2(void, PutChProc,        		\
 	    AROS_UFCA(UBYTE, (ch), D0),       		\
@@ -129,8 +129,11 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
      * *and* that it can be modified in PutChProc.
      */
     register volatile UBYTE  *PutChData asm("%a3");
+    /* PutCh() must always call normal PutChProc() even if DataStream == NULL */
+    const BOOL m68kcompat = TRUE;
 #else
     UBYTE *PutChData = inPutChData;
+    const BOOL m68kcompat = FALSE;
 #endif
 
     /* As long as there is something to format left */
@@ -364,7 +367,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     PutCh('\0');
 
     /* Return the rest of the DataStream or buffer. */
-    return DataStream ? DataStream : PutChData;
+    return DataStream || m68kcompat ? DataStream : PutChData;
 }
 
 
