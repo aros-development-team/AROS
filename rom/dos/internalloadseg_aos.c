@@ -428,7 +428,7 @@ done:
     if (table)
       return firsthunk;
 
-    hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
+    hunksize = *((ULONG*)BADDR(hunktab[0]) - 1);
     if (last > first && hunksize >= 32 / 4) {
       /* NOTE: HUNK_OVERLAY is not required for overlay mode. */
       ULONG *h = (ULONG*)(BADDR(hunktab[first]));
