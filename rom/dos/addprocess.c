@@ -17,6 +17,10 @@ LONG DosEntry (
     APTR initialPC,
     struct ExecBase * SysBase)
 {
+	/* fetch Task pointer before function call because A6 can change inside initialPC
+	 * (temporary hack) */
+	struct Task *task = FindTask(NULL);
+
 	LONG result = AROS_UFC3 (LONG, initialPC,
  	              AROS_UFCA (STRPTR,            argPtr,  A0),
 	              AROS_UFCA (ULONG,             argSize, D0),
@@ -28,7 +32,7 @@ LONG DosEntry (
 	   tc_UserData is safe to use because at this point we are out of the process'
 	   main code
 	*/
-        FindTask(NULL)->tc_UserData = (APTR)result;
+        task->tc_UserData = (APTR)result;
 
 	return result;
 }
