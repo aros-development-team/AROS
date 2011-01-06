@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -418,6 +418,7 @@ done:
     for (t = first; t < numhunks && t <= last; t++)
     {
       hunksize = *((BPTR*)BADDR(hunktab[t] - 1));
+      hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
       if (hunksize)
       {
         bug("%p %d\n", BADDR(hunktab[t]), hunksize);
