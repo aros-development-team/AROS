@@ -394,6 +394,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	};
 	struct MemHeader *mh;
 	ULONG LastAlert[4] = { 0, 0, 0, 0};
+	ULONG oldmem;
 
 	trap = (APTR *)(NULL);
 
@@ -469,31 +470,6 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Determine CPU model */
 	SysBase->AttnFlags |= cpu_detect();
 
-	/* Fix up functions that need 'preserves all registers'
-	 * semantics. This AllocMem()s a little wrapper routine
-	 * that pushes the %d0-%d1/%a0-%a1 registers before
-	 * calling the routine.
-	 */
-#ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
-	PRESERVE_ALL(SysBase, Exec, Disable, 20);
-	PRESERVE_ALL(SysBase, Exec, Enable, 21);
-	PRESERVE_ALL(SysBase, Exec, Forbid, 22);
-#endif
-	PRESERVE_ALL(SysBase, Exec, Permit, 23);
-	PRESERVE_ALL(SysBase, Exec, ObtainSemaphore, 94);
-	PRESERVE_ALL(SysBase, Exec, ReleaseSemaphore, 95);
-	PRESERVE_ALL(SysBase, Exec, ObtainSemaphoreShared, 113);
-
-	/* Functions that need sign extension */
-	EXT_BYTE(SysBase, Exec, SetTaskPri, 50);
-	EXT_BYTE(SysBase, Exec, AllocSignal, 55);
-#if 0
-	EXT_BYTE(SysBase, Exec, OpenDevice, 74);
-	EXT_BYTE(SysBase, Exec, DoIO, 76);
-	EXT_BYTE(SysBase, Exec, WaitIO, 79);
-#endif
-	EXT_WORD(SysBase, Exec, GetCC, 88);
-
 	/* Inject code for GetCC, depending on CPU model */
 	if (SysBase->AttnFlags & AFF_68010) {
 		/* move.w %ccr,%d0; rts; nop */
@@ -520,17 +496,41 @@ void start(IPTR chip_start, ULONG chip_size,
 		Enqueue(&SysBase->MemList,&mh->mh_Node);
 	}
 
-	/* Initialize IRQ subsystem */
-	AmigaIRQInit(SysBase);
-
-	/* Set privilige violation trap - we
-	 * need this to support the Exec/Supervisor call
-	 */
-	trap[8] = Exec_Supervisor_Trap;
+	oldmem = AvailMem(MEMF_FAST);
 
 	/* Ok, let's start the system */
 	DebugPuts("[start] InitCode(RTF_SINGLETASK, 0)\n");
 	InitCode(RTF_SINGLETASK, 0);
+
+	/* Autoconfig ram expansions are now configured */
+
+#if 0
+	/* Move execbase to real fast if available now */
+	if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024)
+		PrepareExecBase(NULL, NULL, NULL);
+#endif
+
+#ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
+	PRESERVE_ALL(SysBase, Exec, Disable, 20);
+	PRESERVE_ALL(SysBase, Exec, Enable, 21);
+	PRESERVE_ALL(SysBase, Exec, Forbid, 22);
+#endif
+	PRESERVE_ALL(SysBase, Exec, Permit, 23);
+	PRESERVE_ALL(SysBase, Exec, ObtainSemaphore, 94);
+	PRESERVE_ALL(SysBase, Exec, ReleaseSemaphore, 95);
+	PRESERVE_ALL(SysBase, Exec, ObtainSemaphoreShared, 113);
+
+	/* Functions that need sign extension */
+	EXT_BYTE(SysBase, Exec, SetTaskPri, 50);
+	EXT_BYTE(SysBase, Exec, AllocSignal, 55);
+
+	/* Initialize IRQ subsystem */
+	AmigaIRQInit(SysBase);
+
+	/* Set privilege violation trap - we
+	 * need this to support the Exec/Supervisor call
+	 */
+	trap[8] = Exec_Supervisor_Trap;
 
 	/* Attempt to allocate a real stack, and switch to it. */
 	do {
