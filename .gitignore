@@ -2108,6 +2108,9 @@
 # /workbench/libs/mesa/src/gallium/include/pipe/
 /workbench/libs/mesa/src/gallium/include/pipe/mmakefile
 
+# /workbench/libs/mesa/src/mapi/vgapi
+/workbench/libs/mesa/src/mapi/vgapi/vgapi_tmp.h
+
 # /workbench/libs/mesa/src/mesa/
 /workbench/libs/mesa/src/mesa/mmakefile
 
