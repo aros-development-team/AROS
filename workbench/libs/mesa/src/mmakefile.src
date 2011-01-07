@@ -25,13 +25,13 @@ include $(SRCDIR)/$(CURDIR)/mapi/mapi/sources.mak
 #MM workbench-libs-mesa-module-cpp
 
 SHARED_LIB_SOURCES = \
-            mesa/aros/arosmesacreatecontext \
-            mesa/aros/arosmesadestroycontext \
-            mesa/aros/arosmesamakecurrent \
-            mesa/aros/arosmesaswapbuffers \
-            mesa/aros/arosmesagetcurrentcontext \
-            mesa/aros/arosmesa_funcs \
-            mesa/aros/arosmesa_init \
+            gallium/state_trackers/arosmesa/arosmesacreatecontext \
+            gallium/state_trackers/arosmesa/arosmesadestroycontext \
+            gallium/state_trackers/arosmesa/arosmesamakecurrent \
+            gallium/state_trackers/arosmesa/arosmesaswapbuffers \
+            gallium/state_trackers/arosmesa/arosmesagetcurrentcontext \
+            gallium/state_trackers/arosmesa/arosmesa_funcs \
+            gallium/state_trackers/arosmesa/arosmesa_init \
             aros/arosmesa_library_api \
             aros/emul_arosc \
             aros/tls \
