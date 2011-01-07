@@ -44,12 +44,6 @@ struct KeyboardBase
     struct Library *kb_OOPBase;
     
     OOP_AttrBase    HiddKbdAB_;
-
-    /* m68k lowlevel.library stores only io_Device field after keyboard.device
-     * has been opened and when it is time to close it, lowlevel creates empty
-     * iorequest, sets io_Device and calls CloseDevice() (!)
-     * So we can't assume io_Unit is valid. */
-    struct KBUnit *kbunit;
 };
 
 
