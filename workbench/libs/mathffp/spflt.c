@@ -52,12 +52,12 @@ AROS_LH1(float, SPFlt,
     LONG TestMask = 0xFFFFFFFF;
     LONG Res = 0;
     
-    kprintf("SPFlt(%d)=",inum);
+    D(kprintf("SPFlt(%d)=",inum));
     
     if (inum == 0)
     {
         SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-        kprintf("0\n");
+        D(kprintf("0\n"));
         return 0;
     }
     
@@ -93,7 +93,7 @@ AROS_LH1(float, SPFlt,
         SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     }
     
-    kprintf("%x\n",Res);
+    D(kprintf("%x\n",Res));
     
     return Res;
     

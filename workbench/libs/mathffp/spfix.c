@@ -75,7 +75,7 @@ AROS_LH1(LONG, SPFix,
         SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     }
 
-    kprintf("SPFix(%x)=%d\n",fnum,Res);
+    D(kprintf("SPFix(%x)=%d\n",fnum,Res));
     
     return Res;
     
