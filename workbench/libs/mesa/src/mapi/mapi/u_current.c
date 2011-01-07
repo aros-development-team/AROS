@@ -111,7 +111,7 @@ const void *u_current_user;
 
 #else
 
-#if defined(__AROS__)
+#if defined(__AROS__) && defined(MAPI_GLAPI_CURRENT)
 #include "aros/arosmesa_intern.h"
 void **GETMESABASECTX(void)
 {
