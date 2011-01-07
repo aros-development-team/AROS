@@ -155,8 +155,8 @@ static int GM_UNIQUENAME(Open)
 	ioreq->io_Error = IOERR_OPENFAIL;
 	return FALSE;
     }
-
-    if((ioreq->io_Unit = AllocMem(sizeof(KBUnit), MEMF_CLEAR)) == NULL)
+    /* check comment in keyboard_intern.h first */
+    if((KBBase->kbunit = ioreq->io_Unit = AllocMem(sizeof(KBUnit), MEMF_CLEAR)) == NULL)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 	return FALSE;
@@ -233,7 +233,7 @@ static int GM_UNIQUENAME(Close)
     struct IORequest *ioreq
 )
 {
-    FreeMem(ioreq->io_Unit, sizeof(KBUnit));
+    FreeMem(KBBase->kbunit, sizeof(KBUnit));
 
     return TRUE;
 }
