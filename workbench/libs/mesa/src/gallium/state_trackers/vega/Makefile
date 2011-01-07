@@ -9,6 +9,9 @@ LIBRARY_INCLUDES = \
 	-I$(TOP)/include \
 	-I$(TOP)/src/mapi
 
+LIBRARY_DEFINES = \
+	-DVEGA_VERSION_STRING=\"$(MESA_VERSION)\"
+
 C_SOURCES = \
            api.c           \
            api_context.c   \
@@ -35,6 +38,7 @@ C_SOURCES = \
            renderer.c \
            stroker.c \
            mask.c \
+           text.c \
            shader.c \
            shaders_cache.c
 

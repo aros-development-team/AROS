@@ -31,21 +31,26 @@
 #include "paint.h"
 #include "mask.h"
 #include "image.h"
+#include "renderer.h"
 
 #include "pipe/p_context.h"
 #include "pipe/p_screen.h"
 #include "pipe/p_state.h"
 #include "util/u_inlines.h"
 #include "util/u_memory.h"
+#include "util/u_math.h"
 
-#define MAX_CONSTANTS 20
+#define MAX_CONSTANTS 28
 
 struct shader {
    struct vg_context *context;
 
+   VGboolean color_transform;
    VGboolean masking;
    struct vg_paint *paint;
    struct vg_image *image;
+
+   struct matrix paint_matrix;
 
    VGboolean drawing_image;
    VGImageMode image_mode;
@@ -71,6 +76,11 @@ void shader_destroy(struct shader *shader)
    FREE(shader);
 }
 
+void shader_set_color_transform(struct shader *shader, VGboolean set)
+{
+   shader->color_transform = set;
+}
+
 void shader_set_masking(struct shader *shader, VGboolean set)
 {
    shader->masking = set;
@@ -91,31 +101,30 @@ struct vg_paint * shader_paint(struct shader *shader)
    return shader->paint;
 }
 
-
-static void setup_constant_buffer(struct shader *shader)
+static VGint setup_constant_buffer(struct shader *shader)
 {
-   struct vg_context *ctx = shader->context;
-   struct pipe_context *pipe = shader->context->pipe;
-   struct pipe_resource **cbuf = &shader->cbuf;
+   const struct vg_state *state = &shader->context->state.vg;
    VGint param_bytes = paint_constant_buffer_size(shader->paint);
-   float temp_buf[MAX_CONSTANTS];
+   VGint i;
 
-   assert(param_bytes <= sizeof(temp_buf));
-   paint_fill_constant_buffer(shader->paint, temp_buf);
+   param_bytes += sizeof(VGfloat) * 8;
+   assert(param_bytes <= sizeof(shader->constants));
 
-   if (*cbuf == NULL ||
-       memcmp(temp_buf, shader->constants, param_bytes) != 0)
-   {
-      pipe_resource_reference(cbuf, NULL);
-
-      memcpy(shader->constants, temp_buf, param_bytes);
-      *cbuf = pipe_user_buffer_create(pipe->screen,
-                                      &shader->constants,
-                                      sizeof(shader->constants),
-				      PIPE_BIND_VERTEX_BUFFER);
+   if (state->color_transform) {
+      for (i = 0; i < 8; i++) {
+         VGfloat val = (i < 4) ? 127.0f : 1.0f;
+         shader->constants[i] =
+            CLAMP(state->color_transform_values[i], -val, val);
+      }
+   }
+   else {
+      memset(shader->constants, 0, sizeof(VGfloat) * 8);
    }
 
-   ctx->pipe->set_constant_buffer(ctx->pipe, PIPE_SHADER_FRAGMENT, 0, *cbuf);
+   paint_fill_constant_buffer(shader->paint,
+         &shader->paint_matrix, shader->constants + 8);
+
+   return param_bytes;
 }
 
 static VGint blend_bind_samplers(struct vg_context *ctx,
@@ -128,12 +137,8 @@ static VGint blend_bind_samplers(struct vg_context *ctx,
        bmode == VG_BLEND_SCREEN ||
        bmode == VG_BLEND_DARKEN ||
        bmode == VG_BLEND_LIGHTEN) {
-      struct st_framebuffer *stfb = ctx->draw_buffer;
-
-      vg_prepare_blend_surface(ctx);
-
       samplers[2] = &ctx->blend_sampler;
-      sampler_views[2] = stfb->blend_texture_view;
+      sampler_views[2] = vg_prepare_blend_surface(ctx);
 
       if (!samplers[0] || !sampler_views[0]) {
          samplers[0] = samplers[2];
@@ -149,10 +154,10 @@ static VGint blend_bind_samplers(struct vg_context *ctx,
    return 0;
 }
 
-static void setup_samplers(struct shader *shader)
+static VGint setup_samplers(struct shader *shader,
+                            struct pipe_sampler_state **samplers,
+                            struct pipe_sampler_view **sampler_views)
 {
-   struct pipe_sampler_state *samplers[PIPE_MAX_SAMPLERS];
-   struct pipe_sampler_view *sampler_views[PIPE_MAX_SAMPLERS];
    struct vg_context *ctx = shader->context;
    /* a little wonky: we use the num as a boolean that just says
     * whether any sampler/textures have been set. the actual numbering
@@ -179,10 +184,7 @@ static void setup_samplers(struct shader *shader)
    if (shader->drawing_image && shader->image)
       num += image_bind_samplers(shader->image, samplers, sampler_views);
 
-   if (num) {
-      cso_set_samplers(ctx->cso_context, 4, (const struct pipe_sampler_state **)samplers);
-      cso_set_fragment_sampler_views(ctx->cso_context, 4, sampler_views);
-   }
+   return (num) ? 4 : 0;
 }
 
 static INLINE VGboolean is_format_bw(struct shader *shader)
@@ -227,6 +229,9 @@ static void setup_shader_program(struct shader *shader)
       default:
          abort();
       }
+
+      if (paint_is_degenerate(shader->paint))
+         shader_id = VEGA_PAINT_DEGENERATE_SHADER;
    }
 
    /* second stage image */
@@ -245,6 +250,9 @@ static void setup_shader_program(struct shader *shader)
          debug_printf("Unknown image mode!");
       }
    }
+
+   if (shader->color_transform)
+      shader_id |= VEGA_COLOR_TRANSFORM_SHADER;
 
    if (shader->masking)
       shader_id |= VEGA_MASK_SHADER;
@@ -271,18 +279,27 @@ static void setup_shader_program(struct shader *shader)
       shader_id |= VEGA_BW_SHADER;
 
    shader->fs = shaders_cache_fill(ctx->sc, shader_id);
-   cso_set_fragment_shader_handle(ctx->cso_context, shader->fs);
 }
 
 
 void shader_bind(struct shader *shader)
 {
+   struct vg_context *ctx = shader->context;
+   struct pipe_sampler_state *samplers[PIPE_MAX_SAMPLERS];
+   struct pipe_sampler_view *sampler_views[PIPE_MAX_SAMPLERS];
+   VGint num_samplers, param_bytes;
+
    /* first resolve the real paint type */
    paint_resolve_type(shader->paint);
 
-   setup_constant_buffer(shader);
-   setup_samplers(shader);
+   num_samplers = setup_samplers(shader, samplers, sampler_views);
+   param_bytes = setup_constant_buffer(shader);
    setup_shader_program(shader);
+
+   renderer_validate_for_shader(ctx->renderer,
+         (const struct pipe_sampler_state **) samplers,
+         sampler_views, num_samplers,
+         shader->fs, (const void *) shader->constants, param_bytes);
 }
 
 void shader_set_image_mode(struct shader *shader, VGImageMode image_mode)
@@ -308,4 +325,20 @@ VGboolean shader_drawing_image(struct shader *shader)
 void shader_set_image(struct shader *shader, struct vg_image *img)
 {
    shader->image = img;
+}
+
+/**
+ * Set the transformation to map a pixel to the paint coordinates.
+ */
+void shader_set_paint_matrix(struct shader *shader, const struct matrix *mat)
+{
+   const struct st_framebuffer *stfb = shader->context->draw_buffer;
+   const VGfloat px_center_offset = 0.5f;
+
+   memcpy(&shader->paint_matrix, mat, sizeof(*mat));
+
+   /* make it window-to-paint for the shaders */
+   matrix_translate(&shader->paint_matrix, px_center_offset,
+         stfb->height - 1.0f + px_center_offset);
+   matrix_scale(&shader->paint_matrix, 1.0f, -1.0f);
 }

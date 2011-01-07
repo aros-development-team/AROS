@@ -1,0 +1,10 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := openvg.h vgext.h vgplatform.h vgu.h
+
+#MM- includes-copy
+%copy_includes path=VG includes=$(INCLUDE_FILES)
+
+%common
+
