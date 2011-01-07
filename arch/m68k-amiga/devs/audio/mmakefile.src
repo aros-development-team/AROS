@@ -1,0 +1,8 @@
+# $Id: mmakefile.src 36081 2010-12-13 20:49:53Z mazze $
+include $(TOP)/config/make.cfg
+
+FILES := audio
+
+%build_module mmake=kernel-amiga-m68k-audio \
+    modname=audio modtype=device \
+    files="$(FILES)" uselibs="hiddstubs rom"

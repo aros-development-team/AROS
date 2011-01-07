@@ -28,7 +28,8 @@ include $(TOP)/config/make.cfg
 #MM     kernel-kernel-kobj \
 #MM     kernel-cia-kobj \
 #MM     workbench-devs-amberram-kobj \
-#MM     workbench-libs-mathffp-kobj
+#MM     workbench-libs-mathffp-kobj \
+#MM     kernel-amiga-m68k-audio-kobj
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
@@ -45,7 +46,7 @@ AFILES=rom_entry rom_init
 
 ROMPAD_rom := 0x1000000
 KLIBS   := exec aros dos utility oop expansion boot workbench mathffp
-KDEVS   := timer input keyboard console trackdisk gameport
+KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs amberram # pipefs xpipe
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock kernel processor dosboot cia potgo disk
