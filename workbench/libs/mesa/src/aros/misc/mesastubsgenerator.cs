@@ -247,8 +247,16 @@ namespace glstubgenerator
 		}
 	}
 	
-	class GLHeaderParser
+	class APIHeaderParser
 	{
+		public const string APIENTRY = "APIENTRY";
+		public const string GLAPI = "GLAPI";
+		public const string GLAPIENTRY = "GLAPIENTRY";
+		public const string EGLAPI = "EGLAPI";
+		public const string EGLAPIENTRY = "EGLAPIENTRY";
+		public const string VGAPI = "VG_API_CALL";
+		public const string VGAPIENTRY = "VG_API_ENTRY";
+		
 		public string readandnormalize(StreamReader sr)
 		{
 			string s = sr.ReadLine();
@@ -262,16 +270,15 @@ namespace glstubgenerator
 				
 		}
 		
-		public FunctionList Parse(string pathToHeader)
+		public FunctionList Parse(string pathToHeader, string APIstring, string APIENTRYstring)
 		{
 			FunctionList functions = new FunctionList();
 			
 			StreamReader sr = File.OpenText(pathToHeader);
 			
 			string line = null;
-			int GLAPIposition = -1;
-			string GLAPIENTRYstring = "";
-			int GLAPIENTRYposition = -1;
+			int APIposition = -1;
+			int APIENTRYposition = -1;
 			int openbracketposition = -1;
 			int closebracketpositiong = -1;
 
@@ -284,26 +291,20 @@ namespace glstubgenerator
 					continue;
 				
 				/* check tokens */
-				GLAPIposition = line.IndexOf("GLAPI");
+				APIposition = line.IndexOf(APIstring);
 				
-				if (GLAPIposition < 0)
+				if (APIposition < 0)
 					continue;
 				
-				/* Check GLAPIENTRY first */
-				GLAPIENTRYstring = "GLAPIENTRY";
-				GLAPIENTRYposition = line.IndexOf(GLAPIENTRYstring, GLAPIposition);
+				/* Check APIENTRY first */
+				APIENTRYposition = line.IndexOf(APIENTRYstring, APIposition);
 				
-				if (GLAPIENTRYposition < 0)
-				{
-					/* Try with APIENTRY */
-					GLAPIENTRYstring = "APIENTRY";
-					GLAPIENTRYposition = line.IndexOf(GLAPIENTRYstring, GLAPIposition);
-					if (GLAPIENTRYposition < 0)
-						continue;
-				}
-					
+				if (APIENTRYposition < 0)
+					continue;
+				if (line[APIENTRYposition - 1] != ' ') /* Space before APIENTRY is required */
+					continue;
 				
-				openbracketposition = line.IndexOf("(", GLAPIENTRYposition);
+				openbracketposition = line.IndexOf("(", APIENTRYposition);
 				
 				if (openbracketposition < 0)
 					continue;
@@ -326,8 +327,8 @@ namespace glstubgenerator
 				
 				/* create objects */
 				Function f = new Function();
-				f.ReturnType = line.Substring(GLAPIposition + 5, GLAPIENTRYposition - GLAPIposition - 5).Trim();
-				f.Name = line.Substring(GLAPIENTRYposition + GLAPIENTRYstring.Length, openbracketposition - GLAPIENTRYposition - GLAPIENTRYstring.Length).Trim();
+				f.ReturnType = line.Substring(APIposition + APIstring.Length, APIENTRYposition - APIposition - APIstring.Length).Trim();
+				f.Name = line.Substring(APIENTRYposition + APIENTRYstring.Length, openbracketposition - APIENTRYposition - APIENTRYstring.Length).Trim();
 				
 				string argumentsstring = line.Substring(openbracketposition + 1, closebracketpositiong - 1 - openbracketposition);
 
@@ -341,6 +342,7 @@ namespace glstubgenerator
 					string innerargument = argument.Replace("*", " * ");
 					innerargument = innerargument.Replace("&", " & ");
 					innerargument = innerargument.Replace("  ", " ");
+					innerargument = innerargument.Replace(" [", "[");
 					innerargument = innerargument.Trim();
 					
 					/* Possible situations:
@@ -426,7 +428,9 @@ namespace glstubgenerator
 			
 			while((line = sr.ReadLine()) != null)
 			{
-				if (line.IndexOf(" gl") < 0)
+				if ((line.IndexOf(" gl") < 0) && 
+				    (line.IndexOf(" egl") < 0) && 
+				    (line.IndexOf(" vg") < 0))
 					continue;
 
 				bracketPosition = line.IndexOf("(", 0);
@@ -449,6 +453,14 @@ namespace glstubgenerator
 	}
 	abstract class ArosFileWriter
 	{
+		protected string getDefine(string path)
+		{
+			string define = Path.GetFileName(path);
+			define = define.Replace('.', '_');
+			define = define.ToUpper();
+			return define;
+		}
+
 		public abstract void Write(string path, FunctionList functions);
 	}
 	
@@ -558,12 +570,63 @@ namespace glstubgenerator
 		}
 	}
 	
+	class MangleFileWriter : ArosFileWriter
+	{
+		public override void Write (string path, FunctionList functions)
+		{
+			StreamWriter swMangle = new StreamWriter(path, false);
+			
+			string define = getDefine(path);
+
+			swMangle.WriteLine("#ifndef {0}", define);
+			swMangle.WriteLine("#define {0}", define);
+			
+			foreach (Function f in functions)
+			{
+				swMangle.WriteLine("#define {0} m{0}", f.Name);
+			}
+			
+			swMangle.WriteLine("#endif");
+			
+			swMangle.Close();
+		}
+	}	
+
+	class MangledHeaderFileWriter : ArosFileWriter
+	{
+		public override void Write (string path, FunctionList functions)
+		{
+			StreamWriter swMangledHeader = new StreamWriter(path, false);
+
+			string define = getDefine(path);
+			
+			swMangledHeader.WriteLine("#ifndef {0}", define);
+			swMangledHeader.WriteLine("#define {0}", define);
+			
+			foreach (Function f in functions)
+			{
+				swMangledHeader.Write("{0} m{1} (", f.ReturnType, f.Name);
+				if (f.Arguments.Count > 0)
+				{
+					int i = 0;
+					for (i = 0; i < f.Arguments.Count - 1; i++)
+						swMangledHeader.Write("{0} {1}, ", f.Arguments[i].Type, f.Arguments[i].Name);
+					swMangledHeader.Write("{0} {1}", f.Arguments[i].Type, f.Arguments[i].Name);
+				}
+				swMangledHeader.WriteLine(");");
+			}
+			
+			swMangledHeader.WriteLine("#endif");
+			
+			swMangledHeader.Close();
+		}
+	}	
+	
 	class MainClass
 	{
-
 		public static void Main(string[] args)
 		{
-			string PATH_TO_MESA = @"/data/deadwood/AROS/AROS/workbench/libs/mesa/";
+			string PATH_TO_MESA = @"/data/deadwood/gitAROS/AROS/workbench/libs/mesa/";
 			GLApiTempParser apiParser = new GLApiTempParser();
 			FunctionNameDictionary implementedFunctions = 
 				apiParser.Parse(PATH_TO_MESA + @"/src/mapi/glapi/glapitemp.h");
@@ -571,16 +634,28 @@ namespace glstubgenerator
 			
 			Console.WriteLine("Implemented functions: {0}", implementedFunctions.Keys.Count);
 			
-			GLHeaderParser p = new GLHeaderParser();
+			/* Parsing part */
+			APIHeaderParser p = new APIHeaderParser();
 			
-			FunctionList functionsglh = p.Parse(PATH_TO_MESA + @"/include/GL/gl.h");
+			FunctionList functionsglh = p.Parse(PATH_TO_MESA + @"/include/GL/gl.h", APIHeaderParser.GLAPI, APIHeaderParser.GLAPIENTRY);
+			FunctionList functionsglhquirk = p.Parse(PATH_TO_MESA + @"/include/GL/gl.h", APIHeaderParser.GLAPI, APIHeaderParser.APIENTRY);
+			functionsglh.AddRange(functionsglhquirk);
 			
-			FunctionList functionsglexth = p.Parse(PATH_TO_MESA + @"/include/GL/glext.h");
+			FunctionList functionsglexth = p.Parse(PATH_TO_MESA + @"/include/GL/glext.h", APIHeaderParser.GLAPI, APIHeaderParser.APIENTRY);
 			
+			FunctionList functionseglh = p.Parse(PATH_TO_MESA + @"/include/EGL/egl.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY);
+			
+			FunctionList functionsopenvgh = p.Parse(PATH_TO_MESA + @"/include/VG/openvg.h", APIHeaderParser.VGAPI, APIHeaderParser.VGAPIENTRY);
+
+			/* EGL extensions will not be available via library interface for now */
+			/* FunctionList functionseglexth = p.Parse(PATH_TO_MESA + @"/include/EGL/eglext.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY); */
+			FunctionList functionseglexth = new FunctionList();
+
 			ConfParser confParser = new ConfParser();
-			FunctionList orderedExistingFunctions = confParser.Parse(PATH_TO_MESA + @"/src/mesa/arosmesa.conf");
+			FunctionList orderedExistingFunctions = confParser.Parse(PATH_TO_MESA + @"/src/aros/arosmesa.conf");
 			
-			Console.WriteLine("Initial parse results: GL: {0} GLEXT: {1}", functionsglh.Count, functionsglexth.Count);
+			Console.WriteLine("Initial parse results: GL: {0} GLEXT: {1} EGL: {2} EGLEXT: {3}", 
+			                  functionsglh.Count, functionsglexth.Count, functionseglh.Count, functionseglexth.Count);
 			
 			functionsglexth.RemoveFunctionsExceptFor(implementedFunctions);
 			functionsglh.RemoveFunctionsExceptFor(implementedFunctions);
@@ -589,27 +664,67 @@ namespace glstubgenerator
 			
 			Console.WriteLine("After filtering of unimplemented functions: GL: {0} GLEXT: {1}", functionsglh.Count, functionsglexth.Count);
 			
+			/* Generation part */
+			
+			/* GL */
+			FunctionList functionsGL = new FunctionList();
+			
 			functionsglexth.RemoveFunctions(functionsglh);
+			
 			Console.WriteLine("After duplicates removal GL: {0}, GLEXT: {1}", functionsglh.Count, functionsglexth.Count);
-			functionsglh.AddRange(functionsglexth);
-			functionsglexth.Clear();
-			Console.WriteLine("After merging GL: {0}, GLEXT: {1}", functionsglh.Count, functionsglexth.Count);
+			functionsGL.AddRange(functionsglh);
+			functionsGL.AddRange(functionsglexth);
 
-			functionsglh.CorrectionForArrayArguments();
-			functionsglh.CalculateRegisters();
-			functionsglh.ReorderToMatch(orderedExistingFunctions);
+			Console.WriteLine("After merging GL {0}", functionsGL.Count);
+
+			/* EGL */
+			FunctionList functionsEGL = new FunctionList();
+			
+			functionseglexth.RemoveFunctions(functionseglh);
+			
+			Console.WriteLine("After duplicates removal EGL: {0}, EGLEXT: {1}", functionseglh.Count, functionseglexth.Count);
+			functionsEGL.AddRange(functionseglh);
+			functionsEGL.AddRange(functionseglexth);
+
+			Console.WriteLine("After merging EGL {0}", functionsEGL.Count);
+			
+			/* VG */
+			FunctionList functionsVG = new FunctionList();
+			functionsVG.AddRange(functionsopenvgh);
+			
+			Console.WriteLine("After merging VG {0}", functionsVG.Count);
+
+			FunctionList functionsfinal = new FunctionList();
+			functionsfinal.AddRange(functionsGL);
+			functionsfinal.AddRange(functionsEGL);
+			functionsfinal.AddRange(functionsVG);
+			
+			functionsfinal.CorrectionForArrayArguments();
+			functionsfinal.CalculateRegisters();
+			functionsfinal.ReorderToMatch(orderedExistingFunctions);
 			
 			
 			StubsFileWriter sfw = new StubsFileWriter();
-			sfw.Write(@"/data/deadwood/temp/aros_libapi.c", functionsglh);
+			sfw.Write(@"/data/deadwood/temp/arosmesa_library_api.c", functionsfinal);
 			
 			ConfFileWriter cfw = new ConfFileWriter();
-			cfw.Write(@"/data/deadwood/temp/arosmesa.conf", functionsglh);
+			cfw.Write(@"/data/deadwood/temp/arosmesa.conf", functionsfinal);
 			
 			UndefFileWriter ufw = new UndefFileWriter();
-			ufw.Write(@"/data/deadwood/temp/mangle_undef.h", functionsglh);
+			ufw.Write(@"/data/deadwood/temp/mangle_undef.h", functionsfinal);
 			
+			MangleFileWriter eglmfw = new MangleFileWriter();
+			eglmfw.Write(@"/data/deadwood/temp/egl_mangle.h", functionsEGL);
 			
+			MangledHeaderFileWriter eglmhfw = new MangledHeaderFileWriter();
+			eglmhfw.Write(@"/data/deadwood/temp/eglapim.h", functionsEGL);
+
+			MangleFileWriter vgmfw = new MangleFileWriter();
+			vgmfw.Write(@"/data/deadwood/temp/vg_mangle.h", functionsVG);
+
+			MangledHeaderFileWriter vgmhfw = new MangledHeaderFileWriter();
+			vgmhfw.Write(@"/data/deadwood/temp/vgapim.h", functionsVG);
+
 		}
 	}
 }
