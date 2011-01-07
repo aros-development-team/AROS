@@ -76,6 +76,55 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 	return (struct Library *)AROSSupportBase;
 }
 
+static void reloclist(struct List *l)
+{
+	struct Node *n;
+
+	n = l->lh_Head;
+	n->ln_Pred = (struct Node*)&l->lh_Head; 
+
+	n = l->lh_TailPred;
+	n->ln_Succ = (struct Node*)&l->lh_Tail;
+}
+
+/* move execbase to other location, used by m68k-amiga port to move exec from
+ * chip or slow ram to real fast ram if autoconfig detected any real fast boards
+ */
+static struct ExecBase *MoveExecBase(void)
+{
+	ULONG totalsize, i;
+	struct ExecBase *oldsb = SysBase, *newsb;
+	
+	totalsize = oldsb->LibNode.lib_NegSize + oldsb->LibNode.lib_PosSize;
+	newsb = (struct ExecBase *)((UBYTE *)AllocMem(totalsize, MEMF_ANY) + oldsb->LibNode.lib_NegSize);
+	CopyMemQuick((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, (UBYTE*)newsb - oldsb->LibNode.lib_NegSize, totalsize);
+
+	reloclist(&newsb->LibList);
+	Remove((struct Node*)oldsb);
+	AddTail(&newsb->LibList, (struct Node*)newsb);
+
+	reloclist(&newsb->MemList);
+	reloclist(&newsb->ResourceList);
+	reloclist(&newsb->DeviceList);
+	reloclist(&newsb->IntrList);
+	reloclist(&newsb->PortList);
+	reloclist(&newsb->TaskReady);
+	reloclist(&newsb->TaskWait);
+	reloclist(&newsb->SemaphoreList);
+	reloclist((struct List*)&newsb->ex_MemHandlers);
+	reloclist(&newsb->TaskReady);
+	for (i = 0; i < 5; i++) {
+		reloclist(&newsb->SoftInts[i].sh_List);
+    	}
+	reloclist(&PrivExecBase(newsb)->ResetHandlers);
+	reloclist((struct List*)&PrivExecBase(newsb)->AllocMemList);
+
+	newsb->ChkBase=~(IPTR)newsb;
+	SysBase = newsb;
+	FreeMem((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, totalsize);
+	return SysBase;
+}
+
 /*
  *  PrepareExecBase() will initialize the ExecBase to default values,
  *  and not add anything yet (except for the MemHeader).
@@ -100,6 +149,9 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     ULONG   negsize = 0;
     ULONG totalsize, i;
     VOID  **fp      = LIBFUNCTABLE;
+
+    if (mh == NULL)
+    	return MoveExecBase();
 
     /* TODO: at this point we should check if SysBase already exists and, if so,
        take special care about reset-surviving things. */
