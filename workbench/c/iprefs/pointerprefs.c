@@ -135,7 +135,7 @@ static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas, LONG n
     struct PointerPrefs *pp;
     struct NewPointerPrefs *npp;
 
-    D(bug("filename=%s\n",filename));
+    D(bug("[PointerPrefs] filename=%s\n",filename));
     iff = CreateIFF(filename, stopchunks, numstopchunks);
     if (iff) {
     	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
