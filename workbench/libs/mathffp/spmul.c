@@ -74,7 +74,7 @@ AROS_LH2(float, SPMul,
     if ((char) Exponent < 0 || (char) Exponent == 0x7f)
     {
         SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-        kprintf("%x * %x = %x\n",fnum1,fnum2,Res);
+        D(kprintf("%x * %x = %x\n",fnum1,fnum2,Res));
         return (Res | (FFPMantisse_Mask + FFPExponent_Mask));
     }
     
@@ -85,7 +85,7 @@ AROS_LH2(float, SPMul,
         SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     }
     
-    kprintf("%x * %x = %x\n",fnum1,fnum2,Res);
+    D(kprintf("%x * %x = %x\n",fnum1,fnum2,Res));
     
     return Res;
   
