@@ -125,8 +125,11 @@ load_st_module(struct st_module *stmod,
       }
    }
 #else
-   /* Select API based on requested name. Only GL for now */
-   stmod->stapi = st_api_create_OpenGL();
+   /* Select API based on requested name. Only GL/VG for now */
+   if (name[4] == 'V') /* SO LAME */
+      stmod->stapi = st_api_create_OpenVG();
+   else    
+      stmod->stapi = st_api_create_OpenGL();
    stmod->lib = NULL;
 #endif
 
