@@ -239,8 +239,15 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 {
 	int i;
 	uint32_t tmp;
-
-	D(bug("[GMA] LoadState\n"));
+	
+	bug("[GMA] LoadState %dx%dx%d\n",
+		(state->htotal & 0x0000ffff) + 1,
+		(state->vtotal & 0x0000ffff) + 1,
+		(state->dspcntr & G45_DSPCNTR_PIXEL_MASK)==G45_DSPCNTR_8BPP  ? 8:
+		(state->dspcntr & G45_DSPCNTR_PIXEL_MASK)==G45_DSPCNTR_15BPP ? 15:
+		(state->dspcntr & G45_DSPCNTR_PIXEL_MASK)==G45_DSPCNTR_16BPP ? 16:
+		(state->dspcntr & G45_DSPCNTR_PIXEL_MASK)==G45_DSPCNTR_32BPP ? 32:666
+		);
 
 	LOCK_HW
 	DO_FLUSH();
@@ -248,7 +255,7 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 	if( sd->pipe == PIPE_B )
 	{
 
-		bug("[GMA]load lvds\n");
+		bug("[GMA]lvds used\n");
 
 		// screen size/timing does not really change , most is already done by BIOS
 
