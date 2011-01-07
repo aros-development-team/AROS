@@ -3620,7 +3620,7 @@ static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
     ReturnInt("init_gfxhiddclass", ULONG, TRUE);
     
 failexit:
-    ReturnPtr("init_gfxhiddclass", ULONG, FALSE);
+    ReturnInt("init_gfxhiddclass", ULONG, FALSE);
 }
 
 /****************************************************************************************/
