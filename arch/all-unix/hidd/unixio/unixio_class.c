@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -19,6 +19,9 @@
 #undef timeval
 
 #define __OOP_NOATTRBASES__
+
+/* We need redefined timeval for the AROS includes. */
+#undef _AROS_TIMEVAL_H_
 
 #include <exec/types.h>
 #include <exec/lists.h>
