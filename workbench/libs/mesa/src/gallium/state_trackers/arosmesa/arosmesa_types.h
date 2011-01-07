@@ -23,15 +23,6 @@ struct arosmesa_framebuffer
     BOOL                        resized;
 };
 
-struct arosmesa_screen_info
-{
-    struct Screen * Screen;                         /* Current screen*/
-    ULONG          Width;
-    ULONG          Height;
-    ULONG          Depth;
-    ULONG          BitsPerPixel;
-};
-
 /* AROSMesa context */
 struct arosmesa_context
 {
@@ -42,7 +33,8 @@ struct arosmesa_context
     struct arosmesa_framebuffer *framebuffer;
 
     struct Window               *window;                /* Intuition window */
-    struct arosmesa_screen_info ScreenInfo;
+    struct Screen               *Screen;
+    ULONG                       BitsPerPixel;
     
     /* Rastport 'visible' to user (window rasport, screen rastport)*/
     struct RastPort             *visible_rp;

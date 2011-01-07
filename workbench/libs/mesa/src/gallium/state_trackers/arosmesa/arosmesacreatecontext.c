@@ -169,7 +169,7 @@
     }
 
     D(bug("[AROSMESA] AROSMesaCreateContext: Filling ST Visual \n"));
-    if (!AROSMesaFillVisual(&amesa->stvis, amesa->stmanager->screen, amesa->ScreenInfo.BitsPerPixel, tagList))
+    if (!AROSMesaFillVisual(&amesa->stvis, amesa->stmanager->screen, amesa->BitsPerPixel, tagList))
     {
         D(bug("[AROSMESA] AROSMesaCreateContext: ERROR -  failed to fill ST Visual\n"));
         goto error_out;
