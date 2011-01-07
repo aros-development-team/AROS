@@ -918,7 +918,7 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
     OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
     gfx = (OOP_Object *)e;
 
-    D(bug("[IntelG45] HIDD_INTELG45_SwitchToVideoMode\n"));
+    bug("[IntelG45] HIDD_INTELG45_SwitchToVideoMode bitmap:%d\n",bmdata);
     
     /* We should be able to get modeID from the bitmap */
     OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);

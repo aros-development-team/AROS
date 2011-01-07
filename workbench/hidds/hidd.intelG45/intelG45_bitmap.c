@@ -415,7 +415,7 @@ VOID METHOD(GMABM, Root, Set)
 }
 
 
-
+/* not used?
 static inline void setup_engine(OOP_Class *cl, OOP_Object *o, GMABitMap_t *bm)
 {
 	if (sd->Engine2DOwner != bm && bm->fbgfx)
@@ -427,7 +427,7 @@ static inline void setup_engine(OOP_Class *cl, OOP_Object *o, GMABitMap_t *bm)
 		OUT_RING((2 << 29) | (0x11 << 22) | (7));	 // BR00
 		if (bm->bpp == 1)
 			OUT_RING(0xff << 16 | bm->pitch/4);
-		else if (bm->bpp = 2)
+		else if (bm->bpp == 2)
 			OUT_RING(0xff << 16 | (bm->pitch / 4) | (1 << 24));
 		else
 			OUT_RING(0xff << 16 | (bm->pitch / 4) | (3 << 24));
@@ -443,6 +443,7 @@ static inline void setup_engine(OOP_Class *cl, OOP_Object *o, GMABitMap_t *bm)
 		UNLOCK_HW
 	}
 }
+*/
 
 VOID METHOD(GMABM, Hidd_BitMap, PutPixel)
 {
@@ -1012,39 +1013,41 @@ BOOL METHOD(GMABM, Hidd_BitMap, ObtainDirectAccess)
 {
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     LOCK_BITMAP
-
     IPTR VideoData = bm->framebuffer;
-
     if (bm->fbgfx)
     {
 //    	DO_FLUSH();
         VideoData += (IPTR)sd->Card.Framebuffer;
-			LOCK_HW
-			DO_FLUSH();
-			UNLOCK_HW
-
-//        if (sd->Card.Busy)
-//        {
-//            LOCK_HW
-//#warning TODO: NVSync(sd)
-//            RADEONWaitForIdleMMIO(sd);|
-//            UNLOCK_HW
-//        }
+		LOCK_HW
+		DO_FLUSH();
+		UNLOCK_HW
     }
-
     *msg->addressReturn = (UBYTE*)VideoData;
     *msg->widthReturn = bm->pitch / bm->bpp;
     *msg->heightReturn = bm->height;
     *msg->bankSizeReturn = *msg->memSizeReturn = bm->pitch * bm->height;
-
     return TRUE;
 }
 
 VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
 {
-    GMABitMap_t *bm = OOP_INST_DATA(cl, o);
 
+    GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     UNLOCK_BITMAP
+
+	if (bm->displayable)
+    {
+        struct pHidd_Compositing_BitMapRectChanged brcmsg =
+        {
+            mID : SD(cl)->mid_BitMapRectChanged,
+            bm : o,
+            x : 0,
+            y : 0,
+            width : bm->width,
+            height : bm->height
+        };
+        OOP_DoMethod(bm->compositing, (OOP_Msg)&brcmsg);    
+    }
 }
 
 #define pHidd_BitMap_FillRect pHidd_BitMap_DrawRect
