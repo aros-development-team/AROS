@@ -18,11 +18,11 @@
 
 VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList)
 {
-    amesa->ScreenInfo.Screen = (struct Screen *)GetTagData(AMA_Screen, 0, tagList);
+    amesa->Screen = (struct Screen *)GetTagData(AMA_Screen, 0, tagList);
     amesa->window = (struct Window *)GetTagData(AMA_Window, 0, tagList);
     amesa->visible_rp = (struct RastPort *)GetTagData(AMA_RastPort, 0, tagList);
 
-    if (amesa->ScreenInfo.Screen)
+    if (amesa->Screen)
     {
         D(bug("[AROSMESA] AROSMesaSelectRastPort: Screen @ %x\n", amesa->ScreenInfo.Screen));
         if (amesa->window)
@@ -40,7 +40,7 @@ VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList)
             if (!(amesa->visible_rp))
             {
                 /* Use the screens rastport */
-                amesa->visible_rp = &amesa->ScreenInfo.Screen->RastPort;
+                amesa->visible_rp = &amesa->Screen->RastPort;
                 D(bug("[AROSMESA] AROSMesaSelectRastPort: Screens RastPort @ %x\n", amesa->visible_rp));
             }
         }
@@ -52,7 +52,7 @@ VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList)
         {
             D(bug("[AROSMESA] AROSMesaSelectRastPort: Window @ %x\n", amesa->window));
             /* Use the windows Screen */
-            amesa->ScreenInfo.Screen = amesa->window->WScreen;
+            amesa->Screen = amesa->window->WScreen;
             D(bug("[AROSMESA] AROSMesaSelectRastPort: Windows Screen @ %x\n", amesa->ScreenInfo.Screen));
 
             if (!(amesa->visible_rp))
@@ -129,13 +129,8 @@ BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
     amesa->bottom = requestedbottom;
     
     /* Init screen information */
-    if (amesa->ScreenInfo.Screen)
-    {
-        amesa->ScreenInfo.Depth         = GetCyberMapAttr(amesa->ScreenInfo.Screen->RastPort.BitMap, CYBRMATTR_DEPTH);
-        amesa->ScreenInfo.BitsPerPixel  = GetCyberMapAttr(amesa->ScreenInfo.Screen->RastPort.BitMap, CYBRMATTR_BPPIX) * 8;
-        amesa->ScreenInfo.Width         = GetCyberMapAttr(amesa->ScreenInfo.Screen->RastPort.BitMap, CYBRMATTR_WIDTH);
-        amesa->ScreenInfo.Height        = GetCyberMapAttr(amesa->ScreenInfo.Screen->RastPort.BitMap, CYBRMATTR_HEIGHT);
-    }
+    if (amesa->Screen)
+        amesa->BitsPerPixel  = GetCyberMapAttr(amesa->Screen->RastPort.BitMap, CYBRMATTR_BPPIX) * 8;
     
     D(bug("[AROSMESA] AROSMesaStandardInit: Context Base dimensions set -:\n"));
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->visible_rp_width        = %d\n", amesa->visible_rp_width));
@@ -146,7 +141,6 @@ BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->right                   = %d\n", amesa->right));
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->top                     = %d\n", amesa->top));
     D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->bottom                  = %d\n", amesa->bottom));
-    D(bug("[AROSMESA] AROSMesaStandardInit:    amesa->depth                   = %d\n", amesa->ScreenInfo.Depth));
 
     return TRUE;
 }
