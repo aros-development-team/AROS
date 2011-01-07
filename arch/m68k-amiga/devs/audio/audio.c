@@ -24,7 +24,7 @@
 
 #include <hardware/custom.h>
 
-#include "audio_device.h"
+#include "audio_intern.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -34,7 +34,7 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("audio beginio %x\n", io));
+    D(bug("audio beginio %x:%d\n", io, io->ioa_Request.io_Command));
  
     if (io->ioa_Request.io_Flags & IOF_QUICK) {
     	return;
@@ -74,6 +74,12 @@ static int GM_UNIQUENAME(open)
     ULONG flags
 )
 {
+    D(bug("Audio: pri=%d key=%x data=%x (%x) len=%d\n",
+	io->ioa_Request.io_Message.mn_Node.ln_Pri,
+	io->ioa_AllocKey,
+	io->ioa_Data, ((UBYTE*)(io->ioa_Data))[0],
+	io->ioa_Length));
+
     io->ioa_Request.io_Error = IOERR_OPENFAIL;
 
     io->ioa_Request.io_Device = (struct Device *)AudioBase;
