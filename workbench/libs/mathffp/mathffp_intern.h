@@ -44,8 +44,12 @@
     use the mathffp.library functions to get information.
 */
 
+#if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+/* FIXME: lh_SysBase is NULL if mathffp is in rom. */
+#else
 #undef SysBase
 #define SysBase (MathBase->lh_SysBase)
+#endif
 
 #define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse    */
 #define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent    */
@@ -68,5 +72,7 @@
 #define minusone 0x800000c1 /* -1.00000000000000000000e+00 */
 #define two      0x80000042 /*  2.0                        */
 #define onehalf  0x80000040 /*  0.5                        */
+
+#define D(x) ;
 
 #endif /* __MATHFFP_INTERN_H__  */
