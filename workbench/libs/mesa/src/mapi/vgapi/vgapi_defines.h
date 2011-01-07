@@ -4,7 +4,7 @@
 #include "VG/openvg.h"
 #include "VG/vgext.h"
 
-#define MAPI_ABI_PREFIX vg
+#define MAPI_ABI_PREFIX mvg
 #define MAPI_ABI_PUBLIC VG_API_CALL
 #define MAPI_ABI_ATTR VG_API_ENTRY
 
