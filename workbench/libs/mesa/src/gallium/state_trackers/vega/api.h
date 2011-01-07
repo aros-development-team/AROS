@@ -48,4 +48,9 @@ void api_make_dispatch_current(const struct mapi_table *tbl);
 
 st_proc_t api_get_proc_address(const char *proc_name);
 
+#if defined(PIPE_OS_AROS)
+#include "vega/vgapim.h"
+#include "vega/vg_mangle.h"
+#endif
+
 #endif /* API_H */
