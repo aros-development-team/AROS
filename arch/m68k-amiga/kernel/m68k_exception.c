@@ -174,10 +174,10 @@ asm (
 	"	.align 4\n"
 	"	.globl	M68KTrapHelper_10\n"
 	"M68KTrapHelper_10:\n"
-	"	move.w	#0,%sp@-\n"		// Make some room
-	"	move.w	%sp@(2 + 6),%sp@-\n"	// Copy the vector
+	"	move.w	%sp@(6),%sp@-\n"	// Copy the vector
 	"	andi.w	#0x0fff,%sp@\n"		// Clear the upper bits
-	"	jmp	M68KExceptionHelper\n"
+	"	clr.w	%sp@-\n"		// extend vector to long
+	"	bra	M68KExceptionHelper\n"
 );
 
 static void M68KExceptionInit_10(struct ExecBase *SysBase)
@@ -279,7 +279,7 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
     	 * via 'regs_t'. Whee!
     	 */
     	regs->trapcode = (IPTR)trapHandler;
-    	regs->traparg  = (ULONG)alert;
+    	regs->traparg  = (ULONG)id;
     }
 }
 
