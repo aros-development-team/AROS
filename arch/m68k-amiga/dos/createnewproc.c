@@ -446,7 +446,6 @@ extern void BCPL_Cleanup(struct Process *me);
 #endif
 
     D(bug("CreateNewProc: proc=@%p entry @%p cd=%x\n", process, entrypoint, process->pr_CurrentDir));
-    { volatile ULONG *c = 0x110; *c = entrypoint; }
 
     pr = AddProcess
         (
@@ -635,24 +634,11 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
     return TRUE;
 }
 
-/* FIXME: Is there a better way to pass DOSBase to KillCurrentProcess ?
- */
-static struct DosLibrary *DOSBase;
-
-static int SetDosBase(LIBBASETYPEPTR __DOSBase)
-{
-    D(bug("SetDosBase\n"));
-    DOSBase = (struct DosLibrary *)__DOSBase;
-    return TRUE;
-}
-
-/* At pri -1 so it is executed before the DosInit in dos_init.c */
-ADD2INITLIB(SetDosBase, -1)
-
 static void KillCurrentProcess(void)
 {
     struct Process *me;
-
+    struct DosLibrary *DOSBase;
+    
     me = (struct Process *)FindTask(NULL);
 
     /* Call user defined exit function before shutting down. */
@@ -670,6 +656,8 @@ static void KillCurrentProcess(void)
         */
 	me->pr_ExitCode(me->pr_Task.tc_UserData, me->pr_ExitData);
     }
+
+    DOSBase = OpenLibrary("dos.library", 0);
 
     P(kprintf("Deleting local variables\n"));
 
@@ -755,7 +743,9 @@ static void KillCurrentProcess(void)
 
     removefromrootnode(me, DOSBase);
 
+    CloseLibrary((struct Library * )DOSBase);
+    P(kprintf("KillCurrentProcess done\n"));
+
     RemTask(NULL);
     
-    CloseLibrary((struct Library * )DOSBase);
 }
