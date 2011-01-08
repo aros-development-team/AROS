@@ -123,6 +123,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR KBBase)
     InitSemaphore(&KBBase->kb_QueueLock);
     NEWLIST(&KBBase->kb_ResetHandlerList);
     NEWLIST(&KBBase->kb_PendingQueue);
+    NEWLIST(&KBBase->kb_kbunits);
     
     return TRUE;
 }
@@ -221,6 +222,10 @@ static int GM_UNIQUENAME(Open)
 	return FALSE;
 	/* TODO: Clean up. */
     }
+    
+    Forbid();
+    AddTail((struct List*)&KBBase->kb_kbunits, &((struct KBUnit*)(ioreq->io_Unit))->node);
+    Permit();
 
     return TRUE;
 }
@@ -233,7 +238,18 @@ static int GM_UNIQUENAME(Close)
     struct IORequest *ioreq
 )
 {
-    FreeMem(ioreq->io_Unit, sizeof(KBUnit));
+    struct Node *node;
+    
+    /* only free ioreq->io_Unit if it is ours */
+    Forbid();
+    ForeachNode(&KBBase->kb_kbunits, node) {
+	if (node == (struct Node*)ioreq->io_Unit) {
+	    Remove(node);
+	    FreeMem(node, sizeof(KBUnit));
+	    break;
+	}
+    }
+    Permit();
 
     return TRUE;
 }
