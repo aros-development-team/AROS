@@ -198,10 +198,10 @@ asm (".chip 68060\n"
 	"	move.w	#0x2003,%d0\n"
 	"	illegal\n"
 		/* 68030 */
-	"	move.w	#0x0001,%d0\n"
+	"1:	move.w	#0x0001,%d0\n"
 		/* disable data cache, bad idea without correct MMU tables */
 	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
-	"1:	move.w	#0x2007,%d0\n"
+	"	move.w	#0x2007,%d0\n"
 	"	illegal\n"
 		/* 68040 */
 	"0:	move.w	#0x2008,%d0\n"
