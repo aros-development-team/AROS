@@ -130,7 +130,8 @@ AROS_UFH5(void, writeexpansion,
                        	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
              	);
 		
-		// do not remove this, it might have changed inside writeexpansion
+		// do not remove this, configDev->cd_BoardAddr
+		// might have changed inside writeexpansion
 		startaddr = (ULONG)configDev->cd_BoardAddr;
 		offset = startaddr / (E_SLOTSIZE * SLOTSPERBYTE);
 		bit = 7 - ((startaddr / E_SLOTSIZE) % SLOTSPERBYTE);

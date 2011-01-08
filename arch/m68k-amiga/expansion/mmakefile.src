@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS     := -I$(SRCDIR)/rom/expansion \
 		   $(PARANOIA_CFLAGS)
 
-FUNCTIONS := readexpansionbyte readexpansionrom configchain configboard writeexpansionbyte writeexpansionword
+FUNCTIONS := readexpansionbyte readexpansionrom configchain configboard writeexpansionbyte writeexpansionword diag
 
 %build_archspecific \
   mainmmake=kernel-expansion maindir=rom/expansion arch=amiga-m68k \
