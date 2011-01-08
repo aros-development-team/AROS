@@ -44,11 +44,22 @@ struct KeyboardBase
     struct Library *kb_OOPBase;
     
     OOP_AttrBase    HiddKbdAB_;
+
+    /* FIXME:
+     * m68k lowlevel.library stores only io_Device field after keyboard.device
+     * has been opened and when it is time to close it, lowlevel reuses old
+     * iorequest (which was used for other purposes originally), sets io_Device
+     * and calls CloseDevice(). Which means we can't assume io_Unit is valid.
+     * we leak memory if above happens but it is much better than freeing
+     * random memory
+     */
+    struct MinList kb_kbunits;
 };
 
 
 typedef struct KBUnit
 {
+	struct MinNode node;
     UWORD  kbu_readPos;		/* Position in the key buffer */
     UWORD  kbu_Qualifiers;      /* Known qualifiers at this moment */
     UWORD  kbu_LastCode;	/* Previous rawkey code */
