@@ -1,0 +1,49 @@
+;
+MSG_APP_NAME (//)
+SysMon
+;
+MSG_APP_TITLE (//)
+System Monitor
+;
+MSG_WINDOW_TITLE (//)
+System Monitor
+;
+MSG_LIST_REFRESH (//)
+Refresh
+;
+MSG_AUTO_REFRESH (//)
+Auto-Refresh (1s)
+;
+MSG_USAGE (//)
+Usage
+;
+MSG_FREQUENCY (//)
+Frequency
+;
+MSG_TAB_TASKS (//)
+Tasks
+;
+MSG_TAB_CPU (//)
+Processors
+;
+MSG_SIMULATED_CPU (//)
+Simulated AROS processor
+;
+MSG_PROCESSOR (//)
+Processor #%d: %s
+;
+MSG_TASK (//)
+Task
+;
+MSG_PROCESS (//)
+Process
+;
+MSG_TASK_NAME (//)
+Name
+;
+MSG_TASK_PRIORITY (//)
+Priority
+;
+MSG_TASK_TYPE (//)
+Type
+;
