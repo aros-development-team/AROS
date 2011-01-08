@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -121,7 +121,7 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
                 {
                     TEXT buffer[128];
-                    ULONG val;
+                    IPTR val;
 
                     val = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
                     RawDoFmt("%ld", &val, RAWFMTFUNC_STRING, buffer);
