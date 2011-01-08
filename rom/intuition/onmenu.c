@@ -84,7 +84,7 @@
 		
                 if (thisitem)
                 {
-                    if (SUBNUM(menunumber) != NOSUB)
+                    if (SUBNUM(menunumber) != NOSUB && thisitem->SubItem)
                     {
                         thisitem = thisitem->SubItem;
 			
