@@ -122,6 +122,12 @@ struct _glapi_table **GETMESABASEDDISPATCH(void)
 {
     return (struct _glapi_table **)&(REGMesaBase->mglb_Dispatch);
 }
+#elif defined(AROS_TLS)
+#include "aros/tls.h"
+
+DECLARE_STATIC_TLS(u_current_table);
+DECLARE_STATIC_TLS(u_current_user);
+
 #else
 struct mapi_table *u_current_table =
    (struct mapi_table *) table_noop_array;
@@ -224,6 +230,8 @@ u_current_set_user_internal(void *ptr)
 #elif defined(THREADS)
    u_tsd_set(&u_current_user_tsd, ptr);
    u_current_user = (ThreadSafe) ? NULL : ptr;
+#elif defined(AROS_TLS)
+   InsertIntoTLS(u_current_user, ptr);
 #else
    u_current_user = ptr;
 #endif
@@ -243,6 +251,8 @@ u_current_get_user_internal(void)
    return (ThreadSafe)
       ? u_tsd_get(&u_current_user_tsd)
       : u_current_user;
+#elif defined(AROS_TLS)
+   return GetFromTLS(u_current_user);
 #else
    return u_current_user;
 #endif
@@ -268,6 +278,8 @@ u_current_set_internal(struct mapi_table *tbl)
 #elif defined(THREADS)
    u_tsd_set(&u_current_table_tsd, (void *) tbl);
    u_current_table = (ThreadSafe) ? NULL : tbl;
+#elif defined(AROS_TLS)
+   InsertIntoTLS(u_current_table, (APTR)tbl);
 #else
    u_current_table = tbl;
 #endif
@@ -284,6 +296,8 @@ u_current_get_internal(void)
 #elif defined(THREADS)
    return (struct mapi_table *) ((ThreadSafe) ?
          u_tsd_get(&u_current_table_tsd) : (void *) u_current_table);
+#elif defined(AROS_TLS)
+   return (struct mapi_table *)GetFromTLS(u_current_table);
 #else
    return u_current_table;
 #endif

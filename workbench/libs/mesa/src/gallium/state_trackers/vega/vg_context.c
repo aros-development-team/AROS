@@ -46,12 +46,29 @@
 #include "util/u_sampler.h"
 #include "util/u_format.h"
 
+#if defined(PIPE_OS_AROS)
+#include "aros/tls.h"
+
+DECLARE_STATIC_TLS(_vg_context)
+
+struct vg_context * vg_current_context(void)
+{
+   return (struct vg_context *)GetFromTLS(_vg_context);
+}
+
+void vg_set_current_context(struct vg_context *ctx)
+{
+   InsertIntoTLS(_vg_context, (APTR)ctx);
+   api_make_dispatch_current((ctx) ? ctx->dispatch : NULL);
+}
+#else
 struct vg_context *_vg_context = 0;
 
 struct vg_context * vg_current_context(void)
 {
    return _vg_context;
 }
+#endif
 
 /**
  * A depth/stencil rb will be needed regardless of what the visual says.
@@ -78,11 +95,13 @@ choose_depth_stencil_format(struct vg_context *ctx)
    return (ctx->ds_format != PIPE_FORMAT_NONE);
 }
 
+#if !defined(PIPE_OS_AROS)
 void vg_set_current_context(struct vg_context *ctx)
 {
    _vg_context = ctx;
    api_make_dispatch_current((ctx) ? ctx->dispatch : NULL);
 }
+#endif
 
 struct vg_context * vg_create_context(struct pipe_context *pipe,
                                       const void *visual,
