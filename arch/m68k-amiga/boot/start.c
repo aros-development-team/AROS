@@ -365,6 +365,18 @@ static LONG doInitCode(ULONG startClass, ULONG version)
     return 0;
 }
 
+static UWORD syschecksum(void)
+{
+	UWORD *p = (UWORD*)&SysBase->SoftVer;
+	UWORD sum = 0;
+	BYTE i = (BYTE*)&SysBase->ChkSum - (BYTE*)&SysBase->SoftVer;
+	while (i >= 0) {
+		sum += *p++;
+		i -= 2;
+	}
+	return sum;
+}
+
 void start(IPTR chip_start, ULONG chip_size,
            IPTR fast_start, ULONG fast_size,
            IPTR ss_stack_upper, IPTR ss_stack_lower)
@@ -409,10 +421,13 @@ void start(IPTR chip_start, ULONG chip_size,
 	DebugPuts("[reset]\n");
 
 	/* Zap out old SysBase if invalid */
-	if (SysBase != NULL && SysBase->ChkBase != ~(IPTR)SysBase)
+	if (SysBase == NULL || SysBase->ChkBase != ~(IPTR)SysBase || syschecksum() != 0xffff) {
+	    DebugPutHex("[SysBase] invalid at", (ULONG)SysBase);
+	    /* TODO: should check again after autoconfig */
 	    SysBase = NULL;
-	else
+	} else {
 	    DebugPutHex("[SysBase] was at", (ULONG)SysBase);
+	}
 
 	if (fast_size != 0) {
 		DebugPutHex("Fast_Upper ",(ULONG)(fast_start + fast_size - 1));
@@ -504,11 +519,18 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	/* Autoconfig ram expansions are now configured */
 
-#if 0
 	/* Move execbase to real fast if available now */
-	if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024)
+	if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024) {
 		PrepareExecBase(NULL, NULL, NULL);
-#endif
+		DebugPutHex("[Sysbase] now at", (ULONG)SysBase);
+	}
+	
+	/* total chipram */
+	SysBase->MaxLocMem = (chip_size + 0xffff) & 0xffff0000;
+	/* total slow ram */
+	SysBase->MaxExtMem = (APTR)(0xc00000 + (fast_size + 0xffff) & 0xffff0000);
+	
+	SysBase->ChkSum = syschecksum() ^ 0xffff;
 
 #ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
 	PRESERVE_ALL(SysBase, Exec, Disable, 20);
