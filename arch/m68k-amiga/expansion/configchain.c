@@ -45,39 +45,6 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 	}					
 }			
 
-static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb, struct ConfigDev *configDev, UBYTE whenflag)
-{
-	struct DiagArea *diag = configDev->cd_Rom.er_DiagArea;
-	UWORD offset = DAC_CONFIGTIME ? diag->da_DiagPoint : diag->da_BootPoint;
-	APTR code = (APTR)(((UBYTE*)diag) + offset);
-	BOOL ret;
-	
-	// call autoconfig ROM da_DiagPoint or bootpoint da_BootPoint
-	D(bug("%x %x %x %x\n", code, configDev->cd_BoardAddr, diag, configDev));
-	ret = AROS_UFC5(BOOL, code,
-   		AROS_UFCA(APTR, configDev->cd_BoardAddr, A0),
-		AROS_UFCA(struct DiagArea*, diag, A2),
-		AROS_UFCA(struct ConfigDev*, configDev, A3),
-		AROS_UFCA(struct ExpansionBase*, ExpansionBase, A5),
-		AROS_UFCA(struct ExecBase*, sb, A6));
-	return ret;
-}
-
-static void callroms(struct ExpansionBase *ExpansionBase, UBYTE whenflag)
-{
-	struct Node *node;
-	D(bug("callroms %x\n", whenflag));
-	ForeachNode(&IntExpBase(ExpansionBase)->eb_BoardList, node) {
-		struct ConfigDev *configDev = (struct ConfigDev*)node;
-		if (configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == whenflag) {
-			if (!calldiagrom(ExpansionBase, IntExpBase(ExpansionBase)->eb_SysBase, configDev, whenflag)) {
-				FreeMem(configDev->cd_Rom.er_DiagArea, configDev->cd_Rom.er_DiagArea->da_Size);
-				configDev->cd_Rom.er_DiagArea = NULL;
-			}	
-		}
-	}
-}
-
 // read one byte from expansion autoconfig ROM
 static UBYTE getromdata(struct ConfigDev *configDev, UBYTE buswidth, UWORD offset)
 {
@@ -131,6 +98,55 @@ static void readroms(struct ExpansionBase *ExpansionBase)
 	}
 }
 
+static ULONG autosize(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
+{
+	UBYTE sizebits = configDev->cd_Rom.er_Flags & ERT_Z3_SSMASK;
+	ULONG maxsize = configDev->cd_BoardSize;
+	ULONG size = 0;
+	volatile ULONG *addr = (ULONG*)configDev->cd_BoardAddr;
+	volatile ULONG *startaddr = addr;
+	ULONG testpattern1 = 0xa5fe, testpattern2 = 0xf15a;
+	ULONG starttmp;
+	ULONG stepsize = 0x80000;
+
+	D(bug("sizebits=%x\n", sizebits));
+	if (sizebits >= 14) /* 14 and 15 = reserved */
+		return 0;
+	if (sizebits >= 2 && sizebits <= 8)
+		return 0x00010000 << (sizebits - 2);
+	if (sizebits >= 9)
+		return 0x00600000 + (0x200000 * (sizebits - 9));
+	starttmp = startaddr[0];
+	startaddr[0] = 0;
+	for (;;) {
+		ULONG tmp1, tmp2, tmp3;
+		tmp1 = addr[0];
+		/* make sure possible data cache entry gets reset */
+		addr[0] = testpattern2;
+		tmp2 = addr[0];
+		addr[0] = testpattern1;
+		tmp2 = startaddr[0];
+		tmp3 = addr[0];
+		addr[0] = tmp1;
+		if (tmp3 != testpattern1) {
+			D(bug("test pattern mismatch at %p\n", addr));
+			break;
+		}
+		if (size && tmp2 == testpattern1) {
+			/* wrap around? */
+			D(bug("wrap around at %p\n", addr));
+			break;
+		}
+		size += stepsize;
+		addr += stepsize / sizeof(ULONG);
+		if (size >= maxsize)
+			break;
+	}
+	startaddr[0] = starttmp;
+	D(bug("size=%x maxsize=%x\n", size, maxsize));
+	return size;
+}
+
 static void allocram(struct ExpansionBase *ExpansionBase)
 {
 	struct Node *node;
@@ -147,8 +163,11 @@ static void allocram(struct ExpansionBase *ExpansionBase)
 			if (configDev->cd_BoardAddr <= (APTR)0x00FFFFFF) {
 				attr |= MEMF_24BITDMA;
 				pri = 0;
+			} else if ((configDev->cd_Rom.er_Flags & ERT_Z3_SSMASK) != 0) {
+				size = autosize(ExpansionBase, configDev);
 			}
-			AddMemList(size, attr, pri, addr, "Fast Memory");
+			if (size && size <= configDev->cd_BoardSize)
+				AddMemList(size, attr, pri, addr, "Fast Memory");
 			configDev->cd_Flags |= CDF_PROCESSED;
 		}
 	}
@@ -165,10 +184,7 @@ AROS_LH1(void, ConfigChain,
 
 	if (baseAddr == 0) {
 		// called by strap
-		// this is not right, real expansion most likely does this earlier
-		callroms(ExpansionBase, DAC_CONFIGTIME);
 		romtaginit(ExpansionBase);
-		callroms(ExpansionBase, DAC_BINDTIME);
 		return;
 	}
 
