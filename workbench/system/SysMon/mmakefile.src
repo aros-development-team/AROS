@@ -3,10 +3,15 @@
 
 include $(TOP)/config/make.cfg
 
+FILES	:= main locale
+EXEDIR	:= $(AROSDIR)/System
+
 #MM- workbench-system : workbench-system-sysmon
+#MM  workbench-system-sysmon : includes linklibs \
+#MM      workbench-system-sysmon-catalogs
 
 %build_prog mmake=workbench-system-sysmon \
-    files=main targetdir=$(AROSDIR)/System \
+    files=$(FILES) targetdir=$(EXEDIR) \
     progname=SysMon uselibs="mui"
 
 %common

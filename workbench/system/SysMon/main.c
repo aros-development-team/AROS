@@ -16,6 +16,9 @@
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 
+#include "locale.h"
+
+#define VERSION "$VER: SysMon 1.0 (07.01.2011) ©2011 The AROS Development Team"
 
 /* MUI information */
 static Object * application;
@@ -27,7 +30,7 @@ static Object ** cpuusagegauges;
 static Object * cpufreqgroup;
 static Object ** cpufreqlabels;
 static Object ** cpufreqvalues;
-static CONST_STRPTR tabs [] = {"Tasks", "Processors", NULL};
+static CONST_STRPTR tabs [] = {NULL, NULL, NULL};
 
 static Object * tasklist;
 static Object * tasklistrefreshbutton;
@@ -77,7 +80,7 @@ VOID UpdateCPUInformation()
         __sprintf(buffer, " CPU %d : %d %% ", i, usage);
         set(cpuusagegauges[i], MUIA_Gauge_Current, usage);
         set(cpuusagegauges[i], MUIA_Gauge_InfoText, (IPTR)buffer);
-        __sprintf(buffer, "%d Mhz", (ULONG)frequency);
+        __sprintf(buffer, "%d MHz", (ULONG)frequency);
         set(cpufreqvalues[i], MUIA_Text_Contents, (IPTR)buffer);
     }
 }
@@ -92,7 +95,7 @@ VOID UpdateCPUStaticInformation()
     for (i = 0; i < processorcount; i++)
     {
 #if SIMULATE_USAGE_FREQ
-        modelstring = "Simulated AROS processor";
+        modelstring = _(MSG_SIMULATED_CPU);
 #else
         struct TagItem tags [] =
         {
@@ -103,7 +106,7 @@ VOID UpdateCPUStaticInformation()
         
         GetCPUInfo(tags);
 #endif
-        __sprintf(buffer, "Processor #%d: %s", i + 1, modelstring);
+        __sprintf(buffer, (STRPTR)_(MSG_PROCESSOR), i + 1, modelstring);
         set(cpufreqlabels[i], MUIA_Text_Contents, buffer);
     }
 }
@@ -225,13 +228,13 @@ AROS_UFH3(VOID, tasklistdisplayfunction,
         __sprintf(bufprio, "%d", obj->Priority);
         strings[0] = obj->Name;
         strings[1] = bufprio;
-        strings[2] = obj->Type == NT_TASK ? "Task" : "Process";
+        strings[2] = obj->Type == NT_TASK ? (STRPTR)_(MSG_TASK) : (STRPTR)_(MSG_PROCESS);
     }
     else
     {
-        strings[0] = "Name";
-        strings[1] = "Priority";
-        strings[2] = "Type";
+        strings[0] = (STRPTR)_(MSG_TASK_NAME);
+        strings[1] = (STRPTR)_(MSG_TASK_PRIORITY);
+        strings[2] = (STRPTR)_(MSG_TASK_TYPE);
     }
 
     AROS_USERFUNC_EXIT
@@ -253,18 +256,22 @@ BOOL CreateApplication()
 {
     Object * cpucolgroup;
     ULONG i;
-    
+
+    tabs[0] = _(MSG_TAB_TASKS);
+    tabs[1] = _(MSG_TAB_CPU);
+
     tasklistdisplayhook.h_Entry = (APTR)tasklistdisplayfunction;
     tasklistrefreshbuttonhook.h_Entry = (APTR)tasklistrefreshbuttonfunction;
 
     application = ApplicationObject,
-        MUIA_Application_Title, (IPTR)"System Monitor",
-        MUIA_Application_Version, (IPTR)"1.0",
+        MUIA_Application_Title, __(MSG_APP_NAME),
+        MUIA_Application_Version, (IPTR) VERSION,
+        MUIA_Application_Copyright, (IPTR)"©2011, The AROS Development Team",
         MUIA_Application_Base, (IPTR)"SYSTEMMONITOR",
-
+        MUIA_Application_Description, __(MSG_APP_TITLE),
         SubWindow, 
             mainwindow = WindowObject,
-                MUIA_Window_Title, (IPTR)"System Monitor",
+                MUIA_Window_Title, __(MSG_WINDOW_TITLE),
                 MUIA_Window_ID, MAKE_ID('S','Y','S','M'),
                 MUIA_Window_Height, MUIV_Window_Height_Visible(45),
                 MUIA_Window_Width, MUIV_Window_Width_Visible(35),
@@ -281,9 +288,9 @@ BOOL CreateApplication()
                             End,
                             Child, ColGroup(2),
                                 Child, VGroup,
-                                    Child, tasklistrefreshbutton = MUI_MakeObject(MUIO_Button, "Refresh"),
+                                    Child, tasklistrefreshbutton = MUI_MakeObject(MUIO_Button, _(MSG_LIST_REFRESH)),
                                     Child, ColGroup(2),
-                                        Child, Label("Auto-Refresh (1s)"),
+                                        Child, Label(_(MSG_AUTO_REFRESH)),
                                         Child, tasklistautorefreshcheckmark = MUI_MakeObject(MUIO_Checkmark, NULL),
                                     End,
                                 End,
@@ -291,9 +298,9 @@ BOOL CreateApplication()
                             End,
                         End,
                         Child, VGroup,
-                            Child, cpuusagegroup = HGroup, GroupFrameT("Usage"), 
+                            Child, cpuusagegroup = HGroup, GroupFrameT(_(MSG_USAGE)), 
                             End,
-                            Child, VGroup, GroupFrameT("Frequency"),
+                            Child, VGroup, GroupFrameT(_(MSG_FREQUENCY)),
                                 Child, cpufreqgroup = ColGroup(3), 
                                 End,
                             End,
@@ -443,6 +450,8 @@ int main()
     ULONG signals = 0;
     ULONG tasklistcounter = 0;
 
+    Locale_Initialize();
+
 #if SIMULATE_USAGE_FREQ
     processorcount = 4;
 #else
@@ -487,6 +496,8 @@ int main()
     DeInitTimer();
     
     DeInitProcessor();
+
+    Locale_Deinitialize();
 
     return 0;
 }
