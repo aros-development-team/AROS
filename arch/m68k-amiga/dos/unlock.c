@@ -54,6 +54,8 @@
     struct FileLock *fl = BADDR(lock);
 
     ASSERT_VALID_PTR_OR_NULL(fh);
+    ASSERT_VALID_FILELOCK(lock);
+
     D(bug("UnLock(%x)\n", fl));
 
     /* 0 handles are OK */
