@@ -402,6 +402,7 @@ static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, struct TagItem
 		D(bug("[GMA] Not a valid EDID data\n"));
 }
 
+
 OOP_Object *METHOD(INTELG45, Root, New)
 {
     D(bug("[GMA] Root New\n"));
@@ -493,7 +494,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
 		char *description = AllocVecPooled(sd->MemPool, 30);
 		snprintf(description, 29, "GMA_LVDS:%dx%d", sd->lvds_fixed.hdisp,sd->lvds_fixed.vdisp);
 
-		// only mode: native lcd
+		//native lcd mode
 		struct TagItem sync_native[]={
 		{ aHidd_Sync_PixelClock,sd->lvds_fixed.pixelclock*1000000 },
 		{ aHidd_Sync_HDisp,     sd->lvds_fixed.hdisp },
@@ -511,10 +512,19 @@ OOP_Object *METHOD(INTELG45, Root, New)
 		{ aHidd_Sync_Description, (IPTR)description },
 		{ TAG_DONE, 0UL }};
 
+		MAKE_SYNC(640x480_60,   25174,
+         640,  656,  752,  800,
+         480,  490,  492,  525,
+         "GMA_LVDS:640x480");
+		
+		tags->ti_Tag =  aHidd_Gfx_SyncTags;
+		tags->ti_Data = (IPTR)sync_640x480_60;
+		tags++;
+		
 		tags->ti_Tag =  aHidd_Gfx_SyncTags;
 		tags->ti_Data = (IPTR)sync_native;
 		tags++;
-
+		
 	}
 	else
 	{
@@ -715,7 +725,6 @@ OOP_Object * METHOD(INTELG45, Hidd_Gfx, NewBitMap)
 }
 
 
-
 void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
 {
     sd->CursorVisible = msg->visible;
@@ -733,28 +742,12 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
     }
 }
 
+
 void METHOD(INTELG45, Hidd_Gfx, SetCursorPos)
 {
-    ULONG x,y;
-    WORD mx=msg->x, my=msg->y;
-
-    if (mx < 0)
-    {
-    	x = G45_CURPOS_SIGN | (-mx);
-    }
-    else
-    	x = mx;
-
-    if (my < 0)
-    {
-    	y = G45_CURPOS_SIGN | (-my);
-    }
-    else
-    	y = my;
-		
-	writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT),
-			sd->Card.MMIO + (sd->pipe == PIPE_A ?G45_CURAPOS:G45_CURBPOS));
-	writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
+	ULONG x,y;
+	WORD mx=msg->x, my=msg->y;
+	SetCursorPosition(sd,msg->x,msg->y);
 }
 
 BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
@@ -961,18 +954,17 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
 			bmdata->usecount++;
 
 			LOCK_HW
-
 			sd->VisibleBitmap = bmdata;
 			G45_LoadState(sd, bmdata->state);
-
 			UNLOCK_HW
+
+			SetCursorPosition(sd,sd->pointerx,sd->pointery);
+			
 			return TRUE;
 		}
 	}
-
-    //HIDDIntelG45ShowCursor(gfx, TRUE);
- return FALSE;     
-   
+	
+	return FALSE;     
 }
 
 static struct HIDD_ModeProperties modeprops = 
