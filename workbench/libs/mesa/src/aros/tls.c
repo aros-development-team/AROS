@@ -75,10 +75,23 @@ APTR GetFromTLS(struct TaskLocalStorage * tls)
         {
             data = tl->tl_Data;
             break;
-            /* TODO: be smart? if list long, move the found not to beginning? */
+            /* TODO: be smart? if list long, move the found node to beginning? */
         }
     }
     ReleaseSemaphore(&tls->tls_Semaphore);
     
     return data;
+}
+
+VOID DestroyTLS(struct TaskLocalStorage * tls)
+{
+    struct TaskLocalNode * n, *m;
+    ObtainSemaphore(&tls->tls_Semaphore);
+    ForeachNodeSafe(&tls->tls_TaskLocalList, n, m)
+    {
+        Remove(&n->tl_Node);
+        FreeVec(n);
+    }
+    ReleaseSemaphore(&tls->tls_Semaphore);
+    FreeVec(tls);
 }
