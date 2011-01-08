@@ -87,6 +87,7 @@
 #define G45_VGACNTRL_VGA_DISABLE	0x80000000
 
 #define G45_DPLLA_CTRL		0x6014
+#define G45_DPLLB_CTRL		0x6018
 
 #define G45_DPLL_VCO_ENABLE		0x80000000
 #define G45_DPLL_DVO_HIGH_SPEED	0x40000000
@@ -104,6 +105,8 @@
 
 #define G45_FPA0					0x6040
 #define G45_FPA1					0x6044
+#define G45_FPB0					0x6048
+#define G45_FPB1					0x604c
 
 #define G45_DSPACNTR				0x70180
 #define G45_DSPBCNTR				0x71180
@@ -121,10 +124,12 @@
 #define G45_DSPCNTR_32BPP			(0x6 << 26)
 
 #define G45_DSPALINOFF				0x70184
+#define G45_DSPABASE G45_DSPALINOFF
 #define G45_DSPASTRIDE				0x70188
 #define G45_DSPASURF				0x7019c
 
 #define G45_DSPBLINOFF				0x71184
+#define G45_DSPBBASE G45_DSPBLINOFF
 #define G45_DSPBSTRIDE				0x71188
 #define G45_DSPBSURF 				0x7119C
 
@@ -161,6 +166,10 @@
 #define G45_LVDS					0x61180
 #define G45_LVDS_PORT_EN			(1 << 31)
 #define G45_LVDS_PIPEB_SELECT		(1 << 30) /* Selects pipe B for LVDS data.  Must be set on pre-965. */
+
+#define G45_PFIT_CONTROL			0x61230
+#define G45_PFIT_ENABLE				(1 << 31)
+#define G45_PFIT_PGM_RATIOS			0x61234
 
 #define G45_CURACNTR				0x70080
 #define G45_CURBCNTR				0x700C0

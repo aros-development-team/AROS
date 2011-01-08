@@ -122,6 +122,56 @@ static BOOL calc_pll_and_validate(GMA_PLL_t *pll)
 	return TRUE;
 }
 
+void EnablePipe(struct g45staticdata *sd,LONG pipe){		
+    char *pipeconf_reg = sd->Card.MMIO + ((pipe == PIPE_A) ? G45_PIPEACONF : G45_PIPEBCONF);
+    writel( readl( pipeconf_reg ) | G45_PIPECONF_ENABLE ,pipeconf_reg );
+}
+	
+void DisablePipe(struct g45staticdata *sd,LONG pipe){
+    char *pipeconf_reg = sd->Card.MMIO + ((pipe == PIPE_A) ? G45_PIPEACONF : G45_PIPEBCONF);
+	
+    writel(readl( pipeconf_reg ) & ~G45_PIPECONF_ENABLE, pipeconf_reg );
+	readl( pipeconf_reg );
+	delay_ms(sd, 20);
+}
+
+void EnablePlane(struct g45staticdata *sd,LONG plane){
+    char *dspbase_reg = sd->Card.MMIO + ((plane == PIPE_A) ? G45_DSPABASE : G45_DSPBBASE);
+    char *dspcntr_reg = sd->Card.MMIO + ((plane == PIPE_A) ? G45_DSPACNTR : G45_DSPBCNTR);
+
+    writel( readl( dspcntr_reg ) | G45_DSPCNTR_PLANE_ENABLE ,dspcntr_reg);
+    writel( readl( dspbase_reg ) ,dspbase_reg);
+    delay_ms(sd, 20);
+}
+
+void DisablePlane(struct g45staticdata *sd,LONG plane){
+    char *dspbase_reg = sd->Card.MMIO + ((plane == PIPE_A) ? G45_DSPABASE : G45_DSPBBASE);
+    char *dspcntr_reg = sd->Card.MMIO + ((plane == PIPE_A) ? G45_DSPACNTR : G45_DSPBCNTR);
+
+	writel( readl( dspcntr_reg ) & ~G45_DSPCNTR_PLANE_ENABLE ,dspcntr_reg);
+	writel( readl( dspbase_reg ) ,dspbase_reg);
+	readl( dspbase_reg );
+	delay_ms(sd, 20);
+}
+
+void  SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y)
+{
+	LONG width = (sd->VisibleBitmap->state->htotal & 0x0000ffff);
+    LONG height = (sd->VisibleBitmap->state->vtotal & 0x0000ffff);
+	
+	if(x<0)x=0;
+	if(y<0)y=0;
+	if(x>width)x = width;  // Grue eat you,if pointer is outside of screen.
+	if(y>height)y = height;
+
+	sd->pointerx =x;
+	sd->pointery =y;
+	
+	writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT),
+			sd->Card.MMIO + (sd->pipe == PIPE_A ?G45_CURAPOS:G45_CURBPOS));
+	writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
+}
+
 void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 		uint16_t width, uint16_t height, uint8_t depth, uint32_t pixelclock, intptr_t framebuffer,
         uint16_t hdisp, uint16_t vdisp, uint16_t hstart, uint16_t hend, uint16_t htotal,
@@ -239,6 +289,7 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 {
 	int i;
 	uint32_t tmp;
+	BOOL panelfitter;
 	
 	bug("[GMA] LoadState %dx%dx%d\n",
 		(state->htotal & 0x0000ffff) + 1,
@@ -254,27 +305,47 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 	
 	if( sd->pipe == PIPE_B )
 	{
-
-		bug("[GMA]lvds used\n");
-
-		// screen size/timing does not really change , most is already done by BIOS
-
+		/*		G45: Volume 3: Display Register
+		• DPLL must be enabled and warmed up before pipe or ports are enabled.
+		• DPLL must be kept enabled until ports are disabled and pipe is completely off.
+		• DPLL frequency must not be changed until ports are disabled and pipe is completely off, except
+		  when in native VGA where SR01 25/28 MHz select can be changed.
+		• Planes must be disabled before pipe is disabled or pipe timings changed.
+		• Panelfitter must be enabled or disabled only when pipe is completely off.
+		• On Gen3 set port multiply when enabling a SDVO port.
+		• On Gen3.5 and GenX set port multiply when programming the DPLL.
+		• The internal TV and CRT ports can be left on during a mode switch if DPLL is not touched.
+		• Ports can be freely enabled or disabled on a running pipe, except when port multiply needs to
+		  be changed.
+		*/
+		
+		// DPLL or FP is not touched here ,register value is same in BIOS vesa modes 640x420 and 1024x600
+		
 		// disable vga
 		writel(readl(sd->Card.MMIO + G45_VGACNTRL) | G45_VGACNTRL_VGA_DISABLE, sd->Card.MMIO + G45_VGACNTRL);
+		
+		ULONG hdisp = (state->htotal & 0x0000ffff) + 1;
+		ULONG vdisp = (state->vtotal & 0x0000ffff) + 1;
 
-		// hdisp & vdisp
-		writel(((sd->lvds_fixed.hdisp - 1) << 16) | (sd->lvds_fixed.vdisp - 1), sd->Card.MMIO + G45_PIPEBSRC);
-		writel(((sd->lvds_fixed.vdisp - 1) << 16) | (sd->lvds_fixed.hdisp - 1), sd->Card.MMIO + G45_DSPBSIZE);
+		if( hdisp == sd->lvds_fixed.hdisp && vdisp == sd->lvds_fixed.vdisp)
+			panelfitter = FALSE;
+		else
+			panelfitter = TRUE;
 
-		// enable pipe  B, pipe A didn't work with LVDS
-		writel( readl( sd->Card.MMIO + G45_PIPEBCONF ) | G45_PIPECONF_ENABLE , sd->Card.MMIO + G45_PIPEBCONF);
-		readl(sd->Card.MMIO + G45_PIPEBCONF);
-		delay_ms(sd, 20);
+		bug("[GMA] panelfitter %s\n",panelfitter ? "ON":"OFF");
+   	 
+		DisablePlane(sd,PIPE_B);
+		DisablePipe(sd,PIPE_B);
+		
+		bug("G45_PFIT_CONTROL=%x\n",readl(sd->Card.MMIO + G45_PFIT_CONTROL));
+		bug("G45_PFIT_PGM_RATIOS=%x\n",readl(sd->Card.MMIO + G45_PFIT_PGM_RATIOS));
+		
+		writel(((hdisp - 1) << 16) | (vdisp - 1), sd->Card.MMIO + G45_PIPEBSRC);
+		writel(((vdisp - 1) << 16) | (hdisp - 1), sd->Card.MMIO + G45_DSPBSIZE);
 
-		// pixel format & enable plane & use pipe B
+		// pixel format , use pipe B
 		tmp = readl( sd->Card.MMIO + G45_DSPBCNTR );
 		tmp = ( tmp & ~G45_DSPCNTR_PIXEL_MASK ) | ( state->dspcntr & G45_DSPCNTR_PIXEL_MASK );
-		tmp |= G45_DSPCNTR_PLANE_ENABLE;
 		tmp |= G45_DSPCNTR_SEL_PIPE_B;
 		writel( tmp , sd->Card.MMIO + G45_DSPBCNTR );
 		delay_ms(sd, 20);
@@ -284,7 +355,7 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 
 		// framebuffer address + possible xy offset
 		LONG offset = sd->VisibleBitmap->yoffset * sd->VisibleBitmap->pitch +
-		              sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp;
+					  sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp;
 		writel( state->dsplinoff - offset , sd->Card.MMIO + G45_DSPBLINOFF );
 		readl( sd->Card.MMIO + G45_DSPBLINOFF );
 
@@ -296,8 +367,25 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 			writel( (i << 16) |(i << 8) | i , sd->Card.MMIO + 0x0a800 + 4 * i);//PALETTE_B
 		}
 
-	}else{
+		// enable/disable panelfitter
+		if( panelfitter ){
+			writel( 0 , sd->Card.MMIO + G45_PFIT_PGM_RATIOS );
+			writel( readl(sd->Card.MMIO + G45_PFIT_CONTROL) | G45_PFIT_ENABLE , sd->Card.MMIO + G45_PFIT_CONTROL );
+		}
+		else
+		{
+			writel( 0 , sd->Card.MMIO + G45_PFIT_PGM_RATIOS );
+			writel( readl(sd->Card.MMIO + G45_PFIT_CONTROL) & ~G45_PFIT_ENABLE , sd->Card.MMIO + G45_PFIT_CONTROL );
+		}
+		delay_ms(sd, 1);
 		
+		EnablePipe(sd,PIPE_B);
+		EnablePlane(sd,PIPE_B);
+		
+	}
+	else
+	{
+
 		uint32_t tmp;
 
 		writel(readl(sd->Card.MMIO + 0x61140) & ~(1 << 29), sd->Card.MMIO + 0x61140);

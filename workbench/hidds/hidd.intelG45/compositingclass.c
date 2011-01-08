@@ -264,6 +264,8 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
     /* If bitmaps have the same modeid, they can be composited */
     if (compdata->screenmodeid == bmmodeid)
         return TRUE;
+	else
+		return FALSE; // if front screen resolution is lower,weird things happen...
 
     /* If bitmaps have different pixel formats, they cannot be composited */
     /* FIXME: actually they can, but CopyBox for different formats is not
