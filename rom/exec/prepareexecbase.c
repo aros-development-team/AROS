@@ -80,6 +80,11 @@ static void reloclist(struct List *l)
 {
 	struct Node *n;
 
+	if (l->lh_Head->ln_Succ == NULL) {
+		NEWLIST(l);
+		return;
+	}
+
 	n = l->lh_Head;
 	n->ln_Pred = (struct Node*)&l->lh_Head; 
 
@@ -95,12 +100,13 @@ static struct ExecBase *MoveExecBase(void)
 	ULONG totalsize, i;
 	struct ExecBase *oldsb = SysBase, *newsb;
 	
+	Remove((struct Node*)oldsb);
+
 	totalsize = oldsb->LibNode.lib_NegSize + oldsb->LibNode.lib_PosSize;
 	newsb = (struct ExecBase *)((UBYTE *)AllocMem(totalsize, MEMF_ANY) + oldsb->LibNode.lib_NegSize);
 	CopyMemQuick((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, (UBYTE*)newsb - oldsb->LibNode.lib_NegSize, totalsize);
 
 	reloclist(&newsb->LibList);
-	Remove((struct Node*)oldsb);
 	AddTail(&newsb->LibList, (struct Node*)newsb);
 
 	reloclist(&newsb->MemList);
