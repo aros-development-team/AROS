@@ -95,7 +95,7 @@ AROS_UFH4(LONG, ReadFunc,
  	if ((LONG)segs > 0)
  	    Close(file);
  	else
- 	    segs = (BPTR)(LONG)-segs;
+ 	    segs = (BPTR)-((LONG)segs);
 #else
         Close(file);
 #endif
