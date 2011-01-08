@@ -177,12 +177,13 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     } while (!sorted);
 
 #ifdef PRINT_LIST
-    bug("Resident modules (addr: pri version name):\n");
+    bug("Resident modules (addr: pri flags version name):\n");
     for (i = 0; i < num; i++)
     {
-        bug("+ %p: %4d %3d \"%s\"\n",
+        bug("+ %p: %4d %02x %3d \"%s\"\n",
             RomTag[i],
             RomTag[i]->rt_Pri,
+            RomTag[i]->rt_Flags,
             RomTag[i]->rt_Version,
             RomTag[i]->rt_Name);
     }
