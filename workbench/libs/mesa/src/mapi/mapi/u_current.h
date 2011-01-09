@@ -39,7 +39,7 @@ extern __thread void *u_current_user_tls
 extern const struct mapi_table *u_current_table;
 extern const void *u_current_user;
 
-#elif defined(AROS_TLS)
+#elif defined(__AROS__)
 
 #else /* GLX_USE_TLS */
 
@@ -77,7 +77,7 @@ u_current_get(void)
 {
 #ifdef GLX_USE_TLS
    return (const struct mapi_table *) u_current_table_tls;
-#elif defined(AROS_TLS)
+#elif defined(__AROS__)
    return u_current_get_internal();
 #else
    return (likely(u_current_table) ?
@@ -96,7 +96,7 @@ u_current_get_user(void)
 {
 #ifdef GLX_USE_TLS
    return u_current_user_tls;
-#elif defined(AROS_TLS)
+#elif defined(__AROS__)
    return u_current_get_user_internal();
 #else
    return likely(u_current_user) ? u_current_user : u_current_get_user_internal();

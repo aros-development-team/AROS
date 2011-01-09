@@ -10,13 +10,9 @@
 
 /****************************************************************************************/
 
-/* Constants */
-
 struct MesaBase
 {
     struct Library  mglb_Lib;
-    APTR            mglb_CurrentContext;
-    APTR            mglb_Dispatch;
 };
 
 #endif /* AROSMESA_INTERN_H */
