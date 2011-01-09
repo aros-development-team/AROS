@@ -31,7 +31,8 @@ namespace glstubgenerator
 			{
 				if ((a.Type.IndexOf("*") >= 0) || (nextdreg > 7))
 				{
-					if (nextareg > 5) throw new ApplicationException("A6 reached");
+					if (nextareg > 5) 
+						throw new ApplicationException("A6 reached");
 					
 					a.Register = string.Format("A{0}", nextareg++);
 				}
@@ -99,6 +100,22 @@ namespace glstubgenerator
 			
 			foreach(Function f in toBeRemoved)
 				this.Remove(f);
+		}
+		
+		public void RemoveFunctionByName(string functionName)
+		{
+			FunctionList toBeRemoved = new FunctionList();
+			
+			foreach(Function f in this)
+			{
+				if (f.Name == functionName)
+					toBeRemoved.Add(f);
+			}
+
+			foreach(Function f in toBeRemoved)
+			{
+				this.Remove(f);
+			}			
 		}
 		
 		public void RemoveFunctionsExceptFor(FunctionNameDictionary functions)
@@ -256,6 +273,8 @@ namespace glstubgenerator
 		public const string EGLAPIENTRY = "EGLAPIENTRY";
 		public const string VGAPI = "VG_API_CALL";
 		public const string VGAPIENTRY = "VG_API_ENTRY";
+		public const string VGUAPI = "VGU_API_CALL";
+		public const string VGUAPIENTRY = "VGU_API_ENTRY";
 		
 		public string readandnormalize(StreamReader sr)
 		{
@@ -466,6 +485,19 @@ namespace glstubgenerator
 	
 	class StubsFileWriter : ArosFileWriter
 	{
+		private bool addRegSaveRest;
+		private string baseName;
+		private string functionPrefix;
+		
+		public StubsFileWriter(bool addRegSaveRest, string libraryName)
+		{
+			this.addRegSaveRest = addRegSaveRest;
+			this.baseName = libraryName + "Base";
+			this.functionPrefix = libraryName.ToLower();
+			this.functionPrefix = char.ToUpper(this.functionPrefix[0]) + this.functionPrefix.Substring(1);
+			
+		}
+
 		public override void Write (string path, FunctionList functions)
 		{
 			StreamWriter swStubs = new StreamWriter(path, false);
@@ -477,14 +509,17 @@ namespace glstubgenerator
 				{
 					swStubs.WriteLine("    AROS_LHA({0}, {1}, {2}),", a.Type, a.Name, a.Register);
 				}
-				swStubs.WriteLine("    struct Library *, MesaBase, 0, Mesa)");
+				swStubs.WriteLine("    struct Library *, {0}, 0, {1})", baseName, functionPrefix);
 				swStubs.WriteLine("{");
 				swStubs.WriteLine("    AROS_LIBFUNC_INIT");
 				swStubs.WriteLine();
-				swStubs.WriteLine("    SAVE_REG");
-				swStubs.WriteLine();
-				swStubs.WriteLine("    PUT_MESABASE_IN_REG");
-				swStubs.WriteLine();
+				if (addRegSaveRest)
+				{
+					swStubs.WriteLine("    SAVE_REG");
+					swStubs.WriteLine();
+					swStubs.WriteLine("    PUT_MESABASE_IN_REG");
+					swStubs.WriteLine();
+				}
 				if (!f.ReturnsVoid())
 				{
 					swStubs.Write("    {0} _return = m{1}(", f.ReturnType, f.Name);
@@ -503,8 +538,11 @@ namespace glstubgenerator
 				}
 				swStubs.WriteLine(");");
 				swStubs.WriteLine();
-				swStubs.WriteLine("    RESTORE_REG");
-				swStubs.WriteLine();
+				if (addRegSaveRest)
+				{
+					swStubs.WriteLine("    RESTORE_REG");
+					swStubs.WriteLine();
+				}
 				if (!f.ReturnsVoid())
 				{
 					swStubs.WriteLine("    return _return;");
@@ -645,7 +683,6 @@ namespace glstubgenerator
 			
 			FunctionList functionseglh = p.Parse(PATH_TO_MESA + @"/include/EGL/egl.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY);
 			
-			FunctionList functionsopenvgh = p.Parse(PATH_TO_MESA + @"/include/VG/openvg.h", APIHeaderParser.VGAPI, APIHeaderParser.VGAPIENTRY);
 
 			/* EGL extensions will not be available via library interface for now */
 			/* FunctionList functionseglexth = p.Parse(PATH_TO_MESA + @"/include/EGL/eglext.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY); */
@@ -688,23 +725,17 @@ namespace glstubgenerator
 
 			Console.WriteLine("After merging EGL {0}", functionsEGL.Count);
 			
-			/* VG */
-			FunctionList functionsVG = new FunctionList();
-			functionsVG.AddRange(functionsopenvgh);
 			
-			Console.WriteLine("After merging VG {0}", functionsVG.Count);
-
 			FunctionList functionsfinal = new FunctionList();
 			functionsfinal.AddRange(functionsGL);
 			functionsfinal.AddRange(functionsEGL);
-			functionsfinal.AddRange(functionsVG);
 			
 			functionsfinal.CorrectionForArrayArguments();
 			functionsfinal.CalculateRegisters();
 			functionsfinal.ReorderToMatch(orderedExistingFunctions);
 			
 			
-			StubsFileWriter sfw = new StubsFileWriter();
+			StubsFileWriter sfw = new StubsFileWriter(true, "Mesa");
 			sfw.Write(@"/data/deadwood/temp/arosmesa_library_api.c", functionsfinal);
 			
 			ConfFileWriter cfw = new ConfFileWriter();
@@ -719,12 +750,37 @@ namespace glstubgenerator
 			MangledHeaderFileWriter eglmhfw = new MangledHeaderFileWriter();
 			eglmhfw.Write(@"/data/deadwood/temp/eglapim.h", functionsEGL);
 
+			/* VG */
+			FunctionList functionsopenvgh = p.Parse(PATH_TO_MESA + @"/include/VG/openvg.h", APIHeaderParser.VGAPI, APIHeaderParser.VGAPIENTRY);
+			FunctionList functionsvguh = p.Parse(PATH_TO_MESA + @"/include/VG/vgu.h", APIHeaderParser.VGUAPI, APIHeaderParser.VGUAPIENTRY);
+
+			FunctionList orderedExistingFunctionsVG = confParser.Parse(PATH_TO_MESA + @"/src/aros/vega/openvg.conf");
+			
+			FunctionList functionsVG = new FunctionList();
+			functionsVG.AddRange(functionsopenvgh);
+			functionsVG.AddRange(functionsvguh);
+			functionsVG.RemoveFunctionByName("vguComputeWarpQuadToQuad"); /* Too many parameters */
+			
+			Console.WriteLine("After merging VG {0}", functionsVG.Count);
+			
+			functionsfinal.Clear();
+			functionsfinal.AddRange(functionsVG);
+			
+			functionsfinal.CorrectionForArrayArguments();
+			functionsfinal.CalculateRegisters();
+			functionsfinal.ReorderToMatch(orderedExistingFunctionsVG);			
+
 			MangleFileWriter vgmfw = new MangleFileWriter();
-			vgmfw.Write(@"/data/deadwood/temp/vg_mangle.h", functionsVG);
+			vgmfw.Write(@"/data/deadwood/temp/vg_mangle.h", functionsfinal);
 
 			MangledHeaderFileWriter vgmhfw = new MangledHeaderFileWriter();
-			vgmhfw.Write(@"/data/deadwood/temp/vgapim.h", functionsVG);
+			vgmhfw.Write(@"/data/deadwood/temp/vgapim.h", functionsfinal);
 
+			StubsFileWriter vgsfw = new StubsFileWriter(false, "OpenVG");
+			vgsfw.Write(@"/data/deadwood/temp/openvg_library_api.c", functionsfinal);
+			
+			ConfFileWriter vgcfw = new ConfFileWriter();
+			vgcfw.Write(@"/data/deadwood/temp/openvg.conf", functionsfinal);
 		}
 	}
 }
