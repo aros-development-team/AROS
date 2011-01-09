@@ -360,11 +360,32 @@ static ULONG cpu_detect(void)
 #define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
 #endif
 
+extern void SuperstackSwap(void);
+/* This calls the register-ABI library
+ * routine Exec/InitCode, for use in NewStackSwap()
+ */
 static LONG doInitCode(ULONG startClass, ULONG version)
 {
-    InitCode(startClass, version);
+	/* Attempt to allocate a new supervisor stack */
+	do {
+   	    ULONG ss_stack_size = SysBase->SysStkUpper - SysBase->SysStkLower;
+	    APTR ss_stack;
 
-    return 0;
+	    ss_stack = AllocMem(ss_stack_size, MEMF_ANY | MEMF_CLEAR);
+	    if (ss_stack == NULL) {
+	    	DebugPuts("Strange. Can't allocate a new system stack\n");
+	        break;
+	    }
+
+            SysBase->SysStkLower    = ss_stack;
+            SysBase->SysStkUpper    = ss_stack + ss_stack_size;
+
+	    Supervisor(SuperstackSwap);
+	} while (0);
+
+	InitCode(startClass, version);
+
+	return 0;
 }
 
 static UWORD syschecksum(void)
