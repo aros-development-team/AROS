@@ -82,32 +82,6 @@
 typedef void (*_glapi_proc)(void);
 struct _glapi_table;
 
-#if defined(__AROS__)
-
-#if defined(__i386__)
-register struct MesaBase * REGMesaBase __asm__("ebx");
-#elif defined(__x86_64__)
-register struct MesaBase * REGMesaBase __asm__("rbx");
-#elif defined(__arm__)
-register struct MesaBase * REGMesaBase __asm__("r10");
-#elif defined(PPC) || defined (__powerpc__)
-/*
- * r11 or r12 emit call clobbered register warnings
- * r13 works as well, but is small data area pointer
- * in SysV ABI, which we might use in the future
- */
-register struct MesaBase * REGMesaBase __asm__("r14");
-#else
-#error Select register for your architecture
-#endif
-
-#define SAVE_REG            struct MesaBase * reg = REGMesaBase;
-#define PUT_MESABASE_IN_REG REGMesaBase = (struct MesaBase *)MesaBase;
-#define RESTORE_REG         REGMesaBase = reg;
-extern void                     **GETMESABASECTX(void);
-extern struct _glapi_table      **GETMESABASEDDISPATCH(void);
-#endif
-
 
 #if defined (GLX_USE_TLS)
 
@@ -123,20 +97,19 @@ _GLAPI_EXPORT extern const void *_glapi_Context;
 # define GET_DISPATCH() _glapi_tls_Dispatch
 # define GET_CURRENT_CONTEXT(C)  GLcontext *C = (GLcontext *) _glapi_tls_Context
 
+#elif defined(__AROS__)
+
+#define SAVE_REG
+#define PUT_MESABASE_IN_REG
+#define RESTORE_REG
+
+#define GET_DISPATCH() _glapi_get_dispatch()
+#define GET_CURRENT_CONTEXT(C)  GLcontext *C = (GLcontext *) _glapi_get_context()
+
 #else
 
-#if defined(__AROS__)
-# if defined(USE_MGL_NAMESPACE)
-#  define _mglapi_Context *(GETMESABASECTX())
-#  define _mglapi_Dispatch *(GETMESABASEDDISPATCH())
-# else
-#  define _glapi_Context *(GETMESABASECTX())
-#  define _glapi_Dispatch *(GETMESABASEDDISPATCH())
-# endif
-#else
 _GLAPI_EXPORT extern struct _glapi_table *_glapi_Dispatch;
 _GLAPI_EXPORT extern void *_glapi_Context;
-#endif
 
 # ifdef THREADS
 
