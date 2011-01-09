@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## version $VER: Commodities.catalog 3.0 (14.10.2001)
 ## language français
 ## codeset 0
 ;
@@ -7,6 +7,12 @@
 MSG_CANT_OPEN_LIB
 Impossible d'ouvrir %s V%ld !\n
 ; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+Impossible d'ouvrir 'input.device'
+;
+MSG_CANT_OPEN_CLIPDEVICE
+Impossible d'ouvrir 'clipboard.device'
 ;
 MSG_CANT_LOCK_SCR
 Impossible de verrouiller l'écran public !\n
@@ -40,6 +46,9 @@ MSG_CANT_CREATE_MSGPORT
 Impossible de créer un port de message !\n
 ; Can't create message port!\n
 ;
+MSG_CANT_ALLOCATE_SIGNAL
+Impossible d'allouer un signal!\n
+;
 MSG_CANT_CREATE_BROKER
 Impossible de créer un objet CxBroker !\n
 ; Can't create CxBroker object!\n
@@ -55,6 +64,12 @@ OK
 MSG_MEN_PROJECT
 Projet
 ; Project
+;
+MSG_MEN_PROJECT_HIDE
+C\0Cacher
+;
+MSG_MEN_PROJECT_ICONIFY
+I\0Iconifier
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Quitter
@@ -173,7 +188,7 @@ Fonctions et touches:
 ; Function To Keys:
 ;
 MSG_FKEY_CXDESCR
-Attache des fonctions spéciales aux touches
+Attache des fonctions aux touches
 ; Attach Special Functions To Keys
 ;
 MSG_FKEY_WINTITLE
@@ -191,6 +206,9 @@ _Nouvelle touche
 MSG_FKEY_DELETE_KEY
 _Effacer la touche
 ; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+Sauver les touches définies
 ;
 MSG_FKEY_COMMAND
 Commande
@@ -220,6 +238,9 @@ MSG_FKEY_CMD_TOGGLE_WIN_SIZE
 Alterner la taille de fenêtre
 ; Toggle Window Size
 ;
+MSG_FKEY_CMD_RESCUE_WIN
+Restaurer la fenêtre
+;
 MSG_FKEY_CMD_INSERT_TEXT
 Insérer un texte
 ; Insert Text
@@ -232,25 +253,9 @@ MSG_FKEY_CMD_RUN_AREXX
 Lancer un script Arexx
 ; Run Arexx Script
 ;
-MSG_FKEY_MEN_PROJECT
-Projet
-; Project
-;
 MSG_FKEY_MEN_PROJECT_SAVE
 S\0Sauver les touches définies
 ; S\0Save Defined Keys
-;
-MSG_FKEY_MEN_PROJECT_HIDE
-C\0Cacher
-; H\0Hide
-;
-MSG_FKEY_MEN_PROJECT_ICONIFY
-I\0Icônifier
-; I\0Iconify
-;
-MSG_FKEY_MEN_PROJECT_QUIT
-Q\0Quitter
-; Q\0Quit
 ;
 MSG_NOCAPSLOCK_CXNAME
 NoCapsLock
@@ -261,6 +266,33 @@ Pas de Verrouillage Majuscule:
 ; NoCapsLock:
 ;
 MSG_NOCAPSLOCK_CXDESCR
-Rend la touche Verrouillage Majuscule inopérante
+Bloque le verrouillage majuscule
 ; Renders the CAPS LOCK key ineffective
+;
+MSG_ALTKEYQ_CXNAME
+AltKeyQ
+;
+MSG_ALTKEYQ_CXTITLE
+Insertion de caractères
+;
+MSG_ALTKEYQ_CXDESCR
+Usage de la touhe Alt comme MSDOS 
+;
+MSG_ASCIITABLE_CXNAME
+ASCIITable
+;
+MSG_ASCIITABLE_CXTITLE
+Table ASCII:
+;
+MSG_ASCIITABLE_CXDESCR
+Choisir les touches
+;
+MSG_ASCIITABLE_WINTITLE
+Table ASCII: Touche = <%s>
+;
+MSG_ASCIITABLE_GAD_COPY
+Copier
+;
+MSG_ASCIITABLE_GAD_CLEAR
+Effacer
 ;
