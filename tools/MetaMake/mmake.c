@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -75,6 +75,7 @@ Boston, MA 02111-1307, USA.  */
 char * mflags[64];
 int mflagc;
 int verbose = 0;
+int quiet = 0;
 int debug = 0;
 
 char *mm_srcdir;    /* Location to scan for cfg files */
@@ -132,13 +133,17 @@ main (int argc, char ** argv)
 	    {
 		verbose = 1;
 	    }
+	    else if (!strcmp (argv[t], "--quiet") || !strcmp (argv[t], "-q"))
+	    {
+		quiet = 1;
+	    }
 	    else if (!strcmp (argv[t], "--debug"))
 	    {
 		debug = 1;
 	    }
 	    else if (!strcmp (argv[t], "--help"))
 	    {
-		printf ("%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [--debug] [--help]\n", argv[0]);
+		printf ("%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [-q,--quiet] [--debug] [--help]\n", argv[0]);
 		return 0;
 	    }
 	    else
@@ -154,8 +159,14 @@ main (int argc, char ** argv)
 
     if (verbose)
     {
+	quiet = 0;
 	printf ("SRCDIR   '%s'\n", mm_srcdir);
 	printf ("BUILDDIR '%s'\n", mm_builddir);
+    }
+
+    if (debug)
+    {
+	quiet = 0;
     }
 
     debug(printf("MMAKE:mmake.c->main: parsed command line options\n"));

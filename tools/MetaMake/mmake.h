@@ -2,6 +2,7 @@
 #define MMAKE_H
 
 extern int verbose;
+extern int quiet;
 extern int debug;
 extern char ** mflags;
 extern int mflagc;

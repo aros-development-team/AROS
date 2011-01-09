@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -272,7 +272,8 @@ callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
 
     strcat (buffer, tname);
 
-    printf ("Making %s in %s\n", tname, path);
+    if (!quiet)
+	printf ("Making %s in %s\n", tname, path);
 
     if (!execute (prj, prj->maketool, "-", "-", buffer))
     {
@@ -536,7 +537,8 @@ maketarget (struct Project * prj, char * tname)
     struct MakefileTarget * mftarget;
     struct List deps;
 
-    printf ("Building %s.%s\n", prj->node.name, tname);
+    if (!quiet)
+	printf ("Building %s.%s\n", prj->node.name, tname);
 
     NewList (&deps);
 
@@ -554,7 +556,8 @@ maketarget (struct Project * prj, char * tname)
 
     if (!target)
     {
-	printf ("Nothing known about target %s in project %s\n", tname, prj->node.name);
+	if (!quiet)
+	    printf ("Nothing known about target %s in project %s\n", tname, prj->node.name);
 	return;
     }
 
@@ -574,7 +577,8 @@ maketarget (struct Project * prj, char * tname)
 
 	if (!subtarget)
 	{
-	    printf ("Nothing known about target %s in project %s\n", node->name, prj->node.name);
+	    if (!quiet)
+		printf ("Nothing known about target %s in project %s\n", node->name, prj->node.name);
 	}
 	else if (!subtarget->updated)
 	{
