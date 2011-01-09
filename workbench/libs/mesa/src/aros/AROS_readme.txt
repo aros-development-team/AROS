@@ -27,34 +27,30 @@ NOTE: The tool that generetes the above mentioned files is implemented so that
 
 Mesa uses a global variable to store current rendering context. This
 leads to a problem when Mesa is a shared library as this context should
-be different for each opener or Mesa.
+be different for each task which uses Mesa.
 
-The implemented solution uses peropener Mesa library libbase. This libbase
-contains a pointer to current opener Mesa rendering context.
+The implemented solution uses a simple TLS implementation inside Mesa library
+to store the context in a "per task" way. The TLS implementation can be found 
+in aros/tls.[ch]
 
-For each glXXX public function a stub is generated in aros_libapi.c. This
-stub takes a form of AROS library function which gets the Mesa libbase
-passed as the last parameter. Once this stub is called, it puts the Mesa
-libbase into the EBX register and calls the real glXXX function - which due
-to name mangling is now named mglXXX. The EBX register is reserved via a
-global variable REGMesaBase (glapi.h) and via -ffixed-ebx compile option.
-The Mesa libbase is put into EBX via PUT_MESABASE_IN_REG macro (glapi.h)
-while the original EBX value is preserved using SAVE_REG/RESTORE_REG macro
-pair. The real function reads the Mesa 'global' rendering context via
-GET_CURRENT_CONTEXT macro which is redefined in glapi.h.
+The public gl/egl functions are exported from library using call wrapper which
+have the proper "library" definitions (for example contains library base).
+
+For each glXXX public function a stub is generated in arosmesa_library_api.c. 
+This stub takes a form of AROS library function which gets the Mesa libbase
+passed as the last parameter. 
+
+Once this stub is called, it calls the real glXXX function - which due
+to name mangling is now named mglXXX. The real function reads the Mesa 'global' 
+rendering context via GET_CURRENT_CONTEXT macro which is redefined in glapi.h.
+Code behind this macro eventually calls the TLS to get "per task" context (see
+mapi/mapi/u_current.c)
 
 The call sequence is as follows:
 
 Client calls glA() functions. This is a stub in linklib.
-The glA() function calls Mesa_glA() functions. This is a shared function
-   in mesa.library which now receives opener Mesa libbase.
-The Mesa_glA() function saves current EBX value
-The Mesa_glA() function puts received Mesa libbase into EBX
-The Mesa_glA() function calls mglA() function.
-The Mesa_glA() function restores the previous EBX value
-
-Note: this is temporary solution until ABI V1 is available. Once this
-happens, ABI V1 mechanisms should be used for handling the global context
+The glA() function calls Mesa_glA() functions. This is a shared function in 
+mesa.library. The Mesa_glA() function calls mglA() function.
 
 3. AROSMesaGetProcAddress
 
@@ -85,8 +81,6 @@ c) "implement" the missing dispatch stubs
    
    void GLAPIENTRY gl_dispatch_stub_343(GLenum target, GLenum format, GLenum type, GLvoid * table);
    
-   Copy these stubs to /mesa/src/mesa/arosmesa_getprocaddress.c overwritting
-   the existing ones and "implement" them by replacing the ";" at the end of
-   the line with "{};"
-
-   
+   Copy these stubs to /mesa/src/mesa/aros/arosmesa_getprocaddress.c 
+   overwritting the existing ones and "implement" them by replacing the ";" at 
+   the end of the line with "{};"
