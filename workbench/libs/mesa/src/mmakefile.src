@@ -169,22 +169,6 @@ OPENVG_SOURCES = \
             mapi/mapi/stub \
             mapi/mapi/u_current \
 
-ifeq ($(AROS_TARGET_CPU), i386)
-  FFIXED = -ffixed-ebx
-endif
-
-ifeq ($(AROS_TARGET_CPU), x86_64)
-  FFIXED = -ffixed-rbx
-endif
-
-ifeq ($(AROS_TARGET_CPU), ppc)
-  FFIXED = -ffixed-r14
-endif
-
-ifeq ($(AROS_TARGET_CPU), arm)
-  FFIXED = -ffixed-r10
-endif
-
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
             -I$(SRCDIR)/$(CURDIR)/../include \
@@ -200,7 +184,7 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/gallium/state_trackers/vega \
             -I$(SRCDIR)/$(CURDIR)/aros \
 
-USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math $(FFIXED) -DMAPI_GLAPI_CURRENT \
+USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math -DMAPI_GLAPI_CURRENT \
                 -DFEATURE_GL=1 \
                 -DFEATURE_VG=1 \
                 -D_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_AROS \
@@ -282,7 +266,7 @@ $(SRCDIR)/$(CURDIR)/mapi/vgapi/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/mapi/vgapi/vgap
 
 
 # Separete lib is needed, because mapi needs to be compiled in with different define
-USER_CFLAGS := -ffast-math $(FFIXED) -DMAPI_ABI_HEADER=\"vgapi/vgapi_tmp.h\" -DAROS_TLS
+USER_CFLAGS := -ffast-math -DMAPI_ABI_HEADER=\"vgapi/vgapi_tmp.h\"
 
 #MM workbench-libs-mesa-module-openvg : workbench-libs-mesa-module-generated
 

@@ -19,24 +19,6 @@ FILES := init agpclass genericbridgedeviceclass agp3bridgedeviceclass \
 
 #MM hidd-agp : includes
 
-ifeq ($(AROS_TARGET_CPU), i386)
-  FFIXED = -ffixed-ebx
-endif
-
-ifeq ($(AROS_TARGET_CPU), x86_64)
-  FFIXED = -ffixed-rbx
-endif
-
-ifeq ($(AROS_TARGET_CPU), ppc)
-  FFIXED = -ffixed-r14
-endif
-
-ifeq ($(AROS_TARGET_CPU), arm)
-  FFIXED = -ffixed-r10
-endif
-
-USER_CFLAGS := $(FFIXED)
-
 %build_module mmake=hidd-agp modname=agp modtype=hidd \
     files="$(FILES)" uselibs="oop rom"
 

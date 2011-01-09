@@ -11,24 +11,6 @@ FILES := galliumclass init
 #MM- workbench-hidds: hidd-gallium
 #MM hidd-gallium : includes linklibs-clib linklibs-libinit
 
-ifeq ($(AROS_TARGET_CPU), i386)
-  FFIXED = -ffixed-ebx
-endif
-
-ifeq ($(AROS_TARGET_CPU), x86_64)
-  FFIXED = -ffixed-rbx
-endif
-
-ifeq ($(AROS_TARGET_CPU), ppc)
-  FFIXED = -ffixed-r14
-endif
-
-ifeq ($(AROS_TARGET_CPU), arm)
-  FFIXED = -ffixed-r10
-endif
-
-USER_CFLAGS := $(FFIXED)
-
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
 

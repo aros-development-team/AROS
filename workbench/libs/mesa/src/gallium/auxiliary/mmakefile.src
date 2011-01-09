@@ -7,22 +7,6 @@ include $(TOP)/config/make.cfg
 
 #MM linklibs-galliumauxiliary : includes linklibs-galliumauxiliary-generated
 
-ifeq ($(AROS_TARGET_CPU), i386)
-  FFIXED = -ffixed-ebx
-endif
-
-ifeq ($(AROS_TARGET_CPU), x86_64)
-  FFIXED = -ffixed-rbx
-endif
-
-ifeq ($(AROS_TARGET_CPU), ppc)
-  FFIXED = -ffixed-r14
-endif
-
-ifeq ($(AROS_TARGET_CPU), arm)
-  FFIXED = -ffixed-r10
-endif
-
 GALLIUM_AUXILIARY_SOURCES = \
             cso_cache/cso_cache \
             cso_cache/cso_context \
@@ -172,7 +156,7 @@ GALLIUM_AUXILIARY_GENERATED_SOURCES = \
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
 
-USER_CFLAGS := -ffast-math $(FFIXED)
+USER_CFLAGS := -ffast-math
 
 %build_linklib mmake=linklibs-galliumauxiliary libname=galliumauxiliary \
     files="$(GALLIUM_AUXILIARY_SOURCES) $(GALLIUM_AUXILIARY_GENERATED_SOURCES)"
