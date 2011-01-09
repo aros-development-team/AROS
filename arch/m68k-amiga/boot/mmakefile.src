@@ -1,5 +1,4 @@
 include $(TOP)/config/make.cfg
-
 #
 # Rules to create AROS Kernel for amiga-m68k
 #
@@ -93,18 +92,30 @@ kernel-link-amiga-m68k-quick : $(DISTDIR)/aros-amiga-m68k-rom.bin $(DISTDIR)/aro
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) -o $@ $<
 
-$(DISTDIR)/aros-amiga-m68k-%.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/%.ld $(SRCDIR)/$(CURDIR)/mmakefile.src
+$(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)rm -f $@
+	$(Q)for file in $(OBJS_$*) $(KOBJS_$*); do \
+		echo "$$file(.text .rodata .rodata.*)" >>$@; \
+	done
+	
+
+$(DISTDIR)/aros-amiga-m68k.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/rom.ld $(SRCDIR)/$(CURDIR)/mmakefile.src \
+	$(OBJS_rom) $(OBJS_ext) \
+	$(GENDIR)/rom_objs.ld \
+	$(GENDIR)/ext_objs.ld
 	@$(MKDIR) $(DISTDIR)
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -static \
 		$(CFLAGS) \
-		$(OBJS_$*) $(KOBJS_$*) -nostartfiles -nostdlib \
-		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/$*.ld \
+		-nostartfiles -nostdlib \
+		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/rom.ld \
 		-L$(LIBDIR) $(LIBS) -lgcc
 
-$(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k-%.elf $(HOSTGENDIR)/tools/romcheck
+$(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/tools/romcheck
 	$(Q)$(TARGET_OBJCOPY) \
 		--output-target binary \
+		--gap-fill 0xff \
+		--only-section=.$* \
 		--pad-to $(ROMPAD_$*) \
 		$< $@
 	$(Q)$(HOSTGENDIR)/tools/romcheck $@

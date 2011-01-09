@@ -3,6 +3,7 @@ MEMORY
   trap (rwx)    : org = 0x00000000 , l = 0x1000
   bss  (rw)     : org = 0x00001000 , l = 0x2000
   invalid (rwx) : org = 0xdead0000 , l = 0x0
+  ext  (rx)     : org = 0x00e00000 , l = 512K
   rom  (rx)     : org = 0x00f80000 , l = 512K
 }
 
@@ -18,9 +19,15 @@ SECTIONS
    */
   .data                       : { *(.data)             } >invalid
 
-  .text     0x00f80000        : { _text_start = .;
-  	                              *(.text)
-                                  _text_end = .;       } >rom =0x0000
-  .rodata                     : { *(.rodata .rodata.*) } >rom =0x0000
-  .eh_frame                   : { *(.eh_frame)         } >rom =0x0000
+  .ext          0x00e00000    : { _ext_start = .;
+INCLUDE ../../../bin/amiga-m68k/gen/ext_objs.ld
+                                  _ext_end = .; 
+                                } >ext =0xffff
+  .rom          0x00f80000    : { _rom_start = .;
+INCLUDE ../../../bin/amiga-m68k/gen/rom_objs.ld
+				  /* This is for the static libs */
+				  *(.text .rodata .rodata.*)
+                                  _rom_end = .;   
+                                } >rom =0xffff
+  .eh_frame                   : { *(.eh_frame)         } >rom =0xffff
 }
