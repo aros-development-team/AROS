@@ -106,7 +106,7 @@ do                                        \
 	(*((ULONG *)PutChData))++;	  \
 	break;				  \
     default:				  \
-	if (DataStream || m68kcompat)			\
+	if (DataStream || !NewRaw)			\
 	{						\
             AROS_UFC2(void, PutChProc,        		\
 	    AROS_UFCA(UBYTE, (ch), D0),       		\
@@ -115,13 +115,17 @@ do                                        \
 	else						\
 	{						\
 	    APTR (*proc)(APTR, UBYTE) = PutChProc;	\
-	    PutChData = proc(PutChData, ch);		\
+	    PutChData = proc((APTR)PutChData, ch);	\
 	}						\
     }                                     \
 } while (0)
 
-APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
-		      APTR inPutChData, va_list VaListStream)
+/* DataStream == NULL can't be used to select between new or old style PutChProc() because
+ * RawDoFmt(<string without parameters>, NULL, PutChProc, PutChData); is valid and used by
+ * m68k programs */
+
+static APTR InternalRawDoFmtInt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
+		      APTR inPutChData, va_list VaListStream, BOOL NewRaw)
 {
 #if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     /* Frequently, AmigaOS users of RawDoFmt() rely upon the AmigaOS
@@ -130,10 +134,8 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
      */
     register volatile UBYTE  *PutChData asm("%a3");
     /* PutCh() must always call normal PutChProc() even if DataStream == NULL */
-    const BOOL m68kcompat = TRUE;
 #else
     UBYTE *PutChData = inPutChData;
-    const BOOL m68kcompat = FALSE;
 #endif
 
     /* As long as there is something to format left */
@@ -367,9 +369,14 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     PutCh('\0');
 
     /* Return the rest of the DataStream or buffer. */
-    return DataStream || m68kcompat ? DataStream : PutChData;
+    return DataStream || !NewRaw ? DataStream : (APTR)PutChData;
 }
 
+APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
+		      APTR inPutChData, va_list VaListStream)
+{
+    return InternalRawDoFmtInt(FormatString, DataStream, PutChProc, inPutChData, VaListStream, TRUE);
+}
 
 /*****************************************************************************
 
@@ -489,7 +496,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     /* This va_list is intentionally empty. It is not used. */
     va_list vaListStream;
 
-    return InternalRawDoFmt(FormatString, DataStream, PutChProc, PutChData, vaListStream);
+    return InternalRawDoFmtInt(FormatString, DataStream, PutChProc, PutChData, vaListStream, FALSE);
 
     AROS_LIBFUNC_EXIT
 } /* RawDoFmt */
