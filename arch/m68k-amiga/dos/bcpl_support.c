@@ -101,7 +101,7 @@ void BCPL_Cleanup(struct Process *me)
 
     GlobVec = ((APTR)GlobVec) - BCPL_GlobVec_NegSize;
     FreeVec(GlobVec);
-    me->pr_SegList = NULL;
+    me->pr_SegList = BNULL;
     me->pr_GlobVec = NULL;
 }
 
