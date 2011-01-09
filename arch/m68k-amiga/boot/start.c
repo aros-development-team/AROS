@@ -528,7 +528,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* total chipram */
 	SysBase->MaxLocMem = (chip_size + 0xffff) & 0xffff0000;
 	/* total slow ram */
-	SysBase->MaxExtMem = (APTR)(0xc00000 + (fast_size + 0xffff) & 0xffff0000);
+	SysBase->MaxExtMem = (APTR)(((0xc00000 + (fast_size + 0xffff)) & 0xffff0000));
 	
 	SysBase->ChkSum = syschecksum() ^ 0xffff;
 

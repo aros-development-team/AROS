@@ -657,7 +657,7 @@ static void KillCurrentProcess(void)
 	me->pr_ExitCode(me->pr_Task.tc_UserData, me->pr_ExitData);
     }
 
-    DOSBase = OpenLibrary("dos.library", 0);
+    DOSBase = (APTR)OpenLibrary("dos.library", 0);
 
     P(kprintf("Deleting local variables\n"));
 
