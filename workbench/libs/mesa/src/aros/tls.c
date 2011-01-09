@@ -47,19 +47,29 @@ VOID InsertIntoTLS(struct TaskLocalStorage * tls, APTR ptr)
         }
     }
     
-    if (!selected)
+    if (ptr)
     {
-        /* Create, set values, add */
-        selected = AllocVec(sizeof(struct TaskLocalNode), MEMF_PUBLIC | MEMF_CLEAR);
-        selected->tl_Task = me;
-        ADDHEAD(&tls->tls_TaskLocalList, selected);
+        if (!selected)
+        {
+            /* Create, set values, add */
+            selected = AllocVec(sizeof(struct TaskLocalNode), MEMF_PUBLIC | MEMF_CLEAR);
+            selected->tl_Task = me;
+            ADDHEAD(&tls->tls_TaskLocalList, selected); /* Always add to head to move dead entries to back of list */
+        }
+        
+        selected->tl_Data = ptr;
+    }
+    else
+    {
+        /* Since NULL was passed, delete the entry */
+        if (selected)
+        {
+            Remove(&selected->tl_Node);
+            FreeVec(selected);
+        }
     }
     
-    selected->tl_Data = ptr;
-    
     ReleaseSemaphore(&tls->tls_Semaphore);
-    
-    /* TODO: When to delete an existing object? When NULL is passed as t? */
 }
 
 APTR GetFromTLS(struct TaskLocalStorage * tls)
@@ -79,7 +89,7 @@ APTR GetFromTLS(struct TaskLocalStorage * tls)
         }
     }
     ReleaseSemaphore(&tls->tls_Semaphore);
-    
+
     return data;
 }
 
