@@ -41,7 +41,7 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 # Main ROM (0xf80000 - 0xffffff)
 FILES=start
-AFILES=rom_entry rom_init
+AFILES=rom_entry rom_init superstack_swap
 
 ROMPAD_rom := 0x1000000
 KLIBS   := exec aros dos utility oop expansion boot workbench mathffp
