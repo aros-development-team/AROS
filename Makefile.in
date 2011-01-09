@@ -1,4 +1,4 @@
-# Copyright © 2000-2003, The AROS Development Team. All rights reserved.
+# Copyright © 2000-2011, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Main makefile for AROS
@@ -21,6 +21,9 @@ SRCDIR := @SRCDIR@
 include $(TOP)/config/make.cfg
 
 MMAKE_OPTIONS ?= --srcdir=$(SRCDIR) --builddir=$(TOP)
+ifneq (,$(findstring s,$(MAKEFLAGS)))
+MMAKE_OPTIONS += -q
+endif
 
 all: makedirs tools mmake
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.AROS
