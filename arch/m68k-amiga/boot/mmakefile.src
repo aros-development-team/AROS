@@ -100,7 +100,8 @@ $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 	
 
 $(DISTDIR)/aros-amiga-m68k.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/rom.ld $(SRCDIR)/$(CURDIR)/mmakefile.src \
-	$(OBJS_rom) $(OBJS_ext) \
+	$(OBJS_rom) $(KOBJS_rom) \
+        $(OBJS_ext) $(KOBJS_ext) \
 	$(GENDIR)/rom_objs.ld \
 	$(GENDIR)/ext_objs.ld
 	@$(MKDIR) $(DISTDIR)
