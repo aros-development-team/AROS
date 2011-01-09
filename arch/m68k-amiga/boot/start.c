@@ -49,6 +49,8 @@ void DebugInit()
 
 int DebugPutChar(register int chr)
 {
+	if (chr == '\n')
+		DebugPutChar('\r');
 	while ((reg_r(SERDATR) & SERDATR_TBE) == 0);
 
 	/* Output a char to the debug UART */
