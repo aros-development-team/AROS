@@ -366,11 +366,66 @@ double strtod (const char * str,char ** endptr)
     return val;
 } /* strtod */
 
+char * strchr (const char * str, int	     c)
+{
+    do
+    {
+        /* those casts are needed to compare chars > 127 */
+	if ((unsigned char)*str == (unsigned char)c)
+	    return ((char *)str);
+    } while (*(str++));
+
+    return NULL;
+} /* strchr */
+
+size_t strcspn (const char * str, const char * reject)
+{
+    size_t n = 0; /* Must set this to zero */
+
+    while (*str && !strchr (reject, *str))
+    {
+	str ++;
+	n ++;
+    }
+
+    return n;
+} /* strcspn */
+
+char * strtok (char	   * str, const char * sep)
+{
+    static char * t;
+
+    if (str != NULL)
+	t = str;
+    else
+	str = t;
+
+    str += strspn (str, sep);
+
+    if (*str == '\0')
+	return NULL;
+
+    t = str;
+
+    t += strcspn (str, sep);
+
+    if (*t != '\0')
+	*t ++ = '\0';
+
+    return str;
+} /* strtok */
+
 double atof (const char * str)
 {
     return strtod (str, (char **)NULL);
 } /* atof */
 
+int fscanf (FILE * fh,const char * format, ...)
+{
+    IMPLEMENT();
+    return 0;
+}
+	
 int __init_emul(void)
 {
     /* malloc/calloc/realloc/free */
@@ -383,7 +438,6 @@ int __init_emul(void)
 
     return 1;
 }
-
 
 void __exit_emul(void)
 {
