@@ -7,24 +7,6 @@ include $(TOP)/config/make.cfg
 #MM- workbench-libs-complete : workbench-libs-gallium
 #MM workbench-libs-gallium : includes hidd-gallium
 
-ifeq ($(AROS_TARGET_CPU), i386)
-  FFIXED = -ffixed-ebx
-endif
-
-ifeq ($(AROS_TARGET_CPU), x86_64)
-  FFIXED = -ffixed-rbx
-endif
-
-ifeq ($(AROS_TARGET_CPU), ppc)
-  FFIXED = -ffixed-r14
-endif
-
-ifeq ($(AROS_TARGET_CPU), arm)
-  FFIXED = -ffixed-r10
-endif
-
-USER_CFLAGS := $(FFIXED)
-
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
 
