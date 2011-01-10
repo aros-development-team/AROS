@@ -102,6 +102,13 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
         else
             n->isscreenvisible = FALSE;
 
+        /* if visible size is 0 ,bitmap is invisible */
+        if(n->screenvisiblerect.MinX == n->screenvisiblerect.MaxX ||
+           n->screenvisiblerect.MinY == n->screenvisiblerect.MaxY )
+        {
+            n->isscreenvisible = FALSE;
+        }
+
         D(bug("[Compositing] Bitmap %x, visible %d, (%d, %d) , (%d, %d)\n", 
             n->bm, n->isscreenvisible, 
             n->screenvisiblerect.MinX, n->screenvisiblerect.MinY, 
