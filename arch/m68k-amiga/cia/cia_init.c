@@ -140,6 +140,11 @@ static AROS_UFH3 (APTR, Cia_Init,
 
     base->hw = (struct CIA*)0xbfe001;
     base->hw->ciaicr = 0x7f;
+    base->hw->ciacra = 0;
+    base->hw->ciacrb = 0;
+    base->hw->ciapra = 0x00;
+    base->hw->ciaddra = 0x03;
+    base->hw->ciaddrb = 0xff;
     base->inten_mask = INTF_PORTS;
 
     base->ciaint.is_Node.ln_Pri = 120;
@@ -158,6 +163,12 @@ static AROS_UFH3 (APTR, Cia_Init,
 
     base->hw = (struct CIA*)0xbfd000;
     base->hw->ciaicr = 0x7f;
+    base->hw->ciacra = 0;
+    base->hw->ciacrb = 0;
+    base->hw->ciapra = 0xff;
+    base->hw->ciaprb = 0xff;
+    base->hw->ciaddra = 0xff;
+    base->hw->ciaddrb = 0xff;
     base->inten_mask = INTF_EXTER;
 
     base->ciaint.is_Node.ln_Pri = 120;
