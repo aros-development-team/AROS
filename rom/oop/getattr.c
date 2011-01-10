@@ -9,12 +9,7 @@
 #include <proto/exec.h>
 #include "intern.h"
 #include <aros/debug.h>
-
-#ifndef AROS_CREATE_ROM
-#  define STATIC_MID static OOP_MethodID mid
-#else
-#  define STATIC_MID OOP_MethodID mid = 0
-#endif
+#include <oop/static_mid.h>
 
 /*****************************************************************************
 
@@ -72,11 +67,10 @@
     
     EnterFunc(bug("OOP_GetAttr())\n"));
     
-    if (!mid)
-    	mid = OOP_GetMethodID(IID_Root, moRoot_Get);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Root, moRoot_Get);
 	
 	
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.attrID	= attrID;
     p.storage	= storage;
     

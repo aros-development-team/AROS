@@ -18,6 +18,7 @@
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <oop/oop.h>
+#include <oop/static_mid.h>
 #include <graphics/text.h>
 #include <graphics/scale.h>
 
@@ -5087,22 +5088,14 @@ BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-#ifndef AROS_CREATE_ROM
-#  define STATIC_MID static OOP_MethodID mid
-#else
-#  define STATIC_MID OOP_MethodID mid = 0
-#endif
-
-/****************************************************************************************/
-
 BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags)
 {
     STATIC_MID;
     struct pHidd_BitMap_SetBitMapTags 	p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetBitMapTags);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetBitMapTags);
 
-    p.mID = mid;
+    p.mID = static_mid;
 
     p.bitMapTags = bitMapTags;
 

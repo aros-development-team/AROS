@@ -19,6 +19,7 @@
 #include <utility/tagitem.h>
 
 #include <oop/oop.h>
+#include <oop/static_mid.h>
 #include <hidd/graphics.h>
 
 #include "graphics_intern.h"
@@ -30,12 +31,6 @@
 
 #undef OOPBase
 #define OOPBase ((struct Library *)OOP_OCLASS(obj)->OOPBasePtr)
-
-#ifndef AROS_CREATE_ROM
-#  define STATIC_MID static OOP_MethodID mid
-#else
-#  define STATIC_MID OOP_MethodID mid = 0
-#endif
 
 /* A small utility function for using varargs when setting attrs */
 #ifndef OOP_SetAttrsTags
@@ -57,9 +52,9 @@ OOP_Object * HIDD_Gfx_NewGC(OOP_Object *obj, struct TagItem *tagList)
     STATIC_MID;
     struct pHidd_Gfx_NewGC p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewGC);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewGC);
         
-    p.mID      = mid;
+    p.mID      = static_mid;
     p.attrList = tagList;
 
     return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) msg));
@@ -71,9 +66,9 @@ void HIDD_Gfx_DisposeGC(OOP_Object *obj, OOP_Object *gc)
     STATIC_MID;
     struct pHidd_Gfx_DisposeGC p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeGC);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeGC);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -85,9 +80,9 @@ OOP_Object * HIDD_Gfx_NewBitMap(OOP_Object *obj, struct TagItem *tagList)
     STATIC_MID;
     struct pHidd_Gfx_NewBitMap p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewBitMap);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewBitMap);
         
-    p.mID      = mid;
+    p.mID      = static_mid;
     p.attrList = tagList;
 
     return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) msg));
@@ -99,9 +94,9 @@ void HIDD_Gfx_DisposeBitMap(OOP_Object *obj, OOP_Object *bitMap)
     STATIC_MID;
     struct pHidd_Gfx_DisposeBitMap p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeBitMap);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeBitMap);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.bitMap = bitMap;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -114,9 +109,9 @@ OOP_Object * HIDD_Gfx_NewOverlay(OOP_Object *obj, struct TagItem *tagList)
     STATIC_MID;
     struct pHidd_Gfx_NewOverlay p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewOverlay);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewOverlay);
 
-    p.mID      = mid;
+    p.mID      = static_mid;
     p.attrList = tagList;
 
     return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) msg));
@@ -129,9 +124,9 @@ void HIDD_Gfx_DisposeOverlay(OOP_Object *obj, OOP_Object *Overlay)
     STATIC_MID;
     struct pHidd_Gfx_DisposeOverlay p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeOverlay);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeOverlay);
         
-    p.mID     = mid;
+    p.mID     = static_mid;
     p.Overlay = Overlay;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -145,9 +140,9 @@ HIDDT_ModeID * HIDD_Gfx_QueryModeIDs(OOP_Object *obj, struct TagItem *queryTags)
     STATIC_MID;
     struct pHidd_Gfx_QueryModeIDs p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_QueryModeIDs);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_QueryModeIDs);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.queryTags	= queryTags;
 
     return (HIDDT_ModeID *)OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -159,9 +154,9 @@ VOID HIDD_Gfx_ReleaseModeIDs(OOP_Object *obj, HIDDT_ModeID *modeIDs)
     STATIC_MID;
     struct pHidd_Gfx_ReleaseModeIDs p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleaseModeIDs);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleaseModeIDs);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.modeIDs	= modeIDs;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -175,9 +170,9 @@ OOP_Object *    HIDD_Gfx_GetPixFmt  (OOP_Object *obj, HIDDT_StdPixFmt stdPixFmt)
     struct pHidd_Gfx_GetPixFmt p, *msg = &p;
 
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
         
-    p.mID = mid;
+    p.mID = static_mid;
     
     p.stdPixFmt		= stdPixFmt;
     
@@ -192,9 +187,9 @@ BOOL HIDD_Gfx_CheckMode(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object *sync, 
     struct pHidd_Gfx_CheckMode p, *msg = &p;
 
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_CheckMode);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_CheckMode);
         
-    p.mID = mid;
+    p.mID = static_mid;
     
     p.modeID	= modeID;
     p.sync	= sync;
@@ -210,9 +205,9 @@ BOOL HIDD_Gfx_GetMode(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object **syncPtr
     STATIC_MID;
     struct pHidd_Gfx_GetMode p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
         
-    p.mID = mid;
+    p.mID = static_mid;
     
     p.modeID	= modeID;
     p.syncPtr	= syncPtr;
@@ -228,9 +223,9 @@ HIDDT_ModeID HIDD_Gfx_NextModeID(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Objec
     STATIC_MID;
     struct pHidd_Gfx_NextModeID p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NextModeID);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NextModeID);
         
-    p.mID = mid;
+    p.mID = static_mid;
     
     p.modeID	= modeID;
     p.syncPtr	= syncPtr;
@@ -247,9 +242,9 @@ BOOL HIDD_Gfx_SetCursorShape(OOP_Object *obj, OOP_Object *shape, LONG xoffset, L
     STATIC_MID;
     struct pHidd_Gfx_SetCursorShape p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorShape);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorShape);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.shape = shape;
     p.xoffset = xoffset;
     p.yoffset = yoffset;
@@ -265,9 +260,9 @@ BOOL HIDD_Gfx_SetCursorPos(OOP_Object *obj, LONG x, LONG y)
     STATIC_MID;
     struct pHidd_Gfx_SetCursorPos p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorPos);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorPos);
         
-    p.mID = mid;
+    p.mID = static_mid;
     
     p.x = x;
     p.y = y;
@@ -283,9 +278,9 @@ VOID HIDD_Gfx_SetCursorVisible(OOP_Object *obj, BOOL visible)
     STATIC_MID;
     struct pHidd_Gfx_SetCursorVisible p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorVisible);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorVisible);
         
-    p.mID = mid;
+    p.mID = static_mid;
     
     p.visible = visible;
 
@@ -302,9 +297,9 @@ BOOL HIDD_Gfx_SetMode(OOP_Object *obj, OOP_Object *sync)
     STATIC_MID;
     struct pHidd_Gfx_SetMode p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetMode);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetMode);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.Sync = sync;
 
     return (BOOL)OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -317,9 +312,9 @@ OOP_Object *HIDD_Gfx_Show(OOP_Object *obj, OOP_Object *bitMap, ULONG flags)
     STATIC_MID;
     struct pHidd_Gfx_Show p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_Show);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_Show);
         
-    p.mID = mid;
+    p.mID = static_mid;
     
     p.bitMap	= bitMap;
     p.flags	= flags;
@@ -334,9 +329,9 @@ VOID HIDD_Gfx_CopyBox(OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OO
     STATIC_MID;
     struct pHidd_Gfx_CopyBox p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_Gfx_CopyBox);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_Gfx_CopyBox);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.src    = src;
     p.srcX   = srcX;
     p.srcY   = srcY;
@@ -357,9 +352,9 @@ ULONG HIDD_Gfx_ModeProperties(OOP_Object *obj, HIDDT_ModeID modeID, struct HIDD_
     STATIC_MID;
     struct pHidd_Gfx_ModeProperties p, *msg = &p;
     
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ModeProperties);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ModeProperties);
     
-    p.mID      = mid;
+    p.mID      = static_mid;
     p.modeID   = modeID;
     p.props    = props;
     p.propsLen = propsLen;
@@ -374,9 +369,9 @@ ULONG HIDD_Gfx_ShowViewPorts(OOP_Object *obj, struct HIDD_ViewPortData *data)
     STATIC_MID;
     struct pHidd_Gfx_ShowViewPorts p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowViewPorts);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ShowViewPorts);
 
-    p.mID  = mid;
+    p.mID  = static_mid;
     p.Data = data;
 
     return OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -389,9 +384,9 @@ OOP_Object *HIDD_Gfx_GetSync(OOP_Object *obj, ULONG num)
     STATIC_MID;
     struct pHidd_Gfx_GetSync p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetSync);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetSync);
 
-    p.mID = mid;
+    p.mID = static_mid;
     p.num = num;
 
     return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -404,9 +399,9 @@ BOOL HIDD_Gfx_GetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
     STATIC_MID;
     struct pHidd_Gfx_Gamma p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetGamma);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetGamma);
 
-    p.mID   = mid;
+    p.mID   = static_mid;
     p.Red   = Red;
     p.Green = Green;
     p.Blue  = Blue;
@@ -421,9 +416,9 @@ BOOL HIDD_Gfx_SetGamma(OOP_Object *obj, UBYTE *Red, UBYTE *Green, UBYTE *Blue)
     STATIC_MID;
     struct pHidd_Gfx_Gamma p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetGamma);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetGamma);
 
-    p.mID   = mid;
+    p.mID   = static_mid;
     p.Red   = Red;
     p.Green = Green;
     p.Blue  = Blue;
@@ -438,9 +433,9 @@ BOOL HIDD_Gfx_QueryHardware3D(OOP_Object *obj, OOP_Object *pixFmt)
     STATIC_MID;
     struct pHidd_Gfx_QueryHardware3D p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_QueryHardware3D);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_QueryHardware3D);
 
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.pixFmt = pixFmt;
 
     return OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -453,9 +448,9 @@ BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *obj, ULONG Type, ULONG *Width, ULONG 
     STATIC_MID;
     struct pHidd_Gfx_GetMaxSpriteSize p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMaxSpriteSize);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMaxSpriteSize);
 
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.Type   = Type;
     p.Width  = Width;
     p.Height = Height;
@@ -470,9 +465,9 @@ BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, 
     STATIC_MID;
     struct pHidd_BitMap_SetColors p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetColors);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetColors);
         
-    p.mID        = mid;
+    p.mID        = static_mid;
     p.colors     = colors;
     p.firstColor = firstColor;
     p.numColors  = numColors;
@@ -487,9 +482,9 @@ ULONG HIDD_BM_PutPixel(OOP_Object *obj, WORD x, WORD y, HIDDT_Pixel val)
     STATIC_MID;
     struct pHidd_BitMap_PutPixel p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutPixel);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutPixel);
         
-    p.mID  = mid;
+    p.mID  = static_mid;
     p.x    = x;
     p.y    = y;
     p.pixel  = val;
@@ -503,9 +498,9 @@ ULONG HIDD_BM_DrawPixel(OOP_Object *obj, OOP_Object *gc, WORD x, WORD y)
     STATIC_MID;
     struct pHidd_BitMap_DrawPixel p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawPixel);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawPixel);
         
-    p.mID  = mid;
+    p.mID  = static_mid;
     p.gc   = gc;
     p.x    = x;
     p.y    = y;
@@ -519,9 +514,9 @@ HIDDT_Pixel HIDD_BM_GetPixel(OOP_Object *obj, WORD x, WORD y)
     STATIC_MID;
     struct pHidd_BitMap_GetPixel p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel);
         
-    p.mID  = mid;
+    p.mID  = static_mid;
     p.x    = x;
     p.y    = y;
 
@@ -534,9 +529,9 @@ VOID HIDD_BM_DrawLine(OOP_Object *obj, OOP_Object *gc, WORD x1, WORD y1, WORD x2
     STATIC_MID;
     struct pHidd_BitMap_DrawLine p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawLine);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawLine);
         
-    p.mID   = mid;
+    p.mID   = static_mid;
     p.gc    = gc;
     p.x1    = x1;
     p.y1    = y1;
@@ -553,9 +548,9 @@ VOID HIDD_BM_DrawRect (OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY, WO
     STATIC_MID;
     struct pHidd_BitMap_DrawRect p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawRect);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawRect);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.minX   = minX;
     p.minY   = minY;
@@ -571,9 +566,9 @@ VOID HIDD_BM_FillRect (OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY, WO
     STATIC_MID;
     struct pHidd_BitMap_DrawRect p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillRect);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillRect);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.minX   = minX;
     p.minY   = minY;
@@ -589,9 +584,9 @@ VOID HIDD_BM_DrawEllipse (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, WORD 
     STATIC_MID;
     struct pHidd_BitMap_DrawEllipse p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawEllipse);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawEllipse);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.x      = x;
     p.y      = y;
@@ -607,9 +602,9 @@ VOID HIDD_BM_FillEllipse (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, WORD 
     STATIC_MID;
     struct pHidd_BitMap_DrawEllipse p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillEllipse);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillEllipse);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.x      = x;
     p.y      = y;
@@ -625,9 +620,9 @@ VOID HIDD_BM_DrawPolygon (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords
     STATIC_MID;
     struct pHidd_BitMap_DrawPolygon p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawPolygon);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawPolygon);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.n      = n;
     p.coords = coords;
@@ -641,9 +636,9 @@ VOID HIDD_BM_FillPolygon (OOP_Object *obj, OOP_Object *gc, UWORD n, WORD *coords
     STATIC_MID;
     struct pHidd_BitMap_DrawPolygon p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillPolygon);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillPolygon);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.n      = n;
     p.coords = coords;
@@ -657,9 +652,9 @@ VOID HIDD_BM_DrawText (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, STRPTR t
     STATIC_MID;
     struct pHidd_BitMap_DrawText p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawText);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawText);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.x      = x;
     p.y      = y;
@@ -675,9 +670,9 @@ VOID HIDD_BM_FillText (OOP_Object *obj, OOP_Object *gc, WORD x, WORD y, STRPTR t
     STATIC_MID;
     struct pHidd_BitMap_DrawText p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillText);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillText);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.x      = x;
     p.y      = y;
@@ -693,9 +688,9 @@ VOID HIDD_BM_Clear (OOP_Object *obj, OOP_Object *gc)
     STATIC_MID;
     struct pHidd_BitMap_Clear p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_Clear);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_Clear);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -713,9 +708,9 @@ VOID     HIDD_BM_GetImage  (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_GetImage p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetImage);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetImage);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.pixels = pixels;
     p.modulo = modulo;
     p.x = x;
@@ -743,9 +738,9 @@ VOID     HIDD_BM_PutImage  (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_PutImage p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutImage);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutImage);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.pixels = pixels;
     p.modulo = modulo;
@@ -770,9 +765,9 @@ VOID     HIDD_BM_PutAlphaImage  (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_PutAlphaImage p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutAlphaImage);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutAlphaImage);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.pixels = pixels;
     p.modulo = modulo;
@@ -798,9 +793,9 @@ VOID     HIDD_BM_PutTemplate  (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_PutTemplate p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutTemplate);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutTemplate);
         
-    p.mID    	= mid;
+    p.mID    	= static_mid;
     p.gc     	= gc;
     p.template  = template;
     p.modulo 	= modulo;
@@ -827,9 +822,9 @@ VOID     HIDD_BM_PutAlphaTemplate  (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_PutAlphaTemplate p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutAlphaTemplate);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutAlphaTemplate);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.gc     = gc;
     p.alpha  = alpha;
     p.modulo = modulo;
@@ -853,9 +848,9 @@ VOID HIDD_BM_PutPattern(OOP_Object *obj, OOP_Object *gc, UBYTE *pattern,
     STATIC_MID;
     struct pHidd_BitMap_PutPattern p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutPattern);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutPattern);
         
-    p.mID    	    = mid;
+    p.mID    	    = static_mid;
     p.gc     	    = gc;
     p.pattern	    = pattern;
     p.patternsrcx   = patternsrcx;
@@ -882,9 +877,9 @@ VOID	 HIDD_BM_BlitColorExpansion	 (OOP_Object *obj, OOP_Object *gc, OOP_Object *
     STATIC_MID;
     struct pHidd_BitMap_BlitColorExpansion p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BlitColorExpansion);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BlitColorExpansion);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.gc	= gc;
     p.srcBitMap	= srcBitMap;
     p.srcX	= srcX;
@@ -904,9 +899,9 @@ HIDDT_Pixel HIDD_BM_MapColor(OOP_Object *obj, HIDDT_Color *color)
     STATIC_MID;
     struct pHidd_BitMap_MapColor p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_MapColor);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_MapColor);
     
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.color	= color;
  
     
@@ -920,9 +915,9 @@ VOID HIDD_BM_UnmapPixel(OOP_Object *obj, HIDDT_Pixel pixel, HIDDT_Color *color)
     STATIC_MID;
     struct pHidd_BitMap_UnmapPixel p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UnmapPixel);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UnmapPixel);
     
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.pixel	= pixel;
     p.color	= color;
 
@@ -937,9 +932,9 @@ VOID     HIDD_BM_PutImageLUT  (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, U
     STATIC_MID;
     struct pHidd_BitMap_PutImageLUT p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutImageLUT);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutImageLUT);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.gc	= gc;
     p.pixels	= pixels;
     p.modulo	= modulo;
@@ -961,9 +956,9 @@ VOID HIDD_BM_PutTranspImageLUT  (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels,
     STATIC_MID;
     struct pHidd_BitMap_PutTranspImageLUT p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutTranspImageLUT);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutTranspImageLUT);
         
-    p.mID	  = mid;
+    p.mID	  = static_mid;
     p.gc	  = gc;
     p.pixels	  = pixels;
     p.modulo	  = modulo;
@@ -985,9 +980,9 @@ VOID     HIDD_BM_GetImageLUT  (OOP_Object *obj, UBYTE *pixels, ULONG modulo, WOR
     STATIC_MID;
     struct pHidd_BitMap_GetImageLUT p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetImageLUT);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetImageLUT);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.pixels	= pixels;
     p.modulo	= modulo;
     p.x		= x;
@@ -1005,9 +1000,9 @@ ULONG HIDD_BM_BytesPerLine(OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width)
     STATIC_MID;
     struct pHidd_BitMap_BytesPerLine p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BytesPerLine);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BytesPerLine);
 
-    p.mID = mid;
+    p.mID = static_mid;
     p.pixFmt	= pixFmt;
     p.width	= width;
 
@@ -1032,9 +1027,9 @@ VOID     HIDD_BM_ConvertPixels  (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_ConvertPixels p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.srcPixFmt = srcPixFmt;
     p.srcPixels = srcPixels;
     
@@ -1066,9 +1061,9 @@ VOID	HIDD_BM_FillMemRect8 (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_FillMemRect8 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect8);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect8);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.dstBuf = dstBuf;
     p.minX = minX;
     p.minY = minY;
@@ -1093,9 +1088,9 @@ VOID	HIDD_BM_FillMemRect16(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_FillMemRect16 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect16);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect16);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.dstBuf = dstBuf;
     p.minX = minX;
     p.minY = minY;
@@ -1120,9 +1115,9 @@ VOID	HIDD_BM_FillMemRect24 (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_FillMemRect24 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect24);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect24);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.dstBuf = dstBuf;
     p.minX = minX;
     p.minY = minY;
@@ -1147,9 +1142,9 @@ VOID	HIDD_BM_FillMemRect32 (OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_FillMemRect32 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect32);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect32);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.dstBuf = dstBuf;
     p.minX = minX;
     p.minY = minY;
@@ -1174,9 +1169,9 @@ VOID	HIDD_BM_InvertMemRect(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_InvertMemRect p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_InvertMemRect);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_InvertMemRect);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.dstBuf = dstBuf;
     p.minX = minX;
     p.minY = minY;
@@ -1203,9 +1198,9 @@ VOID	HIDD_BM_CopyMemBox8(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_CopyMemBox8 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1235,9 +1230,9 @@ VOID	HIDD_BM_CopyMemBox16(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_CopyMemBox16 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1267,9 +1262,9 @@ VOID	HIDD_BM_CopyMemBox24(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_CopyMemBox24 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox24);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox24);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1299,9 +1294,9 @@ VOID	HIDD_BM_CopyMemBox32(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_CopyMemBox32 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox32);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox32);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1332,9 +1327,9 @@ VOID	HIDD_BM_CopyLUTMemBox16(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_CopyLUTMemBox16 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox16);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox16);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1366,9 +1361,9 @@ VOID	HIDD_BM_CopyLUTMemBox24(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_CopyLUTMemBox24 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox24);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox24);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1400,9 +1395,9 @@ VOID	HIDD_BM_CopyLUTMemBox32(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_CopyLUTMemBox32 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1431,9 +1426,9 @@ VOID	HIDD_BM_PutMem32Image8(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMem32Image8 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image8);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image8);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.dst = dst;
     p.dstX = dstX;
@@ -1459,9 +1454,9 @@ VOID	HIDD_BM_PutMem32Image16(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMem32Image16 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image16);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image16);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.dst = dst;
     p.dstX = dstX;
@@ -1487,9 +1482,9 @@ VOID	HIDD_BM_PutMem32Image24(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMem32Image24 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image24);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image24);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.dst = dst;
     p.dstX = dstX;
@@ -1515,9 +1510,9 @@ VOID	HIDD_BM_GetMem32Image8(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_GetMem32Image8 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image8);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image8);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1543,9 +1538,9 @@ VOID	HIDD_BM_GetMem32Image16(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_GetMem32Image16 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1571,9 +1566,9 @@ VOID	HIDD_BM_GetMem32Image24(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_GetMem32Image24 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image24);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image24);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.src = src;
     p.srcX = srcX;
     p.srcY = srcY;
@@ -1602,9 +1597,9 @@ VOID	HIDD_BM_PutMemTemplate8	(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMemTemplate8 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.gc = gc;
     p.template = template;
     p.modulo = modulo;
@@ -1636,9 +1631,9 @@ VOID	HIDD_BM_PutMemTemplate16(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMemTemplate16 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.gc = gc;
     p.template = template;
     p.modulo = modulo;
@@ -1670,9 +1665,9 @@ VOID	HIDD_BM_PutMemTemplate24(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMemTemplate24 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate24);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate24);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.gc = gc;
     p.template = template;
     p.modulo = modulo;
@@ -1704,9 +1699,9 @@ VOID	HIDD_BM_PutMemTemplate32(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMemTemplate32 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.gc = gc;
     p.template = template;
     p.modulo = modulo;
@@ -1744,9 +1739,9 @@ VOID	HIDD_BM_PutMemPattern8	(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMemPattern8 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.gc = gc;
     p.pattern = pattern;
     p.patternsrcx = patternsrcx;
@@ -1790,9 +1785,9 @@ VOID	HIDD_BM_PutMemPattern16	(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMemPattern16 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.gc = gc;
     p.pattern = pattern;
     p.patternsrcx = patternsrcx;
@@ -1836,9 +1831,9 @@ VOID	HIDD_BM_PutMemPattern24	(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMemPattern24 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern24);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern24);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.gc = gc;
     p.pattern = pattern;
     p.patternsrcx = patternsrcx;
@@ -1882,9 +1877,9 @@ VOID	HIDD_BM_PutMemPattern32	(OOP_Object *obj,
     STATIC_MID;
     struct pHidd_BitMap_PutMemPattern32 p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.gc = gc;
     p.pattern = pattern;
     p.patternsrcx = patternsrcx;
@@ -1911,9 +1906,9 @@ OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap)
     STATIC_MID;
     struct pHidd_BitMap_SetColorMap p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetColorMap);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetColorMap);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.colorMap = colorMap;
     
     return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg)msg);
@@ -1930,9 +1925,9 @@ BOOL HIDD_BM_ObtainDirectAccess(OOP_Object *obj
     STATIC_MID;
     struct pHidd_BitMap_ObtainDirectAccess p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ObtainDirectAccess);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ObtainDirectAccess);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.addressReturn	= addressReturn;
     p.widthReturn	= widthReturn;
     p.heightReturn	= heightReturn;
@@ -1950,9 +1945,9 @@ VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj)
     STATIC_MID;
     struct pHidd_BitMap_ReleaseDirectAccess p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ReleaseDirectAccess);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ReleaseDirectAccess);
         
-    p.mID = mid;
+    p.mID = static_mid;
     
     OOP_DoMethod(obj, (OOP_Msg)msg);
 	
@@ -1964,9 +1959,9 @@ VOID HIDD_BM_BitMapScale(OOP_Object *obj, OOP_Object *src, OOP_Object *dest, str
     STATIC_MID;
     struct pHidd_BitMap_BitMapScale p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BitMapScale);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BitMapScale);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.src    = src;
     p.dst    = dest;
     p.bsa    = bsa;
@@ -1981,9 +1976,9 @@ HIDDT_RGBConversionFunction HIDD_BM_SetRGBConversionFunction(OOP_Object *obj, HI
     STATIC_MID;
     struct pHidd_BitMap_SetRGBConversionFunction p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetRGBConversionFunction);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetRGBConversionFunction);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.srcPixFmt = srcPixFmt;
     p.dstPixFmt = dstPixFmt;
     p.function = function;
@@ -1996,9 +1991,9 @@ VOID HIDD_BM_UpdateRect(OOP_Object *obj, WORD x, WORD y, WORD width, WORD height
     STATIC_MID;
     struct pHidd_BitMap_UpdateRect p, *msg = &p;
 
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect);
     
-    p.mID = mid;
+    p.mID = static_mid;
     p.x = x;
     p.y = y;
     p.width = width;
@@ -2014,9 +2009,9 @@ VOID HIDD_GC_SetClipRect(OOP_Object *obj, LONG x1, LONG y1, LONG x2, LONG y2)
     STATIC_MID;
     struct pHidd_GC_SetClipRect p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_GC, moHidd_GC_SetClipRect);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_GC, moHidd_GC_SetClipRect);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.x1	= x1;
     p.y1	= y1;
     p.x2	= x2;
@@ -2031,9 +2026,9 @@ VOID HIDD_GC_UnsetClipRect(OOP_Object *obj)
     STATIC_MID;
     struct pHidd_GC_UnsetClipRect p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_GC, moHidd_GC_UnsetClipRect);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_GC, moHidd_GC_UnsetClipRect);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     
     OOP_DoMethod(obj, (OOP_Msg)msg);
 }
@@ -2044,9 +2039,9 @@ BOOL HIDD_PlanarBM_SetBitMap(OOP_Object *obj, struct BitMap *bitMap)
     STATIC_MID;
     struct pHidd_PlanarBM_SetBitMap p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_PlanarBM, moHidd_PlanarBM_SetBitMap);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_PlanarBM, moHidd_PlanarBM_SetBitMap);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.bitMap = bitMap;
     
     return (BOOL)OOP_DoMethod(obj, (OOP_Msg)msg);
@@ -2057,9 +2052,9 @@ BOOL HIDD_PlanarBM_GetBitMap(OOP_Object *obj, struct BitMap *bitMap)
     STATIC_MID;
     struct pHidd_PlanarBM_GetBitMap p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_PlanarBM, moHidd_PlanarBM_GetBitMap);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_PlanarBM, moHidd_PlanarBM_GetBitMap);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.bitMap = bitMap;
     
     return (BOOL)OOP_DoMethod(obj, (OOP_Msg)msg);
@@ -2072,9 +2067,9 @@ BOOL HIDD_CM_SetColors(OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, U
     STATIC_MID;
     struct pHidd_ColorMap_SetColors p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_SetColors);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_SetColors);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.colors	 = colors;
     p.firstColor = firstColor;
     p.numColors	 = numColors;
@@ -2088,9 +2083,9 @@ HIDDT_Pixel HIDD_CM_GetPixel(OOP_Object *obj, ULONG pixelNo) /* Starts at 0 */
     STATIC_MID;
     struct pHidd_ColorMap_GetPixel p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetPixel);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetPixel);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.pixelNo = pixelNo;
     
     return (HIDDT_Pixel)OOP_DoMethod(obj, (OOP_Msg)msg);
@@ -2102,9 +2097,9 @@ BOOL HIDD_CM_GetColor(OOP_Object *obj, ULONG colorNo, HIDDT_Color *colorReturn) 
     STATIC_MID;
     struct pHidd_ColorMap_GetColor p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetColor);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetColor);
         
-    p.mID = mid;
+    p.mID = static_mid;
     p.colorNo	  = colorNo;
     p.colorReturn = colorReturn;
     

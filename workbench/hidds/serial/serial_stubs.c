@@ -19,6 +19,7 @@
 #include <utility/tagitem.h>
 
 #include <oop/oop.h>
+#include <oop/static_mid.h>
 #include <hidd/serial.h>
 
 //#include "serial_intern.h"
@@ -31,12 +32,6 @@
 #undef OOPBase
 #define OOPBase ((struct Library *)OOP_OCLASS(obj)->OOPBasePtr)
 
-#ifdef AROS_CREATE_ROM
-# define STATIC_MID OOP_MethodID mid = 0
-#else
-# define STATIC_MID static OOP_MethodID mid
-#endif
-
 /***************************************************************/
 
 OOP_Object * HIDD_Serial_NewUnit(OOP_Object *obj, ULONG unitnum)
@@ -44,9 +39,9 @@ OOP_Object * HIDD_Serial_NewUnit(OOP_Object *obj, ULONG unitnum)
     STATIC_MID;
     struct pHidd_Serial_NewUnit p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_NewUnit);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_NewUnit);
         
-    p.mID      = mid;
+    p.mID      = static_mid;
     p.unitnum  = unitnum;
 
     return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) msg));
@@ -58,9 +53,9 @@ VOID HIDD_Serial_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
     STATIC_MID;
     struct pHidd_Serial_DisposeUnit p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_DisposeUnit);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_DisposeUnit);
         
-    p.mID    = mid;
+    p.mID    = static_mid;
     p.unit   = unit;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -76,9 +71,9 @@ BOOL HIDD_SerialUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataRecei
     STATIC_MID;
     struct pHidd_SerialUnit_Init p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Init);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Init);
         
-    p.mID      			= mid;
+    p.mID      			= static_mid;
     p.DataReceived 		= DataReceived;
     p.DataReceivedUserData 	= DataReceivedUserData;
     p.WriteData    		= WriteData;
@@ -93,9 +88,9 @@ ULONG HIDD_SerialUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
     STATIC_MID;
     struct pHidd_SerialUnit_Write p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Write);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Write);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.Length	= length;
     p.Outbuffer	= data; 
 
@@ -109,9 +104,9 @@ BOOL HIDD_SerialUnit_SetBaudrate(OOP_Object *obj, ULONG baudrate)
     STATIC_MID;
     struct pHidd_SerialUnit_SetBaudrate p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetBaudrate);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetBaudrate);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.baudrate  = baudrate;
 
     return ((BOOL) OOP_DoMethod(obj, (OOP_Msg) msg));
@@ -124,9 +119,9 @@ BOOL HIDD_SerialUnit_SetParameters(OOP_Object *obj, struct TagItem * tags)
     STATIC_MID;
     struct pHidd_SerialUnit_SetParameters p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetParameters);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetParameters);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.tags      = tags;
 
     return ((BOOL) OOP_DoMethod(obj, (OOP_Msg) msg));
@@ -139,9 +134,9 @@ BYTE HIDD_SerialUnit_SendBreak(OOP_Object *obj, int duration)
     STATIC_MID;
     struct pHidd_SerialUnit_SendBreak p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SendBreak);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SendBreak);
         
-    p.mID	= mid;
+    p.mID	= static_mid;
     p.duration  = duration;
 
     return ((BYTE)OOP_DoMethod(obj, (OOP_Msg) msg));
@@ -154,9 +149,9 @@ VOID HIDD_SerialUnit_GetCapabilities(OOP_Object *obj, struct TagItem * tags)
     STATIC_MID;
     struct pHidd_SerialUnit_GetCapabilities p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetCapabilities);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetCapabilities);
 
-    p.mID         = mid;
+    p.mID         = static_mid;
     p.taglist     = tags;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -169,9 +164,9 @@ VOID HIDD_SerialUnit_Start(OOP_Object *obj)
     STATIC_MID;
     struct pHidd_SerialUnit_Start p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Start);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Start);
 
-    p.mID         = mid;
+    p.mID         = static_mid;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
 }
@@ -184,9 +179,9 @@ VOID HIDD_SerialUnit_Stop(OOP_Object *obj)
     STATIC_MID;
     struct pHidd_SerialUnit_Stop p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Stop);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Stop);
 
-    p.mID         = mid;
+    p.mID         = static_mid;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
 }
@@ -198,9 +193,9 @@ UWORD HIDD_SerialUnit_GetStatus(OOP_Object *obj)
     STATIC_MID;
     struct pHidd_SerialUnit_GetStatus p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetStatus);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetStatus);
 
-    p.mID         = mid;
+    p.mID         = static_mid;
 
     return ((UWORD)OOP_DoMethod(obj, (OOP_Msg) msg));
 }
