@@ -89,6 +89,10 @@ kernel-link-amiga-m68k : $(DISTDIR)/aros-amiga-m68k-rom.bin $(DISTDIR)/aros-amig
 #MM kernel-link-amiga-m68k-quick: 
 kernel-link-amiga-m68k-quick : $(DISTDIR)/aros-amiga-m68k-rom.bin $(DISTDIR)/aros-amiga-m68k-ext.bin
 
+#MM kernel-link-amiga-m68k-ram:
+kernel-link-amiga-m68k-ram: $(DISTDIR)/aros-amiga-m68k-ram.bin
+
+
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
 	$(Q)$(HOST_CC) -o $@ $<
 
@@ -98,8 +102,7 @@ $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 		echo "$$file(.text .rodata .rodata.*)" >>$@; \
 	done
 	
-
-$(DISTDIR)/aros-amiga-m68k.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/rom.ld $(SRCDIR)/$(CURDIR)/mmakefile.src \
+$(DISTDIR)/aros-amiga-m68k-%.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/%.ld $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_rom) $(KOBJS_rom) \
         $(OBJS_ext) $(KOBJS_ext) \
 	$(GENDIR)/rom_objs.ld \
@@ -109,15 +112,25 @@ $(DISTDIR)/aros-amiga-m68k.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/rom.ld $(SRCDIR)
 	$(Q)$(KERNEL_CC) -static \
 		$(CFLAGS) \
 		-nostartfiles -nostdlib \
-		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/rom.ld \
+		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/$*.ld \
 		-L$(LIBDIR) $(LIBS) -lgcc
 
-$(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/tools/romcheck
+$(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k-rom.elf $(HOSTGENDIR)/tools/romcheck
 	$(Q)$(TARGET_OBJCOPY) \
 		--output-target binary \
 		--gap-fill 0xff \
 		--only-section=.$* \
 		--pad-to $(ROMPAD_$*) \
+		$< $@
+	$(Q)$(HOSTGENDIR)/tools/romcheck $@
+
+$(DISTDIR)/aros-amiga-m68k-ram.bin : $(DISTDIR)/aros-amiga-m68k-ram.elf $(HOSTGENDIR)/tools/romcheck
+	$(Q)$(TARGET_OBJCOPY) \
+		--output-target binary \
+		--gap-fill 0xff \
+		--only-section=.rom \
+		--only-section=.ext \
+		--pad-to 0xd00000 \
 		$< $@
 	$(Q)$(HOSTGENDIR)/tools/romcheck $@
 

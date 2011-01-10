@@ -67,6 +67,15 @@ rom_init:
 	 */
 .L_fast_mem:
 	move.l	#0xc00000, %a0
+
+	/* If were are executing from the 0xc00000
+	 * area, then we can't check for fast mem.
+	 */
+	clr.l	%d0
+	lea.l	_rom_start, %a1
+	cmp.l	%a1, %a0
+	beq	.L_alloc_stacks
+
 	move.l	#0x180000, %d0
 	tst.l   %d6                 /* Gayle? */
 	bne.s   0f                  /* Yes, limit to 0x180000 */
@@ -77,6 +86,7 @@ rom_init:
 0:
 	/* %d0 is now the memory size */
 
+.L_alloc_stacks:
 	/* Default stack is the end of chip memory */
 	move.l	%d4,%d1
 	move.l	%a4,%a1
