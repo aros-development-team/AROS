@@ -18,6 +18,7 @@
 #include <utility/hooks.h>
 
 #include <oop/oop.h>
+#include <oop/static_mid.h>
 
 #include <hidd/hidd.h>
 #include <usb/usb.h>
@@ -28,20 +29,14 @@
 #undef OOPBase
 #define OOPBase (OOP_OOPBASE(o))
 
-#ifdef AROS_CREATE_ROM
-#define STATIC_MID  OOP_MethodID mid = 0
-#else
-#define STATIC_MID  static OOP_MethodID mid
-#endif
-
 BOOL HIDD_USBStorage_Reset(OOP_Object *o)
 {
 	STATIC_MID;
 	struct pHidd_USBStorage_Reset p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Reset);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Reset);
 
-	p.mID = mid;
+	p.mID = static_mid;
 
 	return OOP_DoMethod(o, &p.mID);
 }
@@ -51,9 +46,9 @@ uint8_t HIDD_USBStorage_GetMaxLUN(OOP_Object *o)
 	STATIC_MID;
 	struct pHidd_USBStorage_GetMaxLUN p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_GetMaxLUN);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_GetMaxLUN);
 
-	p.mID = mid;
+	p.mID = static_mid;
 
 	return OOP_DoMethod(o, &p.mID);
 }
@@ -63,9 +58,9 @@ BOOL HIDD_USBStorage_TestUnitReady(OOP_Object *o, uint8_t lun)
 	STATIC_MID;
 	struct pHidd_USBStorage_TestUnitReady p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_TestUnitReady);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_TestUnitReady);
 
-	p.mID = mid;
+	p.mID = static_mid;
 	p.lun = lun;
 
 	return OOP_DoMethod(o, &p.mID);
@@ -76,9 +71,9 @@ uint32_t HIDD_USBStorage_DirectSCSI(OOP_Object *o, uint8_t lun, uint8_t *cmd, ui
 	STATIC_MID;
 	struct pHidd_USBStorage_DirectSCSI p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_DirectSCSI);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_DirectSCSI);
 
-	p.mID = mid;
+	p.mID = static_mid;
 	p.lun = lun;
 	p.cmd = cmd;
 	p.cmdLen = cmdLen;
@@ -94,9 +89,9 @@ BOOL HIDD_USBStorage_ReadCapacity(OOP_Object *o, uint8_t lun, uint32_t *blockTot
 	STATIC_MID;
 	struct pHidd_USBStorage_ReadCapacity p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_ReadCapacity);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_ReadCapacity);
 
-	p.mID = mid;
+	p.mID = static_mid;
 	p.lun = lun;
 	p.blockTotal = blockTotal;
 	p.blockSize = blockSize;
@@ -109,9 +104,9 @@ BOOL HIDD_USBStorage_RequestSense(OOP_Object *o, uint8_t lun, void *buffer, uint
 	STATIC_MID;
 	struct pHidd_USBStorage_RequestSense p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_RequestSense);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_RequestSense);
 
-	p.mID = mid;
+	p.mID = static_mid;
 	p.lun = lun;
 	p.buffer = buffer;
 	p.bufferLength = bufferLength;
@@ -124,9 +119,9 @@ BOOL HIDD_USBStorage_Inquiry(OOP_Object *o, uint8_t lun, void *buffer, uint32_t 
 	STATIC_MID;
 	struct pHidd_USBStorage_Inquiry p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Inquiry);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Inquiry);
 
-	p.mID = mid;
+	p.mID = static_mid;
 	p.lun = lun;
 	p.buffer = buffer;
 	p.bufferLength = bufferLength;
@@ -139,9 +134,9 @@ BOOL HIDD_USBStorage_Read(OOP_Object *o, uint8_t lun, void *buffer, uint32_t lba
 	STATIC_MID;
 	struct pHidd_USBStorage_Read p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Read);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Read);
 
-	p.mID = mid;
+	p.mID = static_mid;
 	p.lun = lun;
 	p.buffer = buffer;
 	p.block= lba;
@@ -155,9 +150,9 @@ BOOL HIDD_USBStorage_Write(OOP_Object *o, uint8_t lun, void *buffer, uint32_t lb
 	STATIC_MID;
 	struct pHidd_USBStorage_Write p;
 
-	if (!mid) mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Write);
+	if (!static_mid) static_mid = OOP_GetMethodID((STRPTR)IID_Hidd_USBStorage, moHidd_USBStorage_Write);
 
-	p.mID = mid;
+	p.mID = static_mid;
 	p.lun = lun;
 	p.buffer = buffer;
 	p.block= lba;

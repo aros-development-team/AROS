@@ -13,6 +13,7 @@
 #include <aros/symbolsets.h>
 #include <cybergraphx/cgxvideo.h>
 #include <exec/lists.h>
+#include <oop/static_mid.h>
 #include <graphics/displayinfo.h>
 
 #include "graphics_intern.h"
@@ -3879,12 +3880,6 @@ static struct pixfmt_data *find_pixfmt(HIDDT_PixelFormat *tofind, struct class_s
 
 /* Stubs for private methods */
 
-#ifndef AROS_CREATE_ROM
-#  define STATIC_MID static OOP_MethodID mid
-#else
-#  define STATIC_MID OOP_MethodID mid = 0
-#endif
-
 /****************************************************************************************/
 
 OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
@@ -3892,9 +3887,9 @@ OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
    STATIC_MID;  
    struct pHidd_Gfx_RegisterPixFmt p, *msg = &p;
    
-   if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_RegisterPixFmt);
+   if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_RegisterPixFmt);
    
-   p.mID = mid;
+   p.mID = static_mid;
    
    p.pixFmtTags = pixFmtTags;
    
@@ -3909,9 +3904,9 @@ VOID HIDD_Gfx_ReleasePixFmt(OOP_Object *o, OOP_Object *pixFmt)
    STATIC_MID;  
    struct pHidd_Gfx_ReleasePixFmt p, *msg = &p;
    
-   if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleasePixFmt);
+   if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleasePixFmt);
    
-   p.mID = mid;
+   p.mID = static_mid;
    
    p.pixFmt = pixFmt;
    

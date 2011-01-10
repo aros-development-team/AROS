@@ -17,6 +17,7 @@
 #include <proto/oop.h>
 
 #include <utility/tagitem.h>
+#include <oop/static_mid.h>
 
 #include <oop/oop.h>
 #include <hidd/irq.h>
@@ -31,11 +32,6 @@
 #undef OOPBase
 #define OOPBase (OOP_OOPBASE(obj))
 
-#ifdef AROS_CREATE_ROM
-# define STATIC_MID OOP_MethodID mid = 0
-#else
-# define STATIC_MID static OOP_MethodID mid
-#endif
 /***************************************************************/
 
 BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_Id id)
@@ -43,9 +39,9 @@ BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_
     STATIC_MID;
     struct pHidd_IRQ_AddHandler p, *msg = &p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler);
+    if(!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler);
         
-    p.mID           = mid;
+    p.mID           = static_mid;
     p.handlerinfo   = handler;
     p.id            = id;
 
@@ -59,9 +55,9 @@ VOID HIDD_IRQ_RemHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler)
     STATIC_MID;
     struct pHidd_IRQ_RemHandler p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler);
 
-    p.mID           = mid;
+    p.mID           = static_mid;
     p.handlerinfo   = handler;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
@@ -74,9 +70,9 @@ VOID HIDD_IRQ_CauseIRQ(OOP_Object *obj, HIDDT_IRQ_Id id, HIDDT_IRQ_HwInfo *hwinf
     STATIC_MID;
     struct pHidd_IRQ_CauseIRQ p, *msg = &p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_CauseIRQ);
+    if (!static_mid) static_mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_CauseIRQ);
 
-    p.mID           = mid;
+    p.mID           = static_mid;
     p.id            = id;
     p.hardwareinfo  = hwinfo;
 
