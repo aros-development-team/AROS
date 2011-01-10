@@ -89,7 +89,7 @@ Object *DiskInfo__OM_NEW
     TEXT                        free[64];
     TEXT                        blocksize[16];
     STRPTR                      status = NULL;
-    STRPTR			dosdevname = NULL;
+    STRPTR			dosdevname = "";
     STRPTR			filesystem = NULL;
     STRPTR			fstype = NULL;
     STRPTR			fshandler = NULL;
