@@ -266,6 +266,7 @@ BOOL CreateApplication()
     application = ApplicationObject,
         MUIA_Application_Title, __(MSG_APP_NAME),
         MUIA_Application_Version, (IPTR) VERSION,
+        MUIA_Application_Author, (IPTR) "Krzysztof Smiechowicz",
         MUIA_Application_Copyright, (IPTR)"©2011, The AROS Development Team",
         MUIA_Application_Base, (IPTR)"SYSTEMMONITOR",
         MUIA_Application_Description, __(MSG_APP_TITLE),
