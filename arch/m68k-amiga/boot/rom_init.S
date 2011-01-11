@@ -1,11 +1,10 @@
 	.text
 
-	.align 4 
-
 #define SS_STACK_SIZE	0x04000
 #define US_STACK_SIZE	0x0c000
 
 	.globl rom_init
+	nop
 rom_init:
 	/* In ROM, so disable the overlay */
 	moveq	#0x3, %d0
