@@ -400,6 +400,9 @@ static UWORD syschecksum(void)
 	return sum;
 }
 
+extern BYTE _rom_start;
+extern BYTE _ext_start;
+
 void start(IPTR chip_start, ULONG chip_size,
            IPTR fast_start, ULONG fast_size,
            IPTR ss_stack_upper, IPTR ss_stack_lower)
@@ -409,12 +412,12 @@ void start(IPTR chip_start, ULONG chip_size,
 	volatile APTR *trap;
 	int i;
 	UWORD *kickrom[] = {
-		(UWORD *)0x00f80000,
-		(UWORD *)0x01000000,
+		(UWORD *)&_rom_start,
+		(UWORD *)(&_rom_start + 0x80000),
 		(UWORD *)0x00f00000,
 		(UWORD *)0x00f80000,
-		(UWORD *)0x00e00000,
-		(UWORD *)0x00e80000,
+		(UWORD *)&_ext_start,
+		(UWORD *)(&_ext_start + 0x80000),
 		(UWORD *)~0,
 		(UWORD *)~0,
 	};
