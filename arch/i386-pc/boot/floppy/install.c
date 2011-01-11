@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -93,7 +93,8 @@ unsigned int collectBlockList
 		struct BlockNode *blocklist
 	)
 {
-unsigned int retval, first_block;
+int retval;
+unsigned int first_block;
 short blk_count,count;
 unsigned short i;
 
@@ -125,7 +126,7 @@ unsigned short i;
 			);
 		if (retval)
 		{
-			printf("ReadError %ld\n", retval);
+			printf("ReadError %d\n", retval);
 			return 0;
 		}
 		while ((i>=6) && (volume->blockbuffer[i]))
@@ -233,7 +234,9 @@ int key;
 		return ERR_FSYS_CORRUPT;
 	if (AROS_BE2LONG(dirh[0]) != T_SHORT)
 		return ERR_BAD_FILETYPE;
-	while (noCaseStrCmp(name,(char *)((unsigned int)dirh+((volume->SizeBlock-20)*4)),1) != 0)
+	while (noCaseStrCmp(name,
+		(char *)((unsigned long)dirh+((volume->SizeBlock-20)*4)),1)
+		!= 0)
 	{
 		if (!dirh[volume->SizeBlock-4])
 			return ERR_FILE_NOT_FOUND;
@@ -289,7 +292,8 @@ int errnum;
 
 
 void installStageFiles(struct Volume *volume) {
-unsigned int block,retval;
+int retval;
+unsigned int block;
 
 	retval=findFile(volume, "/boot/grub/stage2", stage2_firstblock);
 	if ( retval == 0 )
@@ -344,7 +348,7 @@ unsigned int block,retval;
 							volume->blockbuffer, 512, volume->writecommand
 						);
 					if (retval)
-						printf("WriteError %ld\n", retval);
+						printf("WriteError %d\n", retval);
 					else
 					{
 						/* write first data block of stage2 */
@@ -452,7 +456,7 @@ void checkBootCode(struct Volume *volume) {
 }
 
 void removeBootCode(struct Volume *volume) {
-unsigned int retval;
+int retval;
 
 	retval = readwriteBlock
 		(
@@ -460,7 +464,7 @@ unsigned int retval;
 			volume->blockbuffer, 512, volume->readcommand
 		);
 	if (retval)
-		printf("ReadError %ld\n", retval);
+		printf("ReadError %d\n", retval);
 	else
 	{
 		if ((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)==0x444F5300)
@@ -471,7 +475,7 @@ unsigned int retval;
 					volume->blockbuffer, 512, volume->writecommand
 				);
 			if (retval)
-				printf("WriteError %ld\n", retval);
+				printf("WriteError %d\n", retval);
 		}
 	}
 }
