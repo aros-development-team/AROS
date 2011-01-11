@@ -1,8 +1,7 @@
-## version $VER: snoopy.catalog 1.0 (06.08.2006)
+## version $VER: snoopy.catalog 2.0 (06.08.2006)
 ## language français
 ## codeset 0
 ;
-; TODO: update translation and set version to 2
 ;
 MSG_TITLE
 Snoopy
@@ -47,6 +46,14 @@ Noms de volume
 MSG_IGNORE_WB
 Ignorer Workbench/Shell
 ; Ignore Workbench/Shell
+;
+MSG_BREAKPOINT
+Poser un point d'arrêt
+;Set breakpoint
+;
+MSG_MATCH
+Filtrer le nom
+;Match name
 ;
 MSG_SYSTEM_FUNC
 Fonctions Système
