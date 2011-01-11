@@ -2,9 +2,10 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-system : workbench-system-ftmanager
-#MM workbench-system-ftmanager : workbench-libs-freetype-module workbench-libs-codesets
+#MM workbench-system-ftmanager : workbench-libs-freetype-module workbench-libs-codesets \
+#MM workbench-system-ftmanager-catalogs
 
-FILES  := ftmanager fontbitmap_class fontinfo_class fontlist_class fontwindow_class
+FILES  := ftmanager fontbitmap_class fontinfo_class fontlist_class fontwindow_class locale
 EXEDIR := $(AROS_SYSTEM)
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec

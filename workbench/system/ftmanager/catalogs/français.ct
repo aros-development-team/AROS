@@ -1,0 +1,201 @@
+## version $VER: FTManager.catalog 1.0 (08.01.2011)
+## language français
+## codeset 0
+;
+;
+;
+MSG_APP_NAME
+FTManager
+;
+MSG_APP_TITLE
+Gestionnaire des fontes FreeType
+;
+MSG_WINDOW_TITLE
+Gestionnaire des fontes FreeType
+; 
+MSG_LABEL_SOURCE
+Source
+;
+MSG_ASL_FONTS_TRUETYPE
+Fonts:TrueType
+;
+MSG_LABEL_DESTINATION
+Destination
+;
+MSG_ASL_FONTS
+Fonts:
+;
+MSG_LABEL_CODEPAGE
+Codepage
+;
+MSG_QUIT
+_Quitter
+;
+MSG_BUTTON_INSTALL
+_Installer
+;
+MSG_BUTTON_CLOSE
+_Fermer
+;
+MSG_WEIGHT_ULTRATHIN
+ultra fine
+;
+MSG_WEIGHT_EXTRATHIN
+extra fine
+;
+MSG_WEIGHT_THIN
+fine
+;
+MSG_WEIGHT_EXTRALIGHT
+extra légère
+;
+MSG_WEIGHT_LIGHT
+légère
+;
+MSG_WEIGHT_DEMILIGHT
+demi légère
+;
+MSG_WEIGHT_SEMILIGHT
+semi légère
+;
+MSG_WEIGHT_BOOK
+normale
+;
+MSG_WEIGHT_MEDIUM
+moyenne
+;
+MSG_WEIGHT_SEMIBOLD
+semi grasse
+;
+MSG_WEIGHT_DEMIBOLD
+demi grasse
+;
+MSG_WEIGHT_BOLD
+grasse
+;
+MSG_WEIGHT_EXTRABOLD
+extra grasse
+;
+MSG_WEIGHT_BLACK
+noire
+;
+MSG_WEIGHT_EXTRABLACK
+extra noire
+;
+MSG_WEIGHT_ULTRABLACK
+ultra noire
+;
+MSG_WEIGHT_CUSTOM
+personnalisée
+;
+MSG_STYLE_UPRIGHT
+droite
+;
+MSG_STYLE_ITALIC
+italique
+;
+MSG_STYLE_LEFTITALIC
+italique gauche
+;
+MSG_HSTYLE_ULTRACOMPRESSED
+ultra dense
+;
+MSG_HSTYLE_EXTRACOMPRESSED
+extra dense
+;
+MSG_HSTYLE_COMPRESSED
+dense
+;
+MSG_HSTYLE_CONDENSED
+condensée
+;
+MSG_HSTYLE_NORMAL
+réguliere
+;
+MSG_HSTYLE_SEMIEXPANDED
+semi étendue
+;
+MSG_HSTYLE_EXPANDED
+étendue
+;
+MSG_HSTYLE_EXTRAEXPANDED
+extra étendue
+;
+MSG_HSTYLE_CUSTOM
+personnalisée
+;
+MSG_METRIC_GLOBALBOUNDINGBOX
+globale
+;
+MSG_METRIC_RAWFONTMETRIC
+brute
+;
+MSG_METRIC_ASCENDER
+bloquée
+;
+MSG_METRIC_TYPOASCENDER
+typo
+;
+MSG_METRIC_USWINASCENDER
+USWin
+;
+MSG_METRIC_CUSTOMBOUNDINGBOX
+personnalisée
+;
+MSG_LABEL_EXTRAFILE
+Fichier
+;
+MSG_LABEL_FACENUM
+Face
+;
+MSG_LABEL_NAME
+Nom
+;
+MSG_LABEL_FAMILY
+Famille
+;
+MSG_LABEL_METRIC
+Metrique
+;
+MSG_LABEL_BOUNDINGBOX
+Entourage
+;
+MSG_LABEL_YMIN
+yMin
+;
+MSG_LABEL_YMAX
+yMax
+;
+MSG_LABEL_SIZEFACTOR
+Échelle
+;
+MSG_LABEL_SPACEWIDTH
+Largeur
+;
+MSG_LABEL_FIXEDWIDTH
+Chasse fixe
+;
+MSG_LABEL_SERIF
+Empattement
+;
+MSG_LABEL_STEMWEIGHT
+Graisse
+;
+MSG_LABEL_SLANTSTYLE
+Graphie
+;
+MSG_LABEL_HORIZSTYLE
+Chasse
+;
+MSG_FRAME_PREVIEW
+Prévisualisation
+;
+MSG_PREVIEW_STRING
+Maître Corbeau, sur un arbre perché, tenait en son bec un fromage
+;
+MSG_LABEL_SIZE
+Corps
+;
+MSG_LABEL_ANTIALIASING
+Anti-crénelage
+;

@@ -15,6 +15,7 @@
 #include "fontinfo_class.h"
 #include "fontbitmap_class.h"
 #include "globals.h"
+#include "locale.h"
 
 struct FontInfoData
 {
@@ -156,27 +157,25 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 	int k, l;
 	const char *q, *r;
 
-	static const char * const stem_weight_names[] =
-	{
-		"UltraThin",
-		"ExtraThin",
-		"Thin",
-		"ExtraLight",
-		"Light",
-		"DemiLight",
-		"SemiLight",
-		"Book",
-		"Medium",
-		"SemiBold",
-		"DemiBold",
-		"Bold",
-		"ExtraBold",
-		"Black",
-		"ExtraBlack",
-		"UltraBlack",
-		"Custom",
-		NULL
-	};
+	static CONST_STRPTR stem_weight_names[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+        stem_weight_names[0] =_(MSG_WEIGHT_ULTRATHIN);
+        stem_weight_names[1] =_(MSG_WEIGHT_EXTRATHIN);
+        stem_weight_names[2] =_(MSG_WEIGHT_THIN);
+        stem_weight_names[3] =_(MSG_WEIGHT_EXTRALIGHT);
+        stem_weight_names[4] =_(MSG_WEIGHT_LIGHT);
+        stem_weight_names[5] =_(MSG_WEIGHT_DEMILIGHT);
+        stem_weight_names[6] =_(MSG_WEIGHT_SEMILIGHT);
+        stem_weight_names[7] =_(MSG_WEIGHT_BOOK);
+        stem_weight_names[8] =_(MSG_WEIGHT_MEDIUM);
+        stem_weight_names[9] =_(MSG_WEIGHT_SEMIBOLD);
+        stem_weight_names[10] =_(MSG_WEIGHT_DEMIBOLD);
+        stem_weight_names[11] =_(MSG_WEIGHT_BOLD);
+        stem_weight_names[12] =_(MSG_WEIGHT_EXTRABOLD);
+        stem_weight_names[13] =_(MSG_WEIGHT_BLACK);
+        stem_weight_names[14] =_(MSG_WEIGHT_EXTRABLACK);
+        stem_weight_names[15] =_(MSG_WEIGHT_ULTRABLACK);
+        stem_weight_names[16] =_(MSG_WEIGHT_CUSTOM);
+
 	static const UBYTE stem_weight_values[] =
 	{
 		OTS_UltraThin,
@@ -197,27 +196,22 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 		OTS_UltraBlack,
 	};
 
-	static const char * const slant_style_names[] =
-	{
-		"Upright",
-		"Italic",
-		"LeftItalic",
-		NULL
-	};
+	static CONST_STRPTR slant_style_names[] = {NULL, NULL, NULL, NULL};
+		slant_style_names[0] = _(MSG_STYLE_UPRIGHT);
+		slant_style_names[1] = _(MSG_STYLE_ITALIC);
+		slant_style_names[2] = _(MSG_STYLE_LEFTITALIC);
 
-	static const char * const horiz_style_names[] =
-	{
-		"UltraCompressed",
-		"ExtraCompressed",
-		"Compressed",
-		"Condensed",
-		"Normal",
-		"SemiExpanded",
-		"Expanded",
-		"ExtraExpanded",
-		"Custom",
-		NULL
-	};
+	static CONST_STRPTR horiz_style_names[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+		horiz_style_names[0] = _(MSG_HSTYLE_ULTRACOMPRESSED);
+		horiz_style_names[1] = _(MSG_HSTYLE_EXTRACOMPRESSED);
+		horiz_style_names[2] = _(MSG_HSTYLE_COMPRESSED);
+		horiz_style_names[3] = _(MSG_HSTYLE_CONDENSED);
+		horiz_style_names[4] = _(MSG_HSTYLE_NORMAL);
+		horiz_style_names[5] = _(MSG_HSTYLE_SEMIEXPANDED);
+		horiz_style_names[6] = _(MSG_HSTYLE_EXPANDED);
+		horiz_style_names[7] = _(MSG_HSTYLE_EXTRAEXPANDED);
+		horiz_style_names[8] = _(MSG_HSTYLE_CUSTOM);
+
 	static const UBYTE horiz_style_values[] =
 	{
 		OTH_UltraCompressed,
@@ -230,17 +224,15 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 		OTH_ExtraExpanded,
 	};
 
-	static const char *metric_names[] =
-	{
-		"Global bounding box",
-		"Raw font metric",
-		"Ascender",
-		"Typo ascender",
-		"USWin ascender",
-		"Custom bounding box",
-		//"Bitmap size",
-		NULL,
-	};
+	static CONST_STRPTR metric_names[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+		metric_names[0] = _(MSG_METRIC_GLOBALBOUNDINGBOX);
+		metric_names[1] = _(MSG_METRIC_RAWFONTMETRIC);
+		metric_names[2] = _(MSG_METRIC_ASCENDER);
+		metric_names[3] = _(MSG_METRIC_TYPOASCENDER);
+		metric_names[4] = _(MSG_METRIC_USWINASCENDER);
+		metric_names[5] = _(MSG_METRIC_CUSTOMBOUNDINGBOX);
+		//"Bitmap size"
+
 
 	if (!filename || !face)
 	{
@@ -281,7 +273,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 
 	tags[0].ti_Tag = MUIA_Group_Child;
 	tags[0].ti_Data = (IPTR)ColGroup(2),
-		Child, Label2("Extra file"),
+		Child, Label2(_(MSG_LABEL_EXTRAFILE)),
 		Child, attached_file = PopaslObject,
 			MUIA_Popasl_Type, ASL_FileRequest,
 			MUIA_Popstring_String, StringObject,
@@ -292,7 +284,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 			MUIA_Popstring_Button, PopButton(MUII_PopFile),
 			ASLFR_RejectIcons, TRUE,
 			End,
-		Child, Label2("Face num"),
+		Child, Label2(_(MSG_LABEL_FACENUM)),
 		Child, face_num = StringObject,
 			StringFrame,
 			MUIA_String_Integer, 0,
@@ -301,7 +293,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 			MUIA_String_MaxLen, 5,
 			MUIA_CycleChain, TRUE,
 			End,
-		Child, Label2("Name"),
+		Child, Label2(_(MSG_LABEL_NAME)),
 		Child, name = StringObject,
 			StringFrame,
 			MUIA_String_Contents, name_buf,
@@ -309,20 +301,20 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 			MUIA_String_MaxLen, 27,
 			MUIA_CycleChain, TRUE,
 			End,
-		Child, Label2("Family"),
+		Child, Label2(_(MSG_LABEL_FAMILY)),
 		Child, family = StringObject,
 			StringFrame,
 			MUIA_String_Contents, face->family_name,
 			MUIA_String_AdvanceOnCR, TRUE,
 			MUIA_CycleChain, TRUE,
 			End,
-		Child, Label2("Metric"),
+		Child, Label2(_(MSG_LABEL_METRIC)),
 		Child, metric = CycleObject,
 			MUIA_Cycle_Entries, metric_names,
 			MUIA_Cycle_Active, 1,
 			MUIA_CycleChain, TRUE,
 			End,
-		Child, Label2("Bounding box"),
+		Child, Label2(_(MSG_LABEL_BOUNDINGBOX)),
 		Child, HGroup,
 			Child, Label2("yMin"),
 			Child, bbox_ymin = StringObject,
@@ -343,7 +335,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 				MUIA_CycleChain, TRUE,
 				End,
 			End,
-		Child, Label2("Size factor"),
+		Child, Label2(_(MSG_LABEL_SIZEFACTOR)),
 		Child, HGroup,
 			Child, size_factor_low = StringObject,
 				StringFrame,
@@ -366,7 +358,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 				MUIA_CycleChain, TRUE,
 				End,
 			End,
-		Child, Label2("Space width"),
+		Child, Label2(_(MSG_LABEL_SPACEWIDTH)),
 		Child, space_width = StringObject,
 			StringFrame,
 			MUIA_String_Accept, "0123456789",
@@ -375,20 +367,20 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 			MUIA_String_Integer, (IPTR)(face->max_advance_width * 250.0 / 72.307),
 			MUIA_CycleChain, TRUE,
 			End,
-		Child, Label1("Fixed width"),
+		Child, Label1(_(MSG_LABEL_FIXEDWIDTH)),
 		Child, HGroup,
 			Child, fixed = CheckMark((face->face_flags & FT_FACE_FLAG_FIXED_WIDTH) != 0),
 			Child, RectangleObject,
 				End,
 			End,
-		Child, Label1("Serif"),
+		Child, Label1(_(MSG_LABEL_SERIF)),
 		Child, HGroup,
 			Child, serif = CheckMark(os2 && (unsigned)(((os2->sFamilyClass >> 8) &
 							0xff) - 1) < 5),
 			Child, RectangleObject,
 				End,
 			End,
-		Child, Label2("Stem weight"),
+		Child, Label2(_(MSG_LABEL_STEMWEIGHT)),
 		Child, HGroup,
 			Child, stem_weight_cycle = CycleObject,
 				MUIA_Cycle_Entries, stem_weight_names,
@@ -403,7 +395,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 				MUIA_CycleChain, TRUE,
 				End,
 			End,
-		Child, Label2("Slant style"),
+		Child, Label2(_(MSG_LABEL_SLANTSTYLE)),
 		Child, slant_style = CycleObject,
 			MUIA_Cycle_Entries, slant_style_names,
 			MUIA_Cycle_Active, face->style_flags & FT_STYLE_FLAG_ITALIC ?
@@ -411,7 +403,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 				 OTS_LeftItalic : OTS_Italic) : OTS_Upright,
 			MUIA_CycleChain, TRUE,
 			End,
-		Child, Label2("Horiz style"),
+		Child, Label2(_(MSG_LABEL_HORIZSTYLE)),
 		Child, HGroup,
 			Child, horiz_style_cycle = CycleObject,
 				MUIA_Cycle_Entries, horiz_style_names,
@@ -435,15 +427,15 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 		End;
 	tags[1].ti_Tag = MUIA_Group_Child;
 	tags[1].ti_Data = (IPTR)VGroup,
-		GroupFrameT("Preview"),
+		GroupFrameT(_(MSG_FRAME_PREVIEW)),
 		Child, test_string = StringObject,
 			StringFrame,
-			MUIA_String_Contents, "The quick brown fox jumped over the lazy dog.",
+			MUIA_String_Contents, _(MSG_PREVIEW_STRING),
 			MUIA_String_AdvanceOnCR, TRUE,
 			MUIA_CycleChain, TRUE,
 			End,
 		Child, HGroup,
-			Child, Label2("Size"),
+			Child, Label2(_(MSG_LABEL_SIZE)),
 			Child, test_size = StringObject,
 				StringFrame,
 				MUIA_String_Accept, "0123456789",
@@ -451,7 +443,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 				MUIA_String_AdvanceOnCR, TRUE,
 				MUIA_CycleChain, TRUE,
 				End,
-			Child, Label2("Anti-aliasing"),
+			Child, Label2(_(MSG_LABEL_ANTIALIASING)),
 			Child, gray = CheckMark(FALSE),
 			End,
 		Child, ScrollgroupObject,

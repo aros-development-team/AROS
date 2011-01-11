@@ -11,6 +11,7 @@
 #include "fontwindow_class.h"
 #include "fontinfo_class.h"
 #include "globals.h"
+#include "locale.h"
 
 struct FontWindowData
 {
@@ -75,10 +76,10 @@ IPTR fwNew(Class *cl, Object *o, struct opSet *msg)
 			MUIA_FontInfo_Face, face,
 			End,
 		Child, HGroup,
-			Child, install = SimpleButton("_Install"),
+			Child, install = SimpleButton(_(MSG_BUTTON_INSTALL)),
 			Child, RectangleObject,
 				End,
-			Child, close = SimpleButton("_Close"),
+			Child, close = SimpleButton(_(MSG_BUTTON_CLOSE)),
 			End,
 		End;
 	tags[3].ti_Tag = TAG_MORE;

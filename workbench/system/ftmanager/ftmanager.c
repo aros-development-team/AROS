@@ -20,8 +20,11 @@
 #include "fontlist_class.h"
 #include "fontwindow_class.h"
 #include "globals.h"
+#include "locale.h"
 
 #define ARG_TEMPLATE "TTFFONT/A,OUTFONT/A,CODEPAGE"
+
+#define VERSION "$VER: FTManager 1.2 (04.12.2007) ©2011 The AROS Development Team"
 
 enum
 {
@@ -192,15 +195,15 @@ static int ftmanager_gui(void)
 		countfrom++;
 	}
 	app = ApplicationObject,
-		MUIA_Application_Title, "FTManager",
-		MUIA_Application_Version, "$VER: FTManager 1.2 (4.12.2007)",
+		MUIA_Application_Title, __(MSG_APP_NAME),
+		MUIA_Application_Version,(IPTR) VERSION,
 		MUIA_Application_Copyright, "Copyright 2002-2003 by Emmanuel Lesueur",
 		MUIA_Application_Author, "Emmanuel Lesueur",
-		MUIA_Application_Description, "FreeType font manager",
+		MUIA_Application_Description, __(MSG_APP_TITLE),
 		MUIA_Application_Base, "FTMANAGER",
 		SubWindow, win = WindowObject,
 			MUIA_Window_ID, MAKE_ID('F','T','2','M'),
-			MUIA_Window_Title, "FreeType Font Manager",
+			MUIA_Window_Title, __(MSG_WINDOW_TITLE),
 			MUIA_Window_Width, 400,
 			MUIA_Window_RootObject,VGroup,
 				Child, fontlv = ListviewObject,
@@ -208,12 +211,12 @@ static int ftmanager_gui(void)
 						End,
 					End,
 				Child, ColGroup(2),
-					Child, Label2("Source"),
+					Child, Label2(_(MSG_LABEL_SOURCE)),
 					Child, PopaslObject,
 						MUIA_Popasl_Type, ASL_FileRequest,
 						MUIA_Popstring_String, src = StringObject,
 							StringFrame,
-							MUIA_String_Contents, "Fonts:TrueType",
+							MUIA_String_Contents, __(MSG_ASL_FONTS_TRUETYPE),
                                                         MUIA_String_AdvanceOnCR, TRUE,
 							MUIA_CycleChain, TRUE,
 							End,
@@ -221,12 +224,12 @@ static int ftmanager_gui(void)
 						ASLFR_RejectIcons, TRUE,
 						ASLFR_DrawersOnly, TRUE,
 						End,
-					Child, Label2("Destination"),
+					Child, Label2(_(MSG_LABEL_DESTINATION)),
 					Child, PopaslObject,
 						MUIA_Popasl_Type, ASL_FileRequest,
 						MUIA_Popstring_String, dest = StringObject,
 							StringFrame,
-							MUIA_String_Contents, "Fonts:",
+							MUIA_String_Contents, __(MSG_ASL_FONTS),
 							MUIA_String_AdvanceOnCR, TRUE,
 							MUIA_CycleChain, TRUE,
 							End,
@@ -235,12 +238,12 @@ static int ftmanager_gui(void)
 						ASLFR_DrawersOnly, TRUE,
 						ASLFR_RejectIcons, TRUE,
 						End,
-					Child, Label2("Codepage"),
+					Child, Label2(_(MSG_LABEL_CODEPAGE)),
 					Child, codepagecycle = CycleObject,
 						MUIA_Cycle_Entries, codesetentries,
 						End,
 					End,
-				Child, quit = SimpleButton("_Quit"),
+				Child, quit = SimpleButton(_(MSG_QUIT)),
 				End,
 			End,
 		End;
@@ -380,6 +383,9 @@ static int ftmanager_cli(void)
 int main(int argc, char **argv)
 {
 	int retval = RETURN_FAIL;
+
+        Locale_Initialize();
+
 	if (argc > 1)
 	{
 		retval = ftmanager_cli();
@@ -389,5 +395,8 @@ int main(int argc, char **argv)
 		// Starting from CLI without arguments opens GUI, too
 		retval = ftmanager_gui();
 	}
+
+        Locale_Deinitialize();
+
 	return retval;
 }
