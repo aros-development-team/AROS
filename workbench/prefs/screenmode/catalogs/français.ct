@@ -22,3 +22,27 @@ MSG_DEPTH
 MSG_AUTOSCROLL
 \33lDéfilement Auto.
 ;
+MSG_DISPLAY_MODE
+Mode d'affichage
+;
+MSG_MODE_ID
+ID du mode
+;
+MSG_DESCRIPTION
+Description
+;
+MSG_MODE_ATTRIBUTES
+Attributs du mode
+;
+MSG_VISIBLE_SIZE
+Taille visible :
+;
+MSG_MINIMUM_SIZE
+Taille minimum :
+;
+MSG_MAXIMUM_SIZE
+Taille maximum :
+;
+MSG_MAXIMUM_COLORS
+Nombre max de Couleurs:
+;
