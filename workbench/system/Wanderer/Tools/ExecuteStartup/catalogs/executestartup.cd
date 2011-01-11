@@ -1,0 +1,37 @@
+;
+MSG_ERROR (//)
+Error
+;
+MSG_WARNING (//)
+Warning
+;
+MSG_OK (//)
+OK
+;
+MSG_ERROR_GETDISKOBJECT (//)
+ExecuteStartup\nGetDiskObject failed for:\n%s
+;
+MSG_ERROR_INFONODE (//)
+ExecuteStartup\nOut of memory for InfoNode
+;
+MSG_ERROR_LNNAME (//)
+ExecuteStartup\nOut of memory for ln_Name
+;
+MSG_ERROR_SCANNING (//)
+ExecuteStartup\nError %ld occured while scanning directory
+;
+MSG_ERROR_ANCHORPATH (//)
+ExecuteStartup\nOut of memory for AnchorPath
+;
+MSG_ERROR_FILEINFOBLOCK (//)
+ExecuteStartup\nOut of memory for FileInfoBlock
+;
+MSG_ERROR_MEMORYPOOL (//)
+ExecuteStartup\nCouldn't create pool memory
+;
+MSG_ERROR_EXAMINE (//)
+ExecuteStartup\nCouldn't examine 
+;Note final space!
+MSG_WARNING_OPENWBOBJECT (//)
+ExecuteStartup\nOpenWorkbenchObject failed for:\n%s
+;

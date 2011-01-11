@@ -1,0 +1,41 @@
+## version $VER: executestartup.catalog 1.0 (10.01.2011)
+## language français
+## codeset 0
+;
+;
+MSG_ERROR
+Erreur
+;
+MSG_WARNING
+Attention
+;
+MSG_OK
+D'accord
+;
+MSG_ERROR_GETDISKOBJECT
+ExecuteStartup\nGetDiskObject a échoué pour :\n%s
+;
+MSG_ERROR_INFONODE
+ExecuteStartup\nPlus de mémoire pour InfoNode
+;
+MSG_ERROR_LNNAME
+ExecuteStartup\nPlus de mémoire pour ln_name
+;
+MSG_ERROR_SCANNING
+ExecuteStartup\nL'erreur %ld s'est produite\enscrutant le répertoire
+;
+MSG_ERROR_ANCHORPATH
+ExecuteStartup\nPlus de mémoire pour AnchorPath
+;
+MSG_ERROR_FILEINFOBLOCK
+ExecuteStartup\nPlus de mémoire pour FileInfoBlock
+;
+MSG_ERROR_MEMORYPOOL
+ExecuteStartup\nImpossible de créer la memory pool
+;
+MSG_ERROR_EXAMINE
+ExecuteStartup\nImpossible d'examiner 
+;
+MSG_WARNING_OPENWBOBJECT
+ExecuteStartup\nOpenWorkbenchObject a échoué pour :\n%s
+;

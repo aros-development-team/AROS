@@ -47,6 +47,8 @@
 #include <proto/workbench.h>
 #include <proto/intuition.h>
 
+#include "locale.h"
+
 #define STARTUPDIR "sys:WBStartup/"
 
 struct InfoNode
@@ -69,7 +71,12 @@ static BOOL executeWBStartup(void);
 int
 main(void)
 {
+    Locale_Initialize();
+
     executeWBStartup();
+
+    Locale_Deinitialize();
+
     return RETURN_OK;
 }                                       
 
