@@ -9,7 +9,7 @@ EXEDIR      := $(AROS_WANDERER)/Tools
 #MM- workbench-system-wanderer-tools : \
 #MM  workbench-system-wanderer-tools-executestartup \
 #MM  workbench-system-wanderer-tools-executestartup-icons \
-#MM  workbench-system-wanderer-tools-executestartup-cataogs
+#MM  workbench-system-wanderer-tools-executestartup-catalogs
 
 #MM  workbench-system-wanderer-tools-executestartup : includes linklibs
 
