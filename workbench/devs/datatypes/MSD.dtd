@@ -1,0 +1,9 @@
+Name=MSD
+Version=$VER MSD 1.0 (11.01.2011)
+BaseName=binary
+Pattern=#?
+Mask=0x4d 0x5a
+GroupID=syst
+ID=msd
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
