@@ -1,0 +1,196 @@
+;
+MSG_APP_NAME (//)
+FTManager
+;
+MSG_APP_TITLE (//)
+FreeType font manager
+;
+MSG_WINDOW_TITLE (//)
+FreeType font manager
+;
+MSG_LABEL_SOURCE (//)
+Source
+;
+MSG_ASL_FONTS_TRUETYPE (//)
+Fonts:TrueType
+;
+MSG_LABEL_DESTINATION (//)
+Destination
+;
+MSG_ASL_FONTS (//)
+Fonts:
+;
+MSG_LABEL_CODEPAGE (//)
+Codepage
+;
+MSG_QUIT (//)
+_Quit
+;
+MSG_BUTTON_INSTALL (//)
+_Install
+;
+MSG_BUTTON_CLOSE (//)
+_Close
+;
+MSG_WEIGHT_ULTRATHIN (//)
+UltraThin
+;
+MSG_WEIGHT_EXTRATHIN (//)
+ExtraThin
+;
+MSG_WEIGHT_THIN (//)
+Thin
+;
+MSG_WEIGHT_EXTRALIGHT (//)
+ExtraLight
+;
+MSG_WEIGHT_LIGHT (//)
+Light
+;
+MSG_WEIGHT_DEMILIGHT (//)
+DemiLight
+;
+MSG_WEIGHT_SEMILIGHT (//)
+SemiLight
+;
+MSG_WEIGHT_BOOK (//)
+Book
+;
+MSG_WEIGHT_MEDIUM (//)
+Medium
+;
+MSG_WEIGHT_SEMIBOLD (//)
+SemiBold
+;
+MSG_WEIGHT_DEMIBOLD (//)
+DemiBold
+;
+MSG_WEIGHT_BOLD (//)
+Bold
+;
+MSG_WEIGHT_EXTRABOLD (//)
+ExtraBold
+;
+MSG_WEIGHT_BLACK (//)
+Black
+;
+MSG_WEIGHT_EXTRABLACK (//)
+ExtraBlack
+;
+MSG_WEIGHT_ULTRABLACK (//)
+UltraBlack
+;
+MSG_WEIGHT_CUSTOM (//)
+Custom
+;
+MSG_STYLE_UPRIGHT (//)
+Upright
+;
+MSG_STYLE_ITALIC (//)
+Italic
+;
+MSG_STYLE_LEFTITALIC (//)
+LeftItalic
+;
+MSG_HSTYLE_ULTRACOMPRESSED (//)
+UltraCompressed
+;
+MSG_HSTYLE_EXTRACOMPRESSED (//)
+ExtraCompressed
+;
+MSG_HSTYLE_COMPRESSED (//)
+Compressed
+;
+MSG_HSTYLE_CONDENSED (//)
+Condensed
+;
+MSG_HSTYLE_NORMAL (//)
+Normal
+;
+MSG_HSTYLE_SEMIEXPANDED (//)
+SemiExpanded
+;
+MSG_HSTYLE_EXPANDED (//)
+Expanded
+;
+MSG_HSTYLE_EXTRAEXPANDED (//)
+ExtraExpanded
+;
+MSG_HSTYLE_CUSTOM (//)
+Custom
+;
+MSG_METRIC_GLOBALBOUNDINGBOX (//)
+Global bounding box
+;
+MSG_METRIC_RAWFONTMETRIC (//)
+Raw font metric
+;
+MSG_METRIC_ASCENDER (//)
+Ascender
+;
+MSG_METRIC_TYPOASCENDER (//)
+Typo ascender
+;
+MSG_METRIC_USWINASCENDER (//)
+USWin ascender
+;
+MSG_METRIC_CUSTOMBOUNDINGBOX (//)
+Custom bounding box
+;
+MSG_LABEL_EXTRAFILE (//)
+Extra file
+;
+MSG_LABEL_FACENUM (//)
+Face num
+;
+MSG_LABEL_NAME (//)
+Name
+;
+MSG_LABEL_FAMILY (//)
+Family
+;
+MSG_LABEL_METRIC (//)
+Metric
+;
+MSG_LABEL_BOUNDINGBOX (//)
+Bounding box
+;
+MSG_LABEL_YMIN (//)
+yMin
+;
+MSG_LABEL_YMAX (//)
+yMax
+;
+MSG_LABEL_SIZEFACTOR (//)
+Size factor
+;
+MSG_LABEL_SPACEWIDTH (//)
+Space width
+;
+MSG_LABEL_FIXEDWIDTH (//)
+Fixed width
+;
+MSG_LABEL_SERIF (//)
+Serif
+;
+MSG_LABEL_STEMWEIGHT (//)
+Stem weight
+;
+MSG_LABEL_SLANTSTYLE (//)
+Slant style
+;
+MSG_LABEL_HORIZSTYLE (//)
+Horiz style
+;
+MSG_FRAME_PREVIEW (//)
+Preview
+;
+MSG_PREVIEW_STRING (//)
+The quick brown fox jumped over the lazy dog.
+;
+MSG_LABEL_SIZE (//)
+Size
+;
+MSG_LABEL_ANTIALIASING (//)
+Anti-aliasing
+;
