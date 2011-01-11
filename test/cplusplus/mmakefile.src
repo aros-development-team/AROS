@@ -1,0 +1,43 @@
+# This mmakefile relies on existing and working Ñ++ compiler.
+# Because of this i did not add it to the build by default.
+# This target needs to be built manually.
+
+include $(TOP)/config/make.cfg
+
+# Select target C++ compiler
+ifeq ($(TARGET_CXX),)
+  TARGET_CXX := $(TOOLDIR)/$(AROS_TARGET_CPU)-aros-g++
+endif
+
+# Remove C-only flags
+CXX_FLAGS := $(CFLAGS) -isystem $(AROS_DEVELOPMENT)/include
+CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CXX_FLAGS)))
+
+EXEDIR := $(AROSDIR)/$(CURDIR)
+OBJDIR := $(GENDIR)/$(CURDIR)
+
+FILES := exception
+
+EXES := $(addprefix $(EXEDIR)/,$(notdir $(FILES)))
+OBJS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
+DEPS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(FILES))))
+
+#MM
+test-cxx :: $(EXEDIR) $(EXES)
+
+$(EXEDIR):
+	@$(MKDIR) $@
+
+$(EXES) : $(EXEDIR)/% : $(OBJDIR)/%.o
+	%link_q cmd=$(TARGET_CXX)
+
+$(OBJDIR$)/%.o : %.cpp
+	%compile_q cmd=$(TARGET_CXX) opt="$(CXX_FLAGS)"
+
+$(OBJDIR)/%.d : %.cpp
+	%mkdepend_q cc=$(TARGET_CXX) flags="$(CXX_FLAGS)"
+
+
+%include_deps depstargets="test-cxx-quick" deps=$(DEPS)
+
+%common
