@@ -9,7 +9,7 @@ FILES 		:= FTXT ILBM GIF BMP JPEG PNG ELF ELF_EXE ELF64_EXE ELF64_EXE_BE \
 		   A68K ADF AudioMode Catalog Country DataType Font MP3 MP3ID3 \
 		   Otag SFS Trashcan TrueType Lunapaint PREF Lua AmiLua PDF Postscript \
 		   Archive Python REXX FAT AVI MPG MOV WMV WMA VOB ASF OGG RM WAV PLS \
-		   M3U DT64 WinURL PNMP1 PNMP2 PNMP3 PNMP4 PNMP5 PNMP6
+		   M3U DT64 WinURL PNMP1 PNMP2 PNMP3 PNMP4 PNMP5 PNMP6 MSD
 
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
