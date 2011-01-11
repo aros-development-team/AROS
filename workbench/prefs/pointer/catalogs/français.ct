@@ -1,0 +1,41 @@
+## version $VER: pointer.catalog 1.0 (07.01.2011)
+## codeset 0
+## language français
+;
+;
+MSG_WINTITLE
+Préférences du pointeur
+; Pointer Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_HOTSPOT
+Point actif
+; Hotspot
+;
+MSG_ALPHA
+Transparence
+; Alpha
+;
+MSG_FILENAME
+Nom de fichier
+; Filename
+;
+MSG_TYPE
+Type
+; Type
+;
+MSG_TYPE_NORMAL
+Normal
+; Normal
+;
+MSG_TYPE_BUSY
+Occupé
+; Busy
+;
+MSG_SETVIEW
+Choisir / Voir
+; Set / View
+;
