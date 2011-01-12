@@ -12,6 +12,7 @@ endif
 # Remove C-only flags
 CXX_FLAGS := $(CFLAGS) -isystem $(AROS_DEVELOPMENT)/include
 CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CXX_FLAGS)))
+CXX_FLAGS := $(subst -fno-exceptions,, $(CXX_FLAGS))
 
 EXEDIR := $(AROSDIR)/$(CURDIR)
 OBJDIR := $(GENDIR)/$(CURDIR)
