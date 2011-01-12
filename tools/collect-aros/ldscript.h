@@ -61,7 +61,9 @@ static const char LDSCRIPT_PART2[] =
 "  .eh_frame         0 :\n"
 "  {\n"
 "     PROVIDE(__eh_frame_start = .);\n"
-"     KEEP (*(.eh_frame))\n"
+"     KEEP (*(.eh_frame))\n";
+
+static const char LDSCRIPT_PART3[] =
 "  }\n"
 "  .gcc_except_table 0 : { *(.gcc_except_table) }\n"
 "\n"
@@ -92,5 +94,5 @@ static const char LDSCRIPT_PART2[] =
 "  }\n"
 "  /DISCARD/ : { *(.note.GNU-stack) }\n";
 
-static const char LDSCRIPT_PART3[] =
+static const char LDSCRIPT_PART4[] =
 "}\n";
