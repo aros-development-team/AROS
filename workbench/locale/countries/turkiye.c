@@ -2,7 +2,7 @@
     Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for türkiye
+    Desc: Country data for Turkey
 */
 
 #include <libraries/locale.h>
@@ -16,7 +16,7 @@ struct CountryPrefs turkiyePrefs =
     { 0, 0, 0, 0 },
 
     /* Country code (licence plate number), telephone code, measuring system */
-    MAKE_ID('T','U','R', 0 ), 90, MS_ISO,
+    MAKE_ID('T','R',0,0), 90, MS_ISO,
 
     /* Date time format, date format, time format */
     "%e %B %Y %H:%M:%S",
