@@ -31,8 +31,11 @@
  *
  * I would like to use 0xA405, but UAE stole
  * all the A-Line instructions!
+ *
+ * I used to use 0xF405, but that is a valid
+ * instruction on the 68030.
  */
-#define KRN_SYSCALL_INST	0xF405
+#define KRN_SYSCALL_INST	0xFF05
 #define KRN_SYSCALL_MAGIC	0x41524F53
 #define krnSysCall(x)	asm volatile ( \
 				"move.l %0,%%d0\n" \
