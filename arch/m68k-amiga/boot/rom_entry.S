@@ -24,4 +24,5 @@ software_reset:
     .word 0xffff
     .asciz "AROS ROM"
 
-    .org	0xd0
+    .align 4
+    .org   0xd0
