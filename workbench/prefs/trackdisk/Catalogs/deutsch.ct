@@ -1,0 +1,45 @@
+## version $VER: Trackdisk.catalog 1.0 (12.01.2011)
+## language deutsch
+## codeset 0
+;
+;
+MSG_NAME
+Trackdisk
+; Trackdisk
+;
+MSG_TITLE
+Trackdisk-Device-Einstellungen
+; Trackdisk prefs
+;
+MSG_SAVE
+Speichern
+; Save
+;
+MSG_USE
+Benutzen
+; Use
+;
+MSG_CANCEL
+Abbrechen
+; Cancel
+;
+MSG_DESCRIPTION
+trackdisk.device Einstellungen editieren
+; trackdisk.device preferences editor
+;
+MSG_WINDOW_TITLE
+Trackdisk-Device-Einstellungen
+; trackdisk.device preferences
+;
+MSG_DRIVE
+Laufwerk %u
+; Drive %u
+;
+MSG_NOCLICK
+Kein Klicken:
+; No click:
+;
+MSG_RETRIES
+Wiederholungen:
+; Retries:
+;

@@ -91,7 +91,7 @@ Kann Einstellungen nicht speichern
 ; Can't save prefs
 ;
 MSG_App_Description
-OpenURL Voreinstellungen.
+OpenURL-Einstellungen
 ; OpenURL preferences application.
 ;
 MSG_App_Copyright
@@ -99,7 +99,7 @@ Public Domain Software
 ; Public Domain Software
 ;
 MSG_App_ScreenTitle
-OpenURL
+OpenURL-Einstellungen
 ; OpenURL
 ;
 MSG_Menu_Project

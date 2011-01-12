@@ -36,7 +36,7 @@ Kann Anwendungs-Speicher nicht allozieren (%s)!
 ; Can't allocate application memory (%s)!
 ;
 MSG_NAME
-Zeichensatz-Voreinsteller (Font)
+Schriftarten-Einstellungen (Font)
 ; Font Preferences
 ;
 MSG_MENU_PREFERENCES
