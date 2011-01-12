@@ -78,8 +78,10 @@ AROS_SLIB_ENTRY(ReadGayle,Exec):
     bne.s   1f
     clr.b   %d0
 1:
+    cmp.l	#_rom_end,%sp
+    bcc.s   3f
     cmp.l   #_rom_start,%sp
     bge.s   2f
-    rts
+3:  rts
 2:
     jmp     (%sp)
