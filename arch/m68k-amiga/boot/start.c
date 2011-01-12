@@ -59,19 +59,20 @@ int DebugPutChar(register int chr)
 	return 1;
 }
 
-int DebugGetChar(void)
-{
-	while ((reg_r(SERDATR) & SERDATR_RBF) == 0);
-
-	return SERDATR_DB8_of(reg_r(SERDATR));
-}
 
 int DebugMayGetChar(void)
 {
+	int c;
+
 	if ((reg_r(SERDATR) & SERDATR_RBF) == 0)
 	    return -1;
 
-	return SERDATR_DB8_of(reg_r(SERDATR));
+	c = SERDATR_DB8_of(reg_r(SERDATR));
+
+	/* Clear RBF */
+	reg_w(INTREQ, (1 << 11));
+
+	return c;
 }
 
 static void DebugPuts(register const char *buff)
