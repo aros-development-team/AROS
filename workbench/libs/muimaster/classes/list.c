@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -61,7 +61,7 @@ struct ListEntry
 struct ColumnInfo
 {
     int colno; /* Column number */
-    int user_width; /* user setted width -1 if entry width */
+    int user_width; /* user set width; -1 if entry width */
     int min_width; /* min width percentage */
     int max_width; /* min width percentage */
     int weight;
@@ -143,6 +143,9 @@ struct MUI_ListData
     ULONG last_mics;
     ULONG last_active;
     ULONG doubleclick;
+
+    /* clicked column */
+    LONG click_column;
 
     /* list type */
     ULONG input; /* FALSE - readonly, otherwise TRUE */
@@ -952,12 +955,13 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_List_Active: STORE = data->entries_active; return 1;
 	case MUIA_List_InsertPosition: STORE = data->insert_position; return 1;
 	case MUIA_List_Title: STORE = (unsigned long)data->title; return 1;
-	case MUIA_List_VertProp_Entries: STORE = STORE = data->vertprop_entries; return 1;
+	case MUIA_List_VertProp_Entries: STORE = data->vertprop_entries; return 1;
 	case MUIA_List_VertProp_Visible: STORE = data->vertprop_visible; return 1;
 	case MUIA_List_VertProp_First: STORE = data->vertprop_first; return 1;
 	case MUIA_List_Format: STORE = (IPTR)data->format; return 1;
 
 	case MUIA_Listview_DoubleClick: STORE = 0; return 1;
+	case MUIA_Listview_ClickColumn: STORE = data->click_column; return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
@@ -1485,6 +1489,27 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 				if (data->last_active == data->entries_active 
 					&& DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros))
 				{
+				    /* Handle MUIA_ListView_ClickColumn */
+				    data->click_column = 0;
+				    if (data->entries_num > 0 && data->columns > 0)
+				    {
+					LONG width_sum = 0;
+					LONG i;
+					for (i = 0; i < data->columns; i++)
+					{
+					    width_sum += data->ci[i].entries_width;
+					    D(bug("[List/MUIM_HandleEvent] i %d width %d width_sum %d mx %d\n",
+						  i, data->ci[i].entries_width, width_sum, mx));
+					    if (mx < width_sum)
+					    {
+						D(bug("[List/MUIM_HandleEvent] Column hit %d\n", i));
+						// FIXME: do we need set(obj, MUIA_Listview_ClickColumn, i) ?
+						data->click_column = i;
+						break;
+					    }
+					}
+				    }
+				    
 				    set(obj, MUIA_Listview_DoubleClick, TRUE);
 				    data->last_active = -1;
 				    data->last_secs = data->last_mics = 0;
