@@ -12,6 +12,8 @@
 #include <exec/alerts.h>
 #include <proto/exec.h>
 
+extern void *__eh_frame_start;
+
 /*
  * Non-working call frame unwinding in AROS causes calling abort().
  * Here we manually override this function to call Alert(),
@@ -36,6 +38,10 @@ int sub()
 
 int main ()
 {
+#ifdef __AROS__
+    printf("Exception frames start at %p\n", &__eh_frame_start);
+#endif
+
     try
     {
 	sub();
