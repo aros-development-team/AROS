@@ -1,8 +1,11 @@
 	.text
 
+	.align 4 
+
 #define SS_STACK_SIZE	0x04000
 #define US_STACK_SIZE	0x0c000
 
+	reset
 	.globl rom_init
 	nop
 rom_init:
