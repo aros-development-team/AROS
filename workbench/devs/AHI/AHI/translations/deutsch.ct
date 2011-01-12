@@ -260,7 +260,7 @@ OK
 ; *** Texts ***
 ;
 msgTextProgramName
-AHI Voreinstellungen
+AHI-Einstellungen
 ; AHI preferences
 ;
 ;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
