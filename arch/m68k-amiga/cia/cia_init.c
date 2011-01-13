@@ -33,7 +33,7 @@
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "cia_intern.h"
