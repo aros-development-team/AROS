@@ -169,7 +169,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
 	    KernelBase = OpenResource("kernel.resource");
 
 	    /* This is where we start the RTC_AFTERDOS residents */
-bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n");
+	    D(bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n"));
 	    InitCode(RTF_AFTERDOS, 0);
 
 	    /* We now restart the multitasking	- this is done

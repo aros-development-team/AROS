@@ -88,8 +88,8 @@ AROS_UFH4(LONG, ReadFunc,
 
 	if (segs)
             SetIoErr(0);
-	else
- 	    bug("[LoadSeg] Failed to load '%s'\n", name);
+	D(else
+ 	    bug("[LoadSeg] Failed to load '%s'\n", name));
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
  	/* overlayed executables return -segs and handle must not be closed */
  	if ((LONG)segs > 0)
