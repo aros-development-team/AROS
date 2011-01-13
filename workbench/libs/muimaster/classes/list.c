@@ -1494,17 +1494,17 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 				    if (data->entries_num > 0 && data->columns > 0)
 				    {
 					LONG width_sum = 0;
-					LONG i;
-					for (i = 0; i < data->columns; i++)
+					LONG col;
+					for (col = 0; col < data->columns; col++)
 					{
-					    width_sum += data->ci[i].entries_width;
-					    D(bug("[List/MUIM_HandleEvent] i %d width %d width_sum %d mx %d\n",
-						  i, data->ci[i].entries_width, width_sum, mx));
+					    width_sum += data->ci[col].entries_width + data->ci[col].delta + (data->ci[col].bar ? BAR_WIDTH : 0);
+					    D(bug("[List/MUIM_HandleEvent] col %d width %d width_sum %d mx %d\n",
+						  col, data->ci[col].entries_width, width_sum, mx));
 					    if (mx < width_sum)
 					    {
-						D(bug("[List/MUIM_HandleEvent] Column hit %d\n", i));
+						D(bug("[List/MUIM_HandleEvent] Column hit %d\n", col));
 						// FIXME: do we need set(obj, MUIA_Listview_ClickColumn, i) ?
-						data->click_column = i;
+						data->click_column = col;
 						break;
 					    }
 					}
