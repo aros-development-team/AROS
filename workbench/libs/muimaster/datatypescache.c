@@ -24,7 +24,7 @@
 #include <proto/layers.h>
 #include <proto/cybergraphics.h>
 
-#define MYDEBUG 1 
+//#define MYDEBUG 1 
 #include "debug.h"
 #include "support.h"
 #include "muimaster_intern.h"
