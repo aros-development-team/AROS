@@ -91,7 +91,7 @@ void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum)
 			TimerBase->tb_cia_on = 1;
 			TimerBase->tb_cia_count_started = 0;
 			D(bug("UNIT_MICROHZ kickstarted\n"));
-			SetICR(TimerBase->ciares, 0x82);
+			SetICR(TimerBase->ciaares, 0x82);
 		} else {
 			UBYTE lo, hi;
 			// already active but new item was added to head
@@ -104,7 +104,7 @@ void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum)
 			// how long have we already waited?
 			TimerBase->tb_cia_count_started -= (hi << 8) | lo;
 			// force interrupt now
-			SetICR(TimerBase->ciares, 0x82);
+			SetICR(TimerBase->ciaares, 0x82);
 			D(bug("UNIT_MICROHZ restarted\n"));
 		}
 	}
@@ -112,16 +112,16 @@ void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum)
 	
 void GetEClock(struct TimerBase *TimerBase, struct EClockVal *ev)
 {
-	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
+	volatile struct CIA *ciab = (struct CIA*)0xbfd000;
 	UBYTE lo, hi;
 	ULONG evlo, evhi, old;
 	UWORD diff, val;
 	
 	Disable();
 	for (;;) {
-		hi = ciaa->ciatahi;
-		lo = ciaa->ciatalo;
-		if (hi != ciaa->ciatahi)
+		hi = ciab->ciatahi;
+		lo = ciab->ciatalo;
+		if (hi != ciab->ciatahi)
 			break;
 		// lo wraparound, try again
 	}
@@ -129,7 +129,7 @@ void GetEClock(struct TimerBase *TimerBase, struct EClockVal *ev)
 	old = evlo = TimerBase->tb_eclock.ev_lo;
 	evhi = TimerBase->tb_eclock.ev_hi;
 	// pending interrupt?
-	if (SetICR(TimerBase->ciares, 0) & 0x01) {
+	if (SetICR(TimerBase->ciabres, 0) & 0x01) {
 		TimerBase->tb_eclock_last = ECLOCK_BASE;
 		diff = ECLOCK_BASE;
 	} else {
@@ -151,13 +151,13 @@ void GetEClock(struct TimerBase *TimerBase, struct EClockVal *ev)
 	Enable();
 }
 
-AROS_UFH4(APTR, cia_ciainta,
+AROS_UFH4(APTR, ciab_ciainta,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(struct TimerBase *, TimerBase, A1),
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    AROS_USERFUNC_INIT
+	AROS_USERFUNC_INIT
 
 	// e-clock counter, counts full ECLOCK_BASE cycles
 	TimerBase->tb_eclock_last = ECLOCK_BASE;
@@ -177,13 +177,13 @@ AROS_UFH4(APTR, cia_ciainta,
 	AROS_USERFUNC_EXIT
 }
 
-AROS_UFH4(APTR, cia_ciaintb,
+AROS_UFH4(APTR, ciaa_ciaintb,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(struct TimerBase *, TimerBase, A1),
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    AROS_USERFUNC_INIT
+	AROS_USERFUNC_INIT
 
 	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 	struct timerequest *tr, *next;
@@ -202,14 +202,14 @@ AROS_UFH4(APTR, cia_ciaintb,
 
 	Disable();
 
-    ForeachNodeSafe(&TimerBase->tb_Lists[UNIT_MICROHZ], tr, next) {
-    	D(bug("%d/%d %d/%d\n", TimerBase->tb_cia_count.tv_secs, TimerBase->tb_cia_count.tv_micro, tr->tr_time.tv_secs, tr->tr_time.tv_micro));
-    	if (cmp64(&TimerBase->tb_cia_count, &tr->tr_time)) {
-           	Remove((struct Node *)tr);
-           	tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
-           	tr->tr_node.io_Error = 0;
-           	ReplyMsg((struct Message *)tr);
-           	D(bug("ciab done\n"));
+    	ForeachNodeSafe(&TimerBase->tb_Lists[UNIT_MICROHZ], tr, next) {
+    		D(bug("%d/%d %d/%d\n", TimerBase->tb_cia_count.tv_secs, TimerBase->tb_cia_count.tv_micro, tr->tr_time.tv_secs, tr->tr_time.tv_micro));
+    		if (cmp64(&TimerBase->tb_cia_count, &tr->tr_time)) {
+	           	Remove((struct Node *)tr);
+	           	tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
+	           	tr->tr_node.io_Error = 0;
+	           	ReplyMsg((struct Message *)tr);
+	           	D(bug("ciab done\n"));
 		} else {
 			break; // first not finished, can stop searching
 		}	
@@ -246,21 +246,21 @@ AROS_UFH4(APTR, cia_vbint,
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    AROS_USERFUNC_INIT
+    	AROS_USERFUNC_INIT
 	
-    struct timerequest *tr, *next;
+   	 struct timerequest *tr, *next;
 
 	if (TimerBase->tb_vblank_on == 0)
 		return 0;
 	inc64(&TimerBase->tb_vb_count);
 
 	Disable();
-    ForeachNodeSafe(&TimerBase->tb_Lists[UNIT_VBLANK], tr, next) {
-    	if (cmp64(&TimerBase->tb_vb_count, &tr->tr_time)) {
-           	Remove((struct Node *)tr);
-           	tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
-           	tr->tr_node.io_Error = 0;
-           	ReplyMsg((struct Message *)tr);
+    	ForeachNodeSafe(&TimerBase->tb_Lists[UNIT_VBLANK], tr, next) {
+	    	if (cmp64(&TimerBase->tb_vb_count, &tr->tr_time)) {
+	           	Remove((struct Node *)tr);
+	           	tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
+	           	tr->tr_node.io_Error = 0;
+           		ReplyMsg((struct Message *)tr);
 		} else {
 			break; // first not finished, can stop searching
 		}	
