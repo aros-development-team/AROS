@@ -34,7 +34,7 @@
 #include LC_LIBDEFS_FILE
 
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define SIZE_RESLIST 4
@@ -315,7 +315,7 @@ VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     	ULONG idx;
 	bug("UAEGFXCl__Root__Set %x\n", tag->ti_Tag);
     	if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
-    	    bug("->%d\n", idx);
+    	    D(bug("->%d\n", idx));
     	}
     }
 #endif
@@ -499,7 +499,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     D(bug("InitCard done\n"));
 
     csd->hardwaresprite = SetSprite(csd, FALSE) && (gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE));
-    bug("hardware sprite: %d\n", csd->hardwaresprite);
+    D(bug("hardware sprite: %d\n", csd->hardwaresprite));
 
     csd->vram_start = (UBYTE*)gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);
     csd->vram_size = gl(csd->boardinfo + PSSO_BoardInfo_MemorySize);

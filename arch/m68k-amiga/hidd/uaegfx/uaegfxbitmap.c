@@ -27,7 +27,7 @@
 #include <hidd/graphics.h>
 #include <aros/symbolsets.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #define DB2(x) x;
 #define DEBUG_TEXT(x)
 #include <aros/debug.h>
@@ -237,7 +237,7 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
 static int UAEGFXBitmap_Init(LIBBASETYPEPTR LIBBASE)
 {
-    bug("UAEGFXBitmap_Init\n");
+    D(bug("UAEGFXBitmap_Init\n"));
     return TRUE; //return OOP_ObtainAttrBases(attrbases);
 }
 
@@ -245,7 +245,7 @@ static int UAEGFXBitmap_Init(LIBBASETYPEPTR LIBBASE)
 
 static int UAEGFXBitmap_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    bug("UAEGFXBitmap_Expunge\n");
+    D(bug("UAEGFXBitmap_Expunge\n"));
     //OOP_ReleaseAttrBases(attrbases);
     return TRUE;
 }
