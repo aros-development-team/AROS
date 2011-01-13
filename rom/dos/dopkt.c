@@ -75,7 +75,7 @@
 	return FALSE;
     }
     
-    kprintf("Allocated packet %p for action %ld\n", dp, action);
+    D(bug("Allocated packet %p for action %ld\n", dp, action));
 
     if (__is_process(me))
     {
