@@ -445,17 +445,24 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Let the world know we exist
 	 */
 	DebugInit();
+#if AROS_SERIAL_DEBUG
 	DebugPuts("[reset]\n");
+#endif
 
 	/* Zap out old SysBase if invalid */
 	if (SysBase == NULL || SysBase->ChkBase != ~(IPTR)SysBase || syschecksum() != 0xffff) {
+#if AROS_SERIAL_DEBUG
 	    DebugPutHex("[SysBase] invalid at", (ULONG)SysBase);
+#endif
 	    /* TODO: should check again after autoconfig */
 	    SysBase = NULL;
 	} else {
+#if AROS_SERIAL_DEBUG
 	    DebugPutHex("[SysBase] was at", (ULONG)SysBase);
+#endif
 	}
 
+#if AROS_SERIAL_DEBUG
 	if (fast_size != 0) {
 		DebugPutHex("Fast_Upper ",(ULONG)(fast_start + fast_size - 1));
 		DebugPutHex("Fast_Lower ",(ULONG)fast_start);
@@ -464,6 +471,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	DebugPutHex("Chip_Lower ",(ULONG)chip_start);
 	DebugPutHex("SS_Stack_Upper",(ULONG)(ss_stack_upper - 1));
 	DebugPutHex("SS_Stack_Lower",(ULONG)ss_stack_lower);
+#endif
 
 	/* Look for 'HELP' at address 0 - we're recovering
 	 * from a fatal alert
@@ -480,9 +488,11 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
+#if AROS_SERIAL_DEBUG
 	DebugPuts("[bss clear]\n");
 
 	DebugPuts("[prep RAM]\n");
+#endif
 	Early_ScreenCode(CODE_RAM_CHECK);
 
 	if (fast_size == 0) {
@@ -497,7 +507,9 @@ void start(IPTR chip_start, ULONG chip_size,
 		mh = (APTR)fast_start;
 	}
 
+#if AROS_SERIAL_DEBUG
 	DebugPuts("[prep SysBase]\n");
+#endif
 	Early_ScreenCode(CODE_EXEC_CHECK);
 
 	PrepareExecBase(mh, NULL, NULL);
@@ -541,7 +553,9 @@ void start(IPTR chip_start, ULONG chip_size,
 	oldmem = AvailMem(MEMF_FAST);
 
 	/* Ok, let's start the system */
+#if AROS_SERIAL_DEBUG
 	DebugPuts("[start] InitCode(RTF_SINGLETASK, 0)\n");
+#endif
 	InitCode(RTF_SINGLETASK, 0);
 
 	/* Autoconfig ram expansions are now configured */
@@ -549,7 +563,9 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Move execbase to real fast if available now */
 	if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024) {
 		PrepareExecBase(NULL, NULL, NULL);
+#if AROS_SERIAL_DEBUG
 		DebugPutHex("[Sysbase] now at", (ULONG)SysBase);
+#endif
 	}
 	
 	/* total chipram */
