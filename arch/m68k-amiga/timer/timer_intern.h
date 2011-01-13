@@ -42,25 +42,26 @@ struct TimerBase
 
     struct MinList	 tb_Lists[NUM_LISTS];
 
-	struct Resource *ciares;
-	struct Interrupt ciainta;
-	struct Interrupt ciaintb;
-	struct Interrupt vbint;
+    struct Resource *ciaares;
+    struct Resource *ciabres;
+    struct Interrupt ciainta;
+    struct Interrupt ciaintb;
+    struct Interrupt vbint;
 
-	struct EClockVal tb_eclock;
-	ULONG tb_eclock_rate;
-	ULONG tb_eclock_to_usec;
-	UWORD tb_eclock_last;
+    struct EClockVal tb_eclock;
+    ULONG tb_eclock_rate;
+    ULONG tb_eclock_to_usec;
+    UWORD tb_eclock_last;
 
-	struct timeval tb_vb_count;
-	UWORD tb_vblank_rate;
-	ULONG tb_vblank_micros;
-	UWORD tb_vblank_on;
+    struct timeval tb_vb_count;
+    UWORD tb_vblank_rate;
+    ULONG tb_vblank_micros;
+    UWORD tb_vblank_on;
 
-	ULONG tb_cia_count_started;
-	struct timeval tb_cia_count;
-	ULONG tb_cia_micros;
-	UWORD tb_cia_on;	
+    ULONG tb_cia_count_started;
+    struct timeval tb_cia_count;
+    ULONG tb_cia_micros;
+    UWORD tb_cia_on;	
 
 };
 
