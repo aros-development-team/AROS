@@ -6,7 +6,6 @@ FILES := main arosdevice
 #MM- kernel-fs-afs : includes linklibs kernel-fs-afs-linklib
 
 USER_CFLAGS := -I$(SRCDIR)/rom/devs/filesys/afs \
-	       -DDEBUG=1 \
 	       $(PARANOIA_CFLAGS)
 
 %build_archspecific \
