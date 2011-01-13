@@ -1,5 +1,5 @@
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <exec/memory.h>
 #include <exec/lists.h>

@@ -5,7 +5,7 @@
     Desc: Create a new process
     Lang: English
 */
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -42,8 +42,6 @@ extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBas
 extern void BCPL_Cleanup(struct Process *me);
 #endif
 
-/* Temporary macro */
-#define P(x)	x
 /*****************************************************************************
 
     NAME */
@@ -457,9 +455,9 @@ extern void BCPL_Cleanup(struct Process *me);
 	/* NP_Synchronous */
 	if (defaults[19].ti_Data)
 	{
-	    P(kprintf("Calling ChildWait()\n"));
+	    D(bug("Calling ChildWait()\n"));
 	    internal_ChildWait(FindTask(NULL), DOSBase);
-	    P(kprintf("Returned from ChildWait()\n"));
+	    D(bug("Returned from ChildWait()\n"));
 	}
 	goto end;
     }
@@ -558,7 +556,7 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
     ForeachNodeSafe(&process->pr_LocalVars,
 		    varNode, tempNode)
     {
-	P(kprintf("Freeing variable %s with value %s at %p\n",
+	D(bug("Freeing variable %s with value %s at %p\n",
 		  varNode->lv_Node.ln_Name, varNode->lv_Value, varNode));
 	FreeMem(varNode->lv_Value, varNode->lv_Len);
 	Remove((struct Node *)varNode);
@@ -608,7 +606,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 	    CopyMem(varNode, newVar, copyLength);
 	    newVar->lv_Node.ln_Name = (char *)newVar +
 		sizeof(struct LocalVar);
-	    P(kprintf("Variable with name %s copied.\n", 
+	    D(bug("Variable with name %s copied.\n", 
 		      newVar->lv_Node.ln_Name));
 	    
             if (varNode->lv_Len)
@@ -659,40 +657,40 @@ static void KillCurrentProcess(void)
 
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
 
-    P(kprintf("Deleting local variables\n"));
+    D(bug("Deleting local variables\n"));
 
     /* Clean up */
     freeLocalVars(me, DOSBase);
 
-    P(kprintf("Closing input stream\n"));
+    D(bug("Closing input stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEINPUT)
     {
 	Close(me->pr_CIS);
     }
 
-    P(kprintf("Closing output stream\n"));
+    D(bug("Closing output stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEOUTPUT)
     {
 	Close(me->pr_COS);
     }
 
-    P(kprintf("Closing error stream\n"));
+    D(bug("Closing error stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEERROR)
     {
 	Close(me->pr_CES);
     }
 
-    P(kprintf("Freeing arguments\n"));
+    D(bug("Freeing arguments\n"));
 
     if (me->pr_Flags & PRF_FREEARGS)
     {
 	FreeVec(me->pr_Arguments);
     }
 
-    P(kprintf("Unloading segment\n"));
+    D(bug("Unloading segment\n"));
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     if (me->pr_Flags & PRF_FREESEGLIST)
@@ -710,17 +708,17 @@ static void KillCurrentProcess(void)
     }
 #endif
 
-    P(kprintf("Unlocking current dir\n"));
+    D(bug("Unlocking current dir\n"));
 
     if (me->pr_Flags & PRF_FREECURRDIR)
     {
 	UnLock(me->pr_CurrentDir);
     }
 
-    P(kprintf("Unlocking home dir\n"));
+    D(bug("Unlocking home dir\n"));
     UnLock(me->pr_HomeDir);
 
-    P(kprintf("Freeing cli structure\n"));
+    D(bug("Freeing cli structure\n"));
 
     if (me->pr_Flags & PRF_FREECLI)
     {
@@ -735,7 +733,7 @@ static void KillCurrentProcess(void)
 
     if (me->pr_Flags & PRF_SYNCHRONOUS)
     {
-	P(kprintf("Calling ChildFree()\n"));
+	D(bug("Calling ChildFree()\n"));
 
 	// ChildStatus(me);
 	internal_ChildFree(me, DOSBase);
@@ -744,7 +742,7 @@ static void KillCurrentProcess(void)
     removefromrootnode(me, DOSBase);
 
     CloseLibrary((struct Library * )DOSBase);
-    P(kprintf("KillCurrentProcess done\n"));
+    D(bug("KillCurrentProcess done\n"));
 
     RemTask(NULL);
     
