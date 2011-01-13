@@ -51,58 +51,29 @@ static AROS_UFH4(ULONG, keyboard_interrupt,
 { 
     AROS_USERFUNC_INIT
 
-	struct kbd_data *kbddata = (struct kbd_data*)data;
-	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
-	UBYTE lo, hi;
+    struct kbd_data *kbddata = (struct kbd_data*)data;
+    volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 	
-	UBYTE keycode = ciaa->ciasdr;
+    UBYTE keycode = ciaa->ciasdr;
 
-	// handshake, delay may not be correct yet (should be about 85us or more)
-	if (ciaa->ciacra & 1) {
-		// timer active -> assume timer.device has started it
-		for (;;) {
-			hi = ciaa->ciatahi;
-			lo = ciaa->ciatalo;
-			if (hi == ciaa->ciatahi)
-				break;
-		}
-	} else {
-		// not active, assume no one is using it
-	ciaa->ciatahi = 0;
-	ciaa->ciatalo = 100;
-	// oneshot, force load, set serial output (=handshake signal to keyboard)
-	ciaa->ciacra = 0x08 | 0x10 | 0x40;
-	// start timer
-	ciaa->ciacra |= 0x01;
-		hi = 0;
-		lo = 0;
-	}
+    ciaa->ciacra = 0x48;
+    ciaa->ciatalo = 100;
+    ciaa->ciatahi = 0;
 
-	keycode = ~((keycode >> 1) | (keycode << 7));
-	kbddata->kbd_callback(kbddata->callbackdata, keycode);
-	/* "release" UAE mouse wheel up/down key codes */
-	if (keycode == 0x7a || keycode == 0x7b)
-		kbddata->kbd_callback(kbddata->callbackdata, 0x80 | keycode);
+    keycode = ~((keycode >> 1) | (keycode << 7));
+    kbddata->kbd_callback(kbddata->callbackdata, keycode);
+    /* "release" UAE mouse wheel up/down key codes */
+    if (keycode == 0x7a || keycode == 0x7b)
+	kbddata->kbd_callback(kbddata->callbackdata, 0x80 | keycode);
 
-	// timer still not finished? busy wait
-	while (ciaa->ciacra & 1) {
-		UBYTE lo2, hi2;
-		while (ciaa->ciacra & 1) {
-			hi2 = ciaa->ciatahi;
-			lo2 = ciaa->ciatalo;
-			if (hi2 == ciaa->ciatahi)
-				break;
-		}
-		if (hi2 != hi && hi2 != hi - 1)
-			break;
-		if (hi2 == hi && lo2 <= lo)
-			break;
-	}
-	ciaa->ciacra &= ~0x40; // back to input mode
+    // timer still not finished? busy wait
+    while (ciaa->ciacra & 1);
+
+    ciaa->ciacra = 0x08; // back to input mode, end handshake
 	
-	return 0;
+    return 0;
 	
-	AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -159,36 +130,34 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
     if (o)
     {
-		volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
-		struct Interrupt *inter = &XSD(cl)->kbint;
+	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
+	struct Interrupt *inter = &XSD(cl)->kbint;
         struct kbd_data *data = OOP_INST_DATA(cl, o);
         
         data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
         data->callbackdata   = callbackdata;
 	
-		if (!(XSD(cl)->ciares = OpenResource("ciaa.resource")))
-			Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
+	if (!(XSD(cl)->ciares = OpenResource("ciaa.resource")))
+	    Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
 	
-		ciaa->ciacra &= ~0x40;
+	ciaa->ciacra = 0x08; // oneshot
 
-		inter = &XSD(cl)->kbint;
-		inter->is_Node.ln_Pri = 0;
-		inter->is_Node.ln_Type = NT_INTERRUPT;
-		inter->is_Node.ln_Name = "kbr";
-		inter->is_Code = (APTR)keyboard_interrupt;
-		inter->is_Data = data;
+	inter = &XSD(cl)->kbint;
+	inter->is_Node.ln_Pri = 0;
+	inter->is_Node.ln_Type = NT_INTERRUPT;
+	inter->is_Node.ln_Name = "kbr";
+	inter->is_Code = (APTR)keyboard_interrupt;
+	inter->is_Data = data;
 	
-		if (AddICRVector(XSD(cl)->ciares, 3, inter))
-			Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-			
-	}		
+	if (AddICRVector(XSD(cl)->ciares, 3, inter))
+	    Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);	
+    }
  
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
 
 VOID AmigaKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-	struct kbd_data *data;
     ObtainSemaphore(&XSD(cl)->sema);
     if (XSD(cl)->ciares)
     	RemICRVector(XSD(cl)->ciares, 3, &XSD(cl)->kbint);
