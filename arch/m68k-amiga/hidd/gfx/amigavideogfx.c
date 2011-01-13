@@ -375,7 +375,7 @@ static void freeattrbases(struct amigavideo_staticdata *csd)
 int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE)
 {
     struct amigavideo_staticdata *csd = &LIBBASE->csd;
-    bug("Init_AmigaVideoClass\n");
+    D(bug("Init_AmigaVideoClass\n"));
     __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);
     __IHidd_PlanarBM  	= OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
     __IHidd_AmigaVideoBitmap  	= OOP_ObtainAttrBase(IID_Hidd_AmigaVideoBitMap);

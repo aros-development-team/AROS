@@ -10,7 +10,7 @@
 #include "amigavideobitmap.h"
 #include "chipset.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 static const UBYTE fetchunits[] = { 3,3,3,0, 4,3,3,0, 5,4,3,0 };
@@ -168,7 +168,7 @@ void resetmode(struct amigavideo_staticdata *data)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
-    bug("resetmode\n");
+    D(bug("resetmode\n"));
 
     data->disp = NULL;
 
@@ -374,7 +374,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
 
     data->fmode = data->aga ? 2 : 0;
 
-    bug("setmode bm=%x w=%d h=%d d=%d\n", bm, bm->width, bm->rows, bm->depth);
+    D(bug("setmode bm=%x w=%d h=%d d=%d\n", bm, bm->width, bm->rows, bm->depth));
     
     fetchunit = fetchunits[data->fmode * 4 + data->res];
     fetchstart = fetchstarts[data->fmode * 4 + data->res];
