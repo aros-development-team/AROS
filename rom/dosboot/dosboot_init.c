@@ -441,7 +441,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
         strcpy(bootName, LIBBASE->db_BootDevice);
         strcat(bootName, ":");
 
-        bug("[DOSBoot] __dosboot_BootProcess: Booting from device '%s'\n", bootName);
+        D(bug("[DOSBoot] __dosboot_BootProcess: Booting from device '%s'\n", bootName));
 
         /* Lock the boot device and add some default assigns */
         lock =  Lock(bootName, SHARED_LOCK);
