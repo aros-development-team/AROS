@@ -5,7 +5,7 @@
 
 #include "disk_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 void readunitid_internal (struct DiscResource *DiskBase, LONG unitNum)
