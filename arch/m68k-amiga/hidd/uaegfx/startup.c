@@ -1,5 +1,5 @@
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -20,7 +20,7 @@ static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
     struct GfxBase *GfxBase;
     OOP_Object *gfxhidd;
  	
-    bug("************************* UAEGFX_Init ******************************\n");
+    D(bug("************************* UAEGFX_Init ******************************\n"));
     if (!Init_UAEGFXClass(LIBBASE))
     	return FALSE;
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
