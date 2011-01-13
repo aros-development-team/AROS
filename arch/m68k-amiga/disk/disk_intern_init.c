@@ -16,7 +16,7 @@
 
 #define HAVE_NO_DF0_DISK_ID 1
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 void readunitid_internal (struct DiscResource *DiskBase, LONG unitNum)
@@ -169,7 +169,7 @@ BOOL disk_internal_init (struct DiscResource *DiskBase)
 	// detect drives
 	for (i = 0; i < 4; i++) {
 		readunitid_internal(DiskBase, i);
-		bug("DF%d: %08x\n", i, DiskBase->dr_UnitID[i]);
+		D(bug("DF%d: %08x\n", i, DiskBase->dr_UnitID[i]));
 	}
 	
 	return TRUE;
