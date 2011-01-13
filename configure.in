@@ -1225,7 +1225,7 @@ case "$target_os" in
 		aros_object_format="m68kelf"
 		aros_flavour="standcompat"
 		gcc_target_cpu="m68000"
-		aros_config_cflags="$aros_config_cflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -DAROS_CREATE_ROM -DAROS_DOS_PACKETS"
+		aros_config_cflags="$aros_config_cflags -g3 -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -DAROS_DOS_PACKETS"
 		aros_config_aflags="$aros_config_aflags -g3 -${gcc_target_cpu}"
 		aros_paranoia_cflags="$aros_paranoia_cflags -Wno-volatile-register-var"
 		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -${gcc_target_cpu}"
