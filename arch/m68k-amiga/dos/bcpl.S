@@ -5,7 +5,7 @@
     Desc: BCPL stubs that call into Exec and Dos libraries.
     Lang: english
 */
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/m68k/asm.h>
 
 #include "bcpl.h"
