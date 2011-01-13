@@ -933,6 +933,10 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		    DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
 		}
 		break;
+
+	    case    MUIA_Listview_ClickColumn:
+		data->click_column = tag->ti_Data;
+		break;
     	}
     }
 
@@ -1503,8 +1507,7 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 					    if (mx < width_sum)
 					    {
 						D(bug("[List/MUIM_HandleEvent] Column hit %d\n", col));
-						// FIXME: do we need set(obj, MUIA_Listview_ClickColumn, i) ?
-						data->click_column = col;
+						set(obj, MUIA_Listview_ClickColumn, col);
 						break;
 					    }
 					}
