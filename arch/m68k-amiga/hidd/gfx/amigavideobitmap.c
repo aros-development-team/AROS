@@ -27,7 +27,7 @@
 #include <hidd/graphics.h>
 #include <aros/symbolsets.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #define DB2(x) ;
 #define DEBUG_TEXT(x)
 #include <aros/debug.h>
@@ -232,7 +232,7 @@ VOID AmigaVideoBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
 static int AmigaVideoBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    bug("AmigaVideoBM_Init\n");
+    D(bug("AmigaVideoBM_Init\n"));
     return TRUE; //return OOP_ObtainAttrBases(attrbases);
 }
 
@@ -240,7 +240,7 @@ static int AmigaVideoBM_Init(LIBBASETYPEPTR LIBBASE)
 
 static int AmigaVideoBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    bug("AmigaVideoBM_Expunge\n");
+    D(bug("AmigaVideoBM_Expunge\n"));
     //OOP_ReleaseAttrBases(attrbases);
     return TRUE;
 }

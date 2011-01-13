@@ -1,5 +1,5 @@
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -23,7 +23,7 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
     struct GfxBase *GfxBase;
     OOP_Object *gfxhidd;
  	
-    bug("************************* AmigaVideo_Init ******************************\n");
+    D(bug("************************* AmigaVideo_Init ******************************\n"));
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
     if (!GfxBase)
         return FALSE;
