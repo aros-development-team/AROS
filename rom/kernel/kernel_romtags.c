@@ -25,7 +25,9 @@
  */
 #include "memory.h"
 
+#if AROS_SERIAL_DEBUG
 #define PRINT_LIST
+#endif
 
 static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 {
@@ -91,7 +93,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 	ptr = *ranges++;
 	end = *ranges++;
 
-	bug("RomTagScanner: Start = %p, End = %p\n", ptr, end);
+	D(bug("RomTagScanner: Start = %p, End = %p\n", ptr, end));
 	do
 	{
 	    res = (struct Resident *)ptr;
