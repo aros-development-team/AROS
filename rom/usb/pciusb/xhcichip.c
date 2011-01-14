@@ -58,7 +58,7 @@ AROS_UFH3(void, xhciResetHandler,
 
 IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
 
-    IPTR extcapoff = (IPTR) NULL;
+    IPTR extcapoff = (IPTR) 0;
     ULONG cnt = XHCI_EXT_CAPS_MAX;
 
     KPRINTF(1000,("search for ext cap with id(%ld)\n", id));
@@ -86,7 +86,33 @@ IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
     } while(cnt & extcapoff);
 
     KPRINTF(1000, ("not found!\n"));
-    return (IPTR) NULL;
+    return (IPTR) 0;
+}
+
+BOOL xhciResetHC(struct PCIController *hc) {
+
+    struct PCIUnit *hu = hc->hc_Unit;
+    struct PCIDevice *hd = hu->hu_Device;
+
+    ULONG timeout, temp;
+
+    /* Reset controller */
+    temp = opreg_readl(XHCI_USBCMD);
+    opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
+
+    timeout = 250;
+    do {
+        temp = opreg_readl(XHCI_USBSTS);
+        if( !(temp & XHCF_STS_CNR) ) {
+            KPRINTF(1000, ("reset succeeded!\n"));
+            return TRUE;
+            break;
+        }
+        uhwDelayMS(10, hu, hd);
+    } while(--timeout);
+
+    KPRINTF(1000, ("reset failed!\n"));
+    return FALSE;
 }
 
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
@@ -191,53 +217,51 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         }
     } while (extcap);
 
-    hc->hc_PCIMemSize = 1024;   //Arbitrary number
-    hc->hc_PCIMemSize += (hc->xhc_scratchbufs * hc->xhc_pagesize);
+    if(xhciResetHC(hc)) {
 
-    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
-    if(!memptr) {
-        return FALSE;
+        hc->hc_PCIMemSize = 1024;   //Arbitrary number
+        hc->hc_PCIMemSize += (hc->xhc_scratchbufs * hc->xhc_pagesize);
+
+        memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
+        if(!memptr) {
+            return FALSE;
+        }
+
+        hc->hc_PCIMem = (APTR) memptr;
+        // PhysicalAddress - VirtualAdjust = VirtualAddress
+        // VirtualAddress  + VirtualAdjust = PhysicalAddress
+        hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
+        KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
+
+        hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
+        hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
+        hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
+        hc->hc_CompleteInt.is_Data = hc;
+        hc->hc_CompleteInt.is_Code = (void (*)(void)) &xhciCompleteInt;
+
+        // install reset handler
+        hc->hc_ResetInt.is_Code = xhciResetHandler;
+        hc->hc_ResetInt.is_Data = hc;
+        AddResetCallback(&hc->hc_ResetInt);
+
+        // add interrupt
+        hc->hc_PCIIntHandler.h_Node.ln_Name = "XHCI PCI (pciusb.device)";
+        hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
+        hc->hc_PCIIntHandler.h_Code = xhciIntCode;
+        hc->hc_PCIIntHandler.h_Data = hc;
+        HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+
+        /* Program the Max Device Slots Enabled (MaxSlotsEn) field */
+        /* FIXME: This field shall not be modified by software if the xHC is running (Run/Stop (R/S) = ‘1’) */
+        opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | hc->hc_NumPorts) );
+
+        /* Program the Device Context Base Address Array Pointer (DCBAAP) */
+
+        /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
+
+        return TRUE;
     }
-
-    hc->hc_PCIMem = (APTR) memptr;
-    // PhysicalAddress - VirtualAdjust = VirtualAddress
-    // VirtualAddress  + VirtualAdjust = PhysicalAddress
-    hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
-    KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
-
-    /* Reset controller */
-    temp = opreg_readl(XHCI_USBCMD);
-    opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
-
-    /* FIXME: Wait until the Controller Not Ready (CNR) flag in the USBSTS is ‘0’ */
-
-    hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
-    hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
-    hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
-    hc->hc_CompleteInt.is_Data = hc;
-    hc->hc_CompleteInt.is_Code = (void (*)(void)) &xhciCompleteInt;
-
-    // install reset handler
-    hc->hc_ResetInt.is_Code = xhciResetHandler;
-    hc->hc_ResetInt.is_Data = hc;
-    AddResetCallback(&hc->hc_ResetInt);
-
-    // add interrupt
-    hc->hc_PCIIntHandler.h_Node.ln_Name = "XHCI PCI (pciusb.device)";
-    hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
-    hc->hc_PCIIntHandler.h_Code = xhciIntCode;
-    hc->hc_PCIIntHandler.h_Data = hc;
-    HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
-
-    /* Program the Max Device Slots Enabled (MaxSlotsEn) field */
-    /* FIXME: This field shall not be modified by software if the xHC is running (Run/Stop (R/S) = ‘1’) */
-    opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | hc->hc_NumPorts) );
-
-    /* Program the Device Context Base Address Array Pointer (DCBAAP) */
-
-    /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
-
-    return TRUE;
+    return FALSE;
 }
 
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
