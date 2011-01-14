@@ -631,6 +631,7 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     		}
     	}
     }
+#endif
 
     /* move all boot nodes into another list */
     NEWLIST(&list);
@@ -640,7 +641,6 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     /* check boot nodes for partition tables */
     while ((bootNode = (struct BootNode *)RemHead(&list)))
         CheckPartitions(ExpansionBase, SysBase, bootNode);
-#endif
 
     CloseLibrary((struct Library *)ExpansionBase);
 
