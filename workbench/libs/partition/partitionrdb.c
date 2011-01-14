@@ -834,7 +834,7 @@ void PartitionRDBDeletePartition
     PartitionRDBFreeHandle(PartitionBase, ph);
 }
 
-struct PartitionAttribute PartitionRDBPartitionTableAttrs[]=
+const struct PartitionAttribute PartitionRDBPartitionTableAttrs[]=
 {
     {PTTA_TYPE,     PLAM_READ},
     {PTTA_RESERVED, PLAM_READ},
@@ -843,10 +843,10 @@ struct PartitionAttribute PartitionRDBPartitionTableAttrs[]=
 
 struct PartitionAttribute *PartitionRDBQueryPartitionTableAttrs(struct Library *PartitionBase)
 {
-    return PartitionRDBPartitionTableAttrs;
+    return (APTR)PartitionRDBPartitionTableAttrs;
 }
 
-struct PartitionAttribute PartitionRDBPartitionAttrs[]=
+const struct PartitionAttribute PartitionRDBPartitionAttrs[]=
 {
     /* TODO: implement write */
     {PTA_GEOMETRY,  PLAM_READ},
@@ -860,7 +860,7 @@ struct PartitionAttribute PartitionRDBPartitionAttrs[]=
 
 struct PartitionAttribute *PartitionRDBQueryPartitionAttrs(struct Library *PartitionBase)
 {
-    return PartitionRDBPartitionAttrs;
+    return (APTR)PartitionRDBPartitionAttrs;
 }
 
 ULONG PartitionRDBDestroyPartitionTable
@@ -883,7 +883,7 @@ UBYTE buffer[4096];
     return 0;
 }
 
-struct PTFunctionTable PartitionRDB =
+const struct PTFunctionTable PartitionRDB =
 {
     PHPTT_RDB,
     "RDB",

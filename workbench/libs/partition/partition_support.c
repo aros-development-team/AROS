@@ -21,7 +21,7 @@ extern struct PTFunctionTable PartitionEBR;
 extern struct PTFunctionTable PartitionMBR;
 extern struct PTFunctionTable PartitionRDB;
 
-struct PTFunctionTable *PartitionSupport[] =
+const struct PTFunctionTable * const PartitionSupport[] =
     {&PartitionRDB, &PartitionMBR, &PartitionEBR, 0};
 
 /* get geometry */

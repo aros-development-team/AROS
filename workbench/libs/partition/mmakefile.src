@@ -29,7 +29,8 @@ FUNCS := \
 #MM    includes-copy
 #MM- workbench-libs-partition : linklibs
 
-USER_CFLAGS := -DDEBUG=0
+USER_CFLAGS := -DDEBUG=0 \
+	       $(PARANOIA_CFLAGS)
 
 %build_module mmake=workbench-libs-partition \
     modname=partition modtype=library \

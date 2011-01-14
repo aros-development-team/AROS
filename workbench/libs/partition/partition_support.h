@@ -32,7 +32,7 @@ struct PTFunctionTable {
     ULONG    (*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
 };
 
-extern struct PTFunctionTable *PartitionSupport[];
+extern const struct PTFunctionTable * const PartitionSupport[];
 
 LONG PartitionGetGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);
 void PartitionNsdCheck(struct Library *, struct PartitionHandle *);

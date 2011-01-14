@@ -51,7 +51,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct PTFunctionTable **pst;
+    const struct PTFunctionTable * const *pst;
 
     pst = PartitionSupport;
     while (pst[0])
@@ -68,7 +68,7 @@
             LONG retval;
 
                 root->table->type = pst[0]->type;
-                root->table->handler = *pst;
+                root->table->handler = (APTR)*pst;
                 retval = pst[0]->openPartitionTable(PartitionBase, root);
                 if (retval!=0)
                 {

@@ -8,7 +8,6 @@
 
 #include <aros/symbolsets.h>
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include "partition_intern.h"
