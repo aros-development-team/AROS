@@ -609,7 +609,7 @@ posbreak:
     return 0;
 }
 
-static struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
+static const struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
 {
     {PTTA_TYPE,           PLAM_READ},
     {PTTA_RESERVED,       PLAM_READ},
@@ -619,10 +619,10 @@ static struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
 
 static struct PartitionAttribute *PartitionMBRQueryPartitionTableAttrs(struct Library *PartitionBase)
 {
-    return PartitionMBRPartitionTableAttrs;
+    return (APTR)PartitionMBRPartitionTableAttrs;
 }
 
-static struct PartitionAttribute PartitionMBRPartitionAttrs[]=
+static const struct PartitionAttribute PartitionMBRPartitionAttrs[]=
 {
     {PTA_GEOMETRY, PLAM_READ},
     {PTA_TYPE,     PLAM_READ | PLAM_WRITE},
@@ -631,9 +631,9 @@ static struct PartitionAttribute PartitionMBRPartitionAttrs[]=
     {PTA_DONE,     0}
 };
 
-struct PartitionAttribute *PartitionMBRQueryPartitionAttrs(struct Library *PartitionBase)
+static struct PartitionAttribute *PartitionMBRQueryPartitionAttrs(struct Library *PartitionBase)
 {
-    return PartitionMBRPartitionAttrs;
+    return (APTR)PartitionMBRPartitionAttrs;
 }
 
 static ULONG PartitionMBRDestroyPartitionTable
@@ -655,7 +655,7 @@ struct MBR *mbr;
     return 0;
 }
 
-struct PTFunctionTable PartitionMBR =
+const struct PTFunctionTable PartitionMBR =
 {
     PHPTT_MBR,
     "PC-MBR",

@@ -514,7 +514,7 @@ static LONG PartitionEBRSetPartitionAttrs
     return 0;
 }
 
-static struct PartitionAttribute PartitionEBRPartitionTableAttrs[]=
+static const struct PartitionAttribute PartitionEBRPartitionTableAttrs[]=
 {
     {PTTA_TYPE,           PLAM_READ},
     {PTTA_RESERVED,       PLAM_READ},
@@ -525,10 +525,10 @@ static struct PartitionAttribute PartitionEBRPartitionTableAttrs[]=
 static struct PartitionAttribute *PartitionEBRQueryPartitionTableAttrs(
     struct Library *PartitionBase)
 {
-    return PartitionEBRPartitionTableAttrs;
+    return (APTR)PartitionEBRPartitionTableAttrs;
 }
 
-static struct PartitionAttribute PartitionEBRPartitionAttrs[]=
+static const struct PartitionAttribute PartitionEBRPartitionAttrs[]=
 {
     {PTA_GEOMETRY, PLAM_READ},
     {PTA_TYPE,     PLAM_READ | PLAM_WRITE},
@@ -541,7 +541,7 @@ static struct PartitionAttribute PartitionEBRPartitionAttrs[]=
 static struct PartitionAttribute *PartitionEBRQueryPartitionAttrs(
     struct Library *PartitionBase)
 {
-    return PartitionEBRPartitionAttrs;
+    return (APTR)PartitionEBRPartitionAttrs;
 }
 
 static ULONG PartitionEBRDestroyPartitionTable
@@ -563,7 +563,7 @@ struct PartitionHandle *ph;
     return 0;
 }
 
-struct PTFunctionTable PartitionEBR =
+const struct PTFunctionTable PartitionEBR =
 {
     PHPTT_EBR,
     "PC-EBR",

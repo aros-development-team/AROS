@@ -54,7 +54,7 @@
 
     if (root->table == NULL)
     {
-    struct PTFunctionTable **pst;
+        const struct PTFunctionTable * const *pst;
 
         pst = PartitionSupport;
         while (pst[0])
@@ -71,7 +71,7 @@
                     if (root->table)
                     {
                         root->table->type = type;
-                        root->table->handler = *pst;
+                        root->table->handler = (APTR)*pst;
                         retval = pst[0]->createPartitionTable(PartitionBase, root);
                         if (retval != 0)
                         {
