@@ -1,0 +1,180 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+################################################################################
+# GLU                                                                          #
+################################################################################
+
+##MM workbench-libs-glu : includes workbench-libs-glu-cpp
+
+SHARED_LIB_SOURCES = \
+            aros/emul_arosc \
+            
+LIBUTIL_SOURCES = \
+            glu/sgi/libutil/error \
+            glu/sgi/libutil/glue \
+            glu/sgi/libutil/mipmap \
+            glu/sgi/libutil/project \
+            glu/sgi/libutil/quad \
+            glu/sgi/libutil/registry
+
+LIBTESS_SOURCES = \
+            glu/sgi/libtess/dict \
+            glu/sgi/libtess/geom \
+            glu/sgi/libtess/memalloc \
+            glu/sgi/libtess/mesh \
+            glu/sgi/libtess/normal \
+            glu/sgi/libtess/priorityq \
+            glu/sgi/libtess/render \
+            glu/sgi/libtess/sweep \
+            glu/sgi/libtess/tess \
+            glu/sgi/libtess/tessmono
+
+LIBNURBS_SOURCES = \
+            glu/sgi/libnurbs/interface/bezierEval \
+            glu/sgi/libnurbs/interface/bezierPatch \
+            glu/sgi/libnurbs/interface/bezierPatchMesh \
+            glu/sgi/libnurbs/interface/glcurveval \
+            glu/sgi/libnurbs/interface/glinterface \
+            glu/sgi/libnurbs/interface/glrenderer \
+            glu/sgi/libnurbs/interface/glsurfeval \
+            glu/sgi/libnurbs/interface/incurveeval \
+            glu/sgi/libnurbs/interface/insurfeval \
+            glu/sgi/libnurbs/internals/arc \
+            glu/sgi/libnurbs/internals/arcsorter \
+            glu/sgi/libnurbs/internals/arctess \
+            glu/sgi/libnurbs/internals/backend \
+            glu/sgi/libnurbs/internals/basiccrveval \
+            glu/sgi/libnurbs/internals/basicsurfeval \
+            glu/sgi/libnurbs/internals/bin \
+            glu/sgi/libnurbs/internals/bufpool \
+            glu/sgi/libnurbs/internals/cachingeval \
+            glu/sgi/libnurbs/internals/ccw \
+            glu/sgi/libnurbs/internals/coveandtiler \
+            glu/sgi/libnurbs/internals/curve \
+            glu/sgi/libnurbs/internals/curvelist \
+            glu/sgi/libnurbs/internals/curvesub \
+            glu/sgi/libnurbs/internals/dataTransform \
+            glu/sgi/libnurbs/internals/displaylist \
+            glu/sgi/libnurbs/internals/flist \
+            glu/sgi/libnurbs/internals/flistsorter \
+            glu/sgi/libnurbs/internals/hull \
+            glu/sgi/libnurbs/internals/intersect \
+            glu/sgi/libnurbs/internals/knotvector \
+            glu/sgi/libnurbs/internals/mapdesc \
+            glu/sgi/libnurbs/internals/mapdescv \
+            glu/sgi/libnurbs/internals/maplist \
+            glu/sgi/libnurbs/internals/mesher \
+            glu/sgi/libnurbs/internals/monotonizer \
+            glu/sgi/libnurbs/internals/monoTriangulationBackend \
+            glu/sgi/libnurbs/internals/mycode \
+            glu/sgi/libnurbs/internals/nurbstess \
+            glu/sgi/libnurbs/internals/nurbsinterfac \
+            glu/sgi/libnurbs/internals/patch \
+            glu/sgi/libnurbs/internals/patchlist \
+            glu/sgi/libnurbs/internals/quilt \
+            glu/sgi/libnurbs/internals/reader \
+            glu/sgi/libnurbs/internals/renderhints \
+            glu/sgi/libnurbs/internals/slicer \
+            glu/sgi/libnurbs/internals/sorter \
+            glu/sgi/libnurbs/internals/splitarcs \
+            glu/sgi/libnurbs/internals/subdivider \
+            glu/sgi/libnurbs/internals/tobezier \
+            glu/sgi/libnurbs/internals/trimline \
+            glu/sgi/libnurbs/internals/trimregion \
+            glu/sgi/libnurbs/internals/trimvertpool \
+            glu/sgi/libnurbs/internals/uarray \
+            glu/sgi/libnurbs/internals/varray \
+            glu/sgi/libnurbs/nurbtess/directedLine \
+            glu/sgi/libnurbs/nurbtess/gridWrap \
+            glu/sgi/libnurbs/nurbtess/monoChain \
+            glu/sgi/libnurbs/nurbtess/monoPolyPart \
+            glu/sgi/libnurbs/nurbtess/monoTriangulation \
+            glu/sgi/libnurbs/nurbtess/partitionX \
+            glu/sgi/libnurbs/nurbtess/partitionY \
+            glu/sgi/libnurbs/nurbtess/polyDBG \
+            glu/sgi/libnurbs/nurbtess/polyUtil \
+            glu/sgi/libnurbs/nurbtess/primitiveStream \
+            glu/sgi/libnurbs/nurbtess/quicksort \
+            glu/sgi/libnurbs/nurbtess/rectBlock \
+            glu/sgi/libnurbs/nurbtess/sampleCompBot \
+            glu/sgi/libnurbs/nurbtess/sampleComp \
+            glu/sgi/libnurbs/nurbtess/sampleCompRight \
+            glu/sgi/libnurbs/nurbtess/sampleCompTop \
+            glu/sgi/libnurbs/nurbtess/sampledLine \
+            glu/sgi/libnurbs/nurbtess/sampleMonoPoly \
+            glu/sgi/libnurbs/nurbtess/searchTree \
+
+LIBRARY_SOURCES = \
+            $(addprefix ../../, $(LIBUTIL_SOURCES)) \
+            $(addprefix ../../, $(LIBTESS_SOURCES)) \
+            $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/include \
+            -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/libnurbs/internals \
+            -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/libnurbs/nurbtess \
+
+USER_CFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
+
+
+################################################################################
+# Compilation of C++ libnurbs
+
+CC_SOURCES := \
+    $(addprefix ../../, $(LIBNURBS_SOURCES)) \
+
+CPP_SOURCES := \
+    ../../aros/emul_cpp \
+
+CXX_SOURCES := $(CC_SOURCES) $(CPP_SOURCES)
+
+CXX_OBJECTS := $(addprefix $(OBJDIR)/cpp/, $(addsuffix .o, $(notdir $(CXX_SOURCES))))
+
+# Remove C-only flags
+CXX_FLAGS := $(CFLAGS) $(USER_CFLAGS) -fno-rtti -fno-exceptions -isystem $(AROS_DEVELOPMENT)/include
+CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CXX_FLAGS)))
+
+# Define the use of cross compiler
+ifeq ($(TARGET_CXX),)
+  CXX_CC := $(TOOLDIR)/$(AROS_TARGET_CPU)-aros-g++
+else
+  CXX_CC := $(TARGET_CXX)
+endif
+
+$(CC_SOURCES) : workbench-libs-glu-cpp-gendir
+	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cc to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
+
+$(CPP_SOURCES) : workbench-libs-glu-cpp-gendir
+	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cpp to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
+
+#MM
+workbench-libs-glu-cpp-gendir : 
+	@$(MKDIR) $(OBJDIR)/cpp
+
+#MM- workbench-libs-glu-cpp : $(CROSSTOOLS_TARGET)
+
+#MM
+workbench-libs-glu-cpp : $(CC_SOURCES) $(CPP_SOURCES)
+
+#MM
+workbench-libs-glu-cpp-quick : $(CC_SOURCES) $(CPP_SOURCES)
+
+# Compilation of C++ GLSL compiler
+################################################################################
+
+# Hack to get C++ objects linked into module
+LDFLAGS := $(CXX_OBJECTS)
+
+# TEMPORARY HACK FOR i386 (see aros/emul_div/README)
+ifeq ($(AROS_TARGET_CPU), i386)
+  LDFLAGS += -nodefaultlibs
+endif
+
+%build_module mmake=workbench-libs-glu \
+    modname=glu modtype=library linklibname=GLU conffile=glu.conf \
+    files="$(LIBRARY_SOURCES)" \
+    uselibs="rom arosm amiga GL"
+
+%common
+
