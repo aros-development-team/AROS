@@ -22,9 +22,13 @@ include $(SRCDIR)/$(CURDIR)/mapi/mapi/sources.mak
 
 #MM workbench-libs-mesa-module : includes linklibs-galliumauxiliary \
 #MM workbench-libs-gallium workbench-libs-mesa-module-generated \
-#MM workbench-libs-mesa-module-cpp workbench-libs-mesa-module-openvg
+#MM workbench-libs-mesa-module-cpp workbench-libs-openvg
 
 SHARED_LIB_SOURCES = \
+            aros/emul_arosc \
+            aros/tls \
+
+AROSMESA_SOURCES = \
             gallium/state_trackers/arosmesa/arosmesacreatecontext \
             gallium/state_trackers/arosmesa/arosmesadestroycontext \
             gallium/state_trackers/arosmesa/arosmesamakecurrent \
@@ -32,9 +36,6 @@ SHARED_LIB_SOURCES = \
             gallium/state_trackers/arosmesa/arosmesagetcurrentcontext \
             gallium/state_trackers/arosmesa/arosmesa_funcs \
             gallium/state_trackers/arosmesa/arosmesa_init \
-            aros/arosmesa_library_api \
-            aros/emul_arosc \
-            aros/tls \
 
 GLSL_LIBGLCPP_SOURCES = \
             glcpp/glcpp-lex.c \
@@ -134,41 +135,6 @@ EGL_SOURCES = \
             gallium/state_trackers/egl/common/native_helper \
             gallium/state_trackers/egl/aros/native_aros \
 
-OPENVG_SOURCES = \
-            gallium/state_trackers/vega/api \
-            gallium/state_trackers/vega/api_context \
-            gallium/state_trackers/vega/api_filters \
-            gallium/state_trackers/vega/api_images \
-            gallium/state_trackers/vega/api_masks \
-            gallium/state_trackers/vega/api_misc \
-            gallium/state_trackers/vega/api_paint \
-            gallium/state_trackers/vega/api_params \
-            gallium/state_trackers/vega/api_path \
-            gallium/state_trackers/vega/api_text \
-            gallium/state_trackers/vega/api_transform \
-            gallium/state_trackers/vega/arc \
-            gallium/state_trackers/vega/bezier \
-            gallium/state_trackers/vega/image \
-            gallium/state_trackers/vega/mask \
-            gallium/state_trackers/vega/paint \
-            gallium/state_trackers/vega/path \
-            gallium/state_trackers/vega/polygon \
-            gallium/state_trackers/vega/renderer \
-            gallium/state_trackers/vega/shader \
-            gallium/state_trackers/vega/shaders_cache \
-            gallium/state_trackers/vega/stroker \
-            gallium/state_trackers/vega/text \
-            gallium/state_trackers/vega/vg_context \
-            gallium/state_trackers/vega/vg_manager \
-            gallium/state_trackers/vega/vg_state \
-            gallium/state_trackers/vega/vg_translate \
-            gallium/state_trackers/vega/vgu \
-            mapi/mapi/entry \
-            mapi/mapi/mapi \
-            mapi/mapi/table \
-            mapi/mapi/stub \
-            mapi/mapi/u_current \
-
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
             -I$(SRCDIR)/$(CURDIR)/../include \
@@ -236,9 +202,6 @@ workbench-libs-mesa-module-cpp-quick : $(CXX_SOURCES)
 
 # Compilation of C++ GLSL compiler
 
-
-
-
 # Hack to get C++ objects linked into module
 LDFLAGS := $(CXX_OBJECTS)
 
@@ -251,27 +214,13 @@ ifeq ($(AROS_TARGET_CPU), i386)
                 aros/emul_div/umoddi3
 endif
 
-#MM- workbench-libs-mesa-module-quick : workbench-libs-mesa-module-cpp-quick
+##MM- workbench-libs-mesa-module-quick : workbench-libs-mesa-module-cpp-quick
 
 %build_module mmake=workbench-libs-mesa-module \
     modname=mesa modtype=library linklibname=GL conffile=aros/arosmesa.conf linklibfiles="aros/arosmesa_getprocaddress" \
-    files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES)" \
-    uselibs="openvg galliumauxiliary rom gallium arosm amiga"
+    files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES) $(AROSMESA_SOURCES) aros/arosmesa_library_api" \
+    uselibs="galliumauxiliary rom gallium OpenVG arosm amiga"
 
-#MM
-workbench-libs-mesa-module-generated : $(SRCDIR)/$(CURDIR)/mapi/vgapi/vgapi_tmp.h
-
-$(SRCDIR)/$(CURDIR)/mapi/vgapi/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/mapi/vgapi/vgapi.csv
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/mapi/mapi/mapi_abi.py -i vgapi/vgapi_defines.h $< > $@
-
-
-# Separete lib is needed, because mapi needs to be compiled in with different define
-USER_CFLAGS := -ffast-math -DMAPI_ABI_HEADER=\"vgapi/vgapi_tmp.h\"
-
-#MM workbench-libs-mesa-module-openvg : workbench-libs-mesa-module-generated
-
-%build_linklib mmake=workbench-libs-mesa-module-openvg libname=openvg \
-    files="$(OPENVG_SOURCES)" objdir=$(OBJDIR)/openvg
 
 # NOTE: Both files have been generate and added to AROS repository. Once all 
 # build machines support python 2.5 with libxml2, these targets can be enabled
