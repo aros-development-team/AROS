@@ -21,15 +21,18 @@ include $(TOP)/config/make.cfg
 #MM     kernel-c-shellcommands-kobj \
 #MM     workbench-libs-icon-kobj \
 #MM     workbench-libs-gadtools-kobj \
-#MM	workbench-libs-partition-kobj \
+#MM     workbench-libs-partition-kobj \
 #MM     kernel-workbench-devs-amiga-m68k \
 #MM     kernel-usb-amiga-m68k \
 #MM     kernel-fs-afs-kobj \
+#MM     kernel-fs-con-kobj \
 #MM     kernel-kernel-kobj \
 #MM     kernel-cia-kobj \
 #MM     workbench-devs-amberram-kobj \
 #MM     workbench-libs-mathffp-kobj \
-#MM     kernel-amiga-m68k-audio-kobj
+#MM     kernel-amiga-m68k-audio-kobj \
+#MM     kernel-ata-kobj \
+#MM     kernel-filesystem-kobj
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
@@ -45,11 +48,12 @@ FILES=start
 AFILES=rom_entry rom_init superstack_swap
 
 ROMPAD_rom := 0x1000000
+
 KLIBS   := exec aros dos utility oop expansion boot workbench mathffp partition
-KDEVS   := timer input keyboard console trackdisk gameport audio
+KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram # pipefs xpipe
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
-KRSRCS  := battclock kernel processor dosboot cia potgo disk
+KRSRCS  := battclock kernel processor dosboot cia potgo disk FileSystem
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS))) \
