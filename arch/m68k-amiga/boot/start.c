@@ -75,6 +75,8 @@ int DebugMayGetChar(void)
 	return c;
 }
 
+#ifdef AROS_SERIAL_DEBUG
+
 static void DebugPuts(register const char *buff)
 {
 	for (; *buff != 0; buff++)
@@ -91,6 +93,13 @@ void DebugPutHex(const char *what, ULONG val)
 	}
 	DebugPutChar('\n');
 }
+#else
+
+#define DebugPuts(x)
+#define DebugPutHex(x)
+
+#endif
+
 
 void Early_Alert(ULONG alert)
 {
@@ -361,6 +370,28 @@ static ULONG cpu_detect(void)
 #define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
 #endif
 
+static UWORD getsyschecksum(struct ExecBase *sysbase)
+{
+	UWORD sum = 0;
+	UWORD *p = (UWORD*)&sysbase->SoftVer;
+	while (p <= &sysbase->ChkSum)
+		sum += *p++;
+	return sum;
+}
+static void setsyschecksum(void)
+{
+	SysBase->ChkSum = 0;
+	SysBase->ChkSum = getsyschecksum(SysBase);
+}
+static BOOL issysbasevalid(struct ExecBase *sysbase)
+{
+	if (sysbase == NULL || (((ULONG)sysbase) & 0x80000001))
+		return FALSE;
+	if (sysbase->ChkBase != ~(IPTR)sysbase)
+		return FALSE;
+	return getsyschecksum(sysbase) == 0xffff;
+}
+
 extern void SuperstackSwap(void);
 /* This calls the register-ABI library
  * routine Exec/InitCode, for use in NewStackSwap()
@@ -380,6 +411,7 @@ static LONG doInitCode(ULONG startClass, ULONG version)
 
             SysBase->SysStkLower    = ss_stack;
             SysBase->SysStkUpper    = ss_stack + ss_stack_size;
+	    setsyschecksum();
 
 	    Supervisor(SuperstackSwap);
 	} while (0);
@@ -387,18 +419,6 @@ static LONG doInitCode(ULONG startClass, ULONG version)
 	InitCode(startClass, version);
 
 	return 0;
-}
-
-static UWORD syschecksum(void)
-{
-	UWORD *p = (UWORD*)&SysBase->SoftVer;
-	UWORD sum = 0;
-	BYTE i = (BYTE*)&SysBase->ChkSum - (BYTE*)&SysBase->SoftVer;
-	while (i >= 0) {
-		sum += *p++;
-		i -= 2;
-	}
-	return sum;
 }
 
 extern BYTE _rom_start;
@@ -434,6 +454,10 @@ void start(IPTR chip_start, ULONG chip_size,
 	struct MemHeader *mh;
 	ULONG LastAlert[4] = { 0, 0, 0, 0};
 	ULONG oldmem;
+	struct ExecBase *oldsysbase = SysBase;
+	ULONG rom_start = (ULONG)&_rom_start;
+	ULONG rom_end = (ULONG)&_ext_start + 0x80000;
+	ULONG romloader = 0;
 
 	trap = (APTR *)(NULL);
 
@@ -445,24 +469,23 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Let the world know we exist
 	 */
 	DebugInit();
-#if AROS_SERIAL_DEBUG
 	DebugPuts("[reset]\n");
-#endif
 
 	/* Zap out old SysBase if invalid */
-	if (SysBase == NULL || SysBase->ChkBase != ~(IPTR)SysBase || syschecksum() != 0xffff) {
-#if AROS_SERIAL_DEBUG
-	    DebugPutHex("[SysBase] invalid at", (ULONG)SysBase);
-#endif
-	    /* TODO: should check again after autoconfig */
-	    SysBase = NULL;
-	} else {
-#if AROS_SERIAL_DEBUG
+	if (issysbasevalid(SysBase)) {
 	    DebugPutHex("[SysBase] was at", (ULONG)SysBase);
-#endif
+	    if ((ULONG)SysBase >= 0x100 && (ULONG)SysBase < 0x400) {
+	    	/* ram loader fake sysbase */
+	    	romloader = (ULONG)SysBase;
+	    	SysBase = NULL;
+		DebugPutHex("[romloader] rom start:", rom_start);
+		DebugPutHex("[romloader] rom end  :", rom_end);
+	    }
+	    oldsysbase = NULL;
+	} else {
+	    DebugPutHex("[SysBase] invalid at", (ULONG)SysBase);
 	}
 
-#if AROS_SERIAL_DEBUG
 	if (fast_size != 0) {
 		DebugPutHex("Fast_Upper ",(ULONG)(fast_start + fast_size - 1));
 		DebugPutHex("Fast_Lower ",(ULONG)fast_start);
@@ -471,7 +494,6 @@ void start(IPTR chip_start, ULONG chip_size,
 	DebugPutHex("Chip_Lower ",(ULONG)chip_start);
 	DebugPutHex("SS_Stack_Upper",(ULONG)(ss_stack_upper - 1));
 	DebugPutHex("SS_Stack_Lower",(ULONG)ss_stack_lower);
-#endif
 
 	/* Look for 'HELP' at address 0 - we're recovering
 	 * from a fatal alert
@@ -488,11 +510,8 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
-#if AROS_SERIAL_DEBUG
 	DebugPuts("[bss clear]\n");
 
-	DebugPuts("[prep RAM]\n");
-#endif
 	Early_ScreenCode(CODE_RAM_CHECK);
 
 	if (fast_size == 0) {
@@ -507,9 +526,8 @@ void start(IPTR chip_start, ULONG chip_size,
 		mh = (APTR)fast_start;
 	}
 
-#if AROS_SERIAL_DEBUG
 	DebugPuts("[prep SysBase]\n");
-#endif
+
 	Early_ScreenCode(CODE_EXEC_CHECK);
 
 	PrepareExecBase(mh, NULL, NULL);
@@ -553,27 +571,35 @@ void start(IPTR chip_start, ULONG chip_size,
 	oldmem = AvailMem(MEMF_FAST);
 
 	/* Ok, let's start the system */
-#if AROS_SERIAL_DEBUG
 	DebugPuts("[start] InitCode(RTF_SINGLETASK, 0)\n");
-#endif
 	InitCode(RTF_SINGLETASK, 0);
 
 	/* Autoconfig ram expansions are now configured */
 
-	/* Move execbase to real fast if available now */
-	if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024) {
-		PrepareExecBase(NULL, NULL, NULL);
-#if AROS_SERIAL_DEBUG
-		DebugPutHex("[Sysbase] now at", (ULONG)SysBase);
-#endif
+	if (oldsysbase && issysbasevalid(oldsysbase)) {
+		/* sysbase found in autoconfig ram */
+		SysBase = oldsysbase;
+		DebugPutHex("[SysBase] now valid at", (ULONG)SysBase);
+		/* memory leak! we should free "temp" sysbase */
+	} else if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024 && (
+		(TypeOfMem(SysBase) & MEMF_CHIP) ||
+		((ULONG)SysBase >= 0x00a00000ul && (ULONG)SysBase < 0x01000000ul)
+		)) {
+			/* Move execbase to real fast if available now */
+			PrepareExecBase(NULL, NULL, NULL);
+			DebugPutHex("[Sysbase] now at", (ULONG)SysBase);
 	}
 	
 	/* total chipram */
 	SysBase->MaxLocMem = (chip_size + 0xffff) & 0xffff0000;
-	/* total slow ram */
-	SysBase->MaxExtMem = (APTR)(((0xc00000 + (fast_size + 0xffff)) & 0xffff0000));
-	
-	SysBase->ChkSum = syschecksum() ^ 0xffff;
+	/* end of slow ram + 1 */
+	SysBase->MaxExtMem = fast_size ? (APTR)(((0xc00000 + (fast_size + 0xffff)) & 0xffff0000)) : 0;
+
+	/* reset proof our "rom" */
+	if (romloader)
+		SysBase->ColdCapture = (APTR)(romloader - 8);
+
+	setsyschecksum();
 
 #ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
 	PRESERVE_ALL(SysBase, Exec, Disable, 20);
