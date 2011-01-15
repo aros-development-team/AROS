@@ -1,0 +1,311 @@
+#! /bin/sh
+set -e
+
+# Make GRUB rescue image
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+# Initialize some variables.
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@libdir@
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+target_cpu=@target_cpu@
+native_platform=@platform@
+pkglib_DATA="moddep.lst command.lst fs.lst partmap.lst parttool.lst handler.lst video.lst crypto.lst terminal.lst"
+
+self=`basename $0`
+
+multiboot_dir=${libdir}/$(echo ${PACKAGE_TARNAME} | sed ${transform})/i386-multiboot
+coreboot_dir=${libdir}/$(echo ${PACKAGE_TARNAME} | sed ${transform})/i386-coreboot
+qemu_dir=${libdir}/$(echo ${PACKAGE_TARNAME} | sed ${transform})/i386-qemu
+pc_dir=${libdir}/$(echo ${PACKAGE_TARNAME} | sed ${transform})/i386-pc
+efi32_dir=${libdir}/$(echo ${PACKAGE_TARNAME} | sed ${transform})/i386-efi
+efi64_dir=${libdir}/$(echo ${PACKAGE_TARNAME} | sed ${transform})/x86_64-efi
+rom_directory=
+override_dir=
+grub_mkimage=${bindir}/`echo grub-mkimage | sed ${transform}`
+
+xorriso=xorriso
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: $self [OPTION] SOURCE...
+Make GRUB rescue image.
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  -o, --output=FILE       save output in FILE [required]
+  --modules=MODULES       pre-load specified modules MODULES
+  --rom-directory=DIR     save rom images in DIR [optional]
+  --xorriso=FILE          use FILE as xorriso [optional]
+  --grub-mkimage=FILE     use FILE as grub-mkimage
+
+$self generates a bootable rescue image with specified source files, source
+directories, or mkisofs options listed by: xorriso -as mkisofs -help
+
+Option -- switches to native xorriso command mode.
+
+Report bugs to <bug-grub@gnu.org>.
+Mail xorriso support requests to <bug-xorriso@gnu.org>.
+EOF
+}
+
+argument () {
+  opt=$1
+  shift
+
+  if test $# -eq 0; then
+      echo "$0: option requires an argument -- '$opt'" 1>&2
+      exit 1
+  fi
+  echo $1
+}
+
+# Check the arguments.
+while test $# -gt 0
+do
+    option=$1
+    shift
+
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "$self (${PACKAGE_NAME}) ${PACKAGE_VERSION}"
+	exit 0 ;;
+
+    --modules)
+        modules=`argument $option "$@"`; shift ;;
+    --modules=*)
+	modules=`echo "$option" | sed 's/--modules=//'` ;;
+
+    -o | --output)
+	output_image=`argument $option "$@"`; shift ;;
+    --output=*)
+	output_image=`echo "$option" | sed 's/--output=//'` ;;
+
+    --rom-directory)
+        rom_directory=`argument $option "$@"`; shift ;;
+    --rom-directory=*)
+	rom_directory=`echo "$option" | sed 's/--rom-directory=//'` ;;
+
+    # Intentionally undocumented
+    --override-directory)
+        override_dir=`argument $option "$@"`
+	shift
+	PATH=${override_dir}:$PATH
+	export PATH
+	;;
+    --override-directory=*)
+	override_dir=`echo "${option}/" | sed 's/--override-directory=//'`
+	PATH=${override_dir}:$PATH
+	export PATH
+	;;
+
+    --grub-mkimage)
+	grub_mkimage=`argument $option "$@"`; shift ;;
+    --grub-mkimage=*)
+	grub_mkimage=`echo "$option" | sed 's/--grub-mkimage=//'` ;;
+
+    --xorriso)
+	xorriso=`argument $option "$@"`; shift ;;
+    --xorriso=*)
+        xorriso=`echo "${option}/" | sed 's/--xorriso=//'` ;;
+
+    *)
+	source="${source} ${option} $@"; break ;;
+    esac
+done
+
+if [ "x${output_image}" = x ] ; then
+  echo "output file must be given" >&2
+  usage
+  exit 1
+fi
+
+set $grub_mkimage dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+iso9660_dir=`mktemp -d "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+mkdir -p ${iso9660_dir}/boot/grub
+
+process_input_dir ()
+{
+    input_dir="$1"
+    platform="$2"
+    mkdir -p ${iso9660_dir}/boot/grub/${platform}
+    for file in ${input_dir}/*.mod; do
+        if test -f "$file"; then
+            cp -f "$file" ${iso9660_dir}/boot/grub/${platform}/
+        fi
+    done
+    for file in ${pkglib_DATA}; do
+	if test -f "${input_dir}/${file}"; then
+            cp -f "${input_dir}/${file}" ${iso9660_dir}/boot/grub/${platform}/
+	fi
+    done
+
+    mkdir -p ${iso9660_dir}/boot/grub/locale
+    for file in ${input_dir}/po/*.mo; do
+        if test -f "$file"; then
+	    cp -f "$file" ${iso9660_dir}/boot/grub/locale/
+	fi
+    done
+}
+
+make_image ()
+{
+    source_directory="$1"
+    platform=$2
+    if ! test -e "${source_directory}"; then
+	return;
+    fi
+
+    echo "Enabling $2 support ..."
+
+    memdisk_img=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+    memdisk_dir=`mktemp -d "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+    mkdir -p ${memdisk_dir}/boot/grub
+
+    cat << EOF > ${memdisk_dir}/boot/grub/grub.cfg
+search --fs-uuid --set=root ${iso_uuid}
+set prefix=(\${root})/boot/grub/${platform}
+source \$prefix/grub.cfg
+EOF
+    (for i in $(cat ${source_directory}/partmap.lst) ${modules} ; do
+        echo "insmod $i"
+    done ; \
+    echo "source /boot/grub/grub.cfg") \
+    > ${iso9660_dir}/boot/grub/${platform}/grub.cfg
+
+    (cd "${memdisk_dir}"; tar -cf - boot) > "${memdisk_img}"
+    rm -rf ${memdisk_dir}
+    $grub_mkimage -O ${platform} -d "${source_directory}" -m "${memdisk_img}" -o "$3" --prefix='(memdisk)/boot/grub' \
+        search iso9660 configfile normal memdisk tar $4
+    rm -rf ${memdisk_img}
+}
+
+if [ "${override_dir}" = "" ] ; then
+    if test -e "${multiboot_dir}" ; then
+        process_input_dir ${multiboot_dir} i386-multiboot
+    fi
+    if test -e "${coreboot_dir}" ; then
+        process_input_dir ${coreboot_dir} i386-coreboot
+    fi
+    if test -e "${qemu_dir}" ; then
+        process_input_dir ${qemu_dir} i386-qemu
+    fi
+    if test -e "${pc_dir}" ; then
+        process_input_dir ${pc_dir} i386-pc
+    fi
+    if test -e "${efi32_dir}" ; then
+        process_input_dir ${efi32_dir} i386-efi
+    fi
+    if test -e "${efi64_dir}" ; then
+        process_input_dir ${efi64_dir} x86_64-efi
+    fi
+else
+    process_input_dir ${override_dir} ${target_cpu}-${native_platform}
+    multiboot_dir=
+    pc_dir=
+    efi32_dir=
+    efi64_dir=
+    coreboot_dir=
+    qemu_dir=
+    case "${target_cpu}-${native_platform}" in
+        i386-multiboot) multiboot_dir=${override_dir} ;;
+        i386-coreboot) coreboot_dir=${override_dir} ;;
+        i386-qemu) qemu_dir=${override_dir} ;;
+        i386-pc) pc_dir=${override_dir} ;;
+	i386-efi) efi32_dir=${override_dir} ;;
+	x86_64-efi) efi64_dir=${override_dir} ;;
+    esac
+fi
+
+# obtain date-based UUID
+iso_uuid=$(date -u +%Y-%m-%d-%H-%M-%S-00)
+grub_mkisofs_arguments="${grub_mkisofs_arguments} --modification-date=$(echo ${iso_uuid} | sed -e s/-//g)"
+
+# build BIOS core.img
+if test -e "${pc_dir}" ; then
+    echo "Enabling BIOS support ..."
+    core_img=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+    $grub_mkimage -O i386-pc -d ${pc_dir}/ -o ${core_img} --prefix=/boot/grub/i386-pc \
+        iso9660 biosdisk
+    cat ${pc_dir}/cdboot.img ${core_img} > ${iso9660_dir}/boot/grub/i386-pc/eltorito.img
+
+    embed_img=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+    cat ${pc_dir}/boot.img ${core_img} > ${embed_img}
+
+    rm -f ${core_img}
+
+    (for i in $(cat ${pc_dir}/partmap.lst) ${modules} ; do
+        echo "insmod $i"
+    done ; \
+    echo "source /boot/grub/grub.cfg") \
+    > ${iso9660_dir}/boot/grub/i386-pc/grub.cfg
+
+    grub_mkisofs_arguments="${grub_mkisofs_arguments} -b boot/grub/i386-pc/eltorito.img -no-emul-boot -boot-info-table \
+		--embedded-boot ${embed_img}"
+fi
+
+# build multiboot core.img
+make_image "${multiboot_dir}" i386-multiboot "${iso9660_dir}/boot/multiboot.img" "ata at_keyboard"
+
+if test -e "${efi64_dir}" || test -e "${efi32_dir}"; then
+    efi_dir=`mktemp -d "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+    mkdir -p "${efi_dir}/efi/boot"
+
+    # build bootx64.efi
+    make_image "${efi64_dir}" x86_64-efi "${efi_dir}"/efi/boot/bootx64.efi ""
+    # build bootia32.efi
+    make_image "${efi32_dir}" i386-efi "${efi_dir}"/efi/boot/bootia32.efi ""
+
+    mformat -C -f 2880 -L 16 -i "${iso9660_dir}"/efi.img ::
+    mcopy -s -i "${iso9660_dir}"/efi.img ${efi_dir}/efi ::/
+    rm -rf ${efi_dir}
+    grub_mkisofs_arguments="${grub_mkisofs_arguments} --efi-boot efi.img"
+fi
+
+make_image "${qemu_dir}" i386-qemu "${iso9660_dir}/boot/qemu.img" "ata at_keyboard"
+if [ -e "${iso9660_dir}/boot/qemu.img" ] && [ -d "${rom_directory}" ]; then
+    cp "${iso9660_dir}/boot/qemu.img" "${rom_directory}/qemu.img"
+fi
+make_image "${coreboot_dir}" i386-coreboot "${iso9660_dir}/boot/coreboot.elf" "ata at_keyboard"
+if [ -e "${iso9660_dir}/boot/coreboot.elf" ] && [ -d "${rom_directory}" ]; then
+    cp "${iso9660_dir}/boot/coreboot.elf" "${rom_directory}/coreboot.elf"
+fi
+
+# build iso image
+"${xorriso}" -as mkisofs -graft-points ${grub_mkisofs_arguments} --protective-msdos-label -o ${output_image} -r ${iso9660_dir} --sort-weight 0 / --sort-weight 1 /boot ${source}
+rm -rf ${iso9660_dir}
+
+rm -f ${embed_img}
+
+exit 0

@@ -1,0 +1,87 @@
+#! /bin/sh
+set -e
+
+# grub-mkconfig helper script.
+# Copyright (C) 2006,2007,2008,2009,2010  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@libdir@
+. ${libdir}/grub/grub-mkconfig_lib
+
+export TEXTDOMAIN=@PACKAGE@
+export TEXTDOMAINDIR=@localedir@
+
+if [ "x${GRUB_DISTRIBUTOR}" = "x" ] ; then
+  OS=NetBSD
+else
+  OS="${GRUB_DISTRIBUTOR} NetBSD"
+fi
+
+netbsd_entry ()
+{
+  loader="$1"	# "knetbsd" or "multiboot"
+  kernel="$2"	# absolute path to the kernel file
+  recovery="$3"	# is this is a recovery entry?
+  args="$4"	# extra arguments appended to loader command
+
+  kroot_device="$(echo ${GRUB_DEVICE} | sed -e 's,^/dev/r,,')"
+  if ${recovery} ; then
+    title="$(gettext_quoted "%s, with kernel %s (via %s, recovery mode)")"
+  else
+    title="$(gettext_quoted "%s, with kernel %s (via %s)")"
+  fi
+
+  printf "menuentry \"${title}\" {\n" \
+    "${OS}" "$(echo ${kernel} | sed -e 's,^.*/,,')" "${loader}"
+  printf "%s\n" "${prepare_boot_cache}"
+  case "${loader}" in
+    knetbsd)
+      printf "\tknetbsd %s -r %s %s\n" \
+        "${kernel}" "${kroot_device}" "${GRUB_CMDLINE_NETBSD} ${args}"
+      ;;
+    multiboot)
+      printf "\tmultiboot %s %s root=%s %s\n" \
+        "${kernel}" "${kernel}" "${kroot_device}" "${GRUB_CMDLINE_NETBSD} ${args}"
+      ;;
+  esac
+  printf "}\n"
+}
+
+prepare_boot_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE} | sed -e 's,^,	,')"
+
+# We look for NetBSD kernels in / but not in subdirectories.  We simply
+# pick all statically linked ELF executable files (or links) in / with a
+# name that starts with `netbsd'.
+pattern="^ELF[^,]*executable.*statically linked"
+for k in $(ls -t /netbsd*) ; do
+  if ! grub_file_is_not_garbage "$k" ; then
+    continue
+  fi
+  if ! ((file -bL "$k" | grep -q "${pattern}") ||
+        (zcat "$k" | file -bL - | grep -q "${pattern}")) 2>/dev/null ; then
+    continue
+  fi
+
+  echo "Found NetBSD kernel: $k" >&2
+  netbsd_entry "knetbsd"   "$k" false "${GRUB_CMDLINE_NETBSD_DEFAULT}"
+  netbsd_entry "multiboot" "$k" false "${GRUB_CMDLINE_NETBSD_DEFAULT}"
+  if [ "x${GRUB_DISABLE_RECOVERY}" != "xtrue" ]; then
+    netbsd_entry "knetbsd"   "$k" true "-s"
+    netbsd_entry "multiboot" "$k" true "-s"
+  fi
+done

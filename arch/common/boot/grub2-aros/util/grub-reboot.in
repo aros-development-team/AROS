@@ -1,0 +1,135 @@
+#! /bin/sh
+#
+# Set a default boot entry for GRUB, for the next boot only.
+# Copyright (C) 2004,2009  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+# Initialize some variables.
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+
+self=`basename $0`
+
+grub_editenv=${bindir}/`echo grub-editenv | sed ${transform}`
+rootdir=
+bootdir=
+grubdir=`echo "/@bootdirname@/@grubdirname@" | sed 's,//*,/,g'`
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: $self [OPTION] entry
+Set the default boot entry for GRUB, for the next boot only.
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  --boot-directory=DIR    expect GRUB images under the directory DIR/@grubdirname@
+                          instead of the $grubdir directory
+
+ENTRY is a number or a menu item title.
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+argument () {
+  opt=$1
+  shift
+
+  if test $# -eq 0; then
+      echo "$0: option requires an argument -- '$opt'" 1>&2
+      exit 1
+  fi
+  echo $1
+}
+
+# Check the arguments.
+while test $# -gt 0
+do
+    option=$1
+    shift
+
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "$self (${PACKAGE_NAME}) ${PACKAGE_VERSION}"
+	exit 0 ;;
+
+# Accept for compatibility
+    --root-directory)
+	rootdir=`argument $option "$@"`; shift ;;
+    --root-directory=*)
+	rootdir=`echo "$option" | sed 's/--root-directory=//'` ;;
+
+    --boot-directory)
+    bootdir=`argument $option "$@"`; shift;;
+    --boot-directory=*)
+    bootdir=`echo "$option" | sed 's/--boot-directory=//'` ;;
+
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    *)
+	if test "x$entry" != x; then
+	    echo "More than one entry?" 1>&2
+	    usage
+	    exit 1
+	fi
+	entry="${option}" ;;
+    esac
+done
+
+if test "x$entry" = x; then
+    echo "entry not specified." 1>&2
+    usage
+    exit 1
+fi
+
+if [ -z "$bootdir" ]; then
+    # Default bootdir if bootdir not initialized.
+    bootdir=/@bootdirname@
+
+    if [ -n "$rootdir" ] ; then
+        # Initialize bootdir if rootdir was initialized.
+        bootdir=${rootdir}/@bootdirname@
+    fi
+fi
+
+grubdir=`echo "${bootdir}/@grubdirname@" | sed 's,//*,/,g'`
+
+prev_saved_entry=`$grub_editenv ${grubdir}/grubenv list | sed -n 's/^saved_entry=//p'`
+if [ "$prev_saved_entry" ]; then
+    $grub_editenv ${grubdir}/grubenv set prev_saved_entry="$prev_saved_entry"
+else
+    # We need some non-empty value for prev_saved_entry so that GRUB will
+    # recognise that grub-reboot has been used and restore the previous
+    # saved entry. "0" is the same as an empty value, i.e. the first menu
+    # entry.
+    $grub_editenv ${grubdir}/grubenv set prev_saved_entry=0
+fi
+$grub_editenv ${grubdir}/grubenv set saved_entry="$entry"
+
+# Bye.
+exit 0

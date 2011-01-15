@@ -1,0 +1,659 @@
+#! /bin/sh
+
+# Install GRUB on your drive.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+# Initialize some variables.
+transform="@program_transform_name@"
+
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+sbindir="@sbindir@"
+bindir="@bindir@"
+libdir="@libdir@"
+sysconfdir="@sysconfdir@"
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+target_cpu=@target_cpu@
+platform=@platform@
+host_os=@host_os@
+pkglibdir="${libdir}/`echo ${PACKAGE_TARNAME}/${target_cpu}-${platform} | sed ${transform}`"
+localedir="@datadir@/locale"
+
+self="`basename $0`"
+
+grub_setup="${sbindir}/`echo grub-setup | sed ${transform}`"
+grub_mkimage="${bindir}/`echo grub-mkimage | sed ${transform}`"
+grub_mkdevicemap="${sbindir}/`echo grub-mkdevicemap | sed ${transform}`"
+grub_probe="${sbindir}/`echo grub-probe | sed ${transform}`"
+grub_editenv="${bindir}/`echo grub-editenv | sed ${transform}`"
+grub_mkrelpath="${bindir}/`echo grub-mkrelpath | sed ${transform}`"
+rootdir=
+bootdir=
+grubdir="`echo "/@bootdirname@/@grubdirname@" | sed 's,//*,/,g'`"
+modules=
+
+install_device=
+no_floppy=
+force_lba=
+recheck=no
+debug=no
+debug_image=
+
+update_nvram=yes
+
+removable=no
+efi_quiet=
+
+# Get GRUB_DISTRIBUTOR.
+if test -f "${sysconfdir}/default/grub" ; then
+    . "${sysconfdir}/default/grub"
+fi
+
+bootloader_id="$(echo "$GRUB_DISTRIBUTOR" | tr '[A-Z]' '[a-z]' | cut -d' ' -f1)"
+if test -z "$bootloader_id"; then
+    bootloader_id=grub
+fi
+
+if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+    disk_module=biosdisk
+elif [ "${platform}" = "ieee1275" ] || [ "${platform}" = "efi" ] ; then
+    disk_module=
+else
+    disk_module=ata
+fi
+
+# Usage: usage
+# Print the usage.
+usage () {
+if [ "${target_cpu}-${platform}" = "i386-pc" ] \
+    || [ "${target_cpu}-${platform}" = "sparc64-ieee1275" ]; then
+    cat <<EOF
+Usage: $self [OPTION] install_device
+EOF
+else
+    cat <<EOF
+Usage: $self [OPTION] [install_device]
+EOF
+fi
+cat <<EOF
+Install GRUB on your drive.
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  --modules=MODULES       pre-load specified modules MODULES
+  --boot-directory=DIR    install GRUB images under the directory DIR/@grubdirname@
+                          instead of the $grubdir directory
+  --grub-setup=FILE       use FILE as grub-setup
+  --grub-mkimage=FILE     use FILE as grub-mkimage
+  --grub-mkrelpath=FILE   use FILE as grub-mkrelpath
+  --grub-mkdevicemap=FILE use FILE as grub-mkdevicemap
+  --grub-probe=FILE       use FILE as grub-probe
+  --no-floppy             do not probe any floppy drive
+  --allow-floppy          Make the drive also bootable as floppy 
+                          (default for fdX devices). May break on some BIOSes.
+  --recheck               probe a device map even if it already exists
+  --force                 install even if problems are detected
+EOF
+if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+    cat <<EOF
+  --disk-module=MODULE    disk module to use
+EOF
+fi
+if [ "${target_cpu}-${platform}" = "i386-ieee1275" ] || [ "${target_cpu}-${platform}" = "powerpc-ieee1275" ] ; then
+    cat <<EOF
+  --no-nvram              don't update the boot-device NVRAM variable
+EOF
+fi
+if [ "${platform}" = "efi" ]; then
+    cat <<EOF
+   --removable             the installation device is removable
+   --bootloader-id=ID      the ID of bootloader.
+EOF
+fi
+    cat <<EOF
+
+INSTALL_DEVICE can be a GRUB device name or a system device filename.
+
+$self copies GRUB images into $grubdir, and uses grub-setup
+to install grub into the boot sector.
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+argument () {
+  opt="$1"
+  shift
+
+  if test $# -eq 0; then
+      echo "$0: option requires an argument -- '$opt'" 1>&2
+      exit 1
+  fi
+  echo "$1"
+}
+
+allow_floppy=""
+
+# Check the arguments.
+while test $# -gt 0
+do
+    option=$1
+    shift
+
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "$self (${PACKAGE_NAME}) ${PACKAGE_VERSION}"
+	exit 0 ;;
+
+    --modules)
+	modules=`argument $option "$@"`; shift;;
+    --modules=*)
+	modules=`echo "$option" | sed 's/--modules=//'` ;;
+
+# Accept and ignore for compatibility
+    --font)
+        shift;;
+    --font=*)
+	;;
+
+# Accept for compatibility
+    --root-directory)
+	rootdir="`argument $option "$@"`"; shift;;
+    --root-directory=*)
+	rootdir="`echo "$option" | sed 's/--root-directory=//'`" ;;
+
+    --boot-directory)
+	bootdir="`argument $option "$@"`"; shift;;
+    --boot-directory=*)
+	bootdir="`echo "$option" | sed 's/--boot-directory=//'`" ;;
+
+    --grub-setup)
+	grub_setup="`argument "$option" "$@"`"; shift;;
+    --grub-setup=*)
+	grub_setup="`echo "$option" | sed 's/--grub-setup=//'`" ;;
+
+    --bootloader-id)
+	bootloader_id="`argument $option "$@"`"; shift;;
+    --bootloader-id=*)
+	bootloader_id="`echo "$option" | sed 's/--bootloader-id=//'`" ;;
+
+    --grub-mkimage)
+	grub_mkimage="`argument $option "$@"`"; shift;;
+    --grub-mkimage=*)
+	grub_mkimage="`echo "$option" | sed 's/--grub-mkimage=//'`" ;;
+
+    --grub-mkrelpath)
+	grub_mkrelpath="`argument "$option" "$@"`"; shift;;
+    --grub-mkrelpath=*)
+	grub_mkrelpath="`echo "$option" | sed 's/--grub-mkrelpath=//'`" ;;
+
+    --grub-mkdevicemap)
+	grub_mkdevicemap="`argument "$option" "$@"`"; shift;;
+    --grub-mkdevicemap=*)
+	grub_mkdevicemap="`echo "$option" | sed 's/--grub-mkdevicemap=//'`" ;;
+
+    --grub-probe)
+	    grub_probe="`argument "$option" "$@"`"; shift;;
+    --grub-probe=*)
+	grub_probe="`echo "$option" | sed 's/--grub-probe=//'`" ;;
+
+    --no-floppy)
+	no_floppy="--no-floppy" ;;
+    --recheck)
+	recheck=yes ;;
+    --removable)
+	removable=yes ;;
+
+    --allow-floppy)
+	allow_floppy="--allow-floppy" ;;
+
+    --disk-module)
+	if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+	    disk_module="`argument "$option" "$@"`"; shift;
+	fi ;;
+    --disk-module=*)
+	if [ "${target_cpu}-${platform}" = "i386-pc" ] ; then
+           disk_module="`echo "$option" | sed 's/--disk-module=//'`"
+        fi ;;
+
+    --no-nvram)
+	update_nvram=no ;;
+
+    # This is an undocumented feature...
+    --debug)
+	debug=yes ;;
+    --debug-image)
+	debug_image="`argument "$option" "$@"`"; shift;;
+    --debug-image=*)
+	debug_image="`echo "$option" | sed 's/--debug-image=//'`" ;;
+
+    -f | --force)
+        setup_force="--force" ;;
+
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    *)
+	if test "x$install_device" != x; then
+	    echo "More than one install_devices?" 1>&2
+	    usage
+	    exit 1
+	fi
+	install_device="${option}" ;;
+    esac
+done
+
+if test "x$install_device" = x && ([ "${target_cpu}-${platform}" = "i386-pc" ] \
+    || [ "${target_cpu}-${platform}" = "sparc64-ieee1275" ]); then
+    echo "install_device not specified." 1>&2
+    usage
+    exit 1
+fi
+
+# If the debugging feature is enabled, print commands.
+setup_verbose=
+if test x"$debug" = xyes; then
+    set -x
+    setup_verbose="--verbose"
+    efi_quiet=-q
+fi
+
+if [ -z "$bootdir" ]; then
+    # Default bootdir if bootdir not initialized.
+    bootdir="/@bootdirname@"
+
+    if [ -n "$rootdir" ] ; then
+        # Initialize bootdir if rootdir was initialized.
+        bootdir="${rootdir}/@bootdirname@"
+    fi
+fi
+
+grubdir="`echo "${bootdir}/@grubdirname@" | sed 's,//*,/,g'`"
+device_map="${grubdir}/device.map"
+
+
+# Check if GRUB is installed.
+if [ "${target_cpu}-${platform}" = "i386-pc" ] || [ "${target_cpu}-${platform}" = "sparc64-ieee1275" ] ; then
+    set $grub_setup dummy
+    if test -f "$1"; then
+        :
+    else
+        echo "$1: Not found." 1>&2
+        exit 1
+    fi
+fi
+
+set "$grub_mkimage" dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+set "$grub_mkdevicemap" dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+if [ x"$platform" = xefi ]; then
+    # Find the EFI System Partition.
+    efidir=
+    if test -d "${bootdir}/efi"; then
+	install_device="`"$grub_mkdevicemap" --device-map=/dev/stdout | "$grub_probe" --target=device --device-map=/dev/stdin "${bootdir}/efi"`"
+        # Is it a mount point?
+	if test "x$install_device" != "x`"$grub_mkdevicemap" --device-map=/dev/stdout | "$grub_probe" --target=device --device-map=/dev/stdin "${bootdir}"`"; then
+	    efidir="${bootdir}/efi"
+	fi
+    elif test -n "$rootdir" && test "x$rootdir" != "x/"; then
+        # The EFI System Partition may have been given directly using
+        # --root-directory.
+	install_device="`"$grub_mkdevicemap" --device-map=/dev/stdout | "$grub_probe" --target=device --device-map=/dev/stdin "${rootdir}"`"
+        # Is it a mount point?
+	if test "x$install_device" != "x`"$grub_mkdevicemap" --device-map=/dev/stdout | "$grub_probe" --target=device --device-map=/dev/stdin "${rootdir}/.."`"; then
+	    efidir="${rootdir}"
+	fi
+    fi
+    
+    if test -n "$efidir"; then
+	efi_fs=`"$grub_probe" --target=fs "--device-map=${device_map}" "${efidir}"`
+	if test "x$efi_fs" = xfat; then :; else
+	    echo "${efidir} doesn't look like an EFI partition." 1>&2
+	    efidir=
+	fi
+    fi
+    
+    if test -n "$efidir"; then
+        # The EFI specification requires that an EFI System Partition must
+        # contain an "EFI" subdirectory, and that OS loaders are stored in
+        # subdirectories below EFI.  Vendors are expected to pick names that do
+        # not collide with other vendors.  To minimise collisions, we use the
+        # name of our distributor if possible.
+	efi_distributor="$bootloader_id"
+	if test $removable = yes; then
+      	   # The specification makes stricter requirements of removable
+	   # devices, in order that only one image can be automatically loaded
+	   # from them.  The image must always reside under /EFI/BOOT, and it
+	   # must have a specific file name depending on the architecture.
+	    efi_distributor=BOOT
+	    case "$target_cpu" in
+		i386)
+		    efi_file=BOOTIA32.EFI ;;
+		x86-64)
+		    efi_file=BOOTX64.EFI ;;
+	    # GRUB does not yet support these architectures, but they're defined
+	    # by the specification so we include them here to ease future
+	    # expansion.
+		ia64)
+		    efi_file=BOOTIA64.EFI ;;
+	    esac
+	else
+	    # It is convenient for each architecture to have a different
+	    # efi_file, so that different versions can be installed in parallel.
+	    case "$target_cpu" in
+		i386)
+		    efi_file=grubia32.efi ;;
+		x86-64)
+		    efi_file=grubx64.efi ;;
+	 # GRUB does not yet support these architectures, but they're defined
+ 	 # by the specification so we include them here to ease future
+	 # expansion.
+		ia64)
+		    efi_file=grubia64.efi ;;
+		*)
+		    efi_file=grub.efi ;;
+	    esac
+	   # TODO: We should also use efibootmgr, if available, to add a Boot
+	   # entry for ourselves.
+	fi
+	efidir="$efidir/EFI/$efi_distributor"
+	mkdir -p "$efidir" || exit 1
+    else
+        # We don't know what's going on.  Fall back to traditional
+        # (non-specification-compliant) behaviour.
+	efidir="$grubdir"
+	efi_distributor=
+	efi_file=grub.efi
+    fi
+fi
+
+# Create the GRUB directory if it is not present.
+mkdir -p "$grubdir" || exit 1
+
+# If --recheck is specified, remove the device map, if present.
+if test $recheck = yes; then
+    rm -f "$device_map"
+fi
+
+# Create the device map file if it is not present.
+if test -f "$device_map"; then
+    :
+else
+    # Create a safe temporary file.
+    test -n "$mklog" && log_file=`$mklog`
+
+    "$grub_mkdevicemap" "--device-map=$device_map" $no_floppy || exit 1
+fi
+
+# Make sure that there is no duplicated entry.
+tmp=`sed -n '/^([fh]d[0-9]*)/s/\(^(.*)\).*/\1/p' "$device_map" \
+    | sort | uniq -d | sed -n 1p`
+if test -n "$tmp"; then
+    echo "The drive $tmp is defined multiple times in the device map $device_map" 1>&2
+    exit 1
+fi
+
+# Copy the GRUB images to the GRUB directory.
+for file in "${grubdir}"/*.mod "${grubdir}"/*.lst "${grubdir}"/*.img "${grubdir}"/efiemu??.o; do
+    if test -f "$file" && [ "`basename $file`" != menu.lst ]; then
+	rm -f "$file" || exit 1
+    fi
+done
+for file in "${pkglibdir}"/*.mod "${pkglibdir}"/*.lst; do
+    cp -f "$file" "${grubdir}" || exit 1
+done
+if [ "${target_cpu}-${platform}" = "i386-pc" ] || [ "${target_cpu}-${platform}" = "sparc64-ieee1275" ] ; then
+    for file in "${pkglibdir}"/*.img "${pkglibdir}"/efiemu??.o; do
+	if test -f "$file"; then
+	    cp -f "$file" "${grubdir}" || exit 1
+	fi
+    done
+fi
+
+# Copy gettext files
+mkdir -p "${grubdir}"/locale/
+for dir in "${localedir}"/*; do
+    if test -f "$dir/LC_MESSAGES/grub.mo"; then
+        cp -f "$dir/LC_MESSAGES/grub.mo" "${grubdir}/locale/${dir##*/}.mo"
+    fi
+done
+
+# Write device to a variable so we don't have to traverse /dev every time.
+grub_device="`"$grub_probe" --device-map="${device_map}" --target=device "${grubdir}"`" || exit 1
+
+if ! test -f "${grubdir}"/grubenv; then
+    "$grub_editenv" "${grubdir}"/grubenv create
+fi
+
+# Create the core image. First, auto-detect the filesystem module.
+fs_module="`"$grub_probe" --device-map="${device_map}" --target=fs --device "${grub_device}"`"
+if test "x$fs_module" = x ; then
+    echo "Auto-detection of a filesystem of ${grub_device} failed." 1>&2
+    echo "Please report this together with the output of \"$grub_probe --device-map=\"${device_map}\" --target=fs -v ${grubdir}\" to <bug-grub@gnu.org>" 1>&2
+    exit 1
+fi
+
+# Then the partition map module.  In order to support partition-less media,
+# this command is allowed to fail (--target=fs already grants us that the
+# filesystem will be accessible).
+partmap_module=
+for x in `"$grub_probe" --device-map="${device_map}" --target=partmap --device "${grub_device}" 2> /dev/null`; do
+   case "$x" in
+       netbsd | openbsd) 
+	   partmap_module="$partmap_module part_bsd";;
+       "") ;;
+       *)
+	   partmap_module="$partmap_module part_$x";;
+   esac
+done
+
+# Device abstraction module, if any (lvm, raid).
+devabstraction_module="`"$grub_probe" --device-map="${device_map}" --target=abstraction --device "${grub_device}"`"
+
+# The order in this list is critical.  Be careful when modifying it.
+modules="$modules $disk_module"
+modules="$modules $fs_module $partmap_module $devabstraction_module"
+
+relative_grubdir="`"$grub_mkrelpath" "${grubdir}"`" || exit 1
+if [ "x${relative_grubdir}" = "x" ] ; then
+    relative_grubdir=/
+fi
+
+prefix_drive=
+config_opt=
+
+rm -f "${grubdir}/load.cfg"
+
+if [ "x${debug_image}" != x ]; then
+    echo "set debug='${debug_image}'" >> "${grubdir}/load.cfg"
+    config_opt="-c ${grubdir}/load.cfg "
+fi
+
+if [ "x${devabstraction_module}" = "x" ] ; then
+    if [ x"${install_device}" != x ]; then
+      if echo "${install_device}" | grep -qx "(.*)" ; then
+        install_drive="${install_device}"
+      else
+        install_drive="`"$grub_probe" --device-map="${device_map}" --target=drive --device "${install_device}"`" || exit 1
+      fi
+      install_drive="`echo "${install_drive}" | sed -e s/,[a-z0-9,]*//g`"
+    fi
+    grub_drive="`"$grub_probe" --device-map="${device_map}" --target=drive --device "${grub_device}"`" || exit 1
+
+    # Strip partition number
+    grub_partition="`echo "${grub_drive}" | sed -e 's/^[^,]*[,)]//; s/)$//'`"
+    grub_drive="`echo "${grub_drive}" | sed -e s/,[a-z0-9,]*//g`"
+    if [ "$disk_module" = ata ] ; then
+        # generic method (used on coreboot and ata mod)
+        uuid="`"$grub_probe" --device-map="${device_map}" --target=fs_uuid --device "${grub_device}"`"
+        if [ "x${uuid}" = "x" ] ; then
+          echo "UUID needed with ata mod, but the filesystem containing ${grubdir} does not support UUIDs." 1>&2
+          exit 1
+        fi
+        echo "search.fs_uuid ${uuid} root " >> "${grubdir}/load.cfg"
+	echo 'set prefix=($root)'"${relative_grubdir}" >> "${grubdir}/load.cfg"
+	config_opt="-c ${grubdir}/load.cfg "
+        modules="$modules search_fs_uuid"
+    elif [ "x${grub_drive}" != "x${install_drive}" ] ; then
+        uuid="`"$grub_probe" --device-map="${device_map}" --target=fs_uuid --device "${grub_device}"`"
+        if [ "x${uuid}" = "x" ] ; then
+          echo "You attempted a cross-disk install, but the filesystem containing ${grubdir} does not support UUIDs." 1>&2
+          exit 1
+        fi
+        echo "search.fs_uuid ${uuid} root " >> ${grubdir}/load.cfg
+	echo 'set prefix=($root)'"${relative_grubdir}" >> ${grubdir}/load.cfg
+	config_opt="-c ${grubdir}/load.cfg "
+        modules="$modules search_fs_uuid"
+    elif [ "x$platform" = xefi ] || [ "x$platform" = xpc ]; then
+        # we need to hardcode the partition number in the core image's prefix.
+	if [ x"$grub_partition" = x ]; then
+            prefix_drive="()"
+	else
+            prefix_drive="(,$grub_partition)"
+	fi
+    fi
+else
+    prefix_drive=`"$grub_probe" --device-map="${device_map}" --target=drive --device "${grub_device}"` || exit 1
+fi
+
+case "${target_cpu}-${platform}" in
+    sparc64-ieee1275) mkimage_target=sparc64-ieee1275-raw ;;
+    mips-yeeloong) mkimage_target=mipsel-yeeloong-elf ;;
+    *) mkimage_target="${target_cpu}-${platform}" ;;
+esac
+
+case "${target_cpu}-${platform}" in
+    i386-efi | x86_64-efi) imgext=efi ;;
+    mips-yeeloong | i386-coreboot | i386-multiboot | i386-ieee1275 \
+	| powerpc-ieee1275) imgext=elf ;;
+    *) imgext=img ;;
+esac
+
+
+"$grub_mkimage" ${config_opt} -d "${pkglibdir}" -O ${mkimage_target} --output="${grubdir}/core.${imgext}" --prefix="${prefix_drive}${relative_grubdir}" $modules || exit 1
+
+# Backward-compatibility kludges
+if [ "${target_cpu}-${platform}" = "mips-yeeloong" ]; then
+    cp "${grubdir}/core.${imgext}" "${bootdir}"/grub.elf
+elif [ "${target_cpu}-${platform}" = "i386-ieee1275" ] || [ "${target_cpu}-${platform}" = "powerpc-ieee1275" ]; then
+    cp "${grubdir}/core.${imgext}" "${grubdir}/grub"
+elif [ "${target_cpu}-${platform}" = "i386-efi" ] || [ "${target_cpu}-${platform}" = "x86_64-efi" ]; then
+    "$grub_mkimage" ${config_opt} -d "${pkglibdir}" -O ${mkimage_target} --output="${grubdir}/grub.efi" --prefix="" $modules || exit 1
+fi
+
+
+# Perform the platform-dependent install
+if [ "${target_cpu}-${platform}" = "i386-pc" ] || [ "${target_cpu}-${platform}" = "sparc64-ieee1275" ] ; then
+    # Now perform the installation.
+    "$grub_setup" ${allow_floppy} ${setup_verbose} ${setup_force} --directory="${grubdir}" \
+	--device-map="${device_map}" "${install_device}" || exit 1
+elif [ "${target_cpu}-${platform}" = "i386-ieee1275" ] || [ "${target_cpu}-${platform}" = "powerpc-ieee1275" ]; then
+    if [ x"$update_nvram" = xyes ]; then
+	ofpathname="`which ofpathname`"
+	nvsetenv="`which nvsetenv`"
+	set "$ofpathname" dummy
+	if test -f "$1"; then
+	    :
+	else
+	    echo "$1: Not found." 1>&2
+	    exit 1
+	fi
+	set "$nvsetenv" dummy
+	if test -f "$1"; then
+	    :
+	else
+	    echo "$1: Not found." 1>&2
+	    exit 1
+	fi
+        # Get the Open Firmware device tree path translation.
+	dev="`echo $grub_device | sed -e 's/\/dev\///' -e 's/[0-9]\+//'`"
+	partno="`echo $grub_device | sed -e 's/.*[^0-9]\([0-9]\+\)$/\1/'`"
+	ofpath="`$ofpathname $dev`" || {
+	    echo "Couldn't find Open Firmware device tree path for $dev."
+	    echo "You will have to set boot-device manually."
+	    exit 1
+	}
+
+        # Point boot-device at the new grub install
+	boot_device="$ofpath:$partno,"`"$grub_mkrelpath" "${grubdir}/core.${imgext}" | sed 's,/,\\\\,g'`
+	"$nvsetenv" boot-device "$boot_device" || {
+	    echo "$nvsetenv failed."
+	    echo "You will have to set boot-device manually.  At the Open Firmware prompt, type:"
+	    echo "  setenv boot-device $boot_device"
+	    exit 1
+	}
+    fi
+elif [ x"$platform" = xefi ]; then
+    cp "${grubdir}/core.${imgext}" "${efidir}/${efi_file}"
+
+    # Try to make this image bootable using the EFI Boot Manager, if available.
+    efibootmgr="`which efibootmgr`"
+    if test "$removable" = no && test -n "$efi_distributor" && \
+	test -n "$efibootmgr"; then
+        # On Linux, we need the efivars kernel modules.
+	case "$host_os" in
+	    linux*)
+		modprobe -q efivars 2>/dev/null || true ;;
+	esac
+
+        # Delete old entries from the same distributor.
+	for bootnum in `efibootmgr | grep '^Boot[0-9]' | \
+	    fgrep -i " $efi_distributor" | cut -b5-8`; do
+	    efibootmgr $efi_quiet -b "$bootnum" -B
+	done
+
+        # Add a new entry for the image we just created.  efibootmgr needs to be
+        # given the disk device and partition number separately, so we have to
+        # fiddle about with grub-probe to get hold of this reasonably reliably.
+        # Use fresh device map text to avoid any problems with stale data, since
+        # all we need here is a one-to-one mapping.
+	clean_devmap="$($grub_mkdevicemap --device-map=/dev/stdout)"
+	efidir_drive="$(echo "$clean_devmap" | "$grub_probe" --device-map="${device_map}" --target=drive --device-map=/dev/stdin "$efidir")"
+	if test -z "$efidir_drive"; then
+	    echo "Can't find GRUB drive for $efidir; unable to create EFI Boot Manager entry." >&2
+	else
+	    efidir_disk="$(echo "$clean_devmap" | grep "^$(echo "$efidir_drive" | sed 's/,[^)]*//')" | cut -f2)"
+	    efidir_part="$(echo "$efidir_drive" | sed 's/^([^,]*,[^0-9]*//; s/[^0-9].*//')"
+	    efibootmgr $efi_quiet -c -d "$efidir_disk" -p "$efidir_part" -w \
+		-L "$bootloader_id" -l "\\EFI\\$efi_distributor\\$efi_file"
+	fi
+    fi
+fi
+
+echo "Installation finished. No error reported."
+
+# Bye.
+exit 0

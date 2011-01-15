@@ -1,0 +1,306 @@
+#! /bin/sh
+set -e
+
+# Generate grub.cfg by inspecting /boot contents.
+# Copyright (C) 2006,2007,2008,2009,2010 Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+sbindir=@sbindir@
+bindir=@bindir@
+libdir=@libdir@
+sysconfdir=@sysconfdir@
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+host_os=@host_os@
+datarootdir=@datarootdir@
+datadir=@datadir@
+pkgdatadir=${datadir}/`echo @PACKAGE_TARNAME@ | sed "${transform}"`
+grub_cfg=""
+grub_mkconfig_dir=${sysconfdir}/grub.d
+
+self=`basename $0`
+
+grub_mkdevicemap=${sbindir}/`echo grub-mkdevicemap | sed "${transform}"`
+grub_probe=${sbindir}/`echo grub-probe | sed "${transform}"`
+grub_script_check="${bindir}/`echo grub-script-check | sed "${transform}"`"
+
+GRUB_PREFIX=`echo '/@bootdirname@/@grubdirname@' | sed "s,//*,/,g"`
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: $self [OPTION]
+Generate a grub config file
+
+  -o, --output=FILE       output generated config to FILE [default=stdout]
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+argument () {
+  opt=$1
+  shift
+
+  if test $# -eq 0; then
+      echo "$0: option requires an argument -- '$opt'" 1>&2
+      exit 1
+  fi
+  echo $1
+}
+
+# Check the arguments.
+while test $# -gt 0
+do
+    option=$1
+    shift
+
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "$self (${PACKAGE_NAME}) ${PACKAGE_VERSION}"
+	exit 0 ;;
+    -o | --output)
+	grub_cfg=`argument $option "$@"`; shift;;
+    --output=*)
+	grub_cfg=`echo "$option" | sed 's/--output=//'`
+	;;
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    # Explicitly ignore non-option arguments, for compatibility.
+    esac
+done
+
+. ${libdir}/grub/grub-mkconfig_lib
+
+if [ "x$EUID" = "x" ] ; then
+  EUID=`id -u`
+fi
+
+if [ "$EUID" != 0 ] ; then
+  root=f
+  case "`uname 2>/dev/null`" in
+    CYGWIN*)
+      # Cygwin: Assume root if member of admin group
+      for g in `id -G 2>/dev/null` ; do
+	case $g in
+	  0|544) root=t ;;
+	esac
+      done ;;
+  esac
+  if [ $root != t ] ; then
+    echo "$self: You must run this as root" >&2
+    exit 1
+  fi
+fi
+
+set $grub_mkdevicemap dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+set $grub_probe dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+mkdir -p ${GRUB_PREFIX}
+
+if test -e ${GRUB_PREFIX}/device.map ; then : ; else
+  ${grub_mkdevicemap}
+fi
+
+# Device containing our userland.  Typically used for root= parameter.
+GRUB_DEVICE="`${grub_probe} --target=device /`"
+GRUB_DEVICE_UUID="`${grub_probe} --device ${GRUB_DEVICE} --target=fs_uuid 2> /dev/null`" || true
+
+# Device containing our /boot partition.  Usually the same as GRUB_DEVICE.
+GRUB_DEVICE_BOOT="`${grub_probe} --target=device /boot`"
+GRUB_DEVICE_BOOT_UUID="`${grub_probe} --device ${GRUB_DEVICE_BOOT} --target=fs_uuid 2> /dev/null`" || true
+
+# Filesystem for the device containing our userland.  Used for stuff like
+# choosing Hurd filesystem module.
+GRUB_FS="`${grub_probe} --device ${GRUB_DEVICE} --target=fs 2> /dev/null || echo unknown`"
+
+if test -f ${sysconfdir}/default/grub ; then
+  . ${sysconfdir}/default/grub
+fi
+
+# XXX: should this be deprecated at some point?
+if [ "x${GRUB_TERMINAL}" != "x" ] ; then
+  GRUB_TERMINAL_INPUT="${GRUB_TERMINAL}"
+  GRUB_TERMINAL_OUTPUT="${GRUB_TERMINAL}"
+fi
+
+termoutdefault=0
+if [ "x${GRUB_TERMINAL_OUTPUT}" = "x" ]; then
+    GRUB_TERMINAL_OUTPUT=gfxterm;
+    termoutdefault=1;
+fi
+
+for x in ${GRUB_TERMINAL_OUTPUT}; do
+    if [ "x${x}" = "xgfxterm" ]; then
+	if [ -n "$GRUB_FONT" ] ; then
+	    if is_path_readable_by_grub ${GRUB_FONT} > /dev/null ; then
+		GRUB_FONT_PATH=${GRUB_FONT}
+	    else
+		echo "No such font or not readable by grub: ${GRUB_FONT}" >&2
+		exit 1
+	    fi
+	else
+	    for dir in ${pkgdatadir} ${GRUB_PREFIX} /usr/share/grub ; do
+		for basename in unicode unifont ascii; do
+		    path="${dir}/${basename}.pf2"
+		    if is_path_readable_by_grub ${path} > /dev/null ; then
+			GRUB_FONT_PATH=${path}
+		    else
+			continue
+		    fi
+		    if [ "${basename}" = "ascii" ] ; then
+	                # make sure all our children behave in conformance with ascii..
+			export LANG=C
+		    fi
+		    break 2
+		done
+	    done
+	fi
+	if [ -z "${GRUB_FONT_PATH}" ] ; then
+	    if [ "x$termoutdefault" != "x1" ]; then
+		echo "No font for gfxterm found." >&2 ; exit 1
+	    fi
+	    GRUB_TERMINAL_OUTPUT=
+	fi
+    fi
+done
+
+for x in ${GRUB_TERMINAL_OUTPUT}; do
+    case "x${x}" in
+	xgfxterm) ;;
+	xconsole | xserial | xofconsole)
+            # make sure all our children behave in conformance with ascii..
+	    export LANG=C;;
+	*) echo "Invalid output terminal \"${GRUB_TERMINAL_OUTPUT}\"" >&2 ; exit 1 ;;
+    esac
+done
+
+# These are defined in this script, export them here so that user can
+# override them.
+export GRUB_DEVICE \
+  GRUB_DEVICE_UUID \
+  GRUB_DEVICE_BOOT \
+  GRUB_DEVICE_BOOT_UUID \
+  GRUB_FS \
+  GRUB_FONT_PATH \
+  GRUB_PRELOAD_MODULES \
+  GRUB_PREFIX
+
+# These are optional, user-defined variables.
+export GRUB_DEFAULT \
+  GRUB_HIDDEN_TIMEOUT \
+  GRUB_HIDDEN_TIMEOUT_QUIET \
+  GRUB_TIMEOUT \
+  GRUB_DEFAULT_BUTTON \
+  GRUB_HIDDEN_TIMEOUT_BUTTON \
+  GRUB_TIMEOUT_BUTTON \
+  GRUB_BUTTON_CMOS_ADDRESS \
+  GRUB_BUTTON_CMOS_CLEAN \
+  GRUB_DISTRIBUTOR \
+  GRUB_CMDLINE_LINUX \
+  GRUB_CMDLINE_LINUX_DEFAULT \
+  GRUB_CMDLINE_XEN \
+  GRUB_CMDLINE_XEN_DEFAULT \
+  GRUB_CMDLINE_NETBSD \
+  GRUB_CMDLINE_NETBSD_DEFAULT \
+  GRUB_TERMINAL_INPUT \
+  GRUB_TERMINAL_OUTPUT \
+  GRUB_SERIAL_COMMAND \
+  GRUB_DISABLE_LINUX_UUID \
+  GRUB_DISABLE_RECOVERY \
+  GRUB_VIDEO_BACKEND \
+  GRUB_GFXMODE \
+  GRUB_BACKGROUND \
+  GRUB_THEME \
+  GRUB_GFXPAYLOAD_LINUX \
+  GRUB_DISABLE_OS_PROBER \
+  GRUB_INIT_TUNE \
+  GRUB_SAVEDEFAULT \
+  GRUB_BADRAM
+
+if test "x${grub_cfg}" != "x"; then
+  rm -f ${grub_cfg}.new
+  exec > ${grub_cfg}.new
+
+  # Allow this to fail, since /boot/grub/ might need to be fatfs to support some
+  # firmware implementations (e.g. OFW or EFI).
+  chmod 400 ${grub_cfg}.new || grub_warn "Could not make ${grub_cfg}.new readable by only root.\
+  This means that if the generated config contains a password it is readable by everyone"
+fi
+echo "Generating grub.cfg ..." >&2
+
+cat << EOF
+#
+# DO NOT EDIT THIS FILE
+#
+# It is automatically generated by $self using templates
+# from ${grub_mkconfig_dir} and settings from ${sysconfdir}/default/grub
+#
+EOF
+
+for i in ${grub_mkconfig_dir}/* ; do
+  case "$i" in
+    # emacsen backup files. FIXME: support other editors
+    *~) ;;
+    *)
+      if grub_file_is_not_garbage "$i" && test -x "$i" ; then
+        echo
+        echo "### BEGIN $i ###"
+        "$i"
+        echo "### END $i ###"
+      fi
+    ;;
+  esac
+done
+
+if test "x${grub_cfg}" != "x" ; then
+  if ! ${grub_script_check} ${grub_cfg}.new; then
+    echo "Syntax errors are detected in generated GRUB config file." >&2
+    echo "Ensure that there are no errors in /etc/default/grub" >&2
+    echo "and /etc/grub.d/* files or please file a bug report with" >&2
+    echo "${grub_cfg}.new file attached." >&2
+  else
+    # none of the children aborted with error, install the new grub.cfg
+    mv -f ${grub_cfg}.new ${grub_cfg}
+  fi
+fi
+
+echo "done" >&2
