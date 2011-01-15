@@ -147,8 +147,11 @@
 #define F_ULOCK     3
 #endif
 
+/* Arguments for pathconf() */
+#define _PC_PATH_MAX 1
+#define _PC_VDISABLE 2
+
 /*
-    XXX Arguments for pathconf()
     XXX Arguments for sysconf()
 */
 
@@ -193,7 +196,7 @@ uid_t       getuid(void);
 int         isatty(int fd);
 int         link(const char *name1, const char *name2);
 off_t       lseek(int filedes, off_t offset, int whence);
-/* NOTIMPL long        pathconf(const char *path, int name); */
+long        pathconf(const char *path, int name);
 /* NOTIMPL int         pause(void); */
 int         pipe(int filedes[2]);
 ssize_t     read(int d, void *buf, size_t nbytes);
@@ -260,7 +263,7 @@ int         fchdir(int fd);
 /* NOTIMPL int         setregid(gid_t rgid, gid_t egid); */
 /* NOTIMPL int         setreuid(uid_t ruid, uid_t euid); */
 void        swab(const void * restrict src, void * restrict dst, size_t len);
-/* NOTIMPL void        sync(void); */
+void        sync(void);
 int         truncate(const char *path, off_t length);
 /* NOTIMPL useconds_t  ualarm(useconds_t microseconds, useconds_t interval); */
 int         usleep(useconds_t microseconds);

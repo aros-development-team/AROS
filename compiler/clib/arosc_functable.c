@@ -36,6 +36,7 @@
 #include <wchar.h>
 #include <wctype.h>
 #include <inttypes.h>
+#include <termios.h>
 
 #include <ioerr2errno.h>    /* FIXME: Should this really be public? */
 #include "signalhack.h"     /* FIXME: Use <signal.h> when it is finished */

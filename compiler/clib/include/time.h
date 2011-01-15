@@ -36,6 +36,8 @@ struct tm
     const char *tm_zone;
 };
 
+#define _P1003_1B_VISIBLE /* temp hack for grub2 */
+
 #if !defined(_ANSI_SOURCE) && defined(_P1003_1B_VISIBLE)
 
 #include <sys/types/timer_t.h>
@@ -101,7 +103,7 @@ char      *strptime(const char *, const char *, struct tm *);
 /* NOTIMPL int        clock_getres(clockid_t, struct timespec *); */
 /* NOTIMPL int        clock_gettime(clockid_t, struct timespec *); */
 /* NOTIMPL int        clock_settime(clockid_t, const struct timespec *); */
-/* NOTIMPL int        nanosleep(const struct timespec *, struct timespec *); */
+int        nanosleep(const struct timespec *, struct timespec *);
 
 /* NOTIMPL int        timer_create(clockid_t, struct sigevent *, timer_t *); */
 /* NOTIMPL int        timer_delete(timer_t); */

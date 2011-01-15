@@ -181,9 +181,11 @@ SHARED	:= \
 	free \
 	freopen \
 	fseek \
+	fseeko \
 	fsetpos \
 	fstat \
 	ftell \
+	ftello \
 	ftime \
 	ftruncate \
 	fwrite \
@@ -266,10 +268,12 @@ SHARED	:= \
 	mktemp \
 	mktime \
 	mrand48 \
+	nanosleep \
 	nrand48 \
 	on_exit \
 	open \
 	opendir \
+	pathconf \
 	pclose \
 	perror \
 	pipe \
@@ -289,6 +293,7 @@ SHARED	:= \
 	readlink \
 	realloc \
 	realloc_nocopy \
+	realpath \
 	regex/regerror	\
 	regex/regexec	\
 	regex/regcomp	\
@@ -345,9 +350,11 @@ SHARED	:= \
 	strtoul \
 	strtoull \
 	strtoumax \
+	sync \
 	sysconf \
 	symlink \
 	system \
+	tcgetattr \
 	telldir \
 	tempnam \
 	time \
@@ -355,6 +362,7 @@ SHARED	:= \
 	tmpfile \
 	tmpnam \
 	truncate \
+	tcsetattr \
 	ttyname \
 	umask \
 	ungetc \
