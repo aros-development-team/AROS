@@ -1,0 +1,87 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+################################################################################
+# OpenVG                                                                       #
+################################################################################
+
+#MM workbench-libs-openvg : workbench-libs-openvg-generated includes linklibs-galliumauxiliary
+
+SHARED_LIB_SOURCES = \
+            aros/emul_arosc \
+            aros/tls \
+
+# TEMPORARY HACK FOR i386 (see aros/emul_div/README)
+ifeq ($(AROS_TARGET_CPU), i386)
+  LDFLAGS += -nodefaultlibs
+  SHARED_LIB_SOURCES += \
+                aros/emul_div/qdivrem \
+                aros/emul_div/udivdi3 \
+                aros/emul_div/umoddi3
+endif
+
+OPENVG_SOURCES = \
+            gallium/state_trackers/vega/api \
+            gallium/state_trackers/vega/api_context \
+            gallium/state_trackers/vega/api_filters \
+            gallium/state_trackers/vega/api_images \
+            gallium/state_trackers/vega/api_masks \
+            gallium/state_trackers/vega/api_misc \
+            gallium/state_trackers/vega/api_paint \
+            gallium/state_trackers/vega/api_params \
+            gallium/state_trackers/vega/api_path \
+            gallium/state_trackers/vega/api_text \
+            gallium/state_trackers/vega/api_transform \
+            gallium/state_trackers/vega/arc \
+            gallium/state_trackers/vega/bezier \
+            gallium/state_trackers/vega/image \
+            gallium/state_trackers/vega/mask \
+            gallium/state_trackers/vega/paint \
+            gallium/state_trackers/vega/path \
+            gallium/state_trackers/vega/polygon \
+            gallium/state_trackers/vega/renderer \
+            gallium/state_trackers/vega/shader \
+            gallium/state_trackers/vega/shaders_cache \
+            gallium/state_trackers/vega/stroker \
+            gallium/state_trackers/vega/text \
+            gallium/state_trackers/vega/vg_context \
+            gallium/state_trackers/vega/vg_manager \
+            gallium/state_trackers/vega/vg_state \
+            gallium/state_trackers/vega/vg_translate \
+            gallium/state_trackers/vega/vgu \
+            mapi/mapi/entry \
+            mapi/mapi/mapi \
+            mapi/mapi/table \
+            mapi/mapi/stub \
+            mapi/mapi/u_current \
+
+LIBRARY_SOURCES = \
+            $(addprefix ../../, $(OPENVG_SOURCES)) \
+            $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
+            openvg_library_api \
+            getopenvgstatetrackerapi \
+
+
+USER_INCLUDES := \
+            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(SRCDIR)/$(CURDIR)/../../aros \
+            -I$(SRCDIR)/$(CURDIR)/../../mapi \
+            -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
+            -I$(SRCDIR)/$(CURDIR)/../../ \
+            -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega \
+
+USER_CFLAGS := -ffast-math -DMAPI_ABI_HEADER=\"vgapi/vgapi_tmp.h\"
+
+#MM
+workbench-libs-openvg-generated : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi_tmp.h
+
+$(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/../../mapi/mapi/mapi_abi.py -i vgapi/vgapi_defines.h $< > $@
+
+%build_module mmake=workbench-libs-openvg \
+    modname=openvg modtype=library linklibname=OpenVG conffile=openvg.conf \
+    files="$(LIBRARY_SOURCES)" \
+    uselibs="galliumauxiliary rom arosm amiga"
+
+%common
+
