@@ -1,0 +1,6 @@
+#!/bin/sh
+
+grub_mklayout=${bindir}/`echo grub-mklayout | sed ${transform}`
+
+ckbcomp "$@" | $grub_mklayout -o "$1".gkb
+

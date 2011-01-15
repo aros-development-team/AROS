@@ -1,0 +1,216 @@
+# Helper library for grub-mkconfig
+# Copyright (C) 2007,2008,2009,2010  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
+datadir=@datadir@
+bindir=@bindir@
+sbindir=@sbindir@
+pkgdatadir=${datadir}/`echo @PACKAGE_TARNAME@ | sed "${transform}"`
+
+if test "x$grub_probe" = x; then
+  grub_probe=${sbindir}/`echo grub-probe | sed ${transform}`
+fi
+if test "x$grub_mkrelpath" = x; then
+  grub_mkrelpath=${bindir}/`echo grub-mkrelpath | sed ${transform}`
+fi
+
+if $(which gettext >/dev/null 2>/dev/null) ; then
+  gettext="gettext"
+else
+  gettext="echo"
+fi
+
+grub_warn ()
+{
+  echo "Warning: $@" >&2
+}
+
+make_system_path_relative_to_its_root ()
+{
+  ${grub_mkrelpath} $1
+}
+
+is_path_readable_by_grub ()
+{
+  path=$1
+
+  # abort if path doesn't exist
+  if test -e $path ; then : ;else
+    return 1
+  fi
+
+  # abort if file is in a filesystem we can't read
+  if ${grub_probe} -t fs $path > /dev/null 2>&1 ; then : ; else
+    return 1
+  fi
+
+  return 0
+}
+
+convert_system_path_to_grub_path ()
+{
+  path=$1
+
+  grub_warn "convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead."
+
+  # abort if GRUB can't access the path
+  if is_path_readable_by_grub ${path} ; then : ; else
+    return 1
+  fi
+
+  if drive=`${grub_probe} -t drive $path` ; then : ; else
+    return 1
+  fi
+
+  if relative_path=`make_system_path_relative_to_its_root $path` ; then : ; else
+    return 1
+  fi
+
+  echo ${drive}${relative_path}
+}
+
+save_default_entry ()
+{
+  if [ "x${GRUB_SAVEDEFAULT}" = "xtrue" ] ; then
+    cat << EOF
+savedefault
+EOF
+  fi
+}
+
+prepare_grub_to_access_device ()
+{
+  device=$1
+
+  # Abstraction modules aren't auto-loaded.
+  abstraction="`${grub_probe} --device ${device} --target=abstraction`"
+  for module in ${abstraction} ; do
+    echo "insmod ${module}"
+  done
+
+  partmap="`${grub_probe} --device ${device} --target=partmap`"
+  for module in ${partmap} ; do
+    echo "insmod part_${module}"
+  done
+
+  fs="`${grub_probe} --device ${device} --target=fs`"
+  for module in ${fs} ; do
+    echo "insmod ${module}"
+  done
+
+  # If there's a filesystem UUID that GRUB is capable of identifying, use it;
+  # otherwise set root as per value in device.map.
+  echo "set root='`${grub_probe} --device ${device} --target=drive`'"
+  if fs_uuid="`${grub_probe} --device ${device} --target=fs_uuid 2> /dev/null`" ; then
+    echo "search --no-floppy --fs-uuid --set=root ${fs_uuid}"
+  fi
+}
+
+grub_file_is_not_garbage ()
+{
+  if test -f "$1" ; then
+    case "$1" in
+      *.dpkg-*) return 1 ;; # debian dpkg
+      README*)  return 1 ;; # documentation
+    esac
+  else
+    return 1
+  fi
+  return 0
+}
+
+version_test_numeric ()
+{
+  local a=$1
+  local cmp=$2
+  local b=$3
+  if [ "$a" = "$b" ] ; then
+    case $cmp in
+      ge|eq|le) return 0 ;;
+      gt|lt) return 1 ;;
+    esac
+  fi
+  if [ "$cmp" = "lt" ] ; then
+    c=$a
+    a=$b
+    b=$c
+  fi
+  if (echo $a ; echo $b) | sort -n | head -n 1 | grep -qx $b ; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+version_test_gt ()
+{
+  local a=`echo $1 | sed -e "s/[^-]*-//"`
+  local b=`echo $2 | sed -e "s/[^-]*-//"`
+  local cmp=gt
+  if [ "x$b" = "x" ] ; then
+    return 0
+  fi
+  case $a:$b in
+    *.old:*.old) ;;
+    *.old:*) a=`echo -n $a | sed -e s/\.old$//` ; cmp=gt ;;
+    *:*.old) b=`echo -n $b | sed -e s/\.old$//` ; cmp=ge ;;
+  esac
+  version_test_numeric $a $cmp $b
+  return $?
+}
+
+version_find_latest ()
+{
+  local a=""
+  for i in $@ ; do
+    if version_test_gt "$i" "$a" ; then
+      a="$i"
+    fi
+  done
+  echo "$a"
+}
+
+# One layer of quotation is eaten by "", the second by sed, and the third by
+# printf; so this turns ' into \'.  Note that you must use the output of
+# this function in a printf format string.
+gettext_quoted () {
+  $gettext "$@" | sed "s/'/'\\\\\\\\''/g"
+}
+
+# Run the first argument through gettext_quoted, and then pass that and all
+# remaining arguments to printf.  This is a useful abbreviation and tends to
+# be easier to type.
+gettext_printf () {
+  local format="$1"
+  shift
+  printf "$(gettext_quoted "$format")" "$@"
+}
+
+uses_abstraction () {
+  device=$1
+
+  abstraction="`${grub_probe} --device ${device} --target=abstraction`"
+  for module in ${abstraction}; do
+    if test "x${module}" = "x$2"; then
+      return 0
+    fi
+  done
+  return 1
+}

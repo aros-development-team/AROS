@@ -1,0 +1,151 @@
+#! /bin/sh
+set -e
+
+# grub-mkconfig helper script.
+# Copyright (C) 2006,2007,2008,2009,2010  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@libdir@
+. ${libdir}/grub/grub-mkconfig_lib
+
+export TEXTDOMAIN=@PACKAGE@
+export TEXTDOMAINDIR=@localedir@
+
+CLASS="--class gnu-linux --class gnu --class os --class xen"
+
+if [ "x${GRUB_DISTRIBUTOR}" = "x" ] ; then
+  OS=GNU/Linux
+else
+  OS="${GRUB_DISTRIBUTOR} GNU/Linux"
+  CLASS="--class $(echo ${GRUB_DISTRIBUTOR} | tr '[A-Z]' '[a-z]' | cut -d' ' -f1) ${CLASS}"
+fi
+
+# loop-AES arranges things so that /dev/loop/X can be our root device, but
+# the initrds that Linux uses don't like that.
+case ${GRUB_DEVICE} in
+  /dev/loop/*|/dev/loop[0-9])
+    GRUB_DEVICE=`losetup ${GRUB_DEVICE} | sed -e "s/^[^(]*(\([^)]\+\)).*/\1/"`
+  ;;
+esac
+
+if [ "x${GRUB_DEVICE_UUID}" = "x" ] || [ "x${GRUB_DISABLE_LINUX_UUID}" = "xtrue" ] \
+    || ! test -e "/dev/disk/by-uuid/${GRUB_DEVICE_UUID}" \
+    || uses_abstraction "${GRUB_DEVICE}" lvm; then
+  LINUX_ROOT_DEVICE=${GRUB_DEVICE}
+else
+  LINUX_ROOT_DEVICE=UUID=${GRUB_DEVICE_UUID}
+fi
+
+linux_entry ()
+{
+  os="$1"
+  version="$2"
+  xen_version="$3"
+  recovery="$4"
+  args="$5"
+  xen_args="$6"
+  if ${recovery} ; then
+    title="$(gettext_quoted "%s, with Xen %s and Linux %s (recovery mode)")"
+  else
+    title="$(gettext_quoted "%s, with Xen %s and Linux %s")"
+  fi
+  printf "menuentry '${title}' ${CLASS} {\n" "${os}" "${xen_version}" "${version}"
+  if ! ${recovery} ; then
+      save_default_entry | sed -e "s/^/\t/"
+  fi
+
+  if [ -z "${prepare_boot_cache}" ]; then
+    prepare_boot_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/")"
+  fi
+  printf '%s\n' "${prepare_boot_cache}"
+  xmessage="$(gettext_printf "Loading Xen %s ..." ${xen_version})"
+  lmessage="$(gettext_printf "Loading Linux %s ..." ${version})"
+  cat << EOF
+	echo	'$xmessage'
+	multiboot	${rel_xen_dirname}/${xen_basename} placeholder ${xen_args}
+	echo	'$lmessage'
+	module	${rel_dirname}/${basename} placeholder root=${linux_root_device_thisversion} ro ${args}
+EOF
+  if test -n "${initrd}" ; then
+    message="$(gettext_printf "Loading initial ramdisk ...")"
+    cat << EOF
+	echo	'$message'
+	module	${rel_dirname}/${initrd}
+EOF
+  fi
+  cat << EOF
+}
+EOF
+}
+
+linux_list=`for i in /boot/vmlinu[xz]-* /vmlinu[xz]-* ; do
+    	basename=$(basename $i)
+	version=$(echo $basename | sed -e "s,^[^0-9]*-,,g")
+        if grub_file_is_not_garbage "$i" && grep -qx "CONFIG_XEN_DOM0=y" /boot/config-${version} 2> /dev/null ; then echo -n "$i " ; fi
+      done`
+xen_list=`for i in /boot/xen*; do
+        if grub_file_is_not_garbage "$i" ; then echo -n "$i " ; fi
+      done`
+prepare_boot_cache=
+
+while [ "x${xen_list}" != "x" ] ; do
+    list="${linux_list}"
+    current_xen=`version_find_latest $xen_list`
+    xen_basename=`basename ${current_xen}`
+    xen_dirname=`dirname ${current_xen}`
+    rel_xen_dirname=`make_system_path_relative_to_its_root $xen_dirname`
+    xen_version=`echo $xen_basename | sed -e "s,.gz$,,g;s,^xen-,,g"`
+    echo "submenu \"Xen ${xen_version}\" {"
+    while [ "x$list" != "x" ] ; do
+	linux=`version_find_latest $list`
+	echo "Found linux image: $linux" >&2
+	basename=`basename $linux`
+	dirname=`dirname $linux`
+	rel_dirname=`make_system_path_relative_to_its_root $dirname`
+	version=`echo $basename | sed -e "s,^[^0-9]*-,,g"`
+	alt_version=`echo $version | sed -e "s,\.old$,,g"`
+	linux_root_device_thisversion="${LINUX_ROOT_DEVICE}"
+
+	initrd=
+	for i in "initrd.img-${version}" "initrd-${version}.img" \
+	    "initrd-${version}" "initrd.img-${alt_version}" \
+	    "initrd-${alt_version}.img" "initrd-${alt_version}"; do
+	    if test -e "${dirname}/${i}" ; then
+		initrd="$i"
+		break
+	    fi
+	done
+	if test -n "${initrd}" ; then
+	    echo "Found initrd image: ${dirname}/${initrd}" >&2
+	else
+    # "UUID=" magic is parsed by initrds.  Since there's no initrd, it can't work here.
+	    linux_root_device_thisversion=${GRUB_DEVICE}
+	fi
+
+	linux_entry "${OS}" "${version}" "${xen_version}" false \
+	    "${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}" "${GRUB_CMDLINE_XEN} ${GRUB_CMDLINE_XEN_DEFAULT}"
+	if [ "x${GRUB_DISABLE_RECOVERY}" != "xtrue" ]; then
+	    linux_entry "${OS}" "${version}" "${xen_version}" true \
+		"single ${GRUB_CMDLINE_LINUX}" "${GRUB_CMDLINE_XEN}"
+	fi
+
+	list=`echo $list | tr ' ' '\n' | grep -vx $linux | tr '\n' ' '`
+    done
+    echo "}"
+    xen_list=`echo $xen_list | tr ' ' '\n' | grep -vx $current_xen | tr '\n' ' '`
+done

@@ -1,0 +1,7 @@
+#!/bin/sh
+cat <<EOF
+if [ -f  \$prefix/custom.cfg ]; then
+  source \$prefix/custom.cfg;
+fi
+EOF
+

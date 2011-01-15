@@ -1,0 +1,230 @@
+#! /bin/sh
+
+# Install GRUB on your drive.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+# Initialize some variables.
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+sbindir=@sbindir@
+bindir=@bindir@
+libdir=@libdir@
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+target_cpu=@target_cpu@
+platform=@platform@
+host_os=@host_os@
+pkglibdir=${libdir}/`echo ${PACKAGE_TARNAME}/${target_cpu}-${platform} | sed ${transform}`
+localedir=@datadir@/locale
+native_platform=@platform@
+pkglib_DATA="moddep.lst command.lst fs.lst partmap.lst parttool.lst handler.lst video.lst crypto.lst terminal.lst"
+
+self=`basename $0`
+
+grub_mkimage=${bindir}/`echo grub-mkimage | sed ${transform}`
+rootdir=/srv/tftp
+grub_prefix=`echo /boot/grub | sed ${transform}`
+modules=
+
+install_device=
+no_floppy=
+recheck=no
+debug=no
+debug_image=
+subdir=`echo /boot/grub | sed ${transform}`
+pc_dir=${libdir}/$(echo ${PACKAGE_TARNAME} | sed ${transform})/i386-pc
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: $self [OPTION] install_device
+Install GRUB on your drive.
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  --modules=MODULES       pre-load specified modules MODULES
+  --net-directory=DIR     root directory of TFTP server
+  --subdir=DIR            relative subdirectory on network server
+  --grub-mkimage=FILE     use FILE as grub-mkimage
+
+$self copies GRUB images into net_directory/subdir/${target_cpu}-${platform}
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+argument () {
+  opt=$1
+  shift
+
+  if test $# -eq 0; then
+      echo "$0: option requires an argument -- '$opt'" 1>&2
+      exit 1
+  fi
+  echo $1
+}
+
+# Check the arguments.
+while test $# -gt 0
+do
+    option=$1
+    shift
+
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "$self (${PACKAGE_NAME}) ${PACKAGE_VERSION}"
+	exit 0 ;;
+
+    --modules)
+	modules=`argument $option "$@"`; shift;;
+    --modules=*)
+	modules=`echo "$option" | sed 's/--modules=//'` ;;
+
+    --net-directory)
+	rootdir=`argument $option "$@"`; shift;;
+    --net-directory=*)
+	rootdir=`echo "$option" | sed 's/--net-directory=//'` ;;
+
+    --subdir)
+	subdir=`argument $option "$@"`; shift;;
+    --subdir=*)
+	subdir=`echo "$option" | sed 's/--subdir=//'` ;;
+
+    --grub-mkimage)
+	grub_mkimage=`argument $option "$@"`; shift;;
+    --grub-mkimage=*)
+	grub_mkimage=`echo "$option" | sed 's/--grub-mkimage=//'` ;;
+
+    # This is an undocumented feature...
+    --debug)
+	debug=yes ;;
+    --debug-image)
+	debug_image=`argument $option "$@"`; shift;;
+    --debug-image=*)
+	debug_image=`echo "$option" | sed 's/--debug-image=//'` ;;
+
+    # Intentionally undocumented
+    --override-directory)
+        override_dir=`argument $option "$@"`
+	shift
+	PATH=${override_dir}:$PATH
+	export PATH
+	;;
+    --override-directory=*)
+	override_dir=`echo "${option}/" | sed 's/--override-directory=//'`
+	PATH=${override_dir}:$PATH
+	export PATH
+	;;
+
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    *)
+	if test "x$install_device" != x; then
+	    echo "More than one install_devices?" 1>&2
+	    usage
+	    exit 1
+	fi
+	install_device="${option}" ;;
+    esac
+done
+
+set $grub_mkimage dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+# Create the GRUB directory if it is not present.
+mkdir -p "${rootdir}/${subdir}" || exit 1
+
+process_input_dir ()
+{ 
+    input_dir="$1"
+    platform="$2"
+    grubdir="${rootdir}/${subdir}/${platform}"
+    config_opt=
+    mkdir -p "$grubdir" || exit 1
+
+    for file in ${grubdir}/*.mod ${grubdir}/*.lst ${grubdir}/*.img ${grubdir}/efiemu??.o; do
+	if test -f $file && [ "`basename $file`" != menu.lst ]; then
+	    rm -f $file || exit 1
+	fi
+    done
+    for file in ${input_dir}/*.mod; do
+        if test -f "$file"; then
+            cp -f "$file" "$grubdir/"
+        fi
+    done
+    for file in ${pkglib_DATA}; do
+	if test -f "${input_dir}/${file}"; then
+            cp -f "${input_dir}/${file}" "$grubdir/"
+	fi
+    done
+
+    mkdir -p "$grubdir/locale"
+    for file in ${input_dir}/po/*.mo; do
+        if test -f "$file"; then
+	    cp -f "$file" "$grubdir/locale/"
+	fi
+    done
+
+    rm -f ${grubdir}/load.cfg
+
+    if [ "x${debug_image}" != x ]; then
+       echo "set debug='${debug_image}'" >> ${grubdir}/load.cfg
+       config_opt="-c ${grubdir}/load.cfg "
+    fi
+
+    case "${platform}" in
+    	 i386-pc) mkimage_target=i386-pc-pxe;
+	 	  netmodules="pxe";
+		  prefix="(pxe)/${subdir}/${platform}";
+		  ext=0 ;;
+    	 *) echo Unsupported platform ${platform};
+    	    exit 1;;
+    esac
+
+    cat << EOF > ${grubdir}/grub.cfg
+source ${subdir}/grub.cfg
+EOF
+
+    $grub_mkimage ${config_opt} -d "${input_dir}" -O ${mkimage_target} --output=${grubdir}/core.$ext --prefix=$prefix $modules $netmodules || exit 1
+    echo "Netboot directory for ${platform} created. Configure your DHCP server to point to ${subdir}/${platform}/core.$ext"
+}
+
+if [ "${override_dir}" = "" ] ; then
+    if test -e "${pc_dir}" ; then
+        process_input_dir ${pc_dir} i386-pc
+    fi
+else
+    process_input_dir ${override_dir} ${target_cpu}-${native_platform}
+fi
+
+
+# Bye.
+exit 0

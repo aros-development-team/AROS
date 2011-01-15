@@ -1,0 +1,164 @@
+#! /bin/sh
+set -e
+
+# grub-mkconfig helper script.
+# Copyright (C) 2006,2007,2008,2009,2010  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@libdir@
+. ${libdir}/grub/grub-mkconfig_lib
+
+export TEXTDOMAIN=@PACKAGE@
+export TEXTDOMAINDIR=@localedir@
+
+CLASS="--class gnu-linux --class gnu --class os"
+
+if [ "x${GRUB_DISTRIBUTOR}" = "x" ] ; then
+  OS=GNU/Linux
+else
+  OS="${GRUB_DISTRIBUTOR} GNU/Linux"
+  CLASS="--class $(echo ${GRUB_DISTRIBUTOR} | tr '[A-Z]' '[a-z]' | cut -d' ' -f1) ${CLASS}"
+fi
+
+# loop-AES arranges things so that /dev/loop/X can be our root device, but
+# the initrds that Linux uses don't like that.
+case ${GRUB_DEVICE} in
+  /dev/loop/*|/dev/loop[0-9])
+    GRUB_DEVICE=`losetup ${GRUB_DEVICE} | sed -e "s/^[^(]*(\([^)]\+\)).*/\1/"`
+  ;;
+esac
+
+if [ "x${GRUB_DEVICE_UUID}" = "x" ] || [ "x${GRUB_DISABLE_LINUX_UUID}" = "xtrue" ] \
+    || ! test -e "/dev/disk/by-uuid/${GRUB_DEVICE_UUID}" \
+    || uses_abstraction "${GRUB_DEVICE}" lvm; then
+  LINUX_ROOT_DEVICE=${GRUB_DEVICE}
+else
+  LINUX_ROOT_DEVICE=UUID=${GRUB_DEVICE_UUID}
+fi
+
+linux_entry ()
+{
+  os="$1"
+  version="$2"
+  recovery="$3"
+  args="$4"
+  if ${recovery} ; then
+    title="$(gettext_quoted "%s, with Linux %s (recovery mode)")"
+  else
+    title="$(gettext_quoted "%s, with Linux %s")"
+  fi
+  printf "menuentry '${title}' ${CLASS} {\n" "${os}" "${version}"
+  if ! ${recovery} ; then
+      save_default_entry | sed -e "s/^/\t/"
+  fi
+
+  # Use ELILO's generic "efifb" when it's known to be available.
+  # FIXME: We need an interface to select vesafb in case efifb can't be used.
+  if [ "x$GRUB_GFXPAYLOAD_LINUX" = x ]; then
+      cat << EOF
+	load_video
+EOF
+      if grep -qx "CONFIG_FB_EFI=y" /boot/config-${version} 2> /dev/null \
+	  && grep -qx "CONFIG_VT_HW_CONSOLE_BINDING=y" /boot/config-${version} 2> /dev/null; then
+	  cat << EOF
+	set gfxpayload=keep
+EOF
+      fi
+  else
+      if [ "x$GRUB_GFXPAYLOAD_LINUX" != xtext ]; then
+	  cat << EOF
+	load_video
+EOF
+      fi
+	  cat << EOF
+	set gfxpayload=$GRUB_GFXPAYLOAD_LINUX
+EOF
+  fi
+
+  if [ -z "${prepare_boot_cache}" ]; then
+    prepare_boot_cache="$(prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/")"
+  fi
+  printf '%s\n' "${prepare_boot_cache}"
+  message="$(gettext_printf "Loading Linux %s ..." ${version})"
+  cat << EOF
+	echo	'$message'
+	linux	${rel_dirname}/${basename} root=${linux_root_device_thisversion} ro ${args}
+EOF
+  if test -n "${initrd}" ; then
+    message="$(gettext_printf "Loading initial ramdisk ...")"
+    cat << EOF
+	echo	'$message'
+	initrd	${rel_dirname}/${initrd}
+EOF
+  fi
+  cat << EOF
+}
+EOF
+}
+
+list=`for i in /boot/vmlinuz-* /boot/vmlinux-* /vmlinuz-* /vmlinux-* ; do
+        if grub_file_is_not_garbage "$i" ; then echo -n "$i " ; fi
+      done`
+prepare_boot_cache=
+
+while [ "x$list" != "x" ] ; do
+  linux=`version_find_latest $list`
+  echo "Found linux image: $linux" >&2
+  basename=`basename $linux`
+  dirname=`dirname $linux`
+  rel_dirname=`make_system_path_relative_to_its_root $dirname`
+  version=`echo $basename | sed -e "s,^[^0-9]*-,,g"`
+  alt_version=`echo $version | sed -e "s,\.old$,,g"`
+  linux_root_device_thisversion="${LINUX_ROOT_DEVICE}"
+
+  initrd=
+  for i in "initrd.img-${version}" "initrd-${version}.img" \
+	   "initrd-${version}" "initramfs-${version}.img" \
+	   "initrd.img-${alt_version}" "initrd-${alt_version}.img" \
+	   "initrd-${alt_version}" "initramfs-${alt_version}.img"; do
+    if test -e "${dirname}/${i}" ; then
+      initrd="$i"
+      break
+    fi
+  done
+
+  initramfs=
+  for i in "config-${version}" "config-${alt_version}"; do
+    if test -e "${dirname}/${i}" ; then
+      initramfs=`grep CONFIG_INITRAMFS_SOURCE= "${dirname}/${i}" | cut -f2 -d= | tr -d \"`
+      break
+    fi
+  done
+
+  if test -n "${initrd}" ; then
+    echo "Found initrd image: ${dirname}/${initrd}" >&2
+  elif test -z "${initramfs}" ; then
+    # "UUID=" magic is parsed by initrd or initramfs.  Since there's
+    # no initrd or builtin initramfs, it can't work here.
+    linux_root_device_thisversion=${GRUB_DEVICE}
+  fi
+
+  linux_entry "${OS}" "${version}" false \
+      "${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}"
+  if [ "x${GRUB_DISABLE_RECOVERY}" != "xtrue" ]; then
+    linux_entry "${OS}" "${version}" true \
+	"single ${GRUB_CMDLINE_LINUX}"
+  fi
+
+  list=`echo $list | tr ' ' '\n' | grep -vx $linux | tr '\n' ' '`
+done
