@@ -2,7 +2,7 @@
 #define __EMUL_HANDLER_INTERN_H
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: emul_handler_intern.h 34306 2010-08-31 07:47:37Z sonic $
+    $Id$
 
     Desc: Internal header-file for emulation-handler.
     Lang: english
