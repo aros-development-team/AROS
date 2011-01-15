@@ -781,6 +781,38 @@ namespace glstubgenerator
 			
 			ConfFileWriter vgcfw = new ConfFileWriter();
 			vgcfw.Write(@"/data/deadwood/temp/openvg.conf", functionsfinal);
+
+
+			/* GLU */
+			FunctionList functionsgluh = p.Parse(PATH_TO_MESA + @"/include/GL/glu.h", APIHeaderParser.GLAPI, APIHeaderParser.GLAPIENTRY);
+
+			FunctionList orderedExistingFunctionsGLU = confParser.Parse(PATH_TO_MESA + @"/src/aros/glu/glu.conf");
+			
+			FunctionList functionsGLU = new FunctionList();
+			functionsGLU.AddRange(functionsgluh);
+			functionsGLU.RemoveFunctionByName("gluUnProject4"); /* Too many parameters */
+			
+			Console.WriteLine("After merging GLU {0}", functionsGLU.Count);
+			
+			functionsfinal.Clear();
+			functionsfinal.AddRange(functionsGLU);
+			
+			functionsfinal.CorrectionForArrayArguments();
+			functionsfinal.CalculateRegisters();
+			functionsfinal.ReorderToMatch(orderedExistingFunctionsGLU);			
+
+			MangleFileWriter glumfw = new MangleFileWriter();
+			glumfw.Write(@"/data/deadwood/temp/glu_mangle.h", functionsfinal);
+
+			MangledHeaderFileWriter glumhfw = new MangledHeaderFileWriter();
+			glumhfw.Write(@"/data/deadwood/temp/gluapim.h", functionsfinal);
+
+			StubsFileWriter glusfw = new StubsFileWriter(false, "GLU");
+			glusfw.Write(@"/data/deadwood/temp/glu_library_api.c", functionsfinal);
+			
+			ConfFileWriter glucfw = new ConfFileWriter();
+			glucfw.Write(@"/data/deadwood/temp/glu.conf", functionsfinal);
+
 		}
 	}
 }
