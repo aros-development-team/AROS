@@ -3,14 +3,14 @@
     $Id$
 */
 
-#ifndef OPENVG_INTERN_H
-#define OPENVG_INTERN_H
+#ifndef VEGA_INTERN_H
+#define VEGA_INTERN_H
 
 #include <proto/exec.h>
 
 /****************************************************************************************/
 
-struct OpenVGBase
+struct VegaBase
 {
     struct Library  mglb_Lib;
 };

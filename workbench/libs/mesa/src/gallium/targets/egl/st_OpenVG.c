@@ -1,4 +1,4 @@
-#include <proto/openvg.h>
+#include <proto/vega.h>
 #include "egl.h"
 
 PUBLIC struct st_api *

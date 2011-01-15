@@ -58,7 +58,7 @@ OPENVG_SOURCES = \
 LIBRARY_SOURCES = \
             $(addprefix ../../, $(OPENVG_SOURCES)) \
             $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
-            openvg_library_api \
+            vega_library_api \
             getopenvgstatetrackerapi \
 
 
@@ -73,13 +73,13 @@ USER_INCLUDES := \
 USER_CFLAGS := -ffast-math -DMAPI_ABI_HEADER=\"vgapi/vgapi_tmp.h\"
 
 #MM
-workbench-libs-openvg-generated : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi_tmp.h
+workbench-libs-vega-generated : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi_tmp.h
 
 $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/../../mapi/mapi/mapi_abi.py -i vgapi/vgapi_defines.h $< > $@
 
-%build_module mmake=workbench-libs-openvg \
-    modname=openvg modtype=library linklibname=OpenVG conffile=openvg.conf \
+%build_module mmake=workbench-libs-vega \
+    modname=vega modtype=library linklibname=OpenVG conffile=vega.conf \
     files="$(LIBRARY_SOURCES)" \
     uselibs="galliumauxiliary rom arosm amiga"
 

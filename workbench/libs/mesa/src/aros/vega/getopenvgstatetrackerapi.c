@@ -1,4 +1,4 @@
-#include "vega/openvg_intern.h"
+#include "vega/vega_intern.h"
 #include "vg_api.h"
 
 /*****************************************************************************
@@ -10,7 +10,7 @@
 /*  SYNOPSIS */ 
 
 /*  LOCATION */
-      struct Library *, OpenVGBase, 0, Openvg)
+      struct Library *, VegaBase, 0, Vega)
 
 /*  FUNCTION
         This is a private function used by mesa.library to receive pointer to

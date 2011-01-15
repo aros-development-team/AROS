@@ -1,10 +1,10 @@
 #include "VG/openvg.h"
 #include "VG/vgu.h"
 #include "vgapim.h"
-#include "openvg_intern.h"
+#include "vega_intern.h"
 
 AROS_LH0(VGErrorCode, vgGetError,
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -16,7 +16,7 @@ AROS_LH0(VGErrorCode, vgGetError,
 }
 
 AROS_LH0(void, vgFlush,
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -26,7 +26,7 @@ AROS_LH0(void, vgFlush,
 }
 
 AROS_LH0(void, vgFinish,
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -38,7 +38,7 @@ AROS_LH0(void, vgFinish,
 AROS_LH2(void, vgSetf,
     AROS_LHA(VGParamType, type, D0),
     AROS_LHA(VGfloat, value, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -50,7 +50,7 @@ AROS_LH2(void, vgSetf,
 AROS_LH2(void, vgSeti,
     AROS_LHA(VGParamType, type, D0),
     AROS_LHA(VGint, value, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -63,7 +63,7 @@ AROS_LH3(void, vgSetfv,
     AROS_LHA(VGParamType, type, D0),
     AROS_LHA(VGint, count, D1),
     AROS_LHA(const VGfloat *, values, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -76,7 +76,7 @@ AROS_LH3(void, vgSetiv,
     AROS_LHA(VGParamType, type, D0),
     AROS_LHA(VGint, count, D1),
     AROS_LHA(const VGint *, values, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -87,7 +87,7 @@ AROS_LH3(void, vgSetiv,
 
 AROS_LH1(VGfloat, vgGetf,
     AROS_LHA(VGParamType, type, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -100,7 +100,7 @@ AROS_LH1(VGfloat, vgGetf,
 
 AROS_LH1(VGint, vgGeti,
     AROS_LHA(VGParamType, type, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -113,7 +113,7 @@ AROS_LH1(VGint, vgGeti,
 
 AROS_LH1(VGint, vgGetVectorSize,
     AROS_LHA(VGParamType, type, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -128,7 +128,7 @@ AROS_LH3(void, vgGetfv,
     AROS_LHA(VGParamType, type, D0),
     AROS_LHA(VGint, count, D1),
     AROS_LHA(VGfloat *, values, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -141,7 +141,7 @@ AROS_LH3(void, vgGetiv,
     AROS_LHA(VGParamType, type, D0),
     AROS_LHA(VGint, count, D1),
     AROS_LHA(VGint *, values, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -154,7 +154,7 @@ AROS_LH3(void, vgSetParameterf,
     AROS_LHA(VGHandle, object, D0),
     AROS_LHA(VGint, paramType, D1),
     AROS_LHA(VGfloat, value, D2),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -167,7 +167,7 @@ AROS_LH3(void, vgSetParameteri,
     AROS_LHA(VGHandle, object, D0),
     AROS_LHA(VGint, paramType, D1),
     AROS_LHA(VGint, value, D2),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -181,7 +181,7 @@ AROS_LH4(void, vgSetParameterfv,
     AROS_LHA(VGint, paramType, D1),
     AROS_LHA(VGint, count, D2),
     AROS_LHA(const VGfloat *, values, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -195,7 +195,7 @@ AROS_LH4(void, vgSetParameteriv,
     AROS_LHA(VGint, paramType, D1),
     AROS_LHA(VGint, count, D2),
     AROS_LHA(const VGint *, values, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -207,7 +207,7 @@ AROS_LH4(void, vgSetParameteriv,
 AROS_LH2(VGfloat, vgGetParameterf,
     AROS_LHA(VGHandle, object, D0),
     AROS_LHA(VGint, paramType, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -221,7 +221,7 @@ AROS_LH2(VGfloat, vgGetParameterf,
 AROS_LH2(VGint, vgGetParameteri,
     AROS_LHA(VGHandle, object, D0),
     AROS_LHA(VGint, paramType, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -235,7 +235,7 @@ AROS_LH2(VGint, vgGetParameteri,
 AROS_LH2(VGint, vgGetParameterVectorSize,
     AROS_LHA(VGHandle, object, D0),
     AROS_LHA(VGint, paramType, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -251,7 +251,7 @@ AROS_LH4(void, vgGetParameterfv,
     AROS_LHA(VGint, paramType, D1),
     AROS_LHA(VGint, count, D2),
     AROS_LHA(VGfloat *, values, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -265,7 +265,7 @@ AROS_LH4(void, vgGetParameteriv,
     AROS_LHA(VGint, paramType, D1),
     AROS_LHA(VGint, count, D2),
     AROS_LHA(VGint *, values, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -275,7 +275,7 @@ AROS_LH4(void, vgGetParameteriv,
 }
 
 AROS_LH0(void, vgLoadIdentity,
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -286,7 +286,7 @@ AROS_LH0(void, vgLoadIdentity,
 
 AROS_LH1(void, vgLoadMatrix,
     AROS_LHA(const VGfloat *, m, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -297,7 +297,7 @@ AROS_LH1(void, vgLoadMatrix,
 
 AROS_LH1(void, vgGetMatrix,
     AROS_LHA(VGfloat *, m, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -308,7 +308,7 @@ AROS_LH1(void, vgGetMatrix,
 
 AROS_LH1(void, vgMultMatrix,
     AROS_LHA(const VGfloat *, m, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -320,7 +320,7 @@ AROS_LH1(void, vgMultMatrix,
 AROS_LH2(void, vgTranslate,
     AROS_LHA(VGfloat, tx, D0),
     AROS_LHA(VGfloat, ty, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -332,7 +332,7 @@ AROS_LH2(void, vgTranslate,
 AROS_LH2(void, vgScale,
     AROS_LHA(VGfloat, sx, D0),
     AROS_LHA(VGfloat, sy, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -344,7 +344,7 @@ AROS_LH2(void, vgScale,
 AROS_LH2(void, vgShear,
     AROS_LHA(VGfloat, shx, D0),
     AROS_LHA(VGfloat, shy, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -355,7 +355,7 @@ AROS_LH2(void, vgShear,
 
 AROS_LH1(void, vgRotate,
     AROS_LHA(VGfloat, angle, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -371,7 +371,7 @@ AROS_LH6(void, vgMask,
     AROS_LHA(VGint, y, D3),
     AROS_LHA(VGint, width, D4),
     AROS_LHA(VGint, height, D5),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -384,7 +384,7 @@ AROS_LH3(void, vgRenderToMask,
     AROS_LHA(VGPath, path, D0),
     AROS_LHA(VGbitfield, paintModes, D1),
     AROS_LHA(VGMaskOperation, operation, D2),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -396,7 +396,7 @@ AROS_LH3(void, vgRenderToMask,
 AROS_LH2(VGMaskLayer, vgCreateMaskLayer,
     AROS_LHA(VGint, width, D0),
     AROS_LHA(VGint, height, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -409,7 +409,7 @@ AROS_LH2(VGMaskLayer, vgCreateMaskLayer,
 
 AROS_LH1(void, vgDestroyMaskLayer,
     AROS_LHA(VGMaskLayer, maskLayer, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -425,7 +425,7 @@ AROS_LH6(void, vgFillMaskLayer,
     AROS_LHA(VGint, width, D3),
     AROS_LHA(VGint, height, D4),
     AROS_LHA(VGfloat, value, D5),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -442,7 +442,7 @@ AROS_LH7(void, vgCopyMask,
     AROS_LHA(VGint, sy, D4),
     AROS_LHA(VGint, width, D5),
     AROS_LHA(VGint, height, D6),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -456,7 +456,7 @@ AROS_LH4(void, vgClear,
     AROS_LHA(VGint, y, D1),
     AROS_LHA(VGint, width, D2),
     AROS_LHA(VGint, height, D3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -473,7 +473,7 @@ AROS_LH7(VGPath, vgCreatePath,
     AROS_LHA(VGint, segmentCapacityHint, D4),
     AROS_LHA(VGint, coordCapacityHint, D5),
     AROS_LHA(VGbitfield, capabilities, D6),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -487,7 +487,7 @@ AROS_LH7(VGPath, vgCreatePath,
 AROS_LH2(void, vgClearPath,
     AROS_LHA(VGPath, path, D0),
     AROS_LHA(VGbitfield, capabilities, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -498,7 +498,7 @@ AROS_LH2(void, vgClearPath,
 
 AROS_LH1(void, vgDestroyPath,
     AROS_LHA(VGPath, path, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -510,7 +510,7 @@ AROS_LH1(void, vgDestroyPath,
 AROS_LH2(void, vgRemovePathCapabilities,
     AROS_LHA(VGPath, path, D0),
     AROS_LHA(VGbitfield, capabilities, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -521,7 +521,7 @@ AROS_LH2(void, vgRemovePathCapabilities,
 
 AROS_LH1(VGbitfield, vgGetPathCapabilities,
     AROS_LHA(VGPath, path, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -535,7 +535,7 @@ AROS_LH1(VGbitfield, vgGetPathCapabilities,
 AROS_LH2(void, vgAppendPath,
     AROS_LHA(VGPath, dstPath, D0),
     AROS_LHA(VGPath, srcPath, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -549,7 +549,7 @@ AROS_LH4(void, vgAppendPathData,
     AROS_LHA(VGint, numSegments, D1),
     AROS_LHA(const VGubyte *, pathSegments, A0),
     AROS_LHA(const void *, pathData, A1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -563,7 +563,7 @@ AROS_LH4(void, vgModifyPathCoords,
     AROS_LHA(VGint, startIndex, D1),
     AROS_LHA(VGint, numSegments, D2),
     AROS_LHA(const void *, pathData, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -575,7 +575,7 @@ AROS_LH4(void, vgModifyPathCoords,
 AROS_LH2(void, vgTransformPath,
     AROS_LHA(VGPath, dstPath, D0),
     AROS_LHA(VGPath, srcPath, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -589,7 +589,7 @@ AROS_LH4(VGboolean, vgInterpolatePath,
     AROS_LHA(VGPath, startPath, D1),
     AROS_LHA(VGPath, endPath, D2),
     AROS_LHA(VGfloat, amount, D3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -604,7 +604,7 @@ AROS_LH3(VGfloat, vgPathLength,
     AROS_LHA(VGPath, path, D0),
     AROS_LHA(VGint, startSegment, D1),
     AROS_LHA(VGint, numSegments, D2),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -624,7 +624,7 @@ AROS_LH8(void, vgPointAlongPath,
     AROS_LHA(VGfloat *, y, A1),
     AROS_LHA(VGfloat *, tangentX, A2),
     AROS_LHA(VGfloat *, tangentY, A3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -639,7 +639,7 @@ AROS_LH5(void, vgPathBounds,
     AROS_LHA(VGfloat *, minY, A1),
     AROS_LHA(VGfloat *, width, A2),
     AROS_LHA(VGfloat *, height, A3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -654,7 +654,7 @@ AROS_LH5(void, vgPathTransformedBounds,
     AROS_LHA(VGfloat *, minY, A1),
     AROS_LHA(VGfloat *, width, A2),
     AROS_LHA(VGfloat *, height, A3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -666,7 +666,7 @@ AROS_LH5(void, vgPathTransformedBounds,
 AROS_LH2(void, vgDrawPath,
     AROS_LHA(VGPath, path, D0),
     AROS_LHA(VGbitfield, paintModes, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -676,7 +676,7 @@ AROS_LH2(void, vgDrawPath,
 }
 
 AROS_LH0(VGPaint, vgCreatePaint,
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -689,7 +689,7 @@ AROS_LH0(VGPaint, vgCreatePaint,
 
 AROS_LH1(void, vgDestroyPaint,
     AROS_LHA(VGPaint, paint, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -701,7 +701,7 @@ AROS_LH1(void, vgDestroyPaint,
 AROS_LH2(void, vgSetPaint,
     AROS_LHA(VGPaint, paint, D0),
     AROS_LHA(VGbitfield, paintModes, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -712,7 +712,7 @@ AROS_LH2(void, vgSetPaint,
 
 AROS_LH1(VGPaint, vgGetPaint,
     AROS_LHA(VGPaintMode, paintMode, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -726,7 +726,7 @@ AROS_LH1(VGPaint, vgGetPaint,
 AROS_LH2(void, vgSetColor,
     AROS_LHA(VGPaint, paint, D0),
     AROS_LHA(VGuint, rgba, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -737,7 +737,7 @@ AROS_LH2(void, vgSetColor,
 
 AROS_LH1(VGuint, vgGetColor,
     AROS_LHA(VGPaint, paint, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -751,7 +751,7 @@ AROS_LH1(VGuint, vgGetColor,
 AROS_LH2(void, vgPaintPattern,
     AROS_LHA(VGPaint, paint, D0),
     AROS_LHA(VGImage, pattern, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -765,7 +765,7 @@ AROS_LH4(VGImage, vgCreateImage,
     AROS_LHA(VGint, width, D1),
     AROS_LHA(VGint, height, D2),
     AROS_LHA(VGbitfield, allowedQuality, D3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -778,7 +778,7 @@ AROS_LH4(VGImage, vgCreateImage,
 
 AROS_LH1(void, vgDestroyImage,
     AROS_LHA(VGImage, image, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -793,7 +793,7 @@ AROS_LH5(void, vgClearImage,
     AROS_LHA(VGint, y, D2),
     AROS_LHA(VGint, width, D3),
     AROS_LHA(VGint, height, D4),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -811,7 +811,7 @@ AROS_LH8(void, vgImageSubData,
     AROS_LHA(VGint, y, D4),
     AROS_LHA(VGint, width, D5),
     AROS_LHA(VGint, height, D6),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -829,7 +829,7 @@ AROS_LH8(void, vgGetImageSubData,
     AROS_LHA(VGint, y, D4),
     AROS_LHA(VGint, width, D5),
     AROS_LHA(VGint, height, D6),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -844,7 +844,7 @@ AROS_LH5(VGImage, vgChildImage,
     AROS_LHA(VGint, y, D2),
     AROS_LHA(VGint, width, D3),
     AROS_LHA(VGint, height, D4),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -857,7 +857,7 @@ AROS_LH5(VGImage, vgChildImage,
 
 AROS_LH1(VGImage, vgGetParent,
     AROS_LHA(VGImage, image, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -878,7 +878,7 @@ AROS_LH9(void, vgCopyImage,
     AROS_LHA(VGint, width, D6),
     AROS_LHA(VGint, height, D7),
     AROS_LHA(VGboolean, dither, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -889,7 +889,7 @@ AROS_LH9(void, vgCopyImage,
 
 AROS_LH1(void, vgDrawImage,
     AROS_LHA(VGImage, image, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -906,7 +906,7 @@ AROS_LH7(void, vgSetPixels,
     AROS_LHA(VGint, sy, D4),
     AROS_LHA(VGint, width, D5),
     AROS_LHA(VGint, height, D6),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -923,7 +923,7 @@ AROS_LH7(void, vgWritePixels,
     AROS_LHA(VGint, dy, D3),
     AROS_LHA(VGint, width, D4),
     AROS_LHA(VGint, height, D5),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -940,7 +940,7 @@ AROS_LH7(void, vgGetPixels,
     AROS_LHA(VGint, sy, D4),
     AROS_LHA(VGint, width, D5),
     AROS_LHA(VGint, height, D6),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -957,7 +957,7 @@ AROS_LH7(void, vgReadPixels,
     AROS_LHA(VGint, sy, D3),
     AROS_LHA(VGint, width, D4),
     AROS_LHA(VGint, height, D5),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -973,7 +973,7 @@ AROS_LH6(void, vgCopyPixels,
     AROS_LHA(VGint, sy, D3),
     AROS_LHA(VGint, width, D4),
     AROS_LHA(VGint, height, D5),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -984,7 +984,7 @@ AROS_LH6(void, vgCopyPixels,
 
 AROS_LH1(VGFont, vgCreateFont,
     AROS_LHA(VGint, glyphCapacityHint, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -997,7 +997,7 @@ AROS_LH1(VGFont, vgCreateFont,
 
 AROS_LH1(void, vgDestroyFont,
     AROS_LHA(VGFont, font, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1013,7 +1013,7 @@ AROS_LH6(void, vgSetGlyphToPath,
     AROS_LHA(VGboolean, isHinted, D3),
     AROS_LHA(const VGfloat *, glyphOrigin, A0),
     AROS_LHA(const VGfloat *, escapement, A1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1028,7 +1028,7 @@ AROS_LH5(void, vgSetGlyphToImage,
     AROS_LHA(VGImage, image, D2),
     AROS_LHA(const VGfloat *, glyphOrigin, A0),
     AROS_LHA(const VGfloat *, escapement, A1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1040,7 +1040,7 @@ AROS_LH5(void, vgSetGlyphToImage,
 AROS_LH2(void, vgClearGlyph,
     AROS_LHA(VGFont, font, D0),
     AROS_LHA(VGuint, glyphIndex, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1054,7 +1054,7 @@ AROS_LH4(void, vgDrawGlyph,
     AROS_LHA(VGuint, glyphIndex, D1),
     AROS_LHA(VGbitfield, paintModes, D2),
     AROS_LHA(VGboolean, allowAutoHinting, D3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1071,7 +1071,7 @@ AROS_LH7(void, vgDrawGlyphs,
     AROS_LHA(const VGfloat *, adjustments_y, A2),
     AROS_LHA(VGbitfield, paintModes, D2),
     AROS_LHA(VGboolean, allowAutoHinting, D3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1084,7 +1084,7 @@ AROS_LH3(void, vgColorMatrix,
     AROS_LHA(VGImage, dst, D0),
     AROS_LHA(VGImage, src, D1),
     AROS_LHA(const VGfloat *, matrix, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1104,7 +1104,7 @@ AROS_LH10(void, vgConvolve,
     AROS_LHA(VGfloat, scale, D6),
     AROS_LHA(VGfloat, bias, D7),
     AROS_LHA(VGTilingMode, tilingMode, A1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1125,7 +1125,7 @@ AROS_LH11(void, vgSeparableConvolve,
     AROS_LHA(VGfloat, scale, D6),
     AROS_LHA(VGfloat, bias, D7),
     AROS_LHA(VGTilingMode, tilingMode, A2),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1140,7 +1140,7 @@ AROS_LH5(void, vgGaussianBlur,
     AROS_LHA(VGfloat, stdDeviationX, D2),
     AROS_LHA(VGfloat, stdDeviationY, D3),
     AROS_LHA(VGTilingMode, tilingMode, D4),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1158,7 +1158,7 @@ AROS_LH8(void, vgLookup,
     AROS_LHA(const VGubyte *, alphaLUT, A3),
     AROS_LHA(VGboolean, outputLinear, D2),
     AROS_LHA(VGboolean, outputPremultiplied, D3),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1174,7 +1174,7 @@ AROS_LH6(void, vgLookupSingle,
     AROS_LHA(VGImageChannel, sourceChannel, D2),
     AROS_LHA(VGboolean, outputLinear, D3),
     AROS_LHA(VGboolean, outputPremultiplied, D4),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1186,7 +1186,7 @@ AROS_LH6(void, vgLookupSingle,
 AROS_LH2(VGHardwareQueryResult, vgHardwareQuery,
     AROS_LHA(VGHardwareQueryType, key, D0),
     AROS_LHA(VGint, setting, D1),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1199,7 +1199,7 @@ AROS_LH2(VGHardwareQueryResult, vgHardwareQuery,
 
 AROS_LH1(const VGubyte *, vgGetString,
     AROS_LHA(VGStringID, name, D0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1216,7 +1216,7 @@ AROS_LH5(VGUErrorCode, vguLine,
     AROS_LHA(VGfloat, y0, D2),
     AROS_LHA(VGfloat, x1, D3),
     AROS_LHA(VGfloat, y1, D4),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1232,7 +1232,7 @@ AROS_LH4(VGUErrorCode, vguPolygon,
     AROS_LHA(const VGfloat *, points, A0),
     AROS_LHA(VGint, count, D1),
     AROS_LHA(VGboolean, closed, D2),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1249,7 +1249,7 @@ AROS_LH5(VGUErrorCode, vguRect,
     AROS_LHA(VGfloat, y, D2),
     AROS_LHA(VGfloat, width, D3),
     AROS_LHA(VGfloat, height, D4),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1268,7 +1268,7 @@ AROS_LH7(VGUErrorCode, vguRoundRect,
     AROS_LHA(VGfloat, height, D4),
     AROS_LHA(VGfloat, arcWidth, D5),
     AROS_LHA(VGfloat, arcHeight, D6),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1285,7 +1285,7 @@ AROS_LH5(VGUErrorCode, vguEllipse,
     AROS_LHA(VGfloat, cy, D2),
     AROS_LHA(VGfloat, width, D3),
     AROS_LHA(VGfloat, height, D4),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1305,7 +1305,7 @@ AROS_LH8(VGUErrorCode, vguArc,
     AROS_LHA(VGfloat, startAngle, D5),
     AROS_LHA(VGfloat, angleExtent, D6),
     AROS_LHA(VGUArcType, arcType, D7),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1326,7 +1326,7 @@ AROS_LH9(VGUErrorCode, vguComputeWarpQuadToSquare,
     AROS_LHA(VGfloat, sx3, D6),
     AROS_LHA(VGfloat, sy3, D7),
     AROS_LHA(VGfloat *, matrix, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
@@ -1347,7 +1347,7 @@ AROS_LH9(VGUErrorCode, vguComputeWarpSquareToQuad,
     AROS_LHA(VGfloat, dx3, D6),
     AROS_LHA(VGfloat, dy3, D7),
     AROS_LHA(VGfloat *, matrix, A0),
-    struct Library *, OpenVGBase, 0, Openvg)
+    struct Library *, VegaBase, 0, Vega)
 {
     AROS_LIBFUNC_INIT
 
