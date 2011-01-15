@@ -1,0 +1,65 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- arch-common-grub2-host : grub2-host-quick
+#MM  grub2-iso-setup        : grub2-host-quick grub2-aros-quick
+#MM- bootloader-grub2       : arch-common-grub2
+#MM- bootloader-grub2-isosetup : arch-common-grub2 grub2-iso-setup
+
+BOOT_GRUB := $(AROSDIR)/boot/grub
+
+$(BOOT_GRUB):
+	%mkdirs_q $@
+
+#MM
+bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/_unicode.pf2
+
+$(BOOT_GRUB)/splash.png: splash.png $(BOOT_GRUB)
+		$(CP) $< $(BOOT_GRUB)
+
+$(BOOT_GRUB)/_unicode.pf2: unicode.pf2 $(BOOT_GRUB)
+		$(CP) $< $(BOOT_GRUB)/_unicode.pf2
+
+#MM
+bootloader-grub2gfx-common-livecd: $(BOOT_GRUB)/unicode.pf2
+
+$(BOOT_GRUB)/unicode.pf2: unicode.pf2 $(BOOT_GRUB)
+		$(CP) $< $(BOOT_GRUB)
+
+# avoid the mate.tmpl s_flag in order to disable stripping of binaries
+export DEBUG		:= yes
+# remove the -s & --strip-all flags, just in case
+# ... to no strip grub_mod_init or something from modules
+export CFLAGS		:= $(filter-out -s --strip-all,$(HOST_CFLAGS))
+export TARGET_CFLAGS	:= $(CFLAGS)
+
+DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
+CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
+                --host=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)       \
+                --with-platform=$(AROS_TARGET_ARCH)             \
+                --datarootdir=$(DESTDIR)/share                  \
+                --sysconfdir=$(DESTDIR)/etc                     \
+                --disable-grub-mkfont                           \
+                --disable-werror                                \
+                --program-prefix=
+
+%build_with_configure mmake=grub2-host compiler=host nix=yes	\
+        prefix="$(DESTDIR)" srcdir=$(SRCDIR)/$(CURDIR)/../grub2	\
+        extraoptions="$(CONFIG_OPTS)"				\
+        install_target=
+
+GRUB2_MODS  :=	biosdisk fshelp part_msdos part_amiga affs sfs iso9660 minicmd
+LST_FILES   :=	command fs moddep
+GRUB_ARCH   :=	$(AROS_HOST_ARCH)
+GRUB_CPU    :=	i386# fix that some day, just needed now on x64 + x86
+GRUB_ARCH   :=	pc
+MKIMG_OPTS  :=	-O $(GRUB_CPU)-$(GRUB_ARCH) -p /boot/grub
+
+#MM
+grub2-iso-setup: $(BOOT_GRUB)
+	@cd $(HOSTGENDIR)/$(CURDIR)/grub-core                           && \
+	../grub-mkimage $(MKIMG_OPTS) -d . -o core.img $(GRUB2_MODS)    && \
+	$(CP) *.img $(BOOT_GRUB)                                        && \
+	$(CP) *.mod $(BOOT_GRUB)                                        && \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)               && \
+	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/grub2_eltorito
