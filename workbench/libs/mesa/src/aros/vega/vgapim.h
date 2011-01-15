@@ -87,4 +87,12 @@ void mvgLookup (VGImage dst, VGImage src, const VGubyte * redLUT, const VGubyte 
 void mvgLookupSingle (VGImage dst, VGImage src, const VGuint * lookupTable, VGImageChannel sourceChannel, VGboolean outputLinear, VGboolean outputPremultiplied);
 VGHardwareQueryResult mvgHardwareQuery (VGHardwareQueryType key, VGint setting);
 const VGubyte * mvgGetString (VGStringID name);
+VGUErrorCode mvguLine (VGPath path, VGfloat x0, VGfloat y0, VGfloat x1, VGfloat y1);
+VGUErrorCode mvguPolygon (VGPath path, const VGfloat * points, VGint count, VGboolean closed);
+VGUErrorCode mvguRect (VGPath path, VGfloat x, VGfloat y, VGfloat width, VGfloat height);
+VGUErrorCode mvguRoundRect (VGPath path, VGfloat x, VGfloat y, VGfloat width, VGfloat height, VGfloat arcWidth, VGfloat arcHeight);
+VGUErrorCode mvguEllipse (VGPath path, VGfloat cx, VGfloat cy, VGfloat width, VGfloat height);
+VGUErrorCode mvguArc (VGPath path, VGfloat x, VGfloat y, VGfloat width, VGfloat height, VGfloat startAngle, VGfloat angleExtent, VGUArcType arcType);
+VGUErrorCode mvguComputeWarpQuadToSquare (VGfloat sx0, VGfloat sy0, VGfloat sx1, VGfloat sy1, VGfloat sx2, VGfloat sy2, VGfloat sx3, VGfloat sy3, VGfloat * matrix);
+VGUErrorCode mvguComputeWarpSquareToQuad (VGfloat dx0, VGfloat dy0, VGfloat dx1, VGfloat dy1, VGfloat dx2, VGfloat dy2, VGfloat dx3, VGfloat dy3, VGfloat * matrix);
 #endif

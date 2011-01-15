@@ -87,4 +87,12 @@
 #define vgLookupSingle mvgLookupSingle
 #define vgHardwareQuery mvgHardwareQuery
 #define vgGetString mvgGetString
+#define vguLine mvguLine
+#define vguPolygon mvguPolygon
+#define vguRect mvguRect
+#define vguRoundRect mvguRoundRect
+#define vguEllipse mvguEllipse
+#define vguArc mvguArc
+#define vguComputeWarpQuadToSquare mvguComputeWarpQuadToSquare
+#define vguComputeWarpSquareToQuad mvguComputeWarpSquareToQuad
 #endif
