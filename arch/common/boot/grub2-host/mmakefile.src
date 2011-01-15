@@ -43,9 +43,9 @@ CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
                 --disable-werror                                \
                 --program-prefix=
 
-%build_with_configure mmake=grub2-host compiler=host nix=yes	\
-        prefix="$(DESTDIR)" srcdir=$(SRCDIR)/$(CURDIR)/../grub2	\
-        extraoptions="$(CONFIG_OPTS)"				\
+%build_with_configure mmake=grub2-host compiler=host nix=yes		\
+        prefix="$(DESTDIR)" srcdir=$(SRCDIR)/$(CURDIR)/../grub2-aros	\
+        extraoptions="$(CONFIG_OPTS)"					\
         install_target=
 
 GRUB2_MODS  :=	biosdisk fshelp part_msdos part_amiga affs sfs iso9660 minicmd
