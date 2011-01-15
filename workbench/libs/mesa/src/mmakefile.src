@@ -22,7 +22,7 @@ include $(SRCDIR)/$(CURDIR)/mapi/mapi/sources.mak
 
 #MM workbench-libs-mesa-module : includes linklibs-galliumauxiliary \
 #MM workbench-libs-gallium workbench-libs-mesa-module-generated \
-#MM workbench-libs-mesa-module-cpp workbench-libs-openvg
+#MM workbench-libs-mesa-module-cpp workbench-libs-vega
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \

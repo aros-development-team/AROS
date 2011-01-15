@@ -754,7 +754,7 @@ namespace glstubgenerator
 			FunctionList functionsopenvgh = p.Parse(PATH_TO_MESA + @"/include/VG/openvg.h", APIHeaderParser.VGAPI, APIHeaderParser.VGAPIENTRY);
 			FunctionList functionsvguh = p.Parse(PATH_TO_MESA + @"/include/VG/vgu.h", APIHeaderParser.VGUAPI, APIHeaderParser.VGUAPIENTRY);
 
-			FunctionList orderedExistingFunctionsVG = confParser.Parse(PATH_TO_MESA + @"/src/aros/vega/openvg.conf");
+			FunctionList orderedExistingFunctionsVG = confParser.Parse(PATH_TO_MESA + @"/src/aros/vega/vega.conf");
 			
 			FunctionList functionsVG = new FunctionList();
 			functionsVG.AddRange(functionsopenvgh);
@@ -776,11 +776,11 @@ namespace glstubgenerator
 			MangledHeaderFileWriter vgmhfw = new MangledHeaderFileWriter();
 			vgmhfw.Write(@"/data/deadwood/temp/vgapim.h", functionsfinal);
 
-			StubsFileWriter vgsfw = new StubsFileWriter(false, "OpenVG");
-			vgsfw.Write(@"/data/deadwood/temp/openvg_library_api.c", functionsfinal);
+			StubsFileWriter vgsfw = new StubsFileWriter(false, "Vega");
+			vgsfw.Write(@"/data/deadwood/temp/vega_library_api.c", functionsfinal);
 			
 			ConfFileWriter vgcfw = new ConfFileWriter();
-			vgcfw.Write(@"/data/deadwood/temp/openvg.conf", functionsfinal);
+			vgcfw.Write(@"/data/deadwood/temp/vega.conf", functionsfinal);
 
 
 			/* GLU */
