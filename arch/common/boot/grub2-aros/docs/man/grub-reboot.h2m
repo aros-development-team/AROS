@@ -1,0 +1,2 @@
+[NAME]
+grub-reboot \- set the default boot entry for GRUB, for the next boot only

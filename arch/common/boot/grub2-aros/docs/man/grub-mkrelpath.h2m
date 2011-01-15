@@ -1,0 +1,2 @@
+[NAME]
+grub-mkrelpath \- make a system path relative to its root
