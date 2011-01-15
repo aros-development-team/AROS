@@ -15,6 +15,7 @@
 #define __need_size_t
 #define __need_NULL 
 #include <stddef.h>
+#include <sys/types/off_t.h>
 
 typedef __off_t fpos_t;
 
@@ -129,8 +130,10 @@ size_t fwrite(const void * restrict ptr, size_t size, size_t nmemb,
     FILE * restrict stream);
 int fgetpos(FILE * restrict stream, fpos_t * restrict pos);
 int fseek(FILE *stream, long int offset, int whence);
+int fseeko(FILE *stream, off_t offset, int whence);
 int fsetpos(FILE *stream, const fpos_t *pos);
 long int ftell(FILE *stream);
+off_t ftello(FILE *stream);
 void rewind(FILE *stream);
 void clearerr(FILE *stream);
 int feof(FILE *stream);

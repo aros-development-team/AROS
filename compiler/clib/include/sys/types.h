@@ -13,6 +13,9 @@
 #include <sys/cdefs.h>
 #include <aros/macros.h>
 
+/* temp hack: need ssize_t here for grub2 utils */
+#include <sys/types/ssize_t.h>
+
 /* Technically namespace pollution, but what can you do... */
 #include <stdint.h>
 
@@ -61,7 +64,6 @@ typedef quad_t *        qaddr_t;
 
 /* Define the rest of the POSIX types */
 
-#include <sys/types/ssize_t.h>
 #include <sys/types/clockid_t.h>
 #include <sys/types/clock_t.h>
 #include <sys/types/dev_t.h>
