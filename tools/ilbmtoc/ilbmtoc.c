@@ -123,7 +123,7 @@ static void getarguments(int argc, char **argv)
     }
     else
     {
-    	cleanup("Usage: ilbmtoc [-b2c|-b2p] filename", 1);
+        cleanup("Usage: ilbmtoc [-b2c|-b2p] filename", 1);
     }
     
     if (strlen(filename) >= sizeof(imagename)) cleanup("Filename too long!", 1);
@@ -131,7 +131,7 @@ static void getarguments(int argc, char **argv)
     imagenamestart = filename;
     for(;;)
     {
-    	sp = strchr(imagenamestart + 1, '/');
+        sp = strchr(imagenamestart + 1, '/');
 	if (!sp) sp = strchr(imagenamestart + 1, '\\');
 	if (!sp) sp = strchr(imagenamestart + 1, ':');
 	if (!sp) break;
@@ -206,7 +206,7 @@ static void openfile(void)
     
     if (filesize < 12) cleanup("Bad file size!", 1);
     
-    fprintf(stderr, "Filesize is %d\n", filesize);
+    fprintf(stderr, "Filesize is %ld\n", filesize);
     
     fseek(file, 0, SEEK_SET);
     
@@ -214,7 +214,7 @@ static void openfile(void)
     if (!filebuffer) cleanup("Memory allocation for file buffer failed!", 1);
     
     if (fread(filebuffer, 1, filesize, file) != filesize)
-    	cleanup("Error reading file!", 1);
+        cleanup("Error reading file!", 1);
     
     fclose(file); file = NULL;
 }
@@ -244,13 +244,21 @@ static void scanfile(void)
     
     for(;;)
     {
-    	ULONG id;
+        ULONG id;
 	ULONG size;
 	
 	id   = getlong();
 	size = getlong();
 
-	fprintf(stderr, "Chunk: %c%c%c%c  Size: %d\n", id >> 24, id >> 16, id >> 8, id, size);
+        /* Cast the IFF identifier to 4 ASCII chars:
+             (Use unsigned as i ANSI-C the cast to signed is implementation-dependent.) */
+        fprintf( stderr, "Chunk: %c%c%c%c  Size: %ld\n"
+        , (unsigned char) (id >> 24)
+        , (unsigned char) (id >> 16)
+        , (unsigned char) (id >> 8)
+        , (unsigned char) (id)
+        , size
+        );
 		
 	switch(id)
 	{
@@ -280,10 +288,10 @@ static void scanfile(void)
 		
 		bpr = ((bmh.bmh_Width + 15) & ~15) / 8;
 		
-		fprintf(stderr, "BMHD: %d x %d x %d (%d)\n", bmh.bmh_Width,
-		    	    	    	    	    	     bmh.bmh_Height,
-							     bmh.bmh_Depth,
-							     totdepth);
+		fprintf(stderr, "BMHD: %d x %d x %d (%ld)\n", bmh.bmh_Width,
+		    	    	    	    	    	      bmh.bmh_Height,
+							      bmh.bmh_Depth,
+							      totdepth);
 		break;
 	
 	    case ID_CMAP:   
@@ -348,7 +356,7 @@ static unsigned char *unpack_byterun1(unsigned char *source, unsigned char *dest
 	c = (signed char)(*source++);
 	if (c >= 0)
 	{
-    	    while(c-- >= 0)
+            while(c-- >= 0)
 	    {
 		*dest++ = *source++;
 		if (--unpackedsize <= 0) return source;
@@ -356,7 +364,7 @@ static unsigned char *unpack_byterun1(unsigned char *source, unsigned char *dest
 	}
 	else if (c != -128)
 	{
-    	    c = -c;
+            c = -c;
 	    r = *source++;
 
 	    while(c-- >= 0)
@@ -372,7 +380,7 @@ static unsigned char *unpack_byterun1(unsigned char *source, unsigned char *dest
 /****************************************************************************************/
 
 static BOOL norm1(LONG count, unsigned char **source_backup,
-    	    	  unsigned char **dest, LONG *checksize)
+            	  unsigned char **dest, LONG *checksize)
 {
     //if (count >= 0) fprintf(stderr, "XX: non packable %d\n",count);
     
@@ -410,7 +418,7 @@ static BOOL copy1(unsigned char r, LONG count, unsigned char **dest, LONG *check
     
     while(--count >= 0)
     {
-    	LONG step = count;
+        LONG step = count;
 	
 	if (step > 127) step = 127;
 	
@@ -427,7 +435,7 @@ static BOOL copy1(unsigned char r, LONG count, unsigned char **dest, LONG *check
 }
 
 static BOOL pack_byterun1(unsigned char *source, unsigned char *dest,
-    	    	      LONG size, LONG check_size, LONG *packsize)
+            	      LONG size, LONG check_size, LONG *packsize)
 {
     unsigned char *source_backup, *dest_backup;
     LONG samebytes_counter, samebytes, count;
@@ -443,8 +451,8 @@ static BOOL pack_byterun1(unsigned char *source, unsigned char *dest,
     
     for(;;)
     {
-    	//fprintf(stderr, "size = %d. checksize = %d\n", size, checksize);
-    	if (--size < 0) break;
+        //fprintf(stderr, "size = %d. checksize = %d\n", size, checksize);
+        if (--size < 0) break;
 	actbyte = *source++;
 	if (actbyte == oldbyte)
 	{
@@ -464,20 +472,20 @@ static BOOL pack_byterun1(unsigned char *source, unsigned char *dest,
 	
 	if (!copy1(source[-2], samebytes, &dest, &checksize)) return 0;
 
-    	source_backup = source - 1;
+        source_backup = source - 1;
     }
     //fprintf(stderr, "done\n");    
     
     if (samebytes_counter >= 3)
     {
-    	samebytes = samebytes_counter;
+        samebytes = samebytes_counter;
 	count = (LONG)(source - source_backup - samebytes - 1);
 	if (!norm1(count, &source_backup, &dest, &checksize)) return 0;
 	if (!copy1(source[-2], samebytes, &dest, &checksize)) return 0;	
     }
     else
     {
-    	count = (LONG)(source - source_backup - 1);
+        count = (LONG)(source - source_backup - 1);
 	if (!norm1(count, &source_backup, &dest, &checksize)) return 0;
     }
     //fprintf(stderr, "realdone\n");
@@ -490,7 +498,7 @@ static BOOL pack_byterun1(unsigned char *source, unsigned char *dest,
 /****************************************************************************************/
 
 static void p2c(unsigned char *source, unsigned char *dest, LONG width, LONG height,
-    	    	LONG totplanes, LONG wantplanes, LONG chunkybpr)
+            	LONG totplanes, LONG wantplanes, LONG chunkybpr)
 {
     LONG alignedwidth, x, y, p, bpr, bpl;
     
@@ -500,7 +508,7 @@ static void p2c(unsigned char *source, unsigned char *dest, LONG width, LONG hei
     
     for(y = 0; y < height; y++)
     {
-    	for(x = 0; x < width; x++)
+        for(x = 0; x < width; x++)
 	{
 	    LONG mask   = 1 << (7 - (x & 7));
 	    LONG offset = x / 8;
@@ -531,18 +539,18 @@ static void convertbody(void)
     
     if (bmh.bmh_Compression == CMP_NONE)
     {
-    	memcpy(planarbuffer, body, unpackedsize);
+        memcpy(planarbuffer, body, unpackedsize);
     }
     else
     {
-    	unpack_byterun1(body, planarbuffer, unpackedsize);
+        unpack_byterun1(body, planarbuffer, unpackedsize);
     }
     
     chunkybuffer = malloc(bmh.bmh_Width * bmh.bmh_Height);
     if (!chunkybuffer) cleanup("Memory allocation for chunky buffer failed!", 1);
     
     p2c(planarbuffer,
-    	chunkybuffer,
+        chunkybuffer,
 	bmh.bmh_Width,
 	bmh.bmh_Height,
 	totdepth,
@@ -564,12 +572,12 @@ static void packdata(void)
     fprintf(stderr, "Starting packing\n"); 
        
     success = pack_byterun1(chunkybuffer, chunkybuffer_packed,
-    	    	    	    chunkysize, chunkysize, &bodysize_packed);
+            	    	    chunkysize, chunkysize, &bodysize_packed);
 			    
     fprintf(stderr, "Done packing. Success = %d\n", success);    
     if (!success)
     {
-    	free(chunkybuffer_packed); chunkybuffer_packed = 0;
+        free(chunkybuffer_packed); chunkybuffer_packed = 0;
     }	  
 }
 
@@ -587,13 +595,13 @@ static void gensource(void)
     printf("#define %s_PACKED %d\n", bigimagename, (chunkybuffer_packed || planarbuffer_packed) ? 1 : 0);
     printf("#define %s_PLANES %d\n", bigimagename, bmh.bmh_Depth);
     if (have_cmap)
-    	printf("#define %s_COLORS %d\n", bigimagename, cmapentries);
+        printf("#define %s_COLORS %ld\n", bigimagename, cmapentries);
     
     printf("\n");
     
     if (have_cmap)
     {
-    	printf("ULONG %s_pal[%d] =\n", imagename, cmapentries);
+        printf("ULONG %s_pal[%ld] =\n", imagename, cmapentries);
 	printf("{\n");
 	for(i = 0; i < cmapentries; i++)
 	{
@@ -601,7 +609,7 @@ static void gensource(void)
 	    	    	(((ULONG)green[i]) << 8) +
 			((ULONG)blue[i]);
 			
-	    printf("    0x%06x", col);
+	    printf("    0x%06lx", col);
 	    if (i == cmapentries - 1)
 	    	printf("\n");
 	    else
@@ -613,16 +621,16 @@ static void gensource(void)
     
     if (chunkybuffer_packed)
     {
-    	buffer = chunkybuffer_packed;
+        buffer = chunkybuffer_packed;
 	buffersize = bodysize_packed;
     }
     else
     {
-    	buffer = chunkybuffer;
+        buffer = chunkybuffer;
 	buffersize = bodysize;
     }
 
-    printf("UBYTE %s_data[%d] =\n", imagename, buffersize);
+    printf("UBYTE %s_data[%ld] =\n", imagename, buffersize);
     printf("{");
     
     i = 0;
@@ -651,9 +659,9 @@ static void genbrush2csource(void)
 	for (i = 0; i < cmapentries; i++)
 	{
 	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
-		red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i],
-		green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i],
-		blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]);
+		(long) (red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i]),
+		(long) (green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i]),
+		(long) (blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]));
 	}
 	printf("};\n");
 	printf("#endif\n\n");
@@ -670,16 +678,16 @@ static void genbrush2csource(void)
 
 	printf("#ifdef USE_%s_HEADER\n", bigimagename);
 	printf("const struct BitMapHeader %s_header =\n{ %ld,%ld,%ld,%ld,%ld,%ld,%ld,0,%ld,%ld,%ld,%ld,%ld };\n",
-	    imagename, bmh.bmh_Width, bmh.bmh_Height, bmh.bmh_Left, bmh.bmh_Top,
-	    bmh.bmh_Depth, bmh.bmh_Masking, bmh.bmh_Compression, bmh.bmh_Transparent,
-	    bmh.bmh_XAspect, bmh.bmh_YAspect, bmh.bmh_PageWidth, bmh.bmh_PageHeight);
+	    imagename, (long)bmh.bmh_Width, (long)bmh.bmh_Height, (long)bmh.bmh_Left, (long)bmh.bmh_Top,
+	    (long)bmh.bmh_Depth, (long)bmh.bmh_Masking, (long)bmh.bmh_Compression, (long)bmh.bmh_Transparent,
+	    (long)bmh.bmh_XAspect, (long)bmh.bmh_YAspect, (long)bmh.bmh_PageWidth, (long)bmh.bmh_PageHeight);
 	printf("#endif\n\n");
 
 	printf("#ifdef USE_%s_BODY\n", bigimagename);
 	printf("const UBYTE %s_body[%ld] = {\n", imagename, bodysize);
 	for (i = 0; i < bodysize; i++)
 	{
-	    printf("0x%02lx,", body[i]);
+	    printf("0x%02lx,", (long)(body[i]));
 	    if (!((i + 1) % 15)) printf("\n");
 	}
 	printf(" };\n");
@@ -699,9 +707,9 @@ static void genbrush2pixsource(void)
 	for (i = 0; i < cmapentries; i++)
 	{
 	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
-		red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i],
-		green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i],
-		blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]);
+		(long)(red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i]),
+		(long)(green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i]),
+		(long)(blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]));
 	}
 	printf("};\n\n");
     }
@@ -718,7 +726,7 @@ static void genbrush2pixsource(void)
 	printf("const UBYTE %s_body[%ld] = {\n", imagename, bodysize);
 	for (i = 0; i < bodysize; i++)
 	{
-	    printf("0x%02lx,", body[i]);
+	    printf("0x%02lx,", (long)(body[i]));
 	    if (!((i + 1) % 15)) printf("\n");
 	}
 	printf(" };\n");
