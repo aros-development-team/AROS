@@ -1,0 +1,2 @@
+[NAME]
+grub-mkconfig \- generate a GRUB configuration file

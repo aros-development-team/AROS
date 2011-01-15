@@ -1,0 +1,192 @@
+#! /bin/sh -e
+
+# Run GRUB script in a Qemu instance
+# Copyright (C) 2009,2010  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+# Initialize some variables.
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@libdir@
+builddir=@builddir@
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+target_cpu=@target_cpu@
+platform=@platform@
+
+# Force build directory components
+PATH=${builddir}:$PATH
+export PATH
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: $0 [OPTION] [SOURCE]
+Run GRUB script in a Qemu instance.
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  --boot=[fd|hd|cd|net]       boot method for Qemu instance
+  --modules=MODULES       pre-load specified modules MODULES
+  --qemu=FILE             Name of qemu binary
+  --qemu-opts=OPTIONS     extra options to pass to Qemu instance
+  --files=FILES           add files to the image
+
+$0 runs input GRUB script or SOURCE file in a Qemu instance and prints
+its output.
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+boot=hd
+qemu=qemu-system-i386
+
+# Check the arguments.
+for option in "$@"; do
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "$0 (GNU GRUB ${PACKAGE_VERSION})"
+	exit 0 ;;
+    --modules=*)
+	ms=`echo "$option" | sed -e 's/--modules=//' -e 's/,/ /g'`
+	modules="$modules $ms" ;;
+    --files=*)
+	fls=`echo "$option" | sed -e 's/--files=//' -e 's/,/ /g'`
+	files="$files $fls" ;;
+    --qemu=*)
+	qemu=`echo "$option" | sed -e 's/--qemu=//' -e 's/,/ /g'`;;
+    --qemu-opts=*)
+        qs=`echo "$option" | sed -e 's/--qemu-opts=//'`
+        qemuopts="$qemuopts $qs" ;;
+    --boot=*)
+        dev=`echo "$option" | sed -e 's/--boot=//'`
+	if   [ "$dev" = "fd" ] ; then boot=fd;
+	elif [ "$dev" = "hd" ] ; then boot=hd;
+	elif [ "$dev" = "cd" ] ; then boot=cd;
+	elif [ "$dev" = "net" ] ; then boot=net;
+	elif [ "$dev" = "qemu" ] ; then boot=qemu;
+	elif [ "$dev" = "coreboot" ] ; then boot=coreboot;
+	else
+	    echo "Unrecognized boot method \`$dev'" 1>&2
+	    usage
+	    exit 1
+	fi ;;
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1 ;;
+    *)
+	if [ "x${source}" != x ] ; then
+	    echo "too many parameters at the end" 1>&2
+	    usage
+	    exit 1
+	fi
+	source="${option}" ;;
+    esac
+done
+
+if [ "x${source}" = x ] ; then
+    tmpfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+    while read REPLY; do
+	echo "$REPLY" >> ${tmpfile}
+    done
+    source=${tmpfile}
+fi
+
+cfgfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+cat <<EOF >${cfgfile}
+grubshell=yes
+insmod serial
+serial
+terminfo serial dumb
+terminal_input serial
+terminal_output serial
+EOF
+
+rom_directory=`mktemp -d "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+
+for mod in ${modules}
+do
+    echo "insmod ${mod}" >> ${cfgfile}
+done
+
+cat <<EOF >>${cfgfile}
+source /boot/grub/testcase.cfg
+# Stop serial output to suppress "ACPI shutdown failed" error.
+terminal_output console
+halt
+EOF
+
+isofile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+if [ x$boot != xnet ]; then
+    sh @builddir@/grub-mkrescue --grub-mkimage=${builddir}/grub-mkimage --output=${isofile} --override-directory=${builddir}/grub-core \
+	--rom-directory="${rom_directory}" \
+	/boot/grub/grub.cfg=${cfgfile} /boot/grub/testcase.cfg=${source} \
+	${files} >/dev/null 2>&1
+fi
+if [ x$boot = xhd ]; then
+    device=hda
+    bootdev="-boot c"
+fi
+if [ x$boot = xcd ]; then
+    device=cdrom
+    bootdev="-boot d"
+fi
+if [ x$boot = xfd ]; then
+    device=fda
+    bootdev="-boot a"
+fi
+
+if [ x$boot = xqemu ]; then
+    bootdev="-bios ${rom_directory}/qemu.img"
+    device=cdrom
+fi
+
+if [ x$boot = xcoreboot ]; then
+    imgfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+    cp "${GRUB_COREBOOT_ROM}" "${imgfile}"
+    "${GRUB_CBFSTOOL}" "${imgfile}" add-payload "${rom_directory}/coreboot.elf" fallback/payload
+    bootdev="-bios ${imgfile}"
+    device=cdrom
+fi
+
+if [ x$boot = xnet ]; then
+    netdir=`mktemp -d "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+    sh @builddir@/grub-mknetdir --grub-mkimage=${builddir}/grub-mkimage --override-directory=${builddir}/grub-core --net-directory=$netdir
+    cp ${cfgfile} $netdir/boot/grub/grub.cfg
+    cp ${source} $netdir/boot/grub/testcase.cfg
+    ${qemu} ${qemuopts} -nographic -serial file:/dev/stdout -monitor file:/dev/null -boot n -net user,tftp=$netdir,bootfile=/boot/grub/$target_cpu-$platform/core.0  -net nic  | cat | tr -d "\r"
+else
+    ${qemu} ${qemuopts} -nographic -serial file:/dev/stdout -monitor file:/dev/null -${device} ${isofile} ${bootdev} | cat | tr -d "\r"
+fi
+rm -f "${isofile}" "${imgfile}"
+rm -rf "${rom_directory}"
+if [ x$boot = xcoreboot ]; then
+    rm -f "${imgfile}"
+fi
+
+rm -f "${tmpfile}" "${cfgfile}"
+exit 0
+
+

@@ -1,0 +1,7 @@
+# List of files which contain translatable strings.  Only files written in
+# Shell language are included here.
+util/grub.d/10_hurd.in
+util/grub.d/10_kfreebsd.in
+util/grub.d/10_linux.in
+util/grub.d/10_netbsd.in
+util/grub.d/20_linux_xen.in

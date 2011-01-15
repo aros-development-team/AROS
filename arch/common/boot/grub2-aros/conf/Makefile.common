@@ -1,0 +1,169 @@
+# -*- makefile -*-
+
+CFLAGS_PLATFORM=
+
+# Platform specific options
+if COND_i386_pc
+  CFLAGS_PLATFORM += -mrtd -mregparm=3
+endif
+if COND_i386_efi
+  LDFLAGS_PLATFORM = -melf_i386
+endif
+if COND_x86_64_efi
+  LDFLAGS_PLATFORM = -melf_x86_64
+endif
+if COND_i386_qemu
+  CFLAGS_PLATFORM += -mrtd -mregparm=3
+endif
+if COND_i386_coreboot
+  CFLAGS_PLATFORM += -mrtd -mregparm=3
+endif
+if COND_i386_ieee1275
+  CFLAGS_PLATFORM += -mrtd -mregparm=3
+endif
+if COND_mips_yeeloong
+  CFLAGS_PLATFORM += -mexplicit-relocs
+  CPPFLAGS_PLATFORM = -DUSE_ASCII_FAILBACK
+  CCASFLAGS_PLATFORM = -march=mips3
+endif
+if COND_mips
+  CFLAGS_PLATFORM += -mflush-func=grub_cpu_flush_cache
+endif
+if COND_sparc64_ieee1275
+  CFLAGS_PLATFORM += -mno-app-regs
+  LDFLAGS_PLATFORM = -melf64_sparc -mno-relax
+endif
+
+# Other options
+
+CPPFLAGS_DEFAULT = -DGRUB_FILE=\"$(subst $(srcdir)/,,$<)\"
+CPPFLAGS_DEFAULT += -I$(builddir)
+CPPFLAGS_DEFAULT += -I$(srcdir)
+CPPFLAGS_DEFAULT += -I$(top_builddir)
+CPPFLAGS_DEFAULT += -I$(top_srcdir)
+CPPFLAGS_DEFAULT += -I$(top_srcdir)/include
+CPPFLAGS_DEFAULT += -I$(top_builddir)/include
+CCASFLAGS_DEFAULT = -DASM_FILE=1
+
+LDADD_KERNEL =
+
+if ! COND_i386_pc
+if ! COND_i386_efi
+if ! COND_i386_qemu
+if ! COND_i386_coreboot
+if ! COND_i386_multiboot
+if ! COND_i386_ieee1275
+if ! COND_x86_64_efi
+LDADD_KERNEL += -lgcc
+endif
+endif
+endif
+endif
+endif
+endif
+endif
+
+CFLAGS_KERNEL = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -ffreestanding
+LDFLAGS_KERNEL = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib -Wl,-N -static-libgcc
+CPPFLAGS_KERNEL = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
+CCASFLAGS_KERNEL = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
+STRIPFLAGS_KERNEL = -R .rel.dyn -R .reginfo -R .note -R .comment
+
+CFLAGS_MODULE = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -ffreestanding
+LDFLAGS_MODULE = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib -Wl,-N,-r,-d
+CPPFLAGS_MODULE = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
+CCASFLAGS_MODULE = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
+
+CFLAGS_IMAGE = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -fno-builtin
+LDFLAGS_IMAGE = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib -Wl,-N,-S
+CPPFLAGS_IMAGE = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
+CCASFLAGS_IMAGE = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
+
+CFLAGS_PROGRAM =
+LDFLAGS_PROGRAM =
+CPPFLAGS_PROGRAM =
+CCASFLAGS_PROGRAM =
+
+CFLAGS_LIBRARY =
+CPPFLAGS_LIBRARY =
+CCASFLAGS_LIBRARY =
+
+# Other variables
+
+grubconfdir = $(sysconfdir)/grub.d
+grubdatadir = $(datadir)/`echo @PACKAGE_TARNAME@ | sed '$(transform)'`
+platformdir = $(pkglibrootdir)/$(target_cpu)-$(platform)
+
+CFLAGS_GCRY = -Wno-error -Wno-missing-field-initializers
+CPPFLAGS_GCRY = -I$(top_srcdir)/grub-core/lib/libgcrypt_wrap
+
+CFLAGS_GNULIB = -Wno-undef -Wno-sign-compare -Wno-unused -Wno-unused-parameter
+CPPFLAGS_GNULIB = -I$(top_builddir)/grub-core/gnulib -I$(top_srcdir)/grub-core/gnulib
+
+CFLAGS_POSIX = -fno-builtin
+CPPFLAGS_POSIX = -I$(top_srcdir)/grub-core/lib/posix_wrap
+
+CPPFLAGS_EFIEMU = -I$(top_srcdir)/grub-core/efiemu/runtime
+
+# List file macros for recognizing /interesting/ modules
+CPPFLAGS_FS_LIST = -Dgrub_fs_register=FS_LIST_MARKER
+CPPFLAGS_VIDEO_LIST= -Dgrub_video_register=VIDEO_LIST_MARKER
+CPPFLAGS_PARTMAP_LIST = -Dgrub_partition_map_register=PARTMAP_LIST_MARKER
+CPPFLAGS_PARTTOOL_LIST = -Dgrub_parttool_register=PARTTOOL_LIST_MARKER
+CPPFLAGS_TERMINAL_LIST = '-Dgrub_term_register_input(...)=INPUT_TERMINAL_LIST_MARKER(__VA_ARGS__)'
+CPPFLAGS_TERMINAL_LIST += '-Dgrub_term_register_output(...)=OUTPUT_TERMINAL_LIST_MARKER(__VA_ARGS__)'
+CPPFLAGS_COMMAND_LIST = '-Dgrub_register_command(...)=COMMAND_LIST_MARKER(__VA_ARGS__)'
+CPPFLAGS_COMMAND_LIST += '-Dgrub_register_extcmd(...)=EXTCOMMAND_LIST_MARKER(__VA_ARGS__)'
+CPPFLAGS_COMMAND_LIST += '-Dgrub_register_command_p1(...)=P1COMMAND_LIST_MARKER(__VA_ARGS__)'
+CPPFLAGS_MARKER = $(CPPFLAGS_FS_LIST) $(CPPFLAGS_VIDEO_LIST) \
+	$(CPPFLAGS_PARTTOOL_LIST) $(CPPFLAGS_PARTMAP_LIST) \
+	$(CPPFLAGS_TERMINAL_LIST) $(CPPFLAGS_COMMAND_LIST)
+
+# Define these variables to calm down automake
+
+IMG_FILES =
+MOD_FILES =
+MODULE_FILES =
+MARKER_FILES =
+KERNEL_HEADER_FILES =
+
+man_MANS =
+noinst_DATA =
+pkglib_DATA =
+bin_SCRIPTS =
+sbin_SCRIPTS =
+bin_PROGRAMS =
+platform_DATA =
+sbin_PROGRAMS =
+check_SCRIPTS =
+grubconf_DATA =
+check_PROGRAMS =
+noinst_SCRIPTS =
+pkglib_SCRIPTS =
+noinst_PROGRAMS =
+grubconf_SCRIPTS =
+noinst_LIBRARIES =
+dist_noinst_DATA =
+
+TESTS =
+EXTRA_DIST =
+CLEANFILES =
+BUILT_SOURCES =
+
+# Rules for autogen definition files
+
+.PRECIOUS: $(top_srcdir)/Makefile.tpl
+$(top_srcdir)/Makefile.tpl: $(top_srcdir)/gentpl.py
+	python $< | sed -e '/^$$/{N;/^\\n$$/D;}' > $@.new || (rm -f $@.new; exit 1)
+	mv $@.new $@
+
+.PRECIOUS: $(top_srcdir)/Makefile.util.am
+$(top_srcdir)/Makefile.util.am: $(top_srcdir)/Makefile.util.def $(top_srcdir)/Makefile.tpl
+	autogen -T $(top_srcdir)/Makefile.tpl $< | sed -e '/^$$/{N;/^\\n$$/D;}' > $@.new || (rm -f $@.new; exit 1)
+	mv $@.new $@
+
+.PRECIOUS: $(top_srcdir)/grub-core/Makefile.core.am
+$(top_srcdir)/grub-core/Makefile.core.am: $(top_srcdir)/grub-core/Makefile.core.def $(top_srcdir)/grub-core/Makefile.gcry.def $(top_srcdir)/Makefile.tpl
+	if [ "x$$GRUB_CONTRIB" != x ]; then echo "You need to run ./autogen.sh manually." >&2; exit 1; fi
+	autogen -T $(top_srcdir)/Makefile.tpl $(top_srcdir)/grub-core/Makefile.core.def $(top_srcdir)/grub-core/Makefile.gcry.def | sed -e '/^$$/{N;/^\\n$$/D;}' > $@.new || (rm -f $@.new; exit 1)
+	mv $@.new $@
