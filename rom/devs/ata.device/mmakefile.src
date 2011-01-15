@@ -1,6 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+# allow override of ata.h in arch-specific directory
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata.device -I$(SRCDIR)/rom/devs/ata.device
+
 %build_module mmake=kernel-ata \
   modname=ata modtype=device \
   files="ata_init lowlevel ata dma_generic timer" \
