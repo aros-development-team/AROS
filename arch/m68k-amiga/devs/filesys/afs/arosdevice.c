@@ -14,6 +14,7 @@
 #include <exec/resident.h>
 #include <exec/types.h>
 #include <dos/dos.h>
+#include <resources/filesysres.h>
 
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
@@ -41,6 +42,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
     BOOL ok;
     APTR DOSBase;
     struct AFS_work_Seg *seg;
+    struct FileSysResource *fsr;
 
     /* Create device node and add it to the system.
      * The handler will then be started when it is first accessed
@@ -61,8 +63,24 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
     __AROS_SET_FULLJMP(&seg->aws_Code, AFS_work);
 
     ok = AddSegment("afs.handler", MKBADDR(&seg->aws_Next), CMD_SYSTEM);
-    if (!ok)
+    if (ok) {
+    	fsr = (struct FileSysResource*)OpenResource("FileSystem.resource");
+    	if (fsr) {
+    	    ULONG dos = 0x444f5300;
+    	    UBYTE cnt;
+    	    for (cnt = 1; cnt <= 7; cnt++) {
+    	    	/* only fse_DosType, fse_Version and fse_PatchFlags needed */
+    	    	struct FileSysEntry *fse = AllocMem(sizeof(struct Node) + sizeof(ULONG) * 3, MEMF_CLEAR);
+    	    	if (fse) {
+    	    	    fse->fse_DosType = dos + cnt;
+    	    	    fse->fse_Version = (afsbase->ab_Lib.lib_Version << 16) | afsbase->ab_Lib.lib_Revision;
+    	    	    AddTail(&fsr->fsr_FileSysEntries, fse);
+    	    	}
+    	    }
+    	}
+    } else {
     	FreeMem(seg, sizeof(struct AFS_work_Seg));
+    }
 
     CloseLibrary(DOSBase);
 
