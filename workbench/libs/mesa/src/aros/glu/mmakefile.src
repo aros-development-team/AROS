@@ -5,7 +5,18 @@ include $(TOP)/config/make.cfg
 # GLU                                                                          #
 ################################################################################
 
-##MM workbench-libs-glu : includes workbench-libs-glu-cpp
+#MM- workbench-libs-complete : workbench-libs-glu
+
+#MM- workbench-libs-glu : workbench-libs-glu-$(AROS_TARGET_CPU)
+
+# m68k build is disabled, since there is no C++ crosscompiler yet
+##MM- workbench-libs-glu-m68k : workbench-libs-glu-module
+#MM- workbench-libs-glu-i386 : workbench-libs-glu-module
+#MM- workbench-libs-glu-x86_64 : workbench-libs-glu-module
+#MM- workbench-libs-glu-ppc : workbench-libs-glu-module
+#MM- workbench-libs-glu-arm : workbench-libs-glu-module
+
+#MM workbench-libs-glu-module : includes workbench-libs-glu-module-cpp workbench-libs-mesa
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
@@ -142,36 +153,31 @@ else
   CXX_CC := $(TARGET_CXX)
 endif
 
-$(CC_SOURCES) : workbench-libs-glu-cpp-gendir
+$(CC_SOURCES) : workbench-libs-glu-module-cpp-gendir
 	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cc to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
 
-$(CPP_SOURCES) : workbench-libs-glu-cpp-gendir
+$(CPP_SOURCES) : workbench-libs-glu-module-cpp-gendir
 	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cpp to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
 
 #MM
-workbench-libs-glu-cpp-gendir : 
+workbench-libs-glu-module-cpp-gendir : 
 	@$(MKDIR) $(OBJDIR)/cpp
 
-#MM- workbench-libs-glu-cpp : $(CROSSTOOLS_TARGET)
+#MM- workbench-libs-glu-module-cpp : $(CROSSTOOLS_TARGET)
 
 #MM
-workbench-libs-glu-cpp : $(CC_SOURCES) $(CPP_SOURCES)
+workbench-libs-glu-module-cpp : $(CC_SOURCES) $(CPP_SOURCES)
 
 #MM
-workbench-libs-glu-cpp-quick : $(CC_SOURCES) $(CPP_SOURCES)
+workbench-libs-glu-module-cpp-quick : $(CC_SOURCES) $(CPP_SOURCES)
 
-# Compilation of C++ GLSL compiler
+# Compilation of C++ libnurbs
 ################################################################################
 
 # Hack to get C++ objects linked into module
 LDFLAGS := $(CXX_OBJECTS)
 
-# TEMPORARY HACK FOR i386 (see aros/emul_div/README)
-ifeq ($(AROS_TARGET_CPU), i386)
-  LDFLAGS += -nodefaultlibs
-endif
-
-%build_module mmake=workbench-libs-glu \
+%build_module mmake=workbench-libs-glu-module \
     modname=glu modtype=library linklibname=GLU conffile=glu.conf \
     files="$(LIBRARY_SOURCES)" \
     uselibs="rom arosm amiga GL"
