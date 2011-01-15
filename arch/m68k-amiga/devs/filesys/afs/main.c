@@ -120,7 +120,7 @@ static VOID startFlushTimer(struct AFSBase *handler)
     if (handler->timer_flags & TIMER_ACTIVE) {
 	handler->timer_flags |= TIMER_RESTART;
     } else {
-	D(bug("[afs] Starting timer\n"));
+	/* D(bug("[afs] Starting timer\n")); */
 	request = handler->timer_request;
 	request->tr_node.io_Command = TR_ADDREQUEST;
 	request->tr_time.tv_secs = 1;
@@ -139,7 +139,7 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
     } else {
 	struct BlockCache *blockbuffer;
 
-	D(bug("[afs] Alarm rang.\n"));
+	/* D(bug("[afs] Alarm rang.\n")); */
 	if ((volume->dostype == 0x444f5300) && mediumPresent(&volume->ioh))
 	{
 	    /* Check if adding volume node needs to be retried */
@@ -676,8 +676,7 @@ void AFS_work(void) {
 	    	case ACTION_RENAME_DISK:
 	    	{
 	    	    CONST_STRPTR       n = AROS_BSTR_ADDR(dp->dp_Arg1);
-		    relabel(handler, volume, n, &res2);
-		    ok = res2 ? DOSFALSE : DOSTRUE;
+		    ok = relabel(handler, volume, n, &res2);
 	    	    break;
 		}
 	    	case ACTION_CREATE_DIR:
@@ -778,6 +777,9 @@ void AFS_work(void) {
 		    ok = res2 ? DOSFALSE : DOSTRUE;
 	    	    break;
 		}
+		case ACTION_SERIALIZE_DISK:
+		    ok = relabel(handler, volume, NULL, &res2);
+		    break;
 		default:
 		    ok = DOSFALSE;
 		    res2 = ERROR_NOT_IMPLEMENTED;
