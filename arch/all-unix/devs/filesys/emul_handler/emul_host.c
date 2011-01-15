@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifdef HOST_OS_ios
 
 #ifdef __arm__
@@ -278,7 +283,7 @@ ADD2EXPUNGELIB(host_cleanup, 0);
  
 /*********************************************************************************************/
 
-/* Make an AROS error-code (<dos/dos.h>) out of an unix error-code. */
+/* Make an AROS error-code (<dos/dos.h>) out of a unix error-code. */
 static LONG u2a[][2]=
 {
     { ENOMEM   , ERROR_NO_FREE_STORE         },
@@ -704,6 +709,15 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 	/* Object is a plain file */
 	flags = mode2flags(mode);
 	r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
+	if (r < 0 && err_u2a(emulbase) == ERROR_WRITE_PROTECTED)
+	{
+	    /* Try again with read-only access. This is needed because AROS
+	     * FS handlers should only pay attention to R/W protection flags
+	     * when the corresponding operation is attempted on the file */
+	    flags &= ~O_ACCMODE;
+	    flags |= O_RDONLY;
+	    r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
+	}
 	AROS_HOST_BARRIER
 	if (r >= 0)
 	{

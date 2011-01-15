@@ -1,11 +1,9 @@
 /*
  Copyright  1995-2010, The AROS Development Team. All rights reserved.
- $Id: emul_handler.c 34306 2010-08-31 07:47:37Z sonic $
+ $Id$
  
  Desc: Filesystem that accesses an underlying host OS filesystem.
  Lang: english
-
- Please always update the version-string below, if you modify the code!
  */
 
 /*********************************************************************************************/
@@ -159,7 +157,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle, const c
     LONG ret = 0;
     struct filehandle *fh;
 
-    DOPEN(bug("[emul] open_(\"%s\"), directories allowed: %lu\n", name, AllowDir));
+    DOPEN(bug("[emul] open_(\"%s\", 0x%lx), directories allowed: %lu\n", name, mode, AllowDir));
   
     fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
     if (fh)
