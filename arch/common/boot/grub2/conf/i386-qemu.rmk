@@ -1,2 +1,0 @@
-# -*- makefile -*-
-include $(srcdir)/conf/i386-coreboot.mk
