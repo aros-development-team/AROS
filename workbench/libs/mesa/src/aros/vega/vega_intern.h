@@ -15,4 +15,4 @@ struct VegaBase
     struct Library  mglb_Lib;
 };
 
-#endif /* OPENVG_INTERN_H */
+#endif /* VEGA_INTERN_H */
