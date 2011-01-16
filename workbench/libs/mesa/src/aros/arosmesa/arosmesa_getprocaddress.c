@@ -4,7 +4,7 @@
 */
 
 #define GL_GLEXT_PROTOTYPES
-#undef USE_MGL_NAMESPACE
+#define AROSMESA_NO_MANGLING
 #include <GL/arosmesa.h>
 #include "glapi/glapi.h"
 #include "glapi/glapioffsets.h"
