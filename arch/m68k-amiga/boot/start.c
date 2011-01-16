@@ -218,14 +218,14 @@ asm (".chip 68060\n"
 	"	move.w	#0x2007,%d0\n"
 	"	illegal\n"
 		/* 68040 */
-	"0:	move.w	#0x2008,%d0\n"
+	"0:	move.w	#0x200f,%d0\n"
  		/* PCR is 68060 only */
 	"	dc.l 0x4e7a0808\n" // movec	%pcr,%d0\n"
 		/* 68060 */
 	"	move.w	#0x0001,%d0\n"
  		/* enable supercalar, enable FPU */
  	"	dc.l 0x4e7b0808\n" // movec	%d0,%pcr\n"
-	"	move.w	#0x2087,%d0\n"
+	"	move.w	#0x208f,%d0\n"
 	"	illegal\n"
 );
 
@@ -383,7 +383,7 @@ static UWORD getsyschecksum(struct ExecBase *sysbase)
 static void setsyschecksum(void)
 {
 	SysBase->ChkSum = 0;
-	SysBase->ChkSum = getsyschecksum(SysBase);
+	SysBase->ChkSum = getsyschecksum(SysBase) ^ 0xffff;
 }
 static BOOL issysbasevalid(struct ExecBase *sysbase)
 {
@@ -425,13 +425,13 @@ static LONG doInitCode(ULONG startClass, ULONG version)
 
 extern BYTE _rom_start;
 extern BYTE _ext_start;
+extern BYTE _bss;
+extern BYTE _bss_end;
 
 void start(IPTR chip_start, ULONG chip_size,
            IPTR fast_start, ULONG fast_size,
            IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
-	extern void *_bss;
-	extern void *_bss_end;
 	volatile APTR *trap;
 	int i;
 	UWORD *kickrom[] = {
@@ -512,7 +512,8 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
-	DEBUGPUTS(("[bss clear]\n"));
+	DEBUGPUTHEX(("BSS lower", (ULONG)&_bss));
+	DEBUGPUTHEX(("BSS upper", (ULONG)&_bss_end));
 
 	Early_ScreenCode(CODE_RAM_CHECK);
 
@@ -543,6 +544,37 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	/* Determine CPU model */
 	SysBase->AttnFlags |= cpu_detect();
+
+#ifdef AROS_SERIAL_DEBUG
+	DEBUGPUTS(("CPU: "));
+	if (SysBase->AttnFlags & AFF_68060)
+		DEBUGPUTS(("68060"));
+	else if (SysBase->AttnFlags & AFF_68040)
+		DEBUGPUTS(("68040"));
+	else if (SysBase->AttnFlags & AFF_68030)
+		DEBUGPUTS(("68030"));
+	else if (SysBase->AttnFlags & AFF_68020)
+		DEBUGPUTS(("68020"));
+	else if (SysBase->AttnFlags & AFF_68010)
+		DEBUGPUTS(("68010"));
+	else
+		DEBUGPUTS(("68000"));
+	DEBUGPUTS((" FPU: "));
+	if (SysBase->AttnFlags & AFF_FPU40) {
+		if (SysBase->AttnFlags & AFF_68060)
+			DEBUGPUTS(("68060"));
+		else if (SysBase->AttnFlags & AFF_68040)
+			DEBUGPUTS(("68040"));
+		else
+			DEBUGPUTS(("-"));
+	} else if (SysBase->AttnFlags & AFF_68881)
+		DEBUGPUTS(("68881"));
+	else if (SysBase->AttnFlags & AFF_68882)
+		DEBUGPUTS(("68882"));
+	else
+		DEBUGPUTS(("-"));
+	DEBUGPUTS(("\n"));
+#endif
 
 	/* Inject code for GetCC, depending on CPU model */
 	if (SysBase->AttnFlags & AFF_68010) {
@@ -598,8 +630,10 @@ void start(IPTR chip_start, ULONG chip_size,
 	SysBase->MaxExtMem = fast_size ? (APTR)(((0xc00000 + (fast_size + 0xffff)) & 0xffff0000)) : 0;
 
 	/* reset proof our "rom" */
-	if (romloader)
+	if (romloader) {
 		SysBase->ColdCapture = (APTR)(romloader - 8);
+		DEBUGPUTHEX(("[romloader] coldcapture:", (ULONG)SysBase->ColdCapture));
+	}
 
 	setsyschecksum();
 
