@@ -161,11 +161,8 @@ void  SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y)
 	
 	if(x<0)x=0;
 	if(y<0)y=0;
-	if(x>width)x = width;  // Grue eat you,if pointer is outside of screen.
+	if(x>width)x = width;  // Grue eats you,if pointer is outside of the screen.
 	if(y>height)y = height;
-
-	sd->pointerx =x;
-	sd->pointery =y;
 	
 	writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT),
 			sd->Card.MMIO + (sd->pipe == PIPE_A ?G45_CURAPOS:G45_CURBPOS));
@@ -353,10 +350,8 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 		// bitmap width in bytes
 		writel( state->dspstride , sd->Card.MMIO + G45_DSPBSTRIDE );
 
-		// framebuffer address + possible xy offset
-		LONG offset = sd->VisibleBitmap->yoffset * sd->VisibleBitmap->pitch +
-					  sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp;
-		writel( state->dsplinoff - offset , sd->Card.MMIO + G45_DSPBLINOFF );
+		// framebuffer address
+		writel( state->dsplinoff , sd->Card.MMIO + G45_DSPBLINOFF );
 		readl( sd->Card.MMIO + G45_DSPBLINOFF );
 
 		delay_ms(sd, 20);
@@ -397,7 +392,7 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 	//	/* Stop cursor */
 	//	writel(0, sd->Card.MMIO + 0x70080);
 	//	delay_ms(sd, 20);
-
+		
 		/* Disable pipe */
 		writel(readl(sd->Card.MMIO + G45_PIPEACONF) & ~G45_PIPECONF_ENABLE, sd->Card.MMIO + G45_PIPEACONF);
 
@@ -507,12 +502,9 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 		writel(state->pipeconf, sd->Card.MMIO + G45_PIPEACONF);
 		(void)readl(sd->Card.MMIO + G45_PIPEACONF);
 
-		LONG offset = sd->VisibleBitmap->yoffset * sd->VisibleBitmap->pitch +
-					  sd->VisibleBitmap->xoffset * sd->VisibleBitmap->bpp;
-
 		writel(state->dspsurf, sd->Card.MMIO + G45_DSPASURF);
 		writel(state->dspstride, sd->Card.MMIO + G45_DSPASTRIDE);
-		writel(state->dsplinoff - offset , sd->Card.MMIO + G45_DSPALINOFF);
+		writel(state->dsplinoff , sd->Card.MMIO + G45_DSPALINOFF);
 
 		/* Enable DAC */
 		writel((readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_DPMS_MASK) | G45_ADPA_DPMS_ON, sd->Card.MMIO + G45_ADPA);

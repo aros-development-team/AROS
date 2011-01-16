@@ -274,5 +274,7 @@ BOOL lvds_Enabled(struct g45staticdata *sd);
 void GetSync(struct g45staticdata *sd,struct Sync *sync,ULONG pipe);
 void SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y);
 
+BOOL HIDD_INTELG45_SetFramebuffer(OOP_Object * bm);
 BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm);
+
 #endif /* INTELG45_INTERN_H_ */
