@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 # EGL                                                                          #
 ################################################################################
 
+#MM- workbench-libs-complete : workbench-libs-egl
+
 #MM workbench-libs-egl : includes workbench-libs-mesa workbench-libs-vega
 
 SHARED_LIB_SOURCES = \

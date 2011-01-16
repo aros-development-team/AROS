@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 # Vega                                                                         #
 ################################################################################
 
+#MM- workbench-libs-complete : workbench-libs-vega
+
 #MM workbench-libs-vega : workbench-libs-vega-generated includes linklibs-galliumauxiliary
 
 SHARED_LIB_SOURCES = \
