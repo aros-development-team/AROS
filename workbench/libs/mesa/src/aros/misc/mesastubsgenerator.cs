@@ -683,7 +683,7 @@ namespace glstubgenerator
 			
 
 			ConfParser confParser = new ConfParser();
-			FunctionList orderedExistingFunctions = confParser.Parse(PATH_TO_MESA + @"/src/aros/arosmesa.conf");
+			FunctionList orderedExistingFunctions = confParser.Parse(PATH_TO_MESA + @"/src/aros/arosmesa/arosmesa.conf");
 			
 			Console.WriteLine("Initial parse results: GL: {0} GLEXT: {1}", functionsglh.Count, functionsglexth.Count);
 			
@@ -716,14 +716,17 @@ namespace glstubgenerator
 			functionsfinal.ReorderToMatch(orderedExistingFunctions);
 			
 			
-			StubsFileWriter sfw = new StubsFileWriter(true, "Mesa");
+			StubsFileWriter sfw = new StubsFileWriter(false, "Mesa");
 			sfw.Write(@"/data/deadwood/temp/arosmesa_library_api.c", functionsfinal);
 			
 			ConfFileWriter cfw = new ConfFileWriter();
 			cfw.Write(@"/data/deadwood/temp/arosmesa.conf", functionsfinal);
 			
-			UndefFileWriter ufw = new UndefFileWriter();
-			ufw.Write(@"/data/deadwood/temp/mangle_undef.h", functionsfinal);
+			MangleFileWriter glmfw = new MangleFileWriter();
+			glmfw.Write(@"/data/deadwood/temp/arosmesa_mangle.h", functionsfinal);
+
+			MangledHeaderFileWriter glmhfw = new MangledHeaderFileWriter();
+			glmhfw.Write(@"/data/deadwood/temp/arosmesaapim.h", functionsfinal);
 			
 			/* EGL */
 			FunctionList functionseglh = p.Parse(PATH_TO_MESA + @"/include/EGL/egl.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY);
