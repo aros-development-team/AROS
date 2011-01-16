@@ -5,9 +5,9 @@
 
 include $(TOP)/config/make.cfg
 
-include $(SRCDIR)/$(CURDIR)/mesa/sources.mak
-include $(SRCDIR)/$(CURDIR)/mapi/glapi/sources.mak
-include $(SRCDIR)/$(CURDIR)/mapi/mapi/sources.mak
+include $(SRCDIR)/$(CURDIR)/../../mesa/sources.mak
+include $(SRCDIR)/$(CURDIR)/../../mapi/glapi/sources.mak
+include $(SRCDIR)/$(CURDIR)/../../mapi/mapi/sources.mak
 
 #MM- workbench-libs-complete : workbench-libs-mesa
 
@@ -112,16 +112,16 @@ GLSL_CXX_SOURCES = \
 
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
-            -I$(SRCDIR)/$(CURDIR)/../include \
-            -I$(SRCDIR)/$(CURDIR)/../include/GL \
-            -I$(SRCDIR)/$(CURDIR)/mesa \
-            -I$(SRCDIR)/$(CURDIR)/mesa/main \
-            -I$(SRCDIR)/$(CURDIR)/mapi \
-            -I$(SRCDIR)/$(CURDIR)/glsl \
-            -I$(SRCDIR)/$(CURDIR)/talloc \
-            -I$(SRCDIR)/$(CURDIR)/gallium/include \
-            -I$(SRCDIR)/$(CURDIR)/gallium/state_trackers/vega \
-            -I$(SRCDIR)/$(CURDIR)/aros \
+            -I$(SRCDIR)/$(CURDIR)/../../../include \
+            -I$(SRCDIR)/$(CURDIR)/../../../include/GL \
+            -I$(SRCDIR)/$(CURDIR)/../../mesa \
+            -I$(SRCDIR)/$(CURDIR)/../../mesa/main \
+            -I$(SRCDIR)/$(CURDIR)/../../mapi \
+            -I$(SRCDIR)/$(CURDIR)/../../glsl \
+            -I$(SRCDIR)/$(CURDIR)/../../talloc \
+            -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
+            -I$(SRCDIR)/$(CURDIR)/../../aros \
+            -I$(SRCDIR)/$(CURDIR)/../../ \
 
 USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math -DMAPI_GLAPI_CURRENT \
                 -DFEATURE_GL=1 \
@@ -133,12 +133,13 @@ LIB_MESA_SOURCES = \
             talloc/talloc \
             $(addprefix glsl/, $(GLSL_GLCPP_SOURCES:.c=)) \
 
+            
 # Compilation of C++ GLSL compiler
 
 CXX_SOURCES := \
-    $(addprefix mesa/, $(SHADER_CXX_SOURCES:.cpp=)) \
-    $(addprefix glsl/, $(GLSL_CXX_SOURCES:.cpp=)) \
-    aros/emul_cpp \
+    $(addprefix ../../mesa/, $(SHADER_CXX_SOURCES:.cpp=)) \
+    $(addprefix ../../glsl/, $(GLSL_CXX_SOURCES:.cpp=)) \
+    ../../aros/emul_cpp \
 
 CXX_OBJECTS := $(addprefix $(OBJDIR)/cpp/, $(addsuffix .o, $(notdir $(CXX_SOURCES))))
 
@@ -182,11 +183,17 @@ ifeq ($(AROS_TARGET_CPU), i386)
                 aros/emul_div/umoddi3
 endif
 
+LIBRARY_SOURCES = \
+            $(addprefix ../../, $(LIB_MESA_SOURCES)) \
+            $(addprefix ../../, $(AROSMESA_SOURCES)) \
+            $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
+            arosmesa_library_api \
+
 ##MM- workbench-libs-mesa-module-quick : workbench-libs-mesa-module-cpp-quick
 
 %build_module mmake=workbench-libs-mesa-module \
-    modname=mesa modtype=library linklibname=GL conffile=aros/arosmesa.conf linklibfiles="aros/arosmesa_getprocaddress" \
-    files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES) $(AROSMESA_SOURCES) aros/arosmesa_library_api" \
+    modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
+    files="$(LIBRARY_SOURCES)" \
     uselibs="galliumauxiliary rom gallium arosm amiga"
 
 
