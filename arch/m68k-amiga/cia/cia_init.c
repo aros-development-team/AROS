@@ -140,8 +140,12 @@ static AROS_UFH3 (APTR, Cia_Init,
 
     base->hw = (struct CIA*)0xbfe001;
     base->hw->ciaicr = 0x7f;
-    base->hw->ciacra = 0;
-    base->hw->ciacrb = 0;
+    base->hw->ciacra = 0x00;
+    base->hw->ciacrb = 0x80;
+    base->hw->ciatodhi = 0x00;
+    base->hw->ciatodmid = 0x0f;
+    base->hw->ciatodlow = 0x00;
+    base->hw->ciacrb = 0x00;
     base->hw->ciapra = 0x00;
     base->hw->ciaddra = 0x03;
     base->hw->ciaddrb = 0xff;
@@ -163,8 +167,12 @@ static AROS_UFH3 (APTR, Cia_Init,
 
     base->hw = (struct CIA*)0xbfd000;
     base->hw->ciaicr = 0x7f;
-    base->hw->ciacra = 0;
-    base->hw->ciacrb = 0;
+    base->hw->ciacra = 0x00;
+    base->hw->ciacrb = 0x80;
+    base->hw->ciatodhi = 0x00;
+    base->hw->ciatodmid = 0x0f;
+    base->hw->ciatodlow = 0x00;
+    base->hw->ciacrb = 0x00;
     base->hw->ciapra = 0xff;
     base->hw->ciaprb = 0xff;
     base->hw->ciaddra = 0xff;
