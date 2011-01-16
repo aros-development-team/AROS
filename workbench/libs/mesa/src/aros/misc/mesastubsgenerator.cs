@@ -681,18 +681,11 @@ namespace glstubgenerator
 			
 			FunctionList functionsglexth = p.Parse(PATH_TO_MESA + @"/include/GL/glext.h", APIHeaderParser.GLAPI, APIHeaderParser.APIENTRY);
 			
-			FunctionList functionseglh = p.Parse(PATH_TO_MESA + @"/include/EGL/egl.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY);
-			
-
-			/* EGL extensions will not be available via library interface for now */
-			/* FunctionList functionseglexth = p.Parse(PATH_TO_MESA + @"/include/EGL/eglext.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY); */
-			FunctionList functionseglexth = new FunctionList();
 
 			ConfParser confParser = new ConfParser();
 			FunctionList orderedExistingFunctions = confParser.Parse(PATH_TO_MESA + @"/src/aros/arosmesa.conf");
 			
-			Console.WriteLine("Initial parse results: GL: {0} GLEXT: {1} EGL: {2} EGLEXT: {3}", 
-			                  functionsglh.Count, functionsglexth.Count, functionseglh.Count, functionseglexth.Count);
+			Console.WriteLine("Initial parse results: GL: {0} GLEXT: {1}", functionsglh.Count, functionsglexth.Count);
 			
 			functionsglexth.RemoveFunctionsExceptFor(implementedFunctions);
 			functionsglh.RemoveFunctionsExceptFor(implementedFunctions);
@@ -714,21 +707,9 @@ namespace glstubgenerator
 
 			Console.WriteLine("After merging GL {0}", functionsGL.Count);
 
-			/* EGL */
-			FunctionList functionsEGL = new FunctionList();
-			
-			functionseglexth.RemoveFunctions(functionseglh);
-			
-			Console.WriteLine("After duplicates removal EGL: {0}, EGLEXT: {1}", functionseglh.Count, functionseglexth.Count);
-			functionsEGL.AddRange(functionseglh);
-			functionsEGL.AddRange(functionseglexth);
-
-			Console.WriteLine("After merging EGL {0}", functionsEGL.Count);
-			
 			
 			FunctionList functionsfinal = new FunctionList();
 			functionsfinal.AddRange(functionsGL);
-			functionsfinal.AddRange(functionsEGL);
 			
 			functionsfinal.CorrectionForArrayArguments();
 			functionsfinal.CalculateRegisters();
@@ -744,11 +725,35 @@ namespace glstubgenerator
 			UndefFileWriter ufw = new UndefFileWriter();
 			ufw.Write(@"/data/deadwood/temp/mangle_undef.h", functionsfinal);
 			
-			MangleFileWriter eglmfw = new MangleFileWriter();
-			eglmfw.Write(@"/data/deadwood/temp/egl_mangle.h", functionsEGL);
+			/* EGL */
+			FunctionList functionseglh = p.Parse(PATH_TO_MESA + @"/include/EGL/egl.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY);
+			FunctionList orderedExistingFunctionsEGL = confParser.Parse(PATH_TO_MESA + @"/src/aros/egl/egl.conf");
+
+			FunctionList functionsEGL = new FunctionList();
 			
+			functionsEGL.AddRange(functionseglh);
+
+			Console.WriteLine("After merging EGL {0}", functionsEGL.Count);
+			
+			functionsfinal.Clear();
+			functionsfinal.AddRange(functionsEGL);
+			
+			functionsfinal.CorrectionForArrayArguments();
+			functionsfinal.CalculateRegisters();
+			functionsfinal.ReorderToMatch(orderedExistingFunctionsEGL);			
+
+			MangleFileWriter eglmfw = new MangleFileWriter();
+			eglmfw.Write(@"/data/deadwood/temp/egl_mangle.h", functionsfinal);
+
 			MangledHeaderFileWriter eglmhfw = new MangledHeaderFileWriter();
-			eglmhfw.Write(@"/data/deadwood/temp/eglapim.h", functionsEGL);
+			eglmhfw.Write(@"/data/deadwood/temp/eglapim.h", functionsfinal);
+
+			StubsFileWriter eglsfw = new StubsFileWriter(false, "EGL");
+			eglsfw.Write(@"/data/deadwood/temp/egl_library_api.c", functionsfinal);
+			
+			ConfFileWriter eglcfw = new ConfFileWriter();
+			eglcfw.Write(@"/data/deadwood/temp/egl.conf", functionsfinal);
+
 
 			/* VG */
 			FunctionList functionsopenvgh = p.Parse(PATH_TO_MESA + @"/include/VG/openvg.h", APIHeaderParser.VGAPI, APIHeaderParser.VGAPIENTRY);
