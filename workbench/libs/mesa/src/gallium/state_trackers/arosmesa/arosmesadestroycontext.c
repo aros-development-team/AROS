@@ -40,10 +40,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    SAVE_REG
-    
-    PUT_MESABASE_IN_REG
-
     /* Destroy a AROSMesa context */
     D(bug("[AROSMESA] AROSMesaDestroyContext(amesa @ %x)\n", amesa));
 
@@ -70,8 +66,6 @@
         }
     }
     
-    RESTORE_REG
-
     AROS_LIBFUNC_EXIT
 }
 

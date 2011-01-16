@@ -37,10 +37,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    SAVE_REG
-    
-    PUT_MESABASE_IN_REG
-
     if (amesa)
     {
         struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
@@ -60,8 +56,6 @@
         /* Detach */
         glstapi->make_current(glstapi, NULL, NULL, NULL);
     }
-        
-    RESTORE_REG
 
     AROS_LIBFUNC_EXIT
 }

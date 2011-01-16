@@ -99,9 +99,9 @@ _GLAPI_EXPORT extern const void *_glapi_Context;
 
 #elif defined(__AROS__)
 
-#define SAVE_REG
-#define PUT_MESABASE_IN_REG
-#define RESTORE_REG
+#include <GL/gl.h>
+#include "arosmesa/arosmesaapim.h"
+#include "arosmesa/arosmesa_mangle.h"
 
 #define GET_DISPATCH() _glapi_get_dispatch()
 #define GET_CURRENT_CONTEXT(C)  GLcontext *C = (GLcontext *) _glapi_get_context()
