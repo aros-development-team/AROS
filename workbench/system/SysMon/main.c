@@ -268,7 +268,7 @@ BOOL CreateApplication()
         MUIA_Application_Version, (IPTR) VERSION,
         MUIA_Application_Author, (IPTR) "Krzysztof Smiechowicz",
         MUIA_Application_Copyright, (IPTR)"©2011, The AROS Development Team",
-        MUIA_Application_Base, (IPTR)"SYSTEMMONITOR",
+        MUIA_Application_Base, (IPTR)"SYSMON",
         MUIA_Application_Description, __(MSG_APP_TITLE),
         SubWindow, 
             mainwindow = WindowObject,
@@ -473,8 +473,7 @@ int main()
 
     set(mainwindow, MUIA_Window_Open, TRUE);
 
-    while (DoMethod(application, MUIM_Application_NewInput, &signals) != 
-        MUIV_Application_ReturnID_Quit)
+    while (DoMethod(application, MUIM_Application_NewInput, &signals) != MUIV_Application_ReturnID_Quit)
     {
         if (signals)
         {
@@ -490,7 +489,7 @@ int main()
         }
     }
     
-    set(mainwindow, MUIA_Window_Open, TRUE);
+    set(mainwindow, MUIA_Window_Open, FALSE);
     
     DisposeApplication();
 
