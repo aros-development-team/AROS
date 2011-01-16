@@ -13,7 +13,7 @@
       struct Library *, VegaBase, 0, Vega)
 
 /*  FUNCTION
-        This is a private function used by mesa.library to receive pointer to
+        This is a PRIVATE function used by egl.library to receive pointer to
         api structure of OpenVG. Do not use this function in your application.
         OpenVG context is created using EGL API.
  
