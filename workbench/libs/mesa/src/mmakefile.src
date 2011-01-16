@@ -221,7 +221,7 @@ endif
 %build_module mmake=workbench-libs-mesa-module \
     modname=mesa modtype=library linklibname=GL conffile=aros/arosmesa.conf linklibfiles="aros/arosmesa_getprocaddress" \
     files="$(SHARED_LIB_SOURCES) $(LIB_MESA_SOURCES) $(AROSMESA_SOURCES) aros/arosmesa_library_api" \
-    uselibs="galliumauxiliary rom gallium OpenVG arosm amiga"
+    uselibs="galliumauxiliary rom gallium arosm amiga"
 
 
 # NOTE: Both files have been generate and added to AROS repository. Once all 
