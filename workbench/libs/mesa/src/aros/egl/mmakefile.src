@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 # EGL                                                                          #
 ################################################################################
 
-#MM workbench-libs-egl : includes
+#MM workbench-libs-egl : includes workbench-libs-mesa workbench-libs-vega
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
