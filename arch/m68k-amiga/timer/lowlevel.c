@@ -209,7 +209,7 @@ AROS_UFH4(APTR, ciaa_ciaintb,
 	           	tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
 	           	tr->tr_node.io_Error = 0;
 	           	ReplyMsg((struct Message *)tr);
-	           	D(bug("ciab done\n"));
+	           	D(bug("ciab %x done\n", tr));
 		} else {
 			break; // first not finished, can stop searching
 		}	
@@ -261,6 +261,7 @@ AROS_UFH4(APTR, cia_vbint,
 	           	tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
 	           	tr->tr_node.io_Error = 0;
            		ReplyMsg((struct Message *)tr);
+	           	D(bug("vblank %x done\n", tr));
 		} else {
 			break; // first not finished, can stop searching
 		}	

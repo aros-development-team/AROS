@@ -127,7 +127,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     Disable();
     if (AddICRVector(LIBBASE->ciabres, 0, inter)) // CIAB-A timer
 	Alert(AT_DeadEnd | AG_NoMemory | AO_CIARsrc);
-    ciab->ciacra &= ~0x3f;
+    ciab->ciacra = 0;
     // start CIA-A in continuous mode
     ciab->ciatalo = (UBYTE)(ECLOCK_BASE >> 0);
     ciab->ciatblo = (UBYTE)(ECLOCK_BASE >> 8);
