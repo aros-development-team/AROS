@@ -1,4 +1,6 @@
 
+#define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -49,7 +51,8 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb
 	BOOL ret;
 	
 	// call autoconfig ROM da_DiagPoint or bootpoint da_BootPoint
-	D(bug("%x %x %x %x\n", code, configDev->cd_BoardAddr, diag, configDev));
+	D(bug("Call boot rom @%p board %p diag %p configdev %p\n",
+		code, configDev->cd_BoardAddr, diag, configDev));
 	ret = AROS_UFC5(BOOL, code,
    		AROS_UFCA(APTR, configDev->cd_BoardAddr, A0),
 		AROS_UFCA(struct DiagArea*, diag, A2),
@@ -59,12 +62,67 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb
 	return ret;
 }
 
+
+// read one byte from expansion autoconfig ROM
+static UBYTE getromdata(struct ConfigDev *configDev, UBYTE buswidth, UWORD offset)
+{
+	volatile UBYTE *rom = (UBYTE*)(configDev->cd_BoardAddr + configDev->cd_Rom.er_InitDiagVec);
+	
+	switch (buswidth)
+	{
+		case DAC_NIBBLEWIDE:
+			return (rom[offset * 2 + 0] & 0xf0) | ((rom[offset * 2 + 1] & 0xf0) >> 4);
+		case DAC_BYTEWIDE:
+			return rom[offset * 2];
+		case DAC_WORDWIDE:
+		default:
+			return rom[offset];
+	}
+}
+
+static void diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
+{
+	struct DiagArea *da;
+	UBYTE buswidth;
+	UWORD size, i;
+
+	D(bug("Read boot ROM base=%p type=%02x\n", configDev->cd_BoardAddr, configDev->cd_Rom.er_Type));
+	if (!(configDev->cd_Rom.er_Type & ERTF_DIAGVALID)) {
+		D(bug("Board without boot ROM\n"));
+		return;
+	}
+
+	buswidth = getromdata(configDev, 0, 0) & DAC_BUSWIDTH;
+	D(bug("bus=%02x\n", buswidth));
+	if (buswidth == DAC_BUSWIDTH) // illegal
+		return;
+
+	size = (getromdata(configDev, buswidth, 2) << 8) | (getromdata(configDev, buswidth, 3) << 0);
+	D(bug("size=%02x\n", size));
+	if (size < sizeof (struct DiagArea))
+		return;
+
+	da = AllocMem(size, MEMF_CLEAR | MEMF_PUBLIC);
+	if (!da)
+		return;
+
+	configDev->cd_Rom.er_DiagArea = da;
+	// read rom data, including DiagArea
+	for (i = 0; i < size; i++) {
+		UBYTE dat = getromdata(configDev, buswidth, i);
+		((UBYTE*)da)[i] = dat;
+		D(bug("%02x.", dat));
+	}
+	D(bug("\n"));
+}
+
 static void callroms(struct ExpansionBase *ExpansionBase, UBYTE whenflag)
 {
 	struct Node *node;
 	D(bug("callroms %x\n", whenflag));
 	ForeachNode(&IntExpBase(ExpansionBase)->eb_BoardList, node) {
 		struct ConfigDev *configDev = (struct ConfigDev*)node;
+		diagrom(ExpansionBase, configDev);
 		if (configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == whenflag) {
 			if (!calldiagrom(ExpansionBase, IntExpBase(ExpansionBase)->eb_SysBase, configDev, whenflag)) {
 				FreeMem(configDev->cd_Rom.er_DiagArea, configDev->cd_Rom.er_DiagArea->da_Size);
@@ -72,6 +130,7 @@ static void callroms(struct ExpansionBase *ExpansionBase, UBYTE whenflag)
 			}	
 		}
 	}
+	D(bug("callroms done\n"));
 }
 
 static AROS_UFH3 (APTR, Init,
@@ -86,6 +145,7 @@ static AROS_UFH3 (APTR, Init,
    if (!eb)
 	Alert(AT_DeadEnd | AO_ExpansionLib);
    ((struct IntExpansionBase*)eb)->eb_SysBase = SysBase;
+
    callroms(eb, DAC_CONFIGTIME);
 
    AROS_USERFUNC_EXIT

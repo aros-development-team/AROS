@@ -5,8 +5,10 @@
     Desc:
     Lang: english
 */
-#include "expansion_intern.h"
 
+#define DEBUG 0
+#include <aros/debug.h>
+#include "expansion_intern.h"
 #include <proto/expansion.h>
 #include <aros/asmcall.h>
 
@@ -75,6 +77,9 @@ AROS_UFH5(void, writeexpansion,
 	ULONG size = configDev->cd_BoardSize;
 	ULONG start, end, addr;
 	
+	D(bug("Configuring board: mfg=%d prod=%d size=%08x\n",
+	    configDev->cd_Rom.er_Manufacturer, configDev->cd_Rom.er_Product, size));
+
 	memorydevice = (configDev->cd_Rom.er_Type & ERTF_MEMLIST) != 0;
 	if (type == ERT_ZORROII) {
 		start = 0x00200000;
@@ -87,11 +92,16 @@ AROS_UFH5(void, writeexpansion,
 		space = IntExpBase(ExpansionBase)->eb_z3Slots;
 		align = 0x01000000;
 	}
-	if (!memorydevice && size <= E_SLOTSIZE) {
+	if (!memorydevice && type == ERT_ZORROII) {
 		start = 0x00E90000;
 		end   = 0x00EFFFFF;
-		align = 0x00010000;
+		align = size;
+		/* Blizzard 128k expansion must be at 0x00EA0000
+		 * 128k boards must have even start address? */
+		if (size > E_SLOTSIZE)
+			start = 0x00EA0000;
 	}
+	D(bug("Configuration area %08x to %08x, block %08x\n", start, end, align));
 
 	for (addr = start; addr < end; addr += align) {
 		ULONG startaddr = addr;
@@ -121,7 +131,6 @@ AROS_UFH5(void, writeexpansion,
 			continue;
 		
 		configDev->cd_BoardAddr	 = (APTR)startaddr;
-
 		AROS_UFC5(void, writeexpansion,
 			AROS_UFCA(ULONG, board, A0),
 			AROS_UFCA(ULONG, configDev, A3),
@@ -129,6 +138,7 @@ AROS_UFH5(void, writeexpansion,
                 	AROS_UFCA(UWORD, (startaddr >> 16), D1),
                        	AROS_UFCA(struct ExpansionBase*, ExpansionBase, A6)
              	);
+		D(bug("Configured at %08x\n", configDev->cd_BoardAddr));
 		
 		// do not remove this, configDev->cd_BoardAddr
 		// might have changed inside writeexpansion
@@ -149,6 +159,7 @@ AROS_UFH5(void, writeexpansion,
 
 		return TRUE;
 	}
+	D(bug("Configuration failed!\n"));
 	if (!(configDev->cd_Flags & ERFF_NOSHUTUP)) {
 		configDev->cd_Flags |= CDF_SHUTUP;
 		WriteExpansionByte(board, 19, 0); // SHUT-UP!

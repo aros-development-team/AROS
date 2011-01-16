@@ -33,69 +33,27 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 			SetCurrentBinding(&configDev, 4);
 			while (romptr < romend - sizeof (struct Resident*)) {
 				res = (struct Resident*)romptr;
-				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res) {
-					D(bug("initresident %x\n", res));
+				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res && res->rt_Pri < 105) {
+					D(bug("initresident %x '%s'\n", res, res->rt_Name));
 					InitResident(res, NULL);
-					romptr += sizeof (struct Resident);
+					romptr += 13; //sizeof (struct Resident);
 				} else {
-					romptr += 2;
+					romptr += 1;
 				}
 			}
 		}
-	}					
-}			
-
-// read one byte from expansion autoconfig ROM
-static UBYTE getromdata(struct ConfigDev *configDev, UBYTE buswidth, UWORD offset)
-{
-	volatile UBYTE *rom = (UBYTE*)(configDev->cd_BoardAddr + configDev->cd_Rom.er_InitDiagVec);
-	
-	switch (buswidth)
-	{
-		case DAC_NIBBLEWIDE:
-			return (rom[offset * 2 + 0] & 0xf0) | ((rom[offset * 2 + 1] & 0xf0) >> 4);
-		case DAC_BYTEWIDE:
-			return rom[offset * 2];
-		case DAC_WORDWIDE:
-		default:
-			return rom[offset];
-	}
-}
-			
-static void diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
-{
-	struct DiagArea *da;
-	UBYTE buswidth;
-	UWORD size, i;
-
-	if (!(configDev->cd_Rom.er_Type & ERTF_DIAGVALID))
-		return;
-	buswidth = getromdata(configDev, 0, 0) & DAC_BUSWIDTH;
-	if (buswidth == DAC_BUSWIDTH) // illegal
-		return;
-	size = (getromdata(configDev, buswidth, 2) << 8) | (getromdata(configDev, buswidth, 3) << 0);
-	
-	if (size < sizeof (struct DiagArea))
-		return;
-
-	da = AllocMem(size, MEMF_CLEAR | MEMF_PUBLIC);
-	if (!da)
-		return;
-
-	configDev->cd_Rom.er_DiagArea = da;
-	// read rom data, including DiagArea
-	for (i = 0; i < size; i++) {
-		((UBYTE*)da)[i] = getromdata(configDev, buswidth, i);
 	}
 }
 
-static void readroms(struct ExpansionBase *ExpansionBase)
+extern UBYTE _rom_start;
+extern UBYTE _ext_start;
+
+static ULONG checkramrom(UBYTE *addr, ULONG size, ULONG mask)
 {
-	struct Node *node;
-	ForeachNode(&IntExpBase(ExpansionBase)->eb_BoardList, node) {
-		struct ConfigDev *configDev = (struct ConfigDev*)node;
-		diagrom(ExpansionBase, configDev);
-	}
+	/* check if our "rom" is loaded to ram */
+	if (addr < &_rom_start && addr + size > &_rom_start)
+		size = (&_rom_start - addr) & ~mask;
+	return size;
 }
 
 static ULONG autosize(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
@@ -116,6 +74,9 @@ static ULONG autosize(struct ExpansionBase *ExpansionBase, struct ConfigDev *con
 		return 0x00010000 << (sizebits - 2);
 	if (sizebits >= 9)
 		return 0x00600000 + (0x200000 * (sizebits - 9));
+	maxsize = checkramrom((UBYTE*)addr, maxsize, 0x7ffff);
+	if (!maxsize)
+		return 0;
 	starttmp = startaddr[0];
 	startaddr[0] = 0;
 	for (;;) {
@@ -166,11 +127,17 @@ static void allocram(struct ExpansionBase *ExpansionBase)
 			} else if ((configDev->cd_Rom.er_Flags & ERT_Z3_SSMASK) != 0) {
 				size = autosize(ExpansionBase, configDev);
 			}
-			if (size && size <= configDev->cd_BoardSize)
-				AddMemList(size, attr, pri, addr, "Fast Memory");
+			if (size && size <= configDev->cd_BoardSize) {
+				size = checkramrom(addr, size, 65535);
+				if (size) {
+				    D(bug("ram board at %08x, size %08x attr %08x\n", addr, size, attr));
+				    AddMemList(size, attr, pri, addr, "Fast Memory");
+				}
+			}
 			configDev->cd_Flags |= CDF_PROCESSED;
 		}
 	}
+	D(bug("ram boards done\n"));
 }
 	
 
@@ -187,7 +154,7 @@ AROS_LH1(void, ConfigChain,
 		romtaginit(ExpansionBase);
 		return;
 	}
-
+bug("configchain\n");
 	for(;;) {
 		if (!configDev)
 			configDev = AllocConfigDev();
@@ -204,8 +171,6 @@ AROS_LH1(void, ConfigChain,
 	}
 
 	allocram(ExpansionBase);
-
-	readroms(ExpansionBase);
 
     AROS_LIBFUNC_EXIT
 } /* ConfigChain */
