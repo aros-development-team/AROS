@@ -53,8 +53,8 @@ AROS_LH1(void, BeginIO,
     
     unitNum = (ULONG)timereq->tr_node.io_Unit;
     
-    D(bug("timer: %d %d %x %d/%d\n", unitNum, timereq->tr_node.io_Command,
-    	timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro));
+    D(bug("timer: %d %d %x %d/%d task: '%s'\n", unitNum, timereq->tr_node.io_Command,
+    	timereq, timereq->tr_time.tv_secs, timereq->tr_time.tv_micro, FindTask(0)->tc_Node.ln_Name));
     
     switch(timereq->tr_node.io_Command)
     {
