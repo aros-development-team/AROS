@@ -30,6 +30,7 @@ struct StackBitMapNode
 struct HIDDCompositingData
 {
     OOP_Object              *screenbitmap;
+	OOP_Object              *directbitmap; 
     HIDDT_ModeID            screenmodeid;
     struct _Rectangle       screenrect;
 

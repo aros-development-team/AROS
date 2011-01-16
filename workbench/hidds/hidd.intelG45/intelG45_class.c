@@ -745,9 +745,9 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
 
 void METHOD(INTELG45, Hidd_Gfx, SetCursorPos)
 {
-	ULONG x,y;
-	WORD mx=msg->x, my=msg->y;
 	SetCursorPosition(sd,msg->x,msg->y);
+	sd->pointerx = msg->x;
+	sd->pointery = msg->y;
 }
 
 BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
@@ -911,7 +911,7 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
     OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
     gfx = (OOP_Object *)e;
 
-    bug("[IntelG45] HIDD_INTELG45_SwitchToVideoMode bitmap:%d\n",bmdata);
+    bug("[IntelG45] HIDD_INTELG45_SwitchToVideoMode bitmap:%x\n",bmdata);
     
     /* We should be able to get modeID from the bitmap */
     OOP_GetAttr(bm, aHidd_BitMap_ModeID, &modeid);
@@ -952,20 +952,43 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
 		if (bmdata->fbgfx)
 		{
 			bmdata->usecount++;
-
+			SetCursorPosition(sd,0,0);
 			LOCK_HW
 			sd->VisibleBitmap = bmdata;
 			G45_LoadState(sd, bmdata->state);
 			UNLOCK_HW
-
 			SetCursorPosition(sd,sd->pointerx,sd->pointery);
-			
 			return TRUE;
 		}
 	}
 	
 	return FALSE;     
 }
+
+
+BOOL HIDD_INTELG45_SetFramebuffer(OOP_Object * bm)
+{
+	OOP_Class * cl = OOP_OCLASS(bm);
+	GMABitMap_t * bmdata = OOP_INST_DATA(cl, bm);
+	//bug("[IntelG45] HIDD_INTELG45_SetFramebuffer %x %d,%d\n",bmdata,bmdata->xoffset,bmdata->yoffset);
+	if (bmdata->fbgfx)
+	{
+		char *linoff_reg = sd->Card.MMIO + ((sd->pipe == PIPE_A) ? G45_DSPALINOFF : G45_DSPBLINOFF);
+		char *stride_reg = sd->Card.MMIO + ((sd->pipe == PIPE_A) ? G45_DSPASTRIDE : G45_DSPBSTRIDE);
+		
+		// bitmap width in bytes
+		writel( bmdata->state->dspstride , stride_reg );
+		
+		// framebuffer address + possible xy offset  
+		writel(	bmdata->framebuffer - ( bmdata->yoffset * bmdata->pitch +
+										bmdata->xoffset * bmdata->bpp ) ,linoff_reg );
+		readl( linoff_reg );	
+		return TRUE;
+	}
+	//bug("[IntelG45] HIDD_INTELG45_SetFramebuffer: not Framebuffer Bitmap!\n");
+    return FALSE;
+}
+
 
 static struct HIDD_ModeProperties modeprops = 
 {
