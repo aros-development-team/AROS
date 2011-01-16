@@ -59,7 +59,6 @@ int DebugPutChar(register int chr)
 	return 1;
 }
 
-
 int DebugMayGetChar(void)
 {
 	int c;
@@ -83,7 +82,7 @@ static void DebugPuts(register const char *buff)
 		DebugPutChar(*buff);
 }
 
-void DebugPutHex(const char *what, ULONG val)
+static void DebugPutHex(const char *what, ULONG val)
 {
 	int i;
 	DebugPuts(what);
@@ -93,13 +92,16 @@ void DebugPutHex(const char *what, ULONG val)
 	}
 	DebugPutChar('\n');
 }
+
+#define DEBUGPUTS(x) do { DebugPuts x; } while(0)
+#define DEBUGPUTHEX(x) do { DebugPutHex x; } while(0)
+
 #else
 
-#define DebugPuts(x)
-#define DebugPutHex(x)
+#define DEBUGPUTS(x)
+#define DEBUGPUTHEX(x)
 
 #endif
-
 
 void Early_Alert(ULONG alert)
 {
@@ -109,7 +111,7 @@ void Early_Alert(ULONG alert)
     		    ((alert >> 1) & 1) * bright,
     		    ((alert >> 0) & 1) * bright);
 
-    DebugPutHex("Early_Alert", alert);
+    DEBUGPUTHEX(("Early_Alert", alert));
 
     for (;;) {
     	volatile int i;
@@ -405,7 +407,7 @@ static LONG doInitCode(ULONG startClass, ULONG version)
 
 	    ss_stack = AllocMem(ss_stack_size, MEMF_ANY | MEMF_CLEAR);
 	    if (ss_stack == NULL) {
-	    	DebugPuts("Strange. Can't allocate a new system stack\n");
+	    	DEBUGPUTS(("Strange. Can't allocate a new system stack\n"));
 	        break;
 	    }
 
@@ -469,31 +471,31 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Let the world know we exist
 	 */
 	DebugInit();
-	DebugPuts("[reset]\n");
+	DEBUGPUTS(("[reset]\n"));
 
 	/* Zap out old SysBase if invalid */
 	if (issysbasevalid(SysBase)) {
-	    DebugPutHex("[SysBase] was at", (ULONG)SysBase);
+	    DEBUGPUTHEX(("[SysBase] was at", (ULONG)SysBase));
 	    if ((ULONG)SysBase >= 0x100 && (ULONG)SysBase < 0x400) {
 	    	/* ram loader fake sysbase */
 	    	romloader = (ULONG)SysBase;
 	    	SysBase = NULL;
-		DebugPutHex("[romloader] rom start:", rom_start);
-		DebugPutHex("[romloader] rom end  :", rom_end);
+		DEBUGPUTHEX(("[romloader] rom start:", rom_start));
+		DEBUGPUTHEX(("[romloader] rom end  :", rom_end));
 	    }
 	    oldsysbase = NULL;
 	} else {
-	    DebugPutHex("[SysBase] invalid at", (ULONG)SysBase);
+	    DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)SysBase));
 	}
 
 	if (fast_size != 0) {
-		DebugPutHex("Fast_Upper ",(ULONG)(fast_start + fast_size - 1));
-		DebugPutHex("Fast_Lower ",(ULONG)fast_start);
+		DEBUGPUTHEX(("Fast_Upper ",(ULONG)(fast_start + fast_size - 1)));
+		DEBUGPUTHEX(("Fast_Lower ",(ULONG)fast_start));
 	}
-	DebugPutHex("Chip_Upper ",(ULONG)(chip_start + chip_size - 1));
-	DebugPutHex("Chip_Lower ",(ULONG)chip_start);
-	DebugPutHex("SS_Stack_Upper",(ULONG)(ss_stack_upper - 1));
-	DebugPutHex("SS_Stack_Lower",(ULONG)ss_stack_lower);
+	DEBUGPUTHEX(("Chip_Upper ",(ULONG)(chip_start + chip_size - 1)));
+	DEBUGPUTHEX(("Chip_Lower ",(ULONG)chip_start));
+	DEBUGPUTHEX(("SS_Stack_Upper",(ULONG)(ss_stack_upper - 1)));
+	DEBUGPUTHEX(("SS_Stack_Lower",(ULONG)ss_stack_lower));
 
 	/* Look for 'HELP' at address 0 - we're recovering
 	 * from a fatal alert
@@ -510,7 +512,7 @@ void start(IPTR chip_start, ULONG chip_size,
 
 	/* Clear the BSS */
 	__clear_bss(&kbss[0]);
-	DebugPuts("[bss clear]\n");
+	DEBUGPUTS(("[bss clear]\n"));
 
 	Early_ScreenCode(CODE_RAM_CHECK);
 
@@ -526,7 +528,7 @@ void start(IPTR chip_start, ULONG chip_size,
 		mh = (APTR)fast_start;
 	}
 
-	DebugPuts("[prep SysBase]\n");
+	DEBUGPUTS(("[prep SysBase]\n"));
 
 	Early_ScreenCode(CODE_EXEC_CHECK);
 
@@ -571,7 +573,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	oldmem = AvailMem(MEMF_FAST);
 
 	/* Ok, let's start the system */
-	DebugPuts("[start] InitCode(RTF_SINGLETASK, 0)\n");
+	DEBUGPUTS(("[start] InitCode(RTF_SINGLETASK, 0)\n"));
 	InitCode(RTF_SINGLETASK, 0);
 
 	/* Autoconfig ram expansions are now configured */
@@ -579,7 +581,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	if (oldsysbase && issysbasevalid(oldsysbase)) {
 		/* sysbase found in autoconfig ram */
 		SysBase = oldsysbase;
-		DebugPutHex("[SysBase] now valid at", (ULONG)SysBase);
+		DEBUGPUTHEX(("[SysBase] now valid at", (ULONG)SysBase));
 		/* memory leak! we should free "temp" sysbase */
 	} else if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024 && (
 		(TypeOfMem(SysBase) & MEMF_CHIP) ||
@@ -587,7 +589,7 @@ void start(IPTR chip_start, ULONG chip_size,
 		)) {
 			/* Move execbase to real fast if available now */
 			PrepareExecBase(NULL, NULL, NULL);
-			DebugPutHex("[Sysbase] now at", (ULONG)SysBase);
+			DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
 	}
 	
 	/* total chipram */
@@ -644,7 +646,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	} while (0);
 
 	/* We shouldn't get here */
-	DebugPuts("[DOS Task failed to start]\n");
+	DEBUGPUTS(("[DOS Task failed to start]\n"));
 	for (;;)
 	    Debug(0);
 }
