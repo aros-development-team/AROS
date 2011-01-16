@@ -520,12 +520,19 @@ static VOID CheckPartitions
     struct PartitionBase *PartitionBase;
     struct PartitionHandle *pt;
     struct FileSysStartupMsg *fssm;
+    struct DeviceNode *dn = (struct DeviceNode *)bn->bn_DeviceNode;
+
+    if (dn->dn_SegList != BNULL) {
+        /* we already have filesystem handler */
+        Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
+        return;
+    }
 
     PartitionBase =
         (struct PartitionBase *)OpenLibrary("partition.library", 1);
     if (PartitionBase)
     {
-        fssm = BADDR(((struct DeviceNode *)bn->bn_DeviceNode)->dn_Startup);
+        fssm = BADDR(dn->dn_Startup);
         pt = OpenRootPartition(AROS_BSTR_ADDR(fssm->fssm_Device),
             fssm->fssm_Unit);
         if (pt)
