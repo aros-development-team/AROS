@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
 #include <proto/expansion.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -89,7 +91,8 @@
 	configDev->cd_BoardSize = size;
 	configDev->cd_BoardAddr	 = board;
 	
-	D(bug("manufacturer=%d product=%d size=%08x\n", rom->er_Manufacturer, rom->er_Product, size));
+	D(bug("Found board: mfg=%d prod=%d size=%08x serial=%08x diag=%p\n",
+		rom->er_Manufacturer, rom->er_Product, size, rom->er_SerialNumber, rom->er_InitDiagVec));
 	
 	return TRUE;
 
