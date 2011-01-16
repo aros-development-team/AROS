@@ -7,7 +7,8 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-libs-complete : workbench-libs-egl
 
-#MM workbench-libs-egl : includes workbench-libs-mesa workbench-libs-vega
+#MM workbench-libs-egl : includes workbench-libs-mesa workbench-libs-vega \
+#MM     workbench-libs-gallium
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
