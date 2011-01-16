@@ -123,8 +123,7 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../aros \
             -I$(SRCDIR)/$(CURDIR)/../../ \
 
-USER_CFLAGS := -DUSE_MGL_NAMESPACE -ffast-math -DMAPI_GLAPI_CURRENT \
-                -DFEATURE_GL=1 \
+USER_CFLAGS := -ffast-math -DMAPI_GLAPI_CURRENT -DFEATURE_GL=1
 
 LIB_MESA_SOURCES = \
             $(addprefix mesa/, $(MESA_GALLIUM_SOURCES:.c=)) \

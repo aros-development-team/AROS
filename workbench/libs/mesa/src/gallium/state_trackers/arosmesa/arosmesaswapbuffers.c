@@ -41,10 +41,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    SAVE_REG
-    
-    PUT_MESABASE_IN_REG
-
     if (amesa->framebuffer->render_surface) 
     {
         /* Flush rendering cache before blitting */
@@ -56,8 +52,6 @@
     }
 
     AROSMesaCheckAndUpdateBufferSize(amesa);
-
-    RESTORE_REG
 
     AROS_LIBFUNC_EXIT
 }

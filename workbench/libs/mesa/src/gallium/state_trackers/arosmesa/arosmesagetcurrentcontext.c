@@ -35,14 +35,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    SAVE_REG
-    
-    PUT_MESABASE_IN_REG
-
     GET_CURRENT_CONTEXT(ctx);
 
-    RESTORE_REG;
-    
     return (AROSMesaContext)ctx;
 
     AROS_LIBFUNC_EXIT
