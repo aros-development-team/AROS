@@ -63,6 +63,8 @@ extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec)(void);
 
     /* When called the first time, this patches up the
      * Exec syscall table to directly point to the right routine.
+     * NOTE: We may have been originally called from SetFunction()
+     * We must clear caches before calling SetFunction()
      */
     Disable();
     if (SysBase->AttnFlags & AFF_68060) {
@@ -75,12 +77,9 @@ extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec)(void);
         /* Everybody else (68000, 68010) */
         func = AROS_SLIB_ENTRY(CacheClearU_00, Exec);
     }
-
+    func();
     SetFunction(SysBase, -LIB_VECTSIZE * 106, func);
     Enable();
-
-    /* Call 'myself', which is now pointing to the correct routine */
-    CacheClearU();
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearU */
