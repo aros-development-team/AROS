@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2006 by Michal Schulz
-    $Id: hid_init.c 28868 2008-06-02 20:00:22Z error $
+    $Id$
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Library General Public License as

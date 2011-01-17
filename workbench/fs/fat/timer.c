@@ -6,7 +6,7 @@
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  *
- * $Id: main.c 32572 2010-02-04 16:09:52Z NicJA $
+ * $Id$
  */
 
 #define DEBUG 0

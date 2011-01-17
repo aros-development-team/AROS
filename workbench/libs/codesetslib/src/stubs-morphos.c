@@ -16,7 +16,7 @@
 
  codesets.library project: http://sourceforge.net/projects/codesetslib/
 
- $Id: base64.c 155 2009-01-01 23:57:52Z itix $
+ $Id$
 
 ***************************************************************************/
 

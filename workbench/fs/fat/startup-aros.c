@@ -7,7 +7,7 @@
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  *
- * $Id: startup-aros.c,v 1.1 2008/04/25 10:33:43 sonic_amiga Exp $
+ * $Id$
  */
 
 #define DEBUG 0

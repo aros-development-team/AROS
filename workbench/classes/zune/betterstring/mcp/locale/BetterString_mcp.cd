@@ -1,6 +1,6 @@
 ;
 ; BetterString_mcp.cd - BetterString MUI custom prefs catalog description file
-; $Id: BetterString_mcp.cd 150 2008-12-20 21:14:36Z damato $
+; $Id$
 ;
 #version 2
 #language english

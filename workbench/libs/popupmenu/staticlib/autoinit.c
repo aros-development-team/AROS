@@ -2,7 +2,7 @@
     Copyright © 2010, The AROS Development Team. 
     All rights reserved.
     
-    $Id: pm_exlst.c 33426 2010-06-01 18:36:55Z mazze $
+    $Id$
 */
 
 #include <proto/popupmenu.h>

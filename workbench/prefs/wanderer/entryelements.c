@@ -3,7 +3,7 @@
 	This file is part of the Wanderer Preferences program, which is distributed
 	under the terms of version 2 of the GNU General Public License.
 
-	$Id: entryelements.c 26862 2007-09-27 01:02:45Z weissms $
+	$Id$
 */
 
 #include <proto/exec.h>

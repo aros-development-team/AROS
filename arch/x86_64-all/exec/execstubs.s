@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: execstubs.s 21502 2004-04-09 00:29:38Z falemagn $
+    $Id$
 
     Desc: Stubs to call C functions while preserving all registers
     Lang: english

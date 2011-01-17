@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: GetTail.c 704 2010-06-10 08:21:45Z thboeckel $
+ $Id$
 
 ***************************************************************************/
 

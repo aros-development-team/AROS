@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: $
+    $Id$
 
     Desc: Create a new task, improved version
     Lang: english

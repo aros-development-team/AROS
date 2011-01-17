@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Grow.c 696 2010-06-07 11:07:06Z thboeckel $
+ $Id$
 
 ***************************************************************************/
 

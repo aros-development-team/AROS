@@ -1,6 +1,6 @@
 /*
     Copyright 2010, The AROS Development Team. All rights reserved.
-    $Id: arosdrm_nouveau.c 32778 2010-03-12 20:19:32Z deadwood $
+    $Id$
 */
 
 #include "arosdrm.h"

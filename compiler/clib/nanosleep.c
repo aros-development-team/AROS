@@ -1,6 +1,6 @@
 /*
     Copyright © 2008, The AROS Development Team. All rights reserved.
-    $Id: usleep.c 30899 2009-03-14 10:16:38Z mazze $
+    $Id$
 
     POSIX.1-2001 function nanosleep().
 */

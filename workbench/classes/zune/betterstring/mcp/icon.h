@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: icon.h 238 2010-04-28 14:57:43Z thboeckel $
+ $Id$
 
 ***************************************************************************/
 

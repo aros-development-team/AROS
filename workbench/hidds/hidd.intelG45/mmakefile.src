@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 30935 2009-03-16 23:54:42Z neil $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES	:= intelG45_init intelG45_class intelG45_i2c intelG45_bitmap intelG45_lowlevel intelG45_memory compositingclass 

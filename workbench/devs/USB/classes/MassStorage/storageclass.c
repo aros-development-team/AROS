@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2006 by Michal Schulz
-    $Id: hidclass.c 29012 2008-07-12 20:21:28Z schulz $
+    $Id$
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Library General Public License as

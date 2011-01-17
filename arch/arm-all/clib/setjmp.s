@@ -3,7 +3,7 @@
  *
  *  Created on: Aug 5, 2009
  *      Author: misc
- *  $Id:$
+ *  $Id$
  */
 
 #include "aros/arm/asm.h"

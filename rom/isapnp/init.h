@@ -1,4 +1,4 @@
-/* $Id: init.h,v 1.5 2001/05/08 23:14:24 lcs Exp $ */
+/* $Id$ */
 
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.

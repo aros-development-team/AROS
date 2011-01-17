@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: setjmp.s 12741 2001-12-08 18:16:08Z chodorowski $
+    $Id$
 
     Desc: ANSI C function setjmp()
     Lang: english
