@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -19,6 +19,7 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
 
 #include <clib/macros.h>
 
@@ -187,6 +188,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     LONG err;
     ULONG bsize = de->de_SizeBlock * 4;
     struct FATBootSector *boot;
+    struct FATFSInfo *fsinfo;
     BOOL invalid = FALSE;
     ULONG end;
 
@@ -202,8 +204,8 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
      * the boot sector. In practice it doesn't matter - we're going to use
      * this once and once only.
      */
-    sb->first_device_sector = de->de_BlocksPerTrack *
-                              de->de_LowCyl;
+    sb->first_device_sector =
+        de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
 
     D(bug("[fat] boot sector at sector %ld\n", sb->first_device_sector));
 
@@ -262,7 +264,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 
     sb->free_clusters = 0xffffffff;
 
-    /* check if disk is in fact FAT filesystem */          
+    /* check if disk is in fact a FAT filesystem */
 
     /* valid sector size: 512, 1024, 2048, 4096 */
     if (sb->sectorsize != 512 && sb->sectorsize != 1024 && sb->sectorsize != 2048 && sb->sectorsize != 4096)
@@ -378,6 +380,27 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->volume.name[0] = 9;
     }
 
+    /* get initial number of free clusters */
+    sb->free_clusters = -1;
+    if (sb->type == 32) {
+        sb->fsinfo_block = Cache_GetBlock(sb->cache, sb->first_device_sector
+            + AROS_LE2WORD(boot->type.fat32.bpb_fs_info), (UBYTE **)&fsinfo);
+        if (sb->fsinfo_block != NULL) {
+            if (fsinfo->lead_sig == AROS_LONG2LE(FSI_LEAD_SIG)
+                && fsinfo->struct_sig == AROS_LONG2LE(FSI_STRUCT_SIG)
+                && fsinfo->trail_sig == AROS_LONG2LE(FSI_TRAIL_SIG)) {
+                sb->free_clusters = AROS_LE2LONG(fsinfo->free_count);
+                fsinfo->next_free = -1;
+                D(bug("[fat] valid FATFSInfo block found\n"));
+                sb->fsinfo_buffer = fsinfo;
+            }
+            else
+                Cache_FreeBlock(sb->cache, sb->fsinfo_block);
+        }
+    }
+    if (sb->free_clusters == -1)
+        CountFreeClusters(sb);
+
     D(bug("\tFAT Filesystem successfully detected.\n"));
     FreeMem(boot, bsize);
     return 0;
@@ -443,6 +466,20 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
     struct DirEntry de;
     LONG err;
     int i;
+    struct DosEnvec *dosenv = BADDR(glob->fssm->fssm_Environ);
+    ULONG bsize = dosenv->de_SizeBlock * 4;
+    struct FATBootSector *boot;
+
+    /* read boot block */
+    boot = AllocMem(bsize, MEMF_ANY);
+    if (!boot)
+	return ERROR_NO_FREE_STORE;
+
+    if ((err = AccessDisk(FALSE, sb->first_device_sector, 1, bsize, (UBYTE *)boot)) != 0) {
+        D(bug("[fat] couldn't read boot block (%ld)\n", err));
+	FreeMem(boot, bsize);
+        return err;
+    }
 
     D(bug("[fat] searching root directory for volume name\n"));
 
@@ -454,28 +491,10 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0) {
 
         /* match the volume id entry */
-        if ((de.e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_VOLUME_ID) {
+	if ((de.e.entry.attr & ATTR_VOLUME_ID_MASK) == ATTR_VOLUME_ID
+            && de.e.entry.name[0] != 0xe5) {
             D(bug("[fat] found volume id entry %ld\n", dh.cur_index));
-
-            /* copy the name in. name is a BSTR */
-            de.e.entry.name[0] = name[1];
-            for (i = 1; i < 11; i++)
-                if (i < name[0])
-                    de.e.entry.name[i] = tolower(name[i+1]);
-                else
-                    de.e.entry.name[i] = ' ';
-
-            if ((err = UpdateDirEntry(&de)) != 0) {
-                D(bug("[fat] couldn't change volume name\n"));
-                return err;
-            }
-
-            sb->volume.name[0] = name[0] < 10 ? name[0] : 10;
-            CopyMem(&name[1], &(sb->volume.name[1]), sb->volume.name[0]);
-            sb->volume.name[sb->volume.name[0]+1] = '\0';
-
-            D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));
-
+            err = 0;
             break;
         }
 
@@ -486,6 +505,48 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
             break;
         }
     }
+
+    /* create a new volume id entry if there wasn't one */
+    if (err != 0) {
+        err = AllocDirEntry(&dh, 0, &de);
+        if (err == 0) {
+            memset(&de.e.entry, 0, sizeof(struct FATDirEntry));
+            de.e.entry.attr = ATTR_VOLUME_ID;
+        }
+    }
+
+    /* copy the name in. name is a BSTR */
+    if (err == 0) {
+        de.e.entry.name[0] = name[1];
+        for (i = 0; i < 11; i++)
+            if (i < name[0])
+                de.e.entry.name[i] = toupper(name[i+1]);
+            else
+                de.e.entry.name[i] = ' ';
+
+        if ((err = UpdateDirEntry(&de)) != 0) {
+            D(bug("[fat] couldn't change volume name\n"));
+            return err;
+        }
+    }
+
+    /* copy name to boot block as well, and save */
+    if (sb->type == 32)
+        CopyMem(de.e.entry.name, boot->type.fat32.bs_vollab, 11);
+    else
+        CopyMem(de.e.entry.name, boot->type.fat16.bs_vollab, 11);
+
+    if ((err = AccessDisk(TRUE, sb->first_device_sector, 1, bsize,
+        (UBYTE *)boot)) != 0)
+        D(bug("[fat] couldn't write boot block (%ld)\n", err));
+    FreeMem(boot, bsize);
+
+    /* update name in sb */
+    sb->volume.name[0] = name[0] <= 11 ? name[0] : 11;
+    CopyMem(&name[1], &(sb->volume.name[1]), sb->volume.name[0]);
+    sb->volume.name[sb->volume.name[0]+1] = '\0';
+
+    D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));
 
     ReleaseDirHandle(&dh);
     return err;
@@ -548,11 +609,27 @@ void CountFreeClusters(struct FSSuper *sb) {
     D(bug("\tfree clusters: %ld\n", free));
 }
 
-static const UWORD mdays[] = { 0, 31, 59, 90, 120, 151, 181, 212, 143, 273, 304, 334 };
+void AllocCluster(struct FSSuper *sb, ULONG cluster) {
+    SET_NEXT_CLUSTER(sb, cluster, sb->eoc_mark);
+    sb->free_clusters--;
+    if (sb->fsinfo_buffer != NULL) {
+        sb->fsinfo_buffer->free_count = AROS_LONG2LE(sb->free_clusters);
+        Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
+    }
+}
+
+void FreeCluster(struct FSSuper *sb, ULONG cluster) {
+    SET_NEXT_CLUSTER(sb, cluster, 0);
+    sb->free_clusters++;
+    if (sb->fsinfo_buffer != NULL) {
+        sb->fsinfo_buffer->free_count = AROS_LONG2LE(sb->free_clusters);
+        Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
+    }
+}
 
 void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds) {
-    UBYTE year, month, day, hours, mins, secs;
-    UBYTE nleap;
+    ULONG year, month, day, hours, mins, secs;
+    struct ClockData clock_data;
 
     /* date bits: yyyy yyym mmmd dddd */
     year = (date & 0xfe00) >> 9;    /* bits 15-9 */
@@ -566,82 +643,44 @@ void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds) {
 
     D(bug("[fat] converting fat date: year %d month %d day %d hours %d mins %d secs %d\n", year, month, day, hours, mins, secs));
 
-    /* number of leap years in before this year. note this is only dividing by
-     * four, which is fine because FAT dates range 1980-2107. The only year in
-     * that range that is divisible by four but not a leap year is 2100. If
-     * this code is still being used then, feel free to fix it :) */
-    nleap = year >> 2;
-    
-    /* if this year is a leap year and it's March or later, adjust for this
-     * year too */
-    if (year & 0x03 && month >= 3)
-        nleap++;
+    clock_data.year = 1980 + year;
+    clock_data.month = month;
+    clock_data.mday = day;
+    clock_data.hour = hours;
+    clock_data.min = mins;
+    clock_data.sec = secs << 1;
+    secs = Date2Amiga(&clock_data);
 
-    /* calculate days since 1978-01-01 (DOS epoch):
-     *   730 days in 1978+1979, getting us to the FAT epoch 1980-01-01
-     *   years * 365 days
-     *   leap days
-     *   days in all the months before this one
-     *   day of this month */
-    ds->ds_Days = 730 + year * 365 + nleap + mdays[month-1] + day-1;
+    /* calculate days since 1978-01-01 (DOS epoch) */
+    ds->ds_Days = secs / (60 * 60 * 24);
 
     /* minutes since midnight */
-    ds->ds_Minute = hours * 60 + mins;
+    ds->ds_Minute = secs / 60 % (24 * 60);
 
-    /* 1/50 sec ticks. FAT dates are 0-29, so we have to multiply them by two
-     * as well */
-    ds->ds_Tick = (secs << 1) * TICKS_PER_SECOND;
+    /* 1/50 sec ticks since last minute */
+    ds->ds_Tick = secs % 60 * TICKS_PER_SECOND;
 
     D(bug("[fat] converted fat date: days %ld minutes %ld ticks %ld\n", ds->ds_Days, ds->ds_Minute, ds->ds_Tick));
 }
 
-void ConvertAROSDate(struct DateStamp ds, UWORD *date, UWORD *time) {
-    UBYTE year, month, day, hours, mins, secs;
-    BOOL leap;
+void ConvertAROSDate(struct DateStamp *ds, UWORD *date, UWORD *time) {
+    ULONG year, month, day, hours, mins, secs;
+    struct ClockData clock_data;
 
-    /* converting no. of days since 1978-01-01 (DOS epoch) to
-     * years/months/days since FAT epoch (1980-01-01) */
+    /* convert datestamp to seconds since 1978 */
+    secs = ds->ds_Days * 60 * 60 * 24 + ds->ds_Minute * 60
+        + ds->ds_Tick / TICKS_PER_SECOND;
 
-    /* subtract 730 days in 1978/1979 */
-    ds.ds_Days -= 730;
+    /* convert seconds since 1978 to calendar/time data */
+    Amiga2Date(secs, &clock_data);
 
-    /* years are 365 days */
-    year = ds.ds_Days / 365;
-    ds.ds_Days -= year * 365;
-
-    /* leap years. same algorithm as above. get the number of leap years
-     * before this year, and subtract that many days */
-    ds.ds_Days -= year >> 2;
-
-    /* figure out if we need to adjust for a leap year this year. day 60 is
-     * 29-Feb/1-Mar */
-    leap = (year & 0x03 && ds.ds_Days >= 60);
-    
-    /* find the month by checking it against the days-in-month array */
-    for (month = 1; month < 12 && ds.ds_Days > mdays[month]; month++);
-
-    /* day of month is whatever's left (+1, since we count from the 1st) */
-    day = ds.ds_Days - mdays[month - 1] + 1;
-
-    /* subtract a day if we're after march in a leap year */
-    if (leap) {
-        day--;
-        if (day == 0) {
-            month--;
-            if (month == 2)
-                day = 29;
-            else
-                day = ds.ds_Days - mdays[month] + 1;
-        }
-    }
-
-    /* time is easy by comparison. convert minutes since midnight to
-     * hours and seconds */
-    hours = ds.ds_Minute / 60;
-    mins = ds.ds_Minute - (hours * 60);
-
-    /* FAT seconds are 0-29 */
-    secs = (ds.ds_Tick / TICKS_PER_SECOND) >> 1;
+    /* get values used in FAT dates */
+    year = clock_data.year - 1980;
+    month = clock_data.month - 0;
+    day = clock_data.mday;
+    hours = clock_data.hour;
+    mins = clock_data.min;
+    secs = clock_data.sec >> 1;
 
     /* all that remains is to bit-encode the whole lot */
 
@@ -651,3 +690,4 @@ void ConvertAROSDate(struct DateStamp ds, UWORD *date, UWORD *time) {
     /* time bits: hhhh hmmm mmms ssss */
     *time = (((ULONG) hours) << 11) | (((ULONG) mins) << 5) | secs;
 }
+

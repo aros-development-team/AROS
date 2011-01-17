@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -29,7 +29,7 @@
         ULONG cluster = cl;                                     \
         while (cluster >= 0 && cluster < sb->eoc_mark - 7) {    \
             ULONG next_cluster = GET_NEXT_CLUSTER(sb, cluster); \
-            SET_NEXT_CLUSTER(sb, cluster, 0);                   \
+            FreeCluster(sb, cluster);                           \
             cluster = next_cluster;                             \
         }                                                       \
     } while(0)
@@ -570,14 +570,14 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     }
 
     /* allocate it */
-    SET_NEXT_CLUSTER(dh.ioh.sb, cluster, dh.ioh.sb->eoc_mark);
+    AllocCluster(dh.ioh.sb, cluster);
 
     D(bug("[fat] allocated cluster %ld for directory\n", cluster));
 
     /* create the entry, pointing to the new cluster */
     if ((err = CreateDirEntry(&dh, name, namelen, ATTR_DIRECTORY | ATTR_ARCHIVE, cluster, &de)) != 0) {
         /* deallocate the cluster */
-        SET_NEXT_CLUSTER(dh.ioh.sb, cluster, 0);
+        FreeCluster(dh.ioh.sb, cluster);
 
         ReleaseDirHandle(&dh);
         return err;
@@ -598,8 +598,11 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     GetDirEntry(&sdh, 1, &sde);
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
     CopyMem("..         ", &sde.e.entry.name, 11);
-    sde.e.entry.first_cluster_lo = dh.ioh.first_cluster & 0xffff;
-    sde.e.entry.first_cluster_hi = dh.ioh.first_cluster >> 16;
+    cluster = dh.ioh.first_cluster;
+    if (cluster == dh.ioh.sb->rootdir_cluster)
+        cluster = 0;
+    sde.e.entry.first_cluster_lo = cluster & 0xffff;
+    sde.e.entry.first_cluster_hi = cluster >> 16;
     UpdateDirEntry(&sde);
 
     /* clear all remaining entries (the first of which marks the end of the
@@ -845,7 +848,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence, LONG *new
             }
 
             /* mark the cluster used */
-            SET_NEXT_CLUSTER(glob->sb, next, glob->sb->eoc_mark);
+            AllocCluster(glob->sb, next);
 
             /* if the file had no clusters, then this is the first and we
                 * need to note it for later storage in the direntry */
@@ -965,7 +968,7 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct D
     }
 
     /* set and update the date */
-    ConvertAROSDate(*ds, &de.e.entry.write_date, &de.e.entry.write_time);
+    ConvertAROSDate(ds, &de.e.entry.write_date, &de.e.entry.write_time);
     de.e.entry.last_access_date = de.e.entry.write_date;
     UpdateDirEntry(&de);
 

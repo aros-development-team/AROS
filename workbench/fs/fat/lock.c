@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -122,7 +122,7 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
 
     /* found it, do the locking proper */
     if (de.e.entry.attr & ATTR_DIRECTORY && FIRST_FILE_CLUSTER(&de)
-        == glob->sb->rootdir_cluster)
+        <= glob->sb->rootdir_cluster)
         err = LockRoot(access, lock);
     else
         err = LockFile(dh.ioh.first_cluster, de.index, access, lock);

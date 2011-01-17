@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -63,8 +63,12 @@ struct FATFSInfo {
     ULONG free_count;
     ULONG next_free;
     UBYTE reserved2[12];
-    ULONG trial_sig;
-};
+    ULONG trail_sig;
+} __attribute__ ((__packed__));
+
+#define FSI_LEAD_SIG 0x41615252
+#define FSI_STRUCT_SIG 0x61417272
+#define FSI_TRAIL_SIG 0xaa550000
 
 struct FATDirEntry {
     UBYTE name[11];

@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -174,6 +174,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
     /* get handle on grandparent dir so we can find entry with parent's
      * name */
     if (dh->ioh.first_cluster != dh->ioh.sb->rootdir_cluster) {
+        D(bug("[fat] getting grandparent, first cluster is %ld, root cluster is %ld\n", dh->ioh.first_cluster, dh->ioh.sb->rootdir_cluster));
         cluster = dh->ioh.first_cluster;
         GetDirEntry(dh, 1, de);
         InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh, TRUE);
@@ -347,18 +348,14 @@ LONG UpdateDirEntry(struct DirEntry *de) {
     return 0;
 }
 
-LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr, ULONG cluster, struct DirEntry *de) {
+LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de) {
     ULONG nwant;
     LONG err;
     ULONG nfound;
-    struct DateStamp ds;
     BOOL clusteradded = FALSE;
 
-    D(bug("[fat] creating dir entry (name '"); RawPutChars(name, namelen);
-      bug("' attr 0x%02x cluster %ld)\n", attr, cluster));
-
     /* find out how many entries we need */
-    nwant = NumLongNameEntries(name, namelen) + 1;
+    nwant = gap + 1;
 
     D(bug("[fat] need to find room for %ld contiguous entries\n", nwant));
 
@@ -427,20 +424,37 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
     }
 
     D(bug("[fat] found a gap, base (short name) entry is %ld\n", de->index));
+    return 0;
+}
+
+LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
+    UBYTE attr, ULONG cluster, struct DirEntry *de) {
+    ULONG gap;
+    LONG err;
+    struct DateStamp ds;
+
+    D(bug("[fat] creating dir entry (name '"); RawPutChars(name, namelen);
+      bug("' attr 0x%02x cluster %ld)\n", attr, cluster));
+
+    /* find out how many extra entries we need for the long name */
+    gap = NumLongNameEntries(name, namelen);
+
+    /* search for a suitable unused entry */
+    err = AllocDirEntry(dh, gap, de);
+    if (err != 0)
+        return err;
 
     /* build the entry */
     de->e.entry.attr = attr;
     de->e.entry.nt_res = 0;
 
     DateStamp(&ds);
-    ConvertAROSDate(ds, &(de->e.entry.create_date), &(de->e.entry.create_time));
+    ConvertAROSDate(&ds, &(de->e.entry.create_date), &(de->e.entry.create_time));
     de->e.entry.write_date = de->e.entry.create_date;
     de->e.entry.write_time = de->e.entry.create_time;
     de->e.entry.last_access_date = de->e.entry.create_date;
-
-    /* XXX calculate this. I've just written ConvertAROSDate and I'm sick of
-     * dates and times for the moment */
-    de->e.entry.create_time_tenth = 0;
+    de->e.entry.create_time_tenth = ds.ds_Tick % (TICKS_PER_SECOND * 2)
+        / (TICKS_PER_SECOND / 10);
 
     de->e.entry.first_cluster_lo = cluster & 0xffff;
     de->e.entry.first_cluster_hi = cluster >> 16;

@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -126,7 +126,7 @@ void ProcessPackets(void) {
             case ACTION_EXAMINE_OBJECT:
             case ACTION_EXAMINE_FH: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
-                struct FileInfoBlock *fib = BADDR(pkt->dp_Arg2);                     
+                struct FileInfoBlock *fib = BADDR(pkt->dp_Arg2);
 
                 D(bug("[fat] EXAMINE_OBJECT: lock 0x%08x (dir %ld/%ld)\n",
                       pkt->dp_Arg1,
@@ -537,6 +537,16 @@ void ProcessPackets(void) {
                 UnLockDosList(LDF_VOLUMES | LDF_WRITE);
                 if (err != 0)
                     break;
+
+#ifdef AROS_FAST_BPTR
+                /* ReadFATSuper() sets a null byte after the
+                 * string, so this should be fine */
+                CopyMem(glob->sb->volume.name + 1, glob->sb->doslist->dol_Name,
+                    glob->sb->volume.name[0] + 1);
+#else
+                CopyMem(glob->sb->volume.name, glob->sb->doslist->dol_Name,
+                    glob->sb->volume.name[0] + 2);
+#endif
 
                 SendEvent(IECLASS_DISKINSERTED);
 

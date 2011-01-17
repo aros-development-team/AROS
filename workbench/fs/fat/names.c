@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -418,6 +418,10 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     ReleaseDirHandle(&dh);
 
     D(bug("[fat] successfully wrote short & long names\n"));
+
+    /* Set hidden flags on .info files */
+    if (strcmp(name + len - 5, ".info") == 0)
+        short_de->e.entry.attr |= ATTR_HIDDEN;
 
     return 0;
 }

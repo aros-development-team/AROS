@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -51,8 +51,6 @@ void FillDiskInfo (struct InfoData *id) {
     id->id_DiskState = ID_VALIDATED;
 
     if (glob->sb) {
-        CountFreeClusters(glob->sb);
-
         id->id_NumBlocks = glob->sb->total_sectors;
         id->id_NumBlocksUsed = glob->sb->total_sectors - ((glob->sb->free_clusters * glob->sb->clustersize) >> glob->sb->sectorsize_bits);
         id->id_BytesPerBlock = glob->sb->sectorsize;
@@ -251,7 +249,7 @@ void DoDiskInsert(void) {
         FreeVecPooled(glob->mempool, sb);
     }
 
-    SendEvent(IECLASS_DISKINSERTED);       
+    SendEvent(IECLASS_DISKINSERTED);
 
     return;
 }
@@ -405,7 +403,7 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
 		    	     "Either your disk is damaged or it is a bug in\n"
 		    	     "the handler. Please check your disk and/or\n"
 		    	     "report this problem to the developers team.",
-		    	     do_write ? "write" : "read", nblocks, num,
+		    	     (IPTR)(do_write ? "write" : "read"), nblocks, num,
 		    	     glob->sb->first_device_sector, block_size);
 	    }
 	    return IOERR_BADADDRESS;
@@ -426,7 +424,7 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size,
 		    	     "Either your disk is damaged or it is a bug in\n"
 		    	     "the handler. Please check your disk and/or\n"
 		    	     "report this problem to the developers team.",
-		    	     do_write ? "write" : "read", nblocks, num,
+		    	     (IPTR)(do_write ? "write" : "read"), nblocks, num,
 		    	     end - 1, block_size);
 	    }
 	    return IOERR_BADADDRESS;
