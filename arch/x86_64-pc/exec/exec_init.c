@@ -34,6 +34,8 @@
 #include "exec_util.h"
 #include "memory.h"
 
+#define DEBUG 1
+
 #undef AROS_MUNGWALL_DEBUG
 #define P(x) ((void *)(x))
 
@@ -125,42 +127,49 @@ static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096)));
 
 #define MCHIP (MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA)
 #define MFAST (MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL)
-#define exec_InsertMemory(a, b, c) InsertMemory(kernLow, kernTop, b, c, SysBase)
-static void InsertMemory(
-	uintptr_t kernLow,
-	uintptr_t kernTop,
-	uintptr_t lower,
-	uintptr_t upper,
-	struct ExecBase *SysBase)
+static void insertMemoryAux(uintptr_t lower, uintptr_t upper)
 {
+    struct ExecBase *SysBase = TLS_GET(SysBase);
     size_t size = upper - lower + 1;
 
     if (size < 0x1000)
 	return;
 
+    if (lower < 0x01000000)
+    {
+	size_t s2 = (upper < 0x01000000 ? ++upper : 0x01000000) - lower;
+
+	rkprintf("[exec] C %p - %p\n", P(lower), P(lower + s2 - 1));
+	AddMemList(s2, MCHIP, -10, P(lower), (STRPTR)exec_chipname);
+	lower += s2;
+	size -= s2;
+    }
+
+    if (size < 0x1000)
+	return;
+    
+    rkprintf("[exec] F %p - %p\n", P(lower), P(lower + size - 1));
+    AddMemList(size, MFAST, 0, P(lower), (STRPTR)exec_fastname);
+}
+
+static void insertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
+{
+    uintptr_t kernLow = krnGetTagData(KRN_KernelLowest, 0, msg);
+    uintptr_t kernTop = krnGetTagData(KRN_KernelHighest, 0, msg);
+
+    if (lower >= kernLow && lower < kernTop)
+	lower = kernTop;
+
+    if (upper >= kernLow && upper < kernTop)
+	upper = kernLow;
+    
     if (lower < kernLow && upper > kernTop)
     {
-	exec_InsertMemory(msg, lower, kernLow - 1);
-	exec_InsertMemory(msg, kernTop, upper);
+	insertMemoryAux(lower, kernLow - 1);
+	insertMemoryAux(kernTop, upper);
     }
-    else /* other cases are tested by caller */
-    {
-	if (lower < 0x01000000)
-	{
-	    size_t s2 = (upper < 0x01000000 ? ++upper : 0x01000000) - lower;
-
-	    rkprintf("[exec] C %p - %p\n", P(lower), P(lower + s2 - 1));
-	    AddMemList(s2, MCHIP, -10, P(lower), (STRPTR)exec_chipname);
-	    lower += s2;
-	    size -= s2;
-	}
-
-	if (size >= 0x1000)
-	{
-	    rkprintf("[exec] F %p - %p\n", P(lower), P(lower + size - 1));
-	    AddMemList(size, MFAST, 0, P(lower), (STRPTR)exec_fastname);
-	}
-    }
+    else
+	insertMemoryAux(lower, upper);
 }
 
 #undef KernelBase
@@ -255,16 +264,11 @@ int exec_main(struct TagItem *msg, void *entry)
 
     /* Store sysbase in TLS */
     TLS_SET(SysBase, SysBase);
-
-    uintptr_t kernLow = krnGetTagData(KRN_KernelLowest, 0, msg);
-    uintptr_t kernTop = krnGetTagData(KRN_KernelHighest, 0, msg);
-
     rkprintf("[exec] Adding memory ..\n");
 
     if ((len = krnGetTagData(KRN_MMAPLength, 0, msg)))
     {
 	rkprintf("[exec] Registering MMAP regions (len = %lu)\n", len);
-	rkprintf("[exec] K %p - %p\n", P(kernLow), P(kernTop - 1));
 	mmap = (struct mb_mmap *)(krnGetTagData(KRN_MMAPAddress, 0, msg));
 
 	while (len >= sizeof(struct mb_mmap))
@@ -277,13 +281,7 @@ int exec_main(struct TagItem *msg, void *entry)
 		if (addr_lower > lower)
 		    lower = addr_lower;
 
-		if (lower >= kernLow && lower < kernTop)
-		    lower = kernTop;
-
-		if (upper >= kernLow && upper < kernTop)
-		    upper = kernLow;
-
-		exec_InsertMemory(msg, lower, upper);
+		insertMemory(msg, lower, upper);
 	    }
 
 	    len -= mmap->size + 4;
@@ -293,46 +291,8 @@ int exec_main(struct TagItem *msg, void *entry)
     else
     {
 	uintptr_t addr_upper = krnGetTagData(KRN_MEMUpper, 0, msg);
-
 	rkprintf("[exec] Registering mem_lower/mem_upper Memory Region\n");
-
-	if (addr_lower > 0)
-	{
-	    uintptr_t chip_start = 0X2000;
-	    uintptr_t chip_end = (addr_lower * 1024) - 1;
-
-	    if (chip_start < chip_end)
-	    {
-		rkprintf("[exec]   Registering Lower Mem Range (%p - %p)\n",
-			P(chip_start), P(chip_end));
-		exec_InsertMemory(msg, chip_start, chip_end);
-	    }
-	}
-
-	if (addr_upper > 0)
-	{
-	    uintptr_t fast_start = 0x0000100000;
-	    uintptr_t fast_end = (addr_upper * 1024) + (fast_start - 1);
-
-	    if (fast_start < fast_end)
-	    {
-		if (fast_end > 0x01000000)
-		{
-		    rkprintf("[exec]   Registering Upper Chip Mem Range "
-			    "(%p - %p)\n", P(fast_start), P(0x00ffffff));
-		    exec_InsertMemory(msg, fast_start, 0x00ffffff);
-		    rkprintf("[exec]   Registering Upper Fast Mem Range "
-			    "(%p - %p)\n", P(0x01000000), P(fast_end));
-		    exec_InsertMemory(msg, 0x01000000, fast_end);
-		}
-		else
-		{
-		    rkprintf("[exec]   Registering Upper Mem Range "
-			    "(%p - %p)\n", P(fast_start), P(fast_end));
-		    exec_InsertMemory(msg, fast_start, fast_end);
-		}
-	    }
-	}
+	insertMemory(msg, addr_lower, addr_upper);
     }
 
     SumLibrary((struct Library *)SysBase);
@@ -580,7 +540,6 @@ int exec_main(struct TagItem *msg, void *entry)
 
     InitCode(RTF_SINGLETASK, 0);
     PrivExecBase(SysBase)->KernelBase = TLS_GET(KernelBase);
-    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
 
     UBYTE apictotal;
 

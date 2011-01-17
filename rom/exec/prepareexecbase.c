@@ -280,6 +280,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
     }
 
+    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
 
     return SysBase;
