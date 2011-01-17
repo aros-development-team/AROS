@@ -572,12 +572,12 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
         while (len >= sizeof(struct mb_mmap))
         {
-            if (mmap->type == MMAP_TYPE_RAM)
+            if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE)
             {
-                unsigned long addr = (mmap->addr_low | ((unsigned long)mmap->addr_high << 32));
-                unsigned long size = (mmap->len_low | ((unsigned long)mmap->len_high << 32));
+                multiboot_uint64_t addr = mmap->addr;
+                multiboot_uint64_t size = mmap->len;
 
-                if (addr < 0x00100000 && (addr+size) <= 0x00100000)
+                if (addr < 0x00100000 && addr + size <= 0x00100000)
                 {
                     D(kprintf("[BOOT] MMAP: Using Entry %p [%d bytes] for lowpages\n", addr, size));
                     tag->ti_Tag = KRN_MEMLower;
@@ -592,6 +592,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
             len -= mmap->size+4;
             mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
         }
+
         tag->ti_Tag = TAG_DONE;
     }
     else

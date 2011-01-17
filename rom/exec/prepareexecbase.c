@@ -63,7 +63,9 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 {
 	struct AROSSupportBase *AROSSupportBase;
 
-	AROSSupportBase = Allocate(mh, sizeof(struct AROSSupportBase));
+	/* using stdAlloc instead of Allocate because x86_64 exec_init
+	 * has not set yet SysBase in the TLS */
+	AROSSupportBase = stdAlloc(mh, sizeof(*AROSSupportBase), MEMF_CLEAR, 0);
 	
 	AROSSupportBase->kprintf = (void *)kprintf;
 	AROSSupportBase->rkprintf = (void *)rkprintf;
@@ -187,7 +189,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;
-    SysBase->LibNode.lib_Node.ln_Name = "exec.library";
+    SysBase->LibNode.lib_Node.ln_Name = (char *)Exec_resident.rt_Name;
     SysBase->LibNode.lib_IdString     = (char *)Exec_resident.rt_IdString;
     SysBase->LibNode.lib_Version      = VERSION_NUMBER;
     SysBase->LibNode.lib_Revision     = REVISION_NUMBER;

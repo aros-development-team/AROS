@@ -14,7 +14,7 @@ setup-pc-x86_64 :
 $(BINDIR)/boot/aros-pc-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o
 	$(HOST_LD) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds \
 		-o $@ $< $(KOBJS) 
-	@strip --strip-unneeded -R .note -R .comment $@
+	#@strip --strip-unneeded -R .note -R .comment $@
 
 $(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/vesa.bin.o
 	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/vesa.bin.o -o $@

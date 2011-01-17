@@ -57,18 +57,22 @@ struct mb_module {
     unsigned int    reserved;
 };
 
-struct mb_mmap {
-    unsigned int   size;
-    unsigned int   addr_low;
-    unsigned int   addr_high;
-    unsigned int   len_low;
-    unsigned int   len_high;
-    unsigned int   type;
-#define MMAP_TYPE_RAM	    1
-#define MMAP_TYPE_RESERVED  2
-#define MMAP_TYPE_ACPIDATA  3
-#define MMAP_TYPE_ACPINVS   4
-};
+typedef unsigned char           multiboot_uint8_t;
+typedef unsigned short          multiboot_uint16_t;
+typedef unsigned int            multiboot_uint32_t;
+typedef unsigned long long      multiboot_uint64_t;
+
+struct mb_mmap { /* as of multiboot spec 0.6.96 */
+    multiboot_uint32_t	size;
+    multiboot_uint64_t	addr;
+    multiboot_uint64_t	len;
+#define MULTIBOOT_MEMORY_AVAILABLE              1
+#define MULTIBOOT_MEMORY_RESERVED               2
+#define MULTIBOOT_MEMORY_ACPI_RECLAIMABLE       3
+#define MULTIBOOT_MEMORY_NVS                    4
+#define MULTIBOOT_MEMORY_BADRAM                 5
+    multiboot_uint32_t type;
+} __attribute__((packed));
 
 /* VBE controller information */
 struct vbe_controller
