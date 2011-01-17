@@ -63,7 +63,7 @@
 #define SYS_MBUF_H
 
 #ifndef SYS_MALLOC_H
-#include <sys/malloc.h>
+//#include <sys/malloc.h>
 #endif
 
 #if 0				/* not needed (yet), DO NOT DELETE! */
