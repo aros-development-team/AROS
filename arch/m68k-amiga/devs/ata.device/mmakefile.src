@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS     := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata.device
+USER_CFLAGS     := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata.device -I$(SRCDIR)/rom/devs/ata.device
 
 FILES := ata ata_init lowlevel dma_generic ata_amiga
 
