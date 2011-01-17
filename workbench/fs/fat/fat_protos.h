@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -21,6 +21,8 @@ LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
 LONG GetVolumeIdentity(struct FSSuper *sb, struct VolumeIdentity *volume);
 
 void CountFreeClusters(struct FSSuper *sb);
+void AllocCluster(struct FSSuper *sb, ULONG cluster);
+void FreeCluster(struct FSSuper *sb, ULONG cluster);
 
 /* disk.c */
 void ProcessDiskChange (void);
@@ -58,6 +60,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de);
 
 LONG UpdateDirEntry(struct DirEntry *de);
 
+LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de);
 LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr, ULONG cluster, struct DirEntry *de);
 LONG DeleteDirEntry(struct DirEntry *de);
 
@@ -71,7 +74,7 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len);
 
 /* fat.c */
 void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds);
-void ConvertAROSDate(struct DateStamp ds, UWORD *date, UWORD *time);
+void ConvertAROSDate(struct DateStamp *ds, UWORD *date, UWORD *time);
 LONG SetVolumeName(struct FSSuper *sb, UBYTE *name);
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 
