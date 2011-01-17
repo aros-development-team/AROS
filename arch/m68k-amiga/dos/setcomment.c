@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: setcomment.c 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc: Set a filecomment.
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: readlink.c 33168 2010-05-04 06:17:31Z sonic $
+    $Id$
 
     Desc: Read the soft-link information.
     Lang: English

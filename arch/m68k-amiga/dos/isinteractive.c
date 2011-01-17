@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: isinteractive.c 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc: Query a filesystem for interactiveness.
     Lang: English

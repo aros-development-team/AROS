@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: support.h 34424 2010-09-12 21:28:37Z vidarh $
+    $Id$
 
     Desc: Filesystem that uses console device for input/output.
     Lang: english

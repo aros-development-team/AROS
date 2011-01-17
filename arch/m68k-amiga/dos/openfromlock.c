@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: openfromlock.c 34705 2010-10-13 20:30:16Z jmcmullan $
+    $Id$
 
     Desc: Open a file from a lock
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright � 2004-2009, The AROS Development Team. All rights reserved
-    $Id: dma_generic.c 32450 2010-01-25 21:39:30Z schulz $
+    $Id$
 
     Desc:
     Lang: English

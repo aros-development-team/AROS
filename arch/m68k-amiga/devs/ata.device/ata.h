@@ -3,7 +3,7 @@
 
 /*
    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
-   $Id: ata.h 35483 2010-11-14 16:36:25Z weissms $
+   $Id$
 
 Desc: ata.device main private include file
 Lang: English

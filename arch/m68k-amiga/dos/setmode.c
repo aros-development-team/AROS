@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: setmode.c 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc: Set the current mode of a console device.
     Lang: english

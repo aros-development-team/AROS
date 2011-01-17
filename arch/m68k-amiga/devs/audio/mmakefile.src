@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 36081 2010-12-13 20:49:53Z mazze $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := audio

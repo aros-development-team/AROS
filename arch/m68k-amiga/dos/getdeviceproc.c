@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: getdeviceproc.c 34705 2010-10-13 20:30:16Z jmcmullan $
+    $Id$
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
     Lang: english

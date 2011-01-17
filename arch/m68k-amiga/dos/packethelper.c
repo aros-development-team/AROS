@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2009, The AROS Development Team. All rights reserved.
-    $Id: dopkt.c 35237 2010-11-08 02:49:31Z neil $
+    $Id$
 
     Desc:
     Lang: English
