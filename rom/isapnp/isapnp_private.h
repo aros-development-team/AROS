@@ -1,4 +1,4 @@
-/* $Id: isapnp_private.h,v 1.8 2001/05/03 22:52:40 lcs Exp $ */
+/* $Id$ */
 
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.

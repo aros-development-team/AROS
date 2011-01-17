@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2009, The AROS Development Team. All rights reserved.
-    $Id: sendpkt.c 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc:
     Lang: English

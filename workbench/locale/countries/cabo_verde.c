@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: cabo_verde.c 29561 2008-09-29 15:27:58Z hardwired $
+    $Id$
 
     Desc: Country data for Cabo Verde
 */

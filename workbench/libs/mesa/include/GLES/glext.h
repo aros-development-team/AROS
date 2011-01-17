@@ -1,7 +1,7 @@
 #ifndef __glext_h_
 #define __glext_h_
 
-/* $Revision: 10965 $ on $Date:: 2010-04-09 02:11:29 -0700 #$ */
+/* $Revision$ on $Date::                            $ */
 
 #ifdef __cplusplus
 extern "C" {

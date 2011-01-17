@@ -1,4 +1,4 @@
-/* $Id: fd2pragma.c,v 1.24 2010/09/18 12:46:05 phxhf Exp $ */
+/* $Id$ */
 static const char version[] =
 "$VER: fd2pragma 2.194 (02.01.2011) by Dirk Stoecker <software@dstoecker.de>";
 

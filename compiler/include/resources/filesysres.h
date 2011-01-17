@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: filesysres.h 14582 2007-05-19 23:47:21Z sonic $
+    $Id$
 */
 
 #ifndef RESOURCES_FILESYSRES_H

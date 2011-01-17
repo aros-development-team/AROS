@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: remvblankint.c 31639 2009-07-31 17:49:07Z stegerg $
+    $Id$
 
     Desc: 
     Lang: English

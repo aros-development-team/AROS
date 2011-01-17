@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: icon.c 634 2010-04-28 13:42:45Z damato $
+ $Id$
 
 ***************************************************************************/
 

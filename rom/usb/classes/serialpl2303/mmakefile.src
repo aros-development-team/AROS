@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src  $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 FILES :=    serialpl2303.class dev debug

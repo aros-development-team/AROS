@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 29806 2008-10-18 10:52:30Z verhaegs $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 #MM- devs-networks-drivers-rtl8168-i386 : networking-drivers-rtl8168

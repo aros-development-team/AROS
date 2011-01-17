@@ -1,4 +1,4 @@
-#   $Id:$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 FILES := fec_unit fec_handler fec_hardware

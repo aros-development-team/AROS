@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: close.c 34705 2010-10-13 20:30:16Z jmcmullan $
+    $Id$
 
     Desc:
     Lang: English

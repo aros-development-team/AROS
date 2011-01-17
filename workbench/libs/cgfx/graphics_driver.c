@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: graphics_driver.c 32374 2010-01-18 07:45:12Z sonic $
+    $Id$
 
     Desc: Driver for using gfxhidd for gfx output
     Lang: english

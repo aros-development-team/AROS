@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src  $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG

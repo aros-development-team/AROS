@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: angola.c 29561 2008-09-29 15:27:58Z hardwired $
+    $Id$
 
     Desc: Country data for Angola
 */

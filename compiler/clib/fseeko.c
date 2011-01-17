@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: fseek.c 34710 2010-10-14 05:18:48Z jmcmullan $
+    $Id$
 
     Change the position in a stream.
 */

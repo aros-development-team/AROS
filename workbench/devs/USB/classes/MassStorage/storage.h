@@ -3,7 +3,7 @@
 
 /*
     Copyright (C) 2006 by Michal Schulz
-    $Id: hid.h 29017 2008-07-12 22:25:06Z schulz $
+    $Id$
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Library General Public License as

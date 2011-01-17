@@ -1,5 +1,5 @@
 
-/* $Id: pnp_iterators.c,v 1.6 2001/05/07 12:32:42 lcs Exp $ */
+/* $Id$ */
 
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.

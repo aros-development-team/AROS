@@ -3,7 +3,7 @@
 
 /*
    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
-   $Id: ipeditor.h 21130 2004-02-28 22:50:12Z chodorowski, dariusb $
+   $Id$
 */
 
 #include <exec/types.h>
