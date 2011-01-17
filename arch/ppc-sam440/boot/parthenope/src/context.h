@@ -2,7 +2,7 @@
 #define CONTEXT_H_
 
 /*
- * $Id: context.h 41 2008-03-08 09:22:10Z michalsc $
+ * $Id$
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

@@ -2,7 +2,7 @@
 #define DEBUG_H_
 
 /*
- * $Id: debug.h 25 2008-01-26 11:20:14Z michalsc $
+ * $Id$
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

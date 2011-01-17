@@ -2,7 +2,7 @@
 #define MENU_H_
 
 /*
- * $Id: menu.h 27 2008-01-26 22:32:30Z michalsc $
+ * $Id$
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

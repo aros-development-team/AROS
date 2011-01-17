@@ -1,6 +1,6 @@
 /*
     Copyright � 2004-2007, The AROS Development Team. All rights reserved.
-    $Id: radeon_bios.c 27107 2007-10-28 10:49:11Z verhaegs $
+    $Id$
 
     Desc: ATI radeon driver. BIOS part.
     Lang: English

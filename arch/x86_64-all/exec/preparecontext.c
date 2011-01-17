@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: preparecontext.c 34764 2010-10-15 15:04:08Z jmcmullan $
+    $Id$
 
     Desc: PrepareContext() - Prepare a task context for dispatch, x86-64 version
     Lang: english

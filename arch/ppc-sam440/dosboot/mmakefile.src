@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 29725 2008-10-11 23:48:13Z neil $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.. -I$(SRCDIR)/rom/dosboot

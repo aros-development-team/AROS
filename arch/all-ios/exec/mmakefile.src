@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 34602 2010-10-06 06:12:47Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM kernel-exec-darwin-ios: kernel-kernel-includes kernel-exec-ios-native

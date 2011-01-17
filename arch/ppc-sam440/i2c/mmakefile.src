@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 32437 2010-01-24 11:23:09Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 %build_module mmake=hidd-i2c-amcc440 \
