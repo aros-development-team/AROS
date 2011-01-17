@@ -42,142 +42,161 @@ rom_init:
 	jmp	%a0@(2)
 0:
 
-/* Do we have a Gayle? */
-	move.l  #0f,%a7
-	jmp     Exec_ReadGayle
-0:
-    move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
+	/* Do we have a Gayle? */
+	lea		1f(%pc),%a7
+	jmp		Exec_ReadGayle
+1:	move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
 
-	/* Check for 000000 - 200000 Chip Ram
-	 */
-.L_chip_mem:
-	move.l	#0x000000, %a0
-	move.l	#0x200000, %d0
-	lea.l	0f,%a7
-	jmp	.L_memtest
-0:
+	/* misuse bss for temp stack and memory bank array */
+	lea		_bss_end - 40,%a4
+	move.l	%a4,%a5
+	move.l	%a4,%sp
 
-	/* Stash away fast mem config in:
-	 *    %a4 (start)
-	 *    %d5 (size)
-	 */
-	move.l	%a0,%a4
-	move.l	%d0,%d5
+	/* check non-autoconfig memory areas
+	 * in order of fastest to slowest */	
 
-	/* Check for C00000 - D80000 Fast Ram 
-	 * We really want to put our stacks there.
-	 */
-.L_fast_mem:
-	move.l	#0xc00000, %a0
-	move.l	#0x180000, %d0
-	tst.l   %d6                 /* Gayle? */
-	bne.s   0f                  /* Yes, limit to 0x180000 */
-	add.l   #0x040000, %d0      /* No, look for ram in Gayle space */
-0:
-	lea.l	0f,%a7
-	jmp	.L_memtest
-0:
-	/* %d0 is now the memory size */
+	/* cpu slot ram (A3000/A4000) */
+	move.l	#0x08000000,%a0
+	move.l	#0x7f000000,%a1
+	move.l	#0x00100000,%d0
+	bsr		.L_memtest
 
-.L_alloc_stacks:
-	/* Default stack is the end of chip memory */
-	move.l	%d5,%d1
-	move.l	%a4,%a1
+	/* mainboard ram (A3000) */
+	/* end is static 0x08000000, start addr is end - (size of ram) */
+	move.l	%a5,%a3
+	move.l	#-0x00100000,%d7
+.a3000test:
+	move.l	#0x08000000,%a1
+	move.l	#0x00100000,%d0
+	add.l	%d0,%d7
+	move.l	%a1,%a0
+	sub.l	%d0,%a0
+	sub.l	%d7,%a0
+	sub.l	%d7,%a1
+	move.l	%a3,%a5
+	lsr.l	#1,%d0
+	bsr		.L_memtest
+	bne.s	.a3000test
+	move.l	%a3,%a5
+	tst.l	%d7
+	beq.s	.a3000noram
+	move.l	#0x08000000,%a1
+	sub.l	%d7,%a1
+	move.l	%a1,%a5@+
+	move.l	%d7,%a5@+
+.a3000noram:
 
-	/* Do we have fast memory? */
-	tst.l	%d0
-	beq	.L_stack_setup
+	/* slow ram */
+	move.l	#0x00c00000,%a0
+	move.l	#0x00d80000,%a1
+	tst.b	%d6
+	bne.s	0f
+	move.l	#0x00dc0000,%a1
+0:	move.l	#0x00080000,%d0
+	bsr		.L_memtest
+	
+	/* chip ram */
+	sub.l	%a0,%a0
+	move.l	#0x00200000,%a1
+	move.l	#0x00040000,%d0
+	bsr		.L_memtest
+	beq.s	chipfault
+	/* adjust bss */
+	move.l	#_bss_end,%a5@(-8)
+	sub.l	#_bss_end,%a5@(-4)
 
-	/* Yes! We have some fast memory! */
-	move.l	%d0,%d1
-	move.l	%a0,%a1
+	/* end of memory region list */
+	clr.l	%a5@+
+	clr.l	%a5@
 
+	/* get pointer to beginning of fastest found RAM */
+	move.l	%a4@,%a1
+	move.l	%a4@(4),%d1
+	
 	/* Put the Exec Supervisor stack at the top 64K,
 	 * and the Exec User stack as the next 64K under that
 	 */
 .L_stack_setup:
 	lea.l	%a1@(%d1),%sp
 	move.w	#0,%sr		/* Go to user mode */
-	subi.l	#SS_STACK_SIZE,%d1
+	sub.l	#SS_STACK_SIZE,%d1
 	lea.l	%a1@(%d1),%sp
+	
+	sub.l	#SS_STACK_SIZE+US_STACK_SIZE,%a4@(4)
 
-	/* Was this fast memory? */
-	tst.l	%d0
-	beq	0f
-	/* Yes - shrink fast memory by size of SS */
-	move.l	%d1,%d0
-	jmp	1f
-0:	/* No - shrink chip memory by size of SS */
-	move.l	%d1,%d5
-1:
-
-	/* Fix up chipmem offsets.
-	 *  We need some for exceptions and for some BSS
-	 *  ( _bss_end is the end marker )
-	 */
-	lea.l	_bss_end,%a4
-	sub.l	%a4,%d5
-
-	/* Args for start:
-	 *   ChipMem Start
-	 *   ChipMem Size
-	 *   FastMem Start
-	 *   FastMem Size
-	 *   ss_stack_upper
-	 *   ss_stack_lower
-	 */
 	pea.l	%a1@(%d1)
 	pea.l	%a1@(%d1)
-	addi.l	#(SS_STACK_SIZE),%sp@
-	move.l	%d0,%sp@-
-	move.l	%a0,%sp@-
-	move.l	%d5,%sp@-
-	move.l	%a4,%sp@-
-	jsr	start
+	add.l	#(SS_STACK_SIZE),%sp@
+	move.l	%a4,%sp@-	/* memory bank array */
+	jsr		start
+
+chipfault:
+	move.w	#0x0f0,0xdff180
+looping:
+	nop
+	bra.s	looping
 
 	/******** Memory tester *******/
-	/* TODO: Don't clobber memory of SysBase is valid
-	 * IN: A0 - Address, D0 - Possible Size
-	 *     A7 - Return address
+	 * IN: A0 - Address, A1 - Max end address, D0 = block size
 	 * OUT: D0 - Detected size
-	 * TRASH: D1, D2, D3, D4, A1, A2
+	 * TRASH: D1, D2, D3, D4, D5, A1, A2
 	 */
 .L_memtest:
+	move.l	%d0,%d5
+	move.l	%a0,%a5@
+	move.l	%a1,%d0
+	sub.l	%a0,%d0
+
+	move.l	%a0,%d1
+	and.l	#0xff000000,%d1
+	beq		.L_memtest_24bitaddr
+	/* test if 32bit address mirrors address zero */
+	move.l	%d1,%a1
+	move.l	0.w,%d2				/* save old */
+	move.l	#0xfecaf00d,%d1
+	move.l	%d1,0.w
+	nop		/* force 68040/060 bus cycle to finish */
+	cmp.l	%a1@,%d1
+	bne		.L_memtest_32bitok	/* different? no mirror */
+	move.l	#0xcafed00d,%d1
+	move.l	%d1,0.w
+	nop
+	cmp.l	%a1@,%d1
+	bne		.L_memtest_32bitok	/* check again, maybe 0 already had our test value */
+	move.l	%d2,0.w				/* restore saved value */
+	moveq	#0,%d1
+	bra		.L_memtest_none		/* 24-bit CPU, do not test this range */
+.L_memtest_32bitok:
+	move.l	%d2,0.w				/* restore saved value */
+.L_memtest_24bitaddr:
+
 	move.l	%a0@,%a2
 
-	move.l	%a0,%a1
-	cmp.l	#_rom_start,%a1
-	bgt.s	.L_memtest_romcheckdone
-	add.l	%d0,%a1
-	cmp.l	#_rom_start,%a1
-	bcs.s	.L_memtest_romcheckdone
-	/* our rom located here, adjust size */
-	move.l	#_rom_start,%d0
-	sub.l	%a0,%d0
-	clr.w	%d0
-	move.l	%d0,%d1
-	beq.s	.L_memtest_done
-.L_memtest_romcheckdone:
-
-	move.l	#0xfecaf00d,%a0@		/* mirror test value */
+	move.l	#0xfecaf00d,%a0@			/* mirror test value */
 	clr.l	%d1
-.L_memtest_chipcheck:                            /* Can we turn off interrupts? */
-	addi.l	#0x40000,%d1
+
+	move.l	%a1,%d2
+	and.l	#0xff000000,%d2
+	beq.s	.L_memtest_chipcheck	/* no chiptest if 32bit address */
+	move.l	%d0,%d1
+	bra.s	.L_memtest_chipcheck_done
+.L_memtest_chipcheck:					/* Can we turn off interrupts? */
+	add.l	%d5,%d1
 	cmp.l	%d0,%d1
 	bgt.s	.L_memtest_chipcheck_done
-
 	lea.l	%a0@(%d1),%a1
 	move.w	#0x7fff,0xdff09a
-	tst.w	%a1@(-(0x40000 - 0x3f01c))           /* If non-zero, this is not INTENAR */
+	tst.w	%a1@(-(0x40000 - 0x3f01c))	/* If non-zero, this is not INTENAR */
 	bne.s	.L_memtest_chipcheck
 	/* It was zero ... */
-	move.w	#0xc000,0xdff09a                     /* Try the master enable */
-	tst.w	%a1@(-(0x40000 - 0x3f01c))           /* If still zero, not INTENAR */
+	move.w	#0xc000,0xdff09a			/* Try the master enable */
+	tst.w	%a1@(-(0x40000 - 0x3f01c))	/* If still zero, not INTENAR */
 	beq.s	.L_memtest_chipcheck
 	/* It was a custom chip. */
 .L_memtest_chipcheck_done:
+
 	move.l	%d1,%d0
-	sub.l	#0x40000,%d0
+	sub.l	%d5,%d0
 
 	/* TODO: Better pattern checks */
 	clr.l	%d1
@@ -198,12 +217,16 @@ rom_init:
 	move.l	%d3,%a0@(%d1)
 	cmp.l	%d4,%d2
 	bne.s	.L_memtest_done
-	add.l	#0x40000,%d1
+	add.l	%d5,%d1
 	bra.s	.L_memtest_pattern
 .L_memtest_done_end:
 	move.l	%d0,%d1
 .L_memtest_done:
 	move.l	%a2,%a0@
-	move.l	%d1,%d0
-	jmp	(%a7)
+	tst.l	%d1
+	beq.s	.L_memtest_none
+	addq.l	#4,%a5
+	move.l	%d1,%a5@+
+.L_memtest_none:
+	rts
 
