@@ -401,22 +401,22 @@ extern void SuperstackSwap(void);
 static LONG doInitCode(ULONG startClass, ULONG version)
 {
 	/* Attempt to allocate a new supervisor stack */
-	do {
+	/* do not allocate if already in non-autoconfig fast */
+	if ((ULONG)SysBase->SysStkLower < 0x01000000ul) {
    	    ULONG ss_stack_size = SysBase->SysStkUpper - SysBase->SysStkLower;
 	    APTR ss_stack;
 
-	    ss_stack = AllocMem(ss_stack_size, MEMF_ANY | MEMF_CLEAR);
+	    ss_stack = AllocMem(ss_stack_size, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
 	    if (ss_stack == NULL) {
 	    	DEBUGPUTS(("Strange. Can't allocate a new system stack\n"));
-	        break;
+	    } else {
+            	SysBase->SysStkLower    = ss_stack;
+            	SysBase->SysStkUpper    = ss_stack + ss_stack_size;
+	    	setsyschecksum();
+
+		Supervisor(SuperstackSwap);
 	    }
-
-            SysBase->SysStkLower    = ss_stack;
-            SysBase->SysStkUpper    = ss_stack + ss_stack_size;
-	    setsyschecksum();
-
-	    Supervisor(SuperstackSwap);
-	} while (0);
+	}
 
 	InitCode(startClass, version);
 
@@ -428,9 +428,24 @@ extern BYTE _ext_start;
 extern BYTE _bss;
 extern BYTE _bss_end;
 
-void start(IPTR chip_start, ULONG chip_size,
-           IPTR fast_start, ULONG fast_size,
-           IPTR ss_stack_upper, IPTR ss_stack_lower)
+static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size)
+{
+	if (size < 65536)
+		return NULL;
+	if (startaddr < 0x00c00000) {
+		krnCreateMemHeader("chip memory", -10,
+			(APTR)startaddr, size,
+			 MEMF_CHIP | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
+	} else {
+		krnCreateMemHeader(startaddr < 0x01000000 ? "memory" : "expansion memory",
+			startaddr < 0x01000000 ? -5 : (startaddr < 0x08000000 ? 30 : 40),
+			(APTR)startaddr, size,
+			MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | (startaddr < 0x01000000 ? MEMF_24BITDMA : 0));
+	}
+	return (struct MemHeader*)startaddr;
+}
+
+void start(ULONG *membankstemp, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	volatile APTR *trap;
 	int i;
@@ -460,6 +475,7 @@ void start(IPTR chip_start, ULONG chip_size,
 	ULONG rom_start = (ULONG)&_rom_start;
 	ULONG rom_end = (ULONG)&_ext_start + 0x80000;
 	ULONG romloader = 0;
+	ULONG membanks[(4 + 1) * 2]; /* assume max 4 memory regions */
 
 	trap = (APTR *)(NULL);
 
@@ -488,12 +504,19 @@ void start(IPTR chip_start, ULONG chip_size,
 	    DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)SysBase));
 	}
 
-	if (fast_size != 0) {
-		DEBUGPUTHEX(("Fast_Upper ",(ULONG)(fast_start + fast_size - 1)));
-		DEBUGPUTHEX(("Fast_Lower ",(ULONG)fast_start));
+	for (i = 0; membankstemp[i + 1]; i += 2) {
+		ULONG addr = membankstemp[i];
+		ULONG size = membankstemp[i + 1];
+		DEBUGPUTHEX(("RAM_Start", addr));
+		DEBUGPUTHEX(("RAM_End  ", addr + size));
+    		if (addr < (ULONG)&_rom_start && addr + size > (ULONG)&_rom_start) {
+    	    		size = ((ULONG)&_rom_start - addr) & 0xffff0000;
+    	    		DEBUGPUTHEX(("RAM_End_2 ", addr + size));
+    	    	}
+		membanks[i] = addr;
+		membanks[i + 1] = size;
 	}
-	DEBUGPUTHEX(("Chip_Upper ",(ULONG)(chip_start + chip_size - 1)));
-	DEBUGPUTHEX(("Chip_Lower ",(ULONG)chip_start));
+	membanks[i + 1] = 0;
 	DEBUGPUTHEX(("SS_Stack_Upper",(ULONG)(ss_stack_upper - 1)));
 	DEBUGPUTHEX(("SS_Stack_Lower",(ULONG)ss_stack_lower));
 
@@ -510,29 +533,16 @@ void start(IPTR chip_start, ULONG chip_size,
 	for (i = 0; i < 4; i++)
 		trap[64 + i] = 0;
 
-	/* Clear the BSS */
+	/* Clear the BSS. */
 	__clear_bss(&kbss[0]);
 	DEBUGPUTHEX(("BSS lower", (ULONG)&_bss));
 	DEBUGPUTHEX(("BSS upper", (ULONG)&_bss_end));
 
 	Early_ScreenCode(CODE_RAM_CHECK);
 
-	if (fast_size == 0) {
-		krnCreateMemHeader("Chip Mem", -10,
-				 (APTR)chip_start, chip_size,
-				 MEMF_CHIP | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
-		mh = (APTR)chip_start;
-	} else {
-		krnCreateMemHeader("Fast Mem", -5,
-				 (APTR)fast_start, fast_size,
-				 MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
-		mh = (APTR)fast_start;
-	}
-
-	DEBUGPUTS(("[prep SysBase]\n"));
-
+	mh = addmemoryregion(membanks[0], membanks[1]);
+	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
-
 	PrepareExecBase(mh, NULL, NULL);
 
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
@@ -591,15 +601,10 @@ void start(IPTR chip_start, ULONG chip_size,
 	/* Scan for all other ROM Tags */
 	SysBase->ResModules = krnRomTagScanner(mh, kickrom);
 
-	/* If we had Fast memory, don't forget to add
-	 * Chip memory now!
-	 */
-	if (fast_size != 0) {
-		krnCreateMemHeader("Chip Memory", -5,
-				 (APTR)chip_start, chip_size,
-				 MEMF_CHIP | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
-		mh = (APTR)chip_start;
-		Enqueue(&SysBase->MemList,&mh->mh_Node);
+	/* Add remaining memory regions */
+	for (i = 2; membanks[i + 1]; i += 2) {
+		mh = addmemoryregion(membanks[i], membanks[i + 1]);
+		Enqueue(&SysBase->MemList, &mh->mh_Node);
 	}
 
 	oldmem = AvailMem(MEMF_FAST);
@@ -624,12 +629,16 @@ void start(IPTR chip_start, ULONG chip_size,
 			DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
 	}
 	
-	/* total chipram */
-	SysBase->MaxLocMem = (chip_size + 0xffff) & 0xffff0000;
-	/* end of slow ram + 1 */
-	SysBase->MaxExtMem = fast_size ? (APTR)(((0xc00000 + (fast_size + 0xffff)) & 0xffff0000)) : 0;
+	for (i = 0; membanks[i + 1]; i += 2) {
+		ULONG addr = membanks[i];
+		ULONG size = membanks[i + 1];
+		if (addr < 0x00200000)
+			SysBase->MaxLocMem = (size + 0xffff) & 0xffff0000;
+		else if (addr < 0x00d00000)
+			SysBase->MaxExtMem = size ? (APTR)(((0xc00000 + (size + 0xffff)) & 0xffff0000)) : 0;
+	}
 
-	/* reset proof our "rom" */
+	/* reset proof our ram loaded "rom" */
 	if (romloader) {
 		SysBase->ColdCapture = (APTR)(romloader - 8);
 		DEBUGPUTHEX(("[romloader] coldcapture:", (ULONG)SysBase->ColdCapture));
