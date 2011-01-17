@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: exnext.c 32981 2010-04-13 20:05:47Z neil $
+    $Id$
 
     Desc:
     Lang: English

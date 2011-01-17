@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: systemtaglist.c 35832 2010-11-30 05:45:32Z jmcmullan $
+    $Id$
 
     Desc:
     Lang: English

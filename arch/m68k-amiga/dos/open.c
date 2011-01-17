@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: open.c 34705 2010-10-13 20:30:16Z jmcmullan $
+    $Id$
 
     Desc: Open a file with the specified mode.
     Lang: english

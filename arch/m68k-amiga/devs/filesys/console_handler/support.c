@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: support.c 34682 2010-10-13 20:27:40Z jmcmullan $
+    $Id$
 
     Desc: Support functions for console handler. 
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: vbeampos.c 34843 2010-10-20 04:54:32Z jmcmullan $
+    $Id$
 
     Desc: Read the current vertical position of the beam
     Lang: english

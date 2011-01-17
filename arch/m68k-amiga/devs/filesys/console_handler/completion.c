@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: completion.c 30900 2009-03-14 11:10:25Z mazze $
+    $Id$
 
     Desc: 
     Lang: english

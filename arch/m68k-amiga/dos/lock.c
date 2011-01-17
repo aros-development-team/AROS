@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: lock.c 34811 2010-10-17 17:49:01Z vidarh $
+    $Id$
 
     Desc: Locks a file or directory.
     Lang: English

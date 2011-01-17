@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: endnotify.c 34955 2010-10-25 23:32:59Z jmcmullan $
+    $Id$
 
     Desc:
     Lang: English

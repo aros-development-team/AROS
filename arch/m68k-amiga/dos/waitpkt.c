@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2009, The AROS Development Team. All rights reserved.
-    $Id: waitpkt.c 31121 2009-04-17 08:38:45Z sonic $
+    $Id$
 
     Desc:
     Lang: English

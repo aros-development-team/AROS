@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: namefromlock.c 35801 2010-11-27 18:05:11Z twilen $
+    $Id$
 
     Desc: Retrieve the full pathname from a lock.
     Lang: english

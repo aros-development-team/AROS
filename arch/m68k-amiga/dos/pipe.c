@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: /aros/dos/src/rom/dos/open.c 26802 2007-06-11T21:17:31.715385Z rob  $
+    $Id$
 
     Desc: Creates a pair of filehandles connected to each other
     Lang: english

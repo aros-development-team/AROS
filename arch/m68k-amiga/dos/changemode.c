@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: changemode.c 30792 2009-03-07 22:40:04Z neil $
+    $Id$
 
     Desc: Change the mode of a filehandle or lock.
     Lang: English

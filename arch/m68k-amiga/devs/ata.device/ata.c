@@ -1,6 +1,6 @@
 /*
     Copyright © 2004-2009, The AROS Development Team. All rights reserved
-    $Id: ata.c 32122 2009-12-20 10:38:31Z weissms $
+    $Id$
 
     Desc:
     Lang: English

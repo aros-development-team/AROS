@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: errorreport.c 33168 2010-05-04 06:17:31Z sonic $
+    $Id$
 
     Desc:
     Lang: English
