@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 CFILES          := \
         exec_init copymem enable preparecontext rawputchar serialrawio screen \
-        permit shutdowna prepareexecbase
+        permit shutdowna
 
 AFILES		:= coldreboot
 
