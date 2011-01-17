@@ -13,15 +13,6 @@ SHARED_LIB_SOURCES = \
             aros/emul_arosc \
             aros/tls \
 
-# TEMPORARY HACK FOR i386 (see aros/emul_div/README)
-ifeq ($(AROS_TARGET_CPU), i386)
-  LDFLAGS += -nodefaultlibs
-  SHARED_LIB_SOURCES += \
-                aros/emul_div/qdivrem \
-                aros/emul_div/udivdi3 \
-                aros/emul_div/umoddi3
-endif
-
 OPENVG_SOURCES = \
             gallium/state_trackers/vega/api \
             gallium/state_trackers/vega/api_context \

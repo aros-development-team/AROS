@@ -171,16 +171,7 @@ workbench-libs-mesa-module-cpp-quick : $(CXX_SOURCES)
 # Compilation of C++ GLSL compiler
 
 # Hack to get C++ objects linked into module
-LDFLAGS := $(CXX_OBJECTS)
-
-# TEMPORARY HACK FOR i386 (see aros/emul_div/README)
-ifeq ($(AROS_TARGET_CPU), i386)
-  LDFLAGS += -nodefaultlibs
-  SHARED_LIB_SOURCES += \
-                aros/emul_div/qdivrem \
-                aros/emul_div/udivdi3 \
-                aros/emul_div/umoddi3
-endif
+LDFLAGS += $(CXX_OBJECTS)
 
 LIBRARY_SOURCES = \
             $(addprefix ../../, $(LIB_MESA_SOURCES)) \
