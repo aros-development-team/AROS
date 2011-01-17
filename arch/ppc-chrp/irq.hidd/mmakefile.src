@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 28500 2008-04-28 09:17:48Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM kernel-chrp-ppc-irq-kobj : hidd-irq-stubs

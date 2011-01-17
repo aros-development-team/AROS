@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 29732 2008-10-12 18:14:15Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.. -I$(SRCDIR)/rom/devs/ata.device

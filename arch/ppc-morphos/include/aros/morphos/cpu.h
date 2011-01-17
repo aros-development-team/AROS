@@ -2,7 +2,7 @@
 #define AROS_MORPHOS_CPU_H
 /*
     Copyright � 1995-2010, The AROS Development Team. All rights reserved.
-    $Id: cpu.h 33099 2010-04-27 05:42:48Z sonic $
+    $Id$
 
     NOTE: This file must compile *without* any other header !
 

@@ -1,6 +1,6 @@
 /*
     Copyright © 2009, The AROS Development Team. All rights reserved.
-    $Id: copymem.c 20537 2004-01-07 07:16:12Z iaint $
+    $Id$
 
     Desc: Copy memory.
     Lang: english

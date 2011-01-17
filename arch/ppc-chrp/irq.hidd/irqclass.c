@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: irqclass.c 28593 2008-05-01 20:19:36Z schulz $
+    $Id$
 
     Desc: IRQ class
     Lang: english

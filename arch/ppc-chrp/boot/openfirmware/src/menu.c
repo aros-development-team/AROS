@@ -1,5 +1,5 @@
 /*
- * $Id: menu.c 45 2008-03-19 23:24:26Z michalsc $
+ * $Id$
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

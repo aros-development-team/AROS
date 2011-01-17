@@ -2,7 +2,7 @@
 #define UBOOT_H_
 
 /*
- * $Id: uboot.h 48 2008-03-19 23:27:08Z michalsc $
+ * $Id$
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

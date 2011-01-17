@@ -1,5 +1,5 @@
 # Copyright © 2004-2010, The AROS Development Team. All rights reserved.
-# $Id: mmakefile.src 33703 2010-06-26 00:36:14Z agreppin $
+# $Id$
 # just for building the grub2 utils
 # in prevision to use grub-mkimage in InstallAROS
 

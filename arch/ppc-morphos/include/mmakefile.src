@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 32263 2010-01-02 01:12:16Z verhaegs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := aros/morphos/cpu.h

@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 29731 2008-10-12 18:05:43Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-bestcomm-chrp-ppc-efika 	\

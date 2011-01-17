@@ -1,6 +1,6 @@
 /*
     Copyright � 2004-2008, The AROS Development Team. All rights reserved
-    $Id: ata_init.c 28966 2008-07-03 08:17:02Z schulz $
+    $Id$
 
     Desc:
     Lang: English

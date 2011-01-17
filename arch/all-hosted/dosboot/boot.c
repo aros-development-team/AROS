@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    $Id: boot.c 29897 2008-10-27 09:27:10Z sonic $
+    $Id$
 
     Desc: Boot your operating system.
     Lang: english

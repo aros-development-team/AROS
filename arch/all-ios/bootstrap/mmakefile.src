@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 34578 2010-10-04 07:19:30Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 EXEDIR := $(TARGETDIR)/Payload/AROSBootstrap.app
