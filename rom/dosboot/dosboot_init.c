@@ -506,8 +506,6 @@ AROS_UFH3(void, __dosboot_BootProcess,
             }
         }
         ExpansionBase->Flags |= EBF_BOOTFINISHED;
-        if (!(ExpansionBase->Flags & EBF_SILENTSTART))
-            LIBBASE->BootFlags |= BF_NO_SILENT_START;
 
         /* We don't need expansion.library any more */
 	D(bug("[DOSBoot] Closing expansion.library\n"));
