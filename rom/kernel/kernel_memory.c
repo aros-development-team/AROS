@@ -41,7 +41,7 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULON
      * inside the region it describes, the region includes MemHeader.
      */
     mh->mh_Lower           = start;
-    mh->mh_Upper           = start + size - 1;
+    mh->mh_Upper           = start + size;
     mh->mh_Free            = mh->mh_First->mc_Bytes;
 }
 

@@ -181,7 +181,7 @@ int main()
             memtype = "CHIP";
         if (mh->mh_Attributes & MEMF_FAST)
             memtype = "FAST";
-        printf("\t\tNode Type 0x%X, Attributes 0x%X (%s), at $%p-$%p (", mh->mh_Node.ln_Type, mh->mh_Attributes, memtype, mh->mh_Lower, mh->mh_Upper);
+        printf("\t\tNode Type 0x%X, Attributes 0x%X (%s), at $%p-$%p (", mh->mh_Node.ln_Type, mh->mh_Attributes, memtype, mh->mh_Lower, mh->mh_Upper - 1);
         PrintNum(ComputeKBytes(mh->mh_Lower, mh->mh_Upper));
         printf(")\n");
     }
