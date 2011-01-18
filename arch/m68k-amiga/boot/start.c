@@ -23,6 +23,8 @@
 #include "amiga_hwreg.h"
 #include "amiga_irq.h"
 
+#define SS_STACK_SIZE	0x04000
+
 extern const struct Resident Exec_resident;
 
 extern void __clear_bss(const struct KernelBSS *bss);
@@ -401,22 +403,22 @@ extern void SuperstackSwap(void);
 static LONG doInitCode(ULONG startClass, ULONG version)
 {
 	/* Attempt to allocate a new supervisor stack */
-	/* do not allocate if already in non-autoconfig fast */
-	if ((ULONG)SysBase->SysStkLower < 0x01000000ul) {
-   	    ULONG ss_stack_size = SysBase->SysStkUpper - SysBase->SysStkLower;
+	do {
 	    APTR ss_stack;
 
-	    ss_stack = AllocMem(ss_stack_size, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
+	    ss_stack = AllocMem(SS_STACK_SIZE, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
+	    DEBUGPUTHEX(("SS  lower", (ULONG)ss_stack));
+	    DEBUGPUTHEX(("SS  upper", (ULONG)ss_stack + SS_STACK_SIZE - 1));
 	    if (ss_stack == NULL) {
 	    	DEBUGPUTS(("Strange. Can't allocate a new system stack\n"));
-	    } else {
-            	SysBase->SysStkLower    = ss_stack;
-            	SysBase->SysStkUpper    = ss_stack + ss_stack_size;
-	    	setsyschecksum();
-
-		Supervisor(SuperstackSwap);
+	    	break;
 	    }
-	}
+            SysBase->SysStkLower    = ss_stack;
+            SysBase->SysStkUpper    = ss_stack + SS_STACK_SIZE;
+	    setsyschecksum();
+
+	    Supervisor(SuperstackSwap);
+	} while(0);
 
 	InitCode(startClass, version);
 
@@ -445,20 +447,11 @@ static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size)
 	return (struct MemHeader*)startaddr;
 }
 
-void start(ULONG *membankstemp, IPTR ss_stack_upper, IPTR ss_stack_lower)
+void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	volatile APTR *trap;
 	int i;
-	UWORD *kickrom[] = {
-		(UWORD *)&_rom_start,
-		(UWORD *)(&_rom_start + 0x80000),
-		(UWORD *)0x00f00000,
-		(UWORD *)0x00f80000,
-		(UWORD *)&_ext_start,
-		(UWORD *)(&_ext_start + 0x80000),
-		(UWORD *)~0,
-		(UWORD *)~0,
-	};
+	UWORD *kickrom[8];
 	const struct KernelBSS kbss[2] = {
 		{
 			.addr = &_bss,
@@ -475,7 +468,6 @@ void start(ULONG *membankstemp, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	ULONG rom_start = (ULONG)&_rom_start;
 	ULONG rom_end = (ULONG)&_ext_start + 0x80000;
 	ULONG romloader = 0;
-	ULONG membanks[(4 + 1) * 2]; /* assume max 4 memory regions */
 
 	trap = (APTR *)(NULL);
 
@@ -496,29 +488,45 @@ void start(ULONG *membankstemp, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    	/* ram loader fake sysbase */
 	    	romloader = (ULONG)SysBase;
 	    	SysBase = NULL;
-		DEBUGPUTHEX(("[romloader] rom start:", rom_start));
-		DEBUGPUTHEX(("[romloader] rom end  :", rom_end));
 	    }
 	    oldsysbase = NULL;
 	} else {
 	    DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)SysBase));
 	}
 
-	for (i = 0; membankstemp[i + 1]; i += 2) {
-		ULONG addr = membankstemp[i];
-		ULONG size = membankstemp[i + 1];
-		DEBUGPUTHEX(("RAM_Start", addr));
-		DEBUGPUTHEX(("RAM_End  ", addr + size));
+	for (i = 0; membanks[i + 1]; i += 2) {
+		ULONG addr = membanks[i];
+		ULONG size = membanks[i + 1];
+		DEBUGPUTHEX(("RAM lower", addr));
+		DEBUGPUTHEX(("RAM upper", addr + size - 1));
     		if (addr < (ULONG)&_rom_start && addr + size > (ULONG)&_rom_start) {
-    	    		size = ((ULONG)&_rom_start - addr) & 0xffff0000;
-    	    		DEBUGPUTHEX(("RAM_End_2 ", addr + size));
-    	    	}
-		membanks[i] = addr;
-		membanks[i + 1] = size;
+    	    		if (rom_end > addr + size)
+    	    			rom_end = addr + size;
+     	    		size = (ULONG)&_rom_start - addr;
+    	    		DEBUGPUTHEX(("RAM upper", addr + size - 1));
+    	    		membanks[i + 1] = size;
+   	    	}
 	}
-	membanks[i + 1] = 0;
-	DEBUGPUTHEX(("SS_Stack_Upper",(ULONG)(ss_stack_upper - 1)));
-	DEBUGPUTHEX(("SS_Stack_Lower",(ULONG)ss_stack_lower));
+
+	if (romloader) {
+		kickrom[0] = (UWORD*)rom_start;
+		kickrom[1] = (UWORD*)rom_end;
+		kickrom[2] = (UWORD*)0x00f00000;
+		kickrom[3] = (UWORD*)0x00f80000;
+		kickrom[4] = (UWORD*)~0;
+		kickrom[5] = (UWORD*)~0;
+		DEBUGPUTHEX(("[romloader] ROM lower", rom_start));
+		DEBUGPUTHEX(("[romloader] ROM upper", rom_end - 1));
+	} else {
+		kickrom[0] = (UWORD*)&_rom_start;
+		kickrom[1] = (UWORD*)(&_rom_start + 0x80000);
+		kickrom[2] = (UWORD*)0x00f00000;
+		kickrom[3] = (UWORD*)0x00f80000;
+		kickrom[4] = (UWORD*)&_ext_start;
+		kickrom[5] = (UWORD*)(&_ext_start + 0x80000);
+		kickrom[6] = (UWORD*)~0;
+		kickrom[7] = (UWORD*)~0;
+	}
 
 	/* Look for 'HELP' at address 0 - we're recovering
 	 * from a fatal alert
@@ -536,7 +544,7 @@ void start(ULONG *membankstemp, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	/* Clear the BSS. */
 	__clear_bss(&kbss[0]);
 	DEBUGPUTHEX(("BSS lower", (ULONG)&_bss));
-	DEBUGPUTHEX(("BSS upper", (ULONG)&_bss_end));
+	DEBUGPUTHEX(("BSS upper", (ULONG)&_bss_end - 1));
 
 	Early_ScreenCode(CODE_RAM_CHECK);
 
@@ -595,8 +603,10 @@ void start(ULONG *membankstemp, IPTR ss_stack_upper, IPTR ss_stack_lower)
 		FAKE_IT(SysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
 	}
 
-	for (i = 0; kickrom[i] != (UWORD *)~0; i+=2)
-	    krnCreateROMHeader(mh, "Kickstart ROM", kickrom[i], kickrom[i+1]);
+	for (i = 0; kickrom[i] != (UWORD *)~0; i+=2) {
+	    if (kickrom[i] != 0xf00000)
+	    	krnCreateROMHeader(mh, "Kickstart ROM", kickrom[i], kickrom[i+1]);
+	}
 
 	/* Scan for all other ROM Tags */
 	SysBase->ResModules = krnRomTagScanner(mh, kickrom);
