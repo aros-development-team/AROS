@@ -45,8 +45,8 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
 
     /* create fake seglist if only entrypoint was given */
     if (entry && !segList) {
-	ULONG *fakeseg = AllocVec(FAKESEG_SIZE * sizeof(ULONG), MEMF_ANY);
-    	fakeseg[0] = 3;
+	ULONG *fakeseg = AllocMem(FAKESEG_SIZE * sizeof(ULONG), MEMF_ANY);
+    	fakeseg[0] = (FAKESEG_SIZE - 1) * sizeof(ULONG);
     	fakeseg[1] = 0;
     	fakeseg[2] = 0x4e714ef9; /* NOP (long alignment) + JMP.L */
     	fakeseg[3] = (ULONG)entry;
@@ -57,7 +57,6 @@ APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase)
     }
     if (!entry)
     	entry = (APTR)((BPTR*)BADDR(segList) + 1);
-    	
 
     CopyMem(BCPL_GlobVec, GlobVec, sizeof(BCPL_GlobVec));
 
