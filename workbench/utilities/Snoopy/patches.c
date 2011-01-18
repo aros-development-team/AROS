@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -753,7 +753,7 @@ AROS_UFH2(struct Task *, New_FindTask,
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH5(BYTE, New_OpenDevice,
+AROS_UFH5(LONG, New_OpenDevice,
     AROS_UFHA(CONST_STRPTR,       devName,    A0),
     AROS_UFHA(ULONG,              unitNumber, D0),
     AROS_UFHA(struct IORequest *, iORequest,  A1),
@@ -763,7 +763,7 @@ AROS_UFH5(BYTE, New_OpenDevice,
     AROS_USERFUNC_INIT
 
     // 0 means OK
-    BYTE result = AROS_UFC5(BYTE, patches[PATCH_OpenDevice].oldfunc,
+    LONG result = AROS_UFC5(LONG, patches[PATCH_OpenDevice].oldfunc,
 	AROS_UFCA(CONST_STRPTR,       devName,    A0),
 	AROS_UFCA(ULONG,              unitNumber, D0),
 	AROS_UFCA(struct IORequest *, iORequest,  A1),
