@@ -195,8 +195,9 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 
     {
+    	bufferLength = strlen(deviceName) + 1 + 1;
         /* bootable if we can lock the device */
-    	buffer = AllocVec(strlen(deviceName) + 1 + 1, MEMF_ANY);
+    	buffer = AllocMem(bufferLength, MEMF_ANY);
     	if (!buffer)
     	    return FALSE;
     	sprintf(buffer, "%s:", deviceName);
@@ -505,6 +506,8 @@ AROS_UFH3(void, __dosboot_BootProcess,
             }
         }
         ExpansionBase->Flags |= EBF_BOOTFINISHED;
+        if (!(ExpansionBase->Flags & EBF_SILENTSTART))
+            LIBBASE->BootFlags |= BF_NO_SILENT_START;
 
         /* We don't need expansion.library any more */
 	D(bug("[DOSBoot] Closing expansion.library\n"));
