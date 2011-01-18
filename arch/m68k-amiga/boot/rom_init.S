@@ -2,9 +2,6 @@
 
 	.align 4 
 
-#define SS_STACK_SIZE	0x04000
-#define US_STACK_SIZE	0x0c000
-
 	reset
 	.globl rom_init
 	nop
@@ -47,10 +44,16 @@ rom_init:
 	jmp		Exec_ReadGayle
 1:	move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
 
-	/* misuse bss for temp stack and memory bank array */
-	lea		_bss_end - 40,%a4
+	/* reserve space for memory region array */
+	lea		_bss,%a4
+	sub.w	#64,%a4
 	move.l	%a4,%a5
-	move.l	%a4,%sp
+	/* temp supervisor stack */
+	move.l	%a4,%a0
+	move.l	%a0,%sp
+	sub.w	#0x400,%a0
+	/* temp user stack */
+	move.l	%a0,%usp
 
 	/* check non-autoconfig memory areas
 	 * in order of fastest to slowest */	
@@ -109,24 +112,10 @@ rom_init:
 	clr.l	%a5@+
 	clr.l	%a5@
 
-	/* get pointer to beginning of fastest found RAM */
-	move.l	%a4@,%a1
-	move.l	%a4@(4),%d1
-	
-	/* Put the Exec Supervisor stack at the top 64K,
-	 * and the Exec User stack as the next 64K under that
-	 */
-.L_stack_setup:
-	lea.l	%a1@(%d1),%sp
 	move.w	#0,%sr		/* Go to user mode */
-	sub.l	#SS_STACK_SIZE,%d1
-	lea.l	%a1@(%d1),%sp
-	
-	sub.l	#SS_STACK_SIZE+US_STACK_SIZE,%a4@(4)
 
-	pea.l	%a1@(%d1)
-	pea.l	%a1@(%d1)
-	add.l	#(SS_STACK_SIZE),%sp@
+	move.l	%sp,%sp@-
+	move.l	#_bss,%sp@-
 	move.l	%a4,%sp@-	/* memory bank array */
 	jsr		start
 
@@ -136,8 +125,18 @@ looping:
 	nop
 	bra.s	looping
 
+MemoryTest:
+	movem.l	%d2-%d7/%a2-%a6,%sp@-
+	subq.l	#8,%sp
+	move.l	%sp,%a5
+	bsr.s	.L_memtest
+	addq.l	#8,%sp
+	movem.l	%sp@+,%d2-%d7/%a2-%a6
+	rts
+
 	/******** Memory tester *******/
-	 * IN: A0 - Address, A1 - Max end address, D0 = block size
+	 * IN: A0 - Address, A1 - Max end address, A5 - outtable
+	 * IN: D0 = block size
 	 * OUT: D0 - Detected size
 	 * TRASH: D1, D2, D3, D4, D5, A1, A2
 	 */
@@ -164,7 +163,7 @@ looping:
 	cmp.l	%a1@,%d1
 	bne		.L_memtest_32bitok	/* check again, maybe 0 already had our test value */
 	move.l	%d2,0.w				/* restore saved value */
-	moveq	#0,%d1
+	moveq	#0,%d0
 	bra		.L_memtest_none		/* 24-bit CPU, do not test this range */
 .L_memtest_32bitok:
 	move.l	%d2,0.w				/* restore saved value */
@@ -206,6 +205,7 @@ looping:
 	bge.s	.L_memtest_done_end
 	move.l	%a0@(%d1),%d3
 	move.l	%d2,%a0@(%d1)
+	nop
 	tst.l	%d1
 	beq.s	.L_memtest_nomirror
 	cmp.l	%a0@,%d2				/* mirrored? */
@@ -215,6 +215,7 @@ looping:
 .L_memtest_nomirror:
 	move.l	%a0@(%d1),%d4
 	move.l	%d3,%a0@(%d1)
+	nop
 	cmp.l	%d4,%d2
 	bne.s	.L_memtest_done
 	add.l	%d5,%d1
@@ -228,5 +229,6 @@ looping:
 	addq.l	#4,%a5
 	move.l	%d1,%a5@+
 .L_memtest_none:
+	move.l	%d1,%d0
 	rts
 
