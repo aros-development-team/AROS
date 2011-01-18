@@ -138,6 +138,8 @@ void loadseg_free(SIPTR *freefunc, void *buf)
     p -= sizeof(ULONG);
     size = ((ULONG*)p)[0];
     D(bug("freemem %p %d\n", p, size));
+    if (!size)
+    	return;
     AROS_CALL2NR(void, freefunc,
 	  AROS_LCA(void * ,    p, A1),
 	  AROS_LCA(ULONG  , size, D0),
