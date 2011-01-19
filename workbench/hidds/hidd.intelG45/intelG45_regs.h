@@ -54,6 +54,8 @@
 #define G45_GPIOD			0x501c
 #define G45_GPIOE			0x5020
 #define G45_GPIOF			0x5024
+#define G45_GPIOG			0x5028
+#define G45_GPIOH			0x502c
 
 #define G45_GPIO_CLOCK_DIR_MASK	0x0001
 #define G45_GPIO_CLOCK_DIR_VAL		0x0002

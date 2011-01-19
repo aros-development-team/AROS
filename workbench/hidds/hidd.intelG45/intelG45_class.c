@@ -365,6 +365,11 @@ static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, struct TagItem
 				PUSH_TAG(&poolptr, aHidd_Sync_VSyncEnd, va+vsync_o+vsync_w);
 				PUSH_TAG(&poolptr, aHidd_Sync_VTotal, va+vb);
 
+				PUSH_TAG(&poolptr, aHidd_Sync_VMin, va);
+				PUSH_TAG(&poolptr, aHidd_Sync_VMax, 4096);
+				PUSH_TAG(&poolptr, aHidd_Sync_HMin, ha);
+				PUSH_TAG(&poolptr, aHidd_Sync_HMax,  4096);
+
 				PUSH_TAG(&poolptr, aHidd_Sync_Flags, vHidd_Sync_VSyncPlus);
 				PUSH_TAG(&poolptr, TAG_DONE, 0);
 

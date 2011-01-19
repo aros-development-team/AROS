@@ -143,6 +143,79 @@ static const probe_monitor(struct intelg45base *intelg45base)
 }
 #endif
 
+static BOOL probe_monitor(struct intelg45base *intelg45base, uint32_t port)
+{
+	struct g45staticdata *sd = &intelg45base->g45_sd;
+	BOOL result = FALSE;
+	
+	bug("[GMA] Attempting to detect connected monitor\n");
+	sd->DDCPort = port;
+	bug("[GMA] Probing GPIO%c\n", 'A' + (port - G45_GPIOA)/4);
+	OOP_Object *i2c = OOP_NewObject(sd->IntelI2C, NULL, NULL);
+
+	if (i2c)
+	{
+		if (HIDD_I2C_ProbeAddress(i2c, 0xa1))
+		{
+			struct TagItem attrs[] = {
+					{ aHidd_I2CDevice_Driver,   (IPTR)i2c       },
+					{ aHidd_I2CDevice_Address,  0xa0            },
+					{ aHidd_I2CDevice_Name,     (IPTR)"Display" },
+					{ TAG_DONE, 0UL }
+			};
+
+			bug("[GMA]   I2C device found\n");
+			
+			// there is at least something?,so... 
+            result = TRUE;
+			
+			OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
+
+			if (obj)
+			{
+				uint8_t edid[128];
+				char wb[2] = {0, 0};
+				struct pHidd_I2CDevice_WriteRead msg;
+				uint8_t chksum = 0;
+				int i;
+
+				msg.mID = OOP_GetMethodID((STRPTR)IID_Hidd_I2CDevice, moHidd_I2CDevice_WriteRead);
+				msg.readBuffer = &edid[0];
+				msg.readLength = 128;
+				msg.writeBuffer = &wb[0];
+				msg.writeLength = 1;
+
+				OOP_DoMethod(obj, &msg.mID);
+
+				for (i=0; i < 128; i++)
+					chksum += edid[i];
+
+				if (chksum == 0 &&
+						edid[0] == 0 && edid[1] == 0xff && edid[2] == 0xff && edid[3] == 0xff &&
+						edid[4] == 0xff && edid[5] == 0xff && edid[6] == 0xff && edid[7] == 0)
+				{
+					if (edid[0x14] & 0x80)
+					{
+						bug("[GMA]       Digital device\n");
+					}
+					else
+					{
+						bug("[GMA]       Analog device\n");
+					}
+				}
+
+				OOP_DisposeObject(obj);
+			}
+		}
+		else bug("[GMA]   No I2C device found\n");
+
+		OOP_DisposeObject(i2c);
+	}
+	
+	return result;
+}
+
+
 static
 AROS_UFH3(void, Enumerator,
     AROS_UFHA(struct Hook *,hook,       A0),
@@ -396,9 +469,19 @@ AROS_UFH3(void, Enumerator,
 
     	sd->DDCPort = G45_GPIOA;
     	//probe_monitor(intelg45base);
+		
+        BOOL lvds = FALSE;
 
-		// Internal lcd or vga connector ?
-		if( lvds_Enabled(sd) && ! adpa_Enabled(sd))
+        // lvds port enabled ?
+        if( lvds_Enabled(sd) ) lvds = TRUE;
+
+		// VGA port enabled by BIOS ?
+		if( adpa_Enabled(sd)) lvds = FALSE;
+
+		// Final Test: try to read EDID information from VGA port
+        if( probe_monitor(intelg45base, G45_GPIOA ) ) lvds = FALSE;
+
+		if( lvds )
 		{
 			bug("[GMA] lvds Enabled\n");
 			sd->pipe = PIPE_B;
@@ -406,8 +489,11 @@ AROS_UFH3(void, Enumerator,
 		}
 		else
 		{
+			bug("[GMA] analog VGA connector Enabled\n");
 			sd->pipe = PIPE_A;
 		}
+
+		
 
     	/*
     	 * Boot logo.
@@ -416,43 +502,18 @@ AROS_UFH3(void, Enumerator,
     	 */
 
     	sd->initialState = AllocVecPooled(sd->MemPool, sizeof(GMAState_t));
-		if( sd->pipe == PIPE_A )
-		{
-			// VGA connector
-			sd->initialBitMap = AllocBitmapArea(sd, 640, 480, 4, TRUE);
-			G45_InitMode(sd, sd->initialState, 640, 480, 32, 25200, sd->initialBitMap,
-									640, 480,
-									656, 752, 800,
-									490, 492, 525, 0);
-		}
-		else
-		{
-			// native LCD screen mode
-			sd->initialBitMap = AllocBitmapArea(sd, sd->lvds_fixed.width, sd->lvds_fixed.height, 4, TRUE);
-			// clean bitmap
-			memset(sd->initialBitMap + sd->Card.Framebuffer , 0 ,sd->lvds_fixed.width*sd->lvds_fixed.height*4 );
-			G45_InitMode(sd, sd->initialState,
-				sd->lvds_fixed.width,
-				sd->lvds_fixed.height,
-				32,
-				sd->lvds_fixed.pixelclock*1000,
-				sd->initialBitMap,
-				sd->lvds_fixed.hdisp,
-				sd->lvds_fixed.vdisp, 
-				sd->lvds_fixed.hstart,
-				sd->lvds_fixed.hend,
-				sd->lvds_fixed.htotal,
-				sd->lvds_fixed.vstart,
-				sd->lvds_fixed.vend,
-				sd->lvds_fixed.vtotal,
-				sd->lvds_fixed.flags );
-		}
+
+		sd->initialBitMap = AllocBitmapArea(sd, 640, 480, 4, TRUE);
+		G45_InitMode(sd, sd->initialState, 640, 480, 32, 25200, sd->initialBitMap,
+								640, 480,
+								656, 752, 800,
+								490, 492, 525, 0);
+
 
     	uint32_t *pixel = (uint32_t *)(sd->initialBitMap + sd->Card.Framebuffer);
     	uint8_t *stream = header_data;
 		int count=logo_width * logo_height;
 		uint8_t split = *stream++;
-		ULONG x=0;
 		do {
 				uint8_t cnt = *stream++;
 				
@@ -465,7 +526,6 @@ AROS_UFH3(void, Enumerator,
 						uint8_t color = *stream++;
 						count--;
 						*pixel++ = 0xff000000 | (header_data_cmap[color][0] << 16) | (header_data_cmap[color][1] << 8) | (header_data_cmap[color][2]);
-						x++;
 					}
 				}
 				else
@@ -477,12 +537,7 @@ AROS_UFH3(void, Enumerator,
 					{
 						count--;
 						*pixel++ = 0xff000000 | (header_data_cmap[color][0] << 16) | (header_data_cmap[color][1] << 8) | (header_data_cmap[color][2]);
-						x++;
-						if( sd->pipe == PIPE_B && x >= logo_width )
-						{
-							pixel += sd->lvds_fixed.width - x;
-							x = 0;
-						}
+
 					}
 				}
 
