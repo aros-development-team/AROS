@@ -604,7 +604,7 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	}
 
 	for (i = 0; kickrom[i] != (UWORD *)~0; i+=2) {
-	    if (kickrom[i] != 0xf00000)
+	    if (kickrom[i] != (APTR)0xf00000)
 	    	krnCreateROMHeader(mh, "Kickstart ROM", kickrom[i], kickrom[i+1]);
 	}
 
