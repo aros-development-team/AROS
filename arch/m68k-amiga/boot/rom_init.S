@@ -66,7 +66,7 @@ rom_init:
 
 	/* mainboard ram (A3000) */
 	/* end is static 0x08000000, start addr is end - (size of ram) */
-	move.l	%a5,%a3
+	move.l	%a5,%a6
 	move.l	#-0x00100000,%d7
 .a3000test:
 	move.l	#0x08000000,%a1
@@ -76,11 +76,11 @@ rom_init:
 	sub.l	%d0,%a0
 	sub.l	%d7,%a0
 	sub.l	%d7,%a1
-	move.l	%a3,%a5
+	move.l	%a6,%a5
 	lsr.l	#1,%d0
 	bsr		.L_memtest
 	bne.s	.a3000test
-	move.l	%a3,%a5
+	move.l	%a6,%a5
 	tst.l	%d7
 	beq.s	.a3000noram
 	move.l	#0x08000000,%a1
@@ -95,7 +95,7 @@ rom_init:
 	tst.b	%d6
 	bne.s	0f
 	move.l	#0x00dc0000,%a1
-0:	move.l	#0x00080000,%d0
+0:	move.l	#0x00040000,%d0
 	bsr		.L_memtest
 	
 	/* chip ram */
@@ -125,30 +125,31 @@ looping:
 	nop
 	bra.s	looping
 
+	.globl MemoryTest
 MemoryTest:
-	movem.l	%d2-%d7/%a2-%a6,%sp@-
+	movem.l	%d2-%d5/%a2-%a3/%a5,%sp@-
 	subq.l	#8,%sp
 	move.l	%sp,%a5
 	bsr.s	.L_memtest
 	addq.l	#8,%sp
-	movem.l	%sp@+,%d2-%d7/%a2-%a6
+	movem.l	%sp@+,%d2-%d5/%a2-%a3/%a5
 	rts
 
 	/******** Memory tester *******/
 	 * IN: A0 - Address, A1 - Max end address, A5 - outtable
 	 * IN: D0 = block size
 	 * OUT: D0 - Detected size
-	 * TRASH: D1, D2, D3, D4, D5, A1, A2
+	 * TRASH: D1, D2, D3, D4, D5, A1, A2, A3
 	 */
 .L_memtest:
 	move.l	%d0,%d5
-	move.l	%a0,%a5@
+	move.l	%a0,%a5@			/* write start address */
 	move.l	%a1,%d0
-	sub.l	%a0,%d0
+	sub.l	%a0,%d0				/* max size */
 
 	move.l	%a0,%d1
 	and.l	#0xff000000,%d1
-	beq		.L_memtest_24bitaddr
+	beq.s	.L_memtest_24bitaddr
 	/* test if 32bit address mirrors address zero */
 	move.l	%d1,%a1
 	move.l	0.w,%d2				/* save old */
@@ -156,75 +157,89 @@ MemoryTest:
 	move.l	%d1,0.w
 	nop		/* force 68040/060 bus cycle to finish */
 	cmp.l	%a1@,%d1
-	bne		.L_memtest_32bitok	/* different? no mirror */
+	bne.s	.L_memtest_32bitok	/* different? no mirror */
 	move.l	#0xcafed00d,%d1
 	move.l	%d1,0.w
 	nop
 	cmp.l	%a1@,%d1
-	bne		.L_memtest_32bitok	/* check again, maybe 0 already had our test value */
+	bne.s	.L_memtest_32bitok	/* check again, maybe 0 already had our test value */
 	move.l	%d2,0.w				/* restore saved value */
-	moveq	#0,%d0
+	moveq	#0,%d1
 	bra		.L_memtest_none		/* 24-bit CPU, do not test this range */
 .L_memtest_32bitok:
 	move.l	%d2,0.w				/* restore saved value */
 .L_memtest_24bitaddr:
 
-	move.l	%a0@,%a2
+	/* a0 = tested address, d0 = max size, d1 = current size */
 
-	move.l	#0xfecaf00d,%a0@			/* mirror test value */
 	clr.l	%d1
-
-	move.l	%a1,%d2
-	and.l	#0xff000000,%d2
-	beq.s	.L_memtest_chipcheck	/* no chiptest if 32bit address */
-	move.l	%d0,%d1
-	bra.s	.L_memtest_chipcheck_done
-.L_memtest_chipcheck:					/* Can we turn off interrupts? */
-	add.l	%d5,%d1
+.L_memtest_loop:
 	cmp.l	%d0,%d1
-	bgt.s	.L_memtest_chipcheck_done
-	lea.l	%a0@(%d1),%a1
+	bge		.L_memtest_done
+
+	move.l	%a0,%d2
+	and.l	#0xff000000,%d2
+	bne.s	.L_memtest_chipcheck_done	/* no chiptest if 32bit address */
 	move.w	#0x7fff,0xdff09a
-	tst.w	%a1@(-(0x40000 - 0x3f01c))	/* If non-zero, this is not INTENAR */
-	bne.s	.L_memtest_chipcheck
+	nop
+	tst.w	%a0@(0x1c,%d1)				/* If non-zero, this is not INTENAR */
+	bne.s	.L_memtest_chipcheck_done
 	/* It was zero ... */
 	move.w	#0xc000,0xdff09a			/* Try the master enable */
-	tst.w	%a1@(-(0x40000 - 0x3f01c))	/* If still zero, not INTENAR */
-	beq.s	.L_memtest_chipcheck
-	/* It was a custom chip. */
+	nop
+	tst.w	%a0@(0x1c,%d1)				/* If still zero, not INTENAR */
+	bne.s	.L_memtest_done				/* It was a custom chip. */
 .L_memtest_chipcheck_done:
 
-	move.l	%d1,%d0
-	sub.l	%d5,%d0
-
-	/* TODO: Better pattern checks */
-	clr.l	%d1
-	move.l	#0xcafed00d,%d2
-.L_memtest_pattern:
-	cmp.l	%d0,%d1
-	bge.s	.L_memtest_done_end
-	move.l	%a0@(%d1),%d3
-	move.l	%d2,%a0@(%d1)
+	move.l	%a0@(%d1),%d3		/* read old value */
+	move.l	%a0@,%a2			/* save mirror test contents */
+	move.l	#0xfecaf00d,%a0@	/* write mirror test value */
 	nop
-	tst.l	%d1
+	move.l	#0xcafed00d,%d2
+	move.l	%d2,%a0@(%d1)		/* write test pattern */
+	nop
+	tst.l	%d1					/* first test addrress? */
 	beq.s	.L_memtest_nomirror
-	cmp.l	%a0@,%d2				/* mirrored? */
+	cmp.l	%a0@,%d2			/* no, check mirrorirng */
 	bne.s	.L_memtest_nomirror
-	move.l	%d3,%a0@(%d1)
+	move.l	%a2,%a0@			/* restore mirror test contents */
 	bra.s	.L_memtest_done
 .L_memtest_nomirror:
-	move.l	%a0@(%d1),%d4
-	move.l	%d3,%a0@(%d1)
+
+	not.l	%d2
+	move.l	%a0@(4,%d1),%a3		/* read temp address */
+	move.l	%d2,%a0@(4,%d1)		/* fill bus with something else */
+	not.l	%d2
 	nop
+	move.l	%a0@(%d1),%d4		/* read test pattern */
+	move.l	%a3,%a0@(4,%d1)		/* restore */
+
+	cmp.l	%d4,%d2				/* pattern match? */
+	bne.s	.L_memtest_done
+	neg.l	%d2					/* test pattern 2 */
+
+	move.l	%d2,%a0@(%d1)		/* write test pattern */
+	nop
+	not.l	%d2
+	move.l	%a0@(4,%d1),%a3		/* read temp address */
+	move.l	%d2,%a0@(4,%d1)		/* fill bus with something else */
+	not.l	%d2
+	nop
+	move.l	%a0@(%d1),%d4		/* read test pattern */
+	move.l	%a3,%a0@(4,%d1)		/* restore */
+
 	cmp.l	%d4,%d2
 	bne.s	.L_memtest_done
-	add.l	%d5,%d1
-	bra.s	.L_memtest_pattern
-.L_memtest_done_end:
-	move.l	%d0,%d1
+	not.l	%d2
+	move.l	%d3,%a0@(%d1)		/* write old value back */
+
+	move.l	%a2,%a0@			/* restore mirror test contents */
+
+	add.l	%d5,%d1				/* next block */
+	bra		.L_memtest_loop
+
 .L_memtest_done:
-	move.l	%a2,%a0@
-	tst.l	%d1
+	tst.l	%d1					/* nothing found? */
 	beq.s	.L_memtest_none
 	addq.l	#4,%a5
 	move.l	%d1,%a5@+
