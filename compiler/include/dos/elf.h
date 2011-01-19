@@ -2,7 +2,7 @@
 #define DOS_ELF_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definition of ELF file structures.
@@ -20,6 +20,7 @@
 #define SHT_SYMTAB_SHNDX 18
 
 #define ET_REL          1
+#define ET_EXEC		2
 
 #define EM_386          3
 #define EM_68K          4
@@ -88,6 +89,13 @@
 #define ELFCLASS32      1
 #define ELFCLASS64      2               /* 64-bit objects */
 
+#define EI_OSABI        7
+#define EI_ABIVERSION   8
+
+#define ELFOSABI_AROS   15
+
+#define PF_X            (1 << 0)
+
 struct elfheader
 {
     UBYTE ident[16];
@@ -126,6 +134,20 @@ struct sheader
     IPTR  addralign;
     IPTR  entsize;
 };
+
+struct pheader
+{
+    ULONG type;
+    ULONG offset;
+    APTR  vaddr;
+    APTR  paddr;                
+    ULONG filesz;
+    ULONG memsz;
+    ULONG flags;
+    ULONG align;
+};
+
+#define PT_LOAD 1
 
 #if (__WORDSIZE == 64)
 

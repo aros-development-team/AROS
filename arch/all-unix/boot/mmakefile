@@ -62,7 +62,7 @@ $(BINDIR)/boot:
 
 $(BINDIR)/boot/aros-bsp-$(BSP): $(DEP_LIBS) $(KOBJS) $(BINDIR)/boot
 	@$(ECHO) Linking $@...
-	@$(TARGET_CC) $(KOBJS) $(LIBS) -o $@ $(CONFIG_LDFLAGS) -Wl,--allow-multiple-definition $(NOSTARTUP_LDFLAGS)
+	@$(TARGET_CC) $(KOBJS) $(LIBS) -o $@ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS)
 
 #MM
 kernel-boot-unix: $(BINDIR)/boot/AROSBootstrap.conf

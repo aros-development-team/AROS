@@ -15,5 +15,5 @@ $(BINDIR)/boot/aros-strap-hosted: $(KOBJS_HOSTED)
 	@$(ECHO) Linking $@...
 	@$(MKDIR) $(GENDIR)/boot $(BINDIR)/boot
 	@$(TARGET_CC) $(GENMAP) $(GENDIR)/boot/kernel-hosted.map \
-	  -o $@ $^ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS) -Wl,--allow-multiple-definition \
+	  -o $@ $^ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm
