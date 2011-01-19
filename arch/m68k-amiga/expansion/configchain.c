@@ -14,9 +14,9 @@
 #include "expansion_intern.h"
 
 #include <clib/expansion_protos.h>
-
 #include <proto/exec.h>
 #include <exec/resident.h>
+#include <aros/asmcall.h>
 
 // ROMTAG INIT time
 static void romtaginit(struct ExpansionBase *ExpansionBase)
@@ -56,16 +56,17 @@ static ULONG checkramrom(UBYTE *addr, ULONG size, ULONG mask)
 	return size;
 }
 
+AROS_UFP3(ULONG, MemoryTest,
+    AROS_UFPA(APTR, startaddr, A0),
+    AROS_UFPA(APTR, endaddr, A1),
+    AROS_UFPA(ULONG, block, D0));
+
 static ULONG autosize(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
 {
 	UBYTE sizebits = configDev->cd_Rom.er_Flags & ERT_Z3_SSMASK;
 	ULONG maxsize = configDev->cd_BoardSize;
 	ULONG size = 0;
-	volatile ULONG *addr = (ULONG*)configDev->cd_BoardAddr;
-	volatile ULONG *startaddr = addr;
-	ULONG testpattern1 = 0xa5fe, testpattern2 = 0xf15a;
-	ULONG starttmp;
-	ULONG stepsize = 0x80000;
+	UBYTE *addr = (UBYTE*)configDev->cd_BoardAddr;
 
 	D(bug("sizebits=%x\n", sizebits));
 	if (sizebits >= 14) /* 14 and 15 = reserved */
@@ -74,36 +75,13 @@ static ULONG autosize(struct ExpansionBase *ExpansionBase, struct ConfigDev *con
 		return 0x00010000 << (sizebits - 2);
 	if (sizebits >= 9)
 		return 0x00600000 + (0x200000 * (sizebits - 9));
-	maxsize = checkramrom((UBYTE*)addr, maxsize, 0x7ffff);
+	maxsize = checkramrom(addr, maxsize, 0x7ffff);
 	if (!maxsize)
 		return 0;
-	starttmp = startaddr[0];
-	startaddr[0] = 0;
-	for (;;) {
-		ULONG tmp1, tmp2, tmp3;
-		tmp1 = addr[0];
-		/* make sure possible data cache entry gets reset */
-		addr[0] = testpattern2;
-		tmp2 = addr[0];
-		addr[0] = testpattern1;
-		tmp2 = startaddr[0];
-		tmp3 = addr[0];
-		addr[0] = tmp1;
-		if (tmp3 != testpattern1) {
-			D(bug("test pattern mismatch at %p\n", addr));
-			break;
-		}
-		if (size && tmp2 == testpattern1) {
-			/* wrap around? */
-			D(bug("wrap around at %p\n", addr));
-			break;
-		}
-		size += stepsize;
-		addr += stepsize / sizeof(ULONG);
-		if (size >= maxsize)
-			break;
-	}
-	startaddr[0] = starttmp;
+	size = AROS_UFC3(ULONG, MemoryTest,
+		AROS_UFCA(APTR, addr, A0),
+		AROS_UFCA(APTR, addr + maxsize, A1),
+		AROS_UFCA(ULONG, 0x80000, D0));
 	D(bug("size=%x maxsize=%x\n", size, maxsize));
 	return size;
 }
