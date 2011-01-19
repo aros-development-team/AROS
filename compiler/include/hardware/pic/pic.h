@@ -30,13 +30,6 @@ enum PIC_TYPES
 
 /********** APIC DEFINITIONS ****************/
 
-struct GenericAPIC                                                          /* !! DO NOT USE!! THIS WILL BE REMOVED SOON!! */
-{ 
-    char                                    *name; 
-    IPTR                                    (*probe)(); 
-    IPTR                                    (*apic_id_registered)();
-};
-
 struct PICBase
 {
     struct  Node                            PICB_Node;
