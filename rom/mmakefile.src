@@ -98,7 +98,7 @@ $(BINDIR)/boot/aros-base: $(KOBJS_BASE)
 	@$(ECHO) Linking $@...
 	@$(MKDIR) $(GENDIR)/boot
 	@$(TARGET_CC) $(GENMAP) $(GENDIR)/boot/kernel-base.map \
-	  -o $@ $^ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS) -Wl,--allow-multiple-definition \
+	  -o $@ $^ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
 # *** PKG kickstart package ***
