@@ -134,4 +134,10 @@ extern int tcgetattr(int __fd, struct termios *__termios_p);
 extern int tcsetattr(int __fd, int __optional_actions,
                     const struct termios *__termios_p);
 
+extern speed_t cfgetispeed(const struct termios *__termios_p);
+extern speed_t cfgetospeed(const struct termios *__termios_p);
+
+extern int cfsetispeed(struct termios *__termios_p, speed_t __speed);
+extern int cfsetospeed(struct termios *__termios_p, speed_t __speed);
+
 #endif
