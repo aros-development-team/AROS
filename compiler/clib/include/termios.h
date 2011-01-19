@@ -89,6 +89,17 @@ struct termios {
 #define B9600	0000015
 #define B19200	0000016
 #define B38400	0000017
+#define CSIZE   0000060
+#define   CS5   0000000
+#define   CS6   0000020
+#define   CS7   0000040
+#define   CS8   0000060
+#define CSTOPB  0000100
+#define CREAD   0000200
+#define PARENB  0000400
+#define PARODD  0001000
+#define HUPCL   0002000
+#define CLOCAL  0004000
 #define B57600	0010001
 #define B115200	0010002
 
