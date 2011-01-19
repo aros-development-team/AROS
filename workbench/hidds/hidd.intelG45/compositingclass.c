@@ -13,12 +13,6 @@
     the drivers.
 */
 
-/* 
-    TODO: Optimization - if top bitmap covers the complete physical screen,
-    the driver can turn off mirroring mode and use the top bitmap as
-    framebuffer 
-*/
-
 /* Non generic part */
 #include "intelG45_intern.h"
 /* Non generic part */
