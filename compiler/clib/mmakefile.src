@@ -130,6 +130,10 @@ SHARED	:= \
 	basename \
 	bsearch \
 	calloc \
+	cfgetispeed \
+	cfgetospeed \
+	cfsetispeed \
+	cfsetospeed \
 	chdir \
 	chmod \
 	chown \
