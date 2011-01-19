@@ -374,7 +374,7 @@ void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query)
 	    break;
 
 	case KMS_Total:
-	    *((IPTR *)tag->ti_Data) += mh->mh_Upper - mh->mh_Lower + 1;
+	    *((IPTR *)tag->ti_Data) += mh->mh_Upper - mh->mh_Lower;
 	    break;
 
 	case KMS_LargestFree:

@@ -95,7 +95,7 @@ AROS_LH3(void *, KrnAllocPages,
 	     * appropriate for us. We look for it and attempt to allocate
 	     * the given region from it.
 	     */
-	    if (addr >= mh->mh_Lower || addr + length <= mh->mh_Upper + 1)
+	    if (addr >= mh->mh_Lower || addr + length <= mh->mh_Upper)
 	    {
 		res = krnAllocAbs(mh, addr, length, KernelBase);
 		break;

@@ -179,7 +179,7 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
     if (!byteSize)
 	return;
 
-    blockEnd = memoryBlock + byteSize - 1;
+    blockEnd = memoryBlock + byteSize;
 
     /* Protect the memory list from access by other tasks. */
     Forbid();
@@ -274,7 +274,7 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
         }
         else if (attributes & MEMF_TOTAL)
             /* Determine total size. */
-            ret += (IPTR)mh->mh_Upper - (IPTR)mh->mh_Lower + 1;
+            ret += (IPTR)mh->mh_Upper - (IPTR)mh->mh_Lower;
         else
             /* Sum up free memory. */
             ret += mh->mh_Free;
