@@ -709,6 +709,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 	/* Object is a plain file */
 	flags = mode2flags(mode);
 	r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
+	AROS_HOST_BARRIER
 	if (r < 0 && err_u2a(emulbase) == ERROR_WRITE_PROTECTED)
 	{
 	    /* Try again with read-only access. This is needed because AROS
@@ -717,8 +718,8 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 	    flags &= ~O_ACCMODE;
 	    flags |= O_RDONLY;
 	    r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
+	    AROS_HOST_BARRIER
 	}
-	AROS_HOST_BARRIER
 	if (r >= 0)
 	{
 	    fh->type = FHD_FILE;
