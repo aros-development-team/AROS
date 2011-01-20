@@ -233,7 +233,9 @@ UBYTE load_prefs(PREFS *prefs, STRPTR filename)
 
 	if(err == RETURN_OK)
 	{
+		int lock = LockIBase(0);
 		info_screen(prefs, IntuitionBase->ActiveScreen);
+		UnlockIBase(lock);
 
 		/* If user wants to use a custom font for its interface, try lo **
 		** load it, otherwise use default screen font of parent screen: */
@@ -250,7 +252,12 @@ UBYTE load_prefs(PREFS *prefs, STRPTR filename)
 		/* Special characters that separate words */
 		unpack_separators(prefs->wordssep);
 	}
-	else set_default_prefs(prefs, IntuitionBase->ActiveScreen);
+	else
+	{
+		int lock = LockIBase(0);
+		set_default_prefs(prefs, IntuitionBase->ActiveScreen);
+		UnlockIBase(lock);
+	}
 	/* All done */
 	return err;
 }
@@ -266,7 +273,7 @@ UBYTE save_prefs(PREFS *prefs)
 		if( !PushChunk(file, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN) )
 		{
 			if( !PushChunk(file, ID_PREF, ID_JANO, IFFSIZE_UNKNOWN) )
-			{	 
+			{
 			    	if (Wnd)
 				{
 				    /* Save window dimension */
@@ -274,7 +281,14 @@ UBYTE save_prefs(PREFS *prefs)
 				}
 				else
 				{
-				    prefs->left = prefs->top = prefs->width = prefs->height = 0;
+				    int lock;
+				    prefs->left  = 0;
+				    prefs->width = prefs->txtfont->tf_XSize * 80;
+				    
+				    lock = LockIBase(0);
+				    prefs->top    = IntuitionBase->ActiveScreen->BarHeight + 1;
+				    prefs->height = IntuitionBase->ActiveScreen->Height - prefs->top;
+				    UnlockIBase(lock);
 				}
 				
 				/* Write configuration file */
@@ -435,11 +449,13 @@ void update_prefs( Project edit )
 	if(prefs.use_pub == 0)
 	{
 		register struct Screen *list, *first;
+		int lock = LockIBase(0);
 
 		for(first = list = IntuitionBase->ActiveScreen; list && list != first; list=list->NextScreen)
 			if(list == tmpprefs.parent) {
 				first = NULL; break;
 			}
+		UnlockIBase(lock);
 
 		/** The screen hasn't been found! **/
 		if(first && NULL != (list = (void *) LockPubScreen(NULL)))
