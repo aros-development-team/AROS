@@ -83,8 +83,11 @@ int main(int argc, char *argv[])
 	    (KeymapBase    = (struct Library *)       OpenLibrary("keymap.library",    36)) &&
 		 (UtilityBase   = (struct UtilityBase *)   OpenLibrary("utility.library",   36)) )
 	{
+		int lock;
 		init_macros();
+		lock = LockIBase(0);
 		set_default_prefs(&prefs, IntuitionBase->ActiveScreen);
+		UnlockIBase(lock);
 		
 		load_prefs(&prefs, NULL);     /* See if it exists a config file */
 		sigport = create_port();
