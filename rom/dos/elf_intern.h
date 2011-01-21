@@ -58,3 +58,4 @@ int read_block(BPTR file, ULONG offset, APTR buffer, ULONG size, SIPTR *funcarra
 void *load_block(BPTR file, ULONG offset, ULONG size, SIPTR *funcarray, struct DosLibrary *DOSBase);
 int load_first_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, ULONG *shnum, ULONG *shstrndx, struct DosLibrary *DOSBase);
 int relocate(struct elfheader *eh, struct sheader *sh, ULONG shrel_idx, struct sheader *symtab_shndx, struct DosLibrary *DOSBase);
+void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase);
