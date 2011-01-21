@@ -16,7 +16,7 @@ CXX_FLAGS := $(subst -fno-exceptions,, $(CXX_FLAGS))
 
 USER_LDFLAGS := -L$(AROS_DEVELOPMENT)/lib
 
-EXEDIR := $(AROSDIR)/$(CURDIR)
+EXEDIR := $(AROS_TESTS)/cplusplus
 OBJDIR := $(GENDIR)/$(CURDIR)
 
 FILES := exception
