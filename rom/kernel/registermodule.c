@@ -70,8 +70,7 @@ AROS_LH4(void, KrnRegisterModule,
 		    supported type is DEBUG_ELF.
 	debugInfo - Debug information data. For DEBUG_ELF type this should be
 		    a pointer to struct ELF_DebugInfo, filled in as follows:
-		      eh - a pointer to ELF file header with int_shnum and
-		           int_shstrndx fields filled in.
+		      eh - a pointer to ELF file header.
 		      sh - a pointer to an array of ELF section headers.
 
     RESULT
@@ -101,17 +100,28 @@ AROS_LH4(void, KrnRegisterModule,
 	struct sheader *sections = ((struct ELF_DebugInfo *)debugInfo)->sh;
 	module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
 
-	if (mod) {
-	    int shstr = SHINDEX(eh->int_shstrndx);
-	    int i;
+	if (mod)
+	{
+	    ULONG int_shnum    = eh->shnum;
+	    ULONG int_shstrndx = eh->shstrndx;
+	    ULONG shstr;
+	    ULONG i;
 
-	    D(bug("[KRN] %d sections at 0x%p\n", eh->int_shnum, sections));
+            /* Get wider versions of shnum and shstrndx from first section header if needed */
+            if (int_shnum == 0)
+            	int_shnum = sections[0].size;
+            if (int_shstrndx == SHN_XINDEX)
+            	int_shstrndx = sections[0].link;
+
+	    D(bug("[KRN] %d sections at 0x%p\n", int_shnum, sections));
+	    shstr = SHINDEX(int_shstrndx);
 
 	    strcpy(mod->mod.m_name, name);
 	    if (sections[shstr].type == SHT_STRTAB)
 		mod->m_shstr = getstrtab(&sections[shstr]);
 
-	    for (i=0; i < eh->int_shnum; i++) {
+	    for (i=0; i < int_shnum; i++)
+	    {
 		/* Ignore all empty segments */
 		if (sections[i].size)
 		{
@@ -167,7 +177,8 @@ AROS_LH4(void, KrnRegisterModule,
 	    }
 
 	    /* Parse module's symbol table */
-	    for (i=0; i < eh->int_shnum; i++) {
+	    for (i=0; i < int_shnum; i++)
+	    {
 		if (sections[i].addr && sections[i].type == SHT_SYMTAB)
 		{
 		    struct symbol *st = (struct symbol *)sections[i].addr;

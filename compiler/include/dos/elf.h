@@ -112,13 +112,6 @@ struct elfheader
     UWORD shentsize;
     UWORD shnum;
     UWORD shstrndx;
-
-    /* these are internal, and not part of the header proper. they are wider
-     * versions of shnum and shstrndx for when they don't fit in the header
-     * and we need to get them from the first section header.
-     */
-    ULONG int_shnum;
-    ULONG int_shstrndx;
 };
 
 struct sheader
