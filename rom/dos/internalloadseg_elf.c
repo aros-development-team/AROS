@@ -30,64 +30,9 @@
 
 #include <aros/macros.h>
 
-#if (__WORDSIZE == 64)
-#define WANT_CLASS ELFCLASS64
-#else
-#define WANT_CLASS ELFCLASS32
-#endif
+#include "elf_intern.h"
 
-#if AROS_BIG_ENDIAN
-#define WANT_BYTE_ORDER ELFDATA2MSB
-#else
-#define WANT_BYTE_ORDER ELFDATA2LSB
-#endif
-
-struct hunk
-{
-    ULONG size;
-    BPTR  next;
-    char  data[0];
-} __attribute__((packed));
-
-#define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
-#define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
-
-#undef MyRead
-#undef MyAlloc
-#undef MyFree
-
-
-#define MyRead(file, buf, size)      \
-    AROS_CALL3                       \
-    (                                \
-        LONG, funcarray[0],          \
-        AROS_LCA(BPTR,   file, D1),  \
-        AROS_LCA(void *, buf,  D2),  \
-        AROS_LCA(LONG,   size, D3),  \
-        struct DosLibrary *, DOSBase \
-    )
-
-
-#define MyAlloc(size, flags)        \
-    AROS_CALL2                      \
-    (                               \
-        void *, funcarray[1],       \
-        AROS_LCA(ULONG, size,  D0), \
-        AROS_LCA(ULONG, flags, D1), \
-        struct ExecBase *, SysBase  \
-    )				    
-
-
-#define MyFree(addr, size)          \
-    AROS_CALL2NR                    \
-    (                               \
-        void, funcarray[2],         \
-        AROS_LCA(void *, addr, A1), \
-        AROS_LCA(ULONG,  size, D0), \
-        struct ExecBase *, SysBase  \
-    )
-
-static int read_block
+int read_block
 (
     BPTR               file,
     ULONG              offset,
@@ -122,7 +67,7 @@ static int read_block
     return 1;
 }
 
-static void * load_block
+void *load_block
 (
     BPTR               file,
     ULONG              offset,
@@ -149,21 +94,10 @@ static void * load_block
     return NULL;
 }
 
-static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
-    Seek(file, OFFSET_BEGINNING, 0);
-    if (!read_block(file, 0, eh, offsetof(struct elfheader, int_shnum), funcarray, DOSBase))
-        return 0;
-
-    if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
-        eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
-	D(bug("[ELF Loader] Not an ELF object\n"));
-        SetIoErr(ERROR_NOT_EXECUTABLE);
-        return 0;
-    }
-    D(bug("[ELF Loader] ELF object\n"));
-
-    eh->int_shnum = eh->shnum;
-    eh->int_shstrndx = eh->shstrndx;
+int load_first_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, ULONG *shnum, ULONG *shstrndx, struct DosLibrary *DOSBase)
+{
+    *shnum    = eh->shnum;
+    *shstrndx = eh->shstrndx;
 
     /* the ELF header only uses 16 bits to store the count of section headers,
      * so it can't handle more than 65535 headers. if the count is 0, and an
@@ -175,30 +109,49 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
      *
      * see the System V ABI 2001-04-24 draft for more details.
      */
-    if (eh->int_shnum == 0 || eh->int_shstrndx == SHN_XINDEX) {
+    if (eh->shnum == 0 || eh->shstrndx == SHN_XINDEX)
+    {
+        struct sheader sh;
+
         if (eh->shoff == 0) {
             SetIoErr(ERROR_NOT_EXECUTABLE);
             return 0;
         }
 
-        struct sheader sh;
         if (!read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, DOSBase))
             return 0;
 
         /* wider section header count is in the size field */
-        if (eh->int_shnum == 0)
-            eh->int_shnum = sh.size;
+        if (eh->shnum == 0)
+            *shnum = sh.size;
 
         /* wider string table index is in the link field */
-        if (eh->int_shstrndx == SHN_XINDEX)
-            eh->int_shstrndx = sh.link;
+        if (eh->shstrndx == SHN_XINDEX)
+            *shstrndx = sh.link;
 
         /* sanity, if they're still invalid then this isn't elf */
-        if (eh->int_shnum == 0 || eh->int_shstrndx == SHN_XINDEX) {
+        if (*shnum == 0 || *shstrndx == SHN_XINDEX)
+        {
             SetIoErr(ERROR_NOT_EXECUTABLE);
             return 0;
         }
     }
+
+    return 1;
+}
+
+static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
+    Seek(file, OFFSET_BEGINNING, 0);
+    if (!read_block(file, 0, eh, sizeof(struct elfheader), funcarray, DOSBase))
+        return 0;
+
+    if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
+        eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
+	D(bug("[ELF Loader] Not an ELF object\n"));
+        SetIoErr(ERROR_NOT_EXECUTABLE);
+        return 0;
+    }
+    D(bug("[ELF Loader] ELF object\n"));
 
     /* WANT_CLASS should be defined for your target */
     if (eh->ident[EI_CLASS]   != WANT_CLASS      ||
@@ -296,7 +249,7 @@ static int load_hunk
     return 0;
 }
 
-static int relocate
+int relocate
 (
     struct elfheader  *eh,
     struct sheader    *sh,
@@ -358,16 +311,14 @@ static int relocate
         {
 
             case SHN_UNDEF:
-                D(bug("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
-		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name,
-		      (STRPTR)sh[SHINDEX(eh->int_shstrndx)].addr + toreloc->name));
+                D(bug("[ELF Loader] Undefined symbol '%s'\n",
+		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
                 return 0;
 
             case SHN_COMMON:
-                D(bug("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
-		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name,
-		      (STRPTR)sh[SHINDEX(eh->int_shstrndx)].addr + toreloc->name));
+                D(bug("[ELF Loader] COMMON symbol '%s'\n",
+		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
 		      
                 return 0;
@@ -569,18 +520,24 @@ BPTR InternalLoadSeg_ELF
     BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
+    ULONG  int_shnum;
+    ULONG  int_shstrndx;
 
     /* load and validate ELF header */
     if (!load_header(file, &eh, funcarray, DOSBase))
         return 0;
 
+    if (!load_first_header(file, &eh, funcarray, &int_shnum, &int_shstrndx, DOSBase))
+        return 0;
+
     /* load section headers */
-    if (!(sh = load_block(file, eh.shoff, eh.int_shnum * eh.shentsize, funcarray, DOSBase)))
+    if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize, funcarray, DOSBase)))
         return 0;
 
     /* load the string table */
     STRPTR st = NULL;
-    struct sheader *shstr = sh + SHINDEX(eh.int_shstrndx);
+    struct sheader *shstr = sh + SHINDEX(int_shstrndx);
+
     if (shstr->size != 0)
     {
 	st = MyAlloc(shstr->size, MEMF_ANY | MEMF_CLEAR);
@@ -588,7 +545,7 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Iterate over the section headers in order to do some stuff... */
-    for (i = 0; i < eh.int_shnum; i++)
+    for (i = 0; i < int_shnum; i++)
     {
         /*
            Load the symbol and string table(s).
@@ -632,7 +589,7 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Relocate the sections */
-    for (i = 0; i < eh.int_shnum; i++)
+    for (i = 0; i < int_shnum; i++)
     {
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
         if ((sh[i].type == AROS_ELF_REL) && sh[SHINDEX(sh[i].info)].addr)
@@ -695,7 +652,7 @@ end:
     }
     
     /* deallocate the symbol tables */
-    for (i = 0; i < eh.int_shnum; i++)
+    for (i = 0; i < int_shnum; i++)
     {
         if (((sh[i].type == SHT_SYMTAB) || (sh[i].type == SHT_STRTAB)) && (sh[i].addr != NULL))
             MyFree(sh[i].addr, sh[i].size);
@@ -705,7 +662,7 @@ end:
     MyFree(st, shstr->size);
 
     /* Free the section headers */
-    MyFree(sh, eh.int_shnum * eh.shentsize);
+    MyFree(sh, int_shnum * eh.shentsize);
 
     return hunks;
 }
