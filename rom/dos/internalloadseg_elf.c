@@ -140,6 +140,31 @@ int load_first_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, ULONG *
     return 1;
 }
 
+void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
+{
+#ifdef KrnRegisterModule
+    if (KernelBase)
+    {
+	char buffer[512];
+
+	if (NameFromFH(file, buffer, sizeof(buffer))) {
+	    char *nameptr = buffer;
+	    struct ELF_DebugInfo dbg = {eh, sh};
+
+/* gdb support needs full paths */
+#if !AROS_MODULES_DEBUG
+	    /* First, go through the name, till end of the string */
+	    while(*nameptr++);
+	    /* Now, go back until either ":" or "/" is found */
+	    while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
+    		nameptr--;
+#endif
+    	   KrnRegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
+	}
+    }
+#endif
+}
+
 static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
     Seek(file, OFFSET_BEGINNING, 0);
     if (!read_block(file, 0, eh, sizeof(struct elfheader), funcarray, DOSBase))
@@ -603,28 +628,8 @@ BPTR InternalLoadSeg_ELF
         }
     }
 
-#ifdef KrnRegisterModule
     /* Everything is loaded now. Register the module at kernel.resource */
-    if (KernelBase)
-    {
-	char buffer[512];
-
-	if (NameFromFH(file, buffer, sizeof(buffer))) {
-	    char *nameptr = buffer;
-	    struct ELF_DebugInfo dbg = {&eh, sh};
-
-/* gdb support needs full paths */
-#if !AROS_MODULES_DEBUG
-	    /* First, go through the name, till end of the string */
-	    while(*nameptr++);
-	    /* Now, go back until either ":" or "/" is found */
-	    while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
-    		nameptr--;
-#endif
-    	   KrnRegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
-	}
-    }
-#endif
+    register_elf(file, hunks, &eh, sh, DOSBase);
     goto end;
 
 error:
