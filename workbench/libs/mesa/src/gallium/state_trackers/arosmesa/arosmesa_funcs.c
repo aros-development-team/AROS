@@ -367,7 +367,7 @@ static boolean AROSMesaFrameBufferValidate(struct st_framebuffer_iface *stfbi,
     {
         amfb->resized = FALSE;
         /* Detach "front surface" */
-        pipe_surface_reference(&amfb->render_surface, NULL);
+        pipe_resource_reference(&amfb->render_resource, NULL);
 
         /* Detach all resources */
         for (i = 0; i < ST_ATTACHMENT_COUNT; i++)
@@ -382,9 +382,7 @@ static boolean AROSMesaFrameBufferValidate(struct st_framebuffer_iface *stfbi,
             AROSMesaFrameBufferCreateResource(amfb, statts[i]);
             if (statts[i] == ST_ATTACHMENT_FRONT_LEFT)
             {
-                amfb->render_surface = NULL;/*amfb->screen->get_tex_surface(amfb->screen, 
-                    amfb->textures[ST_ATTACHMENT_FRONT_LEFT], 0, 0, 0, 
-                    PIPE_BIND_RENDER_TARGET);*/
+                pipe_resource_reference(&amfb->render_resource, amfb->textures[ST_ATTACHMENT_FRONT_LEFT]);
             }
         }
     }
@@ -439,7 +437,7 @@ VOID AROSMesaDestroyFrameBuffer(struct arosmesa_framebuffer * framebuffer)
     {
         LONG i;
 
-        pipe_surface_reference(&framebuffer->render_surface, NULL);
+        pipe_resource_reference(&framebuffer->render_resource, NULL);
 
         for (i = 0; i < ST_ATTACHMENT_COUNT; i++)
             pipe_resource_reference(&framebuffer->textures[i], NULL);        
