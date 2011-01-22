@@ -19,15 +19,22 @@ void ata_insw(APTR address, IPTR port, ULONG count)
     UWORD *dst = address;
     count /= 2;
     while (count-- != 0)
-        *dst++ = addr[0];
+        *dst++ = *addr;
 }
 
 void ata_insl(APTR address, IPTR port, ULONG count)
 {
 }
+
 void ata_outsw(APTR address, IPTR port, ULONG count)
 {
+    volatile UWORD *addr = (UWORD*)port;
+    UWORD *dst = address;
+    count /= 2;
+    while (count-- != 0)
+        *addr = *dst++;
 }
+
 void ata_outsl(APTR address, IPTR port, ULONG count)
 {
 }
