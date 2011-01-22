@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES  := bootconfig
+CFILES  := bootconfig bootscreen
 AFILES  :=
 
 #MM kernel-dosboot-amiga-m68k : kernel-kernel-amiga-m68k-includes kernel-dosboot-includes includes-asm_h-m68k
