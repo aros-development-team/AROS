@@ -426,7 +426,7 @@ BOOL ScanDosList(STRPTR *filter)
 	else
 	{
 	    BPTR ptr = ndl->dol_misc.dol_handler.dol_Startup;
-	    struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)ptr;
+	    struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)BADDR(ptr);
 	    
 	    idn->DosType = ID_DOS_DISK;
 
