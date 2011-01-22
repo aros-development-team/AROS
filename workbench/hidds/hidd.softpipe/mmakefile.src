@@ -27,9 +27,9 @@ GALLIUM_SOFTPIPE_SOURCES = \
             drivers/softpipe/sp_state_blend \
             drivers/softpipe/sp_state_clip \
             drivers/softpipe/sp_state_derived \
-            drivers/softpipe/sp_state_fs \
             drivers/softpipe/sp_state_sampler \
             drivers/softpipe/sp_state_rasterizer \
+            drivers/softpipe/sp_state_shader \
             drivers/softpipe/sp_state_so \
             drivers/softpipe/sp_state_surface \
             drivers/softpipe/sp_state_vertex \

@@ -202,7 +202,7 @@ VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplaySurface)
             data, 
             msg->left,
             msg->top,
-            spr->stride[surf->level],
+            spr->stride[surf->u.tex.level],
             rp, 
             msg->relx, 
             msg->rely, 
