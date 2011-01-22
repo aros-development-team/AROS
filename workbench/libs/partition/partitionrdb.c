@@ -13,6 +13,7 @@
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <libraries/partition.h>
+#include <resources/filesysres.h>
 
 #include "partition_support.h"
 #include "platform.h"
@@ -42,6 +43,118 @@ struct FileSysNode {
     struct LoadSegBlock *filesystem; /* the FS in LSEG blocks */
     ULONG fsblocks;                  /* nr of LSEG blocks for FS */
 };
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+
+#define LSEGDATASIZE (123 * sizeof(ULONG))
+
+struct FileSysReader
+{
+    ULONG count;
+    ULONG offset;
+    ULONG size;
+    struct FileSysNode *fsn;
+};
+
+/* We can't use InternalLoadSeg() because DOS isn't initialized at this point */
+extern BPTR InternalLoadSeg_AOS(BPTR fh,
+                         BPTR table,
+                         SIPTR * funcarray,
+                         SIPTR * stack,
+                         struct Library * DOSBase);
+
+static AROS_UFH4(LONG, ReadFunc,
+	AROS_UFHA(BPTR, file,   D1),
+	AROS_UFHA(APTR, buffer, D2),
+	AROS_UFHA(LONG, length, D3),
+	AROS_UFHA(struct Library *, DOSBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct FileSysReader *fsr = (struct FileSysReader*)file;
+    ULONG outsize = 0;
+    UBYTE *outbuf = buffer;
+
+    while (length > 0) {
+    	ULONG size = length;
+
+    	if (size + fsr->offset > fsr->size)
+    	    size = fsr->size - fsr->offset;
+    	if (size > 0) {
+    	    UBYTE *inbuf = (UBYTE*)(fsr->fsn->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
+	    CopyMemQuick(inbuf, outbuf, size);
+	}
+
+	outsize += size;
+	fsr->offset += size;
+	length -= size;
+	outbuf += size;
+
+	if (fsr->offset == fsr->size) {
+	    fsr->offset = 0;
+	    fsr->count++;
+	    if (fsr->count == fsr->fsn->fsblocks)
+	    	break;
+	}
+
+    }
+
+    return outsize;
+
+    AROS_USERFUNC_EXIT
+}
+
+/* Insert RDB LSEG filesystem to FileSystem.resource */
+
+static void AddFS(struct RDBData *data)
+{
+    struct FileSysResource *fsr;
+    struct FileSysNode *node;
+    void (* FunctionArray[3])();
+    struct FileSysReader fakefile;
+
+    FunctionArray[0] = (void(*))ReadFunc;
+    FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
+    FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
+
+    fsr = OpenResource("FileSystem.resource");
+    if (!fsr)
+    	return;
+
+    ForeachNode(&data->fsheaderlist, node) {
+    	struct FileSysEntry *fsrnode;
+    	ULONG dostype = node->fhb.fhb_DosType;
+    	ULONG version = node->fhb.fhb_Version;
+    	BOOL newerinstalled = FALSE;
+    	ULONG size = LSEGDATASIZE;
+
+    	ForeachNode(&fsr->fsr_FileSysEntries, fsrnode) {
+    	    if (fsrnode->fse_DosType == dostype && fsrnode->fse_Version >= version)
+    	    	newerinstalled = TRUE;
+    	}
+    	if (newerinstalled)
+    	    continue;
+    	fsrnode = AllocVec(sizeof(struct FileSysEntry), MEMF_PUBLIC | MEMF_CLEAR);
+    	if (!fsrnode)
+    	    break;
+    	fakefile.count = 0;
+    	fakefile.offset = 4;
+    	fakefile.size = size;
+    	fakefile.fsn = node;
+	if (node->filesystem[0].lsb_LoadData[0] == 0x000003f3) {
+	    BPTR seg = InternalLoadSeg_AOS((BPTR)&fakefile, BNULL, (SIPTR*)FunctionArray, NULL, NULL);
+	    if (seg) {
+    	    	D(bug("RDB fs %08x %d.%d '%s' seg=%08x added\n",
+    	    	    dostype, version >> 16, version & 0xffff, &node->fhb.fhb_FileSysName, seg));
+    	    	CopyMemQuick(&node->fhb.fhb_DosType, &fsrnode->fse_DosType, sizeof(struct FileSysEntry) - sizeof(struct Node));
+    	    	fsrnode->fse_SegList = seg;
+    	    	AddHead(&fsr->fsr_FileSysEntries, fsrnode);
+    	    }
+    	}
+    }
+}
+
+#endif
 
 static ULONG calcChkSum(ULONG *ptr, ULONG size)
 {
@@ -282,19 +395,22 @@ LONG PartitionRDBOpenPartitionTable
         struct PartitionHandle *root
     )
 {
-UBYTE buffer[4096];
+UBYTE *buffer;
 struct RDBData *data;
 UBYTE i;
 
-    if (sizeof(buffer) < (root->de.de_SizeBlock << 2))
-        return 0;
+    buffer = AllocVec(root->de.de_SizeBlock << 2, MEMF_PUBLIC);
+    if (!buffer)
+    	return 1;
     data = AllocMem(sizeof(struct RDBData), MEMF_PUBLIC);
     if (data)
     {
         for (i=0;i<RDB_LOCATION_LIMIT; i++)
         {
-            if (readBlock(PartitionBase, root, i, buffer) != 0)
+            if (readBlock(PartitionBase, root, i, buffer) != 0) {
+            	FreeVec(buffer);
                 return 1;
+            }
             CopyMem(buffer, &data->rdb, sizeof(struct RigidDiskBlock));
             if (data->rdb.rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK))
                 break;
@@ -373,10 +489,15 @@ UBYTE i;
                 else
                     break;
             }
+   	    FreeVec(buffer);
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+   	    AddFS(data);
+#endif
             return 0;
         }
         FreeMem(data, sizeof(struct RDBData));
     }
+    FreeVec(buffer);
     return 1;
 }
 
