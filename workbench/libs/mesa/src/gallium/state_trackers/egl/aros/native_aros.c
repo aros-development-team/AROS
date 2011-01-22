@@ -106,8 +106,8 @@ aros_surface_swap_buffers(struct native_surface *nsurf)
 
     resource_surface_get_resources(asurf->rsurf, pres, 1 << NATIVE_ATTACHMENT_BACK_LEFT);
 
-    psurf = asurf->adpy->base.screen->get_tex_surface(asurf->adpy->base.screen, 
-                pres[NATIVE_ATTACHMENT_BACK_LEFT], 0, 0, 0, PIPE_BIND_RENDER_TARGET);
+//FIXME    psurf = asurf->adpy->base.screen->get_tex_surface(asurf->adpy->base.screen, 
+//FIXME                pres[NATIVE_ATTACHMENT_BACK_LEFT], 0, 0, 0, PIPE_BIND_RENDER_TARGET);
 
     BltPipeSurfaceRastPort(psurf, 0, 0, 
         asurf->window->RPort, asurf->window->BorderLeft, asurf->window->BorderTop,
@@ -220,8 +220,8 @@ aros_display_create_surface(struct native_display *ndpy,
     aros_surface_update_geometry(&asurf->base);
 
     asurf->base.destroy = aros_surface_destroy;
-    asurf->base.swap_buffers = aros_surface_swap_buffers;
-    asurf->base.flush_frontbuffer = aros_surface_flush_frontbuffer;
+//FIXME    asurf->base.swap_buffers = aros_surface_swap_buffers;
+//FIXME    asurf->base.flush_frontbuffer = aros_surface_flush_frontbuffer;
     asurf->base.validate = aros_surface_validate;
     asurf->base.wait = aros_surface_wait;
 

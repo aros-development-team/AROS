@@ -22,6 +22,7 @@ EGL_SOURCES = \
             egl/main/eglcurrent \
             egl/main/egldisplay \
             egl/main/egldriver \
+            egl/main/eglfallbacks \
             egl/main/eglglobals \
             egl/main/eglimage \
             egl/main/egllog \
