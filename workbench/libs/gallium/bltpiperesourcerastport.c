@@ -59,6 +59,7 @@
     struct Layer *L = destRP->Layer;
     struct ClipRect *CR;
     struct Rectangle renderableLayerRect;
+    BOOL copied = FALSE;
 
     struct HIDDT_WinSys * ws = (struct HIDDT_WinSys *)srcPipeResource->screen->winsys;
     if (!ws)
@@ -84,7 +85,7 @@
 
     
     /*  Do not clip renderableLayerRect to screen rast port. CRs are already clipped and unclipped 
-        layer coords are needed: see surface_copy */
+        layer coords are needed. */
     
     CR = L->ClipRect;
     
@@ -116,13 +117,14 @@
                 rely : result.MinY - L->bounds.MinY /* Relative (on rastport) Y of the desc blit */
                 };
                 OOP_DoMethod(ws->driver, (OOP_Msg)&drmsg);
+                
+                copied = TRUE;
             }
         }
     }
     
     /* Notify the bitmap about blitting */
-    /* TODO: don't do this call if nothing was blitted */
-    /* TODO: are coords correct in respect to screen with moved LeftEdge/TopEdge ? */
+    if (copied)
     {
         struct pHidd_BitMap_UpdateRect urmsg = {
             mID     :   OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect),
