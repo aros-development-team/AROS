@@ -39,7 +39,7 @@ static const UWORD rightmask[] = {
     0xfff8, 0xfffc, 0xfffe, 0xffff
 };
 
-static UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff };
+static const UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff };
 // A-DAT = edge masking
 // B     = source
 // C     = destination
@@ -113,20 +113,24 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
 
     srcwidth = srcx2 / 16 - srcx / 16 + 1;
     dstwidth = dstx2 / 16 - dstx / 16 + 1;
+    srcx &= 15;
+    dstx &= 15;
+    dstx2 &= 15;
+    srcx2 &= 15;
 
     if (reverse) {
      	if (dstwidth >= srcwidth) {
     	    width = dstwidth;
     	    shifta = 0;
     	    shiftb = shift << 12;
-    	    alwm = leftmask[dstx & 15];
-    	    afwm = rightmask[dstx2 & 15];
+    	    alwm = leftmask[dstx];
+    	    afwm = rightmask[dstx2];
     	} else {
     	   width = srcwidth;
     	   shifta = shift << 12;
     	   shiftb = shift << 12;
-     	   alwm = leftmask[srcx & 15];
-    	   afwm = rightmask[srcx2 & 15];
+     	   alwm = leftmask[srcx];
+    	   afwm = rightmask[srcx2];
     	}
     	srcoffset += srcbm->bytesperrow * (h - 1) + (width - 1) * 2;
     	dstoffset += dstbm->bytesperrow * (h - 1) + (width - 1) * 2;
@@ -135,14 +139,14 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     	    width = dstwidth;
     	    shifta = 0;
     	    shiftb = shift << 12;
-    	    afwm = leftmask[dstx & 15];
-    	    alwm = rightmask[dstx2 & 15];
+    	    afwm = leftmask[dstx];
+    	    alwm = rightmask[dstx2];
     	} else {
     	   width = srcwidth;
     	   shifta = shift << 12;
     	   shiftb = shift << 12;
-     	   afwm = leftmask[srcx & 15];
-    	   alwm = rightmask[srcx2 & 15];
+     	   afwm = leftmask[srcx];
+    	   alwm = rightmask[srcx2];
     	}
     }
 
@@ -186,7 +190,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     return TRUE;
 }
 
-static UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0xca };
+static const UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0xca };
 // copy: /AC + AB = 0xCA
 // invert: /AC + A/C = 0x5A
 // A-DAT = edge masking
@@ -200,7 +204,7 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm,
     ULONG offset;
     WORD width, height;
     UBYTE i;
-    struct Library *GfxBase = data->GfxBase;
+    struct GfxBase *GfxBase = data->gfxbase;
     
     //D(bug("fillrect(%dx%d,%dx%d,%d,%d)\n", x1, y1, x2, y2, pixel, mode));
 
@@ -236,6 +240,137 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm,
     	custom->bltdpt = (APTR)(bm->planes[i] + offset);
     	startblitter(data, width, height);
     	pixel >>= 1;
+    }
+
+    WaitBlit();
+    DisownBlitter();
+
+    return TRUE;
+}
+
+#if 0
+struct pHidd_BitMap_PutTemplate
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE 	    *Template;
+    ULONG	    modulo;
+    WORD    	    srcx;
+    WORD	    x, y;
+    WORD	    width, height;
+    BOOL    	    inverttemplate;
+};
+#endif
+
+static const UBYTE tmpl_minterm[] = { 0, 0, 0, 0, 0, 0 };
+// A-DAT = edge masking
+// B     = template
+// C     = destination
+// D     = destination
+
+// 0 = JAM1:			FG=1: /AC + AB FG=0: /AC + A/B
+// 1 = JAM1 | INVERSVID: 	FG=0: /AC + AB FG=1: /AC + A/B
+// 2 = COMPLEMENT:		/AC + AB/C
+// 3 = COMPLEMENT | INVERSIVD:	/AC + A/B/C
+// 4 = JAM2:			/AC + (FG=0: A/B) (FG=1: AB) + (BG=0: A
+// 5 = JAM2 | INVERSVID:	/AC
+BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct planarbm_data *bm, struct pHidd_BitMap_PutTemplate *tmpl)
+{
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+    OOP_Object *gc = tmpl->gc;
+    HIDDT_Pixel	fg = GC_FG(tmpl->gc);
+    HIDDT_Pixel bg = GC_BG(tmpl->gc);
+
+    UBYTE type, i;
+    BYTE shift;
+    UWORD shifta, shiftb;
+    UWORD afwm, alwm;
+    ULONG srcoffset, dstoffset;
+    WORD width, srcwidth, dstwidth;
+    BOOL reverse;
+    WORD height = tmpl->height;
+    WORD dstx = tmpl->x;
+    WORD dsty = tmpl->y;
+    WORD dstx2 = tmpl->x + tmpl->width - 1;
+    WORD srcx = tmpl->srcx;
+    WORD srcx2 = srcx + tmpl->width - 1;
+
+return FALSE;
+    if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
+    	type = 0;
+    else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
+     	type = 2;
+    else
+     	type = 4;
+    if (tmpl->inverttemplate)
+    	type++;
+
+    srcoffset = 0;
+    dstoffset = bm->bytesperrow * dstx + dsty / 16;
+
+    srcwidth = srcx2 / 16 + 1;
+    dstwidth = dstx2 / 16 - dstx / 16 + 1;
+ 
+    dstx &= 15;
+    dstx2 &= 15;
+    srcx2 &= 15;
+ 
+    shift = dstx - srcx;
+    if (shift < 0) {
+     	reverse = TRUE;
+    	shift = -shift;
+    	if (dstwidth >= srcwidth) {
+    	    width = dstwidth;
+    	    shifta = 0;
+    	    shiftb = shift << 12;
+    	    alwm = leftmask[dstx];
+    	    afwm = rightmask[dstx2];
+    	} else {
+    	    width = srcwidth;
+    	    shifta = shift << 12;
+    	    shiftb = shift << 12;
+     	    alwm = leftmask[srcx];
+    	    afwm = rightmask[srcx2];
+    	}
+    	srcoffset += tmpl->modulo * (height - 1) + (width - 1) * 2;
+    	dstoffset += bm->bytesperrow * (height - 1) + (width - 1) * 2;
+    } else {
+    	reverse = FALSE;
+     	if (dstwidth >= srcwidth) {
+    	    width = dstwidth;
+    	    shifta = 0;
+    	    shiftb = shift << 12;
+    	    afwm = leftmask[dstx];
+    	    alwm = rightmask[dstx2];
+    	} else {
+    	   width = srcwidth;
+    	   shifta = shift << 12;
+    	   shiftb = shift << 12;
+     	   afwm = leftmask[srcx];
+    	   alwm = rightmask[srcx2];
+    	}
+    }
+
+    OwnBlitter();
+    WaitBlit();
+
+    custom->bltafwm = afwm;
+    custom->bltalwm = alwm;
+    custom->bltbmod = tmpl->modulo - width * 2;
+    custom->bltcmod = bm->bytesperrow - width * 2;
+    custom->bltdmod = bm->bytesperrow - width * 2;
+    custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
+    custom->bltcon0 = 0x0700 | tmpl_minterm[type] | shifta;
+    custom->bltadat = 0xffff;
+    
+    for (i = 0; i < bm->depth; i++) {
+    	if (bm->planes[i] == (UBYTE*)0x00000000 || bm->planes[i] == (UBYTE*)0xffffffff)
+  	    continue;
+    	WaitBlit();
+	custom->bltbpt = (APTR)(tmpl->Template + srcoffset);
+    	custom->bltcpt = (APTR)(bm->planes[i] + dstoffset);
+    	custom->bltdpt = (APTR)(bm->planes[i] + dstoffset);
+    	startblitter(data, width, height);
     }
 
     WaitBlit();

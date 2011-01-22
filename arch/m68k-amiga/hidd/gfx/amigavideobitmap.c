@@ -103,7 +103,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	    /* Allocate all the planes */
 	    for (i = 0; i < depth && ok; i++) {
 	    	data->planesmem[i] = AllocVec(height * data->bytesperrow + bmadd, MEMF_CHIP);
-	    	data->planes[i] = (UBYTE*)((((ULONG)(data->planesmem[i])) + 8 + 7) & ~7);
+	    	data->planes[i] = (UBYTE*)((((ULONG)(data->planesmem[i])) + bmadd / 2 + 7) & ~7);
 	    	if (NULL == data->planesmem[i])
 	    	    ok = FALSE;
 	    }
@@ -512,7 +512,7 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct planarbm_data    *data = OOP_INST_DATA(cl, o);
+    struct planarbm_data *data = OOP_INST_DATA(cl, o);
 
     if (!blit_fillrect(csd, data, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode))
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -522,7 +522,13 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 
 VOID AmigaVideoBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+
+    D(bug("puttemplate: %x x=%d y=%d w=%d h=%d srcx=%d modulo=%d invert=%d\n",
+    	msg->Template, msg->x, msg->y, msg->width, msg->height, msg->srcx, msg->inverttemplate));
+    if (!blit_puttemplate(csd, data, msg))
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 
