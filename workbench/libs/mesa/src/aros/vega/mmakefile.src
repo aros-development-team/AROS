@@ -62,16 +62,19 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
             -I$(SRCDIR)/$(CURDIR)/../../ \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega \
+            -I$(GENDIR)/$(CURDIR) \
 
-USER_CFLAGS := -ffast-math -DMAPI_ABI_HEADER=\"vgapi/vgapi_tmp.h\" -DVEGA_VERSION_STRING=\"\"
+USER_CFLAGS := -ffast-math -DMAPI_ABI_HEADER=\"vgapi_tmp.h\" -DVEGA_VERSION_STRING=\"\"
 
 #MM
-workbench-libs-vega-generated : $(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega/api_tmp.h $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi_tmp.h
+workbench-libs-vega-generated : $(GENDIR)/$(CURDIR)/api_tmp.h $(GENDIR)/$(CURDIR)/vgapi_tmp.h
 
-$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega/api_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
+$(GENDIR)/$(CURDIR)/api_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
+	@$(MKDIR) $(GENDIR)/$(CURDIR)
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/../../mapi/mapi/mapi_abi.py $< --printer vgapi --mode app > $@
 
-$(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
+$(GENDIR)/$(CURDIR)/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
+	@$(MKDIR) $(GENDIR)/$(CURDIR)
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/../../mapi/mapi/mapi_abi.py $< --printer vgapi --mode lib > $@
 
 %build_module mmake=workbench-libs-vega \

@@ -49,8 +49,6 @@ GALLIUM_AUXILIARY_SOURCES = \
             draw/draw_vs_ppc \
             draw/draw_vs_sse \
             draw/draw_vs_varient \
-            indices/u_indices_gen \
-            indices/u_unfilled_gen \
             os/os_misc \
             os/os_stream \
             os/os_stream_log \
@@ -115,14 +113,11 @@ GALLIUM_AUXILIARY_SOURCES = \
             util/u_format \
             util/u_format_other \
             util/u_format_s3tc \
-            util/u_format_srgb \
-            util/u_format_table \
             util/u_format_tests \
             util/u_format_yuv \
             util/u_format_zs \
             util/u_framebuffer \
             util/u_gen_mipmap \
-            util/u_half \
             util/u_handle_table \
             util/u_hash \
             util/u_hash_table \
@@ -155,6 +150,8 @@ GALLIUM_AUXILIARY_GENERATED_SOURCES = \
 
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(SRCDIR)/$(CURDIR)/util \
+            -I$(SRCDIR)/$(CURDIR)/indices \
 
 USER_CFLAGS := -ffast-math
 
@@ -162,21 +159,31 @@ USER_CFLAGS := -ffast-math
     files="$(GALLIUM_AUXILIARY_SOURCES) $(GALLIUM_AUXILIARY_GENERATED_SOURCES)"
 
 #MM
-linklibs-galliumauxiliary-generated : $(SRCDIR)/$(CURDIR)/util/u_format_table.c $(SRCDIR)/$(CURDIR)/util/u_format_srgb.c $(SRCDIR)/$(CURDIR)/util/u_half.c $(SRCDIR)/$(CURDIR)/indices/u_unfilled_gen.c $(SRCDIR)/$(CURDIR)/indices/u_indices_gen.c
+linklibs-galliumauxiliary-generated : $(GENDIR)/$(CURDIR)/util/u_format_table.c $(GENDIR)/$(CURDIR)/util/u_format_srgb.c $(GENDIR)/$(CURDIR)/util/u_half.c $(GENDIR)/$(CURDIR)/indices/u_unfilled_gen.c $(GENDIR)/$(CURDIR)/indices/u_indices_gen.c
 
-$(SRCDIR)/$(CURDIR)/util/u_format_table.c :
+$(GENDIR)/$(CURDIR)/util/u_format_table.c :
+	@$(MKDIR) $(GENDIR)/$(CURDIR)/util/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_format_table.py $(SRCDIR)/$(CURDIR)/util/u_format.csv > $@
+	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_format_table.o
 
-$(SRCDIR)/$(CURDIR)/indices/u_indices_gen.c :
+$(GENDIR)/$(CURDIR)/indices/u_indices_gen.c :
+	@$(MKDIR) $(GENDIR)/$(CURDIR)/indices/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/indices/u_indices_gen.py > $@
+	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_indices_gen.o
 
-$(SRCDIR)/$(CURDIR)/indices/u_unfilled_gen.c :
+$(GENDIR)/$(CURDIR)/indices/u_unfilled_gen.c :
+	@$(MKDIR) $(GENDIR)/$(CURDIR)/indices/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/indices/u_unfilled_gen.py > $@
+	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_unfilled_gen.o
 
-$(SRCDIR)/$(CURDIR)/util/u_format_srgb.c :
+$(GENDIR)/$(CURDIR)/util/u_format_srgb.c :
+	@$(MKDIR) $(GENDIR)/$(CURDIR)/util/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_format_srgb.py > $@
+	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_format_srgb.o
 
-$(SRCDIR)/$(CURDIR)/util/u_half.c :
+$(GENDIR)/$(CURDIR)/util/u_half.c :
+	@$(MKDIR) $(GENDIR)/$(CURDIR)/util/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_half.py > $@
+	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_half.o
 
 %common
