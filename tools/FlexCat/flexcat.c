@@ -1719,8 +1719,9 @@ void CreateCat(char *CatFile)
       MemError();
       }
 
-    sprintf(verStr, "$V");
-    sprintf(verStr, "ER: %s %ld.%ld (%ld.%ld.%ld)", name, version, revision, day, month, year);
+    sprintf( verStr, "$V");
+    sprintf( verStr, "ER: %s %ld.%ld (%ld.%ld.%ld)"
+    , name, (long)version, (long)revision, (long)day, (long)month, (long)year);
 
     cc.ID = MAKE_ID('F','V','E','R');
     cc.ID = SwapLong( cc.ID );
@@ -2499,7 +2500,7 @@ void CreateSourceFile(char *SourceFile, char *TemplateFile, char *CDFile)
                     char *start;
                     char _StrLen[20 + 1];
 
-                    sprintf(_StrLen, "%020lx", cs->ID);
+                    sprintf(_StrLen, "%020lx", (long)(cs->ID));
 
                     start = &_StrLen[20-_len*2];
                     while(_len>0)
@@ -2516,7 +2517,7 @@ void CreateSourceFile(char *SourceFile, char *TemplateFile, char *CDFile)
                     char *start;
                     char _StrLen[20 + 1];
 
-                    sprintf(_StrLen, "%020lx", ((CalcRealLength(cs->CD_Str) + 1) & 0xfffffe));
+                    sprintf(_StrLen, "%020lx", (long)((CalcRealLength(cs->CD_Str) + 1) & 0xfffffe));
 
                     start = &_StrLen[20-_len*2];
                     while(_len>0)
@@ -2897,7 +2898,7 @@ int main(int argc, char *argv [])
     {
     if(!ctfile)
       {
-      fprintf(stderr, (char *) msgNoCTArgument);
+      fprintf(stderr, "%s\n", (char *) msgNoCTArgument);
       Usage();
       }
     CreateCat(catalog);
