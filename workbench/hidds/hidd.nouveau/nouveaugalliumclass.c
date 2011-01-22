@@ -273,14 +273,12 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
 
 VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
 {
-    struct pipe_surface * surface = (struct pipe_surface *)msg->surface;
     struct CardData * carddata = &(SD(cl)->carddata);
     struct HIDDNouveauBitMapData srcdata;
-    struct RastPort * rp = (struct RastPort *)msg->rastport;
-    OOP_Object * bm = HIDD_BM_OBJ(rp->BitMap);
+    OOP_Object * bm = HIDD_BM_OBJ(msg->rastport->BitMap);
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
     
-    if (!HIDDNouveauWrapSurface(carddata, surface, &srcdata))
+    if (!HIDDNouveauWrapSurface(carddata, msg->surface, &srcdata))
         return;
 
     /* srcdata does not require a lock, because it's a local object that is
@@ -306,13 +304,12 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
 
 VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
 {
-    struct pipe_resource * resource = (struct pipe_resource *)msg->resource;
     struct CardData * carddata = &(SD(cl)->carddata);
     struct HIDDNouveauBitMapData srcdata;
-    OOP_Object * bm = HIDD_BM_OBJ((struct BitMap *)msg->bitmap);
+    OOP_Object * bm = HIDD_BM_OBJ(msg->bitmap);
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
     
-    if (!HIDDNouveauWrapResource(carddata, resource, &srcdata))
+    if (!HIDDNouveauWrapResource(carddata, msg->resource, &srcdata))
         return;
 
     /* srcdata does not require a lock, because it's a local object that is
