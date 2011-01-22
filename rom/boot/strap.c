@@ -26,6 +26,7 @@
 #include <devices/bootblock.h>
 #include <devices/timer.h>
 #include <dos/dosextens.h>
+#include <resources/filesysres.h>
 
 #include <proto/exec.h>
 #include <proto/expansion.h>
@@ -262,7 +263,23 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
            init();
        }
 }
+
 #endif
+
+static struct FileSysEntry *MatchFileSystemResourceHandler(IPTR DosType)
+{
+    struct FileSysResource *fsr;
+    struct FileSysEntry *fsrnode;
+
+    fsr = OpenResource("FileSystem.resource");
+    if (!fsr)
+    	return NULL;
+    ForeachNode(&fsr->fsr_FileSysEntries, fsrnode) {
+        if (fsrnode->fse_DosType == DosType && fsrnode->fse_SegList != BNULL)
+            return fsrnode;
+    }
+    return NULL;
+}
 
 static STRPTR MatchHandler(IPTR DosType)
 {
@@ -336,6 +353,7 @@ static VOID AddPartitionVolume
     LONG ppos;
     TEXT *devname, *handler;
     LONG bootable;
+    struct FileSysEntry *fse;
 
     D(bug("[Boot] AddPartitionVolume\n"));
     pp = AllocVec(sizeof(struct DosEnvec) + sizeof(IPTR) * 4,
@@ -464,6 +482,31 @@ static VOID AddPartitionVolume
                 }
             }
         }
+
+	fse = MatchFileSystemResourceHandler(pp[4 + DE_DOSTYPE]);
+	if (fse != NULL)
+	{
+	    D(bug("[Boot] found in FileSystem.resource\n"));
+            devnode = MakeDosNode(pp);
+            if (devnode != NULL)
+            {
+            	devnode->dn_SegList = fse->fse_SegList;
+            	/* other fse_PatchFlags bits are quite pointless */
+            	if (fse->fse_PatchFlags & 16)
+            	    devnode->dn_StackSize = fse->fse_StackSize;
+            	if (fse->fse_PatchFlags & 32)
+            	    devnode->dn_Priority = fse->fse_Priority;
+          	if (fse->fse_PatchFlags & 256)
+            	    devnode->dn_GlobalVec = fse->fse_GlobalVec;
+	    
+                AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, 0);
+                D(bug("[Boot] AddBootNode(%s,0x%lx,%p)\n",
+                    AROS_DOSDEVNAME(devnode),
+                    pp[4 + DE_DOSTYPE], fse));
+                return;
+	    }
+	}
+
         FreeVec(pp);
     }
 }
