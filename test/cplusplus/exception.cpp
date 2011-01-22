@@ -24,11 +24,15 @@ void abort(void)
     printf("abort() called\n");
 
     Alert(AN_Unknown);
+
+    /* Calling exit here makes this a noreturn function
+     * avoiding a compiler warning. */
+    exit(20);
 }
 
 #endif
 
-/* Just to make things a little bit more complex */
+/* Just to make things a little bit more complex. */
 int sub()
 {
     printf("sub() entered\n");
