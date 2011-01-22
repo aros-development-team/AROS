@@ -185,38 +185,6 @@ fail:
     return NULL;
 }
 
-VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplaySurface)
-{
-    struct pipe_surface * surf = msg->surface;
-    struct softpipe_resource * spr = softpipe_resource(surf->texture);
-    struct sw_winsys * swws = softpipe_screen(spr->base.screen)->winsys;
-    struct RastPort * rp = CloneRastPort(msg->rastport);
-    APTR * data = spr->data;
-
-    if ((data == NULL) && (spr->dt != NULL))
-        data = swws->displaytarget_map(swws, spr->dt, 0);
-
-    if (data)
-    {
-        WritePixelArray(
-            data, 
-            msg->left,
-            msg->top,
-            spr->stride[surf->u.tex.level],
-            rp, 
-            msg->relx, 
-            msg->rely, 
-            msg->width, 
-            msg->height, 
-            AROS_PIXFMT);
-    }
-
-    if ((spr->data == NULL) && (data != NULL))
-        swws->displaytarget_unmap(swws, spr->dt);
-
-    FreeRastPort(rp);
-}
-
 VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplayResource)
 {
     struct softpipe_resource * spr = softpipe_resource(msg->resource);
