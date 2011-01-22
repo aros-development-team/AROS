@@ -5,6 +5,7 @@
 #include <oop/oop.h>
 #include <exec/semaphores.h>
 #include <exec/interrupts.h>
+#include <graphics/gfxbase.h>
 
 #include "amigavideoclass.h"
 
@@ -24,7 +25,8 @@ struct copper2data
 	UWORD *copper2_palette;
 	UWORD *copper2_palette_aga_lo;
 	UWORD *copper2_scroll;
-	UWORD *copper2bplcon0;
+	UWORD *copper2_bplcon0;
+	UWORD *copper2_bpl;
 };
 
 struct amigavideo_staticdata
@@ -42,7 +44,7 @@ struct amigavideo_staticdata
 	OOP_AttrBase hiddAttrBase;
 	OOP_AttrBase hiddColorMapAttrBase;
 	
-	struct Library *GfxBase;
+	struct GfxBase *gfxbase;
 
 	struct planarbm_data *disp;
 	struct Interrupt inter;
@@ -64,6 +66,7 @@ struct amigavideo_staticdata
 	UWORD bplcon3;
 	UWORD fmode;
 	UWORD ddfstrt, ddfstop;
+	UWORD modulo;
 	struct copper2data copper2;
 	struct copper2data copper2i;
 
@@ -74,6 +77,7 @@ struct amigavideo_staticdata
 	UBYTE depth;
 	UBYTE res; // 0 = lores, 1 = hires, 2 = shres
 	UBYTE interlace;
+	UBYTE extralines;
 	BOOL ecs_agnus, ecs_denise, aga;
 	BOOL cursorvisible;
 
