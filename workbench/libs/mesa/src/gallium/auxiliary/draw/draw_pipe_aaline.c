@@ -406,6 +406,7 @@ aaline_create_texture(struct aaline_stage *aaline)
    texTemp.width0 = 1 << MAX_TEXTURE_LEVEL;
    texTemp.height0 = 1 << MAX_TEXTURE_LEVEL;
    texTemp.depth0 = 1;
+   texTemp.array_size = 1;
    texTemp.bind = PIPE_BIND_SAMPLER_VIEW;
 
    aaline->texture = screen->resource_create(screen, &texTemp);
@@ -441,10 +442,10 @@ aaline_create_texture(struct aaline_stage *aaline)
       /* This texture is new, no need to flush. 
        */
       transfer = pipe->get_transfer(pipe,
-				    aaline->texture,
-				    u_subresource(0, level), 
-				    PIPE_TRANSFER_WRITE,
-				    &box);
+                                    aaline->texture,
+                                    level,
+                                    PIPE_TRANSFER_WRITE,
+                                    &box);
 
       data = pipe->transfer_map(pipe, transfer);
       if (data == NULL)
@@ -688,10 +689,9 @@ aaline_first_line(struct draw_stage *stage, struct prim_header *header)
    aaline->tex_slot = draw_current_shader_outputs(draw);
    aaline->pos_slot = draw_current_shader_position_output(draw);;
 
-   /* advertise the extra post-transformed vertex attribute */
-   draw->extra_shader_outputs.semantic_name = TGSI_SEMANTIC_GENERIC;
-   draw->extra_shader_outputs.semantic_index = aaline->fs->generic_attrib;
-   draw->extra_shader_outputs.slot = aaline->tex_slot;
+   /* allocate the extra post-transformed vertex attribute */
+   (void) draw_alloc_extra_vertex_attrib(draw, TGSI_SEMANTIC_GENERIC,
+                                         aaline->fs->generic_attrib);
 
    /* how many samplers? */
    /* we'll use sampler/texture[pstip->sampler_unit] for the stipple */
@@ -744,7 +744,7 @@ aaline_flush(struct draw_stage *stage, unsigned flags)
 
    draw->suspend_flushing = FALSE;
 
-   draw->extra_shader_outputs.slot = 0;
+   draw_remove_extra_vertex_attribs(draw);
 }
 
 

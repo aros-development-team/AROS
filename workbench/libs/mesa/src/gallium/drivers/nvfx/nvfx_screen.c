@@ -37,7 +37,7 @@ nvfx_screen_get_param(struct pipe_screen *pscreen, enum pipe_cap param)
 	case PIPE_CAP_POINT_SPRITE:
 		return 1;
 	case PIPE_CAP_MAX_RENDER_TARGETS:
-		return screen->use_nv4x ? 4 : 2;
+		return screen->use_nv4x ? 4 : 1;
 	case PIPE_CAP_OCCLUSION_QUERY:
 		return 1;
         case PIPE_CAP_TIMER_QUERY:
@@ -77,6 +77,10 @@ nvfx_screen_get_param(struct pipe_screen *pscreen, enum pipe_cap param)
 		return 1;
 	case PIPE_CAP_DEPTH_CLAMP:
 		return 0; // TODO: implement depth clamp
+	case PIPE_CAP_PRIMITIVE_RESTART:
+		return 0; // TODO: implement primitive restart
+	case PIPE_CAP_SHADER_STENCIL_EXPORT:
+		return 0;
 	default:
 		NOUVEAU_ERR("Warning: unknown PIPE_CAP %d\n", param);
 		return 0;
@@ -114,6 +118,13 @@ nvfx_screen_get_shader_param(struct pipe_screen *pscreen, unsigned shader, enum 
 			return 0; /* we could expose these, but nothing uses them */
 		case PIPE_SHADER_CAP_TGSI_CONT_SUPPORTED:
 		    return 0;
+		case PIPE_SHADER_CAP_INDIRECT_INPUT_ADDR:
+		case PIPE_SHADER_CAP_INDIRECT_OUTPUT_ADDR:
+		case PIPE_SHADER_CAP_INDIRECT_TEMP_ADDR:
+		case PIPE_SHADER_CAP_INDIRECT_CONST_ADDR:
+			return 0;
+		case PIPE_SHADER_CAP_SUBROUTINES:
+			return screen->use_nv4x ? 1 : 0;
 		default:
 			break;
 		}
@@ -146,6 +157,14 @@ nvfx_screen_get_shader_param(struct pipe_screen *pscreen, unsigned shader, enum 
 			return 0; /* we could expose these, but nothing uses them */
 		case PIPE_SHADER_CAP_TGSI_CONT_SUPPORTED:
                         return 1;
+		case PIPE_SHADER_CAP_INDIRECT_INPUT_ADDR:
+		case PIPE_SHADER_CAP_INDIRECT_OUTPUT_ADDR:
+		case PIPE_SHADER_CAP_INDIRECT_TEMP_ADDR:
+			return 0;
+		case PIPE_SHADER_CAP_INDIRECT_CONST_ADDR:
+			return 1;
+		case PIPE_SHADER_CAP_SUBROUTINES:
+			return 1;
 		default:
 			break;
 		}
@@ -194,6 +213,8 @@ nvfx_screen_is_format_supported(struct pipe_screen *pscreen,
 		switch (format) {
 		case PIPE_FORMAT_B8G8R8A8_UNORM:
 		case PIPE_FORMAT_B8G8R8X8_UNORM:
+		case PIPE_FORMAT_R8G8B8A8_UNORM:
+		case PIPE_FORMAT_R8G8B8X8_UNORM:
 		case PIPE_FORMAT_B5G6R5_UNORM:
 			break;
 		case PIPE_FORMAT_R16G16B16A16_FLOAT:

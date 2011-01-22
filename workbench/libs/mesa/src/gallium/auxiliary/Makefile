@@ -8,6 +8,7 @@ C_SOURCES = \
 	cso_cache/cso_context.c \
 	cso_cache/cso_hash.c \
 	draw/draw_context.c \
+	draw/draw_fs.c \
 	draw/draw_gs.c \
 	draw/draw_pipe.c \
 	draw/draw_pipe_aaline.c \
@@ -121,17 +122,18 @@ C_SOURCES = \
 	util/u_handle_table.c \
 	util/u_hash.c \
 	util/u_hash_table.c \
+	util/u_index_modify.c \
 	util/u_keymap.c \
 	util/u_linear.c \
 	util/u_linkage.c \
 	util/u_network.c \
 	util/u_math.c \
-	util/u_mempool.c \
 	util/u_mm.c \
 	util/u_rect.c \
 	util/u_ringbuffer.c \
 	util/u_sampler.c \
 	util/u_simple_shaders.c \
+	util/u_slab.c \
 	util/u_snprintf.c \
 	util/u_staging.c \
 	util/u_surface.c \
@@ -140,8 +142,7 @@ C_SOURCES = \
 	util/u_tile.c \
 	util/u_transfer.c \
 	util/u_resource.c \
-	util/u_upload_mgr.c \
-	target-helpers/wrap_screen.c
+	util/u_upload_mgr.c
 
 	# Disabling until pipe-video branch gets merged in
 	#vl/vl_bitstream_parser.c \
@@ -153,6 +154,7 @@ C_SOURCES = \
 GALLIVM_SOURCES = \
         gallivm/lp_bld_arit.c \
         gallivm/lp_bld_assert.c \
+        gallivm/lp_bld_bitarit.c \
         gallivm/lp_bld_const.c \
         gallivm/lp_bld_conv.c \
         gallivm/lp_bld_debug.c \
@@ -168,10 +170,12 @@ GALLIVM_SOURCES = \
         gallivm/lp_bld_printf.c \
         gallivm/lp_bld_quad.c \
         gallivm/lp_bld_sample.c \
+        gallivm/lp_bld_sample_aos.c \
         gallivm/lp_bld_sample_soa.c \
         gallivm/lp_bld_struct.c \
         gallivm/lp_bld_swizzle.c \
         gallivm/lp_bld_tgsi_aos.c \
+        gallivm/lp_bld_tgsi_info.c \
         gallivm/lp_bld_tgsi_soa.c \
         gallivm/lp_bld_type.c \
         draw/draw_llvm.c \
@@ -181,7 +185,7 @@ GALLIVM_SOURCES = \
         draw/draw_pt_fetch_shade_pipeline_llvm.c
 
 GALLIVM_CPP_SOURCES = \
-    gallivm/lp_bld_misc.cpp
+	gallivm/lp_bld_misc.cpp
 
 GENERATED_SOURCES = \
 	indices/u_indices_gen.c \
@@ -199,23 +203,20 @@ CPP_SOURCES += \
 endif
 
 
-LIBRARY_DEFINES += -D__STDC_CONSTANT_MACROS
-
-
 include ../Makefile.template
 
 
 indices/u_indices_gen.c: indices/u_indices_gen.py
-	python $< > $@
+	$(PYTHON2) $< > $@
 
 indices/u_unfilled_gen.c: indices/u_unfilled_gen.py
-	python $< > $@
+	$(PYTHON2) $< > $@
 
 util/u_format_srgb.c: util/u_format_srgb.py
-	python $< > $@
+	$(PYTHON2) $< > $@
 
 util/u_format_table.c: util/u_format_table.py util/u_format_pack.py util/u_format_parse.py util/u_format.csv
-	python util/u_format_table.py util/u_format.csv > $@
+	$(PYTHON2) util/u_format_table.py util/u_format.csv > $@
 
 util/u_half.c: util/u_half.py
-	python util/u_half.py > $@
+	$(PYTHON2) util/u_half.py > $@

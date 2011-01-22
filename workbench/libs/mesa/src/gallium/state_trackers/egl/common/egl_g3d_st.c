@@ -72,9 +72,8 @@ egl_g3d_st_manager_get_egl_image(struct st_manager *smapi,
 
    out->texture = NULL;
    pipe_resource_reference(&out->texture, gimg->texture);
-   out->face = gimg->face;
    out->level = gimg->level;
-   out->zslice = gimg->zslice;
+   out->layer = gimg->layer;
 
    _eglUnlockMutex(&gsmapi->display->Mutex);
 
@@ -140,6 +139,7 @@ pbuffer_allocate_render_texture(struct egl_g3d_surface *gsurf)
    templ.width0 = gsurf->base.Width;
    templ.height0 = gsurf->base.Height;
    templ.depth0 = 1;
+   templ.array_size = 1;
    templ.format = gsurf->stvis.color_format;
    templ.bind = PIPE_BIND_RENDER_TARGET;
 
@@ -192,7 +192,8 @@ egl_g3d_st_framebuffer_flush_front(struct st_framebuffer_iface *stfbi,
    _EGLSurface *surf = (_EGLSurface *) stfbi->st_manager_private;
    struct egl_g3d_surface *gsurf = egl_g3d_surface(surf);
 
-   return gsurf->native->flush_frontbuffer(gsurf->native);
+   return gsurf->native->present(gsurf->native,
+         NATIVE_ATTACHMENT_FRONT_LEFT, FALSE, 0);
 }
 
 static boolean 

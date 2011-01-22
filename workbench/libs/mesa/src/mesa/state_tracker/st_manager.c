@@ -34,13 +34,13 @@
 #include "util/u_pointer.h"
 #include "util/u_inlines.h"
 #include "util/u_atomic.h"
+#include "util/u_surface.h"
 
 #include "main/mtypes.h"
 #include "main/context.h"
 #include "main/texobj.h"
 #include "main/teximage.h"
 #include "main/texstate.h"
-#include "main/texfetch.h"
 #include "main/framebuffer.h"
 #include "main/fbobject.h"
 #include "main/renderbuffer.h"
@@ -54,13 +54,13 @@
 #include "st_manager.h"
 
 /**
- * Cast wrapper to convert a GLframebuffer to an st_framebuffer.
- * Return NULL if the GLframebuffer is a user-created framebuffer.
+ * Cast wrapper to convert a struct gl_framebuffer to an st_framebuffer.
+ * Return NULL if the struct gl_framebuffer is a user-created framebuffer.
  * We'll only return non-null for window system framebuffers.
  * Note that this function may fail.
  */
 static INLINE struct st_framebuffer *
-st_ws_framebuffer(GLframebuffer *fb)
+st_ws_framebuffer(struct gl_framebuffer *fb)
 {
    /* FBO cannot be casted.  See st_new_framebuffer */
    return (struct st_framebuffer *) ((fb && !fb->Name) ? fb : NULL);
@@ -143,7 +143,7 @@ buffer_index_to_attachment(gl_buffer_index index)
 static void
 st_framebuffer_validate(struct st_framebuffer *stfb, struct st_context *st)
 {
-   struct pipe_screen *screen = st->pipe->screen;
+   struct pipe_context *pipe = st->pipe;
    struct pipe_resource *textures[ST_ATTACHMENT_COUNT];
    uint width, height;
    unsigned i;
@@ -161,7 +161,7 @@ st_framebuffer_validate(struct st_framebuffer *stfb, struct st_context *st)
 
    for (i = 0; i < stfb->num_statts; i++) {
       struct st_renderbuffer *strb;
-      struct pipe_surface *ps;
+      struct pipe_surface *ps, surf_tmpl;
       gl_buffer_index idx;
 
       if (!textures[i])
@@ -180,8 +180,10 @@ st_framebuffer_validate(struct st_framebuffer *stfb, struct st_context *st)
          continue;
       }
 
-      ps = screen->get_tex_surface(screen, textures[i], 0, 0, 0,
-				   PIPE_BIND_RENDER_TARGET);
+      memset(&surf_tmpl, 0, sizeof(surf_tmpl));
+      u_surface_default_template(&surf_tmpl, textures[i],
+                                 PIPE_BIND_RENDER_TARGET);
+      ps = pipe->create_surface(pipe, textures[i], &surf_tmpl);
       if (ps) {
          pipe_surface_reference(&strb->surface, ps);
          pipe_resource_reference(&strb->texture, ps->texture);
@@ -296,11 +298,11 @@ st_framebuffer_add_renderbuffer(struct st_framebuffer *stfb,
 }
 
 /**
- * Intialize a __GLcontextModes from a visual.
+ * Intialize a struct gl_config from a visual.
  */
 static void
 st_visual_to_context_mode(const struct st_visual *visual,
-                          __GLcontextModes *mode)
+                          struct gl_config *mode)
 {
    memset(mode, 0, sizeof(*mode));
 
@@ -420,7 +422,7 @@ static struct st_framebuffer *
 st_framebuffer_create(struct st_framebuffer_iface *stfbi)
 {
    struct st_framebuffer *stfb;
-   __GLcontextModes mode;
+   struct gl_config mode;
    gl_buffer_index idx;
 
    stfb = CALLOC_STRUCT(st_framebuffer);
@@ -429,7 +431,7 @@ st_framebuffer_create(struct st_framebuffer_iface *stfbi)
 
    /* for FBO-only context */
    if (!stfbi) {
-      GLframebuffer *base = _mesa_get_incomplete_framebuffer();
+      struct gl_framebuffer *base = _mesa_get_incomplete_framebuffer();
 
       stfb->Base = *base;
 
@@ -471,8 +473,8 @@ static void
 st_framebuffer_reference(struct st_framebuffer **ptr,
                          struct st_framebuffer *stfb)
 {
-   GLframebuffer *fb = &stfb->Base;
-   _mesa_reference_framebuffer((GLframebuffer **) ptr, fb);
+   struct gl_framebuffer *fb = &stfb->Base;
+   _mesa_reference_framebuffer((struct gl_framebuffer **) ptr, fb);
 }
 
 static void
@@ -486,9 +488,18 @@ st_context_notify_invalid_framebuffer(struct st_context_iface *stctxi,
    stfb = st_ws_framebuffer(st->ctx->WinSysDrawBuffer);
    if (!stfb || stfb->iface != stfbi)
       stfb = st_ws_framebuffer(st->ctx->WinSysReadBuffer);
-   assert(stfb && stfb->iface == stfbi);
 
-   p_atomic_set(&stfb->revalidate, TRUE);
+   if (stfb && stfb->iface == stfbi) {
+      p_atomic_set(&stfb->revalidate, TRUE);
+   }
+   else {
+      /* This function is probably getting called when we've detected a
+       * change in a window's size but the currently bound context is
+       * not bound to that window.
+       * If the st_framebuffer_iface structure had a pointer to the
+       * corresponding st_framebuffer we'd be able to handle this.
+       */
+   }
 }
 
 static void
@@ -507,7 +518,7 @@ st_context_teximage(struct st_context_iface *stctxi, enum st_texture_type target
                     struct pipe_resource *tex, boolean mipmap)
 {
    struct st_context *st = (struct st_context *) stctxi;
-   GLcontext *ctx = st->ctx;
+   struct gl_context *ctx = st->ctx;
    struct gl_texture_unit *texUnit = _mesa_get_current_tex_unit(ctx);
    struct gl_texture_object *texObj;
    struct gl_texture_image *texImage;
@@ -547,6 +558,8 @@ st_context_teximage(struct st_context_iface *stctxi, enum st_texture_type target
    texImage = _mesa_get_tex_image(ctx, texObj, target, level);
    stImage = st_texture_image(texImage);
    if (tex) {
+      gl_format texFormat;
+
       /*
        * XXX When internal_format and tex->format differ, st_finalize_texture
        * needs to allocate a new texture with internal_format and copy the
@@ -564,11 +577,13 @@ st_context_teximage(struct st_context_iface *stctxi, enum st_texture_type target
          internalFormat = GL_RGBA;
       else
          internalFormat = GL_RGB;
+
+      texFormat = st_ChooseTextureFormat(ctx, internalFormat,
+                                         GL_RGBA, GL_UNSIGNED_BYTE);
+
       _mesa_init_teximage_fields(ctx, target, texImage,
-            tex->width0, tex->height0, 1, 0, internalFormat);
-      texImage->TexFormat = st_ChooseTextureFormat(ctx, internalFormat,
-            GL_RGBA, GL_UNSIGNED_BYTE);
-      _mesa_set_fetch_functions(texImage, 2);
+                                 tex->width0, tex->height0, 1, 0,
+                                 internalFormat, texFormat);
 
       width = tex->width0;
       height = tex->height0;
@@ -602,6 +617,26 @@ st_context_teximage(struct st_context_iface *stctxi, enum st_texture_type target
 }
 
 static void
+st_context_copy(struct st_context_iface *stctxi,
+                struct st_context_iface *stsrci, unsigned mask)
+{
+   struct st_context *st = (struct st_context *) stctxi;
+   struct st_context *src = (struct st_context *) stsrci;
+
+   _mesa_copy_context(src->ctx, st->ctx, mask);
+}
+
+static boolean
+st_context_share(struct st_context_iface *stctxi,
+                 struct st_context_iface *stsrci)
+{
+   struct st_context *st = (struct st_context *) stctxi;
+   struct st_context *src = (struct st_context *) stsrci;
+
+   return _mesa_share_state(st->ctx, src->ctx);
+}
+
+static void
 st_context_destroy(struct st_context_iface *stctxi)
 {
    struct st_context *st = (struct st_context *) stctxi;
@@ -616,7 +651,7 @@ st_api_create_context(struct st_api *stapi, struct st_manager *smapi,
    struct st_context *shared_ctx = (struct st_context *) shared_stctxi;
    struct st_context *st;
    struct pipe_context *pipe;
-   __GLcontextModes mode;
+   struct gl_config mode;
    gl_api api;
 
    if (!(stapi->profile_mask & (1 << attribs->profile)))
@@ -668,7 +703,8 @@ st_api_create_context(struct st_api *stapi, struct st_manager *smapi,
       st_context_notify_invalid_framebuffer;
    st->iface.flush = st_context_flush;
    st->iface.teximage = st_context_teximage;
-   st->iface.copy = NULL;
+   st->iface.copy = st_context_copy;
+   st->iface.share = st_context_share;
    st->iface.st_context_private = (void *) smapi;
 
    return &st->iface;
@@ -780,6 +816,7 @@ st_manager_flush_frontbuffer(struct st_context *st)
 
 /**
  * Return the surface of an EGLImage.
+ * FIXME: I think this should operate on resources, not surfaces
  */
 struct pipe_surface *
 st_manager_get_egl_image_surface(struct st_context *st,
@@ -788,7 +825,7 @@ st_manager_get_egl_image_surface(struct st_context *st,
    struct st_manager *smapi =
       (struct st_manager *) st->iface.st_context_private;
    struct st_egl_image stimg;
-   struct pipe_surface *ps;
+   struct pipe_surface *ps, surf_tmpl;
 
    if (!smapi || !smapi->get_egl_image)
       return NULL;
@@ -797,8 +834,13 @@ st_manager_get_egl_image_surface(struct st_context *st,
    if (!smapi->get_egl_image(smapi, eglimg, &stimg))
       return NULL;
 
-   ps = smapi->screen->get_tex_surface(smapi->screen,
-         stimg.texture, stimg.face, stimg.level, stimg.zslice, usage);
+   memset(&surf_tmpl, 0, sizeof(surf_tmpl));
+   surf_tmpl.format = stimg.texture->format;
+   surf_tmpl.usage = usage;
+   surf_tmpl.u.tex.level = stimg.level;
+   surf_tmpl.u.tex.first_layer = stimg.layer;
+   surf_tmpl.u.tex.last_layer = stimg.layer;
+   ps = st->pipe->create_surface(st->pipe, stimg.texture, &surf_tmpl);
    pipe_resource_reference(&stimg.texture, NULL);
 
    return ps;
@@ -823,7 +865,7 @@ st_manager_validate_framebuffers(struct st_context *st)
  * Add a color renderbuffer on demand.
  */
 boolean
-st_manager_add_color_renderbuffer(struct st_context *st, GLframebuffer *fb,
+st_manager_add_color_renderbuffer(struct st_context *st, struct gl_framebuffer *fb,
                                   gl_buffer_index idx)
 {
    struct st_framebuffer *stfb = st_ws_framebuffer(fb);
@@ -856,6 +898,7 @@ st_manager_add_color_renderbuffer(struct st_context *st, GLframebuffer *fb,
 }
 
 static const struct st_api st_gl_api = {
+   "Mesa " MESA_VERSION_STRING,
    ST_API_OPENGL,
 #if FEATURE_GL
    ST_PROFILE_DEFAULT_MASK |

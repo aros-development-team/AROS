@@ -26,6 +26,9 @@
 #define NOUVEAU_MSG(fmt, args...) \
 	fprintf(stderr, "nouveau: "fmt, ##args);
 
+#define nouveau_bo_tile_layout(nvbo) \
+	((nvbo)->tile_flags & NOUVEAU_BO_TILE_LAYOUT_MASK)
+
 /* Constant buffer assignment */
 #define NV50_CB_PMISC		0
 #define NV50_CB_PVP		1
@@ -105,6 +108,7 @@ get_tile_depth(uint32_t tile_mode)
 
 struct nv50_surface {
 	struct pipe_surface base;
+	unsigned offset;
 };
 
 static INLINE struct nv50_surface *
@@ -157,6 +161,7 @@ struct nv50_context {
 	unsigned sampler_view_nr[3];
 
 	unsigned vbo_fifo;
+	unsigned req_lmem;
 };
 
 static INLINE struct nv50_context *

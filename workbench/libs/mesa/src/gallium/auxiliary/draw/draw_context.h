@@ -46,11 +46,16 @@ struct draw_context;
 struct draw_stage;
 struct draw_vertex_shader;
 struct draw_geometry_shader;
+struct draw_fragment_shader;
 struct tgsi_sampler;
+struct gallivm_state;
 
-#define DRAW_MAX_TEXTURE_LEVELS 13  /* 4K x 4K for now */
+
 
 struct draw_context *draw_create( struct pipe_context *pipe );
+
+struct draw_context *
+draw_create_gallivm(struct pipe_context *pipe, struct gallivm_state *gallivm);
 
 void draw_destroy( struct draw_context *draw );
 
@@ -119,9 +124,9 @@ draw_set_mapped_texture(struct draw_context *draw,
                         unsigned sampler_idx,
                         uint32_t width, uint32_t height, uint32_t depth,
                         uint32_t last_level,
-                        uint32_t row_stride[DRAW_MAX_TEXTURE_LEVELS],
-                        uint32_t img_stride[DRAW_MAX_TEXTURE_LEVELS],
-                        const void *data[DRAW_MAX_TEXTURE_LEVELS]);
+                        uint32_t row_stride[PIPE_MAX_TEXTURE_LEVELS],
+                        uint32_t img_stride[PIPE_MAX_TEXTURE_LEVELS],
+                        const void *data[PIPE_MAX_TEXTURE_LEVELS]);
 
 
 /*
@@ -136,6 +141,17 @@ void draw_bind_vertex_shader(struct draw_context *draw,
 void draw_delete_vertex_shader(struct draw_context *draw,
                                struct draw_vertex_shader *dvs);
 
+
+/*
+ * Fragment shader functions
+ */
+struct draw_fragment_shader *
+draw_create_fragment_shader(struct draw_context *draw,
+                            const struct pipe_shader_state *shader);
+void draw_bind_fragment_shader(struct draw_context *draw,
+                               struct draw_fragment_shader *dvs);
+void draw_delete_fragment_shader(struct draw_context *draw,
+                                 struct draw_fragment_shader *dvs);
 
 /*
  * Geometry shader functions

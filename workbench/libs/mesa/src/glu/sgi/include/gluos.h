@@ -2,13 +2,6 @@
 ** gluos.h - operating system dependencies for GLU
 **
 */
-
-#if defined(__AROS__)
-#include <GL/glu.h>
-#include "glu/gluapim.h"
-#include "glu/glu_mangle.h"
-#endif
-
 #ifdef __VMS
 #ifdef __cplusplus
 #pragma message disable nocordel

@@ -67,8 +67,7 @@ void st_init_limits(struct st_context *st)
 {
    struct pipe_screen *screen = st->pipe->screen;
    struct gl_constants *c = &st->ctx->Const;
-   struct gl_program_constants *pc;
-   unsigned i;
+   gl_shader_type sh;
 
    c->MaxTextureLevels
       = _min(screen->get_param(screen, PIPE_CAP_MAX_TEXTURE_2D_LEVELS),
@@ -138,10 +137,12 @@ void st_init_limits(struct st_context *st)
    /* Quads always follow GL provoking rules. */
    c->QuadsFollowProvokingVertexConvention = GL_FALSE;
 
-   for(i = 0; i < MESA_SHADER_TYPES; ++i) {
-      struct gl_shader_compiler_options *options = &st->ctx->ShaderCompilerOptions[i];
-      switch(i)
-      {
+   for (sh = 0; sh < MESA_SHADER_TYPES; ++sh) {
+      struct gl_shader_compiler_options *options =
+         &st->ctx->ShaderCompilerOptions[sh];
+      struct gl_program_constants *pc;
+
+      switch (sh) {
       case PIPE_SHADER_FRAGMENT:
          pc = &c->FragmentProgram;
          break;
@@ -151,29 +152,42 @@ void st_init_limits(struct st_context *st)
       case PIPE_SHADER_GEOMETRY:
          pc = &c->GeometryProgram;
          break;
+      default:
+         assert(0);
+         continue;
       }
 
-      pc->MaxNativeInstructions    = screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_INSTRUCTIONS);
-      pc->MaxNativeAluInstructions = screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_ALU_INSTRUCTIONS);
-      pc->MaxNativeTexInstructions = screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_TEX_INSTRUCTIONS);
-      pc->MaxNativeTexIndirections = screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_TEX_INDIRECTIONS);
-      pc->MaxNativeAttribs         = screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_INPUTS);
-      pc->MaxNativeTemps           = screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_TEMPS);
-      pc->MaxNativeAddressRegs     = screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_ADDRS);
-      pc->MaxNativeParameters      = screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_CONSTS);
+      pc->MaxNativeInstructions    = screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_INSTRUCTIONS);
+      pc->MaxNativeAluInstructions = screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_ALU_INSTRUCTIONS);
+      pc->MaxNativeTexInstructions = screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_TEX_INSTRUCTIONS);
+      pc->MaxNativeTexIndirections = screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_TEX_INDIRECTIONS);
+      pc->MaxNativeAttribs         = screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_INPUTS);
+      pc->MaxNativeTemps           = screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_TEMPS);
+      pc->MaxNativeAddressRegs     = screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_ADDRS);
+      pc->MaxNativeParameters      = screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_CONSTS);
+      pc->MaxUniformComponents     = 4 * MIN2(pc->MaxNativeParameters, MAX_UNIFORMS);
 
       options->EmitNoNoise = TRUE;
 
       /* TODO: make these more fine-grained if anyone needs it */
-      options->EmitNoIfs = !screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_CONTROL_FLOW_DEPTH);
-      options->EmitNoFunctions = !screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_CONTROL_FLOW_DEPTH);
-      options->EmitNoLoops = !screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_CONTROL_FLOW_DEPTH);
-      options->EmitNoMainReturn = !screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_CONTROL_FLOW_DEPTH);
+      options->EmitNoIfs = !screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_CONTROL_FLOW_DEPTH);
+      options->EmitNoLoops = !screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_CONTROL_FLOW_DEPTH);
+      options->EmitNoFunctions = !screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_SUBROUTINES);
+      options->EmitNoMainReturn = !screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_SUBROUTINES);
 
-      options->EmitNoCont = !screen->get_shader_param(screen, i, PIPE_SHADER_CAP_TGSI_CONT_SUPPORTED);
+      options->EmitNoCont = !screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_TGSI_CONT_SUPPORTED);
+
+      options->EmitNoIndirectInput = !screen->get_shader_param(screen, sh,
+                                        PIPE_SHADER_CAP_INDIRECT_INPUT_ADDR);
+      options->EmitNoIndirectOutput = !screen->get_shader_param(screen, sh,
+                                        PIPE_SHADER_CAP_INDIRECT_OUTPUT_ADDR);
+      options->EmitNoIndirectTemp = !screen->get_shader_param(screen, sh,
+                                        PIPE_SHADER_CAP_INDIRECT_TEMP_ADDR);
+      options->EmitNoIndirectUniform = !screen->get_shader_param(screen, sh,
+                                        PIPE_SHADER_CAP_INDIRECT_CONST_ADDR);
 
       if(options->EmitNoLoops)
-         options->MaxUnrollIterations = MIN2(screen->get_shader_param(screen, i, PIPE_SHADER_CAP_MAX_INSTRUCTIONS), 65536);
+         options->MaxUnrollIterations = MIN2(screen->get_shader_param(screen, sh, PIPE_SHADER_CAP_MAX_INSTRUCTIONS), 65536);
    }
 
    /* PIPE_CAP_MAX_FS_INPUTS specifies the number of COLORn + GENERICn inputs
@@ -201,7 +215,7 @@ void st_init_limits(struct st_context *st)
 void st_init_extensions(struct st_context *st)
 {
    struct pipe_screen *screen = st->pipe->screen;
-   GLcontext *ctx = st->ctx;
+   struct gl_context *ctx = st->ctx;
 
    /*
     * Extensions that are supported by all Gallium drivers:
@@ -268,7 +282,6 @@ void st_init_extensions(struct st_context *st)
    ctx->Extensions.OES_draw_texture = GL_TRUE;
 #endif
 
-   ctx->Extensions.SGI_color_matrix = GL_TRUE;
    ctx->Extensions.SGIS_generate_mipmap = GL_TRUE;
 
    /*
@@ -287,6 +300,8 @@ void st_init_extensions(struct st_context *st)
       ctx->Extensions.ARB_vertex_shader = GL_TRUE;
       ctx->Extensions.ARB_shader_objects = GL_TRUE;
       ctx->Extensions.ARB_shading_language_100 = GL_TRUE;
+      ctx->Extensions.ARB_explicit_attrib_location = GL_TRUE;
+      ctx->Extensions.EXT_separate_shader_objects = GL_TRUE;
    }
 
    if (screen->get_param(screen, PIPE_CAP_TEXTURE_MIRROR_REPEAT) > 0) {
@@ -371,6 +386,12 @@ void st_init_extensions(struct st_context *st)
       ctx->Extensions.EXT_texture_sRGB = GL_TRUE;
    }
 
+   if (screen->is_format_supported(screen, PIPE_FORMAT_R8G8_UNORM,
+                                   PIPE_TEXTURE_2D, 0,
+                                   PIPE_BIND_SAMPLER_VIEW, 0)) {
+      ctx->Extensions.ARB_texture_rg = GL_TRUE;
+   }
+
    /* s3tc support */
    if (screen->is_format_supported(screen, PIPE_FORMAT_DXT5_RGBA,
                                    PIPE_TEXTURE_2D, 0,
@@ -421,10 +442,20 @@ void st_init_extensions(struct st_context *st)
 #endif
 
    if (screen->get_shader_param(screen, PIPE_SHADER_GEOMETRY, PIPE_SHADER_CAP_MAX_INSTRUCTIONS) > 0) {
+#if 0 /* XXX re-enable when GLSL compiler again supports geometry shaders */
       ctx->Extensions.ARB_geometry_shader4 = GL_TRUE;
+#endif
+   }
+
+   if (screen->get_param(screen, PIPE_CAP_PRIMITIVE_RESTART)) {
+      ctx->Extensions.NV_primitive_restart = GL_TRUE;
    }
 
    if (screen->get_param(screen, PIPE_CAP_DEPTH_CLAMP)) {
       ctx->Extensions.ARB_depth_clamp = GL_TRUE;
+   }
+
+   if (screen->get_param(screen, PIPE_CAP_SHADER_STENCIL_EXPORT)) {
+      ctx->Extensions.ARB_shader_stencil_export = GL_TRUE;
    }
 }

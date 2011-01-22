@@ -44,31 +44,15 @@
 #include "util/u_memory.h"
 #include "util/u_blit.h"
 #include "util/u_sampler.h"
+#include "util/u_surface.h"
 #include "util/u_format.h"
 
-#if defined(PIPE_OS_AROS)
-#include "aros/tls.h"
-
-DECLARE_STATIC_TLS(_vg_context)
-
-struct vg_context * vg_current_context(void)
-{
-   return (struct vg_context *)GetFromTLS(_vg_context);
-}
-
-void vg_set_current_context(struct vg_context *ctx)
-{
-   InsertIntoTLS(_vg_context, (APTR)ctx);
-   api_make_dispatch_current((ctx) ? ctx->dispatch : NULL);
-}
-#else
 struct vg_context *_vg_context = 0;
 
 struct vg_context * vg_current_context(void)
 {
    return _vg_context;
 }
-#endif
 
 /**
  * A depth/stencil rb will be needed regardless of what the visual says.
@@ -95,13 +79,11 @@ choose_depth_stencil_format(struct vg_context *ctx)
    return (ctx->ds_format != PIPE_FORMAT_NONE);
 }
 
-#if !defined(PIPE_OS_AROS)
 void vg_set_current_context(struct vg_context *ctx)
 {
    _vg_context = ctx;
    api_make_dispatch_current((ctx) ? ctx->dispatch : NULL);
 }
-#endif
 
 struct vg_context * vg_create_context(struct pipe_context *pipe,
                                       const void *visual,
@@ -260,6 +242,7 @@ create_texture(struct pipe_context *pipe, enum pipe_format format,
    templ.width0 = width;
    templ.height0 = height;
    templ.depth0 = 1;
+   templ.array_size = 1;
    templ.last_level = 0;
 
    if (util_format_get_component_bits(format, UTIL_FORMAT_COLORSPACE_ZS, 1)) {
@@ -329,22 +312,18 @@ vg_context_update_surface_mask_view(struct vg_context *ctx,
 
    /* if we had an old surface copy it over */
    if (old_sampler_view) {
-      struct pipe_subresource subsurf, subold_surf;
-      subsurf.face = 0;
-      subsurf.level = 0;
-      subold_surf.face = 0;
-      subold_surf.level = 0;
+      struct pipe_box src_box;
+      u_box_origin_2d(MIN2(old_sampler_view->texture->width0,
+                           stfb->surface_mask_view->texture->width0),
+                      MIN2(old_sampler_view->texture->height0,
+                           stfb->surface_mask_view->texture->height0),
+                      &src_box);
+
       pipe->resource_copy_region(pipe,
                                  stfb->surface_mask_view->texture,
-                                 subsurf,
-                                 0, 0, 0,
+                                 0, 0, 0, 0,
                                  old_sampler_view->texture,
-                                 subold_surf,
-                                 0, 0, 0,
-                                 MIN2(old_sampler_view->texture->width0,
-                                      stfb->surface_mask_view->texture->width0),
-                                 MIN2(old_sampler_view->texture->height0,
-                                      stfb->surface_mask_view->texture->height0));
+                                 0, &src_box);
    }
 
    /* Free the old texture
@@ -378,7 +357,7 @@ vg_context_update_depth_stencil_rb(struct vg_context * ctx,
 {
    struct st_renderbuffer *dsrb = ctx->draw_buffer->dsrb;
    struct pipe_context *pipe = ctx->pipe;
-   unsigned surface_usage;
+   struct pipe_surface surf_tmpl;
 
    if ((dsrb->width == width && dsrb->height == height) && dsrb->texture)
       return FALSE;
@@ -388,18 +367,16 @@ vg_context_update_depth_stencil_rb(struct vg_context * ctx,
    pipe_resource_reference(&dsrb->texture, NULL);
    dsrb->width = dsrb->height = 0;
 
-   /* Probably need dedicated flags for surface usage too:
-    */
-   surface_usage = PIPE_BIND_DEPTH_STENCIL; /* XXX: was: RENDER_TARGET */
-
    dsrb->texture = create_texture(pipe, dsrb->format, width, height);
    if (!dsrb->texture)
       return TRUE;
 
-   dsrb->surface = pipe->screen->get_tex_surface(pipe->screen,
-                                                 dsrb->texture,
-                                                 0, 0, 0,
-                                                 surface_usage);
+   memset(&surf_tmpl, 0, sizeof(surf_tmpl));
+   u_surface_default_template(&surf_tmpl, dsrb->texture,
+                              PIPE_BIND_DEPTH_STENCIL);
+   dsrb->surface = pipe->create_surface(pipe,
+                                        dsrb->texture,
+                                        &surf_tmpl);
    if (!dsrb->surface) {
       pipe_resource_reference(&dsrb->texture, NULL);
       return TRUE;
@@ -422,6 +399,10 @@ void vg_validate_state(struct vg_context *ctx)
 
    if (vg_context_update_depth_stencil_rb(ctx, stfb->width, stfb->height))
       ctx->state.dirty |= DEPTH_STENCIL_DIRTY;
+
+   /* blend state depends on fb format */
+   if (ctx->state.dirty & FRAMEBUFFER_DIRTY)
+      ctx->state.dirty |= BLEND_DIRTY;
 
    renderer_validate(ctx->renderer, ctx->state.dirty,
          ctx->draw_buffer, &ctx->state.vg);
@@ -458,11 +439,16 @@ static void vg_prepare_blend_texture(struct vg_context *ctx,
 {
    struct st_framebuffer *stfb = ctx->draw_buffer;
    struct pipe_surface *surf;
+   struct pipe_surface surf_tmpl;
 
    vg_context_update_blend_texture_view(ctx, stfb->width, stfb->height);
 
-   surf = ctx->pipe->screen->get_tex_surface(ctx->pipe->screen,
-         stfb->blend_texture_view->texture, 0, 0, 0, PIPE_BIND_RENDER_TARGET);
+   memset(&surf_tmpl, 0, sizeof(surf_tmpl));
+   u_surface_default_template(&surf_tmpl, stfb->blend_texture_view->texture,
+                              PIPE_BIND_RENDER_TARGET);
+   surf = ctx->pipe->create_surface(ctx->pipe,
+                                    stfb->blend_texture_view->texture,
+                                    &surf_tmpl);
    if (surf) {
       util_blit_pixels_tex(ctx->blit,
                            src, 0, 0, stfb->width, stfb->height,

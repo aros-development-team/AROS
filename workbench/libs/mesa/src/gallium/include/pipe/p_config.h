@@ -82,10 +82,6 @@
 #define PIPE_ARCH_X86
 #endif
 
-#if defined(__arm__)
-#define PIPE_ARCH_ARM
-#endif
-
 #if defined(__x86_64__) /* gcc */ || defined(_M_X64) /* msvc */ || defined(_M_AMD64) /* msvc */ || defined(__x86_64) /* Sun cc */
 #define PIPE_ARCH_X86_64
 #endif
@@ -110,16 +106,12 @@
 #endif
 #endif
 
-#if defined(__mc68000) /* gcc */
-#define PIPE_ARCH_M68K
-#endif
-
 
 /*
  * Endian detection.
  */
 
-#if defined(PIPE_ARCH_X86) || defined(PIPE_ARCH_X86_64) || defined(PIPE_ARCH_ARM)
+#if defined(PIPE_ARCH_X86) || defined(PIPE_ARCH_X86_64)
 #define PIPE_ARCH_LITTLE_ENDIAN
 #elif defined(PIPE_ARCH_PPC) || defined(PIPE_ARCH_PPC_64)
 #define PIPE_ARCH_BIG_ENDIAN
@@ -135,15 +127,6 @@
  * 
  * See subsystem below for a more fine-grained distinction.
  */
-
-/*
- * In some situations __AROS__ definition can coexist with anything of
- * the below (for example this happens on ARM port which is compiled using Linux
- * compiler at the moment). So if we have __AROS__ we don't evaluate anything else
- */
-#if defined(__AROS__)
-#define PIPE_OS_AROS
-#else
 
 #if defined(__linux__)
 #define PIPE_OS_LINUX
@@ -195,8 +178,6 @@
 #if defined(__CYGWIN__)
 #define PIPE_OS_CYGWIN
 #define PIPE_OS_UNIX
-#endif
-
 #endif
 
 /*

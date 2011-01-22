@@ -44,6 +44,9 @@
 #include "sp_tex_tile_cache.h"
 
 
+/** Set to one to help debug texture sampling */
+#define DEBUG_TEX 0
+
 
 /*
  * Return fractional part of 'f'.  Used for computing interpolation weights.
@@ -105,14 +108,14 @@ lerp_3d(float a, float b, float c,
 
 /**
  * Compute coord % size for repeat wrap modes.
- * Note that if coord is a signed integer, coord % size doesn't give
- * the right value for coord < 0 (in terms of texture repeat).  Just
- * casting to unsigned fixes that.
+ * Note that if coord is negative, coord % size doesn't give the right
+ * value.  To avoid that problem we add a large multiple of the size
+ * (rather than using a conditional).
  */
 static INLINE int
 repeat(int coord, unsigned size)
 {
-   return (int) ((unsigned) coord % size);
+   return (coord + size * 1024) % size;
 }
 
 
@@ -656,7 +659,8 @@ get_texel_2d(const struct sp_sampler_varient *samp,
 
    if (x < 0 || x >= (int) u_minify(texture->width0, level) ||
        y < 0 || y >= (int) u_minify(texture->height0, level)) {
-      return samp->sampler->border_color;
+      return sp_tex_tile_cache_border_color(samp->cache,
+                                            samp->sampler->border_color);
    }
    else {
       return get_texel_2d_no_border( samp, addr, x, y );
@@ -750,7 +754,8 @@ get_texel_3d(const struct sp_sampler_varient *samp,
    if (x < 0 || x >= (int) u_minify(texture->width0, level) ||
        y < 0 || y >= (int) u_minify(texture->height0, level) ||
        z < 0 || z >= (int) u_minify(texture->depth0, level)) {
-      return samp->sampler->border_color;
+      return sp_tex_tile_cache_border_color(samp->cache,
+                                            samp->sampler->border_color);
    }
    else {
       return get_texel_3d_no_border( samp, addr, x, y, z );
@@ -769,6 +774,18 @@ static INLINE unsigned
 pot_level_size(unsigned base_pot, unsigned level)
 {
    return (base_pot >= level) ? (1 << (base_pot - level)) : 1;
+}
+
+
+static void
+print_sample(const char *function, float rgba[NUM_CHANNELS][QUAD_SIZE])
+{
+   debug_printf("%s %g %g %g %g, %g %g %g %g, %g %g %g %g, %g %g %g %g\n",
+                function,
+                rgba[0][0], rgba[1][0], rgba[2][0], rgba[3][0],
+                rgba[0][1], rgba[1][1], rgba[2][1], rgba[3][1],
+                rgba[0][2], rgba[1][2], rgba[2][2], rgba[3][2],
+                rgba[0][3], rgba[1][3], rgba[2][3], rgba[3][3]);
 }
 
 
@@ -830,6 +847,10 @@ img_filter_2d_linear_repeat_POT(struct tgsi_sampler *tgsi_sampler,
                               tx[2][c], tx[3][c]);
       }
    }
+
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
+   }
 }
 
 
@@ -869,6 +890,10 @@ img_filter_2d_nearest_repeat_POT(struct tgsi_sampler *tgsi_sampler,
       for (c = 0; c < 4; c++) {
          rgba[c][j] = out[c];
       }
+   }
+
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
    }
 }
 
@@ -919,6 +944,10 @@ img_filter_2d_nearest_clamp_POT(struct tgsi_sampler *tgsi_sampler,
          rgba[c][j] = out[c];
       }
    }
+
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
+   }
 }
 
 
@@ -954,6 +983,10 @@ img_filter_1d_nearest(struct tgsi_sampler *tgsi_sampler,
       for (c = 0; c < 4; c++) {
          rgba[c][j] = out[c];
       }
+   }
+
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
    }
 }
 
@@ -994,6 +1027,10 @@ img_filter_2d_nearest(struct tgsi_sampler *tgsi_sampler,
       for (c = 0; c < 4; c++) {
          rgba[c][j] = out[c];
       }
+   }
+
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
    }
 }
 
@@ -1042,6 +1079,10 @@ img_filter_cube_nearest(struct tgsi_sampler *tgsi_sampler,
       for (c = 0; c < 4; c++) {
          rgba[c][j] = out[c];
       }
+   }
+
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
    }
 }
 
@@ -1355,6 +1396,10 @@ mip_filter_linear(struct tgsi_sampler *tgsi_sampler,
          }
       }
    }
+
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
+   }
 }
 
 
@@ -1400,13 +1445,9 @@ mip_filter_nearest(struct tgsi_sampler *tgsi_sampler,
       samp->min_img_filter(tgsi_sampler, s, t, p, NULL, tgsi_sampler_lod_bias, rgba);
    }
 
-#if 0
-   printf("RGBA %g %g %g %g, %g %g %g %g, %g %g %g %g, %g %g %g %g\n",
-          rgba[0][0], rgba[1][0], rgba[2][0], rgba[3][0],
-          rgba[0][1], rgba[1][1], rgba[2][1], rgba[3][1],
-          rgba[0][2], rgba[1][2], rgba[2][2], rgba[3][2],
-          rgba[0][3], rgba[1][3], rgba[2][3], rgba[3][3]);
-#endif
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
+   }
 }
 
 
@@ -1507,6 +1548,10 @@ mip_filter_linear_2d_linear_repeat_POT(
             rgba[c][j] = lerp(levelBlend, rgba0[c][j], rgba1[c][j]);
          }
       }
+   }
+
+   if (DEBUG_TEX) {
+      print_sample(__FUNCTION__, rgba);
    }
 }
 

@@ -92,9 +92,8 @@ struct egl_g3d_config {
 struct egl_g3d_image {
    _EGLImage base;
    struct pipe_resource *texture;
-   unsigned face;
    unsigned level;
-   unsigned zslice;
+   unsigned layer;
 };
 
 /* standard typecasts */
@@ -105,8 +104,6 @@ _EGL_DRIVER_TYPECAST(egl_g3d_image, _EGLImage, obj)
 
 struct egl_g3d_sync {
    _EGLSync base;
-
-   int refs;
 
    /* the mutex protects only the condvar, not the struct */
    pipe_mutex mutex;

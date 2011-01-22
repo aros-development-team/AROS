@@ -118,6 +118,11 @@ __inline double __cdecl atan2(double val)
 #endif
 
 
+#ifndef M_SQRT2
+#define M_SQRT2 1.41421356237309504880
+#endif
+
+
 #if defined(_MSC_VER) 
 
 #if _MSC_VER < 1400 && !defined(__cplusplus) || defined(PIPE_SUBSYSTEM_WINDOWS_CE)
@@ -394,8 +399,6 @@ unsigned ffs( unsigned u )
 }
 #elif defined(__MINGW32__)
 #define ffs __builtin_ffs
-#elif defined(PIPE_OS_AROS)
-#define ffs __builtin_ffs
 #endif
 
 #ifdef __MINGW32__
@@ -500,13 +503,7 @@ util_next_power_of_two(unsigned x)
 static INLINE unsigned
 util_bitcount(unsigned n)
 {
-#if defined(PIPE_OS_AROS)
-   unsigned int bits;
-   for (bits = 0; n > 0; n = n >> 1) {
-      bits += (n & 1);
-   }
-   return bits;
-#elif defined(PIPE_CC_GCC)
+#if defined(PIPE_CC_GCC)
    return __builtin_popcount(n);
 #else
    /* K&R classic bitcount.

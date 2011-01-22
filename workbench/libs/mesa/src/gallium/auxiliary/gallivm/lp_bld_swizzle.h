@@ -45,7 +45,7 @@ struct lp_build_context;
 
 
 LLVMValueRef
-lp_build_broadcast(LLVMBuilderRef builder,
+lp_build_broadcast(struct gallivm_state *gallivm,
                    LLVMTypeRef vec_type,
                    LLVMValueRef scalar);
 
@@ -53,6 +53,14 @@ lp_build_broadcast(LLVMBuilderRef builder,
 LLVMValueRef
 lp_build_broadcast_scalar(struct lp_build_context *bld,
                           LLVMValueRef scalar);
+
+
+LLVMValueRef
+lp_build_extract_broadcast(struct gallivm_state *gallivm,
+                           struct lp_type src_type,
+                           struct lp_type dst_type,
+                           LLVMValueRef vector,
+                           LLVMValueRef index);
 
 
 /**

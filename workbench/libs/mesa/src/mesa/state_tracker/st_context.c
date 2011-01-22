@@ -69,7 +69,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(mesa_mvp_dp4, "MESA_MVP_DP4", FALSE)
 /**
  * Called via ctx->Driver.UpdateState()
  */
-void st_invalidate_state(GLcontext * ctx, GLuint new_state)
+void st_invalidate_state(struct gl_context * ctx, GLuint new_state)
 {
    struct st_context *st = st_context(ctx);
 
@@ -97,7 +97,7 @@ st_get_msaa(void)
 
 
 static struct st_context *
-st_create_context_priv( GLcontext *ctx, struct pipe_context *pipe )
+st_create_context_priv( struct gl_context *ctx, struct pipe_context *pipe )
 {
    uint i;
    struct st_context *st = ST_CALLOC_STRUCT( st_context );
@@ -163,12 +163,17 @@ st_create_context_priv( GLcontext *ctx, struct pipe_context *pipe )
 
 
 struct st_context *st_create_context(gl_api api, struct pipe_context *pipe,
-                                     const __GLcontextModes *visual,
+                                     const struct gl_config *visual,
                                      struct st_context *share)
 {
-   GLcontext *ctx;
-   GLcontext *shareCtx = share ? share->ctx : NULL;
+   struct gl_context *ctx;
+   struct gl_context *shareCtx = share ? share->ctx : NULL;
    struct dd_function_table funcs;
+
+   /* Sanity checks */
+   assert(MESA_SHADER_VERTEX == PIPE_SHADER_VERTEX);
+   assert(MESA_SHADER_FRAGMENT == PIPE_SHADER_FRAGMENT);
+   assert(MESA_SHADER_GEOMETRY == PIPE_SHADER_GEOMETRY);
 
    memset(&funcs, 0, sizeof(funcs));
    st_init_driver_functions(&funcs);
@@ -221,7 +226,7 @@ void st_destroy_context( struct st_context *st )
 {
    struct pipe_context *pipe = st->pipe;
    struct cso_context *cso = st->cso_context;
-   GLcontext *ctx = st->ctx;
+   struct gl_context *ctx = st->ctx;
    GLuint i;
 
    /* need to unbind and destroy CSO objects before anything else */
@@ -235,6 +240,13 @@ void st_destroy_context( struct st_context *st )
       pipe_surface_reference(&st->state.framebuffer.cbufs[i], NULL);
    }
    pipe_surface_reference(&st->state.framebuffer.zsbuf, NULL);
+
+   pipe->set_index_buffer(pipe, NULL);
+
+   for (i = 0; i < PIPE_SHADER_TYPES; i++) {
+      pipe->set_constant_buffer(pipe, i, 0, NULL);
+      pipe_resource_reference(&st->state.constants[i], NULL);
+   }
 
    _mesa_delete_program_cache(st->ctx, st->pixel_xfer.cache);
 

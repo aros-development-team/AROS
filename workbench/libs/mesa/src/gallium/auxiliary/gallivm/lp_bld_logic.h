@@ -47,7 +47,7 @@ struct lp_build_context;
 
 
 LLVMValueRef
-lp_build_compare(LLVMBuilderRef builder,
+lp_build_compare(struct gallivm_state *gallivm,
                  const struct lp_type type,
                  unsigned func,
                  LLVMValueRef a,
@@ -80,10 +80,6 @@ lp_build_select_aos(struct lp_build_context *bld,
                     unsigned mask,
                     LLVMValueRef a,
                     LLVMValueRef b);
-
-
-LLVMValueRef
-lp_build_andc(struct lp_build_context *bld, LLVMValueRef a, LLVMValueRef b);
 
 
 #endif /* !LP_BLD_LOGIC_H */
