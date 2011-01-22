@@ -14,6 +14,7 @@ LIB_GALLIUM_SOURCES = \
             createpipescreen \
             destroypipescreen \
             bltpipesurfacerastport \
+            bltpiperesourcerastport \
             gallium_init \
             gallium_func
 
