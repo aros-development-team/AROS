@@ -309,8 +309,7 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
     struct pipe_resource * resource = (struct pipe_resource *)msg->resource;
     struct CardData * carddata = &(SD(cl)->carddata);
     struct HIDDNouveauBitMapData srcdata;
-    struct RastPort * rp = (struct RastPort *)msg->rastport;
-    OOP_Object * bm = HIDD_BM_OBJ(rp->BitMap);
+    OOP_Object * bm = HIDD_BM_OBJ((struct BitMap *)msg->bitmap);
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
     
     if (!HIDDNouveauWrapResource(carddata, resource, &srcdata))
@@ -324,13 +323,13 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
     if (carddata->architecture < NV_ARCH_50)
     {
         HIDDNouveauNV04CopySameFormat(carddata, &srcdata, dstdata, 
-            msg->left, msg->top, msg->absx, msg->absy, msg->width, msg->height, 
+            msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
     }
     else
     {
         HIDDNouveauNV50CopySameFormat(carddata, &srcdata, dstdata, 
-            msg->left, msg->top, msg->absx, msg->absy, msg->width, msg->height, 
+            msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
     }
 

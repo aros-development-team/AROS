@@ -2,7 +2,7 @@
 #define HIDD_GALLIUM_H
 
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,7 +42,7 @@ extern OOP_AttrBase HiddGalliumAttrBase;
 enum
 {
     moHidd_Gallium_CreatePipeScreen = 0,
-    moHidd_Gallium_DisplaySurface = 2,
+    moHidd_Gallium_DisplaySurface = 2, /* This method is OBSOLETE */
     moHidd_Gallium_DisplayResource,
 
     NUM_GALLIUM_METHODS
@@ -81,21 +81,18 @@ struct pHidd_Gallium_DisplaySurface
     ULONG           rely;
 };
 
-/* TODO: Use bitmap object instead of rast port. */
-/* TODO: Give only one set of coordinates - bitmap relative */
 struct pHidd_Gallium_DisplayResource
 {
     OOP_MethodID    mID;
-    APTR            rastport;
-    ULONG           left;
-    ULONG           top;
+    APTR            resource;
+    ULONG           srcx;
+    ULONG           srcy;
+
+    APTR            bitmap;
+    ULONG           dstx;
+    ULONG           dsty;
     ULONG           width;
     ULONG           height;
-    APTR            resource;
-    ULONG           absx;
-    ULONG           absy;
-    ULONG           relx;
-    ULONG           rely;
 };
 
 struct HIDDT_WinSys
