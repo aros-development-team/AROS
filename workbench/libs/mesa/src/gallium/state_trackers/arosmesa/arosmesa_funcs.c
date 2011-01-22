@@ -382,9 +382,9 @@ static boolean AROSMesaFrameBufferValidate(struct st_framebuffer_iface *stfbi,
             AROSMesaFrameBufferCreateResource(amfb, statts[i]);
             if (statts[i] == ST_ATTACHMENT_FRONT_LEFT)
             {
-                amfb->render_surface = amfb->screen->get_tex_surface(amfb->screen, 
+                amfb->render_surface = NULL;/*amfb->screen->get_tex_surface(amfb->screen, 
                     amfb->textures[ST_ATTACHMENT_FRONT_LEFT], 0, 0, 0, 
-                    PIPE_BIND_RENDER_TARGET);
+                    PIPE_BIND_RENDER_TARGET);*/
             }
         }
     }
