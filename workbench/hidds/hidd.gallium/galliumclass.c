@@ -46,7 +46,7 @@ APTR METHOD(Gallium, Hidd_Gallium, CreatePipeScreen)
 
 VOID METHOD(Gallium, Hidd_Gallium, DisplaySurface)
 {
-    bug("[gallium.hidd] Abstract DisplaySurface called\n");
+    bug("[gallium.hidd] Abstract DisplaySurface called. This method is OBSOLETE.\n");
 }
 
 VOID METHOD(Gallium, Hidd_Gallium, DisplayResource)

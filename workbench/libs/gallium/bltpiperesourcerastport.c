@@ -105,16 +105,14 @@
                 /* This clip rect intersects renderable layer rect */
                 struct pHidd_Gallium_DisplayResource drmsg = {
                 mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplayResource),
-                rastport : destRP, /* TODO: remove the need for passing rastport */
-                left : xSrc + result.MinX - L->bounds.MinX - xDest, /* x in the source buffer */
-                top : ySrc + result.MinY - L->bounds.MinY - yDest, /* y in the source buffer */
+                resource : srcPipeResource,
+                srcx : xSrc + result.MinX - L->bounds.MinX - xDest, /* x in the source buffer */
+                srcy : ySrc + result.MinY - L->bounds.MinY - yDest, /* y in the source buffer */
+                bitmap: destRP->BitMap,
+                dstx : result.MinX, /* Absolute (on bitmap) X of dest blit */
+                dsty : result.MinY, /* Absolute (on bitmap) Y of dest blit */
                 width : result.MaxX - result.MinX + 1, /* width of the rect in source buffer */
                 height : result.MaxY - result.MinY + 1, /* height of the rect in source buffer */
-                resource : srcPipeResource,
-                absx : result.MinX, /* Absolute (on screen) X of dest blit */
-                absy : result.MinY, /* Absolute (on screen) Y of the dest blit */
-                relx : result.MinX - L->bounds.MinX, /* Relative (on rastport) X of the desc blit */
-                rely : result.MinY - L->bounds.MinY /* Relative (on rastport) Y of the desc blit */
                 };
                 OOP_DoMethod(ws->driver, (OOP_Msg)&drmsg);
                 

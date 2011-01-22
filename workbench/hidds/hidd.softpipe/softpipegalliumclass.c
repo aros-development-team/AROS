@@ -221,7 +221,7 @@ VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplayResource)
 {
     struct softpipe_resource * spr = softpipe_resource(msg->resource);
     struct sw_winsys * swws = softpipe_screen(spr->base.screen)->winsys;
-    struct RastPort * rp = CloneRastPort(msg->rastport);
+    struct RastPort * rp = CreateRastPort();
     APTR * data = spr->data;
 
     if ((data == NULL) && (spr->dt != NULL))
@@ -229,14 +229,16 @@ VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplayResource)
 
     if (data)
     {
+        rp->BitMap = msg->bitmap;
+
         WritePixelArray(
             data, 
-            msg->left,
-            msg->top,
+            msg->srcx,
+            msg->srcy,
             spr->stride[0],
             rp, 
-            msg->relx, 
-            msg->rely, 
+            msg->dstx, 
+            msg->dsty, 
             msg->width, 
             msg->height, 
             AROS_PIXFMT);
