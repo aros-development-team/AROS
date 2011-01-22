@@ -1,5 +1,5 @@
-# This mmakefile relies on existing and working Ñ++ compiler.
-# Because of this i did not add it to the build by default.
+# This mmakefile relies on existing and working C++ compiler.
+# Because of this I did not add it to the build by default.
 # This target needs to be built manually.
 
 include $(TOP)/config/make.cfg
@@ -7,6 +7,8 @@ include $(TOP)/config/make.cfg
 # Select target C++ compiler
 ifeq ($(TARGET_CXX),)
   TARGET_CXX := $(TOOLDIR)/$(AROS_TARGET_CPU)-aros-g++
+else
+  TARGET_CXX := $(TARGET_CXX) -specs=$(GENDIR)/config/specs
 endif
 
 # Remove C-only flags
