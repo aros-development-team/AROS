@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -46,7 +46,18 @@ APTR METHOD(Gallium, Hidd_Gallium, CreatePipeScreen)
 
 VOID METHOD(Gallium, Hidd_Gallium, DisplaySurface)
 {
-    bug("[gallium.hidd] Abstract DisplaySurface called. This method is OBSOLETE.\n");
+    struct pHidd_Gallium_DisplayResource drmsg = {
+    mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplayResource),
+    resource    : msg->surface->texture,
+    srcx        : msg->left,
+    srcy        : msg->top,
+    bitmap      : msg->rastport->BitMap,
+    dstx        : msg->absx,
+    dsty        : msg->absy,
+    width       : msg->width,
+    height      : msg->height
+    };
+    OOP_DoMethod(o, (OOP_Msg)&drmsg);
 }
 
 VOID METHOD(Gallium, Hidd_Gallium, DisplayResource)
