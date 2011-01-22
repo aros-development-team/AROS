@@ -31,18 +31,26 @@ GALLIUM_NVIDIA_SOURCES = \
             drivers/nv50/nv50_clear \
             drivers/nv50/nv50_context \
             drivers/nv50/nv50_draw \
+            drivers/nv50/nv50_formats \
             drivers/nv50/nv50_miptree \
-            drivers/nv50/nv50_query \
+            drivers/nv50/nv50_pc \
+            drivers/nv50/nv50_pc_emit \
+            drivers/nv50/nv50_pc_optimize \
+            drivers/nv50/nv50_pc_print \
+            drivers/nv50/nv50_pc_regalloc \
             drivers/nv50/nv50_program \
+            drivers/nv50/nv50_push \
+            drivers/nv50/nv50_query \
             drivers/nv50/nv50_resource \
             drivers/nv50/nv50_screen \
+            drivers/nv50/nv50_shader_state \
             drivers/nv50/nv50_state \
             drivers/nv50/nv50_state_validate \
             drivers/nv50/nv50_surface \
             drivers/nv50/nv50_tex \
+            drivers/nv50/nv50_tgsi_to_nc \
             drivers/nv50/nv50_transfer \
             drivers/nv50/nv50_vbo \
-            drivers/nv50/nv50_push \
 
 
 GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
