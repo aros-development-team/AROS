@@ -146,7 +146,7 @@ static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *
                         BPTR cd   = CurrentDir(paths[1]);
                         BPTR lock = Lock(name, SHARED_LOCK);
 
-                        if (lock != NULL)
+                        if (lock != BNULL)
                         {
                             success = OpenWorkbenchObjectA(name, tags);
                             running = FALSE;
@@ -178,7 +178,7 @@ static STRPTR CLI_BuildCommandLine
 {
     const struct TagItem *tstate   = tags;
     const struct TagItem *tag      = NULL;
-    BPTR            lastLock = NULL;
+    BPTR            lastLock = BNULL;
     STRPTR          buffer   = NULL;
     ULONG           length   = strlen(command) + 3 /* NULL + 2 '"' */;
 
@@ -192,11 +192,11 @@ static STRPTR CLI_BuildCommandLine
                 break;
 
             case WBOPENA_ArgName:
-                if (lastLock != NULL)
+                if (lastLock != BNULL)
                 {
                     BPTR cd   = CurrentDir(lastLock);
                     BPTR lock = Lock((STRPTR) tag->ti_Data, ACCESS_READ);
-                    if (lock != NULL)
+                    if (lock != BNULL)
                     {
                         STRPTR path = AllocateNameFromLock(lock);
                         if (path != NULL)
@@ -226,7 +226,7 @@ static STRPTR CLI_BuildCommandLine
         strcat(buffer, command);
         strcat(buffer, "\"");
 
-        tstate = tags; lastLock = NULL;
+        tstate = tags; lastLock = BNULL;
         while ((tag = NextTagItem(&tstate)) != NULL )
         {
             switch (tag->ti_Tag)
@@ -236,11 +236,11 @@ static STRPTR CLI_BuildCommandLine
                     break;
 
                 case WBOPENA_ArgName:
-                    if (lastLock != NULL)
+                    if (lastLock != BNULL)
                     {
                         BPTR cd   = CurrentDir(lastLock);
                         BPTR lock = Lock((STRPTR) tag->ti_Data, ACCESS_READ);
-                        if (lock != NULL)
+                        if (lock != BNULL)
                         {
                             STRPTR path = AllocateNameFromLock(lock);
                             if (path != NULL)
@@ -276,14 +276,14 @@ static BOOL CLI_LaunchProgram
     struct WorkbenchBase *WorkbenchBase
 )
 {
-    BPTR   input       = NULL;
+    BPTR   input       = BNULL;
     STRPTR commandline = NULL;
     IPTR                stacksize = WorkbenchBase->wb_DefaultStackSize;
     LONG                priority = 0;
     struct TagItem      *foundTag = NULL;
 
     input = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
-    if (input == NULL) goto error;
+    if (input == BNULL) goto error;
 
     commandline = CLI_BuildCommandLine(command, tags, WorkbenchBase);
     if (commandline == NULL) goto error;
@@ -332,7 +332,7 @@ static BOOL CLI_LaunchProgram
     return TRUE;
 
 error:
-    if (input != NULL) Close(input);
+    if (input != BNULL) Close(input);
     if (commandline != NULL) FreeVec(commandline);
 
     return FALSE;
@@ -348,7 +348,7 @@ static BOOL WB_BuildArguments
 {
     const struct TagItem *tstate   = tags,
                    *tag      = NULL;
-    BPTR            lastLock = NULL;
+    BPTR            lastLock = BNULL;
     struct WBArg   *args     = NULL;
 
     /*-- Calculate the number of arguments ---------------------------------*/
@@ -366,7 +366,7 @@ static BOOL WB_BuildArguments
                     Filter out args where both lock AND name are NULL, since
                     they are completely worthless to the application.
                 */
-                if (lastLock != NULL || (STRPTR) tag->ti_Data != NULL)
+                if (lastLock != BNULL || (STRPTR) tag->ti_Data != NULL)
                 {
                     startup->sm_NumArgs++;
                 }
@@ -385,7 +385,7 @@ static BOOL WB_BuildArguments
         /*-- Build the argument list ---------------------------------------*/
         if
         (
-               (args[i].wa_Lock = DupLock(lock)) == NULL
+               (args[i].wa_Lock = DupLock(lock)) == BNULL
             || (args[i].wa_Name = StrDup(name))  == NULL
         )
         {
@@ -393,7 +393,7 @@ static BOOL WB_BuildArguments
         }
         i++;
 
-        tstate = tags; lastLock = NULL;
+        tstate = tags; lastLock = BNULL;
         while ((tag = NextTagItem(&tstate)) != NULL)
         {
             switch (tag->ti_Tag)
@@ -407,16 +407,16 @@ static BOOL WB_BuildArguments
                         Filter out args where both lock AND name are NULL,
                         since they are completely worthless to the application.
                     */
-                    if (lastLock != NULL || (STRPTR) tag->ti_Data != NULL)
+                    if (lastLock != BNULL || (STRPTR) tag->ti_Data != NULL)
                     {
                         STRPTR name = (STRPTR) tag->ti_Data;
 
                         /* Duplicate the lock */
-                        if (lastLock != NULL)
+                        if (lastLock != BNULL)
                         {
                             args[i].wa_Lock = DupLock(lastLock);
 
-                            if (args[i].wa_Lock == NULL)
+                            if (args[i].wa_Lock == BNULL)
                             {
                                 D(bug("[WBLIB] WB_BuildArguments: Failed to duplicate lock!\n"));
                                 goto error;
@@ -425,7 +425,7 @@ static BOOL WB_BuildArguments
                         }
                         else
                         {
-                            args[i].wa_Lock = NULL;
+                            args[i].wa_Lock = BNULL;
                         }
 
                         /* Duplicate the name */
@@ -467,7 +467,7 @@ error:
 
         for (i = 0; i < startup->sm_NumArgs; i++)
         {
-            if (args[i].wa_Lock != NULL) UnLock(args[i].wa_Lock);
+            if (args[i].wa_Lock != BNULL) UnLock(args[i].wa_Lock);
             if (args[i].wa_Name != NULL) FreeVec(args[i].wa_Name);
         }
 
@@ -622,11 +622,11 @@ static BOOL HandleTool
 
         D(bug("[WBLIB] OpenWorkbenchObjectA: it's a WB program\n"));
 
-        if (lock != NULL)
+        if (lock != BNULL)
         {
             BPTR parent = ParentDir(lock);
 
-            if (parent != NULL)
+            if (parent != BNULL)
             {
                 IPTR stacksize = icon->do_StackSize;
 
@@ -712,13 +712,13 @@ static BOOL HandleProject
         && strlen(icon->do_DefaultTool) > 0
     )
     {
-        BPTR lock = NULL, parent = NULL;
+        BPTR lock = BNULL, parent = BNULL;
 
         lock = Lock(name, ACCESS_READ);
-        if (lock != NULL)
+        if (lock != BNULL)
             parent = ParentDir(lock);
 
-        if (parent != NULL)
+        if (parent != BNULL)
         {
             IPTR stacksize = icon->do_StackSize;
 
@@ -754,9 +754,26 @@ static BOOL HandleProject
             
             if (FindToolType(icon->do_ToolTypes, "CLI") == NULL)
             {
-                BPTR deftool_lock = NULL, deftool_parent = NULL, old_parent = NULL;
+                BPTR deftool_lock = BNULL, deftool_parent = BNULL, old_parent = BNULL;
+                BOOL found = FALSE;
 
-                if (strpbrk(icon->do_DefaultTool, "/:") == NULL) /* relative path */
+                /* try current dir / absolute path first */
+                deftool_lock = Lock(icon->do_DefaultTool, ACCESS_READ);
+                if (deftool_lock != BNULL)
+                    deftool_parent = ParentDir(deftool_lock);
+
+                if (deftool_parent != BNULL)
+                {
+                    found = TRUE;
+                    success = WB_LaunchProgram
+                    (
+                        deftool_parent, FilePart(icon->do_DefaultTool), deftool_tags, WorkbenchBase
+                    );
+                }
+                UnLock(deftool_parent);
+                UnLock(deftool_lock);
+
+                if (!found && strpbrk(icon->do_DefaultTool, "/:") == NULL) /* relative path */
                 {
                     struct CommandLineInterface *cli = Cli();
                     if (cli != NULL)
@@ -776,7 +793,7 @@ static BOOL HandleProject
                             deftool_parent = Lock(paths[1], SHARED_LOCK);
                             deftool_lock = Lock(icon->do_DefaultTool, SHARED_LOCK);
 
-                            if (deftool_lock != NULL)
+                            if (deftool_lock != BNULL)
                             {
                                 success = WB_LaunchProgram
                                 (
@@ -791,22 +808,6 @@ static BOOL HandleProject
                             CurrentDir(old_parent);
                         }
                     }
-                }
-                else /* absolute path */
-                {
-                    deftool_lock = Lock(icon->do_DefaultTool, ACCESS_READ);
-                    if (deftool_lock != NULL)
-                        deftool_parent = ParentDir(deftool_lock);
-
-                    if (deftool_parent != NULL)
-                    {
-                        success = WB_LaunchProgram
-                        (
-                            deftool_parent, FilePart(icon->do_DefaultTool), deftool_tags, WorkbenchBase
-                        );
-                    }
-                    UnLock(deftool_parent);
-                    UnLock(deftool_lock);
                 }
             }
             else
