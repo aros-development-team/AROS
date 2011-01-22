@@ -468,18 +468,24 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	ULONG rom_start = (ULONG)&_rom_start;
 	ULONG rom_end = (ULONG)&_ext_start + 0x80000;
 	ULONG romloader = 0;
+	ULONG *nmi;
 
 	trap = (APTR *)(NULL);
 
+	nmi = trap[31]; /* save NMI vector */
+
 	/* Set all the exceptions to the Early_TrapHandler
 	 */
-	for (i = 2; i < 64; i++)
-	    trap[i] = Early_TrapHandler;
+	for (i = 2; i < 64; i++) {
+	    if (i != 31)
+	    	trap[i] = Early_TrapHandler;
+	}
 
 	/* Let the world know we exist
 	 */
 	DebugInit();
 	DEBUGPUTS(("[reset]\n"));
+
 
 	/* Zap out old SysBase if invalid */
 	if (issysbasevalid(SysBase)) {
@@ -488,6 +494,7 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    	/* ram loader fake sysbase */
 	    	romloader = (ULONG)SysBase;
 	    	SysBase = NULL;
+		DEBUGPUTHEX(("NMI vector at", (ULONG)nmi));
 	    }
 	    oldsysbase = NULL;
 	} else {
@@ -677,6 +684,10 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	 * need this to support the Exec/Supervisor call
 	 */
 	trap[8] = Exec_Supervisor_Trap;
+
+ 	/* restore romloader NMI debugger */
+	if (romloader)
+		trap[31] = nmi;
 
 	/* Attempt to allocate a real stack, and switch to it. */
 	do {
