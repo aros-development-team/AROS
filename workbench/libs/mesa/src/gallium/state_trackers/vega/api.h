@@ -33,6 +33,11 @@
 #include "VG/vgext.h"
 #include "vg_manager.h"
 
+#if defined(PIPE_OS_AROS)
+#include "vega/vgapim.h"
+#include "vega/vg_mangle.h"
+#endif
+
 #include "api_tmp.h"
 
 struct mapi_table;
