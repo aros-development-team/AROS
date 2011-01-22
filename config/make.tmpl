@@ -2521,10 +2521,11 @@ endif
 #                     /GNU.
 #    - extraoptions = same meaning as the one for the %build_with_configure macro.
 #    - postinstall  = same meaning as the one for the %build_with_configure macro.
+#    - create_pkg   = create a distributable package of the compiled sources, defaults to no
 
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target version=/A suffixes="tar.bz2 tar.gz" \
-    srcdir= package_repo= patch=no patch_repo= prefix= \
-    aros_prefix= extraoptions= preconfigure= postconfigure= postinstall= nix=no nix_dir_layout=
+    srcdir= package_repo= patch=no patch_repo= prefix= aros_prefix= extraoptions= \
+    preconfigure= postconfigure= postinstall= nix=no nix_dir_layout= create_pkg=no
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
@@ -2574,6 +2575,10 @@ endif
 %(mmake)-%(subpackage)-package-basename := \
     $(DISTDIR)/Packages/$(%(mmake)-%(subpackage)-archbase)-aros.$(AROS_TARGET_CPU)
 
+ifneq (%(create_pkg),no)
+    PACKAGE := $(%(mmake)-%(subpackage)-package-basename).tar.bz2
+endif
+
 %build_with_configure mmake=%(mmake)-%(subpackage) package=%(package) compiler=%(compiler) \
      srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-srcdir) \
      nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-prefix)" \
@@ -2584,7 +2589,7 @@ endif
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
 
 #MM
-%(mmake)-%(subpackage)-make-package : $(%(mmake)-%(subpackage)-package-basename).tar.bz2
+%(mmake)-%(subpackage)-make-package : $(PACKAGE)
  
 #There seems to be a bug, either with my clock or with make, 'cause it may happen
 #that $^ and $@ have exactly the same mtime, and in that case make tries
