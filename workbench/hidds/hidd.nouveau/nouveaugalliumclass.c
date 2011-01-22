@@ -34,8 +34,9 @@ HiddNouveauWinSys(struct pipe_winsys *ws)
 
 static VOID
 HIDDNouveauFlushFrontBuffer( struct pipe_screen *screen,
-                            struct pipe_surface *surf,
-                            void *context_private )
+                              struct pipe_resource *resource,
+                              unsigned level, unsigned layer,
+                              void *winsys_drawable_handle  )
 {
     /* No Op */
 }
@@ -66,7 +67,7 @@ HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface
             break;
         case NV_ARCH_50:
             bo = nv50_miptree(surface->texture)->base.bo;
-            pitch = nv50_miptree(surface->texture)->level[surface->level].pitch;
+            pitch = nv50_miptree(surface->texture)->level[surface->u.tex.level].pitch;
             break;
     }
     
@@ -100,6 +101,73 @@ HIDDNouveauWrapSurface(struct CardData * carddata, struct pipe_surface * surface
     bmdata->bo = bo;
     bmdata->width = surface->width;
     bmdata->height = surface->height;
+    bmdata->depth = depth;
+    if (bmdata->depth <= 8)
+        bmdata->bytesperpixel = 1;
+    else if (bmdata->depth <= 16)
+        bmdata->bytesperpixel = 2;
+    else
+        bmdata->bytesperpixel = 4;
+    bmdata->pitch = pitch;
+    bmdata->fbid = 0; /* Default value */
+    InitSemaphore(&bmdata->semaphore);
+
+    return TRUE;
+}
+
+
+/* Wraps the nouveau_bo from resource into 2D bitmap class data */
+static BOOL
+HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resource,
+    struct HIDDNouveauBitMapData * bmdata)
+{
+    struct nouveau_bo * bo = NULL;
+    ULONG pitch = 0; ULONG depth = 0;
+
+    /* Get buffer object and pitch */
+    switch(carddata->architecture)
+    {
+        case NV_ARCH_30:
+        case NV_ARCH_40:
+            bo = nvfx_resource(resource)->bo;
+            pitch = ((struct nvfx_miptree *)resource)->linear_pitch;
+            break;
+        case NV_ARCH_50:
+            bo = nv50_miptree(resource)->base.bo;
+            pitch = nv50_miptree(resource)->level[0].pitch;
+            break;
+    }
+    
+    if ((NULL == bo) || (0 == pitch))
+        return FALSE;
+
+    switch(resource->format)
+    {
+    case PIPE_FORMAT_B8G8R8A8_UNORM:
+    case PIPE_FORMAT_A8R8G8B8_UNORM:
+        depth = 32;
+        break;
+    case PIPE_FORMAT_B8G8R8X8_UNORM:
+    case PIPE_FORMAT_X8R8G8B8_UNORM:
+        depth = 24;
+        break;
+    case PIPE_FORMAT_B5G5R5A1_UNORM:
+    case PIPE_FORMAT_B4G4R4A4_UNORM:
+    case PIPE_FORMAT_B5G6R5_UNORM:
+        depth = 16;
+        break;
+    default:
+        depth = 0;
+        break;
+    }
+    
+    if (0 == depth)
+        return FALSE;
+    
+    /* Set all fields */
+    bmdata->bo = bo;
+    bmdata->width = resource->width0;
+    bmdata->height = resource->height0;
     bmdata->depth = depth;
     if (bmdata->depth <= 8)
         bmdata->bytesperpixel = 1;
@@ -236,3 +304,35 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplaySurface)
     UNLOCK_BITMAP_BM(dstdata)
 }
 
+VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
+{
+    struct pipe_resource * resource = (struct pipe_resource *)msg->resource;
+    struct CardData * carddata = &(SD(cl)->carddata);
+    struct HIDDNouveauBitMapData srcdata;
+    struct RastPort * rp = (struct RastPort *)msg->rastport;
+    OOP_Object * bm = HIDD_BM_OBJ(rp->BitMap);
+    struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    
+    if (!HIDDNouveauWrapResource(carddata, resource, &srcdata))
+        return;
+
+    /* srcdata does not require a lock, because it's a local object that is
+       access only by one task at a time */
+    LOCK_BITMAP_BM(dstdata)
+    UNMAP_BUFFER_BM(dstdata)
+
+    if (carddata->architecture < NV_ARCH_50)
+    {
+        HIDDNouveauNV04CopySameFormat(carddata, &srcdata, dstdata, 
+            msg->left, msg->top, msg->absx, msg->absy, msg->width, msg->height, 
+            0x03 /* vHidd_GC_DrawMode_Copy */);
+    }
+    else
+    {
+        HIDDNouveauNV50CopySameFormat(carddata, &srcdata, dstdata, 
+            msg->left, msg->top, msg->absx, msg->absy, msg->width, msg->height, 
+            0x03 /* vHidd_GC_DrawMode_Copy */);
+    }
+
+    UNLOCK_BITMAP_BM(dstdata)
+}

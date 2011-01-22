@@ -26,8 +26,13 @@
 #define NOUVEAU_MSG(fmt, args...) \
 	fprintf(stderr, "nouveau: "fmt, ##args);
 
+#if !defined(PIPE_OS_AROS)
 #define nouveau_bo_tile_layout(nvbo) \
 	((nvbo)->tile_flags & NOUVEAU_BO_TILE_LAYOUT_MASK)
+#else
+#define nouveau_bo_tile_layout(nvbo) \
+	((nvbo)->tile_flags & 0x0000ff00)
+#endif
 
 /* Constant buffer assignment */
 #define NV50_CB_PMISC		0
