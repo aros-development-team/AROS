@@ -99,21 +99,16 @@ aros_surface_swap_buffers(struct native_surface *nsurf)
 {
     struct aros_surface *asurf = aros_surface(nsurf);
     struct pipe_resource * pres[NUM_NATIVE_ATTACHMENTS] = {0};
-    struct pipe_surface * psurf = NULL;
     uint w,h;
 
     resource_surface_get_size(asurf->rsurf, &w, &h);
 
     resource_surface_get_resources(asurf->rsurf, pres, 1 << NATIVE_ATTACHMENT_BACK_LEFT);
 
-//FIXME    psurf = asurf->adpy->base.screen->get_tex_surface(asurf->adpy->base.screen, 
-//FIXME                pres[NATIVE_ATTACHMENT_BACK_LEFT], 0, 0, 0, PIPE_BIND_RENDER_TARGET);
-
-    BltPipeSurfaceRastPort(psurf, 0, 0, 
+    BltPipeResourceRastPort(pres[NATIVE_ATTACHMENT_BACK_LEFT], 0, 0, 
         asurf->window->RPort, asurf->window->BorderLeft, asurf->window->BorderTop,
         w, h);
 
-    pipe_surface_reference(&psurf, NULL);
     pipe_resource_reference(&pres[NATIVE_ATTACHMENT_BACK_LEFT], NULL);
     /* TODO : call -> possible size change */
     //aros_surface_invalidate(&asurf->base);
@@ -187,6 +182,30 @@ aros_display_get_format_from_window(struct Window * window)
         return PIPE_FORMAT_NONE;
 }
 
+static boolean
+aros_surface_present(struct native_surface *nsurf, enum native_attachment natt,
+                       boolean preserve,uint swap_interval)
+{
+    boolean ret;
+
+    if (preserve || swap_interval)
+        return FALSE;
+
+    switch (natt) {
+    case NATIVE_ATTACHMENT_FRONT_LEFT:
+        ret = aros_surface_flush_frontbuffer(nsurf);
+        break;
+    case NATIVE_ATTACHMENT_BACK_LEFT:
+        ret = aros_surface_swap_buffers(nsurf);
+        break;
+    default:
+        ret = FALSE;
+        break;
+    }
+
+    return ret;
+}
+
 static struct aros_surface *
 aros_display_create_surface(struct native_display *ndpy,
                               struct Window * window,
@@ -220,8 +239,7 @@ aros_display_create_surface(struct native_display *ndpy,
     aros_surface_update_geometry(&asurf->base);
 
     asurf->base.destroy = aros_surface_destroy;
-//FIXME    asurf->base.swap_buffers = aros_surface_swap_buffers;
-//FIXME    asurf->base.flush_frontbuffer = aros_surface_flush_frontbuffer;
+    asurf->base.present = aros_surface_present;
     asurf->base.validate = aros_surface_validate;
     asurf->base.wait = aros_surface_wait;
 
