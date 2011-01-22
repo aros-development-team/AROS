@@ -36,4 +36,4 @@ static int SoftpipeHidd_InitLib(LIBBASETYPEPTR LIBBASE)
 ADD2INITLIB(SoftpipeHidd_InitLib, 0)
 ADD2EXPUNGELIB(SoftpipeHidd_ExpungeLib, 0)
 
-ADD2LIBS((STRPTR)"gallium.hidd", 0, static struct Library *, GalliumHiddBase);
+ADD2LIBS((STRPTR)"gallium.hidd", 7, static struct Library *, GalliumHiddBase);
