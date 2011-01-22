@@ -41,12 +41,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (amesa->framebuffer->render_surface) 
+    if (amesa->framebuffer->render_resource) 
     {
         /* Flush rendering cache before blitting */
         amesa->st->flush(amesa->st, PIPE_FLUSH_RENDER_CACHE, NULL);
 
-        BltPipeSurfaceRastPort(amesa->framebuffer->render_surface, 0, 0, 
+        BltPipeResourceRastPort(amesa->framebuffer->render_resource, 0, 0, 
             amesa->visible_rp, amesa->left, amesa->top, 
             amesa->framebuffer->width, amesa->framebuffer->height);
     }

@@ -17,7 +17,7 @@ struct arosmesa_framebuffer
 
     struct pipe_screen          *screen;
     struct pipe_resource        *textures[ST_ATTACHMENT_COUNT];
-    struct pipe_surface         *render_surface; /* Surface with results of rendering (back buffer) */
+    struct pipe_resource        *render_resource; /* Resource with results of rendering (back buffer) */
     ULONG                       width;
     ULONG                       height;
     BOOL                        resized;
