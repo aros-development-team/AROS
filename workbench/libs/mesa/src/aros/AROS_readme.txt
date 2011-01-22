@@ -9,11 +9,22 @@ The codes of the autogeneration tool (C#) are attached.
 When updating to newer version please do the following:
 
 a. generate new files:
-    - arosmesa_library_api.c
+    - arosmesaapim.h
+    - arosmesa_mangle.h
     - arosmesa.conf
-    - mangle_undef.h
+    - arosmesa_library_api.c
+    - vgapim.h
+    - vg_mangle.h
+    - vega.conf
+    - vega_library_api.c
     - egl_mangle.h
     - eglapim.h
+    - egl.conf
+    - egl_library_api.c
+    - glu_mangle.h
+    - gluapim.h
+    - glu.conf
+    - glu_libraru_api.c
 b. replace the existing files with generated files copying the headers from
    existing files. Be sure to update the version of mesa.library.
 
