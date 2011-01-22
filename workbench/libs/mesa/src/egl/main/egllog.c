@@ -26,11 +26,18 @@ static struct {
    _EGLLogProc logger;
    EGLint num_messages;
 } logging = {
+#if !defined(_EGL_OS_AROS)
    _EGL_MUTEX_INITIALIZER,
    EGL_FALSE,
    FALLBACK_LOG_LEVEL,
    NULL,
    0
+#else
+   .initialized = EGL_FALSE,
+   .level = FALLBACK_LOG_LEVEL,
+   .logger = NULL,
+   .num_messages = 0
+#endif
 };
 
 static const char *level_strings[] = {
@@ -92,13 +99,20 @@ _eglSetLogLevel(EGLint level)
 }
 
 
+#if defined(_EGL_OS_AROS)
+#include <aros/debug.h>
+#endif
 /**
  * The default logger.  It prints the message to stderr.
  */
 static void
 _eglDefaultLogger(EGLint level, const char *msg)
 {
+#if !defined(_EGL_OS_AROS)
    fprintf(stderr, "libEGL %s: %s\n", level_strings[level], msg);
+#else
+   bug("[EGL]: %s: %s\n", level_strings[level], msg);
+#endif
 }
 
 
@@ -130,6 +144,9 @@ _eglInitLogger(void)
    logging.logger = _eglDefaultLogger;
    logging.level = (level >= 0) ? level : FALLBACK_LOG_LEVEL;
    logging.initialized = EGL_TRUE;
+#if defined(_EGL_OS_AROS)
+   _eglInitMutex(&logging.mutex);
+#endif
 
    /* it is fine to call _eglLog now */
    if (log_env && level < 0) {

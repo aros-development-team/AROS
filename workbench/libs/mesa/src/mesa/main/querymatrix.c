@@ -76,6 +76,10 @@ fpclassify(double x)
      (defined(__sun) && defined(__GNUC__))
 
 /* fpclassify is available. */
+#elif defined(__AROS__)
+
+#undef fpclassify
+#define fpclassify(x)   FP_NORMAL
 
 #elif !defined(_XOPEN_SOURCE) || _XOPEN_SOURCE < 600
 

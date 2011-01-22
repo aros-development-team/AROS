@@ -28,7 +28,8 @@ _eglGetNativePlatformFromEnv(void)
       { _EGL_PLATFORM_WINDOWS, "gdi" },
       { _EGL_PLATFORM_X11, "x11" },
       { _EGL_PLATFORM_DRM, "drm" },
-      { _EGL_PLATFORM_FBDEV, "fbdev" }
+      { _EGL_PLATFORM_FBDEV, "fbdev" },
+      { _EGL_PLATFORM_AROS, "aros" }
    };
    _EGLPlatformType plat = _EGL_INVALID_PLATFORM;
    const char *plat_name;
@@ -117,8 +118,15 @@ _eglFindDisplay(_EGLPlatformType plat, void *plat_dpy)
    /* search the display list first */
    dpy = _eglGlobal.DisplayList;
    while (dpy) {
+#if !defined(_EGL_OS_AROS)
+   /* It seems the _eglGlobal.DisplayList should unique per opener (not per task).
+      This is not true on AROS (_eglGlobal.DisplayList  is global for all 
+      openers). The workaround is to always create a new display object. This 
+      might fail with multithreaded applications as they might expect to have 
+      the same display object returned by GetDisplay */
       if (dpy->Platform == plat && dpy->PlatformDisplay == plat_dpy)
          break;
+#endif
       dpy = dpy->Next;
    }
 

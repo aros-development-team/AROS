@@ -33,6 +33,7 @@ static _EGL_DECLARE_MUTEX(_eglModuleMutex);
 static _EGLArray *_eglModules;
 
 
+#if !defined(_EGL_OS_AROS)
 /**
  * Wrappers for dlopen/dlclose()
  */
@@ -195,6 +196,7 @@ _eglUnloadModule(_EGLModule *mod)
    mod->Driver = NULL;
    mod->Handle = NULL;
 }
+#endif /* !defined(_EGL_OS_AROS) */
 
 
 /**
@@ -237,6 +239,7 @@ _eglAddModule(const char *path)
 }
 
 
+#if !defined(_EGL_OS_AROS)
 /**
  * Free a module.
  */
@@ -508,6 +511,7 @@ _eglAddDefaultDrivers(void)
       _eglPreloadForEach(search_path, _eglLoaderFile, name);
    }
 }
+#endif /* !defined(_EGL_OS_AROS) */
 
 
 /**
@@ -521,9 +525,16 @@ _eglAddDrivers(void)
       return EGL_TRUE;
 
    /* the order here decides the priorities of the drivers */
+#if !defined(_EGL_OS_AROS)
    _eglAddUserDriver();
    _eglAddDefaultDrivers();
    _eglPreloadForEach(_eglGetSearchPath(), _eglLoaderPattern, (void *) "egl_");
+#else
+   /* On AROS there is only one, compiled in driver - Gallium3D */
+   _EGLModule * module = _eglAddModule("EGLGALLIUMCOMPILEDIN");
+   if (module->Driver == NULL)
+      module->Driver = _eglMain(NULL); /* Explicit call to Gallium3D driver's init function */
+#endif
 
    return (_eglModules != NULL);
 }
@@ -576,6 +587,7 @@ _eglMatchDriver(_EGLDisplay *dpy, EGLBoolean use_probe)
          break;
    }
 
+#if !defined(_EGL_OS_AROS)
    /* load more modules */
    if (!best_drv) {
       EGLint first_unloaded = i;
@@ -616,6 +628,7 @@ _eglMatchDriver(_EGLDisplay *dpy, EGLBoolean use_probe)
          }
       }
    }
+#endif
 
    _eglUnlockMutex(&_eglModuleMutex);
 
@@ -681,6 +694,7 @@ _eglUnloadDrivers(void)
 }
 
 
+#if !defined(_EGL_OS_AROS)
 /**
  * Invoke a callback function on each EGL search path.
  *
@@ -694,3 +708,4 @@ _eglSearchPathForEach(EGLBoolean (*callback)(const char *, size_t, void *),
    const char *search_path = _eglGetSearchPath();
    _eglPreloadForEach(search_path, callback, callback_data);
 }
+#endif

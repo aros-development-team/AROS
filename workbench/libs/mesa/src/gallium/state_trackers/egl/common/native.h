@@ -208,10 +208,12 @@ struct native_event_handler {
                            struct native_surface *nsurf,
                            unsigned int seq_num);
 
+#if !defined(PIPE_OS_AROS)
    struct pipe_screen *(*new_drm_screen)(struct native_display *ndpy,
                                          const char *name, int fd);
    struct pipe_screen *(*new_sw_screen)(struct native_display *ndpy,
                                         struct sw_winsys *ws);
+#endif
 };
 
 /**
@@ -246,5 +248,8 @@ native_get_fbdev_platform(void);
 #ifdef __cplusplus
 }
 #endif
+
+const struct native_platform *
+native_get_aros_platform(void);
 
 #endif /* _NATIVE_H_ */

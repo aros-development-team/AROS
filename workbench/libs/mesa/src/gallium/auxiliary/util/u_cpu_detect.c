@@ -195,9 +195,12 @@ cpuid(uint32_t ax, uint32_t *p)
    );
 #elif defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64)
    __asm __volatile (
+     "pushq %%rbx\n\t"
      "cpuid\n\t"
+     "movl %%ebx, %%esi\n\t"
+     "popq %%rbx"
      : "=a" (p[0]),
-       "=b" (p[1]),
+       "=S" (p[1]),
        "=c" (p[2]),
        "=d" (p[3])
      : "0" (ax)

@@ -36,6 +36,11 @@
 #include <math.h>
 #include <assert.h>
 
+#if defined(PIPE_OS_AROS)
+#include "vega/vgapim.h"
+#include "vega/vg_mangle.h"
+#endif
+
 static VGboolean is_aligned_to(const void *ptr, VGbyte alignment)
 {
    void *aligned = align_pointer(ptr, alignment);

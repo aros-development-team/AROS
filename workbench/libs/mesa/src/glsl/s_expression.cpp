@@ -28,6 +28,11 @@
 #include <assert.h>
 #include "s_expression.h"
 
+#if defined(__AROS__)
+#include <aros/debug.h>
+#define printf(fmt, ...)    bug(fmt, ##__VA_ARGS__)
+#endif
+
 s_symbol::s_symbol(const char *tmp, size_t n)
 {
    this->str = talloc_strndup (this, tmp, n);
