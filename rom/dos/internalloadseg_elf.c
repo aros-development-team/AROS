@@ -643,12 +643,10 @@ end:
     
     /* Clear the caches to let the CPU see the new data and instructions */
     {
-        BPTR *curr = &hunks;
-        curr = BPTR2HUNK(curr)->next;
-        
+        BPTR curr = hunks;
         while (curr)
         {
-             struct hunk *hunk = BPTR2HUNK(curr);
+             struct hunk *hunk = BPTR2HUNK(BADDR(curr));
              
 	     CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
              
