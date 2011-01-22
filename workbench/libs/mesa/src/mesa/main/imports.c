@@ -88,7 +88,8 @@ _mesa_align_malloc(size_t bytes, unsigned long alignment)
 #if defined(HAVE_POSIX_MEMALIGN)
    void *mem;
    int err = posix_memalign(& mem, alignment, bytes);
-   (void) err;
+   if (err)
+      return NULL;
    return mem;
 #elif defined(_WIN32) && defined(_MSC_VER)
    return _aligned_malloc(bytes, alignment);
@@ -457,7 +458,7 @@ _mesa_inv_sqrtf(float n)
 int
 _mesa_ffs(int32_t i)
 {
-#if (defined(_WIN32) ) || defined(__IBMC__) || defined(__IBMCPP__) || defined(__AROS__)
+#if (defined(_WIN32) ) || defined(__IBMC__) || defined(__IBMCPP__)
    register int bit = 0;
    if (i != 0) {
       if ((i & 0xffff) == 0) {
@@ -520,8 +521,7 @@ _mesa_ffsll(int64_t val)
 unsigned int
 _mesa_bitcount(unsigned int n)
 {
-/* AROS: don't use __builtin_popcount */
-#if !defined(__AROS__) && defined(__GNUC__) && \
+#if defined(__GNUC__) && \
 	((_GNUC__ == 3 && __GNUC_MINOR__ >= 4) || __GNUC__ >= 4)
    return __builtin_popcount(n);
 #else
@@ -883,7 +883,7 @@ error_string( GLenum error )
  * previous errors which were accumulated.
  */
 static void
-flush_delayed_errors( GLcontext *ctx )
+flush_delayed_errors( struct gl_context *ctx )
 {
    char s[MAXSTRING];
 
@@ -907,7 +907,7 @@ flush_delayed_errors( GLcontext *ctx )
  * \param fmtString printf()-like format string.
  */
 void
-_mesa_warning( GLcontext *ctx, const char *fmtString, ... )
+_mesa_warning( struct gl_context *ctx, const char *fmtString, ... )
 {
    char str[MAXSTRING];
    va_list args;
@@ -930,7 +930,7 @@ _mesa_warning( GLcontext *ctx, const char *fmtString, ... )
  * \param fmtString problem description string.
  */
 void
-_mesa_problem( const GLcontext *ctx, const char *fmtString, ... )
+_mesa_problem( const struct gl_context *ctx, const char *fmtString, ... )
 {
    va_list args;
    char str[MAXSTRING];
@@ -958,7 +958,7 @@ _mesa_problem( const GLcontext *ctx, const char *fmtString, ... )
  * \param fmtString printf() style format string, followed by optional args
  */
 void
-_mesa_error( GLcontext *ctx, GLenum error, const char *fmtString, ... )
+_mesa_error( struct gl_context *ctx, GLenum error, const char *fmtString, ... )
 {
    static GLint debug = -1;
 
@@ -1015,7 +1015,7 @@ _mesa_error( GLcontext *ctx, GLenum error, const char *fmtString, ... )
  * \param fmtString printf()-style format string, followed by optional args.
  */
 void
-_mesa_debug( const GLcontext *ctx, const char *fmtString, ... )
+_mesa_debug( const struct gl_context *ctx, const char *fmtString, ... )
 {
 #ifdef DEBUG
    char s[MAXSTRING];

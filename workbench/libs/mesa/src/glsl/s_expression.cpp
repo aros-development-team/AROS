@@ -28,11 +28,6 @@
 #include <assert.h>
 #include "s_expression.h"
 
-#if defined(__AROS__)
-#include <aros/debug.h>
-#define printf(fmt, ...)    bug(fmt, ##__VA_ARGS__)
-#endif
-
 s_symbol::s_symbol(const char *tmp, size_t n)
 {
    this->str = talloc_strndup (this, tmp, n);
@@ -67,7 +62,7 @@ read_atom(void *ctx, const char *& src)
 
    // Check if the atom is a number.
    char *float_end = NULL;
-   double f = strtod(src, &float_end);
+   double f = glsl_strtod(src, &float_end);
    if (float_end != src) {
       char *int_end = NULL;
       int i = strtol(src, &int_end, 10);
@@ -138,7 +133,8 @@ void s_list::print()
    foreach_iter(exec_list_iterator, it, this->subexpressions) {
       s_expression *expr = (s_expression*) it.get();
       expr->print();
-      printf(" ");
+      if (!expr->next->is_tail_sentinel())
+	 printf(" ");
    }
    printf(")");
 }

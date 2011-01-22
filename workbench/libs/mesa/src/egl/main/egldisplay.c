@@ -28,8 +28,7 @@ _eglGetNativePlatformFromEnv(void)
       { _EGL_PLATFORM_WINDOWS, "gdi" },
       { _EGL_PLATFORM_X11, "x11" },
       { _EGL_PLATFORM_DRM, "drm" },
-      { _EGL_PLATFORM_FBDEV, "fbdev" },
-      { _EGL_PLATFORM_AROS, "aros" }
+      { _EGL_PLATFORM_FBDEV, "fbdev" }
    };
    _EGLPlatformType plat = _EGL_INVALID_PLATFORM;
    const char *plat_name;
@@ -118,15 +117,8 @@ _eglFindDisplay(_EGLPlatformType plat, void *plat_dpy)
    /* search the display list first */
    dpy = _eglGlobal.DisplayList;
    while (dpy) {
-#if !defined(_EGL_OS_AROS)
-   /* It seems the _eglGlobal.DisplayList should unique per opener (not per task).
-      This is not true on AROS (_eglGlobal.DisplayList  is global for all 
-      openers). The workaround is to always create a new display object. This 
-      might fail with multithreaded applications as they might expect to have 
-      the same display object returned by GetDisplay */
       if (dpy->Platform == plat && dpy->PlatformDisplay == plat_dpy)
          break;
-#endif
       dpy = dpy->Next;
    }
 
@@ -241,17 +233,53 @@ _eglCheckResource(void *res, _EGLResourceType type, _EGLDisplay *dpy)
 
 
 /**
- * Link a resource to a display.
+ * Initialize a display resource.
  */
 void
-_eglLinkResource(_EGLResource *res, _EGLResourceType type, _EGLDisplay *dpy)
+_eglInitResource(_EGLResource *res, EGLint size, _EGLDisplay *dpy)
 {
-   assert(!res->Display || res->Display == dpy);
-
+   memset(res, 0, size);
    res->Display = dpy;
+   res->RefCount = 1;
+}
+
+
+/**
+ * Increment reference count for the resource.
+ */
+void
+_eglGetResource(_EGLResource *res)
+{
+   assert(res && res->RefCount > 0);
+   /* hopefully a resource is always manipulated with its display locked */
+   res->RefCount++;
+}
+
+
+/**
+ * Decrement reference count for the resource.
+ */
+EGLBoolean
+_eglPutResource(_EGLResource *res)
+{
+   assert(res && res->RefCount > 0);
+   res->RefCount--;
+   return (!res->RefCount);
+}
+
+
+/**
+ * Link a resource to its display.
+ */
+void
+_eglLinkResource(_EGLResource *res, _EGLResourceType type)
+{
+   assert(res->Display);
+
    res->IsLinked = EGL_TRUE;
-   res->Next = dpy->ResourceLists[type];
-   dpy->ResourceLists[type] = res;
+   res->Next = res->Display->ResourceLists[type];
+   res->Display->ResourceLists[type] = res;
+   _eglGetResource(res);
 }
 
 
@@ -278,6 +306,9 @@ _eglUnlinkResource(_EGLResource *res, _EGLResourceType type)
    }
 
    res->Next = NULL;
-   /* do not reset res->Display */
    res->IsLinked = EGL_FALSE;
+   _eglPutResource(res);
+
+   /* We always unlink before destroy.  The driver still owns a reference */
+   assert(res->RefCount);
 }

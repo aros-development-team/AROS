@@ -4,7 +4,7 @@
 
 #include "egltypedefs.h"
 #include "eglapi.h"
-
+#include <stddef.h>
 
 /**
  * Define an inline driver typecast function.
@@ -80,6 +80,7 @@ extern void
 _eglUnloadDrivers(void);
 
 
+/* defined in eglfallbacks.c */
 PUBLIC void
 _eglInitDriverFallbacks(_EGLDriver *drv);
 

@@ -25,7 +25,7 @@
 */
 
 /* Platform-specific types and definitions for egl.h
- * $Revision$ on $Date$
+ * $Revision: 9724 $ on $Date: 2009-12-02 02:05:33 -0800 (Wed, 02 Dec 2009) $
  *
  * Adopters may modify khrplatform.h and this file to suit their platform.
  * You are encouraged to submit all modifications to the Khronos group so that
@@ -97,14 +97,6 @@ typedef Pixmap   EGLNativePixmapType;
 typedef Window   EGLNativeWindowType;
 
 #endif /* MESA_EGL_NO_X11_HEADERS */
-
-#elif defined(__AROS__)
-
-#include <intuition/intuition.h>
-
-typedef APTR            EGLNativeDisplayType;
-typedef struct Bitmap   *EGLNativePixmapType;
-typedef struct Window   *EGLNativeWindowType;
 
 #else
 #error "Platform not recognized"

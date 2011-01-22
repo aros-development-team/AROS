@@ -30,6 +30,7 @@
 
 
 #include "pipe/p_compiler.h"
+#include "sp_texture.h"
 
 
 struct softpipe_tile_cache;
@@ -38,18 +39,22 @@ struct softpipe_tile_cache;
 /**
  * Cache tile size (width and height). This needs to be a power of two.
  */
-#define TILE_SIZE 64
+#define TILE_SIZE_LOG2 6
+#define TILE_SIZE (1 << TILE_SIZE_LOG2)
 
 
-/* If we need to support > 4096, just expand this to be a 64 bit
- * union, or consider tiling in Z as well.
+#define TILE_ADDR_BITS (SP_MAX_TEXTURE_2D_LEVELS - 1 - TILE_SIZE_LOG2)
+
+
+/**
+ * Surface tile address as a union for fast compares.
  */
 union tile_address {
    struct {
-      unsigned x:6;             /* 4096 / TILE_SIZE */
-      unsigned y:6;             /* 4096 / TILE_SIZE */
+      unsigned x:TILE_ADDR_BITS;     /* 16K / TILE_SIZE */
+      unsigned y:TILE_ADDR_BITS;     /* 16K / TILE_SIZE */
       unsigned invalid:1;
-      unsigned pad:19;
+      unsigned pad:15;
    } bits;
    unsigned value;
 };
@@ -57,7 +62,6 @@ union tile_address {
 
 struct softpipe_cached_tile
 {
-   union tile_address addr;
    union {
       float color[TILE_SIZE][TILE_SIZE][4];
       uint color32[TILE_SIZE][TILE_SIZE];
@@ -71,11 +75,6 @@ struct softpipe_cached_tile
 #define NUM_ENTRIES 50
 
 
-/** XXX move these */
-#define MAX_WIDTH 4096
-#define MAX_HEIGHT 4096
-
-
 struct softpipe_tile_cache
 {
    struct pipe_context *pipe;
@@ -83,14 +82,16 @@ struct softpipe_tile_cache
    struct pipe_transfer *transfer;
    void *transfer_map;
 
-   struct softpipe_cached_tile entries[NUM_ENTRIES];
+   union tile_address tile_addrs[NUM_ENTRIES];
+   struct softpipe_cached_tile *entries[NUM_ENTRIES];
    uint clear_flags[(MAX_WIDTH / TILE_SIZE) * (MAX_HEIGHT / TILE_SIZE) / 32];
    float clear_color[4];  /**< for color bufs */
-   uint clear_val;        /**< for z+stencil, or packed color clear value */
+   uint clear_val;        /**< for z+stencil */
    boolean depth_stencil; /**< Is the surface a depth/stencil format? */
 
-   struct softpipe_cached_tile tile;  /**< scratch tile for clears */
+   struct softpipe_cached_tile *tile;  /**< scratch tile for clears */
 
+   union tile_address last_tile_addr;
    struct softpipe_cached_tile *last_tile;  /**< most recently retrieved tile */
 };
 
@@ -147,7 +148,7 @@ sp_get_cached_tile(struct softpipe_tile_cache *tc,
 {
    union tile_address addr = tile_address( x, y );
 
-   if (tc->last_tile->addr.value == addr.value)
+   if (tc->last_tile_addr.value == addr.value)
       return tc->last_tile;
 
    return sp_find_cached_tile( tc, addr );

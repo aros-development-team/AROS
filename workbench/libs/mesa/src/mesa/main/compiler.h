@@ -251,8 +251,6 @@ extern "C" {
 #elif defined(__APPLE__)
 #include <CoreFoundation/CFByteOrder.h>
 #define CPU_TO_LE32( x )	CFSwapInt32HostToLittle( x )
-#elif defined(__AROS__)
-#define CPU_TO_LE32( x )    AROS_BE2LONG( x )
 #elif (defined(_AIX) || defined(__blrts))
 static INLINE GLuint CPU_TO_LE32(GLuint x)
 {
@@ -320,9 +318,6 @@ static INLINE GLuint CPU_TO_LE32(GLuint x)
 /**
  * ASSERT macro
  */
-#if defined(__AROS__)
-#undef ASSERT
-#endif
 #if !defined(_WIN32_WCE)
 #if defined(BUILD_FOR_SNAP) && defined(CHECKED)
 #  define ASSERT(X)   _CHECK(X) 
@@ -361,6 +356,10 @@ static INLINE GLuint CPU_TO_LE32(GLuint x)
 
 #ifndef M_E
 #define M_E (2.7182818284590452354)
+#endif
+
+#ifndef M_LOG2E
+#define M_LOG2E     (1.4426950408889634074)
 #endif
 
 #ifndef ONE_DIV_LN2

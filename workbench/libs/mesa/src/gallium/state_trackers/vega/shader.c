@@ -39,6 +39,7 @@
 #include "util/u_inlines.h"
 #include "util/u_memory.h"
 #include "util/u_math.h"
+#include "util/u_format.h"
 
 #define MAX_CONSTANTS 28
 
@@ -50,6 +51,7 @@ struct shader {
    struct vg_paint *paint;
    struct vg_image *image;
 
+   struct matrix modelview;
    struct matrix paint_matrix;
 
    VGboolean drawing_image;
@@ -127,16 +129,36 @@ static VGint setup_constant_buffer(struct shader *shader)
    return param_bytes;
 }
 
+static VGboolean blend_use_shader(struct vg_context *ctx)
+{
+   VGboolean advanced_blending;
+
+   switch (ctx->state.vg.blend_mode) {
+   case VG_BLEND_SRC_OVER:
+      advanced_blending =
+         util_format_has_alpha(ctx->draw_buffer->strb->format);
+      break;
+   case VG_BLEND_DST_OVER:
+   case VG_BLEND_MULTIPLY:
+   case VG_BLEND_SCREEN:
+   case VG_BLEND_DARKEN:
+   case VG_BLEND_LIGHTEN:
+   case VG_BLEND_ADDITIVE:
+      advanced_blending = VG_TRUE;
+      break;
+   default:
+      advanced_blending = VG_FALSE;
+      break;
+   }
+
+   return advanced_blending;
+}
+
 static VGint blend_bind_samplers(struct vg_context *ctx,
                                  struct pipe_sampler_state **samplers,
                                  struct pipe_sampler_view **sampler_views)
 {
-   VGBlendMode bmode = ctx->state.vg.blend_mode;
-
-   if (bmode == VG_BLEND_MULTIPLY ||
-       bmode == VG_BLEND_SCREEN ||
-       bmode == VG_BLEND_DARKEN ||
-       bmode == VG_BLEND_LIGHTEN) {
+   if (blend_use_shader(ctx)) {
       samplers[2] = &ctx->blend_sampler;
       sampler_views[2] = vg_prepare_blend_surface(ctx);
 
@@ -254,26 +276,56 @@ static void setup_shader_program(struct shader *shader)
    if (shader->color_transform)
       shader_id |= VEGA_COLOR_TRANSFORM_SHADER;
 
+   if (blend_use_shader(ctx)) {
+      if (shader->drawing_image && shader->image_mode == VG_DRAW_IMAGE_STENCIL)
+         shader_id |= VEGA_ALPHA_PER_CHANNEL_SHADER;
+      else
+         shader_id |= VEGA_ALPHA_NORMAL_SHADER;
+
+      switch(blend_mode) {
+      case VG_BLEND_SRC:
+         shader_id |= VEGA_BLEND_SRC_SHADER;
+         break;
+      case VG_BLEND_SRC_OVER:
+         shader_id |= VEGA_BLEND_SRC_OVER_SHADER;
+         break;
+      case VG_BLEND_DST_OVER:
+         shader_id |= VEGA_BLEND_DST_OVER_SHADER;
+         break;
+      case VG_BLEND_SRC_IN:
+         shader_id |= VEGA_BLEND_SRC_IN_SHADER;
+         break;
+      case VG_BLEND_DST_IN:
+         shader_id |= VEGA_BLEND_DST_IN_SHADER;
+         break;
+      case VG_BLEND_MULTIPLY:
+         shader_id |= VEGA_BLEND_MULTIPLY_SHADER;
+         break;
+      case VG_BLEND_SCREEN:
+         shader_id |= VEGA_BLEND_SCREEN_SHADER;
+         break;
+      case VG_BLEND_DARKEN:
+         shader_id |= VEGA_BLEND_DARKEN_SHADER;
+         break;
+      case VG_BLEND_LIGHTEN:
+         shader_id |= VEGA_BLEND_LIGHTEN_SHADER;
+         break;
+      case VG_BLEND_ADDITIVE:
+         shader_id |= VEGA_BLEND_ADDITIVE_SHADER;
+         break;
+      default:
+         assert(0);
+         break;
+      }
+   }
+   else {
+      /* update alpha of the source */
+      if (shader->drawing_image && shader->image_mode == VG_DRAW_IMAGE_STENCIL)
+         shader_id |= VEGA_ALPHA_PER_CHANNEL_SHADER;
+   }
+
    if (shader->masking)
       shader_id |= VEGA_MASK_SHADER;
-
-   switch(blend_mode) {
-   case VG_BLEND_MULTIPLY:
-      shader_id |= VEGA_BLEND_MULTIPLY_SHADER;
-      break;
-   case VG_BLEND_SCREEN:
-      shader_id |= VEGA_BLEND_SCREEN_SHADER;
-      break;
-   case VG_BLEND_DARKEN:
-      shader_id |= VEGA_BLEND_DARKEN_SHADER;
-      break;
-   case VG_BLEND_LIGHTEN:
-      shader_id |= VEGA_BLEND_LIGHTEN_SHADER;
-      break;
-   default:
-      /* handled by pipe_blend_state */
-      break;
-   }
 
    if (black_white)
       shader_id |= VEGA_BW_SHADER;
@@ -299,6 +351,7 @@ void shader_bind(struct shader *shader)
    renderer_validate_for_shader(ctx->renderer,
          (const struct pipe_sampler_state **) samplers,
          sampler_views, num_samplers,
+         &shader->modelview,
          shader->fs, (const void *) shader->constants, param_bytes);
 }
 
@@ -325,6 +378,15 @@ VGboolean shader_drawing_image(struct shader *shader)
 void shader_set_image(struct shader *shader, struct vg_image *img)
 {
    shader->image = img;
+}
+
+/**
+ * Set the transformation to map a vertex to the surface coordinates.
+ */
+void shader_set_surface_matrix(struct shader *shader,
+                               const struct matrix *mat)
+{
+   shader->modelview = *mat;
 }
 
 /**

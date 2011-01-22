@@ -64,7 +64,12 @@ softpipe_get_param(struct pipe_screen *screen, enum pipe_cap param)
    case PIPE_CAP_MAX_TEXTURE_IMAGE_UNITS:
       return PIPE_MAX_SAMPLERS;
    case PIPE_CAP_MAX_VERTEX_TEXTURE_UNITS:
+#ifdef HAVE_LLVM
+      /* Softpipe doesn't yet know how to tell draw/llvm about textures */
+      return 0;
+#else
       return PIPE_MAX_VERTEX_SAMPLERS;
+#endif
    case PIPE_CAP_MAX_COMBINED_SAMPLERS:
       return PIPE_MAX_SAMPLERS + PIPE_MAX_VERTEX_SAMPLERS;
    case PIPE_CAP_NPOT_TEXTURES:
@@ -112,8 +117,12 @@ softpipe_get_param(struct pipe_screen *screen, enum pipe_cap param)
       return 1;
    case PIPE_CAP_STREAM_OUTPUT:
       return 1;
+   case PIPE_CAP_PRIMITIVE_RESTART:
+      return 1;
    case PIPE_CAP_DEPTHSTENCIL_CLEAR_SEPARATE:
       return 0;
+   case PIPE_CAP_SHADER_STENCIL_EXPORT:
+      return 1;
    default:
       return 0;
    }
@@ -205,13 +214,6 @@ softpipe_is_format_supported( struct pipe_screen *screen,
       if (format_desc->block.width != 1 ||
           format_desc->block.height != 1)
          return FALSE;
-
-      /*
-       * TODO: Unfortunately we cannot render into anything more than 32 bits
-       * because we encode color clear values into a 32bit word.
-       */
-      if (format_desc->block.bits > 32)
-         return FALSE;
    }
 
    if (bind & PIPE_BIND_DEPTH_STENCIL) {
@@ -264,12 +266,13 @@ softpipe_destroy_screen( struct pipe_screen *screen )
  */
 static void
 softpipe_flush_frontbuffer(struct pipe_screen *_screen,
-                           struct pipe_surface *surface,
+                           struct pipe_resource *resource,
+                           unsigned level, unsigned layer,
                            void *context_private)
 {
    struct softpipe_screen *screen = softpipe_screen(_screen);
    struct sw_winsys *winsys = screen->winsys;
-   struct softpipe_resource *texture = softpipe_resource(surface->texture);
+   struct softpipe_resource *texture = softpipe_resource(resource);
 
    assert(texture->dt);
    if (texture->dt)

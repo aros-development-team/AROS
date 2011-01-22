@@ -38,7 +38,7 @@
 
 #include "pipe/p_config.h"
 
-#if defined(PIPE_OS_UNIX) || defined(PIPE_OS_AROS)
+#if defined(PIPE_OS_UNIX)
 #  include <unistd.h> /* usleep */
 #endif
 
@@ -60,7 +60,7 @@ os_time_get(void);
 /*
  * Sleep.
  */
-#if defined(PIPE_OS_UNIX) || defined(PIPE_OS_AROS)
+#if defined(PIPE_OS_UNIX)
 #define os_time_sleep(_usecs) usleep(_usecs)
 #else
 void

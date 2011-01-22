@@ -169,6 +169,9 @@ struct draw_context
          unsigned vs_constants_size[PIPE_MAX_CONSTANT_BUFFERS];
          const void *gs_constants[PIPE_MAX_CONSTANT_BUFFERS];
          unsigned gs_constants_size[PIPE_MAX_CONSTANT_BUFFERS];
+         
+         /* pointer to planes */
+         float (*planes)[12][4]; 
       } user;
 
       boolean test_fse;         /* enable FSE even though its not correct (eg for softpipe) */
@@ -250,6 +253,11 @@ struct draw_context
       struct tgsi_sampler **samplers;
    } gs;
 
+   /** Fragment shader state */
+   struct {
+      struct draw_fragment_shader *fragment_shader;
+   } fs;
+
    /** Stream output (vertex feedback) state */
    struct {
       struct pipe_stream_output_state state;
@@ -266,9 +274,10 @@ struct draw_context
    /* If a prim stage introduces new vertex attributes, they'll be stored here
     */
    struct {
-      uint semantic_name;
-      uint semantic_index;
-      int slot;
+      uint num;
+      uint semantic_name[10];
+      uint semantic_index[10];
+      uint slot[10];
    } extra_shader_outputs;
 
    unsigned reduced_prim;
@@ -277,7 +286,6 @@ struct draw_context
 
 #ifdef HAVE_LLVM
    struct draw_llvm *llvm;
-   LLVMExecutionEngineRef engine;
 #endif
 
    struct pipe_sampler_view *sampler_views[PIPE_MAX_VERTEX_SAMPLERS];
@@ -361,6 +369,11 @@ void draw_gs_destroy( struct draw_context *draw );
  */
 uint draw_current_shader_outputs(const struct draw_context *draw);
 uint draw_current_shader_position_output(const struct draw_context *draw);
+
+int draw_alloc_extra_vertex_attrib(struct draw_context *draw,
+                                   uint semantic_name, uint semantic_index);
+void draw_remove_extra_vertex_attribs(struct draw_context *draw);
+
 
 /*******************************************************************************
  * Vertex processing (was passthrough) code:

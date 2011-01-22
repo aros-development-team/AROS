@@ -29,12 +29,8 @@
 #define PIPE_ATOMIC_ASM_MSVC_X86                
 #elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86))
 #define PIPE_ATOMIC_ASM_GCC_X86
-#elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_ARM))
-#define PIPE_ATOMIC_ASM_GCC_ARM
 #elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86_64))
 #define PIPE_ATOMIC_ASM_GCC_X86_64
-#elif defined(PIPE_OS_AROS) && defined(PIPE_ARCH_M68K)
-#define PIPE_ATOMIC_OS_AROS_CPU_M68K
 #elif defined(PIPE_CC_GCC) && (PIPE_CC_GCC_VERSION >= 401)
 #define PIPE_ATOMIC_GCC_INTRINSIC
 #else
@@ -134,69 +130,6 @@ p_atomic_cmpxchg(int32_t *v, int32_t old, int32_t _new)
 
 #endif
 
-#if defined(PIPE_ATOMIC_ASM_GCC_ARM)
-
-#define PIPE_ATOMIC "GCC ARM assembly"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define p_atomic_set(_v, _i) (*(_v) = (_i))
-#define p_atomic_read(_v) (*(_v))
-
-static INLINE boolean
-p_atomic_dec_zero(int32_t *v)
-{
-   unsigned long temp;
-   int result;
-   unsigned long cc;
-   __asm__ __volatile__("\n1: ldrex %0, [%3]; subs %0, %0, #1; moveq %2, #1; movne %2, #0; strex %1, %0, [%3]; teq %1, #0; bne 1b"
-						   :"=&r"(result), "=&r"(temp), "=&r"(cc)
-						   :"r"(v)
-						   :"cc");
-   return cc;
-}
-
-static INLINE void
-p_atomic_inc(int32_t *v)
-{
-   unsigned long temp;
-   int result;
-   __asm__ __volatile__("\n1: ldrex %0, [%2]; add %0, %0, #1; strex %1, %0, [%2]; teq %1, #0; bne 1b"
-		   	   	   	   	   :"=&r"(result), "=&r"(temp)
-		   	   	   	   	   :"r"(v)
-		   	   	   	   	   :"cc");
-}
-
-static INLINE void
-p_atomic_dec(int32_t *v)
-{
-   unsigned long temp;
-   int result;
-   __asm__ __volatile__("\n1: ldrex %0, [%2]; sub %0, %0, #1; strex %1, %0, [%2]; teq %1, #0; bne 1b"
-			   	   	   	   :"=&r"(result), "=&r"(temp)
-			   	   	   	   :"r"(v)
-			   	   	   	   :"cc");
-}
-
-static INLINE int32_t
-p_atomic_cmpxchg(int32_t *v, int32_t old, int32_t _new)
-{
-	  int32_t oldval;
-	   unsigned long temp;
-	   __asm__ __volatile__("\n1: ldrex %0,[%2]; teq %0, %3; strexeq %1, %4, [%2]; teq %1, #0; bne 1b"
-	                                                   :"=&r"(oldval), "=&r"(temp)
-	                                                   :"r"(v), "Ir"(old), "r"(_new)
-	                                                   :"cc");
-	   return oldval;
-}
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 
 
 /* Implementation using GCC-provided synchronization intrinsics
@@ -402,64 +335,6 @@ p_atomic_dec_zero(int32_t *v)
 
 #define p_atomic_cmpxchg(_v, _old, _new) \
 	atomic_cas_32( (uint32_t *) _v, (uint32_t) _old, (uint32_t) _new)
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-
-
-#if defined(PIPE_ATOMIC_OS_AROS_CPU_M68K)
-
-#define PIPE_ATOMIC "AROS OS atomic functions"
-
-#include <aros/atomic.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define p_atomic_set(_v, _i) (*(_v) = (_i))
-#define p_atomic_read(_v) (*(_v))
-
-static INLINE boolean
-p_atomic_dec_zero(int32_t *v)
-{
-   boolean n;
- 
-   /* FIXME: AROS needs an atomic decrement and return... */
-   Disable();
-   AROS_ATOMIC_DEC(*(LONG *)v);
-   n = (*v != 0) ? TRUE : FALSE;
-   Enable();
-
-   return n;
-}
-
-#define p_atomic_inc(_v) AROS_ATOMIC_INC(*(LONG *)_v)
-#define p_atomic_dec(_v) AROS_ATOMIC_DEC(*(LONG *)_v)
-
-static INLINE int32_t
-p_atomic_cmpxchg(int32_t *v, int32_t o, int32_t n)
-{
-	int32_t ret;
-
-	/* FIXME: AROS needs an atomic cmpxchg, using CAS.
-	 * However we can't do this if:
-	 *  a) We are on a 68000 or
-	 *  b) The 'v' points to Chip RAM (no r/m/w possible)
-	 *
-	 *  Settle for Disable()/Enable() for now.
-	 */
-	Disable();
-	if (*v == o)
-		*v = (n);
-	ret = *v;
-	Enable();
-
-	return ret;
-}
 
 #ifdef __cplusplus
 }

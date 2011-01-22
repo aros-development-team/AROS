@@ -13,7 +13,6 @@ enum _egl_platform_type {
    _EGL_PLATFORM_X11,
    _EGL_PLATFORM_DRM,
    _EGL_PLATFORM_FBDEV,
-   _EGL_PLATFORM_AROS,
 
    _EGL_NUM_PLATFORMS,
    _EGL_INVALID_PLATFORM = -1
@@ -41,6 +40,7 @@ struct _egl_resource
    /* which display the resource belongs to */
    _EGLDisplay *Display;
    EGLBoolean IsLinked;
+   EGLint RefCount;
 
    /* used to link resources of the same type */
    _EGLResource *Next;
@@ -163,7 +163,19 @@ _eglGetDisplayHandle(_EGLDisplay *dpy)
 
 
 extern void
-_eglLinkResource(_EGLResource *res, _EGLResourceType type, _EGLDisplay *dpy);
+_eglInitResource(_EGLResource *res, EGLint size, _EGLDisplay *dpy);
+
+
+PUBLIC void
+_eglGetResource(_EGLResource *res);
+
+
+PUBLIC EGLBoolean
+_eglPutResource(_EGLResource *res);
+
+
+extern void
+_eglLinkResource(_EGLResource *res, _EGLResourceType type);
 
 
 extern void

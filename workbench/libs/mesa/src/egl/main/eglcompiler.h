@@ -7,7 +7,6 @@
  */
 #if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L)
 #  include <stdint.h>
-#  include <stddef.h>
 #elif defined(_MSC_VER)
    typedef __int8             int8_t;
    typedef unsigned __int8    uint8_t;

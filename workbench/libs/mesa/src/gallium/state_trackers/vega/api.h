@@ -33,10 +33,7 @@
 #include "VG/vgext.h"
 #include "vg_manager.h"
 
-/* declare the prototypes */
-#define MAPI_ABI_ENTRY(ret, name, params) \
-   ret VG_API_ENTRY vega ## name params;
-#include "vgapi/vgapi_tmp.h"
+#include "api_tmp.h"
 
 struct mapi_table;
 
@@ -47,10 +44,5 @@ void api_destroy_dispatch(struct mapi_table *tbl);
 void api_make_dispatch_current(const struct mapi_table *tbl);
 
 st_proc_t api_get_proc_address(const char *proc_name);
-
-#if defined(PIPE_OS_AROS)
-#include "vega/vgapim.h"
-#include "vega/vg_mangle.h"
-#endif
 
 #endif /* API_H */
