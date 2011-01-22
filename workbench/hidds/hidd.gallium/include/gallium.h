@@ -27,6 +27,14 @@
 #   include <gallium/util/u_simple_screen.h>
 #endif
 
+#ifndef PIPE_STATE_H
+#   include <gallium/pipe/p_state.h>
+#endif
+
+#ifndef GRAPHICS_RASTPORT_H
+#   include <graphics/rastport.h>
+#endif
+
 /* Gallium interface */
 #define CLID_Hidd_Gallium   "hidd.gallium"
 #define IID_Hidd_Gallium    "hidd.gallium"
@@ -67,32 +75,32 @@ struct pHidd_Gallium_CreatePipeScreen
 
 struct pHidd_Gallium_DisplaySurface
 {
-    OOP_MethodID    mID;
-    APTR            context;
-    APTR            rastport;
-    ULONG           left;
-    ULONG           top;
-    ULONG           width;
-    ULONG           height;
-    APTR            surface;
-    ULONG           absx;
-    ULONG           absy;
-    ULONG           relx;
-    ULONG           rely;
+    OOP_MethodID            mID;
+    APTR                    context;
+    struct RastPort         *rastport;
+    ULONG                   left;
+    ULONG                   top;
+    ULONG                   width;
+    ULONG                   height;
+    struct pipe_surface     *surface;
+    ULONG                   absx;
+    ULONG                   absy;
+    ULONG                   relx;
+    ULONG                   rely;
 };
 
 struct pHidd_Gallium_DisplayResource
 {
-    OOP_MethodID    mID;
-    APTR            resource;
-    ULONG           srcx;
-    ULONG           srcy;
+    OOP_MethodID            mID;
+    struct pipe_resource    *resource;
+    ULONG                   srcx;
+    ULONG                   srcy;
 
-    APTR            bitmap;
-    ULONG           dstx;
-    ULONG           dsty;
-    ULONG           width;
-    ULONG           height;
+    struct BitMap           *bitmap;
+    ULONG                   dstx;
+    ULONG                   dsty;
+    ULONG                   width;
+    ULONG                   height;
 };
 
 struct HIDDT_WinSys

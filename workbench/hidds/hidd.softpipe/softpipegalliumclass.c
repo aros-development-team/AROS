@@ -187,7 +187,7 @@ fail:
 
 VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplaySurface)
 {
-    struct pipe_surface * surf = (struct pipe_surface *)msg->surface;
+    struct pipe_surface * surf = msg->surface;
     struct softpipe_resource * spr = softpipe_resource(surf->texture);
     struct sw_winsys * swws = softpipe_screen(spr->base.screen)->winsys;
     struct RastPort * rp = CloneRastPort(msg->rastport);
