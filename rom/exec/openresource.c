@@ -28,7 +28,7 @@
 	name.  If this name can't be found NULL is returned.
 
     INPUTS
-	libName - Pointer to the resource's name.
+	resName - Pointer to the resource's name.
 
     RESULT
 	Pointer to resource or NULL.
