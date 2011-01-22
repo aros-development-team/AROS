@@ -43,6 +43,7 @@ enum
 {
     moHidd_Gallium_CreatePipeScreen = 0,
     moHidd_Gallium_DisplaySurface = 2,
+    moHidd_Gallium_DisplayResource,
 
     NUM_GALLIUM_METHODS
 };
@@ -74,6 +75,23 @@ struct pHidd_Gallium_DisplaySurface
     ULONG           width;
     ULONG           height;
     APTR            surface;
+    ULONG           absx;
+    ULONG           absy;
+    ULONG           relx;
+    ULONG           rely;
+};
+
+/* TODO: Use bitmap object instead of rast port. */
+/* TODO: Give only one set of coordinates - bitmap relative */
+struct pHidd_Gallium_DisplayResource
+{
+    OOP_MethodID    mID;
+    APTR            rastport;
+    ULONG           left;
+    ULONG           top;
+    ULONG           width;
+    ULONG           height;
+    APTR            resource;
     ULONG           absx;
     ULONG           absy;
     ULONG           relx;

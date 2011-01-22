@@ -49,3 +49,8 @@ VOID METHOD(Gallium, Hidd_Gallium, DisplaySurface)
     bug("[gallium.hidd] Abstract DisplaySurface called\n");
 }
 
+VOID METHOD(Gallium, Hidd_Gallium, DisplayResource)
+{
+    bug("[gallium.hidd] Abstract DisplaySurface called\n");
+}
+
