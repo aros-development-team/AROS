@@ -106,7 +106,7 @@ _GLAPI_EXPORT extern const void *_glapi_Context;
 #endif
 
 #define GET_DISPATCH() _glapi_get_dispatch()
-#define GET_CURRENT_CONTEXT(C)  GLcontext *C = (GLcontext *) _glapi_get_context()
+#define GET_CURRENT_CONTEXT(C)  struct gl_context *C = (struct gl_context *) _glapi_get_context()
 
 #else
 

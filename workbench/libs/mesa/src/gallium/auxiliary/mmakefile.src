@@ -12,6 +12,7 @@ GALLIUM_AUXILIARY_SOURCES = \
             cso_cache/cso_context \
             cso_cache/cso_hash \
             draw/draw_context \
+            draw/draw_fs \
             draw/draw_gs \
             draw/draw_pipe \
             draw/draw_pipe_aaline \
@@ -130,7 +131,6 @@ GALLIUM_AUXILIARY_SOURCES = \
             util/u_linkage \
             util/u_network \
             util/u_math \
-            util/u_mempool \
             util/u_mm \
             util/u_rect \
             util/u_ringbuffer \

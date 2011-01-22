@@ -11703,7 +11703,7 @@ AROS_LH3(void, glProgramParameter4fvNV,
 AROS_LH4(void, glProgramParameters4dvNV,
     AROS_LHA(GLenum, target, D0),
     AROS_LHA(GLuint, index, D1),
-    AROS_LHA(GLuint, count, D2),
+    AROS_LHA(GLsizei, count, D2),
     AROS_LHA(const GLdouble *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
@@ -11717,7 +11717,7 @@ AROS_LH4(void, glProgramParameters4dvNV,
 AROS_LH4(void, glProgramParameters4fvNV,
     AROS_LHA(GLenum, target, D0),
     AROS_LHA(GLuint, index, D1),
-    AROS_LHA(GLuint, count, D2),
+    AROS_LHA(GLsizei, count, D2),
     AROS_LHA(const GLfloat *, v, A0),
     struct Library *, MesaBase, 0, Mesa)
 {
@@ -13712,6 +13712,1330 @@ AROS_LH2(void, glEGLImageTargetRenderbufferStorageOES,
     AROS_LIBFUNC_INIT
 
     mglEGLImageTargetRenderbufferStorageOES(target, image);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glColorMaski,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLboolean, r, D1),
+    AROS_LHA(GLboolean, g, D2),
+    AROS_LHA(GLboolean, b, D3),
+    AROS_LHA(GLboolean, a, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglColorMaski(index, r, g, b, a);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetBooleani_v,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLboolean *, data, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetBooleani_v(target, index, data);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetIntegeri_v,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLint *, data, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetIntegeri_v(target, index, data);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glEnablei,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglEnablei(target, index);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glDisablei,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglDisablei(target, index);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(GLboolean, glIsEnabledi,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    GLboolean _return = mglIsEnabledi(target, index);
+
+    return _return;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glClampColor,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, clamp, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglClampColor(target, clamp);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glBeginConditionalRender,
+    AROS_LHA(GLuint, id, D0),
+    AROS_LHA(GLenum, mode, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglBeginConditionalRender(id, mode);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(void, glEndConditionalRender,
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglEndConditionalRender();
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glVertexAttribIPointer,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, size, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(GLsizei, stride, D3),
+    AROS_LHA(const GLvoid *, pointer, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribIPointer(index, size, type, stride, pointer);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetVertexAttribIiv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetVertexAttribIiv(index, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetVertexAttribIuiv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLuint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetVertexAttribIuiv(index, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI1i,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, x, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI1i(index, x);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glVertexAttribI2i,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, x, D1),
+    AROS_LHA(GLint, y, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI2i(index, x, y);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glVertexAttribI3i,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, x, D1),
+    AROS_LHA(GLint, y, D2),
+    AROS_LHA(GLint, z, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI3i(index, x, y, z);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glVertexAttribI4i,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, x, D1),
+    AROS_LHA(GLint, y, D2),
+    AROS_LHA(GLint, z, D3),
+    AROS_LHA(GLint, w, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4i(index, x, y, z, w);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI1ui,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, x, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI1ui(index, x);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glVertexAttribI2ui,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, x, D1),
+    AROS_LHA(GLuint, y, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI2ui(index, x, y);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glVertexAttribI3ui,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, x, D1),
+    AROS_LHA(GLuint, y, D2),
+    AROS_LHA(GLuint, z, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI3ui(index, x, y, z);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glVertexAttribI4ui,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, x, D1),
+    AROS_LHA(GLuint, y, D2),
+    AROS_LHA(GLuint, z, D3),
+    AROS_LHA(GLuint, w, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4ui(index, x, y, z, w);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI1iv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI1iv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI2iv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI2iv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI3iv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI3iv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4iv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4iv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI1uiv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI1uiv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI2uiv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI2uiv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI3uiv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI3uiv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4uiv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4uiv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4bv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLbyte *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4bv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4sv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4sv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4ubv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLubyte *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4ubv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4usv,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLushort *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4usv(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetUniformuiv,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLint, location, D1),
+    AROS_LHA(GLuint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetUniformuiv(program, location, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glBindFragDataLocation,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, color, D1),
+    AROS_LHA(const GLchar *, name, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglBindFragDataLocation(program, color, name);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(GLint, glGetFragDataLocation,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(const GLchar *, name, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    GLint _return = mglGetFragDataLocation(program, name);
+
+    return _return;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glUniform1ui,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLuint, v0, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform1ui(location, v0);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform2ui,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLuint, v0, D1),
+    AROS_LHA(GLuint, v1, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform2ui(location, v0, v1);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glUniform3ui,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLuint, v0, D1),
+    AROS_LHA(GLuint, v1, D2),
+    AROS_LHA(GLuint, v2, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform3ui(location, v0, v1, v2);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glUniform4ui,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLuint, v0, D1),
+    AROS_LHA(GLuint, v1, D2),
+    AROS_LHA(GLuint, v2, D3),
+    AROS_LHA(GLuint, v3, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform4ui(location, v0, v1, v2, v3);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform1uiv,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform1uiv(location, count, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform2uiv,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform2uiv(location, count, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform3uiv,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform3uiv(location, count, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform4uiv,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform4uiv(location, count, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glTexParameterIiv,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(const GLint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglTexParameterIiv(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glTexParameterIuiv,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(const GLuint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglTexParameterIuiv(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetTexParameterIiv,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetTexParameterIiv(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetTexParameterIuiv,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLuint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetTexParameterIuiv(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glClearBufferiv,
+    AROS_LHA(GLenum, buffer, D0),
+    AROS_LHA(GLint, drawbuffer, D1),
+    AROS_LHA(const GLint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglClearBufferiv(buffer, drawbuffer, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glClearBufferuiv,
+    AROS_LHA(GLenum, buffer, D0),
+    AROS_LHA(GLint, drawbuffer, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglClearBufferuiv(buffer, drawbuffer, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glClearBufferfv,
+    AROS_LHA(GLenum, buffer, D0),
+    AROS_LHA(GLint, drawbuffer, D1),
+    AROS_LHA(const GLfloat *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglClearBufferfv(buffer, drawbuffer, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glClearBufferfi,
+    AROS_LHA(GLenum, buffer, D0),
+    AROS_LHA(GLint, drawbuffer, D1),
+    AROS_LHA(GLfloat, depth, D2),
+    AROS_LHA(GLint, stencil, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglClearBufferfi(buffer, drawbuffer, depth, stencil);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(const GLubyte *, glGetStringi,
+    AROS_LHA(GLenum, name, D0),
+    AROS_LHA(GLuint, index, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    const GLubyte * _return = mglGetStringi(name, index);
+
+    return _return;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glTexBuffer,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, internalformat, D1),
+    AROS_LHA(GLuint, buffer, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglTexBuffer(target, internalformat, buffer);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(void, glPrimitiveRestartIndex,
+    AROS_LHA(GLuint, index, D0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglPrimitiveRestartIndex(index);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetInteger64i_v,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLuint, index, D1),
+    AROS_LHA(GLint64 *, data, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetInteger64i_v(target, index, data);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetBufferParameteri64v,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint64 *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetBufferParameteri64v(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glFramebufferTexture,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, attachment, D1),
+    AROS_LHA(GLuint, texture, D2),
+    AROS_LHA(GLint, level, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglFramebufferTexture(target, attachment, texture, level);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribDivisor,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, divisor, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribDivisor(index, divisor);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(void, glPrimitiveRestartNV,
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglPrimitiveRestartNV();
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(void, glPrimitiveRestartIndexNV,
+    AROS_LHA(GLuint, index, D0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglPrimitiveRestartIndexNV(index);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI1iEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, x, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI1iEXT(index, x);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glVertexAttribI2iEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, x, D1),
+    AROS_LHA(GLint, y, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI2iEXT(index, x, y);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glVertexAttribI3iEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, x, D1),
+    AROS_LHA(GLint, y, D2),
+    AROS_LHA(GLint, z, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI3iEXT(index, x, y, z);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glVertexAttribI4iEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, x, D1),
+    AROS_LHA(GLint, y, D2),
+    AROS_LHA(GLint, z, D3),
+    AROS_LHA(GLint, w, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4iEXT(index, x, y, z, w);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI1uiEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, x, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI1uiEXT(index, x);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glVertexAttribI2uiEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, x, D1),
+    AROS_LHA(GLuint, y, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI2uiEXT(index, x, y);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glVertexAttribI3uiEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, x, D1),
+    AROS_LHA(GLuint, y, D2),
+    AROS_LHA(GLuint, z, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI3uiEXT(index, x, y, z);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glVertexAttribI4uiEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLuint, x, D1),
+    AROS_LHA(GLuint, y, D2),
+    AROS_LHA(GLuint, z, D3),
+    AROS_LHA(GLuint, w, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4uiEXT(index, x, y, z, w);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI1ivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI1ivEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI2ivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI2ivEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI3ivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI3ivEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4ivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4ivEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI1uivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI1uivEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI2uivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI2uivEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI3uivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI3uivEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4uivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLuint *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4uivEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4bvEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLbyte *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4bvEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4svEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLshort *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4svEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4ubvEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLubyte *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4ubvEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glVertexAttribI4usvEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(const GLushort *, v, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribI4usvEXT(index, v);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glVertexAttribIPointerEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLint, size, D1),
+    AROS_LHA(GLenum, type, D2),
+    AROS_LHA(GLsizei, stride, D3),
+    AROS_LHA(const GLvoid *, pointer, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglVertexAttribIPointerEXT(index, size, type, stride, pointer);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetVertexAttribIivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetVertexAttribIivEXT(index, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetVertexAttribIuivEXT,
+    AROS_LHA(GLuint, index, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLuint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetVertexAttribIuivEXT(index, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetUniformuivEXT,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLint, location, D1),
+    AROS_LHA(GLuint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetUniformuivEXT(program, location, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glBindFragDataLocationEXT,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(GLuint, color, D1),
+    AROS_LHA(const GLchar *, name, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglBindFragDataLocationEXT(program, color, name);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(GLint, glGetFragDataLocationEXT,
+    AROS_LHA(GLuint, program, D0),
+    AROS_LHA(const GLchar *, name, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    GLint _return = mglGetFragDataLocationEXT(program, name);
+
+    return _return;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glUniform1uiEXT,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLuint, v0, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform1uiEXT(location, v0);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform2uiEXT,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLuint, v0, D1),
+    AROS_LHA(GLuint, v1, D2),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform2uiEXT(location, v0, v1);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glUniform3uiEXT,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLuint, v0, D1),
+    AROS_LHA(GLuint, v1, D2),
+    AROS_LHA(GLuint, v2, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform3uiEXT(location, v0, v1, v2);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH5(void, glUniform4uiEXT,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLuint, v0, D1),
+    AROS_LHA(GLuint, v1, D2),
+    AROS_LHA(GLuint, v2, D3),
+    AROS_LHA(GLuint, v3, D4),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform4uiEXT(location, v0, v1, v2, v3);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform1uivEXT,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform1uivEXT(location, count, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform2uivEXT,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform2uivEXT(location, count, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform3uivEXT,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform3uivEXT(location, count, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glUniform4uivEXT,
+    AROS_LHA(GLint, location, D0),
+    AROS_LHA(GLsizei, count, D1),
+    AROS_LHA(const GLuint *, value, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUniform4uivEXT(location, count, value);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glTexParameterIivEXT,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(const GLint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglTexParameterIivEXT(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glTexParameterIuivEXT,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(const GLuint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglTexParameterIuivEXT(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetTexParameterIivEXT,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetTexParameterIivEXT(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(void, glGetTexParameterIuivEXT,
+    AROS_LHA(GLenum, target, D0),
+    AROS_LHA(GLenum, pname, D1),
+    AROS_LHA(GLuint *, params, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglGetTexParameterIuivEXT(target, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glClearColorIiEXT,
+    AROS_LHA(GLint, red, D0),
+    AROS_LHA(GLint, green, D1),
+    AROS_LHA(GLint, blue, D2),
+    AROS_LHA(GLint, alpha, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglClearColorIiEXT(red, green, blue, alpha);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void, glClearColorIuiEXT,
+    AROS_LHA(GLuint, red, D0),
+    AROS_LHA(GLuint, green, D1),
+    AROS_LHA(GLuint, blue, D2),
+    AROS_LHA(GLuint, alpha, D3),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglClearColorIuiEXT(red, green, blue, alpha);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(void, glUseShaderProgramEXT,
+    AROS_LHA(GLenum, type, D0),
+    AROS_LHA(GLuint, program, D1),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglUseShaderProgramEXT(type, program);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(void, glActiveProgramEXT,
+    AROS_LHA(GLuint, program, D0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    mglActiveProgramEXT(program);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(GLuint, glCreateShaderProgramEXT,
+    AROS_LHA(GLenum, type, D0),
+    AROS_LHA(const GLchar *, string, A0),
+    struct Library *, MesaBase, 0, Mesa)
+{
+    AROS_LIBFUNC_INIT
+
+    GLuint _return = mglCreateShaderProgramEXT(type, string);
+
+    return _return;
 
     AROS_LIBFUNC_EXIT
 }
