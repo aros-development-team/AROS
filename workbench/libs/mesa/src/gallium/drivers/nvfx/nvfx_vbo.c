@@ -247,6 +247,7 @@ boolean
 nvfx_vbo_validate(struct nvfx_context *nvfx)
 {
 	struct nouveau_channel* chan = nvfx->screen->base.channel;
+	struct nouveau_grobj *eng3d = nvfx->screen->eng3d;
 	int i;
 	int elements = MAX2(nvfx->vtxelt->num_elements, nvfx->hw_vtxelt_nr);
 	unsigned vb_flags = nvfx->screen->vertex_buffer_reloc_flags | NOUVEAU_BO_RD;
@@ -262,11 +263,11 @@ nvfx_vbo_validate(struct nvfx_context *nvfx)
 		struct nvfx_buffer* buffer = nvfx_buffer(vb->buffer);
 		float v[4];
 		ve->fetch_rgba_float(v, buffer->data + vb->buffer_offset + ve->src_offset, 0, 0);
-		nvfx_emit_vtx_attr(chan, ve->idx, v, ve->ncomp);
+		nvfx_emit_vtx_attr(chan, eng3d, ve->idx, v, ve->ncomp);
 	}
 
 
-	OUT_RING(chan, RING_3D(NV30_3D_VTXFMT(0), elements));
+	BEGIN_RING(chan, eng3d, NV30_3D_VTXFMT(0), elements);
 	if(nvfx->use_vertex_buffers)
 	{
 		unsigned idx = 0;
@@ -297,12 +298,12 @@ nvfx_vbo_validate(struct nvfx_context *nvfx)
 		unsigned i;
 		/* seems to be some kind of cache flushing */
 		for(i = 0; i < 3; ++i) {
-			OUT_RING(chan, RING_3D(0x1718, 1));
+			BEGIN_RING(chan, eng3d, 0x1718, 1);
 			OUT_RING(chan, 0);
 		}
 	}
 
-	OUT_RING(chan, RING_3D(NV30_3D_VTXBUF(0), elements));
+	BEGIN_RING(chan, eng3d, NV30_3D_VTXBUF(0), elements);
 	if(nvfx->use_vertex_buffers)
 	{
 		unsigned idx = 0;
@@ -330,7 +331,7 @@ nvfx_vbo_validate(struct nvfx_context *nvfx)
 			OUT_RING(chan, 0);
 	}
 
-	OUT_RING(chan, RING_3D(0x1710, 1));
+	BEGIN_RING(chan, eng3d, 0x1710, 1);
 	OUT_RING(chan, 0);
 
 	nvfx->hw_vtxelt_nr = nvfx->vtxelt->num_elements;
@@ -342,15 +343,14 @@ void
 nvfx_vbo_swtnl_validate(struct nvfx_context *nvfx)
 {
 	struct nouveau_channel* chan = nvfx->screen->base.channel;
+	struct nouveau_grobj *eng3d = nvfx->screen->eng3d;
 	unsigned num_outputs = nvfx->vertprog->draw_elements;
 	int elements = MAX2(num_outputs, nvfx->hw_vtxelt_nr);
 
 	if (!elements)
 		return;
 
-	WAIT_RING(chan, (1 + 6 + 1 + 2) + elements * 2);
-
-	OUT_RING(chan, RING_3D(NV30_3D_VTXFMT(0), elements));
+	BEGIN_RING(chan, eng3d, NV30_3D_VTXFMT(0), elements);
 	for(unsigned i = 0; i < num_outputs; ++i)
 		OUT_RING(chan, (4 << NV30_3D_VTXFMT_SIZE__SHIFT) | NV30_3D_VTXFMT_TYPE_V32_FLOAT);
 	for(unsigned i = num_outputs; i < elements; ++i)
@@ -360,16 +360,16 @@ nvfx_vbo_swtnl_validate(struct nvfx_context *nvfx)
 		unsigned i;
 		/* seems to be some kind of cache flushing */
 		for(i = 0; i < 3; ++i) {
-			OUT_RING(chan, RING_3D(0x1718, 1));
+			BEGIN_RING(chan, eng3d, 0x1718, 1);
 			OUT_RING(chan, 0);
 		}
 	}
 
-	OUT_RING(chan, RING_3D(NV30_3D_VTXBUF(0), elements));
+	BEGIN_RING(chan, eng3d, NV30_3D_VTXBUF(0), elements);
 	for (unsigned i = 0; i < elements; i++)
 		OUT_RING(chan, 0);
 
-	OUT_RING(chan, RING_3D(0x1710, 1));
+	BEGIN_RING(chan, eng3d, 0x1710, 1);
 	OUT_RING(chan, 0);
 
 	nvfx->hw_vtxelt_nr = num_outputs;
