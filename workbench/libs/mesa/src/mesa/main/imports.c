@@ -458,7 +458,7 @@ _mesa_inv_sqrtf(float n)
 int
 _mesa_ffs(int32_t i)
 {
-#if (defined(_WIN32) ) || defined(__IBMC__) || defined(__IBMCPP__)
+#if (defined(_WIN32) ) || defined(__IBMC__) || defined(__IBMCPP__) || defined(__AROS__)
    register int bit = 0;
    if (i != 0) {
       if ((i & 0xffff) == 0) {
@@ -521,7 +521,8 @@ _mesa_ffsll(int64_t val)
 unsigned int
 _mesa_bitcount(unsigned int n)
 {
-#if defined(__GNUC__) && \
+/* AROS: don't use __builtin_popcount */
+#if !defined(__AROS__) && defined(__GNUC__) && \
 	((_GNUC__ == 3 && __GNUC_MINOR__ >= 4) || __GNUC__ >= 4)
    return __builtin_popcount(n);
 #else

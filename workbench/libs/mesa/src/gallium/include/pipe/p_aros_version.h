@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,6 +28,6 @@
     each gallium hidd driver client.
 */
 
-#define GALLIUM_INTERFACE_VERSION   3
+#define GALLIUM_INTERFACE_VERSION   4
 
 #endif

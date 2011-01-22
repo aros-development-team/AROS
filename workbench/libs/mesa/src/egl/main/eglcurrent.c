@@ -80,6 +80,35 @@ static INLINE EGLBoolean _eglInitTSD(void (*dtor)(_EGLThreadInfo *))
    return EGL_TRUE;
 }
 
+#elif defined(_EGL_OS_AROS)
+
+#include "aros/tls.h"
+
+static struct TaskLocalStorage * tls = NULL;
+
+static INLINE void _eglSetTSD(const _EGLThreadInfo *t)
+{
+    InsertIntoTLS(tls, (APTR)t);
+}
+
+static INLINE _EGLThreadInfo *_eglGetTSD(void)
+{
+    return (_EGLThreadInfo *)GetFromTLS(tls);
+}
+
+static INLINE EGLBoolean _eglInitTSD(void (*dtor)(_EGLThreadInfo *))
+{
+    /* FIXME: What to do with dtor? */
+    /* FIXME: atexit -> clear from TLS */
+    if (!tls)
+        tls = CreateTLS();
+
+    if (tls)
+        return EGL_TRUE;
+    else
+        return EGL_FALSE;
+}
+
 #else /* PTHREADS */
 static const _EGLThreadInfo *_egl_TSD;
 static void (*_egl_FreeTSD)(_EGLThreadInfo *);

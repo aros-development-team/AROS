@@ -98,6 +98,14 @@ typedef Window   EGLNativeWindowType;
 
 #endif /* MESA_EGL_NO_X11_HEADERS */
 
+#elif defined(__AROS__)
+
+#include <intuition/intuition.h>
+
+typedef APTR            EGLNativeDisplayType;
+typedef struct Bitmap   *EGLNativePixmapType;
+typedef struct Window   *EGLNativeWindowType;
+
 #else
 #error "Platform not recognized"
 #endif
