@@ -45,12 +45,16 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   BPTR last_p = 0;
   UBYTE *overlaytable = NULL;
   ULONG tmp, req;
+  LONG dummy;
 #if DEBUG
   static STRPTR segtypes[] = { "CODE", "DATA", "BSS", };
 #endif
 
 
-  LONG *error=&((struct Process *)FindTask(NULL))->pr_Result2;
+  LONG *error = &dummy;
+  
+  if (DOSBase)
+    error =&((struct Process *)FindTask(NULL))->pr_Result2;
 
   curhunk = 0; /* keep GCC quiet */
   /* start point is HUNK_HEADER + 4 */
@@ -351,6 +355,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       {
         D(bug("HUNK_END\n"));
         ++curhunk;
+        if (curhunk >= numhunks)
+          goto done;
       }
       break;
 
@@ -473,7 +479,8 @@ static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, str
     subsize = loadseg_read((SIPTR*)funcarray[0], file, buf, size, DOSBase);
     if(subsize==0)
     {
-      ((struct Process *)FindTask(NULL))->pr_Result2=ERROR_BAD_HUNK;
+      if (DOSBase)
+      	((struct Process *)FindTask(NULL))->pr_Result2=ERROR_BAD_HUNK;
       return 1;
     }
 
