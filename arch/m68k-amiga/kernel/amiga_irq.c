@@ -282,10 +282,12 @@ static BOOL Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
 static BOOL Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
 {
     /* Paula IRQ  13 - CIA-B & IRQ6
+     *            14 - INTEN (manually setting INTEN bit in INTREQ triggers it)
      */
-    PAULA_IRQ_CHECK(INTF_EXTER);
+    PAULA_IRQ_CHECK(INTF_EXTER | INTF_INTEN);
 
     PAULA_IRQ_HANDLE(INTB_EXTER);
+    PAULA_IRQ_HANDLE(INTB_INTEN);
 
     PAULA_IRQ_ACK();
 
