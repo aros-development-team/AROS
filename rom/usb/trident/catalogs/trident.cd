@@ -1,0 +1,739 @@
+;
+MSG_APP_TITLE (//)
+Trident
+;
+MSG_APP_VERSION (//)
+4.3 (27-May-09)
+;
+MSG_APP_DESC (//)
+Poseidon USB Stack GUI
+;
+MSG_MENU_PROJECT (//)
+Project
+;
+MSG_MENU_ABOUT (//)
+About...
+;
+MSG_MENU_ABOUTMUI (//)
+About MUI...
+;
+MSG_MENU_HELP (//)
+Help
+;
+MSG_MENU_ONLINE (//)
+Online
+;
+MSG_MENU_SC_ONLINE (//)
+O
+;
+MSG_MENU_OFFLINE (//)
+Offline
+;
+MSG_MENU_SC_OFFLINE (//)
+F
+;
+MSG_MENU_ICONIFY (//)
+Iconify
+;
+MSG_MENU_SC_ICONIFY (//)
+H
+;
+MSG_MENU_QUIT (//)
+Quit
+;
+MSG_MENU_SC_QUIT (//)
+Q
+;
+MSG_MENU_INFO (//)
+Information
+;
+MSG_MENU_SAVELOG (//)
+Save error log...
+;
+MSG_MENU_FLUSH(//)
+Flush errors
+;
+MSG_MENU_SAVEDEV (//)
+Save device list...
+;
+MSG_MENU_SETTINGS (//)
+Settings
+;
+MSG_MENU_LOAD (//)
+Load...
+;
+MSG_MENU_SC_LOAD (//)
+L
+;
+MSG_MENU_SAVE (//)
+Save
+;
+MSG_MENU_SC_SAVE (//)
+S
+;
+MSG_MENU_SAVEAS (//)
+Save as...
+;
+MSG_MENU_SC_SAVEAS (//)
+A
+;
+MSG_MENU_MUISETTINGS (//)
+MUI Settings
+;
+MSG_MENU_SC_MUISETTINGS (//)
+M
+;
+MSG_WINDOW_TITLE (//)
+Trident 4.3
+;
+MSG_MAINPANEL_GENERAL (//)
+General
+;
+MSG_MAINPANEL_CONTROLLERS (//)
+Controllers
+;
+MSG_MAINPANEL_DEVICES (//)
+Devices
+;
+MSG_MAINPANEL_CLASSES (//)
+Classes
+;
+MSG_MAINPANEL_OPTIONS (//)
+Options
+;
+MSG_MAINPANEL_POPUPS (//)
+Popups
+;
+MSG_MAINPANEL_CONFIG (//)
+Config
+;
+MSG_ERRLVL_ALL (//)
+All messages
+;
+MSG_ERRLVL_WARNINGS (//)
+Warning and worse
+;
+MSG_ERRLVL_ERRORS (//)
+Errors and failures
+;
+MSG_ERRLVL_FAILURES (//)
+Failures only
+;
+MSG_POPUP_NEVER (//)
+Never open a popup window! Bah!
+;
+MSG_POPUP_ERROR (//)
+Only popup on an error condition
+;
+MSG_POPUP_UNKNOWN (//)
+Popup on new, unknown devices
+;
+MSG_POPUP_NOBINDING (//)
+Popup, if there is no binding
+;
+MSG_POPUP_NOCONFIG (//)
+Popup, if there is no config yet
+;
+MSG_POPUP_CONFIGCLASS (//)
+Popup on configurable class
+;
+MSG_POPUP_BINDING (//)
+Popup, regardless of binding
+;
+MSG_POPUP_ALWAYS (//)
+Always immediately annoy me
+;
+MSG_PANEL_GENERAL_LABEL1 (//)
+\33cTrident V4.3 Graphical User Interface
+;
+MSG_PANEL_GENERAL_LABEL2 (//)
+\33cfor the Poseidon USB Stack
+;
+MSG_PANEL_GENERAL_LABEL3 (//)
+\33cCopyright ©2002-2009 Chris Hodges
+;
+MSG_PANEL_GENERAL_LABEL4 (//)
+\33cAll rights reserved.
+;
+MSG_PANEL_GENERAL_LABEL5 (//)
+\33cMason Icons are\ncourtesy of Martin Merz.
+;
+MSG_PANEL_HARDWARE_LABEL1 (//)
+\33c\33bUSB Hardware Controllers available
+;
+MSG_PANEL_HARDWARE_CONTROLLER_HELP (//)
+This is the list of available hardware controllers.\nSeveral different controllers can be in the system at\nthe same time.\nTo add an entry, use the 'New' gadget at the bottom.\nYou need to manually set an hardware controller online\nthe first time you add the device.
+;
+MSG_PANEL_HARDWARE_LABEL2 (//)
+Device:
+;
+MSG_PANEL_HARDWARE_DEVICE_HELP (//)
+Give the name of the controller device\ndriver in this field. These devices are\nnormally stored in DEVS:USBHardware.
+;
+MSG_PANEL_HARDWARE_SELECT (//)
+Select USBHardware device...
+;
+MSG_PANEL_HARDWARE_UNIT (//)
+Unit:
+;
+MSG_PANEL_HARDWARE_UNIT_HELP (//)
+If there are multiple cards of the\nsame kind in your machine, enter\nthe unit number of the board here.
+;
+MSG_PANEL_HARDWARE_DRIVER_NEW (//)
+\33c New
+;
+MSG_PANEL_HARDWARE_DRIVER_NEW_HELP (//)
+Click here to create a\nnew hardware driver entry.
+;
+MSG_PANEL_HARDWARE_DRIVER_COPY (//)
+\33c Copy
+;
+MSG_PANEL_HARDWARE_DRIVER_COPY_HELP (//)
+Click here to copy the selected\nhardware driver entry.
+;
+MSG_PANEL_HARDWARE_DRIVER_DELETE (//)
+\33c Delete
+;
+MSG_PANEL_HARDWARE_DRIVER_DELETE_HELP (//)
+Click here to remove the selected entry.\nThe hardware will automatically go offline,\ntaking all its connected devices down.
+;
+MSG_PANEL_HARDWARE_DRIVER_ONLINE (//)
+\33c Online
+;
+MSG_PANEL_HARDWARE_DRIVER_ONLINE_HELP (//)
+Click here to activate an\nindividual hardware driver.
+;
+MSG_PANEL_HARDWARE_DRIVER_OFFLINE (//)
+\33c Offline
+;
+MSG_PANEL_HARDWARE_DRIVER_OFFLINE_HELP (//)
+Click here to deactivate an\nindividual hardware driver.
+;
+MSG_PANEL_HARDWARE_DRIVER_INFO (//)
+\33c Info
+;
+MSG_PANEL_HARDWARE_DRIVER_INFO_HELP (//)
+To get information on the device driver,\nclick here. The device needs to be online\nfor the information to be available.
+;
+MSG_PANEL_DEVICES_LABEL (//)
+\33c\33bUSB Devices in the system
+;
+MSG_PANEL_DEVICES_HELP (//)
+This is the list of USB devices (functions)\ncurrently in the system. It also shows the\ncurrently existing device or interface bindings.
+;
+MSG_PANEL_DEVICES_SCAN (//)
+\33c Class Scan
+;
+MSG_PANEL_DEVICES_SCAN_HELP (//)
+Clicking on this button will start a class scan. This means that\neach device will be examined if it matches some of the standard\nclasses in the system. In this case, a binding will be established\nand the functionality will be added to the system automatically.\n
+;
+MSG_PANEL_DEVICES_UNBIND (//)
+\33c Unbind
+;
+MSG_PANEL_DEVICES_UNBIND_HELP (//)
+Manually removes a binding. This can be\nuseful to temporarily deactivate a device.\nUse 'Class Scan' to reactivate the binding.
+;
+MSG_PANEL_DEVICES_INFO (//)
+\33c Information
+;
+MSG_PANEL_DEVICES_INFO_HELP (//)
+Opens a detailed information window.\nJust try it, nothing can go wrong.
+;
+MSG_PANEL_DEVICES_SETTINGS (//)
+\33c Settings
+;
+MSG_PANEL_DEVICES_SETTINGS_HELP (//)
+If there is a device binding and the class\nsupports a configuration GUI. Clicking on this\nbutton will open the preferences window.\n\nNote well, that the corrsponding button for the\ninterface binding settings can be found inside\nthe information window.
+;
+MSG_PANEL_DEVICES_SUSPEND (//)
+\33c Suspend
+;
+MSG_PANEL_DEVICES_SUSPEND_HELP (//)
+Sends device into power saving suspend mode.\nIf a class binding does not support suspend,\nthis button will do nothing.
+;
+MSG_PANEL_DEVICES_RESUME (//)
+\33c Resume
+;
+MSG_PANEL_DEVICES_RESUME_HELP (//)
+Resumes the device to full operation after\nit was placed into suspend mode.\n
+;
+MSG_PANEL_DEVICES_POWERCYCLE (//)
+\33c Powercycle
+;
+MSG_PANEL_DEVICES_POWERCYCLE_HELP (//)
+Power cycles the hub port and re-enumerates\ndevice. Comes handy to reactivate dead devices.\n
+;
+MSG_PANEL_DEVICES_DISABLE (//)
+\33c Disable
+;
+MSG_PANEL_DEVICES_DISABLE_HELP (//)
+Permanently powers off the port. It cannot be\nreactivated by unplugging/replugging the device.\n
+;
+MSG_POSEIDON_SHORTHELP (//)
+Poseidon (his latin name Neptune) the god of the sea\nand its inhabitants, and one of the Olympians, the son\nof Cronus and Rhea, brother of Zeus, Hades, Demeter,\nHera, Hestia. He was married to Amphitrite, a Nereid,\nand had by her the son Triton, a merman. Like other\nOlympians, had many love affairs (e.g. with Medusa)\nand numerous children (e.g. Pegasos).
+;
+MSG_PANEL_CLASSES (//)
+\33c\33bUSB Classes available
+;
+MSG_PANEL_CLASSES_HELP (//)
+This is the list of USB classes available.\nEach class is a software driver for a group of\nUSB devices. Classes can be manually added using\nthe 'Add' button or automatically with 'Dir Scan'.
+;
+MSG_PANEL_CLASSES_LABEL (//)
+Class library:
+;
+MSG_PANEL_CLASSES_LABEL_HELP (//)
+To manually add an usb class driver,\nenter its name here and click on 'Add'.
+;
+MSG_PANEL_CLASSES_SELECT (//)
+Select USB class library...
+;
+MSG_PANEL_CLASSES_ADD (//)
+\33cAdd
+;
+MSG_PANEL_CLASSES_ADD_HELP (//)
+To manually add an usb class\ndriver, enter its name above\nand click on this button.
+;
+MSG_PANEL_CLASSES_REMOVE (//)
+\33c Remove
+;
+MSG_PANEL_CLASSES_REMOVE_HELP (//)
+Click here to remove a class driver\nand all its current bindings.
+;
+MSG_PANEL_CLASSES_CONFIG (//)
+\33c Configure
+;
+MSG_PANEL_CLASSES_CONFIG_HELP (//)
+If a class driver supports some kind of\nconfiguration, click here and it will\nopen a configuration window of the class.
+;
+MSG_PANEL_CLASSES_SCAN (//)
+\33c Dir Scan
+;
+MSG_PANEL_CLASSES_SCAN_HELP (//)
+Automatically scans for class\ndrivers and\nadds all drivers found to the system.
+;
+MSG_PANEL_OPTIONS (//)
+\33c\33bVarious Settings
+;
+MSG_PANEL_OPTIONS_STACK (//)
+Stack Settings
+;
+MSG_PANEL_OPTIONS_PRIORITY (//)
+SubTask priority:
+;
+MSG_PANEL_OPTIONS_PRIORITY_HELP (//)
+Defines the task priority of all\nsubtasks started by Poseidon.
+;
+MSG_PANEL_OPTIONS_BOOT (//)
+Boot delay:
+;
+MSG_PANEL_OPTIONS_BOOT_HELP (//)
+If reset resident, this value defines,\nhow long Poseidon should wait for USB\ndevices to settle, allowing to boot from\nslow devices such as an USB CD drive.
+;
+MSG_PANEL_OPTIONS_BOOT_FORMAT (//)
+%ld sec.
+;
+MSG_PANEL_OPTIONS_DISABLELOW (//)
+Automatically disable hub port on low power conditions:
+;
+MSG_PANEL_OPTIONS_DISABLELOW_HELP (//)
+If a low power condition is detected at a port,\nselecting this switch will automatically turn off\nthe device causing the low power condition.
+;
+MSG_PANEL_OPTIONS_DISABLEDEAD (//)
+Automatically disable hub port, if device drops dead:
+;
+MSG_PANEL_OPTIONS_DISABLEDEAD_HELP (//)
+If a device drops dead (transfer timeouts),\nand this switch is selected, then the hub port\nwill be disabled automatically to avoid unnecessary\nperformance penalties.
+;
+MSG_PANEL_OPTIONS_POWERCYCLE (//)
+Automatically power cycle hub port, if device drops dead:
+;
+MSG_PANEL_OPTIONS_POWERCYCLE_HELP (//)
+If a device drops dead (transfer timeouts),\nand this switch is selected, then the hub port\nwill be reset automatically to try to revive the\ndevice. However, this can lead to nasty infinity loops.
+;
+MSG_PANEL_OPTIONS_POWERSAVE (//)
+Enable power-saving suspend mode:
+;
+MSG_PANEL_OPTIONS_POWERSAVE_HELP (//)
+Devices will be placed into suspend mode after\na specified interval of inactivity.\nPower consumption goes down to less than 1mA.\nResuming of operation usually takes place within 25ms.
+;
+MSG_PANEL_OPTIONS_FORCESUSPEND (//)
+Force suspend mode, even if not supported by class:
+;
+MSG_PANEL_OPTIONS_FORCESUSPEND_HELP (//)
+Class drivers should support going into suspend\nmode. If they don't, enabling this switch will\nsimply release the binding prior to suspending.\nThis is only performed on remote wakeup devices,\notherwise the class wouldn't rebind automatically.
+;
+MSG_PANEL_OPTIONS_INACTIVITY (//)
+Inactivity timeout for suspend:
+;
+MSG_PANEL_OPTIONS_INACTIVITY_HELP (//)
+Timeout before trying to place a device into\npower saving suspend mode.
+;
+MSG_PANEL_OPTIONS_INACTIVITY_FORMAT (//)
+%ld sec.
+;
+MSG_PANEL_OPTIONS_LOGGING (//)
+Logging Options
+;
+MSG_PANEL_OPTIONS_LOGGING_LABEL (//)
+Log info messages:
+;
+MSG_PANEL_OPTIONS_LOGGING_LABEL_HELP (//)
+Toggles logging of normal\ninformation messages.
+;
+MSG_PANEL_OPTIONS_LOGGING_WARN (//)
+Log warnings:
+;
+MSG_PANEL_OPTIONS_LOGGING_WARN_HELP (//)
+Toggles logging of warnings.
+;
+MSG_PANEL_OPTIONS_LOGGING_ERR (//)
+Log errors:
+;
+MSG_PANEL_OPTIONS_LOGGING_ERR_HELP (//)
+Toggles logging of errors.
+;
+MSG_PANEL_OPTIONS_LOGGING_FAIL (//)
+Log failures:
+;
+MSG_PANEL_OPTIONS_LOGGING_FAIL_HELP (//)
+Toggles logging of failures.
+;
+MSG_PANEL_OPTIONS_MEMORY (//)
+Memory allocated in Poseidon Pool:
+;
+MSG_PANEL_POPO (//)
+\33c\33bPopup Settings
+;
+MSG_PANEL_POPO_LABEL (//)
+Popup Window Options
+;
+MSG_PANEL_POPO_CONNECT  (//)
+On connecting:
+;
+MSG_PANEL_POPO_CONNECT_HELP (//)
+Popup display behaviour on\nconnecting new USB devices
+;
+MSG_PANEL_POPO_DISCONNECT (//)
+On disconnect:
+;
+MSG_PANEL_POPO_DISCONNECT_HELP (//)
+Whether to popup a window\nif the device is removed.
+;
+MSG_PANEL_POPO_DEATH (//)
+On device death:
+;
+MSG_PANEL_POPO_DEATH_HELP (//)
+Open a requester, if device seems to be dead.
+;
+MSG_PANEL_POPO_DELAY (//)
+Popup delay:
+;
+MSG_PANEL_POPO_DELAY_HELP (//)
+How long should the requester be displayed\nbefore disappearing automatically.
+;
+MSG_PANEL_POPO_DELAY_FORMAT (//)
+%ld sec.
+;
+MSG_PANEL_POPO_ACTIVATE (//)
+Activate window:
+;
+MSG_PANEL_POPO_ACTIVATE_HELP (//)
+Make the window active when opening.
+;
+MSG_PANEL_POPO_TOFRONT (//)
+Pop to front:
+;
+MSG_PANEL_POPO_TOFRONT_HELP (//)
+Pop window to front, if content changes.
+;
+MSG_PANEL_POPO_CONSOUND (//)
+Connection sound:
+;
+MSG_PANEL_POPO_CONSOUND_HELP (//)
+This sound will be replayed everytime\na device is connected to the bus.
+;
+MSG_PANEL_POPO_CONSOUND_SELECT (//)
+Select a sound file to be replayed...
+;
+MSG_PANEL_POPO_DISCONSOUND (//)
+Disconnect sound:
+;
+MSG_PANEL_POPO_DISCONSOUND_HELP (//)
+This sound will be replayed everytime\na device is removed from the bus.
+;
+MSG_PANEL_POPO_DISCONSOUND_SELECT (//)
+Select a sound file to be replayed...
+;
+MSG_PANEL_CONFIG (//)
+\33c\33bConfiguration management (Use drag & drop)
+;
+MSG_PANEL_CONFIG_HELP (//)
+In this box you can see all the preferences that are\nsaved along the prefs file in ENVARC:.\nYou can use this panel to delete or export prefs.\n\nUse drag & drop to copy or replace preferences.\n
+;
+MSG_PANEL_CONFIG_SAVEAS (//)
+\33c Save as
+;
+MSG_PANEL_CONFIG_SAVEAS_HELP (//)
+Save all the prefs under given name\nfor reloading it later.
+;
+MSG_PANEL_CONFIG_EXPORT (//)
+\33c Export
+;
+MSG_PANEL_CONFIG_EXPORT_HELP (//)
+Allows you to save a selected entry\nto reload it later.
+;
+MSG_PANEL_CONFIG_IMPORT (//)
+\33c Import
+;
+MSG_PANEL_CONFIG_IMPORT_HELP (//)
+Imports a previously saved piece of prefs.
+;
+MSG_PANEL_CONFIG_REMOVE (//)
+\33c Remove
+;
+MSG_PANEL_CONFIG_REMOVE_HELP (//)
+Deletes the selected prefs entry.
+;
+MSG_PANEL_CONFIG_MSGLOG (//)
+Message Log
+;
+MSG_PANEL_CONFIG_INFLVL (//)
+Information level:
+;
+MSG_PANEL_CONFIG_INFLVL_HELP (//)
+This gadget determines the amount and\ntype of messages shown below.
+;
+MSG_PANEL_CONFIG_LOGSAVE (//)
+\33c Save to disk
+;
+MSG_PANEL_CONFIG_LOGSAVE_HELP (//)
+To generate a logfile of the errors,\ne.g. to send the information to me\nfor bug reporting or help.
+;
+MSG_PANEL_CONFIG_LOGFLUSH (//)
+\33c Flush all
+;
+MSG_PANEL_CONFIG_LOGFLUSH_HELP (//)
+Clicking on this button will remove all\nthe messages in the stack. There's no way\nto get them back.
+;
+MSG_PANEL_CONFIG_LOGHELP (//)
+These are the messages of the Poseidon stack\ngenerated so far. If you want to clear this list\njust click on the 'Flush all messages' button.
+;
+MSG_PANEL_CONFIG_ALLONLINE (//)
+\33c All Online
+;
+MSG_PANEL_CONFIG_ALLONLINE_HELP (//)
+Start all USB hardware device drivers that\nhave been entered in the 'Hardware' panel.\nMoreover, the found devices will be checked\nfor possible bindings.
+;
+MSG_PANEL_CONFIG_ALLOFFLINE (//)
+\33c All Offline
+;
+MSG_PANEL_CONFIG_ALLOFFLINE_HELP (//)
+Using 'Offline' you can take down all the USB\nhardware device drivers.\nThis totally halts the stack.
+;
+MSG_PANEL_CONFIG_RESTART (//)
+\33c Restart
+;
+MSG_PANEL_CONFIG_RESTART_HELP (//)
+Clicking on 'Restart' will stop and restart\nall hardware device drivers.
+;
+MSG_PANEL_CONFIG_SAVE (//)
+\33c Save
+;
+MSG_PANEL_CONFIG_SAVE_HELP (//)
+To save your current prefs to disk, click\non this button. The configuration will be\nstored in both ENVARC: and\n ENV:.
+;
+MSG_PANEL_CONFIG_USE (//)
+\33c Use
+;
+MSG_PANEL_CONFIG_USE_HELP (//)
+To use, but not permanently save your prefs\nclick this button. The configuration will be\nstored in ENV:.
+;
+MSG_UNKNOWN (//)
+unknown
+;
+MSG_HARDWARE_WINDOW (//)
+Hardware driver information window
+;
+MSG_HARDWARE_WINDOW_HELP (//)
+These fields show some general information\non the USB hardware driver.
+;
+MSG_HARDWARE_WINDOW_FRAME (//)
+General USB hardware driver information
+;
+MSG_HARDWARE_WINDOW_LABEL (//)
+Device:\nUnit:\nVersion:\nProduct:\nManufacturer:\nDescription:\nCopyright:
+;
+MSG_ACTION_SAVE_ERR (//)
+Select file to save errors to...
+;
+MSG_ACTION_SAVE_ERR_FILE (//)
+Errors.log
+;
+MSG_ACTION_ERR_SAVED (//)
+Error log saved to file %s.
+;
+MSG_ACTION_ERR_SAVED_ERRWRITE (//)
+Error opening file %s for writing.
+;
+MSG_ACTION_SAVE_DEV (//)
+Select file to save device list to...
+;
+MSG_ACTION_SAVE_DEV_FILE (//)
+DevList.log
+;
+MSG_ACTION_SAVE_DEV_ERREXE (//)
+Error executing PsdDevLister
+;
+MSG_ACTION_DEV_SAVED (//)
+DevLister saved to %s.
+;
+MSG_ACTION_PREFS_LOAD (//)
+Select a Poseidon Prefs file...
+;
+MSG_ACTION_PREFS_LOADED (//)
+Config loaded from %s.
+;
+MSG_ACTION_PREFS_SAVEAS (//)
+Select file to save prefs to...
+;
+MSG_ACTION_PREFS_SAVED (//)
+Configuration successfully saved to %s.
+;
+MSG_ACTION_PREFS_SAVEDERR (//)
+Couldn't save config to %s.
+;
+MSG_ACTION_PREFS_NOTSAVED (//)
+Config not saved!
+;
+MSG_ACTION_PREFS_SAVEDSUCCESS (//)
+Configuration successfully saved.
+;
+MSG_ACTION_USEQUIT (//)
+Use|Save|Cancel
+;
+MSG_ACTION_CONFIGCHANGED (//)
+The current configuration has been changed\nand not been saved yet.
+;
+MSG_ACTION_SAVEQUIT (//)
+Couldn't save config.
+;
+MSG_ACTION_DEV_FORCEBIND_NONE (//)
+None
+;
+MSG_ACTION_DEV_FORCE_REQ (//)
+I'm not dumb!|I'll reconsider
+;
+MSG_ACTION_DEV_FORCE_REQ_TXT (//)
+You are about to establish a forced \33bdevice\33n\nbinding. This is not an interface binding. As\nmost people are not capable of reading the\nmanual and they cause more harm than good.\nPlease make sure you know, what you're doing\nand not breaking things (and then bugger me with\nsilly emails).
+;
+MSG_ACTION_DEV_FORCE (//)
+Forcing device binding of %s to %s.
+;
+MSG_ACTION_DEV_FORCE_REMOVE (//)
+Removed forced device binding of %s.
+;
+MSG_ACTION_CFG_REMOVE (//)
+Remove|Cancel
+;
+MSG_ACTION_CFG_REMOVE_HELP (//)
+You are about to \33bremove\33n the configuration\ndata related to the device with the ID\n\33b%s\33n.\nThis includes all individually saved class\nsetting for the device or interfaces, as well\nas the stuff Trident saves (such as custom name or\npopup inhibit).\n\nAre you sure you want to remove these prefs?
+;
+MSG_ACTION_CFG_REMOVE_DEFAULT (//)
+You are about to \33bremove\33n the (default)\nconfiguration of the class \33b%s\33n.\nThis will set the classes initial prefs to the\ninternal defaults \33bon next boot\33n!\nIt does normally not affect the device or interface\nindividually saved settings.\n\nAre you sure you want to remove these prefs?
+;
+MSG_ACTION_CFG_REMOVE_CLASS (//)
+You are about to \33bremove\33n the class\nconfiguration of the class \33b%s\33n,\nspecifically saved for device with ID\n\33b%s\33n.\n\nAre you sure you want to remove these prefs?
+;
+MSG_ACTION_CFG_REMOVE_CLASS_DEF (//)
+You are about to \33bremove\33n the class\nconfiguration of the class \33b%s\33n\nsaved for the particular interface\n\33b%s\33n of the device with ID\n\33b%s\33n.\n\nAre you sure you want to remove these prefs?
+;
+MSG_ACTION_CFG_REMOVE_UNKNOWN (//)
+Do you really want to remove this\n\33bunknown prefs data\33n from the preferences?
+;
+MSG_ACTION_MEMPOOL_FORMAT (//)
+%ld KB
+;
+MSG_ACTION_CFG_EXPORT (//)
+Select file to export prefs to...
+;
+MSG_ACTION_CFG_PREFS_FILE (//)
+unknown.prefs
+;
+MSG_ACTION_STACKCFG_FILE (//)
+stackcfg.prefs
+;
+MSG_ACTION_DEVICECFG_FILE (//)
+devicecfg.prefs
+;
+MSG_ACTION_CLASSCFG_FILE (//)
+classcfg.prefs
+;
+MSG_ACTION_DEVCFGDATA_FILE (//)
+devclscfg.prefs
+;
+MSG_ACTION_IFCFGDATA_FILE (//)
+ifclscfg.prefs
+;
+MSG_ACTION_CFG_FAIL (//)
+Failed to open file %s.
+;
+MSG_ACTION_CFG_IMPORT (//)
+Select file to import prefs from...
+;
+MSG_ACTION_CFGDATA_OOPS (//)
+Oops!
+;
+MSG_ACTION_CFGDATA_OOPS_HELP (//)
+To import device or interface\nprefs data, you need to select\nthe device entry where it should be added.
+;
+MSG_ACTION_CFGDATA_ERR (//)
+I don't know that kind of prefs file.
+;
+MSG_ACTION_CFGDATA_ERR_READ (//)
+Read error on loading prefs file %s.
+;
+MSG_ACTION_CFGDATA_ERR_ALLOC (//)
+Failed to allocate buffer for loading %s.
+;
+MSG_ACTION_CFGDATA_ERR_IFF (//)
+%s does not seem to be an iff file.
+;
+MSG_ACTION_CFGDATA_ERR_OPEN (//)
+Failed to open file %s.
+;
+MSG_APPLYDRAGACTION_DEVICECFG (//)
+Replace|Merge|Cancel
+;
+MSG_APPLYDRAGACTION_DEVICECFG_HELP (//)
+Do you want to \33breplace\33n or \33bmerge\33n the prefs of\n\33b%s\33n\nwith the contents from\n\33b%s\33n?
+;
+MSG_APPLYDRAGACTION_DEVCFGDATA (//)
+Add to device|Cancel
+;
+MSG_APPLYDRAGACTION_DEVCFGDATA_HELP (//)
+Sorry, but only prefs of the same owner can\nbe replaced.\n\nDo you wish to add this prefs\nto the device instead?
+;
+MSG_APPLYDRAGACTION_DEVCFGDATA_REPLACE (//)
+Replace|Cancel
+;
+MSG_APPLYDRAGACTION_DEVCFGDATA_REPLACE_HELP (//)
+Do you want to \33breplace\33n the prefs of\n\33b%s\33n\nby those of\n\33b%s\33n?
+;
+MSG_APPLYDRAGACTION_DEVICECFG_REPLACE (//)
+Replace|Cancel
+;
+MSG_APPLYDRAGACTION_DEVICECFG_REPLACE_HELP (//)
+Do you want to \33breplace\33n the prefs of\n\33b%s\33n\nby the one in\n\33b%s\33n?
+;
+MSG_APPLYDRAGACTION_DEVICECFG_ADD (//)
+Add|Cancel
+;
+MSG_APPLYDRAGACTION_DEVICECFG_ADD_HELP (//)
+Do you want to \33badd\33n the prefs of\n\33b%s\33n\nto the device\n\33b%s\33n?
+;
+MSG_CFGLISTDISPATCHER_OOPS (//)
+Oops!
+;
+MSG_CFGLISTDISPATCHER_OOPS_HELP (//)
+Sorry, drag'n drop operation to\nthat target is not supported.
+;
