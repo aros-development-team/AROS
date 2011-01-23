@@ -1,0 +1,11 @@
+# Copyright © 2004-2008, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 36497 2011-01-11 10:22:01Z olivieradam $
+
+include $(TOP)/config/make.cfg
+
+ICONS := def_PSD
+
+#MM- kernel-usb-trident : kernel-usb-trident-icons
+
+%build_icons mmake=kernel-usb-trident-icons icons=$(ICONS) \
+             dir=$(AROS_ENVARC)/SYS
