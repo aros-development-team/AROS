@@ -56,12 +56,27 @@ struct FileSysReader
     struct FileSysNode *fsn;
 };
 
-/* We can't use InternalLoadSeg() because DOS isn't initialized at this point */
-extern BPTR InternalLoadSeg_AOS(BPTR fh,
+/* We can't use InternalLoadSeg() because DOS isn't initialized
+ * at this point. To allow this to be built as a relocatable
+ * library, we provide a dummy weak alias here, which will
+ * be overridden when linking the ROM image.
+ */
+static BPTR _InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
                          SIPTR * funcarray,
                          SIPTR * stack,
-                         struct Library * DOSBase);
+                         struct Library * DOSBase)
+{
+	return BNULL;
+}
+
+BPTR InternalLoadSeg_AOS(BPTR fh,
+                         BPTR table,
+                         SIPTR * funcarray,
+                         SIPTR * stack,
+                         struct Library * DOSBase)
+	__attribute__((weak, alias("_InternalLoadSeg_AOS")));
+
 
 static AROS_UFH4(LONG, ReadFunc,
 	AROS_UFHA(BPTR, file,   D1),
