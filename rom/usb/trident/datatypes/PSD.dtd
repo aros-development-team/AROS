@@ -1,0 +1,9 @@
+# DataType Description for Poseidon PRefs
+Name=PSD
+Version=$VER: PSD 1.0 (23.01.2011)
+BaseName=psd
+Pattern=#?
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'P' 'S' 'L' 'C'
+GroupID=bina
+Flags=DTF_IFF
+Priority=0

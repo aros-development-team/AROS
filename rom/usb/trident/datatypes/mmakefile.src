@@ -1,0 +1,27 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 36496 2011-01-11 10:19:54Z olivieradam $
+
+include $(TOP)/config/make.cfg
+
+DTDIR 		:= $(AROS_DEVS)/DataTypes
+FILES 		:= PSD
+
+DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
+
+#MM- kernel-usb-trident : kernel-usb-trident-datatypes
+#MM kernel-usb-trident-datatypes : kernel-usb-trident-datatypes-setup
+
+#MM
+kernel-usb-trident-datatypes : $(DTFILES)
+
+#MM
+kernel-usb-trident-datatypes-quick : kernel-usb-trident-datatypes
+
+#MM kernel-usb-trident-datatypes-setup :
+%rule_makedirs dirs=$(DTDIR) setuptarget=kernel-usb-trident-datatypes-setup
+
+$(DTDIR)/% : $(SRCDIR)/$(CURDIR)/%.dtd
+	cd $(DTDIR) && $(CREATEDTDESC) $<
+	
+%common
+
