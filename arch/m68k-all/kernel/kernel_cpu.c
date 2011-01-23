@@ -40,7 +40,12 @@ void cpu_Switch(regs_t *regs)
     struct AROSCPUContext *ctx = GetIntETask(task)->iet_Context;
 
     /* Actually save the context */
-    CopyMem(regs, ctx, sizeof(regs_t));
+    CopyMem(regs, &ctx->cpu, sizeof(regs_t));
+
+    /* If we have an FPU, save the FPU context */
+    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40 | AFF_68060))
+    	    AROS_UFC1(void, FpuSaveContext,
+    	    		    AROS_UFCA(struct FpuContext *, &ctx->fpu, A0));
 
     /* Update tc_SPReg */
     task->tc_SPReg = (APTR)regs->a[7];
@@ -70,8 +75,13 @@ void cpu_Dispatch(regs_t *regs)
     }
 
     ctx = GetIntETask(task)->iet_Context;
-    CopyMem(ctx, regs, sizeof(regs_t));
+    CopyMem(&ctx->cpu, regs, sizeof(regs_t));
     regs->a[7] = (IPTR)task->tc_SPReg;
+
+    /* If we have an FPU, restore the FPU context */
+    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40 | AFF_68060))
+    	    AROS_UFC1(void, FpuRestoreContext,
+    	    		    AROS_UFCA(struct FpuContext *, &ctx->fpu, A0));
 
     /* Re-enable interrupts if needed */
     if (SysBase->IDNestCnt < 0)

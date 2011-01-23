@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES=m68k_exception kernel_cpu
 
-AFILES=issuper
+AFILES=issuper fpusavecontext fpurestorecontext
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-arch/kernel \
                -I$(SRCDIR)/arch/$(CPU)-all/kernel \
