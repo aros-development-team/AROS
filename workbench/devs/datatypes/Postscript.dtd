@@ -2,7 +2,8 @@
 Name=Postscript
 Version=$VER: Postscript 1.0 (9.12.2006)
 BaseName=postscript
-Pattern=#?.(ps|eps)
+Pattern=#?
+Mask=0x25 0x21 0x50 0x53
 GroupID=text
 ID=post
 Flags=DTF_ASCII

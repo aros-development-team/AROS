@@ -1,8 +1,9 @@
 # DataType Description for OGG
 Name=OGG
-Version=$VER: OGG 1.0 (23.02.2009)
+Version=$VER: OGG 1.1 (23.01.2011)
 BaseName=ogg
-Pattern=#?.ogg
+Pattern=#?
+Mask=0x4F 0x67 0x67 0x53 0x00 0x02
 GroupID=musi
 ID=ogg
 Flags=DTF_BINARY,DTF_CASE

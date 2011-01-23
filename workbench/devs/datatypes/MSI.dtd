@@ -1,0 +1,9 @@
+Name=MSI
+Version=$VER MSI 1.0 (23.01.2011)
+BaseName=binary
+Pattern=#?
+Mask=0xD0 0xCF 0x11 0xE0 0xA1 0xB1 0x1A 0xE1
+GroupID=syst
+ID=msi
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
