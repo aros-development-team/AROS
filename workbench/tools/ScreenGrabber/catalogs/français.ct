@@ -1,4 +1,4 @@
-## version $VER: ScreenGrabber.catalog 1.0 (06.12.2004)
+## version $VER: ScreenGrabber.catalog 1.1 (23.01.2011)
 ## language français
 ## codeset 0
 ;
@@ -39,6 +39,44 @@ Sauver le fichier
 MSG_SCREENSHOT
 Capturer
 ;Screenshot
+;
 MSG_SCREEN_PARM
 %d x %d, profondeur=%d
 ;%d x %d, depth=%d
+;
+MSG_OVERWRITE
+Le fichier %s existe déjà.\nVoulez-vous vraiment l'écraser ?
+;File '%s' already exists.\nDo you really want to overwrite it?
+;
+MSG_ERROR_TITLE
+Screengrabber : Erreur
+;Screengrabber Error
+;
+MSG_GAD_OK
+_OK
+;_OK
+;
+MSG_GAD_YESNO
+OUI|NON
+;YES|NO
+;
+MSG_ERR_DATATYPE
+Impossible de créer le datatype objet !
+;Can't create datatype object!
+;
+MSG_NORAM
+Impossible d'allouer de la mémoire !
+;Can't allocate RAM!
+;
+MSG_ERR_DATATYPEIO
+L'écriture de '%s' a échoué avec une erreur d'entrée sortie %ld !
+;Writing of '%s' failed with IO Error %ld!
+;
+MSG_ERR_OPENFILE
+Impossible d'ouvrir le fichier '%s' en sortie !
+;Can't open file '%s' for output!
+;
+MSG_ERR_APP
+Impossible de créer l'objet application !
+;Can't create application object!
+;
