@@ -21,6 +21,7 @@
 #include "IconListClass.h"
 #include "DevWinClass.h"
 #include "CfgListClass.h"
+#include "locale.h"
 
 extern struct ExecBase *SysBase;
 extern struct Library *ps;
@@ -40,35 +41,35 @@ extern struct DosLibrary *DOSBase;
 /* /// "Some strings" */
 static STRPTR mainpanels[] =
 {
-    "General",
-    "Controllers",
-    "Devices",
-    "Classes",
-    "Options",
-    "Popups",
-    "Config",
+    NULL, //"General",
+    NULL,//"Controllers",
+    NULL, //"Devices",
+    NULL, //"Classes",
+    NULL, //"Options",
+    NULL, //"Popups",
+    NULL, //"Config",
     NULL
 };
 
 static STRPTR errlvlstrings[] =
 {
-    "All messages",
-    "Warnings and worse",
-    "Errors and failures",
-    "Failures only",
+    NULL, //"All messages",
+    NULL, //"Warnings and worse",
+    NULL, //"Errors and failures",
+    NULL, //"Failures only",
     NULL
 };
 
 static STRPTR popupnewdevicestrings[] =
 {
-    "Never open a popup window! Bah!",
-    "Only popup on an error condition",
-    "Popup on new, unknown devices",
-    "Popup, if there is no binding",
-    "Popup, if there is no config yet",
-    "Popup on configurable class",
-    "Popup, regardless of binding",
-    "Always immediately annoy me",
+    NULL, //"Never open a popup window! Bah!",
+    NULL, //"Only popup on an error condition",
+    NULL, //"Popup on new, unknown devices",
+    NULL, //"Popup, if there is no binding",
+    NULL, //"Popup, if there is no config yet",
+    NULL, //"Popup on configurable class",
+    NULL, //"Popup, regardless of binding",
+    NULL, //"Always immediately annoy me",
     NULL
 };
 /* \\\ */
@@ -472,18 +473,6 @@ static char *aimeelyrics[] =
     "\33r(Fiona Apple)  "
 
 };
-
-char poseidonshorthelp[] =
-{
-	"Poseidon (his latin name Neptune) the god of the sea\n"
-	"and its inhabitants, and one of the Olympians, the son\n"
-	"of Cronus and Rhea, brother of Zeus, Hades, Demeter,\n"
-	"Hera, Hestia. He was married to Amphitrite, a Nereid,\n"
-	"and had by her the son Triton, a merman. Like other\n"
-	"Olympians, had many love affairs (e.g. with Medusa)\n"
-	"and numerous children (e.g. Pegasos)."
-};
-/* \\\ */
 
 /* /// "HardwareListDisplayHook()" */
 AROS_UFH3(LONG, HardwareListDisplayHook,
@@ -1492,7 +1481,7 @@ void RecursePrefsForm(struct ActionData *data, ULONG *form, ULONG depth, STRPTR 
 void CreatePrefsList(struct ActionData *data)
 {
     struct PrefsListEntry *plnode;
-    IPTR oldpos;
+    IPTR oldpos = 0;
     IPTR oldhash = 0;
     IPTR currhash = 0;
 
@@ -2462,6 +2451,28 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
     APTR pd = NULL;
     struct DevListEntry *dlnode;
 
+    mainpanels[0] = _(MSG_MAINPANEL_GENERAL);
+    mainpanels[1] = _(MSG_MAINPANEL_CONTROLLERS);
+    mainpanels[2] = _(MSG_MAINPANEL_DEVICES);
+    mainpanels[3] = _(MSG_MAINPANEL_CLASSES);
+    mainpanels[4] = _(MSG_MAINPANEL_OPTIONS);
+    mainpanels[5] = _(MSG_MAINPANEL_POPUPS);
+    mainpanels[6] = _(MSG_MAINPANEL_CONFIG);
+
+    errlvlstrings[0] = _(MSG_ERRLVL_ALL);
+    errlvlstrings[1] = _(MSG_ERRLVL_WARNINGS);
+    errlvlstrings[2] = _(MSG_ERRLVL_ERRORS);
+    errlvlstrings[3] = _(MSG_ERRLVL_FAILURES);
+
+    popupnewdevicestrings[0] = _(MSG_POPUP_NEVER);
+    popupnewdevicestrings[1] = _(MSG_POPUP_ERROR);
+    popupnewdevicestrings[2] = _(MSG_POPUP_UNKNOWN);
+    popupnewdevicestrings[3] = _(MSG_POPUP_NOBINDING);
+    popupnewdevicestrings[4] = _(MSG_POPUP_NOCONFIG);
+    popupnewdevicestrings[5] = _(MSG_POPUP_CONFIGCLASS);
+    popupnewdevicestrings[6] = _(MSG_POPUP_BINDING);
+    popupnewdevicestrings[7] = _(MSG_POPUP_ALWAYS);
+
     if(!(obj = (Object *) DoSuperMethodA(cl, obj, msg)))
         return(0);
 
@@ -2530,7 +2541,7 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                     Child, HGroup,
                         Child, VGroup,
                             Child, BodychunkObject,
-                                MUIA_ShortHelp, poseidonshorthelp,
+                                MUIA_ShortHelp, __(MSG_POSEIDON_SHORTHELP),
                                 MUIA_Bitmap_SourceColors, neptune8_colors,
                                 MUIA_FixWidth, NEPTUNE8_WIDTH,
                                 MUIA_FixHeight, NEPTUNE8_HEIGHT,
@@ -2548,13 +2559,13 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                             End,
                         Child, VGroup,
                             Child, VSpace(0),
-                            Child, Label("\33cTrident V4.3 Graphical User Interface"),
-                            Child, Label("\33cfor the Poseidon USB Stack"),
+                            Child, Label(__(MSG_PANEL_GENERAL_LABEL1)),
+                            Child, Label(__(MSG_PANEL_GENERAL_LABEL2)),
                             Child, VSpace(20),
-                            Child, Label("\33cCopyright ©2002-2009 Chris Hodges"),
-                            Child, Label("\33cAll rights reserved."),
+                            Child, Label(__(MSG_PANEL_GENERAL_LABEL3)),
+                            Child, Label(__(MSG_PANEL_GENERAL_LABEL4)),
                             Child, VSpace(20),
-                            Child, Label("\33cMason Icons are\ncourtesy of Martin Merz."),
+                            Child, Label(__(MSG_PANEL_GENERAL_LABEL5)),
                             Child, VSpace(0),
                             End,
                         End,
@@ -2574,39 +2585,30 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
     /* Hardware panel */
     data->cfgcntobj[1] = VGroup,
         MUIA_HelpNode, "tridenthardware",
-        Child, Label("\33c\33bUSB Hardware Controllers available"),
+        Child, Label(__(MSG_PANEL_HARDWARE_LABEL1)),
         Child, ListviewObject,
             MUIA_CycleChain, 1,
-            MUIA_ShortHelp, "This is the list of available hardware controllers.\n"
-                            "Several different controllers can be in the system at\n"
-                            "the same time.\n"
-                            "To add an entry, use the 'New' gadget at the bottom.\n"
-                            "You need to manually set an hardware controller online\n"
-                            "the first time you add the device.",
+            MUIA_ShortHelp, __(MSG_PANEL_HARDWARE_CONTROLLER_HELP),
             MUIA_Listview_List, data->hwlistobj =
     NewObject(IconListClass->mcc_Class, 0, InputListFrame, MUIA_List_MinLineHeight, 16, MUIA_List_Format, "BAR,BAR,BAR,", MUIA_List_Title, TRUE, MUIA_List_DisplayHook, &data->HardwareDisplayHook, TAG_END),
             End,
         Child, data->hwdevgrpobj = HGroup,
             MUIA_Disabled, TRUE,
-            Child, Label("Device:"),
+            Child, Label(__(MSG_PANEL_HARDWARE_LABEL2)),
             Child, data->hwdevaslobj = PopaslObject,
                 MUIA_CycleChain, 1,
-                MUIA_ShortHelp, "Give the name of the controller device\n"
-                                "driver in this field. These devices are\n"
-                                "normally stored in DEVS:USBHardware.",
+                MUIA_ShortHelp, __(MSG_PANEL_HARDWARE_DEVICE_HELP),
                 MUIA_Popstring_String, data->hwdevobj = StringObject,
                     StringFrame,
                     MUIA_CycleChain, 1,
                     MUIA_String_AdvanceOnCR, TRUE,
                     End,
                 MUIA_Popstring_Button, PopButton(MUII_PopFile),
-                ASLFR_TitleText, "Select USBHardware device...",
+                ASLFR_TitleText, __(MSG_PANEL_HARDWARE_SELECT),
                 End,
             Child, Label("Unit:"),
             Child, data->hwunitobj = StringObject,
-                MUIA_ShortHelp, "If there are multiple cards of the\n"
-                                "same kind in your machine, enter\n"
-                                "the unit number of the board here.",
+                MUIA_ShortHelp, __(MSG_PANEL_HARDWARE_UNIT_HELP),
                 StringFrame,
                 MUIA_HorizWeight, 10,
                 MUIA_CycleChain, 1,
@@ -2617,86 +2619,45 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
             End,
         Child, ColGroup(3),
             MUIA_Group_SameWidth, TRUE,
-            Child, data->hwnewobj = MyTextObject("\33c New ",
-                                                 "Click here to create a\n"
-                                                 "new hardware driver entry."),
-            Child, data->hwcopyobj = MyTextObject("\33c Copy ",
-                                                  "Click here to copy the selected\n"
-                                                  "hardware driver entry."),
-            Child, data->hwdelobj = MyTextObject("\33c Delete ",
-                                                 "Click here to remove the selected entry.\n"
-                                                 "The hardware will automatically go offline,\n"
-                                                 "taking all its connected devices down."),
-            Child, data->hwonlineobj = MyTextObject("\33c Online ",
-                                                    "Click here to activate an\n"
-                                                    "individual hardware driver."),
-            Child, data->hwofflineobj = MyTextObject("\33c Offline ",
-                                                     "Click here to deactivate an\n"
-                                                     "individual hardware driver."),
-            Child, data->hwinfoobj = MyTextObject("\33c Info ",
-                                                  "To get information on the device driver,\n"
-                                                  "click here. The device needs to be online\n"
-                                                  "for the information to be available."),
+            Child, data->hwnewobj = MyTextObject(_(MSG_PANEL_HARDWARE_DRIVER_NEW),_(MSG_PANEL_HARDWARE_DRIVER_NEW_HELP)),
+            Child, data->hwcopyobj = MyTextObject(_(MSG_PANEL_HARDWARE_DRIVER_COPY),_(MSG_PANEL_HARDWARE_DRIVER_COPY_HELP)),
+            Child, data->hwdelobj = MyTextObject(_(MSG_PANEL_HARDWARE_DRIVER_DELETE),_(MSG_PANEL_HARDWARE_DRIVER_DELETE_HELP)),
+            Child, data->hwonlineobj = MyTextObject(_(MSG_PANEL_HARDWARE_DRIVER_ONLINE),_(MSG_PANEL_HARDWARE_DRIVER_ONLINE_HELP)),
+            Child, data->hwofflineobj = MyTextObject(_(MSG_PANEL_HARDWARE_DRIVER_OFFLINE),_(MSG_PANEL_HARDWARE_DRIVER_OFFLINE_HELP)),
+            Child, data->hwinfoobj = MyTextObject(_(MSG_PANEL_HARDWARE_DRIVER_INFO),_(MSG_PANEL_HARDWARE_DRIVER_INFO_HELP)),
             End,
         End;
 
     /* Devices panel */
     data->cfgcntobj[2] = VGroup,
         MUIA_HelpNode, "tridentdevices",
-        Child, Label("\33c\33bUSB Devices in the system"),
+        Child, Label(__(MSG_PANEL_DEVICES_LABEL)),
         Child, ListviewObject,
             MUIA_CycleChain, 1,
             MUIA_Listview_List, data->devlistobj =
-    NewObject(IconListClass->mcc_Class, 0, MUIA_ShortHelp, "This is the list of USB devices (functions)\ncurrently in the system. It also shows the\ncurrently existing device or interface bindings.", InputListFrame, MUIA_List_MinLineHeight, 16, MUIA_List_Format, "BAR,BAR,BAR,BAR,", MUIA_List_Title, TRUE, MUIA_List_DisplayHook, &data->DeviceDisplayHook, TAG_END),
+    NewObject(IconListClass->mcc_Class, 0, MUIA_ShortHelp, __(MSG_PANEL_DEVICES_HELP), InputListFrame, MUIA_List_MinLineHeight, 16, MUIA_List_Format, "BAR,BAR,BAR,BAR,", MUIA_List_Title, TRUE, MUIA_List_DisplayHook, &data->DeviceDisplayHook, TAG_END),
             End,
         Child, ColGroup(4),
             MUIA_Group_SameWidth, TRUE,
-            Child, data->devbindobj = MyTextObject("\33c Class Scan ",
-                                                   "Clicking on this button will start a class scan. This means that\n"
-                                                   "each device will be examined if it matches some of the standard\n"
-                                                   "classes in the system. In this case, a binding will be established\n"
-                                                   "and the functionality will be added to the system automatically.\n"),
-            Child, data->devunbindobj = MyTextObjectDisabled("\33c Unbind ",
-                                                             "Manually removes a binding. This can be\n"
-                                                             "useful to temporarily deactivate a device.\n"
-                                                             "Use 'Class Scan' to reactivate the binding."),
-            Child, data->devinfoobj = MyTextObject("\33c Information ",
-                                                   "Opens a detailed information window.\n"
-                                                   "Just try it, nothing can go wrong."),
-            Child, data->devcfgobj = MyTextObjectDisabled("\33c Settings ",
-                                                          "If there is a device binding and the class\n"
-                                                          "supports a configuration GUI. Clicking on this\n"
-                                                          "button will open the preferences window.\n\n"
-                                                          "Note well, that the corrsponding button for the\n"
-                                                          "interface binding settings can be found inside\n"
-                                                          "the information window."),
-            Child, data->devsuspendobj = MyTextObjectDisabled("\33c Suspend ",
-                                                              "Sends device into power saving suspend mode.\n"
-                                                              "If a class binding does not support suspend,\n"
-                                                              "this button will do nothing."),
-            Child, data->devresumeobj = MyTextObjectDisabled("\33c Resume ",
-                                                             "Resumes the device to full operation after\n"
-                                                             "it was placed into suspend mode.\n"),
-            Child, data->devpowercycleobj = MyTextObjectDisabled("\33c Powercycle ",
-                                                                 "Power cycles the hub port and re-enumerates\n"
-                                                                 "device. Comes handy to reactivate dead devices.\n"),
-            Child, data->devdisableobj = MyTextObjectDisabled("\33c Disable ",
-                                                              "Permanently powers off the port. It cannot be\n"
-                                                              "reactivated by unplugging/replugging the device.\n"),
+            Child, data->devbindobj = MyTextObject(_(MSG_PANEL_DEVICES_SCAN),_(MSG_PANEL_DEVICES_SCAN_HELP)),
+            Child, data->devunbindobj = MyTextObjectDisabled(_(MSG_PANEL_DEVICES_UNBIND),_(MSG_PANEL_DEVICES_UNBIND_HELP)),
+            Child, data->devinfoobj = MyTextObject(_(MSG_PANEL_DEVICES_INFO),_(MSG_PANEL_DEVICES_INFO_HELP)),
+            Child, data->devcfgobj = MyTextObjectDisabled(_(MSG_PANEL_DEVICES_SETTINGS),_(MSG_PANEL_DEVICES_SETTINGS_HELP)),
+            Child, data->devsuspendobj = MyTextObjectDisabled(_(MSG_PANEL_DEVICES_SUSPEND),_(MSG_PANEL_DEVICES_SUSPEND_HELP)),
+            Child, data->devresumeobj = MyTextObjectDisabled(_(MSG_PANEL_DEVICES_RESUME),_(MSG_PANEL_DEVICES_RESUME_HELP)),
+            Child, data->devpowercycleobj = MyTextObjectDisabled(_(MSG_PANEL_DEVICES_POWERCYCLE),_(MSG_PANEL_DEVICES_POWERCYCLE_HELP)),
+            Child, data->devdisableobj = MyTextObjectDisabled(_(MSG_PANEL_DEVICES_DISABLE),_(MSG_PANEL_DEVICES_DISABLE_HELP)),
             End,
         End;
 
     /* Classes panel */
     data->cfgcntobj[3] = VGroup,
         MUIA_HelpNode, "tridentclasses",
-        Child, Label("\33c\33bUSB Classes available"),
+        Child, Label(__(MSG_PANEL_CLASSES)),
         Child, data->clslistobj = ListviewObject,
             MUIA_CycleChain, 1,
             MUIA_Listview_List, ListObject,
-                MUIA_ShortHelp, "This is the list of USB classes available.\n"
-                                "Each class is a software driver for a group of\n"
-                                "USB devices. Classes can be manually added using\n"
-                                "the 'Add' button or automatically with 'Dir Scan'.",
+                MUIA_ShortHelp, __(MSG_PANEL_CLASSES_HELP),
                 InputListFrame,
                 MUIA_List_Format, "BAR,BAR,",
                 MUIA_List_Title, TRUE,
@@ -2704,11 +2665,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                 End,
             End,
         Child, HGroup,
-            Child, Label("Class library:"),
+            Child, Label(__(MSG_PANEL_CLASSES_LABEL)),
             Child, PopaslObject,
                 MUIA_CycleChain, 1,
-                MUIA_ShortHelp, "To manually add an usb class driver,\n"
-                                "enter its name here and click on 'Add'.",
+                MUIA_ShortHelp, __(MSG_PANEL_CLASSES_LABEL_HELP),
                 MUIA_Popstring_String, data->clsnameobj = StringObject,
                     StringFrame,
                     MUIA_CycleChain, 1,
@@ -2716,68 +2676,51 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                     MUIA_String_Contents, CLASSPATH "/",
                     End,
                 MUIA_Popstring_Button, PopButton(MUII_PopFile),
-                ASLFR_TitleText, "Select USB class library...",
+                ASLFR_TitleText, __(MSG_PANEL_CLASSES_SELECT),
                 End,
             End,
         Child, HGroup,
             MUIA_Group_SameWidth, TRUE,
-            Child, data->clsaddobj = MyTextObject("\33c Add ",
-                                                  "To manually add an usb class\n"
-                                                  "driver, enter its name above\n"
-                                                  "and click on this button."),
-            Child, data->clsremobj = MyTextObjectDisabled("\33c Remove ",
-                                                          "Click here to remove a class driver\n"
-                                                          "and all its current bindings."),
-            Child, data->clscfgobj = MyTextObjectDisabled("\33c Configure ",
-                                                          "If a class driver supports some kind of\n"
-                                                          "configuration, click here and it will\n"
-                                                          "open a configuration window of the class."),
-            Child, data->clsscanobj = MyTextObject("\33c Dir Scan ",
-                                                   "Automatically scans for class\n"
-                                                   "drivers in " CLASSPATH " and\n"
-                                                   "adds all drivers found to the system."),
+            Child, data->clsaddobj = MyTextObject(_(MSG_PANEL_CLASSES_ADD),_(MSG_PANEL_CLASSES_ADD_HELP)),
+            Child, data->clsremobj = MyTextObjectDisabled(_(MSG_PANEL_CLASSES_REMOVE),_(MSG_PANEL_CLASSES_REMOVE_HELP)),
+            Child, data->clscfgobj = MyTextObjectDisabled(_(MSG_PANEL_CLASSES_CONFIG),_(MSG_PANEL_CLASSES_CONFIG_HELP)),
+            Child, data->clsscanobj = MyTextObject(_(MSG_PANEL_CLASSES_SCAN),_(MSG_PANEL_CLASSES_SCAN_HELP)),
             End,
         End;
 
     /* Options panel */
     data->cfgcntobj[4] = VGroup,
         MUIA_HelpNode, "tridentoptions",
-        Child, Label("\33c\33bVarious Settings"),
+        Child, Label(__(MSG_PANEL_OPTIONS)),
         Child, VSpace(0),
-        Child, VGroup, GroupFrameT("Stack Settings"),
+        Child, VGroup, GroupFrameT(__(MSG_PANEL_OPTIONS_STACK)),
             Child, VSpace(0),
             Child, HGroup,
-                Child, Label("SubTask priority:"),
+                Child, Label(__(MSG_PANEL_OPTIONS_PRIORITY)),
                 Child, data->cfgtaskpriobj = SliderObject, SliderFrame,
-                    MUIA_ShortHelp, "Defines the task priority of all\n"
-                                    "subtasks started by Poseidon.",
+                    MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_PRIORITY_HELP),
                     MUIA_CycleChain, 1,
                     MUIA_Numeric_Min, 0,
                     MUIA_Numeric_Max, 127,
                     MUIA_Numeric_Value, subtaskpri,
                     End,
-                    Child, Label("Boot delay:"),
+                    Child, Label(__(MSG_PANEL_OPTIONS_BOOT)),
                     Child, data->cfgbootdelayobj = SliderObject, SliderFrame,
-                        MUIA_ShortHelp, "If reset resident, this value defines,\n"
-                                        "how long Poseidon should wait for USB\n"
-                                        "devices to settle, allowing to boot from\n"
-                                        "slow devices such as an USB CD drive.\n",
+                        MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_BOOT_HELP),
                         MUIA_CycleChain, 1,
                         MUIA_Numeric_Min, 0,
                         MUIA_Numeric_Max, 15,
                         MUIA_Numeric_Value, bootdelay,
-                        MUIA_Numeric_Format, "%ld sec.",
+                        MUIA_Numeric_Format,__(MSG_PANEL_OPTIONS_BOOT_FORMAT),
                         End,
                 End,
             Child, ColGroup(2),
                 Child, HGroup,
                     Child, HSpace(0),
-                    Child, Label("Automatically disable hub port on low power conditions:"),
+                    Child, Label(__(MSG_PANEL_OPTIONS_DISABLELOW)),
                     End,
                 Child, data->cfgautolpobj = ImageObject, ImageButtonFrame,
-                    MUIA_ShortHelp, "If a low power condition is detected at a port,\n"
-                                    "selecting this switch will automatically turn off\n"
-                                    "the device causing the low power condition.",
+                    MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_DISABLELOW_HELP),
                     MUIA_Background, MUII_ButtonBack,
                     MUIA_CycleChain, 1,
                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2788,13 +2731,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                     End,
                 Child, HGroup,
                     Child, HSpace(0),
-                    Child, Label("Automatically disable hub port, if device drops dead:"),
+                    Child, Label(__(MSG_PANEL_OPTIONS_DISABLEDEAD)),
                     End,
                 Child, data->cfgautodeadobj = ImageObject, ImageButtonFrame,
-                    MUIA_ShortHelp, "If a device drops dead (transfer timeouts),\n"
-                                    "and this switch is selected, then the hub port\n"
-                                    "will be disabled automatically to avoid unnecessary\n"
-                                    "performance penalties.",
+                    MUIA_ShortHelp,__(MSG_PANEL_OPTIONS_DISABLEDEAD_HELP),
                     MUIA_Background, MUII_ButtonBack,
                     MUIA_CycleChain, 1,
                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2806,13 +2746,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                     End,
                 Child, HGroup,
                     Child, HSpace(0),
-                    Child, Label("Automatically power cycle hub port, if device drops dead:"),
+                    Child, Label(__(MSG_PANEL_OPTIONS_POWERCYCLE)),
                     End,
                 Child, data->cfgautopcobj = ImageObject, ImageButtonFrame,
-                    MUIA_ShortHelp, "If a device drops dead (transfer timeouts),\n"
-                                    "and this switch is selected, then the hub port\n"
-                                    "will be reset automatically to try to revive the\n"
-                                    "device. However, this can lead to nasty infinity loops.",
+                    MUIA_ShortHelp,__(MSG_PANEL_OPTIONS_POWERCYCLE_HELP),
                     MUIA_Background, MUII_ButtonBack,
                     MUIA_CycleChain, 1,
                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2823,13 +2760,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                     End,
                 Child, HGroup,
                     Child, HSpace(0),
-                    Child, Label("Enable power-saving suspend mode:"),
+                    Child, Label(__(MSG_PANEL_OPTIONS_POWERSAVE)),
                     End,
                 Child, data->cfgpowersavingobj = ImageObject, ImageButtonFrame,
-                    MUIA_ShortHelp, "Devices will be placed into suspend mode after\n"
-                                    "a specified interval of inactivity.\n"
-                                    "Power consumption goes down to less than 1mA.\n"
-                                    "Resuming of operation usually takes place within 25ms.",
+                    MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_POWERSAVE_HELP),
                     MUIA_Background, MUII_ButtonBack,
                     MUIA_CycleChain, 1,
                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2840,14 +2774,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                     End,
                 Child, HGroup,
                     Child, HSpace(0),
-                    Child, Label("Force suspend mode, even if not supported by class:"),
+                    Child, Label(__(MSG_PANEL_OPTIONS_FORCESUSPEND)),
                     End,
                 Child, data->cfgforcesuspendobj = ImageObject, ImageButtonFrame,
-                    MUIA_ShortHelp, "Class drivers should support going into suspend\n"
-                                    "mode. If they don't, enabling this switch will\n"
-                                    "simply release the binding prior to suspending.\n"
-                                    "This is only performed on remote wakeup devices,\n"
-                                    "otherwise the class wouldn't rebind automatically.",
+                    MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_FORCESUSPEND_HELP),
                     MUIA_Background, MUII_ButtonBack,
                     MUIA_CycleChain, 1,
                     MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2858,32 +2788,30 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                     End,
                 End,
             Child, HGroup,
-                Child, Label("Inactivity timeout for suspend:"),
+                Child, Label(__(MSG_PANEL_OPTIONS_INACTIVITY)),
                 Child, data->cfgsuspendtimeoutobj = SliderObject, SliderFrame,
-                    MUIA_ShortHelp, "Timeout before trying to place a device into\n"
-                                    "power saving suspend mode.",
+                    MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_INACTIVITY_HELP),
                     MUIA_CycleChain, 1,
                     MUIA_Numeric_Min, 5,
                     MUIA_Numeric_Max, 600,
                     MUIA_Numeric_Value, suspendtimeout,
-                    MUIA_Numeric_Format, "%ld sec.",
+                    MUIA_Numeric_Format, __(MSG_PANEL_OPTIONS_INACTIVITY_FORMAT),
                     End,
                 End,
             Child, VSpace(0),
             End,
         Child, VSpace(0),
-        Child, VGroup, GroupFrameT("Logging Options"),
+        Child, VGroup, GroupFrameT(__(MSG_PANEL_OPTIONS_LOGGING)),
             Child, VSpace(0),
             Child, HGroup,
                 Child, HSpace(0),
                 Child, ColGroup(4),
                     Child, HGroup,
                         Child, HSpace(0),
-                        Child, Label("Log info messages:"),
+                        Child, Label(__(MSG_PANEL_OPTIONS_LOGGING_LABEL)),
                         End,
                     Child, data->cfgloginfoobj = ImageObject, ImageButtonFrame,
-                        MUIA_ShortHelp, "Toggles logging of normal\n"
-                                        "information messages.",
+                        MUIA_ShortHelp,__(MSG_PANEL_OPTIONS_LOGGING_LABEL_HELP),
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2894,10 +2822,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         End,
                     Child, HGroup,
                         Child, HSpace(0),
-                        Child, Label("Log warnings:"),
+                        Child, Label(__(MSG_PANEL_OPTIONS_LOGGING_WARN)),
                         End,
                     Child, data->cfglogwarnobj = ImageObject, ImageButtonFrame,
-                        MUIA_ShortHelp, "Toggles logging of warnings.",
+                        MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_LOGGING_WARN_HELP),
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2908,10 +2836,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         End,
                     Child, HGroup,
                         Child, HSpace(0),
-                        Child, Label("Log errors:"),
+                        Child, Label(__(MSG_PANEL_OPTIONS_LOGGING_ERR)),
                         End,
                     Child, data->cfglogerrobj = ImageObject, ImageButtonFrame,
-                        MUIA_ShortHelp, "Toggles logging of errors.",
+                        MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_LOGGING_ERR_HELP),
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2922,10 +2850,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         End,
                     Child, HGroup,
                         Child, HSpace(0),
-                        Child, Label("Log failures:"),
+                        Child, Label(__(MSG_PANEL_OPTIONS_LOGGING_FAIL)),
                         End,
                     Child, data->cfglogfailobj = ImageObject, ImageButtonFrame,
-                        MUIA_ShortHelp, "Toggles logging of failures.",
+                        MUIA_ShortHelp, __(MSG_PANEL_OPTIONS_LOGGING_FAIL_HELP),
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2942,7 +2870,7 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
         Child, VSpace(0),
         Child, HGroup,
             Child, HSpace(0),
-            Child, Label("Memory allocated in Poseidon Pool:"),
+            Child, Label(__(MSG_PANEL_OPTIONS_MEMORY)),
             Child, data->mempoolobj = TextObject,
                 MUIA_Text_Contents, "?",
                 End,
@@ -2953,26 +2881,24 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
     /* PoPo panel */
     data->cfgcntobj[5] = VGroup,
         MUIA_HelpNode, "tridentpopups",
-        Child, Label("\33c\33bPopup Settings"),
+        Child, Label(__(MSG_PANEL_POPO)),
         Child, VSpace(0),
-        Child, VGroup, GroupFrameT("Popup Window Options"),
+        Child, VGroup, GroupFrameT(__(MSG_PANEL_POPO_LABEL)),
             Child, VSpace(0),
             Child, ColGroup(2),
-                Child, Label("On connecting:"),
+                Child, Label(__(MSG_PANEL_POPO_CONNECT)),
                 Child, HGroup,
                     Child, data->cfgpopupnewobj = CycleObject,
-                        MUIA_ShortHelp, "Popup display behaviour on\n"
-                                        "connecting new USB devices",
+                        MUIA_ShortHelp, __(MSG_PANEL_POPO_CONNECT_HELP),
                         MUIA_CycleChain, 1,
                         MUIA_Cycle_Entries, popupnewdevicestrings,
                         MUIA_Cycle_Active, popupnew,
                         End,
                     End,
-                Child, Label("On disconnect:"),
+                Child, Label(__(MSG_PANEL_POPO_DISCONNECT)),
                 Child, HGroup,
                     Child, data->cfgpopupgoneobj = ImageObject, ImageButtonFrame,
-                        MUIA_ShortHelp, "Whether to popup a window\n"
-                                        "if the device is removed.",
+                        MUIA_ShortHelp, _(MSG_PANEL_POPO_DISCONNECT_HELP),
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2982,9 +2908,9 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         MUIA_ShowSelState, FALSE,
                         End,
                     Child, HSpace(0),
-                    Child, Label("On device death:"),
+                    Child, Label(__(MSG_PANEL_POPO_DEATH)),
                     Child, data->cfgpopupdeathobj = ImageObject, ImageButtonFrame,
-                        MUIA_ShortHelp, "Open a requester, if device seems to be dead.",
+                        MUIA_ShortHelp, __(MSG_PANEL_POPO_DEATH_HELP),
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -2994,20 +2920,19 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         MUIA_ShowSelState, FALSE,
                         End,
                     End,
-                Child, Label("Popup delay:"),
+                Child, Label(__(MSG_PANEL_POPO_DELAY)),
                 Child, data->cfgpopupdelayobj = SliderObject, SliderFrame,
-                    MUIA_ShortHelp, "How long should the requester be displayed\n"
-                                    "before disappearing automatically.",
+                    MUIA_ShortHelp, __(MSG_PANEL_POPO_DELAY_HELP),
                     MUIA_CycleChain, 1,
                     MUIA_Numeric_Min, 0,
                     MUIA_Numeric_Max, 25,
                     MUIA_Numeric_Value, popupdelay,
-                    MUIA_Numeric_Format, "%ld sec.",
+                    MUIA_Numeric_Format, __(MSG_PANEL_POPO_DELAY_FORMAT),
                     End,
-                Child, Label("Activate window:"),
+                Child, Label(__(MSG_PANEL_POPO_ACTIVATE)),
                 Child, HGroup,
                     Child, data->cfgpopupactivateobj = ImageObject, ImageButtonFrame,
-                        MUIA_ShortHelp, "Make the window active when opening.",
+                        MUIA_ShortHelp, __(MSG_PANEL_POPO_ACTIVATE_HELP),
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -3017,9 +2942,9 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         MUIA_ShowSelState, FALSE,
                         End,
                     Child, HSpace(0),
-                    Child, Label("Pop to front:"),
+                    Child, Label(__(MSG_PANEL_POPO_TOFRONT)),
                     Child, data->cfgpopuptofrontobj = ImageObject, ImageButtonFrame,
-                        MUIA_ShortHelp, "Pop window to front, if content changes.",
+                        MUIA_ShortHelp, __(MSG_PANEL_POPO_TOFRONT_HELP),
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
                         MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -3029,11 +2954,10 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         MUIA_ShowSelState, FALSE,
                         End,
                     End,
-                Child, Label("Connection sound:"),
+                Child, Label(__(MSG_PANEL_POPO_CONSOUND)),
                 Child, PopaslObject,
                     MUIA_CycleChain, 1,
-                    MUIA_ShortHelp, "This sound will be replayed everytime\n"
-                                    "a device is connected to the bus.",
+                    MUIA_ShortHelp, __(MSG_PANEL_POPO_CONSOUND_HELP),
                     MUIA_Popstring_String, data->cfgdevdtxsoundobj = StringObject,
                         StringFrame,
                         MUIA_CycleChain, 1,
@@ -3041,13 +2965,12 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         MUIA_String_Contents, devdtxsoundfile,
                         End,
                     MUIA_Popstring_Button, PopButton(MUII_PopFile),
-                    ASLFR_TitleText, "Select a sound file to be replayed...",
+                    ASLFR_TitleText, __(MSG_PANEL_POPO_CONSOUND_SELECT),
                     End,
-                Child, Label("Disconnect sound:"),
+                Child, Label(__(MSG_PANEL_POPO_DISCONSOUND)),
                 Child, PopaslObject,
                     MUIA_CycleChain, 1,
-                    MUIA_ShortHelp, "This sound will be replayed everytime\n"
-                                    "a device is removed from the bus.",
+                    MUIA_ShortHelp, __(MSG_PANEL_POPO_DISCONSOUND_HELP),
                     MUIA_Popstring_String, data->cfgdevremsoundobj = StringObject,
                         StringFrame,
                         MUIA_CycleChain, 1,
@@ -3055,7 +2978,7 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                         MUIA_String_Contents, devremsoundfile,
                         End,
                     MUIA_Popstring_Button, PopButton(MUII_PopFile),
-                    ASLFR_TitleText, "Select a sound file to be replayed...",
+                    ASLFR_TitleText, __(MSG_PANEL_POPO_DISCONSOUND_SELECT),
                     End,
                 End,
             Child, VSpace(0),
@@ -3066,29 +2989,20 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
     /* Configuration panel */
     data->cfgcntobj[6] = VGroup,
         MUIA_HelpNode, "tridentconfig",
-        Child, Label("\33c\33bConfiguration management (Use drag & drop)"),
+        Child, Label(__(MSG_PANEL_CONFIG)),
         Child, data->prefslistobj = ListviewObject,
             MUIA_CycleChain, 1,
-            MUIA_ShortHelp, "In this box you can see all the preferences that are\n"
-                            "saved along the prefs file (ENVARC:" STACKLOADER ").\n"
-                            "You can use this panel to delete or export prefs.\n\n"
-                            "Use drag & drop to copy or replace preferences.\n",
+            MUIA_ShortHelp, __(MSG_PANEL_CONFIG_HELP),
             MUIA_Listview_DragType, MUIV_Listview_DragType_Immediate,
             MUIA_Listview_List,
     NewObject(CfgListClass->mcc_Class, 0, InputListFrame, MUIA_List_Format, "BAR,BAR,BAR,", MUIA_List_Title, TRUE, MUIA_List_DisplayHook, &data->PrefsDisplayHook, MUIA_List_ShowDropMarks, TRUE, MUIA_List_AutoVisible, TRUE, TAG_END),
             End,
         Child, HGroup,
             MUIA_Group_SameWidth, TRUE,
-            Child, data->prefssaveasobj = MyTextObject("\33c Save as ",
-                                                       "Save all the prefs under given name\n"
-                                                       "for reloading it later."),
-            Child, data->prefsexportobj = MyTextObjectDisabled("\33c Export ",
-                                                               "Allows you to save a selected entry\n"
-                                                               "to reload it later."),
-            Child, data->prefsimportobj = MyTextObject("\33c Import ",
-                                                       "Imports a previously saved piece of prefs."),
-            Child, data->prefsremoveobj = MyTextObjectDisabled("\33c Remove ",
-                                                               "Deletes the selected prefs entry."),
+            Child, data->prefssaveasobj = MyTextObject(_(MSG_PANEL_CONFIG_SAVEAS),_(MSG_PANEL_CONFIG_SAVEAS_HELP)),
+            Child, data->prefsexportobj = MyTextObjectDisabled(_(MSG_PANEL_CONFIG_EXPORT),_(MSG_PANEL_CONFIG_EXPORT_HELP)),
+            Child, data->prefsimportobj = MyTextObject(_(MSG_PANEL_CONFIG_IMPORT),_(MSG_PANEL_CONFIG_IMPORT_HELP)),
+            Child, data->prefsremoveobj = MyTextObjectDisabled(_(MSG_PANEL_CONFIG_REMOVE),_(MSG_PANEL_CONFIG_REMOVE_HELP)),
             End,
         End;
 
@@ -3132,36 +3046,27 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
         Child, BalanceObject,
             MUIA_ObjectID, MAKE_ID('I','L','B','P'),
             End,
-        Child, VGroup, GroupFrameT("Message Log"),
+        Child, VGroup, GroupFrameT(__(MSG_PANEL_CONFIG_MSGLOG)),
             MUIA_VertWeight, 20,
             Child, HGroup,
-                Child, Label("Information level:"),
+                Child, Label(__(MSG_PANEL_CONFIG_INFLVL)),
                 Child, data->errlvlobj = CycleObject,
                     MUIA_CycleChain, 1,
-                    MUIA_ShortHelp, "This gadget determines the amount and\n"
-                                    "type of messages shown below.",
+                    MUIA_ShortHelp, __(MSG_PANEL_CONFIG_INFLVL_HELP),
                     MUIA_Cycle_Entries, errlvlstrings,
                     End,
                 Child, HSpace(0),
                 Child, HGroup,
                     MUIA_Group_SameWidth, TRUE,
-                    Child, data->errsaveobj = MyTextObject("\33c Save to disk ",
-                                                            "To generate a logfile of the errors,\n"
-                                                            "e.g. to send the information to me\n"
-                                                            "for bug reporting or help."),
-                    Child, data->errflushobj = MyTextObject("\33c Flush all ",
-                                                            "Clicking on this button will remove all\n"
-                                                            "the messages in the stack. There's no way\n"
-                                                            "to get them back."),
+                    Child, data->errsaveobj = MyTextObject(_(MSG_PANEL_CONFIG_LOGSAVE),_(MSG_PANEL_CONFIG_LOGSAVE_HELP)),
+                    Child, data->errflushobj = MyTextObject(_(MSG_PANEL_CONFIG_LOGFLUSH),_(MSG_PANEL_CONFIG_LOGFLUSH_HELP)),
                     End,
                 End,
             Child, data->errlistobj = ListviewObject,
                 MUIA_CycleChain, 1,
                 MUIA_Listview_Input, FALSE,
                 MUIA_Listview_List, ListObject,
-                    MUIA_ShortHelp, "These are the messages of the Poseidon stack\n"
-                                    "generated so far. If you want to clear this list\n"
-                                    "just click on the 'Flush all messages' button.",
+                    MUIA_ShortHelp, __(MSG_PANEL_CONFIG_LOGHELP),
                     ReadListFrame,
                     MUIA_List_Format, "BAR,BAR,BAR,",
                     MUIA_List_DisplayHook, &data->ErrorDisplayHook,
@@ -3170,28 +3075,12 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
             End,
         Child, HGroup,
             MUIA_Group_SameWidth, TRUE,
-            Child, data->onlineobj = MyTextObject( "\33c All Online ",
-                                                   "Start all USB hardware device drivers that\n"
-                                                   "have been entered in the 'Hardware' panel.\n"
-                                                   "Moreover, the found devices will be checked\n"
-                                                   "for possible bindings."),
-            Child, data->offlineobj = MyTextObject("\33c All Offline ",
-                                                   "Using 'Offline' you can take down all the USB\n"
-                                                   "hardware device drivers.\n"
-                                                   "This totally halts the stack."),
-            Child, data->restartobj = MyTextObject("\33c Restart ",
-                                                   "Clicking on 'Restart' will stop and restart\n"
-                                                   "all hardware device drivers.\n"),
+            Child, data->onlineobj = MyTextObject( _(MSG_PANEL_CONFIG_ALLONLINE),_(MSG_PANEL_CONFIG_ALLONLINE_HELP)),
+            Child, data->offlineobj = MyTextObject(_(MSG_PANEL_CONFIG_ALLOFFLINE),_(MSG_PANEL_CONFIG_ALLOFFLINE_HELP)),
+            Child, data->restartobj = MyTextObject(_(MSG_PANEL_CONFIG_RESTART),_(MSG_PANEL_CONFIG_RESTART_HELP)),
             Child, HSpace(0),
-            Child, data->saveobj = MyTextObject("\33c Save ",
-                                                "To save your current prefs to disk, click\n"
-                                                "on this buttion. The configuration will be\n"
-                                                "stored in both ENVARC:" STACKLOADER " and\n"
-                                                "ENV:" STACKLOADER "."),
-            Child, data->useobj = MyTextObject("\33c Use ", \
-                                                "To use, but not permanently save your prefs\n"
-                                                "click this button. The configuration will be\n"
-                                                "stored in ENV:" STACKLOADER "."),
+            Child, data->saveobj = MyTextObject(_(MSG_PANEL_CONFIG_SAVE),_(MSG_PANEL_CONFIG_SAVE_HELP)),
+            Child, data->useobj = MyTextObject(_(MSG_PANEL_CONFIG_USE),_(MSG_PANEL_CONFIG_USE_HELP)),
             End,
         End;
 
@@ -3460,7 +3349,7 @@ IPTR Action_HW_Update(struct IClass *cl, Object *obj, Msg msg)
     }
     if(hlnode)
     {
-        STRPTR str;
+        STRPTR str = "";
         psdFreeVec(hlnode->devname);
         get(data->hwdevobj, MUIA_String_Contents, &str);
         hlnode->devname = psdCopyStr(str);
@@ -3512,11 +3401,11 @@ IPTR Action_HW_Info(struct IClass *cl, Object *obj, Msg msg)
     IPTR revision = 0;
     IPTR version = 0;
     IPTR unitnr = -1;
-    STRPTR devname = "unknown";
-    STRPTR manufacturer = "unknown";
-    STRPTR prodname = "unknown";
-    STRPTR description = "unknown";
-    STRPTR copyright = "unknown";
+    STRPTR devname = _(MSG_UNKNOWN);
+    STRPTR manufacturer = _(MSG_UNKNOWN);
+    STRPTR prodname = _(MSG_UNKNOWN);
+    STRPTR description = _(MSG_UNKNOWN);
+    STRPTR copyright = _(MSG_UNKNOWN);
     STRPTR textbuf1;
 
     DoMethod(data->hwlistobj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &hlnode);
@@ -3542,13 +3431,12 @@ IPTR Action_HW_Info(struct IClass *cl, Object *obj, Msg msg)
                         manufacturer, description, copyright);
         hlnode->infowindow = WindowObject,
             MUIA_Window_ID   , MAKE_ID('H','I','N','F'),
-            MUIA_Window_Title, "Hardware driver information window",
+            MUIA_Window_Title, __(MSG_HARDWARE_WINDOW),
             MUIA_Window_IsSubWindow, FALSE,
             WindowContents, HGroup,
-                MUIA_ShortHelp, "These fields show some general information\n"
-                                "on the USB hardware driver.",
-                MUIA_FrameTitle, "General USB hardware driver information",
-                Child, LabelB("Device:\nUnit:\nVersion:\nProduct:\nManufacturer:\nDescription:\nCopyright:"),
+                MUIA_ShortHelp, __(MSG_HARDWARE_WINDOW_HELP),
+                MUIA_FrameTitle, __(MSG_HARDWARE_WINDOW_FRAME),
+                Child, LabelB(__(MSG_HARDWARE_WINDOW_LABEL)),
                 Child, TextObject,
                     TextFrame,
                     MUIA_Background, MUII_TextBack,
@@ -3785,7 +3673,7 @@ IPTR Action_Restart(struct IClass *cl, Object *obj, Msg msg)
 IPTR Action_ChgErrLevel(struct IClass *cl, Object *obj, Msg msg)
 {
     struct ActionData *data = INST_DATA(cl, obj);
-    IPTR lev;
+    IPTR lev = 0;
     get(data->errlvlobj, MUIA_Cycle_Active, &lev);
     switch(lev)
     {
@@ -3866,9 +3754,9 @@ IPTR Action_SaveErrors(struct IClass *cl, Object *obj, Msg msg)
     struct FileRequester *aslreq;
     char   path[256];
     struct TagItem asltags[] = { { ASLFR_InitialDrawer, (IPTR) "RAM:" },
-                                 { ASLFR_InitialFile, (IPTR) "Errors.log" },
+                                 { ASLFR_InitialFile, __(MSG_ACTION_SAVE_ERR_FILE) },
                                  { ASLFR_DoSaveMode, (IPTR) TRUE },
-                                 { ASLFR_TitleText, (IPTR) "Select file to save errors to..." },
+                                 { ASLFR_TitleText, __(MSG_ACTION_SAVE_ERR) },
                                  { TAG_END, (IPTR) NULL } };
     BPTR fh;
 
@@ -3882,9 +3770,9 @@ IPTR Action_SaveErrors(struct IClass *cl, Object *obj, Msg msg)
             {
                 WriteErrorLogFile(fh);
                 Close(fh);
-                psdAddErrorMsg(RETURN_OK, "Trident", "Error log saved to file %s.", path);
+                psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_ERR_SAVED), path);
             } else {
-                psdAddErrorMsg(RETURN_ERROR, "Trident", "Error opening file %s for writing.", path);
+                psdAddErrorMsg(RETURN_ERROR, _(MSG_APP_TITLE), _(MSG_ACTION_ERR_SAVED_ERRWRITE), path);
             }
             MUI_FreeAslRequest(aslreq);
         }
@@ -3916,9 +3804,9 @@ IPTR Action_SaveDeviceList(struct IClass *cl, Object *obj, Msg msg)
     struct FileRequester *aslreq;
     char   path[256];
     struct TagItem asltags[] = { { ASLFR_InitialDrawer, (IPTR) "RAM:" },
-                                 { ASLFR_InitialFile, (IPTR) "DevList.log" },
+                                 { ASLFR_InitialFile, __(MSG_ACTION_SAVE_DEV_FILE) },
                                  { ASLFR_DoSaveMode, (IPTR) TRUE },
-                                 { ASLFR_TitleText, (IPTR) "Select file to save device list to..." },
+                                 { ASLFR_TitleText, __(MSG_ACTION_SAVE_DEV) },
                                  { TAG_END, (IPTR) NULL } };
     BPTR fh;
 
@@ -3932,13 +3820,13 @@ IPTR Action_SaveDeviceList(struct IClass *cl, Object *obj, Msg msg)
             {
                 if(SystemTags("PsdDevLister", SYS_Output, fh, TAG_END))
                 {
-                    psdAddErrorMsg(RETURN_ERROR, "Trident", "Error executing PsdDevLister");
+                    psdAddErrorMsg(RETURN_ERROR,_(MSG_APP_TITLE), _(MSG_ACTION_SAVE_DEV_ERREXE));
                 } else {
-                    psdAddErrorMsg(RETURN_OK, "Trident", "DevLister saved to %s.", path);
+                    psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_DEV_SAVED), path);
                 }
                 Close(fh);
             } else {
-                psdAddErrorMsg(RETURN_ERROR, "Trident", "Error opening file %s for writing.", path);
+                psdAddErrorMsg(RETURN_ERROR, _(MSG_APP_TITLE), _(MSG_ACTION_ERR_SAVED_ERRWRITE), path);
             }
             MUI_FreeAslRequest(aslreq);
         }
@@ -3955,7 +3843,7 @@ IPTR Action_LoadPrefs(struct IClass *cl, Object *obj, Msg msg)
     char   path[256];
     struct TagItem asltags[] = { { ASLFR_InitialDrawer, (IPTR) "ENVARC:Sys" },
                                  { ASLFR_InitialFile, (IPTR) "Poseidon.prefs" },
-                                 { ASLFR_TitleText, (IPTR) "Select a Poseidon Prefs file..." },
+                                 { ASLFR_TitleText, __(MSG_ACTION_PREFS_LOAD) },
                                  { TAG_END, (IPTR) NULL } };
 
     if((aslreq = MUI_AllocAslRequest(ASL_FileRequest, asltags)))
@@ -3966,7 +3854,7 @@ IPTR Action_LoadPrefs(struct IClass *cl, Object *obj, Msg msg)
             AddPart(path, aslreq->fr_File, 256);
             if(psdLoadCfgFromDisk(path))
             {
-                psdAddErrorMsg(RETURN_OK, "Trident", "Config loaded from %s.", path);
+                psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_PREFS_LOADED), path);
                 //UpdateConfigToGUI(data);
             }
         }
@@ -3984,7 +3872,7 @@ IPTR Action_SavePrefsAs(struct IClass *cl, Object *obj, Msg msg)
     char   path[256];
     struct TagItem asltags[] = { { ASLFR_InitialDrawer, (IPTR) "ENVARC:Sys" },
                                  { ASLFR_InitialFile, (IPTR) "Poseidon.prefs" },
-                                 { ASLFR_TitleText, (IPTR) "Select file to save prefs to..." },
+                                 { ASLFR_TitleText, __(MSG_ACTION_PREFS_SAVEAS) },
                                  { ASLFR_DoSaveMode, (IPTR) TRUE },
                                  { TAG_END, (IPTR) NULL } };
 
@@ -3997,14 +3885,14 @@ IPTR Action_SavePrefsAs(struct IClass *cl, Object *obj, Msg msg)
             InternalCreateConfigGUI(data);
             if(psdSaveCfgToDisk(path, FALSE))
             {
-                psdAddErrorMsg(RETURN_OK, "Trident", "Configuration successfully saved to %s.", path);
+                psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_PREFS_SAVED), path);
                 {
                     IPTR hash = 0;
                     psdGetAttrs(PGA_STACK, NULL, PA_CurrConfigHash, &hash, TAG_END);
                     psdSetAttrs(PGA_STACK, NULL, PA_SavedConfigHash, hash, TAG_END);
                 }
             } else {
-                psdAddErrorMsg(RETURN_ERROR, "Trident", "Couldn't save config to %s.", path);
+                psdAddErrorMsg(RETURN_ERROR, _(MSG_APP_TITLE), _(MSG_ACTION_PREFS_SAVEDERR), path);
             }
             MUI_FreeAslRequest(aslreq);
         }
@@ -4023,9 +3911,9 @@ IPTR Action_SavePrefs(struct IClass *cl, Object *obj, Msg msg)
 
     if(!psdSaveCfgToDisk(NULL, FALSE))
     {
-        psdAddErrorMsg(RETURN_ERROR, "Trident", "Config not saved!");
+        psdAddErrorMsg(RETURN_ERROR, _(MSG_APP_TITLE), _(MSG_ACTION_PREFS_NOTSAVED));
     } else {
-        psdAddErrorMsg(RETURN_OK, "Trident", "Configuration successfully saved.");
+        psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_PREFS_SAVEDSUCCESS));
     }
 
     return(TRUE);
@@ -4055,9 +3943,7 @@ IPTR Action_UseQuit(struct IClass *cl, Object *obj, Msg msg)
     DoMethod(obj, MUIM_Action_Use);
     if(DoMethod(obj, MUIM_Action_Prefs_Changed))
     {
-        res = MUI_RequestA(data->appobj, data->winobj, 0, NULL, "Use|Save|Cancel",
-                           "The current configuration has been changed\n"
-                           "and not been saved yet.", NULL);
+        res = MUI_RequestA(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_USEQUIT), _(MSG_ACTION_CONFIGCHANGED), NULL);
         if(res == 0)
         {
             return(FALSE);
@@ -4080,7 +3966,7 @@ IPTR Action_SaveQuit(struct IClass *cl, Object *obj, Msg msg)
     DoMethod(obj, MUIM_Action_Use);
     if(!(psdSaveCfgToDisk(NULL, FALSE)))
     {
-        psdAddErrorMsg(RETURN_ERROR, "Trident", "Couldn't save config.");
+        psdAddErrorMsg(RETURN_ERROR, _(MSG_APP_TITLE), _(MSG_ACTION_SAVEQUIT));
     } else {
         DoMethod(data->appobj, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     }
@@ -4095,7 +3981,7 @@ IPTR Action_LoadPrefsFrom(struct IClass *cl, Object *obj, Msg msg)
     STRPTR path = (STRPTR) ((struct opSet *) msg)->ops_AttrList;
     if(psdLoadCfgFromDisk(path))
     {
-        psdAddErrorMsg(RETURN_OK, "Trident", "Config loaded from %s.", path);
+        psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_PREFS_LOADED), path);
         return(TRUE);
     }
     return(FALSE);
@@ -4110,7 +3996,7 @@ IPTR Action_SavePrefsTo(struct IClass *cl, Object *obj, Msg msg)
     InternalCreateConfigGUI(data);
     if(psdSaveCfgToDisk(path, FALSE))
     {
-        psdAddErrorMsg(RETURN_OK, "Trident", "Configuration successfully saved to %s.", path);
+        psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_PREFS_SAVED), path);
         return(TRUE);
     }
     return(FALSE);
@@ -4491,7 +4377,7 @@ IPTR Action_Dev_ForceBind(struct IClass *cl, Object *obj, Msg msg)
     if(CheckDeviceValid(dlnode))
     {
         get(mi, MUIA_Menuitem_Title, &name);
-        if(!strcmp(name, "None"))
+        if(!strcmp(name, _(MSG_ACTION_DEV_FORCEBIND_NONE)))
         {
             name = NULL;
         }
@@ -4501,14 +4387,7 @@ IPTR Action_Dev_ForceBind(struct IClass *cl, Object *obj, Msg msg)
                     TAG_END);
         if(name)
         {
-            clever = MUI_RequestA(data->appobj, data->winobj, 0, NULL, "I'm not dumb!|I'll reconsider",
-                                  "You are about to establish a forced \33bdevice\33n\n"
-                                  "binding. This is not an interface binding. As\n"
-                                  "most people are not capable of reading the\n"
-                                  "manual and they cause more harm than good.\n"
-                                  "Please make sure you know, what you're doing\n"
-                                  "and not breaking things (and then bugger me with\n"
-                                  "silly emails).", NULL);
+            clever = MUI_RequestA(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_DEV_FORCE_REQ),_(MSG_ACTION_DEV_FORCE_REQ_TXT), NULL);
             if(!clever)
             {
                 return(FALSE);
@@ -4518,9 +4397,9 @@ IPTR Action_Dev_ForceBind(struct IClass *cl, Object *obj, Msg msg)
         {
             if(name)
             {
-                psdAddErrorMsg(RETURN_OK, "Trident", "Forcing device binding of %s to %s.", devname, name);
+                psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_DEV_FORCE), devname, name);
             } else {
-                psdAddErrorMsg(RETURN_OK, "Trident", "Removed forced device binding of %s.", devname);
+                psdAddErrorMsg(RETURN_OK, _(MSG_APP_TITLE), _(MSG_ACTION_DEV_FORCE_REMOVE), devname);
             }
         }
     }
@@ -4532,24 +4411,24 @@ IPTR Action_Dev_ForceBind(struct IClass *cl, Object *obj, Msg msg)
 IPTR Action_Cfg_Changed(struct IClass *cl, Object *obj, Msg msg)
 {
     struct ActionData *data = INST_DATA(cl, obj);
-    IPTR bootdelay;
-    IPTR subtaskpri;
-    IPTR loginfo;
-    IPTR logwarn;
-    IPTR logerr;
-    IPTR logfail;
-    IPTR popupnew;
-    IPTR popupgone;
-    IPTR popupdeath;
-    IPTR popupdelay;
-    IPTR popupactivate;
-    IPTR popuptofront;
-    IPTR autodisablelp;
-    IPTR autodisabledead;
-    IPTR autorestartdead;
-    IPTR powersaving;
-    IPTR forcesuspend;
-    IPTR suspendtimeout;
+    IPTR bootdelay = 0;
+    IPTR subtaskpri = 0;
+    IPTR loginfo = 0;
+    IPTR logwarn = 0;
+    IPTR logerr = 0;
+    IPTR logfail = 0;
+    IPTR popupnew = 0;
+    IPTR popupgone = 0;
+    IPTR popupdeath = 0;
+    IPTR popupdelay = 0;
+    IPTR popupactivate = 0;
+    IPTR popuptofront = 0;
+    IPTR autodisablelp = 0;
+    IPTR autodisabledead = 0;
+    IPTR autorestartdead = 0;
+    IPTR powersaving = 0;
+    IPTR forcesuspend = 0;
+    IPTR suspendtimeout = 0;
     APTR stackcfg = NULL;
 
     psdGetAttrs(PGA_STACK, NULL, PA_GlobalConfig, &stackcfg, TAG_END);
@@ -4678,7 +4557,7 @@ IPTR Action_Cls_Activate(struct IClass *cl, Object *obj, Msg msg)
 IPTR Action_Cls_Add(struct IClass *cl, Object *obj, Msg msg)
 {
     struct ActionData *data = INST_DATA(cl, obj);
-    STRPTR clsname;
+    STRPTR clsname = "";
     get(data->clsnameobj, MUIA_String_Contents, &clsname);
     psdAddClass(clsname, 0);
     InternalCreateConfigGUI(data);
@@ -4814,7 +4693,7 @@ IPTR Action_Info_MemPool(struct IClass *cl, Object *obj, Msg msg)
     char buf[32];
     IPTR mem;
     psdGetAttrs(PGA_STACK, NULL, PA_MemPoolUsage, &mem, TAG_END);
-    psdSafeRawDoFmt(buf, 32, "%ld KB", (mem+512)>>10);
+    psdSafeRawDoFmt(buf, 32, _(MSG_ACTION_MEMPOOL_FORMAT), (mem+512)>>10);
     set(data->mempoolobj, MUIA_Text_Contents, buf);
     return(TRUE);
 }
@@ -4862,15 +4741,7 @@ IPTR Action_Cfg_Remove(struct IClass *cl, Object *obj, Msg msg)
                 break;
 
             case IFFFORM_DEVICECFG:
-                result = MUI_RequestA(data->appobj, data->winobj, 0, NULL, "Remove|Cancel",
-                                      "You are about to \33bremove\33n the configuration\n"
-                                      "data related to the device with the ID\n"
-                                      "\33b%s\33n.\n"
-                                      "This includes all individually saved class\n"
-                                      "setting for the device or interfaces, as well\n"
-                                      "as the stuff Trident saves (such as custom name or\n"
-                                      "popup inhibit).\n\n"
-                                      "Are you sure you want to remove these prefs?", &plnode->devid);
+                result = MUI_RequestA(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_CFG_REMOVE),_(MSG_ACTION_CFG_REMOVE_HELP), &plnode->devid);
                 if(result)
                 {
                     pic = psdFindCfgForm(NULL, plnode->chunkid);
@@ -4887,14 +4758,7 @@ IPTR Action_Cfg_Remove(struct IClass *cl, Object *obj, Msg msg)
                 break;
 
             case IFFFORM_CLASSCFG:
-                result = MUI_RequestA(data->appobj, data->winobj, 0, NULL, "Remove|Cancel",
-                                      "You are about to \33bremove\33n the (default)\n"
-                                      "configuration of the class \33b%s\33n.\n"
-                                      "This will set the classes initial prefs to the\n"
-                                      "internal defaults \33bon next boot\33n!\n"
-                                      "It does normally not affect the device or interface\n"
-                                      "individually saved settings.\n\n"
-                                      "Are you sure you want to remove these prefs?", &plnode->owner);
+                result = MUI_RequestA(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_CFG_REMOVE),_(MSG_ACTION_CFG_REMOVE_DEFAULT), &plnode->owner);
                 if(result)
                 {
                     pic = psdFindCfgForm(NULL, IFFFORM_CLASSCFG);
@@ -4911,12 +4775,7 @@ IPTR Action_Cfg_Remove(struct IClass *cl, Object *obj, Msg msg)
                 break;
 
             case IFFFORM_DEVCFGDATA:
-                result = MUI_Request(data->appobj, data->winobj, 0, NULL, "Remove|Cancel",
-                                     "You are about to \33bremove\33n the class\n"
-                                     "configuration of the class \33b%s\33n,\n"
-                                     "specifically saved for device with ID\n"
-                                     "\33b%s\33n.\n\n"
-                                     "Are you sure you want to remove these prefs?", plnode->owner, plnode->devid);
+                result = MUI_Request(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_CFG_REMOVE),_(MSG_ACTION_CFG_REMOVE_CLASS), plnode->owner, plnode->devid);
                 if(result)
                 {
                     pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
@@ -4942,13 +4801,7 @@ IPTR Action_Cfg_Remove(struct IClass *cl, Object *obj, Msg msg)
                 break;
 
             case IFFFORM_IFCFGDATA:
-                result = MUI_Request(data->appobj, data->winobj, 0, NULL, "Remove|Cancel",
-                                     "You are about to \33bremove\33n the class\n"
-                                     "configuration of the class \33b%s\33n\n"
-                                     "saved for the particular interface\n"
-                                     "\33b%s\33n of the device with ID\n"
-                                     "\33b%s\33n.\n\n"
-                                     "Are you sure you want to remove these prefs?",
+                result = MUI_Request(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_CFG_REMOVE),_(MSG_ACTION_CFG_REMOVE_CLASS_DEF),
                                      plnode->owner, plnode->ifid, plnode->devid);
                 if(result)
                 {
@@ -4984,9 +4837,7 @@ IPTR Action_Cfg_Remove(struct IClass *cl, Object *obj, Msg msg)
             default:
                 if(plnode->chunkid)
                 {
-                    result = MUI_RequestA(data->appobj, data->winobj, 0, NULL, "Remove|Cancel",
-                                          "Do you really want to remove this\n"
-                                          "\33bunknown prefs data\33n from the preferences?", NULL);
+                    result = MUI_RequestA(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_CFG_REMOVE),_(MSG_ACTION_CFG_REMOVE_UNKNOWN), NULL);
                     if(result)
                     {
                         pic = psdFindCfgForm(NULL, plnode->chunkid);
@@ -5010,9 +4861,9 @@ IPTR Action_Cfg_Export(struct IClass *cl, Object *obj, Msg msg)
     struct PrefsListEntry *plnode;
     struct FileRequester *aslreq;
     char   path[256];
-    struct TagItem asltags[] = { { ASLFR_InitialFile, (IPTR) "unknown.prefs" },
+    struct TagItem asltags[] = { { ASLFR_InitialFile, __(MSG_ACTION_CFG_PREFS_FILE) },
                                  { ASLFR_InitialDrawer, (IPTR) "SYS:Prefs/Presets/Poseidon" },
-                                 { ASLFR_TitleText, (IPTR) "Select file to export prefs to..." },
+                                 { ASLFR_TitleText, __(MSG_ACTION_CFG_EXPORT) },
                                  { ASLFR_DoSaveMode, (IPTR) TRUE },
                                  { TAG_END, (IPTR) NULL } };
     BPTR fh;
@@ -5025,12 +4876,12 @@ IPTR Action_Cfg_Export(struct IClass *cl, Object *obj, Msg msg)
         switch(plnode->chunkid)
         {
             case IFFFORM_STACKCFG:
-                asltags[0].ti_Data = (IPTR) "stackcfg.prefs";
+                asltags[0].ti_Data = __(MSG_ACTION_STACKCFG_FILE);
                 pic = psdFindCfgForm(NULL, plnode->chunkid);
                 break;
 
             case IFFFORM_DEVICECFG:
-                asltags[0].ti_Data = (IPTR) "devicecfg.prefs";
+                asltags[0].ti_Data = __(MSG_ACTION_DEVICECFG_FILE);
                 pic = psdFindCfgForm(NULL, plnode->chunkid);
                 while(pic)
                 {
@@ -5043,7 +4894,7 @@ IPTR Action_Cfg_Export(struct IClass *cl, Object *obj, Msg msg)
                 break;
 
             case IFFFORM_CLASSCFG:
-                asltags[0].ti_Data = (IPTR) "classcfg.prefs";
+                asltags[0].ti_Data = __(MSG_ACTION_CLASSCFG_FILE);
                 pic = psdFindCfgForm(NULL, plnode->chunkid);
                 while(pic)
                 {
@@ -5056,7 +4907,7 @@ IPTR Action_Cfg_Export(struct IClass *cl, Object *obj, Msg msg)
                 break;
 
             case IFFFORM_DEVCFGDATA:
-                asltags[0].ti_Data = (IPTR) "devclscfg.prefs";
+                asltags[0].ti_Data = __(MSG_ACTION_DEVCFGDATA_FILE);
                 pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
                 while(pic)
                 {
@@ -5078,7 +4929,7 @@ IPTR Action_Cfg_Export(struct IClass *cl, Object *obj, Msg msg)
                 break;
 
             case IFFFORM_IFCFGDATA:
-                asltags[0].ti_Data = (IPTR) "ifclscfg.prefs";
+                asltags[0].ti_Data = __(MSG_ACTION_IFCFGDATA_FILE);
                 pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
                 while(pic)
                 {
@@ -5133,7 +4984,7 @@ IPTR Action_Cfg_Export(struct IClass *cl, Object *obj, Msg msg)
                     }
                     Close(fh);
                 } else {
-                    psdAddErrorMsg(RETURN_FAIL, "Trident", "Failed to open file %s.", path);
+                    psdAddErrorMsg(RETURN_FAIL, _(MSG_APP_TITLE), _(MSG_ACTION_CFG_FAIL), path);
                 }
             }
             MUI_FreeAslRequest(aslreq);
@@ -5157,7 +5008,7 @@ IPTR Action_Cfg_Import(struct IClass *cl, Object *obj, Msg msg)
     APTR pic;
 
     struct TagItem asltags[] = { { ASLFR_InitialDrawer, (IPTR) "SYS:Prefs/Presets/Poseidon" },
-                                 { ASLFR_TitleText, (IPTR) "Select file to import prefs from..." },
+                                 { ASLFR_TitleText, __(MSG_ACTION_CFG_IMPORT) },
                                  { TAG_END, (IPTR) NULL } };
 
     DoMethod(data->prefslistobj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &plnode);
@@ -5220,11 +5071,7 @@ IPTR Action_Cfg_Import(struct IClass *cl, Object *obj, Msg msg)
                                             break;
                                         }
                                     }
-                                    MUI_RequestA(data->appobj, data->winobj, 0, NULL, "Oops!",
-                                                 "To import device or interface\n"
-                                                 "prefs data, you need to select\n"
-                                                 "the device entry where it should"
-                                                 "be added.", NULL);
+                                    MUI_RequestA(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_CFGDATA_OOPS),_(MSG_ACTION_CFGDATA_OOPS_HELP), NULL);
                                     break;
 
                                 case IFFFORM_PSDCFG:
@@ -5232,23 +5079,22 @@ IPTR Action_Cfg_Import(struct IClass *cl, Object *obj, Msg msg)
                                     break;
 
                                 default:
-                                    MUI_RequestA(data->appobj, data->winobj, 0, NULL, "Oops!",
-                                                 "I don't know that kind of prefs file.", NULL);
+                                    MUI_RequestA(data->appobj, data->winobj, 0, NULL, _(MSG_ACTION_CFGDATA_OOPS),_(MSG_ACTION_CFGDATA_ERR), NULL);
                                     break;
                             }
                         } else {
-                            psdAddErrorMsg(RETURN_ERROR, "Trident", "Read error on loading prefs file %s.", path);
+                            psdAddErrorMsg(RETURN_ERROR, _(MSG_APP_TITLE), _(MSG_ACTION_CFGDATA_ERR_READ), path);
                         }
                         psdFreeVec(buff);
                    } else {
-                       psdAddErrorMsg(RETURN_ERROR, "Trident", "Failed to allocate buffer for loading %s.", path);
+                       psdAddErrorMsg(RETURN_ERROR, _(MSG_APP_TITLE), _(MSG_ACTION_CFGDATA_ERR_ALLOC), path);
                    }
                 } else {
-                    psdAddErrorMsg(RETURN_ERROR, "Trident", "%s does not seem to be an iff file.", path);
+                    psdAddErrorMsg(RETURN_ERROR, _(MSG_APP_TITLE), _(MSG_ACTION_CFGDATA_ERR_IFF), path);
                 }
                 Close(fh);
             } else {
-                psdAddErrorMsg(RETURN_FAIL, "Trident", "Failed to open file %s.", path);
+                psdAddErrorMsg(RETURN_FAIL, _(MSG_APP_TITLE), _(MSG_ACTION_CFGDATA_ERR_OPEN), path);
             }
         }
         MUI_FreeAslRequest(aslreq);

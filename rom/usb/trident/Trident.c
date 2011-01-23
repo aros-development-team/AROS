@@ -26,6 +26,7 @@
 #include "IconListClass.h"
 #include "DevWinClass.h"
 #include "CfgListClass.h"
+#include "locale.h"
 
 #define TMPL_SWITCH     1
 #define TMPL_NUMERIC    2
@@ -298,6 +299,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    Locale_Initialize();
+
     if(!(ps = OpenLibrary("poseidon.library", 4)))
     {
         fail("Failed to open version 4 of poseidon.library.\n");
@@ -357,93 +360,93 @@ int main(int argc, char *argv[])
         fail("Could not create custom classes.\n");
 
     appobj = ApplicationObject,
-        MUIA_Application_Title      , "Trident",
-        MUIA_Application_Version    , "4.3 (27-May-09)",
-        MUIA_Application_Copyright  , "©2002-2009 Chris Hodges",
-        MUIA_Application_Author     , "Chris Hodges <chrisly@platon42.de>",
-        MUIA_Application_Description, "Poseidon USB Stack GUI",
+        MUIA_Application_Title      , __(MSG_APP_TITLE),
+        MUIA_Application_Version    , __(MSG_APP_VERSION),
+        MUIA_Application_Copyright  , (IPTR) "©2002-2009 Chris Hodges",
+        MUIA_Application_Author     , (IPTR) "Chris Hodges <chrisly@platon42.de>",
+        MUIA_Application_Description, __(MSG_APP_DESC),
         MUIA_Application_Base       , "TRIDENT",
         MUIA_Application_SingleTask , TRUE,
         MUIA_Application_DiskObject , IconObject,
         MUIA_Application_HelpFile   , "HELP:Poseidon.guide",
         MUIA_Application_Menustrip  , MenustripObject,
-            Child, MenuObjectT("Project"),
+            Child, MenuObjectT(_(MSG_MENU_PROJECT)),
                 Child, mi_about = MenuitemObject,
-                    MUIA_Menuitem_Title, "About...",
+                    MUIA_Menuitem_Title, __(MSG_MENU_ABOUT),
                     MUIA_Menuitem_Shortcut, "?",
                     End,
                 Child, mi_aboutmui = MenuitemObject,
-                    MUIA_Menuitem_Title, "About MUI...",
+                    MUIA_Menuitem_Title, __(MSG_MENU_ABOUTMUI),
                     End,
                 Child, mi_help = MenuitemObject,
-                    MUIA_Menuitem_Title, "Help",
+                    MUIA_Menuitem_Title, __(MSG_MENU_HELP),
                     End,
                 Child, MenuitemObject,
                     MUIA_Menuitem_Title, NM_BARLABEL,
                     End,
                 Child, mi_online = MenuitemObject,
-                    MUIA_Menuitem_Title, "Online",
-                    MUIA_Menuitem_Shortcut, "O",
+                    MUIA_Menuitem_Title, __(MSG_MENU_ONLINE),
+                    MUIA_Menuitem_Shortcut, __(MSG_MENU_SC_ONLINE),
                     End,
                 Child, mi_offline = MenuitemObject,
-                    MUIA_Menuitem_Title, "Offline",
-                    MUIA_Menuitem_Shortcut, "F",
+                    MUIA_Menuitem_Title, __(MSG_MENU_OFFLINE),
+                    MUIA_Menuitem_Shortcut, __(MSG_MENU_SC_OFFLINE),
                     End,
                 Child, MenuitemObject,
                     MUIA_Menuitem_Title, NM_BARLABEL,
                     End,
                 Child, mi_iconify = MenuitemObject,
-                    MUIA_Menuitem_Title, "Iconify",
-                    MUIA_Menuitem_Shortcut, "H",
+                    MUIA_Menuitem_Title, __(MSG_MENU_ICONIFY),
+                    MUIA_Menuitem_Shortcut, __(MSG_MENU_SC_ICONIFY),
                     End,
                 Child, MenuitemObject,
                     MUIA_Menuitem_Title, NM_BARLABEL,
                     End,
                 Child, mi_quit = MenuitemObject,
-                    MUIA_Menuitem_Title, "Quit",
-                    MUIA_Menuitem_Shortcut, "Q",
+                    MUIA_Menuitem_Title, __(MSG_MENU_QUIT),
+                    MUIA_Menuitem_Shortcut, __(MSG_MENU_SC_QUIT),
                     End,
                 End,
-            Child, MenuObjectT("Information"),
+            Child, MenuObjectT(_(MSG_MENU_INFO)),
                 Child, mi_saveerrors = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save error log...",
+                    MUIA_Menuitem_Title, __(MSG_MENU_SAVELOG),
                     End,
                 Child, mi_flusherrors = MenuitemObject,
-                    MUIA_Menuitem_Title, "Flush errors",
+                    MUIA_Menuitem_Title, __(MSG_MENU_FLUSH),
                     End,
                 Child, MenuitemObject,
                     MUIA_Menuitem_Title, NM_BARLABEL,
                     End,
                 Child, mi_savedevlist = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save device list...",
+                    MUIA_Menuitem_Title, __(MSG_MENU_SAVEDEV),
                     End,
                 End,
-            Child, MenuObjectT("Settings"),
+            Child, MenuObjectT(_(MSG_MENU_SETTINGS)),
                 Child, mi_loadprefs = MenuitemObject,
-                    MUIA_Menuitem_Title, "Load...",
-                    MUIA_Menuitem_Shortcut, "L",
+                    MUIA_Menuitem_Title, __(MSG_MENU_LOAD),
+                    MUIA_Menuitem_Shortcut, __(MSG_MENU_SC_LOAD),
                     End,
                 Child, mi_saveprefs = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save",
-                    MUIA_Menuitem_Shortcut, "S",
+                    MUIA_Menuitem_Title, __(MSG_MENU_SAVE),
+                    MUIA_Menuitem_Shortcut, _(MSG_MENU_SC_SAVE),
                     End,
                 Child, mi_saveprefsas = MenuitemObject,
-                    MUIA_Menuitem_Title, "Save as...",
-                    MUIA_Menuitem_Shortcut, "A",
+                    MUIA_Menuitem_Title, __(MSG_MENU_SAVEAS),
+                    MUIA_Menuitem_Shortcut, __(MSG_MENU_SC_SAVEAS),
                     End,
                 Child, MenuitemObject,
                     MUIA_Menuitem_Title, NM_BARLABEL,
                     End,
                 Child, mi_muiprefs = MenuitemObject,
-                    MUIA_Menuitem_Title, "MUI Settings",
-                    MUIA_Menuitem_Shortcut, "M",
+                    MUIA_Menuitem_Title, __(MSG_MENU_MUISETTINGS),
+                    MUIA_Menuitem_Shortcut, __(MSG_MENU_SC_MUISETTINGS),
                     End,
                 End,
             End,
 
         SubWindow, mainwinobj = WindowObject,
             MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-            MUIA_Window_Title, "Trident 4.3",
+            MUIA_Window_Title, __(MSG_WINDOW_TITLE),
             MUIA_HelpNode, "usingtrident",
 
             WindowContents, actionobj = NewObject(ActionClass->mcc_Class, 0, TAG_END),
@@ -504,8 +507,8 @@ int main(int argc, char *argv[])
     {
         ULONG sigs = 0;
         ULONG sigmask;
-        LONG isopen;
-        LONG iconify;
+        LONG isopen = 0;
+        LONG iconify = 0;
 
         get(appobj, MUIA_Application_Iconified, &iconify);
         set(mainwinobj, MUIA_Window_Open, TRUE);
@@ -530,6 +533,8 @@ int main(int argc, char *argv[])
 /*
 ** Shut down...
 */
+    Locale_Deinitialize();
+
     fail(NULL);
     return(0); // never gets here, just to shut the compiler up
 }
