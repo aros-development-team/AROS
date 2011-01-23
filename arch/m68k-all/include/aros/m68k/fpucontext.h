@@ -9,7 +9,12 @@
 struct FpuContext {
 	fenv_t fpenv;		/* User-visible status register */
 	union IEEEl2bits fp[8];	/* FP registers */
-	ULONG fsave[3];		/* 1 word for < 68060, 3 words for 68060 */
+	union {
+		UBYTE mc68881[0xb8];
+		UBYTE mc68882[0xd8];
+		UBYTE mc68040[0x60];
+		UBYTE mc68060[0x12];
+	} fsave;		/* FSAVE context (CPU specific) */
 };
 
 /* Defined in arch/m68k-all/kernel/?.S */
