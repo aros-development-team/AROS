@@ -2,10 +2,8 @@
 #define AROS_M68K_CPUCONTEXT_H
 
 /*
- * Preliminary and subject to change! Do not rely on this for now, please.
- * At least the following needs to be done:
- * 1. Add ULONG Flags in the beginning, to allow expansions (see other CPUs)
- * 2. Add FPU context, either directly or as a pointer.
+ * We don't need ULONG Flags in this context, since the
+ *  SysBase->AttnFlags provides the CPU type information.
  */
 
 struct ExceptionContext
