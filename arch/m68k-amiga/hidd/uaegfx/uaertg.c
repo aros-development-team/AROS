@@ -189,14 +189,21 @@ ULONG getrtgformat(struct uaegfx_staticdata *csd, OOP_Object *pixfmt)
     	return RGBFB_CLUT;
     if (depth == 16)
     	return RGBFB_R5G6B5PC;
-    if (redmask == 0x0000ff00)
-    	return RGBFB_B8G8R8A8;
-    if (redmask == 0xff000000)
-    	return RGBFB_R8G8B8A8;
-    if (redmask == 0x000000ff)
-    	return RGBFB_A8B8G8R8;
-    if (redmask == 0x00ff0000)
-    	return RGBFB_A8R8G8B8;
+    if (depth == 32) {
+	if (redmask == 0x0000ff00)
+    	   return RGBFB_B8G8R8A8;
+        if (redmask == 0xff000000)
+    	   return RGBFB_R8G8B8A8;
+        if (redmask == 0x000000ff)
+    	   return RGBFB_A8B8G8R8;
+        if (redmask == 0x00ff0000)
+    	   return RGBFB_A8R8G8B8;
+    } else if (depth == 24) {
+    	if (redmask == 0x000000ff)
+    	   return RGBFB_B8G8R8;
+    	if (redmask == 0x00ff0000)
+    	   return RGBFB_R8G8B8;
+    }
     return RGBFB_NONE;
 }
 

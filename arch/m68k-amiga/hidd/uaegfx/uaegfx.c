@@ -44,17 +44,22 @@
 struct RTGFormat
 {
     UWORD rgbformat;
-    ULONG rm, gm, bm;
-    UWORD rs, gs, bs;
+    ULONG rm, gm, bm, am;
+    UWORD rs, gs, bs, as;
 };
 
 static const struct RTGFormat formats[] =
 {
-    { RGBFB_CLUT,	0x00ff0000, 0x0000ff00, 0x000000ff,   8, 16, 24 },
-    { RGBFB_B8G8R8A8,	0x0000ff00, 0x00ff0000, 0xff000000,  16,  8,  0 },
-    { RGBFB_A8R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff,   8, 16, 24 },
-    { RGBFB_A8B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000,  24, 16,  8 },
-    { RGBFB_R8G8B8A8,	0xff000000, 0x00ff0000, 0x0000ff00,   0,  8, 16 },
+    { RGBFB_CLUT,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0 },
+
+    { RGBFB_B8G8R8A8,	0x0000ff00, 0x00ff0000, 0xff000000, 0x000000ff, 16,  8,  0, 24 },
+    { RGBFB_A8R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0 },
+    { RGBFB_A8B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0 },
+    { RGBFB_R8G8B8A8,	0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff,  0,  8, 16, 24 },
+
+    { RGBFB_B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0 },
+    { RGBFB_R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0 },
+
     { 0 }
 };
 
@@ -140,7 +145,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
      	pflist[j].ti_Data = formats[l].bs;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_AlphaShift;
-     	pflist[j].ti_Data = 0;
+     	pflist[j].ti_Data = formats[l].as;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_RedMask;
      	pflist[j].ti_Data = formats[l].rm;
@@ -152,7 +157,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
      	pflist[j].ti_Data = formats[l].bm;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_AlphaMask;
-     	pflist[j].ti_Data = 0x00000000;
+     	pflist[j].ti_Data = formats[l].am;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_CLUTMask;
      	pflist[j].ti_Data = 0x000000FF;
@@ -164,13 +169,13 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
      	pflist[j].ti_Data = depth <= 8 ? vHidd_ColorModel_Palette : vHidd_ColorModel_TrueColor;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_Depth;
-     	pflist[j].ti_Data = depth > 24 ? 24 : depth;
+     	pflist[j].ti_Data = depth;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_BytesPerPixel;
      	pflist[j].ti_Data = (depth + 7) / 8;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_BitsPerPixel;
-     	pflist[j].ti_Data = depth > 24 ? 24 : depth;
+     	pflist[j].ti_Data = depth;
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_StdPixFmt;
      	pflist[j].ti_Data = vHidd_StdPixFmt_Native;

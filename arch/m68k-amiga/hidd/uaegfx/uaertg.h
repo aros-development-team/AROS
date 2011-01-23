@@ -67,12 +67,12 @@ typedef enum {
 #define	RGBFB_PLANAR	RGBFB_NONE
 #define	RGBFB_CHUNKY	RGBFB_CLUT
 
-#define RGBFB_SUPPORTMASK (RGBFF_CLUT | RGBFF_A8R8G8B8 | RGBFF_A8B8G8R8 | RGBFF_R8G8B8A8 | RGBFF_B8G8R8A8)
+#define RGBFB_SUPPORTMASK (RGBFF_CLUT | RGBFF_A8R8G8B8 | RGBFF_A8B8G8R8 | RGBFF_R8G8B8A8 | RGBFF_B8G8R8A8 | RGBFF_B8G8R8 | RGBFF_R8G8B8)
 
 /* BoardInfo flags */
 #define BIB_HARDWARESPRITE		0		/* board has hardware sprite */
 #define BIB_VBLANKINTERRUPT		4		/* board can cause a hardware interrupt on a vertical retrace */
-#define BIB_BLITTER				15		/* board has blitter */
+#define BIB_BLITTER			15		/* board has blitter */
 #define BIB_HIRESSPRITE			16		/* mouse sprite has double resolution */
 #define BIB_BIGSPRITE			17		/* user wants big mouse sprite */
 #define BIB_NOBLITTER			24		/* disable all blitter functions */
