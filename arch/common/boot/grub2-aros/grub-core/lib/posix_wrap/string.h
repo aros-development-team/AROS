@@ -39,10 +39,14 @@ strcasecmp (const char *s1, const char *s2)
   return grub_strcasecmp (s1, s2);
 }
 
+#define memcpy grub_memcpy
+
+#if 0
 static inline void
 memcpy (void *dest, const void *src, grub_size_t n)
 {
     grub_memcpy (dest. src, n);
 }
+#endif
 
 #endif
