@@ -1,22 +1,23 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=cli sti kernel_debug maygetchar amiga_irq
+FILES=m68k_exception kernel_cpu
 
-AFILES=
+AFILES=issuper
 
-USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
-	       -I$(SRCDIR)/arch/$(CPU)-all/kernel \
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-arch/kernel \
+               -I$(SRCDIR)/arch/$(CPU)-all/kernel \
 	       -I$(SRCDIR)/rom/kernel \
 	       -I$(GENINCDIR) -I$(BINDIR)/Development/include \
 	       -I$(SRCDIR)/rom/exec \
 	       $(PARANOIA_CFLAGS) -DPARANOIA_STACK
 
-USER_AFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
+USER_AFLAGS := -I$(SRCDIR)/arch/$(CPU)-arch/kernel \
                -I$(SRCDIR)/arch/$(CPU)-all/kernel \
 	       -I$(SRCDIR)/rom/kernel \
 	       -I$(GENINCDIR) -I$(BINDIR)/Development/include \
-	       -I$(SRCDIR)/rom/exec
+	       -I$(SRCDIR)/rom/exec -m68060
+
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel arch=m68k \
   files="$(FILES)" asmfiles="$(AFILES)" compiler=kernel
