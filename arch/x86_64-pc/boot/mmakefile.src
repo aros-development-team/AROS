@@ -27,6 +27,7 @@ include $(TOP)/config/make.cfg
 #MM	workbench-libs-workbench \
 #MM	kernel-fs-nil \
 #MM	workbench-devs-amberram \
+#MM	workbench-devs-cdvdfs-packet \
 #MM	kernel-fs-afs \
 #MM	kernel-pc-x86_64-drivers \
 #MM	kernel-workbench-devs-pc-x86_64 \
@@ -50,9 +51,9 @@ MODULES := \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS)))
 
 kernel-package-pc-x86_64:
-	$(RM) -rf $(BINDIR)/.pkg
+	$(RM) $(BINDIR)/.pkg
 	%mkdirs_q $(BINDIR)/.pkg
-	@mv $(MODULES) $(BINDIR)/.pkg/
+	$(CP) $(MODULES) $(BINDIR)/.pkg/
 	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/.pkg  
-	$(RM) -rf $(BINDIR)/.pkg
+	$(RM) $(BINDIR)/.pkg
 
