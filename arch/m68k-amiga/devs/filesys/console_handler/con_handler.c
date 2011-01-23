@@ -56,8 +56,8 @@ static const struct NewWindow default_nw =
 {
     0,				/* LeftEdge */
     0,				/* TopEdge */
-    600,			/* Width */
-    300,			/* Height */
+    -1,				/* Width */
+    -1,				/* Height */
     1,				/* DetailPen */
     0,				/* BlockPen */
     0,		    	    	/* IDCMP */
