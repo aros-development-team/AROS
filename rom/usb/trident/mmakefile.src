@@ -1,9 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES :=    Trident ActionClass CfgListClass DevWinClass IconListClass debug
+FILES :=    Trident ActionClass CfgListClass DevWinClass IconListClass debug locale
 
 #MM- kernel-usb-trident : kernel-usb-poseidon linklibs
+#MM  kernel-usb-trident : kernel-usb-trident-catalogs \
+#MM  kernel-usb-trident-icons
 
 %build_prog progname="Trident" mmake=kernel-usb-trident \
     files=$(FILES) targetdir=$(AROS_PREFS) \

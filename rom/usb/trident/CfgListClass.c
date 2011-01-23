@@ -22,6 +22,7 @@
 #include "IconListClass.h"
 #include "DevWinClass.h"
 #include "CfgListClass.h"
+#include "locale.h"
 
 extern struct ExecBase *SysBase;
 extern struct Library *ps;
@@ -118,11 +119,7 @@ BOOL ApplyDragAction(Object *obj, LONG targetentry)
         case IFFFORM_DEVICECFG:
             if(targetid == IFFFORM_DEVICECFG)
             {
-                result = MUI_Request(_app(obj), _win(obj), 0, NULL, "Replace|Merge|Cancel",
-                                     "Do you want to \33breplace\33n or \33bmerge\33n the prefs of\n"
-                                     "\33b%s\33n\n"
-                                     "with the contents from\n"
-                                     "\33b%s\33n?", targetplnode->id, sourceplnode->id);
+                result = MUI_Request(_app(obj), _win(obj), 0, NULL, _(MSG_APPLYDRAGACTION_DEVICECFG),_(MSG_APPLYDRAGACTION_DEVICECFG_HELP), targetplnode->id, sourceplnode->id);
                 if(result < 1)
                 {
                     return(FALSE);
@@ -193,22 +190,14 @@ BOOL ApplyDragAction(Object *obj, LONG targetentry)
             {
                 if(strcmp(sourceplnode->owner, targetplnode->owner))
                 {
-                    result = MUI_RequestA(_app(obj), _win(obj), 0, NULL, "Add to device|Cancel",
-                                          "Sorry, but only prefs of the same owner can\n"
-                                          "be replaced.\n\n"
-                                          "Do you wish to add this prefs\n"
-                                          "to the device instead?", NULL);
+                    result = MUI_RequestA(_app(obj), _win(obj), 0, NULL, _(MSG_APPLYDRAGACTION_DEVCFGDATA),_(MSG_APPLYDRAGACTION_DEVCFGDATA_HELP), NULL);
                     if(result < 1)
                     {
                         return(FALSE);
                     }
                     targetid = IFFFORM_DEVICECFG;
                 } else {
-                    result = MUI_Request(_app(obj), _win(obj), 0, NULL, "Replace|Cancel",
-                                         "Do you want to \33breplace\33n the prefs of\n"
-                                         "\33b%s\33n\n"
-                                         "by those of\n"
-                                         "\33b%s\33n?", targetplnode->id, sourceplnode->id);
+                    result = MUI_Request(_app(obj), _win(obj), 0, NULL, _(MSG_APPLYDRAGACTION_DEVCFGDATA_REPLACE),_(MSG_APPLYDRAGACTION_DEVCFGDATA_REPLACE_HELP), targetplnode->id, sourceplnode->id);
 
                     if(result < 1)
                     {
@@ -232,17 +221,9 @@ BOOL ApplyDragAction(Object *obj, LONG targetentry)
                 pic = psdGetUsbDevCfg(sourceplnode->owner, targetplnode->devid, sourceplnode->ifid);
                 if(pic)
                 {
-                    result = MUI_Request(_app(obj), _win(obj), 0, NULL, "Replace|Cancel",
-                                         "Do you want to \33breplace\33n the prefs of\n"
-                                         "\33b%s\33n\n"
-                                         "by the one in\n"
-                                         "\33b%s\33n?", targetplnode->id, sourceplnode->id);
+                    result = MUI_Request(_app(obj), _win(obj), 0, NULL, _(MSG_APPLYDRAGACTION_DEVICECFG_REPLACE),_(MSG_APPLYDRAGACTION_DEVICECFG_REPLACE_HELP), targetplnode->id, sourceplnode->id);
                 } else {
-                    result = MUI_Request(_app(obj), _win(obj), 0, NULL, "Add|Cancel",
-                                         "Do you want to \33badd\33n the prefs of\n"
-                                         "\33b%s\33n\n"
-                                         "to the device\n"
-                                         "\33b%s\33n?", sourceplnode->id, targetplnode->id);
+                    result = MUI_Request(_app(obj), _win(obj), 0, NULL, _(MSG_APPLYDRAGACTION_DEVICECFG_ADD),_(MSG_APPLYDRAGACTION_DEVICECFG_ADD_HELP), sourceplnode->id, targetplnode->id);
                 }
                 if(result < 1)
                 {
@@ -357,9 +338,7 @@ AROS_UFH3(IPTR, CfgListDispatcher,
             {
                 ApplyDragAction(obj, tpr.entry);
             } else {
-                MUI_RequestA(_app(obj), _win(obj), 0, NULL, "Oops!",
-                             "Sorry, drag'n drop operation to\n"
-                             "that target is not supported.", NULL);
+                MUI_RequestA(_app(obj), _win(obj), 0, NULL, _(MSG_CFGLISTDISPATCHER_OOPS),_(MSG_CFGLISTDISPATCHER_OOPS_HELP), NULL);
                 return(FALSE);
             }
             return(TRUE);
