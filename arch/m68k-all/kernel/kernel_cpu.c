@@ -43,7 +43,7 @@ void cpu_Switch(regs_t *regs)
     CopyMem(regs, &ctx->cpu, sizeof(regs_t));
 
     /* If we have an FPU, save the FPU context */
-    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40 | AFF_68060))
+    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40))
     	    AROS_UFC1(void, FpuSaveContext,
     	    		    AROS_UFCA(struct FpuContext *, &ctx->fpu, A0));
 
@@ -79,7 +79,7 @@ void cpu_Dispatch(regs_t *regs)
     regs->a[7] = (IPTR)task->tc_SPReg;
 
     /* If we have an FPU, restore the FPU context */
-    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40 | AFF_68060))
+    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40))
     	    AROS_UFC1(void, FpuRestoreContext,
     	    		    AROS_UFCA(struct FpuContext *, &ctx->fpu, A0));
 
