@@ -29,7 +29,7 @@ extern "C" {
 */
 
 /* Header file version number, required by OpenGL ABI for Linux */
-/* glext.h last updated $Date: 2010-11-03 18:59:30 -0700 (Wed, 03 Nov 2010) $ */
+/* glext.h last updated $Date$ */
 /* Current version at http://www.opengl.org/registry/ */
 #define GL_GLEXT_VERSION 66
 /* Function declaration macros - to move into glplatform.h */
