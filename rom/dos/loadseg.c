@@ -14,11 +14,12 @@
 #include <aros/debug.h>
 #include "dos_intern.h"
 
-AROS_UFH4(LONG, ReadFunc,
+static AROS_LH3(LONG, ReadFunc,
 	AROS_UFHA(BPTR, file,   D1),
 	AROS_UFHA(APTR, buffer, D2),
 	AROS_UFHA(LONG, length, D3),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+        struct DosLibrary *, DOSBase, 0, Dos
+)
 {
     AROS_USERFUNC_INIT
 
@@ -71,7 +72,7 @@ AROS_UFH4(LONG, ReadFunc,
     void (* FunctionArray[3])();
     BPTR file, segs=0;
 
-    FunctionArray[0] = (void(*))ReadFunc; //__AROS_GETVECADDR(DOSBase,7);  /* Read() */
+    FunctionArray[0] = (void(*))AROS_SLIB_ENTRY(ReadFunc, Dos); //__AROS_GETVECADDR(DOSBase,7);  /* Read() */
     FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
     FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
 
