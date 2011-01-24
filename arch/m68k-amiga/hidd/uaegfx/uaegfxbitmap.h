@@ -27,6 +27,7 @@ struct bm_data
     UBYTE *palette;
     WORD topedge, leftedge;
     BOOL disp;
+    WORD locked;
 };
 
 #endif
