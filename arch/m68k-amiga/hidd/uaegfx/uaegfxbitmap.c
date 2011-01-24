@@ -111,7 +111,6 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
     struct bm_data    *data;
-    UBYTE  i;
     
     data = OOP_INST_DATA(cl, o);
     
@@ -227,6 +226,9 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	case aoHidd_BitMap_Align:
 	    *msg->storage = 16;
 	    return;
+	case aoHidd_BitMap_IsLinearMem:
+	    *msg->storage = TRUE;
+	    return;
 	}
     }
     DB2(bug("UAEGFXBitmap__Root__Get Exit\n"));
@@ -255,6 +257,26 @@ static int UAEGFXBitmap_Expunge(LIBBASETYPEPTR LIBBASE)
 ADD2INITLIB(UAEGFXBitmap_Init, 0);
 ADD2EXPUNGELIB(UAEGFXBitmap_Expunge, 0);
 
+BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
+{
+    struct bm_data *data = OOP_INST_DATA(cl, o);
+    struct uaegfx_staticdata *csd = CSD(cl);
+
+    *msg->addressReturn = data->VideoData;
+    *msg->widthReturn = data->width;
+    *msg->heightReturn = data->height;
+    /* undocumented, just a guess.. */
+    *msg->bankSizeReturn = *msg->memSizeReturn = data->bytesperline * data->height;
+    data->locked++;
+    return TRUE;
+}
+
+VOID UAEGFXBitmap__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
+{
+    struct bm_data *data = OOP_INST_DATA(cl, o);
+    struct uaegfx_staticdata *csd = CSD(cl);
+    data->locked--;
+}
 
 BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
