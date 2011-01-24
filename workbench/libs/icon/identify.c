@@ -165,6 +165,10 @@ struct DiskObject *__FindDefaultIcon_WB
                     icon = GetDefaultIconFromName("Home", iim->iim_Tags);
                 }
             }
+            else if (strncasecmp(device, "USB", 3) ==0)
+            {
+                icon = GetDefaultIconFromName("USB", iim->iim_Tags);
+            }
             else
             {
                 /* Fall back to generic harddisk icon */
