@@ -144,6 +144,7 @@ void PrioInsert(struct StackVars *sv, struct List *list,
 		struct CompoundDatatype *cdt);
 struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 			      STRPTR name);
+/* FIXME: Is this OK on m68k. Functions will be called with AROS_CALLx */
 LONG ReadFunc(struct StackVars *sv, UBYTE *buffer, ULONG length);
 UBYTE *AllocFunc(ULONG size, ULONG flags);
 void FreeFunc(UBYTE *memory, ULONG size);
