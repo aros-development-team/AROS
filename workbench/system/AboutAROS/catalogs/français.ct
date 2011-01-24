@@ -1,4 +1,4 @@
-## version $VER: AboutAROS.catalog 1.0 (02.07.2009)
+## version $VER: AboutAROS.catalog 1.1 (02.07.2009)
 ## language français
 ## codeset 0
 ;
@@ -139,4 +139,8 @@ MSG_SECTION_DATATYPES
 Modules de types de données
 ; Datatypes
 ;
-; ***NEW***
+MSG_SECTION_TESTING
+Tests
+;Testing
+;
+
