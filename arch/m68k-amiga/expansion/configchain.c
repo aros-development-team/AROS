@@ -36,7 +36,7 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res && res->rt_Pri < 105) {
 					D(bug("initresident %x '%s'\n", res, res->rt_Name));
 					InitResident(res, NULL);
-					romptr += 13; //sizeof (struct Resident);
+					break; /* must not keep looking */
 				} else {
 					romptr += 1;
 				}
