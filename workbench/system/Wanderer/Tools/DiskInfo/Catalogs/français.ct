@@ -32,3 +32,54 @@ Olivier Adam
 MSG_COPYRIGHT
 ©2006 AROS Dev Team
 ;
+MSG_USED
+Occupé
+;
+MSG_FREE
+Disponible
+;
+MSG_SIZE
+Capacité
+;
+MSG_BLOCK_SIZE
+Taille bloc
+;
+MSG_BLOCKS
+blocs
+;
+MSG_BYTES
+octets
+;
+MSG_STATUS
+État
+;
+MSG_READABLE
+Lisible
+;
+MSG_READABLE_WRITABLE
+Lisible/Inscriptible
+;
+MSG_VALIDATING
+En validation
+;
+MSG_NAME
+Nom du volume
+;
+MSG_UNIT
+unité
+;
+MSG_DOSDEVICE
+Pilote DOS :
+;
+MSG_DEVICEINFO
+Connecté en :
+;
+MSG_FILESYSTEM
+Système de fichiers :
+;
+MSG_PACKETDEVICE
+Packet Style device
+;
+MSG_IOFSDEVICE
+IOFS Style device
+;
