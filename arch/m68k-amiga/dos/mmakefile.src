@@ -15,7 +15,8 @@ CFUNCS  := \
 	setprotection startnotify systemtaglist unlock write \
 	waitforchar lockrecord unlockrecord readlink makelink \
 	openfromlock pipe setfilesize setmode waitpkt setfiledate \
-	setcomment format inhibit relabel setowner
+	setcomment format inhibit relabel setowner abortpkt \
+	replypkt
 
 CFILES  := $(CFUNCS) \
 	helper internalopen internalseek \
