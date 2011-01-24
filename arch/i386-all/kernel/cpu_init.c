@@ -15,6 +15,8 @@ static int cpu_Init(struct KernelBase *KernelBase)
 {
     ULONG v1, v2, v3, v4;
 
+    D(bug("[Kernel] cpu_Init(0x%p) for i386\n", KernelBase));
+
     KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext);
 
     /* Evaluate CPU capabilities */

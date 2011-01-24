@@ -2,6 +2,10 @@
 
 #include <kernel_base.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
+#include "kernel_debug.h"
+
 /*****************************************************************************
 
     NAME */
@@ -34,6 +38,7 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[Kernel] KrnGetBootInfo()\n"));
     return BootMsg;
 
     AROS_LIBFUNC_EXIT
