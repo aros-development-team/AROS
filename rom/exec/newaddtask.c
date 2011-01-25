@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a task.
@@ -149,9 +149,9 @@
     if ((IPTR)task->tc_SPReg & 0xf)
     {
         D(bug("[exec] NewAddTask with unaligned stack pointer! fixing 0x%P->0x%P\n",
-              task->tc_SPReg, (IPTR)task->tc_SPReg & 0xfffffff0));
+              task->tc_SPReg, (IPTR)task->tc_SPReg & ~0x0F));
 
-        task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & 0xfffffff0);
+        task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~0x0F);
     }
 #endif
     D(bug("[exec] NewAddTask: SPLower: 0x%P SPUpper: 0x%P SP: 0x%P\n",
