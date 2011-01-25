@@ -493,12 +493,45 @@ static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, str
 }
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+static AROS_UFH4(LONG, ReadFunc,
+	AROS_UFHA(BPTR, file,   D1),
+	AROS_UFHA(APTR, buffer, D2),
+	AROS_UFHA(LONG, length, D3),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
 
-AROS_UFP4(LONG, ReadFunc,
-	AROS_UFPA(BPTR, file,   D1),
-	AROS_UFPA(APTR, buffer, D2),
-	AROS_UFPA(LONG, length, D3),
-	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+    return FRead(file, buffer, 1, length);
+
+    AROS_USERFUNC_EXIT
+}
+
+static AROS_UFH3(APTR, AllocFunc,
+	AROS_UFHA(ULONG, length, D0),
+	AROS_UFHA(ULONG, flags,  D1),
+        AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    return AllocMem(length, flags);
+
+    AROS_USERFUNC_EXIT
+}
+
+static AROS_UFH3(void, FreeFunc,
+	AROS_UFHA(APTR, buffer, A1),
+	AROS_UFHA(ULONG, length, D0),
+        AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    FreeMem(buffer, length);
+
+    AROS_USERFUNC_EXIT
+}
 
 AROS_UFH4(BPTR, LoadSeg_Overlay,
     AROS_UFHA(UBYTE*, name, D1),
@@ -511,9 +544,9 @@ AROS_UFH4(BPTR, LoadSeg_Overlay,
     void (*FunctionArray[3])();
     ULONG hunktype;
 
-    FunctionArray[0] = (void(*))ReadFunc;
-    FunctionArray[1] = __AROS_GETVECADDR(SysBase, 33); /* AllocMem() */
-    FunctionArray[2] = __AROS_GETVECADDR(SysBase, 35); /* FreeMem() */
+    FunctionArray[0] = (APTR)ReadFunc;
+    FunctionArray[1] = (APTR)AllocFunc;
+    FunctionArray[2] = (APTR)FreeFunc;
 
     D(bug("LoadSeg_Overlay. table=%x fh=%x\n", hunktable, fh));
     if (read_block(fh, &hunktype, sizeof(hunktype), (SIPTR*)FunctionArray, DosBase))

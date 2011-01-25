@@ -144,11 +144,20 @@ void PrioInsert(struct StackVars *sv, struct List *list,
 		struct CompoundDatatype *cdt);
 struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 			      STRPTR name);
-/* FIXME: Is this OK on m68k. Functions will be called with AROS_CALLx */
-LONG ReadFunc(struct StackVars *sv, UBYTE *buffer, ULONG length);
-UBYTE *AllocFunc(ULONG size, ULONG flags);
-void FreeFunc(UBYTE *memory, ULONG size);
 
+AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes), 
+	AROS_UFPA(BPTR   , fh        , D1),
+	AROS_UFPA(void * , buf       , D2),
+	AROS_UFPA(LONG   , size      , D3),
+	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes), 
+	AROS_UFPA(ULONG, size, D0),
+	AROS_UFPA(ULONG, req,  D1),
+	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDatatypes), 
+	AROS_UFPA(APTR , memory, A1),
+	AROS_UFPA(ULONG, size  , D0),
+	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
 
 /********************************* CONSTANTS *********************************/
 
@@ -180,17 +189,17 @@ LONG PropArray[2*NUM_PROP]=
 
 #define  NUM_COLL  1
 
-LONG CollArray[2*NUM_COLL]=
+const LONG const CollArray[2*NUM_COLL]=
 {
     ID_DTYP, ID_DTTL
 };
 
 
-LONG_FUNC FunctionArray[]=
+const LONG_FUNC const FunctionArray[]=
 {				/* Note! */
-    (LONG_FUNC)&ReadFunc,
-    (LONG_FUNC)&AllocFunc,
-    (LONG_FUNC)&FreeFunc
+    (LONG_FUNC)AROS_SLIB_ENTRY(ReadFunc, AddDatatypes),
+    (LONG_FUNC)AROS_SLIB_ENTRY(AllocFunc, AddDatatypes),
+    (LONG_FUNC)AROS_SLIB_ENTRY(FreeFunc, AddDatatypes),
 };
 
 
@@ -858,7 +867,11 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 			HookBufSize = cdt->DTCDSize;
 			HookPosition = 0;
 
-			if((SegList = InternalLoadSeg(MKBADDR(sv), BNULL,
+			/* We use a cast to BPTR, since sv may not
+			 * be ULONG aligned. Since only our ReadFunc
+			 * is going to be looking at it, this is ok.
+			 */
+			if((SegList = InternalLoadSeg((BPTR)(sv), BNULL,
 						      (LONG_FUNC)FunctionArray,
 						      &DefaultStack)))
 			{
@@ -1053,7 +1066,11 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 					    HookBufSize = cdt->DTCDSize;
 					    HookPosition = 0;
 
-					    if((SegList = InternalLoadSeg(MKBADDR(sv), BNULL, (LONG_FUNC)FunctionArray, &DefaultStack)))
+					    /* We use a cast to BPTR, since sv may not
+					     * be ULONG aligned. Since only our ReadFunc
+					     * is going to be looking at it, this is ok.
+					     */
+					    if((SegList = InternalLoadSeg((BPTR)(sv), BNULL, (LONG_FUNC)FunctionArray, &DefaultStack)))
 					    {
 						cdt->SegList = SegList;
 						cdt->Function = BADDR(SegList) + sizeof(BPTR);  // FIXME: is this portable?
@@ -1335,8 +1352,15 @@ struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 *
 */
 
-LONG ReadFunc(struct StackVars *sv, UBYTE *buffer, ULONG length)
+AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes),
+	AROS_UFHA(BPTR   , fh        , D1),
+	AROS_UFHA(void * , buffer    , D2),
+	AROS_UFHA(LONG   , length    , D3),
+	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
+    AROS_USERFUNC_INIT
+
+    struct StackVars *sv = (APTR)fh;
     LONG maxlen = HookBufSize-HookPosition;
     LONG actual = length > maxlen ? maxlen : length;
     
@@ -1345,6 +1369,8 @@ LONG ReadFunc(struct StackVars *sv, UBYTE *buffer, ULONG length)
     HookPosition += actual;
     
     return actual;
+
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -1370,9 +1396,16 @@ LONG ReadFunc(struct StackVars *sv, UBYTE *buffer, ULONG length)
 *
 */
 
-UBYTE *AllocFunc(ULONG size, ULONG flags)
+AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes),
+	AROS_UFHA(ULONG, size, D0),
+	AROS_UFHA(ULONG, flags,D1),
+	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     return(AllocMem(size, flags));
+
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -1398,9 +1431,16 @@ UBYTE *AllocFunc(ULONG size, ULONG flags)
 *
 */
 
-void FreeFunc(UBYTE *memory, ULONG size)
+AROS_UFH3(void, AROS_SLIB_ENTRY(FreeFunc, AddDatatypes),
+	AROS_UFHA(APTR , memory, A1),
+	AROS_UFHA(ULONG, size  , D0),
+	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     FreeMem(memory, size);
+
+    AROS_USERFUNC_EXIT
 }
 
 
