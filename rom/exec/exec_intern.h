@@ -29,6 +29,8 @@
 
 #include <exec_platform.h>
 
+#define ALERT_BUFFER_SIZE 2048
+
 /* Internals of this structure are host-specific, we don't know them here */
 struct HostInterface;
 
@@ -42,7 +44,7 @@ struct IntExecBase
     ULONG  PageSize;				/* Memory page size	     */
     ULONG  IntFlags;				/* Internal flags, see below */
     struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   */
-    char   AlertBuffer[2048];			/* Buffer for alert text     */
+    char   AlertBuffer[ALERT_BUFFER_SIZE];	/* Buffer for alert text     */
 };
 
 #define PrivExecBase(base) ((struct IntExecBase *)base)

@@ -9,8 +9,6 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-#define ALERT_BUFFER_SIZE 2048
-
 static char *startstring = "Program failed\n";
 static char *endstring   = "\nWait for disk activity to finish.";
 static char *deadend_buttons     = "More...|Suspend|Reboot";
