@@ -12,7 +12,7 @@
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
-%define compile_q cmd=$(TARGET_CC) opt=$(CFLAGS) from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
+%define compile_q cmd="$(TARGET_CC) $(TARGET_CFLAGS)" opt=$(CFLAGS) from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 	@$(ECHO) "Compiling %(from)"
 	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -2078,7 +2078,7 @@ endif
 %define ctoasm_q
 %.s : %.c
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(TARGET_CC) -S $(CFLAGS) $< -c -o $@
+	@$(TARGET_CC) -S $(CFLAGS) $(TARGET_CFLAGS) $< -c -o $@
 %end
 #------------------------------------------------------------------------------
 
@@ -2210,7 +2210,7 @@ $(HIDD_LIB)($(STUBS_MEM)) : $(STUBS_OBJ)
 	%mklib_q from=$^
 
 $(STUBS_OBJ) : $(STUBS_SRC) 
-	%compile_q cmd=$(TARGET_CC) opt=%(cflags) iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
+	%compile_q cmd="$(TARGET_CC) $(TARGET_CFLAGS)" opt=%(cflags) iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 
 $(STUBS_DEP) : $(STUBS_SRC)
 	%mkdepend_q flags=%(dflags)
