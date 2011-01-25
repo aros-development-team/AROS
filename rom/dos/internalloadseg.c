@@ -119,10 +119,10 @@
 
 void *loadseg_alloc(SIPTR *allocfunc, ULONG size, ULONG req)
 {
-    UBYTE *p = AROS_CALL2(void *, allocfunc,
-        AROS_LCA(ULONG, size  , D0),
-        AROS_LCA(ULONG, req   , D1),
-        struct Library *, (struct Library *)SysBase);
+    UBYTE *p = AROS_UFC3(void *, allocfunc,
+        AROS_UFCA(ULONG, size  , D0),
+        AROS_UFCA(ULONG, req   , D1),
+        AROS_UFCA(struct Library *, (struct Library *)SysBase, A6));
     if (!p)
     	return NULL;
     D(bug("allocmem %p %d\n", p, size));
@@ -140,16 +140,16 @@ void loadseg_free(SIPTR *freefunc, void *buf)
     D(bug("freemem %p %d\n", p, size));
     if (!size)
     	return;
-    AROS_CALL2NR(void, freefunc,
-	  AROS_LCA(void * ,    p, A1),
-	  AROS_LCA(ULONG  , size, D0),
-	  struct Library *, (struct Library *)SysBase);
+    AROS_UFC3(void, freefunc,
+	  AROS_UFCA(void * ,    p, A1),
+	  AROS_UFCA(ULONG  , size, D0),
+	  AROS_UFCA(struct Library *, (struct Library *)SysBase, A6));
 }
 LONG loadseg_read(SIPTR *readfunc, BPTR fh, void *buf, LONG size, struct DosLibrary *DOSBase)
 {
-    return AROS_CALL3(LONG, readfunc,
-	AROS_LCA(BPTR   , fh        , D1),
-	AROS_LCA(void * , buf       , D2),
-	AROS_LCA(LONG   , size      , D3),
-	struct DosLibrary *, DOSBase);
+    return AROS_UFC4(LONG, readfunc,
+	AROS_UFCA(BPTR   , fh        , D1),
+	AROS_UFCA(void * , buf       , D2),
+	AROS_UFCA(LONG   , size      , D3),
+	AROS_UFCA(struct DosLibrary *, DOSBase, A6));
 }

@@ -7,6 +7,7 @@
 */
 #define DEBUG 0
 
+#include <aros/asmcall.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/stdio.h>
@@ -14,16 +15,42 @@
 #include <aros/debug.h>
 #include "dos_intern.h"
 
-static AROS_LH3(LONG, ReadFunc,
+static AROS_UFH4(LONG, ReadFunc,
 	AROS_UFHA(BPTR, file,   D1),
 	AROS_UFHA(APTR, buffer, D2),
 	AROS_UFHA(LONG, length, D3),
-        struct DosLibrary *, DOSBase, 0, Dos
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6)
 )
 {
     AROS_USERFUNC_INIT
 
     return FRead(file, buffer, 1, length);
+
+    AROS_USERFUNC_EXIT
+}
+
+static AROS_UFH3(APTR, AllocFunc,
+	AROS_UFHA(ULONG, length, D0),
+	AROS_UFHA(ULONG, flags,  D1),
+        AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    return AllocMem(length, flags);
+
+    AROS_USERFUNC_EXIT
+}
+
+static AROS_UFH3(void, FreeFunc,
+	AROS_UFHA(APTR, buffer, A1),
+	AROS_UFHA(ULONG, length, D0),
+        AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    FreeMem(buffer, length);
 
     AROS_USERFUNC_EXIT
 }
@@ -72,9 +99,9 @@ static AROS_LH3(LONG, ReadFunc,
     void (* FunctionArray[3])();
     BPTR file, segs=0;
 
-    FunctionArray[0] = (void(*))AROS_SLIB_ENTRY(ReadFunc, Dos); //__AROS_GETVECADDR(DOSBase,7);  /* Read() */
-    FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
-    FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
+    FunctionArray[0] = ReadFunc;
+    FunctionArray[1] = AllocFunc;
+    FunctionArray[2] = FreeFunc;
 
     /* Open the file */
     D(bug("[LoadSeg] Opening '%s'...\n", name));
