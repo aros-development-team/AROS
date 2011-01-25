@@ -112,17 +112,16 @@ struct Patches
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(BPTR, New_CreateDir,
-    AROS_UFHA(CONST_STRPTR, name,    D1),
-    AROS_UFHA(APTR,         libbase, A6)
-)
+AROS_LH1(BPTR, New_CreateDir,
+    AROS_LHA(CONST_STRPTR, name, D1),
+    struct DosLibrary *, DOSBase, 20, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // result is exclusive lock or NULL
-    BPTR result = AROS_UFC2(BPTR, patches[PATCH_CreateDir].oldfunc,
-        AROS_UFCA(CONST_STRPTR, name,    D1),
-	AROS_UFCA(APTR,         libbase, A6));
+    BPTR result = AROS_CALL1(BPTR, patches[PATCH_CreateDir].oldfunc,
+        AROS_LDA(CONST_STRPTR, name,    D1),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_CreateDir].enabled)
     {
@@ -131,23 +130,23 @@ AROS_UFH2(BPTR, New_CreateDir,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(BPTR, New_CurrentDir,
-    AROS_UFHA(BPTR, lock,    D1),
-    AROS_UFHA(APTR, libbase, A6))
+AROS_LH1(BPTR, New_CurrentDir,
+    AROS_LHA(BPTR, lock, D1),
+    struct DosLibrary *, DOSBase, 21, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
     //char lockbuf[MAX_LOCK_LEN+1];
     char *lockpath = "?";
 
     // returns lock to old directory, 0 means boot filesystem
-    BPTR result = AROS_UFC2(BPTR, patches[PATCH_CurrentDir].oldfunc,
-	AROS_UFCA(BPTR, lock,    D1),
-	AROS_UFCA(APTR, libbase, A6));
+    BPTR result = AROS_CALL1(BPTR, patches[PATCH_CurrentDir].oldfunc,
+	AROS_LDA(BPTR, lock,    D1),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_CurrentDir].enabled)
     {
@@ -172,21 +171,21 @@ AROS_UFH2(BPTR, New_CurrentDir,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(BOOL, New_DeleteFile,
-    AROS_UFHA(CONST_STRPTR, name,    D1),
-    AROS_UFHA(APTR,         libbase, A6))
+AROS_LH1(BOOL, New_DeleteFile,
+    AROS_LHA(CONST_STRPTR, name, D1),
+    struct DosLibrary *, DOSBase, 12, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // true means deleting was OK
-    BOOL result = AROS_UFC2(BOOL, patches[PATCH_DeleteFile].oldfunc,
-	AROS_UFCA(CONST_STRPTR, name,    D1),
-	AROS_UFCA(APTR,         libbase, A6));
+    BOOL result = AROS_CALL1(BOOL, patches[PATCH_DeleteFile].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,    D1),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_DeleteFile].enabled)
     {
@@ -195,23 +194,23 @@ AROS_UFH2(BOOL, New_DeleteFile,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(LONG, New_DeleteVar,
-    AROS_UFHA(CONST_STRPTR, name,    D1),
-    AROS_UFHA(ULONG ,       flags,   D2),
-    AROS_UFHA(APTR,         libbase, A6))
+AROS_LH2(LONG, New_DeleteVar,
+    AROS_LHA(CONST_STRPTR, name, D1),
+    AROS_LHA(ULONG , flags, D2),
+    struct DosLibrary *, DOSBase, 152, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // true means variable was deleted
-    LONG result = AROS_UFC3(LONG, patches[PATCH_DeleteVar].oldfunc,
-	AROS_UFCA(CONST_STRPTR, name,    D1),
-	AROS_UFCA(ULONG ,       flags,   D2),
-	AROS_UFCA(APTR,         libbase, A6));
+    LONG result = AROS_CALL2(LONG, patches[PATCH_DeleteVar].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,    D1),
+	AROS_LDA(ULONG ,       flags,   D2),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_DeleteVar].enabled)
     {
@@ -226,25 +225,25 @@ AROS_UFH3(LONG, New_DeleteVar,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH4(LONG, New_Execute,
-    AROS_UFHA(STRPTR, string,  D1),
-    AROS_UFHA(BPTR,   input ,  D2),
-    AROS_UFHA(BPTR,   output,  D3),
-    AROS_UFHA(APTR,   libbase, A6))
+AROS_LH3(LONG, New_Execute,
+    AROS_LHA(CONST_STRPTR, string, D1),
+    AROS_LHA(BPTR  , input , D2),
+    AROS_LHA(BPTR  , output, D3),
+    struct DosLibrary *, DOSBase, 37, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // true means command could be started
-    LONG result = AROS_UFC4(LONG, patches[PATCH_Execute].oldfunc,
-	AROS_UFCA(STRPTR, string,  D1),
-	AROS_UFCA(BPTR,   input ,  D2),
-	AROS_UFCA(BPTR,   output,  D3),
-	AROS_UFCA(APTR,   libbase, A6));
+    LONG result = AROS_CALL3(LONG, patches[PATCH_Execute].oldfunc,
+	AROS_LDA(CONST_STRPTR, string,  D1),
+	AROS_LDA(BPTR,   input ,  D2),
+	AROS_LDA(BPTR,   output,  D3),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_Execute].enabled)
     {
@@ -253,23 +252,23 @@ AROS_UFH4(LONG, New_Execute,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(struct LocalVar *, New_FindVar,
-    AROS_UFHA(CONST_STRPTR, name,    D1),
-    AROS_UFHA(ULONG,        type,    D2),
-    AROS_UFHA(APTR,         libbase, A6))
+AROS_LH2(struct LocalVar *, New_FindVar,
+    AROS_LHA(CONST_STRPTR, name, D1),
+    AROS_LHA(ULONG       , type, D2),
+    struct DosLibrary *, DOSBase, 153, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // NULL means variable not found
-    struct LocalVar *result = AROS_UFC3(struct LocalVar *, patches[PATCH_FindVar].oldfunc,
-	AROS_UFCA(CONST_STRPTR, name,    D1),
-	AROS_UFCA(ULONG,        type,    D2),
-	AROS_UFCA(APTR,         libbase, A6));
+    struct LocalVar *result = AROS_CALL2(struct LocalVar *, patches[PATCH_FindVar].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,    D1),
+	AROS_LDA(ULONG,        type,    D2),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_FindVar].enabled)
     {
@@ -283,27 +282,27 @@ AROS_UFH3(struct LocalVar *, New_FindVar,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH5(LONG, New_GetVar,
-    AROS_UFHA(CONST_STRPTR, name,    D1),
-    AROS_UFHA(STRPTR,       buffer,  D2),
-    AROS_UFHA(LONG,         size,    D3),
-    AROS_UFHA(LONG,         flags,   D4),
-    AROS_UFHA(APTR,         libbase, A6))
+AROS_LH4(LONG, New_GetVar,
+    AROS_LHA(CONST_STRPTR, name,   D1),
+    AROS_LHA(STRPTR,       buffer, D2),
+    AROS_LHA(LONG,         size,   D3),
+    AROS_LHA(LONG,         flags,  D4),
+    struct DosLibrary *, DOSBase, 151, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // -1 means variable not defined
-    LONG result = AROS_UFC5(LONG, patches[PATCH_GetVar].oldfunc,
-	AROS_UFCA(CONST_STRPTR, name,    D1),
-	AROS_UFCA(STRPTR,       buffer,  D2),
-	AROS_UFCA(LONG,         size,    D3),
-	AROS_UFCA(LONG,         flags,   D4),
-	AROS_UFCA(APTR,         libbase, A6));
+    LONG result = AROS_CALL4(LONG, patches[PATCH_GetVar].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,    D1),
+	AROS_LDA(STRPTR,       buffer,  D2),
+	AROS_LDA(LONG,         size,    D3),
+	AROS_LDA(LONG,         flags,   D4),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_GetVar].enabled)
     {
@@ -318,21 +317,21 @@ AROS_UFH5(LONG, New_GetVar,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(BPTR, New_LoadSeg,
-    AROS_UFHA(CONST_STRPTR, name,    D1),
-    AROS_UFHA(APTR,         libbase, A6))
+AROS_LH1(BPTR, New_LoadSeg,
+    AROS_LHA(CONST_STRPTR, name, D1),
+    struct DosLibrary *, DOSBase, 25, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means load failed
-    BPTR result = AROS_UFC2(BPTR, patches[PATCH_LoadSeg].oldfunc,
-	AROS_UFCA(CONST_STRPTR, name,    D1),
-	AROS_UFCA(APTR,         libbase, A6));
+    BPTR result = AROS_CALL1(BPTR, patches[PATCH_LoadSeg].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,    D1),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_LoadSeg].enabled)
     {
@@ -341,23 +340,23 @@ AROS_UFH2(BPTR, New_LoadSeg,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(BPTR, New_Lock,
-    AROS_UFHA(CONST_STRPTR, name,       D1),
-    AROS_UFHA(LONG,         accessMode, D2),
-    AROS_UFHA(APTR,         libbase,    A6))
+AROS_LH2(BPTR, New_Lock,
+    AROS_LHA(CONST_STRPTR, name,       D1),
+    AROS_LHA(LONG,         accessMode, D2),
+    struct DosLibrary *, DOSBase, 14, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means error
-    BPTR result = AROS_UFC3(BPTR, patches[PATCH_Lock].oldfunc,
-	AROS_UFCA(CONST_STRPTR, name,       D1),
-	AROS_UFCA(LONG,         accessMode, D2),
-	AROS_UFCA(APTR,         libbase,    A6));
+    BPTR result = AROS_CALL2(BPTR, patches[PATCH_Lock].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,       D1),
+	AROS_LDA(LONG,         accessMode, D2),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_Lock].enabled)
     {
@@ -381,25 +380,25 @@ AROS_UFH3(BPTR, New_Lock,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH4(LONG, New_MakeLink,
-    AROS_UFHA(STRPTR, name,    D1),
-    AROS_UFHA(APTR,   dest,    D2),
-    AROS_UFHA(LONG,   soft,    D3),
-    AROS_UFHA(APTR,   libbase, A6))
+AROS_LH3(LONG, New_MakeLink,
+    AROS_LHA(CONST_STRPTR, name, D1),
+    AROS_LHA(APTR,   dest, D2),
+    AROS_LHA(LONG  , soft, D3),
+    struct DosLibrary *, DOSBase, 74, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // result is boolean
-    LONG result = AROS_UFC4(LONG, patches[PATCH_MakeLink].oldfunc,
-	AROS_UFCA(STRPTR, name,    D1),
-	AROS_UFCA(APTR,   dest,    D2),
-	AROS_UFCA(LONG,   soft,    D3),
-	AROS_UFCA(APTR,   libbase, A6));
+    LONG result = AROS_CALL3(LONG, patches[PATCH_MakeLink].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,    D1),
+	AROS_LDA(APTR,   dest,    D2),
+	AROS_LDA(LONG,   soft,    D3),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_MakeLink].enabled)
     {
@@ -440,23 +439,23 @@ AROS_UFH4(LONG, New_MakeLink,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(BPTR, New_NewLoadSeg,
-    AROS_UFHA(STRPTR,           file,    D1),
-    AROS_UFHA(struct TagItem *, tags,    D2),
-    AROS_UFHA(APTR,             libbase, A6))
+AROS_LH2(BPTR, New_NewLoadSeg,
+    AROS_LHA(CONST_STRPTR, file, D1),
+    AROS_LHA(struct TagItem *, tags, D2),
+    struct DosLibrary *, DOSBase, 128, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means load failed
-    BPTR result = AROS_UFC3(BPTR, patches[PATCH_NewLoadSeg].oldfunc,
-	AROS_UFCA(STRPTR,           file,    D1),
-	AROS_UFCA(struct TagItem *, tags,    D2),
-	AROS_UFCA(APTR,             libbase, A6));
+    BPTR result = AROS_CALL2(BPTR, patches[PATCH_NewLoadSeg].oldfunc,
+	AROS_LDA(CONST_STRPTR,           file,    D1),
+	AROS_LDA(struct TagItem *, tags,    D2),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_NewLoadSeg].enabled)
     {
@@ -465,24 +464,23 @@ AROS_UFH3(BPTR, New_NewLoadSeg,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3 (BPTR, New_Open,
-    AROS_UFHA (CONST_STRPTR, name,       D1),
-    AROS_UFHA (LONG,         accessMode, D2),
-    AROS_UFHA (APTR,         libbase,    A6))
-
+AROS_LH2(BPTR, New_Open,
+    AROS_LHA(CONST_STRPTR, name,       D1),
+    AROS_LHA(LONG,         accessMode, D2),
+    struct DosLibrary *, DOSBase, 5, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means error
-    BPTR result = AROS_UFC3(BPTR, patches[PATCH_Open].oldfunc,
-	AROS_UFCA (CONST_STRPTR, name,       D1),
-	AROS_UFCA (LONG,         accessMode, D2),
-	AROS_UFCA (APTR,         libbase,    A6));
+    BPTR result = AROS_CALL2(BPTR, patches[PATCH_Open].oldfunc,
+	AROS_LDA (CONST_STRPTR, name,       D1),
+	AROS_LDA (LONG,         accessMode, D2),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_Open].enabled)
     {
@@ -499,30 +497,31 @@ AROS_UFH3 (BPTR, New_Open,
 		(accessMode & FMF_APPEND) ? 'A' : '_',
 		(accessMode & FMF_CREATE) ? 'C' : '_');
 	}
-	else                                   opt = MSG(MSG_UNKNOWN);
+	else
+            opt = MSG(MSG_UNKNOWN);
 
 	main_output("Open", name, opt ? opt : (STRPTR)optstr, (IPTR)result, TRUE);
     }
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(LONG, New_Rename,
-    AROS_UFHA(CONST_STRPTR, oldName, D1),
-    AROS_UFHA(CONST_STRPTR, newName, D2),
-    AROS_UFHA(APTR,         libbase, A6))
+AROS_LH2(LONG, New_Rename,
+    AROS_LHA(CONST_STRPTR, oldName, D1),
+    AROS_LHA(CONST_STRPTR, newName, D2),
+    struct DosLibrary *, DOSBase, 13, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // bool
-    LONG result = AROS_UFC3(LONG, patches[PATCH_Rename].oldfunc,
-	AROS_UFCA(CONST_STRPTR, oldName, D1),
-	AROS_UFCA(CONST_STRPTR, newName, D2),
-	AROS_UFCA(APTR,         libbase, A6));
+    LONG result = AROS_CALL2(LONG, patches[PATCH_Rename].oldfunc,
+	AROS_LDA(CONST_STRPTR, oldName, D1),
+	AROS_LDA(CONST_STRPTR, newName, D2),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_Rename].enabled)
     {
@@ -532,27 +531,27 @@ AROS_UFH3(LONG, New_Rename,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH5(LONG, New_RunCommand,
-    AROS_UFHA(BPTR,   segList,   D1),
-    AROS_UFHA(ULONG,  stacksize, D2),
-    AROS_UFHA(STRPTR, argptr,    D3),
-    AROS_UFHA(ULONG,  argsize,   D4),
-    AROS_UFHA(APTR,   libbase,   A6))
+AROS_LH4(LONG, New_RunCommand,
+    AROS_LHA(BPTR,   segList,   D1),
+    AROS_LHA(ULONG,  stacksize, D2),
+    AROS_LHA(CONST_STRPTR, argptr,    D3),
+    AROS_LHA(ULONG,  argsize,   D4),
+    struct DosLibrary *, DOSBase, 84, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // -1 means error
-    LONG result = AROS_UFC5(LONG, patches[PATCH_RunCommand].oldfunc,
-	AROS_UFCA(BPTR,   segList,   D1),
-	AROS_UFCA(ULONG,  stacksize, D2),
-	AROS_UFCA(STRPTR, argptr,    D3),
-	AROS_UFCA(ULONG,  argsize,   D4),
-	AROS_UFCA(APTR,   libbase,   A6));
+    LONG result = AROS_CALL4(LONG, patches[PATCH_RunCommand].oldfunc,
+	AROS_LDA(BPTR,   segList,   D1),
+	AROS_LDA(ULONG,  stacksize, D2),
+	AROS_LDA(CONST_STRPTR, argptr,    D3),
+	AROS_LDA(ULONG,  argsize,   D4),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_RunCommand].enabled)
     {
@@ -572,26 +571,26 @@ AROS_UFH5(LONG, New_RunCommand,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH5(BOOL, New_SetVar,
-    AROS_UFHA(CONST_STRPTR, name,    D1),
-    AROS_UFHA(CONST_STRPTR, buffer,  D2),
-    AROS_UFHA(LONG,         size,    D3),
-    AROS_UFHA(LONG,         flags,   D4),
-    AROS_UFHA(void*,        libbase, A6))
+AROS_LH4(BOOL, New_SetVar,
+    AROS_LHA(CONST_STRPTR, name, D1),
+    AROS_LHA(CONST_STRPTR, buffer, D2),
+    AROS_LHA(LONG        , size, D3),
+    AROS_LHA(LONG        , flags, D4),
+    struct DosLibrary *, DOSBase, 150, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-    BOOL result = AROS_UFC5(BOOL, patches[PATCH_SetVar].oldfunc,
-	AROS_UFCA(CONST_STRPTR, name,    D1),
-	AROS_UFCA(CONST_STRPTR, buffer,  D2),
-	AROS_UFCA(LONG,         size,    D3),
-	AROS_UFCA(LONG,         flags,   D4),
-	AROS_UFCA(void*,        libbase, A6));
+    BOOL result = AROS_CALL4(BOOL, patches[PATCH_SetVar].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,    D1),
+	AROS_LDA(CONST_STRPTR, buffer,  D2),
+	AROS_LDA(LONG,         size,    D3),
+	AROS_LDA(LONG,         flags,   D4),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_SetVar].enabled)
     {
@@ -629,23 +628,23 @@ AROS_UFH5(BOOL, New_SetVar,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(LONG, New_SystemTagList,
-    AROS_UFHA(CONST_STRPTR,     command, D1),
-    AROS_UFHA(struct TagItem *, tags,    D2),
-    AROS_UFHA(APTR,             libbase, A6))
+AROS_LH2(LONG, New_SystemTagList,
+    AROS_LHA(CONST_STRPTR    , command, D1),
+    AROS_LHA(struct TagItem *, tags,    D2),
+    struct DosLibrary *, DOSBase, 101, Dos)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // -1 means error
-    LONG result = AROS_UFC3(LONG, patches[PATCH_SystemTagList].oldfunc,
-	AROS_UFCA(CONST_STRPTR,     command, D1),
-	AROS_UFCA(struct TagItem *, tags,    D2),
-	AROS_UFCA(APTR,             libbase, A6));
+    LONG result = AROS_CALL2(LONG, patches[PATCH_SystemTagList].oldfunc,
+	AROS_LDA(CONST_STRPTR,     command, D1),
+	AROS_LDA(struct TagItem *, tags,    D2),
+	struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_SystemTagList].enabled)
     {
@@ -656,21 +655,21 @@ AROS_UFH3(LONG, New_SystemTagList,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(struct MsgPort *, New_FindPort,
-    AROS_UFHA(STRPTR, name,    A1),
-    AROS_UFHA(APTR,   libbase, A6))
+AROS_LH1(struct MsgPort *, New_FindPort,
+    AROS_LHA(STRPTR, name, A1),
+    struct ExecBase *, SysBase, 65, Exec)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // NULL means error
-    struct MsgPort *result = AROS_UFC2(struct MsgPort *, patches[PATCH_FindPort].oldfunc,
-	AROS_UFCA(STRPTR, name,    A1),
-	AROS_UFCA(APTR,   libbase, A6));
+    struct MsgPort *result = AROS_CALL1(struct MsgPort *, patches[PATCH_FindPort].oldfunc,
+	AROS_LDA(STRPTR, name,    A1),
+	struct ExecBase *, SysBase);
 
     if (patches[PATCH_FindPort].enabled)
     {
@@ -679,21 +678,21 @@ AROS_UFH2(struct MsgPort *, New_FindPort,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(struct Resident *, New_FindResident,
-    AROS_UFHA(const UBYTE *, name,    A1),
-    AROS_UFHA(APTR,          libbase, A6))
+AROS_LH1(struct Resident *, New_FindResident,
+    AROS_LHA(const UBYTE *, name, A1),
+    struct ExecBase *, SysBase, 16, Exec)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // NULL means error
-    struct Resident *result = AROS_UFC2(struct Resident *, patches[PATCH_FindResident].oldfunc,
-	AROS_UFCA(const UBYTE *, name,    A1),
-	AROS_UFCA(APTR,          libbase, A6));
+    struct Resident *result = AROS_CALL1(struct Resident *, patches[PATCH_FindResident].oldfunc,
+	AROS_LDA(const UBYTE *, name,    A1),
+	struct ExecBase *, SysBase);
 
     if (patches[PATCH_FindResident].enabled)
     {
@@ -702,21 +701,21 @@ AROS_UFH2(struct Resident *, New_FindResident,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(struct SignalSemaphore *, New_FindSemaphore,
-    AROS_UFHA(STRPTR, name,    A1),
-    AROS_UFHA(APTR,   libbase, A6))
+AROS_LH1(struct SignalSemaphore *, New_FindSemaphore,
+    AROS_LHA(STRPTR, name, A1),
+    struct ExecBase *, SysBase, 99, Exec)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // NULL means error
-    struct SignalSemaphore *result = AROS_UFC2(struct SignalSemaphore *, patches[PATCH_FindSemaphore].oldfunc,
-	AROS_UFCA(STRPTR, name,    A1),
-	AROS_UFCA(APTR,   libbase, A6));
+    struct SignalSemaphore *result = AROS_CALL1(struct SignalSemaphore *, patches[PATCH_FindSemaphore].oldfunc,
+	AROS_LDA(STRPTR, name,    A1),
+	struct ExecBase *, SysBase);
 
     if (patches[PATCH_FindSemaphore].enabled)
     {
@@ -725,21 +724,21 @@ AROS_UFH2(struct SignalSemaphore *, New_FindSemaphore,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(struct Task *, New_FindTask,
-    AROS_UFHA(STRPTR, name,    A1),
-    AROS_UFHA(APTR,   libbase, A6))
+AROS_LH1(struct Task *, New_FindTask,
+    AROS_LHA(STRPTR, name, A1),
+    struct ExecBase *, SysBase, 49, Exec)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // NULL means error
-    struct Task *result = AROS_UFC2(struct Task *, patches[PATCH_FindTask].oldfunc,
-	AROS_UFCA(STRPTR, name,    A1),
-	AROS_UFCA(APTR,   libbase, A6));
+    struct Task *result = AROS_CALL1(struct Task *, patches[PATCH_FindTask].oldfunc,
+	AROS_LDA(STRPTR, name,    A1),
+	struct ExecBase *, SysBase);
 
     if (patches[PATCH_FindTask].enabled)
     {
@@ -748,54 +747,55 @@ AROS_UFH2(struct Task *, New_FindTask,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH5(LONG, New_OpenDevice,
-    AROS_UFHA(CONST_STRPTR,       devName,    A0),
-    AROS_UFHA(ULONG,              unitNumber, D0),
-    AROS_UFHA(struct IORequest *, iORequest,  A1),
-    AROS_UFHA(ULONG,              flags,      D1),
-    AROS_UFHA(APTR,               libbase,    A6))
+AROS_LH4(LONG, New_OpenDevice,
+    AROS_LHA(CONST_STRPTR,       devName,    A0),
+    AROS_LHA(IPTR,               unitNumber, D0),
+    AROS_LHA(struct IORequest *, iORequest,  A1),
+    AROS_LHA(ULONG,              flags,      D1),
+    struct ExecBase *, SysBase, 74, Exec)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means OK
-    LONG result = AROS_UFC5(LONG, patches[PATCH_OpenDevice].oldfunc,
-	AROS_UFCA(CONST_STRPTR,       devName,    A0),
-	AROS_UFCA(ULONG,              unitNumber, D0),
-	AROS_UFCA(struct IORequest *, iORequest,  A1),
-	AROS_UFCA(ULONG,              flags,      D1),
-	AROS_UFCA(APTR,               libbase,    A6));
+    LONG result = AROS_CALL4(LONG, patches[PATCH_OpenDevice].oldfunc,
+	AROS_LDA(CONST_STRPTR,       devName,    A0),
+	AROS_LDA(IPTR,               unitNumber, D0),
+	AROS_LDA(struct IORequest *, iORequest,  A1),
+	AROS_LDA(ULONG,              flags,      D1),
+	struct ExecBase *, SysBase);
 
     if (patches[PATCH_OpenDevice].enabled)
     {
 	char unitstr[20];
-	sprintf(unitstr, "Unit %d", unitNumber);
+        // FIXME: unitNumber can be a pointer
+	sprintf(unitstr, "Unit %d", (int)unitNumber);
 	main_output("OpenDevice", devName, unitstr, !result, TRUE);
     }
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(struct Library *, New_OpenLibrary,
-    AROS_UFHA(CONST_STRPTR,  libName, A1),
-    AROS_UFHA(ULONG,         version, D0),
-    AROS_UFHA(APTR,          libbase, A6))
+AROS_LH2(struct Library *, New_OpenLibrary,
+    AROS_LHA(CONST_STRPTR,  libName, A1),
+    AROS_LHA(ULONG,         version, D0),
+    struct ExecBase *, SysBase, 92, Exec)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means error
-    struct Library *result = AROS_UFC3(struct Library *, patches[PATCH_OpenLibrary].oldfunc,
-	AROS_UFCA(CONST_STRPTR,  libName, A1),
-	AROS_UFCA(ULONG,         version, D0),
-	AROS_UFCA(APTR,          libbase, A6));
+    struct Library *result = AROS_CALL2(struct Library *, patches[PATCH_OpenLibrary].oldfunc,
+	AROS_LDA(CONST_STRPTR,  libName, A1),
+	AROS_LDA(ULONG,         version, D0),
+	struct ExecBase *, SysBase);
 
     if (patches[PATCH_OpenLibrary].enabled)
     {
@@ -806,21 +806,21 @@ AROS_UFH3(struct Library *, New_OpenLibrary,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(APTR, New_OpenResource,
-    AROS_UFHA(CONST_STRPTR, resName, A1),
-    AROS_UFHA(APTR,         libbase, A6))
+AROS_LH1(APTR, New_OpenResource,
+    AROS_LHA(CONST_STRPTR, resName, A1),
+    struct ExecBase *, SysBase, 83, Exec)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means error
-    APTR result = AROS_UFC2(APTR, patches[PATCH_OpenResource].oldfunc,
-	AROS_UFCA(CONST_STRPTR, resName, A1),
-	AROS_UFCA(APTR,         libbase, A6));
+    APTR result = AROS_CALL1(APTR, patches[PATCH_OpenResource].oldfunc,
+	AROS_LDA(CONST_STRPTR, resName, A1),
+	struct ExecBase *, SysBase);
 
     if (patches[PATCH_OpenResource].enabled)
     {
@@ -829,21 +829,21 @@ AROS_UFH2(APTR, New_OpenResource,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH2(struct Screen *, New_LockPubScreen,
-    AROS_UFHA(CONST_STRPTR, name,    A0),
-    AROS_UFHA(APTR,         libbase, A6))
+AROS_LH1(struct Screen *, New_LockPubScreen,
+    AROS_LHA(CONST_STRPTR, name, A0),
+    struct IntuitionBase *, IntuitionBase, 85, Intuition)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means error
-    struct Screen *result = AROS_UFC2(struct Screen *, patches[PATCH_LockPubScreen].oldfunc,
-	AROS_UFCA(CONST_STRPTR, name,    A0),
-	AROS_UFCA(APTR,         libbase, A6));
+    struct Screen *result = AROS_CALL1(struct Screen *, patches[PATCH_LockPubScreen].oldfunc,
+	AROS_LDA(CONST_STRPTR, name,    A0),
+	struct IntuitionBase *, IntuitionBase);
 
     if (patches[PATCH_LockPubScreen].enabled)
     {
@@ -852,21 +852,21 @@ AROS_UFH2(struct Screen *, New_LockPubScreen,
     
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
-    
-AROS_UFH2(struct TextFont *, New_OpenFont,
-    AROS_UFHA(struct TextAttr *, textAttr, A0),
-    AROS_UFHA(APTR,              libbase,  A6))
+
+AROS_LH1(struct TextFont *, New_OpenFont,
+    AROS_LHA(struct TextAttr *, textAttr, A0),
+    struct GfxBase *, GfxBase, 12, Graphics)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means error
-    struct TextFont *result = AROS_UFC2(struct TextFont *, patches[PATCH_OpenFont].oldfunc,
-	AROS_UFCA(struct TextAttr *, textAttr, A0),
-	AROS_UFCA(APTR,              libbase,  A6));
+    struct TextFont *result = AROS_CALL1(struct TextFont *, patches[PATCH_OpenFont].oldfunc,
+	AROS_LDA(struct TextAttr *, textAttr, A0),
+	struct GfxBase *, GfxBase);
 
     if (patches[PATCH_OpenFont].enabled)
     {
@@ -885,23 +885,23 @@ AROS_UFH2(struct TextFont *, New_OpenFont,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(UBYTE *, New_FindToolType,
-    AROS_UFHA(CONST STRPTR *, toolTypeArray, A0),
-    AROS_UFHA(CONST STRPTR,   typeName,      A1),
-    AROS_UFHA(APTR,           libbase,       A6))
+AROS_LH2(UBYTE *, New_FindToolType,
+    AROS_LHA(CONST STRPTR *, toolTypeArray, A0),
+    AROS_LHA(CONST STRPTR,   typeName,      A1),
+    struct Library *, IconBase, 16, Icon)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     // 0 means error
-    UBYTE *result = AROS_UFC3(UBYTE *, patches[PATCH_FindToolType].oldfunc,
-	AROS_UFCA(CONST STRPTR *, toolTypeArray, A0),
-	AROS_UFCA(CONST STRPTR,   typeName,      A1),
-	AROS_UFCA(APTR,           libbase,       A6));
+    UBYTE *result = AROS_CALL2(UBYTE *, patches[PATCH_FindToolType].oldfunc,
+	AROS_LDA(CONST STRPTR *, toolTypeArray, A0),
+	AROS_LDA(CONST STRPTR,   typeName,      A1),
+	struct Library *, IconBase);
 
     if (patches[PATCH_FindToolType].enabled)
     {
@@ -910,22 +910,22 @@ AROS_UFH3(UBYTE *, New_FindToolType,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
 
-AROS_UFH3(BOOL, New_MatchToolValue,
-    AROS_UFHA(UBYTE *, typeString, A0),
-    AROS_UFHA(UBYTE *, value,      A1),
-    AROS_UFHA(APTR,    libbase,    A6))
+AROS_LH2(BOOL, New_MatchToolValue,
+    AROS_LHA(UBYTE *, typeString, A0),
+    AROS_LHA(UBYTE *, value, A1),
+    struct Library *, IconBase, 17, Icon)
 {
-    AROS_USERFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-    BOOL result = AROS_UFC3(BOOL, patches[PATCH_MatchToolValue].oldfunc,
-	AROS_UFCA(UBYTE *, typeString, A0),
-	AROS_UFCA(UBYTE *, value,      A1),
-	AROS_UFCA(APTR,    libbase,    A6));
+    BOOL result = AROS_CALL2(BOOL, patches[PATCH_MatchToolValue].oldfunc,
+	AROS_LDA(UBYTE *, typeString, A0),
+	AROS_LDA(UBYTE *, value,      A1),
+	struct Library *, IconBase);
 
     if (patches[PATCH_MatchToolValue].enabled)
     {
@@ -934,7 +934,7 @@ AROS_UFH3(BOOL, New_MatchToolValue,
 
     return result;
 
-    AROS_USERFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 // ----------------------------------------------------------------------------------
@@ -947,33 +947,33 @@ void patches_init(void)
     libbases[LIB_Intuition] = (struct Library*)IntuitionBase;
     libbases[LIB_Graphics]  = (struct Library*)GfxBase;
 
-    patches[PATCH_CreateDir].newfunc      = (FP)&New_CreateDir;
-    patches[PATCH_CurrentDir].newfunc     = (FP)&New_CurrentDir;
-    patches[PATCH_DeleteFile].newfunc     = (FP)&New_DeleteFile;
-    patches[PATCH_DeleteVar].newfunc      = (FP)&New_DeleteVar;
-    patches[PATCH_Execute].newfunc        = (FP)&New_Execute;
-    patches[PATCH_FindVar].newfunc        = (FP)&New_FindVar;
-    patches[PATCH_GetVar].newfunc         = (FP)&New_GetVar;
-    patches[PATCH_LoadSeg].newfunc        = (FP)&New_LoadSeg;
-    patches[PATCH_Lock].newfunc           = (FP)&New_Lock;
-    patches[PATCH_MakeLink].newfunc       = (FP)&New_MakeLink;
-    patches[PATCH_NewLoadSeg].newfunc     = (FP)&New_NewLoadSeg;
-    patches[PATCH_Open].newfunc           = (FP)&New_Open;
-    patches[PATCH_Rename].newfunc         = (FP)&New_Rename;
-    patches[PATCH_RunCommand].newfunc     = (FP)&New_RunCommand;
-    patches[PATCH_SetVar].newfunc         = (FP)&New_SetVar;
-    patches[PATCH_SystemTagList].newfunc  = (FP)&New_SystemTagList;
-    patches[PATCH_FindPort].newfunc       = (FP)&New_FindPort;
-    patches[PATCH_FindResident].newfunc   = (FP)&New_FindResident;
-    patches[PATCH_FindSemaphore].newfunc  = (FP)&New_FindSemaphore;
-    patches[PATCH_FindTask].newfunc       = (FP)&New_FindTask;
-    patches[PATCH_OpenDevice].newfunc     = (FP)&New_OpenDevice;
-    patches[PATCH_OpenLibrary].newfunc    = (FP)&New_OpenLibrary;
-    patches[PATCH_OpenResource].newfunc   = (FP)&New_OpenResource;
-    patches[PATCH_LockPubScreen].newfunc  = (FP)&New_LockPubScreen;
-    patches[PATCH_OpenFont].newfunc       = (FP)&New_OpenFont;
-    patches[PATCH_FindToolType].newfunc   = (FP)&New_FindToolType;
-    patches[PATCH_MatchToolValue].newfunc = (FP)&New_MatchToolValue;
+    patches[PATCH_CreateDir].newfunc      = (FP)AROS_SLIB_ENTRY(New_CreateDir, Dos);
+    patches[PATCH_CurrentDir].newfunc     = (FP)AROS_SLIB_ENTRY(New_CurrentDir, Dos);
+    patches[PATCH_DeleteFile].newfunc     = (FP)AROS_SLIB_ENTRY(New_DeleteFile, Dos);
+    patches[PATCH_DeleteVar].newfunc      = (FP)AROS_SLIB_ENTRY(New_DeleteVar, Dos);
+    patches[PATCH_Execute].newfunc        = (FP)AROS_SLIB_ENTRY(New_Execute, Dos);
+    patches[PATCH_FindVar].newfunc        = (FP)AROS_SLIB_ENTRY(New_FindVar, Dos);
+    patches[PATCH_GetVar].newfunc         = (FP)AROS_SLIB_ENTRY(New_GetVar, Dos);
+    patches[PATCH_LoadSeg].newfunc        = (FP)AROS_SLIB_ENTRY(New_LoadSeg, Dos);
+    patches[PATCH_Lock].newfunc           = (FP)AROS_SLIB_ENTRY(New_Lock, Dos);
+    patches[PATCH_MakeLink].newfunc       = (FP)AROS_SLIB_ENTRY(New_MakeLink, Dos);
+    patches[PATCH_NewLoadSeg].newfunc     = (FP)AROS_SLIB_ENTRY(New_NewLoadSeg, Dos);
+    patches[PATCH_Open].newfunc           = (FP)AROS_SLIB_ENTRY(New_Open, Dos);
+    patches[PATCH_Rename].newfunc         = (FP)AROS_SLIB_ENTRY(New_Rename, Dos);
+    patches[PATCH_RunCommand].newfunc     = (FP)AROS_SLIB_ENTRY(New_RunCommand, Dos);
+    patches[PATCH_SetVar].newfunc         = (FP)AROS_SLIB_ENTRY(New_SetVar, Dos);
+    patches[PATCH_SystemTagList].newfunc  = (FP)AROS_SLIB_ENTRY(New_SystemTagList, Dos);
+    patches[PATCH_FindPort].newfunc       = (FP)AROS_SLIB_ENTRY(New_FindPort, Exec);
+    patches[PATCH_FindResident].newfunc   = (FP)AROS_SLIB_ENTRY(New_FindResident, Exec);
+    patches[PATCH_FindSemaphore].newfunc  = (FP)AROS_SLIB_ENTRY(New_FindSemaphore, Exec);
+    patches[PATCH_FindTask].newfunc       = (FP)AROS_SLIB_ENTRY(New_FindTask, Exec);
+    patches[PATCH_OpenDevice].newfunc     = (FP)AROS_SLIB_ENTRY(New_OpenDevice, Exec);
+    patches[PATCH_OpenLibrary].newfunc    = (FP)AROS_SLIB_ENTRY(New_OpenLibrary, Exec);
+    patches[PATCH_OpenResource].newfunc   = (FP)AROS_SLIB_ENTRY(New_OpenResource, Exec);
+    patches[PATCH_LockPubScreen].newfunc  = (FP)AROS_SLIB_ENTRY(New_LockPubScreen, Intuition);
+    patches[PATCH_OpenFont].newfunc       = (FP)AROS_SLIB_ENTRY(New_OpenFont, Graphics);
+    patches[PATCH_FindToolType].newfunc   = (FP)AROS_SLIB_ENTRY(New_FindToolType, Icon);
+    patches[PATCH_MatchToolValue].newfunc = (FP)AROS_SLIB_ENTRY(New_MatchToolValue, Icon);
 
     patches_set();
 
