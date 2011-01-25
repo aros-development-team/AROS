@@ -7,7 +7,7 @@ USER_CFLAGS := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/arch/all-unix/ker
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
-FUNCS := bug cause cli getsystemattr issuper kernel_debug putchar sti setprotection # allocpages freepages
+FUNCS := cause cli getsystemattr issuper kernel_debug putchar sti setprotection # allocpages freepages
 FILES := kernel_startup kernel kernel_cpu cpu_$(CPU)
 
 %build_archspecific \
