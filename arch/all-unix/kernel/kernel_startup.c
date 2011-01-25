@@ -1,4 +1,3 @@
-#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <aros/symbolsets.h>
@@ -8,7 +7,9 @@
 #include <proto/exec.h>
 
 #include <sys/mman.h>
+
 #include <inttypes.h>
+#include <string.h>
 
 #include "hostinterface.h"
 #include "kernel_base.h"
@@ -17,6 +18,8 @@
 #include "kernel_romtags.h"
 #include "kernel_tagitems.h"
 #include "memory_intern.h"
+
+#define D(x)
 
 /* This macro is defined in both UNIX and AROS headers. Get rid of warnings. */
 #undef __const
@@ -159,9 +162,9 @@ int __startup startup(struct TagItem *msg)
 	((void **)&KernelIFace)[i] = func;
     }
 
-    bug("[Kernel] preparing first mem header\n");
     /* We know that memory map has only one RAM element */
     bootmh = (struct MemHeader *)(IPTR)mmap->addr;
+    bug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len);
 
     /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
     krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
