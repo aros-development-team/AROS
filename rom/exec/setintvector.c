@@ -43,11 +43,12 @@
 {
     AROS_LIBFUNC_INIT
     struct Interrupt *oldint;
+    BOOL ishandler = intNumber <= 2 || (intNumber >= 6 && intNumber <= 12);
 
     Disable ();
 
     oldint = (struct Interrupt *)SysBase->IntVects[intNumber].iv_Node;
-    SysBase->IntVects[intNumber].iv_Node = (struct Node *)interrupt;
+    SysBase->IntVects[intNumber].iv_Node = ishandler ? (struct Node *)interrupt : NULL;
 
     if (interrupt)
     {
