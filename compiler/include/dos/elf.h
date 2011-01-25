@@ -133,21 +133,21 @@ struct sheader
     IPTR  entsize;
 };
 
-struct pheader
-{
-    ULONG type;
-    ULONG offset;
-    APTR  vaddr;
-    APTR  paddr;                
-    ULONG filesz;
-    ULONG memsz;
-    ULONG flags;
-    ULONG align;
-};
-
 #define PT_LOAD 1
 
 #if (__WORDSIZE == 64)
+
+struct pheader
+{
+    ULONG type;
+    ULONG flags;
+    IPTR  offset;
+    APTR  vaddr;
+    APTR  paddr;                
+    IPTR  filesz;
+    IPTR  memsz;
+    IPTR  align;
+};
 
 struct symbol
 {
@@ -164,6 +164,18 @@ struct symbol
 #define ELF_R_INFO(sym, type) (((UQUAD)(sym) << 32) + (type))
 
 #else
+
+struct pheader
+{
+    ULONG type;
+    ULONG offset;
+    APTR  vaddr;
+    APTR  paddr;                
+    ULONG filesz;
+    ULONG memsz;
+    ULONG flags;
+    ULONG align;
+};
 
 struct symbol
 {
@@ -199,6 +211,18 @@ struct relo
     ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))
 
 /* Machine's native values */
+#if (__WORDSIZE == 64)
+#define AROS_ELF_CLASS ELFCLASS64
+#else
+#define AROS_ELF_CLASS ELFCLASS32
+#endif
+
+#if AROS_BIG_ENDIAN
+#define AROS_ELF_DATA ELFDATA2MSB
+#else
+#define AROS_ELF_DATA ELFDATA2LSB
+#endif
+
 #ifdef __i386__
 #define AROS_ELF_MACHINE EM_386
 #define AROS_ELF_REL     SHT_REL
