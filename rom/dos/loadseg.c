@@ -105,7 +105,7 @@ static AROS_UFH3(void, FreeFunc,
 
     /* Open the file */
     D(bug("[LoadSeg] Opening '%s'...\n", name));
-    file = Open (name, FMF_READ);
+    file = Open (name, MODE_OLDFILE);
 
     if (file)
     {
