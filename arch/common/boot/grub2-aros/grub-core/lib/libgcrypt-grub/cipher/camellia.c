@@ -27,6 +27,7 @@
 
 
 #include "camellia.h"
+#include "grub/misc.h"
 
 /* u32 must be 32bit word */
 typedef unsigned int u32;
