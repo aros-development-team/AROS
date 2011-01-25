@@ -298,8 +298,8 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
@@ -394,7 +394,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -459,7 +459,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(TMP_TARGETBASE).so : TMP_CMD:=$(TARGET_CC)
+$(TMP_TARGETBASE).so : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
 $(TMP_TARGETBASE).so : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).so : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -549,7 +549,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(TMP_TARGETS) : TMP_CMD:=$(TARGET_CC)
+$(TMP_TARGETS) : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
 endif
 ifeq (%(compiler),host)
 $(TMP_TARGETS) : TMP_CMD:=$(HOST_CC)
@@ -733,7 +733,7 @@ $(error use of %rule_ref: compiler has to be 'host', 'kernel' or 'target')
 endif
 
 ifeq (%(compiler),target)
-$(GENFILE_TMP) : CC:=$(TARGET_CC)
+$(GENFILE_TMP) : CC:=$(TARGET_CC) $(TARGET_CFLAGS)
 endif
 ifeq (%(compiler),host)
 $(GENFILE_TMP) : CC:=$(HOST_CC)
@@ -795,7 +795,7 @@ $(error use of %rule_ref: compiler has to be 'host', 'kernel' or 'target')
 endif
 
 ifeq (%(compiler),target)
-$(TMP_TARGETS) : CC:=$(TARGET_CC)
+$(TMP_TARGETS) : CC:=$(TARGET_CC) $(TARGET_CFLAGS)
 endif
 ifeq (%(compiler),host)
 $(TMP_TARGETS) : CC:=$(HOST_CC)
@@ -2024,7 +2024,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(TARGET_CC)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
 $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -2399,7 +2399,7 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(TARGET_CC) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+	CC="$(TARGET_CC) $(TARGET_CFLAGS) $(LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
 	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
 	    $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
