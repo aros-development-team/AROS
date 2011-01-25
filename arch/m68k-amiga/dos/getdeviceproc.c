@@ -312,7 +312,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 		res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (IPTR)dl, NULL);
 	    }
 	}
-	if (!res) {
+	if (!res || (dl->dol_Type == DLT_DEVICE && !dl->dol_Task && !newhandler)) {
             UnLockDosList(LDF_ALL | LDF_READ);
             FreeMem(dp, sizeof(struct DevProc));
             SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
