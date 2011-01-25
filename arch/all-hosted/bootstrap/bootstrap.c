@@ -61,8 +61,10 @@ static struct mb_mmap MemoryMap = {
     sizeof(struct mb_mmap),
     0,
     0,
+#if (__WORDSIZE != 64)
     0,
     0,
+#endif
     MMAP_TYPE_RAM
 };
 
