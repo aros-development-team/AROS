@@ -172,7 +172,7 @@ static APTR InternalRawDoFmtInt(CONST_STRPTR FormatString, APTR DataStream, VOID
 	       Note that when the buffer is large enough for decimal it's
 	       large enough for hexdecimal as well.  */
 
-	    #define CBUFSIZE (sizeof(ULONG)*8*302/1000+1)
+	    #define CBUFSIZE (sizeof(IPTR)*8*302/1000+1)
 	    /* The buffer for converting long to ascii.  */
 	    UBYTE cbuf[CBUFSIZE];
 	    ULONG i;
@@ -237,11 +237,7 @@ static APTR InternalRawDoFmtInt(CONST_STRPTR FormatString, APTR DataStream, VOID
   		    buf = fetch_arg(UBYTE *);
 
                     if (!buf)
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
                         buf = "";
-#else
-                        buf = "(null)";
-#endif
 		    width = strlen(buf);
 
 		    break;
