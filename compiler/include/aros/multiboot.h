@@ -52,21 +52,37 @@ struct multiboot {
     UWORD   vbe_if_len;
 };
 
-struct mb_mmap {
+#if (__WORDSIZE == 64)
+
+struct mb_mmap
+{
+    ULONG   size;
+    IPTR    addr;
+    IPTR    len;
+    ULONG   type;
+} __attribute((packed));
+
+#else
+
+struct mb_mmap
+{
     ULONG   size;
     ULONG   addr_low;
     ULONG   addr_high;
     ULONG   len_low;
     ULONG   len_high;
     ULONG   type;
-#define MMAP_TYPE_RAM	    1
-#define MMAP_TYPE_RESERVED  2
-#define MMAP_TYPE_ACPIDATA  3
-#define MMAP_TYPE_ACPINVS   4
 };
 
 #define addr addr_low
 #define len  len_low
+
+#endif
+
+#define MMAP_TYPE_RAM	    1
+#define MMAP_TYPE_RESERVED  2
+#define MMAP_TYPE_ACPIDATA  3
+#define MMAP_TYPE_ACPINVS   4
 
 /* VBE controller information */
 struct vbe_controller
