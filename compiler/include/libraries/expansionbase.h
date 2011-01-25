@@ -17,6 +17,10 @@
 #include <exec/libraries.h>
 #endif
 
+#ifndef EXEC_LISTS_H
+#include <exec/lists.h>
+#endif
+
 /*
     BootNodes are used by dos.library to determine which device to boot
     from. Items found on the list are added to DOS's list of available
