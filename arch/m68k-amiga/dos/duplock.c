@@ -51,6 +51,8 @@
     struct FileLock *fl = (struct FileLock *)BADDR(lock);
     LONG ret;
 
+    if (lock == BNULL)
+    	return BNULL;
     ret = dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_COPY_DIR, lock);
     D(bug("[DupLock] %x -> %x\n", fl, BADDR(ret)));
     return ret;
