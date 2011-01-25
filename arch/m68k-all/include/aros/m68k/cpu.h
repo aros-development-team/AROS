@@ -400,45 +400,10 @@ extern void aros_not_implemented ();
 	__AROS_LDAQUAD(a1), \
 	__AROS_LDAQUAD(a2),__AROS_LD_BASE(bt,bn))
 
-/* Library prototypes expand to nothing */
-#define __AROS_CPU_SPECIFIC_LP
-
-#define AROS_LPQUAD1(t,n,a1,bt,bn,o,s)
-#define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s)
-
-#define AROS_LP0(t,n,bt,bn,o,s)
-#define AROS_LP1(t,n,a1,bt,bn,o,s)
-#define AROS_LP2(t,n,a1,a2,bt,bn,o,s)
-#define AROS_LP3(t,n,a1,a2,a3,bt,bn,o,s)
-#define AROS_LP4(t,n,a1,a2,a3,a4,bt,bn,o,s)
-#define AROS_LP5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
-#define AROS_LP6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
-#define AROS_LP7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
-#define AROS_LP8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
-#define AROS_LP9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
-#define AROS_LP10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
-#define AROS_LP11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
-#define AROS_LP12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
-#define AROS_LP13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
-#define AROS_LP14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
-#define AROS_LP15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
-
-#define AROS_LP0I(t,n,bt,bn,o,s)
-#define AROS_LP1I(t,n,a1,bt,bn,o,s)
-#define AROS_LP2I(t,n,a1,a2,bt,bn,o,s)
-#define AROS_LP3I(t,n,a1,a2,a3,bt,bn,o,s)
-#define AROS_LP4I(t,n,a1,a2,a3,a4,bt,bn,o,s)
-#define AROS_LP5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
-#define AROS_LP6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
-#define AROS_LP7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
-#define AROS_LP8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
-#define AROS_LP9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
-#define AROS_LP10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
-#define AROS_LP11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
-#define AROS_LP12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
-#define AROS_LP13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
-#define AROS_LP14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
-#define AROS_LP15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
+#define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \
+		t n (__AROS_LPAQUAD(a1))
+#define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s) \
+		t n (__AROS_LPAQUAD(a1), __AROS_LPAQUAD(a2))
 
 #endif /* AROS_FLAVOUR_NATIVE */
 
