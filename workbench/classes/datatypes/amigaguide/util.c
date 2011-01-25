@@ -1,7 +1,7 @@
 /*
 ** $PROJECT: amigaguide.datatype
 **
-** $VER: util.c 50.1 (09.09.03)
+** $VER: util.c 50.2 (25.01.2011)
 **
 ** $AUTHOR: Stefan Ruppert <stefan@ruppert-it.de>
 **
@@ -683,45 +683,43 @@ LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
    va_end(ap);
    return strlen(buf);
 }
+
 #elif defined(__AROS__)
 
 #include <stdarg.h>
 
-struct spf
-{
-   STRPTR buf;
-   STRPTR end;
-};
-
-AROS_UFH2S(void, mysprintf_hook,
-    AROS_UFHA(UBYTE, chr, D0),
-    AROS_UFHA(struct spf *, spf, A3))
+AROS_UFH2S(APTR, mysprintf_hook,
+    AROS_UFHA(APTR, s, D0),
+    AROS_UFHA(UBYTE, chr, A3))
 {
    AROS_USERFUNC_INIT
 
-   *(spf->buf++) = chr;
-   
+   STRPTR buf = (STRPTR) s;
+   /* only write character until stop byte */
+   if(*buf == 0)
+   {
+      *buf++ = chr;
+      *buf = '\0';
+   }
+   return buf;
+
    AROS_USERFUNC_EXIT
 }
 
 LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
 {
-   struct spf data;
    va_list ap;
-
-   data.buf = buf;
-   data.end = buf+len-1;
-
    va_start(ap, format);
-
-   VNewRawDoFmt(format,(void (*)()) mysprintf_hook, &data, ap);
-
+   memset(buf, 0, len);
+   buf[len-1] = 127;
+   VNewRawDoFmt(format, mysprintf_hook, buf, ap);
+   buf[len-1] = 0;
    va_end(ap);
-
    return strlen(buf);
 }
 
 #else
+
 struct spf
 {
    STRPTR buf;
