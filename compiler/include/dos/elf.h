@@ -62,8 +62,13 @@
 #define R_ARM_MOVW_ABS_NC 43
 #define R_ARM_MOVT_ABS	  44
 
+#define STT_NOTYPE	0
 #define STT_OBJECT      1
 #define STT_FUNC        2
+#define STT_SECTION	3
+#define STT_FILE	4
+#define STT_LOPROC	13
+#define STT_HIPROC	15
 
 #define SHN_UNDEF       0
 #define SHN_LORESERVE   0xff00
@@ -76,7 +81,7 @@
 #define SHF_ALLOC       (1 << 1)
 #define SHF_EXECINSTR   (1 << 2)
 
-#define ELF32_ST_TYPE(i)    ((i) & 0x0F)
+#define ELF_ST_TYPE(i)    ((i) & 0x0F)
 
 #define EI_VERSION      6
 #define EV_CURRENT      1
