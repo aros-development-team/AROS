@@ -159,6 +159,24 @@ void aros_lc(int id)
 	printf("\t  })\n\n");
 }
 
+void aros_lp(int id, int is_ignored)
+{
+	int i;
+
+	printf("#define AROS_LP%d%s(t,n,", id, is_ignored ? "I" : "");
+	for (i = 0; i < id; i++)
+		printf("a%d,", i + 1);
+	printf("bt,bn,o,s) \\\n");
+	printf("\tt n ( ");
+	for (i = 0; i < id; i++)
+		printf("__AROS_LHA(a%d)%s", 
+			i + 1,
+			((i + 1) == id) ? "" : ", \\\n\t");
+	if (id == 0)
+		printf("void ");
+	printf(")\n");
+}
+
 void aros_lh(int id, int is_ignored)
 {
 	int i;
@@ -266,6 +284,15 @@ int main(int argc, char **argv)
 	for (i = 0; i < GENCALL_MAX; i++)
 		aros_ufc(i);
 
+	printf("#define __AROS_CPU_SPECIFIC_LP\n\n");
+	
+	for (i = 0; i < GENCALL_MAX; i++)
+		aros_lp(i, 0);
+
+	for (i = 0; i < GENCALL_MAX; i++)
+		aros_lp(i, 1);
+
+	printf("\n");
 	printf("#define __AROS_CPU_SPECIFIC_LH\n\n");
 	
 	for (i = 0; i < GENCALL_MAX; i++)
