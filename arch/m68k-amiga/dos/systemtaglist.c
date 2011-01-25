@@ -164,7 +164,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     /* Set up the streams */
     if (!cis)
     {
-        cis = Open("NIL:", FMF_READ);
+        cis = Open("NIL:", MODE_OLDFILE);
 	if (!cis) goto end;
 
 	cis_opened = TRUE;
@@ -172,7 +172,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     else
     if (cis == (BPTR)SYS_DupStream)
     {
-        cis = DupFH(Input(), FMF_READ, DOSBase);
+        cis = DupFH(Input(), MODE_OLDFILE, DOSBase);
 	if (!cis) goto end;
 
 	cis_opened = TRUE;
@@ -181,9 +181,9 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     if (!cos)
     {
         if (IsInteractive(cis))
-	    cos = DupFH(cis, FMF_WRITE, DOSBase);
+	    cos = DupFH(cis, MODE_OLDFILE, DOSBase);
 	else
-	    cos = Open("*", FMF_WRITE);
+	    cos = Open("*", MODE_OLDFILE);
 
         if (!cos) goto end;
 
@@ -192,7 +192,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     else
     if (cos == (BPTR)SYS_DupStream)
     {
-        cos = DupFH(Output(), FMF_WRITE, DOSBase);
+        cos = DupFH(Output(), MODE_OLDFILE, DOSBase);
 	if (!cos) goto end;
 
 	cos_opened = TRUE;
@@ -201,9 +201,9 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     if (!ces)
     {
         if (IsInteractive(cis))
-	    ces = DupFH(cos, FMF_WRITE, DOSBase);
+	    ces = DupFH(cos, MODE_OLDFILE, DOSBase);
 	else
-	    ces = Open("*", FMF_WRITE);
+	    ces = Open("*", MODE_OLDFILE);
 
         if (!ces) goto end;
 
@@ -212,7 +212,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     else
     if (ces == (BPTR)SYS_DupStream)
     {
-        ces = DupFH(Output(), FMF_WRITE, DOSBase);
+        ces = DupFH(Output(), MODE_OLDFILE, DOSBase);
 	if (!ces) goto end;
 
 	ces_opened = TRUE;
