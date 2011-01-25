@@ -1,4 +1,4 @@
-#   Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: target.cfg - an autoconf output file for make variables.
@@ -35,6 +35,7 @@ KERNEL_CFLAGS   := @aros_kernel_cflags@
 KERNEL_OBJCFLAGS := @aros_kernel_objcflags@
 KERNEL_INCLUDES := @aros_kernel_includes@
 KERNEL_LDFLAGS	:= @aros_kernel_ldflags@
+TARGET_CFLAGS   := @aros_target_cflags@
 DEBUG_CFLAGS	:= @aros_debug_cflags@
 DEBUG_AFLAGS	:= @aros_debug_aflags@
 DEBUG_LDFLAGS	:= @aros_debug_ldflags@

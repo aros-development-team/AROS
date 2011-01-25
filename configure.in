@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2010, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2011, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -975,6 +975,7 @@ case "$target_os" in
                 aros_macosx_version="10.6"
                 aros_kernel_cflags="-m64"
                 aros_kernel_ldflags="-m64"
+                aros_target_cflags="-mcmodel=large"
 		aros_default_wbdepth=8
 		gcc_target_cpu="x86_64"
 		aros_kernel_ld="ld"
@@ -2141,6 +2142,7 @@ AC_SUBST(aros_kernel_cflags)
 AC_SUBST(aros_kernel_includes)
 AC_SUBST(aros_kernel_objcflags)
 AC_SUBST(aros_kernel_ldflags)
+AC_SUBST(aros_target_cflags)
 AC_SUBST(aros_debug_cflags)
 AC_SUBST(aros_debug_aflags)
 AC_SUBST(aros_debug_ldflags)
