@@ -142,11 +142,18 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     }
 
     D(bug(" memory"));
-    /* we need space for the code, the length of this hunk and
-       for a pointer to the next hunk
+    /*
+     * We need space for the code, the length of this hunk and
+     * for a pointer to the next hunk.
+     * Note also MEMF_31BIT flag appended to memory requirements.
+     * This is important on 64-bit machines where AmigaDOS hunk
+     * files need to be loaded into low memory (<2GB). This is needed
+     * for correct interpretation of pointers in these files.
+     * Yes, they can't be executed in such environments, but they still can
+     * be read as data files. This allows to use Amiga bitmap fonts on AROS.
      */
     hunksize = count * 4 + sizeof(ULONG) + sizeof(BPTR);
-    hunkptr = loadseg_alloc((SIPTR*)funcarray[1], hunksize, req);
+    hunkptr = loadseg_alloc((SIPTR*)funcarray[1], hunksize, req | MEMF_31BIT);
     if (!hunkptr)
       ERROR(ERROR_NO_FREE_STORE);
     hunktab[i] = MKBADDR(hunkptr);
@@ -396,8 +403,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           goto end;
         count = AROS_BE2LONG(count);
         D(bug("Overlay table size: %d\n", count));
+
+        /* See above for MEMF_31BIT explanation */
         count = count * 4 + sizeof(ULONG) + sizeof(ULONG);
-        overlaytable = loadseg_alloc((SIPTR*)funcarray[1], count, req);
+        overlaytable = loadseg_alloc((SIPTR*)funcarray[1], count, req | MEMF_31BIT);
         if (overlaytable == NULL)
           ERROR(ERROR_NO_FREE_STORE);
         if (read_block(fh, overlaytable, count - sizeof(ULONG), funcarray, DOSBase))
