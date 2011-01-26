@@ -77,14 +77,17 @@ AROS_SLIB_ENTRY(CacheControl,Exec):
     and.w #0x0088,%d3 // 040/060?
     beq.s 2f
 
+	and.l #0x0101,%d1
+	and.l #0x0101,%d2
 	// code cache 0 -> 15
     bclr #0,%d1
     beq.s 3f
-    bset #15,%d1
+    or.l #0x20808000,%d1
 3:	bclr #0,%d2
 	beq.s 4f
-	bset #15,%d2
-4:	// data cache 8 -> 31
+    or.l #0x20808000,%d2
+4:  
+    // data cache 8 -> 31
     bclr #8,%d1
     beq.s 5f
     bset #31,%d1
@@ -95,24 +98,27 @@ AROS_SLIB_ENTRY(CacheControl,Exec):
 
 2:	lea su(%pc),%a5
 	jsr Supervisor(%a6)
-    move.w %a6@(AttnFlags),%d3
 
+    move.w %a6@(AttnFlags),%d3
     and.w #0x0088,%d3 // 040/060?
     beq.s 0f
     move.l %d0,%d1
     moveq #0,%d0
     btst #15,%d1
     beq.s 1f
-    bset #0,%d0
+    // code+burst+write-allocate
+    or.w #0x2011,%d0
 1:	btst #31,%d1
 	beq.s 0f
-	bset #8,%d0
+	// data+burst+copyback
+	or.l #0x80002100,%d0
 0:
 	movem.l %sp@+,%d2/%d3/%a5
     rts
 
 su:	dc.l 0x4e7a0002 //movec %cacr,%d0
 	move.l %d0,%d3
+	and.l %d1,%d2
 	not.l %d1
 	and.l %d1,%d3
 	or.l %d2,%d3
