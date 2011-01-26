@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,7 +24,7 @@ extern struct Library *MUIMasterBase;
  * Must be called after Area's MUIM_Setup.
  */
 
-struct TextFont *zune_font_get(Object *obj, LONG preset)
+struct TextFont *zune_font_get(Object *obj, SIPTR preset)
 {
     struct MUI_GlobalInfo *mgi;
     struct MUI_RenderInfo *mri;
@@ -104,5 +104,5 @@ struct TextFont *zune_font_get(Object *obj, LONG preset)
 	}
 	return mri->mri_Fonts[-preset];
     }
-    return (struct TextFont *)(IPTR)preset;
+    return (struct TextFont *)preset;
 }

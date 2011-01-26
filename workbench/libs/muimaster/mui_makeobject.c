@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2009, The AROS Development Team. All rights reserved.
+    Copyright  2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,7 +21,7 @@
 #include "muimaster_intern.h"
 #include "mui.h"
 
-/*  #define MYDEBUG 1 */
+#define MYDEBUG 1
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
@@ -126,6 +126,8 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath, struct 
 #   define BUFFERSIZE 512
     
     BPTR lock = Lock(imagePath, ACCESS_READ);
+    
+    D(bug("[ImageButton] Font 0x%p\n", textFont));
     if (lock != NULL)
     {
         
