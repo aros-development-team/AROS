@@ -660,7 +660,7 @@ BPTR GetFileLock(Class *cl, Object *obj,
 }
 
 /* ------------------------------- sprintf -------------------------------- */
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__) || defined(__AROS__)
 static APTR mysprintf_hook(APTR s, UBYTE chr)
 {
    STRPTR buf = (STRPTR) s;
@@ -672,40 +672,6 @@ static APTR mysprintf_hook(APTR s, UBYTE chr)
    }
    return buf;
 }
-LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
-{
-   va_list ap;
-   va_start(ap, format);
-   memset(buf, 0, len);
-   buf[len-1] = 127;
-   VNewRawDoFmt(format, mysprintf_hook, buf, ap);
-   buf[len-1] = 0;
-   va_end(ap);
-   return strlen(buf);
-}
-
-#elif defined(__AROS__)
-
-#include <stdarg.h>
-
-AROS_UFH2S(APTR, mysprintf_hook,
-    AROS_UFHA(APTR, s, D0),
-    AROS_UFHA(UBYTE, chr, A3))
-{
-   AROS_USERFUNC_INIT
-
-   STRPTR buf = (STRPTR) s;
-   /* only write character until stop byte */
-   if(*buf == 0)
-   {
-      *buf++ = chr;
-      *buf = '\0';
-   }
-   return buf;
-
-   AROS_USERFUNC_EXIT
-}
-
 LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
 {
    va_list ap;
@@ -741,11 +707,7 @@ LONG mysprintf(struct ClassBase *cb, STRPTR buf, LONG len, STRPTR format,...)
 
    va_start(ap, format);
 
-#ifdef __MORPHOS__
-   VNewRawDoFmt(format, mysprintf_hook, buf, ap);
-#else
    RawDoFmt(format,ap,(void (*)()) mysprintf_hook, &data);
-#endif
 
    va_end(ap);
 
