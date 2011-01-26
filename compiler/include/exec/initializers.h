@@ -4,7 +4,7 @@
 #include <aros/system.h>
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to build init structs (eg. for InitStruct())
@@ -12,7 +12,7 @@
 */
 
 #define OFFSET(structName, structEntry) \
-				(&(((struct structName *) 0)->structEntry))
+				((IPTR)&(((struct structName *) 0)->structEntry))
 
 #if AROS_BIG_ENDIAN
 #define INITBYTE(offset,value)  0xe000,(UWORD) (offset),(UWORD) ((value)<<8)
