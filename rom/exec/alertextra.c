@@ -14,7 +14,7 @@
 #include "exec_util.h"
 #include "etask.h"
 
-#define TRACE_DEPTH 6
+#define TRACE_DEPTH 10
 
 static const char *modstring  = "\n0x%P %s Segment %lu %s + 0x%P";
 static const char *funstring  = "\n0x%P %s Function %s + 0x%P";
