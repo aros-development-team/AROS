@@ -195,12 +195,12 @@ asm (".chip 68060\n"
  		/* CACR is 68020+ */
 	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
 		/* 68020+ or better */
-	"       move.w	#0x8000,%d0\n"
+	"       move.l	#0x80008000,%d0\n"
+ 		/* enable 68040/060 code+data cache */
 	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
- 		/* enable 68040/060 code cache */
 	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
- 		/* bit 15 still set? */
-	"	tst.w	%d0\n"
+ 		/* bit 31 still set? */
+	"	tst.l	%d0\n"
  		/* yes, it is 68040 or 68060 */
 	"	bmi.s	0f\n"
  		/* enable 68020/030 code cache and 68030 data cache */
@@ -219,7 +219,7 @@ asm (".chip 68060\n"
 	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
 	"	move.w	#0x2007,%d0\n"
 	"	illegal\n"
-		/* 68040 */
+		/* 68040 or 68060 */
 	"0:	move.w	#0x200f,%d0\n"
  		/* PCR is 68060 only */
 	"	dc.l 0x4e7a0808\n" // movec	%pcr,%d0\n"
@@ -227,6 +227,9 @@ asm (".chip 68060\n"
 	"	move.w	#0x0001,%d0\n"
  		/* enable supercalar, enable FPU */
  	"	dc.l 0x4e7b0808\n" // movec	%d0,%pcr\n"
+		/* enable store buffer and branch cache */
+	"	move.l	#0xa080a000,%d0\n"
+	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
 	"	move.w	#0x208f,%d0\n"
 	"	illegal\n"
 );
@@ -270,7 +273,8 @@ static ULONG cpu_detect(void)
 	cpuret &= 0xff;
 	if (fpuret) {
 		if (cpuret & (AFF_68040 | AFF_68060))
-			cpuret |= AFF_FPU40 | AFF_68881 | AFF_68882;
+			cpuret |= AFF_FPU40;
+			// AFF_68881 | AFF_68882 set only if 040/060 math emulation running
 		else if ((fpuret & 0x00ff) <= 0x1f)
 			cpuret |= AFF_68881;
 		else
