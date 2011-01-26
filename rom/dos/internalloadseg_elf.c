@@ -45,33 +45,33 @@ struct hunk
 #undef MyFree
 
 #define MyRead(file, buf, size)      \
-    AROS_CALL3                       \
+    AROS_UFC4                        \
     (                                \
         LONG, funcarray[0],          \
-        AROS_LCA(BPTR,   file, D1),  \
-        AROS_LCA(void *, buf,  D2),  \
-        AROS_LCA(LONG,   size, D3),  \
-        struct DosLibrary *, DOSBase \
+        AROS_UFCA(BPTR,   file, D1), \
+        AROS_UFCA(void *, buf,  D2), \
+        AROS_UFCA(LONG,   size, D3), \
+        AROS_UFCA(struct DosLibrary *, DOSBase, A6) \
     )
 
 
-#define MyAlloc(size, flags)        \
-    AROS_CALL2                      \
-    (                               \
-        void *, funcarray[1],       \
-        AROS_LCA(ULONG, size,  D0), \
-        AROS_LCA(ULONG, flags, D1), \
-        struct ExecBase *, SysBase  \
+#define MyAlloc(size, flags)         \
+    AROS_UFC3                        \
+    (                                \
+        void *, funcarray[1],        \
+        AROS_UFCA(ULONG, size,  D0), \
+        AROS_UFCA(ULONG, flags, D1), \
+        AROS_UFCA(struct ExecBase *, SysBase, A6) \
     )				    
 
 
-#define MyFree(addr, size)          \
-    AROS_CALL2NR                    \
-    (                               \
-        void, funcarray[2],         \
-        AROS_LCA(void *, addr, A1), \
-        AROS_LCA(ULONG,  size, D0), \
-        struct ExecBase *, SysBase  \
+#define MyFree(addr, size)           \
+    AROS_UFC3                        \
+    (                                \
+        void, funcarray[2],          \
+        AROS_UFCA(void *, addr, A1), \
+        AROS_UFCA(ULONG,  size, D0), \
+        AROS_UFCA(struct ExecBase *, SysBase, A6) \
     )
 
 static int read_block
