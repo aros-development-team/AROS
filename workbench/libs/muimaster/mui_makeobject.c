@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,7 +21,7 @@
 #include "muimaster_intern.h"
 #include "mui.h"
 
-#define MYDEBUG 1
+/* #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
