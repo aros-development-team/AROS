@@ -12,6 +12,7 @@
 
 extern void AROS_SLIB_ENTRY(CacheClearU_00,Exec)(void);
 extern void AROS_SLIB_ENTRY(CacheClearU_20,Exec)(void);
+extern void AROS_SLIB_ENTRY(CacheClearU_40,Exec)(void);
 extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec)(void);
 /*****************************************************************************
 
@@ -70,6 +71,9 @@ extern void AROS_SLIB_ENTRY(CacheClearU_60,Exec)(void);
     if (SysBase->AttnFlags & AFF_68060) {
         /* 68060 support */
         func = AROS_SLIB_ENTRY(CacheClearU_60, Exec);
+    } else if (SysBase->AttnFlags & AFF_68040) {
+        /* 68040 support */
+        func = AROS_SLIB_ENTRY(CacheClearU_40, Exec);
     } else if (SysBase->AttnFlags & AFF_68020) {
         /* 68020 support */
         func = AROS_SLIB_ENTRY(CacheClearU_20, Exec);
