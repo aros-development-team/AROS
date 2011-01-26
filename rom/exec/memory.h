@@ -39,8 +39,20 @@ AROS_WORSTALIGN:sizeof(struct MemChunk))
 #define MEMHEADER_TOTAL \
 ((sizeof(struct MemHeader)+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1))
 
-/* Mask for flags that describe physical properties of the memory */
+/*
+ * Mask for flags that describe physical properties of the memory
+ * MEMF_31BIT is effective only on 64-bit machines. On 32-bit architectures
+ * it will be ignored.
+ * This is done for backwards compatibility on 32-bit machines, however
+ * this flag perhaps still can be useful there for managing PCI DMA memory.
+ * In this case it should have meaning on 32-bit machines too.
+ *	Pavel Fedin <pavel_fedin@mail.ru>
+ */
+#if (__WORDSIZE == 64)
+#define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA|MEMF_31BIT)
+#else
 #define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA)
+#endif
 
 /* Private Pool structure */
 struct Pool 
@@ -79,8 +91,5 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase);
 
 #define BLOCK_TOTAL \
 ((sizeof(struct Block)+AROS_WORSTALIGN-1)&~(AROS_WORSTALIGN-1))
-
-/* These bits describe physical properties of the memory */
-#define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA)
 
 #endif

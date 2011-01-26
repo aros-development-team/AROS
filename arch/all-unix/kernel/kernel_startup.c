@@ -25,6 +25,19 @@
 #undef __const
 
 /*
+ * On 64 bit Linux bootloaded gives us RAM region below 2GB.
+ * On other 64-bit unices we have no control over it.
+ */
+#if (__WORDSIZE == 64)
+#ifdef HOST_OS_linux
+#define ARCH_31BIT MEMF_31BIT
+#endif
+#endif
+#ifndef ARCH_31BIT
+#define ARCH_31BIT 0
+#endif
+
+/*
  * External early init function from exec.library
  * TODO: find some way to discover it dynamically
  */
@@ -167,7 +180,7 @@ int __startup startup(struct TagItem *msg)
     bug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len);
 
     /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
-    krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
+    krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
 
     D(bug("[Kernel] calling PrepareExecBase(), mh_First = %p, args = %s\n", bootmh->mh_First, args));
     /*
