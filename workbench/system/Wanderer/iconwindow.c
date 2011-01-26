@@ -1,7 +1,9 @@
 /*
-  Copyright  2004-2010, The AROS Development Team. All rights reserved.
+  Copyright © 2004-2011, The AROS Development Team. All rights reserved.
   $Id$
 */
+
+#define DEBUG 0
 #define DOPENWINDOW(x) /* Window positioning and size */
 
 #define ZCC_QUIET
@@ -14,19 +16,8 @@
 #define ICONWINDOW_NODETAILVIEWCLASS
 //#define ICONWINDOW_BUFFERLIST
 
-#ifdef __AROS__
-#define DEBUG 0
-#include <aros/debug.h>
-#endif
-
 #include <exec/types.h>
 #include <libraries/mui.h>
-
-#ifdef __AROS__
-#include <zune/customclasses.h>
-#else
-#include <zune_AROS/customclasses.h>
-#endif
 
 #include <proto/utility.h>
 
@@ -48,19 +39,19 @@
 #include <clib/macros.h>
 
 #ifdef __AROS__
+#include <aros/debug.h>
 #include <clib/alib_protos.h>
-
 #include <prefs/wanderer.h>
+#include <zune/customclasses.h>
 #else
 #include <prefs_AROS/wanderer.h>
+#include <zune_AROS/customclasses.h>
 #endif
 
 #if defined(__AMIGA__) && !defined(__PPC__)
 #define NO_INLINE_STDARG
 #endif
-#ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
-#endif
 #include <proto/muimaster.h>
 
 #include "Classes/iconlist.h"
@@ -75,7 +66,6 @@
 #include "iconwindowbackfill.h"
 
 #ifndef __AROS__
-#define DEBUG 1
 
 #ifdef DEBUG
   #define D(x) if (DEBUG) x
@@ -96,13 +86,19 @@ struct MUI_CustomClass *IconWindowDetailDrawerList_CLASS;
 #define WIWVERS       1
 #define WIWREV        0
 
+#ifdef __AROS__
+#define DoSuperNew(cl, obj, ...) DoSuperNewTags(cl, obj, NULL, __VA_ARGS__)
+#else
+#define IconListviewObject NewObject(IconListview_Class->mcc_Class
+#endif
+
 /*** Private Global Data *********************************************************/
 
 static struct List                      iconwindow_BackFillNodes;
 struct List                             iconwindow_Extensions;
 struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
-static const char __intern_wintitle_wanderer[] = "Wanderer";
+static char __intern_wintitle_wanderer[] = "Wanderer";
 
 /*** Hook functions *********************************************************/
 
@@ -343,7 +339,7 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
 //#if defined(__MORPHOS__)
 //        WindowBF_TAG = MUIA_Window_BackFillHook;
 //#else
-        WindowBF_TAG = (APTR)WA_BackFill;
+        WindowBF_TAG = WA_BackFill;
 //#endif
     }
 
@@ -379,7 +375,8 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
         struct DiskObject       *drawericon = NULL;
         IPTR                    geticon_error = 0, geticon_isdefault = 0;
         IPTR                    _newIconWin__TitleLen = 0;
-        IPTR                    current_DispFlags = 0, current_SortFlags = 0;
+        IPTR                    current_DispFlags = 0;
+/*      IPTR			current_SortFlags = 0; */
         IPTR                    icon__DispFlags = 0,icon__DispFlagMask = ~0;
 
         _newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
@@ -583,75 +580,16 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
         }
     }
 
-#ifdef __AROS__
     _newIconWin__RootViewObj = (Object *) IconListviewObject,
                                             MUIA_Weight,                    100,
                                             MUIA_IconListview_UseWinBorder, TRUE,
                                             MUIA_IconListview_IconList,     (IPTR) _newIconWin__IconListObj,
                                         End;
-#else
-    _newIconWin__RootViewObj = (Object *) NewObject(IconListview_Class->mcc_Class, NULL,
-                                            MUIA_Weight,                        100,
-                                            MUIA_IconListview_UseWinBorder,     TRUE,
-                                            MUIA_IconListview_IconList,         (IPTR) _newIconWin__IconListObj,
-                                        TAG_DONE);
-#endif
                             
     DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, _newIconWin__WindowLeft, _newIconWin__WindowTop, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
     D(bug("[Wanderer:IconWindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__WindowFont));
+    D(bug("[Wanderer:IconWindow] %s: TopPanelContainerObj 0x%p RootViewObj 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__TopPanelContainerObj, _newIconWin__RootViewObj));
 
-#ifdef __AROS__
-    self = (Object *) DoSuperNewTags
-    (
-        CLASS, self, NULL,
-
-        MUIA_Window_Screen,                                     _newIconWin__Screen,
-        MUIA_Window_Backdrop,                                   isBackdrop ? TRUE : FALSE,
-        MUIA_Window_Borderless,                                 isBackdrop ? TRUE : FALSE,
-        MUIA_Window_Width,                                      _newIconWin__WindowWidth,
-        MUIA_Window_Height,                                     _newIconWin__WindowHeight,
-        MUIA_Window_LeftEdge,                                   _newIconWin__WindowLeft,
-        MUIA_Window_TopEdge,                                    _newIconWin__WindowTop,
-        (!isBackdrop) ? MUIA_Window_AltWidth : TAG_IGNORE,      100,
-        (!isBackdrop) ? MUIA_Window_AltHeight : TAG_IGNORE,     80,
-        MUIA_Window_Title,                                      (IPTR)_newIconWin__Title,
-        
-        MUIA_Window_DragBar,                                    (!isBackdrop) ? TRUE : FALSE,
-        MUIA_Window_CloseGadget,                                (!isBackdrop) ? TRUE : FALSE,
-        MUIA_Window_SizeGadget,                                 (!isBackdrop) ? TRUE : FALSE,
-        MUIA_Window_DepthGadget,                                (!isBackdrop) ? TRUE : FALSE,
-#if defined(MUIA_Window_ZoomGadget)
-        MUIA_Window_ZoomGadget,                                 (!isBackdrop) ? TRUE : FALSE,
-#endif
-        MUIA_Window_UseBottomBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
-        MUIA_Window_UseRightBorderScroller,                     (!isBackdrop) ? TRUE : FALSE,
-        MUIA_Window_IsSubWindow,                                TRUE,
-
-        WindowBF_TAG,                                           _newIconWin__BackFillHook,
-
-        MUIA_Window_ScreenTitle,                                (IPTR) "",
-        MUIA_Font,                                              (IPTR) _newIconWin__WindowFont,
-
-        WindowContents, (IPTR) MUI_NewObject(MUIC_Group,
-            MUIA_Group_Spacing,  0,
-            MUIA_Group_SameSize, FALSE,
-            InnerSpacing(0,0),
-
-            ((!isRoot) && _newIconWin__TopPanelContainerObj) ? Child : TAG_IGNORE, (IPTR)_newIconWin__TopPanelContainerObj,
-
-            Child, HGroup,
-                ((!isRoot) && _newIconWin__LeftPanelContainerObj) ? Child : TAG_IGNORE, (IPTR)_newIconWin__LeftPanelContainerObj,
-                /* The actual icon list */
-                Child, (IPTR) _newIconWin__RootViewObj,
-            End,
-
-            ((!isRoot) && _newIconWin__BottomPanelContainerObj) ? Child : TAG_IGNORE, (IPTR)_newIconWin__BottomPanelContainerObj,
-
-        TAG_DONE),
-        
-        TAG_MORE, (IPTR) message->ops_AttrList
-    );
-#else
     self = (Object *) DoSuperNew(CLASS, self, 
         MUIA_Window_Screen,                                    _newIconWin__Screen,
         MUIA_Window_Backdrop,                                  isBackdrop ? TRUE : FALSE,
@@ -675,7 +613,7 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
         MUIA_Window_UseRightBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
         MUIA_Window_IsSubWindow,                             TRUE,
 
-        WindowBF_TAG,                                        *_newIconWin__BackFillHook,
+        WindowBF_TAG,                                        _newIconWin__BackFillHook,
 
         MUIA_Window_ScreenTitle,                             (IPTR) "",
         MUIA_Font,                                           (IPTR) _newIconWin__WindowFont,
@@ -695,7 +633,6 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
 
         TAG_MORE, (IPTR) message->ops_AttrList
     );
-#endif
 
     if (self != NULL)
     {
