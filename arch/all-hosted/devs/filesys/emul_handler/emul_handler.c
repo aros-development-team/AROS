@@ -357,9 +357,8 @@ const ULONG sizes[] = {
     sizeof(struct ExAllData)
 };
 
-LONG examine(struct emulbase *emulbase, struct filehandle *fh,
-             struct ExAllData *ead, ULONG size, ULONG type,
-             LONG *dirpos)
+static LONG examine(struct emulbase *emulbase, struct filehandle *fh,
+             struct ExAllData *ead, ULONG size, ULONG type)
 {
     LONG err;
 
@@ -370,8 +369,6 @@ LONG examine(struct emulbase *emulbase, struct filehandle *fh,
 	if (err)
 	    return err;
     }
-    /* Directory search position has been reset */
-    *dirpos = 0;
 
     return examine_entry(emulbase, fh, NULL, ead, size, type);
 }
@@ -839,8 +836,8 @@ AROS_LH1(void, beginio,
 	error = examine(emulbase, (struct filehandle *)iofs->IOFS.io_Unit,
 			iofs->io_Union.io_EXAMINE.io_ead,
 			iofs->io_Union.io_EXAMINE.io_Size,
-			iofs->io_Union.io_EXAMINE.io_Mode,
-			&(iofs->io_DirPos));
+			iofs->io_Union.io_EXAMINE.io_Mode);
+	iofs->io_DirPos = 0; /* Directory search position has been reset */
 	break;
 
     case FSA_EXAMINE_NEXT:

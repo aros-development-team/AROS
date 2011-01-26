@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -101,7 +101,7 @@ ULONG examine
 		struct ExAllData *ead,
 		ULONG size,
 		ULONG mode,
-		ULONG *dirpos
+		IPTR *dirpos
 	)
 {
 struct BlockCache *entryblock;
@@ -257,20 +257,22 @@ ULONG error,i,block;
 ULONG examineNext
 	(struct AFSBase *afsbase, struct AfsHandle *ah, struct FileInfoBlock *fib)
 {
-struct BlockCache *entryblock;
-STRPTR string;
-ULONG filelistentries,datablocksize,datablocks;
-ULONG owner;
-ULONG error,filekey;
+	struct BlockCache *entryblock;
+	STRPTR string;
+	ULONG filelistentries,datablocksize,datablocks;
+	ULONG owner;
+	ULONG error,filekey;
+	ULONG dirkey = fib->fib_DiskKey; /* fib_DiskKey is an IPTR, so we need this conversion */
 
 	D(bug("[afs] examineNext(%ld,fib)\n", ah->header_block));
-	D(bug("[afs] examineNext: diskey=%ld\n", fib->fib_DiskKey));
+	D(bug("[afs] examineNext: diskey=%ld\n", dirkey));
 
-	error = getNextExamineBlock(afsbase, ah, &fib->fib_DiskKey, &filekey);
+	error = getNextExamineBlock(afsbase, ah, &dirkey, &filekey);
+	fib->fib_DiskKey = dirkey;
 	if (error != 0)
 		return error;
 	/* examine the block */
-	entryblock = getBlock(afsbase, ah->volume, fib->fib_DiskKey);
+	entryblock = getBlock(afsbase, ah->volume, dirkey);
 	if (entryblock == NULL)
 		return ERROR_UNKNOWN;
 	fib->fib_DirEntryType = 
