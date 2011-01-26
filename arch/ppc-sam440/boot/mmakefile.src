@@ -49,7 +49,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-sam440-ppc-irq \
 #MM	workbench-devs-cdvdfs \
 #MM	workbench-devs-sfs \
-#MM	workbench-devs-amberram \
+#MM	kernel-fs-amberram \
 #MM	kernel-hidd-graphics \
 #MM	kernel-hidd-kbd \
 #MM	kernel-hidd-mouse \

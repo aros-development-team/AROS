@@ -36,7 +36,6 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-devs-pc-i386 : \
 #MM	   workbench-devs-sfs-kobj \
-#MM	   workbench-devs-amberram-kobj \
 #MM    workbench-devs-cdvdfs-kobj
 
 #MM- workbench-devs-pc-x86_64 : \

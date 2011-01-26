@@ -28,7 +28,6 @@ include $(TOP)/config/make.cfg
 #MM     kernel-fs-con-kobj \
 #MM     kernel-kernel-kobj \
 #MM     kernel-cia-kobj \
-#MM     workbench-devs-amberram-kobj \
 #MM     workbench-libs-mathffp-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
 #MM     kernel-ata-kobj \

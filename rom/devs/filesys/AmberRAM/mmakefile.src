@@ -4,7 +4,7 @@ FILES := resident handler commands filesystem notification support
 
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
-%build_module_simple mmake=workbench-devs-amberram \
+%build_module_simple mmake=kernel-fs-amberram \
     modname=amberram modtype=handler \
     files="$(FILES)" uselibs="rom"
 
