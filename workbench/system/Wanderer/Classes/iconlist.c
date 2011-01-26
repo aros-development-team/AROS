@@ -1,5 +1,5 @@
 /*
-Copyright  2002-2010, The AROS Development Team. All rights reserved.
+Copyright  2002-2011, The AROS Development Team. All rights reserved.
 $Id$
 */
 
@@ -1848,6 +1848,17 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
 ///
 
 ///OM_NEW()
+
+#define ICONENTRY_SIZE 16
+
+static inline void CalcHeight(struct ListViewModeAttribs *LVMAttribs, struct TextFont *LabelFont)
+{
+    ULONG YSize = LabelFont ? LabelFont->tf_YSize : 0;
+
+    LVMAttribs->lmva_HeaderHeight = HEADERLINE_EXTRAHEIGHT + YSize;
+    LVMAttribs->lmva_RowHeight = LINE_EXTRAHEIGHT + ((ICONENTRY_SIZE > YSize) ? ICONENTRY_SIZE : YSize);
+}
+
 /**************************************************************************
 OM_NEW
 **************************************************************************/
@@ -1906,7 +1917,6 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 		    data->icld_LVMAttribs->lmva_ColumnHAlign[i] = COLUMN_ALIGN_RIGHT;
 		    data->icld_LVMAttribs->lmva_ColumnFlags[i] |= (LVMCF_COLCLICKABLE|LVMCF_COLSORTABLE);
 		    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Type";
-#define ICONENTRY_SIZE 16
 		    data->icld_LVMAttribs->lmva_ColumnWidth[i] = ICONENTRY_SIZE + 2;
 		    break;
 
@@ -1941,9 +1951,14 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 	}
 	data->icld_LVMAttribs->lmva_LastSelectedColumn = -1;
 	data->icld_LVMAttribs->lmva_SortColumn = INDEX_NAME;
-	data->icld_LVMAttribs->lmva_HeaderHeight = HEADERLINE_EXTRAHEIGHT + data->icld_IconLabelFont->tf_YSize;
-	data->icld_LVMAttribs->lmva_RowHeight = LINE_EXTRAHEIGHT + ((ICONENTRY_SIZE > data->icld_IconLabelFont->tf_YSize) ? ICONENTRY_SIZE : data->icld_IconLabelFont->tf_YSize);
 	data->icld_LVMAttribs->lvma_Flags = LVMAF_HEADERDRAWTOEND;
+/*
+ * Seems to be not needed because it's done in MUIM_Setup. No rendering happens before it.
+ * Height calculation moved to MUIM_Setup because font pointer can be NULL here (if user-specified
+ * font failed to open). In this case we fail back to the font specified in MUI's AreaData, but
+ * it becomes known only in MUIM_Setup
+ *
+ 	CalcHeight(data->icld_LVMAttribs, data->icld_IconLabelFont); */
     }
 
     /* Get/Set initial values */
@@ -2092,6 +2107,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                 D(bug("[IconList] %s: MUIA_Font 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
 #endif
                 data->icld_IconLabelFont = (struct TextFont*)tag->ti_Data;
+                /* FIXME: Should we call CalcHeight() here because our font changed? */
                 break;
 
             case MUIA_IconList_LabelInfoText_Font:
@@ -2566,6 +2582,12 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
 
     if (data->icld_IconLabelFont == NULL)   data->icld_IconLabelFont = _font(obj);
     if (data->icld_IconInfoFont == NULL)    data->icld_IconInfoFont = data->icld_IconLabelFont;
+
+    /*
+     * Here we have our font, either from user preferences or from MUI's AreaData.
+     * It's right time to set up some sizes.
+     */
+    CalcHeight(data->icld_LVMAttribs, data->icld_IconLabelFont);
 #if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, data->icld_IconLabelFont, data->icld_BufferRastPort ));
 #endif
