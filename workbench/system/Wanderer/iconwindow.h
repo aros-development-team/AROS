@@ -2,7 +2,7 @@
 #define _ICONWINDOW_H_
 
 /*
-    Copyright  2004 - 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2004 - 2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -152,7 +152,7 @@ struct iconWindow_Extension
 {
     struct Node      iwe_Node;
     IPTR             (*iwe_Setup)(Class *, Object *, struct opSet *);
-    IPTR             (*iwe_Cleanup)(Class *, Object *, struct opSet *);
+    IPTR             (*iwe_Cleanup)(Class *, Object *, Msg);
     IPTR             (*iwe_Set)(Class *, Object *, struct opSet *);
     IPTR             (*iwe_Get)(Class *, Object *, struct opGet *);
 };

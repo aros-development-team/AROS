@@ -1,22 +1,20 @@
 /*
-Copyright © 2002-2009, The AROS Development Team. 
+Copyright © 2002-2011, The AROS Development Team. 
 $Id$
 */
 
-#ifndef __AROS__
-#include "../portable_macros.h"
-#define WANDERER_BUILTIN_ICONLISTVIEW 1
-#else
 #define DEBUG 0
-#include <aros/debug.h>
-#endif
 
 #include <exec/memory.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
 
 #ifdef __AROS__
+#include <aros/debug.h>
 #include <clib/alib_protos.h>
+#else
+#include "../portable_macros.h"
+#define WANDERER_BUILTIN_ICONLISTVIEW 1
 #endif
 
 #include <proto/exec.h>
@@ -36,7 +34,6 @@ $Id$
 #include "iconlistview_private.h"
 
 #ifndef __AROS__
-#define DEBUG 1
 
 #ifdef DEBUG
   #define D(x) if (DEBUG) x
@@ -48,6 +45,9 @@ $Id$
 #else
   #define  D(...)
 #endif
+
+#define ScrollbuttonObject MUI_MakeObject(MUIO_Button, (IPTR)"scroll"
+
 #endif
 
 extern struct Library *MUIMasterBase;
@@ -96,8 +96,8 @@ ULONG IconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_La
             Now place the objects between (0,0,lm->lm_Layout.Width-1,lm->lm_Layout.Height-1)
             */
 
-            LONG virt_width;
-            LONG virt_height;
+            LONG virt_width   = 0;
+            LONG virt_height  = 0;
             LONG vert_width   = _minwidth(data->vert);
             LONG horiz_height = _minheight(data->horiz);
             LONG lay_width    = lm->lm_Layout.Width;
@@ -176,8 +176,8 @@ ULONG IconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_La
 ULONG IconListview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct IconListview_DATA *data = (struct IconListview_DATA *)hook->h_Data;
-    int type = (int)msg[0];
-    LONG val = (LONG)msg[1];
+    int type = (IPTR)msg[0];
+    LONG val = (IPTR)msg[1];
 
     switch (type)
     {
@@ -221,14 +221,8 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return 0;
     usewinborder = GetTagData(MUIA_IconListview_UseWinBorder, FALSE, msg->ops_AttrList);
 
-    #ifdef __AROS__
     if (!usewinborder) 
         button = ScrollbuttonObject, End;
-    #else
-    if (!usewinborder) 
-        button = MUI_MakeObject(MUIO_Button,(IPTR)"scroll", TAG_DONE);
-    #endif
-
     else 
         button = NULL;
 
@@ -294,7 +288,7 @@ D(bug("[IconListview] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, obj));
     DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Height, MUIV_EveryTime, (IPTR)vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
 
 D(bug("[IconListview] obj = %ld\n", obj));
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 ///
 
@@ -353,7 +347,10 @@ IPTR IconListview__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *messa
 IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct IconListview_DATA *data = INST_DATA(cl, obj);
-    LONG top,left,width,height;
+    IPTR top    = 0;
+    IPTR left   = 0;
+    IPTR width  = 0;
+    IPTR height = 0;
 
     get(data->iconlist, MUIA_Virtgroup_Left, &left);
     get(data->iconlist, MUIA_Virtgroup_Top, &top);
