@@ -3,6 +3,7 @@
 File: handler.c
 Author: Neil Cafferkey
 Copyright (C) 2001-2008 Neil Cafferkey
+Copyright (C) 2011 The AROS Development Team
 
 This file is free software; you can redistribute it and/or modify it
 under the terms of the GNU Lesser General Public License as
@@ -194,7 +195,7 @@ LONG Main(void)
 
          case ACTION_LOCATE_OBJECT:
 
-            result = MKBADDR(CmdLocateObject(handler,
+            result = (PINT)MKBADDR(CmdLocateObject(handler,
                BADDR(packet->dp_Arg1), BStr(handler, BADDR(packet->dp_Arg2)),
                packet->dp_Arg3));
             break;
@@ -207,22 +208,22 @@ LONG Main(void)
 
          case ACTION_COPY_DIR:
 
-            result = MKBADDR(CmdCopyDir(handler, BADDR(packet->dp_Arg1)));
+            result = (PINT)MKBADDR(CmdCopyDir(handler, BADDR(packet->dp_Arg1)));
             break;
 
          case ACTION_COPY_DIR_FH:
 
-            result = MKBADDR(CmdCopyDirFH(handler, (APTR)packet->dp_Arg1));
+            result = (PINT)MKBADDR(CmdCopyDirFH(handler, (APTR)packet->dp_Arg1));
             break;
 
          case ACTION_PARENT:
 
-            result = MKBADDR(CmdParent(handler, BADDR(packet->dp_Arg1)));
+            result = (PINT)MKBADDR(CmdParent(handler, BADDR(packet->dp_Arg1)));
             break;
 
          case ACTION_PARENT_FH:
 
-            result = MKBADDR(CmdParentFH(handler, (APTR)packet->dp_Arg1));
+            result = (PINT)MKBADDR(CmdParentFH(handler, (APTR)packet->dp_Arg1));
             break;
 
          case ACTION_SAME_LOCK:
@@ -233,7 +234,7 @@ LONG Main(void)
 
          case ACTION_CREATE_DIR:
 
-            result = MKBADDR(CmdCreateDir(handler, BADDR(packet->dp_Arg1),
+            result = (PINT)MKBADDR(CmdCreateDir(handler, BADDR(packet->dp_Arg1),
                BStr(handler, BADDR(packet->dp_Arg2))));
             break;
 
@@ -329,7 +330,7 @@ LONG Main(void)
 
          case ACTION_CURRENT_VOLUME:
 
-            result = MKBADDR(CmdCurrentVolume(handler));
+            result = (PINT)MKBADDR(CmdCurrentVolume(handler));
             break;
 
          case ACTION_CHANGE_MODE:

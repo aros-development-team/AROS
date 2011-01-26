@@ -471,8 +471,7 @@ struct IOFileSys
     struct IORequest  IOFS;	  /* Standard I/O request. */
     LONG	      io_DosError; /* Dos error code. */
     struct DosPacket *io_PacketEmulation; /* Private */
-    LONG              io_DirPos;   /* The result from telldir() is stored
-				      here */
+    IPTR              io_DirPos;	      /* Handler-private key to current directory position */
 
     /* This union contains all the data needed for the various actions. */
     union
