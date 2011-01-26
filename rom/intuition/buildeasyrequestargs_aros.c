@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
-#define	DEBUG_BUILDEASYREQUEST(x)	D(x);
+#define	DEBUG_BUILDEASYREQUEST(x)
 
 /**********************************************************************************************/
 
@@ -17,6 +17,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <exec/memory.h>
+#include <exec/rawfmt.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/screens.h>
@@ -165,23 +166,31 @@ static int charsinstring(CONST_STRPTR string, char c);
                                             Args,
 					    &nextarg,
                                             IntuitionBase);
+    DEBUG_BUILDEASYREQUEST(bug("intrequest_buildeasyrequest: formatted text 0x%p\n", formattedtext));
     if (formattedtext)
     {
 	gadgetlabels = buildeasyreq_makelabels(&dims,
                                                easyStruct->es_GadgetFormat,
 					       nextarg,
                                                IntuitionBase);
+        DEBUG_BUILDEASYREQUEST(bug("intrequest_buildeasyrequest: gadget labels 0x%p\n", gadgetlabels));
 
     	if(gadgetlabels)
 	{
             if (buildeasyreq_calculatedims(&dims, scr,
                                            formattedtext, gadgetlabels, IntuitionBase))
             {
+	        DEBUG_BUILDEASYREQUEST(bug("intrequest_buildeasyrequest: dimensions OK\n"));
+
                 gadgets = buildeasyreq_makegadgets(&dims, gadgetlabels, scr, IntuitionBase);
                 if (gadgets)
                 {
+	            DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: gadgets 0x%p\n", gadgets));
+
                     requserdata = AllocVec(sizeof(struct IntRequestUserData),
                                            MEMF_ANY|MEMF_CLEAR);
+                    DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: requester data 0x%p\n", requserdata));
+
                     if (requserdata)
                     {
                         struct TagItem win_tags[] =
@@ -203,6 +212,9 @@ static int charsinstring(CONST_STRPTR string, char c);
                         };
 
                         req = OpenWindowTagList(NULL, win_tags);
+                        
+                        DEBUG_BUILDEASYREQUEST(bug("intrequest_buildeasyrequest: window 0x%p\n", req));
+                        
                         if (req)
                         {
                             if (lockedscr) UnlockPubScreen(NULL, lockedscr);
@@ -212,8 +224,6 @@ static int charsinstring(CONST_STRPTR string, char c);
                             requserdata->GadgetLabels = gadgetlabels;
                             requserdata->Gadgets = gadgets;
                             requserdata->NumGadgets = dims.gadgets;
-
-                            DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: gadgets 0x%lx\n", (ULONG) gadgets));
                             
                             buildeasyreq_draw(&dims, formattedtext,
                                               req, scr, gadgets, IntuitionBase);
@@ -340,35 +350,6 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 
 /**********************************************************************************************/
 
-AROS_UFH2 (void, EasyReqPutChar,
-           AROS_UFHA(UBYTE, chr, D0),
-           AROS_UFHA(UBYTE **,buffer,A3)
-          )
-{
-    AROS_USERFUNC_INIT
-
-    *(*buffer)++=chr;
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************************************************/
-
-AROS_UFH2 (void, EasyReqCountChar,
-           AROS_UFHA(UBYTE, chr, D0),
-           AROS_UFHA(ULONG *,counter,A3)
-          )
-{
-    AROS_USERFUNC_INIT
-
-    /* shut up the compiler */
-    chr = chr;
-
-    (*counter)++;
-
-    AROS_USERFUNC_EXIT
-}
-
 /* create an array of gadgetlabels */
 static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
                                        CONST_STRPTR labeltext,
@@ -376,7 +357,7 @@ static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
                                        struct IntuitionBase *IntuitionBase)
 {
     STRPTR  *gadgetlabels;
-    STRPTR   label, lab;
+    STRPTR   label;
     int      currentgadget;
     ULONG    len = 0;
 
@@ -391,7 +372,7 @@ static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
     gadgetlabels[dims->gadgets] = NULL;
 
     /* copy label-string */
-    RawDoFmt(labeltext, args, (VOID_FUNC)AROS_ASMSYMNAME(EasyReqCountChar), &len);
+    RawDoFmt(labeltext, args, (VOID_FUNC)RAWFMTFUNC_COUNT, &len);
     
     label = AllocVec(len + 1, MEMF_ANY);
     if (!label)
@@ -399,9 +380,8 @@ static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
         FreeVec(gadgetlabels);
         return NULL;
     }
-    
-    lab = label;
-    RawDoFmt(labeltext, args, (VOID_FUNC)AROS_ASMSYMNAME(EasyReqPutChar), &lab);
+
+    RawDoFmt(labeltext, args, (VOID_FUNC)RAWFMTFUNC_STRING, label);
 
     /* set up the pointers and insert null-bytes */
     for (currentgadget = 0; currentgadget < dims->gadgets; currentgadget++)
@@ -431,40 +411,17 @@ static STRPTR buildeasyreq_formattext(CONST_STRPTR textformat,
 				      APTR *nextargptr,
                                       struct IntuitionBase *IntuitionBase)
 {
-#if 1
     STRPTR buffer;
-    STRPTR buf;
     ULONG  len = 0;
 
-    RawDoFmt(textformat, args, (VOID_FUNC)AROS_ASMSYMNAME(EasyReqCountChar), &len);
+    RawDoFmt(textformat, args, (VOID_FUNC)RAWFMTFUNC_COUNT, &len);
 
     buffer = AllocVec(len + 1, MEMF_ANY | MEMF_CLEAR);
     if (!buffer) return NULL;
 
-    buf = buffer;
-    *nextargptr = RawDoFmt(textformat, args, (VOID_FUNC)AROS_ASMSYMNAME(EasyReqPutChar), &buf);
-    
+    *nextargptr = RawDoFmt(textformat, args, (VOID_FUNC)RAWFMTFUNC_STRING, buffer);
+
     return buffer;
-
-#else
-    int    len;
-    STRPTR buffer;
-
-    len = strlen(textformat) + 256;
-    for (;;)
-    {
-        buffer = AllocVec(len, MEMF_ANY);
-        if (!buffer)
-            return NULL;
-	    
-        if (vsnprintf(buffer, len, textformat, args) < len)
-            return buffer;
-	    
-        FreeVec(buffer);
-        len += 256;
-    }
-#endif
-
 }
 
 /**********************************************************************************************/
@@ -500,7 +457,10 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
                    scr->WBorBottom;
 
     if (dims->height > scr->Height)
+    {
+    	DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_calculatedims: Too high (requester %u, screen %u)\n", dims->height, scr->Height));
         return FALSE;
+    }
 
     /* calculate width of text-box */
     textline = formattedtext;
@@ -553,7 +513,10 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
     dims->width += OUTERSPACING_X * 2 + scr->WBorLeft + scr->WBorRight;
 
     if (dims->width > scr->Width)
+    {
+    	DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_calculatedims: Too wide (requester %u, screen %u)\n", dims->width, scr->Width));
         return FALSE;
+    }
 
     return TRUE;
 }
