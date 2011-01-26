@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2003, The AROS Development Team.
+    Copyright © 2003-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -11,6 +11,6 @@
 /* Returns a given text font, if necessary it opens the font.
  * Must be called after Area's MUIM_Setup.
  */
-struct TextFont *zune_font_get(Object *obj, LONG preset);
+struct TextFont *zune_font_get(Object *obj, SIPTR preset);
 
 #endif /* _ZUNE_FONT_H */

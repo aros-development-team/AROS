@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -356,7 +356,7 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Register_DATA *data;
     int i;
-    IPTR tmp;
+    IPTR tmp = 0;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL, MUIA_Group_PageMode, TRUE,
 					MUIA_Background, MUII_RegisterBack,
@@ -557,7 +557,7 @@ IPTR Register__MUIM_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *m
 {
     struct Register_DATA *data = INST_DATA(cl, obj);
     ULONG retval = 1;
-    IPTR active;
+    IPTR active = 0;
 
     get(obj, MUIA_Group_ActivePage, &active);
 

@@ -1,6 +1,6 @@
 /* 
-    Copyright  1999, David Le Corfec.
-    Copyright  2002, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002 - 2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -189,7 +189,7 @@ struct MUI_AreaData
 // offset 52
     CONST_STRPTR       mad_BackgroundSpec;
 // offset 56
-    LONG               mad_FontPreset;     /* MUIV_Font_xxx */
+    SIPTR              mad_FontPreset;     /* MUIV_Font_xxx */
 // offset 76
     CONST_STRPTR       mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
 // Inner values at offset 88 in MUI:

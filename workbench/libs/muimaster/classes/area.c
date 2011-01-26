@@ -1754,7 +1754,7 @@ static void handle_press(struct IClass *cl, Object *obj)
 
     case MUIV_InputMode_Immediate:
     {
-        IPTR selected;
+        IPTR selected = FALSE;
 
         get(obj, MUIA_Selected, &selected);
         if (selected)
