@@ -1,7 +1,7 @@
 #ifndef AROS_X86_64_CPU_H
 #define AROS_X86_64_CPU_H
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -117,7 +117,8 @@ struct JumpVec
 		"#define EMITSTUB(fname, bname, vec) " \
 		".weak fname ; "                       \
 		"fname : "                             \
-		"movq bname , %%r11; "                  \
+		"movabsq $bname, %%r11; "	       \
+		"movq (%%r11), %%r11; "                \
 		"jmp *vec(%%r11);\n"                   \
 	        "#define EMITALIAS(fname, alias) "     \
 	        ".weak alias; .set alias, fname\n"
