@@ -1,4 +1,4 @@
-# This mmakefile relies on existing and working C++ compiler.
+# This mmakefile relies on existing and working C++ compiler. Additionally the build fails on ARM CPU.
 # Because of this I did not add it to the build by default.
 # This target needs to be built manually.
 
@@ -37,11 +37,10 @@ $(EXES) : $(EXEDIR)/% : $(OBJDIR)/%.o
 	%link_q cmd=$(TARGET_CXX)
 
 $(OBJDIR$)/%.o : %.cpp
-	%compile_q cmd=$(TARGET_CXX) opt="$(CXX_FLAGS)"
+	%compile_q cmd=$(TARGET_CXX) opt="$(CXX_FLAGS) $(TARGET_CFLAGS)"
 
 $(OBJDIR)/%.d : %.cpp
-	%mkdepend_q cc=$(TARGET_CXX) flags="$(CXX_FLAGS)"
-
+	%mkdepend_q cc=$(TARGET_CXX) flags="$(CXX_FLAGS) $(TARGET_CFLAGS)"
 
 %include_deps depstargets="test-cxx-quick" deps=$(DEPS)
 

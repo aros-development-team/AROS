@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: System memory allocator for MMU-less systems.
@@ -32,8 +32,6 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase)
 	 * Check for the right requirements and enough free memory.
 	 * The requirements are OK if there's no bit in the
 	 * 'attributes' that isn't set in the 'mh->mh_Attributes'.
-	 * MEMF_CLEAR, MEMF_REVERSE and MEMF_NO_EXPUNGE are treated
-	 * as if they were always set in the memheader.
 	 */
 	    if ((requirements & ~mh->mh_Attributes)
 	        || mh->mh_Free < byteSize)

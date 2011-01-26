@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate some memory
@@ -87,7 +87,6 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     APTR res = NULL;
     struct checkMemHandlersState cmhs;
     ULONG origSize         = byteSize;
-    ULONG origRequirements = requirements;
 
     D(if (SysBase->DebugAROSBase))
     D(bug("Call AllocMem (%d, %08x)\n", byteSize, requirements));
@@ -114,7 +113,7 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     cmhs.cmhs_Data.memh_RequestSize  = byteSize;
     cmhs.cmhs_Data.memh_RequestFlags = requirements;
     cmhs.cmhs_Data.memh_Flags        = 0;
-    
+
     do
     {
 	res = nommu_AllocMem(byteSize, requirements, SysBase);
@@ -124,7 +123,7 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     RT_Add (RTT_MEMORY, res, origSize);
 #endif  
 
-    res = MungWall_Build(res, NULL, origSize, origRequirements, SysBase);
+    res = MungWall_Build(res, NULL, origSize, requirements, SysBase);
 
     /* Set DOS error if called from a process */
     if (res == NULL)

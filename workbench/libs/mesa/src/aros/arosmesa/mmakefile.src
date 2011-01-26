@@ -156,7 +156,7 @@ else
 endif
 
 $(CXX_SOURCES) : workbench-libs-mesa-module-cpp-gendir
-	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cpp to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
+	%compile_q cmd=$(CXX_CC) opt="$(CXX_FLAGS) $(TARGET_CFLAGS)" from=$(SRCDIR)/$(CURDIR)/$@.cpp to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
 
 #MM
 workbench-libs-mesa-module-cpp-gendir : 
