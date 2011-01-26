@@ -23,8 +23,6 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
 
     origbuffer = buffer;
     D(bug("NameFromX(%x,%x,%d,%d)\n", BADDR(lock), buffer, length, filehandle));
-    if (lock == 0)
-	return DOSFALSE;
 	
     if (length < 1)
     {
@@ -32,6 +30,13 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
         return DOSFALSE;
     }
     
+    if (filehandle) {
+    	lock = dopacket1(DOSBase, NULL, ((struct FileHandle*)BADDR(lock))->fh_Type, ACTION_COPY_DIR_FH,
+    		((struct FileHandle*)BADDR(lock))->fh_Arg1);
+    	if (!lock)
+    	    return DOSFALSE;
+    }
+
     fib = AllocDosObject(DOS_FIB, 0);
     if (!fib)
     {
@@ -39,11 +44,9 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
         return DOSFALSE;
     }
     
-    if (filehandle) {
-    	lock = dopacket1(DOSBase, NULL, ((struct FileHandle*)BADDR(lock))->fh_Type, ACTION_COPY_DIR_FH,
-    		((struct FileHandle*)BADDR(lock))->fh_Arg1);
-    }
-    
+    if (!lock)
+    	lock = DOSBase->dl_SYSLock;
+
     /* Construct the name from top to bottom */
     name = buffer + length;
     *--name = 0;
