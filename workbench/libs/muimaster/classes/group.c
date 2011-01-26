@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2006, The AROS Development Team.
+    Copyright  2002-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -201,7 +201,9 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_GroupData *data;
     struct TagItem *tags,*tag;
     BOOL   bad_childs = FALSE;
-    ULONG  disabled;
+    IPTR  disabled = FALSE;
+
+    D(bug("[group.mui] OM_NEW, object 0x%p\n", obj));
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return 0;
@@ -227,6 +229,7 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Group_Child:
+	    	    D(bug("[group.mui] Adding child 0x%p\n", tag->ti_Data));
 		    if (tag->ti_Data) DoMethod(obj, OM_ADDMEMBER, tag->ti_Data);
 		    else  bad_childs = TRUE;
 		    break;
@@ -527,7 +530,7 @@ IPTR Group__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     {
 	Object               *cstate;
 	Object               *child;
-	struct MinList       *ChildList;
+	struct MinList       *ChildList = NULL;
 
 	get(data->family, MUIA_Family_List, &(ChildList));
 	cstate = (Object *)ChildList->mlh_Head;
@@ -546,7 +549,7 @@ IPTR Group__OM_ADDMEMBER(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
-/*      D(bug("Group_AddMember(0x%lx, 0x%lx)\n",obj, msg->opam_Object)); */
+    D(bug("Group_AddMember(0x%p, 0x%p)\n",obj, msg->opam_Object));
 
     DoMethodA(data->family, (Msg)msg);
     data->num_childs++;
@@ -609,7 +612,7 @@ IPTR Group__MUIM_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Conne
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -638,7 +641,7 @@ IPTR Group__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_Co
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     get(data->family, MUIA_Family_List, &(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
@@ -725,7 +728,7 @@ static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     if (data->dont_forward_methods) return TRUE;
 
@@ -747,7 +750,7 @@ IPTR Group__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     Object               *cstate_copy;
     Object               *child;
     Object               *childFailed;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
 	return FALSE;
@@ -802,7 +805,7 @@ IPTR Group__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -832,7 +835,7 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object                *cstate;
     Object                *child;
-    struct MinList        *ChildList;
+    struct MinList        *ChildList = NULL;
     struct Rectangle        group_rect; /* child_rect;*/
     int                    page;
     struct Region *region = NULL;
@@ -2428,7 +2431,7 @@ static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinLis
 IPTR Group__MUIM_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    struct MUI_LayoutMsg lm;
+    struct MUI_LayoutMsg lm = {0};
    
     get(data->family, MUIA_Family_List, &(lm.lm_Children));
     if (data->flags & GROUP_PAGEMODE)
@@ -2504,7 +2507,7 @@ IPTR Group__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     /* If msg is NULL, we won't want that the super method actually gets this call */
     if (msg) DoSuperMethodA(cl,obj,(Msg)msg);
@@ -2547,7 +2550,7 @@ IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     get(data->family, MUIA_Family_List, &(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
@@ -2654,7 +2657,7 @@ IPTR Group__MUIM_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_D
     Object               *cstate;
     Object               *child;
     Object               *found_obj;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     get(data->family, MUIA_Family_List, &(ChildList));
     cstate =  (Object *)ChildList->mlh_Head;
@@ -2787,7 +2790,7 @@ IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     // it's me ?
     if (msg->obj == obj)
