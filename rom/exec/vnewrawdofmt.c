@@ -59,8 +59,6 @@
 				   'u' unsigned decimal number.
 				   'x' unsigned hexdecimal number.
 
-	DataStream   - C-style data stream (va_list variable)
-
 	PutChProc    - Callback function. Called for each character, including
 		       the NULL terminator. The function should be declared as
 		       follows:
@@ -80,40 +78,30 @@
 			 RAWFMTFUNC_COUNT  - Count number of characters in the result.
 					     PutChData is a pointer to ULONG which
 					     is incremented every character. Initial
-					     value of the cointer is kept as it is.
-
+					     value of the counter is kept as it is.
 
 	PutChData    - Data propagated to each call of the callback hook.
+
+	DataStream   - C-style data stream (va_list variable)
 
     RESULT
 	Final PutChData value.
 
     NOTES
-	The field size defaults to words which may be different from the
+	The field size defaults to WORDs which may be different from the
 	default integer size of the compiler.
 
     EXAMPLE
 	Build a sprintf style function:
-
-	    static void callback(UBYTE chr __reg(d0), UBYTE **data __reg(a3))
-	    {
-	       *(*data)++=chr;
-	    }
 
 	    void my_sprintf(UBYTE *buffer, UBYTE *format, ...)
 	    {
 		va_list args;
 		
 		va_start(args, format);
-	        VNewRawDoFmt(format, args, &callback, &buffer);
+		VNewRawDoFmt(format, RAWFMTFUNC_STRING, buffer, args);
 		va_end(args);
             }
-
-	The above example uses __stackparm attribute in the function
-	prototype in order to make sure that arguments are all passed on
-	the stack on all architectures. The alternative is to use
-	VNewRawDoFmt() function which takes DataStream in the form of
-	va_list instead of linear array.
 
     BUGS
 	PutChData cannot be modified from the callback hook on non-m68k
