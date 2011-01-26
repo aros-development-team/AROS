@@ -122,7 +122,7 @@ static void SigIOHandler(struct emulbase *emulbase, void *unused)
 	struct filehandle *fh = (struct filehandle *)req->IOFS.io_Unit;
 
 	/* Try to process the request */
-        len = TryRead(emulbase->pdata.SysIFace, (int)fh->fd, req->io_Union.io_READ.io_Buffer, req->io_Union.io_READ.io_Length);
+        len = TryRead(emulbase->pdata.SysIFace, (IPTR)fh->fd, req->io_Union.io_READ.io_Buffer, req->io_Union.io_READ.io_Length);
 	if (len != -2)
 	{
 	    /* Reply the requst if it is done */
@@ -150,7 +150,7 @@ static inline struct filehandle *CreateStdHandle(int fd)
     if (fh)
     {
 	fh->type = FHD_FILE|FHD_STDIO;
-	fh->fd   = (void *)fd;
+	fh->fd   = (void *)(IPTR)fd;
     }
 
     return fh;
@@ -723,7 +723,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 	if (r >= 0)
 	{
 	    fh->type = FHD_FILE;
-	    fh->fd   = (void *)r;
+	    fh->fd   = (void *)(IPTR)r;
 	    ret = 0;
 	}
 	else
@@ -762,7 +762,7 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
     {
     case FHD_FILE:
 	/* Nothing will happen if type has FHD_STDIO set, this is intentional */
-	emulbase->pdata.SysIFace->close((int)current->fd);
+	emulbase->pdata.SysIFace->close((IPTR)current->fd);
 	AROS_HOST_BARRIER
 	break;
 
@@ -785,7 +785,7 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 
     ObtainSemaphore(&emulbase->pdata.sem);
 
-    len = TryRead(emulbase->pdata.SysIFace, (int)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
+    len = TryRead(emulbase->pdata.SysIFace, (IPTR)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
     DREAD(bug("[emul] Result: %d\n", len));
     if (len == -1)
 	error = err_u2a(emulbase);
@@ -804,12 +804,12 @@ LONG DoRead(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
 	ObtainSemaphore(&emulbase->pdata.sem);
 
 	/* Own the filedescriptor and enable SIGIO on it */
-	emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_SETOWN, emulbase->pdata.my_pid);
+	emulbase->pdata.SysIFace->fcntl((IPTR)fh->fd, F_SETOWN, emulbase->pdata.my_pid);
 	AROS_HOST_BARRIER
-	len = emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_GETFL);
+	len = emulbase->pdata.SysIFace->fcntl((IPTR)fh->fd, F_GETFL);
 	AROS_HOST_BARRIER
 	len |= O_ASYNC;
-	emulbase->pdata.SysIFace->fcntl((int)fh->fd, F_SETFL, len);
+	emulbase->pdata.SysIFace->fcntl((IPTR)fh->fd, F_SETFL, len);
 	AROS_HOST_BARRIER
 
 	/* Kick processing loop once because SIGIO could arrive after read attempt
@@ -836,7 +836,7 @@ LONG DoWrite(struct emulbase *emulbase, struct IOFileSys *iofs, BOOL *async)
     
     ObtainSemaphore(&emulbase->pdata.sem);
 
-    len = emulbase->pdata.SysIFace->write((int)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
+    len = emulbase->pdata.SysIFace->write((IPTR)fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
     AROS_HOST_BARRIER
     if (len == -1)
 	error = err_u2a(emulbase);
@@ -872,7 +872,7 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
 
     ObtainSemaphore(&emulbase->pdata.sem);
 
-    res = LSeek((int)file, 0, SEEK_CUR);
+    res = LSeek((IPTR)file, 0, SEEK_CUR);
     AROS_HOST_BARRIER
 
     DSEEK(bug("[emul] Original position: 0x%08X%08X\n", (ULONG)(res >> 32), (ULONG)res));
@@ -881,7 +881,7 @@ LONG DoSeek(struct emulbase *emulbase, void *file, UQUAD *Offset, ULONG mode)
         UQUAD offs = *Offset;
 
         oldpos = res;
-        res = LSeek((int)file, offs, mode);
+        res = LSeek((IPTR)file, offs, mode);
         AROS_HOST_BARRIER
 
 	DSEEK(bug("[emul] New position: 0x%08X%08X\n", (ULONG)(res >> 32), (ULONG)res));
@@ -1062,7 +1062,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
         break;
 
     case OFFSET_CURRENT:
-       	absolute = LSeek((int)fh->fd, 0, SEEK_CUR);
+       	absolute = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
        	AROS_HOST_BARRIER
 
         if (absolute == -1)
@@ -1072,7 +1072,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
         break;
 
     case OFFSET_END:
-        absolute = LSeek((int)fh->fd, 0, SEEK_END); 
+        absolute = LSeek((IPTR)fh->fd, 0, SEEK_END); 
         AROS_HOST_BARRIER
 
         if (absolute == -1)
@@ -1087,7 +1087,7 @@ LONG DoSetSize(struct emulbase *emulbase, struct filehandle *fh, struct IFS_SEEK
 
     if (!err)
     {
-	err = FTruncate((int)fh->fd, absolute);
+	err = FTruncate((IPTR)fh->fd, absolute);
 	AROS_HOST_BARRIER
 	if (err)
 	    err = err_u2a(emulbase);
@@ -1106,7 +1106,7 @@ BOOL DoGetType(struct emulbase *emulbase, void *fd)
 
     ObtainSemaphore(&emulbase->pdata.sem);
     
-    ret = emulbase->pdata.SysIFace->isatty((int)fd);
+    ret = emulbase->pdata.SysIFace->isatty((IPTR)fd);
     AROS_HOST_BARRIER
 
     ReleaseSemaphore(&emulbase->pdata.sem);
