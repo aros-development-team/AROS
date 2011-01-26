@@ -194,4 +194,11 @@ struct mb_drive {
     UWORD   ports[10];		    /* Ugly, needs to be fixed */
 };
 
+struct mb_module {	/* multiboot_mod_list - multiboot_module_t */
+    ULONG mod_start;	/* from bytes */
+    ULONG mod_end;	/* to 'mod_end-1' inclusive */
+    ULONG cmdline;	/* Module command line */
+    ULONG pad;		/* padding to take it to 16 bytes (must be zero) */
+};
+
 #endif /* _MB_H */
