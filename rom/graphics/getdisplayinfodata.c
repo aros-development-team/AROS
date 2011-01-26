@@ -118,8 +118,8 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	return 0;
     }
 
-    D(bug("GetDisplayInfoData(handle=%d, modeid=%x, tagID=%x)\n"
-    	, (ULONG)handle, modeid, tagID));
+    D(bug("GetDisplayInfoData(handle=%d, tagID=%x)\n"
+    	, (ULONG)handle, tagID));
 
     /* Build the queryheader */
     structsize = check_sizes(tagID, size);
