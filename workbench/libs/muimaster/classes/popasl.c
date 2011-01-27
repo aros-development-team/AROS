@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -102,7 +102,9 @@ static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj, void **msg)
     {
 	if (data->type == ASL_FileRequest)
 	{
-	    char *str, *path_end;
+	    char *str = NULL;
+	    char *path_end;
+
 	    get(string,MUIA_String_Contents,&str);
 
 	    path_end = PathPart(str);
@@ -122,8 +124,10 @@ static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj, void **msg)
 
 	if (data->type == ASL_FontRequest)
 	{
-	    char *str, *name_end;
+	    char *str = NULL;
+	    char *name_end;
 	    LONG size;
+
 	    get(string,MUIA_String_Contents,&str);
 
 	    if (str)
@@ -199,52 +203,61 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 	}
 	else
 	{
+	    char *buf = NULL;
+
 	    if (data->type == ASL_FileRequest)
 	    {
 		struct FileRequester *file_req = (struct FileRequester*)data->asl_req;
 		char *file = (char*)file_req->fr_File?(char*)file_req->fr_File:(char*)"";
 		char *drawer = (char*)file_req->fr_Drawer?(char*)file_req->fr_Drawer:(char*)"";
 		int len = strlen(file)+strlen(drawer)+10;
-		char *buf = (char*)AllocVec(len,MEMF_CLEAR);
+
+		buf = (char*)AllocVec(len,MEMF_CLEAR);
 		if (buf)
 		{
-		    IPTR contents;
-
 		    strcpy(buf, drawer);
 		    AddPart(buf, file, len);
-		    set(string, MUIA_String_Contents, (IPTR)buf);
-		    get(string, MUIA_String_Contents, &contents);
-		    /* trigger string notification */
-		    set(string, MUIA_String_Acknowledge, contents);
-		    FreeVec(buf);
 		}
 	    }
 	    else if (data->type == ASL_FontRequest)
 	    {
 		struct FontRequester *font_req = (struct FontRequester*)data->asl_req;
 		char *name = font_req->fo_Attr.ta_Name;
-		LONG size = font_req->fo_Attr.ta_YSize;
-		int len = strlen(name)+20;
-		char *buf = (char*)AllocVec(len,MEMF_CLEAR);
-		if (buf)
+		
+		if (name)
 		{
-		    char num_buf[20];
-		    char *font_ext;
-		    IPTR contents;
+		    LONG size = font_req->fo_Attr.ta_YSize;
+		    int len = strlen(name)+20;
 
-		    strcpy(buf,name);
+		    buf = AllocVec(len,MEMF_CLEAR);
+		    if (buf)
+		    {
+		    	char num_buf[20];
+		    	char *font_ext;
 
-		    /* Remove the .font extension */
-		    if ((font_ext = strstr(buf,".font"))) *font_ext = 0;
-		    snprintf(num_buf, 20, "%ld", size);
-		    AddPart(buf,num_buf,len);
-		    set(string, MUIA_String_Contents, (IPTR)buf);
-		    get(string, MUIA_String_Contents, &contents);
-		    /* trigger string notification */
-		    set(string, MUIA_String_Acknowledge, contents);
-		    FreeVec(buf);
+		    	strcpy(buf,name);
+
+		    	/* Remove the .font extension */
+		    	if ((font_ext = strstr(buf,".font")))
+		    	    *font_ext = 0;
+
+			snprintf(num_buf, 20, "%d", size);
+			AddPart(buf,num_buf,len);
+		    }
 		}
 	    }
+	    
+	    if (buf)
+	    {
+	    	IPTR contents = 0;
+
+		set(string, MUIA_String_Contents, (IPTR)buf);
+		get(string, MUIA_String_Contents, &contents);
+		/* trigger string notification */
+		set(string, MUIA_String_Acknowledge, contents);
+
+		FreeVec(buf);
+	    }	    
 	}
     }
 
