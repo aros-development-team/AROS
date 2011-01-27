@@ -6,7 +6,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include "aros/debug.h"
 
 #include <proto/exec.h>
