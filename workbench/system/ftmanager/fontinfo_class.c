@@ -62,8 +62,9 @@ AROS_UFH3(void, CycleToString,
 {
 	AROS_USERFUNC_INIT
 
-	ULONG entry;
+	IPTR entry = 0;
 	Object *str = p->String;
+
 	get(cycle, MUIA_Cycle_Active, &entry);
 	if (entry == p->NumValues)
 	{
@@ -97,7 +98,8 @@ AROS_UFH3(void, IntegerBounds,
 {
 	AROS_USERFUNC_INIT
 
-	LONG t;
+	IPTR t = 0;
+
 	get(obj, MUIA_String_Integer, &t);
 	if (t < p->Min)
 	{
@@ -122,7 +124,7 @@ AROS_UFH3(void, Metric,
 {
 	AROS_USERFUNC_INIT
 
-	ULONG t;
+	IPTR t = 0;
 	ULONG state;
 	int k;
 
@@ -578,7 +580,8 @@ IPTR fiSetOTags(Class *cl, Object *o)
 {
 	FontInfoData *dat = INST_DATA(cl, o);
 	struct TagItem *tag = dat->OTags;
-	ULONG x, y;
+	IPTR x = 0;
+	IPTR y = 0;
 
 	tag->ti_Tag = OT_FileIdent;
 	++tag;
@@ -657,7 +660,9 @@ IPTR fiSetOTags(Class *cl, Object *o)
 
 	if (tag[-1].ti_Data == METRIC_CUSTOMBBOX)
 	{
-		ULONG ymin, ymax;
+		IPTR ymin = 0;
+		IPTR ymax = 0;
+
 		get(dat->BBoxYMin, MUIA_String_Integer, &ymin);
 		get(dat->BBoxYMax, MUIA_String_Integer, &ymax);
 		tag->ti_Tag = OT_Spec5_BBox;
@@ -689,9 +694,9 @@ ULONG fiUpdatePreview(Class *cl, Object *o)
 {
 	FontInfoData *dat = INST_DATA(cl, o);
 	Object *preview;
-	STRPTR str;
-	ULONG gray;
-	ULONG size;
+	STRPTR str = NULL;
+	IPTR gray = 0;
+	IPTR size = 0;
 
 	fiSetOTags(cl, o);
 
@@ -730,7 +735,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 	FontInfoData *dat = INST_DATA(cl, o);
 	BPTR file;
 	char name[32];
-	STRPTR base;
+	STRPTR base = NULL;
 	BPTR olddir;
 
 	get(dat->Name, MUIA_String_Contents, &base);
@@ -750,7 +755,12 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 		UBYTE *buffer;
 		int num_sizes;
 
-		size = sizeof(tag->ti_Tag) + (fiSetOTags(cl, o) + 2) * sizeof(*tag);
+		/*
+		 * In the file we store 32-bit form of taglist.
+		 * Each complete tag can be represented by UQUAD (two ULONGs),
+		 * and we also append one ULONG for TAG_DONE terminator
+		 */
+		size = sizeof(ULONG) + (fiSetOTags(cl, o) + 2) * sizeof(UQUAD);
 		indirect_size = 0;
 
 		for (tag = dat->OTags; tag->ti_Tag != TAG_END; ++tag)
@@ -778,56 +788,60 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 		buffer = malloc(indirect_size);
 		if (buffer)
 		{
-			size_t offset = 0;
-		    struct TagItem *write_tags;
+		    size_t offset = 0;
+		    ULONG *write_tags;
+		    ULONG *dest;
 
-			memset(buffer, 0, indirect_size);
+		    memset(buffer, 0, indirect_size);
 
-			for (tag = dat->OTags; tag->ti_Tag != TAG_END; ++tag)
+		    for (tag = dat->OTags; tag->ti_Tag != TAG_END; ++tag)
+		    {
+			if (tag->ti_Tag == OT_Spec2_CodePage)
 			{
-				if (tag->ti_Tag == OT_Spec2_CodePage)
-				{
-					offset += 1;
-					offset &= ~1;
-					memcpy(buffer + offset, codepage, sizeof(codepage));
-					tag->ti_Data = size + offset;
-					offset += sizeof(codepage);
-				}
-				else if (tag->ti_Tag & OT_Indirect && tag->ti_Data)
-				{
-					size_t len = strlen((const char *)tag->ti_Data) + 1;
-					memcpy(buffer + offset, (const char *)tag->ti_Data, len);
-					tag->ti_Data = size + offset;
-					offset += len;
-				}
+			    offset += 1;
+			    offset &= ~1;
+			    memcpy(buffer + offset, codepage, sizeof(codepage));
+			    tag->ti_Data = size + offset;
+			    offset += sizeof(codepage);
 			}
+			else if (tag->ti_Tag & OT_Indirect && tag->ti_Data)
+			{
+			    size_t len = strlen((const char *)tag->ti_Data) + 1;
 
-			offset += 1;
-			offset &= ~1;
+			    memcpy(buffer + offset, (const char *)tag->ti_Data, len);
+			    tag->ti_Data = size + offset;
+			    offset += len;
+			}
+		    }
 
-			tag->ti_Tag = OT_AvailSizes;
-			tag->ti_Data = size + offset;
-			++tag;
+		    offset += 1;
+		    offset &= ~1;
 
-			tag->ti_Tag = TAG_END;
+		    tag->ti_Tag = OT_AvailSizes;
+		    tag->ti_Data = size + offset;
+		    ++tag;
 
-			memcpy(buffer + offset, dat->AvailSizes, num_sizes * sizeof(UWORD));
-			offset += num_sizes * sizeof(UWORD);
+		    tag->ti_Tag = TAG_END;
+
+		    memcpy(buffer + offset, dat->AvailSizes, num_sizes * sizeof(UWORD));
+		    offset += num_sizes * sizeof(UWORD);
 
 		    write_tags = malloc(size);
-		    memcpy(write_tags, dat->OTags, size);
-		    for (tag = write_tags; tag->ti_Tag != TAG_END; tag++)
+
+		    dest = write_tags;
+		    for (tag = dat->OTags; tag->ti_Tag != TAG_END; tag++)
 		    {
-			tag->ti_Tag = AROS_LONG2BE(tag->ti_Tag);
-			tag->ti_Data = AROS_LONG2BE(tag->ti_Data);
+			dest[0] = AROS_LONG2BE(tag->ti_Tag);
+			dest[1] = AROS_LONG2BE(tag->ti_Data);
+			dest += 2;
 		    }
-		    tag->ti_Tag = AROS_LONG2BE(TAG_END);
+		    dest[0] = AROS_LONG2BE(TAG_END);
 
-			Write(file, write_tags, size);
+		    Write(file, write_tags, size);
 		    free(write_tags);
-			Write(file, buffer, offset);
 
-			free(buffer);
+		    Write(file, buffer, offset);
+		    free(buffer);
 		}
 
 		Close(file);

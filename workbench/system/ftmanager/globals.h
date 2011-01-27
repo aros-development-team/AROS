@@ -3,7 +3,7 @@
 
 #include <dos/bptr.h>
 
-#define DEBUG_FONTBITMAP(x)	x;
+#define DEBUG_FONTBITMAP(x)
 
 #ifdef __AROS__
 #define dprintf kprintf
@@ -13,11 +13,11 @@
 #	define MAKE_ID(a,b,c,d)	(((a)<<24)|((b)<<16)|((c)<<8)|(d))
 #endif
 
-#define DEBUG_MAIN(x)		x;
-#define DEBUG_FONTBITMAP(x)	x;
-#define DEBUG_FONTINFO(x)	x;
-#define DEBUG_FONTWINDOW(x)	x;
-#define DEBUG_ADDDIR(x)		x;
+#define DEBUG_MAIN(x)
+#define DEBUG_FONTBITMAP(x)
+#define DEBUG_FONTINFO(x)
+#define DEBUG_FONTWINDOW(x)
+#define DEBUG_ADDDIR(x)
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
