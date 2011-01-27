@@ -67,7 +67,10 @@
     ASSERT_VALID_PTR(buffer);
 
     D(bug("[Read] %x %x %d\n", fh, buffer, length));
-    ret = dopacket3(DOSBase, NULL, fh->fh_Type, ACTION_READ, fh->fh_Arg1, (SIPTR)buffer, length);
+    if (fh->fh_Type == BNULL)
+    	ret = 0;
+    else
+    	ret = dopacket3(DOSBase, NULL, fh->fh_Type, ACTION_READ, fh->fh_Arg1, (SIPTR)buffer, length);
     D(bug("[Read]=%d\n", ret));
 
     return ret;
