@@ -179,8 +179,8 @@ static inline BOOL Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase
     UWORD mask = custom_r(INTENAR) & custom_r(INTREQR) & (irq_mask); \
     do {
 
-#define PAULA_IRQ_ACK() \
-    custom_w(INTREQ, mask & 0x7fff);
+#define PAULA_IRQ_ACK(clear_mask) \
+    custom_w(INTREQ, mask & (clear_mask));
 
 #define PAULA_IRQ_HANDLE(irq) \
     	if ((mask) & (1 << (irq))) { \
@@ -207,7 +207,11 @@ static BOOL Amiga_Level_1(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_HANDLE(INTB_DSKBLK);
     PAULA_IRQ_HANDLE(INTB_SOFTINT);
 
-    PAULA_IRQ_ACK();
+    /* SOFTINT is cleared by SOFTINT handler, we can't clear it
+     * here anymore because SOFTINT handler may call Cause() internally
+     */
+
+    PAULA_IRQ_ACK(INTF_DSKBLK | INTF_TBE);
 
     PAULA_IRQ_EXIT();
 }
@@ -219,11 +223,8 @@ static BOOL Amiga_Level_2(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_CHECK(INTF_PORTS);
 
     PAULA_IRQ_HANDLE(INTB_PORTS);
-    /* Clear level 2 and 6 interrupt request after calling handlers.
-     * Paula interrupt won't clear until interrupting hardware
-     * interrupt register is cleared by handler.
-     */
-    PAULA_IRQ_ACK();
+
+    PAULA_IRQ_ACK(INTF_PORTS);
 
     PAULA_IRQ_EXIT();
 }
@@ -240,7 +241,7 @@ static BOOL Amiga_Level_3(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_HANDLE(INTB_VERTB);
     PAULA_IRQ_HANDLE(INTB_BLIT);
 
-    PAULA_IRQ_ACK();
+    PAULA_IRQ_ACK(INTF_COPER | INTF_VERTB | INTF_BLIT);
 
     PAULA_IRQ_EXIT();
 }
@@ -259,7 +260,7 @@ static BOOL Amiga_Level_4(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_HANDLE(INTB_AUD2);
     PAULA_IRQ_HANDLE(INTB_AUD3);
     
-    PAULA_IRQ_ACK();
+    PAULA_IRQ_ACK(INTF_AUD0 | INTF_AUD1 | INTF_AUD2 | INTF_AUD3);
 
     PAULA_IRQ_EXIT();
 }
@@ -274,7 +275,7 @@ static BOOL Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_HANDLE(INTB_RBF);
     PAULA_IRQ_HANDLE(INTB_DSKSYNC);
 
-    PAULA_IRQ_ACK();
+    PAULA_IRQ_ACK(INTF_RBF | INTF_DSKSYNC);
 
     PAULA_IRQ_EXIT();
 }
@@ -289,7 +290,7 @@ static BOOL Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_HANDLE(INTB_EXTER);
     PAULA_IRQ_HANDLE(INTB_INTEN);
 
-    PAULA_IRQ_ACK();
+    PAULA_IRQ_ACK(INTF_EXTER);
 
     PAULA_IRQ_EXIT();
 }
