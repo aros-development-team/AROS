@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,7 +34,7 @@ struct Scrollbutton_DATA
 
 IPTR Scrollbutton__OM_NEW(struct IClass * cl, Object * o, struct opSet * msg)
 {
-  return (ULONG) DoSuperNewTags(cl, o, NULL,
+  return DoSuperNewTags(cl, o, NULL,
   	ButtonFrame,
   	MUIA_InputMode, MUIV_InputMode_RelVerify,
   	MUIA_Background, MUII_ButtonBack,
@@ -160,7 +160,8 @@ IPTR Scrollbutton__MUIM_HandleEvent(struct IClass * cl, Object * o, struct MUIP_
 
 	    case    IDCMP_MOUSEMOVE:
 		    {
-		    	int sel;
+		    	IPTR sel = 0;
+
 		    	get(o,MUIA_Selected, &sel);
 		    	if (sel)
 		    	{
