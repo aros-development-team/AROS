@@ -9,6 +9,7 @@
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
 #include <hardware/custom.h>
+#include <hardware/intbits.h>
 #include <proto/kernel.h>
 
 #include "exec_intern.h"
@@ -100,9 +101,16 @@
         ADDTAIL(&SysBase->SoftInts[pri].sh_List, &softint->is_Node);
         softint->is_Node.ln_Type = NT_SOFTINT;
         SysBase->SysFlags |= SFF_SoftInt;
-
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+	{
+	   /* Quick soft int request */
+	    volatile struct Custom *custom = (struct Custom*)0xdff000;
+	    custom->intreq = INTF_SETCLR | INTF_SOFTINT;
+        }
+#else
         /* If we are in usermode the software interrupt will end up
            being triggered in Enable(). See Enable() code */
+#endif
     }
     Enable();
 
@@ -134,6 +142,15 @@ AROS_UFH5(void, SoftIntDispatch,
     struct Interrupt *intr = NULL;
     BYTE i;
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+
+    /* disable soft ints temporarily */
+    custom->intena = INTF_SOFTINT;
+    /* clear request */
+    custom->intreq = INTF_SOFTINT;
+#endif
+
     /* Don't bother if there are no software ints queued. */
     if( SysBase->SysFlags & SFF_SoftInt )
     {
@@ -163,10 +180,17 @@ AROS_UFH5(void, SoftIntDispatch,
                     break;
                 }
             }
-
-            if (!intr) break;
+            if (!intr) {
+                KrnSti();
+            	break;
+            }
         }
     }
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+    /* re-enable soft ints */
+    custom->intena = INTF_SETCLR | INTF_SOFTINT;
+#endif
 
     AROS_USERFUNC_EXIT
 }
