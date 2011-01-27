@@ -4,9 +4,10 @@ dnl
 dnl Desc: Autoconf source for configuration file
 dnl Lang: english
 
+# Note: After file changes, generate configure anew and commit _both_ files.
+
 #TODO
 # method of getting shared/non-shared ld/ar tool for target.
-
 
 # ------------------------------------------------------------------------
 # Here starts the first section of the configure.in file.
