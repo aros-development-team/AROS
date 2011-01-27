@@ -2,7 +2,7 @@
 #define GRAPHICS_DRIVER_H
 
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display driver definitions.
@@ -13,10 +13,12 @@
 
 /* Tags for AddDisplayDriverA() */
 
-#define DDRV_BootMode	  (TAG_USER + 0x01)	/* BOOL  Boot mode driver which will be unloaded when any next driver comes in, default = FALSE */
-#define DDRV_MonitorID	  (TAG_USER + 0x02)	/* ULONG Monitor ID for this driver, default = next available */
-#define DDRV_ReserveIDs	  (TAG_USER + 0x03)	/* ULONG How many monitor IDs to reserve, default = 1 */
-#define DDRV_KeepBootMode (TAG_USER + 0x04)	/* BOOL  Do not shut down boot mode drivers, default = FALSE */
+#define DDRV_BootMode	  (TAG_USER + 0x01)	/* BOOL    Boot mode driver which will be unloaded when any next driver comes in, default = FALSE */
+#define DDRV_MonitorID	  (TAG_USER + 0x02)	/* ULONG   Monitor ID for this driver, default = next available */
+#define DDRV_ReserveIDs	  (TAG_USER + 0x03)	/* ULONG   How many monitor IDs to reserve, default = 1 */
+#define DDRV_KeepBootMode (TAG_USER + 0x04)	/* BOOL    Do not shut down boot mode drivers, default = FALSE */
+#define DDRV_ResultID	  (TAG_USER + 0x05)	/* ULONG * Obtain assigned monitor ID */
+#define DDRV_IDMask	  (TAG_USER + 0x06)	/* ULONG   Use own mask for monitor ID separation */
 
 /* Return codes */
 
