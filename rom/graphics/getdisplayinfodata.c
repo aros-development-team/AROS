@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetDisplayInfoData()
@@ -32,7 +32,6 @@ static const ULONG size_checks[] =
 
 static ULONG check_sizes(ULONG tagID, ULONG size);
 static ULONG compute_numbits(HIDDT_Pixel mask);
-static ULONG find_display_id(struct DisplayInfoHandle *handle, struct GfxBase *GfxBase);
 
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
 #define DTAG_TO_IDX(dtag)   (((dtag) & 0x7FFFF000) >> 12)
@@ -107,7 +106,11 @@ static ULONG find_display_id(struct DisplayInfoHandle *handle, struct GfxBase *G
     }
     else
     {
-	ID = find_display_id(handle, GfxBase);
+    	/*
+    	 * ID is likely INVALID_ID, but we need its value.
+    	 * Get it from the handle.
+    	 */
+    	ID = DIH(handle)->id | DIH(handle)->drv->id;
     }
 
     if (NULL == handle)
@@ -419,19 +422,4 @@ static ULONG compute_numbits(HIDDT_Pixel mask)
     }
     
     return numbits;
-}
-
-/****************************************************************************************/
-
-static ULONG find_display_id(struct DisplayInfoHandle *handle, struct GfxBase * GfxBase)
-{
-    ULONG id = INVALID_ID;
-    while ((id = NextDisplayInfo(id)) != INVALID_ID)
-    {
-	if (handle == FindDisplayInfo(id))
-	{
-	    return id;
-	}
-    }
-    return INVALID_ID;
 }
