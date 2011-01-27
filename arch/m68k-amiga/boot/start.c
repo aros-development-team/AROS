@@ -154,8 +154,11 @@ static void __attribute__((interrupt)) Early_TrapHandler(void)
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 
 /* detect CPU and FPU type, enable code cache (if supported)
- * does not enable data caches, it is bad idea on real hardware
+ * does not enable data caches, it is bad idea on real 68030 hardware
  * without correct MMU tables (for example chip ram must be non-cacheable)
+ * 68040/060 data caches will be enabled later (transparent translation
+ * registers can be used to disable data caching in low ram, even on EC models)
+ * ram testing requires disabled data caches.
  */
 
 void __attribute__((interrupt)) cpu_detect_trap_fpu(void);
@@ -195,12 +198,12 @@ asm (".chip 68060\n"
  		/* CACR is 68020+ */
 	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
 		/* 68020+ or better */
-	"       move.l	#0x80008000,%d0\n"
- 		/* enable 68040/060 code+data cache */
+	"       move.l	#0x00008000,%d0\n"
+ 		/* enable 68040/060 code cache */
 	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
 	"	dc.l 0x4e7a0002\n" // movec	%cacr,%d0\n"
- 		/* bit 31 still set? */
-	"	tst.l	%d0\n"
+ 		/* bit 15 still set? */
+	"	tst.w	%d0\n"
  		/* yes, it is 68040 or 68060 */
 	"	bmi.s	0f\n"
  		/* enable 68020/030 code cache and 68030 data cache */
@@ -220,15 +223,25 @@ asm (".chip 68060\n"
 	"	move.w	#0x2007,%d0\n"
 	"	illegal\n"
 		/* 68040 or 68060 */
-	"0:	move.w	#0x200f,%d0\n"
+	"0:	moveq	#0,%d0\n"
+		/* set transparent translation registers,
+		 * allow data caching only in 32-bit fast,
+		 * code caching allowed everywhere */
+	"	movec	%d0,%itt1\n"
+	"	move.l	#0x0000e040,%d0\n"
+	"	movec	%d0,%dtt0\n"
+	"	move.l	#0x00ffe000,%d0\n"
+	"	movec	%d0,%dtt1\n"
+	"	movec	%d0,%itt0\n"
+	"	move.w	#0x200f,%d0\n"
  		/* PCR is 68060 only */
 	"	dc.l 0x4e7a0808\n" // movec	%pcr,%d0\n"
 		/* 68060 */
 	"	move.w	#0x0001,%d0\n"
  		/* enable supercalar, enable FPU */
  	"	dc.l 0x4e7b0808\n" // movec	%d0,%pcr\n"
-		/* enable store buffer and branch cache */
-	"	move.l	#0xa080a000,%d0\n"
+		/* enable code cache, store buffer and branch cache */
+	"	move.l	#0x0080a000,%d0\n"
 	"	dc.l 0x4e7b0002\n" // movec	%d0,%cacr\n"
 	"	move.w	#0x208f,%d0\n"
 	"	illegal\n"
