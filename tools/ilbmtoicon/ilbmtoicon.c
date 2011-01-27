@@ -464,7 +464,7 @@ static void showoptions(void)
     
     printf("image1: %s\n", image1option ? image1option : "(NULL)");
     printf("image2: %s\n", image2option ? image2option : "(NULL)");
-    printf("type: %d\n", typeoption);
+    printf("type: %ld\n", typeoption);
     
     strarray = tooltypesoption;
     if (strarray)
