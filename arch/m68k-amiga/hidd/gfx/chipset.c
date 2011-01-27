@@ -411,7 +411,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct planarbm_data *bm)
     ddfstop = ddfstrt + ((bm->width / 4 + ((1 << fetchunit) - 1) - 2 * (1 << fetchunit)) & ~((1 << fetchunit) - 1));
     if (ddfstop >= 0xd4)
 	ddfstop = 0xd4;
-    data->modulo = (ddfstop + 2 * (1 << fetchunit) - ((1 << fetchunit) - 1) - ddfstrt) * 4;
+    data->modulo = (ddfstop + 2 * (1 << fetchunit) - ((1 << maxplanes) - 1) - ddfstrt) * 4;
     data->modulo = bm->width - data->modulo;
     data->modulo /= 8;
     data->modulo &= ~((2 << data->fmode) - 1);
