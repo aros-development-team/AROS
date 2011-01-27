@@ -72,7 +72,4 @@ AROS_SLIB_ENTRY(Enable,Exec):
 	subq.b	#1,%a6@(IDNestCnt)
 	bge.s	0f
 	move.w	#0xc000,0xdff09a
-	btst	#5,%a6@(SysFlags)	/* SFF_SoftInt */
-	beq.s	0f
-	move.w	#0x8004,0xdff09c	/* Trigger SoftInt */
 0:	rts
