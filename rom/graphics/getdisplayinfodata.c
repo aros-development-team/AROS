@@ -32,6 +32,7 @@ static const ULONG size_checks[] =
 
 static ULONG check_sizes(ULONG tagID, ULONG size);
 static ULONG compute_numbits(HIDDT_Pixel mask);
+static ULONG find_display_id(struct DisplayInfoHandle *handle, struct GfxBase *GfxBase);
 
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
 #define DTAG_TO_IDX(dtag)   (((dtag) & 0x7FFFF000) >> 12)
@@ -100,8 +101,15 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
     struct HIDD_ModeProperties HIDDProps = {0};
 
     if (NULL == handle)
+    {
         /* FindDisplayInfo() handles INVALID_ID itself */
 	handle = FindDisplayInfo(ID);
+    }
+    else
+    {
+	ID = find_display_id(handle, GfxBase);
+    }
+
     if (NULL == handle)
     {
 	D(bug("!!! COULD NOT GET HANDLE IN GetDisplayInfoData()\n"));
@@ -414,3 +422,16 @@ static ULONG compute_numbits(HIDDT_Pixel mask)
 }
 
 /****************************************************************************************/
+
+static ULONG find_display_id(struct DisplayInfoHandle *handle, struct GfxBase * GfxBase)
+{
+    ULONG id = INVALID_ID;
+    while ((id = NextDisplayInfo(id)) != INVALID_ID)
+    {
+	if (handle == FindDisplayInfo(id))
+	{
+	    return id;
+	}
+    }
+    return INVALID_ID;
+}
