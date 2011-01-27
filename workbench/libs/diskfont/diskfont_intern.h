@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -79,7 +79,8 @@
 struct OTagList
 {
     STRPTR		filename;
-    struct TagItem	tags[1];
+    struct TagItem	*tags;
+    ULONG		data[1];
 };
 
 struct FontDescrHeader

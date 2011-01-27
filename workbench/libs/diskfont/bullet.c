@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Functions for reading .font files
@@ -54,23 +54,11 @@ STRPTR OTAG_MakeFileName(CONST_STRPTR filename, struct DiskfontBase_intern *Disk
 
 /****************************************************************************************/
 
-VOID OTAG_FreeFileName(STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
-{
-    if (filename) FreeVec(filename);
-}
-
-/****************************************************************************************/
-
-#ifdef __AROS__
-#warning This needs to be reworked for systems where sizeof(TagItem) is > 8!
-#endif
-
-/****************************************************************************************/
-
 struct OTagList *OTAG_GetFile(CONST_STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
 {
     struct FileInfoBlock    *fib;
     struct OTagList	    *otaglist;
+    ULONG		    *srctag;
     struct TagItem	    *ti;
     STRPTR		     otagfilename;
     BPTR		     otagfile;
@@ -83,14 +71,14 @@ struct OTagList *OTAG_GetFile(CONST_STRPTR filename, struct DiskfontBase_intern 
     otagfile = Open(otagfilename, MODE_OLDFILE);
     if (!otagfile)
     {
-	OTAG_FreeFileName(otagfilename, DiskfontBase);
+	FreeVec(otagfilename);
 	return NULL;
     }
 
     fib = AllocDosObject(DOS_FIB, NULL);
     if (!fib)
     {
-        OTAG_FreeFileName(otagfilename, DiskfontBase);
+        FreeVec(otagfilename);
 	Close(otagfile);
 	return NULL;
     }
@@ -101,7 +89,7 @@ struct OTagList *OTAG_GetFile(CONST_STRPTR filename, struct DiskfontBase_intern 
 
     if (!ok)
     {
-	OTAG_FreeFileName(otagfilename, DiskfontBase);
+	FreeVec(otagfilename);
 	Close(otagfile);
 	return NULL;
     }
@@ -109,42 +97,82 @@ struct OTagList *OTAG_GetFile(CONST_STRPTR filename, struct DiskfontBase_intern 
     otaglist = AllocVec(sizeof(struct OTagList) + l, MEMF_PUBLIC | MEMF_CLEAR);
     if (!otaglist)
     {
-	OTAG_FreeFileName(otagfilename, DiskfontBase);
+	FreeVec(otagfilename);
 	Close(otagfile);
 	return NULL;
     }
 
-    ok = (Read(otagfile, otaglist->tags, l) == l);
+    otaglist->filename = otagfilename;
+
+    ok = (Read(otagfile, otaglist->data, l) == l);
     Close(otagfile);
 
-    if (AROS_LONG2BE(otaglist->tags[0].ti_Tag)  != OT_FileIdent) ok = FALSE;
-    if (AROS_LONG2BE(otaglist->tags[0].ti_Data) != l) ok = FALSE;
+    if (AROS_LONG2BE(otaglist->data[0]) != OT_FileIdent)
+    	ok = FALSE;
+    if (AROS_LONG2BE(otaglist->data[1]) != l)
+    	ok = FALSE;
 
     if (!ok)
     {
-	OTAG_FreeFileName(otagfilename, DiskfontBase);
-	FreeVec(otaglist);
+    	OTAG_KillFile(otaglist, DiskfontBase);
 	return NULL;
     }
 
-    ti = otaglist->tags;
+    /*
+     * FIXME: The following suggests that there are no OT_TagList tags in the file.
+     * Is it always true?
+     */
 
+#if (__WORDSIZE == 64)
+    /*
+     * On 64-bit machines we need to convert otag items from ULONGs to IPTRs.
+     * We do it by allocating a new array and expanding all tags.
+     * Note that we also need to keep original buffer, because
+     * it also contains some supplied data. Pointers to these data are stored
+     * as offsets, we will resolve them too during conversion.
+     */
+
+    /* First count number of tags */
+    l = 1;
+    for (srctag = otaglist->data; srctag[0] != TAG_DONE; srctag += 2)
+	l++;
+
+    /* Then allocate a new buffer for them */
+    otaglist->tags = AllocVec(sizeof(struct TagItem) * l, MEMF_ANY);
+    if (!otaglist->tags)
+    {
+    	OTAG_KillFile(otaglist, DiskfontBase);
+	return NULL;
+    }
+#else
+    /*
+     * On 32-bit machines we save some memory by simply converting
+     * endianess in place.
+     */
+    otaglist->tags = (struct TagItem *)otaglist->data;
+#endif
+
+    srctag = otaglist->data;
+    ti = otaglist->tags;
     do
     {
-	ti->ti_Tag = AROS_LONG2BE(ti->ti_Tag);
-	ti->ti_Data = AROS_LONG2BE(ti->ti_Data);
+	ti->ti_Tag  = AROS_LONG2BE(srctag[0]);
+	ti->ti_Data = AROS_LONG2BE(srctag[1]);
+	srctag += 2;
 
 	if (ti->ti_Tag & OT_Indirect)
 	{
-	    ti->ti_Data = (IPTR)otaglist->tags + ti->ti_Data;
+	    /*
+	     * Resolve the indirection. Note that we resolve it
+	     * relative to original data buffer, because on 64-bit machines
+	     * data and tags point to different regions.
+	     */
+	    ti->ti_Data = (IPTR)otaglist->data + ti->ti_Data;
 	}
 
     } while ((ti++)->ti_Tag != TAG_DONE);
 
-    otaglist->filename = otagfilename;
-
     return otaglist;
-
 }
 
 /****************************************************************************************/
@@ -153,7 +181,14 @@ VOID OTAG_KillFile(struct OTagList *otaglist, struct DiskfontBase_intern *Diskfo
 {
     if (otaglist)
     {
-	if (otaglist->filename) OTAG_FreeFileName(otaglist->filename, DiskfontBase);
+#if (__WORDSIZE == 64)
+	if (otaglist->tags)
+	    FreeVec(otaglist->tags);
+#endif
+
+	if (otaglist->filename)
+	    FreeVec(otaglist->filename);
+
 	FreeVec(otaglist);
     }
 }
