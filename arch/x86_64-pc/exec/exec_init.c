@@ -125,7 +125,11 @@ static struct PML4E PML4[512] __attribute__((used,aligned(4096)));
 static struct PDPE PDP[512] __attribute__((used,aligned(4096)));
 static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096)));
 
-#define MCHIP (MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA)
+/*
+ * FIXME: MEMF_31BIT should cover more memory, from 0x00000000 to 0x7FFFFFFF.
+ * What is done here is a quick hacky fix to allow loading bitmap fonts.
+ */
+#define MCHIP (MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA | MEMF_31BIT)
 #define MFAST (MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL)
 static void insertMemoryAux(uintptr_t lower, uintptr_t upper)
 {
@@ -232,7 +236,7 @@ int exec_main(struct TagItem *msg, void *entry)
 	bm = (struct BootMem *)0x1000;
 
 #define BALIGN(p, x) ((void *)((uintptr_t)((char *)(p) + (x) - 1) & ~((x) - 1)))
-#define BMATTR MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK
+#define BMATTR MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK | MEMF_31BIT
 #define BCSIZE sizeof(bm->u.reserved)
     bm = BALIGN(bm, MEMCHUNK_TOTAL);
     mh = &bm->header;
