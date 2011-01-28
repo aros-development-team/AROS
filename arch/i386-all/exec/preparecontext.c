@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PrepareContext() - Prepare a task context for dispatch, i386 version
@@ -31,6 +31,7 @@ AROS_LH4(BOOL, PrepareContext,
     IPTR args[8] = {0};
     WORD numargs = 0;
     IPTR *sp = task->tc_SPReg;
+    struct TagItem *t;
     struct ExceptionContext *ctx;
 
     if (!(task->tc_Flags & TF_ETASK) )
@@ -41,28 +42,17 @@ AROS_LH4(BOOL, PrepareContext,
     if (!ctx)
 	return FALSE;
 
-    while(tagList)
+    while((t = Exec_NextTagItem(&tagList)))
     {
-    	switch(tagList->ti_Tag)
+    	switch(t->ti_Tag)
 	{
-	    case TAG_MORE:
-	    	tagList = (struct TagItem *)tagList->ti_Data;
-		continue;
-		
-	    case TAG_SKIP:
-	    	tagList += tagList->ti_Data;
-		break;
-		
-	    case TAG_DONE:
-	    	tagList = NULL;
-    	    	break;
 		
 #define HANDLEARG(x) \
 	    case TASKTAG_ARG ## x: \
-	    	args[x - 1] = (IPTR)tagList->ti_Data; \
+	    	args[x - 1] = t->ti_Data; \
 		if (x > numargs) numargs = x; \
 		break;
-		
+
 	    HANDLEARG(1)
 	    HANDLEARG(2)
 	    HANDLEARG(3)
@@ -74,10 +64,8 @@ AROS_LH4(BOOL, PrepareContext,
 	    	
 	    #undef HANDLEARG
 	}
-	
-	if (tagList) tagList++;
     }
-    
+
     /*
 	There is not much to do here, or at least that is how it
 	appears. Most of the work is done in the kernel_cpu.h macros.
