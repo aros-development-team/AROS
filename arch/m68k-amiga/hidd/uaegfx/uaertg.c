@@ -1,4 +1,5 @@
 
+#include <aros/debug.h>
 #include <proto/oop.h>
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
@@ -178,17 +179,31 @@ WORD getrtgdepth(ULONG rgbformat)
 
 ULONG getrtgformat(struct uaegfx_staticdata *csd, OOP_Object *pixfmt)
 {
-    IPTR depth, redmask, greenmask, bluemask;
+    IPTR depth, redmask, bluemask, endianswitch;
 
     OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
     OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask, &redmask);
-    OOP_GetAttr(pixfmt, aHidd_PixFmt_GreenMask, &greenmask);
     OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask, &bluemask);
+    OOP_GetAttr(pixfmt, aHidd_PixFmt_SwapPixelBytes, &endianswitch);
 
     if (depth == 8)
     	return RGBFB_CLUT;
-    if (depth == 16)
-    	return RGBFB_R5G6B5PC;
+    if (depth == 15) {
+    	if (redmask == 0x00007c00 && !endianswitch)
+    	    return RGBFB_R5G5B5;
+    	if (redmask == 0x00007c00 && endianswitch)
+    	    return RGBFB_R5G5B5PC;
+    	if (redmask == 0x0000003e && bluemask == 0x0000f800)
+    	    return RGBFB_B5G5R5PC;
+    }
+    if (depth == 16) {
+    	if (redmask == 0x0000f800 && !endianswitch)
+    	    return RGBFB_R5G6B5;
+    	if (redmask == 0x0000f800 && endianswitch)
+    	    return RGBFB_R5G6B5PC;
+    	if (redmask == 0x0000001f && bluemask == 0x0000f800)
+    	    return RGBFB_B5G6R5PC;
+    }
     if (depth == 32) {
 	if (redmask == 0x0000ff00)
     	   return RGBFB_B8G8R8A8;
@@ -204,6 +219,7 @@ ULONG getrtgformat(struct uaegfx_staticdata *csd, OOP_Object *pixfmt)
     	if (redmask == 0x00ff0000)
     	   return RGBFB_R8G8B8;
     }
+    D(bug("getrtgformat RGBFB_NONE!? %d %08x %08x\n", depth, redmask, bluemask));
     return RGBFB_NONE;
 }
 
