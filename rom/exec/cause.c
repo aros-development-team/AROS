@@ -103,8 +103,8 @@
         SysBase->SysFlags |= SFF_SoftInt;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
 	{
-	   /* FIXME: move this into Enable() */
-	   /* Quick soft int request */
+	   /* Quick soft int request. For optimal performance m68k-amiga
+	    * Enable() does not do any extra SFF_SoftInt checks */
 	    volatile struct Custom *custom = (struct Custom*)0xdff000;
 	    custom->intreq = INTF_SETCLR | INTF_SOFTINT;
         }
