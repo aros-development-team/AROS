@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -343,7 +343,7 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
               }
               else
 #endif /* USE_QUADFMT */
-                datasize = sizeof(APTR);
+                datasize = sizeof(ULONG);
               break;
 
             default:
