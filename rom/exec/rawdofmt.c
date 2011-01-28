@@ -280,7 +280,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 		    case 'P':
 			fill = '0';
 			minwidth = sizeof(APTR)*2;
-			size = 'l';
+			size = 'L';
 		    case 'x':
 		        base   = 16;
 			number = fetch_number(size, 1);
