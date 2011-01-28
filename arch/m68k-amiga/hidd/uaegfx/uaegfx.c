@@ -38,7 +38,7 @@
 #include <aros/debug.h>
 
 #define SIZE_RESLIST 4
-#define SIZE_PFLIST 17
+#define SIZE_PFLIST 18
 #define SIZE_MODELIST (5 + RGBFB_MaxFormats)
 
 struct RTGFormat
@@ -46,20 +46,29 @@ struct RTGFormat
     UWORD rgbformat;
     ULONG rm, gm, bm, am;
     UWORD rs, gs, bs, as;
+    BOOL endianswap;
 };
 
 static const struct RTGFormat formats[] =
 {
-    { RGBFB_CLUT,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0 },
+    { RGBFB_CLUT,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_B8G8R8A8,	0x0000ff00, 0x00ff0000, 0xff000000, 0x000000ff, 16,  8,  0, 24 },
-    { RGBFB_A8R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0 },
-    { RGBFB_A8B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0 },
-    { RGBFB_R8G8B8A8,	0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff,  0,  8, 16, 24 },
+    { RGBFB_B8G8R8A8,	0x0000ff00, 0x00ff0000, 0xff000000, 0x000000ff, 16,  8,  0, 24, FALSE },
+    { RGBFB_A8R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0, FALSE },
+    { RGBFB_A8B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0, FALSE },
+    { RGBFB_R8G8B8A8,	0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff,  0,  8, 16, 24, FALSE },
 
-    { RGBFB_B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0 },
-    { RGBFB_R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0 },
+    { RGBFB_B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0, FALSE },
+    { RGBFB_R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
+    { RGBFB_R5G5B5,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, FALSE },
+    { RGBFB_R5G6B5,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, FALSE },
+    { RGBFB_R5G5B5PC,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, TRUE },
+    { RGBFB_R5G6B5PC,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, TRUE },
+/*
+    { RGBFB_B5G5R5PC,	0x0000003e, 0x000007c0, 0x0000f800, 0x00000000, 26, 21, 16,  0, TRUE },
+    { RGBFB_B5G6R5PC,	0x0000001f, 0x000007e0, 0x0000f800, 0x00000000, 27, 21, 16,  0, TRUE },
+*/
     { 0 }
 };
 
@@ -182,6 +191,9 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	j++;
     	pflist[j].ti_Tag = aHidd_PixFmt_BitMapType;
      	pflist[j].ti_Data = vHidd_BitMapType_Chunky;
+    	j++;
+    	pflist[j].ti_Tag = aoHidd_PixFmt_SwapPixelBytes;
+     	pflist[j].ti_Data = formats[l].endianswap;
     	j++;
      	pflist[j].ti_Tag = TAG_DONE;
      	pflist[j].ti_Data = 0;
