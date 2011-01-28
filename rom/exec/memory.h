@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -54,6 +54,20 @@ AROS_WORSTALIGN:sizeof(struct MemChunk))
 #define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA)
 #endif
 
+/*
+ * EXPERIMENTAL: use semaphore protection instead of Forbid()/Permit() for
+ * system memory allocation routines.
+ * In case of problems use definitions below.
+ */
+#define MEM_LOCK	ObtainSemaphore(&PrivExecBase(SysBase)->MemListSem)
+#define MEM_LOCK_SHARED ObtainSemaphoreShared(&PrivExecBase(SysBase)->MemListSem)
+#define MEM_UNLOCK	ReleaseSemaphore(&PrivExecBase(SysBase)->MemListSem)
+/*
+#define MEM_LOCK	Forbid()
+#define MEM_LOCK_SHARED Forbid()
+#define MEM_UNLOCK	Permit()
+*/
+
 /* Private Pool structure */
 struct Pool 
 {
@@ -74,6 +88,12 @@ struct Block
     ULONG Size;
 };
 
+struct checkMemHandlersState
+{
+    struct Node           *cmhs_CurNode;
+    struct MemHandlerData  cmhs_Data;
+};
+
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
 APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct ExecBase *SysBase);
 void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase);
@@ -83,6 +103,8 @@ void FreeMemHeader(APTR addr, struct ExecBase *SysBase);
 
 APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct ExecBase *SysBase);
 void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase);
+
+ULONG checkMemHandlers(struct checkMemHandlersState *cmhs, struct ExecBase *SysBase);
 
 APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase);
 APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase);

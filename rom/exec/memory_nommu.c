@@ -14,6 +14,7 @@
 
 #include <string.h>
 
+#include "exec_intern.h"
 #include "memory.h"
 
 APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase)
@@ -23,7 +24,7 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase)
     ULONG requirements = flags & MEMF_PHYSICAL_MASK;
 
     /* Protect memory list against other tasks */
-    Forbid();
+    MEM_LOCK;
 
     /* Loop over MemHeader structures */
     ForeachNode(&SysBase->MemList, mh)
@@ -42,7 +43,7 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase)
 	    break;
     }
 
-    Permit();
+    MEM_UNLOCK;
 
     return res;
 }
@@ -54,7 +55,7 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
     APTR endlocation = location + byteSize - 1;
 
     /* Protect the memory list from access by other tasks. */
-    Forbid();
+    MEM_LOCK;
 
     /* Loop over MemHeader structures */
     ForeachNode(&SysBase->MemList, mh)
@@ -64,12 +65,7 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
     }
     
     /* If no header was found which matched the requirements, just give up. */
-    if (!mh->mh_Node.ln_Succ)
-    {
-        Permit();
-        return NULL;
-    }
-    else
+    if (mh->mh_Node.ln_Succ)
     {
         struct MemChunk *p1, *p2, *p3, *p4;
         
@@ -111,7 +107,7 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
 
 		    Alert(AN_MemoryInsane|AT_DeadEnd);
 		}
-		return NULL;
+		break;
 	    }
 
 	    /* 2. Check against overlapping blocks */
@@ -125,7 +121,7 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
 		
 		    Alert(AN_MemoryInsane|AT_DeadEnd);
 		}
-		return NULL;
+		break;
 	    }
 #endif
 
@@ -163,8 +159,8 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
         }
     }
 
-    Permit();
-    
+    MEM_UNLOCK;
+
     return ret;
 }
 
@@ -180,7 +176,7 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
     blockEnd = memoryBlock + byteSize;
 
     /* Protect the memory list from access by other tasks. */
-    Forbid();
+    MEM_LOCK;
 
     ForeachNode(&SysBase->MemList, mh)
     {
@@ -190,12 +186,12 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
 
 	stdDealloc(mh, memoryBlock, byteSize, SysBase);
 
-	Permit();
+	MEM_UNLOCK;
 	ReturnVoid ("nommu_FreeMem");
     }
 
-    Permit();
-    
+    MEM_UNLOCK;
+
 #if !defined(NO_CONSISTENCY_CHECKS)
     /* Some memory that didn't fit into any MemHeader? */
     bug("[MM] Chunk allocator error\n");
@@ -218,7 +214,7 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
     D(bug("[MM] physical memory flags: 0x%08X\n", physFlags));
 
     /* Nobody else should access the memory lists now. */
-    Forbid();
+    MEM_LOCK_SHARED;
 
     ForeachNode(&SysBase->MemList, mh)
     {
@@ -278,8 +274,8 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
             ret += mh->mh_Free;
     }
 
-    /* All done. Permit dispatches and return. */
-    Permit();
+    /* All done */
+    MEM_UNLOCK;
 
     return ret;
 }

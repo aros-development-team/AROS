@@ -238,6 +238,9 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
     NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
 
+    InitSemaphore(&PrivExecBase(SysBase)->MemListSem);
+    InitSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+
     SysBase->SoftVer        = VERSION_NUMBER;
 
     SysBase->ColdCapture    = SysBase->CoolCapture

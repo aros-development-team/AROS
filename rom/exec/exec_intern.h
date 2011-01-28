@@ -38,13 +38,15 @@ struct HostInterface;
 struct IntExecBase
 {
     struct ExecBase pub;
-    struct List ResetHandlers;			/* Reset handlers list       */
-    struct MinList AllocMemList;		/* Mungwall allocations list */
-    APTR   KernelBase;				/* kernel.resource base      */
-    ULONG  PageSize;				/* Memory page size	     */
-    ULONG  IntFlags;				/* Internal flags, see below */
-    struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   */
-    char   AlertBuffer[ALERT_BUFFER_SIZE];	/* Buffer for alert text     */
+    struct List ResetHandlers;			/* Reset handlers list      				*/
+    struct MinList AllocMemList;		/* Mungwall allocations list				*/
+    struct SignalSemaphore MemListSem;		/* Memory list protection semaphore			*/
+    struct SignalSemaphore LowMemSem;		/* Lock for single-threading low memory handlers	*/
+    APTR   KernelBase;				/* kernel.resource base      				*/
+    ULONG  PageSize;				/* Memory page size	     				*/
+    ULONG  IntFlags;				/* Internal flags, see below 				*/
+    struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   				*/
+    char   AlertBuffer[ALERT_BUFFER_SIZE];	/* Buffer for alert text     				*/
 };
 
 #define PrivExecBase(base) ((struct IntExecBase *)base)

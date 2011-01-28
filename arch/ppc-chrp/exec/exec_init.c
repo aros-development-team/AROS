@@ -222,6 +222,9 @@ int exec_main(struct TagItem *msg, void *entry)
 
     SumLibrary((struct Library *)SysBase);
 
+    InitSemaphore(&PrivExecBase(SysBase)->MemListSem);
+    InitSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+
     D(bug("[exec] Adding memory\n"));
 
     AddMemList(0x07000000 - lowmem,

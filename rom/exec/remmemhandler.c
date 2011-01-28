@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a memory handler.
@@ -8,6 +8,8 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -44,10 +46,13 @@
     AROS_LIBFUNC_INIT
 
     /* Protect the low memory handler list */
-    Forbid();
-	/* Nothing spectacular: Just remove node */
-	Remove(&memHandler->is_Node);
-    Permit();
+    ObtainSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+
+    /* Nothing spectacular: Just remove node */
+    Remove(&memHandler->is_Node);
+
+    ReleaseSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+
     AROS_LIBFUNC_EXIT
 } /* RemMemHandler */
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Release a semaphore.
@@ -65,6 +65,10 @@
 	        "sem = %x  task = %x (%s)\n\n", sigSem, FindTask(0), FindTask(0)->tc_Node.ln_Name);
     }
 #endif
+
+    /* We can be called from within exec's pre-init code. It's okay. */
+    if (!SysBase->ThisTask)
+    	return;
 
     /* Protect the semaphore srtucture from multiple access. */
     Forbid();

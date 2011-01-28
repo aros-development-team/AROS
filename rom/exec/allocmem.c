@@ -33,14 +33,6 @@
 #include "memory.h"
 #include "mungwall.h"
 
-struct checkMemHandlersState
-{
-    struct Node           *cmhs_CurNode;
-    struct MemHandlerData  cmhs_Data;
-};
-
-static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
-
 /*****************************************************************************
 
     NAME */
@@ -117,7 +109,7 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     do
     {
 	res = nommu_AllocMem(byteSize, requirements, SysBase);
-    } while (res == NULL && checkMemHandlers(&cmhs) == MEM_TRY_AGAIN);
+    } while (res == NULL && checkMemHandlers(&cmhs, SysBase) == MEM_TRY_AGAIN);
 
 #if ENABLE_RT
     RT_Add (RTT_MEMORY, res, origSize);
@@ -142,46 +134,3 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     AROS_LIBFUNC_EXIT
     
 } /* AllocMem */
-
-ULONG checkMemHandlers(struct checkMemHandlersState *cmhs)
-{
-    struct Node      *tmp;
-    struct Interrupt *lmh;
-    
-    if (cmhs->cmhs_Data.memh_RequestFlags & MEMF_NO_EXPUNGE)
-        return MEM_DID_NOTHING;
-   
-    /* Loop over low memory handlers. Handlers can remove
-       themselves from the list while being invoked, thus
-       we need to be careful! */
-    for
-    (
-        lmh = (struct Interrupt *)cmhs->cmhs_CurNode;
-        (tmp = lmh->is_Node.ln_Succ);
-        lmh = (struct Interrupt *)(cmhs->cmhs_CurNode = tmp)
-    )
-    {
-        ULONG ret;
-        
-        ret = AROS_UFC3 (LONG, lmh->is_Code,
-                   AROS_UFCA(struct MemHandlerData *, &cmhs->cmhs_Data, A0),
-                   AROS_UFCA(APTR,                     lmh->is_Data,    A1),
-                   AROS_UFCA(struct ExecBase *,        SysBase,         A6)
-              );
-
-        if (ret == MEM_TRY_AGAIN)
-        {
-            /* MemHandler said he did something. Try again. */
-            /* Is there any program that depends on this flag??? */
-            cmhs->cmhs_Data.memh_Flags |= MEMHF_RECYCLE;
-            return MEM_TRY_AGAIN;
-        }
-        else
-        {
-            /* Nothing more to expect from this handler. */
-            cmhs->cmhs_Data.memh_Flags &= ~MEMHF_RECYCLE;
-        }
-    }
-    
-    return MEM_DID_NOTHING;
-}

@@ -542,6 +542,25 @@ int exec_main(struct TagItem *msg, void *entry)
     if (!_debug)
 	rkprintf("\3");
 
+    /*
+     * TODO:
+     * Exec's pool manager can't work with PageSize == NULL. It uses PageSize for
+     * determining allocation granularity using the following (see createpool.c):
+     *   ULONG align = PrivExecBase(SysBase)->PageSize - 1;
+     *   puddleSize = (puddleSize + align) & ~align;
+     * This way zero PageSize results in zero puddleSize (align = 0 - 1 = -1; puddleSize = something & ~-1 = 0).
+     * This makes pool manager to go nuts.
+     * The minimum acceptable granularity is MEMCHUNK_TOTAL. exec.library should use this value when kernel.resource
+     * returns zero page size (this means that MMU subsystem is not enabled).
+     *
+     * Normally page size is obtained by exec.library from kernel.resource. 
+     * Actually this means that kernel.resource can't create pools in its init code because it is called before
+     * exec's init code. This is a real problem, because it would be nice to be able to use pools in kernel.resource.
+     * Perhaps late initialization of pool should be done. For now i use a quick hack: set fictional page size of
+     * MEMCHUNK_TOTAL before initializing kernel.resource. This allows CreatePool() in it to work.
+     */
+    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
+
     InitCode(RTF_SINGLETASK, 0);
     PrivExecBase(SysBase)->KernelBase = TLS_GET(KernelBase);
 

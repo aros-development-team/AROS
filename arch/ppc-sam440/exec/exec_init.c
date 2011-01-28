@@ -237,6 +237,9 @@ void exec_main(struct TagItem *msg, void *entry)
 
     SumLibrary((struct Library *)SysBase);
 
+    InitSemaphore(&PrivExecBase(SysBase)->MemListSem);
+    InitSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+
     mem = exec_GetMemory();
     D(bug("[exec] Adding memory (%uM)\n", mem));
 

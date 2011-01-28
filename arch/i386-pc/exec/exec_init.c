@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Early bootup section
@@ -741,8 +741,8 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     ExecBase->VBlankFrequency = 50;
     ExecBase->PowerSupplyFrequency = 1;
 
-    NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
-    NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
+    NEWLIST(&PrivExecBase(ExecBase)->ResetHandlers);
+    NEWLIST(&PrivExecBase(ExecBase)->AllocMemList);
     
     rkprintf("OK\nBuilding JumpTable...");
 
@@ -751,6 +751,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         Exec_MakeFunctions(ExecBase, LIBFUNCTABLE, NULL, ExecBase);
 
     rkprintf("OK\n");
+
+    InitSemaphore(&PrivExecBase(ExecBase)->MemListSem);
+    InitSemaphore(&PrivExecBase(ExecBase)->LowMemSem);
 
     /* Enable mungwall before the first allocation call */
     if (strstr(arosmb->cmdline, "mungwall"))
