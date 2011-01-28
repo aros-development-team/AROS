@@ -239,10 +239,15 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 	    /* size modifiers */
 	    switch (*FormatString)
 	    {
-	        case 'l':
-		case 'L':
-		    size = *FormatString++;
-		    break;
+	    case 'l':
+	    	size = *FormatString++;
+	    	/* 'll' is taken for long, the same as 'L' */
+	    	if (*FormatString != 'l')
+	    	    break;
+	    case 'L':
+	    	size = 'L';
+	    	FormatString++;
+		break;
 	    }
 
 	    /* Switch over possible format characters. Sets minus, width and buf. */
@@ -425,6 +430,8 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 				   Defaults to no limit.
 
 		       size	 - 'l' means LONG. Defaults to WORD, if nothing is specified.
+		       		   On 64-bit machines 'll' and 'L' are also supported, meaning
+		       		   full 64-bit value.
 
 		       type	 - 'b' BSTR. It will use the internal representation
                                        of the BSTR defined by the ABI.

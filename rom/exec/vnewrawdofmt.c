@@ -46,10 +46,9 @@
 		       maxwidth  - maximum width of field (for strings only).
 				   Defaults to no limit.
 
-		       size	 - 'w' means WORD.
-		                   'l' means IPTR (LONG on 32-bit architectures and QUAD on 64-bit).
-
-				   defaults to WORD, if nothing is specified.
+		       size	 - 'l' means LONG. Defaults to WORD, if nothing is specified.
+		       		   On 64-bit machines 'll' and 'L' are also supported, meaning
+		       		   full 64-bit value.
 
 		       type	 - 'b' BSTR. It will use the internal representation
                                        of the BSTR defined by the ABI.
