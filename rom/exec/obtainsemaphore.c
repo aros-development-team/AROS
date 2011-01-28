@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Lock a semaphore.
@@ -72,6 +72,14 @@
 	Alert(AN_SemCorrupt);
     }
 #endif
+
+    /*
+     * If there's no ThisTask, the function is called from within memory
+     * allocator in exec's pre-init code. We are already single-threaded,
+     * just return. :)
+     */
+    if (!me)
+    	return;
 
     /* Arbitrate for the semaphore structure */
     Forbid();

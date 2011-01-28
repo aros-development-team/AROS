@@ -13,7 +13,7 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
     struct MemHeader *mh;
 
     /* Nobody should change the memory list now. */
-    Forbid();
+    MEM_LOCK_SHARED;
 
     /* Follow the list of MemHeaders */
     mh = (struct MemHeader *)SysBase->MemList.lh_Head;
@@ -24,7 +24,7 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 	if(address >= mh->mh_Lower && address <= mh->mh_Upper)
 	{
 	    /* Yes. Return it. */
-	    Permit();
+	    MEM_UNLOCK;
 	    return mh;
 	}
 
@@ -32,7 +32,7 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 	mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
     }
 
-    Permit();
+    MEM_UNLOCK;
     return NULL;
 }
 
@@ -563,4 +563,50 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
     	    ReleaseSemaphore(&pool->sem);
 	}
     }
+}
+
+ULONG checkMemHandlers(struct checkMemHandlersState *cmhs, struct ExecBase *SysBase)
+{
+    struct Node      *tmp;
+    struct Interrupt *lmh;
+
+    if (cmhs->cmhs_Data.memh_RequestFlags & MEMF_NO_EXPUNGE)
+        return MEM_DID_NOTHING;
+
+    /* In order to keep things clean, we must run in a single thread */
+    ObtainSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+
+    /*
+     * Loop over low memory handlers. Handlers can remove
+     * themselves from the list while being invoked, thus
+     * we need to be careful!
+     */
+    for (lmh = (struct Interrupt *)cmhs->cmhs_CurNode;
+         (tmp = lmh->is_Node.ln_Succ);
+         lmh = (struct Interrupt *)(cmhs->cmhs_CurNode = tmp))
+    {
+        ULONG ret;
+
+        ret = AROS_UFC3 (LONG, lmh->is_Code,
+                   AROS_UFCA(struct MemHandlerData *, &cmhs->cmhs_Data, A0),
+                   AROS_UFCA(APTR,                     lmh->is_Data,    A1),
+                   AROS_UFCA(struct ExecBase *,        SysBase,         A6)
+              );
+
+        if (ret == MEM_TRY_AGAIN)
+        {
+            /* MemHandler said he did something. Try again. */
+            /* Is there any program that depends on this flag??? */
+            cmhs->cmhs_Data.memh_Flags |= MEMHF_RECYCLE;
+            
+            ReleaseSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+            return MEM_TRY_AGAIN;
+        }
+        else
+            /* Nothing more to expect from this handler. */
+            cmhs->cmhs_Data.memh_Flags &= ~MEMHF_RECYCLE;
+    }
+
+    ReleaseSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+    return MEM_DID_NOTHING;
 }

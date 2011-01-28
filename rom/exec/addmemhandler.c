@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a low memory handler.
@@ -10,6 +10,8 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -48,10 +50,13 @@
     ASSERT_VALID_PTR(memHandler);
 
     /* Protect the low memory handler list */
-    Forbid();
-	/* Nothing spectacular: Just add the new node */
-	Enqueue((struct List *)&SysBase->ex_MemHandlers,&memHandler->is_Node);
-    Permit();
+    ObtainSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+
+    /* Nothing spectacular: Just add the new node */
+    Enqueue((struct List *)&SysBase->ex_MemHandlers,&memHandler->is_Node);
+
+    ReleaseSemaphore(&PrivExecBase(SysBase)->LowMemSem);
+
     AROS_LIBFUNC_EXIT
 } /* AddMemHandler */
 

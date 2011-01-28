@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add memory to the public list of memory.
@@ -8,10 +8,12 @@
 
 #include <aros/debug.h>
 #include <exec/execbase.h>
-#include "memory.h"
 #include <aros/libcall.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "memory.h"
 
 /*****************************************************************************
 
@@ -72,10 +74,13 @@ AROS_LH5(void, AddMemList,
     mh->mh_Free=mh->mh_First->mc_Bytes;
 
     /* Protect the memory list. */
-    Forbid();
-	/* Add MemHeader */
-	Enqueue(&SysBase->MemList,&mh->mh_Node);
-    Permit();
+    MEM_LOCK;
+
+    /* Add MemHeader */
+    Enqueue(&SysBase->MemList,&mh->mh_Node);
+
+    MEM_UNLOCK;
+
     AROS_LIBFUNC_EXIT
 } /* AddMemList */
 
