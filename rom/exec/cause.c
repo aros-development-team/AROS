@@ -103,6 +103,7 @@
         SysBase->SysFlags |= SFF_SoftInt;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
 	{
+	   /* FIXME: move this into Enable() */
 	   /* Quick soft int request */
 	    volatile struct Custom *custom = (struct Custom*)0xdff000;
 	    custom->intreq = INTF_SETCLR | INTF_SOFTINT;
@@ -132,7 +133,7 @@
 
 AROS_UFH5(void, SoftIntDispatch,
     AROS_UFHA(ULONG, intReady, D1),
-    AROS_UFHA(struct Custom *, custom, A0),
+    AROS_UFHA(volatile struct Custom *, custom, A0),
     AROS_UFHA(IPTR, intData, A1),
     AROS_UFHA(ULONG_FUNC, intCode, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -142,13 +143,15 @@ AROS_UFH5(void, SoftIntDispatch,
     struct Interrupt *intr = NULL;
     BYTE i;
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-    volatile struct Custom *custom = (struct Custom*)0xdff000;
-
-    /* disable soft ints temporarily */
-    custom->intena = INTF_SOFTINT;
-    /* clear request */
-    custom->intreq = INTF_SOFTINT;
+#if defined(__mc68000)
+    /* If we are working on classic Amiga(tm), we have valid custom chip pointer */
+    if (custom)
+    {
+    	/* disable soft ints temporarily */
+    	custom->intena = INTF_SOFTINT;
+    	/* clear request */
+    	custom->intreq = INTF_SOFTINT;
+    }
 #endif
 
     /* Don't bother if there are no software ints queued. */
@@ -161,6 +164,10 @@ AROS_UFH5(void, SoftIntDispatch,
         {
             for(i=4; i>=0; i--)
             {
+            	/*
+            	 * This KrnCli() is needed because we could re-enter here after one handler has already
+            	 * been executed. In this case interrupts have been enabled before calling the handler.
+            	 */
 		KrnCli();
                 intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
 
@@ -168,6 +175,10 @@ AROS_UFH5(void, SoftIntDispatch,
                 {
                     intr->is_Node.ln_Type = NT_INTERRUPT;
 
+		    /*
+		     * SoftInt handlers are called with interrupts enabled,
+		     * this is how original AmigaOS(tm) works
+		     */
                     KrnSti();
 
                     /* Call the software interrupt. */
@@ -180,16 +191,25 @@ AROS_UFH5(void, SoftIntDispatch,
                     break;
                 }
             }
-            if (!intr) {
+            if (!intr)
+            {
+            	/*
+            	 * We executed KrnCli() and attempted to fetch a request from the list,
+            	 * but the list was empty.
+            	 * We are going to exit, but before this we need to re-enable
+            	 * interrupts. Otherwise we exit this vector with disabled interrupts,
+            	 * screwing things up.
+            	 */
                 KrnSti();
             	break;
             }
         }
     }
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+#if defined(__mc68000)
     /* re-enable soft ints */
-    custom->intena = INTF_SETCLR | INTF_SOFTINT;
+    if (custom)
+	custom->intena = INTF_SETCLR | INTF_SOFTINT;
 #endif
 
     AROS_USERFUNC_EXIT

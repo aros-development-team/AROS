@@ -15,7 +15,7 @@
 
 #include <hardware/intbits.h>
 
-#include "kernel_cpu.h"
+#include "kernel_base.h"
 #include "kernel_intr.h"
 #include "kernel_syscall.h"
 #include "kernel_scheduler.h"
@@ -184,7 +184,7 @@ static inline BOOL Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase
 
 #define PAULA_IRQ_HANDLE(irq) \
     	if ((mask) & (1 << (irq))) { \
-    	    Amiga_Paula_IRQ(irq, mask, SysBase); \
+    	    core_Cause(irq, mask); \
     	}
 
 #define PAULA_IRQ_EXIT()	\

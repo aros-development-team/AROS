@@ -10,6 +10,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_intr.h"
 #include "kernel_scheduler.h"
 
 #define D(x)
@@ -88,7 +89,7 @@ void cpu_Dispatch(regs_t *regs)
 	AROS_HOST_BARRIER
 
         if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(INTB_SOFTINT);
+            core_Cause(INTB_SOFTINT, 1l << INTB_SOFTINT);
     }
 
     D(bug("[KRN] cpu_Dispatch(), task %p (%s)\n", task, task->tc_Node.ln_Name));

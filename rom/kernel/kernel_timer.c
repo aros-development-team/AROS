@@ -4,7 +4,7 @@
 #include <proto/exec.h>
 
 #include <kernel_base.h>
-#include <kernel_scheduler.h>
+#include <kernel_intr.h>
 
 static int Timer_Init(struct KernelBase *KernelBase)
 {
@@ -31,7 +31,7 @@ void core_TimerTick()
 	KernelBase->kb_TimerCount++;
 	if (KernelBase->kb_TimerCount == KernelBase->kb_VBlankTicks)
 	{
-	    core_Cause(INTB_VERTB);
+	    core_Cause(INTB_VERTB, 1L << INTB_VERTB);
 	    KernelBase->kb_TimerCount = 0;
 	}
     }
