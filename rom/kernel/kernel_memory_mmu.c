@@ -414,7 +414,7 @@ void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query)
 	struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
 	IPTR p;
 
-	ObtainSemaphore(&head->sem);
+	ObtainSemaphoreShared(&head->sem);
 
 	for (p = 0; p < head->size; )
 	{
