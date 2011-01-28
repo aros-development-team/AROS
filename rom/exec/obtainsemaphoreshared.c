@@ -136,7 +136,7 @@
         
         sr.sr_Waiter = (struct Task *) ((UBYTE *) me + 1);
 
-        bug("Task = %8lx, Waiter = %8lx\n", me, sr.sr_Waiter);
+        D(bug("Task = %8lx, Waiter = %8lx\n", me, sr.sr_Waiter));
 
 	/*
 	    Have to clear the signal to make sure that we don't
