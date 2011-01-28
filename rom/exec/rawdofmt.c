@@ -20,13 +20,14 @@
 
 #ifdef __arm__
 
-#define va_is_null(ap) ap.__ap
+#define is_va_list(ap) ap.__ap
+#define null_va_list(ap) va_list ap = {NULL}
 #define VA_NULL {NULL}
 
 #else
 
-#define va_is_null(ap) ap
-#define VA_NULL NULL
+#define is_va_list(ap) ap
+#define null_va_list(ap) void *ap = NULL
 
 #endif
 
@@ -85,12 +86,12 @@
     						\
     if (sizeof(type) <= sizeof(short))		\
     {						\
-    	res = *(short *)DataStream;		\
+    	res = (type)*(short *)DataStream;	\
     	DataStream = (short *)DataStream + 1;	\
     }						\
     else					\
     {						\
-    	res = *(long *)DataStream;		\
+    	res = (type)*(long *)DataStream;	\
     	DataStream = (long *)DataStream + 1;	\
     }						\
     res;					\
@@ -99,15 +100,15 @@
 /* Fetch the data either from memory or from the va_list, depending
    on the value of VaListStream.  */
 #define fetch_arg(type) \
-    (VaListStream ? fetch_va_arg(type) : fetch_mem_arg(type))
+    (is_va_list(VaListStream) ? fetch_va_arg(type) : fetch_mem_arg(type))
 
 /*
  * Fetch a number from the stream.
  *
- * size - one of 'w', 'l', 'i'
+ * size - one of 'w', 'l', 'L'
  * sign - <0 or >= 0.
  * 
- * EXPERIMENTAL: 'i' is used to represent full IPTR value on 64-bit systems
+ * EXPERIMENTAL: 'L' is used to represent full IPTR value on 64-bit systems
  */
 #define fetch_number(size, sign)                                                               \
     (sign >= 0                                                                                 \
@@ -130,7 +131,7 @@ do                                        \
 	(*((ULONG *)PutChData))++;	  \
 	break;				  \
     default:				  \
-	if (VaListStream)				\
+	if (is_va_list(VaListStream))			\
 	{						\
 	    APTR (*proc)(APTR, UBYTE) = PutChProc;	\
 	    PutChData = proc((APTR)PutChData, ch);	\
@@ -176,7 +177,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 		minus	 - 1: number is negative
 		minwidth - minimum width
 		maxwidth - maximum width
-		size	 - one of 'w', 'l', 'i'.
+		size	 - one of 'w', 'l', 'L'.
 		width	 - width of printable string
 		buf	 - pointer to printable string
 	    */
@@ -239,7 +240,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 	    switch (*FormatString)
 	    {
 	        case 'l':
-		case 'i':
+		case 'L':
 		    size = *FormatString++;
 		    break;
 	    }
@@ -391,7 +392,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     PutCh('\0');
 
     /* Return the rest of the DataStream or buffer. */
-    return va_is_null(VaListStream) ? PutChData : DataStream;
+    return is_va_list(VaListStream) ? PutChData : DataStream;
 }
 
 /*****************************************************************************
@@ -508,7 +509,9 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 {
     AROS_LIBFUNC_INIT
 
-    return InternalRawDoFmt(FormatString, DataStream, PutChProc, PutChData, VA_NULL);
+    null_va_list(vaListStream);
+
+    return InternalRawDoFmt(FormatString, DataStream, PutChProc, PutChData, vaListStream);
 
     AROS_LIBFUNC_EXIT
 } /* RawDoFmt */
