@@ -112,8 +112,8 @@
  */
 #define fetch_number(size, sign)                                                               \
     (sign >= 0                                                                                 \
-     ? (size == 'w' ? fetch_arg(UWORD) : (size == 'l' ? fetch_arg(ULONG) : fetch_arg(IPTR)))   \
-     : (size == 'w' ? fetch_arg(WORD)  : (size == 'l' ? fetch_arg(LONG)  : fetch_arg(SIPTR))))
+     ? (size == 'i' ? fetch_arg(IPTR)  : (size == 'l' ? fetch_arg(ULONG) : fetch_arg(UWORD)))   \
+     : (size == 'i' ? fetch_arg(SIPTR) : (size == 'l' ? fetch_arg(LONG)  : fetch_arg(WORD))))
 
 /* Call the PutCharProc funtion with the given parameters.  */
 #define PutCh(ch)                         \
@@ -177,14 +177,14 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 		minus	 - 1: number is negative
 		minwidth - minimum width
 		maxwidth - maximum width
-		size	 - one of 'w', 'l', 'L'.
+		size	 - one of 'h', 'l', 'i'.
 		width	 - width of printable string
 		buf	 - pointer to printable string
 	    */
 	    int left  = 0;
 	    int fill  = ' ';
 	    int minus = 0;
-	    int size  = 'w';
+	    int size  = 'h';
 	    ULONG minwidth = 0;
 	    ULONG maxwidth = ~0;
 	    ULONG width    = 0;
@@ -240,13 +240,8 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 	    switch (*FormatString)
 	    {
 	    case 'l':
+	    case 'i':
 	    	size = *FormatString++;
-	    	/* 'll' is taken for long, the same as 'L' */
-	    	if (*FormatString != 'l')
-	    	    break;
-	    case 'L':
-	    	size = 'L';
-	    	FormatString++;
 		break;
 	    }
 
@@ -277,10 +272,11 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 		    IPTR number = 0; int base;
 		    static const char digits[] = "0123456789ABCDEF";
 
+		    case 'p':
 		    case 'P':
 			fill = '0';
 			minwidth = sizeof(APTR)*2;
-			size = 'L';
+			size = 'i';
 		    case 'x':
 		        base   = 16;
 			number = fetch_number(size, 1);
@@ -430,8 +426,6 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 				   Defaults to no limit.
 
 		       size	 - 'l' means LONG. Defaults to WORD, if nothing is specified.
-		       		   On 64-bit machines 'll' and 'L' are also supported, meaning
-		       		   full 64-bit value.
 
 		       type	 - 'b' BSTR. It will use the internal representation
                                        of the BSTR defined by the ABI.
@@ -440,6 +434,8 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 				   's' C string. NULL terminated.
 				   'u' unsigned decimal number.
 				   'x' unsigned hexdecimal number.
+				   'P' pointer. Size depends on the architecture.
+				   'p' The same as 'P', for AmigaOS v4 compatibility.
 
 	DataStream   - Pointer to a zone of memory containing the data. Data has to be
 	               WORD aligned.
@@ -511,6 +507,15 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     SEE ALSO
 
     INTERNALS
+	In AROS this function supports also 'i' type specifier
+	standing for full IPTR argument. This makes difference on
+	64-bit machines. At the moment this addition is not stable
+	and subject to change. Consider using %P or %p to output
+	full 64-bit pointers.
+
+	When locale.library starts up this function is replaced
+	with advanced version, supporting extensions supported
+	by FormatString() function.
 
 ******************************************************************************/
 {

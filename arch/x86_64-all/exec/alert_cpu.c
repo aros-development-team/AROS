@@ -14,11 +14,11 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-static const char *gpr_fmt = "RAX=%016lx  RBX=%016lx  RCX=%016lx  RDX=%016lx\n"
-			     "RSI=%016lx  RDI=%016lx  RSP=%016lx  RBP=%016lx\n"
-			     "R8 =%016lx  R9 =%016lx  R10=%016lx  R11=%016lx\n"
-	 		     "R12=%016lx  R13=%016lx  R14=%016lx  R15=%016lx\n"
-			     "RIP=%016lx  RSP=%016lx  RFLAGS=%016lx";
+static const char *gpr_fmt = "RAX=%P  RBX=%P  RCX=%P  RDX=%P\n"
+			     "RSI=%P  RDI=%P  RSP=%P  RBP=%P\n"
+			     "R8 =%P  R9 =%P  R10=%P  R11=%P\n"
+	 		     "R12=%P  R13=%P  R14=%P  R15=%P\n"
+			     "RIP=%P  RSP=%P  RFLAGS=%P";
 
 static const char *seg_fmt = "\nCS=%04lx  SS=%04lx  DS=%04lx\n"
 			       "ES=%04lx  FS=%04lx  GS=%04lx";

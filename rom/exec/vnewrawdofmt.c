@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Format a string and emit it.
@@ -47,8 +47,6 @@
 				   Defaults to no limit.
 
 		       size	 - 'l' means LONG. Defaults to WORD, if nothing is specified.
-		       		   On 64-bit machines 'll' and 'L' are also supported, meaning
-		       		   full 64-bit value.
 
 		       type	 - 'b' BSTR. It will use the internal representation
                                        of the BSTR defined by the ABI.
@@ -57,6 +55,8 @@
 				   's' C string. NULL terminated.
 				   'u' unsigned decimal number.
 				   'x' unsigned hexdecimal number.
+				   'P' pointer. Size depends on the architecture.
+				   'p' The same as 'P', for AmigaOS v4 compatibility.
 
 	PutChProc    - Callback function. Called for each character, including
 		       the NULL terminator. The function should be declared as
@@ -109,6 +109,15 @@
     SEE ALSO
 
     INTERNALS
+	In AROS this function supports also 'i' type specifier
+	standing for full IPTR argument. This makes difference on
+	64-bit machines. At the moment this addition is not stable
+	and subject to change. Consider using %P or %p to output
+	full 64-bit pointers.
+
+	When locale.library starts up this function is replaced
+	with advanced version, supporting extensions supported
+	by FormatString() function.
 
 ******************************************************************************/
 {
