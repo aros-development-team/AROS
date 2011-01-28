@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Format a string and emit it.
@@ -17,6 +17,18 @@
 
 #include "exec_intern.h"
 #include "exec_util.h"
+
+#ifdef __arm__
+
+#define va_is_null(ap) ap.__ap
+#define VA_NULL {NULL}
+
+#else
+
+#define va_is_null(ap) ap
+#define VA_NULL NULL
+
+#endif
 
 /* Fetch the data from a va_list.
 
@@ -42,7 +54,7 @@
     type res;                                           \
                                                         \
     if (sizeof(type) <= sizeof(int))                    \
-	res = (type)va_arg(VaListStream, int);          \
+	res = (type)(IPTR)va_arg(VaListStream, int);    \
     else                                                \
     if (sizeof(type) == sizeof(long))                   \
 	res = (type)va_arg(VaListStream, long);         \
@@ -63,32 +75,44 @@
    aligned; in such cases data should be fetched in pieces,
    taking into account the endianess of the machine.
 
-   Another possibility would be to assume that DataStream
-   is a pointer to an array of objects on systems other
-   than 68k, and arrays are always properly aligned.  */
+   Currently it is assumed that ULONG values are stored
+   in an array of IPTRs. This results in good portability for
+   both 32- and 64-bit systems. */
 
-
-#define fetch_mem_arg(type)              \
-({                                       \
-    type __retval = *(type *)DataStream; \
-    DataStream = (type *)DataStream + 1; \
-    __retval;                            \
+#define fetch_mem_arg(type)              	\
+({                                       	\
+    type res;					\
+    						\
+    if (sizeof(type) <= sizeof(short))		\
+    {						\
+    	res = *(short *)DataStream;		\
+    	DataStream = (short *)DataStream + 1;	\
+    }						\
+    else					\
+    {						\
+    	res = *(long *)DataStream;		\
+    	DataStream = (long *)DataStream + 1;	\
+    }						\
+    res;					\
 })
 
 /* Fetch the data either from memory or from the va_list, depending
    on the value of VaListStream.  */
 #define fetch_arg(type) \
-    (DataStream ? fetch_mem_arg(type) : fetch_va_arg(type))
+    (VaListStream ? fetch_va_arg(type) : fetch_mem_arg(type))
 
-/* Fetch a number from the stream.
-
-   size - one of 'w', 'l', 'i'
-   sign - <0 or >= 0.  */
-#define fetch_number(size, sign)                                                             \
-    (sign >= 0                                                                            \
-     ? (size == 'w' ? fetch_arg(UWORD) : fetch_arg(IPTR)) \
-     : (size == 'w' ? fetch_arg(WORD) : fetch_arg(SIPTR)))
-
+/*
+ * Fetch a number from the stream.
+ *
+ * size - one of 'w', 'l', 'i'
+ * sign - <0 or >= 0.
+ * 
+ * EXPERIMENTAL: 'i' is used to represent full IPTR value on 64-bit systems
+ */
+#define fetch_number(size, sign)                                                               \
+    (sign >= 0                                                                                 \
+     ? (size == 'w' ? fetch_arg(UWORD) : (size == 'l' ? fetch_arg(ULONG) : fetch_arg(IPTR)))   \
+     : (size == 'w' ? fetch_arg(WORD)  : (size == 'l' ? fetch_arg(LONG)  : fetch_arg(SIPTR))))
 
 /* Call the PutCharProc funtion with the given parameters.  */
 #define PutCh(ch)                         \
@@ -106,34 +130,36 @@ do                                        \
 	(*((ULONG *)PutChData))++;	  \
 	break;				  \
     default:				  \
-	if (DataStream || !NewRaw)			\
+	if (VaListStream)				\
+	{						\
+	    APTR (*proc)(APTR, UBYTE) = PutChProc;	\
+	    PutChData = proc((APTR)PutChData, ch);	\
+	}						\
+	else						\
 	{						\
             AROS_UFC2(void, PutChProc,        		\
 	    AROS_UFCA(UBYTE, (ch), D0),       		\
 	    AROS_UFCA(APTR , PutChData, A3)); 		\
 	}						\
-	else						\
-	{						\
-	    APTR (*proc)(APTR, UBYTE) = PutChProc;	\
-	    PutChData = proc((APTR)PutChData, ch);	\
-	}						\
     }                                     \
 } while (0)
 
-/* DataStream == NULL can't be used to select between new or old style PutChProc() because
+/*
+ * DataStream == NULL can't be used to select between new or old style PutChProc() because
  * RawDoFmt(<string without parameters>, NULL, PutChProc, PutChData); is valid and used by
- * m68k programs */
+ * m68k programs.
+ * In order to get around we use specially formed va_list with NULL value.
+ */
 
-static APTR InternalRawDoFmtInt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
-		      APTR inPutChData, va_list VaListStream, BOOL NewRaw)
+APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
+		      APTR inPutChData, va_list VaListStream)
 {
-#if defined(mc68000) && (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if defined(mc68000)
     /* Frequently, AmigaOS users of RawDoFmt() rely upon the AmigaOS
      * behaviour that A3 *in this routine* is the pointer to PutChData,
      * *and* that it can be modified in PutChProc.
      */
     register volatile UBYTE  *PutChData asm("%a3");
-    /* PutCh() must always call normal PutChProc() even if DataStream == NULL */
 #else
     UBYTE *PutChData = inPutChData;
 #endif
@@ -365,13 +391,7 @@ static APTR InternalRawDoFmtInt(CONST_STRPTR FormatString, APTR DataStream, VOID
     PutCh('\0');
 
     /* Return the rest of the DataStream or buffer. */
-    return DataStream || !NewRaw ? DataStream : (APTR)PutChData;
-}
-
-APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
-		      APTR inPutChData, va_list VaListStream)
-{
-    return InternalRawDoFmtInt(FormatString, DataStream, PutChProc, inPutChData, VaListStream, TRUE);
+    return va_is_null(VaListStream) ? PutChData : DataStream;
 }
 
 /*****************************************************************************
@@ -403,8 +423,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 		       maxwidth  - maximum width of field (for strings only).
 				   Defaults to no limit.
 
-		       size	 - 'l' means IPTR (LONG on 32-bit architectures and QUAD on 64-bit).
-				   Defaults to WORD, if nothing is specified.
+		       size	 - 'l' means LONG. Defaults to WORD, if nothing is specified.
 
 		       type	 - 'b' BSTR. It will use the internal representation
                                        of the BSTR defined by the ABI.
@@ -489,10 +508,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 {
     AROS_LIBFUNC_INIT
 
-    /* This va_list is intentionally empty. It is not used. */
-    va_list vaListStream;
-
-    return InternalRawDoFmtInt(FormatString, DataStream, PutChProc, PutChData, vaListStream, FALSE);
+    return InternalRawDoFmt(FormatString, DataStream, PutChProc, PutChData, VA_NULL);
 
     AROS_LIBFUNC_EXIT
 } /* RawDoFmt */
