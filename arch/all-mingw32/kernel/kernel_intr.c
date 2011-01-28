@@ -13,6 +13,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
+#include "kernel_intr.h"
 #include "kernel_mingw32.h"
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
@@ -31,7 +32,7 @@
  * This implementation differs from generic one because Windows-hosted AROS has very specific
  * idle loop implementation.
  */
-static void core_ExitInterrupt(CONTEXT *regs)
+void core_ExitInterrupt(CONTEXT *regs)
 {
     D(bug("[Scheduler] core_ExitInterrupt\n"));
 
@@ -39,7 +40,7 @@ static void core_ExitInterrupt(CONTEXT *regs)
     if (SysBase->SysFlags & SFF_SoftInt)
     {
         D(bug("[Scheduler] Causing SoftInt\n"));
-        core_Cause(INTB_SOFTINT);
+        core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
     }
 
     /* No tasks active (AROS is in idle state)? If yes, just pick up

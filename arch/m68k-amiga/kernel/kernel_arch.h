@@ -19,3 +19,6 @@
 
 #define ictl_enable_irq(irq)
 #define ictl_disable_irq(irq)
+
+/* Amiga(tm) custom chips MMIO area */
+#define _CUSTOM 0xDFF000

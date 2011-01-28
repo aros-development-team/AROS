@@ -103,7 +103,7 @@ struct Task *core_Dispatch(void)
     /* Original m68k programs can change stack manually without updating SPLower or SPUpper.
      * For example WB3.1 C:SetPatch adds exec/OpenDevice() patch that swaps stacks manually.
      * Result is that _all_ programs that call OpenDevice() crash if stack is checked. */
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#ifndef __mc68000
     /* Check the stack of the task we are about to launch */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
@@ -117,19 +117,4 @@ struct Task *core_Dispatch(void)
 
     /* Leave interrupt and jump to the new task */
     return task;
-}
-
-/* Call exec interrupt vector, if present */
-void core_Cause(unsigned char n)
-{
-    struct IntVector *iv = &SysBase->IntVects[n];
-
-    /* If the SoftInt vector in SysBase is set, call it. It will do the rest for us */
-    if (iv->iv_Code)
-        AROS_UFC5(void, iv->iv_Code,
-		  AROS_UFCA(ULONG, 1L << n, D1),
-		  AROS_UFCA(APTR, NULL, A0),
-		  AROS_UFCA(APTR, iv->iv_Data, A1),
-		  AROS_UFCA(APTR, iv->iv_Code, A5),
-		  AROS_UFCA(struct ExecBase *, SysBase, A6));
 }

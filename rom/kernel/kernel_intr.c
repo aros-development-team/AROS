@@ -4,7 +4,7 @@
 
 #include "../exec/etask.h"
  
-#include <kernel_cpu.h>
+#include <kernel_base.h>
 #include <kernel_intr.h>
 #include <kernel_scheduler.h>
 
@@ -23,7 +23,7 @@ void core_ExitInterrupt(regs_t *regs)
 {
     /* Soft interrupt requested? It's high time to do it */
     if (SysBase->SysFlags & SFF_SoftInt)
-        core_Cause(INTB_SOFTINT);
+        core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
 
     /* If task switching is disabled, do nothing */
     if (SysBase->TDNestCnt < 0)
