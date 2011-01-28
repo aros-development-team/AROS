@@ -127,6 +127,9 @@ static struct ExecBase *MoveExecBase(void)
 	reloclist(&PrivExecBase(newsb)->ResetHandlers);
 	reloclist((struct List*)&PrivExecBase(newsb)->AllocMemList);
 
+	InitSemaphore(&PrivExecBase(newsb)->MemListSem);
+	InitSemaphore(&PrivExecBase(newsb)->LowMemSem);
+
 	newsb->ChkBase=~(IPTR)newsb;
 	SysBase = newsb;
 	FreeMem((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, totalsize);
