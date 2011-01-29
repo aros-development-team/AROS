@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -265,6 +265,7 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 	    switch(brd->minterm)
 	    {
 	    	case (ABC|ABNC|ANBC): /* (ABC|ABNC|ANBC) if copy source and blit thru mask */
+		case 0xC0: /* compatibility with AOS3 */
 		    if (pal_to_true)
 		    {
 		    	for(y = 0; y < doing_lines; y++)
