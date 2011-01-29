@@ -97,6 +97,7 @@ static AROS_UFH3 (APTR, Init,
    dev_node->dn_Handler = (STRPTR)handler_name;
    dev_node->dn_StackSize = 10000;
    dev_node->dn_SegList = MKBADDR((BPTR *)Main - 1);
+   dev_node->dn_Priority = 10;
    if(!AddDosEntry((APTR)dev_node))
       Alert(AT_DeadEnd);
 
