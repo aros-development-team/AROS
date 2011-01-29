@@ -358,7 +358,7 @@ extern void aros_not_implemented ();
 	 	register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)) = _q1.reg[1]; \
 	 	asm("jsr %c1(%%a6)\n" : \
 	 		"=r" (_ret) : \
-	 		 "n" (o), \
+	 		 "n" (-1 * (o) * LIB_VECTSIZE), \
 			 "r" (__AROS_LTAQUAD1(a1)), \
 			 "r" (__AROS_LTAQUAD2(a1)), \
 	 		 "r" (bt_tmp) \
@@ -383,7 +383,7 @@ extern void aros_not_implemented ();
 	 	register ULONG __AROS_LTAQUAD2(a2) asm(__AROS_LSAQUAD2(a2)) = _q2.reg[1]; \
 	 	asm("jsr %c1(%%a6)\n" : \
 	 		"=r" (_ret) : \
-	 		 "n" (o), \
+	 		 "n" (-1 * (o) * LIB_VECTSIZE), \
 			 "r" (__AROS_LTAQUAD1(a1)), \
 			 "r" (__AROS_LTAQUAD2(a1)), \
 			 "r" (__AROS_LTAQUAD1(a2)), \
