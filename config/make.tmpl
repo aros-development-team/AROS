@@ -2576,7 +2576,7 @@ endif
     $(DISTDIR)/Packages/$(%(mmake)-%(subpackage)-archbase)-aros.$(AROS_TARGET_CPU)
 
 ifneq (%(create_pkg),no)
-    PACKAGE := $(%(mmake)-%(subpackage)-package-basename).tar.bz2
+    %(mmake)-%(subpackage)-package := $(%(mmake)-%(subpackage)-package-basename).tar.bz2
 endif
 
 %build_with_configure mmake=%(mmake)-%(subpackage) package=%(package) compiler=%(compiler) \
@@ -2589,7 +2589,7 @@ endif
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
 
 #MM
-%(mmake)-%(subpackage)-make-package : $(PACKAGE)
+%(mmake)-%(subpackage)-make-package : $(%(mmake)-%(subpackage)-package)
  
 #There seems to be a bug, either with my clock or with make, 'cause it may happen
 #that $^ and $@ have exactly the same mtime, and in that case make tries
