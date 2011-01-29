@@ -65,6 +65,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
    dev_node->dn_StackSize = AROS_STACKSIZE;
    dev_node->dn_SegList = MKBADDR(&cs_con->cs_Next);
    dev_node->dn_Startup = 0;
+   dev_node->dn_Priority = 5;
    if(!AddDosEntry((APTR)dev_node))
       Alert(AT_DeadEnd);
 
@@ -74,6 +75,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
    dev_node->dn_StackSize = AROS_STACKSIZE;
    dev_node->dn_SegList = MKBADDR(&cs_con->cs_Next);
    dev_node->dn_Startup = 1;
+   dev_node->dn_Priority = 5;
    if(!AddDosEntry((APTR)dev_node))
       Alert(AT_DeadEnd);
 
