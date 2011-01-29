@@ -83,10 +83,6 @@ static void close_con(struct conbase *conbase, struct IOFileSys *iofs)
     fh->usecount--;
     if (fh->usecount > 0)
     {
-	if (iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask == fh->breaktask)
-	{
-	    fh->breaktask = NULL;
-	}	
 	if (iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask == fh->lastwritetask)
 	{
 	    fh->lastwritetask = NULL;
@@ -94,7 +90,6 @@ static void close_con(struct conbase *conbase, struct IOFileSys *iofs)
     }
     else
     {
-    	fh->breaktask = NULL;
 	iofs->IOFS.io_Unit = NULL;
     }
 
