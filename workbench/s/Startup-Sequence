@@ -119,6 +119,7 @@ If EXISTS ENV:SYS/Packages
 EndIf
 
 Protect S:PCD s ADD QUIET
+Protect S:SPat s ADD QUIET
 
 If EXISTS S:User-Startup
     Execute S:User-Startup
