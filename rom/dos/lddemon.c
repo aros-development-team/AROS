@@ -867,6 +867,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 	{ NP_WindowPtr, -1 },
 	{ NP_Name, (IPTR)ldDemonName },
 	{ NP_StackSize, AROS_STACKSIZE },
+	{ NP_Priority, 5 },
 	{ TAG_END , 0 }
     };
 
