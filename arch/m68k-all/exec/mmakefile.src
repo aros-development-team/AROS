@@ -7,7 +7,8 @@ FILES=offsets getcc preparecontext \
 AFILES=newstackswap stackswap \
        supervisor superstate userstate \
        forbid \
-       cacheclearu_ cachepostdma_ cachepredma_
+       cacheclearu_ cachepostdma_ cachepredma_ \
+       setsr
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec $(PARANOIA_CFLAGS)
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
