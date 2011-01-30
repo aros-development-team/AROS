@@ -67,7 +67,8 @@ AROS_SLIB_ENTRY(SetSR,Exec):
 su: move.w %sp@,%d2
 	and.w %d1,%d0
 	not.w %d1
-	and.w %d1,%d2
-	or.w %d0,%d2
-    move.w %d2,%sp@
+	and.w %d1,%sp@
+	or.w %d0,%sp@
+	moveq #0,%d0
+    move.w %d2,%d0
     rte
