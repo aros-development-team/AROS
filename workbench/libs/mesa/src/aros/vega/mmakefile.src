@@ -27,6 +27,7 @@ OPENVG_SOURCES = \
             gallium/state_trackers/vega/api_transform \
             gallium/state_trackers/vega/arc \
             gallium/state_trackers/vega/bezier \
+            gallium/state_trackers/vega/handle \
             gallium/state_trackers/vega/image \
             gallium/state_trackers/vega/mask \
             gallium/state_trackers/vega/paint \
