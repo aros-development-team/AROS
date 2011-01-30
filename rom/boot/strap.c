@@ -544,6 +544,14 @@ static BOOL CheckTables
 
 static BOOL IsRemovable(struct ExecBase *SysBase, struct IOExtTD *ioreq)
 {
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+    /* On AROS m68k, CF cards are removable, but are
+     * bootable. Also, we should support CDROMs that
+     * have RDB blocks. So, in all cases, allow the
+     * RDB support.
+     */
+    return FALSE;
+#else
     struct DriveGeometry dg;
 
     ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
@@ -551,6 +559,7 @@ static BOOL IsRemovable(struct ExecBase *SysBase, struct IOExtTD *ioreq)
     ioreq->iotd_Req.io_Length = sizeof(struct DriveGeometry);
     DoIO((struct IORequest *)ioreq);
     return (dg.dg_Flags & DGF_REMOVABLE) ? TRUE : FALSE;
+#endif
 }
 
 static VOID CheckPartitions
