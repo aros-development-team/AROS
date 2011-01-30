@@ -26,30 +26,24 @@
     HISTORY
 */
 
-AROS_LH1(double, IEEEDPTan,
-    AROS_LHA(double, y, D0),
+AROS_LHQUAD1(double, IEEEDPTan,
+    AROS_LHAQUAD(double, y, D0, D1),
     struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 8, MathIeeeDoubTrans
 )
 {
     AROS_LIBFUNC_INIT
-    double sn, cs;
+    QUAD sn, cs, Res;
     
     cs = IEEEDPCos(y);
     sn = IEEEDPSin(y);
-    if (cs == 0)
+    if (is_eqC(cs, 0, 0))
     {
-        if (sn > 0)
-	{
-            return IEEEDPPInfty_Hi;
-	}
-	else
-	{
-            return IEEEDPPInfty_Lo;
-	}
+        Set_Value64C(Res, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo);
+        return Res;
     }
     else
     {
-        return sn/cs;
+        return IEEEDPDiv(sn, cs);
     }
 
     AROS_LIBFUNC_EXIT
