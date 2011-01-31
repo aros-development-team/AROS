@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Debugging macros.
@@ -169,14 +169,14 @@
 #define ASSERT_VALID_PTR(x) do {				\
 	(((IPTR)(x) > 1024) &&					\
 	TypeOfMem((APTR)(x))) ? 0 :				\
-	( DBPRINTF("\x07%s, %ld: bad pointer: %s = $%lx\n",	\
+	( DBPRINTF("\x07%s, %ld: bad pointer: %s = $%p\n",	\
 	THIS_FILE, __LINE__, #x, (APTR)(x)) );			\
 } while(0)
 
 #define ASSERT_VALID_PTR_OR_NULL(x) do {			\
 	((((APTR)(x)) == NULL) ||				\
 	(((IPTR)(x) > 1024) &&	TypeOfMem((APTR)(x)))) ? 0 :	\
-	( DBPRINTF("\x07%s:%ld: bad pointer: %s = $%lx\n",	\
+	( DBPRINTF("\x07%s:%ld: bad pointer: %s = $%p\n",	\
 	THIS_FILE, __LINE__, #x, (APTR)(x)) );			\
 } while(0)
 
