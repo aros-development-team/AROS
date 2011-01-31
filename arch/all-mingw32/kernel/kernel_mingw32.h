@@ -15,9 +15,6 @@
 
 extern struct HostInterface *HostIFace;
 
-void cpu_Switch(CONTEXT *regs);
-void cpu_Dispatch(CONTEXT *regs);
-
 int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs);
 int core_IRQHandler(unsigned char *irqs, CONTEXT *regs);
 
