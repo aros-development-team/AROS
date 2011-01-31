@@ -45,6 +45,7 @@ static const char *kernel_functions[] = {
 /* rom startup */
 int __startup startup(struct TagItem *msg)
 {
+    void* _stack = AROS_GET_SP;
     struct ExecBase *SysBase;
     void *hostlib;
     char *errstr;
@@ -163,6 +164,13 @@ int __startup startup(struct TagItem *msg)
      * so that TypeOfMem() will not return 0 for addresses pointing into the kickstart.
      */
     krnCreateROMHeader(mh, "Kickstart ROM", klo, khi);
+
+    /*
+     * Stack memory header. This special memory header covers a little part of the programs
+     * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
+     * during initialization.
+     */
+    krnCreateROMHeader(mh, "Boot stack", _stack - AROS_STACKSIZE, _stack);
 
     /* In order for these functions to work before KernelBase and ExecBase are set up */
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf  = mykprintf;
