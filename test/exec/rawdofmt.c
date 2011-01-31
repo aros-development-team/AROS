@@ -12,24 +12,27 @@ int main(void)
     IPTR args[] = {
         (IPTR)"one",
 	(IPTR)"two",
-	3
+	3,
+	4,
+	5,
+	6,
     };
 
     printf("Checking NewRawDoFmt...\n");
-    NewRawDoFmt("%s plus %s will be %lu", (VOID_FUNC)RAWFMTFUNC_COUNT, &count, "one", "two", 3);
+    NewRawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu", (VOID_FUNC)RAWFMTFUNC_COUNT, &count, "one", "two", 3, 4, 5, 6);
     printf("Count is %u\n", count);
-    NewRawDoFmt("%s plus %s will be %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buf, "one", "two", 3);
+    NewRawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buf, "one", "two", 3, 4, 5, 6);
     printf("Formatted string is: %s\n", buf);
-    NewRawDoFmt("%s plus %s will be %lu\n", (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL, "one", "two", 3);
+    NewRawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu\n", (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL, "one", "two", 3, 4, 5, 6);
     printf("Serial output done\n");
 
     count = 0;
     printf("Checking RawDoFmt...\n");
-    RawDoFmt("%s plus %s will be %lu", args, (VOID_FUNC)RAWFMTFUNC_COUNT, &count);
+    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu", args, (VOID_FUNC)RAWFMTFUNC_COUNT, &count);
     printf("Count is %u\n", count);
-    RawDoFmt("%s plus %s will be %lu", args, (VOID_FUNC)RAWFMTFUNC_STRING, buf);
+    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu", args, (VOID_FUNC)RAWFMTFUNC_STRING, buf);
     printf("Formatted string is: %s\n", buf);
-    RawDoFmt("%s plus %s will be %lu\n", args, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+    RawDoFmt("%s plus %s will be %lu, next are %lu, %lu, %lu\n", args, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
     printf("Serial output done\n");
 
     return 0;
