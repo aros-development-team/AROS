@@ -123,7 +123,7 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../talloc \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
             -I$(SRCDIR)/$(CURDIR)/../../aros \
-            -I$(SRCDIR)/$(CURDIR)/../../ \
+            -I$(SRCDIR)/$(CURDIR)/../.. \
 
 USER_CFLAGS := -ffast-math -DMAPI_GLAPI_CURRENT -DFEATURE_GL=1
 
