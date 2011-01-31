@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locale_RawDoFmt - locale.library's private replacement
@@ -337,7 +337,6 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     AROS_LIBFUNC_INIT
 
     struct Hook       hook;
-    APTR    	      retval;
 
     hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc_SysV);
     hook.h_SubEntry = (HOOKFUNC)PutChProc;
@@ -345,14 +344,14 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
 
     REPLACEMENT_LOCK;
 
-    retval = InternalFormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
+    InternalFormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
     	    	    	  (STRPTR)FormatString,
 			  NULL,
 			  &hook, DataStream);
 
     REPLACEMENT_UNLOCK;
 
-    return retval;
+    return hook.h_Data;
 
     AROS_LIBFUNC_EXIT
 
