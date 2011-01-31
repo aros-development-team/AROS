@@ -64,6 +64,14 @@
     /* Get pointer to current task */
     me=SysBase->ThisTask;
 
+    /*
+     * If there's no ThisTask, the function is called from within memory
+     * allocator in exec's pre-init code. We are already single-threaded,
+     * just return. :)
+     */
+    if (!me)
+    	return;
+
 #if CHECK_INITSEM
     if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
     {
@@ -72,14 +80,6 @@
 	Alert(AN_SemCorrupt);
     }
 #endif
-
-    /*
-     * If there's no ThisTask, the function is called from within memory
-     * allocator in exec's pre-init code. We are already single-threaded,
-     * just return. :)
-     */
-    if (!me)
-    	return;
 
     /* Arbitrate for the semaphore structure */
     Forbid();
