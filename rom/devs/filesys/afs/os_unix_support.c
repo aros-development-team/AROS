@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,7 +32,8 @@ va_list ap;
 }
 
 LONG showError(struct AFSBase *afsbase, ULONG error, ...) {
-char *texts[]={0,
+char *texts[]={
+				NULL,
 				"No ioport",
 				"Couldn't open device %s",
 				"Couldn't add disk as dosentry",
@@ -51,7 +52,8 @@ char *texts[]={0,
 				"Repairing disk structure will lead to data loss.\n"
 					"It's best to make a backup before proceeding.\n\n"
 					"Please select what to do.",
-				0,
+				"Volume\n%s\nis write protected",
+				NULL,
 				"Unknown error"
 };
 
