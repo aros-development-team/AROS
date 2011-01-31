@@ -53,8 +53,8 @@ struct Node {};
 #define ERROR_BUFFER_OVERFLOW 303
 
 /* dos/bptr.h */
-#define BADDR(x) (x)
-#define MKBADDR(x) (x)
+#define BADDR(x) ((void *)(x))   // Convert from BPTR to pointer.
+#define MKBADDR(x) ((BPTR)(x))   // Convert from pointer to BPTR.
 #define BNULL NULL
 
 /* dos/dos.h */
