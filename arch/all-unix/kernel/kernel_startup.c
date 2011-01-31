@@ -206,7 +206,7 @@ int __startup startup(struct TagItem *msg)
      * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
      * during initialization.
      */
-    krnCreateROMHeader(bootmh, "Boot stack", _stack - 3072, _stack);
+    krnCreateROMHeader(bootmh, "Boot stack", _stack - AROS_STACKSIZE, _stack);
 
     bug("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
     InitCode(RTF_SINGLETASK, 0);
