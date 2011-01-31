@@ -17,6 +17,8 @@
 
 #ifdef __AROS__
 
+#define regs_t CONTEXT
+
 /* Some common definitions */
 #define cpumode_t __unused char
 
