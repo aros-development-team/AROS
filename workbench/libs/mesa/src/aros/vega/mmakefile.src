@@ -61,7 +61,7 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../aros \
             -I$(SRCDIR)/$(CURDIR)/../../mapi \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
-            -I$(SRCDIR)/$(CURDIR)/../../ \
+            -I$(SRCDIR)/$(CURDIR)/../.. \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega \
             -I$(GENDIR)/$(CURDIR) \
 

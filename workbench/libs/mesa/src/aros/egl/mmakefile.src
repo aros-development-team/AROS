@@ -54,7 +54,7 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/egl \
             -I$(SRCDIR)/$(CURDIR)/../../egl/main \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
-            -I$(SRCDIR)/$(CURDIR)/../../ \
+            -I$(SRCDIR)/$(CURDIR)/../.. \
 
 USER_CFLAGS :=  -DFEATURE_GL=1 \
                 -DFEATURE_VG=1 \
