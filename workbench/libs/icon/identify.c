@@ -23,17 +23,26 @@
 
 #include <string.h>
 
+#ifndef ID_FAT12_DISK
+#define ID_FAT12_DISK      AROS_MAKE_ID('F','A','T',0) /* FAT12 */
+#define ID_FAT16_DISK      AROS_MAKE_ID('F','A','T',1) /* FAT16 */
+#define ID_FAT32_DISK      AROS_MAKE_ID('F','A','T',2) /* FAT32 */
+#endif
+#ifndef ID_CDFS_DISK
+#define ID_CDFS_DISK       AROS_MAKE_ID('C','D','F','S') /* CDFS */
+#endif
 
 /*** Prototypes *************************************************************/
 BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, CONST_STRPTR volume, APTR *theDOSBase);
 struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, const struct TagItem *tags, struct IconBase *IconBase);
 struct DiskObject *__GetDefaultIconFromType_WB(LONG type, const struct TagItem *tags, struct IconBase *IconBase);
+LONG __FindDiskType_WB(STRPTR volname, BPTR lock, struct IconBase *IconBase);
 
 /*** Macros *****************************************************************/
 #define FindDeviceName(buffer, length, volume) (__FindDeviceName_WB((buffer), (length), (volume), DOSBase))
 #define GetDefaultIconFromName(name, tags) (__GetDefaultIconFromName_WB((name), (tags), IconBase))
 #define GetDefaultIconFromType(type, tags) (__GetDefaultIconFromType_WB((type), (tags), IconBase))
-
+#define FindDiskType(volname, lock) (__FindDiskType_WB((volname),(lock),IconBase))
 /*** Functions **************************************************************/
 LONG __FindType_WB(BPTR lock, struct IconBase *IconBase) 
 {
@@ -133,7 +142,10 @@ struct DiskObject *__FindDefaultIcon_WB
             )
         )
         {
-            if (strlen(device) <= 5) 
+            BPTR lock = Lock(device, SHARED_LOCK);
+            LONG type = FindDiskType(iim->iim_FIB->fib_FileName, lock);
+            UnLock(lock);
+            if (strlen(device) <= 5)
             {
                 if (strcasecmp(device, "RAM:") == 0)
                 {
@@ -142,15 +154,15 @@ struct DiskObject *__FindDefaultIcon_WB
                 else if (strncasecmp(device, "RAD", 3) == 0)
                 {
                     icon = GetDefaultIconFromName("RAD", iim->iim_Tags);
-                }
+                } /*
                 else if (strncasecmp(device, "DF", 2) == 0)
                 {
                     icon = GetDefaultIconFromName("Floppy", iim->iim_Tags);
-                }
+                } 
                 else if (strncasecmp(device, "CD", 2) == 0)
                 {
                     icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
-                }
+                } */
                 else if
                 (
                        strncasecmp(device, "DH",  2) == 0 
@@ -163,6 +175,36 @@ struct DiskObject *__FindDefaultIcon_WB
                 else if (strcasecmp(device, "HOME:") == 0)
                 {
                     icon = GetDefaultIconFromName("Home", iim->iim_Tags);
+                }
+                else if (type)
+                {
+                    D(bug("[icon] Identify Type: 0x%8x\n",type));
+                    switch(type)
+                    {
+                        case ID_MSDOS_DISK:
+                        case ID_FAT12_DISK:
+                        case ID_FAT16_DISK:
+                        case ID_FAT32_DISK:
+                            icon = GetDefaultIconFromName("FAT", iim->iim_Tags);
+                            break;
+                        case ID_SFS_BE_DISK:
+                        case ID_SFS_LE_DISK:
+                            icon = GetDefaultIconFromName("SFS", iim->iim_Tags);
+                            break;
+                        case ID_FFS_DISK:
+                        case ID_INTER_DOS_DISK:
+                        case ID_INTER_FFS_DISK:
+                        case ID_FASTDIR_DOS_DISK:
+                        case ID_FASTDIR_FFS_DISK:
+                            icon = GetDefaultIconFromName("ADF", iim->iim_Tags);
+                            break;
+                        case ID_CDFS_DISK:
+                            icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
+                            break;
+                        default:
+                            icon = GetDefaultIconFromName("Disk", iim->iim_Tags);
+                            break;
+                    }
                 }
             }
             else if (strncasecmp(device, "USB", 3) ==0)
@@ -348,6 +390,37 @@ struct DiskObject *__FindDefaultIcon_WB
 }
 
 /*** Support functions ******************************************************/
+LONG __FindDiskType_WB(STRPTR volname, BPTR lock, struct IconBase *IconBase)
+{
+    LONG disktype = ID_NO_DISK_PRESENT;
+    struct DosList *dl, *dn;
+
+    dl = LockDosList(LDF_VOLUMES|LDF_READ);
+    if (dl)
+    {
+        dn = FindDosEntry(dl, volname, LDF_VOLUMES);
+        if (dn)
+        {
+            disktype = dn->dol_misc.dol_volume.dol_DiskType;
+        }
+    UnLockDosList(LDF_VOLUMES|LDF_READ);
+    }
+
+    if (disktype == 0) //FFS workaround (dol_DiskType == 0)
+    {
+        struct InfoData *id = AllocMem(sizeof(struct InfoData), MEMF_PUBLIC|MEMF_CLEAR);
+        if (id != NULL)
+        {
+            if (Info(lock, id))
+            {
+                disktype = id->id_DiskType;
+            }
+            FreeMem(id,sizeof(struct InfoData));
+        }
+    }
+    return disktype;
+}
+
 BOOL __FindDeviceName_WB
 (
     STRPTR buffer, LONG length, CONST_STRPTR volume, 
