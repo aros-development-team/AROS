@@ -71,7 +71,7 @@
     if (!me)
     	return;
 
-//    ASSERT_VALID_PTR(sigSem);
+    ASSERT_VALID_PTR(sigSem);
 
 #if CHECK_INITSEM
     if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
