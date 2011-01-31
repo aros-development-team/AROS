@@ -312,25 +312,25 @@ extern void aros_not_implemented ();
 #include <aros/m68k/libcall.h>
 
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
-	t AROS_SLIB_ENTRY(n,s) (void) { \
-		register ULONG __AROS_LTAQUAD1(a1) asm(__AROS_LSAQUAD1(a1)); \
-		register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)); \
-		register bt bn asm("%a6"); \
+	AROS_LH2(t,n, \
+		AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \
+		AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \
+		bt, bn, o, s) \
 		union { \
 			__AROS_LPAQUAD(a1) val; \
 			ULONG reg[2]; \
 		} __AROS_LTAQUAD(a1); \
 		__AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \
 		__AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \
-		__AROS_LPAQUAD(a1) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val;
+		__AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val;
 
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
-	t AROS_SLIB_ENTRY(n,s) (void) { \
-		register ULONG __AROS_LTAQUAD1(a1) asm(__AROS_LSAQUAD1(a1)); \
-		register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)); \
-		register ULONG __AROS_LTAQUAD1(a2) asm(__AROS_LSAQUAD1(a2)); \
-		register ULONG __AROS_LTAQUAD2(a2) asm(__AROS_LSAQUAD2(a2)); \
-		register bt bn asm("%a6"); \
+	AROS_LH4(t,n, \
+		AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \
+		AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \
+		AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \
+		AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \
+		bt, bn, o, s) \
 		union { \
 			__AROS_LPAQUAD(a1) val; \
 			ULONG reg[2]; \
@@ -341,10 +341,11 @@ extern void aros_not_implemented ();
 		} __AROS_LTAQUAD(a2); \
 		__AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \
 		__AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \
+		__AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val; \
 		__AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \
 		__AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \
-		__AROS_LPAQUAD(a1) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val; \
-		__AROS_LPAQUAD(a2) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val; \
+		__AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;
+
 
 #define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \
 	({ \
@@ -352,18 +353,11 @@ extern void aros_not_implemented ();
 			__AROS_LPAQUAD(a1) val; \
 			ULONG reg[2]; \
 		} _q1 = { .val = __AROS_LCAQUAD(a1) }; \
-	 	register unsigned int _ret asm("%d0"); \
-	 	bt bt_tmp = bn; \
-	 	register ULONG __AROS_LTAQUAD1(a1) asm(__AROS_LSAQUAD1(a1)) = _q1.reg[0]; \
-	 	register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)) = _q1.reg[1]; \
-	 	asm("jsr %c1(%%a6)\n" : \
-	 		"=r" (_ret) : \
-	 		 "n" (-1 * (o) * LIB_VECTSIZE), \
-			 "r" (__AROS_LTAQUAD1(a1)), \
-			 "r" (__AROS_LTAQUAD2(a1)), \
-	 		 "r" (bt_tmp) \
-	 	); \
-	 (t)_ret;})
+	 	AROS_LC2(t, n,  \
+	 		AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \
+	 		AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \
+	 		bt, bn, o, s); \
+	 })
 
 #define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \
 	({ \
@@ -375,22 +369,14 @@ extern void aros_not_implemented ();
 			__AROS_LPAQUAD(a2) val; \
 			ULONG reg[2]; \
 		} _q2 = { .val = __AROS_LCAQUAD(a2) }; \
-	 	register unsigned int _ret asm("%d0"); \
-	 	bt bt_tmp = bn; \
-	 	register ULONG __AROS_LTAQUAD1(a1) asm(__AROS_LSAQUAD1(a1)) = _q1.reg[0]; \
-	 	register ULONG __AROS_LTAQUAD2(a1) asm(__AROS_LSAQUAD2(a1)) = _q1.reg[1]; \
-	 	register ULONG __AROS_LTAQUAD1(a2) asm(__AROS_LSAQUAD1(a2)) = _q2.reg[0]; \
-	 	register ULONG __AROS_LTAQUAD2(a2) asm(__AROS_LSAQUAD2(a2)) = _q2.reg[1]; \
-	 	asm("jsr %c1(%%a6)\n" : \
-	 		"=r" (_ret) : \
-	 		 "n" (-1 * (o) * LIB_VECTSIZE), \
-			 "r" (__AROS_LTAQUAD1(a1)), \
-			 "r" (__AROS_LTAQUAD2(a1)), \
-			 "r" (__AROS_LTAQUAD1(a2)), \
-			 "r" (__AROS_LTAQUAD2(a2)), \
-	 		 "r" (bt_tmp) \
-	 	); \
-	 (t)_ret;})
+	 	AROS_LC4(t, n,  \
+	 		AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \
+	 		AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \
+	 		AROS_LCA(ULONG, _q2.reg[0], __AROS_LRAQUAD1(a2)), \
+	 		AROS_LCA(ULONG, _q2.reg[1], __AROS_LRAQUAD2(a2)), \
+	 		bt, bn, o, s); \
+	 })
+
 
 #   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
 	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
