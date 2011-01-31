@@ -17,6 +17,7 @@ AROS_SLIB_ENTRY(StackSwap, Exec):
                 
                 /* Disable interrupts */
                 pushq   %rsi
+                movq	%rsi, %rdi	/* Put SysBase into rdi (first argument) */
                 call    *Disable(%rsi)
                 popq    %rsi
 
@@ -42,9 +43,12 @@ AROS_SLIB_ENTRY(StackSwap, Exec):
                 /* Restore *NEW* stack pointer */
                 xchgq   %rsp, stk_Pointer(%rdi)
                 
+                pushq	%rdi
                 pushq   %rax
+                movq	%rsi, %rdi
                 call    *Enable(%rsi)
                 popq    %rax
+                popq	%rdi
                 
                 jmpq    *%rax
                                 
