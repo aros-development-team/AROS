@@ -33,7 +33,8 @@ static inline APTR stream_addr(APTR *args, ULONG len)
 {
     APTR ret = *args;
 
-    *args += len;
+    /* LONG data are actually IPTR-aligned */
+    *args += (len > sizeof(UWORD)) ? sizeof(IPTR) : len;
     return ret;
 }
 
