@@ -166,6 +166,7 @@ for dir in $all_dirs; do
 done
 
 # patch path in env.h
+sed -i -e "19 c \#define LD_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-ld\"" tools/collect-aros/env.h
 sed -i -e "20 c \#define STRIP_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-strip\"" tools/collect-aros/env.h
 sed -i -e "21 c \#define NM_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-nm -C -ul\"" tools/collect-aros/env.h
 sed -i -e "22 c \#define OBJDUMP_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-objdump\"" tools/collect-aros/env.h
