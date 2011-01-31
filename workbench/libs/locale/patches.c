@@ -96,8 +96,7 @@ static struct patchinfo
     {LIB_DOS    , 163, LIB_LocDosGetLocalizedString},
 #else
     {LIB_EXEC   , 87 , AROS_SLIB_ENTRY(LocRawDoFmt		, Locale)},
-/* Please test on various architectures before enabling
-    {LIB_EXEC   , 137, AROS_SLIB_ENTRY(LocVNewRawDoFmt		, Locale)}, */
+    {LIB_EXEC   , 137, AROS_SLIB_ENTRY(LocVNewRawDoFmt		, Locale)},
     {LIB_UTILITY, 28 , AROS_SLIB_ENTRY(LocStrnicmp		, Locale)},
     {LIB_UTILITY, 27 , AROS_SLIB_ENTRY(LocStricmp		, Locale)},
     {LIB_UTILITY, 30 , AROS_SLIB_ENTRY(LocToLower		, Locale)},

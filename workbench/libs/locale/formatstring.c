@@ -95,10 +95,19 @@ static inline APTR va_addr(va_list args, ULONG len)
 #elif defined(__arm__)
 
 #define va_addr(args, len) stream_addr(&args.__ap, len)
+#define is_va_list(ap) ap.__ap
+#define null_va_list(ap) va_list ap = {NULL}
 
 #else
 
 #define va_addr(args, len) stream_addr(&args, len)
+
+#endif
+
+#ifndef is_va_list
+
+#define is_va_list(ap) ap
+#define null_va_list(ap) void *ap = NULL
 
 #endif
 
@@ -172,12 +181,12 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
             /*
             ** prepare the indices array
             */
-	    if (dataStream) {
+	    if (is_va_list(VaListStream)) {
+	    	for (i = 0; i <= max_argpos; i++)
+		    indices[i] = (IPTR)va_addr(VaListStream, indices[i]);
+	    } else {
                 for (i = 0; i <= max_argpos; i++)
 		    indices[i] = (IPTR)stream_addr((APTR *)&dataStream, indices[i]);
-	    } else {
-		for (i = 0; i <= max_argpos; i++)
-		    indices[i] = (IPTR)va_addr(VaListStream, indices[i]);
 	    }
 	    
           }
@@ -731,9 +740,9 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
 {
     AROS_LIBFUNC_INIT
 
-    va_list args;
+    null_va_list(vaListStream);
 
-    return InternalFormatString(locale, fmtTemplate, dataStream, putCharFunc, args);
+    return InternalFormatString(locale, fmtTemplate, dataStream, putCharFunc, vaListStream);
 
     AROS_LIBFUNC_EXIT
 } /* FormatString */
