@@ -18,7 +18,7 @@ EXEDIR  := $(AROS_C)
 
 %build_prog mmake=workbench-c-acpidump \
     progname=ACPIDump targetdir=$(EXEDIR) \
-    files="$(FILES) $(x86FILES)" \
+    files="$(FILES)" \
     uselibs="arossupport amiga arosc m"
 
 %common
