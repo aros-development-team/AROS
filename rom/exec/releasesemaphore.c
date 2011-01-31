@@ -58,6 +58,10 @@
 
     AROS_LIBFUNC_INIT
 
+    /* We can be called from within exec's pre-init code. It's okay. */
+    if (!SysBase->ThisTask)
+    	return;
+
 #if CHECK_INITSEM
     if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
     {
@@ -65,10 +69,6 @@
 	        "sem = %x  task = %x (%s)\n\n", sigSem, FindTask(0), FindTask(0)->tc_Node.ln_Name);
     }
 #endif
-
-    /* We can be called from within exec's pre-init code. It's okay. */
-    if (!SysBase->ThisTask)
-    	return;
 
     /* Protect the semaphore srtucture from multiple access. */
     Forbid();
