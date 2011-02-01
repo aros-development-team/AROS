@@ -17,6 +17,7 @@
 #include <intuition/intuition.h>
 
 #include "error.h"
+#include "errstrings.h"
 #include "baseredef.h"
 
 
