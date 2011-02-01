@@ -164,7 +164,12 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 
 	    /* Set the propertyflags,
 	       Note that we enforce some flags because we emulate these features by software */
-	    di->PropertyFlags = DIPF_IS_FOREIGN | DIPF_IS_WB | DIPF_IS_SPRITES | DIPF_IS_DBUFFER | HIDDProps.DisplayInfoFlags;
+	    di->PropertyFlags = DIPF_IS_WB | DIPF_IS_SPRITES | DIPF_IS_DBUFFER | HIDDProps.DisplayInfoFlags;
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+	    /* CGFX does not set this flag. Picasso only for modes that are not graphics.library compatible.
+	     * Documented and actual real world behavior are opposite on all common m68k RTG hardware! */
+	    di->PropertyFlags |= DIPF_IS_FOREIGN;
+#endif
 
 	    /* Too many colors to count here. This field is really obsolete */
 	    di->PaletteRange = 65535;
