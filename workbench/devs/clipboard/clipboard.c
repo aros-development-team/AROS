@@ -146,6 +146,11 @@ static int GM_UNIQUENAME(Open)
 
     if(CBBase->cb_ClipDir == NULL)
     {
+	/* Disable dos requesters */
+	struct Process *pr = (struct Process*)FindTask(NULL);
+	APTR oldWindowPtr = pr->pr_WindowPtr;
+	pr->pr_WindowPtr = (APTR)-1;
+
 	D(bug("clipboard.device/Checking for CLIPS:\n"));
 
 	if (!(tempLock = Lock("CLIPS:", ACCESS_READ)))
@@ -182,6 +187,8 @@ static int GM_UNIQUENAME(Open)
 	    D(bug("clipboard.device/Found CLIPS:\n"));
 	    CBBase->cb_ClipDir = "CLIPS:";
 	}
+
+	pr->pr_WindowPtr = oldWindowPtr;
 
 	/* Release the possible lock we have made */
 	UnLock(tempLock);
