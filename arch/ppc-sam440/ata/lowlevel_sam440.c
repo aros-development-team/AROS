@@ -14,7 +14,7 @@ UBYTE ata_in(UWORD offset, IPTR port)
 
 VOID ata_outl(ULONG val, UWORD offset, IPTR port)
 {
-    outl(val, (uint32_t *)(port + offset + PCIC0_IO));
+    outl_le(val, (uint32_t *)(port + offset + PCIC0_IO));
 }
 
 VOID ata_insw(APTR address, UWORD port, ULONG count)
