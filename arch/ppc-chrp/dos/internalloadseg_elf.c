@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables
@@ -11,8 +11,11 @@
 
 #define DEBUG 0
 
+#include <aros/config.h>
+#include <aros/kernel.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <dos/elf.h>
 #include <dos/dosasl.h>
 #include <proto/dos.h>
 #include <proto/arossupport.h>
@@ -27,10 +30,6 @@
 
 #include <aros/macros.h>
 
-#define ELF32_R_SYM(val)        ((val) >> 8)
-#define ELF32_R_TYPE(val)       ((val) & 0xff)
-#define ELF32_R_INFO(sym, type) (((sym) << 8) + ((type) & 0xff))
-
 struct hunk
 {
     ULONG size;
@@ -38,42 +37,41 @@ struct hunk
     char  data[0];
 } __attribute__((packed));
 
-#define BPTR2HUNK(bptr) ((struct hunk *)((char *)BADDR(bptr) - offsetof(struct hunk, next)))
+#define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
 #undef MyRead
 #undef MyAlloc
 #undef MyFree
 
-
 #define MyRead(file, buf, size)      \
-    AROS_CALL3                       \
+    AROS_UFC4                        \
     (                                \
         LONG, funcarray[0],          \
-        AROS_LCA(BPTR,   file, D1),  \
-        AROS_LCA(void *, buf,  D2),  \
-        AROS_LCA(LONG,   size, D3),  \
-        struct DosLibrary *, DOSBase \
+        AROS_UFCA(BPTR,   file, D1), \
+        AROS_UFCA(void *, buf,  D2), \
+        AROS_UFCA(LONG,   size, D3), \
+        AROS_UFCA(struct DosLibrary *, DOSBase, A6) \
     )
 
 
-#define MyAlloc(size, flags)        \
-    AROS_CALL2                      \
-    (                               \
-        void *, funcarray[1],       \
-        AROS_LCA(ULONG, size,  D0), \
-        AROS_LCA(ULONG, flags, D1), \
-        struct ExecBase *, SysBase  \
-    )
+#define MyAlloc(size, flags)         \
+    AROS_UFC3                        \
+    (                                \
+        void *, funcarray[1],        \
+        AROS_UFCA(ULONG, size,  D0), \
+        AROS_UFCA(ULONG, flags, D1), \
+        AROS_UFCA(struct ExecBase *, SysBase, A6) \
+    )				    
 
 
-#define MyFree(addr, size)          \
-    AROS_CALL2NR                    \
-    (                               \
-        void, funcarray[2],         \
-        AROS_LCA(void *, addr, A1), \
-        AROS_LCA(ULONG,  size, D0), \
-        struct ExecBase *, SysBase  \
+#define MyFree(addr, size)           \
+    AROS_UFC3                        \
+    (                                \
+        void, funcarray[2],          \
+        AROS_UFCA(void *, addr, A1), \
+        AROS_UFCA(ULONG,  size, D0), \
+        AROS_UFCA(struct ExecBase *, SysBase, A6) \
     )
 
 static int read_block
@@ -111,7 +109,7 @@ static int read_block
     return 1;
 }
 
-static void * load_block
+static void *load_block
 (
     BPTR               file,
     ULONG              offset,
@@ -138,20 +136,9 @@ static void * load_block
     return NULL;
 }
 
-static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
-    if (!read_block(file, 0, eh, offsetof(struct elfheader, int_shnum), funcarray, DOSBase))
-        return 0;
-
-    if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
-        eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
-	D(bug("[ELF Loader] Not an ELF object\n"));
-        SetIoErr(ERROR_NOT_EXECUTABLE);
-        return 0;
-    }
-    D(bug("[ELF Loader] ELF object\n"));
-
-    eh->int_shnum = eh->shnum;
-    eh->int_shstrndx = eh->shstrndx;
+static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase)
+{
+    ULONG shnum = eh->shnum;
 
     /* the ELF header only uses 16 bits to store the count of section headers,
      * so it can't handle more than 65535 headers. if the count is 0, and an
@@ -163,90 +150,81 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
      *
      * see the System V ABI 2001-04-24 draft for more details.
      */
-    if (eh->int_shnum == 0 || eh->int_shstrndx == SHN_XINDEX) {
+    if (eh->shnum == 0)
+    {
+        struct sheader sh;
+
         if (eh->shoff == 0) {
             SetIoErr(ERROR_NOT_EXECUTABLE);
             return 0;
         }
 
-        struct sheader sh;
         if (!read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, DOSBase))
             return 0;
 
         /* wider section header count is in the size field */
-        if (eh->int_shnum == 0)
-            eh->int_shnum = sh.size;
-
-        /* wider string table index is in the link field */
-        if (eh->int_shstrndx == SHN_XINDEX)
-            eh->int_shstrndx = sh.link;
+        shnum = sh.size;
 
         /* sanity, if they're still invalid then this isn't elf */
-        if (eh->int_shnum == 0 || eh->int_shstrndx == SHN_XINDEX) {
+        if (shnum == 0)
             SetIoErr(ERROR_NOT_EXECUTABLE);
-            return 0;
-        }
     }
 
-    if
-    (
-            eh->ident[EI_CLASS]   != ELFCLASS32  ||
-        eh->ident[EI_VERSION] != EV_CURRENT  ||
-        eh->type              != ET_REL      ||
+    return shnum;
+}
 
-        #if defined(__i386__)
-            eh->ident[EI_DATA] != ELFDATA2LSB ||
-            eh->machine        != EM_386
+static void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
+{
+#ifdef KrnRegisterModule
+    if (KernelBase)
+    {
+	char buffer[512];
 
-        #elif defined(__x86_64__)
-            eh->ident[EI_DATA] != ELFDATA2LSB ||
-	    eh->machine        != EM_X86_64
+	if (NameFromFH(file, buffer, sizeof(buffer))) {
+	    char *nameptr = buffer;
+	    struct ELF_DebugInfo dbg = {eh, sh};
 
-        #elif defined(__mc68000__)
-            eh->ident[EI_DATA] != ELFDATA2MSB ||
-            eh->machine        != EM_68K
+/* gdb support needs full paths */
+#if !AROS_MODULES_DEBUG
+	    /* First, go through the name, till end of the string */
+	    while(*nameptr++);
+	    /* Now, go back until either ":" or "/" is found */
+	    while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
+    		nameptr--;
+#endif
+    	   KrnRegisterModule(nameptr, sh, &eh);
+    	   //KrnRegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
+	}
+    }
+#endif
+}
 
-        #elif defined(__ppc__) || defined(__powerpc__)
-	    eh->ident[EI_DATA] != ELFDATA2MSB ||
-	    eh->machine        != EM_PPC
+static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
+    Seek(file, OFFSET_BEGINNING, 0);
+    if (!read_block(file, 0, eh, sizeof(struct elfheader), funcarray, DOSBase))
+        return 0;
 
-        #elif defined(__arm__)
-            eh->ident[EI_DATA] != ELFDATA2LSB ||
-            eh->machine        != EM_ARM
-#warning ARM has not been tested, yet!
+    if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
+        eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
+	D(bug("[ELF Loader] Not an ELF object\n"));
+        SetIoErr(ERROR_NOT_EXECUTABLE);
+        return 0;
+    }
+    D(bug("[ELF Loader] ELF object\n"));
 
-        #else
-        #    error Your architecture is not supported
-        #endif
-    )
+    /* WANT_CLASS should be defined for your target */
+    if (eh->ident[EI_CLASS]   != AROS_ELF_CLASS  ||
+        eh->ident[EI_VERSION] != EV_CURRENT      ||
+        eh->type              != ET_REL          ||
+        eh->ident[EI_DATA]    != AROS_ELF_DATA   ||
+        eh->machine           != AROS_ELF_MACHINE)
     {
         D(bug("[ELF Loader] Object is of wrong type\n"));
-        #if defined(__x86_64__)
-            D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS64));
-	#else
-            D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS32));
-	#endif
-        D(bug("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT));
-        D(bug("[ELF Loader] type       is %d - should be %d\n", eh->type,              ET_REL));
-#if defined (__i386__)
-        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2LSB));
-#elif defined (__mc68000__)
-        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2MSB));
-#elif defined(__ppc__) || defined(__powerpc__)
-        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2MSB));
-#elif defined (__arm__)
-        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2MSB));
-#endif
-
-#if defined (__i386__)
-        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_386));
-#elif defined(__mc68000__)
-        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_68K));
-#elif defined(__ppc__) || defined(__powerpc__)
-        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_PPC));
-#elif defined(__arm__)
-        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_ARM));
-#endif
+        D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS]  , AROS_ELF_CLASS ));
+        D(bug("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT     ));
+        D(bug("[ELF Loader] type       is %d - should be %d\n", eh->type             , ET_REL         ));
+        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA]   , AROS_ELF_DATA  ));
+        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine          , AROS_ELF_MACHINE));
 
         SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
@@ -300,12 +278,12 @@ static int load_hunk
             {
 	        sh->addr = (char *)AROS_ROUNDUP2
                 (
-                    (ULONG)hunk->data + sizeof(struct FullJumpVec), sh->addralign
+                    (IPTR)hunk->data + sizeof(struct FullJumpVec), sh->addralign
                 );
                 __AROS_SET_FULLJMP((struct FullJumpVec *)hunk->data, sh->addr);
             }
             else
-                sh->addr = (char *)AROS_ROUNDUP2((ULONG)hunk->data, sh->addralign);
+                sh->addr = (char *)AROS_ROUNDUP2((IPTR)hunk->data, sh->addralign);
 	}
 	else
 	    sh->addr = hunk->data;
@@ -313,10 +291,10 @@ static int load_hunk
         /* Link the previous one with the new one */
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
 
-        D(bug("[dos] hunk @ %p\n", sh->addr));
-
+        D(bug("[dos] hunk @ %p, size=%08x, addr @ %p\n", hunk, hunk->size, sh->addr));
+        
         /* Update the pointer to the previous one, which is now the current one */
-        *next_hunk_ptr = HUNK2BPTR(hunk);
+        *next_hunk_ptr = &hunk->next;
 
         if (sh->type != SHT_NOBITS)
             return read_block(file, sh->offset, sh->addr, sh->size, funcarray, DOSBase);
@@ -345,12 +323,13 @@ static int relocate
 
     struct symbol *symtab   = (struct symbol *)shsymtab->addr;
     struct relo   *rel      = (struct relo *)shrel->addr;
-    char          *section  = toreloc->addr;
 
-    /* this happens if the target section has no allocation. that can happen
-     * eg. with a .debug PROGBITS and a .rel.debug section */
-    if (section == NULL)
-        return 1;
+    /*
+     * Ignore relocs if the target section has no allocation. that can happen
+     * eg. with a .debug PROGBITS and a .rel.debug section
+     */
+    if (!(toreloc->flags & SHF_ALLOC))
+    	return 1;
 
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
@@ -359,10 +338,23 @@ static int relocate
 
     for (i=0; i<numrel; i++, rel++)
     {
-        struct symbol *sym = &symtab[ELF32_R_SYM(rel->info)];
-        ULONG *p = (ULONG *)&section[rel->offset];
-	ULONG  s;
+        struct symbol *sym;
+        ULONG *p;
+	IPTR s;
         ULONG shindex;
+
+#ifdef __arm__
+	/*
+	 * R_ARM_V4BX are actually special marks for the linker.
+	 * They even never have a target (shindex == SHN_UNDEF),
+	 * so we simply ignore them before doing any checks.
+	 */
+	if (ELF_R_TYPE(rel->info) == R_ARM_V4BX)
+	    continue;
+#endif
+
+	sym = &symtab[ELF_R_SYM(rel->info)];
+	p = toreloc->addr + rel->offset;
 
         if (sym->shindex != SHN_XINDEX)
             shindex = sym->shindex;
@@ -373,25 +365,25 @@ static int relocate
                 SetIoErr(ERROR_BAD_HUNK);
                 return 0;
             }
-            shindex = ((ULONG *)symtab_shndx->addr)[ELF32_R_SYM(rel->info)];
+            shindex = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel->info)];
         }
+
+	DB2(bug("[ELF Loader] Processing symbol %s\n", sh[SHINDEX(shsymtab->link)].addr + sym->name));
 
         switch (shindex)
         {
 
             case SHN_UNDEF:
-                D(bug("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
-		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name,
-		      (STRPTR)sh[SHINDEX(eh->int_shstrndx)].addr + toreloc->name));
+                D(bug("[ELF Loader] Undefined symbol '%s'\n",
+		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
                 return 0;
 
             case SHN_COMMON:
-                D(bug("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
-		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name,
-		      (STRPTR)sh[SHINDEX(eh->int_shstrndx)].addr + toreloc->name));
+                D(bug("[ELF Loader] COMMON symbol '%s'\n",
+		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
-
+		      
                 return 0;
 
             case SHN_ABS:
@@ -408,17 +400,17 @@ static int relocate
 		else
 		if (SysBase_sym == sym)
 		{
-		    SysBase_yes: s = (ULONG)&SysBase;
+		    SysBase_yes: s = (IPTR)&SysBase;
 		}
 		else
 		    SysBase_no:  s = sym->value;
                 break;
 
   	    default:
-		s = (ULONG)sh[SHINDEX(shindex)].addr + sym->value;
+		s = (IPTR)sh[SHINDEX(shindex)].addr + sym->value;
  	}
 
-        switch (ELF32_R_TYPE(rel->info))
+        switch (ELF_R_TYPE(rel->info))
         {
             #if defined(__i386__)
 
@@ -434,18 +426,25 @@ static int relocate
                 break;
 
             #elif defined(__x86_64__)
-		/* These weren't tested */
             case R_X86_64_64: /* 64bit direct/absolute */
-                *p = s + rel->addend;
+                *(UQUAD *)p = s + rel->addend;
                 break;
 
             case R_X86_64_PC32: /* PC relative 32 bit signed */
-                *p = s + rel->addend - (ULONG)p;
+                *(ULONG *)p = s + rel->addend - (IPTR) p;
+                break;
+
+            case R_X86_64_32:
+                *(ULONG *)p = (UQUAD)s + (UQUAD)rel->addend;
+                break;
+                
+            case R_X86_64_32S:
+                *(LONG *)p = (QUAD)s + (QUAD)rel->addend;
                 break;
 
             case R_X86_64_NONE: /* No reloc */
                 break;
-
+		
             #elif defined(__mc68000__)
 
             case R_68K_32:
@@ -464,14 +463,14 @@ static int relocate
             case R_PPC_ADDR32:
                 *p = s + rel->addend;
                 break;
-
+	
 	    case R_PPC_ADDR16_LO:
 		{
 		    unsigned short *c = (unsigned short *) p;
 		    *c = (s + rel->addend) & 0xffff;
 		}
 		break;
-
+	    
 	    case R_PPC_ADDR16_HA:
 		{
 		    unsigned short *c = (unsigned short *) p;
@@ -481,7 +480,7 @@ static int relocate
 			(*c)++;
 		}
 		break;
-
+	    
             case R_PPC_REL16_LO:
 		{
 		    unsigned short *c = (unsigned short *) p;
@@ -507,33 +506,59 @@ static int relocate
 	    case R_PPC_REL32:
 		*p = s + rel->addend - (ULONG) p;
 		break;
-
+	    
             case R_PPC_NONE:
                 break;
-
+            
             #elif defined(__arm__)
+            case R_ARM_CALL:
+	    case R_ARM_JUMP24:
+    	    case R_ARM_PC24:
+            {
+                /* On ARM the 24 bit offset is shifted by 2 to the right */
+                signed long offset = (*p & 0x00ffffff) << 2;
+                /* If highest bit set, make offset negative */
+                if (offset & 0x02000000)
+                    offset -= 0x04000000;
 
-            /*
-             * This has not been tested. Taken from ARMELF.pdf
-             * from arm.com page 33ff.
-             */
-            case R_ARM_PC24:
-                *p = s + rel->addend - (ULONG)p;
-                break;
+                offset += s - (uint32_t)p;
 
-            case R_ARM_ABS32:
-                *p = s + rel->addend;
-                break;
+                offset >>= 2;
+                *p &= 0xff000000;
+                *p |= offset & 0x00ffffff;
+            }
+            break;
 
-            case R_ARM_NONE:
-                break;
+    	    case R_ARM_MOVW_ABS_NC:
+    	    case R_ARM_MOVT_ABS:
+            {
+                signed long offset = *p;
+                offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
+                offset = (offset ^ 0x8000) - 0x8000;
+
+                offset += s;
+
+                if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
+                    offset >>= 16;
+
+                *p &= 0xfff0f000;
+                *p |= ((offset & 0xf000) << 4) | (offset & 0x0fff);
+            }
+            break;
+
+    	    case R_ARM_ABS32:
+        	*p += s;
+        	break;
+
+    	    case R_ARM_NONE:
+        	break;
 
             #else
             #    error Your architecture is not supported
             #endif
 
             default:
-                D(bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF32_R_TYPE(rel->info)));
+                D(bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF_R_TYPE(rel->info)));
                 SetIoErr(ERROR_BAD_HUNK);
 		return 0;
         }
@@ -555,29 +580,25 @@ BPTR InternalLoadSeg_ELF
     struct sheader   *sh;
     struct sheader   *symtab_shndx = NULL;
     BPTR   hunks         = 0;
-    BPTR  *next_hunk_ptr = MKBADDR(&hunks);
+    BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
+    ULONG  int_shnum;
 
     /* load and validate ELF header */
     if (!load_header(file, &eh, funcarray, DOSBase))
         return 0;
-
-    /* load section headers */
-    if (!(sh = load_block(file, eh.shoff, eh.int_shnum * eh.shentsize, funcarray, DOSBase)))
+    
+    int_shnum = read_shnum(file, &eh, funcarray, DOSBase);
+    if (!int_shnum)
         return 0;
 
-    /* load the string table */
-    STRPTR st = NULL;
-    struct sheader *shstr = sh + SHINDEX(eh.int_shstrndx);
-    if (shstr->size != 0)
-    {
-	st = MyAlloc(shstr->size, MEMF_ANY | MEMF_CLEAR);
-        read_block(file, shstr->offset, st, shstr->size, funcarray, DOSBase);
-    }
+    /* load section headers */
+    if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize, funcarray, DOSBase)))
+        return 0;
 
     /* Iterate over the section headers in order to do some stuff... */
-    for (i = 0; i < eh.int_shnum; i++)
+    for (i = 0; i < int_shnum; i++)
     {
         /*
            Load the symbol and string table(s).
@@ -621,37 +642,10 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Relocate the sections */
-    for (i = 0; i < eh.int_shnum; i++)
+    for (i = 0; i < int_shnum; i++)
     {
-        if
-        (
-            #if defined(__i386__)
-
-            sh[i].type == SHT_REL &&
-
-            #elif defined(__x86_64__)
-
-	    sh[i].type == SHT_RELA &&
-
-            #elif defined(__mc68000__)
-
-            sh[i].type == SHT_RELA &&
-
-            #elif defined(__ppc__) || defined(__powerpc__)
-
-            sh[i].type == SHT_RELA &&
-
-            #elif defined(__arm__)
-            #warning Missing code for ARM
-//            sh[i].type = SHT_
-
-            #else
-            #    error Your architecture is not supported
-            #endif
-
-            /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
-            sh[SHINDEX(sh[i].info)].addr
-        )
+        /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
+        if ((sh[i].type == AROS_ELF_REL) && sh[SHINDEX(sh[i].info)].addr)
         {
 	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
@@ -663,22 +657,7 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Everything is loaded now. Register the module at kernel.resource */
-    if (KernelBase) {
-        char buffer[512];
-
-        if (NameFromFH(file, buffer, 512))
-        {
-            char *nameptr = buffer;
-
-            /* First, go through the name, till end of the string */
-            while(*nameptr++);
-            /* Now, go back until either ":" or "/" is found */
-            while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
-                    nameptr--;
-
-            KrnRegisterModule(nameptr, sh, &eh);
-        }
-    }
+    register_elf(file, hunks, &eh, sh, DOSBase);
     goto end;
 
 error:
@@ -689,32 +668,29 @@ error:
     hunks = 0;
 
 end:
-
+    
     /* Clear the caches to let the CPU see the new data and instructions */
     {
         BPTR curr = hunks;
         while (curr)
         {
-             struct hunk *hunk = BPTR2HUNK(curr);
-
+             struct hunk *hunk = BPTR2HUNK(BADDR(curr));
+             
 	     CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
-
+             
              curr = hunk->next;
         }
     }
-
+    
     /* deallocate the symbol tables */
-    for (i = 0; i < eh.int_shnum; i++)
+    for (i = 0; i < int_shnum; i++)
     {
         if (((sh[i].type == SHT_SYMTAB) || (sh[i].type == SHT_STRTAB)) && (sh[i].addr != NULL))
             MyFree(sh[i].addr, sh[i].size);
     }
 
-    /* Free the string table */
-    MyFree(st, shstr->size);
-
     /* Free the section headers */
-    MyFree(sh, eh.int_shnum * eh.shentsize);
+    MyFree(sh, int_shnum * eh.shentsize);
 
     return hunks;
 }
