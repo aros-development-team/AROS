@@ -16,6 +16,7 @@
 #include <time.h>
 #include "os.h"
 #include "error.h"
+#include "errstrings.h"
 #include "volumes.h"
 
 void showPtrArgsText(struct AFSBase *afsbase, char *string, va_list args) {
