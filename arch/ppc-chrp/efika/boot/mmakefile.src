@@ -119,7 +119,7 @@ $(TARGET_ISO):
 		%mkdirs_q $(AROSDIR)/S
 		@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 		@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
-		@$(MKDIR) -p "$(PORTSDIR)"
+		@$(MKDIR) -p "$(DISTDIR)"
 		@mkisofs -f \
                 -o $@ \
                 -allow-leading-dots \
