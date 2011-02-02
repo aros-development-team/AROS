@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new process
     Lang: English
 */
+
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
@@ -23,16 +24,34 @@
 #include LC_LIBDEFS_FILE
 #include <string.h>
 
-static void KillCurrentProcess(void);
-struct Process *AddProcess(struct Process *process, STRPTR argPtr,
-ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
-
+static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLibrary *DOSBase);
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);
 
 BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct DosLibrary * DOSBase);
 
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
+
+#ifdef __m68000
+
+/* On m68k CPU we support old BCPL programs */
+
+extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase);
+extern void BCPL_Cleanup(struct Process *me);
+
+#else
+
+static inline APTR BCPL_Setup(struct Process *process , BPTR segList, APTR entry, APTR DOSBase)
+{
+     /* this points to segarray, not seglist, check BCPL_Setup() and Guru Book */
+    process->pr_SegList = segList;
+
+    return entry ? entry : (BPTR *)BADDR(segList) + 1;
+}
+
+#define BCPL_Cleanup(pr)
+
+#endif
 
 #include <aros/debug.h>
 
@@ -118,6 +137,15 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	       { TAG_END    	  , 0           	    	}
     };
 
+    struct TagItem tasktags[] =
+    {
+    	{TASKTAG_ARG1, 0},
+	{TASKTAG_ARG2, 0},
+	{TASKTAG_ARG3, 0},
+	{TASKTAG_ARG4, (IPTR)DOSBase},
+	{TAG_DONE    , 0}
+    };
+
     /* C has no exceptions. This is a simple replacement. */
 #define ERROR_IF(a)  if(a) goto error  /* Throw a generic error. */
 #define ENOMEM_IF(a) if (a) goto enomem /* Throw out of memory. */
@@ -137,7 +165,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	}
     }
 
-    ApplyTagChanges(defaults, tags);
+    ApplyTagChanges(defaults, (struct TagItem *)tags);
 
     /* If both the seglist and the entry are specified, make sure that the entry resides in the seglist */
     if (defaults[0].ti_Data && defaults[1].ti_Data)
@@ -207,7 +235,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         BPTR *oldpath = NULL;
         
 	/* Don't forget to pass tags to AllocDosObject() */
-	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, tags);
+	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, (struct TagItem *)tags);
 	ENOMEM_IF(cli == NULL);
 
 	cli->cli_DefaultStack = (defaults[9].ti_Data + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
@@ -428,19 +456,17 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
        not to. */
 
     if (argsize) argsize--;
-    
-    if
-    (
-	   	
-        AddProcess
-        (
-            process, argptr, argsize,
-	    defaults[1].ti_Data ?
-	    (APTR)defaults[1].ti_Data:
-	    (APTR)((BPTR *)BADDR(defaults[0].ti_Data) + 1),
-	    KillCurrentProcess, DOSBase
-        )
-    )
+
+    tasktags[0].ti_Data = (IPTR)argptr;
+    tasktags[1].ti_Data = argsize;
+
+    tasktags[2].ti_Data = (IPTR)BCPL_Setup(process, (BPTR)defaults[0].ti_Data, (APTR)defaults[1].ti_Data, DOSBase);
+    if (!tasktags[2].ti_Data)
+    	goto enomem;
+
+    addprocesstoroot(process, DOSBase);
+
+    if (NewAddTask(&process->pr_Task, DosEntry,	NULL, tasktags))
     {
 	/* NP_Synchronous */
 	if (defaults[19].ti_Data)
@@ -455,6 +481,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     /* Fall through */
 enomem:
+
+    BCPL_Cleanup(process);
+
     if (__is_process(me))
     {
 	SetIoErr(ERROR_NO_FREE_STORE);
@@ -618,25 +647,13 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
     return TRUE;
 }
 
-/* FIXME: Is there a better way to pass DOSBase to KillCurrentProcess ?
- */
-static struct DosLibrary *DOSBase;
-
-static int SetDosBase(LIBBASETYPEPTR __DOSBase)
+static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLibrary *DOSBase)
 {
-    D(bug("SetDosBase\n"));
-    DOSBase = (struct DosLibrary *)__DOSBase;
-    return TRUE;
-}
+    struct Process *me = (struct Process *)FindTask(NULL);
+    LONG result;
 
-/* At pri -1 so it is executed before the DosInit in dos_init.c */
-ADD2INITLIB(SetDosBase, -1)
-
-static void KillCurrentProcess(void)
-{
-    struct Process *me;
-
-    me = (struct Process *)FindTask(NULL);
+    /* Call entry point of our process, remembering stack in its pr_ReturnAddr */
+    result = CallEntry(argPtr, argSize, initialPC, me);
 
     /* Call user defined exit function before shutting down. */
     if (me->pr_ExitCode != NULL)
@@ -651,7 +668,7 @@ static void KillCurrentProcess(void)
 	   support both register and stack parameters at once, so we use 
 	   the stack only. This oughta be fixed somehow.
         */
-	me->pr_ExitCode(me->pr_Task.tc_UserData, me->pr_ExitData);
+	me->pr_ExitCode(result, me->pr_ExitData);
     }
 
     P(kprintf("Deleting local variables\n"));
@@ -691,8 +708,17 @@ static void KillCurrentProcess(void)
 
     if (me->pr_Flags & PRF_FREESEGLIST)
     {
+#ifdef __m68000
+    	ULONG *segarray = BADDR(me->pr_SegList);
+
+    	if (segarray[3])
+	    UnLoadSeg(segarray[3]);
+	segarray[3] = 0;
+#else
 	UnLoadSeg(me->pr_SegList);
+#endif
     }
+    BCPL_Cleanup(me);
 
     P(kprintf("Unlocking current dir\n"));
 
@@ -726,8 +752,4 @@ static void KillCurrentProcess(void)
     }
 
     removefromrootnode(me, DOSBase);
-
-    RemTask(NULL);
-    
-    CloseLibrary((struct Library * )DOSBase);
 }

@@ -6,7 +6,7 @@ BCPL_AFILES  := bcpl bcpl_writef
 
 CFUNCS  := \
 	addbuffers adddosentry assignlock changemode close  \
-	createdir createnewproc deletefile duplock duplockfromfh \
+	createdir deletefile duplock duplockfromfh \
 	endnotify errorreport exall exallend examine examinefh  \
 	exnext finddosentry getdeviceproc info isfilesystem \
 	isinteractive lock namefrom namefromfh namefromlock \

@@ -10,7 +10,7 @@ FILES	  := errorlist lddemon runprocess iofs_sendpkt \
 	     patternmatching internalseek internalflush \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
-FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
+FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     allocdosobject assignadd assignlate assignlock assignpath \
 	     attemptlockdoslist changemode checksignal cli cliinitnewcli \
 	     cliinitrun close comparedates createdir createnewproc \

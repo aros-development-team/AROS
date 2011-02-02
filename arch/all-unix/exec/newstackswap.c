@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NewStackSwap() - Call a function with swapped stack.
@@ -31,9 +31,10 @@ static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
     int i;
 
     bug("[NewStackSwap] Stack swapping done\n");
-    bug("[NewStackSwap] Function address: 0x%P\n", func);
+    bug("[NewStackSwap] SP at 0x%p\n", AROS_GET_SP);
+    bug("[NewStackSwap] Function address: 0x%p\n", func);
     for (i = 0; i < 8; i++)
-    	bug("[NewStackSwap] args[%u] = 0x%P\n", i, (void *)args[i]);
+    	bug("[NewStackSwap] args[%u] = 0x%p\n", i, (void *)args[i]);
 #endif
 
     *ret = func(args[0], args[1], args[2], args[3],
@@ -53,10 +54,10 @@ AROS_LH3(IPTR, NewStackSwap,
 
     struct Task *me = FindTask(NULL);
     IPTR ret;
-    APTR splower, spupper;
+    volatile APTR splower, spupper;
     ucontext_t ucx, ucx_return;
 
-    D(bug("NewStackSwap(0x%P, 0x%P, 0x%P, 0x%P)\n", sss, entry, args, SysBase));
+    D(bug("NewStackSwap(0x%p, 0x%p, 0x%p, 0x%p)\n", sss, entry, args, SysBase));
     DB2(bug("[NewStackSwap] Context size: %u\n", sizeof(ucontext_t)));
 
     Disable();  /* To avoid random crashes during startup */
@@ -64,7 +65,7 @@ AROS_LH3(IPTR, NewStackSwap,
     AROS_HOST_BARRIER
     Enable();
 
-    D(bug("[NewStackSwap] getcontext() done, arguments: 0x%P, 0x%P, 0x%P, 0x%P\n", sss, entry, args, SysBase));
+    D(bug("[NewStackSwap] getcontext() done, arguments: 0x%p, 0x%p, 0x%p, 0x%p\n", sss, entry, args, SysBase));
 
     /* Prepare the alternate stack */
     ucx.uc_stack.ss_sp    = sss->stk_Lower;
@@ -72,12 +73,12 @@ AROS_LH3(IPTR, NewStackSwap,
     ucx.uc_stack.ss_flags = SS_ONSTACK;
     ucx.uc_link           = &ucx_return;
 
-    D(bug("[NewStackSwap] Prepared stack: 0x%P - 0x%P (size %u bytes)\n", sss->stk_Lower, sss->stk_Pointer, ucx.uc_stack.ss_size));
+    D(bug("[NewStackSwap] Prepared stack: 0x%p - 0x%p (size %u bytes)\n", sss->stk_Lower, sss->stk_Pointer, ucx.uc_stack.ss_size));
 
     PD(SysBase).SysIFace->makecontext(&ucx, (void *(*)()) trampoline, 3, entry, &ret, args->Args);
     AROS_HOST_BARRIER
-    
-    D(bug("[NewStackSwap] Prepared context, doing stack swap\n"));
+
+    DB2(bug("[NewStackSwap] Prepared context, doing stack swap\n"));
 
     /* Remember original stack limits */
     splower = me->tc_SPLower;

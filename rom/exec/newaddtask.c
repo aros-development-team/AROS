@@ -145,16 +145,13 @@
         task->tc_SPReg = (UBYTE *)(task->tc_SPLower) - SP_OFFSET;
 #endif
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    if ((IPTR)task->tc_SPReg & 0xf)
-    {
-        D(bug("[exec] NewAddTask with unaligned stack pointer! fixing 0x%P->0x%P\n",
-              task->tc_SPReg, (IPTR)task->tc_SPReg & ~0x0F));
+#ifdef AROS_STACKALIGN
+    D(if ((IPTR)task->tc_SPReg & (AROS_STACKALIGN - 1))
+        bug("[exec] NewAddTask with unaligned stack pointer (0x%p)! Fixing...\n", task->tc_SPReg);)
 
-        task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~0x0F);
-    }
+    task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~(AROS_STACKALIGN - 1));
 #endif
-    D(bug("[exec] NewAddTask: SPLower: 0x%P SPUpper: 0x%P SP: 0x%P\n",
+    D(bug("[exec] NewAddTask: SPLower: 0x%P SPUpper: 0x%p SP: 0x%p\n",
           task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg));
 
 #if AROS_STACK_DEBUG

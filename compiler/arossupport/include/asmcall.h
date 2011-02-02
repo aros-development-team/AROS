@@ -765,6 +765,15 @@ typedef unsigned int (*ULONG_FUNC)();
 #   define AROS_USERFUNC_EXIT }}
 #endif
 
+#ifndef AROS_ENTRY
+#define AROS_ENTRY(t, n, a1, a2, bt, bn)	\
+    __AROS_UFH_PREFIX t n (			\
+    __AROS_UFHA(a1),				\
+    __AROS_UFHA(a2),				\
+    __AROS_UFHA(bt, bn, A6)			\
+    ) {
+#endif
+
 /******************************************************************************
 *****  ENDE aros/asmcall.h
 ******************************************************************************/

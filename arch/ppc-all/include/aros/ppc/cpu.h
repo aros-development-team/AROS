@@ -1,7 +1,7 @@
 #ifndef AROS_PPC_CPU_H
 #define AROS_PPC_CPU_H
 /*
-    Copyright � 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -23,6 +23,7 @@
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	  16 /* Worst case alignment */
+#define AROS_STACKALIGN		  16 /* FIXME: is this really needed ? */
 
 /*
  * PowerPC note:
@@ -137,11 +138,6 @@ struct JumpVec
    other targets the standard ABI rules the AROS world anyway...
 */
 #undef UseExecstubs
-
-/* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
-   recognise them */
-#undef PassThroughErrnos
-#define PassThroughErrnos 0x40000000
 
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \

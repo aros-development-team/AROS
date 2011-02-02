@@ -4,7 +4,7 @@
 #include <aros/config.h>
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -42,9 +42,6 @@
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
 #define AROS_GET_SP ({register unsigned char * sp asm("%sp"); sp;})
-
-/* ??? */
-#define SP_OFFSET 0
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
@@ -131,12 +128,6 @@ do                                                       \
 */
 #undef UseExecstubs
 //#define UseExecstubs 1
-
-/* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
-   recognise them */
-#undef PassThroughErrnos
-//#define PassThroughErrnos 0x40000000
-#define PassThroughErrnos 0
 
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \
@@ -390,6 +381,13 @@ extern void aros_not_implemented ();
 		t n (__AROS_LPAQUAD(a1))
 #define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s) \
 		t n (__AROS_LPAQUAD(a1), __AROS_LPAQUAD(a2))
+
+#define AROS_ENTRY(t, n, a1, a2, bt, bn)	\
+    __AROS_UFH_PREFIX t n (			\
+    __AROS_UFHA(a1),				\
+    __AROS_UFHA(a2),				\
+    ) {						\
+    	bt bn = *((bt *)4);
 
 #endif /* AROS_FLAVOUR_NATIVE */
 
