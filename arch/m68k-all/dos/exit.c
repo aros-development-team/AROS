@@ -30,7 +30,7 @@ AROS_LH1(void, Exit,
  * A5 - BCPL 'jsr' routine
  * A6 - BCPL 'rts' routine
  */
-static ULONG CallEntry(ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me)
+ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me)
 {
     ULONG ret;
     APTR pr_GlobVec = me->pr_GlobVec;
