@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <proto/exec.h>
@@ -30,12 +30,13 @@
 
 /*  FUNCTION
         Changes the buffering modes and buffer size for a filehandle.
-        With buff == NULL, the current buffer will be deallocated and a
-        new one of (approximately) size will be allocated.  If buffer is
-        non-NULL, it will be used for buffering and must be at least
-        max(size,208) bytes long, and MUST be longword aligned.  If size
-        is -1, then only the buffering mode will be changed.
-    
+        With buff == NULL, the current buffer will be deallocated (if it
+        was not a user-supplied one) and a new one of (approximately) size
+        will be allocated. If buffer is non-NULL, it will be used for
+        buffering and must be at least max(size,208) bytes long, and MUST
+        be longword aligned. If size is -1, then only the buffering mode
+        will be changed.
+
     INPUTS
         file - Filehandle
         buff - buffer pointer for buffered I/O or NULL.
@@ -81,27 +82,8 @@
         }
 
         vbuf_free(fh);
-
-        if (NULL != buff)
-        {
-            fh->fh_Size = size;
-            if(fh->fh_Flags & FHF_WRITE)
-            {
-                fh->fh_Pos = fh->fh_Buf = buff;
-                fh->fh_End = fh->fh_Buf + fh->fh_Size;
-            }
-            else
-            {
-                fh->fh_Pos = fh->fh_Buf = fh->fh_End = buff;
-            }
-        }
-    	else
-    	{
-            if (NULL == vbuf_alloc(fh, size, DOSBase))
-            {
-                return(EOF);
-            }
-    	}
+        if (!vbuf_alloc(fh, buff, size))
+            return EOF;
     }
 
     return 0;
@@ -113,29 +95,33 @@
 void
 vbuf_free(FileHandlePtr fh)
 {
-    /* free buffer allocated by system */
     if (fh->fh_Flags & FHF_BUF)
     {
-        FreeMem(fh->fh_Buf, fh->fh_Size);
-        
+	/* free buffer allocated by system */
+    	if (fh->fh_Flags & FHF_OWNBUF)
+	    FreeMem(fh->fh_Buf, fh->fh_Size);
+
         fh->fh_Buf = fh->fh_Pos = fh->fh_End = NULL;
         fh->fh_Size = 0;
     }
 
-    fh->fh_Flags &= ~FHF_BUF;
+    fh->fh_Flags &= ~(FHF_BUF | FHF_OWNBUF);
 }
 
-
-APTR
-vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase)
+APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
 {
-        STRPTR
-    buf = AllocMem(size, MEMF_ANY);
+    ULONG flags = FHF_BUF;
+
+    if (!buf)
+    {
+    	buf = AllocMem(size, MEMF_ANY);
+    	flags |= FHF_OWNBUF;
+    }
 
     if (NULL != buf)
     {
         fh->fh_Size = size;
-        fh->fh_Flags |= FHF_BUF;
+        fh->fh_Flags |= flags;
 
         if(fh->fh_Flags & FHF_WRITE)
         {
@@ -148,5 +134,5 @@ vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase)
         }
     }
 
-    return(fh->fh_Buf);
+    return buf;
 }

@@ -61,14 +61,13 @@
 {
     LONG ret;
     APTR oldReturnAddr = proc->pr_ReturnAddr; /* might be changed by CallEntry */
-    struct Process *me = FindTask(NULL);
     struct StackSwapArgs args = {{
 	(IPTR) argptr,
-	argsize == -1 ? strlen(argptr) : argsize, /* Compute argsize automatically */
+	argsize,
 	(IPTR) entry,
-	(IPTR) me
+	(IPTR) proc
     }};
-    
+
     /* Call the function with the new stack */
     ret = NewStackSwap(sss, CallEntry, &args);
 
