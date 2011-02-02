@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display an alert.
@@ -65,6 +65,7 @@
 
     struct Task *task = SysBase->ThisTask;
     struct IntETask *iet = NULL;
+    int supervisor = KrnIsSuper();
 
     D(bug("[exec] Alert 0x%08X\n", alertNum));
 
@@ -76,18 +77,32 @@
 	if (!iet->iet_AlertLocation)
 	{
 	    /* If no, the location is where we were called from */
-	    iet->iet_AlertLocation = __builtin_return_address(0);
-	    /*
-	     * And backtrace starts at caller's frame.
-	     * On ARM we don't have frame pointer so we can't do backtrace.
-	     * __builtin_frame_address(1) will return garbage, so don't do this.
-	     */
+	    if (supervisor && ((alertNum & ~AT_DeadEnd) == AN_StackProbe))
+	    {
+	    	/*
+	    	 * Special case: AN_StackProbe issued by kernel's task dispatcher.
+	    	 * Pick up data from task's context.
+	    	 */
+		struct ExceptionContext *ctx = iet->iet_Context;
+
+		iet->iet_AlertLocation = (APTR)ctx->PC;
+	    	iet->iet_AlertStack    = (APTR)ctx->FP;
+	    }
+	    else
+	    {
+	    	iet->iet_AlertLocation = __builtin_return_address(0);
+	    	/*
+	    	 * And backtrace starts at caller's frame.
+	    	 * On ARM we don't have frame pointer so we can't do backtrace.
+	    	 * __builtin_frame_address(1) will return garbage, so don't do this.
+	    	 */
 #ifdef __arm__
-	    iet->iet_AlertStack = NULL;
+	    	iet->iet_AlertStack = NULL;
 #else
-	    iet->iet_AlertStack = __builtin_frame_address(1);
+	    	iet->iet_AlertStack = __builtin_frame_address(1);
 #endif
-	    D(bug("[Alert] Previous frame 0x%p, caller 0x%p\n", iet->iet_AlertStack, iet->iet_AlertLocation));
+	    	D(bug("[Alert] Previous frame 0x%p, caller 0x%p\n", iet->iet_AlertStack, iet->iet_AlertLocation));
+	    }
 	}
     }
 
@@ -95,7 +110,7 @@
      * If we are running in user mode we should first try to report a problem
      * using Intuition display.
      */
-    if (!KrnIsSuper())
+    if (!supervisor)
     {
         alertNum = Exec_UserAlert(alertNum, SysBase);
 	if (!alertNum)
