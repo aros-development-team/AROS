@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Default trap handler
@@ -14,36 +14,6 @@
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
-
-/* Unify PC and FP register names for various CPU contexts */
-#ifdef __i386__
-#define PC eip
-#define FP ebp
-#endif
-#ifdef __x86_64__
-#define PC rip
-#define FP rbp
-#endif
-#ifdef __mc68000__
-#define PC pc
-#define FP a[6]
-#endif
-#ifdef __powerpc__
-#define PC ip
-#define FP gpr[1]
-#endif
-#ifdef __ppc__
-#define PC ip
-#define FP gpr[1]
-#endif
-#ifdef __arm__
-#define PC pc
-#define FP lr
-#endif
-
-#ifndef PC
-#error unsupported CPU type
-#endif
 
 /* In original AmigaOS the trap handler is entered in supervisor mode with the
  * following on the supervisor stack:

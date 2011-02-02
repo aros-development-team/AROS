@@ -2,7 +2,7 @@
 #define _EXEC_UTIL_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility functions for exec.
@@ -16,6 +16,36 @@
 #include <stdarg.h>
 
 #include "exec_intern.h"
+
+/* PC and FP registers for various CPUs */
+#ifdef __i386__
+#define PC eip
+#define FP ebp
+#endif
+#ifdef __x86_64__
+#define PC rip
+#define FP rbp
+#endif
+#ifdef __mc68000__
+#define PC pc
+#define FP a[6]
+#endif
+#ifdef __powerpc__
+#define PC ip
+#define FP gpr[1]
+#endif
+#ifdef __ppc__
+#define PC ip
+#define FP gpr[1]
+#endif
+#ifdef __arm__
+#define PC pc
+#define FP lr
+#endif
+
+#ifndef PC
+#error unsupported CPU type
+#endif
 
 #ifndef EXEC_TASKS_H
 struct Task;
