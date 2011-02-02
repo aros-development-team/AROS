@@ -166,39 +166,6 @@ extern void aros_not_implemented ();
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
 
-/* Special stack-swapping call to a user function,
- * used in rom/dos/runprocess.c
- */
-#define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
-({\
-    long _n1 = (long)(n1);\
-    long _n2 = (long)(n2);\
-    long _n3 = (long)(n3);\
-    long _re;\
-    __asm__ __volatile__(\
-	"move.l %%sp,%%a0\n\t"\
-	"movem.l %%d2-%%d7/%%a2-%%a6,%%a0@-\n\t"\
-	"move.l %5,%%a0@-\n\t"\
-	"move.l %4,%%a0@-\n\t"\
-	"move.l %3,%%a0@-\n\t"\
-	"lea.l  %%a0@(-4),%%a1\n\t"\
-	"move.l %%a1,%1\n\t"\
-	"move.l %2,%%a1\n\t"\
-	"move.l %%a0,%%sp\n\t"\
-	"move.l %%sp@(0),%%a0\n\t" \
-	"move.l %%sp@(4),%%d0\n\t" \
-	"jsr    (%%a1)\n\t"\
-	"lea.l  %%sp@(12),%%sp\n\t"\
-	"movem.l %%sp@+,%%d2-%%d7/%%a2-%%a6\n\t"\
-	"movl   %%d0,%0"\
-	: "=g" (_re), "=m"(*(APTR *)p)\
-	: "m" (n), "m"(_n1), "m"(_n2), "m"(_n3)\
-	: "cc", "memory", "%d0", "%a0", "%a1" );\
-    (t)_re;\
-})
-#define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
-
-
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 
 #define AROS_COMPAT_SETD0(x)	do { } while (0)

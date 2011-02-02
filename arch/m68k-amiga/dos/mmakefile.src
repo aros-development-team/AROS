@@ -19,8 +19,7 @@ CFUNCS  := \
 	replypkt
 
 CFILES  := $(CFUNCS) \
-	helper internalopen internalseek \
-	packethelper runprocess \
+	helper internalopen internalseek packethelper \
 	$(BCPL_CFILES)
 
 AFILES := $(BCPL_AFILES)
