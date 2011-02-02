@@ -77,7 +77,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[exec] Call NewAddTask (0x%P (\"%s\"), 0x%P, 0x%P)\n"
+    D(bug("[exec] Call NewAddTask (0x%p (\"%s\"), 0x%p, 0x%p)\n"
         , task
         , task->tc_Node.ln_Name
         , initialPC
@@ -151,7 +151,7 @@
 
     task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~(AROS_STACKALIGN - 1));
 #endif
-    D(bug("[exec] NewAddTask: SPLower: 0x%P SPUpper: 0x%p SP: 0x%p\n",
+    D(bug("[exec] NewAddTask: SPLower: 0x%p SPUpper: 0x%p SP: 0x%p\n",
           task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg));
 
 #if AROS_STACK_DEBUG
