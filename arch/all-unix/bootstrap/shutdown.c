@@ -6,6 +6,19 @@
 
 #define D(x) 
 
+#ifdef __i386__
+/*
+ * MacOS X x86 ABI says that stack must be aligned at 16 bytes boundary.
+ * Otherwise dyld's lazy binding (dyld_stub_binder) can crash at first.
+ * See http://www.opensource.apple.com/source/dyld/dyld-132.13/src/dyld_stub_binder.s
+ * Luckily this doesn't seem to happen when functions are linked in explicitly using dlsym().
+ * On other systems this at least won't harm.
+ */
+#define __stackalign __attribute__((force_align_arg_pointer))
+#else
+#define __stackalign
+#endif
+
 static char **Kernel_ArgV;
 
 void SaveArgs(char **argv)
@@ -13,7 +26,7 @@ void SaveArgs(char **argv)
     Kernel_ArgV = argv;
 }
 
-void Host_Shutdown(unsigned char warm)
+__stackalign void Host_Shutdown(unsigned char warm)
 {
     /* Warm reboot is not implemented yet */
     if (warm)
