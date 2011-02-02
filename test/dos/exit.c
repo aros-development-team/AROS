@@ -22,9 +22,17 @@ AROS_ENTRY(__startup static int, Start,
 {
     AROS_USERFUNC_INIT
 
+    struct Process *me;
+    IPTR *stackbase;
+
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
     if (!DOSBase)
     	return RETURN_FAIL;
+
+    /* Let's check correctness of stack size passing */
+    me = (struct Process *)FindTask(NULL);
+    stackbase = me->pr_ReturnAddr;
+    Printf("Stack size is set to %ld (should be %ld)\n", stackbase[0], me->pr_Task.tc_SPUpper - me->pr_Task.tc_SPLower);
 
     test();
     
