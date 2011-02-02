@@ -86,7 +86,7 @@
 
     struct Task *t;
     
-    D(bug("Call AddTask (%08lx (\"%s\"), %08lx, %08lx)\n"
+    D(bug("[exec] Call AddTask (%08lx (\"%s\"), %08lx, %08lx)\n"
 	, task
 	, task->tc_Node.ln_Name
 	, initialPC
