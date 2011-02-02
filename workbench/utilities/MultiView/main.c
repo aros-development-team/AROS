@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -570,7 +570,7 @@ void AddDTOToWin(void)
 				 TAG_DONE);
 
     AddDTObject(win, NULL, dto, -1);
-    RefreshDTObjects(dto, win, NULL, NULL); // seems to be needed by text datatype to render more than first line at start...
+    RefreshDTObjects(dto, win, NULL, 0); // seems to be needed by text datatype to render more than first line at start...
 }
 
 /*********************************************************************************************/
@@ -767,9 +767,29 @@ static void OpenDTO(void)
 	    AddDTOToWin();
 	    SetWindowTitles(win, objnamebuffer, (UBYTE *)~0);
 	    SetMenuFlags();
+
+	    // adopt object to current settings
+	    if (dto_subclass_gid == GID_TEXT)
+	    {
+		SetDTAttrs (dto, NULL, NULL,
+			    TDTA_WordWrap, tdt_text_wordwrap,
+			    TAG_DONE);
+		DoLayout(TRUE);
+	    }
+	    else if (dto_subclass_gid == GID_PICTURE)
+	    {
+		// zoom has been set to 1 above
+		FitToWindow();
+		SetDTAttrs (dto, NULL, NULL,
+			    PDTA_DestMode, (pdt_force_map) ? PMODE_V42 : PMODE_V43,
+			    TAG_DONE);
+		SetDTAttrs (dto, NULL, NULL,
+			    PDTA_DitherQuality, pdt_pict_dither ? 4 : 0,
+			    TAG_DONE);
+		DoLayout(TRUE);
+	    }
 	}
     }
-    
 }
 
 /*********************************************************************************************/
@@ -1315,7 +1335,7 @@ static void HandleAll(void)
 				    }
 				#endif
 				    {
-					#warning TODO: change mouse pointer to crosshair
+					//TODO: change mouse pointer to crosshair
 				    }
 				    break;
 
@@ -1405,7 +1425,7 @@ static void HandleAll(void)
 				case MSG_MEN_PICT_DITHER:
 				    pdt_pict_dither = (item->Flags & CHECKED) ? TRUE : FALSE;
 				    SetDTAttrs (dto, NULL, NULL,
-						PDTA_DitherQuality, (item->Flags & CHECKED) ? 4 : 0,
+						PDTA_DitherQuality, pdt_pict_dither ? 4 : 0,
 						TAG_DONE);
 				    DoLayout(TRUE);
 				    break;
