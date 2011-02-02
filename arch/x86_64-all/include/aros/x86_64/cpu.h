@@ -23,6 +23,7 @@
 #define AROS_IPTRALIGN		   8 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   8 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
+#define AROS_STACKALIGN		  16 /* Clean stack alignment */
 
 /* define this if we have no support for linear varargs in the compiler */
 #define NO_LINEAR_VARARGS       1
@@ -63,9 +64,6 @@ register unsigned char * AROS_GET_SP __asm__("%rsp");
 
 /*do we need a function attribute to get parameters on the stack? */
 #define __stackparm
-
-/* ??? */
-#define SP_OFFSET 0
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
@@ -135,11 +133,6 @@ struct JumpVec
 #undef UseExecstubs
 #define UseExecstubs 1
 
-/* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
-   recognise them */
-#undef PassThroughErrnos
-#define PassThroughErrnos 0x40000000
-
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \
 	((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
@@ -196,27 +189,5 @@ extern void _aros_not_implemented (char *);
 #define __AROS_UFP_PREFIX   /* eps */
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
-
-
-#define __UFC3R(_t,_n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
-({\
-    long _n1 = (long)(n1);\
-    long _n2 = (long)(n2);\
-    long _n3 = (long)(n3);\
-    long _re;\
-    __asm__ __volatile__(\
-	"movq   %5,%%rdx\n\t"\
-	"movq   %4,%%rsi\n\t"\
-	"movq   %3,%%rdi\n\t"\
-	"movq   %2,%%rcx\n\t"\
-	"movl   %%esp,%1\n\t"\
-	"call  *%%rcx\n\t"\
-	"movl   %%eax,%0"\
-	: "=m"(_re), "=m"(*(APTR *)p)\
-	: "g"(_n), "g"(_n1), "g"(_n2), "g"(_n3)\
-	: "cc", "memory", "%rcx", "%rax", "%rdx", "%rsi", "%rdi" );\
-    (_t)_re;\
-})
-#define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
 
 #endif /* AROS_X86_64_CPU_H */

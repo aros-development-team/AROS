@@ -1,0 +1,9 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/rom/dos
+
+%build_archspecific \
+  mainmmake=kernel-dos maindir=rom/dos \
+  arch=m68k \
+  files="exit"

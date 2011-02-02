@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ShutdownA() - Shut down the operating system.
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <proto/exec.h>
 
@@ -64,7 +65,7 @@
            In order to avoid it we Disable() */
 	Disable();
 
-	D(bug("[exec] SysBase 0x%P, reboot function: 0x%P\n", SysBase, PD(SysBase).Reboot));
+	D(bug("[exec] SysBase 0x%p, reboot function: 0x%p\n", SysBase, PD(SysBase).Reboot));
 	PD(SysBase).Reboot(0);
 	AROS_HOST_BARRIER
 

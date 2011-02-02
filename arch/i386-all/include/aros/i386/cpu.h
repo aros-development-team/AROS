@@ -1,7 +1,7 @@
 #ifndef AROS_I386_CPU_H
 #define AROS_I386_CPU_H
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -25,6 +25,7 @@
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   4 /* Worst case alignment */
+#define AROS_STACKALIGN		  16 /* Clean stack must be aligned to this */
 
 #define SIZEOF_FPU_STATE	512  /* 108 bytes are needed to store FPU, 512 bytes are needed to store SSE */
 #define SIZEOF_ALL_REGISTERS	(15*4 + SIZEOF_FPU_STATE + 16)  /* Size of iet_Context */
@@ -49,9 +50,6 @@
 #ifndef __TINYC__
 #define AROS_GET_SP ({register unsigned char *sp asm("%esp"); sp;})
 #endif
-
-/* ??? */
-#define SP_OFFSET 0
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
@@ -120,14 +118,6 @@ struct JumpVec
 #undef UseExecstubs
 #define UseExecstubs 1
 
-/* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
-   recognise them */
-/*
-  NOT DO THIS ON NATIVE
-#undef PassThroughErrnos
-#define PassThroughErrnos 0x40000000
-*/
-
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \
 	((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
@@ -189,31 +179,5 @@ extern void aros_not_implemented ();
 #define __AROS_UFP_PREFIX   /* eps */
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
-
-
-#define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
-({\
-    long _n1 = (long)(n1);\
-    long _n2 = (long)(n2);\
-    long _n3 = (long)(n3);\
-    long _re;\
-    __asm__ __volatile__(\
-    	"movl   %%esp,%1\n\t"\
-	"movl   %5,%%eax\n\t"\
-	"pushl  %%eax\n\t"\
-	"movl   %4,%%eax\n\t"\
-	"pushl  %%eax\n\t"\
-	"movl   %3,%%eax\n\t"\
-	"pushl  %%eax\n\t"\
-	"movl   %2,%%eax\n\t"\
-	"call   *%%eax\n\t"\
-	"lea    12(%%esp),%%esp\n\t"\
-	"movl   %%eax,%0"\
-	: "=g"(_re), "=m"(*(APTR *)p)\
-	: "ad"(n), "g"(_n1), "g"(_n2), "g"(_n3)\
-	: "cc", "memory", "%eax" );\
-    (t)_re;\
-})
-#define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
 
 #endif /* AROS_I386_CPU_H */
