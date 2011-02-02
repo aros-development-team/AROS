@@ -77,6 +77,14 @@ struct vfp
     struct DosLibrary *DOSBase;
 };
 
+/* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
+#define FHF_WRITE   0x80000000
+#define FHF_BUF     1
+#define FHF_APPEND  2
+#define FHF_LINEBUF 4
+#define FHF_NOBUF   8
+#define FHF_OWNBUF  16
+
 #define FPUTC(f,c) \
 (((struct FileHandle *)BADDR(f))->fh_Flags&FHF_WRITE&& \
  ((struct FileHandle *)BADDR(f))->fh_Pos<((struct FileHandle *)BADDR(f))->fh_End? \
@@ -252,7 +260,7 @@ typedef struct FileHandle* FileHandlePtr;
 
 void vbuf_free(FileHandlePtr fh);
 
-APTR vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase);
+APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size);
 
 LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase);
 

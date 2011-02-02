@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -370,13 +370,6 @@ struct FileHandle
 #ifndef AROS_DOS_PACKETS
 #define  fh_Arg1  fh_CompatibilityHack
 #endif
-
-/* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
-#define FHF_WRITE   0x80000000
-#define FHF_BUF     1
-#define FHF_APPEND  2
-#define FHF_LINEBUF 4
-#define FHF_NOBUF   8
 
 /* Structure of a lock. This is provided as it may be required internally by
  * packet-based filesystems, but it is not used by dos.library and the rest of

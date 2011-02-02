@@ -78,7 +78,7 @@ struct StackState
 
     /* Disable() because we may have to swap stack limits */
     Disable();
-    longjmp(&ss->state, 1);
+    longjmp(ss->state, 1);
 
     AROS_LIBFUNC_EXIT
 } /* Exit */
@@ -96,7 +96,7 @@ ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *m
     ss.stackaddr = me->pr_Task.tc_SPLower;
     me->pr_ReturnAddr = &ss;
 
-    if (setjmp(&ss.state))
+    if (setjmp(ss.state))
     {
     	/*
     	 * We came here from Exit().

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Lang: english
@@ -103,7 +103,7 @@ FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOS
         /* Is there a buffer? */
         if (fh->fh_Buf == NULL)
         {
-            if (vbuf_alloc(fh, IOBUFSIZE, DOSBase) == NULL)
+            if (vbuf_alloc(fh, NULL, IOBUFSIZE) == NULL)
             {
                 return(EOF);
             }

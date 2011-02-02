@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -105,7 +105,7 @@
         /* Is there a buffer? */
         if(fh->fh_Buf == NULL)
         {
-            if (NULL == vbuf_alloc(fh, IOBUFSIZE, DOSBase))
+            if (NULL == vbuf_alloc(fh, NULL, IOBUFSIZE))
             {
                 return(EOF);
             }
