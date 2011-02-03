@@ -7,6 +7,8 @@
     Char: ISO 8859-2
 */
 
+/*  Language file for the Hungarian language. Collation tables need to be implemented */
+
 #include <exec/types.h>
 #include <aros/system.h>
 #include <exec/resident.h>
@@ -22,7 +24,7 @@
 #define LANGSTR     "magyar"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
 #define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: magyar.language 41.0 (25.07.1999)"
+#define LANGTAG     "\0$VER: "LANGSTR".language 41.0 (25.07.1999)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -299,7 +301,7 @@ const STRPTR __magyar_strings[] =
     "Délelôtt", "Délután",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
     "\"", "\"",
