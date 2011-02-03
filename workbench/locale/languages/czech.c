@@ -24,7 +24,7 @@
 #define LANGSTR     "czech"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
 #define LANGREV     1           /* Revision number of language */
-#define LANGTAG     "\0$VER: czech.language 41.1 (14.08.2010)"
+#define LANGTAG     "\0$VER: "LANGSTR".language 41.1 (14.08.2010)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -298,13 +298,13 @@ const STRPTR __czech_strings[] =
     "èec", "srp", "záø", "øíj", "lis", "pro",
 
     "Ano", /* Yes, affirmative response */
-    "Ne", /* No/negative response */
+    "Ne",  /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "dop.", "odp.",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
     "\"", "\"",
