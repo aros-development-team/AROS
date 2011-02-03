@@ -2517,7 +2517,11 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
                     while(--len)
                     {
                         widechar = *tmpptr++;
-                        widechar = AROS_WORD2LE(widechar);
+                        widechar = AROS_LE2WORD(widechar);
+                        if(widechar == 0)
+                        {
+                            break;
+                        }
                         if((widechar < 0x20) || (widechar > 255))
                         {
                             *cbuf++ = '?';
@@ -8838,7 +8842,7 @@ AROS_UFH0(void, pDeviceTask)
             cnt = 0;
             while(phw->phw_MsgCount)
             {
-                KPRINTF(20, ("Still %ld iorequests pending!\n", msgcount));
+                KPRINTF(20, ("Still %ld iorequests pending!\n", phw->phw_MsgCount));
                 psdDelayMS(100);
                 if(++cnt == 50)
                 {
