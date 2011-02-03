@@ -2,7 +2,14 @@
 #define ERRSTRINGS_H
 
 
-/* Shares texts[], with the error strings and requester types, between aros and unix. */
+/*
+ * Shares between aros and unix the array texts[], with provides
+ *  error strings and requester types.
+ *  The data is in this header file to avoid further splitting
+ *  up into a header file and a code file. This is possible,
+ *  here, as this file should always be included in just one
+ *  file, the source code for error handling.
+ */
 
 
 /*
@@ -51,6 +58,9 @@ struct showReqStruct
                 {NULL, Req_Cancel },  // Error has already been reported.
                 {"Unknown error", Req_Cancel}
         };
-
+/*
+ * This array can be accessed with an enum of error codes. These
+ *  are included in error.h.
+ */
 
 #endif
