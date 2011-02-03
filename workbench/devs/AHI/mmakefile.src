@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 
 #MM- AHI       : workbench-devs-AHI
 
-#MM- workbench-devs-AHI : $(OSS_LIBRARY_TARGET)
+#MM- workbench-devs-AHI : includes linklibs $(OSS_LIBRARY_TARGET)
 
 EXEDIR := $(AROSDIR)
 
