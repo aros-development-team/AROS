@@ -24,7 +24,7 @@
 #define LANGSTR     "polski"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
 #define LANGREV     1           /* Revision number of language */
-#define LANGTAG     "\0$VER: polski.language 41.1 (14.03.2010)"
+#define LANGTAG     "\0$VER: "LANGSTR".language 41.1 (14.03.2010)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -305,7 +305,7 @@ const STRPTR __polish_strings[] =
     "Rano", "Po po³.",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
     "\"", "\"",
