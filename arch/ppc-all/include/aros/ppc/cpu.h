@@ -23,7 +23,7 @@
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	  16 /* Worst case alignment */
-#define AROS_STACKALIGN		  16 /* FIXME: is this really needed ? */
+#define AROS_STACKALIGN		  16 /* Stack alignment, see note below */
 
 /*
  * PowerPC note:
