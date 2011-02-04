@@ -28,7 +28,11 @@
 #endif
 #ifdef __mc68000__
 #define PC pc
+#ifdef CONFIG_GCC_FP_A6
 #define FP a[6]
+#else
+#define FP a[5]
+#endif
 #endif
 #ifdef __powerpc__
 #define PC ip
