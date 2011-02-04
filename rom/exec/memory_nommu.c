@@ -52,7 +52,7 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
     APTR ret = NULL;
-    APTR endlocation = location + byteSize - 1;
+    APTR endlocation = location + byteSize;
 
     /* Protect the memory list from access by other tasks. */
     MEM_LOCK;

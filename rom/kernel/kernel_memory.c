@@ -65,7 +65,7 @@ struct MemHeader *krnCreateROMHeader(struct MemHeader *ram, CONST_STRPTR name, A
 	mh->mh_Attributes = MEMF_KICK;
 	mh->mh_First = NULL;
 	mh->mh_Lower = start;
-	mh->mh_Upper = end;
+	mh->mh_Upper = end + 1;			/* end is the last valid address of the region */
 	mh->mh_Free = 0;                        /* Never allocate from this chunk! */
 	Enqueue(&SysBase->MemList, &mh->mh_Node);
     }

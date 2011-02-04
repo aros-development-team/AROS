@@ -21,7 +21,7 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
     while(mh->mh_Node.ln_Succ != NULL)
     {
 	/* Check if this MemHeader fits */
-	if(address >= mh->mh_Lower && address <= mh->mh_Upper)
+	if(address >= mh->mh_Lower && address < mh->mh_Upper)
 	{
 	    /* Yes. Return it. */
 	    MEM_UNLOCK;
@@ -321,7 +321,7 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase)
 	mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
 	mh->mh_Attributes	= orig->mh_Attributes;
 	mh->mh_Lower 	    	= (APTR)mh + MEMHEADER_TOTAL;
-	mh->mh_Upper 	    	= mh->mh_Lower + size - 1;
+	mh->mh_Upper 	    	= mh->mh_Lower + size;
 	mh->mh_First	    	= mh->mh_Lower;
 	mh->mh_Free  	    	= size;
 
@@ -335,7 +335,7 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase)
 /* Free a region allocated by AllocMemHeader() */
 void FreeMemHeader(APTR addr, struct ExecBase *SysBase)
 {
-    ULONG size = ((struct MemHeader *)addr)->mh_Upper - addr + 1;
+    ULONG size = ((struct MemHeader *)addr)->mh_Upper - addr;
 
     DMH(bug("[FreeMemHeader] Freeing %u bytes at 0x%p\n", size, addr));
     nommu_FreeMem(addr, size, SysBase);
@@ -514,7 +514,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
 
     /* Verify that MemHeader pointer is correct */
     if ((mh->mh_Node.ln_Type != NT_MEMORY) ||
-	(freeStart < mh->mh_Lower) || (freeStart + freeSize > mh->mh_Upper + 1))
+	(freeStart < mh->mh_Lower) || (freeStart + freeSize > mh->mh_Upper))
     {
     	/*
 	 * Something is wrong.
@@ -539,7 +539,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct ExecBase *SysBase)
 	    ObtainSemaphore(&pool->sem);
 	}
 
-	size = mh->mh_Upper - mh->mh_Lower + 1;
+	size = mh->mh_Upper - mh->mh_Lower;
 	D(bug("[FreePooled] Allocated from puddle 0x%p, size %u\n", mh, size));
 
 	/* Free the memory. */
