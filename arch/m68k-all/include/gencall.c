@@ -28,6 +28,10 @@
  *       Unhappiness ensues. So, we must use 'void *'
  *       for all 'bt' arguments in the call macros.
  */
+
+#define FLAG_BN		(1 << 0)
+#define FLAG_DOUBLE	(1 << 1)
+
 void aros_ufp(int id, int is_static)
 {
 	int i;
@@ -53,9 +57,11 @@ void aros_ufh(int id, int is_static)
 	printf("\n");
 }
 
-static void asm_regs_init(int id, int has_bn, const char *jmp, const char *addr)
+static void asm_regs_init(int id, int flags, const char *jmp, const char *addr)
 {
     int i;
+    int has_bn = (flags & FLAG_BN);
+    int ret_d  = (flags & FLAG_DOUBLE);
 
     /* Input values */
     for (i = 0; i < id; i++)
@@ -65,7 +71,9 @@ static void asm_regs_init(int id, int has_bn, const char *jmp, const char *addr)
     	printf("\t   ULONG _bn_arg = (ULONG)bn; \\\n");
 
     /* Define registers */
-    printf("\t   register volatile ULONG _ret asm(\"%%d0\"); \\\n");
+    printf("\t   register volatile ULONG _ret0 asm(\"%%d0\"); \\\n");
+    if (ret_d)
+    	printf("\t   register volatile ULONG _ret1 asm(\"%%d1\"); \\\n");
     for (i = 0; i < id; i++)
 	printf("\t   register volatile ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)); \\\n",
 		i + 1, i + 1);
@@ -115,13 +123,19 @@ static void asm_regs_init(int id, int has_bn, const char *jmp, const char *addr)
     }
 }
 
-static void asm_regs_exit(int id, int has_bn)
+static void asm_regs_exit(int id, int flags)
 {
+    int ret_d  = (flags & FLAG_DOUBLE);
+    
     /* Get the return code */
-    printf("\t   asm volatile (\"\" : \"=r\" (_ret) : : \"%%a0\", \"%%a1\", \"%%d1\", \"cc\", \"memory\"); \\\n");
-
-    /* Save retval */
-    printf("\t  (t)_ret; \\\n");
+    if (ret_d) {
+    	printf("\t   asm volatile (\"\" : \"=r\" (_ret0), \"=r\" (_ret1) : : \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
+    	printf("\t   (t)({union { struct { ULONG r0,r1; } v; double d; } rv;\\\n");
+    	printf("\t        rv.v.r0 = _ret0; rv.v.r1 = _ret1; rv.d; });\\\n");
+    } else {
+    	printf("\t   asm volatile (\"\" : \"=r\" (_ret0) : : \"%%d1\", \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
+    	printf("\t   (t)_ret0; \\\n");
+    }
 }
 
 static void aros_ufc(int id)
@@ -146,16 +160,18 @@ static void aros_ufc(int id)
 	printf("\t  })\n\n");
 }
 
-void aros_lc(int id)
+void aros_lc(int id, int is_double)
 {
 	int i;
-	printf("#define AROS_LC%d(t,n,", id);
+	int flags = FLAG_BN | (is_double ? FLAG_DOUBLE : 0);
+
+	printf("#define AROS_LC%d%s(t,n,", id, is_double ? "D" : "");
 	for (i = 0; i < id; i++)
 		printf("a%d,", i + 1);
 	printf("bt,bn,o,s) \\\n");
 	printf("\t({ \\\n");
-	asm_regs_init(id, 1, "jsr %c1(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
-	asm_regs_exit(id, 1);
+	asm_regs_init(id, flags, "jsr %c1(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
+	asm_regs_exit(id, flags);
 	printf("\t  })\n\n");
 }
 
@@ -305,7 +321,11 @@ int main(int argc, char **argv)
 	printf("#define __AROS_CPU_SPECIFIC_LC\n\n");
 	
 	for (i = 0; i < GENCALL_MAX; i++)
-		aros_lc(i);
+		aros_lc(i, 0);
+
+	/* For double return AROS_LC2D and AROS_LC4D */
+	aros_lc(2, 1);
+	aros_lc(4, 1);
 
 	for (i = 0; i < GENCALL_MAX; i++)
 		aros_lcnr(i);
