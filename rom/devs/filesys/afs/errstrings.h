@@ -29,11 +29,11 @@ enum showReqType
  * - text - content to be displayed
  * - type - set of buttons for the requester
  */
-struct showReqStruct 
+const struct showReqStruct 
 {
-        char* text;
+        const char* text;
         enum showReqType type;
-} texts[] =
+} const texts[] =
         {
                 {NULL, Req_Cancel },
                 {"No ioport", Req_Cancel },
