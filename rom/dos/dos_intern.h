@@ -96,7 +96,6 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase);
 
 BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase);
-ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me);
 
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
 BOOL internal_SetProgramName(struct CommandLineInterface *cli,

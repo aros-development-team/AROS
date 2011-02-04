@@ -5,12 +5,16 @@
     Desc: Execute a loaded command synchronously
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include "../exec/etask.h"
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/filesystem.h>
 #include <proto/dos.h>
+#include <dos/stdio.h>
 #include "dos_intern.h"
 
 LONG AROS_SLIB_ENTRY(RunProcess,Dos)
@@ -87,6 +91,8 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     UBYTE *stack;
     LONG ret;
     struct StackSwapStruct sss;
+    BPTR oldinput = BNULL;
+    struct FileHandle *fhinput = NULL;
 
     if(stacksize < AROS_STACKSIZE)
 	stacksize = AROS_STACKSIZE;
@@ -102,15 +108,41 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     oldresult=me->pr_Result2;
     /* we have to save iet_startup field because it's overwritten in 
        startup code */
-	oldstartup = (struct aros_startup *)GetIntETask(me)->iet_startup;
+    oldstartup = (struct aros_startup *)GetIntETask(me)->iet_startup;
     
     me->pr_Result2=oldresult;
 
     oldargs=me->pr_Arguments;
     me->pr_Arguments=(STRPTR)argptr;
 
+    /* Need to inject command arguments to the beginning of input handle.
+     * Guru Book mentions this (but related to CreateNewProc())
+     * which means something isn't 100% correct..
+     *
+     * This fixes for example C:Execute
+     * Must be always buffered or EndCLI won't work
+     */
+    oldinput = Input();
+    if (oldinput) {
+    	fhinput = BADDR(oldinput);
+    	if (vbuf_alloc(fhinput, fhinput->fh_Buf, 208) && IsInteractive(oldinput)) {
+    	    int size = argsize < 0 ? strlen(argptr) : argsize;
+    	    if (size > 0) {
+    	    	if (size > 208)
+    	    	    size = 208;
+	        /* ugly hack */
+	        memcpy(fhinput->fh_Buf, argptr, size);
+	        fhinput->fh_Pos = fhinput->fh_Buf;
+	        fhinput->fh_End = fhinput->fh_Buf + size;
+	    }
+	}
+    }
+
+    D(bug("RunCommand: segList @%p I=%x O=%x Args='%s'\n", BADDR(segList), BADDR(Input()), BADDR(Output()), argptr));
+
     ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
 		(LONG_FUNC)((BPTR *)BADDR(segList)+1),DOSBase);
+
     me->pr_Arguments=oldargs;
 
     oldresult=me->pr_Result2;
@@ -118,6 +150,10 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     GetIntETask(me)->iet_startup = oldstartup;
 
     me->pr_Result2=oldresult;
+
+    /* remove buffered argument stream */
+    /* must be original stream, command might have called SelectInput() */
+    Flush(oldinput);
 
     FreeMem(stack,stacksize);
     

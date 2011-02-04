@@ -1,17 +1,34 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RunProcess() - Run a process from an entry point with args
     Lang: english
 */
-
 #include <aros/asmcall.h>	/* LONG_FUNC */
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <aros/debug.h>
 
-#include "dos_intern.h"
+#include <string.h>
+
+static ULONG CallEntry(APTR pReturn_Addr, struct StackSwapStruct* sss,
+		       STRPTR argptr, ULONG argsize, LONG_FUNC entry)
+{
+
+#ifndef AROS_UFC3R
+#error You need to write the AROS_UFC3R macro for your CPU
+#endif
+
+    return AROS_UFC3R(ULONG, entry,
+		      AROS_UFCA(STRPTR, argptr, A0),
+		      AROS_UFCA(ULONG, argsize, D0),
+		      AROS_UFCA(struct ExecBase *, SysBase, A6),
+		      pReturn_Addr,
+		      (sss->stk_Upper - (ULONG)sss->stk_Lower) /* used by m68k-linux arch, needed?? */
+		     );
+
+}
 
 /**************************************************************************
 
@@ -42,12 +59,6 @@
 	The return value of (*entry)();
 
     NOTES
-    	This function is actually obsolete and should be removed. It is still here
-    	only for compatibility with older source code. Some architectures use own
-    	version of this code. The following is needed in order to do it:
-    	1. Test NewStackSwap() on PPC and x86-64 native versions.
-    	2. Remove architecture-specific RunProcess() implementations from these architectures.
-    	3. Move this code into RunCommand().
 
     EXAMPLE
 
@@ -62,12 +73,13 @@
     LONG ret;
     APTR oldReturnAddr = proc->pr_ReturnAddr; /* might be changed by CallEntry */
     struct StackSwapArgs args = {{
+	(IPTR) &proc->pr_ReturnAddr,
+	(IPTR) sss,
 	(IPTR) argptr,
-	argsize,
-	(IPTR) entry,
-	(IPTR) proc
+	argsize == -1 ? strlen(argptr) : argsize, /* Compute argsize automatically */
+	(IPTR) entry
     }};
-
+    
     /* Call the function with the new stack */
     ret = NewStackSwap(sss, CallEntry, &args);
 
