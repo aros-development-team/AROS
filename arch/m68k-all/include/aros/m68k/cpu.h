@@ -352,7 +352,7 @@ extern void aros_not_implemented ();
 #define AROS_ENTRY(t, n, a1, a2, bt, bn)	\
     __AROS_UFH_PREFIX t n (			\
     __AROS_UFHA(a1),				\
-    __AROS_UFHA(a2),				\
+    __AROS_UFHA(a2)				\
     ) {						\
     	bt bn = *((bt *)4);
 
