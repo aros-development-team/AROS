@@ -149,8 +149,10 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 	        if (data->disp) {
 	     	    OOP_Object *gfxhidd, *sync, *pf;
     		    IPTR modeid = vHidd_ModeID_Invalid;
-    		    IPTR dwidth, dheight, depth;
+    		    IPTR dwidth, dheight, depth, width, height;
 
+		    OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
+		    OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
 		    OOP_GetAttr(o, aHidd_BitMap_ModeID , &modeid);
     		    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 		    HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
@@ -161,9 +163,9 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    getrtgmodeinfo(csd, sync, pf, &data->modeinfo);
 		    csd->modeinfo = &data->modeinfo;
 		    csd->rgbformat = data->rgbformat;
-		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, dwidth);
-		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, dheight);
-		    D(bug("%dx%dx%d BF=%08x\n", dwidth, dheight, depth, data->rgbformat));
+		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
+		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
+		    D(bug("%dx%dx%d (%dx%d) BF=%08x\n", dwidth, dheight, depth, width, height, data->rgbformat));
 
 		    if (csd->hardwaresprite && depth <= 8) {
 		    	UWORD i;
