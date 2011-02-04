@@ -44,14 +44,6 @@
 
 #include <libcore/base.h>
 
-/*
-    This is the MathIEEESPBasBase structure. It is documented here because 
-    it is completely private. Applications should treat it as a struct 
-    Library, and use the mathieeespbas.library functions to get information.
-*/
-
-#define SysBase MathIeeeSingBasBase->lh_SysBase
-
 #define IEEESPMantisse_Mask 0x007FFFFF /* 23 bit for the mantisse  */
 #define IEEESPExponent_Mask 0x7F800000 /*  8 bit for the exponent  */
 #define IEEESPSign_Mask     0x80000000 /*  1 bit for the sign      */
