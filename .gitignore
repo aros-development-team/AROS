@@ -35,21 +35,6 @@
 # /arch/.unmaintained/hidd/
 /arch/.unmaintained/hidd/mmakefile
 
-# /arch/.unmaintained/i386-darwin/
-/arch/.unmaintained/i386-darwin/mmakefile
-
-# /arch/.unmaintained/i386-darwin/bootstrap/
-/arch/.unmaintained/i386-darwin/bootstrap/mmakefile
-
-# /arch/.unmaintained/i386-darwin/exec/
-/arch/.unmaintained/i386-darwin/exec/mmakefile
-
-# /arch/.unmaintained/i386-darwin/kernel/
-/arch/.unmaintained/i386-darwin/kernel/mmakefile
-
-# /arch/.unmaintained/i386-darwin/kernel/include/
-/arch/.unmaintained/i386-darwin/kernel/include/mmakefile
-
 # /arch/.unmaintained/m68k-emul/
 /arch/.unmaintained/m68k-emul/mmakefile
 
@@ -184,6 +169,54 @@
 # /arch/.unmaintained/ppc-native/exec/
 /arch/.unmaintained/ppc-native/exec/mmakefile
 
+# /arch/all-android/
+/arch/all-android/mmakefile
+
+# /arch/all-android/bootstrap/
+/arch/all-android/bootstrap/mmakefile
+
+# /arch/all-android/bootstrap/app/
+/arch/all-android/bootstrap/app/mmakefile
+
+# /arch/all-android/bootstrap/app/res/
+/arch/all-android/bootstrap/app/res/mmakefile
+
+# /arch/all-android/bootstrap/app/res/drawable/
+/arch/all-android/bootstrap/app/res/drawable/mmakefile
+
+# /arch/all-android/bootstrap/app/res/values/
+/arch/all-android/bootstrap/app/res/values/mmakefile
+
+# /arch/all-android/bootstrap/app/src/
+/arch/all-android/bootstrap/app/src/mmakefile
+
+# /arch/all-android/bootstrap/app/src/org/
+/arch/all-android/bootstrap/app/src/org/mmakefile
+
+# /arch/all-android/bootstrap/app/src/org/aros/
+/arch/all-android/bootstrap/app/src/org/aros/mmakefile
+
+# /arch/all-android/bootstrap/app/src/org/aros/bootstrap/
+/arch/all-android/bootstrap/app/src/org/aros/bootstrap/mmakefile
+
+# /arch/all-android/devs/
+/arch/all-android/devs/mmakefile
+
+# /arch/all-android/devs/filesys/
+/arch/all-android/devs/filesys/mmakefile
+
+# /arch/all-android/devs/filesys/emul_handler/
+/arch/all-android/devs/filesys/emul_handler/mmakefile
+
+# /arch/all-android/exec/
+/arch/all-android/exec/mmakefile
+
+# /arch/all-android/hidd/
+/arch/all-android/hidd/mmakefile
+
+# /arch/all-android/hidd/androidgfx/
+/arch/all-android/hidd/androidgfx/mmakefile
+
 # /arch/all-darwin/
 /arch/all-darwin/mmakefile
 
@@ -198,6 +231,9 @@
 
 # /arch/all-hosted/devs/filesys/emul_handler/
 /arch/all-hosted/devs/filesys/emul_handler/mmakefile
+
+# /arch/all-hosted/devs/hostdisk/
+/arch/all-hosted/devs/hostdisk/mmakefile
 
 # /arch/all-hosted/dosboot/
 /arch/all-hosted/dosboot/mmakefile
@@ -215,14 +251,23 @@
 # /arch/all-hosted/hostlib/
 /arch/all-hosted/hostlib/mmakefile
 
+# /arch/all-hosted/mobile/dosboot/
+/arch/all-hosted/mobile/dosboot/mmakefile
+
 # /arch/all-ios/
 /arch/all-ios/mmakefile
 
 # /arch/all-ios/bootstrap/
 /arch/all-ios/bootstrap/mmakefile
 
+# /arch/all-ios/exec/
+/arch/all-ios/exec/mmakefile
+
 # /arch/all-linux/
 /arch/all-linux/mmakefile
+
+# /arch/all-linux/bootstrap/
+/arch/all-linux/bootstrap/mmakefile
 
 # /arch/all-linux/hidd/linuxfb/
 /arch/all-linux/hidd/linuxfb/mmakefile
@@ -252,6 +297,9 @@
 
 # /arch/all-mingw32/devs/filesys/emul_handler/
 /arch/all-mingw32/devs/filesys/emul_handler/mmakefile
+
+# /arch/all-mingw32/devs/hostdisk/
+/arch/all-mingw32/devs/hostdisk/mmakefile
 
 # /arch/all-mingw32/exec/
 /arch/all-mingw32/exec/mmakefile
@@ -288,9 +336,6 @@
 /arch/all-unix/battclock/mmakefile
 /arch/all-unix/battclock/*.bak
 
-# /arch/all-unix/bootloader/
-/arch/all-unix/bootloader/mmakefile
-
 # /arch/all-unix/bootstrap/
 /arch/all-unix/bootstrap/mmakefile
 
@@ -318,9 +363,6 @@
 
 # /arch/all-unix/hidd/unixio/
 /arch/all-unix/hidd/unixio/mmakefile
-
-# /arch/all-unix/hostlib/
-/arch/all-unix/hostlib/mmakefile
 
 # /arch/all-unix/kernel/
 /arch/all-unix/kernel/mmakefile
@@ -419,12 +461,8 @@
 /arch/common/boot/grub/util/grub-terminfo
 /arch/common/boot/grub/util/mbchk
 
-# /arch/common/boot/grub2/
-/arch/common/boot/grub2/mmakefile
-/arch/common/boot/grub2/autom4te.cache
-
-# /arch/common/boot/grub2/AROS/
-/arch/common/boot/grub2/AROS/mmakefile
+# /arch/common/boot/grub2-host/
+/arch/common/boot/grub2-host/mmakefile
 
 # /arch/common/boot/iso/
 /arch/common/boot/iso/mmakefile
@@ -448,6 +486,9 @@
 
 # /arch/i386-all/include/
 /arch/i386-all/include/mmakefile
+
+# /arch/i386-all/kernel/
+/arch/i386-all/kernel/mmakefile
 
 # /arch/i386-all/mlib/
 /arch/i386-all/mlib/mmakefile
@@ -553,11 +594,17 @@
 # /arch/m68k-all/clib/
 /arch/m68k-all/clib/mmakefile
 
+# /arch/m68k-all/dos/
+/arch/m68k-all/dos/mmakefile
+
 # /arch/m68k-all/exec/
 /arch/m68k-all/exec/mmakefile
 
 # /arch/m68k-all/include/
 /arch/m68k-all/include/mmakefile
+
+# /arch/m68k-all/kernel/
+/arch/m68k-all/kernel/mmakefile
 
 # /arch/m68k-all/libgcc1/
 /arch/m68k-all/libgcc1/mmakefile
@@ -565,14 +612,77 @@
 # /arch/m68k-all/mlib/
 /arch/m68k-all/mlib/mmakefile
 
+# /arch/m68k-all/utility/
+/arch/m68k-all/utility/mmakefile
+
 # /arch/m68k-amiga/
 /arch/m68k-amiga/mmakefile
+
+# /arch/m68k-amiga/battclock/
+/arch/m68k-amiga/battclock/mmakefile
 
 # /arch/m68k-amiga/boot/
 /arch/m68k-amiga/boot/mmakefile
 
+# /arch/m68k-amiga/boot/floppy/
+/arch/m68k-amiga/boot/floppy/mmakefile
+
+# /arch/m68k-amiga/cia/
+/arch/m68k-amiga/cia/mmakefile
+
+# /arch/m68k-amiga/devs/
+/arch/m68k-amiga/devs/mmakefile
+
+# /arch/m68k-amiga/devs/ata.device/
+/arch/m68k-amiga/devs/ata.device/mmakefile
+
+# /arch/m68k-amiga/devs/audio/
+/arch/m68k-amiga/devs/audio/mmakefile
+
+# /arch/m68k-amiga/devs/filesys/afs/
+/arch/m68k-amiga/devs/filesys/afs/mmakefile
+
+# /arch/m68k-amiga/devs/filesys/console_handler/
+/arch/m68k-amiga/devs/filesys/console_handler/mmakefile
+
+# /arch/m68k-amiga/devs/filesys/nil_handler/
+/arch/m68k-amiga/devs/filesys/nil_handler/mmakefile
+
+# /arch/m68k-amiga/devs/filesys/packet/
+/arch/m68k-amiga/devs/filesys/packet/mmakefile
+
+# /arch/m68k-amiga/devs/trackdisk/
+/arch/m68k-amiga/devs/trackdisk/mmakefile
+
+# /arch/m68k-amiga/disk/
+/arch/m68k-amiga/disk/mmakefile
+
+# /arch/m68k-amiga/dos/
+/arch/m68k-amiga/dos/mmakefile
+
+# /arch/m68k-amiga/dosboot/
+/arch/m68k-amiga/dosboot/mmakefile
+
 # /arch/m68k-amiga/exec/
 /arch/m68k-amiga/exec/mmakefile
+
+# /arch/m68k-amiga/expansion/
+/arch/m68k-amiga/expansion/mmakefile
+
+# /arch/m68k-amiga/graphics/
+/arch/m68k-amiga/graphics/mmakefile
+
+# /arch/m68k-amiga/hidd/gfx/
+/arch/m68k-amiga/hidd/gfx/mmakefile
+
+# /arch/m68k-amiga/hidd/keyboard/
+/arch/m68k-amiga/hidd/keyboard/mmakefile
+
+# /arch/m68k-amiga/hidd/mouse/
+/arch/m68k-amiga/hidd/mouse/mmakefile
+
+# /arch/m68k-amiga/hidd/uaegfx/
+/arch/m68k-amiga/hidd/uaegfx/mmakefile
 
 # /arch/m68k-amiga/include/
 /arch/m68k-amiga/include/mmakefile
@@ -585,6 +695,12 @@
 
 # /arch/m68k-amiga/mlib/
 /arch/m68k-amiga/mlib/mmakefile
+
+# /arch/m68k-amiga/potgo/
+/arch/m68k-amiga/potgo/mmakefile
+
+# /arch/m68k-amiga/timer/
+/arch/m68k-amiga/timer/mmakefile
 
 # /arch/m68k-mac/
 /arch/m68k-mac/mmakefile
@@ -642,6 +758,9 @@
 
 # /arch/ppc-chrp/battclock/
 /arch/ppc-chrp/battclock/mmakefile
+
+# /arch/ppc-chrp/boot/openfirmware/src/
+/arch/ppc-chrp/boot/openfirmware/src/mmakefile
 
 # /arch/ppc-chrp/dos/
 /arch/ppc-chrp/dos/mmakefile
@@ -754,6 +873,9 @@
 # /arch/x86_64-all/include/
 /arch/x86_64-all/include/mmakefile
 
+# /arch/x86_64-all/kernel/
+/arch/x86_64-all/kernel/mmakefile
+
 # /arch/x86_64-all/mlib/
 /arch/x86_64-all/mlib/mmakefile
 
@@ -819,12 +941,6 @@
 # /compiler/boost/
 /compiler/boost/mmakefile
 
-# /compiler/c_lib/
-/compiler/c_lib/makefile
-
-# /compiler/c_lib/source/
-/compiler/c_lib/source/makefile
-
 # /compiler/clib/
 /compiler/clib/mmakefile
 
@@ -865,6 +981,12 @@
 
 # /compiler/libpng/
 /compiler/libpng/mmakefile
+
+# /compiler/library_template_c/
+/compiler/library_template_c/makefile
+
+# /compiler/library_template_c/source/
+/compiler/library_template_c/source/makefile
 
 # /compiler/mlib/
 /compiler/mlib/mmakefile
@@ -1112,9 +1234,6 @@
 # /rom/devs/
 /rom/devs/makefile
 
-# /rom/devs/ahci.device/
-/rom/devs/ahci.device/mmakefile
-
 # /rom/devs/ata.device/
 /rom/devs/ata.device/mmakefile
 
@@ -1126,6 +1245,9 @@
 /rom/devs/filesys/makefile
 /rom/devs/filesys/mmakefile
 /rom/devs/filesys/makefile.bak
+
+# /rom/devs/filesys/AmberRAM/
+/rom/devs/filesys/AmberRAM/mmakefile
 
 # /rom/devs/filesys/afs/
 /rom/devs/filesys/afs/mmakefile
@@ -1335,6 +1457,16 @@
 
 # /rom/usb/trident/
 /rom/usb/trident/mmakefile
+/rom/usb/trident/strings.h
+
+# /rom/usb/trident/catalogs/
+/rom/usb/trident/catalogs/mmakefile
+
+# /rom/usb/trident/datatypes/
+/rom/usb/trident/datatypes/mmakefile
+
+# /rom/usb/trident/icons/
+/rom/usb/trident/icons/mmakefile
 
 # /rom/utility/
 /rom/utility/mmakefile
@@ -1381,14 +1513,23 @@
 # /test/clib/
 /test/clib/mmakefile
 
+# /test/cplusplus/
+/test/cplusplus/mmakefile
+
 # /test/desktop/
 /test/desktop/mmakefile
 
 # /test/dos/
 /test/dos/mmakefile
 
+# /test/exec/
+/test/exec/mmakefile
+
 # /test/icon/
 /test/icon/mmakefile
+
+# /test/kernel/
+/test/kernel/mmakefile
 
 # /test/library/
 /test/library/mmakefile
@@ -1755,8 +1896,94 @@
 /workbench/devs/makefile
 /workbench/devs/makefile.bak
 
-# /workbench/devs/AHI
+# /workbench/devs/AHI/
+/workbench/devs/AHI/mmakefile
 /workbench/devs/AHI/.files-touched
+
+# /workbench/devs/AHI/PackageFiles/Packages/
+/workbench/devs/AHI/PackageFiles/Packages/mmakefile
+
+# /workbench/devs/AHI/PackageFiles/S/
+/workbench/devs/AHI/PackageFiles/S/mmakefile
+
+# /workbench/devs/CDVDFS/src/
+/workbench/devs/CDVDFS/src/mmakefile
+
+# /workbench/devs/SFS/
+/workbench/devs/SFS/mmakefile
+
+# /workbench/devs/SFS/FS/
+/workbench/devs/SFS/FS/mmakefile
+
+# /workbench/devs/SFS/SFSdefrag/
+/workbench/devs/SFS/SFSdefrag/mmakefile
+/workbench/devs/SFS/SFSdefrag/strings.h
+
+# /workbench/devs/SFS/SFSdefrag/Catalogs/
+/workbench/devs/SFS/SFSdefrag/Catalogs/mmakefile
+
+# /workbench/devs/SFS/SFSdefrag/Icons/
+/workbench/devs/SFS/SFSdefrag/Icons/mmakefile
+
+# /workbench/devs/SFS/SFSdefragmentGUI/
+/workbench/devs/SFS/SFSdefragmentGUI/mmakefile
+
+# /workbench/devs/SFS/SFSformat/
+/workbench/devs/SFS/SFSformat/mmakefile
+
+# /workbench/devs/SFS/SFSquery/
+/workbench/devs/SFS/SFSquery/mmakefile
+
+# /workbench/devs/SFS/SetCache/
+/workbench/devs/SFS/SetCache/mmakefile
+
+# /workbench/devs/USB/
+/workbench/devs/USB/.cdtproject
+/workbench/devs/USB/.project
+/workbench/devs/USB/.settings
+/workbench/devs/USB/mmakefile
+
+# /workbench/devs/USB/classes/
+/workbench/devs/USB/classes/mmakefile
+
+# /workbench/devs/USB/classes/HID/
+/workbench/devs/USB/classes/HID/mmakefile
+
+# /workbench/devs/USB/classes/HID/include/
+/workbench/devs/USB/classes/HID/include/mmakefile
+
+# /workbench/devs/USB/classes/MassStorage/
+/workbench/devs/USB/classes/MassStorage/mmakefile
+
+# /workbench/devs/USB/classes/MassStorage/include/
+/workbench/devs/USB/classes/MassStorage/include/mmakefile
+
+# /workbench/devs/USB/drivers/
+/workbench/devs/USB/drivers/mmakefile
+
+# /workbench/devs/USB/drivers/EHCI/
+/workbench/devs/USB/drivers/EHCI/mmakefile
+
+# /workbench/devs/USB/drivers/OHCI/
+/workbench/devs/USB/drivers/OHCI/mmakefile
+
+# /workbench/devs/USB/drivers/UHCI/
+/workbench/devs/USB/drivers/UHCI/mmakefile
+
+# /workbench/devs/USB/include/
+/workbench/devs/USB/include/mmakefile
+
+# /workbench/devs/USB/stack/
+/workbench/devs/USB/stack/mmakefile
+
+# /workbench/devs/USB/stack/stubs/
+/workbench/devs/USB/stack/stubs/mmakefile
+
+# /workbench/devs/USB/tools/
+/workbench/devs/USB/tools/mmakefile
+
+# /workbench/devs/USB/tools/lsusb/
+/workbench/devs/USB/tools/lsusb/mmakefile
 
 # /workbench/devs/audio/
 /workbench/devs/audio/mmakefile
@@ -2025,6 +2252,7 @@
 
 # /workbench/libs/identify/
 /workbench/libs/identify/mmakefile
+/workbench/libs/identify/modulefunctions.h
 
 # /workbench/libs/iffparse/
 /workbench/libs/iffparse/libdefs.h
@@ -2108,7 +2336,10 @@
 # /workbench/libs/mesa/src/gallium/include/pipe/
 /workbench/libs/mesa/src/gallium/include/pipe/mmakefile
 
-# /workbench/libs/mesa/src/mapi/vgapi
+# /workbench/libs/mesa/src/gallium/state_trackers/vega/
+/workbench/libs/mesa/src/gallium/state_trackers/vega/api_tmp.h
+
+# /workbench/libs/mesa/src/mapi/vgapi/
 /workbench/libs/mesa/src/mapi/vgapi/vgapi_tmp.h
 
 # /workbench/libs/mesa/src/mesa/
@@ -2469,6 +2700,10 @@
 
 # /workbench/system/SysMon/
 /workbench/system/SysMon/mmakefile
+/workbench/system/SysMon/strings.h
+
+# /workbench/system/SysMon/catalogs/
+/workbench/system/SysMon/catalogs/mmakefile
 
 # /workbench/system/Wanderer/
 /workbench/system/Wanderer/mmakefile
@@ -2518,6 +2753,13 @@
 
 # /workbench/system/Wanderer/Tools/ExecuteStartup/
 /workbench/system/Wanderer/Tools/ExecuteStartup/mmakefile
+/workbench/system/Wanderer/Tools/ExecuteStartup/strings.h
+
+# /workbench/system/Wanderer/Tools/ExecuteStartup/catalogs/
+/workbench/system/Wanderer/Tools/ExecuteStartup/catalogs/mmakefile
+
+# /workbench/system/Wanderer/Tools/ExecuteStartup/icons/
+/workbench/system/Wanderer/Tools/ExecuteStartup/icons/mmakefile
 
 # /workbench/system/Wanderer/Tools/Info/
 /workbench/system/Wanderer/Tools/Info/mmakefile
@@ -2551,6 +2793,10 @@
 
 # /workbench/system/ftmanager/
 /workbench/system/ftmanager/mmakefile
+/workbench/system/ftmanager/strings.h
+
+# /workbench/system/ftmanager/catalogs/
+/workbench/system/ftmanager/catalogs/mmakefile
 
 # /workbench/tools/
 /workbench/tools/mmakefile
@@ -2591,20 +2837,14 @@
 # /workbench/tools/commodities/catalogs/
 /workbench/tools/commodities/catalogs/mmakefile
 
-# /workbench/tools/commodities/gblanker/
-/workbench/tools/commodities/gblanker/mmakefile
-
-# /workbench/tools/commodities/gblanker/Blankers/ASwarm/
-/workbench/tools/commodities/gblanker/Blankers/ASwarm/mmakefile
-
-# /workbench/tools/commodities/gblanker/Libraries/Garshnelib/
-/workbench/tools/commodities/gblanker/Libraries/Garshnelib/mmakefile
-
 # /workbench/tools/commodities/startmenu/
 /workbench/tools/commodities/startmenu/mmakefile
 
 # /workbench/tools/debug/bifteck/
 /workbench/tools/debug/bifteck/mmakefile
+
+# /workbench/tools/debug/kecho/
+/workbench/tools/debug/kecho/mmakefile
 
 # /workbench/tools/debug/sashimi/
 /workbench/tools/debug/sashimi/mmakefile
