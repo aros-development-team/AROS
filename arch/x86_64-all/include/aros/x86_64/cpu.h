@@ -190,4 +190,26 @@ extern void _aros_not_implemented (char *);
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
 
+
+#define __UFC3R(_t,_n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
+({\
+    long _n1 = (long)(n1);\
+    long _n2 = (long)(n2);\
+    long _n3 = (long)(n3);\
+    long _re;\
+    __asm__ __volatile__(\
+	"movq   %5,%%rdx\n\t"\
+	"movq   %4,%%rsi\n\t"\
+	"movq   %3,%%rdi\n\t"\
+	"movq   %2,%%rcx\n\t"\
+	"movl   %%esp,%1\n\t"\
+	"call  *%%rcx\n\t"\
+	"movl   %%eax,%0"\
+	: "=m"(_re), "=m"(*(APTR *)p)\
+	: "g"(_n), "g"(_n1), "g"(_n2), "g"(_n3)\
+	: "cc", "memory", "%rcx", "%rax", "%rdx", "%rsi", "%rdi" );\
+    (_t)_re;\
+})
+#define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
+
 #endif /* AROS_X86_64_CPU_H */

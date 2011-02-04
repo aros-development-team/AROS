@@ -1,7 +1,7 @@
 #ifndef AROS_ARM_CPU_H
 #define AROS_ARM_CPU_H
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -176,6 +176,24 @@ extern void aros_not_implemented ();
 #define __AROS_UFP_PREFIX   /* eps */
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
+
+/* Untested! This macro *may* be wrong... */
+#define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
+({\
+    register long _n1 asm("r0") = (long)(n1);\
+    register long _n2 asm("r1") = (long)(n2);\
+    register long _n3 asm("r2") = (long)(n3);\
+    register long _re asm("r0");\
+    __asm__ __volatile__(\
+        "ldr    %%ip, %1\n\t"\
+        "str    %%sp,[%%ip, $0]\n\t"\
+        "blx    %2\n\t"\
+        : "=r"(_re), "=m"(*(int *)p)\
+        : "r"(n), "r"(_n1), "r"(_n2), "r"(_n3)\
+        : "cc", "memory", "lr");\
+    (t)_re;\
+})
+#define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
 
 /*
  * This must be placed before every call to host OS on hosted AROS.
