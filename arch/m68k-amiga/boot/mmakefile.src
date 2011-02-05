@@ -14,6 +14,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-amiga-m68k-uaegfx-kobj \
 #MM     kernel-disk-kobj \
 #MM     kernel-potgo-kobj \
+#MM     kernel-misc-kobj \
 #MM     workbench-fs-pipefs-kobj \
 #MM     workbench-fs-xpipe-kobj \
 #MM     workbench-libs-workbench-kobj \
@@ -52,7 +53,7 @@ KLIBS   := exec aros dos utility oop expansion boot workbench mathffp partition
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram # pipefs xpipe
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
-KRSRCS  := battclock kernel processor dosboot cia potgo disk FileSystem
+KRSRCS  := battclock kernel processor dosboot cia potgo disk FileSystem misc
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS))) \
@@ -134,7 +135,6 @@ $(DISTDIR)/aros-amiga-m68k-ram.bin : $(DISTDIR)/aros-amiga-m68k-ram.elf $(HOSTGE
 		--gap-fill 0xff \
 		--only-section=.rom \
 		--only-section=.ext \
-		--pad-to 0xd00000 \
 		$< $@
 	$(Q)$(HOSTGENDIR)/tools/romcheck $@
 
