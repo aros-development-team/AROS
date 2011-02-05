@@ -23,7 +23,7 @@ $(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)
 	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -o $@ -L$(LIBDIR)  -lrom -lm
 
 $(TARGETDIR)/kernel.bin.o: $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/irq_hidd.o
-		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T kernel.lds -o $(TARGETDIR)/kernel.bin $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/irq_hidd.o -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit      
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $(TARGETDIR)/kernel.bin $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/irq_hidd.o -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit      
 		$(STRIP) --strip-unneeded -R .note -R .comment $(TARGETDIR)/kernel.bin
 		cd $(TARGETDIR) && $(HOST_LD) -r --format binary --oformat elf32-i386 kernel.bin -o $@
 
