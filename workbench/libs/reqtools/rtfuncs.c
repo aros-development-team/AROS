@@ -111,10 +111,11 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 {
     if (DOSBase == NULL)
     {
-	DOSBase = RTBase->DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
+	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
 	if (DOSBase == NULL)
 	    return NULL;
     }
+    RTBase->DOSBase = DOSBase;
 
     if ( ! RTBase->ReqToolsPrefs.IsLoaded)
     {
@@ -171,22 +172,26 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
     } /* if (! RTBase->ReqToolsPrefs.IsLoaded) */
     
     if(IntuitionBase == NULL)
-	IntuitionBase = RTBase->IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
+	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
+    RTBase->IntuitionBase = IntuitionBase;
     if(IntuitionBase == NULL)
 	return NULL;
 
     if(GfxBase == NULL)
-	GfxBase = RTBase->GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
+	GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
+    RTBase->GfxBase =  GfxBase;
     if(GfxBase == NULL)
 	return NULL;
     
     if(UtilityBase == NULL)
-	UtilityBase = RTBase->UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37);
+	UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37);
+    RTBase->UtilityBase = UtilityBase;
     if(UtilityBase == NULL)
 	return NULL;
 
     if(GadToolsBase == NULL)
-	GadToolsBase = RTBase->GadToolsBase = OpenLibrary("gadtools.library", 37);
+	GadToolsBase = OpenLibrary("gadtools.library", 37);
+    RTBase->GadToolsBase = GadToolsBase;
     if(GadToolsBase == NULL)
 	return NULL;
 
