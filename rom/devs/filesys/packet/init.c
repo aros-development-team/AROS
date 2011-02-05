@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007-2010 The AROS Development Team
+ * Copyright © 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -233,10 +233,6 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
             iofs->IOFS.io_Error = dp->dp_Res2;
             dn->dn_Ext.dn_AROS.dn_Device = NULL;
             dn->dn_Ext.dn_AROS.dn_Unit = NULL;
-
-            Disable();
-            Remove((struct Node *)mount);
-            Enable();
         }
         else {
 	    /* The handler has set up dn_Task itself. Note that it's okay for the handler
