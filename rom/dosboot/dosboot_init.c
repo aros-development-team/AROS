@@ -192,7 +192,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
 
     D(bug("[DOSBoot] __dosboot_IsBootable('%s')\n", deviceName));
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
 
     {
     	bufferLength = strlen(deviceName) + 1 + 1;
@@ -476,7 +476,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
         AddBootAssign("SYS:L", "L");
         AddBootAssign("SYS:Fonts", "FONTS");
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if !(mc68000)
         if ((lock = Lock("DEVS:Drivers", SHARED_LOCK)) != BNULL)
         {
             AssignLock("DRIVERS", lock);
@@ -511,7 +511,7 @@ AROS_UFH3(void, __dosboot_BootProcess,
 	D(bug("[DOSBoot] Closing expansion.library\n"));
         CloseLibrary( (struct Library *) ExpansionBase );
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if !(mc68000)
         /* Initialize HIDDs */
 	if (!(LIBBASE->BootFlags & BF_NO_DISPLAY_DRIVERS))
 	{

@@ -9,7 +9,7 @@
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
 #endif
@@ -50,7 +50,7 @@
 {
     AROS_LIBFUNC_INIT
     struct List *list;
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
     struct Custom *custom = (struct Custom *)(void **)0xdff000;
 #endif
 
@@ -60,7 +60,7 @@
 
     Remove((struct Node *)interrupt);
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
     if(list->lh_TailPred == (struct Node *)list)
     {
 	/* disable interrupts if there are no more nodes on the list */

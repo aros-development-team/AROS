@@ -9,7 +9,7 @@
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
 #endif
@@ -51,7 +51,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
     struct Custom *custom = (struct Custom *)(void **)0xdff000;
 #endif
 
@@ -59,7 +59,7 @@
 
     Enqueue((struct List *)SysBase->IntVects[intNumber].iv_Data, (struct Node *)interrupt);
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
     /*
 	Enable the chipset interrupt if run on a native Amiga.
     */
