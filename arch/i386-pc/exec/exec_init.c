@@ -63,10 +63,14 @@
 #include <aros/asmcall.h>
 #include <aros/config.h>
 
+#include <aros/kernel.h>
+
 #define DEBUG    1
 
 #include <aros/debug.h>
 #include <aros/multiboot.h>
+
+#include <utility/tagitem.h>
 
 #include <hardware/custom.h>
 #include <hardware/acpi/acpi.h>
@@ -76,6 +80,8 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <inttypes.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -87,6 +93,22 @@
 #include "vesa.h"
 
 #define SMP_SUPPORT 0
+
+/*
+ * Here the history starts. We are already in flat, 32bit mode. All protections
+ * are off, CPU is working in Supervisor level (CPL0). This state can be emu-
+ * lated by ColdReboot() routine as it may freely use Supervisor()
+ *
+ * kernel_startup can be executed only from CPL0 without vmm. Interrupts should
+ * be disabled.
+ *
+ * Note that kernel_startup is declared as entry symbol for output ELF file.
+ */
+
+asm(                ".section .aros.init,\"ax\"\n\t.globl kernel_startup  \n\t"
+                    ".type  kernel_startup,@function\n"
+"kernel_startup:    jmp exec_init\n\t.text");
+
 
 #if SMP_SUPPORT
     extern void prepare_primary_cpu(struct ExecBase *SysBase);      /* FUNCTION FROM "cpu.resource"!!!!!!! */
@@ -133,7 +155,7 @@ unsigned char setupVesa(struct multiboot *mbinfo);
 
 
 asmlinkage void Exec_SystemCall(struct pt_regs);
-ULONG   **exec_RomTagScanner();
+ULONG   **exec_RomTagScanner(struct ExecBase *, struct TagItem *);
 void    irqSetup(void);
 
 extern const UBYTE LIBEND __text;             /* Somewhere in library */
@@ -157,6 +179,7 @@ extern void Exec_Dispatch_SSE();
 extern void Exec_CopyMem_SSE();
 
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
+extern intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, struct TagItem *tagList);
 
 AROS_UFP5S(void, IntServer,
     AROS_UFPA(ULONG, intMask, D0),
@@ -209,20 +232,6 @@ asm(        ".globl aros_intern\n\t"
             ".set   aros_intern,0\n\t"
             ".set   SysBase,4       ");
 
-/*
- * Here the history starts. We are already in flat, 32bit mode. All protections
- * are off, CPU is working in Supervisor level (CPL0). This state can be emu-
- * lated by ColdReboot() routine as it may freely use Supervisor()
- *
- * kernel_startup can be executed only from CPL0 without vmm. Interrupts should
- * be disabled.
- *
- * Note that kernel_startup is declared as entry symbol for output ELF file.
- */
-
-asm(                ".globl kernel_startup  \n\t"
-                    ".type  kernel_startup,@function\n"
-"kernel_startup:    jmp exec_init");
 
 const char exec_core[] __text       = "Native/CORE v2.0.1";
 
@@ -268,6 +277,7 @@ struct view { unsigned char sign; unsigned char attr; };
  */
 asm("\nexec_init:                \n\t"
 	        "movl    $0x93000,%esp\n\t"     /* Start with setting up a temporary stack */
+			"pushl   %edx		 \n\t"		/* TagList from bootstrap */
 	        "pushl   %ebx        \n\t"      /* Then store the MultiBoot info pointer   */
 	        "pushl   %eax        \n\t"      /* Store multiboot magic cookie            */
 	        "pushl   $0x0        \n\t"      /* And fake a C code call                  */
@@ -408,7 +418,7 @@ struct arosmb *arosmb;
 /*
  * C/ASM mixed initialization routine. Here the real game begins...
  */
-void exec_cinit(unsigned long magic, unsigned long addr)
+void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
 {
     struct ExecBase *ExecBase;
     struct multiboot *mbinfo;
@@ -583,6 +593,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0xa1)); /* Mask all interrupts */
 
     rkprintf("Interrupts redirected\n");
+
+
+//    for(;;);
 
     /*
      * Check for valid ExecBase. This is quite important part, because this way
@@ -794,7 +807,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     rkprintf("Memory added\n");
 
     /* Protect kernel and RO data from beeing allocated by software */
-    AllocAbs((ULONG)&_end - 0x000a0000, (APTR)0x000a0000);
+    AllocAbs((ULONG)(krnGetTagData(KRN_KernelHighest, (ULONG)&_end, tags) - krnGetTagData(KRN_KernelLowest, (ULONG)&_end, tags)), (APTR)krnGetTagData(KRN_KernelLowest, (ULONG)&_end, tags));
 
     /* Protect bootup stack from being allocated */
     AllocAbs(0x3000,0x90000);
@@ -1127,7 +1140,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     RawIOInit();
 
     /* Scan for valid RomTags */
-    ExecBase->ResModules = exec_RomTagScanner();
+    ExecBase->ResModules = exec_RomTagScanner(ExecBase, tags);
 
     if (ExecBase->CoolCapture)
     {
@@ -1385,12 +1398,10 @@ struct rt_node
     struct Resident *module;
 };
 
-ULONG **exec_RomTagScanner()
+ULONG **exec_RomTagScanner(struct ExecBase *SysBase, struct TagItem *tags)
 {
-    struct ExecBase *SysBase = *(struct ExecBase **)4UL;
-
     struct List     rtList;             /* List of modules */
-    UWORD           *ptr = (UWORD*)0x00100000;  /* Start looking here */
+    UWORD           *ptr = (UWORD*)krnGetTagData(KRN_KernelLowest, (ULONG)&_end, tags);  /* Start looking here */
 
     struct Resident *res;               /* module found */
 
@@ -1463,7 +1474,7 @@ ULONG **exec_RomTagScanner()
 
         /* Get next address... */
         ptr++;
-    } while (ptr < (UWORD*)&_end);
+    } while (ptr < (UWORD*)krnGetTagData(KRN_KernelHighest, (ULONG)&_end, tags));
     
     /*
      * By now we have valid (and sorted) list of kernel resident modules.
