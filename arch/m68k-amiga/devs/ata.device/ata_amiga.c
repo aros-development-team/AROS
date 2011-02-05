@@ -6,6 +6,7 @@
 #include <exec/exec.h>
 #include <proto/exec.h>
 #include <graphics/gfxbase.h>
+#include <hardware/custom.h>
 
 #include "ata.h"
 
@@ -55,6 +56,27 @@ void ata_outl(ULONG val, UWORD offset, IPTR port)
 {
 }
 
+static BOOL custom_check(APTR addr)
+{
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+    volatile struct Custom *maybe_custom = (struct Custom*)addr;
+    UWORD intena;
+    BOOL iscustom = TRUE;
+    
+    intena = custom->intenar;
+    custom->intena = 0x7fff;
+    custom->intena = 0xc000;
+    maybe_custom->intena = 0x7fff;
+    if (custom->intenar == 0x4000) {
+    	maybe_custom->intena = 0x7fff;
+    	if (custom->intenar == 0x4000)
+    	    iscustom = FALSE;
+    }
+    custom->intena = 0x7fff;
+    custom->intena = intena | 0x8000;
+    return iscustom;
+}  	
+
 static UBYTE *getport(void)
 {
     UBYTE id, status;
@@ -66,8 +88,8 @@ static UBYTE *getport(void)
         port = (UBYTE*)GAYLE_BASE_1200;
     } else {
     	gfx = (struct GfxBase*)OpenLibrary("graphics.library", 0);
-    	// in AGA this area is never custom mirror
-    	if (gfx->ChipRevBits0 & GFXF_AA_ALICE) {
+    	// in AGA this area is never custom mirror but lets make sure..
+    	if (!custom_check(0xdd2000) && (gfx->ChipRevBits0 & GFXF_AA_ALICE)) {
             port = (UBYTE*)GAYLE_BASE_4000;
         }
         CloseLibrary(gfx);
