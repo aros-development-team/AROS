@@ -184,23 +184,31 @@ static void action(void)
     	switch(mode)
 	{
 	    case 0:
+	    	SetDrMd(rp, JAM1);
+		WritePixel(rp, x, y);
+		WritePixel(rp, x + 1, y);
+		WritePixel(rp, x, y + 1);
+		WritePixel(rp, x + 1, y + 1);
+		break;
+
+	    case 1:
 		SetDrMd(rp, JAM1);
 		Move(rp, x, y);
-		Text(rp, "Text JAM1", 4);		
+		Text(rp, "Text JAM1", 4);
 	    	break;
 		
-	    case 1:
+	    case 2:
 		SetDrMd(rp, JAM2);
 		Move(rp, x, y);
-		Text(rp, "Text JAM2", 4);		
+		Text(rp, "Text JAM2", 4);
 	    	break;
 	    	
-	    case 2:
+	    case 3:
 	    	SetDrMd(rp, JAM1);
 		RectFill(rp, x, y, x + 30, y + 30);
 		break;
 		
-	    case 3:
+	    case 4:
 	    	SetDrMd(rp, JAM1);
 		Move(rp, x, y);
 		Draw(rp, x + 30, y);
@@ -209,18 +217,19 @@ static void action(void)
 		Draw(rp, x, y);
 		break;
 		
-	    case 4:
+	    case 5:
 	    	SetDrMd(rp, JAM1);
 		DrawEllipse(rp, x, y, 30, 30);
 		break;
+
 	}
-			       
+
         getevents();
 	
 	if (Keys[KC_SPACE])
 	{
 	    Keys[KC_SPACE] = 0;
-	    mode = (mode + 1) % 5;
+	    mode = (mode + 1) % 6;
 	    hue = 0;
 	}
 	
