@@ -13,7 +13,7 @@
 
 #include "dos_intern.h"
 
-#ifdef __m68000
+#ifdef __mc68000
 
 ULONG BCPL_CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *me);
 
