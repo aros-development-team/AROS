@@ -44,12 +44,12 @@ USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libi
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KRSRCS  := battclock bootloader dosboot kernel processor
-KLIBS   := exec boot aros dos graphics utility intuition keymap \
+KRSRCS  := battclock bootloader dosboot processor
+KLIBS   := boot aros dos graphics utility intuition keymap \
       	   expansion oop layers partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs
-KHIDDS  := hiddclass serial keyboard mouse irq graphics kbd ps2mouse vesagfx vgah pci pcipc
+KHIDDS  := hiddclass serial keyboard mouse graphics kbd ps2mouse vesagfx vgah pci pcipc
 KUSB    := poseidon_library.o hub_class.o hid_class.o massstorage_class.o pciusb_device.o usbromstartup_resource.o
 ##Disabled RSRC cpu isapnp
 
@@ -68,23 +68,23 @@ kernel-setup-pc-i386 :
 	%mkdirs_q $(BINDIR)/boot/grub
 
 #MM kernel-link-pc-i386 : kernel-setup-pc-i386
-kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
+kernel-link-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386
 
 #MM
-kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-pc-i386
+kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-kernel-pc-i386
 
 #MM kernel-package-pc-i386 : kernel-link-pc-i386
-kernel-package-pc-i386 : $(BINDIR)/boot/aros-pc-i386.gz
+kernel-package-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386
 
-$(BINDIR)/boot/aros-pc-i386 : $(KOBJS) $(DEPLIBS)
-	@$(KERNEL_CC) $(KERNEL_CFLAGS) -Wl,-N,-e,kernel_startup,-Ttext,0x00100000 \
-	    $(GENMAP) $(OSGENDIR)/boot/aros.map -o $@ $(KOBJS) \
+$(BINDIR)/boot/aros-kernel-pc-i386 : $(KOBJS) $(DEPLIBS)
+	@$(TARGET_CC) -Wl,-N \
+	    $(GENMAP) $(OSGENDIR)/boot/aros.map -T kernel.lds -o $@ $(KOBJS) \
 	    -static $(NOSTARTUP_LDFLAGS) -L$(LIBDIR) $(LIBS)
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment \
 	    -R .note.gnu.build-id $@
 
-$(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
-	@gzip -9 -f $^
+# $(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
+#	@gzip -9 -f $^
 
 #MM
 clean ::

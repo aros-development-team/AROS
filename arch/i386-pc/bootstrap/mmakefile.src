@@ -1,0 +1,46 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+TARGETDIR 	:= $(GENDIR)/$(CURDIR)
+KOBJS 		:=
+FILES		:= bootstrap screen elf support
+
+#MM kernel-bootstrap-i386 : linklibs kernel-kernel-pc-i386-kobj kernel-exec-kobj
+kernel-bootstrap-i386: $(BINDIR)/boot/aros-pc-i386.gz
+
+setup-pc-i386 :
+	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR) $(KOBJSDIR)
+
+$(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
+	@gzip -f $^
+	
+$(BINDIR)/boot/aros-pc-i386: setup-pc-i386 $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/kernel.bin.o 
+	$(HOST_LD) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds \
+		-o $@ $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/kernel.bin.o -L$(LIBDIR) -lm -lrom -lm
+	@strip --strip-unneeded -R .note -R .comment $@
+
+$(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) -o $@ -L$(LIBDIR)  -lrom -lm
+
+$(TARGETDIR)/kernel.bin.o: $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/irq_hidd.o
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T kernel.lds -o $(TARGETDIR)/kernel.bin $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/irq_hidd.o -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit      
+		$(STRIP) --strip-unneeded -R .note -R .comment $(TARGETDIR)/kernel.bin
+		cd $(TARGETDIR) && $(HOST_LD) -r --format binary --oformat elf32-i386 kernel.bin -o $@
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(TARGETDIR)/%.o : %.c
+	%compile_q
+
+$(TARGETDIR)/%.o : %.S
+	%compile_q
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+-include $(DEPS)
+
+%common
