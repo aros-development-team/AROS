@@ -32,7 +32,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
-#ifdef __m68000
+#ifdef __mc68000
 
 /* On m68k CPU we support old BCPL programs */
 
@@ -715,7 +715,7 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
 
     if (me->pr_Flags & PRF_FREESEGLIST)
     {
-#ifdef __m68000
+#ifdef __mc68000
     	ULONG *segarray = BADDR(me->pr_SegList);
 
     	if (segarray[3])
