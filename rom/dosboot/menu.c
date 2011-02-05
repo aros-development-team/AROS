@@ -318,7 +318,7 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
         }
     }
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
     {
     	volatile UBYTE *cia = (UBYTE*)0xbfe001;
     	volatile UWORD *potinp = (UWORD*)0xdff016;
