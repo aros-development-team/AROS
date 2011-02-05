@@ -87,7 +87,7 @@ AROS_UFH5(void, writeexpansion,
 		space = IntExpBase(ExpansionBase)->eb_z2Slots;
 		align = configDev->cd_BoardSize;
 	} else {
-		start = 0x10000000;
+		start = size > 0x20000000 ? 0x10000000 : 0x40000000;
 		end   = 0x7FFFFFFF;
 		space = IntExpBase(ExpansionBase)->eb_z3Slots;
 		align = 0x01000000;
