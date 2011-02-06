@@ -114,6 +114,8 @@ struct RootNode
     APTR             rn_RestartSeg;
       /* (struct DosInfo *) see below for DosInfo */
     BPTR             rn_Info;
+      /* BPTR to default (FFS) filesystem, used for example by WB C:Mount
+       * when mountlist filesystem is not specified */
     BPTR             rn_FileHandlerSegment;
       /* List of all CLI processes (struct CliProcList - see below). See also
          rn_TaskArray. */
