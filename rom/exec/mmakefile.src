@@ -35,7 +35,7 @@ ALL_FUNCTIONS	:= \
 
 INIT_FILE   := exec_init
 SYS_FILES   := prepareexecbase
-FILES	    := alertextra alert_cpu systemalert \
+FILES	    := alertextra alert_cpu systemalert initkicktags \
 	       memory memory_nommu mungwall traphandler exec_util
 
 # I need the private includes (for struct AROSCPUContext) and they
