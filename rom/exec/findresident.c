@@ -60,9 +60,9 @@
              * 2GB. on these platforms we assume aligned pointers and use bit
              * 0 instead */
 #ifdef __mc68000__
-	    if(*list & 0x80000000) list = (IPTR *)(*list & 0x7fffffff);
+	    if(*list & 0x80000000) { list = (IPTR *)(*list & 0x7fffffff); continue; }
 #else
-            if(*list & 0x1) list = (IPTR *)(*list & ~(IPTR)0x1);
+	    if(*list & 0x1) { list = (IPTR *)(*list & ~(IPTR)0x1); continue; }
 #endif
 
 	    if(!(strcmp( ((struct Resident *)*list)->rt_Name, name)) )
