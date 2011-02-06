@@ -40,20 +40,20 @@ struct AFS_work_Seg {
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
 {
     BOOL ok;
-    APTR DOSBase;
+    struct DosLibrary *DOSBase;
     struct AFS_work_Seg *seg;
     struct FileSysResource *fsr;
 
     /* Create device node and add it to the system.
      * The handler will then be started when it is first accessed
      */
-    DOSBase = OpenLibrary("dos.library", 0);
+    DOSBase = (struct DosLibrary*)OpenLibrary("dos.library", 0);
     if (DOSBase == NULL)
     	return FALSE;
 
     seg = AllocMem(sizeof(struct AFS_work_Seg), MEMF_CLEAR | MEMF_ANY);
     if (seg == NULL) {
-    	CloseLibrary(DOSBase);
+    	CloseLibrary((struct Library*)DOSBase);
     	return FALSE;
     }
 
@@ -64,6 +64,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
 
     ok = AddSegment("afs.handler", MKBADDR(&seg->aws_Next), CMD_SYSTEM);
     if (ok) {
+    	/* default filesystem */
+    	DOSBase->dl_Root->rn_FileHandlerSegment = MKBADDR(&seg->aws_Next);
     	fsr = (struct FileSysResource*)OpenResource("FileSystem.resource");
     	if (fsr) {
     	    ULONG dos = 0x444f5300;
