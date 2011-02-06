@@ -391,28 +391,6 @@ static ULONG cpu_detect(void)
 #define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
 #endif
 
-static UWORD getsyschecksum(struct ExecBase *sysbase)
-{
-	UWORD sum = 0;
-	UWORD *p = (UWORD*)&sysbase->SoftVer;
-	while (p <= &sysbase->ChkSum)
-		sum += *p++;
-	return sum;
-}
-static void setsyschecksum(void)
-{
-	SysBase->ChkSum = 0;
-	SysBase->ChkSum = getsyschecksum(SysBase) ^ 0xffff;
-}
-static BOOL issysbasevalid(struct ExecBase *sysbase)
-{
-	if (sysbase == NULL || (((ULONG)sysbase) & 0x80000001))
-		return FALSE;
-	if (sysbase->ChkBase != ~(IPTR)sysbase)
-		return FALSE;
-	return getsyschecksum(sysbase) == 0xffff;
-}
-
 extern void SuperstackSwap(void);
 /* This calls the register-ABI library
  * routine Exec/InitCode, for use in NewStackSwap()
@@ -432,11 +410,12 @@ static LONG doInitCode(ULONG startClass, ULONG version)
 	    }
             SysBase->SysStkLower    = ss_stack;
             SysBase->SysStkUpper    = ss_stack + SS_STACK_SIZE;
-	    setsyschecksum();
+	    SetSysBaseChkSum();
 
 	    Supervisor(SuperstackSwap);
 	} while(0);
 
+	InitKickTags();
 	InitCode(startClass, version);
 
 	return 0;
@@ -482,6 +461,7 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	ULONG LastAlert[4] = { 0, 0, 0, 0};
 	ULONG oldmem;
 	struct ExecBase *oldsysbase = SysBase;
+	BOOL invalidsysbase = FALSE;
 	ULONG rom_start = (ULONG)&_rom_start;
 	ULONG rom_end = (ULONG)&_ext_start + 0x80000;
 	ULONG romloader = 0;
@@ -505,17 +485,19 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 
 
 	/* Zap out old SysBase if invalid */
-	if (issysbasevalid(SysBase)) {
+	if (IsSysBaseValid(SysBase)) {
 	    DEBUGPUTHEX(("[SysBase] was at", (ULONG)SysBase));
 	    if ((ULONG)SysBase >= 0x100 && (ULONG)SysBase < 0x400) {
 	    	/* ram loader fake sysbase */
 	    	romloader = (ULONG)SysBase;
 	    	SysBase = NULL;
 		DEBUGPUTHEX(("NMI vector at", (ULONG)nmi));
+	    } else {
+	    	/* TODO: ColdCapture */
 	    }
-	    oldsysbase = NULL;
 	} else {
 	    DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)SysBase));
+	    invalidsysbase = TRUE;
 	}
 
 	for (i = 0; membanks[i + 1]; i += 2) {
@@ -575,7 +557,7 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	mh = addmemoryregion(membanks[0], membanks[1]);
 	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
-	PrepareExecBase(mh, NULL, NULL);
+	PrepareExecBaseFromOld(mh, oldsysbase, NULL, NULL);
 
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
         SysBase->SysStkLower    = (APTR)ss_stack_lower;
@@ -649,19 +631,21 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 
 	/* Autoconfig ram expansions are now configured */
 
-	if (oldsysbase && issysbasevalid(oldsysbase)) {
+	if (invalidsysbase && oldsysbase && IsSysBaseValid(oldsysbase)) {
 		/* sysbase found in autoconfig ram */
-		SysBase = oldsysbase;
-		DEBUGPUTHEX(("[SysBase] now valid at", (ULONG)SysBase));
+		DEBUGPUTHEX(("[SysBase] now valid at", (ULONG)oldsysbase));
+		SysBase = PrepareExecBaseMove(oldsysbase);
+		DEBUGPUTHEX(("[SysBase] initialized at", (ULONG)SysBase));
 		/* memory leak! we should free "temp" sysbase */
 	} else if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024 && (
 		(TypeOfMem(SysBase) & MEMF_CHIP) ||
 		((ULONG)SysBase >= 0x00a00000ul && (ULONG)SysBase < 0x01000000ul)
 		)) {
 			/* Move execbase to real fast if available now */
-			PrepareExecBase(NULL, NULL, NULL);
+			SysBase = PrepareExecBaseMove(SysBase);
 			DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
 	}
+	/* TODO: late ColdCapture if Exec was in autoconfig RAM */
 	
 	for (i = 0; membanks[i + 1]; i += 2) {
 		ULONG addr = membanks[i];
@@ -678,7 +662,7 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 		DEBUGPUTHEX(("[romloader] coldcapture:", (ULONG)SysBase->ColdCapture));
 	}
 
-	setsyschecksum();
+	SetSysBaseChkSum();
 
 #ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
 	PRESERVE_ALL(SysBase, Exec, Disable, 20);
