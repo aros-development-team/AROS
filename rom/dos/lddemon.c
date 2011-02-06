@@ -196,7 +196,7 @@ LDLoad(
     Initialise the library.
 */
 static struct Library *
-LDInit(BPTR seglist, struct DosLibrary *DOSBase)
+LDInit(BPTR seglist, struct DosLibrary *DOSBase, struct List *list)
 {
     struct ExecBase *SysBase = DOSBase->dl_SysBase;
     BPTR seg = seglist;
@@ -226,15 +226,26 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 		&& res->rt_MatchTag == res )
 	    {
 		struct Library *lib;
+		struct Node *node;
 
 		D(bug("[LDInit] Calling InitResident(%p) on %s\n", res, res->rt_Name));
+		/* AOS compatibility hack. Ramlib ignores InitResident() return code.
+		 * After InitResident() it checks if lib/dev appeared in exec lib/dev list.
+		 */
 		Forbid();
 		lib = InitResident(res, seglist);
+		node = FindName(list, res->rt_Name);
 		Permit();
-		D(bug("[LDInit] Done calling InitResident(%p) on %s\n", res, res->rt_Name));
+		D(bug("[LDInit] Done calling InitResident(%p) on %s, seg %p node %p\n", res, res->rt_Name, lib, node));
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+		if( node == NULL )
+		    UnLoadSeg(seglist);
+		return (struct Library*)node;
+#else
 		if( lib == NULL )
 		    UnLoadSeg(seglist);
 		return lib;
+#endif
 	    }
 	}
 	seg = *(BPTR *)BADDR(seg);
@@ -439,7 +450,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 	WaitPort(&ldd.ldd_ReplyPort);
 	D(bug("[LDCaller] Returned\n"));
 
-	library = LDInit(MKBADDR(ldd.ldd_Return), DOSBase);
+	library = LDInit(MKBADDR(ldd.ldd_Return), DOSBase, &SysBase->LibList);
 
         if( library != NULL )
         {
@@ -611,7 +622,7 @@ AROS_LH4(LONG, OpenDevice,
 	WaitPort(&ldd.ldd_ReplyPort);
 	D(bug("[LDCaller] Returned\n"));
 
-	iORequest->io_Device = (struct Device *)LDInit(MKBADDR(ldd.ldd_Return), DOSBase);
+	iORequest->io_Device = (struct Device *)LDInit(MKBADDR(ldd.ldd_Return), DOSBase, &SysBase->DeviceList);
 
 	if(iORequest->io_Device)
         {
