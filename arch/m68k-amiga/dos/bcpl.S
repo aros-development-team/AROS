@@ -6,6 +6,7 @@
     Lang: english
 */
 #define DEBUG 0
+#define BCPLSTRINGDEBUG 0
 #include <aros/m68k/asm.h>
 
 #include "bcpl.h"
@@ -296,40 +297,29 @@ BCPL Read           /* -0c, LONG, Read, @FileHandle, &buf, len */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPL strncpy        /* -08, void, @src, @dest, n */
-    movem.l	%d2-%d5,%sp@-
-    lsl.l	#2,%d1
-    lsl.l	#2,%d2
-    clr.l	%d4
-    clr.l	%d5
-    move.b	%a0@(%d1),%d4
-    move.b	%a0@(%d2),%d5
-    cmp.l	%d5,%d3		/* Dest already bigger than N? Exit. */
-    ble		2f
-    add.l	%d5,%d4		/* D4 is strlen(src) + strlen(dest) */
-    cmp.l	%d4,%d3		/* Total > N? */
-    bge		0f
-    move.l	%d3,%d4		/* Force N as the max length */
-0:
-    sub.l	%d5,%d4		/* D4 -= strlen(dest) */
-    add.l	%d2,%d5		/* Set D5 as the end of dest */
-    bra		.Lstrncpy_loop_cond
-
-.Lstrncpy_loop:
-    move.b	%a0@(%d1),%a0@(%d5)
-    addq.l	#1,%d1
-    addq.l	#1,%d5
-.Lstrncpy_loop_cond:
-    dbf		%d4,.Lstrncpy_loop
-
-    sub.l	%d2,%d5
-    move.b	%d5,%a0@(-1,%d2)	/* Fix up dest len */
-2:
-    movem.l	%sp@+,%d2-%d5
+BCPL memcpy        /* -08, void, @src, @dest, n */
+    movem.l	%d2-%d3/%a0-%a1,%sp@-
+	lsl.l	#2,%d1
+	move.l	%d1,%a0
+	lsl.l	#2,%d2
+	move.l	%d2,%a1
+.copyloop:
+	subq.l	#1,%d3
+	bmi.s	.copydone
+	move.l	%a0@+,%a1@+
+	bra.s	.copyloop
+.copydone:
+    movem.l	%sp@+,%d2-%d3/%a0-%a1
     BRTS
 
 BCPL Open           /* -04, FileHandle ^, &name, mode */
     movem.l	%a0-%a1/%a6,%sp@-
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
     move.l	%a2@(BCPL_DOSBase),%a6
     jsr		%a6@(5 * -6)	/* DOS/Open() */
     movem.l	%sp@+,%a0-%a1/%a6
@@ -506,6 +496,12 @@ BCPL freevec        /*  78, void, @vec */
 BCPL openDevice     /*  7c, BOOL, @IORequest, @name, unit, flags */
     movem.l	%d5/%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
     lsl.l	#2,%d1
     move.l	%d1,%d5
 
@@ -816,7 +812,7 @@ BCPL findinput      /* ec, FileHandle ^, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
 
     moveq.l	#1, %d0
-    jsr		bstr_to_cstr
+    bsr		bstr_to_cstr
 
     move.l	%a2@(BCPL_DOSBase),%a6
     move.l	#1005 /* MODE_OLDFILE */,%d2
@@ -828,7 +824,7 @@ BCPL findoutput     /* f0, FileHandle ^, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
   
     moveq.l	#1, %d0
-    jsr		bstr_to_cstr
+    bsr		bstr_to_cstr
 
     move.l	%a2@(BCPL_DOSBase),%a6
     move.l	#1006 /* MODE_NEWFILE */,%d2
@@ -1042,10 +1038,12 @@ BCPL charcmp        /* 130, long , char1, char2 */
 BCPL strcmp         /* 134, long , @String1, @String2 */
     movem.l	%d1-%d3/%a0-%a1,%sp@-
 
-    ;move.l	%d1,%d0
-	;bsr		bstr_debug
-	;move.l	%d2,%d0
-	;bsr		bstr_debug
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+	move.l	%d2,%d0
+	bsr		bstr_debug
+#endif
 
     lsl.l	#2,%d1
     move.l	%d1,%a0
@@ -1122,6 +1120,13 @@ BCPL subString      /* 140, void, @string, @substring */
     move.l	SysBase,%a6
     move.l	%a2@(BCPL_DOSBase),%a5
 
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+	move.l	%d2,%d0
+	bsr		bstr_debug
+#endif
+
     moveq	#0,%d3
 
     lsl.l	#2,%d1
@@ -1179,6 +1184,12 @@ findarg_end:
 BCPL load           /* 144, SegList ^, @filename */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
     moveq	#1,%d0
     bsr		bstr_to_cstr
     jsr		%a6@(25 * -6)	/* DOS/LoadSeg() */
@@ -1198,6 +1209,12 @@ BCPLd tidyup         /* 150, void,  */
 BCPL addDevice      /* 154, void, @name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
     moveq.l	#1,%d0
     bsr		bstr_to_cstr
     moveq	#0,%d2			/* DLT_DEVICE */
@@ -1343,7 +1360,7 @@ BCPL deviceproc     /* 198, FileLock ^, @filename */
     move.l	%a2@(BCPL_DOSBase),%a6
 
     moveq.l	#1, %d0
-    jsr		bstr_to_cstr
+    bsr		bstr_to_cstr
 
     jsr		%a6@(29 * -6)	/* DOS/DeviceProc() */
     movem.l	%sp@+,%a0-%a1/%a6
@@ -1366,12 +1383,17 @@ BCPL extractDeviceName  /* 1ac, void, @buf, separator, @name , oldpos */
     movem.l	%d1-%d5/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
 
+#if BCPLSTRINGDEBUG
+    move.l	%d3,%d0
+	bsr		bstr_debug
+#endif
+
 							/* D2 = SplitName 'separator' */
     subq.l	#1,%d4			/* D4 = oldpos - 1 (?) */
 							
     move.l	%d3, %d1
     moveq	#4, %d0
-    jsr		bstr_to_cstr
+    bsr		bstr_to_cstr
     						/* D1 = SplitName 'name' */
 
     move.l	%a1@(0), %d3	/* Recover D1 (buf) from A1[0] */
@@ -1399,7 +1421,7 @@ BCPL lock           /* 1b0, FileLock ^, @name */
     move.l	%a2@(BCPL_DOSBase),%a6
 
     moveq.l	#1, %d0
-    jsr		bstr_to_cstr
+    bsr		bstr_to_cstr
 
     moveq.l	#-2,%d2		/* Shared lock */
     jsr		%a6@(14 * -6)	/* DOS/Lock() */
@@ -1460,40 +1482,45 @@ BCPL lock_1ec       /* 1ec, FileLock ^, &name */
     movem.l	%d2/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
     moveq.l	#1, %d0
-    jsr		bstr_to_cstr
+    bsr		bstr_to_cstr
     moveq.l	#-2,%d2		/* Shared lock */
     jsr		%a6@(14 * -6)	/* DOS/Lock() */
     movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
 BCPL findDevInfo    /* 1f0, DevInfo ^, @name */
-    movem.l	%d1-%d3/%a0-%a1/%a6,%sp@-
+    movem.l	%d2-%d3/%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
 
-    moveq.l	#1, %d0
-    jsr		bstr_to_cstr
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
+    moveq.l	#1,%d0
+    bsr		bstr_to_cstr
 
     move.l	%d1,%sp@-
-    move.l	#0x1d,%d1	/* LDF_ALL | LDF_READ */
+    moveq	#0x1d,%d1	/* LDF_ALL | LDF_READ */
     jsr		%a6@(109 * -6)	/* DOS/LockDosList */
     move.l	%d0,%d1
     move.l	%sp@+,%d2
-    move.l	#0x1d,%d3	/* LDF_ALL | LDF_READ */
+    moveq	#0x1d,%d3	/* LDF_ALL | LDF_READ */
     jsr		%a6@(114 * -6)	/* DOS/FindDosEntry */
     move.l	%d0,%sp@-
-    move.l	#0x1d,%d1	/* LDF_ALL | LDF_READ */
+    moveq	#0x1d,%d1	/* LDF_ALL | LDF_READ */
     jsr		%a6@(110 * -6)	/* DOS/UnlockDosList */
     move.l	%sp@+,%d0
     lsr.l	#2,%d0
-    movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
+    movem.l	%sp@+,%d2-%d3/%a0-%a1/%a6
     BRTS
 
 BCPL createDir      /* 1f4, FileLock^, @name */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(BCPL_DOSBase),%a6
 
-    moveq.l	#1, %d0
-    jsr		bstr_to_cstr
+    moveq.l	#1,%d0
+    bsr		bstr_to_cstr
 
     jsr		%a6@(20 * -6)	/* DOS/CreateDir() */
     movem.l	%sp@+,%a0-%a1/%a6
@@ -1549,14 +1576,15 @@ bstr_to_cstr:
     movem.l	%sp@+,%d0/%a0-%a1
     rts
 
+#if BCPLSTRINGDEBUG
 .bstr_format:
     .string  "'%b'\n"
-
 bstr_debug:
-	move.l	%d1,%sp@-
+	movem.l	%d1/%a0-%a1,%sp@-
     move.l  %d0,%sp@-
-    move.l  #.bstr_format,%sp@-
+    pea		.bstr_format(%pc)
     jsr     kprintf
     addq.l	#8,%sp
-    move.l	%sp@+,%d1
+    movem.l	%sp@+,%d1/%a0-%a1
     rts
+#endif
