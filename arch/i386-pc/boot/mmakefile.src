@@ -77,7 +77,7 @@ kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-kernel-pc-i386
 kernel-package-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386
 
 $(BINDIR)/boot/aros-kernel-pc-i386 : $(KOBJS) $(DEPLIBS)
-	@$(TARGET_CC) -Wl,-N \
+	@$(TARGET_CC) $(CFLAGS) -Wl,-N \
 	    $(GENMAP) $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS) \
 	    -static $(NOSTARTUP_LDFLAGS) -L$(LIBDIR) $(LIBS)
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment \
