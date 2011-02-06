@@ -78,6 +78,33 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 	return (struct Library *)AROSSupportBase;
 }
 
+BOOL IsSysBaseValid(struct ExecBase *sysbase)
+{
+    if (sysbase == NULL || (((ULONG)sysbase) & 0x80000001))
+	return FALSE;
+    if (sysbase->ChkBase != ~(IPTR)sysbase)
+	return FALSE;
+    if (sysbase->SoftVer != VERSION_NUMBER)
+	return FALSE;
+    /* more tests? */
+    return GetSysBaseChkSum(sysbase) == 0xffff;
+}
+
+UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
+{
+     UWORD sum = 0;
+     UWORD *p = (UWORD*)&sysbase->SoftVer;
+     while (p <= &sysbase->ChkSum)
+	sum += *p++;
+     return sum;
+}
+void SetSysBaseChkSum(void)
+{
+     SysBase->ChkBase=~(IPTR)SysBase;
+     SysBase->ChkSum = 0;
+     SysBase->ChkSum = GetSysBaseChkSum(SysBase) ^ 0xffff;
+}
+
 static void reloclist(struct List *l)
 {
 	struct Node *n;
@@ -94,14 +121,29 @@ static void reloclist(struct List *l)
 	n->ln_Succ = (struct Node*)&l->lh_Tail;
 }
 
-/* move execbase to other location, used by m68k-amiga port to move exec from
+/* Move execbase to better location, used by m68k-amiga port to move exec from
  * chip or slow ram to real fast ram if autoconfig detected any real fast boards
+ * RTF_SINGLETASK run level.
+ * Note that oldSysBase is NOT location where to copy from but location of SysBase
+ * before reset (from where to copy reset proof pointers)
  */
-static struct ExecBase *MoveExecBase(void)
+struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
 {
-	ULONG totalsize, i;
-	struct ExecBase *oldsb = SysBase, *newsb;
+    ULONG totalsize, i;
+    struct ExecBase *oldsb = SysBase, *newsb;
 	
+    APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
+    APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
+
+	if (oldSysBase) {
+		ColdCapture = oldSysBase->ColdCapture;
+    		CoolCapture = oldSysBase->CoolCapture;
+    		WarmCapture = oldSysBase->WarmCapture;
+    		KickMemPtr = oldSysBase->KickMemPtr; 
+    		KickTagPtr = oldSysBase->KickTagPtr;
+    		KickCheckSum = oldSysBase->KickCheckSum;
+    	}
+
 	Remove((struct Node*)oldsb);
 
 	totalsize = oldsb->LibNode.lib_NegSize + oldsb->LibNode.lib_PosSize;
@@ -130,9 +172,20 @@ static struct ExecBase *MoveExecBase(void)
 	InitSemaphore(&PrivExecBase(newsb)->MemListSem);
 	InitSemaphore(&PrivExecBase(newsb)->LowMemSem);
 
-	newsb->ChkBase=~(IPTR)newsb;
 	SysBase = newsb;
 	FreeMem((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, totalsize);
+
+	if (oldSysBase) {
+    		SysBase->ColdCapture = ColdCapture;
+    		SysBase->CoolCapture = CoolCapture;
+    		SysBase->WarmCapture = WarmCapture;
+    		SysBase->KickMemPtr = KickMemPtr;
+    		SysBase->KickTagPtr = KickTagPtr;
+    		SysBase->KickCheckSum = KickCheckSum;
+    	}
+
+	SetSysBaseChkSum();
+
 	return SysBase;
 }
 
@@ -155,17 +208,26 @@ static struct ExecBase *MoveExecBase(void)
  *						Pavel Fedin <pavel_fedin@mail.ru>
 */
 
-struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *data)
+static struct ExecBase *PrepareEB(struct MemHeader *mh, struct ExecBase *oldSysBase, char *args, struct HostInterface *data)
 {
     ULONG   negsize = 0;
     ULONG totalsize, i;
     VOID  **fp      = LIBFUNCTABLE;
 
-    if (mh == NULL)
-    	return MoveExecBase();
+    /* Copy reset proof pointers if oldSysBase is set. This routine does not check if
+     * oldSysBase is valid because invalid pointers can cause crashes on some platforms */
 
-    /* TODO: at this point we should check if SysBase already exists and, if so,
-       take special care about reset-surviving things. */
+    APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
+    APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
+
+    if (oldSysBase) {
+	ColdCapture = oldSysBase->ColdCapture;
+    	CoolCapture = oldSysBase->CoolCapture;
+    	WarmCapture = oldSysBase->WarmCapture;
+    	KickMemPtr = oldSysBase->KickMemPtr; 
+    	KickTagPtr = oldSysBase->KickTagPtr;
+    	KickCheckSum = oldSysBase->KickCheckSum;
+    }
 
     /* Calculate the size of the vector table */
     while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;
@@ -189,6 +251,15 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 	      AROS_UFCA(CONST_APTR, LIBFUNCTABLE, A1),
 	      AROS_UFCA(CONST_APTR, NULL, A2),
 	      struct ExecBase *, SysBase);
+
+    if (oldSysBase) {
+    	SysBase->ColdCapture = ColdCapture;
+    	SysBase->CoolCapture = CoolCapture;
+    	SysBase->WarmCapture = WarmCapture;
+    	SysBase->KickMemPtr = KickMemPtr;
+    	SysBase->KickTagPtr = KickTagPtr;
+    	SysBase->KickCheckSum = KickCheckSum;
+    }
 
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;
@@ -246,10 +317,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 
     SysBase->SoftVer        = VERSION_NUMBER;
 
-    SysBase->ColdCapture    = SysBase->CoolCapture
-	                    = SysBase->WarmCapture
-			    = NULL;
-
     SysBase->MaxLocMem      = (IPTR)mh->mh_Upper;
 
     SysBase->Quantum        = 4;
@@ -263,8 +330,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
     /* Default frequencies */
     SysBase->VBlankFrequency = 50;
     SysBase->PowerSupplyFrequency = 1;
-
-    SysBase->ChkBase=~(IPTR)SysBase;
 
     /* Parse some arguments from command line */
     if (args)
@@ -288,6 +353,16 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostIn
 
     PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
+    SetSysBaseChkSum();
 
     return SysBase;
+}
+
+struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *data)
+{
+    return PrepareEB(mh, NULL, args, data);
+}
+struct ExecBase *PrepareExecBaseFromOld(struct MemHeader *mh, struct ExecBase *oldSysBase, char *args, struct HostInterface *data)
+{
+    return PrepareEB(mh, oldSysBase, args, data);
 }
