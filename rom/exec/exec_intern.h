@@ -62,6 +62,14 @@ extern void __AROS_InitExecBase (void);
 
 APTR allocBootMem(struct MemHeader *mh, ULONG size);
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *hif);
+struct ExecBase *PrepareExecBaseFromOld(struct MemHeader *mh, struct ExecBase *oldSysBase, char *args, struct HostInterface *hif);
+struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase);
 BOOL Exec_PreparePlatform(struct Exec_PlatformData *pdata, struct HostInterface *hif);
+
+void InitKickTags(void);
+void InitResidentList(IPTR *list, ULONG startClass, ULONG version);
+UWORD GetSysBaseChkSum(struct ExecBase *sysbase);
+void SetSysBaseChkSum(void);
+BOOL IsSysBaseValid(struct ExecBase *sysbase);
 
 #endif /* __EXEC_INTERN_H__ */
