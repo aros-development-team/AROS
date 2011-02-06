@@ -247,6 +247,10 @@
                 UnLockObject(iim.iim_FileLock);
             }
         }
+    } else {
+    	/* NULL name = return empty DiskObject */
+    	struct DiskObject temp = { 0 };
+    	icon = DupDiskObjectA(&temp, NULL);
     }
 
     /* Set error code */
