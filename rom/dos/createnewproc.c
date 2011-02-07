@@ -652,15 +652,8 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
     struct Process *me = (struct Process *)FindTask(NULL);
     LONG result;
 
-#ifdef __mc68000
-    result = AROS_UFC3(ULONG, initialPC,
-	AROS_UFCA(STRPTR, argPtr, A0),
-	AROS_UFCA(ULONG, argSize, D0),
-	AROS_UFCA(struct ExecBase *, SysBase, A6));
-#else
     /* Call entry point of our process, remembering stack in its pr_ReturnAddr */
     result = CallEntry(argPtr, argSize, initialPC, me);
-#endif
 
     /* Call user defined exit function before shutting down. */
     if (me->pr_ExitCode != NULL)
