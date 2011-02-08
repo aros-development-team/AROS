@@ -779,11 +779,13 @@ int elf2hunk(int file, int hunk_fd)
     	switch (hh[i]->type) {
     	case HUNK_BSS:
     	    D(bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4)));
+    	    wlong(hunk_fd, hh[i]->type);
     	    wlong(hunk_fd, (hh[i]->size + 4) / 4);
     	    hunks++;
     	    break;
     	case HUNK_CODE:
     	case HUNK_DATA:
+    	    wlong(hunk_fd, hh[i]->type);
     	    D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
     	    wlong(hunk_fd, (hh[i]->size + 4)/4);
     	    err = write(hunk_fd, hh[i]->data - sizeof(ULONG), ((hh[i]->size + 4)/4)*4);
