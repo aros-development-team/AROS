@@ -40,7 +40,7 @@ struct Library *IntuitionBase;
 struct Globals global_data;
 struct Globals *glob = &global_data;
 
-const TEXT version_string[] = "$VER: fat.handler 41.50 (17.1.2011)";
+const TEXT version_string[] = "$VER: fat.handler 41.51 (8.2.2011)";
 
 void handler(void) {
     struct Message *msg;
