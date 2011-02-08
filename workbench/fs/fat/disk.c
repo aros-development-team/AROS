@@ -52,7 +52,8 @@ void FillDiskInfo (struct InfoData *id) {
 
     if (glob->sb) {
         id->id_NumBlocks = glob->sb->total_sectors;
-        id->id_NumBlocksUsed = glob->sb->total_sectors - ((glob->sb->free_clusters * glob->sb->clustersize) >> glob->sb->sectorsize_bits);
+        id->id_NumBlocksUsed = glob->sb->total_sectors
+            - (glob->sb->free_clusters << glob->sb->cluster_sectors_bits);
         id->id_BytesPerBlock = glob->sb->sectorsize;
 
 	id->id_DiskType = ID_DOS_DISK;

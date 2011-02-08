@@ -402,6 +402,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         CountFreeClusters(sb);
 
     D(bug("\tFAT Filesystem successfully detected.\n"));
+    D(bug("\tFree Clusters = %ld\n", sb->free_clusters));
     FreeMem(boot, bsize);
     return 0;
 }
