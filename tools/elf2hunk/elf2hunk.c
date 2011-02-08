@@ -554,7 +554,7 @@ static int relocate
         }
 
 	D(bug("[ELF2HUNK]   Hunk %d, offset 0x%x: base 0x%x\n", (int)hunk, (int)offset, (int)value));
-        *(ULONG *)(h->data + offset) += value;
+        *(ULONG *)(h->data + offset) = htonl(value + ntohl(*(ULONG *)(h->data + offset)));
         if (hunk == ~0) {
     	    h->relocs--;
     	    continue;
@@ -627,12 +627,16 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
 {
     int i;
 
+    if (hh[h]->relocs == 0)
+    	return;
+
     /* Sort the relocations by reference hunk id */
     qsort(hh[h]->reloc, hh[h]->relocs, sizeof(hh[h]->reloc[0]), reloc_cmp);
 
     wlong(hunk_fd, HUNK_RELOC32);
+    D(bug("\tHUNK_RELOC32: %d relocations\n", hh[h]->relocs));
 
-    for (i = 0; i < hh[h]->relocs; i++) {
+    for (i = 0; i < hh[h]->relocs; ) {
     	int count;
     	int shid = hh[h]->reloc[i].shid;
     	for (count = i; count < hh[h]->relocs; count++)
@@ -640,11 +644,11 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     	    	break;
     	count -= i;
     	wlong(hunk_fd, count);
-    	D(bug("\tHUNK_RELOC32: %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
+    	D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
     	/* Convert from ELF hunk ID to AOS hunk ID */
     	wlong(hunk_fd, hh[shid]->hunk);
     	for (; count > 0; i++, count--) {
-    	    D(bug("\t\t0x%08x %s\n", (int)hh[h]->reloc[i].offset, hh[h]->reloc[i].symbol));
+    	    D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->reloc[i].offset, hh[h]->reloc[i].symbol));
     	    wlong(hunk_fd, hh[h]->reloc[i].offset);
     	}
     }
@@ -791,6 +795,12 @@ int elf2hunk(int file, int hunk_fd, const char *libname)
     	    D(bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4)));
     	    wlong(hunk_fd, hh[i]->type);
     	    wlong(hunk_fd, (hh[i]->size + 4) / 4);
+if (0) {
+    	    for (s = 0; s < int_shnum; s++) {
+    	    	if (hh[s] && hh[s]->type == HUNK_SYMBOL)
+    	    	    sym_dump(hunk_fd, sh, hh, i, s);
+    	    }
+}
     	    wlong(hunk_fd, HUNK_END);
     	    hunks++;
     	    break;
