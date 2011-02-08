@@ -41,7 +41,7 @@ makedirs:
 	else true ; fi
 
 # Create the tools that are used to build AROS.
-tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
+tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) $(ELF2HUNK) \
 	$(FLEXCAT) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
 	$(FD2INLINE) $(FD2PRAGMA) $(SFDC)
@@ -53,6 +53,10 @@ $(TOOLLIB) : $(wildcard $(SRCDIR)/tools/toollib/*.[ch])
 $(GENMF) : $(SRCDIR)/tools/genmf/genmf.py
 	@$(ECHO) Copying genmf...
 	@./config.status $(subst $(TOP)/,,$(GENMF)) genmf_executable
+
+$(ELF2HUNK) : $(SRCDIR)/tools/elf2hunk/elf2hunk.c
+	@$(ECHO) Building elf2hunk...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/elf2hunk SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(ARCHTOOL) : $(SRCDIR)/tools/archtools/archtool.c
 	@$(ECHO) Building archtool...
