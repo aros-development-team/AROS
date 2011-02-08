@@ -1137,6 +1137,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         SetFunction(&ExecBase->LibNode, -86 * LIB_VECTSIZE,
             AROS_SLIB_ENTRY(MemoryRawPutChar, Exec));
     }
+    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL; /* temp fix for debug=memory */
     RawIOInit();
 
     /* Scan for valid RomTags */
