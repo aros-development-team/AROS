@@ -649,7 +649,7 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     }
 }
 
-int elf2hunk(int file, int hunk_fd)
+int elf2hunk(int file, int hunk_fd, const char *libname)
 {
     struct hunkheader **hh;
     struct elfheader  eh;
@@ -751,10 +751,18 @@ int elf2hunk(int file, int hunk_fd)
         }
     }
 
-    D(bug("HUNK_HEADER: 0x%08x, hunks=%d, first=%d, last=%d\n", 0, hunks, 0, hunks-1));
+    D(bug("HUNK_HEADER: \"%s\", hunks=%d, first=%d, last=%d\n", libname, hunks, 0, hunks-1));
 
     wlong(hunk_fd, HUNK_HEADER);
-    wlong(hunk_fd, 0);	/* We don't support shared libraries yet */
+    if (libname == NULL) {
+    	wlong(hunk_fd, 0);	/* No name */
+    } else {
+    	int lsize = (strlen(libname) + 4) / 4;
+    	wlong(hunk_fd, lsize);
+    	err = write(hunk_fd, libname, lsize * 4);
+    	if (err < 0)
+    	    return EXIT_FAILURE;
+    }
     wlong(hunk_fd, hunks);
     wlong(hunk_fd, 0);	/* First hunk is #0 */
     wlong(hunk_fd, hunks - 1); /* Last hunk is hunks-1 */
@@ -785,12 +793,12 @@ int elf2hunk(int file, int hunk_fd)
     	    break;
     	case HUNK_CODE:
     	case HUNK_DATA:
-    	    wlong(hunk_fd, hh[i]->type);
     	    D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
+    	    wlong(hunk_fd, hh[i]->type);
     	    wlong(hunk_fd, (hh[i]->size + 4)/4);
     	    err = write(hunk_fd, hh[i]->data - sizeof(ULONG), ((hh[i]->size + 4)/4)*4);
     	    if (err < 0)
-    	    	return 0;
+    	    	return EXIT_FAILURE;
     	    for (s = 0; s < int_shnum; s++) {
     	    	if (hh[s] && hh[s]->type == HUNK_SYMBOL)
     	    	    sym_dump(hunk_fd, sh, hh, i, s);
@@ -801,7 +809,7 @@ int elf2hunk(int file, int hunk_fd)
     	    break;
     	default:
     	    D(bug("Unsupported allocatable hunk type %d\n", (int)hh[i]->type));
-    	    return 0;
+    	    return EXIT_FAILURE;
     	}
     }
 
@@ -828,8 +836,30 @@ error:
 int main(int argc, char **argv)
 {
     int elf_fd, hunk_fd;
+    const char *libname;
+
+    if (argc != 3) {
+    	fprintf(stderr, "Usage:\n%s file.elf file.hunk\n", argv[0]);
+    	return EXIT_FAILURE;
+    }
 
     elf_fd = open(argv[1], O_RDONLY);
+    if (elf_fd < 0) {
+    	perror(argv[1]);
+    	return EXIT_FAILURE;
+    }
+
     hunk_fd = open(argv[2], O_RDWR | O_CREAT | O_TRUNC, 0755);
-    return elf2hunk(elf_fd, hunk_fd);
+    if (hunk_fd < 0) {
+    	perror(argv[2]);
+    	return EXIT_FAILURE;
+    }
+
+    libname = strrchr(argv[1], '/');
+    if (libname == NULL)
+    	libname = argv[1];
+    else
+    	libname++;
+
+    return elf2hunk(elf_fd, hunk_fd, libname);
 }
