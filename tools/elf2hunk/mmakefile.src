@@ -1,0 +1,11 @@
+include $(TOP)/config/make.cfg
+
+#MM- build-tools : build-tools-elf2hunk
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+
+%build_prog mmake=build-tools-elf2hunk \
+    progname=elf2hunk targetdir=$(AROSDIR)/Build/Tools \
+    uselibs=arosc
+
+%common
