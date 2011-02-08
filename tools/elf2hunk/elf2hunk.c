@@ -630,10 +630,11 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     /* Sort the relocations by reference hunk id */
     qsort(hh[h]->reloc, hh[h]->relocs, sizeof(hh[h]->reloc[0]), reloc_cmp);
 
+    wlong(hunk_fd, HUNK_RELOC32);
+
     for (i = 0; i < hh[h]->relocs; i++) {
     	int count;
     	int shid = hh[h]->reloc[i].shid;
-    	wlong(hunk_fd, HUNK_RELOC32);
     	for (count = i; count < hh[h]->relocs; count++)
     	    if (hh[h]->reloc[count].shid != shid)
     	    	break;
@@ -647,6 +648,7 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     	    wlong(hunk_fd, hh[h]->reloc[i].offset);
     	}
     }
+    wlong(hunk_fd, 0);
 }
 
 int elf2hunk(int file, int hunk_fd, const char *libname)
@@ -714,7 +716,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname)
         }
         else
         /* Load the section in memory if needed, and make an hunk out of it */
-        if (sh[i].flags & SHF_ALLOC)
+        if (sh[i].flags & SHF_ALLOC && sh[i].size > 0)
         {
             hh[i] = calloc(sizeof(struct hunkheader), 1);
             hh[i]->size = sh[i].size;
@@ -789,6 +791,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname)
     	    D(bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4)));
     	    wlong(hunk_fd, hh[i]->type);
     	    wlong(hunk_fd, (hh[i]->size + 4) / 4);
+    	    wlong(hunk_fd, HUNK_END);
     	    hunks++;
     	    break;
     	case HUNK_CODE:
@@ -796,16 +799,18 @@ int elf2hunk(int file, int hunk_fd, const char *libname)
     	    D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
     	    wlong(hunk_fd, hh[i]->type);
     	    wlong(hunk_fd, (hh[i]->size + 4)/4);
-    	    err = write(hunk_fd, hh[i]->data - sizeof(ULONG), ((hh[i]->size + 4)/4)*4);
+    	    err = write(hunk_fd, hh[i]->data, ((hh[i]->size + 4)/4)*4);
     	    if (err < 0)
     	    	return EXIT_FAILURE;
+if (0) {
     	    for (s = 0; s < int_shnum; s++) {
     	    	if (hh[s] && hh[s]->type == HUNK_SYMBOL)
     	    	    sym_dump(hunk_fd, sh, hh, i, s);
     	    }
+}
     	    reloc_dump(hunk_fd, hh, i);
-    	    D(bug("\tHUNK_END\n"));
     	    wlong(hunk_fd, HUNK_END);
+    	    D(bug("\tHUNK_END\n"));
     	    break;
     	default:
     	    D(bug("Unsupported allocatable hunk type %d\n", (int)hh[i]->type));
@@ -861,5 +866,6 @@ int main(int argc, char **argv)
     else
     	libname++;
 
+    libname = NULL;
     return elf2hunk(elf_fd, hunk_fd, libname);
 }
