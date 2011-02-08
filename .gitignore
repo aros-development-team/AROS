@@ -1234,8 +1234,8 @@
 # /rom/devs/
 /rom/devs/makefile
 
-# /rom/devs/ata.device/
-/rom/devs/ata.device/mmakefile
+# /rom/devs/ata/
+/rom/devs/ata/mmakefile
 
 # /rom/devs/console/
 /rom/devs/console/mmakefile
