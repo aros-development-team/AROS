@@ -634,7 +634,7 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     qsort(hh[h]->reloc, hh[h]->relocs, sizeof(hh[h]->reloc[0]), reloc_cmp);
 
     wlong(hunk_fd, HUNK_RELOC32);
-    D(bug("\tHUNK_RELOC32: %d relocations\n", hh[h]->relocs));
+    D(bug("\tHUNK_RELOC32: %d relocations\n", (int)hh[h]->relocs));
 
     for (i = 0; i < hh[h]->relocs; ) {
     	int count;
