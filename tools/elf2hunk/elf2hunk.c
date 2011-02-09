@@ -486,7 +486,7 @@ static int relocate
                 set_error(EINVAL);
                 return 0;
             }
-            shindex = ((ULONG *)hh[symtab_shndx]->data)[ELF_R_SYM(rel->info)];
+            shindex = ntohl(((ULONG *)hh[symtab_shndx]->data)[ELF_R_SYM(rel->info)]);
         }
 
 	DB2(bug("[ELF2HUNK] Processing %d symbol %s\n", (int)shindex, symname));
@@ -747,7 +747,9 @@ int elf2hunk(int file, int hunk_fd, const char *libname)
     for (i = 0; i < int_shnum; i++)
     {
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
-        if ((sh[i].type == AROS_ELF_REL) && hh[SHINDEX(sh[i].info)]->data)
+        if ((sh[i].type == AROS_ELF_REL)
+        	&& hh[SHINDEX(sh[i].info)]
+        	&& hh[SHINDEX(sh[i].info)]->data)
         {
 	    void *reloc = load_block(file, sh[i].offset, sh[i].size);
 	    
