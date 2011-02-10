@@ -47,7 +47,7 @@
     SEE ALSO
 
     INTERNALS
-	On AROS this function can not fail. Return value is present for
+	On AROS this function cannot fail. Return value is present for
 	AmigaOS v4 compatibility.
 
 ******************************************************************************/

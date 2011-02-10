@@ -39,7 +39,7 @@
 		       if it is too small.
 	threshSize   - Allocations beyond the threshSize are given
 		       directly to the system. threshSize must be
-		       smaller or equal than the puddleSize.
+		       smaller than or equal to the puddleSize.
 
     RESULT
 	A handle for the memory pool or NULL if the pool couldn't

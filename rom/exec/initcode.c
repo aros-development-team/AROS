@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize resident modules
@@ -91,7 +91,7 @@ void InitResidentList(IPTR *list, ULONG startClass, ULONG version)
 	    {
 		D(bug("calling InitResident(\"%s\", NULL)\n", 
 			((struct Resident *)(*list))->rt_Name));
-		InitResident((struct Resident *)*list, 0);
+		InitResident((struct Resident *)*list, BNULL);
 	    }
 	    else
 		D(bug("NOT calling InitResident(\"%s\", NULL)\n",
