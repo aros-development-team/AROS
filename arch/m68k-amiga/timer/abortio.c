@@ -5,7 +5,7 @@
     Desc: AbortIO() - abort a running timer request.
     Lang: english
 */
-#include "timer_intern.h"
+#include <timer_intern.h>
 #include <exec/io.h>
 #include <exec/errors.h>
 

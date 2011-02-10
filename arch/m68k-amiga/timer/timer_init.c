@@ -11,9 +11,8 @@
 
 	implementation notes:
 
-	- CIAA-A: keyboard
-	- CIAA-B: normal timer jobs (microhz/e-clock)
-	- CIAB-A: E-clock counter
+	- CIAA-A: normal timer jobs (microhz/e-clock)
+	- CIAA-B: E-clock counter
 	- vblank interrupt used for vblank timer unit
 
 	Unit conversions and misuse of tv_sec/tv_usec fields probably looks strange..
@@ -43,15 +42,15 @@
 
 #include LC_LIBDEFS_FILE
 
-#include "timer_intern.h"
+#include <timer_intern.h>
 
-AROS_UFP4(APTR, ciab_ciainta,
+AROS_UFP4(APTR, ciab_eclock,
     AROS_UFPA(ULONG, dummy, A0),
    	AROS_UFPA(void *, data, A1),
     AROS_UFPA(ULONG, dummy2, A5),
     AROS_UFPA(struct ExecBase *, SysBase, A6));
 
-AROS_UFP4(APTR, ciaa_ciaintb,
+AROS_UFP4(APTR, ciaint_timer,
     AROS_UFPA(ULONG, dummy, A0),
     AROS_UFPA(void *, data, A1),
     AROS_UFPA(ULONG, dummy2, A5),
@@ -67,14 +66,12 @@ AROS_UFP4(APTR, cia_vbint,
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
-    volatile struct CIA *ciab = (struct CIA*)0xbfd000;
     struct Interrupt *inter;
     struct BattClockBase *BattClockBase;
 
     /* Setup the timer.device data */
     LIBBASE->tb_eclock_rate = 709379; // FIXME: PAL/NTSC check
-    LIBBASE->tb_cia_micros = LIBBASE->tb_eclock_rate;
+    LIBBASE->tb_micro_micros = LIBBASE->tb_eclock_rate;
     LIBBASE->tb_vblank_rate = 50;
     LIBBASE->tb_vblank_micros = 1000000 / LIBBASE->tb_vblank_rate;
 
@@ -90,7 +87,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     NEWLIST(&LIBBASE->tb_Lists[UNIT_VBLANK]);
     NEWLIST(&LIBBASE->tb_Lists[UNIT_MICROHZ]);
  
-    inter = &LIBBASE->vbint;
+    inter = &LIBBASE->tb_vbint;
     inter->is_Code = (APTR)cia_vbint;
     inter->is_Data         = LIBBASE;
     inter->is_Node.ln_Name = "timer.device VBlank";
@@ -98,42 +95,54 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     inter->is_Node.ln_Type = NT_INTERRUPT;
     AddIntServer(INTB_VERTB, inter);
 
-    if (!(LIBBASE->ciaares = OpenResource("ciaa.resource")))
+    /* CIA-A timer A = microhz */
+    LIBBASE->tb_micro_cia = (struct CIA*)0xbfe001;
+    LIBBASE->tb_micro_cr = (UBYTE*)LIBBASE->tb_micro_cia + 0xe00;
+    LIBBASE->tb_micro_lo = (UBYTE*)LIBBASE->tb_micro_cia + 0x400;
+    LIBBASE->tb_micro_hi = (UBYTE*)LIBBASE->tb_micro_cia + 0x500;
+    LIBBASE->tb_micro_intbit = 0;
+    if (!(LIBBASE->tb_micro_res = OpenResource("ciaa.resource")))
 	Alert(AT_DeadEnd | AG_OpenRes | AO_CIARsrc);
-    if (!(LIBBASE->ciabres = OpenResource("ciab.resource")))
-	Alert(AT_DeadEnd | AG_OpenRes | AO_CIARsrc);
-	
-    inter = &LIBBASE->ciaintb;
+    
+    inter = &LIBBASE->tb_ciaint_timer;
     inter->is_Node.ln_Pri = 0;
     inter->is_Node.ln_Type = NT_INTERRUPT;
-    inter->is_Node.ln_Name = "timer.device CIAA-B";
-    inter->is_Code = (APTR)ciaa_ciaintb;
+    inter->is_Node.ln_Name = "timer.device microhz";
+    inter->is_Code = (APTR)ciaint_timer;
     inter->is_Data = LIBBASE;
 	
     Disable();
-    if (AddICRVector(LIBBASE->ciaares, 1, inter)) // CIAA-B timer
+    if (AddICRVector(LIBBASE->tb_micro_res, LIBBASE->tb_micro_intbit, inter))
 	Alert(AT_DeadEnd | AG_NoMemory | AO_CIARsrc);
-    ciaa->ciacrb = 0x08; // one-shot
-    SetICR(LIBBASE->ciaares, 0x02);
+    *LIBBASE->tb_micro_cr = 0x08; // one-shot
+    SetICR(LIBBASE->tb_micro_res, 1 << LIBBASE->tb_micro_intbit);
     Enable(); 
 
-    inter = &LIBBASE->ciainta;
+    /* CIA-A timer B = E-Clock */
+    LIBBASE->tb_eclock_cia = (struct CIA*)0xbfe001;
+    LIBBASE->tb_eclock_cr = (UBYTE*)LIBBASE->tb_eclock_cia + 0xf00;
+    LIBBASE->tb_eclock_lo = (UBYTE*)LIBBASE->tb_eclock_cia + 0x600;
+    LIBBASE->tb_eclock_hi = (UBYTE*)LIBBASE->tb_eclock_cia + 0x700;
+    LIBBASE->tb_eclock_intbit = 1;
+    if (!(LIBBASE->tb_eclock_res = OpenResource("ciaa.resource")))
+	Alert(AT_DeadEnd | AG_OpenRes | AO_CIARsrc);
+
+    inter = &LIBBASE->tb_ciaint_eclock;
     inter->is_Node.ln_Pri = 0;
     inter->is_Node.ln_Type = NT_INTERRUPT;
-    inter->is_Node.ln_Name = "timer.device CIAB-A";
-    inter->is_Code = (APTR)ciab_ciainta;
+    inter->is_Node.ln_Name = "timer.device eclock";
+    inter->is_Code = (APTR)ciab_eclock;
     inter->is_Data = LIBBASE;
 	
     Disable();
-    if (AddICRVector(LIBBASE->ciabres, 0, inter)) // CIAB-A timer
+    if (AddICRVector(LIBBASE->tb_eclock_res, LIBBASE->tb_eclock_intbit, inter))
 	Alert(AT_DeadEnd | AG_NoMemory | AO_CIARsrc);
-    ciab->ciacra = 0;
-    // start CIA-A in continuous mode
-    ciab->ciatalo = (UBYTE)(ECLOCK_BASE >> 0);
-    ciab->ciatblo = (UBYTE)(ECLOCK_BASE >> 8);
-    ciab->ciacra |= 0x10;
-    ciab->ciacra |= 0x01;
-    LIBBASE->tb_eclock_last = ECLOCK_BASE;
+    *LIBBASE->tb_eclock_cr = 0x00;
+    // start timer in continuous mode
+    *LIBBASE->tb_eclock_lo = 0xff;
+    *LIBBASE->tb_eclock_hi = 0xff;
+    *LIBBASE->tb_eclock_cr |= 0x10;
+    *LIBBASE->tb_eclock_cr |= 0x01;
     Enable(); 
 
     D(bug("timer.device init\n"));
@@ -175,9 +184,9 @@ static int GM_UNIQUENAME(Open)
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
     Disable();
-    RemIntServer(&LIBBASE->vbint, INTB_VERTB);
-    RemICRVector(LIBBASE->ciaares, 1, &LIBBASE->ciaintb);
-    RemICRVector(LIBBASE->ciabres, 0, &LIBBASE->ciainta);
+    RemIntServer(&LIBBASE->tb_vbint, INTB_VERTB);
+    RemICRVector(LIBBASE->tb_micro_res, LIBBASE->tb_micro_intbit, &LIBBASE->tb_ciaint_timer);
+    RemICRVector(LIBBASE->tb_eclock_res, LIBBASE->tb_eclock_intbit, &LIBBASE->tb_ciaint_eclock);
     Enable();
     return TRUE;
 }

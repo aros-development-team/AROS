@@ -30,45 +30,45 @@
 
 #define NUM_LISTS	2
 
-#define ECLOCK_BASE 0x7000
+#define ECLOCK_BASE 0x10000
 
 struct TimerBase
 {
     /* Required by the system */
-    struct Device	 tb_Device;
+    struct Device tb_Device;
 
-    struct timeval	tb_CurrentTime;	/* system time */
-    struct timeval	tb_lastsystime;
+    struct timeval tb_CurrentTime;	/* system time */
+    struct timeval tb_lastsystime;
 
-    struct MinList	 tb_Lists[NUM_LISTS];
+    struct MinList tb_Lists[NUM_LISTS];
 
-    struct Resource *ciaares;
-    struct Resource *ciabres;
-    struct Interrupt ciainta;
-    struct Interrupt ciaintb;
-    struct Interrupt vbint;
-
+    struct Resource *tb_eclock_res;
+    volatile struct CIA *tb_eclock_cia;
+    volatile UBYTE *tb_eclock_cr, *tb_eclock_lo, *tb_eclock_hi;
+    struct Interrupt tb_ciaint_eclock;
+    UWORD tb_eclock_intbit;
     struct EClockVal tb_eclock;
     ULONG tb_eclock_rate;
     ULONG tb_eclock_to_usec;
-    UWORD tb_eclock_last;
 
+    struct Resource *tb_micro_res;
+    volatile struct CIA *tb_micro_cia;
+    volatile UBYTE *tb_micro_cr, *tb_micro_lo, *tb_micro_hi;
+    struct Interrupt tb_ciaint_timer;
+    UWORD tb_micro_intbit;
+    ULONG tb_micro_started;
+    struct timeval tb_micro_count;
+    ULONG tb_micro_micros;
+    BOOL tb_micro_on;	
+
+    struct Interrupt tb_vbint;
     struct timeval tb_vb_count;
     UWORD tb_vblank_rate;
     ULONG tb_vblank_micros;
-    UWORD tb_vblank_on;
-
-    ULONG tb_cia_count_started;
-    struct timeval tb_cia_count;
-    ULONG tb_cia_micros;
-    UWORD tb_cia_on;	
-
+    BOOL tb_vblank_on;
 };
 
-#define GetTimerBase(tb)	((struct TimerBase *)(tb))
-#define GetDevice(tb)		((struct Device *)(tb))
-
-void GetEClock(struct TimerBase *TimerBase, struct EClockVal *ev);
+ULONG GetEClock(struct TimerBase *TimerBase);
 void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum);
 BOOL cmp64(struct timeval *tv1, struct timeval *tv2);
 ULONG sub64(struct timeval *larger, struct timeval *smaller);
