@@ -5,7 +5,7 @@
     Desc: AddTime() - add two timeval's together.
     Lang: english
 */
-#include "timer_intern.h"
+#include <timer_intern.h>
 
 /*****************************************************************************
 
