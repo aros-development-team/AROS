@@ -22,7 +22,20 @@ struct arosc_userdata * __get_arosc_userdata(void)
     
     #ifdef AROSC_SHARED
     struct Task *curtask = FindTask(NULL);
-    
+
+    #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    /* For running AROS on AOS 3.1, we need to create a ETask
+     * structure just to preserve the libc state.
+     * Surely we can find a better way to handle this.
+     */
+    if (!(curtask->tc_Flags & TF_ETASK)) {
+    	curtask->tc_UnionETask.tc_ETask = AllocMem(sizeof(struct IntETask), MEMF_CLEAR);
+    	if (curtask->tc_UnionETask.tc_ETask == NULL)
+    	    return NULL;
+    	curtask->tc_Flags |= TF_ETASK;
+    }
+    #endif
+
     acpd = GetIntETask(curtask)->iet_acpd;
     
     if (acpd == NULL)
