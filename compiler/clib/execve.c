@@ -24,7 +24,7 @@
 #include <__errno.h>
 #include "__exec.h"
 #include "__upath.h"
-#include "__open.h"
+#include "__fdesc.h"
 #include "__arosc_privdata.h"
 #include "__vfork.h"
 

@@ -12,7 +12,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <errno.h>
-#include "__open.h"
+#include "__fdesc.h"
 #include "__errno.h"
 
 /*****************************************************************************

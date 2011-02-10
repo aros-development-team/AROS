@@ -8,7 +8,7 @@
 #include <errno.h>
 
 #include "__stat.h"
-#include "__open.h"
+#include "__fdesc.h"
 
 /*****************************************************************************
 

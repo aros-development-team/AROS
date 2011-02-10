@@ -5,7 +5,7 @@
     C function to update stdfiles when changed by dos functions.
 */
 
-#include "__open.h"
+#include "__fdesc.h"
 
 /*****************************************************************************
 

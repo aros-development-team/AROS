@@ -21,7 +21,7 @@
 
 #include "etask.h"
 #include "__arosc_privdata.h"
-#include "__open.h"
+#include "__fdesc.h"
 #include "__vfork.h"
 #include "__exec.h"
 

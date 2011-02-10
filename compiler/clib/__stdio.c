@@ -20,7 +20,7 @@
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
-#include "__open.h"
+#include "__fdesc.h"
 #include "__stdio.h"
 
 int __smode2oflags(const char *mode)
