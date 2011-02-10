@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Support functions for POSIX exec*() functions.
@@ -364,9 +364,8 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     }
     
     /* Set standard files to the standard files from arosc */
-    fdesc *in = privdata->acpd_fd_array[STDIN_FILENO],
-        *out = privdata->acpd_fd_array[STDOUT_FILENO],
-        *err = privdata->acpd_fd_array[STDERR_FILENO];
+    fdesc *in = __getfdesc(STDIN_FILENO), *out = __getfdesc(STDOUT_FILENO),
+        *err = __getfdesc(STDERR_FILENO);
 
     if(in) 
         privdata->acpd_exec_oldin = SelectInput(in->fcb->fh);
@@ -652,12 +651,14 @@ static void __exec_cleanup(struct arosc_privdata *privdata)
 static void close_on_exec(void)
 {
     int i;
-    for (i = __numslots - 1; i >= 0; i--)
+    fdesc *fd;
+
+    for (i = __getfdslots() - 1; i >= 0; i--)
     {
-        if (__fd_array[i])
+        if ((fd = __getfdesc(i)) != NULL)
         {
             D(bug("close_on_exec: checking fd %d\n", i));
-            if (__fd_array[i]->fdflags & FD_CLOEXEC)
+            if (fd->fdflags & FD_CLOEXEC)
             {
                 D(bug("close_on_exec: closing fd %d\n", i));
                 assert(close(i) == 0);

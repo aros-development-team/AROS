@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     File descriptors handling internals.
@@ -27,6 +27,10 @@
 #include "__fdesc.h"
 #include "__upath.h"
 
+int __getfdslots(void)
+{
+    return __numslots;
+}
 
 fdesc *__getfdesc(register int fd)
 {
@@ -311,7 +315,7 @@ int __init_vars(void)
     return TRUE;
 }
 
-int __register_init_fdarray(fdesc **__fdarray, int numslots)
+int __register_init_fdarray(struct arosc_privdata *priv)
 {
     /* arosc privdata should not be used inside this function,
      * this function is called before aroscbase is initialized
@@ -322,8 +326,8 @@ int __register_init_fdarray(fdesc **__fdarray, int numslots)
         return 0;
 
     regnode->task = FindTask(NULL);
-    regnode->fdarray = __fdarray;
-    regnode->numslots = numslots;
+    regnode->fdarray = priv->acpd_fd_array;
+    regnode->numslots = priv->acpd_numslots;
     
     D(bug("Allocated regnode: %p, fdarray: %p, numslots: %d\n",
           regnode, regnode->fdarray, regnode->numslots

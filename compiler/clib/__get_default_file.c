@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to get a dos.library file handle associated with given file 
@@ -44,14 +44,15 @@
 
 ******************************************************************************/
 {
+    fdesc *fd;
+
 	if(
 		file_descriptor < 0 || 
-		file_descriptor > __numslots ||
-		!__fd_array[file_descriptor]
+		(fd = __getfdesc(file_descriptor)) == NULL
 	) return -1;
 	else
 	{ 
-		*(BPTR*)file_handle = (BPTR) __fd_array[file_descriptor]->fcb->fh;
+		*(BPTR*)file_handle = (BPTR) fd->fcb->fh;
 	}
 	return 0;
 }

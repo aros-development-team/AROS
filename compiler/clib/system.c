@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function system().
@@ -132,9 +132,9 @@ static int system_no_sh(const char *string)
 
     free(cmd);
     
-    in = pdata->acpd_fd_array[STDIN_FILENO];
-    out = pdata->acpd_fd_array[STDOUT_FILENO];
-    err = pdata->acpd_fd_array[STDERR_FILENO];
+    in = __getfdesc(STDIN_FILENO);
+    out = __getfdesc(STDOUT_FILENO);
+    err = __getfdesc(STDERR_FILENO);
     
     ret = (int)SystemTags
     (
