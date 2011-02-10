@@ -5,7 +5,7 @@
     Desc: CmpTime() - compare two time values.
     Lang: english
 */
-#include "timer_intern.h"
+#include <timer_intern.h>
 
 /*****************************************************************************
 

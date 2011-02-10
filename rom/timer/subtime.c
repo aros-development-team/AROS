@@ -5,7 +5,7 @@
     Desc: SubTime - subtract two timevals from each other.
     Lang: english
 */
-#include "timer_intern.h"
+#include <timer_intern.h>
 
 /*****************************************************************************
 
