@@ -12,13 +12,14 @@
 #include <proto/timer.h>
 #include <proto/cia.h>
 
-#include "timer_intern.h"
+#include <timer_intern.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
 
 // convert timeval pair to 64-bit vblank or e-clock unit
-// (hopefully 64-bit multiplication and division isn't too heavy..)
+// (hopefully 64-bit multiplication and division isn't too heavy, should be
+// replaced with multiplication and right shift..
 void convertunits(struct TimerBase *TimerBase, struct timeval *tr, int unit)
 {
 	if (unit == UNIT_VBLANK) {
@@ -28,7 +29,7 @@ void convertunits(struct TimerBase *TimerBase, struct timeval *tr, int unit)
 		tr->tv_micro = v;
 	} else if (unit == UNIT_MICROHZ) {
 		long long v = ((long long)tr->tv_secs) * 1000000 + tr->tv_micro;
-		v *= TimerBase->tb_cia_micros;
+		v *= TimerBase->tb_micro_micros;
 		v /= 1000000;
 		tr->tv_secs = v >> 32;
 		tr->tv_micro = v;		
@@ -82,76 +83,58 @@ ULONG sub64(struct timeval *larger, struct timeval *smaller)
 // Disabled state assumed
 void CheckTimer(struct TimerBase *TimerBase, ULONG unitnum)
 {
-	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 	if (unitnum == UNIT_VBLANK) {
-		TimerBase->tb_vblank_on = 1;
+		TimerBase->tb_vblank_on = TRUE;
 	} else if (unitnum == UNIT_MICROHZ) {
-		if (!TimerBase->tb_cia_on) {
+		if (!TimerBase->tb_micro_on) {
 			// not active, kickstart it
-			TimerBase->tb_cia_on = 1;
-			TimerBase->tb_cia_count_started = 0;
-			D(bug("UNIT_MICROHZ kickstarted\n"));
-			SetICR(TimerBase->ciaares, 0x82);
+			TimerBase->tb_micro_on = TRUE;
+			TimerBase->tb_micro_started = 0;
+			D(bug("ciaint_timer kickstarted\n"));
 		} else {
 			UBYTE lo, hi;
 			// already active but new item was added to head
 			for (;;) {
-				hi = ciaa->ciatbhi;
-				lo = ciaa->ciatblo;
-				if (hi == ciaa->ciatbhi)
+				hi = *TimerBase->tb_micro_hi;
+				lo = *TimerBase->tb_micro_lo;
+				if (hi == *TimerBase->tb_micro_hi)
 					break;
 			}
 			// how long have we already waited?
-			TimerBase->tb_cia_count_started -= (hi << 8) | lo;
+			TimerBase->tb_micro_started -= (hi << 8) | lo;
 			// force interrupt now
-			SetICR(TimerBase->ciaares, 0x82);
-			D(bug("UNIT_MICROHZ restarted\n"));
+			D(bug("ciaint_timer restarted\n"));
 		}
+		SetICR(TimerBase->tb_micro_res, 0x80 | (1 << TimerBase->tb_micro_intbit));
 	}
 }
-	
-void GetEClock(struct TimerBase *TimerBase, struct EClockVal *ev)
+
+ULONG GetEClock(struct TimerBase *TimerBase)
 {
-	volatile struct CIA *ciab = (struct CIA*)0xbfd000;
 	UBYTE lo, hi;
-	ULONG evlo, evhi, old;
-	UWORD diff, val;
+	ULONG diff, val;
 	
-	Disable();
+	/* Disable() assumed */
 	for (;;) {
-		hi = ciab->ciatahi;
-		lo = ciab->ciatalo;
-		if (hi != ciab->ciatahi)
+		hi = *TimerBase->tb_eclock_hi;
+		lo = *TimerBase->tb_eclock_lo;
+		if (hi == *TimerBase->tb_eclock_hi)
 			break;
 		// lo wraparound, try again
 	}
 	val = (hi << 8) | lo;
-	old = evlo = TimerBase->tb_eclock.ev_lo;
-	evhi = TimerBase->tb_eclock.ev_hi;
 	// pending interrupt?
-	if (SetICR(TimerBase->ciabres, 0) & 0x01) {
-		TimerBase->tb_eclock_last = ECLOCK_BASE;
-		diff = ECLOCK_BASE;
+	if (SetICR(TimerBase->tb_eclock_res, 0) & (1 << TimerBase->tb_eclock_intbit)) {
+		if (val > ECLOCK_BASE /2)
+			diff = ECLOCK_BASE;
 	} else {
 		diff = 0;
 	}
-	diff += TimerBase->tb_eclock_last - val;
-	evlo += diff;
-	if (old > evlo)
-		evhi++;
-	ev->ev_lo = evlo;
-	ev->ev_hi = evhi;
-	TimerBase->tb_eclock_last = val;
-
-	TimerBase->tb_eclock_to_usec += diff;
-	if (TimerBase->tb_eclock_to_usec >= TimerBase->tb_eclock_rate) {
-		TimerBase->tb_eclock_to_usec -= TimerBase->tb_eclock_rate;
-		TimerBase->tb_CurrentTime.tv_secs++;
-	}
-	Enable();
+	diff += ECLOCK_BASE - val;
+	return diff;
 }
 
-AROS_UFH4(APTR, ciab_ciainta,
+AROS_UFH4(APTR, ciab_eclock,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(struct TimerBase *, TimerBase, A1),
     AROS_UFHA(ULONG, dummy2, A5),
@@ -159,8 +142,9 @@ AROS_UFH4(APTR, ciab_ciainta,
 {
 	AROS_USERFUNC_INIT
 
+	D(bug("eclock int\n"));
+
 	// e-clock counter, counts full ECLOCK_BASE cycles
-	TimerBase->tb_eclock_last = ECLOCK_BASE;
 	ULONG old = TimerBase->tb_eclock.ev_lo;
 	TimerBase->tb_eclock.ev_lo += ECLOCK_BASE;
 	if (old > TimerBase->tb_eclock.ev_lo)
@@ -177,7 +161,7 @@ AROS_UFH4(APTR, ciab_ciainta,
 	AROS_USERFUNC_EXIT
 }
 
-AROS_UFH4(APTR, ciaa_ciaintb,
+AROS_UFH4(APTR, ciaint_timer,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(struct TimerBase *, TimerBase, A1),
     AROS_UFHA(ULONG, dummy2, A5),
@@ -185,31 +169,30 @@ AROS_UFH4(APTR, ciaa_ciaintb,
 {
 	AROS_USERFUNC_INIT
 
-	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
 	struct timerequest *tr, *next;
 	ULONG old;
 
-	D(bug("ciabint\n"));
+	D(bug("ciaint_timer\n"));
 
-	if (TimerBase->tb_cia_on == 0)
+	if (TimerBase->tb_micro_on == FALSE)
 		return 0;
 
-	// we have counted tb_cia_count_started since last interrupt
-	old = TimerBase->tb_cia_count.tv_micro;
-	TimerBase->tb_cia_count.tv_micro += TimerBase->tb_cia_count_started;
-	if (old > TimerBase->tb_cia_count.tv_micro)
-		TimerBase->tb_cia_count.tv_secs++;
+	// we have counted tb_micro_started since last interrupt
+	old = TimerBase->tb_micro_count.tv_micro;
+	TimerBase->tb_micro_count.tv_micro += TimerBase->tb_micro_started;
+	if (old > TimerBase->tb_micro_count.tv_micro)
+		TimerBase->tb_micro_count.tv_secs++;
 
 	Disable();
 
     	ForeachNodeSafe(&TimerBase->tb_Lists[UNIT_MICROHZ], tr, next) {
-    		D(bug("%d/%d %d/%d\n", TimerBase->tb_cia_count.tv_secs, TimerBase->tb_cia_count.tv_micro, tr->tr_time.tv_secs, tr->tr_time.tv_micro));
-    		if (cmp64(&TimerBase->tb_cia_count, &tr->tr_time)) {
+    		D(bug("%d/%d %d/%d\n", TimerBase->tb_micro_count.tv_secs, TimerBase->tb_micro_count.tv_micro, tr->tr_time.tv_secs, tr->tr_time.tv_micro));
+    		if (cmp64(&TimerBase->tb_micro_count, &tr->tr_time)) {
 	           	Remove((struct Node *)tr);
 	           	tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
 	           	tr->tr_node.io_Error = 0;
 	           	ReplyMsg((struct Message *)tr);
-	           	D(bug("ciab %x done\n", tr));
+	           	D(bug("ciaint_timer %x done\n", tr));
 		} else {
 			break; // first not finished, can stop searching
 		}	
@@ -217,19 +200,19 @@ AROS_UFH4(APTR, ciaa_ciaintb,
 	}
 	tr = (struct timerequest*)(((struct List *)(&TimerBase->tb_Lists[UNIT_MICROHZ]))->lh_Head);
 	if (tr->tr_node.io_Message.mn_Node.ln_Succ) {
-		ULONG newcount = sub64(&tr->tr_time, &TimerBase->tb_cia_count);
-		D(bug("newcount=%d\n", newcount));
+		ULONG newcount = sub64(&tr->tr_time, &TimerBase->tb_micro_count);
+		D(bug("ciaint_timer newcount=%d\n", newcount));
 		// longer than max CIA timer capacity?
 		if (newcount > 0xffff)
 			newcount = 0xffff;
-		TimerBase->tb_cia_count_started = newcount;
+		TimerBase->tb_micro_started = newcount;
 		// reload new timer value (timer autostarts)
-		ciaa->ciatblo = (UBYTE)(newcount >> 0);
-		ciaa->ciatbhi = (UBYTE)(newcount >> 8);
+		*TimerBase->tb_micro_lo = (UBYTE)(newcount >> 0);
+		*TimerBase->tb_micro_hi = (UBYTE)(newcount >> 8);
 	} else {
-		D(bug("ciab off\n"));
+		D(bug("ciaint_timer off\n"));
 		// list is empty
-		TimerBase->tb_cia_on = 0;
+		TimerBase->tb_micro_on = FALSE;
 	}
 
 	Enable();
@@ -250,7 +233,7 @@ AROS_UFH4(APTR, cia_vbint,
 	
    	 struct timerequest *tr, *next;
 
-	if (TimerBase->tb_vblank_on == 0)
+	if (TimerBase->tb_vblank_on == FALSE)
 		return 0;
 	inc64(&TimerBase->tb_vb_count);
 
@@ -268,7 +251,7 @@ AROS_UFH4(APTR, cia_vbint,
 			
 	}
 	if (IsListEmpty(&TimerBase->tb_Lists[UNIT_VBLANK])) {
-		TimerBase->tb_vblank_on = 0;
+		TimerBase->tb_vblank_on = FALSE;
 	}
 	Enable();
 	

@@ -10,7 +10,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include "timer_intern.h"
+#include <timer_intern.h>
 
 /*****************************************************************************
 
@@ -56,17 +56,24 @@
     AROS_LIBFUNC_INIT
 
     struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
-    struct EClockVal ev;
+    ULONG eclock, tb_eclock_to_usec;
 
-    GetEClock(timerBase, &ev);
-    
+    Disable();
+    tb_eclock_to_usec = timerBase->tb_eclock_to_usec;
+    eclock = GetEClock(timerBase);
+    Enable();
     dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
     // ugh, 64-bit multiplication and division..
-    dest->tv_micro = (long long)timerBase->tb_eclock_to_usec * 1000000 / timerBase->tb_eclock_rate;
+    dest->tv_micro = (long long)(tb_eclock_to_usec + eclock)  * 1000000 / timerBase->tb_eclock_rate;
+    // can only overflow once, e-clock interrupts happen more than once a second
+    if (dest->tv_micro >= 1000000) {
+    	dest->tv_micro -= 1000000;
+    	dest->tv_secs++;
+    }
     if (equ64(dest, &timerBase->tb_lastsystime))
     	inc64(dest);
     timerBase->tb_lastsystime.tv_secs = dest->tv_secs;
     timerBase->tb_lastsystime.tv_micro = dest->tv_micro;
-	D(bug("systime=%d/%d\n", dest->tv_secs, dest->tv_micro));
+    D(bug("systime=%d/%d\n", dest->tv_secs, dest->tv_micro));
     AROS_LIBFUNC_EXIT
 } /* GetSysTime */

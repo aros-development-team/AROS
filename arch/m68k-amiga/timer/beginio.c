@@ -13,7 +13,7 @@
 #include <proto/timer.h>
 #include <devices/newstyle.h>
 
-#include "timer_intern.h"
+#include <timer_intern.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -124,7 +124,7 @@ AROS_LH1(void, BeginIO,
         	}
                 case UNIT_MICROHZ:
                     convertunits(TimerBase, &timereq->tr_time, UNIT_MICROHZ);
-                    add64(&timereq->tr_time, &TimerBase->tb_cia_count);
+                    add64(&timereq->tr_time, &TimerBase->tb_micro_count);
                     Disable();
                     timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
@@ -141,7 +141,7 @@ AROS_LH1(void, BeginIO,
                     replyit = FALSE;
                     break;
                 case UNIT_ECLOCK:
-               	    add64(&timereq->tr_time, &TimerBase->tb_cia_count);
+               	    add64(&timereq->tr_time, &TimerBase->tb_micro_count);
 	            Disable();
                     timer_addToWaitList(TimerBase, UNIT_MICROHZ, timereq);
                     Enable();
@@ -228,8 +228,8 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, ULONG unit, struct 
 	CheckTimer(TimerBase, unit);   
 
     D(bug("added %x: %d/%d->%d/%d\n", iotr,
-	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_secs : TimerBase->tb_cia_count.tv_secs),
-	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_usec : TimerBase->tb_cia_count.tv_secs),
+	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_secs : TimerBase->tb_micro_count.tv_secs),
+	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_usec : TimerBase->tb_micro_count.tv_secs),
 	iotr->tr_time.tv_secs, iotr->tr_time.tv_micro));
 
 }
