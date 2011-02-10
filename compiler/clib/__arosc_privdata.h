@@ -100,6 +100,7 @@ struct arosc_privdata
     BPTR acpd_exec_seglist;
     char *acpd_exec_args;
     char *acpd_exec_taskname;
+    APTR acpd_exec_pool;
     char **acpd_exec_tmparray;
     BPTR acpd_exec_oldin, acpd_exec_oldout, acpd_exec_olderr;
     struct Library *acpd_exec_aroscbase;

@@ -31,8 +31,8 @@
 
 static BOOL containswhite(const char *str);
 static char *escape(const char *str);
-static char *appendarg(char *argptr, int *argptrsize, const char *arg);
-static char *appendargs(char *argptr, int *argptrsize, char *const args[]);
+static char *appendarg(char *argptr, int *argptrsize, const char *arg, APTR pool);
+static char *appendargs(char *argptr, int *argptrsize, char *const args[], APTR pool);
 static void __exec_cleanup(struct arosc_privdata *privdata);
 static void close_on_exec();
 
@@ -42,8 +42,8 @@ static void close_on_exec();
 APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], char *const envp[])
 {
     struct arosc_privdata *privdata = __get_arosc_privdata();
-    char *filename2 = NULL, *filenamefree = NULL;
-    int argssize = 1024;
+    char *filename2 = NULL;
+    int argssize = 512;
 
     D(bug("Entering __exec_prepare(\"%s\", %d, %x, %x)\n",
           filename, searchpath, argv, envp
@@ -55,12 +55,107 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         goto error;
     }
 
+    /* Use own memory to allocate so that no arosstdc.library functions need to be called
+       exec_pool can also be allocated in __exec_valist2array
+    */
+    if (!privdata->acpd_exec_pool)
+        privdata->acpd_exec_pool = CreatePool(MEMF_PUBLIC, 1024, 512);
+    if (!privdata->acpd_exec_pool)
+    {
+        errno = ENOMEM;
+        goto error;
+    }
+
+    privdata->acpd_exec_args = AllocPooled(privdata->acpd_exec_pool, argssize);
+    privdata->acpd_exec_args[0] = '\0';
+
+    /* Search path if asked and no directory separator is present in the file */
+    if (searchpath && index(filename, '/') == NULL && index(filename, ':') == NULL)
+    {
+        int i, len, size;
+        char *path = NULL, *path_ptr, *path_item;
+        BPTR lock;
+        
+        if (environ)
+        {
+            for (i=0; environ[i]; i++)
+            {
+                if (strncmp(environ[i], "PATH=", 5) == 0)
+                {
+                    path = &environ[i][5];
+                    break;
+                }
+            }
+        }
+        
+        if (!path)
+            path = getenv("PATH");
+
+        if (!path)
+            path = ":/bin:/usr/bin";
+
+        D(bug("__exec_prepare: PATH('%s')\n", path));
+
+        path_ptr = AllocPooled(privdata->acpd_exec_pool, strlen(path) + 1);
+        strcpy(path_ptr, path);
+        path = path_ptr;
+
+        D(bug("__exec_prepare: PATH('%s')\n", path));
+
+        size = 128;
+        filename2 = AllocPooled(privdata->acpd_exec_pool, size);
+        if (!filename2)
+        {
+            errno = ENOMEM;
+            goto error;
+        }
+
+        for(path_ptr = path, lock = (BPTR)NULL, path_item = strsep(&path_ptr, ",:");
+            lock == (BPTR)NULL && path_item != NULL;
+            path_item = strsep(&path_ptr, ",:")
+        ) 
+        {
+            if(path_item[0] == '\0')
+                path_item = ".";
+
+            len = strlen(path_item) + strlen(filename) + 2;
+
+            if (len > size)
+            {
+                FreePooled(privdata->acpd_exec_pool, filename2, size);
+                size = len;
+                filename2 = AllocPooled(privdata->acpd_exec_pool, size);
+                if (!filename2)
+                {
+                    errno = ENOMEM;
+                    goto error;
+                }
+            }
+
+            strcpy(filename2, path_item);
+            strcat(filename2, "/");
+            strcat(filename2, filename);
+            lock = Lock(__path_u2a(filename2), SHARED_LOCK);
+            D(bug("__exec_prepare: Lock(\"%s\") == %x\n", filename2, (APTR)lock));
+        }
+
+        if(lock != (BPTR)NULL)
+            UnLock(lock);
+        else
+        {
+            errno = ENOENT;
+            goto error;
+        }
+    }
+    else
+        filename2 = (char *)filename;
+
+    
     if (privdata->acpd_flags & PRETEND_CHILD)
     {
         struct vfork_data *udata = privdata->acpd_vfork_data;
             
-        udata->exec_filename = filename;
-        udata->exec_searchpath = searchpath;
+        udata->exec_filename = filename2;
         udata->exec_argv = argv;
         udata->exec_envp = envp;
             
@@ -79,80 +174,21 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         {
             D(bug("__exec_prepare: Continue child immediately on error\n"));
             Signal(udata->child, 1 << udata->child_signal);
+
+            return NULL;
         }
         
         D(bug("__exec_prepare: Exiting from forked __exec_prepare id=%x, errno=%d\n",
               udata->exec_id, udata->child_errno
         ));
         
-        return udata->exec_id;
+        return privdata;
     }
-    privdata->acpd_exec_args = malloc(argssize);
+
+    D(bug("__exec_prepare: Not running as PRETEND_CHILD\n"));
+    privdata->acpd_exec_args = AllocPooled(privdata->acpd_exec_pool, argssize);
     privdata->acpd_exec_args[0] = '\0';
-    
-    /* Search path if asked and no directory separator is present in the file */
-    if (searchpath && index(filename, '/') == NULL && index(filename, ':') == NULL)
-    {
-        int i;
-        char *path = NULL, *path_ptr, *path_item;
-        BPTR lock;
-        
-        if (environ)
-        {
-            for (i=0; environ[i]; i++)
-            {
-                if (strncmp(environ[i], "PATH=", 5) == 0)
-                {
-                    path = &environ[i][5];
-                    break;
-                }
-            }
-        }
-        
-        if (!path)
-            path = getenv("PATH");
-        
-        path = strdup(path ? path : ":/bin:/usr/bin");
 
-        for(path_ptr = path, lock = (BPTR)NULL, path_item = strsep(&path_ptr, ",:");
-            lock == (BPTR)NULL && path_item != NULL;
-            path_item = strsep(&path_ptr, ",:")
-        ) 
-        {
-            if(filenamefree)
-                free(filenamefree);
-            
-            if(path_item[0] == '\0')
-                path_item = ".";
-
-            filenamefree = filename2 = malloc(strlen(path_item) + strlen(filename) + 2);
-            if(filename2)
-            {
-                filename2[0] = '\0';
-                strcat(filename2, path_item);
-                strcat(filename2, "/");
-                strcat(filename2, filename);
-                lock = Lock(__path_u2a(filename2), SHARED_LOCK);
-                D(bug("__exec_prepare: Lock(\"%s\") == %x\n", filename2, (APTR)lock));
-            }
-            else
-            {
-                errno = ENOMEM;
-                goto error;
-            }
-        }
-        if(lock != (BPTR)NULL)
-            UnLock(lock);
-        else
-        {
-            errno = ENOENT;
-            goto error;
-        }
-    }
-    else
-        filename2 = (char *)filename;
-
-    
     /* Let's check if it's a script */
     BPTR fh = Open((CONST_STRPTR)__path_u2a(filename2), MODE_OLDFILE);
     if(fh)
@@ -195,7 +231,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                         args[0] = filename2;
                     }
                     privdata->acpd_exec_args = appendargs(
-                        privdata->acpd_exec_args, &argssize, args
+                        privdata->acpd_exec_args, &argssize, args, privdata->acpd_exec_pool
                     );
                     if (!privdata->acpd_exec_args)
                     {
@@ -204,9 +240,8 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                     }
 
                     /* Set file to execute as the script interpreter */
-                    if (filenamefree)
-                        free(filenamefree);
-                    filenamefree = filename2 = strdup(inter);
+                    filename2 = AllocPooled(privdata->acpd_exec_pool, strlen(inter) + 1);
+                    strcpy(filename2, inter);
                 }
             }
         }
@@ -220,7 +255,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     }
 
     /* Add arguments to command line args */
-    privdata->acpd_exec_args = appendargs(privdata->acpd_exec_args, &argssize, argv + 1);
+    privdata->acpd_exec_args = appendargs(privdata->acpd_exec_args, &argssize, argv + 1, privdata->acpd_exec_pool);
     if (!privdata->acpd_exec_args)
     {
         errno = ENOMEM;
@@ -258,11 +293,13 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     }
 
     /* Set taskname */
-    if (!(privdata->acpd_exec_taskname = strdup(filename2)))
+    privdata->acpd_exec_taskname = AllocPooled(privdata->acpd_exec_pool, strlen(filename2) + 1);
+    if (!privdata->acpd_exec_taskname)
     {
         errno = ENOMEM;
         goto error;
     }
+    strcpy(privdata->acpd_exec_taskname, filename2);
     
     /* Load file to execute */
     privdata->acpd_exec_seglist = LoadSeg((CONST_STRPTR)__path_u2a(filename2));
@@ -338,10 +375,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     if(err)
         privdata->acpd_exec_olderr = SelectError(err->fcb->fh);
 
-    /* Clean up data */
-    if (filenamefree)
-        free(filenamefree);
-
     /* Generate new privdata for the exec */
     assert(!(privdata->acpd_flags & KEEP_OLD_ACPD));
     privdata->acpd_flags |= CREATE_NEW_ACPD;
@@ -364,9 +397,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
 error:
     __exec_cleanup(privdata);
     
-    if (filenamefree)
-        free(filenamefree);
-    
     return (APTR)NULL;
 }
 
@@ -379,14 +409,21 @@ void __exec_do(APTR id)
     struct Task *self = FindTask(NULL);
     LONG returncode;
 
+    D(bug("Entering __exec_prepare(%x)\n", id));
+
     if (__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
     {
         struct vfork_data *udata = __get_arosc_privdata()->acpd_vfork_data;
+
+        D(bug("[__exec_do] PRETEND_CHILD\n"));
 
         close_on_exec();
         
         /* Signal child that __exec_do is called */
         Signal(udata->child, 1 << udata->child_signal);
+
+        /* Clean up in parent */
+        __exec_cleanup(privdata);
         
         /* Continue as parent process */
         _exit(0);
@@ -394,6 +431,8 @@ void __exec_do(APTR id)
         assert(0); /* Should not be reached */
         return;
     }
+
+    D(bug("[__exec_do] !PRETEND_CHILD\n"));
 
     oldtaskname = self->tc_Node.ln_Name;
     self->tc_Node.ln_Name = privdata->acpd_exec_taskname;
@@ -525,14 +564,23 @@ static char *escape(const char *str)
 }
 
 /* Append arg string to argptr increasing argptr if needed */
-static char *appendarg(char *argptr, int *argptrsize, const char *arg)
+static char *appendarg(char *argptr, int *argptrsize, const char *arg, APTR pool)
 {
     while(strlen(argptr) + strlen(arg) + 2 > *argptrsize)
     {
-        *argptrsize *= 2;
-        argptr = realloc(argptr, *argptrsize);
-        if(!argptr)
+        char *argptr2;
+        int argptrsize2 = 2*(*argptrsize);
+
+        argptr2 = AllocPooled(pool, argptrsize2);
+        if(!argptr2)
+        {
+            FreePooled(pool, argptr, *argptrsize);
             return NULL;
+        }
+        strcpy(argptr2, argptr);
+        FreePooled(pool, argptr, *argptrsize);
+        argptr = argptr2;
+        *argptrsize = argptrsize2;
     }
     strcat(argptr, arg);
     strcat(argptr, " ");
@@ -540,7 +588,7 @@ static char *appendarg(char *argptr, int *argptrsize, const char *arg)
     return argptr;
 }
 
-static char *appendargs(char *argptr, int *argssizeptr, char *const args[])
+static char *appendargs(char *argptr, int *argssizeptr, char *const args[], APTR pool)
 {
     char *const *argsit;
     
@@ -550,14 +598,13 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[])
         {
             char *escaped = escape(*argsit);
             if(!escaped) {
-                free(argptr);
                 return NULL;
             }
-            argptr = appendarg(argptr, argssizeptr, escaped);
+            argptr = appendarg(argptr, argssizeptr, escaped, pool);
             free(escaped);
         }
         else
-            argptr = appendarg(argptr, argssizeptr, *argsit);
+            argptr = appendarg(argptr, argssizeptr, *argsit, pool);
     }
     
     return argptr;
@@ -590,24 +637,19 @@ static void __exec_cleanup(struct arosc_privdata *privdata)
         privdata->acpd_exec_olderr = (BPTR)NULL;
     }
 
-    if (privdata->acpd_exec_args)
+    if (privdata->acpd_exec_pool)
     {
-        free(privdata->acpd_exec_args);
-        privdata->acpd_exec_args = NULL;
+        DeletePool(privdata->acpd_exec_pool);
+        privdata->acpd_exec_pool = NULL;
     }
     if (privdata->acpd_exec_seglist)
     {
         UnLoadSeg(privdata->acpd_exec_seglist);
         privdata->acpd_exec_seglist = (BPTR)NULL;
     }
-    if (privdata->acpd_exec_taskname)
-    {
-        free(privdata->acpd_exec_taskname);
-        privdata->acpd_exec_taskname = NULL;
-    }
 }
 
-static void close_on_exec()
+static void close_on_exec(void)
 {
     int i;
     for (i = __numslots - 1; i >= 0; i--)
