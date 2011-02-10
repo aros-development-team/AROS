@@ -55,22 +55,20 @@ struct abdescr
 
 struct kbd_staticdata
 {
-    struct SignalSemaphore 	sema; /* Protexting this whole struct */
-	struct Interrupt kbint;
+    struct SignalSemaphore sema; /* Protexting this whole struct */
+    struct Interrupt kbint;
     struct Resource *ciares;
-    
+    struct timerequest *timerio;
+    struct Library *TimerBase;
 
-    OOP_Class 			*kbdclass;
-
-    OOP_Object 			*kbdhidd;
-    
-    OOP_AttrBase        hiddKbdAB;
+    OOP_Class *kbdclass;
+    OOP_Object *kbdhidd;
+    OOP_AttrBase hiddKbdAB;
 };
 
 struct kbdbase
 {
     struct Library library;
-    
     struct kbd_staticdata ksd;
 };
 
@@ -78,6 +76,7 @@ struct kbd_data
 {
     VOID    (*kbd_callback)(APTR, UWORD);
     APTR    callbackdata;
+    struct Library *TimerBase;
 };
 
 /****************************************************************************************/

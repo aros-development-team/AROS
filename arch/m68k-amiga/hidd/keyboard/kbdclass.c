@@ -26,9 +26,11 @@
 #include <hardware/custom.h>
 #include <hardware/cia.h>
 #include <proto/cia.h>
+#include <proto/timer.h>
 
 #include <devices/inputevent.h>
 #include <devices/rawkeycodes.h>
+#include <devices/timer.h>
 
 #include "kbd.h"
 
@@ -53,12 +55,14 @@ static AROS_UFH4(ULONG, keyboard_interrupt,
 
     struct kbd_data *kbddata = (struct kbd_data*)data;
     volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
-	
-    UBYTE keycode = ciaa->ciasdr;
+    struct Library *TimerBase = kbddata->TimerBase;
+    struct EClockVal eclock1, eclock2;
+    UBYTE keycode;
+    
+    keycode = ciaa->ciasdr;
 
-    ciaa->ciacra = 0x48;
-    ciaa->ciatalo = 100;
-    ciaa->ciatahi = 0;
+    ciaa->ciacra |= 0x40;
+    ReadEClock(&eclock1);
 
     keycode = ~((keycode >> 1) | (keycode << 7));
     kbddata->kbd_callback(kbddata->callbackdata, keycode);
@@ -66,10 +70,14 @@ static AROS_UFH4(ULONG, keyboard_interrupt,
     if (keycode == 0x7a || keycode == 0x7b)
 	kbddata->kbd_callback(kbddata->callbackdata, 0x80 | keycode);
 
-    // timer still not finished? busy wait
-    while (ciaa->ciacra & 1);
-
-    ciaa->ciacra = 0x08; // back to input mode, end handshake
+    // busy wait until handshake pulse has been long enough
+    for (;;) {
+    	ReadEClock(&eclock2);
+    	if ((LONG)(eclock2.ev_lo - eclock1.ev_lo) >= 80)
+    	    break;
+    }
+    		
+    ciaa->ciacra &= ~0x40; // end handshake
 	
     return 0;
 	
@@ -137,10 +145,13 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
         data->callbackdata   = callbackdata;
 	
+	XSD(cl)->timerio = (struct timerequest*)AllocMem(sizeof(struct timerequest), MEMF_CLEAR | MEMF_PUBLIC);
+	if (OpenDevice("timer.device", UNIT_ECLOCK, (struct IORequest*)XSD(cl)->timerio, 0))
+	    Alert(AT_DeadEnd | AG_OpenDev | AN_Unknown);
+	XSD(cl)->TimerBase = data->TimerBase = (struct Library*)XSD(cl)->timerio->tr_node.io_Device;
+
 	if (!(XSD(cl)->ciares = OpenResource("ciaa.resource")))
 	    Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
-	
-	ciaa->ciacra = 0x08; // oneshot
 
 	inter = &XSD(cl)->kbint;
 	inter->is_Node.ln_Pri = 0;
@@ -161,6 +172,8 @@ VOID AmigaKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     ObtainSemaphore(&XSD(cl)->sema);
     if (XSD(cl)->ciares)
     	RemICRVector(XSD(cl)->ciares, 3, &XSD(cl)->kbint);
+    if (XSD(cl)->TimerBase)
+    	CloseDevice((struct IORequest*)XSD(cl)->timerio);
     ReleaseSemaphore(&XSD(cl)->sema);
     OOP_DoSuperMethod(cl, o, msg);
 }
