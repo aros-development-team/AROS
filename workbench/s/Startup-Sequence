@@ -23,6 +23,7 @@ Assign WANDERER: SYS:System/Wanderer DEFER
 
 If EXISTS SYS:Classes/USB
     Assign USBCLASSES: SYS:Classes/USB
+    AddUSBClasses >NIL:
 EndIf
 
 If EXISTS SYS:DiskImages
