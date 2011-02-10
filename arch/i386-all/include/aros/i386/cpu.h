@@ -24,7 +24,7 @@
 #define AROS_PTRALIGN		   4 /* Alignment for PTR */
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
-#define AROS_WORSTALIGN 	   4 /* Worst case alignment */
+#define AROS_WORSTALIGN 	   16 /* Worst case alignment */
 #define AROS_STACKALIGN		  16 /* Clean stack must be aligned to this */
 
 #define SIZEOF_FPU_STATE	512  /* 108 bytes are needed to store FPU, 512 bytes are needed to store SSE */
