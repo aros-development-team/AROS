@@ -146,8 +146,9 @@ LONG launcher()
     {
         D(bug("launcher: freeing child_signal\n"));
         FreeSignal(child_signal);
-        CloseLibrary(aroscbase);
     }
+
+    CloseLibrary(aroscbase);
     
     return 0;
 }
@@ -178,8 +179,11 @@ pid_t __vfork(jmp_buf env)
     };
 
     udata->parent = this;
-    
+
     struct arosc_privdata *ppriv = __get_arosc_privdata();
+
+    D(bug("__vfork: ppriv = %x\n", ppriv));
+
     udata->ppriv = ppriv;
     
     /* Store parent's vfork_data to restore it later */
@@ -233,6 +237,8 @@ pid_t __vfork(jmp_buf env)
         /* Reinitialize variables as they may have been overwritten during setjmp */
         ppriv = __get_arosc_privdata();
         udata = ppriv->acpd_vfork_data;
+
+        D(bug("__vfork: ppriv = %x\n", ppriv));
 
 	if(!udata->child_executed)
 	{
