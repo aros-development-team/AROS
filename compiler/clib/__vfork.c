@@ -100,7 +100,7 @@ LONG launcher()
             
             exec_id = udata->exec_id = __exec_prepare(
                 udata->exec_filename,
-                udata->exec_searchpath,
+                0,
                 udata->exec_argv,
                 udata->exec_envp
             );

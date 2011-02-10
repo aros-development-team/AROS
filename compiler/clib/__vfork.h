@@ -37,7 +37,6 @@ struct vfork_data
     BYTE child_signal;
 
     const char *exec_filename;
-    int exec_searchpath;
     char *const *exec_argv;
     char *const *exec_envp;
     APTR exec_id;
