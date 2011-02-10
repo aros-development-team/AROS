@@ -2,7 +2,7 @@
 #define ___FDESC_H
 
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: file descriptors handling internals - header file
@@ -31,7 +31,9 @@ typedef struct _fdesc
     int  fdflags;
 } fdesc;
 
-int __register_init_fdarray(fdesc **fdarray, int numslots);
+struct arosc_privdata;
+int __register_init_fdarray(struct arosc_privdata *priv);
+int __getfdslots(void);
 fdesc *__getfdesc(register int fd);
 void __setfdesc(register int fd, fdesc *fdesc);
 int __getfdslot(int wanted_fd);
