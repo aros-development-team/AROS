@@ -296,6 +296,10 @@ static void parent_enterpretendchild(struct vfork_data *udata)
 
     udata->ppriv->acpd_vfork_data = udata;
 
+    /* Remember and switch malloc mempool */
+    udata->parent_mempool = udata->ppriv->acpd_mempool;
+    udata->ppriv->acpd_mempool = udata->cpriv->acpd_mempool;
+
     /* Remember and switch fd descriptor table */
     udata->parent_acpd_fd_mempool = udata->ppriv->acpd_fd_mempool;
     udata->parent_acpd_numslots = udata->ppriv->acpd_numslots;
@@ -332,6 +336,9 @@ static void child_takeover(struct vfork_data *udata)
 static void parent_leavepretendchild(struct vfork_data *udata)
 {
     D(bug("parent_leavepretendchild(%x): entered\n", udata));
+
+    /* Restore parent's malloc mempool */
+    udata->ppriv->acpd_mempool = udata->parent_mempool;
 
     /* Restore parent's old fd_array */
     udata->ppriv->acpd_fd_mempool = udata->parent_acpd_fd_mempool;
