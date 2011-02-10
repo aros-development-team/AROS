@@ -61,14 +61,15 @@ int __getfdslot(int wanted_fd)
     {
         void *tmp;
         
-        tmp = malloc((wanted_fd+1)*sizeof(fdesc *));
+        tmp = AllocPooled(__fd_mempool, (wanted_fd+1)*sizeof(fdesc *));
         
         if (!tmp) return -1;
 
         if (__fd_array)
         {
-            CopyMem(__fd_array, tmp, __numslots*sizeof(fdesc *));
-            free(__fd_array);
+            size_t size = __numslots*sizeof(fdesc *);
+            CopyMem(__fd_array, tmp, size);
+            FreePooled(__fd_mempool, __fd_array, size);
         }
 
         __fd_array = tmp;
