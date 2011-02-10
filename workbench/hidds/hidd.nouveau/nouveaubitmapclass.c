@@ -725,20 +725,24 @@ ULONG METHOD(NouveauBitMap, Hidd_BitMap, BytesPerLine)
 
 BOOL METHOD(NouveauBitMap, Hidd_BitMap, ObtainDirectAccess)
 {
-    /* This is done on purpose. Direct bitmap access will be slower
-       than accelerated GetImage/PutImage and also is incorreclty
-       handled in SDL */
-    *msg->addressReturn = NULL;
-    *msg->widthReturn = 0;
-    *msg->heightReturn = 0;
-    *msg->bankSizeReturn = 0;
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
-    return FALSE;
+    LOCK_BITMAP
+    MAP_BUFFER
+
+    *msg->addressReturn = (UBYTE*)bmdata->bo->map;
+    *msg->widthReturn = bmdata->pitch / bmdata->bytesperpixel;
+    *msg->heightReturn = bmdata->height;
+    *msg->bankSizeReturn = *msg->memSizeReturn = bmdata->pitch * bmdata->height;
+
+    return TRUE;
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, ReleaseDirectAccess)
 {
-    /* No op on purpose */
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+
+    UNLOCK_BITMAP
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
