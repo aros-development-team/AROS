@@ -5,7 +5,7 @@
 
 #include <dos/dos.h>
 #include <proto/dos.h>
-#include "__open.h"
+#include "__fdesc.h"
 
 /*****************************************************************************
 

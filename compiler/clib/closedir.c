@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "__open.h"
+#include "__fdesc.h"
 
 /*****************************************************************************
 

@@ -16,7 +16,7 @@
 #include <sys/wait.h>
 
 #include "__errno.h"
-#include "__open.h"
+#include "__fdesc.h"
 #include "__upath.h"
 
 #define DEBUG 0

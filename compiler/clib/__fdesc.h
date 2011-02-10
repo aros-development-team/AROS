@@ -1,5 +1,5 @@
-#ifndef ___OPEN_H
-#define ___OPEN_H
+#ifndef ___FDESC_H
+#define ___FDESC_H
 
 /*
     Copyright © 1995-2009, The AROS Development Team. All rights reserved.
@@ -41,4 +41,5 @@ void __updatestdio(void);
 LONG __oflags2amode(int flags);
 fdesc *__alloc_fdesc(void);
 void __free_fdesc(fdesc *fdesc);
-#endif
+
+#endif /* ___FDESC_H */

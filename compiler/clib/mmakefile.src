@@ -108,8 +108,8 @@ SHARED	:= \
 	__get_default_file \
 	__env \
 	__exitfunc \
+        __fdesc \
 	__ioerr2errno \
-	__open \
 	__rand48 \
 	__spawnv \
 	__stat \

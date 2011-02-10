@@ -10,7 +10,7 @@
 #include <stdarg.h>
 
 #include "__errno.h"
-#include "__open.h"
+#include "__fdesc.h"
 
 /*****************************************************************************
 

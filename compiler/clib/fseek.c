@@ -11,7 +11,7 @@
 #include <proto/dos.h>
 #include "__errno.h"
 #include "__stdio.h"
-#include "__open.h"
+#include "__fdesc.h"
 
 /*****************************************************************************
 

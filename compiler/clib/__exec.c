@@ -24,7 +24,7 @@
 #include "__exec.h"
 #include "__upath.h"
 #include "__errno.h"
-#include "__open.h"
+#include "__fdesc.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
