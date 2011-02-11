@@ -14,12 +14,15 @@ HOST_STRIP  ?= strip
 HOST_MKDIR  ?= mkdir
 ELF2HUNK    ?= elf2hunk
 HOST_CFLAGS ?= -Wall -g -O
+ifeq ("${MSYSTEM}", "MINGW32")
+	MINGLIBS := -lws2_32
+endif
 
 all : $(ELF2HUNK)
 
 $(ELF2HUNK) : $(SRC)
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $< -o $(ELF2HUNK)
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $(ELF2HUNK) ${MINGLIBS}
 
 clean :
 	@$(RM) $(ELF2HUNK)

@@ -16,20 +16,25 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#if defined(__GNUC__)&&defined(WIN32)
+#include <winsock2.h>
+#else
 #include <arpa/inet.h>
-
+typedef uint32_t ULONG;
+typedef int      BOOL;
+#endif
 typedef uint8_t  UBYTE;
 typedef uint16_t UWORD;
-typedef uint32_t ULONG;
 typedef uint32_t IPTR;
 typedef int32_t  SIPTR;
 typedef char *   STRPTR;
-typedef int      BOOL;
 
 #define SysBase	0x0004
 
+#if !defined(FALSE)&&!defined(TRUE)
 #define FALSE 0
 #define TRUE (!FALSE)
+#endif
 
 #define HUNK_CODE	1001
 #define HUNK_DATA	1002
