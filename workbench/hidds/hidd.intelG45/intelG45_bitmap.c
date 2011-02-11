@@ -1011,18 +1011,19 @@ ULONG METHOD(GMABM, Hidd_BitMap, BytesPerLine)
 
 BOOL METHOD(GMABM, Hidd_BitMap, ObtainDirectAccess)
 {
+/*
 	*msg->addressReturn = NULL;
     *msg->widthReturn = 0;
     *msg->heightReturn = 0;
     *msg->bankSizeReturn = 0;
     return FALSE;
-/*
+*/
+
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     LOCK_BITMAP
     IPTR VideoData = bm->framebuffer;
     if (bm->fbgfx)
     {
-//    	DO_FLUSH();
         VideoData += (IPTR)sd->Card.Framebuffer;
 		LOCK_HW
 		DO_FLUSH();
@@ -1033,12 +1034,12 @@ BOOL METHOD(GMABM, Hidd_BitMap, ObtainDirectAccess)
     *msg->heightReturn = bm->height;
     *msg->bankSizeReturn = *msg->memSizeReturn = bm->pitch * bm->height;
     return TRUE;
-	*/
+
 }
 
 VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
 {
-	/*
+
     GMABitMap_t *bm = OOP_INST_DATA(cl, o);
     UNLOCK_BITMAP
 
@@ -1055,7 +1056,7 @@ VOID METHOD(GMABM, Hidd_BitMap, ReleaseDirectAccess)
         };
         OOP_DoMethod(bm->compositing, (OOP_Msg)&brcmsg);    
     }
-	*/
+
 }
 
 #define pHidd_BitMap_FillRect pHidd_BitMap_DrawRect
