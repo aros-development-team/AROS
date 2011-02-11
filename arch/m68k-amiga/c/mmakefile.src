@@ -1,0 +1,22 @@
+# Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := SetPatchAROS
+
+USER_CFLAGS := -I$(SRCDIR)
+
+#MM- workbench-c-quick : workbench-c-arch-quick
+
+#MM workbench-c-arch : includes linklibs workbench-c-arch-elf
+#MM workbench-c-arch-quick : workbench-c-arch-elf-quick
+
+%build_progs mmake=workbench-c-arch-elf \
+    files=$(FILES) targetdir=$(AROS_C)/ELF \
+    uselibs="arossupport amiga arosc m"
+
+workbench-c-arch: workbench-c-arch-elf
+	@$(FOR) file in $(FILES) ; do \
+	    $(ELF2HUNK) $(AROS_C)/ELF/"$$file" $(AROS_C)/"$$file" ; \
+	done
