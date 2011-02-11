@@ -74,6 +74,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     LIBBASE->tb_micro_micros = LIBBASE->tb_eclock_rate;
     LIBBASE->tb_vblank_rate = 50;
     LIBBASE->tb_vblank_micros = 1000000 / LIBBASE->tb_vblank_rate;
+    SysBase->ex_EClockFrequency = LIBBASE->tb_eclock_rate;
+    SysBase->PowerSupplyFrequency = 50;
+    SysBase->VBlankFrequency = 50;
 
     BattClockBase = OpenResource("battclock.resource");
     if (BattClockBase) {
