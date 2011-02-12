@@ -1245,6 +1245,7 @@ case "$target_os" in
 		aros_target_strip_flags="-R.comment --strip-debug"
 		aros_default_wbwidth=640
 		aros_default_wbheight=256
+		aros_default_wbdepth=2
 		;;
 	    *ppc*)
 		aros_cpu="ppc"
