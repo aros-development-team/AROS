@@ -232,7 +232,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct planarbm
     if (yend > 312)
     	yend = 312;
     copptr = c2d->copper2_bplcon0;
-    copptr[4] = (yend << 8) | 0x07;
+    copptr[4] = (yend << 8) | 0x05;
     if (yend < 256) {
         copptr[2] = 0x00df;
         copptr[3] = 0x00fe;
@@ -242,7 +242,10 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct planarbm
     }
 
     copptr = c2d->copper2;
-    copptr[0] = ((y - data->extralines) << 8) | 0x07;
+    copptr[0] = ((y - data->extralines) << 8) | 0x05;
+    copptr = c2d->copper2_bplcon0;
+    copptr[-2] = (y << 8) | 0x05;
+    
 }
 
 static void setcopperscroll(struct amigavideo_staticdata *data, struct planarbm_data *bm)
@@ -365,8 +368,8 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct planarbm
 
     data->extralines = (c - c2d->copper2) / 112 + 1;
 
-    *c++ = 0x00df;
-    *c++ = 0x00fe;
+    *c++ = 0xffff;
+    *c++ = 0xfffe;
     c2d->copper2_bplcon0 = c;
     *c++ = 0x0100;
     *c++ = bplcon0;
