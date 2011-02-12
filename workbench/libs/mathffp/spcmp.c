@@ -62,8 +62,8 @@
 */
 
 AROS_LH2(LONG, SPCmp,
-    AROS_LHA(float, fnum1, D0),
-    AROS_LHA(float, fnum2, D1),
+    AROS_LHA(float, fnum1, D1),
+    AROS_LHA(float, fnum2, D0),
     struct LibHeader *, MathBase, 7, Mathffp
 )
 {
