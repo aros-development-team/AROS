@@ -59,7 +59,7 @@ struct TimerBase
     ULONG tb_micro_started;
     struct timeval tb_micro_count;
     ULONG tb_micro_micros;
-    BOOL tb_micro_on;	
+    BOOL tb_micro_on;
 
     struct Interrupt tb_vbint;
     struct timeval tb_vb_count;

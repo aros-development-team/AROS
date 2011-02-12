@@ -31,6 +31,7 @@
 #include <devices/timer.h>
 #include <hardware/intbits.h>
 #include <hardware/cia.h>
+#include <graphics/gfxbase.h>
 
 #include <proto/exec.h>
 #include <proto/kernel.h>
@@ -68,16 +69,16 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     struct Interrupt *inter;
     struct BattClockBase *BattClockBase;
-
-    /* Setup the timer.device data */
-    LIBBASE->tb_eclock_rate = 709379; // FIXME: PAL/NTSC check
+    struct GfxBase *GfxBase;
+    	
+    GfxBase = TaggedOpenLibrary(1);
+    LIBBASE->tb_eclock_rate = (GfxBase->DisplayFlags & REALLY_PAL) ? 709379 : 715909;
     LIBBASE->tb_micro_micros = LIBBASE->tb_eclock_rate;
-    LIBBASE->tb_vblank_rate = 50;
+    LIBBASE->tb_vblank_rate = (GfxBase->DisplayFlags & PAL) ? 50 : 60;
     LIBBASE->tb_vblank_micros = 1000000 / LIBBASE->tb_vblank_rate;
     SysBase->ex_EClockFrequency = LIBBASE->tb_eclock_rate;
-    SysBase->PowerSupplyFrequency = 50;
-    SysBase->VBlankFrequency = 50;
-
+    CloseLibrary((struct Library*)GfxBase);
+    
     BattClockBase = OpenResource("battclock.resource");
     if (BattClockBase) {
 	ULONG t = ReadBattClock();

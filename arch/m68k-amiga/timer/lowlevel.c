@@ -124,11 +124,10 @@ ULONG GetEClock(struct TimerBase *TimerBase)
 	}
 	val = (hi << 8) | lo;
 	// pending interrupt?
+	diff = 0;
 	if (SetICR(TimerBase->tb_eclock_res, 0) & (1 << TimerBase->tb_eclock_intbit)) {
-		if (val > ECLOCK_BASE /2)
+		if (val > ECLOCK_BASE / 2)
 			diff = ECLOCK_BASE;
-	} else {
-		diff = 0;
 	}
 	diff += ECLOCK_BASE - val;
 	return diff;
