@@ -1011,6 +1011,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             /* Allocate pens for the mouse pointer */
             for (k = 1; k < 4; ++k)
             {
+            	LONG opret = -1;
     	        DEBUG_OPENSCREEN(dprintf("OpenScreen: ViewPort 0x%p Index %d R 0x%08X G 0x%08X B 0x%08X\n",
                                          &screen->Screen.ViewPort,
                                          k + spritebase,
@@ -1018,11 +1019,11 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 					 p[k+7].green,
 					 p[k+7].blue));
 		if (k + spritebase < numcolors)
-                    ObtainPen(screen->Screen.ViewPort.ColorMap, k + spritebase,
+                    opret = ObtainPen(screen->Screen.ViewPort.ColorMap, k + spritebase,
 			      p[k+7].red, p[k+7].green, p[k+7].blue, 0);
-		else
+		if (opret < 0) /* ObtainPen() fails if spritebase >= number of screen colors */
 		    SetRGB32(&screen->Screen.ViewPort, k + spritebase,
-			     p[k+4].red, p[k+4].green, p[k+4].blue);
+			     p[k+7].red, p[k+7].green, p[k+7].blue);
 	    }
         }
 
