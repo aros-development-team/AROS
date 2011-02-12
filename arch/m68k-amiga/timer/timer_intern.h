@@ -64,8 +64,11 @@ struct TimerBase
     struct Interrupt tb_vbint;
     struct timeval tb_vb_count;
     UWORD tb_vblank_rate;
-    ULONG tb_vblank_micros;
+    UWORD tb_vblank_micros;
     BOOL tb_vblank_on;
+
+    ULONG tb_eclock_micro_mult;
+    UWORD tb_micro_eclock_mult;
 };
 
 ULONG GetEClock(struct TimerBase *TimerBase);
