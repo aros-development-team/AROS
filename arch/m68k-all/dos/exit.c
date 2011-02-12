@@ -14,13 +14,19 @@
  * http://cataclysm.cx/random/amiga/reference/Libraries_Manual_guide/node060F.html
  */
 
+AROS_UFP2(ULONG, BCPL_Exit,
+    AROS_UFPA(LONG, returnCode, D1),
+    AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+
 AROS_LH1(void, Exit,
 	 AROS_LHA(LONG, returnCode, D1),
 	 struct DosLibrary *, DOSBase, 24, Dos)
 {
     AROS_LIBFUNC_INIT
 
-    /* TODO: implement this */
+    AROS_UFC2(ULONG, BCPL_Exit,
+	AROS_UFCA(LONG, returnCode, D1),
+	AROS_UFCA(struct DosLibrary *, DOSBase, A6));
 
     AROS_LIBFUNC_EXIT
 }
