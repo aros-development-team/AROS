@@ -12,6 +12,10 @@
 
 #include "exec_intern.h"
 
+#if AROS_SERIAL_DEBUG
+#define PRINT_LIST
+#endif
+
 #ifdef __mc68000__
 #define NEXTRESIDENT(list) \
 	if(*list & 0x80000000) { list = (IPTR *)(*list & 0x7fffffff); continue; }
@@ -22,22 +26,48 @@
 
 /* I don't think KickTag merge can be implemented without ugly hacks.. */
 
-static IPTR *CopyResidents(IPTR *list, IPTR *dst)
+
+static IPTR *FindOldResident(IPTR *oldlist, struct Resident *RomTag)
+{
+    IPTR *oldlisttmp = oldlist;
+    if (!oldlist)
+    	return NULL;
+    while (*oldlisttmp) {
+	struct Resident *OldRomTag;
+	NEXTRESIDENT(oldlisttmp);
+	OldRomTag = (struct Resident*)*oldlisttmp;
+	if (!strcmp(OldRomTag->rt_Name, RomTag->rt_Name)) {
+	    if ((OldRomTag->rt_Version < RomTag->rt_Version) ||
+		(OldRomTag->rt_Version == RomTag->rt_Version && OldRomTag->rt_Pri <= RomTag->rt_Pri))
+		return oldlisttmp;
+	}
+	oldlisttmp++;
+    }
+    return NULL;
+}
+
+static IPTR *CopyResidents(IPTR *list, IPTR *dst, IPTR *oldlist)
 {
     struct Resident *RomTag;
     while(*list)
     {
+	IPTR *oldresident;
 	NEXTRESIDENT(list);
 	RomTag = (struct Resident*)*list;
-        bug("* %p: %4d %02x %3d \"%s\"\n",
+#ifdef PRINT_LIST
+	bug("* %p: %4d %02x %3d \"%s\"\n",
             RomTag,
             RomTag->rt_Pri,
             RomTag->rt_Flags,
             RomTag->rt_Version,
             RomTag->rt_Name);
-
-
-	*dst++ = *list++;
+#endif
+	oldresident = FindOldResident(oldlist, RomTag);
+	if (oldresident)
+	    *oldresident = *list;
+	else
+	    *dst++ = *list;
+	list++;
     }
     *dst = 0;
     return dst;
@@ -92,9 +122,9 @@ static void AddToResidentList(IPTR *list)
     newlist = AllocMem((oldcnt + addcnt + 1) * sizeof(struct Resident*), MEMF_PUBLIC);
     if (!newlist)
     	return;
-    tmplist = CopyResidents(SysBase->ResModules, newlist);
-    bug("KickTag residents:\n");
-    CopyResidents(list, tmplist);
+    tmplist = CopyResidents(SysBase->ResModules, newlist, NULL);
+    D(bug("KickTag residents:\n"));
+    CopyResidents(list, tmplist, SysBase->ResModules);
     SortResidents(newlist);
     /* Redirect InitCode() loop to new list */
     /* We assume we got here between SINGLETASK and COLDSTART */
@@ -108,7 +138,7 @@ static void AddToResidentList(IPTR *list)
 #endif
     }
     SysBase->ResModules = newlist;
-
+#ifdef PRINT_LIST
     bug("Resident modules after KickTags merge:\n");
     for (i = 0; i < addcnt + oldcnt; i++) {
     	struct Resident *RomTag = (struct Resident*)newlist[i];
@@ -119,7 +149,7 @@ static void AddToResidentList(IPTR *list)
             RomTag->rt_Version,
             RomTag->rt_Name);
     }
-
+#endif
 }
 
 void InitKickTags(void)
