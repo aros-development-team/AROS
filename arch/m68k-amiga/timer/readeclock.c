@@ -60,10 +60,10 @@
     old = dest->ev_lo = TimerBase->tb_eclock.ev_lo;
     dest->ev_hi = TimerBase->tb_eclock.ev_hi;
     eclock = GetEClock(TimerBase);
+    Enable();
     dest->ev_lo += eclock;
     if (old > dest->ev_lo)
     	dest->ev_hi++;
-    Enable();
     return TimerBase->tb_eclock_rate;
 
     AROS_LIBFUNC_EXIT

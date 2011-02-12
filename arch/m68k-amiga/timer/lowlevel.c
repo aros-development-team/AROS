@@ -17,20 +17,17 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-// convert timeval pair to 64-bit vblank or e-clock unit
-// (hopefully 64-bit multiplication and division isn't too heavy, should be
-// replaced with multiplication and right shift..
+// convert timeval pair to 64-bit e-clock unit or 32-bit vblank
 void convertunits(struct TimerBase *TimerBase, struct timeval *tr, int unit)
 {
 	if (unit == UNIT_VBLANK) {
-		long long v = ((long long)tr->tv_secs) * 1000000 + tr->tv_micro;
-		v /= TimerBase->tb_vblank_micros;
-		tr->tv_secs = v >> 32;
+		ULONG v = tr->tv_secs * TimerBase->tb_vblank_rate;
+		v += tr->tv_micro / TimerBase->tb_vblank_micros;
+		tr->tv_secs = 0;
 		tr->tv_micro = v;
 	} else if (unit == UNIT_MICROHZ) {
-		long long v = ((long long)tr->tv_secs) * 1000000 + tr->tv_micro;
-		v *= TimerBase->tb_micro_micros;
-		v /= 1000000;
+		long long v = (long long)tr->tv_secs * TimerBase->tb_eclock_rate;
+		v += ((long long)tr->tv_micro * TimerBase->tb_micro_eclock_mult) >> 15;
 		tr->tv_secs = v >> 32;
 		tr->tv_micro = v;		
 	}

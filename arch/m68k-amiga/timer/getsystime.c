@@ -56,15 +56,13 @@
     AROS_LIBFUNC_INIT
 
     struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
-    ULONG eclock, tb_eclock_to_usec;
+    ULONG tb_eclock_to_usec;
 
     Disable();
-    tb_eclock_to_usec = timerBase->tb_eclock_to_usec;
-    eclock = GetEClock(timerBase);
+    tb_eclock_to_usec = timerBase->tb_eclock_to_usec + GetEClock(timerBase);
     Enable();
     dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
-    // ugh, 64-bit multiplication and division..
-    dest->tv_micro = (long long)(tb_eclock_to_usec + eclock)  * 1000000 / timerBase->tb_eclock_rate;
+    dest->tv_micro = (ULONG)(((long long)tb_eclock_to_usec * timerBase->tb_eclock_micro_mult) >> 16);
     // can only overflow once, e-clock interrupts happen more than once a second
     if (dest->tv_micro >= 1000000) {
     	dest->tv_micro -= 1000000;

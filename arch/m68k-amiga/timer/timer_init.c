@@ -70,15 +70,18 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     struct Interrupt *inter;
     struct BattClockBase *BattClockBase;
     struct GfxBase *GfxBase;
-    	
+
     GfxBase = TaggedOpenLibrary(1);
+
     LIBBASE->tb_eclock_rate = (GfxBase->DisplayFlags & REALLY_PAL) ? 709379 : 715909;
-    LIBBASE->tb_micro_micros = LIBBASE->tb_eclock_rate;
     LIBBASE->tb_vblank_rate = (GfxBase->DisplayFlags & PAL) ? 50 : 60;
     LIBBASE->tb_vblank_micros = 1000000 / LIBBASE->tb_vblank_rate;
     SysBase->ex_EClockFrequency = LIBBASE->tb_eclock_rate;
+    LIBBASE->tb_eclock_micro_mult = (GfxBase->DisplayFlags & REALLY_PAL) ? 92385 : 91542;
+    LIBBASE->tb_micro_eclock_mult = (GfxBase->DisplayFlags & REALLY_PAL) ? 23245 : 23459;
+
     CloseLibrary((struct Library*)GfxBase);
-    
+
     BattClockBase = OpenResource("battclock.resource");
     if (BattClockBase) {
 	ULONG t = ReadBattClock();
