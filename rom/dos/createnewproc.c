@@ -662,13 +662,29 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
 	   The Ralph Bebel's guru book says that pr_ExitCode
  	   is passed the process return code in D0 and pr_ExitData in D1,
 	   but the Matt Dillon's DICE C implementation of vfork shows that
-	   those parameters are passed also on the stack. 
-	   
-	   The AROS macros for functions with register parameters don't
-	   support both register and stack parameters at once, so we use 
-	   the stack only. This oughta be fixed somehow.
-        */
-	me->pr_ExitCode(result, me->pr_ExitData);
+	   those parameters are passed also on the stack. 	   
+	 */
+#ifdef __mc68000
+	asm volatile (
+		"move.l %0, %%d0\n"
+		"move.l %1, %%d1\n"
+		"move.l %2, %%a0\n"
+		"move.l %%d0, %%sp@-\n"
+		"move.l %%d1, %%sp@-\n"
+		"jsr (%%a0)\n"
+		"addq.l #8, %%sp\n"
+		: /* No return values */
+		: "g" (result), "g" (me->pr_ExitData), "g" (me->pr_ExitCode)
+		: "d0", "d1", "a0", "a1"
+	);
+#else
+	/* 
+ 	   The AROS macros for functions with register parameters don't
+ 	   support both register and stack parameters at once, so we use 
+	   the stack only on non-m68k. This oughta be fixed somehow.
+         */
+ 	me->pr_ExitCode(result, me->pr_ExitData);
+#endif
     }
 
     P(kprintf("Deleting local variables\n"));
