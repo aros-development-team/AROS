@@ -659,7 +659,7 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
     if (me->pr_ExitCode != NULL)
     {
         /* 
-	   The Ralph Bebel's guru book says that pr_ExitCode
+	   The Ralph Babel's guru book says that pr_ExitCode
  	   is passed the process return code in D0 and pr_ExitData in D1,
 	   but the Matt Dillon's DICE C implementation of vfork shows that
 	   those parameters are passed also on the stack. 	   
