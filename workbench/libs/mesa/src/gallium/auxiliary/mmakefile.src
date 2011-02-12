@@ -121,6 +121,7 @@ GALLIUM_AUXILIARY_SOURCES = \
             util/u_handle_table \
             util/u_hash \
             util/u_hash_table \
+            util/u_index_modify \
             util/u_keymap \
             util/u_linear \
             util/u_linkage \
@@ -131,6 +132,7 @@ GALLIUM_AUXILIARY_SOURCES = \
             util/u_ringbuffer \
             util/u_sampler \
             util/u_simple_shaders \
+            util/u_slab \
             util/u_snprintf \
             util/u_staging \
             util/u_surface \
