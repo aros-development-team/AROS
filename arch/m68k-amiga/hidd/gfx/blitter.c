@@ -65,6 +65,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct planarbm_data *srcb
     WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = data->gfxbase;
     ULONG srcoffset, dstoffset;
     BYTE shift, i;
     WORD srcwidth, dstwidth, width;
@@ -201,10 +202,10 @@ static const UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 
 BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm, WORD x1,WORD y1,WORD x2,WORD y2, HIDDT_Pixel pixel,HIDDT_DrawMode mode)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = data->gfxbase;
     ULONG offset;
     WORD width, height;
     UBYTE i;
-    struct GfxBase *GfxBase = data->gfxbase;
     
     //D(bug("fillrect(%dx%d,%dx%d,%d,%d)\n", x1, y1, x2, y2, pixel, mode));
 
@@ -230,7 +231,7 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct planarbm_data *bm,
     	pixel = 0x00;
     else if (mode == vHidd_GC_DrawMode_Set)
     	pixel = 0xff;
-    
+
     for (i = 0; i < bm->depth; i++) {
     	if (bm->planes[i] == (UBYTE*)0x00000000 || bm->planes[i] == (UBYTE*)0xffffffff)
   	    continue;
@@ -277,6 +278,7 @@ static const UBYTE tmpl_minterm[] = { 0, 0, 0, 0, 0, 0 };
 BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct planarbm_data *bm, struct pHidd_BitMap_PutTemplate *tmpl)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = data->gfxbase;
     OOP_Object *gc = tmpl->gc;
     HIDDT_Pixel	fg = GC_FG(tmpl->gc);
     HIDDT_Pixel bg = GC_BG(tmpl->gc);
