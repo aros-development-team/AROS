@@ -1,0 +1,9 @@
+Name=FLAC
+Version=$VER: FLAC 1.0 (13.2.2011)
+BaseName=flac
+Pattern=#?
+Mask='f' 'L' 'a' 'C'
+GroupID=musi
+ID=flac
+Flags=DTF_BINARY,DTF_CASE
+Priority=1
