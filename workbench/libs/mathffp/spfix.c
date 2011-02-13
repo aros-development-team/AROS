@@ -57,7 +57,10 @@ AROS_LH1(LONG, SPFix,
     
     
     Shift = (fnum & FFPExponent_Mask) - 0x40;
-    Res = ((ULONG)(fnum & FFPMantisse_Mask)) >> (32 - Shift);
+    if (Shift > 0) /* > 32 bit LONG shift = undefined */
+	Res = ((ULONG)(fnum & FFPMantisse_Mask)) >> (32 - Shift);
+    else
+    	Res = 0;
     
     if (0 == Res)
     {
@@ -75,7 +78,7 @@ AROS_LH1(LONG, SPFix,
         SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     }
 
-    D(kprintf("SPFix(%x)=%d\n",fnum,Res));
+    D(kprintf("SPFix(%x) = %d\n", fnum, Res));
     
     return Res;
     

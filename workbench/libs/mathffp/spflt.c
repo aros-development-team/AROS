@@ -52,7 +52,7 @@ AROS_LH1(float, SPFlt,
     LONG TestMask = 0xFFFFFFFF;
     LONG Res = 0;
     
-    D(kprintf("SPFlt(%d)=",inum));
+    D(kprintf("SPFlt(%d) = ",inum));
     
     if (inum == 0)
     {
@@ -75,7 +75,10 @@ AROS_LH1(float, SPFlt,
     
     /* Exponent = number of highest set bit + 1 */
     
-    inum <<= (32 - Exponent);
+    if (Exponent > 0) /* > 32 bit LONG shift = undefined */
+	inum <<= (32 - Exponent);
+    else
+    	inum = 0;
     if ((char) inum < 0) inum +=0x100;
     inum &= FFPMantisse_Mask;
     
