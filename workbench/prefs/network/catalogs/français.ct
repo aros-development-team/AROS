@@ -1,8 +1,7 @@
-## version $VER: networkprefs.catalog 1.0 ($TODAY)
+## version $VER: networkprefs.catalog 3.0 ($TODAY)
 ## language français
 ## codeset 0
 ;
-; TODO: update me and set version to 2
 ;
 MSG_NAME
 Préférences Réseau
@@ -12,9 +11,18 @@ MSG_DESCRIPTION
 Préférences du réseau TCP/IP
 ; TCP/IP Network preferences
 ;
+MSG_IFNAME
+Nom
+;
+MSG_UP
+Active
+;
 MSG_DEVICE
 Périphérique
 ; Device
+;
+MSG_UNIT
+Unité
 ;
 MSG_IP_MODE
 Mode IP
@@ -48,6 +56,12 @@ MSG_DOMAIN_NAME
 Nom de domaine
 ; Domain Name
 ;
+MSG_SERIAL_DEVICE
+Périph. série
+;
+MSG_UNIT_NUMBER
+Unité
+;
 MSG_IP_MODE_MANUAL
 Manuel
 ; Manual
@@ -55,6 +69,39 @@ Manuel
 MSG_IP_MODE_DHCP
 Adresse obtenue avec DHCP
 ; Get address from DHCP
+;
+MSG_ENC_NONE
+Aucune
+;
+MSG_ENC_WEP
+WEP
+;
+MSG_ENC_WPA
+WPA
+;
+MSG_KEY_TEXT
+Passphrase
+;
+MSG_KEY_HEX
+Hexadécimal
+;
+MSG_SSID
+Réseau
+;
+MSG_ENCTYPE
+Encryption
+;
+MSG_KEYTYPE
+Type de clé
+;
+MSG_KEY
+Clé
+;
+MSG_HIDDEN
+Caché
+;
+MSG_ADHOC
+Ad-hoc
 ;
 MSG_TAB_IP_CONFIGURATION
 Configuration IP
@@ -64,9 +111,23 @@ MSG_TAB_COMPUTER_NAME
 Nom de l'ordinateur
 ; Computer Name
 ;
+MSG_TAB_WIRELESS
+Sans fil
+;
+MSG_TAB_MOBILE
+Mobile
+;
 MSG_AUTOSTART_STACK
 Démarrage automatique
 ; Autostart
+;
+MSG_AUTOSTART_WIRELESS
+Activer le réseau sans fil
+;Enable wireless networking
+;
+MSG_AUTOSTART_MOBILE
+Démarrer ModemManager durant le boot
+;Start ModemManager during system boot
 ;
 MSG_ERR_UNKNOWN_ERROR
 Erreur inconnue
@@ -76,9 +137,32 @@ MSG_ERR_NOT_RESTARTED_STACK
 La pile réseau n'a pu démarrer.
 ; Failed to restart network stack
 ;
+MSG_ERR_NOT_RESTARTED_WIRELESS
+Échec en redémarrant le sans fil
+;Failed to restart wireless networking
+;
+MSG_ERR_NOT_RESTARTED_MOBILE
+Échec en redémarrant ModemManager
+;Failed to restart ModemManager
+;
 MSG_BUTTON_OK
 Ok
 ; Ok
+;
+MSG_BUTTON_ADD
+Ajouter
+;
+MSG_BUTTON_EDIT
+Modifier
+;
+MSG_BUTTON_REMOVE
+Retirer
+;
+MSG_BUTTON_APPLY
+Appliquer
+;
+MSG_BUTTON_CLOSE
+Fermer
 ;
 MSG_ERROR_TITLE
 Erreur
@@ -99,4 +183,19 @@ Information
 MSG_PREFS_SAVED_RESTART
 Les préférences ont été sauvées vers %s. \nRedémarrer AROS pour que les modifications prenent effet.
 ; Preferences have been saved to %s.\nRestart AROS for them to take effect.
+;
+MSG_IFWINDOW_TITLE
+Interface
+;
+MSG_NETWINDOW_TITLE
+Réseau sans fil
+;Wireless Network
+;
+MSG_USERNAME
+Nom d'utilisateur
+;Username
+;
+MSG_PASSWORD
+Mot de passe
+;Password
 ;
