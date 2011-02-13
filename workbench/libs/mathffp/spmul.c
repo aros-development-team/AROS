@@ -51,7 +51,8 @@ AROS_LH2(float, SPMul,
     Res += ((Mant1H * Mant2L) >>  4);
     Res += ((Mant1L * Mant2H) >>  4);
     Res += ((Mant1L * Mant2L) >> 16);
-    
+    Res &= FFPMantisse_Mask;
+
     /* Bit 32 is not set */
     if ((LONG)Res > 0)
     {
@@ -74,7 +75,7 @@ AROS_LH2(float, SPMul,
     if ((char) Exponent < 0 || (char) Exponent == 0x7f)
     {
         SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-        D(kprintf("%x * %x = %x\n",fnum1,fnum2,Res));
+        D(kprintf("SPMul(%x * %x) = %x\n",fnum1,fnum2,Res));
         return (Res | (FFPMantisse_Mask + FFPExponent_Mask));
     }
     
@@ -85,7 +86,7 @@ AROS_LH2(float, SPMul,
         SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     }
     
-    D(kprintf("%x * %x = %x\n",fnum1,fnum2,Res));
+    D(kprintf("SPMul(%x * %x) = %x\n", fnum1, fnum2, Res));
     
     return Res;
   
