@@ -294,12 +294,13 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 	    }
         }
     }
+    //bug("putpixel %dx%d %x\n", msg->x, msg->y, msg->pixel);
 }
 
 /****************************************************************************************/
 
 ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
-				 struct pHidd_BitMap_GetPixel *msg)
+				struct pHidd_BitMap_GetPixel *msg)
 {
     struct planarbm_data    *data;
     UBYTE   	    	    **plane;
@@ -330,8 +331,38 @@ ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 	    }
 	}
     }
-    
+    //bug("getpixel %dx%d=%x\n", msg->x, msg->y, retval);
     return retval; 
+}
+
+/****************************************************************************************/
+
+VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
+				struct pHidd_BitMap_DrawLine *msg)
+{
+    HIDDT_Pixel fg = GC_FG(msg->gc);
+    HIDDT_DrawMode mode = GC_DRMD(msg->gc);
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct planarbm_data *data = OOP_INST_DATA(cl, o);
+
+    if (msg->x1 == msg->x2 || msg->y1 == msg->y2) {
+    	WORD x1 = msg->x1, x2 = msg->x2;
+    	WORD y1 = msg->y1, y2 = msg->y2;
+    	if (x1 > x2) {
+    	    WORD tmp = x1;
+    	    x1 = x2;
+    	    x2 = tmp;
+    	}
+    	if (y1 > y2) {
+    	    WORD tmp = y1;
+    	    y1 = y2;
+    	    y2 = tmp;
+    	}
+	if (!blit_fillrect(csd, data, x1, y1, x2, y2, fg, mode))
+    	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    } else {
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
 }
 
 /****************************************************************************************/
