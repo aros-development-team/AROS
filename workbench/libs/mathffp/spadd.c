@@ -179,7 +179,7 @@ AROS_LH2(float, SPAdd,
     
     Res |= (Mant1 & FFPMantisse_Mask) | Exponent;
     
-    D(kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res));
+    D(kprintf("SPAdd(%x + %x) = %x\n", fnum1, fnum2, Res));
     
     return Res;
 

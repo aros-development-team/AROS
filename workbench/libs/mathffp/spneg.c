@@ -41,6 +41,7 @@ AROS_LH1(float, SPNeg,
 {
     AROS_LIBFUNC_INIT
     
+    D(kprintf("SPNeg(%08x)\n", fnum1));
     if (0 == fnum1)
     {
         SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);

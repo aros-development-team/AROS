@@ -45,6 +45,8 @@ AROS_LH1(LONG, SPTst,
 )
 {
     AROS_LIBFUNC_INIT
+    
+    D(kprintf("SPTst(%08x)\n", fnum));
     /* fnum1 is negative */
     if ((char) fnum < 0)
     {

@@ -68,7 +68,9 @@ AROS_LH2(LONG, SPCmp,
 )
 {
     AROS_LIBFUNC_INIT
-    
+
+    D(kprintf("SPCmp(%08x,%08x)=", fnum1, fnum2));
+
     /* fnum1 is negative and fnum2 is positive
     **  or
     ** exponent of fnum1 is less than the exponent of fnum2
@@ -76,6 +78,7 @@ AROS_LH2(LONG, SPCmp,
     */
     if ( (char)fnum1 < (char)fnum2 )
     {
+        D(kprintf("-1\n"));
         SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
         return -1;
     }
@@ -87,6 +90,7 @@ AROS_LH2(LONG, SPCmp,
     */
     if ((char) fnum1 > (char) fnum2 )
     {
+        D(kprintf("1\n"));
         SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
         return 1;
     }
@@ -96,6 +100,7 @@ AROS_LH2(LONG, SPCmp,
     */
     if (fnum1 == fnum2)
     {
+        D(kprintf("0\n"));
         SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
         return 0;
     }
@@ -103,11 +108,13 @@ AROS_LH2(LONG, SPCmp,
     /* mantisse(fnum1) < mantisse(fnum2) */
     if (fnum1 < fnum2)
     {
+        D(kprintf("-1\n"));
         SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
         return -1;
     }
     
     /* Mantisse(fnum1) > mantisse(fnum2) */
+    D(kprintf("1\n"));
     SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
     return 1;
 

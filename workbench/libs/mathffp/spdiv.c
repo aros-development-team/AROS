@@ -118,7 +118,7 @@ AROS_LH2(float, SPDiv,
         return(Res | (FFPMantisse_Mask | FFPExponent_Mask));
     }
 
-    D(kprintf("%x / %x =%x\n",fnum2,fnum1,Res));
+    D(kprintf("SPDiv(%x / %x) = %x\n", fnum2, fnum1, Res));
   
     return Res;
 

@@ -37,7 +37,7 @@ AROS_LH1(float, SPAbs,
 )
 {
     AROS_LIBFUNC_INIT
-    
+    D(kprintf("SPAbs(%08x)\n", fnum1));
     if (0 == fnum1)
     {
         /* value is 0 -> set the Zero Flag */
