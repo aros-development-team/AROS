@@ -41,16 +41,34 @@ AROS_LH1(void, Exit,
 ULONG CallEntry(STRPTR argPtr, ULONG argSize, LONG_FUNC entry, struct Process *me)
 {
     ULONG stacksize;
+    ULONG ret;
     
     /* Is this still needed here? */
     stacksize = (APTR)&stacksize - me->pr_Task.tc_SPLower;
     /* Set pr_ReturnAddr to some location in our stack */
     me->pr_ReturnAddr = &stacksize;
 
-    return AROS_UFC3(ULONG, entry,
-	AROS_UFCA(STRPTR, argPtr, A0),
-	AROS_UFCA(ULONG, argSize, D0),
-	AROS_UFCA(struct ExecBase *, SysBase, A6));
+    /* Preserve all registers, and
+     * allow both stack and reg passing interfaces to work
+     */
+    asm volatile (
+    	    "move.l %1, %%a0\n"
+    	    "move.l %2, %%d0\n"
+    	    "move.l %3, %%a1\n"
+    	    "move.l %4, %%a6\n"
+    	    "movem.l %%d2-%%d7/%%a2-%%a5,%%sp@-\n"
+    	    "move.l %%d0, %%sp@-\n"
+    	    "move.l %%a0, %%sp@-\n"
+    	    "jsr    (%%a1)\n"
+    	    "addq.l #8, %%sp\n"
+    	    "movem.l %%sp@+,%%d2-%%d7/%%a2-%%a5\n"
+    	    "move.l %%d0, %0\n"
+    	    : "=g" (ret)
+    	    : "g" (argPtr), "g" (argSize), "g" (entry), "g" (SysBase)
+    	    : "d0", "d1",
+    	      "a0", "a1", "a6");
+
+    return ret;
 }
 
 /*
