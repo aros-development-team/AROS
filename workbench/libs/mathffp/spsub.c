@@ -42,8 +42,8 @@ AROS_LH2(float, SPSub,
 {
     AROS_LIBFUNC_INIT
     
-    ULONG r = SPAdd(fnum2, fnum1 ^ FFPSign_Mask);
-    D(kprintf("%x - %x = %x\n",fnum2,fnum1,r));
+    float r = SPAdd(fnum2, fnum1 ^ FFPSign_Mask);
+    D(kprintf("SPSub(%x - %x) = %x\n", fnum2, fnum1, r));
     return r;
 
     AROS_LIBFUNC_EXIT
