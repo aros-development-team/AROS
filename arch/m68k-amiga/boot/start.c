@@ -30,17 +30,19 @@ extern const struct Resident Exec_resident;
 extern void __clear_bss(const struct KernelBSS *bss);
 
 #define RGB(r,g,b)	((((r) & 0xf) << 8) | (((g) & 0xf) << 4) | (((b) & 0xf) << 0))
+#define RGB_MASK	RGB(15, 15, 15)
 
 #define CODE_ROM_CHECK	RGB( 4,  4, 4)
 #define CODE_RAM_CHECK	RGB( 9,  9, 9)
 #define CODE_EXEC_CHECK	RGB( 1,  1, 1)
-#define CODE_TRAP_FAIL	RGB(12, 12, 0)
+#define CODE_ALLOC_FAIL	(RGB( 0, 12, 0) | AT_DeadEnd)
+#define CODE_TRAP_FAIL	(RGB(12, 12, 0) | AT_DeadEnd)
 
-void Early_ScreenCode(UWORD code)
+void Early_ScreenCode(ULONG code)
 {
 	reg_w(BPLCON0, 0x0200);
 	reg_w(BPL1DAT, 0x0000);
-	reg_w(COLOR00, code);
+	reg_w(COLOR00, code & RGB_MASK);
 }
 
 void DebugInit()
@@ -296,7 +298,6 @@ static ULONG cpu_detect(void)
 	return cpuret;
 }
 	
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 /* Create a sign extending call stub:
  * foo:
  *   jsr AROS_SLIB_ENTRY(funcname, libname)
@@ -313,6 +314,7 @@ static ULONG cpu_detect(void)
 		UWORD *asmcall; \
 		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
 		asmcall = AllocMem(6 * sizeof(UWORD), MEMF_PUBLIC); \
+		if (asmcall == NULL) Early_Alert(CODE_ALLOC_FAIL); \
 		/* NOTE: 'asmcall' will intentionally never be freed */ \
 		asmcall[0] = 0x4eb9; \
 		asmcall[1] = (func >> 16) & 0xffff; \
@@ -328,6 +330,7 @@ static ULONG cpu_detect(void)
 		UWORD *asmcall; \
 		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
 		asmcall = AllocMem(5 * sizeof(UWORD), MEMF_PUBLIC); \
+		if (asmcall == NULL) Early_Alert(CODE_ALLOC_FAIL); \
 		/* NOTE: 'asmcall' will intentionally never be freed */ \
 		asmcall[0] = 0x4eb9; \
 		asmcall[1] = (func >> 16) & 0xffff; \
@@ -354,6 +357,7 @@ static ULONG cpu_detect(void)
 		UWORD *asmcall; \
 		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
 		asmcall = AllocMem(8 * sizeof(UWORD), MEMF_PUBLIC); \
+		if (asmcall == NULL) Early_Alert(CODE_ALLOC_FAIL); \
 		/* NOTE: 'asmcall' will intentionally never be freed */ \
 		asmcall[0] = 0x48e7; \
 		asmcall[1] = 0xc0c0; \
@@ -382,14 +386,6 @@ static ULONG cpu_detect(void)
  */
 #define FAKE_ID(lib, libname, funcname, funcid, value) \
 	FAKE_IT(lib, libname, funcname, funcid, 0x303c, value, 0x4e75)
-#else
-/* Not needed on EABI */
-#define PRESERVE_ALL(lib, libname, funcname, funcid) do { } while (0)
-#define EXT_BYTE(lib, libname, funcname, funcid) do { } while (0)
-#define EXT_WORD(lib, libname, funcname, funcid) do { } while (0)
-#define FAKE_IT(lib, libname, funcname, funcid, ...) do { } while (0)
-#define FAKE_ID(lib, libname, funcname, funcid, value) do { } while (0)
-#endif
 
 extern void SuperstackSwap(void);
 /* This calls the register-ABI library
@@ -406,6 +402,7 @@ static LONG doInitCode(ULONG startClass, ULONG version)
 	    DEBUGPUTHEX(("SS  upper", (ULONG)ss_stack + SS_STACK_SIZE - 1));
 	    if (ss_stack == NULL) {
 	    	DEBUGPUTS(("Strange. Can't allocate a new system stack\n"));
+	    	Early_Alert(CODE_ALLOC_FAIL);
 	    	break;
 	    }
             SysBase->SysStkLower    = ss_stack;
@@ -698,7 +695,8 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	
 	    sss.stk_Lower = AllocMem(size, MEMF_PUBLIC);
 	    if (sss.stk_Lower == NULL) {
-		bug("Can't allocate a new stack for Exec... Strange.\n");
+		DEBUGPUTS(("Can't allocate a new stack for Exec... Strange.\n"));
+	    	Early_Alert(CODE_ALLOC_FAIL);
 		break;
 	    }
 	    sss.stk_Upper = sss.stk_Lower + size;
