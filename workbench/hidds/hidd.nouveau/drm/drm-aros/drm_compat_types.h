@@ -1,6 +1,6 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: drm_compat_types.h 36033 2010-12-11 12:49:14Z deadwood $
 */
 
 #ifndef _DRM_COMPAT_TYPES_
@@ -143,7 +143,12 @@ struct i2c_adapter
 };
 
 struct i2c_client;
-struct i2c_board_info;
+struct i2c_board_info
+{
+    BYTE type[20]; /* Name? */
+    UWORD addr;
+};
+
 struct i2c_driver
 {
     ULONG dummy;
@@ -167,16 +172,10 @@ struct i2c_msg
     UBYTE *buf;
 };
 
-/* FB handling */
-struct fb_var_screeninfo;
-struct fb_cmap;
-struct fb_fillrect;
-struct fb_image;
-struct fb_copyarea;
-
 /* Wait queue handling */
 struct wait_queue_head
 {
+    ULONG dummy;
 };
 typedef struct wait_queue_head wait_queue_head_t;
 

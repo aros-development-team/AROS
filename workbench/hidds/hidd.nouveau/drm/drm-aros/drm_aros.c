@@ -1,6 +1,6 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: drm_aros.c 33175 2010-05-04 19:45:15Z deadwood $
 */
 
 #include "drmP.h"
@@ -27,6 +27,8 @@ AROS_UFH3(void, Enumerator,
 
     IPTR ProductID;
     IPTR VendorID;
+    IPTR SubSystemProductID;
+    IPTR SubSystemVendorID;
     IPTR INTLine;
     struct drm_driver *drv = (struct drm_driver *)hook->h_Data;
     struct drm_pciid *sup = drv->PciIDs;
@@ -34,6 +36,8 @@ AROS_UFH3(void, Enumerator,
     /* Get the Device's ProductID */
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_SubsystemID, &SubSystemProductID);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_SubsystemVendorID, &SubSystemVendorID);
 
     DRM_DEBUG("VendorID: %x, ProductID: %x\n", VendorID, ProductID);
     
@@ -63,6 +67,8 @@ AROS_UFH3(void, Enumerator,
             /* Filling out device properties */
             drv->VendorID = (UWORD)VendorID;
             drv->ProductID = (UWORD)ProductID;
+            drv->SubSystemVendorID = (UWORD)SubSystemVendorID;
+            drv->SubSystemProductID = (UWORD)SubSystemProductID;
             drv->pciDevice = pciDevice;
 
             /*
