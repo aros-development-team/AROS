@@ -31,6 +31,16 @@
 #define U642VOID(x) ((void *)(unsigned long)(x))
 #define VOID2U64(x) ((uint64_t)(unsigned long)(x))
 
+static inline int DRM_IOCTL(int fd, int cmd, void *arg)
+{
+	int ret = drmIoctl(fd, cmd, arg);
+	return ret < 0 ? -errno : ret;
+}
+
+/*
+ * Util functions
+ */
+
 void* drmAllocCpy(void *array, int count, int entry_size)
 {
 	char *r;
@@ -48,79 +58,25 @@ void* drmAllocCpy(void *array, int count, int entry_size)
 	return r;
 }
 
-int drmModeAddFB(int fd, uint32_t width, uint32_t height, uint8_t depth,
-                uint8_t bpp, uint32_t pitch, uint32_t bo_handle,
-                uint32_t *buf_id)
+/*
+ * A couple of free functions.
+ */
+
+void drmModeFreeModeInfo(drmModeModeInfoPtr ptr)
 {
-    struct drm_mode_fb_cmd f;
-    int ret;
+	if (!ptr)
+		return;
 
-    f.width  = width;
-    f.height = height;
-    f.pitch  = pitch;
-    f.bpp    = bpp;
-    f.depth  = depth;
-    f.handle = bo_handle;
-
-    if ((ret = drmIoctl(fd, DRM_IOCTL_MODE_ADDFB, &f)))
-        return ret;
-
-    *buf_id = f.fb_id;
-    return 0;
+	drmFree(ptr);
 }
 
-int drmModeRmFB(int fd, uint32_t bufferId)
+void drmModeFreeResources(drmModeResPtr ptr)
 {
-	return drmIoctl(fd, DRM_IOCTL_MODE_RMFB, &bufferId);
-}
+	if (!ptr)
+		return;
 
-int drmModeSetCrtc(int fd, uint32_t crtcId, uint32_t bufferId,
-                    uint32_t x, uint32_t y, uint32_t *connectors, int count,
-                    drmModeModeInfoPtr mode)
-{
-    struct drm_mode_crtc crtc;
+	drmFree(ptr);
 
-    crtc.x          = x;
-    crtc.y          = y;
-    crtc.crtc_id    = crtcId;
-    crtc.fb_id      = bufferId;
-    crtc.set_connectors_ptr = VOID2U64(connectors);
-    crtc.count_connectors = count;
-    if (mode) {
-      memcpy(&crtc.mode, mode, sizeof(struct drm_mode_modeinfo));
-      crtc.mode_valid = 1;
-    } else
-      crtc.mode_valid = 0;
-
-    return drmIoctl(fd, DRM_IOCTL_MODE_SETCRTC, &crtc);
-}
-
-drmModeCrtcPtr drmModeGetCrtc(int fd, uint32_t crtcId)
-{
-	struct drm_mode_crtc crtc;
-	drmModeCrtcPtr r;
-
-	crtc.crtc_id = crtcId;
-
-	if (drmIoctl(fd, DRM_IOCTL_MODE_GETCRTC, &crtc))
-		return 0;
-
-	/*
-	 * return
-	 */
-
-	if (!(r = drmMalloc(sizeof(*r))))
-		return 0;
-
-	r->crtc_id         = crtc.crtc_id;
-	r->x               = crtc.x;
-	r->y               = crtc.y;
-	r->mode_valid      = crtc.mode_valid;
-	if (r->mode_valid)
-		memcpy(&r->mode, &crtc.mode, sizeof(struct drm_mode_modeinfo));
-	r->buffer_id       = crtc.fb_id;
-	r->gamma_size      = crtc.gamma_size;
-	return r;
 }
 
 void drmModeFreeCrtc(drmModeCrtcPtr ptr)
@@ -131,6 +87,28 @@ void drmModeFreeCrtc(drmModeCrtcPtr ptr)
 	drmFree(ptr);
 
 }
+
+void drmModeFreeConnector(drmModeConnectorPtr ptr)
+{
+	if (!ptr)
+		return;
+
+	drmFree(ptr->encoders);
+	drmFree(ptr->prop_values);
+	drmFree(ptr->props);
+	drmFree(ptr->modes);
+	drmFree(ptr);
+
+}
+
+void drmModeFreeEncoder(drmModeEncoderPtr ptr)
+{
+	drmFree(ptr);
+}
+
+/*
+ * ModeSetting functions.
+ */
 
 drmModeResPtr drmModeGetResources(int fd)
 {
@@ -226,27 +204,148 @@ err_allocs:
 	return r;
 }
 
-void drmModeFreeResources(drmModeResPtr ptr)
+int drmModeAddFB(int fd, uint32_t width, uint32_t height, uint8_t depth,
+                 uint8_t bpp, uint32_t pitch, uint32_t bo_handle,
+		 uint32_t *buf_id)
 {
-	if (!ptr)
-		return;
+	struct drm_mode_fb_cmd f;
+	int ret;
 
-	drmFree(ptr);
+	f.width  = width;
+	f.height = height;
+	f.pitch  = pitch;
+	f.bpp    = bpp;
+	f.depth  = depth;
+	f.handle = bo_handle;
+
+	if ((ret = DRM_IOCTL(fd, DRM_IOCTL_MODE_ADDFB, &f)))
+		return ret;
+
+	*buf_id = f.fb_id;
+	return 0;
+}
+
+int drmModeRmFB(int fd, uint32_t bufferId)
+{
+	return DRM_IOCTL(fd, DRM_IOCTL_MODE_RMFB, &bufferId);
+
 
 }
 
-void drmModeFreeConnector(drmModeConnectorPtr ptr)
+/*
+ * Crtc functions
+ */
+
+drmModeCrtcPtr drmModeGetCrtc(int fd, uint32_t crtcId)
 {
-	if (!ptr)
-		return;
+	struct drm_mode_crtc crtc;
+	drmModeCrtcPtr r;
 
-	drmFree(ptr->encoders);
-	drmFree(ptr->prop_values);
-	drmFree(ptr->props);
-	drmFree(ptr->modes);
-	drmFree(ptr);
+	crtc.crtc_id = crtcId;
 
+	if (drmIoctl(fd, DRM_IOCTL_MODE_GETCRTC, &crtc))
+		return 0;
+
+	/*
+	 * return
+	 */
+
+	if (!(r = drmMalloc(sizeof(*r))))
+		return 0;
+
+	r->crtc_id         = crtc.crtc_id;
+	r->x               = crtc.x;
+	r->y               = crtc.y;
+	r->mode_valid      = crtc.mode_valid;
+	if (r->mode_valid)
+		memcpy(&r->mode, &crtc.mode, sizeof(struct drm_mode_modeinfo));
+	r->buffer_id       = crtc.fb_id;
+	r->gamma_size      = crtc.gamma_size;
+	return r;
 }
+
+
+int drmModeSetCrtc(int fd, uint32_t crtcId, uint32_t bufferId,
+                   uint32_t x, uint32_t y, uint32_t *connectors, int count,
+		   drmModeModeInfoPtr mode)
+{
+	struct drm_mode_crtc crtc;
+
+	crtc.x             = x;
+	crtc.y             = y;
+	crtc.crtc_id       = crtcId;
+	crtc.fb_id         = bufferId;
+	crtc.set_connectors_ptr = VOID2U64(connectors);
+	crtc.count_connectors = count;
+	if (mode) {
+	  memcpy(&crtc.mode, mode, sizeof(struct drm_mode_modeinfo));
+	  crtc.mode_valid = 1;
+	} else
+	  crtc.mode_valid = 0;
+
+	return DRM_IOCTL(fd, DRM_IOCTL_MODE_SETCRTC, &crtc);
+}
+
+/*
+ * Cursor manipulation
+ */
+
+int drmModeSetCursor(int fd, uint32_t crtcId, uint32_t bo_handle, uint32_t width, uint32_t height)
+{
+	struct drm_mode_cursor arg;
+
+	arg.flags = DRM_MODE_CURSOR_BO;
+	arg.crtc_id = crtcId;
+	arg.width = width;
+	arg.height = height;
+	arg.handle = bo_handle;
+
+	return DRM_IOCTL(fd, DRM_IOCTL_MODE_CURSOR, &arg);
+}
+
+int drmModeMoveCursor(int fd, uint32_t crtcId, int x, int y)
+{
+	struct drm_mode_cursor arg;
+
+	arg.flags = DRM_MODE_CURSOR_MOVE;
+	arg.crtc_id = crtcId;
+	arg.x = x;
+	arg.y = y;
+
+	return DRM_IOCTL(fd, DRM_IOCTL_MODE_CURSOR, &arg);
+}
+
+/*
+ * Encoder get
+ */
+drmModeEncoderPtr drmModeGetEncoder(int fd, uint32_t encoder_id)
+{
+	struct drm_mode_get_encoder enc;
+	drmModeEncoderPtr r = NULL;
+
+	enc.encoder_id = encoder_id;
+	enc.encoder_type = 0;
+	enc.possible_crtcs = 0;
+	enc.possible_clones = 0;
+
+	if (drmIoctl(fd, DRM_IOCTL_MODE_GETENCODER, &enc))
+		return 0;
+
+	if (!(r = drmMalloc(sizeof(*r))))
+		return 0;
+
+	r->encoder_id = enc.encoder_id;
+	r->crtc_id = enc.crtc_id;
+	r->encoder_type = enc.encoder_type;
+	r->possible_crtcs = enc.possible_crtcs;
+	r->possible_clones = enc.possible_clones;
+
+	return r;
+}
+
+/*
+ * Connector manipulation
+ */
 
 drmModeConnectorPtr drmModeGetConnector(int fd, uint32_t connector_id)
 {
@@ -343,57 +442,23 @@ err_allocs:
 	return r;
 }
 
-int drmModeSetCursor(int fd, uint32_t crtcId, uint32_t bo_handle, uint32_t width, uint32_t height)
+int drmModeAttachMode(int fd, uint32_t connector_id, drmModeModeInfoPtr mode_info)
 {
-	struct drm_mode_cursor arg;
+	struct drm_mode_mode_cmd res;
 
-	arg.flags = DRM_MODE_CURSOR_BO;
-	arg.crtc_id = crtcId;
-	arg.width = width;
-	arg.height = height;
-	arg.handle = bo_handle;
+	memcpy(&res.mode, mode_info, sizeof(struct drm_mode_modeinfo));
+	res.connector_id = connector_id;
 
-	return drmIoctl(fd, DRM_IOCTL_MODE_CURSOR, &arg);
+	return DRM_IOCTL(fd, DRM_IOCTL_MODE_ATTACHMODE, &res);
 }
 
-int drmModeMoveCursor(int fd, uint32_t crtcId, int x, int y)
+int drmModeDetachMode(int fd, uint32_t connector_id, drmModeModeInfoPtr mode_info)
 {
-	struct drm_mode_cursor arg;
+	struct drm_mode_mode_cmd res;
 
-	arg.flags = DRM_MODE_CURSOR_MOVE;
-	arg.crtc_id = crtcId;
-	arg.x = x;
-	arg.y = y;
+	memcpy(&res.mode, mode_info, sizeof(struct drm_mode_modeinfo));
+	res.connector_id = connector_id;
 
-	return drmIoctl(fd, DRM_IOCTL_MODE_CURSOR, &arg);
+	return DRM_IOCTL(fd, DRM_IOCTL_MODE_DETACHMODE, &res);
 }
 
-drmModeEncoderPtr drmModeGetEncoder(int fd, uint32_t encoder_id)
-{
-	struct drm_mode_get_encoder enc;
-	drmModeEncoderPtr r = NULL;
-
-	enc.encoder_id = encoder_id;
-	enc.encoder_type = 0;
-	enc.possible_crtcs = 0;
-	enc.possible_clones = 0;
-
-	if (drmIoctl(fd, DRM_IOCTL_MODE_GETENCODER, &enc))
-		return 0;
-
-	if (!(r = drmMalloc(sizeof(*r))))
-		return 0;
-
-	r->encoder_id = enc.encoder_id;
-	r->crtc_id = enc.crtc_id;
-	r->encoder_type = enc.encoder_type;
-	r->possible_crtcs = enc.possible_crtcs;
-	r->possible_clones = enc.possible_clones;
-
-	return r;
-}
-
-void drmModeFreeEncoder(drmModeEncoderPtr ptr)
-{
-	drmFree(ptr);
-}

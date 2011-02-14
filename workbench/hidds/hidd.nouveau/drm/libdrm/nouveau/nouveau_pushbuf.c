@@ -78,7 +78,7 @@ nouveau_pushbuf_fini_call(struct nouveau_channel *chan)
 }
 
 static int
-nouveau_pushbuf_init_call(struct nouveau_channel *chan)
+nouveau_pushbuf_init_call(struct nouveau_channel *chan, int buf_size)
 {
 	struct drm_nouveau_gem_pushbuf req;
 	struct nouveau_channel_priv *nvchan = nouveau_channel(chan);
@@ -101,7 +101,7 @@ nouveau_pushbuf_init_call(struct nouveau_channel *chan)
 
 	for (i = 0; i < CALPB_BUFFERS; i++) {
 		ret = nouveau_bo_new(dev, flags | NOUVEAU_BO_MAP,
-				     0, CALPB_BUFSZ, &nvpb->buffer[i]);
+				     0, buf_size, &nvpb->buffer[i]);
 		if (ret) {
 			nouveau_pushbuf_fini_call(chan);
 			return ret;
@@ -114,13 +114,13 @@ nouveau_pushbuf_init_call(struct nouveau_channel *chan)
 }
 
 int
-nouveau_pushbuf_init(struct nouveau_channel *chan)
+nouveau_pushbuf_init(struct nouveau_channel *chan, int buf_size)
 {
 	struct nouveau_channel_priv *nvchan = nouveau_channel(chan);
 	struct nouveau_pushbuf_priv *nvpb = &nvchan->pb;
 	int ret;
 
-	ret = nouveau_pushbuf_init_call(chan);
+	ret = nouveau_pushbuf_init_call(chan, buf_size);
 	if (ret)
 		return ret;
 

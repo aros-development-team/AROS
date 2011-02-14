@@ -49,7 +49,7 @@ struct nouveau_channel {
 
 int
 nouveau_channel_alloc(struct nouveau_device *, uint32_t fb, uint32_t tt,
-		      struct nouveau_channel **);
+		      int pushbuf_size, struct nouveau_channel **);
 
 void
 nouveau_channel_free(struct nouveau_channel **);

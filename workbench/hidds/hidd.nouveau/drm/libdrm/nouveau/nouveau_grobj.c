@@ -99,6 +99,8 @@ nouveau_grobj_free(struct nouveau_grobj **grobj)
 	if (nvgrobj->base.grclass) {
 		struct drm_nouveau_gpuobj_free f;
 
+		FIRE_RING(&chan->base);
+
 		f.channel = chan->drm.channel;
 		f.handle  = nvgrobj->base.handle;
 		drmCommandWrite(nvdev->fd, DRM_NOUVEAU_GPUOBJ_FREE,

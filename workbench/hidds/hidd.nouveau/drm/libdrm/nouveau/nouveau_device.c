@@ -26,10 +26,6 @@
 
 #include "nouveau_private.h"
 
-#if NOUVEAU_DRM_HEADER_PATCHLEVEL != 16
-#error nouveau_drm.h does not match expected patchlevel, update libdrm.
-#endif
-
 int
 nouveau_device_open_existing(struct nouveau_device **dev, int close,
 			     int fd, drm_context_t ctx)
@@ -42,17 +38,24 @@ nouveau_device_open_existing(struct nouveau_device **dev, int close,
 	if (!dev || *dev)
 	    return -EINVAL;
 
-	ver = drmGetVersion(fd);
-	if (!ver || ver->version_patchlevel != NOUVEAU_DRM_HEADER_PATCHLEVEL)
-		return -EINVAL;
-	drmFreeVersion(ver);
-
 	nvdev = calloc(1, sizeof(*nvdev));
 	if (!nvdev)
 	    return -ENOMEM;
 	nvdev->fd = fd;
 	nvdev->ctx = ctx;
 	nvdev->needs_close = close;
+
+	ver = drmGetVersion(fd);
+	if (!ver)
+		return -EINVAL;
+
+	if ((ver->version_major == 0 && ver->version_patchlevel != 16) ||
+	     ver->version_major > 1) {
+		nouveau_device_close((void *)&nvdev);
+		return -EINVAL;
+	}
+
+	drmFreeVersion(ver);
 
 	ret = nouveau_device_get_param(&nvdev->base,
 				       NOUVEAU_GETPARAM_VM_VRAM_BASE, &value);
@@ -91,6 +94,11 @@ nouveau_device_open_existing(struct nouveau_device **dev, int close,
 		return ret;
 	}
 	nvdev->base.chipset = value;
+
+	ret = nouveau_device_get_param(&nvdev->base,
+				       NOUVEAU_GETPARAM_HAS_BO_USAGE, &value);
+	if (!ret)
+		nvdev->has_bo_usage = value;
 
 	*dev = &nvdev->base;
 	return 0;
