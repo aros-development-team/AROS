@@ -242,6 +242,9 @@ static inline void spin_unlock(spinlock_t * lock)
     ReleaseSemaphore(&lock->semaphore);
 }
 
+#define spin_lock_bh(x)                 spin_lock(x)
+#define spin_unlock_bh(x)               spin_unlock(x)
+
 #define spin_lock_irqsave(lock, flags)      \
 do                      \
 {                       \
