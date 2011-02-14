@@ -80,6 +80,8 @@ nouveau_notifier_free(struct nouveau_notifier **notifier)
 	nvchan = nouveau_channel(nvnotify->base.channel);
 	nvdev   = nouveau_device(nvchan->base.device);
 
+	FIRE_RING(&nvchan->base);
+
 	f.channel = nvchan->drm.channel;
 	f.handle  = nvnotify->base.handle;
 	drmCommandWrite(nvdev->fd, DRM_NOUVEAU_GPUOBJ_FREE, &f, sizeof(f));		

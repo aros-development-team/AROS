@@ -28,7 +28,8 @@
 
 int
 nouveau_channel_alloc(struct nouveau_device *dev, uint32_t fb_ctxdma,
-		      uint32_t tt_ctxdma, struct nouveau_channel **chan)
+		      uint32_t tt_ctxdma, int pushbuf_size,
+		      struct nouveau_channel **chan)
 {
 	struct nouveau_device_priv *nvdev = nouveau_device(dev);
 	struct nouveau_channel_priv *nvchan;
@@ -90,7 +91,7 @@ nouveau_channel_alloc(struct nouveau_device *dev, uint32_t fb_ctxdma,
 		return ret;
 	}
 
-	ret = nouveau_pushbuf_init(&nvchan->base);
+	ret = nouveau_pushbuf_init(&nvchan->base, pushbuf_size);
 	if (ret) {
 		nouveau_channel_free((void *)&nvchan);
 		return ret;

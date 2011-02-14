@@ -37,8 +37,8 @@
 #include "nouveau_pushbuf.h"
 #include "nouveau_reloc.h"
 
-#define CALPB_BUFFERS 4
-#define CALPB_BUFSZ   16384
+#define CALPB_BUFFERS 3
+
 struct nouveau_pushbuf_priv {
 	uint32_t cal_suffix0;
 	uint32_t cal_suffix1;
@@ -64,7 +64,7 @@ struct nouveau_pushbuf_priv {
 #define nouveau_pushbuf(n) ((struct nouveau_pushbuf_priv *)(n))
 
 int
-nouveau_pushbuf_init(struct nouveau_channel *);
+nouveau_pushbuf_init(struct nouveau_channel *, int buf_size);
 void
 nouveau_pushbuf_fini(struct nouveau_channel *);
 
@@ -115,6 +115,7 @@ struct nouveau_bo_priv {
 	uint32_t global_handle;
 	drm_handle_t handle;
 	uint64_t map_handle;
+	int map_refcnt;
 	void *map;
 
 	/* Last known information from kernel on buffer status */

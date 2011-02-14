@@ -39,6 +39,12 @@
 #define NOUVEAU_BO_IFLUSH (1 << 15)
 #define NOUVEAU_BO_DUMMY  (1 << 31)
 
+#define NOUVEAU_BO_TILE_LAYOUT_MASK 0x0000ff00
+#define NOUVEAU_BO_TILE_16BPP       0x00000001
+#define NOUVEAU_BO_TILE_32BPP       0x00000002
+#define NOUVEAU_BO_TILE_ZETA        0x00000004
+#define NOUVEAU_BO_TILE_SCANOUT     0x00000008
+
 struct nouveau_bo {
 	struct nouveau_device *device;
 	uint32_t handle;

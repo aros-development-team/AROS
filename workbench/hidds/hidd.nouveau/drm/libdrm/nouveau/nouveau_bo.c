@@ -54,7 +54,8 @@ nouveau_bo_info(struct nouveau_bo_priv *nvbo, struct drm_nouveau_gem_info *arg)
 	nvbo->offset = arg->offset;
 	nvbo->map_handle = arg->map_handle;
 	nvbo->base.tile_mode = arg->tile_mode;
-	nvbo->base.tile_flags = arg->tile_flags;
+	/* XXX - flag inverted for backwards compatibility */
+	nvbo->base.tile_flags = arg->tile_flags ^ NOUVEAU_GEM_TILE_NONCONTIG;
 	return 0;
 }
 
@@ -146,6 +147,10 @@ nouveau_bo_kalloc(struct nouveau_bo_priv *nvbo, struct nouveau_channel *chan)
 
 	info->tile_mode = nvbo->base.tile_mode;
 	info->tile_flags = nvbo->base.tile_flags;
+	/* XXX - flag inverted for backwards compatibility */
+	info->tile_flags ^= NOUVEAU_GEM_TILE_NONCONTIG;
+	if (!nvdev->has_bo_usage)
+		info->tile_flags &= NOUVEAU_GEM_TILE_LAYOUT_MASK;
 
 	ret = drmCommandWriteRead(nvdev->fd, DRM_NOUVEAU_GEM_NEW,
 				  &req, sizeof(req));
@@ -389,8 +394,6 @@ nouveau_bo_wait(struct nouveau_bo *bo, int cpu_write, int no_wait, int no_block)
 		req.flags |= NOUVEAU_GEM_CPU_PREP_WRITE;
 	if (no_wait)
 		req.flags |= NOUVEAU_GEM_CPU_PREP_NOWAIT;
-	if (no_block)
-		req.flags |= NOUVEAU_GEM_CPU_PREP_NOBLOCK;
 
 	do {
 		ret = drmCommandWrite(nvdev->fd, DRM_NOUVEAU_GEM_CPU_PREP,
@@ -440,6 +443,8 @@ nouveau_bo_map_range(struct nouveau_bo *bo, uint32_t delta, uint32_t size,
 					      (flags & NOUVEAU_BO_NOWAIT), 0);
 			if (ret)
 				return ret;
+
+			nvbo->map_refcnt++;
 		}
 
 		bo->map = (char *)nvbo->map + delta;
@@ -464,13 +469,14 @@ nouveau_bo_unmap(struct nouveau_bo *bo)
 {
 	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
 
-	if (bo->map && !nvbo->sysmem) {
+	if (bo->map && !nvbo->sysmem && nvbo->map_refcnt) {
 		struct nouveau_device_priv *nvdev = nouveau_device(bo->device);
 		struct drm_nouveau_gem_cpu_fini req;
 
 		req.handle = nvbo->handle;
 		drmCommandWrite(nvdev->fd, DRM_NOUVEAU_GEM_CPU_FINI,
 				&req, sizeof(req));
+		nvbo->map_refcnt--;
 	}
 
 	bo->map = NULL;
