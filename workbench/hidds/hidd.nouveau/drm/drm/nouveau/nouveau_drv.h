@@ -397,6 +397,7 @@ struct nouveau_pgraph_engine {
 };
 
 struct nouveau_display_engine {
+	void *priv;
 	int (*early_init)(struct drm_device *);
 	void (*late_takedown)(struct drm_device *);
 	int (*create)(struct drm_device *);
@@ -662,12 +663,6 @@ struct drm_nouveau_private {
 	/* interrupt handling */
 	void (*irq_handler[32])(struct drm_device *);
 	bool msi_enabled;
-#if !defined(__AROS__)
-    /* Not needed - all queued stuff is called directly */
-	struct workqueue_struct *wq;
-    /* Not needed - direct call to nv50_display_irq_handler_bh is made in irq handler */
-	struct work_struct irq_work;
-#endif
 
 	struct list_head vbl_waiting;
 
@@ -761,14 +756,6 @@ struct drm_nouveau_private {
 	} susres;
 
 	struct backlight_device *backlight;
-
-	struct nouveau_channel *evo;
-	u32 evo_alloc;
-	struct {
-		struct dcb_entry *dcb;
-		u16 script;
-		u32 pclk;
-	} evo_irq;
 
 	struct {
 		struct dentry *channel_root;

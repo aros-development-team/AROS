@@ -968,14 +968,6 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 		 dev->pci_vendor, dev->pci_device);
 #endif
 
-#if !defined(__AROS__)
-	dev_priv->wq = create_workqueue("nouveau");
-	if (!dev_priv->wq) {
-		ret = -EINVAL;
-		goto err_priv;
-	}
-#endif
-
 	/* resource 0 is mmio regs */
 	/* resource 1 is linear FB */
 	/* resource 2 is RAMIN (mmio regs + 0x1000000) */
@@ -988,7 +980,7 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 		NV_ERROR(dev, "Unable to initialize the mmio mapping. "
 			 "Please report your setup to " DRIVER_EMAIL "\n");
 		ret = -EINVAL;
-		goto err_wq;
+		goto err_priv;
 	}
 	NV_DEBUG(dev, "regs mapped ok at 0x%llx\n",
 					(unsigned long long)mmio_start_offs);
@@ -1101,11 +1093,7 @@ err_ramin:
 	iounmap(dev_priv->ramin);
 err_mmio:
 	iounmap(dev_priv->mmio);
-err_wq:
-#if !defined(__AROS__)
-	destroy_workqueue(dev_priv->wq);
 err_priv:
-#endif
 	kfree(dev_priv);
 	dev->dev_private = NULL;
 err_out:
@@ -1182,7 +1170,7 @@ int nouveau_ioctl_getparam(struct drm_device *dev, void *data,
 		getparam->value = 1;
 		break;
 	case NOUVEAU_GETPARAM_HAS_PAGEFLIP:
-		getparam->value = (dev_priv->card_type < NV_50);
+		getparam->value = 1;
 		break;
 	case NOUVEAU_GETPARAM_GRAPH_UNITS:
 		/* NV40 and NV50 versions are quite different, but register

@@ -279,6 +279,7 @@ struct drm_pending_vblank_event;
 
 /**
  * drm_crtc_funcs - control CRTCs for a given device
+ * @reset: reset CRTC after state has been invalidate (e.g. resume)
  * @dpms: control display power levels
  * @save: save CRTC state
  * @resore: restore CRTC state
@@ -306,6 +307,8 @@ struct drm_crtc_funcs {
 	void (*save)(struct drm_crtc *crtc); /* suspend? */
 	/* Restore CRTC state */
 	void (*restore)(struct drm_crtc *crtc); /* resume? */
+	/* Reset CRTC state */
+	void (*reset)(struct drm_crtc *crtc);
 
 	/* cursor controls */
 	int (*cursor_set)(struct drm_crtc *crtc, struct drm_file *file_priv,
@@ -383,6 +386,7 @@ struct drm_crtc {
  * @dpms: set power state (see drm_crtc_funcs above)
  * @save: save connector state
  * @restore: restore connector state
+ * @reset: reset connector after state has been invalidate (e.g. resume)
  * @mode_valid: is this mode valid on the given connector?
  * @mode_fixup: try to fixup proposed mode for this connector
  * @mode_set: set this mode
@@ -400,6 +404,7 @@ struct drm_connector_funcs {
 	void (*dpms)(struct drm_connector *connector, int mode);
 	void (*save)(struct drm_connector *connector);
 	void (*restore)(struct drm_connector *connector);
+	void (*reset)(struct drm_connector *connector);
 
 	/* Check to see if anything is attached to the connector.
 	 * @force is set to false whilst polling, true when checking the
@@ -417,6 +422,7 @@ struct drm_connector_funcs {
 };
 
 struct drm_encoder_funcs {
+	void (*reset)(struct drm_encoder *encoder);
 	void (*destroy)(struct drm_encoder *encoder);
 };
 
@@ -662,6 +668,7 @@ extern struct drm_display_mode *drm_mode_duplicate(struct drm_device *dev,
 						   struct drm_display_mode *mode);
 extern void drm_mode_debug_printmodeline(struct drm_display_mode *mode);
 extern void drm_mode_config_init(struct drm_device *dev);
+extern void drm_mode_config_reset(struct drm_device *dev);
 extern void drm_mode_config_cleanup(struct drm_device *dev);
 extern void drm_mode_set_name(struct drm_display_mode *mode);
 extern bool drm_mode_equal(struct drm_display_mode *mode1, struct drm_display_mode *mode2);

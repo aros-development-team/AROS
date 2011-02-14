@@ -146,6 +146,7 @@ nv50_gpio_irq_unregister(struct drm_device *dev, enum dcb_gpio_tag tag,
 	struct nv50_gpio_priv *priv = pgpio->priv;
 	struct nv50_gpio_handler *gpioh, *tmp;
 	struct dcb_gpio_entry *gpio;
+	LIST_HEAD(tofree);
 	unsigned long flags;
 
 	gpio = nouveau_bios_gpio_entry(dev, tag);
@@ -158,10 +159,18 @@ nv50_gpio_irq_unregister(struct drm_device *dev, enum dcb_gpio_tag tag,
 		    gpioh->handler != handler ||
 		    gpioh->data != data)
 			continue;
-		list_del(&gpioh->head);
-		kfree(gpioh);
+#if !defined(__AROS__)
+		list_move(&gpioh->head, &tofree);
+#endif
 	}
 	spin_unlock_irqrestore(&priv->lock, flags);
+
+#if !defined(__AROS__)
+	list_for_each_entry_safe(gpioh, tmp, &tofree, head) {
+		flush_work_sync(&gpioh->work);
+		kfree(gpioh);
+	}
+#endif
 }
 
 bool
@@ -214,7 +223,6 @@ nv50_gpio_init(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_gpio_engine *pgpio = &dev_priv->engine.gpio;
-	struct nv50_gpio_priv *priv;
 	int ret;
 
 	if (!pgpio->priv) {
@@ -222,7 +230,6 @@ nv50_gpio_init(struct drm_device *dev)
 		if (ret)
 			return ret;
 	}
-	priv = pgpio->priv;
 
 	/* disable, and ack any pending gpio interrupts */
 	nv_wr32(dev, 0xe050, 0x00000000);
@@ -309,7 +316,7 @@ nv50_gpio_isr(struct drm_device *dev)
 		gpioh->inhibit = true;
 
 #if !defined(__AROS__)
-		queue_work(dev_priv->wq, &gpioh->work);
+		schedule_work(&gpioh->work);
 #else
         /* Kind of hackish call but it does its job. */
         nv50_gpio_isr_bh(gpioh);
