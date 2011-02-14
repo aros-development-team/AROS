@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: nouveaui2c.c 33313 2010-05-19 18:12:41Z deadwood $
 */
 
 #include "drmP.h"
@@ -43,8 +43,8 @@ void METHOD(NouveauI2C, Hidd_I2C, PutBits)
     struct HIDDNouveauI2CData * i2cdata = OOP_INST_DATA(cl, o);
     struct nouveau_i2c_chan * i2c_chan = (struct nouveau_i2c_chan *)i2cdata->i2c_chan;
  
-    i2c_chan->algo.bit.setsda(i2c_chan, msg->sda);
-    i2c_chan->algo.bit.setscl(i2c_chan, msg->scl);
+    i2c_chan->bit.setsda(i2c_chan, msg->sda);
+    i2c_chan->bit.setscl(i2c_chan, msg->scl);
 }
 
 void METHOD(NouveauI2C, Hidd_I2C, GetBits)
@@ -52,8 +52,8 @@ void METHOD(NouveauI2C, Hidd_I2C, GetBits)
     struct HIDDNouveauI2CData * i2cdata = OOP_INST_DATA(cl, o);
     struct nouveau_i2c_chan * i2c_chan = (struct nouveau_i2c_chan *)i2cdata->i2c_chan;
 
-    *msg->sda = i2c_chan->algo.bit.getsda(i2c_chan);
-    *msg->scl = i2c_chan->algo.bit.getscl(i2c_chan);
+    *msg->sda = i2c_chan->bit.getsda(i2c_chan);
+    *msg->scl = i2c_chan->bit.getscl(i2c_chan);
 }
 
 ADD2LIBS((STRPTR)"i2c.hidd", 0, static struct Library *, I2CBase);

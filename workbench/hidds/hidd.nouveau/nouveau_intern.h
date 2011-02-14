@@ -2,7 +2,7 @@
 #define _NOUVEAU_INTERN_H
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: nouveau_intern.h 35441 2010-11-13 22:17:39Z deadwood $
 */
 
 #include <hidd/graphics.h>
@@ -240,6 +240,7 @@ enum DMAObjects
 #define NV_ARCH_30  0x30
 #define NV_ARCH_40  0x40
 #define NV_ARCH_50  0x50
+#define NV_ARCH_C0  0xC0
 
 BOOL NVAccelCommonInit(struct CardData * carddata);
 VOID NVAccelFree(struct CardData * carddata);

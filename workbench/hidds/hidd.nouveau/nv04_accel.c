@@ -23,7 +23,7 @@
 
 #include "nouveau_intern.h"
 #include "nv_rop.h"
-#include "nouveau/nouveau_class.h"
+#include "nouveau_class.h"
 
 VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,
 		  ULONG pat0, ULONG pat1)
@@ -94,15 +94,11 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
 //			return FALSE;
 //		}
     if (drawmode != 0x03 /* DrawMode_Copy */) {
-        BEGIN_RING(chan, blit, NV04_IMAGE_BLIT_SURFACE, 1);
-        OUT_RING  (chan, carddata->NvContextSurfaces->handle);
         BEGIN_RING(chan, blit, NV01_IMAGE_BLIT_OPERATION, 1);
         OUT_RING  (chan, 1); /* ROP_AND */
 
         HIDDNouveauNV04SetROP(carddata, drawmode);
     } else {
-        BEGIN_RING(chan, blit, NV04_IMAGE_BLIT_SURFACE, 1);
-        OUT_RING  (chan, carddata->NvContextSurfaces->handle);
         BEGIN_RING(chan, blit, NV01_IMAGE_BLIT_OPERATION, 1);
         OUT_RING  (chan, 3); /* SRCCOPY */
     }
@@ -119,7 +115,6 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     /* TODO: State resubmit preparation. What does it do? */
 
     /* Execute copy */
-    WAIT_RING (chan, 4);
     BEGIN_RING(chan, blit, NV01_IMAGE_BLIT_POINT_IN, 3);
     OUT_RING  (chan, (srcY << 16) | srcX);
     OUT_RING  (chan, (destY << 16) | destX);
@@ -199,7 +194,6 @@ BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
     /* TODO: State resubmit preparation. What does it do? */
 	
 	/* Execute solid fill */
-	WAIT_RING (chan, 3);
 	BEGIN_RING(chan, rect,
 		   NV04_GDI_RECTANGLE_TEXT_UNCLIPPED_RECTANGLE_POINT(0), 2);
 	OUT_RING  (chan, (minX << 16) | minY);
