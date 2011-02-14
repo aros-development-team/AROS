@@ -236,11 +236,7 @@ nouveau_screen_init(struct nouveau_screen *screen, struct nouveau_device *dev)
 	int ret;
 
 	ret = nouveau_channel_alloc(dev, 0xbeef0201, 0xbeef0202,
-#if !defined(PIPE_OS_AROS)
 				    512*1024, &screen->channel);
-#else
-				    &screen->channel);
-#endif
 	if (ret)
 		return ret;
 	screen->device = dev;
