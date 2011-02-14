@@ -57,7 +57,7 @@
 #define uninitialized_var(x)            x
 #define get_user(x, p)                  ({u32 ret = 0; x = *(p); ret;})
 #define put_user(x, p)                  ({u32 ret = 0; *(p) = x; ret;})
-
+#define rounddown(x, y)                 (((x)/(y))*(y))
 
 #define MODULE_FIRMWARE(x)
 
@@ -206,6 +206,11 @@ static inline int atomic_dec_and_test(atomic_t *v)
     return (__sync_sub_and_fetch(&v->count, 1) == 0);
 }
 
+static inline int atomic_sub_and_test(int i, atomic_t *v)
+{
+    return (__sync_sub_and_fetch(&v->count, i) == 0);
+}
+
 static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
 {
     return __sync_val_compare_and_swap(&v->count, old, new);
@@ -287,9 +292,26 @@ static inline void kref_get(struct kref *kref)
 
 static inline int kref_put(struct kref *kref, void (*release) (struct kref *kref))
 {
-    if (atomic_dec_and_test(&kref->refcount)) release(kref);
-    return atomic_read(&kref->refcount);
+    if (atomic_dec_and_test(&kref->refcount)) 
+    {
+        release(kref);
+        return 1;
+    }
+    else
+        return 0;
 }
+
+static inline int kref_sub(struct kref *kref, unsigned int count, void (*release) (struct kref *kref))
+{
+    if (atomic_sub_and_test(count, &kref->refcount)) 
+    {
+        release(kref);
+        return 1;
+    }
+    else
+        return 0; 
+}
+
 
 /* IDR handling */
 #define idr_pre_get(a, b)               idr_pre_get_internal(a)

@@ -51,6 +51,11 @@ list_empty(struct list_head *head) {
 	return (head)->next == head;
 }
 
+static __inline__ int 
+list_is_singular(struct list_head *head) {
+    return !list_empty(head) && ((head)->next == (head->prev));
+}
+
 #define list_add(entry, head) list_add_tail(entry, head)
 
 static __inline__ void

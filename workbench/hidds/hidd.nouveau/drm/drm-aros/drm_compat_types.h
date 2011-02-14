@@ -23,6 +23,7 @@
 #define s16                         WORD
 #define u32                         ULONG
 #define u64                         UQUAD
+#define s64                         QUAD
 #define u8                          UBYTE
 #define resource_size_t             IPTR
 #define dma_addr_t                  IPTR

@@ -30,6 +30,7 @@
 #include "nouveau_ramht.h"
 #include "nouveau_grctx.h"
 #include "nouveau_dma.h"
+#include "nouveau_vm.h"
 #include "nv50_evo.h"
 
 static int  nv50_graph_register(struct drm_device *);
@@ -245,6 +246,7 @@ nv50_graph_create_context(struct nouveau_channel *chan)
 	nv_wo32(chan->ramin_grctx, 0x00000, chan->ramin->vinst >> 12);
 
 	dev_priv->engine.instmem.flush(dev);
+	atomic_inc(&chan->vm->pgraph_refs);
 	return 0;
 }
 
@@ -254,6 +256,7 @@ nv50_graph_destroy_context(struct nouveau_channel *chan)
 	struct drm_device *dev = chan->dev;
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_pgraph_engine *pgraph = &dev_priv->engine.graph;
+	struct nouveau_fifo_engine *pfifo = &dev_priv->engine.fifo;
 	int i, hdr = (dev_priv->chipset == 0x50) ? 0x200 : 0x20;
 	unsigned long flags;
 
@@ -263,6 +266,7 @@ nv50_graph_destroy_context(struct nouveau_channel *chan)
 		return;
 
 	spin_lock_irqsave(&dev_priv->context_switch_lock, flags);
+	pfifo->reassign(dev, false);
 	pgraph->fifo_access(dev, false);
 
 	if (pgraph->channel(dev) == chan)
@@ -273,9 +277,12 @@ nv50_graph_destroy_context(struct nouveau_channel *chan)
 	dev_priv->engine.instmem.flush(dev);
 
 	pgraph->fifo_access(dev, true);
+	pfifo->reassign(dev, true);
 	spin_unlock_irqrestore(&dev_priv->context_switch_lock, flags);
 
 	nouveau_gpuobj_ref(NULL, &chan->ramin_grctx);
+
+	atomic_dec(&chan->vm->pgraph_refs);
 }
 
 static int
@@ -468,7 +475,7 @@ nv50_graph_register(struct drm_device *dev)
 void
 nv50_graph_tlb_flush(struct drm_device *dev)
 {
-	nv50_vm_flush(dev, 0);
+	nv50_vm_flush_engine(dev, 0);
 }
 
 void
@@ -511,7 +518,7 @@ nv86_graph_tlb_flush(struct drm_device *dev)
 			 nv_rd32(dev, 0x400384), nv_rd32(dev, 0x400388));
 	}
 
-	nv50_vm_flush(dev, 0);
+	nv50_vm_flush_engine(dev, 0);
 
 	nv_mask(dev, 0x400500, 0x00000001, 0x00000001);
 	spin_unlock_irqrestore(&dev_priv->context_switch_lock, flags);
@@ -550,13 +557,48 @@ static struct nouveau_bitfield nv50_graph_trap_ccache[] = {
 };
 
 /* There must be a *lot* of these. Will take some time to gather them up. */
-static struct nouveau_enum nv50_data_error_names[] = {
-	{ 4,	"INVALID_VALUE" },
-	{ 5,	"INVALID_ENUM" },
-	{ 8,	"INVALID_OBJECT" },
-	{ 0xc,	"INVALID_BITFIELD" },
-	{ 0x28,	"MP_NO_REG_SPACE" },
-	{ 0x2b,	"MP_BLOCK_SIZE_MISMATCH" },
+struct nouveau_enum nv50_data_error_names[] = {
+	{ 0x00000003, "INVALID_QUERY_OR_TEXTURE" },
+	{ 0x00000004, "INVALID_VALUE" },
+	{ 0x00000005, "INVALID_ENUM" },
+	{ 0x00000008, "INVALID_OBJECT" },
+	{ 0x00000009, "READ_ONLY_OBJECT" },
+	{ 0x0000000a, "SUPERVISOR_OBJECT" },
+	{ 0x0000000b, "INVALID_ADDRESS_ALIGNMENT" },
+	{ 0x0000000c, "INVALID_BITFIELD" },
+	{ 0x0000000d, "BEGIN_END_ACTIVE" },
+	{ 0x0000000e, "SEMANTIC_COLOR_BACK_OVER_LIMIT" },
+	{ 0x0000000f, "VIEWPORT_ID_NEEDS_GP" },
+	{ 0x00000010, "RT_DOUBLE_BIND" },
+	{ 0x00000011, "RT_TYPES_MISMATCH" },
+	{ 0x00000012, "RT_LINEAR_WITH_ZETA" },
+	{ 0x00000015, "FP_TOO_FEW_REGS" },
+	{ 0x00000016, "ZETA_FORMAT_CSAA_MISMATCH" },
+	{ 0x00000017, "RT_LINEAR_WITH_MSAA" },
+	{ 0x00000018, "FP_INTERPOLANT_START_OVER_LIMIT" },
+	{ 0x00000019, "SEMANTIC_LAYER_OVER_LIMIT" },
+	{ 0x0000001a, "RT_INVALID_ALIGNMENT" },
+	{ 0x0000001b, "SAMPLER_OVER_LIMIT" },
+	{ 0x0000001c, "TEXTURE_OVER_LIMIT" },
+	{ 0x0000001e, "GP_TOO_MANY_OUTPUTS" },
+	{ 0x0000001f, "RT_BPP128_WITH_MS8" },
+	{ 0x00000021, "Z_OUT_OF_BOUNDS" },
+	{ 0x00000023, "XY_OUT_OF_BOUNDS" },
+	{ 0x00000027, "CP_MORE_PARAMS_THAN_SHARED" },
+	{ 0x00000028, "CP_NO_REG_SPACE_STRIPED" },
+	{ 0x00000029, "CP_NO_REG_SPACE_PACKED" },
+	{ 0x0000002a, "CP_NOT_ENOUGH_WARPS" },
+	{ 0x0000002b, "CP_BLOCK_SIZE_MISMATCH" },
+	{ 0x0000002c, "CP_NOT_ENOUGH_LOCAL_WARPS" },
+	{ 0x0000002d, "CP_NOT_ENOUGH_STACK_WARPS" },
+	{ 0x0000002e, "CP_NO_BLOCKDIM_LATCH" },
+	{ 0x00000031, "ENG2D_FORMAT_MISMATCH" },
+	{ 0x0000003f, "PRIMITIVE_ID_NEEDS_GP" },
+	{ 0x00000044, "SEMANTIC_VIEWPORT_OVER_LIMIT" },
+	{ 0x00000045, "SEMANTIC_COLOR_FRONT_OVER_LIMIT" },
+	{ 0x00000046, "LAYER_ID_NEEDS_GP" },
+	{ 0x00000047, "SEMANTIC_CLIP_OVER_LIMIT" },
+	{ 0x00000048, "SEMANTIC_PTSZ_OVER_LIMIT" },
 	{}
 };
 

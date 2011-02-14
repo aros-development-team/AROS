@@ -36,6 +36,8 @@
 
 #include "nouveau_drv.h"
 #include "nouveau_pm.h"
+#include "nouveau_mm.h"
+#include "nouveau_vm.h"
 
 #if defined(__AROS__)
 #define PCI_AGP_COMMAND_FW  0x0010
@@ -147,100 +149,6 @@ nv10_mem_set_tiling(struct drm_device *dev, uint32_t addr, uint32_t size,
 }
 
 /*
- * NV50 VM helpers
- */
-int
-nv50_mem_vm_bind_linear(struct drm_device *dev, uint64_t virt, uint32_t size,
-			uint32_t flags, uint64_t phys)
-{
-	struct drm_nouveau_private *dev_priv = dev->dev_private;
-	struct nouveau_gpuobj *pgt;
-	unsigned block;
-	int i;
-
-	virt = ((virt - dev_priv->vm_vram_base) >> 16) << 1;
-	size = (size >> 16) << 1;
-
-	phys |= ((uint64_t)flags << 32);
-	phys |= 1;
-	if (dev_priv->vram_sys_base) {
-		phys += dev_priv->vram_sys_base;
-		phys |= 0x30;
-	}
-
-	while (size) {
-		unsigned offset_h = upper_32_bits(phys);
-		unsigned offset_l = lower_32_bits(phys);
-		unsigned pte, end;
-
-		for (i = 7; i >= 0; i--) {
-			block = 1 << (i + 1);
-			if (size >= block && !(virt & (block - 1)))
-				break;
-		}
-		offset_l |= (i << 7);
-
-		phys += block << 15;
-		size -= block;
-
-		while (block) {
-			pgt = dev_priv->vm_vram_pt[virt >> 14];
-			pte = virt & 0x3ffe;
-
-			end = pte + block;
-			if (end > 16384)
-				end = 16384;
-			block -= (end - pte);
-			virt  += (end - pte);
-
-			while (pte < end) {
-				nv_wo32(pgt, (pte * 4) + 0, offset_l);
-				nv_wo32(pgt, (pte * 4) + 4, offset_h);
-				pte += 2;
-			}
-		}
-	}
-
-	dev_priv->engine.instmem.flush(dev);
-	dev_priv->engine.fifo.tlb_flush(dev);
-	dev_priv->engine.graph.tlb_flush(dev);
-	nv50_vm_flush(dev, 6);
-	return 0;
-}
-
-void
-nv50_mem_vm_unbind(struct drm_device *dev, uint64_t virt, uint32_t size)
-{
-	struct drm_nouveau_private *dev_priv = dev->dev_private;
-	struct nouveau_gpuobj *pgt;
-	unsigned pages, pte, end;
-
-	virt -= dev_priv->vm_vram_base;
-	pages = (size >> 16) << 1;
-
-	while (pages) {
-		pgt = dev_priv->vm_vram_pt[virt >> 29];
-		pte = (virt & 0x1ffe0000ULL) >> 15;
-
-		end = pte + pages;
-		if (end > 16384)
-			end = 16384;
-		pages -= (end - pte);
-		virt  += (end - pte) << 15;
-
-		while (pte < end) {
-			nv_wo32(pgt, (pte * 4), 0);
-			pte++;
-		}
-	}
-
-	dev_priv->engine.instmem.flush(dev);
-	dev_priv->engine.fifo.tlb_flush(dev);
-	dev_priv->engine.graph.tlb_flush(dev);
-	nv50_vm_flush(dev, 6);
-}
-
-/*
  * Cleanup everything
  */
 void
@@ -337,62 +245,7 @@ nouveau_mem_detect_nforce(struct drm_device *dev)
 	return 0;
 }
 
-static void
-nv50_vram_preinit(struct drm_device *dev)
-{
-	struct drm_nouveau_private *dev_priv = dev->dev_private;
-	int i, parts, colbits, rowbitsa, rowbitsb, banks;
-	u64 rowsize, predicted;
-	u32 r0, r4, rt, ru;
-
-	r0 = nv_rd32(dev, 0x100200);
-	r4 = nv_rd32(dev, 0x100204);
-	rt = nv_rd32(dev, 0x100250);
-	ru = nv_rd32(dev, 0x001540);
-	NV_DEBUG(dev, "memcfg 0x%08x 0x%08x 0x%08x 0x%08x\n", r0, r4, rt, ru);
-
-	for (i = 0, parts = 0; i < 8; i++) {
-		if (ru & (0x00010000 << i))
-			parts++;
-	}
-
-	colbits  =  (r4 & 0x0000f000) >> 12;
-	rowbitsa = ((r4 & 0x000f0000) >> 16) + 8;
-	rowbitsb = ((r4 & 0x00f00000) >> 20) + 8;
-	banks    = ((r4 & 0x01000000) ? 8 : 4);
-
-	rowsize = parts * banks * (1 << colbits) * 8;
-	predicted = rowsize << rowbitsa;
-	if (r0 & 0x00000004)
-		predicted += rowsize << rowbitsb;
-
-	if (predicted != dev_priv->vram_size) {
-		NV_WARN(dev, "memory controller reports %dMiB VRAM\n",
-			(u32)(dev_priv->vram_size >> 20));
-		NV_WARN(dev, "we calculated %dMiB VRAM\n",
-			(u32)(predicted >> 20));
-	}
-
-	dev_priv->vram_rblock_size = rowsize >> 12;
-	if (rt & 1)
-		dev_priv->vram_rblock_size *= 3;
-
-	NV_DEBUG(dev, "rblock %lld bytes\n",
-		 (u64)dev_priv->vram_rblock_size << 12);
-}
-
-static void
-nvaa_vram_preinit(struct drm_device *dev)
-{
-	struct drm_nouveau_private *dev_priv = dev->dev_private;
-
-	/* To our knowledge, there's no large scale reordering of pages
-	 * that occurs on IGP chipsets.
-	 */
-	dev_priv->vram_rblock_size = 1;
-}
-
-static int
+int
 nouveau_mem_detect(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
@@ -406,41 +259,20 @@ nouveau_mem_detect(struct drm_device *dev)
 	if (dev_priv->card_type < NV_50) {
 		dev_priv->vram_size  = nv_rd32(dev, NV04_PFB_FIFO_DATA);
 		dev_priv->vram_size &= NV10_PFB_FIFO_DATA_RAM_AMOUNT_MB_MASK;
-	} else
-	if (dev_priv->card_type < NV_C0) {
-		dev_priv->vram_size = nv_rd32(dev, NV04_PFB_FIFO_DATA);
-		dev_priv->vram_size |= (dev_priv->vram_size & 0xff) << 32;
-		dev_priv->vram_size &= 0xffffffff00ll;
-
-		switch (dev_priv->chipset) {
-		case 0xaa:
-		case 0xac:
-		case 0xaf:
-			dev_priv->vram_sys_base = nv_rd32(dev, 0x100e10);
-			dev_priv->vram_sys_base <<= 12;
-			nvaa_vram_preinit(dev);
-			break;
-		default:
-			nv50_vram_preinit(dev);
-			break;
-		}
-	} else {
-		dev_priv->vram_size  = nv_rd32(dev, 0x10f20c) << 20;
-		dev_priv->vram_size *= nv_rd32(dev, 0x121c74);
-	}
-#else
-    dev_priv->vram_size = 128 << 20;
-#endif
-
-	NV_INFO(dev, "Detected %dMiB VRAM\n", (int)(dev_priv->vram_size >> 20));
-	if (dev_priv->vram_sys_base) {
-		NV_INFO(dev, "Stolen system memory at: 0x%010llx\n",
-			dev_priv->vram_sys_base);
 	}
 
 	if (dev_priv->vram_size)
 		return 0;
 	return -ENOMEM;
+}
+
+bool
+nouveau_mem_flags_valid(struct drm_device *dev, u32 tile_flags)
+{
+	if (!(tile_flags & NOUVEAU_GEM_TILE_LAYOUT_MASK))
+		return true;
+
+	return false;
 }
 
 #if __OS_HAS_AGP
@@ -465,6 +297,9 @@ get_agp_mode(struct drm_device *dev, unsigned long mode)
 
 		mode = (mode & ~0x7) | (rate & 0x7);
 	}
+#else
+    dev_priv->vram_size = 128 << 20;
+#endif
 
 	return mode;
 }
@@ -565,21 +400,23 @@ nouveau_mem_vram_init(struct drm_device *dev)
 	struct ttm_bo_device *bdev = &dev_priv->ttm.bdev;
 	int ret, dma_bits;
 
+	dma_bits = 32;
 #if !defined(__AROS__)
-	if (dev_priv->card_type >= NV_50 &&
-	    pci_dma_supported(dev->pdev, DMA_BIT_MASK(40)))
-		dma_bits = 40;
-	else
-		dma_bits = 32;
+	if (dev_priv->card_type >= NV_50) {
+		if (pci_dma_supported(dev->pdev, DMA_BIT_MASK(40)))
+			dma_bits = 40;
+	} else
+	if (drm_device_is_pcie(dev) &&
+	    dev_priv->chipset != 0x40 &&
+	    dev_priv->chipset != 0x45) {
+		if (pci_dma_supported(dev->pdev, DMA_BIT_MASK(39)))
+			dma_bits = 39;
+	}
 
 	ret = pci_set_dma_mask(dev->pdev, DMA_BIT_MASK(dma_bits));
 	if (ret)
 		return ret;
 #endif
-
-	ret = nouveau_mem_detect(dev);
-	if (ret)
-		return ret;
 
 	dev_priv->fb_phys = pci_resource_start(dev->pdev, 1);
 
@@ -596,13 +433,6 @@ nouveau_mem_vram_init(struct drm_device *dev)
 		return ret;
 	}
 
-	dev_priv->fb_available_size = dev_priv->vram_size;
-	dev_priv->fb_mappable_pages = dev_priv->fb_available_size;
-	if (dev_priv->fb_mappable_pages > pci_resource_len(dev->pdev, 1))
-		dev_priv->fb_mappable_pages =
-			pci_resource_len(dev->pdev, 1);
-	dev_priv->fb_mappable_pages >>= PAGE_SHIFT;
-
 	/* reserve space at end of VRAM for PRAMIN */
 	if (dev_priv->chipset == 0x40 || dev_priv->chipset == 0x47 ||
 	    dev_priv->chipset == 0x49 || dev_priv->chipset == 0x4b)
@@ -612,6 +442,22 @@ nouveau_mem_vram_init(struct drm_device *dev)
 		dev_priv->ramin_rsvd_vram = (1 * 1024 * 1024);
 	else
 		dev_priv->ramin_rsvd_vram = (512 * 1024);
+
+	ret = dev_priv->engine.vram.init(dev);
+	if (ret)
+		return ret;
+
+	NV_INFO(dev, "Detected %dMiB VRAM\n", (int)(dev_priv->vram_size >> 20));
+	if (dev_priv->vram_sys_base) {
+		NV_INFO(dev, "Stolen system memory at: 0x%010llx\n",
+			dev_priv->vram_sys_base);
+	}
+
+	dev_priv->fb_available_size = dev_priv->vram_size;
+	dev_priv->fb_mappable_pages = dev_priv->fb_available_size;
+	if (dev_priv->fb_mappable_pages > pci_resource_len(dev->pdev, 1))
+		dev_priv->fb_mappable_pages = pci_resource_len(dev->pdev, 1);
+	dev_priv->fb_mappable_pages >>= PAGE_SHIFT;
 
 	dev_priv->fb_available_size -= dev_priv->ramin_rsvd_vram;
 	dev_priv->fb_aper_free = dev_priv->fb_available_size;
@@ -829,3 +675,112 @@ nouveau_mem_timing_fini(struct drm_device *dev)
 
 	kfree(mem->timing);
 }
+
+static int
+nouveau_vram_manager_init(struct ttm_mem_type_manager *man, unsigned long p_size)
+{
+	struct drm_nouveau_private *dev_priv = nouveau_bdev(man->bdev);
+	struct nouveau_mm *mm;
+	u32 b_size;
+	int ret;
+
+	p_size = (p_size << PAGE_SHIFT) >> 12;
+	b_size = dev_priv->vram_rblock_size >> 12;
+
+	ret = nouveau_mm_init(&mm, 0, p_size, b_size);
+	if (ret)
+		return ret;
+
+	man->priv = mm;
+	return 0;
+}
+
+static int
+nouveau_vram_manager_fini(struct ttm_mem_type_manager *man)
+{
+	struct nouveau_mm *mm = man->priv;
+	int ret;
+
+	ret = nouveau_mm_fini(&mm);
+	if (ret)
+		return ret;
+
+	man->priv = NULL;
+	return 0;
+}
+
+static void
+nouveau_vram_manager_del(struct ttm_mem_type_manager *man,
+			 struct ttm_mem_reg *mem)
+{
+	struct drm_nouveau_private *dev_priv = nouveau_bdev(man->bdev);
+	struct nouveau_vram_engine *vram = &dev_priv->engine.vram;
+	struct drm_device *dev = dev_priv->dev;
+
+	vram->put(dev, (struct nouveau_vram **)&mem->mm_node);
+}
+
+static int
+nouveau_vram_manager_new(struct ttm_mem_type_manager *man,
+			 struct ttm_buffer_object *bo,
+			 struct ttm_placement *placement,
+			 struct ttm_mem_reg *mem)
+{
+	struct drm_nouveau_private *dev_priv = nouveau_bdev(man->bdev);
+	struct nouveau_vram_engine *vram = &dev_priv->engine.vram;
+	struct drm_device *dev = dev_priv->dev;
+	struct nouveau_bo *nvbo = nouveau_bo(bo);
+	struct nouveau_vram *node;
+	u32 size_nc = 0;
+	int ret;
+
+	if (nvbo->tile_flags & NOUVEAU_GEM_TILE_NONCONTIG)
+		size_nc = 1 << nvbo->vma.node->type;
+
+	ret = vram->get(dev, mem->num_pages << PAGE_SHIFT,
+			mem->page_alignment << PAGE_SHIFT, size_nc,
+			(nvbo->tile_flags >> 8) & 0xff, &node);
+	if (ret)
+		return ret;
+
+	node->page_shift = 12;
+	if (nvbo->vma.node)
+		node->page_shift = nvbo->vma.node->type;
+
+	mem->mm_node = node;
+	mem->start   = node->offset >> PAGE_SHIFT;
+	return 0;
+}
+
+void
+nouveau_vram_manager_debug(struct ttm_mem_type_manager *man, const char *prefix)
+{
+	struct nouveau_mm *mm = man->priv;
+	struct nouveau_mm_node *r;
+	u32 total = 0, free = 0;
+
+	mutex_lock(&mm->mutex);
+	list_for_each_entry(r, &mm->nodes, nl_entry) {
+		printk(KERN_DEBUG "%s %d: 0x%010llx 0x%010llx\n",
+		       prefix, r->type, ((u64)r->offset << 12),
+		       (((u64)r->offset + r->length) << 12));
+
+		total += r->length;
+		if (!r->type)
+			free += r->length;
+	}
+	mutex_unlock(&mm->mutex);
+
+	printk(KERN_DEBUG "%s  total: 0x%010llx free: 0x%010llx\n",
+	       prefix, (u64)total << 12, (u64)free << 12);
+	printk(KERN_DEBUG "%s  block: 0x%08x\n",
+	       prefix, mm->block_size << 12);
+}
+
+const struct ttm_mem_type_manager_func nouveau_vram_manager = {
+	nouveau_vram_manager_init,
+	nouveau_vram_manager_fini,
+	nouveau_vram_manager_new,
+	nouveau_vram_manager_del,
+	nouveau_vram_manager_debug
+};

@@ -106,6 +106,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.clock_set		= nv04_pm_clock_set;
 		engine->crypt.init		= nouveau_stub_init;
 		engine->crypt.takedown		= nouveau_stub_takedown;
+		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x10:
 		engine->instmem.init		= nv04_instmem_init;
@@ -163,6 +165,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.clock_set		= nv04_pm_clock_set;
 		engine->crypt.init		= nouveau_stub_init;
 		engine->crypt.takedown		= nouveau_stub_takedown;
+		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x20:
 		engine->instmem.init		= nv04_instmem_init;
@@ -220,6 +224,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.clock_set		= nv04_pm_clock_set;
 		engine->crypt.init		= nouveau_stub_init;
 		engine->crypt.takedown		= nouveau_stub_takedown;
+		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x30:
 		engine->instmem.init		= nv04_instmem_init;
@@ -279,6 +285,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.voltage_set		= nouveau_voltage_gpio_set;
 		engine->crypt.init		= nouveau_stub_init;
 		engine->crypt.takedown		= nouveau_stub_takedown;
+		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x40:
 	case 0x60:
@@ -340,6 +348,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.temp_get		= nv40_temp_get;
 		engine->crypt.init		= nouveau_stub_init;
 		engine->crypt.takedown		= nouveau_stub_takedown;
+		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x50:
 	case 0x80: /* gotta love NVIDIA's consistency.. */
@@ -450,17 +460,21 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 			engine->crypt.takedown	= nouveau_stub_takedown;
 			break;
 		}
+		engine->vram.init		= nv50_vram_init;
+		engine->vram.get		= nv50_vram_new;
+		engine->vram.put		= nv50_vram_del;
+		engine->vram.flags_valid	= nv50_vram_flags_valid;
 		break;
 	case 0xC0:
 		engine->instmem.init		= nvc0_instmem_init;
 		engine->instmem.takedown	= nvc0_instmem_takedown;
 		engine->instmem.suspend		= nvc0_instmem_suspend;
 		engine->instmem.resume		= nvc0_instmem_resume;
-		engine->instmem.get		= nvc0_instmem_get;
-		engine->instmem.put		= nvc0_instmem_put;
-		engine->instmem.map		= nvc0_instmem_map;
-		engine->instmem.unmap		= nvc0_instmem_unmap;
-		engine->instmem.flush		= nvc0_instmem_flush;
+		engine->instmem.get		= nv50_instmem_get;
+		engine->instmem.put		= nv50_instmem_put;
+		engine->instmem.map		= nv50_instmem_map;
+		engine->instmem.unmap		= nv50_instmem_unmap;
+		engine->instmem.flush		= nv84_instmem_flush;
 		engine->mc.init			= nv50_mc_init;
 		engine->mc.takedown		= nv50_mc_takedown;
 		engine->timer.init		= nv04_timer_init;
@@ -501,6 +515,10 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->gpio.irq_enable		= nv50_gpio_irq_enable;
 		engine->crypt.init		= nouveau_stub_init;
 		engine->crypt.takedown		= nouveau_stub_takedown;
+		engine->vram.init		= nvc0_vram_init;
+		engine->vram.get		= nvc0_vram_new;
+		engine->vram.put		= nv50_vram_del;
+		engine->vram.flags_valid	= nvc0_vram_flags_valid;
 		break;
 	default:
 		NV_ERROR(dev, "NV%02x unsupported\n", dev_priv->chipset);
@@ -542,6 +560,10 @@ nouveau_card_init_channel(struct drm_device *dev)
 	if (ret)
 		return ret;
 
+	/* no dma objects on fermi... */
+	if (dev_priv->card_type >= NV_C0)
+		goto out_done;
+
 	ret = nouveau_gpuobj_dma_new(dev_priv->channel, NV_CLASS_DMA_IN_MEMORY,
 				     0, dev_priv->vram_size,
 				     NV_MEM_ACCESS_RW, NV_MEM_TARGET_VRAM,
@@ -566,6 +588,7 @@ nouveau_card_init_channel(struct drm_device *dev)
 	if (ret)
 		goto out_err;
 
+out_done:
 	mutex_unlock(&dev_priv->channel->mutex);
 	return 0;
 
@@ -582,13 +605,23 @@ static void nouveau_switcheroo_set_state(struct pci_dev *pdev,
 	pm_message_t pmm = { .event = PM_EVENT_SUSPEND };
 	if (state == VGA_SWITCHEROO_ON) {
 		printk(KERN_ERR "VGA switcheroo: switched nouveau on\n");
+		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
 		nouveau_pci_resume(pdev);
 		drm_kms_helper_poll_enable(dev);
+		dev->switch_power_state = DRM_SWITCH_POWER_ON;
 	} else {
 		printk(KERN_ERR "VGA switcheroo: switched nouveau off\n");
+		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
 		drm_kms_helper_poll_disable(dev);
 		nouveau_pci_suspend(pdev, pmm);
+		dev->switch_power_state = DRM_SWITCH_POWER_OFF;
 	}
+}
+
+static void nouveau_switcheroo_reprobe(struct pci_dev *pdev)
+{
+	struct drm_device *dev = pci_get_drvdata(pdev);
+	nouveau_fbcon_output_poll_changed(dev);
 }
 
 static bool nouveau_switcheroo_can_switch(struct pci_dev *pdev)
@@ -613,6 +646,7 @@ nouveau_card_init(struct drm_device *dev)
 #if !defined(__AROS__)
 	vga_client_register(dev->pdev, dev, NULL, nouveau_vga_set_decode);
 	vga_switcheroo_register_client(dev->pdev, nouveau_switcheroo_set_state,
+				       nouveau_switcheroo_reprobe,
 				       nouveau_switcheroo_can_switch);
 #endif
 
@@ -1078,6 +1112,9 @@ err_out:
 
 void nouveau_lastclose(struct drm_device *dev)
 {
+#if !defined(__AROS__)
+	vga_switcheroo_process_delayed_switch();
+#endif
 }
 
 int nouveau_unload(struct drm_device *dev)

@@ -54,6 +54,7 @@ AROS_DRM_NVIDIA_SOURCES = \
             drm/nouveau/nouveau_gem \
             drm/nouveau/nouveau_hw \
             drm/nouveau/nouveau_mem \
+            drm/nouveau/nouveau_mm \
             drm/nouveau/nouveau_notifier_renamed \
             drm/nouveau/nouveau_object \
             drm/nouveau/nouveau_sgdma \
@@ -62,6 +63,7 @@ AROS_DRM_NVIDIA_SOURCES = \
             drm/nouveau/nouveau_temp \
             drm/nouveau/nouveau_ttm \
             drm/nouveau/nouveau_util \
+            drm/nouveau/nouveau_vm \
             drm/nouveau/nouveau_volt \
             drm/nouveau/nv04_crtc \
             drm/nouveau/nv04_cursor \
@@ -104,9 +106,14 @@ AROS_DRM_NVIDIA_SOURCES = \
             drm/nouveau/nv50_grctx \
             drm/nouveau/nv50_pm \
             drm/nouveau/nv50_sor \
+            drm/nouveau/nv50_vm \
+            drm/nouveau/nv50_vram \
             drm/nouveau/nv84_crypt \
             drm/nouveau/nva3_pm \
             drm/nouveau/nvc0_fb \
             drm/nouveau/nvc0_fifo \
             drm/nouveau/nvc0_graph \
+            drm/nouveau/nvc0_grctx \
             drm/nouveau/nvc0_instmem \
+            drm/nouveau/nvc0_vm \
+            drm/nouveau/nvc0_vram \
