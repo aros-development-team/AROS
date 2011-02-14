@@ -4,6 +4,6 @@ BaseName=binary
 Pattern=#?
 Mask=0x00 0x00 0x03 0xf3
 GroupID=syst
-ID=a68k
+ID=exec
 Flags=DTF_BINARY,DTF_CASE
 Priority=0
