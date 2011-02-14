@@ -1,10 +1,10 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: nouveauclass.c 35441 2010-11-13 22:17:39Z deadwood $
 */
 
 #include "nouveau_intern.h"
-#include "nouveau/nouveau_class.h"
+#include "nouveau_class.h"
 #include "compositing.h"
 
 #include <graphics/displayinfo.h>
@@ -59,7 +59,6 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
     *selectedconnector = NULL;
     *selectedcrtc = NULL;
     drmModeResPtr drmmode = NULL;
-    drmModeEncoderPtr selectedencoder = NULL;
     LONG i; ULONG crtc_id;
 
     /* Get all components information */
@@ -95,21 +94,11 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
         return FALSE;
     }
 
-    /* Selecting crtc (from encoder) */
-    selectedencoder = drmModeGetEncoder(fd, (*selectedconnector)->encoder_id);
-    
-    if (!selectedencoder)
-    {
-        D(bug("[Nouveau] Not able to get encoder information for enc_id %d\n", (*selectedconnector)->encoder_id));
-        drmModeFreeConnector(*selectedconnector);
-        *selectedconnector = NULL;
-        drmModeFreeResources(drmmode);
-        return FALSE;
-    }
-
-    /* WARNING: CRTC_ID from encoder seems to be zero after first mode switch */
-    crtc_id = selectedencoder->crtc_id;
-    drmModeFreeEncoder(selectedencoder);
+    /* Selecting first available CRTC */
+    if (drmmode->count_crtcs > 0)
+        crtc_id = drmmode->crtcs[0];
+    else
+        crtc_id = 0;
 
     *selectedcrtc = drmModeGetCrtc(fd, crtc_id);
     if (!(*selectedcrtc))
@@ -338,7 +327,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     struct CardData * carddata = &(SD(cl)->carddata);
     LONG ret;
     ULONG selectedcrtcid;
-    
+
     nouveau_init();
 
     nouveau_device_open(&dev, "");
@@ -460,13 +449,17 @@ OOP_Object * METHOD(Nouveau, Root, New)
             case 0xa0:
                 carddata->architecture = NV_ARCH_50;
                 break;
+            case 0xc0:
+                carddata->architecture = NV_ARCH_C0;
+                break;
             default:
                 /* TODO: report error, how to handle it? */
                 return NULL;
             }
 
             /* Allocate dma channel */
-            ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, &carddata->chan);
+            ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, 
+                24 * 1024, &carddata->chan);
             /* TODO: Check ret, how to handle ? */
 
             /* Initialize acceleration objects */

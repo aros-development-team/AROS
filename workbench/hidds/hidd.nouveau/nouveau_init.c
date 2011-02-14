@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: nouveau_init.c 35881 2010-12-03 20:28:26Z deadwood $
 */
 
 #include "nouveau_intern.h"
@@ -13,51 +13,10 @@
 #if defined(HOSTED_BUILD)
 static VOID Nouveau_HOSTED_BUILD_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct nouveau_device * dev = NULL;
-    struct nouveau_device_priv * nvdev = NULL;
-    struct CardData * carddata = &LIBBASE->sd.carddata;
-
-    nouveau_init();
-
-    nouveau_device_open(&dev, "");
-    nvdev = nouveau_device(dev);
-
-    carddata->dev = dev;
+    OOP_NewObject(NULL, CLID_Hidd_Gfx_Nouveau, NULL);
     
-    /* Check chipset architecture */
-    switch (carddata->dev->chipset & 0xf0) 
-    {
-    case 0x00:
-        carddata->architecture = NV_ARCH_04;
-        break;
-    case 0x10:
-        carddata->architecture = NV_ARCH_10;
-        break;
-    case 0x20:
-        carddata->architecture = NV_ARCH_20;
-        break;
-    case 0x30:
-        carddata->architecture = NV_ARCH_30;
-        break;
-    case 0x40:
-    case 0x60:
-        carddata->architecture = NV_ARCH_40;
-        break;
-    case 0x50:
-    case 0x80:
-    case 0x90:
-    case 0xa0:
-        carddata->architecture = NV_ARCH_50;
-        break;
-    default:
-        break;
-    }
-
-    /* Allocate dma channel */
-    nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, &carddata->chan);
-
-    /* Initialize acceleration objects */
-    NVAccelCommonInit(carddata);
+    /* TODO: NewBitmap creation of screen bitmap 1024x768 */
+    /* TODO: ShowViewPorts - display of bitmap */
 }
 #endif
 

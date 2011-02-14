@@ -22,7 +22,7 @@
  */
 
 #include "nouveau_intern.h"
-#include "nouveau/nouveau_class.h"
+#include "nouveau_class.h"
 
 #include <proto/oop.h>
 
@@ -173,6 +173,8 @@ BOOL HiddNouveauNVAccelUploadM2MF(
     unsigned cpp = bmdata->bytesperpixel;
     unsigned line_len = width * cpp;
     unsigned dst_offset = 0, dst_pitch = 0, linear = 0;
+    /* Maximum DMA transfer */
+    unsigned line_count = carddata->GART->size / line_len;
     char *src = (char *)srcpixels;
 
 //    if (!nv50_style_tiled_pixmap(pdpix)) {
@@ -181,22 +183,15 @@ BOOL HiddNouveauNVAccelUploadM2MF(
         dst_offset += (y * dst_pitch) + (x * cpp);
 //    }
 
+    /* HW limitations */
+    if (line_count > 2047)
+        line_count = 2047;
+
     while (height) {
-        int line_count;
         char *dst;
 
-        /* Determine max amount of data we can DMA at once */
-        if (height * line_len <= carddata->GART->size) {
+        if (line_count > height)
             line_count = height;
-        } else {
-            line_count = carddata->GART->size / line_len;
-            if (line_count > height)
-                line_count = height;
-        }
-
-        /* HW limitations */
-        if (line_count > 2047)
-            line_count = 2047;
 
         /* Upload to GART */
         if (nouveau_bo_map(carddata->GART, NOUVEAU_BO_WR))
@@ -422,6 +417,8 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
     unsigned cpp = bmdata->bytesperpixel;
     unsigned line_len = width * cpp;
     unsigned src_offset = 0, src_pitch = 0, linear = 0;
+    /* Maximum DMA transfer */
+    unsigned line_count = carddata->GART->size / line_len;
     char * dst = (char *)dstpixels;
 
 //    if (!nv50_style_tiled_pixmap(pspix)) {
@@ -430,21 +427,15 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
         src_offset += (y * src_pitch) + (x * cpp);
 //    }
 
+    /* HW limitations */
+    if (line_count > 2047)
+        line_count = 2047;
+
     while (height) {
-        int line_count;
         char *src;
 
-        if (height * line_len <= carddata->GART->size) {
+        if (line_count > height)
             line_count = height;
-        } else {
-            line_count = carddata->GART->size / line_len;
-            if (line_count > height)
-                line_count = height;
-        }
-
-        /* HW limitations */
-        if (line_count > 2047)
-            line_count = 2047;
 
         if (MARK_RING(chan, 32, 6))
             return FALSE;
