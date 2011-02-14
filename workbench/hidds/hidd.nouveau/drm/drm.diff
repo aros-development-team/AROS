@@ -1,6 +1,6 @@
 diff -ur drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
---- drm-orig/drm_agpsupport.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_agpsupport.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_agpsupport.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_agpsupport.c	2011-02-13 15:38:04.000000000 +0100
 @@ -32,12 +32,16 @@
   */
  
@@ -72,15 +72,15 @@ diff -ur drm-orig/drm_agpsupport.c drm/drm_agpsupport.c
  
  /**
   * Initialize the AGP resources.
-@@ -472,4 +480,5 @@
+@@ -466,4 +474,5 @@
  }
- EXPORT_SYMBOL(drm_agp_chipset_flush);
+ EXPORT_SYMBOL(drm_agp_bind_pages);
  
 +
  #endif /* __OS_HAS_AGP */
 diff -ur drm-orig/drm_cache.c drm/drm_cache.c
---- drm-orig/drm_cache.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_cache.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_cache.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_cache.c	2011-01-28 20:30:12.000000000 +0100
 @@ -91,6 +91,12 @@
  				   (unsigned long)page_virtual + PAGE_SIZE);
  		kunmap_atomic(page_virtual, KM_USER0);
@@ -95,8 +95,8 @@ diff -ur drm-orig/drm_cache.c drm/drm_cache.c
  	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
  	WARN_ON_ONCE(1);
 diff -ur drm-orig/drm_crtc.c drm/drm_crtc.c
---- drm-orig/drm_crtc.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_crtc.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_crtc.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_crtc.c	2011-02-13 15:38:04.000000000 +0100
 @@ -29,8 +29,10 @@
   *      Dave Airlie <airlied@linux.ie>
   *      Jesse Barnes <jesse.barnes@intel.com>
@@ -284,8 +284,8 @@ diff -ur drm-orig/drm_crtc.c drm/drm_crtc.c
 +#endif
 +
 diff -ur drm-orig/drm_crtc.h drm/drm_crtc.h
---- drm-orig/drm_crtc.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_crtc.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_crtc.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/drm_crtc.h	2011-02-13 15:38:04.000000000 +0100
 @@ -25,12 +25,16 @@
  #ifndef __DRM_CRTC_H__
  #define __DRM_CRTC_H__
@@ -303,7 +303,7 @@ diff -ur drm-orig/drm_crtc.h drm/drm_crtc.h
  
  struct drm_device;
  struct drm_mode_set;
-@@ -463,7 +467,7 @@
+@@ -472,7 +476,7 @@
   */
  struct drm_connector {
  	struct drm_device *dev;
@@ -312,7 +312,7 @@ diff -ur drm-orig/drm_crtc.h drm/drm_crtc.h
  	struct device_attribute *attr;
  	struct list_head head;
  
-@@ -570,7 +574,9 @@
+@@ -579,7 +583,9 @@
  
  	/* output poll support */
  	bool poll_enabled;
@@ -323,8 +323,8 @@ diff -ur drm-orig/drm_crtc.h drm/drm_crtc.h
  	/* pointers to standard properties */
  	struct list_head property_blob_list;
 diff -ur drm-orig/drm_crtc_helper.c drm/drm_crtc_helper.c
---- drm-orig/drm_crtc_helper.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_crtc_helper.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_crtc_helper.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_crtc_helper.c	2011-02-13 15:38:04.000000000 +0100
 @@ -32,10 +32,12 @@
  #include "drmP.h"
  #include "drm_crtc.h"
@@ -364,7 +364,21 @@ diff -ur drm-orig/drm_crtc_helper.c drm/drm_crtc_helper.c
  
  /**
   * drm_encoder_crtc_ok - can a given crtc drive a given encoder?
-@@ -653,7 +659,9 @@
+@@ -431,11 +437,13 @@
+ 	/* Store real post-adjustment hardware mode. */
+ 	crtc->hwmode = *adjusted_mode;
+ 
++#if !defined(__AROS__)
+ 	/* Calculate and store various constants which
+ 	 * are later needed by vblank and swap-completion
+ 	 * timestamping. They are derived from true hwmode.
+ 	 */
+ 	drm_calc_timestamping_constants(crtc);
++#endif
+ 
+ 	/* XXX free adjustedmode */
+ 	drm_mode_destroy(dev, adjusted_mode);
+@@ -666,7 +674,9 @@
  				goto fail;
  			}
  		}
@@ -374,7 +388,7 @@ diff -ur drm-orig/drm_crtc_helper.c drm/drm_crtc_helper.c
  	} else if (fb_changed) {
  		set->crtc->x = set->x;
  		set->crtc->y = set->y;
-@@ -791,6 +799,7 @@
+@@ -812,6 +822,7 @@
  }
  EXPORT_SYMBOL(drm_helper_mode_fill_fb_struct);
  
@@ -382,14 +396,14 @@ diff -ur drm-orig/drm_crtc_helper.c drm/drm_crtc_helper.c
  int drm_helper_resume_force_mode(struct drm_device *dev)
  {
  	struct drm_crtc *crtc;
-@@ -936,3 +945,4 @@
+@@ -961,3 +972,4 @@
  		queue_delayed_work(system_nrt_wq, &dev->mode_config.output_poll_work, 0);
  }
  EXPORT_SYMBOL(drm_helper_hpd_irq_event);
 +#endif
 diff -ur drm-orig/drm_crtc_helper.h drm/drm_crtc_helper.h
---- drm-orig/drm_crtc_helper.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_crtc_helper.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_crtc_helper.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/drm_crtc_helper.h	2011-01-28 20:30:12.000000000 +0100
 @@ -33,11 +33,15 @@
  #ifndef __DRM_CRTC_HELPER_H__
  #define __DRM_CRTC_HELPER_H__
@@ -407,8 +421,8 @@ diff -ur drm-orig/drm_crtc_helper.h drm/drm_crtc_helper.h
  enum mode_set_atomic {
  	LEAVE_ATOMIC_MODE_SET,
 diff -ur drm-orig/drm_dp_helper.h drm/drm_dp_helper.h
---- drm-orig/drm_dp_helper.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_dp_helper.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_dp_helper.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/drm_dp_helper.h	2011-01-28 20:30:12.000000000 +0100
 @@ -23,8 +23,12 @@
  #ifndef _DRM_DP_HELPER_H_
  #define _DRM_DP_HELPER_H_
@@ -423,8 +437,8 @@ diff -ur drm-orig/drm_dp_helper.h drm/drm_dp_helper.h
  /* From the VESA DisplayPort spec */
  
 diff -ur drm-orig/drm_edid.c drm/drm_edid.c
---- drm-orig/drm_edid.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_edid.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_edid.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_edid.c	2011-01-28 20:30:12.000000000 +0100
 @@ -27,9 +27,11 @@
   * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
   * DEALINGS IN THE SOFTWARE.
@@ -509,8 +523,8 @@ diff -ur drm-orig/drm_edid.c drm/drm_edid.c
  EXPORT_SYMBOL(drm_add_modes_noedid);
 +
 diff -ur drm-orig/drm_edid.h drm/drm_edid.h
---- drm-orig/drm_edid.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_edid.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_edid.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/drm_edid.h	2011-01-28 20:30:12.000000000 +0100
 @@ -23,7 +23,11 @@
  #ifndef __DRM_EDID_H__
  #define __DRM_EDID_H__
@@ -524,8 +538,8 @@ diff -ur drm-orig/drm_edid.h drm/drm_edid.h
  #define EDID_LENGTH 128
  #define DDC_ADDR 0x50
 diff -ur drm-orig/drm_edid_modes.h drm/drm_edid_modes.h
---- drm-orig/drm_edid_modes.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_edid_modes.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_edid_modes.h	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_edid_modes.h	2011-01-28 20:30:12.000000000 +0100
 @@ -23,7 +23,9 @@
   * DEALINGS IN THE SOFTWARE.
   */
@@ -537,8 +551,8 @@ diff -ur drm-orig/drm_edid_modes.h drm/drm_edid_modes.h
  #include "drm_edid.h"
  
 diff -ur drm-orig/drm_encoder_slave.h drm/drm_encoder_slave.h
---- drm-orig/drm_encoder_slave.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_encoder_slave.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_encoder_slave.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/drm_encoder_slave.h	2011-01-28 20:30:12.000000000 +0100
 @@ -145,7 +145,9 @@
  static inline int drm_i2c_encoder_register(struct module *owner,
  					   struct drm_i2c_encoder_driver *driver)
@@ -561,8 +575,8 @@ diff -ur drm-orig/drm_encoder_slave.h drm/drm_encoder_slave.h
  
  void drm_i2c_encoder_destroy(struct drm_encoder *encoder);
 diff -ur drm-orig/drm_gem.c drm/drm_gem.c
---- drm-orig/drm_gem.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_gem.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_gem.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_gem.c	2011-01-28 20:30:12.000000000 +0100
 @@ -25,6 +25,7 @@
   *
   */
@@ -687,8 +701,8 @@ diff -ur drm-orig/drm_gem.c drm/drm_gem.c
  EXPORT_SYMBOL(drm_gem_mmap);
 +#endif
 diff -ur drm-orig/drm_global.c drm/drm_global.c
---- drm-orig/drm_global.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_global.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_global.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_global.c	2011-01-28 20:30:12.000000000 +0100
 @@ -28,9 +28,13 @@
   * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
   */
@@ -704,8 +718,8 @@ diff -ur drm-orig/drm_global.c drm/drm_global.c
  
  struct drm_global_item {
 diff -ur drm-orig/drm.h drm/drm.h
---- drm-orig/drm.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/drm.h	2011-01-28 20:30:12.000000000 +0100
 @@ -37,11 +37,15 @@
  #define _DRM_H_
  
@@ -724,8 +738,8 @@ diff -ur drm-orig/drm.h drm/drm.h
  
  #include <sys/ioccom.h>
 diff -ur drm-orig/drm_hashtab.h drm/drm_hashtab.h
---- drm-orig/drm_hashtab.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_hashtab.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_hashtab.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/drm_hashtab.h	2011-01-28 20:30:12.000000000 +0100
 @@ -35,12 +35,16 @@
  #ifndef DRM_HASHTAB_H
  #define DRM_HASHTAB_H
@@ -754,9 +768,9 @@ diff -ur drm-orig/drm_hashtab.h drm/drm_hashtab.h
  };
  
 diff -ur drm-orig/drm_irq.c drm/drm_irq.c
---- drm-orig/drm_irq.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_irq.c	2010-12-26 19:20:30.000000000 +0100
-@@ -34,12 +34,21 @@
+--- drm-orig/drm_irq.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_irq.c	2011-02-13 15:38:04.000000000 +0100
+@@ -34,13 +34,21 @@
   */
  
  #include "drmP.h"
@@ -769,97 +783,16 @@ diff -ur drm-orig/drm_irq.c drm/drm_irq.c
  #include <linux/vgaarb.h>
 +#else
 +#include "drm_aros.h"
-+
+ 
 +#include <proto/oop.h>
 +#include <hidd/pci.h>
 +#endif
 +
 +#if !defined(__AROS__)
- /**
-  * Get interrupt from bus id.
-  *
-@@ -76,6 +85,7 @@
- 
- 	return 0;
- }
-+#endif
- 
- static void vblank_disable_fn(unsigned long arg)
- {
-@@ -106,16 +116,22 @@
- 	if (dev->num_crtcs == 0)
- 		return;
- 
-+#if !defined(__AROS__)
- 	del_timer(&dev->vblank_disable_timer);
-+#endif
- 
- 	vblank_disable_fn((unsigned long)dev);
- 
-+#if !defined(__AROS__)
- 	kfree(dev->vbl_queue);
-+#endif
- 	kfree(dev->_vblank_count);
- 	kfree(dev->vblank_refcount);
- 	kfree(dev->vblank_enabled);
- 	kfree(dev->last_vblank);
-+#if !defined(__AROS__)
- 	kfree(dev->last_vblank_wait);
-+#endif
- 	kfree(dev->vblank_inmodeset);
- 
- 	dev->num_crtcs = 0;
-@@ -126,15 +142,19 @@
- {
- 	int i, ret = -ENOMEM;
- 
-+#if !defined(__AROS__)
- 	setup_timer(&dev->vblank_disable_timer, vblank_disable_fn,
- 		    (unsigned long)dev);
-+#endif
- 	spin_lock_init(&dev->vbl_lock);
- 	dev->num_crtcs = num_crtcs;
- 
-+#if !defined(__AROS__)
- 	dev->vbl_queue = kmalloc(sizeof(wait_queue_head_t) * num_crtcs,
- 				 GFP_KERNEL);
- 	if (!dev->vbl_queue)
- 		goto err;
-+#endif
- 
- 	dev->_vblank_count = kmalloc(sizeof(atomic_t) * num_crtcs, GFP_KERNEL);
- 	if (!dev->_vblank_count)
-@@ -153,9 +173,11 @@
- 	if (!dev->last_vblank)
- 		goto err;
- 
-+#if !defined(__AROS__)
- 	dev->last_vblank_wait = kcalloc(num_crtcs, sizeof(u32), GFP_KERNEL);
- 	if (!dev->last_vblank_wait)
- 		goto err;
-+#endif
- 
- 	dev->vblank_inmodeset = kcalloc(num_crtcs, sizeof(int), GFP_KERNEL);
- 	if (!dev->vblank_inmodeset)
-@@ -163,7 +185,9 @@
- 
- 	/* Zero per-crtc vblank stuff */
- 	for (i = 0; i < num_crtcs; i++) {
-+#if !defined(__AROS__)
- 		init_waitqueue_head(&dev->vbl_queue[i]);
-+#endif
- 		atomic_set(&dev->_vblank_count[i], 0);
- 		atomic_set(&dev->vblank_refcount[i], 0);
- 	}
-@@ -177,6 +201,7 @@
- }
- EXPORT_SYMBOL(drm_vblank_init);
- 
-+#if !defined(__AROS__)
- static void drm_irq_vgaarb_nokms(void *cookie, bool state)
- {
- 	struct drm_device *dev = cookie;
-@@ -196,6 +221,7 @@
+ /* Access macro for slots in vblank timestamp ringbuffer. */
+ #define vblanktimestamp(dev, crtc, count) ( \
+ 	(dev)->_vblank_time[(crtc) * DRM_VBLANKTIME_RBSIZE + \
+@@ -306,6 +314,7 @@
  		dev->driver->irq_postinstall(dev);
  	}
  }
@@ -867,7 +800,7 @@ diff -ur drm-orig/drm_irq.c drm/drm_irq.c
  
  /**
   * Install IRQ handler.
-@@ -206,6 +232,7 @@
+@@ -316,6 +325,7 @@
   * \c drm_driver_irq_preinstall() and \c drm_driver_irq_postinstall() functions
   * before and after the installation.
   */
@@ -875,7 +808,7 @@ diff -ur drm-orig/drm_irq.c drm/drm_irq.c
  int drm_irq_install(struct drm_device *dev)
  {
  	int ret = 0;
-@@ -271,6 +298,89 @@
+@@ -381,7 +391,91 @@
  	return ret;
  }
  EXPORT_SYMBOL(drm_irq_install);
@@ -963,17 +896,11 @@ diff -ur drm-orig/drm_irq.c drm/drm_irq.c
 +}
 +#endif
  
++#if !defined(__AROS__)
  /**
   * Uninstall the IRQ handler.
-@@ -279,6 +389,7 @@
   *
-  * Calls the driver's \c drm_driver_irq_uninstall() function, and stops the irq.
-  */
-+#if !defined(__AROS__)
- int drm_irq_uninstall(struct drm_device * dev)
- {
- 	unsigned long irqflags;
-@@ -318,7 +429,52 @@
+@@ -428,7 +522,52 @@
  	return 0;
  }
  EXPORT_SYMBOL(drm_irq_uninstall);
@@ -1026,67 +953,14 @@ diff -ur drm-orig/drm_irq.c drm/drm_irq.c
  /**
   * IRQ control ioctl.
   *
-@@ -358,6 +514,7 @@
- 		return -EINVAL;
- 	}
- }
-+#endif
- 
- /**
-  * drm_vblank_count - retrieve "cooked" vblank counter value
-@@ -471,10 +628,15 @@
- 
- 	/* Last user schedules interrupt disable */
- 	if (atomic_dec_and_test(&dev->vblank_refcount[crtc]))
-+#if !defined(__AROS__)
- 		mod_timer(&dev->vblank_disable_timer, jiffies + 5*DRM_HZ);
-+#else
-+        vblank_disable_fn((unsigned long)dev);
-+#endif
- }
- EXPORT_SYMBOL(drm_vblank_put);
- 
-+#if !defined(__AROS__)
- void drm_vblank_off(struct drm_device *dev, int crtc)
- {
- 	unsigned long irqflags;
-@@ -487,6 +649,7 @@
- 	spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
- }
- EXPORT_SYMBOL(drm_vblank_off);
-+#endif
- 
- /**
-  * drm_vblank_pre_modeset - account for vblanks across mode sets
-@@ -534,6 +697,7 @@
- }
- EXPORT_SYMBOL(drm_vblank_post_modeset);
- 
-+#if !defined(__AROS__)
- /**
-  * drm_modeset_ctl - handle vblank event counter changes across mode switch
-  * @DRM_IOCTL_ARGS: standard ioctl arguments
-@@ -769,6 +933,7 @@
- 
- 	trace_drm_vblank_event(crtc, seq);
- }
-+#endif
- 
- /**
-  * drm_handle_vblank - handle a vblank event
-@@ -784,7 +949,9 @@
- 		return;
- 
- 	atomic_inc(&dev->_vblank_count[crtc]);
-+#if !defined(__AROS__)
- 	DRM_WAKEUP(&dev->vbl_queue[crtc]);
- 	drm_handle_vblank_events(dev, crtc);
-+#endif
+@@ -1313,3 +1452,4 @@
+ 	spin_unlock_irqrestore(&dev->vblank_time_lock, irqflags);
  }
  EXPORT_SYMBOL(drm_handle_vblank);
++#endif
 diff -ur drm-orig/drm_memory.c drm/drm_memory.c
---- drm-orig/drm_memory.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_memory.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_memory.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_memory.c	2011-01-28 20:30:12.000000000 +0100
 @@ -33,7 +33,9 @@
   * OTHER DEALINGS IN THE SOFTWARE.
   */
@@ -1142,8 +1016,8 @@ diff -ur drm-orig/drm_memory.c drm/drm_memory.c
  static inline void *agp_remap(unsigned long offset, unsigned long size,
  			      struct drm_device * dev)
 diff -ur drm-orig/drm_mm.c drm/drm_mm.c
---- drm-orig/drm_mm.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_mm.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_mm.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_mm.c	2011-02-13 15:38:04.000000000 +0100
 @@ -43,8 +43,12 @@
  
  #include "drmP.h"
@@ -1158,8 +1032,8 @@ diff -ur drm-orig/drm_mm.c drm/drm_mm.c
  #define MM_UNUSED_TARGET 4
  
 diff -ur drm-orig/drm_mm.h drm/drm_mm.h
---- drm-orig/drm_mm.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_mm.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_mm.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/drm_mm.h	2011-02-13 15:38:04.000000000 +0100
 @@ -36,10 +36,15 @@
  /*
   * Generic range manager structs
@@ -1177,8 +1051,8 @@ diff -ur drm-orig/drm_mm.h drm/drm_mm.h
  struct drm_mm_node {
  	struct list_head free_stack;
 diff -ur drm-orig/drm_modes.c drm/drm_modes.c
---- drm-orig/drm_modes.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/drm_modes.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/drm_modes.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/drm_modes.c	2011-01-28 20:30:12.000000000 +0100
 @@ -30,8 +30,10 @@
   * authorization from the copyright holder(s) and author(s).
   */
@@ -1216,8 +1090,8 @@ diff -ur drm-orig/drm_modes.c drm/drm_modes.c
  	return diff;
  }
 diff -ur drm-orig/nouveau/nouveau_bios.c drm/nouveau/nouveau_bios.c
---- drm-orig/nouveau/nouveau_bios.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_bios.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_bios.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_bios.c	2011-02-13 15:38:04.000000000 +0100
 @@ -28,7 +28,9 @@
  #include "nouveau_hw.h"
  #include "nouveau_encoder.h"
@@ -1359,7 +1233,7 @@ diff -ur drm-orig/nouveau/nouveau_bios.c drm/nouveau/nouveau_bios.c
  	/* Dell Latitude D620 reports a too-high value for the dual-link
  	 * transition freq, causing us to program the panel incorrectly.
  	 *
-@@ -6442,8 +6479,9 @@
+@@ -6458,8 +6495,9 @@
  		return 0;
  	}
  
@@ -1370,7 +1244,7 @@ diff -ur drm-orig/nouveau/nouveau_bios.c drm/nouveau/nouveau_bios.c
  	else {
  		dcb->i2c_table = &bios->data[i2ctabptr];
  		if (dcb->version >= 0x30)
-@@ -6825,12 +6863,16 @@
+@@ -6841,12 +6879,16 @@
  	struct nvbios *bios = &dev_priv->vbios;
  	int ret;
  
@@ -1388,11 +1262,11 @@ diff -ur drm-orig/nouveau/nouveau_bios.c drm/nouveau/nouveau_bios.c
  	ret = parse_dcb_table(dev, bios);
  	if (ret)
 diff -ur drm-orig/nouveau/nouveau_bo_renamed.c drm/nouveau/nouveau_bo_renamed.c
---- drm-orig/nouveau/nouveau_bo_renamed.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_bo_renamed.c	2010-12-26 19:20:30.000000000 +0100
-@@ -33,8 +33,10 @@
- #include "nouveau_drv.h"
- #include "nouveau_dma.h"
+--- drm-orig/nouveau/nouveau_bo_renamed.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_bo_renamed.c	2011-02-13 15:38:04.000000000 +0100
+@@ -35,8 +35,10 @@
+ #include "nouveau_mm.h"
+ #include "nouveau_vm.h"
  
 +#if !defined(__AROS__)
  #include <linux/log2.h>
@@ -1402,8 +1276,8 @@ diff -ur drm-orig/nouveau/nouveau_bo_renamed.c drm/nouveau/nouveau_bo_renamed.c
  static void
  nouveau_bo_del_ttm(struct ttm_buffer_object *bo)
 diff -ur drm-orig/nouveau/nouveau_calc.c drm/nouveau/nouveau_calc.c
---- drm-orig/nouveau/nouveau_calc.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_calc.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_calc.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_calc.c	2011-01-28 20:30:12.000000000 +0100
 @@ -211,7 +211,7 @@
  	    (dev->pci_device & 0xffff) == 0x01f0 /*CHIPSET_NFORCE2*/) {
  		uint32_t type;
@@ -1414,8 +1288,8 @@ diff -ur drm-orig/nouveau/nouveau_calc.c drm/nouveau/nouveau_calc.c
  		sim_data.memory_type = (type >> 12) & 1;
  		sim_data.memory_width = 64;
 diff -ur drm-orig/nouveau/nouveau_connector.c drm/nouveau/nouveau_connector.c
---- drm-orig/nouveau/nouveau_connector.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_connector.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_connector.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_connector.c	2011-01-28 20:30:12.000000000 +0100
 @@ -24,7 +24,9 @@
   *
   */
@@ -1473,8 +1347,8 @@ diff -ur drm-orig/nouveau/nouveau_connector.c drm/nouveau/nouveau_connector.c
  }
 +
 diff -ur drm-orig/nouveau/nouveau_display.c drm/nouveau/nouveau_display.c
---- drm-orig/nouveau/nouveau_display.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_display.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_display.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_display.c	2011-01-28 20:30:12.000000000 +0100
 @@ -28,7 +28,9 @@
  #include "drm_crtc_helper.h"
  #include "nouveau_drv.h"
@@ -1550,8 +1424,8 @@ diff -ur drm-orig/nouveau/nouveau_display.c drm/nouveau/nouveau_display.c
 +#endif
  }
 diff -ur drm-orig/nouveau/nouveau_dp.c drm/nouveau/nouveau_dp.c
---- drm-orig/nouveau/nouveau_dp.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_dp.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_dp.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_dp.c	2011-01-28 20:30:12.000000000 +0100
 @@ -576,6 +576,7 @@
  	return ret ? ret : (stat & NV50_AUXCH_STAT_REPLY);
  }
@@ -1566,8 +1440,8 @@ diff -ur drm-orig/nouveau/nouveau_dp.c drm/nouveau/nouveau_dp.c
  };
 +#endif
 diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
---- drm-orig/nouveau/nouveau_drv.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_drv.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_drv.h	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_drv.h	2011-02-13 15:38:04.000000000 +0100
 @@ -39,10 +39,20 @@
  #define NOUVEAU_FAMILY   0x0000FFFF
  #define NOUVEAU_FLAGS    0xFFFF0000
@@ -1589,7 +1463,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  #include "ttm/ttm_module.h"
  
  struct nouveau_fpriv {
-@@ -125,7 +135,7 @@
+@@ -137,7 +147,7 @@
  	bool is_iomem;
  	void __iomem *ioptr = (void __force __iomem *)ttm_kmap_obj_virtual(
  						&nvbo->kmap, &is_iomem);
@@ -1598,7 +1472,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  	return ioptr;
  }
  
-@@ -274,11 +284,11 @@
+@@ -289,11 +299,11 @@
  		struct list_head flip;
  	} nvsw;
  
@@ -1612,7 +1486,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  };
  
  struct nouveau_instmem_engine {
-@@ -408,7 +418,7 @@
+@@ -425,7 +435,7 @@
  
  #define NOUVEAU_PM_MAX_LEVEL 8
  struct nouveau_pm_level {
@@ -1621,7 +1495,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  	char name[32];
  	int id;
  
-@@ -466,7 +476,7 @@
+@@ -483,7 +493,7 @@
  	struct nouveau_pm_level *cur;
  
  	struct device *hwmon;
@@ -1630,7 +1504,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  
  	int (*clock_get)(struct drm_device *, u32 id);
  	void *(*clock_pre)(struct drm_device *, struct nouveau_pm_level *,
-@@ -625,8 +635,12 @@
+@@ -652,8 +662,12 @@
  	/* interrupt handling */
  	void (*irq_handler[32])(struct drm_device *);
  	bool msi_enabled;
@@ -1643,7 +1517,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  
  	struct list_head vbl_waiting;
  
-@@ -782,8 +796,10 @@
+@@ -818,8 +832,10 @@
  extern int nouveau_perflvl_wr;
  extern int nouveau_msi;
  
@@ -1654,7 +1528,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  
  /* nouveau_state.c */
  extern void nouveau_preclose(struct drm_device *dev, struct drm_file *);
-@@ -964,7 +980,7 @@
+@@ -998,7 +1014,7 @@
  #else
  static inline void nouveau_register_dsm_handler(void) {}
  static inline void nouveau_unregister_dsm_handler(void) {}
@@ -1663,7 +1537,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  static inline int nouveau_acpi_get_bios_chunk(uint8_t *bios, int offset, int len) { return -EINVAL; }
  static inline int nouveau_acpi_edid(struct drm_device *dev, struct drm_connector *connector) { return -EINVAL; }
  #endif
-@@ -1012,7 +1028,7 @@
+@@ -1046,7 +1062,7 @@
  /* nouveau_ttm.c */
  int nouveau_ttm_global_init(struct drm_nouveau_private *);
  void nouveau_ttm_global_release(struct drm_nouveau_private *);
@@ -1672,7 +1546,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  
  /* nouveau_dp.c */
  int nouveau_dp_auxch(struct nouveau_i2c_chan *auxch, int cmd, int addr,
-@@ -1379,6 +1395,10 @@
+@@ -1408,6 +1424,10 @@
  int nv50_calc_pll2(struct drm_device *, struct pll_lims *,
  		   int clk, int *N, int *fN, int *M, int *P);
  
@@ -1683,7 +1557,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  #ifndef ioread32_native
  #ifdef __BIG_ENDIAN
  #define ioread16_native ioread16be
-@@ -1463,6 +1483,8 @@
+@@ -1492,6 +1512,8 @@
   * Logging
   * Argument d is (struct drm_device *).
   */
@@ -1692,7 +1566,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  #define NV_PRINTK(level, d, fmt, arg...) \
  	printk(level "[" DRM_NAME "] " DRIVER_NAME " %s: " fmt, \
  					pci_name(d->pdev), ##arg)
-@@ -1489,6 +1511,31 @@
+@@ -1518,6 +1540,31 @@
  		NV_PRINTK(KERN_DEBUG, d, fmt, ##arg);                          \
  } while (0)
  #endif
@@ -1724,7 +1598,7 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
  #define NV_ERROR(d, fmt, arg...) NV_PRINTK(KERN_ERR, d, fmt, ##arg)
  #define NV_INFO(d, fmt, arg...) NV_PRINTK(KERN_INFO, d, fmt, ##arg)
  #define NV_TRACEWARN(d, fmt, arg...) NV_PRINTK(KERN_NOTICE, d, fmt, ##arg)
-@@ -1548,9 +1595,15 @@
+@@ -1577,9 +1624,15 @@
  nv_match_device(struct drm_device *dev, unsigned device,
  		unsigned sub_vendor, unsigned sub_device)
  {
@@ -1739,11 +1613,11 @@ diff -ur drm-orig/nouveau/nouveau_drv.h drm/nouveau/nouveau_drv.h
 +#endif
  }
  
- /* memory type/access flags, do not match hardware values */
+ /* returns 1 if device is one of the nv4x using the 0x4497 object class,
 diff -ur drm-orig/nouveau/nouveau_fence.c drm/nouveau/nouveau_fence.c
---- drm-orig/nouveau/nouveau_fence.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_fence.c	2010-12-26 19:20:30.000000000 +0100
-@@ -71,7 +71,9 @@
+--- drm-orig/nouveau/nouveau_fence.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_fence.c	2011-02-13 15:38:04.000000000 +0100
+@@ -72,7 +72,9 @@
  void
  nouveau_fence_update(struct nouveau_channel *chan)
  {
@@ -1753,7 +1627,7 @@ diff -ur drm-orig/nouveau/nouveau_fence.c drm/nouveau/nouveau_fence.c
  	struct nouveau_fence *tmp, *fence;
  	uint32_t sequence;
  
-@@ -79,10 +81,15 @@
+@@ -80,10 +82,15 @@
  
  	/* Fetch the last sequence if the channel is still up and running */
  	if (likely(!list_empty(&chan->fence.pending))) {
@@ -1769,7 +1643,7 @@ diff -ur drm-orig/nouveau/nouveau_fence.c drm/nouveau/nouveau_fence.c
  
  		if (chan->fence.sequence_ack == sequence)
  			goto out;
-@@ -220,6 +227,7 @@
+@@ -229,6 +236,7 @@
  int
  __nouveau_fence_wait(void *sync_obj, void *sync_arg, bool lazy, bool intr)
  {
@@ -1777,7 +1651,7 @@ diff -ur drm-orig/nouveau/nouveau_fence.c drm/nouveau/nouveau_fence.c
  	unsigned long timeout = jiffies + (3 * DRM_HZ);
  	unsigned long sleep_time = jiffies + 1;
  	int ret = 0;
-@@ -247,6 +255,26 @@
+@@ -256,6 +264,26 @@
  	__set_current_state(TASK_RUNNING);
  
  	return ret;
@@ -1805,8 +1679,8 @@ diff -ur drm-orig/nouveau/nouveau_fence.c drm/nouveau/nouveau_fence.c
  
  static struct nouveau_semaphore *
 diff -ur drm-orig/nouveau/nouveau_hw.c drm/nouveau/nouveau_hw.c
---- drm-orig/nouveau/nouveau_hw.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_hw.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_hw.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_hw.c	2011-02-13 15:38:04.000000000 +0100
 @@ -487,7 +487,7 @@
  	    (dev->pci_device & 0x0ff0) == CHIPSET_NFORCE) {
  		uint32_t mpllP;
@@ -1825,9 +1699,22 @@ diff -ur drm-orig/nouveau/nouveau_hw.c drm/nouveau/nouveau_hw.c
  		return clock;
  	}
  
+@@ -1017,10 +1017,12 @@
+ 
+ 	NVWriteCRTC(dev, head, NV_PCRTC_START, regp->fb_start);
+ 
++#if !defined(__AROS__)
+ 	/* Enable vblank interrupts. */
+ 	NVWriteCRTC(dev, head, NV_PCRTC_INTR_EN_0,
+ 		    (dev->vblank_enabled[head] ? 1 : 0));
+ 	NVWriteCRTC(dev, head, NV_PCRTC_INTR_0, NV_PCRTC_INTR_0_VBLANK);
++#endif
+ }
+ 
+ static void
 diff -ur drm-orig/nouveau/nouveau_i2c.c drm/nouveau/nouveau_i2c.c
---- drm-orig/nouveau/nouveau_i2c.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_i2c.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_i2c.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_i2c.c	2011-01-28 20:30:12.000000000 +0100
 @@ -27,6 +27,22 @@
  #include "nouveau_i2c.h"
  #include "nouveau_hw.h"
@@ -1905,8 +1792,8 @@ diff -ur drm-orig/nouveau/nouveau_i2c.c drm/nouveau/nouveau_i2c.c
  
  	if (ret) {
 diff -ur drm-orig/nouveau/nouveau_i2c.h drm/nouveau/nouveau_i2c.h
---- drm-orig/nouveau/nouveau_i2c.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_i2c.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_i2c.h	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_i2c.h	2011-01-28 20:30:12.000000000 +0100
 @@ -23,8 +23,10 @@
  #ifndef __NOUVEAU_I2C_H__
  #define __NOUVEAU_I2C_H__
@@ -1919,8 +1806,8 @@ diff -ur drm-orig/nouveau/nouveau_i2c.h drm/nouveau/nouveau_i2c.h
  
  struct dcb_i2c_entry;
 diff -ur drm-orig/nouveau/nouveau_irq.c drm/nouveau/nouveau_irq.c
---- drm-orig/nouveau/nouveau_irq.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_irq.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_irq.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_irq.c	2011-01-28 20:30:12.000000000 +0100
 @@ -104,14 +104,20 @@
  nouveau_irq_init(struct drm_device *dev)
  {
@@ -1955,11 +1842,11 @@ diff -ur drm-orig/nouveau/nouveau_irq.c drm/nouveau/nouveau_irq.c
  
  void
 diff -ur drm-orig/nouveau/nouveau_mem.c drm/nouveau/nouveau_mem.c
---- drm-orig/nouveau/nouveau_mem.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_mem.c	2010-12-26 19:20:30.000000000 +0100
-@@ -37,6 +37,10 @@
- #include "nouveau_drv.h"
- #include "nouveau_pm.h"
+--- drm-orig/nouveau/nouveau_mem.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_mem.c	2011-02-13 15:38:04.000000000 +0100
+@@ -39,6 +39,10 @@
+ #include "nouveau_mm.h"
+ #include "nouveau_vm.h"
  
 +#if defined(__AROS__)
 +#define PCI_AGP_COMMAND_FW  0x0010
@@ -1968,7 +1855,7 @@ diff -ur drm-orig/nouveau/nouveau_mem.c drm/nouveau/nouveau_mem.c
  /*
   * NV10-NV40 tiling helpers
   */
-@@ -392,7 +396,7 @@
+@@ -245,7 +249,7 @@
  nouveau_mem_detect(struct drm_device *dev)
  {
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
@@ -1977,35 +1864,35 @@ diff -ur drm-orig/nouveau/nouveau_mem.c drm/nouveau/nouveau_mem.c
  	if (dev_priv->card_type == NV_04) {
  		dev_priv->vram_size = nouveau_mem_detect_nv04(dev);
  	} else
-@@ -424,6 +428,9 @@
- 		dev_priv->vram_size  = nv_rd32(dev, 0x10f20c) << 20;
- 		dev_priv->vram_size *= nv_rd32(dev, 0x121c74);
+@@ -256,6 +260,9 @@
+ 		dev_priv->vram_size  = nv_rd32(dev, NV04_PFB_FIFO_DATA);
+ 		dev_priv->vram_size &= NV10_PFB_FIFO_DATA_RAM_AMOUNT_MB_MASK;
  	}
 +#else
 +    dev_priv->vram_size = 128 << 20;
 +#endif
  
- 	NV_INFO(dev, "Detected %dMiB VRAM\n", (int)(dev_priv->vram_size >> 20));
- 	if (dev_priv->vram_sys_base) {
-@@ -558,6 +565,7 @@
- 	struct ttm_bo_device *bdev = &dev_priv->ttm.bdev;
+ 	if (dev_priv->vram_size)
+ 		return 0;
+@@ -394,6 +401,7 @@
  	int ret, dma_bits;
  
+ 	dma_bits = 32;
 +#if !defined(__AROS__)
- 	if (dev_priv->card_type >= NV_50 &&
- 	    pci_dma_supported(dev->pdev, DMA_BIT_MASK(40)))
- 		dma_bits = 40;
-@@ -567,6 +575,7 @@
+ 	if (dev_priv->card_type >= NV_50) {
+ 		if (pci_dma_supported(dev->pdev, DMA_BIT_MASK(40)))
+ 			dma_bits = 40;
+@@ -408,6 +416,7 @@
  	ret = pci_set_dma_mask(dev->pdev, DMA_BIT_MASK(dma_bits));
  	if (ret)
  		return ret;
 +#endif
  
- 	ret = nouveau_mem_detect(dev);
- 	if (ret)
+ 	dev_priv->fb_phys = pci_resource_start(dev->pdev, 1);
+ 
 diff -ur drm-orig/nouveau/nouveau_sgdma.c drm/nouveau/nouveau_sgdma.c
---- drm-orig/nouveau/nouveau_sgdma.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_sgdma.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_sgdma.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_sgdma.c	2011-02-13 15:38:04.000000000 +0100
 @@ -1,7 +1,9 @@
  #include "drmP.h"
  #include "nouveau_drv.h"
@@ -2016,9 +1903,21 @@ diff -ur drm-orig/nouveau/nouveau_sgdma.c drm/nouveau/nouveau_sgdma.c
  
  #define NV_CTXDMA_PAGE_SHIFT 12
  #define NV_CTXDMA_PAGE_SIZE  (1 << NV_CTXDMA_PAGE_SHIFT)
+@@ -427,7 +429,11 @@
+ 	 * christmas.  The cards before it have them, the cards after
+ 	 * it have them, why is NV44 so unloved?
+ 	 */
++#if !defined(__AROS__)
+ 	dev_priv->gart_info.dummy.page = alloc_page(GFP_DMA32 | GFP_KERNEL);
++#else
++	dev_priv->gart_info.dummy.page = create_page_helper();
++#endif
+ 	if (!dev_priv->gart_info.dummy.page)
+ 		return -ENOMEM;
+ 
 diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
---- drm-orig/nouveau/nouveau_state.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_state.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_state.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_state.c	2011-02-13 15:38:04.000000000 +0100
 @@ -23,18 +23,24 @@
   * DEALINGS IN THE SOFTWARE.
   */
@@ -2044,7 +1943,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  #include "nouveau_ramht.h"
  #include "nouveau_pm.h"
  #include "nv50_display.h"
-@@ -504,6 +510,7 @@
+@@ -522,6 +528,7 @@
  	return 0;
  }
  
@@ -2052,7 +1951,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  static unsigned int
  nouveau_vga_set_decode(void *priv, bool state)
  {
-@@ -521,6 +528,7 @@
+@@ -539,6 +546,7 @@
  	else
  		return VGA_RSRC_NORMAL_IO | VGA_RSRC_NORMAL_MEM;
  }
@@ -2060,7 +1959,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  
  static int
  nouveau_card_init_channel(struct drm_device *dev)
-@@ -566,6 +574,7 @@
+@@ -589,6 +597,7 @@
  	return ret;
  }
  
@@ -2068,7 +1967,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  static void nouveau_switcheroo_set_state(struct pci_dev *pdev,
  					 enum vga_switcheroo_state state)
  {
-@@ -592,6 +601,7 @@
+@@ -625,6 +634,7 @@
  	spin_unlock(&dev->count_lock);
  	return can_switch;
  }
@@ -2076,31 +1975,42 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  
  int
  nouveau_card_init(struct drm_device *dev)
-@@ -600,9 +610,11 @@
+@@ -633,10 +643,12 @@
  	struct nouveau_engine *engine;
  	int ret;
  
 +#if !defined(__AROS__)
  	vga_client_register(dev->pdev, dev, NULL, nouveau_vga_set_decode);
  	vga_switcheroo_register_client(dev->pdev, nouveau_switcheroo_set_state,
+ 				       nouveau_switcheroo_reprobe,
  				       nouveau_switcheroo_can_switch);
 +#endif
  
  	/* Initialise internal driver API hooks */
  	ret = nouveau_init_engine_ptrs(dev);
-@@ -623,7 +635,11 @@
+@@ -657,7 +669,9 @@
  	if (ret)
  		goto out_display_early;
  
 +#if !defined(__AROS__)
  	nouveau_pm_init(dev);
-+#else
-+IMPLEMENT("nouveau_pm_init(dev);\n");
 +#endif
  
  	ret = nouveau_mem_vram_init(dev);
  	if (ret)
-@@ -708,8 +724,10 @@
+@@ -718,9 +732,11 @@
+ 	if (ret)
+ 		goto out_fifo;
+ 
++#if !defined(__AROS__)
+ 	ret = drm_vblank_init(dev, nv_two_heads(dev) ? 2 : 1);
+ 	if (ret)
+ 		goto out_vblank;
++#endif
+ 
+ 	ret = nouveau_irq_init(dev);
+ 	if (ret)
+@@ -742,8 +758,10 @@
  	if (ret)
  		NV_ERROR(dev, "Error %d registering backlight\n", ret);
  
@@ -2111,7 +2021,17 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	return 0;
  
  out_fence:
-@@ -745,12 +763,18 @@
+@@ -751,7 +769,9 @@
+ out_irq:
+ 	nouveau_irq_fini(dev);
+ out_vblank:
++#if !defined(__AROS__)
+ 	drm_vblank_cleanup(dev);
++#endif
+ 	engine->display.destroy(dev);
+ out_fifo:
+ 	if (!nouveau_noaccel)
+@@ -779,12 +799,18 @@
  out_vram:
  	nouveau_mem_vram_fini(dev);
  out_bios:
@@ -2130,14 +2050,16 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	return ret;
  }
  
-@@ -790,10 +814,16 @@
+@@ -822,12 +848,18 @@
+ 	nouveau_mem_vram_fini(dev);
+ 
  	nouveau_irq_fini(dev);
++#if !defined(__AROS__)
  	drm_vblank_cleanup(dev);
++#endif
  
 +#if !defined(__AROS__)
  	nouveau_pm_fini(dev);
-+#else
-+IMPLEMENT("nouveau_pm_fini(dev);\n");
 +#endif
  	nouveau_bios_takedown(dev);
  
@@ -2147,7 +2069,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  }
  
  /* here a client dies, release the stuff that was allocated for its
-@@ -833,6 +863,7 @@
+@@ -867,6 +899,7 @@
  #endif
  }
  
@@ -2155,7 +2077,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  static struct apertures_struct *nouveau_get_apertures(struct drm_device *dev)
  {
  	struct pci_dev *pdev = dev->pdev;
-@@ -870,10 +901,11 @@
+@@ -904,10 +937,11 @@
  #ifdef CONFIG_X86
  	primary = dev->pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
  #endif
@@ -2168,7 +2090,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  
  int nouveau_load(struct drm_device *dev, unsigned long flags)
  {
-@@ -892,14 +924,21 @@
+@@ -926,14 +960,21 @@
  
  	dev_priv->flags = flags & NOUVEAU_FLAGS;
  
@@ -2190,7 +2112,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  
  	/* resource 0 is mmio regs */
  	/* resource 1 is linear FB */
-@@ -942,6 +981,10 @@
+@@ -976,6 +1017,10 @@
  	} else
  		dev_priv->chipset = 0xff;
  
@@ -2201,7 +2123,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	switch (dev_priv->chipset & 0xf0) {
  	case 0x00:
  	case 0x10:
-@@ -967,13 +1010,15 @@
+@@ -1001,13 +1046,15 @@
  		ret = -EINVAL;
  		goto err_mmio;
  	}
@@ -2218,7 +2140,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  
  	/* Map PRAMIN BAR, or on older cards, the aperture withing BAR0 */
  	if (dev_priv->card_type >= NV_40) {
-@@ -1021,8 +1066,10 @@
+@@ -1055,8 +1102,10 @@
  err_mmio:
  	iounmap(dev_priv->mmio);
  err_wq:
@@ -2229,7 +2151,17 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	kfree(dev_priv);
  	dev->dev_private = NULL;
  err_out:
-@@ -1038,16 +1085,21 @@
+@@ -1065,7 +1114,9 @@
+ 
+ void nouveau_lastclose(struct drm_device *dev)
+ {
++#if !defined(__AROS__)
+ 	vga_switcheroo_process_delayed_switch();
++#endif
+ }
+ 
+ int nouveau_unload(struct drm_device *dev)
+@@ -1073,16 +1124,21 @@
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
  	struct nouveau_engine *engine = &dev_priv->engine;
  
@@ -2256,7 +2188,7 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	return 0;
  }
  
-@@ -1130,6 +1182,7 @@
+@@ -1165,6 +1221,7 @@
  nouveau_wait_eq(struct drm_device *dev, uint64_t timeout,
  		uint32_t reg, uint32_t mask, uint32_t val)
  {
@@ -2264,7 +2196,25 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
  	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
  	uint64_t start = ptimer->read(dev);
-@@ -1157,6 +1210,9 @@
+@@ -1175,6 +1232,9 @@
+ 	} while (ptimer->read(dev) - start < timeout);
+ 
+ 	return false;
++#else
++    return true;
++#endif
+ }
+ 
+ /* Wait until (value(reg) & mask) != val, up until timeout has hit */
+@@ -1182,6 +1242,7 @@
+ nouveau_wait_ne(struct drm_device *dev, uint64_t timeout,
+ 		uint32_t reg, uint32_t mask, uint32_t val)
+ {
++#if !defined(HOSTED_BUILD)
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+ 	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
+ 	uint64_t start = ptimer->read(dev);
+@@ -1192,6 +1253,9 @@
  	} while (ptimer->read(dev) - start < timeout);
  
  	return false;
@@ -2274,14 +2224,14 @@ diff -ur drm-orig/nouveau/nouveau_state.c drm/nouveau/nouveau_state.c
  }
  
  /* Waits for PGRAPH to go completely idle */
-@@ -1176,4 +1232,3 @@
+@@ -1211,4 +1275,3 @@
  
  	return true;
  }
 -
 diff -ur drm-orig/nouveau/nouveau_temp.c drm/nouveau/nouveau_temp.c
---- drm-orig/nouveau/nouveau_temp.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_temp.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_temp.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_temp.c	2011-02-13 15:38:04.000000000 +0100
 @@ -235,6 +235,7 @@
  		temps->fan_boost = 40;
  }
@@ -2311,8 +2261,8 @@ diff -ur drm-orig/nouveau/nouveau_temp.c drm/nouveau/nouveau_temp.c
  
  void
 diff -ur drm-orig/nouveau/nouveau_ttm.c drm/nouveau/nouveau_ttm.c
---- drm-orig/nouveau/nouveau_ttm.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_ttm.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_ttm.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_ttm.c	2011-01-28 20:30:12.000000000 +0100
 @@ -28,6 +28,7 @@
  
  #include "nouveau_drv.h"
@@ -2355,8 +2305,8 @@ diff -ur drm-orig/nouveau/nouveau_ttm.c drm/nouveau/nouveau_ttm.c
  nouveau_ttm_global_init(struct drm_nouveau_private *dev_priv)
  {
 diff -ur drm-orig/nouveau/nouveau_util.c drm/nouveau/nouveau_util.c
---- drm-orig/nouveau/nouveau_util.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_util.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_util.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_util.c	2011-01-28 20:30:12.000000000 +0100
 @@ -25,11 +25,17 @@
   *
   */
@@ -2387,8 +2337,8 @@ diff -ur drm-orig/nouveau/nouveau_util.c drm/nouveau/nouveau_util.c
 +#endif
  }
 diff -ur drm-orig/nouveau/nouveau_volt.c drm/nouveau/nouveau_volt.c
---- drm-orig/nouveau/nouveau_volt.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nouveau_volt.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nouveau_volt.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nouveau_volt.c	2011-01-28 20:30:12.000000000 +0100
 @@ -101,6 +101,7 @@
  	return -ENOENT;
  }
@@ -2406,8 +2356,8 @@ diff -ur drm-orig/nouveau/nouveau_volt.c drm/nouveau/nouveau_volt.c
  void
  nouveau_volt_fini(struct drm_device *dev)
 diff -ur drm-orig/nouveau/nv04_crtc.c drm/nouveau/nv04_crtc.c
---- drm-orig/nouveau/nv04_crtc.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nv04_crtc.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nv04_crtc.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv04_crtc.c	2011-02-13 15:38:04.000000000 +0100
 @@ -33,7 +33,9 @@
  #include "nouveau_fb.h"
  #include "nouveau_hw.h"
@@ -2418,7 +2368,27 @@ diff -ur drm-orig/nouveau/nv04_crtc.c drm/nouveau/nv04_crtc.c
  
  static int
  nv04_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
-@@ -862,6 +864,7 @@
+@@ -672,7 +674,9 @@
+ 	if (nv_two_heads(dev))
+ 		NVSetOwner(dev, nv_crtc->index);
+ 
++#if !defined(__AROS__)
+ 	drm_vblank_pre_modeset(dev, nv_crtc->index);
++#endif
+ 	funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
+ 
+ 	NVBlankScreen(dev, nv_crtc->index, true);
+@@ -705,7 +709,9 @@
+ #endif
+ 
+ 	funcs->dpms(crtc, DRM_MODE_DPMS_ON);
++#if !defined(__AROS__)
+ 	drm_vblank_post_modeset(dev, nv_crtc->index);
++#endif
+ }
+ 
+ static void nv_crtc_destroy(struct drm_crtc *crtc)
+@@ -862,6 +868,7 @@
  			       struct drm_framebuffer *fb,
  			       int x, int y, enum mode_set_atomic state)
  {
@@ -2426,7 +2396,7 @@ diff -ur drm-orig/nouveau/nv04_crtc.c drm/nouveau/nv04_crtc.c
  	struct drm_nouveau_private *dev_priv = crtc->dev->dev_private;
  	struct drm_device *dev = dev_priv->dev;
  
-@@ -869,6 +872,7 @@
+@@ -869,6 +876,7 @@
  		nouveau_fbcon_save_disable_accel(dev);
  	else
  		nouveau_fbcon_restore_accel(dev);
@@ -2435,8 +2405,8 @@ diff -ur drm-orig/nouveau/nv04_crtc.c drm/nouveau/nv04_crtc.c
  	return nv04_crtc_do_mode_set_base(crtc, fb, x, y, true);
  }
 diff -ur drm-orig/nouveau/nv04_dfp.c drm/nouveau/nv04_dfp.c
---- drm-orig/nouveau/nv04_dfp.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nv04_dfp.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nv04_dfp.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv04_dfp.c	2011-01-28 20:30:12.000000000 +0100
 @@ -34,7 +34,9 @@
  #include "nouveau_hw.h"
  #include "nvreg.h"
@@ -2465,9 +2435,29 @@ diff -ur drm-orig/nouveau/nv04_dfp.c drm/nouveau/nv04_dfp.c
  }
  
  static const struct drm_encoder_helper_funcs nv04_lvds_helper_funcs = {
+diff -ur drm-orig/nouveau/nv04_display.c drm/nouveau/nv04_display.c
+--- drm-orig/nouveau/nv04_display.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv04_display.c	2011-02-13 15:38:04.000000000 +0100
+@@ -270,12 +270,16 @@
+ nv04_vblank_crtc0_isr(struct drm_device *dev)
+ {
+ 	nv_wr32(dev, NV_CRTC0_INTSTAT, NV_CRTC_INTR_VBLANK);
++#if !defined(__AROS__)
+ 	drm_handle_vblank(dev, 0);
++#endif
+ }
+ 
+ static void
+ nv04_vblank_crtc1_isr(struct drm_device *dev)
+ {
+ 	nv_wr32(dev, NV_CRTC1_INTSTAT, NV_CRTC_INTR_VBLANK);
++#if !defined(__AROS__)
+ 	drm_handle_vblank(dev, 1);
++#endif
+ }
 diff -ur drm-orig/nouveau/nv04_tv.c drm/nouveau/nv04_tv.c
---- drm-orig/nouveau/nv04_tv.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nv04_tv.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nv04_tv.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv04_tv.c	2011-01-28 20:30:12.000000000 +0100
 @@ -32,6 +32,7 @@
  #include "nouveau_hw.h"
  #include "drm_crtc_helper.h"
@@ -2528,9 +2518,32 @@ diff -ur drm-orig/nouveau/nv04_tv.c drm/nouveau/nv04_tv.c
 +#endif
  }
 +
+diff -ur drm-orig/nouveau/nv50_crtc.c drm/nouveau/nv50_crtc.c
+--- drm-orig/nouveau/nv50_crtc.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv50_crtc.c	2011-02-13 15:38:04.000000000 +0100
+@@ -453,7 +453,9 @@
+ 
+ 	NV_DEBUG_KMS(dev, "index %d\n", nv_crtc->index);
+ 
++#if !defined(__AROS__)
+ 	drm_vblank_pre_modeset(dev, nv_crtc->index);
++#endif
+ 	nv50_crtc_blank(nv_crtc, true);
+ }
+ 
+@@ -469,7 +471,9 @@
+ 	NV_DEBUG_KMS(dev, "index %d\n", nv_crtc->index);
+ 
+ 	nv50_crtc_blank(nv_crtc, false);
++#if !defined(__AROS__)
+ 	drm_vblank_post_modeset(dev, nv_crtc->index);
++#endif
+ 
+ 	ret = RING_SPACE(evo, 2);
+ 	if (ret) {
 diff -ur drm-orig/nouveau/nv50_display.c drm/nouveau/nv50_display.c
---- drm-orig/nouveau/nv50_display.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nv50_display.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nv50_display.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv50_display.c	2011-02-13 15:38:04.000000000 +0100
 @@ -29,7 +29,9 @@
  #include "nouveau_encoder.h"
  #include "nouveau_connector.h"
@@ -2551,7 +2564,22 @@ diff -ur drm-orig/nouveau/nv50_display.c drm/nouveau/nv50_display.c
  	nouveau_irq_register(dev, 26, nv50_display_isr);
  
  	ret = nv50_display_init(dev);
-@@ -754,12 +758,18 @@
+@@ -444,10 +448,14 @@
+ 		nouveau_bo_wr32(chan->notifier_bo, chan->nvsw.vblsem_offset,
+ 						chan->nvsw.vblsem_rval);
+ 		list_del(&chan->nvsw.vbl_wait);
++#if !defined(__AROS__)
+ 		drm_vblank_put(dev, crtc);
++#endif
+ 	}
+ 
++#if !defined(__AROS__)
+ 	drm_handle_vblank(dev, crtc);
++#endif
+ }
+ 
+ static void
+@@ -754,12 +762,18 @@
  	nv_wr32(dev, 0x619494, nv_rd32(dev, 0x619494) | 8);
  }
  
@@ -2570,7 +2598,7 @@ diff -ur drm-orig/nouveau/nv50_display.c drm/nouveau/nv50_display.c
  
  	for (;;) {
  		uint32_t intr0 = nv_rd32(dev, NV50_PDISPLAY_INTR_0);
-@@ -835,8 +845,13 @@
+@@ -835,8 +849,13 @@
  				  NV50_PDISPLAY_INTR_1_CLK_UNK40));
  		if (clock) {
  			nv_wr32(dev, NV03_PMC_INTR_EN_0, 0);
@@ -2585,8 +2613,8 @@ diff -ur drm-orig/nouveau/nv50_display.c drm/nouveau/nv50_display.c
  			intr1 &= ~clock;
  		}
 diff -ur drm-orig/nouveau/nv50_display.h drm/nouveau/nv50_display.h
---- drm-orig/nouveau/nv50_display.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nv50_display.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nv50_display.h	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv50_display.h	2011-01-28 20:30:12.000000000 +0100
 @@ -35,7 +35,11 @@
  #include "nouveau_crtc.h"
  #include "nv50_evo.h"
@@ -2600,8 +2628,8 @@ diff -ur drm-orig/nouveau/nv50_display.h drm/nouveau/nv50_display.h
  void nv50_display_late_takedown(struct drm_device *dev);
  int nv50_display_create(struct drm_device *dev);
 diff -ur drm-orig/nouveau/nv50_fb.c drm/nouveau/nv50_fb.c
---- drm-orig/nouveau/nv50_fb.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nv50_fb.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nv50_fb.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv50_fb.c	2011-01-28 20:30:12.000000000 +0100
 @@ -18,7 +18,11 @@
  	if (!priv)
  		return -ENOMEM;
@@ -2615,8 +2643,8 @@ diff -ur drm-orig/nouveau/nv50_fb.c drm/nouveau/nv50_fb.c
  		kfree(priv);
  		return -ENOMEM;
 diff -ur drm-orig/nouveau/nv50_gpio.c drm/nouveau/nv50_gpio.c
---- drm-orig/nouveau/nv50_gpio.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/nouveau/nv50_gpio.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/nouveau/nv50_gpio.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv50_gpio.c	2011-01-28 20:30:12.000000000 +0100
 @@ -29,7 +29,12 @@
  #include "nv50_display.h"
  
@@ -2681,9 +2709,69 @@ diff -ur drm-orig/nouveau/nv50_gpio.c drm/nouveau/nv50_gpio.c
  	}
  	spin_unlock(&priv->lock);
  }
+diff -ur drm-orig/nouveau/nv50_graph.c drm/nouveau/nv50_graph.c
+--- drm-orig/nouveau/nv50_graph.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nv50_graph.c	2011-02-13 15:38:04.000000000 +0100
+@@ -397,7 +397,9 @@
+ 	if (!chan->nvsw.vblsem || chan->nvsw.vblsem_offset == ~0 || data > 1)
+ 		return -EINVAL;
+ 
++#if !defined(__AROS__)
+ 	drm_vblank_get(dev, data);
++#endif
+ 
+ 	chan->nvsw.vblsem_head = data;
+ 	list_add(&chan->nvsw.vbl_wait, &dev_priv->vbl_waiting);
+diff -ur drm-orig/nouveau/nvc0_fifo.c drm/nouveau/nvc0_fifo.c
+--- drm-orig/nouveau/nvc0_fifo.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nvc0_fifo.c	2011-02-13 15:38:04.000000000 +0100
+@@ -325,7 +325,11 @@
+ 	nv_wr32(dev, 0x000204, 0xffffffff);
+ 	nv_wr32(dev, 0x002204, 0xffffffff);
+ 
++#if !defined(__AROS__)
+ 	priv->spoon_nr = hweight32(nv_rd32(dev, 0x002204));
++#else
++IMPLEMENT("calling hweight32\n");
++#endif
+ 	NV_DEBUG(dev, "PFIFO: %d subfifo(s)\n", priv->spoon_nr);
+ 
+ 	/* assign engines to subfifos */
+diff -ur drm-orig/nouveau/nvc0_graph.c drm/nouveau/nvc0_graph.c
+--- drm-orig/nouveau/nvc0_graph.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/nouveau/nvc0_graph.c	2011-02-13 15:38:04.000000000 +0100
+@@ -22,7 +22,9 @@
+  * Authors: Ben Skeggs
+  */
+ 
++#if !defined(__AROS__)
+ #include <linux/firmware.h>
++#endif
+ 
+ #include "drmP.h"
+ 
+@@ -542,6 +544,7 @@
+ nvc0_fuc_load_fw(struct drm_device *dev, u32 fuc_base,
+ 		 const char *code_fw, const char *data_fw)
+ {
++#if !defined(__AROS__)
+ 	const struct firmware *fw;
+ 	char name[32];
+ 	int ret, i;
+@@ -572,7 +575,9 @@
+ 		nv_wr32(dev, fuc_base + 0x0184, ((u32 *)fw->data)[i]);
+ 	}
+ 	release_firmware(fw);
+-
++#else
++IMPLEMENT("\n");
++#endif
+ 	return 0;
+ }
+ 
 diff -ur drm-orig/ttm/ttm_agp_backend.c drm/ttm/ttm_agp_backend.c
---- drm-orig/ttm/ttm_agp_backend.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/ttm/ttm_agp_backend.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/ttm/ttm_agp_backend.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/ttm/ttm_agp_backend.c	2011-01-28 20:30:12.000000000 +0100
 @@ -33,11 +33,15 @@
  #include "ttm/ttm_bo_driver.h"
  #ifdef TTM_HAS_AGP
@@ -2709,8 +2797,8 @@ diff -ur drm-orig/ttm/ttm_agp_backend.c drm/ttm/ttm_agp_backend.c
  }
  
 diff -ur drm-orig/ttm/ttm_bo_api.h drm/ttm/ttm_bo_api.h
---- drm-orig/ttm/ttm_bo_api.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/ttm/ttm_bo_api.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/ttm/ttm_bo_api.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/ttm/ttm_bo_api.h	2011-02-13 15:38:04.000000000 +0100
 @@ -32,6 +32,7 @@
  #define _TTM_BO_API_H_
  
@@ -2730,7 +2818,7 @@ diff -ur drm-orig/ttm/ttm_bo_api.h drm/ttm/ttm_bo_api.h
  
  struct ttm_bo_device;
  
-@@ -262,7 +267,9 @@
+@@ -264,7 +269,9 @@
  	 * Members protected by the bdev::vm_lock
  	 */
  
@@ -2740,7 +2828,7 @@ diff -ur drm-orig/ttm/ttm_bo_api.h drm/ttm/ttm_bo_api.h
  	struct drm_mm_node *vm_node;
  
  
-@@ -625,6 +632,7 @@
+@@ -665,6 +672,7 @@
  #if 0
  #endif
  
@@ -2748,7 +2836,7 @@ diff -ur drm-orig/ttm/ttm_bo_api.h drm/ttm/ttm_bo_api.h
  /**
   * ttm_fbdev_mmap - mmap fbdev memory backed by a ttm buffer object.
   *
-@@ -677,6 +685,7 @@
+@@ -717,6 +725,7 @@
  extern ssize_t ttm_bo_io(struct ttm_bo_device *bdev, struct file *filp,
  			 const char __user *wbuf, char __user *rbuf,
  			 size_t count, loff_t *f_pos, bool write);
@@ -2757,8 +2845,8 @@ diff -ur drm-orig/ttm/ttm_bo_api.h drm/ttm/ttm_bo_api.h
  extern void ttm_bo_swapout_all(struct ttm_bo_device *bdev);
  
 diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
---- drm-orig/ttm/ttm_bo.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/ttm/ttm_bo.c	2011-01-26 23:08:47.000000000 +0100
+--- drm-orig/ttm/ttm_bo.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/ttm/ttm_bo.c	2011-02-13 15:38:04.000000000 +0100
 @@ -31,6 +31,7 @@
  #include "ttm/ttm_module.h"
  #include "ttm/ttm_bo_driver.h"
@@ -2826,15 +2914,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  		kfree(bo);
  	}
  }
-@@ -191,6 +201,7 @@
- 	}
- }
- 
-+
- /**
-  * Call with the lru_lock held.
-  */
-@@ -335,8 +346,12 @@
+@@ -351,8 +361,12 @@
  			break;
  		}
  
@@ -2847,7 +2927,15 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  		if (unlikely(ret != 0))
  			ttm_tt_destroy(bo->ttm);
  		break;
-@@ -457,13 +472,19 @@
+@@ -456,6 +470,7 @@
+ 	return ret;
+ }
+ 
++
+ /**
+  * Call bo::reserved.
+  * Will release GPU memory type usage on destruction.
+@@ -475,13 +490,19 @@
  
  	atomic_set(&bo->reserved, 0);
  
@@ -2867,7 +2955,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
  {
  	struct ttm_bo_device *bdev = bo->bdev;
-@@ -518,8 +539,18 @@
+@@ -535,8 +556,18 @@
  		driver->sync_obj_flush(sync_obj, sync_obj_arg);
  		driver->sync_obj_unref(&sync_obj);
  	}
@@ -2886,7 +2974,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  }
  
  /**
-@@ -636,6 +667,7 @@
+@@ -653,6 +684,7 @@
  	return ret;
  }
  
@@ -2894,7 +2982,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static void ttm_bo_delayed_workqueue(struct work_struct *work)
  {
  	struct ttm_bo_device *bdev =
-@@ -646,6 +678,7 @@
+@@ -663,6 +695,7 @@
  				      ((HZ / 100) < 1) ? 1 : HZ / 100);
  	}
  }
@@ -2902,8 +2990,8 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  static void ttm_bo_release(struct kref *kref)
  {
-@@ -654,7 +687,9 @@
- 	struct ttm_bo_device *bdev = bo->bdev;
+@@ -672,7 +705,9 @@
+ 	struct ttm_mem_type_manager *man = &bdev->man[bo->mem.mem_type];
  
  	if (likely(bo->vm_node != NULL)) {
 +#if !defined(__AROS__)        
@@ -2912,7 +3000,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  		drm_mm_put_block(bo->vm_node);
  		bo->vm_node = NULL;
  	}
-@@ -676,6 +711,7 @@
+@@ -697,6 +732,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_unref);
  
@@ -2920,7 +3008,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  int ttm_bo_lock_delayed_workqueue(struct ttm_bo_device *bdev)
  {
  	return cancel_delayed_work_sync(&bdev->wq);
-@@ -689,6 +725,7 @@
+@@ -710,6 +746,7 @@
  				      ((HZ / 100) < 1) ? 1 : HZ / 100);
  }
  EXPORT_SYMBOL(ttm_bo_unlock_delayed_workqueue);
@@ -2928,7 +3016,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  static int ttm_bo_evict(struct ttm_buffer_object *bo, bool interruptible,
  			bool no_wait_reserve, bool no_wait_gpu)
-@@ -1219,6 +1256,7 @@
+@@ -1243,6 +1280,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_init);
  
@@ -2936,7 +3024,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static inline size_t ttm_bo_size(struct ttm_bo_global *glob,
  				 unsigned long num_pages)
  {
-@@ -1263,6 +1301,7 @@
+@@ -1287,6 +1325,7 @@
  
  	return ret;
  }
@@ -2944,7 +3032,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  static int ttm_bo_force_list_clean(struct ttm_bo_device *bdev,
  					unsigned mem_type, bool allow_errors)
-@@ -1324,6 +1363,7 @@
+@@ -1348,6 +1387,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_clean_mm);
  
@@ -2952,7 +3040,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  int ttm_bo_evict_mm(struct ttm_bo_device *bdev, unsigned mem_type)
  {
  	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
-@@ -1345,6 +1385,7 @@
+@@ -1369,6 +1409,7 @@
  	return ttm_bo_force_list_clean(bdev, mem_type, true);
  }
  EXPORT_SYMBOL(ttm_bo_evict_mm);
@@ -2960,7 +3048,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  int ttm_bo_init_mm(struct ttm_bo_device *bdev, unsigned type,
  			unsigned long p_size)
-@@ -1377,6 +1418,7 @@
+@@ -1405,6 +1446,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_init_mm);
  
@@ -2968,7 +3056,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  static void ttm_bo_global_kobj_release(struct kobject *kobj)
  {
  	struct ttm_bo_global *glob =
-@@ -1386,27 +1428,53 @@
+@@ -1414,27 +1456,53 @@
  	__free_page(glob->dummy_read_page);
  	kfree(glob);
  }
@@ -3026,7 +3114,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  	if (unlikely(glob->dummy_read_page == NULL)) {
  		ret = -ENOMEM;
-@@ -1416,6 +1484,7 @@
+@@ -1444,6 +1512,7 @@
  	INIT_LIST_HEAD(&glob->swap_lru);
  	INIT_LIST_HEAD(&glob->device_list);
  
@@ -3034,7 +3122,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  	ttm_mem_init_shrink(&glob->shrink, ttm_bo_swapout);
  	ret = ttm_mem_register_shrink(glob->mem_glob, &glob->shrink);
  	if (unlikely(ret != 0)) {
-@@ -1423,6 +1492,7 @@
+@@ -1451,6 +1520,7 @@
  		       "Could not register buffer object swapout.\n");
  		goto out_no_shrink;
  	}
@@ -3042,7 +3130,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  	glob->ttm_bo_extra_size =
  		ttm_round_pot(sizeof(struct ttm_tt)) +
-@@ -1433,13 +1503,16 @@
+@@ -1461,13 +1531,16 @@
  
  	atomic_set(&glob->bo_count, 0);
  
@@ -3063,18 +3151,17 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  out_no_drp:
  	kfree(glob);
  	return ret;
-@@ -1472,8 +1545,10 @@
+@@ -1500,7 +1573,9 @@
  	list_del(&bdev->device_list);
  	mutex_unlock(&glob->device_list_mutex);
  
 +#if !defined(__AROS__)
- 	if (!cancel_delayed_work(&bdev->wq))
- 		flush_scheduled_work();
+ 	cancel_delayed_work_sync(&bdev->wq);
 +#endif
  
  	while (ttm_bo_delayed_delete(bdev, true))
  		;
-@@ -1516,12 +1591,16 @@
+@@ -1543,12 +1618,16 @@
  	if (unlikely(ret != 0))
  		goto out_no_sys;
  
@@ -3091,8 +3178,8 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  	bdev->nice_mode = true;
  	INIT_LIST_HEAD(&bdev->ddestroy);
  	bdev->dev_mapping = NULL;
-@@ -1564,16 +1643,21 @@
- void ttm_bo_unmap_virtual(struct ttm_buffer_object *bo)
+@@ -1592,12 +1671,16 @@
+ void ttm_bo_unmap_virtual_locked(struct ttm_buffer_object *bo)
  {
  	struct ttm_bo_device *bdev = bo->bdev;
 +#if !defined(__AROS__)
@@ -3105,15 +3192,18 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
 +#else
 +    /* This is no-op under AROS */
 +#endif
- 	ttm_mem_io_free(bdev, &bo->mem);
+ 	ttm_mem_io_free_vm(bo);
  }
+ 
+@@ -1614,6 +1697,7 @@
+ 
  EXPORT_SYMBOL(ttm_bo_unmap_virtual);
  
 +#if !defined(__AROS__)
  static void ttm_bo_vm_insert_rb(struct ttm_buffer_object *bo)
  {
  	struct ttm_bo_device *bdev = bo->bdev;
-@@ -1598,6 +1682,7 @@
+@@ -1638,6 +1722,7 @@
  	rb_link_node(&bo->vm_rb, parent, cur);
  	rb_insert_color(&bo->vm_rb, &bdev->addr_space_rb);
  }
@@ -3121,7 +3211,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  
  /**
   * ttm_bo_setup_vm:
-@@ -1637,7 +1722,9 @@
+@@ -1677,7 +1762,9 @@
  		goto retry_pre_get;
  	}
  
@@ -3131,7 +3221,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  	write_unlock(&bdev->vm_lock);
  	bo->addr_space_offset = ((uint64_t) bo->vm_node->start) << PAGE_SHIFT;
  
-@@ -1657,9 +1744,13 @@
+@@ -1698,9 +1785,13 @@
  
  	if (likely(bo->sync_obj == NULL))
  		return 0;
@@ -3146,17 +3236,7 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  		if (driver->sync_obj_signaled(bo->sync_obj, bo->sync_obj_arg)) {
  			void *tmp_obj = bo->sync_obj;
  			bo->sync_obj = NULL;
-@@ -1714,7 +1805,9 @@
- 
- 	ret = ttm_bo_reserve(bo, true, no_wait, false, 0);
- 	if (unlikely(ret != 0))
-+	{
- 		return ret;
-+	}
- 	spin_lock(&bo->lock);
- 	ret = ttm_bo_wait(bo, false, true, no_wait);
- 	spin_unlock(&bo->lock);
-@@ -1732,6 +1825,7 @@
+@@ -1774,6 +1865,7 @@
  }
  EXPORT_SYMBOL(ttm_bo_synccpu_write_release);
  
@@ -3164,14 +3244,14 @@ diff -ur drm-orig/ttm/ttm_bo.c drm/ttm/ttm_bo.c
  /**
   * A buffer object shrink method that tries to swap out the first
   * buffer object on the bo_global::swap_lru list.
-@@ -1842,3 +1936,4 @@
+@@ -1883,3 +1975,4 @@
  		;
  }
  EXPORT_SYMBOL(ttm_bo_swapout_all);
 +#endif
 diff -ur drm-orig/ttm/ttm_bo_driver.h drm/ttm/ttm_bo_driver.h
---- drm-orig/ttm/ttm_bo_driver.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/ttm/ttm_bo_driver.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/ttm/ttm_bo_driver.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/ttm/ttm_bo_driver.h	2011-02-13 15:38:05.000000000 +0100
 @@ -31,13 +31,19 @@
  #define _TTM_BO_DRIVER_H_
  
@@ -3221,7 +3301,7 @@ diff -ur drm-orig/ttm/ttm_bo_driver.h drm/ttm/ttm_bo_driver.h
  	enum ttm_caching_state caching_state;
  	enum {
  		tt_bound,
-@@ -474,10 +487,14 @@
+@@ -489,10 +502,14 @@
  	 * Constant after init.
  	 */
  
@@ -3237,7 +3317,7 @@ diff -ur drm-orig/ttm/ttm_bo_driver.h drm/ttm/ttm_bo_driver.h
  	size_t ttm_bo_extra_size;
  	size_t ttm_bo_size;
  	struct mutex device_list_mutex;
-@@ -534,7 +551,9 @@
+@@ -553,7 +570,9 @@
  	/*
  	 * Protected by the vm lock.
  	 */
@@ -3247,7 +3327,7 @@ diff -ur drm-orig/ttm/ttm_bo_driver.h drm/ttm/ttm_bo_driver.h
  	struct drm_mm addr_space_mm;
  
  	/*
-@@ -553,7 +572,9 @@
+@@ -573,7 +592,9 @@
  	 * Internal protection.
  	 */
  
@@ -3257,7 +3337,7 @@ diff -ur drm-orig/ttm/ttm_bo_driver.h drm/ttm/ttm_bo_driver.h
  
  	bool need_dma32;
  };
-@@ -970,6 +991,7 @@
+@@ -1024,6 +1045,7 @@
  				     bool evict, bool no_wait_reserve,
  				     bool no_wait_gpu,
  				     struct ttm_mem_reg *new_mem);
@@ -3265,7 +3345,7 @@ diff -ur drm-orig/ttm/ttm_bo_driver.h drm/ttm/ttm_bo_driver.h
  /**
   * ttm_io_prot
   *
-@@ -980,12 +1002,15 @@
+@@ -1034,12 +1056,15 @@
   * setting up a PTE with the caching model indicated by @c_state.
   */
  extern pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp);
@@ -3283,8 +3363,8 @@ diff -ur drm-orig/ttm/ttm_bo_driver.h drm/ttm/ttm_bo_driver.h
  /**
   * ttm_agp_backend_init
 diff -ur drm-orig/ttm/ttm_bo_manager.c drm/ttm/ttm_bo_manager.c
---- drm-orig/ttm/ttm_bo_manager.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/ttm/ttm_bo_manager.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/ttm/ttm_bo_manager.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/ttm/ttm_bo_manager.c	2011-01-28 20:30:12.000000000 +0100
 @@ -32,9 +32,11 @@
  #include "ttm/ttm_bo_driver.h"
  #include "ttm/ttm_placement.h"
@@ -3298,8 +3378,8 @@ diff -ur drm-orig/ttm/ttm_bo_manager.c drm/ttm/ttm_bo_manager.c
  /**
   * Currently we use a spinlock for the lock, but a mutex *may* be
 diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
---- drm-orig/ttm/ttm_bo_util.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/ttm/ttm_bo_util.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/ttm/ttm_bo_util.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/ttm/ttm_bo_util.c	2011-02-13 15:38:05.000000000 +0100
 @@ -30,12 +30,14 @@
  
  #include "ttm/ttm_bo_driver.h"
@@ -3315,7 +3395,23 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  
  void ttm_bo_free_old_node(struct ttm_buffer_object *bo)
  {
-@@ -162,6 +164,7 @@
+@@ -81,7 +83,15 @@
+ 		return 0;
+ 
+ 	if (interruptible)
++#if !defined(__AROS__)
+ 		return mutex_lock_interruptible(&man->io_reserve_mutex);
++#else
++    {
++        IMPLEMENT("Calling mutex_lock_interruptible\n");
++        mutex_lock(&man->io_reserve_mutex);
++        return 0;
++    }
++#endif
+ 
+ 	mutex_lock(&man->io_reserve_mutex);
+ 	return 0;
+@@ -252,6 +262,7 @@
  
  	src = (void *)((unsigned long)src + (page << PAGE_SHIFT));
  
@@ -3323,7 +3419,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  #ifdef CONFIG_X86
  	dst = kmap_atomic_prot(d, prot);
  #else
-@@ -170,11 +173,15 @@
+@@ -260,11 +271,15 @@
  	else
  		dst = kmap(d);
  #endif
@@ -3339,7 +3435,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  #ifdef CONFIG_X86
  	kunmap_atomic(dst);
  #else
-@@ -183,6 +190,9 @@
+@@ -273,6 +288,9 @@
  	else
  		kunmap(d);
  #endif
@@ -3349,7 +3445,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  
  	return 0;
  }
-@@ -198,6 +208,7 @@
+@@ -288,6 +306,7 @@
  		return -ENOMEM;
  
  	dst = (void *)((unsigned long)dst + (page << PAGE_SHIFT));
@@ -3357,7 +3453,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  #ifdef CONFIG_X86
  	src = kmap_atomic_prot(s, prot);
  #else
-@@ -206,11 +217,15 @@
+@@ -296,11 +315,15 @@
  	else
  		src = kmap(s);
  #endif
@@ -3373,7 +3469,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  #ifdef CONFIG_X86
  	kunmap_atomic(src);
  #else
-@@ -219,6 +234,9 @@
+@@ -309,6 +332,9 @@
  	else
  		kunmap(s);
  #endif
@@ -3383,7 +3479,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  
  	return 0;
  }
-@@ -264,13 +282,21 @@
+@@ -354,13 +380,21 @@
  	for (i = 0; i < new_mem->num_pages; ++i) {
  		page = i * dir + add;
  		if (old_iomap == NULL) {
@@ -3405,7 +3501,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  			ret = ttm_copy_io_ttm_page(ttm, old_iomap, page,
  						   prot);
  		} else
-@@ -354,6 +380,7 @@
+@@ -444,6 +478,7 @@
  	return 0;
  }
  
@@ -3413,7 +3509,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp)
  {
  #if defined(__i386__) || defined(__x86_64__)
-@@ -382,6 +409,7 @@
+@@ -472,6 +507,7 @@
  	return tmp;
  }
  EXPORT_SYMBOL(ttm_io_prot);
@@ -3421,7 +3517,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  
  static int ttm_bo_ioremap(struct ttm_buffer_object *bo,
  			  unsigned long offset,
-@@ -410,7 +438,10 @@
+@@ -500,7 +536,10 @@
  			   unsigned long num_pages,
  			   struct ttm_bo_kmap_obj *map)
  {
@@ -3433,7 +3529,7 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  	struct ttm_tt *ttm = bo->ttm;
  	struct page *d;
  	int i;
-@@ -439,9 +470,11 @@
+@@ -529,9 +568,11 @@
  		 * We need to use vmap to get the desired page protection
  		 * or to make the buffer object look contiguous.
  		 */
@@ -3446,8 +3542,8 @@ diff -ur drm-orig/ttm/ttm_bo_util.c drm/ttm/ttm_bo_util.c
  		map->virtual = vmap(ttm->pages + start_page, num_pages,
  				    0, prot);
 diff -ur drm-orig/ttm/ttm_module.h drm/ttm/ttm_module.h
---- drm-orig/ttm/ttm_module.h	2010-12-08 03:04:06.000000000 +0100
-+++ drm/ttm/ttm_module.h	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/ttm/ttm_module.h	2011-01-27 21:29:22.000000000 +0100
++++ drm/ttm/ttm_module.h	2011-01-28 20:30:12.000000000 +0100
 @@ -31,8 +31,12 @@
  #ifndef _TTM_MODULE_H_
  #define _TTM_MODULE_H_
@@ -3462,8 +3558,8 @@ diff -ur drm-orig/ttm/ttm_module.h drm/ttm/ttm_module.h
  #define TTM_PFX "[TTM] "
  extern struct kobject *ttm_get_kobj(void);
 diff -ur drm-orig/ttm/ttm_tt.c drm/ttm/ttm_tt.c
---- drm-orig/ttm/ttm_tt.c	2010-12-08 03:04:06.000000000 +0100
-+++ drm/ttm/ttm_tt.c	2010-12-26 19:20:30.000000000 +0100
+--- drm-orig/ttm/ttm_tt.c	2011-01-27 21:29:19.000000000 +0100
++++ drm/ttm/ttm_tt.c	2011-01-28 20:30:12.000000000 +0100
 @@ -28,20 +28,26 @@
   * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
   */
