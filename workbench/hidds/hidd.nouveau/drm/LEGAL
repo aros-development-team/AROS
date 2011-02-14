@@ -1,7 +1,4 @@
-All files in drm-changed directory and its subdirectories are dual licensed 
-GPL-MIT. MIT license is selected as applicable for AROS port.
-
-All files in drm-unchanged directory and its subdirectories are dual licensed 
+All files in drm directory and its subdirectories are dual licensed 
 GPL-MIT. MIT license is selected as applicable for AROS port.
 
 All files in libdrm directory and its subdirectories are licensed under MIT 
@@ -9,7 +6,6 @@ license.
 
 The following files in drm-aros directory are licensed under MIT license:
     drm_linux_lists.h
-    ttm/ttm_memory.h
 
 All other files in drm-aros directory and its subdirectories are licensed under 
 APL license.
