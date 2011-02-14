@@ -260,6 +260,9 @@ nouveau_mem_detect(struct drm_device *dev)
 		dev_priv->vram_size  = nv_rd32(dev, NV04_PFB_FIFO_DATA);
 		dev_priv->vram_size &= NV10_PFB_FIFO_DATA_RAM_AMOUNT_MB_MASK;
 	}
+#else
+    dev_priv->vram_size = 128 << 20;
+#endif
 
 	if (dev_priv->vram_size)
 		return 0;
@@ -297,9 +300,6 @@ get_agp_mode(struct drm_device *dev, unsigned long mode)
 
 		mode = (mode & ~0x7) | (rate & 0x7);
 	}
-#else
-    dev_priv->vram_size = 128 << 20;
-#endif
 
 	return mode;
 }

@@ -1230,6 +1230,9 @@ nouveau_wait_eq(struct drm_device *dev, uint64_t timeout,
 	} while (ptimer->read(dev) - start < timeout);
 
 	return false;
+#else
+    return true;
+#endif
 }
 
 /* Wait until (value(reg) & mask) != val, up until timeout has hit */
@@ -1237,6 +1240,7 @@ bool
 nouveau_wait_ne(struct drm_device *dev, uint64_t timeout,
 		uint32_t reg, uint32_t mask, uint32_t val)
 {
+#if !defined(HOSTED_BUILD)
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
 	uint64_t start = ptimer->read(dev);
