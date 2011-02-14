@@ -570,7 +570,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                     KPRINTF(10, ("Resetting UHCI HC\n"));
                     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_GLOBALRESET);
-                    uhwDelayMS(15, hu, hd);
+                    uhwDelayMS(15, hu);
 
                     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
 
@@ -578,7 +578,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     cnt = 100;
                     do
                     {
-                        uhwDelayMS(10, hu, hd);
+                        uhwDelayMS(10, hu);
                         if(!(READIO16_LE(hc->hc_RegBase, UHCI_USBCMD) & UHCF_HCRESET))
                         {
                             break;
@@ -589,7 +589,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     {
                         KPRINTF(20, ("Reset Timeout!\n"));
                         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
-                        uhwDelayMS(15, hu, hd);
+                        uhwDelayMS(15, hu);
                     } else {
                         KPRINTF(20, ("Reset finished after %ld ticks\n", 100-cnt));
                     }
@@ -828,7 +828,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                                 KPRINTF(10, ("BIOS gave up on OHCI. Pwned!\n"));
                                 break;
                             }
-                            uhwDelayMS(10, hu, hd);
+                            uhwDelayMS(10, hu);
                         } while(--timeout);
                         if(!timeout)
                         {
@@ -849,7 +849,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         {
                             break;
                         }
-                        uhwDelayMS(1, hu, hd);
+                        uhwDelayMS(1, hu);
                     } while(--cnt);
 
 #ifdef DEBUG
@@ -918,7 +918,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                         WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, ((2<<hc->hc_NumPorts)-2)<<OHBS_PORTPOWERCTRL);
                     }
 
-                    uhwDelayMS(50, hu, hd);
+                    uhwDelayMS(50, hu);
                     WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA, hubdesca);
 
                     CacheClearE(hc->hc_OhciHCCA,   sizeof(struct OhciHCCA),                  CACRF_ClearD);
@@ -1103,7 +1103,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                                         KPRINTF(10, ("BIOS gave up on EHCI. Pwned!\n"));
                                         break;
                                     }
-                                    uhwDelayMS(10, hu, hd);
+                                    uhwDelayMS(10, hu);
                                 } while(--timeout);
                                 if(!timeout)
                                 {
@@ -1128,11 +1128,11 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                     KPRINTF(10, ("Resetting EHCI HC\n"));
                     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
-                    uhwDelayMS(10, hu, hd);
+                    uhwDelayMS(10, hu);
                     cnt = 100;
                     do
                     {
-                        uhwDelayMS(10, hu, hd);
+                        uhwDelayMS(10, hu);
                         if(!(READREG32_LE(hc->hc_RegBase, EHCI_USBCMD) & EHUF_HCRESET))
                         {
                             break;
@@ -1462,16 +1462,16 @@ void pciFreeUnit(struct PCIUnit *hu)
                     WRITEREG32_LE(hc->hc_RegBase, portreg, 0);
                 }
                 CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, 1UL<<EHUS_INTTHRESHOLD);
-                uhwDelayMS(10, hu, hd);
+                uhwDelayMS(10, hu);
                 CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_CONFIGFLAG, 0);
                 CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
                 SYNC;
 
-                uhwDelayMS(50, hu, hd);
+                uhwDelayMS(50, hu);
                 CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, 1UL<<EHUS_INTTHRESHOLD);
                 SYNC;
 
-                uhwDelayMS(10, hu, hd);
+                uhwDelayMS(10, hu);
 
                 KPRINTF(20, ("Shutting down EHCI done.\n"));
                 break;
@@ -1493,21 +1493,21 @@ void pciFreeUnit(struct PCIUnit *hu)
                 PCIXWriteConfigWord(hc, UHCI_USBLEGSUP, 0);
                 // disable all ports
                 WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
-                uhwDelayMS(50, hu, hd);
+                uhwDelayMS(50, hu);
                 //WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE);
-                //uhwDelayMS(50, hu, hd);
+                //uhwDelayMS(50, hu);
                 KPRINTF(20, ("Stopping UHCI %08lx\n", hc));
                 WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
                 SYNC;
 
                 //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
-                uhwDelayMS(10, hu, hd);
+                uhwDelayMS(10, hu);
 
                 KPRINTF(20, ("Resetting UHCI %08lx\n", hc));
                 WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
                 SYNC;
 
-                uhwDelayMS(50, hu, hd);
+                uhwDelayMS(50, hu);
                 WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
                 SYNC;
 
@@ -1523,18 +1523,18 @@ void pciFreeUnit(struct PCIUnit *hu)
                 WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, 0);
                 WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_UNPOWERHUB);
 
-                uhwDelayMS(50, hu, hd);
+                uhwDelayMS(50, hu);
                 KPRINTF(20, ("Stopping OHCI %08lx\n", hc));
                 CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, 0);
                 CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, 0);
                 SYNC;
 
                 //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
-                uhwDelayMS(10, hu, hd);
+                uhwDelayMS(10, hu);
                 KPRINTF(20, ("Resetting OHCI %08lx\n", hc));
                 CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
                 SYNC;
-                uhwDelayMS(50, hu, hd);
+                uhwDelayMS(50, hu);
 
                 KPRINTF(20, ("Shutting down OHCI done.\n"));
                 break;

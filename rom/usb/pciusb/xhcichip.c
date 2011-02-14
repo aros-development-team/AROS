@@ -27,7 +27,6 @@ AROS_UFH3(void, xhciResetHandler,
     ULONG timeout, temp;
 
     struct PCIUnit *hu = hc->hc_Unit;
-    struct PCIDevice *hd = hu->hu_Device;
 
 	/* Halt controller */
 	temp = opreg_readl(XHCI_USBCMD);
@@ -41,7 +40,7 @@ AROS_UFH3(void, xhciResetHandler,
             KPRINTF(1000, ("XHCI Controller halted!\n"));
             break;
         }
-        uhwDelayMS(10, hu, hd);
+        uhwDelayMS(10, hu);
     } while(--timeout);
 
     #ifdef DEBUG
@@ -54,6 +53,56 @@ AROS_UFH3(void, xhciResetHandler,
 	opreg_writel(XHCI_USBCMD, (temp | XHCF_CMD_HCRST));
 
     AROS_USERFUNC_EXIT
+}
+
+void xhciCompleteInt(struct PCIController *hc)
+{
+    KPRINTF(1, ("CompleteInt!\n"));
+
+    KPRINTF(1, ("CompleteDone\n"));
+}
+
+void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+{
+    struct PCIController *hc = (struct PCIController *) irq->h_Data;
+    struct PCIDevice *base = hc->hc_Device;
+    struct PCIUnit *unit = hc->hc_Unit;
+    ULONG intr, portn;
+
+    intr = opreg_readl(XHCI_USBSTS);
+    if(intr & XHCF_STS_EINT) {
+        /* Clear (RW1C) Event Interrupt (EINT) */
+        opreg_writel(XHCI_USBSTS, XHCF_STS_EINT);
+
+        if(hc->hc_Online) {
+            switch(intr) {
+                case XHCB_STS_HSE:
+                    KPRINTF(1000, ("Host System Error (HSE)!\n"));
+                    break;
+                case XHCB_STS_PCD:
+
+                    /* There are seven status change bits in the PORTSC register,
+                            Connect Status Change (CSC)
+                            Port Enabled/Disabled Change (PEC)
+                            Warm Port Reset Change (WRC)
+                            Over-current Change (OCC)
+                            Port Reset Change (PRC)
+                            Port Link State Change (PLC)
+                            Port Config Error Change (CEC)
+                    */
+                    for (portn = 1; portn <= hc->hc_NumPorts; portn++) {
+                        if (opreg_readl(XHCI_PORTSC(portn)) & (XHCF_PS_CSC|XHCF_PS_PEC|XHCF_PS_OCC|XHCF_PS_WRC|XHCF_PS_PRC|XHCF_PS_PLC|XHCF_PS_CEC))
+                        {
+                            KPRINTF(1000,("port %d changed\n", portn));
+                        }
+                    }
+                    break;
+                case XHCB_STS_SRE:
+                    KPRINTF(1000, ("Host Controller Error (HCE)!\n"));
+                    break;
+            }
+        }
+    }
 }
 
 IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
@@ -92,7 +141,6 @@ IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
 BOOL xhciResetHC(struct PCIController *hc) {
 
     struct PCIUnit *hu = hc->hc_Unit;
-    struct PCIDevice *hd = hu->hu_Device;
 
     ULONG timeout, temp;
 
@@ -108,7 +156,7 @@ BOOL xhciResetHC(struct PCIController *hc) {
             return TRUE;
             break;
         }
-        uhwDelayMS(10, hu, hd);
+        uhwDelayMS(10, hu);
     } while(--timeout);
 
     KPRINTF(1000, ("reset failed!\n"));
@@ -199,7 +247,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                    KPRINTF(1000, ("BIOS gave up on XHCI. Pwned!\n"));
                    break;
                }
-               uhwDelayMS(10, hu, hd);
+               uhwDelayMS(10, hu);
             } while(--timeout);
 
             if(!timeout) {
@@ -268,9 +316,6 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
 
-    /*FIXME: Get rid of this, only referenced by uhwDelayMS, but not actually used */
-    struct PCIDevice *hd = hu->hu_Device;
-
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
@@ -279,7 +324,7 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu) {
             case HCITYPE_XHCI:
             {
                 KPRINTF(1000, ("Shutting down XHCI %08lx\n", hc));
-                uhwDelayMS(50, hu, hd);
+                uhwDelayMS(50, hu);
                 SYNC;
                 KPRINTF(1000, ("Shutting down XHCI done.\n"));
                 break;

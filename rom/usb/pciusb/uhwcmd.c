@@ -78,37 +78,17 @@ BOOL uhwOpenTimer(struct PCIUnit *unit, struct PCIDevice *base)
 }
 /* \\\ */
 
-#define TimerBase unit->hu_TimerReq->tr_node.io_Device
-
 /* /// "uhwDelayMS()" */
-void uhwDelayMS(ULONG milli, struct PCIUnit *unit, struct PCIDevice *base)
+void uhwDelayMS(ULONG milli, struct PCIUnit *unit)
 {
-#if 0
-    struct timeval tv1;
-    struct timeval tv2;
-
-    GetSysTime(&tv1);
     unit->hu_TimerReq->tr_time.tv_secs  = 0;
     unit->hu_TimerReq->tr_time.tv_micro = milli * 1000;
     DoIO((struct IORequest *) unit->hu_TimerReq);
-    GetSysTime(&tv2);
-    SubTime(&tv2, &tv1);
-    if(tv2.tv_micro < milli * 1000)
-    {
-        KPRINTF(200, ("actual delay %ld s/%ld uS, should be %ld ms\n", tv2.tv_secs, tv2.tv_micro, milli));
-    } else {
-        KPRINTF(10, ("delta=%ld\n", tv2.tv_micro - milli * 1000));
-    }
-#else
-    unit->hu_TimerReq->tr_time.tv_secs  = 0;
-    unit->hu_TimerReq->tr_time.tv_micro = milli * 1000;
-    DoIO((struct IORequest *) unit->hu_TimerReq);
-#endif
 }
 /* \\\ */
 
 /* /// "uhwDelayMicro()" */
-void uhwDelayMicro(ULONG micro, struct PCIUnit *unit, struct PCIDevice *base)
+void uhwDelayMicro(ULONG micro, struct PCIUnit *unit)
 {
     unit->hu_TimerReq->tr_time.tv_secs  = 0;
     unit->hu_TimerReq->tr_time.tv_micro = micro;
@@ -245,7 +225,7 @@ WORD cmdReset(struct IOUsbHWReq *ioreq,
 {
     KPRINTF(10, ("CMD_RESET ioreq: 0x%08lx\n", ioreq));
 
-    uhwDelayMS(1, unit, base);
+    uhwDelayMS(1, unit);
     uhwGetUsbState(ioreq, unit, base);
 
     if(ioreq->iouh_State & UHSF_OPERATIONAL)
@@ -659,13 +639,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     newval |= UHPF_PORTRESET;
                                     WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(25, unit, base);
+                                    uhwDelayMS(25, unit);
                                     newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     // like windows does it
                                     newval &= ~UHPF_PORTRESET;
                                     WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMicro(50, unit, base);
+                                    uhwDelayMicro(50, unit);
                                     newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
                                     KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTRESET);
@@ -676,7 +656,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     cnt = 100;
                                     do
                                     {
-                                        uhwDelayMS(1, unit, base);
+                                        uhwDelayMS(1, unit);
                                         newval = READIO16_LE(hc->hc_RegBase, portreg);
                                     } while(--cnt && (!(newval & UHPF_PORTENABLE)));
                                     if(cnt)
@@ -739,21 +719,21 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     KPRINTF(10, ("Resetting Port (%s)\n", oldval & OHPF_PORTRESET ? "already" : "ok"));
                                     // make sure we have at least 50ms of reset time here, as required for a root hub port
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-                                    uhwDelayMS(10, unit, base);
+                                    uhwDelayMS(10, unit);
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-                                    uhwDelayMS(10, unit, base);
+                                    uhwDelayMS(10, unit);
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-                                    uhwDelayMS(10, unit, base);
+                                    uhwDelayMS(10, unit);
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-                                    uhwDelayMS(10, unit, base);
+                                    uhwDelayMS(10, unit);
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-                                    uhwDelayMS(15, unit, base);
+                                    uhwDelayMS(15, unit);
                                     oldval = READREG32_LE(hc->hc_RegBase, portreg);
                                     KPRINTF(10, ("OHCI Reset release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                  oldval & OHPF_PORTENABLE ? "enabled" : "not enabled"));
                                     if(oldval & OHPF_PORTRESET)
                                     {
-                                         uhwDelayMS(40, unit, base);
+                                         uhwDelayMS(40, unit);
                                          oldval = READREG32_LE(hc->hc_RegBase, portreg);
                                          KPRINTF(10, ("OHCI Reset 2nd release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                           oldval & OHPF_PORTENABLE ? "enabled" : "still not enabled"));
@@ -811,12 +791,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     newval &= ~(EHPF_PORTSUSPEND|EHPF_PORTENABLE);
                                     newval |= EHPF_PORTRESET;
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(50, unit, base);
+                                    uhwDelayMS(50, unit);
                                     newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND|EHPF_PORTENABLE);
                                     KPRINTF(10, ("Reset=%s\n", newval & EHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     newval &= ~EHPF_PORTRESET;
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-                                    uhwDelayMS(10, unit, base);
+                                    uhwDelayMS(10, unit);
                                     newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
                                     KPRINTF(10, ("Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
                                     KPRINTF(10, ("Highspeed=%s\n", newval & EHPF_PORTENABLE ? "YES!" : "NO"));
@@ -854,7 +834,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 KPRINTF(10, ("OHCI Port status before handover=%08lx\n", ohcioldval));
                                                 KPRINTF(10, ("Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok"));
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTPOWER);
-                                                uhwDelayMS(10, unit, base);
+                                                uhwDelayMS(10, unit);
                                                 KPRINTF(10, ("OHCI Port status after handover=%08lx\n", READREG32_LE(chc->hc_RegBase, ohciportreg)));
                                                 break;
                                             }
@@ -864,7 +844,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         newval |= EHPF_NOTPORTOWNER;
                                         unit->hu_EhciOwned[idx - 1] = FALSE;
                                         WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-                                        uhwDelayMS(90, unit, base);
+                                        uhwDelayMS(90, unit);
                                         KPRINTF(10, ("EHCI Port status (after handover)=%08lx\n", READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND)));
                                         // enable companion controller port
                                         switch(chc->hc_HCIType)
@@ -884,12 +864,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                     uhcinewval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                                     uhcinewval |= UHPF_PORTRESET;
                                                     WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
-                                                    uhwDelayMS(50, unit, base);
+                                                    uhwDelayMS(50, unit);
                                                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                                     KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                                     uhcinewval &= ~UHPF_PORTRESET;
                                                     WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
-                                                    uhwDelayMicro(50, unit, base);
+                                                    uhwDelayMicro(50, unit);
                                                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
                                                     KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD"));
                                                 }
@@ -897,11 +877,11 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 uhcinewval |= UHPF_PORTENABLE;
                                                 WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                                                 chc->hc_PortChangeMap[uhcihciport] |= UPSF_PORT_RESET|UPSF_PORT_ENABLE; // manually fake reset change
-                                                uhwDelayMS(5, unit, base);
+                                                uhwDelayMS(5, unit);
                                                 cnt = 100;
                                                 do
                                                 {
-                                                    uhwDelayMS(1, unit, base);
+                                                    uhwDelayMS(1, unit);
                                                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg);
                                                 } while(--cnt && (!(uhcinewval & UHPF_PORTENABLE)));
                                                 if(cnt)
@@ -922,21 +902,21 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 KPRINTF(10, ("OHCI Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok"));
                                                 // make sure we have at least 50ms of reset time here, as required for a root hub port
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                                                uhwDelayMS(10, unit, base);
+                                                uhwDelayMS(10, unit);
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                                                uhwDelayMS(10, unit, base);
+                                                uhwDelayMS(10, unit);
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                                                uhwDelayMS(10, unit, base);
+                                                uhwDelayMS(10, unit);
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                                                uhwDelayMS(10, unit, base);
+                                                uhwDelayMS(10, unit);
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                                                uhwDelayMS(15, unit, base);
+                                                uhwDelayMS(15, unit);
                                                 ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
                                                 KPRINTF(10, ("OHCI Reset release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                              ohcioldval & OHPF_PORTENABLE ? "enabled" : "not enabled"));
                                                 if(ohcioldval & OHPF_PORTRESET)
                                                 {
-                                                    uhwDelayMS(40, unit, base);
+                                                    uhwDelayMS(40, unit);
                                                     ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
                                                     KPRINTF(10, ("OHCI Reset 2nd release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                                      ohcioldval & OHPF_PORTENABLE ? "enabled" : "still not enabled"));
@@ -952,11 +932,11 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         newval &= ~EHPF_PORTRESET;
                                         WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
                                         hc->hc_PortChangeMap[hciport] |= UPSF_PORT_RESET; // manually fake reset change
-                                        uhwDelayMS(10, unit, base);
+                                        uhwDelayMS(10, unit);
                                         cnt = 100;
                                         do
                                         {
-                                            uhwDelayMS(1, unit, base);
+                                            uhwDelayMS(1, unit);
                                             newval = READREG32_LE(hc->hc_RegBase, portreg);
                                         } while(--cnt && (!(newval & EHPF_PORTENABLE)));
                                         if(cnt)
@@ -1665,7 +1645,7 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
     struct PCIController *hc;
 
     KPRINTF(10, ("UHCMD_INTXFER ioreq: 0x%08lx\n", ioreq));
-    //uhwDelayMS(1000, unit, base); /* Wait 200 ms */
+    //uhwDelayMS(1000, unit); /* Wait 200 ms */
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
     {
@@ -5293,62 +5273,6 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     }
 }
 /* \\\ */
-
-#if defined(USB3)
-/* /// "xhciCompleteInt()" */
-void xhciCompleteInt(struct PCIController *hc)
-{
-    KPRINTF(1, ("CompleteInt!\n"));
-
-    KPRINTF(1, ("CompleteDone\n"));
-}
-/* \\\ */
-
-/* /// "xhciIntCode()" */
-void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-    struct PCIController *hc = (struct PCIController *) irq->h_Data;
-    struct PCIDevice *base = hc->hc_Device;
-    struct PCIUnit *unit = hc->hc_Unit;
-    ULONG intr, portn;
-
-    intr = opreg_readl(XHCI_USBSTS);
-    if(intr & XHCF_STS_EINT) {
-        /* Clear (RW1C) Event Interrupt (EINT) */
-        opreg_writel(XHCI_USBSTS, XHCF_STS_EINT);
-
-        if(hc->hc_Online) {
-            switch(intr) {
-                case XHCB_STS_HSE:
-                    KPRINTF(1000, ("Host System Error (HSE)!\n"));
-                    break;
-                case XHCB_STS_PCD:
-
-                    /* There are seven status change bits in the PORTSC register,
-                            Connect Status Change (CSC)
-                            Port Enabled/Disabled Change (PEC)
-                            Warm Port Reset Change (WRC)
-                            Over-current Change (OCC)
-                            Port Reset Change (PRC)
-                            Port Link State Change (PLC)
-                            Port Config Error Change (CEC)
-                    */
-                    for (portn = 1; portn <= hc->hc_NumPorts; portn++) {
-                        if (opreg_readl(XHCI_PORTSC(portn)) & (XHCF_PS_CSC|XHCF_PS_PEC|XHCF_PS_OCC|XHCF_PS_WRC|XHCF_PS_PRC|XHCF_PS_PLC|XHCF_PS_CEC))
-                        {
-                            KPRINTF(1000,("port %d changed\n", portn));
-                        }
-                    }
-                    break;
-                case XHCB_STS_SRE:
-                    KPRINTF(1000, ("Host Controller Error (HCE)!\n"));
-                    break;
-            }
-        }
-    }
-}
-/* \\\ */
-#endif
 
 /* /// "uhwNakTimeoutInt()" */
 AROS_UFH1(void, uhwNakTimeoutInt,

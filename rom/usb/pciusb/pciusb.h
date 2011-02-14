@@ -57,10 +57,13 @@ struct PCIUnit
     LONG                  hu_UnitNo;
 
     struct PCIDevice     *hu_Device;         /* Uplink */
+
     struct MsgPort       *hu_MsgPort;
     struct timerequest   *hu_TimerReq;       /* Timer I/O Request */
+
     struct timerequest    hu_LateIOReq;      /* Timer I/O Request */
     struct MsgPort        hu_LateMsgPort;
+
     struct timerequest    hu_NakTimeoutReq;
     struct MsgPort        hu_NakTimeoutMsgPort;
     struct Interrupt      hu_NakTimeoutInt;
@@ -209,8 +212,6 @@ struct PCIDevice
 
     BOOL                hd_ScanDone;      /* PCI scan done? */
     APTR                hd_MemPool;       /* Memory Pool */
-
-    struct Device      *hd_TimerBase;     /* timer device base */
 
 	struct List         hd_Units;         /* List of units */
 };
