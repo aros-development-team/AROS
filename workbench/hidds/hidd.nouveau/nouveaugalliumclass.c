@@ -209,13 +209,20 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
     struct HIDDNouveauBitMapData srcdata;
     OOP_Object * bm = HIDD_BM_OBJ(msg->bitmap);
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
-    
+
     if (!HIDDNouveauWrapResource(carddata, msg->resource, &srcdata))
         return;
 
     /* srcdata does not require a lock, because it's a local object that is
        access only by one task at a time */
     LOCK_BITMAP_BM(dstdata)
+    /* XXX HACK XXX */
+    /* HACK: there seems to something wrong with blitting method. Without this
+    mapping, the blitting is jittering with high frame frames. Probably some
+    flush is missing somewhere and doing a mapping executes this missing flush 
+    */
+    MAP_BUFFER_BM(dstdata)
+    /* XXX HACK XXX */
     UNMAP_BUFFER_BM(dstdata)
 
     if (carddata->architecture < NV_ARCH_50)
