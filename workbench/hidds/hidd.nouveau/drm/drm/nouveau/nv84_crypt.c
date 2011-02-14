@@ -25,6 +25,7 @@
 #include "drmP.h"
 #include "nouveau_drv.h"
 #include "nouveau_util.h"
+#include "nouveau_vm.h"
 
 static void nv84_crypt_isr(struct drm_device *);
 
@@ -52,6 +53,7 @@ nv84_crypt_create_context(struct nouveau_channel *chan)
 	nv_wo32(ramin, 0xb4, 0);
 
 	dev_priv->engine.instmem.flush(dev);
+	atomic_inc(&chan->vm->pcrypt_refs);
 	return 0;
 }
 
@@ -79,12 +81,13 @@ nv84_crypt_destroy_context(struct nouveau_channel *chan)
 	nv_wr32(dev, 0x10200c, 0x00000010);
 
 	nouveau_gpuobj_ref(NULL, &chan->crypt_ctx);
+	atomic_dec(&chan->vm->pcrypt_refs);
 }
 
 void
 nv84_crypt_tlb_flush(struct drm_device *dev)
 {
-	nv50_vm_flush(dev, 0x0a);
+	nv50_vm_flush_engine(dev, 0x0a);
 }
 
 int

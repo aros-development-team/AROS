@@ -188,6 +188,21 @@ struct drm_pciid
 #define DRIVER_GEM         0x1000
 #define DRIVER_MODESET     0x2000
 
+/* Size of ringbuffer for vblank timestamps. Just double-buffer
+ * in initial implementation.
+ */
+#define DRM_VBLANKTIME_RBSIZE 2
+
+/* Flags and return codes for get_vblank_timestamp() driver function. */
+#define DRM_CALLED_FROM_VBLIRQ 1
+#define DRM_VBLANKTIME_SCANOUTPOS_METHOD (1 << 0)
+#define DRM_VBLANKTIME_INVBL             (1 << 1)
+
+/* get_scanout_position() return flags */
+#define DRM_SCANOUTPOS_VALID        (1 << 0)
+#define DRM_SCANOUTPOS_INVBL        (1 << 1)
+#define DRM_SCANOUTPOS_ACCURATE     (1 << 2)
+
 struct drm_driver
 {
     /* PCI */

@@ -355,7 +355,13 @@ struct drm_crtc {
 
 	bool enabled;
 
+	/* Requested mode from modesetting. */
 	struct drm_display_mode mode;
+
+	/* Programmed mode in hw, after adjustments for encoders,
+	 * crtc, panel scaling etc. Needed for timestamping etc.
+	 */
+	struct drm_display_mode hwmode;
 
 	int x, y;
 	const struct drm_crtc_funcs *funcs;
@@ -363,6 +369,9 @@ struct drm_crtc {
 	/* CRTC gamma size for reporting to userspace */
 	uint32_t gamma_size;
 	uint16_t *gamma_store;
+
+	/* Constants needed for precise vblank and swap timestamping. */
+	s64 framedur_ns, linedur_ns, pixeldur_ns;
 
 	/* if you are using the helper */
 	void *helper_private;
