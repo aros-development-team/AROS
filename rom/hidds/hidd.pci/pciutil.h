@@ -149,6 +149,7 @@ static const PCI_ClassCodes PCI_ClassTable[] =
     { 0x0c, 0x03, 0x00, "Serial", "USB", "UHCI" },
     { 0x0c, 0x03, 0x10, "Serial", "USB", "OHCI" },
     { 0x0c, 0x03, 0x20, "Serial", "USB", "EHCI" },
+    { 0x0c, 0x03, 0x30, "Serial", "USB", "XHCI" },
     { 0x0c, 0x03, 0x80, "Serial", "USB", "Other" },
     { 0x0c, 0x03, 0xfe, "Serial", "USB", "Device" },
     { 0x0c, 0x04, 0x00, "Serial", "Fibrechannel", "" },
