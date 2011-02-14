@@ -181,7 +181,6 @@ static void vblank_disable_and_save(struct drm_device *dev, int crtc)
 	spin_unlock_irqrestore(&dev->vblank_time_lock, irqflags);
 	preempt_enable();
 }
-#endif
 
 static void vblank_disable_fn(unsigned long arg)
 {
@@ -197,11 +196,7 @@ static void vblank_disable_fn(unsigned long arg)
 		if (atomic_read(&dev->vblank_refcount[i]) == 0 &&
 		    dev->vblank_enabled[i]) {
 			DRM_DEBUG("disabling vblank on crtc %d\n", i);
-#if !defined(__AROS__)
 			vblank_disable_and_save(dev, i);
-#else
-IMPLEMENT("Calling vblank_disable_and_save\n");
-#endif
 		}
 		spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
 	}
@@ -213,26 +208,18 @@ void drm_vblank_cleanup(struct drm_device *dev)
 	if (dev->num_crtcs == 0)
 		return;
 
-#if !defined(__AROS__)
 	del_timer(&dev->vblank_disable_timer);
-#endif
 
 	vblank_disable_fn((unsigned long)dev);
 
-#if !defined(__AROS__)
 	kfree(dev->vbl_queue);
-#endif
 	kfree(dev->_vblank_count);
 	kfree(dev->vblank_refcount);
 	kfree(dev->vblank_enabled);
 	kfree(dev->last_vblank);
-#if !defined(__AROS__)
 	kfree(dev->last_vblank_wait);
-#endif
 	kfree(dev->vblank_inmodeset);
-#if !defined(__AROS__)
 	kfree(dev->_vblank_time);
-#endif
 
 	dev->num_crtcs = 0;
 }
@@ -242,23 +229,17 @@ int drm_vblank_init(struct drm_device *dev, int num_crtcs)
 {
 	int i, ret = -ENOMEM;
 
-#if !defined(__AROS__)
 	setup_timer(&dev->vblank_disable_timer, vblank_disable_fn,
 		    (unsigned long)dev);
-#endif
 	spin_lock_init(&dev->vbl_lock);
-#if !defined(__AROS__)
 	spin_lock_init(&dev->vblank_time_lock);
-#endif
 
 	dev->num_crtcs = num_crtcs;
 
-#if !defined(__AROS__)
 	dev->vbl_queue = kmalloc(sizeof(wait_queue_head_t) * num_crtcs,
 				 GFP_KERNEL);
 	if (!dev->vbl_queue)
 		goto err;
-#endif
 
 	dev->_vblank_count = kmalloc(sizeof(atomic_t) * num_crtcs, GFP_KERNEL);
 	if (!dev->_vblank_count)
@@ -277,38 +258,30 @@ int drm_vblank_init(struct drm_device *dev, int num_crtcs)
 	if (!dev->last_vblank)
 		goto err;
 
-#if !defined(__AROS__)
 	dev->last_vblank_wait = kcalloc(num_crtcs, sizeof(u32), GFP_KERNEL);
 	if (!dev->last_vblank_wait)
 		goto err;
-#endif
 
 	dev->vblank_inmodeset = kcalloc(num_crtcs, sizeof(int), GFP_KERNEL);
 	if (!dev->vblank_inmodeset)
 		goto err;
 
-#if !defined(__AROS__)
 	dev->_vblank_time = kcalloc(num_crtcs * DRM_VBLANKTIME_RBSIZE,
 				    sizeof(struct timeval), GFP_KERNEL);
 	if (!dev->_vblank_time)
 		goto err;
-#endif
 
 	DRM_INFO("Supports vblank timestamp caching Rev 1 (10.10.2010).\n");
 
-#if !defined(__AROS__)
 	/* Driver specific high-precision vblank timestamping supported? */
 	if (dev->driver->get_vblank_timestamp)
 		DRM_INFO("Driver supports precise vblank timestamp query.\n");
 	else
 		DRM_INFO("No driver support for vblank timestamp query.\n");
-#endif
 
 	/* Zero per-crtc vblank stuff */
 	for (i = 0; i < num_crtcs; i++) {
-#if !defined(__AROS__)
 		init_waitqueue_head(&dev->vbl_queue[i]);
-#endif
 		atomic_set(&dev->_vblank_count[i], 0);
 		atomic_set(&dev->vblank_refcount[i], 0);
 	}
@@ -322,7 +295,6 @@ err:
 }
 EXPORT_SYMBOL(drm_vblank_init);
 
-#if !defined(__AROS__)
 static void drm_irq_vgaarb_nokms(void *cookie, bool state)
 {
 	struct drm_device *dev = cookie;
@@ -918,7 +890,6 @@ u32 drm_get_last_vbltimestamp(struct drm_device *dev, int crtc,
 	return 0;
 }
 EXPORT_SYMBOL(drm_get_last_vbltimestamp);
-#endif
 
 /**
  * drm_vblank_count - retrieve "cooked" vblank counter value
@@ -935,7 +906,6 @@ u32 drm_vblank_count(struct drm_device *dev, int crtc)
 }
 EXPORT_SYMBOL(drm_vblank_count);
 
-#if !defined(__AROS__)
 /**
  * drm_vblank_count_and_time - retrieve "cooked" vblank counter value
  * and the system timestamp corresponding to that vblank counter value.
@@ -1032,7 +1002,6 @@ static void drm_update_vblank_count(struct drm_device *dev, int crtc)
 
 	atomic_add(diff, &dev->_vblank_count[crtc]);
 }
-#endif
 
 /**
  * drm_vblank_get - get a reference count on vblank events
@@ -1047,7 +1016,6 @@ static void drm_update_vblank_count(struct drm_device *dev, int crtc)
  */
 int drm_vblank_get(struct drm_device *dev, int crtc)
 {
-#if !defined(__AROS__)
 	unsigned long irqflags, irqflags2;
 	int ret = 0;
 
@@ -1087,9 +1055,6 @@ int drm_vblank_get(struct drm_device *dev, int crtc)
 	spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
 
 	return ret;
-#else
-    return 0;
-#endif
 }
 EXPORT_SYMBOL(drm_vblank_get);
 
@@ -1107,31 +1072,22 @@ void drm_vblank_put(struct drm_device *dev, int crtc)
 
 	/* Last user schedules interrupt disable */
 	if (atomic_dec_and_test(&dev->vblank_refcount[crtc]) &&
-#if !defined(__AROS__)
 	    (drm_vblank_offdelay > 0))
 		mod_timer(&dev->vblank_disable_timer,
 			  jiffies + ((drm_vblank_offdelay * DRM_HZ)/1000));
-#else
-        (TRUE))
-        vblank_disable_fn((unsigned long)dev);
-#endif
 }
 EXPORT_SYMBOL(drm_vblank_put);
 
-#if !defined(__AROS__)
 void drm_vblank_off(struct drm_device *dev, int crtc)
 {
 	unsigned long irqflags;
 
 	spin_lock_irqsave(&dev->vbl_lock, irqflags);
 	vblank_disable_and_save(dev, crtc);
-#if !defined(__AROS__)
 	DRM_WAKEUP(&dev->vbl_queue[crtc]);
-#endif
 	spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
 }
 EXPORT_SYMBOL(drm_vblank_off);
-#endif
 
 /**
  * drm_vblank_pre_modeset - account for vblanks across mode sets
@@ -1179,7 +1135,6 @@ void drm_vblank_post_modeset(struct drm_device *dev, int crtc)
 }
 EXPORT_SYMBOL(drm_vblank_post_modeset);
 
-#if !defined(__AROS__)
 /**
  * drm_modeset_ctl - handle vblank event counter changes across mode switch
  * @DRM_IOCTL_ARGS: standard ioctl arguments
@@ -1425,7 +1380,6 @@ void drm_handle_vblank_events(struct drm_device *dev, int crtc)
 
 	trace_drm_vblank_event(crtc, seq);
 }
-#endif
 
 /**
  * drm_handle_vblank - handle a vblank event
@@ -1437,7 +1391,6 @@ void drm_handle_vblank_events(struct drm_device *dev, int crtc)
  */
 void drm_handle_vblank(struct drm_device *dev, int crtc)
 {
-#if !defined(__AROS__)
 	u32 vblcount;
 	s64 diff_ns;
 	struct timeval tvblank;
@@ -1497,6 +1450,6 @@ void drm_handle_vblank(struct drm_device *dev, int crtc)
 	drm_handle_vblank_events(dev, crtc);
 
 	spin_unlock_irqrestore(&dev->vblank_time_lock, irqflags);
-#endif
 }
 EXPORT_SYMBOL(drm_handle_vblank);
+#endif

@@ -448,10 +448,14 @@ nv50_display_vblank_crtc_handler(struct drm_device *dev, int crtc)
 		nouveau_bo_wr32(chan->notifier_bo, chan->nvsw.vblsem_offset,
 						chan->nvsw.vblsem_rval);
 		list_del(&chan->nvsw.vbl_wait);
+#if !defined(__AROS__)
 		drm_vblank_put(dev, crtc);
+#endif
 	}
 
+#if !defined(__AROS__)
 	drm_handle_vblank(dev, crtc);
+#endif
 }
 
 static void

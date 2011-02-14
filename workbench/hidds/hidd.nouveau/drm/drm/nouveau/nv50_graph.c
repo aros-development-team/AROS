@@ -397,7 +397,9 @@ nv50_graph_nvsw_vblsem_release(struct nouveau_channel *chan,
 	if (!chan->nvsw.vblsem || chan->nvsw.vblsem_offset == ~0 || data > 1)
 		return -EINVAL;
 
+#if !defined(__AROS__)
 	drm_vblank_get(dev, data);
+#endif
 
 	chan->nvsw.vblsem_head = data;
 	list_add(&chan->nvsw.vbl_wait, &dev_priv->vbl_waiting);
