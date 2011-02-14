@@ -1,6 +1,6 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: nouveau_drv.c 33731 2010-06-29 18:29:56Z deadwood $
 */
 
 #include "drmP.h"
@@ -9,13 +9,11 @@
 #include "nouveau_pciids.h"
 
 /* Whether pushbuf and notifer are to be put in VRAM (access via 
-   pci mapping) or in GART (accessed by card - SGDMA or AGP) 
-   Setting nouveau_vram_pushbuf to 1 causes problems */
+   pci mapping) or in GART (accessed by card - SGDMA or AGP)*/
+/* Setting nouveau_vram_pushbuf to 1 causes problems */
 int nouveau_vram_pushbuf = 0;
 int nouveau_vram_notify = 0;
-int nouveau_noagp = 0;
 int nouveau_noaccel = 0;
-int nouveau_ctxfw = 0; /* Use external ctxprog for NV40 */
 char *nouveau_vbios = NULL; /* Override default VBIOS location */
 /* Register access debug bitmask:
 0x1 mc, 0x2 video, 0x4 fb, 0x8 extdev, 0x10 crtc, 0x20 ramdac, 0x40 vgacrtc, 
@@ -36,6 +34,12 @@ int nouveau_uscript_tmds = -1;
 int nouveau_override_conntype = 0;
 /* Disable TV-out detection */
 int nouveau_tv_disable = 0;
+/* 0 to disable AGP */
+int nouveau_agpmode = -1;
+/* Enable MSI */
+int nouveau_msi = 0;
+/* Force POST */
+int nouveau_force_post = 0;
 
 
 extern struct drm_ioctl_desc nouveau_ioctls[];
@@ -61,6 +65,9 @@ static struct drm_driver driver =
     .irq_preinstall = nouveau_irq_preinstall,
     .irq_postinstall = nouveau_irq_postinstall,
     .irq_uninstall = nouveau_irq_uninstall,
+    .get_vblank_counter = drm_vblank_count,
+    .enable_vblank = nouveau_vblank_enable,
+    .disable_vblank = nouveau_vblank_disable,
     .version_patchlevel = NOUVEAU_DRM_HEADER_PATCHLEVEL,
     .ioctls = nouveau_ioctls,
     .gem_init_object = nouveau_gem_object_new,

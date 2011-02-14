@@ -1,10 +1,11 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: drm_drv.c 33568 2010-06-13 11:11:33Z deadwood $
 */
 
 #include "drmP.h"
 #include "drm_aros.h"
+#include "drm_global.h"
 
 struct drm_driver *current_drm_driver = NULL;
 
@@ -97,6 +98,8 @@ static int drm_init_device(struct drm_driver * driver)
 
 int drm_init(struct drm_driver * driver)
 {
+    drm_global_init();
+
     if (drm_aros_pci_init(driver))
         return -1;
 

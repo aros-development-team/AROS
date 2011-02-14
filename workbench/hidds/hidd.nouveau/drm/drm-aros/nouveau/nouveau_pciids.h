@@ -1,6 +1,6 @@
 /*
     Copyright 2009, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: nouveau_pciids.h 34292 2010-08-29 19:14:11Z deadwood $
 */
 
 #if !defined(NOVUEAU_PCIIDS_H)
@@ -442,6 +442,9 @@ struct drm_pciid nouveau_pciids [] =
     { 0x10de, 0x0cb0 }, /* GT215 [GeForce GTS 350M] */
     { 0x10de, 0x0cb1 }, /* GT215 [GeForce GTS 360M] */
     { 0x10de, 0x0cbc }, /* GT215 [Quadro FX 1800M] */
+    { 0x10de, 0x0dc4 }, /* GF106 [GeForce 450 GTS] */
+    { 0x10de, 0x0e22 }, /* GF104 [GeForce GTX 460] */
+    { 0x10de, 0x10c3 }, /* G98 [GeForce 8400GS] */
     
     { 0x0000, 0x0000 }
 };
