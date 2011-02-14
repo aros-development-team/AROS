@@ -231,9 +231,6 @@ struct drm_driver
     void        (*irq_preinstall)(struct drm_device *);
     int         (*irq_postinstall)(struct drm_device *);
     void        (*irq_uninstall)(struct drm_device *);
-    u32         (*get_vblank_counter) (struct drm_device *dev, int crtc);    
-    int         (*enable_vblank) (struct drm_device *dev, int crtc);
-    void        (*disable_vblank) (struct drm_device *dev, int crtc);
 
     /* GEM */
     int         (*gem_init_object) (struct drm_gem_object *obj);
@@ -267,17 +264,6 @@ struct drm_device
     struct idr object_name_idr;
     uint32_t invalidate_domains;    /* domains pending invalidation */
     uint32_t flush_domains;         /* domains pending flush */
-
-    /* VBLANK handling */
-    int *vblank_enabled;
-    int *vblank_inmodeset;
-    spinlock_t vbl_lock;
-    int vblank_disable_allowed;
-    int num_crtcs;
-    atomic_t *vblank_refcount;
-    u32 max_vblank_count;
-    u32 *last_vblank;               /* protected by dev->vbl_lock, used for wraparound handling */
-    atomic_t *_vblank_count;		
 
     /* AROS specific fields */
     OOP_Object              *pdev;

@@ -671,8 +671,6 @@ nouveau_card_init(struct drm_device *dev)
 
 #if !defined(__AROS__)
 	nouveau_pm_init(dev);
-#else
-IMPLEMENT("nouveau_pm_init(dev);\n");
 #endif
 
 	ret = nouveau_mem_vram_init(dev);
@@ -734,9 +732,11 @@ IMPLEMENT("nouveau_pm_init(dev);\n");
 	if (ret)
 		goto out_fifo;
 
+#if !defined(__AROS__)
 	ret = drm_vblank_init(dev, nv_two_heads(dev) ? 2 : 1);
 	if (ret)
 		goto out_vblank;
+#endif
 
 	ret = nouveau_irq_init(dev);
 	if (ret)
@@ -769,7 +769,9 @@ out_fence:
 out_irq:
 	nouveau_irq_fini(dev);
 out_vblank:
+#if !defined(__AROS__)
 	drm_vblank_cleanup(dev);
+#endif
 	engine->display.destroy(dev);
 out_fifo:
 	if (!nouveau_noaccel)
@@ -846,12 +848,12 @@ static void nouveau_card_takedown(struct drm_device *dev)
 	nouveau_mem_vram_fini(dev);
 
 	nouveau_irq_fini(dev);
+#if !defined(__AROS__)
 	drm_vblank_cleanup(dev);
+#endif
 
 #if !defined(__AROS__)
 	nouveau_pm_fini(dev);
-#else
-IMPLEMENT("nouveau_pm_fini(dev);\n");
 #endif
 	nouveau_bios_takedown(dev);
 
