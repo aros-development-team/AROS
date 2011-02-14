@@ -18,7 +18,7 @@ struct Unit *Open_Unit(struct IOUsbHWReq *ioreq,
 void Close_Unit(struct PCIDevice *base, struct PCIUnit *unit,
                 struct IOUsbHWReq *ioreq);
 
-void uhwDelayMS(ULONG milli, struct PCIUnit *unit, struct PCIDevice *base);
+void uhwDelayMS(ULONG milli, struct PCIUnit *unit);
 
 WORD cmdReset(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
