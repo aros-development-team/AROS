@@ -20,9 +20,13 @@
  * Send a ^C to the SetPatchAROS to unload it.
  */
 
+#define MINSTACK	8192
+
 #include <aros/asmcall.h>
 #include <dos/stdio.h>
 #include <proto/utility.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 
 #include <rom/dos/internalloadseg_elf.c>
 
@@ -123,8 +127,8 @@ static AROS_UFH5(APTR, myCreateProc,
 {
     AROS_USERFUNC_INIT
 
-    if (stacksize < 8192)
-    	stacksize = 8192;
+    if (stacksize < MINSTACK)
+    	stacksize = MINSTACK;
     else
     	stacksize += 1024;
 
@@ -145,9 +149,8 @@ static AROS_UFH2(APTR, myCreateNewProc,
 {
     AROS_USERFUNC_INIT
 
-    APTR proc;
-    struct TagItem *tstate, *tmp, *found;
-    int tags, test;
+    struct TagItem *tstate, *tmp, *found, fake[2];
+    int tags;
 
     tstate = tag;
     found = NULL;
@@ -160,30 +163,23 @@ static AROS_UFH2(APTR, myCreateNewProc,
     }
 
     Printf("Tags:  %ld\n", (LONG)tags);
-    Printf("Found: 0x%lx 0x%lx (0x%lx %ld)\n", (LONG)NP_StackSize, (LONG)found, found->ti_Tag, found->ti_Data);
     if (found == NULL) {
-	tmp = AllocMem(sizeof(struct TagItem)*(tags+1), MEMF_ANY);
-	if (tmp == NULL)
-	    return NULL;
-	CopyMem(tag, &tmp[1], sizeof(struct TagItem)*tags);
-	tmp[0].ti_Tag = NP_StackSize;
-	tmp[0].ti_Data = 8192;
-	tag = tmp;
-    } else
-    {
-    	if (found->ti_Data <= 8192)
-    	    found->ti_Data = 8192;
+    	Printf("Fake: (0x%lx %ld)\n", (LONG)NP_StackSize, MINSTACK);
+	fake[0].ti_Tag = NP_StackSize;
+	fake[0].ti_Data = MINSTACK;
+	fake[1].ti_Tag = TAG_MORE;
+	fake[1].ti_Data = (IPTR)tag;
+	tag = &fake[0];
+    } else {
+    	Printf("Found: 0x%lx (%ld)\n", (LONG)found, found->ti_Data);
+    	if (found->ti_Data <= MINSTACK)
+    	    found->ti_Data = MINSTACK;
     	else
     	    found->ti_Data += 1024;
     }
-    Printf("Found: 0x%lx (%ld)\n", (LONG)found, found->ti_Data);
-    proc = AROS_UFC2(APTR, oldCreateNewProc,
+    return AROS_UFC2(APTR, oldCreateNewProc,
     	    AROS_UFCA(struct TagItem *, tag, D1),
     	    AROS_UFCA(struct DosLibrary *, DOSBase, A6));
-    if (found == NULL) {
-    	FreeMem(tmp, sizeof(struct TagItem)*(tags+1));
-    }
-    return proc;
 
     AROS_USERFUNC_EXIT
 }
