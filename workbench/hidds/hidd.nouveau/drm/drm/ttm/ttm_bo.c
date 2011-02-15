@@ -1785,11 +1785,6 @@ int ttm_bo_wait(struct ttm_buffer_object *bo,
 
 	if (likely(bo->sync_obj == NULL))
 		return 0;
-#if defined(__AROS__)
-    /* Be sure always to wait until fence is signalled. See note in
-       ttm_bo_cleanup_refs_or_queue */
-    no_wait = false;
-#endif		
 
 	while (bo->sync_obj) {
 		if (driver->sync_obj_signaled(bo->sync_obj, bo->sync_obj_arg)) {
