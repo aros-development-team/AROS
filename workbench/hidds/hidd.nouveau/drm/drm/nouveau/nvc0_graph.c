@@ -304,7 +304,9 @@ static int
 nvc0_graph_mthd_page_flip(struct nouveau_channel *chan,
 			  u32 class, u32 mthd, u32 data)
 {
+#if !defined(__AROS__)
 	nouveau_finish_page_flip(chan, NULL);
+#endif
 	return 0;
 }
 

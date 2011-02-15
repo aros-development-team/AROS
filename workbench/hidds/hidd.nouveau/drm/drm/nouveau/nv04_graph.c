@@ -560,12 +560,14 @@ int
 nv04_graph_mthd_page_flip(struct nouveau_channel *chan,
 			  u32 class, u32 mthd, u32 data)
 {
+#if !defined(__AROS__)
 	struct drm_device *dev = chan->dev;
 	struct nouveau_page_flip_state s;
 
 	if (!nouveau_finish_page_flip(chan, &s))
 		nv_set_crtc_base(dev, s.crtc,
 				 s.offset + s.y * s.pitch + s.x * s.bpp / 8);
+#endif
 
 	return 0;
 }
