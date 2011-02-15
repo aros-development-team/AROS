@@ -564,9 +564,10 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         "mov    %0,%%es\n\t"    /* registers (segment descriptors).    */
         "mov    %0,%%ss\n\t"    /* AROS uses only %CS %SS %DS and %ES  */
         "mov    %1,%%fs\n\t"    /* %FS and %GS are set to 0 so we can  */
-        "mov    %1,%%gs"        /* generate GP if someone uses them.   */
+        "mov    %1,%%gs\n\t"    /* generate GP if someone uses them.   */
+        "ljmp   %2,$1f\n1:\n\t" /* And finally, set the %CS!!!         */
         :
-        :"a"(KERNEL_DS),"b"(0));
+        :"a"(KERNEL_DS),"b"(0),"i"(KERNEL_CS));
 
     asm("ltr    %%ax"::"ax"(0x30));
 
@@ -1592,15 +1593,6 @@ unsigned char setupVesa(struct multiboot *mbinfo)
 	    mbinfo->vbe_mode = mode;
 	} else
 	    rkprintf("[VESA] mode setting error: 0x%04X\n", r);
-    }
-    else
-    {
-        /* XXX HACK XXX */
-        /* Without this hack, asm("sti") in exec_cinit crashes AROS */
-        unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
-        void *vesa_start = &_binary_vesa_start;
-        memcpy((void *)0x1000, vesa_start, vesa_size);
-        findMode(640, 480, 8, 60, 1);
     }
     return palwidth;
 }
