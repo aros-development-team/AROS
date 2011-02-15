@@ -228,14 +228,19 @@ int main(int argc, char **argv)
 
    DOSBase = (APTR)OpenLibrary("dos.library", 0);
    if (DOSBase != NULL) {
+       Disable();
+
        oldCreateProc    = SetFunction(DOSBase, -23 * LIB_VECTSIZE, myCreateProc);
        oldCreateNewProc = SetFunction(DOSBase, -83 * LIB_VECTSIZE, myCreateNewProc);
        oldLoadSeg       = SetFunction(DOSBase, -25 * LIB_VECTSIZE, myLoadSeg);
+       Enable();
        PutStr("AROS Support active. Press ^C to unload.\n");
        Wait(SIGBREAKF_CTRL_C);
+       Disable();
        SetFunction(DOSBase, -25 * LIB_VECTSIZE, oldLoadSeg);
        SetFunction(DOSBase, -83 * LIB_VECTSIZE, oldCreateNewProc);
        SetFunction(DOSBase, -23 * LIB_VECTSIZE, oldCreateProc);
+       Enable();
        PutStr("AROS Support unloaded.\n");
        CloseLibrary(DOSBase);
    }
