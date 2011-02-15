@@ -117,11 +117,18 @@ AROS_LH1(struct aroscbase *, open,
 	   struct aroscbase *, aroscbase, 1, arosc)
 {
     AROS_LIBFUNC_INIT
+
+    struct Task *me = FindTask(NULL);
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
 	at the same time. Take care.
     */
+    if (!(me->tc_Flags & TF_ETASK) || GetIntETask(me)==NULL) {
+    	/* No ETask? No arosc.library.
+    	 */
+    	return NULL;
+    }
 
     /* Keep compiler happy */
     version=0;
