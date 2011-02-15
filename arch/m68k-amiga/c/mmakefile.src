@@ -5,16 +5,19 @@ include $(TOP)/config/make.cfg
 
 FILES := SetPatchAROS
 
+AFILES := newstackswap
+
 USER_CFLAGS := -I$(SRCDIR)
+USER_AFLAGS := -I$(GENINCDIR) -Os
 
 #MM- workbench-c-quick : workbench-c-arch-quick
 
 #MM workbench-c-arch : includes linklibs workbench-c-arch-elf
 #MM workbench-c-arch-quick : workbench-c-arch-elf-quick
 
-%build_progs mmake=workbench-c-arch-elf \
-    files=$(FILES) targetdir=$(AROS_C)/ELF \
-    uselibs="arossupport amiga arosc m"
+%build_prog mmake=workbench-c-arch-elf progname=SetPatchAROS \
+    files=$(FILES) asmfiles=$(AFILES) targetdir=$(AROS_C)/ELF \
+    uselibs="arossupport amiga"
 
 workbench-c-arch: workbench-c-arch-elf
 	@$(FOR) file in $(FILES) ; do \

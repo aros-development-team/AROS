@@ -71,6 +71,7 @@ static AROS_UFH3(void, FreeFunc,
 }
 
 static APTR oldLoadSeg;
+extern void myNewStackSwap(void);
 
 static AROS_UFH2(BPTR, myLoadSeg,
 	AROS_UFHA(CONST_STRPTR, name, D1),
@@ -96,7 +97,29 @@ static AROS_UFH2(BPTR, myLoadSeg,
        /* Is it the ELF magic? */
        len = FRead(file, &magic, 1, sizeof(magic));
        if (len == sizeof(magic) && magic == 0x7f454c46) { /* ELF magic */
-           segs = InternalLoadSeg_ELF(file, BNULL, FunctionArray, NULL, DOSBase);
+           struct StackSwapStruct sss;
+           struct StackSwapArgs ssa;
+           
+           sss.stk_Lower = AllocMem(8192, MEMF_ANY);
+           if (sss.stk_Lower == NULL) {
+               Close(file);
+               return NULL;
+           }
+           sss.stk_Upper = sss.stk_Lower + 8192;
+           sss.stk_Pointer = sss.stk_Upper;
+           ssa.Args[0] = (IPTR)file;
+           ssa.Args[1] = (IPTR)BNULL;
+           ssa.Args[2] = (IPTR)FunctionArray;
+           ssa.Args[3] = (IPTR)NULL;
+           ssa.Args[4] = (IPTR)DOSBase;
+
+           segs = (BPTR)AROS_UFC4(IPTR, myNewStackSwap,
+           	   	AROS_UFHA(struct StackSwapStruct *, &sss, A0),
+           	   	AROS_UFHA(LONG_FUNC, InternalLoadSeg_ELF, A1),
+           	   	AROS_UFHA(struct StackSwapArgs *, &ssa, A2),
+           	   	AROS_UFHA(struct ExecBase *, SysBase, A6));
+           FreeMem(sss.stk_Lower, 8192);
+
            if (segs) {
                if ((LONG)segs > 0) {
                    Close(file);
@@ -106,6 +129,9 @@ static AROS_UFH2(BPTR, myLoadSeg,
                SetIoErr(0);
                return segs;
            }
+
+           Close(file);
+           return NULL;
        }
        Close(file);
    }
