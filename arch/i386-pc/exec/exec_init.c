@@ -1593,6 +1593,15 @@ unsigned char setupVesa(struct multiboot *mbinfo)
 	} else
 	    rkprintf("[VESA] mode setting error: 0x%04X\n", r);
     }
+    else
+    {
+        /* XXX HACK XXX */
+        /* Without this hack, asm("sti") in exec_cinit crashes AROS */
+        unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
+        void *vesa_start = &_binary_vesa_start;
+        memcpy((void *)0x1000, vesa_start, vesa_size);
+        findMode(640, 480, 8, 60, 1);
+    }
     return palwidth;
 }
 
