@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sets up the ExecBase a bit. (Mostly clearing).
@@ -252,14 +252,13 @@ static struct ExecBase *PrepareEB(struct MemHeader *mh, struct ExecBase *oldSysB
 	      AROS_UFCA(CONST_APTR, NULL, A2),
 	      struct ExecBase *, SysBase);
 
-    if (oldSysBase) {
-    	SysBase->ColdCapture = ColdCapture;
-    	SysBase->CoolCapture = CoolCapture;
-    	SysBase->WarmCapture = WarmCapture;
-    	SysBase->KickMemPtr = KickMemPtr;
-    	SysBase->KickTagPtr = KickTagPtr;
-    	SysBase->KickCheckSum = KickCheckSum;
-    }
+    /* Bring back saved values (or NULLs) */
+    SysBase->ColdCapture = ColdCapture;
+    SysBase->CoolCapture = CoolCapture;
+    SysBase->WarmCapture = WarmCapture;
+    SysBase->KickMemPtr = KickMemPtr;
+    SysBase->KickTagPtr = KickTagPtr;
+    SysBase->KickCheckSum = KickCheckSum;
 
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;
