@@ -340,16 +340,16 @@ fail_free:
 	kfree(s);
 	return ret;
 #else
-IMPLEMENT("\n");
-return 0;
+    /* No-op under AROS */
+    return 0;
 #endif
 }
 
+#if !defined(__AROS__)
 int
 nouveau_finish_page_flip(struct nouveau_channel *chan,
 			 struct nouveau_page_flip_state *ps)
 {
-#if !defined(__AROS__)
 	struct drm_device *dev = chan->dev;
 	struct nouveau_page_flip_state *s;
 	unsigned long flags;
@@ -383,8 +383,5 @@ nouveau_finish_page_flip(struct nouveau_channel *chan,
 
 	spin_unlock_irqrestore(&dev->event_lock, flags);
 	return 0;
-#else
-IMPLEMENT("\n");
-return 0;
-#endif
 }
+#endif

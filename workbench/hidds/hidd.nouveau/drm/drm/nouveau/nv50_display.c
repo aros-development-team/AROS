@@ -378,6 +378,7 @@ nv50_display_destroy(struct drm_device *dev)
 void
 nv50_display_flip_stop(struct drm_crtc *crtc)
 {
+#if !defined(__AROS__)
 	struct nv50_display *disp = nv50_display(crtc->dev);
 	struct nouveau_crtc *nv_crtc = nouveau_crtc(crtc);
 	struct nv50_display_crtc *dispc = &disp->crtc[nv_crtc->index];
@@ -399,12 +400,16 @@ nv50_display_flip_stop(struct drm_crtc *crtc)
 	BEGIN_RING(evo, 0, 0x0080, 1);
 	OUT_RING  (evo, 0x00000000);
 	FIRE_RING (evo);
+#else
+    /* No-op under AROS */
+#endif
 }
 
 int
 nv50_display_flip_next(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 		       struct nouveau_channel *chan)
 {
+#if !defined(__AROS__)
 	struct drm_nouveau_private *dev_priv = crtc->dev->dev_private;
 	struct nouveau_framebuffer *nv_fb = nouveau_framebuffer(fb);
 	struct nv50_display *disp = nv50_display(crtc->dev);
@@ -488,6 +493,9 @@ nv50_display_flip_next(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 
 	dispc->sem.offset ^= 0x10;
 	dispc->sem.value++;
+#else
+    /* No-op under AROS */
+#endif
 	return 0;
 }
 
