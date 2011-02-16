@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Patch a library or device function
@@ -10,6 +10,7 @@
 #include <proto/intuition.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
 #include "exec_debug.h"
 
 #ifndef DEBUG_SetFunction
@@ -64,7 +65,13 @@
 	NewOpen must be prepared with AROS_UFH macros.
 
     BUGS
-	None.
+	This contains a hack to fix dos.library/ramlib attempts to
+	setfunction exec functions. Because of this, a funcOffset
+	of more than 32 kB be truncated. This hack will also fix
+	other programs only using the lower 16 bits of funcOffset
+	and leaving garbage in the upper 16 bits.
+
+	These programs should be fixed.
 
     SEE ALSO
 	MakeLibrary(), MakeFunctions(), SumLibrary()
@@ -75,11 +82,43 @@
 {
     AROS_LIBFUNC_INIT
     APTR ret;
+    ULONG *vecaddr;
 
     D(bug("SetFunction(%s, %lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, funcOffset, (ULONG)newFunction));
 
-    /* Vector pre-processing for non-native machines: */
-    funcOffset = (-funcOffset) / LIB_VECTSIZE;
+    /*
+	Fix dos.library/ramlib attempts to SetFunction() CloseDevice/
+	CloseLibrary/RemDevice/RemLibrary/OpenDevice/OpenLibrary.
+
+	This also effectively limits the max offset to 32k, but this limit was
+	already in the original, though not really documented.
+
+	What happens is this: the prototype for the funcOffset says it is a
+	long, but the autodoc also says that only a0.w (lower 16 bits) is used.
+	Dos.library/ramlib only sets the lower 16 bits of a0 to the required
+	offset, without sign-extending to the upper 16 bits, in fact without
+	even clearing them. These high 16 bits will therefore contain garbage:
+
+	SetFunction(exec.library, 7804fe3e, fc6524) = 30303030 CloseDevice
+	SetFunction(exec.library, 3030fe62, fc6528) = 30303030 CloseLibrary
+	SetFunction(exec.library, 3030fe4a, fc651c) = 30303030 RemDevice
+	SetFunction(exec.library, 3030fe6e, fc6520) = 30303030 RemLibrary
+	SetFunction(exec.library, 3030fe44, fc6564) = 30303030 OpenDevice
+	SetFunction(exec.library, 3030fdd8, fc659a) = 30303030 OpenLibrary
+
+	In my [ldp] opinion, the autodoc should never have said that only A0.W
+	is used for the funcOffset, while specifying a "long" in the prototype.
+	This will stay broken and this fix will stay here until we fix
+	dos.library/ramlib.
+    */
+    if (funcOffset & 0x00008000)
+    {
+	funcOffset |= 0xffff0000;
+    }
+    else
+    {
+	funcOffset &= 0x0000ffff;
+    }
 
     /*
 	Arbitrate for the jumptable. This isn't enough for interrupt callable
@@ -90,15 +129,17 @@
     /* Mark the library as changed. */
     library->lib_Flags|=LIBF_CHANGED;
 
-    /* Get old vector. */
-    ret = __AROS_GETVECADDR (library, funcOffset);
+    /* The following section is coded like this (instead of using the macros),
+       because else gcc will output 64-bit muls instructions, that are not
+       present on the 68060 (and will crash it). It's faster this way, too. :) */
+    vecaddr = (APTR)((ULONG)library + funcOffset);
 
-    /* Don't forget to initialise the vector, or else there would be no actual
-       assembler jump instruction in the vector */
-    __AROS_INITVEC (library, funcOffset);
+    /* Get the old vector pointer */
+    ret = (APTR)*(ULONG *)(((ULONG)vecaddr)+2);
 
-    /* Write new one. */
-    __AROS_SETVECADDR (library, funcOffset, newFunction);
+    /* Set new vector and jmp instruction */
+    *(UWORD *)vecaddr = 0x4ef9;
+    *(ULONG *)(((ULONG)vecaddr)+2) = (ULONG)newFunction;
 
 #if 1
     /* And clear the instruction cache. */
