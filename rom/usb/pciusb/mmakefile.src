@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES :=    pci_aros xhcichip dev uhwcmd debug
+FILES :=    pci_aros ehcichip xhcichip dev uhwcmd debug
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
 

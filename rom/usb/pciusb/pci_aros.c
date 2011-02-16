@@ -136,21 +136,6 @@ static AROS_UFH3(void, OhciResetHandler,
 }
 /* \\\ */
 
-/* /// "EhciResetHandler()" */
-static AROS_UFH3(void, EhciResetHandler,
-                 AROS_UFHA(struct PCIController *, hc, A1),
-                 AROS_UFHA(APTR, unused, A5),
-                 AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    // reset controller
-    CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
-
-    AROS_USERFUNC_EXIT
-}
-/* \\\ */
-
 /* /// "pciInit()" */
 BOOL pciInit(struct PCIDevice *hd)
 {
@@ -351,7 +336,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 {
     struct PCIDevice *hd = hu->hu_Device;
     struct PCIController *hc;
-    struct PCIController *usb20hc = NULL;
+
     BOOL allocgood = TRUE;
     ULONG usb11ports;
     ULONG usb20ports;
@@ -359,8 +344,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     ULONG usb30ports;
 #endif
     ULONG cnt;
-    BOOL complexrouting = FALSE;
-    ULONG portroute = 0;
+
     ULONG ohcicnt = 0;
     ULONG uhcicnt = 0;
     ULONG ehcicnt = 0;
@@ -386,7 +370,6 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             { aHidd_PCIDevice_isMaster, FALSE },
             { TAG_DONE, 0UL },
     };
-
 
     struct TagItem pciActivateBusmaster[] =
     {
@@ -934,290 +917,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
                 case HCITYPE_EHCI:
                 {
-                    struct EhciQH *eqh;
-                    struct EhciQH *predeqh;
-                    struct EhciTD *etd;
-                    ULONG *tabptr;
-                    UBYTE *memptr;
-                    ULONG bitcnt;
-                    ULONG hcsparams;
-                    ULONG hccparams;
-                    volatile APTR pciregbase;
-                    ULONG extcapoffset;
-                    ULONG legsup;
-                    ULONG timeout;
-
-                    usb20hc = hc;
-
-                    hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
-                    hc->hc_CompleteInt.is_Node.ln_Name = "EHCI CompleteInt";
-                    hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
-                    hc->hc_CompleteInt.is_Data = hc;
-                    hc->hc_CompleteInt.is_Code = (void (*)(void)) &ehciCompleteInt;
-
-                    /*
-                        FIXME: We should be able to read some EHCI registers before allocating memory
-                    */
-                    /*
-                        FIXME: Check the real size from USBCMD Frame List Size field (bits3:2)
-                        and set the value accordingly if Frame List Flag in the HCCPARAMS indicates RW for the field
-                        else use default value of EHCI_FRAMELIST_SIZE (1024)
-                    */
-                    hc->hc_PCIMemSize = sizeof(ULONG) * EHCI_FRAMELIST_SIZE + EHCI_FRAMELIST_ALIGNMENT + 1;
-                    hc->hc_PCIMemSize += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
-                    hc->hc_PCIMemSize += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
-
-                    memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
-                    if(!memptr)
-                    {
-                        allocgood = FALSE;
-                        break;
-                    }
-
-                    hc->hc_PCIMem = (APTR) memptr;
-                    // PhysicalAddress - VirtualAdjust = VirtualAddress
-                    // VirtualAddress  + VirtualAdjust = PhysicalAddress
-                    hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
-                    KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
-
-                    // align memory
-                    memptr = (UBYTE *) ((((ULONG) hc->hc_PCIMem) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
-                    hc->hc_EhciFrameList = (ULONG *) memptr;
-                    KPRINTF(10, ("FrameListBase 0x%08lx\n", hc->hc_EhciFrameList));
-                    memptr += sizeof(APTR) * EHCI_FRAMELIST_SIZE;
-
-                    // build up QH pool
-                    eqh = (struct EhciQH *) memptr;
-                    hc->hc_EhciQHPool = eqh;
-                    cnt = EHCI_QH_POOLSIZE - 1;
-                    do
-                    {
-                        // minimal initalization
-                        eqh->eqh_Succ = (eqh + 1);
-                        WRITEMEM32_LE(&eqh->eqh_Self, (ULONG) (&eqh->eqh_NextQH) + hc->hc_PCIVirtualAdjust + EHCI_QUEUEHEAD);
-                        CONSTWRITEMEM32_LE(&eqh->eqh_NextTD, EHCI_TERMINATE);
-                        CONSTWRITEMEM32_LE(&eqh->eqh_AltNextTD, EHCI_TERMINATE);
-                        eqh++;
-                    } while(--cnt);
-                    eqh->eqh_Succ = NULL;
-                    WRITEMEM32_LE(&eqh->eqh_Self, (ULONG) (&eqh->eqh_NextQH) + hc->hc_PCIVirtualAdjust + EHCI_QUEUEHEAD);
-                    CONSTWRITEMEM32_LE(&eqh->eqh_NextTD, EHCI_TERMINATE);
-                    CONSTWRITEMEM32_LE(&eqh->eqh_AltNextTD, EHCI_TERMINATE);
-                    memptr += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
-
-                    // build up TD pool
-                    etd = (struct EhciTD *) memptr;
-                    hc->hc_EhciTDPool = etd;
-                    cnt = EHCI_TD_POOLSIZE - 1;
-                    do
-                    {
-                        etd->etd_Succ = (etd + 1);
-                        WRITEMEM32_LE(&etd->etd_Self, (ULONG) (&etd->etd_NextTD) + hc->hc_PCIVirtualAdjust);
-                        etd++;
-                    } while(--cnt);
-                    etd->etd_Succ = NULL;
-                    WRITEMEM32_LE(&etd->etd_Self, (ULONG) (&etd->etd_NextTD) + hc->hc_PCIVirtualAdjust);
-                    memptr += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
-
-                    // empty async queue head
-                    hc->hc_EhciAsyncFreeQH = NULL;
-                    hc->hc_EhciAsyncQH = eqh = ehciAllocQH(hc);
-                    eqh->eqh_Succ = eqh;
-                    eqh->eqh_Pred = eqh;
-                    CONSTWRITEMEM32_LE(&eqh->eqh_EPCaps, EQEF_RECLAMHEAD);
-                    eqh->eqh_NextQH = eqh->eqh_Self;
-
-                    // empty terminating queue head
-                    hc->hc_EhciTermQH = eqh = ehciAllocQH(hc);
-                    eqh->eqh_Succ = NULL;
-                    CONSTWRITEMEM32_LE(&eqh->eqh_NextQH, EHCI_TERMINATE);
-                    predeqh = eqh;
-
-                    // 1 ms INT QH
-                    hc->hc_EhciIntQH[0] = eqh = ehciAllocQH(hc);
-                    eqh->eqh_Succ = predeqh;
-                    predeqh->eqh_Pred = eqh;
-                    eqh->eqh_Pred = NULL; // who knows...
-                    //eqh->eqh_NextQH = predeqh->eqh_Self;
-                    predeqh = eqh;
-
-                    // make 11 levels of QH interrupts
-                    for(cnt = 1; cnt < 11; cnt++)
-                    {
-                        hc->hc_EhciIntQH[cnt] = eqh = ehciAllocQH(hc);
-                        eqh->eqh_Succ = predeqh;
-                        eqh->eqh_Pred = NULL; // who knows...
-                        //eqh->eqh_NextQH = predeqh->eqh_Self; // link to previous int level
-                        predeqh = eqh;
-                    }
-
-                    ehciUpdateIntTree(hc);
-
-                    // fill in framelist with IntQH entry points based on interval
-                    tabptr = hc->hc_EhciFrameList;
-                    for(cnt = 0; cnt < EHCI_FRAMELIST_SIZE; cnt++)
-                    {
-                        eqh = hc->hc_EhciIntQH[10];
-                        bitcnt = 0;
-                        do
-                        {
-                            if(cnt & (1UL<<bitcnt))
-                            {
-                                eqh = hc->hc_EhciIntQH[bitcnt];
-                                break;
-                            }
-                        } while(++bitcnt < 11);
-                        *tabptr++ = eqh->eqh_Self;
-                    }
-
-                    etd = hc->hc_ShortPktEndTD = ehciAllocTD(hc);
-                    etd->etd_Succ = NULL;
-                    CONSTWRITEMEM32_LE(&etd->etd_NextTD, EHCI_TERMINATE);
-                    CONSTWRITEMEM32_LE(&etd->etd_AltNextTD, EHCI_TERMINATE);
-                    CONSTWRITEMEM32_LE(&etd->etd_CtrlStatus, 0);
-
-                    // time to initialize hardware...
-                    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
-                    pciregbase = (APTR) (((IPTR) pciregbase) & (~0xf));
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // activate memory
-
-                    extcapoffset = (READREG32_LE(pciregbase, EHCI_HCCPARAMS) & EHCM_EXTCAPOFFSET)>>EHCS_EXTCAPOFFSET;
-
-                    while(extcapoffset >= 0x40)
-                    {
-                        KPRINTF(10, ("EHCI has extended caps at 0x%08lx\n", extcapoffset));
-                        legsup = PCIXReadConfigLong(hc, extcapoffset);
-                        if(((legsup & EHLM_CAP_ID) >> EHLS_CAP_ID) == 0x01)
-                        {
-                            if(legsup & EHLF_BIOS_OWNER)
-                            {
-                                KPRINTF(10, ("BIOS still has hands on EHCI, trying to get rid of it\n"));
-                                legsup |= EHLF_OS_OWNER;
-                                PCIXWriteConfigLong(hc, extcapoffset, legsup);
-                                timeout = 100;
-                                do
-                                {
-                                    legsup = PCIXReadConfigLong(hc, extcapoffset);
-                                    if(!(legsup & EHLF_BIOS_OWNER))
-                                    {
-                                        KPRINTF(10, ("BIOS gave up on EHCI. Pwned!\n"));
-                                        break;
-                                    }
-                                    uhwDelayMS(10, hu);
-                                } while(--timeout);
-                                if(!timeout)
-                                {
-                                    KPRINTF(10, ("BIOS didn't release EHCI. Forcing and praying...\n"));
-                                    legsup |= EHLF_OS_OWNER;
-                                    legsup &= ~EHLF_BIOS_OWNER;
-                                    PCIXWriteConfigLong(hc, extcapoffset, legsup);
-                                }
-                            }
-                            /* disable all SMIs */
-                            PCIXWriteConfigLong(hc, extcapoffset + 4, 0);
-                            break;
-                        }
-                        extcapoffset = (legsup & EHCM_EXTCAPOFFSET)>>EHCS_EXTCAPOFFSET;
-                    }
-
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
-
-                    // we use the operational registers as RegBase.
-                    hc->hc_RegBase = (APTR) ((ULONG) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));
-                    KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
-
-                    KPRINTF(10, ("Resetting EHCI HC\n"));
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
-                    uhwDelayMS(10, hu);
-                    cnt = 100;
-                    do
-                    {
-                        uhwDelayMS(10, hu);
-                        if(!(READREG32_LE(hc->hc_RegBase, EHCI_USBCMD) & EHUF_HCRESET))
-                        {
-                            break;
-                        }
-                    } while(--cnt);
-
-#ifdef DEBUG
-                    if(cnt == 0)
-                    {
-                        KPRINTF(20, ("Reset Timeout!\n"));
-                    } else {
-                        KPRINTF(20, ("Reset finished after %ld ticks\n", 100-cnt));
-                    }
-#endif
-
-                    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
-
-                    // Read HCSPARAMS register to obtain number of downstream ports
-                    hcsparams = READREG32_LE(pciregbase, EHCI_HCSPARAMS);
-                    hccparams = READREG32_LE(pciregbase, EHCI_HCCPARAMS);
-
-                    hc->hc_NumPorts = (hcsparams & EHSM_NUM_PORTS)>>EHSS_NUM_PORTS;
-                    KPRINTF(20, ("Found EHCI Controller %08lx with %ld ports (%ld companions with %ld ports each)\n",
-                                 hc->hc_PCIDeviceObject, hc->hc_NumPorts,
-                                 (hcsparams & EHSM_NUM_COMPANIONS)>>EHSS_NUM_COMPANIONS,
-                                 (hcsparams & EHSM_PORTS_PER_COMP)>>EHSS_PORTS_PER_COMP));
-                    if(hcsparams & EHSF_EXTPORTROUTING)
-                    {
-                        complexrouting = TRUE;
-                        portroute = READREG32_LE(pciregbase, EHCI_HCSPPORTROUTE);
-#ifdef DEBUG
-                        for(cnt = 0; cnt < hc->hc_NumPorts; cnt++)
-                        {
-                            KPRINTF(100, ("Port %ld maps to controller %ld\n", cnt, ((portroute >> (cnt<<2)) & 0xf)));
-                        }
-#endif
-                    }
-                    KPRINTF(20, ("HCCParams: 64 Bit=%s, ProgFrameList=%s, AsyncSchedPark=%s\n",
-                                 (hccparams & EHCF_64BITS) ? "Yes" : "No",
-                                 (hccparams & EHCF_PROGFRAMELIST) ? "Yes" : "No",
-                                 (hccparams & EHCF_ASYNCSCHEDPARK) ? "Yes" : "No"));
-                    hc->hc_EhciUsbCmd = (1UL<<EHUS_INTTHRESHOLD);
-                    if(hccparams & EHCF_ASYNCSCHEDPARK)
-                    {
-                        KPRINTF(20, ("Enabling AsyncSchedParkMode with MULTI_3\n"));
-                        hc->hc_EhciUsbCmd |= EHUF_ASYNCSCHEDPARK|(3<<EHUS_ASYNCPARKCOUNT);
-                    }
-                    WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, hc->hc_EhciUsbCmd);
-
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT, 0);
-
-                    WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, (ULONG) pciGetPhysical(hc, hc->hc_EhciFrameList));
-                    WRITEREG32_LE(hc->hc_RegBase, EHCI_ASYNCADDR, AROS_LONG2LE(hc->hc_EhciAsyncQH->eqh_Self));
-
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, EHSF_ALL_INTS);
-
-                    // install reset handler
-                    hc->hc_ResetInt.is_Code = EhciResetHandler;
-                    hc->hc_ResetInt.is_Data = hc;
-                    AddResetCallback(&hc->hc_ResetInt);
-
-                    // add interrupt
-                    hc->hc_PCIIntHandler.h_Node.ln_Name = "EHCI PCI (pciusb.device)";
-                    hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
-                    hc->hc_PCIIntHandler.h_Code = ehciIntCode;
-                    hc->hc_PCIIntHandler.h_Data = hc;
-                    HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
-
-                    hc->hc_PCIIntEnMask = EHSF_ALL_INTS;
-                    WRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, hc->hc_PCIIntEnMask);
-
-                    CacheClearE(hc->hc_EhciFrameList, sizeof(ULONG) * EHCI_FRAMELIST_SIZE,      CACRF_ClearD);
-                    CacheClearE(hc->hc_EhciQHPool,    sizeof(struct EhciQH) * EHCI_QH_POOLSIZE, CACRF_ClearD);
-                    CacheClearE(hc->hc_EhciTDPool,    sizeof(struct EhciTD) * EHCI_TD_POOLSIZE, CACRF_ClearD);
-                    
-                    CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_CONFIGFLAG, EHCF_CONFIGURED);
-                    hc->hc_EhciUsbCmd |= EHUF_RUNSTOP|EHUF_PERIODICENABLE|EHUF_ASYNCENABLE;
-                    WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, hc->hc_EhciUsbCmd);
-                    SYNC;
-
-                    KPRINTF(20, ("HW Init done\n"));
-
-                    KPRINTF(10, ("HW Regs USBCMD=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBCMD)));
-                    KPRINTF(10, ("HW Regs USBSTS=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS)));
-                    KPRINTF(10, ("HW Regs FRAMECOUNT=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT)));
+                    allocgood = ehciInit(hc,hu);
                     break;
                 }
 #if defined(USB3)
@@ -1304,12 +1004,12 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     {
         if((hc->hc_HCIType == HCITYPE_UHCI) || (hc->hc_HCIType == HCITYPE_OHCI))
         {
-            if(complexrouting)
+            if(hc->hc_complexrouting)
             {
                 ULONG locport = 0;
                 for(cnt = 0; cnt < usb20ports; cnt++)
                 {
-                    if(((portroute >> (cnt<<2)) & 0xf) == hc->hc_FunctionNum)
+                    if(((hc->hc_portroute >> (cnt<<2)) & 0xf) == hc->hc_FunctionNum)
                     {
                         KPRINTF(10, ("CHC %ld Port %ld assigned to global Port %ld\n", hc->hc_FunctionNum, locport, cnt));
                         hu->hu_PortMap11[cnt] = hc;
@@ -1442,44 +1142,8 @@ void pciFreeUnit(struct PCIUnit *hu)
 #if defined(USB3)
     xhciFree(hc, hu);
 #endif
-
     // doing this in three steps to avoid these damn host errors
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
-    {
-        switch(hc->hc_HCIType)
-        {
-            case HCITYPE_EHCI:
-            {
-                UWORD portreg;
-                UWORD hciport;
-                KPRINTF(20, ("Shutting down EHCI %08lx\n", hc));
-                CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, 0);
-                // disable all ports
-                for(hciport = 0; hciport < hc->hc_NumPorts; hciport++)
-                {
-                    portreg = EHCI_PORTSC1 + (hciport<<2);
-                    WRITEREG32_LE(hc->hc_RegBase, portreg, 0);
-                }
-                CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, 1UL<<EHUS_INTTHRESHOLD);
-                uhwDelayMS(10, hu);
-                CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_CONFIGFLAG, 0);
-                CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
-                SYNC;
-
-                uhwDelayMS(50, hu);
-                CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, 1UL<<EHUS_INTTHRESHOLD);
-                SYNC;
-
-                uhwDelayMS(10, hu);
-
-                KPRINTF(20, ("Shutting down EHCI done.\n"));
-                break;
-            }
-        }
-
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
-    }
+    ehciFree(hc, hu);
 
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)

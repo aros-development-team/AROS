@@ -12,13 +12,14 @@
 #endif
 #include "pciusb.h"
 
-struct Unit *Open_Unit(struct IOUsbHWReq *ioreq,
-                       LONG unitnr,
-                       struct PCIDevice *base);
-void Close_Unit(struct PCIDevice *base, struct PCIUnit *unit,
-                struct IOUsbHWReq *ioreq);
+struct Unit *Open_Unit(struct IOUsbHWReq *ioreq, LONG unitnr, struct PCIDevice *base);
+void Close_Unit(struct PCIDevice *base, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
 
+void SureCause(struct PCIDevice *base, struct Interrupt *interrupt);
+BOOL uhwOpenTimer(struct PCIUnit *unit, struct PCIDevice *base);
 void uhwDelayMS(ULONG milli, struct PCIUnit *unit);
+void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *ioreq);
+void uhwCheckRootHubChanges(struct PCIUnit *unit);
 
 WORD cmdReset(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
@@ -71,13 +72,21 @@ static inline void ohciFreeED(struct PCIController *hc, struct OhciED *oed);
 static inline struct OhciTD * ohciAllocTD(struct PCIController *hc);
 static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd);
 
-
+BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu);
+void ehciFree(struct PCIController *hc, struct PCIUnit *hu);
 void ehciCompleteInt(struct PCIController *hc);
 void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
-void ehciUpdateIntTree(struct PCIController *hc);
 void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh);
 void ehciFreePeriodicContext(struct PCIController *hc, struct EhciQH *eqh);
+void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh);
+void ehciUpdateIntTree(struct PCIController *hc);
+void ehciHandleFinishedTDs(struct PCIController *hc);
+void ehciScheduleCtrlTDs(struct PCIController *hc);
+void ehciScheduleIntTDs(struct PCIController *hc);
+void ehciScheduleBulkTDs(struct PCIController *hc);
+void ehciUpdateFrameCounter(struct PCIController *hc);
+
 static inline struct EhciQH * ehciAllocQH(struct PCIController *hc);
 static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
 static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
@@ -89,6 +98,13 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 void xhciCompleteInt(struct PCIController *hc);
 void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 #endif
+
+UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset);
+UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset);
+ULONG PCIXReadConfigLong(struct PCIController *hc, UBYTE offset);
+void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value);
+void PCIXWriteConfigWord(struct PCIController *hc, ULONG offset, UWORD value);
+void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value);
 
 struct my_NSDeviceQueryResult
 {
