@@ -24,7 +24,7 @@
 /*
  * displays requester on screen or puts text to the debug buffer
  */
-LONG showPtrArgsText(struct AFSBase *afsbase, char *string, enum showReqType type, ULONG *args) 
+LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, ULONG *args) 
 {
 	char* options[] =
 	{
