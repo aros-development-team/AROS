@@ -65,7 +65,7 @@
 #define	XHCB_U2DEV_LAT  16
 
 #define	XHCM_U1DEV_LAT  (((1UL<<8)-1)<<XHCB_U1DEV_LAT)
-#define	XHCM_U2DEV_LAT  (((1UL<<8)-1)<<XHCB_U2DEV_LAT)
+#define	XHCM_U2DEV_LAT  (((1UL<<16)-1)<<XHCB_U2DEV_LAT)
 
 
 /* XHCI_HCCPARAMS defines */
@@ -249,10 +249,10 @@
 #define	XHCF_PS_PED     (1UL<<XHCB_PS_PED)
 #define	XHCF_PS_OCA     (1UL<<XHCB_PS_OCA)
 #define	XHCF_PS_PR      (1UL<<XHCB_PS_PR)
-#define	XHCM_PS_PLS     (((1UL<<16)-1)<<XHCB_PS_PLS)
+#define	XHCM_PS_PLS     (((1UL<<4)-1)<<XHCB_PS_PLS)
 #define	XHCF_PS_PP      (1UL<<XHCB_PS_PP)
-#define	XHCM_PS_SPEED   (((1UL<<16)-1)<<XHCB_PS_SPEED)
-#define	XHCM_PS_PIC     (((1UL<<16)-1)<<XHCB_PS_PIC)
+#define	XHCM_PS_SPEED   (((1UL<<4)-1)<<XHCB_PS_SPEED)
+#define	XHCM_PS_PIC     (((1UL<<2)-1)<<XHCB_PS_PIC)
 #define	XHCF_PS_LWS     (1UL<<XHCB_PS_LWS)
 #define	XHCF_PS_CSC     (1UL<<XHCB_PS_CSC)
 #define	XHCF_PS_PEC     (1UL<<XHCB_PS_PEC)
