@@ -42,6 +42,7 @@
 
 /* HUB class specific descriptors */
 #define UDT_HUB               0x29
+#define UDT_HUBSS             0x2a  /* SuperSpeed hub descriptor */
 
 /* Usb Class Specific Descriptor: Hub Descriptor */
 struct  UsbHubDesc
