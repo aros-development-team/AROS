@@ -77,32 +77,32 @@ void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         opreg_writel(XHCI_USBSTS, XHCF_STS_EINT);
 
         if(hc->hc_Online) {
-            switch(intr) {
-                case XHCB_STS_HSE:
-                    KPRINTF(1000, ("Host System Error (HSE)!\n"));
-                    break;
-                case XHCB_STS_PCD:
 
-                    /* There are seven status change bits in the PORTSC register,
-                            Connect Status Change (CSC)
-                            Port Enabled/Disabled Change (PEC)
-                            Warm Port Reset Change (WRC)
-                            Over-current Change (OCC)
-                            Port Reset Change (PRC)
-                            Port Link State Change (PLC)
-                            Port Config Error Change (CEC)
-                    */
-                    for (portn = 1; portn <= hc->hc_NumPorts; portn++) {
-                        if (opreg_readl(XHCI_PORTSC(portn)) & (XHCF_PS_CSC|XHCF_PS_PEC|XHCF_PS_OCC|XHCF_PS_WRC|XHCF_PS_PRC|XHCF_PS_PLC|XHCF_PS_CEC))
-                        {
-                            KPRINTF(1000,("port %d changed\n", portn));
-                        }
-                    }
-                    break;
-                case XHCB_STS_SRE:
-                    KPRINTF(1000, ("Host Controller Error (HCE)!\n"));
-                    break;
+            if(intr & XHCF_STS_HSE) {
+                KPRINTF(1000, ("Host System Error (HSE)!\n"));
             }
+
+            if(intr & XHCF_STS_PCD) {
+                /* There are seven status change bits in the PORTSC register,
+                        Connect Status Change (CSC)
+                        Port Enabled/Disabled Change (PEC)
+                        Warm Port Reset Change (WRC)
+                        Over-current Change (OCC)
+                        Port Reset Change (PRC)
+                        Port Link State Change (PLC)
+                        Port Config Error Change (CEC)
+                */
+                for (portn = 1; portn <= hc->hc_NumPorts; portn++) {
+                    if (opreg_readl(XHCI_PORTSC(portn)) & (XHCF_PS_CSC|XHCF_PS_PEC|XHCF_PS_OCC|XHCF_PS_WRC|XHCF_PS_PRC|XHCF_PS_PLC|XHCF_PS_CEC)) {
+                            KPRINTF(1000,("port %d changed\n", portn));
+                    }
+                }
+            }
+
+            if(intr & XHCF_STS_SRE) {
+                KPRINTF(1000, ("Host Controller Error (HCE)!\n"));
+            }
+
         }
     }
 }
@@ -112,31 +112,31 @@ IPTR xhciExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
     IPTR extcapoff = (IPTR) 0;
     ULONG cnt = XHCI_EXT_CAPS_MAX;
 
-    KPRINTF(1000,("search for ext cap with id(%ld)\n", id));
+    KPRINTF(100,("search for ext cap with id(%ld)\n", id));
 
     if(extcap) {
-        KPRINTF(1000, ("continue search from %p\n", extcap));
+        KPRINTF(100, ("continue search from %p\n", extcap));
         extcap = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32_LE(extcap));
     } else {  
         extcap = (IPTR) hc->xhc_capregbase + XHCV_xECP(capreg_readl(XHCI_HCCPARAMS));
-        KPRINTF(1000, ("search from the beginning %p\n", extcap));
+        KPRINTF(100, ("search from the beginning %p\n", extcap));
     }
 
     do {
         extcap += extcapoff;
         if((XHCV_EXT_CAPS_ID(READMEM32_LE(extcap)) == id)) {
-            KPRINTF(1000, ("found matching ext cap %lx\n", extcap));
+            KPRINTF(100, ("found matching ext cap %lx\n", extcap));
             return (IPTR) extcap;
         }
         #if DEBUG
         if(extcap)
-            KPRINTF(1000, ("skipping ext cap with id(%ld)\n", XHCV_EXT_CAPS_ID(READMEM32_LE(extcap))));
+            KPRINTF(100, ("skipping ext cap with id(%ld)\n", XHCV_EXT_CAPS_ID(READMEM32_LE(extcap))));
         #endif
         extcapoff = (IPTR) XHCV_EXT_CAPS_NEXT(READMEM32_LE(extcap));
         cnt--;
     } while(cnt & extcapoff);
 
-    KPRINTF(1000, ("not found!\n"));
+    KPRINTF(100, ("not found!\n"));
     return (IPTR) 0;
 }
 
@@ -228,9 +228,10 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     KPRINTF(1000, ("Pagesize 2^(n+12) = %lx\n",hc->xhc_pagesize));
 
     hc->hc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
+
+    KPRINTF(1000, ("MaxPorts %lx\n",hc->hc_NumPorts));
     KPRINTF(1000, ("MaxSlots %lx\n",XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))));
     KPRINTF(1000, ("MaxIntrs %lx\n",XHCV_MaxIntrs(capreg_readl(XHCI_HCSPARAMS1))));
-    KPRINTF(1000, ("MaxPorts %lx\n",hc->hc_NumPorts));
 
     extcap = xhciExtCap(hc, XHCI_EXT_CAPS_LEGACY, 0);
     if(extcap) {
@@ -269,13 +270,18 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     if(xhciResetHC(hc)) {
 
+        for(cnt = 1; cnt <=hc->hc_NumPorts; cnt++) {
+            temp = opreg_readl(XHCI_PORTSC(cnt));
+            KPRINTF(1000, ("Port #%d speed is %d\n",cnt, (temp&XHCM_PS_SPEED)>>XHCB_PS_SPEED ));
+        }
+
         hc->hc_PCIMemSize = 1024;   //Arbitrary number
         hc->hc_PCIMemSize += ((hc->xhc_scratchbufs) * (hc->xhc_pagesize));
 
         memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
+        hc->hc_PCIMem = (APTR) memptr;
 
         if(memptr) {
-            hc->hc_PCIMem = (APTR) memptr;
             // PhysicalAddress - VirtualAdjust = VirtualAddress
             // VirtualAddress  + VirtualAdjust = PhysicalAddress
             hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
@@ -292,25 +298,32 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
             hc->hc_ResetInt.is_Data = hc;
             AddResetCallback(&hc->hc_ResetInt);
 
-            // add interrupt
+            /* Clears (RW1C) Host System Error(HSE), Event Interrupt(EINT), Port Change Detect(PCD) and Save/Restore Error(SRE) */
+            temp = opreg_readl(XHCI_USBSTS);
+            opreg_writel(XHCI_USBSTS, temp);
+
+            // add interrupt handler
             hc->hc_PCIIntHandler.h_Node.ln_Name = "XHCI PCI (pciusb.device)";
             hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
             hc->hc_PCIIntHandler.h_Code = xhciIntCode;
             hc->hc_PCIIntHandler.h_Data = hc;
             HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
 
+            /* After reset all notifications should be automatically disabled but ensure anyway */
+            opreg_writel(XHCI_DNCTRL, 0);
+
             /* Program the Max Device Slots Enabled (MaxSlotsEn) field */
-            /* FIXME: This field shall not be modified by software if the xHC is running (Run/Stop (R/S) = ‘1’) */
-            opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | hc->hc_NumPorts) );
+            opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG)&~XHCM_CONFIG_MaxSlotsEn) | XHCV_MaxSlots(capreg_readl(XHCI_HCSPARAMS1))) );
 
             /* Program the Device Context Base Address Array Pointer (DCBAAP) */
 
             /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
 
+            /* Set Run/Stop(R/S), Interrupter Enable(INTE) and Host System Error Enable(HSEE) */
+            opreg_writel(XHCI_USBCMD, (XHCF_CMD_RS | XHCF_CMD_INTE | XHCF_CMD_HSEE) );
+
             KPRINTF(1000, ("xhciInit returns TRUE...\n"));
             return TRUE;
-        } else {
-            hc->hc_PCIMem = 0;
         }
     }
 
