@@ -698,15 +698,15 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             } else {
                 splitctrl = EQSF_MULTI_1;
             }
-            if(ioreq->iouh_Interval < 2) // 0-1 ÂµFrames
+            if(ioreq->iouh_Interval < 2) // 0-1 µFrames
             {
                 splitctrl |= (0xff<<EQSS_MUSOFACTIVE);
             }
-            else if(ioreq->iouh_Interval < 4) // 2-3 ÂµFrames
+            else if(ioreq->iouh_Interval < 4) // 2-3 µFrames
             {
                 splitctrl |= (0x55<<EQSS_MUSOFACTIVE);
             }
-            else if(ioreq->iouh_Interval < 8) // 4-7 ÂµFrames
+            else if(ioreq->iouh_Interval < 8) // 4-7 µFrames
             {
                 splitctrl |= (0x22<<EQSS_MUSOFACTIVE);
             }
@@ -721,7 +721,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, splitctrl);
             if(ioreq->iouh_Interval >= 1024)
             {
-                inteqh = hc->hc_EhciIntQH[10]; // 1024ÂµFrames interval
+                inteqh = hc->hc_EhciIntQH[10]; // 1024 µFrames interval
             } else {
                 cnt = 0;
                 do
@@ -1191,8 +1191,9 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         FIXME: We should be able to read some EHCI registers before allocating memory
     */
     memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
+    hc->hc_PCIMem = (APTR) memptr;
+
     if(memptr) {
-        hc->hc_PCIMem = (APTR) memptr;
         // PhysicalAddress - VirtualAdjust = VirtualAddress
         // VirtualAddress  + VirtualAdjust = PhysicalAddress
         hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
