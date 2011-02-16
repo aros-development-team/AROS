@@ -275,10 +275,18 @@ static AROS_UFH2(APTR, myCreateNewProc,
  */
 int main(int argc, char **argv)
 {
-   struct DOSBase *DOSBase;
+   APTR DOSBase;
 
-   DOSBase = (APTR)OpenLibrary("dos.library", 0);
+   DOSBase = OpenLibrary("dos.library", 0);
    if (DOSBase != NULL) {
+       struct Library *sbl = (APTR)SysBase;
+       if (sbl->lib_Version > 40) {
+       	   FPrintf(Error(), "SetPatchAROS: Unsupported exec.library %ld.%ld\n",
+       	   	   sbl->lib_Version, sbl->lib_Revision);
+       	   CloseLibrary((APTR)DOSBase);
+       	   return RETURN_ERROR;
+       }
+
        Disable();
 
        oldRawDoFmt      = SetFunction(SysBase, -87 * LIB_VECTSIZE, myRawDoFmt);
