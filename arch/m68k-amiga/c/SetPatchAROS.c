@@ -28,6 +28,52 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+/*************  ExecBase Patches ********************/
+
+static APTR oldRawDoFmt;
+static AROS_UFH5(APTR, myRawDoFmt,
+	AROS_UFHA(CONST_STRPTR, fmt, A0),
+	AROS_UFHA(APTR,        args, A1),
+	AROS_UFHA(VOID_FUNC,  putch, A2),
+	AROS_UFHA(APTR,      putptr, A3),
+	AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    /* moveb %d0, %a3@+
+     * rts
+     */
+    const ULONG m68k_string = 0x16c04e75;
+    /* addql #1, %a3@
+     * rts
+     */
+    const ULONG m68k_count  = 0x52934e75;
+    /* jmp %a6@(-86 * 6)
+     */
+    const ULONG m68k_serial = 0x4eeefdfc;
+
+    switch ((IPTR)putch) {
+    case RAWFMTFUNC_STRING:
+    	putch = (VOID_FUNC)&m68k_string;
+    	break;
+    case RAWFMTFUNC_COUNT:
+    	putch = (VOID_FUNC)&m68k_count;
+    	break;
+    case RAWFMTFUNC_SERIAL:
+    	putch = (VOID_FUNC)&m68k_serial;
+    	break;
+    default:
+    	break;
+    }
+
+    return AROS_UFC5(APTR, myRawDoFmt,
+	AROS_UFCA(CONST_STRPTR, fmt, A0),
+	AROS_UFCA(APTR,        args, A1),
+	AROS_UFCA(VOID_FUNC,  putch, A2),
+	AROS_UFCA(APTR,      putptr, A3),
+	AROS_UFCA(struct ExecBase *, SysBase, A6));
+}
+
+/*************  DosLibrary Patches ******************/
+
 #include <rom/dos/internalloadseg_elf.c>
 
 static AROS_UFH4(LONG, ReadFunc,
@@ -210,7 +256,6 @@ static AROS_UFH2(APTR, myCreateNewProc,
     AROS_USERFUNC_EXIT
 }
 
-
 /* Really stupid way to deal with this,
  * but what we're going to do is make our
  * patches, and wait for a ^C.
@@ -230,6 +275,7 @@ int main(int argc, char **argv)
    if (DOSBase != NULL) {
        Disable();
 
+       oldRawDoFmt      = SetFunction(SysBase, -87 * LIB_VECTSIZE, myRawDoFmt);
        oldCreateProc    = SetFunction(DOSBase, -23 * LIB_VECTSIZE, myCreateProc);
        oldCreateNewProc = SetFunction(DOSBase, -83 * LIB_VECTSIZE, myCreateNewProc);
        oldLoadSeg       = SetFunction(DOSBase, -25 * LIB_VECTSIZE, myLoadSeg);
@@ -240,6 +286,7 @@ int main(int argc, char **argv)
        SetFunction(DOSBase, -25 * LIB_VECTSIZE, oldLoadSeg);
        SetFunction(DOSBase, -83 * LIB_VECTSIZE, oldCreateNewProc);
        SetFunction(DOSBase, -23 * LIB_VECTSIZE, oldCreateProc);
+       SetFunction(SysBase, -87 * LIB_VECTSIZE, oldRawDoFmt);
        Enable();
        PutStr("AROS Support unloaded.\n");
        CloseLibrary(DOSBase);
