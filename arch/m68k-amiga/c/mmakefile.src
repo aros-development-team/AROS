@@ -10,6 +10,7 @@ AFILES := newstackswap
 USER_CFLAGS := -I$(SRCDIR)
 USER_AFLAGS := -I$(GENINCDIR) -Os
 
+#MM- workbench-c : workbench-c-arch
 #MM- workbench-c-quick : workbench-c-arch-quick
 
 #MM workbench-c-arch : includes linklibs workbench-c-arch-elf

@@ -28,6 +28,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <exec/rawfmt.h>
+
 /*************  ExecBase Patches ********************/
 
 static APTR oldRawDoFmt;
@@ -38,6 +40,8 @@ static AROS_UFH5(APTR, myRawDoFmt,
 	AROS_UFHA(APTR,      putptr, A3),
 	AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     /* moveb %d0, %a3@+
      * rts
      */
@@ -51,25 +55,27 @@ static AROS_UFH5(APTR, myRawDoFmt,
     const ULONG m68k_serial = 0x4eeefdfc;
 
     switch ((IPTR)putch) {
-    case RAWFMTFUNC_STRING:
+    case (IPTR)RAWFMTFUNC_STRING:
     	putch = (VOID_FUNC)&m68k_string;
     	break;
-    case RAWFMTFUNC_COUNT:
+    case (IPTR)RAWFMTFUNC_COUNT:
     	putch = (VOID_FUNC)&m68k_count;
     	break;
-    case RAWFMTFUNC_SERIAL:
+    case (IPTR)RAWFMTFUNC_SERIAL:
     	putch = (VOID_FUNC)&m68k_serial;
     	break;
     default:
     	break;
     }
 
-    return AROS_UFC5(APTR, myRawDoFmt,
+    return AROS_UFC5(APTR, oldRawDoFmt,
 	AROS_UFCA(CONST_STRPTR, fmt, A0),
 	AROS_UFCA(APTR,        args, A1),
 	AROS_UFCA(VOID_FUNC,  putch, A2),
 	AROS_UFCA(APTR,      putptr, A3),
 	AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+    AROS_USERFUNC_EXIT
 }
 
 /*************  DosLibrary Patches ******************/
