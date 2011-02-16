@@ -6,6 +6,8 @@
 #include <proto/oop.h>
 #include <hidd/pci.h>
 
+#include <devices/usb_hub.h>
+
 #include "uhwcmd.h"
 
 #if defined(USB3)
@@ -307,6 +309,8 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
             KPRINTF(1000, ("xhciInit returns TRUE...\n"));
             return TRUE;
+        } else {
+            hc->hc_PCIMem = 0;
         }
     }
 

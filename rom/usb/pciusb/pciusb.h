@@ -189,6 +189,10 @@ struct PCIController
     UBYTE                 hc_PortNum20[MAX_ROOT_PORTS]; /* Global Port number the local controller port corresponds with */
 
     UWORD                 hc_PortChangeMap[MAX_ROOT_PORTS]; /* Port Change Map */
+
+    BOOL                  hc_complexrouting;
+    ULONG                 hc_portroute;
+
 };
 
 
