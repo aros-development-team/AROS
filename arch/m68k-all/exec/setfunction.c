@@ -10,6 +10,7 @@
 #include <proto/intuition.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <exec/rawfmt.h>
 
 #include "exec_debug.h"
 
@@ -22,6 +23,53 @@
 #endif
 #include <aros/debug.h>
 #undef kprintf
+
+static APTR realRawDoFmt;
+static AROS_UFH5(APTR, myRawDoFmt,
+	AROS_UFHA(CONST_STRPTR, fmt, A0),
+	AROS_UFHA(APTR,        args, A1),
+	AROS_UFHA(VOID_FUNC,  putch, A2),
+	AROS_UFHA(APTR,      putptr, A3),
+	AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    /* moveb %d0, %a3@+
+     * rts
+     */
+    const ULONG m68k_string = 0x16c04e75;
+    /* addql #1, %a3@
+     * rts
+     */
+    const ULONG m68k_count  = 0x52934e75;
+    /* jmp %a6@(-86 * 6)
+     */
+    const ULONG m68k_serial = 0x4eeefdfc;
+
+    switch ((IPTR)putch) {
+    case (IPTR)RAWFMTFUNC_STRING:
+	putch = (VOID_FUNC)&m68k_string;
+	break;
+    case (IPTR)RAWFMTFUNC_COUNT:
+	putch = (VOID_FUNC)&m68k_count;
+	break;
+    case (IPTR)RAWFMTFUNC_SERIAL:
+	putch = (VOID_FUNC)&m68k_serial;
+	break;
+    default:
+	break;
+    }
+
+    return AROS_UFC5(APTR, realRawDoFmt,
+	AROS_UFCA(CONST_STRPTR, fmt, A0),
+	AROS_UFCA(APTR,        args, A1),
+	AROS_UFCA(VOID_FUNC,  putch, A2),
+	AROS_UFCA(APTR,      putptr, A3),
+	AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+    AROS_USERFUNC_EXIT
+}
+
 
 /*****************************************************************************
 
@@ -73,6 +121,10 @@
 
 	These programs should be fixed.
 
+	Also, this includes a hack to fix attempt to SetFunction the
+	Exec/RawDoFmt() routine, which adds a wrapper to translate
+	'magic' AROS PutChFunc vectors to real functions.
+
     SEE ALSO
 	MakeLibrary(), MakeFunctions(), SumLibrary()
 
@@ -118,6 +170,20 @@
     else
     {
 	funcOffset &= 0x0000ffff;
+    }
+
+    /* AOS 3.1's locale.library wants to trample over Exec/RawDoFmt.
+     * Since the replacement does not understand the 'magic' AROS
+     * RAWFMTFUNC_xxxx vectors, we need to install a wrapper to
+     * translate those to real functions.
+     *
+     * This should not effect AROS usage of SetFunction() of 
+     * RawDoFmt, as it will only end up adding about 16 m68k
+     * instructions of overhead.
+     */
+    if (library == (APTR)SysBase && funcOffset == (-87 * LIB_VECTSIZE)) {
+    	realRawDoFmt = newFunction;
+    	newFunction = myRawDoFmt;
     }
 
     /*
