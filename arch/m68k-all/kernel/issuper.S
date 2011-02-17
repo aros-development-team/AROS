@@ -42,7 +42,7 @@ AROS_LH0I(int, KrnIsSuper,
 
 AROS_SLIB_ENTRY(KrnIsSuper,Kernel):
 	movem.l	%a5-%a6,%sp@-
-	movem.l	(4),%a6
+	move.l	SysBase,%a6
 	lea	1f,%a5
 	jsr	%a6@(Supervisor)
 	movem.l	%sp@+,%a5-%a6
