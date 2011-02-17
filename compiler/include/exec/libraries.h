@@ -69,16 +69,16 @@ struct Library {
 
 /* ID numbers for Exec/TaggedOpenLibrary
  */
-#define TAGGEDOPEN_GRAPHICS     0
-#define TAGGEDOPEN_LAYERS       1
-#define TAGGEDOPEN_INTUITION    2
-#define TAGGEDOPEN_DOS          3
-#define TAGGEDOPEN_ICON         4
-#define TAGGEDOPEN_EXPANSION    5
-#define TAGGEDOPEN_UTILITY      6
-#define TAGGEDOPEN_KEYMAP       7
-#define TAGGEDOPEN_GADTOOLS     8
-#define TAGGEDOPEN_WORKBENCH    9
+#define TAGGEDOPEN_GRAPHICS     1
+#define TAGGEDOPEN_LAYERS       2
+#define TAGGEDOPEN_INTUITION    3
+#define TAGGEDOPEN_DOS          4
+#define TAGGEDOPEN_ICON         5
+#define TAGGEDOPEN_EXPANSION    6
+#define TAGGEDOPEN_UTILITY      7
+#define TAGGEDOPEN_KEYMAP       8
+#define TAGGEDOPEN_GADTOOLS     9
+#define TAGGEDOPEN_WORKBENCH    10
 
 
 #endif	/* EXEC_LIBRARIES_H */
