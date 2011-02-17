@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES=offsets getcc preparecontext \
       cachecleare cacheclearu cachecontrol cachepostdma cachepredma \
-      setfunction
+      setfunction alert_cpu
 
 AFILES=newstackswap stackswap \
        supervisor superstate userstate \
