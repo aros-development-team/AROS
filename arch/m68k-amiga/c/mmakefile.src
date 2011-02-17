@@ -10,17 +10,17 @@ AFILES := newstackswap
 USER_CFLAGS := -I$(SRCDIR)
 USER_AFLAGS := -I$(GENINCDIR) -Os
 
-#MM- workbench-c : workbench-c-arch
-#MM- workbench-c-quick : workbench-c-arch-quick
+#MM- workbench-c : workbench-c-$(AROS_TARGET_CPU)
+#MM- workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
 
-#MM workbench-c-arch : includes linklibs workbench-c-arch-elf
-#MM workbench-c-arch-quick : workbench-c-arch-elf-quick
+#MM workbench-c-m68k : includes linklibs workbench-c-m68k-elf
+#MM workbench-c-m68k-quick : workbench-c-m68k-elf-quick
 
-%build_prog mmake=workbench-c-arch-elf progname=SetPatchAROS \
+%build_prog mmake=workbench-c-m68k-elf progname=SetPatchAROS \
     files=$(FILES) asmfiles=$(AFILES) targetdir=$(AROS_C)/ELF \
     uselibs="arossupport amiga"
 
-workbench-c-arch: workbench-c-arch-elf
+workbench-c-m68k: workbench-c-m68k-elf
 	@$(FOR) file in $(FILES) ; do \
 	    $(ELF2HUNK) $(AROS_C)/ELF/"$$file" $(AROS_C)/"$$file" ; \
 	done
