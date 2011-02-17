@@ -184,15 +184,15 @@ extern void aros_not_implemented ();
    prototype. */
 #define __AROS_LHA(type,name,reg)     type name
 #define __AROS_LPA(type,name,reg)     type
-#define __AROS_LCA(type,name,reg)     name
+#define __AROS_LCA(type,name,reg)     (name)
 #define __AROS_LDA(type,name,reg)     type
 #define __AROS_UFHA(type,name,reg)    type name
 #define __AROS_UFPA(type,name,reg)    type
-#define __AROS_UFCA(type,name,reg)    name
+#define __AROS_UFCA(type,name,reg)    (name)
 #define __AROS_UFDA(type,name,reg)    type
 #define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
 #define __AROS_LPAQUAD(type,name,reg1,reg2)     type
-#define __AROS_LCAQUAD(type,name,reg1,reg2)     name
+#define __AROS_LCAQUAD(type,name,reg1,reg2)     (name)
 #define __AROS_LDAQUAD(type,name,reg1,reg2)     type
 
 #else /* BINCOMPAT */
@@ -255,15 +255,15 @@ extern void aros_not_implemented ();
    prototype. */
 #define __AROS_LHA(type,name,reg)     type name
 #define __AROS_LPA(type,name,reg)     type
-#define __AROS_LCA(type,name,reg)     name
+#define __AROS_LCA(type,name,reg)     (name)
 #define __AROS_LDA(type,name,reg)     type
 #define __AROS_UFHA(type,name,reg)    type name
 #define __AROS_UFPA(type,name,reg)    type
-#define __AROS_UFCA(type,name,reg)    name
+#define __AROS_UFCA(type,name,reg)    (name)
 #define __AROS_UFDA(type,name,reg)    type
 #define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
 #define __AROS_LPAQUAD(type,name,reg1,reg2)     type
-#define __AROS_LCAQUAD(type,name,reg1,reg2)     name
+#define __AROS_LCAQUAD(type,name,reg1,reg2)     (name)
 #define __AROS_LDAQUAD(type,name,reg1,reg2)     type
 
 /* Call a libary function which requires the libbase */
