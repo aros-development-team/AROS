@@ -440,6 +440,15 @@ static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size)
 	return (struct MemHeader*)startaddr;
 }
 
+static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
+{
+    if (sysbase == NULL || (((ULONG)sysbase) & 0x80000001))
+	return FALSE;
+    if (sysbase->ChkBase != ~(IPTR)sysbase)
+	return FALSE;
+    return GetSysBaseChkSum(sysbase) == 0xffff;
+}
+
 void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	volatile APTR *trap;
@@ -482,16 +491,15 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 
 
 	/* Zap out old SysBase if invalid */
-	if (IsSysBaseValid(SysBase)) {
-	    DEBUGPUTHEX(("[SysBase] was at", (ULONG)SysBase));
-	    if ((ULONG)SysBase >= 0x100 && (ULONG)SysBase < 0x400) {
-	    	/* ram loader fake sysbase */
-	    	romloader = (ULONG)SysBase;
-	    	SysBase = NULL;
+	if ((ULONG)SysBase >= 0x100 && (ULONG)SysBase < 0x400 && IsSysBaseValidNoVersion(SysBase)) {
+	    DEBUGPUTHEX(("[SysBase romloader] was at", (ULONG)SysBase));
+    	/* ram loader fake sysbase */
+    	romloader = (ULONG)SysBase;
+    	SysBase = NULL;
 		DEBUGPUTHEX(("NMI vector at", (ULONG)nmi));
-	    } else {
-	    	/* TODO: ColdCapture */
-	    }
+	} else if (IsSysBaseValid(SysBase)) {
+	    DEBUGPUTHEX(("[SysBase] was at", (ULONG)SysBase));
+    	/* TODO: ColdCapture */
 	} else {
 	    DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)SysBase));
 	    invalidsysbase = TRUE;
@@ -554,7 +562,7 @@ void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	mh = addmemoryregion(membanks[0], membanks[1]);
 	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
-	PrepareExecBaseFromOld(mh, oldsysbase, NULL, NULL);
+	PrepareExecBaseFromOld(mh, romloader ? NULL : oldsysbase, NULL, NULL);
 
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
         SysBase->SysStkLower    = (APTR)ss_stack_lower;
