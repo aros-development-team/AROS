@@ -4,7 +4,8 @@
 #include <proto/kernel.h>
 
 AROS_UFH1(void, FpuSaveContext,
-	AROS_UFHA(struct FpuContext *, fpu, A0))
+	AROS_UFHA(struct FpuContext *, fpu, A0)
+	AROS_UFHA(UWORD, nulloffset, D0))
 
     SYNOPSIS
 
@@ -39,8 +40,8 @@ AROS_UFH1(void, FpuSaveContext,
 
 FpuSaveContext:
 	fsave		%a0@(3*4 + 8*12)
+	tst.b		3*4 + 8*12(%a0,%d0.w)
+	beq.s		0f
 	fmovem.x	%fp0-%fp7,%a0@(3*4)
-	fmovem.l	%fpiar,%a0@(8)
-	fmovem.l	%fpsr,%a0@(4)
-	fmovem.l	%fpcr,%a0@(0)
-	rts
+	fmovem.l	%fpcr/%fpsr/%fpiar,%a0@
+0:	rts
