@@ -19,11 +19,13 @@ struct FpuContext {
 
 /* Defined in arch/m68k-all/kernel/?.S */
 
-AROS_UFP1(void, FpuSaveContext,
-		AROS_UFPA(struct FpuContext *, fpu, A0));
+AROS_UFP2(void, FpuSaveContext,
+		AROS_UFPA(struct FpuContext *, fpu, A0),
+		AROS_UFHA(UWORD, nulloffset, D0));
 
-AROS_UFP1(void, FpuRestoreContext,
-		AROS_UFPA(struct FpuContext *, fpu, A0));
+AROS_UFP2(void, FpuRestoreContext,
+		AROS_UFPA(struct FpuContext *, fpu, A0),
+		AROS_UFPA(UWORD, nulloffset, D0));
 
 
 #endif

@@ -3,8 +3,9 @@
     NAME
 #include <proto/kernel.h>
 
-AROS_UFH1(void, FpuRestoreContext,
-	AROS_UFHA(struct FpuContext *, fpu, A0))
+AROS_UFH2(void, FpuRestoreContext,
+	AROS_UFHA(struct FpuContext *, fpu, A0)
+	AROS_UFHA(UWORD, nulloffset, D0))
 
     SYNOPSIS
 
@@ -38,9 +39,9 @@ AROS_UFH1(void, FpuRestoreContext,
 	.globl	FpuRestoreContext
 
 FpuRestoreContext:
-	fmovem.l	%a0@(0),%fpcr
-	fmovem.l	%a0@(4),%fpsr
-	fmovem.l	%a0@(8),%fpiar
+	tst.b		3*4 + 8*12(%a0,%d0.w)
+	beq.s		0f
+	fmovem.l	%a0@,%fpcr/%fpsr/%fpiar
 	fmovem.x	%a0@(3*4),%fp0-%fp7
-	frestore	%a0@(3*4 + 8*12)
+0:	frestore	%a0@(3*4 + 8*12)
 	rts
