@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Retrieve the full pathname from a lock.
@@ -147,15 +147,16 @@ struct MyExAllData
     	    iofs->io_Union.io_OPEN.io_Filename	= "/";
     	    iofs->io_Union.io_OPEN.io_FileMode	= 0;
     	    DosDoIO(&iofs->IOFS);
-    	    parentlock = iofs->IOFS.io_Unit;
     	    error = iofs->io_DosError;
+	    if (!error)
+	    {
+		parentlock = iofs->IOFS.io_Unit;
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     	    /* Some 'classic' filesystems don't ever return ST_ROOT.
     	     * We check to see if the lock is the same as the previous
     	     * lock, and if so, assume we're reached the root.
     	     */
-    	    if (!error) {
     	        iofs->IOFS.io_Unit = curlock;
     	        iofs->IOFS.io_Command = FSA_SAME_LOCK;
     	        iofs->io_Union.io_SAME_LOCK.io_Lock[0] = curlock;
@@ -164,8 +165,8 @@ struct MyExAllData
     	        DosDoIO(&iofs->IOFS);
     	        if (iofs->io_DosError == 0 && iofs->io_Union.io_SAME_LOCK.io_Same == LOCK_SAME)
     	    	   ead->ed_Type = ST_ROOT;
-    	    }
 #endif
+    	    }
     	}
     	/* Move name to the top of the buffer. */
     	if(!error)
