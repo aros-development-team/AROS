@@ -626,8 +626,13 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
             /* "Extension" group */
             _newIconWin__TopPanelContainerObj ? Child : TAG_IGNORE, (IPTR)_newIconWin__TopPanelContainerObj,
 
-            /* icon list */
-            Child, (IPTR) _newIconWin__RootViewObj,
+            Child, HGroup,
+                _newIconWin__LeftPanelContainerObj ? Child : TAG_IGNORE, (IPTR)_newIconWin__LeftPanelContainerObj,
+                /* icon list */
+                Child, (IPTR) _newIconWin__RootViewObj,
+            End,
+
+            _newIconWin__BottomPanelContainerObj ? Child : TAG_IGNORE, (IPTR)_newIconWin__BottomPanelContainerObj,
 
         TAG_DONE),
 
