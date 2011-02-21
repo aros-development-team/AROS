@@ -148,11 +148,10 @@ static void aros_ufc(int id)
 		printf(",a%d", i + 1);
 	printf(") \\\n");
 	printf("\t({ APTR _n = (n);\\\n");
-	snprintf(jmp, sizeof(jmp), "pea.l .Lufc%d_%%c2\\n"
+	snprintf(jmp, sizeof(jmp), "pea.l 0f\\n"
 		                   "move.l %%1, %%%%sp@-\\n"
 		                   "rts\\n"
-		                   ".Lufc%d_%%c2:\\n"
-		                   , id, id);
+		                   "0:\\n");
 	jmp[sizeof(jmp)-1]=0;
 	asm_regs_init(i, 0, jmp, "\"r\" (_n), \"i\" (__LINE__)");
 
