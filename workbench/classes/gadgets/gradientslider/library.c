@@ -53,8 +53,6 @@ void __regargs L_CloseLibs(struct GradientSliderBase_intern *);
 Class * __regargs initClass (struct GradientSliderBase_intern *);
 Class  * ObtainClass(REG(a6, struct GradientSliderBase_intern *) );
 
-extern ULONG   dispatch_gradientsliderclass(REG(a0, Class *), REG(a2, Object *), REG(a1, Msg ) );
-
 /****************************************************************************/
 
 UBYTE	LibName[] = NAME_STRING,
@@ -230,8 +228,17 @@ Class * __saveds ObtainClass(REG(a6, struct GradientSliderBase_intern *GradientS
 
 /****************************************************************************/
 
+#ifdef __AROS__
+AROS_UFH3(IPTR, dispatch_gradientsliderclass,
+	AROS_UFHA(Class *, cl, A0),
+	AROS_UFHA(Object *, o, A2),
+	AROS_UFHA(Msg, msg, A1))
+#else
 ULONG __saveds dispatch_gradientsliderclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg ) )
+#endif
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
     
     switch(msg->MethodID)
@@ -280,6 +287,8 @@ ULONG __saveds dispatch_gradientsliderclass( REG(a0, Class *cl), REG(a2, Object 
     } /* switch */
 
     return (retval);
+
+    AROS_USERFUNC_EXIT
 }  /* dispatch_gradientsliderclass */
 
 /***************************************************************************************************/
