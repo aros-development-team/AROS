@@ -32,27 +32,6 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
-#ifdef __mc68000
-
-/* On m68k CPU we support old BCPL programs */
-
-extern APTR BCPL_Setup(struct Process *me, BPTR segList, APTR entry, APTR DOSBase);
-extern void BCPL_Cleanup(struct Process *me);
-
-#else
-
-static inline APTR BCPL_Setup(struct Process *process , BPTR segList, APTR entry, APTR DOSBase)
-{
-     /* this points to segarray, not seglist, check BCPL_Setup() and Guru Book */
-    process->pr_SegList = segList;
-
-    return entry ? entry : (BPTR *)BADDR(segList) + 1;
-}
-
-#define BCPL_Cleanup(pr)
-
-#endif
-
 #include <aros/debug.h>
 
 /* Temporary macro */
@@ -724,15 +703,10 @@ static void DosEntry (STRPTR argPtr, ULONG argSize, APTR initialPC, struct DosLi
 
     if (me->pr_Flags & PRF_FREESEGLIST)
     {
-#ifdef __mc68000
-    	ULONG *segarray = BADDR(me->pr_SegList);
+    	BPTR *segarray = BADDR(me->pr_SegList);
 
-    	if (segarray[3])
+    	if (segarray && segarray[3])
 	    UnLoadSeg(segarray[3]);
-	segarray[3] = 0;
-#else
-	UnLoadSeg(me->pr_SegList);
-#endif
     }
     BCPL_Cleanup(me);
 
