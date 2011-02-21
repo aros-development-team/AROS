@@ -13,7 +13,9 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 #MM- workbench-c : workbench-c-$(AROS_TARGET_CPU)
 #MM- workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
 
-#MM workbench-c-m68k : includes linklibs workbench-c-m68k-elf
+#MM workbench-c-m68k : includes \
+#MM                    kernel-kernel-includes \
+#MM                    linklibs workbench-c-m68k-elf
 #MM workbench-c-m68k-quick : workbench-c-m68k-elf-quick
 
 %build_prog mmake=workbench-c-m68k-elf progname=SetPatchAROS \
