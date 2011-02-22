@@ -811,6 +811,18 @@ RTDesc const * RT_Resources[RTT_MAX];
     }
 } /* RT_ShowRTStack */
 
+/* To safely pass an empty va_list, we need to use
+ * the following wrapper.
+ */
+static inline void GetRTShowError_ap(RTData * rtd, int rtt, RTNode *n, IPTR ptr, int i, const char * file, ULONG line, ...)
+{
+    va_list ap;
+    va_start(ap, line);
+
+    (void)(*GetRTShowError(rtt))(rtd, rtt, n, ptr, i, file, line, ap);
+
+    va_end(ap);
+}
 
 /*****************************************************************************
 
@@ -856,19 +868,15 @@ RTDesc const * RT_Resources[RTT_MAX];
 
     if (!(rtnode->Flags & RTNF_DONT_FREE) )
     {
-    	va_list ap;
-
 	/* Print an error */
-	(void) (*(GetRTShowError(rtt)))
-	(
+	GetRTShowError_ap(
 	    rtd,
 	    rtt,
 	    rtnode,
 	    0UL,
 	    RT_EXIT,
 	    NULL,
-	    0L,
-	    ap
+	    0L
 	);
 
 	/* free the resource */
