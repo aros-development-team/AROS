@@ -141,7 +141,7 @@ static const STRPTR GetFileMode (LONG mode)
     case MODE_READWRITE: return "MODE_READWRITE";
     }
 
-    sprintf (buffer, "<illegal mode %ld>", mode);
+    sprintf (buffer, "<illegal mode %ld>", (long)mode);
 
     return buffer;
 } /* GetFileMode */
