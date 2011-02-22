@@ -14,7 +14,7 @@
 	AROS_LH1(IPTR, ChildWait,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, tid, D0),
+	AROS_LHA(ULONG, tid, D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 126, Exec)
@@ -94,7 +94,7 @@
 	/* Check if it has returned already. This will also take the first. */
 	ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
 	{
-	    if ((ULONG)(IPTR)tid == 0 || child->et_UniqueID == (ULONG)(IPTR)tid)
+	    if (tid == 0 || child->et_UniqueID == tid)
 		goto child_exited;
 	}
 

@@ -14,7 +14,7 @@
 	AROS_LH1(ULONG, ChildStatus,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, tid, D0),
+	AROS_LHA(ULONG, tid, D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 125, Exec)
@@ -64,7 +64,7 @@
     /* Search through the running tasks list */
     ForeachNode(&et->et_Children, child)
     {
-	if (child->et_UniqueID == (ULONG)(IPTR)tid)
+	if (child->et_UniqueID == tid)
 	{
 	    status = CHILD_ACTIVE;
 	    break;
@@ -73,7 +73,7 @@
 
     ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
     {
-	if (child->et_UniqueID == (ULONG)(IPTR)tid)
+	if (child->et_UniqueID == tid)
 	{
 	    status = CHILD_EXITED;
 	    break;
