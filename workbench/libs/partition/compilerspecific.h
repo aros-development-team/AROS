@@ -1,4 +1,4 @@
-#ifndef IPTR
+#if !defined(__AROS__) && !defined(IPTR)
 #define IPTR ULONG
 #endif
 
