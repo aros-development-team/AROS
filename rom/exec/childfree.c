@@ -15,7 +15,7 @@
 	AROS_LH1(void, ChildFree,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, tid, D0),
+	AROS_LHA(ULONG, tid, D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 123, Exec)
@@ -52,7 +52,7 @@
     struct ETask *et;
 
     Forbid();
-    et = FindChild((ULONG)(IPTR)tid);
+    et = FindChild(tid);
     if(et != NULL)
     {
 	Remove((struct Node *)et);

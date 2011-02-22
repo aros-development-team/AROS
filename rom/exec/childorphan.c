@@ -16,7 +16,7 @@
 	AROS_LH1(ULONG, ChildOrphan,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, tid, D0),
+	AROS_LHA(ULONG, tid, D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 124, Exec)
@@ -78,7 +78,7 @@
     else
     {
     	Forbid();
-	child = FindChild((ULONG)(IPTR)tid);
+	child = FindChild(tid);
 	if(child != NULL)
 	{
 	    child->et_Parent = NULL;
