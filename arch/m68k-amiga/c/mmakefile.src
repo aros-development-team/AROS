@@ -3,12 +3,11 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := SetPatchAROS
-
-AFILES := newstackswap
 
 USER_CFLAGS := -I$(SRCDIR)
 USER_AFLAGS := -I$(GENINCDIR) -Os
+
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 #MM- workbench-c : workbench-c-$(AROS_TARGET_CPU)
 #MM- workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
@@ -17,6 +16,9 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 #MM                    kernel-kernel-includes \
 #MM                    linklibs workbench-c-m68k-elf
 #MM workbench-c-m68k-quick : workbench-c-m68k-elf-quick
+
+FILES := SetPatchAROS
+AFILES := newstackswap
 
 %build_prog mmake=workbench-c-m68k-elf progname=SetPatchAROS \
     files=$(FILES) asmfiles=$(AFILES) targetdir=$(AROS_C)/ELF \
