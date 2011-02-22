@@ -237,7 +237,7 @@ STATIC BOOL MakePlanarImages(struct NativeIcon *icon, struct IconBase *IconBase)
 
 BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 {
-    static const STRPTR const chunknames[] =
+    static CONST_STRPTR const chunknames[] =
     {
     	"icOn",
 	NULL

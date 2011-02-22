@@ -676,7 +676,7 @@ AROS_UFH3S(ULONG, ProcessFlagPtr,
 kprintf ("ProcessFlagPtr: %08lx %ld\n", ptr);
 #endif
 
-	*((APTR *)data->sdd_Dest) = (APTR)(ptr != 0L);
+	*((IPTR *)data->sdd_Dest) = (IPTR)(ptr != 0L);
 
 	break;
 

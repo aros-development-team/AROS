@@ -146,7 +146,7 @@ struct IconBase
     LONG                    ib_MaxNameLength;
     BOOL                    ib_NewIconsSupport;
     BOOL                    ib_ColorIconSupport;
-    IPTR                    ib_SegList;
+    BPTR                    ib_SegList;
 
     /* Required External libraries */
     APTR                    ib_DOSBase;
