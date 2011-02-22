@@ -239,8 +239,13 @@ static void set_error(int err)
     errorcode = err;
 }
 
+#if defined(DEBUG) && DEBUG
 #define D(x)	x
 #define DB2(x)	x
+#else
+#define D(x)
+#define DB2(x)	x
+#endif
 #define bug(fmt,args...)	fprintf(stderr, fmt ,##args )
 
 static int must_swap = -1;
