@@ -24,6 +24,7 @@ MODULE_FILES := arosdevice arosmain
 #MM workbench-devs-sfs-packet: workbench-devs-sfs-c
 
 USER_CFLAGS := -DSFS_BE
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_prog mmake=workbench-devs-sfs-packet \
     progname=sfs.handler targetdir=$(AROS_DEVS) \

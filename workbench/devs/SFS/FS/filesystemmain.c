@@ -176,7 +176,7 @@ void initGlobals()
 
 static struct DosPacket *getpacket(struct Process *);
 static struct DosPacket *waitpacket(struct Process *);
-static void returnpacket(LONG,LONG);
+static void returnpacket(SIPTR,LONG);
 static void sdlhtask(void);
 
 LONG request(UBYTE *,UBYTE *,UBYTE *,APTR, ... );
@@ -218,7 +218,9 @@ static void deinitdisk(void);
 
 LONG handlesimplepackets(struct DosPacket *packet);
 static LONG dumppackets(struct DosPacket *packet,LONG);
+#ifdef DEBUGCODE
 static void dumppacket(void);
+#endif
 static void actioncurrentvolume(struct DosPacket *);
 static void actionsamelock(struct DosPacket *);
 static void actiondiskinfo(struct DosPacket *);
@@ -353,13 +355,13 @@ LONG mainprogram(struct ExecBase *SysBase)
 
     if(initcachebuffers()==0) {
 
-      if((IntuitionBase=OpenLibrary("intuition.library",37))!=0) {
+      if((IntuitionBase=(APTR)OpenLibrary("intuition.library",37))!=0) {
 
 #ifdef STARTDEBUG
           dreq("(1) Filesystem initializing...");
 #endif
 
-        if((UtilityBase=OpenLibrary("utility.library",37))!=0) {
+        if((UtilityBase=(APTR)OpenLibrary("utility.library",37))!=0) {
 
           /* Create a msgport and iorequest for opening timer.device */
 
@@ -642,7 +644,7 @@ void mainloop(void) {
         switch(globals->packet->dp_Type) {
         case ACTION_SFS_SET:
           {
-            struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
+            const struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
             struct TagItem *tag;
 
             while((tag=NextTagItem(&taglist))!=NULL) {
@@ -672,10 +674,10 @@ void mainloop(void) {
           break;
         case ACTION_SFS_QUERY:
           {
-            struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
+            const struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
             struct TagItem *tag;
 
-            while(tag=NextTagItem(&taglist)) {
+            while((tag=NextTagItem(&taglist))) {
               switch(tag->ti_Tag) {
               case ASQ_START_BYTEH:
                 tag->ti_Data=globals->byte_lowh;
@@ -801,10 +803,10 @@ void mainloop(void) {
             currentdate=getdate();
 
             if(globals->packet->dp_Type==ACTION_SFS_FORMAT) {
-              struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
+              const struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
               struct TagItem *tag;
 
-              while(tag=NextTagItem(&taglist)) {
+              while((tag=NextTagItem(&taglist))) {
                 switch(tag->ti_Tag) {
                 case ASF_NAME:
                   name=(UBYTE *)tag->ti_Data;
@@ -1263,7 +1265,7 @@ void mainloop(void) {
                     LONG errorcode;
   
                     lock=(struct ExtFileLock *)BADDR(globals->packet->dp_Arg1);
-                    copybstrasstr(globals->packet->dp_Arg2,globals->string,258);
+                    copybstrasstr((APTR)globals->packet->dp_Arg2,globals->string,258);
   
                     _DEBUG(("ACTION_MAKE_LINK: Name = '%s', LinkPath = '%s'\n",globals->string,(UBYTE *)globals->packet->dp_Arg3));
 
@@ -1394,7 +1396,7 @@ void mainloop(void) {
                     }
                   }
                   else {
-                    returnpacket((LONG)(dest - globals->packet->dp_Arg3 - 1),
+                    returnpacket((LONG)((SIPTR)dest - globals->packet->dp_Arg3 - 1),
                       0);
                   }
                 }
@@ -1407,13 +1409,13 @@ void mainloop(void) {
                   LONG errorcode;
 
                   lock=(struct ExtFileLock *)BADDR(globals->packet->dp_Arg1);
-                  copybstrasstr(globals->packet->dp_Arg2,globals->string,258);
+                  copybstrasstr((BSTR)globals->packet->dp_Arg2,globals->string,258);
 
                   if((errorcode=findcreate(&lock,globals->string,globals->packet->dp_Type,0))!=0) {
                     returnpacket(0,errorcode);
                   }
                   else {
-                    returnpacket(TOBADDR(lock),0);
+                    returnpacket((SIPTR)TOBADDR(lock),0);
                   }
                 }
 
@@ -1433,14 +1435,14 @@ void mainloop(void) {
                   lock=(struct ExtFileLock *)BADDR(globals->packet->dp_Arg2);
 
                   if(globals->packet->dp_Type!=ACTION_FH_FROM_LOCK) {
-                    copybstrasstr(globals->packet->dp_Arg3,globals->string,258);
+                    copybstrasstr((BSTR)globals->packet->dp_Arg3,globals->string,258);
                     _DEBUG(("OPEN FILE: %s (mode = %ld)\n", globals->string, globals->packet->dp_Type));
                     errorcode=findcreate(&lock,globals->string,globals->packet->dp_Type,0);
                   }
 
                   if(errorcode==0) {
                     if((errorcode=createglobalhandle(lock))==0) {
-                      fh->fh_Arg1=(LONG)lock;
+                      fh->fh_Arg1=(IPTR)lock;
                     }
                     else if(globals->packet->dp_Type!=ACTION_FH_FROM_LOCK) {
                       freelock(lock);
@@ -1526,7 +1528,7 @@ void mainloop(void) {
                 {
                   LONG errorcode;
 
-                  copybstrasstr(globals->packet->dp_Arg2,globals->string,258);
+                  copybstrasstr((BSTR)globals->packet->dp_Arg2,globals->string,258);
 
                   _DEBUG(("ACTION_DELETE_OBJECT(0x%08lx,'%s')\n",BADDR(globals->packet->dp_Arg1),globals->string));
 
@@ -1569,7 +1571,9 @@ void mainloop(void) {
                       struct fsObjectContainer *oc=cb->data;
                       UBYTE *s;
                       UBYTE *d;
+#ifndef USE_FAST_BSTR
                       UBYTE len;
+#endif
 
                       /* Succesfully locked the doslist */
 
@@ -1580,7 +1584,7 @@ void mainloop(void) {
 
                       s=BADDR(globals->packet->dp_Arg1);
                       d=oc->object[0].name;
-                      d[copybstrasstr(s, d, 30)+1] = 0;
+                      d[copybstrasstr((BSTR)globals->packet->dp_Arg1, d, 30)+1] = 0;
 #if 0
                       len=*s++;
 
@@ -1654,10 +1658,10 @@ void mainloop(void) {
                     UBYTE *s;
 
                     lock=BADDR(globals->packet->dp_Arg1);
-                    copybstrasstr(globals->packet->dp_Arg2,globals->string,258);
+                    copybstrasstr((BSTR)globals->packet->dp_Arg2,globals->string,258);
 
                     if((errorcode=locateobjectfromlock(lock,validatepath(globals->string),&cb,&o))==0) {
-                      copybstrasstr(globals->packet->dp_Arg4,globals->string,258);
+                      copybstrasstr((BSTR)globals->packet->dp_Arg4,globals->string,258);
 
                       settemporarylock(BE2L(o->be_objectnode));
 
@@ -1695,8 +1699,8 @@ void mainloop(void) {
                   LONG errorcode;
 
                   do {
-                    copybstrasstr(globals->packet->dp_Arg3,globals->string,258);
-                    copybstrasstr(globals->packet->dp_Arg4,globals->string2,258);
+                    copybstrasstr((BSTR)globals->packet->dp_Arg3,globals->string,258);
+                    copybstrasstr((BSTR)globals->packet->dp_Arg4,globals->string2,258);
 
                     newtransaction();
                     if((errorcode=setcomment(BADDR(globals->packet->dp_Arg2),validatepath(globals->string),globals->string2))!=0) {
@@ -1730,7 +1734,7 @@ void mainloop(void) {
                     struct ExtFileLock *lock;
 
                     lock=BADDR(globals->packet->dp_Arg2);
-                    copybstrasstr(globals->packet->dp_Arg3,globals->string,258);
+                    copybstrasstr((BSTR)globals->packet->dp_Arg3,globals->string,258);
 
                     if((errorcode=locatelockableobject(lock,validatepath(globals->string),&cb,&o))==0) {
                       NODE objectnode=BE2L(o->be_objectnode);
@@ -2199,7 +2203,7 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
                     if(keepentry!=DOSFALSE && eac->eac_MatchFunc!=0) {
                       
 #ifdef __AROS__
-                      keepentry=CALLHOOKPKT(eac->eac_MatchFunc, ead, globals->packet->dp_Arg4);
+                      keepentry=CALLHOOKPKT(eac->eac_MatchFunc, ead, (APTR)globals->packet->dp_Arg4);
 #else
                       LONG __asm(*hookfunc)(register __a0 struct Hook *,register __a1 struct ExAllData *,register __a2 ULONG)=(LONG __asm(*)(register __a0 struct Hook *,register __a1 struct ExAllData *,register __a2 ULONG))eac->eac_MatchFunc->h_Entry;
                       keepentry=hookfunc(eac->eac_MatchFunc,ead,packet->dp_Arg4);
@@ -2716,7 +2720,7 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
                     returnpacket(0,errorcode);
                   }
                   else {
-                    returnpacket(TOBADDR(lock),0);
+                    returnpacket((SIPTR)TOBADDR(lock),0);
                   }
                 }
                 break;
@@ -2742,7 +2746,7 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
                     returnpacket(0,errorcode);
                   }
                   else {
-                    returnpacket(TOBADDR(lock),0);
+                    returnpacket((SIPTR)TOBADDR(lock),0);
                   }
                 }
                 break;
@@ -2751,7 +2755,7 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
                   struct ExtFileLock *lock;
                   LONG errorcode;
 
-                  copybstrasstr(globals->packet->dp_Arg2,globals->string,258);
+                  copybstrasstr((BSTR)globals->packet->dp_Arg2,globals->string,258);
 
                   _XDEBUG((DEBUG_LOCK,"ACTION_LOCATE_OBJECT(0x%08lx,'%s',0x%08lx)\n",BADDR(globals->packet->dp_Arg1),globals->string,globals->packet->dp_Arg3));
 
@@ -2759,7 +2763,7 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
                     returnpacket(0,errorcode);
                   }
                   else {
-                    returnpacket(TOBADDR(lock),0);
+                    returnpacket((SIPTR)TOBADDR(lock),0);
                   }
                 }
                 break;
@@ -2812,7 +2816,7 @@ _DEBUG(("examine ED_TYPE, o->bits=%x, o->objectnode=%d\n", o->bits, BE2L(o->be_o
 
                   _DEBUG(("ACTION_REMOVE_NOTIFY: Removing notification of %s\n",nr->nr_FullName));
 
-                  if(nr->nr_Flags & NRF_SEND_MESSAGE != 0) {
+                  if((nr->nr_Flags & NRF_SEND_MESSAGE) != 0) {
                     /* Removing all outstanding messages form msgport */
                     while(GetMsg(nr->nr_stuff.nr_Msg.nr_Port)!=0) {
                     }
@@ -3038,7 +3042,7 @@ static struct DosPacket *waitpacket(struct Process *p) {
 
 
 
-static void returnpacket(LONG res1,LONG res2) {
+static void returnpacket(SIPTR res1,LONG res2) {
   struct Message *msg;
   struct MsgPort *replyport;
 
@@ -3060,7 +3064,7 @@ static void returnpacket(LONG res1,LONG res2) {
 
 
 
-static void returnpacket2(struct DosPacket *packet, LONG res1, LONG res2)
+static void returnpacket2(struct DosPacket *packet, SIPTR res1, LONG res2)
 {
   struct Message *msg;
   struct MsgPort *replyport;
@@ -3480,7 +3484,7 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
 
         while(nr!=0) {
 #ifdef AROS_KERNEL
-          nr->nr_Handler=globals->asfsbase;
+          nr->nr_Handler=(APTR)globals->asfsbase;
 #else
           nr->nr_Handler=&globals->mytask->pr_MsgPort;
 #endif
@@ -3980,6 +3984,7 @@ static LONG dumppackets(struct DosPacket *packet,LONG returncode) {
 }
 
 
+#ifdef DEBUGCODE
 static void dumppacket() {
   struct DosPacket *packet;
 
@@ -3994,7 +3999,7 @@ static void dumppacket() {
     dumppackets(packet,ERROR_NOT_A_DOS_DISK);
   }
 }
-
+#endif
 
 
 static void actioncurrentvolume(struct DosPacket *packet) {
@@ -4004,10 +4009,10 @@ static void actioncurrentvolume(struct DosPacket *packet) {
 
   if(lock==0) {
     _DEBUG(("ACTION_CURRENT_VOLUME: volumenode = %ld\n",globals->volumenode));
-    returnpacket2(packet, TOBADDR(globals->volumenode),globals->startupmsg->fssm_Unit);
+    returnpacket2(packet, (SIPTR)TOBADDR(globals->volumenode), 0);
   }
   else {
-    returnpacket2(packet, lock->volume,globals->startupmsg->fssm_Unit);
+    returnpacket2(packet, (SIPTR)lock->volume,0);
   }
 }
 

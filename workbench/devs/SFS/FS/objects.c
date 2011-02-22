@@ -39,7 +39,9 @@ extern LONG deletefileslowly(struct CacheBuffer *cbobject, struct fsObject *o);
 static LONG dehashobjectquick(NODE objectnode, UBYTE *name, NODE parentobjectnode);
 LONG simpleremoveobject(struct CacheBuffer *cb,struct fsObject *o);
 LONG locatelockableparent(struct ExtFileLock *lock,UBYTE *path,struct CacheBuffer **returned_cb,struct fsObject **returned_o);
+#ifdef DEBUGCODE
 static void copyobject(struct fsObject *o2,struct fsObject *o);
+#endif
 LONG findobjectspace(struct CacheBuffer **io_cb,struct fsObject **io_o,ULONG bytesneeded);
 static UBYTE *emptyspaceinobjectcontainer(struct fsObjectContainer *oc);
 WORD objectsize(struct fsObject *o);
@@ -727,7 +729,7 @@ static LONG createobjecttagitem(struct CacheBuffer **io_cb, struct fsObject **io
         }
 
         if((errorcode=findobjectspace(io_cb, io_o, objectsize))==0) {
-          struct TagItem *tstate=tags;
+          const struct TagItem *tstate=tags;
           struct fsObject *o=*io_o;
           UBYTE *name=o->name;
           UBYTE *objname=objectname;
@@ -902,7 +904,7 @@ static LONG createobjecttagitem(struct CacheBuffer **io_cb, struct fsObject **io
 }
 
 
-
+#ifdef DEBUGCODE
 static void copyobject(struct fsObject *o2,struct fsObject *o) {
   o->be_objectnode=o2->be_objectnode;   // BE-BE copy
   o->be_owneruid=o2->be_owneruid;   // BE-BE copy
@@ -920,7 +922,7 @@ static void copyobject(struct fsObject *o2,struct fsObject *o) {
     o->object.file.be_size=o2->object.file.be_size;   // BE-BE copy
   }
 }
-
+#endif
 
 
 LONG setcomment2(struct CacheBuffer *cb, struct fsObject *o, UBYTE *comment) {
@@ -978,7 +980,7 @@ LONG setcomment2(struct CacheBuffer *cb, struct fsObject *o, UBYTE *comment) {
 
             struct TagItem tags[] = {
             		{	CO_ALLOWDUPLICATES, TRUE },
-            		{	CO_COMMENT, comment },
+            		{	CO_COMMENT, (IPTR)comment },
             		{	CO_OBJECTNODE, BE2L(oldo->be_objectnode) },
             		{	CO_PROTECTION, BE2L(oldo->be_protection) },
             		{	CO_DATEMODIFIED, BE2L(oldo->be_datemodified) },
@@ -1237,7 +1239,7 @@ LONG findcreate(struct ExtFileLock **returned_lock, UBYTE *path, LONG packettype
             struct TagItem tags[] = {
             		{ CO_BITS, bits },
             		{ CO_HASHOBJECT, TRUE },
-            		{ CO_SOFTLINK, softlink },
+            		{ CO_SOFTLINK, (IPTR)softlink },
             		{ CO_UPDATEPARENT, TRUE },
             		{ TAG_DONE, 0 }
             };
@@ -1901,7 +1903,7 @@ LONG renameobject2(struct CacheBuffer *cb, struct fsObject *o, struct CacheBuffe
         /* In goes the Parent cb & o, out comes the New object's cb & o :-) */
 
         struct TagItem tags[] = {
-        		{ CO_COMMENT, comment },
+        		{ CO_COMMENT, (IPTR)comment },
         		{ CO_OBJECTNODE, BE2L(oldo->be_objectnode) },
         		{ CO_PROTECTION, BE2L(oldo->be_protection) },
         		{ CO_DATEMODIFIED, BE2L(oldo->be_datemodified) },
