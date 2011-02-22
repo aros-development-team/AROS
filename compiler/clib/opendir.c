@@ -96,7 +96,7 @@
     }
 
 #ifndef ExNext_IS_WORKING_WITHOUT_ASSIGN
-    sprintf(assign, "READDIR%x", (unsigned)dir);
+    sprintf(assign, "READDIR%p", dir);
 
     if (!AssignLock(assign, DupLock(lock)))
     {

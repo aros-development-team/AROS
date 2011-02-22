@@ -104,7 +104,7 @@
 	    *status = startup->as_startup_error;
 	}
         ret = et->et_UniqueID;
-        ChildFree((APTR)et->et_UniqueID);
+        ChildFree(et->et_UniqueID);
     }
     else
 	errno = ECHILD;
