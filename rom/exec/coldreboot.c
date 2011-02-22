@@ -48,7 +48,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write exec/ColdReboot()
+    /* TODO: Write exec/ColdReboot() */
     aros_print_not_implemented("ColdReboot");
 
     AROS_LIBFUNC_EXIT

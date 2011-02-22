@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -72,11 +73,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#warning TODO: Write exec/CacheClearE()
-/* iaint: I am sick of this continually printing out... */
-#if DEBUG
+    /* TODO: Write exec/CacheClearE() */
     aros_print_not_implemented("CacheClearE");
-#endif
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 
