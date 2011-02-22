@@ -161,7 +161,7 @@ LONG PropFunc
 	    {
 		DEBUG_PROPHOOKS(dprintf("PropFunc: err = IFFERR_MANGLED\n"));
 		err = IFFERR_MANGLED;
-    #warning FIXME: should return err here?
+    		/* FIXME: should return err here? */
 	    }
 	}
     }
