@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/ReadExpansionRom()
+    /* TODO: Write expansion/ReadExpansionRom() */
     aros_print_not_implemented ("ReadExpansionRom");
 
 	return FALSE;

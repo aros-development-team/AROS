@@ -42,7 +42,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/WriteExpansionWord()
+    /* TODO: Write expansion/WriteExpansionWord() */
     aros_print_not_implemented ("WriteExpansionWord");
 
     AROS_LIBFUNC_EXIT

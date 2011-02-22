@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/ReadExpansionByte()
+    /* TODO: Write expansion/ReadExpansionByte() */
     aros_print_not_implemented ("ReadExpansionByte");
     return 0;
 
