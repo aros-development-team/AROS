@@ -57,14 +57,14 @@
 
 ******************************************************************************/
 { 
-    ULONG  pid = (ULONG)FindTask(0L);
+    IPTR pid = (IPTR)FindTask(0L);
     char *c = template + strlen(template);
     BPTR  lock;
-    int remainder;
+    IPTR remainder;
     
     while (*--c == 'X')
     {
-    	remainder = (int)(pid % 10L);
+    	remainder = pid % 10;
     	assert(remainder>=0); 
     	assert(remainder<10);
 		*c = remainder + '0';

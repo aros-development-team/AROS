@@ -64,7 +64,7 @@ LONG launcher()
     }
 
     if(__register_init_fdarray(udata->ppriv))
-        aroscbase = (struct aroscbase *)OpenLibrary((STRPTR) "arosc.library", 0);
+        aroscbase = OpenLibrary((STRPTR) "arosc.library", 0);
     if(!aroscbase)
     {
 	FreeSignal(child_signal);

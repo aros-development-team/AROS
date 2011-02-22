@@ -108,7 +108,6 @@ static int system_sh(const char *string)
 	
 static int system_no_sh(const char *string)
 {
-    struct arosc_privdata *pdata = __get_arosc_privdata();
     const char *apath;
     char *args, *cmd, *fullcmd;
     fdesc *in, *out, *err;

@@ -92,7 +92,7 @@
 ******************************************************************************/
 {
     struct ETask *et;
-    APTR tid = (APTR) pid;
+    ULONG tid = pid;
     pid_t ret = -1;
     int exchildno;
 
@@ -152,7 +152,7 @@
             *status = startup->as_startup_error;
         }
         ret = et->et_UniqueID;
-        ChildFree((APTR)et->et_UniqueID);
+        ChildFree(et->et_UniqueID);
     }
     else
         errno = ECHILD;
