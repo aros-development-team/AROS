@@ -244,7 +244,7 @@ static void set_error(int err)
 #define DB2(x)	x
 #else
 #define D(x)
-#define DB2(x)	x
+#define DB2(x)
 #endif
 #define bug(fmt,args...)	fprintf(stderr, fmt ,##args )
 
@@ -499,7 +499,7 @@ static int relocate
             shindex = ntohl(((ULONG *)hh[symtab_shndx]->data)[ELF_R_SYM(rel->info)]);
         }
 
-	DB2(bug("[ELF2HUNK] Processing %d symbol %s\n", (int)shindex, symname));
+	D(bug("[ELF2HUNK] Processing %d symbol %s\n", (int)shindex, symname));
 
         switch (shindex)
         {
@@ -787,7 +787,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname)
 
     /* Write all allocatable hunk sizes */
     for (i = 0; i < int_shnum; i++) {
-    	const char *names[3]={ "CODE", "DATA", "BSS" };
+    	const __attribute__((unused)) char *names[3]={ "CODE", "DATA", "BSS" };
     	if (hh[i]==NULL || hh[i]->hunk < 0)
     	    continue;
 
