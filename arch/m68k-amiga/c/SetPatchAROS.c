@@ -155,7 +155,7 @@ static AROS_UFH2(BPTR, myLoadSeg,
            sss.stk_Lower = AllocMem(8192, MEMF_ANY);
            if (sss.stk_Lower == NULL) {
                Close(file);
-               return NULL;
+               return BNULL;
            }
            sss.stk_Upper = sss.stk_Lower + 8192;
            sss.stk_Pointer = sss.stk_Upper;
@@ -183,7 +183,7 @@ static AROS_UFH2(BPTR, myLoadSeg,
            }
 
            Close(file);
-           return NULL;
+           return BNULL;
        }
        Close(file);
    }
