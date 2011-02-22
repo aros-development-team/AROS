@@ -146,6 +146,23 @@ static IPTR RT_OpenScreen (RTData * rtd, ScreenResource * rt, va_list args, BOOL
     return (IPTR)(rt->Screen);
 } /* RT_OpenScreen */
 
+/* To safely pass an empty va_list, we need to use
+ * the following wrapper.
+ */
+static inline IPTR RT_Search_ap(RTData *rtd, int type, RTNode **prtwin, ...)
+{
+    IPTR ret;
+    va_list ap;
+
+    va_start(ap, prtwin);
+
+    ret = RT_Search(rtd, type, prtwin, ap);
+
+    va_end(ap);
+    
+    return ret;
+}
+
 static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt)
 {
     if (rt->Screen->FirstWindow)
@@ -162,9 +179,7 @@ static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt)
 
 	while ((win = rt->Screen->FirstWindow))
 	{
-	    va_list ap;
-
-	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)prtwin, ap) == RT_SEARCH_FOUND)
+	    if (RT_Search_ap (rtd, RTT_WINDOW, (RTNode **)prtwin) == RT_SEARCH_FOUND)
 	    {
 		RT_FreeResource (rtd, RTT_WINDOW, (RTNode *)rtwin);
 	    }
