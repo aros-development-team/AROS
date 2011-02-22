@@ -60,7 +60,7 @@ void my_read_fn(png_structp png_ptr, png_bytep data, png_size_t length);
 /***************************************************************************************************/
 
 AROS_LH1(LONG, PNG_CheckSig,
-    AROS_LHA(STRPTR, name, A0),
+    AROS_LHA(CONST_STRPTR, name, A0),
     struct Library *, PNGBase, 6, PNG)
 {
     AROS_LIBFUNC_INIT
@@ -117,7 +117,7 @@ void my_readmem_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 
 /***************************************************************************************************/
 
-static APTR PNG_LoadImageInternal(APTR handle, STRPTR *chunkstoread, APTR *chunkstore,
+static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread, APTR *chunkstore,
     	    	    	    	  BOOL makeARGB, LONG handletype)
 {
     struct PNGStuff   png;
@@ -467,7 +467,7 @@ static APTR PNG_LoadImageInternal(APTR handle, STRPTR *chunkstoread, APTR *chunk
 
 AROS_LH4(APTR, PNG_LoadImageFH,
     AROS_LHA(BPTR, fh, A0),
-    AROS_LHA(STRPTR *, chunkstoread, A1),
+    AROS_LHA(CONST_STRPTR const *, chunkstoread, A1),
     AROS_LHA(APTR *,  chunkstore, A2),
     AROS_LHA(BOOL, makeARGB, D0),
     struct Library *, PNGBase, 7, PNG)
@@ -482,8 +482,8 @@ AROS_LH4(APTR, PNG_LoadImageFH,
 /***************************************************************************************************/
 
 AROS_LH4(APTR, PNG_LoadImage,
-    AROS_LHA(STRPTR, name, A0),
-    AROS_LHA(STRPTR *, chunkstoread, A1),
+    AROS_LHA(CONST_STRPTR, name, A0),
+    AROS_LHA(CONST_STRPTR const *, chunkstoread, A1),
     AROS_LHA(APTR *,  chunkstore, A2),
     AROS_LHA(BOOL, makeARGB, D0),
     struct Library *, PNGBase, 8, PNG)
@@ -509,7 +509,7 @@ AROS_LH4(APTR, PNG_LoadImage,
 AROS_LH5(APTR, PNG_LoadImageMEM,
     AROS_LHA(APTR, mem, A0),
     AROS_LHA(ULONG, memsize, D0),
-    AROS_LHA(STRPTR *, chunkstoread, A1),
+    AROS_LHA(CONST_STRPTR const *, chunkstoread, A1),
     AROS_LHA(APTR *,  chunkstore, A2),
     AROS_LHA(BOOL, makeARGB, D1),
     struct Library *, PNGBase, 9, PNG)
