@@ -4,6 +4,7 @@
 include $(TOP)/config/make.cfg
     
 USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_prog mmake=workbench-devs-sfs-c-sfsdefragmentgui \
     files=SFSdefragmentGUI progname=SFSdefragmentGUI targetdir=$(AROS_C) \

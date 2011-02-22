@@ -190,7 +190,7 @@ LONG savetransaction(BLCK *firsttransactionblock) {
   if((cb=getcachebuffer())!=0) {
     struct Operation *o=FirstNode();
     struct fsTransactionStorage *ts=cb->data;
-    UBYTE *src;
+    UBYTE *src = NULL;
     LONG length=0;
     LONG done;
 

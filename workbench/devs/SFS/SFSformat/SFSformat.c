@@ -25,14 +25,14 @@ LONG main()
     struct {
         char *device;
         char *name;
-        ULONG casesensitive;
-        ULONG norecycled;
-        ULONG showrecycled;
+        IPTR  casesensitive;
+        IPTR  norecycled;
+        IPTR  showrecycled;
     } arglist={NULL};
 
     if((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37))!=0)
     {
-        if((readarg=ReadArgs(template,(LONG *)&arglist,0))!=0)
+        if((readarg=ReadArgs(template,(IPTR *)&arglist,0))!=0)
         {
             struct MsgPort *msgport;
             struct DosList *dl;
@@ -120,7 +120,7 @@ LONG main()
                 }
             }
             else {
-                VPrintf("Unknown device %s\n",&arglist.device);
+                VPrintf("Unknown device %s\n",(IPTR *)&arglist.device);
                 UnLockDosList(LDF_DEVICES|LDF_READ);
             }
             FreeArgs(readarg);

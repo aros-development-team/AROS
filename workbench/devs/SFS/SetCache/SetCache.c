@@ -21,10 +21,10 @@ int main()
     struct {char *name;
           ULONG *lines;
           ULONG *readahead;
-          ULONG nocopyback;} arglist={NULL};
+          IPTR nocopyback;} arglist={NULL};
 
     if((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37))!=0) {
-        if((readarg=ReadArgs(template,(LONG *)&arglist,0))!=0) {
+        if((readarg=ReadArgs(template,(IPTR *)&arglist,0))!=0) {
             struct MsgPort *msgport;
             struct DosList *dl;
             UBYTE *devname=arglist.name;
@@ -53,7 +53,7 @@ int main()
 		    };
 
                     if((errorcode=DoPkt(msgport, ACTION_SFS_QUERY, (SIPTR)&tags, 0, 0, 0, 0))!=DOSFALSE) {
-                        ULONG lines,readahead;
+                        STACKULONG lines,readahead;
 
                         lines=tags[0].ti_Data;
                         readahead=tags[1].ti_Data;
@@ -108,7 +108,7 @@ int main()
                 }
             }
             else {
-                VPrintf("Couldn't find device '%s:'.\n",&arglist.name);
+                VPrintf("Couldn't find device '%s:'.\n",(IPTR *)&arglist.name);
                 UnLockDosList(LDF_DEVICES|LDF_READ);
             }
 
