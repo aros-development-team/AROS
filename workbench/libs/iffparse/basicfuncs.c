@@ -265,7 +265,7 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
     LONG err;
     /* Either RETURN_2CLIENT or IFFERR_EOC */
     LONG stepping_retval;
-    ULONG param;
+    IPTR param;
 
     D(bug("InvokeHandlers (Iff=%p, mode=%d, ident=0x%08lx\n",
 	iff, mode, ident
