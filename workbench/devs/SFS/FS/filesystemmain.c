@@ -1265,7 +1265,7 @@ void mainloop(void) {
                     LONG errorcode;
   
                     lock=(struct ExtFileLock *)BADDR(globals->packet->dp_Arg1);
-                    copybstrasstr((APTR)globals->packet->dp_Arg2,globals->string,258);
+                    copybstrasstr((BSTR)globals->packet->dp_Arg2,globals->string,258);
   
                     _DEBUG(("ACTION_MAKE_LINK: Name = '%s', LinkPath = '%s'\n",globals->string,(UBYTE *)globals->packet->dp_Arg3));
 
@@ -3467,8 +3467,8 @@ struct DeviceList *usevolumenode(UBYTE *name, ULONG creationdate) {
 
         _DEBUG(("usevolumenode: Found DosEntry with same date, and locklist!=0\n"));
 
-        lock=(struct ExtFileLock *)dol->dol_misc.dol_volume.dol_LockList;
-        nr=(struct fsNotifyRequest *)(((struct DeviceList *)dol)->dl_unused);
+        lock=(struct ExtFileLock *)BADDR(dol->dol_misc.dol_volume.dol_LockList);
+        nr=(struct fsNotifyRequest *)BADDR((((struct DeviceList *)dol)->dl_unused));
         dol->dol_misc.dol_volume.dol_LockList=0;
         ((struct DeviceList *)dol)->dl_unused=0;
 
@@ -3742,7 +3742,7 @@ LONG initdisk() {
         _DEBUG(("initdisk: Using new or old volumenode.\n"));
 
         if(errorcode==0) {    /* Reusing the found VolumeNode or using the new VolumeNode */
-#ifdef AROS_KERNEL
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
           vn->dl_Ext.dl_AROS.dl_Device = &globals->asfsbase->device;
           vn->dl_Ext.dl_AROS.dl_Unit = (struct Unit *)&globals->device->rootfh;
 #endif
@@ -3841,12 +3841,12 @@ static void deinitdisk() {
 
       Forbid();
 
-#ifdef AROS_KERNEL
+#if defined(__AROS__) && !defined(AROS_DOS_PACKETS)
       globals->volumenode->dl_Ext.dl_AROS.dl_Unit = NULL;
 #endif
       globals->volumenode->dl_Task=0;
-      globals->volumenode->dl_LockList=globals->locklist;
-      globals->volumenode->dl_unused=globals->notifyrequests;
+      globals->volumenode->dl_LockList=MKBADDR(globals->locklist);
+      globals->volumenode->dl_unused=MKBADDR(globals->notifyrequests);
 
       Permit();
 

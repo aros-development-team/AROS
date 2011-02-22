@@ -379,8 +379,14 @@ BOOL GUIinit()
             mp = dll->dol_Task;
             if(DoPkt(mp, ACTION_SFS_QUERY, (SIPTR)tags, 0, 0, 0, 0)!=DOSFALSE)
             {
+                const char *name;
+#ifdef AROS_DOS_PACKETS
+                name = AROS_BSTR_ADDR(dll->dol_Name);
+#else
+                name = dll->dol_Ext.dol_AROS.dol_DevName;
+#endif
                 if(tags[0].ti_Data >= (1<<16) + 83)
-                    DoMethod(DevList, MUIM_List_InsertSingle, (IPTR)dll->dol_Ext.dol_AROS.dol_DevName, MUIV_List_Insert_Bottom);
+                    DoMethod(DevList, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
             }
         }
         UnLockDosList(LDF_READ | LDF_DEVICES);

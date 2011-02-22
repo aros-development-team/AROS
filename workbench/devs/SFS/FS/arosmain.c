@@ -355,14 +355,10 @@ D(bug("[SFS] open: error = %d\n", error));
                     {
                         struct FileHandle fh=
                         {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-                                0,{0,0},
-#endif
+#ifndef AROS_DOS_PACKETS
                                 0,
                                 (APTR)-1,(APTR)-1,
                                 0,0,0,0,0
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-                                ,0
 #endif
                         };
 
