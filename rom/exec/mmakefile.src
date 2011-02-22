@@ -48,6 +48,7 @@ USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/exec \
 	       -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
 USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 # As a hack the SYS_FILES are added as the initfile.
 %build_module mmake=kernel-exec \

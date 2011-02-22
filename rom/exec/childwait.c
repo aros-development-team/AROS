@@ -94,7 +94,7 @@
 	/* Check if it has returned already. This will also take the first. */
 	ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
 	{
-	    if ((ULONG)tid == 0 || child->et_UniqueID == (ULONG)tid)
+	    if ((ULONG)(IPTR)tid == 0 || child->et_UniqueID == (ULONG)(IPTR)tid)
 		goto child_exited;
 	}
 

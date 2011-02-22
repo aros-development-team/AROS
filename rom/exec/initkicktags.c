@@ -117,7 +117,9 @@ static void AddToResidentList(IPTR *list)
     IPTR *newlist, *tmplist;
     int oldcnt = CountResidents(SysBase->ResModules);
     int addcnt = CountResidents(list);
+#ifdef PRINT_LIST
     int i;
+#endif
     
     newlist = AllocMem((oldcnt + addcnt + 1) * sizeof(struct Resident*), MEMF_PUBLIC);
     if (!newlist)
@@ -154,7 +156,7 @@ static void AddToResidentList(IPTR *list)
 
 void InitKickTags(void)
 {
-    ULONG chk = (ULONG)SysBase->KickCheckSum;
+    ULONG chk = (ULONG)(IPTR)SysBase->KickCheckSum;
     ULONG chkold = SumKickData();
     struct MemList *ml = (struct MemList*)SysBase->KickMemPtr;
 

@@ -59,7 +59,7 @@
 	I used to have this as a print, but it is used by the math*.library's
     */
 
-    return ~0UL;
+    return ~0;
 
     AROS_LIBFUNC_EXIT
 } /* SetSR() */

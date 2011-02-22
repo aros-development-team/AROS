@@ -80,8 +80,12 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 
 BOOL IsSysBaseValid(struct ExecBase *sysbase)
 {
-    if (sysbase == NULL || (((ULONG)sysbase) & 0x80000001))
+    if (sysbase == NULL)
 	return FALSE;
+#ifdef __mc68000
+    if (((IPTR)sysbase) & 0x80000001)
+	return FALSE;
+#endif
     if (sysbase->ChkBase != ~(IPTR)sysbase)
 	return FALSE;
     if (sysbase->SoftVer != VERSION_NUMBER)
