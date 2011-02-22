@@ -53,6 +53,8 @@ FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(STARTUPFILES) $(MISCFILES)
 #MM- linklibs: linklibs-autoinit
 #MM linklibs-autoinit : includes includes-copy kernel-expansion-includes
 
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 %copy_includes includes="autoinit.h detach.h" path=aros
 
 %build_linklib mmake=linklibs-autoinit libname=autoinit files=$(FILES)
