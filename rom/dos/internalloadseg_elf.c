@@ -47,7 +47,7 @@ struct hunk
 #define MyRead(file, buf, size)      \
     AROS_UFC4                        \
     (                                \
-        LONG, funcarray[0],          \
+        LONG, ((APTR)funcarray[0]),          \
         AROS_UFCA(BPTR,   file, D1), \
         AROS_UFCA(void *, buf,  D2), \
         AROS_UFCA(LONG,   size, D3), \
@@ -58,7 +58,7 @@ struct hunk
 #define MyAlloc(size, flags)         \
     AROS_UFC3                        \
     (                                \
-        void *, funcarray[1],        \
+        void *, ((APTR)funcarray[1]),        \
         AROS_UFCA(ULONG, size,  D0), \
         AROS_UFCA(ULONG, flags, D1), \
         AROS_UFCA(struct ExecBase *, SysBase, A6) \
@@ -68,7 +68,7 @@ struct hunk
 #define MyFree(addr, size)           \
     AROS_UFC3                        \
     (                                \
-        void, funcarray[2],          \
+        void, ((APTR)funcarray[2]),          \
         AROS_UFCA(void *, addr, A1), \
         AROS_UFCA(ULONG,  size, D0), \
         AROS_UFCA(struct ExecBase *, SysBase, A6) \
