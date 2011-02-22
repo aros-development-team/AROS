@@ -21,7 +21,7 @@ LONG main() {
   struct {char *name;} arglist={NULL};
 
   if((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37))!=0) {
-    if((readarg=ReadArgs(template,(LONG *)&arglist,0))!=0) {
+    if((readarg=ReadArgs(template,(IPTR *)&arglist,0))!=0) {
       struct MsgPort *msgport;
       struct DosList *dl;
       UBYTE *devname=arglist.name;
@@ -102,7 +102,7 @@ LONG main() {
             }
 
             printf("Bytes/block      : %-8ld   Total blocks : %ld\n", tags[7].ti_Data, tags[8].ti_Data);
-            printf("Cache accesses   : %-8ld   Cache misses : %ld (%d%%)\n", tags[0].ti_Data, tags[1].ti_Data, perc);
+            printf("Cache accesses   : %-8ld   Cache misses : %ld (%ld%%)\n", tags[0].ti_Data, tags[1].ti_Data, (long)perc);
             printf("Read-ahead cache : %ldx %ld bytes ",tags[14].ti_Data, tags[15].ti_Data);
 
             if(tags[16].ti_Data!=0) {
@@ -129,7 +129,7 @@ LONG main() {
         }
       }
       else {
-        VPrintf("Couldn't find device '%s:'.\n",&arglist.name);
+        VPrintf("Couldn't find device '%s:'.\n",(IPTR *)&arglist.name);
         UnLockDosList(LDF_DEVICES|LDF_READ);
       }
 

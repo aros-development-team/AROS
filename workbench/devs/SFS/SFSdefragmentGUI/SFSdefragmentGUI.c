@@ -69,13 +69,13 @@ int main() {
   WORD exit=FALSE;
 
   struct {char *name;
-          ULONG debug;} arglist={NULL};
+          IPTR debug;} arglist={NULL};
 
   DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37);
   IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",37);
   GfxBase=(struct GfxBase *)OpenLibrary("graphics.library",37);
 
-  if((readarg=ReadArgs(template,(LONG *)&arglist,0))!=0) {
+  if((readarg=ReadArgs(template,(IPTR *)&arglist,0))!=0) {
     struct MsgPort *msgport;
     struct DosList *dl;
     UBYTE *devname=arglist.name;
@@ -108,7 +108,7 @@ int main() {
           if(tags[1].ti_Data >= (1<<16) + 83) {
             if((errorcode=DoPkt(msgport, ACTION_SFS_DEFRAGMENT_INIT, 0, 0, 0, 0, 0))!=DOSFALSE) {
               if((bitmap=AllocVec(blocks_total / 8 + 32, MEMF_CLEAR))!=0) {
-                if((errorcode=DoPkt(msgport, ACTION_SFS_READ_BITMAP, bitmap, 0, blocks_total, 0, 0))!=DOSFALSE) {
+                if((errorcode=DoPkt(msgport, ACTION_SFS_READ_BITMAP, (SIPTR)bitmap, 0, blocks_total, 0, 0))!=DOSFALSE) {
                   if((mywindow=OpenWindowTags(0, WA_Width, dw+16,
                                                  WA_Height, dh+16,
                                                  WA_MinWidth, 100,
@@ -161,7 +161,7 @@ int main() {
                               bmset(bitmap, (blocks_total+31)/32, ds->data[1], ds->data[0]);
 
                               if(arglist.debug!=0) {
-                                printf("Moved %d blocks from %d to %d\n", ds->data[0], ds->data[1], ds->data[2]);
+                                printf("Moved %lu blocks from %lu to %lu\n", (unsigned long)ds->data[0], (unsigned long)ds->data[1], (unsigned long)ds->data[2]);
                               }
 
                               lastread[e]=ds->data[1];
@@ -222,7 +222,7 @@ int main() {
       }
     }
     else {
-      VPrintf("Couldn't find device '%s:'.\n",&arglist.name);
+      VPrintf("Couldn't find device '%s:'.\n",(IPTR *)&arglist.name);
       UnLockDosList(LDF_DEVICES|LDF_READ);
     }
 

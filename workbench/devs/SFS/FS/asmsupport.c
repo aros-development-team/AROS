@@ -177,7 +177,8 @@ LONG bmffo(ULONG *bitmap, LONG longs, LONG bitoffset)
 
     while (longs-- > 0) {
         if (*scan++ != 0) {
-            return (bfffo(AROS_BE2LONG(*--scan),0) + ((scan - bitmap) << 5));
+            --scan;
+            return (bfffo(AROS_BE2LONG(*scan),0) + ((scan - bitmap) << 5));
         }
     }
 
@@ -210,7 +211,8 @@ LONG bmffz(ULONG *bitmap, LONG longs, LONG bitoffset)
 
     while (longs-- > 0) {
         if (*scan++ != 0xFFFFFFFF) {
-            return (bfffz(AROS_BE2LONG(*--scan),0) + ((scan - bitmap) << 5));
+            --scan;
+            return (bfffz(AROS_BE2LONG(*scan),0) + ((scan - bitmap) << 5));
         }
     }
 
@@ -329,8 +331,9 @@ BOOL bmtsto(ULONG *bitmap, LONG bitoffset, LONG bits)
             bits -= (32-bitoffset);
         }
 
-        if ((mask & AROS_BE2LONG(*scan++)) != mask)
+        if ((mask & AROS_BE2LONG(*scan)) != mask)
             return FALSE;
+        scan++;
     }
 
     while (bits > 0)
@@ -345,8 +348,9 @@ BOOL bmtsto(ULONG *bitmap, LONG bitoffset, LONG bits)
             mask = 0xffffffff << (32-bits);
             bits = 0;
         }
-        if ((mask & AROS_BE2LONG(*scan++)) != mask)
+        if ((mask & AROS_BE2LONG(*scan)) != mask)
             return FALSE;
+        scan++;
     }
 
     return TRUE;
@@ -373,8 +377,9 @@ BOOL bmtstz(ULONG *bitmap, LONG bitoffset, LONG bits)
             mask = (0xffffffff >> bitoffset);
             bits -= (32-bitoffset);
         }
-        if ((mask & AROS_BE2LONG(*scan++)) != 0)
+        if ((mask & AROS_BE2LONG(*scan)) != 0)
             return FALSE;
+        scan++;
     }
 
     while (bits > 0)
@@ -389,8 +394,9 @@ BOOL bmtstz(ULONG *bitmap, LONG bitoffset, LONG bits)
             mask = 0xffffffff << (32-bits);
             bits = 0;
         }
-        if ((mask & AROS_BE2LONG(*scan++)) != 0)
+        if ((mask & AROS_BE2LONG(*scan)) != 0)
             return FALSE;
+        scan++;
     }
 
     return TRUE;
@@ -418,7 +424,8 @@ ULONG bmcnto(ULONG *bitmap, LONG bitoffset, LONG bits)
             mask = (0xffffffff >> bitoffset);
             bits -= (32-bitoffset);
         }
-        count += bfcnto(AROS_BE2LONG(*scan++) & mask);
+        count += bfcnto(AROS_BE2LONG(*scan) & mask);
+        scan++;
     }
 
     while (bits > 0)
@@ -433,7 +440,8 @@ ULONG bmcnto(ULONG *bitmap, LONG bitoffset, LONG bits)
             mask = 0xffffffff << (32-bits);
             bits = 0;
         }
-        count += bfcnto(AROS_BE2LONG(*scan++) & mask);
+        count += bfcnto(AROS_BE2LONG(*scan) & mask);
+        scan++;
     }
 
     return count;
@@ -462,7 +470,8 @@ ULONG bmcntz(ULONG *bitmap, LONG bitoffset, LONG bits)
             bits -= (32-bitoffset);
         }
 
-        count += bfcntz(AROS_BE2LONG(*scan++) | mask);
+        count += bfcntz(AROS_BE2LONG(*scan) | mask);
+        scan++;
     }
 
     while (bits > 0)
@@ -478,7 +487,8 @@ ULONG bmcntz(ULONG *bitmap, LONG bitoffset, LONG bits)
             bits = 0;
         }
 
-        count += bfcntz(AROS_BE2LONG(*scan++) | mask);
+        count += bfcntz(AROS_BE2LONG(*scan) | mask);
+        scan++;
     }
 
     return count;
