@@ -14,7 +14,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct IFFHandle *, iff, A0),
-	AROS_LHA(LONG             *, propArray, A1),
+	AROS_LHA(const LONG       *, propArray, A1),
 	AROS_LHA(LONG              , numPairs, D0),
 
 /*  LOCATION */
