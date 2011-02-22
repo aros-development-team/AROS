@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/ConfigBoard()
+    /* TODO: Write expansion/ConfigBoard() */
     aros_print_not_implemented ("ConfigBoard");
     
     return FALSE;

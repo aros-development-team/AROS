@@ -46,7 +46,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write expansion/WriteExpansionByte()
+    /* TODO: Write expansion/WriteExpansionByte() */
     aros_print_not_implemented ("WriteExpansionByte");
 
     AROS_LIBFUNC_EXIT
