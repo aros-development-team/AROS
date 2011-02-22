@@ -324,6 +324,7 @@ void changegeometry(struct DosEnvec *de)
     #endif
 }
 
+#ifdef DEBUGCODE
 static struct fsIORequest *createiorequest(void)
 {
     struct fsIORequest *fsi;
@@ -343,6 +344,7 @@ static struct fsIORequest *createiorequest(void)
 
     return(fsi);
 }
+#endif
 
 LONG initdeviceio(UBYTE *devicename, ULONG unit, ULONG flags, struct DosEnvec *de)
 {

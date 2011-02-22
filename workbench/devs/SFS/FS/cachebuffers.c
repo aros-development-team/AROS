@@ -601,7 +601,7 @@ void dumpcachebuffer(struct CacheBuffer *cb) {
 }
 
 
-
+#ifdef DEBUGCODE
 static void dumpcachebuffers3(void) {
   struct CacheBuffer *cb;
 
@@ -612,6 +612,7 @@ static void dumpcachebuffers3(void) {
     cb=(struct CacheBuffer *)(cb->node.mln_Succ);
   }
 }
+#endif
 
 
 
@@ -739,7 +740,7 @@ void dumpcachebuffers(void) {
 }
 
 
-
+#ifdef DEBUGCODE
 static void dumpcachebuffers2(void) {
   struct CacheBuffer *cb;
   ULONG cnt=0;
@@ -756,6 +757,7 @@ static void dumpcachebuffers2(void) {
     dumpcachebuffers();
   }
 }
+#endif
 
 
 

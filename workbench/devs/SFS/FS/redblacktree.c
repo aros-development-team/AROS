@@ -371,6 +371,7 @@ void DeleteFixup(RBNODE *X) {
   X->color = BLACK;
 }
 
+#ifdef DEBUGCODE
 static RBNODE *FindClosestNode(unsigned long data) {
   RBNODE *closest=0;
   RBNODE *current = ROOT;
@@ -391,6 +392,7 @@ static RBNODE *FindClosestNode(unsigned long data) {
   }
   return(closest);
 }
+#endif
 
 RBNODE *FindNode(unsigned long data) {
   RBNODE *current = ROOT;
@@ -432,7 +434,7 @@ RBNODE *FindNodeFrom(RBNODE *current,unsigned long data) {
 
 
 
-
+#ifdef DEBUGCODE
 /* Call with FindAllNodes(ROOT,...); */
 
 static void FindAllNodes(RBNODE *current,unsigned long data) {
@@ -454,7 +456,7 @@ static void FindAllNodes(RBNODE *current,unsigned long data) {
     }
   }
 }
-
+#endif
 
 
 void WalkTree(RBNODE *current) {

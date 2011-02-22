@@ -181,7 +181,7 @@ static void AddFileSystemTask(struct ASFSBase *asfsbase, struct IOFileSys *iofs)
     } /* if (device) */
     else
     {
-#warning "maybe use another error here"
+	// FIXME: maybe use another error here
 	iofs->io_DosError = ERROR_NO_FREE_STORE;
     }
 
@@ -249,7 +249,7 @@ D(bug("[SFS] open: lock %08x (%s) %s\n",
                     new = AllocMem(sizeof(struct ASFSHandle), MEMF_PUBLIC | MEMF_CLEAR);
                     if (new)
                     {
-		    	struct ExtFileLock dummyfl;
+//		    	struct ExtFileLock dummyfl;
 		    	void *handle;
 
 //		    	if (!(asfshandle->flags & AHF_IS_LOCK))
@@ -359,7 +359,7 @@ D(bug("[SFS] open: error = %d\n", error));
                                 0,{0,0},
 #endif
                                 0,
-                                (UBYTE *)-1,(UBYTE *)-1,
+                                (APTR)-1,(APTR)-1,
                                 0,0,0,0,0
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
                                 ,0
@@ -758,7 +758,7 @@ D(bug("[SFS] FSA_RENAME %s %s\n", iofs->io_Union.io_RENAME.io_Filename, iofs->io
                     (IPTR)MKBADDR(asfshandle->handle);
                 packet.dp_Arg3 =
                     (IPTR)MKBADDR(iofs->io_Union.io_SET_COMMENT.io_Filename);
-#warning "TODO: check if really BSTR"
+                // TODO: check if really BSTR
                 packet.dp_Arg4 = (IPTR)iofs->io_Union.io_SET_COMMENT.io_Comment;
                 sendPacket(asfsbase, &packet, asfshandle->device->taskmp);
                 if (packet.dp_Res1)
