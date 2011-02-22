@@ -52,7 +52,7 @@
     struct ETask *et;
 
     Forbid();
-    et = FindChild((ULONG)tid);
+    et = FindChild((ULONG)(IPTR)tid);
     if(et != NULL)
     {
 	Remove((struct Node *)et);

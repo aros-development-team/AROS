@@ -77,7 +77,7 @@ AROS_LD3(void, CacheClearE,
 	    /* Decrement vector pointer by one and install vector */
 	    __AROS_INITVEC(target,n);
 	    if (*fp)
-		__AROS_SETVECADDR(target,n,funcDispBase+*fp);
+		__AROS_SETVECADDR(target,n,(void *)funcDispBase+*fp);
 
 	    /* Use next array entry */
 	    fp++;

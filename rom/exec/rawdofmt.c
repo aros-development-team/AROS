@@ -58,7 +58,7 @@
 	res = (type)(IPTR)va_arg(VaListStream, int);    \
     else                                                \
     if (sizeof(type) == sizeof(long))                   \
-	res = (type)va_arg(VaListStream, long);         \
+	res = (type)(IPTR)va_arg(VaListStream, long);   \
     else                                                \
 	res = (type)(IPTR)va_arg(VaListStream, void *); \
                                                         \
@@ -82,19 +82,19 @@
 
 #define fetch_mem_arg(type)              	\
 ({                                       	\
-    type res;					\
+    IPTR res;					\
     						\
     if (sizeof(type) <= sizeof(short))		\
     {						\
-    	res = (type)*(short *)DataStream;	\
+    	res = *(short *)DataStream	;	\
     	DataStream = (short *)DataStream + 1;	\
     }						\
-    else					\
+    else if (sizeof(type) <= sizeof(long))	\
     {						\
-    	res = (type)*(long *)DataStream;	\
+    	res = *(long *)DataStream;		\
     	DataStream = (long *)DataStream + 1;	\
     }						\
-    res;					\
+    (type)res;					\
 })
 
 /* Fetch the data either from memory or from the va_list, depending
@@ -133,7 +133,7 @@ do                                        \
     default:				  \
 	if (is_va_list(VaListStream))			\
 	{						\
-	    APTR (*proc)(APTR, UBYTE) = PutChProc;	\
+	    APTR (*proc)(APTR, UBYTE) = (APTR)PutChProc;\
 	    PutChData = proc((APTR)PutChData, ch);	\
 	}						\
 	else						\
@@ -393,7 +393,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
     PutCh('\0');
 
     /* Return the rest of the DataStream or buffer. */
-    return is_va_list(VaListStream) ? PutChData : DataStream;
+    return is_va_list(VaListStream) ? (APTR)PutChData : DataStream;
 }
 
 /*****************************************************************************

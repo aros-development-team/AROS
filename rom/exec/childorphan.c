@@ -78,7 +78,7 @@
     else
     {
     	Forbid();
-	child = FindChild((ULONG)tid);
+	child = FindChild((ULONG)(IPTR)tid);
 	if(child != NULL)
 	{
 	    child->et_Parent = NULL;

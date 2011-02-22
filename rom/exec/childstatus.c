@@ -64,7 +64,7 @@
     /* Search through the running tasks list */
     ForeachNode(&et->et_Children, child)
     {
-	if (child->et_UniqueID == (ULONG)tid)
+	if (child->et_UniqueID == (ULONG)(IPTR)tid)
 	{
 	    status = CHILD_ACTIVE;
 	    break;
@@ -73,7 +73,7 @@
 
     ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
     {
-	if (child->et_UniqueID == (ULONG)tid)
+	if (child->et_UniqueID == (ULONG)(IPTR)tid)
 	{
 	    status = CHILD_EXITED;
 	    break;
