@@ -42,6 +42,8 @@ FILES	:= \
 #MM linklibs-arossupport : includes
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 %build_linklib mmake=linklibs-arossupport libname=arossupport files=$(FILES)
 
 INCLUDE_FILES	    := $(call WILDCARD, include/*.h)
