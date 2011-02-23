@@ -16,12 +16,12 @@
 /*****************************************************************************
 
     NAME */
-	AROS_UFH3(ULONG, TimeDelay,
+	LONG TimeDelay(
 
 /*  SYNOPSIS */
-	AROS_UFHA(LONG, Unit, D0),
-	AROS_UFHA(ULONG, Seconds, D1),
-	AROS_UFHA(ULONG, MicroSeconds, D2))
+	LONG Unit,
+	ULONG Seconds,
+	ULONG MicroSeconds)
 
 /*  FUNCTION
 	TimeDelay() waits for the specified period of time before returning
@@ -56,8 +56,6 @@
 
 ******************************************************************************/
 {
-    AROS_USERFUNC_INIT
-
     struct timerequest tr;
     struct MsgPort mp;
     UBYTE error = 0;
@@ -93,7 +91,5 @@
     }
 
     return error;
-
-    AROS_USERFUNC_EXIT
 
 } /* TimeDelay() */
