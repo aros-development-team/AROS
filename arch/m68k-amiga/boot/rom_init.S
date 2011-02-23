@@ -117,7 +117,7 @@ rom_init:
 	move.l	%sp,%sp@-
 	move.l	#_bss,%sp@-
 	move.l	%a4,%sp@-	/* memory bank array */
-	jsr		start
+	jsr		exec_boot
 
 chipfault:
 	move.w	#0x0f0,0xdff180

@@ -449,7 +449,7 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
     return GetSysBaseChkSum(sysbase) == 0xffff;
 }
 
-void start(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
+void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	volatile APTR *trap;
 	int i;
