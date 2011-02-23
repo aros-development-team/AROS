@@ -301,7 +301,7 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
     	Handler = NULL;
     }
 
-#ifdef PARANOIA_STACK
+#ifdef AROS_DEBUG_STACK
     if (KernelBase != NULL) {	// Prevents early failure
 	if (regs->sr & 0x2000) {
 		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (((APTR)regs)-1) > SysBase->SysStkUpper) {
@@ -327,7 +327,7 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
     if (Handler == NULL || !Handler(regs, Id, SysBase))
     	M68KExceptionHandler(regs, Id, SysBase);
 
-#ifdef PARANOIA_STACK
+#ifdef AROS_DEBUG_STACK
     if (KernelBase != NULL) {
 	if (regs->sr & 0x2000) {
 		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (((APTR)regs)-1) > SysBase->SysStkUpper) {
@@ -337,7 +337,6 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
 	} else {
-#if 0
 		struct Task *t = SysBase->ThisTask;
 		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
 			D(bug("[%s]: Stack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
@@ -345,7 +344,6 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
 			D(PRINT_CPU_CONTEXT(regs));
 			Alert(AT_DeadEnd | AN_StackProbe);
 		}
-#endif
 	}
     }
 #endif
