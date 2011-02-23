@@ -17,6 +17,12 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 #MM                    linklibs workbench-c-m68k-elf
 #MM workbench-c-m68k-quick : workbench-c-m68k-elf-quick
 
+FILES := gdbstub gdbstop
+
+%build_progs mmake=workbench-c-m68k \
+    files=$(FILES) targetdir=$(AROS_C) \
+    uselibs="arossupport amiga rom"
+
 FILES := SetPatchAROS
 AFILES := newstackswap
 
