@@ -96,12 +96,12 @@ static AROS_UFH3(void, FreeFunc,
 {
     AROS_LIBFUNC_INIT
 
-    void (* FunctionArray[3])();
+    SIPTR FunctionArray[3];
     BPTR file, segs=0;
 
-    FunctionArray[0] = ReadFunc;
-    FunctionArray[1] = AllocFunc;
-    FunctionArray[2] = FreeFunc;
+    FunctionArray[0] = (SIPTR)ReadFunc;
+    FunctionArray[1] = (SIPTR)AllocFunc;
+    FunctionArray[2] = (SIPTR)FreeFunc;
 
     /* Open the file */
     D(bug("[LoadSeg] Opening '%s'...\n", name));
