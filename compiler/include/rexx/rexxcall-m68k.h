@@ -13,7 +13,7 @@
 #define RexxCallQueryLibFunc(rexxmsg, libbase, offset, retargstringptr) \
   ({ \
     int _offset=abs(offset)/6; \
-    AROS_LC2(ULONG, RexxCallQueryLibFunc, \
+    AROS_LVO_CALL2(ULONG, \
 	       AROS_LCA(struct RexxMsg *, rexxmsg, A0), \
 	       AROS_LCA(STRPTR *, retargstringptr, A1), \
 	       struct Library *, libbase, _offset, rexxcall); \
