@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CacheClearE() - Clear the caches with extended control.
@@ -73,8 +73,9 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    /* TODO: Write exec/CacheClearE() */
-    aros_print_not_implemented("CacheClearE");
+
+    /* This function is entirely architecture-specific. Replace when needed. */
+
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := platform_init shutdowna cachecleare
+FILES := platform_init shutdowna
 ifneq ($(AROS_TARGET_CPU), arm)
 USER_CFLAGS := -DHAVE_SWAPCONTEXT
 FILES += newstackswap
