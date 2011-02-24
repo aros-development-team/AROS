@@ -915,7 +915,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
     ObtainSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
 #define SetFunc(offs,ptr) \
-    SetFunction(&SysBase->LibNode, (offs)*LIB_VECTSIZE, \
+    SetFunction(&SysBase->LibNode, (offs)*(LONG)LIB_VECTSIZE, \
     			AROS_SLIB_ENTRY(ptr,Dos))
 
     /* Do not set the vectors until you have initialised everything else. */

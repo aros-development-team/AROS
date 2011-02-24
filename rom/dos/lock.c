@@ -147,7 +147,7 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 	if (!cur)
 	    cur = DOSBase->dl_SYSLock;
 
-        if (cur && (cur != -1))
+        if (cur && (cur != (BPTR)-1))
         {
             fh = BADDR(cur);
     
