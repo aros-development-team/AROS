@@ -262,10 +262,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       break;
 
       case HUNK_RELOC32:
-#if AROS_SIZEOFULONG != AROS_SIZEOFPTR
-        bug("HUNK_RELOC32 not implemented\n");
-        ERROR(ERROR_BAD_HUNK);
-#else
         D(bug("HUNK_RELOC32:\n"));
         while (1)
         {
@@ -296,22 +292,18 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             //D(bug("\t\t0x%06lx\n", offset));
             addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
 
-            *addr = AROS_BE2LONG(*addr) + (ULONG)GETHUNKPTR(count);
+            *addr = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
 
             --i;
           }
         }
-#endif
       break;
 
       case HUNK_DREL32: /* For compatibility with V37 */
       case HUNK_RELOC32SHORT:
-#if AROS_SIZEOFULONG != AROS_SIZEOFPTR
-        bug("HUNK_DREL32/HUNK_RELOC32SHORT not implemented\n");
-        ERROR(ERROR_BAD_HUNK);
-#else
         {
           ULONG Wordcount = 0;
+          ULONG offset;
 
           while (1)
           {
@@ -353,7 +345,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
               //D(bug("\t\t0x%06lx\n", offset));
               addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
 
-              *addr = AROS_BE2LONG(*addr) + (ULONG)GETHUNKPTR(count);
+              *addr = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
 
               --i;
             } /* while (i > 0)*/
@@ -366,7 +358,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             read_block(fh, &word, sizeof(word), funcarray, DOSBase);
           }
         }
-#endif
       break;
 
       case HUNK_END:
@@ -454,11 +445,14 @@ done:
       return firsthunk;
 
     hunksize = *((ULONG*)BADDR(hunktab[0]) - 1);
-    if (last > first && hunksize >= 32 / 4) {
+    if (last > first && hunksize >= 32 / 4)
+    {
       /* NOTE: HUNK_OVERLAY is not required for overlay mode. */
       ULONG *h = (ULONG*)(BADDR(hunktab[first]));
-      if (h[2] == 0x0000abcd) {
-#if AROS_SIZEOFULONG != AROS_SIZEOFPTR
+
+      if (h[2] == 0x0000abcd)
+      {
+#if __WORDSIZE != 32
         D(bug("overlay not supported!\n"));
         ERROR(ERROR_BAD_HUNK);
 #else
