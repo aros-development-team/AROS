@@ -292,7 +292,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             //D(bug("\t\t0x%06lx\n", offset));
             addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
 
-            *addr = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+            /* See the above MEMF_31 explanation for why this
+             * works on AROS 64-bit.
+             */
+            *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
 
             --i;
           }
@@ -345,7 +348,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
               //D(bug("\t\t0x%06lx\n", offset));
               addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
 
-              *addr = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+              /* See the above MEMF_31 explanation for why this
+               * works on AROS 64-bit.
+               */
+              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
 
               --i;
             } /* while (i > 0)*/
