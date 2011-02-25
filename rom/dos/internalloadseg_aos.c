@@ -38,7 +38,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
   BPTR *hunktab = BADDR(table);
   BPTR firsthunk = BNULL, prevhunk = BNULL;
-  ULONG hunktype, count, first, last, offset, curhunk, numhunks;
+  ULONG hunktype, count, first, last, curhunk, numhunks;
   LONG t;
   UBYTE name_buf[255];
   register int i;
@@ -262,10 +262,15 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       break;
 
       case HUNK_RELOC32:
+#if AROS_SIZEOFULONG != AROS_SIZEOFPTR
+        bug("HUNK_RELOC32 not implemented\n");
+        ERROR(ERROR_BAD_HUNK);
+#else
         D(bug("HUNK_RELOC32:\n"));
         while (1)
         {
           ULONG *addr;
+          ULONG offset;
 
           if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
             goto end;
@@ -296,10 +301,15 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             --i;
           }
         }
+#endif
       break;
 
       case HUNK_DREL32: /* For compatibility with V37 */
       case HUNK_RELOC32SHORT:
+#if AROS_SIZEOFULONG != AROS_SIZEOFPTR
+        bug("HUNK_DREL32/HUNK_RELOC32SHORT not implemented\n");
+        ERROR(ERROR_BAD_HUNK);
+#else
         {
           ULONG Wordcount = 0;
 
@@ -356,6 +366,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             read_block(fh, &word, sizeof(word), funcarray, DOSBase);
           }
         }
+#endif
       break;
 
       case HUNK_END:
@@ -447,12 +458,17 @@ done:
       /* NOTE: HUNK_OVERLAY is not required for overlay mode. */
       ULONG *h = (ULONG*)(BADDR(hunktab[first]));
       if (h[2] == 0x0000abcd) {
+#if AROS_SIZEOFULONG != AROS_SIZEOFPTR
+        D(bug("overlay not supported!\n"));
+        ERROR(ERROR_BAD_HUNK);
+#else
         /* overlay executable */
         h[3] = (ULONG)fh;
         h[4] = (ULONG)overlaytable;
         h[5] = MKBADDR(hunktab);
         D(bug("overlay loaded!\n"));
         return (BPTR)(-(LONG)MKBADDR(h));
+#endif
       }
     }
 
