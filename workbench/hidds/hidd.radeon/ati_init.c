@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2003-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -290,7 +290,6 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
                 }
 		CloseDevice((struct IORequest *)&LIBBASE->sd.tr);
             }
-            OOP_ReleaseAttrBases(attrbases);
         }
     }
 
