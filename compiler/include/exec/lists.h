@@ -2,7 +2,8 @@
 #define EXEC_LISTS_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
         
     Structures and macros for exec lists.
 */
@@ -122,7 +123,7 @@ do                                                        \
     struct Node *__aros_node_tmp = (struct Node *)(_n),  \
                 *n = __aros_node_tmp;                    \
                                                          \
-    (n && n->ln_Succ->ln_Succ) ? n->ln_Succ : (struct Node *)0; \
+    (n && n->ln_Succ && n->ln_Succ->ln_Succ) ? n->ln_Succ : (struct Node *)0; \
 })
 
 #define GetPred(_n)                                      \
@@ -130,7 +131,7 @@ do                                                        \
     struct Node *__aros_node_tmp = (struct Node *)(_n),  \
                 *n = __aros_node_tmp;                    \
                                                          \
-    (n && n->ln_Pred->ln_Pred) ? n->ln_Pred : (struct Node *)0; \
+    (n && n->ln_Pred && n->ln_Pred->ln_Pred) ? n->ln_Pred : (struct Node *)0; \
 })
 
 #define REMHEAD(_l)                                               \
