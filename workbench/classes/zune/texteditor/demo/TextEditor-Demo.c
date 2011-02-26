@@ -489,7 +489,7 @@ int main(VOID)
                       rxmsg->rm_Action = RXCOMM;
                       rxmsg->rm_Stdin = rxstdout;
                       rxmsg->rm_Stdout = rxstdout;
-                      rxmsg->rm_Args[0] = CreateArgstring((STRPTR)script, strlen(script));
+                      rxmsg->rm_Args[0] = (IPTR)CreateArgstring((STRPTR)script, strlen(script));
                       PutMsg(rexxport, (struct Message *)rxmsg);
                     }
                   }
@@ -503,7 +503,7 @@ int main(VOID)
                       if(!rxmsg->rm_Result1 && rxmsg->rm_Result2)
                         DeleteArgstring((STRPTR)rxmsg->rm_Result2);
 
-                      DeleteArgstring(rxmsg->rm_Args[0]);
+                      DeleteArgstring((UBYTE *)rxmsg->rm_Args[0]);
                       DeleteRexxMsg(rxmsg);
                       DeleteMsgPort(myport);
                       myport = NULL;
