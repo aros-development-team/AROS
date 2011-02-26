@@ -51,7 +51,7 @@
  1.21  19.05.09 : added SDISPATCHER() to generate a static dispatcher.
  1.22  24.06.10 : fixed AROS macros (Matthias Rustler).
  1.23  12.08.10 : added missing proto/alib.h include for AROS
- 1.23a 25.02.11 : fixed AROS macros for m68k (Jason McMullan)
+ 1.23b 25.02.11 : fixed AROS macros for m68k (Jason McMullan)
 
 */
 
@@ -210,7 +210,7 @@
     	    AROS_UFPA(Object *, obj, A2), \
     	    AROS_UFPA(Msg, msg, A1))
   #define DISPATCHERx(x,name) \
-    IPTR name(struct IClass * cl, Object * obj, Msg msg); \
+    x IPTR name(struct IClass * cl, Object * obj, Msg msg); \
     x AROS_UFH3(IPTR, Gate_##name, \
     	    AROS_UFHA(struct IClass *, cl, A0), \
     	    AROS_UFHA(Object *, obj, A2), \
@@ -219,7 +219,7 @@
     	return name(cl, obj, msg); \
       AROS_USERFUNC_EXIT \
     } \
-    IPTR name(struct IClass * cl, Object * obj, Msg msg)
+    x IPTR name(struct IClass * cl, Object * obj, Msg msg)
   #define DISPATCHER(name)  DISPATCHERx(,name)
   #define SDISPATCHER(name) DISPATCHERx(static,name)
   #define ENTRY(func) (APTR)Gate_##func
