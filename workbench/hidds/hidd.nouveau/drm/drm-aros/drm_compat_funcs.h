@@ -20,7 +20,7 @@
 #define writeb(val, addr)               (*(volatile UBYTE*)(addr) = (val))
 #define readb(addr)                     (*(volatile UBYTE*)(addr))
 #define kzalloc(size, flags)            AllocVec(size, MEMF_ANY | MEMF_CLEAR)
-#define kcalloc(count, size, flags)     AllocVec(count * size, MEMF_ANY | MEMF_CLEAR);
+#define kcalloc(count, size, flags)     AllocVec((count) * (size), MEMF_ANY | MEMF_CLEAR);
 #define kmalloc(size, flags)            AllocVec(size, MEMF_ANY)
 #define vmalloc_user(size)              AllocVec(size, MEMF_ANY | MEMF_CLEAR)
 #define vmalloc(size)                   AllocVec(size, MEMF_ANY)
