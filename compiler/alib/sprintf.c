@@ -15,7 +15,7 @@
        VOID  __sprintf(
 
 /*  SYNOPSIS */
-	     UBYTE *buffer, UBYTE *format, ...)
+	     UBYTE *buffer, const UBYTE *format, ...)
 
 /*  FUNCTION
 	Print a formatted string to a buffer.
