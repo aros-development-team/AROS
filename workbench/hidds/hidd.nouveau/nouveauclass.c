@@ -463,7 +463,11 @@ OOP_Object * METHOD(Nouveau, Root, New)
             /* TODO: Check ret, how to handle ? */
 
             /* Initialize acceleration objects */
-            ret = NVAccelCommonInit(carddata);
+            if (carddata->architecture != NV_ARCH_C0)
+            {
+                /* TODO:NVC0: Implement acceleration */
+                ret = NVAccelCommonInit(carddata);
+            }
             /* TODO: Check ret, how to handle ? */
 
             /* Allocate buffer object for cursor */
@@ -486,6 +490,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
             /* Set initial pattern (else 16-bit ROPs are not working) */
             if (carddata->architecture == NV_ARCH_50)
                 HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
+            else if (carddata->architecture == NV_ARCH_C0)
+                ;/* TODO:NVC0: Implement */
             else
                 HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
 
