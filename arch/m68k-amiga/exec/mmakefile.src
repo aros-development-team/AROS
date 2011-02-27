@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := coldreboot
-AFILES		:= enable disable readgayle cachecontrol
+AFILES		:= enable disable readgayle
 
 #MM kernel-exec : kernel-exec-amiga-m68k
 #MM kernel-exec-amiga-m68k : \
