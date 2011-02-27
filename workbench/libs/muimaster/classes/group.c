@@ -735,7 +735,9 @@ static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
     get(data->family, MUIA_Family_List, &(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
+    {
 	DoMethodA(child, (Msg)msg);
+    }
     return TRUE;
 }
 
