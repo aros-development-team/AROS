@@ -811,6 +811,39 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
         else
             return 0;
     }
+    else if ((num == 2) && (msgs[0].addr == 0x54) && (msgs[1].addr == 0x54) && (msgs[0].len == 1) && (msgs[1].len == 1))
+    {
+        /* This is reading data from register 0x54 */
+        struct pHidd_I2CDevice_WriteRead msg;
+        BOOL result = FALSE;
+        
+        struct TagItem attrs[] = 
+        {
+            { aHidd_I2CDevice_Driver,   (IPTR)adap->i2cdriver   },
+            { aHidd_I2CDevice_Address,  0xa8                    },
+            { aHidd_I2CDevice_Name,     (IPTR)"Read Register"   },
+            { TAG_DONE, 0UL }
+        };
+
+        D(bug("i2c_transfer - reading from register 0x54\n"));
+
+        OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
+        
+        msg.mID = OOP_GetMethodID((STRPTR)IID_Hidd_I2CDevice, moHidd_I2CDevice_WriteRead);
+        msg.readBuffer = msgs[1].buf;
+        msg.readLength = msgs[1].len;
+        msg.writeBuffer = msgs[0].buf;
+        msg.writeLength = msgs[0].len;
+
+        result = OOP_DoMethod(obj, &msg.mID);
+        
+        OOP_DisposeObject(obj);
+        
+        if (result)
+            return 2;
+        else
+            return 0;
+    }
     else
     {
         /* Not supported case */
