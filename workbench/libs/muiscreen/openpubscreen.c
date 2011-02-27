@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,7 +52,7 @@
     struct Hook *backfillHook = NULL;
     char *ret = NULL;
 
-    D(bug("MUIS_OpenPubScreen(%p)\n", desc));
+    D(bug("MUIS_OpenPubScreen(%p) name %s\n", desc, desc->Name));
 
     // TODO desc->SysDefault
     // TODO desc->AutoClose
@@ -80,12 +80,20 @@
     
     if(screen)
     {
-	ret = desc->Name;
-	struct Node *node;
-	ForeachNode(&MUIScreenBase->clients, node)
+	if ((PubScreenStatus(screen, 0) & 1) == 0)
 	{
-	    struct MUIS_InfoClient *client = (struct MUIS_InfoClient*) node;
-	    Signal(client->task, client->sigbit);
+	    D(bug("Can't make screen public\n"));
+	    CloseScreen(screen);
+	}
+	else
+	{
+	    ret = desc->Name;
+	    struct Node *node;
+	    ForeachNode(&MUIScreenBase->clients, node)
+	    {
+		struct MUIS_InfoClient *client = (struct MUIS_InfoClient*) node;
+		Signal(client->task, client->sigbit);
+	    }
 	}
     }
     

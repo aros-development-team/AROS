@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -69,6 +69,7 @@
     
     if(found)
     {
+	PubScreenStatus(pubscrnode->psn_Screen, PSNF_PRIVATE);
 	CloseScreen(pubscrnode->psn_Screen);
 
 	struct Node *node;
