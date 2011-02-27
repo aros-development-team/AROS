@@ -2,14 +2,14 @@
 include $(TOP)/config/make.cfg
 
 FILES=offsets getcc preparecontext \
-      cachecleare cacheclearu cachecontrol cachepostdma cachepredma \
+      cachecleare cacheclearu cachepostdma cachepredma \
       setfunction alert_cpu
 
 AFILES=newstackswap stackswap \
        supervisor superstate userstate \
        forbid \
        cacheclearu_ cachepostdma_ cachepredma_ \
-       setsr
+       setsr cachecontrol
 
 USER_CFLAGS := -I$(SRCDIR)/rom/exec $(PARANOIA_CFLAGS)
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
