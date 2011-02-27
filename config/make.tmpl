@@ -2452,7 +2452,9 @@ endif
 #                         version. Each one of them is tried until a matching archive is
 #                         found. They are appended to patches and these are tried the
 #                         same way as packages are.
-#     - destination     = the local directory where to put the archive and patches.
+#     - location        = the local directory where to put the fetched archive and patches.
+#                         If not specified, the directory specified by destination is used.
+#     - destination     = the directory to unpack the archive to.
 #                         If not specified, the current directory is assumed.
 #     - patches_origins = list of locations where to find the patches. They are tried
 #                         in sequence, until a patch is found and fetching it 
@@ -2468,15 +2470,21 @@ endif
 #                         
 #                         The patch_subdir and patch_opt fields are optional.
 
-%define fetch mmake=/A archive_origins=. archive=/A suffixes= location=%destination destination=. \
+%define fetch mmake=/A archive_origins=. archive=/A suffixes= location= destination=. \
     patches_origins=$(SRCDIR)/$(CURDIR) patches_specs=::
 
 .PHONY: %(mmake)
 
+ifneq (%(location),)
+    %(mmake)-location := %(location)
+else
+    %(mmake)-location := %(destination)
+endif
+
 #MM
 %(mmake) :
-	$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l %(location) -d %(destination) \
-        -po "%(patches_origins)" -p %(patches_specs)
+	$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
+        -d %(destination) -po "%(patches_origins)" -p %(patches_specs)
 %end
 #------------------------------------------------------------------------------
 
@@ -2511,6 +2519,7 @@ endif
 #                     version. Each one of them is tried until a matching archive is found.
 #                     Defaults to "tar.bz2 tar.gz".
 #    - destination  = same meaning as the one for the %fetch macro
+#    - location     = same meaning as the one for the %fetch macro
 #    - package_repo = same meaning as the one of the %fetch macro's %(archive_origins) argument
 #    - patch        = "yes" or "no", depending on whether a patch for this package needs to be
 #                     fetched or not
