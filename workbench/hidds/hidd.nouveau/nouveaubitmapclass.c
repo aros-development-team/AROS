@@ -515,18 +515,27 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     
     LOCK_BITMAP
     UNMAP_BUFFER
-    
-    if (carddata->architecture < NV_ARCH_50)
+
+    switch(carddata->architecture)
     {
+    case(NV_ARCH_03):
+    case(NV_ARCH_04):
+    case(NV_ARCH_10):
+    case(NV_ARCH_20):
+    case(NV_ARCH_30):
+    case(NV_ARCH_40):
         ret = HIDDNouveauNV04FillSolidRect(carddata, bmdata, 
                     0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
-    }
-    else
-    {
+        break;
+    case(NV_ARCH_50):
         ret = HIDDNouveauNV50FillSolidRect(carddata, bmdata, 
                     0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
-    }
-   
+        break;
+    case(NV_ARCH_C0):
+        ret = FALSE; /* TODO:NVC0: IMPLEMENT */
+        break;
+    }    
+
     UNLOCK_BITMAP
 
     if (ret)
@@ -547,18 +556,27 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
     
     LOCK_BITMAP
     UNMAP_BUFFER
-    
-    if (carddata->architecture < NV_ARCH_50)
+
+    switch(carddata->architecture)
     {
+    case(NV_ARCH_03):
+    case(NV_ARCH_04):
+    case(NV_ARCH_10):
+    case(NV_ARCH_20):
+    case(NV_ARCH_30):
+    case(NV_ARCH_40):
         ret = HIDDNouveauNV04FillSolidRect(carddata, bmdata, 
                     msg->minX, msg->minY, msg->maxX, msg->maxY, GC_DRMD(msg->gc), GC_FG(msg->gc));
-    }
-    else
-    {
+        break;
+    case(NV_ARCH_50):
         ret = HIDDNouveauNV50FillSolidRect(carddata, bmdata, 
                     msg->minX, msg->minY, msg->maxX, msg->maxY, GC_DRMD(msg->gc), GC_FG(msg->gc));
+        break;
+    case(NV_ARCH_C0):
+        ret = FALSE; /* TODO:NVCO: IMPLEMENT */
+        break;
     }
-    
+
     UNLOCK_BITMAP
 
     if (ret)
@@ -576,7 +594,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
     LOCK_BITMAP
 
     /* For larger transfers use GART */
-    if (((msg->width * msg->height) >= (64 * 64)) && (carddata->GART))
+    if (((msg->width * msg->height) >= (64 * 64)) && (carddata->GART) && (carddata->architecture != NV_ARCH_C0))/* TODO:NVCO: IMPLEMENT */
     {
         BOOL result = FALSE;
         
@@ -628,7 +646,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     LOCK_BITMAP
 
     /* For larger transfers use GART */
-    if (((msg->width * msg->height) >= (64 * 64)) && (carddata->GART))
+    if (((msg->width * msg->height) >= (64 * 64)) && (carddata->GART) && (carddata->architecture != NV_ARCH_C0))/* TODO:NVCO: IMPLEMENT */
     {
         BOOL result = FALSE;
         

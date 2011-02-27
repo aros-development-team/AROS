@@ -488,12 +488,23 @@ OOP_Object * METHOD(Nouveau, Root, New)
             InitSemaphore(&carddata->gartsemaphore);
             
             /* Set initial pattern (else 16-bit ROPs are not working) */
-            if (carddata->architecture == NV_ARCH_50)
-                HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
-            else if (carddata->architecture == NV_ARCH_C0)
-                ;/* TODO:NVC0: Implement */
-            else
+            switch(carddata->architecture)
+            {
+            case(NV_ARCH_03):
+            case(NV_ARCH_04):
+            case(NV_ARCH_10):
+            case(NV_ARCH_20):
+            case(NV_ARCH_30):
+            case(NV_ARCH_40):
                 HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
+                break;
+            case(NV_ARCH_50):
+                HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
+                break;
+            case(NV_ARCH_C0):
+                /* TODO:NVCO IMPLEMENT */
+                break;
+            }
 
             /* Create compositing object */
             {
@@ -585,17 +596,26 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         UNMAP_BUFFER_BM(srcdata)
         UNMAP_BUFFER_BM(destdata)
         
-        if (carddata->architecture < NV_ARCH_50)
+        switch(carddata->architecture)
         {
+        case(NV_ARCH_03):
+        case(NV_ARCH_04):
+        case(NV_ARCH_10):
+        case(NV_ARCH_20):
+        case(NV_ARCH_30):
+        case(NV_ARCH_40):
             ret = HIDDNouveauNV04CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
-        }
-        else
-        {
+            break;
+        case(NV_ARCH_50):
             ret = HIDDNouveauNV50CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
+            break;
+        case(NV_ARCH_C0):
+            ret = FALSE; /* TODO:NVCO IMPLEMENT */
+            break;
         }
 
         UNLOCK_BITMAP_BM(destdata);
