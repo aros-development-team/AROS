@@ -325,11 +325,7 @@ nvc0_fifo_init(struct drm_device *dev)
 	nv_wr32(dev, 0x000204, 0xffffffff);
 	nv_wr32(dev, 0x002204, 0xffffffff);
 
-#if !defined(__AROS__)
 	priv->spoon_nr = hweight32(nv_rd32(dev, 0x002204));
-#else
-IMPLEMENT("calling hweight32\n");
-#endif
 	NV_DEBUG(dev, "PFIFO: %d subfifo(s)\n", priv->spoon_nr);
 
 	/* assign engines to subfifos */

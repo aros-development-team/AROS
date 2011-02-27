@@ -882,3 +882,18 @@ void release_firmware(const struct firmware * fw)
         FreeVec((APTR)fw);
     }
 }
+
+/* Other */
+unsigned int hweight32(unsigned int number)
+{
+    unsigned int result = 0;
+    int i = 0;
+    
+    for (i = 0; i < 32; i++)
+    {
+        if (number & 0x1) result++;
+        number >>= 1;
+    }
+    
+    return result;
+}
