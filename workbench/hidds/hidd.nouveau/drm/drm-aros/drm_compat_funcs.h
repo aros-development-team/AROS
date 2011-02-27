@@ -386,4 +386,6 @@ __res = ((unsigned long) n) % (unsigned) base; \
 n = ((unsigned long) n) / (unsigned) base; \
 __res; })
 
+unsigned int hweight32(unsigned int number);
+
 #endif /* _DRM_COMPAT_FUNCS_ */
