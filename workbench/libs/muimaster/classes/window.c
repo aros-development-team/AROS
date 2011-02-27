@@ -295,19 +295,35 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
             data->wd_UserScreen = muiGlobalInfo(obj)->mgi_CustomScreen;
         }
     }
-
     if (data->wd_UserScreen)
     {
         mri->mri_Screen = data->wd_UserScreen;
     }
     else
     {
-        if (!(mri->mri_Screen = LockPubScreen(data->wd_UserPublicScreen)))
+        if (data->wd_UserPublicScreen)
         {
-            if (!(mri->mri_Screen = LockPubScreen(NULL)))
+            mri->mri_Screen = LockPubScreen(data->wd_UserPublicScreen);
+        }
+        else if (muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name && muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name[0])
+        {
+            mri->mri_Screen = LockPubScreen(muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);
+            // FIXME: open the public screen if necessary
+        }
+
+        if (mri->mri_Screen == NULL)
+        {
+            mri->mri_Screen = LockPubScreen(NULL);
+            if (mri->mri_Screen == NULL)
             {
                 return FALSE;
             }
+        }
+
+        // FIXME: is this the right place for this action?
+        if (mri->mri_Screen && muiGlobalInfo(obj)->mgi_Prefs->publicscreen_pop_to_front)
+        {
+            ScreenToFront(mri->mri_Screen);
         }
 
         data->wd_Flags |= MUIWF_SCREENLOCKED;
