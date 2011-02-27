@@ -16,7 +16,7 @@
 	AROS_LH1(struct MsgPort *, FindPort,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, A1),
+	AROS_LHA(CONST_STRPTR, name, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 65, Exec)
