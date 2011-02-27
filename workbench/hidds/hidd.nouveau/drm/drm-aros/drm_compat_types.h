@@ -180,6 +180,13 @@ struct wait_queue_head
 };
 typedef struct wait_queue_head wait_queue_head_t;
 
+/* Firmware */
+struct firmware
+{
+    ULONG size;
+    APTR data;
+};
+
 /* Other */
 struct work_struct;
 struct module;

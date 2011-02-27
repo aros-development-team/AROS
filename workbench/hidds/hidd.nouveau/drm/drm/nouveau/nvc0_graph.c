@@ -555,7 +555,6 @@ static int
 nvc0_fuc_load_fw(struct drm_device *dev, u32 fuc_base,
 		 const char *code_fw, const char *data_fw)
 {
-#if !defined(__AROS__)
 	const struct firmware *fw;
 	char name[32];
 	int ret, i;
@@ -586,9 +585,6 @@ nvc0_fuc_load_fw(struct drm_device *dev, u32 fuc_base,
 		nv_wr32(dev, fuc_base + 0x0184, ((u32 *)fw->data)[i]);
 	}
 	release_firmware(fw);
-#else
-IMPLEMENT("\n");
-#endif
 	return 0;
 }
 

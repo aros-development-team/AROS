@@ -58,6 +58,7 @@
 #define get_user(x, p)                  ({u32 ret = 0; x = *(p); ret;})
 #define put_user(x, p)                  ({u32 ret = 0; *(p) = x; ret;})
 #define rounddown(x, y)                 (((x)/(y))*(y))
+#define request_firmware(fw, name, x)   _request_firmware(fw, name)
 
 #define MODULE_FIRMWARE(x)
 
@@ -373,6 +374,10 @@ unsigned long get_jiffies();
     IMPLEMENT("\n");                            \
     __ret;                                      \
 })
+
+/* Firmware */
+int _request_firmware(const struct firmware ** pfw, char * name);
+void release_firmware(const struct firmware * fw);
 
 /* other */
 #define do_div(n,base) ({ \
