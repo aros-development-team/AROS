@@ -71,7 +71,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     struct BattClockBase *BattClockBase;
     struct GfxBase *GfxBase;
 
-    GfxBase = TaggedOpenLibrary(1);
+    GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
 
     LIBBASE->tb_eclock_rate = (GfxBase->DisplayFlags & REALLY_PAL) ? 709379 : 715909;
     LIBBASE->tb_vblank_rate = (GfxBase->DisplayFlags & PAL) ? 50 : 60;
