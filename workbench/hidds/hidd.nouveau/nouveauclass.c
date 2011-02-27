@@ -457,18 +457,22 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 return NULL;
             }
 
-            /* Allocate dma channel */
-            ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, 
-                24 * 1024, &carddata->chan);
-            /* TODO: Check ret, how to handle ? */
-
-            /* Initialize acceleration objects */
             if (carddata->architecture != NV_ARCH_C0)
             {
-                /* TODO:NVC0: Implement acceleration */
+                /* Allocate dma channel */
+                ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, 
+                    24 * 1024, &carddata->chan);
+                /* TODO: Check ret, how to handle ? */
+
+                /* Initialize acceleration objects */
+            
                 ret = NVAccelCommonInit(carddata);
+                /* TODO: Check ret, how to handle ? */
             }
-            /* TODO: Check ret, how to handle ? */
+            else
+            {
+               /* TODO:NVC0: Implement acceleration */
+            }
 
             /* Allocate buffer object for cursor */
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
