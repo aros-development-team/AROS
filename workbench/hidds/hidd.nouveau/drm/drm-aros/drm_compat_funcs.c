@@ -860,3 +860,25 @@ int i2c_del_adapter(struct i2c_adapter * adap)
     return 0;
 }
 
+/* Firmware */
+int _request_firmware(const struct firmware ** pfw, char * name)
+{
+    struct firmware * fw = AllocVec(sizeof(struct firmware), MEMF_ANY | MEMF_CLEAR);
+    fw->size = 100;
+    fw->data = AllocMem(fw->size, MEMF_ANY | MEMF_CLEAR);
+    *pfw = fw;
+
+    return 8; /* TODO: fixme, signal error for now */
+}
+
+void release_firmware(const struct firmware * fw)
+{
+    if (fw)
+    {
+        if (fw->data)
+        {
+            FreeMem(fw->data, fw->size);
+        }
+        FreeVec((APTR)fw);
+    }
+}
