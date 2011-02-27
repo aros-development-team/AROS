@@ -1032,6 +1032,10 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 		break;
 	case 0xc0:
 		dev_priv->card_type = NV_C0;
+#if defined(__AROS__)
+        /* TODO:NVC0: Implement acceleration */
+        nouveau_noaccel = 1; /* FORCE UNTIL FIRMWARE CAN BE LOADED */
+#endif
 		break;
 	default:
 		NV_INFO(dev, "Unsupported chipset 0x%08x\n", reg0);
