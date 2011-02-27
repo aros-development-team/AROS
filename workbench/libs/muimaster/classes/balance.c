@@ -192,7 +192,7 @@ static void draw_object_frame (Object *obj, Object *o, BOOL fixed)
 
 static LONG get_first_bound (struct Balance_DATA *data, Object *obj)
 {
-    ULONG spacing;
+    ULONG spacing = 0;
 
     if (data->horizgroup)
     {
@@ -208,7 +208,7 @@ static LONG get_first_bound (struct Balance_DATA *data, Object *obj)
 
 static LONG get_second_bound (struct Balance_DATA *data, Object *obj)
 {
-    ULONG spacing;
+    ULONG spacing = 0;
 
     if (data->horizgroup)
     {
@@ -651,12 +651,16 @@ static void handle_move (struct IClass *cl, Object *obj, WORD mouse)
     else
 	return;
 
-    /* relayout with new weights */
-    DoMethod(_parent(obj), MUIM_Layout);
-
     /* full drawing, or sketch */
     if (muiGlobalInfo(obj)->mgi_Prefs->balancing_look == BALANCING_SHOW_OBJECTS)
     {
+	DoMethod(_parent(obj), MUIM_Hide);
+
+	/* relayout with new weights */
+	DoMethod(_parent(obj), MUIM_Layout);
+
+	DoMethod(_parent(obj), MUIM_Show);
+
 	MUI_Redraw(_parent(obj), MADF_DRAWALL);
     }
     else
@@ -667,11 +671,17 @@ static void handle_move (struct IClass *cl, Object *obj, WORD mouse)
 	DoMethod(_parent(obj), MUIM_DrawBackground, _mleft(_parent(obj)),
 		 _mtop(_parent(obj)), _mwidth(_parent(obj)), _mheight(_parent(obj)),
 		 0, 0, 0);
+
+	/* relayout with new weights */
+	DoMethod(_parent(obj), MUIM_Layout);
+
+	DoMethod(obj, MADF_DRAWOBJECT);
+
 	/* for each child, draw a black frame */
 	object_state = (Object *)data->objs->lh_Head;
 	while ((sibling = NextObject(&object_state)))
 	{
-	    if (!(_flags(sibling) & MADF_SHOWME))
+	    if ((!(_flags(sibling) & MADF_SHOWME)) && (obj != sibling))
 		continue;
 /*  	D(bug("sibling %lx\n", sibling)); */
 	    
@@ -731,7 +741,15 @@ IPTR Balance__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			data->state = NOT_CLICKED;
 			if (data->total_weight != -1)
-			    MUI_Redraw(_parent(obj), MADF_DRAWALL);
+			{
+			    DoMethod(_parent(obj), MUIM_Hide);
+
+			    /* relayout with new weights */
+			    DoMethod(_parent(obj), MUIM_Layout);
+			    
+			    DoMethod(_parent(obj), MUIM_Show);
+			    MUI_Redraw(_parent(obj), MADF_DRAWOBJECT);
+			}
 			else
 			    MUI_Redraw(obj, MADF_DRAWALL);
 	  	    }
@@ -747,6 +765,9 @@ IPTR Balance__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 		data->lazy ^= 1;
 		if (data->lazy)
 		    break;
+		
+		DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+
 		if (data->horizgroup)
 		{
 		    handle_move(cl, obj, msg->imsg->MouseX);
@@ -757,6 +778,9 @@ IPTR Balance__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 		    handle_move(cl, obj, msg->imsg->MouseY);
 		    data->lastpos = msg->imsg->MouseY;
 		}
+
+		data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+		DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 	    }
 	    break;
 	}
