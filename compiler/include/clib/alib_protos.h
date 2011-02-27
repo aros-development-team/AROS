@@ -79,7 +79,7 @@ ULONG RangeRand (ULONG maxValue);
 ULONG FastRand (ULONG seed);
 LONG TimeDelay (LONG unit, ULONG secs, ULONG microsecs);
 void waitbeam (LONG pos);
-void __sprintf(UBYTE *buffer, UBYTE *format, ...);
+void __sprintf(UBYTE *buffer, const UBYTE *format, ...);
 STRPTR StrDup(CONST_STRPTR str);
 APTR ReAllocVec(APTR oldmem, ULONG size, ULONG requirements);
 
