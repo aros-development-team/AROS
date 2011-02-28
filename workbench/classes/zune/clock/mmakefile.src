@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+
 FILES         := clock
 INCLUDE_FILES := clock.h
 

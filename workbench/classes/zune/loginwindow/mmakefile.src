@@ -3,6 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+
 FILES         := loginwindow
 INCLUDE_FILES := loginwindow.h
 
