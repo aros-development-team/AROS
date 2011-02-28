@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2010, The AROS Development Team. All rights reserved.
+    Copyright  2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,6 +16,7 @@
 #include <aros/debug.h>
 
 #include "misc.h"
+#include "keymap.h"
 #include "locale.h"
 #include "ipeditor.h"
 #include "prefs.h"
@@ -30,12 +31,16 @@ static struct Hook display_hook;
 struct IPEditor_DATA
 {
     Object *iped_KeyTypes;
+    Object *iped_DefKey;
+    Object *iped_AltKey;
     Object *iped_RepeatRate;
     Object *iped_RepeatDelay;
     Object *iped_Accelerated;
     Object *iped_MouseSpeed;
     Object *iped_DoubleClickDelay;
     Object *iped_LeftHandedMouse;
+
+    struct Hook iped_setHook;
 };
 
 /*** Local Functions ********************************************************/
@@ -54,16 +59,38 @@ static void keytypes_display_func(struct Hook *h, char **array, struct ListviewE
     *array   = entry->node.ln_Name;
 }
 
+AROS_UFH3(static void, setFunction,
+	  AROS_UFHA(struct Hook *, h, A0),
+	  AROS_UFHA(Object *, obj, A2),
+	  AROS_UFHA(APTR *, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct IPEditor_DATA *data = h->h_Data;
+    Object *kmobj = msg[0];
+    struct ListviewEntry *entry = NULL;
+
+    DoMethod(data->iped_KeyTypes, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &entry);
+    SET(kmobj, MUIA_Keymap_Keymap, entry);
+    SET(obj, MUIA_PrefsEditor_Changed, TRUE);   
+
+    AROS_USERFUNC_EXIT
+}
+
 /*** Methods ****************************************************************/
 Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object *keyTypes;
+    Object *defKey;
+    Object *altKey;
     Object *RepeatRate;
     Object *RepeatDelay;
     Object *Accelerated;
     Object *GadMouseSpeed;
     Object *DoubleClickDelay;
     Object *LeftHandedMouse;
+    Object *setDefKey;
+    Object *setAltKey;
 
     struct ListviewEntry *entry;
 
@@ -90,7 +117,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, (IPTR)HGroup,
                     Child, (IPTR)VGroup,
                         GroupFrameT(__(MSG_GAD_KEY_TYPE)),
-                        MUIA_Weight, 45,
+                        MUIA_Weight, 50,
                         Child, (IPTR)ListviewObject,
                             MUIA_Listview_Input, FALSE,
                             MUIA_Listview_List, (IPTR)(keyTypes = (Object *)ListObject,
@@ -100,6 +127,39 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_List_Format, (IPTR)"P=\033c,",
                                 MUIA_List_DisplayHook, (IPTR)&display_hook,
                             End),
+                        End,
+                        Child, (IPTR)ColGroup(3),
+                            Child, (IPTR)Label1(__(MSG_GAD_KEY_DEF)),
+                            Child, (IPTR)(defKey = KeymapObject,
+                            	MUIA_Weight, 255,
+                            End),
+                            Child, (IPTR)(setDefKey = TextObject, 
+                            	ButtonFrame,
+				MUIA_Font, MUIV_Font_Button,
+				MUIA_Text_HiCharIdx, '_',
+				MUIA_Text_Contents, __(MSG_GAD_KEY_SET),
+				MUIA_Text_PreParse, (IPTR)"\33c",
+				MUIA_InputMode, MUIV_InputMode_RelVerify,
+				MUIA_Background, MUII_ButtonBack,
+				MUIA_CycleChain, TRUE,
+				MUIA_Disabled, TRUE,
+			    End),
+                            Child, (IPTR)Label1(__(MSG_GAD_KEY_ALT)),
+                            Child, (IPTR)(altKey = KeymapObject,
+                            	MUIA_Weight, 255,
+                            	MUIA_Disabled, TRUE,
+                            End),
+                            Child, (IPTR)(setAltKey = TextObject, 
+                            	ButtonFrame,
+				MUIA_Font, MUIV_Font_Button,
+				MUIA_Text_HiCharIdx, '_',
+				MUIA_Text_Contents, __(MSG_GAD_KEY_SET),
+				MUIA_Text_PreParse, (IPTR)"\33c",
+				MUIA_InputMode, MUIV_InputMode_RelVerify,
+				MUIA_Background, MUII_ButtonBack,
+				MUIA_CycleChain, TRUE,
+				MUIA_Disabled, TRUE,
+			    End),
                         End,
                     End,
                     Child, (IPTR)VGroup,
@@ -133,19 +193,19 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     End,
                 End,
             End,
-            Child, VGroup,
-                Child, VGroup,
+            Child, (IPTR)VGroup,
+                Child, (IPTR)VGroup,
                     GroupFrameT(__(MSG_GAD_MOUSE_SPEED)),
                     Child, (IPTR)(GadMouseSpeed = MUI_MakeObject(MUIO_Cycle, NULL, MouseSpeed)),
-                    Child, HGroup,
+                    Child, (IPTR)HGroup,
                         Child, (IPTR)HSpace(0),
                         Child, (IPTR)Label1(__(MSG_GAD_MOUSE_ACCELERATED)),
                         Child, (IPTR)(Accelerated = MUI_MakeObject(MUIO_Checkmark, NULL)),
                     End,
                 End,
-                Child, VGroup,
+                Child, (IPTR)VGroup,
                     GroupFrameT(__(MSG_GAD_MOUSE_BUTTON_SETTINGS)),
-                    Child, ColGroup(2),
+                    Child, (IPTR)ColGroup(2),
                         Child, (IPTR)Label1(__(MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY)),
                         Child, (IPTR)(DoubleClickDelay = (Object *)StringifyObject,
                             MUIA_MyStringifyType, STRINGIFY_DoubleClickDelay,
@@ -154,7 +214,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             MUIA_Numeric_Max, 199,
                         End),
                         Child, (IPTR)Label1(__(MSG_GAD_LEFT_HANDED_MOUSE)),
-                        Child, HGroup,
+                        Child, (IPTR)HGroup,
                             Child, (IPTR)(LeftHandedMouse = MUI_MakeObject(MUIO_Checkmark, NULL)),
                             Child, (IPTR)HSpace(0),
                         End,
@@ -173,10 +233,15 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->iped_RepeatRate = RepeatRate;
         data->iped_RepeatDelay = RepeatDelay;
         data->iped_KeyTypes = keyTypes;
+        data->iped_DefKey = defKey;
+        data->iped_AltKey = altKey;
         data->iped_Accelerated = Accelerated;
         data->iped_MouseSpeed = GadMouseSpeed;
         data->iped_DoubleClickDelay = DoubleClickDelay;
         data->iped_LeftHandedMouse = LeftHandedMouse;
+
+	data->iped_setHook.h_Entry = (HOOKFUNC)setFunction;
+	data->iped_setHook.h_Data = data;
 
         IPTR root;
 
@@ -215,11 +280,16 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
-        DoMethod
-        (
-            keyTypes, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
+        DoMethod(keyTypes, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+                 setDefKey, 3, MUIM_Set, MUIA_Disabled, FALSE);
+/*      DoMethod(keyTypes, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+                 setAltKey, 3, MUIM_Set, MUIA_Disabled, FALSE);*/
+
+        DoMethod(setDefKey, MUIM_Notify, MUIA_Pressed, FALSE,
+                 self, 3, MUIM_CallHook, &data->iped_setHook, defKey);
+
+        DoMethod(setAltKey, MUIM_Notify, MUIA_Pressed, FALSE,
+            	 self, 3, MUIM_CallHook, &data->iped_setHook, altKey);
 
         DoMethod
         (
@@ -278,22 +348,19 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
 
     inputprefs.ip_PointerTicks = 1 << (2 - val);
 
-    struct ListviewEntry *entry;
+    struct ListviewEntry *entry = NULL;
 
-    DoMethod
-    (
-        data->iped_KeyTypes, MUIM_List_GetEntry,
-        MUIV_List_GetEntry_Active, &entry
-    );
+    GET(data->iped_DefKey, MUIA_Keymap_Keymap, &entry);
 
     if (entry != NULL)
     {
         D(bug("IPrefs: selected %s\n", entry->realname));
-        strncpy(inputprefs.ip_Keymap, entry->realname, sizeof(inputprefs.ip_Keymap));
+        strncpy(inputprefs.ip_KeymapName, entry->realname, sizeof(inputprefs.ip_KeymapName));
     }
     else
     {
-        strncpy(inputprefs.ip_Keymap, DEFAULT_KEYMAP, sizeof(inputprefs.ip_Keymap));
+	strncpy(inputprefs.ip_Keymap, DEFAULT_KEYMAP, sizeof(inputprefs.ip_Keymap));
+        strncpy(inputprefs.ip_KeymapName, DEFAULT_KEYMAP, sizeof(inputprefs.ip_KeymapName));
     }
 
     GET(data->iped_LeftHandedMouse, MUIA_Selected, &val);
@@ -307,6 +374,10 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     ULONG rrate = 12 -(inputprefs.ip_KeyRptSpeed.tv_micro / 20000);
     ULONG rdelay = ((inputprefs.ip_KeyRptDelay.tv_micro + (inputprefs.ip_KeyRptDelay.tv_secs * 1000000)) / 20000) - 1;
     ULONG dcdelay = ((inputprefs.ip_DoubleClick.tv_micro + (inputprefs.ip_DoubleClick.tv_secs * 1000000)) / 20000) - 1;
+    char *keymap = inputprefs.ip_KeymapName;
+
+    if (!keymap[0])
+    	keymap = inputprefs.ip_Keymap;
 
     NNSET(data->iped_RepeatRate, MUIA_Numeric_Value, (IPTR) rrate);
     NNSET(data->iped_RepeatDelay, MUIA_Numeric_Value, (IPTR) rdelay);
@@ -314,18 +385,14 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     NNSET(data->iped_Accelerated, MUIA_Selected, (IPTR) (inputprefs.ip_MouseAccel != 0) ? TRUE : FALSE);
 
     struct ListviewEntry *entry;
-    LONG pos = 0;
 
-    NNSET(data->iped_KeyTypes, MUIA_List_Active, MUIV_List_Active_Off);
     ForeachNode(&keymap_list, entry)
     {
-        if (!stricmp(inputprefs.ip_Keymap, entry->realname))
+        if (!stricmp(keymap, entry->realname))
         {
-            NNSET(data->iped_KeyTypes, MUIA_List_Active, pos);
+            SET(data->iped_DefKey, MUIA_Keymap_Keymap, entry);
             break;
         }
-
-        ++pos;
     }
 
     IPTR    active = 0;
