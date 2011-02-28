@@ -52,12 +52,8 @@ void InitConfig (Object *obj, struct InstData *data)
 
   ENTER();
 
-#ifndef __AROS__
   if(isFlagSet(data->Flags, FLG_SetFrame) && MUIMasterBase->lib_Version >= 20)
     set(obj, MUIA_Frame, DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_Frame, &setting) ? (STRPTR)setting : (STRPTR)"302211");
-#else
-#warning "AROS: FIXME, MUIA_Frame stuff!"
-#endif
 
   data->InactiveText = GetCol(obj, MUICFG_BetterString_InactiveText, (struct MUI_PenSpec *)"m4", data);
   data->ActiveText = GetCol(obj, MUICFG_BetterString_ActiveText, (struct MUI_PenSpec *)"m5", data);
