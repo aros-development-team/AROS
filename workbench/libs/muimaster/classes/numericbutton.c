@@ -225,7 +225,7 @@ static void DrawKnob(Object *obj, struct Numericbutton_DATA *data, BOOL force)
 
     if (data->knob_bg)
     {
-    	#warning "Ugly hack?"
+    	// FIXME: Ugly hack?
 	
 	struct IBox old_mad_Box = muiAreaData(obj)->mad_Box;
 	

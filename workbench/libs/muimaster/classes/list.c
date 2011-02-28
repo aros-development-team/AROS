@@ -266,7 +266,7 @@ static int InsertListEntries(struct MUI_ListData *data, int pos, struct ListEntr
 **************************************************************************/
 static void RemoveListEntries(struct MUI_ListData *data, int pos, int count)
 {
-#warning segfault if entries_num = pos = count = 1
+    // FIXME: segfault if entries_num = pos = count = 1
     memmove(&data->entries[pos], &data->entries[pos+count],
 	    (data->entries_num - (pos + count)) * sizeof(struct ListEntry *));
 }
