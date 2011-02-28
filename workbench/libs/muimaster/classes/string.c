@@ -574,7 +574,7 @@ IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 		
 	    case MUIA_String_SelectSize: /* BetterString */
-	    	#warning "TODO: Implement OM_SET(MUIA_String_SelectSize)!"
+	    	// TODO: Implement OM_SET(MUIA_String_SelectSize)!
 	    	break;
 
 	}
@@ -2021,7 +2021,7 @@ IPTR String__MUIM_FileNameStart(struct IClass * cl, Object * obj, struct MUIP_St
     {
     	buf = data->Buffer;
     }
-#warning "TODO: Implement String_FileNameStart correctly!"
+    // TODO: Implement String_FileNameStart correctly!
 
     return (IPTR)buf;
 }

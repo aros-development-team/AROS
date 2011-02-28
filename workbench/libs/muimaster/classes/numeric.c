@@ -403,7 +403,7 @@ IPTR Numeric__MUIM_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_Num
     val  = CLAMP(msg->scale - msg->scalemin, msg->scalemin, msg->scalemax);
     d    = msg->scalemax -  msg->scalemin;
 
-#warning FIXME: watch out for overflow here.
+    // FIXME: watch out for overflow here.
     val  = val * (max - min);
     
     if (d)

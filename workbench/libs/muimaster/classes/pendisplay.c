@@ -179,7 +179,7 @@ IPTR Pendisplay__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 	    
 	case MUIA_Pendisplay_RGBcolor:
 	    {
-		#warning FIXME: MUIA_Pendisplay_RGBColor (only works for RGB pen specs)
+		// FIXME: MUIA_Pendisplay_RGBColor (only works for RGB pen specs)
 		struct MUI_PenSpec_intern intpenspec;
 		zune_pen_spec_to_intern(&data->penspec, &intpenspec);
 

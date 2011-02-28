@@ -32,7 +32,7 @@
 #include "support.h"
 #include "imspec.h"
 
-#warning quick hack to not draw the background for gradients. It should really be generalized
+// FIXME: quick hack to not draw the background for gradients. It should really be generalized
 #include "imspec_intern.h"
 
 extern struct Library *MUIMasterBase;
@@ -206,7 +206,7 @@ IPTR Image__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		    if (data->img)
 			zune_imspec_cleanup(data->img);
 		    data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
-#warning quick hack to not draw the background for gradients. It should really be generalized
+		    // FIXME: quick hack to not draw the background for gradients. It should really be generalized
 		    if (data->img)
 		    {
 			if (data->img->type == IST_SCALED_GRADIENT
@@ -300,7 +300,7 @@ IPTR Image__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (data->spec)
     {
 	data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
-#warning quick hack to not draw the background for gradients. It should really be generalized
+	// FIXME: quick hack to not draw the background for gradients. It should really be generalized
 	if (data->img)
 	{
 	    if (data->img->type == IST_SCALED_GRADIENT
