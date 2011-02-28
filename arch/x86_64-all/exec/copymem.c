@@ -141,7 +141,7 @@ D(bug("[Exec] CopyMem: Aligning src to %d byte boundary (%d bytes) .. \n", SSE_R
             src += alignsize;
             dst += alignsize;
         }
-        if (lcnt > 0)
+        if (lcnt > 0) {
             if ((((IPTR)src & SSE_REG_MASK) == 0) && (((IPTR)dst & SSE_REG_MASK) == 0))
             {
                 /*
@@ -203,6 +203,7 @@ D(bug("[Exec] CopyMem: SSE Unaligned-Copy %p to %p.\n", src, dst));
                     dst += (SSE_REG_SIZE * 4);
                 }
             }
+        }
     }
 
     if (size > 0)
