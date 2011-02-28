@@ -19,7 +19,7 @@ extern struct Library * MUIMasterBase;
 	Object * MUI_NewObject (
 
 /*  SYNOPSIS */
-	char * classname,
+	const char * classname,
 	Tag tag1, 
 	...)
 

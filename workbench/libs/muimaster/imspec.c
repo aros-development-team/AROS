@@ -648,7 +648,7 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
 	case IST_BRUSH:
 	    if (spec->u.brush.dt[0])
 	    {
-		char *straddr;
+		const char *straddr;
 		long len;
 		straddr = *(spec->u.brush.filename);
 		len = strlen(straddr);                        
@@ -804,7 +804,7 @@ void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPor
 		state = 0;
 	    if (spec->u.brush.dt[state])
 	    {
-		char *straddr;
+		const char *straddr;
 		long len;
 		straddr = *(spec->u.brush.filename);
 		len = strlen(straddr);                        

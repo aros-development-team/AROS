@@ -39,7 +39,7 @@ static LONG display_func(struct Hook *hook, char **array, struct MUI_Palette_Ent
     struct MUI_PaletteData *data = hook->h_Data;
     
     if (data->names) {  /* does any strings exist */
-        *array = (char *)data->names[(int) array[-1]];  /*then display user names */
+        *array = (char *)data->names[(SIPTR) array[-1]];  /*then display user names */
 	array++;
     } else {
         sprintf(data->buf,"Color %ld",(long)(array[-1]+1));   /* if nos show default color names */
