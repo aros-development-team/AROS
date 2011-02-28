@@ -176,19 +176,20 @@ struct MUI_MinMax
 #define MUIPEN_MASK 0x0000ffff
 #define MUIPEN(pen) ((pen) & MUIPEN_MASK)
 
-
-enum {
-    MUIV_Font_Inherit = 0,
-    MUIV_Font_Normal = -1,
-    MUIV_Font_List = -2,
-    MUIV_Font_Tiny = -3,
-    MUIV_Font_Fixed = -4,
-    MUIV_Font_Title = -5,
-    MUIV_Font_Big = -6,
-    MUIV_Font_Button = -7,
-    MUIV_Font_Knob = -8,
-    MUIV_Font_NegCount = -9,
-};
+/* These cannot be enums, since they will
+ * not be passed properly in varadic
+ * functions by some compilers.
+ */
+#define MUIV_Font_Inherit  ((IPTR)0)
+#define MUIV_Font_Normal   ((IPTR)-1)
+#define MUIV_Font_List     ((IPTR)-2)
+#define MUIV_Font_Tiny     ((IPTR)-3)
+#define MUIV_Font_Fixed    ((IPTR)-4)
+#define MUIV_Font_Title    ((IPTR)-5)
+#define MUIV_Font_Big      ((IPTR)-6)
+#define MUIV_Font_Button   ((IPTR)-7)
+#define MUIV_Font_Knob     ((IPTR)-8)
+#define MUIV_Font_NegCount ((IPTR)-9)
 
 /* Possible keyevents (user configurable) */
 enum

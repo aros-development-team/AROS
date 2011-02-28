@@ -24,12 +24,13 @@ extern struct Library *MUIMasterBase;
  * Must be called after Area's MUIM_Setup.
  */
 
-struct TextFont *zune_font_get(Object *obj, SIPTR preset)
+struct TextFont *zune_font_get(Object *obj, IPTR font)
 {
     struct MUI_GlobalInfo *mgi;
     struct MUI_RenderInfo *mri;
+    SIPTR preset = (SIPTR)font;
 
-    if ((preset <= MUIV_Font_Inherit) && (preset >= MUIV_Font_NegCount))
+    if ((preset <= (SIPTR)MUIV_Font_Inherit) && (preset >= (SIPTR)MUIV_Font_NegCount))
     {
     	CONST_STRPTR name;
 
@@ -72,7 +73,7 @@ struct TextFont *zune_font_get(Object *obj, SIPTR preset)
 	}
 	else /* fallback to window normal font */
 	{
-	    if (preset != MUIV_Font_Normal && preset != MUIV_Font_Fixed) /* avoid infinite recursion */
+	    if (preset != (SIPTR)MUIV_Font_Normal && preset != (SIPTR)MUIV_Font_Fixed) /* avoid infinite recursion */
 	    {
 		/* dont do this, would result in the font being closed more than once */
 /*  		return (mri->mri_Fonts[-preset] = zune_font_get(obj, MUIV_Font_Normal)); */
@@ -83,7 +84,7 @@ struct TextFont *zune_font_get(Object *obj, SIPTR preset)
 	/* no font loaded, fallback to screen font or system font */
 	if (!mri->mri_Fonts[-preset])
 	{
-	    if (MUIV_Font_Normal == preset)
+	    if ((SIPTR)MUIV_Font_Normal == preset)
 	    {
 		struct TextAttr scr_attr;
 		scr_attr = *(_screen(obj)->Font);
@@ -104,5 +105,5 @@ struct TextFont *zune_font_get(Object *obj, SIPTR preset)
 	}
 	return mri->mri_Fonts[-preset];
     }
-    return (struct TextFont *)preset;
+    return (struct TextFont *)font;
 }
