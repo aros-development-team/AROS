@@ -73,7 +73,7 @@ LONG PopPublicScreenStrObjFunc(struct Hook *hook, Object *popup, Object *str)
     struct PopPublicScreen_DATA   *data = (struct PopPublicScreen_DATA *)hook->h_Data;
     struct List     	    *pubscrlist;
     struct PubScreenNode    *pubscrnode;
-    STRPTR  	    	     strtext, listentry;
+    STRPTR  	    	     strtext = NULL, listentry;
     LONG    	    	     index;
     struct MUI_PubScreenDesc *desc;
     APTR pfh;
