@@ -288,7 +288,7 @@ DISPATCHER(popupDispatcher)
 {
     switch (msg->MethodID)
     {
-        case OM_NEW: return mpopupNew(cl,obj,(APTR)msg);
+        case OM_NEW: return (IPTR)mpopupNew(cl,obj,(APTR)msg);
         default:     return DoSuperMethodA(cl,obj,msg);
     }
 }
@@ -527,7 +527,7 @@ DISPATCHER(editorDispatcher)
 {
     switch (msg->MethodID)
     {
-        case OM_NEW:           return meditorNew(cl,obj,(APTR)msg);
+        case OM_NEW:           return (IPTR)meditorNew(cl,obj,(APTR)msg);
         case OM_DISPOSE:       return meditorDispose(cl,obj,(APTR)msg);
         case MUIM_Editor_Save: return meditorSave(cl,obj,(APTR)msg);
         case MUIM_Editor_Load: return meditorLoad(cl,obj,(APTR)msg);
@@ -769,7 +769,7 @@ DISPATCHER(appDispatcher)
 {
     switch (msg->MethodID)
     {
-        case OM_NEW:                            return mappNew(cl,obj,(APTR)msg);
+        case OM_NEW:                            return (IPTR)mappNew(cl,obj,(APTR)msg);
         case MUIM_App_DisposeWin:               return mappDisposeWin(cl,obj,(APTR)msg);
         case MUIM_App_About:                    return mappAbout(cl,obj,(APTR)msg);
         case MUIM_Application_OpenConfigWindow: return mappOpenMUIConfigWindow(cl,obj,(APTR)msg);
