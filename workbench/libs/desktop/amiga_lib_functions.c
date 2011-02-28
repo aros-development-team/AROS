@@ -113,7 +113,7 @@ AROS_UFH2(void, __putChr,
     AROS_USERFUNC_EXIT
 }
 
-VOID __sprintf(UBYTE * buffer, UBYTE * format, ...)
+VOID __sprintf(UBYTE * buffer, const UBYTE * format, ...)
 {
     RawDoFmt(format, &format + 1, (VOID_FUNC) __putChr, &buffer);
 } /* sprintf */
