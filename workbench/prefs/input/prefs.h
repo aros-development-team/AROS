@@ -2,7 +2,7 @@
 #define _PREFS_H_
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -68,14 +68,21 @@ struct nameexp
     STRPTR flag;
 };
 
+struct typeexp
+{
+    STRPTR shortname;
+    STRPTR longname;
+};
+
+#define KEYMAP_NAME_LEN 30
+#define KEYMAP_FLAG_LEN 128
 
 struct ListviewEntry
 {
     struct Node node;
-    UBYTE                           layoutname[30];
+    UBYTE                           layoutname[KEYMAP_NAME_LEN];
     UBYTE                           realname[30];
-    UBYTE                           flagname[30];
-    UBYTE                           displayflag[128];
+    UBYTE                           displayflag[KEYMAP_FLAG_LEN];
 };
 
 struct KeymapEntry
@@ -98,7 +105,7 @@ void Prefs_kbd_cleanup(void);
 /*********************************************************************************************/
 
 extern struct timerequest *InputIO;
-extern IPTR                mempool;
+extern APTR                mempool;
 extern struct List         keymap_list;
 extern struct InputPrefs   inputprefs;
 

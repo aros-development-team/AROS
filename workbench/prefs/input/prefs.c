@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -32,7 +32,7 @@
 
 /*********************************************************************************************/
 
-IPTR                mempool;
+APTR                mempool;
 struct InputPrefs   inputprefs;
 struct List         keymap_list;
 struct timerequest *InputIO;
@@ -43,12 +43,13 @@ static BPTR                testkeymap_seg = NULL;
 
 /*********************************************************************************************/
 
-struct nameexp layout_expansion_table[] =
+static const struct nameexp layout_expansion_table[] =
 {
     {"al"   , "Albanian"            , NULL              },
-    {"usa"  , "American (Sun 5c)"   , "United_States"   },
-    {"us"   , "American (PC 104)"   , "United_States"   },
-    {"usx"  , "American (PC 105)"   , "United_States"   },
+    {"usa"  , "American"	    , "United_States"   },
+    {"usa0" , "American"	    , "United_States"   },
+    {"us"   , "American"	    , "United_States"   },
+    {"usx"  , "American"	    , "United_States"   },
     {"d"    , "Deutsch"             , "Deutschland"     },
     {"b"    , "Belge"               , "Belgique"        },
     {"by"   , "Belarussian"         , NULL              },
@@ -90,6 +91,14 @@ struct nameexp layout_expansion_table[] =
     {NULL   , NULL                  , NULL              }
 };
 
+static const struct typeexp type_expansion_table[] = {
+    {"amiga", "Amiga" },
+    {"pc104", "PC 104"},
+    {"pc105", "PC 105"},
+    {"sun"  , "Sun"   },
+    {NULL   , NULL    }
+};
+
 /*********************************************************************************************/
 
 static BOOL Prefs_Load(STRPTR from)
@@ -108,18 +117,63 @@ static BOOL Prefs_Load(STRPTR from)
 
 /*********************************************************************************************/
 
-static void ExpandName(STRPTR name, STRPTR flag, struct nameexp *exp)
+static void ExpandName(struct ListviewEntry *entry)
 {
-    for(; exp->shortname; exp++)
+    char *sp;
+    char *type = NULL;
+    const struct nameexp *exp;
+
+    strcpy(entry->layoutname, entry->realname);
+
+    sp = strchr(entry->realname, '_');
+    if (sp)
     {
-        if (stricmp(exp->shortname, name) == 0)
+    	/*
+    	 * We have several variants of US keyboard, so
+    	 * we append type name.
+    	 */
+        if ((sp[1] == 'u' && sp[2] == 's'))
         {
-            strcpy(name, exp->longname);
+             const struct typeexp *te;
+
+             *sp = 0;   
+	     for (te = type_expansion_table; te->shortname; te++)
+	     {
+	    	if (!strcmp(entry->realname, te->shortname))
+	    	{
+	    	    type = te->longname;
+	    	    break;
+	    	}
+	    }
+            *sp = '_';
+        }
+        sp++;
+    }
+    else
+	sp = entry->realname;
+
+    for (exp = layout_expansion_table; exp->shortname; exp++)
+    {
+        if (stricmp(exp->shortname, sp) == 0)
+        {
+            if (type)
+            	snprintf(entry->layoutname, sizeof(entry->layoutname), "%s (%s)", exp->longname, type);
+            else
+	        strcpy(entry->layoutname, exp->longname);
+
             if (exp->flag != NULL)
-                strcpy(flag, exp->flag);
+            {
+#if SHOWFLAGS == 1
+        	sprintf(entry->displayflag, "\033I[5:Locale:Flags/Countries/%s]", exp->flag);
+#else
+        	entry->displayflag[0] = '\0';
+#endif
+	    }
             break;
         }
     }
+    
+    
 }
 
 /*********************************************************************************************/
@@ -149,6 +203,26 @@ void Prefs_ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
     memset(&ap, 0, sizeof(ap));
     NewList(&templist);
 
+    /*
+     * Add default keymap.
+     * CHECKME: possibly too hacky. May be we should verify its presence in keymap.resource?
+     * How is it done in classic AmigaOS(tm) ?
+     */
+    entry = AllocPooled(mempool, entrysize);
+    if (entry)
+    {
+        strcpy(entry->layoutname, "American (Default)");
+    	strcpy(entry->realname  , DEFAULT_KEYMAP);
+#if SHOWFLAGS == 1
+    	strcpy(entry->displayflag, "\033I[5:Locale:Flags/Countries/United_States]");
+#else
+        entry->displayflag[0] = '\0';
+#endif
+
+    	entry->node.ln_Name = entry->layoutname;
+    	AddTail(&templist, &entry->node);    	
+    }
+
     error = MatchFirst(pattern, &ap);
     while((error == 0))
     {
@@ -162,15 +236,12 @@ void Prefs_ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 
                 sp = strchr(entry->realname, '_');
                 if (sp)
-                {
-                    sp[0] = '\0';
-                    strcpy(entry->layoutname, sp + 1);
-                    sp[0] = '_';
-                }
+                   sp++;
                 else
-                    strcpy(entry->layoutname, entry->realname);
+                   sp = entry->realname;
+                strcpy(entry->layoutname, sp);
 
-                ExpandName(entry->layoutname, entry->flagname, layout_expansion_table);
+                ExpandName(entry);
                 AddTail(&templist, &entry->node);
             }
         }
@@ -184,16 +255,6 @@ void Prefs_ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
     {
         Remove(&entry->node);
         SortInNode(list, &entry->node);
-    }
-
-    ForeachNode(list, entry)
-    {
-#if SHOWFLAGS == 1
-        sprintf(entry->displayflag, "\033I[5:Locale:Flags/Countries/%s]", entry->flagname);
-#else
-        entry->displayflag[0] = '\0';
-#endif
-        D(bug("IPrefs: kbd entry flag: %s\n", entry->flagname));
     }
 }
 
@@ -453,7 +514,7 @@ BOOL Prefs_Default(void)
     inputprefs.ip_KeyRptSpeed.tv_micro = 40000;
     inputprefs.ip_MouseAccel           = 1;
     inputprefs.ip_ClassicKeyboard      = 0;
-    inputprefs.ip_KeymapName[0]        = 0;
+    strcpy(inputprefs.ip_KeymapName, DEFAULT_KEYMAP);
     inputprefs.ip_SwitchMouseButtons   = FALSE;
 
     return TRUE;
@@ -528,7 +589,7 @@ static void try_setting_test_keymap(void)
 
         ForeachNode(&KeyMapResource->kr_List, node)
         {
-            if (!stricmp(inputprefs.ip_Keymap, node->ln_Name))
+            if (!stricmp(inputprefs.ip_KeymapName, node->ln_Name))
             {
                 kmn = (struct KeyMapNode *)node;
                 break;

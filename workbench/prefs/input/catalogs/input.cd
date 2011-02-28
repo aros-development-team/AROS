@@ -101,3 +101,12 @@ Normal
 MSG_GAD_MOUSE_SPEED_FAST (//)
 Fast
 ;
+MSG_GAD_KEY_DEF (//)
+Default
+;
+MSG_GAD_KEY_ALT (//)
+Alternate
+;
+MSG_GAD_KEY_SET (//)
+Set
+;

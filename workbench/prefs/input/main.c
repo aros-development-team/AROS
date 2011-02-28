@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2010, The AROS Development Team. All rights reserved.
+    Copyright  2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
             NewList(&keymap_list);
 
-            mempool = (IPTR) CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
+            mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
             if (mempool != 0)
             {
                 Prefs_ScanDirectory("DEVS:Keymaps/#?_~(#?.info)", &keymap_list, sizeof(struct KeymapEntry));

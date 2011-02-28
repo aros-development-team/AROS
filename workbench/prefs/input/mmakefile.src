@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES       := main args locale misc ipeditor prefs stringify
+FILES       := main args keymap locale misc ipeditor prefs stringify
 EXEDIR      := $(AROS_PREFS)
 
 #MM- workbench-prefs : workbench-prefs-input
