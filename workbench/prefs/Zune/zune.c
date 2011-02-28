@@ -196,7 +196,7 @@ struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
 *****************************************************************/
 static void hook_func_standard(struct Hook *h, void *dummy, IPTR *funcptr)
 {
-    void (*func) (ULONG *) = (void (*)(IPTR *)) (*funcptr);
+    void (*func) (IPTR *) = (void (*)(IPTR *)) (*funcptr);
     if (func) func(funcptr + 1);
 }
 
@@ -366,7 +366,7 @@ void find_mcps(void)
 	    
 	} /* for(pathptr = searchpaths; *pathptr; pathptr++) */
 	
-    	if (!dp->dvp_Flags & DVPF_ASSIGN) break;
+    	if (!(dp->dvp_Flags & DVPF_ASSIGN)) break;
 	
     } /* while((dp = GetDeviceProc("LIBS:", dp))) */
     
@@ -802,7 +802,7 @@ void loop(void)
 
 int main(void)
 {
-    BPTR OldDir, NewDir;
+    BPTR OldDir = BNULL, NewDir;
     int  retval = RETURN_OK;
     struct RDArgs *rda = NULL;
 //    APTR *proc=0;
