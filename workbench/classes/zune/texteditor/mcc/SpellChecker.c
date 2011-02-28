@@ -142,7 +142,7 @@ static BOOL SendRexx(CONST_STRPTR word, CONST_STRPTR command)
       SHOWSTRING(DBF_SPELL, buffer);
 
       rxmsg->rm_Action = RXCOMM;
-      if((rxmsg->rm_Args[0] = (APTR)CreateArgstring(buffer, strlen(buffer))) != 0)
+      if((rxmsg->rm_Args[0] = (IPTR)CreateArgstring(buffer, strlen(buffer))) != 0)
       {
         if(SafePutMsg("REXX", (struct Message *)rxmsg) == TRUE)
         {
