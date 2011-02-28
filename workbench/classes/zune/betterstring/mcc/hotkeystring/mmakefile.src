@@ -6,8 +6,7 @@ include $(TOP)/config/make.cfg
 #MM workbench-classes-zune-hotkeystring-test : \
 #MM workbench-classes-zune-hotkeystring-class includes linklibs
 
-USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
-USER_CFLAGS := -DNO_INLINE_STDARG
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
 
 FILES := Dispatcher HandleInput Debug
 	 
@@ -17,8 +16,7 @@ FILES := Dispatcher HandleInput Debug
 
 
 
-USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
-USER_CFLAGS := -DNO_INLINE_STDARG
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
 
 %build_prog mmake=workbench-classes-zune-hotkeystring-test \
     progname=HotkeyString-Test files="HotkeyString-Test $(FILES)" \
