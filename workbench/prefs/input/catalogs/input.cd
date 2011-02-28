@@ -110,3 +110,12 @@ Alternate
 MSG_GAD_KEY_SET (//)
 Set
 ;
+MSG_GAD_KEY_SWITCH (//)
+Layout switching
+;
+MSG_GAD_KEY_SWITCH_ENABLE (//)
+Enabled
+;
+MSG_GAD_KEY_SWITCH_KEY (//)
+Hotkey
+;
