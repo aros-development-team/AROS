@@ -14,7 +14,9 @@ FILES := \
     codepages \
     debug
 
-USER_CFLAGS = -I. -I$(SRCDIR)/$(CURDIR)/../include
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_CFLAGS = -I. -idirafter $(SRCDIR)/$(CURDIR)/../include
 
 #MM workbench-libs-codesets : workbench-libs-codesets-includes linklibs
 

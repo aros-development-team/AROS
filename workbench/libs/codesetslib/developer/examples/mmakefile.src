@@ -12,7 +12,10 @@ FILES  := b64d b64e DetectCodeset UTF8ToStrHook demo1 Convert autoopen
 
 EXEDIR := $(AROS_TESTS)/Codesetslib
 
-USER_CFLAGS = -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../../include
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_CFLAGS = -idirafter $(SRCDIR)/$(CURDIR)/../include \
+	      -idirafter $(SRCDIR)/$(CURDIR)/../../include
 
 %build_progs mmake=workbench-libs-codesets-test \
     files=$(FILES) targetdir=$(EXEDIR) \

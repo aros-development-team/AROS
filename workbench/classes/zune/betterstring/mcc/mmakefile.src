@@ -6,14 +6,15 @@ include $(TOP)/config/make.cfg
 #MM workbench-classes-zune-betterstring-test : \
 #MM workbench-classes-zune-betterstring-class includes linklibs
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcp
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../mcp -idirafter $(SRCDIR)/$(CURDIR)/../include
 
-USER_CFLAGS := -DNO_INLINE_STDARG
 
 FILES := \
         AllocBitMap \
         AllocFunctions \
-		ClipboardServer \
+        ClipboardServer \
         Dispatcher \
         FileNameCompl \
         GetSetAttrs \
@@ -29,7 +30,7 @@ FILES := \
 
 
 
-USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../include
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include
 USER_CFLAGS := -DNO_INLINE_STDARG
 
 %build_prog mmake=workbench-classes-zune-betterstring-test \

@@ -10,7 +10,9 @@ include $(TOP)/config/make.cfg
 
 #MM- clean :  texteditor-mcp-clean
 
-USER_INCLUDES = -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcc
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcc
 USER_CFLAGS := -DNO_INLINE_STDARG
 
 FILES := library \
