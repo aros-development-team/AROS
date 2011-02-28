@@ -214,7 +214,6 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
   fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
   if (fh)
   {
-	fh->type       = FHD_DIRECTORY;
 	fh->volumename = (*handle)->volumename;
 	fh->dl	       = (*handle)->dl;
 	
