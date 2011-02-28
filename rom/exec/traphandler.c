@@ -22,12 +22,13 @@
  * In our current implementation we use two pointers on stack. The idea is taken
  * from AmigaOS v4.
  *
- * TODO: m68k trap handler should be binary-compatible with original AmigaOS
- * implementation. There are two possible ways to accomplish this:
- * 1. Implement a stub in asm around it. tc_TrapCode should point to this stub.
- * 2. Implement AROS-specific flag in task's tc_Flags which will tell that
- *    a newstyle trap handler is used.
- * Each of this approaches has its own pros and cons.
+ * On m68k, the exeception handling routines check to see whether
+ * task->tc_TrapCode == Exec_TrapHandler, and, if so, call this
+ * routine.
+ *
+ * If not, they call the routine via the AOS 1.x-3.x method described above.
+ *
+ * See arch/m68k-all/kernel/m68k_exception.c for implementation details.
  */
 
 void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
