@@ -189,7 +189,7 @@ struct MUI_AreaData
 // offset 52
     CONST_STRPTR       mad_BackgroundSpec;
 // offset 56
-    SIPTR              mad_FontPreset;     /* MUIV_Font_xxx */
+    IPTR               mad_FontPreset;     /* MUIV_Font_xxx or pointer to struct TextFont */
 // offset 76
     CONST_STRPTR       mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
 // Inner values at offset 88 in MUI:
