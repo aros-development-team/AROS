@@ -142,7 +142,7 @@ AROS_UFH3(void, display_function,
     static char buf[100];
     if (entry)
     {
-    	sprintf(buf,"%ld", (LONG) *(strings-1));
+    	sprintf(buf,"%ld", (long) *(strings-1));
         strings[0] = buf;
         strings[1] = entry->column1;
         strings[2] = entry->column2;
@@ -166,7 +166,7 @@ AROS_UFH3(void, display2_function,
     static char buf[100];
     if (entry)
     {
-    	sprintf(buf,"line num: %ld  id: %p", (LONG) *(strings-1), entry);
+    	sprintf(buf,"line num: %ld  id: %p", (long) *(strings-1), entry);
         strings[0] = buf;
     } else
     {
@@ -276,7 +276,7 @@ AROS_UFH3S(IPTR, dispatcher,
 	    struct DropText_Data *data = (struct DropText_Data*)INST_DATA(cl,obj);
 	    char buf[100];
 	    data->times++;
-	    sprintf(buf,"%ld times",data->times); /* no MUIM_SetAsString yet */
+	    sprintf(buf,"%ld times",(long)data->times); /* no MUIM_SetAsString yet */
 	    set(obj,MUIA_Text_Contents,buf);
     	}
     }
@@ -370,7 +370,7 @@ int main(void)
 	    MUIA_Family_Child, MenuitemObject,
 	    	MUIA_Menuitem_Title, "Project",
 	    	MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "About...", MUIA_Menuitem_Shortcut, "?", End,
-	    	MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
+	    	MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, (SIPTR)-1, End,
 	    	MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Quit", MUIA_Menuitem_Shortcut, "Q", End,
 	    	End,
 	    End,
