@@ -198,7 +198,7 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    entry.name[sizeof(entry.name) - 2] = '\0';
 	    strcat(entry.name, ":");
 	    
-	    if ((lock = Lock(entry.name, SHARED_LOCK)) != NULL)
+	    if ((lock = Lock(entry.name, SHARED_LOCK)) != BNULL)
 	    {
 		if (Info(lock, &diskinfo) != DOSFALSE)
 		{

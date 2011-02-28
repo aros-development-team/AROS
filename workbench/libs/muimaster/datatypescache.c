@@ -185,8 +185,9 @@ void dt_cleanup(void)
 }
 */
 
-char *allocPath(char *str) {
-  char *s0, *s1, *s;
+char *allocPath(const char *str) {
+  const char *s0, *s1;
+  char *s;
   int	 l;
 
   s = NULL;
@@ -446,7 +447,7 @@ void FreePropConfig(struct dt_node *data)
 
 }
 
-BOOL ReadFrameConfig(STRPTR filename, struct dt_frame_image *fi, struct Screen *scr) {
+BOOL ReadFrameConfig(CONST_STRPTR filename, struct dt_frame_image *fi, struct Screen *scr) {
     
     char    buffer[256];
     char    *line, *v;

@@ -66,13 +66,13 @@ struct __MUIBuiltinClass {
     !defined(NO_INLINE_STDARG)           && \
     !defined(__SASC)
 
-#define MUIOBJMACRO_START(class) (IPTR) \
+#define MUIOBJMACRO_START(class) (APTR) \
 ({                                      \
      ClassID __class = (ClassID) class; \
      enum { __ismuiobjmacro = 1 };      \
      IPTR __tags[] = {0
 
-#define BOOPSIOBJMACRO_START(class) (IPTR) \
+#define BOOPSIOBJMACRO_START(class) (APTR) \
 ({                                         \
      Class *__class = (Class *) class;     \
      enum { __ismuiobjmacro = 0 };         \
