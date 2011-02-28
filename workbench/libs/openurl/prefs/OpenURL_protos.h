@@ -25,7 +25,7 @@ APTR DoSuperNew(struct IClass *cl, APTR obj, ...);
 #elif defined(__AROS__)
 #define DoSuperNew(cl, obj, ...)				\
 ({								\
-    IPTR __args[] = {__VA_ARGS__};				\
+    IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
     DoSuperNewTagList(cl, obj, NULL, (struct TagItem *)__args);	\
 })
 #else
