@@ -117,14 +117,11 @@ typedef void (*Function)();           /* pointer to a function */
 extern int DebugPutChar(register int x);   /* write a single character      */
 extern int DebugGetChar();   /* read and return a single char */
 
-void exceptionHandler(int n, void *a);  /* assign an exception handler */
-ExceptionHook exceptionHook;  /* hook variable for errors/exceptions */
+void exceptionHandler(int n, ExceptionHook a);  /* assign an exception handler */
 
 /************************/
 /* FORWARD DECLARATIONS */
 /************************/
-static void
-initializeRemcomErrorFrame ();
 
 /************************************************************************/
 /* BUFMAX defines the maximum number of characters in inbound/outbound buffers*/
@@ -148,32 +145,6 @@ enum regnames {D0,D1,D2,D3,D4,D5,D6,D7,
                FPCONTROL,FPSTATUS,FPIADDR
               };
 
-
-/* We keep a whole frame cache here.  "Why?", I hear you cry, "doesn't
-   GDB handle that sort of thing?"  Well, yes, I believe the only
-   reason for this cache is to save and restore floating point state
-   (fsave/frestore).  A cleaner way to do this would be to make the
- fsave data part of the registers which GDB deals with like any
-   other registers.  This should not be a performance problem if the
-   ability to read individual registers is added to the protocol.  */
-
-typedef struct FrameStruct
-{
-    struct FrameStruct  *previous;
-    int       exceptionPC;      /* pc value when this frame created */
-    int       exceptionVector;  /* cpu vector causing exception     */
-    short     frameSize;        /* size of cpu frame in words       */
-    short     sr;               /* for 68000, this not always sr    */
-    int       pc;
-    short     format;
-    int       fsaveHeader;
-    int       morejunk[0];        /* exception frame, fp save... */
-} Frame;
-
-#define FRAMESIZE 500
-int   gdbFrameStack[FRAMESIZE];
-static Frame *lastFrame;
-
 /*
  * these should not be static cuz they can be used outside this module
  */
@@ -182,15 +153,6 @@ int superStack;
 
 #define STACKSIZE 1024
 int remcomStack[STACKSIZE/sizeof(int)];
-static int* stackPtr;
-
-/*
- * In many cases, the system will want to continue exception processing
- * when a continue command is given.  
- * oldExceptionHook is a function to invoke in this case.
- */
-
-static ExceptionHook oldExceptionHook;
 
 #ifdef mc68020
 /* the size of the exception stack on the 68020 varies with the type of
@@ -210,305 +172,7 @@ jmp_buf remcomEnv;
 /***************************  ASSEMBLY CODE MACROS *************************/
 /* 									   */
 
-#ifdef __HAVE_68881__
-/* do an fsave, then remember the address to begin a restore from */
-#define SAVE_FP_REGS()    asm(" fsave   a0@-");		\
-			  asm(" fmovemx fp0-fp7,registers+72");        \
-			  asm(" fmoveml fpcr/fpsr/fpi,registers+168"); 
-#define RESTORE_FP_REGS()                              \
-asm("                                                \n\
-    fmoveml  registers+168,fpcr/fpsr/fpi            \n\
-    fmovemx  registers+72,fp0-fp7                   \n\
-    cmpl     #-1,a0@     |  skip frestore flag set ? \n\
-    beq      skip_frestore                           \n\
-    frestore a0@+                                    \n\
-skip_frestore:                                       \n\
-");
-
-#else
-#define SAVE_FP_REGS()
-#define RESTORE_FP_REGS()
-#endif /* __HAVE_68881__ */
-
-void return_to_super();
-void return_to_user();
-
-asm(
-	".text\n"
-	".globl return_to_super\n"
-	"return_to_super:\n"
-	"        movel   registers+60,%sp /* get new stack pointer */\n"
-	"        movel   lastFrame,%a0   /* get last frame info  */\n"
-	"        bra     return_to_any\n"
-	"\n"
-	".globl return_to_user\n"
-	"return_to_user:\n"
-	"        movel   registers+60,%a0 /* get usp */\n"
-	"        movel   %a0,%usp           /* set usp */\n"
-	"        movel   superStack,%sp  /* get original stack pointer */\n"
-	"\n"
-	"return_to_any:\n"
-	"        movel   lastFrame,%a0   /* get last frame info  */\n"
-	"        movel   %a0@+,lastFrame /* link in previous frame     */\n"
-	"        addql   #8,%a0           /* skip over pc, vector#*/\n"
-	"        movew   %a0@+,%d0         /* get # of words in cpu frame */\n"
-	"        addw    %d0,%a0           /* point to end of data        */\n"
-	"        addw    %d0,%a0           /* point to end of data        */\n"
-	"        movel   %a0,%a1\n"
-	"#\n"
-	"# copy the stack frame\n"
-	"        subql   #1,%d0\n"
-	"copyUserLoop:\n"
-	"        movew   %a1@-,%sp@-\n"
-	"        dbf     %d0,copyUserLoop\n"
-);                                                                     
-        RESTORE_FP_REGS()                                              
-   asm("   moveml  registers,%d0-%d7/%a0-%a6");
-   asm("   rte");  /* pop and go! */                                    
-
-#define DISABLE_INTERRUPTS()   asm("         oriw   #0x0700,%sr");
 #define BREAKPOINT() asm("   trap #1");
-
-/* this function is called immediately when a level 7 interrupt occurs */
-/* if the previous interrupt level was 7 then we're already servicing  */
-/* this interrupt and an rte is in order to return to the debugger.    */
-/* For the 68000, the offset for sr is 6 due to the jsr return address */
-asm(	".text\n"
-	".globl _debug_level7\n"
-	"_debug_level7:\n"
-	"	movew   %d0,%sp@-\n");
-#if defined (mc68020) || defined (mc68332)
-asm("	movew   %sp@(2),%d0\n");
-#else
-asm("	movew   %sp@(6),%d0\n");
-#endif
-asm(
-	"	andiw   #0x700,%d0\n"
-	"	cmpiw   #0x700,%d0\n"
-	"	beq     already7\n"
-	"        movew   %sp@+,%d0\n"
-	"        bra     _catchException\n"
-	"already7:\n"
-	"	movew   %sp@+,%d0\n");
-#if !defined (mc68020) && !defined (mc68332)
-asm("	lea     %sp@(4),%sp");     /* pull off 68000 return address */
-#endif
-asm("	rte");
-
-extern void _catchException ();
-
-#if defined (mc68020) || defined (mc68332)
-/* This function is called when a 68020 exception occurs.  It saves
- * all the cpu and fpcp regs in the registers array, creates a frame on a
- * linked list of frames which has the cpu and fpcp stack frames needed
- * to properly restore the context of these processors, and invokes
- * an exception handler (remcom_handler).
- *
- * stack on entry:                       stack on exit:
- *   N bytes of junk                     exception # MSWord
- *   Exception Format Word               exception # MSWord
- *   Program counter LSWord              
- *   Program counter MSWord             
- *   Status Register                    
- *                                       
- *                                       
- */
-asm(	".text\n"
-	".globl _catchException\n"
-	"_catchException:\n");
-DISABLE_INTERRUPTS();
-asm(	"moveml  %d0-%d7/%a0-%a6,registers /* save registers        */\n"
-	"movel	lastFrame,%a0	/* last frame pointer */\n");
-SAVE_FP_REGS();        
-asm(
-	"	lea     registers,%a5   /* get address of registers     */\n"
-	"        movew   %sp@,%d1          /* get status register          */\n"
-	"        movew   %d1,%a5@(66)      /* save sr		 	*/\n"
-	"	movel   %sp@(2),%a4       /* save pc in a4 for later use  */\n"
-	"        movel   %a4,%a5@(68)      /* save pc in regisers[]      	*/\n"
-	"\n"
-	"#\n"
-	"# figure out how many bytes in the stack frame\n"
-	"	movew   %sp@(6),%d0	/* get '020 exception format	*/\n"
-	"        movew   %d0,%d2           /* make a copy of format word   */\n"
-	"        andiw   #0xf000,%d0      /* mask off format type         */\n"
-	"        rolw    #5,%d0           /* rotate into the low byte *2  */\n"
-	"        lea     exceptionSize,%a1\n"
-	"        addw    %d0,%a1           /* index into the table         */\n"
-	"	movew   %a1@,%d0          /* get number of words in frame */\n"
-	"        movew   %d0,%d3           /* save it                      */\n"
-	"        subw    %d0,%a0		/* adjust save pointer          */\n"
-	"        subw    %d0,%a0		/* adjust save pointer(bytes)   */\n"
-	"	movel   %a0,%a1           /* copy save pointer            */\n"
-	"	subql   #1,%d0           /* predecrement loop counter    */\n"
-	"#\n"
-	"# copy the frame\n"
-	"saveFrameLoop:\n"
-	"	movew  	%sp@+,%a1@+\n"
-	"	dbf     %d0,saveFrameLoop\n"
-	"#\n"
-	"# now that the stack has been clenaed,\n"
-	"# save the a7 in use at time of exception\n"
-	"        movel   %sp,superStack  /* save supervisor sp           */\n"
-	"        andiw   #0x2000,%d1      /* were we in supervisor mode ? */\n"
-	"        beq     userMode\n"
-	"        movel   %a7,%a5@(60)      /* save a7                  */\n"
-	"        bra     a7saveDone\n"
-	"userMode:\n"
-	"	movel   %usp,%a1\n"
-	"        movel   %a1,%a5@(60)      /* save user stack pointer	*/\n"
-	"a7saveDone:\n"
-	"\n"
-	"#\n"
-	"# save size of frame\n"
-	"        movew   %d3,%a0@-\n"
-	"\n"
-	"#\n"
-	"# compute exception number\n"
-	"	andl    #0xfff,%d2   	/* mask off vector offset	*/\n"
-	"	lsrw    #2,%d2   	/* divide by 4 to get vect num	*/\n"
-	"        movel   %d2,%a0@-         /* save it                      */\n"
-	"#\n"
-	"# save pc causing exception\n"
-	"        movel   %a4,%a0@-\n"
-	"#\n"
-	"# save old frame link and set the new value\n"
-	"	movel	lastFrame,%a1	/* last frame pointer */\n"
-	"	movel   %a1,%a0@-		/* save pointer to prev frame	*/\n"
-	"        movel   %a0,lastFrame\n"
-	"\n"
-	"        movel   %d2,%sp@-		/* push exception num           */\n"
-	"	movel   exceptionHook,%a0  /* get address of handler */\n"
-	"        jbsr    %a0@             /* and call it */\n"
-	"        clrl    %sp@             /* replace exception num parm with frame ptr */\n"
-	"        jbsr     _returnFromException   /* jbsr, but never returns */\n"
-);
-#else /* mc68000 */
-/* This function is called when an exception occurs.  It translates the
- * return address found on the stack into an exception vector # which
- * is then handled by either handle_exception or a system handler.
- * catchException provides a front end for both.  
- *
- * stack on entry:                       stack on exit:
- *   Program counter MSWord              exception # MSWord 
- *   Program counter LSWord              exception # MSWord
- *   Status Register                     
- *   Return Address  MSWord              
- *   Return Address  LSWord             
- */
-asm(
-	".text\n"
-	".globl _catchException\n"
-	"_catchException:\n"
-);
-DISABLE_INTERRUPTS();
-asm(
-	"        moveml %d0-%d7/%a0-%a6,registers  /* save registers               */\n"
-	"	movel	lastFrame,%a0	/* last frame pointer */\n"
-);
-SAVE_FP_REGS();        
-asm(
-	"        lea     registers,%a5   /* get address of registers     */\n"
-	"        movel   %sp@+,%d2         /* pop return address           */\n"
-	"        sub.l    #exceptionTable, %d2 /* subtract off start of exception table */\n"
-	"        subq.l    #6,%d2	\n"
-	"        divs    #6,%d2   	/*  exception number		*/\n"
-	"        extl    %d2   \n"
-	"\n"
-	"        moveql  #3,%d3           /* assume a three word frame     */\n"
-	"\n"
-	"        cmpiw   #3,%d2           /* bus error or address error ? */\n"
-	"        bgt     normal          /* if >3 then normal error      */\n"
-	"        movel   %sp@+,%a0@-       /* copy error info to frame buff*/\n"
-	"        movel   %sp@+,%a0@-       /* these are never used         */\n"
-	"        moveql  #7,%d3           /* this is a 7 word frame       */\n"
-	"     \n"
-	"normal:   \n"
-	"	movew   %sp@+,%d1         /* pop status register          */\n"
-	"        movel   %sp@+,%a4         /* pop program counter          */\n"
-	"        movew   %d1,%a5@(66)      /* save sr		 	*/	\n"
-	"        movel   %a4,%a5@(68)      /* save pc in regisers[]      	*/\n"
-	"        movel   %a4,%a0@-         /* copy pc to frame buffer      */\n"
-	"	movew   %d1,%a0@-         /* copy sr to frame buffer      */\n"
-	"\n"
-	"        movel   %sp,superStack  /* save supervisor sp          */\n"
-	"\n"
-	"        andiw   #0x2000,%d1      /* were we in supervisor mode ? */\n"
-	"        beq     userMode       \n"
-	"        movel   %a7,%a5@(60)      /* save a7                  */\n"
-	"        bra     saveDone             \n"
-	"userMode:\n"
-	"        movel   %usp,%a1    	/* save user stack pointer 	*/\n"
-	"        movel   %a1,%a5@(60)      /* save user stack pointer	*/\n"
-	"saveDone:\n"
-	"\n"
-	"        movew   %d3,%a0@-         /* push frame size in words     */\n"
-	"        movel   %d2,%a0@-         /* push vector number           */\n"
-	"        movel   %a4,%a0@-         /* push exception pc            */\n"
-	"\n"
-	"#\n"
-	"# save old frame link and set the new value\n"
-	"	movel	lastFrame,%a1	/* last frame pointer */\n"
-	"	movel   %a1,%a0@-		/* save pointer to prev frame	*/\n"
-	"        movel   %a0,lastFrame\n"
-	"\n"
-	"        movel   %d2,%sp@-		/* push exception num           */\n"
-	"	movel   exceptionHook,%a0  /* get address of handler */\n"
-	"        jbsr    %a0@             /* and call it */\n"
-	"        clrl    %sp@             /* replace exception num parm with frame ptr */\n"
-	"        jbsr     _returnFromException   /* jbsr, but never returns */\n"
-);
-#endif
-
-
-/*
- * remcomHandler is a front end for handle_exception.  It moves the
- * stack pointer into an area reserved for debugger use in case the
- * breakpoint happened in supervisor mode.
- */
-asm("remcomHandler:");
-asm("           addl    #4,%sp");        /* pop off return address     */
-asm("           movel   %sp@+,%d0");      /* get the exception number   */
-asm("		movel   stackPtr,%sp"); /* move to remcom stack area  */
-asm("		movel   %d0,%sp@-");	/* push exception onto stack  */
-asm("		jbsr    handle_exception");    /* this never returns */
-asm("           rts");                  /* return */
-
-void _returnFromException( Frame *frame )
-{
-    /* if no passed in frame, use the last one */
-    if (! frame)
-    {
-        frame = lastFrame;
-	frame->frameSize = 4;
-        frame->format = 0;
-        frame->fsaveHeader = -1; /* restore regs, but we dont have fsave info*/
-    }
-
-#if !defined (mc68020) && !defined (mc68332)
-    /* a 68000 cannot use the internal info pushed onto a bus error
-     * or address error frame when doing an RTE so don't put this info
-     * onto the stack or the stack will creep every time this happens.
-     */
-    frame->frameSize=3;
-#endif
-
-    /* throw away any frames in the list after this frame */
-    lastFrame = frame;
-
-    frame->sr = registers[(int) PS];
-    frame->pc = registers[(int) PC];
-
-    if (registers[(int) PS] & 0x2000)
-    { 
-        /* return to supervisor mode... */
-        return_to_super();
-    }
-    else
-    { /* return to user mode */
-        return_to_user();
-    }
-}
 
 int hex(ch)
 char ch;
@@ -602,7 +266,7 @@ char * buffer;
   DebugPutChar(hexchars[checksum >> 4]);
   DebugPutChar(hexchars[checksum % 16]);
 
-  } while (1 == 0);  /* (DebugGetChar() != '+'); */
+  } while (DebugGetChar() != '+');
   
 }
 
@@ -738,8 +402,6 @@ void handle_exception(int exceptionVector)
   int    sigval;
   int    addr, length;
   char * ptr;
-  int    newPC;
-  Frame  *frame;
 
   if ((exceptionVector == (32+1)) ||
       (exceptionVector == (32+15)))
@@ -803,13 +465,13 @@ void handle_exception(int exceptionVector)
                   }     
                 } 
 		else {
-		  exceptionHandler(2,_catchException);   
+		  exceptionHandler(2,handle_exception);   
 		  strcpy(remcomOutBuffer,"E03");
 		  debug_error("bus error");
 		  }     
                 
 		/* restore handler for bus error */
-		exceptionHandler(2,_catchException);   
+		exceptionHandler(2,handle_exception);   
 		break;
       
       /* MAA..AA,LLLL: Write LLLL bytes at address AA.AA return OK */
@@ -835,15 +497,15 @@ void handle_exception(int exceptionVector)
 		      }     
                 } 
 		else {
-		  exceptionHandler(2,_catchException);   
+		  exceptionHandler(2,handle_exception);   
 		  strcpy(remcomOutBuffer,"E03");
 		  debug_error("bus error");
 		  }     
 
                 /* restore handler for bus error */
-                exceptionHandler(2,_catchException);   
+                exceptionHandler(2,handle_exception);   
                 break;
-     
+
      /* cAA..AA    Continue at address AA..AA(optional) */
      /* sAA..AA   Step one instruction from AA..AA(optional) */
      case 'c' : 
@@ -853,107 +515,14 @@ void handle_exception(int exceptionVector)
          if (hexToInt(&ptr,&addr))
              registers[ PC ] = addr;
              
-          newPC = registers[ PC];
+         /* clear the trace bit */
+         registers[ PS ] &= 0x7fff;
           
-          /* clear the trace bit */
-          registers[ PS ] &= 0x7fff;
-          
-          /* set the trace bit if we're stepping */
-          if (remcomInBuffer[0] == 's') registers[ PS ] |= 0x8000;
-          
-          /*
-           * look for newPC in the linked list of exception frames.
-           * if it is found, use the old frame it.  otherwise,
-           * fake up a dummy frame in returnFromException().
-           */
+         /* set the trace bit if we're stepping */
+         if (remcomInBuffer[0] == 's') registers[ PS ] |= 0x8000;
 
-#ifdef HAVE_STDIO
-          if (remote_debug) printf("new pc = 0x%x\n",newPC);
-#endif
-          frame = lastFrame;
-          while (frame)
-          {
-#ifdef HAVE_STDIO
-              if (remote_debug)
-                  printf("frame at 0x%x has pc=0x%x, except#=%d\n",
-                         frame,frame->exceptionPC,
-                         frame->exceptionVector);
-#endif
-              if (frame->exceptionPC == newPC) break;  /* bingo! a match */
-              /*
-               * for a breakpoint instruction, the saved pc may
-               * be off by two due to re-executing the instruction
-               * replaced by the trap instruction.  Check for this.
-               */
-              if ((frame->exceptionVector == (32+1)) &&
-                  (frame->exceptionPC == (newPC+2))) break;
-              if ((frame->exceptionVector == (32+15)) &&
-                  (frame->exceptionPC == (newPC+2))) break;
-              if (frame == frame->previous)
-	      {
-	          frame = 0; /* no match found */ 
-	          break; 
-	      }
-	      frame = frame->previous;
-          }
-          
-          /*
-           * If we found a match for the PC AND we are not returning
-           * as a result of a breakpoint (32+1), trap (32+15)
-           * trace exception (9), nmi (31), jmp to
-           * the old exception handler as if this code never ran.
-           */
-          if (frame) 
-          {
-              if ((frame->exceptionVector != 9)  && 
-                  (frame->exceptionVector != 31) && 
-                  (frame->exceptionVector != (32+1)) &&
-                  (frame->exceptionVector != (32+15)))
-              { 
-                  /*
-                   * invoke the previous handler.
-                   */
-                  if (oldExceptionHook)
-                      (*oldExceptionHook) (frame->exceptionVector);
-                  newPC = registers[ PC ];    /* pc may have changed  */
-                  if (newPC != frame->exceptionPC)
-                  {
-#ifdef HAVE_STDIO
-                      if (remote_debug)
-                          printf("frame at 0x%x has pc=0x%x, except#=%d\n",
-                                 frame,frame->exceptionPC,
-                                 frame->exceptionVector);
-#endif
-                      /* re-use the last frame, we're skipping it (longjump?)*/
-		      frame = (Frame *) 0;
-	              _returnFromException( frame );  /* this is a jump */
-                  }
-              }
-          }         
-
-    	  /* if we couldn't find a frame, create one */
-          if (frame == 0)
-	  {
-    	      frame = lastFrame -1 ;
-	      
-	      /* by using a bunch of print commands with breakpoints,
-    	         it's possible for the frame stack to creep down.  If it creeps
-		 too far, give up and reset it to the top.  Normal use should
-    	         not see this happen.
-    	      */
-	      if ((unsigned int) (frame-2) < (unsigned int) &gdbFrameStack)
-    	      {
-    	         initializeRemcomErrorFrame();
-    	         frame = lastFrame; 
-	      }
-    	      frame->previous = lastFrame;
-              lastFrame = frame;
-              frame = 0;  /* null so _return... will properly initialize it */ 
-	  }    
-	  
-	  _returnFromException( frame ); /* this is a jump */
-
-          break;
+         /* Don't send a reply. The trap will signal GDB. */
+         return;
           
       /* kill the program */
       case 'k' :  /* do nothing */
@@ -965,54 +534,10 @@ void handle_exception(int exceptionVector)
     }
 }
 
-
-void
-initializeRemcomErrorFrame()
-{
-    lastFrame = ((Frame *) &gdbFrameStack[FRAMESIZE-1]) - 1;
-    lastFrame->previous = lastFrame;
-}
-
 /* this function is used to set up exception handlers for tracing and 
    breakpoints */
 void set_debug_traps()
 {
-  extern void _debug_level7();
-  extern void remcomHandler();
-  int exception;
-
-#ifdef __mc68020
-  asm("moveal  #0x000000, %a0 ; movec   %a0, %vbr");
-#endif
-
-  initializeRemcomErrorFrame();
-  stackPtr  = &remcomStack[STACKSIZE/sizeof(int) - 1];
-
-  for (exception = 2; exception <= 7 /* 23 */; exception++)
-      exceptionHandler(exception,_catchException);   
-
-  exceptionHandler(9,_catchException); 
-  exceptionHandler(14,_catchException); 
-  exceptionHandler(15,_catchException); 
-
-  /* level 7 interrupt              */
-  exceptionHandler(31,_debug_level7);    
-  
-  /* breakpoint exception (trap #1) */
-  exceptionHandler(32 + 1,_catchException);
-  /* GDB run-in-place exception (trap #15) */
-  exceptionHandler(32 + 15,_catchException);
-
-  /* 48 to 54 are floating point coprocessor errors */
-  for (exception = 48; exception <= 54; exception++)
-      exceptionHandler(exception,_catchException);   
-
-  if (oldExceptionHook != remcomHandler)
-  {
-      oldExceptionHook = exceptionHook;
-      exceptionHook    = remcomHandler;
-  }
-  
   initialized = 1;
 
   DebugPutChar('\n');
@@ -1046,6 +571,7 @@ void gdbstub()
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <exec/execbase.h>
 
 /* write a single character      */
 int DebugPutChar(register int x)
@@ -1064,37 +590,120 @@ int DebugGetChar()
     return (int)c;
 }
 
-/* Add an exception handler */
-#ifdef __mc68020
-void exceptionHandler(int n, void *a)
+static ExceptionHook exceptionTable[256];
+
+void exceptionHandler(int n, ExceptionHook a)
 {
-  ((volatile unsigned int *)0x000000)[n] = (unsigned int)a;
+    exceptionTable[n] = a;
 }
-#else
-static struct exceptionTable_s {
-    UWORD jsr;
-    APTR vec;
-} exceptionTable[256];
-void exceptionHandler(int n, void *a)
+
+union M68K_Exception_Frame {
+    struct {
+	UWORD status;
+	ULONG access;
+	UWORD sr;
+	ULONG pc;
+    } m68000_bus;
+    struct {
+	UWORD sr;
+	ULONG pc;
+    } m68000;
+    struct {
+	UWORD sr;
+	ULONG pc;
+	UWORD vector;
+	UWORD data[0];
+    } m68010;
+};
+
+void trapHandler_(union M68K_Exception_Frame *frame, ULONG id)
 {
-    struct exceptionTable_s *et;
-   
-    n &= 0xff;
-    et = &exceptionTable[n];
-    et->jsr = 0x4eb9;
-    et->vec = a;
-    ((APTR *)0x000000)[n] = et;
+    if (SysBase->AttnFlags & AFF_68010) {
+    	/* M68010+, any trap */
+    	registers[PS] = frame->m68010.sr;
+    	registers[PC] = frame->m68010.pc;
+    } else if (id == 2 || id == 3) {
+    	/* M68000 Bus/Address trap */
+    	registers[PS] = frame->m68000_bus.sr;
+    	registers[PC] = frame->m68000_bus.pc;
+    } else {
+    	/* M68000 other traps */
+    	registers[PS] = frame->m68000.sr;
+    	registers[PC] = frame->m68000.pc;
+    }
+
+    /* TODO: Save FPU state */
+
+    if (id > 256 || exceptionTable[id] == NULL) {
+    	handle_exception(id);
+    } else {
+    	(exceptionTable[id])(id);
+    }
+
+    /* Restore registers */
+    if (SysBase->AttnFlags & AFF_68010) {
+    	/* M68010+, any trap */
+    	frame->m68010.sr = registers[PS];
+    	frame->m68010.pc = registers[PC];
+    } else if (id == 2 || id == 3) {
+    	/* M68000 Bus/Address trap */
+    	frame->m68000_bus.sr = registers[PS];
+    	frame->m68000_bus.pc = registers[PC];
+    } else {
+    	/* M68000 other traps */
+    	frame->m68000.sr = registers[PS];
+    	frame->m68000.pc = registers[PC];
+    }
 }
-#endif
+
+/* Wrapper for the trapHandler_ */
+extern void trapHandler(void);
+asm (
+	"	.text\n"
+	"	.global trapHandler\n"
+	"trapHandler:\n"
+	"	oriw    #0x0700,%sr\n"      /* Disable interrupts */
+	"	movem.l %d0-%d7/%a0-%a6,registers\n"
+	"	move.l  %usp,%a0\n"        /* registers[A7] = USP */
+	"	lea.l   registers,%a1\n"
+	"	move.l  %a0,%a1@(15*4)\n"
+	"	lea.l   %sp@(+4),%a0\n"    /* A0 = exception frame */
+	"	move.l  %a0,%sp@-\n"       /* Stack = Frame *, ID */
+	"	jsr     trapHandler_\n"    /* Call C routine */
+	"	addq    #8,%sp\n"          /* Pop off stack args */
+	"	lea.l   registers,%a1\n"
+	"	move.l  %a1@(15*4),%a0\n"
+	"	move.l  %a0,%usp\n"        /* Save new USP */
+	"	movem.l registers,%d0-%d7/%a0-%a6\n"	/* Restore regs */
+	"	rte\n"                     /* Done! */
+);
 
 int main(int argc, char **argv)
 {
     APTR DOSBase;
+    APTR oldSysTrap, oldTaskTrap;
 
     if ((DOSBase = OpenLibrary("dos.library", 0))) {
+    	struct Task *task = FindTask(NULL);
+
+    	/* Select the GDBStub's trap code */
+    	Disable();
+    	oldTaskTrap = task->tc_TrapCode;
+    	oldSysTrap = SysBase->TaskTrapCode;
+    	SysBase->TaskTrapCode = trapHandler;
+    	task->tc_TrapCode = trapHandler;
+    	Enable();
+
 	gdbstub();
 	PutStr("GDB trapping enabled on the serial port\n");
 	Wait(SIGBREAKF_CTRL_C);
+
+	/* Restore old traps. Not really safe, but better than nothing */
+	Disable();
+    	SysBase->TaskTrapCode = oldSysTrap;
+    	task->tc_TrapCode = oldTaskTrap;
+    	Enable();
+
 	CloseLibrary(DOSBase);
     } else {
     	return RETURN_ERROR;
