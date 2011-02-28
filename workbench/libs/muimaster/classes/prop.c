@@ -695,7 +695,7 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 
 	if (_flags(obj) & MADF_INVIRTUALGROUP)
 	{
-    	    Object *wnd, *parent;
+    	    Object *wnd = NULL, *parent;
 
     	    get(obj, MUIA_WindowObject,&wnd);
 	    parent = obj;

@@ -46,7 +46,7 @@ static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 {
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
     char buf[255];
-    STRPTR name;
+    STRPTR name = NULL;
     
     get(data->bitmap_string, MUIA_String_Contents, &name);
     if (name && strlen(name) > 0)
@@ -241,7 +241,7 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 	    buf = AllocVec(len,0);
 	    if (buf)
 	    {
-	    	LONG num;
+	    	LONG num = 0;
 	    	int is_directory;
 		BOOL add_me = TRUE;
 
@@ -364,7 +364,7 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data,
 	case '4':
 	{
 	    struct ExternalListEntry *entry;
-	    LONG entries;
+	    LONG entries = 0;
 	    int i;
 
 	    set(obj, MUIA_Group_ActivePage, 3);
@@ -819,7 +819,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     		{
 		    int i;
 
-    		    LONG act;
+    		    LONG act = 0;
 		    if (data->imagespec)
 		    {
 		    	FreeVec(data->imagespec);
@@ -862,7 +862,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
 			case 2:
 			{
-			    struct MUI_PenSpec *penspec;
+			    struct MUI_PenSpec *penspec = NULL;
 
 			    get(data->color_group, MUIA_Penadjust_Spec, &penspec);
 			    if (penspec)
@@ -898,7 +898,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
 			case    4: /* Bitmap */
 				{
-				    char *str;
+				    char *str = NULL;
 				    get(data->bitmap_string,MUIA_String_Contents,&str);
 				    if (str)
 				    {

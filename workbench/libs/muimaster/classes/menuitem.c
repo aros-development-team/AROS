@@ -44,7 +44,7 @@ static int Menuitem_GetTotalChildren(Object *obj)
 {
     Object                *cstate;
     Object                *child;
-    struct MinList        *ChildList;
+    struct MinList        *ChildList = NULL;
     int num = 0;
 
     get(obj, MUIA_Family_List, &ChildList);
@@ -61,7 +61,7 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu, int depth)
 {
     Object                *cstate;
     Object                *child;
-    struct MinList        *ChildList;
+    struct MinList        *ChildList = NULL;
     int num = 0;
 
     if (depth > 2) return 0;
@@ -207,14 +207,14 @@ IPTR Menuitem__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	    	_handle_bool_tag(data->flags, tag->ti_Data, MENUF_CHECKED);
 		if (data->exclude && (data->flags & MENUF_CHECKED))
 		{
-		    Object  	    *parent;
+		    Object  	    *parent = NULL;
     	    	    get(obj, MUIA_Parent, &parent);
 
 		    if (parent)
 		    {
     	    	    	Object	    	*child;
     	    	    	Object	    	*cstate;
-    	    	    	struct MinList  *ChildList;
+    	    	    	struct MinList  *ChildList = NULL;
 			ULONG	    	i = 1;
 			
     	    	    	get(parent, MUIA_Family_List, &ChildList);
@@ -223,7 +223,7 @@ IPTR Menuitem__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 			{
 			    if ((i & data->exclude) && (child != obj))
 			    {			    
-				IPTR checkit, checked;
+				IPTR checkit = 0, checked = 0;
 
 				get(child, MUIA_Menuitem_Checkit, &checkit);
 				get(child, MUIA_Menuitem_Checked, &checked);
@@ -383,7 +383,7 @@ IPTR Menuitem__MUIM_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Co
 {
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     D(bug("Menuitem_ConnectParent(%p) %s\n", obj, OCLASS(obj)->cl_ID));
 
@@ -407,7 +407,7 @@ IPTR Menuitem__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 {
     Object               *cstate;
     Object               *child;
-    struct MinList       *ChildList;
+    struct MinList       *ChildList = NULL;
 
     D(bug("Menuitem_DisconnectParent(%p) %s\n", obj, OCLASS(obj)->cl_ID));
 

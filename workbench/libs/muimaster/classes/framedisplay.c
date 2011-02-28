@@ -155,7 +155,7 @@ IPTR Framedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *ms
 
 IPTR Framedisplay__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
 {
-    struct MUI_FrameSpec *dummy;
+    struct MUI_FrameSpec *dummy = NULL;
 
     if (msg->obj == obj)
 	return MUIV_DragQuery_Refuse;
@@ -166,7 +166,7 @@ IPTR Framedisplay__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_Dr
 
 IPTR Framedisplay__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
 {
-    struct MUI_FrameSpec *spec;
+    struct MUI_FrameSpec *spec = NULL;
 
     get(msg->obj, MUIA_Framedisplay_Spec, &spec);
     set(obj, MUIA_Framedisplay_Spec, (IPTR)spec);

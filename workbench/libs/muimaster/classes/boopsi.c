@@ -306,7 +306,7 @@ _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj)));
     
     if (_flags(obj) & MADF_INVIRTUALGROUP)
     {
-    	Object *wnd, *parent;
+    	Object *wnd = NULL, *parent;
 	
     	get(obj, MUIA_WindowObject,&wnd);
 	parent = obj;

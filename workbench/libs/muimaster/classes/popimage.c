@@ -104,7 +104,7 @@ IPTR Popimage__MUIM_Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
     if (!data->wnd)
     {
     	Object *ok_button, *cancel_button;
-    	char *img_spec;
+    	char *img_spec = NULL;
 	ULONG x = 0, y = 0;
 
 	get(_win(obj), MUIA_Window_LeftEdge, &x);
@@ -175,7 +175,7 @@ IPTR Popimage__MUIM_Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->wnd)
     {
-	ULONG opened;
+	ULONG opened = FALSE;
 
 	set(data->wnd, MUIA_Window_Open,TRUE);
 	get(data->wnd, MUIA_Window_Open, &opened);
@@ -198,7 +198,7 @@ IPTR Popimage__MUIM_Popimage_CloseWindow(struct IClass *cl, Object *obj,
 
     if (ok)
     {
-	char *spec;
+	char *spec = NULL;
 	get(data->imageadjust, MUIA_Imageadjust_Spec, &spec);
 /*  	D(bug("popimage: got %s\n", spec)); */
 	set(obj, MUIA_Imagedisplay_Spec, (IPTR)spec);

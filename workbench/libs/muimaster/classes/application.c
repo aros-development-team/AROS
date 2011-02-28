@@ -1677,7 +1677,7 @@ static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj, struct MUIP_A
     char name[1024];
     BPTR fh;
     Object *dataspace;
-    struct MinList *children;
+    struct MinList *children = NULL;
     Object *cstate;
     Object *child;
 
@@ -1740,7 +1740,7 @@ static IPTR Application__MUIM_Save(struct IClass *cl, Object *obj, struct MUIP_A
     char name[1024];
     BPTR fh;
     Object *dataspace;
-    struct MinList *children;
+    struct MinList *children = NULL;
     Object *cstate;
     Object *child;
 

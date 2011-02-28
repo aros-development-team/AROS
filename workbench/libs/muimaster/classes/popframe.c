@@ -100,7 +100,7 @@ IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
     if (!data->wnd)
     {
     	Object *ok_button, *cancel_button;
-    	struct MUI_Frame_Spec *frame_spec;
+    	struct MUI_Frame_Spec *frame_spec = NULL;
 	ULONG x = 0, y = 0;
 
 	get(_win(obj), MUIA_Window_LeftEdge, &x);
@@ -151,7 +151,7 @@ IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->wnd)
     {
-	ULONG opened;
+	ULONG opened = FALSE;
 
 	set(data->wnd, MUIA_Window_Open,TRUE);
 	get(data->wnd, MUIA_Window_Open, &opened);
@@ -174,7 +174,7 @@ IPTR Popframe__MUIM_Popframe_CloseWindow(struct IClass *cl, Object *obj,
 
     if (ok)
     {
-	STRPTR spec;
+	STRPTR spec = NULL;
 	get(data->frameadjust, MUIA_Frameadjust_Spec, &spec);
 /*  	D(bug("popframe: got %s\n", spec)); */
 	set(obj, MUIA_Framedisplay_Spec, (IPTR)spec);

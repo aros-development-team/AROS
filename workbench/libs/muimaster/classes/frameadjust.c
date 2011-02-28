@@ -49,7 +49,7 @@ static void SliderFunc(struct Hook *hook, Object *obj, struct SliderFuncMsg *msg
 {
     struct Frameadjust_DATA *data = msg->data;
     Object *slider = msg->slider;
-    ULONG val;
+    ULONG val = 0;
     char fs[10];
 
     get(slider, MUIA_Numeric_Value, &val);

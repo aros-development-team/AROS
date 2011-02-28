@@ -30,7 +30,7 @@ LONG PopscreenStrObjFunc(struct Hook *hook, Object *popup, Object *str)
     struct Popscreen_DATA   *data = (struct Popscreen_DATA *)hook->h_Data;
     struct List     	    *pubscrlist;
     struct PubScreenNode    *pubscrnode;
-    STRPTR  	    	     strtext, listentry;
+    STRPTR  	    	     strtext = NULL, listentry;
     LONG    	    	     index;
     
     DoMethod(data->list, MUIM_List_Clear);

@@ -128,7 +128,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath, struct 
     BPTR lock = Lock(imagePath, ACCESS_READ);
     
     D(bug("[ImageButton] Font 0x%p\n", textFont));
-    if (lock != NULL)
+    if (lock != BNULL)
     {
         
         TEXT imageSpec[BUFFERSIZE]; 

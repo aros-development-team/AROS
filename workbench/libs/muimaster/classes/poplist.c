@@ -28,7 +28,7 @@ extern struct Library *MUIMasterBase;
 LONG PoplistStrObjFunc(struct Hook *hook, Object *popup, Object *str)
 {
     struct Poplist_DATA *data = (struct Poplist_DATA *)hook->h_Data;
-    STRPTR  	    	 strtext, listentry;
+    STRPTR  	    	 strtext = NULL, listentry;
     LONG    	    	 index;
     
     get(str, MUIA_String_Contents, &strtext);

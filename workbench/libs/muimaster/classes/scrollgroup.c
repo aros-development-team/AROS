@@ -98,8 +98,8 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 
 		    LONG virt_width;
 		    LONG virt_height;
-		    LONG virt_minwidth;
-		    LONG virt_minheight;
+		    LONG virt_minwidth = 0;
+		    LONG virt_minheight = 0;
 		    LONG virt_maxwidth;
 		    LONG virt_maxheight;
 		    LONG vert_width = _minwidth(data->vert);
@@ -319,7 +319,7 @@ IPTR Scrollgroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Scrollgroup__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct Scrollgroup_DATA *data = INST_DATA(cl, obj);
-    LONG top,left,width,height;
+    LONG top = 0,left = 0,width = 0,height = 0;
 
     get(data->contents, MUIA_Virtgroup_Left, &left);
     get(data->contents, MUIA_Virtgroup_Top, &top);
