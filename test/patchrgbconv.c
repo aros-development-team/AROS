@@ -91,7 +91,7 @@ void ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt,
     APTR src = srcPixels;
     APTR dst = dstPixels;
 
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &gfxhidd);
+    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 
     if (!gfxhidd) {
         bug("ConvertPixels(): Failed to obtain graphics driver\n");
