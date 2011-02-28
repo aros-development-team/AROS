@@ -20,10 +20,9 @@ extern struct Library * MUIMasterBase;
 	APTR app,
 	APTR win,
 	LONG flags,
-	char *title,
-	char *gadgets,
-	char *format,
-	APTR param1,
+	const char *title,
+	const char *gadgets,
+	const char *format,
 	...)
 
 /*  FUNCTION
@@ -46,5 +45,5 @@ extern struct Library * MUIMasterBase;
 
 *****************************************************************************/
 {
-    return MUI_RequestA(app, win, flags, title, gadgets, format, &param1);
+    return MUI_RequestA(app, win, flags, title, gadgets, format, (&format)+1);
 } /* MUI_Request */
