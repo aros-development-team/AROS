@@ -41,7 +41,7 @@
 #define BlockEnabled(data)  (isFlagSet((data)->Flags, FLG_BlockEnabled) && (data)->BlockStart != (data)->BlockStop)
 
 #if defined(__amigaos4__) || defined(__MORPHOS__)
-static int VARARGS68K MySPrintf(const char *buf, const char *fmt, ...)
+static int VARARGS68K MySPrintf(char *buf, const char *fmt, ...)
 {
   VA_LIST args;
 
@@ -54,7 +54,7 @@ static int VARARGS68K MySPrintf(const char *buf, const char *fmt, ...)
 #elif defined(__AROS__)
 #define MySPrintf __sprintf /* from amiga lib */
 #else
-static int STDARGS MySPrintf(const char *buf, const char *fmt, ...)
+static int STDARGS MySPrintf(char *buf, const char *fmt, ...)
 {
   static const UWORD PutCharProc[2] = {0x16C0,0x4E75};
   /* dirty hack to avoid assembler part :-)
@@ -441,7 +441,7 @@ static BOOL DecreaseNearNumber(struct InstData *data)
     {
       if(res)
       {
-        const char *format = "%lx";
+        char *format;
         char string[12];
         char format2[12];
 
