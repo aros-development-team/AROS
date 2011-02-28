@@ -5,6 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <mui/HotkeyString_mcc.h>
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
@@ -33,14 +34,20 @@ struct IPEditor_DATA
     Object *iped_KeyTypes;
     Object *iped_DefKey;
     Object *iped_AltKey;
+    Object *iped_SetDefKey;
+    Object *iped_SetAltKey;
     Object *iped_RepeatRate;
     Object *iped_RepeatDelay;
+    Object *iped_SwitchEnable;
+    Object *iped_SwitchKey;
     Object *iped_Accelerated;
     Object *iped_MouseSpeed;
     Object *iped_DoubleClickDelay;
     Object *iped_LeftHandedMouse;
 
     struct Hook iped_setHook;
+    struct Hook iped_setEnableHook;
+    struct Hook iped_switchEnableHook;
 };
 
 /*** Local Functions ********************************************************/
@@ -77,6 +84,48 @@ AROS_UFH3(static void, setFunction,
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3(static void, setEnableFunction,
+	  AROS_UFHA(struct Hook *, h, A0),
+	  AROS_UFHA(Object *, obj, A2),
+	  AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct IPEditor_DATA *data = h->h_Data;
+    IPTR sw_enabled = FALSE;
+
+    SET(data->iped_SetDefKey, MUIA_Disabled, FALSE);
+    GET(data->iped_SwitchEnable, MUIA_Selected, &sw_enabled);
+    SET(data->iped_SetAltKey, MUIA_Disabled, !sw_enabled);
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(static void, switchEnableFunction,
+	  AROS_UFHA(struct Hook *, h, A0),
+	  AROS_UFHA(Object *, obj, A2),
+	  AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct IPEditor_DATA *data = h->h_Data;
+    IPTR disabled = 0;
+    IPTR active = 0;
+
+    GET(data->iped_SwitchEnable, MUIA_Selected, &disabled);
+    disabled = !disabled;
+    SET(data->iped_SwitchKey, MUIA_Disabled, disabled);
+    SET(data->iped_AltKey, MUIA_Disabled, disabled);
+    GET(data->iped_KeyTypes, MUIA_List_Active, &active);
+    SET(data->iped_SetAltKey, MUIA_Disabled, disabled || (active == MUIV_List_Active_Off));
+
+    SET(obj, MUIA_PrefsEditor_Changed, TRUE);
+
+    AROS_USERFUNC_EXIT
+}
+
+
+
 /*** Methods ****************************************************************/
 Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
@@ -85,6 +134,8 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object *altKey;
     Object *RepeatRate;
     Object *RepeatDelay;
+    Object *switchEnable;
+    Object *switchKey;
     Object *Accelerated;
     Object *GadMouseSpeed;
     Object *DoubleClickDelay;
@@ -182,14 +233,26 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Numeric_Max, 74,
                             End),
                         End,
+                        Child, (IPTR)ColGroup(2),
+                            GroupFrameT(__(MSG_GAD_KEY_SWITCH)),
+                            Child, (IPTR)Label1(__(MSG_GAD_KEY_SWITCH_ENABLE)),
+                            Child, (IPTR)HGroup,
+                            	Child, (IPTR)(switchEnable = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                            	Child, (IPTR)MUI_MakeObject(MUIO_HSpace, 0),
+                            End,
+                            Child, (IPTR)Label1(__(MSG_GAD_KEY_SWITCH_KEY)),
+                            Child, (IPTR)(switchKey = MUI_NewObject("HotKeyString.mcc",
+                                StringFrame,
+                                MUIA_Disabled, TRUE,
+                            TAG_DONE)),
+                        End,
                         Child, (IPTR)VGroup,
                             GroupFrameT(__(MSG_GAD_KEY_TEST)),
-                            Child, (IPTR)HVSpace,
                             Child, (IPTR)StringObject,
                                 StringFrame,
                             End,
-                            Child, (IPTR)HVSpace,
                         End,
+                        Child, (IPTR)HVSpace,
                     End,
                 End,
             End,
@@ -235,6 +298,10 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->iped_KeyTypes = keyTypes;
         data->iped_DefKey = defKey;
         data->iped_AltKey = altKey;
+        data->iped_SetDefKey = setDefKey;
+        data->iped_SetAltKey = setAltKey;
+        data->iped_SwitchEnable = switchEnable;
+        data->iped_SwitchKey = switchKey;
         data->iped_Accelerated = Accelerated;
         data->iped_MouseSpeed = GadMouseSpeed;
         data->iped_DoubleClickDelay = DoubleClickDelay;
@@ -242,6 +309,10 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 	data->iped_setHook.h_Entry = (HOOKFUNC)setFunction;
 	data->iped_setHook.h_Data = data;
+	data->iped_setEnableHook.h_Entry = (HOOKFUNC)setEnableFunction;
+	data->iped_setEnableHook.h_Data = data;
+	data->iped_switchEnableHook.h_Entry = (HOOKFUNC)switchEnableFunction;
+	data->iped_switchEnableHook.h_Data = data;
 
         IPTR root;
 
@@ -281,15 +352,16 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         );
 
         DoMethod(keyTypes, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-                 setDefKey, 3, MUIM_Set, MUIA_Disabled, FALSE);
-/*      DoMethod(keyTypes, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-                 setAltKey, 3, MUIM_Set, MUIA_Disabled, FALSE);*/
+                 self, 2, MUIM_CallHook, &data->iped_setEnableHook);
 
         DoMethod(setDefKey, MUIM_Notify, MUIA_Pressed, FALSE,
                  self, 3, MUIM_CallHook, &data->iped_setHook, defKey);
 
         DoMethod(setAltKey, MUIM_Notify, MUIA_Pressed, FALSE,
             	 self, 3, MUIM_CallHook, &data->iped_setHook, altKey);
+
+        DoMethod(switchEnable, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        	 self, 2, MUIM_CallHook, &data->iped_switchEnableHook);
 
         DoMethod
         (
