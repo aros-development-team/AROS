@@ -301,7 +301,7 @@ static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, 
     case 'O': /* pointer from List_CreateImage */
     {
         struct ListImage *li;
-        ULONG tmp;
+        IPTR tmp;
         char *t;
 
         if (*s != '[')
@@ -314,7 +314,7 @@ static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, 
         if (t == NULL)
         break;
         *t = 0;
-        if (HexToLong(s,&tmp) != -1)
+        if (HexToIPTR(s,&tmp) != -1)
         {
             D(bug("listimage = %lx\n", tmp));
             if (tmp == 0)
