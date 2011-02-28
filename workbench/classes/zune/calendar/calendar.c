@@ -49,7 +49,7 @@ IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
 
-    data->daylabels = (STRPTR *)GetTagData(MUIA_Calendar_DayLabels, 0, msg->ops_AttrList);
+    data->daylabels = (CONST_STRPTR *)GetTagData(MUIA_Calendar_DayLabels, 0, msg->ops_AttrList);
     if (!data->daylabels)
     {
     	struct Locale 	*locale;
@@ -417,7 +417,7 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 	
     	for(x = 0; x < 7; x++)
 	{
-	    STRPTR text;	    
+	    CONST_STRPTR text;	    
 	    UBYTE buf[3];
 	    
 	    if (data->old_mday && (day != data->old_mday) && (day != data->clockdata.mday))
