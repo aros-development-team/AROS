@@ -19,7 +19,8 @@
 #define EXEC_INTERFACE_DROP(interface)
 #define EXEC_INTERFACE_ASSIGN(a,b)
 
-/*** Misc OS4 Functions *****************************************************/
-LONG HexToLong(STRPTR s, ULONG *val);
+/*** Misc Functions *****************************************************/
+LONG HexToIPTR(CONST_STRPTR s, IPTR *val);
+LONG HexToLong(CONST_STRPTR s, ULONG *val);
 
 #endif

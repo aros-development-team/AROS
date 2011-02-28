@@ -13,12 +13,26 @@
 
 /***************************************************
  Like StrToLong() but for hex numbers
- (This function is available in OS4)
+ that represent addresses
 ***************************************************/
-LONG HexToLong(STRPTR s, ULONG *val)
+#ifdef __AROS__
+LONG HexToIPTR(CONST_STRPTR s, IPTR *val)
 {
     char *end;
-    *val = strtoul(s,&end,16);
+    *val = (IPTR)strtoull(s,&end,16);
     if (end == (char*)s) return -1;
     return end - (char*)s;
 }
+LONG HexToLong(CONST_STRPTR s, ULONG *val)
+{
+    char *end;
+    *val = (ULONG)strtoul(s,&end,16);
+    if (end == (char*)s) return -1;
+    return end - (char*)s;
+}
+#else
+LONG HexToIPTR(CONST_STRPTR s, IPTR *val)
+{
+    return HexToLong((STRPTR)s, val);
+}
+#endif
