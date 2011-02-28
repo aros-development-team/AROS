@@ -241,7 +241,7 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 		    	if ((font_ext = strstr(buf,".font")))
 		    	    *font_ext = 0;
 
-			snprintf(num_buf, 20, "%d", size);
+			snprintf(num_buf, 20, "%ld", (long)size);
 			AddPart(buf,num_buf,len);
 		    }
 		}

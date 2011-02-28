@@ -77,7 +77,7 @@ AROS_UFHA(struct Dirlist_Entry *, entry, A1))
 	}
 	else
 	{
-	    snprintf(data->size_string, sizeof(data->size_string), "%d", entry->fib.fib_Size);
+	    snprintf(data->size_string, sizeof(data->size_string), "%ld", (long)entry->fib.fib_Size);
 	    *array++ = data->size_string;
 	}
 	

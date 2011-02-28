@@ -45,7 +45,7 @@ static void printSize(STRPTR string, size_t bufsize, UQUAD size)
 	unit = 'K';
     }
     
-    snprintf(string, bufsize, "%u%c", (ULONG)size, unit);
+    snprintf(string, bufsize, "%u%c", (unsigned int)size, unit);
     string[bufsize - 1] = '\0';
 }
 
@@ -206,8 +206,8 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		    (
 			entry.full,
 			sizeof(entry.full),
-			"%d%%",
-			100 * diskinfo.id_NumBlocksUsed / diskinfo.id_NumBlocks
+			"%ld%%",
+			(long)(100 * diskinfo.id_NumBlocksUsed / diskinfo.id_NumBlocks)
 		    );
 		    entry.full[sizeof(entry.full) - 1] = '\0';
 		    
