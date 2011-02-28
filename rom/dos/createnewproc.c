@@ -137,6 +137,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	{
     	    LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 
+	    D(bug("Parent stack: %u (0x%08X)\n", parentstack, parentstack));
 	    if (parentstack > AROS_STACKSIZE)
 	    {
 	        defaults[9].ti_Data = parentstack;
@@ -174,13 +175,29 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* Do this early to ease implementation of failure code */
     NEWLIST((struct List *)&process->pr_LocalVars);
 
+    /*
+     * This assignment will explicitly convert stack size from IPTR to ULONG.
+     * This is important on 64-bit machines. For example, let's have a tag item:
+     * NP_StackSize, 8192
+     * When this pair is put on stack, numbers are considered LONGs. But items on stack
+     * must be aligned on 8-byte boundaries. So we skip some spacing:
+     * movl   $0x2000,0x8(%rsp)
+     * movl   $0x800003f3,(%rsp)
+     * Note that since numbers are plain longs, they are loaded using movl operation.
+     * This means that empty space at 0x4(%rsp) will contain trash (leftover from previous
+     * stack usage).
+     * So, if you then grab this value as IPTR, upper half of this value will contain trash.
+     * This way 0x2000 may become something like 0x2000002000, and seriously spoil your life.
+     * Yes, 64-bit systems appear to be strictly typed in such places.
+     */
+    process->pr_StackSize = defaults[9].ti_Data;
     /* We need a minimum stack to handle interrupt contexts */
-    if (defaults[9].ti_Data < AROS_STACKSIZE)
+    if (process->pr_StackSize < AROS_STACKSIZE)
     {
-	defaults[9].ti_Data = AROS_STACKSIZE;
+	process->pr_StackSize = AROS_STACKSIZE;
     }
 
-    stack = AllocMem(defaults[9].ti_Data, MEMF_PUBLIC);
+    stack = AllocMem(process->pr_StackSize, MEMF_PUBLIC);
     ENOMEM_IF(stack == NULL);
 
     s = (STRPTR)defaults[10].ti_Data;
@@ -217,7 +234,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, (struct TagItem *)tags);
 	ENOMEM_IF(cli == NULL);
 
-	cli->cli_DefaultStack = (defaults[9].ti_Data + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
+	cli->cli_DefaultStack = (process->pr_StackSize + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
 
 	if (__is_process(me))
 	{
@@ -358,7 +375,10 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_Task.tc_Node.ln_Name = name;
     process->pr_Task.tc_Node.ln_Pri = defaults[11].ti_Data;
     process->pr_Task.tc_SPLower = stack;
-    process->pr_Task.tc_SPUpper = stack + defaults[9].ti_Data;
+    process->pr_Task.tc_SPUpper = stack + process->pr_StackSize;
+
+    D(bug("Starting process %s\n", name));
+    D(bug("Stack: 0x%p - 0x%p\n", process->pr_Task.tc_SPLower, process->pr_Task.tc_SPUpper));
 
 /*  process->pr_ReturnAddr; */
     NEWLIST(&process->pr_Task.tc_MemEntry);
@@ -367,7 +387,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     memlist->ml_ME[0].me_Addr = process;
     memlist->ml_ME[0].me_Length = sizeof(struct Process);
     memlist->ml_ME[1].me_Addr = stack;
-    memlist->ml_ME[1].me_Length = defaults[9].ti_Data;
+    memlist->ml_ME[1].me_Length = process->pr_StackSize;
     memlist->ml_ME[2].me_Addr = name;
     memlist->ml_ME[2].me_Length = namesize;
 
@@ -381,7 +401,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     NEWLIST(&process->pr_MsgPort.mp_MsgList);
 
     process->pr_SegList = (BPTR)defaults[0].ti_Data;
-    process->pr_StackSize = defaults[9].ti_Data;
     process->pr_GlobVec = NULL;	                   /* Unused BCPL crap */
     process->pr_StackBase = MKBADDR(process->pr_Task.tc_SPUpper);
     process->pr_Result2 = 0;
@@ -518,7 +537,7 @@ error:
 
     if (stack != NULL)
     {
-	FreeMem(stack, defaults[9].ti_Data);
+	FreeMem(stack, process->pr_StackSize);
     }
 
     if (process != NULL)
