@@ -18,7 +18,7 @@ Object *app;
 
 int __nocommandline = 1;
 
-Object *MakeFontsGroup(ULONG FontAttr, STRPTR title)
+Object *MakeFontsGroup(SIPTR FontAttr, STRPTR title)
 {
     return VGroup,
 	GroupFrameT(title),
