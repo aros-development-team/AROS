@@ -483,7 +483,7 @@ IPTR Coloradjust__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 	    return TRUE;
 	    
 	case MUIA_Coloradjust_RGB:
-	    *(IPTR **)store = data->rgb;
+	    *(IPTR *)store = (IPTR)&data->rgb[0];
 	    return TRUE;
     }
 

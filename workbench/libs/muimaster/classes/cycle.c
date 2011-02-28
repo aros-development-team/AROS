@@ -290,7 +290,7 @@ IPTR Cycle__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
 
 static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
 {
-    struct MinList *childlist;
+    struct MinList *childlist = NULL;
     Object  	   *child, *cstate;
 
     if (data->popwin)
@@ -311,7 +311,7 @@ static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
-        ZText *text;
+        ZText *text = NULL;
     
     get(child, MUIA_UserData, &text);
     if (!text) break;
@@ -332,10 +332,10 @@ static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
 
 static void RenderPopupItem(Object *obj, struct MUI_CycleData *data, WORD which)
 {
-    struct MinList  *childlist;
+    struct MinList  *childlist = NULL;
     struct RastPort *saverp;
     Object  	    *child, *cstate;
-    ZText   	    *text;
+    ZText   	    *text = NULL;
     WORD    	     x1, y1, x2, y2, i = which;
     
     get(data->pageobj, MUIA_Group_ChildList, &childlist);
@@ -409,7 +409,7 @@ static void RenderPopupItem(Object *obj, struct MUI_CycleData *data, WORD which)
 static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
 {
     const struct ZuneFrameGfx 	*zframe;
-    struct MinList  	      	*childlist;
+    struct MinList  	      	*childlist = NULL;
     struct RastPort 	    	*rp, *saverp;
     Object  	    	    	*child, *cstate;      
     WORD    	    	    	 x, y, winx, winy, winw, winh, i;
@@ -543,7 +543,7 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
-        ZText *text;
+        ZText *text = NULL;
     
     get(child, MUIA_UserData, &text);
     

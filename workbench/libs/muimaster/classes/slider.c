@@ -152,8 +152,8 @@ IPTR Slider__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *knob_frame;
-    LONG min;
-    LONG max;
+    LONG min = 0;
+    LONG max = 0;
     LONG val;
     LONG width;
     struct RastPort rp;
@@ -230,7 +230,7 @@ IPTR Slider__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 IPTR Slider__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
-    LONG min,max;
+    LONG min = 0,max = 0;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
@@ -298,7 +298,7 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *knob_frame;
     int knob_frame_state;
-    LONG val;
+    LONG val = 0;
     char *buf;
     int width;
 
@@ -433,7 +433,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 
 	case IDCMP_MOUSEMOVE:
 	{
-	    IPTR oldval;
+	    IPTR oldval = 0;
 	    LONG newval;
 	    LONG pixel;
 	    LONG oldko = data->knob_offset;

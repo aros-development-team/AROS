@@ -1371,7 +1371,7 @@ static IPTR Area__MUIM_DrawBackgroundBuffered(struct IClass *cl, Object *obj, st
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     struct MUI_ImageSpec_intern *bg;
-    LONG state;
+    LONG state = 0;
 
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
     return FALSE;

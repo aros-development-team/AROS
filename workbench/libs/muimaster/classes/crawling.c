@@ -96,7 +96,7 @@ IPTR Crawling__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 	    
 	    if (data->ticker == 0)
 	    {
-	    	IPTR virty, virth;
+	    	IPTR virty = 0, virth = 0;
 		
 		get(obj, MUIA_Virtgroup_Top, &virty);
 		get(obj, MUIA_Virtgroup_Height, &virth);

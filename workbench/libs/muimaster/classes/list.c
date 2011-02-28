@@ -1329,9 +1329,9 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	       in front of our window. Therefore refresh root object of
 	       window, not just this object */
 	       
-	    Object *o;
+	    Object *o = NULL;
 	    
-	    get(_win(obj),MUIA_Window_RootObject, &o);	       
+	    get(_win(obj),MUIA_Window_RootObject, &o);
 	    MUI_Redraw(o, MADF_DRAWOBJECT);
 	    
 	    MUI_EndRefresh(muiRenderInfo(obj), 0);

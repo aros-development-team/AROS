@@ -54,13 +54,13 @@
     AROS_LIBFUNC_INIT
 
     APTR clip = (APTR)-1;
-    IPTR disabled;
+    IPTR disabled = 0;
 
     if (!(_flags(obj) & MADF_CANDRAW)) return;
 
     if (_flags(obj) & MADF_INVIRTUALGROUP)
     {
-	Object *wnd;
+	Object *wnd = NULL;
 	Object *parent;
 	struct Region *region = NULL;
 

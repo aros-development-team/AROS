@@ -325,7 +325,7 @@ static void HandleMouseClick(struct MenuHandlerData *mhd, int menuup)
     {	
 	struct Window *win = (struct Window *)lay->Window;
 	struct MenuItem *item = NULL;
-	WORD itemnum;
+	WORD itemnum = 0;
 
      	win = (struct Window *)lay->Window;
 

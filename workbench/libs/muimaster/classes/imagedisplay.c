@@ -283,7 +283,7 @@ IPTR Imagedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *ms
 
 IPTR Imagedisplay__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
 {
-    IPTR dummy;
+    IPTR dummy = 0;
 
     if (msg->obj == obj)
 	return MUIV_DragQuery_Refuse;
@@ -295,7 +295,7 @@ IPTR Imagedisplay__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_Dr
 
 IPTR Imagedisplay__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
 {
-    IPTR spec;
+    IPTR spec = 0;
 
     if (get(msg->obj, MUIA_Imagedisplay_Spec, &spec))
     {

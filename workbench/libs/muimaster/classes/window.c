@@ -1384,13 +1384,13 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
             {
                 Object                *cstate;
                 Object                *child;
-                struct MinList        *ChildList;
+                struct MinList        *ChildList = 0;
 
                 get(_app(oWin), MUIA_Application_WindowList, &(ChildList));
                 cstate = (Object *)ChildList->mlh_Head;
                 while ((child = NextObject(&cstate)))
                 {
-                    struct Window *wnd;
+                    struct Window *wnd = NULL;
                     get(child, MUIA_Window_Window,&wnd);
                     if (!wnd) continue;
 
@@ -1405,7 +1405,7 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 
             if (dest_wnd)
             {
-                Object *root;
+                Object *root = NULL;
                 get(dest_wnd, MUIA_Window_RootObject, &root);
 
                 if (root)
@@ -1678,8 +1678,8 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
                         Object *item_obj = (Object*)GTMENUITEM_USERDATA(item);
                         if (item_obj)
                         {
-                            Object *app;
-                            IPTR udata;
+                            Object *app = NULL;
+                            IPTR udata = 0;
 
                             if (item->Flags & CHECKIT)
                                 set(item_obj, MUIA_Menuitem_Checked, !!(item->Flags & CHECKED));
@@ -2430,7 +2430,7 @@ static Object *GetPrevNextActiveObject (struct ObjNode *old_activenode, objnode_
         /* let's see if this obj meets cycle requirements (enabled & visible) */
         if (obj)
         {
-            IPTR is_disabled;
+            IPTR is_disabled = 0;
 
             get(obj, MUIA_Disabled, &is_disabled);
 
@@ -3906,7 +3906,7 @@ IPTR Window__MUIM_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Windo
 **************************************************************************/
 IPTR Window__MUIM_GetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Window_GetMenuCheck *msg)
 {
-    IPTR stat;
+    IPTR stat = 0;
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     Object *item;
     Object *strip = data->wd_ChildMenustrip;
@@ -3943,7 +3943,7 @@ IPTR Window__MUIM_SetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Windo
 **************************************************************************/
 IPTR Window__MUIM_GetMenuState(struct IClass *cl, Object *obj, struct MUIP_Window_GetMenuState *msg)
 {
-    IPTR stat;
+    IPTR stat = 0;
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     Object *item;
     Object *strip = data->wd_ChildMenustrip;

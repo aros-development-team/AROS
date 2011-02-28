@@ -297,7 +297,7 @@ struct NewImage *GetImageFromFile(char *name, struct Screen *scr) {
     *             the specific DataTypes installed
 */
 
-    struct	BitMapHeader   	  *bmhd;
+    struct	BitMapHeader   	  *bmhd = NULL;
     struct	NewImage	   	  *ni;
 
     struct  pdtBlitPixelArray pa;

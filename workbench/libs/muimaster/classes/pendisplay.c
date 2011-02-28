@@ -262,7 +262,7 @@ IPTR Pendisplay__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
     if (data->refobj)
     {
-    	IPTR val;
+    	IPTR val = 0;
 	
 	get(data->refobj, MUIA_Pendisplay_Pen, &val);	
     	color = (LONG)val;
@@ -343,7 +343,7 @@ IPTR Pendisplay__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_Drag
 
 IPTR Pendisplay__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
 {
-    STRPTR spec;
+    STRPTR spec = NULL;
 
     if (get(msg->obj, MUIA_Pendisplay_Spec, &spec))
 	set(obj, MUIA_Pendisplay_Spec, spec);

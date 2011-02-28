@@ -401,7 +401,7 @@ MUIM_Draw
 IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
-    Object *act;
+    Object *act = NULL;
     APTR clip;
 
 /*     D(bug("muimaster.library/text.c: Draw Text Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */

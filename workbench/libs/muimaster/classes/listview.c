@@ -113,7 +113,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct Hook *layout_hook;
     Object *group, *vert;
     Object *list = (Object*)GetTagData(MUIA_Listview_List, NULL, msg->ops_AttrList);
-    LONG entries,first,visible;
+    LONG entries = 0,first = 0,visible = 0;
     if (!list) return NULL;
 
     layout_hook = mui_alloc_struct(struct Hook);

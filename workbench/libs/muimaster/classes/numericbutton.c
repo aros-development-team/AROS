@@ -140,7 +140,7 @@ IPTR Numericbutton__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
     if (data->needs_to_recalculate_sizes)
     {
         struct RastPort rp;
-        LONG min, max, val, width;
+        LONG min = 0, max = 0, val, width;
 	
 	InitRastPort(&rp);
 	SetFont(&rp,_font(obj));
@@ -418,7 +418,7 @@ IPTR Numericbutton__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *
 **************************************************************************/
 IPTR Numericbutton__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    IPTR  val;
+    IPTR  val = 0;
     char *buf;
     int   width;
 
