@@ -100,23 +100,23 @@ BOOL zune_pen_intern_to_spec (const struct MUI_PenSpec_intern *intern,
     {
 	case PST_MUI:
 	    spec->ps_buf[0] = 'm';
-	    sprintf(spec->ps_buf + 1, "%ld", intern->p_mui);
+	    sprintf(spec->ps_buf + 1, "%ld", (long)intern->p_mui);
 	    break;
 
 	case PST_CMAP:
 	    spec->ps_buf[0] = 'p';
-	    sprintf(spec->ps_buf + 1, "%ld", intern->p_cmap);
+	    sprintf(spec->ps_buf + 1, "%ld", (long)intern->p_cmap);
 	    break;
 
 	case PST_RGB:
 	    spec->ps_buf[0] = 'r';
 	    sprintf(spec->ps_buf + 1, "%08lx,%08lx,%08lx",
-		    intern->p_rgb.red, intern->p_rgb.green, intern->p_rgb.blue);
+		    (long)intern->p_rgb.red, (long)intern->p_rgb.green, (long)intern->p_rgb.blue);
 	    break;
 
 	case PST_SYS:
 	    spec->ps_buf[0] = 's';
-	    sprintf(spec->ps_buf + 1, "%ld", intern->p_sys);
+	    sprintf(spec->ps_buf + 1, "%ld", (long)intern->p_sys);
 	    break;
 
 	default:

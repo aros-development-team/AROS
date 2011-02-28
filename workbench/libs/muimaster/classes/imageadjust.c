@@ -73,9 +73,13 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
     snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec),
 	     "%s:%d,%08x,%08x,%08x-%08x,%08x,%08x",
 	     is_tiled ? "8" : "7",
-                 angle,
-                 start_rgb->red,start_rgb->green,start_rgb->blue,
-                 end_rgb->red,end_rgb->green,end_rgb->blue);
+                 (int)angle,
+                 (unsigned int)start_rgb->red,
+                 (unsigned int)start_rgb->green,
+                 (unsigned int)start_rgb->blue,
+                 (unsigned int)end_rgb->red,
+                 (unsigned int)end_rgb->green,
+                 (unsigned int)end_rgb->blue);
 
     set(data->gradient_imagedisplay, MUIA_Imagedisplay_Spec, data->gradient_imagespec);
 }
@@ -658,7 +662,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    {
 		char spec[10];
 
-		snprintf(spec, sizeof(spec), "1:%d", i);
+		snprintf(spec, sizeof(spec), "1:%d", (int)i);
 		data->vector_image[i] = (Object *)ImageObject,
 		    ButtonFrame,
 		    InnerSpacing(4,4),
@@ -843,7 +847,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 				{
 				    if (data->last_pattern_selected != -1)
 					snprintf(data->imagespec, 40, "0:%d",
-						 data->last_pattern_selected+128);
+						 (int)data->last_pattern_selected+128);
 				    else
 					strcpy(data->imagespec,"0:128");
 				}
@@ -854,7 +858,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 				{
 				    if (data->last_vector_selected != -1)
 					snprintf(data->imagespec, 20, "1:%d",
-						 data->last_vector_selected);
+						 (int)data->last_vector_selected);
 				    else
 					strcpy(data->imagespec,"0:128");
 				}
