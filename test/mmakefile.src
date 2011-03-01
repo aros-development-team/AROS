@@ -101,7 +101,8 @@ HOSTEDTESTFILES :=  \
 
 EXEDIR := $(AROS_TESTS)
 
-USER_CFLAGS := -I$(SRCDIR)/workbench/libs
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 #MM test : test-clib test-kernel test-exec test-zune workbench-devs-cdvdfs-cdrom
 #MM test : includes includes-copy workbench-datatypes-png-includes
