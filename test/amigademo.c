@@ -68,7 +68,7 @@
 #include <stdio.h>
 
 #include <aros/oldprograms.h>
-#define register
+
 /* #define USE_RAST to enable ClipBlit() test and writing to screens */
 #undef USE_RAST
 
