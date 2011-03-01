@@ -39,7 +39,7 @@ struct InputPrefs {
 
 /* Experimental and AROS-specific, subject to change */
 
-#define ID_KMS MAKE_ID('K','M','S','W')
+#define ID_KMSW MAKE_ID('K','M','S','W')
 
 struct KMSPrefs
 {
