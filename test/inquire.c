@@ -54,17 +54,17 @@ int main(int argc, char **argv)
 	AI_ArosVariant,         (IPTR) &variant,
 	TAG_DONE);
 
-    printf ("AROS release = %ld.%ld\n", relMajor, relMinor);
-    printf ("AROS module major version = V%ld\n", vers);
+    printf ("AROS release = %ld.%ld\n", (long)relMajor, (long)relMinor);
+    printf ("AROS module major version = V%ld\n", (long)vers);
     printf ("AROS Variant = %s\n", variant);
 
     if (kicksize)
     {
-	printf("Kickstart base address = $%lx\n", kickbase);
+	printf("Kickstart base address = $%lx\n", (long)kickbase);
 
-	printf("Kickstart size = $%lx (%ld kB)\n", kicksize, kicksize/1024);
+	printf("Kickstart size = $%lx (%ld kB)\n", (long)kicksize, (long)kicksize/1024);
 
-	printf("Kickstart version = %d.%d\n", kickver, kickrev);
+	printf("Kickstart version = %d.%d\n", (int)kickver, (int)kickrev);
     }
     else
     {

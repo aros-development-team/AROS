@@ -17,7 +17,7 @@ struct Window *win;
 LONG width, height, depth, type;
 APTR paldata, gfxdata;
 
-STRPTR wantedchunks[] =
+CONST_STRPTR wantedchunks[] =
 {
     "icOn",
     NULL
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 	PNG_GetImageData(handle, &gfxdata, &paldata);
 	
 	printf("Width %ld    Height %ld    Depth %ld    Type    %ld\n",
-	    	width, height, depth, type);
+	    	(long)width, (long)height, (long)depth, (long)type);
 	printf("GfxData %p  PalData %p\n", gfxdata, paldata);
 	
 	if (chunks[0])
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 	    
 	    PNG_GetChunkInfo(chunks[0], (APTR *) &data, &size);
 	    
-	    printf("\nICON chunk found. Size %ld\n", size);
+	    printf("\nICON chunk found. Size %ld\n", (long)size);
 	    {
 	    	while(size >= 4)
 		{
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Icon X Position: %ld\n", val);
+				printf("Icon X Position: %ld\n", (long)val);
 			    }
 			    break;
 			    
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Icon Y Position: %ld\n", val);
+				printf("Icon Y Position: %ld\n", (long)val);
 			    }
 			    break;
 
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer X Position: %ld\n", val);
+				printf("Drawer X Position: %ld\n", (long)val);
 			    }
 			    break;
 
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer Y Position: %ld\n", val);
+				printf("Drawer Y Position: %ld\n", (long)val);
 			    }
 			    break;
 
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer Width: %ld\n", val);
+				printf("Drawer Width: %ld\n", (long)val);
 			    }
 			    break;
 
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer Height: %ld\n", val);
+				printf("Drawer Height: %ld\n", (long)val);
 			    }
 			    break;
 
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer View/Type Flags: %lx\n", val);
+				printf("Drawer View/Type Flags: %lx\n", (unsigned long)val);
 			    }
 			    break;
 

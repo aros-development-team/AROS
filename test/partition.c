@@ -50,7 +50,7 @@ ULONG a;
 	printf("name: %s\n", name);
 	for (a=i+1;a;a--)
 		printf("  ");
-	printf("type: %lx\n", type);
+	printf("type: %lx\n", (unsigned long)type);
 	PrintDE(&de, i+1);
 }
 
@@ -103,7 +103,7 @@ ULONG a;
 		}
 		for (a=i;a;a--)
 			printf("  ");
-		printf("reserved blocks: %ld\n", reserved);
+		printf("reserved blocks: %ld\n", (long)reserved);
 		PrintDE(&de,i);
 		for (a=i;a;a--)
 			printf("  ");
@@ -126,7 +126,7 @@ ULONG unit = 1;
 		root = OpenRootPartition(device, unit);
 		if (root)
 		{
-			printf("got root handle of %s unit %ld\n", device, unit);
+			printf("got root handle of %s unit %ld\n", device, (long)unit);
 			PrintPartitionTable(root, 0);
 			CloseRootPartition(root);
 		}

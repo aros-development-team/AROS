@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
     LONG len;
 
     if (argc > 1) {
-        if ((in = Open(argv[1], MODE_OLDFILE)) == NULL) {
+        if ((in = Open(argv[1], MODE_OLDFILE)) == BNULL) {
             Fault(IoErr(), "minicat", buf, 255);
             fprintf(stderr, "%s\n", buf);
             return 1;

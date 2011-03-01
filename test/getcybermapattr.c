@@ -38,7 +38,7 @@ int main(void)
 	pixfmt = GetCyberMapAttr(bm, CYBRMATTR_PIXFMT);
 	
 	printf("Pixel Format: #%ld (%s)\n",
-	       pixfmt,
+	       (long)pixfmt,
 	       ((pixfmt >= 0) && (pixfmt < NUM_PIXFMT)) ? pixfmt_str[pixfmt] : "<unknown>");
 	
     }

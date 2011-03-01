@@ -73,17 +73,17 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 		 CreateExtIO(SerPort, sizeof(struct IOExtSer));
 	
 	printf("Opening unit %ld. Using baudrate %ld baud.\n",
-	       unitnum,
-	       baudrate);
+	       (long)unitnum,
+	       (long)baudrate);
 	
 	err = OpenDevice("serial.device",unitnum,(struct IORequest *)IORequests[0],0);
 	
 	if (0 != err) {
-		printf("Failed to open unit %ld of serial device.\n",unitnum);
+		printf("Failed to open unit %ld of serial device.\n",(long)unitnum);
 		DeleteExtIO((struct IORequest *)IORequests[0]);
 		IORequests[0]=NULL;
 	} else {
-		printf("Opened device. Now waiting for %ld seconds.\n",delay);
+		printf("Opened device. Now waiting for %ld seconds.\n",(long)delay);
 		if (0 != delay) {
 			Delay(50*delay);
 		}
@@ -104,7 +104,7 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 			IORequests[0]->IOSer.io_Data = buffer;
 
 			DoIO((struct IORequest *)IORequests[0]);
-			printf("Now please enter something! Waiting for %ld seconds!\n",delay);
+			printf("Now please enter something! Waiting for %ld seconds!\n",(long)delay);
 			if (0 != delay) {
 				Delay(50 * delay);
 			}
@@ -159,7 +159,7 @@ void closedevices(void)
 
 void open_device(void)
 {
-	ULONG unitnum;
+	unsigned long unitnum;
 	char sevenwire, shared;
 	int index = getFreeIORequest();
 	ULONG flags = 0;
@@ -176,7 +176,7 @@ void open_device(void)
 	
 	printf("Open serial device.\n");
 	printf("Unitnumber: ");
-	scanf("%ld", &unitnum);
+	scanf("%lu", &unitnum);
 	printf("shared access (y/n):");
 	scanf("%c", &shared);
 	printf("seven wire (y/n):");

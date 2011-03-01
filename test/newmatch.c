@@ -398,7 +398,7 @@ LONG My_MatchFirst(STRPTR pat, struct AnchorPath *AP)
 
     } /* if (error == 0) */
 
-    printf("My_MatchFirst: returning %ld. Ac = %p\n", error, ac);
+    printf("My_MatchFirst: returning %ld. Ac = %p\n", (long)error, ac);
 
     SetIoErr(error);
 

@@ -41,7 +41,7 @@ static void ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFm
     APTR src = srcPixels;
     APTR dst = dstPixels;
 
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &gfxhidd);
+    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 
     if (!gfxhidd) {
         printf("ConvertPixels(): Failed to obtain graphics driver\n");
@@ -88,14 +88,14 @@ int main(void)
 	for(i = 0; i < 8; i++)
 	{
 	    printf("ARGB32 %08x = RGB15 %04x (%02x %02x %02x) (%3d%% %3d%% %3d%%) [%08x]\n",
-	    	    argb[i], rgb15[i],
+	    	    (unsigned int)argb[i], rgb15[i],
 		    (rgb15[i] & 0x7C00) >> 10,
 		    (rgb15[i] & 0x03E0) >> 5,
 		    (rgb15[i] & 0x001F),
 		    ((rgb15[i] & 0x7C00) >> 10) * 100 / 31,
 		    ((rgb15[i] & 0x03E0) >> 5) * 100 / 31,
 		    (rgb15[i] & 0x001F) * 100 / 31,
-		    argb_inv[i]
+		    (unsigned int)argb_inv[i]
 		    );
 	}
     }

@@ -63,7 +63,7 @@ void doit(char *msg, WORD dx, WORD dy)
     cr = dummy_lay.ClipRect;
     while(cr)
     {
-        printf("%ld ", cr->Flags);
+        printf("%ld ", (long)cr->Flags);
         cr = cr->Next;
     }
     printf("\n");

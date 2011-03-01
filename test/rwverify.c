@@ -39,8 +39,8 @@ int round1(char *filename) {
     fputs("\nround 1: 1024 buffers of 1024 bytes each\n\n", stdout);
 
     fh = Open(filename, MODE_NEWFILE);
-    if (fh == NULL) {
-        printf("couldn't open '%s' for write (%ld)\n", filename, IoErr());
+    if (fh == BNULL) {
+        printf("couldn't open '%s' for write (%ld)\n", filename, (long)IoErr());
         return 1;
     }
 
@@ -55,13 +55,13 @@ int round1(char *filename) {
 
         bytes = Write(fh, buf, 1024);
         if (bytes < 0) {
-            printf("buffer %d: error (%ld)\n", n, IoErr());
+            printf("buffer %d: error (%ld)\n", n, (long)IoErr());
             Close(fh);
             return 1;
         }
 
         if (bytes < 1024) {
-            printf("buffer %d: short write! error is %ld\n", n, IoErr());
+            printf("buffer %d: short write! error is %ld\n", n, (long)IoErr());
             Close(fh);
             return 1;
         }
@@ -72,8 +72,8 @@ int round1(char *filename) {
     Close(fh);
 
     fh = Open(filename, MODE_OLDFILE);
-    if (fh == NULL) {
-        printf("couldn't open '%s' for read (%ld)\n", filename, IoErr());
+    if (fh == BNULL) {
+        printf("couldn't open '%s' for read (%ld)\n", filename, (long)IoErr());
         return 1;
     }
 
@@ -85,12 +85,12 @@ int round1(char *filename) {
     for (n = 0; n < 1024; n++) {
         bytes = Read(fh, buf, 1024);
         if (bytes < 0) {
-            printf("buffer %d: error (%ld)\n", n, IoErr());
+            printf("buffer %d: error (%ld)\n", n, (long)IoErr());
             Close(fh);
             return 1;
         }
         if (bytes < 1024) {
-            printf("buffer %d: short read! error is %ld\n", n, IoErr());
+            printf("buffer %d: short read! error is %ld\n", n, (long)IoErr());
             Close(fh);
             return 1;
         }
@@ -125,8 +125,8 @@ int round2(char *filename) {
     fputs("\nround 2: 8192 buffers, increasing length from 0-1023 bytes\n\n", stdout);
 
     fh = Open(filename, MODE_NEWFILE);
-    if (fh == NULL) {
-        printf("couldn't open '%s' for write (%ld)\n", filename, IoErr());
+    if (fh == BNULL) {
+        printf("couldn't open '%s' for write (%ld)\n", filename, (long)IoErr());
         return 1;
     }
 
@@ -141,13 +141,13 @@ int round2(char *filename) {
 
         bytes = Write(fh, buf, (n & 1023));
         if (bytes < 0) {
-            printf("buffer %d: error (%ld)\n", n, IoErr());
+            printf("buffer %d: error (%ld)\n", n, (long)IoErr());
             Close(fh);
             return 1;
         }
 
         if (bytes < (n & 1023)) {
-            printf("buffer %d: short write! error is %ld\n", n, IoErr());
+            printf("buffer %d: short write! error is %ld\n", n, (long)IoErr());
             Close(fh);
             return 1;
         }
@@ -158,8 +158,8 @@ int round2(char *filename) {
     Close(fh);
 
     fh = Open(filename, MODE_OLDFILE);
-    if (fh == NULL) {
-        printf("couldn't open '%s' for read (%ld)\n", filename, IoErr());
+    if (fh == BNULL) {
+        printf("couldn't open '%s' for read (%ld)\n", filename, (long)IoErr());
         return 1;
     }
 
@@ -171,12 +171,12 @@ int round2(char *filename) {
     for (n = 0; n < 8192; n++) {
         bytes = Read(fh, buf, (n & 1023));
         if (bytes < 0) {
-            printf("buffer %d: error (%ld)\n", n, IoErr());
+            printf("buffer %d: error (%ld)\n", n, (long)IoErr());
             Close(fh);
             return 1;
         }
         if (bytes < (n & 1023)) {
-            printf("buffer %d: short read! error is %ld\n", n, IoErr());
+            printf("buffer %d: short read! error is %ld\n", n, (long)IoErr());
             Close(fh);
             return 1;
         }

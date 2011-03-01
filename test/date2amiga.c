@@ -42,7 +42,7 @@ int main(void)
 	    if (dt.dat_Stamp.ds_Days != days)
 	    {
 		printf("StrToDate showed bad results for date \"%s\" (day #%ld). "
-	    	       "StrToDate thought it was day #%ld\n", s, days, dt.dat_Stamp.ds_Days);
+	    	       "StrToDate thought it was day #%ld\n", s, (long)days, (long)dt.dat_Stamp.ds_Days);
 	    }
 	    else
 	    {
@@ -52,7 +52,7 @@ int main(void)
 		    printf("Date2Amiga gave wrong values for date \"%s\" (day #%ld)"
 		           " (secs %ld) -> wrong secs is %ld"
 			   " --> clockdate: year = %d month = %d day = %d\n"
-			   , s, days, seconds, secresult, cd.year, cd.month, cd.mday);
+			   , s, (long)days, (long)seconds, (long)secresult, (int)cd.year, (int)cd.month, (int)cd.mday);
 		}
 		
 	    }

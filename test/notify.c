@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     nr->nr_stuff.nr_Msg.nr_Port = port;
 
     if (StartNotify(nr) == DOSFALSE) {
-        printf("StartNotify failed: %ld\n", IoErr());
+        printf("StartNotify failed: %ld\n", (long)IoErr());
         return 0;
     }
 

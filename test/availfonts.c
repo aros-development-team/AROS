@@ -61,7 +61,7 @@ void action(void)
     afh = (struct AvailFontsHeader *)buf;
     numentries = afh->afh_NumEntries;
     
-    printf("numentries = %ld\n", numentries);
+    printf("numentries = %ld\n", (long)numentries);
     
     af = (struct TAvailFonts *)(buf + 2);
     
@@ -80,7 +80,8 @@ void action(void)
 {
 	if ((af->taf_Attr.tta_Style & FSF_TAGGED) && (af->taf_Attr.tta_Tags))
 	{
-	    struct TagItem *tag, *tstate = af->taf_Attr.tta_Tags;
+	    struct TagItem *tag;
+	    const struct TagItem *tstate = af->taf_Attr.tta_Tags;
 	   
 	    printf("tags = %p\n",  af->taf_Attr.tta_Tags);
 	    //Delay(1*50);

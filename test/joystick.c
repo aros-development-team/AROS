@@ -21,12 +21,12 @@ static void printbuttons(ULONG val)
 
 static void printmousedirections(ULONG val)
 {
-    printf("[%d,%d]", (val & JP_MHORZ_MASK), (val & JP_MVERT_MASK) >> 8);
+    printf("[%d,%d]", (int)(val & JP_MHORZ_MASK), (int)(val & JP_MVERT_MASK) >> 8);
 }
 
 static void printajoydirections(ULONG val)
 {
-    printf("[%d, %d]", (val & JP_XAXIS_MASK), (val & JP_YAXIS_MASK) >> 8);
+    printf("[%d, %d]", (int)(val & JP_XAXIS_MASK), (int)(val & JP_YAXIS_MASK) >> 8);
 }
 static void printjoydirections(ULONG val)
 {

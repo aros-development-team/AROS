@@ -86,7 +86,7 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
     float_res = func args;                                                               \
     if (*float_resptr != cres)                                                           \
 	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx expected=0x%08lx)\n", \
-                 __LINE__, *float_resptr, cres);                                         \
+                 __LINE__, (unsigned long)*float_resptr, (unsigned long)cres);                                         \
     else                                                                                 \
 	printf ("OK  : " #func " " #args "\n");
 
@@ -103,15 +103,15 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
       {                                                                                            \
 	printf ("FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 (LONG)(((QUAD)*double_resptr)>>32),*(((LONG *)double_resptr)+1),                  \
-                 (LONG)(((QUAD)cres)>>32),(LONG)cres);                                             \
+                 (unsigned long)(((QUAD)*double_resptr)>>32),(unsigned long)*(((LONG *)double_resptr)+1),                  \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
       }                                                                                            \
       else                                                                                         \
       {                                                                                            \
 	printf ("(little endian) FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 *(((LONG *)double_resptr)+1),*(((LONG *)double_resptr)),                          \
-                 (LONG)(((QUAD)cres)>>32),(LONG)cres);                                             \
+                 (unsigned long)*(((LONG *)double_resptr)+1),(unsigned long)*(((LONG *)double_resptr)),                          \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
       }                                                                                            \
     }                                                                                              \
     else                                                                                           \
@@ -126,15 +126,15 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
       {                                                                                            \
 	printf ("FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 (LONG)(((QUAD)*double_resptr)>>32),*(((LONG *)double_resptr)+1),                  \
-                 (LONG)(((QUAD)cres)>>32),(LONG)cres);                                             \
+                 (unsigned long)(((QUAD)*double_resptr)>>32),(unsigned long)*(((LONG *)double_resptr)+1),                  \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
       }                                                                                            \
       else                                                                                         \
       {                                                                                            \
 	printf ("(little endian) FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 *(((LONG *)double_resptr)+1),*(((LONG *)double_resptr)),                          \
-                 (LONG)(((QUAD)cres)>>32),(LONG)cres);                                             \
+                 (unsigned long)*(((LONG *)double_resptr)+1),(unsigned long)*(((LONG *)double_resptr)),                          \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
       }                                                                                            \
     }                                                                                              \
     else                                                                                           \
@@ -149,15 +149,15 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
       {                                                                                            \
 	printf ("FAIL: " #func " (" #arg1 "," #arg2 ") in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 (LONG)(((QUAD)*double_resptr )>>32),*(((LONG *)double_resptr )+1),                \
-                 (LONG)(((QUAD)*double_resptr2)>>32),*(((LONG *)double_resptr2)+1) );              \
+                 (unsigned long)(((QUAD)*double_resptr )>>32),(unsigned long)*(((LONG *)double_resptr )+1),                \
+                 (unsigned long)(((QUAD)*double_resptr2)>>32),(unsigned long)*(((LONG *)double_resptr2)+1) );              \
       }                                                                                            \
       else                                                                                         \
       {                                                                                            \
 	printf ("(little endian) FAIL: " #func " (" #arg1 "," #arg2 ") in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 *(((LONG *)double_resptr )+1),*(((LONG *)double_resptr)),                         \
-                 *(((LONG *)double_resptr2)+1),*(((LONG *)double_resptr2)) );                      \
+                 (unsigned long)*(((LONG *)double_resptr )+1),(unsigned long)*(((LONG *)double_resptr)),                         \
+                 (unsigned long)*(((LONG *)double_resptr2)+1),(unsigned long)*(((LONG *)double_resptr2)) );                      \
       }                                                                                            \
     }                                                                                              \
     else                                                                                           \

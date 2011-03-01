@@ -47,19 +47,19 @@ int main(void)
 			{
 			    printf("********* No errors during writing :-) **************\n");
 						    
-			} else printf("WriteChunkBytes(iff, buffer, strlen(buffer)) returned %ld\n",err);
+			} else printf("WriteChunkBytes(iff, buffer, strlen(buffer)) returned %ld\n",(long)err);
 		        
 			PopChunk(iff);
 			
-		    } else printf("PushChunk(iff, ID_ILBM, MAKE_ID('A', 'B', 'C', 'D'), IFFSIZE_UNKNOWN) returned error %ld\n",err);
+		    } else printf("PushChunk(iff, ID_ILBM, MAKE_ID('A', 'B', 'C', 'D'), IFFSIZE_UNKNOWN) returned error %ld\n",(long)err);
 		    
 		    PopChunk(iff);
 		    
-		} else printf("PushChunk(iff, ID_ILBM, ID_FORM, IFFSIZE) returned error %ld\n",err);
+		} else printf("PushChunk(iff, ID_ILBM, ID_FORM, IFFSIZE) returned error %ld\n",(long)err);
 		
 	        CloseIFF(iff);
 		
-	    } else printf("OpenIFF returned error %ld\n",err);
+	    } else printf("OpenIFF returned error %ld\n",(long)err);
 	    
 	    Close((BPTR) iff->iff_Stream);
 	    

@@ -28,7 +28,7 @@ int main(void)
 	if (dt.dat_Stamp.ds_Days != days)
 	{
 	    printf("Bad results for date \"%s\" (day #%ld). "
-	    	   "StrToDate thought it was day #%ld\n", s, days, dt.dat_Stamp.ds_Days);
+	    	   "StrToDate thought it was day #%ld\n", s, (long)days, (long)dt.dat_Stamp.ds_Days);
 	}
 	
 	days++;

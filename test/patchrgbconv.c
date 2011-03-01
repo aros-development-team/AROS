@@ -213,9 +213,9 @@ static void installfunc(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbits
 	sprintf(sbuf, " Benchmark %s to %s (%s to %s): before %d (%f) after %d (%f) (%d %%)\n", 
 	    	      srcfmt_string, dstfmt_string,
 		      pf_to_string[srcfmt], pf_to_string[dstfmt],
-	    	      time1, time1 / 1000000.0, 
-	    	      time2, time2 / 1000000.0,
-		      (time2 ? time1 * 100 / time2 : 0));
+	    	      (int)time1, time1 / 1000000.0, 
+	    	      (int)time2, time2 / 1000000.0,
+		      (int)(time2 ? time1 * 100 / time2 : 0));
 	bug("%s", sbuf);
     }
 
