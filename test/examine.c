@@ -29,8 +29,8 @@ int main (int argc, char **argv) {
     }
 
     lock = Lock(argv[1], SHARED_LOCK);
-    if (lock == NULL) {
-        printf("couldn't open file [%ld]\n", IoErr());
+    if (lock == BNULL) {
+        printf("couldn't open file [%ld]\n", (long)IoErr());
         return 1;
     }
 
@@ -42,19 +42,19 @@ int main (int argc, char **argv) {
     }
 
     if (! Examine(lock, fib)) {
-        printf("Examine() failed [%ld]\n", IoErr());
+        printf("Examine() failed [%ld]\n", (long)IoErr());
         FreeDosObject(DOS_FIB, fib);
         UnLock(lock);
         return 1;
     }
 
-    printf("fib_DiskKey     : 0x%x\n",    fib->fib_DiskKey);
-    printf("fib_DirEntryType: %d [%s]\n", fib->fib_DirEntryType, ENTRYTYPESTR(fib->fib_DirEntryType));
+    printf("fib_DiskKey     : 0x%lx\n",   fib->fib_DiskKey);
+    printf("fib_DirEntryType: %d [%s]\n", (int)fib->fib_DirEntryType, ENTRYTYPESTR(fib->fib_DirEntryType));
     printf("fib_FileName    : %s\n",      fib->fib_FileName);
-    printf("fib_Protection  : 0x%04x\n",  fib->fib_Protection);
-    printf("fib_EntryType   : %d [%s]\n", fib->fib_EntryType, ENTRYTYPESTR(fib->fib_EntryType));
-    printf("fib_Size        : %d\n",      fib->fib_Size);
-    printf("fib_NumBlocks   : %d\n",      fib->fib_NumBlocks);
+    printf("fib_Protection  : 0x%04x\n",  (unsigned)fib->fib_Protection);
+    printf("fib_EntryType   : %d [%s]\n", (int)fib->fib_EntryType, ENTRYTYPESTR(fib->fib_EntryType));
+    printf("fib_Size        : %d\n",      (int)fib->fib_Size);
+    printf("fib_NumBlocks   : %d\n",      (int)fib->fib_NumBlocks);
 
     dt.dat_Stamp = fib->fib_Date;
     dt.dat_Format = FORMAT_DOS;

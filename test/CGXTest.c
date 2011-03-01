@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
 
 
 		printf("Locked BitMap data:\n");
-		printf("Base address: 0x%x\n", bm_baseaddress);
+		printf("Base address: %p\n", (APTR)bm_baseaddress);
 		printf("Width: %d\n", bm_width);
 		printf("Height: %d\n", bm_height);
 		printf("Depth: %d\n", bm_depth);

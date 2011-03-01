@@ -19,10 +19,6 @@
 
 #include <stdarg.h>
 
-#ifndef IPTR
-#define IPTR ULONG
-#endif
-
 struct myargs
 {
     LONG *left;
@@ -99,8 +95,8 @@ int main(int argc, char **argv)
 			{TAG_IGNORE,   0			         },
 			{TAG_IGNORE,   0			         },
 			{TAG_IGNORE,   0			         },
-			{SA_Title,     "Screen opening and movement test"},
-			{SA_ErrorCode, &oserr			         },
+			{SA_Title,     (IPTR)"Screen opening and movement test"},
+			{SA_ErrorCode, (IPTR)&oserr			         },
 			{TAG_DONE,     0				 }
 		    };
 

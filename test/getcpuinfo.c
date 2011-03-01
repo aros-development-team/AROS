@@ -24,7 +24,7 @@ static ULONG getcpucount()
 
     GetCPUInfo(tags);
 
-    printf("CPU Count: %d\n", cpucount);
+    printf("CPU Count: %d\n", (int)cpucount);
     
     return cpucount;
 }
@@ -172,23 +172,23 @@ static void printcpuinformation(ULONG index)
     
     GetCPUInfo(tags);
     
-    printf("CPU: %d\n", index);
-    printf("Family: %d\n", family);
+    printf("CPU: %d\n", (int)index);
+    printf("Family: %d\n", (int)family);
     printf("FamilyString: %s\n", GetDescription(ProcessorFamily, family));
     printf("ModelString: %s\n", modelstring);
     printf("Vector Unit: %s\n", GetDescription(VectorUnit, vectorunit));
     printf("Architecture: %s\n", GetDescription(ProcessorArchitecture, architecture));
     printf("Endianness: %s\n", GetDescription(CurrentEndianness, endianness));
     
-    printf("Current Speed: %u Mhz\n", (ULONG)(currentspeed / 1000000));
-    printf("Frontside Bus Speed: %u Mhz\n", (ULONG)(fsbspeed / 1000000));
+    printf("Current Speed: %u Mhz\n", (unsigned)(currentspeed / 1000000));
+    printf("Frontside Bus Speed: %u Mhz\n", (unsigned)(fsbspeed / 1000000));
     
-    printf("L1CacheSize: %d kB\n", l1size);
-    printf("L1DataCacheSize: %d kB\n", l1datasize);
-    printf("L1InstructionCacheSize: %d kB\n", l1instrsize);
-    printf("L2CacheSize: %d kB\n", l2size);
-    printf("L3CacheSize: %d kB\n", l3size);
-    printf("CacheLineSize: %d B\n", cachelinesize);
+    printf("L1CacheSize: %d kB\n", (int)l1size);
+    printf("L1DataCacheSize: %d kB\n", (int)l1datasize);
+    printf("L1InstructionCacheSize: %d kB\n", (int)l1instrsize);
+    printf("L2CacheSize: %d kB\n", (int)l2size);
+    printf("L3CacheSize: %d kB\n", (int)l3size);
+    printf("CacheLineSize: %d B\n", (int)cachelinesize);
     
     printf("Features:\n");
     i = 0;

@@ -30,7 +30,7 @@ int main(void)
     exit(20);
   }
   puts("Getting length");
-  printf("Length: %ld\n",LengthArgstring(s));
+  printf("Length: %ld\n",(long)LengthArgstring(s));
   puts("Deleting Argstring");
   DeleteArgstring(s);
 

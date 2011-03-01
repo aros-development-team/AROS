@@ -10,8 +10,10 @@ int main(int argc, char **argv) {
     BPTR in, out;
     TEXT something[64];
     int i;
+#ifndef AROS_DOS_PACKETS
     struct IOFileSys iofs;
     struct FileHandle *fh;
+#endif
 
     in = Input();
     out = Output();

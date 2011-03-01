@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     }
 
     fh = Open(argv[1], MODE_READWRITE);
-    if (fh == NULL) {
+    if (fh == BNULL) {
         PrintFault(IoErr(), "SetFileSize");
         return 0;
     }

@@ -26,9 +26,9 @@ int main(void)
 	    {
 	    	printf("Verified date: \"%s\" days = %ld min = %ld tick = %ld\n",
 		    	s,
-		    	dt.dat_Stamp.ds_Days,
-			dt.dat_Stamp.ds_Minute,
-			dt.dat_Stamp.ds_Tick);
+		    	(long)dt.dat_Stamp.ds_Days,
+			(long)dt.dat_Stamp.ds_Minute,
+			(long)dt.dat_Stamp.ds_Tick);
 	    	
 		Amiga2Date(dt.dat_Stamp.ds_Days * 60 * 60 * 24 + 
 		    	   dt.dat_Stamp.ds_Minute * 60 +

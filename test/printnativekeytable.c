@@ -149,7 +149,7 @@ static void dotest(void)
 			    (msg->Code & ~IECODE_UP_PREFIX),
 			    (msg->Code & ~IECODE_UP_PREFIX),
 			    msg->Qualifier,
-			    *(ULONG *)msg->IAddress);
+			    (long)*(ULONG *)msg->IAddress);
 			    
 		    {
 		    	struct InputEvent ie;

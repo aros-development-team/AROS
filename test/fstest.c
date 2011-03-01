@@ -41,7 +41,7 @@ int size;
 		FreeVec(ead);
 		FreeDosObject(DOS_EXALLCONTROL, eac);
 		printf("\nFailed to lock %s!\n", startpath);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -52,7 +52,7 @@ int size;
 		FreeVec(ead);
 		FreeDosObject(DOS_EXALLCONTROL, eac);
 		printf("\nEntry %s is not directory!\n", startpath);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -64,7 +64,7 @@ kprintf("entries = %ld\n", eac->eac_Entries);
 		FreeVec(ead);
 		FreeDosObject(DOS_EXALLCONTROL, eac);
 		printf("\nNot enough memory for %s when doing ExamineAll()!\n", startpath);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -74,7 +74,7 @@ kprintf("entries = %ld\n", eac->eac_Entries);
 		FreeDosObject(DOS_EXALLCONTROL, eac);
 		FreeVec(ead);
 		printf("\nExAll() returned error on %s!\n", startpath);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -94,7 +94,7 @@ kprintf("entries = %ld\n", eac->eac_Entries);
 				FreeDosObject(DOS_EXALLCONTROL, eac);
 				FreeVec(ead);
 				printf("\nFailed to delete file %s\n", dpath);
-				printf("I/O Error is %ld\n", IoErr());
+				printf("I/O Error is %ld\n", (long)IoErr());
 				PrintFault(IoErr(), NULL);
 				return 1;
 			}
@@ -124,7 +124,7 @@ kprintf("entries = %ld\n", eac->eac_Entries);
 	if (DeleteFile(startpath) == 0)
 	{
 		printf("\nFailed to delete directory %s\n", startpath);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -155,7 +155,7 @@ BPTR plock;
 	if (plock == NULL)
 	{
 		printf("\nFailed to get parent of %s!\n", path);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -184,7 +184,7 @@ int i,j;
 	if (lock == NULL)
 	{
 		printf("\nFailed to get lock on %s!\n", startpath);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -198,7 +198,7 @@ int i,j;
 		{
 			UnLock(lock);
 			printf("\nFailed to get lock on %s!\n", path);
-			printf("I/O Error is %ld\n", IoErr());
+			printf("I/O Error is %ld\n", (long)IoErr());
 			PrintFault(IoErr(), NULL);
 			return 1;
 		}
@@ -219,7 +219,7 @@ int i,j;
 				UnLock(lock);
 				UnLock(dlock);
 				printf("\nFailed to get lock on %s!\n", fpath);
-				printf("I/O Error is %ld\n", IoErr());
+				printf("I/O Error is %ld\n", (long)IoErr());
 				PrintFault(IoErr(), NULL);
 				return 1;
 			}
@@ -249,7 +249,7 @@ int i,j;
 	if (fh == NULL)
 	{
 		printf("\nFailed to open file %s!\n", path);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -258,7 +258,7 @@ int i,j;
 		if (Read(fh, buffer, 512) != 512)
 		{
 			printf("\nFailed to read from file %s\n", path);
-			printf("I/O Error is %ld\n", IoErr());
+			printf("I/O Error is %ld\n", (long)IoErr());
 			PrintFault(IoErr(), NULL);
 			return 1;
 		}
@@ -319,7 +319,7 @@ int i;
 	if (fh == NULL)
 	{
 		printf("\nFailed to create file %s!\n", path);
-		printf("I/O Error is %ld\n", IoErr());
+		printf("I/O Error is %ld\n", (long)IoErr());
 		PrintFault(IoErr(), NULL);
 		return 1;
 	}
@@ -336,7 +336,7 @@ int i;
 		{
 			Close(fh);
 			printf("Failed to write to file %s\n", path);
-			printf("I/O Error is %ld\n", IoErr());
+			printf("I/O Error is %ld\n", (long)IoErr());
 			PrintFault(IoErr(), NULL);
 			return 1;
 		}
@@ -394,7 +394,7 @@ char path[512];
 		if (dir == NULL)
 		{
 			printf("\nFailed locking %s!\n",path);
-			printf("I/O Error is %ld\n", IoErr());
+			printf("I/O Error is %ld\n", (long)IoErr());
 			PrintFault(IoErr(), NULL);
 			return 1;
 		}
@@ -423,7 +423,7 @@ char path[512];
 		if (dir == NULL)
 		{
 			printf("\nFailed to create %s!\n", path);
-			printf("I/O Error is %ld\n", IoErr());
+			printf("I/O Error is %ld\n", (long)IoErr());
 			PrintFault(IoErr(), NULL);
 			return 1;
 		}
@@ -534,11 +534,11 @@ int nomid=0;
 		return 1;
 	printf("done\n");
 #if TEST
-	printf("Used blocks before test: %ld\n", sid.id_NumBlocksUsed);
+	printf("Used blocks before test: %ld\n", (long)sid.id_NumBlocksUsed);
 	if (nomid == 0)
-		printf("Used blocks using test: %ld\n", mid.id_NumBlocksUsed);
+		printf("Used blocks using test: %ld\n", (long)mid.id_NumBlocksUsed);
 	if (getDiskInfo(argv[1], &eid) == 0)
-		printf("Used blocks after test: %ld\n", eid.id_NumBlocksUsed);
+		printf("Used blocks after test: %ld\n", (long)eid.id_NumBlocksUsed);
 #endif
 	return 0;
 }

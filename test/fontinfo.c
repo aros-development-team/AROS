@@ -103,7 +103,7 @@ static void openfont(void)
     ta.tta_Flags = FPF_DESIGNED;
     ta.tta_Tags = tags;
     
-    printf("fontname = \"%s\"  fontsize = %ld\n", fontname, fontsize);
+    printf("fontname = \"%s\"  fontsize = %ld\n", fontname, (long)fontsize);
     
     font = OpenDiskFont((struct TextAttr *)&ta);
     if (!font) cleanup("Could not open font!");
@@ -160,7 +160,7 @@ static void openfont(void)
 	dpivalue = GetTagData(TA_DeviceDPI, 0, extension);
 	
 	printf("  ta_devicedpi of opened font is: xdpi %ld  ydpi: %ld\n",
-	    	dpivalue >> 16, dpivalue & 0xFFFF);
+	    	(long)(dpivalue >> 16), (long)(dpivalue & 0xFFFF));
 	
 	printf("  tfe_MatchWord %x\n", tfe->tfe_MatchWord);
 	printf("  tfe_Flags0 %x\n", tfe->tfe_Flags0);
@@ -226,7 +226,7 @@ static void action(void)
 	       font->tf_CharKern ? "" : "[",
 	       (font->tf_CharKern ? ((WORD *)font->tf_CharKern)[i - font->tf_LoChar] : 0),
 	       font->tf_CharKern ? "" : "]",
-	       ((LONG *)font->tf_CharLoc)[i - font->tf_LoChar] & 0xFFFF,
+	       (long)((LONG *)font->tf_CharLoc)[i - font->tf_LoChar] & 0xFFFF,
 	       font->tf_CharSpace ? "" : "[",
 	       (font->tf_CharSpace ? ((WORD *)font->tf_CharSpace)[i - font->tf_LoChar] : 0),
 	       font->tf_CharSpace ? "" : "]");
@@ -253,8 +253,8 @@ static void action(void)
 	}
     }
     
-    if (numsomething) printf("average something = %ld\n", totsomething / numsomething);
-    if (numcharspace) printf("average charspace = %ld\n", totcharspace / numcharspace);
+    if (numsomething) printf("average something = %ld\n", (long)(totsomething / numsomething));
+    if (numcharspace) printf("average charspace = %ld\n", (long)(totcharspace / numcharspace));
 }
 
 static void showfont(void)

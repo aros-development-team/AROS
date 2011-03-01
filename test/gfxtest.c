@@ -201,7 +201,7 @@ VOID test_readpixel(struct Window *w)
 	
 	pen = ReadPixel(w->RPort, 70, 70);
 	
-	printf("Wrote pen %ld, read pen %d\n", i, pen);
+	printf("Wrote pen %ld, read pen %d\n", (long)i, pen);
     
     }
 }

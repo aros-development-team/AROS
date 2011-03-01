@@ -48,7 +48,7 @@ int main(void)
 	    Signal(SysBase->ThisTask,(1<<s2)|(1<<s1));
 	    SetExcept(0,1<<s2);
 	    SysBase->ThisTask->tc_ExceptCode=oldexc;
-	    printf("got: %08lx\n",s);
+	    printf("got: %08lx\n",(unsigned long)s);
 	    FreeSignal(s2);
 	}
 	FreeSignal(s1);

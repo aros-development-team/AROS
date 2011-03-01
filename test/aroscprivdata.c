@@ -40,6 +40,8 @@ LONG secondchild()
 	showuserdata(this, parent);
     Forbid();
     Signal(parent, SIGBREAKF_CTRL_F);	
+
+    return 0;
 }
 
 LONG firstchild()
@@ -68,6 +70,8 @@ LONG firstchild()
 	
 	Forbid();
     Signal(parent, SIGBREAKF_CTRL_F);
+
+    return 0;
 }
 
 int main(int argc, char ** argv)
@@ -86,4 +90,6 @@ int main(int argc, char ** argv)
 	if ( proc != NULL ) {
         Wait(SIGBREAKF_CTRL_F);
     }
+
+    return 0;
 }

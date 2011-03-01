@@ -47,7 +47,7 @@ struct protocol {
 	const char * signature;
 	ULONG signature_length;
 	ULONG packet_length;
-	const void (* handler)(char *, ULONG, struct mouse_action *);
+	void (*handler)(char *, ULONG, struct mouse_action *);
 	const char * name;
 };
 
@@ -88,7 +88,7 @@ const char ms_mouse[] =
 	0x11,0x09
 };
 
-static const void ms_mouse_protocol(char *, ULONG, struct mouse_action * );
+static void ms_mouse_protocol(char *, ULONG, struct mouse_action * );
 
 
 /*
@@ -118,9 +118,9 @@ static CxObj * cxbroker;
 
 
 
-static const void ms_mouse_protocol(char * buffer, 
-                                    ULONG len,
-                                    struct mouse_action * ma)
+static void ms_mouse_protocol(char * buffer, 
+                              ULONG len,
+                              struct mouse_action * ma)
 {
 	ULONG i = 0;
 
@@ -223,7 +223,7 @@ static void check_mouse_action(struct mouse_action * old_action,
 static void read_input(struct IOExtSer * IORequest, 
                        struct MsgPort * notifport,
                        struct MsgPort * cxport,
-                       const void (* handler)(char *, ULONG, struct mouse_action *))
+                       void (*handler)(char *, ULONG, struct mouse_action *))
 {
 	struct mouse_action old_action, cur_action;
 	BOOL end = FALSE;
@@ -327,7 +327,7 @@ static const struct protocol * probe_protocol(struct IOExtSer * IORequest, struc
 			while (protocols[i].signature) {
 				printf("Possible: %s, sign_length=%ld\n",
 				      protocols[i].name,
-				      protocols[i].signature_length);
+				      (long)protocols[i].signature_length);
 				
 				if (n >= protocols[i].signature_length) {
 					ULONG d = n - protocols[i].signature_length;
@@ -379,7 +379,7 @@ static void mouse_driver(ULONG unit, BOOL probe_proto,struct MsgPort * notifport
 				
 				
 				if (0 == ((struct IORequest *)IORequest)->io_Error) {
-					const void (*handler) (char*,ULONG,struct mouse_action *) = NULL;
+					void (*handler) (char*,ULONG,struct mouse_action *) = NULL;
 					if (TRUE == probe_proto) {
 						const struct protocol * p;
 						p = probe_protocol(IORequest, notifport);

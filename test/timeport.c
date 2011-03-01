@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
         end.tv_usec += 1000000;
     }
 
-    printf("PA_SIGNAL: %ld.%lds\n", end.tv_sec - start.tv_sec, (end.tv_usec - start.tv_usec) / 1000);
+    printf("PA_SIGNAL: %ld.%lds\n",(long)( end.tv_sec - start.tv_sec), (long)(end.tv_usec - start.tv_usec) / 1000);
 
     intr = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     intr->is_Code = intentry;
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
         end.tv_usec += 1000000;
     }
 
-    printf("PA_SOFTINT: %ld.%lds\n", end.tv_sec - start.tv_sec, (end.tv_usec - start.tv_usec) / 1000);
+    printf("PA_SOFTINT: %ld.%lds\n", (long)(end.tv_sec - start.tv_sec), (long)(end.tv_usec - start.tv_usec) / 1000);
 
     port->mp_Flags = PA_CALL;
     port->mp_SigTask = callentry;
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
         end.tv_usec += 1000000;
     }
 
-    printf("PA_CALL: %ld.%lds\n", end.tv_sec - start.tv_sec, (end.tv_usec - start.tv_usec) / 1000);
+    printf("PA_CALL: %ld.%lds\n", (long)(end.tv_sec - start.tv_sec), (long)(end.tv_usec - start.tv_usec) / 1000);
 
     intr->is_Code = fastentry;
 
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
         end.tv_usec += 1000000;
     }
 
-    printf("PA_FASTCALL: %ld.%lds\n", end.tv_sec - start.tv_sec, (end.tv_usec - start.tv_usec) / 1000);
+    printf("PA_FASTCALL: %ld.%lds\n", (long)(end.tv_sec - start.tv_sec), (long)(end.tv_usec - start.tv_usec) / 1000);
 
     FreeVec(intr);
 
