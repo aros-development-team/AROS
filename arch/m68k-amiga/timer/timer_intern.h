@@ -69,6 +69,7 @@ struct TimerBase
 
     ULONG tb_eclock_micro_mult;
     UWORD tb_micro_eclock_mult;
+    ULONG  lastsystimetweak;
 };
 
 ULONG GetEClock(struct TimerBase *TimerBase);

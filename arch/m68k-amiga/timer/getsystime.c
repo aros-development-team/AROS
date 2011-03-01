@@ -63,15 +63,17 @@
     Enable();
     dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
     dest->tv_micro = (ULONG)(((long long)tb_eclock_to_usec * timerBase->tb_eclock_micro_mult) >> 16);
+    if (!equ64(&timerBase->tb_lastsystime, dest))
+    	timerBase->lastsystimetweak = 0;
+    timerBase->tb_lastsystime.tv_secs = dest->tv_secs;
+    timerBase->tb_lastsystime.tv_micro = dest->tv_micro;
+    dest->tv_micro += timerBase->lastsystimetweak;
+    timerBase->lastsystimetweak++;
     // can only overflow once, e-clock interrupts happen more than once a second
     if (dest->tv_micro >= 1000000) {
     	dest->tv_micro -= 1000000;
     	dest->tv_secs++;
     }
-    if (equ64(dest, &timerBase->tb_lastsystime))
-    	inc64(dest);
-    timerBase->tb_lastsystime.tv_secs = dest->tv_secs;
-    timerBase->tb_lastsystime.tv_micro = dest->tv_micro;
     D(bug("systime=%d/%d\n", dest->tv_secs, dest->tv_micro));
     AROS_LIBFUNC_EXIT
 } /* GetSysTime */
