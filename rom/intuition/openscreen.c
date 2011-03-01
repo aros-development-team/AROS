@@ -710,7 +710,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                 }
             }
 #else
-	    if (!(custombm->Flags & BMF_SPECIALFMT) || (modeid != (ULONG)custombm->Planes[7]))
+	    if (!(custombm->Flags & BMF_SPECIALFMT) || (modeid != (ULONG)(IPTR)custombm->Planes[7]))
 		custombm = NULL;
 #endif
 

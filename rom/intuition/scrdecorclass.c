@@ -108,6 +108,7 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 
 /**************************************************************************************************/
 
+#if 0
 static UWORD getbgpen(ULONG state, UWORD *pens)
 {
     UWORD bg;
@@ -126,7 +127,7 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
     
     return bg;
 }
-
+#endif
 
 /**************************************************************************************************/
 

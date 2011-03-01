@@ -235,7 +235,7 @@ LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL Wait
                 ie.ie_SubClass      = 0;
                 ie.ie_Code  	    = msg->Code;
                 ie.ie_Qualifier     = 0;
-                ie.ie_EventAddress  = (APTR *) *((ULONG *)msg->IAddress);
+                ie.ie_EventAddress  = (APTR *) *((IPTR *)msg->IAddress);
 		
                 if (KeymapBase && MapRawKey(&ie,rawbuffer,RKBUFLEN,0))
                 {

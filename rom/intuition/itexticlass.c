@@ -70,4 +70,4 @@ IPTR ITextIClass__IM_DRAW(Class *cl, struct Image *im, struct impDraw *msg)
     return retval;
 }
 
-#warning ITextIClass::IM_DRAWFRAME not implemented
+// FIXME: ITextIClass::IM_DRAWFRAME not implemented

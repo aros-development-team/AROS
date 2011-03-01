@@ -133,7 +133,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
         	switch (tag->ti_Data)
         	{
-    	    	    #warning "if IA_Width, IA_Height was not specified sysiclass should choose size depending on drawinfo (screen resolution)"
+    	    	    // FIXME: if IA_Width, IA_Height was not specified sysiclass should choose size depending on drawinfo (screen resolution)"
 
         	    case LEFTIMAGE:
         	    case UPIMAGE:
@@ -188,7 +188,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         	break;
 
             case SYSIA_UserBuffer:
-                data->userbuffer = tag->ti_Data;
+                data->userbuffer = (APTR)tag->ti_Data;
                 break;
 
 
@@ -401,7 +401,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
     wdecormsg.wdp_State = msg->imp_State;
     wdecormsg.wdp_Flags = 0;
     wdecormsg.wdp_Dri = data->dri;
-    wdecormsg.wdp_UserBuffer = (win == NULL) ? NULL : ((struct IntWindow *)win)->DecorUserBuffer;
+    wdecormsg.wdp_UserBuffer = (win == NULL) ? 0 : ((struct IntWindow *)win)->DecorUserBuffer;
 
     sdecormsg.MethodID  = SDM_DRAW_SYSIMAGE;
     sdecormsg.sdp_TrueColor      = tc;
@@ -414,7 +414,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
     sdecormsg.sdp_State = msg->imp_State;
     sdecormsg.sdp_Flags = 0;
     sdecormsg.sdp_Dri = data->dri;
-    sdecormsg.sdp_UserBuffer = data->userbuffer;
+    sdecormsg.sdp_UserBuffer = (IPTR)data->userbuffer;
 
     mdecormsg.MethodID  = MDM_DRAW_SYSIMAGE;
     mdecormsg.mdp_TrueColor      = tc;
@@ -427,7 +427,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
     mdecormsg.mdp_State = msg->imp_State;
     mdecormsg.mdp_Flags = 0;
     mdecormsg.mdp_Dri = data->dri;
-    mdecormsg.mdp_UserBuffer = data->userbuffer;
+    mdecormsg.mdp_UserBuffer = (IPTR)data->userbuffer;
 
     SetDrMd(rport, JAM1);
 
