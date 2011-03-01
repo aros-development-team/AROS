@@ -85,7 +85,6 @@ struct Task *CreateScreennotifyHandlerTask(APTR taskparams, struct IntuitionBase
 ***************************/
 void DefaultScreennotifyHandler(struct ScreennotifyTaskParams *taskparams)
 {
-    struct IntuitionBase    *IntuitionBase = taskparams->intuitionBase;
     struct MsgPort          *port = NULL;
     BOOL            	     success = FALSE;
 

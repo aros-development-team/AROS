@@ -230,7 +230,7 @@ BOOL fire_message(struct Window *w,ULONG Class, UWORD Code, APTR IAddress, struc
                 }
             }
 
-            send_intuimessage(imsg, w, IntuitionBase);
+            send_intuimessage((struct IntuiMessage *)imsg, w, IntuitionBase);
 
             result = TRUE;
         }
@@ -1512,7 +1512,6 @@ struct Window *FindDesktopWindow(struct Screen *screen,struct IntuitionBase *Int
 
 struct InputEvent *AllocInputEvent(struct IIHData *iihdata)
 {
-    struct IntuitionBase    	*IntuitionBase = iihdata->IntuitionBase;
     struct GeneratedInputEvent  *gie;
     struct InputEvent       	*ie;
 
@@ -1552,7 +1551,6 @@ struct InputEvent *AllocInputEvent(struct IIHData *iihdata)
 
 void FreeGeneratedInputEvents(struct IIHData *iihdata)
 {
-    struct IntuitionBase    *IntuitionBase = iihdata->IntuitionBase;
     struct Node             *node, *succ;
 
     /* Free the list of allocated events that have already been propagated. */
