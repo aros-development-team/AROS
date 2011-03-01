@@ -160,6 +160,7 @@ USER_INCLUDES := -I$(SRCDIR)/rom/dos \
                  -D__OOP_NOLIBBASE__ \
                  -D__GRAPHICS_NOLIBBASE__ \
                  -D__KEYMAP_NOLIBBASE__
+USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 #MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
 #MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)
