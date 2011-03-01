@@ -200,7 +200,11 @@ int main(int argc, char **argv)
 	startindex = endindex = index;
     }
 
+#if AROS_SIZEOFULONG == AROS_SIZEOFPTR
     table = (WORD *)SysBase->ex_Reserved2[1]; /* set up in config/i386-native/Drivers/keyboard/kbdclass.c */
+#else
+    table = NULL;
+#endif
     if (!table)
     {
     	puts("Error: table points to NULL!\n");
