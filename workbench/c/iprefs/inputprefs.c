@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -42,94 +42,30 @@ struct FileInputPrefs
 
 static LONG stopchunks[] =
 {
-    ID_PREF, ID_INPT
+    ID_PREF, ID_INPT,
+    ID_PREF, ID_KMSW
 };
-
-/*********************************************************************************************/
-
-static struct KeyMapNode *KeymapAlreadyOpen(struct KeyMapResource *KeyMapResource, STRPTR name)
-{
-    struct KeyMapNode *kmn = NULL;
-    struct Node       *node;
-    
-    Forbid();
-    
-    ForeachNode(&KeyMapResource->kr_List, node)
-    {
-	if (!stricmp(name, node->ln_Name))
-	{
-	    kmn = (struct KeyMapNode *)node;
-	    break;
-	}
-    }
-    
-    Permit();
-    
-    return kmn;
-}
 
 /*********************************************************************************************/
 
 static void SetInputPrefs(struct FileInputPrefs *prefs)
 {
-    struct KeyMapResource *KeyMapResource;
     struct KeyMapNode	  *kmn;
     struct Preferences	   p;
     struct IOStdReq	   ioreq;
-    
-    if ((KeyMapResource = OpenResource("keymap.resource")))
-    {
-	char *keymap = prefs->ip_KeymapName;
-	
-	if (!keymap[0])
-		keymap = prefs->ip_Keymap;
-	D(bug("[InputPrefs] Keymap name: %s\n", keymap));
 
-    	kmn = KeymapAlreadyOpen(KeyMapResource, keymap);
-	
-	if (!kmn)
-	{
-	    struct KeyMapNode *kmn_check;
-	    BPTR lock, olddir, seg;
-	    
-	    lock = Lock("DEVS:Keymaps", SHARED_LOCK);
-	    if (lock)
-	    {
-	    	olddir = CurrentDir(lock);
-		
-		if ((seg = LoadSeg(keymap)))
-		{
-	    	    kmn = (struct KeyMapNode *) (((UBYTE *)BADDR(seg)) + sizeof(APTR));
-		    
-		    Forbid();
-		    if ((kmn_check = KeymapAlreadyOpen(KeyMapResource, keymap)))
-		    {
-		    	kmn = kmn_check;
-		    }
-		    else
-		    {
-		    	AddHead(&KeyMapResource->kr_List, &kmn->kn_Node);
-            	    	seg = 0;
-		    }
-		    Permit();
-		 
-		    if (seg) UnLoadSeg(seg);   
-		}
-		
-		CurrentDir(olddir);
-		
-	    	UnLock(lock);
-		
-	    } /* if (lock) */
-	    
-	} /* if (!kmn) */
-	
-	if (kmn) SetKeyMapDefault(&kmn->kn_KeyMap);
-	
-    } /* if ((KeyMapResource = OpenResource("keymap.resource"))) */
+    char *keymap = prefs->ip_KeymapName;
+
+    if (!keymap[0])
+	keymap = prefs->ip_Keymap;
+    D(bug("[InputPrefs] Keymap name: %s\n", keymap));
+
+    kmn = OpenKeymap(keymap);
+    if (kmn)
+	SetKeyMapDefault(&kmn->kn_KeyMap);
 
     GetPrefs(&p, sizeof(p));
-    
+
     #define GETLONG(x) ((x[0] << 24) | (x[1] << 16) | (x[2] << 8) | x[3])
     #define GETWORD(x) ((x[0] << 8) | x[1])
     
@@ -180,43 +116,63 @@ void InputPrefs_Handler(STRPTR filename)
     
     D(bug("In IPrefs:InputPrefs_Handler\n"));
     
-    if ((iff = CreateIFF(filename, stopchunks, 1)))
+    if ((iff = CreateIFF(filename, stopchunks, 2)))
     {
+	/*
+	 * Disable keymap switcher.
+	 * It will stay disabled if the file does not contain KMSW chunk.
+	 * This is done for backwards compatibility.
+	 */
+	KMSBase->kms_SwitchCode = KMS_DISABLE;
+
 	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
 	{
-	    struct ContextNode   *cn;
-	    struct FileInputPrefs inputprefs;
+	    struct ContextNode *cn;
+	    struct FileInputPrefs *inputprefs;
+    	    struct KMSPrefs *kmsprefs;
 
+	    D(bug("InputPrefs_Handler: ParseIFF okay\n"));
 	    cn = CurrentChunk(iff);
 
-   	    D(bug("InputPrefs_Handler: ParseIFF okay. Chunk Type = %c%c%c%c  ChunkID = %c%c%c%c\n",
-		  cn->cn_Type >> 24,
-		  cn->cn_Type >> 16,
-		  cn->cn_Type >> 8,
-		  cn->cn_Type,
-		  cn->cn_ID >> 24,
-		  cn->cn_ID >> 16,
-		  cn->cn_ID >> 8,
-		  cn->cn_ID));
-
-	    if (cn->cn_ID == ID_INPT)
+	    switch (cn->cn_ID)
 	    {
-		ULONG size = cn->cn_Size;
+	    case ID_INPT:
+		D(bug("InputPrefs_Handler: INPT chunk\n"));
 
-		if (size > sizeof(inputprefs))
-		    size = sizeof(inputprefs);
+		inputprefs = LoadChunk(iff, sizeof(struct FileInputPrefs), MEMF_ANY);
+		if (inputprefs)
+		{
+		    SetInputPrefs(inputprefs);
+		    FreeVec(inputprefs);
+		}
+		break;
 
-    	    	D(bug("InputPrefs_Handler: ID_INPT chunk found.\n"));		
+	    case ID_KMSW:
+		D(bug("InputPrefs_Handler: KMSW chunk\n"));
 
-		memset(&inputprefs, 0, sizeof(inputprefs));
+		kmsprefs = LoadChunk(iff, sizeof(struct KMSPrefs), MEMF_ANY);
+		if (kmsprefs)
+		{
+		    if (kmsprefs->kms_Enabled)
+		    {
+			struct KeyMapNode *alt_km = OpenKeymap(kmsprefs->kms_AltKeymap);
 
-		if (ReadChunkBytes(iff, &inputprefs, size) == size)
-    	    	    SetInputPrefs(&inputprefs);
+			if (alt_km)
+			{
+			    KMSBase->kms_SwitchQual = AROS_BE2WORD(kmsprefs->kms_SwitchQual);
+			    KMSBase->kms_SwitchCode = AROS_BE2WORD(kmsprefs->kms_SwitchCode);
+			    KMSBase->kms_AltKeymap  = &alt_km->kn_KeyMap;
+			}
+		    }
+
+		    FreeVec(kmsprefs);
+		}
+		break;
 	    }
 	} /* while(ParseIFF(iff, IFFPARSE_SCAN) == 0) */
-	    
+
    	KillIFF(iff);
-	
+
     } /* if ((iff = CreateIFF(filename))) */
     
     

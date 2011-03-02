@@ -1,0 +1,12 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := kms_library
+FUNCS := openkeymap
+
+%build_module mmake=workbench-libs-kms \
+    modname=kms modtype=library \
+    files="$(FILES) $(FUNCS)" \
+    uselibs=rom
+
+%common

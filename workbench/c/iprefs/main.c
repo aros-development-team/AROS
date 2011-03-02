@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 	
     Desc: Iprefs
@@ -76,6 +76,7 @@ libtable[] =
     {&IFFParseBase  	, "iffparse.library"	    	, 39, FALSE },
     {&LocaleBase    	, "locale.library"  	    	, 39, TRUE  },
     {&KeymapBase        , "keymap.library"              , 39, FALSE },
+    {&KMSBase		, "kms.library"			, 3,  FALSE },
     {&LayersBase        , "layers.library"              , 39, FALSE },
     {&DataTypesBase     , "datatypes.library"           , 39, FALSE },
     {&DiskfontBase      , "diskfont.library"            , 39, FALSE },
