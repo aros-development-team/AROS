@@ -61,6 +61,15 @@ struct FileInputPrefs
     UBYTE   ip_SwitchMouseButtons[4];
 };
 
+struct FileKMSPrefs
+{
+    UBYTE kms_Enabled;
+    UBYTE kms_Reserved;
+    UBYTE kms_SwitchQual[2];
+    UBYTE kms_SwitchCode[2];
+    char  kms_AltKeymap[64];
+};
+
 struct nameexp
 {
     STRPTR shortname;
@@ -108,5 +117,6 @@ extern struct timerequest *InputIO;
 extern APTR                mempool;
 extern struct List         keymap_list;
 extern struct InputPrefs   inputprefs;
+extern struct KMSPrefs     kmsprefs;
 
 #endif
