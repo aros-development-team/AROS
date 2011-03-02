@@ -295,7 +295,7 @@ USER_LIBS   := amiga rom m mui
 #MM workbench-classes-zune-crawling : includes
 %build_module \
     mmake=workbench-classes-zune-crawling \
-    modname=Crawling modtype=mui files=crawling \
+    modname=Crawling modtype=mui modsuffix=mcc files=crawling \
     conffile=crawling.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_CRAWLING=0" \
     uselibs=$(USER_LIBS)

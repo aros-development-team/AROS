@@ -8,7 +8,7 @@
 
 /****************************************************************************/
 /*** Name *******************************************************************/
-#define MUIC_Crawling                "Crawling.mui"
+#define MUIC_Crawling                "Crawling.mcc"
 
 /*** Identifier base (for Zune extensions) **********************************/
 //#define MUIB_Crawling                (MUIB_ZUNE | 0x0000????)
