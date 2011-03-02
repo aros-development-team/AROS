@@ -10,6 +10,8 @@
 #include <zune/prefseditor.h>
 
 #include <proto/alib.h>
+#include <proto/dos.h>
+#include <proto/commodities.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -363,6 +365,9 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         DoMethod(switchEnable, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
         	 self, 2, MUIM_CallHook, &data->iped_switchEnableHook);
 
+	DoMethod(switchKey, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+		 self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+
         DoMethod
         (
             Accelerated, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
@@ -383,6 +388,8 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
 {
     IPTR    val = 0;
     ULONG   micros, secs;
+    STRPTR key = NULL;
+    struct InputXpression ix = {IX_VERSION, 0};
 
     GET(data->iped_RepeatRate, MUIA_Numeric_Value, &val);
 
@@ -426,7 +433,7 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
 
     if (entry != NULL)
     {
-        D(bug("IPrefs: selected %s\n", entry->realname));
+        D(Printf("Gadgets2Prefs: Default keymap: %s\n", entry->realname));
         strncpy(inputprefs.ip_KeymapName, entry->realname, sizeof(inputprefs.ip_KeymapName));
     }
     else
@@ -438,6 +445,29 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
     GET(data->iped_LeftHandedMouse, MUIA_Selected, &val);
     inputprefs.ip_SwitchMouseButtons = val;
 
+    GET(data->iped_SwitchEnable, MUIA_Selected, &val);
+    kmsprefs.kms_Enabled = val;
+
+    GET(data->iped_AltKey, MUIA_Keymap_Keymap, &entry);
+    if (entry)
+	strncpy(kmsprefs.kms_AltKeymap, entry->realname, sizeof(kmsprefs.kms_AltKeymap));
+    else
+	kmsprefs.kms_AltKeymap[0] = 0;
+
+    GET(data->iped_SwitchKey, MUIA_String_Contents, (IPTR *)&key);
+    if (ParseIX(key, &ix))
+    {
+	D(Printf("Gadgets2Prefs: IX parse error\n"));
+	kmsprefs.kms_SwitchQual = 0;
+	kmsprefs.kms_SwitchCode = 0;
+    }
+    else
+    {
+	D(Printf("Gadgets2Prefs: Switch qualifier 0x%04lX, code 0x%04lX\n", ix.ix_Qualifier, ix.ix_Code));
+        kmsprefs.kms_SwitchQual = ix.ix_Qualifier;
+	kmsprefs.kms_SwitchCode = ix.ix_Code;
+    }
+
     return TRUE;
 }
 
@@ -447,7 +477,19 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     ULONG rdelay = ((inputprefs.ip_KeyRptDelay.tv_micro + (inputprefs.ip_KeyRptDelay.tv_secs * 1000000)) / 20000) - 1;
     ULONG dcdelay = ((inputprefs.ip_DoubleClick.tv_micro + (inputprefs.ip_DoubleClick.tv_secs * 1000000)) / 20000) - 1;
     char *keymap = inputprefs.ip_KeymapName;
+    struct InputXpression ix =
+    {
+        IX_VERSION,
+        IECLASS_RAWKEY,
+	kmsprefs.kms_SwitchCode,
+	0xFFFF,
+        kmsprefs.kms_SwitchQual,
+        IX_NORMALQUALS,
+        0
+    };
 
+    D(Printf("Prefs2Gadgets: Switch qualifier 0x%04lX, code 0x%04lX\n", kmsprefs.kms_SwitchQual, kmsprefs.kms_SwitchCode));
+    
     if (!keymap[0])
     	keymap = inputprefs.ip_Keymap;
 
@@ -461,10 +503,9 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     ForeachNode(&keymap_list, entry)
     {
         if (!stricmp(keymap, entry->realname))
-        {
             SET(data->iped_DefKey, MUIA_Keymap_Keymap, entry);
-            break;
-        }
+	if (!stricmp(kmsprefs.kms_AltKeymap, entry->realname))
+	    SET(data->iped_AltKey, MUIA_Keymap_Keymap, entry);
     }
 
     IPTR    active = 0;
@@ -489,6 +530,9 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     NNSET(data->iped_MouseSpeed, MUIA_Cycle_Active, active);
 
     NNSET(data->iped_LeftHandedMouse, MUIA_Selected, inputprefs.ip_SwitchMouseButtons);
+
+    SET(data->iped_SwitchEnable, MUIA_Selected, kmsprefs.kms_Enabled);
+    NNSET(data->iped_SwitchKey, MUIA_HotkeyString_IX, &ix);
 
     return TRUE;
 }

@@ -34,11 +34,13 @@
 
 APTR                mempool;
 struct InputPrefs   inputprefs;
+struct KMSPrefs     kmsprefs;
 struct List         keymap_list;
 struct timerequest *InputIO;
 
 static BOOL                inputdev_changed = FALSE;
 static struct InputPrefs   backupprefs;
+static struct KMSPrefs	   kmsbackupprefs;
 static BPTR                testkeymap_seg = NULL;
 
 /*********************************************************************************************/
@@ -260,9 +262,16 @@ void Prefs_ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 
 /*********************************************************************************************/
 
+static LONG stopchunks[] =
+{
+    ID_PREF, ID_INPT,
+    ID_PREF, ID_KMSW
+};
+
 BOOL Prefs_ImportFH(BPTR fh)
 {
     struct FileInputPrefs   loadprefs;
+    struct FileKMSPrefs	    loadkmsprefs;
     struct IFFHandle       *iff;
     ULONG		    size;
     BOOL                    retval = FALSE;
@@ -282,11 +291,12 @@ BOOL Prefs_ImportFH(BPTR fh)
             {
                 D(Printf("LoadPrefs: OpenIFF okay.\n"));
 
-                if (!StopChunk(iff, ID_PREF, ID_INPT))
+                if (!StopChunks(iff, stopchunks, 2))
                 {
                     D(Printf("LoadPrefs: StopChunk okay.\n"));
+		    retval = TRUE;
 
-                    if (!ParseIFF(iff, IFFPARSE_SCAN))
+                    while (!ParseIFF(iff, IFFPARSE_SCAN))
                     {
                         struct ContextNode *cn;
 
@@ -295,30 +305,57 @@ BOOL Prefs_ImportFH(BPTR fh)
                         cn = CurrentChunk(iff);
 			size = cn->cn_Size;
 
-                        if (size > sizeof(struct FileInputPrefs))
-			    size = sizeof(struct FileInputPrefs);
+			switch (cn->cn_ID)
+			{
+			case ID_INPT:
+			    D(Printf("LoadPrefs: INPT chunk\n"));
 
-                        if (ReadChunkBytes(iff, &loadprefs, size) == size)
-                        {
-                            D(Printf("LoadPrefs: Reading chunk successful.\n"));
+			    if (size > sizeof(struct FileInputPrefs))
+				size = sizeof(struct FileInputPrefs);
 
-                            CopyMem(loadprefs.ip_Keymap, inputprefs.ip_Keymap, sizeof(loadprefs.ip_Keymap));
-                            inputprefs.ip_PointerTicks         = ARRAY_TO_WORD(loadprefs.ip_PointerTicks);
-                            inputprefs.ip_DoubleClick.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_secs);
-                            inputprefs.ip_DoubleClick.tv_micro = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_micro);
-                            inputprefs.ip_KeyRptDelay.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_secs);
-                            inputprefs.ip_KeyRptDelay.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_micro);
-                            inputprefs.ip_KeyRptSpeed.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_secs);
-                            inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_micro);
-                            inputprefs.ip_MouseAccel           = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
-                            inputprefs.ip_ClassicKeyboard      = ARRAY_TO_LONG(loadprefs.ip_ClassicKeyboard);
-			    CopyMem(loadprefs.ip_KeymapName, inputprefs.ip_KeymapName, sizeof(loadprefs.ip_KeymapName));
-			    inputprefs.ip_SwitchMouseButtons   = loadprefs.ip_SwitchMouseButtons[3];
+                            if (ReadChunkBytes(iff, &loadprefs, size) == size)
+			    {
+				D(Printf("LoadPrefs: Reading chunk successful.\n"));
+
+				CopyMem(loadprefs.ip_Keymap, inputprefs.ip_Keymap, sizeof(loadprefs.ip_Keymap));
+				inputprefs.ip_PointerTicks         = ARRAY_TO_WORD(loadprefs.ip_PointerTicks);
+				inputprefs.ip_DoubleClick.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_secs);
+				inputprefs.ip_DoubleClick.tv_micro = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_micro);
+				inputprefs.ip_KeyRptDelay.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_secs);
+				inputprefs.ip_KeyRptDelay.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_micro);
+				inputprefs.ip_KeyRptSpeed.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_secs);
+				inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_micro);
+				inputprefs.ip_MouseAccel           = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
+				inputprefs.ip_ClassicKeyboard      = ARRAY_TO_LONG(loadprefs.ip_ClassicKeyboard);
+				CopyMem(loadprefs.ip_KeymapName, inputprefs.ip_KeymapName, sizeof(loadprefs.ip_KeymapName));
+				inputprefs.ip_SwitchMouseButtons   = loadprefs.ip_SwitchMouseButtons[3];
 			    
-			    D(Printf("LoadPrefs: SwitchMouseButtons: %ld\n", inputprefs.ip_SwitchMouseButtons));
+				D(Printf("LoadPrefs: SwitchMouseButtons: %ld\n", inputprefs.ip_SwitchMouseButtons));
+			    }
+			    else
+				retval = FALSE;
+			    break;
 
-                            retval = TRUE;
-                        }
+			case ID_KMSW:
+			    D(Printf("LoadPrefs: KMSW chunk\n"));
+
+			    if (size > sizeof(struct FileKMSPrefs))
+				size = sizeof(struct FileKMSPrefs);
+
+                            if (ReadChunkBytes(iff, &loadkmsprefs, size) == size)
+			    {
+				D(Printf("LoadPrefs: Reading chunk successful.\n"));
+
+				kmsprefs.kms_Enabled    = loadkmsprefs.kms_Enabled;
+				kmsprefs.kms_Reserved   = loadkmsprefs.kms_Reserved;
+				kmsprefs.kms_SwitchQual = ARRAY_TO_WORD(loadkmsprefs.kms_SwitchQual);
+				kmsprefs.kms_SwitchCode = ARRAY_TO_WORD(loadkmsprefs.kms_SwitchCode);
+				CopyMem(loadkmsprefs.kms_AltKeymap, kmsprefs.kms_AltKeymap, sizeof(kmsprefs.kms_AltKeymap));
+			    }
+			    else
+				retval = FALSE;
+			    break;
+			}
                     } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
                 } /* if (!StopChunk(iff, ID_PREF, ID_INPT)) */
                 CloseIFF(iff);
@@ -335,6 +372,7 @@ BOOL Prefs_ImportFH(BPTR fh)
 BOOL Prefs_ExportFH(BPTR fh)
 {
     struct FileInputPrefs   saveprefs;
+    struct FileKMSPrefs	    savekmsprefs;
     struct IFFHandle       *iff;
     BOOL                    retval = FALSE;
     BOOL                    delete_if_error = FALSE;
@@ -356,6 +394,12 @@ BOOL Prefs_ExportFH(BPTR fh)
     saveprefs.ip_SwitchMouseButtons[1] = 0;
     saveprefs.ip_SwitchMouseButtons[2] = 0;
     saveprefs.ip_SwitchMouseButtons[3] = inputprefs.ip_SwitchMouseButtons;
+
+    savekmsprefs.kms_Enabled  = kmsprefs.kms_Enabled;
+    savekmsprefs.kms_Reserved = kmsprefs.kms_Reserved;
+    WORD_TO_ARRAY(kmsprefs.kms_SwitchQual, savekmsprefs.kms_SwitchQual);
+    WORD_TO_ARRAY(kmsprefs.kms_SwitchCode, savekmsprefs.kms_SwitchCode);
+    CopyMem(kmsprefs.kms_AltKeymap, savekmsprefs.kms_AltKeymap, sizeof(savekmsprefs.kms_AltKeymap));
 
     if ((iff = AllocIFF()))
     {
@@ -409,6 +453,15 @@ BOOL Prefs_ExportFH(BPTR fh)
                                 PopChunk(iff);
 
                             } /* if (!PushChunk(iff, ID_PREF, ID_INPT, sizeof(saveprefs))) */
+
+                            if (!PushChunk(iff, ID_PREF, ID_KMSW, sizeof(savekmsprefs)))
+                            {
+                                if (WriteChunkBytes(iff, &savekmsprefs, sizeof(savekmsprefs)) == sizeof(savekmsprefs))
+                                    retval = retval && TRUE;
+
+                                PopChunk(iff);
+
+                            } /* if (!PushChunk(iff, ID_PREF, ID_INPT, sizeof(saveprefs))) */			    
 
                         } /* if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head)) */
                         else
@@ -517,6 +570,11 @@ BOOL Prefs_Default(void)
     strcpy(inputprefs.ip_KeymapName, DEFAULT_KEYMAP);
     inputprefs.ip_SwitchMouseButtons   = FALSE;
 
+    kmsprefs.kms_Enabled      = FALSE;
+    kmsprefs.kms_SwitchQual   = 0;
+    kmsprefs.kms_SwitchCode   = 0;
+    kmsprefs.kms_AltKeymap[0] = 0;
+
     return TRUE;
 }
 
@@ -524,12 +582,14 @@ BOOL Prefs_Default(void)
 
 void Prefs_Backup(void)
 {
-    backupprefs = inputprefs;
+    CopyMem(&inputprefs, &backupprefs, sizeof(inputprefs));
+    CopyMem(&kmsprefs, &kmsbackupprefs, sizeof(kmsprefs));
 }
 
 void Prefs_Restore(void)
 {
-    inputprefs = backupprefs;
+    CopyMem(&backupprefs, &inputprefs, sizeof(inputprefs));
+    CopyMem(&kmsbackupprefs, &kmsprefs, sizeof(kmsprefs));
 }
 
 /*********************************************************************************************/
