@@ -39,7 +39,7 @@ typedef struct {
 	 uint32_t	PixelClock;
 } GMA_PLL_t;
 
-BOOL delay_ms(struct g45staticdata *sd, uint32_t msec)
+VOID delay_ms(struct g45staticdata *sd, uint32_t msec)
 {
 	/* Allocate a signal within this task context */
 
@@ -57,7 +57,7 @@ BOOL delay_ms(struct g45staticdata *sd, uint32_t msec)
 	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
 }
 
-BOOL delay_us(struct g45staticdata *sd, uint32_t usec)
+VOID delay_us(struct g45staticdata *sd, uint32_t usec)
 {
 	/* Allocate a signal within this task context */
 
@@ -74,6 +74,7 @@ BOOL delay_us(struct g45staticdata *sd, uint32_t usec)
 
 	sd->tr.tr_node.io_Message.mn_ReplyPort->mp_SigTask = NULL;
 }
+
 static BOOL calc_pll_and_validate(GMA_PLL_t *pll)
 {
 	uint32_t	m, p;
@@ -154,7 +155,12 @@ void DisablePlane(struct g45staticdata *sd,LONG plane){
 	delay_ms(sd, 20);
 }
 
-void  SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y)
+void UpdateCursor(struct g45staticdata *sd)
+{
+    writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE : G45_CURBBASE));
+}
+
+void SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y)
 {
 	LONG width = (sd->VisibleBitmap->state->htotal & 0x0000ffff);
     LONG height = (sd->VisibleBitmap->state->vtotal & 0x0000ffff);
@@ -166,7 +172,7 @@ void  SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y)
 	
 	writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT),
 			sd->Card.MMIO + (sd->pipe == PIPE_A ?G45_CURAPOS:G45_CURBPOS));
-	writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
+    UpdateCursor(sd);
 }
 
 void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
@@ -372,6 +378,7 @@ void G45_LoadState(struct g45staticdata *sd, GMAState_t *state)
 			writel( 0 , sd->Card.MMIO + G45_PFIT_PGM_RATIOS );
 			writel( readl(sd->Card.MMIO + G45_PFIT_CONTROL) & ~G45_PFIT_ENABLE , sd->Card.MMIO + G45_PFIT_CONTROL );
 		}
+		writel(state->dspsurf, sd->Card.MMIO + G45_DSPBSURF);
 		delay_ms(sd, 1);
 		
 		EnablePipe(sd,PIPE_B);
@@ -577,7 +584,7 @@ VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG heigh
     LOCK_HW
 
     D(bug("[GMA] FreeBitmapArea(%p,%dx%d@%d)\n",
-	bmp, width, height, bpp));
+	ptr, width, height, bpp));
 
     Forbid();
     Deallocate(&sd->CardMem, ptr, 1024+((width * bpp + 63) & ~63) * height);

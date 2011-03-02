@@ -266,12 +266,13 @@ void G45_InitMode(struct g45staticdata *sd, GMAState_t *state,
 void G45_LoadState(struct g45staticdata *sd, GMAState_t *state);
 IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height, ULONG bpp, BOOL must_have);
 VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp);
-BOOL delay_ms(struct g45staticdata *sd, uint32_t msec);
-BOOL delay_us(struct g45staticdata *sd, uint32_t usec);
+VOID delay_ms(struct g45staticdata *sd, uint32_t msec);
+VOID delay_us(struct g45staticdata *sd, uint32_t usec);
 
 BOOL adpa_Enabled(struct g45staticdata *sd);
 BOOL lvds_Enabled(struct g45staticdata *sd);
 void GetSync(struct g45staticdata *sd,struct Sync *sync,ULONG pipe);
+void UpdateCursor(struct g45staticdata *sd);
 void SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y);
 
 BOOL HIDD_INTELG45_SetFramebuffer(OOP_Object * bm);

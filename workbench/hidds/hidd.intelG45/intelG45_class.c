@@ -228,7 +228,8 @@ void createSync(OOP_Class *cl, int x, int y, int refresh, struct TagItem **tagsp
 	PUSH_TAG(poolptr, TAG_DONE, 0);
 }
 
-static int G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr, struct TagItem *poolptr, OOP_Object *obj)
+static VOID G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr,
+    struct TagItem *poolptr, OOP_Object *obj)
 {
 	struct pHidd_I2CDevice_WriteRead msg;
 	uint8_t edid[128];
@@ -737,14 +738,13 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
     {
 		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_ARGB ,
 				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
-		writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
     }
     else
     {
 		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_OFF ,
 				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
-		writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
     }
+    UpdateCursor(sd);
 }
 
 
@@ -762,7 +762,6 @@ BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
         sd->CursorVisible = 0;
 		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_OFF ,
 				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
-		writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
     }
     else
     {
@@ -782,8 +781,8 @@ BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
         HIDD_BM_GetImage(msg->shape, (UBYTE *)curimg, 64*4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
 		writel( (sd->pipe == PIPE_A ? G45_CURCNTR_PIPE_A : G45_CURCNTR_PIPE_B ) | G45_CURCNTR_TYPE_ARGB ,
 				sd->Card.MMIO +  (sd->pipe == PIPE_A ? G45_CURACNTR:G45_CURBCNTR));
-		writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE:G45_CURBBASE));
     }
+    UpdateCursor(sd);
 
     return TRUE;
 }
@@ -793,13 +792,13 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
     ULONG mode = GC_DRMD(msg->gc);
     IPTR src=0, dst=0;
 
-    /* Check whether we can get Drawable attribute of our ATI class */
+    /* Check whether we can get Drawable attribute of our GMA class */
     OOP_GetAttr(msg->src,   aHidd_GMABitMap_Drawable,   &src);
     OOP_GetAttr(msg->dest,  aHidd_GMABitMap_Drawable,   &dst);
 
     if (!dst || !src)
     {
-        /* No. One of the bitmaps is not an ATI bitmap */
+        /* No. One of the bitmaps is not a GMA bitmap */
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     else
@@ -873,6 +872,7 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
 
             ADVANCE_RING();
 
+            DO_FLUSH();
             UNLOCK_HW
 
             UNLOCK_BITMAP_BM(bm_src)
