@@ -95,7 +95,7 @@ typedef struct NotifyNode
     struct MinNode nn_Node;
     BOOL        nn_Active;   /* When TRUE, it means that the notification is currently being handled */
                              /* It's used to prevent loops */
-    IPTR        nn_TrigAttr;
+    ULONG       nn_TrigAttr;
     IPTR        nn_TrigVal;
     APTR        nn_DestObj;
     ULONG       nn_NumParams;
