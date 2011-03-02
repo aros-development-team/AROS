@@ -106,10 +106,6 @@ BOOL Prefs_ImportFH(BPTR fh);
 BOOL Prefs_ExportFH(BPTR fh);
 BOOL Prefs_Default(void);
 BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save);
-void Prefs_Test(void);
-void Prefs_Restore(void);
-void Prefs_Backup(void);
-void Prefs_kbd_cleanup(void);
 
 /*********************************************************************************************/
 

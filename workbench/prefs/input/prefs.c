@@ -10,12 +10,9 @@
 
 #define SHOWFLAGS 1  /* Set to 1 to show Flags in the keylist */
 
-#include <devices/input.h>
-
 #include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
-#include <proto/keymap.h>
 #include <proto/iffparse.h>
 #include <proto/utility.h>
 
@@ -36,12 +33,6 @@ APTR                mempool;
 struct InputPrefs   inputprefs;
 struct KMSPrefs     kmsprefs;
 struct List         keymap_list;
-struct timerequest *InputIO;
-
-static BOOL                inputdev_changed = FALSE;
-static struct InputPrefs   backupprefs;
-static struct KMSPrefs	   kmsbackupprefs;
-static BPTR                testkeymap_seg = NULL;
 
 /*********************************************************************************************/
 
@@ -576,147 +567,4 @@ BOOL Prefs_Default(void)
     kmsprefs.kms_AltKeymap[0] = 0;
 
     return TRUE;
-}
-
-/*********************************************************************************************/
-
-void Prefs_Backup(void)
-{
-    CopyMem(&inputprefs, &backupprefs, sizeof(inputprefs));
-    CopyMem(&kmsprefs, &kmsbackupprefs, sizeof(kmsprefs));
-}
-
-void Prefs_Restore(void)
-{
-    CopyMem(&backupprefs, &inputprefs, sizeof(inputprefs));
-    CopyMem(&kmsbackupprefs, &kmsprefs, sizeof(kmsprefs));
-}
-
-/*********************************************************************************************/
-
-void update_inputdev(void)
-{
-    if (InputIO)
-    {
-        if (InputIO->tr_node.io_Device)
-        {
-            InputIO->tr_node.io_Command = IND_SETPERIOD;
-            InputIO->tr_time = inputprefs.ip_KeyRptSpeed;
-            DoIO(&InputIO->tr_node);
-
-            InputIO->tr_node.io_Command = IND_SETTHRESH;
-            InputIO->tr_time = inputprefs.ip_KeyRptDelay;
-            DoIO(&InputIO->tr_node);
-
-            inputdev_changed = TRUE;
-
-        }
-    }
-}
-
-static void try_setting_mousespeed(void)
-{
-    struct Preferences p;
-
-    GetPrefs(&p, sizeof(p));
-    p.PointerTicks = inputprefs.ip_PointerTicks;
-    p.DoubleClick  = inputprefs.ip_DoubleClick;
-    p.KeyRptDelay  = inputprefs.ip_KeyRptDelay;
-    p.KeyRptSpeed  = inputprefs.ip_KeyRptSpeed;
-    if (inputprefs.ip_MouseAccel)
-    {
-        p.EnableCLI |= MOUSE_ACCEL;
-    }
-    else
-    {
-        p.EnableCLI &= ~MOUSE_ACCEL;
-    }
-
-    SetPrefs(&p, sizeof(p), FALSE);
-}
-
-static void try_setting_test_keymap(void)
-{
-    struct KeyMapResource *KeyMapResource;
-    struct Library        *KeymapBase;
-    struct KeyMapNode     *kmn = NULL;
-    struct Node           *node;
-    BPTR                   lock, seg, olddir, oldseg = 0;
-
-    if ((KeyMapResource = OpenResource("keymap.resource")))
-    {
-        Forbid();
-
-        ForeachNode(&KeyMapResource->kr_List, node)
-        {
-            if (!stricmp(inputprefs.ip_KeymapName, node->ln_Name))
-            {
-                kmn = (struct KeyMapNode *)node;
-                break;
-            }
-        }
-
-        Permit();
-
-    }
-
-    if (!kmn)
-    {
-        lock = Lock("DEVS:Keymaps", SHARED_LOCK);
-
-        if (lock)
-        {
-            olddir = CurrentDir(lock);
-
-            if ((seg = LoadSeg(inputprefs.ip_Keymap)))
-            {
-                kmn = (struct KeyMapNode *) (((UBYTE *)BADDR(seg)) + sizeof(APTR));
-                oldseg = testkeymap_seg;
-                testkeymap_seg = seg;
-
-            }
-
-            CurrentDir(olddir);
-            UnLock(lock);
-        }
-    }
-
-    if (kmn)
-    {
-        KeymapBase = OpenLibrary("keymap.library", 0);
-        if (KeymapBase)
-        {
-            SetKeyMapDefault((struct KeyMap *)&kmn->kn_KeyMap);
-            CloseLibrary(KeymapBase);
-        }
-    }
-    if (oldseg) UnLoadSeg(oldseg);
-
-}
-
-void Prefs_kbd_cleanup(void)
-{
-    if (inputdev_changed)
-    {
-        InputIO->tr_node.io_Command = IND_SETPERIOD;
-        InputIO->tr_time = backupprefs.ip_KeyRptSpeed;
-        DoIO(&InputIO->tr_node);
-
-        InputIO->tr_node.io_Command = IND_SETTHRESH;
-        InputIO->tr_time = backupprefs.ip_KeyRptDelay;
-        DoIO(&InputIO->tr_node);
-        inputdev_changed = FALSE;
-    }
-
-    if (testkeymap_seg)
-    {
-        UnLoadSeg(testkeymap_seg);
-    }
-}
-
-void Prefs_Test(void)
-{
-    update_inputdev();
-    try_setting_mousespeed();
-    try_setting_test_keymap();
 }

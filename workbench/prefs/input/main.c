@@ -27,49 +27,9 @@
 
 /*********************************************************************************************/
 
-static struct MsgPort     *InputMP;
-
-/*********************************************************************************************/
-
-static BOOL OpenInputDev(void)
-{
-    if ((InputMP = CreateMsgPort()))
-    {
-        if ((InputIO = (struct timerequest *) CreateIORequest(InputMP, sizeof(struct IOStdReq))))
-        {
-            OpenDevice("input.device", 0, (struct IORequest *)InputIO, 0);
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
-/*********************************************************************************************/
-
-static void CloseInputDev(void)
-{
-    if (InputIO)
-    {
-        CloseDevice((struct IORequest *)InputIO);
-        DeleteIORequest((struct IORequest *)InputIO);
-    }
-
-    if (InputMP)
-    {
-        DeleteMsgPort(InputMP);
-    }
-}
-
-
-/*********************************************************************************************/
-
-
 int main(int argc, char **argv)
 {
     Object *application,  *window;
-
-    if (!OpenInputDev())
-        return 0;
 
     Locale_Initialize();
 
@@ -82,7 +42,6 @@ int main(int argc, char **argv)
         else
         {
             Prefs_Default();
-            Prefs_Backup();
 
             NewList(&keymap_list);
 
@@ -117,10 +76,6 @@ int main(int argc, char **argv)
         }
         FreeArguments();
     }
-
-    Prefs_kbd_cleanup();
-
-    CloseInputDev();
 
     Locale_Deinitialize();
 

@@ -547,8 +547,8 @@ IPTR IPEditor__MUIM_PrefsEditor_ImportFH
 
     if (Prefs_ImportFH(message->fh))
     {
-        Prefs_Backup();
         IPTR back = InputPrefs2Gadgets(data);
+
         SET(self, MUIA_PrefsEditor_Changed, FALSE);
         SET(self, MUIA_PrefsEditor_Testing, FALSE);
         return back;
@@ -571,40 +571,6 @@ IPTR IPEditor__MUIM_PrefsEditor_ExportFH
     return FALSE;
 }
 
-IPTR IPEditor__MUIM_PrefsEditor_Test
-(
-    Class *CLASS, Object *self, Msg message
-)
-{
-
-    SETUP_INST_DATA;
-
-    Gadgets2InputPrefs(data);
-    Prefs_Test();
-
-    SET(self, MUIA_PrefsEditor_Changed, FALSE);
-    SET(self, MUIA_PrefsEditor_Testing, TRUE);
-
-    return TRUE;
-}
-
-IPTR IPEditor__MUIM_PrefsEditor_Revert
-(
-    Class *CLASS, Object *self, Msg message
-)
-{
-    SETUP_INST_DATA;
-
-    Prefs_Restore();
-    InputPrefs2Gadgets(data);
-    Prefs_Test();
-
-    SET(self, MUIA_PrefsEditor_Changed, FALSE);
-    SET(self, MUIA_PrefsEditor_Testing, FALSE);
-
-    return TRUE;
-}
-
 IPTR IPEditor__MUIM_PrefsEditor_SetDefaults
 (
     Class *CLASS, Object *self, Msg message
@@ -615,23 +581,17 @@ IPTR IPEditor__MUIM_PrefsEditor_SetDefaults
 
     success = Prefs_Default();
     if (success)
-    {
         InputPrefs2Gadgets(data);
-        Prefs_Backup();
-        Prefs_Test();
-    }
 
     return success;
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_6
+ZUNE_CUSTOMCLASS_4
 (
     IPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                       struct opSet *,
     MUIM_PrefsEditor_ImportFH,    struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
-    MUIM_PrefsEditor_Test,        Msg,
-    MUIM_PrefsEditor_Revert,      Msg,
     MUIM_PrefsEditor_SetDefaults, Msg
 );
