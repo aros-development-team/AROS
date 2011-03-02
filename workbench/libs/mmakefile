@@ -16,6 +16,7 @@
 #MM     workbench-libs-gadtools \
 #MM     workbench-libs-icon \
 #MM     workbench-libs-iffparse \
+#MM	workbench-libs-kms \
 #MM     workbench-libs-locale \
 #MM	workbench-libs-lowlevel \
 #MM     workbench-libs-mathffp \
@@ -55,6 +56,7 @@
 #MM     workbench-libs-gadtools-includes \
 #MM     workbench-libs-icon-includes \
 #MM     workbench-libs-iffparse-includes \
+#MM	workbench-libs-kms-includes \
 #MM     workbench-libs-locale-includes \
 #MM	workbench-libs-lowlevel-includes \
 #MM     workbench-libs-mathffp-includes \
