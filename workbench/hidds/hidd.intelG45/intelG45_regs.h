@@ -25,6 +25,7 @@
 
 #define G45_BSM			0x5c
 #define G45_MSAC			0x62
+#define G45_MSAC2			0x66
 
 
 /* Ring buffer registers */

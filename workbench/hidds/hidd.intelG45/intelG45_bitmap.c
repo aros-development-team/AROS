@@ -81,7 +81,7 @@ OOP_Object *METHOD(GMABM, Root, New)
     {
         GMABitMap_t *bm = OOP_INST_DATA(cl, o);
 
-        ULONG width, height, depth;
+        IPTR width, height, depth;
         UBYTE bytesPerPixel;
         IPTR displayable;
 
@@ -211,7 +211,6 @@ OOP_Object *METHOD(GMABM, Root, New)
         {
             if (bm->framebuffer == -1)
             {
-            	int __tmp;
                 bm->framebuffer = (IPTR)AllocMem(bm->pitch * bm->height,
                             MEMF_PUBLIC | MEMF_CLEAR);
                 bm->fbgfx = FALSE;
@@ -410,8 +409,8 @@ VOID METHOD(GMABM, Root, Set)
 		writel( bm->state->dsplinoff - offset , sd->Card.MMIO + ( sd->pipe == PIPE_A ? G45_DSPALINOFF:G45_DSPBLINOFF ));
 		readl( sd->Card.MMIO + G45_DSPBLINOFF );
     }
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 */
-	 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 
@@ -499,10 +498,11 @@ HIDDT_Pixel METHOD(GMABM, Hidd_BitMap, GetPixel)
 		UNLOCK_HW
 	}
 
-	if (bm->fbgfx)
-		ptr = bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch;
-	else
-		ptr = bm->framebuffer + msg->y * bm->pitch;
+    if (bm->fbgfx)
+        ptr = sd->Card.Framebuffer;
+    else
+        ptr = NULL;
+    ptr += bm->framebuffer + msg->y * bm->pitch;
 
 	switch (bm->bpp)
 	{
@@ -533,9 +533,10 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
     HIDDT_Pixel     	    	    writeMask;
 
     if (bm->fbgfx)
-    	ptr = bm->framebuffer + sd->Card.Framebuffer + msg->y * bm->pitch;
+        ptr = sd->Card.Framebuffer;
     else
-    	ptr = bm->framebuffer + msg->y * bm->pitch;
+        ptr = NULL;
+    ptr += bm->framebuffer + msg->y * bm->pitch;
 
     src       = GC_FG(gc);
     mode      = GC_DRMD(gc);
@@ -578,6 +579,13 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
 		if(mode & 8) val = (~src & ~dest) | val;
 
 		val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
+	}
+
+	if (bm->fbgfx)
+	{
+		LOCK_HW
+		DO_FLUSH();
+		UNLOCK_HW
 	}
 
 	switch (bm->bpp)
@@ -793,7 +801,7 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawLine)
 
 	LOCK_BITMAP
 
-	if ((GC_LINEPAT(gc) =! (UWORD)~0) || !bm->fbgfx)
+	if ((GC_LINEPAT(gc) != (UWORD)~0) || !bm->fbgfx)
 	{
 		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	}
@@ -996,6 +1004,7 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawLine)
 
 		ADVANCE_RING();
 
+		DO_FLUSH();
 		UNLOCK_HW
 	}
 
@@ -1105,6 +1114,7 @@ VOID METHOD(GMABM, Hidd_BitMap, FillRect)
 		OUT_RING(0);
 		ADVANCE_RING();
 
+		DO_FLUSH();
 		UNLOCK_HW
 	}
 	else
@@ -1135,7 +1145,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutAlphaImage)
     	ULONG x_add = (msg->modulo - msg->width * 4) >> 2;
     	UWORD height = msg->height;
     	UWORD bw = msg->width;
-        ULONG *pixarray = msg->pixels;
+        ULONG *pixarray = (ULONG *)msg->pixels;
         ULONG y = msg->y;
         ULONG x;
 
@@ -1151,7 +1161,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutAlphaImage)
         {
         	while(height--)
         	{
-        		ULONG *xbuf = VideoData + sd->Card.Framebuffer + y * bm->pitch;
+                ULONG *xbuf = (ULONG *)(sd->Card.Framebuffer + VideoData + y * bm->pitch);
         		xbuf += msg->x;
 
         		for (x=0; x < bw; x++)
@@ -1235,7 +1245,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutAlphaImage)
         {
         	while(height--)
         	{
-        		UWORD *xbuf = VideoData + sd->Card.Framebuffer + y * bm->pitch;
+        		UWORD *xbuf = (UWORD *)(sd->Card.Framebuffer + VideoData + y * bm->pitch);
         		xbuf += msg->x;
 
         		for (x=0; x < bw; x++)
@@ -1321,7 +1331,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
     IPTR VideoData = bm->framebuffer;
 
     /* In 32bpp mode the StdPixFmt_Native format bitmap can be drawn using the 2D engine.
-     * THis is done by mapping the source range via GTT into video space and issuing the blit.
+     * This is done by mapping the source range via GTT into video space and issuing the blit.
      *
      * Unfortunately, AROS likes to re-use the same scratch line many times during one single bitmap
      * draw (many blits of height=1 instead of one single blit).
@@ -1404,7 +1414,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 
     if (!done)
     {
-    	D(bug("[GMA] PutImage on unkown pixfmt %d\n",msg->pixFmt));
+    	D(bug("[GMA] PutImage on unknown pixfmt %d\n",msg->pixFmt));
 
     	if (bm->fbgfx)
         {
@@ -1573,10 +1583,10 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 			    			intptr_t virt[4] = { sd->ScratchArea, sd->ScratchArea + line_width,
 												 sd->ScratchArea + 2*line_width, sd->ScratchArea + 3*line_width  };
 
-			    			OOP_Object *dstpf;
-			    			OOP_Object *srcpf;
+			    			HIDDT_PixelFormat *srcpf, *dstpf;
 
-			    			srcpf = HIDD_Gfx_GetPixFmt(sd->GMAObject, msg->pixFmt);
+			    			srcpf = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(
+                                sd->GMAObject, msg->pixFmt);
 			    			OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstpf);
 
 			    			/* Attach memory, if necessary */
@@ -1606,7 +1616,9 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 								while(readl(&sd->HardwareStatusPage[17 + current]) == 0);
 
 								/* Convert! */
-								HIDD_BM_ConvertPixels(o, &_src, srcpf, msg->modulo, &dst, dstpf, msg->modulo, msg->width, 1, NULL);
+								HIDD_BM_ConvertPixels(o, &_src, srcpf,
+                                    msg->modulo, (APTR *)&dst, dstpf,
+                                    msg->modulo, msg->width, 1, NULL);
 
 								/* Mark buffer as busy */
 								writel(0, &sd->HardwareStatusPage[17 + current]);
@@ -2266,7 +2278,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutPattern)
 VOID METHOD(GMABM, Hidd_BitMap, UpdateRect)
 {
     GMABitMap_t * bmdata = OOP_INST_DATA(cl, o);
-    D(bug("[GMA]BitMap::UpdateRect %d,%d-%d,%d\n",msg->x,msg->y,msg->width,msg->height));
+    D(bug("[GMA]BitMap::UpdateRect %d,%d-%d,%d o=%p\n",msg->x,msg->y,msg->width,msg->height,o));
     if (bmdata->displayable)
     {
         struct pHidd_Compositing_BitMapRectChanged brcmsg =

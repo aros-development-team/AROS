@@ -68,6 +68,17 @@ static volatile uint32_t min(uint32_t a, uint32_t b)
 
 static const char __attribute__((used)) __greet[] = "!!! This driver is sponsored by iMica !!!\n";
 
+static BOOL IsCompatible(UWORD product_id)
+{
+    return product_id == 0x2582
+        || product_id == 0x2772
+        || product_id == 0x27a2
+        || product_id == 0x27a6
+        || product_id == 0x27ae
+        || product_id == 0x2a42;
+}
+
+
 #if 0
 static const probe_monitor(struct intelg45base *intelg45base)
 {
@@ -230,10 +241,12 @@ AROS_UFH3(void, Enumerator,
 
     IPTR ProductID;
     IPTR VendorID;
+    IPTR RevisionID;
 
     /* Get the Device's ProductID */
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_RevisionID, &RevisionID);
 
     D(bug("[GMA] Checking device %04x:%04x\n", VendorID, ProductID));
 
@@ -257,11 +270,11 @@ AROS_UFH3(void, Enumerator,
     	}
     }
 
-    if (forced || ProductID == 0x2772 || ProductID == 0x27a6 || ProductID == 0x27a2 || ProductID == 0x27ae || ProductID == 0x2582)
+    if (forced || IsCompatible(ProductID))
     {
     	UWORD MGCC = HIDD_PCIDevice_ReadConfigWord(pciDevice, G45_MGCC);
-    	ULONG BSM = HIDD_PCIDevice_ReadConfigLong(pciDevice, G45_BSM);
-    	UBYTE MSAC = HIDD_PCIDevice_ReadConfigByte(pciDevice, G45_MSAC);
+    	D(ULONG BSM = HIDD_PCIDevice_ReadConfigLong(pciDevice, G45_BSM));
+    	D(UBYTE MSAC = HIDD_PCIDevice_ReadConfigByte(pciDevice, G45_MSAC));
 
     	/*-------- DO NOT CHANGE/REMOVE -------------*/
     	bug("\003\n"); /* Tell vga text mode debug output to die */
@@ -306,15 +319,28 @@ AROS_UFH3(void, Enumerator,
 
     	OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
 
-    	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, &driver);
+    	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *)&driver);
 
-    	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &Bar0);
-    	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &Bar2);
-    	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base3, &Bar3);
+        if (RevisionID >= 7)
+        {
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &Bar0);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &Bar2);
+            Bar3 = Bar0 + 2 * 1024 * 1024;
 
-    	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &Size0);
-    	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &Size2);
-    	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size3, &Size3);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &Size0);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &Size2);
+            Size3 = Size0 - 2 * 1024 * 1024;
+        }
+        else
+        {
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &Bar0);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &Bar2);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base3, &Bar3);
+
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &Size0);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &Size2);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size3, &Size3);
+        }
 
     	D(bug("[GMA] MGCC=%04x, BSM=%08x, MSAC=%08x\n", MGCC, BSM, MSAC));
     	D(bug("[GMA] Bar0=%08x-%08x, Bar2=%08x-%08x, Bar3=%08x-%08x\n", Bar0, Bar0 + Size0 - 1,
@@ -360,11 +386,22 @@ AROS_UFH3(void, Enumerator,
     		}
     	}
 
-    	sd->Card.Framebuffer = HIDD_PCIDriver_MapPCI(driver, Bar2, Size2);
-    	sd->Card.Framebuffer_size = Size2;
-    	sd->Card.MMIO = HIDD_PCIDriver_MapPCI(driver, Bar0, Size0);
-    	sd->Card.GATT = HIDD_PCIDriver_MapPCI(driver, Bar3, Size3);
-    	sd->Card.GATT_size = Size3;
+        if (RevisionID >= 7)
+        {
+            sd->Card.Framebuffer = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar2, Size2);
+            sd->Card.Framebuffer_size = Size2;
+            sd->Card.MMIO = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar0, Size0);
+            sd->Card.GATT = (APTR)(sd->Card.MMIO + 2 * 1024 * 1024);
+            sd->Card.GATT_size = Size3;
+        }
+        else
+        {
+            sd->Card.Framebuffer = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar2, Size2);
+            sd->Card.Framebuffer_size = Size2;
+            sd->Card.MMIO = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar0, Size0);
+            sd->Card.GATT = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar3, Size3);
+            sd->Card.GATT_size = Size3;
+        }
 
     	D(bug("[GMA] GATT space for %d entries\n", Size3 / 4));
 
@@ -438,14 +475,17 @@ AROS_UFH3(void, Enumerator,
 
     	/* Ring buffer. The very first allocation, therefore I take for granted it's aligned on 4K page boundary.
     	 * Get 8KB of it. */
-    	sd->RingBuffer = ((intptr_t)Allocate(&sd->CardMem, 64*4096)) - (intptr_t)sd->Card.Framebuffer;
-    	sd->RingBufferPhys = (uint32_t *)((intptr_t)sd->RingBuffer + sd->Card.Framebuffer);
+        sd->RingBufferPhys = Allocate(&sd->CardMem, 64 * 4096);
+        sd->RingBuffer = (intptr_t)sd->RingBufferPhys - (intptr_t)sd->Card.Framebuffer;
     	sd->RingBufferSize = 64*4096;
     	sd->RingBufferTail = 0;
 
     	/* Reserve some memory for HW cursor */
     	sd->CursorImage =  ((intptr_t)Allocate(&sd->CardMem, 64*64*4)) - (intptr_t)sd->Card.Framebuffer;
-    	sd->CursorBase = G45_VirtualToPhysical(sd, sd->CursorImage);
+        if (RevisionID >= 7)
+            sd->CursorBase = sd->CursorImage;
+        else
+            sd->CursorBase = G45_VirtualToPhysical(sd, sd->CursorImage);
 
     	D(bug("[GMA] Using ARGB cursor at graphics address %08x (physical address %08x)\n",
     			sd->CursorImage, sd->CursorBase));
@@ -461,9 +501,9 @@ AROS_UFH3(void, Enumerator,
     	sd->Engine2DOwner = NULL;
 
     	sd->HardwareStatusPage = (void*)(((intptr_t)AllocPooled(sd->MemPool, 4096 + 4095) + 4095) & ~4095);
-    	writel(sd->HardwareStatusPage, sd->Card.MMIO + 0x2080);
+    	writel((ULONG)sd->HardwareStatusPage, sd->Card.MMIO + 0x2080);
 
-//    	sd->HardwareStatusPage = readl(sd->Card.MMIO + 0x2080);
+//    	sd->HardwareStatusPage = (APTR)readl(sd->Card.MMIO + 0x2080);
     	D(bug("[GMA] Hardware status page: %08x\n", readl(sd->Card.MMIO + 0x2080)));
     	writel(1, &sd->HardwareStatusPage[16]);
 
