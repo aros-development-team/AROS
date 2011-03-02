@@ -1,4 +1,6 @@
+#include <aros/debug.h>
 #include <aros/symbolsets.h>
+#include <devices/input.h>
 #include <libraries/kms.h>
 #include <proto/exec.h>
 #include <proto/keymap.h>
@@ -24,15 +26,6 @@ AROS_LH4(WORD, patch_MapRawKey,
      */
     if (kmsbase->pub.kms_SwitchCode != KMS_DISABLE)
     {
-	if ((event->ie_Class == IECLASS_RAWKEY) &&
-	    (event->ie_Qualifier == kmsbase->pub.kms_SwitchQual) &&
-	    (event->ie_Code      == kmsbase->pub.kms_SwitchCode))
-	{
-	    /* Process keymap switching - just flip the flag and exit */
-	    kmsbase->active = !kmsbase->active;
-	    return 0;
-	}
-
 	if (kmsbase->active)
 	    keyMap = kmsbase->pub.kms_AltKeymap;
     }
@@ -74,10 +67,75 @@ AROS_LH5(LONG, patch_MapANSI,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_UFH2(static struct InputEvent *, kms_InputHandler,
+          AROS_UFHA(struct InputEvent * ,event, A0),
+          AROS_UFHA(struct kms_base *, KMSBase,  A1))
+{
+    AROS_USERFUNC_INIT
+
+    if (event->ie_Class == IECLASS_RAWKEY)
+    {
+	D(bug("[KMS] RAWKEY: qualifier 0x%04X, code 0x%04X\n", event->ie_Qualifier, event->ie_Code));
+
+	/* 0x03FF masks out all mouse qualifiers. I'm too lazy to type them all by names. */
+	if (((event->ie_Qualifier & 0x03FF) == kmsbase->pub.kms_SwitchQual) &&
+	     (event->ie_Code      	    == kmsbase->pub.kms_SwitchCode))
+	{
+	    /* Switch keymap and swallow the event */
+	    kmsbase->active = !kmsbase->active;
+	    return NULL;
+	}
+    }
+
+    return event;
+
+    AROS_USERFUNC_EXIT
+}
+
 static ULONG KMS_Init(struct kms_base *KMSBase)
 {
+    struct MsgPort *mp;
+    struct IOStdReq *ioreq;
+    LONG error = TRUE;
+
     KMSBase->kmr = OpenResource("keymap.resource");
     if (!KMSBase->kmr)
+	return FALSE;
+
+    mp = CreateMsgPort();
+    if (!mp)
+	return FALSE;
+
+    ioreq = CreateIORequest(mp, sizeof(struct IOStdReq));
+    if (ioreq)
+    {
+	error = OpenDevice("input.device", 0, (struct IORequest *)ioreq, 0);
+	if (!error)
+	{
+	    /*
+	     * Keymap switcher should work no matter what.
+	     * So we use the highest possible priority.
+	     */
+	    KMSBase->input_Int.is_Node.ln_Name = "Keymap switcher";
+	    KMSBase->input_Int.is_Node.ln_Pri  = 127;
+	    KMSBase->input_Int.is_Code = (void (*)())kms_InputHandler;
+	    KMSBase->input_Int.is_Data = KMSBase;
+
+	    ioreq->io_Command = IND_ADDHANDLER;
+	    ioreq->io_Data = &KMSBase->input_Int;
+
+	    DoIO((struct IORequest *)ioreq);
+
+	    D(bug("[KMS] Installed input handler\n"));
+	    
+	    CloseDevice((struct IORequest *)ioreq);
+	}
+
+	DeleteIORequest((struct IORequest *)ioreq);
+    }
+    DeleteMsgPort(mp);
+
+    if (error)
 	return FALSE;
 
     KMSBase->rom_MapRawKey = SetFunction(KeymapBase, -7 * LIB_VECTSIZE, AROS_SLIB_ENTRY(patch_MapRawKey, Kms));

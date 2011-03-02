@@ -5,6 +5,7 @@ struct kms_base
 {
     struct KMSLibrary pub;
     struct KeyMapResource *kmr;
+    struct Interrupt input_Int;
     BOOL active;
     APTR rom_MapRawKey;
     APTR rom_MapANSI;
