@@ -79,7 +79,7 @@ VOID Set (struct IClass *cl, Object *obj, struct opSet *msg)
     {
       struct MUIP_HandleEvent msg = { 0, &imsg, MUIKEY_NONE };
 
-      imsg.Class    = IECLASS_RAWKEY;
+      imsg.Class    = IDCMP_RAWKEY;
       imsg.Code    = ix->ix_Code;
       imsg.Qualifier  = ix->ix_Qualifier;
 
