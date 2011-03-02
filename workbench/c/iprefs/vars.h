@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -22,6 +22,7 @@ VAR struct Library              *LocaleBase;
 #endif
 
 VAR struct Library              *KeymapBase;
+VAR struct KMSLibrary		*KMSBase;
 VAR struct Library              *LayersBase;
 VAR struct Library              *DataTypesBase;
 VAR struct Library              *DiskfontBase;

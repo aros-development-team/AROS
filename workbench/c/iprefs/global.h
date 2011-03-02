@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -160,6 +160,8 @@
 #ifndef PROTO_IFFPARSE_H
 #include <proto/iffparse.h>
 #endif
+
+#include <proto/kms.h>
 
 /*********************************************************************************************/
 
