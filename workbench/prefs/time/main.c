@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -40,24 +40,6 @@
 
 /*********************************************************************************************/
 
-static struct libinfo
-{
-    APTR        var;
-    STRPTR      name;
-    WORD        version;
-    BOOL    	required;
-}
-libtable[] =
-{
-    {&IntuitionBase     , "intuition.library"	 , 39, TRUE  },
-    {&GfxBase           , "graphics.library" 	 , 40, TRUE  }, /* 40, because of WriteChunkyPixels */
-    {&UtilityBase       , "utility.library"  	 , 39, TRUE  },
-    {&MUIMasterBase 	, "muimaster.library"	 , 0 , TRUE  },
-    {NULL                                            	     }
-};
-
-/*********************************************************************************************/
-
 static struct Hook  	    	yearhook, clockhook, activehook, restorehook;
 #if DO_SPECIAL_BUTTON_LAYOUT
 static struct Hook  	    	buttonlayouthook;	    	
@@ -66,7 +48,7 @@ static struct RDArgs        	*myargs;
 static Object	    	    	*activetimestrobj;
 static IPTR                 	args[NUM_ARGS];
 
-static STRPTR monthlabels[] =
+static CONST_STRPTR monthlabels[] =
 {
     "January",
     "February",
@@ -85,10 +67,8 @@ static STRPTR monthlabels[] =
 
 /*********************************************************************************************/
 
-static void CloseLibs(void);
 static void CloseTimerDev(void);
 static void FreeArguments(void);
-static void FreeVisual(void);
 static void KillGUI(void);
 
 /*********************************************************************************************/
@@ -123,46 +103,11 @@ void Cleanup(STRPTR msg)
     }
     
     KillGUI();
-    FreeVisual();
     FreeArguments();
     CloseTimerDev();
-    CloseLibs();
     CleanupLocale();
     
     exit(prog_exitcode);
-}
-
-
-/*********************************************************************************************/
-
-static void OpenLibs(void)
-{
-    struct libinfo *li;
-    
-    for(li = libtable; li->var; li++)
-    {
-	if (!((*(struct Library **)li->var) = OpenLibrary(li->name, li->version)))
-	{
-	    if (li->required)
-	    {
-	    	sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
-	    	Cleanup(s);
-	    }
-	}       
-    }
-       
-}
-
-/*********************************************************************************************/
-
-static void CloseLibs(void)
-{
-    struct libinfo *li;
-    
-    for(li = libtable; li->var; li++)
-    {
-	if (*(struct Library **)li->var) CloseLibrary((*(struct Library **)li->var));
-    }
 }
 
 /*********************************************************************************************/
@@ -218,12 +163,16 @@ static void OpenBattClockRes(void)
 
 /*********************************************************************************************/
 
-static void GetArguments(void)
+static void GetArguments(int argc, char **argv)
 {
-    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
+
+    if (argc) // started from CLI
     {
-	Fault(IoErr(), 0, s, 256);
-	Cleanup(s);
+	if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
+	{
+	    Fault(IoErr(), 0, s, 256);
+	    Cleanup(s);
+	}
     }
     
     // if (!args[ARG_FROM]) args[ARG_FROM] = (IPTR)CONFIGNAME_ENV;
@@ -234,18 +183,6 @@ static void GetArguments(void)
 static void FreeArguments(void)
 {
     if (myargs) FreeArgs(myargs);
-}
-
-/*********************************************************************************************/
-
-static void GetVisual(void)
-{
-}
-
-/*********************************************************************************************/
-
-static void FreeVisual(void)
-{
 }
 
 /*********************************************************************************************/
@@ -535,7 +472,7 @@ static void MakeGUI(void)
     app = ApplicationObject,
 	MUIA_Application_Title, (IPTR)"Time",
 	MUIA_Application_Version, (IPTR)VERSIONSTR,
-	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2002, The AROS Development Team",
+	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2011, The AROS Development Team",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)MSG(MSG_WINTITLE),
 	MUIA_Application_Base, (IPTR)"Time",
@@ -543,6 +480,7 @@ static void MakeGUI(void)
   	SubWindow, wnd = WindowObject,
 	    MUIA_Window_Title, (IPTR)MSG(MSG_WINTITLE),
 	    MUIA_Window_ID, MAKE_ID('T','W','I','N'),
+	    MUIA_Window_CloseGadget, FALSE,
 	    WindowContents, VGroup,
 	    	Child, HGroup, /* Group containing calendar box and clock box */
 		    MUIA_Group_SameWidth, TRUE,
@@ -672,8 +610,6 @@ static void MakeGUI(void)
 	
     if (!app) Cleanup(MSG(MSG_CANT_CREATE_APP));
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-
     DoMethod(cancelobj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(saveobj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
     DoMethod(useobj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_USE);
@@ -775,16 +711,14 @@ static void HandleAll(void)
 
 /*********************************************************************************************/
 
-int main(void)
+int main(int argc, char **argv)
 {
     InitLocale("System/Prefs/Time.catalog", 1);
     InitMenus();
-    OpenLibs();
     OpenTimerDev();
     OpenBattClockRes();
-    GetArguments();
+    GetArguments(argc, argv);
     InitPrefs((args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE));
-    GetVisual();
     MakeGUI();
     HandleAll();
     Cleanup(NULL);
