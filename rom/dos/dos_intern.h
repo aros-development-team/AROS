@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal types and stuff for dos
@@ -261,8 +261,8 @@ struct InternalExAllControl
 typedef struct FileHandle* FileHandlePtr;
 
 void vbuf_free(FileHandlePtr fh);
-
 APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size);
+void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG argsize, struct DosLibrary *DOSBase);
 
 LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase);
 

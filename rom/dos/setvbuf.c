@@ -2,6 +2,7 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
+
 #include <proto/exec.h>
 
 #include "dos_intern.h"
@@ -135,4 +136,47 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
     }
 
     return buf;
+}
+
+void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DOSBase)
+{
+    FileHandlePtr fhinput;
+
+    if (!fh)
+    	return;
+    fhinput = BADDR(fh);
+
+    /* Deallocate old filehandle's buffer (if any) */
+    vbuf_free(fhinput);
+
+    /* Must be always buffered or EndCLI won't work */
+    if (vbuf_alloc(fhinput, NULL, 209) && IsInteractive(fh))
+    {
+    	D(bug("[vbuf] Handle 0x%p, injecting string: %s\n", fh, argptr));
+
+	/* ugly hack */
+
+    	if (size > 0)
+    	{
+    	    if (size > 208)
+    	        size = 208;
+	    CopyMem(argptr, fhinput->fh_Buf, size);
+	}
+
+	fhinput->fh_Pos = fhinput->fh_Buf;
+        fhinput->fh_End = fhinput->fh_Buf + size;
+
+	/*
+	 * Append EOL if needed (also if there are no arguments at all).
+	 * Without this ReadArgs() calling FGets() appears to be waiting
+	 * for some real input.
+	 * CHECKME: is this correct?
+	 */
+	if ((size == 0) || (fhinput->fh_End[-1] != '\n'))
+	{
+	    fhinput->fh_End[0] = '\n';
+	    fhinput->fh_End++;
+	}
+
+    }
 }

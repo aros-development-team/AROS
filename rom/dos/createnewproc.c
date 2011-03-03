@@ -455,6 +455,14 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     if (argsize) argsize--;
 
+    /*
+     * Inject command arguments to the beginning of input handle. Guru Book mentions this.
+     * This fixes for example AmigaOS' C:Execute.
+     * CHECKME: is this correct? May be this applies only to CLI processes?
+     */
+    D(bug("argsize: %u argstr: %s\n", argsize, argptr));
+    vbuf_inject(process->pr_CIS, argptr, argsize, DOSBase);
+
     tasktags[0].ti_Data = (IPTR)argptr;
     tasktags[1].ti_Data = argsize;
 

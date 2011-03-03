@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute a loaded command synchronously
     Lang: english
 */
-#define DEBUG 0
+
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -92,7 +92,6 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     LONG ret;
     struct StackSwapStruct sss;
     BPTR oldinput = BNULL;
-    struct FileHandle *fhinput = NULL;
 
     if(stacksize < AROS_STACKSIZE)
 	stacksize = AROS_STACKSIZE;
@@ -120,37 +119,12 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     	argsize = strlen(argptr);
 
     /*
-     * Inject command arguments to the beginning of input handle.
-     * Guru Book mentions this (but related to CreateNewProc())
-     * which means something isn't 100% correct..
-     *
-     * This fixes for example C:Execute
-     * Must be always buffered or EndCLI won't work
+     * Inject command arguments to the beginning of input handle. Guru Book mentions this.
+     * This fixes for example AmigaOS' C:Execute
      */
     oldinput = Input();
-    if (oldinput)
-    {
-    	fhinput = BADDR(oldinput);
-    	/* Deallocate old filehandle's buffer (if any) */
-    	vbuf_free(fhinput);
-
-    	if (vbuf_alloc(fhinput, NULL, 208) && IsInteractive(oldinput))
-    	{
-    	    ULONG size = argsize;
-
-    	    if (size > 0)
-    	    {
-    	    	if (size > 208)
-    	    	    size = 208;
-	        /* ugly hack */
-	        CopyMem(argptr, fhinput->fh_Buf, size);
-	        fhinput->fh_Pos = fhinput->fh_Buf;
-	        fhinput->fh_End = fhinput->fh_Buf + size;
-	    }
-	}
-    }
-
-    D(bug("RunCommand: segList @%p I=%x O=%x Args='%s'\n", BADDR(segList), BADDR(Input()), BADDR(Output()), argptr));
+    D(bug("RunCommand: segList @%p I=0x%p O=%p Args='%s' Argsize=%u\n", BADDR(segList), oldinput, Output(), argptr, argsize));
+    vbuf_inject(oldinput, argptr, argsize, DOSBase);
 
     ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
 		(LONG_FUNC)((BPTR *)BADDR(segList)+1),DOSBase);
