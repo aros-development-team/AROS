@@ -9,7 +9,6 @@
 
 #include <aros/debug.h>
 
-
 /*****************************************************************************
 
     NAME */
@@ -77,11 +76,6 @@
 
     if (size != -1)
     {
-        if (size < 208)
-        {
-            size = 208;
-        }
-
         vbuf_free(fh);
         if (!vbuf_alloc(fh, buff, size))
             return EOF;
@@ -112,6 +106,9 @@ vbuf_free(FileHandlePtr fh)
 APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
 {
     ULONG flags = FHF_BUF;
+
+    if (size < 208)
+	size = 208;
 
     if (!buf)
     {
@@ -150,7 +147,7 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     vbuf_free(fhinput);
 
     /* Must be always buffered or EndCLI won't work */
-    if (vbuf_alloc(fhinput, NULL, 209) && IsInteractive(fh))
+    if (vbuf_alloc(fhinput, NULL, size + 1) && IsInteractive(fh))
     {
     	D(bug("[vbuf] Handle 0x%p, injecting string: %s\n", fh, argptr));
 
@@ -158,25 +155,24 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
 
     	if (size > 0)
     	{
-    	    if (size > 208)
-    	        size = 208;
 	    CopyMem(argptr, fhinput->fh_Buf, size);
-	}
+	    fhinput->fh_Pos = fhinput->fh_Buf;
 
-	fhinput->fh_Pos = fhinput->fh_Buf;
+	    /*
+	     * Append EOL if there's no one.
+	     * Without it ReadArgs() blocks in FGets() reading arguments.
+	     */
+	    if (fhinput->fh_Buf[size - 1] != '\n')
+	    	fhinput->fh_Buf[size++] = '\n';
+	}
+	else
+	    /*
+	     * Inject EOF if the string is empty.
+	     * This is for the same purpose as appending EOL above, but looks more consistent.
+	     * CHECKME: are these things correct at all?
+	     */
+	    fhinput->fh_Pos = fhinput->fh_Pos + 1;
+
         fhinput->fh_End = fhinput->fh_Buf + size;
-
-	/*
-	 * Append EOL if needed (also if there are no arguments at all).
-	 * Without this ReadArgs() calling FGets() appears to be waiting
-	 * for some real input.
-	 * CHECKME: is this correct?
-	 */
-	if ((size == 0) || (fhinput->fh_End[-1] != '\n'))
-	{
-	    fhinput->fh_End[0] = '\n';
-	    fhinput->fh_End++;
-	}
-
     }
 }
