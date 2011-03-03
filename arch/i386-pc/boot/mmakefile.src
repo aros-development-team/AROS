@@ -58,8 +58,9 @@ KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) )) \
-         $(addprefix $(KOBJSDIR)/,$(KUSB) )
+         $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
+
+KOBJS_USB := $(addprefix $(KOBJSDIR)/,$(KUSB) )
 
 #MM
 kernel-setup-pc-i386 :
@@ -68,13 +69,13 @@ kernel-setup-pc-i386 :
 	%mkdirs_q $(BINDIR)/boot/grub
 
 #MM kernel-link-pc-i386 : kernel-setup-pc-i386
-kernel-link-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386
+kernel-link-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot/aros-usb-pc-i386.gz
 
 #MM
-kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-kernel-pc-i386
+kernel-link-pc-i386-quick : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot/aros-usb-pc-i386.gz
 
 #MM kernel-package-pc-i386 : kernel-link-pc-i386
-kernel-package-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386
+kernel-package-pc-i386 : $(BINDIR)/boot/aros-kernel-pc-i386.gz $(BINDIR)/boot/aros-usb-pc-i386.gz
 
 $(BINDIR)/boot/aros-kernel-pc-i386 : $(KOBJS) $(DEPLIBS)
 	@$(TARGET_CC) $(CFLAGS) -Wl,-N \
@@ -83,8 +84,18 @@ $(BINDIR)/boot/aros-kernel-pc-i386 : $(KOBJS) $(DEPLIBS)
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment \
 	    -R .note.gnu.build-id $@
 
-# $(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
-#	@gzip -9 -f $^
+$(BINDIR)/boot/aros-usb-pc-i386 : $(KOBJS_USB) $(DEPLIBS)
+	@$(TARGET_CC) $(CFLAGS) -Wl,-N \
+	    $(GENMAP) $(OSGENDIR)/boot/aros.map -T $(SRCDIR)/$(CURDIR)/kernel.lds -o $@ $(KOBJS_USB) \
+	    -static $(NOSTARTUP_LDFLAGS) -L$(LIBDIR) $(LIBS)
+	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment \
+	    -R .note.gnu.build-id $@
+
+$(BINDIR)/boot/aros-kernel-pc-i386.gz : $(BINDIR)/boot/aros-kernel-pc-i386
+	@gzip -9 -f $^
+
+$(BINDIR)/boot/aros-usb-pc-i386.gz : $(BINDIR)/boot/aros-usb-pc-i386
+	@gzip -9 -f $^
 
 #MM
 clean ::
