@@ -48,7 +48,6 @@ FILES := \
     SetClock \
     SetDate \
     SetDefaultFont \
-    SetKeyboard \
     SetLocale \
     Shutdown \
     Sort \
@@ -69,6 +68,7 @@ PURE_FILES := \
     Debug \
     Dir \
     GfxControl \
+    SetKeyboard \
     WaitX
 #   ISApnp
 
