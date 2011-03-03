@@ -75,75 +75,65 @@ enum
     NOOFARGS
 };
 
-struct Library *KeymapBase = NULL;
-struct KMSLibrary *KMSBase = NULL;
-
-static struct RDArgs *myargs;
-static IPTR args[NOOFARGS];
-static char s[256];
-
-static void Cleanup(char *msg, WORD rc)
+AROS_ENTRY(__startup static ULONG, Start,
+	   AROS_UFHA(char *, argstr, A0),
+	   AROS_UFHA(ULONG, argsize, D0),
+	   struct ExecBase *, SysBase)
 {
-    if (msg)
-    {
-    	Printf("SetKeyboard: %s\n",msg);
-    }
-    
-    if (myargs)
-    {
-	FreeArgs(myargs);
-    }
+    AROS_USERFUNC_INIT
 
+    struct DosLibrary *DOSBase;
+    struct Library *KeymapBase;
+    struct KMSLibrary *KMSBase;
+    STRPTR err = NULL;
+    ULONG rc = RETURN_FAIL;
+
+    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+    if (!DOSBase)
+    	return RETURN_FAIL;
+
+    KeymapBase = OpenLibrary("keymap.library", 0);
     if (KeymapBase)
     {
-	CloseLibrary(KeymapBase);
+    	KMSBase = (struct KMSLibrary *)OpenLibrary("kms.library", 0);
+	if (KMSBase)
+	{
+	    IPTR args[NOOFARGS];
+	    struct RDArgs *myargs = ReadArgs(ARG_TEMPLATE, args, 0);
+
+	    if (myargs)
+	    {
+	        struct KeyMapNode *kmn = OpenKeymap((STRPTR)args[ARG_NAME]);
+
+    		if (kmn)
+    		{
+		    SetKeyMapDefault(&kmn->kn_KeyMap);
+		    rc = RETURN_OK;
+		}
+	    }
+	    
+	    if (rc != RETURN_OK)
+	    	PrintFault(IoErr(), "SetKeyboard");
+
+	    if (myargs)
+	    	FreeArgs(myargs);
+
+	    CloseLibrary(&KMSBase->kms_Lib);
+	}
+	else
+	    err = "Can't opem kms.library!";
+
+    	CloseLibrary(KeymapBase);
     }
+    else
+    	err = "Can't open keymap.library!";
 
-    if (KMSBase)
-    	CloseLibrary(&KMSBase->kms_Lib);
+    if (err)
+    	Printf("SetKeyboard: %s\n", err);
 
-    exit(rc);
-}
+    CloseLibrary(&DOSBase->dl_lib);
 
-static void OpenLibs(void)
-{
-    if (!(KeymapBase = OpenLibrary("keymap.library", 0)))
-    {
-    	Cleanup("Can't open keymap.library!", RETURN_FAIL);
-    }
+    return rc;
 
-    KMSBase = (struct KMSLibrary *)OpenLibrary("kms.library", 0);
-    if (!KMSBase)
-    	Cleanup("Can't opem kms.library!", RETURN_FAIL);
-}
-
-static void GetArguments(void)
-{
-    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, 0)))
-    {
-    	Fault(IoErr(), 0, s, 255);
-	Cleanup(s, RETURN_FAIL);
-    }
-}
-
-static void Action(void)
-{
-    struct KeyMapNode *kmn = OpenKeymap((STRPTR)args[ARG_NAME]);
-
-    if (kmn)    
-	SetKeyMapDefault(&kmn->kn_KeyMap);
-    /* TODO: add error processing */
-}
-
-int __nocommandline;
-
-int main(void)
-{
-    OpenLibs();
-    GetArguments();
-    
-    Action();
-    Cleanup(0, RETURN_OK);
-    
-    return 0;
+    AROS_USERFUNC_EXIT
 }
