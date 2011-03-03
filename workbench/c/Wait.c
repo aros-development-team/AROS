@@ -56,7 +56,6 @@
 #include <proto/exec.h>
 
 #include <string.h>
-#include <stdio.h>
 
 const TEXT version[] = "$VER: Wait 41.2 (30.4.2000)\n";
 
@@ -92,7 +91,7 @@ int main (void)
 
 	if (strlen((char *)args[3]) > 5)
 	{
-	    puts("Time should be HH:MM");
+	    PutStr("Time should be HH:MM");
 	    ERROR(RETURN_FAIL);
 	}
 
@@ -104,7 +103,7 @@ int main (void)
 
 	if (!StrToDate(&dt))
 	{
-	    puts("Time should be HH:MM");
+	    PutStr("Time should be HH:MM");
 	    ERROR(RETURN_FAIL);
 	}
 	
@@ -204,7 +203,7 @@ int main (void)
 	    }
 	    else if (!devok)
 	    {
-	        puts("Wait: Could not open timer.device!");
+	        PutStr("Wait: Could not open timer.device!");
 		ERROR(RETURN_FAIL);
 	    }
 	    
