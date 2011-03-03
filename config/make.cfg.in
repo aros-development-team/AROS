@@ -113,6 +113,8 @@ COLLECT-AROS    := $(TOOLDIR)/collect-aros$(HOST_EXE_SUFFIX)
 GENMODULE       := $(TOOLDIR)/genmodule$(HOST_EXE_SUFFIX)
 CXREF           := $(TOOLDIR)/cxref$(HOST_EXE_SUFFIX)
 
+RESIDENT_BEGIN  := compiler/libinit/libentry
+
 AROS_CC         := $(TARGET_CC)
 AROS_AS         := $(TARGET_AS)
 AROS_LD         := $(TARGET_LD)
