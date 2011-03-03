@@ -678,33 +678,77 @@ asm (
 	"	rte\n"                     /* Done! */
 );
 
+static APTR oldAddTask;
+AROS_UFH4(APTR, myAddTask,
+	AROS_UFHA(struct Task *,     task,      A1),
+	AROS_UFHA(APTR,              initialPC, A2),
+	AROS_UFHA(APTR,              finalPC,   A3),
+	AROS_UFHA(struct ExecBase *, SysBase,   A6))
+{
+    AROS_USERFUNC_INIT
+
+    /* Set us up as the trap handler */
+    task->tc_TrapCode = trapHandler;
+
+    return AROS_UFC4(APTR, oldAddTask,
+	AROS_UFCA(struct Task *,     task,      A1),
+	AROS_UFCA(APTR,              initialPC, A2),
+	AROS_UFCA(APTR,              finalPC,   A3),
+	AROS_UFCA(struct ExecBase *, SysBase,   A6));
+
+    AROS_USERFUNC_EXIT
+}
+
 int main(int argc, char **argv)
 {
     APTR DOSBase;
-    APTR oldSysTrap, oldTaskTrap;
 
     if ((DOSBase = OpenLibrary("dos.library", 0))) {
-    	struct Task *task = FindTask(NULL);
-
-    	/* Select the GDBStub's trap code */
+    	struct Task *task;
+    	/* We need to patch AddTask() to set
+    	 * us up as the default stub for tc_TrapCode.
+    	 *
+    	 * Although this is not needed (yet) on AROS,
+    	 * the Shell or Workbench may set tc_TrapCode
+    	 * before AddTask() on AOS.
+    	 *
+    	 * So instead of modifying SysBase->TrapCode,
+    	 * we have to inject this into the Exec Library.
+    	 */
     	Disable();
-    	oldTaskTrap = task->tc_TrapCode;
-    	oldSysTrap = SysBase->TaskTrapCode;
-    	SysBase->TaskTrapCode = trapHandler;
-    	task->tc_TrapCode = trapHandler;
+    	oldAddTask  = SetFunction(SysBase, -47 * LIB_VECTSIZE, myAddTask);
+    	/* And set up all ready/waiting tasks to use us.
+    	 *
+    	 * We're the running task, so we won't be patched.
+    	 */
+    	for (task = (APTR)GetHead(&SysBase->TaskReady); task; task = (APTR)GetSucc(task)) {
+    	    task->tc_TrapCode = trapHandler;
+    	}
+    	for (task = (APTR)GetHead(&SysBase->TaskWait); task; task = (APTR)GetSucc(task)) {
+    	    task->tc_TrapCode = trapHandler;
+    	}
     	Enable();
 
-	gdbstub();
-	PutStr("GDB trapping enabled on the serial port\n");
-	Wait(SIGBREAKF_CTRL_C);
+    	gdbstub();
+    	PutStr("GDB trapping enabled on the serial port\n");
+    	Wait(SIGBREAKF_CTRL_C);
 
-	/* Restore old traps. Not really safe, but better than nothing */
-	Disable();
-    	SysBase->TaskTrapCode = oldSysTrap;
-    	task->tc_TrapCode = oldTaskTrap;
+    	/* Restore traps. Not really safe, but better than nothing */
+    	Disable();
+    	/* And set up all ready/waiting tasks to use the default.
+    	 *
+    	 * We're the running task, so we won't be patched.
+    	 */
+    	for (task = (APTR)GetHead(&SysBase->TaskReady); task; task = (APTR)GetSucc(task)) {
+    	    task->tc_TrapCode = SysBase->TaskTrapCode;
+    	}
+    	for (task = (APTR)GetHead(&SysBase->TaskWait); task; task = (APTR)GetSucc(task)) {
+    	    task->tc_TrapCode = SysBase->TaskTrapCode;
+    	}
+    	SetFunction(SysBase, -47 * LIB_VECTSIZE, oldAddTask);
     	Enable();
 
-	CloseLibrary(DOSBase);
+    	CloseLibrary(DOSBase);
     } else {
     	return RETURN_ERROR;
     }
