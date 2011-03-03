@@ -67,8 +67,17 @@
 	rectangle->MaxY = icon->do_Gadget.Height - 1;
     }
 
-    /* FIXME: GetIconRectangleA() is only very limited implemented */
-    
+    if (label != NULL) {
+    	struct TextExtent extent;
+
+    	TextExtent(rp, label, strlen(label), &extent);
+
+    	rectangle->MaxY += extent.te_Height;
+
+    	if (extent.te_Width > (rectangle->MaxX+1))
+    	    rectangle->MaxX  = extent.te_Width - 1;
+    }
+
     return TRUE;
     
     AROS_LIBFUNC_EXIT
