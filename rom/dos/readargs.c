@@ -1,11 +1,12 @@
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/rdargs.h>
@@ -118,9 +119,9 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     ULONG arg, numargs, nextarg;
     LONG it, item, chars;
     struct CSource lcs, *cs;
-#ifdef AROS_DOS_PACKETS
+//#ifdef AROS_DOS_PACKETS
     TEXT argbuff[256];	/* Maximum BCPL string length + ASCIIZ */
-#endif
+//#endif
 
     ASSERT_VALID_PTR(template);
     ASSERT_VALID_PTR(array);
@@ -180,12 +181,17 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     }
     else
     {
-#ifdef AROS_DOS_PACKETS
+    	D(bug("[ReadArgs] Input: 0x%p\n", Input()));
+	/*
+	 * Take arguments from input stream. They were injected there by either
+	 * runcommand.c or createnewproc.c (see vbuf_inject() routine).
+	 * This is described in Guru Book.
+	 */
+	argbuff[0] = 0;
         lcs.CS_Buffer = &argbuff[0];
         FGets(Input(), lcs.CS_Buffer, sizeof(argbuff));
-#else
-        lcs.CS_Buffer = (me->pr_Arguments ? me->pr_Arguments : (UBYTE *) "");
-#endif
+
+	D(bug("[ReadArgs] Line: %s\n", argbuff));
 
         cs1 = lcs.CS_Buffer;
 
