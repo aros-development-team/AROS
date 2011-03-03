@@ -7,7 +7,6 @@ FILES := \
     AddBuffers \
     AddDatatypes \
     Avail \
-    Beep \
     Break \
     ChangeTaskPri \
     CheckMem \
@@ -64,6 +63,7 @@ FILES := \
 
 PURE_FILES := \
     Assign \
+    Beep \
     Copy \
     Debug \
     Dir \
