@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -96,8 +96,6 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
         csm->csm_ReturnCode = Cli()->cli_ReturnCode;
 	ReplyMsg((struct Message *)csm);
     }
-
-    UnLoadSeg(ShellSeg);
 
     return rc;
 
