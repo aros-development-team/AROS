@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Beep
@@ -29,18 +29,32 @@
 ******************************************************************************/
 
 #include <proto/exec.h>
+#include <dos/dos.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <proto/intuition.h>
 #include <intuition/screens.h>
 
-const TEXT version[] = "$VER: Beep 41.1 (30.12.2000)";
+const TEXT version[] = "$VER: Beep 41.2 (03.03.2011)";
 
-int IntuitionBase_version = 0;
-
-int main()
+AROS_ENTRY(__startup static ULONG, Start,
+	   AROS_UFHA(char *, argstr, A0),
+	   AROS_UFHA(ULONG, argsize, D0),
+	   struct ExecBase *, SysBase)
 {
+    AROS_USERFUNC_INIT
+    
+    struct IntuitionBase *IntuitionBase;
+
+    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0);
+    if (!IntuitionBase)
+    	return RETURN_FAIL;
+
     DisplayBeep( NULL );
-    return 0;
+    
+    CloseLibrary(&IntuitionBase->LibNode);
+    return RETURN_OK;
+
+    AROS_USERFUNC_EXIT
 }
 
