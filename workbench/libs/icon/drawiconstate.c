@@ -2,7 +2,6 @@
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
-
 #include <workbench/icon.h>
 #include <intuition/imageclass.h>
 #include "icon_intern.h"
@@ -60,11 +59,44 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    LONG wDelta,textTop,textLeft;
+    struct NativeIcon *nativeicon;
+
+    nativeicon = GetNativeIcon(icon, LB(IconBase));
+
+    wDelta = 0;
+    textTop = 0;
+    textLeft = 0;
+
+    if (label != NULL) {
+    	struct TextExtent extent;
+
+    	if (nativeicon && nativeicon->icon35.img1.imagedata) {
+    	    wDelta = nativeicon->icon35.width;
+    	    textTop = nativeicon->icon35.height;
+    	} else {
+    	    wDelta = icon->do_Gadget.Width;
+    	    textTop = icon->do_Gadget.Height;
+    	}
+
+    	TextExtent(rp, label, strlen(label), &extent);
+
+    	/* wDelta will be the centering offset for the icon */
+    	/* textLeft is the horiz offset for the text */
+
+    	if (extent.te_Width > wDelta) {
+    	    wDelta = (extent.te_Width - wDelta) / 2;
+    	    textLeft = 0;
+    	} else {
+    	    textLeft = (wDelta - extent.te_Width) / 2;
+    	    wDelta = 0;
+    	}
+
+    	/* textTop is adjusted downwards by the size of the font */
+    	textTop += extent.te_Height;
+    }
 
 #ifndef FORCE_LUT_ICONS
-    struct NativeIcon *nativeicon;
-    
-    nativeicon = GetNativeIcon(icon, LB(IconBase));
     if (nativeicon && GfxBase && CyberGfxBase)
     {
 	ULONG bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
@@ -85,13 +117,13 @@
                 0,
                 nativeicon->iconPNG.width * sizeof(ULONG),
                 rp,
-                leftEdge,
+                leftEdge + wDelta,
                 topEdge,
                 nativeicon->iconPNG.width,
                 nativeicon->iconPNG.height,
                 0
             );
-	    return;
+	    goto draw_label;
 	}
 
         if (nativeicon->icon35.img1.imagedata)
@@ -138,22 +170,28 @@
 					       &bmrp, cgfxcoltab, 0, 0, nativeicon->icon35.width, nativeicon->icon35.height,
 					       CTABFMT_XRGB8);
     
-			    BltMaskBitMapRastPort(bm, 0, 0, rp, leftEdge, topEdge, nativeicon->icon35.width,
-						  nativeicon->icon35.height, 0xE0, img->mask);
+			    BltMaskBitMapRastPort(bm, 0, 0, rp,
+			    	    leftEdge + wDelta,
+			    	    topEdge,
+			    	    nativeicon->icon35.width,
+			    	    nativeicon->icon35.height,
+			    	    0xE0, img->mask);
 		    
 			    DeinitRastPort(&bmrp);
         
 			    FreeBitMap(bm);
                             FreeVecPooled(POOL, cgfxcoltab);
 
-			    return;
+			    goto draw_label;
 			} /* if (bm) */ 
 		    } /* if (img->mask) */
 
 		    WriteLUTPixelArray
                     (
                         img->imagedata, 0, 0, nativeicon->icon35.width,
-                        rp, cgfxcoltab, leftEdge, topEdge,
+                        rp, cgfxcoltab,
+                        leftEdge + wDelta,
+                        topEdge,
                         nativeicon->icon35.width,
                         nativeicon->icon35.height,
                         CTABFMT_XRGB8
@@ -161,7 +199,7 @@
 
 		    FreeVecPooled(POOL, cgfxcoltab);
 
-                    return;
+                    goto draw_label;
 
 		} /* if (cgfxcoltab != NULL) */
 
@@ -173,8 +211,8 @@
     {
 	    DrawImage
         (
-            rp, (struct Image *) icon->do_Gadget.SelectRender, 
-            leftEdge, topEdge
+            rp, (struct Image *)icon->do_Gadget.SelectRender,
+            leftEdge + wDelta, topEdge
         );
     }
     else if (icon->do_Gadget.GadgetRender)
@@ -184,12 +222,16 @@
 	        DrawImage
             (
                 rp, (struct Image *) icon->do_Gadget.GadgetRender,
-                leftEdge, topEdge
+                leftEdge + wDelta, topEdge
             );
 	    }
     }
 
-    /* FIXME: DrawIconStateA() is only very limited implemented */
+draw_label:
+    if (label != NULL) {
+    	Move(rp, leftEdge + textLeft, topEdge + textTop);
+    	Text(rp, label, strlen(label));
+    }
 
     AROS_LIBFUNC_EXIT
 } /* DrawIconStateA() */
