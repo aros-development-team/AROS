@@ -10,18 +10,6 @@
 #define VAR extern
 #endif
 
-VAR struct IntuitionBase        *IntuitionBase;
-VAR struct GfxBase              *GfxBase;
-
-#ifdef __AROS__
-VAR struct UtilityBase          *UtilityBase;
-VAR struct LocaleBase           *LocaleBase;
-#else
-VAR struct Library              *UtilityBase;
-VAR struct Library              *LocaleBase;
-#endif
-
-VAR struct Library  	    	*MUIMasterBase;
 VAR struct Device	    	*TimerBase;
 VAR struct Library		*BattClockBase;
 VAR struct MUI_CustomClass  	*calendarmcc;
