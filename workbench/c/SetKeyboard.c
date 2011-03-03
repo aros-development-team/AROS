@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -60,11 +60,12 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/keymap.h>
+#include <proto/kms.h>
 
 #include <string.h>
 #include <stdlib.h>
 
-const TEXT version[] = "$VER: SetKeyboard 41.2 (16.1.2000)\n";
+const TEXT version[] = "$VER: SetKeyboard 41.3 (03.03.2011)\n";
 
 #define ARG_TEMPLATE "KEYMAP/A"
 
@@ -75,14 +76,11 @@ enum
 };
 
 struct Library *KeymapBase = NULL;
-struct KeyMapResource *KeyMapResource;
+struct KMSLibrary *KMSBase = NULL;
 
 static struct RDArgs *myargs;
-static struct KeyMapNode *kmn;
-static BPTR seg;
 static IPTR args[NOOFARGS];
 static char s[256];
-static char *filename, *name;
 
 static void Cleanup(char *msg, WORD rc)
 {
@@ -91,11 +89,6 @@ static void Cleanup(char *msg, WORD rc)
     	Printf("SetKeyboard: %s\n",msg);
     }
     
-    if (seg)
-    {
-	UnLoadSeg(seg);
-    }
-
     if (myargs)
     {
 	FreeArgs(myargs);
@@ -105,28 +98,24 @@ static void Cleanup(char *msg, WORD rc)
     {
 	CloseLibrary(KeymapBase);
     }
-    
+
+    if (KMSBase)
+    	CloseLibrary(&KMSBase->kms_Lib);
+
     exit(rc);
 }
-
 
 static void OpenLibs(void)
 {
     if (!(KeymapBase = OpenLibrary("keymap.library", 0)))
     {
-    	Cleanup("Can´t open keymap.library!", RETURN_FAIL);
+    	Cleanup("Can't open keymap.library!", RETURN_FAIL);
     }
+
+    KMSBase = (struct KMSLibrary *)OpenLibrary("kms.library", 0);
+    if (!KMSBase)
+    	Cleanup("Can't opem kms.library!", RETURN_FAIL);
 }
-
-
-static void OpenKeyMapResoure(void)
-{
-    if (!(KeyMapResource = OpenResource("keymap.resource")))
-    {
-    	Cleanup("Can´t open keymap.resoure!", RETURN_FAIL);
-    }
-}
-
 
 static void GetArguments(void)
 {
@@ -135,86 +124,22 @@ static void GetArguments(void)
     	Fault(IoErr(), 0, s, 255);
 	Cleanup(s, RETURN_FAIL);
     }
-    
-    filename = (char *)args[ARG_NAME];
-    name = FilePart(filename);
 }
-
-
-static struct KeyMapNode *KeymapAlreadyOpen(void)
-{
-    struct Node *node;
-    struct KeyMapNode *kmn = NULL;
-    
-    Forbid();
-    
-    ForeachNode(&KeyMapResource->kr_List, node)
-    {
-	if (!stricmp(name, node->ln_Name))
-	{
-	    kmn = (struct KeyMapNode *)node;
-	    break;
-	}
-    }
-    
-    Permit();
-    
-    return kmn;
-}
-
 
 static void Action(void)
 {
-    kmn = KeymapAlreadyOpen();
-    
-    if (!kmn)
-    {
-	struct KeyMapNode *kmn_check;
-	
-	if (name == filename)
-	{
-            strcpy(s, "DEVS:Keymaps");
-	    AddPart(s, name, 255);
-	}
-	else
-	{
-            strcpy(s, filename);
-	}
-	
-	if (!(seg = LoadSeg(s)))
-	{
-            Fault(IoErr(), 0, s, 255);
-	    Cleanup(s, RETURN_FAIL);
-	}
-	
-	kmn = (struct KeyMapNode *) (((UBYTE *)BADDR(seg)) + sizeof(APTR));
-	
-	Forbid();    
-	
-	if ((kmn_check = KeymapAlreadyOpen()))
-	{
-            kmn = kmn_check;
-	}
-	else
-	{
-	    AddHead(&KeyMapResource->kr_List, &kmn->kn_Node);
-            seg = 0;
-	}
-	
-	Permit();
-	
-    }  /* if (!kmn) */
-    
-    SetKeyMapDefault(&kmn->kn_KeyMap);
-}
+    struct KeyMapNode *kmn = OpenKeymap((STRPTR)args[ARG_NAME]);
 
+    if (kmn)    
+	SetKeyMapDefault(&kmn->kn_KeyMap);
+    /* TODO: add error processing */
+}
 
 int __nocommandline;
 
 int main(void)
 {
     OpenLibs();
-    OpenKeyMapResoure();
     GetArguments();
     
     Action();
