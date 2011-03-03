@@ -1,6 +1,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <devices/input.h>
+#include <devices/rawkeycodes.h>
 #include <libraries/kms.h>
 #include <proto/exec.h>
 #include <proto/keymap.h>
@@ -24,7 +25,7 @@ AROS_LH4(WORD, patch_MapRawKey,
      * Otherwise we can stick with alternate keymap
      * and no way to switch back to default one.
      */
-    if (kmsbase->pub.kms_SwitchCode != KMS_DISABLE)
+    if (kmsbase->pub.kms_SwitchQual != KMS_QUAL_DISABLE)
     {
 	if (kmsbase->active)
 	    keyMap = kmsbase->pub.kms_AltKeymap;
@@ -50,7 +51,7 @@ AROS_LH5(LONG, patch_MapANSI,
 {
     AROS_LIBFUNC_INIT
 
-    if (kmsbase->pub.kms_SwitchCode != KMS_DISABLE)
+    if (kmsbase->pub.kms_SwitchQual != KMS_QUAL_DISABLE)
     {
 	if (kmsbase->active)
 	    keyMap = kmsbase->pub.kms_AltKeymap;
@@ -78,12 +79,23 @@ AROS_UFH2(static struct InputEvent *, kms_InputHandler,
 	D(bug("[KMS] RAWKEY: qualifier 0x%04X, code 0x%04X\n", event->ie_Qualifier, event->ie_Code));
 
 	/* 0x03FF masks out all mouse qualifiers. I'm too lazy to type them all by names. */
-	if (((event->ie_Qualifier & 0x03FF) == kmsbase->pub.kms_SwitchQual) &&
-	     (event->ie_Code      	    == kmsbase->pub.kms_SwitchCode))
+	if ((event->ie_Qualifier & 0x03FF) == kmsbase->pub.kms_SwitchQual)
 	{
-	    /* Switch keymap and swallow the event */
-	    kmsbase->active = !kmsbase->active;
-	    return NULL;
+	    /*
+	     * Qualifiers match. Now switch happens if:
+	     * a) key codes match;
+	     * b) kms_SwitchCode contains KMS_CODE_NOKEY and event code is any qualifier key.
+	     * Without (b) sequence of pressing qualifier keys would matter, for example
+	     * 'lshift + rshift' would be different from 'rshift + lshift',
+	     */
+	    if (((kmsbase->pub.kms_SwitchCode == KMS_CODE_NOKEY) &&
+	         (event->ie_Code >= RAWKEY_LSHIFT) && (event->ie_Code <= RAWKEY_RAMIGA)) ||
+	        (event->ie_Code == kmsbase->pub.kms_SwitchCode))
+	    {
+	    	/* Switch keymap and swallow the event */
+	    	kmsbase->active = !kmsbase->active;
+	    	return NULL;
+	    }
 	}
     }
 
@@ -141,7 +153,7 @@ static ULONG KMS_Init(struct kms_base *KMSBase)
     KMSBase->rom_MapRawKey = SetFunction(KeymapBase, -7 * LIB_VECTSIZE, AROS_SLIB_ENTRY(patch_MapRawKey, Kms));
     KMSBase->rom_MapANSI   = SetFunction(KeymapBase, -7 * LIB_VECTSIZE, AROS_SLIB_ENTRY(patch_MapRawKey, Kms));
 
-    KMSBase->pub.kms_SwitchCode = KMS_DISABLE;
+    KMSBase->pub.kms_SwitchQual = KMS_QUAL_DISABLE;
 
     kmsbase = KMSBase;
     return TRUE;

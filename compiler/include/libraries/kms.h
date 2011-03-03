@@ -19,6 +19,7 @@ struct KMSLibrary
     struct KeyMap *kms_AltKeymap;	/* Alternate keymap pointer */
 };
 
-#define KMS_DISABLE 0xFFFF	/* Set kms_SwitchCode to this in order to turn off switcher */
+#define KMS_QUAL_DISABLE 0xFFFF	/* Set kms_SwitchQual to this in order to turn off switcher */
+#define KMS_CODE_NOKEY   0xFFFF /* Set kms_SwitchCode to this if the hotkey consists only of qualifiers */
 
 #endif
