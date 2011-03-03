@@ -1,5 +1,5 @@
 /*
-   Copyright  2003-2010, The AROS Development Team. All rights reserved.
+   Copyright  2003-2011, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -35,8 +35,10 @@ struct LocaleRegister_DATA
     Object *country;
     Object *timezone;
 
-    char *LocaleRegisterLabels[3];
+    const char *LocaleRegisterLabels[3];
     char *tab_label;
+
+    BOOL save;
 };
 
 STATIC VOID LocalePrefs2Gadgets(struct LocaleRegister_DATA *data);
@@ -318,13 +320,41 @@ IPTR LocaleRegister__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
     return DoSuperMethodA(CLASS, self, message);
 }
 
+IPTR LocaleRegister__MUIM_PrefsEditor_Save(Class *cl, Object *obj, Msg msg)
+{
+    IPTR res;
+    struct LocaleRegister_DATA *data = INST_DATA(cl, obj);
+
+    /* We set this flag in order not to call Prefs_SaveCharset() twice */
+    data->save = TRUE;
+    res = DoSuperMethodA(cl, obj, msg);
+    data->save = FALSE;
+
+    return res && Prefs_SaveCharset(TRUE);
+}
+
+IPTR LocaleRegister__MUIM_PrefsEditor_Use(Class *cl, Object *obj, Msg msg)
+{
+    struct LocaleRegister_DATA *data = INST_DATA(cl, obj);
+
+    if (!DoSuperMethodA(cl, obj, msg))
+    	return FALSE;
+
+    if (data->save)
+    	return TRUE;
+
+    return Prefs_SaveCharset(FALSE);
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_7
 (
     LocaleRegister, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                       struct opSet *,
     OM_DISPOSE,                   Msg,
     MUIM_PrefsEditor_ImportFH,    struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
-    MUIM_PrefsEditor_SetDefaults, Msg
+    MUIM_PrefsEditor_SetDefaults, Msg,
+    MUIM_PrefsEditor_Save,	  Msg,
+    MUIM_PrefsEditor_Use,	  Msg
 );
