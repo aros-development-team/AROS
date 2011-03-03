@@ -10,6 +10,8 @@
 
 #define SHOWFLAGS 1  /* Set to 1 to show Flags in the keylist */
 
+#include <libraries/kms.h>
+
 #include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -562,8 +564,8 @@ BOOL Prefs_Default(void)
     inputprefs.ip_SwitchMouseButtons   = FALSE;
 
     kmsprefs.kms_Enabled      = FALSE;
-    kmsprefs.kms_SwitchQual   = 0;
-    kmsprefs.kms_SwitchCode   = 0;
+    kmsprefs.kms_SwitchQual   = KMS_QUAL_DISABLE;
+    kmsprefs.kms_SwitchCode   = KMS_CODE_NOKEY;
     kmsprefs.kms_AltKeymap[0] = 0;
 
     return TRUE;

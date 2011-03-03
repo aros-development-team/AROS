@@ -5,6 +5,8 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <devices/rawkeycodes.h>
+#include <libraries/kms.h>
 #include <mui/HotkeyString_mcc.h>
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
@@ -15,7 +17,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "misc.h"
@@ -458,14 +460,20 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
     if (ParseIX(key, &ix))
     {
 	D(Printf("Gadgets2Prefs: IX parse error\n"));
-	kmsprefs.kms_SwitchQual = 0;
-	kmsprefs.kms_SwitchCode = 0;
+	kmsprefs.kms_SwitchQual = KMS_QUAL_DISABLE;
+	kmsprefs.kms_SwitchCode = KMS_CODE_NOKEY;
     }
     else
     {
 	D(Printf("Gadgets2Prefs: Switch qualifier 0x%04lX, code 0x%04lX\n", ix.ix_Qualifier, ix.ix_Code));
         kmsprefs.kms_SwitchQual = ix.ix_Qualifier;
-	kmsprefs.kms_SwitchCode = ix.ix_Code;
+        /*
+         * ParseIX() sets ix_Code to zero if the expressions consists only of qualifiers.
+         * This can be considered a bug, because 0x00 is a valid code for RAWKEY_TILDE key.
+         * This means that this key can't be a hotkey.
+         * CHECKME: is it the same as in AmigaOS(tm), or it's AROS bug?
+         */
+	kmsprefs.kms_SwitchCode = ix.ix_Code ? ix.ix_Code : KMS_CODE_NOKEY;
     }
 
     return TRUE;
@@ -481,7 +489,7 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     {
         IX_VERSION,
         IECLASS_RAWKEY,
-	kmsprefs.kms_SwitchCode,
+	RAWKEY_LAMIGA,
 	0xFFFF,
         kmsprefs.kms_SwitchQual,
         IX_NORMALQUALS,
@@ -489,7 +497,15 @@ static BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data)
     };
 
     D(Printf("Prefs2Gadgets: Switch qualifier 0x%04lX, code 0x%04lX\n", kmsprefs.kms_SwitchQual, kmsprefs.kms_SwitchCode));
-    
+
+    /*
+     * In order to specify qualifier-only hotkey any qualifier key code will do.
+     * We use RAWKEY_LAMIGA for this purpose.
+     * This is HotKeyString.mcc's feature.
+     */
+    if (kmsprefs.kms_SwitchCode != KMS_CODE_NOKEY)
+    	ix.ix_Code = kmsprefs.kms_SwitchCode;
+
     if (!keymap[0])
     	keymap = inputprefs.ip_Keymap;
 

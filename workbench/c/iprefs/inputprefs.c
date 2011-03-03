@@ -123,7 +123,7 @@ void InputPrefs_Handler(STRPTR filename)
 	 * It will stay disabled if the file does not contain KMSW chunk.
 	 * This is done for backwards compatibility.
 	 */
-	KMSBase->kms_SwitchCode = KMS_DISABLE;
+	KMSBase->kms_SwitchQual = KMS_QUAL_DISABLE;
 
 	while(ParseIFF(iff, IFFPARSE_SCAN) == 0)
 	{
