@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,6 +20,7 @@ VOID Prefs_Deinitialize(VOID);
 BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save);
 BOOL Prefs_ImportFH(BPTR fh);
 BOOL Prefs_ExportFH(BPTR fh);
+BOOL Prefs_SaveCharset(BOOL envarc);
 BOOL Prefs_Default(VOID);
 
 /*********************************************************************************************/
