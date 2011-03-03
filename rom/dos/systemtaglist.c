@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -115,6 +115,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     BOOL isAsynch      = FALSE;
     LONG rc            = -1;
     LONG *cliNumPtr    = NULL;
+    struct RootNode *rn = DOSBase->dl_Root;
 
     const struct TagItem *tags2 = tags;
     struct TagItem *newtags, *tag;
@@ -218,24 +219,44 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	ces_opened = TRUE;
     }
 
-    /* Load the shell */
-    /* FIXME: implement UserShell and BootShell */
-    shellseg = LoadSeg("C:Shell");
-    if (shellseg == BNULL)
-    {
-    	struct Segment *seg;
+    /*
+     * Load the shell
+     * FIXME: implement UserShell and BootShell
+     * First of all we expect its seglist to be stored in RootNode.
+     */
+    shellseg = rn->rn_ShellSegment;
 
-        D(bug("Could not load C:Shell\n"));
-        Forbid();
-        seg = FindSegment("Shell", NULL, TRUE);
-        if (seg != NULL && seg->seg_UC <= 0)
-            shellseg = seg->seg_Seg;
-        Permit();
-    }
     if (shellseg == BNULL)
     {
-        D(bug("Could not load SYSTEM:Shell\n"));
-        goto end;
+    	/* It's not loaded yet. Load it. */
+    	shellseg = LoadSeg("C:Shell");
+
+    	if (shellseg == BNULL)
+    	{
+	    /*
+	     * Strange things go here:
+	     * 1. Why this sequence? Shouldn't resident copy be used first ?
+	     * 2. Is it needed at all? C:Shell can be made resident only with C:Resident command,
+	     *    which itself needs shell to be executed.
+	     */
+    	    struct Segment *seg;
+
+            D(bug("Could not load C:Shell\n"));
+            Forbid();
+            seg = FindSegment("Shell", NULL, TRUE);
+            if (seg != NULL && seg->seg_UC <= 0)
+            	shellseg = seg->seg_Seg;
+	    Permit();
+    	}
+
+	if (shellseg == BNULL)
+    	{
+            D(bug("Could not load SYSTEM:Shell\n"));
+            goto end;
+    	}
+
+	/* Install our shell into RootNode. We will never UnLoadSeg() it. */
+    	rn->rn_ShellSegment = shellseg;
     }
 
     newtags = CloneTagItems(tags);
@@ -333,7 +354,6 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     }
 
 end:
-    UnLoadSeg(shellseg);
     if (script_opened) Close(script);
     if (cis_opened)    Close(cis);
     if (cos_opened)    Close(cos);
