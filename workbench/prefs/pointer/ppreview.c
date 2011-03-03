@@ -50,8 +50,6 @@ struct PPreview_DATA
 /*** Functions **************************************************************/
 STATIC VOID killdto(struct PPreview_DATA *data)
 {
-    ALIVE
-
     data->pprv_bm   = NULL;
     data->pprv_bmhd = NULL;
 
@@ -64,8 +62,6 @@ STATIC VOID killdto(struct PPreview_DATA *data)
 
 STATIC IPTR setup_datatype(Class *cl, Object *obj)
 {
-    ALIVE
-
     SETUP_INST_DATA;
 
     if (data->pprv_dto) killdto(data); /* Object already existed */
