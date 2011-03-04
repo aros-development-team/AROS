@@ -23,12 +23,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 
 #include LC_LIBDEFS_FILE
 #include "memory.h"
 #include "exec_intern.h"
-#include "exec_util.h"
 
 #undef kprintf /* This can't be used in the code here */
 
@@ -109,90 +109,6 @@ void SetSysBaseChkSum()
      SysBase->ChkSum = GetSysBaseChkSum(SysBase) ^ 0xffff;
 }
 
-static void reloclist(struct List *l)
-{
-	struct Node *n;
-
-	if (l->lh_Head->ln_Succ == NULL) {
-		NEWLIST(l);
-		return;
-	}
-
-	n = l->lh_Head;
-	n->ln_Pred = (struct Node*)&l->lh_Head; 
-
-	n = l->lh_TailPred;
-	n->ln_Succ = (struct Node*)&l->lh_Tail;
-}
-
-/* Move execbase to better location, used by m68k-amiga port to move exec from
- * chip or slow ram to real fast ram if autoconfig detected any real fast boards
- * RTF_SINGLETASK run level.
- * Note that oldSysBase is NOT location where to copy from but location of SysBase
- * before reset (from where to copy reset proof pointers)
- */
-struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
-{
-    ULONG totalsize, i;
-    struct ExecBase *oldsb = SysBase, *newsb;
-	
-    APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
-    APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
-
-	if (oldSysBase) {
-		ColdCapture = oldSysBase->ColdCapture;
-    		CoolCapture = oldSysBase->CoolCapture;
-    		WarmCapture = oldSysBase->WarmCapture;
-    		KickMemPtr = oldSysBase->KickMemPtr; 
-    		KickTagPtr = oldSysBase->KickTagPtr;
-    		KickCheckSum = oldSysBase->KickCheckSum;
-    	}
-
-	Remove((struct Node*)oldsb);
-
-	totalsize = oldsb->LibNode.lib_NegSize + oldsb->LibNode.lib_PosSize;
-	newsb = (struct ExecBase *)((UBYTE *)AllocMem(totalsize, MEMF_ANY) + oldsb->LibNode.lib_NegSize);
-	CopyMemQuick((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, (UBYTE*)newsb - oldsb->LibNode.lib_NegSize, totalsize);
-
-	reloclist(&newsb->LibList);
-	AddTail(&newsb->LibList, (struct Node*)newsb);
-
-	reloclist(&newsb->MemList);
-	reloclist(&newsb->ResourceList);
-	reloclist(&newsb->DeviceList);
-	reloclist(&newsb->IntrList);
-	reloclist(&newsb->PortList);
-	reloclist(&newsb->TaskReady);
-	reloclist(&newsb->TaskWait);
-	reloclist(&newsb->SemaphoreList);
-	reloclist((struct List*)&newsb->ex_MemHandlers);
-	reloclist(&newsb->TaskReady);
-	for (i = 0; i < 5; i++) {
-		reloclist(&newsb->SoftInts[i].sh_List);
-    	}
-	reloclist(&PrivExecBase(newsb)->ResetHandlers);
-	reloclist((struct List*)&PrivExecBase(newsb)->AllocMemList);
-
-	InitSemaphore(&PrivExecBase(newsb)->MemListSem);
-	InitSemaphore(&PrivExecBase(newsb)->LowMemSem);
-
-	SysBase = newsb;
-	FreeMem((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, totalsize);
-
-	if (oldSysBase) {
-    		SysBase->ColdCapture = ColdCapture;
-    		SysBase->CoolCapture = CoolCapture;
-    		SysBase->WarmCapture = WarmCapture;
-    		SysBase->KickMemPtr = KickMemPtr;
-    		SysBase->KickTagPtr = KickTagPtr;
-    		SysBase->KickCheckSum = KickCheckSum;
-    	}
-
-	SetSysBaseChkSum();
-
-	return SysBase;
-}
-
 /*
  *  PrepareExecBase() will initialize the ExecBase to default values,
  *  and not add anything yet (except for the MemHeader).
@@ -216,17 +132,16 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     ULONG negsize = 0;
     ULONG totalsize, i;
     VOID  **fp = LIBFUNCTABLE;
-    struct TagItem *tag;
+    char *args;
     APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
     APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
 
     /*
-     * Copy reset proof pointers if old SysBase is set. This routine does not check if
-     * old SysBase is valid because invalid pointers can cause crashes on some platforms.
-     * This needs to be done in platform's code. Check routine should zero out SysBase
-     * if it is invalid.
+     * Copy reset proof pointers if old SysBase is valid.
+     * Additional platform-specific code is needed in order to test
+     * address validity. This routine should zero out SysBase if it is invalid.
      */
-    if (SysBase)
+    if (IsSysBaseValid(SysBase))
     {
 	ColdCapture  = SysBase->ColdCapture;
     	CoolCapture  = SysBase->CoolCapture;
@@ -338,11 +253,10 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     SysBase->PowerSupplyFrequency = 1;
 
     /* Parse some arguments from command line */
-    tag = Exec_FindTagItem(KRN_CmdLine, msg);
-    if (tag && tag->ti_Data)
+    args = (char *)LibGetTagData(KRN_CmdLine, 0, msg);
+    if (args)
     {
 	char *s;
-	char *args = (char *)tag->ti_Data;
 
 	/* Set VBlank and EClock frequencies if specified */
 	s = strstr(args, "vblank=");

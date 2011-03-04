@@ -1,7 +1,5 @@
-/*
- * Kernel's own implementation of TagItem utility functions.
- * It is needed because kernel.resource is initialized long
- * before utility.library and therefore can't use it.
- */
-struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
-intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, struct TagItem *tagList);
+#include <proto/alib.h>
+
+/* Obsolete names, do not use them. Use names from libamiga */
+#define krnNextTagItem LibNextTagItem
+#define krnGetTagData  LibGetTagData

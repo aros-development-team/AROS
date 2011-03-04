@@ -23,7 +23,7 @@ AROS_LH4(BOOL, PrepareContext,
 	 AROS_LHA(VOLATILE struct Task *, task,       A0),
 	 AROS_LHA(APTR,                   entryPoint, A1),
 	 AROS_LHA(APTR,                   fallBack,   A2),
-	 AROS_LHA(struct TagItem *,       tagList,    A3),
+	 AROS_LHA(const struct TagItem *, tagList,    A3),
 	 struct ExecBase *, SysBase, 6, Exec)
 {
     AROS_LIBFUNC_INIT
@@ -42,7 +42,7 @@ AROS_LH4(BOOL, PrepareContext,
     if (!ctx)
 	return FALSE;
 
-    while ((t = Exec_NextTagItem(&tagList)))
+    while ((t = LibNextTagItem(&tagList)))
     {
     	switch(t->ti_Tag)
 	{
