@@ -9,7 +9,7 @@
 #include <proto/disk.h>
 #include <resources/disk.h>
 
-AROS_LH1(BOOL, FreeUnit,
+AROS_LH1(void, FreeUnit,
 	 AROS_LHA(LONG, unitNum, D0),
 	 struct DiscResource *, DiskBase, 2, Disk)
 {
