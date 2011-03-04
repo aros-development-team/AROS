@@ -350,7 +350,7 @@ int bootstrap(int argc, char ** argv)
 #endif
 
     fprintf(stderr, "[Bootstrap] entering kernel@%p...\n", kernel_entry);
-    i = kernel_entry(km);
+    i = kernel_entry(km, AROS_BOOT_MAGIC);
 
     DisplayError("Kernel exited with code %d", i);
     return i;

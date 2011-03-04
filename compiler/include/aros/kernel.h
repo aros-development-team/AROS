@@ -2,13 +2,14 @@
 #define AROS_KERNEL_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: TagItems for the kernel.resource
     Lang: english
 */
 
+#include <aros/macros.h>
 #include <dos/elf.h>
 #include <utility/tagitem.h>
 
@@ -54,6 +55,9 @@ typedef enum
 #define KRN_HostInterface	(KRN_Dummy + 20)
 #define KRN_DebugInfo		(KRN_Dummy + 21) /* (dbg_seg_t *) */
 #define KRN_BootLoader          (KRN_Dummy + 22)
+
+/* Magic value passed by the bootstrap as second parameter */
+#define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')
 
 /* BSS segments descriptor */
 struct KernelBSS

@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 #MM
 kernel-link-hosted-quick: $(BINDIR)/boot/aros-strap-hosted
 
-KOBJS_HOSTED := $(KOBJSDIR)/bootloader_resource.o $(KOBJSDIR)/dosboot_resource.o
+KOBJS_HOSTED := $(GENDIR)/$(RESIDENT_BEGIN).o $(KOBJSDIR)/bootloader_resource.o $(KOBJSDIR)/dosboot_resource.o
 
 $(BINDIR)/boot/aros-strap-hosted: $(KOBJS_HOSTED)
 	@$(ECHO) Linking $@...
@@ -17,3 +17,6 @@ $(BINDIR)/boot/aros-strap-hosted: $(KOBJS_HOSTED)
 	@$(TARGET_CC) $(GENMAP) $(GENDIR)/boot/kernel-hosted.map \
 	  -o $@ $^ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm
+
+# This takes care about $(RESIDENT_BEGIN).o
+include $(SRCDIR)/config/make.tail
