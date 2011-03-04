@@ -41,6 +41,7 @@ FILES	:= \
 
 USER_CFLAGS := -I$(SRCDIR)/rom/dos \
 	       -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 #MM- workbench-c : workbench-c-shellcommands
 #MM- workbench-c-quick : workbench-c-shellcommands-quick
@@ -61,8 +62,8 @@ $(OBJDIR)/NewCLI.o : $(OBJDIR)/NewShell.o
 
 USER_CFLAGS := -I$(SRCDIR)/rom/dos \
 	       -include $(SRCDIR)/workbench/c/shellcommands/shcommands_embedded.h \
-	       -D__NOLIBBASE__ \
-	       $(PARANOIA_CFLAGS)
+	       -D__NOLIBBASE__
+USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 OBJDIR := $(OBJDIR).kernel
 
