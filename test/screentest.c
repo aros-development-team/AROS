@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 			}
 		        CloseScreen(screen);
 		    } else
-		        printf("Failed to open screen, error: %d\n", oserr);
+		        printf("Failed to open screen, error: %d\n", (int)oserr);
 		    FreeArgs(rda);
 	        } else
 		    printf("Error parsing arguments\n");

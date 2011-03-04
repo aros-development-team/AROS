@@ -16,7 +16,7 @@ int main(void)
     printf("exec.library v%u.%u\n", SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision);
     printf("VBlank frequency: %u\n", SysBase->VBlankFrequency);
     printf("PSU    frequency: %u\n", SysBase->PowerSupplyFrequency);
-    printf("EClock frequency: %u\n\n", SysBase->ex_EClockFrequency);
+    printf("EClock frequency: %u\n\n", (unsigned int)SysBase->ex_EClockFrequency);
     
     mp = CreateMsgPort();
     if (mp) {
@@ -30,7 +30,7 @@ int main(void)
 		ULONG seconds;
 	    
 		printf("timer.device v%u.%u\n", TimerBase->dd_Library.lib_Version, TimerBase->dd_Library.lib_Revision);
-		printf("EClock frequency reported: %u\n\n", ReadEClock(&clock));
+		printf("EClock frequency reported: %u\n\n", (unsigned int)ReadEClock(&clock));
 		ReadEClock(&clock);
 		GetSysTime(&tv);
 		seconds = tv.tv_secs + 10;
@@ -42,14 +42,14 @@ int main(void)
 		    ReadEClock(&clock);
 		    GetSysTime(&tv);
 		    if (oclock.ev_hi > clock.ev_hi || (oclock.ev_hi == clock.ev_hi && oclock.ev_lo > clock.ev_lo)) {
-		    	printf("\n\nFAIL: EClock old: %08x.%08x new: %08x.%08x\n", oclock.ev_hi, oclock.ev_lo, clock.ev_hi, clock.ev_lo); 
+		    	printf("\n\nFAIL: EClock old: %08x.%08x new: %08x.%08x\n", (unsigned int)oclock.ev_hi, (unsigned int)oclock.ev_lo, (unsigned int)clock.ev_hi, (unsigned int)clock.ev_lo); 
 			break;
 		    }
 		    if (otv.tv_secs > tv.tv_secs || (otv.tv_secs == tv.tv_secs && otv.tv_micro >= tv.tv_micro) || tv.tv_micro >= 1000000) {
-		    	printf("\n\nFAIL: SysTime old: %u.%06u new: %u.%06u\n", otv.tv_secs, otv.tv_micro, tv.tv_secs, tv.tv_micro); 
+		    	printf("\n\nFAIL: SysTime old: %u.%06u new: %u.%06u\n", (unsigned int)otv.tv_secs, (unsigned int)otv.tv_micro, (unsigned int)tv.tv_secs, (unsigned int)tv.tv_micro); 
 			break;
 		    }
-		    printf("%08x.%08x %u.%06u\r", clock.ev_hi, clock.ev_lo, tv.tv_secs, tv.tv_micro);
+		    printf("%08x.%08x %u.%06u\r", (unsigned int)clock.ev_hi, (unsigned int)clock.ev_lo, (unsigned int)tv.tv_secs, (unsigned int)tv.tv_micro);
 		}
 		printf("\n\n");
 

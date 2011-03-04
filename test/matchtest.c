@@ -154,7 +154,7 @@ LONG MyMatchFirst(STRPTR pat, struct AnchorPath * AP)
       
       firstlock = Lock(ParsedPattern, ACCESS_READ);
       /* check whether an error occurred */
-      if (NULL == firstlock)
+      if (BNULL == firstlock)
       {
         FreeMem(ParsedPattern, PatLength);
         return ERROR_DIR_NOT_FOUND; /* hope that's the right one... */
@@ -336,7 +336,7 @@ LONG MyMatchNext(struct AnchorPath * AP)
         UnLock(AC->an_Lock);
 
 
-      AC->an_Lock = NULL;
+      AC->an_Lock = BNULL;
       /* Are there any previous directories??? */
       if (NULL != AC->an_Parent)
       {

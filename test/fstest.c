@@ -36,7 +36,7 @@ int size;
 		return 1;
 	}
 	lock = Lock(startpath, SHARED_LOCK);
-	if (lock == NULL)
+	if (lock == BNULL)
 	{
 		FreeVec(ead);
 		FreeDosObject(DOS_EXALLCONTROL, eac);
@@ -152,7 +152,7 @@ int specificParentCheck(BPTR lock, BPTR dlock, char *path) {
 BPTR plock;
 
 	plock = ParentDir(dlock);
-	if (plock == NULL)
+	if (plock == BNULL)
 	{
 		printf("\nFailed to get parent of %s!\n", path);
 		printf("I/O Error is %ld\n", (long)IoErr());
@@ -181,7 +181,7 @@ int i,j;
 	if (dnum<1)
 		dnum = 1;
 	lock = Lock(startpath, SHARED_LOCK);
-	if (lock == NULL)
+	if (lock == BNULL)
 	{
 		printf("\nFailed to get lock on %s!\n", startpath);
 		printf("I/O Error is %ld\n", (long)IoErr());
@@ -194,7 +194,7 @@ int i,j;
 		AddPart(path, startpath, 512);
 		AddPart(path, name, 512);
 		dlock = Lock(path, SHARED_LOCK);
-		if (dlock == NULL)
+		if (dlock == BNULL)
 		{
 			UnLock(lock);
 			printf("\nFailed to get lock on %s!\n", path);
@@ -214,7 +214,7 @@ int i,j;
 			AddPart(fpath, path, 512);
 			AddPart(fpath, name, 512);
 			flock = Lock(fpath, SHARED_LOCK);
-			if (flock == NULL)
+			if (flock == BNULL)
 			{
 				UnLock(lock);
 				UnLock(dlock);
@@ -246,7 +246,7 @@ unsigned int buffer[512];
 int i,j;
 
 	fh = Open(path, MODE_OLDFILE);
-	if (fh == NULL)
+	if (fh == BNULL)
 	{
 		printf("\nFailed to open file %s!\n", path);
 		printf("I/O Error is %ld\n", (long)IoErr());
@@ -316,7 +316,7 @@ unsigned int buffer[512];
 int i;
 
 	fh = Open(path, MODE_NEWFILE);
-	if (fh == NULL)
+	if (fh == BNULL)
 	{
 		printf("\nFailed to create file %s!\n", path);
 		printf("I/O Error is %ld\n", (long)IoErr());
@@ -391,7 +391,7 @@ char path[512];
 		AddPart(path, startpath, 512);
 		AddPart(path, name, 512);
 		dir = Lock(path, SHARED_LOCK);
-		if (dir == NULL)
+		if (dir == BNULL)
 		{
 			printf("\nFailed locking %s!\n",path);
 			printf("I/O Error is %ld\n", (long)IoErr());
@@ -420,7 +420,7 @@ char path[512];
 		AddPart(path, startpath, 512);
 		AddPart(path, name, 512);
 		dir = CreateDir(path);
-		if (dir == NULL)
+		if (dir == BNULL)
 		{
 			printf("\nFailed to create %s!\n", path);
 			printf("I/O Error is %ld\n", (long)IoErr());
@@ -447,7 +447,7 @@ int getDiskInfo(char *device, struct InfoData *id) {
 BPTR lock;
 
 	lock = Lock(device, SHARED_LOCK);
-	if (lock == NULL)
+	if (lock == BNULL)
 	{
 		printf("Failed to get lock on %s!\n", device);
 		return 1;

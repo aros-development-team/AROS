@@ -25,13 +25,13 @@ int main(int argc, char **argv) {
     }
 
     lock = Lock(argv[1], SHARED_LOCK);
-    if (lock == NULL) {
+    if (lock == BNULL) {
         PrintFault(IoErr(), "openfromlock");
         return 0;
     }
 
     fh = OpenFromLock(lock);
-    if (fh == NULL) {
+    if (fh == BNULL) {
         PrintFault(IoErr(), "openfromlock");
         UnLock(lock);
         return 0;
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     if (error == 0)
     {
         lock = DupLockFromFH(fh);
-        if (lock == NULL)
+        if (lock == BNULL)
         {
             PutStr("Couldn't duplicate lock from file handle.\n");
             error = IoErr();

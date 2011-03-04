@@ -130,7 +130,7 @@ static void openfont(void)
 	printf("  name %p (%s)\n", dfh->dfh_DF.ln_Name, dfh->dfh_DF.ln_Name);
 	printf("  FileID %x\n", dfh->dfh_FileID);
 	printf("  Revision %x\n", dfh->dfh_Revision);
-	printf("  Segment  %p\n", dfh->dfh_Segment);
+	printf("  Segment  %p\n", BADDR(dfh->dfh_Segment));
 	printf("  Name %p (%s)\n", dfh->dfh_Name, dfh->dfh_Name);
     }
     

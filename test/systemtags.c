@@ -10,7 +10,7 @@ static struct Task *t;
 
 static void StartCommand(void)
 {
-  struct FileHandle *fh = Open("S:Startup-Sequence", MODE_OLDFILE);
+  BPTR fh = Open("S:Startup-Sequence", MODE_OLDFILE);
     
   SystemTags("type in:", SYS_Input, (IPTR) fh);
     
@@ -19,7 +19,7 @@ static void StartCommand(void)
 
 int main(void)
 {
-    struct FileHandle *fh;
+    BPTR fh;
     
     SystemTags
     (

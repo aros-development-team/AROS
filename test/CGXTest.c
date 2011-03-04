@@ -162,13 +162,13 @@ int main(int argc, char *argv[])
 		printf("It does not support linear memory access!\n");
 
 	result=GetCyberMapAttr(myBitMap, CYBRMATTR_WIDTH);
-	printf("Width: %d\n", result);
+	printf("Width: %d\n", (int)result);
 
 	result=GetCyberMapAttr(myBitMap, CYBRMATTR_HEIGHT);
-	printf("Height: %d\n", result);
+	printf("Height: %d\n", (int)result);
 
 	result=GetCyberMapAttr(myBitMap, CYBRMATTR_DEPTH);
-	printf("Depth: %d\n", result);
+	printf("Depth: %d\n", (int)result);
 
 	result=GetCyberMapAttr(myBitMap, CYBRMATTR_PIXFMT);
 	printf("Pixel format: ");
@@ -222,10 +222,10 @@ int main(int argc, char *argv[])
 	printf("\n");
 
 	result=GetCyberMapAttr(myBitMap, CYBRMATTR_BPPIX);
-	printf("Bytes per pixel: %d\n", result);
+	printf("Bytes per pixel: %d\n", (int)result);
 
 	result=GetCyberMapAttr(myBitMap, CYBRMATTR_XMOD);
-	printf("Bytes per row: %d\n\n", result);
+	printf("Bytes per row: %d\n\n", (int)result);
 
 	printf("Locking BitMap and writing to it...");
 	bitMapHandle = LockBitMapTags(myBitMap,
@@ -252,9 +252,9 @@ int main(int argc, char *argv[])
 
 		printf("Locked BitMap data:\n");
 		printf("Base address: %p\n", (APTR)bm_baseaddress);
-		printf("Width: %d\n", bm_width);
-		printf("Height: %d\n", bm_height);
-		printf("Depth: %d\n", bm_depth);
+		printf("Width: %d\n", (int)bm_width);
+		printf("Height: %d\n", (int)bm_height);
+		printf("Depth: %d\n", (int)bm_depth);
 		printf("Pixel format: ");
 		switch(bm_pixfmt)
 		{
@@ -304,8 +304,8 @@ int main(int argc, char *argv[])
 				printf("UNDEFINED");
 		}
 		printf("\n");
-		printf("Bytes per pixel: %d\n", bm_bytesperpix);
-		printf("Bytes per row: %d\n", bm_bytesperrow);
+		printf("Bytes per pixel: %d\n", (int)bm_bytesperpix);
+		printf("Bytes per row: %d\n", (int)bm_bytesperrow);
 		printf("\n");
 
 		printf("Blitting BitMap to window...");

@@ -693,7 +693,7 @@ LONG My_MatchNext(struct AnchorPath *AP)
 	    
 	    UnLock(ac->an_Lock);
 	    
-	    ac->an_Lock = NULL;
+	    ac->an_Lock = BNULL;
 	    ac->an_Flags &= ~DDF_ExaminedBit;
 	    
 	    /* Make ac and AP->ap_Current point to the previous AChain */
@@ -871,11 +871,11 @@ static void my_matchme(char *pattern, BOOL all)
 
     if (error != 0)
     {
-	printf("MatchFirst: error = %d\n", error);
+	printf("MatchFirst: error = %d\n", (int)error);
     }
     else
     {
-        printf("direntrytype = %d\n", AP->ap_Info.fib_DirEntryType);
+        printf("direntrytype = %d\n", (int)AP->ap_Info.fib_DirEntryType);
         if (!(AP->ap_Flags & APF_ITSWILD) &&
 	     (AP->ap_Info.fib_DirEntryType > 0))
 	{
