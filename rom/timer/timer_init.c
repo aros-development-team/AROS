@@ -42,6 +42,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     APTR KernelBase = OpenResource("kernel.resource");
     ULONG TimerPeriod = SysBase->ex_EClockFrequency;
 
+    /* We must get EClock rate from kernel.resource. Some implementations may not provide it. */
+    if (!TimerPeriod)
+    	return FALSE;
+
     LIBBASE->tb_TimerIRQNum = -1;
     if (KernelBase && TimerPeriod)
 	LIBBASE->tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
