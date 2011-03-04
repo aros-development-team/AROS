@@ -1862,7 +1862,7 @@ LONG mount(IPTR	*params, STRPTR	name)
 
 	if (!IsEHandler && !StartupString)
         {
-	    dn->dn_Startup = (BPTR)StartupValue;
+	    dn->dn_Startup = (BPTR)(SIPTR)StartupValue;
         }
 
 	if (IsFilesystem && ((ForceLoad==0) || (HandlerString==NULL)))
