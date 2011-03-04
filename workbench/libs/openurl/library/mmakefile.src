@@ -19,7 +19,7 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
 %build_module_simple mmake=workbench-libs-openurl-lib \
     modname=openurl modtype=library \
     files=$(FILES) \
-    uselibs="amiga"
+    uselibs="amiga rom"
 
 #MM workbench-libs-openurl-clean : workbench-libs-openurl-lib-clean
 
