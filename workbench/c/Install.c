@@ -157,7 +157,7 @@ UWORD i;
 			);
 		if (retval)
 		{
-			printf("ReadError %lu\n", retval);
+			printf("ReadError %lu\n", (long)retval);
 			return 0;
 		}
 		while ((i>=6) && (volume->blockbuffer[i]))
@@ -294,10 +294,10 @@ STRPTR errstr=NULL;
 												volume->blockbuffer, 512, volume->writecommand
 											);
 										if (retval)
-											printf("WriteError %lu\n", retval);
+											printf("WriteError %lu\n", (long)retval);
 									}
 									else
-										printf("WriteErrro %lu\n", retval);
+										printf("WriteErrro %lu\n", (long)retval);
 								}
 								else
 									error = IoErr();
@@ -566,7 +566,7 @@ ULONG retval;
 			volume->blockbuffer, 512, volume->readcommand
 		);
 	if (retval)
-		printf("ReadError %lu\n", retval);
+		printf("ReadError %lu\n", (long)retval);
 	else
 	{
 		if ((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)==0x444F5300)
@@ -577,7 +577,7 @@ ULONG retval;
 					volume->blockbuffer, 512, volume->writecommand
 				);
 			if (retval)
-				printf("WriteError %lu\n", retval);
+				printf("WriteError %lu\n", (long)retval);
 		}
 	}
 }

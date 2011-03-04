@@ -567,7 +567,7 @@ int printFileData(struct AnchorPath *ap,
 		    int  fill;
 		    int  i;	/* Loop variable */
 
-		    sprintf(key, "%ld", diskKey);
+		    sprintf(key, "%ld", (long)diskKey);
 		    fill = 7 - strlen(key) - 2;
 
 		    for (i = 0; i < fill; i++)

@@ -39,7 +39,7 @@ struct TagItem tags[2];
 		printf
 		(
 			"size: %lld\n",
-			(
+			(long long)(
 				(QUAD)(de.de_HighCyl-de.de_LowCyl+1)*de.de_Surfaces*
 				(QUAD)de.de_BlocksPerTrack*(de.de_SizeBlock<<2)
 			)
@@ -65,7 +65,7 @@ struct TagItem tags[2];
 		tags[0].ti_Tag = PT_POSITION;
 		tags[0].ti_Data = (STACKIPTR)&pos;
 		GetPartitionAttrs(ph, tags);
-		printf("position: %lu\n", pos);
+		printf("position: %lu\n", (unsigned long)pos);
 	}
 	if (existsAttr(pattr, PTA_ACTIVE))
 	{
@@ -74,7 +74,7 @@ struct TagItem tags[2];
 		tags[0].ti_Tag = PT_ACTIVE;
 		tags[0].ti_Data = (STACKIPTR)&active;
 		GetPartitionAttrs(ph, tags);
-		printf("active: %lu\n", active);
+		printf("active: %lu\n", (unsigned long)active);
 	}
 	if (existsAttr(pattr, PTA_NAME))
 	{
@@ -92,7 +92,7 @@ struct TagItem tags[2];
 		tags[0].ti_Tag = PT_ACTIVE;
 		tags[0].ti_Data = (STACKIPTR)&ba;
 		GetPartitionAttrs(ph, tags);
-		printf("bootable: %lu\n", ba);
+		printf("bootable: %lu\n", (unsigned long)ba);
 	}
 	if (existsAttr(pattr, PTA_AUTOMOUNT))
 	{
@@ -101,7 +101,7 @@ struct TagItem tags[2];
 		tags[0].ti_Tag = PT_ACTIVE;
 		tags[0].ti_Data = (STACKIPTR)&am;
 		GetPartitionAttrs(ph, tags);
-		printf("automount: %lu\n", am);
+		printf("automount: %lu\n", (unsigned long)am);
 	}
 }
 
@@ -169,7 +169,7 @@ struct PartitionHandle *ph;
 			CloseRootPartition(ph);
 		}
 		else
-			printf("Could not open root partition on device %s unit %lu\n", device, unit);
+			printf("Could not open root partition on device %s unit %lu\n", device, (unsigned long)unit);
 		CloseLibrary((struct Library *)PartitionBase);
 	}
 	return retval;
@@ -189,7 +189,7 @@ WORD i,j;
 		tags[0].ti_Data = (STACKIPTR)&type;
 		GetPartitionTableAttrs(root, tags);
 		for (i=0;i<depth;i++) printf("\t");
-		printf("Partition table type = %lu\n", type);
+		printf("Partition table type = %lu\n", (unsigned long)type);
 		ph = (struct PartitionHandle *)root->table->list.lh_Head;
 		j = 0;
 		while (ph->ln.ln_Succ)
@@ -241,7 +241,7 @@ struct DeviceIO dio;
 	{
 		if (iscorrectType(dio.iotd))
 		{
-			printf("\tUnit=%lu: ", unit);
+			printf("\tUnit=%lu: ", (unsigned long)unit);
 			if (identify(dio.iotd, id))
 				printf("id\n");
 			else
