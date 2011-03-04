@@ -20,7 +20,6 @@
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
 
-#include <stdlib.h>
 #include <string.h>
 
 #include <proto/alib.h>
@@ -256,20 +255,14 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     args = (char *)LibGetTagData(KRN_CmdLine, 0, msg);
     if (args)
     {
-	char *s;
-
-	/* Set VBlank and EClock frequencies if specified */
-	s = strstr(args, "vblank=");
-	if (s)
-	    SysBase->VBlankFrequency = atoi(&s[7]);
-
-	s = strstr(args, "eclock=");
-	if (s)
-	    SysBase->ex_EClockFrequency = atoi(&s[7]);
-
-	/* Enable mungwall before the first AllocMem() */
-	s = strstr(args, "mungwall");
-	if (s)
+	/*
+	 * Enable mungwall before the first AllocMem().
+	 * Yes, we have actually already called stdAlloc() once
+	 * in order to allocate memory for SysBase itself, however
+	 * this is not a real problem because it is never going
+	 * to be freed.
+	 */
+	if (strstr(args, "mungwall"))
 	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
     }
 
