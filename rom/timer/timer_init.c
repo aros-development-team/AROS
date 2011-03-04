@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands, generic hardware-independent version
@@ -41,10 +41,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     APTR KernelBase = OpenResource("kernel.resource");
     ULONG TimerPeriod = SysBase->ex_EClockFrequency;
-
-    /* We must get EClock rate from kernel.resource. Some implementations may not provide it. */
-    if (!TimerPeriod)
-    	return FALSE;
 
     LIBBASE->tb_TimerIRQNum = -1;
     if (KernelBase && TimerPeriod)
