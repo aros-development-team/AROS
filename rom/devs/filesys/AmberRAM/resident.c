@@ -94,7 +94,7 @@ static AROS_UFH3 (APTR, Init,
    dev_node = (APTR)MakeDosEntry(dev_name, DLT_DEVICE);
    if(dev_node == NULL)
       Alert(AT_DeadEnd | AG_NoMemory);
-   dev_node->dn_Handler = (STRPTR)handler_name;
+   dev_node->dn_Handler = (BSTR)handler_name;
    dev_node->dn_StackSize = 10000;
    dev_node->dn_SegList = MKBADDR((BPTR *)Main - 1);
    dev_node->dn_Priority = 10;

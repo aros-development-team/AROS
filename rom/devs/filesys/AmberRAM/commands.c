@@ -417,7 +417,7 @@ BOOL CmdFHFromLock(struct Handler *handler, struct FileHandle *handle,
    struct Lock *lock)
 {
    LONG error = 0;
-   struct Opening *opening;
+   struct Opening *opening = NULL;
    struct Object *file;
 
    /* Check if access is allowed */
@@ -2191,7 +2191,7 @@ BOOL CmdChangeMode(struct Handler *handler, ULONG type, APTR thing, ULONG new_mo
 BOOL CmdMakeLink(struct Handler *handler, struct Lock *lock, STRPTR name,
    APTR reference, LONG link_type)
 {
-   struct Object *link, *parent, *target, *master_link;
+   struct Object *link, *parent, *target = NULL, *master_link;
    LONG error = 0, object_type;
    PINT block_diff;
    struct MinNode *node;

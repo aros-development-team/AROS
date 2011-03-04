@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 FILES := resident handler commands filesystem notification support
 
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
+USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 %build_module_simple mmake=kernel-fs-amberram \
     modname=amberram modtype=handler \
