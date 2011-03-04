@@ -42,6 +42,7 @@
 
 #define ICONDUPA_JustLoadedFromDisk ICONA_Reserved1
 
+/* This must be a power of 2 */
 #define ICONLIST_HASHSIZE 256
 
 /****************************************************************************************/
