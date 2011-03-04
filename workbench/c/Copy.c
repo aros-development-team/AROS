@@ -561,22 +561,12 @@ static STRPTR skipspaces( STRPTR buffer);
 static STRPTR skipnonspaces( STRPTR buffer);
 static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd);
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-AROS_UFH2(__startup static int, Start,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0))
-{
-    AROS_USERFUNC_INIT
-
-    struct ExecBase *SysBase = *((APTR *)4);
-#else
-AROS_UFH3(__startup static int, Start,
+__startup static AROS_ENTRY(int, Start,
 	  AROS_UFHA(char *, argstr, A0),
 	  AROS_UFHA(ULONG, argsize, D0),
-	  AROS_UFHA(struct ExecBase *, SysBase, A6))
+	  struct ExecBase *, SysBase)
 {
     AROS_USERFUNC_INIT
-#endif
 
     struct DosLibrary *DOSBase;
     struct Process *task;
