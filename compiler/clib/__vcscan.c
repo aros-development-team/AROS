@@ -23,9 +23,7 @@
  * PREV(c);     ungetc a character
  * VAL(a)       leads to 1 if a is true and valid
  */
-#ifndef AROS_NOFPU
-#	define FULL_SPECIFIERS
-#endif
+#define FULL_SPECIFIERS
 
 #define NEXT(c) ((c)=(*getc)(data),size++,incount++)
 #define PREV(c) do{if((c)!=EOF)(*ungetc)((c),data);size--;incount--;}while(0)

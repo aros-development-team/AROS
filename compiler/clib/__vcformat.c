@@ -24,16 +24,7 @@
 
 #include <aros/config.h>
 
-/* Prevent 'missing math function' problem on AROSfA */
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #define FULL_SPECIFIERS
-#endif
-
-#ifdef AROS_NOFPU
-#	ifdef FULL_SPECIFIERS
-#		undef FULL_SPECIFIERS
-#	endif
-#endif
 
 #ifndef BITSPERBYTE
 #   define BITSPERBYTE 8
