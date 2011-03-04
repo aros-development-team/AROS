@@ -196,28 +196,15 @@ struct ArgList
     IPTR devices;
 };
 
-#if defined(__AROS__) && !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-AROS_UFH3(__startup static int, Start,
+AROS_ENTRY(__startup static int, Start,
 	  AROS_UFHA(char *, argstr, A0),
 	  AROS_UFHA(ULONG, argsize, D0),
-	  AROS_UFHA(struct ExecBase *, sBase, A6))
+	  struct ExecBase *, sBase)
 {
 	AROS_USERFUNC_INIT
 	return Main(sBase);
 	AROS_USERFUNC_EXIT
 }
-#else
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-__startup
-#endif
-int Start(void)
-{
-	struct ExecBase *sBase;
-
-	sBase = *((struct ExecBase **) 4);
-	return Main(sBase);
-}
-#endif
 
 static int Main(struct ExecBase *sBase)
 {
