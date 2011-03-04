@@ -41,7 +41,7 @@
  * External early init function from exec.library
  * TODO: find some way to discover it dynamically
  */
-extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *, struct HostInterface *);
+extern struct ExecBase *PrepareExecBase(struct MemHeader *, struct TagItem *);
 
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
@@ -85,7 +85,6 @@ static const char *kernel_functions[] = {
 int __startup startup(struct TagItem *msg, ULONG magic)
 {
     void* _stack = AROS_GET_SP;
-    struct ExecBase *SysBase = NULL;
     void *hostlib;
     char *errstr;
     unsigned int i;
@@ -96,8 +95,8 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     UWORD *klo = NULL;
     UWORD *khi = NULL;
     struct mb_mmap *mmap = NULL;
-    char *args = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
+    APTR reslist;
 
     /* This bails out if the user started us from within AROS command line, as common executable */
     if (magic != AROS_BOOT_MAGIC)
@@ -123,10 +122,6 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
 	case KRN_HostInterface:
 	    hif = (struct HostInterface *)tag->ti_Data;
-	    break;
-
-	case KRN_CmdLine:
-	    args = (char *)tag->ti_Data;
 	    break;
 	}
     }
@@ -181,24 +176,28 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* We know that memory map has only one RAM element */
     bootmh = (struct MemHeader *)(IPTR)mmap->addr;
-    bug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len);
 
-    /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
+    /* Prepare the first mem header */
+    bug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len);
     krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
 
-    D(bug("[Kernel] calling PrepareExecBase(), mh_First = %p, args = %s\n", bootmh->mh_First, args));
     /*
-     * FIXME: This routine is part of exec.library, however it doesn't have an LVO
-     * (it can't have one because exec.library is not initialized yet) and is called
-     * only from here. Probably the code should be reorganized and this routine needs
-     * to be moved to kernel.resource
+     * Look for ROMTags.
+     * We do it before calling PrepareExecBase() because this routine is able to locate
+     * exec.library. Then we may have some way to figure out address of PrepareExecBase()
+     * dynamically. This will let us to completely separate kernel.resource from exec.library.
      */
-    SysBase = PrepareExecBase(bootmh, args, HostIFace);
-    D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
-
     ranges[0] = klo;
     ranges[1] = khi;
-    SysBase->ResModules = krnRomTagScanner(bootmh, ranges);
+    reslist = krnRomTagScanner(bootmh, ranges);
+
+    /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
+    D(bug("[Kernel] calling PrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
+    SysBase = NULL;	/* TODO: check SysBase validity here when warm reboot is implemented */
+    PrepareExecBase(bootmh, msg);
+
+    D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
+    SysBase->ResModules = reslist;
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections

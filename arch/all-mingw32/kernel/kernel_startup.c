@@ -46,7 +46,6 @@ static const char *kernel_functions[] = {
 int __startup startup(struct TagItem *msg)
 {
     void* _stack = AROS_GET_SP;
-    struct ExecBase *SysBase;
     void *hostlib;
     char *errstr;
     unsigned int i;
@@ -152,7 +151,8 @@ int __startup startup(struct TagItem *msg)
      * only from here. Probably the code should be reorganized and this routine needs
      * to be moved to kernel.resource
      */
-    SysBase = PrepareExecBase(mh, args, HostIFace);
+    SysBase = NULL;
+    PrepareExecBase(mh, args, HostIFace);
     D(mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
     ranges[0] = klo;

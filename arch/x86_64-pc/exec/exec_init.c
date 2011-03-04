@@ -262,7 +262,8 @@ int exec_main(struct TagItem *msg, void *entry)
     rkprintf("[exec] mh->mh_Free    = %u\n", mh->mh_Free);
 
     rkprintf("[exec] Preparing ExecBase...\n");
-    SysBase = PrepareExecBase(mh, cmd, NULL);
+    SysBase = NULL;
+    PrepareExecBase(mh, msg);
     rkprintf("[exec] SysBase 0x%p\n", SysBase);
     rkprintf("[exec] mh->mh_Free    = %u\n", mh->mh_Free);
 

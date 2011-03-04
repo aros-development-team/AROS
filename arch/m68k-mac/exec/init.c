@@ -167,7 +167,6 @@ void sputc(char c);
 
 void main_init(void)
 {
-	struct ExecBase *SysBase = NULL;
 	ULONG * m68k_USP;
 	UWORD * rom_ranges[] = {(UWORD *)0x1000 , (UWORD *)&_end, (UWORD *)~0};
 	struct MemHeader * mh =  NULL;
@@ -227,7 +226,9 @@ void main_init(void)
 	 */
 
 	rkprintf("PrepareExecBase\n");
-	SysBase = (struct ExecBase*)PrepareExecBase(mh);
+	
+	SysBase = NULL;
+	PrepareExecBase(mh, NULL);
 	rkprintf("SysBase = 4\n");
 	*(APTR *)0x4 = SysBase;
 

@@ -246,7 +246,6 @@ extern ULONG _binary_rom_disk_start;
 
 void main_init(void)
 {
-	struct ExecBase *SysBase = NULL;
 	ULONG * arm_SP_User = 0xbad0c0de;
 	ULONG * arm_SP_IRQ  = 0xbad0c0de;
 	ULONG * arm_SP_FIQ  = 0xbad0c0de;
@@ -286,7 +285,8 @@ void main_init(void)
 	   which detects "read from 4UL" commands.
 	 */
 	print_serial("preparing execbase now\n");
-	SysBase = (struct ExecBase*)PrepareExecBase(mh);
+	SysBase = NULL;
+	PrepareExecBase(mh, NULL);
 	*(APTR *)0x4 = SysBase;
 	/*
 	 * Detect the rest of the memory...
