@@ -1344,14 +1344,16 @@ STRPTR FindSegmentVER(BPTR	Segment)
 {
 	while (Segment)
 	{
-		ULONG		*MySegment;
+		void		*MySegment;
 		CONST_STRPTR	MyBuffer;
+		ULONG		BufferLen;
 		CONST_STRPTR	EndBuffer;
 		CONST_STRPTR	SegmentEnd;
 
-		MySegment	= (ULONG*) BADDR(Segment);
-		MyBuffer	= (CONST_STRPTR) &MySegment[1];
-		SegmentEnd	= ((CONST_STRPTR) MySegment) + MySegment[-1] - sizeof(ULONG) * 2;
+		MySegment	= BADDR(Segment);
+		MyBuffer	= (CONST_STRPTR) (MySegment + sizeof(BPTR));
+		BufferLen	= *(ULONG *)(MySegment - sizeof(ULONG));
+		SegmentEnd	= (CONST_STRPTR) (MySegment + (BufferLen - 1) * 4);
 		EndBuffer	= SegmentEnd - 5;
 
 		while (MyBuffer < EndBuffer)
@@ -1379,7 +1381,7 @@ STRPTR FindSegmentVER(BPTR	Segment)
 			MyBuffer++;
 		}
 
-		Segment	=(BPTR) MySegment[0];
+		Segment	=*(BPTR *)MySegment;
 	}
 
 	SetIoErr(ERROR_OBJECT_NOT_FOUND);
