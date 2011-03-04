@@ -159,9 +159,10 @@ static void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, IPTR *args);
 static void _DeferFlush(struct localdata *ld, BPTR fh);
 
 #define DeferPutStr(str) _DeferPutStr(ld,str)
-#define DeferPrintf(fmt,args...) \
-  DEBUG_ASSIGN(kprintf(fmt, ## args);) \
-  do { IPTR __args[] = {0 , ## args}; _DeferVPrintf(ld, fmt, __args + 1); } while (0)
+#define DeferPrintf(fmt,...) \
+  DEBUG_ASSIGN(kprintf(fmt, __VA_ARGS__);) \
+  do { IPTR __args[] = {0 , AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };  \
+      _DeferVPrintf(ld, fmt, __args + 1); } while (0)
 #define DeferFlush(fh) _DeferFlush(ld,fh)
 
 

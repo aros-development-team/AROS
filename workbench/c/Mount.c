@@ -233,8 +233,8 @@ void ShowFault(LONG code, char *s, ...);
 
 #define ShowError(s, ...)	\
 {				\
-    IPTR args[] = {__VA_ARGS__};\
-    ShowErrorArgs(s, args);	\
+    IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    ShowErrorArgs(s, __args);	\
 }
 
 struct DosLibrary *DOSBase;
