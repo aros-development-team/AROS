@@ -1238,7 +1238,6 @@ case "$target_os" in
 		target_tool_prefix="m68k-elf-"
 		# Needed to get the correct multilib
 		aros_config_ldflags="-${gcc_target_cpu}"
-		aros_debug_ldflags="-${gcc_target_cpu}"
 		aros_shared_ldflags="-${gcc_target_cpu}"
 		aros_kernel_ldflags="-${gcc_target_cpu}"
 		aros_target_nostdlib_ldflags="-${gcc_target_cpu}"
