@@ -16,7 +16,6 @@
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "kernel_romtags.h"
-#include "kernel_tagitems.h"
 #include "memory_intern.h"
 
 #define D(x)
@@ -36,6 +35,12 @@
 #ifndef ARCH_31BIT
 #define ARCH_31BIT 0
 #endif
+
+/*
+ * This prototype is dubbed here because proto/alib.h causes conflict
+ * because of struct timeval redefinition.
+ */
+struct TagItem *LibNextTagItem(const struct TagItem **tstate);
 
 /*
  * External early init function from exec.library
@@ -102,8 +107,10 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     if (magic != AROS_BOOT_MAGIC)
     	return -1;
 
-    while ((tag = krnNextTagItem(&tstate))) {
-	switch (tag->ti_Tag) {
+    while ((tag = LibNextTagItem(&tstate)))
+    {
+	switch (tag->ti_Tag)
+	{
 	case KRN_KernelLowest:
 	    klo = (UWORD *)tag->ti_Data;
 	    break;

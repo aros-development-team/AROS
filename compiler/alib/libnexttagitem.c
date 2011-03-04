@@ -1,11 +1,6 @@
-#include <aros/kernel.h>
-#include <utility/tagitem.h>
+#include <proto/alib.h>
 
-#include <inttypes.h>
-
-#include <kernel_tagitems.h>
-
-struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
+struct TagItem *LibNextTagItem(const struct TagItem **tagListPtr)
 {
     if (!(*tagListPtr))
 	return NULL;
@@ -36,18 +31,4 @@ struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 
         (*tagListPtr)++;
     }
-}
-
-intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, struct TagItem *tagList)
-{
-    const struct TagItem *tstate = tagList;
-    struct TagItem *tag;
-    
-    while ((tag = krnNextTagItem(&tstate)))
-    {
-	if (tag->ti_Tag == tagValue)
-	    return tag->ti_Data;
-    }
-    
-    return defaultVal;
 }

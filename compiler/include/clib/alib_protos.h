@@ -122,6 +122,11 @@ void LibDeletePool (APTR poolHeader);
 APTR LibAllocPooled (APTR poolHeader, ULONG memSize);
 void LibFreePooled (APTR poolHeader, APTR memory, ULONG memSize);
 
+/* Taglists */
+struct TagItem *LibNextTagItem(const struct TagItem **tagListPtr);
+struct TagItem *LibFindTagItem(Tag tagValue, struct TagItem *tagList);
+IPTR LibGetTagData(Tag tagValue, IPTR defaultVal, struct TagItem *tagList);
+
 /* Hook Support */
 AROS_UFP3(IPTR, HookEntry,
     AROS_UFPA(struct Hook *, hook,  A0),

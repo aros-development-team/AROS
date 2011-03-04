@@ -23,7 +23,7 @@ FUNCS := addexceptionhandler addirqhandler bug cause cli createcontext deletecon
 	 initmemory statmemory
 
 FILES := kernel_init cpu_init kernel_cpu kernel_debug kernel_intr kernel_memory_mmu \
-	 kernel_memory kernel_romtags kernel_scheduler kernel_tagitems kernel_timer
+	 kernel_memory kernel_romtags kernel_scheduler kernel_timer
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource \

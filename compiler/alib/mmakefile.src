@@ -73,6 +73,9 @@ FILES	:= \
     libcreatepool \
     libdeletepool \
     libfreepooled \
+    libfindtagitem \
+    libgettagdata \
+    libnexttagitem \
     lockbitmaptags \
     makeworkbenchobjectvisible \
     mergesortlist \
