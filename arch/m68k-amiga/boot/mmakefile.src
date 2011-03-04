@@ -104,7 +104,7 @@ $(HOSTGENDIR)/tools/romcheck: romcheck.c
 $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)rm -f $@
 	$(Q)for file in $(OBJS_$*) $(KOBJS_$*); do \
-		echo "$$file(.text .rodata .rodata.*)" >>$@; \
+		echo "$$file(.rodata .rodata.* .text)" >>$@; \
 	done
 	
 $(DISTDIR)/aros-amiga-m68k-%.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/%.ld $(SRCDIR)/$(CURDIR)/mmakefile.src \
