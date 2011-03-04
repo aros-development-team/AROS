@@ -23,6 +23,7 @@ MA 02111-1307, USA.
 */
 
 #include <aros/debug.h>
+#include <aros/asmcall.h>
 
 #include "handler_protos.h"
 
