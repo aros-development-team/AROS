@@ -1,0 +1,59 @@
+#
+#	$Id: makefile.os3,v 1.2 2005/06/08 06:54:25 damato Exp $
+#
+#	:ts=4
+#
+
+CC	= m68k-amigaos-gcc
+
+.c.o:
+	@echo "Compiling $<"
+	@$(CC) -c $(CFLAGS) -o $*.o $<
+
+###########################################################################
+
+NAME	= hello_varargs
+VERSION	= 51
+
+###########################################################################
+
+WARNINGS = \
+	-Wall -W -Wshadow -Wpointer-arith -Wsign-compare -Wmissing-prototypes \
+	-Wundef -Wbad-function-cast -Wmissing-declarations
+
+CPU = -m68020-60 -msoft-float
+OPTIONS = -DNDEBUG -D__USE_INLINE__
+OPTIMIZE = -O3 -fomit-frame-pointer -fstrength-reduce -finline-functions
+DEBUG = -g
+
+###########################################################################
+
+CFLAGS = -noixemul $(WARNINGS) $(OPTIMIZE) $(DEBUG) $(CPU) $(OPTIONS) -I. \
+         -I../../includes
+LFLAGS = -L.
+
+###########################################################################
+
+OBJS = \
+	example_varargs.o \
+
+LIBS = \
+  -lc
+
+###########################################################################
+
+all: $(NAME)
+
+$(NAME): $(OBJS)
+	@echo "Linking $@"
+	@$(CC) -o $@.debug $(CFLAGS) $(LFLAGS) $(OBJS) $(LIBS)
+	@m68k-amigaos-strip -R.comment -o $@ $@.debug
+
+###########################################################################
+
+example_varargs.o : example_varargs.c
+
+###########################################################################
+
+clean:
+	-rm *.o *.debug $(NAME)
