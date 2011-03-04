@@ -18,13 +18,15 @@
 #include <ctype.h>
 #include <math.h>
 
+#ifndef AROSC_ROM
+#define FULL_SPECIFIERS
+#endif
+
 /* some macros to cut this short
  * NEXT(c);     read next character
  * PREV(c);     ungetc a character
  * VAL(a)       leads to 1 if a is true and valid
  */
-#define FULL_SPECIFIERS
-
 #define NEXT(c) ((c)=(*getc)(data),size++,incount++)
 #define PREV(c) do{if((c)!=EOF)(*ungetc)((c),data);size--;incount--;}while(0)
 #define VAL(a)  ((a)&&size<=width)

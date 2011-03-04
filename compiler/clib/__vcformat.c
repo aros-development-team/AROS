@@ -24,7 +24,9 @@
 
 #include <aros/config.h>
 
+#ifndef AROSC_ROM
 #define FULL_SPECIFIERS
+#endif
 
 #ifndef BITSPERBYTE
 #   define BITSPERBYTE 8

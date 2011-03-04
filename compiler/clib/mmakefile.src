@@ -393,10 +393,15 @@ SHARED_ARCH := \
     vfork \
     vfork_longjmp
 
+# Note: These files are compiled differently
+#       depending on whether -DAROSC_ROM is used
+#       or not.
 ROM_ONLY := \
 	__ctype \
 	__arosc_userdata \
-	__assert_kernel
+	__assert_kernel \
+	__vcformat \
+	__vcscan
 
 ROM_COMMON := \
 	bcmp \
@@ -448,8 +453,6 @@ ROM_COMMON_ARCH := \
 ROM_STATIC := \
 	__filesystem_support \
 	__isinf \
-	__vcformat \
-	__vcscan \
 	abs \
 	atoi \
 	atol \
