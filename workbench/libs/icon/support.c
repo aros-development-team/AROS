@@ -223,31 +223,25 @@ CONST_STRPTR GetDefaultIconName(LONG type)
     }
 }
 
-/* FIXME: Probably sucks. I have no clue about this hash stuff */
+/* Use the FNV-1 hash function over the object's pointer.
+ * http://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function
+ */
 LONG CalcIconHash(struct DiskObject *dobj)
 {
-    LONG l1, l2, l3, l4, hash;
-#if __WORDSIZE == 64
-    LONG l5, l6, l7, l8;
+    const ULONG FNV1_32_Offset = 2166136261UL;
+    const ULONG FNV1_32_Prime  = 16777619UL;
+    IPTR data = (IPTR)dobj;
+    ULONG hash;
+    int i;
 
-    l5 = (((IPTR)dobj) >> 32) & 0xFF;
-    l6 = (((IPTR)dobj) >> 40) & 0xFF;
-    l7 = (((IPTR)dobj) >> 48) & 0xFF;
-    l8 = (((IPTR)dobj) >> 56) & 0xFF;
-#endif
-    
-    l1 = ((IPTR)dobj) & 0xFF;
-    l2 = (((IPTR)dobj) >> 8) & 0xFF;
-    l3 = (((IPTR)dobj) >> 16) & 0xFF;
-    l4 = (((IPTR)dobj) >> 24) & 0xFF;
-   
-    hash = (l1 + l2 + l3 + l4
-#if __WORDSIZE == 64
-	    + l5 + l6 + l7 + l8
-#endif
-	   ) % ICONLIST_HASHSIZE;
-
-    return hash;
+    hash = FNV1_32_Offset;
+    for (i = 0; i < AROS_SIZEOFPTR; i++) {
+    	    hash *= FNV1_32_Prime;
+    	    hash ^= data & 0xff;
+    	    data >>= 8;
+    }
+    	
+    return hash & (ICONLIST_HASHSIZE-1);
 }
 
 VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase)
