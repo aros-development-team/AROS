@@ -31,6 +31,7 @@ INCSUBDIRS :=	aros \
 		proto \
 		resources \
 		rexx \
+		SDI \
         scsi \
 		utility \
 		workbench
