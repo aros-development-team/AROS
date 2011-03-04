@@ -296,15 +296,10 @@ static void startread(struct filehandle *fh)
 	fh->flags |= FHFLG_ASYNCCONSOLEREAD;
 }
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-
-    /* SegList points here, must be long aligned */
-    __attribute__((aligned(4)))
-
-#endif
-
-LONG CONMain(void)
+AROS_HANDLER(LONG,CONMain)
 {
+    AROS_USERFUNC_INIT
+
 	struct MsgPort *mp;
 	struct DosPacket *dp;
 	struct Message *mn;
@@ -527,5 +522,5 @@ end:
 	replypkt(dp, DOSFALSE);
 	D(bug("[CON] %x closed\n", fh));
 	return 0;
-
+    AROS_USERFUNC_EXIT
 }

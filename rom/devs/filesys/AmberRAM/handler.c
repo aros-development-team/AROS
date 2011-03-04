@@ -47,15 +47,10 @@ static VOID ReplyPacket(struct MsgPort *proc_port, struct DosPacket *packet,
 static TEXT *BStr(struct Handler *h, UBYTE *b_str);
 static TEXT *BStr2(struct Handler *h, UBYTE *b_str);
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-
-    /* SegList points here, must be long aligned */
-    __attribute__((aligned(4)))
-
-#endif
-
-LONG Main(void)
+AROS_HANDLER(LONG, Main)
 {
+   AROS_USERFUNC_INIT
+
    struct Handler *handler;
    struct MsgPort *proc_port;
    struct DosPacket *packet;
@@ -397,6 +392,8 @@ LONG Main(void)
    DeleteHandler(handler);
 
    return RETURN_OK;
+
+   AROS_USERFUNC_EXIT
 }
 
 
