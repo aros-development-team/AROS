@@ -4,7 +4,7 @@
 /* Includeheader
 
         Name:           SDI_hook.h
-        Versionstring:  $VER: SDI_hook.h 1.23a (25.02.11)
+        Versionstring:  $VER: SDI_hook.h 1.24 (03.03.2011)
         Author:         SDI & Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
@@ -51,7 +51,7 @@
  1.21  19.05.09 : added SDISPATCHER() to generate a static dispatcher.
  1.22  24.06.10 : fixed AROS macros (Matthias Rustler).
  1.23  12.08.10 : added missing proto/alib.h include for AROS
- 1.23b 25.02.11 : fixed AROS macros for m68k (Jason McMullan)
+ 1.24  03.03.11 : fixed AROS macros for m68k (Jason McMullan)
 
 */
 
