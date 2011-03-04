@@ -1,12 +1,13 @@
+/*
+ * Copyright (C) 2006 - 2011 The AROS Development Team. All rights reserved.
+ * $Id$
+ */
+
+
 #ifndef ELFLOADER_H_
 #define ELFLOADER_H_
 
-/*
- Copyright (C) 2006 - 2010 The AROS Development Team. All rights reserved.
- $Id$
- */
-
-typedef int (*kernel_entry_fun_t)(struct TagItem *);
+typedef int (*kernel_entry_fun_t)(struct TagItem *, ULONG);
 
 int AddKernelFile(char *name);
 void FreeKernelList(void);

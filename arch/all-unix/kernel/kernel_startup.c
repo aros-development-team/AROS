@@ -82,7 +82,7 @@ static const char *kernel_functions[] = {
 /*
  * Kickstart entry point. Note that our code area is already made read-only by the bootstrap.
  */
-int __startup startup(struct TagItem *msg)
+int __startup startup(struct TagItem *msg, ULONG magic)
 {
     void* _stack = AROS_GET_SP;
     struct ExecBase *SysBase = NULL;
@@ -98,6 +98,10 @@ int __startup startup(struct TagItem *msg)
     struct mb_mmap *mmap = NULL;
     char *args = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
+
+    /* This bails out if the user started us from within AROS command line, as common executable */
+    if (magic != AROS_BOOT_MAGIC)
+    	return -1;
 
     while ((tag = krnNextTagItem(&tstate))) {
 	switch (tag->ti_Tag) {

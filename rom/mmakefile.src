@@ -93,7 +93,7 @@ KOBJ_HANDLERS := $(addprefix $(KOBJSDIR)/, $(addsuffix _handler.o, $(BASE_HANDLE
 KOBJ_HIDD     := $(addprefix $(KOBJSDIR)/, $(addsuffix _hidd.o, $(BASE_HIDD)))
 KOBJ_LIBS     := $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, $(BASE_LIBS)))
 
-KOBJS_BASE := $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD)
+KOBJS_BASE := $(GENDIR)/$(RESIDENT_BEGIN).o $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD)
 
 $(BINDIR)/boot/aros-base: $(KOBJS_BASE)
 	@$(ECHO) Linking $@...
