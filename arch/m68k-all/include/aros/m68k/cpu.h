@@ -166,37 +166,6 @@ extern void aros_not_implemented ();
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-
-#define AROS_COMPAT_SETD0(x)	do { } while (0)
-
-/* What to do with the library base in header, prototype and call */
-/* Rules:
- *    LP == LD
- *    LP cannot return basetype
- */
-#define __AROS_LH_BASE(basetype,basename)   basetype basename
-#define __AROS_LP_BASE(basetype,basename)   void *
-#define __AROS_LC_BASE(basetype,basename)   basename
-#define __AROS_LD_BASE(basetype,basename)   basetype
-
-/* How to transform an argument in header, opt prototype, call and forced
-   prototype. */
-#define __AROS_LHA(type,name,reg)     type name
-#define __AROS_LPA(type,name,reg)     type
-#define __AROS_LCA(type,name,reg)     (name)
-#define __AROS_LDA(type,name,reg)     type
-#define __AROS_UFHA(type,name,reg)    type name
-#define __AROS_UFPA(type,name,reg)    type
-#define __AROS_UFCA(type,name,reg)    (name)
-#define __AROS_UFDA(type,name,reg)    type
-#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
-#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
-#define __AROS_LCAQUAD(type,name,reg1,reg2)     (name)
-#define __AROS_LDAQUAD(type,name,reg1,reg2)     type
-
-#else /* BINCOMPAT */
-
 #define AROS_COMPAT_SETD0(x)	do { asm volatile ( "move.l %0,%%d0\n" : "=g" (x)); return; } while (0)
 
 #define A0	a0
@@ -356,6 +325,5 @@ extern void aros_not_implemented ();
     ) {						\
     	bt bn = *((bt *)4);
 
-#endif /* AROS_FLAVOUR_NATIVE */
 
 #endif /* AROS_M68K_CPU_H */
