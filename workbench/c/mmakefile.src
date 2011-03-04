@@ -73,6 +73,7 @@ PURE_FILES := \
 #   ISApnp
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/dos
+USER_CFLAGS     += $(PARANOIA_CFLAGS)
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
