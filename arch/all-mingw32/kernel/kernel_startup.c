@@ -6,6 +6,7 @@
 #include <exec/execbase.h>
 #include <exec/resident.h>
 #include <utility/tagitem.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
@@ -14,14 +15,13 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_romtags.h"
-#include "kernel_tagitems.h"
 #include "kernel_mingw32.h"
 
 /*
  * External early init function from exec.library
  * TODO: find some way to discover it dynamically
  */
-extern struct ExecBase *PrepareExecBase(struct MemHeader *, char *, struct HostInterface *);
+extern struct ExecBase *PrepareExecBase(struct MemHeader *, struct TagItem *);
 
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
@@ -43,9 +43,9 @@ static const char *kernel_functions[] = {
 };
 
 /* rom startup */
-int __startup startup(struct TagItem *msg)
+int __startup startup(struct TagItem *msg, ULONG magic)
 {
-    void* _stack = AROS_GET_SP;
+    void *_stack = AROS_GET_SP;
     void *hostlib;
     char *errstr;
     unsigned int i;
@@ -53,21 +53,23 @@ int __startup startup(struct TagItem *msg)
     struct TagItem *tag;
     const struct TagItem *tstate = msg;
     struct HostInterface *hif = NULL;
-    void *klo = NULL;
-    void *khi = NULL;
     struct mb_mmap *mmap = NULL;
-    char *args = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
-    while ((tag = krnNextTagItem(&tstate)))
+    /* Fail if we are ocassionally started from within AROS command line */
+    if (magic != AROS_BOOT_MAGIC)
+    	return -1;
+
+    while ((tag = LibNextTagItem(&tstate)))
     {
-	switch (tag->ti_Tag) {
+	switch (tag->ti_Tag)
+	{
 	case KRN_KernelLowest:
-	    klo = (UWORD *)tag->ti_Data;
+	    ranges[0] = (UWORD *)tag->ti_Data;
 	    break;
 
 	case KRN_KernelHighest:
-	    khi = (UWORD *)tag->ti_Data;
+	    ranges[1] = (UWORD *)tag->ti_Data;
 	    break;
 
 	case KRN_MMAPAddress:
@@ -81,10 +83,6 @@ int __startup startup(struct TagItem *msg)
 	case KRN_HostInterface:
 	    hif = (struct HostInterface *)tag->ti_Data;
 	    break;
-
-	case KRN_CmdLine:
-	    args = (char *)tag->ti_Data;
-	    break;
 	}
     }
 
@@ -96,7 +94,8 @@ int __startup startup(struct TagItem *msg)
     BootMsg = msg;
     HostIFace = hif;
 
-    if ((!klo) || (!khi) || (!mmap)) {
+    if ((!ranges[0]) || (!ranges[1]) || (!mmap))
+    {
 	mykprintf("[Kernel] Not enough parameters from bootstrap!\n");
 	return -1;
     }
@@ -113,10 +112,11 @@ int __startup startup(struct TagItem *msg)
 	mykprintf("[Kernel] Obsolete bootstrap interface (found v%u, need v%u)\n",
 		  HostIFace->Version, HOSTINTERFACE_VERSION);
 	return -1;
-   }
+    }
 
     hostlib = HostIFace->hostlib_Open("Libs\\Host\\kernel.dll", &errstr);
-    if (!hostlib) {
+    if (!hostlib)
+    {
 	mykprintf("[Kernel] Failed to load host-side module: %s\n", errstr);
 	HostIFace->hostlib_FreeErrorStr(errstr);
 	return -1;
@@ -152,18 +152,16 @@ int __startup startup(struct TagItem *msg)
      * to be moved to kernel.resource
      */
     SysBase = NULL;
-    PrepareExecBase(mh, args, HostIFace);
+    PrepareExecBase(mh, msg);
     D(mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
-    ranges[0] = klo;
-    ranges[1] = khi;
     SysBase->ResModules = krnRomTagScanner(mh, ranges);
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kickstart.
      */
-    krnCreateROMHeader(mh, "Kickstart ROM", klo, khi);
+    krnCreateROMHeader(mh, "Kickstart ROM", ranges[0], ranges[1]);
 
     /*
      * Stack memory header. This special memory header covers a little part of the programs

@@ -1,8 +1,4 @@
-/*
- * In fact this file can be a temporary thing. Perhaps CPU cache manipulation
- * and system rebooting should also be handled by kernel.resource.
- */
-
+#include <aros/kernel.h>
 #include <proto/exec.h>
 
 #include "../kernel/hostinterface.h"
@@ -23,8 +19,8 @@ BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct TagItem *msg)
     tag = Exec_FindTagItem(KRN_HostInterface, msg);
     if (!tag)
     	return FALSE;
-    
-    HostIFace = (strut HostInterface *)tag->ti_Data;
+
+    HostIFace = (struct HostInterface *)tag->ti_Data;
 
     KernelLib = HostIFace->hostlib_Open("kernel32.dll", NULL);
     if (!KernelLib)
