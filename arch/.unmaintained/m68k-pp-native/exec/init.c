@@ -31,7 +31,7 @@
 #include "exec_intern.h"
 #include "etask.h"
 
-extern struct ExecBase * PrepareExecBase(struct MemHeader *);
+extern struct ExecBase * PrepareExecBase(struct MemHeader *, void *);
 extern void switch_to_user_mode(void *, ULONG *);
 extern void main_init_cont(void);
 extern struct MemHeader * detect_memory(void);
@@ -155,7 +155,6 @@ extern ULONG initial_ssp;
 
 void main_init(void)
 {
-	struct ExecBase *SysBase = NULL;
 	ULONG * m68k_USP;
 	UWORD * rom_ranges[] = {(UWORD *)0x10c00000 , (UWORD *)0x10c00000 + (1024 * 1024),
 	                        (UWORD *)~0};
@@ -180,8 +179,8 @@ void main_init(void)
 	   Even with MP this addr is OK for ExecBase. We may write an int handler
 	   which detects "read from 4UL" commands.
 	 */
-
-	SysBase = (struct ExecBase*)PrepareExecBase(mh);
+	SysBase = NULL;
+	PrepareExecBase(mh, NULL);
 	*(APTR *)0x4 = SysBase;
 
 	/*

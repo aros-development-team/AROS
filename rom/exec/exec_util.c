@@ -435,3 +435,17 @@ struct TagItem *Exec_NextTagItem(struct TagItem **tagListPtr)
         (*tagListPtr)++;
     }
 }
+
+struct TagItem *Exec_FindTagItem(Tag tagValue, struct TagItem *tagList)
+{
+    const struct TagItem *tstate = tagList;
+    struct TagItem *tag;
+
+    while ((tag = Exec_NextTagItem(&tstate)))
+    {
+	if (tag->ti_Tag == tagValue)
+	    return tag;
+    }
+
+    return NULL;
+}

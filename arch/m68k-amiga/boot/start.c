@@ -562,7 +562,8 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	mh = addmemoryregion(membanks[0], membanks[1]);
 	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
-	PrepareExecBaseFromOld(mh, romloader ? NULL : oldsysbase, NULL, NULL);
+	SysBase = romloader ? NULL : oldsysbase;
+	PrepareExecBase(mh, NULL);
 
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
         SysBase->SysStkLower    = (APTR)ss_stack_lower;

@@ -22,8 +22,6 @@
 #define LIBC_NAME "libc.so"
 #endif
 
-#define HAVE_PREPAREPLATFORM
-
 struct LibCInterface
 {
     void (*exit)(int status);
@@ -39,7 +37,7 @@ struct Exec_PlatformData
     APTR HostLibBase;
     struct LibCInterface *SysIFace;
     void (*Reboot)(unsigned char warm);
-    void (*DisplayAlert)(char *text);	/* Currently used only on iOS */
+    void (*DisplayAlert)(char *text);	/* Currently used only on iOS and Android */
 };
 
 #define HostLibBase PD(SysBase).HostLibBase

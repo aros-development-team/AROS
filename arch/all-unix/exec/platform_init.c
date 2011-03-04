@@ -1,10 +1,13 @@
 #include <aros/debug.h>
+#include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <proto/hostlib.h>
+#include <proto/kernel.h>
 
 #include "../kernel/hostinterface.h"
 
 #include "exec_intern.h"
+#include "exec_util.h"
 
 static const char *libc_symbols[] = {
     "exit",
@@ -16,16 +19,18 @@ static const char *libc_symbols[] = {
     NULL
 };
 
-BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct HostInterface *HostIFace)
-{
-    pd->Reboot = HostIFace->Reboot;
-    return TRUE;
-}
-
 static int Platform_Init(struct ExecBase *SysBase)
 {
+    struct TagItem *tag;
     APTR LibCHandle;
     ULONG r;
+
+    /* Fetch restart callback routine from HostInterface */
+    tag = Exec_FindTagItem(KRN_HostInterface, KrnGetBootInfo());
+    if (!tag)
+    	return FALSE;
+
+    PD(SysBase).Reboot = ((struct HostInterface *)tag->ti_Data)->Reboot;
 
     HostLibBase = OpenResource("hostlib.resource");
     D(bug("[exec] HostLibBase %p\n", HostLibBase));

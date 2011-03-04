@@ -7,15 +7,24 @@
 
 #include "../kernel/hostinterface.h"
 #include "exec_intern.h"
+#include "exec_util.h"
 
 /*
  * Note that we are called very early, so no exec calls here! We don't have
  * ExecBase's functions table yet, only empty data structure!
  */
-BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct HostInterface *HostIFace)
+BOOL Exec_PreparePlatform(struct Exec_PlatformData *pd, struct TagItem *msg)
 {
+    struct TagItem *tag;
+    struct HostInterface *HostIFace;
     void *KernelLib, *UserLib;
     APTR  __stdcall (*GetCurrentProcess)(void);
+
+    tag = Exec_FindTagItem(KRN_HostInterface, msg);
+    if (!tag)
+    	return FALSE;
+    
+    HostIFace = (strut HostInterface *)tag->ti_Data;
 
     KernelLib = HostIFace->hostlib_Open("kernel32.dll", NULL);
     if (!KernelLib)

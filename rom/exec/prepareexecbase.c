@@ -8,6 +8,7 @@
 
 #include <aros/asmcall.h>
 #include <aros/debug.h>
+#include <aros/kernel.h>
 #include <clib/macros.h>
 #include <exec/types.h>
 #include <exec/lists.h>
@@ -27,6 +28,7 @@
 #include LC_LIBDEFS_FILE
 #include "memory.h"
 #include "exec_intern.h"
+#include "exec_util.h"
 
 #undef kprintf /* This can't be used in the code here */
 
@@ -61,21 +63,18 @@ void _aros_not_implemented(char *X)
 
 struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
 {
-	struct AROSSupportBase *AROSSupportBase;
+    struct AROSSupportBase *AROSSupportBase;
 
-	/* using stdAlloc instead of Allocate because x86_64 exec_init
-	 * has not set yet SysBase in the TLS */
-	AROSSupportBase = stdAlloc(mh, sizeof(*AROSSupportBase), MEMF_CLEAR, 0);
-	
-	AROSSupportBase->kprintf = (void *)kprintf;
-	AROSSupportBase->rkprintf = (void *)rkprintf;
-	AROSSupportBase->vkprintf = (void *)vkprintf;
+    AROSSupportBase = Allocate(mh, sizeof(struct AROSSupportBase));
 
-	/* FIXME: Add code to read in the debug options */
-	AROSSupportBase->StdOut = NULL;
-	AROSSupportBase->DebugConfig = NULL;
+    AROSSupportBase->kprintf = (void *)kprintf;
+    AROSSupportBase->rkprintf = (void *)rkprintf;
+    AROSSupportBase->vkprintf = (void *)vkprintf;
 
-	return (struct Library *)AROSSupportBase;
+    AROSSupportBase->StdOut = NULL;
+    AROSSupportBase->DebugConfig = NULL;
+
+    return (struct Library *)AROSSupportBase;
 }
 
 BOOL IsSysBaseValid(struct ExecBase *sysbase)
@@ -102,7 +101,8 @@ UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
 	sum += *p++;
      return sum;
 }
-void SetSysBaseChkSum(void)
+
+void SetSysBaseChkSum()
 {
      SysBase->ChkBase=~(IPTR)SysBase;
      SysBase->ChkSum = 0;
@@ -210,27 +210,30 @@ struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
  *  nothing really bad in the fact that global SysBase is touched here and changing this does not
  *  really win something.
  *						Pavel Fedin <pavel_fedin@mail.ru>
-*/
-
-static struct ExecBase *PrepareEB(struct MemHeader *mh, struct ExecBase *oldSysBase, char *args, struct HostInterface *data)
+ */
+struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 {
-    ULONG   negsize = 0;
+    ULONG negsize = 0;
     ULONG totalsize, i;
-    VOID  **fp      = LIBFUNCTABLE;
-
-    /* Copy reset proof pointers if oldSysBase is set. This routine does not check if
-     * oldSysBase is valid because invalid pointers can cause crashes on some platforms */
-
+    VOID  **fp = LIBFUNCTABLE;
+    struct TagItem *tag;
     APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
     APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
 
-    if (oldSysBase) {
-	ColdCapture = oldSysBase->ColdCapture;
-    	CoolCapture = oldSysBase->CoolCapture;
-    	WarmCapture = oldSysBase->WarmCapture;
-    	KickMemPtr = oldSysBase->KickMemPtr; 
-    	KickTagPtr = oldSysBase->KickTagPtr;
-    	KickCheckSum = oldSysBase->KickCheckSum;
+    /*
+     * Copy reset proof pointers if old SysBase is set. This routine does not check if
+     * old SysBase is valid because invalid pointers can cause crashes on some platforms.
+     * This needs to be done in platform's code. Check routine should zero out SysBase
+     * if it is invalid.
+     */
+    if (SysBase)
+    {
+	ColdCapture  = SysBase->ColdCapture;
+    	CoolCapture  = SysBase->CoolCapture;
+    	WarmCapture  = SysBase->WarmCapture;
+    	KickMemPtr   = SysBase->KickMemPtr; 
+    	KickTagPtr   = SysBase->KickTagPtr;
+    	KickCheckSum = SysBase->KickCheckSum;
     }
 
     /* Calculate the size of the vector table */
@@ -245,7 +248,7 @@ static struct ExecBase *PrepareEB(struct MemHeader *mh, struct ExecBase *oldSysB
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data */
-    if (!Exec_PreparePlatform(&PD(SysBase), data))
+    if (!Exec_PreparePlatform(&PD(SysBase), msg))
 	return NULL;
 #endif
 
@@ -335,9 +338,11 @@ static struct ExecBase *PrepareEB(struct MemHeader *mh, struct ExecBase *oldSysB
     SysBase->PowerSupplyFrequency = 1;
 
     /* Parse some arguments from command line */
-    if (args)
+    tag = Exec_FindTagItem(KRN_CmdLine, msg);
+    if (tag && tag->ti_Data)
     {
 	char *s;
+	char *args = (char *)tag->ti_Data;
 
 	/* Set VBlank and EClock frequencies if specified */
 	s = strstr(args, "vblank=");
@@ -354,18 +359,9 @@ static struct ExecBase *PrepareEB(struct MemHeader *mh, struct ExecBase *oldSysB
 	    PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
     }
 
-    PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
+
     SetSysBaseChkSum();
 
     return SysBase;
-}
-
-struct ExecBase *PrepareExecBase(struct MemHeader *mh, char *args, struct HostInterface *data)
-{
-    return PrepareEB(mh, NULL, args, data);
-}
-struct ExecBase *PrepareExecBaseFromOld(struct MemHeader *mh, struct ExecBase *oldSysBase, char *args, struct HostInterface *data)
-{
-    return PrepareEB(mh, oldSysBase, args, data);
 }
