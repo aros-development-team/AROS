@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macro's to make calling arexx library querying functions portable
@@ -10,6 +10,12 @@
 #define REXX_REXXCALL_H
 
 #include <exec/types.h>
+
+#ifdef __mc68000
+
+#include <rexx/rexxcall-m68k.h>
+
+#else
 
 /* Some macro's to make ARexx portable to non-m68k platforms */
 #define RexxCallQueryLibFunc(rexxmsg, libbase, offset, retargstringptr) \
@@ -34,4 +40,5 @@
      return rc; \
   })
 
+#endif
 #endif

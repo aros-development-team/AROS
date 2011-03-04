@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,7 +21,7 @@
     asm volatile("\n#define " #sym " %0 ": : "i" (val))
 #endif
 
-#define FuncOffset(x)       (int)__AROS_GETJUMPVEC(0,x)
+#define FuncOffset(x)       (long)__AROS_GETJUMPVEC(0,x)
 
 int main(void) {
     asm volatile("\n/* Macros */" ::);

@@ -39,7 +39,7 @@ INCSUBDIRS :=	aros \
 INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp))
 ARCHINCDIR    := $(SRCDIR)/arch/$(CPU)-$(ARCH)/include/
 ARCH_INCLUDES := $(subst $(ARCHINCDIR),,$(foreach d,$(addprefix $(ARCHINCDIR),$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)))
-INCLUDES      := $(filter-out rexx/rexxcall-%.h $(ARCH_INCLUDES),$(INCLUDES))
+INCLUDES      := $(filter-out $(ARCH_INCLUDES),$(INCLUDES))
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
@@ -59,14 +59,6 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
 #MM
 compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
 
-ifeq ($(TARGET_CPU),m68k)
-$(AROS_INCLUDES)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
-	@$(CP) $< $@
-
-$(GENINCDIR)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
-	@$(CP) $< $@
-endif
-
 $(AROS_INCLUDES)/%.h : %.h
 	@$(CP) $< $@
 
@@ -82,6 +74,25 @@ $(GENINCDIR)/%.hpp : %.hpp
 setup : $(INCL_DIRS)
 
 $(INCL_DIRS) :
+	@$(MKDIR) $@
+
+#MM
+includes-asm_h-$(CPU) : $(GENINCDIR)/aros/$(CPU)/asm.h
+
+.PHONY : includes-asm_h-$(CPU)
+
+$(OBJDIR)/asm.s : asm.c | $(OBJDIR)
+	@$(ECHO) Compiling $<...
+	@$(TARGET_CC) $(CFLAGS) -S $< -o $@
+
+$(GENINCDIR)/aros/$(CPU)/asm.h : $(OBJDIR)/asm.s | $(GENINCDIR)/aros/$(AROS_TARGET_CPU)
+	@$(ECHO) Generating $@...
+	@grep "^[/#][*d]" $< | sed s/[$$]//g >$@
+
+$(OBJDIR) :
+	@$(MKDIR) $@
+
+$(GENINCDIR)/aros/$(CPU) :
 	@$(MKDIR) $@
 
 #MM
