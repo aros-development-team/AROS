@@ -1,13 +1,13 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macro's to make calling arexx library querying functions portable
     Lang: English
 */
 
-#ifndef AROS_REXXCALL_H
-#define AROS_REXXCALL_H
+#ifndef AROS_REXXCALL_M68K_H
+#define AROS_REXXCALL_M68K_H
 
 /* Some macro's to make ARexx portable to non-m68k platforms */
 #define RexxCallQueryLibFunc(rexxmsg, libbase, offset, retargstringptr) \
