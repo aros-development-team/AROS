@@ -184,7 +184,7 @@
     #define LIBPROTO(name, ret, ...)                                  \
       LIBFUNC ret name(__VA_ARGS__)
     #define LIBPROTOVA(name, ret, ...)                                \
-      /*LIBFUNC ret STDARGS VARARGS68K name(__VA_ARGS__);*/
+      LIBFUNC ret STDARGS VARARGS68K name(__VA_ARGS__);
     #define LIBSTUB(name, ret, ...)                                   \
       LIBFUNC ret name(__VA_ARGS__);                                  \
       LIBFUNC ret libstub_##name(__VA_ARGS__)

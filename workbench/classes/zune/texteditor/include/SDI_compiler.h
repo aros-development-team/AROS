@@ -4,7 +4,7 @@
 /* Includeheader
 
         Name:           SDI_compiler.h
-        Versionstring:  $VER: SDI_compiler.h 1.34 (26.07.2010)
+        Versionstring:  $VER: SDI_compiler.h 1.35 (03.03.2011)
         Author:         Dirk Stoecker & Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
@@ -58,6 +58,7 @@
                   to AROS.
  1.34  26.07.10 : adapted IPTR and SIPTR definitions as the latest MorphOS SDK already
                   contains them. (tboeckel)
+ 1.35  03.03.11 : fixed AROS macros for m68k (Jason McMullan)
 
 */
 
