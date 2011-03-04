@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: exec.library resident and initialization.
@@ -182,16 +182,9 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     if (!PrivExecBase(SysBase)->PageSize)
 	PrivExecBase(SysBase)->PageSize = MEMCHUNK_TOTAL;
 
-    /*
-	Create boot task.  Sigh, we actually create a Process sized Task,
-	since DOS needs to call things which think it has a Process and
-	we don't want to overwrite memory with something strange do we?
-
-	We do this until at least we can boot dos more cleanly.
-     */
-
+    /* Create boot task */
     ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-    t  = (struct Task *)   AllocMem(sizeof(struct Process), MEMF_PUBLIC|MEMF_CLEAR);
+    t  = (struct Task *)   AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
     if( !ml || !t ) {
 	kprintf("ERROR: Cannot create Boot Task!\n");
 	Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
@@ -199,14 +192,10 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 
     ml->ml_NumEntries = 1;
     ml->ml_ME[0].me_Addr = t;
-    ml->ml_ME[0].me_Length = sizeof(struct Process);
+    ml->ml_ME[0].me_Length = sizeof(struct Task);
 
     NEWLIST(&t->tc_MemEntry);
     NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
-
-    /* It's the boot process that RunCommand()s the boot shell, so we
-       must have this list initialized */
-    NEWLIST((struct List *)&((struct Process *)t)->pr_LocalVars);
 
     AddHead(&t->tc_MemEntry,&ml->ml_Node);
 
@@ -215,7 +204,7 @@ AROS_UFH3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     t->tc_Node.ln_Pri = 0;
     t->tc_State = TS_RUN;
     t->tc_SigAlloc = 0xFFFF;
-    t->tc_SPLower = 0;	    /* This is the system's stack */
+    t->tc_SPLower = 0;		/* This is the system's boot stack. Not to be confused with supervisor stack! */
     t->tc_SPUpper = (APTR)~0UL;
     t->tc_Flags |= TF_ETASK;
 
