@@ -56,7 +56,7 @@ typedef LONG PINT;
 #endif
 
 #define MIN(A, B) (((A) < (B))? (A): (B))
-#define MEMBLOCKS(A) (((A) - 1 >> (MEM_BLOCKSHIFT)) + 1)
+#define MEMBLOCKS(A) ((((A) - 1) >> (MEM_BLOCKSHIFT)) + 1)
 #define HARDLINK(A)\
    ((struct Object *)\
    (((BYTE *)(A)) - (UPINT)&((struct Object *)NULL)->hard_link))
