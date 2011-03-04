@@ -98,8 +98,8 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
 {
     PrintNode("MonitorSpec", &mspc->ms_Node);
     printf        ("  ms_Flags               0x%04X\n",  mspc->ms_Flags);
-    printf        ("  ratioh                 %d\n"    ,  mspc->ratioh);
-    printf        ("  ratiov                 %d\n"    ,  mspc->ratiov);
+    printf        ("  ratioh                 %d\n"    ,  (int)mspc->ratioh);
+    printf        ("  ratiov                 %d\n"    ,  (int)mspc->ratiov);
     printf        ("  total_rows             %u\n"    ,  mspc->total_rows);
     printf        ("  total_colorclocks      %u\n"    ,  mspc->total_colorclocks);
     printf        ("  DeniseMaxDisplayColumn %u\n"    ,  mspc->DeniseMaxDisplayColumn);
@@ -116,7 +116,7 @@ static void PrintMonitorSpec(struct MonitorSpec *mspc)
     printf        ("  ms_maxoscan            %p\n"    ,  mspc->ms_maxoscan);
     printf        ("  ms_videoscan           %p\n"    ,  mspc->ms_videoscan);
     printf        ("  DeniseMinDisplayColumn %u\n"    ,  mspc->DeniseMinDisplayColumn);
-    printf        ("  DisplayCompatible      0x%08X\n",  mspc->DisplayCompatible);
+    printf        ("  DisplayCompatible      0x%08X\n",  (unsigned)mspc->DisplayCompatible);
     printf        ("  DisplayInfoDataBase    %p\n"    , &mspc->DisplayInfoDataBase);
     PrintList(&mspc->DisplayInfoDataBase);
     printf        ("  ms_MrgCop              %p\n"    ,  mspc->ms_MrgCop);
@@ -239,7 +239,7 @@ int main(void)
         if (modeid == INVALID_ID)
             break;
 
-	printf("ModeID 0x%08X ", modeid);
+	printf("ModeID 0x%08X ", (unsigned)modeid);
 	memset(&ni, 0, sizeof(ni));
 	len = GetDisplayInfoData(NULL, (UBYTE *)&ni, sizeof(ni), DTAG_NAME, modeid);
 	if (len > 0)
@@ -256,9 +256,9 @@ int main(void)
 	memset(&di, 0, sizeof(di));
 	len = GetDisplayInfoData(NULL, (UBYTE *)&di, sizeof(di), DTAG_DISP, modeid);
 	if (len > 0) {
-	    printf    ("DisplayInfo (%u bytes)\n", len);
+	    printf    ("DisplayInfo (%u bytes)\n", (unsigned)len);
 	    printf    ("  NotAvailable     0x%04X\n",  di.NotAvailable);
-	    printf    ("  PropertyFlags    0x%08X\n",  di.PropertyFlags);
+	    printf    ("  PropertyFlags    0x%08X\n",  (unsigned)di.PropertyFlags);
 	    PrintPoint("  Resolution      "         , &di.Resolution);
 	    printf    ("  PixelSpeed       %u\n"    ,  di.PixelSpeed);
 	    printf    ("  NumStdSprites    %u\n"    ,  di.NumStdSprites);
@@ -273,7 +273,7 @@ int main(void)
 	memset(&dims, 0, sizeof(dims));
 	len = GetDisplayInfoData(NULL, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid);
 	if (len > 0) {
-	    printf        ("DimensionInfo (%u bytes)\n", len);
+	    printf        ("DimensionInfo (%u bytes)\n", (unsigned)len);
 	    printf        ("  MaxDepth        %u\n",  dims.MaxDepth);
 	    printf        ("  MinRasterWidth  %u\n",  dims.MinRasterWidth);
 	    printf        ("  MinRasterHeight %u\n",  dims.MinRasterHeight);
@@ -290,7 +290,7 @@ int main(void)
 	memset(&mon, 0, sizeof(mon));
 	len = GetDisplayInfoData(NULL, (UBYTE *)&mon, sizeof(mon), DTAG_MNTR, modeid);
 	if (len > 0) {
-	    printf        ("MonitorInfo (%u bytes)\n", len);
+	    printf        ("MonitorInfo (%u bytes)\n", (unsigned)len);
 	    PrintName     ("  Mspc               "         , &mon.Mspc->ms_Node);
 	    PrintPoint    ("  ViewPosition       "         , &mon.ViewPosition);
 	    PrintPoint    ("  ViewResolution     "         , &mon.ViewResolution);
@@ -301,7 +301,7 @@ int main(void)
             printf        ("  Compatibility       %d\n"    ,  mon.Compatibility);
 	    PrintPoint    ("  MouseTicks         "         , &mon.MouseTicks);
 	    PrintPoint    ("  DefaultViewPosition"         , &mon.DefaultViewPosition);
-	    printf        ("  PreferredModeID     0x%08X\n",  mon.PreferredModeID);
+	    printf        ("  PreferredModeID     0x%08X\n",  (unsigned)mon.PreferredModeID);
 
 	    if (args.allspecs)
 	        mspc = NULL;

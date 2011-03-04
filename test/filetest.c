@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     if(r3>=0)
 	buffer[r3]=0;
 
-    printf("Results: %d %d %d %d \'%s\'\n",r1,r2,r3,r4,buffer);
+    printf("Results: %d %d %d %d \'%s\'\n",(int)r1,(int)r2,(int)r3,(int)r4,buffer);
     hexdump(buffer, r3);
     
     return 0;
