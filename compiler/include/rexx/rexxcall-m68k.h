@@ -19,13 +19,27 @@
 	       struct Library *, libbase, _offset, rexxcall); \
   })
 
+/* ARexx Query Functions return their arguments in BOTH
+ * A0 and D0.
+ */
 #define AROS_AREXXLIBQUERYFUNC(f,m,lt,l,o,p) \
-  AROS_LH2(ULONG, f, \
-	     AROS_LCA(struct RexxMsg *, m, A0), \
-	     AROS_LCA(STRPTR *, _retargstringptr, A1), \
-	     lt, l, o, p)
+  AROS_UFP3(ULONG, p##_##f##_wrapper, \
+	     AROS_UFPA(struct RexxMsg *, m, A0), \
+	     AROS_UFPA(STRPTR *, _retargstringptr, A1), \
+	     AROS_UFHA(lt, l, A6)); \
+  asm ( ".text\n" \
+  	".global " #p "_" #f "\n" \
+  	#p "_" #f ":\n" \
+  	"jsr " #p "_" #f "_wrapper \n" \
+  	"move.l %d0,%a0 \n" \
+  	"rts\n" ); \
+  AROS_UFH3(ULONG, p##_##f##_wrapper, \
+	     AROS_UFHA(struct RexxMsg *, m, A0), \
+	     AROS_UFHA(STRPTR *, _retargstringptr, A1), \
+	     AROS_UFHA(lt, l, A6)) { AROS_USERFUNC_INIT 
+#define AROS_AREXXLIBQUERYFUNC_END \
+    AROS_USERFUNC_EXIT }
 
-#warning FIXME: retargstringptr has to be returned in A0 also, asm has to be added
 #define ReturnRexxQuery(rc,arg) \
   *_retargstringptr = arg; \
   return rc;
