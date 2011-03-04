@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES          := coldreboot
+CFILES          := coldreboot moveexecbase
 AFILES		:= enable disable readgayle
 
 #MM kernel-exec : kernel-exec-amiga-m68k
