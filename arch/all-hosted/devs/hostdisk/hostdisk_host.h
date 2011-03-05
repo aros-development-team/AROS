@@ -14,6 +14,7 @@
 #define FILE_ATTRIBUTE_READONLY 0x00000001
 #define FILE_ATTRIBUTE_NORMAL   0x00000080
 
+#define ERROR_INVALID_FUNCTION		1L
 #define ERROR_FILE_NOT_FOUND		2L
 #define ERROR_PATH_NOT_FOUND		3L
 #define ERROR_ACCESS_DENIED		5L
@@ -40,5 +41,7 @@ struct HostInterface
     ULONG  __stdcall (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
     ULONG  __stdcall (*GetFileAttributes)(STRPTR lpFileName);
     ULONG  __stdcall (*GetFileSize)(void *hFile, ULONG *lpFileSizeHigh);
+    ULONG  __stdcall (*DeviceIoControl)(void *hDevice, ULONG dwIoControlCode, void *lpInBuffer, ULONG nInBufferSize,
+					void *lpOutBuffer, ULONG nOutBufferSize, ULONG *lpBytesReturned, void *lpOverlapped);
     ULONG  __stdcall (*GetLastError)(void);
 };

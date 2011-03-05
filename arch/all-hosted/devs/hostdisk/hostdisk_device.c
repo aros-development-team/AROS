@@ -163,6 +163,8 @@ static int GM_UNIQUENAME(Close)
 
     ObtainSemaphore(&hdskBase->sigsem);
     unit = (struct unit *)iotd->iotd_Req.io_Unit;
+    D(bug("hostdisk: close unit %u\n", unit->unitnum));
+
     if(!--unit->usecount)
     {
 	Remove(&unit->msg.mn_Node);
@@ -192,6 +194,8 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("hostdisk: command %u\n", iotd->iotd_Req.io_Command));
+    
     switch(iotd->iotd_Req.io_Command)
     {
 	case CMD_UPDATE:
