@@ -1,13 +1,13 @@
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
+#include <proto/alib.h>
 #include <proto/hostlib.h>
 #include <proto/kernel.h>
 
 #include "../kernel/hostinterface.h"
 
 #include "exec_intern.h"
-#include "exec_util.h"
 
 static const char *libc_symbols[] = {
     "exit",
@@ -26,7 +26,7 @@ static int Platform_Init(struct ExecBase *SysBase)
     ULONG r;
 
     /* Fetch restart callback routine from HostInterface */
-    tag = Exec_FindTagItem(KRN_HostInterface, KrnGetBootInfo());
+    tag = LibFindTagItem(KRN_HostInterface, KrnGetBootInfo());
     if (!tag)
     	return FALSE;
 

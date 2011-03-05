@@ -68,10 +68,6 @@ struct IntETask;
 APTR Exec_AllocTaskMem (struct Task * task, ULONG size, ULONG flags, struct ExecBase *SysBase);
 void Exec_FreeTaskMem (struct Task * task, APTR mem, struct ExecBase *SysBase);
 
-/* Obsolete names */
-#define Exec_NextTagItem LibNextTagItem
-#define Exec_FindTagItem LibFindTagItem
-
 void Exec_InitETask(struct Task *task, struct ETask *etask, struct ExecBase *SysBase);
 void Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase);
 struct Task *Exec_FindTaskByID(ULONG id, struct ExecBase *SysBase);

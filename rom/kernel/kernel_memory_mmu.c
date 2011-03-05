@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Page-based memory allocator.
@@ -9,13 +9,13 @@
 #include <aros/config.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
-#include <kernel_tagitems.h>
 #include "memory_intern.h"
 
 #define D(x)
@@ -365,7 +365,7 @@ void krnStatMemHeader(struct MemHeader *mh, const struct TagItem *query)
     IPTR *num_free       = NULL;
     BOOL do_traverse = FALSE;
 
-    while ((tag = krnNextTagItem(&query)))
+    while ((tag = LibNextTagItem(&query)))
     {
 	switch (tag->ti_Tag)
 	{
