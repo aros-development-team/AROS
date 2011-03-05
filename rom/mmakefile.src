@@ -93,14 +93,17 @@ KOBJ_HANDLERS := $(addprefix $(KOBJSDIR)/, $(addsuffix _handler.o, $(BASE_HANDLE
 KOBJ_HIDD     := $(addprefix $(KOBJSDIR)/, $(addsuffix _hidd.o, $(BASE_HIDD)))
 KOBJ_LIBS     := $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, $(BASE_LIBS)))
 
-KOBJS_BASE := $(GENDIR)/$(RESIDENT_BEGIN).o $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD)
+USELIBS := autoinit libinit amiga arossupport rom arosm hiddstubs hiddgraphicsstubs
 
-$(BINDIR)/boot/aros-base: $(KOBJS_BASE)
+KOBJS_BASE := $(GENDIR)/$(RESIDENT_BEGIN).o $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD)
+LDLIBS     := $(addprefix -l, $(USELIBS))
+DEPLIBS    := $(addprefix $(LIBDIR)/lib, $(addsuffix .a, $(USELIBS)))
+
+$(BINDIR)/boot/aros-base: $(KOBJS_BASE) $(DEPLIBS)
 	@$(ECHO) Linking $@...
 	@$(MKDIR) $(GENDIR)/boot
 	@$(TARGET_CC) $(GENMAP) $(GENDIR)/boot/kernel-base.map \
-	  -o $@ $^ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
-	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
+	  -o $@ $^ $(CONFIG_LDFLAGS) $(NOSTARTUP_LDFLAGS) -L$(LIBDIR) $(LDLIBS)
 
 # *** PKG kickstart package ***
 

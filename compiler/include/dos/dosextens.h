@@ -330,48 +330,27 @@ struct FileHandle
     UBYTE * fh_Pos;
     UBYTE * fh_End;
 
-#ifdef AROS_DOS_PACKETS
+    LONG  fh_Funcs;
+    LONG  fh_Func2;
+    APTR  fh_Func3;
+    SIPTR fh_Args;
+    APTR  fh_Arg2;
 
-    LONG fh_Funcs;
-#define fh_Func1 fh_Funcs
-    LONG fh_Func2;
-    LONG fh_Func3;
-    LONG fh_Args;
-#define fh_Arg1 fh_Args
-    LONG fh_Arg2;
-
-    /* kept here until things stabilize */
-    ULONG	    fh_Size;
-    ULONG	    fh_Flags;
-
-#else
-
-    /* The following four fields have different names and a different
-       function than their AmigaOS equivalents. The original names were:
-       fh_Funcs/fh_Func1, fh_Func2, fh_Func3, fh_Args/fh_Arg1 and fh_Arg2 */
-    ULONG	    fh_Size;
-    ULONG	    fh_Flags;   /* see below */
-      /* This is a pointer to a filesystem handler. See <dos/filesystems.h> for
-         more information. */
-    struct Device * fh_Device;
-
-    /* SDuvan: Added this and removed the #if below. This field allows us
-               to emulate packets -- specifically it makes it possible
-	       to implement the ***Pkt() functions */
-    SIPTR fh_CompatibilityHack;
-
-      /* A private pointer to a device specific filehandle structure. See
-         <dos/filesystems.h> for more information. */
-    struct Unit   * fh_Unit;
-
-#endif
-
+    /* Private AROS-specific extensions. Do not touch! */
+    ULONG fh_Size;
+    ULONG fh_Flags;
 };
 
+/* Original AmigaOS aliases */
+#define fh_Func1 fh_Funcs
+#define fh_Arg1 fh_Args
+
+/* AmigaOS4 alias for fh_Port */
 #define fh_Interactive fh_Port
-#ifndef AROS_DOS_PACKETS
-#define  fh_Arg1  fh_CompatibilityHack
-#endif
+
+/* AROS-specific. Do not use, will change! */
+#define fh_Device fh_Func3
+#define fh_Unit	  fh_Arg2
 
 /* Structure of a lock. This is provided as it may be required internally by
  * packet-based filesystems, but it is not used by dos.library and the rest of
