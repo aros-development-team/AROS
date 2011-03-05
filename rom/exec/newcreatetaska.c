@@ -63,6 +63,10 @@ static const struct newMemList MemTemplate =
 	  TASKTAG_NAME	       (STRPTR)  - A pointer to task name. The name will be copied.
 	  TASKTAG_USERDATA     (APTR)    - Anything. Will be written into tc_UserData.
 	  TASKTAG_PRI          (BYTE)    - Task's priority. Defaults to 0.
+	  TASKTAG_ARG1 ...
+	  TASKTAG_ARG8	       (IPTR)    - Arguments (up to 8) which will be passed to task's
+					   entry function. The arguments are supplied in
+					   C-standard way.
 	  TASKTAG_FLAGS        (ULONG)   - Initial value for tc_Flags.
 	  TASKTAG_TCBEXTRASIZE (ULONG)   - Value which will be added to sizeof(struct Task)
 					   in order to determine final size of task structure.
