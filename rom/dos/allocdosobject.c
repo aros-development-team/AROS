@@ -64,13 +64,21 @@
 	{
 	    struct FileHandle *fh = (struct FileHandle *)mem;
 
-#ifdef AROS_DOS_PACKETS
 	    fh->fh_Pos = (APTR)-1;
 	    fh->fh_End = (APTR)-1;
-#else
-	    /* We set fh->fh_Arg1 to point back to 'fh' to make packet
-	       emulation possible */
-	    fh->fh_CompatibilityHack = (SIPTR)fh;
+
+#ifndef AROS_DOS_PACKETS
+	    /*
+	     * We set fh->fh_Arg1 to point back to 'fh' to make packet
+	     * emulation possible.
+	     * This works in the following way: an application wishing to
+	     * send filehandle-related packet picks up contents of fh_Arg1
+	     * and puts it into packet's dp_Arg1. Code in iofs_sendpkt.c relies
+	     * on this and is able to get a filehandle back.
+	     *
+	     * CHECKME: may be remove #ifndef ? This should not harm m68k port.
+	     */
+	    fh->fh_Arg1 = fh;
 #endif
 	}
 	return mem;
