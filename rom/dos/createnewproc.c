@@ -147,7 +147,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     ApplyTagChanges(defaults, (struct TagItem *)tags);
 
-    /* If both the seglist and the entry are specified, make sure that the entry resides in the seglist */
+    /*
+     * If both the seglist and the entry are specified, make sure that the entry resides in the seglist
+     * Disabled because it is not necessarily always true. At least current implementation of SystemTagList()
+     * specifies seglist for the shell but uses own entry point.
+     *
     if (defaults[0].ti_Data && defaults[1].ti_Data)
     {
         BPTR seg;
@@ -166,7 +170,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
         if (!seg)
             return NULL;
-    }
+    } */
 
     process = (struct Process *)AllocMem(sizeof(struct Process),
 					 MEMF_PUBLIC | MEMF_CLEAR);
