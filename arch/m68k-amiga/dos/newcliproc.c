@@ -29,7 +29,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     struct DosLibrary *DOSBase;
     STRPTR alloced_argstr = NULL;
 
-    BPTR ShellSeg, CurrentInput;
+    BPTR CurrentInput;
     BOOL Background, Asynch;
 
     me  = (struct Process *)FindTask(NULL);
@@ -39,7 +39,6 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
 
-    ShellSeg     = csm->csm_ShellSeg;
     CurrentInput = csm->csm_CurrentInput;
     Background   = csm->csm_Background;
     Asynch       = csm->csm_Asynch;
@@ -55,6 +54,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     if (DOSBase)
     {
 	struct CommandLineInterface *cli = Cli();
+	BPTR *ShellSeg = BADDR(me->pr_SegList);
 
 	cli->cli_StandardInput  = Input();
         cli->cli_StandardOutput =
@@ -89,7 +89,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
             argstr = alloced_argstr;
         }
 
-	rc = RunCommand(ShellSeg, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
+	rc = RunCommand(ShellSeg[3], cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
 
 	if (alloced_argstr != NULL)
 	    FreeVec(alloced_argstr);
@@ -103,8 +103,6 @@ exit:
         csm->csm_ReturnCode = Cli()->cli_ReturnCode;
 	ReplyMsg((struct Message *)csm);
     }
-
-    UnLoadSeg(ShellSeg);
 
     return rc;
 

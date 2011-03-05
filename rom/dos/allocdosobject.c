@@ -78,7 +78,7 @@
 	     *
 	     * CHECKME: may be remove #ifndef ? This should not harm m68k port.
 	     */
-	    fh->fh_Arg1 = fh;
+	    fh->fh_Arg1 = (SIPTR)fh;
 #endif
 	}
 	return mem;
