@@ -111,7 +111,12 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
     Permit();
 
     if (len == -1)
+    {
+	D(bug("hostdisk: Host_GetGeometry(): Windows error %u\n", err));
 	return error(err);
+    }
+
+    D(bug("hostdisk: Drive length: %d\n", len));
 
     dg->dg_SectorSize = 512;
     dg->dg_Heads = 16;
@@ -124,7 +129,7 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
     dg->dg_CylSectors = dg->dg_Heads * dg->dg_TrackSectors;
     dg->dg_BufMemType = MEMF_PUBLIC;
     dg->dg_DeviceType = DG_DIRECT_ACCESS;
-    dg->dg_Flags = DGF_REMOVABLE;
+    dg->dg_Flags = 0; //DGF_REMOVABLE;
 
     return 0;
 }
@@ -137,6 +142,7 @@ static const char *KernelSymbols[] = {
     "SetFilePointer",
     "GetFileAttributesA",
     "GetFileSize",
+    "DeviceIoControl",
     "GetLastError",
     NULL
 };
