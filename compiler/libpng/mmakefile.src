@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 #MM- linklibs-png : includes
 #MM includes-copy
 
-INCLUDE_FILES	:= png.h pngconf.h
+INCLUDE_FILES	:= png.h pngconf.h pnglibconf.h
 
 %copy_includes path=.
 
