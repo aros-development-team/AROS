@@ -73,7 +73,7 @@ static void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu, BOOL dostep)
     	if (tdu->pub.tdu_PubFlags & TDPF_NOCLICK) {
     	    td_seek(tdu, -1, 0, tdb);
     	} else {
-    	    // step towards cyl 0 if > 0, it not, step to cyl 1
+    	    // step towards cyl 0 if > 0, if not, step to cyl 1
     	    td_seek(tdu, tdu->pub.tdu_CurrTrk >= 2 ? (tdu->pub.tdu_CurrTrk - 2) / 2 : 1, 0, tdb);
     	}
     }
@@ -94,7 +94,7 @@ static void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu, BOOL dostep)
     }
 }
 
-static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
+static BOOL TD_PerformIO(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 {
     struct TDU *tdu = (struct TDU *)iotd->iotd_Req.io_Unit;
     struct DriveGeometry *geo;
@@ -154,9 +154,9 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    break;
 	case TD_CHANGESTATE:
     	    td_select(tdu, tdb);
-	    if (tdu->tdu_DiskIn == TDU_NODISK)
+ 	    if (tdu->tdu_DiskIn == TDU_NODISK)
 		TestInsert(tdb, tdu, FALSE);
-	    if (tdu->tdu_DiskIn == TDU_DISK) {
+ 	    if (tdu->tdu_DiskIn == TDU_DISK) {
 		/* test if disk is still in there */
 		temp = td_getDiskChange(tdu, tdb);
 		iotd->iotd_Req.io_Actual = temp ? 0 : 1;
@@ -250,48 +250,34 @@ static BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
     } /* switch(iotd->iotd_Req.io_Command) */
     td_deselect(tdu, tdb);
     giveunit(tdb);
-    return (reply);
+    return reply;
 }
-
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOExtTD *, iotd, A1),
  struct TrackDiskBase *, TDBase, 5, TrackDisk)
 {
     AROS_LIBFUNC_INIT
-    struct TDU *tdu = (struct TDU *)iotd->iotd_Req.io_Unit;
 
     if (iotd->iotd_Req.io_Flags & IOF_QUICK) {
 	switch(iotd->iotd_Req.io_Command)
 	{
-	    case TD_CHANGESTATE:
-		if ((!(tdu->pub.tdu_PubFlags & TDPF_NOCLICK)) || (tdu->tdu_DiskIn == TDU_DISK))
-		    break;
-	    	case CMD_READ:
-	    	case CMD_UPDATE:
-		case CMD_WRITE:
-		case TD_FORMAT:
-		case TD_MOTOR:
-		case TD_SEEK:
-		case ETD_READ:
-		case ETD_UPDATE:
-		case ETD_WRITE:
-		case ETD_FORMAT:
-		case ETD_MOTOR:
-		case ETD_SEEK:
-		PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
-		    iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
-		    return;
-		}
-		TD_PerformIO(iotd,TDBase);
+	    case TD_GETNUMTRACKS:
+	    case TD_GETDRIVETYPE:
+	    case TD_GETGEOMETRY:
+	    case TD_REMCHANGEINT:
+	    case TD_ADDCHANGEINT:
+	    case TD_PROTSTATUS:
+	    case TD_CHANGENUM:
+	    TD_PerformIO(iotd,TDBase);
 	    return;
-    } else {
-	/* Forward to devicetask */
-	PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
-	/* Not done quick */
-	iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
-	return;
+	}
     }
+    /* Not done quick */
+    iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
+    /* Forward to devicetask */
+    PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -300,7 +286,9 @@ AROS_LH1(LONG, abortio,
  struct TrackDiskBase *, TDBase, 6, TrackDisk)
 {
     AROS_LIBFUNC_INIT
+
     return IOERR_NOCMD;
+
     AROS_LIBFUNC_EXIT
 }
 
