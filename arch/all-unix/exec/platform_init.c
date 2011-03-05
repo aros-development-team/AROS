@@ -1,13 +1,18 @@
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
-#include <proto/alib.h>
 #include <proto/hostlib.h>
 #include <proto/kernel.h>
 
 #include "../kernel/hostinterface.h"
 
 #include "exec_intern.h"
+
+/*
+ * This prototype is dubbed here because proto/alib.h causes conflict
+ * because of struct timeval redefinition.
+ */
+struct TagItem *LibFindTagItem(Tag id, struct TagItem *tags);
 
 static const char *libc_symbols[] = {
     "exit",
