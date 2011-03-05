@@ -229,7 +229,7 @@ static void timer_addToWaitList(struct TimerBase *TimerBase, ULONG unit, struct 
 
     D(bug("added %x: %d/%d->%d/%d\n", iotr,
 	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_secs : TimerBase->tb_micro_count.tv_secs),
-	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_usec : TimerBase->tb_micro_count.tv_secs),
+	(unit == UNIT_VBLANK ? TimerBase->tb_vb_count.tv_usec : TimerBase->tb_micro_count.tv_usec),
 	iotr->tr_time.tv_secs, iotr->tr_time.tv_micro));
 
 }

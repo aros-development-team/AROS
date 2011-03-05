@@ -202,6 +202,8 @@ AROS_UFH4(APTR, ciaint_timer,
 		if (newcount > 0xffff)
 			newcount = 0xffff;
 		TimerBase->tb_micro_started = newcount;
+		// reset control register, some badly behaving programs may have changed it
+		*TimerBase->tb_micro_cr = 0x08;
 		// reload new timer value (timer autostarts)
 		*TimerBase->tb_micro_lo = (UBYTE)(newcount >> 0);
 		*TimerBase->tb_micro_hi = (UBYTE)(newcount >> 8);
