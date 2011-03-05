@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,7 +15,6 @@
 struct CliStartupMessage
 {
     struct Message csm_Msg;
-    BPTR           csm_ShellSeg;
     BOOL           csm_Background;
     BOOL           csm_Asynch;
     BPTR           csm_CurrentInput;

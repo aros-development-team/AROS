@@ -104,15 +104,18 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     AROS_LIBFUNC_INIT
 
     BPTR   cis = Input(), cos = Output(), ces = Error(), script = BNULL;
-    BPTR   shellseg = BNULL;
-    STRPTR cShell   = NULL;
+    BPTR   shellseg  = BNULL;
+    STRPTR cShell    = "C:Shell";
+    STRPTR shellName = "Boot Shell";
     BOOL script_opened = FALSE;
     BOOL cis_opened    = FALSE;
     BOOL cos_opened    = FALSE;
     BOOL ces_opened    = FALSE;
-    BOOL isBoot        = TRUE;
+    BOOL isBoot	       = TRUE;
+    BOOL isCustom      = FALSE;
     BOOL isBackground  = TRUE;
     BOOL isAsynch      = FALSE;
+    BOOL needUnload    = FALSE;
     LONG rc            = -1;
     LONG *cliNumPtr    = NULL;
     struct RootNode *rn = DOSBase->dl_Root;
@@ -142,6 +145,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 
 	    case SYS_CustomShell:
 	        cShell = (STRPTR)tag->ti_Data;
+	        isCustom = TRUE;
 		break;
 
             case SYS_UserShell:
@@ -219,45 +223,60 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	ces_opened = TRUE;
     }
 
-    /*
-     * Load the shell
-     * FIXME: implement UserShell and BootShell
-     * First of all we expect its seglist to be stored in RootNode.
-     */
-    shellseg = rn->rn_ShellSegment;
+    if (isCustom)
+    	shellName = cShell;
+    else
+    {
+    	/* Seglist of default shell is stored in RootNode when loaded */
+    	shellseg = rn->rn_ShellSegment;
+    	/*
+    	 * Set shell process name.
+    	 * On AROS we have no actual difference between user and boot shell.
+    	 */
+    	if (!isBoot)
+    	    shellName = isBackground ? "Background CLI" : "New Shell";
+    }
 
     if (shellseg == BNULL)
     {
-    	/* It's not loaded yet. Load it. */
-    	shellseg = LoadSeg("C:Shell");
+    	/*
+    	 * The shell is not loaded yet, we need to do it.
+    	 * First we try to find a named resident seglist.
+    	 */
+        struct Segment *seg;
+    	STRPTR segName = FilePart(cShell);
+
+        Forbid();
+
+        seg = FindSegment(segName, NULL, TRUE);
+        if (seg != NULL && seg->seg_UC <= 0)
+	    shellseg = seg->seg_Seg;
+
+	Permit();
 
     	if (shellseg == BNULL)
     	{
-	    /*
-	     * Strange things go here:
-	     * 1. Why this sequence? Shouldn't resident copy be used first ?
-	     * 2. Is it needed at all? C:Shell can be made resident only with C:Resident command,
-	     *    which itself needs shell to be executed.
-	     */
-    	    struct Segment *seg;
-
-            D(bug("Could not load C:Shell\n"));
-            Forbid();
-            seg = FindSegment("Shell", NULL, TRUE);
-            if (seg != NULL && seg->seg_UC <= 0)
-            	shellseg = seg->seg_Seg;
-	    Permit();
+    	    /*
+    	     * Not found? Load the shell from disk.
+    	     * Custom shells need to be unloaded after being used.
+    	     */
+    	    shellseg = LoadSeg(cShell);
+    	    if (isCustom)
+    	    	needUnload = TRUE;
     	}
 
 	if (shellseg == BNULL)
     	{
-            D(bug("Could not load SYSTEM:Shell\n"));
+            D(bug("Could not load shell\n"));
             goto end;
     	}
 
-	/* Install our shell into RootNode. We will never UnLoadSeg() it. */
-    	rn->rn_ShellSegment = shellseg;
+	/* Install our shell into RootNode (if not custom). We will never UnLoadSeg() it. */
+	if (!isCustom)
+    	    rn->rn_ShellSegment = shellseg;
     }
+
+    D(bug("Shell seglist: 0x%p\n", shellseg));
 
     newtags = CloneTagItems(tags);
     if (newtags)
@@ -270,28 +289,19 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	{
 	    { NP_Entry      , (IPTR) NewCliProc             }, /* 0  */
 	    { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 1  */
-	    
-	    /*
-		Disabled, because CreateNewProc() already handles NP_StackSize,
-		i.e. it uses either AROS_STACKSIZE or the stack from the parent
-		process.
-	    */
-	    // { NP_StackSize  , AROS_STACKSIZE                },
-	    { TAG_IGNORE    , 0                             }, /* 2  */
-	    { NP_Name       , isBoot ? (IPTR)"Boot Shell" :
-	                      isBackground ?
-			      (IPTR)"Background CLI" :
-			      (IPTR)"New Shell"             }, /* 3  */
-	    { NP_Input      , (IPTR)cis                     }, /* 4  */
-	    { NP_Output     , (IPTR)cos                     }, /* 5  */
-	    { NP_CloseInput , (isAsynch || cis_opened)      }, /* 6  */
-	    { NP_CloseOutput, (isAsynch || cos_opened)      }, /* 7  */
-	    { NP_Cli        , (IPTR)TRUE                    }, /* 8  */
+	    { NP_Name       , (IPTR)shellName	            },
+	    { NP_Input      , (IPTR)cis                     },
+	    { NP_Output     , (IPTR)cos                     },
+	    { NP_CloseInput , (isAsynch || cis_opened)      },
+	    { NP_CloseOutput, (isAsynch || cos_opened)      },
+	    { NP_Cli        , (IPTR)TRUE                    },
 	    { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
-	                      (IPTR)me->pr_WindowPtr        }, /* 9 */
-	    { NP_Arguments  , (IPTR)command                 }, /* 10 */
-	    { NP_Synchronous, FALSE                         }, /* 11 */
-	    { NP_Error      , (IPTR)ces                     }, /* 12 */
+	                      (IPTR)me->pr_WindowPtr        },
+	    { NP_Seglist    , (IPTR)shellseg		    },
+	    { NP_FreeSeglist, needUnload		    },
+	    { NP_Arguments  , (IPTR)command                 },
+	    { NP_Synchronous, FALSE                         },
+	    { NP_Error      , (IPTR)ces                     },
 	    { NP_CloseError , (isAsynch || ces_opened) &&
             /* 
                 Since old AmigaOS programs don't know anything about Error()
@@ -323,6 +333,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Data = (IPTR)newtags;
 
 	cliproc = CreateNewProc(proctags);
+	D(bug("Created shell process 0x%p\n", cliproc));
 
 	if (cliproc)
 	{
@@ -331,7 +342,6 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	    csm.csm_Msg.mn_ReplyPort    = &me->pr_MsgPort;
 
 	    csm.csm_CurrentInput = script;
-            csm.csm_ShellSeg     = shellseg;
             csm.csm_Background   = isBackground;
 	    csm.csm_Asynch       = isAsynch;
 
@@ -348,12 +358,14 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	    cos_opened    =
 	    ces_opened    = FALSE;
 
-	    shellseg = BNULL;
+	    /* The process was started, do not unload the shell */
+	    needUnload = FALSE;
 	}
 	FreeTagItems(newtags);
     }
 
 end:
+    if (needUnload)    UnLoadSeg(shellseg);
     if (script_opened) Close(script);
     if (cis_opened)    Close(cis);
     if (cos_opened)    Close(cos);
