@@ -1,17 +1,16 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new task, improved version
     Lang: english
 */
 
+#include <proto/alib.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
 
 #include <string.h>
-
-#include "exec_util.h"
 
 struct newMemList
 {
@@ -104,7 +103,7 @@ static const struct newMemList MemTemplate =
     ULONG  pri	     = 0;
     ULONG  flags     = 0;
 
-    while ((tag = Exec_NextTagItem(&tstate)))
+    while ((tag = LibNextTagItem(&tstate)))
     {
 	switch (tag->ti_Tag)
 	{
