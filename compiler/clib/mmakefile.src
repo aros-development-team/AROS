@@ -404,6 +404,7 @@ ROM_ONLY := \
 	__vcscan
 
 ROM_COMMON := \
+	atof \
 	bcmp \
 	bcopy \
 	bzero \
