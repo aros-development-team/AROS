@@ -75,6 +75,7 @@
 #include <hardware/custom.h>
 #include <hardware/acpi/acpi.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 
 #include <stddef.h>
@@ -179,7 +180,6 @@ extern void Exec_Dispatch_SSE();
 extern void Exec_CopyMem_SSE();
 
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
-extern intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, struct TagItem *tagList);
 
 AROS_UFP5S(void, IntServer,
     AROS_UFPA(ULONG, intMask, D0),
@@ -808,7 +808,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
     rkprintf("Memory added\n");
 
     /* Protect kernel and RO data from beeing allocated by software */
-    AllocAbs((ULONG)(krnGetTagData(KRN_KernelHighest, (ULONG)&_end, tags) - krnGetTagData(KRN_KernelLowest, (ULONG)&_end, tags)), (APTR)krnGetTagData(KRN_KernelLowest, (ULONG)&_end, tags));
+    AllocAbs((ULONG)(LibGetTagData(KRN_KernelHighest, (ULONG)&_end, tags) - LibGetTagData(KRN_KernelLowest, (ULONG)&_end, tags)), (APTR)LibGetTagData(KRN_KernelLowest, (ULONG)&_end, tags));
 
     /* Protect bootup stack from being allocated */
     AllocAbs(0x3000,0x90000);
@@ -1403,7 +1403,7 @@ struct rt_node
 ULONG **exec_RomTagScanner(struct ExecBase *SysBase, struct TagItem *tags)
 {
     struct List     rtList;             /* List of modules */
-    UWORD           *ptr = (UWORD*)krnGetTagData(KRN_KernelLowest, (ULONG)&_end, tags);  /* Start looking here */
+    UWORD           *ptr = (UWORD*)LibGetTagData(KRN_KernelLowest, (ULONG)&_end, tags);  /* Start looking here */
 
     struct Resident *res;               /* module found */
 
@@ -1476,7 +1476,7 @@ ULONG **exec_RomTagScanner(struct ExecBase *SysBase, struct TagItem *tags)
 
         /* Get next address... */
         ptr++;
-    } while (ptr < (UWORD*)krnGetTagData(KRN_KernelHighest, (ULONG)&_end, tags));
+    } while (ptr < (UWORD*)LibGetTagData(KRN_KernelHighest, (ULONG)&_end, tags));
     
     /*
      * By now we have valid (and sorted) list of kernel resident modules.

@@ -1,12 +1,12 @@
 #include <aros/kernel.h>
 #include <dos/bptr.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
-#include <kernel_tagitems.h>
 
 #include "debug_intern.h"
 
@@ -130,7 +130,7 @@ AROS_LH2(int, KrnDecodeLocationA,
     D(bug("[KRN] KrnDecodeLocationA(0x%p)\n", addr));
 
     /* Parse TagList */
-    while ((tag = krnNextTagItem(&tstate)))
+    while ((tag = LibNextTagItem(&tstate)))
     {
 	switch (tag->ti_Tag) {
 	case KDL_ModuleName:

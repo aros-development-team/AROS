@@ -1,6 +1,7 @@
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 
 #include <inttypes.h>
@@ -9,7 +10,6 @@
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
-#include <kernel_tagitems.h>
 #include <kernel_timer.h>
 
 /* Some globals we can't live without */
@@ -40,7 +40,7 @@ static int Kernel_Init(struct KernelBase *kBase)
     NEWLIST(&KernelBase->kb_Modules);
     InitSemaphore(&KernelBase->kb_ModSem);
 
-    KernelBase->kb_KernelModules = (dbg_seg_t *)krnGetTagData(KRN_DebugInfo, 0, BootMsg);
+    KernelBase->kb_KernelModules = (dbg_seg_t *)LibGetTagData(KRN_DebugInfo, 0, BootMsg);
 
     D(bug("[KRN] Kernel_Init() done\n"));
     return 1;

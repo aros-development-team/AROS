@@ -1,12 +1,12 @@
 #include <aros/config.h>
 #include <exec/execbase.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 
 #include <inttypes.h>
 
 #include <kernel_base.h>
-#include <kernel_tagitems.h>
 #include "memory_intern.h"
 
 #include "memory.h" /* From rom/exec, contains MEMF_PHYSICAL_MASK definition */
@@ -75,7 +75,7 @@ AROS_LH2(ULONG, KrnStatMemoryA,
 	struct MemHeader *mh;
 	BOOL do_traverse = FALSE;
 
-	while ((tag = krnNextTagItem(&tstate)))
+	while ((tag = LibNextTagItem(&tstate)))
 	{
 	    switch (tag->ti_Tag)
 	    {
