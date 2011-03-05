@@ -40,9 +40,9 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
 	     vprintf waitforchar waitpkt write writechars
 
-#MM kernel-dos-linklib : kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
-#MM kernel-dos-kobj : kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
-#MM kernel-dos : kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
+#MM kernel-dos-linklib : linklibs-clib kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
+#MM kernel-dos-kobj : linklibs-clib kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
+#MM kernel-dos : linklibs-clib kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
 
 #MM kernel-dos-includes : \
 #MM     kernel-utility-includes \
