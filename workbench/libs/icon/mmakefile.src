@@ -53,7 +53,6 @@ USER_CFLAGS := -D__NOLIBBASE__ $(PARANOIA_CFLAGS)
 %build_module mmake=workbench-libs-icon \
     modname=icon modtype=library \
     files="icon_init $(FUNCS) $(FILES)" \
-    noref=$(FILES) \
     uselibs="arossupport amiga rom m"
 
 %common
