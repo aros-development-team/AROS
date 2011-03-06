@@ -53,6 +53,6 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \
   files="dos_init $(FUNCTIONS) $(FILES)" \
-  noref=lddemon uselibs="rom"
+  uselibs="rom"
 
 %common
