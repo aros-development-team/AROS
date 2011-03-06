@@ -165,26 +165,31 @@ linklibs-galliumauxiliary-generated : $(GENDIR)/$(CURDIR)/util/u_format_table.c 
 
 $(GENDIR)/$(CURDIR)/util/u_format_table.c :
 	@$(MKDIR) $(GENDIR)/$(CURDIR)/util/
+	cd $(GENDIR)/$(CURDIR)/util/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_format_table.py $(SRCDIR)/$(CURDIR)/util/u_format.csv > $@
 	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_format_table.o
 
 $(GENDIR)/$(CURDIR)/indices/u_indices_gen.c :
 	@$(MKDIR) $(GENDIR)/$(CURDIR)/indices/
+	cd $(GENDIR)/$(CURDIR)/indices/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/indices/u_indices_gen.py > $@
 	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_indices_gen.o
 
 $(GENDIR)/$(CURDIR)/indices/u_unfilled_gen.c :
 	@$(MKDIR) $(GENDIR)/$(CURDIR)/indices/
+	cd $(GENDIR)/$(CURDIR)/indices/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/indices/u_unfilled_gen.py > $@
 	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_unfilled_gen.o
 
 $(GENDIR)/$(CURDIR)/util/u_format_srgb.c :
 	@$(MKDIR) $(GENDIR)/$(CURDIR)/util/
+	cd $(GENDIR)/$(CURDIR)/util/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_format_srgb.py > $@
 	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_format_srgb.o
 
 $(GENDIR)/$(CURDIR)/util/u_half.c :
 	@$(MKDIR) $(GENDIR)/$(CURDIR)/util/
+	cd $(GENDIR)/$(CURDIR)/util/
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/util/u_half.py > $@
 	%compile_q from=$@ to=$(GENDIR)/$(CURDIR)/u_half.o
 
