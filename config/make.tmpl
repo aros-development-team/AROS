@@ -2365,7 +2365,7 @@ endif
 	    $(%(mmake)-install_command); \
         fi
 
-%(srcdir)/.files-touched:
+$(%(mmake)-pkgdir)/.files-touched:
 	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/configure '{}' \; && \
 	$(TOUCH) $@
 
@@ -2382,7 +2382,7 @@ endif
 
 $(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo %(srcdir) | sed 's/^\(.\):\//\/\1\//')
 ifeq (%(compiler),host)
-$(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@ 
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
@@ -2395,7 +2395,7 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	    $(TOUCH) $@
 endif
 ifeq (%(compiler),target)
-$(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
@@ -2411,7 +2411,7 @@ $(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	    $(TOUCH) $@
 endif
 ifeq (%(compiler),kernel)
-$(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
