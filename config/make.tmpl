@@ -115,27 +115,6 @@
 
 
 #------------------------------------------------------------------------------
-# Create the function reference file %(to) to %(from)
-%define mkref_q cc=$(AROS_CC) cppflags="-E -C -dD -D__CXREF__" cflags=$(CFLAGS) from=$< to=$@
-	@$(ECHO) "Generating ref for $(notdir %(from))..."
-	@$(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to) 2>$(GENDIR)/cerrors
-	@$(IF) $(TEST) -s %(to) ; \
-	then \
-	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-	        $(ECHO) "%(from): $(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to)" >> $(GENDIR)/errors ; \
-	        tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
-	    fi ; \
-	else \
-	    $(ECHO) "Reference generation failed: $(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to)" 1>&2 ; \
-	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
-	    $(RM) %(to) ; \
-	    exit 1 ; \
-	fi
-%end
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
 # Create one directory without any output
 %define mkdir_q dir=.
 	@$(IF) $(TEST) ! -d %(dir) ; then $(MKDIR) %(dir) ; else $(NOP) ; fi
@@ -710,113 +689,6 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLI
 
 
 #------------------------------------------------------------------------------
-# Generate a rule to generate a function reference file from a C source file.
-# Basename may contain a directory part, then the source file has to be in that
-# directory. The generated file will be put in the object directory without the
-# directory.
-# options
-# - basename: the basename of the file to compile. Use % for a wildcard rule
-# - cflags (default $(CFLAGS)): the C flags to use for compilation
-# - targetdir: the directory to put the generated .ref file. By default the
-#   .ref file will be put in the same directory as the .c file.
-# - includefile: This file will be included at the head of the source file
-%define rule_ref basename=/A cflags=$(CFLAGS) targetdir= includefile= compiler=target
-
-ifeq (%(targetdir),)
-GENFILE_TMP := %(basename).ref
-else
-GENFILE_TMP := %(targetdir)/$(notdir %(basename)).ref
-endif
-
-ifeq ($(filter %(compiler),target kernel host),)
-$(error use of %rule_ref: compiler has to be 'host', 'kernel' or 'target')
-endif
-
-ifeq (%(compiler),target)
-$(GENFILE_TMP) : CC:=$(TARGET_CC) $(TARGET_CFLAGS)
-endif
-ifeq (%(compiler),host)
-$(GENFILE_TMP) : CC:=$(HOST_CC)
-endif
-ifeq(%(compiler),kernel)
-$(GENFILE_TMP) : CC:=$(KERNEL_CC) $(KERNEL_CFLAGS)
-endif
-
-$(GENFILE_TMP) : %(basename).c $(CXREF) %(includefile)
-ifeq (%(includefile),)
-	%mkref_q cc=$(CC) cflags="%(cflags)"
-else
-	%mkref_q cc=$(CC) cflags="%(cflags) -include %(includefile)"
-endif
-
-%end
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
-# Generate a rule to generate a function reference file from a C source file.
-# Basename may contain a directory part, then the source file has to be in that
-# directory. The generated file will be put in the object directory without the
-# directory.
-# options
-# - basenames: the basenames of the files to compile. No wildcard is allowed
-# - cflags (default $(CFLAGS)): the C flags to use for compilation
-# - targetdir: the directory to put the generated .ref file. By default the
-#   .ref file will be put in the same directory as the .c file. When targetdir
-#   is not empty all files will be put there and path parts in the basenames
-#   will be stripped off.
-# - includefile: This file will be included at the head of the source file
-%define rule_ref_multi basenames=/A cflags=$(CFLAGS) targetdir= includefile= \
-    compiler=target
-
-ifeq (%(targetdir),)
-TMP_TARGETS := $(addsuffix .ref,%(basenames))
-TMP_WILDCARD := %.ref
-else
-TMP_TARGETS := $(addprefix %(targetdir)/,$(addsuffix .ref,$(notdir %(basenames))))
-TMP_WILDCARD := %(targetdir)/%.ref
-
-# Be sure that all .c files are generated
-$(TMP_TARGETS) : | $(addsuffix .c,%(basenames))
-
-# Be sure that all .c files are found
-TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
-TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
-TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
-ifneq ($(TMP_DIRS),)
-    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
-    vpath %.c $(TMP_DIRS)
-endif
-
-endif
-
-ifeq ($(filter %(compiler),target kernel host),)
-$(error use of %rule_ref: compiler has to be 'host', 'kernel' or 'target')
-endif
-
-ifeq (%(compiler),target)
-$(TMP_TARGETS) : CC:=$(TARGET_CC) $(TARGET_CFLAGS)
-endif
-ifeq (%(compiler),host)
-$(TMP_TARGETS) : CC:=$(HOST_CC)
-endif
-ifeq (%(compiler),kernel)
-$(TMP_TARGETS) : CC:=$(KERNEL_CC) $(KERNEL_CFLAGS)
-endif
-ifeq (%(includefile),)
-$(TMP_TARGETS) : CFLAGS:=%(cflags)
-else
-$(TMP_TARGETS) : CFLAGS:="%(cflags) -include %(includefile)"
-$(TMP_TARGETS) : %(includefile)
-endif
-$(TMP_TARGETS) : $(CXREF)
-$(TMP_TARGETS) : $(TMP_WILDCARD) : %.c
-	%mkref_q cc=$(CC)
-%end
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
 # Generate the libdefs.h include file for a module.
 %define rule_genmodule_genlibdefs modname=/A modtype=/A modsuffix= conffile= targetdir=
 
@@ -844,44 +716,6 @@ $(TMP_TARGET) : MODTYPE := %(modtype)
 $(TMP_TARGET) : $(TMP_DEPS)
 	@$(ECHO) "Generating $(notdir $@)"
 	@$(GENMODULE) $(OPTS) writelibdefs $(MODNAME) $(MODTYPE)
-%end
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
-# Generate the funclist file for a module.
-%define rule_genmodule_funclist \
-    modname=/A modtype=/A modsuffix= conffile= targetdir= reffile=
-
-TMP_TARGET := %(modname).funclist
-TMP_DEPS := $(GENMODULE)
-TMP_OPTS := 
-ifeq (%(reffile),)
-    $(error reffile needed in rule_genmodule_funclist but none specified)
-endif
-TMP_OPTS := -r %(reffile)
-TMP_DEPS += %(reffile)
-ifneq (%(conffile),)
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
-else
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
-endif
-ifneq (%(modsuffix),)
-    TMP_OPTS += -s %(modsuffix)
-endif
-ifneq (%(targetdir),)
-    TMP_OPTS += -d %(targetdir)
-    TMP_TARGET := %(targetdir)/$(TMP_TARGET)
-endif
-
-$(TMP_TARGET) : OPTS := $(TMP_OPTS)
-$(TMP_TARGET) : MODNAME := %(modname)
-$(TMP_TARGET) : MODTYPE := %(modtype)
-$(TMP_TARGET) : $(TMP_DEPS)
-	@$(ECHO) "Generating $(notdir $@)"
-	@$(GENMODULE) $(OPTS) writefunclist $(MODNAME) $(MODTYPE)
 %end
 #------------------------------------------------------------------------------
 
@@ -920,63 +754,19 @@ $(TMP_TARGET) : $(TMP_DEPS)
 
 
 #------------------------------------------------------------------------------
-# Generate dummy support files so cxref when used on the a module source file
-# will find something to include. This rule has to be preceeded by
-# %rule_genmodule_makefile
-%define rule_genmodule_dummy modname=/A modtype=/A modsuffix= conffile= targetdir=
-
-ifneq ($(%(modname)_INCLUDES),)
-TMP_TARGETS := $(%(modname)_INCLUDES)
-
-TMP_DEPS := $(GENMODULE)
-TMP_OPTS := 
-ifneq (%(conffile),)
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
-else
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
-endif
-ifneq (%(modsuffix),)
-    TMP_OPTS += -s %(modsuffix)
-endif
-ifneq (%(targetdir),)
-    TMP_OPTS += -d %(targetdir)
-    TMP_TARGETS := $(addprefix %(targetdir)/,$(TMP_TARGETS))
-endif
-
-$(TMP_TARGETS) : OPTS := $(TMP_OPTS)
-$(TMP_TARGETS) : MODNAME := %(modname)
-$(TMP_TARGETS) : MODTYPE := %(modtype)
-$(TMP_TARGETS) : $(TMP_DEPS)
-	@$(ECHO) "Generating dummy include files"
-	@$(GENMODULE) $(OPTS) writedummy $(MODNAME) $(MODTYPE)
-endif
-%end
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
 # Generate the support files for compiling a module. This includes include
 # files and source files. This rule has to be preceeded by
 # %rule_genmodule_makefile
 %define rule_genmodule_files modname=/A modtype=/A modsuffix= targetdir= \
-    conffile= reffile=
+    conffile=
 
 TMP_TARGETS := $(%(modname)_STARTFILES) $(%(modname)_ENDFILES) \
 	       $(%(modname)_LINKLIBFILES)
 TMP_TARGETS := $(addsuffix .c,$(TMP_TARGETS)) $(addsuffix .S, $(%(modname)_LINKLIBAFILES))
 
 TMP_DEPS := $(GENMODULE)
-ifeq ($(%(modname)_NEEDREF), yes)
-    ifeq (%(reffile),)
-        $(error reffile needed in rule_genmodule_files but none specified)
-    endif
-    TMP_OPTS := -r %(reffile)
-    TMP_DEPS += %(reffile)
-else
-    TMP_OPTS :=
-endif
+TMP_OPTS :=
+
 ifneq (%(conffile),)
     TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
     TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
@@ -997,7 +787,7 @@ $(TMP_TARGETS) : OPTS := $(TMP_OPTS)
 $(TMP_TARGETS) : MODNAME := %(modname)
 $(TMP_TARGETS) : MODTYPE := %(modtype)
 $(TMP_TARGETS) : $(TMP_DEPS)
-	@$(ECHO) "Generating functable and support files for module $(MODNAME$(BDID))"
+	@$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
 ifneq (%(conffile),lib.conf)
 	@$(IF) $(TEST) -f lib.conf; then \
 	  $(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
@@ -1015,22 +805,14 @@ endif
 # Generate the support files for compiling a module. This includes include
 # files and source files.
 %define rule_genmodule_includes modname=/A modtype=/A modsuffix= \
-    targetdir= conffile= reffile=
-
+    targetdir= conffile=
 
 ifneq ($(%(modname)_INCLUDES),)
 TMP_TARGETS := $(%(modname)_INCLUDES)
 
 TMP_DEPS := $(GENMODULE)
-ifeq ($(%(modname)_NEEDREF), yes)
-    ifeq (%(reffile),)
-        $(error reffile needed in rule_genmodule_files but none specified)
-    endif
-    TMP_OPTS := -r %(reffile)
-    TMP_DEPS += %(reffile)
-else
-    TMP_OPTS :=
-endif
+TMP_OPTS :=
+
 ifneq (%(conffile),)
     TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
     TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
@@ -1234,7 +1016,6 @@ endif
 
 # Default values for variables and arguments
 BD_DEFLINKLIBNAME := %(modname)
-BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
 BD_DEFDFLAGS := %(cflags)
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 BD_MODDIR := %(moduledir)
@@ -1323,7 +1104,7 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 BD_DEPS       := $(addprefix %(objdir)/, $(addsuffix .d,%(files)))
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
 
-$(BD_OBJS) $(BD_DEPS) $(BD_REFS) : | %(objdir)
+$(BD_OBJS) $(BD_DEPS) : | %(objdir)
 $(BD_MODULE) : | $(BD_MODDIR)
 $(BD_KOBJ) : | $(KOBJSDIR)
 GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
@@ -1343,7 +1124,6 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
   conffile= files="$(basename $(call WILDCARD, *.c))" \
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
-  reffile=$(BD_DEFREFFILE) noref= \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
   compiler=target
 
@@ -1359,13 +1139,12 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #MM %(mmake)-includes-quick
 #MM %(mmake)-includes-dirs
 #MM %(mmake)-makefile
-#MM %(mmake)-funclist
 #MM %(mmake)-clean
 
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
     %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-funclist %(mmake)-linklib
+    %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-linklib
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -1378,7 +1157,6 @@ endif
 
 # Default values for variables and arguments
 BD_DEFLINKLIBNAME := %(modname)
-BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
 BD_DEFDFLAGS := %(cflags)
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 
@@ -1417,7 +1195,7 @@ BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
 ifneq ($(%(modname)_INCLUDES),)
 %rule_genmodule_includes modname=%(modname) modtype=%(modtype) \
 		      	 modsuffix=%(modsuffix) targetdir=%(objdir)/include \
-		      	 conffile=%(conffile) reffile=%(reffile)
+		      	 conffile=%(conffile)
 
 %rule_copy_diff_multi \
     files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(GENINCDIR) \
@@ -1427,10 +1205,6 @@ ifneq ($(%(modname)_INCLUDES),)
     files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(BD_INCDIR) \
     stampfile=%(objdir)/%(modname)_incs
 
-%rule_genmodule_dummy modname=%(modname) modtype=%(modtype) \
-		      modsuffix=%(modsuffix) \
-		      targetdir=%(objdir)/dummyinc conffile=%(conffile)
-
 BD_INCDIRS := $(filter-out ./,$(sort $(dir $(%(modname)_INCLUDES))))
 
 TMP%(modname)_INCDIRS := \
@@ -1438,9 +1212,6 @@ TMP%(modname)_INCDIRS := \
     $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
     $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
 %rule_makedirs dirs=$(TMP%(modname)_INCDIRS) setuptarget=%(mmake)-includes-dirs
-
-$(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES)) : | %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
-GLOB_MKDIRS += %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
 
 endif
 
@@ -1456,20 +1227,11 @@ $(BD_DEFLIBDEFSINC) :
 $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | %(objdir)/include
 GLOB_MKDIRS += %(objdir)/include
 
-## Generation of the funclist file
-##
-%(mmake)-funclist : %(modname).funclist
-
-%rule_genmodule_funclist \
-    modname=%(modname) modtype=%(modtype) modsuffix=%(modsuffix) \
-    conffile=%(conffile) reffile=%(reffile)
-
-
 ## Extra genmodule src files generation
 ## 
 %rule_genmodule_files modname=%(modname) modtype=%(modtype) \
 		      modsuffix=%(modsuffix) targetdir=%(objdir) \
-		      conffile=%(conffile) reffile=%(reffile)
+		      conffile=%(conffile)
 
 ## Compilation
 ##
@@ -1510,24 +1272,6 @@ ifneq ($(BD_LINKLIBAFILES),)
 %rule_assemble_multi \
     basenames=$(BD_LINKLIBAFILES) targetdir=%(objdir) suffix=.S
 endif
-
-## function reference files generation
-##
-BD_CFLAGS_REF := -I$(dir $(GENMODULE))/genmod_inc -I%(objdir)/dummyinc $(strip %(cflags)) -I$(TOP)/$(CURDIR) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
-%rule_ref_multi \
-    basenames=$(BD_FILES) targetdir=%(objdir) \
-    cflags=$(BD_CFLAGS_REF) \
-    compiler=%(compiler)
-
-ifeq (%(noref),)
-BD_REFS   := $(addprefix %(objdir)/,$(addsuffix .ref, $(notdir $(BD_FILES))))
-else
-BD_REFS   := $(addprefix %(objdir)/,$(addsuffix .ref, $(notdir $(filter-out %(noref),$(BD_FILES)))))
-endif
-
-%rule_join from=$(BD_REFS) to=%(reffile) \
-	   text="Collecting function references for module %(modname)"
-
 
 ## Linking
 ##
@@ -1588,24 +1332,21 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 BD_DEPS := $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CCFILES) $(BD_TARGETCCFILES))))
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick" deps=$(BD_DEPS)
 
-$(BD_OBJS) $(BD_DEPS) $(BD_REFS) : | %(objdir)
+$(BD_OBJS) $(BD_DEPS) : | %(objdir)
 $(BD_MODULE) : | %(prefix)/%(moduledir)
 $(BD_KOBJ) : | $(KOBJSDIR)
 GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)
 
 # Some include files need to be generated before the .c can be parsed.
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick),) # Only for this target these deps are wanted
-BD_REFFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
-    $(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES))
-$(BD_REFS) : $(BD_REFFILE_DEPS) $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
 
 BD_DFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
     $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES))
 $(BD_DEPS) : $(BD_DFILE_DEPS)
 endif
 
-BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) %(reffile) \
-    $(BD_REFS) $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
+BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) \
+    $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
     %(objdir)/Makefile.%(modname) \
     $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
     $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
@@ -1631,8 +1372,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # API, but no actual implementation here.
 %define build_module_skeleton mmake=/A modname=/A modtype=/A modsuffix= \
   conffile= \
-  objdir=$(OBJDIR) prefix=$(AROSDIR) \
-  reffile=$(BD_DEFREFFILE)
+  objdir=$(OBJDIR) prefix=$(AROSDIR)
 
 # Define metamake targets and their dependencies
 #MM- includes-all : %(mmake)-includes
@@ -1645,13 +1385,12 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 #MM %(mmake)-includes-quick
 #MM %(mmake)-includes-dirs
 #MM %(mmake)-makefile
-#MM %(mmake)-funclist
 #MM %(mmake)-clean
 
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
     %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-funclist
+    %(mmake)-kobj
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -1664,7 +1403,6 @@ endif
 
 # Default values for variables and arguments
 BD_DEFLINKLIBNAME := %(modname)
-BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
 BD_DEFDFLAGS := %(cflags)
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 
@@ -1703,7 +1441,7 @@ BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
 ifneq ($(%(modname)_INCLUDES),)
 %rule_genmodule_includes modname=%(modname) modtype=%(modtype) \
 		      	 modsuffix=%(modsuffix) targetdir=%(objdir)/include \
-		      	 conffile=%(conffile) reffile=%(reffile)
+		      	 conffile=%(conffile)
 
 %rule_copy_diff_multi \
     files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(GENINCDIR) \
@@ -1713,10 +1451,6 @@ ifneq ($(%(modname)_INCLUDES),)
     files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(BD_INCDIR) \
     stampfile=%(objdir)/%(modname)_incs
 
-%rule_genmodule_dummy modname=%(modname) modtype=%(modtype) \
-		      modsuffix=%(modsuffix) \
-		      targetdir=%(objdir)/dummyinc conffile=%(conffile)
-
 BD_INCDIRS := $(filter-out ./,$(sort $(dir $(%(modname)_INCLUDES))))
 
 TMP%(modname)_INCDIRS := \
@@ -1724,9 +1458,6 @@ TMP%(modname)_INCDIRS := \
     $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
     $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
 %rule_makedirs dirs=$(TMP%(modname)_INCDIRS) setuptarget=%(mmake)-includes-dirs
-
-$(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES)) : | %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
-GLOB_MKDIRS += %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
 
 endif
 
@@ -1742,23 +1473,14 @@ $(BD_DEFLIBDEFSINC) :
 $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | %(objdir)/include
 GLOB_MKDIRS += %(objdir)/include
 
-## Generation of the funclist file
-##
-%(mmake)-funclist : %(modname).funclist
-
-%rule_genmodule_funclist \
-    modname=%(modname) modtype=%(modtype) modsuffix=%(modsuffix) \
-    conffile=%(conffile) reffile=%(reffile)
-
-
 ## Extra genmodule src files generation
 ## 
 %rule_genmodule_files modname=%(modname) modtype=%(modtype) \
 		      modsuffix=%(modsuffix) targetdir=%(objdir) \
-		      conffile=%(conffile) reffile=%(reffile)
+		      conffile=%(conffile)
 
-BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) %(reffile) \
-    $(BD_REFS) $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
+BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) \
+    $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
     %(objdir)/Makefile.%(modname) \
     $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
     $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
@@ -1851,8 +1573,6 @@ GLOB_MKDIRS += %(objdir) %(libdir)
 
 %end
 #------------------------------------------------------------------------------
-
-
 
 
 #------------------------------------------------------------------------------
