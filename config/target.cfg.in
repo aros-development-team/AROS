@@ -21,7 +21,13 @@ SHARED_LD	:= @aros_shared_ld@
 KERNEL_LD	:= @aros_kernel_ld@
 GENMAP		:= @aros_target_genmap@
 TARGET_OBJCOPY	:= @aros_target_objcopy@
+
+ifeq ($(DEBUG),yes)
+TARGET_STRIP	:= @NOP@
+else
 TARGET_STRIP	:= @aros_target_strip@ @aros_target_strip_flags@
+endif
+
 TARGET_OBJDUMP	:= @aros_target_objdump@
 KERNEL_RESCOMP  := @aros_kernel_rescomp@
 
