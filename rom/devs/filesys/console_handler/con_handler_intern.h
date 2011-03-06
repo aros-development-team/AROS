@@ -15,6 +15,7 @@
 #include <intuition/intuition.h>
 #include <hidd/hidd.h>
 #include <aros/asmcall.h>
+#include <libraries/gadtools.h>
 
 /*
 ** stegerg:
@@ -62,6 +63,8 @@ struct filehandle
     struct MsgPort	*conreadmp;
     struct MsgPort	*conwritemp;
     struct Window	*window;
+    struct Menu         *menu;
+    void                *vi; /* visual-info required by GadTools */
     struct Task 	*contask;
     struct Task		*breaktask;
     struct Task		*lastwritetask;

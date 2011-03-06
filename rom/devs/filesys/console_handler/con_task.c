@@ -24,6 +24,16 @@
 #include <proto/intuition.h>
 #include <devices/conunit.h>
 #include <devices/timer.h>
+#include <libraries/gadtools.h>
+
+/* Suppressing manual opening of Gadtools.library. We need gadtools for
+   the menu layout, however we need to gracefully fail, since gadtools
+   isn't in the kernel and autoinit would potentially try to open it
+   before gadtools can be loaded from disk 
+*/
+
+struct Library * GadToolsBase;
+#include <proto/gadtools.h>
 
 #undef SDEBUG
 #undef DEBUG
@@ -43,6 +53,44 @@
 #define ioReq(x) ((struct IORequest *)x)
 
 /****************************************************************************************/
+
+#define MSG_CONSOLETITLE_STR "Console"
+#define MSG_RESET_STR "Reset"
+#define MSG_QUIT_STR "Quit"
+#define MSG_COMPLETETITLE_STR "Complete"
+#define MSG_REVIEWTITLE_STR "Review"
+#define MSG_ENABLED_STR "Enabled"
+#define MSG_CLEARBUFFER_STR "Clear buffer"
+#define MSG_SAVEPLAIN_STR "Save plaintext as..."
+#define MSG_SAVESTYLES_STR "Save with styles as..."
+#define MSG_HISTORYTITLE_STR "History"
+#define MSG_COMPLETEF_STR "Complete file"
+#define MSG_COMPLETEC_STR "Complete command"
+#define MSG_COMPLETED_STR "Complete device"
+
+static const struct NewMenu default_nm[] =
+  {
+	{NM_TITLE,   MSG_CONSOLETITLE_STR, NULL, 0, 0L, NULL},
+	{   NM_ITEM, MSG_RESET_STR, "Z", 0, 0L, (APTR)101},
+	{   NM_ITEM, (STRPTR)NM_BARLABEL,  NULL, 0, 0L, NULL},
+	{   NM_ITEM, MSG_QUIT_STR,  "Q", 0, 0L, (APTR)111},
+	{NM_TITLE,   MSG_COMPLETETITLE_STR,NULL, 0, 0L, NULL},
+	{   NM_ITEM, MSG_COMPLETEF_STR, "F" , 0, 0L, (APTR)201},
+	{   NM_ITEM, MSG_COMPLETEC_STR, "M" , 0, 0L, (APTR)202},
+	{   NM_ITEM, MSG_COMPLETED_STR, "D" , 0, 0L, (APTR)203},
+	{NM_TITLE,   MSG_REVIEWTITLE_STR,  NULL, 0, 0L, NULL},
+	{   NM_ITEM, MSG_ENABLED_STR, "W" , CHECKIT | MENUTOGGLE |CHECKED, 0L, (APTR)301},
+	{   NM_ITEM, MSG_CLEARBUFFER_STR, NULL, 0, 0L, (APTR)302},
+	{   NM_ITEM, (STRPTR)NM_BARLABEL,  NULL, 0, 0L, NULL},
+	{   NM_ITEM, MSG_SAVEPLAIN_STR, NULL, 0, 0L, (APTR)303},
+	{   NM_ITEM, MSG_SAVESTYLES_STR, NULL, 0, 0L, (APTR)304},
+	{NM_TITLE,   MSG_HISTORYTITLE_STR, NULL, 0, 0L, NULL},
+	{   NM_ITEM, MSG_ENABLED_STR, NULL, CHECKIT | MENUTOGGLE | CHECKED, 0L, (APTR)401},
+	{   NM_ITEM, MSG_CLEARBUFFER_STR, NULL, 0, 0L, (APTR)402},
+
+	{NM_END,0,0,0,0,0}
+  };
+
 
 static const struct NewWindow default_nw =
 {
@@ -195,6 +243,22 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 
 /****************************************************************************************/
 
+static VOID CloseConWindow(struct filehandle *fh)
+{
+  if (fh->menu) {
+    ClearMenuStrip(fh->window);
+    FreeMenus(fh->menu);
+  }
+  if (fh->vi) {
+    FreeVisualInfo(fh->vi);
+    fh->vi = NULL;
+  }
+  if (fh->window) {
+    CloseWindow(fh->window);
+    fh->window = NULL;
+  }
+}
+
 LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 {
     LONG err = 0;
@@ -214,6 +278,22 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 
     if (fh->window)
     {
+        if (!GadToolsBase) {
+	    GadToolsBase = OpenLibrary("gadtools.library",0L);
+        }
+        if (GadToolsBase) {
+	  D(bug("Initializing menus"));
+	    fh->vi = (void *)GetVisualInfo(fh->window->WScreen, TAG_END);
+	    if (fh->vi) {
+	        fh->menu = CreateMenus(&default_nm,TAG_END);
+	        if (fh->menu) {
+	            if (LayoutMenus(fh->menu, fh->vi, TAG_END)) {
+		        SetMenuStrip(fh->window, fh->menu);
+	            }
+		}
+	    }
+	}
+
     	D(bug("contask: window opened\n"));
 	fh->conreadio->io_Data   = (APTR)fh->window;
 	fh->conreadio->io_Length = sizeof (struct Window);
@@ -243,7 +323,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 	{
 	    err = ERROR_INVALID_RESIDENT_LIBRARY;
 	}
-	if (err) CloseWindow(fh->window);
+	if (err) CloseConWindow(fh);
 
     } /* if (fh->window) */
     else
@@ -583,8 +663,7 @@ static void process_input(struct conbase * conbase,struct filehandle *fh)
 	      if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
 		CloseDevice((struct IORequest *)fh->conreadio);
 	      fh->flags &= ~FHFLG_CONSOLEDEVICEOPEN;
-	      CloseWindow(fh->window);
-	      fh->window = NULL;
+	      CloseConWindow(fh->window);
 	    }
 	  
 	  /* fall through */
@@ -1147,8 +1226,7 @@ AROS_UFH3(VOID, conTaskEntry,
     if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
     	CloseDevice((struct IORequest *)fh->conreadio);
 
-    if (fh->window)
-    	CloseWindow(fh->window);
+    CloseConWindow(fh);
 	
     DeleteIORequest( ioReq(fh->conreadio) );
     FreeMem(fh->conreadmp, sizeof (struct MsgPort) * 3);
