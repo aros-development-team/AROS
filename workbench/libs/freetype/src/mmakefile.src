@@ -67,5 +67,5 @@ USER_CFLAGS := -DFT2_BUILD_LIBRARY
 
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
     modtype=library files="$(SHFILES) $(FT2FILES)" linklibname=freetype2shared \
-    noref=../config/aros/ftsystem uselibs="amiga rom m"
+    uselibs="amiga rom m"
 
