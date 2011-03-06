@@ -2366,6 +2366,7 @@ endif
         fi
 
 $(%(mmake)-pkgdir)/.files-touched:
+	%mkdirs_q $(%(mmake)-pkgdir)
 	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/configure '{}' \; && \
 	$(TOUCH) $@
 
