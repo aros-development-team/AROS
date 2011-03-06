@@ -30,17 +30,13 @@ FILES := library \
   modname=TextEditor modtype=mcp \
   files=$(FILES) uselibs="amiga mui rom m"
 
-
 #MM includes-copy
 
 INCLUDE_FILES := TextEditor_mcp.h
 %copy_includes path=mui
 
-
-
 TARGETDIR := $(AROS_CATALOGS)
 
-# FIXME: doesn't work outside source tree
 LOCALE_H := $(TOP)/$(CURDIR)/locale.h
 LOCALE_C := $(TOP)/$(CURDIR)/locale.c
 
@@ -82,7 +78,6 @@ $(TARGETDIR)/dansk/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/danish.ct
 $(TARGETDIR)/russian/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/russian.ct
 	@$(MKDIR) $(TARGETDIR)/russian
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
 
 #MM
 texteditor-mcp-clean :
