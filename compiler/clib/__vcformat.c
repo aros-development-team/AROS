@@ -32,7 +32,7 @@
 #   define BITSPERBYTE 8
 #endif
 
-#if (__WORDSIZE != 64) && defined(AROSC_STATIC)
+#if (__WORDSIZE != 64) && (defined(AROSC_STATIC) || defined(AROSC_ROM))
 #undef AROS_HAVE_LONG_LONG
 #endif
 
