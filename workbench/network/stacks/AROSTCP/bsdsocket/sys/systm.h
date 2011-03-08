@@ -68,6 +68,10 @@
 
 #include <stdarg.h>
 
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
+
 #include <dos/rdargs.h>
 
 /*
@@ -108,7 +112,13 @@ _remque(register struct queue_node *node)
 
 void cs_putchar(unsigned char, struct CSource *);
 void panic(const char *, ...);
+#ifdef __AROS__
+#define __log(A, B, C...) \
+bug("[AROSTCP] "); bug(B , ## C); bug("\n")
+#define log(A, B, C...) __log(A, B , ## C)
+#else
 void __log(unsigned long, const char *, ...);
+#endif
 int vlog(unsigned long, const char *, const char *, va_list);
 int printf(const char *, ...);
 int sprintf(char * buf, const char * fmt, ...);

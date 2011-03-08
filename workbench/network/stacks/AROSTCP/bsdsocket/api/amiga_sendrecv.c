@@ -147,7 +147,7 @@ AROS_LH6(LONG, sendto,
 {
   AROS_LIBFUNC_INIT
   DSYSCALLS(log(LOG_DEBUG,"sendto(%ld, buf, %ld, 0x%08lx, sockaddr_in, %ld", s, len, flags, tolen);)
-  DSYSCALLS(dump_sockaddr_in((struct sockaddr_in *)to);)
+  DSYSCALLS(dump_sockaddr_in((struct sockaddr_in *)to, libPtr);)
   return __sendto(s, buf, len, flags, to, tolen, libPtr);
   AROS_LIBFUNC_EXIT
 }
