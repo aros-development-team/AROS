@@ -5,7 +5,10 @@ TARGETDIR 	:= $(GENDIR)/$(CURDIR)
 KOBJS 		:=
 FILES		:= bootstrap screen elf support
 
-#MM kernel-bootstrap-i386 : linklibs kernel-kernel-pc-i386-kobj kernel-exec-kobj
+#MM kernel-bootstrap-i386 : linklibs \
+#MM        kernel-kernel-kobj \
+#MM        kernel-exec-kobj \
+#MM        kernel-pc-i386-irq-kobj
 kernel-bootstrap-i386: $(BINDIR)/boot/aros-pc-i386.gz
 
 setup-pc-i386 :
