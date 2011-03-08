@@ -207,6 +207,9 @@ panic(const char *fmt,...)
 *
 */
 
+#ifdef __AROS__
+#undef __log
+#endif
 void
 __log(unsigned long level, const char *fmt, ...)
 {
