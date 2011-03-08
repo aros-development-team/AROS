@@ -56,9 +56,8 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 {
     struct multiboot *mb = (struct multiboot *)addr;/* Multiboot structure from GRUB */
     unsigned long mem_upper = 0;
-    unsigned long kernel_phys_base = 0;
 
-	kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
+    kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
     kprintf("[BOOT] Stack @ %p, [%d bytes]\n",__stack, 65536);
 
     /* Disable interrupts on the XT-PIC directly */
@@ -66,7 +65,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     outb(0xff, 0xa1);
 
     tag->ti_Tag = KRN_BootLoader;
-    tag->ti_Data = "Bootstrap/GRUB for x86";
+    tag->ti_Data = (IPTR)"Bootstrap/GRUB for x86";
     tag++;
 
     if (mb->cmdline)
@@ -88,7 +87,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     	struct mb_mmap *mmap = (struct mb_mmap *)mb->mmap_addr;
 
     	void *dst = malloc(mb->mmap_length);
-    	memcpy(dst, mb->mmap_addr, len);
+    	memcpy(dst, (void *)mb->mmap_addr, len);
 
     	tag->ti_Tag = KRN_MMAPAddress;
     	tag->ti_Data = (intptr_t)dst;
@@ -174,7 +173,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     	unsigned long kernel_virt = kernel_phys;
 
     	unsigned long total_size_ro, total_size_rw;
-    	unsigned long size_ro, size_rw;
+    	uint32_t size_ro, size_rw;
 
     	/* Calculate total size of kernel and modules */
 
@@ -234,7 +233,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     	}
 
     	tag->ti_Tag = KRN_KernelBss;
-    	tag->ti_Data = tracker;
+    	tag->ti_Data = (IPTR)tracker;
     	tag++;
 
     	kprintf("[BOOT] Kernel taglist contains %d entries\n", ((intptr_t)tag - (intptr_t)tags)/sizeof(struct TagItem));
