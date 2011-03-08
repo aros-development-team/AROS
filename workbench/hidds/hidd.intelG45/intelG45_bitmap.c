@@ -216,7 +216,7 @@ OOP_Object *METHOD(GMABM, Root, New)
                 bm->fbgfx = FALSE;
             }
 
-            if ((bm->framebuffer != 0xffffffff) && (bm->framebuffer != 0))
+            if (bm->framebuffer != NULL)
             {
 				D(bug("[GMA] not displayable Bitmap::new = %p\n", o));
                 return o;

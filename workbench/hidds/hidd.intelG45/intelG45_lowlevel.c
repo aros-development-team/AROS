@@ -563,6 +563,7 @@ IPTR AllocBitmapArea(struct g45staticdata *sd, ULONG width, ULONG height,
 
     D(bug("[GMA] AllocBitmapArea(%dx%d@%d) = %p\n",
 	width, height, bpp, result));
+    D(bug("[GMA] Available graphics memory is now %ldMB\n", sd->CardMem.mh_Free >> 20));
     /*
 	If Allocate failed, make the 0xffffffff as return. If it succeeded, make
 	the memory pointer relative to the begin of GFX memory
@@ -589,6 +590,7 @@ VOID FreeBitmapArea(struct g45staticdata *sd, IPTR bmp, ULONG width, ULONG heigh
     Forbid();
     Deallocate(&sd->CardMem, ptr, 1024+((width * bpp + 63) & ~63) * height);
     Permit();
+    D(bug("[GMA] Available graphics memory is now %ldMB\n", sd->CardMem.mh_Free >> 20));
 
     UNLOCK_HW
 }

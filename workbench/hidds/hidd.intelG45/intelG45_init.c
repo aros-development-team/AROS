@@ -33,9 +33,20 @@
 
 #include "compositing.h"
 
-static volatile uint32_t min(uint32_t a, uint32_t b)
+#define KBYTES 1024
+#define MBYTES (1024 * 1024)
+
+static uint32_t min(uint32_t a, uint32_t b)
 {
 	if (a < b)
+		return a;
+	else
+		return b;
+}
+
+static uint32_t max(uint32_t a, uint32_t b)
+{
+	if (a > b)
 		return a;
 	else
 		return b;
@@ -78,6 +89,35 @@ static BOOL IsCompatible(UWORD product_id)
         || product_id == 0x2a42;
 }
 
+static ULONG GetGATTSize(struct intelg45base *intelg45base)
+{
+    struct g45staticdata *sd = &intelg45base->g45_sd;
+    ULONG size = 0;
+
+    switch (readl(sd->Card.MMIO + G45_GATT_CONTROL) >> 1 & 0x7)
+    {
+        case 0:
+            size = 512 * KBYTES;
+            break;
+        case 1:
+            size = 256 * KBYTES;
+            break;
+        case 2:
+            size = 128 * KBYTES;
+            break;
+        case 3:
+            size = 1 * MBYTES;
+            break;
+        case 4:
+            size = 2 * MBYTES;
+            break;
+        case 5:
+            size = 1 * MBYTES + 512 * KBYTES;
+            break;
+    }
+
+    return size;
+}
 
 #if 0
 static const probe_monitor(struct intelg45base *intelg45base)
@@ -238,7 +278,8 @@ AROS_UFH3(void, Enumerator,
     struct g45staticdata *sd = &intelg45base->g45_sd;
     void *BootLoaderBase;
     BOOL forced = FALSE;
-
+    ULONG gfx_mem_size = 64 * MBYTES, min_gfx_mem_size = 8 * MBYTES,
+        max_gfx_mem_size, extra_mem_size;
     IPTR ProductID;
     IPTR VendorID;
     IPTR RevisionID;
@@ -276,6 +317,8 @@ AROS_UFH3(void, Enumerator,
     	D(ULONG BSM = HIDD_PCIDevice_ReadConfigLong(pciDevice, G45_BSM));
     	D(UBYTE MSAC = HIDD_PCIDevice_ReadConfigByte(pciDevice, G45_MSAC));
 
+    	D(bug("[GMA] MGCC=%04x, BSM=%08x, MSAC=%08x\n", MGCC, BSM, MSAC));
+
     	/*-------- DO NOT CHANGE/REMOVE -------------*/
     	bug("\003\n"); /* Tell vga text mode debug output to die */
     	/*-------- DO NOT CHANGE/REMOVE -------------*/
@@ -305,8 +348,8 @@ AROS_UFH3(void, Enumerator,
     		break;
     	}
 
-    	IPTR Bar0, Bar2, Bar3;
-    	IPTR Size0, Size2, Size3;
+        IPTR mmio_base, window_base, gatt_base;
+        IPTR mmio_size, window_size, gatt_size;
 
     	OOP_Object *driver;
 
@@ -323,31 +366,42 @@ AROS_UFH3(void, Enumerator,
 
         if (RevisionID >= 7)
         {
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &Bar0);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &Bar2);
-            Bar3 = Bar0 + 2 * 1024 * 1024;
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &mmio_base);
+            mmio_size -= 2 * MBYTES;
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &window_base);
+            gatt_base = mmio_base + 2 * MBYTES;
 
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &Size0);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &Size2);
-            Size3 = Size0 - 2 * 1024 * 1024;
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &mmio_size);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &window_size);
+            gatt_size = GetGATTSize(intelg45base);
         }
         else
         {
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &Bar0);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &Bar2);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base3, &Bar3);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &mmio_base);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &window_base);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base3, &gatt_base);
 
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &Size0);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &Size2);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size3, &Size3);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &mmio_size);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &window_size);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size3, &gatt_size);
         }
 
-    	D(bug("[GMA] MGCC=%04x, BSM=%08x, MSAC=%08x\n", MGCC, BSM, MSAC));
-    	D(bug("[GMA] Bar0=%08x-%08x, Bar2=%08x-%08x, Bar3=%08x-%08x\n", Bar0, Bar0 + Size0 - 1,
-    			Bar2, Bar2 + Size2 - 1, Bar3, Bar3 + Size3 - 1));
+        /* Gain access to PCI resource regions used */
+        sd->Card.Framebuffer = HIDD_PCIDriver_MapPCI(driver,
+            (APTR)window_base, window_size);
+        sd->Card.Framebuffer_size = window_size;
+        sd->Card.MMIO = HIDD_PCIDriver_MapPCI(driver,
+            (APTR)mmio_base, mmio_size);
+        sd->Card.GATT = HIDD_PCIDriver_MapPCI(driver,
+            (APTR)gatt_base, gatt_size);
+        sd->Card.GATT_size = gatt_size;
 
-    	/* Estimate the common size of GATT and BAR2. Substract 16MB for scratch area */
-    	uint32_t minimum_size = min(Size2, Size3*1024) - 16*1024*1024;
+        /* Estimate the common size of the GATT and the graphics aperature.
+         * Substract 16MB for scratch area */
+        max_gfx_mem_size = min(window_size, gatt_size * 1024) - 16 * MBYTES;
+
+        /* Ensure graphics buffer isn't smaller than stolen memory */
+        gfx_mem_size = max(sd->Card.Stolen_size, gfx_mem_size);
 
     	/*
     	 * start initialization:
@@ -372,41 +426,34 @@ AROS_UFH3(void, Enumerator,
 
 						D(bug("[GMA] Found boot parameter '%s'\n", node->ln_Name));
 
-						uint32_t meg = strtol(str, &endptr, 0) * 1024*1024;
-						if (meg < 16*1024*1024)
-							meg = 16*1024*1024;
+						uint32_t meg = strtol(str, &endptr, 0);
+						if (meg < 16)
+							meg = 16;
 
-						meg = min(meg, minimum_size);
+                        gfx_mem_size = max(min_gfx_mem_size, meg * MBYTES);
+                        gfx_mem_size = min(gfx_mem_size, max_gfx_mem_size);
 
-						D(bug("[GMA] Kernel parameter limits available video memory to %dMB\n", meg >> 20));
-
-						minimum_size = meg;
+                        D(bug("[GMA] Boot parameter sets video memory to %dMB\n",
+                            gfx_mem_size >> 20));
     				}
            		}
     		}
     	}
 
-        if (RevisionID >= 7)
-        {
-            sd->Card.Framebuffer = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar2, Size2);
-            sd->Card.Framebuffer_size = Size2;
-            sd->Card.MMIO = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar0, Size0);
-            sd->Card.GATT = (APTR)(sd->Card.MMIO + 2 * 1024 * 1024);
-            sd->Card.GATT_size = Size3;
-        }
+        /* Calculate amount of extra memory to request */
+        if (gfx_mem_size > sd->Card.Stolen_size)
+            extra_mem_size = gfx_mem_size - sd->Card.Stolen_size;
         else
-        {
-            sd->Card.Framebuffer = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar2, Size2);
-            sd->Card.Framebuffer_size = Size2;
-            sd->Card.MMIO = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar0, Size0);
-            sd->Card.GATT = HIDD_PCIDriver_MapPCI(driver, (APTR)Bar3, Size3);
-            sd->Card.GATT_size = Size3;
-        }
+            extra_mem_size = 0;
 
-    	D(bug("[GMA] GATT space for %d entries\n", Size3 / 4));
+    	/* GATT table and a 4K popup are in stolen memory, so we don't get
+         * quite the full amount */
+        gfx_mem_size -= sd->Card.GATT_size + 4096;
+
+    	D(bug("[GMA] GATT space for %d entries\n", gatt_size / 4));
 
     	D(bug("[GMA] Stolen memory size: %dMB\n", sd->Card.Stolen_size >> 20));
-    	D(bug("[GMA] Framebuffer size: %d MB\n", sd->Card.Framebuffer_size >> 20));
+        D(bug("[GMA] Framebuffer window size: %d MB\n", sd->Card.Framebuffer_size >> 20));
 
 	    struct MemChunk *mc = (struct MemChunk *)sd->Card.Framebuffer;
 
@@ -415,7 +462,7 @@ AROS_UFH3(void, Enumerator,
 	    sd->CardMem.mh_First = mc;
 	    sd->CardMem.mh_Lower = (APTR)mc;
 
-	    sd->CardMem.mh_Free = minimum_size;
+	    sd->CardMem.mh_Free = gfx_mem_size;
 	    sd->CardMem.mh_Upper = (APTR)(sd->CardMem.mh_Free + (IPTR)mc);
 
 	    mc->mc_Next = NULL;
@@ -423,32 +470,29 @@ AROS_UFH3(void, Enumerator,
 
 	    sd->PCIDevice = pciDevice;
 
-	    D(bug("[GMA] Usable memory: %d MB\n", minimum_size >> 20));
+	    D(bug("[GMA] Usable memory: %d MB\n", gfx_mem_size >> 20));
 
-    	/* Calculate amount of requested memory. Take size of framebuffer... */
-    	intptr_t requested_memory = minimum_size;
-    	/* Substract the size of stolen memory... */
-    	requested_memory -= sd->Card.Stolen_size;
-    	/* GATT table is in stolen memory... */
-    	requested_memory += sd->Card.GATT_size;
-    	/* and a 4K popup is there */
-    	requested_memory += 4096;
+    	D(bug("[GMA] Requesting %d KB memory\n", extra_mem_size >> 10));
 
-    	D(bug("[GMA] Requesting %d KB memory\n", requested_memory >> 10));
-
-    	/* First virtual address of new memory region */
+    	/* Virtual address of end of stolen graphics memory */
     	uintptr_t virtual = sd->Card.Stolen_size - sd->Card.GATT_size - 4096;
-    	/* Get memory */
-    	uintptr_t phys_memory = (uintptr_t)AllocMem(requested_memory + 4095, MEMF_REVERSE);
-    	D(bug("[GMA] Got %08x\n", phys_memory));
 
-    	/* Align it to the page size boundary (we allocated one page more already) */
-    	phys_memory = (phys_memory + 4095) &~4095;
+        if (extra_mem_size != 0)
+        {
+            /* Get memory */
+            uintptr_t phys_memory =
+                (uintptr_t)AllocMem(extra_mem_size + 4095, MEMF_REVERSE);
+            D(bug("[GMA] Got %08x\n", phys_memory));
 
-    	D(bug("[GMA] Mapping physical %08x to virtual %08x with size %08x\n",phys_memory, virtual, requested_memory));
-    	G45_AttachMemory(sd, phys_memory, virtual, requested_memory);
+            /* Align it to the page size boundary (we allocated one page
+             * more already) */
+            phys_memory = (phys_memory + 4095) &~4095;
 
-    	sd->ScratchArea = virtual + requested_memory;
+            D(bug("[GMA] Mapping physical %08x to virtual %08x with size %08x\n",
+                phys_memory, virtual, extra_mem_size));
+            G45_AttachMemory(sd, phys_memory, virtual, extra_mem_size);
+        }
+    	sd->ScratchArea = virtual + extra_mem_size;
     	D(bug("[GMA] Scratch area at %08x\n", sd->ScratchArea));
 
     	uint32_t val;
@@ -532,8 +576,6 @@ AROS_UFH3(void, Enumerator,
 			bug("[GMA] analog VGA connector Enabled\n");
 			sd->pipe = PIPE_A;
 		}
-
-		
 
     	/*
     	 * Boot logo.
