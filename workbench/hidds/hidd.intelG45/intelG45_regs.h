@@ -28,6 +28,8 @@
 #define G45_MSAC2			0x66
 
 
+#define G45_GATT_CONTROL				0x2020
+
 /* Ring buffer registers */
 #define G45_RING_TAIL					0x2030
 #define G45_RING_TAIL_MASK				0x1ffff8
