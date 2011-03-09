@@ -259,6 +259,9 @@ nouveau_mem_detect(struct drm_device *dev)
 		dev_priv->vram_size  = nv_rd32(dev, NV04_PFB_FIFO_DATA);
 		dev_priv->vram_size &= NV10_PFB_FIFO_DATA_RAM_AMOUNT_MB_MASK;
 	}
+#if defined(HOSTED_BUILD)
+    dev_priv->vram_size = HOSTED_BUILD_VRAM_SIZE;
+#endif
 
 	if (dev_priv->vram_size)
 		return 0;
@@ -442,9 +445,6 @@ nouveau_mem_vram_init(struct drm_device *dev)
 	ret = dev_priv->engine.vram.init(dev);
 	if (ret)
 		return ret;
-#if defined(HOSTED_BUILD)
-    dev_priv->vram_size = HOSTED_BUILD_VRAM_SIZE;
-#endif
 
 	NV_INFO(dev, "Detected %dMiB VRAM\n", (int)(dev_priv->vram_size >> 20));
 	if (dev_priv->vram_sys_base) {
