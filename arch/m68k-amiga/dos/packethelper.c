@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -12,6 +12,8 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include "dos_intern.h"
+
+#include <string.h>
 
 /*****************************************************************************
 
@@ -137,7 +139,9 @@ SIPTR dopacket0(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, L
 
 BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketHelperStruct *phs)
 {
-    if (isdosdevicec(name) < 0) { /* no ":" */
+    if (!strchr(name, ':'))
+    {
+    	/* no ":" */
     	struct Process *me = (struct Process *)FindTask(NULL);
         BPTR cur;
     	BSTR bstrname = C2BSTR(name);
