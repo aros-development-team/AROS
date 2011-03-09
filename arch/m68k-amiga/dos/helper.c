@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: BSTR helpers
     Lang: English
@@ -11,28 +11,6 @@
 
 #define  DEBUG  0
 #include <aros/debug.h>
-
-WORD isdosdeviceb(BSTR ss)
-{
-	UBYTE b;
-	UBYTE *s = BADDR(ss);
-	
-	for (b = 0; b < s[0]; b++) {
-		if (s[b + 1] == ':')
-			return b;
-	}
-	return -1;
-}
-WORD isdosdevicec(CONST_STRPTR s)
-{
-	UBYTE b = 0;
-	while (s[b]) {
-		if (s[b] == ':')
-			return b;
-		b++;
-	}
-	return -1;
-}
 
 BSTR C2BSTR(CONST_STRPTR src)
 {

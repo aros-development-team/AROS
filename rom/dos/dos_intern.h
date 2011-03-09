@@ -286,8 +286,6 @@ BSTR C2BSTR(CONST_STRPTR);
 char *BSTR2C(BSTR);
 BOOL CMPCBSTR(CONST_STRPTR, BSTR);
 BOOL CMPICBSTR(CONST_STRPTR, BSTR);
-WORD isdosdeviceb(BSTR);
-WORD isdosdevicec(CONST_STRPTR);
 SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5);
 SIPTR dopacket4(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4);
 SIPTR dopacket3(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3);
