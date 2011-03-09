@@ -801,8 +801,6 @@ out_vram:
 out_bios:
 #if !defined(__AROS__)
 	nouveau_pm_fini(dev);
-#else
-IMPLEMENT("Calling nouveau_pm_fini(dev);\n");
 #endif
 	nouveau_bios_takedown(dev);
 out_display_early:
