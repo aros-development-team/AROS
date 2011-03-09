@@ -173,6 +173,9 @@ nv50_vram_init(struct drm_device *dev)
 	dev_priv->vram_size  = nv_rd32(dev, 0x10020c);
 	dev_priv->vram_size |= (dev_priv->vram_size & 0xff) << 32;
 	dev_priv->vram_size &= 0xffffffff00ULL;
+#if defined(HOSTED_BUILD)
+    dev_priv->vram_size = HOSTED_BUILD_VRAM_SIZE;
+#endif
 
 	switch (dev_priv->chipset) {
 	case 0xaa:

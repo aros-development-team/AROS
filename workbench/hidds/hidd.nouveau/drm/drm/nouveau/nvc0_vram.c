@@ -94,6 +94,9 @@ nvc0_vram_init(struct drm_device *dev)
 
 	dev_priv->vram_size  = nv_rd32(dev, 0x10f20c) << 20;
 	dev_priv->vram_size *= nv_rd32(dev, 0x121c74);
+#if defined(HOSTED_BUILD)
+    dev_priv->vram_size = HOSTED_BUILD_VRAM_SIZE;
+#endif
 	dev_priv->vram_rblock_size = 4096;
 	return 0;
 }
