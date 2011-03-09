@@ -1,8 +1,0 @@
-# $Id$
-#
-include $(TOP)/config/make.cfg
-
-##linklibs-arosm-m68k: arosm-setup-link linklibs-arosm-m68k
-
-#MM- linklibs-arosm-m68k : linklibs-arosm-nofpu
-
