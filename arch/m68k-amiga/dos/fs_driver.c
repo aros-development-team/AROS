@@ -65,10 +65,10 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR lock, LONG mode, CON
 	return ERROR_ACTION_NOT_KNOWN;
     }
 
-    /* 'lock' parameter is actually a parent's BPTR lock if refType != REF_DEVICE */
     switch (refType)
     {
     case REF_LOCK:
+	/* 'lock' parameter is actually a parent's BPTR lock */
     	port = ((struct FileLock *)BADDR(lock))->fl_Task;
     	break;
 
@@ -79,15 +79,15 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR lock, LONG mode, CON
 
     case REF_CONSOLE:
     	me = (struct Process *)FindTask(NULL);
-    	if (me->pr_ConsoleTask)
-    	    port = me->pr_ConsoleTask;
-    	else
+    	port = me->pr_ConsoleTask;
+    	if (!port)
     	{
 	    /* was NIL: */
     	    SetIoErr(0);
     	    handle->fh_Type = BNULL;
             return DOSTRUE;
         }
+        /* CHECKME: 'lock' being passed is process' console file handle, not a lock. Is it correct to pass it on ? */
         break;
     }
 
