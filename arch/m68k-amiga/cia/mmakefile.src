@@ -5,7 +5,7 @@ FUNCTIONS := ableicr addicrvector remicrvector seticr
 
 %build_module_simple mmake=kernel-cia \
     modname=cia modtype=resource \
-    files="cia_init $(FUNCTIONS)"
+    files="cia_init cia_interrupt $(FUNCTIONS)"
 
 #MM
 kernel-cia-includes: $(AROS_INCLUDES)/clib/cia_protos.h $(AROS_INCLUDES)/defines/cia.h \
