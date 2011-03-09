@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -90,12 +90,12 @@
 	    return NULL;
 	}
 	
-	D(bug("Found list entry %s\n", dlist->dol_Ext.dol_AROS.dol_DevName));
+	D(bug("[FindDosEntry] Found list entry 0x%p, '%b' type %d\n", dlist, dlist->dol_Name, dlist->dol_Type));
 
 	/* Check type and name */
 	if (flags & flagarray[dlist->dol_Type + 1] &&
-	    !Strnicmp(name, dlist->dol_Ext.dol_AROS.dol_DevName, size) && 
-	    !dlist->dol_Ext.dol_AROS.dol_DevName[size])
+	    !CMPNICBSTR(name, dlist->dol_Name, size) &&
+	    !AROS_BSTR_ADDR(dlist->dol_Name)[size])
 	{
 	    return dlist;
 	}
