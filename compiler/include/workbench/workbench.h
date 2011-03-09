@@ -283,4 +283,8 @@ struct AppMenuItem;
 
 #define WBA_LAST_TAG                        (WBA_BASE+64)
 
+/* Parameters for the UpdateWorkbench() function */
+#define UPDATEWB_ObjectRemoved              0
+#define UPDATEWB_ObjectAdded                1
+
 #endif /* WORKBENCH_WORKBENCH_H */
