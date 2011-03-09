@@ -207,6 +207,10 @@ case "$host_os" in
     darwin*)
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	aros_host_arch="darwin"
+	android_build_os="darwin-x86"
+	android_tool="android"
+	default_android_sdk="/android-sdk-mac_x86"
+	default_android_ndk="/android-ndk-r5b"
 	case "$host_cpu" in
 	    *i?86*)
 		aros_host_cpu="i386"
@@ -738,7 +742,7 @@ ios)
     AC_MSG_RESULT($aros_android_sdk)
 
     AC_MSG_CHECKING([Android NDK path])
-    AC_ARG_WITH(ndk,AC_HELP_STRING([--with-ndk=PATH],[Specify Android NDK path (default=$default_android_ndk).]),aros_android_ndk="$withval",aros_android_ndk="")
+    AC_ARG_WITH(ndk,AC_HELP_STRING([--with-ndk=PATH],[Specify Android NDK path (default=$default_android_ndk).]),aros_android_ndk="$withval",aros_android_ndk="$default_android_ndk")
     AC_MSG_RESULT($aros_android_ndk)
 
     AC_MSG_CHECKING([what Android version to use])
