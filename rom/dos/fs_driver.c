@@ -135,6 +135,78 @@ LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, STRPTR name, L
     return iofs.io_DosError;
 }
 
+LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR ref, LONG accessMode, STRPTR name, struct DosLibrary *DOSBase)
+{
+    struct IOFileSys iofs;
+    LONG doappend = 0;
+
+    /* Prepare I/O request. */
+    InitIOFS(&iofs, FSA_OPEN_FILE, DOSBase);
+
+    switch (accessMode)
+    {
+    case MODE_OLDFILE:
+	iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_OLDFILE;
+	break;
+
+    case MODE_NEWFILE:
+	iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_NEWFILE;
+	break;
+
+    case MODE_READWRITE:
+	iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_READWRITE;
+	break;
+
+    default:
+	/* See if the user requested append mode */
+	doappend = accessMode & FMF_APPEND;
+	/* The append mode is all taken care by dos.library */
+	iofs.io_Union.io_OPEN_FILE.io_FileMode = accessMode & ~FMF_APPEND;
+	break;
+    }
+
+    if (refType == REF_DEVICE)
+    {
+        struct DevProc *dvp = ref;
+
+	iofs.IOFS.io_Device = (struct Device *)dvp->dvp_Port;
+	if (dvp->dvp_Lock != BNULL)
+	    iofs.IOFS.io_Unit = ((struct FileHandle *)BADDR(dvp->dvp_Lock))->fh_Unit;
+	else
+            iofs.IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
+    }
+    else
+    {
+    	/* In IOFS consoles and regular locks are the same */
+    	struct FileHandle *fh = BADDR(ref);
+
+    	iofs.IOFS.io_Device = fh->fh_Device;
+	iofs.IOFS.io_Unit   = fh->fh_Unit;
+    }
+
+    iofs.io_Union.io_OPEN_FILE.io_Filename = (refType == REF_CONSOLE) ? (STRPTR)"" : name;
+
+    DosDoIO(&iofs.IOFS);
+
+    if (!iofs.io_DosError)
+    {
+        handle->fh_Device = iofs.IOFS.io_Device;
+        handle->fh_Unit   = iofs.IOFS.io_Unit;
+
+        if (doappend)
+        {
+            /* See if the handler supports FSA_SEEK */
+            if (Seek(MKBADDR(handle), 0, OFFSET_END) != -1)
+            {
+        	/* if so then set the proper flag in the FileHandle struct */
+        	handle->fh_Flags |= FHF_APPEND;
+            }
+        }
+    }
+
+    return iofs.io_DosError;
+}
+
 LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBase)
 {
     struct IOFileSys iofs;

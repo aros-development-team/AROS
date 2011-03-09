@@ -10,7 +10,7 @@ CFUNCS  := \
 	endnotify errorreport exall exallend examine examinefh  \
 	exnext finddosentry getdeviceproc info isfilesystem \
 	isinteractive namefrom namefromfh namefromlock \
-	open parentdir parentoffh read rename \
+	parentdir parentoffh read rename \
 	runhandler samedevice samelock sendpkt \
 	setprotection startnotify unlock write \
 	waitforchar lockrecord unlockrecord readlink makelink \
@@ -19,7 +19,7 @@ CFUNCS  := \
 	replypkt
 
 CFILES  := $(CFUNCS) \
-	fs_driver helper internalopen internalseek packethelper \
+	fs_driver helper internalseek packethelper \
 	$(BCPL_CFILES)
 
 AFILES := $(BCPL_AFILES)
