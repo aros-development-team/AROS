@@ -12,7 +12,6 @@
 #include <proto/exec.h>
 
 #include "dos_newcliproc.h"
-#include "dos_dosdoio.h"
 #include "fs_driver.h"
 
 AROS_UFH3(LONG, NewCliProc,
