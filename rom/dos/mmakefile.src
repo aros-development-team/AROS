@@ -7,7 +7,7 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 IMAGE_TYPES := aos elf
 FILES	  := bcpl_support errorlist lddemon runprocess iofs_sendpkt \
-	     match_misc newcliproc rootnode dosdoio\
+	     match_misc newcliproc rootnode dosdoio fs_driver \
 	     patternmatching internalseek internalflush \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
