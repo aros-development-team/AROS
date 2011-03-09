@@ -16,7 +16,7 @@
 #include <dos/dosasl.h>
 #include <utility/tagitem.h>
 
-#include "dos_dosdoio.h"
+#include "fs_driver.h"
 
 /* the alternative is to do something similar in clib or
    to have two files with the same contents
