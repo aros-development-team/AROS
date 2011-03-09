@@ -177,10 +177,11 @@ int main (argc, argv, envp)
 	}
 	if (!(MiamiBase = OpenLibrary("miami.library", 0)))
 	{
-        	fprintf(stderr, "No miami avalailable !\n");
+        	fprintf(stderr, "No miami available!\n");
 		return RETURN_FAIL;
 	}
 	atexit(__close_bsdsocket);
+	SetErrnoPtr(&errno, sizeof(errno));
 
 	static TEXT dh_conf[256];
 	static TEXT dh_db[256];
