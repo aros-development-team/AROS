@@ -39,6 +39,69 @@ LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, STRPTR name, L
     return error;
 }
 
+LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR lock, LONG mode, STRPTR name, struct DosLibrary *DOSBase)
+{
+    ULONG action;
+    BSTR bstrname;
+    struct MsgPort *port;
+    struct Process *me;
+    LONG error = 0;
+
+    if (mode == MODE_READWRITE)
+	action = ACTION_FINDUPDATE;
+    else if (mode == MODE_NEWFILE)
+	action = ACTION_FINDOUTPUT;
+    else if (mode == MODE_OLDFILE)
+	action = ACTION_FINDINPUT;
+    else if (mode & FMF_CREATE)
+	action = ACTION_FINDOUTPUT;
+    else if (mode & FMF_CLEAR)
+	action = ACTION_FINDOUTPUT;
+    else if (mode & (FMF_READ | FMF_WRITE))
+	action = ACTION_FINDINPUT;
+    else
+    {
+	bug("unknown access mode %x\n", mode);
+	return ERROR_ACTION_NOT_KNOWN;
+    }
+
+    /* 'lock' parameter is actually a parent's BPTR lock if refType != REF_DEVICE */
+    switch (refType)
+    {
+    case REF_LOCK:
+    	port = ((struct FileLock *)BADDR(lock))->fl_Task;
+    	break;
+
+    case REF_DEVICE:
+    	port = ((struct DevProc *)lock)->dvp_Port;
+    	lock = ((struct DevProc *)lock)->dvp_Lock;
+    	break;
+
+    case REF_CONSOLE:
+    	me = (struct Process *)FindTask(NULL);
+    	if (me->pr_ConsoleTask)
+    	    port = me->pr_ConsoleTask;
+    	else
+    	{
+	    /* was NIL: */
+    	    SetIoErr(0);
+    	    handle->fh_Type = BNULL;
+            return DOSTRUE;
+        }
+        break;
+    }
+
+    bstrname = C2BSTR(name);
+    if (!bstrname)
+    	return ERROR_NO_FREE_STORE;
+
+    dopacket3(DOSBase, &error, port, action, MKBADDR(handle), lock, bstrname);
+    FreeVec(BADDR(bstrname));
+
+    handle->fh_Type = port;
+    return error;
+}
+
 LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBase)
 {
     LONG error = 0;
