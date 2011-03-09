@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -73,15 +73,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG            success = 1;
-    struct DosList *dl, *scan;
+    LONG success = DOSTRUE;
+    struct DosList *dl;
 
-    if (dlist == NULL) return success;
+    if (dlist == NULL)
+    	return success;
 
-    D(bug("[AddDosEntry] Adding '%b' from Task '%s'\n", dlist->dol_Name,
+    D(bug("[AddDosEntry] Adding '%b' type %d from addr %x Task '%s'\n",
+        dlist->dol_Name, dlist->dol_Type, dlist,
         FindTask(NULL)->tc_Node.ln_Name));
+
     dl = LockDosList(LDF_ALL | LDF_READ);
 
+#ifndef AROS_DOS_PACKETS
     /* If the passed entry has dol_Task defined, then it's a packet-based
      * handler, and probably doesn't have valid dol_DevName, dol_Device and
      * dol_Unit fields, which will be needed. So we search through the DOS
@@ -99,7 +103,10 @@
      * bogus, probably causing crashes shortly after. Again, I'll worry about
      * it if and when it happens.
      */
-    if (dlist->dol_Task != NULL) {
+    if (dlist->dol_Task != NULL)
+    {
+    	struct DosList *scan;
+
         for (scan = dl; scan != NULL; scan = BADDR(scan->dol_Next))
             if (scan->dol_Task == dlist->dol_Task && scan->dol_Type == DLT_DEVICE) {
                 /* Do patching only if found DeviceNode belongs to packet.handler. Otherwise do not touch anything.
@@ -140,6 +147,7 @@
 	dlist->dol_Ext.dol_AROS.dol_DevName = AROS_BSTR_ADDR(dlist->dol_Name);
 	D(bug("[AddDosEntry] Filling in dol_DevName: %s\n", dlist->dol_Ext.dol_AROS.dol_DevName));
     }
+#endif
 
     LockDosList(LDF_ENTRY|LDF_WRITE);
     if(dlist->dol_Type != DLT_VOLUME)
@@ -151,11 +159,10 @@
 	    if(dl == NULL)
 		break;
 
-	    if(dl->dol_Type != DLT_VOLUME &&
-	       !Stricmp(dl->dol_Ext.dol_AROS.dol_DevName, dlist->dol_Ext.dol_AROS.dol_DevName))
+	    if(dl->dol_Type != DLT_VOLUME && !CMPBSTR(dl->dol_Name, dlist->dol_Name))
 	    {
-		D(bug("[AddDosEntry] Name clash for %08lx->dol_DevName: %s and %08lx->dol_DevName %s\n", dl, dl->dol_Ext.dol_AROS.dol_DevName, dlist, dlist->dol_Ext.dol_AROS.dol_DevName));
-		success = 0;
+		D(bug("[AddDosEntry] Name clash for %08lx->dol_Name: %b and %08lx->dol_Name %b\n", dl, dl->dol_Name, dlist, dlist->dol_Name));
+		success = DOSFALSE;
 		break;
 	    }
 	}

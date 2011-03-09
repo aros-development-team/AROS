@@ -266,12 +266,22 @@ void vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG argsize, struct DosLibrary 
 
 LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase);
 
+
+#ifdef AROS_FAST_BSTR
+
+#define CMPBSTR(x, y) Stricmp(BADDR(x), BADDR(y))
+
+#else
+
+BOOL CMPBSTR(BSTR, BSTR);
+
+#endif
+
 #ifdef AROS_DOS_PACKETS
 
 struct Process *RunPacketHandler(struct DeviceNode *dn, const char *name, struct DosLibrary *DOSBase);
 BSTR C2BSTR(CONST_STRPTR);
 char *BSTR2C(BSTR);
-BOOL CMPBSTR(BSTR, BSTR);
 BOOL CMPCBSTR(CONST_STRPTR, BSTR);
 BOOL CMPICBSTR(CONST_STRPTR, BSTR);
 BOOL CMPNICBSTR(CONST_STRPTR, BSTR, UBYTE);

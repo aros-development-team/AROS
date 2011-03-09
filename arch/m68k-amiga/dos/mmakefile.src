@@ -5,7 +5,7 @@ BCPL_CFILES  := bcpl_support bcpl_readargs bcpl_putpkt
 BCPL_AFILES  := bcpl bcpl_writef
 
 CFUNCS  := \
-	addbuffers adddosentry assignlock changemode close  \
+	addbuffers changemode close  \
 	createdir deletefile duplock duplockfromfh \
 	endnotify errorreport exall exallend examine examinefh  \
 	exnext finddosentry getdeviceproc info isfilesystem \

@@ -79,7 +79,7 @@ loop:
 #endif
 } /* DosDoIO */
 
-LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
+LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
 {
     struct FileHandle *fh = BADDR(parent);
     struct IOFileSys iofs;
@@ -135,7 +135,7 @@ LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, STRPTR name, L
     return iofs.io_DosError;
 }
 
-LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR ref, LONG accessMode, STRPTR name, struct DosLibrary *DOSBase)
+LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR ref, LONG accessMode, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
     struct IOFileSys iofs;
     LONG doappend = 0;
