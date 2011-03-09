@@ -1,14 +1,21 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES          := addicrvector remicrvector ableicr seticr \
-		   cia_init cia_interrupt
+FUNCTIONS := ableicr addicrvector remicrvector seticr
 
-USER_CFLAGS     := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/cia \
-		   -I$(SRCDIR)/rom/cia
+%build_module_simple mmake=kernel-cia \
+    modname=cia modtype=resource \
+    files="cia_init $(FUNCTIONS)"
 
-%build_archspecific \
-  mainmmake=kernel-cia maindir=rom/cia arch=amiga-m68k \
-  files=$(CFILES) 
+#MM
+kernel-cia-includes: $(AROS_INCLUDES)/clib/cia_protos.h $(AROS_INCLUDES)/defines/cia.h \
+		     $(AROS_INCLUDES)/proto/cia.h
 
-%common
+$(AROS_INCLUDES)/clib/cia_protos.h: $(SRCDIR)/$(CURDIR)/cia_lib.sfd
+	$(SFDC) --mode=clib --target=x-aros --output=$@ $<
+
+$(AROS_INCLUDES)/defines/cia.h: $(SRCDIR)/$(CURDIR)/cia_lib.sfd
+	$(SFDC) --mode=macros --target=x-aros --output=$@ $<
+
+$(AROS_INCLUDES)/proto/cia.h: $(SRCDIR)/$(CURDIR)/cia_lib.sfd
+	$(SFDC) --mode=proto --target=x-aros --output=$@ $<
