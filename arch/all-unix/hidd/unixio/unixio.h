@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO include file
@@ -8,15 +8,19 @@
 #ifndef UXIO_H
 #define UXIO_H
 
+#define timeval sys_timeval
+
+#include <sys/types.h>
+#include <poll.h>
+
+#undef timeval
+
 #include <exec/tasks.h>
 #include <exec/ports.h>
 #include <exec/libraries.h>
 #include <dos/bptr.h>
 #include <oop/oop.h>
 #include <proto/exec.h>
-
-#include <sys/types.h>
-#include <poll.h>
 
 #ifdef HOST_OS_linux
 #define LIBC_NAME "libc.so.6"

@@ -7,11 +7,6 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
-# This prevents redefinition of struct timeval.
-ifneq ($(ARCH), darwin)
-USER_CFLAGS += -D_AROS_TIMEVAL_H_
-endif
-
 %build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd \
     files=unixio_class uselibs="hiddstubs oop rom"
