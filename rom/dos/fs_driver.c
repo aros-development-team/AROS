@@ -19,64 +19,7 @@
 
 BYTE DosDoIO(struct IORequest *iORequest)
 {
-#if 1
     return DoIO(iORequest);
-#else    
-    /*
-	Prepare the message. Tell the device that it is OK to wait in the
-	BeginIO() call by setting the quick bit.
-    */
-    iORequest->io_Flags=IOF_QUICK;
-    iORequest->io_Message.mn_Node.ln_Type=0;
-
-    /* Call BeginIO() vector */
-    AROS_LVO_CALL1NR(void,
-	AROS_LCA(struct IORequest *,iORequest,A1),
-	struct Device *,iORequest->io_Device,5,
-    );
-
-    /* If the quick flag is cleared it wasn't done quick. Wait for completion. */
-    if(!(iORequest->io_Flags&IOF_QUICK))
-    {
-	ULONG iosigf = 1<<iORequest->io_Message.mn_ReplyPort->mp_SigBit;
-	ULONG sigs = 0;
-
-
-loop:
-	while
-	(
-	    !(sigs & SIGBREAKF_CTRL_C)  &&
-
-	    !(iORequest->io_Flags&IOF_QUICK) &&
-	    iORequest->io_Message.mn_Node.ln_Type==NT_MESSAGE
-	)
-	{
-	    sigs = Wait(iosigf | SIGBREAKF_CTRL_C);
-	}
-
-	if(iORequest->io_Message.mn_Node.ln_Type==NT_REPLYMSG)
-        {
-	    /* Arbitrate for the message queue. */
-	    Disable();
-
-	    /* Remove the message */
-	    Remove(&iORequest->io_Message.mn_Node);
-  	    Enable();
-	}
-	else
-	if (sigs & SIGBREAKF_CTRL_C)
-	{
-	    AbortIO(iORequest);
-	    sigs = 0;
-
-	    goto loop;
-	}
-    }
-
-    /* All done. Get returncode. */
-    return iORequest->io_Error;
-
-#endif
 } /* DosDoIO */
 
 LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
@@ -135,7 +78,7 @@ LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR n
     return iofs.io_DosError;
 }
 
-LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR ref, LONG accessMode, CONST_STRPTR name, struct DosLibrary *DOSBase)
+LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR ref, LONG accessMode, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
     struct IOFileSys iofs;
     LONG doappend = 0;
@@ -167,7 +110,7 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR ref, LONG accessMode
 
     if (refType == REF_DEVICE)
     {
-        struct DevProc *dvp = ref;
+        struct DevProc *dvp = BADDR(ref);
 
 	iofs.IOFS.io_Device = (struct Device *)dvp->dvp_Port;
 	if (dvp->dvp_Lock != BNULL)

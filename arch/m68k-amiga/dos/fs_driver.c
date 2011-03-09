@@ -15,6 +15,11 @@
 #include "dos_intern.h"
 #include "fs_driver.h"
 
+BYTE DosDoIO(struct IORequest *iORequest)
+{
+    return DoIO(iORequest);
+}
+
 LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
 {
     struct FileLock *fl = BADDR(parent);
@@ -39,11 +44,11 @@ LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR n
     return error;
 }
 
-LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR lock, LONG mode, CONST_STRPTR name, struct DosLibrary *DOSBase)
+LONG fs_Open(struct FileHandle *handle, UBYTE refType, BPTR lock, LONG mode, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
     ULONG action;
     BSTR bstrname;
-    struct MsgPort *port;
+    struct MsgPort *port = NULL;
     struct Process *me;
     LONG error = 0;
 
@@ -73,22 +78,23 @@ LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR lock, LONG mode, CON
     	break;
 
     case REF_DEVICE:
-    	port = ((struct DevProc *)lock)->dvp_Port;
-    	lock = ((struct DevProc *)lock)->dvp_Lock;
+    	port = ((struct DevProc *)BADDR(lock))->dvp_Port;
+    	lock = ((struct DevProc *)BADDR(lock))->dvp_Lock;
     	break;
 
     case REF_CONSOLE:
     	me = (struct Process *)FindTask(NULL);
     	port = me->pr_ConsoleTask;
-    	if (!port)
-    	{
-	    /* was NIL: */
-    	    SetIoErr(0);
-    	    handle->fh_Type = BNULL;
-            return DOSTRUE;
-        }
         /* CHECKME: 'lock' being passed is process' console file handle, not a lock. Is it correct to pass it on ? */
         break;
+    }
+
+    if (!port)
+    {
+    	/* was NIL: */
+    	SetIoErr(0);
+    	handle->fh_Type = BNULL;
+        return DOSTRUE;
     }
 
     bstrname = C2BSTR(name);

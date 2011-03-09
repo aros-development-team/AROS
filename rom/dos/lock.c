@@ -134,7 +134,7 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
                 break;
             }
 
-	    error = fs_LocateObject(handle, NULL, dvp, filename, accessMode, DOSBase);
+	    error = fs_LocateObject(handle, BNULL, dvp, filename, accessMode, DOSBase);
 
         } while (error == ERROR_OBJECT_NOT_FOUND);
 

@@ -63,13 +63,13 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 
 	if (!Background)
 	{
-	    struct FileHandle *fhin  = BADDR(Input());
-	    struct FileHandle *fhout = BADDR(Output());
+	    BPTR fhin  = Input();
+	    BPTR fhout = Output();
 
-	    if (fhin)
+	    if (fhin != BNULL)
             	fs_ChangeSignal(fhin, me, DOSBase);
-            if (fhout)
-            	fs_ChangeSignal(fhin, me, DOSBase);
+            if (fhout != BNULL)
+            	fs_ChangeSignal(fhout, me, DOSBase);
         }
 
         /* If argstr is missing a newline terminator, add it */

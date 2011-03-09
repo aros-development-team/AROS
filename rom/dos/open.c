@@ -100,14 +100,11 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 LONG InternalOpen(CONST_STRPTR name, LONG accessMode, 
     struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
 {
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);
     LONG ret = DOSFALSE;
     LONG error = 0;
     LONG error2 = 0;
-    LONG doappend = 0;
     BPTR con, ast;
 
     D(bug("[Open] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\", \n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name));
@@ -117,9 +114,6 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 	SetIoErr(ERROR_TOO_MANY_LEVELS);
 	return DOSFALSE;
     }
-
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_OPEN_FILE, DOSBase);
 
     switch(accessMode)
     {
@@ -188,7 +182,7 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
                     break;
 		}
 
-	    	error = fs_Open(handle, REF_DEVICE, dvp, accessMode, filename, DOSBase);
+	    	error = fs_Open(handle, REF_DEVICE, MKBADDR(dvp), accessMode, filename, DOSBase);
             } while(error == ERROR_OBJECT_NOT_FOUND && accessMode != MODE_NEWFILE);
 
 	    if (error == ERROR_NO_MORE_ENTRIES)
