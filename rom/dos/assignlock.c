@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create an assign.
@@ -55,20 +55,27 @@
     BOOL success = DOSTRUE;
 
     struct DosList    *dl, *newdl = NULL;
-    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 
     if (lock != NULL)
     {
 	newdl = MakeDosEntry(name, DLT_DIRECTORY);
 
 	if (newdl == NULL)
-	{
 	    return DOSFALSE;
-	}
+	else
+	{
+#ifdef AROS_DOS_PACKETS
+	    struct FileLock *fl = BADDR(lock);
 
-	newdl->dol_Ext.dol_AROS.dol_Unit   = fh->fh_Unit;
-	newdl->dol_Ext.dol_AROS.dol_Device = fh->fh_Device;
-	newdl->dol_Lock                    = lock;
+	    newdl->dol_Task = fl->fl_Task;
+#else
+	    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
+
+	    newdl->dol_Ext.dol_AROS.dol_Unit   = fh->fh_Unit;
+	    newdl->dol_Ext.dol_AROS.dol_Device = fh->fh_Device;
+#endif
+	    newdl->dol_Lock                    = lock;
+	}
     }
 
     dl = LockDosList(LDF_ALL | LDF_WRITE);

@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id: $
+    $Id$
 
     Desc: Low-level filesystem access functions, packet version
     Lang: English
@@ -15,7 +15,7 @@
 #include "dos_intern.h"
 #include "fs_driver.h"
 
-LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
+LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
 {
     struct FileLock *fl = BADDR(parent);
     struct MsgPort *port;
@@ -39,7 +39,7 @@ LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, STRPTR name, L
     return error;
 }
 
-LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR lock, LONG mode, STRPTR name, struct DosLibrary *DOSBase)
+LONG fs_Open(struct FileHandle *handle, UBYTE refType, APTR lock, LONG mode, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
     ULONG action;
     BSTR bstrname;
