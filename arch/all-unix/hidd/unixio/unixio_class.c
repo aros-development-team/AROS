@@ -20,9 +20,6 @@
 
 #define __OOP_NOATTRBASES__
 
-/* We need redefined timeval for the AROS includes. */
-#undef _AROS_TIMEVAL_H_
-
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/interrupts.h>
