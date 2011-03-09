@@ -50,12 +50,29 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    // FIXME: screen argument is ignored
-    D(bug("StartWorkbench(0x%08x, @%p)\n", flags, ptr));
+    APTR DOSBase;
+    IPTR rc = FALSE;
+  
+    /* Start Workbook, if we have it. */
+    D(bug("StartWorkbench: ptr = %p\n", ptr));
+    if ((DOSBase = OpenLibrary("dos.library", 0))) {
+    	struct Segment *seg;
+    	BPTR wbseg = 0;
 
-    // FIXME: Replace with a call to Wanderer Lite...
-    return FALSE;
+    	Forbid();
+    	seg = FindSegment("Workbook", NULL, TRUE);
+    	if (seg != NULL)
+    	    wbseg = seg->seg_Seg;
+    	Permit();
+    	D(bug("StartWorkbench: DOSBase = %p, Segment = %p\n", DOSBase, BADDR(wbseg)));
+    	if (wbseg) {
+    	    /* This task now becomes Workbench */
+    	    ULONG (*wbfunc)(void) = BADDR(wbseg);
+    	    rc = wbfunc();
+    	}
+    }
+
+    return rc;
         
     AROS_LIBFUNC_EXIT
 } /* StartWorkbench() */
