@@ -15,7 +15,7 @@
 
 #include <intuition/cghooks.h>
 
-#include "workbook.h"
+#include "workbook_intern.h"
 #include "classes.h"
 
 struct wbIcon {
@@ -242,7 +242,6 @@ static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
 
-    snoop(cl,obj,msg);
     switch (msg->MethodID) {
     case OM_NEW:     rc = wbIconNew(cl, obj, (APTR)msg); break;
     case OM_DISPOSE: rc = wbIconDispose(cl, obj, (APTR)msg); break;

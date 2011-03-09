@@ -18,7 +18,7 @@
 #include <intuition/cghooks.h>
 #include <libraries/gadtools.h>
 
-#include "workbook.h"
+#include "workbook_intern.h"
 #include "classes.h"
 
 static inline WORD max(WORD a, WORD b)
@@ -301,8 +301,6 @@ static IPTR WBVirtualHandleInput(Class *cl, Object *obj, struct gpInput *gpi)
 static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
-
-    snoop(cl, obj, msg);
 
     switch (msg->MethodID) {
     case OM_NEW:     rc = WBVirtualNew(cl, obj, (APTR)msg); break;

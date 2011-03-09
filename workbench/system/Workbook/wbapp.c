@@ -16,7 +16,7 @@
 #include <libraries/gadtools.h>
 #include <workbench/handler.h>
 
-#include "workbook.h"
+#include "workbook_intern.h"
 #include "classes.h"
 
 struct wbApp {
@@ -233,8 +233,6 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
 static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
-
-    snoop(cl, obj, msg);
 
     switch (msg->MethodID) {
     case OM_NEW:       rc = WBAppNew(cl, obj, (APTR)msg); break;

@@ -15,7 +15,7 @@
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
 
-#include "workbook.h"
+#include "workbook_intern.h"
 #include "classes.h"
 
 struct wbSet {
@@ -91,8 +91,6 @@ static IPTR WBSetRender(Class *cl, Object *obj, struct gpRender *gpr)
 static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
-
-    snoop(cl, obj, msg);
 
     switch (msg->MethodID) {
     case OM_ADDMEMBER:  rc = WBSetAddMember(cl, obj, (APTR)msg); break;

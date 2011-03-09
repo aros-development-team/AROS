@@ -21,9 +21,6 @@ struct WorkbookBase {
     Object *wb_App;
 };
 
-int WB_Main(struct WorkbookBase *wb);
-void snoop(Class *cl, Object *obj, Msg msg);
-
 #define IntuitionBase wb->wb_IntuitionBase
 #define DOSBase       wb->wb_DOSBase
 #define UtilityBase   wb->wb_UtilityBase

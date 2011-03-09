@@ -18,7 +18,7 @@
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
 
-#include "workbook.h"
+#include "workbook_intern.h"
 #include "classes.h"
 
 static inline WORD max(WORD a, WORD b)
@@ -40,7 +40,7 @@ struct wbWindow {
 
 #define WBWF_USERPORT   (1 << 0)    /* Window has a custom port */
 
-struct NewMenu WBWindow_menu[] =  {
+static const struct NewMenu WBWindow_menu[] =  {
 	{ NM_TITLE, "Workbook",   0, 0, 0, 0, },
 	{  NM_ITEM, "Quit...",   "Q", 0, 0, 0, },
 	{   NM_END, NULL,          0, 0, 0, 0, },
@@ -506,8 +506,6 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
 static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
 {
     IPTR rc = 0;
-
-    snoop(cl, obj, msg);
 
     switch (msg->MethodID) {
     case OM_NEW:       rc = WBWindowNew(cl, obj, (APTR)msg); break;

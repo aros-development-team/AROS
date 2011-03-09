@@ -13,10 +13,11 @@
 #include <proto/icon.h>
 #include <proto/workbench.h>
 
-#include "workbook.h"
+#include "workbook_intern.h"
 #include "classes.h"
 
-int WB_Main(struct WorkbookBase *wb)
+/* Allocate classes and run the main app */
+static int WB_Main(struct WorkbookBase *wb)
 {
     int rc = RETURN_OK;
 
@@ -60,4 +61,77 @@ exit:
     	FreeClass(wb->wb_WBApp);
 
     return rc;
+}
+
+AROS_HANDLER(ULONG, WorkbookMain)
+{
+    struct WorkbookBase *wb;
+    int rc = RETURN_ERROR;
+
+    AROS_USERFUNC_INIT
+
+    wb = NULL;
+
+    wb = AllocVec(sizeof(*wb), MEMF_CLEAR);
+    if (!wb)
+    	goto error;
+
+    DOSBase = OpenLibrary("dos.library", 0);
+    if (DOSBase == NULL)
+    	goto error;
+
+    IntuitionBase = OpenLibrary("intuition.library",0);
+    if (IntuitionBase == NULL)
+    	goto error;
+
+    UtilityBase = OpenLibrary("utility.library",0);
+    if (UtilityBase == NULL)
+        goto error;
+
+    GadToolsBase = OpenLibrary("gadtools.library",0);
+    if (GadToolsBase == NULL)
+        goto error;
+
+    /* Version 44 or later for DrawIconStateA */
+    IconBase = OpenLibrary("icon.library",44);
+    if (IconBase == NULL)
+        goto error;
+
+    /* Version 44 or later for OpenWorkbenchObject */
+    WorkbenchBase = OpenLibrary("workbench.library",44);
+    if (WorkbenchBase == NULL)
+        goto error;
+
+    GfxBase = OpenLibrary("graphics.library",0);
+    if (GfxBase == NULL)
+        goto error;
+
+    rc = WB_Main(wb);
+
+error:
+    if (wb) {
+        if (GfxBase)
+            CloseLibrary(GfxBase);
+
+        if (WorkbenchBase)
+            CloseLibrary(WorkbenchBase);
+
+        if (IconBase)
+            CloseLibrary(IconBase);
+
+        if (GadToolsBase)
+            CloseLibrary(GadToolsBase);
+
+        if (IntuitionBase)
+            CloseLibrary(GadToolsBase);
+
+        if (DOSBase)
+            CloseLibrary(DOSBase);
+
+        FreeVec(wb);
+    }
+
+    return rc;
+
+    AROS_USERFUNC_EXIT
 }
