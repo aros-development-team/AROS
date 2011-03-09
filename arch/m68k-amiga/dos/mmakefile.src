@@ -9,17 +9,17 @@ CFUNCS  := \
 	createdir deletefile duplock duplockfromfh \
 	endnotify errorreport exall exallend examine examinefh  \
 	exnext finddosentry getdeviceproc info isfilesystem \
-	isinteractive lock namefrom namefromfh namefromlock \
-	newcliproc open parentdir parentoffh read rename \
+	isinteractive namefrom namefromfh namefromlock \
+	open parentdir parentoffh read rename \
 	runhandler samedevice samelock sendpkt \
-	setprotection startnotify systemtaglist unlock write \
+	setprotection startnotify unlock write \
 	waitforchar lockrecord unlockrecord readlink makelink \
 	openfromlock pipe setfilesize setmode waitpkt setfiledate \
 	setcomment format inhibit relabel setowner abortpkt \
 	replypkt
 
 CFILES  := $(CFUNCS) \
-	helper internalopen internalseek packethelper \
+	fs_driver helper internalopen internalseek packethelper \
 	$(BCPL_CFILES)
 
 AFILES := $(BCPL_AFILES)

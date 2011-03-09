@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locks a file or directory.
@@ -12,13 +12,15 @@
 #include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+
 #include "dos_intern.h"
+#include "fs_driver.h"
 
 #define  DEBUG  0
 #include <aros/debug.h>
 
 LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
-    struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
+    BPTR *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
 
 #define MAX_SOFT_LINK_NESTING 16 /* Maximum level of soft links nesting */
 
@@ -60,36 +62,23 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 {
     AROS_LIBFUNC_INIT
 
-    LONG error;
-
-    ASSERT_VALID_PTR(name);
+    BPTR fl;
 
     /* Sanity check */
     if (name == NULL)
         return BNULL;
     
-    /* Create filehandle */
-    struct FileHandle *ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
+    ASSERT_VALID_PTR(name);
 
-    if (ret != NULL)
+    D(bug("[Lock] '%s':%d\n", name, accessMode));
+
+    if (InternalLock(name, accessMode, &fl, MAX_SOFT_LINK_NESTING, DOSBase))
     {
-        ASSERT_VALID_PTR(ret);
-	if(InternalLock(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase))
-    	{
-    	    return MKBADDR(ret);
-    	}
-        else
-        {
-            error = IoErr();
-            FreeDosObject(DOS_FILEHANDLE, ret);
-        }
-    }
-    else
-    {
-    	error = ERROR_NO_FREE_STORE;
+    	D(bug("[Lock] returned 0x%p\n", fl));
+        return fl;
     }
 
-    SetIoErr(error);
+    D(bug("[Lock] failed, err=%d\n", IoErr()));
     return BNULL;
 
     AROS_LIBFUNC_EXIT
@@ -98,16 +87,15 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 /* Try to lock name recursively calling itself in case it's a soft link. 
    Store result in handle. Return boolean value indicating result. */
 LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
-    struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
+    BPTR *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
 {
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);
     struct DevProc *dvp;
     LONG ret = DOSFALSE;
     LONG error = 0;
     LONG error2 = 0;
+    STRPTR filename;
 
     D(bug("[Lock] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\", \n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name));
 
@@ -117,61 +105,28 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 	return DOSFALSE;
     }
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_OPEN, DOSBase);    
-
-    switch (accessMode)
+    filename = strchr(name, ':');
+    if (!filename)
     {
-    	case EXCLUSIVE_LOCK:
-    	    iofs.io_Union.io_OPEN.io_FileMode = FMF_LOCK | FMF_READ;
-    	    break;
-    
-    	case SHARED_LOCK:
-    	    iofs.io_Union.io_OPEN.io_FileMode = FMF_READ;
-    	    break;
-    
-    	default:
-	    D(bug("[Lock] incompatible mode %d\n", accessMode));
-	    SetIoErr(ERROR_ACTION_NOT_KNOWN);
-	    return DOSFALSE;
-    }
-
-    /* catch the zero-length special case. we can't (currently) call
-     * GetDeviceProc(), as it will call NameFromLock(), which will
-     * DupLock(), which will end up here */
-    if (*name == '\0') {
+	/* No ':' in the pathname, path is relative to current directory */
 	BPTR cur;
-	struct FileHandle *fh;
 
 	cur = me->pr_CurrentDir;
 	if (!cur)
 	    cur = DOSBase->dl_SYSLock;
 
         if (cur && (cur != (BPTR)-1))
-        {
-            fh = BADDR(cur);
-    
-            iofs.io_Union.io_OPEN.io_Filename = (STRPTR) "";
-    
-            iofs.IOFS.io_Device = fh->fh_Device;
-            iofs.IOFS.io_Unit = fh->fh_Unit;
-    
-            DosDoIO(&iofs.IOFS);
-    
-            error = me->pr_Result2 = iofs.io_DosError;
-        } 
+            error = fs_LocateObject(handle, cur, NULL, name, accessMode, DOSBase);
         else 
-        {
             error = ERROR_OBJECT_NOT_FOUND;
-            SetIoErr(error);
-        }
+
+        SetIoErr(error);
     }
     else 
     {
-        iofs.io_Union.io_OPEN.io_Filename = StripVolume(name);
+    	filename++;
         dvp = NULL;
-
-        do 
+        do
         {
             if ((dvp = GetDeviceProc(name, dvp)) == NULL) 
             {
@@ -179,7 +134,8 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
                 break;
             }
 
-            error = DoIOFS(&iofs, dvp, NULL, DOSBase);
+	    error = fs_LocateObject(handle, NULL, dvp, filename, accessMode, DOSBase);
+
         } while (error == ERROR_OBJECT_NOT_FOUND);
 
 	/* FIXME: On Linux hosted we sometimes get ERROR_IS_SOFTLINK with dvp == NULL,
@@ -239,12 +195,8 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     }
 
     if(!error)
-    {
-	handle->fh_Device = iofs.IOFS.io_Device;
-	handle->fh_Unit   = iofs.IOFS.io_Unit;
 	return DOSTRUE;
-    }
-    else if(error == ERROR_IS_SOFT_LINK)
+    else if (error == ERROR_IS_SOFT_LINK)
     {
 	if(!ret)
 	    SetIoErr(error2);

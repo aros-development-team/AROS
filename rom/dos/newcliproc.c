@@ -13,6 +13,7 @@
 
 #include "dos_newcliproc.h"
 #include "dos_dosdoio.h"
+#include "fs_driver.h"
 
 AROS_UFH3(LONG, NewCliProc,
 AROS_UFHA(char *,argstr,A0),
@@ -25,6 +26,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     struct CliStartupMessage *csm;
     LONG rc = RETURN_FAIL;
     struct DosLibrary *DOSBase;
+    STRPTR alloced_argstr = NULL;
 
     BPTR CurrentInput;
     BOOL Background, Asynch;
@@ -32,7 +34,6 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     me  = (struct Process *)FindTask(NULL);
     WaitPort(&me->pr_MsgPort);
     csm = (struct CliStartupMessage *)GetMsg(&me->pr_MsgPort);
-
 
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
 
@@ -63,31 +64,36 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 
 	if (!Background)
 	{
-	    struct IOFileSys iofs;
 	    struct FileHandle *fhin  = BADDR(Input());
 	    struct FileHandle *fhout = BADDR(Output());
 
-            iofs.IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-            iofs.IOFS.io_Message.mn_ReplyPort    = &me->pr_MsgPort;
-            iofs.IOFS.io_Message.mn_Length       = sizeof(struct IOFileSys);
-            iofs.IOFS.io_Command                 = FSA_CHANGE_SIGNAL;
-            iofs.IOFS.io_Flags                   = 0;
+	    if (fhin)
+            	fs_ChangeSignal(fhin, me, DOSBase);
+            if (fhout)
+            	fs_ChangeSignal(fhin, me, DOSBase);
+        }
 
-	    iofs.io_Union.io_CHANGE_SIGNAL.io_Task = (struct Task *)me;
-
-	    iofs.IOFS.io_Device  = fhin->fh_Device;
-    	    iofs.IOFS.io_Unit    = fhin->fh_Unit;
-
-	    DoIO(&iofs.IOFS);
-
-	    iofs.IOFS.io_Device  = fhout->fh_Device;
-    	    iofs.IOFS.io_Unit    = fhout->fh_Unit;
-
-	    DoIO(&iofs.IOFS);
+        /* If argstr is missing a newline terminator, add it */
+        if (argsize == 0 || argstr[argsize-1] != '\n')
+        {
+            alloced_argstr = AllocVec(argsize+2, MEMF_ANY);
+            if (alloced_argstr == NULL)
+            {
+            	rc = DOSFALSE;
+            	goto exit;
+            }
+            CopyMem(argstr, alloced_argstr, argsize);
+            alloced_argstr[argsize++]='\n';
+            alloced_argstr[argsize]  = 0;
+            argstr = alloced_argstr;
         }
 
 	rc = RunCommand(ShellSeg[3], cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
 
+	if (alloced_argstr != NULL)
+	    FreeVec(alloced_argstr);
+
+exit:
         CloseLibrary((struct Library *)DOSBase);
     }
 

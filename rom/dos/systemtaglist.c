@@ -12,8 +12,6 @@
 # define  DEBUG 0
 # include <aros/debug.h>
 
-#include "dos_newcliproc.h"
-#include "dos_intern.h"
 #include <utility/tagitem.h>
 #include <dos/dostags.h>
 #include <proto/utility.h>
@@ -21,7 +19,9 @@
 #include <aros/asmcall.h>
 #include <exec/ports.h>
 
-static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
+#include "dos_newcliproc.h"
+#include "dos_intern.h"
+#include "fs_driver.h"
 
 /*****************************************************************************
 
@@ -104,14 +104,14 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     AROS_LIBFUNC_INIT
 
     BPTR   cis = Input(), cos = Output(), ces = Error(), script = BNULL;
-    BPTR   shellseg  = BNULL;
-    STRPTR cShell    = "C:Shell";
-    STRPTR shellName = "Boot Shell";
+    BPTR   shellseg = BNULL;
+    STRPTR cShell      = "C:Shell";
+    STRPTR shellName   = "Boot Shell";
     BOOL script_opened = FALSE;
     BOOL cis_opened    = FALSE;
     BOOL cos_opened    = FALSE;
     BOOL ces_opened    = FALSE;
-    BOOL isBoot	       = TRUE;
+    BOOL isBoot        = TRUE;
     BOOL isCustom      = FALSE;
     BOOL isBackground  = TRUE;
     BOOL isAsynch      = FALSE;
@@ -169,7 +169,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     /* Set up the streams */
     if (!cis)
     {
-        cis = Open("NIL:", FMF_READ);
+        cis = Open("NIL:", MODE_OLDFILE);
 	if (!cis) goto end;
 
 	cis_opened = TRUE;
@@ -177,7 +177,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     else
     if (cis == (BPTR)SYS_DupStream)
     {
-        cis = DupFH(Input(), FMF_READ, DOSBase);
+        cis = DupFH(Input(), MODE_OLDFILE, DOSBase);
 	if (!cis) goto end;
 
 	cis_opened = TRUE;
@@ -186,9 +186,9 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     if (!cos)
     {
         if (IsInteractive(cis))
-	    cos = DupFH(cis, FMF_WRITE, DOSBase);
+	    cos = DupFH(cis, MODE_OLDFILE, DOSBase);
 	else
-	    cos = Open("*", FMF_WRITE);
+	    cos = Open("*", MODE_OLDFILE);
 
         if (!cos) goto end;
 
@@ -197,7 +197,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     else
     if (cos == (BPTR)SYS_DupStream)
     {
-        cos = DupFH(Output(), FMF_WRITE, DOSBase);
+        cos = DupFH(Output(), MODE_OLDFILE, DOSBase);
 	if (!cos) goto end;
 
 	cos_opened = TRUE;
@@ -206,9 +206,9 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     if (!ces)
     {
         if (IsInteractive(cis))
-	    ces = DupFH(cos, FMF_WRITE, DOSBase);
+	    ces = DupFH(cos, MODE_OLDFILE, DOSBase);
 	else
-	    ces = Open("*", FMF_WRITE);
+	    ces = Open("*", MODE_OLDFILE);
 
         if (!ces) goto end;
 
@@ -217,16 +217,16 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     else
     if (ces == (BPTR)SYS_DupStream)
     {
-        ces = DupFH(Output(), FMF_WRITE, DOSBase);
+        ces = DupFH(Output(), MODE_OLDFILE, DOSBase);
 	if (!ces) goto end;
 
 	ces_opened = TRUE;
     }
 
+    /* Load the shell */
     if (isCustom)
     	shellName = cShell;
-    else
-    {
+    else {
     	/* Seglist of default shell is stored in RootNode when loaded */
     	shellseg = rn->rn_ShellSegment;
     	/*
@@ -237,46 +237,36 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
     	    shellName = isBackground ? "Background CLI" : "New Shell";
     }
 
-    if (shellseg == BNULL)
-    {
-    	/*
-    	 * The shell is not loaded yet, we need to do it.
-    	 * First we try to find a named resident seglist.
-    	 */
-        struct Segment *seg;
-    	STRPTR segName = FilePart(cShell);
-
-        Forbid();
-
-        seg = FindSegment(segName, NULL, TRUE);
-        if (seg != NULL && seg->seg_UC <= 0)
-	    shellseg = seg->seg_Seg;
-
-	Permit();
-
-    	if (shellseg == BNULL)
-    	{
-    	    /*
-    	     * Not found? Load the shell from disk.
-    	     * Custom shells need to be unloaded after being used.
-    	     */
-    	    shellseg = LoadSeg(cShell);
-    	    if (isCustom)
-    	    	needUnload = TRUE;
-    	}
-
-	if (shellseg == BNULL)
-    	{
-            D(bug("Could not load shell\n"));
-            goto end;
-    	}
-
-	/* Install our shell into RootNode (if not custom). We will never UnLoadSeg() it. */
-	if (!isCustom)
-    	    rn->rn_ShellSegment = shellseg;
+    /* First, try loading from disk. */
+    if (shellseg == BNULL) {
+    	shellseg = LoadSeg(cShell);
+    	if (isCustom)
+    	    needUnload = TRUE;
     }
 
-    D(bug("Shell seglist: 0x%p\n", shellseg));
+    /* Next, look for a resident */
+    if (shellseg == BNULL)
+    {
+    	struct Segment *seg;
+    	STRPTR segName = FilePart(cShell);
+
+        D(bug("Could not load C:Shell\n"));
+        Forbid();
+        seg = FindSegment(segName, NULL, TRUE);
+        if (seg != NULL && seg->seg_UC <= 0)
+            shellseg = seg->seg_Seg;
+        Permit();
+    }
+
+    /* Otherwise, we're dead. No shell. */
+    if (shellseg == BNULL)
+    {
+        D(bug("Could not load shell\n"));
+        goto end;
+    }
+
+    if (!isCustom)
+    	rn->rn_ShellSegment = shellseg;
 
     newtags = CloneTagItems(tags);
     if (newtags)
@@ -289,7 +279,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	{
 	    { NP_Entry      , (IPTR) NewCliProc             }, /* 0  */
 	    { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 1  */
-	    { NP_Name       , (IPTR)shellName	            },
+	    { NP_Name       , (IPTR)shellName               }, /* 2  */
 	    { NP_Input      , (IPTR)cis                     },
 	    { NP_Output     , (IPTR)cos                     },
 	    { NP_CloseInput , (isAsynch || cis_opened)      },
@@ -297,8 +287,8 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	    { NP_Cli        , (IPTR)TRUE                    },
 	    { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
 	                      (IPTR)me->pr_WindowPtr        },
-	    { NP_Seglist    , (IPTR)shellseg		    },
-	    { NP_FreeSeglist, needUnload		    },
+	    { NP_Seglist    , (IPTR)shellseg                },
+	    { NP_FreeSeglist, needUnload                    },
 	    { NP_Arguments  , (IPTR)command                 },
 	    { NP_Synchronous, FALSE                         },
 	    { NP_Error      , (IPTR)ces                     },
@@ -333,7 +323,6 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Data = (IPTR)newtags;
 
 	cliproc = CreateNewProc(proctags);
-	D(bug("Created shell process 0x%p\n", cliproc));
 
 	if (cliproc)
 	{
@@ -357,7 +346,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	    cis_opened    =
 	    cos_opened    =
 	    ces_opened    = FALSE;
-
+	    
 	    /* The process was started, do not unload the shell */
 	    needUnload = FALSE;
 	}
@@ -375,18 +364,3 @@ end:
 
     AROS_LIBFUNC_EXIT
 } /* SystemTagList */
-
-static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
-{
-    BPTR ret = BNULL;
-
-    if (fh)
-    {
-        BPTR olddir = CurrentDir(fh);
-        ret    = Open("", mode);
-
-        CurrentDir(olddir);
-    }
-
-    return ret;
-}
