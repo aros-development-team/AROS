@@ -1,0 +1,23 @@
+# Copyright © 2004-2009, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
+FILES := main \
+	 workbook \
+	 wbapp \
+	 wbwindow \
+	 wbvirtual \
+	 wbset \
+	 wbicon
+
+#MM- workbench-system : workbench-system-workbook
+
+%build_prog mmake=workbench-system-workbook \
+    progname=Workbook targetdir=$(AROS_SYSTEM)/Workbook \
+    files=$(FILES) uselibs="amiga rom" \
+    detach=no
+
+%common
