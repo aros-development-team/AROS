@@ -270,10 +270,12 @@ LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary
 #ifdef AROS_FAST_BSTR
 
 #define CMPBSTR(x, y) Stricmp(BADDR(x), BADDR(y))
+#define CMPNICBSTR(x, y, n) Strnicmp(x, BADDR(y), n)
 
 #else
 
 BOOL CMPBSTR(BSTR, BSTR);
+BOOL CMPNICBSTR(CONST_STRPTR, BSTR, UBYTE);
 
 #endif
 
@@ -284,7 +286,6 @@ BSTR C2BSTR(CONST_STRPTR);
 char *BSTR2C(BSTR);
 BOOL CMPCBSTR(CONST_STRPTR, BSTR);
 BOOL CMPICBSTR(CONST_STRPTR, BSTR);
-BOOL CMPNICBSTR(CONST_STRPTR, BSTR, UBYTE);
 WORD isdosdeviceb(BSTR);
 WORD isdosdevicec(CONST_STRPTR);
 SIPTR dopacket5(struct DosLibrary *DOSBase, SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5);
