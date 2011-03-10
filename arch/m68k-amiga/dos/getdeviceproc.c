@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
@@ -101,6 +101,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
                 UnLock(dp->dvp_Lock);
 
             FreeMem(dp, sizeof(struct DevProc));
+            SetIoErr(ERROR_NO_MORE_ENTRIES);
             return NULL;
         }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
@@ -86,6 +86,7 @@ static BOOL VolumeIsOffline(struct DosList *dl);
                 UnLock(dp->dvp_Lock);
 
             FreeMem(dp, sizeof(struct DevProc));
+            SetIoErr(ERROR_NO_MORE_ENTRIES);
             return NULL;
         }
 
