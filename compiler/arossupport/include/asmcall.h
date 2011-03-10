@@ -774,12 +774,6 @@ typedef unsigned int (*ULONG_FUNC)();
     ) {
 #endif
 
-/* Function declaration for DOS Handler startup code
- */
-#ifndef AROS_HANDLER
-#define AROS_HANDLER(t,n) AROS_UFH0(t,n)
-#endif
-
 /******************************************************************************
 *****  ENDE aros/asmcall.h
 ******************************************************************************/
