@@ -7,8 +7,6 @@
     Lang: english
 */
 
-#define DEBUG 1
-
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/rdargs.h>
