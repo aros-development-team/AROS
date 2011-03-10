@@ -256,6 +256,7 @@
         if (seg != NULL && seg->seg_UC <= 0)
             shellseg = seg->seg_Seg;
         Permit();
+        needUnload = FALSE;
     }
 
     /* Otherwise, we're dead. No shell. */
