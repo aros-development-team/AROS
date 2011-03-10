@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -13,7 +13,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH0(LONG, IoErr,
+	AROS_LH0(SIPTR, IoErr,
 
 /*  SYNOPSIS */
 
