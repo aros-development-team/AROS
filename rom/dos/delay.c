@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -60,8 +60,8 @@
     NEWLIST(&timermp.mp_MsgList);
     
     /* clone timerequest in DOSBase */
-    timerio = DOSBase->dl_TimerIO;
-    
+    CopyMem(&DOSBase->dl_TimerIO, &timerio, sizeof(timerio));
+
     timerio.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
     timerio.tr_node.io_Message.mn_ReplyPort    = &timermp;    
     timerio.tr_node.io_Command 		       = TR_ADDREQUEST;
@@ -70,7 +70,7 @@
 
     SetSignal(0, SIGF_SINGLE);
 	
-    DosDoIO(&timerio.tr_node);
+    DoIO(&timerio.tr_node);
     
     AROS_LIBFUNC_EXIT
 } /* Delay */

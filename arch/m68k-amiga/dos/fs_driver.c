@@ -15,11 +15,6 @@
 #include "dos_intern.h"
 #include "fs_driver.h"
 
-BYTE DosDoIO(struct IORequest *iORequest)
-{
-    return DoIO(iORequest);
-}
-
 LONG fs_LocateObject(BPTR *ret, BPTR parent, struct DevProc *dvp, CONST_STRPTR name, LONG accessMode, struct DosLibrary *DOSBase)
 {
     struct FileLock *fl = BADDR(parent);
