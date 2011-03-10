@@ -55,7 +55,7 @@
   
     /* Start Workbook, if we have it. */
     D(bug("StartWorkbench: ptr = %p\n", ptr));
-    if ((DOSBase = OpenLibrary("dos.library", 0))) {
+    if ((DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS))) {
     	struct Segment *seg;
     	BPTR wbseg = 0;
 
@@ -66,9 +66,18 @@
     	Permit();
     	D(bug("StartWorkbench: DOSBase = %p, Segment = %p\n", DOSBase, BADDR(wbseg)));
     	if (wbseg) {
-    	    /* This task now becomes Workbench */
-    	    ULONG (*wbfunc)(void) = BADDR(wbseg);
-    	    rc = wbfunc();
+	    struct TagItem tags[] =
+	    {
+	    	/* FIXME: check tags */
+		{ NP_Entry, (IPTR)BADDR(wbseg) },
+		{ NP_WindowPtr, -1 },
+		{ NP_Name, (IPTR)"Workbench" },
+		{ NP_Cli, TRUE },
+		{ NP_Priority, 1 },
+		{ TAG_END , 0 }
+	    };
+     	    if (CreateNewProc((struct TagItem *)tags))
+     	    	rc = TRUE;
     	}
     }
 
