@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Loader for shared libraries and devices.
@@ -102,15 +102,9 @@ static const char ldDemonName[] = "Lib & Dev Loader Daemon";
     to directory <basedir>. Will also try <caller>'s current and home
     directories.
 */
-static BPTR
-LDLoad(
-    struct Process *caller,
-    STRPTR name,
-    STRPTR basedir,
-    struct DosLibrary *DOSBase
-)
+static BPTR LDLoad(struct Process *caller, STRPTR name, STRPTR basedir,
+		   struct DosLibrary *DOSBase, struct ExecBase *SysBase)
 {
-    struct ExecBase *SysBase = DOSBase->dl_SysBase;
     struct Process *me = (struct Process *)FindTask(NULL);
     BPTR seglist = BNULL;
     STRPTR path;
@@ -195,18 +189,12 @@ LDLoad(
   Library *LDInit(seglist, DOSBase)
     Initialise the library.
 */
-static struct Library *
-LDInit(BPTR seglist, struct DosLibrary *DOSBase, struct List *list)
+static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase, struct List *list, struct ExecBase *SysBase)
 {
-    struct ExecBase *SysBase = DOSBase->dl_SysBase;
     BPTR seg = seglist;
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     /* we may not have any extension fields */ 
-    int sizeofresident = offsetof(struct Resident, rt_Init) + sizeof(APTR);
-#else
-    int sizeofresident = sizeof(struct Resident);
-#endif
+    const int sizeofresident = offsetof(struct Resident, rt_Init) + sizeof(APTR);
 
     while(seg)
     {
@@ -237,15 +225,10 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase, struct List *list)
 		node = FindName(list, res->rt_Name);
 		Permit();
 		D(bug("[LDInit] Done calling InitResident(%p) on %s, seg %p node %p\n", res, res->rt_Name, lib, node));
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
+
 		if( node == NULL )
 		    UnLoadSeg(seglist);
 		return (struct Library*)node;
-#else
-		if( lib == NULL )
-		    UnLoadSeg(seglist);
-		return lib;
-#endif
 	    }
 	}
 	seg = *(BPTR *)BADDR(seg);
@@ -282,10 +265,8 @@ struct LDObjectNode
 #endif
 };
 
-struct LDObjectNode *LDNewObjectNode(STRPTR name, struct DosLibrary *DOSBase)
+static struct LDObjectNode *LDNewObjectNode(STRPTR name, struct ExecBase *SysBase)
 {
-    struct ExecBase *SysBase = DOSBase->dl_SysBase;
-
     struct LDObjectNode *ret = AllocVec(sizeof(struct LDObjectNode), MEMF_ANY);
     if (ret)
     {
@@ -311,10 +292,8 @@ struct LDObjectNode *LDNewObjectNode(STRPTR name, struct DosLibrary *DOSBase)
     return NULL;
 }
 
-VOID LDDestroyObjectNode(struct LDObjectNode *object, struct DosLibrary *DOSBase)
+static VOID LDDestroyObjectNode(struct LDObjectNode *object, struct ExecBase *SysBase)
 {
-    struct ExecBase *SysBase = DOSBase->dl_SysBase;
-
     FreeVec(object->ldon_Node.ln_Name);
     FreeVec(object);
 }
@@ -382,7 +361,7 @@ AROS_LH2(struct Library *, OpenLibrary,
     object = (struct LDObjectNode *)FindName(&DOSBase->dl_LDObjectsList, stripped_libname);
     if (!object)
     {
-        object = LDNewObjectNode(stripped_libname, DOSBase);
+        object = LDNewObjectNode(stripped_libname, SysBase);
 	if (object)
 	{
 	    AddTail(&DOSBase->dl_LDObjectsList, (struct Node *)object);
@@ -450,7 +429,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 	WaitPort(&ldd.ldd_ReplyPort);
 	D(bug("[LDCaller] Returned\n"));
 
-	library = LDInit(MKBADDR(ldd.ldd_Return), DOSBase, &SysBase->LibList);
+	library = LDInit(MKBADDR(ldd.ldd_Return), DOSBase, &SysBase->LibList, SysBase);
 
         if( library != NULL )
         {
@@ -519,7 +498,7 @@ AROS_LH2(struct Library *, OpenLibrary,
     if (--(object->ldon_AccessCount) == 0)
     {
         Remove((struct Node *)object);
-        LDDestroyObjectNode(object, DOSBase);
+        LDDestroyObjectNode(object, SysBase);
     }
     else
        ReleaseSemaphore(&object->ldon_SigSem);
@@ -559,7 +538,7 @@ AROS_LH4(LONG, OpenDevice,
 
     if (!object)
     {
-        object = LDNewObjectNode(stripped_devname, DOSBase);
+        object = LDNewObjectNode(stripped_devname, SysBase);
 	if (object)
 	{
 	    AddTail(&DOSBase->dl_LDObjectsList, (struct Node*)object);
@@ -622,7 +601,7 @@ AROS_LH4(LONG, OpenDevice,
 	WaitPort(&ldd.ldd_ReplyPort);
 	D(bug("[LDCaller] Returned\n"));
 
-	iORequest->io_Device = (struct Device *)LDInit(MKBADDR(ldd.ldd_Return), DOSBase, &SysBase->DeviceList);
+	iORequest->io_Device = (struct Device *)LDInit(MKBADDR(ldd.ldd_Return), DOSBase, &SysBase->DeviceList, SysBase);
 
 	if(iORequest->io_Device)
         {
@@ -657,7 +636,7 @@ AROS_LH4(LONG, OpenDevice,
     if (--(object->ldon_AccessCount) == 0)
     {
         Remove((struct Node *)object);
-        LDDestroyObjectNode(object, DOSBase);
+        LDDestroyObjectNode(object, SysBase);
     }
     else
        ReleaseSemaphore(&object->ldon_SigSem);
@@ -846,11 +825,7 @@ AROS_UFH3(void, LDDemon,
 	    D(bug("[LDDemon] Got a request for %s in %s\n",
 		    ldd->ldd_Name, ldd->ldd_BaseDir));
 
-	    libSeg = LDLoad(
-		ldd->ldd_ReplyPort.mp_SigTask,
-		ldd->ldd_Name,
-		ldd->ldd_BaseDir,
-		DOSBase);
+	    libSeg = LDLoad(ldd->ldd_ReplyPort.mp_SigTask, ldd->ldd_Name, ldd->ldd_BaseDir, DOSBase, SysBase);
 	    ldd->ldd_Return = BADDR(libSeg);
 
 	    D(bug("[LDDemon] Replying with %p as result\n", ldd->ldd_Return));

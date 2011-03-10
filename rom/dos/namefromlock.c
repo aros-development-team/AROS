@@ -113,9 +113,7 @@ struct MyExAllData
     iofs->IOFS.io_Message.mn_ReplyPort	  = &me->pr_MsgPort;
     iofs->IOFS.io_Message.mn_Length	  = sizeof(struct IOFileSys);
 
-    iofs->IOFS.io_Device = (fh == NULL)
-                                ? DOSBase->dl_NulHandler
-                                : fh->fh_Device;
+    iofs->IOFS.io_Device = fh->fh_Device;
 
     /* Construct the name from top to bottom */
     name = buffer + length;
