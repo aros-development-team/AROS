@@ -14,7 +14,7 @@ struct AFSBase
 {
 #ifdef AROS_DOS_PACKETS
 	struct Library ab_Lib;
-	APTR   ab_Segment;		/* Pointer to segment header */
+	BPTR   ab_SegList;		/* Pointer to SegList trampoline */
 	struct Volume *volume;
 	struct DosLibrary *dosbase;
 	struct MsgPort *timer_mp;
