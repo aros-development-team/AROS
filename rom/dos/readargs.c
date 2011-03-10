@@ -7,6 +7,8 @@
     Lang: english
 */
 
+#define DEBUG 1
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/rdargs.h>
@@ -236,10 +238,9 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
                 /* Prompt for more input */
 
-/* printf ("Only ? found\n");
-printf ("rdargs=%p\n", rdargs);
-if (rdargs)
-printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
+		D(bug("[ReadArgs] Only ? found\n"));
+		D(bug("[ReadArgs] rdargs=0x%p\n", rdargs));
+		D(if (rdargs) bug ("[ReadArds] rdargs->RDA_ExtHelp=0x%p\n", rdargs->RDA_ExtHelp);)
 
                 if (FPuts(output, template) || FPuts(output, ": "))
                 {
@@ -294,12 +295,14 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	
 	                    iline[isize++] = c;
 	                }
-	                
+
+			D(iline[isize] = 0; bug("[ReadArgs] Size %d, line: '%s'\n", isize, iline));
+
 	                /* if user entered single ? again or some string ending
 	                   with space and ? either display template again or
 	                   extended help if it's available */
-	                if ((isize == 2 || (isize > 2 && iline[isize-3] == ' ')) 
-	                		&& iline[isize-2] == '?' ) 
+	                if ((isize == 1 || (isize > 1 && iline[isize-2] == ' ')) 
+	                		&& iline[isize-1] == '?' ) 
 	                {
 	                    helpdisplayed = TRUE;
 	                	isize = 0;
