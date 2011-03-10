@@ -11,13 +11,20 @@
 #include "dos_intern.h"
 
 /*
- * On m68k exitting a program can be performed by setting SP to pr_ReturnAddr - 12,
- * putting return code into d0 and performing rts.
- * For the complete code, see http://cataclysm.cx/random/amiga/reference/Libraries_Manual_guide/node060F.html
- * Similar construction should work on all CPUs. I guess this is what is used by Exit() routine.
- * Also it is known that ULONG at address taken from pr_ReturnAddr is stack size for CLI processes.
- * For other CPUs we don't keep exact stack layout and consider it private. Only Exit() knows what
- * to do with it. However we keep stack size value where it was, some code relies on it.
+ * On m68k exiting a program can be performed by setting SP
+ * to (FindTask(NULL)->pr_ReturnAddr - 4), and performing an rts.
+ *
+ * For the complete code, see arch/m68k-amiga/dos/exit.c and
+ * arch/m68k-amiga/dos/bcpl.S, "BCPL Exit"
+ *
+ * pr_ReturnAddr points to the actual stack size.
+ *
+ * Similar construction should work on all CPUs. I guess this is what
+ * is used by Exit() routine.
+ *
+ * For other CPUs we don't keep exact stack layout and consider it 
+ * private. Only Exit() knows what to do with it. However we keep stack
+ * size value where it was, some code relies on it.
  */
 struct StackState
 {
