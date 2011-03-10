@@ -63,12 +63,10 @@ exit:
     return rc;
 }
 
-AROS_HANDLER(ULONG, WorkbookMain)
+ULONG WorkbookMain(void)
 {
     struct WorkbookBase *wb;
     int rc = RETURN_ERROR;
-
-    AROS_USERFUNC_INIT
 
     wb = NULL;
 
@@ -132,6 +130,4 @@ error:
     }
 
     return rc;
-
-    AROS_USERFUNC_EXIT
 }

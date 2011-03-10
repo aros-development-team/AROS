@@ -48,10 +48,8 @@ static VOID ReplyPacket(struct MsgPort *proc_port, struct DosPacket *packet,
 static TEXT *BStr(struct Handler *h, UBYTE *b_str);
 static TEXT *BStr2(struct Handler *h, UBYTE *b_str);
 
-AROS_HANDLER(LONG, Main)
+LONG AmberMain(void)
 {
-   AROS_USERFUNC_INIT
-
    struct Handler *handler;
    struct MsgPort *proc_port;
    struct DosPacket *packet;
@@ -393,11 +391,7 @@ AROS_HANDLER(LONG, Main)
    DeleteHandler(handler);
 
    return RETURN_OK;
-
-   AROS_USERFUNC_EXIT
 }
-
-
 
 static struct DosPacket *GetPacket(struct MsgPort *port)
 {

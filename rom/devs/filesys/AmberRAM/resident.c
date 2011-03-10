@@ -44,7 +44,7 @@ MA 02111-1307, USA.
 #define rom_tag Ram_ROMTag
 #endif
 
-extern LONG Main(void);
+extern LONG AmberMain(void);
 
 static AROS_UFP3 (APTR, Init,
 		  AROS_UFPA(struct Library *, lh, D0),
@@ -84,6 +84,7 @@ static AROS_UFH3 (APTR, Init,
 {
    struct DosLibrary *DOSBase;
    struct DeviceNode *dev_node;
+   BPTR seg;
 
     AROS_USERFUNC_INIT
 
@@ -94,9 +95,14 @@ static AROS_UFH3 (APTR, Init,
    dev_node = (APTR)MakeDosEntry(dev_name, DLT_DEVICE);
    if(dev_node == NULL)
       Alert(AT_DeadEnd | AG_NoMemory);
+
+   seg = CreateSegList(AmberMain);
+   if (seg == BNULL)
+      Alert(AT_DeadEnd | AG_NoMemory);
+
    dev_node->dn_Handler = (BSTR)handler_name;
    dev_node->dn_StackSize = 10000;
-   dev_node->dn_SegList = MKBADDR((BPTR *)Main - 1);
+   dev_node->dn_SegList = seg;
    dev_node->dn_Priority = 10;
    if(!AddDosEntry((APTR)dev_node))
       Alert(AT_DeadEnd);
