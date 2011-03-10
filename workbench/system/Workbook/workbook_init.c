@@ -21,6 +21,7 @@ extern void WorkbookMain(void);
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     APTR DOSBase;
+    BPTR seg;
 
     D(bug("[Workbook] Init\n"));
 
@@ -30,7 +31,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	return FALSE;
     }
 
-    AddSegment("Workbook", MKBADDR(WorkbookMain), CMD_INTERNAL);
+    seg = CreateSegList(WorkbookMain);
+    if (seg != BNULL) {
+    	AddSegment("Workbook", seg, CMD_INTERNAL);
+    }
 
     CloseLibrary(DOSBase);
 

@@ -25,45 +25,32 @@ static const TEXT dev_name_raw[] = "RAW";
  * We will feed in to DOS/AddSegment() the BPTR to 
  * &aws_Next as the 'seglist' to add.
  */
-struct CON_Seg {
-    ULONG              cs_Size;      /* Length of segment in # of ULONGs */
-    ULONG              cs_Next;      /* Next segment (always 0 for this) */
-    struct FullJumpVec cs_Code;      /* Code to jump to CONMain */
-};
-
 #undef DOSBase
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
 {
    APTR DOSBase;
    struct DeviceNode *dev_node;
-   struct CON_Seg *cs_con;
+   BPTR conseg;
 
-   cs_con = AllocMem(sizeof(*cs_con), MEMF_ANY);
-   if (cs_con == NULL) {
-       Alert(AT_DeadEnd | AG_NoMemory);
+   DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
+   if (DOSBase == NULL) {
+       Alert(AG_OpenLib | AO_DOSLib);
        return FALSE;
    }
 
    /* Create device node and add it to the system. The handler will then be
       started when it is first accessed */
-   cs_con->cs_Size = 0;	/* Must be 0 to prevent UnLoadSeg */
-   cs_con->cs_Next = 0;	/* from killing us.               */
-   __AROS_SET_FULLJMP(&cs_con->cs_Code, CONMain);
-
-
-   DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-   if (DOSBase == NULL) {
-       FreeMem(cs_con, sizeof(*cs_con));
-       Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
-       return FALSE;
-   }
+   conseg = CreateSegList(CONMain);
+   if (conseg == BNULL)
+       Alert(AT_DeadEnd | AG_NoMemory);
 
    dev_node = (APTR)MakeDosEntry(dev_name_con, DLT_DEVICE);
    if(dev_node == NULL)
       Alert(AT_DeadEnd | AG_NoMemory);
+
    dev_node->dn_StackSize = AROS_STACKSIZE;
-   dev_node->dn_SegList = MKBADDR(&cs_con->cs_Next);
+   dev_node->dn_SegList = conseg;
    dev_node->dn_Startup = 0;
    dev_node->dn_Priority = 5;
    if(!AddDosEntry((APTR)dev_node))
@@ -73,7 +60,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
    if(dev_node == NULL)
       Alert(AT_DeadEnd | AG_NoMemory);
    dev_node->dn_StackSize = AROS_STACKSIZE;
-   dev_node->dn_SegList = MKBADDR(&cs_con->cs_Next);
+   dev_node->dn_SegList = conseg;
    dev_node->dn_Startup = 1;
    dev_node->dn_Priority = 5;
    if(!AddDosEntry((APTR)dev_node))

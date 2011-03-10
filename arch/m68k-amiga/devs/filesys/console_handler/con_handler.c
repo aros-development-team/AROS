@@ -296,10 +296,8 @@ static void startread(struct filehandle *fh)
 	fh->flags |= FHFLG_ASYNCCONSOLEREAD;
 }
 
-AROS_HANDLER(LONG,CONMain)
+LONG CONMain(void)
 {
-    AROS_USERFUNC_INIT
-
 	struct MsgPort *mp;
 	struct DosPacket *dp;
 	struct Message *mn;
@@ -522,5 +520,4 @@ end:
 	replypkt(dp, DOSFALSE);
 	D(bug("[CON] %x closed\n", fh));
 	return 0;
-    AROS_USERFUNC_EXIT
 }
