@@ -8,7 +8,7 @@ CFUNCS  := \
 	addbuffers changemode close  \
 	createdir deletefile duplock duplockfromfh \
 	endnotify errorreport exall exallend examine examinefh  \
-	exnext getdeviceproc info isfilesystem \
+	exit exnext getdeviceproc info isfilesystem \
 	isinteractive namefrom namefromfh namefromlock \
 	parentdir parentoffh read rename \
 	runhandler samedevice samelock sendpkt \
