@@ -52,6 +52,7 @@ void    hexdump      (const void * data, IPTR offset, ULONG count);
 int     strrncasecmp (const char *, const char *, int);
 void    RawPutChars  (const UBYTE * string, int len);
 BOOL    IsDosEntryA  (char *Name, ULONG Flags);
+BPTR    CreateSegList(APTR function);
 
 /* AROS enhancements */
 BOOL ReadByte    (struct Hook *, UBYTE  * dataptr, void * stream);
