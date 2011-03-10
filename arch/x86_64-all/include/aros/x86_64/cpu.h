@@ -66,25 +66,35 @@ register unsigned char * AROS_GET_SP __asm__("%rsp");
 #define __stackparm
 
 /*
-    One entry in a libraries' jumptable. For assembler compatibility, the
-    field jmp should contain the code for an absolute jmp to a 32bit
-    address. There are also a couple of macros which you should use to
-    access the vector table from C.
+ * Structure representing a jump code.
+ * Used to build proper seglist header, for example by LoadSeg()
+ * On x86-64 we use this code:
+ *     movabsq $vec, %r11
+ *     jmpq    *%r11
 */
 struct FullJumpVec
 {
-    unsigned char jmp;
-    void         *vec;
+    unsigned short movabsq;
+    void          *vec;
+    unsigned short jmp1;
+    unsigned char  jmp2;
 } __attribute__((packed));
 
 #define __AROS_SET_FULLJMP(v,a) \
 do \
 {  \
     struct FullJumpVec *_v = v; \
-    _v->jmp = 0xE9; \
-    _v->vec = (void *) ((unsigned long)(a) - (unsigned long)(_v) - 5); \
+    _v->movabsq = 0xBB49;	\
+    _v->vec     = (a);		\
+    _v->jmp1    = 0xFF41;	\
+    _v->jmp2    = 0xE3;		\
 } while (0)
 
+/*
+ * One entry in libraries' vector table.
+ * On x86-64 we use vector table consisting only of pointers.
+ * We do not include jump code in them.
+ */
 struct JumpVec
 {
     void *vec;
