@@ -21,6 +21,7 @@
 #include <proto/alib.h>
 #include <proto/utility.h>
 #include <utility/tagitem.h>
+#include <resources/filesysres.h>
 #include <aros/debug.h>
 #include LC_LIBDEFS_FILE
 #include "dos_intern.h"
@@ -88,6 +89,9 @@ static int DosInit(struct DosLibrary *LIBBASE)
     
     IPTR * taskarray;
     struct DosInfo *dosinfo;
+#ifdef AROS_DOS_PACKETS
+    struct FileSysResource *fsr;
+#endif
 
     LIBBASE->dl_Root = (struct RootNode *)AllocMem(sizeof(struct RootNode),
                                                    MEMF_PUBLIC|MEMF_CLEAR);
@@ -105,6 +109,37 @@ static int DosInit(struct DosLibrary *LIBBASE)
     InitSemaphore(&dosinfo->di_DevLock);
     InitSemaphore(&dosinfo->di_EntryLock);
     InitSemaphore(&dosinfo->di_DeleteLock);
+
+#ifdef AROS_DOS_PACKETS
+    /* Set dl_Root->rn_FileHandlerSegment to the AFS handler,
+     * if it's been loaded. Otherwise, use the first handler
+     * on the FileSystemResource list that has fse_PatchFlags
+     * set to mark it with a valid SegList */
+    if ((fsr = OpenResource("FileSystem.resource"))) {
+    	struct FileSysEntry *fse;
+    	BPTR defseg = BNULL;
+    	const ULONG DosMagic = 0x444f5301; /* DOS\001 */
+
+    	ForeachNode(&fsr->fsr_FileSysEntries, fse) {
+    	    if (fse->fse_DosType == DosMagic &&
+    	    	(fse->fse_PatchFlags & FSEF_SEGLIST)) {
+    	    	defseg = fse->fse_SegList;
+    	    	break;
+    	    }
+    	}
+
+    	if (defseg == BNULL) {
+    	    ForeachNode(&fsr->fsr_FileSysEntries, fse) {
+    	    	if ((fse->fse_PatchFlags & FSEF_SEGLIST) &&
+    	    	    (fse->fse_SegList != BNULL)) {
+    	    	    defseg = fse->fse_SegList;
+    	    	}
+    	    }
+    	}
+
+    	LIBBASE->dl_Root->rn_FileHandlerSegment = defseg;
+    }
+#endif
 
     /* Initialize for the fools that illegally used this field */
     LIBBASE->dl_UtilityBase   = OpenLibrary("utility.library", 0);
