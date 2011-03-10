@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a file with the specified mode.
@@ -186,7 +186,7 @@ LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
             } while(error == ERROR_OBJECT_NOT_FOUND && accessMode != MODE_NEWFILE);
 
 	    if (error == ERROR_NO_MORE_ENTRIES)
-        	error = me->pr_Result2 = ERROR_OBJECT_NOT_FOUND;
+        	error = ERROR_OBJECT_NOT_FOUND;
 
 	    if (error == ERROR_IS_SOFT_LINK)
             {
