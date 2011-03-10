@@ -327,16 +327,4 @@ extern void aros_not_implemented ();
     ) {						\
     	bt bn = *((bt *)4);
 
-/* Function declaration for DOS Handler startup code
- * This must be LONG aligned, since DOS will expect
- * it to be able to be referenced by a BPTR.
- */
-#define AROS_HANDLER(t,n) \
-asm (	".text\n" \
-	".global " #n "\n" \
-	".balign 4\n" \
-	#n ":\n" \
-	"jmp " #n "_AROS_HANDLER\n"); \
-	AROS_UFH0(t, n##_AROS_HANDLER)
-
 #endif /* AROS_M68K_CPU_H */
