@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,10 +15,10 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(LONG, SetIoErr,
+	AROS_LH1(SIPTR, SetIoErr,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, result, D1),
+	AROS_LHA(SIPTR, result, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 77, Dos)
@@ -47,7 +47,7 @@
     AROS_LIBFUNC_INIT
 
     /* old contents */
-    LONG old;
+    SIPTR old;
 
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);

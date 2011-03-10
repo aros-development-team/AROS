@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DeviceProc - Return a handle to a devices process.
@@ -56,16 +56,9 @@
 {
     AROS_LIBFUNC_INIT
 
-#if (AROS_SIZEOFPTR != AROS_SIZEOFULONG)
-    /* We can't safely return the lock ID via
-     * SetIoErr() on this architecture.
-     */
-    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-
-    return NULL;
-#else
-    struct MsgPort *res = NULL;
+    struct MsgPort *res;
     struct DevProc *dvp;
+    SIPTR err;
 
     /* just use GetDeviceProc(), it knows everything useful anyway */
     if ((dvp = GetDeviceProc(name, NULL)) == NULL)
@@ -73,19 +66,22 @@
 
     /* if GetDeviceProc() had to create the lock (ie non-binding assigns), we
      * can't return it as there's no cleanup function, so we have to error */
-    if (dvp->dvp_Flags & DVPF_UNLOCK) {
-        FreeDeviceProc(dvp);
-        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-        return NULL;
+    if (dvp->dvp_Flags & DVPF_UNLOCK)
+    {
+    	res = NULL;
+    	err = ERROR_DEVICE_NOT_MOUNTED;
     }
-
-    /* all good. get the lock and device */
-    SetIoErr(dvp->dvp_Lock);
-    res = dvp->dvp_Port;
+    else
+    {
+        /* all good. get the lock and device */
+    	res = dvp->dvp_Port;
+    	err = (SIPTR)dvp->dvp_Lock;
+    }
 
     FreeDeviceProc(dvp);
 
+    SetIoErr(err);
     return res;
-#endif
+
     AROS_LIBFUNC_EXIT
 } /* DeviceProc */

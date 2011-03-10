@@ -181,7 +181,7 @@ struct Process
     BPTR	    pr_StackBase;
       /* Secondary return-value, as defined in <dos/dos.h>. As of now this
          field is declared PRIVATE. Use IoErr()/SetIoErr() to access it. */
-    LONG	    pr_Result2;
+    SIPTR	    pr_Result2;
       /* Lock of the current directory. As of now this is declared READ-ONLY.
          Use CurrentDir() to set it. (struct FileLock *) */
     BPTR	    pr_CurrentDir;
