@@ -49,7 +49,7 @@
 	struct FullJumpVec Code;	/* Code to jump to the offset */
     } *segtmp;
 
-    segtmp = AllocMem(sizeof(*segtmp), MEMF_31BIT | MEMF_CLEAR);
+    segtmp = AllocMem(sizeof(*segtmp), MEMF_CLEAR);
     if (!segtmp)
     	return BNULL;
 
