@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 #include <string.h>
 
 #include <aros/debug.h>
