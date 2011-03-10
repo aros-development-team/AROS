@@ -60,7 +60,7 @@
     NEWLIST(&timermp.mp_MsgList);
     
     /* clone timerequest in DOSBase */
-    CopyMem(&DOSBase->dl_TimerIO, &timerio, sizeof(timerio));
+    CopyMem(DOSBase->dl_TimeReq, &timerio, sizeof(timerio));
 
     timerio.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
     timerio.tr_node.io_Message.mn_ReplyPort    = &timermp;    

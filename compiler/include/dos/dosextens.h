@@ -63,33 +63,34 @@ struct DosLibrary
 
     /* The following fields are PRIVATE! */
     struct ErrorString	 * dl_Errors;
-    struct timerequest *dl_TimeReq;
+    struct timerequest   * dl_TimeReq;
     struct Library	 * dl_UtilityBase;
     struct Library	 * dl_IntuitionBase;
 
-    /* These are AROS specific extensions. They are all PRIVATE! */
+    /*
+     * These were AROS-specific private fields. At the moment they are mostly not used
+     * and are present only for binary compatibility with programs that used dl_Flags
+     * (Directory Opus for example). Do not try to use them in any way!
+     */
     struct Device	 * dl_TimerBase;
     struct timerequest	   dl_TimerIO;
-
     struct DosList	 * dl_DevInfo;
     struct ExecBase	 * dl_SysBase;
     BPTR		   dl_SegList;
     struct Device	 * dl_NulHandler;
     struct Unit 	 * dl_NulLock;
 
+    /* LDDemon (library loader) private data */
     struct SignalSemaphore dl_LDObjectsListSigSem;
     struct List            dl_LDObjectsList;
     struct Interrupt	   dl_LDHandler;
     struct MsgPort	 * dl_LDDemonPort;
     struct Process	 * dl_LDDemonTask;
     ULONG		   dl_LDReturn;
+
+    /* AROS-specific and private. Can go away in future. */
     BPTR    	    	   dl_SYSLock;
-    
-#if 0
-    ULONG		   dl_ProcCnt;
-#endif
-      /* The flags are the same, as they were in RootNode->rn_Flags. See below
-         for definitions. */
+    /* The flags are ORed with RootNode->rn_Flags. See below for definitions. */
     ULONG		   dl_Flags;
 };
 

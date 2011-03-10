@@ -26,7 +26,7 @@
 #ifdef TimerBase
 #undef TimerBase
 #endif
-#define TimerBase (DOSBase->dl_TimerBase)
+#define TimerBase (DOSBase->dl_TimerIO.tr_node.io_Device)
 
 #ifdef UtilityBase
 #undef UtilityBase

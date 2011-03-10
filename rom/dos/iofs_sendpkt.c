@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -868,17 +868,11 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
     }
     else
     {
-    #if 0
-    	/* stegerg: ?? */
-	device = DOSBase->dl_NulHandler;
-	unit = DOSBase->dl_NulLock;
-    #else
     	fh = (struct FileHandle *)BADDR(DOSBase->dl_SYSLock);
 	device = fh->fh_Device;
 	unit = fh->fh_Unit;
-    #endif
     }
-    
+
     iofs->IOFS.io_Device = device;
     iofs->IOFS.io_Unit = unit;
     iofs->io_Union.io_NamedFile.io_Filename = pathname;
