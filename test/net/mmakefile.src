@@ -1,0 +1,16 @@
+# Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 36955 2011-02-04 07:46:28Z sonic $
+
+include $(TOP)/config/make.cfg
+
+FILES           := netlib
+EXEDIR          := $(AROS_TESTS)/net
+
+##MM- test : test-net
+##MM- test-quick : test-net-quick
+
+%build_progs mmake=test-net \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga arosc m net"
+
+%common
