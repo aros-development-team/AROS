@@ -31,8 +31,7 @@
 #include <unistd.h>
 #include <sys/uio.h>
 
-int
-writev (int fd, const struct iovec *iov, int iovcnt)
+ssize_t writev (int fd, const struct iovec *iov, int iovcnt)
 {
   int written = 0;
   int res;

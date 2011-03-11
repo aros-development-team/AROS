@@ -44,7 +44,6 @@ static char ocopyright[] =
 #endif
 
 #ifdef __AROS__
-int h_errno = 0;
 struct Library *MiamiBase  = NULL;
 struct Library *SocketBase = NULL;
 
