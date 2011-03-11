@@ -108,6 +108,21 @@ static const struct _pt {
     { 0, 0 }
 };
 
+static struct FileSysEntry *MatchFileSystemResourceHandler(IPTR DosType)
+{
+    struct FileSysResource *fsr;
+    struct FileSysEntry *fsrnode;
+
+    fsr = OpenResource("FileSystem.resource");
+    if (!fsr)
+    	return NULL;
+    ForeachNode(&fsr->fsr_FileSysEntries, fsrnode) {
+        if (fsrnode->fse_DosType == DosType && fsrnode->fse_SegList != BNULL)
+            return fsrnode;
+    }
+    return NULL;
+}
+
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
 static BOOL BootBlockChecksum(UBYTE *bootblock)
 {
@@ -136,8 +151,6 @@ struct InitTable {
 	ULONG_FUNC init;
 };
 
-static CONST TEXT __attribute__((aligned(4))) CONST _afs_handler[] = "\013afs.handler";
-
 static void FloppyBootNode(
         struct ExpansionBase *ExpansionBase,
         CONST_STRPTR driver, int unit, ULONG type, BOOL hddisk, BOOL bootable)
@@ -145,7 +158,6 @@ static void FloppyBootNode(
     TEXT dosdevname[4] = "DF0";
     IPTR pp[4 + sizeof(struct DosEnvec)/sizeof(IPTR)] = {};
     struct DeviceNode *devnode;
-    CONST BSTR afs_handler = MKBADDR(_afs_handler);
 
     dosdevname[2] += unit;
     D(bug("strap: Adding bootnode %s: dostype=%08x DDHD=%d\n", dosdevname, type, hddisk ? 1 : 0));
@@ -171,11 +183,11 @@ static void FloppyBootNode(
     devnode = MakeDosNode(pp);
 
     if (devnode) {
-    	/* If it's a DOS disk, assume we want the afs.handler
-    	 */
-    	if ((type & 0xFFFFFF00) == 0x444f5300)
-    	    devnode->dn_Handler = afs_handler;
-    	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
+    	struct FileSysEntry *fse = MatchFileSystemResourceHandler(type);
+	/* NULL dn_Handler is ok, rn_FileHandlerSegment is supported now */
+    	if (fse && (fse->fse_PatchFlags & FSEF_SEGLIST))
+    	    devnode->dn_Handler = fse->fse_SegList;
+   	AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, 0);
     }
 }
 
@@ -265,21 +277,6 @@ static void BootBlock(struct ExpansionBase *ExpansionBase)
 }
 
 #endif
-
-static struct FileSysEntry *MatchFileSystemResourceHandler(IPTR DosType)
-{
-    struct FileSysResource *fsr;
-    struct FileSysEntry *fsrnode;
-
-    fsr = OpenResource("FileSystem.resource");
-    if (!fsr)
-    	return NULL;
-    ForeachNode(&fsr->fsr_FileSysEntries, fsrnode) {
-        if (fsrnode->fse_DosType == DosType && fsrnode->fse_SegList != BNULL)
-            return fsrnode;
-    }
-    return NULL;
-}
 
 static STRPTR MatchHandler(IPTR DosType)
 {
@@ -575,11 +572,13 @@ static VOID CheckPartitions
     struct DeviceNode *dn = (struct DeviceNode *)bn->bn_DeviceNode;
 
     if (dn->dn_SegList != BNULL) {
+    	D(bug("CheckPartition('%s') handler = %x\n", AROS_DOSDEVNAME(dn), dn->dn_SegList));
         /* we already have filesystem handler */
         Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
         return;
     }
 
+    D(bug("CheckPartition('%s') checking..\n", AROS_DOSDEVNAME(dn)));
     PartitionBase =
         (struct PartitionBase *)OpenLibrary("partition.library", 1);
     if (PartitionBase)
