@@ -27,9 +27,9 @@ NETLIBSRC = strerror \
            writev \
            vasprintf \
            asprintf \
+           init_inet_daemon \
            err
 # Temporarily left out:
-#          init_inet_daemon
 #          printuserfault
 
 SANA2LIBSRC = sana2perror \
