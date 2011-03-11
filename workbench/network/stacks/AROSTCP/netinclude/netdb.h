@@ -3,7 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
- * Copyright (C) 2005 Pavel Fedin
+ * Copyright (C) 2005 - 2011 Pavel Fedin
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Library General Public License
@@ -85,22 +85,25 @@ struct	protoent {
 	int	p_proto;	/* protocol # */
 };
 
-#ifndef KERNEL
-
-#if 0 /* NC */
-#ifndef BSDSOCKET_H
-#include <bsdsocket.h>
-#endif
-#endif
-
-#endif /* !KERNEL */
-
 /*
  * Error return codes from gethostbyname() and gethostbyaddr()
  * (left in extern int h_errno).
  */
 #ifndef KERNEL
-extern	int h_errno;
+
+#include <bsdsocket/socketbasetags.h>
+#include <proto/socket.h>
+
+static inline int *__get_h_errno_ptr(struct Library *SocketBase)
+{
+    int *ptr;
+
+    SocketBaseTags(SBTM_GETVAL(SBTC_HERRNOLONGPTR), &ptr, TAG_DONE);
+    return ptr;
+}
+
+#define h_errno (*__get_h_errno_ptr(SocketBase))
+
 #endif
 
 #define	HOST_NOT_FOUND	1 /* Authoritative Answer Host not found */
