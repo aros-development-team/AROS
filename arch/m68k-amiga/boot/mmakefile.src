@@ -24,6 +24,7 @@ include $(TOP)/config/make.cfg
 #MM     workbench-libs-gadtools-kobj \
 #MM     workbench-libs-partition-kobj \
 #MM     kernel-workbook-kobj \
+#MM     kernel-amiga-m68k-wbtag-kobj \
 #MM     kernel-workbench-devs-amiga-m68k \
 #MM     kernel-usb-amiga-m68k \
 #MM     kernel-fs-afs-kobj \
@@ -75,7 +76,7 @@ KLIBS   :=  keymap graphics layers intuition gadtools icon workbench
 KDEVS   := 
 KHNDLRS := 
 KHIDDS  :=
-KRSRCS  := shellcommands workbook
+KRSRCS  := shellcommands workbook wbtag
 
 ROMPAD_ext := 0xe80000
 KOBJS_ext := \
