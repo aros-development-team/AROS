@@ -3,6 +3,23 @@
 #include <proto/intuition.h>
 #include "conf.h"
 
+/* SAS C 6.50 kludge */
+#ifdef SASC
+#if __VERSION__ > 6 || __REVISION__ >= 50
+#define exit(x) return x
+#endif
+#endif
+
+/* AROS kludge, see below */
+#ifdef __AROS__
+
+#include <aros/symbolsets.h>
+
+#undef CONSTRUCTOR
+#define CONSTRUCTOR
+#define exit(x) return x
+#endif
+
 extern STRPTR _ProgramName;
 struct Library *MiamiBase = NULL;
 
@@ -38,3 +55,22 @@ void STDARGS DESTRUCTOR _STD_200_closeMiami(void)
     MiamiBase = NULL;
   }
 }
+
+#ifdef __AROS__
+
+/*
+ * Unfortunately AROS startup code does not support early exit().
+ * This can be considered a serious C++ compatibility problem since
+ * constructors of static objects may throw exceptions,
+ * involving exit() or abort() calls.
+ */
+
+static ULONG AROS_openMiami(void)
+{
+    return _STI_200_openMiami() ? FALSE : TRUE;
+}
+
+ADD2INIT(AROS_openMiami, 10);
+ADD2EXIT(_STD_200_closeMiami, 10);
+
+#endif

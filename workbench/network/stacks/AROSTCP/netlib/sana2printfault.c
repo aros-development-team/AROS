@@ -9,11 +9,9 @@
 
 #include <devices/sana2.h>
 #include <net/sana2errno.h>
-#ifdef __SASC 
 #include <proto/dos.h>
-#else
-#include <clib/dos_protos.h>
-#endif
+
+#include "conf.h"
 
 /****** sana2.lib/sana2PrintFault *********************************************
 
@@ -47,18 +45,18 @@ Sana2PrintFault(const char *banner, struct IOSana2Req *ios2)
 {
   register WORD err = ios2->ios2_Req.io_Error;
   register ULONG werr = ios2->ios2_WireError;
-  LONG args[3];
+  IPTR args[3];
   char * format;
 
-  args[0] = (LONG)banner; 
+  args[0] = (IPTR)banner; 
 
   if (err >= sana2io_nerr || -err > io_nerr) {
-    args[1] = (LONG)io_errlist[0];
+    args[1] = (IPTR)io_errlist[0];
   } else { 
     if (err < 0) 
-      args[1] = (LONG)io_errlist[-err];
+      args[1] = (IPTR)io_errlist[-err];
     else 
-      args[1] = (LONG)sana2io_errlist[err];
+      args[1] = (IPTR)sana2io_errlist[err];
   }
   if (werr == 0 || werr >= sana2wire_nerr) {
     if (banner != NULL)
@@ -70,9 +68,8 @@ Sana2PrintFault(const char *banner, struct IOSana2Req *ios2)
       format = "%s: %s (%s)\n";
     else
       format = "%s (%s)\n";
-    args[2] = (LONG)sana2wire_errlist[werr];
+    args[2] = (IPTR)sana2wire_errlist[werr];
   }
 
   VPrintf(format, banner != NULL ? args : args + 1);
 }
-
