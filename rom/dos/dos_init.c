@@ -35,6 +35,8 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
     AROS_UFPA(BPTR, fh, D3),
     AROS_UFPA(struct DosLibrary *, DosBase, A6));
 
+extern void *BCPL_jsr, *BCPL_rts;
+
 static void PatchDOS(struct DosLibrary *dosbase)
 {
     UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
@@ -75,6 +77,9 @@ static void PatchDOS(struct DosLibrary *dosbase)
     __AROS_SETVECADDR(dosbase, 25, asmcall);
 
     CacheClearU();
+
+    dosbase->dl_A5 = (LONG)&BCPL_jsr;
+    dosbase->dl_A6 = (LONG)&BCPL_rts;
 }
 
 #else
