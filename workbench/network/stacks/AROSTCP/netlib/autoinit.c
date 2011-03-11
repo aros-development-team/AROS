@@ -106,7 +106,6 @@ extern STRPTR _ProgramName;	/* startup module defines this :-) */
 LONG STDARGS CONSTRUCTOR _STI_200_openSockets(void)
 {
   struct Library *IntuitionBase;
-  STRPTR errorStr;
 
   /*
    * Open bsdsocket.library

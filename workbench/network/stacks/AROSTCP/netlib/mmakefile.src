@@ -9,6 +9,7 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -DAMITCP_NEW_NAMES -DSOCKETBA
 
 NETLIBSRC = strerror \
            autoinit \
+           chmod \
            dummy \
            lineread \
            printfault \
@@ -30,7 +31,6 @@ NETLIBSRC = strerror \
 # Temporarily left out:
 #          init_inet_daemon
 #          printuserfault
-#          chmod
 
 SANA2LIBSRC = sana2perror \
              sana2errlist \
