@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Filesystem that uses console device for input/output.
@@ -245,9 +245,12 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 
 static VOID CloseConWindow(struct filehandle *fh)
 {
+  D(bug("CloseConWindow, fh 0x%p\n", fh));
+
   if (fh->menu) {
     ClearMenuStrip(fh->window);
     FreeMenus(fh->menu);
+    fh->menu = NULL;
   }
   if (fh->vi) {
     FreeVisualInfo(fh->vi);
@@ -273,7 +276,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
     };
 
     win_tags[2].ti_Data = (IPTR)fh->screenname;
-    D(bug("[contask] Opening window on screen %s, IntuitionBase = 0x%p\n", fh->screenname, IntuitionBase));
+    D(bug("[contask] Opening window on screen %s, FileHandle 0x%p, IntuitionBase = 0x%p\n", fh->screenname, fh, IntuitionBase));
     fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
 
     if (fh->window)
@@ -282,8 +285,9 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 	    GadToolsBase = OpenLibrary("gadtools.library",0L);
         }
         if (GadToolsBase) {
-	  D(bug("Initializing menus"));
+	  D(bug("Initializing menus\n"));
 	    fh->vi = (void *)GetVisualInfo(fh->window->WScreen, TAG_END);
+	    D(bug("VisualInfo 0x%p\n", fh->vi));
 	    if (fh->vi) {
 	        fh->menu = CreateMenus(&default_nm,TAG_END);
 	        if (fh->menu) {
@@ -663,7 +667,7 @@ static void process_input(struct conbase * conbase,struct filehandle *fh)
 	      if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
 		CloseDevice((struct IORequest *)fh->conreadio);
 	      fh->flags &= ~FHFLG_CONSOLEDEVICEOPEN;
-	      CloseConWindow(fh->window);
+	      CloseConWindow(fh);
 	    }
 	  
 	  /* fall through */
