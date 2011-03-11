@@ -5,12 +5,14 @@
  *      Copyright © 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
- *      Copyright © 2005 Pavel Fedin
+ *      Copyright © 2005 - 2011 Pavel Fedin
  */
 
 #include <errno.h>
 #include <proto/socket.h>
 #include <bsdsocket/socketbasetags.h>
+
+#include "conf.h"
 
 /****** net.lib/strerror *****************************************************
 
@@ -50,7 +52,7 @@ char *
 strerror(int error)
 #endif
 {
-  ULONG taglist[3];
+  IPTR taglist[3];
 
   taglist[0] = SBTM_GETVAL(SBTC_ERRNOSTRPTR);
   taglist[1] = error;

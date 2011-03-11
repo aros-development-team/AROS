@@ -109,7 +109,6 @@
 *****************************************************************************
 */
 
-#include <libraries/usergroup.h>
 #include <proto/dos.h>
 
 #include <sys/types.h>
@@ -149,6 +148,7 @@ int chmod(const char *path, mode_t mode)
 }
 
 #ifdef DEBUGGING
+#include <libraries/usergroup.h>
 #include <proto/usergroup.h>
 #include <stdlib.h>
 #include <string.h>

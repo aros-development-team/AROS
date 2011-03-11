@@ -10,3 +10,7 @@
 #define DESTRUCTOR __attribute__ ((destructor))
 #define INTERRUPT
 #endif
+
+#ifndef __AROS__
+#define IPTR ULONG
+#endif
