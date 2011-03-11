@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <dos/dos.h>
@@ -11,6 +11,8 @@
 
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include "autoinit_intern.h"
 
 int __nocommandline __attribute__((weak)) = 0;
 
@@ -64,10 +66,7 @@ int __initcommandline(void)
     /*
      * get program name
      */
-     __argv[0] = FindTask(NULL)->tc_Node.ln_Name;
-
-     if (!__argv[0])
-         return 0;
+     __argv[0] = __get_command_name();
 
 #if DEBUG /* Debug argument parsing */
 

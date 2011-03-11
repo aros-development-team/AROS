@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 
 FILES := \
 	all-tests \
+	arguments \
 	chdir \
 	strchr \
 	stpblk \
