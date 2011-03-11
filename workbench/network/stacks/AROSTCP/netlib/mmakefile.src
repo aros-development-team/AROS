@@ -17,10 +17,7 @@ NETLIBSRC = strerror \
            syslog \
            getpid \
            getppid \
-           chmod \
            popen\
-           printuserfault \
-           init_inet_daemon \
            serveraccept \
            linkaddr \
            linkntoa \
@@ -30,6 +27,10 @@ NETLIBSRC = strerror \
            vasprintf \
            asprintf \
            err
+# Temporarily left out:
+#          init_inet_daemon
+#          printuserfault
+#          chmod
 
 SANA2LIBSRC = sana2perror \
              sana2errlist \
