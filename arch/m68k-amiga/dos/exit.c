@@ -100,5 +100,5 @@ ULONG BCPL_CallEntry(STRPTR argPtr, ULONG argSize, LONG_FUNC entry, struct Proce
 {
     extern void *BCPL_rts;
 
-    return CallEntry_A6(argPtr, argSize, entry, me, BCPL_rts);
+    return CallEntry_A6(argPtr, argSize, entry, me, &BCPL_rts);
 }
