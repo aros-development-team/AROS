@@ -2,7 +2,7 @@
 #define EXEC_TASKS_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Task structure and constants
@@ -21,6 +21,8 @@
 #ifndef UTILITY_TAGITEM_H
 #   include <utility/tagitem.h>
 #endif
+
+struct ETask;
 
 /* You must use Exec functions to modify task structure fields. */
 struct Task
@@ -41,7 +43,7 @@ struct Task
 	    UWORD tc_ETrapAlloc;   /* Allocated traps */
 	    UWORD tc_ETrapAble;    /* Enabled traps */
 	} tc_ETrap;
-	APTR	  tc_ETask;	   /* Valid if TF_ETASK is set */
+	struct ETask *tc_ETask;	   /* Valid if TF_ETASK is set */
     }		tc_UnionETask;
     APTR	tc_ExceptData;	/* Exception data */
     APTR	tc_ExceptCode;	/* Exception code */
@@ -137,6 +139,28 @@ struct StackSwapArgs
 #define SIGF_NET	(1L<<7)
 #define SIGF_DOS	(1L<<8)
 
+/* Define this when compiling MorphOS-compatible source */
+#ifdef AROS_MORPHOS_COMPATIBLE
+
+#define tc_ETask tc_UnionETask.tc_ETask
+
+struct ETask
+{
+    struct Message Message;
+    struct Task *  Parent;	    /* Pointer to task */
+    ULONG	   UniqueID;
+    struct MinList Children;     /* List of children */
+    UWORD	   TrapAlloc;
+    UWORD	   TrapAble;
+    ULONG	   Result1;	    /* First result */
+    APTR	   Result2;	    /* Result data pointer (AllocVec) */
+    struct MsgPort MsgPort;
+
+    /* Internal fields follow */
+};
+
+#else
+
 /* Extended Task structure */
 struct ETask
 {
@@ -152,6 +176,8 @@ struct ETask
 
     /* Internal fields follow */
 };
+
+#endif
 
 /* Return codes from new child functions */
 #define CHILD_NOTNEW   1 /* Function not called from a new style task */
