@@ -10,7 +10,6 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -DAMITCP_NEW_NAMES -DSOCKETBA
 
 NETLIBSRC = strerror \
            autoinit \
-           chmod \
            dummy \
            lineread \
            printfault \
@@ -19,7 +18,7 @@ NETLIBSRC = strerror \
            syslog \
            getpid \
            getppid \
-           popen\
+           popen \
            serveraccept \
            linkaddr \
            linkntoa \
@@ -30,8 +29,6 @@ NETLIBSRC = strerror \
            asprintf \
            init_inet_daemon \
            err
-# Temporarily left out:
-#          printuserfault
 
 SANA2LIBSRC = sana2perror \
              sana2errlist \
