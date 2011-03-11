@@ -36,7 +36,9 @@ LIBHANDLINGFILES := \
 STARTUPFILES := \
 	__showerror \
 	commandline \
+	commandname \
 	__stdiowin \
+	_programname \
         stdiowin \
         fromwb \
         initexitsets \
