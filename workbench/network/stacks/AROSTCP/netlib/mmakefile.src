@@ -6,7 +6,7 @@ USER_INCLUDES := -isystem ../netinclude/
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -DAMITCP_NEW_NAMES -DSOCKETBASE_IN_CONTEXT -DUSERGROUPBASE_IN_CONTEXT
 
 #MM- workbench-network-stacks-arostcp : arostcp-linklibs
-#MM- arostcp-linklibs : includes arostcp-linklibs-netlib arostcp-linklibs-sana2 arostcp-linklibs-miami
+#MM- arostcp-linklibs : includes arostcp-linklibs-netlib arostcp-linklibs-miami #arostcp-linklibs-sana2
 
 NETLIBSRC = strerror \
            autoinit \
