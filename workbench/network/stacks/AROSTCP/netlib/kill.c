@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <errno.h>
 
-BOOL CheckTask(struct List *tl, pid_t pid)
+static BOOL CheckTask(struct List *tl, pid_t pid)
 {
     struct Node *t;
     for (t = tl->lh_Head; t->ln_Succ; t = t->ln_Succ)
@@ -30,11 +30,24 @@ int kill(pid_t pid, int sigs)
     default:
 	return EINVAL;
     }
+
     Forbid();
-    task_valid = (CheckTask(&SysBase->TaskReady, pid) || CheckTask(&SysBase->TaskWait, pid));
+
+    /*
+     * The task can be:
+     * a) Current one
+     * b) In the TaskReady list
+     * c) In the TaskWait list
+     */
+    task_valid = ((pid == (pid_t)FindTask(NULL)) ||
+    		  CheckTask(&SysBase->TaskReady, pid) ||
+    		  CheckTask(&SysBase->TaskWait, pid));
+
     if (task_valid && exec_sigs)
 	Signal((struct Task *)pid, exec_sigs);
+
     Permit();
+
     return task_valid ? 0 : ESRCH;
 }
 
