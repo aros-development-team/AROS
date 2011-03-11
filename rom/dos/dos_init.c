@@ -89,9 +89,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
     
     IPTR * taskarray;
     struct DosInfo *dosinfo;
-#ifdef AROS_DOS_PACKETS
     struct FileSysResource *fsr;
-#endif
 
     LIBBASE->dl_Root = (struct RootNode *)AllocMem(sizeof(struct RootNode),
                                                    MEMF_PUBLIC|MEMF_CLEAR);
@@ -110,12 +108,14 @@ static int DosInit(struct DosLibrary *LIBBASE)
     InitSemaphore(&dosinfo->di_EntryLock);
     InitSemaphore(&dosinfo->di_DeleteLock);
 
-#ifdef AROS_DOS_PACKETS
-    /* Set dl_Root->rn_FileHandlerSegment to the AFS handler,
+    /*
+     * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
      * if it's been loaded. Otherwise, use the first handler
      * on the FileSystemResource list that has fse_PatchFlags
-     * set to mark it with a valid SegList */
-    if ((fsr = OpenResource("FileSystem.resource"))) {
+     * set to mark it with a valid SegList
+     */
+    if ((fsr = OpenResource("FileSystem.resource")))
+    {
     	struct FileSysEntry *fse;
     	BPTR defseg = BNULL;
     	const ULONG DosMagic = 0x444f5301; /* DOS\001 */
@@ -139,7 +139,6 @@ static int DosInit(struct DosLibrary *LIBBASE)
 
     	LIBBASE->dl_Root->rn_FileHandlerSegment = defseg;
     }
-#endif
 
     /* Initialize for the fools that illegally used this field */
     LIBBASE->dl_UtilityBase   = OpenLibrary("utility.library", 0);
@@ -179,7 +178,7 @@ static int DosInit(struct DosLibrary *LIBBASE)
 
 	KernelBase = OpenResource("kernel.resource");
 
-	/* This is where we start the RTC_AFTERDOS residents */
+	/* This is where we start the RTF_AFTERDOS residents */
 	D(bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n"));
 	InitCode(RTF_AFTERDOS, 0);
 
