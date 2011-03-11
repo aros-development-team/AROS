@@ -1,3 +1,5 @@
+#define AROS_MORPHOS_COMPATIBLE
+
 #include <exec/tasks.h>
 #include <sys/types.h>
 #include <proto/exec.h>

@@ -5,7 +5,7 @@
  *      Copyright © 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
- *	Copyright © 2005 Pavel Fedin
+ *	Copyright © 2005 - 2011 Pavel Fedin
  */
 
 #include <exec/types.h>
@@ -32,14 +32,6 @@ static const char SOCKETNAME[] = "bsdsocket.library";
 #define SOCKETVERSION 4		/* minimum bsdsocket version to use */
 
 extern STRPTR _ProgramName;	/* startup module defines this :-) */
-
-/*
- * Globa| h_errno
- */
-/*#if sizeof(int) != sizeof(long)
-#error short ints not supported!
-#endif*/
-int h_errno = 0;
 
 /****** net.lib/autoinit *********************************************
 
@@ -117,23 +109,16 @@ LONG STDARGS CONSTRUCTOR _STI_200_openSockets(void)
   STRPTR errorStr;
 
   /*
-   * Check OS version
-   */
-  if ((*(struct Library **)4)->lib_Version < 37)
-    exit(20);
-
-  /*
    * Open bsdsocket.library
    */
   if ((SocketBase = OpenLibrary((STRPTR)SOCKETNAME, SOCKETVERSION)) != NULL) {
     /*
      * Succesfull. Now tell bsdsocket.library:
      * - the address of our errno
-     * - the address of our h_errno
      * - our program name
+     * h_errno is not processed here any more, now it's thread-safe
      */
     if (SocketBaseTags(SBTM_SETVAL(SBTC_ERRNOPTR(sizeof(errno))), &errno,
-		       SBTM_SETVAL(SBTC_HERRNOLONGPTR), &h_errno,
 		       SBTM_SETVAL(SBTC_LOGTAGPTR), _ProgramName,
 		       TAG_END))
       exit(30);
