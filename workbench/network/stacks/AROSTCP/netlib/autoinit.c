@@ -8,20 +8,16 @@
  *	Copyright © 2005 - 2011 Pavel Fedin
  */
 
+#include <bsdsocket/socketbasetags.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
-
 #include <intuition/intuition.h>
-
 #include <proto/socket.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
 #include <stdlib.h>
-
 #include <errno.h>
-
-#include <bsdsocket/socketbasetags.h>
 
 #include "conf.h"
 
@@ -91,8 +87,18 @@ extern STRPTR _ProgramName;	/* startup module defines this :-) */
 /* SAS C 6.50 kludge */
 #ifdef SASC
 #if __VERSION__ > 6 || __REVISION__ >= 50
-#define exit(x) return(x)
+#define exit(x) return x
 #endif
+#endif
+
+/* AROS kludge, see below */
+#ifdef __AROS__
+
+#include <aros/symbolsets.h>
+
+#undef CONSTRUCTOR
+#define CONSTRUCTOR
+#define exit(x) return x
 #endif
 
 /*
@@ -149,3 +155,22 @@ void STDARGS DESTRUCTOR _STD_200_closeSockets(void)
     SocketBase = NULL;
   }
 }
+
+#ifdef __AROS__
+
+/*
+ * Unfortunately AROS startup code does not support early exit().
+ * This can be considered a serious C++ compatibility problem since
+ * constructors of static objects may throw exceptions,
+ * involving exit() or abort() calls.
+ */
+
+static ULONG AROS_openSockets(void)
+{
+    return _STI_200_openSockets() ? FALSE : TRUE;
+}
+
+ADD2INIT(AROS_openSockets, 10);
+ADD2EXIT(_STD_200_closeSockets, 10);
+
+#endif
