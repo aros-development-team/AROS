@@ -2,7 +2,7 @@
 #define _ARGS_H_
 
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -17,7 +17,7 @@ enum Argument {
 };
 
 /*** Prototypes *************************************************************/
-BOOL ReadArguments(VOID);
+BOOL ReadArguments(int argc, char **argv);
 VOID FreeArguments(VOID);
 IPTR GetArgument(enum Argument arg);
 

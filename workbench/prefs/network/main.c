@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -15,15 +15,15 @@
 #include "netpeditor.h"
 #include "prefsdata.h"
 
-#define VERSION "$VER: Network 1.8 (17.11.2010) AROS Dev Team"
+#define VERSION "$VER: Network 1.9 (12.03.2011) AROS Dev Team"
 
-int main(void)
+int main(int argc, char **argv)
 {
     Object *application,  *window;
 
     Locale_Initialize();
 
-    ReadArguments();
+    ReadArguments(argc, argv);
 
     InitNetworkPrefs(
         (ARG(FROM) != (IPTR)NULL ? (STRPTR)ARG(FROM) : (STRPTR)PREFS_PATH_ENV),
