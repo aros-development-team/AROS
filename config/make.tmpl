@@ -2261,6 +2261,7 @@ endif
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
 #MM- %(mmake)-fetch : %(mmake)-%(subpackage)-fetch
+#MM- %(mmake)-create-patch : %(mmake)-%(subpackage)-create-patch
  
 %(mmake)-archbase  := %(package)-%(version)
 
@@ -2301,6 +2302,20 @@ endif
 
 #MM- %(mmake) : %(mmake)-%(subpackage)
 
+# If you did some changes to the unpacked sources, call the target below
+# to easily create a new patch.
+#MM
+%(mmake)-%(subpackage)-create-patch :
+	@$(FETCH) -a $(%(mmake)-%(subpackage)-archbase) -s "%(suffixes)" -l $(PORTSSOURCEDIR) -d $(%(mmake)-portdir)/tmp ; \
+	mv $(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-archbase) $(%(mmake)-portdir)/tmp/$(%(mmake)-%(subpackage)-archbase).aros ; \
+	cd $(%(mmake)-portdir)/tmp ; \
+	diff -ruN \
+	    $(%(mmake)-%(subpackage)-archbase) \
+	    $(%(mmake)-%(subpackage)-archbase).aros \
+	    >$(SRCDIR)/$(CURDIR)/$(%(mmake)-%(subpackage)-archbase)-aros-new.diff ; \
+	mv $(%(mmake)-portdir)/tmp/$(%(mmake)-%(subpackage)-archbase).aros $(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-archbase) ; \
+	$(RM) $(%(mmake)-portdir)/tmp
+
 %(mmake)-%(subpackage)-package-dir := $(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-archbase)
 
 %(mmake)-%(subpackage)-package-basename := \
@@ -2316,7 +2331,7 @@ endif
      aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
      %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)"
 
-.PHONY : %(mmake)-%(subpackage)-make-package
+.PHONY : %(mmake)-%(subpackage)-make-package %(mmake)-%(subpackage)-create-patch
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
 
 #MM
