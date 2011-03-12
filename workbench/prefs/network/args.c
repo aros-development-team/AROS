@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -14,15 +14,19 @@ STATIC IPTR args[COUNT];
 STATIC struct RDArgs *rdargs;
 
 /*** Functions **************************************************************/
-BOOL ReadArguments(VOID)
+BOOL ReadArguments(int argc, char **argv)
 {
-    rdargs = ReadArgs(TEMPLATE, args, NULL);
-    return rdargs != NULL;
+    if (argc != 0) // started from Shell
+    {
+        rdargs = ReadArgs(TEMPLATE, args, NULL);
+        return rdargs != NULL;
+    }
+    return TRUE;
 }
 
 VOID FreeArguments(VOID)
 {
-    FreeArgs(rdargs);
+    FreeArgs(rdargs); // save to use with NULL.
 }
 
 IPTR GetArgument(enum Argument id)
