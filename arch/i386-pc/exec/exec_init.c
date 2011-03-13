@@ -807,8 +807,12 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
 
     rkprintf("Memory added\n");
 
-    /* Protect kernel and RO data from beeing allocated by software */
-    AllocAbs((ULONG)(LibGetTagData(KRN_KernelHighest, (ULONG)&_end, tags) - LibGetTagData(KRN_KernelLowest, (ULONG)&_end, tags)), (APTR)LibGetTagData(KRN_KernelLowest, (ULONG)&_end, tags));
+    /* Protect kernel and RO data from being allocated by software */
+    IPTR kernel_highest =
+        LibGetTagData(KRN_KernelHighest, (ULONG)&_end, tags);
+    IPTR kernel_lowest =
+        LibGetTagData(KRN_KernelLowest, (ULONG)&_end - 0x000a0000, tags);
+    AllocAbs(kernel_highest - kernel_lowest, (APTR)kernel_lowest);
 
     /* Protect bootup stack from being allocated */
     AllocAbs(0x3000,0x90000);
@@ -817,7 +821,7 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
 
     /* Protect the RSD PTR which is always in the first MB for later use */
     if(arosmb->acpirsdp)
-    AllocAbs(arosmb->acpirsdp, arosmb->acpilength);
+        AllocAbs(arosmb->acpilength, arosmb->acpirsdp);
 
 /*
     // tcheko : GRUB returns end of uppermem (fastmem) always lower than ACPI table data
@@ -831,17 +835,17 @@ void exec_cinit(unsigned long magic, unsigned long addr, struct TagItem *tags)
         if(mmap->type == MMAP_TYPE_ACPIDATA)
         {
             rkprintf("Protecting ACPI DATA memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
-            AllocAbs(mmap->addr_low, mmap->len_low);
+            AllocAbs(mmap->len_low, mmap->addr_low);
         }         
         if(mmap->type == MMAP_TYPE_ACPINVS)
         {
             rkprintf("Protecting ACPI NVS memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
-            AllocAbs(mmap->addr_low, mmap->len_low);            
+            AllocAbs(mmap->len_low, mmap->addr_low);
         }
         if(mmap->type == MMAP_TYPE_RESERVED)
         {
             rkprintf("Protecting reserved memory space (%x:%lu)\n", mmap->addr_low, mmap->len_low);
-            AllocAbs(mmap->addr_low, mmap->len_low);            
+            AllocAbs(mmap->len_low, mmap->addr_low);
         }
     }
 */
@@ -1203,9 +1207,10 @@ void get_ACPI_RSDPTR(struct arosmb* mb)
 	        
     		if(!sum)
             {
-                rkprintf("ACPI RSD PTR address found!\n");
+                rkprintf("ACPI RSD PTR address found at %p!\n", j);
                 mb->acpirsdp = (IPTR)j;
                 mb->acpilength = (((struct ACPI_TABLE_TYPE_RSDP*)j)->revision < 2)?20:36;
+                break;
             }
             else
             {
