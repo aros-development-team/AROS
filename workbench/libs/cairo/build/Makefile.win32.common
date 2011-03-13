@@ -1,0 +1,71 @@
+default: all
+
+#
+# Edit build/Makefile.win32.features to enable features to build
+#
+include $(top_srcdir)/build/Makefile.win32.features
+
+ifeq ($(top_builddir),)
+top_builddir = $(top_srcdir)
+endif
+
+CC := cl
+LINK := link
+
+ifeq ($(CFG),debug)
+MS_MDFLAGS := -MDd
+MS_LDFLAGS := -LDd
+OPT := -Od -Zi
+else
+MS_MDFLAGS := -MD
+MS_LDFLAGS := -LD
+OPT := -MD -O2
+endif
+
+PIXMAN_CFLAGS := -I$(top_srcdir)/../pixman/pixman
+PIXMAN_LIBS := $(top_builddir)/../pixman/pixman/$(CFG)/pixman-1.lib
+
+CAIRO_LIBS =  gdi32.lib msimg32.lib user32.lib
+ifeq ($(CAIRO_HAS_PNG_FUNCTIONS),1)
+LIBPNG_CFLAGS += -I$(top_srcdir)/../libpng/
+CAIRO_LIBS +=  $(top_builddir)/../libpng/libpng.lib
+endif
+ifeq ($(CAIRO_HAS_PS_SURFACE)$(CAIRO_HAS_PDF_SURFACE),00)
+else
+ZLIB_CFLAGS += -I$(top_srcdir)/../zlib/
+CAIRO_LIBS += $(top_builddir)/../zlib/zdll.lib
+endif
+
+DEFAULT_CFLAGS = -nologo $(MS_MDFLAGS) $(OPT)
+DEFAULT_CFLAGS += -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
+DEFAULT_CFLAGS += -I. -I$(top_srcdir)
+DEFAULT_CFLAGS += $(PIXMAN_CFLAGS) $(LIBPNG_CFLAGS) $(ZLIB_CFLAGS)
+
+CAIRO_CFLAGS = $(DEFAULT_CFLAGS) $(CFLAGS)
+
+inform:
+	@echo
+ifneq ($(CFG),release)
+ifneq ($(CFG),debug)
+	@echo "Invalid configuration "$(CFG)" specified."
+	@echo -n "You must specify a configuration when "
+	@echo "running make, e.g. make CFG=debug"
+	@echo
+	@echo -n "Possible choices for configuration are "
+	@echo "'release' and 'debug'"
+	@exit 1
+endif
+endif
+
+# Some generic rules
+
+$(CFG)/%.obj: %.c
+	@mkdir -p $(CFG)
+	@$(CC) $(CAIRO_CFLAGS) -c -Fo"$@" $<
+
+$(CFG)/%-static.obj: %.c
+	@mkdir -p $(CFG)
+	@$(CC) $(CAIRO_CFLAGS) -c -DCAIRO_WIN32_STATIC_BUILD=1 -Fo"$@" $<
+
+clean:
+	@rm -f $(CFG)/*.obj $(CFG)/*.dll $(CFG)/*.lib $(CFG)/*.pdb $(CFG)/*.ilk || exit 0

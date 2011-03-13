@@ -1,0 +1,52 @@
+top_srcdir = ..
+include $(top_srcdir)/build/Makefile.win32.common
+include $(top_srcdir)/test/Makefile.sources
+
+CFLAGS += -I../src -I../boilerplate -I./pdiff
+
+LDFLAGS += ./pdiff/pdiff.lib ../src/$(CFG)/cairo-static.lib $(PIXMAN_LIBS) ../boilerplate/$(CFG)/boiler.lib $(EXE_LDFLAGS)
+
+
+TESTCORE_SOURCES = \
+	cairo-test.c \
+	buffer-diff.c \
+	$(NULL)
+
+all: cairo-test-suite.exe
+
+make-cairo-test-constructors.exe: $(CFG)/make-cairo-test-constructors.obj
+	$(CC) $(OPT) $(MS_MDFLAGS) $(CFG)/make-cairo-test-constructors.obj -Fe"$@" -link $(LDFLAGS) user32.lib /NODEFAULTLIB:library
+
+cairo-test-constructors.c: $(test_sources) make-cairo-test-constructors.exe
+	./make-cairo-test-constructors.exe $(test_sources) > $@
+
+SOURCES = $(cairo_test_suite_sources) $(test_sources) cairo-test-constructors.c
+
+OBJECTS = $(patsubst %.c, $(CFG)/%-static.obj, $(SOURCES))
+
+cairo-test-suite.exe: $(OBJECTS) ./pdiff/pdiff.lib ../boilerplate/$(CFG)/boiler.lib
+	$(CC) $(OPT) $(MS_MDFLAGS) $(OBJECTS) -Fe"$@" -link $(LDFLAGS) $(CAIRO_LIBS) /NODEFAULTLIB:library
+
+./pdiff/pdiff.lib:
+	(cd pdiff ; $(MAKE) -f Makefile.win32)
+
+../boilerplate/$(CFG)/boiler.lib:
+	(cd ../boilerplate ; $(MAKE) -f Makefile.win32)
+
+.PHONY: check test html
+
+check: cairo-test-suite.exe
+	./cairo-test-suite.exe
+
+# define gen-html so that both 'test' and 'html' targets
+# can generate html while having different dependencies
+define gen-html
+@echo Creating index.html...
+@perl make-html.pl > index.html
+endef
+
+test: check
+	$(gen-html)
+
+html:
+	$(gen-html)
