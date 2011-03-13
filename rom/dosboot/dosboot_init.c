@@ -292,9 +292,10 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     result = TRUE;
 #endif
 
-#endif
 
 cleanup:
+#endif
+
     if (buffer != NULL ) FreeMem(buffer, bufferLength);
 
     D(bug("[DOSBoot] __dosboot_IsBootable returned %d\n", result));
