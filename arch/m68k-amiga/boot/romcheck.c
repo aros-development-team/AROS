@@ -60,6 +60,7 @@ int main(int argc, char **argv)
 	void *rom;
 	uint8_t *p;
 	uint32_t size = 512 * 1024;
+	off_t len;
 
 	fd = open(argv[1], O_RDWR | O_CREAT, 0666);
 	if (fd < 0) {
@@ -67,9 +68,11 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	/* Resize to 512K */
-	lseek(fd, size, SEEK_SET);
-	lseek(fd, 0, SEEK_SET);
+	/* Pad with 0xff */
+	for (len = lseek(fd, 0, SEEK_END); len < size; len++) {
+	    unsigned char ff = 0xff;
+	    write(fd, &ff, 1);
+	}
 
 	rom = mmap(NULL, size, PROT_READ | PROT_WRITE,
 			MAP_SHARED, fd, 0);
@@ -81,7 +84,7 @@ int main(int argc, char **argv)
 
 	/* add interrupt vector offsets, needed by 68000 and 68010 */
 	p = (uint8_t*)rom + size - 16;
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < 7; i++) {
 		p[i * 2 + 1] = i + 0x18;
 		p[i * 2 + 0] = 0;
 	}
