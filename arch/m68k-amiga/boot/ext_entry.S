@@ -5,7 +5,7 @@
 
 	nop
 ext_entry:
-	jmp 0xf80002
+	jmp software_reset
 
 	.align 8 
 ROM_CheckSum:
