@@ -27,6 +27,29 @@ static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, str
 
 #define GETHUNKPTR(x) ((UBYTE*)(BADDR(hunktab[x]) + sizeof(BPTR)))
 
+/* Seek forward by count ULONGs.
+ * Returns 0 on success, 1 on failure.
+ */
+static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct DosLibrary *DOSBase)
+{
+    int err;
+    ULONG tmp;
+
+    /* For AOS compatibility, we can't use DOS/Seek() here,
+     * as AOS callers to InternalLoadSeg will not pass
+     * in a Seek element of the funcarray, and the read
+     * callback of funcarray may be for reading in-memory
+     * instead of pointing to DOS/Read.
+     *
+     * Luckily, reading HUNKs is linear, so we can just
+     * read ahead.
+     */
+    while (!(err = read_block(fd, &tmp, sizeof(tmp), funcarray, DOSBase)) && count)
+    	count--;
+
+    return err;
+}
+
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
                          SIPTR * funcarray,
@@ -196,7 +219,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           {
             count = AROS_BE2LONG(count) ;
 
-            if (Seek(fh, (count+1)*4, OFFSET_CURRENT) < 0)
+            if (seek_forward(fh, count+1, funcarray, DOSBase))
               goto end;
           }
       break;
@@ -398,7 +421,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         count = AROS_BE2LONG(count);
 
         D(bug("HUNK_DEBUG (%x Bytes)\n",count));
-        if (Seek(fh, count * 4, OFFSET_CURRENT ) < 0 )
+        if (seek_forward(fh, count, funcarray, DOSBase))
           goto end;
         break;
 
