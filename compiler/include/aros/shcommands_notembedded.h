@@ -15,15 +15,6 @@
 #define _stringify(x) #x
 #define stringify(x) _stringify(x)
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE) || defined(AROS_DOS_PACKETS)
-#    define AMIGANATIVETRICK            \
-     asm("\t.text                  \n"  \
-         "\tmove.l	SysBase,%a6\n"  \
-	 "\tjra		_entry(%pc) \n");
-#else
-#    define AMIGANATIVETRICK
-#endif
-
 #if SH_GLOBAL_DOSBASE
 #    define DECLARE_DOSBase_global extern struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_global struct DosLibrary *DOSBase;
@@ -53,14 +44,13 @@
 
 
 #define __AROS_SH_ARGS(name, version, numargs, defl, templ, help) \
-AMIGANATIVETRICK                                               \
 DECLARE_main(name);                                            \
 DECLARE_DOSBase_global                                         \
                                                                \
-AROS_UFH3(__startup static LONG, _entry,                       \
+__startup static AROS_ENTRY(LONG, _entry,                       \
     AROS_UFHA(char *,argstr,A0),                               \
     AROS_UFHA(ULONG,argsize,D0),                               \
-    AROS_UFHA(struct ExecBase *,SysBase,A6)                    \
+    struct ExecBase *,SysBase                                  \
 )                                                              \
 {                                                              \
     AROS_USERFUNC_INIT                                         \
