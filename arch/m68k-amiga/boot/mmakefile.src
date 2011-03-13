@@ -110,6 +110,7 @@ $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_rom) $(KOBJS_rom) \
         $(OBJS_ext) $(KOBJS_ext) \
+	$(SRCDIR)/$(CURDIR)/aros.ld \
 	$(GENDIR)/rom_objs.ld \
 	$(GENDIR)/ext_objs.ld
 	@$(MKDIR) $(DISTDIR)
@@ -117,7 +118,7 @@ $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.
 	$(Q)$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
 		-Wl,--defsym -Wl,SysBase=0x4 \
-		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aos.ld \
+		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros.ld \
 		-L$(LIBDIR) $(LIBS) -lgcc
 
 $(DISTDIR)/aros-amiga-m68k.elf: $(DISTDIR)/aros-amiga-m68k-reloc.elf
@@ -151,4 +152,25 @@ $(KOBJSDIR)/%.d : %.c
 DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 -include $(DEPS)
 
+## Compressed elf for AROSBootstrap
 
+BOOTDIR := $(BINDIR)/boot
+
+#MM- kernel-link-amiga-m68k: kernel-boot-elf-gz
+#MM- kernel-link-amiga-m68k-quick: kernel-boot-elf-gz-quick
+
+#MM kernel-boot-elf-gz:
+#MM kernel-boot-elf-gz-quick:
+kernel-boot-elf-gz: $(BOOTDIR)/aros.elf.gz
+kernel-boot-elf-gz-quick: $(BOOTDIR)/aros.elf.gz
+
+$(BOOTDIR)/aros.elf.gz: $(DISTDIR)/aros-amiga-m68k-reloc.elf \
+	$(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)$(MKDIR) $(GENDIR)/$(CURDIR)
+	$(Q)$(TARGET_OBJCOPY) \
+	    --strip-unneeded \
+	    $< $(GENDIR)/$(CURDIR)/aros.elf
+	$(Q)gzip -c $(GENDIR)/$(CURDIR)/aros.elf >$@
+	$(Q)$(RM) -f $(GENDIR)/$(CURDIR)/aros.elf
+
+%common
