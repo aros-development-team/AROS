@@ -29,6 +29,21 @@ static AROS_UFH4(LONG, ReadFunc,
     AROS_USERFUNC_EXIT
 }
 
+static AROS_UFH4(LONG, SeekFunc,
+	AROS_UFHA(BPTR, file,  D1),
+	AROS_UFHA(LONG,   pos, D2),
+	AROS_UFHA(LONG,  mode, D3),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    return Seek(file, pos, mode);
+
+    AROS_USERFUNC_EXIT
+}
+
+
 static AROS_UFH3(APTR, AllocFunc,
 	AROS_UFHA(ULONG, length, D0),
 	AROS_UFHA(ULONG, flags,  D1),
@@ -96,12 +111,13 @@ static AROS_UFH3(void, FreeFunc,
 {
     AROS_LIBFUNC_INIT
 
-    SIPTR FunctionArray[3];
     BPTR file, segs=0;
-
-    FunctionArray[0] = (SIPTR)ReadFunc;
-    FunctionArray[1] = (SIPTR)AllocFunc;
-    FunctionArray[2] = (SIPTR)FreeFunc;
+    LONG_FUNC FunctionArray[] = {
+    	(LONG_FUNC)ReadFunc,
+    	(LONG_FUNC)AllocFunc,
+    	(LONG_FUNC)FreeFunc,
+    	(LONG_FUNC)SeekFunc,	/* Only needed for ELF */
+    };
 
     /* Open the file */
     D(bug("[LoadSeg] Opening '%s'...\n", name));
@@ -112,7 +128,7 @@ static AROS_UFH3(void, FreeFunc,
 	D(bug("[LoadSeg] Loading '%s'...\n", name));
 
 	SetVBuf(file, NULL, BUF_FULL, 4096);
-	segs = InternalLoadSeg(file, BNULL, (void *)FunctionArray, NULL);
+	segs = InternalLoadSeg(file, BNULL, FunctionArray, NULL);
 
 	if (segs)
             SetIoErr(0);

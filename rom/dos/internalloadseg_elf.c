@@ -53,7 +53,7 @@ static int read_block
     UBYTE *buf = (UBYTE *)buffer;
     LONG   subsize;
 
-    if (Seek(file, offset, OFFSET_BEGINNING) < 0)
+    if (ilsSeek(file, offset, OFFSET_BEGINNING) < 0)
         return 0;
 
     while (size)
@@ -165,7 +165,7 @@ static void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct she
 }
 
 static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
-    Seek(file, OFFSET_BEGINNING, 0);
+    ilsSeek(file, OFFSET_BEGINNING, 0);
     if (!read_block(file, 0, eh, sizeof(struct elfheader), funcarray, DOSBase))
         return 0;
 

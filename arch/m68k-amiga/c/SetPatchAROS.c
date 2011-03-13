@@ -96,6 +96,20 @@ static AROS_UFH4(LONG, ReadFunc,
     AROS_USERFUNC_EXIT
 }
 
+static AROS_UFH4(LONG, SeekFunc,
+	AROS_UFHA(BPTR, file,   D1),
+	AROS_UFHA(LONG, pos,    D2),
+	AROS_UFHA(LONG, mode,   D3),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    return Seek(file, pos, mode);
+
+    AROS_USERFUNC_EXIT
+}
+
 static AROS_UFH3(APTR, AllocFunc,
 	AROS_UFHA(ULONG, length, D0),
 	AROS_UFHA(ULONG, flags,  D1),
@@ -131,13 +145,14 @@ static AROS_UFH2(BPTR, myLoadSeg,
 {
    AROS_USERFUNC_INIT
 
-   SIPTR FunctionArray[3];
    BPTR file, segs;
    ULONG magic;
-
-   FunctionArray[0] = (SIPTR)ReadFunc;
-   FunctionArray[1] = (SIPTR)AllocFunc;
-   FunctionArray[2] = (SIPTR)FreeFunc;
+   SIPTR FunctionArray[] = {
+       (SIPTR)ReadFunc,
+       (SIPTR)AllocFunc,
+       (SIPTR)FreeFunc,
+       (SIPTR)SeekFunc,
+   };
 
    file = Open (name, MODE_OLDFILE);
    if (file) {
