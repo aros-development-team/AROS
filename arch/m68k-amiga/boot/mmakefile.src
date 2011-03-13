@@ -49,7 +49,9 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 FILES=start
 AFILES=rom_entry rom_init superstack_swap
 
-ROMPAD_rom := 0x1000000
+ROMLOC_bss := 0x0002000  # Sadly, we need to consume Chip RAM for the ROM BSS.
+
+ROMLOC_rom := 0x0f80000
 
 KLIBS   := exec aros dos utility oop expansion boot mathffp partition
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
@@ -78,7 +80,7 @@ KHNDLRS :=
 KHIDDS  :=
 KRSRCS  := shellcommands workbook wbtag
 
-ROMPAD_ext := 0xe80000
+ROMLOC_ext := 0xe00000
 KOBJS_ext := \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
@@ -96,48 +98,41 @@ kernel-link-amiga-m68k : $(DISTDIR)/aros-amiga-m68k-rom.bin $(DISTDIR)/aros-amig
 #MM kernel-link-amiga-m68k-quick: 
 kernel-link-amiga-m68k-quick : $(DISTDIR)/aros-amiga-m68k-rom.bin $(DISTDIR)/aros-amiga-m68k-ext.bin
 
-#MM kernel-link-amiga-m68k-ram:
-kernel-link-amiga-m68k-ram: $(DISTDIR)/aros-amiga-m68k-ram.bin
-
-
 $(HOSTGENDIR)/tools/romcheck: romcheck.c
-	$(Q)$(HOST_CC) -o $@ $<
+	$(Q)$(HOST_CC) $(DEBUG_CFLAGS) -o $@ $<
 
 $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)rm -f $@
 	$(Q)for file in $(OBJS_$*) $(KOBJS_$*); do \
 		echo "$$file(.rodata .rodata.* .text)" >>$@; \
 	done
-	
-$(DISTDIR)/aros-amiga-m68k-%.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/%.ld $(SRCDIR)/$(CURDIR)/mmakefile.src \
+
+$(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_rom) $(KOBJS_rom) \
         $(OBJS_ext) $(KOBJS_ext) \
 	$(GENDIR)/rom_objs.ld \
 	$(GENDIR)/ext_objs.ld
 	@$(MKDIR) $(DISTDIR)
 	@$(ECHO) Linking $@...
-	$(Q)$(KERNEL_CC) -static \
-		$(CFLAGS) \
-		-nostartfiles -nostdlib \
-		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/$*.ld \
+	$(Q)$(KERNEL_CC) -Wl,-r \
+		-static -nostartfiles -nostdlib \
+		-Wl,--defsym -Wl,SysBase=0x4 \
+		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aos.ld \
 		-L$(LIBDIR) $(LIBS) -lgcc
 
-$(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k-rom.elf $(HOSTGENDIR)/tools/romcheck
-	$(Q)$(TARGET_OBJCOPY) \
-		--output-target binary \
-		--gap-fill 0xff \
-		--only-section=.$* \
-		--pad-to $(ROMPAD_$*) \
-		$< $@
-	$(Q)$(HOSTGENDIR)/tools/romcheck $@
+$(DISTDIR)/aros-amiga-m68k.elf: $(DISTDIR)/aros-amiga-m68k-reloc.elf
+	$(Q)$(KERNEL_LD) -o $@ \
+	    --section-start .rom=$(ROMLOC_rom) \
+	    --section-start .ext=$(ROMLOC_ext) \
+	    --section-start .bss=$(ROMLOC_bss) \
+	    $<
 
-$(DISTDIR)/aros-amiga-m68k-ram.bin : $(DISTDIR)/aros-amiga-m68k-ram.elf $(HOSTGENDIR)/tools/romcheck
+$(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/tools/romcheck
 	$(Q)$(TARGET_OBJCOPY) \
 		--output-target binary \
+		--only-section=.$* \
 		--gap-fill 0xff \
-		--only-section=.rom \
-		--only-section=.ext \
-		$< $@
+		$(DISTDIR)/aros-amiga-m68k.elf $@
 	$(Q)$(HOSTGENDIR)/tools/romcheck $@
 
 #MM
