@@ -56,7 +56,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG *result=&((struct Process *)FindTask(NULL))->pr_Result2;
+    SIPTR *result=&((struct Process *)FindTask(NULL))->pr_Result2;
 
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(file);

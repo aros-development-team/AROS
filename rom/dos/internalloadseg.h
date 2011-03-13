@@ -4,31 +4,31 @@
 BPTR InternalLoadSeg_AOS(BPTR file,
                          BPTR table,
                          SIPTR * funcarray,
-                         SIPTR * stack,
+                         LONG  * stacksize,
                          struct DosLibrary * DOSBase);
 
 BPTR InternalLoadSeg_ELF(BPTR file,
                          BPTR hunk_table,
                          SIPTR * funcarray,
-                         SIPTR * stack,
+                         LONG  * stacksize,
                          struct DosLibrary * DOSBase);
 
 BPTR InternalLoadSeg_ELF64(BPTR file,
                          BPTR hunk_table,
                          SIPTR * funcarray,
-                         SIPTR * stack,
+                         LONG  * stacksize,
                          struct DosLibrary * DOSBase);
 
 BPTR InternalLoadSeg_ELF_AROS(BPTR file,
                          BPTR hunk_table,
                          SIPTR * funcarray,
-                         SIPTR * stack,
+                         LONG  * stacksize,
                          struct DosLibrary * DOSBase);
 
 BPTR InternalLoadSeg_AOUT(BPTR file,
                           BPTR hunk_table,
                           SIPTR * funcarray,
-                          SIPTR * stack,
+                          LONG  * stacksize,
                           struct DosLibrary * DOSBase);
 
 APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG flags);

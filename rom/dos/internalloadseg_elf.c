@@ -553,7 +553,7 @@ BPTR InternalLoadSeg_ELF
     BPTR               file,
     BPTR               table __unused,
     SIPTR             *funcarray,
-    SIPTR             *stack __unused,
+    LONG              *stack __unused,
     struct DosLibrary *DOSBase
 )
 {
