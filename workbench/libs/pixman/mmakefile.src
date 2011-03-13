@@ -1,0 +1,41 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES : =				\
+	pixman-image.c			\
+	pixman-access.c			\
+	pixman-access-accessors.c	\
+	pixman-region16.c		\
+	pixman-region32.c		\
+	pixman-combine32.c		\
+	pixman-combine64.c		\
+	pixman-utils.c			\
+	pixman-edge.c			\
+	pixman-edge-accessors.c		\
+	pixman-trap.c			\
+	pixman-timer.c			\
+	pixman-matrix.c			\
+	pixman-gradient-walker.c	\
+	pixman-linear-gradient.c	\
+	pixman-radial-gradient.c	\
+	pixman-bits-image.c		\
+	pixman.c			\
+	pixman-cpu.c			\
+	pixman-fast-path.c		\
+	pixman-implementation.c		\
+	pixman-solid-fill.c		\
+	pixman-general.c
+
+#MM workbench-libs-pixman-includes : includes-copy
+
+#MM workbench-libs-pixman : linklibs
+
+%build_module mmake=workbench-libs-pixman \
+    modname=pixman modtype=library \
+    files="$(FILES)" \
+    uselibs="amiga rom m"
+
+%copy_includes mmake=includes-copy includes=pixman/pixman.h path=libraries dir=pixman
+
+%common
