@@ -51,7 +51,7 @@
                                     A1       D0    A6
            FuncTable[3] -> pos    = SeekFunc(readhandle, pos, mode), DOSBase
                            D0                D0          D1   D2
-        stack         : pointer to storage (ULONG) for stacksize.
+        stack         : pointer to storage (LONG) for stacksize.
                         (currently ignored)
 
     RESULT
@@ -78,7 +78,7 @@
     typedef struct _segfunc_t
     {
     	ULONG id;
-        BPTR (*func)(BPTR, BPTR, SIPTR *, SIPTR *, struct DosLibrary *);
+        BPTR (*func)(BPTR, BPTR, SIPTR *, LONG *, struct DosLibrary *);
         D(CONST_STRPTR format;)
     } segfunc_t;
 

@@ -53,7 +53,7 @@ static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct DosLibrar
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
                          SIPTR * funcarray,
-                         SIPTR * stack,
+                         LONG  * stacksize,
                          struct DosLibrary * DOSBase)
 {
   #define ERROR(a)    { *error=a; goto end; }
@@ -68,13 +68,13 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   BPTR last_p = 0;
   UBYTE *overlaytable = NULL;
   ULONG tmp, req;
-  LONG dummy;
+  SIPTR dummy;
 #if DEBUG
   static STRPTR segtypes[] = { "CODE", "DATA", "BSS", };
 #endif
 
 
-  LONG *error = &dummy;
+  SIPTR *error = &dummy;
   
   if (DOSBase)
     error =&((struct Process *)FindTask(NULL))->pr_Result2;

@@ -82,7 +82,7 @@ if(input!=NULL)					\
 
     STRPTR b=buffer;
     LONG c;
-    LONG *result=&((struct Process *)FindTask(NULL))->pr_Result2;
+    SIPTR *result=&((struct Process *)FindTask(NULL))->pr_Result2;
     
     /* Skip leading whitespace characters */
     do
