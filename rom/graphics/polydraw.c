@@ -34,6 +34,8 @@
     RESULT
 
     NOTES
+	Official prototype files declare count as LONG but
+	original ROM code only uses low 16-bits.
 
     EXAMPLE
 
@@ -51,10 +53,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG i;
+    UWORD i, cnt;
     WORD x, y;
 
-    for(i = 0; i < count; i++)
+    cnt = (UWORD)count; /* see NOTES */
+    for(i = 0; i < cnt; i++)
     {
     	x = *polyTable++;
 	y = *polyTable++;
