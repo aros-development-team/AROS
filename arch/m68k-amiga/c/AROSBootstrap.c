@@ -129,7 +129,7 @@ static AROS_UFH3(APTR, elfAlloc,
 
     size += sizeof(*ml);
 
-    ml = AllocMem(size, flags | MEMF_KICK);
+    ml = AllocMem(size, flags | MEMF_KICK | (SysBase->LibNode.lib_Version >= 36 ? MEMF_REVERSE : 0));
 
     ml->ml_NumEntries = 1;
     ml->ml_ME[0].me_Addr = (APTR)ml;
@@ -187,20 +187,146 @@ static BPTR ROMLoad(const char *filename)
     return rom;
 }
 
-UWORD GetSysBaseChkSum(void)
+#define FAKEBASE 0x200
+#define FAKEBASESIZE 558
+#define COLDCAPTURE (FAKEBASE + FAKEBASESIZE + 16)
+
+/* Theory of operation:
+
+- create fake sysbase in low chip memory (We can't use original because it is not binary compatible with AROS one)
+- set correct checksum and point ColdCapture to our routine (also in low chip)
+- reset the system (autoconfig devices disappear, including most expansion RAM and ROM overlay disables chip RAM)
+- original ROM code now disables ROM overlay and checks KS checksum and jumps to our ColdCapture routine
+- above step is needed because in worst case ALL RAM disappear at reset and there
+  are also accelerators that reset the CPU completely when reset instruction is executed.
+- now we have control again, autoconfig devices are still unconfigured but at least we have chip ram.
+- jump to AROS ROM code entry point which detects romloader mode and automatically reserves RAM used by "ROM" code
+- AROS ROM creates new proper execbase and copies ColdCapture
+- normal boot starts
+
+*/
+
+static UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
 {
     UWORD sum = 0;
-    UWORD *p = (UWORD*)&SysBase->SoftVer;
-    while (p <= &SysBase->ChkSum)
+    UWORD *p = (UWORD*)&sysbase->SoftVer;
+    while (p <= &sysbase->ChkSum)
     	sum += *(p++);
 
     return sum;
+}
+
+/* reset VBR and switch off MMU */
+static void setcpu(void)
+{
+    asm(
+	".chip 68040\n"
+	"move.l	4,%a0\n"
+	"move.w	296(%a0),%d1\n"
+	"moveq	#0,%d0\n"
+	"btst	#0,%d1\n"
+	"beq.s	novbr\n"
+	"movec	%d0,%vbr\n"
+"novbr:	moveq	#1,%d0\n"
+	"beq.s	cpudone\n"
+	"movec	%d0,%cacr\n"
+	"btst	#3,%d1\n"
+	"beq.s	not040\n"
+	"movec	%d0,%tc\n"
+	"movec	%d0,%dtt0\n"
+	"movec	%d0,%dtt1\n"
+	"movec	%d0,%itt0\n"
+	"movec	%d0,%itt1\n"
+	"cpusha	%bc\n"
+	"bra.s	cpudone\n"
+"not040: btst	#2,%d1\n"
+	"beq.s	cpudone\n"
+	"lea	zero(%pc),%a0\n"
+	".long	0xf0104000\n"
+	".long	0xf0100c00\n"
+	".long	0xf0100800\n"
+	"bra.s cpudone\n"
+"zero:	.long	0,0\n"
+"cpudone:\n"
+    );
+}
+
+static void reboot(void)
+{
+    asm(
+	"lea 0xf80002,%a0\n"
+	"reset\n"
+	"jmp (%a0)\n"
+    );
+}
+
+void coldcapturecode(void)
+{
+    asm(
+	".long end - start\n"
+	"start:\n"
+	"move.w	#0x440,0xdff180\n"
+	"clr.l	0.w\n"
+	"lea	0x200,%a0\n"
+	"move.l	(%a0),0x7c.w\n" // restore NMI
+	"lea	12(%a0),%a0\n"
+	"move.l	%a0,4.w\n"
+	"lea	start(%pc),%a1\n"
+	"move.l	%a1,42(%a0)\n" // ColdCapture
+	"move.l	%a0,%d0\n"
+	"not.l	%d0\n"
+	"move.l	%d0,38(%a0)\n" // ChkBase
+	"moveq	#0,%d1\n"
+	"lea	34(%a0),%a0\n"
+	"moveq	#24-1,%d0\n"
+	"chk1:	add.w (%a0)+,%d1\n"
+	"dbf	%d0,chk1\n"
+	"not.w	%d1\n"
+	"move.w	%d1,(%a0)\n" // ChkSum
+	"move.l	start-4(%pc),%a0\n"
+	"jmp	(%a0)\n"
+	"end:\n"
+    );
+}
+
+static void supercode(void)
+{
+    ULONG *fakesys, *coldcapture, *coldcapturep;
+    struct ExecBase *sysbase;
+    ULONG *traps = 0;
+    ULONG len;
+
+    setcpu();
+    fakesys = (ULONG*)FAKEBASE;
+    coldcapture = (ULONG*)COLDCAPTURE;
+    coldcapturep = (ULONG*)coldcapturecode;
+    len = *coldcapturep++;
+    memcpy (coldcapture, coldcapturep, len);
+    *fakesys++ = traps[31]; // Level 7
+    *fakesys++ = 0x4ef9 | (COLDCAPTURE >> 16);
+    *fakesys++ = (COLDCAPTURE << 16) | 0x4e75;
+    sysbase = (struct ExecBase*)fakesys; 
+    traps[1] = (ULONG)sysbase;
+    SysBase = (struct ExecBase*)sysbase;
+    memset(sysbase, 0, FAKEBASESIZE);
+    sysbase->ColdCapture = coldcapture;
+    sysbase->ChkBase=~(IPTR)sysbase;
+    sysbase->MaxLocMem = 524288;
+    sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
+
+#if 0 // SysBase is not valid enough for SumKickData() at this point
+    sysbase->KickMemPtr = (APTR)coldcapture[-2];
+    sysbase->KickCheckSum = (APTR)SumKickData();
+#endif
+
+    reboot();
 }
 
 void BootROM(BPTR romlist)
 {
     APTR GfxBase;
     APTR entry;
+    ULONG *coldcapture = (ULONG*)COLDCAPTURE;
 
     if (0 && (GfxBase = OpenLibrary("graphics.library", 0))) {
     	LoadView(NULL);
@@ -212,7 +338,12 @@ void BootROM(BPTR romlist)
 
     /* We're off in the weeds now. */
     Disable();
+    coldcapture[-1] = (ULONG)entry;
+    coldcapture[-2] = (ULONG)mlist.mlh_Head;
+    Supervisor(supercode);
+}
 
+#if 0   
     /* Make list singly linked, and join
      * with the existing KickMem list
      */
@@ -227,7 +358,7 @@ void BootROM(BPTR romlist)
     SysBase->ChkSum = GetSysBaseChkSum() ^ 0xffff;
 
     ColdReboot();
-}
+#endif
 
 
 int __nocommandline;
