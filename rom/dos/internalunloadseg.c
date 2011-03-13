@@ -54,6 +54,7 @@
     AROS_LIBFUNC_INIT
 
     BPTR next;
+    SIPTR funcarray[] = { NULL, NULL, (SIPTR)freefunc };
 
     if (seglist)
     {
@@ -68,8 +69,8 @@
     	    ULONG *seg = BADDR(seglist);
     	    if (seg[2] == 0x0000abcd && seg[6] == (ULONG)DOSBase->dl_GV) {
     	    	Close((BPTR)seg[3]); /* file handle */
-    	    	loadseg_free((SIPTR*)freefunc, (void*)seg[4]); /* overlay table, APTR */
-    	    	loadseg_free((SIPTR*)freefunc, BADDR(seg[5])); /* hunk table, BPTR */
+    	    	ilsFreeVec((void*)seg[4]); /* overlay table, APTR */
+    	    	ilsFreeVec(BADDR(seg[5])); /* hunk table, BPTR */
     	    }
     	}
 #endif
@@ -77,7 +78,7 @@
 	while (seglist)
 	{
 	    next = *(BPTR *)BADDR(seglist);
-	    loadseg_free((SIPTR*)freefunc, BADDR(seglist));
+	    ilsFreeVec(BADDR(seglist));
 	    seglist = next;
 	}
 

@@ -78,7 +78,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   D(bug("\tHunk count: %ld\n", numhunks));
 
   if (!hunktab) {
-    hunktab = loadseg_alloc((SIPTR*)funcarray[1], sizeof(BPTR) * (numhunks + 1 + 1), MEMF_CLEAR);
+    hunktab = ilsAllocVec(sizeof(BPTR) * (numhunks + 1 + 1), MEMF_CLEAR);
     if (hunktab == NULL)
       ERROR(ERROR_NO_FREE_STORE);
   }
@@ -153,7 +153,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
      * be read as data files. This allows to use Amiga bitmap fonts on AROS.
      */
     hunksize = count * 4 + sizeof(ULONG) + sizeof(BPTR);
-    hunkptr = loadseg_alloc((SIPTR*)funcarray[1], hunksize, req | MEMF_31BIT);
+    hunkptr = ilsAllocVec(hunksize, req | MEMF_31BIT);
     if (!hunkptr)
       ERROR(ERROR_NO_FREE_STORE);
     hunktab[i] = MKBADDR(hunkptr);
@@ -414,7 +414,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
         /* See above for MEMF_31BIT explanation */
         count = count * 4 + sizeof(ULONG) + sizeof(ULONG);
-        overlaytable = loadseg_alloc((SIPTR*)funcarray[1], count, req | MEMF_31BIT);
+        overlaytable = ilsAllocVec(count, req | MEMF_31BIT);
         if (overlaytable == NULL)
           ERROR(ERROR_NO_FREE_STORE);
         if (read_block(fh, overlaytable, count - sizeof(ULONG), funcarray, DOSBase))
@@ -473,13 +473,13 @@ done:
     }
 
     if (overlaytable) {
-      loadseg_free((SIPTR*)funcarray[2], overlaytable);
+      ilsFreeVec(overlaytable);
       ERROR(ERROR_BAD_HUNK);
     }
 
     last_p = firsthunk;
 
-    loadseg_free((SIPTR*)funcarray[2], hunktab);
+    ilsFreeVec(hunktab);
     hunktab = NULL;
   }
 
@@ -487,8 +487,8 @@ end:
   if (hunktab != NULL)
   {
     for (t = 0 /* first */; t < numhunks /* last */; t++)
-      loadseg_free((SIPTR*)funcarray[2], BADDR(hunktab[t]));
-    loadseg_free((SIPTR*)funcarray[2], hunktab);
+      ilsFreeVec(BADDR(hunktab[t]));
+    ilsFreeVec(hunktab);
   }
   return last_p;
 } /* InternalLoadSeg */
@@ -501,7 +501,7 @@ static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, str
 
   while(size)
   {
-    subsize = loadseg_read((SIPTR*)funcarray[0], file, buf, size, DOSBase);
+    subsize = ilsRead(file, buf, size);
     if(subsize==0)
     {
       if (DOSBase)
