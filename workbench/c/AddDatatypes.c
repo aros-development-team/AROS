@@ -1076,7 +1076,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 					     * be ULONG aligned. Since only our ReadFunc
 					     * is going to be looking at it, this is ok.
 					     */
-					    if((SegList = InternalLoadSeg((BPTR)(sv), BNULL, (LONG_FUNC)FunctionArray, &DefaultStack)))
+					    if((SegList = InternalLoadSeg((BPTR)(sv), BNULL, (LONG_FUNC *)FunctionArray, &DefaultStack)))
 					    {
 						cdt->SegList = SegList;
 						cdt->Function = BADDR(SegList) + sizeof(BPTR);  // FIXME: is this portable?
