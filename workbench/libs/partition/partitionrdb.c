@@ -119,18 +119,48 @@ static AROS_UFH4(LONG, ReadFunc,
     AROS_USERFUNC_EXIT
 }
 
+static AROS_UFH4(LONG, SeekFunc,
+	AROS_UFHA(BPTR, file,   D1),
+	AROS_UFHA(LONG, pos,    D2),
+	AROS_UFHA(LONG, mode,   D3),
+	AROS_UFHA(struct Library *, DOSBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct FileSysReader *fsr = (struct FileSysReader*)file;
+    LONG oldpos = fsr->offset;
+
+    switch (mode) {
+    case OFFSET_BEGINNING: break;
+    case OFFSET_END:       pos = fsr->size - pos; break;
+    case OFFSET_CURRENT:   pos = fsr->offset + pos; break;
+    default: return -1;
+    }
+
+    if (pos < 0 || pos >= fsr->size)
+    	return -1;
+
+    fsr->offset = pos;
+
+    return oldpos;
+
+    AROS_USERFUNC_EXIT
+}
+
+
 /* Insert RDB LSEG filesystem to FileSystem.resource */
 
 static void AddFS(struct RDBData *data)
 {
     struct FileSysResource *fsr;
     struct FileSysNode *node;
-    void (* FunctionArray[3])();
+    void (* FunctionArray[4])();
     struct FileSysReader fakefile;
 
     FunctionArray[0] = (void(*))ReadFunc;
     FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
     FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
+    FunctionArray[3] = (void(*))SeekFunc;
 
     fsr = OpenResource("FileSystem.resource");
     if (!fsr)

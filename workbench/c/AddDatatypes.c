@@ -150,6 +150,11 @@ AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes),
 	AROS_UFPA(void * , buf       , D2),
 	AROS_UFPA(LONG   , size      , D3),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+AROS_UFP4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes), 
+	AROS_UFPA(BPTR   , fh        , D1),
+	AROS_UFPA(LONG   , pos       , D2),
+	AROS_UFPA(LONG   , mode      , D3),
+	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
 AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes), 
 	AROS_UFPA(ULONG, size, D0),
 	AROS_UFPA(ULONG, req,  D1),
@@ -200,6 +205,7 @@ const LONG_FUNC const FunctionArray[]=
     (LONG_FUNC)AROS_SLIB_ENTRY(ReadFunc, AddDatatypes),
     (LONG_FUNC)AROS_SLIB_ENTRY(AllocFunc, AddDatatypes),
     (LONG_FUNC)AROS_SLIB_ENTRY(FreeFunc, AddDatatypes),
+    (LONG_FUNC)AROS_SLIB_ENTRY(SeekFunc, AddDatatypes), /* For ELF */
 };
 
 
@@ -872,7 +878,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 			 * is going to be looking at it, this is ok.
 			 */
 			if((SegList = InternalLoadSeg((BPTR)(sv), BNULL,
-						      (LONG_FUNC)FunctionArray,
+						      (LONG_FUNC *)FunctionArray,
 						      &DefaultStack)))
 			{
 			    cdt->SegList = SegList;
@@ -1373,7 +1379,54 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes),
     AROS_USERFUNC_EXIT
 }
 
+/****** AddDatatypes/SeekFunc *************************************************
+*
+*   NAME
+*        SeekFunc - seek hook for InternalLoadSeg (ELF only)
+*
+*   SYNOPSIS
+*
+*   FUNCTION
+*
+*   INPUTS
+*
+*   RETURNS
+*
+*   EXAMPLE
+*
+*   SEE ALSO
+*
+******************************************************************************
+*
+*/
 
+AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes),
+	AROS_UFHA(BPTR   , fh        , D1),
+	AROS_UFHA(LONG   , pos       , D2),
+	AROS_UFHA(LONG   , mode      , D3),
+	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct StackVars *sv = (APTR)fh;
+    LONG oldpos = HookPosition;
+
+    switch (mode) {
+    case OFFSET_BEGINNING: break;
+    case OFFSET_END:       pos = HookBufSize - pos; break;
+    case OFFSET_CURRENT:   pos = HookPosition + pos; break;
+    default: return -1;
+    }
+   
+    if (pos < 0 || pos >= HookBufSize)
+    	return -1;
+
+    HookPosition = pos;
+    
+    return oldpos;
+
+    AROS_USERFUNC_EXIT
+}
 
 /****** AddDatatypes/AllocFunc ************************************************
 *

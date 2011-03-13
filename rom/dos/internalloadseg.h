@@ -67,4 +67,14 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf);
         AROS_UFCA(struct ExecBase *, SysBase, A6) \
     )
 
+#define ilsSeek(file, pos, mode)     \
+    AROS_UFC4                        \
+    (                                \
+        LONG, (APTR)(funcarray[3]),  \
+        AROS_UFCA(BPTR,   file, D1), \
+        AROS_UFCA(LONG,    pos, D2), \
+        AROS_UFCA(LONG,   mode, D3), \
+        AROS_UFCA(struct DosLibrary *, DOSBase, A6) \
+    )
+
 #endif

@@ -42,13 +42,15 @@
     INPUTS
         fh            : Filehandle to load from
         table         : ignored
-        functionarray : array of functions to be used for read, alloc and free
+        funcarray : array of functions to be used for read, seek, alloc and free
            FuncTable[0] -> bytes  = ReadFunc(readhandle, buffer, length), DOSBase
                            D0                D1          A0      D0       A6
            FuncTable[1] -> Memory = AllocFunc(size,flags), ExecBase
                            D0                 D0   D1      A6
            FuncTable[2] -> FreeFunc(memory, size), ExecBase
                                     A1       D0    A6
+           FuncTable[3] -> pos    = SeekFunc(readhandle, pos, mode), DOSBase
+                           D0                D0          D1   D2
         stack         : pointer to storage (ULONG) for stacksize.
                         (currently ignored)
 
@@ -56,6 +58,8 @@
         seglist  - pointer to loaded Seglist or NULL in case of failure.
 
     NOTES
+        FuncTable[3] is not used for Amiga HUNK format files, but is required
+                     for ELF.
 
     EXAMPLE
 
