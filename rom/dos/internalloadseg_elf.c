@@ -450,11 +450,27 @@ static int relocate
                 *p = s + rel->addend;
                 break;
 
+            case R_68K_16:
+                *(UWORD *)p = s + rel->addend;
+                break;
+
+            case R_68K_8:
+                *(UBYTE *)p = s + rel->addend;
+                break;
+
             case R_68K_PC32:
                 *p = s + rel->addend - (ULONG)p;
                 break;
 
-            case R_68k_NONE:
+            case R_68K_PC16:
+                *(UWORD *)p = s + rel->addend - (ULONG)p;
+                break;
+
+            case R_68K_PC8:
+                *(UBYTE *)p = s + rel->addend - (ULONG)p;
+                break;
+
+            case R_68K_NONE:
                 break;
 
             #elif defined(__ppc__) || defined(__powerpc__)

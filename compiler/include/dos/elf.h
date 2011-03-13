@@ -39,9 +39,13 @@
 #define R_X86_64_32     10
 #define R_X86_64_32S    11
 
-#define R_68k_NONE      0
+#define R_68K_NONE      0
 #define R_68K_32        1
+#define R_68K_16        2
+#define R_68K_8         3
 #define R_68K_PC32      4
+#define R_68K_PC16      5
+#define R_68K_PC8       6
 
 #define R_PPC_NONE      0
 #define R_PPC_ADDR32    1
