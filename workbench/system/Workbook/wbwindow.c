@@ -365,7 +365,7 @@ D(bug("%s: Path='%s'\n", __func__, my->Path));
 
     wbRedimension(cl, obj);
 
-    my->Menu = CreateMenusA(WBWindow_menu, NULL);
+    my->Menu = CreateMenusA((struct NewMenu *)WBWindow_menu, NULL);
     if (my->Menu == NULL) {
     	CloseWindow(my->Window);
     	FreeVec(my->Path);
