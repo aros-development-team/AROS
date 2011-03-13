@@ -8,7 +8,7 @@
 #MM- workbench-libs-complete : \
 #MM     workbench-libs-amigaguide \
 #MM     workbench-libs-asl \
-#MM	workbench-libs-cgfx \
+#MM     workbench-libs-cgfx \
 #MM     workbench-libs-commodities \
 #MM     workbench-libs-camd \
 #MM     workbench-libs-datatypes \
@@ -16,9 +16,9 @@
 #MM     workbench-libs-gadtools \
 #MM     workbench-libs-icon \
 #MM     workbench-libs-iffparse \
-#MM	workbench-libs-kms \
+#MM     workbench-libs-kms \
 #MM     workbench-libs-locale \
-#MM	workbench-libs-lowlevel \
+#MM     workbench-libs-lowlevel \
 #MM     workbench-libs-mathffp \
 #MM     workbench-libs-mathieeesingbas \
 #MM     workbench-libs-mathieeesingtrans \
@@ -26,6 +26,7 @@
 #MM     workbench-libs-mathieeedoubbas \
 #MM     workbench-libs-mathieeedoubtrans \
 #MM     workbench-libs-partition \
+#MM     workbench-libs-pixman \
 #MM     workbench-libs-prometheus \
 #MM     workbench-libs-reqtools \
 #MM     workbench-libs-rexxsupport \
@@ -39,7 +40,7 @@
 #MM     workbench-libs-pci \
 #MM     workbench-libs-freetype-complete \
 #MM     workbench-libs-codesets \
-#MM 	workbench-libs-thread \
+#MM     workbench-libs-thread \
 #MM     workbench-libs-muiscreen \
 #MM     workbench-libs-openurl \
 #MM     workbench-libs-popupmenu
@@ -50,15 +51,15 @@
 #MM     workbench-libs-bullet-includes \
 #MM     workbench-libs-commodities-includes \
 #MM     workbench-libs-camd-includes \
-#MM	workbench-libs-cgfx-includes \
+#MM     workbench-libs-cgfx-includes \
 #MM     workbench-libs-datatypes-includes \
 #MM     workbench-libs-diskfont-includes \
 #MM     workbench-libs-gadtools-includes \
 #MM     workbench-libs-icon-includes \
 #MM     workbench-libs-iffparse-includes \
-#MM	workbench-libs-kms-includes \
+#MM     workbench-libs-kms-includes \
 #MM     workbench-libs-locale-includes \
-#MM	workbench-libs-lowlevel-includes \
+#MM     workbench-libs-lowlevel-includes \
 #MM     workbench-libs-mathffp-includes \
 #MM     workbench-libs-mathieeesingbas-includes \
 #MM     workbench-libs-mathieeesingtrans-includes \
@@ -66,6 +67,7 @@
 #MM     workbench-libs-mathieeedoubbas-includes \
 #MM     workbench-libs-mathieeedoubtrans-includes \
 #MM     workbench-libs-partition-includes \
+#MM     workbench-libs-pixman-includes \
 #MM     workbench-libs-prometheus-includes \
 #MM     workbench-libs-reqtools-includes \
 #MM     workbench-libs-rexxsupport-includes \
@@ -77,7 +79,7 @@
 #MM     workbench-libs-muimaster-includes \
 #MM     workbench-libs-coolimages-includes \
 #MM     workbench-libs-codesets-lib-includes \
-#MM 	workbench-libs-thread-includes \
+#MM     workbench-libs-thread-includes \
 #MM     workbench-libs-muiscreen-includes \
 #MM     workbench-libs-openurl-includes \
 #MM     workbench-libs-popupmenu-includes
