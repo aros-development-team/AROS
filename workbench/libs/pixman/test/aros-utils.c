@@ -49,7 +49,7 @@ show_image (pixman_image_t *image)
     else
 	printf("Can't deal with this format: %x\n", format);
 
-    WritePixelArray(image, 0, 0, stride, window->RPort, 0, 0, width, height, RECTFMT_ARGB);
+    WritePixelArray(pixman_image_get_data(image), 0, 0, stride, window->RPort, 0, 0, width, height, RECTFMT_ARGB);
 
     port = window->UserPort;
     while (!terminated)
