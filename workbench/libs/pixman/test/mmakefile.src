@@ -1,0 +1,113 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-libs-pixman-test : \
+#MM  workbench-libs-pixman-test-a1-trap \
+#MM  workbench-libs-pixman-test-alpha \
+#MM  workbench-libs-pixman-test-clip \
+#MM  workbench-libs-pixman-test-convolution \
+#MM  workbench-libs-pixman-test-fetch \
+#MM  workbench-libs-pixman-test-gradient \
+#MM  workbench-libs-pixman-test-oob \
+#MM  workbench-libs-pixman-test-region-translate \
+#MM  workbench-libs-pixman-test-screen \
+#MM  workbench-libs-pixman-test-trap
+
+# #MM  workbench-libs-pixman-test-affine
+# #MM  workbench-libs-pixman-test-blitters
+# #MM  workbench-libs-pixman-test-composite
+# #MM  workbench-libs-pixman-test-gradient-crash
+# #MM  workbench-libs-pixman-test-pdf-op
+# #MM  workbench-libs-pixman-test-radial
+# #MM  workbench-libs-pixman-test-region
+# #MM  workbench-libs-pixman-test-scaling-crash
+# #MM  workbench-libs-pixman-test-scaling
+# #MM  workbench-libs-pixman-test-stress
+
+#MM  workbench-libs-pixman-test-a1-trap : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-affine : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-alpha : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-blitters : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-clip : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-composite : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-convolution : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-fetch : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-gradient-crash : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-gradient : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-oob : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-pdf-op : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-radial : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-region : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-region-translate : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-scaling-crash : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-scaling : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-screen : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-stress : includes linklibs workbench-libs-pixman
+#MM  workbench-libs-pixman-test-trap : includes linklibs workbench-libs-pixman
+
+TARGETDIR := $(AROS_TESTS)/pixman
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../pixman -I$(SRCDIR)/$(CURDIR)/../aros
+USER_CFLAGS := -DHAVE_CONFIG_H -DPIXMAN_NO_TLS
+
+%build_prog mmake=workbench-libs-pixman-test-a1-trap progname=a1-trap \
+    files="a1-trap-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-affine progname=affine \
+    files="affine-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-alpha progname=alpha \
+    files="alpha-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-blitters progname=blitters \
+    files="blitters-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-clip progname=clip \
+    files="clip-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-composite progname=composite \
+    files="composite-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-convolution progname=convolution \
+    files="convolution-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-fetch progname=fetch \
+    files="fetch-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-gradient-crash progname=gradient-crash \
+    files="gradient-crash-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-gradient progname=gradient \
+    files="gradient-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-oob progname=oob \
+    files="oob-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-pdf-op progname=pdf-op \
+    files="pdf-op-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-radial progname=radial \
+    files="radial-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-region progname=region \
+    files="region-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-region-translate progname=region-translate \
+    files="region-translate-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-scaling-crash progname=scaling-crash \
+    files="scaling-crash-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-scaling progname=scaling \
+    files="scaling-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-screen progname=screen \
+    files="screen-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-stress progname=stress \
+    files="stress-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%build_prog mmake=workbench-libs-pixman-test-trap progname=trap \
+    files="trap-test aros-utils" targetdir=$(TARGETDIR) uselibs="pixman"
+
+%common
