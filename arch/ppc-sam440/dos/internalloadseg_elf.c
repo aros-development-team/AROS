@@ -40,40 +40,6 @@ struct hunk
 #define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
-#undef MyRead
-#undef MyAlloc
-#undef MyFree
-
-#define MyRead(file, buf, size)      \
-    AROS_UFC4                        \
-    (                                \
-        LONG, funcarray[0],          \
-        AROS_UFCA(BPTR,   file, D1), \
-        AROS_UFCA(void *, buf,  D2), \
-        AROS_UFCA(LONG,   size, D3), \
-        AROS_UFCA(struct DosLibrary *, DOSBase, A6) \
-    )
-
-
-#define MyAlloc(size, flags)         \
-    AROS_UFC3                        \
-    (                                \
-        void *, funcarray[1],        \
-        AROS_UFCA(ULONG, size,  D0), \
-        AROS_UFCA(ULONG, flags, D1), \
-        AROS_UFCA(struct ExecBase *, SysBase, A6) \
-    )				    
-
-
-#define MyFree(addr, size)           \
-    AROS_UFC3                        \
-    (                                \
-        void, funcarray[2],          \
-        AROS_UFCA(void *, addr, A1), \
-        AROS_UFCA(ULONG,  size, D0), \
-        AROS_UFCA(struct ExecBase *, SysBase, A6) \
-    )
-
 static int read_block
 (
     BPTR               file,
@@ -92,7 +58,7 @@ static int read_block
 
     while (size)
     {
-        subsize = MyRead(file, buf, size);
+        subsize = ilsRead(file, buf, size);
 
         if (subsize <= 0)
         {
@@ -122,13 +88,13 @@ static void *load_block
     D(bug("[ELF Loader] (size=%d)\n",size));
     D(bug("[ELF Loader] (funcarray=0x%x)\n",funcarray));
     D(bug("[ELF Loader] (funcarray[1]=0x%x)\n",funcarray[1]));
-    void *block = MyAlloc(size, MEMF_ANY);
+    void *block = ilsAllocMem(size, MEMF_ANY);
     if (block)
     {
         if (read_block(file, offset, block, size, funcarray, DOSBase))
             return block;
 
-        MyFree(block, size);
+        ilsFreeMem(block, size);
     }
     else
         SetIoErr(ERROR_NO_FREE_STORE);
@@ -262,7 +228,7 @@ static int load_hunk
              hunk_size += sizeof(struct FullJumpVec);
     }
 
-    hunk = MyAlloc(hunk_size, MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
+    hunk = ilsAllocMem(hunk_size, MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
     if (hunk)
     {
         hunk->next = 0;
@@ -651,7 +617,7 @@ BPTR InternalLoadSeg_ELF
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
                 goto error;
 
-            MyFree(sh[i].addr, sh[i].size);
+            ilsFreeMem(sh[i].addr, sh[i].size);
             sh[i].addr = NULL;
         }
     }
@@ -686,15 +652,11 @@ end:
     for (i = 0; i < int_shnum; i++)
     {
         if (((sh[i].type == SHT_SYMTAB) || (sh[i].type == SHT_STRTAB)) && (sh[i].addr != NULL))
-            MyFree(sh[i].addr, sh[i].size);
+            ilsFreeMem(sh[i].addr, sh[i].size);
     }
 
     /* Free the section headers */
-    MyFree(sh, int_shnum * eh.shentsize);
+    ilsFreeMem(sh, int_shnum * eh.shentsize);
 
     return hunks;
 }
-
-#undef MyRead1
-#undef MyAlloc
-#undef MyFree

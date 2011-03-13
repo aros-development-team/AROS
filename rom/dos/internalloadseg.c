@@ -96,13 +96,13 @@
 	LONG len;
 
 	SetIoErr(0);
-    	len = loadseg_read((SIPTR*)((SIPTR*)functionarray)[0], fh, &id, sizeof(id), DOSBase);
+    	len = ilsRead(fh, &id, sizeof(id));
 	if (len == sizeof(id)) {
 	    id = AROS_BE2LONG(id);
 	    for (i = 0; i < num_funcs; i++) {
 		if (funcs[i].id == id) {
-		    segs = (*funcs[i].func)(fh, BNULL, (SIPTR *)functionarray,
-			NULL, DOSBase);
+		    segs = (*funcs[i].func)(fh, BNULL, (SIPTR *)funcarray,
+			stack, DOSBase);
 		    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
 			segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
 		    return segs;
@@ -117,19 +117,17 @@
     AROS_LIBFUNC_EXIT
 } /* InternalLoadSeg */
 
-void *loadseg_alloc(SIPTR *allocfunc, ULONG size, ULONG req)
+APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG req)
 {
-    UBYTE *p = AROS_UFC3(void *, allocfunc,
-        AROS_UFCA(ULONG, size  , D0),
-        AROS_UFCA(ULONG, req   , D1),
-        AROS_UFCA(struct Library *, (struct Library *)SysBase, A6));
+    UBYTE *p = ilsAllocMem(size, req);
     if (!p)
     	return NULL;
     D(bug("allocmem %p %d\n", p, size));
     *((ULONG*)p) = (ULONG)size;
     return p + sizeof(ULONG);       
 }
-void loadseg_free(SIPTR *freefunc, void *buf)
+
+void _ilsFreeVec(SIPTR *funcarray, void *buf)
 {
     UBYTE *p = (UBYTE*)buf;
     ULONG size;
@@ -140,16 +138,6 @@ void loadseg_free(SIPTR *freefunc, void *buf)
     D(bug("freemem %p %d\n", p, size));
     if (!size)
     	return;
-    AROS_UFC3(void, freefunc,
-	  AROS_UFCA(void * ,    p, A1),
-	  AROS_UFCA(ULONG  , size, D0),
-	  AROS_UFCA(struct Library *, (struct Library *)SysBase, A6));
-}
-LONG loadseg_read(SIPTR *readfunc, BPTR fh, void *buf, LONG size, struct DosLibrary *DOSBase)
-{
-    return AROS_UFC4(LONG, readfunc,
-	AROS_UFCA(BPTR   , fh        , D1),
-	AROS_UFCA(void * , buf       , D2),
-	AROS_UFCA(LONG   , size      , D3),
-	AROS_UFCA(struct DosLibrary *, DOSBase, A6));
+
+    ilsFreeMem(p, size);
 }
