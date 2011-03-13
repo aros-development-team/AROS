@@ -29,8 +29,8 @@ FILES :=				\
 	pixman/pixman-general		\
 	aros/emul_arosc
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/pixman
-USER_CFLAGS := -DPACKAGE -DPIXMAN_NO_TLS
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/pixman -I$(SRCDIR)/$(CURDIR)/aros
+USER_CFLAGS := -DHAVE_CONFIG_H -DPIXMAN_NO_TLS
 
 #MM workbench-libs-pixman-includes : includes-copy
 
