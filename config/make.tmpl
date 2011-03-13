@@ -1878,7 +1878,8 @@ $(error %copy_includes: compiler argument (%(compiler)) has to be host, kernel o
 endif
 
 ifneq (%(dir),)
-BD_INCL_FILES := $(subst %(dir),$(GENINCDIR)/%(path),%(includes))
+BD_INCL_FILES := $(subst %(dir),$(GENINCDIR)/%(path),$(dir %(includes)))
+BD_INCL_FILES := $(addprefix $(GENINCDIR)/%(path)/,$(notdir %(includes)))
 BD_INC_PATH := $(SRCDIR)/$(CURDIR)/%(dir)/
 else
 BD_INCL_FILES := $(addprefix $(GENINCDIR)/%(path)/,%(includes))
@@ -1892,7 +1893,8 @@ $(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)%
 ifeq (%(compiler),target)
 
 ifneq (%(dir),)
-BD_INCL_FILES2 := $(subst %(dir),$(AROS_INCLUDES)/%(path),%(includes))
+BD_INCL_FILES2 := $(subst %(dir),$(AROS_INCLUDES)/%(path),$(dir %(includes)))
+BD_INCL_FILES2 := $(addprefix $(AROS_INCLUDES)/%(path)/,$(notdir %(includes)))
 else
 BD_INCL_FILES2 := $(addprefix $(AROS_INCLUDES)/%(path)/,%(includes))
 endif
