@@ -1,0 +1,340 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Version Information</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="index.html" title="Cairo: A Vector Graphics Library">
+<link rel="up" href="cairo-support.html" title="Utilities">
+<link rel="prev" href="cairo-Error-handling.html" title="Error handling">
+<link rel="next" href="cairo-Types.html" title="Types">
+<meta name="generator" content="GTK-Doc V1.15 (XML mode)">
+<link rel="stylesheet" href="style.css" type="text/css">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table class="navigation" id="top" width="100%" summary="Navigation header" cellpadding="2" cellspacing="2">
+<tr valign="middle">
+<td><a accesskey="p" href="cairo-Error-handling.html"><img src="left.png" width="24" height="24" border="0" alt="Prev"></a></td>
+<td><a accesskey="u" href="cairo-support.html"><img src="up.png" width="24" height="24" border="0" alt="Up"></a></td>
+<td><a accesskey="h" href="index.html"><img src="home.png" width="24" height="24" border="0" alt="Home"></a></td>
+<th width="100%" align="center">Cairo: A Vector Graphics Library</th>
+<td><a accesskey="n" href="cairo-Types.html"><img src="right.png" width="24" height="24" border="0" alt="Next"></a></td>
+</tr>
+<tr><td colspan="5" class="shortcuts">
+<a href="#cairo-Version-Information.synopsis" class="shortcut">Top</a>
+                   | 
+                  <a href="#cairo-Version-Information.description" class="shortcut">Description</a>
+</td></tr>
+</table>
+<div class="refentry" title="Version Information">
+<a name="cairo-Version-Information"></a><div class="titlepage"></div>
+<div class="refnamediv"><table width="100%"><tr>
+<td valign="top">
+<h2><span class="refentrytitle"><a name="cairo-Version-Information.top_of_page"></a>Version Information</span></h2>
+<p>Version Information — Compile-time and run-time version checks.</p>
+</td>
+<td valign="top" align="right"></td>
+</tr></table></div>
+<div class="refsynopsisdiv" title="Synopsis">
+<a name="cairo-Version-Information.synopsis"></a><h2>Synopsis</h2>
+<pre class="synopsis">#define             <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION:CAPS" title="CAIRO_VERSION">CAIRO_VERSION</a>
+#define             <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-MAJOR:CAPS" title="CAIRO_VERSION_MAJOR">CAIRO_VERSION_MAJOR</a>
+#define             <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-MINOR:CAPS" title="CAIRO_VERSION_MINOR">CAIRO_VERSION_MINOR</a>
+#define             <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-MICRO:CAPS" title="CAIRO_VERSION_MICRO">CAIRO_VERSION_MICRO</a>
+#define             <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-STRING:CAPS" title="CAIRO_VERSION_STRING">CAIRO_VERSION_STRING</a>
+#define             <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-ENCODE:CAPS" title="CAIRO_VERSION_ENCODE()">CAIRO_VERSION_ENCODE</a>                (major,
+                                                         minor,
+                                                         micro)
+#define             <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-STRINGIZE:CAPS" title="CAIRO_VERSION_STRINGIZE()">CAIRO_VERSION_STRINGIZE</a>             (major,
+                                                         minor,
+                                                         micro)
+<span class="returnvalue">int</span>                 <a class="link" href="cairo-Version-Information.html#cairo-version" title="cairo_version ()">cairo_version</a>                       (<em class="parameter"><code><span class="type">void</span></code></em>);
+const <span class="returnvalue">char</span> *        <a class="link" href="cairo-Version-Information.html#cairo-version-string" title="cairo_version_string ()">cairo_version_string</a>                (<em class="parameter"><code><span class="type">void</span></code></em>);
+</pre>
+</div>
+<div class="refsect1" title="Description">
+<a name="cairo-Version-Information.description"></a><h2>Description</h2>
+<p>
+Cairo has a three-part version number scheme. In this scheme, we use
+even vs. odd numbers to distinguish fixed points in the software
+vs. in-progress development, (such as from git instead of a tar file,
+or as a "snapshot" tar file as opposed to a "release" tar file).
+</p>
+<p>
+</p>
+<div class="informalexample"><pre class="programlisting">
+ _____ Major. Always 1, until we invent a new scheme.
+/  ___ Minor. Even/Odd = Release/Snapshot (tar files) or Branch/Head (git)
+| /  _ Micro. Even/Odd = Tar-file/git
+| | /
+1.0.0
+</pre></div>
+<p>
+</p>
+<p>
+Here are a few examples of versions that one might see.
+</p>
+<div class="informalexample"><pre class="programlisting">
+Releases
+--------
+1.0.0 - A major release
+1.0.2 - A subsequent maintenance release
+1.2.0 - Another major release
+
+Snapshots
+---------
+1.1.2 - A snapshot (working toward the 1.2.0 release)
+
+In-progress development (eg. from git)
+--------------------------------------
+1.0.1 - Development on a maintenance branch (toward 1.0.2 release)
+1.1.1 - Development on head (toward 1.1.2 snapshot and 1.2.0 release)
+</pre></div>
+<p>
+</p>
+<div class="refsect2" title="Compatibility">
+<a name="id2765635"></a><h3>Compatibility</h3>
+<p>
+The API/ABI compatibility guarantees for various versions are as
+follows. First, let's assume some cairo-using application code that is
+successfully using the API/ABI "from" one version of cairo. Then let's
+ask the question whether this same code can be moved "to" the API/ABI
+of another version of cairo.
+</p>
+<p>
+Moving from a release to any later version (release, snapshot,
+development) is always guaranteed to provide compatibility.
+</p>
+<p>
+Moving from a snapshot to any later version is not guaranteed to
+provide compatibility, since snapshots may introduce new API that ends
+up being removed before the next release.
+</p>
+<p>
+Moving from an in-development version (odd micro component) to any
+later version is not guaranteed to provide compatibility. In fact,
+there's not even a guarantee that the code will even continue to work
+with the same in-development version number. This is because these
+numbers don't correspond to any fixed state of the software, but
+rather the many states between snapshots and releases.
+</p>
+</div>
+<hr>
+<div class="refsect2" title="Examining the version">
+<a name="id2765673"></a><h3>Examining the version</h3>
+<p>
+Cairo provides the ability to examine the version at either
+compile-time or run-time and in both a human-readable form as well as
+an encoded form suitable for direct comparison. Cairo also provides the
+macro <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-ENCODE:CAPS" title="CAIRO_VERSION_ENCODE()"><code class="function">CAIRO_VERSION_ENCODE()</code></a> to perform the encoding.
+</p>
+<p>
+</p>
+<div class="informalexample"><pre class="programlisting">
+Compile-time
+------------
+CAIRO_VERSION_STRING    Human-readable
+CAIRO_VERSION           Encoded, suitable for comparison
+
+Run-time
+--------
+cairo_version_string()  Human-readable
+cairo_version()         Encoded, suitable for comparison
+</pre></div>
+<p>
+</p>
+<p>
+For example, checking that the cairo version is greater than or equal
+to 1.0.0 could be achieved at compile-time or run-time as follows:
+</p>
+<p>
+</p>
+<div class="informalexample"><pre class="programlisting">
+##if CAIRO_VERSION &gt;= CAIRO_VERSION_ENCODE(1, 0, 0)
+printf ("Compiling with suitable cairo version: %s\n", %CAIRO_VERSION_STRING);
+##endif
+
+if (cairo_version() &gt;= CAIRO_VERSION_ENCODE(1, 0, 0))
+    printf ("Running with suitable cairo version: %s\n", cairo_version_string ());
+</pre></div>
+<p>
+</p>
+</div>
+</div>
+<div class="refsect1" title="Details">
+<a name="cairo-Version-Information.details"></a><h2>Details</h2>
+<div class="refsect2" title="CAIRO_VERSION">
+<a name="CAIRO-VERSION:CAPS"></a><h3>CAIRO_VERSION</h3>
+<pre class="programlisting">#define             CAIRO_VERSION</pre>
+<p>
+The version of cairo available at compile-time, encoded using
+<a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-ENCODE:CAPS" title="CAIRO_VERSION_ENCODE()"><code class="function">CAIRO_VERSION_ENCODE()</code></a>.
+</p>
+</div>
+<hr>
+<div class="refsect2" title="CAIRO_VERSION_MAJOR">
+<a name="CAIRO-VERSION-MAJOR:CAPS"></a><h3>CAIRO_VERSION_MAJOR</h3>
+<pre class="programlisting">#define CAIRO_VERSION_MAJOR USE_cairo_version_OR_cairo_version_string_INSTEAD
+</pre>
+<p>
+The major component of the version of cairo available at compile-time.
+</p>
+</div>
+<hr>
+<div class="refsect2" title="CAIRO_VERSION_MINOR">
+<a name="CAIRO-VERSION-MINOR:CAPS"></a><h3>CAIRO_VERSION_MINOR</h3>
+<pre class="programlisting">#define CAIRO_VERSION_MINOR USE_cairo_version_OR_cairo_version_string_INSTEAD
+</pre>
+<p>
+The minor component of the version of cairo available at compile-time.
+</p>
+</div>
+<hr>
+<div class="refsect2" title="CAIRO_VERSION_MICRO">
+<a name="CAIRO-VERSION-MICRO:CAPS"></a><h3>CAIRO_VERSION_MICRO</h3>
+<pre class="programlisting">#define CAIRO_VERSION_MICRO USE_cairo_version_OR_cairo_version_string_INSTEAD
+</pre>
+<p>
+The micro component of the version of cairo available at compile-time.
+</p>
+</div>
+<hr>
+<div class="refsect2" title="CAIRO_VERSION_STRING">
+<a name="CAIRO-VERSION-STRING:CAPS"></a><h3>CAIRO_VERSION_STRING</h3>
+<pre class="programlisting">#define             CAIRO_VERSION_STRING</pre>
+<p>
+A human-readable string literal containing the version of cairo available
+at compile-time, in the form of "X.Y.Z".
+</p>
+</div>
+<hr>
+<div class="refsect2" title="CAIRO_VERSION_ENCODE()">
+<a name="CAIRO-VERSION-ENCODE:CAPS"></a><h3>CAIRO_VERSION_ENCODE()</h3>
+<pre class="programlisting">#define             CAIRO_VERSION_ENCODE(major, minor, micro)</pre>
+<p>
+This macro encodes the given cairo version into an integer.  The numbers
+returned by <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION:CAPS" title="CAIRO_VERSION"><code class="literal">CAIRO_VERSION</code></a> and <a class="link" href="cairo-Version-Information.html#cairo-version" title="cairo_version ()"><code class="function">cairo_version()</code></a> are encoded using this macro.
+Two encoded version numbers can be compared as integers.  The encoding ensures
+that later versions compare greater than earlier versions.
+</p>
+<p>
+<em class="parameter"><code>Returns</code></em>: the encoded version.
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>major</code></em> :</span></p></td>
+<td>the major component of the version number
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>minor</code></em> :</span></p></td>
+<td>the minor component of the version number
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>micro</code></em> :</span></p></td>
+<td>the micro component of the version number
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<hr>
+<div class="refsect2" title="CAIRO_VERSION_STRINGIZE()">
+<a name="CAIRO-VERSION-STRINGIZE:CAPS"></a><h3>CAIRO_VERSION_STRINGIZE()</h3>
+<pre class="programlisting">#define             CAIRO_VERSION_STRINGIZE(major, minor, micro)</pre>
+<p>
+This macro encodes the given cairo version into an string.  The numbers
+returned by <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-STRING:CAPS" title="CAIRO_VERSION_STRING"><code class="literal">CAIRO_VERSION_STRING</code></a> and <a class="link" href="cairo-Version-Information.html#cairo-version-string" title="cairo_version_string ()"><code class="function">cairo_version_string()</code></a> are encoded using this macro.
+The parameters to this macro must expand to numerical literals.
+</p>
+<p>
+<em class="parameter"><code>Returns</code></em>: a string literal containing the version.
+</p>
+<p>
+<em class="parameter"><code>Since</code></em>: 1.8
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>major</code></em> :</span></p></td>
+<td>the major component of the version number
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>minor</code></em> :</span></p></td>
+<td>the minor component of the version number
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><em class="parameter"><code>micro</code></em> :</span></p></td>
+<td>the micro component of the version number
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<hr>
+<div class="refsect2" title="cairo_version ()">
+<a name="cairo-version"></a><h3>cairo_version ()</h3>
+<pre class="programlisting"><span class="returnvalue">int</span>                 cairo_version                       (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
+<p>
+Returns the version of the cairo library encoded in a single
+integer as per <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-ENCODE:CAPS" title="CAIRO_VERSION_ENCODE()"><code class="literal">CAIRO_VERSION_ENCODE</code></a>. The encoding ensures that
+later versions compare greater than earlier versions.
+</p>
+<p>
+A run-time comparison to check that cairo's version is greater than
+or equal to version X.Y.Z could be performed as follows:
+</p>
+<p>
+</p>
+<div class="informalexample"><pre class="programlisting">
+if (cairo_version() &gt;= CAIRO_VERSION_ENCODE(X,Y,Z)) {...}
+</pre></div>
+<p>
+</p>
+<p>
+See also <a class="link" href="cairo-Version-Information.html#cairo-version-string" title="cairo_version_string ()"><code class="function">cairo_version_string()</code></a> as well as the compile-time
+equivalents <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION:CAPS" title="CAIRO_VERSION"><code class="literal">CAIRO_VERSION</code></a> and <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-STRING:CAPS" title="CAIRO_VERSION_STRING"><code class="literal">CAIRO_VERSION_STRING</code></a>.
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody><tr>
+<td><p><span class="term"><span class="emphasis"><em>Returns</em></span> :</span></p></td>
+<td> the encoded version.
+</td>
+</tr></tbody>
+</table></div>
+</div>
+<hr>
+<div class="refsect2" title="cairo_version_string ()">
+<a name="cairo-version-string"></a><h3>cairo_version_string ()</h3>
+<pre class="programlisting">const <span class="returnvalue">char</span> *        cairo_version_string                (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
+<p>
+Returns the version of the cairo library as a human-readable string
+of the form "X.Y.Z".
+</p>
+<p>
+See also <a class="link" href="cairo-Version-Information.html#cairo-version" title="cairo_version ()"><code class="function">cairo_version()</code></a> as well as the compile-time equivalents
+<a class="link" href="cairo-Version-Information.html#CAIRO-VERSION-STRING:CAPS" title="CAIRO_VERSION_STRING"><code class="literal">CAIRO_VERSION_STRING</code></a> and <a class="link" href="cairo-Version-Information.html#CAIRO-VERSION:CAPS" title="CAIRO_VERSION"><code class="literal">CAIRO_VERSION</code></a>.
+</p>
+<div class="variablelist"><table border="0">
+<col align="left" valign="top">
+<tbody><tr>
+<td><p><span class="term"><span class="emphasis"><em>Returns</em></span> :</span></p></td>
+<td> a string containing the version.
+</td>
+</tr></tbody>
+</table></div>
+</div>
+</div>
+</div>
+<div class="footer">
+<hr>
+          Generated by GTK-Doc V1.15</div>
+</body>
+</html>
