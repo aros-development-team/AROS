@@ -12,25 +12,53 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 #MM- workbench-c : workbench-c-$(AROS_TARGET_CPU)
 #MM- workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
 
-#MM workbench-c-m68k : includes \
-#MM                    kernel-kernel-includes \
-#MM                    linklibs workbench-c-m68k-elf
-#MM workbench-c-m68k-quick : workbench-c-m68k-elf-quick
+#MM- workbench-c-m68k : includes \
+#MM                     kernel-kernel-includes \
+#MM                     linklibs \
+#MM                     workbench-c-m68k-aos
+#MM- workbench-c-m68k-quick : workbench-c-m68k-aos-quick
+
+#MM- workbench-c-m68k-elf: workbench-c-m68k-apps \
+#MM                        workbench-c-m68k-setpatcharos-elf \
+#MM                        workbench-c-m68k-arosbootstrap-elf
+
+#MM- workbench-c-m68k-elf-quick: workbench-c-m68k-apps-quick \
+#MM                              workbench-c-m68k-setpatcharos-elf-quick \
+#MM                              workbench-c-m68k-arosbootstrap-elf-quick
+
+AROS_BOOT := $(BINDIR)/boot
 
 FILES := gdbstub gdbstop
 
-%build_progs mmake=workbench-c-m68k \
+%build_progs mmake=workbench-c-m68k-apps \
     files=$(FILES) targetdir=$(AROS_C) \
     uselibs="arossupport amiga rom"
 
-FILES := SetPatchAROS
+CFILES := SetPatchAROS
 AFILES := newstackswap
 
-%build_prog mmake=workbench-c-m68k-elf progname=SetPatchAROS \
-    files=$(FILES) asmfiles=$(AFILES) targetdir=$(AROS_C)/ELF \
-    uselibs="arossupport amiga"
+%build_prog mmake=workbench-c-m68k-setpatcharos-elf progname=SetPatchAROS.elf \
+    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
+    uselibs="arossupport amiga rom"
 
-workbench-c-m68k: workbench-c-m68k-elf
-	@$(FOR) file in $(FILES) ; do \
-	    $(ELF2HUNK) $(AROS_C)/ELF/"$$file" $(AROS_C)/"$$file" ; \
-	done
+CFILES := AROSBootstrap
+AFILES :=
+
+%build_prog mmake=workbench-c-m68k-arosbootstrap-elf progname=AROSBootstrap.elf \
+    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
+    uselibs="arossupport amiga z rom"
+
+
+#MM workbench-c-m68k-aos: workbench-c-m68k-elf
+#MM workbench-c-m68k-aos-quick: workbench-c-m68k-elf-quick
+
+ALL_FILES := $(FILES)
+
+BOOT_FILES := SetPatchAROS AROSBootstrap
+
+workbench-c-m68k-aos: $(FILES:%=$(AROS_C)/%) $(BOOT_FILES:%=$(AROS_BOOT)/%)
+
+workbench-c-m68k-aos-quick: $(FILES:%=$(AROS_C)/%) $(BOOT_FILES:%=$(AROS_BOOT)/%)
+
+%: %.elf
+	$(Q)$(ELF2HUNK) $< $@
