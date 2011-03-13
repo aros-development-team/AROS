@@ -24,10 +24,10 @@
         AROS_LH4(BPTR, InternalLoadSeg,
 
 /*  SYNOPSIS */
-        AROS_LHA(BPTR     , fh           , D0),
-        AROS_LHA(BPTR     , table        , A0),
-        AROS_LHA(LONG_FUNC, functionarray, A1),
-        AROS_LHA(LONG *   , stack        , A2),
+        AROS_LHA(BPTR       , fh           , D0),
+        AROS_LHA(BPTR       , table        , A0),
+        AROS_LHA(LONG_FUNC *, funcarray    , A1),
+        AROS_LHA(LONG *     , stack        , A2),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 126, Dos)
