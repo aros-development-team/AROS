@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     ROMTag scanner.
@@ -11,6 +11,7 @@
 #include <exec/nodes.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 
 #include <string.h>
@@ -204,4 +205,18 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 #endif
 
     return RomTag;
+}
+
+INITFUNC *findExecInit(struct Resident **resList)
+{
+    ULONG i;
+
+    for (i = 0; resList[i]; i++)
+    {
+    	/* Locate exec.library and return early init routine pointer encoded in its extensions taglist */
+    	if ((!strcmp(resList[i]->rt_Name, "exec.library")) && (resList[i]->rt_Flags & RTF_EXTENDED))
+    	    return (INITFUNC *)LibGetTagData(RTT_STARTUP, 0, resList[i]->rt_Tags);
+    }
+
+    return NULL;
 }

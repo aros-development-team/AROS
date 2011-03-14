@@ -42,12 +42,6 @@
  */
 struct TagItem *LibNextTagItem(const struct TagItem **tstate);
 
-/*
- * External early init function from exec.library
- * TODO: find some way to discover it dynamically
- */
-extern struct ExecBase *PrepareExecBase(struct MemHeader *, struct TagItem *);
-
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
@@ -102,6 +96,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
     APTR reslist;
+    INITFUNC *execBoot;
 
     /* This bails out if the user started us from within AROS command line, as common executable */
     if (magic != AROS_BOOT_MAGIC)
@@ -198,10 +193,18 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     ranges[1] = khi;
     reslist = krnRomTagScanner(bootmh, ranges);
 
+    /* Locate exec.library early init routine */
+    execBoot = findExecInit(reslist);
+    if (!execBoot)
+    {
+    	bug("[Kernel] Unable to locate exec.library startup code!\n");
+    	return -1;
+    }
+
     /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
-    D(bug("[Kernel] calling PrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
+    D(bug("[Kernel] calling PrepareExecBase() at 0x%p, mh_First = %p\n", execBoot, bootmh->mh_First));
     SysBase = NULL;	/* TODO: check SysBase validity here when warm reboot is implemented */
-    PrepareExecBase(bootmh, msg);
+    execBoot(bootmh, msg);
 
     D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
     SysBase->ResModules = reslist;
