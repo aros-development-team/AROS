@@ -1,0 +1,107 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+CAIRO_FILES := \
+	cairo-analysis-surface \
+	cairo-arc \
+	cairo-array \
+	cairo-atomic \
+	cairo-base64-stream \
+	cairo-base85-stream \
+	cairo-bentley-ottmann \
+	cairo-bentley-ottmann-rectangular \
+	cairo-bentley-ottmann-rectilinear \
+	cairo-botor-scan-converter \
+	cairo-boxes \
+	cairo \
+	cairo-cache \
+	cairo-clip \
+	cairo-color \
+	cairo-composite-rectangles \
+	cairo-debug \
+	cairo-device \
+	cairo-fixed \
+	cairo-font-face \
+	cairo-font-face-twin \
+	cairo-font-face-twin-data \
+	cairo-font-options \
+	cairo-freelist \
+	cairo-freed-pool \
+	cairo-gstate \
+	cairo-hash \
+	cairo-hull \
+	cairo-image-info \
+	cairo-image-surface \
+	cairo-lzw \
+	cairo-matrix \
+	cairo-recording-surface \
+	cairo-misc \
+	cairo-mutex \
+	cairo-observer \
+	cairo-output-stream \
+	cairo-paginated-surface \
+	cairo-path-bounds \
+	cairo-path \
+	cairo-path-fill \
+	cairo-path-fixed \
+	cairo-path-in-fill \
+	cairo-path-stroke \
+	cairo-pattern \
+	cairo-pen \
+	cairo-polygon \
+	cairo-rectangle \
+	cairo-rectangular-scan-converter \
+	cairo-region \
+	cairo-rtree \
+	cairo-scaled-font \
+	cairo-slope \
+	cairo-spans \
+	cairo-spline \
+	cairo-stroke-style \
+	cairo-surface \
+	cairo-surface-fallback \
+	cairo-surface-clipper \
+	cairo-surface-offset \
+	cairo-surface-snapshot \
+	cairo-surface-subsurface \
+	cairo-surface-wrapper \
+	cairo-system \
+	cairo-tor-scan-converter \
+	cairo-toy-font-face \
+	cairo-traps \
+	cairo-unicode \
+	cairo-user-font \
+	cairo-version \
+	cairo-wideint
+
+CAIRO_PNG_FILES := cairo-png
+CAIRO_PDF_FILES := cairo-pdf-surface cairo-pdf-operators
+CAIRO_FT_FILES := cairo-ft-font
+CAIRO_FONT_FILES := cairo-cff-subset cairo-scaled-font-subsets cairo-truetype-subset cairo-type1-fallback cairo-type1-subset cairo-type3-glyph-surface
+
+FILES := \
+	$(CAIRO_FILES) \
+	$(CAIRO_PNG_FILES) \
+	$(CAIRO_PDF_FILES) \
+	$(CAIRO_FT_FILES) \
+	$(CAIRO_FONT_FILES) \
+	cairo-deflate-stream \
+	../aros/emul_arosc
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../aros -I$(GENINCDIR)/pixman-1
+USER_CFLAGS := -DHAVE_CONFIG_H -DCAIRO_NO_MUTEX
+
+#MM workbench-libs-cairo-includes : includes-copy
+
+#MM workbench-libs-cairo : linklibs workbench-libs-pixman
+
+%build_module mmake=workbench-libs-cairo \
+    modname=cairo modtype=library \
+    files="$(FILES)" \
+    uselibs="freetype2 amiga rom m pixman png z "
+
+INCLUDE_FILES := cairo-deprecated.h cairo-ft.h cairo.h cairo-pdf.h cairo-ps.h cairo-svg.h cairo-version.h
+%copy_includes mmake=includes-copy path=cairo
+
+%common
