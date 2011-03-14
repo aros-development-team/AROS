@@ -39,11 +39,6 @@ rom_init:
 	jmp	%a0@(2)
 0:
 
-	/* Do we have a Gayle? */
-	lea		1f(%pc),%a7
-	jmp		Exec_ReadGayle
-1:	move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
-
 	/* reserve space for memory region array */
 	lea		_bss,%a4
 	sub.w	#64,%a4
@@ -54,6 +49,11 @@ rom_init:
 	sub.w	#0x400,%a0
 	/* temp user stack */
 	move.l	%a0,%usp
+
+	/* Do we have a Gayle? */
+	sub.l	%a6,%a6
+	jsr		Exec_ReadGayle
+1:	move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
 
 	/* check non-autoconfig memory areas
 	 * in order of fastest to slowest */	
