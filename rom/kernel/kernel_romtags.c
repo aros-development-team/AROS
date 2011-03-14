@@ -49,13 +49,14 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
  * Additionally, in order to be able to discover exec.library (and its early init function)
  * dynamically, we want krnRomTagScanner() to work before ExecBase is created.
  */
-static inline void krnAllocBootMem(struct MemHeader *mh, ULONG size)
+static inline void krnAllocBootMem(struct MemHeader *mh, struct MemChunk *next, IPTR chunkSize, IPTR allocSize)
 {
-    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+    allocSize = AROS_ROUNDUP2(allocSize, MEMCHUNK_TOTAL);
 
-    mh->mh_First          = (struct MemChunk *)((APTR)mh->mh_First + size);
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
+    mh->mh_First          = (struct MemChunk *)((APTR)mh->mh_First + allocSize);
+    mh->mh_First->mc_Next = next;
+    mh->mh_Free          -= allocSize;
+    mh->mh_First->mc_Bytes = chunkSize - allocSize;
 }
 
 /*
@@ -89,8 +90,13 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
      * When we are done we know list length, so we can seal the used
      * memory by allocating it from the MemHeader.
      * This is 100% safe because we are here long before multitasking
-     * is started up.
+     * is started up. However in some situations we can already have several
+     * MemChunks in our MemHeader (this happens on softkicked m68k Amiga).
+     * So, we preserve origiinal chunk size and next chunk pointer.
+     * Note that we expect the first chunk in the MemHeader to have enough space for resident list.
      */
+    struct MemChunk *nextChunk = mh->mh_First->mc_Next;
+    IPTR chunkSize = mh->mh_First->mc_Bytes;
     struct Resident **RomTag = (struct Resident **)mh->mh_First;
     ULONG	    num = 0;
 
@@ -152,7 +158,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     RomTag[num] = NULL;
 
     /* Seal our used memory as allocated */
-    krnAllocBootMem(mh, (num + 1) * sizeof(struct Resident *));
+    krnAllocBootMem(mh, nextChunk, chunkSize, (num + 1) * sizeof(struct Resident *));
 
     /*
      * By now we have valid list of kickstart resident modules.
