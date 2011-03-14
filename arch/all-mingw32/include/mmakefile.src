@@ -1,5 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+# Current %copy_includes implementation will strip pathname from $(INCLUDE_FILES)
+# before substitution. This is not entirely correct.
 INCLUDE_FILES := mingw32/aros/irq.h
-%copy_includes mmake=includes-copy-mingw32-$(CPU) path=../$(CPU)-mingw32/include dir=mingw32
+%copy_includes mmake=includes-copy-mingw32-$(CPU) path=../$(CPU)-mingw32/include/aros dir=mingw32/aros
