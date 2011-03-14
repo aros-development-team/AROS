@@ -21,6 +21,7 @@
 
 #include <zlib.h>
 
+#define NO_SYSBASE_REMAP
 #include <rom/dos/internalloadseg_elf.c>
 
 struct DosLibrary *DOSBase;
@@ -208,13 +209,13 @@ static BPTR ROMLoad(const char *filename)
 
 static UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
 {
-    UWORD sum = 0;
-    UWORD *p = (UWORD*)&sysbase->SoftVer;
-    while (p <= &sysbase->ChkSum)
-    	sum += *(p++);
-
-    return sum;
+     UWORD sum = 0;
+     UWORD *p = (UWORD*)&sysbase->SoftVer;
+     while (p <= &sysbase->ChkSum)
+	sum += *p++;
+     return sum;
 }
+
 
 /* reset VBR and switch off MMU */
 static void setcpu(void)
@@ -260,64 +261,46 @@ static void reboot(void)
     );
 }
 
-void coldcapturecode(void)
+AROS_UFH2(void, putser,
+	AROS_UFHA(UBYTE, chr,       D0),
+	AROS_UFHA(APTR , PutChData, A3))
 {
-    asm(
-	".long end - start\n"
-	"start:\n"
-	"move.w	#0x440,0xdff180\n"
-	"clr.l	0.w\n"
-	"lea	0x200,%a0\n"
-	"move.l	(%a0),0x7c.w\n" // restore NMI
-	"lea	12(%a0),%a0\n"
-	"move.l	%a0,4.w\n"
-	"lea	start(%pc),%a1\n"
-	"move.l	%a1,42(%a0)\n" // ColdCapture
-	"move.l	%a0,%d0\n"
-	"not.l	%d0\n"
-	"move.l	%d0,38(%a0)\n" // ChkBase
-	"moveq	#0,%d1\n"
-	"lea	34(%a0),%a0\n"
-	"moveq	#24-1,%d0\n"
-	"chk1:	add.w (%a0)+,%d1\n"
-	"dbf	%d0,chk1\n"
-	"not.w	%d1\n"
-	"move.w	%d1,(%a0)\n" // ChkSum
-	"move.l	start-4(%pc),%a0\n"
-	"jmp	(%a0)\n"
-	"end:\n"
-    );
+    AROS_USERFUNC_INIT
+    RawPutChar(chr);
+    AROS_USERFUNC_EXIT
 }
+    
+APTR entry;
 
 static void supercode(void)
 {
-    ULONG *fakesys, *coldcapture, *coldcapturep;
+    ULONG *fakesys;
     struct ExecBase *sysbase;
     ULONG *traps = 0;
-    ULONG len;
 
     setcpu();
     fakesys = (ULONG*)FAKEBASE;
-    coldcapture = (ULONG*)COLDCAPTURE;
-    coldcapturep = (ULONG*)coldcapturecode;
-    len = *coldcapturep++;
-    memcpy (coldcapture, coldcapturep, len);
+
     *fakesys++ = traps[31]; // Level 7
-    *fakesys++ = 0x4ef9 | (COLDCAPTURE >> 16);
-    *fakesys++ = (COLDCAPTURE << 16) | 0x4e75;
+    *fakesys++ = 0x4ef9 | ((IPTR)entry >> 16);
+    *fakesys++ = ((IPTR)entry << 16) | 0x4e75;
     sysbase = (struct ExecBase*)fakesys; 
-    traps[1] = (ULONG)sysbase;
-    SysBase = (struct ExecBase*)sysbase;
+    traps[1] = (IPTR)sysbase;
+
     memset(sysbase, 0, FAKEBASESIZE);
-    sysbase->ColdCapture = coldcapture;
+    sysbase->ColdCapture = entry;
+    sysbase->MaxLocMem = 512 * 1024;
+    sysbase->KickMemPtr = (APTR)mlist.mlh_Head;
+    sysbase->KickCheckSum = (APTR)SumKickData();
     sysbase->ChkBase=~(IPTR)sysbase;
-    sysbase->MaxLocMem = 524288;
+    sysbase->ChkSum = 0;
     sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
 
-#if 0 // SysBase is not valid enough for SumKickData() at this point
-    sysbase->KickMemPtr = (APTR)coldcapture[-2];
-    sysbase->KickCheckSum = (APTR)SumKickData();
-#endif
+    RawDoFmt("KickMemPtr 0x%lx\n", &sysbase->KickMemPtr, putser, NULL);
+    RawDoFmt("Ready to go!\nColdCapture is 0x%lx\n", &sysbase->ColdCapture, putser, NULL);
+
+    SysBase = (struct ExecBase*)sysbase;
+    CacheClearU();
 
     reboot();
 }
@@ -325,8 +308,6 @@ static void supercode(void)
 void BootROM(BPTR romlist)
 {
     APTR GfxBase;
-    APTR entry;
-    ULONG *coldcapture = (ULONG*)COLDCAPTURE;
 
     if (0 && (GfxBase = OpenLibrary("graphics.library", 0))) {
     	LoadView(NULL);
@@ -338,34 +319,26 @@ void BootROM(BPTR romlist)
 
     /* We're off in the weeds now. */
     Disable();
-    coldcapture[-1] = (ULONG)entry;
-    coldcapture[-2] = (ULONG)mlist.mlh_Head;
-    Supervisor(supercode);
-}
 
-#if 0   
     /* Make list singly linked, and join
      * with the existing KickMem list
      */
     mlist.mlh_TailPred->mln_Succ = SysBase->KickMemPtr;
 
-    SysBase->KickMemPtr = mlist.mlh_Head;
-    SysBase->KickCheckSum = (APTR)SumKickData();
-
-    SysBase->ColdCapture = entry;
-    SysBase->ChkBase=~(IPTR)SysBase;
-    SysBase->ChkSum = 0;
-    SysBase->ChkSum = GetSysBaseChkSum() ^ 0xffff;
-
-    ColdReboot();
-#endif
-
+    Supervisor(supercode);
+}
 
 int __nocommandline;
 
 int main(void)
 {
     int err = 1;
+
+    /* See if we're already running on AROS.
+     */
+    struct Library *sbl = (APTR)SysBase;
+    if (sbl->lib_Version > 40)
+    	return RETURN_OK;
 
     NEWLIST(&mlist);
 
