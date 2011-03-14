@@ -453,7 +453,7 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
 /* Aside from adding chip RAM, this also protects the
  * BSS if it is within Chip RAM.
  */
-/*static*/ struct MemHeader *addchipram(IPTR chip_start, IPTR chip_len)
+static struct MemHeader *addchipram(IPTR chip_start, IPTR chip_len)
 {
     struct MemHeader *mh;
 
@@ -620,12 +620,18 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 
 	mh = addchipram(membanks[0], membanks[1]);
 
+	/* NOTE: mh *must* have, as its first mc, a chunk
+	 *       big enough for krnRomTagScanner.
+	 *
+	 * Call the SysBase initialization.
+	 */
 	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
-	PrepareExecBase(mh, NULL);
+	if (!krnPrepareExecBase(kickrom, mh, NULL))
+	    Early_Alert(AT_DeadEnd | AG_MakeLib | AO_ExecLib);
+
 	/* From here on, we can reference SysBase */
 #undef SysBase
-
 	DEBUGPUTHEX(("[new  SysBase]", (ULONG)SysBase));
 
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
@@ -682,9 +688,6 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    if (kickrom[i] != (APTR)0xf00000)
 	    	krnCreateROMHeader(mh, "Kickstart ROM", kickrom[i], kickrom[i+1]);
 	}
-
-	/* Scan for all other ROM Tags */
-	SysBase->ResModules = krnRomTagScanner(mh, kickrom);
 
 	/* Add remaining memory regions */
 	for (i = 2; membanks[i + 1]; i += 2) {
