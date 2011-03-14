@@ -692,10 +692,12 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 		FAKE_IT(SysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
 	}
 
-	for (i = 0; kickrom[i] != (UWORD *)~0; i+=2) {
-	    if (kickrom[i] != (APTR)0xf00000)
-	    	krnCreateROMHeader(mh, "Kickstart ROM", kickrom[i], kickrom[i+1]);
-	}
+	/* Only add the 2 standard ROM locations, since
+	 * we may get memory at 0x00f00000, or when we
+	 * are ReKicked, at the rom-in-ramlocations.
+	 */
+	krnCreateROMHeader(mh, "Kickstart ROM", (APTR)0x00f80000, (APTR)0x01000000);
+	krnCreateROMHeader(mh, "Kickstart ROM", (APTR)0x00e00000, (APTR)0x00e80000);
 
 	/* Add remaining memory regions */
 	for (i = 2; membanks[i + 1]; i += 2) {
