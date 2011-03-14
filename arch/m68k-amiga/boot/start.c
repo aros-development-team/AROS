@@ -533,7 +533,6 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	ULONG oldmem;
 	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
 	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
-	struct ExecBase *fakebase = NULL;
 	/* We can't use the global 'SysBase' symbol, since
 	 * the compiler does not know that PrepareExecBase
 	 * may change it out from under us.
@@ -564,17 +563,21 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    wasvalid = IsSysBaseValidNoVersion(oldSysBase);
 	    if (wasvalid) {
 	    	DEBUGPUTHEX(("[SysBase] fakebase at", (ULONG)oldSysBase));
-	    	/* Save reset proof vectors */
-		ColdCapture  = oldSysBase->ColdCapture;
-	    	CoolCapture  = oldSysBase->CoolCapture;
-	    	WarmCapture  = oldSysBase->WarmCapture;
-	    	KickMemPtr   = oldSysBase->KickMemPtr; 
-	    	KickTagPtr   = oldSysBase->KickTagPtr;
-	    	KickCheckSum = oldSysBase->KickCheckSum;
-	    	fakebase = oldSysBase;
+	    	wasvalid = TRUE;
 	    } else {
 	    	DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)oldSysBase));
+	    	wasvalid = FALSE;
 	    }
+	}
+
+	if (wasvalid) {
+	    /* Save reset proof vectors */
+	    ColdCapture  = oldSysBase->ColdCapture;
+	    CoolCapture  = oldSysBase->CoolCapture;
+	    WarmCapture  = oldSysBase->WarmCapture;
+	    KickMemPtr   = oldSysBase->KickMemPtr; 
+	    KickTagPtr   = oldSysBase->KickTagPtr;
+	    KickCheckSum = oldSysBase->KickCheckSum;
 	}
 
 	for (i = 0; membanks[i + 1]; i += 2) {
@@ -628,15 +631,18 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	/* From here on, we can reference SysBase */
 #undef SysBase
 	DEBUGPUTHEX(("[new  SysBase]", (ULONG)SysBase));
-	if (fakebase) {
-	    SysBase->ColdCapture = ColdCapture;
-	    SysBase->CoolCapture = CoolCapture;
-	    SysBase->WarmCapture = WarmCapture;
-	    SysBase->KickMemPtr = KickMemPtr;
-	    SysBase->KickTagPtr = KickTagPtr;
-	    SysBase->KickCheckSum = KickCheckSum;
-	    SetSysBaseChkSum();
-	}
+
+    	if (wasvalid) {
+    	    SysBase->ColdCapture = ColdCapture;
+    	    SysBase->CoolCapture = CoolCapture;
+    	    SysBase->WarmCapture = WarmCapture;
+    	    SysBase->ChkSum = 0;
+    	    SysBase->ChkSum = GetSysBaseChkSum(SysBase) ^ 0xffff; 
+    	    SysBase->KickMemPtr = KickMemPtr;
+    	    SysBase->KickTagPtr = KickTagPtr;
+    	    SysBase->KickCheckSum = KickCheckSum;
+    	}
+
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
         SysBase->SysStkLower    = (APTR)ss_stack_lower;
 
@@ -694,6 +700,8 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 
 	/* Add remaining memory regions */
 	for (i = 2; membanks[i + 1]; i += 2) {
+		DEBUGPUTHEX(("RAM Addr: ", membanks[i]));
+		DEBUGPUTHEX(("RAM Size: ", membanks[i+1]));
 		mh = addmemoryregion(membanks[i], membanks[i + 1]);
 		Enqueue(&SysBase->MemList, &mh->mh_Node);
 	}
@@ -705,7 +713,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	InitCode(RTF_SINGLETASK, 0);
 
 	/* Autoconfig ram expansions are now configured */
-	if (!fakebase && !wasvalid && IsSysBaseValid(oldSysBase)) {
+	if (!wasvalid && IsSysBaseValid(oldSysBase)) {
 	    /* Ah, old ExecBase was in fast RAM */
 	    DEBUGPUTHEX(("[Sysbase] now valid at", (ULONG)oldSysBase));
 	    SysBase = PrepareExecBaseMove(oldSysBase);
