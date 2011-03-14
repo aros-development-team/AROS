@@ -20,12 +20,6 @@
 #include <kernel_debug.h>
 #include <kernel_romtags.h>
 
-/*
- * Private exec.library include, needed for MEMCHUNK_TOTAL.
- * TODO: may be bring it out to public includes ?
- */
-#include "memory.h"
-
 #if AROS_SERIAL_DEBUG
 #define PRINT_LIST
 #endif

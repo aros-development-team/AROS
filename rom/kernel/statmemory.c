@@ -9,8 +9,6 @@
 #include <kernel_base.h>
 #include "memory_intern.h"
 
-#include "memory.h" /* From rom/exec, contains MEMF_PHYSICAL_MASK definition */
-
 /*****************************************************************************
 
     NAME */
