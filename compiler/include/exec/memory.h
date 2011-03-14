@@ -2,7 +2,7 @@
 #define EXEC_MEMORY_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Memory handling
@@ -25,9 +25,14 @@ struct MemHeader
 
 struct MemChunk
 {
-    struct MemChunk * mc_Next;
-    ULONG             mc_Bytes;
+    struct MemChunk *mc_Next;
+    IPTR             mc_Bytes;
 };
+
+/* Total size of struct MemChunk, including padding */
+#define MEMCHUNK_TOTAL  (AROS_WORSTALIGN > sizeof(struct MemChunk) ? AROS_WORSTALIGN : sizeof(struct MemChunk))
+/* Total size of struct MemHeader, including padding */
+#define MEMHEADER_TOTAL (AROS_ROUNDUP2(sizeof(struct MemHeader), MEMCHUNK_TOTAL))
 
 struct MemEntry
 {
@@ -51,26 +56,34 @@ struct MemList
 #define MEM_BLOCKSIZE 8L
 #define MEM_BLOCKMASK (MEM_BLOCKSIZE - 1)
 
-/* AllocMem() Flags */
-#define MEMF_ANY        0L
-#define MEMF_PUBLIC     (1L<<0)
-#define MEMF_CHIP       (1L<<1)
-#define MEMF_FAST       (1L<<2)
-#define MEMF_EXECUTABLE (1L<<4)	 /* AmigaOS v4 compatible */
-#define MEMF_LOCAL      (1L<<8)
-#define MEMF_24BITDMA   (1L<<9)
-#define MEMF_KICK       (1L<<10)
-#define MEMF_31BIT      (1L<<12) /* MorphOS compatible */
-#define MEMF_CLEAR      (1L<<16)
-#define MEMF_LARGEST    (1L<<17)
-#define MEMF_REVERSE    (1L<<18)
-#define MEMF_TOTAL      (1L<<19)
-#define MEMF_HWALIGNED  (1L<<20) /* For AllocMem() only! */
-#define MEMF_NO_EXPUNGE (1L<<31)
+/* Memory allocation flags */
+#define MEMF_ANY           0L
+#define MEMF_PUBLIC        (1L<<0)
+#define MEMF_CHIP          (1L<<1)
+#define MEMF_FAST          (1L<<2)
+#define MEMF_EXECUTABLE    (1L<<4)  /* AmigaOS v4 compatible */
+#define MEMF_LOCAL         (1L<<8)
+#define MEMF_24BITDMA      (1L<<9)
+#define MEMF_KICK          (1L<<10)
+#define MEMF_31BIT         (1L<<12) /* Low address space (<2GB). Effective only on 64 bit machines. */
+#define MEMF_CLEAR         (1L<<16) /* Explicitly clear memory after allocation */
+#define MEMF_LARGEST       (1L<<17)
+#define MEMF_REVERSE       (1L<<18)
+#define MEMF_TOTAL         (1L<<19)
+#define MEMF_HWALIGNED     (1L<<20) /* For AllocMem() - align address and size to physical page boundary */
+#define MEMF_SEM_PROTECTED (1L<<20) /* For CreatePool() - add semaphore protection to the pool */
+#define MEMF_NO_EXPUNGE    (1L<<31)
 
-/* New in AROS/MorphOS. Flag for CreatePool to get automatic
-   semaphore protection */
-#define MEMF_SEM_PROTECTED (1L << 20)
+/*
+ * Mask for flags that describe physical properties of the memory.
+ * MEMF_31BIT is effective only on 64-bit machines.
+ * This is actually AROS internal definition, it may change. Do not rely on it.
+ */
+#if (__WORDSIZE == 64)
+#define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA|MEMF_KICK|MEMF_31BIT)
+#else
+#define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA|MEMF_KICK)
+#endif
 
 struct MemHandlerData
 {

@@ -13,47 +13,6 @@
 #include <exec/memory.h>
 #include <stddef.h>
 
-#define RTPOTx4(a)      ((a)>2?4:(a)>1?2:1)
-
-#define RTPOTx10(a)     ((a)>=4?RTPOTx4(((a)+3)/4)*4:RTPOTx4(a))
-
-#define RTPOTx100(a)    \
-((a)>=0x10?RTPOTx10(((a)+0xf)/0x10)*0x10:RTPOTx10(a))
-
-#define RTPOTx10000(a)  \
-((a)>=0x100?RTPOTx100(((a)+0xff)/0x100)*0x100:RTPOTx100(a))
-
-#define RTPOTx100000000(a)      \
-((a)>=0x10000?RTPOTx10000(((a)+0xffff)/0x10000)*0x10000:RTPOTx10000(a))
-
-#define ROUNDUP_TO_POWER_OF_TWO(a)      RTPOTx100(a)
-
-/* Some defines for the memory handling functions. */
-
-/* This is for the alignment of memchunk structures. */
-#define MEMCHUNK_TOTAL	\
-ROUNDUP_TO_POWER_OF_TWO(AROS_WORSTALIGN>sizeof(struct MemChunk)? \
-AROS_WORSTALIGN:sizeof(struct MemChunk))
-
-/* This allows to take the end of the MemHeader as the first MemChunk. */
-#define MEMHEADER_TOTAL \
-((sizeof(struct MemHeader)+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1))
-
-/*
- * Mask for flags that describe physical properties of the memory
- * MEMF_31BIT is effective only on 64-bit machines. On 32-bit architectures
- * it will be ignored.
- * This is done for backwards compatibility on 32-bit machines, however
- * this flag perhaps still can be useful there for managing PCI DMA memory.
- * In this case it should have meaning on 32-bit machines too.
- *	Pavel Fedin <pavel_fedin@mail.ru>
- */
-#if (__WORDSIZE == 64)
-#define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA|MEMF_31BIT)
-#else
-#define MEMF_PHYSICAL_MASK (MEMF_PUBLIC|MEMF_CHIP|MEMF_FAST|MEMF_LOCAL|MEMF_24BITDMA)
-#endif
-
 /*
  * EXPERIMENTAL: use semaphore protection instead of Forbid()/Permit() for
  * system memory allocation routines.

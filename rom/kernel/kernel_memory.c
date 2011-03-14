@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common memory utility functions
@@ -12,8 +12,6 @@
 #include <proto/exec.h>
 
 #include <kernel_base.h>
-
-#include "../exec/memory.h"	/* needed for MEMHEADER_TOTAL */
 
 /*
  * Create MemHeader structure for the specified RAM region.
