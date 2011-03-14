@@ -17,12 +17,6 @@
 #include "kernel_romtags.h"
 #include "kernel_mingw32.h"
 
-/*
- * External early init function from exec.library
- * TODO: find some way to discover it dynamically
- */
-extern struct ExecBase *PrepareExecBase(struct MemHeader *, struct TagItem *);
-
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
@@ -144,18 +138,20 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     mh = (struct MemHeader *)mmap->addr;
     krnCreateMemHeader("Normal RAM", -5, mh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
 
-    D(mykprintf("[Kernel] calling PrepareExecBase(), mh_First = 0x%p, args = %s\n", mh->mh_First, args));
     /*
-     * FIXME: This routine is part of exec.library, however it doesn't have an LVO
-     * (it can't have one because exec.library is not initialized yet) and is called
-     * only from here. Probably the code should be reorganized and this routine needs
-     * to be moved to kernel.resource
+     * TODO: this needs to be replaced by SysBase address validation.
+     * After this we can support reset-proof KickTags and capture vectors.
      */
     SysBase = NULL;
-    PrepareExecBase(mh, msg);
-    D(mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
-    SysBase->ResModules = krnRomTagScanner(mh, ranges);
+    D(mykprintf("[Kernel] calling krnPrepareExecBase(), mh_First = 0x%p, msg = 0x%p\n", mh->mh_First, msg));
+    if (!krnPrepareExecBase(ranges, mh, msg))
+    {
+	mykprintf("[Kernel] Failed to create ExecBase!\n");
+	return -1;
+    }
+
+    D(mykprintf("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections

@@ -6,7 +6,7 @@
 */
 
 #include <aros/debug.h>
-#include <exec/types.h>
+#include <exec/execbase.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <exec/memory.h>
@@ -207,15 +207,36 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     return RomTag;
 }
 
-INITFUNC *findExecInit(struct Resident **resList)
+/* This is PrepareExecBase() calling convention */
+typedef struct ExecBase *(INITFUNC)(struct MemHeader *, struct TagItem *);
+
+struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struct TagItem *bootMsg)
 {
     ULONG i;
+    struct Resident **resList = krnRomTagScanner(mh, ranges);
 
     for (i = 0; resList[i]; i++)
     {
-    	/* Locate exec.library and return early init routine pointer encoded in its extensions taglist */
-    	if ((!strcmp(resList[i]->rt_Name, "exec.library")) && (resList[i]->rt_Flags & RTF_EXTENDED))
-    	    return (INITFUNC *)LibGetTagData(RTT_STARTUP, 0, resList[i]->rt_Tags);
+    	/* Locate exec.library */
+    	if (!strcmp(resList[i]->rt_Name, "exec.library"))
+	{
+	    struct ExecBase *sysBase = NULL;
+
+	    /* Obtain early init routine pointer encoded in its extensions taglist */
+	    if (resList[i]->rt_Flags & RTF_EXTENDED)
+	    {
+		INITFUNC *execBoot = (INITFUNC *)LibGetTagData(RTT_STARTUP, 0, resList[i]->rt_Tags);
+
+		if (!execBoot)
+		    return NULL;
+
+		sysBase = execBoot(mh, bootMsg);
+		if (sysBase)
+		    sysBase->ResModules = resList;
+	    }
+
+	    return sysBase;
+	}
     }
 
     return NULL;
