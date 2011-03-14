@@ -56,31 +56,23 @@
 {
     AROS_LIBFUNC_INIT
 
-    IPTR origSize = byteSize;
     APTR ret = NULL;
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
 	return NULL;
 
-    /* Make room for mungwall if needed */
-    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
-    {
-    	location -= MUNGWALL_BLOCK_SHIFT;
-        byteSize += MUNGWALL_TOTAL_SIZE;
-    }
-
     ret = nommu_AllocAbs(location, byteSize, SysBase);
 
     D(bug("[AllocAbs] Location: requested 0x%p, actual 0x%p\n", location, ret));
-    D(bug("[AllocAbs] Length: requested %u, actual %u\n", origSize, origSize + location - ret));
+    D(bug("[AllocAbs] Length: requested %u, actual %u\n", byteSize,
+        byteSize + location - ret));
     /*
      * Starting address may have been adjusted, in this case 'ret' will
      * differ from 'location', and allocation length was in fact increased
      * by this difference.
      */
-    return MungWall_Build(ret, NULL, origSize + location - ret, MEMF_CLEAR,
-        SysBase);
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* AllocAbs */
