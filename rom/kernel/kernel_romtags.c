@@ -43,6 +43,27 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 }
 
 /*
+ * Our own, very simplified down memory allocator.
+ * We use it because we should avoid to statically link in functions from other modules.
+ * Currently the only linked in function is PrepareExecBase() and at some point it will
+ * change. It will be possible to completely separate exec.library and kernel.resource,
+ * and load them separately from the bootstrap.
+ *
+ * It is okay to use this routine because this is one of the first allocations (actually
+ * should be the first one) and it is never going to be freed.
+ * Additionally, in order to be able to discover exec.library (and its early init function)
+ * dynamically, we want krnRomTagScanner() to work before ExecBase is created.
+ */
+static inline void krnAllocBootMem(struct MemHeader *mh, ULONG size)
+{
+    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+
+    mh->mh_First          = (struct MemChunk *)((APTR)mh->mh_First + size);
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
+}
+
+/*
  * RomTag scanner.
  *
  * This function scans kernel for existing Resident modules. If two modules
@@ -59,7 +80,6 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
  * The array ranges gives a [ start, end ] pair to scan, with an entry of
  * -1 used to break the loop.
  */
-#define MAX_ROMTAGS	256
 
 APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 {
@@ -68,18 +88,19 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     struct Resident *res;               /* module found */
     ULONG	    i;
     BOOL	    sorted;
-    struct Resident **RomTag;
-    APTR	tmp;
-    ULONG	num = 0;
-
-    /* Look for a chunk that can hold at least MAX_ROMTAGS entries.
+    /* 
+     * We take the beginning of free memory from our boot MemHeader
+     * and construct resident list there.
+     * When we are done we know list length, so we can seal the used
+     * memory by allocating it from the MemHeader.
+     * This is 100% safe because we are here long before multitasking
+     * is started up.
      */
-    RomTag = stdAlloc(mh, MAX_ROMTAGS * sizeof(struct Resident *), MEMF_ANY, NULL);
-    if (RomTag == NULL)
-    	return NULL;
+    struct Resident **RomTag = (struct Resident **)mh->mh_First;
+    ULONG	    num = 0;
 
     /* Look in whole kickstart for resident modules */
-    while ((*ranges != (UWORD *)~0) && (num < MAX_ROMTAGS))
+    while (*ranges != (UWORD *)~0)
     {
 	ptr = *ranges++;
 	end = *ranges++;
@@ -135,17 +156,8 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     /* Terminate the list */
     RomTag[num] = NULL;
 
-    /* Try to reduce our memory usage to exactly what we need. */
-    tmp = stdAlloc(mh, (num + 1) * sizeof(struct Resident *), MEMF_ANY, NULL);
-    if (tmp == NULL) {
-    	/* We're going to hope that we'll get some more memory soon,
-    	 * once Exec processes some of these RomTags...
-    	 */
-    } else {
-	memcpy(tmp, RomTag, (num + 1) * sizeof(struct Resident *));
-	stdDealloc(mh, RomTag, MAX_ROMTAGS * sizeof(struct Resident *), NULL);
-	RomTag = tmp;
-    }
+    /* Seal our used memory as allocated */
+    krnAllocBootMem(mh, (num + 1) * sizeof(struct Resident *));
 
     /*
      * By now we have valid list of kickstart resident modules.
