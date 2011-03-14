@@ -42,15 +42,6 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
     return -1;
 }
 
-static inline void krnAllocBootMem(struct MemHeader *mh, ULONG size)
-{
-    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
-
-    mh->mh_First          = (struct MemChunk *)((APTR)mh->mh_First + size);
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_Free           = mh->mh_First->mc_Bytes = mh->mh_Free - size;
-}
-
 /*
  * RomTag scanner.
  *
@@ -68,6 +59,7 @@ static inline void krnAllocBootMem(struct MemHeader *mh, ULONG size)
  * The array ranges gives a [ start, end ] pair to scan, with an entry of
  * -1 used to break the loop.
  */
+#define MAX_ROMTAGS	256
 
 APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 {
@@ -76,19 +68,18 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     struct Resident *res;               /* module found */
     ULONG	    i;
     BOOL	    sorted;
-    /* 
-     * We take the beginning of free memory from our boot MemHeader
-     * and construct resident list there.
-     * When we are done we know list length, so we can seal the used
-     * memory by allocating it from the MemHeader.
-     * This is 100% safe because we are here long before multitasking
-     * is started up.
+    struct Resident **RomTag;
+    APTR	tmp;
+    ULONG	num = 0;
+
+    /* Look for a chunk that can hold at least MAX_ROMTAGS entries.
      */
-    struct Resident **RomTag = (struct Resident **)mh->mh_First;
-    ULONG	    num = 0;
+    RomTag = stdAlloc(mh, MAX_ROMTAGS * sizeof(struct Resident *), MEMF_ANY, NULL);
+    if (RomTag == NULL)
+    	return NULL;
 
     /* Look in whole kickstart for resident modules */
-    while (*ranges != (UWORD *)~0)
+    while ((*ranges != (UWORD *)~0) && (num < MAX_ROMTAGS))
     {
 	ptr = *ranges++;
 	end = *ranges++;
@@ -144,8 +135,17 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     /* Terminate the list */
     RomTag[num] = NULL;
 
-    /* Seal our used memory as allocated */
-    krnAllocBootMem(mh, (num + 1) * sizeof(struct Resident *));
+    /* Try to reduce our memory usage to exactly what we need. */
+    tmp = stdAlloc(mh, (num + 1) * sizeof(struct Resident *), MEMF_ANY, NULL);
+    if (tmp == NULL) {
+    	/* We're going to hope that we'll get some more memory soon,
+    	 * once Exec processes some of these RomTags...
+    	 */
+    } else {
+	memcpy(tmp, RomTag, (num + 1) * sizeof(struct Resident *));
+	stdDealloc(mh, RomTag, MAX_ROMTAGS * sizeof(struct Resident *), NULL);
+	RomTag = tmp;
+    }
 
     /*
      * By now we have valid list of kickstart resident modules.
