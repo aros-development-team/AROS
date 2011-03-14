@@ -331,15 +331,6 @@ static void reboot(void)
     );
 }
 
-AROS_UFH2(void, putser,
-	AROS_UFHA(UBYTE, chr,       D0),
-	AROS_UFHA(APTR , PutChData, A3))
-{
-    AROS_USERFUNC_INIT
-    RawPutChar(chr);
-    AROS_USERFUNC_EXIT
-}
-    
 APTR entry;
 
 static void supercode(void)
@@ -363,6 +354,11 @@ static void supercode(void)
     sysbase = (struct ExecBase*)fakesys; 
 
     memset(sysbase, 0, FAKEBASESIZE);
+
+    /* Detached node */
+    sysbase->LibNode.lib_Node.ln_Pred = &sysbase->LibNode.lib_Node;
+    sysbase->LibNode.lib_Node.ln_Succ = &sysbase->LibNode.lib_Node;
+
     sysbase->ColdCapture = coldcapture;
     sysbase->MaxLocMem = 512 * 1024;
     sysbase->ChkBase =~(IPTR)sysbase;
@@ -371,10 +367,6 @@ static void supercode(void)
     sysbase->KickMemPtr = (APTR)mlist.mlh_Head;
     sysbase->KickTagPtr = (APTR)SysBase->KickTagPtr;
     sysbase->KickCheckSum = (APTR)mySumKickData(sysbase);
-
-//  These would override disabled state and cause issues
-//    RawDoFmt("KickMemPtr 0x%lx\n", &sysbase->KickMemPtr, putser, NULL);
-//    RawDoFmt("Ready to go!\nColdCapture is 0x%lx\n", &sysbase->ColdCapture, putser, NULL);
 
     traps[1] = (IPTR)sysbase;
     // TODO: add custom cacheclear, can't call CacheClearU() because it may not work
