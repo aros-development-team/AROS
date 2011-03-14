@@ -23,6 +23,6 @@ INCLUDE ../../../bin/amiga-m68k/gen/rom_objs.ld
   /* This should cause angry complaints if .data exists
    * We don't want .data, and we don't need it.
    */
-  .data                       : { *(.data)             }
+  .data                       : { *(.data)             } >invalid
 
 }
