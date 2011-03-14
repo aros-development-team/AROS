@@ -24,11 +24,6 @@
     RESULT
 
     NOTES
-	This function is special, because we need to call it
-	from ROM code before the stack is set up.
-	
-	If %sp > 0xe000000, then we return via
-	the value in %sp, not (%sp)+.
 
     EXAMPLE
 
@@ -49,12 +44,11 @@ AROS_SLIB_ENTRY(ReadGayle,Exec):
 	/* A3000 Fat Gary/RAMSEY registers are supposed to be supervisor-only
 	 * Common chip revisions don't care but later (rare) revisions might do it */
 
-	sub.l	%a1,%a1 /* a1 zero = initial rom call, must not use stack */
-	cmp.l	#_rom_end,%sp
-	bcc.s   3f
-	cmp.l   #_rom_start,%sp
-	bge.s   2f
-3:	addq.w	#1,%a1 /* a1 = non-zero = normal, can use stack */
+	/* If A6 is 0, this is the initial ROM call, and
+	 * we are already in supervisor mode.
+	 */
+	cmp.l	#0,%a6
+	beq.s   2f
 	move.l	%a5,%sp@-
 	lea		%pc@(2f),%a5
 	jsr		Supervisor(%a6)
@@ -100,7 +94,7 @@ AROS_SLIB_ENTRY(ReadGayle,Exec):
 	bne.s   1f
 	clr.b   %d0
 1:
-	move.l	%a1,%d1
+	cmp.l	#0,%a6
 	beq.s	2f
 	rte
-2:	jmp     (%sp)
+2:	rts
