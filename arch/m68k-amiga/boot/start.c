@@ -413,7 +413,6 @@ static LONG doInitCode(ULONG startClass, ULONG version)
 	    Supervisor(SuperstackSwap);
 	} while(0);
 
-	InitKickTags();
 	InitCode(startClass, version);
 
 	return 0;
@@ -711,6 +710,11 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	/* Ok, let's start the system */
 	DEBUGPUTS(("[start] InitCode(RTF_SINGLETASK, 0)\n"));
 	InitCode(RTF_SINGLETASK, 0);
+
+	/* Before we allocate anything else, try to 
+	 * initialize the Kick Data
+	 */
+	InitKickTags();
 
 	/* Autoconfig ram expansions are now configured */
 	if (!wasvalid && IsSysBaseValid(oldSysBase)) {
