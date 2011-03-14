@@ -683,11 +683,6 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 		Enqueue(&SysBase->MemList, &mh->mh_Node);
 	}
 
-	/* Allocate all KickMemPtr memories */
-	if (SumKickData() == (IPTR)SysBase->KickCheckSum) {
-	    allockickmem(SysBase->KickMemPtr);
-	}
-
 	oldmem = AvailMem(MEMF_FAST);
 
 	/* Ok, let's start the system */
