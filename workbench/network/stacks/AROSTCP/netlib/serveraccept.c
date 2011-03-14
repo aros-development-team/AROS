@@ -76,9 +76,9 @@ long
 serveraccept(char *pname, struct sockaddr_in *ha)
 {
   struct sockaddr_in sin; 
-  long ha_len = sizeof(*ha);
+  socklen_t ha_len = sizeof(*ha);
   int s, sa;
-  long port;
+  LONG port;
   struct servent *sp;
   long on = 1;
 
