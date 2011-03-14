@@ -91,12 +91,8 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     struct TagItem *tag;
     const struct TagItem *tstate = msg;
     struct HostInterface *hif = NULL;
-    UWORD *klo = NULL;
-    UWORD *khi = NULL;
     struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
-    APTR reslist;
-    INITFUNC *execBoot;
 
     /* This bails out if the user started us from within AROS command line, as common executable */
     if (magic != AROS_BOOT_MAGIC)
@@ -107,11 +103,11 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	switch (tag->ti_Tag)
 	{
 	case KRN_KernelLowest:
-	    klo = (UWORD *)tag->ti_Data;
+	    ranges[0] = (UWORD *)tag->ti_Data;
 	    break;
 
 	case KRN_KernelHighest:
-	    khi = (UWORD *)tag->ti_Data;
+	    ranges[1] = (UWORD *)tag->ti_Data;
 	    break;
 
 	case KRN_MMAPAddress:
@@ -138,7 +134,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     D(bug("[Kernel] Starting up...\n"));
 
-    if ((!klo) || (!khi) || (!mmap)) {
+    if ((!ranges[0]) || (!ranges[1]) || (!mmap)) {
 	bug("[Kernel] Not enough parameters from bootstrap!\n");
 	return -1;
     }
@@ -183,37 +179,23 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     bug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len);
     krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
 
-    /*
-     * Look for ROMTags.
-     * We do it before calling PrepareExecBase() because this routine is able to locate
-     * exec.library. Then we may have some way to figure out address of PrepareExecBase()
-     * dynamically. This will let us to completely separate kernel.resource from exec.library.
-     */
-    ranges[0] = klo;
-    ranges[1] = khi;
-    reslist = krnRomTagScanner(bootmh, ranges);
+    SysBase = NULL;	/* TODO: check SysBase validity here when warm reboot is implemented */
 
-    /* Locate exec.library early init routine */
-    execBoot = findExecInit(reslist);
-    if (!execBoot)
+    /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
+    D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
+    if (!krnPrepareExecBase(ranges, bootmh, msg)
     {
-    	bug("[Kernel] Unable to locate exec.library startup code!\n");
+    	bug("[Kernel] Unable to create ExecBase!\n");
     	return -1;
     }
 
-    /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
-    D(bug("[Kernel] calling PrepareExecBase() at 0x%p, mh_First = %p\n", execBoot, bootmh->mh_First));
-    SysBase = NULL;	/* TODO: check SysBase validity here when warm reboot is implemented */
-    execBoot(bootmh, msg);
-
     D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
-    SysBase->ResModules = reslist;
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
      */
-    krnCreateROMHeader(bootmh, "Kickstart ROM", klo, khi);
+    krnCreateROMHeader(bootmh, "Kickstart ROM", ranges[0], ranges[1]);
 
     /* Stack memory header. This special memory header covers a little part of the programs
      * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
