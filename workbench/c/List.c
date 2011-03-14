@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     List the contents of a directory.
@@ -456,7 +456,7 @@ int printFileData(struct AnchorPath *ap,
     STRPTR  	       filenote = ap->ap_Info.fib_Comment;
     LONG    	       diskKey = ap->ap_Info.fib_DiskKey;
     
-    int error = RETURN_OK;
+    int error = 0;
 
     UBYTE date[LEN_DATSTRING];
     UBYTE time[LEN_DATSTRING];
@@ -653,7 +653,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
     ULONG  files = 0;
     ULONG  dirs = 0;
     ULONG  nBlocks = 0;
-    ULONG  error;
+    LONG  error;
 
     NewList(&DirList);
     NewList(&FreeDirNodeList);
@@ -664,14 +664,14 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 
 	if (ap == NULL)
 	{
-	    return RETURN_ERROR;
+	    return 0;
 	}
 
 	ap->ap_Strlen = MAX_PATH_LEN;
 
 	error = MatchFirst(filename, ap);
 
-	/* Explicitely named directory and not a pattern? --> enter dir */
+	/* Explicitly named directory and not a pattern? --> enter dir */
 
 	if (0 == error)
 	{
@@ -714,7 +714,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 
 			if (!first) printSummary(filename, files, dirs, nBlocks, noHead, TRUE);
 
-			/* Update global statistics for (possiblr) ALL option */
+			/* Update global statistics for (possible) ALL option */
 			stats->nFiles += files;
 			stats->nDirs += dirs;
 			stats->nBlocks += nBlocks;
@@ -798,7 +798,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 	    printSummary(filename, files, dirs, nBlocks, noHead, printEmpty);
 	}
 
-	/* Update global statistics for (possiblr) ALL option */
+	/* Update global statistics for (possible) ALL option */
 	stats->nFiles += files;
 	stats->nDirs += dirs;
 	stats->nBlocks += nBlocks;
@@ -860,7 +860,8 @@ int main(void)
     static CONST_STRPTR default_directories[] = {(CONST_STRPTR)"", 0};
     struct RDArgs *rda;		       
 
-    LONG     error = RETURN_OK;
+    LONG     result = RETURN_OK;
+    LONG     error = 0;
     STRPTR   parsedPattern = NULL;
     STRPTR   subpatternStr = NULL;
     BPTR     oldOutput = BNULL;
@@ -1021,7 +1022,7 @@ int main(void)
 			     upto != NULL, subpatternStr, all, keys,
 			     &stats);
 
-	    if (error != RETURN_OK)
+	    if (error != 0)
 	    {
 		break;
 	    }
@@ -1033,7 +1034,7 @@ int main(void)
     } 
     else
     {
-	error = IoErr();;
+	error = IoErr();
     }
 
     if ((BOOL)args[ARG_NOHEAD] == FALSE &&
@@ -1046,16 +1047,16 @@ int main(void)
     }
 
 
-    if (error != RETURN_OK)
+    if (error != 0)
     {
 	if (error == ERROR_BREAK)
 	{
-	    error = RETURN_WARN;
+	    result = RETURN_WARN;
 	}
 	else
 	{
 	    PrintFault(error, "List");
-	    error = RETURN_FAIL;
+	    result = RETURN_FAIL;
 	}
     }
     
@@ -1074,5 +1075,5 @@ int main(void)
 	Close(SelectOutput(oldOutput));
     }
     
-    return error;
+    return result;
 }
