@@ -5,14 +5,14 @@ FILES=m68k_exception kernel_cpu kernel_gdb
 
 AFILES=issuper fpusavecontext fpurestorecontext
 
-USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-arch/kernel \
-               -I$(SRCDIR)/arch/$(CPU)-all/kernel \
+USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
+	       -I$(SRCDIR)/arch/$(CPU)-all/kernel \
 	       -I$(SRCDIR)/rom/kernel \
 	       -I$(GENINCDIR) -I$(BINDIR)/Development/include \
 	       -I$(SRCDIR)/rom/exec \
 	       $(PARANOIA_CFLAGS) -DPARANOIA_STACK
 
-USER_AFLAGS := -I$(SRCDIR)/arch/$(CPU)-arch/kernel \
+USER_AFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
                -I$(SRCDIR)/arch/$(CPU)-all/kernel \
 	       -I$(SRCDIR)/rom/kernel \
 	       -I$(GENINCDIR) -I$(BINDIR)/Development/include \
