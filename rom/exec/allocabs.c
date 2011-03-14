@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory at address
@@ -79,7 +79,8 @@
      * differ from 'location', and allocation length was in fact increased
      * by this difference.
      */
-    return MungWall_Build(ret, NULL, origSize + location - ret, 0, SysBase);
+    return MungWall_Build(ret, NULL, origSize + location - ret, MEMF_CLEAR,
+        SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* AllocAbs */
