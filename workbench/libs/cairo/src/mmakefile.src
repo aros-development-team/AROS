@@ -92,7 +92,7 @@ FILES := \
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../aros -I$(GENINCDIR)/pixman-1
 USER_CFLAGS := -DHAVE_CONFIG_H -DCAIRO_NO_MUTEX
 
-#MM workbench-libs-cairo-includes : includes-copy
+#MM workbench-libs-cairo-includes : workbench-libs-pixman-includes includes-copy
 
 #MM workbench-libs-cairo : linklibs workbench-libs-pixman
 

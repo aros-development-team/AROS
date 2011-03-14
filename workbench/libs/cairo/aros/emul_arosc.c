@@ -1,5 +1,5 @@
 /*
-    Copyright 2009, The AROS Development Team. All rights reserved.
+    Copyright 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,6 +17,9 @@
 #include <math.h>
 #include <ctype.h>
 #include <limits.h>
+#include <locale.h>
+#include <time.h>
+
 
 /* 
     The purpose of this file is to provide implementation for C functions which 
@@ -239,6 +242,12 @@ int fgetc (FILE * stream)
     return EOF;
 }
 
+int feof (FILE * stream)
+{
+    IMPLEMENT();;
+    return TRUE;
+}
+
 size_t fwrite (const void * restrict buf, size_t size, size_t nblocks, FILE * restrict stream)
 {
     ULONG i;
@@ -425,7 +434,19 @@ int fscanf (FILE * fh,const char * format, ...)
     IMPLEMENT();
     return 0;
 }
-	
+
+struct lconv *localeconv()
+{
+    IMPLEMENT();
+    return NULL;
+}
+
+struct tm *gmtime(const time_t * tt)
+{
+    IMPLEMENT();
+    return NULL;
+}
+
 int __init_emul(void)
 {
     /* malloc/calloc/realloc/free */
