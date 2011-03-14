@@ -512,6 +512,18 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
     return mh;
 }
 
+static void allockickmem(struct MemList *ml)
+{
+    for (; ml ; ml = (struct MemList *)ml->ml_Node.ln_Succ) {
+    	int i;
+    	for (i = 0; i < ml->ml_NumEntries; i++) {
+    	    DEBUGPUTHEX(("KickMem @", (IPTR)ml->ml_ME[i].me_Addr));
+    	    DEBUGPUTHEX(("KickMem ~", ml->ml_ME[i].me_Length));
+    	    AllocAbs(ml->ml_ME[i].me_Length, ml->ml_ME[i].me_Addr);
+    	}
+    }
+}
+
 void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	volatile APTR *trap;
@@ -691,6 +703,11 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	for (i = 2; membanks[i + 1]; i += 2) {
 		mh = addmemoryregion(membanks[i], membanks[i + 1]);
 		Enqueue(&SysBase->MemList, &mh->mh_Node);
+	}
+
+	/* Allocate all KickMemPtr memories */
+	if (SumKickData() == (IPTR)SysBase->KickCheckSum) {
+	    allockickmem(SysBase->KickMemPtr);
 	}
 
 	oldmem = AvailMem(MEMF_FAST);
