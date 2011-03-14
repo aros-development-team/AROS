@@ -39,24 +39,26 @@ rom_init:
 	jmp	%a0@(2)
 0:
 
-	/* reserve space for memory region array */
-	lea		_bss,%a4
-	sub.w	#64,%a4
-	move.l	%a4,%a5
-	/* temp supervisor stack */
-	move.l	%a4,%a0
-	move.l	%a0,%sp
-	sub.w	#0x400,%a0
+	/* temp system stack */
+	move.l	#0x1000,%a5	/* Safe, but tiny, 'trap' stack */
+	move.l	%a5,%sp
 	/* temp user stack */
-	move.l	%a0,%usp
+	sub.w	#0x100,%a5
+	move.l	%a5,%usp
 
 	/* Do we have a Gayle? */
 	sub.l	%a6,%a6
 	jsr		Exec_ReadGayle
 1:	move.l  %d0,%d6         /* Save for later - %d6 is Gayle ID */
 
-	/* check non-autoconfig memory areas
-	 * in order of fastest to slowest */	
+	move.w	#0,%sr		/* Go to user mode */
+
+	/* Memory region array is put into the
+	 * system stack from the bottom up, so
+	 * we check the non-autoconfig memory areas
+	 * in order of fastest to slowest, going
+	 * up the system stack in A5.
+	 */
 
 	/* cpu slot ram (A3000/A4000) */
 	move.l	#0x08000000,%a0
@@ -103,20 +105,21 @@ rom_init:
 	move.l	#0x00200000,%a1
 	move.l	#0x00040000,%d0
 	bsr		.L_memtest
-	beq.s	chipfault
-	/* adjust bss */
-	move.l	#_bss_end,%a5@(-8)
-	sub.l	#_bss_end,%a5@(-4)
+	beq	chipfault
+	/* adjust to skip the first 4k for trap
+	 */
+	move.l	#0x1000,%a5@(-8)
+	sub.l	#0x1000,%a5@(-4)
 
 	/* end of memory region list */
 	clr.l	%a5@+
 	clr.l	%a5@
 
-	move.w	#0,%sr		/* Go to user mode */
-
+	move.l	%sp,%a5
+	lea.l	%sp@(-0x700),%a0
 	move.l	%sp,%sp@-
-	move.l	#_bss,%sp@-
-	move.l	%a4,%sp@-	/* memory bank array */
+	move.l	%a0,%sp@-
+	move.l	%a5,%sp@-	/* memory bank array */
 	jsr		exec_boot
 
 chipfault:
@@ -128,10 +131,8 @@ looping:
 	.globl MemoryTest
 MemoryTest:
 	movem.l	%d2-%d5/%a2-%a3/%a5,%sp@-
-	subq.l	#8,%sp
-	move.l	%sp,%a5
+	lea.l	%sp@(8),%a5
 	bsr.s	.L_memtest
-	addq.l	#8,%sp
 	movem.l	%sp@+,%d2-%d5/%a2-%a3/%a5
 	rts
 
