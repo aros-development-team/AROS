@@ -531,6 +531,9 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	struct MemHeader *mh;
 	ULONG LastAlert[4] = { 0, 0, 0, 0};
 	ULONG oldmem;
+	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
+	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
+	struct ExecBase *fakebase = NULL;
 	/* We can't use the global 'SysBase' symbol, since
 	 * the compiler does not know that PrepareExecBase
 	 * may change it out from under us.
@@ -561,13 +564,17 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    wasvalid = IsSysBaseValidNoVersion(oldSysBase);
 	    if (wasvalid) {
 	    	DEBUGPUTHEX(("[SysBase] fakebase at", (ULONG)oldSysBase));
+	    	/* Save reset proof vectors */
+		ColdCapture  = oldSysBase->ColdCapture;
+	    	CoolCapture  = oldSysBase->CoolCapture;
+	    	WarmCapture  = oldSysBase->WarmCapture;
+	    	KickMemPtr   = oldSysBase->KickMemPtr; 
+	    	KickTagPtr   = oldSysBase->KickTagPtr;
+	    	KickCheckSum = oldSysBase->KickCheckSum;
+	    	fakebase = oldSysBase;
 	    } else {
 	    	DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)oldSysBase));
 	    }
-	}
-
-	if (!wasvalid) {
-	    (*(APTR *)4) = NULL;
 	}
 
 	for (i = 0; membanks[i + 1]; i += 2) {
@@ -621,7 +628,15 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	/* From here on, we can reference SysBase */
 #undef SysBase
 	DEBUGPUTHEX(("[new  SysBase]", (ULONG)SysBase));
-
+	if (fakebase) {
+	    SysBase->ColdCapture = ColdCapture;
+	    SysBase->CoolCapture = CoolCapture;
+	    SysBase->WarmCapture = WarmCapture;
+	    SysBase->KickMemPtr = KickMemPtr;
+	    SysBase->KickTagPtr = KickTagPtr;
+	    SysBase->KickCheckSum = KickCheckSum;
+	    SetSysBaseChkSum();
+	}
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
         SysBase->SysStkLower    = (APTR)ss_stack_lower;
 
@@ -690,7 +705,12 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	InitCode(RTF_SINGLETASK, 0);
 
 	/* Autoconfig ram expansions are now configured */
-	if ((AvailMem(MEMF_FAST) > (oldmem + 256 * 1024)) &&
+	if (!fakebase && !wasvalid && IsSysBaseValid(oldSysBase)) {
+	    /* Ah, old ExecBase was in fast RAM */
+	    DEBUGPUTHEX(("[Sysbase] now valid at", (ULONG)oldSysBase));
+	    SysBase = PrepareExecBaseMove(oldSysBase);
+	    /* FIXME: free SysBase we just allocated for nothing */
+	} else if ((AvailMem(MEMF_FAST) > (oldmem + 256 * 1024)) &&
 	    ((TypeOfMem(SysBase) & MEMF_CHIP) ||
 	     ((ULONG)SysBase >= 0x00a00000ul && (ULONG)SysBase < 0x01000000ul))) {
 	    /* Move execbase to real fast if available now */
