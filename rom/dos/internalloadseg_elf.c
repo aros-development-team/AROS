@@ -299,7 +299,9 @@ static int relocate
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
 
+#ifndef NO_SYSBASE_REMAP
     struct symbol *SysBase_sym = NULL;
+#endif
 
     for (i=0; i<numrel; i++, rel++)
     {
@@ -352,6 +354,9 @@ static int relocate
                 return 0;
 
             case SHN_ABS:
+            #ifdef NO_SYSBASE_REMAP
+		s = sym->value;
+	    #else
 	        if (SysBase_sym == NULL)
 		{
 		    if (strncmp((STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name, "SysBase", 8) == 0)
@@ -369,6 +374,7 @@ static int relocate
 		}
 		else
 		    SysBase_no:  s = sym->value;
+            #endif
                 break;
 
   	    default:
