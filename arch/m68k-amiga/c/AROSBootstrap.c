@@ -266,10 +266,10 @@ static void setcpu(void)
 	"beq.s	novbr\n"
 	"movec	%d0,%vbr\n"
 "novbr:	moveq	#1,%d0\n"
-	"beq.s	cpudone\n"
 	"movec	%d0,%cacr\n"
 	"btst	#3,%d1\n"
 	"beq.s	not040\n"
+	/* 68040/060 MMU */
 	"movec	%d0,%tc\n"
 	"movec	%d0,%dtt0\n"
 	"movec	%d0,%dtt1\n"
@@ -279,6 +279,7 @@ static void setcpu(void)
 	"bra.s	cpudone\n"
 "not040: btst	#2,%d1\n"
 	"beq.s	cpudone\n"
+	/* 68030 MMU */
 	"lea	zero(%pc),%a0\n"
 	".long	0xf0104000\n"
 	".long	0xf0100c00\n"
@@ -286,6 +287,38 @@ static void setcpu(void)
 	"bra.s cpudone\n"
 "zero:	.long	0,0\n"
 "cpudone:\n"
+    );
+}
+
+/* This is needed because KS clears ColdCapture before calling it
+ * causing checksum mismatch in AROS exec check
+ */
+void coldcapturecode(void)
+{
+    asm(
+	".long end - start\n"
+	"start:\n"
+	"move.w	#0x440,0xdff180\n"
+	"clr.l	0.w\n"
+	"lea	0x200,%a0\n"
+	"move.l	(%a0),0x7c.w\n" // restore NMI
+	"lea	12(%a0),%a0\n"
+	"move.l	%a0,4.w\n"
+	"lea	start(%pc),%a1\n"
+	"move.l	%a1,42(%a0)\n"  // ColdCapture
+	"move.l	%a0,%d0\n"
+	"not.l	%d0\n"
+	"move.l	%d0,38(%a0)\n" // ChkBase
+	"moveq	#0,%d1\n"
+	"lea	34(%a0),%a0\n"
+	"moveq	#24-1,%d0\n"
+	"chk1:	add.w (%a0)+,%d1\n"
+	"dbf	%d0,chk1\n"
+	"not.w	%d1\n"
+	"move.w	%d1,(%a0)\n" // ChkSum
+	"move.l	start-4(%pc),%a0\n"
+	"jmp	(%a0)\n"
+	"end:\n"
     );
 }
 
@@ -311,36 +344,41 @@ APTR entry;
 
 static void supercode(void)
 {
-    ULONG *fakesys;
+    ULONG *fakesys, *coldcapture, *coldcapturep;
     struct ExecBase *sysbase;
     ULONG *traps = 0;
+    ULONG len;
 
     setcpu();
     fakesys = (ULONG*)FAKEBASE;
+    coldcapture = (ULONG*)COLDCAPTURE;
+    coldcapture[-1] = (ULONG)entry;
+    coldcapturep = (ULONG*)coldcapturecode;
+    len = *coldcapturep++;
+    memcpy (coldcapture, coldcapturep, len);
 
     *fakesys++ = traps[31]; // Level 7
-    *fakesys++ = 0x4ef9 | ((IPTR)entry >> 16);
-    *fakesys++ = ((IPTR)entry << 16) | 0x4e75;
+    *fakesys++ = 0x4ef9 | (COLDCAPTURE >> 16);
+    *fakesys++ = (COLDCAPTURE << 16) | 0x4e75;
     sysbase = (struct ExecBase*)fakesys; 
-    traps[1] = (IPTR)sysbase;
 
     memset(sysbase, 0, FAKEBASESIZE);
-    sysbase->ColdCapture = entry;
+    sysbase->ColdCapture = coldcapture;
     sysbase->MaxLocMem = 512 * 1024;
-    sysbase->ChkBase=~(IPTR)sysbase;
-    sysbase->ChkSum = 0;
+    sysbase->ChkBase =~(IPTR)sysbase;
     sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
 
     sysbase->KickMemPtr = (APTR)mlist.mlh_Head;
     sysbase->KickTagPtr = (APTR)SysBase->KickTagPtr;
     sysbase->KickCheckSum = (APTR)mySumKickData(sysbase);
 
-    RawDoFmt("KickMemPtr 0x%lx\n", &sysbase->KickMemPtr, putser, NULL);
-    RawDoFmt("Ready to go!\nColdCapture is 0x%lx\n", &sysbase->ColdCapture, putser, NULL);
+//  These would override disabled state and cause issues
+//    RawDoFmt("KickMemPtr 0x%lx\n", &sysbase->KickMemPtr, putser, NULL);
+//    RawDoFmt("Ready to go!\nColdCapture is 0x%lx\n", &sysbase->ColdCapture, putser, NULL);
 
-    SysBase = (struct ExecBase*)sysbase;
-    CacheClearU();
-
+    traps[1] = (IPTR)sysbase;
+    // TODO: add custom cacheclear, can't call CacheClearU() because it may not work
+    // anymore and KS 1.x does not even have it
     reboot();
 }
 
