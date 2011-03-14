@@ -39,6 +39,7 @@
 
 static const UBYTE name[];
 static const UBYTE version[];
+static struct TagItem resTags[];
 extern const char LIBEND;
 AROS_UFP3S(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFPA(ULONG, dummy, D0),
@@ -50,17 +51,23 @@ const struct Resident Exec_resident =
     RTC_MATCHWORD,
     (struct Resident *)&Exec_resident,
     (APTR)&LIBEND,
-    RTF_SINGLETASK,
+    RTF_SINGLETASK | RTF_EXTENDED,
     VERSION_NUMBER,
     NT_LIBRARY,
     120,
     (STRPTR)name,
     (STRPTR)&version[6],
-    &GM_UNIQUENAME(init)
+    &GM_UNIQUENAME(init),
+    REVISION_NUMBER,
+    resTags
 };
 
 static const UBYTE name[] = MOD_NAME_STRING;
 static const UBYTE version[] = VERSION_STRING;
+static struct TagItem resTags[] = {
+    {RTT_STARTUP, PrepareExecBase},
+    {TAG_DONE   , 0              }
+};
 
 extern void debugmem(void);
 
