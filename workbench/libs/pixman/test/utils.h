@@ -65,8 +65,14 @@ image_endian_swap (pixman_image_t *img, int bpp);
 /* Allocate memory that is bounded by protected pages,
  * so that out-of-bounds access will cause segfaults
  */
+
+#if defined(HAVE_MPROTECT) && defined(HAVE_GETPAGESIZE) && defined(HAVE_SYS_MMAN_H)
 void *
 fence_malloc (int64_t len);
+#else
+void *
+fence_malloc (uint32_t len);
+#endif
 
 void
 fence_free (void *data);
