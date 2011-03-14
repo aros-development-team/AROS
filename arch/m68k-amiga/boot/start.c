@@ -449,6 +449,69 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
     return GetSysBaseChkSum(sysbase) == 0xffff;
 }
 
+/* Aside from adding chip RAM, this also protects the
+ * BSS if it is within Chip RAM.
+ */
+/*static*/ struct MemHeader *addchipram(IPTR chip_start, IPTR chip_len)
+{
+    struct MemHeader *mh;
+
+    IPTR chip_end = chip_start + chip_len;
+    IPTR bss_start = (IPTR)&_bss;
+    IPTR bss_end   = (((IPTR)&_bss_end) + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL-1);
+    IPTR bss_len   = bss_end - bss_start;
+
+    /* If the BSS in within chip ram, we need to protect it.
+     */
+    if ((chip_start == bss_start) && (chip_end > bss_end)) {
+
+    	/* Case 1: BSS starts at the same place as chip ram */
+    	mh = addmemoryregion(bss_end, chip_len - bss_len);
+
+    } else if ((chip_start < bss_start) && (chip_end == bss_end)) {
+
+    	/* Case 2: BSS abuts the end of the chip ram */
+    	mh = addmemoryregion(chip_start, bss_start - chip_start);
+
+    } else if ((chip_start < bss_start) && (chip_end > bss_end)) {
+    	/* Case 3: BSS wholly within the chip ram */
+    	if ((chip_start + MEMHEADER_TOTAL) > bss_start) {
+
+    	    /* Case 3.1: Not enough room for the memheader, Case 1 again */
+    	    mh = addmemoryregion(bss_end, chip_len - bss_len);
+
+    	} else if (chip_end < (bss_end + MEMCHUNK_TOTAL)) {
+
+    	    /* Case 3.2: Not enough room for the memchunk, Case 2 again */
+    	    mh = addmemoryregion(chip_start, bss_start - chip_start);
+
+    	} else {
+
+    	    mh = addmemoryregion(chip_start, chip_len);
+
+    	    /* Add the free chunk after the BSS */
+    	    mh->mh_First->mc_Next = (APTR)bss_end;
+
+    	    mh->mh_First->mc_Next->mc_Next = NULL;
+    	    mh->mh_First->mc_Next->mc_Bytes = chip_end-bss_end;
+
+    	    mh->mh_First->mc_Bytes -= (chip_end-bss_start);
+    	    mh->mh_Free -= bss_len;
+    	}
+    } else if ((bss_start < chip_end) && (chip_start <= bss_start) && (chip_end < bss_end)) {
+    	DEBUGPUTS(("BSS: Catastrophe! The BSS crossed a memheader!\n"));
+    	mh = NULL;
+    } else {
+    	/* The BSS wasn't in Chip RAM. This is fine, as this
+    	 * means it's in the KickMemList, and will be handled
+    	 * later by KickMemList processing.
+    	 */
+    	mh = addmemoryregion(chip_start, chip_len);
+    }
+
+    return mh;
+}
+
 void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	volatile APTR *trap;
@@ -559,7 +622,8 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 
 	Early_ScreenCode(CODE_RAM_CHECK);
 
-	mh = addmemoryregion(membanks[0], membanks[1]);
+	mh = addchipram(membanks[0], membanks[1]);
+
 	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
 	SysBase = romloader ? NULL : oldsysbase;
