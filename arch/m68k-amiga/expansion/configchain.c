@@ -48,14 +48,6 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 extern UBYTE _rom_start;
 extern UBYTE _ext_start;
 
-static ULONG checkramrom(UBYTE *addr, ULONG size, ULONG mask)
-{
-	/* check if our "rom" is loaded to ram */
-	if (addr < &_rom_start && addr + size > &_rom_start)
-		size = (&_rom_start - addr) & ~mask;
-	return size;
-}
-
 AROS_UFP3(ULONG, MemoryTest,
     AROS_UFPA(APTR, startaddr, A0),
     AROS_UFPA(APTR, endaddr, A1),
@@ -75,14 +67,11 @@ static ULONG autosize(struct ExpansionBase *ExpansionBase, struct ConfigDev *con
 		return 0x00010000 << (sizebits - 2);
 	if (sizebits >= 9)
 		return 0x00600000 + (0x200000 * (sizebits - 9));
-	maxsize = checkramrom(addr, maxsize, 0x7ffff);
-	if (!maxsize)
-		return 0;
 	size = AROS_UFC3(ULONG, MemoryTest,
 		AROS_UFCA(APTR, addr, A0),
 		AROS_UFCA(APTR, addr + maxsize, A1),
 		AROS_UFCA(ULONG, 0x80000, D0));
-	D(bug("size=%x maxsize=%x\n", size, maxsize));
+	D(bug("addr=%lx size=%lx maxsize=%lx\n", addr, size, maxsize));
 	return size;
 }
 
@@ -106,11 +95,8 @@ static void allocram(struct ExpansionBase *ExpansionBase)
 				size = autosize(ExpansionBase, configDev);
 			}
 			if (size && size <= configDev->cd_BoardSize) {
-				size = checkramrom(addr, size, 65535);
-				if (size) {
-				    D(bug("ram board at %08x, size %08x attr %08x\n", addr, size, attr));
-				    AddMemList(size, attr, pri, addr, "Fast Memory");
-				}
+				D(bug("ram board at %08x, size %08x attr %08x\n", addr, size, attr));
+				AddMemList(size, attr, pri, addr, "Fast Memory");
 			}
 			configDev->cd_Flags |= CDF_PROCESSED;
 		}
