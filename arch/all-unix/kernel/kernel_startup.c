@@ -183,7 +183,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
     D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
-    if (!krnPrepareExecBase(ranges, bootmh, msg)
+    if (!krnPrepareExecBase(ranges, bootmh, msg))
     {
     	bug("[Kernel] Unable to create ExecBase!\n");
     	return -1;
