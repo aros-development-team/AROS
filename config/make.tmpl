@@ -2214,6 +2214,48 @@ endif
 
 
 #------------------------------------------------------------------------------
+# This macro can aid in patch creation for fetched ports. It temporarily creates another
+# unpatched source tree and runs diff against this and a previously fetched and possibly
+# patched tree. Depending on what happens after patching during a normal build it might
+# give best results if the new patch is created directly after fetch.
+#
+# Arguments:
+#
+#     - mmake    = mmaketarget
+#     - archbase = archive base name
+#     - suffixes = a list of suffixes to append to the the package name plus the
+#                  version. Each one of them is tried until a matching archive is
+#                  found.
+#     - portdir  = the directory to unpack the archive to.
+#     - excludes = diff patterns to exclude files or directories from the patch
+
+%define create_patch mmake=/A archbase=/A suffixes="tar.bz2 tar.gz" portdir=/A excludes=
+
+.PHONY: %(mmake)
+
+ifneq (%(excludes),)
+    %(mmake)-exclude := -X ./exclude.patterns
+endif
+
+#MM
+%(mmake):
+	@$(FETCH) -a %(archbase) -s "%(suffixes)" -l $(PORTSSOURCEDIR) -d %(portdir)/tmp ; \
+	$(MV) %(portdir)/%(archbase) %(portdir)/tmp/%(archbase).aros ; \
+	cd %(portdir)/tmp ; \
+	$(FOR) f in %(excludes) ; do \
+	    $(ECHO) $$f >> ./exclude.patterns ; \
+	done ; \
+	diff -ruN $(%(mmake)-exclude) \
+	    %(archbase) \
+	    %(archbase).aros \
+	    >$(SRCDIR)/$(CURDIR)/%(archbase)-aros-new.diff ; \
+	$(MV) %(portdir)/tmp/%(archbase).aros %(portdir)/%(archbase) ; \
+	$(RM) %(portdir)/tmp
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Joins the features of %fetch and %build_with_configure, taking advantage of
 # the naming scheme of GNU packages. GNU packages names are in the form
 #
@@ -2302,21 +2344,10 @@ endif
     archive_origins=". %(package_repo)" \
     patches_specs="$(%(mmake)-%(subpackage)-patches_specs)" patches_origins="$(SRCDIR)/$(CURDIR) %(patch_repo)"
 
-#MM- %(mmake) : %(mmake)-%(subpackage)
+%create_patch mmake=%(mmake)-%(subpackage)-create-patch \
+    archbase=%(mmake)-%(subpackage)-archbase suffixes="%(suffixes)" portdir=%(mmake)-portdir
 
-# If you did some changes to the unpacked sources, call the target below
-# to easily create a new patch.
-#MM
-%(mmake)-%(subpackage)-create-patch :
-	@$(FETCH) -a $(%(mmake)-%(subpackage)-archbase) -s "%(suffixes)" -l $(PORTSSOURCEDIR) -d $(%(mmake)-portdir)/tmp ; \
-	mv $(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-archbase) $(%(mmake)-portdir)/tmp/$(%(mmake)-%(subpackage)-archbase).aros ; \
-	cd $(%(mmake)-portdir)/tmp ; \
-	diff -ruN \
-	    $(%(mmake)-%(subpackage)-archbase) \
-	    $(%(mmake)-%(subpackage)-archbase).aros \
-	    >$(SRCDIR)/$(CURDIR)/$(%(mmake)-%(subpackage)-archbase)-aros-new.diff ; \
-	mv $(%(mmake)-portdir)/tmp/$(%(mmake)-%(subpackage)-archbase).aros $(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-archbase) ; \
-	$(RM) $(%(mmake)-portdir)/tmp
+#MM- %(mmake) : %(mmake)-%(subpackage)
 
 %(mmake)-%(subpackage)-package-dir := $(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-archbase)
 
