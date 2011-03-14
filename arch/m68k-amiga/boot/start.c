@@ -37,6 +37,7 @@ extern void __clear_bss(const struct KernelBSS *bss);
 #define CODE_EXEC_CHECK	RGB( 1,  1, 1)
 #define CODE_ALLOC_FAIL	(RGB( 0, 12, 0) | AT_DeadEnd)
 #define CODE_TRAP_FAIL	(RGB(12, 12, 0) | AT_DeadEnd)
+#define CODE_EXEC_FAIL	(RGB( 0, 12,12) | AT_DeadEnd)
 
 void Early_ScreenCode(ULONG code)
 {
@@ -528,6 +529,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	volatile APTR *trap;
 	int i;
+	BOOL wasvalid;
 	UWORD *kickrom[8];
 	const struct KernelBSS kbss[2] = {
 		{
@@ -541,16 +543,14 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	struct MemHeader *mh;
 	ULONG LastAlert[4] = { 0, 0, 0, 0};
 	ULONG oldmem;
-	struct ExecBase *oldsysbase = SysBase;
-	BOOL invalidsysbase = FALSE;
-	ULONG rom_start = (ULONG)&_rom_start;
-	ULONG rom_end = (ULONG)&_ext_start + 0x80000;
-	ULONG romloader = 0;
-	ULONG *nmi;
+	/* We can't use the global 'SysBase' symbol, since
+	 * the compiler does not know that PrepareExecBase
+	 * may change it out from under us.
+	 */
+	struct ExecBase *oldSysBase = *(APTR *)4;
+#define SysBase CANNOT_USE_SYSBASE_SYMBOL_HERE
 
 	trap = (APTR *)(NULL);
-
-	nmi = trap[31]; /* save NMI vector */
 
 	/* Set all the exceptions to the Early_TrapHandler
 	 */
@@ -564,55 +564,39 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	DebugInit();
 	DEBUGPUTS(("[reset]\n"));
 
-
 	/* Zap out old SysBase if invalid */
-	if ((ULONG)SysBase >= 0x100 && (ULONG)SysBase < 0x400 && IsSysBaseValidNoVersion(SysBase)) {
-	    DEBUGPUTHEX(("[SysBase romloader] was at", (ULONG)SysBase));
-    	/* ram loader fake sysbase */
-    	romloader = (ULONG)SysBase;
-    	SysBase = NULL;
-		DEBUGPUTHEX(("NMI vector at", (ULONG)nmi));
-	} else if (IsSysBaseValid(SysBase)) {
-	    DEBUGPUTHEX(("[SysBase] was at", (ULONG)SysBase));
+	wasvalid = IsSysBaseValid(oldSysBase);
+	if (wasvalid) {
+	    DEBUGPUTHEX(("[SysBase] was at", (ULONG)oldSysBase));
     	/* TODO: ColdCapture */
 	} else {
-	    DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)SysBase));
-	    invalidsysbase = TRUE;
+	    wasvalid = IsSysBaseValidNoVersion(oldSysBase);
+	    if (wasvalid) {
+	    	DEBUGPUTHEX(("[SysBase] fakebase at", (ULONG)oldSysBase));
+	    } else {
+	    	DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)oldSysBase));
+	    }
+	}
+
+	if (!wasvalid) {
+	    (*(APTR *)4) = NULL;
 	}
 
 	for (i = 0; membanks[i + 1]; i += 2) {
-		ULONG addr = membanks[i];
+		ULONG addr = membanks[i + 0];
 		ULONG size = membanks[i + 1];
 		DEBUGPUTHEX(("RAM lower", addr));
 		DEBUGPUTHEX(("RAM upper", addr + size - 1));
-    		if (addr < (ULONG)&_rom_start && addr + size > (ULONG)&_rom_start) {
-    	    		if (rom_end > addr + size)
-    	    			rom_end = addr + size;
-     	    		size = (ULONG)&_rom_start - addr;
-    	    		DEBUGPUTHEX(("RAM upper", addr + size - 1));
-    	    		membanks[i + 1] = size;
-   	    	}
 	}
 
-	if (romloader) {
-		kickrom[0] = (UWORD*)rom_start;
-		kickrom[1] = (UWORD*)rom_end;
-		kickrom[2] = (UWORD*)0x00f00000;
-		kickrom[3] = (UWORD*)0x00f80000;
-		kickrom[4] = (UWORD*)~0;
-		kickrom[5] = (UWORD*)~0;
-		DEBUGPUTHEX(("[romloader] ROM lower", rom_start));
-		DEBUGPUTHEX(("[romloader] ROM upper", rom_end - 1));
-	} else {
-		kickrom[0] = (UWORD*)&_rom_start;
-		kickrom[1] = (UWORD*)(&_rom_start + 0x80000);
-		kickrom[2] = (UWORD*)0x00f00000;
-		kickrom[3] = (UWORD*)0x00f80000;
-		kickrom[4] = (UWORD*)&_ext_start;
-		kickrom[5] = (UWORD*)(&_ext_start + 0x80000);
-		kickrom[6] = (UWORD*)~0;
-		kickrom[7] = (UWORD*)~0;
-	}
+	kickrom[0] = (UWORD*)&_rom_start;
+	kickrom[1] = (UWORD*)(&_rom_start + 0x80000);
+	kickrom[2] = (UWORD*)0x00f00000;
+	kickrom[3] = (UWORD*)0x00f80000;
+	kickrom[4] = (UWORD*)&_ext_start;
+	kickrom[5] = (UWORD*)(&_ext_start + 0x80000);
+	kickrom[6] = (UWORD*)~0;
+	kickrom[7] = (UWORD*)~0;
 
 	/* Look for 'HELP' at address 0 - we're recovering
 	 * from a fatal alert
@@ -638,8 +622,11 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 
 	DEBUGPUTHEX(("[prep SysBase]", (ULONG)mh));
 	Early_ScreenCode(CODE_EXEC_CHECK);
-	SysBase = romloader ? NULL : oldsysbase;
 	PrepareExecBase(mh, NULL);
+	/* From here on, we can reference SysBase */
+#undef SysBase
+
+	DEBUGPUTHEX(("[new  SysBase]", (ULONG)SysBase));
 
         SysBase->SysStkUpper    = (APTR)ss_stack_upper;
         SysBase->SysStkLower    = (APTR)ss_stack_lower;
@@ -717,20 +704,12 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	InitCode(RTF_SINGLETASK, 0);
 
 	/* Autoconfig ram expansions are now configured */
-
-	if (invalidsysbase && oldsysbase && IsSysBaseValid(oldsysbase)) {
-		/* sysbase found in autoconfig ram */
-		DEBUGPUTHEX(("[SysBase] now valid at", (ULONG)oldsysbase));
-		SysBase = PrepareExecBaseMove(oldsysbase);
-		DEBUGPUTHEX(("[SysBase] initialized at", (ULONG)SysBase));
-		/* memory leak! we should free "temp" sysbase */
-	} else if (AvailMem(MEMF_FAST) > oldmem + 256 * 1024 && (
-		(TypeOfMem(SysBase) & MEMF_CHIP) ||
-		((ULONG)SysBase >= 0x00a00000ul && (ULONG)SysBase < 0x01000000ul)
-		)) {
-			/* Move execbase to real fast if available now */
-			SysBase = PrepareExecBaseMove(SysBase);
-			DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
+	if ((AvailMem(MEMF_FAST) > (oldmem + 256 * 1024)) &&
+	    ((TypeOfMem(SysBase) & MEMF_CHIP) ||
+	     ((ULONG)SysBase >= 0x00a00000ul && (ULONG)SysBase < 0x01000000ul))) {
+	    /* Move execbase to real fast if available now */
+	    SysBase = PrepareExecBaseMove(SysBase);
+	    DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
 	}
 	/* TODO: late ColdCapture if Exec was in autoconfig RAM */
 	
@@ -741,12 +720,6 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 			SysBase->MaxLocMem = (size + 0xffff) & 0xffff0000;
 		else if (addr < 0x00d00000)
 			SysBase->MaxExtMem = size ? (APTR)(((0xc00000 + (size + 0xffff)) & 0xffff0000)) : 0;
-	}
-
-	/* reset proof our ram loaded "rom" */
-	if (romloader) {
-		SysBase->ColdCapture = (APTR)(romloader - 8);
-		DEBUGPUTHEX(("[romloader] coldcapture:", (ULONG)SysBase->ColdCapture));
 	}
 
 	SetSysBaseChkSum();
@@ -773,10 +746,6 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	 */
 	trap[8] = Exec_Supervisor_Trap;
 
- 	/* restore romloader NMI debugger */
-	if (romloader)
-		trap[31] = nmi;
-
 	/* Attempt to allocate a real stack, and switch to it. */
 	do {
 	    struct StackSwapStruct sss;
@@ -799,7 +768,6 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	} while (0);
 
 	/* We shouldn't get here */
-	DEBUGPUTS(("[DOS Task failed to start]\n"));
-	for (;;)
-	    Debug(0);
+	Early_Alert(CODE_EXEC_FAIL);
+	for (;;);
 }
