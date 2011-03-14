@@ -216,6 +216,43 @@ static UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
      return sum;
 }
 
+static ULONG mySumKickData(struct ExecBase *sysbase)
+{
+    ULONG chksum = 0;
+
+    if (sysbase->KickTagPtr) {
+    	IPTR *list = sysbase->KickTagPtr;
+ 	while(*list)
+	{
+   	    chksum += (ULONG)*list;
+            /* on amiga, if bit 31 is set then this points to another list of
+             * modules rather than pointing to a single module. bit 31 is
+             * inconvenient on architectures where code may be loaded above
+             * 2GB. on these platforms we assume aligned pointers and use bit
+             * 0 instead */
+#ifdef __mc68000__
+	    if(*list & 0x80000000) { list = (IPTR *)(*list & 0x7fffffff); continue; }
+#else
+            if(*list & 0x1) { list = (IPTR *)(*list & ~(IPTR)0x1); continue; }
+#endif
+	    list++;
+   	}
+    }
+
+    if (sysbase->KickMemPtr) {
+	struct MemList *ml = (struct MemList*)sysbase->KickMemPtr;
+	while (ml->ml_Node.ln_Succ) {
+	    UBYTE i;
+	    ULONG *p = (ULONG*)ml;
+	    for (i = 0; i < sizeof(struct MemList) / sizeof(ULONG); i++)
+	    	chksum += p[i];
+	    ml = (struct MemList*)ml->ml_Node.ln_Succ;
+	}
+    }
+
+    return chksum;
+}
+
 
 /* reset VBR and switch off MMU */
 static void setcpu(void)
@@ -290,11 +327,13 @@ static void supercode(void)
     memset(sysbase, 0, FAKEBASESIZE);
     sysbase->ColdCapture = entry;
     sysbase->MaxLocMem = 512 * 1024;
-    sysbase->KickMemPtr = (APTR)mlist.mlh_Head;
-    sysbase->KickCheckSum = (APTR)SumKickData();
     sysbase->ChkBase=~(IPTR)sysbase;
     sysbase->ChkSum = 0;
     sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
+
+    sysbase->KickMemPtr = (APTR)mlist.mlh_Head;
+    sysbase->KickTagPtr = (APTR)SysBase->KickTagPtr;
+    sysbase->KickCheckSum = (APTR)mySumKickData(sysbase);
 
     RawDoFmt("KickMemPtr 0x%lx\n", &sysbase->KickMemPtr, putser, NULL);
     RawDoFmt("Ready to go!\nColdCapture is 0x%lx\n", &sysbase->ColdCapture, putser, NULL);
