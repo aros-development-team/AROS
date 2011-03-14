@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -73,7 +73,7 @@ if(input!=NULL)					\
 }else						\
 {       					\
     c=FGetC(Input());				\
-    if(c==EOF&&*result)				\
+    if(c==EOF && IoErr())			\
         return ITEM_ERROR;			\
 }
 
@@ -82,7 +82,6 @@ if(input!=NULL)					\
 
     STRPTR b=buffer;
     LONG c;
-    SIPTR *result=&((struct Process *)FindTask(NULL))->pr_Result2;
     
     /* Skip leading whitespace characters */
     do
@@ -106,7 +105,7 @@ if(input!=NULL)					\
             if(!maxchars)
             {
                 *buffer=0;
-                *result=ERROR_BUFFER_OVERFLOW;
+                SetIoErr(ERROR_BUFFER_OVERFLOW);
                 return ITEM_ERROR;
             }
             maxchars--;
@@ -121,7 +120,7 @@ if(input!=NULL)					\
                     if(c!=EOF)
                         UNGET();
                     *buffer=0;
-                    *result=ERROR_UNMATCHED_QUOTES;
+                    SetIoErr(ERROR_UNMATCHED_QUOTES);
                     return ITEM_ERROR;
                 }else if(c=='n'||c=='N')
                     c='\n';
@@ -132,7 +131,7 @@ if(input!=NULL)					\
                 if(c!=EOF)
                     UNGET();
                 *buffer=0;
-                *result=ERROR_UNMATCHED_QUOTES;
+                SetIoErr(ERROR_UNMATCHED_QUOTES);
                 return ITEM_ERROR;
             }else if(c=='\"')
             {
@@ -148,7 +147,7 @@ if(input!=NULL)					\
         if(!maxchars)
         {
             *buffer=0;
-            *result=ERROR_BUFFER_OVERFLOW;
+            SetIoErr(ERROR_BUFFER_OVERFLOW);
             return ITEM_ERROR;
         }
         maxchars--;
@@ -159,7 +158,7 @@ if(input!=NULL)					\
             if(!maxchars)
             {
                 *buffer=0;
-                *result=ERROR_BUFFER_OVERFLOW;
+                SetIoErr(ERROR_BUFFER_OVERFLOW);
                 return ITEM_ERROR;
             }
             maxchars--;
