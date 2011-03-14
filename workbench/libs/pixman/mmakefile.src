@@ -41,7 +41,7 @@ USER_CFLAGS := -DHAVE_CONFIG_H -DPIXMAN_NO_TLS
     files="$(FILES)" \
     uselibs="amiga rom m"
 
-%copy_includes mmake=includes-copy includes="pixman/pixman.h pixman/pixman-version.h" \
-    path=pixman-1 dir=pixman
+INCLUDE_FILES := pixman/pixman.h pixman/pixman-version.h
+%copy_includes mmake=includes-copy path=pixman-1 dir=pixman
 
 %common

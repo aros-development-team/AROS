@@ -4,26 +4,26 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-libs-pixman-test : \
 #MM  workbench-libs-pixman-test-a1-trap \
+#MM  workbench-libs-pixman-test-affine \
 #MM  workbench-libs-pixman-test-alpha \
+#MM  workbench-libs-pixman-test-blitters \
 #MM  workbench-libs-pixman-test-clip \
 #MM  workbench-libs-pixman-test-convolution \
 #MM  workbench-libs-pixman-test-fetch \
 #MM  workbench-libs-pixman-test-gradient \
+#MM  workbench-libs-pixman-test-gradient-crash \
 #MM  workbench-libs-pixman-test-oob \
+#MM  workbench-libs-pixman-test-pdf-op \
+#MM  workbench-libs-pixman-test-radial \
+#MM  workbench-libs-pixman-test-region \
 #MM  workbench-libs-pixman-test-region-translate \
+#MM  workbench-libs-pixman-test-scaling \
+#MM  workbench-libs-pixman-test-scaling-crash \
 #MM  workbench-libs-pixman-test-screen \
+#MM  workbench-libs-pixman-test-stress \
 #MM  workbench-libs-pixman-test-trap
 
-# #MM  workbench-libs-pixman-test-affine
-# #MM  workbench-libs-pixman-test-blitters
-# #MM  workbench-libs-pixman-test-composite
-# #MM  workbench-libs-pixman-test-gradient-crash
-# #MM  workbench-libs-pixman-test-pdf-op
-# #MM  workbench-libs-pixman-test-radial
-# #MM  workbench-libs-pixman-test-region
-# #MM  workbench-libs-pixman-test-scaling-crash
-# #MM  workbench-libs-pixman-test-scaling
-# #MM  workbench-libs-pixman-test-stress
+#MM  workbench-libs-pixman-test-composite
 
 #MM  workbench-libs-pixman-test-a1-trap : includes linklibs workbench-libs-pixman
 #MM  workbench-libs-pixman-test-affine : includes linklibs workbench-libs-pixman
@@ -87,7 +87,7 @@ USER_CFLAGS := -DHAVE_CONFIG_H -DPIXMAN_NO_TLS
     files="pdf-op-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
 
 %build_prog mmake=workbench-libs-pixman-test-radial progname=radial \
-    files="radial-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
+    files="radial-test aros-utils utils" targetdir=$(TARGETDIR) uselibs="pixman"
 
 %build_prog mmake=workbench-libs-pixman-test-region progname=region \
     files="region-test utils" targetdir=$(TARGETDIR) uselibs="pixman"
