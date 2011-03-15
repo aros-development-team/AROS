@@ -846,6 +846,7 @@ with_ios_sdk
 with_sdk
 with_ndk
 with_android_version
+with_aros_gcc
 with_portssources
 with_bootloader
 with_iconset
@@ -1532,7 +1533,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-gcc-version=VERSION
-                          Use gcc-VERSION for building AROS
+                          Use host gcc-VERSION for building AROS
   --with-optimization=FLAGS
                           Use optimization flags FLAGS (default=-O2).
   --with-paranoia=FLAGS   CC flags to enable paranoia
@@ -1547,6 +1548,7 @@ Optional Packages:
                           (default=$default_android_ndk).
   --with-android-version=VERSION
                           Use Android platform VERSION (default=2.2).
+  --with-aros-gcc=VERSION Use aros-gcc-VERSION for building AROS
   --with-portssources=DIR Where to download sourcecode for external ports
   --with-bootloader=NAME  Use a specific bootloader
   --with-iconset=NAME     Use a specific Icon-set (default=Gorilla).
@@ -2626,13 +2628,9 @@ $as_echo_n "checking for AROS style target... " >&6; }
 
 if test "$target" = "NONE" ; then
     target=$host_os-$host_cpu
-    cross_compile=no
 else
     if test "$target" = "" ; then
         target=$host_os-$host_cpu
-        cross_compile=no
-    else
-        cross_compile=yes
     fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target" >&5
@@ -4268,6 +4266,11 @@ esac
 aros_kernel_cc_includes=""
 aros_target_cc_includes=""
 
+# Override this to "default" in order to force a specific build to use real AROS crosscompiler
+# instead of a wrapper script.
+# Useful for non-ELF hosts (like Windows and Darwin).
+use_aros_gcc="no"
+
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
 # not look at anything that compiles to the target yet, we'll get
@@ -4345,6 +4348,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     darwin*)
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	aros_host_arch="darwin"
+	use_aros_gcc="yes"
 	android_build_os="darwin-x86"
 	android_tool="android"
 	default_android_sdk="/android-sdk-mac_x86"
@@ -4472,6 +4476,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
     cygwin*)
 	aros_host_arch="cygwin"
+	use_aros_gcc="yes"
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	android_build_os="windows"
 	android_tool="android.bat"
@@ -4491,6 +4496,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
     mingw32*)
         aros_host_arch="mingw32"
+        use_aros_gcc="yes"
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	android_build_os="windows"
 	android_tool="android.bat"
@@ -7014,8 +7020,8 @@ $as_echo "no" >&6; }
 fi
 
 #-----------------------------------------------------------------------------
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific gcc version to use" >&5
-$as_echo_n "checking what specific gcc version to use... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific host gcc version to use" >&5
+$as_echo_n "checking what specific host gcc version to use... " >&6; }
 
 # Check whether --with-gcc-version was given.
 if test "${with_gcc_version+set}" = set; then :
@@ -7424,16 +7430,6 @@ case "$target_os" in
 		gcc_target_cpu="i386"
 		aros_object_format="elf_i386"
 		aros_target_strip_flags="-x"
-		aros_target_cc="i386-aros-gcc"
-		aros_target_cxx="i386-aros-g++"
-		aros_target_ld="i386-aros-ld"
-		aros_target_as="i386-aros-as"
-		aros_target_ar="i386-aros-ar"
-		aros_target_ranlib="i386-aros-ranlib"
-		aros_target_nm="i386-aros-nm"
-		aros_target_strip="i386-aros-strip"
-		aros_target_objcopy="i386-aros-objcopy"
-		aros_target_objdump="i386-aros-objdump"
 		target_tool_prefix="i686-apple-darwin10-"
 		target_tool_flags="-m32"
 		;;
@@ -7449,16 +7445,6 @@ case "$target_os" in
 		aros_default_wbdepth=8
 		gcc_target_cpu="x86_64"
 		aros_kernel_ld="ld"
-		aros_target_cc="x86_64-aros-gcc"
-		aros_target_cxx="x86_64-aros-g++"
-		aros_target_ld="x86_64-aros-ld"
-		aros_target_as="x86_64-aros-as"
-		aros_target_ar="x86_64-aros-ar"
-		aros_target_ranlib="x86_64-aros-ranlib"
-		aros_target_nm="x86_64-aros-nm"
-		aros_target_strip="x86_64-aros-strip"
-		aros_target_objcopy="x86_64-aros-objcopy"
-		aros_target_objdump="x86_64-aros-objdump"
 		target_tool_prefix="i686-apple-darwin10-"
 		;;
 	    *ppc*)
@@ -7470,16 +7456,6 @@ case "$target_os" in
 		aros_default_wbdepth=8
 		gcc_target_cpu="ppc"
 		aros_kernel_ld="ld -arch ppc"
-		aros_target_cc="ppc-aros-gcc"
-		aros_target_cxx="ppc-aros-g++"
-		aros_target_ld="ppc-aros-ld"
-		aros_target_as="ppc-aros-as"
-		aros_target_ar="ppc-aros-ar"
-		aros_target_ranlib="ppc-aros-ranlib"
-		aros_target_nm="ppc-aros-nm"
-		aros_target_strip="ppc-aros-strip"
-		aros_target_objcopy="ppc-aros-objcopy"
-		aros_target_objdump="ppc-aros-objdump"
 		target_tool_prefix="powerpc-apple-darwin10-"
 		;;
 	    *arm*)
@@ -7492,17 +7468,6 @@ case "$target_os" in
 		aros_arch_libs="-laeabi"
 		aros_default_wbdepth=8
 		gcc_target_cpu="arm"
-		aros_kernel_ld="ld -arch armv6"
-		aros_target_cc="arm-aros-gcc"
-		aros_target_cxx="arm-aros-g++"
-		aros_target_ld="arm-aros-ld"
-		aros_target_as="arm-aros-as"
-		aros_target_ar="arm-aros-ar"
-		aros_target_ranlib="arm-aros-ranlib"
-		aros_target_nm="arm-aros-nm"
-		aros_target_strip="arm-aros-strip"
-		aros_target_objcopy="arm-aros-objcopy"
-		aros_target_objdump="arm-aros-objdump"
 		target_tool_prefix="arm-apple-darwin10-"
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
 		;;
@@ -7737,16 +7702,6 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
-		aros_target_cc="i386-aros-gcc"
-		aros_target_cxx="i386-aros-g++"
-		aros_target_ld="i386-aros-ld"
-		aros_target_as="i386-aros-as"
-		aros_target_ar="i386-aros-ar"
-		aros_target_ranlib="i386-aros-ranlib"
-		aros_target_nm="i386-aros-nm"
-		aros_target_strip="i386-aros-strip"
-		aros_target_objcopy="i386-aros-objcopy"
-		aros_target_objdump="i386-aros-objdump"
 		target_tool_prefix="i386-mingw32-"
 		;;
 	    *x86_64*)
@@ -7756,16 +7711,6 @@ case "$target_os" in
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
 		aros_default_wbdepth=8
 		gcc_target_cpu="x86_64"
-		aros_target_cc="x86_64-aros-gcc"
-		aros_target_cxx="x86_64-aros-g++"
-		aros_target_ld="x86_64-aros-ld"
-		aros_target_as="x86_64-aros-as"
-		aros_target_ar="x86_64-aros-ar"
-		aros_target_ranlib="x86_64-aros-ranlib"
-		aros_target_nm="x86_64-aros-nm"
-		aros_target_strip="x86_64-aros-strip"
-		aros_target_objcopy="x86_64-aros-objcopy"
-		aros_target_objdump="x86_64-aros-objdump"
 		target_tool_prefix="x86_64-w64-mingw32-"
 		;;
 	    *arm*)
@@ -7775,16 +7720,6 @@ case "$target_os" in
                 aros_arch_libs="-laeabi"
 		aros_default_wbdepth=8
 		gcc_target_cpu="arm"
-		aros_target_cc="arm-aros-gcc"
-		aros_target_cxx="arm-aros-g++"
-		aros_target_ld="arm-aros-ld"
-		aros_target_as="arm-aros-as"
-		aros_target_ar="arm-aros-ar"
-		aros_target_ranlib="arm-aros-ranlib"
-		aros_target_nm="arm-aros-nm"
-		aros_target_strip="arm-aros-strip"
-		aros_target_objcopy="arm-aros-objcopy"
-		aros_target_objdump="arm-aros-objdump"
 		target_tool_prefix="arm-mingw32ce-"
 		aros_default_wbwidth=160
                 aros_default_wbheight=160
@@ -7868,6 +7803,48 @@ case "$target_os" in
 	;;
 esac
 
+#-----------------------------------------------------------------------------
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific AROS gcc version to use" >&5
+$as_echo_n "checking what specific AROS gcc version to use... " >&6; }
+
+# Check whether --with-aros-gcc was given.
+if test "${with_aros_gcc+set}" = set; then :
+  withval=$with_aros_gcc; aros_gcc_version="$withval"
+else
+  aros_gcc_version="$use_aros_gcc"
+fi
+
+case "$aros_gcc_version" in
+yes)
+    aros_gcc_version="default"
+    ;;
+no)
+    aros_gcc_version="none"
+    ;;
+esac
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_version" >&5
+$as_echo "$aros_gcc_version" >&6; }
+
+if test "$aros_gcc_version" != "none"; then
+    if test "$aros_gcc_version" != "default"; then
+	aros_target_cc="$aros_target_cpu-aros-gcc-$aros_gcc_version"
+	aros_target_cxx="$aros_target_cpu-aros-g++-$aros_gcc_version"
+    else
+    	aros_target_cc="$aros_target_cpu-aros-gcc"
+	aros_target_cxx="$aros_target_cpu-aros-g++"
+    fi
+
+    aros_target_ld="$aros_target_cpu-aros-ld"
+    aros_target_as="$aros_target_cpu-aros-as"
+    aros_target_ar="$aros_target_cpu-aros-ar"
+    aros_target_ranlib="$aros_target_cpu-aros-ranlib"
+    aros_target_nm="$aros_target_cpu-aros-nm"
+    aros_target_strip="$aros_target_cpu-aros-strip"
+    aros_target_objcopy="$aros_target_cpu-aros-objcopy"
+    aros_target_objdump="$aros_target_cpu-aros-objdump"
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Where to download sourcecode for external ports" >&5
 $as_echo_n "checking Where to download sourcecode for external ports... " >&6; }
 
@@ -7947,6 +7924,7 @@ cross_compiling=no
 if test "$aros_host_cpu" != "$aros_target_cpu" ; then
     cross_compiling=yes
 fi
+
 if test "$aros_host_cpu" == "x86_64" ; then
     if test "$aros_target_cpu" == "i386" ; then
 	if test "$aros_target_arch" != "mingw32"; then
@@ -7954,6 +7932,7 @@ if test "$aros_host_cpu" == "x86_64" ; then
 	fi
     fi
 fi
+
 if test "$aros_host_arch" == "darwin" ; then
     if test "$aros_target_arch" != "darwin" ; then
 	cross_compiling=yes
