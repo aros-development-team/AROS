@@ -1357,6 +1357,7 @@ cairo_font_face_status (cairo_font_face_t *font_face);
  * @CAIRO_FONT_TYPE_WIN32: The font is of type Win32
  * @CAIRO_FONT_TYPE_QUARTZ: The font is of type Quartz (Since: 1.6)
  * @CAIRO_FONT_TYPE_USER: The font was create using cairo's user font api (Since: 1.8)
+ * @CAIRO_FONT_TYPE_AROS: The font is of type AROS
  *
  * #cairo_font_type_t is used to describe the type of a given font
  * face or scaled font. The font types are also known as "font
@@ -1392,7 +1393,8 @@ typedef enum _cairo_font_type {
     CAIRO_FONT_TYPE_FT,
     CAIRO_FONT_TYPE_WIN32,
     CAIRO_FONT_TYPE_QUARTZ,
-    CAIRO_FONT_TYPE_USER
+    CAIRO_FONT_TYPE_USER,
+    CAIRO_FONT_TYPE_AROS // FIXME: do we really need this or can we use FONT_TYPE_USER?
 } cairo_font_type_t;
 
 cairo_public cairo_font_type_t
@@ -2071,6 +2073,7 @@ cairo_surface_status (cairo_surface_t *surface);
  * @CAIRO_SURFACE_TYPE_SKIA: The surface is of type Skia, since 1.10
  * @CAIRO_SURFACE_TYPE_SUBSURFACE: The surface is a subsurface created with
  *   cairo_surface_create_for_rectangle(), since 1.10
+ * @CAIRO_SURFACE_TYPE_AROS: The surface is of type aros
  *
  * #cairo_surface_type_t is used to describe the type of a given
  * surface. The surface types are also known as "backends" or "surface
@@ -2119,7 +2122,8 @@ typedef enum _cairo_surface_type {
     CAIRO_SURFACE_TYPE_TEE,
     CAIRO_SURFACE_TYPE_XML,
     CAIRO_SURFACE_TYPE_SKIA,
-    CAIRO_SURFACE_TYPE_SUBSURFACE
+    CAIRO_SURFACE_TYPE_SUBSURFACE,
+    CAIRO_SURFACE_TYPE_AROS
 } cairo_surface_type_t;
 
 cairo_public cairo_surface_type_t

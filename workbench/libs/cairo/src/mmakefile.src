@@ -79,6 +79,7 @@ CAIRO_PNG_FILES := cairo-png
 CAIRO_PDF_FILES := cairo-pdf-surface cairo-pdf-operators
 CAIRO_FT_FILES := cairo-ft-font
 CAIRO_FONT_FILES := cairo-cff-subset cairo-scaled-font-subsets cairo-truetype-subset cairo-type1-fallback cairo-type1-subset cairo-type3-glyph-surface
+CAIRO_AROS_FILES := cairo-aros-surface cairo-aros-font
 
 FILES := \
 	$(CAIRO_FILES) \
@@ -86,6 +87,7 @@ FILES := \
 	$(CAIRO_PDF_FILES) \
 	$(CAIRO_FT_FILES) \
 	$(CAIRO_FONT_FILES) \
+	$(CAIRO_AROS_FILES) \
 	cairo-deflate-stream \
 	../aros/emul_arosc
 

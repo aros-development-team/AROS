@@ -36,7 +36,7 @@
 #ifndef CAIRO_AROS_H
 #define CAIRO_AROS_H
 
-#include <cairo.h>
+#include "cairo.h"
 
 #ifdef CAIRO_HAS_AROS_SURFACE
 
