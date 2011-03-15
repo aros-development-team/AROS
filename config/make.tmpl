@@ -2065,8 +2065,7 @@ endif
 ifneq (%(install_target),)
     %(mmake)-install_command = \
         $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
-        -C $(%(mmake)-pkgdir) %(install_target) -j1 && \
-        $(TOUCH) $(%(mmake)-installflag)
+        -C $(%(mmake)-pkgdir) %(install_target) -j1
 
     %(mmake)-uninstall_command = \
     $(RM) $(%(mmake)-installflag) && \
@@ -2080,11 +2079,14 @@ endif
 #MM- %(mmake)-quick : %(preconfigure) %(mmake)-configure %(postconfigure) %(mmake)-build_and_install-quick %(postinstall)
 
 #MM
-%(mmake)-build_and_install-quick :  $(%(mmake)-configflag)
+%(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
+
+$(%(mmake)-installflag) : $(%(mmake)-configflag)
 	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(%(mmake)-pkgdir); then \
             $(RM)  $(%(mmake)-installflag) && \
 	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -C $(%(mmake)-pkgdir) && \
-	    $(%(mmake)-install_command); \
+	    $(%(mmake)-install_command) && \
+	    $(TOUCH) $@ -r $^; \
         fi
 
 $(%(mmake)-pkgdir)/.files-touched:
