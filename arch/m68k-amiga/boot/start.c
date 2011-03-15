@@ -507,14 +507,24 @@ void doColdCapture(void)
     if (ColdCapture == NULL)
     	return;
 
+    if (((ULONG *)ColdCapture)[1] == AROS_MAKE_ID('F','A','K','E')) {
+    	/* Fake SysBase installed by AROSBootstrap.
+    	 *
+    	 * In this case, ColdCapture is the trampoline executed
+    	 * by the AOS ROM to get into AROS. We need to keep
+    	 * ColdCapture around in AROS SysBase, but we don't
+    	 * want to execute it (and cause an infinite loop).
+    	 */
+    	DEBUGPUTS(("[ColdCapture] Ignoring AOS->AROS trampoline\n"));
+    	return;
+    }
+
     SysBase->ColdCapture = NULL;
     /* ColdCapture calling method is a little
      * strange. It's in supervisor mode, requires
      * the return location in A5, and SysBase in A6.
      */
-#if 0 /* Disabled for now, until we can check for ReKick ColdCapture */
     Supervisor(superColdCapture);
-#endif
     SysBase->ColdCapture = ColdCapture;
 }
 
@@ -582,6 +592,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    KickMemPtr   = oldSysBase->KickMemPtr; 
 	    KickTagPtr   = oldSysBase->KickTagPtr;
 	    KickCheckSum = oldSysBase->KickCheckSum;
+
 	    /* Mark the oldSysBase as processed */
 	    oldSysBase = NULL;
 	}
