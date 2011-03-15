@@ -464,6 +464,40 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
     return GetSysBaseChkSum(sysbase) == 0xffff;
 }
 
+/* Ugh. BSS. Maybe move this to Trap[12]? */
+static APTR ColdCapture;
+
+/* SysBase is already in A6 */
+void superColdCapture(void);
+asm (
+    	".global superColdCapture\n"
+    "superColdCapture:\n"
+    	"move.l ColdCapture,%a0\n"
+    	"movem.l %d2-%d7/%a2-%a6,%sp@-\n"
+    	"move.l #0f,%a5\n"
+    	"jmp (%a0)\n"
+    	"0:\n"
+    	"movem.l %sp@+,%d2-%d7/%a2-%a6\n"
+    	"rte\n"
+    );
+
+void doColdCapture(void)
+{
+    ColdCapture = SysBase->ColdCapture;
+    if (ColdCapture == NULL)
+    	return;
+
+    SysBase->ColdCapture = NULL;
+    /* ColdCapture calling method is a little
+     * strange. It's in supervisor mode, requires
+     * the return location in A5, and SysBase in A6.
+     */
+#if 0 /* Disabled for now, until we can check for ReKick ColdCapture */
+    Supervisor(superColdCapture);
+#endif
+    SysBase->ColdCapture = ColdCapture;
+}
+
 void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 {
 	volatile APTR *trap;
@@ -509,7 +543,6 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	wasvalid = IsSysBaseValid(oldSysBase);
 	if (wasvalid) {
 	    DEBUGPUTHEX(("[SysBase] was at", (ULONG)oldSysBase));
-    	/* TODO: ColdCapture */
 	} else {
 	    wasvalid = IsSysBaseValidNoVersion(oldSysBase);
 	    if (wasvalid) {
@@ -529,6 +562,8 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    KickMemPtr   = oldSysBase->KickMemPtr; 
 	    KickTagPtr   = oldSysBase->KickTagPtr;
 	    KickCheckSum = oldSysBase->KickCheckSum;
+	    /* Mark the oldSysBase as processed */
+	    oldSysBase = NULL;
 	}
 
 	for (i = 0; membanks[i + 1]; i += 2) {
@@ -687,6 +722,12 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	/* Seal up SysBase's critical variables */
 	SetSysBaseChkSum();
 
+	/* Now that we have a valid SysBase,
+	 * we can call ColdCapture
+	 */
+	if (wasvalid)
+	    doColdCapture();
+
 	oldmem = AvailMem(MEMF_FAST);
 
 	/* Ok, let's start the system */
@@ -712,6 +753,8 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    /* Re-seal SysBase */
 	    SetSysBaseChkSum();
 	    wasvalid = TRUE;
+
+	    doColdCapture();
 	}
 
 	/* Before we allocate anything else, try to 
