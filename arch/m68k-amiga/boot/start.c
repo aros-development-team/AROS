@@ -105,8 +105,8 @@ static void DebugPutHex(const char *what, ULONG val)
 
 #else
 
-#define DEBUGPUTS(x)
-#define DEBUGPUTHEX(x)
+#define DEBUGPUTS(x) do { } while (0)
+#define DEBUGPUTHEX(x) do { } while (0)
 
 #endif
 
