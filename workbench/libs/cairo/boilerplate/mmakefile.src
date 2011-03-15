@@ -1,0 +1,16 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-cairo-boiler : workbench-libs-cairo
+
+FILES := cairo-boilerplate cairo-boilerplate-aros
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../aros -I$(SRCDIR)/$(CURDIR)/../src \
+	-I$(GENINCDIR)/pixman-1
+USER_CFLAGS := -DCAIRO_NO_MUTEX
+
+%build_linklib mmake=workbench-libs-cairo-boiler libname=boiler \
+  files="$(FILES)" libdir=$(AROS_TESTS)/cairo
+
+%common
