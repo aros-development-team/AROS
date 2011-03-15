@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 
     Desc: Define the C structure for storing the command line options and the
           module config data
@@ -13,7 +13,7 @@
 #include "functionhead.h"
 #include "stringlist.h"
 
-enum command { CMD_UNSPECIFIED, DUMMY, FILES, LIBDEFS, INCLUDES, MAKEFILE, WRITEFUNCLIST };
+enum command { CMD_UNSPECIFIED, FILES, LIBDEFS, INCLUDES, MAKEFILE, WRITEFUNCLIST };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, IMAGE, GADGET,
 	       DATATYPE, CLASS, HIDD, USBCLASS
 };
@@ -44,11 +44,11 @@ enum optionflags
 enum coptionbit { CBIT_PRIVATE };
 enum coptionflags { COPTION_PRIVATE = 1<<CBIT_PRIVATE };
 
-enum intcfgbit { BIT_GENASTUBS, BIT_NOREADREF };
+enum intcfgbit { BIT_GENASTUBS, BIT_NOREADFUNCS };
 enum intcfgflags
 {
     CFG_GENASTUBS = 1<<BIT_GENASTUBS,
-    CFG_NOREADREF = 1<<BIT_NOREADREF
+    CFG_NOREADFUNCS = 1<<BIT_NOREADFUNCS /* all needed functions are available */
 };
 
 /* Classinfo is used to store the information of a BOOPSI class */
@@ -81,7 +81,7 @@ struct classinfo
 struct config
 {
     /* members that store filename and paths derived from argv */
-    char *conffile, *gendir, *genincdir, *reffile;
+    char *conffile, *gendir, *genincdir;
 
     /* The name and type of the module */
     char *modulename, *modulenameupper;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
     
     Main for genmodule. A tool to generate files for building modules.
@@ -14,8 +14,6 @@ int main(int argc, char **argv)
     switch (cfg->command)
     {
     case FILES:
-	if (!(cfg->intcfg & CFG_NOREADREF))
-	    readref(cfg);
 	writestart(cfg);
 	writeend(cfg);
 	if (cfg->options & OPTION_AUTOINIT)
@@ -30,10 +28,6 @@ int main(int argc, char **argv)
             fprintf(stderr, "%s called with writeincludes when no includes are present\n", argv[0]);
             exit(20);
         }
-	if (!(cfg->intcfg & CFG_NOREADREF))
-	    readref(cfg);
-	/* fall through */
-    case DUMMY:
         writeincproto(cfg);
         writeincclib(cfg);
         writeincdefines(cfg);
@@ -55,7 +49,6 @@ int main(int argc, char **argv)
 	if (cfg->classlist != NULL)
 	    cfg->classlist->methlist = NULL;
 
-	readref(cfg);
 	writefunclist(cfg);
 	break;
 	

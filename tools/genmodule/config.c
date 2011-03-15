@@ -41,8 +41,8 @@ freeBanner(char *banner)
 
 const static char usage[] =
     "\n"
-    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-r reffile] [-n]\n"
-    "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs|writefunclist} modname modtype\n"
+    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-n]\n"
+    "       {writefiles|writemakefile|writeincludes|writelibdefs|writefunclist} modname modtype\n"
 ;
 
 static void readconfig(struct config *);
@@ -89,7 +89,7 @@ struct config *initconfig(int argc, char **argv)
 
     memset(cfg, 0, sizeof(struct config));
     
-    while ((c = getopt(argc, argv, ":c:s:d:r:")) != -1)
+    while ((c = getopt(argc, argv, ":c:s:d:")) != -1)
     {
 	if (c == ':')
 	{
@@ -110,9 +110,6 @@ struct config *initconfig(int argc, char **argv)
 	    /* Remove / at end if present */
 	    if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
 	    cfg->gendir = optarg;
-	    break;
-	case 'r':
-	    cfg->reffile = optarg;
 	    break;
 	default:
 	    fprintf(stderr, "Internal error: Unhandled option\n");
@@ -141,10 +138,6 @@ struct config *initconfig(int argc, char **argv)
     else if (strcmp(argv[optind], "writelibdefs") == 0)
     {
 	cfg->command = LIBDEFS;
-    }
-    else if (strcmp(argv[optind], "writedummy") == 0)
-    {
-	cfg->command = DUMMY;
     }
     else if (strcmp(argv[optind], "writefunclist") == 0)
     {
@@ -236,18 +229,7 @@ struct config *initconfig(int argc, char **argv)
 	}
 
 	if (cfg->gendir == NULL)
-	    cfg->gendir = ".";
-	
-	if (cfg->command != FILES && cfg->command != INCLUDES && cfg->command != WRITEFUNCLIST)
-	{
-	    if (cfg->reffile != NULL)
-		fprintf(stderr, "WARNING ! Option -r ingored for %s\n", argv[optind]);
-	}
-	else if (cfg->command == FILES && cfg->reffile == NULL)
-	{
-	    snprintf(tmpbuf, sizeof(tmpbuf), "%s.ref", cfg->modulename);
-	    cfg->reffile = strdup(tmpbuf);
-	}
+	    cfg->gendir = ".";	
     }
     
     readconfig(cfg);
@@ -259,7 +241,7 @@ struct config *initconfig(int argc, char **argv)
     {
 	struct functionhead *funchead;
 
-	cfg->intcfg |= CFG_NOREADREF;
+	cfg->intcfg |= CFG_NOREADFUNCS;
 
 	/* Add beginio_func to the list of functions */
 	funchead = newfunctionhead(cfg->beginiofunc, REGISTERMACRO);
@@ -279,7 +261,7 @@ struct config *initconfig(int argc, char **argv)
 	funchead->next = cfg->funclist->next;
 	cfg->funclist->next = funchead;
     }
-    else if (cfg->modtype == DEVICE && cfg->intcfg & CFG_NOREADREF)
+    else if (cfg->modtype == DEVICE && cfg->intcfg & CFG_NOREADFUNCS)
     {
 	fprintf
 	(
@@ -461,14 +443,14 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 		if (inclass)
 		    exitfileerror(20, "functionlist section not allow in class section\n");
 		readsectionfunctionlist(cfg);
-		cfg->intcfg |= CFG_NOREADREF;
+		cfg->intcfg |= CFG_NOREADFUNCS;
 		break;
 
 	    case 6: /* methodlist */
 		if (cl == NULL)
 		    exitfileerror(20, "methodlist section when not in a class\n");
 		readsectionmethodlist(cl);
-		cfg->intcfg |= CFG_NOREADREF;
+		cfg->intcfg |= CFG_NOREADFUNCS;
 		break;
 		
 	    case 7: /* class */
@@ -925,7 +907,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    exitfileerror(20, "dispatcher specified when not a BOOPSI class\n");
 		cl->dispatcher = strdup(s);
 		/* function references are not needed when dispatcher is specified */
-		cfg->intcfg |= CFG_NOREADREF;
+		cfg->intcfg |= CFG_NOREADFUNCS;
 		break;
 
 	    case 24: /* initpri */

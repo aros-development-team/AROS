@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2011, The AROS Development Team. All rights reserved.
     $Id$
     
     Code to write a Makefile with variables that provides the files
@@ -58,11 +58,6 @@ void writemakefile(struct config *cfg)
     }
     fprintf(out, "\n");
 
-    fprintf(out,
-	    "%s_NEEDREF := %s\n",
-	    cfg->modulename, (cfg->intcfg & CFG_NOREADREF) ? "no" : "yes"
-    );
-    
     if (ferror(out))
     {
 	perror("Error writing Makefile");
