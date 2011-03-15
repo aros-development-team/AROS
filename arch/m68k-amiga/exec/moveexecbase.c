@@ -57,7 +57,7 @@ struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
 	Remove((struct Node*)oldsb);
 
 	totalsize = oldsb->LibNode.lib_NegSize + oldsb->LibNode.lib_PosSize;
-	newsb = (struct ExecBase *)((UBYTE *)AllocMem(totalsize, MEMF_LOCAL) + oldsb->LibNode.lib_NegSize);
+	newsb = (struct ExecBase *)((UBYTE *)AllocMem(totalsize, MEMF_KICK) + oldsb->LibNode.lib_NegSize);
 	CopyMemQuick((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, (UBYTE*)newsb - oldsb->LibNode.lib_NegSize, totalsize);
 
 	reloclist(&newsb->LibList);
