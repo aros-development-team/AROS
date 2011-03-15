@@ -807,8 +807,8 @@ BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume 
     return retval;
 }
 
-/* Collects the list of blocks that a file occupies on FFS filesystem*/
-ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode *blocklist)
+/* Collects the list of blocks that a file occupies on FFS filesystem */
+ULONG collectBlockListFFS(struct Volume *volume, ULONG block, struct BlockNode *blocklist)
 {
     ULONG retval, first_block;
     WORD blk_count,count;
@@ -919,8 +919,8 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode 
 	return first_block;
 }
 
-/* Collects the list of blocks that a file occupies on SFS filesystem*/
-ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct BlockNode *blocklist)
+/* Collects the list of blocks that a file occupies on SFS filesystem */
+ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockNode *blocklist)
 {
     ULONG retval, first_block = 0;
     WORD blk_count = 0, count = 0;
