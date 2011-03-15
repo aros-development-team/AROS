@@ -50,12 +50,12 @@
     struct Process *me=(struct Process *)FindTask(NULL);
     BPTR old;
 
-    ASSERT_VALID_PTR_OR_NULL(lock);
+    ASSERT_VALID_PTR_OR_NULL(BADDR(lock));
 
     /* Nothing spectacular */
     old=me->pr_CurrentDir;
     me->pr_CurrentDir=lock;
-    ASSERT_VALID_PTR_OR_NULL(old);
+    ASSERT_VALID_PTR_OR_NULL(BADDR(old));
     return old;
     AROS_LIBFUNC_EXIT
 } /* CurrentDir */

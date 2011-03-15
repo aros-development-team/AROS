@@ -60,7 +60,7 @@
     UBYTE           buffer[80];
     BOOL            ret;
 
-    ASSERT_VALID_PTR(stream);
+    ASSERT_VALID_PTR(BADDR(stream));
     ASSERT_VALID_PTR_OR_NULL(header);
 
     /* Fault() will do all the formatting of the string */
