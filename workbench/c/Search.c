@@ -238,8 +238,6 @@ int main(void)
 	    
 	    for(from = (TEXT **)args[ARG_FROM]; from && *from && success; 
 		from++)
-//	    for(from = *(((TEXT ***)args) + ARG_FROM); from && *from && success; 
-//		from++)
 	    {
 		
 		/* Initialise file search */
@@ -253,8 +251,6 @@ int main(void)
 		
 		print_names = ((TEXT **)args[ARG_FROM])[1]
 		    || (anchor->ap_Flags & APF_ITSWILD);
-//		print_names = (*(*(((TEXT ***)args) + ARG_FROM) + 1))
-//		    || (anchor->ap_Flags & APF_ITSWILD);
 		
 		/* Enter sub-dir if the pattern was an explicitly named dir */
 		

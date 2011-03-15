@@ -1,10 +1,10 @@
 /*
 
-    (C) 1995-2008 The AROS Development Team
+    (C) 1995-2011 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
- 
+
     Desc: Assign CLI command
     Lang: English
 */
@@ -14,6 +14,7 @@
 #ifdef __AROS__
 #include <aros/asmcall.h>
 #include <proto/arossupport.h>
+#include <aros/debug.h>
 #else
 #include <clib/debug_protos.h>
 #endif
@@ -843,7 +844,7 @@ void _DeferPutStr(struct localdata *ld, CONST_STRPTR str)
 {
 	UBYTE c;
 
-	DEBUG_ASSIGN(kprintf(str);)
+	DEBUG_ASSIGN(kprintf(str));
 	while ((c = *str++))
 	{
 		deferputch(c, ld);
