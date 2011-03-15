@@ -464,6 +464,26 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
     return GetSysBaseChkSum(sysbase) == 0xffff;
 }
 
+static BOOL InitKickMem(void)
+{
+    struct MemList *ml = SysBase->KickMemPtr;
+    while (ml) {
+	int i;
+	for (i = 0; i < ml->ml_NumEntries; i++) {
+	    if (!AllocAbs(ml->ml_ME[i].me_Length, ml->ml_ME[i].me_Addr)) {
+	    	DEBUGPUTHEX(("KickMemPtr: ", (IPTR)ml));
+	    	DEBUGPUTHEX(("     Index: ", i));
+	    	DEBUGPUTHEX(("      Addr: ", (IPTR)ml->ml_ME[i].me_Addr));
+	    	DEBUGPUTHEX(("       Len: ", ml->ml_ME[i].me_Length));
+		return FALSE;
+	    }
+	}
+	ml = (struct MemList*)ml->ml_Node.ln_Succ;
+    }
+
+    return TRUE;
+}
+
 /* Ugh. BSS. Maybe move this to Trap[12]? */
 static APTR ColdCapture;
 
@@ -757,10 +777,20 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    doColdCapture();
 	}
 
-	/* Before we allocate anything else, try to 
-	 * initialize the Kick Data
+	/* Before we allocate anything else, we need to
+	 * lock down the entries in KickMemPtr
+	 *
+	 * If we get a single failure, don't run any
+	 * of the KickTags.
 	 */
-	InitKickTags();
+	if (SysBase->KickCheckSum == (APTR)SumKickData()) {
+	    if (!InitKickMem()) {
+	    	DEBUGPUTS(("[KickMem] KickMem failed an allocation. Ignoring KickTags\n"));
+	    	SysBase->KickTagPtr = NULL;
+	    }
+	    SysBase->KickMemPtr = NULL;
+	    SysBase->KickCheckSum = (APTR)SumKickData();
+	}
 
 	if ((AvailMem(MEMF_FAST) > (oldmem + 256 * 1024)) &&
 	    ((TypeOfMem(SysBase) & MEMF_CHIP) ||
@@ -769,8 +799,11 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	    SysBase = PrepareExecBaseMove(SysBase);
 	    DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
 	}
-	/* TODO: late ColdCapture if Exec was in autoconfig RAM */
 	
+	/* Now that SysBase is in its final position, we can
+	 * call CoolCapture and the KickTags.
+	 */
+	InitKickTags();
 
 	/* Initialize IRQ subsystem */
 	AmigaIRQInit(SysBase);
