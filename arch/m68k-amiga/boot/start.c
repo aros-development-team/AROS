@@ -300,6 +300,9 @@ static ULONG cpu_detect(void)
 	}
 	return cpuret;
 }
+
+#define _AS_STRING(x)	#x
+#define AS_STRING(x)	_AS_STRING(x)
 	
 /* Create a sign extending call stub:
  * foo:
@@ -314,34 +317,24 @@ static ULONG cpu_detect(void)
  */
 #define EXT_BYTE(lib, libname, funcname, funcid) \
 	do { \
-		UWORD *asmcall; \
-		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
-		asmcall = AllocMem(6 * sizeof(UWORD), MEMF_PUBLIC); \
-		if (asmcall == NULL) Early_Alert(CODE_ALLOC_FAIL); \
-		/* NOTE: 'asmcall' will intentionally never be freed */ \
-		asmcall[0] = 0x4eb9; \
-		asmcall[1] = (func >> 16) & 0xffff; \
-		asmcall[2] = (func >>  0) & 0xffff; \
-		asmcall[3] = 0x4880; \
-		asmcall[4] = 0x48c0; \
-		asmcall[5] = 0x4e75; \
+		void libname##_##funcname##_Wrapper(void) \
+		{ asm volatile ( \
+			"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname)) "\n" \
+			"ext.w %d0\n" \
+			"ext.l %d0\n" \
+			"rts\n"); } \
 		/* Insert into the library's jumptable */ \
-		__AROS_SETVECADDR(lib, funcid, asmcall); \
+		__AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
 	} while (0)
 #define EXT_WORD(lib, libname, funcname, funcid) \
 	do { \
-		UWORD *asmcall; \
-		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
-		asmcall = AllocMem(5 * sizeof(UWORD), MEMF_PUBLIC); \
-		if (asmcall == NULL) Early_Alert(CODE_ALLOC_FAIL); \
-		/* NOTE: 'asmcall' will intentionally never be freed */ \
-		asmcall[0] = 0x4eb9; \
-		asmcall[1] = (func >> 16) & 0xffff; \
-		asmcall[2] = (func >>  0) & 0xffff; \
-		asmcall[3] = 0x48c0; \
-		asmcall[4] = 0x4e75; \
+		void libname##_##funcname##_Wrapper(void) \
+		{ asm volatile ( \
+			"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname)) "\n" \
+			"ext.l %d0\n" \
+			"rts\n"); } \
 		/* Insert into the library's jumptable */ \
-		__AROS_SETVECADDR(lib, funcid, asmcall); \
+		__AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
 	} while (0)
 /*
  * Create a register preserving call stub:
@@ -357,21 +350,14 @@ static ULONG cpu_detect(void)
  */
 #define PRESERVE_ALL(lib, libname, funcname, funcid) \
 	do { \
-		UWORD *asmcall; \
-		IPTR func = (IPTR)__AROS_GETJUMPVEC(lib, funcid)->vec; \
-		asmcall = AllocMem(8 * sizeof(UWORD), MEMF_PUBLIC); \
-		if (asmcall == NULL) Early_Alert(CODE_ALLOC_FAIL); \
-		/* NOTE: 'asmcall' will intentionally never be freed */ \
-		asmcall[0] = 0x48e7; \
-		asmcall[1] = 0xc0c0; \
-		asmcall[2] = 0x4eb9; \
-		asmcall[3] = (func >> 16) & 0xffff; \
-		asmcall[4] = (func >>  0) & 0xffff; \
-		asmcall[5] = 0x4cdf; \
-		asmcall[6] = 0x0303; \
-		asmcall[7] = 0x4e75; \
+		void libname##_##funcname##_Wrapper(void) \
+	        { asm volatile ( \
+	        	"movem.l %d0-%d1/%a0-%a1,%sp@-\n" \
+	        	"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname)) "\n" \
+	        	"movem.l %sp@+,%d0-%d1/%a0-%a1\n" \
+	        	"rts\n" ); } \
 		/* Insert into the library's jumptable */ \
-		__AROS_SETVECADDR(lib, funcid, asmcall); \
+		__AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
 	} while (0)
 /* Inject arbitrary code into the jump table
  * Used for GetCC and nano-stubs
