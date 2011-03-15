@@ -553,11 +553,11 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	}
 
 	kickrom[0] = (UWORD*)&_rom_start;
-	kickrom[1] = (UWORD*)(&_rom_start + 0x80000);
+	kickrom[1] = (UWORD*)&_rom_end;
 	kickrom[2] = (UWORD*)0x00f00000;
 	kickrom[3] = (UWORD*)0x00f80000;
 	kickrom[4] = (UWORD*)&_ext_start;
-	kickrom[5] = (UWORD*)(&_ext_start + 0x80000);
+	kickrom[5] = (UWORD*)&_ext_end;
 	kickrom[6] = (UWORD*)~0;
 	kickrom[7] = (UWORD*)~0;
 
