@@ -57,6 +57,22 @@ struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
 	Remove((struct Node*)oldsb);
 
 	totalsize = oldsb->LibNode.lib_NegSize + oldsb->LibNode.lib_PosSize;
+
+	/* A little discussion on why MEMF_KICK is used.
+	 *
+	 * MEMF_CHIP is the 'core' memory on an Amiga, at address 0.
+	 *    Always there, but super slow.
+	 * MEMF_LOCAL is all of MEMF_CHIP, plus any non-AutoConfig expansion
+	 *   (ie A500/600 Ranger at 0xc00000, A3000 and A4000 motherboard RAMs)
+	 * MEMF_KICK is all of MEMF_LOCAL, plus any AutoConfig expansions
+	 *   (ie Zorro II and Zorro III memory cards)
+	 * MEMF_FAST *may* include other memories, which could be set up
+	 *   by the SysBase->KickTags list, or CLI utilities
+	 *
+	 * arch/m68k-amiga/exec/boot.c has been specially prepared to handle
+	 * MEMF_LOCAL or MEMF_KICK SysBase, so MEMF_KICK is the fastest
+	 * superset.
+	 */
 	newsb = (struct ExecBase *)((UBYTE *)AllocMem(totalsize, MEMF_KICK) + oldsb->LibNode.lib_NegSize);
 	CopyMemQuick((UBYTE*)oldsb - oldsb->LibNode.lib_NegSize, (UBYTE*)newsb - oldsb->LibNode.lib_NegSize, totalsize);
 
