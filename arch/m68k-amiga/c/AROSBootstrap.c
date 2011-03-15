@@ -120,17 +120,12 @@ static AROS_UFH4(LONG, elfSeek,
     AROS_USERFUNC_EXIT
 }
 
-static struct MinList mlist;
-
 static AROS_UFH3(APTR, elfAlloc,
 	AROS_UFHA(ULONG, size, D0),
 	AROS_UFHA(ULONG, flags, D1),
 	AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
-    struct MemList *ml;
-
-    size += sizeof(*ml);
 
     /* Clear bits 15-0, we're setting memory class explicitly */
     flags &= ~0x7fff;
@@ -141,15 +136,7 @@ static AROS_UFH3(APTR, elfAlloc,
     	flags |= MEMF_CHIP;
     }
 
-    ml = AllocMem(size, flags);
-
-    ml->ml_NumEntries = 1;
-    ml->ml_ME[0].me_Addr = (APTR)ml;
-    ml->ml_ME[0].me_Length = size;
-
-    AddTail(&mlist, ml);
-
-    return &ml[1];
+    return AllocMem(size, flags);
 
     AROS_USERFUNC_EXIT
 }
@@ -160,12 +147,6 @@ static AROS_UFH3(void, elfFree,
 	AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
-    struct MemList *ml;
-
-    addr -= sizeof(*ml);
-    size += sizeof(*ml);
-
-    Remove(addr);
 
     FreeMem(addr, size);
 
@@ -375,7 +356,7 @@ static void supercode(void)
     sysbase->ChkBase =~(IPTR)sysbase;
     sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
 
-    sysbase->KickMemPtr = (APTR)mlist.mlh_Head;
+    sysbase->KickMemPtr = (APTR)SysBase->KickMemPtr;
     sysbase->KickTagPtr = (APTR)SysBase->KickTagPtr;
     sysbase->KickCheckSum = (APTR)mySumKickData(sysbase);
 
@@ -400,11 +381,6 @@ void BootROM(BPTR romlist)
     /* We're off in the weeds now. */
     Disable();
 
-    /* Make list singly linked, and join
-     * with the existing KickMem list
-     */
-    mlist.mlh_TailPred->mln_Succ = SysBase->KickMemPtr;
-
     Supervisor(supercode);
 }
 
@@ -419,8 +395,6 @@ int main(void)
     struct Library *sbl = (APTR)SysBase;
     if (sbl->lib_Version > 40)
     	return RETURN_OK;
-
-    NEWLIST(&mlist);
 
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase != NULL) {
