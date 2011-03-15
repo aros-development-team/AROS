@@ -694,6 +694,26 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	InitCode(RTF_SINGLETASK, 0);
 	/* Autoconfig ram expansions are now configured */
 
+	/* If oldSysBase is not NULL, that means that it
+	 * (a) wasn't valid before when we only had MEMF_LOCAL
+	 * ram and (b) could possibly be in the MEMF_KICK memory
+	 * we just got. Let's check it and find out if we
+	 * can use it's capture vectors.
+	 */
+	if (oldSysBase && IsSysBaseValidNoVersion(oldSysBase)) {
+	    /* Save reset proof vectors */
+	    SysBase->ColdCapture  = oldSysBase->ColdCapture;
+	    SysBase->CoolCapture  = oldSysBase->CoolCapture;
+	    SysBase->WarmCapture  = oldSysBase->WarmCapture;
+	    /* Save KickData */
+	    SysBase->KickMemPtr   = oldSysBase->KickMemPtr; 
+	    SysBase->KickTagPtr   = oldSysBase->KickTagPtr;
+	    SysBase->KickCheckSum = oldSysBase->KickCheckSum;
+	    /* Re-seal SysBase */
+	    SetSysBaseChkSum();
+	    wasvalid = TRUE;
+	}
+
 	/* Before we allocate anything else, try to 
 	 * initialize the Kick Data
 	 */
