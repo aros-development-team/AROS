@@ -46,8 +46,7 @@ void writeincclib(struct config *cfg)
 	    "\n"
     );
 
-    if (cfg->command!=DUMMY)
-	writefuncprotos(out, cfg, cfg->funclist);
+    writefuncprotos(out, cfg, cfg->funclist);
 
     fprintf(out,
 	    "\n"

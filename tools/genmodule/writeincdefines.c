@@ -47,25 +47,22 @@ void writeincdefines(struct config *cfg)
     );
     freeBanner(banner);
 
-    if (cfg->command!=DUMMY)
+    for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
-	for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
+	if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
 	{
-	    if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
+	    if (funclistit->libcall != STACK)
 	    {
-		if (funclistit->libcall != STACK)
-		{
-		    writedefineregister(out, funclistit, cfg);
-		    if (!funclistit->novararg)
-			writedefinevararg(out, funclistit, cfg);
-		}
-		else /* libcall == STACK */
-		{
-		    writedefinestack(out, funclistit, cfg);
-		}
-		
-		writealiases(out, funclistit, cfg);
+		writedefineregister(out, funclistit, cfg);
+		if (!funclistit->novararg)
+		    writedefinevararg(out, funclistit, cfg);
 	    }
+	    else /* libcall == STACK */
+	    {
+		writedefinestack(out, funclistit, cfg);
+	    }
+	    
+	    writealiases(out, funclistit, cfg);
 	}
     }
     fprintf(out,
