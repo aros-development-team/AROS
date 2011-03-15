@@ -62,7 +62,7 @@
     struct FileLock *fl = BADDR(lock);
     LONG ret;
 
-    ASSERT_VALID_PTR_OR_NULL(lock);
+    ASSERT_VALID_PTR_OR_NULL(BADDR(lock));
     ASSERT_VALID_FILELOCK(lock);
 
     D(bug("[Examine] lock=%x fib=%x\n", fl, fib));
