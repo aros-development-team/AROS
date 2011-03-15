@@ -10,7 +10,9 @@
  * image cannot be loaded by this application.
  *
  * As you can probably guess, you will need at least 2MB of
- * MEMF_KICK RAM to get this to work.
+ * MEMF_LOCAL RAM to get this to work. We can't use MEMF_KICK,
+ * since some MEMF_KICK ram may not be available until after
+ * expansion.library processing.
  *
  * Also - no AROS specific code can go in here! We have to run
  * on AOS 1.3 and up.
@@ -130,7 +132,16 @@ static AROS_UFH3(APTR, elfAlloc,
 
     size += sizeof(*ml);
 
-    ml = AllocMem(size, flags | MEMF_KICK | (SysBase->LibNode.lib_Version >= 36 ? MEMF_REVERSE : 0));
+    /* Clear bits 15-0, we're setting memory class explicitly */
+    flags &= ~0x7fff;
+
+    if (SysBase->LibNode.lib_Version >= 36) {
+    	flags |= MEMF_LOCAL | MEMF_REVERSE;
+    } else {
+    	flags |= MEMF_CHIP;
+    }
+
+    ml = AllocMem(size, flags);
 
     ml->ml_NumEntries = 1;
     ml->ml_ME[0].me_Addr = (APTR)ml;
