@@ -290,6 +290,10 @@ void coldcapturecode(void)
     asm(
 	".long end - start\n"
 	"start:\n"
+	"bra.s 0f\n"
+	"nop\n"               /* Align to start + 4 */
+	".long 0x46414b45\n"  /* AROS_MAKE_ID('F','A','K','E') */
+	"0:\n"
 	"move.w	#0x440,0xdff180\n"
 	"clr.l	0.w\n"
 	"lea	0x200,%a0\n"
@@ -362,11 +366,13 @@ static void supercode(void)
     sysbase->LibNode.lib_Node.ln_Pred = &sysbase->LibNode.lib_Node;
     sysbase->LibNode.lib_Node.ln_Succ = &sysbase->LibNode.lib_Node;
 
+    /* Set up cold capture */
     sysbase->ColdCapture = coldcapture;
     sysbase->MaxLocMem = 512 * 1024;
     sysbase->ChkBase =~(IPTR)sysbase;
     sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
 
+    /* Propogate the existing OS's Kick Data */
     sysbase->KickMemPtr = (APTR)SysBase->KickMemPtr;
     sysbase->KickTagPtr = (APTR)SysBase->KickTagPtr;
     sysbase->KickCheckSum = (APTR)mySumKickData(sysbase);
