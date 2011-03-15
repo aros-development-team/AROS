@@ -314,10 +314,19 @@ void coldcapturecode(void)
     );
 }
 
-static void reboot(void)
+/* We have to copy the reboot code, as it must be in
+ * MEMF_LOCAL RAM, otherwise the jmp after the
+ * reset will vanish.
+ *
+ * DO NOT CALL THIS FUNCTION DIRECTLY!
+ */
+#define REBOOTBASE (12 * sizeof(ULONG))	/* Unused m68k exception vectors 12 and 13*/
+#define REBOOTSIZE (4 * sizeof(UWORD))
+static void rebootcode(void)
 {
-    asm(
-	"lea 0xf80002,%a0\n"
+    asm volatile (
+	"nop\n"
+	"move.l #2,%a0\n"
 	"reset\n"
 	"jmp (%a0)\n"
     );
@@ -329,6 +338,7 @@ static void supercode(void)
 {
     ULONG *fakesys, *coldcapture, *coldcapturep;
     struct ExecBase *sysbase;
+    void (*reboot)(void) = (APTR)REBOOTBASE;
     ULONG *traps = 0;
     ULONG len;
 
@@ -339,6 +349,7 @@ static void supercode(void)
     coldcapturep = (ULONG*)coldcapturecode;
     len = *coldcapturep++;
     memcpy (coldcapture, coldcapturep, len);
+    memcpy (rebootcode, (APTR)reboot, REBOOTSIZE);
 
     *fakesys++ = traps[31]; // Level 7
     *fakesys++ = 0x4ef9 | (COLDCAPTURE >> 16);
