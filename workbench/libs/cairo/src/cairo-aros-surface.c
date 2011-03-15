@@ -34,6 +34,7 @@
  */
 
 #include "cairoint.h"
+#include "cairo-error-private.h"
 #include "cairo-aros.h"
 
 #include <exec/types.h>
@@ -150,7 +151,7 @@ _surface_to_image (cairo_aros_surface_t   *surface,
     y2 = surface->height;
 
     if (interest_rect) {
-        cairo_rectangle_int16_t rect;
+        cairo_rectangle_t rect;
 
         rect.x = interest_rect->x;
         rect.y = interest_rect->y;
@@ -383,7 +384,7 @@ cairo_aros_surface_create (struct RastPort *rastport, int xoff, int yoff, int wi
         surface->content = CAIRO_CONTENT_COLOR;
     }
 
-    _cairo_surface_init (&surface->base, &cairo_aros_surface_backend, surface->content);
+    _cairo_surface_init (&surface->base, &cairo_aros_surface_backend, NULL, surface->content);
 
     return &surface->base;
 }

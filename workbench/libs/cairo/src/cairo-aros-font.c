@@ -34,6 +34,7 @@
  */
 
 #include "cairoint.h"
+#include "cairo-error-private.h"
 #include "cairo-aros.h"
 
 #include <exec/types.h>
@@ -214,7 +215,7 @@ _cairo_aros_font_face_scaled_font_create (void                        *abstract_
     cairo_font_extents_t extents;
 
     cairo_matrix_multiply (&scale, font_matrix, ctm);
-    status = _cairo_matrix_compute_scale_factors (&scale, &xscale, &yscale, 1);
+    status = _cairo_matrix_compute_basis_scale_factors (&scale, &xscale, &yscale, 1);
     if (status)
         return status;
 
