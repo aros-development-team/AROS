@@ -570,7 +570,9 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	mh = addmemoryregion(membanks[0], membanks[1]);
 
 	/* NOTE: mh *must* have, as its first mc, a chunk
-	 *       big enough for krnRomTagScanner.
+	 *       big enough for krnRomTagScanner, and at
+	 *       least one other chunk big enough for the
+	 *       initial SysBase.
 	 *
 	 * Call the SysBase initialization.
 	 */
@@ -644,58 +646,6 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 		FAKE_IT(SysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
 	}
 
-	/* Only add the 2 standard ROM locations, since
-	 * we may get memory at 0x00f00000, or when we
-	 * are ReKicked, at the rom-in-ramlocations.
-	 */
-	krnCreateROMHeader(mh, "Kickstart ROM", (APTR)0x00f80000, (APTR)0x01000000);
-	krnCreateROMHeader(mh, "Kickstart ROM", (APTR)0x00e00000, (APTR)0x00e80000);
-
-	/* Add remaining memory regions */
-	for (i = 2; membanks[i + 1]; i += 2) {
-		DEBUGPUTHEX(("RAM Addr: ", membanks[i]));
-		DEBUGPUTHEX(("RAM Size: ", membanks[i+1]));
-		mh = addmemoryregion(membanks[i], membanks[i + 1]);
-		Enqueue(&SysBase->MemList, &mh->mh_Node);
-	}
-
-	oldmem = AvailMem(MEMF_FAST);
-
-	/* Ok, let's start the system */
-	DEBUGPUTS(("[start] InitCode(RTF_SINGLETASK, 0)\n"));
-	InitCode(RTF_SINGLETASK, 0);
-
-	/* Before we allocate anything else, try to 
-	 * initialize the Kick Data
-	 */
-	InitKickTags();
-
-	/* Autoconfig ram expansions are now configured */
-	if (!wasvalid && IsSysBaseValid(oldSysBase)) {
-	    /* Ah, old ExecBase was in fast RAM */
-	    DEBUGPUTHEX(("[Sysbase] now valid at", (ULONG)oldSysBase));
-	    SysBase = PrepareExecBaseMove(oldSysBase);
-	    /* FIXME: free SysBase we just allocated for nothing */
-	} else if ((AvailMem(MEMF_FAST) > (oldmem + 256 * 1024)) &&
-	    ((TypeOfMem(SysBase) & MEMF_CHIP) ||
-	     ((ULONG)SysBase >= 0x00a00000ul && (ULONG)SysBase < 0x01000000ul))) {
-	    /* Move execbase to real fast if available now */
-	    SysBase = PrepareExecBaseMove(SysBase);
-	    DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
-	}
-	/* TODO: late ColdCapture if Exec was in autoconfig RAM */
-	
-	for (i = 0; membanks[i + 1]; i += 2) {
-		ULONG addr = membanks[i];
-		ULONG size = membanks[i + 1];
-		if (addr < 0x00200000)
-			SysBase->MaxLocMem = (size + 0xffff) & 0xffff0000;
-		else if (addr < 0x00d00000)
-			SysBase->MaxExtMem = size ? (APTR)(((0xc00000 + (size + 0xffff)) & 0xffff0000)) : 0;
-	}
-
-	SetSysBaseChkSum();
-
 #ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
 	PRESERVE_ALL(SysBase, Exec, Disable, 20);
 	PRESERVE_ALL(SysBase, Exec, Enable, 21);
@@ -709,6 +659,55 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	/* Functions that need sign extension */
 	EXT_BYTE(SysBase, Exec, SetTaskPri, 50);
 	EXT_BYTE(SysBase, Exec, AllocSignal, 55);
+
+	/* Only add the 2 standard ROM locations, since
+	 * we may get memory at 0x00f00000, or when we
+	 * are ReKicked, at the rom-in-ram locations.
+	 */
+	krnCreateROMHeader(mh, "Kickstart ROM", (APTR)0x00f80000, (APTR)0x01000000);
+	krnCreateROMHeader(mh, "Kickstart ROM", (APTR)0x00e00000, (APTR)0x00e80000);
+
+	/* Add remaining memory regions */
+	for (i = 2; membanks[i + 1]; i += 2) {
+		IPTR  addr = membanks[i];
+		ULONG size = membanks[i + 1];
+
+		DEBUGPUTHEX(("RAM Addr: ", addr));
+		DEBUGPUTHEX(("RAM Size: ", size));
+		mh = addmemoryregion(membanks[i], membanks[i + 1]);
+		Enqueue(&SysBase->MemList, &mh->mh_Node);
+
+		/* Adjust MaxLocMem and MaxExtMem as needed */
+		if (addr < 0x00200000)
+			SysBase->MaxLocMem = (size + 0xffff) & 0xffff0000;
+		else if (addr < 0x00d00000)
+			SysBase->MaxExtMem = size ? (APTR)(((0xc00000 + (size + 0xffff)) & 0xffff0000)) : 0;
+	}
+
+	/* Seal up SysBase's critical variables */
+	SetSysBaseChkSum();
+
+	oldmem = AvailMem(MEMF_FAST);
+
+	/* Ok, let's start the system */
+	DEBUGPUTS(("[start] InitCode(RTF_SINGLETASK, 0)\n"));
+	InitCode(RTF_SINGLETASK, 0);
+	/* Autoconfig ram expansions are now configured */
+
+	/* Before we allocate anything else, try to 
+	 * initialize the Kick Data
+	 */
+	InitKickTags();
+
+	if ((AvailMem(MEMF_FAST) > (oldmem + 256 * 1024)) &&
+	    ((TypeOfMem(SysBase) & MEMF_CHIP) ||
+	     ((ULONG)SysBase >= 0x00a00000ul && (ULONG)SysBase < 0x01000000ul))) {
+	    /* Move execbase to real fast if available now */
+	    SysBase = PrepareExecBaseMove(SysBase);
+	    DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
+	}
+	/* TODO: late ColdCapture if Exec was in autoconfig RAM */
+	
 
 	/* Initialize IRQ subsystem */
 	AmigaIRQInit(SysBase);
