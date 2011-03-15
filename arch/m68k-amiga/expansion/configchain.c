@@ -43,6 +43,7 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 			}
 		}
 	}
+	D(bug("romtaginit done\n"));
 }
 
 extern UBYTE _rom_start;
@@ -84,7 +85,7 @@ static void allocram(struct ExpansionBase *ExpansionBase)
 	ForeachNode(&IntExpBase(ExpansionBase)->eb_BoardList, node) {
 		struct ConfigDev *configDev = (struct ConfigDev*)node;
 		if ((configDev->cd_Rom.er_Type & ERTF_MEMLIST) && !(configDev->cd_Flags & CDF_SHUTUP) && !(configDev->cd_Flags & CDF_PROCESSED)) {
-			ULONG attr = MEMF_PUBLIC | MEMF_FAST;
+			ULONG attr = MEMF_PUBLIC | MEMF_FAST | MEMF_KICK;
 			ULONG size = configDev->cd_BoardSize;
 			APTR addr = configDev->cd_BoardAddr;
 			LONG pri = 20;
@@ -118,7 +119,7 @@ AROS_LH1(void, ConfigChain,
 		romtaginit(ExpansionBase);
 		return;
 	}
-bug("configchain\n");
+	D(bug("configchain\n"));
 	for(;;) {
 		if (!configDev)
 			configDev = AllocConfigDev();
@@ -133,6 +134,7 @@ bug("configchain\n");
 			configDev = NULL;
 		}
 	}
+	D(bug("configchain done\n"));
 
 	allocram(ExpansionBase);
 
