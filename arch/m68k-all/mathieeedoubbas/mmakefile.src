@@ -1,0 +1,14 @@
+# $Id: mmakefile.src 36224 2010-12-24 14:09:45Z sonic $
+include $(TOP)/config/make.cfg
+
+FILES := ieeedpbas_fpu mathieeedoubbas_init
+AFILES := fpu
+
+USER_CFLAGS := -I$(SRCDIR)/workbench/libs/mathieeedoubbas
+USER_AFLAGS := -I$(GENINCDIR)
+
+%build_archspecific \
+  mainmmake=workbench-libs-mathieeedoubbas maindir=workbench/libs/mathieeedoubbas arch=m68k \
+  files="$(FILES)" asmfiles="$(AFILES)"
+
+%common
