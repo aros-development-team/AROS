@@ -480,9 +480,18 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
     	    pix2 <<= 1;
     	    pix1 |= (c & 1) ? 1 : 0;
     	    pix2 |= (c & 2) ? 1 : 0;
+    	    /* When we fill a word, place it. */
+    	    if ((x & 0xf)==0xf) {
+    	    	*p++ = pix1;
+    	    	*p++ = pix2;
+    	    }
     	}
-    	*p++ = pix1;
-    	*p++ = pix2;
+    	/* Place the word at the end of the
+    	 * row, if not already placed */
+    	if ((x & 0xf) != 0) {
+	    *p++ = pix1;
+	    *p++ = pix2;
+	}
     }
     setspritepos(data, data->spritex, data->spritey);
     setspritevisible(data, data->cursorvisible);
