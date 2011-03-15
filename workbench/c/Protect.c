@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Protect CLI command
@@ -64,12 +64,6 @@
         dos.library/SetProtection()
 
     INTERNALS
-
-    HISTORY
-
-        27-Jul-1997  laguest  --  Initial inclusion into the AROS tree
-	3.12.2000    SDuvan   --  Rewrote, simplified and implemented missing
-	                          functionality
 
 ******************************************************************************/
 
@@ -240,7 +234,7 @@ int main(void)
 
 	    if (retval == RETURN_OK)
 	    {
-		if (!all &&IsDosEntryA(file, LDF_VOLUMES | LDF_DEVICES))
+		if (!all && IsDosEntryA(file, LDF_VOLUMES | LDF_DEVICES))
 		{
 		    Printf("Can't set protection for %s - ", file);
 		    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
@@ -283,12 +277,14 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
     int   retval = RETURN_OK;
     LONG  indent = 0;
     int   i;			/* Loop variable */
-    BOOL  error;
+    BOOL  success;
+    ULONG match_count = 0;
 
     for (match = MatchFirst(file, ap);
     	 match == 0 && retval == RETURN_OK && !CTRL_C;
 	 match = MatchNext(ap))
     {
+        match_count++;
 	if (isDir(&ap->ap_Info))
 	{
 	    if (ap->ap_Flags & APF_DIDDIR)
@@ -306,7 +302,7 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
 
 	}
 
-	error = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection, flags,
+	success = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection, flags,
 			      flagsSet, add, sub);
 
         if (!quiet)
@@ -331,15 +327,22 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
                 PutStr(" (dir)");
             }
 
-            if (!error)
+            if (!success)
             {
                 PrintFault(ioerr, "..error");
+                retval = RETURN_ERROR;
             }
             else
             {
                 PutStr("..done\n");
             }
         }
+    }
+
+    if (match_count == 0 || IoErr() != ERROR_NO_MORE_ENTRIES)
+    {
+        PrintFault(IoErr(), NULL);
+        retval = RETURN_ERROR;
     }
 
     MatchEnd(ap);
