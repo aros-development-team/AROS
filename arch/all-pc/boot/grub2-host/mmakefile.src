@@ -33,10 +33,21 @@ export DEBUG		:= yes
 export CFLAGS		:= $(filter-out -s --strip-all,$(HOST_CFLAGS))
 export TARGET_CFLAGS	:= $(CFLAGS)
 
+ifeq ($(AROS_TARGET_VARIANT),efi)
+    GRUB2_PLATFORM := efi
+else
+    GRUB2_PLATFORM := $(AROS_TARGET_ARCH)
+endif
+
+# See verbose comments in ranlib-helper for explanation of this
+ifeq ($(AROS_HOST_ARCH),darwin)
+    RANLIB := $(SRCDIR)/$(CURDIR)/ranlib-helper
+endif
+
 DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
 CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
                 --host=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)       \
-                --with-platform=$(AROS_TARGET_ARCH)             \
+                --with-platform=$(GRUB2_PLATFORM)               \
                 --datarootdir=$(DESTDIR)/share                  \
                 --sysconfdir=$(DESTDIR)/etc                     \
                 --disable-grub-mkfont                           \
