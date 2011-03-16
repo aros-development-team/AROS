@@ -464,13 +464,14 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
     return GetSysBaseChkSum(sysbase) == 0xffff;
 }
 
-static BOOL InitKickMem(void)
+static BOOL InitKickMem(struct ExecBase *SysBase)
 {
     struct MemList *ml = SysBase->KickMemPtr;
     while (ml) {
 	int i;
 	for (i = 0; i < ml->ml_NumEntries; i++) {
-	    if (!AllocAbs(ml->ml_ME[i].me_Length, ml->ml_ME[i].me_Addr)) {
+	    /* Use the non-mungwalling AllocAbs */
+	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase)) {
 	    	DEBUGPUTHEX(("KickMemPtr: ", (IPTR)ml));
 	    	DEBUGPUTHEX(("     Index: ", i));
 	    	DEBUGPUTHEX(("      Addr: ", (IPTR)ml->ml_ME[i].me_Addr));
@@ -795,7 +796,7 @@ void exec_boot(ULONG *membanks, IPTR ss_stack_upper, IPTR ss_stack_lower)
 	 * of the KickTags.
 	 */
 	if (SysBase->KickCheckSum == (APTR)SumKickData()) {
-	    if (!InitKickMem()) {
+	    if (!InitKickMem(SysBase)) {
 	    	DEBUGPUTS(("[KickMem] KickMem failed an allocation. Ignoring KickTags\n"));
 	    	SysBase->KickTagPtr = NULL;
 	    }
