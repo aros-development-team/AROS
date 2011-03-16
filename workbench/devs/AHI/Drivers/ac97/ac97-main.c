@@ -1,9 +1,4 @@
 
-/*
- *  This is a do-nothing example AHI driver that just discards the
- *  sound data that is sent to it. Recording is not supported.
- */
-
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -36,7 +31,7 @@ PROCGW( static, void,  slaveentry, SlaveEntry );
 /*  There is probably no reason to support all these frequencies. If,
  *  for example, your hardware is locked at 48 kHz, it's ok to only
  *  present one single mixing/recording frequency to the user. If your
- *  hardware has internal resamples and accept any frequency, select a
+ *  hardware has internal resamples and accepts any frequency, select a
  *  few common ones.
  */
 
