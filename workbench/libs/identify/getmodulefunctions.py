@@ -30,7 +30,7 @@ modules = (
 #    ["bootmenu.resource", "rom/bootmenu/bootmenu.conf", lvoresource, None],
     ["cybergraphics.library", "workbench/libs/cgfx/cybergraphics.conf", lvolibrary, None],
     ["dbus.library", "rom/dbus/dbus.conf", lvolibrary, None],
-    ["ata.device", "rom/devs/ata.device/ata.conf", lvodevice, None],
+    ["ata.device", "rom/devs/ata/ata.conf", lvodevice, None],
     ["console.device", "rom/devs/console/console.conf", lvodevice, None],
     ["input.device", "rom/devs/input/input.conf", lvodevice, None],
     ["dos.library", "rom/dos/dos.conf", lvolibrary, None],
