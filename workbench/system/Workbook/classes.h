@@ -102,6 +102,7 @@ Class *WBSet_MakeClass(struct WorkbookBase *wb);
 #define WBIA_Dummy               (TAG_USER | 0x40440000)
 #define WBIA_File                (WBIA_Dummy+1)	/* CONST_STRPTR */
 #define WBIA_Icon                (WBIA_Dummy+2)	/* DiskObject */
+#define WBIA_Label               (WBIA_Dummy+3)	/* CONST_STRPTR */
 
 /* Methods */
 #define WBIM_Dummy               (TAG_USER | 0x40440100)
