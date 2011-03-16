@@ -27,6 +27,7 @@ struct copper2data
 	UWORD *copper2_scroll;
 	UWORD *copper2_bplcon0;
 	UWORD *copper2_bpl;
+	UWORD *copper2_fmode;
 };
 
 struct amigavideo_staticdata
@@ -64,7 +65,7 @@ struct amigavideo_staticdata
 	UWORD *sprite;
 	UWORD spritex, spritey;
 	UWORD bplcon3;
-	UWORD fmode;
+	UBYTE fmode_bpl, fmode_spr;
 	UWORD ddfstrt, ddfstop;
 	UWORD modulo;
 	struct copper2data copper2;
