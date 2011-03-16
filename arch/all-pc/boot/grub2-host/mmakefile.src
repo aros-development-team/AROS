@@ -68,7 +68,11 @@ LST_FILES   :=	command fs moddep
 MKIMG_OPTS  :=	-O $(GRUB_CPU)-$(GRUB_ARCH) -p /boot/grub
 
 #MM
-grub2-iso-setup: $(BOOT_GRUB)
+grub2-iso-setup: grub2-$(GRUB_ARCH)-iso-setup
+
+#MM
+grub2-pc-iso-setup: $(BOOT_GRUB)
+	@$(ECHO) Creating $(BOOT_GRUB)...
 	@cd $(HOSTGENDIR)/$(CURDIR)/grub-core                           && \
 	../grub-mkimage $(MKIMG_OPTS) -d . -o core.img $(GRUB2_MODS)    && \
 	$(CP) *.img $(BOOT_GRUB)                                        && \
@@ -77,7 +81,8 @@ grub2-iso-setup: $(BOOT_GRUB)
 	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/grub2_eltorito
 
 #MM
-grub2-efi-iso-setup-quick: $(BOOT_GRUB)
+grub2-efi-iso-setup: $(BOOT_GRUB)
+	@$(ECHO) Creating $(BOOT_GRUB)...
 	@cd $(HOSTGENDIR)/$(CURDIR)/grub-core                           && \
 	../grub-mkimage $(MKIMG_OPTS) -d . -o grub.efi $(GRUB2_MODS)    && \
 	$(CP) *.efi $(BOOT_GRUB)                                        && \
